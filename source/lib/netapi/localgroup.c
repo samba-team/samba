@@ -209,6 +209,8 @@ WERROR NetLocalGroupAdd_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
+	init_lsa_String(&lsa_account_name, alias_name);
+
 	status = rpccli_samr_CreateDomAlias(pipe_cli, ctx,
 					    &domain_handle,
 					    &lsa_account_name,
@@ -786,6 +788,13 @@ WERROR NetLocalGroupEnum_r(struct libnetapi_ctx *ctx,
 			return WERR_UNKNOWN_LEVEL;
 	}
 
+	if (r->out.total_entries) {
+		*r->out.total_entries = 0;
+	}
+	if (r->out.entries_read) {
+		*r->out.entries_read = 0;
+	}
+
 	ZERO_STRUCT(connect_handle);
 	ZERO_STRUCT(builtin_handle);
 	ZERO_STRUCT(domain_handle);
@@ -836,6 +845,10 @@ WERROR NetLocalGroupEnum_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
+	if (r->out.total_entries) {
+		*r->out.total_entries += builtin_info->info2.num_aliases;
+	}
+
 	status = rpccli_samr_QueryDomainInfo(pipe_cli, ctx,
 					     &domain_handle,
 					     2,
@@ -843,6 +856,10 @@ WERROR NetLocalGroupEnum_r(struct libnetapi_ctx *ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		werr = ntstatus_to_werror(status);
 		goto done;
+	}
+
+	if (r->out.total_entries) {
+		*r->out.total_entries += domain_info->info2.num_aliases;
 	}
 
 	status = rpccli_samr_EnumDomainAliases(pipe_cli, ctx,
