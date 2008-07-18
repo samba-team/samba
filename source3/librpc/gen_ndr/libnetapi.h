@@ -10,6 +10,7 @@
 #define _HEADER_libnetapi
 
 #define ERROR_MORE_DATA	( 234L )
+#define ENCRYPTED_PWLEN	( 256 )
 #define FILTER_TEMP_DUPLICATE_ACCOUNT	( 0x0001 )
 #define FILTER_NORMAL_ACCOUNT	( 0x0002 )
 #define FILTER_INTERDOMAIN_TRUST_ACCOUNT	( 0x0008 )
@@ -192,6 +193,37 @@ struct USER_INFO_20 {
 	uint32_t usri20_user_id;
 };
 
+struct USER_INFO_21 {
+	uint8_t *usri21_password;
+};
+
+struct USER_INFO_22 {
+	const char * usri22_name;
+	uint8_t *usri22_password;
+	uint32_t usri22_password_age;
+	uint32_t usri22_priv;
+	const char * usri22_home_dir;
+	const char * usri22_comment;
+	uint32_t usri22_flags;
+	uint32_t usri22_script_path;
+	uint32_t usri22_auth_flags;
+	const char * usri22_full_name;
+	const char * usri22_usr_comment;
+	const char * usri22_parms;
+	const char * usri22_workstations;
+	uint32_t usri22_last_logon;
+	uint32_t usri22_last_logoff;
+	uint32_t usri22_acct_expires;
+	uint32_t usri22_max_storage;
+	uint32_t usri22_units_per_week;
+	uint8_t *usri22_logon_hours;/* [unique] */
+	uint32_t usri22_bad_pw_count;
+	uint32_t usri22_num_logons;
+	const char * usri22_logon_server;
+	uint32_t usri22_country_code;
+	uint32_t usri22_code_page;
+};
+
 struct USER_INFO_23 {
 	const char * usri23_name;
 	const char * usri23_full_name;
@@ -200,8 +232,85 @@ struct USER_INFO_23 {
 	struct domsid *usri23_user_sid;/* [unique] */
 };
 
+struct USER_INFO_1003 {
+	const char * usri1003_password;
+};
+
+struct USER_INFO_1005 {
+	uint32_t usri1005_priv;
+};
+
+struct USER_INFO_1006 {
+	const char * usri1006_home_dir;
+};
+
 struct USER_INFO_1007 {
 	const char * usri1007_comment;
+};
+
+struct USER_INFO_1008 {
+	uint32_t usri1008_flags;
+};
+
+struct USER_INFO_1009 {
+	const char * usri1009_script_path;
+};
+
+struct USER_INFO_1010 {
+	uint32_t usri1010_auth_flags;
+};
+
+struct USER_INFO_1011 {
+	const char * usri1011_full_name;
+};
+
+struct USER_INFO_1012 {
+	const char * usri1012_usr_comment;
+};
+
+struct USER_INFO_1013 {
+	const char * usri1013_parms;
+};
+
+struct USER_INFO_1014 {
+	const char * usri1014_workstations;
+};
+
+struct USER_INFO_1017 {
+	uint32_t usri1017_acct_expires;
+};
+
+struct USER_INFO_1018 {
+	uint32_t usri1018_max_storage;
+};
+
+struct USER_INFO_1020 {
+	uint32_t usri1020_units_per_week;
+	uint8_t *usri1020_logon_hours;/* [unique] */
+};
+
+struct USER_INFO_1023 {
+	const char * usri1023_logon_server;
+};
+
+struct USER_INFO_1024 {
+	uint32_t usri1024_country_code;
+};
+
+struct USER_INFO_1025 {
+	uint32_t usri1025_code_page;
+};
+
+struct USER_INFO_1051 {
+	uint32_t usri1051_primary_group_id;
+};
+
+struct USER_INFO_1052 {
+	const char * usri1052_profile;
+};
+
+struct USER_INFO_1053 {
+	const char * usri1053_home_dir_drive;
 };
 
 struct USER_INFO_X {

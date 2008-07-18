@@ -849,6 +849,158 @@ _PUBLIC_ void ndr_print_USER_INFO_20(struct ndr_print *ndr, const char *name, co
 	ndr->depth--;
 }
 
+_PUBLIC_ enum ndr_err_code ndr_push_USER_INFO_21(struct ndr_push *ndr, int ndr_flags, const struct USER_INFO_21 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 1));
+		NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->usri21_password, ENCRYPTED_PWLEN));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_USER_INFO_21(struct ndr_pull *ndr, int ndr_flags, struct USER_INFO_21 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 1));
+		NDR_PULL_ALLOC_N(ndr, r->usri21_password, ENCRYPTED_PWLEN);
+		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->usri21_password, ENCRYPTED_PWLEN));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_USER_INFO_21(struct ndr_print *ndr, const char *name, const struct USER_INFO_21 *r)
+{
+	ndr_print_struct(ndr, name, "USER_INFO_21");
+	ndr->depth++;
+	ndr_print_array_uint8(ndr, "usri21_password", r->usri21_password, ENCRYPTED_PWLEN);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_USER_INFO_22(struct ndr_push *ndr, int ndr_flags, const struct USER_INFO_22 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->usri22_name));
+		NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->usri22_password, ENCRYPTED_PWLEN));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->usri22_password_age));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->usri22_priv));
+		NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->usri22_home_dir));
+		NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->usri22_comment));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->usri22_flags));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->usri22_script_path));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->usri22_auth_flags));
+		NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->usri22_full_name));
+		NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->usri22_usr_comment));
+		NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->usri22_parms));
+		NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->usri22_workstations));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->usri22_last_logon));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->usri22_last_logoff));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->usri22_acct_expires));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->usri22_max_storage));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->usri22_units_per_week));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->usri22_logon_hours));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->usri22_bad_pw_count));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->usri22_num_logons));
+		NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->usri22_logon_server));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->usri22_country_code));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->usri22_code_page));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		if (r->usri22_logon_hours) {
+			NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, *r->usri22_logon_hours));
+		}
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_USER_INFO_22(struct ndr_pull *ndr, int ndr_flags, struct USER_INFO_22 *r)
+{
+	uint32_t _ptr_usri22_logon_hours;
+	TALLOC_CTX *_mem_save_usri22_logon_hours_0;
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->usri22_name));
+		NDR_PULL_ALLOC_N(ndr, r->usri22_password, ENCRYPTED_PWLEN);
+		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->usri22_password, ENCRYPTED_PWLEN));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->usri22_password_age));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->usri22_priv));
+		NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->usri22_home_dir));
+		NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->usri22_comment));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->usri22_flags));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->usri22_script_path));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->usri22_auth_flags));
+		NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->usri22_full_name));
+		NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->usri22_usr_comment));
+		NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->usri22_parms));
+		NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->usri22_workstations));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->usri22_last_logon));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->usri22_last_logoff));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->usri22_acct_expires));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->usri22_max_storage));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->usri22_units_per_week));
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_usri22_logon_hours));
+		if (_ptr_usri22_logon_hours) {
+			NDR_PULL_ALLOC(ndr, r->usri22_logon_hours);
+		} else {
+			r->usri22_logon_hours = NULL;
+		}
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->usri22_bad_pw_count));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->usri22_num_logons));
+		NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->usri22_logon_server));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->usri22_country_code));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->usri22_code_page));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		if (r->usri22_logon_hours) {
+			_mem_save_usri22_logon_hours_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->usri22_logon_hours, 0);
+			NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, r->usri22_logon_hours));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_usri22_logon_hours_0, 0);
+		}
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_USER_INFO_22(struct ndr_print *ndr, const char *name, const struct USER_INFO_22 *r)
+{
+	ndr_print_struct(ndr, name, "USER_INFO_22");
+	ndr->depth++;
+	ndr_print_string(ndr, "usri22_name", r->usri22_name);
+	ndr_print_array_uint8(ndr, "usri22_password", r->usri22_password, ENCRYPTED_PWLEN);
+	ndr_print_uint32(ndr, "usri22_password_age", r->usri22_password_age);
+	ndr_print_uint32(ndr, "usri22_priv", r->usri22_priv);
+	ndr_print_string(ndr, "usri22_home_dir", r->usri22_home_dir);
+	ndr_print_string(ndr, "usri22_comment", r->usri22_comment);
+	ndr_print_uint32(ndr, "usri22_flags", r->usri22_flags);
+	ndr_print_uint32(ndr, "usri22_script_path", r->usri22_script_path);
+	ndr_print_uint32(ndr, "usri22_auth_flags", r->usri22_auth_flags);
+	ndr_print_string(ndr, "usri22_full_name", r->usri22_full_name);
+	ndr_print_string(ndr, "usri22_usr_comment", r->usri22_usr_comment);
+	ndr_print_string(ndr, "usri22_parms", r->usri22_parms);
+	ndr_print_string(ndr, "usri22_workstations", r->usri22_workstations);
+	ndr_print_uint32(ndr, "usri22_last_logon", r->usri22_last_logon);
+	ndr_print_uint32(ndr, "usri22_last_logoff", r->usri22_last_logoff);
+	ndr_print_uint32(ndr, "usri22_acct_expires", r->usri22_acct_expires);
+	ndr_print_uint32(ndr, "usri22_max_storage", r->usri22_max_storage);
+	ndr_print_uint32(ndr, "usri22_units_per_week", r->usri22_units_per_week);
+	ndr_print_ptr(ndr, "usri22_logon_hours", r->usri22_logon_hours);
+	ndr->depth++;
+	if (r->usri22_logon_hours) {
+		ndr_print_uint8(ndr, "usri22_logon_hours", *r->usri22_logon_hours);
+	}
+	ndr->depth--;
+	ndr_print_uint32(ndr, "usri22_bad_pw_count", r->usri22_bad_pw_count);
+	ndr_print_uint32(ndr, "usri22_num_logons", r->usri22_num_logons);
+	ndr_print_string(ndr, "usri22_logon_server", r->usri22_logon_server);
+	ndr_print_uint32(ndr, "usri22_country_code", r->usri22_country_code);
+	ndr_print_uint32(ndr, "usri22_code_page", r->usri22_code_page);
+	ndr->depth--;
+}
+
 _PUBLIC_ enum ndr_err_code ndr_push_USER_INFO_23(struct ndr_push *ndr, int ndr_flags, const struct USER_INFO_23 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
@@ -912,6 +1064,96 @@ _PUBLIC_ void ndr_print_USER_INFO_23(struct ndr_print *ndr, const char *name, co
 	ndr->depth--;
 }
 
+_PUBLIC_ enum ndr_err_code ndr_push_USER_INFO_1003(struct ndr_push *ndr, int ndr_flags, const struct USER_INFO_1003 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->usri1003_password));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_USER_INFO_1003(struct ndr_pull *ndr, int ndr_flags, struct USER_INFO_1003 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->usri1003_password));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_USER_INFO_1003(struct ndr_print *ndr, const char *name, const struct USER_INFO_1003 *r)
+{
+	ndr_print_struct(ndr, name, "USER_INFO_1003");
+	ndr->depth++;
+	ndr_print_string(ndr, "usri1003_password", r->usri1003_password);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_USER_INFO_1005(struct ndr_push *ndr, int ndr_flags, const struct USER_INFO_1005 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->usri1005_priv));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_USER_INFO_1005(struct ndr_pull *ndr, int ndr_flags, struct USER_INFO_1005 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->usri1005_priv));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_USER_INFO_1005(struct ndr_print *ndr, const char *name, const struct USER_INFO_1005 *r)
+{
+	ndr_print_struct(ndr, name, "USER_INFO_1005");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "usri1005_priv", r->usri1005_priv);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_USER_INFO_1006(struct ndr_push *ndr, int ndr_flags, const struct USER_INFO_1006 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->usri1006_home_dir));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_USER_INFO_1006(struct ndr_pull *ndr, int ndr_flags, struct USER_INFO_1006 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->usri1006_home_dir));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_USER_INFO_1006(struct ndr_print *ndr, const char *name, const struct USER_INFO_1006 *r)
+{
+	ndr_print_struct(ndr, name, "USER_INFO_1006");
+	ndr->depth++;
+	ndr_print_string(ndr, "usri1006_home_dir", r->usri1006_home_dir);
+	ndr->depth--;
+}
+
 _PUBLIC_ enum ndr_err_code ndr_push_USER_INFO_1007(struct ndr_push *ndr, int ndr_flags, const struct USER_INFO_1007 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
@@ -939,6 +1181,510 @@ _PUBLIC_ void ndr_print_USER_INFO_1007(struct ndr_print *ndr, const char *name, 
 	ndr_print_struct(ndr, name, "USER_INFO_1007");
 	ndr->depth++;
 	ndr_print_string(ndr, "usri1007_comment", r->usri1007_comment);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_USER_INFO_1008(struct ndr_push *ndr, int ndr_flags, const struct USER_INFO_1008 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->usri1008_flags));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_USER_INFO_1008(struct ndr_pull *ndr, int ndr_flags, struct USER_INFO_1008 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->usri1008_flags));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_USER_INFO_1008(struct ndr_print *ndr, const char *name, const struct USER_INFO_1008 *r)
+{
+	ndr_print_struct(ndr, name, "USER_INFO_1008");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "usri1008_flags", r->usri1008_flags);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_USER_INFO_1009(struct ndr_push *ndr, int ndr_flags, const struct USER_INFO_1009 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->usri1009_script_path));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_USER_INFO_1009(struct ndr_pull *ndr, int ndr_flags, struct USER_INFO_1009 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->usri1009_script_path));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_USER_INFO_1009(struct ndr_print *ndr, const char *name, const struct USER_INFO_1009 *r)
+{
+	ndr_print_struct(ndr, name, "USER_INFO_1009");
+	ndr->depth++;
+	ndr_print_string(ndr, "usri1009_script_path", r->usri1009_script_path);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_USER_INFO_1010(struct ndr_push *ndr, int ndr_flags, const struct USER_INFO_1010 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->usri1010_auth_flags));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_USER_INFO_1010(struct ndr_pull *ndr, int ndr_flags, struct USER_INFO_1010 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->usri1010_auth_flags));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_USER_INFO_1010(struct ndr_print *ndr, const char *name, const struct USER_INFO_1010 *r)
+{
+	ndr_print_struct(ndr, name, "USER_INFO_1010");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "usri1010_auth_flags", r->usri1010_auth_flags);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_USER_INFO_1011(struct ndr_push *ndr, int ndr_flags, const struct USER_INFO_1011 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->usri1011_full_name));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_USER_INFO_1011(struct ndr_pull *ndr, int ndr_flags, struct USER_INFO_1011 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->usri1011_full_name));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_USER_INFO_1011(struct ndr_print *ndr, const char *name, const struct USER_INFO_1011 *r)
+{
+	ndr_print_struct(ndr, name, "USER_INFO_1011");
+	ndr->depth++;
+	ndr_print_string(ndr, "usri1011_full_name", r->usri1011_full_name);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_USER_INFO_1012(struct ndr_push *ndr, int ndr_flags, const struct USER_INFO_1012 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->usri1012_usr_comment));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_USER_INFO_1012(struct ndr_pull *ndr, int ndr_flags, struct USER_INFO_1012 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->usri1012_usr_comment));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_USER_INFO_1012(struct ndr_print *ndr, const char *name, const struct USER_INFO_1012 *r)
+{
+	ndr_print_struct(ndr, name, "USER_INFO_1012");
+	ndr->depth++;
+	ndr_print_string(ndr, "usri1012_usr_comment", r->usri1012_usr_comment);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_USER_INFO_1013(struct ndr_push *ndr, int ndr_flags, const struct USER_INFO_1013 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->usri1013_parms));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_USER_INFO_1013(struct ndr_pull *ndr, int ndr_flags, struct USER_INFO_1013 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->usri1013_parms));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_USER_INFO_1013(struct ndr_print *ndr, const char *name, const struct USER_INFO_1013 *r)
+{
+	ndr_print_struct(ndr, name, "USER_INFO_1013");
+	ndr->depth++;
+	ndr_print_string(ndr, "usri1013_parms", r->usri1013_parms);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_USER_INFO_1014(struct ndr_push *ndr, int ndr_flags, const struct USER_INFO_1014 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->usri1014_workstations));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_USER_INFO_1014(struct ndr_pull *ndr, int ndr_flags, struct USER_INFO_1014 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->usri1014_workstations));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_USER_INFO_1014(struct ndr_print *ndr, const char *name, const struct USER_INFO_1014 *r)
+{
+	ndr_print_struct(ndr, name, "USER_INFO_1014");
+	ndr->depth++;
+	ndr_print_string(ndr, "usri1014_workstations", r->usri1014_workstations);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_USER_INFO_1017(struct ndr_push *ndr, int ndr_flags, const struct USER_INFO_1017 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->usri1017_acct_expires));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_USER_INFO_1017(struct ndr_pull *ndr, int ndr_flags, struct USER_INFO_1017 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->usri1017_acct_expires));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_USER_INFO_1017(struct ndr_print *ndr, const char *name, const struct USER_INFO_1017 *r)
+{
+	ndr_print_struct(ndr, name, "USER_INFO_1017");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "usri1017_acct_expires", r->usri1017_acct_expires);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_USER_INFO_1018(struct ndr_push *ndr, int ndr_flags, const struct USER_INFO_1018 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->usri1018_max_storage));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_USER_INFO_1018(struct ndr_pull *ndr, int ndr_flags, struct USER_INFO_1018 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->usri1018_max_storage));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_USER_INFO_1018(struct ndr_print *ndr, const char *name, const struct USER_INFO_1018 *r)
+{
+	ndr_print_struct(ndr, name, "USER_INFO_1018");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "usri1018_max_storage", r->usri1018_max_storage);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_USER_INFO_1020(struct ndr_push *ndr, int ndr_flags, const struct USER_INFO_1020 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->usri1020_units_per_week));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->usri1020_logon_hours));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		if (r->usri1020_logon_hours) {
+			NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, *r->usri1020_logon_hours));
+		}
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_USER_INFO_1020(struct ndr_pull *ndr, int ndr_flags, struct USER_INFO_1020 *r)
+{
+	uint32_t _ptr_usri1020_logon_hours;
+	TALLOC_CTX *_mem_save_usri1020_logon_hours_0;
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->usri1020_units_per_week));
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_usri1020_logon_hours));
+		if (_ptr_usri1020_logon_hours) {
+			NDR_PULL_ALLOC(ndr, r->usri1020_logon_hours);
+		} else {
+			r->usri1020_logon_hours = NULL;
+		}
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		if (r->usri1020_logon_hours) {
+			_mem_save_usri1020_logon_hours_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->usri1020_logon_hours, 0);
+			NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, r->usri1020_logon_hours));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_usri1020_logon_hours_0, 0);
+		}
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_USER_INFO_1020(struct ndr_print *ndr, const char *name, const struct USER_INFO_1020 *r)
+{
+	ndr_print_struct(ndr, name, "USER_INFO_1020");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "usri1020_units_per_week", r->usri1020_units_per_week);
+	ndr_print_ptr(ndr, "usri1020_logon_hours", r->usri1020_logon_hours);
+	ndr->depth++;
+	if (r->usri1020_logon_hours) {
+		ndr_print_uint8(ndr, "usri1020_logon_hours", *r->usri1020_logon_hours);
+	}
+	ndr->depth--;
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_USER_INFO_1023(struct ndr_push *ndr, int ndr_flags, const struct USER_INFO_1023 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->usri1023_logon_server));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_USER_INFO_1023(struct ndr_pull *ndr, int ndr_flags, struct USER_INFO_1023 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->usri1023_logon_server));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_USER_INFO_1023(struct ndr_print *ndr, const char *name, const struct USER_INFO_1023 *r)
+{
+	ndr_print_struct(ndr, name, "USER_INFO_1023");
+	ndr->depth++;
+	ndr_print_string(ndr, "usri1023_logon_server", r->usri1023_logon_server);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_USER_INFO_1024(struct ndr_push *ndr, int ndr_flags, const struct USER_INFO_1024 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->usri1024_country_code));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_USER_INFO_1024(struct ndr_pull *ndr, int ndr_flags, struct USER_INFO_1024 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->usri1024_country_code));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_USER_INFO_1024(struct ndr_print *ndr, const char *name, const struct USER_INFO_1024 *r)
+{
+	ndr_print_struct(ndr, name, "USER_INFO_1024");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "usri1024_country_code", r->usri1024_country_code);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_USER_INFO_1025(struct ndr_push *ndr, int ndr_flags, const struct USER_INFO_1025 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->usri1025_code_page));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_USER_INFO_1025(struct ndr_pull *ndr, int ndr_flags, struct USER_INFO_1025 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->usri1025_code_page));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_USER_INFO_1025(struct ndr_print *ndr, const char *name, const struct USER_INFO_1025 *r)
+{
+	ndr_print_struct(ndr, name, "USER_INFO_1025");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "usri1025_code_page", r->usri1025_code_page);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_USER_INFO_1051(struct ndr_push *ndr, int ndr_flags, const struct USER_INFO_1051 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->usri1051_primary_group_id));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_USER_INFO_1051(struct ndr_pull *ndr, int ndr_flags, struct USER_INFO_1051 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->usri1051_primary_group_id));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_USER_INFO_1051(struct ndr_print *ndr, const char *name, const struct USER_INFO_1051 *r)
+{
+	ndr_print_struct(ndr, name, "USER_INFO_1051");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "usri1051_primary_group_id", r->usri1051_primary_group_id);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_USER_INFO_1052(struct ndr_push *ndr, int ndr_flags, const struct USER_INFO_1052 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->usri1052_profile));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_USER_INFO_1052(struct ndr_pull *ndr, int ndr_flags, struct USER_INFO_1052 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->usri1052_profile));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_USER_INFO_1052(struct ndr_print *ndr, const char *name, const struct USER_INFO_1052 *r)
+{
+	ndr_print_struct(ndr, name, "USER_INFO_1052");
+	ndr->depth++;
+	ndr_print_string(ndr, "usri1052_profile", r->usri1052_profile);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_USER_INFO_1053(struct ndr_push *ndr, int ndr_flags, const struct USER_INFO_1053 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->usri1053_home_dir_drive));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_USER_INFO_1053(struct ndr_pull *ndr, int ndr_flags, struct USER_INFO_1053 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->usri1053_home_dir_drive));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_USER_INFO_1053(struct ndr_print *ndr, const char *name, const struct USER_INFO_1053 *r)
+{
+	ndr_print_struct(ndr, name, "USER_INFO_1053");
+	ndr->depth++;
+	ndr_print_string(ndr, "usri1053_home_dir_drive", r->usri1053_home_dir_drive);
 	ndr->depth--;
 }
 
