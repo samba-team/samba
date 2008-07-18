@@ -396,6 +396,15 @@ struct GROUP_INFO_1005 {
 	uint32_t grpi1005_attributes;
 };
 
+struct GROUP_USERS_INFO_0 {
+	const char * grui0_name;
+};
+
+struct GROUP_USERS_INFO_1 {
+	const char * grui1_name;
+	uint32_t grui1_attributes;
+};
+
 struct LOCALGROUP_INFO_0 {
 	const char * lgrpi0_name;
 };
@@ -774,6 +783,26 @@ struct NetGroupDelUser {
 	} in;
 
 	struct {
+		enum NET_API_STATUS result;
+	} out;
+
+};
+
+
+struct NetGroupGetUsers {
+	struct {
+		const char * server_name;
+		const char * group_name;
+		uint32_t level;
+		uint32_t prefmaxlen;
+		uint32_t *resume_handle;/* [ref] */
+	} in;
+
+	struct {
+		uint8_t **buffer;/* [ref] */
+		uint32_t *entries_read;/* [ref] */
+		uint32_t *total_entries;/* [ref] */
+		uint32_t *resume_handle;/* [ref] */
 		enum NET_API_STATUS result;
 	} out;
 
