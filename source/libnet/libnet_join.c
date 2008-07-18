@@ -1733,8 +1733,8 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 /****************************************************************
 ****************************************************************/
 
-WERROR libnet_join_rollback(TALLOC_CTX *mem_ctx,
-			    struct libnet_JoinCtx *r)
+static WERROR libnet_join_rollback(TALLOC_CTX *mem_ctx,
+				   struct libnet_JoinCtx *r)
 {
 	WERROR werr;
 	struct libnet_UnjoinCtx *u = NULL;
