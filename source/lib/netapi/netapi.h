@@ -290,6 +290,15 @@ struct GROUP_INFO_1005 {
 	uint32_t grpi1005_attributes;
 };
 
+struct GROUP_USERS_INFO_0 {
+	const char * grui0_name;
+};
+
+struct GROUP_USERS_INFO_1 {
+	const char * grui1_name;
+	uint32_t grui1_attributes;
+};
+
 struct LOCALGROUP_INFO_0 {
 	const char * lgrpi0_name;
 };
@@ -898,6 +907,35 @@ NET_API_STATUS NetGroupAddUser(const char * server_name /* [in] */,
 NET_API_STATUS NetGroupDelUser(const char * server_name /* [in] */,
 			       const char * group_name /* [in] */,
 			       const char * user_name /* [in] */);
+
+/************************************************************//**
+ *
+ * NetGroupGetUsers
+ *
+ * @brief Get Users for a group on a server
+ *
+ * @param[in] server_name The server name to connect to
+ * @param[in] group_name The group name to enumerate users for
+ * @param[in] level The enumeration level used for the query
+ * @param[out] buffer The returned enumeration buffer
+ * @param[in] prefmaxlen The requested maximal buffer size
+ * @param[out] entries_read The number of returned entries
+ * @param[out] total_entries The number of total entries
+ * @param[in,out] resume_handle A handle passed in and returned for resuming
+ * operations
+ * @return NET_API_STATUS
+ *
+ * example group/group_getusers.c
+ ***************************************************************/
+
+NET_API_STATUS NetGroupGetUsers(const char * server_name /* [in] */,
+				const char * group_name /* [in] */,
+				uint32_t level /* [in] */,
+				uint8_t **buffer /* [out] [ref] */,
+				uint32_t prefmaxlen /* [in] */,
+				uint32_t *entries_read /* [out] [ref] */,
+				uint32_t *total_entries /* [out] [ref] */,
+				uint32_t *resume_handle /* [in,out] [ref] */);
 
 /************************************************************//**
  *
