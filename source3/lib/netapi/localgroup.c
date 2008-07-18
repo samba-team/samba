@@ -27,18 +27,22 @@
 static WERROR libnetapi_samr_lookup_and_open_alias(TALLOC_CTX *mem_ctx,
 						   struct rpc_pipe_client *pipe_cli,
 						   struct policy_handle *domain_handle,
-						   struct lsa_String *lsa_account_name,
+						   const char *group_name,
 						   uint32_t access_rights,
 						   struct policy_handle *alias_handle)
 {
 	NTSTATUS status;
 	WERROR werr;
+
+	struct lsa_String lsa_account_name;
 	struct samr_Ids user_rids, name_types;
+
+	init_lsa_String(&lsa_account_name, group_name);
 
 	status = rpccli_samr_LookupNames(pipe_cli, mem_ctx,
 					 domain_handle,
 					 1,
-					 lsa_account_name,
+					 &lsa_account_name,
 					 &user_rids,
 					 &name_types);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -177,11 +181,9 @@ WERROR NetLocalGroupAdd_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	init_lsa_String(&lsa_account_name, alias_name);
-
 	werr = libnetapi_samr_lookup_and_open_alias(ctx, pipe_cli,
 						    &builtin_handle,
-						    &lsa_account_name,
+						    alias_name,
 						    SAMR_ALIAS_ACCESS_LOOKUP_INFO,
 						    &alias_handle);
 
@@ -275,7 +277,6 @@ WERROR NetLocalGroupDel_r(struct libnetapi_ctx *ctx,
 	struct rpc_pipe_client *pipe_cli = NULL;
 	NTSTATUS status;
 	WERROR werr;
-	struct lsa_String lsa_account_name;
 	struct policy_handle connect_handle, domain_handle, builtin_handle, alias_handle;
 	struct dom_sid2 *domain_sid = NULL;
 
@@ -308,11 +309,9 @@ WERROR NetLocalGroupDel_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	init_lsa_String(&lsa_account_name, r->in.group_name);
-
 	werr = libnetapi_samr_lookup_and_open_alias(ctx, pipe_cli,
 						    &builtin_handle,
-						    &lsa_account_name,
+						    r->in.group_name,
 						    SEC_STD_DELETE,
 						    &alias_handle);
 
@@ -336,7 +335,7 @@ WERROR NetLocalGroupDel_r(struct libnetapi_ctx *ctx,
 
 	werr = libnetapi_samr_lookup_and_open_alias(ctx, pipe_cli,
 						    &domain_handle,
-						    &lsa_account_name,
+						    r->in.group_name,
 						    SEC_STD_DELETE,
 						    &alias_handle);
 
@@ -445,7 +444,6 @@ WERROR NetLocalGroupGetInfo_r(struct libnetapi_ctx *ctx,
 	struct rpc_pipe_client *pipe_cli = NULL;
 	NTSTATUS status;
 	WERROR werr;
-	struct lsa_String lsa_account_name;
 	struct policy_handle connect_handle, domain_handle, builtin_handle, alias_handle;
 	struct dom_sid2 *domain_sid = NULL;
 	union samr_AliasInfo *alias_info = NULL;
@@ -489,11 +487,9 @@ WERROR NetLocalGroupGetInfo_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	init_lsa_String(&lsa_account_name, r->in.group_name);
-
 	werr = libnetapi_samr_lookup_and_open_alias(ctx, pipe_cli,
 						    &builtin_handle,
-						    &lsa_account_name,
+						    r->in.group_name,
 						    SAMR_ALIAS_ACCESS_LOOKUP_INFO,
 						    &alias_handle);
 
@@ -517,7 +513,7 @@ WERROR NetLocalGroupGetInfo_r(struct libnetapi_ctx *ctx,
 
 	werr = libnetapi_samr_lookup_and_open_alias(ctx, pipe_cli,
 						    &domain_handle,
-						    &lsa_account_name,
+						    r->in.group_name,
 						    SAMR_ALIAS_ACCESS_LOOKUP_INFO,
 						    &alias_handle);
 
@@ -672,7 +668,7 @@ WERROR NetLocalGroupSetInfo_r(struct libnetapi_ctx *ctx,
 
 	werr = libnetapi_samr_lookup_and_open_alias(ctx, pipe_cli,
 						    &builtin_handle,
-						    &lsa_account_name,
+						    r->in.group_name,
 						    SAMR_ALIAS_ACCESS_SET_INFO,
 						    &alias_handle);
 
@@ -695,7 +691,7 @@ WERROR NetLocalGroupSetInfo_r(struct libnetapi_ctx *ctx,
 
 	werr = libnetapi_samr_lookup_and_open_alias(ctx, pipe_cli,
 						    &domain_handle,
-						    &lsa_account_name,
+						    r->in.group_name,
 						    SAMR_ALIAS_ACCESS_SET_INFO,
 						    &alias_handle);
 	if (!W_ERROR_IS_OK(werr)) {
