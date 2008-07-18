@@ -1207,9 +1207,9 @@ NTSTATUS ctdbd_register_reconfigure(struct ctdbd_connection *conn)
 }
 
 /*
-  persstent store. Used when we update a record in a persistent database
+  persistent call. Used to start, store or cancel persistent updates.
  */
-NTSTATUS ctdbd_persistent_store(struct ctdbd_connection *conn, uint32_t db_id, TDB_DATA key, TDB_DATA data)
+static NTSTATUS ctdbd_persistent_call(struct ctdbd_connection *conn, uint32_t opcode, uint32_t db_id, TDB_DATA key, TDB_DATA data)
 {
        int cstatus=0;
        struct ctdb_rec_data *rec;
@@ -1232,8 +1232,7 @@ NTSTATUS ctdbd_persistent_store(struct ctdbd_connection *conn, uint32_t db_id, T
        recdata.dptr  = (uint8_t *)rec;
        recdata.dsize = length;
 
-       status = ctdbd_control(conn, CTDB_CURRENT_NODE, 
-                              CTDB_CONTROL_PERSISTENT_STORE, 
+       status = ctdbd_control(conn, CTDB_CURRENT_NODE, opcode,
                               0, recdata, NULL, NULL, &cstatus);
        if (cstatus != 0) {
                return NT_STATUS_INTERNAL_DB_CORRUPTION;
@@ -1241,6 +1240,40 @@ NTSTATUS ctdbd_persistent_store(struct ctdbd_connection *conn, uint32_t db_id, T
        return status;
 }
 
+/*
+  persistent store. Used when we update a record in a persistent database
+ */
+NTSTATUS ctdbd_persistent_store(struct ctdbd_connection *conn, uint32_t db_id, TDB_DATA key, TDB_DATA data)
+{
+	return ctdbd_persistent_call(conn,
+				CTDB_CONTROL_PERSISTENT_STORE, 
+				db_id, key, data);
+}
+
+/*
+  tell the ctdb daemon that we are starting a persistent update operation.
+  If we terminate/disconnect from the daemon without first performing
+  either a persistent_store or a cancel ctdbd will perform recovery.
+ */
+NTSTATUS ctdbd_start_persistent_update(struct ctdbd_connection *conn, uint32_t db_id, TDB_DATA key, TDB_DATA data)
+{
+	return ctdbd_persistent_call(conn,
+				CTDB_CONTROL_START_PERSISTENT_UPDATE, 
+				db_id, key, data);
+                              
+}
+
+/*
+  Cancel a persistent update operation. This is used if we have started a
+  persistent update  but we want to abort it before we have made changes to
+  the tdb database.
+ */
+NTSTATUS ctdbd_cancel_persistent_update(struct ctdbd_connection *conn, uint32_t db_id, TDB_DATA key, TDB_DATA data)
+{
+	return ctdbd_persistent_call(conn,
+				CTDB_CONTROL_CANCEL_PERSISTENT_UPDATE, 
+				db_id, key, data);
+}
 
 #else
 
