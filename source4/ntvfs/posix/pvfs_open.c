@@ -1173,7 +1173,7 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 		   struct ntvfs_request *req, union smb_open *io)
 {
 	struct pvfs_state *pvfs = ntvfs->private_data;
-	int flags;
+	int flags = 0;
 	struct pvfs_filename *name;
 	struct pvfs_file *f;
 	struct ntvfs_handle *h;
@@ -1206,6 +1206,9 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
+	/* These options are ignored */
+	create_options &= ~NTCREATEX_OPTIONS_MUST_IGNORE_MASK;
+
 	if (create_options & NTCREATEX_OPTIONS_NOT_SUPPORTED_MASK) {
 		return NT_STATUS_NOT_SUPPORTED;
 	}
@@ -1217,10 +1220,22 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 		/* no-op */
 	}
 
-	/* These options are ignored */
-	if (create_options & (NTCREATEX_OPTIONS_FREE_SPACE_QUERY | NTCREATEX_OPTIONS_OPFILTER)) {
+	/* TODO: If (unlikely) Linux does a good compressed
+	 * filesystem, we might need an ioctl call for this */
+	if (create_options & NTCREATEX_OPTIONS_NO_COMPRESSION) {
 		/* no-op */
 	}
+
+	if (create_options & NTCREATEX_OPTIONS_NO_INTERMEDIATE_BUFFERING) {
+		create_options |= NTCREATEX_OPTIONS_WRITE_THROUGH;
+	}
+
+	/* Open the file with sync, if they asked for it, but
+	   'strict sync = no' turns this client request into a no-op */
+	if (create_options & (NTCREATEX_OPTIONS_WRITE_THROUGH) && !(pvfs->flags | PVFS_FLAG_STRICT_SYNC)) {
+		flags |= O_SYNC;
+	}
+
 
 	/* other create options are not allowed */
 	if ((create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE) &&
@@ -1281,8 +1296,6 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	/* FILE_ATTRIBUTE_DIRECTORY is ignored if the above test for directory
 	   open doesn't match */
 	io->generic.in.file_attr &= ~FILE_ATTRIBUTE_DIRECTORY;
-
-	flags = 0;
 
 	switch (io->generic.in.open_disposition) {
 	case NTCREATEX_DISP_SUPERSEDE:
