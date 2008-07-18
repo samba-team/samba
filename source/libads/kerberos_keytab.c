@@ -212,12 +212,12 @@ out:
 	return (int)ret;
 }
 
-int smb_krb5_kt_add_entry(krb5_context context,
-			  krb5_keytab keytab,
-			  krb5_kvno kvno,
-			  const char *princ_s,
-			  krb5_enctype *enctypes,
-			  krb5_data password)
+static int smb_krb5_kt_add_entry(krb5_context context,
+				 krb5_keytab keytab,
+				 krb5_kvno kvno,
+				 const char *princ_s,
+				 krb5_enctype *enctypes,
+				 krb5_data password)
 {
 	return smb_krb5_kt_add_entry_ext(context,
 					 keytab,
