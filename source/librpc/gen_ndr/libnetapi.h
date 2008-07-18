@@ -204,6 +204,33 @@ struct USER_INFO_1007 {
 	const char * usri1007_comment;
 };
 
+struct USER_INFO_X {
+	const char * usriX_name;
+	const char * usriX_password;
+	uint32_t usriX_password_age;
+	uint32_t usriX_priv;
+	const char * usriX_home_dir;
+	const char * usriX_comment;
+	uint32_t usriX_flags;
+	const char * usriX_script_path;
+	uint32_t usriX_auth_flags;
+	const char * usriX_full_name;
+	const char * usriX_usr_comment;
+	const char * usriX_parms;
+	const char * usriX_workstations;
+	uint32_t usriX_last_logon;
+	uint32_t usriX_last_logoff;
+	uint32_t usriX_acct_expires;
+	uint32_t usriX_max_storage;
+	uint32_t usriX_units_per_week;
+	uint8_t *usriX_logon_hours;/* [unique] */
+	uint32_t usriX_bad_pw_count;
+	uint32_t usriX_num_logons;
+	const char * usriX_logon_server;
+	uint32_t usriX_country_code;
+	uint32_t usriX_code_page;
+};
+
 struct NET_DISPLAY_USER {
 	const char * usri1_name;
 	const char * usri1_comment;

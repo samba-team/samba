@@ -942,6 +942,126 @@ _PUBLIC_ void ndr_print_USER_INFO_1007(struct ndr_print *ndr, const char *name, 
 	ndr->depth--;
 }
 
+_PUBLIC_ enum ndr_err_code ndr_push_USER_INFO_X(struct ndr_push *ndr, int ndr_flags, const struct USER_INFO_X *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->usriX_name));
+		NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->usriX_password));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->usriX_password_age));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->usriX_priv));
+		NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->usriX_home_dir));
+		NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->usriX_comment));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->usriX_flags));
+		NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->usriX_script_path));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->usriX_auth_flags));
+		NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->usriX_full_name));
+		NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->usriX_usr_comment));
+		NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->usriX_parms));
+		NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->usriX_workstations));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->usriX_last_logon));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->usriX_last_logoff));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->usriX_acct_expires));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->usriX_max_storage));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->usriX_units_per_week));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->usriX_logon_hours));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->usriX_bad_pw_count));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->usriX_num_logons));
+		NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->usriX_logon_server));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->usriX_country_code));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->usriX_code_page));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		if (r->usriX_logon_hours) {
+			NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, *r->usriX_logon_hours));
+		}
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_USER_INFO_X(struct ndr_pull *ndr, int ndr_flags, struct USER_INFO_X *r)
+{
+	uint32_t _ptr_usriX_logon_hours;
+	TALLOC_CTX *_mem_save_usriX_logon_hours_0;
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->usriX_name));
+		NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->usriX_password));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->usriX_password_age));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->usriX_priv));
+		NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->usriX_home_dir));
+		NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->usriX_comment));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->usriX_flags));
+		NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->usriX_script_path));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->usriX_auth_flags));
+		NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->usriX_full_name));
+		NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->usriX_usr_comment));
+		NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->usriX_parms));
+		NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->usriX_workstations));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->usriX_last_logon));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->usriX_last_logoff));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->usriX_acct_expires));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->usriX_max_storage));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->usriX_units_per_week));
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_usriX_logon_hours));
+		if (_ptr_usriX_logon_hours) {
+			NDR_PULL_ALLOC(ndr, r->usriX_logon_hours);
+		} else {
+			r->usriX_logon_hours = NULL;
+		}
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->usriX_bad_pw_count));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->usriX_num_logons));
+		NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->usriX_logon_server));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->usriX_country_code));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->usriX_code_page));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		if (r->usriX_logon_hours) {
+			_mem_save_usriX_logon_hours_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->usriX_logon_hours, 0);
+			NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, r->usriX_logon_hours));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_usriX_logon_hours_0, 0);
+		}
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_USER_INFO_X(struct ndr_print *ndr, const char *name, const struct USER_INFO_X *r)
+{
+	ndr_print_struct(ndr, name, "USER_INFO_X");
+	ndr->depth++;
+	ndr_print_string(ndr, "usriX_name", r->usriX_name);
+	ndr_print_string(ndr, "usriX_password", r->usriX_password);
+	ndr_print_uint32(ndr, "usriX_password_age", r->usriX_password_age);
+	ndr_print_uint32(ndr, "usriX_priv", r->usriX_priv);
+	ndr_print_string(ndr, "usriX_home_dir", r->usriX_home_dir);
+	ndr_print_string(ndr, "usriX_comment", r->usriX_comment);
+	ndr_print_uint32(ndr, "usriX_flags", r->usriX_flags);
+	ndr_print_string(ndr, "usriX_script_path", r->usriX_script_path);
+	ndr_print_uint32(ndr, "usriX_auth_flags", r->usriX_auth_flags);
+	ndr_print_string(ndr, "usriX_full_name", r->usriX_full_name);
+	ndr_print_string(ndr, "usriX_usr_comment", r->usriX_usr_comment);
+	ndr_print_string(ndr, "usriX_parms", r->usriX_parms);
+	ndr_print_string(ndr, "usriX_workstations", r->usriX_workstations);
+	ndr_print_uint32(ndr, "usriX_last_logon", r->usriX_last_logon);
+	ndr_print_uint32(ndr, "usriX_last_logoff", r->usriX_last_logoff);
+	ndr_print_uint32(ndr, "usriX_acct_expires", r->usriX_acct_expires);
+	ndr_print_uint32(ndr, "usriX_max_storage", r->usriX_max_storage);
+	ndr_print_uint32(ndr, "usriX_units_per_week", r->usriX_units_per_week);
+	ndr_print_ptr(ndr, "usriX_logon_hours", r->usriX_logon_hours);
+	ndr->depth++;
+	if (r->usriX_logon_hours) {
+		ndr_print_uint8(ndr, "usriX_logon_hours", *r->usriX_logon_hours);
+	}
+	ndr->depth--;
+	ndr_print_uint32(ndr, "usriX_bad_pw_count", r->usriX_bad_pw_count);
+	ndr_print_uint32(ndr, "usriX_num_logons", r->usriX_num_logons);
+	ndr_print_string(ndr, "usriX_logon_server", r->usriX_logon_server);
+	ndr_print_uint32(ndr, "usriX_country_code", r->usriX_country_code);
+	ndr_print_uint32(ndr, "usriX_code_page", r->usriX_code_page);
+	ndr->depth--;
+}
+
 _PUBLIC_ enum ndr_err_code ndr_push_NET_DISPLAY_USER(struct ndr_push *ndr, int ndr_flags, const struct NET_DISPLAY_USER *r)
 {
 	if (ndr_flags & NDR_SCALARS) {

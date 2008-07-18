@@ -107,6 +107,9 @@ void ndr_print_USER_INFO_23(struct ndr_print *ndr, const char *name, const struc
 enum ndr_err_code ndr_push_USER_INFO_1007(struct ndr_push *ndr, int ndr_flags, const struct USER_INFO_1007 *r);
 enum ndr_err_code ndr_pull_USER_INFO_1007(struct ndr_pull *ndr, int ndr_flags, struct USER_INFO_1007 *r);
 void ndr_print_USER_INFO_1007(struct ndr_print *ndr, const char *name, const struct USER_INFO_1007 *r);
+enum ndr_err_code ndr_push_USER_INFO_X(struct ndr_push *ndr, int ndr_flags, const struct USER_INFO_X *r);
+enum ndr_err_code ndr_pull_USER_INFO_X(struct ndr_pull *ndr, int ndr_flags, struct USER_INFO_X *r);
+void ndr_print_USER_INFO_X(struct ndr_print *ndr, const char *name, const struct USER_INFO_X *r);
 enum ndr_err_code ndr_push_NET_DISPLAY_USER(struct ndr_push *ndr, int ndr_flags, const struct NET_DISPLAY_USER *r);
 enum ndr_err_code ndr_pull_NET_DISPLAY_USER(struct ndr_pull *ndr, int ndr_flags, struct NET_DISPLAY_USER *r);
 void ndr_print_NET_DISPLAY_USER(struct ndr_print *ndr, const char *name, const struct NET_DISPLAY_USER *r);
