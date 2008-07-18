@@ -308,6 +308,7 @@ static WERROR cmd_drsuapi_getncchanges(struct rpc_pipe_client *cli,
 	DATA_BLOB session_key;
 
 	int32_t level = 8;
+	bool single = false;
 	int32_t level_out = 0;
 	union drsuapi_DsGetNCChangesRequest req;
 	union drsuapi_DsGetNCChangesCtr ctr;
@@ -326,13 +327,22 @@ static WERROR cmd_drsuapi_getncchanges(struct rpc_pipe_client *cli,
 				  DRSUAPI_DS_REPLICA_NEIGHBOUR_RETURN_OBJECT_PARENTS |
 				  DRSUAPI_DS_REPLICA_NEIGHBOUR_NEVER_SYNCED;
 
-	if (argc > 2) {
-		printf("usage: %s naming_context_dn\n", argv[0]);
+	if (argc > 3) {
+		printf("usage: %s [naming_context_or_object_dn [single]]\n", argv[0]);
 		return WERR_OK;
 	}
 
 	if (argc >= 2) {
 		nc_dn = argv[1];
+	}
+
+	if (argc == 3) {
+		if (strequal(argv[2], "single")) {
+			single = true;
+		} else {
+			printf("warning: ignoring unknown argument '%s'\n",
+			       argv[2]);
+		}
 	}
 
 	ZERO_STRUCT(info28);
@@ -440,12 +450,18 @@ static WERROR cmd_drsuapi_getncchanges(struct rpc_pipe_client *cli,
 		req.req8.replica_flags		= replica_flags;
 		req.req8.max_object_count	= 402;
 		req.req8.max_ndr_size		= 402116;
+		if (single) {
+			req.req8.extended_op	= DRSUAPI_EXOP_REPL_OBJ;
+		}
 	} else {
 		level = 5;
 		req.req5.naming_context		= &nc;
 		req.req5.replica_flags		= replica_flags;
 		req.req5.max_object_count	= 402;
 		req.req5.max_ndr_size		= 402116;
+		if (single) {
+			req.req5.extended_op	= DRSUAPI_EXOP_REPL_OBJ;
+		}
 	}
 
 	for (y=0; ;y++) {
