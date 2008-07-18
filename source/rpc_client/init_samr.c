@@ -460,3 +460,49 @@ void init_samr_user_info24(struct samr_UserInfo24 *r,
 	memcpy(r->password.data, data, sizeof(r->password.data));
 	r->pw_len = pw_len;
 }
+
+/*************************************************************************
+ inits a samr_CryptPasswordEx structure
+ *************************************************************************/
+
+void init_samr_CryptPasswordEx(const char *pwd,
+			       DATA_BLOB *session_key,
+			       struct samr_CryptPasswordEx *pwd_buf)
+{
+	/* samr_CryptPasswordEx */
+
+	uchar pwbuf[532];
+	struct MD5Context md5_ctx;
+	uint8_t confounder[16];
+	DATA_BLOB confounded_session_key = data_blob(NULL, 16);
+
+	encode_pw_buffer(pwbuf, pwd, STR_UNICODE);
+
+	generate_random_buffer((uint8_t *)confounder, 16);
+
+	MD5Init(&md5_ctx);
+	MD5Update(&md5_ctx, confounder, 16);
+	MD5Update(&md5_ctx, session_key->data,
+			    session_key->length);
+	MD5Final(confounded_session_key.data, &md5_ctx);
+
+	SamOEMhashBlob(pwbuf, 516, &confounded_session_key);
+	memcpy(&pwbuf[516], confounder, 16);
+
+	memcpy(pwd_buf->data, pwbuf, sizeof(pwbuf));
+	data_blob_free(&confounded_session_key);
+}
+
+/*************************************************************************
+ inits a samr_CryptPassword structure
+ *************************************************************************/
+
+void init_samr_CryptPassword(const char *pwd,
+			     DATA_BLOB *session_key,
+			     struct samr_CryptPassword *pwd_buf)
+{
+	/* samr_CryptPassword */
+
+	encode_pw_buffer(pwd_buf->data, pwd, STR_UNICODE);
+	SamOEMhashBlob(pwd_buf->data, 516, session_key);
+}
