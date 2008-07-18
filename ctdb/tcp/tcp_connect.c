@@ -100,9 +100,6 @@ static void ctdb_node_connect_write(struct event_context *ev, struct fd_event *f
 
 	/* the queue subsystem now owns this fd */
 	tnode->fd = -1;
-       
-	/* tell the ctdb layer we are connected */
-	node->ctdb->upcalls->node_connected(node);
 }
 
 
