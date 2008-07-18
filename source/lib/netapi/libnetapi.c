@@ -783,7 +783,7 @@ NET_API_STATUS NetQueryDisplayInformation(const char * server_name /* [in] [uniq
 
 NET_API_STATUS NetGroupAdd(const char * server_name /* [in] */,
 			   uint32_t level /* [in] */,
-			   uint8_t *buf /* [in] [ref] */,
+			   uint8_t *buffer /* [in] [ref] */,
 			   uint32_t *parm_err /* [out] [ref] */)
 {
 	struct NetGroupAdd r;
@@ -799,7 +799,7 @@ NET_API_STATUS NetGroupAdd(const char * server_name /* [in] */,
 	/* In parameters */
 	r.in.server_name = server_name;
 	r.in.level = level;
-	r.in.buf = buf;
+	r.in.buffer = buffer;
 
 	/* Out parameters */
 	r.out.parm_err = parm_err;
@@ -925,7 +925,7 @@ NET_API_STATUS NetGroupEnum(const char * server_name /* [in] */,
 NET_API_STATUS NetGroupSetInfo(const char * server_name /* [in] */,
 			       const char * group_name /* [in] */,
 			       uint32_t level /* [in] */,
-			       uint8_t *buf /* [in] [ref] */,
+			       uint8_t *buffer /* [in] [ref] */,
 			       uint32_t *parm_err /* [out] [ref] */)
 {
 	struct NetGroupSetInfo r;
@@ -942,7 +942,7 @@ NET_API_STATUS NetGroupSetInfo(const char * server_name /* [in] */,
 	r.in.server_name = server_name;
 	r.in.group_name = group_name;
 	r.in.level = level;
-	r.in.buf = buf;
+	r.in.buffer = buffer;
 
 	/* Out parameters */
 	r.out.parm_err = parm_err;
@@ -973,7 +973,7 @@ NET_API_STATUS NetGroupSetInfo(const char * server_name /* [in] */,
 NET_API_STATUS NetGroupGetInfo(const char * server_name /* [in] */,
 			       const char * group_name /* [in] */,
 			       uint32_t level /* [in] */,
-			       uint8_t **buf /* [out] [ref] */)
+			       uint8_t **buffer /* [out] [ref] */)
 {
 	struct NetGroupGetInfo r;
 	struct libnetapi_ctx *ctx = NULL;
@@ -991,7 +991,7 @@ NET_API_STATUS NetGroupGetInfo(const char * server_name /* [in] */,
 	r.in.level = level;
 
 	/* Out parameters */
-	r.out.buf = buf;
+	r.out.buffer = buffer;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(NetGroupGetInfo, &r);
@@ -1106,7 +1106,7 @@ NET_API_STATUS NetGroupDelUser(const char * server_name /* [in] */,
 
 NET_API_STATUS NetLocalGroupAdd(const char * server_name /* [in] */,
 				uint32_t level /* [in] */,
-				uint8_t *buf /* [in] [ref] */,
+				uint8_t *buffer /* [in] [ref] */,
 				uint32_t *parm_err /* [out] [ref] */)
 {
 	struct NetLocalGroupAdd r;
@@ -1122,7 +1122,7 @@ NET_API_STATUS NetLocalGroupAdd(const char * server_name /* [in] */,
 	/* In parameters */
 	r.in.server_name = server_name;
 	r.in.level = level;
-	r.in.buf = buf;
+	r.in.buffer = buffer;
 
 	/* Out parameters */
 	r.out.parm_err = parm_err;
@@ -1195,7 +1195,7 @@ NET_API_STATUS NetLocalGroupDel(const char * server_name /* [in] */,
 NET_API_STATUS NetLocalGroupGetInfo(const char * server_name /* [in] */,
 				    const char * group_name /* [in] */,
 				    uint32_t level /* [in] */,
-				    uint8_t **buf /* [out] [ref] */)
+				    uint8_t **buffer /* [out] [ref] */)
 {
 	struct NetLocalGroupGetInfo r;
 	struct libnetapi_ctx *ctx = NULL;
@@ -1213,7 +1213,7 @@ NET_API_STATUS NetLocalGroupGetInfo(const char * server_name /* [in] */,
 	r.in.level = level;
 
 	/* Out parameters */
-	r.out.buf = buf;
+	r.out.buffer = buffer;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(NetLocalGroupGetInfo, &r);
@@ -1241,7 +1241,7 @@ NET_API_STATUS NetLocalGroupGetInfo(const char * server_name /* [in] */,
 NET_API_STATUS NetLocalGroupSetInfo(const char * server_name /* [in] */,
 				    const char * group_name /* [in] */,
 				    uint32_t level /* [in] */,
-				    uint8_t *buf /* [in] [ref] */,
+				    uint8_t *buffer /* [in] [ref] */,
 				    uint32_t *parm_err /* [out] [ref] */)
 {
 	struct NetLocalGroupSetInfo r;
@@ -1258,7 +1258,7 @@ NET_API_STATUS NetLocalGroupSetInfo(const char * server_name /* [in] */,
 	r.in.server_name = server_name;
 	r.in.group_name = group_name;
 	r.in.level = level;
-	r.in.buf = buf;
+	r.in.buffer = buffer;
 
 	/* Out parameters */
 	r.out.parm_err = parm_err;
@@ -1340,7 +1340,7 @@ NET_API_STATUS NetLocalGroupEnum(const char * server_name /* [in] */,
 ****************************************************************/
 
 NET_API_STATUS NetRemoteTOD(const char * server_name /* [in] */,
-			    uint8_t **buf /* [out] [ref] */)
+			    uint8_t **buffer /* [out] [ref] */)
 {
 	struct NetRemoteTOD r;
 	struct libnetapi_ctx *ctx = NULL;
@@ -1356,7 +1356,7 @@ NET_API_STATUS NetRemoteTOD(const char * server_name /* [in] */,
 	r.in.server_name = server_name;
 
 	/* Out parameters */
-	r.out.buf = buf;
+	r.out.buffer = buffer;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(NetRemoteTOD, &r);

@@ -49,22 +49,22 @@ WERROR NetGroupAdd_r(struct libnetapi_ctx *ctx,
 	ZERO_STRUCT(domain_handle);
 	ZERO_STRUCT(group_handle);
 
-	if (!r->in.buf) {
+	if (!r->in.buffer) {
 		return WERR_INVALID_PARAM;
 	}
 
 	switch (r->in.level) {
 		case 0:
-			info0 = (struct GROUP_INFO_0 *)r->in.buf;
+			info0 = (struct GROUP_INFO_0 *)r->in.buffer;
 			break;
 		case 1:
-			info1 = (struct GROUP_INFO_1 *)r->in.buf;
+			info1 = (struct GROUP_INFO_1 *)r->in.buffer;
 			break;
 		case 2:
-			info2 = (struct GROUP_INFO_2 *)r->in.buf;
+			info2 = (struct GROUP_INFO_2 *)r->in.buffer;
 			break;
 		case 3:
-			info3 = (struct GROUP_INFO_3 *)r->in.buf;
+			info3 = (struct GROUP_INFO_3 *)r->in.buffer;
 			break;
 		default:
 			werr = WERR_UNKNOWN_LEVEL;
@@ -478,7 +478,7 @@ WERROR NetGroupSetInfo_r(struct libnetapi_ctx *ctx,
 
 	switch (r->in.level) {
 		case 0:
-			g0 = (struct GROUP_INFO_0 *)r->in.buf;
+			g0 = (struct GROUP_INFO_0 *)r->in.buffer;
 			init_lsa_String(&info.name, g0->grpi0_name);
 			status = rpccli_samr_SetGroupInfo(pipe_cli, ctx,
 							  &group_handle,
@@ -486,7 +486,7 @@ WERROR NetGroupSetInfo_r(struct libnetapi_ctx *ctx,
 							  &info);
 			break;
 		case 1:
-			g1 = (struct GROUP_INFO_1 *)r->in.buf;
+			g1 = (struct GROUP_INFO_1 *)r->in.buffer;
 			init_lsa_String(&info.description, g1->grpi1_comment);
 			status = rpccli_samr_SetGroupInfo(pipe_cli, ctx,
 							  &group_handle,
@@ -494,7 +494,7 @@ WERROR NetGroupSetInfo_r(struct libnetapi_ctx *ctx,
 							  &info);
 			break;
 		case 2:
-			g2 = (struct GROUP_INFO_2 *)r->in.buf;
+			g2 = (struct GROUP_INFO_2 *)r->in.buffer;
 			init_lsa_String(&info.description, g2->grpi2_comment);
 			status = rpccli_samr_SetGroupInfo(pipe_cli, ctx,
 							  &group_handle,
@@ -511,7 +511,7 @@ WERROR NetGroupSetInfo_r(struct libnetapi_ctx *ctx,
 							  &info);
 			break;
 		case 3:
-			g3 = (struct GROUP_INFO_3 *)r->in.buf;
+			g3 = (struct GROUP_INFO_3 *)r->in.buffer;
 			init_lsa_String(&info.description, g3->grpi3_comment);
 			status = rpccli_samr_SetGroupInfo(pipe_cli, ctx,
 							  &group_handle,
@@ -528,7 +528,7 @@ WERROR NetGroupSetInfo_r(struct libnetapi_ctx *ctx,
 							  &info);
 			break;
 		case 1002:
-			g1002 = (struct GROUP_INFO_1002 *)r->in.buf;
+			g1002 = (struct GROUP_INFO_1002 *)r->in.buffer;
 			init_lsa_String(&info.description, g1002->grpi1002_comment);
 			status = rpccli_samr_SetGroupInfo(pipe_cli, ctx,
 							  &group_handle,
@@ -536,7 +536,7 @@ WERROR NetGroupSetInfo_r(struct libnetapi_ctx *ctx,
 							  &info);
 			break;
 		case 1005:
-			g1005 = (struct GROUP_INFO_1005 *)r->in.buf;
+			g1005 = (struct GROUP_INFO_1005 *)r->in.buffer;
 			info.attributes.attributes = g1005->grpi1005_attributes;
 			status = rpccli_samr_SetGroupInfo(pipe_cli, ctx,
 							  &group_handle,
@@ -739,7 +739,7 @@ WERROR NetGroupGetInfo_r(struct libnetapi_ctx *ctx,
 	werr = map_group_info_to_buffer(ctx, r->in.level,
 					group_info_all ? &info->all : &info->all2,
 					domain_sid, rids.ids[0],
-					r->out.buf);
+					r->out.buffer);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}

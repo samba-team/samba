@@ -138,17 +138,17 @@ WERROR NetLocalGroupAdd_r(struct libnetapi_ctx *ctx,
 
 	const char *alias_name = NULL;
 
-	if (!r->in.buf) {
+	if (!r->in.buffer) {
 		return WERR_INVALID_PARAM;
 	}
 
 	switch (r->in.level) {
 		case 0:
-			info0 = (struct LOCALGROUP_INFO_0 *)r->in.buf;
+			info0 = (struct LOCALGROUP_INFO_0 *)r->in.buffer;
 			alias_name = info0->lgrpi0_name;
 			break;
 		case 1:
-			info1 = (struct LOCALGROUP_INFO_1 *)r->in.buf;
+			info1 = (struct LOCALGROUP_INFO_1 *)r->in.buffer;
 			alias_name = info1->lgrpi1_name;
 			break;
 		default:
@@ -546,7 +546,7 @@ WERROR NetLocalGroupGetInfo_r(struct libnetapi_ctx *ctx,
 					r->in.group_name,
 					&alias_info->all,
 					r->in.level, &entries_read,
-					r->out.buf);
+					r->out.buffer);
 
  done:
 	if (!cli) {
@@ -713,7 +713,7 @@ WERROR NetLocalGroupSetInfo_r(struct libnetapi_ctx *ctx,
 
  set_alias:
 
-	werr = map_buffer_to_alias_info(ctx, r->in.level, r->in.buf,
+	werr = map_buffer_to_alias_info(ctx, r->in.level, r->in.buffer,
 					&alias_level, &alias_info);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
