@@ -34,15 +34,15 @@
 	To use the rid and ad backends, please specify them via the
 	<smbconfoption name="idmap config"/> parameter, possibly also for the
 	domain your machine is member of, specified by <smbconfoption
-	name="workgroup">.
-	<para>
+	name="workgroup"/>.
+	</para>
 
 	<para>Examples of SID/uid/gid backends include tdb (<citerefentry>
 	<refentrytitle>idmap_tdb</refentrytitle><manvolnum>8</manvolnum></citerefentry>),
 	ldap (<citerefentry><refentrytitle>idmap_ldap</refentrytitle>
 	<manvolnum>8</manvolnum></citerefentry>), rid (<citerefentry>
 	<refentrytitle>idmap_rid</refentrytitle><manvolnum>8</manvolnum></citerefentry>),
-	and ad (<citerefentry><refentrytitle>idmap_tdb</refentrytitle>
+	and ad (<citerefentry><refentrytitle>idmap_ad</refentrytitle>
 	<manvolnum>8</manvolnum></citerefentry>).
 	</para>
 </description>

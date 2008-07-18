@@ -34,8 +34,8 @@
                 authoritative for a unix ID to SID mapping, so it must be set
                 for each individually configured domain, and it must be
                 disjoint from the ranges set via <smbconfoption name="idmap
-                uid"> and <smbconfoption name="idmap gid">.
-		<para></listitem>
+                uid"/> and <smbconfoption name="idmap gid"/>.
+		</para></listitem>
 
 		</varlistentry>
 	</variablelist>
