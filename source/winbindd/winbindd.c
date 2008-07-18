@@ -59,7 +59,7 @@ struct messaging_context *winbind_messaging_context(void)
 
 /* Reload configuration */
 
-static bool reload_services_file(void)
+static bool reload_services_file(const char *logfile)
 {
 	bool ret;
 
@@ -69,6 +69,12 @@ static bool reload_services_file(void)
 		if (file_exist(fname,NULL) && !strcsequal(fname,get_dyn_CONFIGFILE())) {
 			set_dyn_CONFIGFILE(fname);
 		}
+	}
+
+	/* if this is a child, restore the logfile to the special
+	   name - <domain>, idmap, etc. */
+	if (logfile && *logfile) {
+		lp_set_logfile(logfile);
 	}
 
 	reopen_logs();
@@ -208,7 +214,7 @@ static void msg_reload_services(struct messaging_context *msg,
 {
         /* Flush various caches */
 	flush_caches();
-	reload_services_file();
+	reload_services_file((const char *) private_data);
 }
 
 /* React on 'smbcontrol winbindd shutdown' in the same way as on SIGTERM*/
@@ -804,14 +810,14 @@ static bool remove_idle_client(void)
 }
 
 /* check if HUP has been received and reload files */
-void winbind_check_sighup(void)
+void winbind_check_sighup(const char *logfile)
 {
 	if (do_sighup) {
 
 		DEBUG(3, ("got SIGHUP\n"));
 
 		flush_caches();
-		reload_services_file();
+		reload_services_file(logfile);
 
 		do_sighup = False;
 	}
@@ -984,7 +990,7 @@ static void process_loop(void)
 	/* Check signal handling things */
 
 	winbind_check_sigterm(true);
-	winbind_check_sighup();
+	winbind_check_sighup(NULL);
 
 	if (do_sigusr2) {
 		print_winbindd_status();
@@ -1136,7 +1142,7 @@ int main(int argc, char **argv, char **envp)
 
 	db_tdb2_setup_messaging(winbind_messaging_context(), true);
 
-	if (!reload_services_file()) {
+	if (!reload_services_file(NULL)) {
 		DEBUG(0, ("error opening config file\n"));
 		exit(1);
 	}
