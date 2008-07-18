@@ -7,7 +7,9 @@ This is the second stable release of Samba 3.2.
 
 Major bug fixes included in Samba 3.2.1 are:
 
-  o
+  o Regression in Winbindd offline mode.
+  o Flushing of smb.conf when creating a new share using SWAT.
+  o Setting of ACEs in setups with "dos filemode = yes".
 
 
 ######################################################################
@@ -69,16 +71,23 @@ o   Volker Lendecke <vl@samba.org>
     * Fix error message if trying to join with a non-privileged user.
     * Fix setups using "include = registry" without [global] settings
       in the registry.
+    * Fix "net sam rights" on domain member servers.
+    * Add documentation for the vfs streams modules.
 
 
 o   Herb Lewis <herb@samba.org>
     * Cleanup some duplicate code by passing the password to the wbinfo_auth*
       functions.
+    * Allow SID with 0 in subauthority to be converted properly.
 
 
 o   Zach Loafman <zachary.loafman@isilon.com>
     * Set sin[6]_family instead of ss_family in in[6]_addr_to_sockaddr_storage.
     * Fix realpath() check so that it doesn't generate a core() when it fails.
+
+
+o   Jim McDonough <jmcd@samba.org>
+    * Fix overwriting of winbind logfiles.
 
 
 o   Lars Müller <lars@samba.org>
@@ -101,6 +110,7 @@ o   Simo Sorce <idra@samba.org>
 o   Bo Yang <boyang@novell.com>
     * Allow authentication and memory credential refresh after password
       change from gdm/xdm.
+    * Allow %u parameters for print job username.
 
 
 ######################################################################
