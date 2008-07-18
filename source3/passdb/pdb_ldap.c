@@ -2723,8 +2723,8 @@ static NTSTATUS ldapsam_enum_group_members(struct pdb_methods *methods,
 								 entry, "sambaSID",
 								 mem_ctx);
 			if (!sidstr) {
-				DEBUG(0, ("Severe DB error, sambaSamAccount can't miss "
-					  "the sambaSID attribute\n"));
+				DEBUG(0, ("Severe DB error, %s can't miss the sambaSID"
+					  "attribute\n", LDAP_OBJ_SAMBASAMACCOUNT));
 				ret = NT_STATUS_INTERNAL_DB_CORRUPTION;
 				goto done;
 			}
@@ -2774,8 +2774,7 @@ static NTSTATUS ldapsam_enum_group_members(struct pdb_methods *methods,
 						    entry,
 						    get_global_sam_sid(),
 						    &rid)) {
-			DEBUG(0, ("Severe DB error, sambaSamAccount can't miss "
-				  "the sambaSID attribute\n"));
+			DEBUG(0, ("Severe DB error, %s can't miss the samba SID"								"attribute\n", LDAP_OBJ_SAMBASAMACCOUNT));
 			ret = NT_STATUS_INTERNAL_DB_CORRUPTION;
 			goto done;
 		}
@@ -2981,8 +2980,8 @@ static NTSTATUS ldapsam_map_posixgroup(TALLOC_CTX *mem_ctx,
 	int rc;
 
 	filter = talloc_asprintf(mem_ctx,
-				 "(&(objectClass=posixGroup)(gidNumber=%u))",
-				 map->gid);
+				 "(&(objectClass=%s)(gidNumber=%u))",
+				 LDAP_OBJ_POSIXGROUP, map->gid);
 	if (filter == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -3005,7 +3004,7 @@ static NTSTATUS ldapsam_map_posixgroup(TALLOC_CTX *mem_ctx,
 
 	mods = NULL;
 	smbldap_set_mod(&mods, LDAP_MOD_ADD, "objectClass",
-			"sambaGroupMapping");
+			LDAP_OBJ_GROUPMAP);
 	smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, entry, &mods, "sambaSid",
 			 sid_string_talloc(mem_ctx, &map->sid));
 	smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, entry, &mods, "sambaGroupType",
@@ -3125,10 +3124,9 @@ static NTSTATUS ldapsam_add_group_mapping_entry(struct pdb_methods *methods,
 	mods = NULL;
 
 	smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, NULL, &mods, "objectClass",
-			 "sambaSidEntry");
+			 LDAP_OBJ_SID_ENTRY);
 	smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, NULL, &mods, "objectClass",
-			 "sambaGroupMapping");
-
+			 LDAP_OBJ_GROUPMAP);
 	smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, NULL, &mods, "sambaSid",
 			 sid_string_talloc(mem_ctx, &map->sid));
 	smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, NULL, &mods, "sambaGroupType",
@@ -4186,8 +4184,8 @@ static char *get_ldap_filter(TALLOC_CTX *mem_ctx, const char *username)
 	char *escaped = NULL;
 	char *result = NULL;
 
-	asprintf(&filter, "(&%s(objectclass=sambaSamAccount))",
-		 "(uid=%u)");
+	asprintf(&filter, "(&%s(objectclass=%s))",
+			  "(uid=%u)", LDAP_OBJ_SAMBASAMACCOUNT);
 	if (filter == NULL) goto done;
 
 	escaped = escape_ldap_string_alloc(username);
@@ -4694,9 +4692,10 @@ static bool ldapsam_search_grouptype(struct pdb_methods *methods,
 	state->connection = ldap_state->smbldap_state;
 	state->scope = LDAP_SCOPE_SUBTREE;
 	state->filter =	talloc_asprintf(search->mem_ctx,
-					"(&(objectclass=sambaGroupMapping)"
-					"(sambaGroupType=%d)(sambaSID=%s*))", 
-					type, sid_to_fstring(tmp, sid));
+					"(&(objectclass=%s)"
+					"(sambaGroupType=%d)(sambaSID=%s*))",
+					 LDAP_OBJ_GROUPMAP,
+					 type, sid_to_fstring(tmp, sid));
 	state->attrs = talloc_attrs(search->mem_ctx, "cn", "sambaSid",
 				    "displayName", "description",
 				    "sambaGroupType", NULL);
@@ -5828,15 +5827,15 @@ static bool get_trusteddom_pw_int(struct ldapsam_privates *ldap_state,
 
 	if (num_result > 1) {
 		DEBUG(1, ("ldapsam_get_trusteddom_pw: more than one "
-			  "sambaTrustedDomainPassword object for domain '%s'"
-			  "?!\n", domain));
+			  "%s object for domain '%s'?!\n",
+			  LDAP_OBJ_TRUSTDOM_PASSWORD, domain));
 		return False;
 	}
 
 	if (num_result == 0) {
 		DEBUG(1, ("ldapsam_get_trusteddom_pw: no "
-			  "sambaTrustedDomainPassword object for domain %s.\n",
-			  domain));
+			  "%s object for domain %s.\n",
+			  LDAP_OBJ_TRUSTDOM_PASSWORD, domain));
 		*entry = NULL;
 	} else {
 		*entry = ldap_first_entry(priv2ld(ldap_state), result);
@@ -5934,7 +5933,7 @@ static bool ldapsam_set_trusteddom_pw(struct pdb_methods *methods,
 
 	mods = NULL;
 	smbldap_make_mod(priv2ld(ldap_state), entry, &mods, "objectClass",
-			 "sambaTrustedDomainPassword");
+			 LDAP_OBJ_TRUSTDOM_PASSWORD);
 	smbldap_make_mod(priv2ld(ldap_state), entry, &mods, "sambaDomainName",
 			 domain);
 	smbldap_make_mod(priv2ld(ldap_state), entry, &mods, "sambaSID",
