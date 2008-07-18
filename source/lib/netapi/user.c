@@ -27,9 +27,8 @@
 /****************************************************************
 ****************************************************************/
 
-static void convert_USER_INFO_1_to_samr_user_info25(struct USER_INFO_1 *info1,
-						    DATA_BLOB *user_session_key,
-						    struct samr_UserInfo25 *info25)
+static void convert_USER_INFO_X_to_samr_user_info21(struct USER_INFO_X *infoX,
+						    struct samr_UserInfo21 *info21)
 {
 	uint32_t fields_present = SAMR_FIELD_ACCT_FLAGS;
 	struct samr_LogonHours zero_logon_hours;
@@ -37,41 +36,41 @@ static void convert_USER_INFO_1_to_samr_user_info25(struct USER_INFO_1 *info1,
 	uint32_t acct_flags = 0;
 	NTTIME password_age;
 
-	ZERO_STRUCTP(info25);
+	ZERO_STRUCTP(info21);
 	ZERO_STRUCT(zero_logon_hours);
 	ZERO_STRUCT(zero_parameters);
 
-	if (info1->usri1_name) {
+	if (infoX->usriX_name) {
 		fields_present |= SAMR_FIELD_FULL_NAME;
 	}
-	if (info1->usri1_password) {
+	if (infoX->usriX_password) {
 		fields_present |= SAMR_FIELD_PASSWORD;
 	}
-	if (info1->usri1_flags) {
+	if (infoX->usriX_flags) {
 		fields_present |= SAMR_FIELD_ACCT_FLAGS;
 	}
-	if (info1->usri1_name) {
+	if (infoX->usriX_name) {
 		fields_present |= SAMR_FIELD_FULL_NAME;
 	}
-	if (info1->usri1_home_dir) {
+	if (infoX->usriX_home_dir) {
 		fields_present |= SAMR_FIELD_HOME_DIRECTORY;
 	}
-	if (info1->usri1_script_path) {
+	if (infoX->usriX_script_path) {
 		fields_present |= SAMR_FIELD_LOGON_SCRIPT;
 	}
-	if (info1->usri1_comment) {
+	if (infoX->usriX_comment) {
 		fields_present |= SAMR_FIELD_DESCRIPTION;
 	}
-	if (info1->usri1_password_age) {
+	if (infoX->usriX_password_age) {
 		fields_present |= SAMR_FIELD_FORCE_PWD_CHANGE;
 	}
 
-	acct_flags |= info1->usri1_flags | ACB_NORMAL;
+	acct_flags |= infoX->usriX_flags | ACB_NORMAL;
 
-	unix_to_nt_time_abs(&password_age, info1->usri1_password_age);
+	unix_to_nt_time_abs(&password_age, infoX->usriX_password_age);
 
-	/* TODO: info1->usri1_priv */
-	init_samr_user_info21(&info25->info,
+	/* TODO: infoX->usriX_priv */
+	init_samr_user_info21(info21,
 			      0,
 			      0,
 			      0,
@@ -79,12 +78,12 @@ static void convert_USER_INFO_1_to_samr_user_info25(struct USER_INFO_1 *info1,
 			      0,
 			      password_age,
 			      NULL,
-			      info1->usri1_name,
-			      info1->usri1_home_dir,
+			      infoX->usriX_name,
+			      infoX->usriX_home_dir,
 			      NULL,
-			      info1->usri1_script_path,
+			      infoX->usriX_script_path,
 			      NULL,
-			      info1->usri1_comment,
+			      infoX->usriX_comment,
 			      NULL,
 			      NULL,
 			      &zero_parameters,
@@ -100,29 +99,80 @@ static void convert_USER_INFO_1_to_samr_user_info25(struct USER_INFO_1 *info1,
 			      0,
 			      0,
 			      0);
+}
 
-	if (info1->usri1_password) {
-		uchar pwbuf[532];
-		struct MD5Context ctx;
-		uint8_t confounder[16];
-		DATA_BLOB confounded_session_key = data_blob(NULL, 16);
+/****************************************************************
+****************************************************************/
 
-		encode_pw_buffer(pwbuf, info1->usri1_password, STR_UNICODE);
+static NTSTATUS construct_USER_INFO_X(uint32_t level,
+				      uint8_t *buffer,
+				      struct USER_INFO_X *uX)
+{
+	struct USER_INFO_0 *u0 = NULL;
+	struct USER_INFO_1 *u1 = NULL;
+	struct USER_INFO_2 *u2 = NULL;
+	struct USER_INFO_1007 *u1007 = NULL;
 
-		generate_random_buffer((uint8_t *)confounder, 16);
-
-		MD5Init(&ctx);
-		MD5Update(&ctx, confounder, 16);
-		MD5Update(&ctx, user_session_key->data,
-				user_session_key->length);
-		MD5Final(confounded_session_key.data, &ctx);
-
-		SamOEMhashBlob(pwbuf, 516, &confounded_session_key);
-		memcpy(&pwbuf[516], confounder, 16);
-
-		memcpy(info25->password.data, pwbuf, sizeof(pwbuf));
-		data_blob_free(&confounded_session_key);
+	if (!buffer || !uX) {
+		return NT_STATUS_INVALID_PARAMETER;
 	}
+
+	ZERO_STRUCTP(uX);
+
+	switch (level) {
+		case 0:
+			u0 = (struct USER_INFO_0 *)buffer;
+			uX->usriX_name		= u0->usri0_name;
+			break;
+		case 1:
+			u1 = (struct USER_INFO_1 *)buffer;
+			uX->usriX_name		= u1->usri1_name;
+			uX->usriX_password	= u1->usri1_password;
+			uX->usriX_password_age	= u1->usri1_password_age;
+			uX->usriX_priv		= u1->usri1_priv;
+			uX->usriX_home_dir	= u1->usri1_home_dir;
+			uX->usriX_comment	= u1->usri1_comment;
+			uX->usriX_flags		= u1->usri1_flags;
+			uX->usriX_script_path	= u1->usri1_script_path;
+			break;
+		case 2:
+			u2 = (struct USER_INFO_2 *)buffer;
+			uX->usriX_name		= u2->usri2_name;
+			uX->usriX_password	= u2->usri2_password;
+			uX->usriX_password_age	= u2->usri2_password_age;
+			uX->usriX_priv		= u2->usri2_priv;
+			uX->usriX_home_dir	= u2->usri2_home_dir;
+			uX->usriX_comment	= u2->usri2_comment;
+			uX->usriX_flags		= u2->usri2_flags;
+			uX->usriX_script_path	= u2->usri2_script_path;
+			uX->usriX_auth_flags	= u2->usri2_auth_flags;
+			uX->usriX_full_name	= u2->usri2_full_name;
+			uX->usriX_usr_comment	= u2->usri2_usr_comment;
+			uX->usriX_parms		= u2->usri2_parms;
+			uX->usriX_workstations	= u2->usri2_workstations;
+			uX->usriX_last_logon	= u2->usri2_last_logon;
+			uX->usriX_last_logoff	= u2->usri2_last_logoff;
+			uX->usriX_acct_expires	= u2->usri2_acct_expires;
+			uX->usriX_max_storage	= u2->usri2_max_storage;
+			uX->usriX_units_per_week= u2->usri2_units_per_week;
+			uX->usriX_logon_hours	= u2->usri2_logon_hours;
+			uX->usriX_bad_pw_count	= u2->usri2_bad_pw_count;
+			uX->usriX_num_logons	= u2->usri2_num_logons;
+			uX->usriX_logon_server	= u2->usri2_logon_server;
+			uX->usriX_country_code	= u2->usri2_country_code;
+			uX->usriX_code_page	= u2->usri2_code_page;
+			break;
+		case 1007:
+			u1007 = (struct USER_INFO_1007 *)buffer;
+			uX->usriX_comment	= u1007->usri1007_comment;
+			break;
+		case 3:
+		case 4:
+		default:
+			return NT_STATUS_INVALID_INFO_CLASS;
+	}
+
+	return NT_STATUS_OK;
 }
 
 /****************************************************************
@@ -138,12 +188,12 @@ WERROR NetUserAdd_r(struct libnetapi_ctx *ctx,
 	POLICY_HND connect_handle, domain_handle, user_handle;
 	struct lsa_String lsa_account_name;
 	struct dom_sid2 *domain_sid = NULL;
-	struct samr_UserInfo25 info25;
+	struct samr_UserInfo21 info21;
 	union samr_UserInfo *user_info = NULL;
 	struct samr_PwInfo pw_info;
 	uint32_t access_granted = 0;
 	uint32_t rid = 0;
-	struct USER_INFO_1 *info1;
+	struct USER_INFO_X uX;
 
 	ZERO_STRUCT(connect_handle);
 	ZERO_STRUCT(domain_handle);
@@ -155,7 +205,6 @@ WERROR NetUserAdd_r(struct libnetapi_ctx *ctx,
 
 	switch (r->in.level) {
 		case 1:
-			info1 = (struct USER_INFO_1 *)r->in.buffer;
 			break;
 		case 2:
 		case 3:
@@ -176,6 +225,12 @@ WERROR NetUserAdd_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
+	status = construct_USER_INFO_X(r->in.level, r->in.buffer, &uX);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
 	werr = libnetapi_samr_open_domain(ctx, pipe_cli,
 					  SAMR_ACCESS_ENUM_DOMAINS |
 					  SAMR_ACCESS_OPEN_DOMAIN,
@@ -189,7 +244,7 @@ WERROR NetUserAdd_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	init_lsa_String(&lsa_account_name, info1->usri1_name);
+	init_lsa_String(&lsa_account_name, uX.usriX_name);
 
 	status = rpccli_samr_CreateUser2(pipe_cli, ctx,
 					 &domain_handle,
@@ -230,14 +285,36 @@ WERROR NetUserAdd_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
+	convert_USER_INFO_X_to_samr_user_info21(&uX,
+						&info21);
+
 	ZERO_STRUCTP(user_info);
 
-	convert_USER_INFO_1_to_samr_user_info25(info1,
-						&cli->user_session_key,
-						&info25);
+	if (uX.usriX_password) {
 
-	if (info1->usri1_password) {
-		user_info->info25 = info25;
+		uchar pwbuf[532];
+		struct MD5Context md5_ctx;
+		uint8_t confounder[16];
+		DATA_BLOB confounded_session_key = data_blob(NULL, 16);
+
+		encode_pw_buffer(pwbuf, uX.usriX_password, STR_UNICODE);
+
+		generate_random_buffer((uint8_t *)confounder, 16);
+
+		MD5Init(&md5_ctx);
+		MD5Update(&md5_ctx, confounder, 16);
+		MD5Update(&md5_ctx, cli->user_session_key.data,
+				cli->user_session_key.length);
+		MD5Final(confounded_session_key.data, &md5_ctx);
+
+		SamOEMhashBlob(pwbuf, 516, &confounded_session_key);
+		memcpy(&pwbuf[516], confounder, 16);
+
+		memcpy(user_info->info25.password.data, pwbuf, sizeof(pwbuf));
+		data_blob_free(&confounded_session_key);
+
+		user_info->info25.info = info21;
+
 		status = rpccli_samr_SetUserInfo2(pipe_cli, ctx,
 						  &user_handle,
 						  25,
@@ -245,10 +322,10 @@ WERROR NetUserAdd_r(struct libnetapi_ctx *ctx,
 
 		if (NT_STATUS_EQUAL(status, NT_STATUS(DCERPC_FAULT_INVALID_TAG))) {
 
-			user_info->info23.info = info25.info;
+			user_info->info23.info = info21;
 
 			encode_pw_buffer(user_info->info23.password.data,
-					 info1->usri1_password, STR_UNICODE);
+					 uX.usriX_password, STR_UNICODE);
 			SamOEMhashBlob(user_info->info23.password.data, 516,
 				       &cli->user_session_key);
 
@@ -258,7 +335,7 @@ WERROR NetUserAdd_r(struct libnetapi_ctx *ctx,
 							  user_info);
 		}
 	} else {
-		user_info->info21 = info25.info;
+		user_info->info21 = info21;
 		status = rpccli_samr_SetUserInfo(pipe_cli, ctx,
 						 &user_handle,
 						 21,
