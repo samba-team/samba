@@ -118,7 +118,7 @@ static char *stream_dir(vfs_handle_struct *handle, const char *base_path,
 	uint8 id_buf[16];
 
 	const char *rootdir = lp_parm_const_string(
-		SNUM(handle->conn), "streams", "directory",
+		SNUM(handle->conn), "streams_depot", "directory",
 		handle->conn->connectpath);
 
 	if (base_sbuf == NULL) {
