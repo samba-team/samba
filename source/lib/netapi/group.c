@@ -1306,3 +1306,21 @@ WERROR NetGroupEnum_l(struct libnetapi_ctx *ctx,
 {
 	return NetGroupEnum_r(ctx, r);
 }
+
+/****************************************************************
+****************************************************************/
+
+WERROR NetGroupGetUsers_r(struct libnetapi_ctx *ctx,
+			  struct NetGroupGetUsers *r)
+{
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR NetGroupGetUsers_l(struct libnetapi_ctx *ctx,
+			  struct NetGroupGetUsers *r)
+{
+	return WERR_NOT_SUPPORTED;
+}
