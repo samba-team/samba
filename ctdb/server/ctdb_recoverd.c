@@ -2901,7 +2901,7 @@ again:
 	}
 
 
-	DEBUG(DEBUG_INFO, (__location__ " Update flags on all nodes\n"));
+	DEBUG(DEBUG_DEBUG, (__location__ " Update flags on all nodes\n"));
 	/*
 	  update all nodes to have the same flags that we have
 	 */
