@@ -73,6 +73,50 @@ static WERROR libnetapi_samr_lookup_and_open_alias(TALLOC_CTX *mem_ctx,
 /****************************************************************
 ****************************************************************/
 
+static NTSTATUS libnetapi_samr_open_alias_queryinfo(TALLOC_CTX *mem_ctx,
+						    struct rpc_pipe_client *pipe_cli,
+						    struct policy_handle *handle,
+						    uint32_t rid,
+						    uint32_t access_rights,
+						    enum samr_AliasInfoEnum level,
+						    union samr_AliasInfo **alias_info)
+{
+	NTSTATUS status;
+	struct policy_handle alias_handle;
+	union samr_AliasInfo *_alias_info = NULL;
+
+	ZERO_STRUCT(alias_handle);
+
+	status = rpccli_samr_OpenAlias(pipe_cli, mem_ctx,
+				       handle,
+				       access_rights,
+				       rid,
+				       &alias_handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+
+	status = rpccli_samr_QueryAliasInfo(pipe_cli, mem_ctx,
+					    &alias_handle,
+					    level,
+					    &_alias_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+
+	*alias_info = _alias_info;
+
+ done:
+	if (is_valid_policy_hnd(&alias_handle)) {
+		rpccli_samr_Close(pipe_cli, mem_ctx, &alias_handle);
+	}
+
+	return status;
+}
+
+/****************************************************************
+****************************************************************/
+
 WERROR NetLocalGroupAdd_r(struct libnetapi_ctx *ctx,
 			  struct NetLocalGroupAdd *r)
 {
