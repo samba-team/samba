@@ -52,19 +52,21 @@
 
 #define NDR_NETGROUPDELUSER (0x16)
 
-#define NDR_NETLOCALGROUPADD (0x17)
+#define NDR_NETGROUPGETUSERS (0x17)
 
-#define NDR_NETLOCALGROUPDEL (0x18)
+#define NDR_NETLOCALGROUPADD (0x18)
 
-#define NDR_NETLOCALGROUPGETINFO (0x19)
+#define NDR_NETLOCALGROUPDEL (0x19)
 
-#define NDR_NETLOCALGROUPSETINFO (0x1a)
+#define NDR_NETLOCALGROUPGETINFO (0x1a)
 
-#define NDR_NETLOCALGROUPENUM (0x1b)
+#define NDR_NETLOCALGROUPSETINFO (0x1b)
 
-#define NDR_NETREMOTETOD (0x1c)
+#define NDR_NETLOCALGROUPENUM (0x1c)
 
-#define NDR_LIBNETAPI_CALL_COUNT (29)
+#define NDR_NETREMOTETOD (0x1d)
+
+#define NDR_LIBNETAPI_CALL_COUNT (30)
 enum ndr_err_code ndr_push_NET_API_STATUS(struct ndr_push *ndr, int ndr_flags, enum NET_API_STATUS r);
 enum ndr_err_code ndr_pull_NET_API_STATUS(struct ndr_pull *ndr, int ndr_flags, enum NET_API_STATUS *r);
 void ndr_print_NET_API_STATUS(struct ndr_print *ndr, const char *name, enum NET_API_STATUS r);
@@ -182,6 +184,12 @@ void ndr_print_NET_DISPLAY_MACHINE(struct ndr_print *ndr, const char *name, cons
 enum ndr_err_code ndr_push_NET_DISPLAY_GROUP(struct ndr_push *ndr, int ndr_flags, const struct NET_DISPLAY_GROUP *r);
 enum ndr_err_code ndr_pull_NET_DISPLAY_GROUP(struct ndr_pull *ndr, int ndr_flags, struct NET_DISPLAY_GROUP *r);
 void ndr_print_NET_DISPLAY_GROUP(struct ndr_print *ndr, const char *name, const struct NET_DISPLAY_GROUP *r);
+enum ndr_err_code ndr_push_GROUP_USERS_INFO_0(struct ndr_push *ndr, int ndr_flags, const struct GROUP_USERS_INFO_0 *r);
+enum ndr_err_code ndr_pull_GROUP_USERS_INFO_0(struct ndr_pull *ndr, int ndr_flags, struct GROUP_USERS_INFO_0 *r);
+void ndr_print_GROUP_USERS_INFO_0(struct ndr_print *ndr, const char *name, const struct GROUP_USERS_INFO_0 *r);
+enum ndr_err_code ndr_push_GROUP_USERS_INFO_1(struct ndr_push *ndr, int ndr_flags, const struct GROUP_USERS_INFO_1 *r);
+enum ndr_err_code ndr_pull_GROUP_USERS_INFO_1(struct ndr_pull *ndr, int ndr_flags, struct GROUP_USERS_INFO_1 *r);
+void ndr_print_GROUP_USERS_INFO_1(struct ndr_print *ndr, const char *name, const struct GROUP_USERS_INFO_1 *r);
 enum ndr_err_code ndr_push_NetJoinDomain(struct ndr_push *ndr, int flags, const struct NetJoinDomain *r);
 enum ndr_err_code ndr_pull_NetJoinDomain(struct ndr_pull *ndr, int flags, struct NetJoinDomain *r);
 void ndr_print_NetJoinDomain(struct ndr_print *ndr, const char *name, int flags, const struct NetJoinDomain *r);
@@ -251,6 +259,9 @@ void ndr_print_NetGroupAddUser(struct ndr_print *ndr, const char *name, int flag
 enum ndr_err_code ndr_push_NetGroupDelUser(struct ndr_push *ndr, int flags, const struct NetGroupDelUser *r);
 enum ndr_err_code ndr_pull_NetGroupDelUser(struct ndr_pull *ndr, int flags, struct NetGroupDelUser *r);
 void ndr_print_NetGroupDelUser(struct ndr_print *ndr, const char *name, int flags, const struct NetGroupDelUser *r);
+enum ndr_err_code ndr_push_NetGroupGetUsers(struct ndr_push *ndr, int flags, const struct NetGroupGetUsers *r);
+enum ndr_err_code ndr_pull_NetGroupGetUsers(struct ndr_pull *ndr, int flags, struct NetGroupGetUsers *r);
+void ndr_print_NetGroupGetUsers(struct ndr_print *ndr, const char *name, int flags, const struct NetGroupGetUsers *r);
 enum ndr_err_code ndr_push_NetLocalGroupAdd(struct ndr_push *ndr, int flags, const struct NetLocalGroupAdd *r);
 enum ndr_err_code ndr_pull_NetLocalGroupAdd(struct ndr_pull *ndr, int flags, struct NetLocalGroupAdd *r);
 void ndr_print_NetLocalGroupAdd(struct ndr_print *ndr, const char *name, int flags, const struct NetLocalGroupAdd *r);
