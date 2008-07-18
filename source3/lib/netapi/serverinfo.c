@@ -238,9 +238,9 @@ WERROR NetRemoteTOD_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	*r->out.buf = (uint8_t *)talloc_memdup(ctx, info,
-			sizeof(struct srvsvc_NetRemoteTODInfo));
-	W_ERROR_HAVE_NO_MEMORY(*r->out.buf);
+	*r->out.buffer = (uint8_t *)talloc_memdup(ctx, info,
+			  sizeof(struct srvsvc_NetRemoteTODInfo));
+	W_ERROR_HAVE_NO_MEMORY(*r->out.buffer);
 
  done:
 	return werr;

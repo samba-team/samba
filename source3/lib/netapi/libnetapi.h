@@ -138,7 +138,7 @@ WERROR NetQueryDisplayInformation_l(struct libnetapi_ctx *ctx,
 				    struct NetQueryDisplayInformation *r);
 NET_API_STATUS NetGroupAdd(const char * server_name /* [in] */,
 			   uint32_t level /* [in] */,
-			   uint8_t *buf /* [in] [ref] */,
+			   uint8_t *buffer /* [in] [ref] */,
 			   uint32_t *parm_err /* [out] [ref] */);
 WERROR NetGroupAdd_r(struct libnetapi_ctx *ctx,
 		     struct NetGroupAdd *r);
@@ -164,7 +164,7 @@ WERROR NetGroupEnum_l(struct libnetapi_ctx *ctx,
 NET_API_STATUS NetGroupSetInfo(const char * server_name /* [in] */,
 			       const char * group_name /* [in] */,
 			       uint32_t level /* [in] */,
-			       uint8_t *buf /* [in] [ref] */,
+			       uint8_t *buffer /* [in] [ref] */,
 			       uint32_t *parm_err /* [out] [ref] */);
 WERROR NetGroupSetInfo_r(struct libnetapi_ctx *ctx,
 			 struct NetGroupSetInfo *r);
@@ -173,7 +173,7 @@ WERROR NetGroupSetInfo_l(struct libnetapi_ctx *ctx,
 NET_API_STATUS NetGroupGetInfo(const char * server_name /* [in] */,
 			       const char * group_name /* [in] */,
 			       uint32_t level /* [in] */,
-			       uint8_t **buf /* [out] [ref] */);
+			       uint8_t **buffer /* [out] [ref] */);
 WERROR NetGroupGetInfo_r(struct libnetapi_ctx *ctx,
 			 struct NetGroupGetInfo *r);
 WERROR NetGroupGetInfo_l(struct libnetapi_ctx *ctx,
@@ -194,7 +194,7 @@ WERROR NetGroupDelUser_l(struct libnetapi_ctx *ctx,
 			 struct NetGroupDelUser *r);
 NET_API_STATUS NetLocalGroupAdd(const char * server_name /* [in] */,
 				uint32_t level /* [in] */,
-				uint8_t *buf /* [in] [ref] */,
+				uint8_t *buffer /* [in] [ref] */,
 				uint32_t *parm_err /* [out] [ref] */);
 WERROR NetLocalGroupAdd_r(struct libnetapi_ctx *ctx,
 			  struct NetLocalGroupAdd *r);
@@ -209,7 +209,7 @@ WERROR NetLocalGroupDel_l(struct libnetapi_ctx *ctx,
 NET_API_STATUS NetLocalGroupGetInfo(const char * server_name /* [in] */,
 				    const char * group_name /* [in] */,
 				    uint32_t level /* [in] */,
-				    uint8_t **buf /* [out] [ref] */);
+				    uint8_t **buffer /* [out] [ref] */);
 WERROR NetLocalGroupGetInfo_r(struct libnetapi_ctx *ctx,
 			      struct NetLocalGroupGetInfo *r);
 WERROR NetLocalGroupGetInfo_l(struct libnetapi_ctx *ctx,
@@ -217,7 +217,7 @@ WERROR NetLocalGroupGetInfo_l(struct libnetapi_ctx *ctx,
 NET_API_STATUS NetLocalGroupSetInfo(const char * server_name /* [in] */,
 				    const char * group_name /* [in] */,
 				    uint32_t level /* [in] */,
-				    uint8_t *buf /* [in] [ref] */,
+				    uint8_t *buffer /* [in] [ref] */,
 				    uint32_t *parm_err /* [out] [ref] */);
 WERROR NetLocalGroupSetInfo_r(struct libnetapi_ctx *ctx,
 			      struct NetLocalGroupSetInfo *r);
@@ -235,7 +235,7 @@ WERROR NetLocalGroupEnum_r(struct libnetapi_ctx *ctx,
 WERROR NetLocalGroupEnum_l(struct libnetapi_ctx *ctx,
 			   struct NetLocalGroupEnum *r);
 NET_API_STATUS NetRemoteTOD(const char * server_name /* [in] */,
-			    uint8_t **buf /* [out] [ref] */);
+			    uint8_t **buffer /* [out] [ref] */);
 WERROR NetRemoteTOD_r(struct libnetapi_ctx *ctx,
 		      struct NetRemoteTOD *r);
 WERROR NetRemoteTOD_l(struct libnetapi_ctx *ctx,
