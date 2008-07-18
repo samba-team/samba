@@ -1264,8 +1264,8 @@ def provision_backend(setup_dir=None, message=None,
                                                      { "MEMBER_ATTR" : str(res[i]["lDAPDisplayName"][0]),
                                                        "MEMBEROF_ATTR" : str(target) })
 
-        memberof_config += """overlay refint
-refint_attributes""" + refint_attributes
+        refint_config = read_and_sub_file(setup_path("refint.conf"),
+                                            { "LINK_ATTRS" : refint_attributes})
     
         setup_file(setup_path("slapd.conf"), paths.slapdconf,
                    {"DNSDOMAIN": names.dnsdomain,
@@ -1273,7 +1273,8 @@ refint_attributes""" + refint_attributes
                     "DOMAINDN": names.domaindn,
                     "CONFIGDN": names.configdn,
                     "SCHEMADN": names.schemadn,
-                    "MEMBEROF_CONFIG": memberof_config})
+                    "MEMBEROF_CONFIG": memberof_config,
+                    "REFINT_CONFIG": refint_config})
         setup_file(setup_path("modules.conf"), paths.modulesconf,
                    {"REALM": names.realm})
         
