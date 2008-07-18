@@ -19,13 +19,13 @@
 
 #include "includes.h"
 
-#include "librpc/gen_ndr/libnetapi.h"
+#include "lib/netapi/netapi.h"
 
 /****************************************************************
 ****************************************************************/
 
-bool ConvertSidToStringSid(const struct domsid *sid,
-			   char **sid_string)
+int ConvertSidToStringSid(const struct domsid *sid,
+			  char **sid_string)
 {
 	char *ret;
 
