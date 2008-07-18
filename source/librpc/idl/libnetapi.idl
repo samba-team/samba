@@ -289,6 +289,39 @@ interface libnetapi
 		uint32 usri20_user_id;
 	} USER_INFO_20;
 
+	const int ENCRYPTED_PWLEN = 256;
+
+	[public] typedef struct {
+		uint8 usri21_password[ENCRYPTED_PWLEN];
+	} USER_INFO_21;
+
+	[public] typedef struct {
+		string usri22_name;
+		uint8 usri22_password[ENCRYPTED_PWLEN];
+		uint32 usri22_password_age;
+		uint32 usri22_priv;
+		string usri22_home_dir;
+		string usri22_comment;
+		uint32 usri22_flags;
+		uint32 usri22_script_path;
+		uint32 usri22_auth_flags;
+		string usri22_full_name;
+		string usri22_usr_comment;
+		string usri22_parms;
+		string usri22_workstations;
+		uint32 usri22_last_logon;
+		uint32 usri22_last_logoff;
+		uint32 usri22_acct_expires;
+		uint32 usri22_max_storage;
+		uint32 usri22_units_per_week;
+		uint8 *usri22_logon_hours;
+		uint32 usri22_bad_pw_count;
+		uint32 usri22_num_logons;
+		string usri22_logon_server;
+		uint32 usri22_country_code;
+		uint32 usri22_code_page;
+	} USER_INFO_22;
+
 	[public] typedef struct {
 		string usri23_name;
 		string usri23_full_name;
@@ -298,8 +331,85 @@ interface libnetapi
 	} USER_INFO_23;
 
 	[public] typedef struct {
+		string usri1003_password;
+	} USER_INFO_1003;
+
+	[public] typedef struct {
+		uint32 usri1005_priv;
+	} USER_INFO_1005;
+
+	[public] typedef struct {
+		string usri1006_home_dir;
+	} USER_INFO_1006;
+
+	[public] typedef struct {
 		string usri1007_comment;
 	} USER_INFO_1007;
+
+	[public] typedef struct {
+		uint32 usri1008_flags;
+	} USER_INFO_1008;
+
+	[public] typedef struct {
+		string usri1009_script_path;
+	} USER_INFO_1009;
+
+	[public] typedef struct {
+		uint32 usri1010_auth_flags;
+	} USER_INFO_1010;
+
+	[public] typedef struct {
+		string usri1011_full_name;
+	} USER_INFO_1011;
+
+	[public] typedef struct {
+		string usri1012_usr_comment;
+	} USER_INFO_1012;
+
+	[public] typedef struct {
+		string usri1013_parms;
+	} USER_INFO_1013;
+
+	[public] typedef struct {
+		string usri1014_workstations;
+	} USER_INFO_1014;
+
+	[public] typedef struct {
+		uint32 usri1017_acct_expires;
+	} USER_INFO_1017;
+
+	[public] typedef struct {
+		uint32 usri1018_max_storage;
+	} USER_INFO_1018;
+
+	[public] typedef struct {
+		uint32 usri1020_units_per_week;
+		uint8 *usri1020_logon_hours;
+	} USER_INFO_1020;
+
+	[public] typedef struct {
+		string usri1023_logon_server;
+	} USER_INFO_1023;
+
+	[public] typedef struct {
+		uint32 usri1024_country_code;
+	} USER_INFO_1024;
+
+	[public] typedef struct {
+		uint32 usri1025_code_page;
+	} USER_INFO_1025;
+
+	[public] typedef struct {
+		uint32 usri1051_primary_group_id;
+	} USER_INFO_1051;
+
+	[public] typedef struct {
+		string usri1052_profile;
+	} USER_INFO_1052;
+
+	[public] typedef struct {
+		string usri1053_home_dir_drive;
+	} USER_INFO_1053;
 
 	[public] typedef struct {
 		string usriX_name;
