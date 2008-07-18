@@ -393,8 +393,10 @@ WERROR NetLocalGroupDel_l(struct libnetapi_ctx *ctx,
 ****************************************************************/
 
 static WERROR map_alias_info_to_buffer(TALLOC_CTX *mem_ctx,
+				       const char *alias_name,
 				       struct samr_AliasInfoAll *info,
 				       uint32_t level,
+				       uint32_t *entries_read,
 				       uint8_t **buffer)
 {
 	struct LOCALGROUP_INFO_0 g0;
@@ -403,29 +405,32 @@ static WERROR map_alias_info_to_buffer(TALLOC_CTX *mem_ctx,
 
 	switch (level) {
 		case 0:
-			g0.lgrpi0_name		= info->name.string;
+			g0.lgrpi0_name		= talloc_strdup(mem_ctx, alias_name);
+			W_ERROR_HAVE_NO_MEMORY(g0.lgrpi0_name);
 
-			*buffer = (uint8_t *)talloc_memdup(mem_ctx, &g0, sizeof(g0));
+			ADD_TO_ARRAY(mem_ctx, struct LOCALGROUP_INFO_0, g0,
+				     (struct LOCALGROUP_INFO_0 **)buffer, entries_read);
 
 			break;
 		case 1:
-			g1.lgrpi1_name		= info->name.string;
-			g1.lgrpi1_comment	= info->description.string;
+			g1.lgrpi1_name		= talloc_strdup(mem_ctx, alias_name);
+			g1.lgrpi1_comment	= talloc_strdup(mem_ctx, info->description.string);
+			W_ERROR_HAVE_NO_MEMORY(g1.lgrpi1_name);
 
-			*buffer = (uint8_t *)talloc_memdup(mem_ctx, &g1, sizeof(g1));
+			ADD_TO_ARRAY(mem_ctx, struct LOCALGROUP_INFO_1, g1,
+				     (struct LOCALGROUP_INFO_1 **)buffer, entries_read);
 
 			break;
 		case 1002:
-			g1002.lgrpi1002_comment	= info->description.string;
+			g1002.lgrpi1002_comment	= talloc_strdup(mem_ctx, info->description.string);
 
-			*buffer = (uint8_t *)talloc_memdup(mem_ctx, &g1002, sizeof(g1002));
+			ADD_TO_ARRAY(mem_ctx, struct LOCALGROUP_INFO_1002, g1002,
+				     (struct LOCALGROUP_INFO_1002 **)buffer, entries_read);
 
 			break;
 		default:
 			return WERR_UNKNOWN_LEVEL;
 	}
-
-	W_ERROR_HAVE_NO_MEMORY(*buffer);
 
 	return WERR_OK;
 }
@@ -444,6 +449,7 @@ WERROR NetLocalGroupGetInfo_r(struct libnetapi_ctx *ctx,
 	struct policy_handle connect_handle, domain_handle, builtin_handle, alias_handle;
 	struct dom_sid2 *domain_sid = NULL;
 	union samr_AliasInfo *alias_info = NULL;
+	uint32_t entries_read = 0;
 
 	if (!r->in.group_name) {
 		return WERR_INVALID_PARAM;
@@ -531,8 +537,11 @@ WERROR NetLocalGroupGetInfo_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	werr = map_alias_info_to_buffer(ctx, &alias_info->all,
-					r->in.level, r->out.buf);
+	werr = map_alias_info_to_buffer(ctx,
+					r->in.group_name,
+					&alias_info->all,
+					r->in.level, &entries_read,
+					r->out.buf);
 
  done:
 	if (!cli) {
