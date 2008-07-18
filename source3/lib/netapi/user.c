@@ -292,28 +292,11 @@ WERROR NetUserAdd_r(struct libnetapi_ctx *ctx,
 
 	if (uX.usriX_password) {
 
-		uchar pwbuf[532];
-		struct MD5Context md5_ctx;
-		uint8_t confounder[16];
-		DATA_BLOB confounded_session_key = data_blob(NULL, 16);
-
-		encode_pw_buffer(pwbuf, uX.usriX_password, STR_UNICODE);
-
-		generate_random_buffer((uint8_t *)confounder, 16);
-
-		MD5Init(&md5_ctx);
-		MD5Update(&md5_ctx, confounder, 16);
-		MD5Update(&md5_ctx, cli->user_session_key.data,
-				cli->user_session_key.length);
-		MD5Final(confounded_session_key.data, &md5_ctx);
-
-		SamOEMhashBlob(pwbuf, 516, &confounded_session_key);
-		memcpy(&pwbuf[516], confounder, 16);
-
-		memcpy(user_info->info25.password.data, pwbuf, sizeof(pwbuf));
-		data_blob_free(&confounded_session_key);
-
 		user_info->info25.info = info21;
+
+		init_samr_CryptPasswordEx(uX.usriX_password,
+					  &cli->user_session_key,
+					  &user_info->info25.password);
 
 		status = rpccli_samr_SetUserInfo2(pipe_cli, ctx,
 						  &user_handle,
@@ -324,10 +307,9 @@ WERROR NetUserAdd_r(struct libnetapi_ctx *ctx,
 
 			user_info->info23.info = info21;
 
-			encode_pw_buffer(user_info->info23.password.data,
-					 uX.usriX_password, STR_UNICODE);
-			SamOEMhashBlob(user_info->info23.password.data, 516,
-				       &cli->user_session_key);
+			init_samr_CryptPassword(uX.usriX_password,
+						&cli->user_session_key,
+						&user_info->info23.password);
 
 			status = rpccli_samr_SetUserInfo2(pipe_cli, ctx,
 							  &user_handle,
@@ -335,7 +317,9 @@ WERROR NetUserAdd_r(struct libnetapi_ctx *ctx,
 							  user_info);
 		}
 	} else {
+
 		user_info->info21 = info21;
+
 		status = rpccli_samr_SetUserInfo(pipe_cli, ctx,
 						 &user_handle,
 						 21,
