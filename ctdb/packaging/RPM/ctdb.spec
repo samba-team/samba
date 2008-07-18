@@ -5,7 +5,7 @@ Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
 Version: 1.0
-Release: 49
+Release: 50
 Epoch: 0
 License: GNU GPL version 3
 Group: System Environment/Daemons
@@ -118,6 +118,16 @@ fi
 %{_includedir}/ctdb_private.h
 
 %changelog
+* Fri Jul 18 2008 : Version 1.0.50
+ - Dont assume that just because we can establish a TCP connection
+   that we are actually talking to a functioning ctdb daemon.
+   So dont mark the node as CONNECTED just because the tcp handshake
+   was successful.
+ - Dont try to set the recmaster to ourself during elections for those
+   cases we know this will fail. To remove some annoying benign but scary
+   looking entries from the log.
+ - Bugfix for eventsystem for signal handling that could cause a node to
+   hang.
 * Thu Jul 17 2008 : Version 1.0.49
  - Update the safe persistent update fix to work with unpatched samba
    servers.
