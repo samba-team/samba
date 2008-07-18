@@ -1028,7 +1028,7 @@ static int smbldap_open(struct smbldap_state *ldap_state)
 		
 #ifndef NO_LDAP_SECURITY
 	if (geteuid() != 0) {
-		DEBUG(0, ("smbldap_open: cannot access LDAP when not root..\n"));
+		DEBUG(0, ("smbldap_open: cannot access LDAP when not root\n"));
 		return  LDAP_INSUFFICIENT_ACCESS;
 	}
 #endif
