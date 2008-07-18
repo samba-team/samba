@@ -53,7 +53,7 @@ static void flag_change_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	ctdb->nodes[c->pnn]->flags = 
 		(ctdb->nodes[c->pnn]->flags&NODE_FLAGS_DISCONNECTED) 
 		| (c->new_flags & ~NODE_FLAGS_DISCONNECTED);	
-	DEBUG(DEBUG_INFO,("Node flags for node %u are now 0x%x\n", c->pnn, ctdb->nodes[c->pnn]->flags));
+	DEBUG(DEBUG_DEBUG,("Node flags for node %u are now 0x%x\n", c->pnn, ctdb->nodes[c->pnn]->flags));
 
 	/* make sure we don't hold any IPs when we shouldn't */
 	if (c->pnn == ctdb->pnn &&
