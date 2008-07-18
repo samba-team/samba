@@ -759,7 +759,171 @@ WERROR NetLocalGroupSetInfo_l(struct libnetapi_ctx *ctx,
 WERROR NetLocalGroupEnum_r(struct libnetapi_ctx *ctx,
 			   struct NetLocalGroupEnum *r)
 {
-	return WERR_NOT_SUPPORTED;
+	struct cli_state *cli = NULL;
+	struct rpc_pipe_client *pipe_cli = NULL;
+	NTSTATUS status;
+	WERROR werr;
+	struct policy_handle connect_handle, domain_handle, builtin_handle, alias_handle;
+	struct dom_sid2 *domain_sid = NULL;
+	uint32_t entries_read = 0;
+	union samr_DomainInfo *domain_info = NULL;
+	union samr_DomainInfo *builtin_info = NULL;
+	struct samr_SamArray *domain_sam_array = NULL;
+	struct samr_SamArray *builtin_sam_array = NULL;
+	int i;
+
+	if (!r->out.buffer) {
+		return WERR_INVALID_PARAM;
+	}
+
+	switch (r->in.level) {
+		case 0:
+		case 1:
+			break;
+		default:
+			return WERR_UNKNOWN_LEVEL;
+	}
+
+	ZERO_STRUCT(connect_handle);
+	ZERO_STRUCT(builtin_handle);
+	ZERO_STRUCT(domain_handle);
+	ZERO_STRUCT(alias_handle);
+
+	werr = libnetapi_open_ipc_connection(ctx, r->in.server_name, &cli);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	werr = libnetapi_open_pipe(ctx, cli, PI_SAMR, &pipe_cli);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	werr = libnetapi_samr_open_builtin_domain(ctx, pipe_cli,
+						  SAMR_ACCESS_OPEN_DOMAIN |
+						  SAMR_ACCESS_ENUM_DOMAINS,
+						  SAMR_DOMAIN_ACCESS_LOOKUP_INFO_2 |
+						  SAMR_DOMAIN_ACCESS_ENUM_ACCOUNTS |
+						  SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
+						  &connect_handle,
+						  &builtin_handle);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	werr = libnetapi_samr_open_domain(ctx, pipe_cli,
+					  SAMR_ACCESS_OPEN_DOMAIN |
+					  SAMR_ACCESS_ENUM_DOMAINS,
+					  SAMR_DOMAIN_ACCESS_LOOKUP_INFO_2 |
+					  SAMR_DOMAIN_ACCESS_ENUM_ACCOUNTS |
+					  SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
+					  &connect_handle,
+					  &domain_handle,
+					  &domain_sid);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	status = rpccli_samr_QueryDomainInfo(pipe_cli, ctx,
+					     &builtin_handle,
+					     2,
+					     &builtin_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	status = rpccli_samr_QueryDomainInfo(pipe_cli, ctx,
+					     &domain_handle,
+					     2,
+					     &domain_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	status = rpccli_samr_EnumDomainAliases(pipe_cli, ctx,
+					       &builtin_handle,
+					       r->in.resume_handle,
+					       &builtin_sam_array,
+					       r->in.prefmaxlen,
+					       &entries_read);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	for (i=0; i<builtin_sam_array->count; i++) {
+		union samr_AliasInfo *alias_info = NULL;
+
+		if (r->in.level == 1) {
+
+			status = libnetapi_samr_open_alias_queryinfo(ctx, pipe_cli,
+								     &builtin_handle,
+								     builtin_sam_array->entries[i].idx,
+								     SAMR_ALIAS_ACCESS_LOOKUP_INFO,
+								     ALIASINFOALL,
+								     &alias_info);
+			if (!NT_STATUS_IS_OK(status)) {
+				werr = ntstatus_to_werror(status);
+				goto done;
+			}
+		}
+
+		werr = map_alias_info_to_buffer(ctx,
+						builtin_sam_array->entries[i].name.string,
+						alias_info ? &alias_info->all : NULL,
+						r->in.level,
+						r->out.entries_read,
+						r->out.buffer);
+	}
+
+	status = rpccli_samr_EnumDomainAliases(pipe_cli, ctx,
+					       &domain_handle,
+					       r->in.resume_handle,
+					       &domain_sam_array,
+					       r->in.prefmaxlen,
+					       &entries_read);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	for (i=0; i<domain_sam_array->count; i++) {
+
+		union samr_AliasInfo *alias_info = NULL;
+
+		if (r->in.level == 1) {
+			status = libnetapi_samr_open_alias_queryinfo(ctx, pipe_cli,
+								     &domain_handle,
+								     domain_sam_array->entries[i].idx,
+								     SAMR_ALIAS_ACCESS_LOOKUP_INFO,
+								     ALIASINFOALL,
+								     &alias_info);
+			if (!NT_STATUS_IS_OK(status)) {
+				werr = ntstatus_to_werror(status);
+				goto done;
+			}
+		}
+
+		werr = map_alias_info_to_buffer(ctx,
+						domain_sam_array->entries[i].name.string,
+						alias_info ? &alias_info->all : NULL,
+						r->in.level,
+						r->out.entries_read,
+						r->out.buffer);
+	}
+
+ done:
+	if (!cli) {
+		return werr;
+	}
+
+	libnetapi_samr_close_domain_handle(ctx, &domain_handle);
+	libnetapi_samr_close_builtin_handle(ctx, &builtin_handle);
+	libnetapi_samr_close_connect_handle(ctx, &connect_handle);
+
+	return werr;
 }
 
 /****************************************************************
