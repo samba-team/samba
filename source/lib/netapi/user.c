@@ -612,10 +612,10 @@ static NTSTATUS libnetapi_samr_lookup_user_map_USER_INFO(TALLOC_CTX *mem_ctx,
 	struct sec_desc_buf *sec_desc = NULL;
 	struct dom_sid sid;
 
-	struct USER_INFO_0 *info0 = NULL;
-	struct USER_INFO_10 *info10 = NULL;
-	struct USER_INFO_20 *info20 = NULL;
-	struct USER_INFO_23 *info23 = NULL;
+	struct USER_INFO_0 info0;
+	struct USER_INFO_10 info10;
+	struct USER_INFO_20 info20;
+	struct USER_INFO_23 info23;
 
 	switch (level) {
 		case 0:
@@ -632,13 +632,10 @@ static NTSTATUS libnetapi_samr_lookup_user_map_USER_INFO(TALLOC_CTX *mem_ctx,
 	}
 
 	if (level == 0) {
-		info0 = TALLOC_P(mem_ctx, struct USER_INFO_0);
-		NT_STATUS_HAVE_NO_MEMORY(info0);
+		info0.usri0_name = talloc_strdup(mem_ctx, user_name);
+		NT_STATUS_HAVE_NO_MEMORY(info0.usri0_name);
 
-		info0->usri0_name = talloc_strdup(mem_ctx, user_name);
-		NT_STATUS_HAVE_NO_MEMORY(info0->usri0_name);
-
-		ADD_TO_ARRAY(mem_ctx, struct USER_INFO_0, *info0,
+		ADD_TO_ARRAY(mem_ctx, struct USER_INFO_0, info0,
 			     (struct USER_INFO_0 **)buffer, num_entries);
 
 		return NT_STATUS_OK;
@@ -659,63 +656,60 @@ static NTSTATUS libnetapi_samr_lookup_user_map_USER_INFO(TALLOC_CTX *mem_ctx,
 
 	switch (level) {
 		case 10:
-			info10 = TALLOC_P(mem_ctx, struct USER_INFO_10);
-			NT_STATUS_HAVE_NO_MEMORY(info10);
+			info10.usri10_name = talloc_strdup(mem_ctx, user_name);
+			NT_STATUS_HAVE_NO_MEMORY(info10.usri10_name);
 
-			info10->usri10_name = talloc_strdup(mem_ctx, user_name);
-			NT_STATUS_HAVE_NO_MEMORY(info10->usri10_name);
-
-			info10->usri10_comment = talloc_strdup(mem_ctx,
+			info10.usri10_comment = talloc_strdup(mem_ctx,
 				info21->description.string);
 
-			info10->usri10_full_name = talloc_strdup(mem_ctx,
+			info10.usri10_full_name = talloc_strdup(mem_ctx,
 				info21->full_name.string);
 
-			info10->usri10_usr_comment = talloc_strdup(mem_ctx,
+			info10.usri10_usr_comment = talloc_strdup(mem_ctx,
 				info21->comment.string);
 
-			ADD_TO_ARRAY(mem_ctx, struct USER_INFO_10, *info10,
+			ADD_TO_ARRAY(mem_ctx, struct USER_INFO_10, info10,
 				     (struct USER_INFO_10 **)buffer, num_entries);
 
 			break;
 
 		case 20:
-			info20 = TALLOC_P(mem_ctx, struct USER_INFO_20);
-			NT_STATUS_HAVE_NO_MEMORY(info20);
+			info20.usri20_name = talloc_strdup(mem_ctx, user_name);
+			NT_STATUS_HAVE_NO_MEMORY(info20.usri20_name);
 
-			info20->usri20_name = talloc_strdup(mem_ctx, user_name);
-			NT_STATUS_HAVE_NO_MEMORY(info20->usri20_name);
-
-			info20->usri20_comment = talloc_strdup(mem_ctx,
+			info20.usri20_comment = talloc_strdup(mem_ctx,
 				info21->description.string);
 
-			info20->usri20_flags = info21->acct_flags;
-			info20->usri20_user_id = rid;
+			info20.usri20_full_name = talloc_strdup(mem_ctx,
+				info21->full_name.string);
 
-			ADD_TO_ARRAY(mem_ctx, struct USER_INFO_20, *info20,
+			info20.usri20_flags = info21->acct_flags;
+			info20.usri20_user_id = rid;
+
+			ADD_TO_ARRAY(mem_ctx, struct USER_INFO_20, info20,
 				     (struct USER_INFO_20 **)buffer, num_entries);
 
 			break;
 		case 23:
-			info23 = TALLOC_P(mem_ctx, struct USER_INFO_23);
-			NT_STATUS_HAVE_NO_MEMORY(info23);
+			info23.usri23_name = talloc_strdup(mem_ctx, user_name);
+			NT_STATUS_HAVE_NO_MEMORY(info23.usri23_name);
 
-			info23->usri23_name = talloc_strdup(mem_ctx, user_name);
-			NT_STATUS_HAVE_NO_MEMORY(info23->usri23_name);
-
-			info23->usri23_comment = talloc_strdup(mem_ctx,
+			info23.usri23_comment = talloc_strdup(mem_ctx,
 				info21->description.string);
 
-			info23->usri23_flags = info21->acct_flags;
+			info23.usri23_full_name = talloc_strdup(mem_ctx,
+				info21->full_name.string);
+
+			info23.usri23_flags = info21->acct_flags;
 
 			if (!sid_compose(&sid, domain_sid, rid)) {
 				return NT_STATUS_NO_MEMORY;
 			}
 
-			info23->usri23_user_sid =
+			info23.usri23_user_sid =
 				(struct domsid *)sid_dup_talloc(mem_ctx, &sid);
 
-			ADD_TO_ARRAY(mem_ctx, struct USER_INFO_23, *info23,
+			ADD_TO_ARRAY(mem_ctx, struct USER_INFO_23, info23,
 				     (struct USER_INFO_23 **)buffer, num_entries);
 			break;
 	}
