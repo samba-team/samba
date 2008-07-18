@@ -178,8 +178,8 @@ static NTSTATUS populate_ldap_for_ldif(const char *sid,
 	fprintf(add_fd, "# %s, %s\n", lp_workgroup(), suffix);
 	fprintf(add_fd, "dn: sambaDomainName=%s,%s\n", lp_workgroup(),
 		suffix);
-	fprintf(add_fd, "objectClass: sambaDomain\n");
-	fprintf(add_fd, "objectClass: sambaUnixIdPool\n");
+	fprintf(add_fd, "objectClass: %s\n", LDAP_OBJ_DOMINFO);
+	fprintf(add_fd, "objectClass: %s\n", LDAP_OBJ_IDPOOL);
 	fprintf(add_fd, "sambaDomainName: %s\n", lp_workgroup());
 	fprintf(add_fd, "sambaSID: %s\n", sid);
 	fprintf(add_fd, "uidNumber: %d\n", ++ldif_uid);
@@ -192,8 +192,8 @@ static NTSTATUS populate_ldap_for_ldif(const char *sid,
 		suffix);
 	fprintf(add_fd, "dn: cn=Domain Admins,ou=%s,%s\n", group_attr,
 		suffix);
-	fprintf(add_fd, "objectClass: posixGroup\n");
-	fprintf(add_fd, "objectClass: sambaGroupMapping\n");
+	fprintf(add_fd, "objectClass: %s\n", LDAP_OBJ_POSIXGROUP);
+	fprintf(add_fd, "objectClass: %s\n", LDAP_OBJ_GROUPMAP);
 	fprintf(add_fd, "cn: Domain Admins\n");
 	fprintf(add_fd, "memberUid: Administrator\n");
 	fprintf(add_fd, "description: Netbios Domain Administrators\n");
@@ -209,8 +209,8 @@ static NTSTATUS populate_ldap_for_ldif(const char *sid,
 		suffix);
 	fprintf(add_fd, "dn: cn=Domain Users,ou=%s,%s\n", group_attr,
 		suffix);
-	fprintf(add_fd, "objectClass: posixGroup\n");
-	fprintf(add_fd, "objectClass: sambaGroupMapping\n");
+	fprintf(add_fd, "objectClass: %s\n", LDAP_OBJ_POSIXGROUP);
+	fprintf(add_fd, "objectClass: %s\n", LDAP_OBJ_GROUPMAP);
 	fprintf(add_fd, "cn: Domain Users\n");
 	fprintf(add_fd, "description: Netbios Domain Users\n");
 	fprintf(add_fd, "gidNumber: 513\n");
@@ -225,8 +225,8 @@ static NTSTATUS populate_ldap_for_ldif(const char *sid,
 		suffix);
 	fprintf(add_fd, "dn: cn=Domain Guests,ou=%s,%s\n", group_attr,
 		suffix);
-	fprintf(add_fd, "objectClass: posixGroup\n");
-	fprintf(add_fd, "objectClass: sambaGroupMapping\n");
+	fprintf(add_fd, "objectClass: %s\n", LDAP_OBJ_POSIXGROUP);
+	fprintf(add_fd, "objectClass: %s\n", LDAP_OBJ_GROUPMAP);
 	fprintf(add_fd, "cn: Domain Guests\n");
 	fprintf(add_fd, "description: Netbios Domain Guests\n");
 	fprintf(add_fd, "gidNumber: 514\n");
@@ -241,8 +241,8 @@ static NTSTATUS populate_ldap_for_ldif(const char *sid,
 		suffix);
 	fprintf(add_fd, "dn: cn=Domain Computers,ou=%s,%s\n",
 		group_attr, suffix);
-	fprintf(add_fd, "objectClass: posixGroup\n");
-	fprintf(add_fd, "objectClass: sambaGroupMapping\n");
+	fprintf(add_fd, "objectClass: %s\n", LDAP_OBJ_POSIXGROUP);
+	fprintf(add_fd, "objectClass: %s\n", LDAP_OBJ_GROUPMAP);
 	fprintf(add_fd, "gidNumber: 515\n");
 	fprintf(add_fd, "cn: Domain Computers\n");
 	fprintf(add_fd, "description: Netbios Domain Computers accounts\n");
@@ -257,8 +257,8 @@ static NTSTATUS populate_ldap_for_ldif(const char *sid,
 		suffix);
 	fprintf(add_fd, "dn: cn=Administrators,ou=%s,%s\n", group_attr,
 		suffix);
-	fprintf(add_fd, "objectClass: posixGroup\n");
-	fprintf(add_fd, "objectClass: sambaGroupMapping\n");
+	fprintf(add_fd, "objectClass: %s\n", LDAP_OBJ_POSIXGROUP);
+	fprintf(add_fd, "objectClass: %s\n", LDAP_OBJ_GROUPMAP);
 	fprintf(add_fd, "gidNumber: 544\n");
 	fprintf(add_fd, "cn: Administrators\n");
 	fprintf(add_fd, "description: Netbios Domain Members can fully administer the computer/sambaDomainName\n");
@@ -272,8 +272,8 @@ static NTSTATUS populate_ldap_for_ldif(const char *sid,
 		suffix);
 	fprintf(add_fd, "dn: cn=Print Operators,ou=%s,%s\n",
 		group_attr, suffix);
-	fprintf(add_fd, "objectClass: posixGroup\n");
-	fprintf(add_fd, "objectClass: sambaGroupMapping\n");
+	fprintf(add_fd, "objectClass: %s\n", LDAP_OBJ_POSIXGROUP);
+	fprintf(add_fd, "objectClass: %s\n", LDAP_OBJ_GROUPMAP);
 	fprintf(add_fd, "gidNumber: 550\n");
 	fprintf(add_fd, "cn: Print Operators\n");
 	fprintf(add_fd, "description: Netbios Domain Print Operators\n");
@@ -288,8 +288,8 @@ static NTSTATUS populate_ldap_for_ldif(const char *sid,
 		suffix);
 	fprintf(add_fd, "dn: cn=Backup Operators,ou=%s,%s\n",
 		group_attr, suffix);
-	fprintf(add_fd, "objectClass: posixGroup\n");
-	fprintf(add_fd, "objectClass: sambaGroupMapping\n");
+	fprintf(add_fd, "objectClass: %s\n", LDAP_OBJ_POSIXGROUP);
+	fprintf(add_fd, "objectClass: %s\n", LDAP_OBJ_GROUPMAP);
 	fprintf(add_fd, "gidNumber: 551\n");
 	fprintf(add_fd, "cn: Backup Operators\n");
 	fprintf(add_fd, "description: Netbios Domain Members can bypass file security to back up files\n");
@@ -303,8 +303,8 @@ static NTSTATUS populate_ldap_for_ldif(const char *sid,
 	fprintf(add_fd, "# Replicators, %s, %s\n", group_attr, suffix);
 	fprintf(add_fd, "dn: cn=Replicators,ou=%s,%s\n", group_attr,
 		suffix);
-	fprintf(add_fd, "objectClass: posixGroup\n");
-	fprintf(add_fd, "objectClass: sambaGroupMapping\n");
+	fprintf(add_fd, "objectClass: %s\n", LDAP_OBJ_POSIXGROUP);
+	fprintf(add_fd, "objectClass: %s\n", LDAP_OBJ_GROUPMAP);
 	fprintf(add_fd, "gidNumber: 552\n");
 	fprintf(add_fd, "cn: Replicators\n");
 	fprintf(add_fd, "description: Netbios Domain Supports file replication in a sambaDomainName\n");
@@ -544,8 +544,8 @@ static NTSTATUS fetch_group_info_to_ldif(TALLOC_CTX *mem_ctx,
 		suffix);
 	fprintf_attr(add_fd, "dn", "cn=%s,ou=%s,%s", groupname, group_attr,
 		     suffix);
-	fprintf(add_fd, "objectClass: posixGroup\n");
-	fprintf(add_fd, "objectClass: sambaGroupMapping\n");
+	fprintf(add_fd, "objectClass: %s\n", LDAP_OBJ_POSIXGROUP);
+	fprintf(add_fd, "objectClass: %s\n", LDAP_OBJ_GROUPMAP);
 	fprintf_attr(add_fd, "cn", "%s", groupname);
 	fprintf(add_fd, "gidNumber: %d\n", ldif_gid);
 	fprintf(add_fd, "sambaSID: %s\n", groupmap->sambaSID);
@@ -670,9 +670,9 @@ static NTSTATUS fetch_account_info_to_ldif(TALLOC_CTX *mem_ctx,
 	SAFE_FREE(user_rdn);
 	fprintf(add_fd, "ObjectClass: top\n");
 	fprintf(add_fd, "objectClass: inetOrgPerson\n");
-	fprintf(add_fd, "objectClass: posixAccount\n");
+	fprintf(add_fd, "objectClass: %s\n", LDAP_OBJ_POSIXACCOUNT);
 	fprintf(add_fd, "objectClass: shadowAccount\n");
-	fprintf(add_fd, "objectClass: sambaSamAccount\n");
+	fprintf(add_fd, "objectClass: %s\n", LDAP_OBJ_SAMBASAMACCOUNT);
 	fprintf_attr(add_fd, "cn", "%s", username);
 	fprintf_attr(add_fd, "sn", "%s", username);
 	fprintf_attr(add_fd, "uid", "%s", username);
@@ -775,8 +775,8 @@ static NTSTATUS fetch_alias_info_to_ldif(TALLOC_CTX *mem_ctx,
 		suffix);
 	fprintf_attr(add_fd, "dn", "cn=%s,ou=%s,%s", aliasname, group_attr,
 		     suffix);
-	fprintf(add_fd, "objectClass: posixGroup\n");
-	fprintf(add_fd, "objectClass: sambaGroupMapping\n");
+	fprintf(add_fd, "objectClass: %s\n", LDAP_OBJ_POSIXGROUP);
+	fprintf(add_fd, "objectClass: %s\n", LDAP_OBJ_GROUPMAP);
 	fprintf(add_fd, "cn: %s\n", aliasname);
 	fprintf(add_fd, "gidNumber: %d\n", ldif_gid);
 	fprintf(add_fd, "sambaSID: %s\n", groupmap->sambaSID);
