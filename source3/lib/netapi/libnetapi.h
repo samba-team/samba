@@ -192,6 +192,18 @@ WERROR NetGroupDelUser_r(struct libnetapi_ctx *ctx,
 			 struct NetGroupDelUser *r);
 WERROR NetGroupDelUser_l(struct libnetapi_ctx *ctx,
 			 struct NetGroupDelUser *r);
+NET_API_STATUS NetGroupGetUsers(const char * server_name /* [in] */,
+				const char * group_name /* [in] */,
+				uint32_t level /* [in] */,
+				uint8_t **buffer /* [out] [ref] */,
+				uint32_t prefmaxlen /* [in] */,
+				uint32_t *entries_read /* [out] [ref] */,
+				uint32_t *total_entries /* [out] [ref] */,
+				uint32_t *resume_handle /* [in,out] [ref] */);
+WERROR NetGroupGetUsers_r(struct libnetapi_ctx *ctx,
+			  struct NetGroupGetUsers *r);
+WERROR NetGroupGetUsers_l(struct libnetapi_ctx *ctx,
+			  struct NetGroupGetUsers *r);
 NET_API_STATUS NetLocalGroupAdd(const char * server_name /* [in] */,
 				uint32_t level /* [in] */,
 				uint8_t *buffer /* [in] [ref] */,
