@@ -46,7 +46,7 @@ void ndr_print_GUID(struct ndr_print *ndr, const char *name, const struct GUID *
 bool ndr_syntax_id_equal(const struct ndr_syntax_id *i1,
 			 const struct ndr_syntax_id *i2)
 {
-	return guid_equal(&i1->uuid, &i2->uuid)
+	return GUID_equal(&i1->uuid, &i2->uuid)
 		&& (i1->if_version == i2->if_version);
 }
 
