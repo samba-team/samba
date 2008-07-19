@@ -173,26 +173,6 @@ typedef uint32 codepoint_t;
 
 /* pipe string names */
 #define PIPE_LANMAN   "\\PIPE\\LANMAN"
-#define PIPE_SRVSVC   "\\PIPE\\srvsvc"
-#define PIPE_SAMR     "\\PIPE\\samr"
-#define PIPE_WINREG   "\\PIPE\\winreg"
-#define PIPE_WKSSVC   "\\PIPE\\wkssvc"
-#define PIPE_NETLOGON "\\PIPE\\NETLOGON"
-#define PIPE_NTLSA    "\\PIPE\\ntlsa"
-#define PIPE_NTSVCS   "\\PIPE\\ntsvcs"
-#define PIPE_LSASS    "\\PIPE\\lsass"
-#define PIPE_LSARPC   "\\PIPE\\lsarpc"
-#define PIPE_SPOOLSS  "\\PIPE\\spoolss"
-#define PIPE_NETDFS   "\\PIPE\\netdfs"
-#define PIPE_ECHO     "\\PIPE\\rpcecho"
-#define PIPE_SHUTDOWN "\\PIPE\\initshutdown"
-#define PIPE_EPM      "\\PIPE\\epmapper"
-#define PIPE_SVCCTL   "\\PIPE\\svcctl"
-#define PIPE_EVENTLOG "\\PIPE\\eventlog"
-#define PIPE_EPMAPPER "\\PIPE\\epmapper"
-#define PIPE_DRSUAPI  "\\PIPE\\drsuapi"
-
-#define PIPE_NETLOGON_PLAIN "\\NETLOGON"
 
 #define PI_LSARPC		0
 #define PI_DSSETUP		1
