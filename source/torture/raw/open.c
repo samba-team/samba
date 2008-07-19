@@ -983,6 +983,7 @@ static bool test_nttrans_create(struct smbcli_state *cli, struct torture_context
 		io.ntcreatex.in.create_options = create_option;
 		status = smb_raw_open(cli->tree, tctx, &io);
 		CHECK_STATUS(status, NT_STATUS_OK);
+		fnum = io.ntcreatex.out.file.fnum;
 
 		CHECK_VAL(io.ntcreatex.out.oplock_level, 0);
 		CHECK_VAL(io.ntcreatex.out.create_action, NTCREATEX_ACTION_EXISTED);
