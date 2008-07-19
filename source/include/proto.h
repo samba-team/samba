@@ -1817,7 +1817,6 @@ void smb_uuid_generate_random(struct GUID *uu);
 const char *smb_uuid_string(TALLOC_CTX *mem_ctx, const struct GUID uu);
 bool smb_string_to_uuid(const char *in, struct GUID* uu);
 char *guid_binstring(const struct GUID *guid);
-bool guid_equal(const struct GUID *g1, const struct GUID *g2);
 
 /* The following definitions come from lib/version.c  */
 
