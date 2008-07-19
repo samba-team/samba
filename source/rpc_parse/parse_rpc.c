@@ -80,9 +80,9 @@ int cli_get_pipe_idx(const RPC_IFACE *syntax)
 {
 	int i;
 	for (i = 0; pipe_names[i].client_pipe; i++) {
-		if (GUID_equal(&pipe_names[i].abstr_syntax->uuid, &syntax->uuid) &&
-		    pipe_names[i].abstr_syntax->if_version == syntax->if_version)
+		if (ndr_syntax_id_equal(pipe_names[i].abstr_syntax, syntax)) {
 			return i;
+		}
 	}
 
 	return -1;
