@@ -23,27 +23,6 @@
 extern int max_send;
 extern enum protocol_types Protocol;
 
-static const char *known_nt_pipes[] = {
-	"\\LANMAN",
-	"\\srvsvc",
-	"\\samr",
-	"\\wkssvc",
-	"\\NETLOGON",
-	"\\ntlsa",
-	"\\ntsvcs",
-	"\\lsass",
-	"\\lsarpc",
-	"\\winreg",
-	"\\initshutdown",
-	"\\spoolss",
-	"\\netdfs",
-	"\\rpcecho",
-        "\\svcctl",
-	"\\eventlog",
-	"\\unixinfo",
-	NULL
-};
-
 static char *nttrans_realloc(char **ptr, size_t size)
 {
 	if (ptr==NULL) {
@@ -291,25 +270,12 @@ static void nt_open_pipe(char *fname, connection_struct *conn,
 			 struct smb_request *req, int *ppnum)
 {
 	smb_np_struct *p = NULL;
-	int i;
 
 	DEBUG(4,("nt_open_pipe: Opening pipe %s.\n", fname));
 
 	/* See if it is one we want to handle. */
 
-	if (lp_disable_spoolss() && strequal(fname, "\\spoolss")) {
-		reply_botherror(req, NT_STATUS_OBJECT_NAME_NOT_FOUND,
-				ERRDOS, ERRbadpipe);
-		return;
-	}
-
-	for( i = 0; known_nt_pipes[i]; i++ ) {
-		if( strequal(fname,known_nt_pipes[i])) {
-			break;
-		}
-	}
-
-	if ( known_nt_pipes[i] == NULL ) {
+	if (!is_known_pipename(fname)) {
 		reply_botherror(req, NT_STATUS_OBJECT_NAME_NOT_FOUND,
 				ERRDOS, ERRbadpipe);
 		return;

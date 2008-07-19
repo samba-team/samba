@@ -1078,6 +1078,39 @@ NTSTATUS rpc_pipe_register_commands(int version, const char *clnt,
         return NT_STATUS_OK;
 }
 
+/**
+ * Is a named pipe known?
+ * @param[in] cli_filename	The pipe name requested by the client
+ * @result			Do we want to serve this?
+ */
+bool is_known_pipename(const char *cli_filename)
+{
+	const char *pipename = cli_filename;
+	int i;
+
+	if (strnequal(pipename, "\\PIPE\\", 6)) {
+		pipename += 5;
+	}
+
+	if (*pipename == '\\') {
+		pipename += 1;
+	}
+
+	if (lp_disable_spoolss() && strequal(pipename, "spoolss")) {
+		DEBUG(10, ("refusing spoolss access\n"));
+		return false;
+	}
+
+	for (i=0; i<rpc_lookup_size; i++) {
+		if (strequal(pipename, rpc_lookup[i].pipe.clnt)) {
+			return true;
+		}
+	}
+
+	DEBUG(10, ("is_known_pipename: %s unknown\n", cli_filename));
+	return false;
+}
+
 /*******************************************************************
  Handle a SPNEGO krb5 bind auth.
 *******************************************************************/
