@@ -23,7 +23,84 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_CLI
 
-extern struct pipe_id_info pipe_names[];
+/*******************************************************************
+interface/version dce/rpc pipe identification
+********************************************************************/
+
+static const struct ndr_syntax_id syntax_spoolss = {
+	{
+		0x12345678, 0x1234, 0xabcd,
+		{ 0xef, 0x00 },
+		{ 0x01, 0x23,
+		  0x45, 0x67, 0x89, 0xab }
+	}, 0x01
+};
+
+/*
+ * IMPORTANT!!  If you update this structure, make sure to
+ * update the index #defines in smb.h.
+ */
+
+static const struct pipe_id_info pipe_names [] =
+{
+	{ PIPE_LSARPC,		&ndr_table_lsarpc.syntax_id,
+	  PIPE_LSASS,		&ndr_transfer_syntax },
+	{ PIPE_LSARPC,		&ndr_table_dssetup.syntax_id,
+	  PIPE_LSASS,		&ndr_transfer_syntax },
+	{ PIPE_SAMR,		&ndr_table_samr.syntax_id,
+	  PIPE_LSASS,		&ndr_transfer_syntax },
+	{ PIPE_NETLOGON,	&ndr_table_netlogon.syntax_id,
+	  PIPE_LSASS,		&ndr_transfer_syntax },
+	{ PIPE_SRVSVC,		&ndr_table_srvsvc.syntax_id,
+	  PIPE_NTSVCS,		&ndr_transfer_syntax },
+	{ PIPE_WKSSVC,		&ndr_table_wkssvc.syntax_id,
+	  PIPE_NTSVCS,		&ndr_transfer_syntax },
+	{ PIPE_WINREG,		&ndr_table_winreg.syntax_id,
+	  PIPE_WINREG,		&ndr_transfer_syntax },
+	{ PIPE_SPOOLSS,		&syntax_spoolss,
+	  PIPE_SPOOLSS,		&ndr_transfer_syntax },
+	{ PIPE_NETDFS,		&ndr_table_netdfs.syntax_id,
+	  PIPE_NETDFS,		&ndr_transfer_syntax },
+	{ PIPE_ECHO,		&ndr_table_rpcecho.syntax_id,
+	  PIPE_ECHO,		&ndr_transfer_syntax },
+	{ PIPE_SHUTDOWN,	&ndr_table_initshutdown.syntax_id,
+	  PIPE_SHUTDOWN,	&ndr_transfer_syntax },
+	{ PIPE_SVCCTL,		&ndr_table_svcctl.syntax_id,
+	  PIPE_NTSVCS,		&ndr_transfer_syntax },
+	{ PIPE_EVENTLOG,	&ndr_table_eventlog.syntax_id,
+	  PIPE_EVENTLOG,	&ndr_transfer_syntax },
+	{ PIPE_NTSVCS,		&ndr_table_ntsvcs.syntax_id,
+	  PIPE_NTSVCS,		&ndr_transfer_syntax },
+	{ PIPE_EPMAPPER,	&ndr_table_epmapper.syntax_id,
+	  PIPE_EPMAPPER,	&ndr_transfer_syntax },
+	{ PIPE_DRSUAPI,		&ndr_table_drsuapi.syntax_id,
+	  PIPE_DRSUAPI,		&ndr_transfer_syntax },
+	{ NULL, NULL, NULL, NULL }
+};
+
+/****************************************************************************
+ Return the pipe name from the index.
+ ****************************************************************************/
+
+const char *cli_get_pipe_name(int pipe_idx)
+{
+	return &pipe_names[pipe_idx].client_pipe[5];
+}
+
+/****************************************************************************
+ Return the pipe idx from the syntax.
+ ****************************************************************************/
+int cli_get_pipe_idx(const RPC_IFACE *syntax)
+{
+	int i;
+	for (i = 0; pipe_names[i].client_pipe; i++) {
+		if (ndr_syntax_id_equal(pipe_names[i].abstr_syntax, syntax)) {
+			return i;
+		}
+	}
+
+	return -1;
+}
 
 /********************************************************************
  Map internal value to wire value.
