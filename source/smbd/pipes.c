@@ -44,9 +44,6 @@ struct pipe_dbrec {
 	fstring	user;
 };
 
-
-extern struct pipe_id_info pipe_names[];
-
 /****************************************************************************
  Reply to an open and X on a named pipe.
  This code is basically stolen from reply_open_and_X with some
@@ -59,7 +56,6 @@ void reply_open_pipe_and_X(connection_struct *conn, struct smb_request *req)
 	char *pipe_name = NULL;
 	smb_np_struct *p;
 	int size=0,fmode=0,mtime=0,rmode=0;
-	int i;
 	TALLOC_CTX *ctx = talloc_tos();
 
 	/* XXXX we need to handle passed times, sattr and flags */
@@ -82,13 +78,7 @@ void reply_open_pipe_and_X(connection_struct *conn, struct smb_request *req)
 	DEBUG(4,("Opening pipe %s.\n", pipe_name));
 
 	/* See if it is one we want to handle. */
-	for( i = 0; pipe_names[i].client_pipe ; i++ ) {
-		if( strequal(pipe_name,pipe_names[i].client_pipe)) {
-			break;
-		}
-	}
-
-	if (pipe_names[i].client_pipe == NULL) {
+	if (!is_known_pipename(pipe_name)) {
 		reply_botherror(req, NT_STATUS_OBJECT_NAME_NOT_FOUND,
 				ERRDOS, ERRbadpipe);
 		return;
