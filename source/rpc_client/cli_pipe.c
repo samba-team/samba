@@ -3292,32 +3292,32 @@ struct rpc_pipe_client *cli_rpc_pipe_open_schannel_with_key(struct cli_state *cl
  version uses an ntlmssp auth bound netlogon pipe to get the key.
  ****************************************************************************/
 
-static struct rpc_pipe_client *get_schannel_session_key_auth_ntlmssp(struct cli_state *cli,
-							const char *domain,
-							const char *username,
-							const char *password,
-							uint32 *pneg_flags,
-							NTSTATUS *perr)
+static NTSTATUS get_schannel_session_key_auth_ntlmssp(struct cli_state *cli,
+						      const char *domain,
+						      const char *username,
+						      const char *password,
+						      uint32 *pneg_flags,
+						      struct rpc_pipe_client **presult)
 {
 	struct rpc_pipe_client *netlogon_pipe = NULL;
+	NTSTATUS status;
 
-	*perr = cli_rpc_pipe_open_spnego_ntlmssp(cli,
-						 &ndr_table_netlogon.syntax_id,
-						 PIPE_AUTH_LEVEL_PRIVACY,
-						 domain, username, password,
-						 &netlogon_pipe);
-	if (!netlogon_pipe) {
-		return NULL;
+	status = cli_rpc_pipe_open_spnego_ntlmssp(
+		cli, &ndr_table_netlogon.syntax_id, PIPE_AUTH_LEVEL_PRIVACY,
+		domain, username, password, &netlogon_pipe);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
-	*perr = get_schannel_session_key_common(netlogon_pipe, cli, domain,
-						pneg_flags);
-	if (!NT_STATUS_IS_OK(*perr)) {
+	status = get_schannel_session_key_common(netlogon_pipe, cli, domain,
+						 pneg_flags);
+	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(netlogon_pipe);
-		return NULL;
+		return status;
 	}
 
-	return netlogon_pipe;
+	*presult = netlogon_pipe;
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
@@ -3338,9 +3338,9 @@ struct rpc_pipe_client *cli_rpc_pipe_open_ntlmssp_auth_schannel(struct cli_state
 	struct rpc_pipe_client *netlogon_pipe = NULL;
 	struct rpc_pipe_client *result = NULL;
 
-	netlogon_pipe = get_schannel_session_key_auth_ntlmssp(cli, domain, username,
-							password, &neg_flags, perr);
-	if (!netlogon_pipe) {
+	*perr = get_schannel_session_key_auth_ntlmssp(
+		cli, domain, username, password, &neg_flags, &netlogon_pipe);
+	if (!NT_STATUS_IS_OK(*perr)) {
 		DEBUG(0,("cli_rpc_pipe_open_ntlmssp_auth_schannel: failed to get schannel session "
 			"key from server %s for domain %s.\n",
 			cli->desthost, domain ));
