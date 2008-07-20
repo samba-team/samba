@@ -176,9 +176,9 @@ struct cmd_set echo_commands[] = {
 
 	{ "ECHO" },
 
-	{ "echoaddone", RPC_RTYPE_NTSTATUS, cmd_echo_add_one,     NULL, PI_RPCECHO, NULL, "Add one to a number", "" },
-	{ "echodata",   RPC_RTYPE_NTSTATUS, cmd_echo_data,        NULL, PI_RPCECHO, NULL, "Echo data",           "" },
-	{ "sinkdata",   RPC_RTYPE_NTSTATUS, cmd_echo_sink_data,   NULL, PI_RPCECHO, NULL, "Sink data",           "" },
-	{ "sourcedata", RPC_RTYPE_NTSTATUS, cmd_echo_source_data, NULL, PI_RPCECHO, NULL, "Source data",         "" },
+	{ "echoaddone", RPC_RTYPE_NTSTATUS, cmd_echo_add_one,     NULL, &ndr_table_rpcecho.syntax_id, NULL, "Add one to a number", "" },
+	{ "echodata",   RPC_RTYPE_NTSTATUS, cmd_echo_data,        NULL, &ndr_table_rpcecho.syntax_id, NULL, "Echo data",           "" },
+	{ "sinkdata",   RPC_RTYPE_NTSTATUS, cmd_echo_sink_data,   NULL, &ndr_table_rpcecho.syntax_id, NULL, "Sink data",           "" },
+	{ "sourcedata", RPC_RTYPE_NTSTATUS, cmd_echo_source_data, NULL, &ndr_table_rpcecho.syntax_id, NULL, "Source data",         "" },
 	{ NULL }
 };

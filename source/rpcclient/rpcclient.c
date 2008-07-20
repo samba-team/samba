@@ -481,25 +481,25 @@ static struct cmd_set rpcclient_commands[] = {
 
 	{ "GENERAL OPTIONS" },
 
-	{ "help", RPC_RTYPE_NTSTATUS, cmd_help, NULL, 	  -1, NULL,	"Get help on commands", "[command]" },
-	{ "?", 	RPC_RTYPE_NTSTATUS, cmd_help, NULL,	  -1, NULL,	"Get help on commands", "[command]" },
-	{ "debuglevel", RPC_RTYPE_NTSTATUS, cmd_debuglevel, NULL,   -1,	NULL, "Set debug level", "level" },
-	{ "debug", RPC_RTYPE_NTSTATUS, cmd_debuglevel, NULL,   -1,	NULL, "Set debug level", "level" },
-	{ "list",	RPC_RTYPE_NTSTATUS, cmd_listcommands, NULL, -1,	NULL, "List available commands on <pipe>", "pipe" },
-	{ "exit", RPC_RTYPE_NTSTATUS, cmd_quit, NULL,   -1,	NULL,	"Exit program", "" },
-	{ "quit", RPC_RTYPE_NTSTATUS, cmd_quit, NULL,	  -1,	NULL, "Exit program", "" },
-	{ "sign", RPC_RTYPE_NTSTATUS, cmd_sign, NULL,	  -1,	NULL, "Force RPC pipe connections to be signed", "" },
-	{ "seal", RPC_RTYPE_NTSTATUS, cmd_seal, NULL,	  -1,	NULL, "Force RPC pipe connections to be sealed", "" },
-	{ "schannel", RPC_RTYPE_NTSTATUS, cmd_schannel, NULL,	  -1, NULL,	"Force RPC pipe connections to be sealed with 'schannel'.  Assumes valid machine account to this domain controller.", "" },
-	{ "schannelsign", RPC_RTYPE_NTSTATUS, cmd_schannel_sign, NULL,	  -1, NULL, "Force RPC pipe connections to be signed (not sealed) with 'schannel'.  Assumes valid machine account to this domain controller.", "" },
-	{ "timeout", RPC_RTYPE_NTSTATUS, cmd_timeout, NULL,	  -1, NULL, "Set timeout (in milliseonds) for RPC operations", "" },
-	{ "none", RPC_RTYPE_NTSTATUS, cmd_none, NULL,	  -1, NULL, "Force RPC pipe connections to have no special properties", "" },
+	{ "help", RPC_RTYPE_NTSTATUS, cmd_help, NULL, 	  NULL, NULL,	"Get help on commands", "[command]" },
+	{ "?", 	RPC_RTYPE_NTSTATUS, cmd_help, NULL,	  NULL, NULL,	"Get help on commands", "[command]" },
+	{ "debuglevel", RPC_RTYPE_NTSTATUS, cmd_debuglevel, NULL,   NULL,	NULL, "Set debug level", "level" },
+	{ "debug", RPC_RTYPE_NTSTATUS, cmd_debuglevel, NULL,   NULL,	NULL, "Set debug level", "level" },
+	{ "list",	RPC_RTYPE_NTSTATUS, cmd_listcommands, NULL, NULL,	NULL, "List available commands on <pipe>", "pipe" },
+	{ "exit", RPC_RTYPE_NTSTATUS, cmd_quit, NULL,   NULL,	NULL,	"Exit program", "" },
+	{ "quit", RPC_RTYPE_NTSTATUS, cmd_quit, NULL,	  NULL,	NULL, "Exit program", "" },
+	{ "sign", RPC_RTYPE_NTSTATUS, cmd_sign, NULL,	  NULL,	NULL, "Force RPC pipe connections to be signed", "" },
+	{ "seal", RPC_RTYPE_NTSTATUS, cmd_seal, NULL,	  NULL,	NULL, "Force RPC pipe connections to be sealed", "" },
+	{ "schannel", RPC_RTYPE_NTSTATUS, cmd_schannel, NULL,	  NULL, NULL,	"Force RPC pipe connections to be sealed with 'schannel'.  Assumes valid machine account to this domain controller.", "" },
+	{ "schannelsign", RPC_RTYPE_NTSTATUS, cmd_schannel_sign, NULL,	  NULL, NULL, "Force RPC pipe connections to be signed (not sealed) with 'schannel'.  Assumes valid machine account to this domain controller.", "" },
+	{ "timeout", RPC_RTYPE_NTSTATUS, cmd_timeout, NULL,	  NULL, NULL, "Set timeout (in milliseonds) for RPC operations", "" },
+	{ "none", RPC_RTYPE_NTSTATUS, cmd_none, NULL,	  NULL, NULL, "Force RPC pipe connections to have no special properties", "" },
 
 	{ NULL }
 };
 
 static struct cmd_set separator_command[] = {
-	{ "---------------", MAX_RPC_RETURN_TYPE, NULL, NULL,	-1, NULL, "----------------------" },
+	{ "---------------", MAX_RPC_RETURN_TYPE, NULL, NULL,	NULL, NULL, "----------------------" },
 	{ NULL }
 };
 
@@ -577,18 +577,16 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 
 	/* Open pipe */
 
-	if (cmd_entry->pipe_idx != -1 && cmd_entry->rpc_pipe == NULL) {
+	if ((cmd_entry->interface != NULL) && (cmd_entry->rpc_pipe == NULL)) {
 		switch (pipe_default_auth_type) {
 			case PIPE_AUTH_TYPE_NONE:
 				ntresult = cli_rpc_pipe_open_noauth(
-					cli,
-					cli_get_iface(cmd_entry->pipe_idx),
+					cli, cmd_entry->interface,
 					&cmd_entry->rpc_pipe);
 				break;
 			case PIPE_AUTH_TYPE_SPNEGO_NTLMSSP:
 				ntresult = cli_rpc_pipe_open_spnego_ntlmssp(
-					cli,
-					cli_get_iface(cmd_entry->pipe_idx),
+					cli, cmd_entry->interface,
 					pipe_default_auth_level,
 					lp_workgroup(),
 					get_cmdline_auth_info_username(),
@@ -597,8 +595,7 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 				break;
 			case PIPE_AUTH_TYPE_NTLMSSP:
 				ntresult = cli_rpc_pipe_open_ntlmssp(
-					cli,
-					cli_get_iface(cmd_entry->pipe_idx),
+					cli, cmd_entry->interface,
 					pipe_default_auth_level,
 					lp_workgroup(),
 					get_cmdline_auth_info_username(),
@@ -607,26 +604,31 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 				break;
 			case PIPE_AUTH_TYPE_SCHANNEL:
 				ntresult = cli_rpc_pipe_open_schannel(
-					cli,
-					cli_get_iface(cmd_entry->pipe_idx),
+					cli, cmd_entry->interface,
 					pipe_default_auth_level,
 					lp_workgroup(),
 					&cmd_entry->rpc_pipe);
 				break;
 			default:
-				DEBUG(0, ("Could not initialise %s. Invalid auth type %u\n",
-					cli_get_pipe_name(cmd_entry->pipe_idx),
-					pipe_default_auth_type ));
+				DEBUG(0, ("Could not initialise %s. Invalid "
+					  "auth type %u\n",
+					  cli_get_pipe_name_from_iface(
+						  debug_ctx(), cli,
+						  cmd_entry->interface),
+					  pipe_default_auth_type ));
 				return NT_STATUS_UNSUCCESSFUL;
 		}
 		if (!NT_STATUS_IS_OK(ntresult)) {
 			DEBUG(0, ("Could not initialise %s. Error was %s\n",
-				cli_get_pipe_name(cmd_entry->pipe_idx),
-				nt_errstr(ntresult) ));
+				  cli_get_pipe_name_from_iface(
+					  debug_ctx(), cli,
+					  cmd_entry->interface),
+				  nt_errstr(ntresult) ));
 			return ntresult;
 		}
 
-		if (cmd_entry->pipe_idx == PI_NETLOGON) {
+		if (ndr_syntax_id_equal(cmd_entry->interface,
+					&ndr_table_netlogon.syntax_id)) {
 			uint32_t neg_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS;
 			uint32 sec_channel_type;
 			uchar trust_password[16];
@@ -648,7 +650,9 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 
 			if (!NT_STATUS_IS_OK(ntresult)) {
 				DEBUG(0, ("Could not initialise credentials for %s.\n",
-					cli_get_pipe_name(cmd_entry->pipe_idx)));
+					  cli_get_pipe_name_from_iface(
+						  debug_ctx(), cli,
+						  cmd_entry->interface)));
 				return ntresult;
 			}
 		}
