@@ -3150,15 +3150,15 @@ NTSTATUS cli_rpc_pipe_open_spnego_ntlmssp(struct cli_state *cli,
 /****************************************************************************
   Get a the schannel session key out of an already opened netlogon pipe.
  ****************************************************************************/
-static bool get_schannel_session_key_common(struct rpc_pipe_client *netlogon_pipe,
-					    struct cli_state *cli,
-					    const char *domain,
-					    uint32 *pneg_flags,
-					    NTSTATUS *perr)
+static NTSTATUS get_schannel_session_key_common(struct rpc_pipe_client *netlogon_pipe,
+						struct cli_state *cli,
+						const char *domain,
+						uint32 *pneg_flags)
 {
 	uint32 sec_chan_type = 0;
 	unsigned char machine_pwd[16];
 	const char *machine_account;
+	NTSTATUS status;
 
 	/* Get the machine account credentials from secrets.tdb. */
 	if (!get_trust_pw_hash(domain, machine_pwd, &machine_account,
@@ -3167,11 +3167,10 @@ static bool get_schannel_session_key_common(struct rpc_pipe_client *netlogon_pip
 		DEBUG(0, ("get_schannel_session_key: could not fetch "
 			"trust account password for domain '%s'\n",
 			domain));
-		*perr = NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
-		return false;
+		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
 
-	*perr = rpccli_netlogon_setup_creds(netlogon_pipe,
+	status = rpccli_netlogon_setup_creds(netlogon_pipe,
 					cli->desthost, /* server name */
 					domain,	       /* domain */
 					global_myname(), /* client name */
@@ -3180,21 +3179,22 @@ static bool get_schannel_session_key_common(struct rpc_pipe_client *netlogon_pip
 					sec_chan_type,
 					pneg_flags);
 
-	if (!NT_STATUS_IS_OK(*perr)) {
-		DEBUG(3,("get_schannel_session_key_common: rpccli_netlogon_setup_creds "
-			"failed with result %s to server %s, domain %s, machine account %s.\n",
-			nt_errstr(*perr), cli->desthost, domain, machine_account ));
-		return false;
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(3, ("get_schannel_session_key_common: "
+			  "rpccli_netlogon_setup_creds failed with result %s "
+			  "to server %s, domain %s, machine account %s.\n",
+			  nt_errstr(status), cli->desthost, domain,
+			  machine_account ));
+		return status;
 	}
 
 	if (((*pneg_flags) & NETLOGON_NEG_SCHANNEL) == 0) {
 		DEBUG(3, ("get_schannel_session_key: Server %s did not offer schannel\n",
 			cli->desthost));
-		*perr = NT_STATUS_INVALID_NETWORK_RESPONSE;
-		return false;
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
 
-	return true;
+	return NT_STATUS_OK;;
 }
 
 /****************************************************************************
@@ -3216,9 +3216,9 @@ struct rpc_pipe_client *get_schannel_session_key(struct cli_state *cli,
 		return NULL;
 	}
 
-	if (!get_schannel_session_key_common(netlogon_pipe, cli, domain,
-					     pneg_flags, perr))
-	{
+	*perr = get_schannel_session_key_common(netlogon_pipe, cli, domain,
+						pneg_flags);
+	if (!NT_STATUS_IS_OK(*perr)) {
 		TALLOC_FREE(netlogon_pipe);
 		return NULL;
 	}
@@ -3308,9 +3308,9 @@ static struct rpc_pipe_client *get_schannel_session_key_auth_ntlmssp(struct cli_
 		return NULL;
 	}
 
-	if (!get_schannel_session_key_common(netlogon_pipe, cli, domain,
-					     pneg_flags, perr))
-	{
+	*perr = get_schannel_session_key_common(netlogon_pipe, cli, domain,
+						pneg_flags);
+	if (!NT_STATUS_IS_OK(*perr)) {
 		TALLOC_FREE(netlogon_pipe);
 		return NULL;
 	}
