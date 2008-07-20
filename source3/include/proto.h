@@ -7915,7 +7915,6 @@ const char *cli_get_pipe_name_from_iface(TALLOC_CTX *mem_ctx,
 					 struct cli_state *cli,
 					 const struct ndr_syntax_id *interface);
 int cli_get_pipe_idx(const RPC_IFACE *syntax);
-const struct ndr_syntax_id *cli_get_iface(int pipe_idx);
 void init_rpc_hdr(RPC_HDR *hdr, enum RPC_PKT_TYPE pkt_type, uint8 flags,
 				uint32 call_id, int data_len, int auth_len);
 bool smb_io_rpc_hdr(const char *desc,  RPC_HDR *rpc, prs_struct *ps, int depth);
