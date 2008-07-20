@@ -279,7 +279,8 @@ NTSTATUS connect_to_ipc_krb5(struct net_context *c,
  * @return Normal NTSTATUS return.
  **/
 NTSTATUS connect_dst_pipe(struct net_context *c, struct cli_state **cli_dst,
-			  struct rpc_pipe_client **pp_pipe_hnd, int pipe_num)
+			  struct rpc_pipe_client **pp_pipe_hnd,
+			  const struct ndr_syntax_id *interface)
 {
 	NTSTATUS nt_status;
 	char *server_name = SMB_STRDUP("127.0.0.1");
@@ -304,7 +305,7 @@ NTSTATUS connect_dst_pipe(struct net_context *c, struct cli_state **cli_dst,
 		return nt_status;
 	}
 
-	nt_status = cli_rpc_pipe_open_noauth(cli_tmp, cli_get_iface(pipe_num),
+	nt_status = cli_rpc_pipe_open_noauth(cli_tmp, interface,
 					     &pipe_hnd);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("couldn't not initialize pipe\n"));
