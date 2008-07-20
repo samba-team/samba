@@ -106,21 +106,6 @@ const char *cli_get_pipe_name_from_iface(TALLOC_CTX *mem_ctx,
 	return NULL;
 }
 
-/****************************************************************************
- Return the pipe idx from the syntax.
- ****************************************************************************/
-int cli_get_pipe_idx(const RPC_IFACE *syntax)
-{
-	int i;
-	for (i = 0; pipe_names[i].client_pipe; i++) {
-		if (ndr_syntax_id_equal(pipe_names[i].abstr_syntax, syntax)) {
-			return i;
-		}
-	}
-
-	return -1;
-}
-
 /********************************************************************
  Map internal value to wire value.
  ********************************************************************/
