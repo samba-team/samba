@@ -110,7 +110,8 @@ WERROR NetJoinDomain_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	werr = libnetapi_open_pipe(ctx, cli, PI_WKSSVC, &pipe_cli);
+	werr = libnetapi_open_pipe(ctx, cli, &ndr_table_wkssvc.syntax_id,
+				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
@@ -241,7 +242,8 @@ WERROR NetUnjoinDomain_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	werr = libnetapi_open_pipe(ctx, cli, PI_WKSSVC, &pipe_cli);
+	werr = libnetapi_open_pipe(ctx, cli, &ndr_table_wkssvc.syntax_id,
+				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
@@ -293,7 +295,8 @@ WERROR NetGetJoinInformation_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	werr = libnetapi_open_pipe(ctx, cli, PI_WKSSVC, &pipe_cli);
+	werr = libnetapi_open_pipe(ctx, cli, &ndr_table_wkssvc.syntax_id,
+				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
@@ -427,7 +430,8 @@ WERROR NetGetJoinableOUs_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	werr = libnetapi_open_pipe(ctx, cli, PI_WKSSVC, &pipe_cli);
+	werr = libnetapi_open_pipe(ctx, cli, &ndr_table_wkssvc.syntax_id,
+				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}

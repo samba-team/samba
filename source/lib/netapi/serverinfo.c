@@ -75,7 +75,8 @@ WERROR NetServerGetInfo_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	werr = libnetapi_open_pipe(ctx, cli, PI_SRVSVC, &pipe_cli);
+	werr = libnetapi_open_pipe(ctx, cli, &ndr_table_srvsvc.syntax_id,
+				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
@@ -175,7 +176,8 @@ WERROR NetServerSetInfo_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	werr = libnetapi_open_pipe(ctx, cli, PI_SRVSVC, &pipe_cli);
+	werr = libnetapi_open_pipe(ctx, cli, &ndr_table_srvsvc.syntax_id,
+				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
@@ -221,7 +223,8 @@ WERROR NetRemoteTOD_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	werr = libnetapi_open_pipe(ctx, cli, PI_SRVSVC, &pipe_cli);
+	werr = libnetapi_open_pipe(ctx, cli, &ndr_table_srvsvc.syntax_id,
+				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}

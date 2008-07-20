@@ -91,75 +91,70 @@ static struct client_pipe_connection *pipe_connections;
 /********************************************************************
 ********************************************************************/
 
-static struct rpc_pipe_client *pipe_cm_find(struct cli_state *cli,
-					    int pipe_idx,
-					    NTSTATUS *status)
+static NTSTATUS pipe_cm_find(struct cli_state *cli,
+			     const struct ndr_syntax_id *interface,
+			     struct rpc_pipe_client **presult)
 {
 	struct client_pipe_connection *p;
 
 	for (p = pipe_connections; p; p = p->next) {
 
 		if (!rpc_pipe_np_smb_conn(p->pipe)) {
-			*status = NT_STATUS_PIPE_EMPTY;
-			return NULL;
+			return NT_STATUS_PIPE_EMPTY;
 		}
 
-		if (strequal(cli->desthost, p->pipe->desthost) &&
-		    rpccli_is_pipe_idx(p->pipe, pipe_idx)) {
-			*status = NT_STATUS_OK;
-			return p->pipe;
+		if (strequal(cli->desthost, p->pipe->desthost)
+		    && ndr_syntax_id_equal(&p->pipe->abstract_syntax,
+					   interface)) {
+			*presult = p->pipe;
+			return NT_STATUS_OK;
 		}
 	}
 
-	*status = NT_STATUS_PIPE_NOT_AVAILABLE;
-
-	return NULL;
+	return NT_STATUS_PIPE_NOT_AVAILABLE;
 }
 
 /********************************************************************
 ********************************************************************/
 
-static struct rpc_pipe_client *pipe_cm_connect(TALLOC_CTX *mem_ctx,
-					       struct cli_state *cli,
-					       int pipe_idx,
-					       NTSTATUS *status)
+static NTSTATUS pipe_cm_connect(TALLOC_CTX *mem_ctx,
+				struct cli_state *cli,
+				const struct ndr_syntax_id *interface,
+				struct rpc_pipe_client **presult)
 {
 	struct client_pipe_connection *p;
+	NTSTATUS status;
 
 	p = TALLOC_ZERO_ARRAY(mem_ctx, struct client_pipe_connection, 1);
 	if (!p) {
-		*status = NT_STATUS_NO_MEMORY;
-		return NULL;
+		return NT_STATUS_NO_MEMORY;
 	}
 
-	*status = cli_rpc_pipe_open_noauth(cli, cli_get_iface(pipe_idx),
-					   &p->pipe);
-	if (!NT_STATUS_IS_OK(*status)) {
+	status = cli_rpc_pipe_open_noauth(cli, interface, &p->pipe);
+	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(p);
-		return NULL;
+		return status;
 	}
 
 	DLIST_ADD(pipe_connections, p);
 
-	return p->pipe;
+	*presult = p->pipe;
+	return NT_STATUS_OK;
 }
 
 /********************************************************************
 ********************************************************************/
 
-static struct rpc_pipe_client *pipe_cm_open(TALLOC_CTX *ctx,
-					    struct cli_state *cli,
-					    int pipe_idx,
-					    NTSTATUS *status)
+static NTSTATUS pipe_cm_open(TALLOC_CTX *ctx,
+			     struct cli_state *cli,
+			     const struct ndr_syntax_id *interface,
+			     struct rpc_pipe_client **presult)
 {
-	struct rpc_pipe_client *p;
-
-	p = pipe_cm_find(cli, pipe_idx, status);
-	if (!p) {
-		p = pipe_cm_connect(ctx, cli, pipe_idx, status);
+	if (NT_STATUS_IS_OK(pipe_cm_find(cli, interface, presult))) {
+		return NT_STATUS_OK;
 	}
 
-	return p;
+	return pipe_cm_connect(ctx, cli, interface, presult);
 }
 
 /********************************************************************
@@ -167,23 +162,26 @@ static struct rpc_pipe_client *pipe_cm_open(TALLOC_CTX *ctx,
 
 WERROR libnetapi_open_pipe(struct libnetapi_ctx *ctx,
 			   struct cli_state *cli,
-			   int pipe_idx,
-			   struct rpc_pipe_client **pipe_cli)
+			   const struct ndr_syntax_id *interface,
+			   struct rpc_pipe_client **presult)
 {
+	struct rpc_pipe_client *result;
 	NTSTATUS status;
 
-	if (!cli || !pipe_cli) {
+	if (!cli || !presult) {
 		return WERR_INVALID_PARAM;
 	}
 
-	*pipe_cli = pipe_cm_open(ctx, cli, pipe_idx, &status);
-	if (!*pipe_cli) {
+	status = pipe_cm_open(ctx, cli, interface, &result);
+	if (!NT_STATUS_IS_OK(status)) {
 		libnetapi_set_error_string(ctx, "failed to open PIPE %s: %s",
-			cli_get_pipe_name(pipe_idx),
+			cli_get_pipe_name_from_iface(debug_ctx(), cli,
+						     interface),
 			get_friendly_nt_error_msg(status));
 		return WERR_DEST_NOT_FOUND;
 	}
 
+	*presult = result;
 	return WERR_OK;
 }
 

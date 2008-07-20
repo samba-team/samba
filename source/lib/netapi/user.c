@@ -170,7 +170,8 @@ WERROR NetUserAdd_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	werr = libnetapi_open_pipe(ctx, cli, PI_SAMR, &pipe_cli);
+	werr = libnetapi_open_pipe(ctx, cli, &ndr_table_samr.syntax_id,
+				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
@@ -333,7 +334,8 @@ WERROR NetUserDel_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	werr = libnetapi_open_pipe(ctx, cli, PI_SAMR, &pipe_cli);
+	werr = libnetapi_open_pipe(ctx, cli, &ndr_table_samr.syntax_id,
+				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
@@ -709,7 +711,8 @@ WERROR NetUserEnum_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	werr = libnetapi_open_pipe(ctx, cli, PI_SAMR, &pipe_cli);
+	werr = libnetapi_open_pipe(ctx, cli, &ndr_table_samr.syntax_id,
+				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
@@ -1001,7 +1004,8 @@ WERROR NetQueryDisplayInformation_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	werr = libnetapi_open_pipe(ctx, cli, PI_SAMR, &pipe_cli);
+	werr = libnetapi_open_pipe(ctx, cli, &ndr_table_samr.syntax_id,
+				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
@@ -1128,7 +1132,8 @@ WERROR NetUserGetInfo_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	werr = libnetapi_open_pipe(ctx, cli, PI_SAMR, &pipe_cli);
+	werr = libnetapi_open_pipe(ctx, cli, &ndr_table_samr.syntax_id,
+				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
