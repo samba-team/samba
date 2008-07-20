@@ -50,7 +50,8 @@ WERROR NetGetDCName_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	werr = libnetapi_open_pipe(ctx, cli, PI_NETLOGON, &pipe_cli);
+	werr = libnetapi_open_pipe(ctx, cli, &ndr_table_netlogon.syntax_id,
+				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
@@ -90,7 +91,8 @@ WERROR NetGetAnyDCName_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	werr = libnetapi_open_pipe(ctx, cli, PI_NETLOGON, &pipe_cli);
+	werr = libnetapi_open_pipe(ctx, cli, &ndr_table_netlogon.syntax_id,
+				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
@@ -149,7 +151,8 @@ WERROR DsGetDcName_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	werr = libnetapi_open_pipe(ctx, cli, PI_NETLOGON, &pipe_cli);
+	werr = libnetapi_open_pipe(ctx, cli, &ndr_table_netlogon.syntax_id,
+				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}

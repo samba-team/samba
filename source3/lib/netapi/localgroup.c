@@ -166,7 +166,8 @@ WERROR NetLocalGroupAdd_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	werr = libnetapi_open_pipe(ctx, cli, PI_SAMR, &pipe_cli);
+	werr = libnetapi_open_pipe(ctx, cli, &ndr_table_samr.syntax_id,
+				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
@@ -293,7 +294,8 @@ WERROR NetLocalGroupDel_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	werr = libnetapi_open_pipe(ctx, cli, PI_SAMR, &pipe_cli);
+	werr = libnetapi_open_pipe(ctx, cli, &ndr_table_samr.syntax_id,
+				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
@@ -472,7 +474,8 @@ WERROR NetLocalGroupGetInfo_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	werr = libnetapi_open_pipe(ctx, cli, PI_SAMR, &pipe_cli);
+	werr = libnetapi_open_pipe(ctx, cli, &ndr_table_samr.syntax_id,
+				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
@@ -650,7 +653,8 @@ WERROR NetLocalGroupSetInfo_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	werr = libnetapi_open_pipe(ctx, cli, PI_SAMR, &pipe_cli);
+	werr = libnetapi_open_pipe(ctx, cli, &ndr_table_samr.syntax_id,
+				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
@@ -792,7 +796,8 @@ WERROR NetLocalGroupEnum_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	werr = libnetapi_open_pipe(ctx, cli, PI_SAMR, &pipe_cli);
+	werr = libnetapi_open_pipe(ctx, cli, &ndr_table_samr.syntax_id,
+				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}

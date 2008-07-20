@@ -49,8 +49,8 @@ WERROR libnetapi_open_ipc_connection(struct libnetapi_ctx *ctx,
 WERROR libnetapi_shutdown_cm(struct libnetapi_ctx *ctx);
 WERROR libnetapi_open_pipe(struct libnetapi_ctx *ctx,
 			   struct cli_state *cli,
-			   int pipe_idx,
-			   struct rpc_pipe_client **pipe_cli);
+			   const struct ndr_syntax_id *interface,
+			   struct rpc_pipe_client **presult);
 WERROR libnetapi_samr_open_domain(struct libnetapi_ctx *mem_ctx,
 				  struct rpc_pipe_client *pipe_cli,
 				  uint32_t connect_mask,

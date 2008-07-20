@@ -86,9 +86,9 @@ const char *cli_get_pipe_name(int pipe_idx)
 	return &pipe_names[pipe_idx].client_pipe[5];
 }
 
-static const char *cli_get_pipe_name_from_iface(TALLOC_CTX *mem_ctx,
-						struct cli_state *cli,
-						const struct ndr_syntax_id *interface)
+const char *cli_get_pipe_name_from_iface(TALLOC_CTX *mem_ctx,
+					 struct cli_state *cli,
+					 const struct ndr_syntax_id *interface)
 {
 	int i;
 	for (i = 0; pipe_names[i].client_pipe; i++) {
