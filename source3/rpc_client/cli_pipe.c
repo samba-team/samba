@@ -95,6 +95,26 @@ const char *cli_get_pipe_name(int pipe_idx)
 	return &pipe_names[pipe_idx].client_pipe[5];
 }
 
+static const char *cli_get_pipe_name_from_iface(TALLOC_CTX *mem_ctx,
+						struct cli_state *cli,
+						const struct ndr_syntax_id *interface)
+{
+	int i;
+	for (i = 0; pipe_names[i].client_pipe; i++) {
+		if (ndr_syntax_id_equal(pipe_names[i].abstr_syntax,
+					interface)) {
+			return cli_get_pipe_name(i);
+		}
+	}
+
+	/*
+	 * Here we should ask \\epmapper, but for now our code is only
+	 * interested in the known pipes mentioned in pipe_names[]
+	 */
+
+	return NULL;
+}
+
 /****************************************************************************
  Return the pipe idx from the syntax.
  ****************************************************************************/
@@ -2881,44 +2901,44 @@ NTSTATUS rpc_pipe_open_ncalrpc(TALLOC_CTX *mem_ctx, const char *socket_path,
  * 
  ****************************************************************************/
 
-static struct rpc_pipe_client *rpc_pipe_open_np(struct cli_state *cli, int pipe_idx, NTSTATUS *perr)
+static NTSTATUS rpc_pipe_open_np(struct cli_state *cli,
+				 const struct ndr_syntax_id *abstract_syntax,
+				 struct rpc_pipe_client **presult)
 {
 	struct rpc_pipe_client *result;
 	int fnum;
 
-	*perr = NT_STATUS_NO_MEMORY;
-
 	/* sanity check to protect against crashes */
 
 	if ( !cli ) {
-		*perr = NT_STATUS_INVALID_HANDLE;
-		return NULL;
+		return NT_STATUS_INVALID_HANDLE;
 	}
-
-	/* The pipe name index must fall within our array */
-	SMB_ASSERT((pipe_idx >= 0) && (pipe_idx < PI_MAX_PIPES));
 
 	result = TALLOC_ZERO_P(NULL, struct rpc_pipe_client);
 	if (result == NULL) {
-		*perr = NT_STATUS_NO_MEMORY;
-		return NULL;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	result->transport_type = NCACN_NP;
 
-	result->trans.np.pipe_name = cli_get_pipe_name(pipe_idx);
+	result->trans.np.pipe_name = cli_get_pipe_name_from_iface(
+		result, cli, abstract_syntax);
+	if (result->trans.np.pipe_name == NULL) {
+		DEBUG(1, ("Could not find pipe for interface\n"));
+		TALLOC_FREE(result);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
 	result->trans.np.cli = cli;
-	result->abstract_syntax = *pipe_names[pipe_idx].abstr_syntax;
+	result->abstract_syntax = *abstract_syntax;
 	result->transfer_syntax = ndr_transfer_syntax;
 	result->desthost = talloc_strdup(result, cli->desthost);
 	result->srv_name_slash = talloc_asprintf_strupper_m(
 		result, "\\\\%s", result->desthost);
 
 	if ((result->desthost == NULL) || (result->srv_name_slash == NULL)) {
-		*perr = NT_STATUS_NO_MEMORY;
 		TALLOC_FREE(result);
-		return NULL;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	fnum = cli_nt_create(cli, result->trans.np.pipe_name,
@@ -2928,9 +2948,8 @@ static struct rpc_pipe_client *rpc_pipe_open_np(struct cli_state *cli, int pipe_
 			 "to machine %s.  Error was %s\n",
 			 result->trans.np.pipe_name, cli->desthost,
 			 cli_errstr(cli)));
-		*perr = cli_get_nt_error(cli);
-		talloc_destroy(result);
-		return NULL;
+		TALLOC_FREE(result);
+		return cli_get_nt_error(cli);
 	}
 
 	result->trans.np.fnum = fnum;
@@ -2938,9 +2957,8 @@ static struct rpc_pipe_client *rpc_pipe_open_np(struct cli_state *cli, int pipe_
 	DLIST_ADD(cli->pipe_list, result);
 	talloc_set_destructor(result, rpc_pipe_destructor);
 
-	*perr = NT_STATUS_OK;
-
-	return result;
+	*presult = result;
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
@@ -2965,7 +2983,9 @@ static struct rpc_pipe_client *cli_rpc_pipe_open(struct cli_state *cli,
 			}
 			break;
 		default:
-			result = rpc_pipe_open_np(cli, pipe_idx, perr);
+			*perr = rpc_pipe_open_np(
+				cli, pipe_names[pipe_idx].abstr_syntax,
+				&result);
 			if (result == NULL) {
 				return NULL;
 			}
