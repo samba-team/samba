@@ -108,7 +108,7 @@ NTSTATUS net_get_remote_domain_sid(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 int run_rpc_command(struct net_context *c,
 			struct cli_state *cli_arg,
-			const int pipe_idx,
+			const struct ndr_syntax_id *interface,
 			int conn_flags,
 			rpc_command_fn fn,
 			int argc,
@@ -153,10 +153,12 @@ int run_rpc_command(struct net_context *c,
 	}
 
 	if (!(conn_flags & NET_FLAGS_NO_PIPE)) {
-		if (lp_client_schannel() && (pipe_idx == PI_NETLOGON)) {
+		if (lp_client_schannel()
+		    && (ndr_syntax_id_equal(interface,
+					    &ndr_table_netlogon.syntax_id))) {
 			/* Always try and create an schannel netlogon pipe. */
 			nt_status = cli_rpc_pipe_open_schannel(
-				cli, cli_get_iface(pipe_idx),
+				cli, interface,
 				PIPE_AUTH_LEVEL_PRIVACY, domain_name,
 				&pipe_hnd);
 			if (!NT_STATUS_IS_OK(nt_status)) {
@@ -168,18 +170,19 @@ int run_rpc_command(struct net_context *c,
 		} else {
 			if (conn_flags & NET_FLAGS_SEAL) {
 				nt_status = cli_rpc_pipe_open_ntlmssp(
-					cli, cli_get_iface(pipe_idx),
+					cli, interface,
 					PIPE_AUTH_LEVEL_PRIVACY,
 					lp_workgroup(), c->opt_user_name,
 					c->opt_password, &pipe_hnd);
 			} else {
 				nt_status = cli_rpc_pipe_open_noauth(
-					cli, cli_get_iface(pipe_idx),
+					cli, interface,
 					&pipe_hnd);
 			}
 			if (!NT_STATUS_IS_OK(nt_status)) {
 				DEBUG(0, ("Could not initialise pipe %s. Error was %s\n",
-					cli_get_pipe_name(pipe_idx),
+					cli_get_pipe_name_from_iface(
+						debug_ctx(), cli, interface),
 					nt_errstr(nt_status) ));
 				cli_shutdown(cli);
 				return -1;
@@ -258,7 +261,8 @@ int net_rpc_changetrustpw(struct net_context *c, int argc, const char **argv)
 		return 0;
 	}
 
-	return run_rpc_command(c, NULL, PI_NETLOGON, NET_FLAGS_ANONYMOUS | NET_FLAGS_PDC,
+	return run_rpc_command(c, NULL, &ndr_table_netlogon.syntax_id,
+			       NET_FLAGS_ANONYMOUS | NET_FLAGS_PDC,
 			       rpc_changetrustpw_internals,
 			       argc, argv);
 }
@@ -358,7 +362,7 @@ static NTSTATUS rpc_oldjoin_internals(struct net_context *c,
 
 static int net_rpc_perform_oldjoin(struct net_context *c, int argc, const char **argv)
 {
-	return run_rpc_command(c, NULL, PI_NETLOGON,
+	return run_rpc_command(c, NULL, &ndr_table_netlogon.syntax_id,
 			       NET_FLAGS_NO_PIPE | NET_FLAGS_ANONYMOUS | NET_FLAGS_PDC,
 			       rpc_oldjoin_internals,
 			       argc, argv);
@@ -529,8 +533,8 @@ int net_rpc_info(struct net_context *c, int argc, const char **argv)
 		return 0;
 	}
 
-	return run_rpc_command(c, NULL, PI_SAMR, NET_FLAGS_PDC,
-			       rpc_info_internals,
+	return run_rpc_command(c, NULL, &ndr_table_samr.syntax_id,
+			       NET_FLAGS_PDC, rpc_info_internals,
 			       argc, argv);
 }
 
@@ -589,7 +593,7 @@ int net_rpc_getsid(struct net_context *c, int argc, const char **argv)
 		return 0;
 	}
 
-	return run_rpc_command(c, NULL, PI_SAMR,
+	return run_rpc_command(c, NULL, &ndr_table_samr.syntax_id,
 			       NET_FLAGS_ANONYMOUS | NET_FLAGS_PDC,
 			       rpc_getsid_internals,
 			       argc, argv);
@@ -781,8 +785,8 @@ static NTSTATUS rpc_user_rename_internals(struct net_context *c,
 
 static int rpc_user_rename(struct net_context *c, int argc, const char **argv)
 {
-	return run_rpc_command(c, NULL, PI_SAMR, 0, rpc_user_rename_internals,
-			       argc, argv);
+	return run_rpc_command(c, NULL, &ndr_table_samr.syntax_id, 0,
+			       rpc_user_rename_internals, argc, argv);
 }
 
 /**
@@ -953,8 +957,8 @@ static NTSTATUS rpc_user_password_internals(struct net_context *c,
 
 static int rpc_user_password(struct net_context *c, int argc, const char **argv)
 {
-	return run_rpc_command(c, NULL, PI_SAMR, 0, rpc_user_password_internals,
-			       argc, argv);
+	return run_rpc_command(c, NULL, &ndr_table_samr.syntax_id, 0,
+			       rpc_user_password_internals, argc, argv);
 }
 
 /**
@@ -1083,8 +1087,8 @@ static NTSTATUS rpc_user_info_internals(struct net_context *c,
 
 static int rpc_user_info(struct net_context *c, int argc, const char **argv)
 {
-	return run_rpc_command(c, NULL, PI_SAMR, 0, rpc_user_info_internals,
-			       argc, argv);
+	return run_rpc_command(c, NULL, &ndr_table_samr.syntax_id, 0,
+			       rpc_user_info_internals, argc, argv);
 }
 
 /**
@@ -1250,7 +1254,7 @@ int net_rpc_user(struct net_context *c, int argc, const char **argv)
 			return 0;
 		}
 
-		return run_rpc_command(c, NULL,PI_SAMR, 0,
+		return run_rpc_command(c, NULL, &ndr_table_samr.syntax_id, 0,
 				       rpc_user_list_internals,
 				       argc, argv);
 	}
@@ -1874,8 +1878,8 @@ static NTSTATUS rpc_group_delete_internals(struct net_context *c,
 
 static int rpc_group_delete(struct net_context *c, int argc, const char **argv)
 {
-	return run_rpc_command(c, NULL, PI_SAMR, 0, rpc_group_delete_internals,
-                               argc,argv);
+	return run_rpc_command(c, NULL, &ndr_table_samr.syntax_id, 0,
+			       rpc_group_delete_internals, argc,argv);
 }
 
 static int rpc_group_add_internals(struct net_context *c, int argc, const char **argv)
@@ -1984,7 +1988,7 @@ static NTSTATUS rpc_alias_add_internals(struct net_context *c,
 static int rpc_group_add(struct net_context *c, int argc, const char **argv)
 {
 	if (c->opt_localgroup)
-		return run_rpc_command(c, NULL, PI_SAMR, 0,
+		return run_rpc_command(c, NULL, &ndr_table_samr.syntax_id, 0,
 				       rpc_alias_add_internals,
 				       argc, argv);
 
@@ -2249,7 +2253,7 @@ static NTSTATUS rpc_group_addmem_internals(struct net_context *c,
 
 static int rpc_group_addmem(struct net_context *c, int argc, const char **argv)
 {
-	return run_rpc_command(c, NULL, PI_SAMR, 0,
+	return run_rpc_command(c, NULL, &ndr_table_samr.syntax_id, 0,
 			       rpc_group_addmem_internals,
 			       argc, argv);
 }
@@ -2448,7 +2452,7 @@ static NTSTATUS rpc_group_delmem_internals(struct net_context *c,
 
 static int rpc_group_delmem(struct net_context *c, int argc, const char **argv)
 {
-	return run_rpc_command(c, NULL, PI_SAMR, 0,
+	return run_rpc_command(c, NULL, &ndr_table_samr.syntax_id, 0,
 			       rpc_group_delmem_internals,
 			       argc, argv);
 }
@@ -2694,7 +2698,7 @@ static NTSTATUS rpc_group_list_internals(struct net_context *c,
 
 static int rpc_group_list(struct net_context *c, int argc, const char **argv)
 {
-	return run_rpc_command(c, NULL, PI_SAMR, 0,
+	return run_rpc_command(c, NULL, &ndr_table_samr.syntax_id, 0,
 			       rpc_group_list_internals,
 			       argc, argv);
 }
@@ -2980,7 +2984,7 @@ static int rpc_group_members(struct net_context *c, int argc, const char **argv)
 		return rpc_group_usage(c, argc, argv);
 	}
 
-	return run_rpc_command(c, NULL, PI_SAMR, 0,
+	return run_rpc_command(c, NULL, &ndr_table_samr.syntax_id, 0,
 			       rpc_group_members_internals,
 			       argc, argv);
 }
@@ -3111,7 +3115,7 @@ int net_rpc_group(struct net_context *c, int argc, const char **argv)
 			return 0;
 		}
 
-		return run_rpc_command(c, NULL, PI_SAMR, 0,
+		return run_rpc_command(c, NULL, &ndr_table_samr.syntax_id, 0,
 				       rpc_group_list_internals,
 				       argc, argv);
 	}
@@ -3195,7 +3199,7 @@ static int rpc_share_add(struct net_context *c, int argc, const char **argv)
 	if ((argc < 1) || !strchr(argv[0], '=') || c->display_usage) {
 		return rpc_share_usage(c, argc, argv);
 	}
-	return run_rpc_command(c, NULL, PI_SRVSVC, 0,
+	return run_rpc_command(c, NULL, &ndr_table_srvsvc.syntax_id, 0,
 			       rpc_share_add_internals,
 			       argc, argv);
 }
@@ -3248,7 +3252,7 @@ static int rpc_share_delete(struct net_context *c, int argc, const char **argv)
 	if (argc < 1 || c->display_usage) {
 		return rpc_share_usage(c, argc, argv);
 	}
-	return run_rpc_command(c, NULL, PI_SRVSVC, 0,
+	return run_rpc_command(c, NULL, &ndr_table_srvsvc.syntax_id, 0,
 			       rpc_share_del_internals,
 			       argc, argv);
 }
@@ -3432,8 +3436,8 @@ static int rpc_share_list(struct net_context *c, int argc, const char **argv)
 		return 0;
 	}
 
-	return run_rpc_command(c, NULL, PI_SRVSVC, 0, rpc_share_list_internals,
-			       argc, argv);
+	return run_rpc_command(c, NULL, &ndr_table_srvsvc.syntax_id, 0,
+			       rpc_share_list_internals, argc, argv);
 }
 
 static bool check_share_availability(struct cli_state *cli, const char *netname)
@@ -3591,7 +3595,7 @@ static int rpc_share_migrate_shares(struct net_context *c, int argc,
 		return -1;
 	}
 
-	return run_rpc_command(c, NULL, PI_SRVSVC, 0,
+	return run_rpc_command(c, NULL, &ndr_table_srvsvc.syntax_id, 0,
 			       rpc_share_migrate_shares_internals,
 			       argc, argv);
 }
@@ -3915,7 +3919,7 @@ static int rpc_share_migrate_files(struct net_context *c, int argc, const char *
 		return -1;
 	}
 
-	return run_rpc_command(c, NULL, PI_SRVSVC, 0,
+	return run_rpc_command(c, NULL, &ndr_table_srvsvc.syntax_id, 0,
 			       rpc_share_migrate_files_internals,
 			       argc, argv);
 }
@@ -4037,7 +4041,7 @@ static int rpc_share_migrate_security(struct net_context *c, int argc,
 		return -1;
 	}
 
-	return run_rpc_command(c, NULL, PI_SRVSVC, 0,
+	return run_rpc_command(c, NULL, &ndr_table_srvsvc.syntax_id, 0,
 			       rpc_share_migrate_security_internals,
 			       argc, argv);
 }
@@ -4073,17 +4077,17 @@ static int rpc_share_migrate_all(struct net_context *c, int argc,
 	/* order is important. we don't want to be locked out by the share-acl
 	 * before copying files - gd */
 
-	ret = run_rpc_command(c, NULL, PI_SRVSVC, 0,
+	ret = run_rpc_command(c, NULL, &ndr_table_srvsvc.syntax_id, 0,
 			      rpc_share_migrate_shares_internals, argc, argv);
 	if (ret)
 		return ret;
 
-	ret = run_rpc_command(c, NULL, PI_SRVSVC, 0,
+	ret = run_rpc_command(c, NULL, &ndr_table_srvsvc.syntax_id, 0,
 			      rpc_share_migrate_files_internals, argc, argv);
 	if (ret)
 		return ret;
 
-	return run_rpc_command(c, NULL, PI_SRVSVC, 0,
+	return run_rpc_command(c, NULL, &ndr_table_srvsvc.syntax_id, 0,
 			       rpc_share_migrate_security_internals, argc,
 			       argv);
 }
@@ -4878,19 +4882,19 @@ static int rpc_share_allowedusers(struct net_context *c, int argc,
 		return 0;
 	}
 
-	result = run_rpc_command(c, NULL, PI_SAMR, 0,
+	result = run_rpc_command(c, NULL, &ndr_table_samr.syntax_id, 0,
 				 rpc_aliaslist_internals,
 				 argc, argv);
 	if (result != 0)
 		return result;
 
-	result = run_rpc_command(c, NULL, PI_LSARPC, 0,
+	result = run_rpc_command(c, NULL, &ndr_table_lsarpc.syntax_id, 0,
 				 rpc_aliaslist_dump,
 				 argc, argv);
 	if (result != 0)
 		return result;
 
-	return run_rpc_command(c, NULL, PI_SRVSVC, 0,
+	return run_rpc_command(c, NULL, &ndr_table_srvsvc.syntax_id, 0,
 			       rpc_share_allowedusers_internals,
 			       argc, argv);
 }
@@ -4995,7 +4999,7 @@ int net_rpc_share(struct net_context *c, int argc, const char **argv)
 			return 0;
 		}
 
-		return run_rpc_command(c, NULL, PI_SRVSVC, 0,
+		return run_rpc_command(c, NULL, &ndr_table_srvsvc.syntax_id, 0,
 				       rpc_share_list_internals,
 				       argc, argv);
 	}
@@ -5185,7 +5189,7 @@ static int rpc_file_close(struct net_context *c, int argc, const char **argv)
 		return rpc_file_usage(c, argc, argv);
 	}
 
-	return run_rpc_command(c, NULL, PI_SRVSVC, 0,
+	return run_rpc_command(c, NULL, &ndr_table_srvsvc.syntax_id, 0,
 			       rpc_file_close_internals,
 			       argc, argv);
 }
@@ -5288,7 +5292,7 @@ static int rpc_file_user(struct net_context *c, int argc, const char **argv)
 		return rpc_file_usage(c, argc, argv);
 	}
 
-	return run_rpc_command(c, NULL, PI_SRVSVC, 0,
+	return run_rpc_command(c, NULL, &ndr_table_srvsvc.syntax_id, 0,
 			       rpc_file_list_internals,
 			       argc, argv);
 }
@@ -5341,7 +5345,7 @@ int net_rpc_file(struct net_context *c, int argc, const char **argv)
 			return 0;
 		}
 
-		return run_rpc_command(c, NULL, PI_SRVSVC, 0,
+		return run_rpc_command(c, NULL, &ndr_table_srvsvc.syntax_id, 0,
 				       rpc_file_list_internals,
 				       argc, argv);
 	}
@@ -5449,7 +5453,7 @@ static int rpc_shutdown_abort(struct net_context *c, int argc,
 		return 0;
 	}
 
-	rc = run_rpc_command(c, NULL, PI_INITSHUTDOWN, 0,
+	rc = run_rpc_command(c, NULL, &ndr_table_initshutdown.syntax_id, 0,
 			     rpc_shutdown_abort_internals, argc, argv);
 
 	if (rc == 0)
@@ -5457,7 +5461,7 @@ static int rpc_shutdown_abort(struct net_context *c, int argc,
 
 	DEBUG(1, ("initshutdown pipe didn't work, trying winreg pipe\n"));
 
-	return run_rpc_command(c, NULL, PI_WINREG, 0,
+	return run_rpc_command(c, NULL, &ndr_table_winreg.syntax_id, 0,
 			       rpc_reg_shutdown_abort_internals,
 			       argc, argv);
 }
@@ -5600,12 +5604,12 @@ static int rpc_shutdown(struct net_context *c, int argc, const char **argv)
 		return 0;
 	}
 
-	rc = run_rpc_command(c, NULL, PI_INITSHUTDOWN, 0,
+	rc = run_rpc_command(c, NULL, &ndr_table_initshutdown.syntax_id, 0,
 			     rpc_init_shutdown_internals, argc, argv);
 
 	if (rc) {
 		DEBUG(1, ("initshutdown pipe failed, trying winreg pipe\n"));
-		rc = run_rpc_command(c, NULL, PI_WINREG, 0,
+		rc = run_rpc_command(c, NULL, &ndr_table_winreg.syntax_id, 0,
 				     rpc_reg_shutdown_internals, argc, argv);
 	}
 
@@ -5783,7 +5787,7 @@ static NTSTATUS rpc_trustdom_add_internals(struct net_context *c,
 static int rpc_trustdom_add(struct net_context *c, int argc, const char **argv)
 {
 	if (argc > 0 && !c->display_usage) {
-		return run_rpc_command(c, NULL, PI_SAMR, 0,
+		return run_rpc_command(c, NULL, &ndr_table_samr.syntax_id, 0,
 				       rpc_trustdom_add_internals, argc, argv);
 	} else {
 		d_printf("Usage:\n"
@@ -5936,7 +5940,7 @@ static NTSTATUS rpc_trustdom_del_internals(struct net_context *c,
 static int rpc_trustdom_del(struct net_context *c, int argc, const char **argv)
 {
 	if (argc > 0 && !c->display_usage) {
-		return run_rpc_command(c, NULL, PI_SAMR, 0,
+		return run_rpc_command(c, NULL, &ndr_table_samr.syntax_id, 0,
 				       rpc_trustdom_del_internals, argc, argv);
 	} else {
 		d_printf("Usage:\n"
@@ -6692,9 +6696,11 @@ static int rpc_trustdom_list(struct net_context *c, int argc, const char **argv)
 					&remote_cli);
 			if (NT_STATUS_IS_OK(nt_status)) {
 				/* query for domain's sid */
-				if (run_rpc_command(c, remote_cli, PI_LSARPC, 0,
-						    rpc_query_domain_sid, argc,
-						    argv))
+				if (run_rpc_command(
+					    c, remote_cli,
+					    &ndr_table_lsarpc.syntax_id, 0,
+					    rpc_query_domain_sid, argc,
+					    argv))
 					d_fprintf(stderr, "couldn't get domain's sid\n");
 
 				cli_shutdown(remote_cli);
@@ -6842,7 +6848,8 @@ static int rpc_samdump(struct net_context *c, int argc, const char **argv) {
 		return 0;
 	}
 
-	return run_rpc_command(c, NULL, PI_NETLOGON, NET_FLAGS_ANONYMOUS,
+	return run_rpc_command(c, NULL, &ndr_table_netlogon.syntax_id,
+			       NET_FLAGS_ANONYMOUS,
 			       rpc_samdump_internals, argc, argv);
 }
 
@@ -6878,7 +6885,8 @@ static int rpc_vampire(struct net_context *c, int argc, const char **argv)
 			return 0;
 		}
 
-		return run_rpc_command(c, NULL, PI_NETLOGON, NET_FLAGS_ANONYMOUS,
+		return run_rpc_command(c, NULL, &ndr_table_netlogon.syntax_id,
+				       NET_FLAGS_ANONYMOUS,
 				       rpc_vampire_internals,
 				       argc, argv);
 	}
@@ -6918,30 +6926,30 @@ static int rpc_printer_migrate_all(struct net_context *c, int argc,
 		return -1;
 	}
 
-	ret = run_rpc_command(c, NULL, PI_SPOOLSS, 0,
+	ret = run_rpc_command(c, NULL, &syntax_spoolss, 0,
 			      rpc_printer_migrate_printers_internals, argc,
 			      argv);
 	if (ret)
 		return ret;
 
-	ret = run_rpc_command(c, NULL, PI_SPOOLSS, 0,
+	ret = run_rpc_command(c, NULL, &syntax_spoolss, 0,
 			      rpc_printer_migrate_drivers_internals, argc,
 			      argv);
 	if (ret)
 		return ret;
 
-	ret = run_rpc_command(c, NULL, PI_SPOOLSS, 0,
+	ret = run_rpc_command(c, NULL, &syntax_spoolss, 0,
 			      rpc_printer_migrate_forms_internals, argc, argv);
 	if (ret)
 		return ret;
 
-	ret = run_rpc_command(c, NULL, PI_SPOOLSS, 0,
+	ret = run_rpc_command(c, NULL, &syntax_spoolss, 0,
 			      rpc_printer_migrate_settings_internals, argc,
 			      argv);
 	if (ret)
 		return ret;
 
-	return run_rpc_command(c, NULL, PI_SPOOLSS, 0,
+	return run_rpc_command(c, NULL, &syntax_spoolss, 0,
 			       rpc_printer_migrate_security_internals, argc,
 			       argv);
 
@@ -6972,7 +6980,7 @@ static int rpc_printer_migrate_drivers(struct net_context *c, int argc,
 		return -1;
 	}
 
-	return run_rpc_command(c, NULL, PI_SPOOLSS, 0,
+	return run_rpc_command(c, NULL, &syntax_spoolss, 0,
 			       rpc_printer_migrate_drivers_internals,
 			       argc, argv);
 }
@@ -7002,7 +7010,7 @@ static int rpc_printer_migrate_forms(struct net_context *c, int argc,
 		return -1;
 	}
 
-	return run_rpc_command(c, NULL, PI_SPOOLSS, 0,
+	return run_rpc_command(c, NULL, &syntax_spoolss, 0,
 			       rpc_printer_migrate_forms_internals,
 			       argc, argv);
 }
@@ -7032,7 +7040,7 @@ static int rpc_printer_migrate_printers(struct net_context *c, int argc,
 		return -1;
 	}
 
-	return run_rpc_command(c, NULL, PI_SPOOLSS, 0,
+	return run_rpc_command(c, NULL, &syntax_spoolss, 0,
 			       rpc_printer_migrate_printers_internals,
 			       argc, argv);
 }
@@ -7062,7 +7070,7 @@ static int rpc_printer_migrate_security(struct net_context *c, int argc,
 		return -1;
 	}
 
-	return run_rpc_command(c, NULL, PI_SPOOLSS, 0,
+	return run_rpc_command(c, NULL, &syntax_spoolss, 0,
 			       rpc_printer_migrate_security_internals,
 			       argc, argv);
 }
@@ -7092,7 +7100,7 @@ static int rpc_printer_migrate_settings(struct net_context *c, int argc,
 		return -1;
 	}
 
-	return run_rpc_command(c, NULL, PI_SPOOLSS, 0,
+	return run_rpc_command(c, NULL, &syntax_spoolss, 0,
 			       rpc_printer_migrate_settings_internals,
 			       argc, argv);
 }
@@ -7188,7 +7196,7 @@ static int rpc_printer_list(struct net_context *c, int argc, const char **argv)
 		return 0;
 	}
 
-	return run_rpc_command(c, NULL, PI_SPOOLSS, 0,
+	return run_rpc_command(c, NULL, &syntax_spoolss, 0,
 			       rpc_printer_list_internals,
 			       argc, argv);
 }
@@ -7213,7 +7221,7 @@ static int rpc_printer_driver_list(struct net_context *c, int argc,
 		return 0;
 	}
 
-	return run_rpc_command(c, NULL, PI_SPOOLSS, 0,
+	return run_rpc_command(c, NULL, &syntax_spoolss, 0,
 			       rpc_printer_driver_list_internals,
 			       argc, argv);
 }
@@ -7238,7 +7246,7 @@ static int rpc_printer_publish_publish(struct net_context *c, int argc,
 		return 0;
 	}
 
-	return run_rpc_command(c, NULL, PI_SPOOLSS, 0,
+	return run_rpc_command(c, NULL, &syntax_spoolss, 0,
 			       rpc_printer_publish_publish_internals,
 			       argc, argv);
 }
@@ -7262,7 +7270,7 @@ static int rpc_printer_publish_update(struct net_context *c, int argc, const cha
 		return 0;
 	}
 
-	return run_rpc_command(c, NULL, PI_SPOOLSS, 0,
+	return run_rpc_command(c, NULL, &syntax_spoolss, 0,
 			       rpc_printer_publish_update_internals,
 			       argc, argv);
 }
@@ -7287,7 +7295,7 @@ static int rpc_printer_publish_unpublish(struct net_context *c, int argc,
 		return 0;
 	}
 
-	return run_rpc_command(c, NULL, PI_SPOOLSS, 0,
+	return run_rpc_command(c, NULL, &syntax_spoolss, 0,
 			       rpc_printer_publish_unpublish_internals,
 			       argc, argv);
 }
@@ -7312,7 +7320,7 @@ static int rpc_printer_publish_list(struct net_context *c, int argc,
 		return 0;
 	}
 
-	return run_rpc_command(c, NULL, PI_SPOOLSS, 0,
+	return run_rpc_command(c, NULL, &syntax_spoolss, 0,
 			       rpc_printer_publish_list_internals,
 			       argc, argv);
 }
@@ -7377,7 +7385,7 @@ static int rpc_printer_publish(struct net_context *c, int argc,
 			net_display_usage_from_functable(func);
 			return 0;
 		}
-		return run_rpc_command(c, NULL, PI_SPOOLSS, 0,
+		return run_rpc_command(c, NULL, &syntax_spoolss, 0,
 			       rpc_printer_publish_list_internals,
 			       argc, argv);
 	}
@@ -7480,7 +7488,7 @@ int net_rpc_printer(struct net_context *c, int argc, const char **argv)
 			net_display_usage_from_functable(func);
 			return 0;
 		}
-		return run_rpc_command(c, NULL, PI_SPOOLSS, 0,
+		return run_rpc_command(c, NULL, &syntax_spoolss, 0,
 			       rpc_printer_list_internals,
 			       argc, argv);
 	}

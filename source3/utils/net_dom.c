@@ -94,14 +94,15 @@ static int net_dom_unjoin(struct net_context *c, int argc, const char **argv)
 		c->opt_reboot = true;
 		c->opt_timeout = 30;
 
-		ret = run_rpc_command(c, cli, PI_INITSHUTDOWN, 0,
-				      rpc_init_shutdown_internals,
+		ret = run_rpc_command(c, cli,
+				      &ndr_table_initshutdown.syntax_id,
+				      0, rpc_init_shutdown_internals,
 				      argc, argv);
 		if (ret == 0) {
 			goto done;
 		}
 
-		ret = run_rpc_command(c, cli, PI_WINREG, 0,
+		ret = run_rpc_command(c, cli, &ndr_table_winreg.syntax_id, 0,
 				      rpc_reg_shutdown_internals,
 				      argc, argv);
 		goto done;
@@ -200,14 +201,14 @@ static int net_dom_join(struct net_context *c, int argc, const char **argv)
 		c->opt_reboot = true;
 		c->opt_timeout = 30;
 
-		ret = run_rpc_command(c, cli, PI_INITSHUTDOWN, 0,
+		ret = run_rpc_command(c, cli, &ndr_table_initshutdown.syntax_id, 0,
 				      rpc_init_shutdown_internals,
 				      argc, argv);
 		if (ret == 0) {
 			goto done;
 		}
 
-		ret = run_rpc_command(c, cli, PI_WINREG, 0,
+		ret = run_rpc_command(c, cli, &ndr_table_winreg.syntax_id, 0,
 				      rpc_reg_shutdown_internals,
 				      argc, argv);
 		goto done;

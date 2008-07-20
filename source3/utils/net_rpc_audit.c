@@ -373,7 +373,7 @@ static int rpc_audit_get(struct net_context *c, int argc, const char **argv)
 		return 0;
 	}
 
-	return run_rpc_command(c, NULL, PI_LSARPC, 0,
+	return run_rpc_command(c, NULL, &ndr_table_lsarpc.syntax_id, 0,
 		rpc_audit_get_internal, argc, argv);
 }
 
@@ -389,7 +389,7 @@ static int rpc_audit_set(struct net_context *c, int argc, const char **argv)
 		return 0;
 	}
 
-	return run_rpc_command(c, NULL, PI_LSARPC, 0,
+	return run_rpc_command(c, NULL, &ndr_table_lsarpc.syntax_id, 0,
 		rpc_audit_set_internal, argc, argv);
 }
 
@@ -405,7 +405,7 @@ static int rpc_audit_enable(struct net_context *c, int argc, const char **argv)
 		return 0;
 	}
 
-	return run_rpc_command(c, NULL, PI_LSARPC, 0,
+	return run_rpc_command(c, NULL, &ndr_table_lsarpc.syntax_id, 0,
 		rpc_audit_enable_internal, argc, argv);
 }
 
@@ -421,7 +421,7 @@ static int rpc_audit_disable(struct net_context *c, int argc, const char **argv)
 		return 0;
 	}
 
-	return run_rpc_command(c, NULL, PI_LSARPC, 0,
+	return run_rpc_command(c, NULL, &ndr_table_lsarpc.syntax_id, 0,
 		rpc_audit_disable_internal, argc, argv);
 }
 
@@ -437,7 +437,7 @@ static int rpc_audit_list(struct net_context *c, int argc, const char **argv)
 		return 0;
 	}
 
-	return run_rpc_command(c, NULL, PI_LSARPC, 0,
+	return run_rpc_command(c, NULL, &ndr_table_lsarpc.syntax_id, 0,
 		rpc_audit_list_internal, argc, argv);
 }
 

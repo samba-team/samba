@@ -580,7 +580,7 @@ static int rpc_service_list(struct net_context *c, int argc, const char **argv )
 		return 0;
 	}
 
-	return run_rpc_command(c, NULL, PI_SVCCTL, 0,
+	return run_rpc_command(c, NULL, &ndr_table_svcctl.syntax_id, 0,
 		rpc_service_list_internal, argc, argv );
 }
 
@@ -596,7 +596,7 @@ static int rpc_service_start(struct net_context *c, int argc, const char **argv 
 		return 0;
 	}
 
-	return run_rpc_command(c, NULL, PI_SVCCTL, 0,
+	return run_rpc_command(c, NULL, &ndr_table_svcctl.syntax_id, 0,
 		rpc_service_start_internal, argc, argv );
 }
 
@@ -612,7 +612,7 @@ static int rpc_service_stop(struct net_context *c, int argc, const char **argv )
 		return 0;
 	}
 
-	return run_rpc_command(c, NULL, PI_SVCCTL, 0,
+	return run_rpc_command(c, NULL, &ndr_table_svcctl.syntax_id, 0,
 		rpc_service_stop_internal, argc, argv );
 }
 
@@ -628,7 +628,7 @@ static int rpc_service_resume(struct net_context *c, int argc, const char **argv
 		return 0;
 	}
 
-	return run_rpc_command(c, NULL, PI_SVCCTL, 0,
+	return run_rpc_command(c, NULL, &ndr_table_svcctl.syntax_id, 0,
 		rpc_service_resume_internal, argc, argv );
 }
 
@@ -644,7 +644,7 @@ static int rpc_service_pause(struct net_context *c, int argc, const char **argv 
 		return 0;
 	}
 
-	return run_rpc_command(c, NULL, PI_SVCCTL, 0,
+	return run_rpc_command(c, NULL, &ndr_table_svcctl.syntax_id, 0,
 		rpc_service_pause_internal, argc, argv );
 }
 
@@ -660,7 +660,7 @@ static int rpc_service_status(struct net_context *c, int argc, const char **argv
 		return 0;
 	}
 
-	return run_rpc_command(c, NULL, PI_SVCCTL, 0,
+	return run_rpc_command(c, NULL, &ndr_table_svcctl.syntax_id, 0,
 		rpc_service_status_internal, argc, argv );
 }
 
