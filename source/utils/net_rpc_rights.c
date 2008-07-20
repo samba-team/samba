@@ -572,7 +572,7 @@ static int rpc_rights_list(struct net_context *c, int argc, const char **argv )
 		return 0;
 	}
 
-	return run_rpc_command(c, NULL, PI_LSARPC, 0,
+	return run_rpc_command(c, NULL, &ndr_table_lsarpc.syntax_id, 0,
 		rpc_rights_list_internal, argc, argv );
 }
 
@@ -593,7 +593,7 @@ static int rpc_rights_grant(struct net_context *c, int argc, const char **argv )
 		return 0;
 	}
 
-	return run_rpc_command(c, NULL, PI_LSARPC, 0,
+	return run_rpc_command(c, NULL, &ndr_table_lsarpc.syntax_id, 0,
 		rpc_rights_grant_internal, argc, argv );
 }
 
@@ -614,7 +614,7 @@ static int rpc_rights_revoke(struct net_context *c, int argc, const char **argv)
 		return 0;
 	}
 
-	return run_rpc_command(c, NULL, PI_LSARPC, 0,
+	return run_rpc_command(c, NULL, &ndr_table_lsarpc.syntax_id, 0,
 		rpc_rights_revoke_internal, argc, argv );
 }
 

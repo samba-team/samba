@@ -225,8 +225,8 @@ int rpc_vampire_ldif(struct net_context *c, int argc, const char **argv)
 		return 0;
 	}
 
-	return run_rpc_command(c, NULL, PI_NETLOGON, 0, rpc_vampire_ldif_internals,
-			       argc, argv);
+	return run_rpc_command(c, NULL, &ndr_table_netlogon.syntax_id, 0,
+			       rpc_vampire_ldif_internals, argc, argv);
 }
 
 
@@ -340,12 +340,14 @@ int rpc_vampire_keytab(struct net_context *c, int argc, const char **argv)
 		return 0;
 	}
 
-	ret = run_rpc_command(c, NULL, PI_DRSUAPI, NET_FLAGS_SEAL,
+	ret = run_rpc_command(c, NULL, &ndr_table_drsuapi.syntax_id,
+			      NET_FLAGS_SEAL,
 			      rpc_vampire_keytab_ds_internals, argc, argv);
 	if (ret == 0) {
 		return 0;
 	}
 
-	return run_rpc_command(c, NULL, PI_NETLOGON, 0, rpc_vampire_keytab_internals,
+	return run_rpc_command(c, NULL, &ndr_table_netlogon.syntax_id, 0,
+			       rpc_vampire_keytab_internals,
 			       argc, argv);
 }
