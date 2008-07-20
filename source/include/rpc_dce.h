@@ -161,16 +161,6 @@ typedef struct ndr_syntax_id RPC_IFACE;
 
 #define RPC_IFACE_LEN (UUID_SIZE + 4)
 
-struct pipe_id_info {
-	/* the names appear not to matter: the syntaxes _do_ matter */
-
-	const char *client_pipe;
-	const RPC_IFACE *abstr_syntax; /* this one is the abstract syntax id */
-
-	const char *server_pipe;  /* this one is the secondary syntax name */
-	const RPC_IFACE *trans_syntax; /* this one is the primary syntax id */
-};
-
 /* RPC_HDR - dce rpc header */
 typedef struct rpc_hdr_info {
 	uint8  major; /* 5 - RPC major version */

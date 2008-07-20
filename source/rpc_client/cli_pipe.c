@@ -60,41 +60,30 @@ static const struct ndr_syntax_id syntax_spoolss = {
  * update the index #defines in smb.h.
  */
 
-static const struct pipe_id_info pipe_names [] =
+static const struct pipe_id_info {
+	/* the names appear not to matter: the syntaxes _do_ matter */
+
+	const char *client_pipe;
+	const RPC_IFACE *abstr_syntax; /* this one is the abstract syntax id */
+} pipe_names [] =
 {
-	{ PIPE_LSARPC,		&ndr_table_lsarpc.syntax_id,
-	  PIPE_LSASS,		&ndr_transfer_syntax },
-	{ PIPE_LSARPC,		&ndr_table_dssetup.syntax_id,
-	  PIPE_LSASS,		&ndr_transfer_syntax },
-	{ PIPE_SAMR,		&ndr_table_samr.syntax_id,
-	  PIPE_LSASS,		&ndr_transfer_syntax },
-	{ PIPE_NETLOGON,	&ndr_table_netlogon.syntax_id,
-	  PIPE_LSASS,		&ndr_transfer_syntax },
-	{ PIPE_SRVSVC,		&ndr_table_srvsvc.syntax_id,
-	  PIPE_NTSVCS,		&ndr_transfer_syntax },
-	{ PIPE_WKSSVC,		&ndr_table_wkssvc.syntax_id,
-	  PIPE_NTSVCS,		&ndr_transfer_syntax },
-	{ PIPE_WINREG,		&ndr_table_winreg.syntax_id,
-	  PIPE_WINREG,		&ndr_transfer_syntax },
-	{ PIPE_SPOOLSS,		&syntax_spoolss,
-	  PIPE_SPOOLSS,		&ndr_transfer_syntax },
-	{ PIPE_NETDFS,		&ndr_table_netdfs.syntax_id,
-	  PIPE_NETDFS,		&ndr_transfer_syntax },
-	{ PIPE_ECHO,		&ndr_table_rpcecho.syntax_id,
-	  PIPE_ECHO,		&ndr_transfer_syntax },
-	{ PIPE_SHUTDOWN,	&ndr_table_initshutdown.syntax_id,
-	  PIPE_SHUTDOWN,	&ndr_transfer_syntax },
-	{ PIPE_SVCCTL,		&ndr_table_svcctl.syntax_id,
-	  PIPE_NTSVCS,		&ndr_transfer_syntax },
-	{ PIPE_EVENTLOG,	&ndr_table_eventlog.syntax_id,
-	  PIPE_EVENTLOG,	&ndr_transfer_syntax },
-	{ PIPE_NTSVCS,		&ndr_table_ntsvcs.syntax_id,
-	  PIPE_NTSVCS,		&ndr_transfer_syntax },
-	{ PIPE_EPMAPPER,	&ndr_table_epmapper.syntax_id,
-	  PIPE_EPMAPPER,	&ndr_transfer_syntax },
-	{ PIPE_DRSUAPI,		&ndr_table_drsuapi.syntax_id,
-	  PIPE_DRSUAPI,		&ndr_transfer_syntax },
-	{ NULL, NULL, NULL, NULL }
+	{ PIPE_LSARPC,		&ndr_table_lsarpc.syntax_id },
+	{ PIPE_LSARPC,		&ndr_table_dssetup.syntax_id },
+	{ PIPE_SAMR,		&ndr_table_samr.syntax_id },
+	{ PIPE_NETLOGON,	&ndr_table_netlogon.syntax_id },
+	{ PIPE_SRVSVC,		&ndr_table_srvsvc.syntax_id },
+	{ PIPE_WKSSVC,		&ndr_table_wkssvc.syntax_id },
+	{ PIPE_WINREG,		&ndr_table_winreg.syntax_id },
+	{ PIPE_SPOOLSS,		&syntax_spoolss },
+	{ PIPE_NETDFS,		&ndr_table_netdfs.syntax_id },
+	{ PIPE_ECHO,		&ndr_table_rpcecho.syntax_id },
+	{ PIPE_SHUTDOWN,	&ndr_table_initshutdown.syntax_id },
+	{ PIPE_SVCCTL,		&ndr_table_svcctl.syntax_id },
+	{ PIPE_EVENTLOG,	&ndr_table_eventlog.syntax_id },
+	{ PIPE_NTSVCS,		&ndr_table_ntsvcs.syntax_id },
+	{ PIPE_EPMAPPER,	&ndr_table_epmapper.syntax_id },
+	{ PIPE_DRSUAPI,		&ndr_table_drsuapi.syntax_id },
+	{ NULL, NULL }
 };
 
 /****************************************************************************
@@ -2926,7 +2915,7 @@ static struct rpc_pipe_client *rpc_pipe_open_np(struct cli_state *cli, int pipe_
 
 	result->trans.np.cli = cli;
 	result->abstract_syntax = pipe_names[pipe_idx].abstr_syntax;
-	result->transfer_syntax = pipe_names[pipe_idx].trans_syntax;
+	result->transfer_syntax = &ndr_transfer_syntax;
 	result->desthost = talloc_strdup(result, cli->desthost);
 	result->srv_name_slash = talloc_asprintf_strupper_m(
 		result, "\\\\%s", result->desthost);
