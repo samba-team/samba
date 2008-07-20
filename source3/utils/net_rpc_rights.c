@@ -691,13 +691,13 @@ struct rpc_sh_cmd *net_rpc_rights_cmds(struct net_context *c, TALLOC_CTX *mem_ct
 {
 	static struct rpc_sh_cmd cmds[] = {
 
-	{ "list", NULL, PI_LSARPC, rpc_sh_rights_list,
+	{ "list", NULL, &ndr_table_lsarpc.syntax_id, rpc_sh_rights_list,
 	  "View available or assigned privileges" },
 
-	{ "grant", NULL, PI_LSARPC, rpc_sh_rights_grant,
+	{ "grant", NULL, &ndr_table_lsarpc.syntax_id, rpc_sh_rights_grant,
 	  "Assign privilege[s]" },
 
-	{ "revoke", NULL, PI_LSARPC, rpc_sh_rights_revoke,
+	{ "revoke", NULL, &ndr_table_lsarpc.syntax_id, rpc_sh_rights_revoke,
 	  "Revoke privilege[s]" },
 
 	{ NULL, NULL, 0, NULL, NULL }
