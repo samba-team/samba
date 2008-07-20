@@ -1592,34 +1592,34 @@ struct rpc_sh_cmd *net_rpc_user_edit_cmds(struct net_context *c,
 {
 	static struct rpc_sh_cmd cmds[] = {
 
-		{ "fullname", NULL, PI_SAMR, rpc_sh_user_str_edit,
+		{ "fullname", NULL, &ndr_table_samr.syntax_id, rpc_sh_user_str_edit,
 		  "Show/Set a user's full name" },
 
-		{ "homedir", NULL, PI_SAMR, rpc_sh_user_str_edit,
+		{ "homedir", NULL, &ndr_table_samr.syntax_id, rpc_sh_user_str_edit,
 		  "Show/Set a user's home directory" },
 
-		{ "homedrive", NULL, PI_SAMR, rpc_sh_user_str_edit,
+		{ "homedrive", NULL, &ndr_table_samr.syntax_id, rpc_sh_user_str_edit,
 		  "Show/Set a user's home drive" },
 
-		{ "logonscript", NULL, PI_SAMR, rpc_sh_user_str_edit,
+		{ "logonscript", NULL, &ndr_table_samr.syntax_id, rpc_sh_user_str_edit,
 		  "Show/Set a user's logon script" },
 
-		{ "profilepath", NULL, PI_SAMR, rpc_sh_user_str_edit,
+		{ "profilepath", NULL, &ndr_table_samr.syntax_id, rpc_sh_user_str_edit,
 		  "Show/Set a user's profile path" },
 
-		{ "description", NULL, PI_SAMR, rpc_sh_user_str_edit,
+		{ "description", NULL, &ndr_table_samr.syntax_id, rpc_sh_user_str_edit,
 		  "Show/Set a user's description" },
 
-		{ "disabled", NULL, PI_SAMR, rpc_sh_user_flag_edit,
+		{ "disabled", NULL, &ndr_table_samr.syntax_id, rpc_sh_user_flag_edit,
 		  "Show/Set whether a user is disabled" },
 
-		{ "autolock", NULL, PI_SAMR, rpc_sh_user_flag_edit,
+		{ "autolock", NULL, &ndr_table_samr.syntax_id, rpc_sh_user_flag_edit,
 		  "Show/Set whether a user locked out" },
 
-		{ "pwnotreq", NULL, PI_SAMR, rpc_sh_user_flag_edit,
+		{ "pwnotreq", NULL, &ndr_table_samr.syntax_id, rpc_sh_user_flag_edit,
 		  "Show/Set whether a user does not need a password" },
 
-		{ "pwnoexp", NULL, PI_SAMR, rpc_sh_user_flag_edit,
+		{ "pwnoexp", NULL, &ndr_table_samr.syntax_id, rpc_sh_user_flag_edit,
 		  "Show/Set whether a user's password does not expire" },
 
 		{ NULL, NULL, 0, NULL, NULL }
@@ -1634,13 +1634,13 @@ struct rpc_sh_cmd *net_rpc_user_cmds(struct net_context *c,
 {
 	static struct rpc_sh_cmd cmds[] = {
 
-		{ "list", NULL, PI_SAMR, rpc_sh_user_list,
+		{ "list", NULL, &ndr_table_samr.syntax_id, rpc_sh_user_list,
 		  "List available users" },
 
-		{ "info", NULL, PI_SAMR, rpc_sh_user_info,
+		{ "info", NULL, &ndr_table_samr.syntax_id, rpc_sh_user_info,
 		  "List the domain groups a user is member of" },
 
-		{ "show", NULL, PI_SAMR, rpc_sh_user_show,
+		{ "show", NULL, &ndr_table_samr.syntax_id, rpc_sh_user_show,
 		  "Show info about a user" },
 
 		{ "edit", net_rpc_user_edit_cmds, 0, NULL,
@@ -5119,16 +5119,16 @@ struct rpc_sh_cmd *net_rpc_share_cmds(struct net_context *c, TALLOC_CTX *mem_ctx
 {
 	static struct rpc_sh_cmd cmds[] = {
 
-	{ "list", NULL, PI_SRVSVC, rpc_sh_share_list,
+	{ "list", NULL, &ndr_table_srvsvc.syntax_id, rpc_sh_share_list,
 	  "List available shares" },
 
-	{ "add", NULL, PI_SRVSVC, rpc_sh_share_add,
+	{ "add", NULL, &ndr_table_srvsvc.syntax_id, rpc_sh_share_add,
 	  "Add a share" },
 
-	{ "delete", NULL, PI_SRVSVC, rpc_sh_share_delete,
+	{ "delete", NULL, &ndr_table_srvsvc.syntax_id, rpc_sh_share_delete,
 	  "Delete a share" },
 
-	{ "info", NULL, PI_SRVSVC, rpc_sh_share_info,
+	{ "info", NULL, &ndr_table_srvsvc.syntax_id, rpc_sh_share_info,
 	  "Get information about a share" },
 
 	{ NULL, NULL, 0, NULL, NULL }
