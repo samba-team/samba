@@ -59,8 +59,9 @@ NTSTATUS net_get_remote_domain_sid(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	NTSTATUS result = NT_STATUS_OK;
 	union lsa_PolicyInformation *info = NULL;
 
-	lsa_pipe = cli_rpc_pipe_open_noauth(cli, PI_LSARPC, &result);
-	if (!lsa_pipe) {
+	result = cli_rpc_pipe_open_noauth(cli, &ndr_table_lsarpc.syntax_id,
+					  &lsa_pipe);
+	if (!NT_STATUS_IS_OK(result)) {
 		d_fprintf(stderr, "Could not initialise lsa pipe\n");
 		return result;
 	}
@@ -173,9 +174,11 @@ int run_rpc_command(struct net_context *c,
 								     c->opt_password,
 								     &nt_status);
 			} else {
-				pipe_hnd = cli_rpc_pipe_open_noauth(cli, pipe_idx, &nt_status);
+				nt_status = cli_rpc_pipe_open_noauth(
+					cli, cli_get_iface(pipe_idx),
+					&pipe_hnd);
 			}
-			if (!pipe_hnd) {
+			if (!NT_STATUS_IS_OK(nt_status)) {
 				DEBUG(0, ("Could not initialise pipe %s. Error was %s\n",
 					cli_get_pipe_name(pipe_idx),
 					nt_errstr(nt_status) ));
@@ -296,8 +299,9 @@ static NTSTATUS rpc_oldjoin_internals(struct net_context *c,
 	NTSTATUS result;
 	uint32 sec_channel_type;
 
-	pipe_hnd = cli_rpc_pipe_open_noauth(cli, PI_NETLOGON, &result);
-	if (!pipe_hnd) {
+	result = cli_rpc_pipe_open_noauth(cli, &ndr_table_netlogon.syntax_id,
+					  &pipe_hnd);
+	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(0,("rpc_oldjoin_internals: netlogon pipe open to machine %s failed. "
 			"error was %s\n",
 			cli->desthost,
@@ -2000,8 +2004,9 @@ static NTSTATUS get_sid_from_name(struct cli_state *cli,
 	POLICY_HND lsa_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
-	pipe_hnd = cli_rpc_pipe_open_noauth(cli, PI_LSARPC, &result);
-	if (!pipe_hnd) {
+	result = cli_rpc_pipe_open_noauth(cli, &ndr_table_lsarpc.syntax_id,
+					  &pipe_hnd);
+	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
 
@@ -2813,9 +2818,10 @@ static NTSTATUS rpc_list_alias_members(struct net_context *c,
 		return NT_STATUS_OK;
 	}
 
-	lsa_pipe = cli_rpc_pipe_open_noauth(rpc_pipe_np_smb_conn(pipe_hnd),
-					    PI_LSARPC, &result);
-	if (!lsa_pipe) {
+	result = cli_rpc_pipe_open_noauth(rpc_pipe_np_smb_conn(pipe_hnd),
+					  &ndr_table_lsarpc.syntax_id,
+					  &lsa_pipe);
+	if (!NT_STATUS_IS_OK(result)) {
 		d_fprintf(stderr, "Couldn't open LSA pipe. Error was %s\n",
 			nt_errstr(result) );
 		return result;
@@ -5962,8 +5968,9 @@ static NTSTATUS rpc_trustdom_get_pdc(struct net_context *c,
 
 	/* Try netr_GetDcName */
 
-	netr = cli_rpc_pipe_open_noauth(cli, PI_NETLOGON, &status);
-	if (!netr) {
+	status = cli_rpc_pipe_open_noauth(cli, &ndr_table_netlogon.syntax_id,
+					  &netr);
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
@@ -6091,8 +6098,9 @@ static int rpc_trustdom_establish(struct net_context *c, int argc,
 	 * Call LsaOpenPolicy and LsaQueryInfo
 	 */
 
-	pipe_hnd = cli_rpc_pipe_open_noauth(cli, PI_LSARPC, &nt_status);
-	if (!pipe_hnd) {
+	nt_status = cli_rpc_pipe_open_noauth(cli, &ndr_table_lsarpc.syntax_id,
+					     &pipe_hnd);
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("Could not initialise lsa pipe. Error was %s\n", nt_errstr(nt_status) ));
 		cli_shutdown(cli);
 		talloc_destroy(mem_ctx);
@@ -6345,8 +6353,9 @@ static int rpc_trustdom_vampire(struct net_context *c, int argc,
 		return -1;
 	};
 
-	pipe_hnd = cli_rpc_pipe_open_noauth(cli, PI_LSARPC, &nt_status);
-	if (!pipe_hnd) {
+	nt_status = cli_rpc_pipe_open_noauth(cli, &ndr_table_lsarpc.syntax_id,
+					     &pipe_hnd);
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("Could not initialise lsa pipe. Error was %s\n",
 			nt_errstr(nt_status) ));
 		cli_shutdown(cli);
@@ -6501,8 +6510,9 @@ static int rpc_trustdom_list(struct net_context *c, int argc, const char **argv)
 		return -1;
 	};
 
-	pipe_hnd = cli_rpc_pipe_open_noauth(cli, PI_LSARPC, &nt_status);
-	if (!pipe_hnd) {
+	nt_status = cli_rpc_pipe_open_noauth(cli, &ndr_table_lsarpc.syntax_id,
+					     &pipe_hnd);
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("Could not initialise lsa pipe. Error was %s\n",
 			nt_errstr(nt_status) ));
 		cli_shutdown(cli);
@@ -6591,8 +6601,9 @@ static int rpc_trustdom_list(struct net_context *c, int argc, const char **argv)
 	/*
 	 * Open \PIPE\samr and get needed policy handles
 	 */
-	pipe_hnd = cli_rpc_pipe_open_noauth(cli, PI_SAMR, &nt_status);
-	if (!pipe_hnd) {
+	nt_status = cli_rpc_pipe_open_noauth(cli, &ndr_table_samr.syntax_id,
+					     &pipe_hnd);
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("Could not initialise samr pipe. Error was %s\n", nt_errstr(nt_status)));
 		cli_shutdown(cli);
 		talloc_destroy(mem_ctx);

@@ -30,13 +30,19 @@ static NTSTATUS cmd_testme(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 
 	d_printf("testme\n");
 
-	lsa_pipe = cli_rpc_pipe_open_noauth(rpc_pipe_np_smb_conn(cli),
-					    PI_LSARPC, &status);
-	if (lsa_pipe == NULL) goto done;
+	status = cli_rpc_pipe_open_noauth(rpc_pipe_np_smb_conn(cli),
+					  &ndr_table_lsarpc.syntax_id,
+					  &lsa_pipe);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
 
-	samr_pipe = cli_rpc_pipe_open_noauth(rpc_pipe_np_smb_conn(cli),
-					     PI_SAMR, &status);
-	if (samr_pipe == NULL) goto done;
+	status = cli_rpc_pipe_open_noauth(rpc_pipe_np_smb_conn(cli),
+					  &ndr_table_samr.syntax_id,
+					  &samr_pipe);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
 
 	status = rpccli_lsa_open_policy(lsa_pipe, mem_ctx, False,
 					SEC_RIGHTS_QUERY_VALUE, &pol);

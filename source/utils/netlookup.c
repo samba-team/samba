@@ -118,11 +118,11 @@ static struct con_struct *create_cs(struct net_context *c,
 		return NULL;
 	}
 
-	cs->lsapipe = cli_rpc_pipe_open_noauth(cs->cli,
-					PI_LSARPC,
-					&nt_status);
+	nt_status = cli_rpc_pipe_open_noauth(cs->cli,
+					&ndr_table_lsarpc.syntax_id,
+					&cs->lsapipe);
 
-	if (cs->lsapipe == NULL) {
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(2,("create_cs: open LSA pipe failed. Error was %s\n", nt_errstr(nt_status)));
 		cs->failed_connect = true;
 		cs->err = nt_status;

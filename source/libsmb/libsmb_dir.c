@@ -273,8 +273,9 @@ net_share_enum_rpc(struct cli_state *cli,
 	uint32_t total_entries = 0;
 
         /* Open the server service pipe */
-        pipe_hnd = cli_rpc_pipe_open_noauth(cli, PI_SRVSVC, &nt_status);
-        if (!pipe_hnd) {
+        nt_status = cli_rpc_pipe_open_noauth(cli, &ndr_table_srvsvc.syntax_id,
+					     &pipe_hnd);
+        if (!NT_STATUS_IS_OK(nt_status)) {
                 DEBUG(1, ("net_share_enum_rpc pipe open fail!\n"));
                 return -1;
         }

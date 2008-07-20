@@ -152,10 +152,11 @@ NTSTATUS remote_password_change(const char *remote_machine, const char *user_nam
 		 * will just fail. So we do it anonymously, there's no other
 		 * way.
 		 */
-		pipe_hnd = cli_rpc_pipe_open_noauth(cli, PI_SAMR, &result);
+		result = cli_rpc_pipe_open_noauth(
+			cli, &ndr_table_samr.syntax_id, &pipe_hnd);
 	}
 
-	if (!pipe_hnd) {
+	if (!NT_STATUS_IS_OK(result)) {
 		if (lp_client_lanman_auth()) {
 			/* Use the old RAP method. */
 			if (!cli_oem_change_password(cli, user_name, new_passwd, old_passwd)) {
@@ -204,9 +205,10 @@ NTSTATUS remote_password_change(const char *remote_machine, const char *user_nam
 	result = NT_STATUS_UNSUCCESSFUL;
 	
 	/* OK, this is ugly, but... try an anonymous pipe. */
-	pipe_hnd = cli_rpc_pipe_open_noauth(cli, PI_SAMR, &result);
+	result = cli_rpc_pipe_open_noauth(cli, &ndr_table_samr.syntax_id,
+					  &pipe_hnd);
 
-	if ( pipe_hnd &&
+	if ( NT_STATUS_IS_OK(result) &&
 		(NT_STATUS_IS_OK(result = rpccli_samr_chgpasswd_user2(
 					 pipe_hnd, talloc_tos(), user_name,
 					 new_passwd, old_passwd)))) {

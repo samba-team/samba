@@ -78,8 +78,10 @@ static NTSTATUS net_sh_run(struct net_context *c,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	pipe_hnd = cli_rpc_pipe_open_noauth(ctx->cli, cmd->pipe_idx, &status);
-	if (pipe_hnd == NULL) {
+	status = cli_rpc_pipe_open_noauth(ctx->cli,
+					  cli_get_iface(cmd->pipe_idx),
+					  &pipe_hnd);
+	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, "Could not open pipe: %s\n",
 			  nt_errstr(status));
 		return status;

@@ -36,8 +36,9 @@ NTSTATUS net_rpc_lookup_name(struct net_context *c,
 
 	ZERO_STRUCT(pol);
 
-	lsa_pipe = cli_rpc_pipe_open_noauth(cli, PI_LSARPC, &result);
-	if (lsa_pipe == NULL) {
+	result = cli_rpc_pipe_open_noauth(cli, &ndr_table_lsarpc.syntax_id,
+					  &lsa_pipe);
+	if (!NT_STATUS_IS_OK(result)) {
 		d_fprintf(stderr, "Could not initialise lsa pipe\n");
 		return result;
 	}
@@ -303,8 +304,9 @@ NTSTATUS connect_dst_pipe(struct net_context *c, struct cli_state **cli_dst,
 		return nt_status;
 	}
 
-	pipe_hnd = cli_rpc_pipe_open_noauth(cli_tmp, pipe_num, &nt_status);
-	if (!pipe_hnd) {
+	nt_status = cli_rpc_pipe_open_noauth(cli_tmp, cli_get_iface(pipe_num),
+					     &pipe_hnd);
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("couldn't not initialize pipe\n"));
 		cli_shutdown(cli_tmp);
 		SAFE_FREE(server_name);

@@ -145,7 +145,9 @@ static void fetch_machine_sid(struct cli_state *cli)
 		goto error;
 	}
 
-	if ((lsapipe = cli_rpc_pipe_open_noauth(cli, PI_LSARPC, &result)) == NULL) {
+	result = cli_rpc_pipe_open_noauth(cli, &ndr_table_lsarpc.syntax_id,
+					  &lsapipe);
+	if (!NT_STATUS_IS_OK(result)) {
 		fprintf(stderr, "could not initialise lsa pipe. Error was %s\n", nt_errstr(result) );
 		goto error;
 	}
@@ -578,9 +580,10 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 	if (cmd_entry->pipe_idx != -1 && cmd_entry->rpc_pipe == NULL) {
 		switch (pipe_default_auth_type) {
 			case PIPE_AUTH_TYPE_NONE:
-				cmd_entry->rpc_pipe = cli_rpc_pipe_open_noauth(cli,
-								cmd_entry->pipe_idx,
-								&ntresult);
+				ntresult = cli_rpc_pipe_open_noauth(
+					cli,
+					cli_get_iface(cmd_entry->pipe_idx),
+					&cmd_entry->rpc_pipe);
 				break;
 			case PIPE_AUTH_TYPE_SPNEGO_NTLMSSP:
 				cmd_entry->rpc_pipe = cli_rpc_pipe_open_spnego_ntlmssp(cli,
@@ -613,7 +616,7 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 					pipe_default_auth_type ));
 				return NT_STATUS_UNSUCCESSFUL;
 		}
-		if (!cmd_entry->rpc_pipe) {
+		if (!NT_STATUS_IS_OK(ntresult)) {
 			DEBUG(0, ("Could not initialise %s. Error was %s\n",
 				cli_get_pipe_name(cmd_entry->pipe_idx),
 				nt_errstr(ntresult) ));

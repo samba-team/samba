@@ -2680,8 +2680,9 @@ static WERROR cmd_spoolss_printercmp(struct rpc_pipe_client *cli,
 	if ( !NT_STATUS_IS_OK(nt_status) )
 		return WERR_GENERAL_FAILURE;
 
-	cli2 = cli_rpc_pipe_open_noauth(cli_server2, PI_SPOOLSS, &nt_status);
-	if (!cli2) {
+	nt_status = cli_rpc_pipe_open_noauth(cli_server2, &syntax_spoolss,
+					     &cli2);
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		printf("failed to open spoolss pipe on server %s (%s)\n",
 			servername2, nt_errstr(nt_status));
 		return WERR_GENERAL_FAILURE;
