@@ -167,12 +167,11 @@ int run_rpc_command(struct net_context *c,
 			}
 		} else {
 			if (conn_flags & NET_FLAGS_SEAL) {
-				pipe_hnd = cli_rpc_pipe_open_ntlmssp(cli, pipe_idx,
-								     PIPE_AUTH_LEVEL_PRIVACY,
-								     lp_workgroup(),
-								     c->opt_user_name,
-								     c->opt_password,
-								     &nt_status);
+				nt_status = cli_rpc_pipe_open_ntlmssp(
+					cli, cli_get_iface(pipe_idx),
+					PIPE_AUTH_LEVEL_PRIVACY,
+					lp_workgroup(), c->opt_user_name,
+					c->opt_password, &pipe_hnd);
 			} else {
 				nt_status = cli_rpc_pipe_open_noauth(
 					cli, cli_get_iface(pipe_idx),
