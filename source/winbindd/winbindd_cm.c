@@ -2006,11 +2006,11 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 			   "for domain %s, trying anon\n", domain->name));
 		goto anonymous;
 	}
-	conn->samr_pipe = cli_rpc_pipe_open_schannel_with_key
-		(conn->cli, PI_SAMR, PIPE_AUTH_LEVEL_PRIVACY,
-		 domain->name, p_dcinfo, &result);
+	result = cli_rpc_pipe_open_schannel_with_key
+		(conn->cli, &ndr_table_samr.syntax_id, PIPE_AUTH_LEVEL_PRIVACY,
+		 domain->name, p_dcinfo, &conn->samr_pipe);
 
-	if (conn->samr_pipe == NULL) {
+	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(10,("cm_connect_sam: failed to connect to SAMR pipe for "
 			  "domain %s using schannel. Error was %s\n",
 			  domain->name, nt_errstr(result) ));
@@ -2144,11 +2144,12 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 			   "for domain %s, trying anon\n", domain->name));
 		goto anonymous;
 	}
-	conn->lsa_pipe = cli_rpc_pipe_open_schannel_with_key
-		(conn->cli, PI_LSARPC, PIPE_AUTH_LEVEL_PRIVACY,
-		 domain->name, p_dcinfo, &result);
+	result = cli_rpc_pipe_open_schannel_with_key
+		(conn->cli, &ndr_table_lsarpc.syntax_id,
+		 PIPE_AUTH_LEVEL_PRIVACY,
+		 domain->name, p_dcinfo, &conn->lsa_pipe);
 
-	if (conn->lsa_pipe == NULL) {
+	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(10,("cm_connect_lsa: failed to connect to LSA pipe for "
 			  "domain %s using schannel. Error was %s\n",
 			  domain->name, nt_errstr(result) ));
@@ -2290,18 +2291,15 @@ NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 	   part of the new pipe auth struct.
 	*/
 
-	conn->netlogon_pipe =
-		cli_rpc_pipe_open_schannel_with_key(conn->cli,
-						    PI_NETLOGON,
-						    PIPE_AUTH_LEVEL_PRIVACY,
-						    domain->name,
-						    netlogon_pipe->dc,
-						    &result);
+	result = cli_rpc_pipe_open_schannel_with_key(
+		conn->cli, &ndr_table_netlogon.syntax_id,
+		PIPE_AUTH_LEVEL_PRIVACY, domain->name, netlogon_pipe->dc,
+		&conn->netlogon_pipe);
 
 	/* We can now close the initial netlogon pipe. */
 	TALLOC_FREE(netlogon_pipe);
 
-	if (conn->netlogon_pipe == NULL) {
+	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(3, ("Could not open schannel'ed NETLOGON pipe. Error "
 			  "was %s\n", nt_errstr(result)));
 			  

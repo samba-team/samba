@@ -1044,15 +1044,13 @@ NTSTATUS libnet_join_ok(const char *netbios_domain_name,
 		return NT_STATUS_OK;
 	}
 
-	pipe_hnd = cli_rpc_pipe_open_schannel_with_key(cli, PI_NETLOGON,
-						       PIPE_AUTH_LEVEL_PRIVACY,
-						       netbios_domain_name,
-						       netlogon_pipe->dc,
-						       &status);
+	status = cli_rpc_pipe_open_schannel_with_key(
+		cli, &ndr_table_netlogon.syntax_id, PIPE_AUTH_LEVEL_PRIVACY,
+		netbios_domain_name, netlogon_pipe->dc, &pipe_hnd);
 
 	cli_shutdown(cli);
 
-	if (!pipe_hnd) {
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("libnet_join_ok: failed to open schannel session "
 			"on netlogon pipe to server %s for domain %s. "
 			"Error was %s\n",

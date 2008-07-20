@@ -7122,12 +7122,12 @@ NTSTATUS get_schannel_session_key(struct cli_state *cli,
 				  const char *domain,
 				  uint32 *pneg_flags,
 				  struct rpc_pipe_client **presult);
-struct rpc_pipe_client *cli_rpc_pipe_open_schannel_with_key(struct cli_state *cli,
-					int pipe_idx,
-					enum pipe_auth_level auth_level,
-					const char *domain,
-					const struct dcinfo *pdc,
-					NTSTATUS *perr);
+NTSTATUS cli_rpc_pipe_open_schannel_with_key(struct cli_state *cli,
+					     const struct ndr_syntax_id *interface,
+					     enum pipe_auth_level auth_level,
+					     const char *domain,
+					     const struct dcinfo *pdc,
+					     struct rpc_pipe_client **presult);
 struct rpc_pipe_client *cli_rpc_pipe_open_ntlmssp_auth_schannel(struct cli_state *cli,
                                                 int pipe_idx,
 						enum pipe_auth_level auth_level,
