@@ -219,11 +219,11 @@ static WERROR cmd_ntsvcs_get_dev_reg_prop(struct rpc_pipe_client *cli,
 struct cmd_set ntsvcs_commands[] = {
 
 	{ "NTSVCS" },
-	{ "ntsvcs_getversion", RPC_RTYPE_WERROR, NULL, cmd_ntsvcs_get_version, PI_NTSVCS, NULL, "Query NTSVCS version", "" },
-	{ "ntsvcs_validatedevinst", RPC_RTYPE_WERROR, NULL, cmd_ntsvcs_validate_dev_inst, PI_NTSVCS, NULL, "Query NTSVCS device instance", "" },
-	{ "ntsvcs_getdevlistsize", RPC_RTYPE_WERROR, NULL, cmd_ntsvcs_get_device_list_size, PI_NTSVCS, NULL, "Query NTSVCS get device list", "" },
-	{ "ntsvcs_hwprofflags", RPC_RTYPE_WERROR, NULL, cmd_ntsvcs_hw_prof_flags, PI_NTSVCS, NULL, "Query NTSVCS HW prof flags", "" },
-	{ "ntsvcs_hwprofinfo", RPC_RTYPE_WERROR, NULL, cmd_ntsvcs_get_hw_prof_info, PI_NTSVCS, NULL, "Query NTSVCS HW prof info", "" },
-	{ "ntsvcs_getdevregprop", RPC_RTYPE_WERROR, NULL, cmd_ntsvcs_get_dev_reg_prop, PI_NTSVCS, NULL, "Query NTSVCS device registry property", "" },
+	{ "ntsvcs_getversion", RPC_RTYPE_WERROR, NULL, cmd_ntsvcs_get_version, &ndr_table_ntsvcs.syntax_id, NULL, "Query NTSVCS version", "" },
+	{ "ntsvcs_validatedevinst", RPC_RTYPE_WERROR, NULL, cmd_ntsvcs_validate_dev_inst, &ndr_table_ntsvcs.syntax_id, NULL, "Query NTSVCS device instance", "" },
+	{ "ntsvcs_getdevlistsize", RPC_RTYPE_WERROR, NULL, cmd_ntsvcs_get_device_list_size, &ndr_table_ntsvcs.syntax_id, NULL, "Query NTSVCS get device list", "" },
+	{ "ntsvcs_hwprofflags", RPC_RTYPE_WERROR, NULL, cmd_ntsvcs_hw_prof_flags, &ndr_table_ntsvcs.syntax_id, NULL, "Query NTSVCS HW prof flags", "" },
+	{ "ntsvcs_hwprofinfo", RPC_RTYPE_WERROR, NULL, cmd_ntsvcs_get_hw_prof_info, &ndr_table_ntsvcs.syntax_id, NULL, "Query NTSVCS HW prof info", "" },
+	{ "ntsvcs_getdevregprop", RPC_RTYPE_WERROR, NULL, cmd_ntsvcs_get_dev_reg_prop, &ndr_table_ntsvcs.syntax_id, NULL, "Query NTSVCS device registry property", "" },
 	{ NULL }
 };

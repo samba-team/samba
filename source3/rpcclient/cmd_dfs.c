@@ -318,12 +318,12 @@ struct cmd_set dfs_commands[] = {
 
 	{ "DFS" },
 
-	{ "dfsversion",	RPC_RTYPE_WERROR, NULL, cmd_dfs_version, PI_NETDFS, NULL, "Query DFS support",    "" },
-	{ "dfsadd",	RPC_RTYPE_WERROR, NULL, cmd_dfs_add,     PI_NETDFS, NULL, "Add a DFS share",      "" },
-	{ "dfsremove",	RPC_RTYPE_WERROR, NULL, cmd_dfs_remove,  PI_NETDFS, NULL, "Remove a DFS share",   "" },
-	{ "dfsgetinfo",	RPC_RTYPE_WERROR, NULL, cmd_dfs_getinfo, PI_NETDFS, NULL, "Query DFS share info", "" },
-	{ "dfsenum",	RPC_RTYPE_WERROR, NULL, cmd_dfs_enum,    PI_NETDFS, NULL, "Enumerate dfs shares", "" },
-	{ "dfsenumex",	RPC_RTYPE_WERROR, NULL, cmd_dfs_enumex,  PI_NETDFS, NULL, "Enumerate dfs shares", "" },
+	{ "dfsversion",	RPC_RTYPE_WERROR, NULL, cmd_dfs_version, &ndr_table_netdfs.syntax_id, NULL, "Query DFS support",    "" },
+	{ "dfsadd",	RPC_RTYPE_WERROR, NULL, cmd_dfs_add,     &ndr_table_netdfs.syntax_id, NULL, "Add a DFS share",      "" },
+	{ "dfsremove",	RPC_RTYPE_WERROR, NULL, cmd_dfs_remove,  &ndr_table_netdfs.syntax_id, NULL, "Remove a DFS share",   "" },
+	{ "dfsgetinfo",	RPC_RTYPE_WERROR, NULL, cmd_dfs_getinfo, &ndr_table_netdfs.syntax_id, NULL, "Query DFS share info", "" },
+	{ "dfsenum",	RPC_RTYPE_WERROR, NULL, cmd_dfs_enum,    &ndr_table_netdfs.syntax_id, NULL, "Enumerate dfs shares", "" },
+	{ "dfsenumex",	RPC_RTYPE_WERROR, NULL, cmd_dfs_enumex,  &ndr_table_netdfs.syntax_id, NULL, "Enumerate dfs shares", "" },
 
 	{ NULL }
 };
