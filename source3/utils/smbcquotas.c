@@ -49,8 +49,10 @@ static bool cli_open_policy_hnd(void)
 	if (!cli_ipc) {
 		NTSTATUS ret;
 		cli_ipc = connect_one("IPC$");
-		global_pipe_hnd = cli_rpc_pipe_open_noauth(cli_ipc, PI_LSARPC, &ret);
-		if (!global_pipe_hnd) {
+		ret = cli_rpc_pipe_open_noauth(cli_ipc,
+					       &ndr_table_lsarpc.syntax_id,
+					       &global_pipe_hnd);
+		if (!NT_STATUS_IS_OK(ret)) {
 				return False;
 		}
 	}

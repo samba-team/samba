@@ -1633,8 +1633,8 @@ static int net_ads_printer_publish(struct net_context *c, int argc, const char *
 	SAFE_FREE(srv_cn_escaped);
 	SAFE_FREE(printername_escaped);
 
-	pipe_hnd = cli_rpc_pipe_open_noauth(cli, PI_SPOOLSS, &nt_status);
-	if (!pipe_hnd) {
+	nt_status = cli_rpc_pipe_open_noauth(cli, &syntax_spoolss, &pipe_hnd);
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		d_fprintf(stderr, "Unable to open a connnection to the spoolss pipe on %s\n",
 			 servername);
 		SAFE_FREE(prt_dn);

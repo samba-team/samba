@@ -7101,7 +7101,9 @@ NTSTATUS rpc_pipe_open_tcp(TALLOC_CTX *mem_ctx, const char *host,
 NTSTATUS rpc_pipe_open_ncalrpc(TALLOC_CTX *mem_ctx, const char *socket_path,
 			       const struct ndr_syntax_id *abstract_syntax,
 			       struct rpc_pipe_client **presult);
-struct rpc_pipe_client *cli_rpc_pipe_open_noauth(struct cli_state *cli, int pipe_idx, NTSTATUS *perr);
+NTSTATUS cli_rpc_pipe_open_noauth(struct cli_state *cli,
+				  const struct ndr_syntax_id *interface,
+				  struct rpc_pipe_client **presult);
 struct rpc_pipe_client *cli_rpc_pipe_open_ntlmssp(struct cli_state *cli,
 						int pipe_idx,
 						enum pipe_auth_level auth_level,
@@ -7910,6 +7912,7 @@ bool prs_data_blob(prs_struct *prs, DATA_BLOB *blob, TALLOC_CTX *mem_ctx);
 
 const char *cli_get_pipe_name(int pipe_idx);
 int cli_get_pipe_idx(const RPC_IFACE *syntax);
+const struct ndr_syntax_id *cli_get_iface(int pipe_idx);
 void init_rpc_hdr(RPC_HDR *hdr, enum RPC_PKT_TYPE pkt_type, uint8 flags,
 				uint32 call_id, int data_len, int auth_len);
 bool smb_io_rpc_hdr(const char *desc,  RPC_HDR *rpc, prs_struct *ps, int depth);

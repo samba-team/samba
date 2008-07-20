@@ -2617,7 +2617,8 @@ static bool spoolss_connect_to_client(struct rpc_pipe_client **pp_pipe,
 	 * Now start the NT Domain stuff :-).
 	 */
 
-	if ( !(*pp_pipe = cli_rpc_pipe_open_noauth(the_cli, PI_SPOOLSS, &ret)) ) {
+	ret = cli_rpc_pipe_open_noauth(the_cli, &syntax_spoolss, pp_pipe);
+	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(2,("spoolss_connect_to_client: unable to open the spoolss pipe on machine %s. Error was : %s.\n",
 			remote_machine, nt_errstr(ret)));
 		cli_shutdown(the_cli);

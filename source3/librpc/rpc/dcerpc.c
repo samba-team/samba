@@ -131,7 +131,6 @@ _PUBLIC_ NTSTATUS dcerpc_pipe_connect(TALLOC_CTX *parent_ctx, struct dcerpc_pipe
 	struct dcerpc_pipe *p = talloc(parent_ctx, struct dcerpc_pipe);
 	struct dcerpc_binding *binding;
 	NTSTATUS nt_status;
-	int idx;
 
 	nt_status = dcerpc_parse_binding(p, binding_string, &binding);
 
@@ -165,16 +164,10 @@ _PUBLIC_ NTSTATUS dcerpc_pipe_connect(TALLOC_CTX *parent_ctx, struct dcerpc_pipe
 		return nt_status;
 	}
 
-	idx = cli_get_pipe_idx(&table->syntax_id);
-	if (idx < 0) {
-		DEBUG(0, ("Unable to find interface index"));
-		talloc_free(p);
-		return NT_STATUS_OBJECT_PATH_INVALID;
-	}
+	nt_status = cli_rpc_pipe_open_noauth(p->cli, &table->syntax_id,
+					     &p->rpc_cli);
 
-	p->rpc_cli = cli_rpc_pipe_open_noauth(p->cli, idx, &nt_status);
-
-	if (p->rpc_cli == NULL) {
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(p);
 		return nt_status;
 	}

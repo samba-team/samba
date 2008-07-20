@@ -27,15 +27,6 @@
 interface/version dce/rpc pipe identification
 ********************************************************************/
 
-static const struct ndr_syntax_id syntax_spoolss = {
-	{
-		0x12345678, 0x1234, 0xabcd,
-		{ 0xef, 0x00 },
-		{ 0x01, 0x23,
-		  0x45, 0x67, 0x89, 0xab }
-	}, 0x01
-};
-
 #define PIPE_SRVSVC   "\\PIPE\\srvsvc"
 #define PIPE_SAMR     "\\PIPE\\samr"
 #define PIPE_WINREG   "\\PIPE\\winreg"
@@ -128,6 +119,15 @@ int cli_get_pipe_idx(const RPC_IFACE *syntax)
 	}
 
 	return -1;
+}
+
+/********************************************************************
+ LEGACY function to ease transition from pipe_idx to interface
+ ********************************************************************/
+const struct ndr_syntax_id *cli_get_iface(int pipe_idx)
+{
+	SMB_ASSERT((pipe_idx >= 0) && (pipe_idx < PI_MAX_PIPES));
+	return pipe_names[pipe_idx].abstr_syntax;
 }
 
 /********************************************************************
@@ -2985,23 +2985,25 @@ static NTSTATUS cli_rpc_pipe_open(struct cli_state *cli,
  Open a named pipe to an SMB server and bind anonymously.
  ****************************************************************************/
 
-struct rpc_pipe_client *cli_rpc_pipe_open_noauth(struct cli_state *cli, int pipe_idx, NTSTATUS *perr)
+NTSTATUS cli_rpc_pipe_open_noauth(struct cli_state *cli,
+				  const struct ndr_syntax_id *interface,
+				  struct rpc_pipe_client **presult)
 {
 	struct rpc_pipe_client *result;
 	struct cli_pipe_auth_data *auth;
+	NTSTATUS status;
 
-	*perr = cli_rpc_pipe_open(cli, pipe_names[pipe_idx].abstr_syntax,
-				  &result);
-	if (!NT_STATUS_IS_OK(*perr)) {
-		return NULL;
+	status = cli_rpc_pipe_open(cli, interface, &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
-	*perr = rpccli_anon_bind_data(result, &auth);
-	if (!NT_STATUS_IS_OK(*perr)) {
+	status = rpccli_anon_bind_data(result, &auth);
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("rpccli_anon_bind_data returned %s\n",
-			  nt_errstr(*perr)));
+			  nt_errstr(status)));
 		TALLOC_FREE(result);
-		return NULL;
+		return status;
 	}
 
 	/*
@@ -3017,30 +3019,34 @@ struct rpc_pipe_client *cli_rpc_pipe_open_noauth(struct cli_state *cli, int pipe
 	auth->domain = talloc_strdup(auth, cli->domain);
 
 	if ((auth->user_name == NULL) || (auth->domain == NULL)) {
-		*perr = NT_STATUS_NO_MEMORY;
 		TALLOC_FREE(result);
-		return NULL;
+		return NT_STATUS_NO_MEMORY;
 	}
 
-	*perr = rpc_pipe_bind(result, auth);
-	if (!NT_STATUS_IS_OK(*perr)) {
+	status = rpc_pipe_bind(result, auth);
+	if (!NT_STATUS_IS_OK(status)) {
 		int lvl = 0;
-		if (rpccli_is_pipe_idx(result, PI_DSSETUP)) {
+		if (ndr_syntax_id_equal(interface,
+					&ndr_table_dssetup.syntax_id)) {
 			/* non AD domains just don't have this pipe, avoid
 			 * level 0 statement in that case - gd */
 			lvl = 3;
 		}
-		DEBUG(lvl, ("cli_rpc_pipe_open_noauth: rpc_pipe_bind for pipe %s failed with error %s\n",
-			cli_get_pipe_name(pipe_idx), nt_errstr(*perr) ));
+		DEBUG(lvl, ("cli_rpc_pipe_open_noauth: rpc_pipe_bind for pipe "
+			    "%s failed with error %s\n",
+			    cli_get_pipe_name_from_iface(debug_ctx(), cli,
+							 interface),
+			    nt_errstr(status) ));
 		TALLOC_FREE(result);
-		return NULL;
+		return status;
 	}
 
 	DEBUG(10,("cli_rpc_pipe_open_noauth: opened pipe %s to machine "
 		  "%s and bound anonymously.\n", result->trans.np.pipe_name,
 		  cli->desthost ));
 
-	return result;
+	*presult = result;
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
@@ -3204,8 +3210,9 @@ struct rpc_pipe_client *get_schannel_session_key(struct cli_state *cli,
 {
 	struct rpc_pipe_client *netlogon_pipe = NULL;
 
-	netlogon_pipe = cli_rpc_pipe_open_noauth(cli, PI_NETLOGON, perr);
-	if (!netlogon_pipe) {
+	*perr = cli_rpc_pipe_open_noauth(cli, &ndr_table_netlogon.syntax_id,
+					 &netlogon_pipe);
+	if (!NT_STATUS_IS_OK(*perr)) {
 		return NULL;
 	}
 

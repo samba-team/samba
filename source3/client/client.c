@@ -3634,9 +3634,10 @@ static bool browse_host_rpc(bool sort)
 	uint32_t total_entries = 0;
 	int i;
 
-	pipe_hnd = cli_rpc_pipe_open_noauth(cli, PI_SRVSVC, &status);
+	status = cli_rpc_pipe_open_noauth(cli, &ndr_table_srvsvc.syntax_id,
+					  &pipe_hnd);
 
-	if (pipe_hnd == NULL) {
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("Could not connect to srvsvc pipe: %s\n",
 			   nt_errstr(status)));
 		TALLOC_FREE(frame);

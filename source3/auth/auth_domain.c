@@ -112,10 +112,11 @@ static NTSTATUS connect_to_domain_password_server(struct cli_state **cli,
 		netlogon_pipe = cli_rpc_pipe_open_schannel(*cli, PI_NETLOGON,
 					PIPE_AUTH_LEVEL_PRIVACY, domain, &result);
 	} else {
-		netlogon_pipe = cli_rpc_pipe_open_noauth(*cli, PI_NETLOGON, &result);
+		result = cli_rpc_pipe_open_noauth(
+			*cli, &ndr_table_netlogon.syntax_id, &netlogon_pipe);
 	}
 
-	if(!netlogon_pipe) {
+	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(0,("connect_to_domain_password_server: unable to open the domain client session to \
 machine %s. Error was : %s.\n", dc_name, nt_errstr(result)));
 		cli_shutdown(*cli);

@@ -7724,4 +7724,3 @@ bool convert_port_data_1( NT_PORT_DATA_1 *port1, RPC_BUFFER *buf )
 
 	return True;
 }
-

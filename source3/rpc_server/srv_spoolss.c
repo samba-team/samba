@@ -1630,15 +1630,6 @@ void spoolss_get_pipe_fns( struct api_struct **fns, int *n_fns )
 	*n_fns = sizeof(api_spoolss_cmds) / sizeof(struct api_struct);
 }
 
-static const struct ndr_syntax_id syntax_spoolss = {
-	{
-		0x12345678, 0x1234, 0xabcd,
-		{ 0xef, 0x00 },
-		{ 0x01, 0x23,
-		  0x45, 0x67, 0x89, 0xab }
-	}, 0x01
-};
-
 NTSTATUS rpc_spoolss_init(void)
 {
   return rpc_pipe_register_commands(SMB_RPC_INTERFACE_VERSION,

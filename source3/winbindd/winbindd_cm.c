@@ -1712,10 +1712,11 @@ static void set_dc_type_and_flags_connect( struct winbindd_domain *domain )
 
 	DEBUG(5, ("set_dc_type_and_flags_connect: domain %s\n", domain->name ));
 
-	cli = cli_rpc_pipe_open_noauth(domain->conn.cli, PI_DSSETUP,
-				       &result);
+	result = cli_rpc_pipe_open_noauth(domain->conn.cli,
+					  &ndr_table_dssetup.syntax_id,
+					  &cli);
 
-	if (cli == NULL) {
+	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(5, ("set_dc_type_and_flags_connect: Could not bind to "
 			  "PI_DSSETUP on domain %s: (%s)\n",
 			  domain->name, nt_errstr(result)));
@@ -1759,9 +1760,10 @@ static void set_dc_type_and_flags_connect( struct winbindd_domain *domain )
 	}
 
 no_dssetup:
-	cli = cli_rpc_pipe_open_noauth(domain->conn.cli, PI_LSARPC, &result);
+	result = cli_rpc_pipe_open_noauth(domain->conn.cli,
+					  &ndr_table_lsarpc.syntax_id, &cli);
 
-	if (cli == NULL) {
+	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(5, ("set_dc_type_and_flags_connect: Could not bind to "
 			  "PI_LSARPC on domain %s: (%s)\n",
 			  domain->name, nt_errstr(result)));
@@ -2031,11 +2033,10 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
  anonymous:
 
 	/* Finally fall back to anonymous. */
-	conn->samr_pipe = cli_rpc_pipe_open_noauth(conn->cli, PI_SAMR,
-						   &result);
+	result = cli_rpc_pipe_open_noauth(conn->cli, &ndr_table_samr.syntax_id,
+					  &conn->samr_pipe);
 
-	if (conn->samr_pipe == NULL) {
-		result = NT_STATUS_PIPE_NOT_AVAILABLE;
+	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
 
@@ -2167,9 +2168,10 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 
  anonymous:
 
-	conn->lsa_pipe = cli_rpc_pipe_open_noauth(conn->cli, PI_LSARPC,
-						  &result);
-	if (conn->lsa_pipe == NULL) {
+	result = cli_rpc_pipe_open_noauth(conn->cli,
+					  &ndr_table_lsarpc.syntax_id,
+					  &conn->lsa_pipe);
+	if (!NT_STATUS_IS_OK(result)) {
 		result = NT_STATUS_PIPE_NOT_AVAILABLE;
 		goto done;
 	}
@@ -2219,9 +2221,10 @@ NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 		return NT_STATUS_OK;
 	}
 
-	netlogon_pipe = cli_rpc_pipe_open_noauth(conn->cli, PI_NETLOGON,
-						 &result);
-	if (netlogon_pipe == NULL) {
+	result = cli_rpc_pipe_open_noauth(conn->cli,
+					  &ndr_table_netlogon.syntax_id,
+					  &netlogon_pipe);
+	if (!NT_STATUS_IS_OK(result)) {
 		return result;
 	}
 

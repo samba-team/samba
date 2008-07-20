@@ -132,8 +132,9 @@ static struct rpc_pipe_client *pipe_cm_connect(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	p->pipe = cli_rpc_pipe_open_noauth(cli, pipe_idx, status);
-	if (!p->pipe) {
+	*status = cli_rpc_pipe_open_noauth(cli, cli_get_iface(pipe_idx),
+					   &p->pipe);
+	if (!NT_STATUS_IS_OK(*status)) {
 		TALLOC_FREE(p);
 		return NULL;
 	}
