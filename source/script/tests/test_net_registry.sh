@@ -362,7 +362,7 @@ take_administrative_rights()
 if test "x${RPC}" = "xrpc" ; then
 testit "giving user ${USERNAME} administrative rights" \
 	give_administrative_rights || \
-	failed=`expr $failed +1`
+	failed=`expr $failed + 1`
 fi
 
 testit "enumerate HKLM" \
