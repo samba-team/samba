@@ -7140,13 +7140,13 @@ NTSTATUS cli_rpc_pipe_open_schannel(struct cli_state *cli,
 				    enum pipe_auth_level auth_level,
 				    const char *domain,
 				    struct rpc_pipe_client **presult);
-struct rpc_pipe_client *cli_rpc_pipe_open_krb5(struct cli_state *cli,
-						int pipe_idx,
-						enum pipe_auth_level auth_level,
-						const char *service_princ,
-						const char *username,
-						const char *password,
-						NTSTATUS *perr);
+NTSTATUS cli_rpc_pipe_open_krb5(struct cli_state *cli,
+				const struct ndr_syntax_id *interface,
+				enum pipe_auth_level auth_level,
+				const char *service_princ,
+				const char *username,
+				const char *password,
+				struct rpc_pipe_client **presult);
 NTSTATUS cli_get_session_key(TALLOC_CTX *mem_ctx,
 			     struct rpc_pipe_client *cli,
 			     DATA_BLOB *session_key);
