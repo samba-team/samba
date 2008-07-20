@@ -3328,35 +3328,39 @@ static NTSTATUS get_schannel_session_key_auth_ntlmssp(struct cli_state *cli,
  uses an ntlmssp bind to get the session key.
  ****************************************************************************/
 
-struct rpc_pipe_client *cli_rpc_pipe_open_ntlmssp_auth_schannel(struct cli_state *cli,
-                                                int pipe_idx,
-						enum pipe_auth_level auth_level,
-                                                const char *domain,
-						const char *username,
-						const char *password,
-						NTSTATUS *perr)
+NTSTATUS cli_rpc_pipe_open_ntlmssp_auth_schannel(struct cli_state *cli,
+						 const struct ndr_syntax_id *interface,
+						 enum pipe_auth_level auth_level,
+						 const char *domain,
+						 const char *username,
+						 const char *password,
+						 struct rpc_pipe_client **presult)
 {
 	uint32_t neg_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS;
 	struct rpc_pipe_client *netlogon_pipe = NULL;
 	struct rpc_pipe_client *result = NULL;
+	NTSTATUS status;
 
-	*perr = get_schannel_session_key_auth_ntlmssp(
+	status = get_schannel_session_key_auth_ntlmssp(
 		cli, domain, username, password, &neg_flags, &netlogon_pipe);
-	if (!NT_STATUS_IS_OK(*perr)) {
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("cli_rpc_pipe_open_ntlmssp_auth_schannel: failed to get schannel session "
 			"key from server %s for domain %s.\n",
 			cli->desthost, domain ));
-		return NULL;
+		return status;
 	}
 
-	*perr = cli_rpc_pipe_open_schannel_with_key(
-		cli, cli_get_iface(pipe_idx), auth_level,
-		domain, netlogon_pipe->dc, &result);
+	status = cli_rpc_pipe_open_schannel_with_key(
+		cli, interface, auth_level, domain, netlogon_pipe->dc,
+		&result);
 
 	/* Now we've bound using the session key we can close the netlog pipe. */
 	TALLOC_FREE(netlogon_pipe);
 
-	return result;
+	if (NT_STATUS_IS_OK(status)) {
+		*presult = result;
+	}
+	return status;
 }
 
 /****************************************************************************
