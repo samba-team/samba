@@ -1024,10 +1024,9 @@ NTSTATUS libnet_join_ok(const char *netbios_domain_name,
 		return status;
 	}
 
-	netlogon_pipe = get_schannel_session_key(cli,
-						 netbios_domain_name,
-						 &neg_flags, &status);
-	if (!netlogon_pipe) {
+	status = get_schannel_session_key(cli, netbios_domain_name,
+					  &neg_flags, &netlogon_pipe);
+	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_NETWORK_RESPONSE)) {
 			cli_shutdown(cli);
 			return NT_STATUS_OK;

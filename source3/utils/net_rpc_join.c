@@ -73,12 +73,13 @@ NTSTATUS net_rpc_join_ok(struct net_context *c, const char *domain,
 	}
 
 	/* Setup the creds as though we're going to do schannel... */
-        netlogon_pipe = get_schannel_session_key(cli, domain, &neg_flags, &ntret);
+	ntret = get_schannel_session_key(cli, domain, &neg_flags,
+					 &netlogon_pipe);
 
 	/* We return NT_STATUS_INVALID_NETWORK_RESPONSE if the server is refusing
 	   to negotiate schannel, but the creds were set up ok. That'll have to do. */
 
-        if (!netlogon_pipe) {
+        if (!NT_STATUS_IS_OK(ntret)) {
 		if (NT_STATUS_EQUAL(ntret, NT_STATUS_INVALID_NETWORK_RESPONSE)) {
 			cli_shutdown(cli);
 			return NT_STATUS_OK;

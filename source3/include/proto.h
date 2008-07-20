@@ -7118,10 +7118,10 @@ NTSTATUS cli_rpc_pipe_open_spnego_ntlmssp(struct cli_state *cli,
 					  const char *username,
 					  const char *password,
 					  struct rpc_pipe_client **presult);
-struct rpc_pipe_client *get_schannel_session_key(struct cli_state *cli,
-							const char *domain,
-							uint32 *pneg_flags,
-							NTSTATUS *perr);
+NTSTATUS get_schannel_session_key(struct cli_state *cli,
+				  const char *domain,
+				  uint32 *pneg_flags,
+				  struct rpc_pipe_client **presult);
 struct rpc_pipe_client *cli_rpc_pipe_open_schannel_with_key(struct cli_state *cli,
 					int pipe_idx,
 					enum pipe_auth_level auth_level,
