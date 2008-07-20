@@ -2965,36 +2965,20 @@ static NTSTATUS rpc_pipe_open_np(struct cli_state *cli,
  Open a pipe to a remote server.
  ****************************************************************************/
 
-static struct rpc_pipe_client *cli_rpc_pipe_open(struct cli_state *cli,
-						 int pipe_idx,
-						 NTSTATUS *perr)
+static NTSTATUS cli_rpc_pipe_open(struct cli_state *cli,
+				  const struct ndr_syntax_id *interface,
+				  struct rpc_pipe_client **presult)
 {
-	struct rpc_pipe_client *result = NULL;
-
-	*perr = NT_STATUS_PIPE_NOT_AVAILABLE;
-
-	switch (pipe_idx) {
-		case PI_DRSUAPI:
-			*perr = rpc_pipe_open_tcp(NULL, cli->desthost,
-						  &ndr_table_drsuapi.syntax_id,
-						  &result);
-			if (!NT_STATUS_IS_OK(*perr)) {
-				return NULL;
-			}
-			break;
-		default:
-			*perr = rpc_pipe_open_np(
-				cli, pipe_names[pipe_idx].abstr_syntax,
-				&result);
-			if (result == NULL) {
-				return NULL;
-			}
-			break;
+	if (ndr_syntax_id_equal(interface, &ndr_table_drsuapi.syntax_id)) {
+		/*
+		 * We should have a better way to figure out this drsuapi
+		 * speciality...
+		 */
+		return rpc_pipe_open_tcp(NULL, cli->desthost, interface,
+					 presult);
 	}
 
-	*perr = NT_STATUS_OK;
-
-	return result;
+	return rpc_pipe_open_np(cli, interface, presult);
 }
 
 /****************************************************************************
@@ -3006,8 +2990,9 @@ struct rpc_pipe_client *cli_rpc_pipe_open_noauth(struct cli_state *cli, int pipe
 	struct rpc_pipe_client *result;
 	struct cli_pipe_auth_data *auth;
 
-	result = cli_rpc_pipe_open(cli, pipe_idx, perr);
-	if (result == NULL) {
+	*perr = cli_rpc_pipe_open(cli, pipe_names[pipe_idx].abstr_syntax,
+				  &result);
+	if (!NT_STATUS_IS_OK(*perr)) {
 		return NULL;
 	}
 
@@ -3074,8 +3059,9 @@ static struct rpc_pipe_client *cli_rpc_pipe_open_ntlmssp_internal(struct cli_sta
 	struct rpc_pipe_client *result;
 	struct cli_pipe_auth_data *auth;
 
-	result = cli_rpc_pipe_open(cli, pipe_idx, perr);
-	if (result == NULL) {
+	*perr = cli_rpc_pipe_open(cli, pipe_names[pipe_idx].abstr_syntax,
+				  &result);
+	if (!NT_STATUS_IS_OK(*perr)) {
 		return NULL;
 	}
 
@@ -3249,8 +3235,9 @@ struct rpc_pipe_client *cli_rpc_pipe_open_schannel_with_key(struct cli_state *cl
 	struct rpc_pipe_client *result;
 	struct cli_pipe_auth_data *auth;
 
-	result = cli_rpc_pipe_open(cli, pipe_idx, perr);
-	if (result == NULL) {
+	*perr = cli_rpc_pipe_open(cli, pipe_names[pipe_idx].abstr_syntax,
+				  &result);
+	if (!NT_STATUS_IS_OK(*perr)) {
 		return NULL;
 	}
 
@@ -3408,8 +3395,9 @@ struct rpc_pipe_client *cli_rpc_pipe_open_krb5(struct cli_state *cli,
 	struct rpc_pipe_client *result;
 	struct cli_pipe_auth_data *auth;
 
-	result = cli_rpc_pipe_open(cli, pipe_idx, perr);
-	if (result == NULL) {
+	*perr = cli_rpc_pipe_open(cli, pipe_names[pipe_idx].abstr_syntax,
+				  &result);
+	if (!NT_STATUS_IS_OK(*perr)) {
 		return NULL;
 	}
 
