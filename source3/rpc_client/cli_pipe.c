@@ -78,13 +78,8 @@ static const struct pipe_id_info {
 };
 
 /****************************************************************************
- Return the pipe name from the index.
+ Return the pipe name from the interface.
  ****************************************************************************/
-
-const char *cli_get_pipe_name(int pipe_idx)
-{
-	return &pipe_names[pipe_idx].client_pipe[5];
-}
 
 const char *cli_get_pipe_name_from_iface(TALLOC_CTX *mem_ctx,
 					 struct cli_state *cli,
@@ -94,7 +89,7 @@ const char *cli_get_pipe_name_from_iface(TALLOC_CTX *mem_ctx,
 	for (i = 0; pipe_names[i].client_pipe; i++) {
 		if (ndr_syntax_id_equal(pipe_names[i].abstr_syntax,
 					interface)) {
-			return cli_get_pipe_name(i);
+			return &pipe_names[i].client_pipe[5];
 		}
 	}
 
