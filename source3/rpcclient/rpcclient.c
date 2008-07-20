@@ -586,22 +586,24 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 					&cmd_entry->rpc_pipe);
 				break;
 			case PIPE_AUTH_TYPE_SPNEGO_NTLMSSP:
-				cmd_entry->rpc_pipe = cli_rpc_pipe_open_spnego_ntlmssp(cli,
-								cmd_entry->pipe_idx,
-								pipe_default_auth_level,
-								lp_workgroup(),
-								get_cmdline_auth_info_username(),
-								get_cmdline_auth_info_password(),
-								&ntresult);
+				ntresult = cli_rpc_pipe_open_spnego_ntlmssp(
+					cli,
+					cli_get_iface(cmd_entry->pipe_idx),
+					pipe_default_auth_level,
+					lp_workgroup(),
+					get_cmdline_auth_info_username(),
+					get_cmdline_auth_info_password(),
+					&cmd_entry->rpc_pipe);
 				break;
 			case PIPE_AUTH_TYPE_NTLMSSP:
-				cmd_entry->rpc_pipe = cli_rpc_pipe_open_ntlmssp(cli,
-								cmd_entry->pipe_idx,
-								pipe_default_auth_level,
-								lp_workgroup(),
-								get_cmdline_auth_info_username(),
-								get_cmdline_auth_info_password(),
-								&ntresult);
+				ntresult = cli_rpc_pipe_open_ntlmssp(
+					cli,
+					cli_get_iface(cmd_entry->pipe_idx),
+					pipe_default_auth_level,
+					lp_workgroup(),
+					get_cmdline_auth_info_username(),
+					get_cmdline_auth_info_password(),
+					&cmd_entry->rpc_pipe);
 				break;
 			case PIPE_AUTH_TYPE_SCHANNEL:
 				cmd_entry->rpc_pipe = cli_rpc_pipe_open_schannel(cli,

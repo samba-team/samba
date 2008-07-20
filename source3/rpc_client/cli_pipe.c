@@ -3053,38 +3053,37 @@ NTSTATUS cli_rpc_pipe_open_noauth(struct cli_state *cli,
  Open a named pipe to an SMB server and bind using NTLMSSP or SPNEGO NTLMSSP
  ****************************************************************************/
 
-static struct rpc_pipe_client *cli_rpc_pipe_open_ntlmssp_internal(struct cli_state *cli,
-						int pipe_idx,
-						enum pipe_auth_type auth_type,
-						enum pipe_auth_level auth_level,
-						const char *domain,
-						const char *username,
-						const char *password,
-						NTSTATUS *perr)
+static NTSTATUS cli_rpc_pipe_open_ntlmssp_internal(struct cli_state *cli,
+						   const struct ndr_syntax_id *interface,
+						   enum pipe_auth_type auth_type,
+						   enum pipe_auth_level auth_level,
+						   const char *domain,
+						   const char *username,
+						   const char *password,
+						   struct rpc_pipe_client **presult)
 {
 	struct rpc_pipe_client *result;
 	struct cli_pipe_auth_data *auth;
+	NTSTATUS status;
 
-	*perr = cli_rpc_pipe_open(cli, pipe_names[pipe_idx].abstr_syntax,
-				  &result);
-	if (!NT_STATUS_IS_OK(*perr)) {
-		return NULL;
+	status = cli_rpc_pipe_open(cli, interface, &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
-	*perr = rpccli_ntlmssp_bind_data(
+	status = rpccli_ntlmssp_bind_data(
 		result, auth_type, auth_level, domain, username,
 		cli->pwd.null_pwd ? NULL : password, &auth);
-	if (!NT_STATUS_IS_OK(*perr)) {
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("rpccli_ntlmssp_bind_data returned %s\n",
-			  nt_errstr(*perr)));
-		TALLOC_FREE(result);
-		return NULL;
+			  nt_errstr(status)));
+		goto err;
 	}
 
-	*perr = rpc_pipe_bind(result, auth);
-	if (!NT_STATUS_IS_OK(*perr)) {
+	status = rpc_pipe_bind(result, auth);
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("cli_rpc_pipe_open_ntlmssp_internal: cli_rpc_pipe_bind failed with error %s\n",
-			nt_errstr(*perr) ));
+			nt_errstr(status) ));
 		goto err;
 	}
 
@@ -3093,12 +3092,13 @@ static struct rpc_pipe_client *cli_rpc_pipe_open_ntlmssp_internal(struct cli_sta
 		result->trans.np.pipe_name, cli->desthost,
 		domain, username ));
 
-	return result;
+	*presult = result;
+	return NT_STATUS_OK;
 
   err:
 
 	TALLOC_FREE(result);
-	return NULL;
+	return status;
 }
 
 /****************************************************************************
@@ -3106,22 +3106,22 @@ static struct rpc_pipe_client *cli_rpc_pipe_open_ntlmssp_internal(struct cli_sta
  Open a named pipe to an SMB server and bind using NTLMSSP (bind type 10)
  ****************************************************************************/
 
-struct rpc_pipe_client *cli_rpc_pipe_open_ntlmssp(struct cli_state *cli,
-						int pipe_idx,
-						enum pipe_auth_level auth_level,
-						const char *domain,
-						const char *username,
-						const char *password,
-						NTSTATUS *perr)
+NTSTATUS cli_rpc_pipe_open_ntlmssp(struct cli_state *cli,
+				   const struct ndr_syntax_id *interface,
+				   enum pipe_auth_level auth_level,
+				   const char *domain,
+				   const char *username,
+				   const char *password,
+				   struct rpc_pipe_client **presult)
 {
 	return cli_rpc_pipe_open_ntlmssp_internal(cli,
-						pipe_idx,
+						interface,
 						PIPE_AUTH_TYPE_NTLMSSP,
 						auth_level,
 						domain,
 						username,
 						password,
-						perr);
+						presult);
 }
 
 /****************************************************************************
@@ -3129,22 +3129,22 @@ struct rpc_pipe_client *cli_rpc_pipe_open_ntlmssp(struct cli_state *cli,
  Open a named pipe to an SMB server and bind using spnego NTLMSSP (bind type 9)
  ****************************************************************************/
 
-struct rpc_pipe_client *cli_rpc_pipe_open_spnego_ntlmssp(struct cli_state *cli,
-						int pipe_idx,
-						enum pipe_auth_level auth_level,
-						const char *domain,
-						const char *username,
-						const char *password,
-						NTSTATUS *perr)
+NTSTATUS cli_rpc_pipe_open_spnego_ntlmssp(struct cli_state *cli,
+					  const struct ndr_syntax_id *interface,
+					  enum pipe_auth_level auth_level,
+					  const char *domain,
+					  const char *username,
+					  const char *password,
+					  struct rpc_pipe_client **presult)
 {
 	return cli_rpc_pipe_open_ntlmssp_internal(cli,
-						pipe_idx,
+						interface,
 						PIPE_AUTH_TYPE_SPNEGO_NTLMSSP,
 						auth_level,
 						domain,
 						username,
 						password,
-						perr);
+						presult);
 }
 
 /****************************************************************************
@@ -3299,7 +3299,11 @@ static struct rpc_pipe_client *get_schannel_session_key_auth_ntlmssp(struct cli_
 {
 	struct rpc_pipe_client *netlogon_pipe = NULL;
 
-	netlogon_pipe = cli_rpc_pipe_open_spnego_ntlmssp(cli, PI_NETLOGON, PIPE_AUTH_LEVEL_PRIVACY, domain, username, password, perr);
+	*perr = cli_rpc_pipe_open_spnego_ntlmssp(cli,
+						 &ndr_table_netlogon.syntax_id,
+						 PIPE_AUTH_LEVEL_PRIVACY,
+						 domain, username, password,
+						 &netlogon_pipe);
 	if (!netlogon_pipe) {
 		return NULL;
 	}
