@@ -99,11 +99,11 @@ NTSTATUS net_rpc_join_ok(struct net_context *c, const char *domain,
 		return ntret;
 	}
 
-	pipe_hnd = cli_rpc_pipe_open_schannel_with_key(cli, PI_NETLOGON,
-				PIPE_AUTH_LEVEL_PRIVACY,
-				domain, netlogon_pipe->dc, &ntret);
+	ntret = cli_rpc_pipe_open_schannel_with_key(
+		cli, &ndr_table_netlogon.syntax_id, PIPE_AUTH_LEVEL_PRIVACY,
+		domain, netlogon_pipe->dc, &pipe_hnd);
 
-	if (!pipe_hnd) {
+	if (!NT_STATUS_IS_OK(ntret)) {
 		DEBUG(0,("net_rpc_join_ok: failed to open schannel session "
 				"on netlogon pipe to server %s for domain %s. Error was %s\n",
 			cli->desthost, domain, nt_errstr(ntret) ));
@@ -413,13 +413,12 @@ int net_rpc_join_newstyle(struct net_context *c, int argc, const char **argv)
 	   do the same again (setup creds) in net_rpc_join_ok(). JRA. */
 
 	if (lp_client_schannel() && (neg_flags & NETLOGON_NEG_SCHANNEL)) {
-		struct rpc_pipe_client *netlogon_schannel_pipe = 
-						cli_rpc_pipe_open_schannel_with_key(cli,
-							PI_NETLOGON,
-							PIPE_AUTH_LEVEL_PRIVACY,
-							domain,
-							pipe_hnd->dc,
-							&result);
+		struct rpc_pipe_client *netlogon_schannel_pipe;
+
+		result = cli_rpc_pipe_open_schannel_with_key(
+			cli, &ndr_table_netlogon.syntax_id,
+			PIPE_AUTH_LEVEL_PRIVACY, domain, pipe_hnd->dc,
+			&netlogon_schannel_pipe);
 
 		if (!NT_STATUS_IS_OK(result)) {
 			DEBUG(0, ("Error in domain join verification (schannel setup failed): %s\n\n",

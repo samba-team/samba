@@ -3234,37 +3234,38 @@ NTSTATUS get_schannel_session_key(struct cli_state *cli,
  using session_key. sign and seal.
  ****************************************************************************/
 
-struct rpc_pipe_client *cli_rpc_pipe_open_schannel_with_key(struct cli_state *cli,
-					int pipe_idx,
-					enum pipe_auth_level auth_level,
-					const char *domain,
-					const struct dcinfo *pdc,
-					NTSTATUS *perr)
+NTSTATUS cli_rpc_pipe_open_schannel_with_key(struct cli_state *cli,
+					     const struct ndr_syntax_id *interface,
+					     enum pipe_auth_level auth_level,
+					     const char *domain,
+					     const struct dcinfo *pdc,
+					     struct rpc_pipe_client **presult)
 {
 	struct rpc_pipe_client *result;
 	struct cli_pipe_auth_data *auth;
+	NTSTATUS status;
 
-	*perr = cli_rpc_pipe_open(cli, pipe_names[pipe_idx].abstr_syntax,
-				  &result);
-	if (!NT_STATUS_IS_OK(*perr)) {
-		return NULL;
+	status = cli_rpc_pipe_open(cli, interface, &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
-	*perr = rpccli_schannel_bind_data(result, domain, auth_level,
-					  pdc->sess_key, &auth);
-	if (!NT_STATUS_IS_OK(*perr)) {
+	status = rpccli_schannel_bind_data(result, domain, auth_level,
+					   pdc->sess_key, &auth);
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("rpccli_schannel_bind_data returned %s\n",
-			  nt_errstr(*perr)));
+			  nt_errstr(status)));
 		TALLOC_FREE(result);
-		return NULL;
+		return status;
 	}
 
-	*perr = rpc_pipe_bind(result, auth);
-	if (!NT_STATUS_IS_OK(*perr)) {
-		DEBUG(0, ("cli_rpc_pipe_open_schannel_with_key: cli_rpc_pipe_bind failed with error %s\n",
-			nt_errstr(*perr) ));
+	status = rpc_pipe_bind(result, auth);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("cli_rpc_pipe_open_schannel_with_key: "
+			  "cli_rpc_pipe_bind failed with error %s\n",
+			  nt_errstr(status) ));
 		TALLOC_FREE(result);
-		return NULL;
+		return status;
 	}
 
 	/*
@@ -3275,7 +3276,7 @@ struct rpc_pipe_client *cli_rpc_pipe_open_schannel_with_key(struct cli_state *cl
 	if (result->dc == NULL) {
 		DEBUG(0, ("talloc failed\n"));
 		TALLOC_FREE(result);
-		return NULL;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	DEBUG(10,("cli_rpc_pipe_open_schannel_with_key: opened pipe %s to machine %s "
@@ -3283,7 +3284,8 @@ struct rpc_pipe_client *cli_rpc_pipe_open_schannel_with_key(struct cli_state *cl
 		"and bound using schannel.\n",
 		result->trans.np.pipe_name, cli->desthost, domain ));
 
-	return result;
+	*presult = result;
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
@@ -3347,9 +3349,9 @@ struct rpc_pipe_client *cli_rpc_pipe_open_ntlmssp_auth_schannel(struct cli_state
 		return NULL;
 	}
 
-	result = cli_rpc_pipe_open_schannel_with_key(cli, pipe_idx,
-				auth_level,
-				domain, netlogon_pipe->dc, perr);
+	*perr = cli_rpc_pipe_open_schannel_with_key(
+		cli, cli_get_iface(pipe_idx), auth_level,
+		domain, netlogon_pipe->dc, &result);
 
 	/* Now we've bound using the session key we can close the netlog pipe. */
 	TALLOC_FREE(netlogon_pipe);
@@ -3381,9 +3383,9 @@ struct rpc_pipe_client *cli_rpc_pipe_open_schannel(struct cli_state *cli,
 		return NULL;
 	}
 
-	result = cli_rpc_pipe_open_schannel_with_key(cli, pipe_idx,
-				auth_level,
-				domain, netlogon_pipe->dc, perr);
+	*perr = cli_rpc_pipe_open_schannel_with_key(
+		cli, cli_get_iface(pipe_idx), auth_level,
+		domain, netlogon_pipe->dc, &result);
 
 	/* Now we've bound using the session key we can close the netlog pipe. */
 	TALLOC_FREE(netlogon_pipe);
