@@ -2217,8 +2217,8 @@ NTSTATUS rpc_pipe_bind(struct rpc_pipe_client *cli,
 
 	/* Marshall the outgoing data. */
 	status = create_rpc_bind_req(cli, &rpc_out, rpc_call_id,
-				cli->abstract_syntax,
-				cli->transfer_syntax,
+				&cli->abstract_syntax,
+				&cli->transfer_syntax,
 				cli->auth->auth_type,
 				cli->auth->auth_level);
 
@@ -2255,7 +2255,7 @@ NTSTATUS rpc_pipe_bind(struct rpc_pipe_client *cli,
 		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
 
-	if(!check_bind_response(&hdr_ba, cli->transfer_syntax)) {
+	if(!check_bind_response(&hdr_ba, &cli->transfer_syntax)) {
 		DEBUG(2,("rpc_pipe_bind: check_bind_response failed.\n"));
 		prs_mem_free(&rbuf);
 		return NT_STATUS_BUFFER_TOO_SMALL;
@@ -2288,7 +2288,7 @@ NTSTATUS rpc_pipe_bind(struct rpc_pipe_client *cli,
 			/* Need to send alter context request and reply. */
 			status = rpc_finish_spnego_ntlmssp_bind(
 				cli, &hdr, &rbuf, rpc_call_id,
-				cli->abstract_syntax, cli->transfer_syntax,
+				&cli->abstract_syntax, &cli->transfer_syntax,
 				cli->auth->auth_type, cli->auth->auth_level);
 			if (!NT_STATUS_IS_OK(status)) {
 				prs_mem_free(&rbuf);
@@ -2337,7 +2337,8 @@ unsigned int rpccli_set_timeout(struct rpc_pipe_client *cli,
 
 bool rpccli_is_pipe_idx(struct rpc_pipe_client *cli, int pipe_idx)
 {
-	return (cli->abstract_syntax == pipe_names[pipe_idx].abstr_syntax);
+	return ndr_syntax_id_equal(&cli->abstract_syntax,
+				   pipe_names[pipe_idx].abstr_syntax);
 }
 
 bool rpccli_get_pwd_hash(struct rpc_pipe_client *cli, uint8_t nt_hash[16])
@@ -2616,8 +2617,8 @@ static NTSTATUS rpc_pipe_open_tcp_port(TALLOC_CTX *mem_ctx, const char *host,
 
 	result->transport_type = NCACN_IP_TCP;
 
-	result->abstract_syntax = abstract_syntax;
-	result->transfer_syntax = &ndr_transfer_syntax;
+	result->abstract_syntax = *abstract_syntax;
+	result->transfer_syntax = ndr_transfer_syntax;
 
 	result->desthost = talloc_strdup(result, host);
 	result->srv_name_slash = talloc_asprintf_strupper_m(
@@ -2824,8 +2825,8 @@ NTSTATUS rpc_pipe_open_ncalrpc(TALLOC_CTX *mem_ctx, const char *socket_path,
 
 	result->transport_type = NCACN_UNIX_STREAM;
 
-	result->abstract_syntax = abstract_syntax;
-	result->transfer_syntax = &ndr_transfer_syntax;
+	result->abstract_syntax = *abstract_syntax;
+	result->transfer_syntax = ndr_transfer_syntax;
 
 	result->desthost = get_myname(result);
 	result->srv_name_slash = talloc_asprintf_strupper_m(
@@ -2914,8 +2915,8 @@ static struct rpc_pipe_client *rpc_pipe_open_np(struct cli_state *cli, int pipe_
 	result->trans.np.pipe_name = cli_get_pipe_name(pipe_idx);
 
 	result->trans.np.cli = cli;
-	result->abstract_syntax = pipe_names[pipe_idx].abstr_syntax;
-	result->transfer_syntax = &ndr_transfer_syntax;
+	result->abstract_syntax = *pipe_names[pipe_idx].abstr_syntax;
+	result->transfer_syntax = ndr_transfer_syntax;
 	result->desthost = talloc_strdup(result, cli->desthost);
 	result->srv_name_slash = talloc_asprintf_strupper_m(
 		result, "\\\\%s", result->desthost);

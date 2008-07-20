@@ -76,8 +76,8 @@ struct rpc_pipe_client {
 		} sock;
 	} trans ;
 
-	const struct ndr_syntax_id *abstract_syntax;
-	const struct ndr_syntax_id *transfer_syntax;
+	struct ndr_syntax_id abstract_syntax;
+	struct ndr_syntax_id transfer_syntax;
 
 	char *desthost;
 	char *srv_name_slash;
