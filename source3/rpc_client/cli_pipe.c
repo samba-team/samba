@@ -2818,7 +2818,7 @@ NTSTATUS rpc_pipe_open_ncalrpc(TALLOC_CTX *mem_ctx, const char *socket_path,
 	struct sockaddr_un addr;
 	NTSTATUS status;
 
-	result = talloc(mem_ctx, struct rpc_pipe_client);
+	result = talloc_zero(mem_ctx, struct rpc_pipe_client);
 	if (result == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -2846,12 +2846,6 @@ NTSTATUS rpc_pipe_open_ncalrpc(TALLOC_CTX *mem_ctx, const char *socket_path,
 	}
 
 	talloc_set_destructor(result, rpc_pipe_sock_destructor);
-
-	result->dc = TALLOC_ZERO_P(result, struct dcinfo);
-	if (result->dc == NULL) {
-		status = NT_STATUS_NO_MEMORY;
-		goto fail;
-	}
 
 	ZERO_STRUCT(addr);
 	addr.sun_family = AF_UNIX;
@@ -2925,16 +2919,6 @@ static struct rpc_pipe_client *rpc_pipe_open_np(struct cli_state *cli, int pipe_
 		*perr = NT_STATUS_NO_MEMORY;
 		TALLOC_FREE(result);
 		return NULL;
-	}
-
-	if (pipe_idx == PI_NETLOGON) {
-		/* Set up a netlogon credential chain for a netlogon pipe. */
-		result->dc = TALLOC_ZERO_P(result, struct dcinfo);
-		if (result->dc == NULL) {
-			*perr = NT_STATUS_NO_MEMORY;
-			TALLOC_FREE(result);
-			return NULL;
-		}
 	}
 
 	fnum = cli_nt_create(cli, result->trans.np.pipe_name,
@@ -3267,9 +3251,15 @@ struct rpc_pipe_client *cli_rpc_pipe_open_schannel_with_key(struct cli_state *cl
 		return NULL;
 	}
 
-	/* The credentials on a new netlogon pipe are the ones we are passed in - copy them over. */
-	if (result->dc) {
-		*result->dc = *pdc;
+	/*
+	 * The credentials on a new netlogon pipe are the ones we are passed
+	 * in - copy them over.
+	 */
+	result->dc = (struct dcinfo *)talloc_memdup(result, pdc, sizeof(*pdc));
+	if (result->dc == NULL) {
+		DEBUG(0, ("talloc failed\n"));
+		TALLOC_FREE(result);
+		return NULL;
 	}
 
 	DEBUG(10,("cli_rpc_pipe_open_schannel_with_key: opened pipe %s to machine %s "

@@ -136,13 +136,12 @@ NTSTATUS rpccli_netlogon_setup_creds(struct rpc_pipe_client *cli,
 
 	SMB_ASSERT(rpccli_is_pipe_idx(cli, PI_NETLOGON));
 
-	dc = cli->dc;
-	if (!dc) {
-		return NT_STATUS_INVALID_PARAMETER;
+	TALLOC_FREE(cli->dc);
+	cli->dc = talloc_zero(cli, struct dcinfo);
+	if (cli->dc == NULL) {
+		return NT_STATUS_NO_MEMORY;
 	}
-
-	/* Ensure we don't reuse any of this state. */
-	ZERO_STRUCTP(dc);
+	dc = cli->dc;
 
 	/* Store the machine account password we're going to use. */
 	memcpy(dc->mach_pw, machine_pwd, 16);
