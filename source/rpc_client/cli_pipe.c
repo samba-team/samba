@@ -3203,27 +3203,29 @@ static NTSTATUS get_schannel_session_key_common(struct rpc_pipe_client *netlogon
  ****************************************************************************/
 
 
-struct rpc_pipe_client *get_schannel_session_key(struct cli_state *cli,
-							const char *domain,
-							uint32 *pneg_flags,
-							NTSTATUS *perr)
+NTSTATUS get_schannel_session_key(struct cli_state *cli,
+				  const char *domain,
+				  uint32 *pneg_flags,
+				  struct rpc_pipe_client **presult)
 {
 	struct rpc_pipe_client *netlogon_pipe = NULL;
+	NTSTATUS status;
 
-	*perr = cli_rpc_pipe_open_noauth(cli, &ndr_table_netlogon.syntax_id,
-					 &netlogon_pipe);
-	if (!NT_STATUS_IS_OK(*perr)) {
-		return NULL;
+	status = cli_rpc_pipe_open_noauth(cli, &ndr_table_netlogon.syntax_id,
+					  &netlogon_pipe);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
-	*perr = get_schannel_session_key_common(netlogon_pipe, cli, domain,
-						pneg_flags);
-	if (!NT_STATUS_IS_OK(*perr)) {
+	status = get_schannel_session_key_common(netlogon_pipe, cli, domain,
+						 pneg_flags);
+	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(netlogon_pipe);
-		return NULL;
+		return status;
 	}
 
-	return netlogon_pipe;
+	*presult = netlogon_pipe;
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
@@ -3370,8 +3372,9 @@ struct rpc_pipe_client *cli_rpc_pipe_open_schannel(struct cli_state *cli,
 	struct rpc_pipe_client *netlogon_pipe = NULL;
 	struct rpc_pipe_client *result = NULL;
 
-	netlogon_pipe = get_schannel_session_key(cli, domain, &neg_flags, perr);
-	if (!netlogon_pipe) {
+	*perr = get_schannel_session_key(cli, domain, &neg_flags,
+					 &netlogon_pipe);
+	if (!NT_STATUS_IS_OK(*perr)) {
 		DEBUG(0,("cli_rpc_pipe_open_schannel: failed to get schannel session "
 			"key from server %s for domain %s.\n",
 			cli->desthost, domain ));
