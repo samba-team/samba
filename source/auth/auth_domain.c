@@ -109,8 +109,9 @@ static NTSTATUS connect_to_domain_password_server(struct cli_state **cli,
 	/* open the netlogon pipe. */
 	if (lp_client_schannel()) {
 		/* We also setup the creds chain in the open_schannel call. */
-		netlogon_pipe = cli_rpc_pipe_open_schannel(*cli, PI_NETLOGON,
-					PIPE_AUTH_LEVEL_PRIVACY, domain, &result);
+		result = cli_rpc_pipe_open_schannel(
+			*cli, &ndr_table_netlogon.syntax_id,
+			PIPE_AUTH_LEVEL_PRIVACY, domain, &netlogon_pipe);
 	} else {
 		result = cli_rpc_pipe_open_noauth(
 			*cli, &ndr_table_netlogon.syntax_id, &netlogon_pipe);
