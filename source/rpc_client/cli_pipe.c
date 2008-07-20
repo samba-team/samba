@@ -122,15 +122,6 @@ int cli_get_pipe_idx(const RPC_IFACE *syntax)
 }
 
 /********************************************************************
- LEGACY function to ease transition from pipe_idx to interface
- ********************************************************************/
-const struct ndr_syntax_id *cli_get_iface(int pipe_idx)
-{
-	SMB_ASSERT((pipe_idx >= 0) && (pipe_idx < PI_MAX_PIPES));
-	return pipe_names[pipe_idx].abstr_syntax;
-}
-
-/********************************************************************
  Map internal value to wire value.
  ********************************************************************/
 
