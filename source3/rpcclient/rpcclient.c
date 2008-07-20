@@ -606,11 +606,12 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 					&cmd_entry->rpc_pipe);
 				break;
 			case PIPE_AUTH_TYPE_SCHANNEL:
-				cmd_entry->rpc_pipe = cli_rpc_pipe_open_schannel(cli,
-								cmd_entry->pipe_idx,
-								pipe_default_auth_level,
-								lp_workgroup(),
-								&ntresult);
+				ntresult = cli_rpc_pipe_open_schannel(
+					cli,
+					cli_get_iface(cmd_entry->pipe_idx),
+					pipe_default_auth_level,
+					lp_workgroup(),
+					&cmd_entry->rpc_pipe);
 				break;
 			default:
 				DEBUG(0, ("Could not initialise %s. Invalid auth type %u\n",

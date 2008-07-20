@@ -7135,11 +7135,11 @@ NTSTATUS cli_rpc_pipe_open_ntlmssp_auth_schannel(struct cli_state *cli,
 						 const char *username,
 						 const char *password,
 						 struct rpc_pipe_client **presult);
-struct rpc_pipe_client *cli_rpc_pipe_open_schannel(struct cli_state *cli,
-                                                int pipe_idx,
-						enum pipe_auth_level auth_level,
-                                                const char *domain,
-						NTSTATUS *perr);
+NTSTATUS cli_rpc_pipe_open_schannel(struct cli_state *cli,
+				    const struct ndr_syntax_id *interface,
+				    enum pipe_auth_level auth_level,
+				    const char *domain,
+				    struct rpc_pipe_client **presult);
 struct rpc_pipe_client *cli_rpc_pipe_open_krb5(struct cli_state *cli,
 						int pipe_idx,
 						enum pipe_auth_level auth_level,

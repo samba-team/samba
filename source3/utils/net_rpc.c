@@ -155,11 +155,11 @@ int run_rpc_command(struct net_context *c,
 	if (!(conn_flags & NET_FLAGS_NO_PIPE)) {
 		if (lp_client_schannel() && (pipe_idx == PI_NETLOGON)) {
 			/* Always try and create an schannel netlogon pipe. */
-			pipe_hnd = cli_rpc_pipe_open_schannel(cli, pipe_idx,
-							PIPE_AUTH_LEVEL_PRIVACY,
-							domain_name,
-							&nt_status);
-			if (!pipe_hnd) {
+			nt_status = cli_rpc_pipe_open_schannel(
+				cli, cli_get_iface(pipe_idx),
+				PIPE_AUTH_LEVEL_PRIVACY, domain_name,
+				&pipe_hnd);
+			if (!NT_STATUS_IS_OK(nt_status)) {
 				DEBUG(0, ("Could not initialise schannel netlogon pipe. Error was %s\n",
 					nt_errstr(nt_status) ));
 				cli_shutdown(cli);
