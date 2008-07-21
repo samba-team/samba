@@ -50,7 +50,7 @@ WERROR rpccli_spoolss_reply_open_printer(struct rpc_pipe_client *cli, TALLOC_CTX
 
 	/* Marshall data and send request */
 
-	CLI_DO_RPC_WERR( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_REPLYOPENPRINTER,
+	CLI_DO_RPC_WERR( cli, mem_ctx, &syntax_spoolss, SPOOLSS_REPLYOPENPRINTER,
 		q, r,
 		qbuf, rbuf,
 		spoolss_io_q_replyopenprinter,
@@ -81,7 +81,7 @@ WERROR rpccli_spoolss_reply_close_printer(struct rpc_pipe_client *cli, TALLOC_CT
 
 	/* Marshall data and send request */
 
-	CLI_DO_RPC_WERR( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_REPLYCLOSEPRINTER,
+	CLI_DO_RPC_WERR( cli, mem_ctx, &syntax_spoolss, SPOOLSS_REPLYCLOSEPRINTER,
 		q, r,
 		qbuf, rbuf,
 		spoolss_io_q_replycloseprinter,
@@ -115,7 +115,7 @@ WERROR rpccli_spoolss_routerreplyprinter(struct rpc_pipe_client *cli, TALLOC_CTX
 
 	/* Marshall data and send request */
 
-	CLI_DO_RPC_WERR( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_ROUTERREPLYPRINTER,
+	CLI_DO_RPC_WERR( cli, mem_ctx, &syntax_spoolss, SPOOLSS_ROUTERREPLYPRINTER,
 		q, r,
 		qbuf, rbuf,
 		spoolss_io_q_routerreplyprinter,
@@ -166,7 +166,7 @@ WERROR rpccli_spoolss_rrpcn(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 
 	/* Marshall data and send request */
 
-	CLI_DO_RPC_WERR( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_RRPCN,
+	CLI_DO_RPC_WERR( cli, mem_ctx, &syntax_spoolss, SPOOLSS_RRPCN,
 		q, r,
 		qbuf, rbuf,
 		spoolss_io_q_reply_rrpcn,
@@ -206,7 +206,7 @@ WERROR rpccli_spoolss_rffpcnex(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 
 	/* Marshall data and send request */
 
-	CLI_DO_RPC_WERR( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_RFFPCNEX,
+	CLI_DO_RPC_WERR( cli, mem_ctx, &syntax_spoolss, SPOOLSS_RFFPCNEX,
 		q, r,
 		qbuf, rbuf,
 		spoolss_io_q_rffpcnex,
