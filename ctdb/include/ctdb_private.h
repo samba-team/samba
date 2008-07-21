@@ -1098,7 +1098,7 @@ struct ctdb_client_call_state {
 	struct ctdb_call *call;
 	struct {
 		void (*fn)(struct ctdb_client_call_state *);
-		void *private;
+		void *private_data;
 	} async;
 };
 

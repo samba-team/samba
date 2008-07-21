@@ -775,7 +775,7 @@ static void vacuum_fetch_next(struct vacuum_info *v);
  */
 static void vacuum_fetch_callback(struct ctdb_client_call_state *state)
 {
-	struct vacuum_info *v = talloc_get_type(state->async.private, struct vacuum_info);
+	struct vacuum_info *v = talloc_get_type(state->async.private_data, struct vacuum_info);
 	talloc_free(state);
 	vacuum_fetch_next(v);
 }
@@ -841,7 +841,7 @@ static void vacuum_fetch_next(struct vacuum_info *v)
 			return;
 		}
 		state->async.fn = vacuum_fetch_callback;
-		state->async.private = v;
+		state->async.private_data = v;
 		return;
 	}
 
