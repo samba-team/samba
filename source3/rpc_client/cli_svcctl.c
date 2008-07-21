@@ -49,7 +49,7 @@ WERROR rpccli_svcctl_enumerate_services( struct rpc_pipe_client *cli, TALLOC_CTX
 	/* first time is to get the buffer size */
 	in.buffer_size = 0;
 
-	CLI_DO_RPC_WERR( cli, mem_ctx, PI_SVCCTL, SVCCTL_ENUM_SERVICES_STATUS_W, 
+	CLI_DO_RPC_WERR( cli, mem_ctx, &ndr_table_svcctl.syntax_id, SVCCTL_ENUM_SERVICES_STATUS_W,
 	            in, out, 
 	            qbuf, rbuf,
 	            svcctl_io_q_enum_services_status,
@@ -61,7 +61,8 @@ WERROR rpccli_svcctl_enumerate_services( struct rpc_pipe_client *cli, TALLOC_CTX
 	if ( W_ERROR_EQUAL( out.status, WERR_MORE_DATA ) ) {
 		in.buffer_size = out.needed;
 
-		CLI_DO_RPC_WERR( cli, mem_ctx, PI_SVCCTL, SVCCTL_ENUM_SERVICES_STATUS_W, 
+		CLI_DO_RPC_WERR( cli, mem_ctx, &ndr_table_svcctl.syntax_id,
+				 SVCCTL_ENUM_SERVICES_STATUS_W,
 		            in, out, 
 		            qbuf, rbuf,
 		            svcctl_io_q_enum_services_status,
@@ -107,7 +108,8 @@ WERROR rpccli_svcctl_query_config(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	in.buffer_size = 0;
 	
 	
-	CLI_DO_RPC_WERR( cli, mem_ctx, PI_SVCCTL, SVCCTL_QUERY_SERVICE_CONFIG_W, 
+	CLI_DO_RPC_WERR( cli, mem_ctx, &ndr_table_svcctl.syntax_id,
+			 SVCCTL_QUERY_SERVICE_CONFIG_W,
 	            in, out, 
 	            qbuf, rbuf,
 	            svcctl_io_q_query_service_config,
@@ -117,7 +119,8 @@ WERROR rpccli_svcctl_query_config(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	if ( W_ERROR_EQUAL( out.status, WERR_INSUFFICIENT_BUFFER ) ) {
 		in.buffer_size = out.needed;
 
-		CLI_DO_RPC_WERR( cli, mem_ctx, PI_SVCCTL, SVCCTL_QUERY_SERVICE_CONFIG_W,
+		CLI_DO_RPC_WERR( cli, mem_ctx, &ndr_table_svcctl.syntax_id,
+				 SVCCTL_QUERY_SERVICE_CONFIG_W,
 		            in, out, 
 		            qbuf, rbuf,
 		            svcctl_io_q_query_service_config,
