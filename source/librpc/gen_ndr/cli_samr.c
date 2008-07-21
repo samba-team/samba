@@ -25,7 +25,6 @@ NTSTATUS rpccli_samr_Connect(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SAMR,
 				&ndr_table_samr,
 				NDR_SAMR_CONNECT,
 				&r);
@@ -65,7 +64,6 @@ NTSTATUS rpccli_samr_Close(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SAMR,
 				&ndr_table_samr,
 				NDR_SAMR_CLOSE,
 				&r);
@@ -109,7 +107,6 @@ NTSTATUS rpccli_samr_SetSecurity(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SAMR,
 				&ndr_table_samr,
 				NDR_SAMR_SETSECURITY,
 				&r);
@@ -151,7 +148,6 @@ NTSTATUS rpccli_samr_QuerySecurity(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SAMR,
 				&ndr_table_samr,
 				NDR_SAMR_QUERYSECURITY,
 				&r);
@@ -191,7 +187,6 @@ NTSTATUS rpccli_samr_Shutdown(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SAMR,
 				&ndr_table_samr,
 				NDR_SAMR_SHUTDOWN,
 				&r);
@@ -233,7 +228,6 @@ NTSTATUS rpccli_samr_LookupDomain(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SAMR,
 				&ndr_table_samr,
 				NDR_SAMR_LOOKUPDOMAIN,
 				&r);
@@ -279,7 +273,6 @@ NTSTATUS rpccli_samr_EnumDomains(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SAMR,
 				&ndr_table_samr,
 				NDR_SAMR_ENUMDOMAINS,
 				&r);
@@ -326,7 +319,6 @@ NTSTATUS rpccli_samr_OpenDomain(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SAMR,
 				&ndr_table_samr,
 				NDR_SAMR_OPENDOMAIN,
 				&r);
@@ -369,7 +361,6 @@ NTSTATUS rpccli_samr_QueryDomainInfo(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SAMR,
 				&ndr_table_samr,
 				NDR_SAMR_QUERYDOMAININFO,
 				&r);
@@ -413,7 +404,6 @@ NTSTATUS rpccli_samr_SetDomainInfo(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SAMR,
 				&ndr_table_samr,
 				NDR_SAMR_SETDOMAININFO,
 				&r);
@@ -458,7 +448,6 @@ NTSTATUS rpccli_samr_CreateDomainGroup(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SAMR,
 				&ndr_table_samr,
 				NDR_SAMR_CREATEDOMAINGROUP,
 				&r);
@@ -505,7 +494,6 @@ NTSTATUS rpccli_samr_EnumDomainGroups(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SAMR,
 				&ndr_table_samr,
 				NDR_SAMR_ENUMDOMAINGROUPS,
 				&r);
@@ -553,7 +541,6 @@ NTSTATUS rpccli_samr_CreateUser(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SAMR,
 				&ndr_table_samr,
 				NDR_SAMR_CREATEUSER,
 				&r);
@@ -602,7 +589,6 @@ NTSTATUS rpccli_samr_EnumDomainUsers(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SAMR,
 				&ndr_table_samr,
 				NDR_SAMR_ENUMDOMAINUSERS,
 				&r);
@@ -650,7 +636,6 @@ NTSTATUS rpccli_samr_CreateDomAlias(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SAMR,
 				&ndr_table_samr,
 				NDR_SAMR_CREATEDOMALIAS,
 				&r);
@@ -697,7 +682,6 @@ NTSTATUS rpccli_samr_EnumDomainAliases(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SAMR,
 				&ndr_table_samr,
 				NDR_SAMR_ENUMDOMAINALIASES,
 				&r);
@@ -742,7 +726,6 @@ NTSTATUS rpccli_samr_GetAliasMembership(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SAMR,
 				&ndr_table_samr,
 				NDR_SAMR_GETALIASMEMBERSHIP,
 				&r);
@@ -788,7 +771,6 @@ NTSTATUS rpccli_samr_LookupNames(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SAMR,
 				&ndr_table_samr,
 				NDR_SAMR_LOOKUPNAMES,
 				&r);
@@ -835,7 +817,6 @@ NTSTATUS rpccli_samr_LookupRids(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SAMR,
 				&ndr_table_samr,
 				NDR_SAMR_LOOKUPRIDS,
 				&r);
@@ -881,7 +862,6 @@ NTSTATUS rpccli_samr_OpenGroup(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SAMR,
 				&ndr_table_samr,
 				NDR_SAMR_OPENGROUP,
 				&r);
@@ -924,7 +904,6 @@ NTSTATUS rpccli_samr_QueryGroupInfo(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SAMR,
 				&ndr_table_samr,
 				NDR_SAMR_QUERYGROUPINFO,
 				&r);
@@ -968,7 +947,6 @@ NTSTATUS rpccli_samr_SetGroupInfo(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SAMR,
 				&ndr_table_samr,
 				NDR_SAMR_SETGROUPINFO,
 				&r);
@@ -1011,7 +989,6 @@ NTSTATUS rpccli_samr_AddGroupMember(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SAMR,
 				&ndr_table_samr,
 				NDR_SAMR_ADDGROUPMEMBER,
 				&r);
@@ -1050,7 +1027,6 @@ NTSTATUS rpccli_samr_DeleteDomainGroup(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SAMR,
 				&ndr_table_samr,
 				NDR_SAMR_DELETEDOMAINGROUP,
 				&r);
@@ -1092,7 +1068,6 @@ NTSTATUS rpccli_samr_DeleteGroupMember(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SAMR,
 				&ndr_table_samr,
 				NDR_SAMR_DELETEGROUPMEMBER,
 				&r);
@@ -1132,7 +1107,6 @@ NTSTATUS rpccli_samr_QueryGroupMember(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SAMR,
 				&ndr_table_samr,
 				NDR_SAMR_QUERYGROUPMEMBER,
 				&r);
@@ -1176,7 +1150,6 @@ NTSTATUS rpccli_samr_SetMemberAttributesOfGroup(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SAMR,
 				&ndr_table_samr,
 				NDR_SAMR_SETMEMBERATTRIBUTESOFGROUP,
 				&r);
@@ -1220,7 +1193,6 @@ NTSTATUS rpccli_samr_OpenAlias(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SAMR,
 				&ndr_table_samr,
 				NDR_SAMR_OPENALIAS,
 				&r);
@@ -1263,7 +1235,6 @@ NTSTATUS rpccli_samr_QueryAliasInfo(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SAMR,
 				&ndr_table_samr,
 				NDR_SAMR_QUERYALIASINFO,
 				&r);
@@ -1307,7 +1278,6 @@ NTSTATUS rpccli_samr_SetAliasInfo(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SAMR,
 				&ndr_table_samr,
 				NDR_SAMR_SETALIASINFO,
 				&r);
@@ -1346,7 +1316,6 @@ NTSTATUS rpccli_samr_DeleteDomAlias(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SAMR,
 				&ndr_table_samr,
 				NDR_SAMR_DELETEDOMALIAS,
 				&r);
@@ -1388,7 +1357,6 @@ NTSTATUS rpccli_samr_AddAliasMember(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SAMR,
 				&ndr_table_samr,
 				NDR_SAMR_ADDALIASMEMBER,
 				&r);
@@ -1429,7 +1397,6 @@ NTSTATUS rpccli_samr_DeleteAliasMember(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SAMR,
 				&ndr_table_samr,
 				NDR_SAMR_DELETEALIASMEMBER,
 				&r);
@@ -1469,7 +1436,6 @@ NTSTATUS rpccli_samr_GetMembersInAlias(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SAMR,
 				&ndr_table_samr,
 				NDR_SAMR_GETMEMBERSINALIAS,
 				&r);
@@ -1514,7 +1480,6 @@ NTSTATUS rpccli_samr_OpenUser(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SAMR,
 				&ndr_table_samr,
 				NDR_SAMR_OPENUSER,
 				&r);
@@ -1554,7 +1519,6 @@ NTSTATUS rpccli_samr_DeleteUser(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SAMR,
 				&ndr_table_samr,
 				NDR_SAMR_DELETEUSER,
 				&r);
@@ -1597,7 +1561,6 @@ NTSTATUS rpccli_samr_QueryUserInfo(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SAMR,
 				&ndr_table_samr,
 				NDR_SAMR_QUERYUSERINFO,
 				&r);
@@ -1641,7 +1604,6 @@ NTSTATUS rpccli_samr_SetUserInfo(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SAMR,
 				&ndr_table_samr,
 				NDR_SAMR_SETUSERINFO,
 				&r);
@@ -1700,7 +1662,6 @@ NTSTATUS rpccli_samr_ChangePasswordUser(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SAMR,
 				&ndr_table_samr,
 				NDR_SAMR_CHANGEPASSWORDUSER,
 				&r);
@@ -1740,7 +1701,6 @@ NTSTATUS rpccli_samr_GetGroupsForUser(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SAMR,
 				&ndr_table_samr,
 				NDR_SAMR_GETGROUPSFORUSER,
 				&r);
@@ -1791,7 +1751,6 @@ NTSTATUS rpccli_samr_QueryDisplayInfo(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SAMR,
 				&ndr_table_samr,
 				NDR_SAMR_QUERYDISPLAYINFO,
 				&r);
@@ -1838,7 +1797,6 @@ NTSTATUS rpccli_samr_GetDisplayEnumerationIndex(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SAMR,
 				&ndr_table_samr,
 				NDR_SAMR_GETDISPLAYENUMERATIONINDEX,
 				&r);
@@ -1878,7 +1836,6 @@ NTSTATUS rpccli_samr_TestPrivateFunctionsDomain(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SAMR,
 				&ndr_table_samr,
 				NDR_SAMR_TESTPRIVATEFUNCTIONSDOMAIN,
 				&r);
@@ -1917,7 +1874,6 @@ NTSTATUS rpccli_samr_TestPrivateFunctionsUser(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SAMR,
 				&ndr_table_samr,
 				NDR_SAMR_TESTPRIVATEFUNCTIONSUSER,
 				&r);
@@ -1957,7 +1913,6 @@ NTSTATUS rpccli_samr_GetUserPwInfo(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SAMR,
 				&ndr_table_samr,
 				NDR_SAMR_GETUSERPWINFO,
 				&r);
@@ -1999,7 +1954,6 @@ NTSTATUS rpccli_samr_RemoveMemberFromForeignDomain(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SAMR,
 				&ndr_table_samr,
 				NDR_SAMR_REMOVEMEMBERFROMFOREIGNDOMAIN,
 				&r);
@@ -2041,7 +1995,6 @@ NTSTATUS rpccli_samr_QueryDomainInfo2(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SAMR,
 				&ndr_table_samr,
 				NDR_SAMR_QUERYDOMAININFO2,
 				&r);
@@ -2084,7 +2037,6 @@ NTSTATUS rpccli_samr_QueryUserInfo2(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SAMR,
 				&ndr_table_samr,
 				NDR_SAMR_QUERYUSERINFO2,
 				&r);
@@ -2135,7 +2087,6 @@ NTSTATUS rpccli_samr_QueryDisplayInfo2(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SAMR,
 				&ndr_table_samr,
 				NDR_SAMR_QUERYDISPLAYINFO2,
 				&r);
@@ -2182,7 +2133,6 @@ NTSTATUS rpccli_samr_GetDisplayEnumerationIndex2(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SAMR,
 				&ndr_table_samr,
 				NDR_SAMR_GETDISPLAYENUMERATIONINDEX2,
 				&r);
@@ -2231,7 +2181,6 @@ NTSTATUS rpccli_samr_CreateUser2(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SAMR,
 				&ndr_table_samr,
 				NDR_SAMR_CREATEUSER2,
 				&r);
@@ -2284,7 +2233,6 @@ NTSTATUS rpccli_samr_QueryDisplayInfo3(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SAMR,
 				&ndr_table_samr,
 				NDR_SAMR_QUERYDISPLAYINFO3,
 				&r);
@@ -2328,7 +2276,6 @@ NTSTATUS rpccli_samr_AddMultipleMembersToAlias(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SAMR,
 				&ndr_table_samr,
 				NDR_SAMR_ADDMULTIPLEMEMBERSTOALIAS,
 				&r);
@@ -2369,7 +2316,6 @@ NTSTATUS rpccli_samr_RemoveMultipleMembersFromAlias(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SAMR,
 				&ndr_table_samr,
 				NDR_SAMR_REMOVEMULTIPLEMEMBERSFROMALIAS,
 				&r);
@@ -2414,7 +2360,6 @@ NTSTATUS rpccli_samr_OemChangePasswordUser2(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SAMR,
 				&ndr_table_samr,
 				NDR_SAMR_OEMCHANGEPASSWORDUSER2,
 				&r);
@@ -2465,7 +2410,6 @@ NTSTATUS rpccli_samr_ChangePasswordUser2(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SAMR,
 				&ndr_table_samr,
 				NDR_SAMR_CHANGEPASSWORDUSER2,
 				&r);
@@ -2505,7 +2449,6 @@ NTSTATUS rpccli_samr_GetDomPwInfo(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SAMR,
 				&ndr_table_samr,
 				NDR_SAMR_GETDOMPWINFO,
 				&r);
@@ -2548,7 +2491,6 @@ NTSTATUS rpccli_samr_Connect2(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SAMR,
 				&ndr_table_samr,
 				NDR_SAMR_CONNECT2,
 				&r);
@@ -2592,7 +2534,6 @@ NTSTATUS rpccli_samr_SetUserInfo2(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SAMR,
 				&ndr_table_samr,
 				NDR_SAMR_SETUSERINFO2,
 				&r);
@@ -2637,7 +2578,6 @@ NTSTATUS rpccli_samr_SetBootKeyInformation(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SAMR,
 				&ndr_table_samr,
 				NDR_SAMR_SETBOOTKEYINFORMATION,
 				&r);
@@ -2677,7 +2617,6 @@ NTSTATUS rpccli_samr_GetBootKeyInformation(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SAMR,
 				&ndr_table_samr,
 				NDR_SAMR_GETBOOTKEYINFORMATION,
 				&r);
@@ -2722,7 +2661,6 @@ NTSTATUS rpccli_samr_Connect3(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SAMR,
 				&ndr_table_samr,
 				NDR_SAMR_CONNECT3,
 				&r);
@@ -2767,7 +2705,6 @@ NTSTATUS rpccli_samr_Connect4(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SAMR,
 				&ndr_table_samr,
 				NDR_SAMR_CONNECT4,
 				&r);
@@ -2823,7 +2760,6 @@ NTSTATUS rpccli_samr_ChangePasswordUser3(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SAMR,
 				&ndr_table_samr,
 				NDR_SAMR_CHANGEPASSWORDUSER3,
 				&r);
@@ -2873,7 +2809,6 @@ NTSTATUS rpccli_samr_Connect5(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SAMR,
 				&ndr_table_samr,
 				NDR_SAMR_CONNECT5,
 				&r);
@@ -2918,7 +2853,6 @@ NTSTATUS rpccli_samr_RidToSid(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SAMR,
 				&ndr_table_samr,
 				NDR_SAMR_RIDTOSID,
 				&r);
@@ -2962,7 +2896,6 @@ NTSTATUS rpccli_samr_SetDsrmPassword(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SAMR,
 				&ndr_table_samr,
 				NDR_SAMR_SETDSRMPASSWORD,
 				&r);
@@ -3004,7 +2937,6 @@ NTSTATUS rpccli_samr_ValidatePassword(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SAMR,
 				&ndr_table_samr,
 				NDR_SAMR_VALIDATEPASSWORD,
 				&r);
