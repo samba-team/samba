@@ -51,7 +51,7 @@ net_s3() {
 testparm_s3() {
 	echo "RUNNING TESTS testparm_s3"
 	$SCRIPTDIR/test_testparm_s3.sh \
-	|| failed=`expr $failed +$?`
+	|| failed=`expr $failed + $?`
 }
 
 posix_s3() {
