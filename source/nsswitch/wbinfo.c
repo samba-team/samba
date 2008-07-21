@@ -359,10 +359,11 @@ static bool wbinfo_list_domains(bool list_all_domains, bool verbose)
 	}
 
 	for (i=0; i<num_domains; i++) {
-		d_printf("%-16s", domain_list[i].short_name);
-
-		if (!print_all) {
-			d_printf("\n");	
+		if (print_all) {
+			d_printf("%-16s", domain_list[i].short_name);
+		} else {
+			d_printf("%s", domain_list[i].short_name);
+			d_printf("\n");
 			continue;
 		}
 
