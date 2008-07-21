@@ -73,6 +73,8 @@ posix_s3() {
 	fi
 }
 
+failed=0
+
 if test "x$TESTS" = "x" ; then
 	local_s3
 	smbtorture_s3
