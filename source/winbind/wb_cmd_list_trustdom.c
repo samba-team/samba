@@ -159,7 +159,8 @@ static void cmd_list_trustdoms_recv_doms(struct rpc_request *req)
 			state->r.out.domains->domains[i].sid);
 	}
 
-	if (NT_STATUS_IS_OK(state->ctx->status)) {
+	if (NT_STATUS_IS_OK(state->ctx->status) || NT_STATUS_EQUAL(state->ctx->status, NT_STATUS_NO_MORE_ENTRIES)) {
+		state->ctx->status = NT_STATUS_OK;
 		composite_done(state->ctx);
 		return;
 	}
