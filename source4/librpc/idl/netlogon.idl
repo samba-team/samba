@@ -403,7 +403,7 @@ interface netlogon
 
 	typedef struct {
 		lsa_String domain_name;
-		lsa_String comment;
+		lsa_String oem_information; /* comment */
 		dlong force_logoff_time;
 		uint16 min_password_length;
 		uint16 password_history_length;
