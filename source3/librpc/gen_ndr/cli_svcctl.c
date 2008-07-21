@@ -23,7 +23,6 @@ NTSTATUS rpccli_svcctl_CloseServiceHandle(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SVCCTL,
 				&ndr_table_svcctl,
 				NDR_SVCCTL_CLOSESERVICEHANDLE,
 				&r);
@@ -71,7 +70,6 @@ NTSTATUS rpccli_svcctl_ControlService(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SVCCTL,
 				&ndr_table_svcctl,
 				NDR_SVCCTL_CONTROLSERVICE,
 				&r);
@@ -116,7 +114,6 @@ NTSTATUS rpccli_svcctl_DeleteService(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SVCCTL,
 				&ndr_table_svcctl,
 				NDR_SVCCTL_DELETESERVICE,
 				&r);
@@ -161,7 +158,6 @@ NTSTATUS rpccli_svcctl_LockServiceDatabase(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SVCCTL,
 				&ndr_table_svcctl,
 				NDR_SVCCTL_LOCKSERVICEDATABASE,
 				&r);
@@ -212,7 +208,6 @@ NTSTATUS rpccli_svcctl_QueryServiceObjectSecurity(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SVCCTL,
 				&ndr_table_svcctl,
 				NDR_SVCCTL_QUERYSERVICEOBJECTSECURITY,
 				&r);
@@ -264,7 +259,6 @@ NTSTATUS rpccli_svcctl_SetServiceObjectSecurity(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SVCCTL,
 				&ndr_table_svcctl,
 				NDR_SVCCTL_SETSERVICEOBJECTSECURITY,
 				&r);
@@ -309,7 +303,6 @@ NTSTATUS rpccli_svcctl_QueryServiceStatus(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SVCCTL,
 				&ndr_table_svcctl,
 				NDR_SVCCTL_QUERYSERVICESTATUS,
 				&r);
@@ -352,7 +345,6 @@ NTSTATUS rpccli_svcctl_SetServiceStatus(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SVCCTL,
 				&ndr_table_svcctl,
 				NDR_SVCCTL_SETSERVICESTATUS,
 				&r);
@@ -396,7 +388,6 @@ NTSTATUS rpccli_svcctl_UnlockServiceDatabase(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SVCCTL,
 				&ndr_table_svcctl,
 				NDR_SVCCTL_UNLOCKSERVICEDATABASE,
 				&r);
@@ -439,7 +430,6 @@ NTSTATUS rpccli_svcctl_NotifyBootConfigStatus(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SVCCTL,
 				&ndr_table_svcctl,
 				NDR_SVCCTL_NOTIFYBOOTCONFIGSTATUS,
 				&r);
@@ -489,7 +479,6 @@ NTSTATUS rpccli_svcctl_SCSetServiceBitsW(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SVCCTL,
 				&ndr_table_svcctl,
 				NDR_SVCCTL_SCSETSERVICEBITSW,
 				&r);
@@ -552,7 +541,6 @@ NTSTATUS rpccli_svcctl_ChangeServiceConfigW(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SVCCTL,
 				&ndr_table_svcctl,
 				NDR_SVCCTL_CHANGESERVICECONFIGW,
 				&r);
@@ -626,7 +614,6 @@ NTSTATUS rpccli_svcctl_CreateServiceW(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SVCCTL,
 				&ndr_table_svcctl,
 				NDR_SVCCTL_CREATESERVICEW,
 				&r);
@@ -681,7 +668,6 @@ NTSTATUS rpccli_svcctl_EnumDependentServicesW(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SVCCTL,
 				&ndr_table_svcctl,
 				NDR_SVCCTL_ENUMDEPENDENTSERVICESW,
 				&r);
@@ -739,7 +725,6 @@ NTSTATUS rpccli_svcctl_EnumServicesStatusW(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SVCCTL,
 				&ndr_table_svcctl,
 				NDR_SVCCTL_ENUMSERVICESSTATUSW,
 				&r);
@@ -794,7 +779,6 @@ NTSTATUS rpccli_svcctl_OpenSCManagerW(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SVCCTL,
 				&ndr_table_svcctl,
 				NDR_SVCCTL_OPENSCMANAGERW,
 				&r);
@@ -844,7 +828,6 @@ NTSTATUS rpccli_svcctl_OpenServiceW(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SVCCTL,
 				&ndr_table_svcctl,
 				NDR_SVCCTL_OPENSERVICEW,
 				&r);
@@ -893,7 +876,6 @@ NTSTATUS rpccli_svcctl_QueryServiceConfigW(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SVCCTL,
 				&ndr_table_svcctl,
 				NDR_SVCCTL_QUERYSERVICECONFIGW,
 				&r);
@@ -943,7 +925,6 @@ NTSTATUS rpccli_svcctl_QueryServiceLockStatusW(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SVCCTL,
 				&ndr_table_svcctl,
 				NDR_SVCCTL_QUERYSERVICELOCKSTATUSW,
 				&r);
@@ -993,7 +974,6 @@ NTSTATUS rpccli_svcctl_StartServiceW(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SVCCTL,
 				&ndr_table_svcctl,
 				NDR_SVCCTL_STARTSERVICEW,
 				&r);
@@ -1042,7 +1022,6 @@ NTSTATUS rpccli_svcctl_GetServiceDisplayNameW(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SVCCTL,
 				&ndr_table_svcctl,
 				NDR_SVCCTL_GETSERVICEDISPLAYNAMEW,
 				&r);
@@ -1095,7 +1074,6 @@ NTSTATUS rpccli_svcctl_GetServiceKeyNameW(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SVCCTL,
 				&ndr_table_svcctl,
 				NDR_SVCCTL_GETSERVICEKEYNAMEW,
 				&r);
@@ -1149,7 +1127,6 @@ NTSTATUS rpccli_svcctl_SCSetServiceBitsA(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SVCCTL,
 				&ndr_table_svcctl,
 				NDR_SVCCTL_SCSETSERVICEBITSA,
 				&r);
@@ -1212,7 +1189,6 @@ NTSTATUS rpccli_svcctl_ChangeServiceConfigA(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SVCCTL,
 				&ndr_table_svcctl,
 				NDR_SVCCTL_CHANGESERVICECONFIGA,
 				&r);
@@ -1280,7 +1256,6 @@ NTSTATUS rpccli_svcctl_CreateServiceA(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SVCCTL,
 				&ndr_table_svcctl,
 				NDR_SVCCTL_CREATESERVICEA,
 				&r);
@@ -1334,7 +1309,6 @@ NTSTATUS rpccli_svcctl_EnumDependentServicesA(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SVCCTL,
 				&ndr_table_svcctl,
 				NDR_SVCCTL_ENUMDEPENDENTSERVICESA,
 				&r);
@@ -1394,7 +1368,6 @@ NTSTATUS rpccli_svcctl_EnumServicesStatusA(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SVCCTL,
 				&ndr_table_svcctl,
 				NDR_SVCCTL_ENUMSERVICESSTATUSA,
 				&r);
@@ -1449,7 +1422,6 @@ NTSTATUS rpccli_svcctl_OpenSCManagerA(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SVCCTL,
 				&ndr_table_svcctl,
 				NDR_SVCCTL_OPENSCMANAGERA,
 				&r);
@@ -1498,7 +1470,6 @@ NTSTATUS rpccli_svcctl_OpenServiceA(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SVCCTL,
 				&ndr_table_svcctl,
 				NDR_SVCCTL_OPENSERVICEA,
 				&r);
@@ -1546,7 +1517,6 @@ NTSTATUS rpccli_svcctl_QueryServiceConfigA(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SVCCTL,
 				&ndr_table_svcctl,
 				NDR_SVCCTL_QUERYSERVICECONFIGA,
 				&r);
@@ -1596,7 +1566,6 @@ NTSTATUS rpccli_svcctl_QueryServiceLockStatusA(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SVCCTL,
 				&ndr_table_svcctl,
 				NDR_SVCCTL_QUERYSERVICELOCKSTATUSA,
 				&r);
@@ -1646,7 +1615,6 @@ NTSTATUS rpccli_svcctl_StartServiceA(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SVCCTL,
 				&ndr_table_svcctl,
 				NDR_SVCCTL_STARTSERVICEA,
 				&r);
@@ -1695,7 +1663,6 @@ NTSTATUS rpccli_svcctl_GetServiceDisplayNameA(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SVCCTL,
 				&ndr_table_svcctl,
 				NDR_SVCCTL_GETSERVICEDISPLAYNAMEA,
 				&r);
@@ -1748,7 +1715,6 @@ NTSTATUS rpccli_svcctl_GetServiceKeyNameA(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SVCCTL,
 				&ndr_table_svcctl,
 				NDR_SVCCTL_GETSERVICEKEYNAMEA,
 				&r);
@@ -1794,7 +1760,6 @@ NTSTATUS rpccli_svcctl_GetCurrentGroupeStateW(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SVCCTL,
 				&ndr_table_svcctl,
 				NDR_SVCCTL_GETCURRENTGROUPESTATEW,
 				&r);
@@ -1836,7 +1801,6 @@ NTSTATUS rpccli_svcctl_EnumServiceGroupW(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SVCCTL,
 				&ndr_table_svcctl,
 				NDR_SVCCTL_ENUMSERVICEGROUPW,
 				&r);
@@ -1884,7 +1848,6 @@ NTSTATUS rpccli_svcctl_ChangeServiceConfig2A(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SVCCTL,
 				&ndr_table_svcctl,
 				NDR_SVCCTL_CHANGESERVICECONFIG2A,
 				&r);
@@ -1932,7 +1895,6 @@ NTSTATUS rpccli_svcctl_ChangeServiceConfig2W(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SVCCTL,
 				&ndr_table_svcctl,
 				NDR_SVCCTL_CHANGESERVICECONFIG2W,
 				&r);
@@ -1982,7 +1944,6 @@ NTSTATUS rpccli_svcctl_QueryServiceConfig2A(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SVCCTL,
 				&ndr_table_svcctl,
 				NDR_SVCCTL_QUERYSERVICECONFIG2A,
 				&r);
@@ -2034,7 +1995,6 @@ NTSTATUS rpccli_svcctl_QueryServiceConfig2W(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SVCCTL,
 				&ndr_table_svcctl,
 				NDR_SVCCTL_QUERYSERVICECONFIG2W,
 				&r);
@@ -2086,7 +2046,6 @@ NTSTATUS rpccli_svcctl_QueryServiceStatusEx(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SVCCTL,
 				&ndr_table_svcctl,
 				NDR_SVCCTL_QUERYSERVICESTATUSEX,
 				&r);
@@ -2146,7 +2105,6 @@ NTSTATUS rpccli_EnumServicesStatusExA(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SVCCTL,
 				&ndr_table_svcctl,
 				NDR_ENUMSERVICESSTATUSEXA,
 				&r);
@@ -2211,7 +2169,6 @@ NTSTATUS rpccli_EnumServicesStatusExW(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SVCCTL,
 				&ndr_table_svcctl,
 				NDR_ENUMSERVICESSTATUSEXW,
 				&r);
@@ -2260,7 +2217,6 @@ NTSTATUS rpccli_svcctl_SCSendTSMessage(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_SVCCTL,
 				&ndr_table_svcctl,
 				NDR_SVCCTL_SCSENDTSMESSAGE,
 				&r);

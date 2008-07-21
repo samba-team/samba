@@ -24,7 +24,6 @@ NTSTATUS rpccli_dssetup_DsRoleGetPrimaryDomainInformation(struct rpc_pipe_client
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_DSSETUP,
 				&ndr_table_dssetup,
 				NDR_DSSETUP_DSROLEGETPRIMARYDOMAININFORMATION,
 				&r);
@@ -69,7 +68,6 @@ NTSTATUS rpccli_dssetup_DsRoleDnsNameToFlatName(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_DSSETUP,
 				&ndr_table_dssetup,
 				NDR_DSSETUP_DSROLEDNSNAMETOFLATNAME,
 				&r);
@@ -111,7 +109,6 @@ NTSTATUS rpccli_dssetup_DsRoleDcAsDc(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_DSSETUP,
 				&ndr_table_dssetup,
 				NDR_DSSETUP_DSROLEDCASDC,
 				&r);
@@ -153,7 +150,6 @@ NTSTATUS rpccli_dssetup_DsRoleDcAsReplica(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_DSSETUP,
 				&ndr_table_dssetup,
 				NDR_DSSETUP_DSROLEDCASREPLICA,
 				&r);
@@ -195,7 +191,6 @@ NTSTATUS rpccli_dssetup_DsRoleDemoteDc(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_DSSETUP,
 				&ndr_table_dssetup,
 				NDR_DSSETUP_DSROLEDEMOTEDC,
 				&r);
@@ -237,7 +232,6 @@ NTSTATUS rpccli_dssetup_DsRoleGetDcOperationProgress(struct rpc_pipe_client *cli
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_DSSETUP,
 				&ndr_table_dssetup,
 				NDR_DSSETUP_DSROLEGETDCOPERATIONPROGRESS,
 				&r);
@@ -279,7 +273,6 @@ NTSTATUS rpccli_dssetup_DsRoleGetDcOperationResults(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_DSSETUP,
 				&ndr_table_dssetup,
 				NDR_DSSETUP_DSROLEGETDCOPERATIONRESULTS,
 				&r);
@@ -321,7 +314,6 @@ NTSTATUS rpccli_dssetup_DsRoleCancel(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_DSSETUP,
 				&ndr_table_dssetup,
 				NDR_DSSETUP_DSROLECANCEL,
 				&r);
@@ -363,7 +355,6 @@ NTSTATUS rpccli_dssetup_DsRoleServerSaveStateForUpgrade(struct rpc_pipe_client *
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_DSSETUP,
 				&ndr_table_dssetup,
 				NDR_DSSETUP_DSROLESERVERSAVESTATEFORUPGRADE,
 				&r);
@@ -405,7 +396,6 @@ NTSTATUS rpccli_dssetup_DsRoleUpgradeDownlevelServer(struct rpc_pipe_client *cli
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_DSSETUP,
 				&ndr_table_dssetup,
 				NDR_DSSETUP_DSROLEUPGRADEDOWNLEVELSERVER,
 				&r);
@@ -447,7 +437,6 @@ NTSTATUS rpccli_dssetup_DsRoleAbortDownlevelServerUpgrade(struct rpc_pipe_client
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_DSSETUP,
 				&ndr_table_dssetup,
 				NDR_DSSETUP_DSROLEABORTDOWNLEVELSERVERUPGRADE,
 				&r);

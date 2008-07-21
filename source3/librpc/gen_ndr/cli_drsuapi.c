@@ -26,7 +26,6 @@ NTSTATUS rpccli_drsuapi_DsBind(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_DRSUAPI,
 				&ndr_table_drsuapi,
 				NDR_DRSUAPI_DSBIND,
 				&r);
@@ -74,7 +73,6 @@ NTSTATUS rpccli_drsuapi_DsUnbind(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_DRSUAPI,
 				&ndr_table_drsuapi,
 				NDR_DRSUAPI_DSUNBIND,
 				&r);
@@ -123,7 +121,6 @@ NTSTATUS rpccli_drsuapi_DsReplicaSync(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_DRSUAPI,
 				&ndr_table_drsuapi,
 				NDR_DRSUAPI_DSREPLICASYNC,
 				&r);
@@ -173,7 +170,6 @@ NTSTATUS rpccli_drsuapi_DsGetNCChanges(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_DRSUAPI,
 				&ndr_table_drsuapi,
 				NDR_DRSUAPI_DSGETNCCHANGES,
 				&r);
@@ -223,7 +219,6 @@ NTSTATUS rpccli_drsuapi_DsReplicaUpdateRefs(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_DRSUAPI,
 				&ndr_table_drsuapi,
 				NDR_DRSUAPI_DSREPLICAUPDATEREFS,
 				&r);
@@ -265,7 +260,6 @@ NTSTATUS rpccli_DRSUAPI_REPLICA_ADD(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_DRSUAPI,
 				&ndr_table_drsuapi,
 				NDR_DRSUAPI_REPLICA_ADD,
 				&r);
@@ -307,7 +301,6 @@ NTSTATUS rpccli_DRSUAPI_REPLICA_DEL(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_DRSUAPI,
 				&ndr_table_drsuapi,
 				NDR_DRSUAPI_REPLICA_DEL,
 				&r);
@@ -349,7 +342,6 @@ NTSTATUS rpccli_DRSUAPI_REPLICA_MODIFY(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_DRSUAPI,
 				&ndr_table_drsuapi,
 				NDR_DRSUAPI_REPLICA_MODIFY,
 				&r);
@@ -391,7 +383,6 @@ NTSTATUS rpccli_DRSUAPI_VERIFY_NAMES(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_DRSUAPI,
 				&ndr_table_drsuapi,
 				NDR_DRSUAPI_VERIFY_NAMES,
 				&r);
@@ -441,7 +432,6 @@ NTSTATUS rpccli_drsuapi_DsGetMemberships(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_DRSUAPI,
 				&ndr_table_drsuapi,
 				NDR_DRSUAPI_DSGETMEMBERSHIPS,
 				&r);
@@ -485,7 +475,6 @@ NTSTATUS rpccli_DRSUAPI_INTER_DOMAIN_MOVE(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_DRSUAPI,
 				&ndr_table_drsuapi,
 				NDR_DRSUAPI_INTER_DOMAIN_MOVE,
 				&r);
@@ -535,7 +524,6 @@ NTSTATUS rpccli_drsuapi_DsGetNT4ChangeLog(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_DRSUAPI,
 				&ndr_table_drsuapi,
 				NDR_DRSUAPI_DSGETNT4CHANGELOG,
 				&r);
@@ -587,7 +575,6 @@ NTSTATUS rpccli_drsuapi_DsCrackNames(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_DRSUAPI,
 				&ndr_table_drsuapi,
 				NDR_DRSUAPI_DSCRACKNAMES,
 				&r);
@@ -639,7 +626,6 @@ NTSTATUS rpccli_drsuapi_DsWriteAccountSpn(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_DRSUAPI,
 				&ndr_table_drsuapi,
 				NDR_DRSUAPI_DSWRITEACCOUNTSPN,
 				&r);
@@ -691,7 +677,6 @@ NTSTATUS rpccli_drsuapi_DsRemoveDSServer(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_DRSUAPI,
 				&ndr_table_drsuapi,
 				NDR_DRSUAPI_DSREMOVEDSSERVER,
 				&r);
@@ -735,7 +720,6 @@ NTSTATUS rpccli_DRSUAPI_REMOVE_DS_DOMAIN(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_DRSUAPI,
 				&ndr_table_drsuapi,
 				NDR_DRSUAPI_REMOVE_DS_DOMAIN,
 				&r);
@@ -785,7 +769,6 @@ NTSTATUS rpccli_drsuapi_DsGetDomainControllerInfo(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_DRSUAPI,
 				&ndr_table_drsuapi,
 				NDR_DRSUAPI_DSGETDOMAINCONTROLLERINFO,
 				&r);
@@ -837,7 +820,6 @@ NTSTATUS rpccli_drsuapi_DsAddEntry(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_DRSUAPI,
 				&ndr_table_drsuapi,
 				NDR_DRSUAPI_DSADDENTRY,
 				&r);
@@ -881,7 +863,6 @@ NTSTATUS rpccli_DRSUAPI_EXECUTE_KCC(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_DRSUAPI,
 				&ndr_table_drsuapi,
 				NDR_DRSUAPI_EXECUTE_KCC,
 				&r);
@@ -931,7 +912,6 @@ NTSTATUS rpccli_drsuapi_DsReplicaGetInfo(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_DRSUAPI,
 				&ndr_table_drsuapi,
 				NDR_DRSUAPI_DSREPLICAGETINFO,
 				&r);
@@ -975,7 +955,6 @@ NTSTATUS rpccli_DRSUAPI_ADD_SID_HISTORY(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_DRSUAPI,
 				&ndr_table_drsuapi,
 				NDR_DRSUAPI_ADD_SID_HISTORY,
 				&r);
@@ -1025,7 +1004,6 @@ NTSTATUS rpccli_drsuapi_DsGetMemberships2(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_DRSUAPI,
 				&ndr_table_drsuapi,
 				NDR_DRSUAPI_DSGETMEMBERSHIPS2,
 				&r);
@@ -1069,7 +1047,6 @@ NTSTATUS rpccli_DRSUAPI_REPLICA_VERIFY_OBJECTS(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_DRSUAPI,
 				&ndr_table_drsuapi,
 				NDR_DRSUAPI_REPLICA_VERIFY_OBJECTS,
 				&r);
@@ -1111,7 +1088,6 @@ NTSTATUS rpccli_DRSUAPI_GET_OBJECT_EXISTENCE(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_DRSUAPI,
 				&ndr_table_drsuapi,
 				NDR_DRSUAPI_GET_OBJECT_EXISTENCE,
 				&r);
@@ -1161,7 +1137,6 @@ NTSTATUS rpccli_drsuapi_QuerySitesByCost(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_DRSUAPI,
 				&ndr_table_drsuapi,
 				NDR_DRSUAPI_QUERYSITESBYCOST,
 				&r);

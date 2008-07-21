@@ -26,7 +26,6 @@ NTSTATUS rpccli_epm_Insert(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_EPMAPPER,
 				&ndr_table_epmapper,
 				NDR_EPM_INSERT,
 				&r);
@@ -67,7 +66,6 @@ NTSTATUS rpccli_epm_Delete(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_EPMAPPER,
 				&ndr_table_epmapper,
 				NDR_EPM_DELETE,
 				&r);
@@ -118,7 +116,6 @@ NTSTATUS rpccli_epm_Lookup(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_EPMAPPER,
 				&ndr_table_epmapper,
 				NDR_EPM_LOOKUP,
 				&r);
@@ -168,7 +165,6 @@ NTSTATUS rpccli_epm_Map(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_EPMAPPER,
 				&ndr_table_epmapper,
 				NDR_EPM_MAP,
 				&r);
@@ -210,7 +206,6 @@ NTSTATUS rpccli_epm_LookupHandleFree(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_EPMAPPER,
 				&ndr_table_epmapper,
 				NDR_EPM_LOOKUPHANDLEFREE,
 				&r);
@@ -250,7 +245,6 @@ NTSTATUS rpccli_epm_InqObject(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_EPMAPPER,
 				&ndr_table_epmapper,
 				NDR_EPM_INQOBJECT,
 				&r);
@@ -293,7 +287,6 @@ NTSTATUS rpccli_epm_MgmtDelete(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_EPMAPPER,
 				&ndr_table_epmapper,
 				NDR_EPM_MGMTDELETE,
 				&r);
@@ -330,7 +323,6 @@ NTSTATUS rpccli_epm_MapAuth(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_EPMAPPER,
 				&ndr_table_epmapper,
 				NDR_EPM_MAPAUTH,
 				&r);

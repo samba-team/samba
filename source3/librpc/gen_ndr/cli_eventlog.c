@@ -24,7 +24,6 @@ NTSTATUS rpccli_eventlog_ClearEventLogW(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_EVENTLOG,
 				&ndr_table_eventlog,
 				NDR_EVENTLOG_CLEAREVENTLOGW,
 				&r);
@@ -61,7 +60,6 @@ NTSTATUS rpccli_eventlog_BackupEventLogW(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_EVENTLOG,
 				&ndr_table_eventlog,
 				NDR_EVENTLOG_BACKUPEVENTLOGW,
 				&r);
@@ -100,7 +98,6 @@ NTSTATUS rpccli_eventlog_CloseEventLog(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_EVENTLOG,
 				&ndr_table_eventlog,
 				NDR_EVENTLOG_CLOSEEVENTLOG,
 				&r);
@@ -138,7 +135,6 @@ NTSTATUS rpccli_eventlog_DeregisterEventSource(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_EVENTLOG,
 				&ndr_table_eventlog,
 				NDR_EVENTLOG_DEREGISTEREVENTSOURCE,
 				&r);
@@ -178,7 +174,6 @@ NTSTATUS rpccli_eventlog_GetNumRecords(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_EVENTLOG,
 				&ndr_table_eventlog,
 				NDR_EVENTLOG_GETNUMRECORDS,
 				&r);
@@ -219,7 +214,6 @@ NTSTATUS rpccli_eventlog_GetOldestRecord(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_EVENTLOG,
 				&ndr_table_eventlog,
 				NDR_EVENTLOG_GETOLDESTRECORD,
 				&r);
@@ -257,7 +251,6 @@ NTSTATUS rpccli_eventlog_ChangeNotify(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_EVENTLOG,
 				&ndr_table_eventlog,
 				NDR_EVENTLOG_CHANGENOTIFY,
 				&r);
@@ -305,7 +298,6 @@ NTSTATUS rpccli_eventlog_OpenEventLogW(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_EVENTLOG,
 				&ndr_table_eventlog,
 				NDR_EVENTLOG_OPENEVENTLOGW,
 				&r);
@@ -343,7 +335,6 @@ NTSTATUS rpccli_eventlog_RegisterEventSourceW(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_EVENTLOG,
 				&ndr_table_eventlog,
 				NDR_EVENTLOG_REGISTEREVENTSOURCEW,
 				&r);
@@ -380,7 +371,6 @@ NTSTATUS rpccli_eventlog_OpenBackupEventLogW(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_EVENTLOG,
 				&ndr_table_eventlog,
 				NDR_EVENTLOG_OPENBACKUPEVENTLOGW,
 				&r);
@@ -428,7 +418,6 @@ NTSTATUS rpccli_eventlog_ReadEventLogW(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_EVENTLOG,
 				&ndr_table_eventlog,
 				NDR_EVENTLOG_READEVENTLOGW,
 				&r);
@@ -468,7 +457,6 @@ NTSTATUS rpccli_eventlog_ReportEventW(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_EVENTLOG,
 				&ndr_table_eventlog,
 				NDR_EVENTLOG_REPORTEVENTW,
 				&r);
@@ -505,7 +493,6 @@ NTSTATUS rpccli_eventlog_ClearEventLogA(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_EVENTLOG,
 				&ndr_table_eventlog,
 				NDR_EVENTLOG_CLEAREVENTLOGA,
 				&r);
@@ -542,7 +529,6 @@ NTSTATUS rpccli_eventlog_BackupEventLogA(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_EVENTLOG,
 				&ndr_table_eventlog,
 				NDR_EVENTLOG_BACKUPEVENTLOGA,
 				&r);
@@ -579,7 +565,6 @@ NTSTATUS rpccli_eventlog_OpenEventLogA(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_EVENTLOG,
 				&ndr_table_eventlog,
 				NDR_EVENTLOG_OPENEVENTLOGA,
 				&r);
@@ -616,7 +601,6 @@ NTSTATUS rpccli_eventlog_RegisterEventSourceA(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_EVENTLOG,
 				&ndr_table_eventlog,
 				NDR_EVENTLOG_REGISTEREVENTSOURCEA,
 				&r);
@@ -653,7 +637,6 @@ NTSTATUS rpccli_eventlog_OpenBackupEventLogA(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_EVENTLOG,
 				&ndr_table_eventlog,
 				NDR_EVENTLOG_OPENBACKUPEVENTLOGA,
 				&r);
@@ -690,7 +673,6 @@ NTSTATUS rpccli_eventlog_ReadEventLogA(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_EVENTLOG,
 				&ndr_table_eventlog,
 				NDR_EVENTLOG_READEVENTLOGA,
 				&r);
@@ -727,7 +709,6 @@ NTSTATUS rpccli_eventlog_ReportEventA(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_EVENTLOG,
 				&ndr_table_eventlog,
 				NDR_EVENTLOG_REPORTEVENTA,
 				&r);
@@ -764,7 +745,6 @@ NTSTATUS rpccli_eventlog_RegisterClusterSvc(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_EVENTLOG,
 				&ndr_table_eventlog,
 				NDR_EVENTLOG_REGISTERCLUSTERSVC,
 				&r);
@@ -801,7 +781,6 @@ NTSTATUS rpccli_eventlog_DeregisterClusterSvc(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_EVENTLOG,
 				&ndr_table_eventlog,
 				NDR_EVENTLOG_DEREGISTERCLUSTERSVC,
 				&r);
@@ -838,7 +817,6 @@ NTSTATUS rpccli_eventlog_WriteClusterEvents(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_EVENTLOG,
 				&ndr_table_eventlog,
 				NDR_EVENTLOG_WRITECLUSTEREVENTS,
 				&r);
@@ -875,7 +853,6 @@ NTSTATUS rpccli_eventlog_GetLogIntormation(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_EVENTLOG,
 				&ndr_table_eventlog,
 				NDR_EVENTLOG_GETLOGINTORMATION,
 				&r);
@@ -914,7 +891,6 @@ NTSTATUS rpccli_eventlog_FlushEventLog(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_EVENTLOG,
 				&ndr_table_eventlog,
 				NDR_EVENTLOG_FLUSHEVENTLOG,
 				&r);
