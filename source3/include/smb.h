@@ -174,24 +174,6 @@ typedef uint32 codepoint_t;
 /* pipe string names */
 #define PIPE_LANMAN   "\\PIPE\\LANMAN"
 
-#define PI_LSARPC		0
-#define PI_DSSETUP		1
-#define PI_SAMR			2
-#define PI_NETLOGON		3
-#define PI_SRVSVC		4
-#define PI_WKSSVC		5
-#define PI_WINREG		6
-#define PI_SPOOLSS		7
-#define PI_NETDFS		8
-#define PI_RPCECHO 		9
-#define PI_INITSHUTDOWN		10
-#define PI_SVCCTL		11
-#define PI_EVENTLOG 		12
-#define PI_NTSVCS		13
-#define PI_EPMAPPER		14
-#define PI_DRSUAPI		15
-#define PI_MAX_PIPES		16
-
 /* 64 bit time (100usec) since ????? - cifs6.txt, section 3.5, page 30 */
 typedef uint64_t NTTIME;
 
