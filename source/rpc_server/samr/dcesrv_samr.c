@@ -521,10 +521,10 @@ static NTSTATUS dcesrv_samr_info_DomInfo1(struct samr_domain_state *state,
 /*
   return DomInfo2
 */
-static NTSTATUS dcesrv_samr_info_DomInfo2(struct samr_domain_state *state, 
-					  TALLOC_CTX *mem_ctx,
-					  struct ldb_message **dom_msgs,
-					  struct samr_DomInfo2 *info)
+static NTSTATUS dcesrv_samr_info_DomGeneralInformation(struct samr_domain_state *state, 
+						       TALLOC_CTX *mem_ctx,
+						       struct ldb_message **dom_msgs,
+						       struct samr_DomGeneralInformation *info)
 {
 	/* This pulls the NetBIOS name from the 
 	   cn=NTDS Settings,cn=<NETBIOS name of PDC>,....
@@ -538,7 +538,7 @@ static NTSTATUS dcesrv_samr_info_DomInfo2(struct samr_domain_state *state,
 	info->force_logoff_time = ldb_msg_find_attr_as_uint64(dom_msgs[0], "forceLogoff", 
 							    0x8000000000000000LL);
 
-	info->comment.string = samdb_result_string(dom_msgs[0], "comment", NULL);
+	info->oem_information.string = samdb_result_string(dom_msgs[0], "oEMInformation", NULL);
 	info->domain_name.string  = state->domain_name;
 
 	info->sequence_num = ldb_msg_find_attr_as_uint64(dom_msgs[0], "modifiedCount", 
@@ -592,12 +592,12 @@ static NTSTATUS dcesrv_samr_info_DomInfo3(struct samr_domain_state *state,
 /*
   return DomInfo4
 */
-static NTSTATUS dcesrv_samr_info_DomInfo4(struct samr_domain_state *state,
+static NTSTATUS dcesrv_samr_info_DomOEMInformation(struct samr_domain_state *state,
 				   TALLOC_CTX *mem_ctx,
 				    struct ldb_message **dom_msgs,
-				   struct samr_DomInfo4 *info)
+				   struct samr_DomOEMInformation *info)
 {
-	info->comment.string = samdb_result_string(dom_msgs[0], "comment", NULL);
+	info->oem_information.string = samdb_result_string(dom_msgs[0], "oEMInformation", NULL);
 
 	return NT_STATUS_OK;
 }
@@ -700,13 +700,13 @@ static NTSTATUS dcesrv_samr_info_DomInfo9(struct samr_domain_state *state,
 /*
   return DomInfo11
 */
-static NTSTATUS dcesrv_samr_info_DomInfo11(struct samr_domain_state *state,
+static NTSTATUS dcesrv_samr_info_DomGeneralInformation2(struct samr_domain_state *state,
 				    TALLOC_CTX *mem_ctx,
 				    struct ldb_message **dom_msgs,
-				    struct samr_DomInfo11 *info)
+				    struct samr_DomGeneralInformation2 *info)
 {
 	NTSTATUS status;
-	status = dcesrv_samr_info_DomInfo2(state, mem_ctx, dom_msgs, &info->info2);
+	status = dcesrv_samr_info_DomGeneralInformation(state, mem_ctx, dom_msgs, &info->general);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -792,7 +792,7 @@ static NTSTATUS dcesrv_samr_QueryDomainInfo(struct dcesrv_call_state *dce_call, 
 	case 2:
 	{
 		static const char * const attrs2[] = {"forceLogoff",
-						      "comment", 
+						      "oEMInformation", 
 						      "modifiedCount", 
 						      "fSMORoleOwner",
 						      NULL};
@@ -808,7 +808,7 @@ static NTSTATUS dcesrv_samr_QueryDomainInfo(struct dcesrv_call_state *dce_call, 
 	}
 	case 4:
 	{
-		static const char * const attrs2[] = {"comment", 
+		static const char * const attrs2[] = {"oEMInformation", 
 						      NULL};
 		attrs = attrs2;
 		break;
@@ -843,7 +843,7 @@ static NTSTATUS dcesrv_samr_QueryDomainInfo(struct dcesrv_call_state *dce_call, 
 		break;		
 	case 11:
 	{
-		static const char * const attrs2[] = { "comment", "forceLogoff", 
+		static const char * const attrs2[] = { "oEMInformation", "forceLogoff", 
 						       "modifiedCount", 
 						       "lockoutDuration", 
 						       "lockOutObservationWindow", 
@@ -886,42 +886,42 @@ static NTSTATUS dcesrv_samr_QueryDomainInfo(struct dcesrv_call_state *dce_call, 
 	switch (r->in.level) {
 	case 1:
 		return dcesrv_samr_info_DomInfo1(d_state, mem_ctx, dom_msgs, 
-					  &r->out.info->info1);
+						 &r->out.info->info1);
 	case 2:
-		return dcesrv_samr_info_DomInfo2(d_state, mem_ctx, dom_msgs, 
-					  &r->out.info->info2);
+		return dcesrv_samr_info_DomGeneralInformation(d_state, mem_ctx, dom_msgs, 
+							      &r->out.info->general);
 	case 3:
 		return dcesrv_samr_info_DomInfo3(d_state, mem_ctx, dom_msgs, 
-					  &r->out.info->info3);
+						 &r->out.info->info3);
 	case 4:
-		return dcesrv_samr_info_DomInfo4(d_state, mem_ctx, dom_msgs, 
-					  &r->out.info->info4);
+		return dcesrv_samr_info_DomOEMInformation(d_state, mem_ctx, dom_msgs, 
+							  &r->out.info->oem);
 	case 5:
 		return dcesrv_samr_info_DomInfo5(d_state, mem_ctx, dom_msgs, 
-					  &r->out.info->info5);
+						 &r->out.info->info5);
 	case 6:
 		return dcesrv_samr_info_DomInfo6(d_state, mem_ctx, dom_msgs, 
-					  &r->out.info->info6);
+						 &r->out.info->info6);
 	case 7:
 		return dcesrv_samr_info_DomInfo7(d_state, mem_ctx, dom_msgs, 
-					  &r->out.info->info7);
+						 &r->out.info->info7);
 	case 8:
 		return dcesrv_samr_info_DomInfo8(d_state, mem_ctx, dom_msgs, 
-					  &r->out.info->info8);
+						 &r->out.info->info8);
 	case 9:
 		return dcesrv_samr_info_DomInfo9(d_state, mem_ctx, dom_msgs, 
-					  &r->out.info->info9);
+						 &r->out.info->info9);
 	case 11:
-		return dcesrv_samr_info_DomInfo11(d_state, mem_ctx, dom_msgs, 
-					  &r->out.info->info11);
+		return dcesrv_samr_info_DomGeneralInformation2(d_state, mem_ctx, dom_msgs, 
+							       &r->out.info->general2);
 	case 12:
 		return dcesrv_samr_info_DomInfo12(d_state, mem_ctx, dom_msgs, 
-					  &r->out.info->info12);
+						  &r->out.info->info12);
 	case 13:
 		return dcesrv_samr_info_DomInfo13(d_state, mem_ctx, dom_msgs, 
-					  &r->out.info->info13);
+						  &r->out.info->info13);
 	}
-
+	
 	return NT_STATUS_INVALID_INFO_CLASS;
 }
 
@@ -962,10 +962,10 @@ static NTSTATUS dcesrv_samr_SetDomainInfo(struct dcesrv_call_state *dce_call, TA
 		SET_INT64  (msg, info1.min_password_age,       "minPwdAge");
 		break;
 	case 3:
-		SET_UINT64  (msg, info3.force_logoff_time,      "forceLogoff");
+		SET_UINT64  (msg, info3.force_logoff_time,     "forceLogoff");
 		break;
 	case 4:
-		SET_STRING(msg, info4.comment,          "comment");
+		SET_STRING(msg, oem.oem_information,           "oEMInformation");
 		break;
 
 	case 6:
@@ -2997,7 +2997,7 @@ static NTSTATUS dcesrv_samr_QueryUserInfo(struct dcesrv_call_state *dce_call, TA
 	case 1:
 	{
 		static const char * const attrs2[] = {"sAMAccountName", "displayName",
-						      "primaryGroupID", "description",
+						      "primaryroupID", "description",
 						      "comment", NULL};
 		attrs = attrs2;
 		break;
