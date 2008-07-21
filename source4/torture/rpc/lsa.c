@@ -1822,6 +1822,19 @@ static bool test_EnumTrustDom(struct dcerpc_pipe *p,
 
 	printf("\nTesting EnumTrustDom\n");
 
+	r.in.handle = handle;
+	r.in.resume_handle = &resume_handle;
+	r.in.max_size = 0;
+	r.out.domains = &domains;
+	r.out.resume_handle = &resume_handle;
+	
+	enum_status = dcerpc_lsa_EnumTrustDom(p, mem_ctx, &r);
+	
+	if (!(NT_STATUS_EQUAL(enum_status, STATUS_MORE_ENTRIES) || NT_STATUS_EQUAL(enum_status, NT_STATUS_NO_MORE_ENTRIES))) {
+		printf("EnumTrustDom of zero size failed - %s\n", nt_errstr(enum_status));
+		return false;
+	}
+		
 	do {
 		r.in.handle = handle;
 		r.in.resume_handle = &resume_handle;
@@ -1848,12 +1861,30 @@ static bool test_EnumTrustDom(struct dcerpc_pipe *p,
 			return false;
 		}
 		
+		if (domains.count == 0) {
+			printf("EnumTrustDom failed - should have returned 'NT_STATUS_NO_MORE_ENTRIES' for 0 trusted domains\n");
+			return false;
+		}
+
 		ret &= test_query_each_TrustDom(p, mem_ctx, handle, &domains);
 		
 	} while ((NT_STATUS_EQUAL(enum_status, STATUS_MORE_ENTRIES)));
 
 	printf("\nTesting EnumTrustedDomainsEx\n");
 
+	r_ex.in.handle = handle;
+	r_ex.in.resume_handle = &resume_handle;
+	r_ex.in.max_size = LSA_ENUM_TRUST_DOMAIN_EX_MULTIPLIER * 3;
+	r_ex.out.domains = &domains_ex;
+	r_ex.out.resume_handle = &resume_handle;
+	
+	enum_status = dcerpc_lsa_EnumTrustedDomainsEx(p, mem_ctx, &r_ex);
+	
+	if (!(NT_STATUS_EQUAL(enum_status, STATUS_MORE_ENTRIES) || NT_STATUS_EQUAL(enum_status, NT_STATUS_NO_MORE_ENTRIES))) {
+		printf("EnumTrustedDomainEx of zero size failed - %s\n", nt_errstr(enum_status));
+		return false;
+	}
+		
 	resume_handle = 0;
 	do {
 		r_ex.in.handle = handle;
@@ -1884,6 +1915,11 @@ static bool test_EnumTrustDom(struct dcerpc_pipe *p,
 			return false;
 		}
 
+		if (domains_ex.count == 0) {
+			printf("EnumTrustDomainEx failed - should have returned 'NT_STATUS_NO_MORE_ENTRIES' for 0 trusted domains\n");
+			return false;
+		}
+
 		ret &= test_query_each_TrustDomEx(p, mem_ctx, handle, &domains_ex);
 		
 	} while ((NT_STATUS_EQUAL(enum_status, STATUS_MORE_ENTRIES)));
@@ -1906,6 +1942,10 @@ static bool test_CreateTrustedDomain(struct dcerpc_pipe *p,
 
 	printf("Testing CreateTrustedDomain for 12 domains\n");
 
+	if (!test_EnumTrustDom(p, mem_ctx, handle)) {
+		ret = false;
+	}
+	
 	for (i=0; i< 12; i++) {
 		char *trust_name = talloc_asprintf(mem_ctx, "torturedom%02d", i);
 		char *trust_sid = talloc_asprintf(mem_ctx, "S-1-5-21-97398-379795-100%02d", i);
