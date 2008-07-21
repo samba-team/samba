@@ -770,7 +770,7 @@ sub ParseElementPrint($$$$)
 			} else {
 				my $counter = "cntr_$e->{NAME}_$l->{LEVEL_INDEX}";
 
-				$self->pidl("ndr->print(ndr, \"\%s: ARRAY(\%d)\", \"$e->{NAME}\", $length);");
+				$self->pidl("ndr->print(ndr, \"\%s: ARRAY(\%d)\", \"$e->{NAME}\", (int)$length);");
 				$self->pidl("ndr->depth++;");
 				$self->pidl("for ($counter=0;$counter<$length;$counter++) {");
 				$self->indent;
