@@ -1130,9 +1130,6 @@ static NTSTATUS dcesrv_lsa_EnumTrustDom(struct dcesrv_call_state *dce_call, TALL
 	if (count == -1) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
-	if (count == 0 || r->in.max_size == 0) {
-		return NT_STATUS_OK;
-	}
 
 	/* convert to lsa_TrustInformation format */
 	entries = talloc_array(mem_ctx, struct lsa_DomainInfo, count);
@@ -1217,9 +1214,6 @@ static NTSTATUS dcesrv_lsa_EnumTrustedDomainsEx(struct dcesrv_call_state *dce_ca
 			     "objectclass=trustedDomain");
 	if (count == -1) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	}
-	if (count == 0 || r->in.max_size == 0) {
-		return NT_STATUS_OK;
 	}
 
 	/* convert to lsa_DomainInformation format */
