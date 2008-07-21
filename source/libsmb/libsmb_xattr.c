@@ -39,7 +39,8 @@ find_lsa_pipe_hnd(struct cli_state *ipc_cli)
              pipe_hnd;
              pipe_hnd = pipe_hnd->next) {
                 
-		if (rpccli_is_pipe_idx(pipe_hnd, PI_LSARPC)) {
+		if (ndr_syntax_id_equal(&pipe_hnd->abstract_syntax,
+					&ndr_table_lsarpc.syntax_id)) {
 			return pipe_hnd;
 		}
 	}
