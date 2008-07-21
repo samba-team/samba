@@ -2326,12 +2326,6 @@ unsigned int rpccli_set_timeout(struct rpc_pipe_client *cli,
 	return cli_set_timeout(cli->trans.np.cli, timeout);
 }
 
-bool rpccli_is_pipe_idx(struct rpc_pipe_client *cli, int pipe_idx)
-{
-	return ndr_syntax_id_equal(&cli->abstract_syntax,
-				   pipe_names[pipe_idx].abstr_syntax);
-}
-
 bool rpccli_get_pwd_hash(struct rpc_pipe_client *cli, uint8_t nt_hash[16])
 {
 	if ((cli->auth->auth_type == PIPE_AUTH_TYPE_NTLMSSP)
