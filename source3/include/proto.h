@@ -7073,7 +7073,6 @@ NTSTATUS rpc_pipe_bind(struct rpc_pipe_client *cli,
 		       struct cli_pipe_auth_data *auth);
 unsigned int rpccli_set_timeout(struct rpc_pipe_client *cli,
 				unsigned int timeout);
-bool rpccli_is_pipe_idx(struct rpc_pipe_client *cli, int pipe_idx);
 bool rpccli_get_pwd_hash(struct rpc_pipe_client *cli, uint8_t nt_hash[16]);
 struct cli_state *rpc_pipe_np_smb_conn(struct rpc_pipe_client *p);
 NTSTATUS rpccli_anon_bind_data(TALLOC_CTX *mem_ctx,
