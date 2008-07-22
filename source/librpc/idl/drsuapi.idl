@@ -67,14 +67,14 @@ interface drsuapi
 	typedef struct {
 		drsuapi_SupportedExtensions supported_extensions;
 		GUID site_guid;
-		uint32 u1;
+		uint32 pid;
 	} drsuapi_DsBindInfo24;
 
 	/* this is used by w2k3 */
 	typedef struct {
 		drsuapi_SupportedExtensions supported_extensions;
 		GUID site_guid;
-		uint32 u1;
+		uint32 pid;
 		uint32 repl_epoch;
 	} drsuapi_DsBindInfo28;
 
@@ -82,7 +82,7 @@ interface drsuapi
 	typedef struct {
 		drsuapi_SupportedExtensions supported_extensions;
 		GUID site_guid;
-		uint32 u1;
+		uint32 pid;
 		uint32 repl_epoch;
 		drsuapi_SupportedExtensionsExt supported_extensions_ext;
 		GUID config_dn_guid;
@@ -1469,7 +1469,7 @@ interface drsuapi
 		GUID bind_guid;
 		NTTIME_1sec bind_time;
 		[flag(NDR_BIG_ENDIAN)] ipv4address client_ip_address;
-		uint32 u5; /* this is the same value the client used as u1 in the DsBindInfoX struct */
+		uint32 u5; /* this is the same value the client used as pid in the DsBindInfoX struct */
 	} drsuapi_DsReplicaConnection04;
 
 	typedef struct {
