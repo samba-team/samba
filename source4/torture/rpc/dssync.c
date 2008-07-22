@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "lib/cmdline/popt_common.h"
 #include "librpc/gen_ndr/ndr_drsuapi_c.h"
+#include "librpc/gen_ndr/ndr_drsblobs.h"
 #include "libcli/cldap/cldap.h"
 #include "libcli/ldap/ldap_client.h"
 #include "torture/torture.h"
@@ -526,6 +527,8 @@ static void test_analyse_objects(struct torture_context *tctx,
 			DEBUGADD(0,("ATTR: %s enc.length=%lu plain.length=%lu\n",
 				    name, (long)enc_data->length, (long)plain_data.length));
 			if (plain_data.length) {
+				enum ndr_err_code ndr_err;
+				struct supplementalCredentialsBlob scb;
 				dump_data(0, plain_data.data, plain_data.length);
 				if (save_values_dir) {
 					char *fname;
@@ -540,6 +543,13 @@ static void test_analyse_objects(struct torture_context *tctx,
 						}
 					}
 					talloc_free(fname);
+				}
+
+				ndr_err = ndr_pull_struct_blob_all(&plain_data, tctx,
+					   lp_iconv_convenience(tctx->lp_ctx), &scb,
+					   (ndr_pull_flags_fn_t)ndr_pull_supplementalCredentialsBlob);
+				if (NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+					NDR_PRINT_DEBUG(supplementalCredentialsBlob, &scb);
 				}
 			} else {
 				dump_data(0, enc_data->data, enc_data->length);
