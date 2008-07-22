@@ -58,6 +58,11 @@ interface drsuapi
 		DRSUAPI_SUPPORTED_EXTENSION_80000000			= 0x80000000
 	} drsuapi_SupportedExtensions;
 
+	typedef [bitmap32bit] bitmap {
+		DRSUAPI_SUPPORTED_EXTENSION_ADAM			= 0x00000001,
+		DRSUAPI_SUPPORTED_EXTENSION_LH_BETA2			= 0x00000002
+	} drsuapi_SupportedExtensionsExt;
+
 	/* this is used by w2k */
 	typedef struct {
 		drsuapi_SupportedExtensions supported_extensions;
@@ -79,7 +84,7 @@ interface drsuapi
 		GUID site_guid;
 		uint32 u1;
 		uint32 repl_epoch;
-		uint32 unknown;
+		drsuapi_SupportedExtensionsExt supported_extensions_ext;
 		GUID config_dn_guid;
 	} drsuapi_DsBindInfo48;
 
