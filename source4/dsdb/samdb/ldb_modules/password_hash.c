@@ -804,30 +804,41 @@ static int setup_supplemental_field(struct setup_password_fields_io *io)
 	struct supplementalCredentialsBlob scb;
 	struct supplementalCredentialsBlob _old_scb;
 	struct supplementalCredentialsBlob *old_scb = NULL;
-	/* Packages + (Kerberos, WDigest and maybe CLEARTEXT) */
-	uint32_t num_packages = 1 + 2;
+	/* Packages + (Kerberos, WDigest and CLEARTEXT) */
+	uint32_t num_names = 0;
+	const char *names[1+3];
+	uint32_t num_packages = 0;
 	struct supplementalCredentialsPackage packages[1+3];
-	struct supplementalCredentialsPackage *pp = &packages[0];
-	struct supplementalCredentialsPackage *pk = &packages[1];
-	struct supplementalCredentialsPackage *pd = &packages[2];
-	struct supplementalCredentialsPackage *pc = NULL;
+	/* Packages */
+	struct supplementalCredentialsPackage *pp = NULL;
 	struct package_PackagesBlob pb;
 	DATA_BLOB pb_blob;
 	char *pb_hexstr;
+	/* Primary:Kerberos */
+	const char **nk = NULL;
+	struct supplementalCredentialsPackage *pk = NULL;
 	struct package_PrimaryKerberosBlob pkb;
 	DATA_BLOB pkb_blob;
 	char *pkb_hexstr;
+	/* Primary:WDigest */
+	const char **nd = NULL;
+	struct supplementalCredentialsPackage *pd = NULL;
 	struct package_PrimaryWDigestBlob pdb;
 	DATA_BLOB pdb_blob;
 	char *pdb_hexstr;
+	/* Primary:CLEARTEXT */
+	const char **nc = NULL;
+	struct supplementalCredentialsPackage *pc = NULL;
 	struct package_PrimaryCLEARTEXTBlob pcb;
 	DATA_BLOB pcb_blob;
 	char *pcb_hexstr;
 	int ret;
 	enum ndr_err_code ndr_err;
 	uint8_t zero16[16];
+	bool do_cleartext = false;
 
 	ZERO_STRUCT(zero16);
+	ZERO_STRUCT(names);
 
 	if (!io->n.cleartext) {
 		/* 
@@ -864,17 +875,46 @@ static int setup_supplemental_field(struct setup_password_fields_io *io)
 
 	if (io->domain->store_cleartext &&
 	    (io->u.user_account_control & UF_ENCRYPTED_TEXT_PASSWORD_ALLOWED)) {
-		pc = &packages[3];
-		num_packages++;
+		do_cleartext = true;
 	}
 
-	/* Kerberos, WDigest, CLEARTEXT and termination(counted by the Packages element) */
-	pb.names = talloc_zero_array(io->ac, const char *, num_packages);
+	/*
+	 * The ordering is this
+	 *
+	 * Primary:Kerberos
+	 * Primary:WDigest
+	 * Primary:CLEARTEXT (optional)
+	 *
+	 * And the 'Packages' package is insert before the last
+	 * other package.
+	 */
+
+	/* Primary:Kerberos */
+	nk = &names[num_names++];
+	pk = &packages[num_packages++];
+
+	if (!do_cleartext) {
+		/* Packages */
+		pp = &packages[num_packages++];
+	}
+
+	/* Primary:WDigest */
+	nd = &names[num_names++];
+	pd = &packages[num_packages++];
+
+	if (do_cleartext) {
+		/* Packages */
+		pp = &packages[num_packages++];
+
+		/* Primary:CLEARTEXT */
+		nc = &names[num_names++];
+		pc = &packages[num_packages++];
+	}
 
 	/*
 	 * setup 'Primary:Kerberos' element
 	 */
-	pb.names[0] = "Kerberos";
+	*nk = "Kerberos";
 
 	ret = setup_primary_kerberos(io, old_scb, &pkb);
 	if (ret != LDB_SUCCESS) {
@@ -905,7 +945,7 @@ static int setup_supplemental_field(struct setup_password_fields_io *io)
 	/*
 	 * setup 'Primary:WDigest' element
 	 */
-	pb.names[1] = "WDigest";
+	*nd = "WDigest";
 
 	ret = setup_primary_wdigest(io, old_scb, &pdb);
 	if (ret != LDB_SUCCESS) {
@@ -937,7 +977,7 @@ static int setup_supplemental_field(struct setup_password_fields_io *io)
 	 * setup 'Primary:CLEARTEXT' element
 	 */
 	if (pc) {
-		pb.names[2]	= "CLEARTEXT";
+		*nc		= "CLEARTEXT";
 
 		pcb.cleartext	= io->n.cleartext;
 
@@ -966,6 +1006,7 @@ static int setup_supplemental_field(struct setup_password_fields_io *io)
 	/*
 	 * setup 'Packages' element
 	 */
+	pb.names = names;
 	ndr_err = ndr_push_struct_blob(&pb_blob, io->ac, 
 				       lp_iconv_convenience(ldb_get_opaque(io->ac->module->ldb, "loadparm")), 
 				       &pb,
@@ -990,6 +1031,7 @@ static int setup_supplemental_field(struct setup_password_fields_io *io)
 	/*
 	 * setup 'supplementalCredentials' value
 	 */
+	ZERO_STRUCT(scb);
 	scb.sub.num_packages	= num_packages;
 	scb.sub.packages	= packages;
 
