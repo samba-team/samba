@@ -221,7 +221,7 @@ static NTSTATUS libnet_dssync_bind(TALLOC_CTX *mem_ctx,
 	info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_GETCHGREPLY_V7;
 	info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_VERIFY_OBJECT;
 	info28.site_guid		= GUID_zero();
-	info28.u1			= 508;
+	info28.pid			= 508;
 	info28.repl_epoch		= 0;
 
 	bind_info.length = 28;
