@@ -64,8 +64,10 @@ extern const struct ndr_interface_table ndr_table_drsuapi;
 
 #define NDR_DRSUAPI_CALL_COUNT (25)
 void ndr_print_drsuapi_SupportedExtensions(struct ndr_print *ndr, const char *name, uint32_t r);
+void ndr_print_drsuapi_SupportedExtensionsExt(struct ndr_print *ndr, const char *name, uint32_t r);
 void ndr_print_drsuapi_DsBindInfo24(struct ndr_print *ndr, const char *name, const struct drsuapi_DsBindInfo24 *r);
 void ndr_print_drsuapi_DsBindInfo28(struct ndr_print *ndr, const char *name, const struct drsuapi_DsBindInfo28 *r);
+void ndr_print_drsuapi_DsBindInfo48(struct ndr_print *ndr, const char *name, const struct drsuapi_DsBindInfo48 *r);
 void ndr_print_drsuapi_DsBindInfoFallBack(struct ndr_print *ndr, const char *name, const struct drsuapi_DsBindInfoFallBack *r);
 void ndr_print_drsuapi_DsBindInfo(struct ndr_print *ndr, const char *name, const union drsuapi_DsBindInfo *r);
 void ndr_print_drsuapi_DsBindInfoCtr(struct ndr_print *ndr, const char *name, const struct drsuapi_DsBindInfoCtr *r);

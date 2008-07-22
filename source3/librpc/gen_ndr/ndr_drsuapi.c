@@ -62,6 +62,29 @@ _PUBLIC_ void ndr_print_drsuapi_SupportedExtensions(struct ndr_print *ndr, const
 	ndr->depth--;
 }
 
+static enum ndr_err_code ndr_push_drsuapi_SupportedExtensionsExt(struct ndr_push *ndr, int ndr_flags, uint32_t r)
+{
+	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_drsuapi_SupportedExtensionsExt(struct ndr_pull *ndr, int ndr_flags, uint32_t *r)
+{
+	uint32_t v;
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_drsuapi_SupportedExtensionsExt(struct ndr_print *ndr, const char *name, uint32_t r)
+{
+	ndr_print_uint32(ndr, name, r);
+	ndr->depth++;
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_SUPPORTED_EXTENSION_ADAM", DRSUAPI_SUPPORTED_EXTENSION_ADAM, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_SUPPORTED_EXTENSION_LH_BETA2", DRSUAPI_SUPPORTED_EXTENSION_LH_BETA2, r);
+	ndr->depth--;
+}
+
 static enum ndr_err_code ndr_push_drsuapi_DsBindInfo24(struct ndr_push *ndr, int ndr_flags, const struct drsuapi_DsBindInfo24 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
@@ -137,6 +160,51 @@ _PUBLIC_ void ndr_print_drsuapi_DsBindInfo28(struct ndr_print *ndr, const char *
 	ndr->depth--;
 }
 
+static enum ndr_err_code ndr_push_drsuapi_DsBindInfo48(struct ndr_push *ndr, int ndr_flags, const struct drsuapi_DsBindInfo48 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_drsuapi_SupportedExtensions(ndr, NDR_SCALARS, r->supported_extensions));
+		NDR_CHECK(ndr_push_GUID(ndr, NDR_SCALARS, &r->site_guid));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->u1));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->repl_epoch));
+		NDR_CHECK(ndr_push_drsuapi_SupportedExtensionsExt(ndr, NDR_SCALARS, r->supported_extensions_ext));
+		NDR_CHECK(ndr_push_GUID(ndr, NDR_SCALARS, &r->config_dn_guid));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_drsuapi_DsBindInfo48(struct ndr_pull *ndr, int ndr_flags, struct drsuapi_DsBindInfo48 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_drsuapi_SupportedExtensions(ndr, NDR_SCALARS, &r->supported_extensions));
+		NDR_CHECK(ndr_pull_GUID(ndr, NDR_SCALARS, &r->site_guid));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->u1));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->repl_epoch));
+		NDR_CHECK(ndr_pull_drsuapi_SupportedExtensionsExt(ndr, NDR_SCALARS, &r->supported_extensions_ext));
+		NDR_CHECK(ndr_pull_GUID(ndr, NDR_SCALARS, &r->config_dn_guid));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_drsuapi_DsBindInfo48(struct ndr_print *ndr, const char *name, const struct drsuapi_DsBindInfo48 *r)
+{
+	ndr_print_struct(ndr, name, "drsuapi_DsBindInfo48");
+	ndr->depth++;
+	ndr_print_drsuapi_SupportedExtensions(ndr, "supported_extensions", r->supported_extensions);
+	ndr_print_GUID(ndr, "site_guid", &r->site_guid);
+	ndr_print_uint32(ndr, "u1", r->u1);
+	ndr_print_uint32(ndr, "repl_epoch", r->repl_epoch);
+	ndr_print_drsuapi_SupportedExtensionsExt(ndr, "supported_extensions_ext", r->supported_extensions_ext);
+	ndr_print_GUID(ndr, "config_dn_guid", &r->config_dn_guid);
+	ndr->depth--;
+}
+
 static enum ndr_err_code ndr_push_drsuapi_DsBindInfoFallBack(struct ndr_push *ndr, int ndr_flags, const struct drsuapi_DsBindInfoFallBack *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
@@ -200,6 +268,15 @@ static enum ndr_err_code ndr_push_drsuapi_DsBindInfo(struct ndr_push *ndr, int n
 				}
 			break; }
 
+			case 48: {
+				{
+					struct ndr_push *_ndr_info48;
+					NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_info48, 4, -1));
+					NDR_CHECK(ndr_push_drsuapi_DsBindInfo48(_ndr_info48, NDR_SCALARS, &r->info48));
+					NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_info48, 4, -1));
+				}
+			break; }
+
 			default: {
 				{
 					struct ndr_push *_ndr_FallBack;
@@ -218,6 +295,9 @@ static enum ndr_err_code ndr_push_drsuapi_DsBindInfo(struct ndr_push *ndr, int n
 			break;
 
 			case 28:
+			break;
+
+			case 48:
 			break;
 
 			default:
@@ -252,6 +332,15 @@ static enum ndr_err_code ndr_pull_drsuapi_DsBindInfo(struct ndr_pull *ndr, int n
 				}
 			break; }
 
+			case 48: {
+				{
+					struct ndr_pull *_ndr_info48;
+					NDR_CHECK(ndr_pull_subcontext_start(ndr, &_ndr_info48, 4, -1));
+					NDR_CHECK(ndr_pull_drsuapi_DsBindInfo48(_ndr_info48, NDR_SCALARS, &r->info48));
+					NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_info48, 4, -1));
+				}
+			break; }
+
 			default: {
 				{
 					struct ndr_pull *_ndr_FallBack;
@@ -269,6 +358,9 @@ static enum ndr_err_code ndr_pull_drsuapi_DsBindInfo(struct ndr_pull *ndr, int n
 			break;
 
 			case 28:
+			break;
+
+			case 48:
 			break;
 
 			default:
@@ -291,6 +383,10 @@ _PUBLIC_ void ndr_print_drsuapi_DsBindInfo(struct ndr_print *ndr, const char *na
 
 		case 28:
 			ndr_print_drsuapi_DsBindInfo28(ndr, "info28", &r->info28);
+		break;
+
+		case 48:
+			ndr_print_drsuapi_DsBindInfo48(ndr, "info48", &r->info48);
 		break;
 
 		default:

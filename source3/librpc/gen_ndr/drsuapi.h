@@ -49,6 +49,10 @@
 #define DRSUAPI_SUPPORTED_EXTENSION_40000000 ( 0x40000000 )
 #define DRSUAPI_SUPPORTED_EXTENSION_80000000 ( 0x80000000 )
 
+/* bitmap drsuapi_SupportedExtensionsExt */
+#define DRSUAPI_SUPPORTED_EXTENSION_ADAM ( 0x00000001 )
+#define DRSUAPI_SUPPORTED_EXTENSION_LH_BETA2 ( 0x00000002 )
+
 struct drsuapi_DsBindInfo24 {
 	uint32_t supported_extensions;
 	struct GUID site_guid;
@@ -62,6 +66,15 @@ struct drsuapi_DsBindInfo28 {
 	uint32_t repl_epoch;
 };
 
+struct drsuapi_DsBindInfo48 {
+	uint32_t supported_extensions;
+	struct GUID site_guid;
+	uint32_t u1;
+	uint32_t repl_epoch;
+	uint32_t supported_extensions_ext;
+	struct GUID config_dn_guid;
+};
+
 struct drsuapi_DsBindInfoFallBack {
 	DATA_BLOB info;/* [flag(LIBNDR_FLAG_REMAINING)] */
 };
@@ -69,6 +82,7 @@ struct drsuapi_DsBindInfoFallBack {
 union drsuapi_DsBindInfo {
 	struct drsuapi_DsBindInfo24 info24;/* [subcontext(4),case(24)] */
 	struct drsuapi_DsBindInfo28 info28;/* [subcontext(4),case(28)] */
+	struct drsuapi_DsBindInfo48 info48;/* [subcontext(4),case(48)] */
 	struct drsuapi_DsBindInfoFallBack FallBack;/* [subcontext(4),default] */
 }/* [nodiscriminant] */;
 
