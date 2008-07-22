@@ -249,7 +249,7 @@ static krb5_error_code LDB_message2entry_keys(krb5_context context,
 		}
 		talloc_steal(mem_ctx, blob.data);
 
-		/* TODO: use ndr_pull_struct_blob_all(), when the ndr layer handles it correct with relative pointers */
+		/* we cannot use ndr_pull_struct_blob_all() here, as w2k and w2k3 add padding bytes */
 		ndr_err = ndr_pull_struct_blob(&blob, mem_ctx, iconv_convenience, &_pkb,
 					       (ndr_pull_flags_fn_t)ndr_pull_package_PrimaryKerberosBlob);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
