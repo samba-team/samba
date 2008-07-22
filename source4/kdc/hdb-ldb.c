@@ -325,6 +325,7 @@ static krb5_error_code LDB_message2entry_keys(krb5_context context,
 			if (!use) continue;
 
 			key.mkvno = 0;
+			key.salt = NULL;
 
 			if (pkb3->salt.string) {
 				DATA_BLOB salt;
