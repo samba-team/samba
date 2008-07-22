@@ -244,6 +244,7 @@ def provision_paths_from_lp(lp, dnsdomain):
     paths.templates = os.path.join(paths.private_dir, "templates.ldb")
     paths.dns = os.path.join(paths.private_dir, dnsdomain + ".zone")
     paths.namedconf = os.path.join(paths.private_dir, "named.conf")
+    paths.namedtxt = os.path.join(paths.private_dir, "named.txt")
     paths.krb5conf = os.path.join(paths.private_dir, "krb5.conf")
     paths.winsdb = os.path.join(paths.private_dir, "wins.ldb")
     paths.s4_ldapi_path = os.path.join(paths.private_dir, "ldapi")
@@ -1084,9 +1085,13 @@ def provision(setup_dir, message, session_info,
                              domainguid=domainguid, hostguid=hostguid)
 
             create_named_conf(paths.namedconf, setup_path, realm=names.realm,
+                              dnsdomain=names.dnsdomain, private_dir=paths.private_dir)
+
+            create_named_txt(paths.namedtxt, setup_path, realm=names.realm,
                               dnsdomain=names.dnsdomain, private_dir=paths.private_dir,
                               keytab_name=paths.dns_keytab)
             message("See %s for an example configuration include file for BIND" % paths.namedconf)
+            message("and %s for further documentation required for secure DNS updates" % paths.namedtxt)
 
             create_krb5_conf(paths.krb5conf, setup_path, dnsdomain=names.dnsdomain,
                              hostname=names.hostname, realm=names.realm)
@@ -1376,7 +1381,7 @@ def create_zone_file(path, setup_path, dnsdomain, domaindn,
 
 
 def create_named_conf(path, setup_path, realm, dnsdomain,
-                      private_dir, keytab_name):
+                      private_dir):
     """Write out a file containing zone statements suitable for inclusion in a
     named.conf file (including GSS-TSIG configuration).
     
@@ -1392,9 +1397,28 @@ def create_named_conf(path, setup_path, realm, dnsdomain,
             "DNSDOMAIN": dnsdomain,
             "REALM": realm,
             "REALM_WC": "*." + ".".join(realm.split(".")[1:]),
+            "PRIVATE_DIR": private_dir
+            })
+
+def create_named_txt(path, setup_path, realm, dnsdomain,
+                      private_dir, keytab_name):
+    """Write out a file containing zone statements suitable for inclusion in a
+    named.conf file (including GSS-TSIG configuration).
+    
+    :param path: Path of the new named.conf file.
+    :param setup_path: Setup path function.
+    :param realm: Realm name
+    :param dnsdomain: DNS Domain name
+    :param private_dir: Path to private directory
+    :param keytab_name: File name of DNS keytab file
+    """
+
+    setup_file(setup_path("named.txt"), path, {
+            "DNSDOMAIN": dnsdomain,
+            "REALM": realm,
             "DNS_KEYTAB": keytab_name,
             "DNS_KEYTAB_ABS": os.path.join(private_dir, keytab_name),
-            "PRIVATE_DIR": private_dir,
+            "PRIVATE_DIR": private_dir
         })
 
 def create_krb5_conf(path, setup_path, dnsdomain, hostname, realm):
