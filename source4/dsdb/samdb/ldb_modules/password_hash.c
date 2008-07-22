@@ -1071,7 +1071,7 @@ static int setup_password_fields(struct setup_password_fields_io *io)
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
-	if (io->n.cleartext && !io->n.nt_hash) {
+	if (io->n.cleartext) {
 		struct samr_Password *hash;
 
 		hash = talloc(io->ac, struct samr_Password);
@@ -1092,7 +1092,7 @@ static int setup_password_fields(struct setup_password_fields_io *io)
 		}
 	}
 
-	if (io->n.cleartext && !io->n.lm_hash) {
+	if (io->n.cleartext) {
 		struct samr_Password *hash;
 
 		hash = talloc(io->ac, struct samr_Password);
