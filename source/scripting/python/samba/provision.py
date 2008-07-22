@@ -1043,6 +1043,7 @@ def provision(setup_dir, message, session_info,
         policy_path = os.path.join(paths.sysvol, names.dnsdomain, "Policies", 
                                    "{" + policyguid + "}")
         os.makedirs(policy_path, 0755)
+        open(os.path.join(policy_path, "GPT.INI"), 'w').write("")
         os.makedirs(os.path.join(policy_path, "Machine"), 0755)
         os.makedirs(os.path.join(policy_path, "User"), 0755)
         if not os.path.isdir(paths.netlogon):
@@ -1081,12 +1082,11 @@ def provision(setup_dir, message, session_info,
                              hostip6=hostip6, hostname=names.hostname,
                              dnspass=dnspass, realm=names.realm,
                              domainguid=domainguid, hostguid=hostguid)
-            message("Please install the zone located in %s into your DNS server" % paths.dns)
 
             create_named_conf(paths.namedconf, setup_path, realm=names.realm,
                               dnsdomain=names.dnsdomain, private_dir=paths.private_dir,
                               keytab_name=paths.dns_keytab)
-            message("See %s for example configuration statements for secure GSS-TSIG updates" % paths.namedconf)
+            message("See %s for an example configuration include file for BIND" % paths.namedconf)
 
             create_krb5_conf(paths.krb5conf, setup_path, dnsdomain=names.dnsdomain,
                              hostname=names.hostname, realm=names.realm)
@@ -1394,6 +1394,7 @@ def create_named_conf(path, setup_path, realm, dnsdomain,
             "REALM_WC": "*." + ".".join(realm.split(".")[1:]),
             "DNS_KEYTAB": keytab_name,
             "DNS_KEYTAB_ABS": os.path.join(private_dir, keytab_name),
+            "PRIVATE_DIR": private_dir,
         })
 
 def create_krb5_conf(path, setup_path, dnsdomain, hostname, realm):
