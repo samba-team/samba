@@ -104,7 +104,7 @@ static struct DsSyncTest *test_create_context(struct torture_context *tctx)
 	our_bind_info28->supported_extensions	= 0xFFFFFFFF;
 	our_bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_ADDENTRYREPLY_V3;
 	our_bind_info28->site_guid		= GUID_zero();
-	our_bind_info28->u1			= 0;
+	our_bind_info28->pid			= 0;
 	our_bind_info28->repl_epoch		= 1;
 
 	our_bind_info_ctr			= &ctx->admin.drsuapi.our_bind_info_ctr;
@@ -153,7 +153,7 @@ static struct DsSyncTest *test_create_context(struct torture_context *tctx)
 		our_bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_XPRESS_COMPRESS;
 	}
 	our_bind_info28->site_guid		= GUID_zero();
-	our_bind_info28->u1			= 508;
+	our_bind_info28->pid			= 508;
 	our_bind_info28->repl_epoch		= 0;
 
 	our_bind_info_ctr			= &ctx->new_dc.drsuapi.our_bind_info_ctr;
@@ -210,7 +210,7 @@ static bool _test_DsBind(struct torture_context *tctx,
 			info24 = &b->req.out.bind_info->info.info24;
 			b->peer_bind_info28.supported_extensions= info24->supported_extensions;
 			b->peer_bind_info28.site_guid		= info24->site_guid;
-			b->peer_bind_info28.u1			= info24->u1;
+			b->peer_bind_info28.pid			= info24->pid;
 			b->peer_bind_info28.repl_epoch		= 0;
 			break;
 		}

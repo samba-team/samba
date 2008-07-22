@@ -104,7 +104,7 @@ static WERROR dreplsrv_connect_samdb(struct dreplsrv_service *service, struct lo
 	/* TODO: fill in site_guid */
 	bind_info28->site_guid			= GUID_zero();
 	/* TODO: find out how this is really triggered! */
-	bind_info28->u1				= 0;
+	bind_info28->pid			= 0;
 	bind_info28->repl_epoch			= 0;
 
 	return WERR_OK;
