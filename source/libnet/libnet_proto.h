@@ -55,6 +55,11 @@ struct libnet_keytab_entry *libnet_keytab_search(struct libnet_keytab_context *c
 						 const char *principal, int kvno,
 						 const const krb5_enctype enctype,
 						 TALLOC_CTX *mem_ctx);
+
+krb5_error_code libnet_keytab_remove_entries(struct libnet_keytab_context *ctx,
+					     const char *principal,
+					     int kvno,
+					     const krb5_enctype enctype);
 #endif
 
 /* The following definitions come from libnet/libnet_samsync.c  */

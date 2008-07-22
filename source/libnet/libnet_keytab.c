@@ -223,4 +223,94 @@ cont:
 	return entry;
 }
 
+/**
+ * Remove all entries that have the given principal, kvno and enctype.
+ */
+krb5_error_code libnet_keytab_remove_entries(struct libnet_keytab_context *ctx,
+					     const char *principal,
+					     int kvno,
+					     const krb5_enctype enctype)
+{
+	krb5_error_code ret;
+	krb5_kt_cursor cursor;
+	krb5_keytab_entry kt_entry;
+
+	ZERO_STRUCT(kt_entry);
+	ZERO_STRUCT(cursor);
+
+	ret = krb5_kt_start_seq_get(ctx->context, ctx->keytab, &cursor);
+	if (ret) {
+		return 0;
+	}
+
+	while (krb5_kt_next_entry(ctx->context, ctx->keytab, &kt_entry, &cursor) == 0)
+	{
+		char *princ_s = NULL;
+
+		if (kt_entry.vno != kvno) {
+			goto cont;
+		}
+
+		if (kt_entry.key.enctype != enctype) {
+			goto cont;
+		}
+
+		ret = smb_krb5_unparse_name(ctx->context, kt_entry.principal,
+					    &princ_s);
+		if (ret) {
+			DEBUG(5, ("smb_krb5_unparse_name failed (%s)\n",
+				  error_message(ret)));
+			goto cont;
+		}
+
+		if (strcmp(principal, princ_s) != 0) {
+			goto cont;
+		}
+
+		/* match found - remove */
+
+		DEBUG(10, ("found entry for principal %s, kvno %d, "
+			   "enctype %d - trying to remove it\n",
+			   princ_s, kt_entry.vno, kt_entry.key.enctype));
+
+		ret = krb5_kt_end_seq_get(ctx->context, ctx->keytab, &cursor);
+		ZERO_STRUCT(cursor);
+		if (ret) {
+			DEBUG(5, ("krb5_kt_end_seq_get failed (%s)\n",
+				  error_message(ret)));
+			goto cont;
+		}
+
+		ret = krb5_kt_remove_entry(ctx->context, ctx->keytab,
+					   &kt_entry);
+		if (ret) {
+			DEBUG(5, ("krb5_kt_remove_entry failed (%s)\n",
+				  error_message(ret)));
+			goto cont;
+		}
+		DEBUG(10, ("removed entry for principal %s, kvno %d, "
+			   "enctype %d\n", princ_s, kt_entry.vno,
+			   kt_entry.key.enctype));
+
+		ret = krb5_kt_start_seq_get(ctx->context, ctx->keytab, &cursor);
+		if (ret) {
+			DEBUG(5, ("krb5_kt_start_seq_get failed (%s)\n",
+				  error_message(ret)));
+			goto cont;
+		}
+
+cont:
+		smb_krb5_kt_free_entry(ctx->context, &kt_entry);
+		SAFE_FREE(princ_s);
+	}
+
+	ret = krb5_kt_end_seq_get(ctx->context, ctx->keytab, &cursor);
+	if (ret) {
+		DEBUG(5, ("krb5_kt_end_seq_get failed (%s)\n",
+			  error_message(ret)));
+	}
+
+	return ret;
+}
+
 #endif /* HAVE_KRB5 */
