@@ -56,20 +56,20 @@
 struct drsuapi_DsBindInfo24 {
 	uint32_t supported_extensions;
 	struct GUID site_guid;
-	uint32_t u1;
+	uint32_t pid;
 };
 
 struct drsuapi_DsBindInfo28 {
 	uint32_t supported_extensions;
 	struct GUID site_guid;
-	uint32_t u1;
+	uint32_t pid;
 	uint32_t repl_epoch;
 };
 
 struct drsuapi_DsBindInfo48 {
 	uint32_t supported_extensions;
 	struct GUID site_guid;
-	uint32_t u1;
+	uint32_t pid;
 	uint32_t repl_epoch;
 	uint32_t supported_extensions_ext;
 	struct GUID config_dn_guid;
