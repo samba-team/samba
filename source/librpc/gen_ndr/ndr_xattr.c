@@ -87,7 +87,7 @@ _PUBLIC_ void ndr_print_tdb_xattrs(struct ndr_print *ndr, const char *name, cons
 	ndr_print_struct(ndr, name, "tdb_xattrs");
 	ndr->depth++;
 	ndr_print_uint32(ndr, "num_xattrs", r->num_xattrs);
-	ndr->print(ndr, "%s: ARRAY(%d)", "xattrs", r->num_xattrs);
+	ndr->print(ndr, "%s: ARRAY(%d)", "xattrs", (int)r->num_xattrs);
 	ndr->depth++;
 	for (cntr_xattrs_0=0;cntr_xattrs_0<r->num_xattrs;cntr_xattrs_0++) {
 		char *idx_0=NULL;

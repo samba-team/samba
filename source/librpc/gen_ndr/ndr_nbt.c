@@ -266,7 +266,7 @@ _PUBLIC_ void ndr_print_nbt_rdata_netbios(struct ndr_print *ndr, const char *nam
 	ndr_print_struct(ndr, name, "nbt_rdata_netbios");
 	ndr->depth++;
 	ndr_print_uint16(ndr, "length", r->length);
-	ndr->print(ndr, "%s: ARRAY(%d)", "addresses", r->length / 6);
+	ndr->print(ndr, "%s: ARRAY(%d)", "addresses", (int)r->length / 6);
 	ndr->depth++;
 	for (cntr_addresses_0=0;cntr_addresses_0<r->length / 6;cntr_addresses_0++) {
 		char *idx_0=NULL;
@@ -448,7 +448,7 @@ _PUBLIC_ void ndr_print_nbt_rdata_status(struct ndr_print *ndr, const char *name
 	ndr->depth++;
 	ndr_print_uint16(ndr, "length", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?r->num_names * 18 + 47:r->length);
 	ndr_print_uint8(ndr, "num_names", r->num_names);
-	ndr->print(ndr, "%s: ARRAY(%d)", "names", r->num_names);
+	ndr->print(ndr, "%s: ARRAY(%d)", "names", (int)r->num_names);
 	ndr->depth++;
 	for (cntr_names_0=0;cntr_names_0<r->num_names;cntr_names_0++) {
 		char *idx_0=NULL;
@@ -772,7 +772,7 @@ _PUBLIC_ void ndr_print_nbt_name_packet(struct ndr_print *ndr, const char *name,
 		ndr_print_uint16(ndr, "ancount", r->ancount);
 		ndr_print_uint16(ndr, "nscount", r->nscount);
 		ndr_print_uint16(ndr, "arcount", r->arcount);
-		ndr->print(ndr, "%s: ARRAY(%d)", "questions", r->qdcount);
+		ndr->print(ndr, "%s: ARRAY(%d)", "questions", (int)r->qdcount);
 		ndr->depth++;
 		for (cntr_questions_0=0;cntr_questions_0<r->qdcount;cntr_questions_0++) {
 			char *idx_0=NULL;
@@ -782,7 +782,7 @@ _PUBLIC_ void ndr_print_nbt_name_packet(struct ndr_print *ndr, const char *name,
 			}
 		}
 		ndr->depth--;
-		ndr->print(ndr, "%s: ARRAY(%d)", "answers", r->ancount);
+		ndr->print(ndr, "%s: ARRAY(%d)", "answers", (int)r->ancount);
 		ndr->depth++;
 		for (cntr_answers_0=0;cntr_answers_0<r->ancount;cntr_answers_0++) {
 			char *idx_0=NULL;
@@ -792,7 +792,7 @@ _PUBLIC_ void ndr_print_nbt_name_packet(struct ndr_print *ndr, const char *name,
 			}
 		}
 		ndr->depth--;
-		ndr->print(ndr, "%s: ARRAY(%d)", "nsrecs", r->nscount);
+		ndr->print(ndr, "%s: ARRAY(%d)", "nsrecs", (int)r->nscount);
 		ndr->depth++;
 		for (cntr_nsrecs_0=0;cntr_nsrecs_0<r->nscount;cntr_nsrecs_0++) {
 			char *idx_0=NULL;
@@ -802,7 +802,7 @@ _PUBLIC_ void ndr_print_nbt_name_packet(struct ndr_print *ndr, const char *name,
 			}
 		}
 		ndr->depth--;
-		ndr->print(ndr, "%s: ARRAY(%d)", "additional", r->arcount);
+		ndr->print(ndr, "%s: ARRAY(%d)", "additional", (int)r->arcount);
 		ndr->depth++;
 		for (cntr_additional_0=0;cntr_additional_0<r->arcount;cntr_additional_0++) {
 			char *idx_0=NULL;
@@ -1792,7 +1792,7 @@ _PUBLIC_ void ndr_print_nbt_netlogon_query_for_pdc2(struct ndr_print *ndr, const
 	ndr_print_string(ndr, "computer_name", r->computer_name);
 	ndr_print_string(ndr, "user_name", r->user_name);
 	ndr_print_string(ndr, "mailslot_name", r->mailslot_name);
-	ndr->print(ndr, "%s: ARRAY(%d)", "unknown", 2);
+	ndr->print(ndr, "%s: ARRAY(%d)", "unknown", (int)2);
 	ndr->depth++;
 	for (cntr_unknown_0=0;cntr_unknown_0<2;cntr_unknown_0++) {
 		char *idx_0=NULL;
@@ -2254,7 +2254,7 @@ _PUBLIC_ void ndr_print_nbt_netlogon_announce_uas(struct ndr_print *ndr, const c
 	ndr_print_string(ndr, "unicode_pdc_name", r->unicode_pdc_name);
 	ndr_print_string(ndr, "unicode_domain", r->unicode_domain);
 	ndr_print_uint32(ndr, "db_count", r->db_count);
-	ndr->print(ndr, "%s: ARRAY(%d)", "dbchange", r->db_count);
+	ndr->print(ndr, "%s: ARRAY(%d)", "dbchange", (int)r->db_count);
 	ndr->depth++;
 	for (cntr_dbchange_0=0;cntr_dbchange_0<r->db_count;cntr_dbchange_0++) {
 		char *idx_0=NULL;
@@ -4274,7 +4274,7 @@ _PUBLIC_ void ndr_print_nbt_browse_backup_list_response(struct ndr_print *ndr, c
 	ndr->depth++;
 	ndr_print_uint8(ndr, "BackupCount", r->BackupCount);
 	ndr_print_uint32(ndr, "Token", r->Token);
-	ndr->print(ndr, "%s: ARRAY(%d)", "BackupServerList", r->BackupCount);
+	ndr->print(ndr, "%s: ARRAY(%d)", "BackupServerList", (int)r->BackupCount);
 	ndr->depth++;
 	for (cntr_BackupServerList_0=0;cntr_BackupServerList_0<r->BackupCount;cntr_BackupServerList_0++) {
 		char *idx_0=NULL;

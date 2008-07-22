@@ -744,7 +744,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsReplicaCursorCtrEx(struct ndr_print *ndr, cons
 	ndr_print_uint32(ndr, "reserved1", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?0:r->reserved1);
 	ndr_print_uint32(ndr, "count", r->count);
 	ndr_print_uint32(ndr, "reserved2", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?0:r->reserved2);
-	ndr->print(ndr, "%s: ARRAY(%d)", "cursors", r->count);
+	ndr->print(ndr, "%s: ARRAY(%d)", "cursors", (int)r->count);
 	ndr->depth++;
 	for (cntr_cursors_0=0;cntr_cursors_0<r->count;cntr_cursors_0++) {
 		char *idx_0=NULL;
@@ -1113,7 +1113,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsReplicaOIDMapping_Ctr(struct ndr_print *ndr, c
 	ndr_print_ptr(ndr, "mappings", r->mappings);
 	ndr->depth++;
 	if (r->mappings) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "mappings", r->num_mappings);
+		ndr->print(ndr, "%s: ARRAY(%d)", "mappings", (int)r->num_mappings);
 		ndr->depth++;
 		for (cntr_mappings_1=0;cntr_mappings_1<r->num_mappings;cntr_mappings_1++) {
 			char *idx_1=NULL;
@@ -1282,7 +1282,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsPartialAttributeSet(struct ndr_print *ndr, con
 	ndr_print_uint32(ndr, "version", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?1:r->version);
 	ndr_print_uint32(ndr, "reserved1", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?0:r->reserved1);
 	ndr_print_uint32(ndr, "num_attids", r->num_attids);
-	ndr->print(ndr, "%s: ARRAY(%d)", "attids", r->num_attids);
+	ndr->print(ndr, "%s: ARRAY(%d)", "attids", (int)r->num_attids);
 	ndr->depth++;
 	for (cntr_attids_0=0;cntr_attids_0<r->num_attids;cntr_attids_0++) {
 		char *idx_0=NULL;
@@ -1633,7 +1633,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsReplicaCursor2CtrEx(struct ndr_print *ndr, con
 	ndr_print_uint32(ndr, "reserved1", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?0:r->reserved1);
 	ndr_print_uint32(ndr, "count", r->count);
 	ndr_print_uint32(ndr, "reserved2", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?0:r->reserved2);
-	ndr->print(ndr, "%s: ARRAY(%d)", "cursors", r->count);
+	ndr->print(ndr, "%s: ARRAY(%d)", "cursors", (int)r->count);
 	ndr->depth++;
 	for (cntr_cursors_0=0;cntr_cursors_0<r->count;cntr_cursors_0++) {
 		char *idx_0=NULL;
@@ -1777,7 +1777,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsAttributeValueCtr(struct ndr_print *ndr, const
 	ndr_print_ptr(ndr, "values", r->values);
 	ndr->depth++;
 	if (r->values) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "values", r->num_values);
+		ndr->print(ndr, "%s: ARRAY(%d)", "values", (int)r->num_values);
 		ndr->depth++;
 		for (cntr_values_1=0;cntr_values_1<r->num_values;cntr_values_1++) {
 			char *idx_1=NULL;
@@ -2021,7 +2021,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsReplicaAttributeCtr(struct ndr_print *ndr, con
 	ndr_print_ptr(ndr, "attributes", r->attributes);
 	ndr->depth++;
 	if (r->attributes) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "attributes", r->num_attributes);
+		ndr->print(ndr, "%s: ARRAY(%d)", "attributes", (int)r->num_attributes);
 		ndr->depth++;
 		for (cntr_attributes_1=0;cntr_attributes_1<r->num_attributes;cntr_attributes_1++) {
 			char *idx_1=NULL;
@@ -2207,7 +2207,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsReplicaMetaDataCtr(struct ndr_print *ndr, cons
 	ndr_print_struct(ndr, name, "drsuapi_DsReplicaMetaDataCtr");
 	ndr->depth++;
 	ndr_print_uint32(ndr, "count", r->count);
-	ndr->print(ndr, "%s: ARRAY(%d)", "meta_data", r->count);
+	ndr->print(ndr, "%s: ARRAY(%d)", "meta_data", (int)r->count);
 	ndr->depth++;
 	for (cntr_meta_data_0=0;cntr_meta_data_0<r->count;cntr_meta_data_0++) {
 		char *idx_0=NULL;
@@ -2706,7 +2706,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsGetNCChangesCtr6(struct ndr_print *ndr, const 
 	ndr_print_ptr(ndr, "linked_attributes", r->linked_attributes);
 	ndr->depth++;
 	if (r->linked_attributes) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "linked_attributes", r->linked_attributes_count);
+		ndr->print(ndr, "%s: ARRAY(%d)", "linked_attributes", (int)r->linked_attributes_count);
 		ndr->depth++;
 		for (cntr_linked_attributes_1=0;cntr_linked_attributes_1<r->linked_attributes_count;cntr_linked_attributes_1++) {
 			char *idx_1=NULL;
@@ -3886,7 +3886,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsGetMembershipsCtr1(struct ndr_print *ndr, cons
 	ndr_print_ptr(ndr, "info_array", r->info_array);
 	ndr->depth++;
 	if (r->info_array) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "info_array", r->num_memberships);
+		ndr->print(ndr, "%s: ARRAY(%d)", "info_array", (int)r->num_memberships);
 		ndr->depth++;
 		for (cntr_info_array_1=0;cntr_info_array_1<r->num_memberships;cntr_info_array_1++) {
 			char *idx_1=NULL;
@@ -3906,7 +3906,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsGetMembershipsCtr1(struct ndr_print *ndr, cons
 	ndr_print_ptr(ndr, "group_attrs", r->group_attrs);
 	ndr->depth++;
 	if (r->group_attrs) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "group_attrs", r->num_memberships);
+		ndr->print(ndr, "%s: ARRAY(%d)", "group_attrs", (int)r->num_memberships);
 		ndr->depth++;
 		for (cntr_group_attrs_1=0;cntr_group_attrs_1<r->num_memberships;cntr_group_attrs_1++) {
 			char *idx_1=NULL;
@@ -3921,7 +3921,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsGetMembershipsCtr1(struct ndr_print *ndr, cons
 	ndr_print_ptr(ndr, "sids", r->sids);
 	ndr->depth++;
 	if (r->sids) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "sids", r->num_sids);
+		ndr->print(ndr, "%s: ARRAY(%d)", "sids", (int)r->num_sids);
 		ndr->depth++;
 		for (cntr_sids_1=0;cntr_sids_1<r->num_sids;cntr_sids_1++) {
 			char *idx_1=NULL;
@@ -4125,7 +4125,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsGetMembershipsRequest1(struct ndr_print *ndr, 
 	ndr_print_ptr(ndr, "info_array", r->info_array);
 	ndr->depth++;
 	if (r->info_array) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "info_array", r->count);
+		ndr->print(ndr, "%s: ARRAY(%d)", "info_array", (int)r->count);
 		ndr->depth++;
 		for (cntr_info_array_1=0;cntr_info_array_1<r->count;cntr_info_array_1++) {
 			char *idx_1=NULL;
@@ -4809,7 +4809,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsNameRequest1(struct ndr_print *ndr, const char
 	ndr_print_ptr(ndr, "names", r->names);
 	ndr->depth++;
 	if (r->names) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "names", r->count);
+		ndr->print(ndr, "%s: ARRAY(%d)", "names", (int)r->count);
 		ndr->depth++;
 		for (cntr_names_1=0;cntr_names_1<r->count;cntr_names_1++) {
 			char *idx_1=NULL;
@@ -5066,7 +5066,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsNameCtr1(struct ndr_print *ndr, const char *na
 	ndr_print_ptr(ndr, "array", r->array);
 	ndr->depth++;
 	if (r->array) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "array", r->count);
+		ndr->print(ndr, "%s: ARRAY(%d)", "array", (int)r->count);
 		ndr->depth++;
 		for (cntr_array_1=0;cntr_array_1<r->count;cntr_array_1++) {
 			char *idx_1=NULL;
@@ -5314,7 +5314,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsWriteAccountSpnRequest1(struct ndr_print *ndr,
 	ndr_print_ptr(ndr, "spn_names", r->spn_names);
 	ndr->depth++;
 	if (r->spn_names) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "spn_names", r->count);
+		ndr->print(ndr, "%s: ARRAY(%d)", "spn_names", (int)r->count);
 		ndr->depth++;
 		for (cntr_spn_names_1=0;cntr_spn_names_1<r->count;cntr_spn_names_1++) {
 			char *idx_1=NULL;
@@ -6191,7 +6191,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsGetDCInfoCtr1(struct ndr_print *ndr, const cha
 	ndr_print_ptr(ndr, "array", r->array);
 	ndr->depth++;
 	if (r->array) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "array", r->count);
+		ndr->print(ndr, "%s: ARRAY(%d)", "array", (int)r->count);
 		ndr->depth++;
 		for (cntr_array_1=0;cntr_array_1<r->count;cntr_array_1++) {
 			char *idx_1=NULL;
@@ -6559,7 +6559,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsGetDCInfoCtr2(struct ndr_print *ndr, const cha
 	ndr_print_ptr(ndr, "array", r->array);
 	ndr->depth++;
 	if (r->array) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "array", r->count);
+		ndr->print(ndr, "%s: ARRAY(%d)", "array", (int)r->count);
 		ndr->depth++;
 		for (cntr_array_1=0;cntr_array_1<r->count;cntr_array_1++) {
 			char *idx_1=NULL;
@@ -6930,7 +6930,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsGetDCInfoCtr3(struct ndr_print *ndr, const cha
 	ndr_print_ptr(ndr, "array", r->array);
 	ndr->depth++;
 	if (r->array) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "array", r->count);
+		ndr->print(ndr, "%s: ARRAY(%d)", "array", (int)r->count);
 		ndr->depth++;
 		for (cntr_array_1=0;cntr_array_1<r->count;cntr_array_1++) {
 			char *idx_1=NULL;
@@ -7107,7 +7107,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsGetDCConnectionCtr01(struct ndr_print *ndr, co
 	ndr_print_ptr(ndr, "array", r->array);
 	ndr->depth++;
 	if (r->array) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "array", r->count);
+		ndr->print(ndr, "%s: ARRAY(%d)", "array", (int)r->count);
 		ndr->depth++;
 		for (cntr_array_1=0;cntr_array_1<r->count;cntr_array_1++) {
 			char *idx_1=NULL;
@@ -8085,7 +8085,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsAddEntryCtr2(struct ndr_print *ndr, const char
 	ndr_print_ptr(ndr, "objects", r->objects);
 	ndr->depth++;
 	if (r->objects) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "objects", r->count);
+		ndr->print(ndr, "%s: ARRAY(%d)", "objects", (int)r->count);
 		ndr->depth++;
 		for (cntr_objects_1=0;cntr_objects_1<r->count;cntr_objects_1++) {
 			char *idx_1=NULL;
@@ -8228,7 +8228,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsAddEntryCtr3(struct ndr_print *ndr, const char
 	ndr_print_ptr(ndr, "objects", r->objects);
 	ndr->depth++;
 	if (r->objects) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "objects", r->count);
+		ndr->print(ndr, "%s: ARRAY(%d)", "objects", (int)r->count);
 		ndr->depth++;
 		for (cntr_objects_1=0;cntr_objects_1<r->count;cntr_objects_1++) {
 			char *idx_1=NULL;
@@ -8953,7 +8953,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsReplicaNeighbourCtr(struct ndr_print *ndr, con
 	ndr->depth++;
 	ndr_print_uint32(ndr, "count", r->count);
 	ndr_print_uint32(ndr, "reserved", r->reserved);
-	ndr->print(ndr, "%s: ARRAY(%d)", "array", r->count);
+	ndr->print(ndr, "%s: ARRAY(%d)", "array", (int)r->count);
 	ndr->depth++;
 	for (cntr_array_0=0;cntr_array_0<r->count;cntr_array_0++) {
 		char *idx_0=NULL;
@@ -9015,7 +9015,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsReplicaCursorCtr(struct ndr_print *ndr, const 
 	ndr->depth++;
 	ndr_print_uint32(ndr, "count", r->count);
 	ndr_print_uint32(ndr, "reserved", r->reserved);
-	ndr->print(ndr, "%s: ARRAY(%d)", "array", r->count);
+	ndr->print(ndr, "%s: ARRAY(%d)", "array", (int)r->count);
 	ndr->depth++;
 	for (cntr_array_0=0;cntr_array_0<r->count;cntr_array_0++) {
 		char *idx_0=NULL;
@@ -9161,7 +9161,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsReplicaObjMetaDataCtr(struct ndr_print *ndr, c
 	ndr->depth++;
 	ndr_print_uint32(ndr, "count", r->count);
 	ndr_print_uint32(ndr, "reserved", r->reserved);
-	ndr->print(ndr, "%s: ARRAY(%d)", "array", r->count);
+	ndr->print(ndr, "%s: ARRAY(%d)", "array", (int)r->count);
 	ndr->depth++;
 	for (cntr_array_0=0;cntr_array_0<r->count;cntr_array_0++) {
 		char *idx_0=NULL;
@@ -9304,7 +9304,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsReplicaKccDsaFailuresCtr(struct ndr_print *ndr
 	ndr->depth++;
 	ndr_print_uint32(ndr, "count", r->count);
 	ndr_print_uint32(ndr, "reserved", r->reserved);
-	ndr->print(ndr, "%s: ARRAY(%d)", "array", r->count);
+	ndr->print(ndr, "%s: ARRAY(%d)", "array", (int)r->count);
 	ndr->depth++;
 	for (cntr_array_0=0;cntr_array_0<r->count;cntr_array_0++) {
 		char *idx_0=NULL;
@@ -9706,7 +9706,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsReplicaOpCtr(struct ndr_print *ndr, const char
 	ndr->depth++;
 	ndr_print_NTTIME(ndr, "time", r->time);
 	ndr_print_uint32(ndr, "count", r->count);
-	ndr->print(ndr, "%s: ARRAY(%d)", "array", r->count);
+	ndr->print(ndr, "%s: ARRAY(%d)", "array", (int)r->count);
 	ndr->depth++;
 	for (cntr_array_0=0;cntr_array_0<r->count;cntr_array_0++) {
 		char *idx_0=NULL;
@@ -9918,7 +9918,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsReplicaAttrValMetaDataCtr(struct ndr_print *nd
 	ndr->depth++;
 	ndr_print_uint32(ndr, "count", r->count);
 	ndr_print_int32(ndr, "enumeration_context", r->enumeration_context);
-	ndr->print(ndr, "%s: ARRAY(%d)", "array", r->count);
+	ndr->print(ndr, "%s: ARRAY(%d)", "array", (int)r->count);
 	ndr->depth++;
 	for (cntr_array_0=0;cntr_array_0<r->count;cntr_array_0++) {
 		char *idx_0=NULL;
@@ -9980,7 +9980,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsReplicaCursor2Ctr(struct ndr_print *ndr, const
 	ndr->depth++;
 	ndr_print_uint32(ndr, "count", r->count);
 	ndr_print_int32(ndr, "enumeration_context", r->enumeration_context);
-	ndr->print(ndr, "%s: ARRAY(%d)", "array", r->count);
+	ndr->print(ndr, "%s: ARRAY(%d)", "array", (int)r->count);
 	ndr->depth++;
 	for (cntr_array_0=0;cntr_array_0<r->count;cntr_array_0++) {
 		char *idx_0=NULL;
@@ -10120,7 +10120,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsReplicaCursor3Ctr(struct ndr_print *ndr, const
 	ndr->depth++;
 	ndr_print_uint32(ndr, "count", r->count);
 	ndr_print_int32(ndr, "enumeration_context", r->enumeration_context);
-	ndr->print(ndr, "%s: ARRAY(%d)", "array", r->count);
+	ndr->print(ndr, "%s: ARRAY(%d)", "array", (int)r->count);
 	ndr->depth++;
 	for (cntr_array_0=0;cntr_array_0<r->count;cntr_array_0++) {
 		char *idx_0=NULL;
@@ -10299,7 +10299,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsReplicaObjMetaData2Ctr(struct ndr_print *ndr, 
 	ndr->depth++;
 	ndr_print_uint32(ndr, "count", r->count);
 	ndr_print_int32(ndr, "enumeration_context", r->enumeration_context);
-	ndr->print(ndr, "%s: ARRAY(%d)", "array", r->count);
+	ndr->print(ndr, "%s: ARRAY(%d)", "array", (int)r->count);
 	ndr->depth++;
 	for (cntr_array_0=0;cntr_array_0<r->count;cntr_array_0++) {
 		char *idx_0=NULL;
@@ -10544,7 +10544,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsReplicaAttrValMetaData2Ctr(struct ndr_print *n
 	ndr->depth++;
 	ndr_print_uint32(ndr, "count", r->count);
 	ndr_print_int32(ndr, "enumeration_context", r->enumeration_context);
-	ndr->print(ndr, "%s: ARRAY(%d)", "array", r->count);
+	ndr->print(ndr, "%s: ARRAY(%d)", "array", (int)r->count);
 	ndr->depth++;
 	for (cntr_array_0=0;cntr_array_0<r->count;cntr_array_0++) {
 		char *idx_0=NULL;
@@ -10667,7 +10667,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsReplicaConnection04Ctr(struct ndr_print *ndr, 
 	ndr->depth++;
 	ndr_print_uint32(ndr, "count", r->count);
 	ndr_print_uint32(ndr, "reserved", r->reserved);
-	ndr->print(ndr, "%s: ARRAY(%d)", "array", r->count);
+	ndr->print(ndr, "%s: ARRAY(%d)", "array", (int)r->count);
 	ndr->depth++;
 	for (cntr_array_0=0;cntr_array_0<r->count;cntr_array_0++) {
 		char *idx_0=NULL;
@@ -10822,7 +10822,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsReplica06Ctr(struct ndr_print *ndr, const char
 	ndr->depth++;
 	ndr_print_uint32(ndr, "count", r->count);
 	ndr_print_uint32(ndr, "reserved", r->reserved);
-	ndr->print(ndr, "%s: ARRAY(%d)", "array", r->count);
+	ndr->print(ndr, "%s: ARRAY(%d)", "array", (int)r->count);
 	ndr->depth++;
 	for (cntr_array_0=0;cntr_array_0<r->count;cntr_array_0++) {
 		char *idx_0=NULL;
@@ -11637,7 +11637,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsGetMemberships2Request1(struct ndr_print *ndr,
 	ndr_print_ptr(ndr, "req_array", r->req_array);
 	ndr->depth++;
 	if (r->req_array) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "req_array", r->num_req);
+		ndr->print(ndr, "%s: ARRAY(%d)", "req_array", (int)r->num_req);
 		ndr->depth++;
 		for (cntr_req_array_1=0;cntr_req_array_1<r->num_req;cntr_req_array_1++) {
 			char *idx_1=NULL;
@@ -11835,7 +11835,7 @@ _PUBLIC_ void ndr_print_drsuapi_QuerySitesByCostCtr1(struct ndr_print *ndr, cons
 	ndr_print_ptr(ndr, "info", r->info);
 	ndr->depth++;
 	if (r->info) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "info", r->num_info);
+		ndr->print(ndr, "%s: ARRAY(%d)", "info", (int)r->num_info);
 		ndr->depth++;
 		for (cntr_info_1=0;cntr_info_1<r->num_info;cntr_info_1++) {
 			char *idx_1=NULL;
@@ -12057,7 +12057,7 @@ _PUBLIC_ void ndr_print_drsuapi_QuerySitesByCostRequest1(struct ndr_print *ndr, 
 	ndr_print_ptr(ndr, "site_to", r->site_to);
 	ndr->depth++;
 	if (r->site_to) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "site_to", r->num_req);
+		ndr->print(ndr, "%s: ARRAY(%d)", "site_to", (int)r->num_req);
 		ndr->depth++;
 		for (cntr_site_to_1=0;cntr_site_to_1<r->num_req;cntr_site_to_1++) {
 			char *idx_1=NULL;

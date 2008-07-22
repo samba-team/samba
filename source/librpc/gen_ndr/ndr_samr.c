@@ -295,7 +295,7 @@ _PUBLIC_ void ndr_print_samr_SamArray(struct ndr_print *ndr, const char *name, c
 	ndr_print_ptr(ndr, "entries", r->entries);
 	ndr->depth++;
 	if (r->entries) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "entries", r->count);
+		ndr->print(ndr, "%s: ARRAY(%d)", "entries", (int)r->count);
 		ndr->depth++;
 		for (cntr_entries_1=0;cntr_entries_1<r->count;cntr_entries_1++) {
 			char *idx_1=NULL;
@@ -1156,7 +1156,7 @@ _PUBLIC_ void ndr_print_samr_Ids(struct ndr_print *ndr, const char *name, const 
 	ndr_print_ptr(ndr, "ids", r->ids);
 	ndr->depth++;
 	if (r->ids) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "ids", r->count);
+		ndr->print(ndr, "%s: ARRAY(%d)", "ids", (int)r->count);
 		ndr->depth++;
 		for (cntr_ids_1=0;cntr_ids_1<r->count;cntr_ids_1++) {
 			char *idx_1=NULL;
@@ -1553,7 +1553,7 @@ _PUBLIC_ void ndr_print_samr_RidTypeArray(struct ndr_print *ndr, const char *nam
 	ndr_print_ptr(ndr, "rids", r->rids);
 	ndr->depth++;
 	if (r->rids) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "rids", r->count);
+		ndr->print(ndr, "%s: ARRAY(%d)", "rids", (int)r->count);
 		ndr->depth++;
 		for (cntr_rids_1=0;cntr_rids_1<r->count;cntr_rids_1++) {
 			char *idx_1=NULL;
@@ -1568,7 +1568,7 @@ _PUBLIC_ void ndr_print_samr_RidTypeArray(struct ndr_print *ndr, const char *nam
 	ndr_print_ptr(ndr, "types", r->types);
 	ndr->depth++;
 	if (r->types) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "types", r->count);
+		ndr->print(ndr, "%s: ARRAY(%d)", "types", (int)r->count);
 		ndr->depth++;
 		for (cntr_types_1=0;cntr_types_1<r->count;cntr_types_1++) {
 			char *idx_1=NULL;
@@ -3703,7 +3703,7 @@ _PUBLIC_ void ndr_print_samr_RidWithAttributeArray(struct ndr_print *ndr, const 
 	ndr_print_ptr(ndr, "rids", r->rids);
 	ndr->depth++;
 	if (r->rids) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "rids", r->count);
+		ndr->print(ndr, "%s: ARRAY(%d)", "rids", (int)r->count);
 		ndr->depth++;
 		for (cntr_rids_1=0;cntr_rids_1<r->count;cntr_rids_1++) {
 			char *idx_1=NULL;
@@ -3840,7 +3840,7 @@ _PUBLIC_ void ndr_print_samr_DispInfoGeneral(struct ndr_print *ndr, const char *
 	ndr_print_ptr(ndr, "entries", r->entries);
 	ndr->depth++;
 	if (r->entries) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "entries", r->count);
+		ndr->print(ndr, "%s: ARRAY(%d)", "entries", (int)r->count);
 		ndr->depth++;
 		for (cntr_entries_1=0;cntr_entries_1<r->count;cntr_entries_1++) {
 			char *idx_1=NULL;
@@ -3972,7 +3972,7 @@ _PUBLIC_ void ndr_print_samr_DispInfoFull(struct ndr_print *ndr, const char *nam
 	ndr_print_ptr(ndr, "entries", r->entries);
 	ndr->depth++;
 	if (r->entries) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "entries", r->count);
+		ndr->print(ndr, "%s: ARRAY(%d)", "entries", (int)r->count);
 		ndr->depth++;
 		for (cntr_entries_1=0;cntr_entries_1<r->count;cntr_entries_1++) {
 			char *idx_1=NULL;
@@ -4104,7 +4104,7 @@ _PUBLIC_ void ndr_print_samr_DispInfoFullGroups(struct ndr_print *ndr, const cha
 	ndr_print_ptr(ndr, "entries", r->entries);
 	ndr->depth++;
 	if (r->entries) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "entries", r->count);
+		ndr->print(ndr, "%s: ARRAY(%d)", "entries", (int)r->count);
 		ndr->depth++;
 		for (cntr_entries_1=0;cntr_entries_1<r->count;cntr_entries_1++) {
 			char *idx_1=NULL;
@@ -4225,7 +4225,7 @@ _PUBLIC_ void ndr_print_samr_DispInfoAscii(struct ndr_print *ndr, const char *na
 	ndr_print_ptr(ndr, "entries", r->entries);
 	ndr->depth++;
 	if (r->entries) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "entries", r->count);
+		ndr->print(ndr, "%s: ARRAY(%d)", "entries", (int)r->count);
 		ndr->depth++;
 		for (cntr_entries_1=0;cntr_entries_1<r->count;cntr_entries_1++) {
 			char *idx_1=NULL;
@@ -4827,7 +4827,7 @@ _PUBLIC_ void ndr_print_samr_ValidatePasswordInfo(struct ndr_print *ndr, const c
 	ndr_print_ptr(ndr, "pwd_history", r->pwd_history);
 	ndr->depth++;
 	if (r->pwd_history) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "pwd_history", r->pwd_history_len);
+		ndr->print(ndr, "%s: ARRAY(%d)", "pwd_history", (int)r->pwd_history_len);
 		ndr->depth++;
 		for (cntr_pwd_history_1=0;cntr_pwd_history_1<r->pwd_history_len;cntr_pwd_history_1++) {
 			char *idx_1=NULL;
@@ -7198,7 +7198,7 @@ _PUBLIC_ void ndr_print_samr_LookupNames(struct ndr_print *ndr, const char *name
 		ndr_print_policy_handle(ndr, "domain_handle", r->in.domain_handle);
 		ndr->depth--;
 		ndr_print_uint32(ndr, "num_names", r->in.num_names);
-		ndr->print(ndr, "%s: ARRAY(%d)", "names", r->in.num_names);
+		ndr->print(ndr, "%s: ARRAY(%d)", "names", (int)r->in.num_names);
 		ndr->depth++;
 		for (cntr_names_0=0;cntr_names_0<r->in.num_names;cntr_names_0++) {
 			char *idx_0=NULL;
@@ -7337,7 +7337,7 @@ _PUBLIC_ void ndr_print_samr_LookupRids(struct ndr_print *ndr, const char *name,
 		ndr_print_policy_handle(ndr, "domain_handle", r->in.domain_handle);
 		ndr->depth--;
 		ndr_print_uint32(ndr, "num_rids", r->in.num_rids);
-		ndr->print(ndr, "%s: ARRAY(%d)", "rids", r->in.num_rids);
+		ndr->print(ndr, "%s: ARRAY(%d)", "rids", (int)r->in.num_rids);
 		ndr->depth++;
 		for (cntr_rids_0=0;cntr_rids_0<r->in.num_rids;cntr_rids_0++) {
 			char *idx_0=NULL;

@@ -94,7 +94,7 @@ _PUBLIC_ void ndr_print_replPropertyMetaDataCtr1(struct ndr_print *ndr, const ch
 	ndr->depth++;
 	ndr_print_uint32(ndr, "count", r->count);
 	ndr_print_uint32(ndr, "reserved", r->reserved);
-	ndr->print(ndr, "%s: ARRAY(%d)", "array", r->count);
+	ndr->print(ndr, "%s: ARRAY(%d)", "array", (int)r->count);
 	ndr->depth++;
 	for (cntr_array_0=0;cntr_array_0<r->count;cntr_array_0++) {
 		char *idx_0=NULL;
@@ -257,7 +257,7 @@ _PUBLIC_ void ndr_print_replUpToDateVectorCtr1(struct ndr_print *ndr, const char
 	ndr->depth++;
 	ndr_print_uint32(ndr, "count", r->count);
 	ndr_print_uint32(ndr, "reserved", r->reserved);
-	ndr->print(ndr, "%s: ARRAY(%d)", "cursors", r->count);
+	ndr->print(ndr, "%s: ARRAY(%d)", "cursors", (int)r->count);
 	ndr->depth++;
 	for (cntr_cursors_0=0;cntr_cursors_0<r->count;cntr_cursors_0++) {
 		char *idx_0=NULL;
@@ -314,7 +314,7 @@ _PUBLIC_ void ndr_print_replUpToDateVectorCtr2(struct ndr_print *ndr, const char
 	ndr->depth++;
 	ndr_print_uint32(ndr, "count", r->count);
 	ndr_print_uint32(ndr, "reserved", r->reserved);
-	ndr->print(ndr, "%s: ARRAY(%d)", "cursors", r->count);
+	ndr->print(ndr, "%s: ARRAY(%d)", "cursors", (int)r->count);
 	ndr->depth++;
 	for (cntr_cursors_0=0;cntr_cursors_0<r->count;cntr_cursors_0++) {
 		char *idx_0=NULL;
@@ -757,7 +757,7 @@ _PUBLIC_ void ndr_print_partialAttributeSetCtr1(struct ndr_print *ndr, const cha
 	ndr_print_struct(ndr, name, "partialAttributeSetCtr1");
 	ndr->depth++;
 	ndr_print_uint32(ndr, "count", r->count);
-	ndr->print(ndr, "%s: ARRAY(%d)", "array", r->count);
+	ndr->print(ndr, "%s: ARRAY(%d)", "array", (int)r->count);
 	ndr->depth++;
 	for (cntr_array_0=0;cntr_array_0<r->count;cntr_array_0++) {
 		char *idx_0=NULL;
@@ -1280,7 +1280,7 @@ _PUBLIC_ void ndr_print_supplementalCredentialsSubBlob(struct ndr_print *ndr, co
 	ndr->depth++;
 	ndr_print_string(ndr, "prefix", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?SUPPLEMENTAL_CREDENTIALS_PREFIX:r->prefix);
 	ndr_print_uint16(ndr, "num_packages", r->num_packages);
-	ndr->print(ndr, "%s: ARRAY(%d)", "packages", r->num_packages);
+	ndr->print(ndr, "%s: ARRAY(%d)", "packages", (int)r->num_packages);
 	ndr->depth++;
 	for (cntr_packages_0=0;cntr_packages_0<r->num_packages;cntr_packages_0++) {
 		char *idx_0=NULL;
@@ -1697,7 +1697,7 @@ _PUBLIC_ void ndr_print_package_PrimaryKerberosCtr3(struct ndr_print *ndr, const
 	ndr_print_package_PrimaryKerberosString(ndr, "salt", &r->salt);
 	ndr_print_uint32(ndr, "unknown1", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?0:r->unknown1);
 	ndr_print_uint32(ndr, "unknown2", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?0:r->unknown2);
-	ndr->print(ndr, "%s: ARRAY(%d)", "keys", r->num_keys);
+	ndr->print(ndr, "%s: ARRAY(%d)", "keys", (int)r->num_keys);
 	ndr->depth++;
 	for (cntr_keys_0=0;cntr_keys_0<r->num_keys;cntr_keys_0++) {
 		char *idx_0=NULL;
@@ -1707,7 +1707,7 @@ _PUBLIC_ void ndr_print_package_PrimaryKerberosCtr3(struct ndr_print *ndr, const
 		}
 	}
 	ndr->depth--;
-	ndr->print(ndr, "%s: ARRAY(%d)", "old_keys", r->num_old_keys);
+	ndr->print(ndr, "%s: ARRAY(%d)", "old_keys", (int)r->num_old_keys);
 	ndr->depth++;
 	for (cntr_old_keys_0=0;cntr_old_keys_0<r->num_old_keys;cntr_old_keys_0++) {
 		char *idx_0=NULL;
@@ -1717,7 +1717,7 @@ _PUBLIC_ void ndr_print_package_PrimaryKerberosCtr3(struct ndr_print *ndr, const
 		}
 	}
 	ndr->depth--;
-	ndr->print(ndr, "%s: ARRAY(%d)", "unknown3", r->num_keys);
+	ndr->print(ndr, "%s: ARRAY(%d)", "unknown3", (int)r->num_keys);
 	ndr->depth++;
 	for (cntr_unknown3_0=0;cntr_unknown3_0<r->num_keys;cntr_unknown3_0++) {
 		char *idx_0=NULL;
@@ -1727,7 +1727,7 @@ _PUBLIC_ void ndr_print_package_PrimaryKerberosCtr3(struct ndr_print *ndr, const
 		}
 	}
 	ndr->depth--;
-	ndr->print(ndr, "%s: ARRAY(%d)", "unknown3_old", r->num_old_keys);
+	ndr->print(ndr, "%s: ARRAY(%d)", "unknown3_old", (int)r->num_old_keys);
 	ndr->depth++;
 	for (cntr_unknown3_old_0=0;cntr_unknown3_old_0<r->num_old_keys;cntr_unknown3_old_0++) {
 		char *idx_0=NULL;
@@ -1985,7 +1985,7 @@ _PUBLIC_ void ndr_print_package_PrimaryWDigestBlob(struct ndr_print *ndr, const 
 	ndr_print_uint8(ndr, "num_hashes", r->num_hashes);
 	ndr_print_uint32(ndr, "unknown3", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?0:r->unknown3);
 	ndr_print_udlong(ndr, "uuknown4", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?0:r->uuknown4);
-	ndr->print(ndr, "%s: ARRAY(%d)", "hashes", r->num_hashes);
+	ndr->print(ndr, "%s: ARRAY(%d)", "hashes", (int)r->num_hashes);
 	ndr->depth++;
 	for (cntr_hashes_0=0;cntr_hashes_0<r->num_hashes;cntr_hashes_0++) {
 		char *idx_0=NULL;
@@ -2533,7 +2533,7 @@ _PUBLIC_ void ndr_print_DsCompressedBlob(struct ndr_print *ndr, const char *name
 	uint32_t cntr_chunks_0;
 	ndr_print_struct(ndr, name, "DsCompressedBlob");
 	ndr->depth++;
-	ndr->print(ndr, "%s: ARRAY(%d)", "chunks", 5);
+	ndr->print(ndr, "%s: ARRAY(%d)", "chunks", (int)5);
 	ndr->depth++;
 	for (cntr_chunks_0=0;cntr_chunks_0<5;cntr_chunks_0++) {
 		char *idx_0=NULL;

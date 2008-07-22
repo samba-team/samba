@@ -74,7 +74,7 @@ _PUBLIC_ void ndr_print_domsid(struct ndr_print *ndr, const char *name, const st
 	ndr_print_uint8(ndr, "sid_rev_num", r->sid_rev_num);
 	ndr_print_uint8(ndr, "num_auths", r->num_auths);
 	ndr_print_array_uint8(ndr, "id_auth", r->id_auth, 6);
-	ndr->print(ndr, "%s: ARRAY(%d)", "sub_auths", MAXSUBAUTHS);
+	ndr->print(ndr, "%s: ARRAY(%d)", "sub_auths", (int)MAXSUBAUTHS);
 	ndr->depth++;
 	for (cntr_sub_auths_0=0;cntr_sub_auths_0<MAXSUBAUTHS;cntr_sub_auths_0++) {
 		char *idx_0=NULL;
