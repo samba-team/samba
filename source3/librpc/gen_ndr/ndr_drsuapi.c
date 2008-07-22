@@ -91,7 +91,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsBindInfo24(struct ndr_push *ndr, int
 		NDR_CHECK(ndr_push_align(ndr, 4));
 		NDR_CHECK(ndr_push_drsuapi_SupportedExtensions(ndr, NDR_SCALARS, r->supported_extensions));
 		NDR_CHECK(ndr_push_GUID(ndr, NDR_SCALARS, &r->site_guid));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->u1));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->pid));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -104,7 +104,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsBindInfo24(struct ndr_pull *ndr, int
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_drsuapi_SupportedExtensions(ndr, NDR_SCALARS, &r->supported_extensions));
 		NDR_CHECK(ndr_pull_GUID(ndr, NDR_SCALARS, &r->site_guid));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->u1));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->pid));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -117,7 +117,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsBindInfo24(struct ndr_print *ndr, const char *
 	ndr->depth++;
 	ndr_print_drsuapi_SupportedExtensions(ndr, "supported_extensions", r->supported_extensions);
 	ndr_print_GUID(ndr, "site_guid", &r->site_guid);
-	ndr_print_uint32(ndr, "u1", r->u1);
+	ndr_print_uint32(ndr, "pid", r->pid);
 	ndr->depth--;
 }
 
@@ -127,7 +127,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsBindInfo28(struct ndr_push *ndr, int
 		NDR_CHECK(ndr_push_align(ndr, 4));
 		NDR_CHECK(ndr_push_drsuapi_SupportedExtensions(ndr, NDR_SCALARS, r->supported_extensions));
 		NDR_CHECK(ndr_push_GUID(ndr, NDR_SCALARS, &r->site_guid));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->u1));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->pid));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->repl_epoch));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
@@ -141,7 +141,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsBindInfo28(struct ndr_pull *ndr, int
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_drsuapi_SupportedExtensions(ndr, NDR_SCALARS, &r->supported_extensions));
 		NDR_CHECK(ndr_pull_GUID(ndr, NDR_SCALARS, &r->site_guid));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->u1));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->pid));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->repl_epoch));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
@@ -155,7 +155,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsBindInfo28(struct ndr_print *ndr, const char *
 	ndr->depth++;
 	ndr_print_drsuapi_SupportedExtensions(ndr, "supported_extensions", r->supported_extensions);
 	ndr_print_GUID(ndr, "site_guid", &r->site_guid);
-	ndr_print_uint32(ndr, "u1", r->u1);
+	ndr_print_uint32(ndr, "pid", r->pid);
 	ndr_print_uint32(ndr, "repl_epoch", r->repl_epoch);
 	ndr->depth--;
 }
@@ -166,7 +166,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsBindInfo48(struct ndr_push *ndr, int
 		NDR_CHECK(ndr_push_align(ndr, 4));
 		NDR_CHECK(ndr_push_drsuapi_SupportedExtensions(ndr, NDR_SCALARS, r->supported_extensions));
 		NDR_CHECK(ndr_push_GUID(ndr, NDR_SCALARS, &r->site_guid));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->u1));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->pid));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->repl_epoch));
 		NDR_CHECK(ndr_push_drsuapi_SupportedExtensionsExt(ndr, NDR_SCALARS, r->supported_extensions_ext));
 		NDR_CHECK(ndr_push_GUID(ndr, NDR_SCALARS, &r->config_dn_guid));
@@ -182,7 +182,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsBindInfo48(struct ndr_pull *ndr, int
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_drsuapi_SupportedExtensions(ndr, NDR_SCALARS, &r->supported_extensions));
 		NDR_CHECK(ndr_pull_GUID(ndr, NDR_SCALARS, &r->site_guid));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->u1));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->pid));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->repl_epoch));
 		NDR_CHECK(ndr_pull_drsuapi_SupportedExtensionsExt(ndr, NDR_SCALARS, &r->supported_extensions_ext));
 		NDR_CHECK(ndr_pull_GUID(ndr, NDR_SCALARS, &r->config_dn_guid));
@@ -198,7 +198,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsBindInfo48(struct ndr_print *ndr, const char *
 	ndr->depth++;
 	ndr_print_drsuapi_SupportedExtensions(ndr, "supported_extensions", r->supported_extensions);
 	ndr_print_GUID(ndr, "site_guid", &r->site_guid);
-	ndr_print_uint32(ndr, "u1", r->u1);
+	ndr_print_uint32(ndr, "pid", r->pid);
 	ndr_print_uint32(ndr, "repl_epoch", r->repl_epoch);
 	ndr_print_drsuapi_SupportedExtensionsExt(ndr, "supported_extensions_ext", r->supported_extensions_ext);
 	ndr_print_GUID(ndr, "config_dn_guid", &r->config_dn_guid);
