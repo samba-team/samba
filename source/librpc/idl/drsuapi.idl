@@ -79,7 +79,8 @@ interface drsuapi
 		GUID site_guid;
 		uint32 u1;
 		uint32 repl_epoch;
-		uint32 unknown[5];
+		uint32 unknown;
+		GUID config_dn_guid;
 	} drsuapi_DsBindInfo48;
 
 	typedef struct {
