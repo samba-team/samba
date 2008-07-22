@@ -140,6 +140,9 @@ struct setup_password_fields_io {
 		struct samr_Password *nt_history;
 		uint32_t lm_history_len;
 		struct samr_Password *lm_history;
+		const char *salt;
+		DATA_BLOB des_md5;
+		DATA_BLOB des_crc;
 		struct ldb_val supplemental;
 		NTTIME last_set;
 		uint32_t kvno;
@@ -216,21 +219,12 @@ static int setup_lm_fields(struct setup_password_fields_io *io)
 	return LDB_SUCCESS;
 }
 
-static int setup_primary_kerberos(struct setup_password_fields_io *io,
-				  const struct supplementalCredentialsBlob *old_scb,
-				  struct package_PrimaryKerberosBlob *pkb)
+static int setup_kerberos_keys(struct setup_password_fields_io *io)
 {
 	krb5_error_code krb5_ret;
 	Principal *salt_principal;
 	krb5_salt salt;
 	krb5_keyblock key;
-	uint32_t k=0;
-	struct package_PrimaryKerberosCtr3 *pkb3 = &pkb->ctr.ctr3;
-	struct supplementalCredentialsPackage *old_scp = NULL;
-	struct package_PrimaryKerberosBlob _old_pkb;
-	struct package_PrimaryKerberosCtr3 *old_pkb3 = NULL;
-	uint32_t i;
-	enum ndr_err_code ndr_err;
 
 	/* Many, many thanks to lukeh@padl.com for this
 	 * algorithm, described in his Nov 10 2004 mail to
@@ -290,7 +284,7 @@ static int setup_primary_kerberos(struct setup_password_fields_io *io,
 	}
 	if (krb5_ret) {
 		ldb_asprintf_errstring(io->ac->module->ldb,
-				       "setup_primary_kerberos: "
+				       "setup_kerberos_keys: "
 				       "generation of a salting principal failed: %s",
 				       smb_get_krb5_error_message(io->smb_krb5_context->krb5_context, krb5_ret, io->ac));
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -304,76 +298,22 @@ static int setup_primary_kerberos(struct setup_password_fields_io *io,
 	krb5_free_principal(io->smb_krb5_context->krb5_context, salt_principal);
 	if (krb5_ret) {
 		ldb_asprintf_errstring(io->ac->module->ldb,
-				       "setup_primary_kerberos: "
+				       "setup_kerberos_keys: "
 				       "generation of krb5_salt failed: %s",
 				       smb_get_krb5_error_message(io->smb_krb5_context->krb5_context, krb5_ret, io->ac));
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	/* create a talloc copy */
-	pkb3->salt.string = talloc_strndup(io->ac,
-					  salt.saltvalue.data,
-					  salt.saltvalue.length);
+	io->g.salt = talloc_strndup(io->ac,
+				    salt.saltvalue.data,
+				    salt.saltvalue.length);
 	krb5_free_salt(io->smb_krb5_context->krb5_context, salt);
-	if (!pkb3->salt.string) {
+	if (!io->g.salt) {
 		ldb_oom(io->ac->module->ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	salt.saltvalue.data	= discard_const(pkb3->salt.string);
-	salt.saltvalue.length	= strlen(pkb3->salt.string);
-
-	/*
-	 * prepare generation of keys
-	 *
-	 * ENCTYPE_AES256_CTS_HMAC_SHA1_96 (disabled by default)
-	 * ENCTYPE_DES_CBC_MD5
-	 * ENCTYPE_DES_CBC_CRC
-	 *
-	 * NOTE: update num_keys when you add another enctype!
-	 */
-	pkb3->num_keys	= 3;
-	pkb3->keys	= talloc_array(io->ac, struct package_PrimaryKerberosKey, pkb3->num_keys);
-	if (!pkb3->keys) {
-		ldb_oom(io->ac->module->ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	if (lp_parm_bool(ldb_get_opaque(io->ac->module->ldb, "loadparm"), NULL, "password_hash", "create_aes_key", false)) {
-	/*
-	 * TODO:
-	 *
-	 * w2k and w2k3 doesn't support AES, so we'll not include
-	 * the AES key here yet.
-	 *
-	 * Also we don't have an example supplementalCredentials blob
-	 * from Windows Longhorn Server with AES support
-	 *
-	 */
-	/*
-	 * create ENCTYPE_AES256_CTS_HMAC_SHA1_96 key out of
-	 * the salt and the cleartext password
-	 */
-	krb5_ret = krb5_string_to_key_salt(io->smb_krb5_context->krb5_context,
-					   ENCTYPE_AES256_CTS_HMAC_SHA1_96,
-					   io->n.cleartext,
-					   salt,
-					   &key);
-	pkb3->keys[k].keytype	= ENCTYPE_AES256_CTS_HMAC_SHA1_96;
-	pkb3->keys[k].value	= talloc(pkb3->keys, DATA_BLOB);
-	if (!pkb3->keys[k].value) {
-		krb5_free_keyblock_contents(io->smb_krb5_context->krb5_context, &key);
-		ldb_oom(io->ac->module->ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	*pkb3->keys[k].value	= data_blob_talloc(pkb3->keys[k].value,
-						   key.keyvalue.data,
-						   key.keyvalue.length);
-	krb5_free_keyblock_contents(io->smb_krb5_context->krb5_context, &key);
-	if (!pkb3->keys[k].value->data) {
-		ldb_oom(io->ac->module->ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	k++;
-}
+	salt.saltvalue.data	= discard_const(io->g.salt);
+	salt.saltvalue.length	= strlen(io->g.salt);
 
 	/*
 	 * create ENCTYPE_DES_CBC_MD5 key out of
@@ -384,22 +324,21 @@ static int setup_primary_kerberos(struct setup_password_fields_io *io,
 					   io->n.cleartext,
 					   salt,
 					   &key);
-	pkb3->keys[k].keytype	= ENCTYPE_DES_CBC_MD5;
-	pkb3->keys[k].value	= talloc(pkb3->keys, DATA_BLOB);
-	if (!pkb3->keys[k].value) {
-		krb5_free_keyblock_contents(io->smb_krb5_context->krb5_context, &key);
-		ldb_oom(io->ac->module->ldb);
+	if (krb5_ret) {
+		ldb_asprintf_errstring(io->ac->module->ldb,
+				       "setup_kerberos_keys: "
+				       "generation of a des-cbc-md5 key failed: %s",
+				       smb_get_krb5_error_message(io->smb_krb5_context->krb5_context, krb5_ret, io->ac));
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	*pkb3->keys[k].value	= data_blob_talloc(pkb3->keys[k].value,
-						   key.keyvalue.data,
-						   key.keyvalue.length);
+	io->g.des_md5 = data_blob_talloc(io->ac,
+					 key.keyvalue.data,
+					 key.keyvalue.length);
 	krb5_free_keyblock_contents(io->smb_krb5_context->krb5_context, &key);
-	if (!pkb3->keys[k].value->data) {
+	if (!io->g.des_md5.data) {
 		ldb_oom(io->ac->module->ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	k++;
 
 	/*
 	 * create ENCTYPE_DES_CBC_CRC key out of
@@ -410,25 +349,56 @@ static int setup_primary_kerberos(struct setup_password_fields_io *io,
 					   io->n.cleartext,
 					   salt,
 					   &key);
-	pkb3->keys[k].keytype	= ENCTYPE_DES_CBC_CRC;
-	pkb3->keys[k].value	= talloc(pkb3->keys, DATA_BLOB);
-	if (!pkb3->keys[k].value) {
-		krb5_free_keyblock_contents(io->smb_krb5_context->krb5_context, &key);
-		ldb_oom(io->ac->module->ldb);
+	if (krb5_ret) {
+		ldb_asprintf_errstring(io->ac->module->ldb,
+				       "setup_kerberos_keys: "
+				       "generation of a des-cbc-crc key failed: %s",
+				       smb_get_krb5_error_message(io->smb_krb5_context->krb5_context, krb5_ret, io->ac));
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	*pkb3->keys[k].value	= data_blob_talloc(pkb3->keys[k].value,
-						   key.keyvalue.data,
-						   key.keyvalue.length);
+	io->g.des_crc = data_blob_talloc(io->ac,
+					 key.keyvalue.data,
+					 key.keyvalue.length);
 	krb5_free_keyblock_contents(io->smb_krb5_context->krb5_context, &key);
-	if (!pkb3->keys[k].value->data) {
+	if (!io->g.des_crc.data) {
 		ldb_oom(io->ac->module->ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	k++;
 
-	/* fix up key number */
-	pkb3->num_keys = k;
+	return LDB_SUCCESS;
+}
+
+static int setup_primary_kerberos(struct setup_password_fields_io *io,
+				  const struct supplementalCredentialsBlob *old_scb,
+				  struct package_PrimaryKerberosBlob *pkb)
+{
+	struct package_PrimaryKerberosCtr3 *pkb3 = &pkb->ctr.ctr3;
+	struct supplementalCredentialsPackage *old_scp = NULL;
+	struct package_PrimaryKerberosBlob _old_pkb;
+	struct package_PrimaryKerberosCtr3 *old_pkb3 = NULL;
+	uint32_t i;
+	enum ndr_err_code ndr_err;
+
+	/*
+	 * prepare generation of keys
+	 *
+	 * ENCTYPE_DES_CBC_MD5
+	 * ENCTYPE_DES_CBC_CRC
+	 */
+	pkb3->salt.string	= io->g.salt;
+	pkb3->num_keys		= 2;
+	pkb3->keys		= talloc_array(io->ac,
+					       struct package_PrimaryKerberosKey,
+					       pkb3->num_keys);
+	if (!pkb3->keys) {
+		ldb_oom(io->ac->module->ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	pkb3->keys[0].keytype	= ENCTYPE_DES_CBC_MD5;
+	pkb3->keys[0].value	= &io->g.des_md5;
+	pkb3->keys[1].keytype	= ENCTYPE_DES_CBC_CRC;
+	pkb3->keys[1].value	= &io->g.des_crc;
 
 	/* initialize the old keys to zero */
 	pkb3->num_old_keys	= 0;
@@ -1107,6 +1077,13 @@ static int setup_password_fields(struct setup_password_fields_io *io)
 			io->n.lm_hash = hash;
 		} else {
 			talloc_free(hash->hash);
+		}
+	}
+
+	if (io->n.cleartext) {
+		ret = setup_kerberos_keys(io);
+		if (ret != 0) {
+			return ret;
 		}
 	}
 
