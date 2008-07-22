@@ -405,6 +405,8 @@ static WERROR cmd_drsuapi_getncchanges(struct rpc_pipe_client *cli,
 		supported_extensions = bind_info.info.info24.supported_extensions;
 	} else if (bind_info.length == 28) {
 		supported_extensions = bind_info.info.info28.supported_extensions;
+	} else if (bind_info.length == 48) {
+		supported_extensions = bind_info.info.info48.supported_extensions;
 	}
 
 	if (!nc_dn) {
