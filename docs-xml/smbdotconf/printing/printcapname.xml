@@ -1,5 +1,5 @@
 <samba:parameter name="printcap name"
-	context="S"
+	context="G"
 	type="string"
 		 print="1" developer="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
