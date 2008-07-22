@@ -73,6 +73,15 @@ interface drsuapi
 		uint32 repl_epoch;
 	} drsuapi_DsBindInfo28;
 
+	/* this is used by w2k8 */
+	typedef struct {
+		drsuapi_SupportedExtensions supported_extensions;
+		GUID site_guid;
+		uint32 u1;
+		uint32 repl_epoch;
+		uint32 unknown[5];
+	} drsuapi_DsBindInfo48;
+
 	typedef struct {
 		[flag(NDR_REMAINING)] DATA_BLOB info;
 	} drsuapi_DsBindInfoFallBack;
@@ -80,6 +89,7 @@ interface drsuapi
 	typedef [nodiscriminant] union {
 		[case(24)][subcontext(4)] drsuapi_DsBindInfo24 info24;
 		[case(28)][subcontext(4)] drsuapi_DsBindInfo28 info28;
+		[case(48)][subcontext(4)] drsuapi_DsBindInfo48 info48;
 		[default][subcontext(4)] drsuapi_DsBindInfoFallBack FallBack;
 	} drsuapi_DsBindInfo;
 
