@@ -1562,7 +1562,7 @@ _PUBLIC_ void ndr_print_epm_tower(struct ndr_print *ndr, const char *name, const
 		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN|LIBNDR_FLAG_LITTLE_ENDIAN);
 		ndr->depth++;
 		ndr_print_uint16(ndr, "num_floors", r->num_floors);
-		ndr->print(ndr, "%s: ARRAY(%d)", "floors", r->num_floors);
+		ndr->print(ndr, "%s: ARRAY(%d)", "floors", (int)r->num_floors);
 		ndr->depth++;
 		for (cntr_floors_0=0;cntr_floors_0<r->num_floors;cntr_floors_0++) {
 			char *idx_0=NULL;
@@ -1844,7 +1844,7 @@ _PUBLIC_ void ndr_print_epm_Insert(struct ndr_print *ndr, const char *name, int 
 		ndr_print_struct(ndr, "in", "epm_Insert");
 		ndr->depth++;
 		ndr_print_uint32(ndr, "num_ents", r->in.num_ents);
-		ndr->print(ndr, "%s: ARRAY(%d)", "entries", r->in.num_ents);
+		ndr->print(ndr, "%s: ARRAY(%d)", "entries", (int)r->in.num_ents);
 		ndr->depth++;
 		for (cntr_entries_0=0;cntr_entries_0<r->in.num_ents;cntr_entries_0++) {
 			char *idx_0=NULL;
@@ -1924,7 +1924,7 @@ _PUBLIC_ void ndr_print_epm_Delete(struct ndr_print *ndr, const char *name, int 
 		ndr_print_struct(ndr, "in", "epm_Delete");
 		ndr->depth++;
 		ndr_print_uint32(ndr, "num_ents", r->in.num_ents);
-		ndr->print(ndr, "%s: ARRAY(%d)", "entries", r->in.num_ents);
+		ndr->print(ndr, "%s: ARRAY(%d)", "entries", (int)r->in.num_ents);
 		ndr->depth++;
 		for (cntr_entries_0=0;cntr_entries_0<r->in.num_ents;cntr_entries_0++) {
 			char *idx_0=NULL;
@@ -2124,7 +2124,7 @@ _PUBLIC_ void ndr_print_epm_Lookup(struct ndr_print *ndr, const char *name, int 
 		ndr->depth++;
 		ndr_print_uint32(ndr, "num_ents", *r->out.num_ents);
 		ndr->depth--;
-		ndr->print(ndr, "%s: ARRAY(%d)", "entries", *r->out.num_ents);
+		ndr->print(ndr, "%s: ARRAY(%d)", "entries", (int)*r->out.num_ents);
 		ndr->depth++;
 		for (cntr_entries_0=0;cntr_entries_0<*r->out.num_ents;cntr_entries_0++) {
 			char *idx_0=NULL;
@@ -2313,7 +2313,7 @@ _PUBLIC_ void ndr_print_epm_Map(struct ndr_print *ndr, const char *name, int fla
 		ndr->depth++;
 		ndr_print_uint32(ndr, "num_towers", *r->out.num_towers);
 		ndr->depth--;
-		ndr->print(ndr, "%s: ARRAY(%d)", "towers", *r->out.num_towers);
+		ndr->print(ndr, "%s: ARRAY(%d)", "towers", (int)*r->out.num_towers);
 		ndr->depth++;
 		for (cntr_towers_0=0;cntr_towers_0<*r->out.num_towers;cntr_towers_0++) {
 			char *idx_0=NULL;
