@@ -336,11 +336,6 @@ static int setup_primary_kerberos(struct setup_password_fields_io *io,
 		ldb_oom(io->ac->module->ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	pkb3->unknown3	= talloc_zero_array(io->ac, uint64_t, pkb3->num_keys);
-	if (!pkb3->unknown3) {
-		ldb_oom(io->ac->module->ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
 
 	if (lp_parm_bool(ldb_get_opaque(io->ac->module->ldb, "loadparm"), NULL, "password_hash", "create_aes_key", false)) {
 	/*
@@ -438,7 +433,6 @@ static int setup_primary_kerberos(struct setup_password_fields_io *io,
 	/* initialize the old keys to zero */
 	pkb3->num_old_keys	= 0;
 	pkb3->old_keys		= NULL;
-	pkb3->unknown3_old	= NULL;
 
 	/* if there're no old keys, then we're done */
 	if (!old_scb) {
@@ -499,7 +493,6 @@ static int setup_primary_kerberos(struct setup_password_fields_io *io,
 	/* fill in the old keys */
 	pkb3->num_old_keys	= old_pkb3->num_keys;
 	pkb3->old_keys		= old_pkb3->keys;
-	pkb3->unknown3_old	= old_pkb3->unknown3;
 
 	return LDB_SUCCESS;
 }
