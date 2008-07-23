@@ -574,7 +574,7 @@ static void unbecomeDC_drsuapi_bind_send(struct libnet_UnbecomeDC_state *s)
 	bind_info28				= &s->drsuapi.local_info28;
 	bind_info28->supported_extensions	= 0;
 	bind_info28->site_guid			= GUID_zero();
-	bind_info28->pid			= 508;
+	bind_info28->pid			= 0;
 	bind_info28->repl_epoch			= 0;
 
 	s->drsuapi.bind_info_ctr.length		= 28;
