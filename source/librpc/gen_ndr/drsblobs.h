@@ -149,7 +149,7 @@ struct ldapControlDirSyncCookie {
 struct supplementalCredentialsPackage {
 	uint16_t name_len;/* [value(2*strlen_m(name))] */
 	uint16_t data_len;/* [value(strlen(data))] */
-	uint16_t unknown1;
+	uint16_t reserved;
 	const char *name;/* [charset(UTF16)] */
 	const char *data;/* [charset(DOS)] */
 };
