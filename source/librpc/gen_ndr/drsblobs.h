@@ -191,23 +191,25 @@ struct package_PrimaryKerberosString {
 };
 
 struct package_PrimaryKerberosKey {
+	uint16_t reserved1;/* [value(0)] */
+	uint16_t reserved2;/* [value(0)] */
+	uint32_t reserved3;/* [value(0)] */
 	uint32_t keytype;
 	uint32_t value_len;/* [value((value?value->length:0))] */
 	DATA_BLOB *value;/* [relative,subcontext_size(value_len),subcontext(0),flag(LIBNDR_FLAG_REMAINING)] */
-	uint32_t unknown1;/* [value(0)] */
-	uint32_t unknown2;/* [value(0)] */
 };
 
 struct package_PrimaryKerberosCtr3 {
 	uint16_t num_keys;
 	uint16_t num_old_keys;
 	struct package_PrimaryKerberosString salt;
-	uint32_t unknown1;/* [value(0)] */
-	uint32_t unknown2;/* [value(0)] */
 	struct package_PrimaryKerberosKey *keys;
 	struct package_PrimaryKerberosKey *old_keys;
-	uint64_t *unknown3;
-	uint64_t *unknown3_old;
+	uint32_t padding1;/* [value(0)] */
+	uint32_t padding2;/* [value(0)] */
+	uint32_t padding3;/* [value(0)] */
+	uint32_t padding4;/* [value(0)] */
+	uint32_t padding5;/* [value(0)] */
 };
 
 union package_PrimaryKerberosCtr {
