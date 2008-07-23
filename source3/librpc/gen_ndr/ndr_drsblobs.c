@@ -1200,7 +1200,7 @@ static enum ndr_err_code ndr_push_supplementalCredentialsPackage(struct ndr_push
 		NDR_CHECK(ndr_push_align(ndr, 2));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, 2 * strlen_m(r->name)));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, strlen(r->data)));
-		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->unknown1));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->reserved));
 		NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->name, 2 * strlen_m(r->name), sizeof(uint8_t), CH_UTF16));
 		NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->data, strlen(r->data), sizeof(uint8_t), CH_DOS));
 	}
@@ -1215,7 +1215,7 @@ static enum ndr_err_code ndr_pull_supplementalCredentialsPackage(struct ndr_pull
 		NDR_CHECK(ndr_pull_align(ndr, 2));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->name_len));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->data_len));
-		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->unknown1));
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->reserved));
 		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->name, r->name_len, sizeof(uint8_t), CH_UTF16));
 		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->data, r->data_len, sizeof(uint8_t), CH_DOS));
 	}
@@ -1230,7 +1230,7 @@ _PUBLIC_ void ndr_print_supplementalCredentialsPackage(struct ndr_print *ndr, co
 	ndr->depth++;
 	ndr_print_uint16(ndr, "name_len", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?2 * strlen_m(r->name):r->name_len);
 	ndr_print_uint16(ndr, "data_len", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?strlen(r->data):r->data_len);
-	ndr_print_uint16(ndr, "unknown1", r->unknown1);
+	ndr_print_uint16(ndr, "reserved", r->reserved);
 	ndr_print_string(ndr, "name", r->name);
 	ndr_print_string(ndr, "data", r->data);
 	ndr->depth--;
