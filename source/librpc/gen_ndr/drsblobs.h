@@ -7,7 +7,7 @@
 #ifndef _HEADER_drsblobs
 #define _HEADER_drsblobs
 
-#define SUPPLEMENTAL_CREDENTIALS_PREFIX	( "                                                P" )
+#define SUPPLEMENTAL_CREDENTIALS_PREFIX	( "                                                " )
 enum drsuapi_DsAttributeId;
 
 struct replPropertyMetaData1 {
@@ -154,8 +154,20 @@ struct supplementalCredentialsPackage {
 	const char *data;/* [charset(DOS)] */
 };
 
+enum supplementalCredentialsSignature
+#ifndef USE_UINT_ENUMS
+ {
+	SUPPLEMENTAL_CREDENTIALS_SIGNATURE=0x0050
+}
+#else
+ { __donnot_use_enum_supplementalCredentialsSignature=0x7FFFFFFF}
+#define SUPPLEMENTAL_CREDENTIALS_SIGNATURE ( 0x0050 )
+#endif
+;
+
 struct supplementalCredentialsSubBlob {
 	const char *prefix;/* [value(SUPPLEMENTAL_CREDENTIALS_PREFIX),charset(UTF16)] */
+	enum supplementalCredentialsSignature signature;/* [value(SUPPLEMENTAL_CREDENTIALS_SIGNATURE)] */
 	uint16_t num_packages;
 	struct supplementalCredentialsPackage *packages;
 }/* [gensize] */;

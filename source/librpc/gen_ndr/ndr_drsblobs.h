@@ -78,6 +78,7 @@ enum ndr_err_code ndr_push_ldapControlDirSyncCookie(struct ndr_push *ndr, int nd
 enum ndr_err_code ndr_pull_ldapControlDirSyncCookie(struct ndr_pull *ndr, int ndr_flags, struct ldapControlDirSyncCookie *r);
 void ndr_print_ldapControlDirSyncCookie(struct ndr_print *ndr, const char *name, const struct ldapControlDirSyncCookie *r);
 void ndr_print_supplementalCredentialsPackage(struct ndr_print *ndr, const char *name, const struct supplementalCredentialsPackage *r);
+void ndr_print_supplementalCredentialsSignature(struct ndr_print *ndr, const char *name, enum supplementalCredentialsSignature r);
 void ndr_print_supplementalCredentialsSubBlob(struct ndr_print *ndr, const char *name, const struct supplementalCredentialsSubBlob *r);
 enum ndr_err_code ndr_push_supplementalCredentialsBlob(struct ndr_push *ndr, int ndr_flags, const struct supplementalCredentialsBlob *r);
 enum ndr_err_code ndr_pull_supplementalCredentialsBlob(struct ndr_pull *ndr, int ndr_flags, struct supplementalCredentialsBlob *r);
