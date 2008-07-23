@@ -205,7 +205,7 @@ interface drsblobs {
 	typedef struct {
 		[value(2*strlen_m(name))] uint16 name_len;
 		[value(strlen(data))] uint16 data_len;
-		uint16 unknown1; /* 2 for name = 'Packages', 1 for name = 'Primary:*' */
+		uint16 reserved; /* 2 for 'Packages', 1 for 'Primary:*', but should be ignored */
 		[charset(UTF16)] uint8 name[name_len];
 		/*
 		 * the data field contains data as HEX strings
