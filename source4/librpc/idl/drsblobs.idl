@@ -228,11 +228,16 @@ interface drsblobs {
 		[charset(DOS)] uint8 data[data_len];
 	} supplementalCredentialsPackage;
 
-	/* this are 0x30 (48) whitespaces (0x20) followed by 'P' (0x50) */
-	const string SUPPLEMENTAL_CREDENTIALS_PREFIX = "                                                P";
+	/* this are 0x30 (48) whitespaces (0x20) */
+	const string SUPPLEMENTAL_CREDENTIALS_PREFIX = "                                                ";
+
+	typedef [flag(NDR_PAHEX)] enum {
+		SUPPLEMENTAL_CREDENTIALS_SIGNATURE = 0x0050
+	} supplementalCredentialsSignature;
 
 	typedef [gensize] struct {
-		[value(SUPPLEMENTAL_CREDENTIALS_PREFIX),charset(UTF16)] uint16 prefix[0x31];
+		[value(SUPPLEMENTAL_CREDENTIALS_PREFIX),charset(UTF16)] uint16 prefix[0x30];
+		[value(SUPPLEMENTAL_CREDENTIALS_SIGNATURE)] supplementalCredentialsSignature signature;
 		uint16 num_packages;
 		supplementalCredentialsPackage packages[num_packages];
 	} supplementalCredentialsSubBlob;
