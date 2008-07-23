@@ -270,11 +270,20 @@ NTSTATUS dcesrv_generic_session_key(struct dcesrv_connection *p,
 
 /*
   fetch the user session key - may be default (above) or the SMB session key
+
+  The key is always truncated to 16 bytes 
 */
 _PUBLIC_ NTSTATUS dcesrv_fetch_session_key(struct dcesrv_connection *p,
 				  DATA_BLOB *session_key)
 {
-	return p->auth_state.session_key(p, session_key);
+	NTSTATUS status = p->auth_state.session_key(p, session_key);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	session_key->length = MIN(session_key->length, 16);
+
+	return NT_STATUS_OK;
 }
 
 
