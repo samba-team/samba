@@ -446,10 +446,6 @@ static int setup_primary_kerberos(struct setup_password_fields_io *io,
 	}
 
 	for (i=0; i < old_scb->sub.num_packages; i++) {
-		if (old_scb->sub.packages[i].unknown1 != 0x00000001) {
-			continue;
-		}
-
 		if (strcmp("Primary:Kerberos", old_scb->sub.packages[i].name) != 0) {
 			continue;
 		}
@@ -931,7 +927,7 @@ static int setup_supplemental_field(struct setup_password_fields_io *io)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	pk->name	= "Primary:Kerberos";
-	pk->unknown1	= 1;
+	pk->reserved	= 1;
 	pk->data	= pkb_hexstr;
 
 	/*
@@ -962,7 +958,7 @@ static int setup_supplemental_field(struct setup_password_fields_io *io)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	pd->name	= "Primary:WDigest";
-	pd->unknown1	= 1;
+	pd->reserved	= 1;
 	pd->data	= pdb_hexstr;
 
 	/*
@@ -991,7 +987,7 @@ static int setup_supplemental_field(struct setup_password_fields_io *io)
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 		pc->name	= "Primary:CLEARTEXT";
-		pc->unknown1	= 1;
+		pc->reserved	= 1;
 		pc->data	= pcb_hexstr;
 	}
 
@@ -1016,7 +1012,7 @@ static int setup_supplemental_field(struct setup_password_fields_io *io)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	pp->name	= "Packages";
-	pp->unknown1	= 2;
+	pp->reserved	= 2;
 	pp->data	= pb_hexstr;
 
 	/*
