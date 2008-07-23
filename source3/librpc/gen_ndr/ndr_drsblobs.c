@@ -1236,12 +1236,52 @@ _PUBLIC_ void ndr_print_supplementalCredentialsPackage(struct ndr_print *ndr, co
 	ndr->depth--;
 }
 
+static enum ndr_err_code ndr_push_supplementalCredentialsSignature(struct ndr_push *ndr, int ndr_flags, enum supplementalCredentialsSignature r)
+{
+	{
+		uint32_t _flags_save_ENUM = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX);
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r));
+		ndr->flags = _flags_save_ENUM;
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_supplementalCredentialsSignature(struct ndr_pull *ndr, int ndr_flags, enum supplementalCredentialsSignature *r)
+{
+	uint16_t v;
+	{
+		uint32_t _flags_save_ENUM = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX);
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &v));
+		*r = v;
+		ndr->flags = _flags_save_ENUM;
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_supplementalCredentialsSignature(struct ndr_print *ndr, const char *name, enum supplementalCredentialsSignature r)
+{
+	const char *val = NULL;
+
+	{
+		uint32_t _flags_save_ENUM = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX);
+		switch (r) {
+			case SUPPLEMENTAL_CREDENTIALS_SIGNATURE: val = "SUPPLEMENTAL_CREDENTIALS_SIGNATURE"; break;
+		}
+		ndr_print_enum(ndr, name, "ENUM", val, r);
+		ndr->flags = _flags_save_ENUM;
+	}
+}
+
 static enum ndr_err_code ndr_push_supplementalCredentialsSubBlob(struct ndr_push *ndr, int ndr_flags, const struct supplementalCredentialsSubBlob *r)
 {
 	uint32_t cntr_packages_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 2));
-		NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, SUPPLEMENTAL_CREDENTIALS_PREFIX, 0x31, sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, SUPPLEMENTAL_CREDENTIALS_PREFIX, 0x30, sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_push_supplementalCredentialsSignature(ndr, NDR_SCALARS, SUPPLEMENTAL_CREDENTIALS_SIGNATURE));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->num_packages));
 		for (cntr_packages_0 = 0; cntr_packages_0 < r->num_packages; cntr_packages_0++) {
 			NDR_CHECK(ndr_push_supplementalCredentialsPackage(ndr, NDR_SCALARS, &r->packages[cntr_packages_0]));
@@ -1258,7 +1298,8 @@ static enum ndr_err_code ndr_pull_supplementalCredentialsSubBlob(struct ndr_pull
 	TALLOC_CTX *_mem_save_packages_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 2));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->prefix, 0x31, sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->prefix, 0x30, sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_pull_supplementalCredentialsSignature(ndr, NDR_SCALARS, &r->signature));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->num_packages));
 		NDR_PULL_ALLOC_N(ndr, r->packages, r->num_packages);
 		_mem_save_packages_0 = NDR_PULL_GET_MEM_CTX(ndr);
@@ -1279,6 +1320,7 @@ _PUBLIC_ void ndr_print_supplementalCredentialsSubBlob(struct ndr_print *ndr, co
 	ndr_print_struct(ndr, name, "supplementalCredentialsSubBlob");
 	ndr->depth++;
 	ndr_print_string(ndr, "prefix", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?SUPPLEMENTAL_CREDENTIALS_PREFIX:r->prefix);
+	ndr_print_supplementalCredentialsSignature(ndr, "signature", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?SUPPLEMENTAL_CREDENTIALS_SIGNATURE:r->signature);
 	ndr_print_uint16(ndr, "num_packages", r->num_packages);
 	ndr->print(ndr, "%s: ARRAY(%d)", "packages", (int)r->num_packages);
 	ndr->depth++;
