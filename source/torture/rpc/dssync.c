@@ -154,7 +154,7 @@ static struct DsSyncTest *test_create_context(struct torture_context *tctx)
 		our_bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_XPRESS_COMPRESS;
 	}
 	our_bind_info28->site_guid		= GUID_zero();
-	our_bind_info28->pid			= 508;
+	our_bind_info28->pid			= 0;
 	our_bind_info28->repl_epoch		= 0;
 
 	our_bind_info_ctr			= &ctx->new_dc.drsuapi.our_bind_info_ctr;

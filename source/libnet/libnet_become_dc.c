@@ -1611,12 +1611,7 @@ static void becomeDC_drsuapi_bind_send(struct libnet_BecomeDC_state *s,
 	bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_XPRESS_COMPRESS;
 #endif
 	bind_info28->site_guid			= s->dest_dsa.site_guid;
-	if (s->domain.behavior_version == 2) {
-		/* TODO: find out how this is really triggered! */
-		bind_info28->pid		= 528;
-	} else {
-		bind_info28->pid		= 516;
-	}
+	bind_info28->pid			= 0;
 	bind_info28->repl_epoch			= 0;
 
 	drsuapi->bind_info_ctr.length		= 28;
