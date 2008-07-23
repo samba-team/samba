@@ -1516,22 +1516,30 @@ static void becomeDC_drsuapi_connect_send(struct libnet_BecomeDC_state *s,
 	drsuapi->s = s;
 
 	if (!drsuapi->binding) {
+		char *krb5_str = "";
+		char *print_str = "";
 		/*
-		 * Note: It's important to pass 'krb5' as auth_type here
-		 *       otherwise the replication will not work with
-		 *       Windows 2000. If NTLMSSP is used Windows 2000
-		 *       returns garbage in the DsGetNCChanges() response
+		 * Note: Replication only works with Windows 2000 when 'krb5' is
+		 *       passed as auth_type here. If NTLMSSP is used, Windows
+		 *       2000 returns garbage in the DsGetNCChanges() response
 		 *       if encrypted password attributes would be in the response.
 		 *       That means the replication of the schema and configuration
 		 *       partition works fine, but it fails for the domain partition.
 		 */
-		if (lp_parm_bool(s->libnet->lp_ctx, NULL, "become_dc", "print", false)) {
-			binding_str = talloc_asprintf(s, "ncacn_ip_tcp:%s[krb5,print,seal]", s->source_dsa.dns_name);
-			if (composite_nomem(binding_str, c)) return;
-		} else {
-			binding_str = talloc_asprintf(s, "ncacn_ip_tcp:%s[krb5,seal]", s->source_dsa.dns_name);
-			if (composite_nomem(binding_str, c)) return;
+		if (lp_parm_bool(s->libnet->lp_ctx, NULL, "become_dc",
+				 "force krb5", true))
+		{
+			krb5_str = "krb5,";
 		}
+		if (lp_parm_bool(s->libnet->lp_ctx, NULL, "become_dc",
+				 "print", false))
+		{
+			print_str = "print,";
+		}
+		binding_str = talloc_asprintf(s, "ncacn_ip_tcp:%s[%s%sseal]",
+					      s->source_dsa.dns_name,
+					      krb5_str, print_str);
+		if (composite_nomem(binding_str, c)) return;
 		c->status = dcerpc_parse_binding(s, binding_str, &drsuapi->binding);
 		talloc_free(binding_str);
 		if (!composite_is_ok(c)) return;
