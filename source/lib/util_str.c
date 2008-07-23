@@ -1231,7 +1231,7 @@ char *talloc_string_sub2(TALLOC_CTX *mem_ctx, const char *src,
 	char *string;
 	ssize_t ls,lp,li,ld, i;
 
-	if (!insert || !pattern || !*pattern || !src || !*src) {
+	if (!insert || !pattern || !*pattern || !src) {
 		return NULL;
 	}
 
