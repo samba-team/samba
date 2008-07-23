@@ -543,9 +543,20 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	uint32_t context_id;
 	const struct dcesrv_interface *iface;
 
+#if 0
+	/* It is not safe to enable this check - windows clients
+	 * (WinXP in particular) will use it for NETLOGON calls, for
+	 * the subsequent SCHANNEL bind.  It turns out that NETLOGON
+	 * calls include no policy handles, so it is safe there.  Let
+	 * the failure occour on the attempt to reuse a poilcy handle,
+	 * rather than here */
+
+	/* Association groups allow policy handles to be shared across
+	 * multiple client connections.  We don't implement this yet. */
 	if (call->pkt.u.bind.assoc_group_id != 0) {
 		return dcesrv_bind_nak(call, 0);	
 	}
+#endif
 
 	if (call->pkt.u.bind.num_contexts < 1 ||
 	    call->pkt.u.bind.ctx_list[0].num_transfer_syntaxes < 1) {
