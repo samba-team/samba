@@ -100,7 +100,6 @@ static NTSTATUS parse_object(TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status = NT_STATUS_OK;
 	uchar nt_passwd[16];
-	struct libnet_keytab_entry entry;
 	DATA_BLOB *blob;
 	int i = 0;
 	struct drsuapi_DsReplicaAttribute *attr;
@@ -215,18 +214,11 @@ static NTSTATUS parse_object(TALLOC_CTX *mem_ctx,
 	}
 
 	for (; i<pwd_history_len; i++) {
-
-		entry.kvno = kvno--;
-		entry.name = talloc_strdup(mem_ctx, name);
-		entry.principal = talloc_asprintf(mem_ctx, "%s@%s",
-						  name, ctx->dns_domain_name);
-		entry.password = data_blob_talloc(mem_ctx, &pwd_history[i*16], 16);
-		NT_STATUS_HAVE_NO_MEMORY(entry.name);
-		NT_STATUS_HAVE_NO_MEMORY(entry.principal);
-		NT_STATUS_HAVE_NO_MEMORY(entry.password.data);
-
-		ADD_TO_ARRAY(mem_ctx, struct libnet_keytab_entry, entry,
-			     &ctx->entries, &ctx->count);
+		status = add_to_keytab_entries(mem_ctx, ctx, kvno--, name, NULL,
+				data_blob_talloc(mem_ctx, &pwd_history[i*16], 16));
+		if (!NT_STATUS_IS_OK(status)) {
+			break;
+		}
 	}
 
 	return status;
