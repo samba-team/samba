@@ -138,38 +138,39 @@ static void ctdb_log_handler(struct event_context *ev, struct fd_event *fde,
 			     uint16_t flags, void *private)
 {
 	struct ctdb_context *ctdb = talloc_get_type(private, struct ctdb_context);
-	int n1, n2;
 	char *p;
+	int n;
 
 	if (!(flags & EVENT_FD_READ)) {
 		return;
 	}
 	
-	n1 = read(ctdb->log->pfd, &ctdb->log->buf[ctdb->log->buf_used],
+	n = read(ctdb->log->pfd, &ctdb->log->buf[ctdb->log->buf_used],
 		 sizeof(ctdb->log->buf) - ctdb->log->buf_used);
-	if (n1 > 0) {
-		ctdb->log->buf_used += n1;
+	if (n > 0) {
+		ctdb->log->buf_used += n;
 	}
 
-	p = memchr(ctdb->log->buf, '\n', ctdb->log->buf_used);
-	if (!p) {
-		if (ctdb->log->buf_used == sizeof(ctdb->log->buf)) {
-			do_debug("%*.*s\n", 
-				 (int)ctdb->log->buf_used, (int)ctdb->log->buf_used, ctdb->log->buf);
-			ctdb->log->buf_used = 0;
+	while (ctdb->log->buf_used > 0 &&
+	       (p = memchr(ctdb->log->buf, '\n', ctdb->log->buf_used)) != NULL) {
+		int n1 = (p - ctdb->log->buf)+1;
+		int n2 = n1 - 1;
+		/* swallow \r from child processes */
+		if (n2 > 0 && ctdb->log->buf[n2-1] == '\r') {
+			n2--;
 		}
-		return;
+		do_debug("%*.*s\n", n2, n2, ctdb->log->buf);
+		memmove(ctdb->log->buf, p+1, sizeof(ctdb->log->buf) - n1);
+		ctdb->log->buf_used -= n1;
 	}
 
-	n1 = (p - ctdb->log->buf)+1;
-	n2 = n1 - 1;
-	/* swallow \r from child processes */
-	if (n2 > 0 && ctdb->log->buf[n2-1] == '\r') {
-		n2--;
+	/* the buffer could have completely filled - unfortunately we have
+	   no choice but to dump it out straight away */
+	if (ctdb->log->buf_used == sizeof(ctdb->log->buf)) {
+		do_debug("%*.*s\n", 
+			 (int)ctdb->log->buf_used, (int)ctdb->log->buf_used, ctdb->log->buf);
+		ctdb->log->buf_used = 0;
 	}
-	do_debug("%*.*s\n", n2, n2, ctdb->log->buf);
-	memmove(ctdb->log->buf, p+1, sizeof(ctdb->log->buf) - n1);
-	ctdb->log->buf_used -= n1;
 }
 
 
