@@ -876,7 +876,9 @@ static int setup_supplemental_field(struct setup_password_fields_io *io)
 
 	/* if there's an old supplementaCredentials blob then parse it */
 	if (io->o.supplemental) {
-		ndr_err = ndr_pull_struct_blob_all(io->o.supplemental, io->ac, lp_iconv_convenience(ldb_get_opaque(io->ac->module->ldb, "loadparm")), &_old_scb,
+		ndr_err = ndr_pull_struct_blob_all(io->o.supplemental, io->ac,
+						   lp_iconv_convenience(ldb_get_opaque(io->ac->module->ldb, "loadparm")),
+						   &_old_scb,
 						   (ndr_pull_flags_fn_t)ndr_pull_supplementalCredentialsBlob);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
@@ -887,7 +889,14 @@ static int setup_supplemental_field(struct setup_password_fields_io *io)
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 
-		old_scb = &_old_scb;
+		if (_old_scb.sub.signature == SUPPLEMENTAL_CREDENTIALS_SIGNATURE) {
+			old_scb = &_old_scb;
+		} else {
+			ldb_debug(io->ac->module->ldb, LDB_DEBUG_ERROR,
+					       "setup_supplemental_field: "
+					       "supplementalCredentialsBlob signature[0x%04X] expected[0x%04X]",
+					       _old_scb.sub.signature, SUPPLEMENTAL_CREDENTIALS_SIGNATURE);
+		}
 	}
 
 	if (io->domain->store_cleartext &&
