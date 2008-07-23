@@ -226,6 +226,9 @@ static bool _test_DsBind(struct torture_context *tctx,
 		case 28:
 			b->peer_bind_info28 = b->req.out.bind_info->info.info28;
 			break;
+		default:
+			printf("DsBind - warning: unknown BindInfo length: %u\n",
+			       b->req.out.bind_info->length);
 		}
 	}
 
