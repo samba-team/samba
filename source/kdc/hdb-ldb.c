@@ -221,6 +221,12 @@ static krb5_error_code LDB_message2entry_keys(krb5_context context,
 			goto out;
 		}
 
+		if (scb.sub.signature != SUPPLEMENTAL_CREDENTIALS_SIGNATURE) {
+			NDR_PRINT_DEBUG(supplementalCredentialsBlob, &scb);
+			ret = EINVAL;
+			goto out;
+		}
+
 		for (i=0; i < scb.sub.num_packages; i++) {
 			if (scb.sub.packages[i].unknown1 != 0x00000001) {
 				continue;
