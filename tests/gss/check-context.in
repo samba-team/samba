@@ -80,9 +80,19 @@ ${kadmin} add -p p1 --use-defaults host/lucid.test.h5l.se@${R} || exit 1
 ${kadmin} ext -k ${keytab} host/lucid.test.h5l.se@${R} || exit 1
 ${kadmin} add -p p1 --use-defaults host/lucid@${R} || exit 1
 ${kadmin} ext -k ${keytab} host/lucid@${R} || exit 1
+
 ${kadmin} add -p kaka --use-defaults digest/${R}@${R} || exit 1
 
 ${kadmin} add -p u1 --use-defaults user1@${R} || exit 1
+
+# Create a server principal with no AES
+${kadmin} add -p p1 --use-defaults host/no-aes.test.h5l.se@${R} || exit 1
+${kadmin} get host/no-aes.test.h5l.se@${R} > tempfile || exit 1
+${kadmin} del_enctype host/no-aes.test.h5l.se@${R} \
+    aes256-cts-hmac-sha1-96 aes128-cts-hmac-sha1-96 || exit 1
+${kadmin} ext -k ${keytab} host/no-aes.test.h5l.se@${R} || exit 1
+echo "E: ${enctype_sans_aes}"
+
 
 echo "Doing database check"
 ${kadmin} check ${R} || exit 1
@@ -215,6 +225,19 @@ rm ${keytabfile}.new
 #    host@lucid.test.h5l.se || \
 #	{ exitcode=1 ; echo "test failed"; }
 
+
+# this will break when oneone invents a cooler enctype then aes256-cts-hmac-sha1-96
+coolenctype="aes256-cts-hmac-sha1-96"
+
+echo "Getting client initial tickets"
+${kinit} --password-file=${objdir}/foopassword user1@${R} || \
+    { echo "kinit failed"; exitcode=1; }
+
+echo "Building context on cred w/o aes, but still aes session key"
+${context} --mech-type=${mech} \
+    --session-enctype=${coolenctype} \
+    --name-type=hostbased-service host@no-aes.test.h5l.se || \
+	{ exitcode=1 ; echo "test failed"; }
 
 trap "" EXIT
 
