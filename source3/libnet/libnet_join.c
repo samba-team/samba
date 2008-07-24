@@ -1447,6 +1447,37 @@ static WERROR libnet_join_pre_processing(TALLOC_CTX *mem_ctx,
 /****************************************************************
 ****************************************************************/
 
+static void libnet_join_add_dom_rids_to_builtins(struct dom_sid *domain_sid)
+{
+	NTSTATUS status;
+
+	/* Try adding dom admins to builtin\admins. Only log failures. */
+	status = create_builtin_administrators(domain_sid);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_PROTOCOL_UNREACHABLE)) {
+		DEBUG(10,("Unable to auto-add domain administrators to "
+			  "BUILTIN\\Administrators during join because "
+			  "winbindd must be running."));
+	} else if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(5, ("Failed to auto-add domain administrators to "
+			  "BUILTIN\\Administrators during join: %s\n",
+			  nt_errstr(status)));
+	}
+
+	/* Try adding dom users to builtin\users. Only log failures. */
+	status = create_builtin_users(domain_sid);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_PROTOCOL_UNREACHABLE)) {
+		DEBUG(10,("Unable to auto-add domain users to BUILTIN\\users "
+			  "during join because winbindd must be running."));
+	} else if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(5, ("Failed to auto-add domain administrators to "
+			  "BUILTIN\\Administrators during join: %s\n",
+			  nt_errstr(status)));
+	}
+}
+
+/****************************************************************
+****************************************************************/
+
 static WERROR libnet_join_post_processing(TALLOC_CTX *mem_ctx,
 					  struct libnet_JoinCtx *r)
 {
@@ -1464,6 +1495,8 @@ static WERROR libnet_join_post_processing(TALLOC_CTX *mem_ctx,
 	if (r->in.join_flags & WKSSVC_JOIN_FLAGS_JOIN_TYPE) {
 		saf_store(r->in.domain_name, r->in.dc_name);
 	}
+
+	libnet_join_add_dom_rids_to_builtins(r->out.domain_sid);
 
 	return WERR_OK;
 }

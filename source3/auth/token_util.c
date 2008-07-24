@@ -262,7 +262,7 @@ static NTSTATUS add_sid_to_builtin(const DOM_SID *builtin_sid,
 /*******************************************************************
 *******************************************************************/
 
-static NTSTATUS create_builtin_users(const DOM_SID *dom_sid)
+NTSTATUS create_builtin_users(const DOM_SID *dom_sid)
 {
 	NTSTATUS status;
 	DOM_SID dom_users;
@@ -292,7 +292,7 @@ static NTSTATUS create_builtin_users(const DOM_SID *dom_sid)
 /*******************************************************************
 *******************************************************************/
 
-static NTSTATUS create_builtin_administrators(const DOM_SID *dom_sid)
+NTSTATUS create_builtin_administrators(const DOM_SID *dom_sid)
 {
 	NTSTATUS status;
 	DOM_SID dom_admins, root_sid;
