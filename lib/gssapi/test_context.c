@@ -460,7 +460,6 @@ main(int argc, char **argv)
 		     (int)enctype, (int)keyblock2->keytype);
 	}
 
-
 	if (keyblock)
 	    krb5_free_keyblock(context, keyblock);
 	if (keyblock2)
