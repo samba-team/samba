@@ -198,7 +198,7 @@ static NTSTATUS samsync_ldb_handle_domain(TALLOC_CTX *mem_ctx,
 	}
 
 	samdb_msg_add_string(state->sam_ldb, mem_ctx, 
-			     msg, "oEMInformation", domain->comment.string);
+			     msg, "oEMInformation", domain->oem_information.string);
 
 	samdb_msg_add_int64(state->sam_ldb, mem_ctx, 
 			    msg, "forceLogoff", domain->force_logoff_time);
