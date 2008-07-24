@@ -165,7 +165,8 @@ done:
 /*******************************************************************
 *******************************************************************/
 
-static NTSTATUS add_builtin_administrators( struct nt_user_token *token )
+static NTSTATUS add_builtin_administrators(struct nt_user_token *token,
+					   const DOM_SID *dom_sid)
 {
 	DOM_SID domadm;
 	NTSTATUS status;
@@ -181,8 +182,7 @@ static NTSTATUS add_builtin_administrators( struct nt_user_token *token )
 	if ( IS_DC ) {
 		sid_copy( &domadm, get_global_sam_sid() );
 	} else {
-		if ( !secrets_fetch_domain_sid( lp_workgroup(), &domadm ) )
-			return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+		sid_copy(&domadm, dom_sid);
 	}
 	sid_append_rid( &domadm, DOMAIN_GROUP_RID_ADMINS );
 
@@ -292,7 +292,7 @@ static NTSTATUS create_builtin_users(const DOM_SID *dom_sid)
 /*******************************************************************
 *******************************************************************/
 
-static NTSTATUS create_builtin_administrators( void )
+static NTSTATUS create_builtin_administrators(const DOM_SID *dom_sid)
 {
 	NTSTATUS status;
 	DOM_SID dom_admins, root_sid;
@@ -301,7 +301,7 @@ static NTSTATUS create_builtin_administrators( void )
 	TALLOC_CTX *ctx;
 	bool ret;
 
-	status = pdb_create_builtin_alias( BUILTIN_ALIAS_RID_ADMINS );
+	status = create_builtin(BUILTIN_ALIAS_RID_ADMINS);
 	if ( !NT_STATUS_IS_OK(status) ) {
 		DEBUG(5,("create_builtin_administrators: Failed to create Administrators\n"));
 		return status;
@@ -309,10 +309,10 @@ static NTSTATUS create_builtin_administrators( void )
 
 	/* add domain admins */
 	if ((IS_DC || (lp_server_role() == ROLE_DOMAIN_MEMBER))
-		&& secrets_fetch_domain_sid(lp_workgroup(), &dom_admins))
+		&& sid_compose(&dom_admins, dom_sid, DOMAIN_GROUP_RID_ADMINS))
 	{
-		sid_append_rid(&dom_admins, DOMAIN_GROUP_RID_ADMINS);
-		status = pdb_add_aliasmem( &global_sid_Builtin_Administrators, &dom_admins );
+		status = add_sid_to_builtin(&global_sid_Builtin_Administrators,
+					    &dom_admins);
 		if ( !NT_STATUS_IS_OK(status) ) {
 			DEBUG(4,("create_builtin_administrators: Failed to add Domain Admins"
 				" Administrators\n"));
@@ -330,7 +330,8 @@ static NTSTATUS create_builtin_administrators( void )
 	TALLOC_FREE( ctx );
 
 	if ( ret ) {
-		status = pdb_add_aliasmem( &global_sid_Builtin_Administrators, &root_sid );
+		status = add_sid_to_builtin(&global_sid_Builtin_Administrators,
+					    &root_sid);
 		if ( !NT_STATUS_IS_OK(status) ) {
 			DEBUG(4,("create_builtin_administrators: Failed to add root"
 				" Administrators\n"));
@@ -433,27 +434,30 @@ struct nt_user_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
 	   be resolved then assume that the add_aliasmem( S-1-5-32 )
 	   handled it. */
 
-	if ( !sid_to_gid( &global_sid_Builtin_Administrators, &gid ) ) {
-		/* We can only create a mapping if winbind is running
-		   and the nested group functionality has been enabled */
+	if (!sid_to_gid(&global_sid_Builtin_Administrators, &gid)) {
 
-		if ( lp_winbind_nested_groups() && winbind_ping() ) {
-			become_root();
-			status = create_builtin_administrators( );
-			if ( !NT_STATUS_IS_OK(status) ) {
-				DEBUG(2,("WARNING: Failed to create BUILTIN\\Administrators "
-					 "group!  Can Winbind allocate gids?\n"));
-				/* don't fail, just log the message */
-			}
-			unbecome_root();
+		become_root();
+		if (!secrets_fetch_domain_sid(lp_workgroup(), &dom_sid)) {
+			status = NT_STATUS_OK;
+			DEBUG(3, ("Failed to fetch domain sid for %s\n",
+				  lp_workgroup()));
+		} else {
+			status = create_builtin_administrators(&dom_sid);
 		}
-		else {
-			status = add_builtin_administrators( result );
+		unbecome_root();
+
+		if (NT_STATUS_EQUAL(status, NT_STATUS_PROTOCOL_UNREACHABLE)) {
+			/* Add BUILTIN\Administrators directly to token. */
+			status = add_builtin_administrators(result, &dom_sid);
 			if ( !NT_STATUS_IS_OK(status) ) {
-				/* just log a complaint but do not fail */
-				DEBUG(3,("create_local_nt_token: failed to check for local Administrators"
-					" membership (%s)\n", nt_errstr(status)));
+				DEBUG(3, ("Failed to check for local "
+					  "Administrators membership (%s)\n",
+					  nt_errstr(status)));
 			}
+		} else if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(2, ("WARNING: Failed to create "
+				  "BUILTIN\\Administrators group!  Can "
+				  "Winbind allocate gids?\n"));
 		}
 	}
 
