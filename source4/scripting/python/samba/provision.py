@@ -503,6 +503,8 @@ def setup_samdb_partitions(samdb_path, setup_path, message, lp, session_info,
         backend_modules = ["normalise", "entryuuid", "paged_searches"]
         # OpenLDAP handles subtree renames, so we don't want to do any of these things
         tdb_modules_list = None
+    elif ldap_backend is not None:
+        raise "LDAP Backend specified, but LDAP Backend Type not specified"
     elif serverrole == "domain controller":
         backend_modules = ["repl_meta_data"]
     else:
