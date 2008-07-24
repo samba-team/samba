@@ -191,11 +191,10 @@ static krb5_error_code LDB_message2entry_keys(krb5_context context,
 	const struct ldb_val *sc_val;
 	struct supplementalCredentialsBlob scb;
 	struct supplementalCredentialsPackage *scpk = NULL;
-	struct supplementalCredentialsPackage *scpkn = NULL;
+	bool newer_keys = false;
 	struct package_PrimaryKerberosBlob _pkb;
 	struct package_PrimaryKerberosCtr3 *pkb3 = NULL;
-	struct package_PrimaryKerberosNewerBlob _pknb;
-	struct package_PrimaryKerberosNewerCtr4 *pkb4 = NULL;
+	struct package_PrimaryKerberosCtr4 *pkb4 = NULL;
 	uint32_t i;
 	uint32_t allocated_keys = 0;
 
@@ -232,11 +231,12 @@ static krb5_error_code LDB_message2entry_keys(krb5_context context,
 
 		for (i=0; i < scb.sub.num_packages; i++) {
 			if (strcmp("Primary:Kerberos-Newer-Keys", scb.sub.packages[i].name) == 0) {
-				scpkn = &scb.sub.packages[i];
-				if (!scpkn->data || !scpkn->data[0]) {
-					scpkn = NULL;
+				scpk = &scb.sub.packages[i];
+				if (!scpk->data || !scpk->data[0]) {
+					scpk = NULL;
 					continue;
 				}
+				newer_keys = true;
 				break;
 			} else if (strcmp("Primary:Kerberos", scb.sub.packages[i].name) == 0) {
 				scpk = &scb.sub.packages[i];
@@ -250,39 +250,11 @@ static krb5_error_code LDB_message2entry_keys(krb5_context context,
 			}
 		}
 	}
-	/* Primary:Kerberos-Newer-Keys element of supplementalCredentials */
-	if (scpkn) {
-		DATA_BLOB blob;
-
-		blob = strhex_to_data_blob(scpkn->data);
-		if (!blob.data) {
-			ret = ENOMEM;
-			goto out;
-		}
-		talloc_steal(mem_ctx, blob.data);
-
-		/* TODO: use ndr_pull_struct_blob_all(), when the ndr layer handles it correct with relative pointers */
-		ndr_err = ndr_pull_struct_blob(&blob, mem_ctx, iconv_convenience, &_pknb,
-					       (ndr_pull_flags_fn_t)ndr_pull_package_PrimaryKerberosNewerBlob);
-		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-			krb5_set_error_string(context, "LDB_message2entry_keys: could not parse package_PrimaryKerberosNewerBlob");
-			krb5_warnx(context, "LDB_message2entry_keys: could not parse package_PrimaryKerberosNewerBlob");
-			ret = EINVAL;
-			goto out;
-		}
-
-		if (_pknb.version != 4) {
-			krb5_set_error_string(context, "LDB_message2entry_keys: could not parse PrimaryKerberosNewer not version 4");
-			krb5_warnx(context, "LDB_message2entry_keys: could not parse PrimaryKerberosNewer not version 4");
-			ret = EINVAL;
-			goto out;
-		}
-
-		pkb4 = &_pknb.ctr.ctr4;
-
-		allocated_keys += pkb4->num_keys;
-	} else if (scpk) {
-		/* Fallback to Primary:Kerberos element of supplementalCredentials */
+	/*
+	 * Primary:Kerberos-Newer-Keys or Primary:Kerberos element
+	 * of supplementalCredentials
+	 */
+	if (scpk) {
 		DATA_BLOB blob;
 
 		blob = strhex_to_data_blob(scpk->data);
@@ -302,16 +274,27 @@ static krb5_error_code LDB_message2entry_keys(krb5_context context,
 			goto out;
 		}
 
-		if (_pkb.version != 3) {
-			krb5_set_error_string(context, "LDB_message2entry_keys: could not parse PrimaryKerberos not version 3");
-			krb5_warnx(context, "LDB_message2entry_keys: could not parse PrimaryKerberos not version 3");
+		if (newer_keys && _pkb.version != 4) {
+			krb5_set_error_string(context, "LDB_message2entry_keys: Primary:Kerberos-Newer-Keys not version 4");
+			krb5_warnx(context, "LDB_message2entry_keys: Primary:Kerberos-Newer-Keys not version 4");
 			ret = EINVAL;
 			goto out;
 		}
-		
-		pkb3 = &_pkb.ctr.ctr3;
 
-		allocated_keys += pkb3->num_keys;
+		if (!newer_keys && _pkb.version != 3) {
+			krb5_set_error_string(context, "LDB_message2entry_keys: could not parse Primary:Kerberos not version 3");
+			krb5_warnx(context, "LDB_message2entry_keys: could not parse Primary:Kerberos not version 3");
+			ret = EINVAL;
+			goto out;
+		}
+
+		if (_pkb.version == 4) {
+			pkb4 = &_pkb.ctr.ctr4;
+			allocated_keys += pkb4->num_keys;
+		} else if (_pkb.version == 3) {
+			pkb3 = &_pkb.ctr.ctr3;
+			allocated_keys += pkb3->num_keys;
+		}
 	}
 
 	if (allocated_keys == 0) {
@@ -390,6 +373,8 @@ static krb5_error_code LDB_message2entry_keys(krb5_context context,
 					goto out;
 				}
 			}
+
+			/* TODO: maybe pass the iteration_count somehow... */
 
 			ret = krb5_keyblock_init(context,
 						 pkb4->keys[i].keytype,
