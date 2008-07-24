@@ -7,7 +7,7 @@
 #ifndef _HEADER_drsblobs
 #define _HEADER_drsblobs
 
-#define SUPPLEMENTAL_CREDENTIALS_PREFIX	( "                                                P" )
+#define SUPPLEMENTAL_CREDENTIALS_PREFIX	( "                                                " )
 enum drsuapi_DsAttributeId;
 
 struct replPropertyMetaData1 {
@@ -149,13 +149,25 @@ struct ldapControlDirSyncCookie {
 struct supplementalCredentialsPackage {
 	uint16_t name_len;/* [value(2*strlen_m(name))] */
 	uint16_t data_len;/* [value(strlen(data))] */
-	uint16_t unknown1;
+	uint16_t reserved;
 	const char *name;/* [charset(UTF16)] */
 	const char *data;/* [charset(DOS)] */
 };
 
+enum supplementalCredentialsSignature
+#ifndef USE_UINT_ENUMS
+ {
+	SUPPLEMENTAL_CREDENTIALS_SIGNATURE=0x0050
+}
+#else
+ { __donnot_use_enum_supplementalCredentialsSignature=0x7FFFFFFF}
+#define SUPPLEMENTAL_CREDENTIALS_SIGNATURE ( 0x0050 )
+#endif
+;
+
 struct supplementalCredentialsSubBlob {
 	const char *prefix;/* [value(SUPPLEMENTAL_CREDENTIALS_PREFIX),charset(UTF16)] */
+	enum supplementalCredentialsSignature signature;/* [value(SUPPLEMENTAL_CREDENTIALS_SIGNATURE)] */
 	uint16_t num_packages;
 	struct supplementalCredentialsPackage *packages;
 }/* [gensize] */;
@@ -179,23 +191,25 @@ struct package_PrimaryKerberosString {
 };
 
 struct package_PrimaryKerberosKey {
+	uint16_t reserved1;/* [value(0)] */
+	uint16_t reserved2;/* [value(0)] */
+	uint32_t reserved3;/* [value(0)] */
 	uint32_t keytype;
 	uint32_t value_len;/* [value((value?value->length:0))] */
 	DATA_BLOB *value;/* [relative,subcontext_size(value_len),subcontext(0),flag(LIBNDR_FLAG_REMAINING)] */
-	uint32_t unknown1;/* [value(0)] */
-	uint32_t unknown2;/* [value(0)] */
 };
 
 struct package_PrimaryKerberosCtr3 {
 	uint16_t num_keys;
 	uint16_t num_old_keys;
 	struct package_PrimaryKerberosString salt;
-	uint32_t unknown1;/* [value(0)] */
-	uint32_t unknown2;/* [value(0)] */
 	struct package_PrimaryKerberosKey *keys;
 	struct package_PrimaryKerberosKey *old_keys;
-	uint64_t *unknown3;
-	uint64_t *unknown3_old;
+	uint32_t padding1;/* [value(0)] */
+	uint32_t padding2;/* [value(0)] */
+	uint32_t padding3;/* [value(0)] */
+	uint32_t padding4;/* [value(0)] */
+	uint32_t padding5;/* [value(0)] */
 };
 
 union package_PrimaryKerberosCtr {
@@ -205,6 +219,36 @@ union package_PrimaryKerberosCtr {
 struct package_PrimaryKerberosBlob {
 	uint32_t version;/* [value(3)] */
 	union package_PrimaryKerberosCtr ctr;/* [switch_is(version)] */
+}/* [public] */;
+
+struct package_PrimaryKerberosNewerKey {
+	uint32_t unknown1;/* [value(0)] */
+	uint32_t unknown2;/* [value(0)] */
+	uint32_t unknown3;/* [value(0x00001000)] */
+	uint32_t keytype;
+	uint32_t value_len;/* [value((value?value->length:0))] */
+	DATA_BLOB *value;/* [relative,subcontext_size(value_len),subcontext(0),flag(LIBNDR_FLAG_REMAINING)] */
+};
+
+struct package_PrimaryKerberosNewerCtr4 {
+	uint16_t num_keys;
+	uint16_t unknown1;/* [value(0)] */
+	uint16_t num_old_keys1;
+	uint16_t num_old_keys2;
+	struct package_PrimaryKerberosString salt;
+	uint32_t unknown2;/* [value(0x00001000)] */
+	struct package_PrimaryKerberosNewerKey *keys;
+	struct package_PrimaryKerberosNewerKey *old_keys1;
+	struct package_PrimaryKerberosNewerKey *old_keys2;
+};
+
+union package_PrimaryKerberosNewerCtr {
+	struct package_PrimaryKerberosNewerCtr4 ctr4;/* [case(4)] */
+}/* [nodiscriminant] */;
+
+struct package_PrimaryKerberosNewerBlob {
+	uint32_t version;/* [value(4)] */
+	union package_PrimaryKerberosNewerCtr ctr;/* [switch_is(version)] */
 }/* [public] */;
 
 struct package_PrimaryCLEARTEXTBlob {
@@ -349,6 +393,14 @@ struct decode_Packages {
 struct decode_PrimaryKerberos {
 	struct {
 		struct package_PrimaryKerberosBlob blob;
+	} in;
+
+};
+
+
+struct decode_PrimaryKerberosNewer {
+	struct {
+		struct package_PrimaryKerberosNewerBlob blob;
 	} in;
 
 };

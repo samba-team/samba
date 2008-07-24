@@ -537,7 +537,6 @@ static void request_len_recv(void *private_data, bool success);
 static void request_recv(void *private_data, bool success);
 static void request_main_recv(void *private_data, bool success);
 static void request_finished(struct winbindd_cli_state *state);
-void request_finished_cont(void *private_data, bool success);
 static void response_main_sent(void *private_data, bool success);
 static void response_extra_sent(void *private_data, bool success);
 
@@ -546,10 +545,7 @@ static void response_extra_sent(void *private_data, bool success)
 	struct winbindd_cli_state *state =
 		talloc_get_type_abort(private_data, struct winbindd_cli_state);
 
-	if (state->mem_ctx != NULL) {
-		talloc_destroy(state->mem_ctx);
-		state->mem_ctx = NULL;
-	}
+	TALLOC_FREE(state->mem_ctx);
 
 	if (!success) {
 		state->finished = True;
@@ -574,10 +570,7 @@ static void response_main_sent(void *private_data, bool success)
 	}
 
 	if (state->response.length == sizeof(state->response)) {
-		if (state->mem_ctx != NULL) {
-			talloc_destroy(state->mem_ctx);
-			state->mem_ctx = NULL;
-		}
+		TALLOC_FREE(state->mem_ctx);
 
 		setup_async_read(&state->fd_event, &state->request,
 				 sizeof(uint32), request_len_recv, state);
@@ -607,17 +600,6 @@ void request_ok(struct winbindd_cli_state *state)
 	SMB_ASSERT(state->response.result == WINBINDD_PENDING);
 	state->response.result = WINBINDD_OK;
 	request_finished(state);
-}
-
-void request_finished_cont(void *private_data, bool success)
-{
-	struct winbindd_cli_state *state =
-		talloc_get_type_abort(private_data, struct winbindd_cli_state);
-
-	if (success)
-		request_ok(state);
-	else
-		request_error(state);
 }
 
 static void request_len_recv(void *private_data, bool success)
@@ -767,10 +749,7 @@ static void remove_client(struct winbindd_cli_state *state)
 
 	SAFE_FREE(state->response.extra_data.data);
 
-	if (state->mem_ctx != NULL) {
-		talloc_destroy(state->mem_ctx);
-		state->mem_ctx = NULL;
-	}
+	TALLOC_FREE(state->mem_ctx);
 
 	remove_fd_event(&state->fd_event);
 		
