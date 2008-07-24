@@ -200,6 +200,65 @@ static NTSTATUS add_builtin_administrators( struct nt_user_token *token )
 	return NT_STATUS_OK;
 }
 
+/**
+ * Create the requested BUILTIN if it doesn't already exist.  This requires
+ * winbindd to be running.
+ *
+ * @param[in] rid BUILTIN rid to create
+ * @return Normal NTSTATUS return.
+ */
+static NTSTATUS create_builtin(uint32 rid)
+{
+	NTSTATUS status = NT_STATUS_OK;
+	DOM_SID sid;
+	gid_t gid;
+
+	if (!sid_compose(&sid, &global_sid_Builtin, rid)) {
+		return NT_STATUS_NO_SUCH_ALIAS;
+	}
+
+	if (!sid_to_gid(&sid, &gid)) {
+		if (!lp_winbind_nested_groups() || !winbind_ping()) {
+			return NT_STATUS_PROTOCOL_UNREACHABLE;
+		}
+		status = pdb_create_builtin_alias(rid);
+	}
+	return status;
+}
+
+/**
+ * Add sid as a member of builtin_sid.
+ *
+ * @param[in] builtin_sid	An existing builtin group.
+ * @param[in] dom_sid		sid to add as a member of builtin_sid.
+ * @return Normal NTSTATUS return
+ */
+static NTSTATUS add_sid_to_builtin(const DOM_SID *builtin_sid,
+				   const DOM_SID *dom_sid)
+{
+	NTSTATUS status = NT_STATUS_OK;
+
+	if (!dom_sid || !builtin_sid) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	status = pdb_add_aliasmem(builtin_sid, dom_sid);
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_MEMBER_IN_ALIAS)) {
+		DEBUG(5, ("add_sid_to_builtin %s is already a member of %s\n",
+			  sid_string_dbg(dom_sid),
+			  sid_string_dbg(builtin_sid)));
+		return NT_STATUS_OK;
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(3, ("add_sid_to_builtin %s could not be added to %s: "
+			  "%s\n", sid_string_dbg(dom_sid),
+			  sid_string_dbg(builtin_sid), nt_errstr(status)));
+	}
+	return status;
+}
+
 /*******************************************************************
 *******************************************************************/
 
