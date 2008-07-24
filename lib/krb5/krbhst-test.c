@@ -95,7 +95,7 @@ main(int argc, char **argv)
 	    krb5_krbhst_init(context, argv[i], types[j], &handle);
 	    while(krb5_krbhst_next_as_string(context, handle,
 					     host, sizeof(host)) == 0)
-		printf("%s\n", host);
+		printf("\thost: %s\n", host);
 	    krb5_krbhst_reset(context, handle);
 	    printf ("\n");
 	}
