@@ -28,8 +28,7 @@ TESTS=	testsmbc \
 	testchmod \
 	testutime \
 	testread \
-	testwrite \
-	libsmbclient.c
+	testwrite
 
 #	tree \
 
@@ -93,10 +92,6 @@ testread: testread.o
 
 testwrite: testwrite.o
 	@echo Linking testwrite
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $< $(LIBSMBCLIENT) -lpopt
-
-libsmbclient: libsmbclient.o
-	@echo Linking libsmbclient
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $< $(LIBSMBCLIENT) -lpopt
 
 smbsh:
