@@ -361,6 +361,12 @@ WERROR dsdb_prefix_map_update(TALLOC_CTX *mem_ctx, uint32_t *num_prefixes, struc
 	
 	new_num_prefixes = *num_prefixes + 1;
 	index_new_prefix = *num_prefixes;
+
+	/*
+	 * this is the algorithm we use to create new mappings for now
+	 *
+	 * TODO: find what algorithm windows use
+	 */
 	new_entry_id = (*num_prefixes)<<16;
 
 	/* Extract the prefix from the oid*/
