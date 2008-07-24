@@ -262,12 +262,12 @@ static NTSTATUS add_sid_to_builtin(const DOM_SID *builtin_sid,
 /*******************************************************************
 *******************************************************************/
 
-static NTSTATUS create_builtin_users( void )
+static NTSTATUS create_builtin_users(const DOM_SID *dom_sid)
 {
 	NTSTATUS status;
 	DOM_SID dom_users;
 
-	status = pdb_create_builtin_alias( BUILTIN_ALIAS_RID_USERS );
+	status = create_builtin(BUILTIN_ALIAS_RID_USERS);
 	if ( !NT_STATUS_IS_OK(status) ) {
 		DEBUG(5,("create_builtin_users: Failed to create Users\n"));
 		return status;
@@ -275,10 +275,10 @@ static NTSTATUS create_builtin_users( void )
 
 	/* add domain users */
 	if ((IS_DC || (lp_server_role() == ROLE_DOMAIN_MEMBER))
-		&& secrets_fetch_domain_sid(lp_workgroup(), &dom_users))
+		&& sid_compose(&dom_users, dom_sid, DOMAIN_GROUP_RID_USERS))
 	{
-		sid_append_rid(&dom_users, DOMAIN_GROUP_RID_USERS );
-		status = pdb_add_aliasmem( &global_sid_Builtin_Users, &dom_users);
+		status = add_sid_to_builtin(&global_sid_Builtin_Users,
+					    &dom_users);
 		if ( !NT_STATUS_IS_OK(status) ) {
 			DEBUG(4,("create_builtin_administrators: Failed to add Domain Users to"
 				" Users\n"));
@@ -356,6 +356,7 @@ struct nt_user_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
 	int i;
 	NTSTATUS status;
 	gid_t gid;
+	DOM_SID dom_sid;
 
 	DEBUG(10, ("Create local NT token for %s\n",
 		   sid_string_dbg(user_sid)));
@@ -460,19 +461,23 @@ struct nt_user_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
 	   be resolved then assume that the add_aliasmem( S-1-5-32 )
 	   handled it. */
 
-	if ( !sid_to_gid( &global_sid_Builtin_Users, &gid ) ) {
-		/* We can only create a mapping if winbind is running
-		   and the nested group functionality has been enabled */
+	if (!sid_to_gid(&global_sid_Builtin_Users, &gid)) {
 
-		if ( lp_winbind_nested_groups() && winbind_ping() ) {
-			become_root();
-			status = create_builtin_users( );
-			if ( !NT_STATUS_IS_OK(status) ) {
-				DEBUG(2,("WARNING: Failed to create BUILTIN\\Users group! "
-					 "Can Winbind allocate gids?\n"));
-				/* don't fail, just log the message */
-			}
-			unbecome_root();
+		become_root();
+		if (!secrets_fetch_domain_sid(lp_workgroup(), &dom_sid)) {
+			status = NT_STATUS_OK;
+			DEBUG(3, ("Failed to fetch domain sid for %s\n",
+				  lp_workgroup()));
+		} else {
+			status = create_builtin_users(&dom_sid);
+		}
+		unbecome_root();
+
+		if (!NT_STATUS_EQUAL(status, NT_STATUS_PROTOCOL_UNREACHABLE) &&
+		    !NT_STATUS_IS_OK(status))
+		{
+			DEBUG(2, ("WARNING: Failed to create BUILTIN\\Users group! "
+				  "Can Winbind allocate gids?\n"));
 		}
 	}
 
