@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006 Kungliga Tekniska Högskolan
+ * Copyright (c) 2006 - 2008 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -455,7 +455,7 @@ main(int argc, char **argv)
 	    if (ret)
 		krb5_err(context, 1, ret, "krb5_string_to_enctype");
 
-	    if (enctype != keyblock2->keytype)
+	    if (enctype != keyblock->keytype)
 		errx(1, "keytype is not the expected %d != %d",
 		     (int)enctype, (int)keyblock2->keytype);
 	}
