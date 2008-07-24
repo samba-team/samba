@@ -537,7 +537,6 @@ static void request_len_recv(void *private_data, bool success);
 static void request_recv(void *private_data, bool success);
 static void request_main_recv(void *private_data, bool success);
 static void request_finished(struct winbindd_cli_state *state);
-void request_finished_cont(void *private_data, bool success);
 static void response_main_sent(void *private_data, bool success);
 static void response_extra_sent(void *private_data, bool success);
 
@@ -601,17 +600,6 @@ void request_ok(struct winbindd_cli_state *state)
 	SMB_ASSERT(state->response.result == WINBINDD_PENDING);
 	state->response.result = WINBINDD_OK;
 	request_finished(state);
-}
-
-void request_finished_cont(void *private_data, bool success)
-{
-	struct winbindd_cli_state *state =
-		talloc_get_type_abort(private_data, struct winbindd_cli_state);
-
-	if (success)
-		request_ok(state);
-	else
-		request_error(state);
 }
 
 static void request_len_recv(void *private_data, bool success)
