@@ -437,10 +437,11 @@ static int setup_primary_kerberos(struct setup_password_fields_io *io,
 	 * ENCTYPE_DES_CBC_MD5
 	 * ENCTYPE_DES_CBC_CRC
 	 */
+	pkb->version		= 3;
 	pkb3->salt.string	= io->g.salt;
 	pkb3->num_keys		= 2;
 	pkb3->keys		= talloc_array(io->ac,
-					       struct package_PrimaryKerberosKey,
+					       struct package_PrimaryKerberosKey3,
 					       pkb3->num_keys);
 	if (!pkb3->keys) {
 		ldb_oom(io->ac->module->ldb);
@@ -521,12 +522,12 @@ static int setup_primary_kerberos(struct setup_password_fields_io *io,
 
 static int setup_primary_kerberos_newer(struct setup_password_fields_io *io,
 					const struct supplementalCredentialsBlob *old_scb,
-					struct package_PrimaryKerberosNewerBlob *pkb)
+					struct package_PrimaryKerberosBlob *pkb)
 {
-	struct package_PrimaryKerberosNewerCtr4 *pkb4 = &pkb->ctr.ctr4;
+	struct package_PrimaryKerberosCtr4 *pkb4 = &pkb->ctr.ctr4;
 	struct supplementalCredentialsPackage *old_scp = NULL;
-	struct package_PrimaryKerberosNewerBlob _old_pkb;
-	struct package_PrimaryKerberosNewerCtr4 *old_pkb4 = NULL;
+	struct package_PrimaryKerberosBlob _old_pkb;
+	struct package_PrimaryKerberosCtr4 *old_pkb4 = NULL;
 	uint32_t i;
 	enum ndr_err_code ndr_err;
 
@@ -538,30 +539,37 @@ static int setup_primary_kerberos_newer(struct setup_password_fields_io *io,
 	 * ENCTYPE_DES_CBC_MD5
 	 * ENCTYPE_DES_CBC_CRC
 	 */
-	pkb4->salt.string	= io->g.salt;
-	pkb4->num_keys		= 4;
-	pkb4->keys		= talloc_array(io->ac,
-					       struct package_PrimaryKerberosNewerKey,
-					       pkb4->num_keys);
+	pkb->version			= 4;
+	pkb4->salt.string		= io->g.salt;
+	pkb4->default_iteration_count	= 4096;
+	pkb4->num_keys			= 4;
+
+	pkb4->keys = talloc_array(io->ac,
+				  struct package_PrimaryKerberosKey4,
+				  pkb4->num_keys);
 	if (!pkb4->keys) {
 		ldb_oom(io->ac->module->ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	pkb4->keys[0].keytype	= ENCTYPE_AES256_CTS_HMAC_SHA1_96;
-	pkb4->keys[0].value	= &io->g.aes_256;
-	pkb4->keys[1].keytype	= ENCTYPE_AES128_CTS_HMAC_SHA1_96;
-	pkb4->keys[1].value	= &io->g.aes_128;
-	pkb4->keys[2].keytype	= ENCTYPE_DES_CBC_MD5;
-	pkb4->keys[2].value	= &io->g.des_md5;
-	pkb4->keys[3].keytype	= ENCTYPE_DES_CBC_CRC;
-	pkb4->keys[3].value	= &io->g.des_crc;
+	pkb4->keys[0].iteration_count	= 4096;
+	pkb4->keys[0].keytype		= ENCTYPE_AES256_CTS_HMAC_SHA1_96;
+	pkb4->keys[0].value		= &io->g.aes_256;
+	pkb4->keys[1].iteration_count	= 4096;
+	pkb4->keys[1].keytype		= ENCTYPE_AES128_CTS_HMAC_SHA1_96;
+	pkb4->keys[1].value		= &io->g.aes_128;
+	pkb4->keys[2].iteration_count	= 4096;
+	pkb4->keys[2].keytype		= ENCTYPE_DES_CBC_MD5;
+	pkb4->keys[2].value		= &io->g.des_md5;
+	pkb4->keys[3].iteration_count	= 4096;
+	pkb4->keys[3].keytype		= ENCTYPE_DES_CBC_CRC;
+	pkb4->keys[3].value		= &io->g.des_crc;
 
 	/* initialize the old keys to zero */
-	pkb4->num_old_keys1	= 0;
-	pkb4->old_keys1		= NULL;
-	pkb4->num_old_keys2	= 0;
-	pkb4->old_keys2		= NULL;
+	pkb4->num_old_keys	= 0;
+	pkb4->old_keys		= NULL;
+	pkb4->num_older_keys	= 0;
+	pkb4->older_keys	= NULL;
 
 	/* if there're no old keys, then we're done */
 	if (!old_scb) {
@@ -580,7 +588,7 @@ static int setup_primary_kerberos_newer(struct setup_password_fields_io *io,
 		old_scp = &old_scb->sub.packages[i];
 		break;
 	}
-	/* Primary:Kerberos element of supplementalCredentials */
+	/* Primary:Kerberos-Newer-Keys element of supplementalCredentials */
 	if (old_scp) {
 		DATA_BLOB blob;
 
@@ -595,20 +603,20 @@ static int setup_primary_kerberos_newer(struct setup_password_fields_io *io,
 		ndr_err = ndr_pull_struct_blob(&blob, io->ac,
 					       lp_iconv_convenience(ldb_get_opaque(io->ac->module->ldb, "loadparm")),
 					       &_old_pkb,
-					       (ndr_pull_flags_fn_t)ndr_pull_package_PrimaryKerberosNewerBlob);
+					       (ndr_pull_flags_fn_t)ndr_pull_package_PrimaryKerberosBlob);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
 			ldb_asprintf_errstring(io->ac->module->ldb,
 					       "setup_primary_kerberos_newer: "
-					       "failed to pull old package_PrimaryKerberosNewerBlob: %s",
+					       "failed to pull old package_PrimaryKerberosBlob: %s",
 					       nt_errstr(status));
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 
 		if (_old_pkb.version != 4) {
 			ldb_asprintf_errstring(io->ac->module->ldb,
-					       "setup_primary_kerberos: "
-					       "package_PrimaryKerberosNewerBlob version[%u] expected[4]",
+					       "setup_primary_kerberos_newer: "
+					       "package_PrimaryKerberosBlob version[%u] expected[4]",
 					       _old_pkb.version);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
@@ -622,10 +630,10 @@ static int setup_primary_kerberos_newer(struct setup_password_fields_io *io,
 	}
 
 	/* fill in the old keys */
-	pkb4->num_old_keys1	= old_pkb4->num_keys;
-	pkb4->old_keys1		= old_pkb4->keys;
-	pkb4->num_old_keys2	= old_pkb4->num_old_keys1;
-	pkb4->old_keys2		= old_pkb4->old_keys1;
+	pkb4->num_old_keys	= old_pkb4->num_keys;
+	pkb4->old_keys		= old_pkb4->keys;
+	pkb4->num_older_keys	= old_pkb4->num_old_keys;
+	pkb4->older_keys	= old_pkb4->old_keys;
 
 	return LDB_SUCCESS;
 }
@@ -980,7 +988,7 @@ static int setup_supplemental_field(struct setup_password_fields_io *io)
 	/* Primary:Kerberos-Newer-Keys */
 	const char **nkn = NULL;
 	struct supplementalCredentialsPackage *pkn = NULL;
-	struct package_PrimaryKerberosNewerBlob pknb;
+	struct package_PrimaryKerberosBlob pknb;
 	DATA_BLOB pknb_blob;
 	char *pknb_hexstr;
 	/* Primary:Kerberos */
@@ -1105,7 +1113,7 @@ static int setup_supplemental_field(struct setup_password_fields_io *io)
 		ndr_err = ndr_push_struct_blob(&pknb_blob, io->ac,
 					       lp_iconv_convenience(ldb_get_opaque(io->ac->module->ldb, "loadparm")),
 					       &pknb,
-					       (ndr_push_flags_fn_t)ndr_push_package_PrimaryKerberosNewerBlob);
+					       (ndr_push_flags_fn_t)ndr_push_package_PrimaryKerberosBlob);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
 			ldb_asprintf_errstring(io->ac->module->ldb,
