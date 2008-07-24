@@ -35,7 +35,7 @@ else
 	build_editline=yes
 	LIB_readline="\$(top_builddir)/lib/editline/libeditline.la \$(LIB_tgetent)"
 fi
-AM_CONDITIONAL(EDITLINE "$build_editline" = yes)
+AM_CONDITIONAL(EDITLINE, test "$build_editline" = yes)
 AM_CONDITIONAL(el_compat, test "$ac_foo" = yes)
 AC_DEFINE(HAVE_READLINE, 1, 
 	[Define if you have a readline compatible library.])dnl
