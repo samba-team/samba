@@ -1081,12 +1081,22 @@ krb5_string_to_keytype(krb5_context context,
 		       const char *string,
 		       krb5_keytype *keytype)
 {
+    char *end;
     int i;
+
     for(i = 0; i < num_keytypes; i++)
 	if(strcasecmp(keytypes[i]->name, string) == 0){
 	    *keytype = keytypes[i]->type;
 	    return 0;
 	}
+
+    /* check if the enctype is a number */
+    *keytype = strtol(string, &end, 0);
+    if(*end == '\0' && *keytype != 0) {
+	if (krb5_enctype_valid(context, *keytype) == 0)
+	    return 0;
+    }
+
     krb5_set_error_message(context, KRB5_PROG_KEYTYPE_NOSUPP,
 			   "key type %s not supported", string);
     return KRB5_PROG_KEYTYPE_NOSUPP;
