@@ -946,7 +946,7 @@ static bool init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 				}
 			}
 			if (hex_failed) {
-				DEBUG(0,("init_sam_from_ldap: Failed to get password history for user %s\n",
+				DEBUG(2,("init_sam_from_ldap: Failed to get password history for user %s\n",
 					username));
 				memset(pwhist, '\0', pwHistLen * PW_HISTORY_ENTRY_LEN);
 			}
