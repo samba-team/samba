@@ -234,10 +234,13 @@ ${kinit} --password-file=${objdir}/foopassword user1@${R} || \
     { echo "kinit failed"; exitcode=1; }
 
 echo "Building context on cred w/o aes, but still aes session key"
-${context} --mech-type=${mech} \
+${context} \
+    --mech-type=krb5 \
+    --mutual-auth \
     --session-enctype=${coolenctype} \
     --name-type=hostbased-service host@no-aes.test.h5l.se || \
 	{ exitcode=1 ; echo "test failed"; }
+#bash
 
 trap "" EXIT
 
