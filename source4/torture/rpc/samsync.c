@@ -346,9 +346,9 @@ static bool samsync_handle_domain(TALLOC_CTX *mem_ctx, struct samsync_state *sam
 
 	TEST_STRING_EQUAL(q[5].out.info->info5.domain_name, domain->domain_name);
 	
-	TEST_STRING_EQUAL(q[2].out.info->info2.comment, domain->comment);
-	TEST_STRING_EQUAL(q[4].out.info->info4.comment, domain->comment);
-	TEST_TIME_EQUAL(q[2].out.info->info2.force_logoff_time, domain->force_logoff_time);
+	TEST_STRING_EQUAL(q[2].out.info->general.oem_information, domain->oem_information);
+	TEST_STRING_EQUAL(q[4].out.info->oem.oem_information, domain->oem_information);
+	TEST_TIME_EQUAL(q[2].out.info->general.force_logoff_time, domain->force_logoff_time);
 	TEST_TIME_EQUAL(q[3].out.info->info3.force_logoff_time, domain->force_logoff_time);
 
 	TEST_TIME_EQUAL(q[1].out.info->info1.min_password_length, domain->min_password_length);
@@ -1487,7 +1487,7 @@ bool torture_rpc_samsync(struct torture_context *torture)
 	s.in.level = 4;
 	s.in.info = talloc(mem_ctx, union samr_DomainInfo);
 	
-	s.in.info->info4.comment.string
+	s.in.info->oem.oem_information.string
 		= talloc_asprintf(mem_ctx, 
 				  "Tortured by Samba4: %s", 
 				  timestring(mem_ctx, time(NULL)));

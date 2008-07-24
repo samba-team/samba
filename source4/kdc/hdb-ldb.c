@@ -190,9 +190,12 @@ static krb5_error_code LDB_message2entry_keys(krb5_context context,
 	struct samr_Password *hash;
 	const struct ldb_val *sc_val;
 	struct supplementalCredentialsBlob scb;
-	struct supplementalCredentialsPackage *scp = NULL;
+	struct supplementalCredentialsPackage *scpk = NULL;
+	struct supplementalCredentialsPackage *scpkn = NULL;
 	struct package_PrimaryKerberosBlob _pkb;
 	struct package_PrimaryKerberosCtr3 *pkb3 = NULL;
+	struct package_PrimaryKerberosNewerBlob _pknb;
+	struct package_PrimaryKerberosNewerCtr4 *pkb4 = NULL;
 	uint32_t i;
 	uint32_t allocated_keys = 0;
 
@@ -221,28 +224,37 @@ static krb5_error_code LDB_message2entry_keys(krb5_context context,
 			goto out;
 		}
 
+		if (scb.sub.signature != SUPPLEMENTAL_CREDENTIALS_SIGNATURE) {
+			NDR_PRINT_DEBUG(supplementalCredentialsBlob, &scb);
+			ret = EINVAL;
+			goto out;
+		}
+
 		for (i=0; i < scb.sub.num_packages; i++) {
-			if (scb.sub.packages[i].unknown1 != 0x00000001) {
-				continue;
+			if (strcmp("Primary:Kerberos-Newer-Keys", scb.sub.packages[i].name) == 0) {
+				scpkn = &scb.sub.packages[i];
+				if (!scpkn->data || !scpkn->data[0]) {
+					scpkn = NULL;
+					continue;
+				}
+				break;
+			} else if (strcmp("Primary:Kerberos", scb.sub.packages[i].name) == 0) {
+				scpk = &scb.sub.packages[i];
+				if (!scpk->data || !scpk->data[0]) {
+					scpk = NULL;
+				}
+				/*
+				 * we don't break here in hope to find
+				 * a Kerberos-Newer-Keys package
+				 */
 			}
-
-			if (strcmp("Primary:Kerberos", scb.sub.packages[i].name) != 0) {
-				continue;
-			}
-
-			if (!scb.sub.packages[i].data || !scb.sub.packages[i].data[0]) {
-				continue;
-			}
-
-			scp = &scb.sub.packages[i];
-			break;
 		}
 	}
-	/* Primary:Kerberos element of supplementalCredentials */
-	if (scp) {
+	/* Primary:Kerberos-Newer-Keys element of supplementalCredentials */
+	if (scpkn) {
 		DATA_BLOB blob;
 
-		blob = strhex_to_data_blob(scp->data);
+		blob = strhex_to_data_blob(scpkn->data);
 		if (!blob.data) {
 			ret = ENOMEM;
 			goto out;
@@ -250,6 +262,37 @@ static krb5_error_code LDB_message2entry_keys(krb5_context context,
 		talloc_steal(mem_ctx, blob.data);
 
 		/* TODO: use ndr_pull_struct_blob_all(), when the ndr layer handles it correct with relative pointers */
+		ndr_err = ndr_pull_struct_blob(&blob, mem_ctx, iconv_convenience, &_pknb,
+					       (ndr_pull_flags_fn_t)ndr_pull_package_PrimaryKerberosNewerBlob);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			krb5_set_error_string(context, "LDB_message2entry_keys: could not parse package_PrimaryKerberosNewerBlob");
+			krb5_warnx(context, "LDB_message2entry_keys: could not parse package_PrimaryKerberosNewerBlob");
+			ret = EINVAL;
+			goto out;
+		}
+
+		if (_pknb.version != 4) {
+			krb5_set_error_string(context, "LDB_message2entry_keys: could not parse PrimaryKerberosNewer not version 4");
+			krb5_warnx(context, "LDB_message2entry_keys: could not parse PrimaryKerberosNewer not version 4");
+			ret = EINVAL;
+			goto out;
+		}
+
+		pkb4 = &_pknb.ctr.ctr4;
+
+		allocated_keys += pkb4->num_keys;
+	} else if (scpk) {
+		/* Fallback to Primary:Kerberos element of supplementalCredentials */
+		DATA_BLOB blob;
+
+		blob = strhex_to_data_blob(scpk->data);
+		if (!blob.data) {
+			ret = ENOMEM;
+			goto out;
+		}
+		talloc_steal(mem_ctx, blob.data);
+
+		/* we cannot use ndr_pull_struct_blob_all() here, as w2k and w2k3 add padding bytes */
 		ndr_err = ndr_pull_struct_blob(&blob, mem_ctx, iconv_convenience, &_pkb,
 					       (ndr_pull_flags_fn_t)ndr_pull_package_PrimaryKerberosBlob);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -304,7 +347,68 @@ static krb5_error_code LDB_message2entry_keys(krb5_context context,
 		entry_ex->entry.keys.len++;
 	}
 
-	if (pkb3) {
+	if (pkb4) {
+		for (i=0; i < pkb4->num_keys; i++) {
+			bool use = true;
+			Key key;
+
+			if (!pkb4->keys[i].value) continue;
+
+			if (userAccountControl & UF_USE_DES_KEY_ONLY) {
+				switch (pkb4->keys[i].keytype) {
+				case ENCTYPE_DES_CBC_CRC:
+				case ENCTYPE_DES_CBC_MD5:
+					break;
+				default:
+					use = false;
+					break;
+				}
+			}
+
+			if (!use) continue;
+
+			key.mkvno = 0;
+			key.salt = NULL;
+
+			if (pkb4->salt.string) {
+				DATA_BLOB salt;
+
+				salt = data_blob_string_const(pkb4->salt.string);
+
+				key.salt = calloc(1, sizeof(*key.salt));
+				if (key.salt == NULL) {
+					ret = ENOMEM;
+					goto out;
+				}
+
+				key.salt->type = hdb_pw_salt;
+
+				ret = krb5_data_copy(&key.salt->salt, salt.data, salt.length);
+				if (ret) {
+					free(key.salt);
+					key.salt = NULL;
+					goto out;
+				}
+			}
+
+			ret = krb5_keyblock_init(context,
+						 pkb4->keys[i].keytype,
+						 pkb4->keys[i].value->data,
+						 pkb4->keys[i].value->length,
+						 &key.key);
+			if (ret) {
+				if (key.salt) {
+					free_Salt(key.salt);
+					free(key.salt);
+					key.salt = NULL;
+				}
+				goto out;
+			}
+
+			entry_ex->entry.keys.val[entry_ex->entry.keys.len] = key;
+			entry_ex->entry.keys.len++;
+		}
+	} else if (pkb3) {
 		for (i=0; i < pkb3->num_keys; i++) {
 			bool use = true;
 			Key key;
@@ -325,6 +429,7 @@ static krb5_error_code LDB_message2entry_keys(krb5_context context,
 			if (!use) continue;
 
 			key.mkvno = 0;
+			key.salt = NULL;
 
 			if (pkb3->salt.string) {
 				DATA_BLOB salt;

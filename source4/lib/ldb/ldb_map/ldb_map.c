@@ -810,6 +810,7 @@ static struct ldb_val map_objectclass_convert_remote(struct ldb_module *module, 
 /* Generate a local message with a mapped objectClass. */
 static struct ldb_message_element *map_objectclass_generate_local(struct ldb_module *module, void *mem_ctx, const char *local_attr, const struct ldb_message *remote)
 {
+	const struct ldb_map_context *data = map_get_context(module);
 	struct ldb_message_element *el, *oc;
 	struct ldb_val val;
 	int i;
@@ -844,10 +845,10 @@ static struct ldb_message_element *map_objectclass_generate_local(struct ldb_mod
 		el->values[i] = map_objectclass_convert_remote(module, el->values, &oc->values[i]);
 	}
 
-	val.data = (uint8_t *)talloc_strdup(el->values, "extensibleObject");
+	val.data = (uint8_t *)talloc_strdup(el->values, data->add_objectclass);
 	val.length = strlen((char *)val.data);
 
-	/* Remove last value if it was "extensibleObject" */
+	/* Remove last value if it was the string in data->add_objectclass (eg samba4top, extensibleObject) */
 	if (ldb_val_equal_exact(&val, &el->values[i-1])) {
 		el->num_values--;
 		el->values = talloc_realloc(el, el->values, struct ldb_val, el->num_values);

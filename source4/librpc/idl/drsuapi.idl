@@ -58,20 +58,35 @@ interface drsuapi
 		DRSUAPI_SUPPORTED_EXTENSION_80000000			= 0x80000000
 	} drsuapi_SupportedExtensions;
 
+	typedef [bitmap32bit] bitmap {
+		DRSUAPI_SUPPORTED_EXTENSION_ADAM			= 0x00000001,
+		DRSUAPI_SUPPORTED_EXTENSION_LH_BETA2			= 0x00000002
+	} drsuapi_SupportedExtensionsExt;
+
 	/* this is used by w2k */
 	typedef struct {
 		drsuapi_SupportedExtensions supported_extensions;
 		GUID site_guid;
-		uint32 u1;
+		uint32 pid;
 	} drsuapi_DsBindInfo24;
 
 	/* this is used by w2k3 */
 	typedef struct {
 		drsuapi_SupportedExtensions supported_extensions;
 		GUID site_guid;
-		uint32 u1;
+		uint32 pid;
 		uint32 repl_epoch;
 	} drsuapi_DsBindInfo28;
+
+	/* this is used by w2k8 */
+	typedef struct {
+		drsuapi_SupportedExtensions supported_extensions;
+		GUID site_guid;
+		uint32 pid;
+		uint32 repl_epoch;
+		drsuapi_SupportedExtensionsExt supported_extensions_ext;
+		GUID config_dn_guid;
+	} drsuapi_DsBindInfo48;
 
 	typedef struct {
 		[flag(NDR_REMAINING)] DATA_BLOB info;
@@ -80,6 +95,7 @@ interface drsuapi
 	typedef [nodiscriminant] union {
 		[case(24)][subcontext(4)] drsuapi_DsBindInfo24 info24;
 		[case(28)][subcontext(4)] drsuapi_DsBindInfo28 info28;
+		[case(48)][subcontext(4)] drsuapi_DsBindInfo48 info48;
 		[default][subcontext(4)] drsuapi_DsBindInfoFallBack FallBack;
 	} drsuapi_DsBindInfo;
 
@@ -1409,7 +1425,7 @@ interface drsuapi
 		GUID bind_guid;
 		NTTIME_1sec bind_time;
 		[flag(NDR_BIG_ENDIAN)] ipv4address client_ip_address;
-		uint32 u5; /* this is the same value the client used as u1 in the DsBindInfoX struct */
+		uint32 u5; /* this is the same value the client used as pid in the DsBindInfoX struct */
 	} drsuapi_DsReplicaConnection04;
 
 	typedef struct {

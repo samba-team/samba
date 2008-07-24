@@ -45,7 +45,7 @@ static WERROR dcesrv_drsuapi_DsBind(struct dcesrv_call_state *dce_call, TALLOC_C
 	struct ldb_result *ntds_res;
 	struct ldb_dn *ntds_dn;
 	static const char *ntds_attrs[] = { "ms-DS-ReplicationEpoch", NULL };
-	uint32_t u1;
+	uint32_t pid;
 	uint32_t repl_epoch;
 	int ret;
 
@@ -98,9 +98,12 @@ static WERROR dcesrv_drsuapi_DsBind(struct dcesrv_call_state *dce_call, TALLOC_C
 	repl_epoch = samdb_result_uint(ntds_res->msgs[0], "ms-DS-ReplicationEpoch", 0);
 
 	/*
-	 * TODO: find out what this is...
+	 * The "process identifier" of the client.
+	 * According to the WSPP docs, sectin 5.35, this is
+	 * for informational and debugging purposes only.
+	 * The assignment is implementation specific.
 	 */
-	u1 = 0;
+	pid = 0;
 
 	/*
 	 * store the clients bind_guid
@@ -119,7 +122,7 @@ static WERROR dcesrv_drsuapi_DsBind(struct dcesrv_call_state *dce_call, TALLOC_C
 			info24 = &r->in.bind_info->info.info24;
 			b_state->remote_info28.supported_extensions	= info24->supported_extensions;
 			b_state->remote_info28.site_guid		= info24->site_guid;
-			b_state->remote_info28.u1			= info24->u1;
+			b_state->remote_info28.pid			= info24->pid;
 			b_state->remote_info28.repl_epoch		= 0;
 			break;
 		}
@@ -171,8 +174,8 @@ static WERROR dcesrv_drsuapi_DsBind(struct dcesrv_call_state *dce_call, TALLOC_C
 	b_state->local_info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_XPRESS_COMPRESS;
 #endif
 	b_state->local_info28.site_guid			= site_guid;
-	b_state->local_info28.u1				= u1;
-	b_state->local_info28.repl_epoch			= repl_epoch;
+	b_state->local_info28.pid			= pid;
+	b_state->local_info28.repl_epoch		= repl_epoch;
 
 	/*
 	 * allocate the return bind_info

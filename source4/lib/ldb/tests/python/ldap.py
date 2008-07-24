@@ -579,7 +579,7 @@ member: cn=ldaptestuser4,cn=ldaptestcontainer,""" + self.base_dn + """
         self.assertEquals(str(res[0].dn), ("CN=ldaptestuser4,CN=ldaptestcontainer2," + self.base_dn))
         self.assertEquals(res[0]["memberOf"][0].upper(), ("CN=ldaptestgroup2,CN=Users," + self.base_dn).upper())
 
-        time.sleep(2)
+        time.sleep(4)
 
         print "Testing ldb.search for (&(member=CN=ldaptestuser4,CN=ldaptestcontainer2," + self.base_dn + ")(objectclass=group)) to check subtree renames and linked attributes"
         res = ldb.search(self.base_dn, expression="(&(member=CN=ldaptestuser4,CN=ldaptestcontainer2," + self.base_dn + ")(objectclass=group))", scope=SCOPE_SUBTREE)
@@ -835,7 +835,7 @@ member: CN=ldaptestutf8user èùéìòà,CN=Users,""" + self.base_dn + """
 
         ldb.delete(("CN=ldaptestuser2,CN=Users," + self.base_dn))
 
-        time.sleep(2)
+        time.sleep(4)
 
         attrs = ["cn", "name", "objectClass", "objectGUID", "whenCreated", "nTSecurityDescriptor", "member"]
         print "Testing ldb.search for (&(cn=ldaptestgroup2)(objectClass=group)) to check linked delete"

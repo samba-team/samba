@@ -208,7 +208,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 
 	typedef struct {
 		NTTIME force_logoff_time;
-		lsa_String comment;
+		lsa_String oem_information; /* comment */
 		lsa_String domain_name;
 		lsa_String primary; /* PDC name if this is a BDC */
 		udlong sequence_num;
@@ -218,15 +218,15 @@ import "misc.idl", "lsa.idl", "security.idl";
 		uint32 num_users;
 		uint32 num_groups;
 		uint32 num_aliases;
-	} samr_DomInfo2;
+	} samr_DomGeneralInformation;
 
 	typedef struct {
 		NTTIME force_logoff_time;
 	} samr_DomInfo3;
 
 	typedef struct {
-		lsa_String comment;
-	} samr_DomInfo4;
+		lsa_String oem_information; /* comment */
+	} samr_DomOEMInformation;
 
 	typedef struct {
 		lsa_String domain_name;
@@ -250,11 +250,11 @@ import "misc.idl", "lsa.idl", "security.idl";
 	} samr_DomInfo9;
 
 	typedef struct {
-		samr_DomInfo2 info2;
+		samr_DomGeneralInformation general;
 		hyper lockout_duration;
 		hyper lockout_window;
 		uint16 lockout_threshold;
-	} samr_DomInfo11;
+	} samr_DomGeneralInformation2;
 
 	typedef struct {
 		hyper lockout_duration;
@@ -271,15 +271,15 @@ import "misc.idl", "lsa.idl", "security.idl";
 
 	typedef [switch_type(uint16)] union {
 		[case(1)] samr_DomInfo1 info1;
-		[case(2)] samr_DomInfo2 info2;
+		[case(2)] samr_DomGeneralInformation general;
 		[case(3)] samr_DomInfo3 info3;
-		[case(4)] samr_DomInfo4 info4;
+		[case(4)] samr_DomOEMInformation oem;
 		[case(5)] samr_DomInfo5 info5;
 		[case(6)] samr_DomInfo6 info6;
 		[case(7)] samr_DomInfo7 info7;
 		[case(8)] samr_DomInfo8 info8;
 		[case(9)] samr_DomInfo9 info9;
-		[case(11)] samr_DomInfo11 info11;
+		[case(11)] samr_DomGeneralInformation2 general2;
 		[case(12)] samr_DomInfo12 info12;
 		[case(13)] samr_DomInfo13 info13;
 	} samr_DomainInfo;
