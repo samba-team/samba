@@ -1,3 +1,8 @@
+2008-07-22  Love Hornquist Astrand  <lha@10a96laptop.local>
+
+	* lib/krb5/crypto.c: Allow numbers to be enctypes to as long as
+	they are valid.
+
 2008-07-17  Love Hornquist Astrand  <lha@kth.se>
 
 	* lib/hdb/version-script.map: some random bits needed for libkadm
