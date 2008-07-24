@@ -278,33 +278,20 @@ interface drsblobs {
 		uint32 keytype;
 		[value((value?value->length:0))] uint32 value_len;
 		[relative,subcontext(0),subcontext_size(value_len),flag(NDR_REMAINING)] DATA_BLOB *value;
-	} package_PrimaryKerberosKey;
+	} package_PrimaryKerberosKey3;
 
 	typedef struct {
 		uint16 num_keys;
 		uint16 num_old_keys;
 		package_PrimaryKerberosString salt;
-		package_PrimaryKerberosKey keys[num_keys];
-		package_PrimaryKerberosKey old_keys[num_old_keys];
+		package_PrimaryKerberosKey3 keys[num_keys];
+		package_PrimaryKerberosKey3 old_keys[num_old_keys];
 		[value(0)] uint32 padding1;
 		[value(0)] uint32 padding2;
 		[value(0)] uint32 padding3;
 		[value(0)] uint32 padding4;
 		[value(0)] uint32 padding5;
 	} package_PrimaryKerberosCtr3;
-
-	typedef [nodiscriminant] union {
-		[case(3)] package_PrimaryKerberosCtr3 ctr3;
-	} package_PrimaryKerberosCtr;
-
-	typedef [public] struct {
-		[value(3)] uint32 version;
-		[switch_is(version)] package_PrimaryKerberosCtr ctr;
-	} package_PrimaryKerberosBlob;
-
-	void decode_PrimaryKerberos(
-		[in] package_PrimaryKerberosBlob blob
-		);
 
 	typedef struct {
 		[value(0)] uint16 reserved1;
@@ -314,7 +301,7 @@ interface drsblobs {
 		uint32 keytype;
 		[value((value?value->length:0))] uint32 value_len;
 		[relative,subcontext(0),subcontext_size(value_len),flag(NDR_REMAINING)] DATA_BLOB *value;
-	} package_PrimaryKerberosNewerKey;
+	} package_PrimaryKerberosKey4;
 
 	typedef struct {
 		uint16 num_keys;
@@ -323,23 +310,25 @@ interface drsblobs {
 		uint16 num_older_keys;
 		package_PrimaryKerberosString salt;
 		uint32 default_iteration_count;
-		package_PrimaryKerberosNewerKey keys[num_keys];
-		package_PrimaryKerberosNewerKey service_keys[num_service_keys];
-		package_PrimaryKerberosNewerKey old_keys[num_old_keys];
-		package_PrimaryKerberosNewerKey older_keys[num_older_keys];
-	} package_PrimaryKerberosNewerCtr4;
+		package_PrimaryKerberosKey4 keys[num_keys];
+		package_PrimaryKerberosKey4 service_keys[num_service_keys];
+		package_PrimaryKerberosKey4 old_keys[num_old_keys];
+		package_PrimaryKerberosKey4 older_keys[num_older_keys];
+	} package_PrimaryKerberosCtr4;
 
 	typedef [nodiscriminant] union {
-		[case(4)] package_PrimaryKerberosNewerCtr4 ctr4;
-	} package_PrimaryKerberosNewerCtr;
+		[case(3)] package_PrimaryKerberosCtr3 ctr3;
+		[case(4)] package_PrimaryKerberosCtr4 ctr4;
+	} package_PrimaryKerberosCtr;
 
 	typedef [public] struct {
-		[value(4)] uint32 version;
-		[switch_is(version)] package_PrimaryKerberosNewerCtr ctr;
-	} package_PrimaryKerberosNewerBlob;
+		uint16 version;
+		[value(0)] uint16 flags;
+		[switch_is(version)] package_PrimaryKerberosCtr ctr;
+	} package_PrimaryKerberosBlob;
 
-	void decode_PrimaryKerberosNewer(
-		[in] package_PrimaryKerberosNewerBlob blob
+	void decode_PrimaryKerberos(
+		[in] package_PrimaryKerberosBlob blob
 		);
 
 	typedef [public] struct {
