@@ -46,15 +46,15 @@ struct sigcounter {
   the poor design of signals means that this table must be static global
 */
 static struct sig_state {
-	struct signal_event *sig_handlers[NUM_SIGNALS];
-	struct sigaction *oldact[NUM_SIGNALS];
-	struct sigcounter signal_count[NUM_SIGNALS];
+	struct signal_event *sig_handlers[NUM_SIGNALS+1];
+	struct sigaction *oldact[NUM_SIGNALS+1];
+	struct sigcounter signal_count[NUM_SIGNALS+1];
 	struct sigcounter got_signal;
 	int pipe_hack[2];
 #ifdef SA_SIGINFO
 	/* with SA_SIGINFO we get quite a lot of info per signal */
-	siginfo_t *sig_info[NUM_SIGNALS];
-	struct sigcounter sig_blocked[NUM_SIGNALS];
+	siginfo_t *sig_info[NUM_SIGNALS+1];
+	struct sigcounter sig_blocked[NUM_SIGNALS+1];
 #endif
 } *sig_state;
 
