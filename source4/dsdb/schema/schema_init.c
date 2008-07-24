@@ -302,7 +302,6 @@ WERROR dsdb_create_prefix_mapping(struct ldb_context *ldb, struct dsdb_schema *s
 	WERROR status;
 	uint32_t num_prefixes;
 	struct dsdb_schema_oid_prefix *prefixes;
-	struct ldb_val ndr_blob;
 	TALLOC_CTX *mem_ctx;
 	uint32_t out;
 
@@ -312,7 +311,8 @@ WERROR dsdb_create_prefix_mapping(struct ldb_context *ldb, struct dsdb_schema *s
 	/* Read prefixes from disk*/
 	status = dsdb_read_prefixes_from_ldb( mem_ctx, ldb, &num_prefixes, &prefixes ); 
 	if (!W_ERROR_IS_OK(status)) {
-		DEBUG(0,("dsdb_create_prefix_mapping: dsdb_read_prefixes_from_ldb failed\n"));
+		DEBUG(0,("dsdb_create_prefix_mapping: dsdb_read_prefixes_from_ldb: %s\n",
+			win_errstr(status)));
 		talloc_free(mem_ctx);
 		return status;
 	}
@@ -323,27 +323,28 @@ WERROR dsdb_create_prefix_mapping(struct ldb_context *ldb, struct dsdb_schema *s
 		/* prefix found*/
 		talloc_free(mem_ctx);
 		return status;
-	}
-	/* Update prefix map in ldb*/
-	/* Update the prefixes */
-	status = dsdb_prefix_map_update(mem_ctx, &num_prefixes, &prefixes, full_oid);
-	if (!W_ERROR_IS_OK(status)) {
-		DEBUG(0,("dsdb_create_prefix_mapping: dsdb_prefix_map_update failed\n"));
+	} else if (!W_ERROR_EQUAL(WERR_DS_NO_MSDS_INTID, status)) {
+		/* error */
+		DEBUG(0,("dsdb_create_prefix_mapping: dsdb_find_prefix_for_oid: %s\n",
+			win_errstr(status)));
 		talloc_free(mem_ctx);
 		return status;
 	}
-	/* Convert prefixes in ndr blob*/
-	status = dsdb_write_prefixes_to_ndr( mem_ctx, ldb, num_prefixes, prefixes, &ndr_blob );
+
+	/* Create the new mapping for the prefix of full_oid */
+	status = dsdb_prefix_map_update(mem_ctx, &num_prefixes, &prefixes, full_oid);
 	if (!W_ERROR_IS_OK(status)) {
-		DEBUG(0,("dsdb_create_prefix_mapping: dsdb_write_prefixes_to_ndr failed\n"));
+		DEBUG(0,("dsdb_create_prefix_mapping: dsdb_prefix_map_update: %s\n",
+			win_errstr(status)));
 		talloc_free(mem_ctx);
 		return status;
 	}
 
 	/* Update prefixMap in ldb*/
-	status = dsdb_write_prefixes_to_ldb( mem_ctx, ldb, &ndr_blob );
+	status = dsdb_write_prefixes_to_ldb(mem_ctx, ldb, num_prefixes, prefixes);
 	if (!W_ERROR_IS_OK(status)) {
-		DEBUG(0,("dsdb_create_prefix_mapping: dsdb_write_prefixes_to_ldb failed\n"));
+		DEBUG(0,("dsdb_create_prefix_mapping: dsdb_write_prefixes_to_ldb: %s\n",
+			win_errstr(status)));
 		talloc_free(mem_ctx);
 		return status;
 	}
@@ -439,11 +440,17 @@ WERROR dsdb_find_prefix_for_oid(uint32_t num_prefixes, const struct dsdb_schema_
 	return WERR_DS_NO_MSDS_INTID;
 }
 
-WERROR dsdb_write_prefixes_to_ldb(TALLOC_CTX *mem_ctx, struct ldb_context *ldb, struct ldb_val *ndr_blob)
+WERROR dsdb_write_prefixes_to_ldb(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
+				  uint32_t num_prefixes,
+				  const struct dsdb_schema_oid_prefix *prefixes)
 {
 	struct ldb_message msg;
 	struct ldb_dn *schema_dn;
 	struct ldb_message_element el;
+	struct prefixMapBlob pm;
+	struct ldb_val ndr_blob;
+	enum ndr_err_code ndr_err;
+	uint32_t i;
 	int ret;
 	
 	schema_dn = samdb_schema_dn(ldb);
@@ -451,9 +458,31 @@ WERROR dsdb_write_prefixes_to_ldb(TALLOC_CTX *mem_ctx, struct ldb_context *ldb, 
 		DEBUG(0,("dsdb_write_prefixes_to_ldb: no schema dn present\n"));	
 		return WERR_FOOBAR;
 	}
+
+	pm.version			= PREFIX_MAP_VERSION_DSDB;
+	pm.ctr.dsdb.num_mappings	= num_prefixes;
+	pm.ctr.dsdb.mappings		= talloc_array(mem_ctx,
+						struct drsuapi_DsReplicaOIDMapping,
+						pm.ctr.dsdb.num_mappings);
+	if (!pm.ctr.dsdb.mappings) {
+		return WERR_NOMEM;
+	}
+
+	for (i=0; i < num_prefixes; i++) {
+		pm.ctr.dsdb.mappings[i].id_prefix = prefixes[i].id>>16;
+		pm.ctr.dsdb.mappings[i].oid.oid = talloc_strdup(pm.ctr.dsdb.mappings, prefixes[i].oid);
+	}
+
+	ndr_err = ndr_push_struct_blob(&ndr_blob, ldb,
+				       lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")),
+				       &pm,
+				       (ndr_push_flags_fn_t)ndr_push_prefixMapBlob);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return WERR_FOOBAR;
+	}
  
 	el.num_values = 1;
-	el.values = ndr_blob;
+	el.values = &ndr_blob;
 	el.flags = LDB_FLAG_MOD_REPLACE;
 	el.name = talloc_strdup(mem_ctx, "prefixMap");
  
@@ -540,43 +569,6 @@ WERROR dsdb_read_prefixes_from_ldb(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 	talloc_free(blob);
 	return WERR_OK;
 }
-
-
-WERROR dsdb_write_prefixes_to_ndr(TALLOC_CTX *mem_ctx, struct ldb_context *ldb, uint32_t num_prefixes, const struct dsdb_schema_oid_prefix *prefixes, struct ldb_val *out)
-{
-	struct prefixMapBlob *blob;
-	enum ndr_err_code ndr_err;
-	uint32_t i;
-
-	blob = talloc_zero(mem_ctx, struct prefixMapBlob);
-	W_ERROR_HAVE_NO_MEMORY(blob);
-
-	blob->version = PREFIX_MAP_VERSION_DSDB;
-	blob->ctr.dsdb.num_mappings = num_prefixes;
-	blob->ctr.dsdb.mappings = talloc_realloc(blob,
-											blob->ctr.dsdb.mappings,
-											struct drsuapi_DsReplicaOIDMapping,
-											blob->ctr.dsdb.num_mappings);
-	if (!blob->ctr.dsdb.mappings) {
-		return WERR_NOMEM;
-	}
-
-	for (i=0; i < num_prefixes; i++) {
-		blob->ctr.dsdb.mappings[i].id_prefix = prefixes[i].id>>16;
-		blob->ctr.dsdb.mappings[i].oid.oid = talloc_strdup(blob->ctr.dsdb.mappings, prefixes[i].oid);
-	}
-
-	ndr_err = ndr_push_struct_blob(out, ldb,
-					   lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")),
-					   blob,
-					   (ndr_push_flags_fn_t)ndr_push_prefixMapBlob);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		return WERR_FOOBAR;
-	}
-	
-	return WERR_OK;
-}
-
 
 #define GET_STRING_LDB(msg, attr, mem_ctx, p, elem, strict) do { \
 	(p)->elem = samdb_result_string(msg, attr, NULL);\
