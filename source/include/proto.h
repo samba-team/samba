@@ -171,6 +171,8 @@ bool nt_token_check_domain_rid( NT_USER_TOKEN *token, uint32 rid );
 NT_USER_TOKEN *get_root_nt_token( void );
 NTSTATUS add_aliases(const DOM_SID *domain_sid,
 		     struct nt_user_token *token);
+NTSTATUS create_builtin_users(const DOM_SID *sid);
+NTSTATUS create_builtin_administrators(const DOM_SID *sid);
 struct nt_user_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
 					    const DOM_SID *user_sid,
 					    bool is_guest,
