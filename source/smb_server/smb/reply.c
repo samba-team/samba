@@ -2192,6 +2192,7 @@ void smbsrv_reply_ntcreate_and_X(struct smbsrv_request *req)
 	io->ntcreatex.in.security_flags =   CVAL(req->in.vwv, 47);
 	io->ntcreatex.in.ea_list          = NULL;
 	io->ntcreatex.in.sec_desc         = NULL;
+	io->ntcreatex.in.query_maximal_access = false;
 
 	/* we use a couple of bits of the create options internally */
 	if (io->ntcreatex.in.create_options & NTCREATEX_OPTIONS_PRIVATE_MASK) {
