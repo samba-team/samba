@@ -240,7 +240,6 @@ ${context} \
     --session-enctype=${coolenctype} \
     --name-type=hostbased-service host@no-aes.test.h5l.se || \
 	{ exitcode=1 ; echo "test failed"; }
-#bash
 
 trap "" EXIT
 
