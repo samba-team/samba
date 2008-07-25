@@ -104,6 +104,7 @@ struct winbindd_async_request {
 	void *private_data;
 };
 
+static void async_request_fail(struct winbindd_async_request *state);
 static void async_main_request_sent(void *private_data, bool success);
 static void async_request_sent(void *private_data, bool success);
 static void async_reply_recv(void *private_data, bool success);
@@ -129,6 +130,7 @@ void async_request(TALLOC_CTX *mem_ctx, struct winbindd_child *child,
 
 	state->mem_ctx = mem_ctx;
 	state->child = child;
+	state->reply_timeout_event = NULL;
 	state->request = request;
 	state->response = response;
 	state->continuation = continuation;
@@ -148,10 +150,7 @@ static void async_main_request_sent(void *private_data, bool success)
 
 	if (!success) {
 		DEBUG(5, ("Could not send async request\n"));
-
-		state->response->length = sizeof(struct winbindd_response);
-		state->response->result = WINBINDD_ERROR;
-		state->continuation(state->private_data, False);
+		async_request_fail(state);
 		return;
 	}
 
