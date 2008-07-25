@@ -1534,6 +1534,11 @@ int dsdb_set_global_schema(struct ldb_context *ldb)
 		return ret;
 	}
 
+	/* Keep a reference to this schema, just incase the global copy is replaced */
+	if (talloc_reference(ldb, global_schema) == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
 	return LDB_SUCCESS;
 }
 
@@ -1569,6 +1574,10 @@ void dsdb_make_schema_global(struct ldb_context *ldb)
 	struct dsdb_schema *schema = dsdb_get_schema(ldb);
 	if (!schema) {
 		return;
+	}
+
+	if (global_schema) {
+		talloc_unlink(talloc_autofree_context(), schema);
 	}
 
 	talloc_steal(talloc_autofree_context(), schema);
