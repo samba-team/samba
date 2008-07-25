@@ -270,11 +270,20 @@ NTSTATUS dcesrv_generic_session_key(struct dcesrv_connection *p,
 
 /*
   fetch the user session key - may be default (above) or the SMB session key
+
+  The key is always truncated to 16 bytes 
 */
 _PUBLIC_ NTSTATUS dcesrv_fetch_session_key(struct dcesrv_connection *p,
 				  DATA_BLOB *session_key)
 {
-	return p->auth_state.session_key(p, session_key);
+	NTSTATUS status = p->auth_state.session_key(p, session_key);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	session_key->length = MIN(session_key->length, 16);
+
+	return NT_STATUS_OK;
 }
 
 
@@ -534,20 +543,20 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	uint32_t context_id;
 	const struct dcesrv_interface *iface;
 
-#if 0
-	/* It is not safe to enable this check - windows clients
-	 * (WinXP in particular) will use it for NETLOGON calls, for
-	 * the subsequent SCHANNEL bind.  It turns out that NETLOGON
-	 * calls include no policy handles, so it is safe there.  Let
-	 * the failure occour on the attempt to reuse a poilcy handle,
-	 * rather than here */
-
-	/* Association groups allow policy handles to be shared across
-	 * multiple client connections.  We don't implement this yet. */
-	if (call->pkt.u.bind.assoc_group_id != 0) {
+	/*
+	 * Association groups allow policy handles to be shared across
+	 * multiple client connections.  We don't implement this yet.
+	 *
+	 * So we just allow 0 if the client wants to create a new
+	 * association group.
+	 *
+	 * And we allow the 0x12345678 value, we give away as
+	 * assoc_group_id back to the clients
+	 */
+	if (call->pkt.u.bind.assoc_group_id != 0 &&
+	    call->pkt.u.bind.assoc_group_id != 0x12345678) {
 		return dcesrv_bind_nak(call, 0);	
 	}
-#endif
 
 	if (call->pkt.u.bind.num_contexts < 1 ||
 	    call->pkt.u.bind.ctx_list[0].num_transfer_syntaxes < 1) {

@@ -1516,13 +1516,30 @@ static void becomeDC_drsuapi_connect_send(struct libnet_BecomeDC_state *s,
 	drsuapi->s = s;
 
 	if (!drsuapi->binding) {
-		if (lp_parm_bool(s->libnet->lp_ctx, NULL, "become_dc", "print", false)) {
-			binding_str = talloc_asprintf(s, "ncacn_ip_tcp:%s[krb5,print,seal]", s->source_dsa.dns_name);
-			if (composite_nomem(binding_str, c)) return;
-		} else {
-			binding_str = talloc_asprintf(s, "ncacn_ip_tcp:%s[krb5,seal]", s->source_dsa.dns_name);
-			if (composite_nomem(binding_str, c)) return;
+		char *krb5_str = "";
+		char *print_str = "";
+		/*
+		 * Note: Replication only works with Windows 2000 when 'krb5' is
+		 *       passed as auth_type here. If NTLMSSP is used, Windows
+		 *       2000 returns garbage in the DsGetNCChanges() response
+		 *       if encrypted password attributes would be in the response.
+		 *       That means the replication of the schema and configuration
+		 *       partition works fine, but it fails for the domain partition.
+		 */
+		if (lp_parm_bool(s->libnet->lp_ctx, NULL, "become_dc",
+				 "force krb5", true))
+		{
+			krb5_str = "krb5,";
 		}
+		if (lp_parm_bool(s->libnet->lp_ctx, NULL, "become_dc",
+				 "print", false))
+		{
+			print_str = "print,";
+		}
+		binding_str = talloc_asprintf(s, "ncacn_ip_tcp:%s[%s%sseal]",
+					      s->source_dsa.dns_name,
+					      krb5_str, print_str);
+		if (composite_nomem(binding_str, c)) return;
 		c->status = dcerpc_parse_binding(s, binding_str, &drsuapi->binding);
 		talloc_free(binding_str);
 		if (!composite_is_ok(c)) return;
@@ -1602,12 +1619,7 @@ static void becomeDC_drsuapi_bind_send(struct libnet_BecomeDC_state *s,
 	bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_XPRESS_COMPRESS;
 #endif
 	bind_info28->site_guid			= s->dest_dsa.site_guid;
-	if (s->domain.behavior_version == 2) {
-		/* TODO: find out how this is really triggered! */
-		bind_info28->pid		= 528;
-	} else {
-		bind_info28->pid		= 516;
-	}
+	bind_info28->pid			= 0;
 	bind_info28->repl_epoch			= 0;
 
 	drsuapi->bind_info_ctr.length		= 28;
@@ -1638,6 +1650,15 @@ static WERROR becomeDC_drsuapi_bind_recv(struct libnet_BecomeDC_state *s,
 			drsuapi->remote_info28.site_guid		= info24->site_guid;
 			drsuapi->remote_info28.pid			= info24->pid;
 			drsuapi->remote_info28.repl_epoch		= 0;
+			break;
+		}
+		case 48: {
+			struct drsuapi_DsBindInfo48 *info48;
+			info48 = &drsuapi->bind_r.out.bind_info->info.info48;
+			drsuapi->remote_info28.supported_extensions	= info48->supported_extensions;
+			drsuapi->remote_info28.site_guid		= info48->site_guid;
+			drsuapi->remote_info28.pid			= info48->pid;
+			drsuapi->remote_info28.repl_epoch		= info48->repl_epoch;
 			break;
 		}
 		case 28:
@@ -2083,7 +2104,7 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 		vd[0] = data_blob_talloc(vd, NULL, 4);
 		if (composite_nomem(vd[0].data, c)) return;
 
-		SIVAL(vd[0].data, 0, DS_BEHAVIOR_WIN2003);
+		SIVAL(vd[0].data, 0, DS_BEHAVIOR_WIN2008);
 
 		vs[0].blob		= &vd[0];
 
