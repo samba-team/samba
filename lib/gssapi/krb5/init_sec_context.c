@@ -672,6 +672,7 @@ repl_mutual
 	kret = krb5_mk_rep(context,
 			   ctx->auth_context,
 			   &outbuf);
+	krb5_auth_con_setflags(context, ctx->auth_context, con_flags);
 	if (kret) {
 	    *minor_status = kret;
 	    return GSS_S_FAILURE;
@@ -679,11 +680,6 @@ repl_mutual
 	
 	output_token->length = outbuf.length;
 	output_token->value  = outbuf.data;
-
-	krb5_auth_con_removeflags(context,
-				  ctx->auth_context,
-				  KRB5_AUTH_CONTEXT_DO_SEQUENCE,
-				  NULL);
     }
 
     return gsskrb5_initiator_ready(minor_status, ctx, context);
