@@ -3052,6 +3052,11 @@ NTSTATUS create_file(connection_struct *conn,
 			ZERO_STRUCT(sbuf);
 			goto done;
 		}
+
+		if (!(conn->fs_capabilities & FILE_NAMED_STREAMS)) {
+			status = NT_STATUS_OBJECT_PATH_NOT_FOUND;
+			goto fail;
+		}
 	}
 
 	if ((req != NULL) && (req->flags2 & FLAGS2_DFS_PATHNAMES)) {
