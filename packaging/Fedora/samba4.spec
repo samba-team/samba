@@ -11,7 +11,6 @@
 
 Summary: The Samba4 CIFS and AD client and server suite
 Name: samba4
-Epoch: 0
 Version: 4.0.0
 Release: 0.%{main_release}.alpha%{alpha_version}%{?dist}
 License: GPLv3+, LGPLv3+, BSD
@@ -25,7 +24,7 @@ Source1: %{name}.log
 Source4: %{name}.sysconfig
 Source5: %{name}.init
 
-Requires(pre): %{name}-common = %{epoch}:%{version}-%{release}
+Requires(pre): %{name}-common = %{version}-%{release}
 Requires: pam >= 0:0.64
 Requires: logrotate >= 0:3.4
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
@@ -33,7 +32,7 @@ Requires(pre): /usr/sbin/groupadd
 Requires(post): /sbin/chkconfig, /sbin/service
 Requires(preun): /sbin/chkconfig, /sbin/service
 BuildRequires: pam-devel, readline-devel, ncurses-devel, libacl-devel, e2fsprogs-devel
-BuildRequires: popt-devel, libattr-devel, libaio-devel, sed, ldconfig
+BuildRequires: popt-devel, libattr-devel, libaio-devel, sed
 BuildRequires:  perl(ExtUtils::MakeMaker)
 BuildRequires: libtalloc-devel >= %{talloc_version}
 BuildRequires: libtdb-devel >= %{tdb_version}
@@ -48,8 +47,8 @@ by Windows 2000 and above.
 %package client
 Summary: Samba client programs
 Group: Applications/System
-Requires: %{name}-common = %{epoch}:%{version}-%{release}
-Requires: %{name}-libs = %{epoch}:%{version}-%{release}
+Requires: %{name}-common = %{version}-%{release}
+Requires: %{name}-libs = %{version}-%{release}
 
 %description client
 The %{name}-client package provides some SMB/CIFS clients to complement
@@ -59,10 +58,6 @@ of SMB/CIFS shares and printing to SMB/CIFS printers.
 %package libs
 Summary: Samba libraries
 Group: Applications/System
-Requires: libtdb >= 0:%{tdb_version}
-Requires: libtalloc >= 0:%{talloc_version}
-Requires(post): /sbin/ldconfig
-Requires(postun): /sbin/ldconfig
 
 %description libs
 The %{name}-libs package  contains the libraries needed by programs 
@@ -71,7 +66,7 @@ that link against the SMB, RPC and other protocols provided by the Samba suite.
 %package python
 Summary: Samba python libraries
 Group: Applications/System
-Requires: %{name}-libs = %{epoch}:%{version}-%{release}
+Requires: %{name}-libs = %{version}-%{release}
 
 %description python
 The %{name}-python package contains the python libraries needed by programs 
@@ -80,7 +75,7 @@ that use SMB, RPC and other Samba provided protocols in python programs/
 %package devel
 Summary: Developer tools for Samba libraries
 Group: Development/Libraries
-Requires: %{name}-libs = %{epoch}:%{version}-%{release}
+Requires: %{name}-libs = %{version}-%{release}
 
 %description devel
 The %{name}-devel package contains the header files for the libraries
@@ -99,8 +94,8 @@ and Wireshark to parse IDL and similar protocols
 %package common
 Summary: Files used by both Samba servers and clients
 Group: Applications/System
-Requires: %{name}-libs = %{epoch}:%{version}-%{release}
-Requires(post): /sbin/chkconfig, /sbin/service, coreutils
+Requires: %{name}-libs = %{version}-%{release}
+Requires(post): /sbin/chkconfig, /sbin/service
 Requires(preun): /sbin/chkconfig, /sbin/service
 
 %description common
@@ -110,7 +105,7 @@ packages of Samba.
 %package winbind
 Summary: Samba winbind
 Group: Applications/System
-Requires: %{name} = %{epoch}:%{version}-%{release}
+Requires: %{name} = %{version}-%{release}
 
 %description winbind
 The samba-winbind package provides the winbind NSS library, and some
