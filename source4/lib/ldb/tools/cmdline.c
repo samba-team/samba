@@ -75,6 +75,7 @@ struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb,
 #if (_SAMBA_BUILD_ >= 4)
 		POPT_COMMON_SAMBA
 		POPT_COMMON_CREDENTIALS
+		POPT_COMMON_CONNECTION
 		POPT_COMMON_VERSION
 #endif
 		{ NULL }
