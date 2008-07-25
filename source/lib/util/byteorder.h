@@ -126,6 +126,8 @@ static __inline__ void st_le32(uint32_t *addr, const uint32_t val)
 	__asm__ ("stwbrx %1,0,%2" : "=m" (*addr) : "r" (val), "r" (addr));
 }
 #define HAVE_ASM_BYTEORDER 1
+#else
+#define HAVE_ASM_BYTEORDER 0
 #endif
 
 
@@ -172,7 +174,7 @@ static __inline__ void st_le32(uint32_t *addr, const uint32_t val)
 #define SSVALS(buf,pos,val) SSVALX((buf),(pos),((int16_t)(val)))
 #define SIVALS(buf,pos,val) SIVALX((buf),(pos),((int32_t)(val)))
 
-#else /* CAREFUL_ALIGNMENT */
+#else /* not CAREFUL_ALIGNMENT */
 
 /* this handles things for architectures like the 386 that can handle
    alignment errors */
@@ -197,7 +199,7 @@ static __inline__ void st_le32(uint32_t *addr, const uint32_t val)
 #define SSVALS(buf,pos,val) SVALS_NC(buf,pos)=((int16_t)(val))
 #define SIVALS(buf,pos,val) IVALS_NC(buf,pos)=((int32_t)(val))
 
-#endif /* CAREFUL_ALIGNMENT */
+#endif /* not CAREFUL_ALIGNMENT */
 
 /* now the reverse routines - these are used in nmb packets (mostly) */
 #define SREV(x) ((((x)&0xFF)<<8) | (((x)>>8)&0xFF))
