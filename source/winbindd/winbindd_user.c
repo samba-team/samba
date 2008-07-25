@@ -184,7 +184,7 @@ static void getpwsid_queryuser_recv(void *private_data, bool success,
 				    const char *full_name, 
 				    const char *homedir,
 				    const char *shell,
-				    uint32 gid,
+				    gid_t gid,
 				    uint32 group_rid);
 static void getpwsid_sid2uid_recv(void *private_data, bool success, uid_t uid);
 static void getpwsid_sid2gid_recv(void *private_data, bool success, gid_t gid);
@@ -223,7 +223,7 @@ static void getpwsid_queryuser_recv(void *private_data, bool success,
 				    const char *full_name, 
 				    const char *homedir,
 				    const char *shell,
-				    uint32 gid,
+				    gid_t gid,
 				    uint32 group_rid)
 {
 	fstring username;
