@@ -660,24 +660,29 @@ repl_mutual
 	*ret_flags = ctx->flags;
 
     if (req_flags & GSS_C_DCE_STYLE) {
-	int32_t con_flags;
+	int32_t local_seq, remote_seq;
 	krb5_data outbuf;
 
-	/* Do don't do sequence number for the mk-rep */
-	krb5_auth_con_removeflags(context,
-				  ctx->auth_context,
-				  KRB5_AUTH_CONTEXT_DO_SEQUENCE,
-				  &con_flags);
+	/*
+	 * So DCE_STYLE is strange. The client echos the seq number
+	 * that the server used in the server's mk_rep in its own
+	 * mk_rep(). After when done, it resets to it's own seq number
+	 * for the gss_wrap calls.
+	 */
 
-	kret = krb5_mk_rep(context,
-			   ctx->auth_context,
-			   &outbuf);
-	krb5_auth_con_setflags(context, ctx->auth_context, con_flags);
+	krb5_auth_getremoteseqnumber(context, ctx->auth_context, &remote_seq);
+	krb5_auth_con_getlocalseqnumber(context, ctx->auth_context, &local_seq);
+	krb5_auth_con_setlocalseqnumber(context, ctx->auth_context, remote_seq);
+
+	kret = krb5_mk_rep(context, ctx->auth_context, &outbuf);
 	if (kret) {
 	    *minor_status = kret;
 	    return GSS_S_FAILURE;
 	}
 	
+	/* reset local seq number */
+	krb5_auth_con_setlocalseqnumber(context, ctx->auth_context, local_seq);	
+
 	output_token->length = outbuf.length;
 	output_token->value  = outbuf.data;
     }
