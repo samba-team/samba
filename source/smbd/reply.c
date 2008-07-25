@@ -2000,7 +2000,7 @@ void reply_mknew(struct smb_request *req)
 	}
 
 	ts[0] = get_atimespec(&sbuf); /* atime. */
-	status = smb_set_file_time(conn, fsp, fname, &sbuf, ts, true);
+	status = smb_set_file_time(conn, fsp, fsp->fsp_name, &sbuf, ts, true);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBcreate);
 		reply_openerror(req, status);
