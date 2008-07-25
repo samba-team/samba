@@ -36,6 +36,8 @@
 #include "libcli/security/security.h"
 #include "param/param.h"
 
+#define SAMBA_ACCOC_GROUP 0x12345678
+
 extern const struct dcesrv_interface dcesrv_mgmt_interface;
 
 /*
@@ -554,7 +556,7 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	 * assoc_group_id back to the clients
 	 */
 	if (call->pkt.u.bind.assoc_group_id != 0 &&
-	    call->pkt.u.bind.assoc_group_id != 0x12345678) {
+	    call->pkt.u.bind.assoc_group_id != SAMBA_ACCOC_GROUP) {
 		return dcesrv_bind_nak(call, 0);	
 	}
 
@@ -629,7 +631,7 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	pkt.u.bind_ack.max_xmit_frag = 0x2000;
 	pkt.u.bind_ack.max_recv_frag = 0x2000;
 	/* we need to send a non zero assoc_group_id here to make longhorn happy, it also matches samba3 */
-	pkt.u.bind_ack.assoc_group_id = 0x12345678;
+	pkt.u.bind_ack.assoc_group_id = SAMBA_ACCOC_GROUP;
 	if (iface) {
 		/* FIXME: Use pipe name as specified by endpoint instead of interface name */
 		pkt.u.bind_ack.secondary_address = talloc_asprintf(call, "\\PIPE\\%s", iface->name);
