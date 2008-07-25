@@ -7,6 +7,7 @@ This is the second stable release of Samba 3.2.
 
 Major bug fixes included in Samba 3.2.1 are:
 
+  o Race condition in Winbind leading to a crash.
   o Regression in Winbindd offline mode.
   o Flushing of smb.conf when creating a new share using SWAT.
   o Setting of ACEs in setups with "dos filemode = yes".
@@ -66,6 +67,7 @@ o   Volodymyr Khomenko <Volodymyr.Khomenko@exanet.com>
 
 o   Volker Lendecke <vl@samba.org>
     * BUG 5512: Fix alignment problems on sparc.
+    * Fix a race condition in Winbind leading to a crash.
     * Fix a segfault in base64_encode_data_blob.
     * Fix some uninitialized variable references via ndr_print.
     * Fix error message if trying to join with a non-privileged user.
@@ -98,8 +100,13 @@ o   Darshan Purandare <dpurandare@isilon.com>
     * Add broadcasting of the debug message to all winbindd children.
 
 
+o   Karolin Seeger <kseeger@samba.org>
+    * BUG 5635: Fix updating of printer queues.
+
+
 o   Andreas Schneider <anschneider@suse.de>
     * Release still reachable memory if the smbclient context is freed.
+    * Remove trailing withespace from wbinfo -m which breaks gdm auth.
 
 
 o   Simo Sorce <idra@samba.org>
