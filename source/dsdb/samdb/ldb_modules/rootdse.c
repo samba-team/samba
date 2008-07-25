@@ -392,9 +392,50 @@ static int rootdse_init(struct ldb_module *module)
 	return ldb_next_init(module);
 }
 
+static int rootdse_modify(struct ldb_module *module, struct ldb_request *req)
+{
+	struct ldb_result *ext_res;
+	int ret;
+	struct ldb_dn *schema_dn;
+	struct ldb_message_element *schemaUpdateNowAttr;
+	
+	/*
+		If dn is not "" we should let it pass through
+	*/
+	if (!ldb_dn_is_null(req->op.mod.message->dn)) {
+		return ldb_next_request(module, req);
+	}
+	
+	/*
+		dn is empty so check for schemaUpdateNow attribute
+		"The type of modification and values specified in the LDAP modify operation do not matter." MSDN
+	*/
+	schemaUpdateNowAttr = ldb_msg_find_element(req->op.mod.message, "schemaUpdateNow");
+	if (!schemaUpdateNowAttr) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	schema_dn = samdb_schema_dn(module->ldb);
+	if (!schema_dn) {
+		ldb_reset_err_string(module->ldb);
+		ldb_debug(module->ldb, LDB_DEBUG_WARNING,
+			  "rootdse_modify: no schema dn present: (skip ldb_extended call)\n");
+		return ldb_next_request(module, req);
+	}
+
+	ret = ldb_extended(module->ldb, DSDB_EXTENDED_SCHEMA_UPDATE_NOW_OID, schema_dn, &ext_res);
+	if (ret != LDB_SUCCESS) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	
+	talloc_free(ext_res);
+	return ret;
+}
+
 _PUBLIC_ const struct ldb_module_ops ldb_rootdse_module_ops = {
 	.name			= "rootdse",
-	.init_context           = rootdse_init,
-	.search                 = rootdse_search,
-	.request		= rootdse_request
+	.init_context   = rootdse_init,
+	.search         = rootdse_search,
+	.request		= rootdse_request,
+	.modify         = rootdse_modify
 };

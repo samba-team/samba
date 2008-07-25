@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "lib/cmdline/popt_common.h"
 #include "librpc/gen_ndr/ndr_drsuapi_c.h"
+#include "librpc/gen_ndr/ndr_drsblobs.h"
 #include "libcli/cldap/cldap.h"
 #include "libcli/ldap/ldap_client.h"
 #include "torture/torture.h"
@@ -153,7 +154,7 @@ static struct DsSyncTest *test_create_context(struct torture_context *tctx)
 		our_bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_XPRESS_COMPRESS;
 	}
 	our_bind_info28->site_guid		= GUID_zero();
-	our_bind_info28->pid			= 508;
+	our_bind_info28->pid			= 0;
 	our_bind_info28->repl_epoch		= 0;
 
 	our_bind_info_ctr			= &ctx->new_dc.drsuapi.our_bind_info_ctr;
@@ -214,9 +215,21 @@ static bool _test_DsBind(struct torture_context *tctx,
 			b->peer_bind_info28.repl_epoch		= 0;
 			break;
 		}
+		case 48: {
+			struct drsuapi_DsBindInfo48 *info48;
+			info48 = &b->req.out.bind_info->info.info48;
+			b->peer_bind_info28.supported_extensions= info48->supported_extensions;
+			b->peer_bind_info28.site_guid		= info48->site_guid;
+			b->peer_bind_info28.pid			= info48->pid;
+			b->peer_bind_info28.repl_epoch		= info48->repl_epoch;
+			break;
+		}
 		case 28:
 			b->peer_bind_info28 = b->req.out.bind_info->info.info28;
 			break;
+		default:
+			printf("DsBind - warning: unknown BindInfo length: %u\n",
+			       b->req.out.bind_info->length);
 		}
 	}
 
@@ -514,6 +527,8 @@ static void test_analyse_objects(struct torture_context *tctx,
 			DEBUGADD(0,("ATTR: %s enc.length=%lu plain.length=%lu\n",
 				    name, (long)enc_data->length, (long)plain_data.length));
 			if (plain_data.length) {
+				enum ndr_err_code ndr_err;
+				struct supplementalCredentialsBlob scb;
 				dump_data(0, plain_data.data, plain_data.length);
 				if (save_values_dir) {
 					char *fname;
@@ -528,6 +543,13 @@ static void test_analyse_objects(struct torture_context *tctx,
 						}
 					}
 					talloc_free(fname);
+				}
+
+				ndr_err = ndr_pull_struct_blob_all(&plain_data, tctx,
+					   lp_iconv_convenience(tctx->lp_ctx), &scb,
+					   (ndr_pull_flags_fn_t)ndr_pull_supplementalCredentialsBlob);
+				if (NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+					NDR_PRINT_DEBUG(supplementalCredentialsBlob, &scb);
 				}
 			} else {
 				dump_data(0, enc_data->data, enc_data->length);

@@ -631,12 +631,6 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 	status = pvfs_access_check_create(pvfs, req, name, &access_mask);
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	if (io->generic.in.query_maximal_access) {
-		status = pvfs_access_maximal_allowed(pvfs, req, name, 
-						     &io->generic.out.maximal_access);
-		NT_STATUS_NOT_OK_RETURN(status);
-	}
-
 	/* check that the parent isn't opened with delete on close set */
 	status = pvfs_resolve_parent(pvfs, req, name, &parent);
 	if (NT_STATUS_IS_OK(status)) {
@@ -705,6 +699,12 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 	status = pvfs_open_setup_eas_acl(pvfs, req, name, fd, f, io);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto cleanup_delete;
+	}
+
+	if (io->generic.in.query_maximal_access) {
+		status = pvfs_access_maximal_allowed(pvfs, req, name, 
+						     &io->generic.out.maximal_access);
+		NT_STATUS_NOT_OK_RETURN(status);
 	}
 
 	/* form the lock context used for byte range locking and

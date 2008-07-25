@@ -74,7 +74,7 @@ again:
 				return NT_STATUS_NOT_FOUND;
 
 			} else {
-				/* if not this was probably a legittimate error
+				/* if not this was probably a legitimate error
 				 * reset ret and errno to the correct values */
 				errno = EPERM;
 				ret = -1;

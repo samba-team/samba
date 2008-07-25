@@ -134,6 +134,7 @@ static NTSTATUS nttrans_create(struct smbsrv_request *req,
 	io->ntcreatex.in.security_flags   = CVAL(params, 52);
 	io->ntcreatex.in.sec_desc         = NULL;
 	io->ntcreatex.in.ea_list          = NULL;
+	io->ntcreatex.in.query_maximal_access = false;
 
 	req_pull_string(&req->in.bufinfo, &io->ntcreatex.in.fname, 
 			params + 53, 
