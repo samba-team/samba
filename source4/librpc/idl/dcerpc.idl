@@ -253,6 +253,7 @@ interface dcerpc
 	const uint8 DCERPC_PFC_FLAG_FIRST		= 0x01; /* First fragment */
 	const uint8 DCERPC_PFC_FLAG_LAST		= 0x02; /* Last fragment */
 	const uint8 DCERPC_PFC_FLAG_PENDING_CANCEL	= 0x04; /* Cancel was pending at sender */
+	const uint8 DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN	= DCERPC_PFC_FLAG_PENDING_CANCEL; /* depends on the pdu type */
 	const uint8 DCERPC_PFC_FLAG_CONC_MPX		= 0x10; /* supports concurrent multiplexing of a single connection. */
 	const uint8 DCERPC_PFC_FLAG_DID_NOT_EXECUTE	= 0x20; /* on a fault it means the server hasn't done anything */
 	const uint8 DCERPC_PFC_FLAG_MAYBE		= 0x40; /* `maybe' call semantics requested */
