@@ -1,5 +1,9 @@
 2008-07-25  Love Hörnquist Åstrand  <lha@kth.se>
 
+	* ntlm/init_sec_context.c: Use krb5_cc_get_config.
+
+2008-07-25  Love Hörnquist Åstrand  <lha@kth.se>
+
 	* krb5/init_sec_context.c: Match the orignal patch I got from
 	metze, seems that DCE-STYLE is even more weirer then what I though
 	when I merged the patch.
