@@ -8826,8 +8826,6 @@ bool api_pipe_schannel_process(pipes_struct *p, prs_struct *rpc_in, uint32 *p_ss
 struct current_user *get_current_user(struct current_user *user, pipes_struct *p);
 void free_pipe_rpc_context( PIPE_RPC_FNS *list );
 bool api_pipe_request(pipes_struct *p);
-bool api_rpcTNP(pipes_struct *p, const char *rpc_name, 
-		const struct api_struct *api_rpc_cmds, int n_cmds);
 
 /* The following definitions come from rpc_server/srv_pipe_hnd.c  */
 
