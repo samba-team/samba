@@ -870,3 +870,53 @@ gss_krb5_get_tkt_flags(OM_uint32 *minor_status,
     return GSS_S_COMPLETE;
 }
 
+OM_uint32 GSSAPI_LIB_FUNCTION
+gsskrb5_set_time_offset(int offset)
+{
+        struct _gss_mech_switch	*m;
+	gss_buffer_desc buffer;
+	OM_uint32 junk;
+	int32_t o = offset;
+
+	_gss_load_mech();
+
+	buffer.value = &o;
+	buffer.length = sizeof(o);
+
+	SLIST_FOREACH(m, &_gss_mechs, gm_link) {
+		if (m->gm_mech.gm_set_sec_context_option == NULL)
+			continue;
+		m->gm_mech.gm_set_sec_context_option(&junk, NULL,
+		    GSS_KRB5_SET_TIME_OFFSET_X, &buffer);
+	}
+
+	return (GSS_S_COMPLETE);
+}
+
+OM_uint32 GSSAPI_LIB_FUNCTION
+gsskrb5_get_time_offset(int *offset)
+{
+        struct _gss_mech_switch	*m;
+	gss_buffer_desc buffer;
+	OM_uint32 maj_stat, junk;
+	int32_t o;
+
+	_gss_load_mech();
+
+	buffer.value = &o;
+	buffer.length = sizeof(o);
+
+	SLIST_FOREACH(m, &_gss_mechs, gm_link) {
+		if (m->gm_mech.gm_set_sec_context_option == NULL)
+			continue;
+		maj_stat = m->gm_mech.gm_set_sec_context_option(&junk, NULL,
+		    GSS_KRB5_GET_TIME_OFFSET_X, &buffer);
+
+		if (maj_stat == GSS_S_COMPLETE) {
+			*offset = o;
+			return maj_stat;
+		}
+	}
+
+	return (GSS_S_UNAVAILABLE);
+}

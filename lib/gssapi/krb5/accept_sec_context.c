@@ -251,6 +251,65 @@ gsskrb5_acceptor_ready(OM_uint32 * minor_status,
 }
 
 static OM_uint32
+send_error_token(OM_uint32 *minor_status,
+		 krb5_context context,
+		 krb5_error_code kret,
+		 krb5_principal server,
+		 krb5_data *indata,
+		 gss_buffer_t output_token)
+{
+    krb5_principal ap_req_server = NULL;
+    krb5_error_code ret;
+    krb5_data outbuf;
+
+    /* build server from request if the acceptor had not selected one */
+    if (server == NULL) {
+	AP_REQ ap_req;
+
+	ret = krb5_decode_ap_req(context, indata, &ap_req);
+	if (ret) {
+	    *minor_status = ret;
+	    return GSS_S_FAILURE;
+	}
+	ret = _krb5_principalname2krb5_principal(context,
+						  &ap_req_server,
+						  ap_req.ticket.sname,
+						  ap_req.ticket.realm);
+	free_AP_REQ(&ap_req);
+	if (ret) {
+	    *minor_status = ret;
+	    return GSS_S_FAILURE;
+	}
+	server = ap_req_server;
+    }
+    
+    ret = krb5_mk_error(context, kret, NULL, NULL, NULL,
+			server, NULL, NULL, &outbuf);
+    if (ap_req_server)
+	krb5_free_principal(context, ap_req_server);
+    if (ret) {
+	*minor_status = ret;
+	return GSS_S_FAILURE;
+    }
+    
+    ret = _gsskrb5_encapsulate(minor_status,
+			       &outbuf,
+			       output_token,
+			       "\x03\x00",
+			       GSS_KRB5_MECHANISM);
+    krb5_data_free (&outbuf);
+    if (ret)
+	return ret;
+
+    if (kret == KRB5KRB_AP_ERR_SKEW)
+	return GSS_S_CONTINUE_NEEDED;
+
+    *minor_status = kret;
+    return GSS_S_FAILURE;
+}
+
+
+static OM_uint32
 gsskrb5_acceptor_start(OM_uint32 * minor_status,
 		       gsskrb5_ctx ctx,
 		       krb5_context context,
@@ -304,6 +363,10 @@ gsskrb5_acceptor_start(OM_uint32 * minor_status,
     {
 	krb5_rd_req_in_ctx in = NULL;
 	krb5_rd_req_out_ctx out = NULL;
+	krb5_principal server = NULL;
+
+	if (acceptor_cred)
+	    server = acceptor_cred->principal;
 
 	kret = krb5_rd_req_in_ctx_alloc(context, &in);
 	if (kret == 0)
@@ -319,17 +382,22 @@ gsskrb5_acceptor_start(OM_uint32 * minor_status,
 	kret = krb5_rd_req_ctx(context,
 			       &ctx->auth_context,
 			       &indata,
-			       (acceptor_cred_handle == GSS_C_NO_CREDENTIAL) ? NULL : acceptor_cred->principal,
+			       server,
 			       in, &out);
 	krb5_rd_req_in_ctx_free(context, in);
 	if (kret) {
-	    ret = GSS_S_FAILURE;
-	    *minor_status = kret;
-	    return ret;
+	    /* No reply in not-MUTUAL mode */
+	    if (0 && !(ctx->flags & GSS_C_MUTUAL_FLAG)) {
+		ret = GSS_S_FAILURE;
+		*minor_status = kret;
+		return ret;
+	    }
+	    return send_error_token(minor_status, context, kret,
+				    server, &indata, output_token);
 	}
 
 	/*
-	 * We need to remember some data on the context_handle.
+	 * we need to remember some data on the context_handle.
 	 */
 	kret = krb5_rd_req_out_get_ap_req_options(context, out,
 						  &ap_options);

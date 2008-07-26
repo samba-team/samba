@@ -50,6 +50,8 @@ static int deleg_flag = 0;
 static int server_no_deleg_flag = 0;
 static char *gsskrb5_acceptor_identity = NULL;
 static char *session_enctype_string = NULL;
+static int client_time_offset = 0;
+static int server_time_offset = 0;
 static int version_flag = 0;
 static int verbose_flag = 0;
 static int help_flag	= 0;
@@ -127,6 +129,8 @@ loop(gss_OID mechoid,
 
     while (!server_done || !client_done) {
 
+	gsskrb5_set_time_offset(client_time_offset);
+
 	maj_stat = gss_init_sec_context(&min_stat,
 					init_cred,
 					cctx,
@@ -148,11 +152,15 @@ loop(gss_OID mechoid,
 	else
 	    client_done = 1;
 
+	gsskrb5_get_time_offset(&client_time_offset);
+
 	if (client_done && server_done)
 	    break;
 
 	if (input_token.length != 0)
 	    gss_release_buffer(&min_stat, &input_token);
+
+	gsskrb5_set_time_offset(server_time_offset);
 
 	maj_stat = gss_accept_sec_context(&min_stat,
 					  sctx,
@@ -169,8 +177,7 @@ loop(gss_OID mechoid,
 		errx(1, "accept_sec_context: %s",
 		     gssapi_err(maj_stat, min_stat, actual_mech_server));
 
-	if (verbose_flag)
-	    printf("%.*s", (int)input_token.length, (char *)input_token.value);
+	gsskrb5_get_time_offset(&server_time_offset);
 
 	if (output_token.length != 0)
 	    gss_release_buffer(&min_stat, &output_token);
@@ -198,6 +205,11 @@ loop(gss_OID mechoid,
     if (gss_oid_equal(actual_mech_server, actual_mech_client) == 0)
 	errx(1, "mech mismatch");
     *actual_mech = actual_mech_server;
+
+    if (verbose_flag) {
+	printf("server time offset: %d\n", server_time_offset);
+	printf("client time offset: %d\n", client_time_offset);
+    }
 }
 
 static void
@@ -270,6 +282,8 @@ static struct getargs args[] = {
      "server should get a credential", NULL },
     {"gsskrb5-acceptor-identity", 0, arg_string, &gsskrb5_acceptor_identity, "keytab", NULL },
     {"session-enctype",	0, arg_string,	&session_enctype_string, "enctype", NULL },
+    {"client-time-offset",	0, arg_integer,	&client_time_offset, "time", NULL },
+    {"server-time-offset",	0, arg_integer,	&server_time_offset, "time", NULL },
     {"version",	0,	arg_flag,	&version_flag, "print version", NULL },
     {"verbose",	'v',	arg_flag,	&verbose_flag, "verbose", NULL },
     {"help",	0,	arg_flag,	&help_flag,  NULL, NULL }

@@ -985,7 +985,7 @@ krb5_get_dns_canonicalize_hostname (krb5_context context)
  * @param sec seconds part of offset.
  * @param usec micro seconds part of offset.
  *
- * @return return non zero if the library uses DNS to canonicalize hostnames.
+ * @return returns zero
  *
  * @ingroup krb5
  */
@@ -997,6 +997,27 @@ krb5_get_kdc_sec_offset (krb5_context context, int32_t *sec, int32_t *usec)
 	*sec = context->kdc_sec_offset;
     if (usec)
 	*usec = context->kdc_usec_offset;
+    return 0;
+}
+
+/**
+ * Set current offset in time to the KDC.
+ *
+ * @param context Kerberos 5 context.
+ * @param sec seconds part of offset.
+ * @param usec micro seconds part of offset.
+ *
+ * @return returns zero
+ *
+ * @ingroup krb5
+ */
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_set_kdc_sec_offset (krb5_context context, int32_t sec, int32_t usec)
+{
+    context->kdc_sec_offset = sec;
+    if (usec >= 0)
+	context->kdc_usec_offset = usec;
     return 0;
 }
 

@@ -66,6 +66,8 @@ extern GSSAPI_LIB_VARIABLE gss_OID GSS_KRB5_SET_DNS_CANONICALIZE_X;
 extern GSSAPI_LIB_VARIABLE gss_OID GSS_KRB5_SEND_TO_KDC_X;
 extern GSSAPI_LIB_VARIABLE gss_OID GSS_KRB5_SET_DEFAULT_REALM_X;
 extern GSSAPI_LIB_VARIABLE gss_OID GSS_KRB5_CCACHE_NAME_X;
+extern GSSAPI_LIB_VARIABLE gss_OID GSS_KRB5_SET_TIME_OFFSET_X;
+extern GSSAPI_LIB_VARIABLE gss_OID GSS_KRB5_GET_TIME_OFFSET_X;
 /* Extensions inquire context */
 extern GSSAPI_LIB_VARIABLE gss_OID GSS_KRB5_GET_TKT_FLAGS_X;
 extern GSSAPI_LIB_VARIABLE gss_OID GSS_KRB5_EXTRACT_AUTHZ_DATA_FROM_SEC_CONTEXT_X;
@@ -156,6 +158,12 @@ OM_uint32 GSSAPI_LIB_FUNCTION
 gsskrb5_get_subkey(OM_uint32 *minor_status,
 		   gss_ctx_id_t context_handle,
 		   struct EncryptionKey **out);
+
+OM_uint32 GSSAPI_LIB_FUNCTION
+gsskrb5_set_time_offset(int);
+
+OM_uint32 GSSAPI_LIB_FUNCTION
+gsskrb5_get_time_offset(int *);
 
 /*
  * Lucid - NFSv4 interface to GSS-API KRB5 to expose key material to

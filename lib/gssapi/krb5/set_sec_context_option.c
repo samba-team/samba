@@ -70,6 +70,36 @@ get_string(OM_uint32 *minor_status,
     return GSS_S_COMPLETE;
 }
 
+static OM_uint32
+get_int32(OM_uint32 *minor_status,
+	  const gss_buffer_t value,
+	  OM_uint32 *ret)
+{
+    *minor_status = 0;
+    if (value == NULL || value->length == 0)
+	*ret = 0;
+    else if (value->length == sizeof(*ret))
+	memcpy(ret, value->value, sizeof(*ret));
+    else
+	return GSS_S_UNAVAILABLE;
+
+    return GSS_S_COMPLETE;
+}
+
+static OM_uint32
+set_int32(OM_uint32 *minor_status,
+	  const gss_buffer_t value,
+	  OM_uint32 set)
+{
+    *minor_status = 0;
+    if (value->length == sizeof(set))
+	memcpy(value->value, &set, sizeof(set));
+    else
+	return GSS_S_UNAVAILABLE;
+
+    return GSS_S_COMPLETE;
+}
+
 OM_uint32
 _gsskrb5_set_sec_context_option
            (OM_uint32 *minor_status,
@@ -184,6 +214,35 @@ _gsskrb5_set_sec_context_option
 	if (*minor_status)
 	    return GSS_S_FAILURE;
 
+	return GSS_S_COMPLETE;
+    } else if (gss_oid_equal(desired_object, GSS_KRB5_SET_TIME_OFFSET_X)) {
+	OM_uint32 offset;
+	time_t t;
+
+	maj_stat = get_int32(minor_status, value, &offset);
+	if (maj_stat != GSS_S_COMPLETE)
+	    return maj_stat;
+
+	t = time(NULL) + offset;
+	
+	krb5_set_real_time(context, t, 0);
+
+	*minor_status = 0;
+	return GSS_S_COMPLETE;
+    } else if (gss_oid_equal(desired_object, GSS_KRB5_GET_TIME_OFFSET_X)) {
+	krb5_timestamp sec;
+	int32_t usec;
+	time_t t;
+
+	t = time(NULL);
+
+	krb5_us_timeofday (context, &sec, &usec);
+
+	maj_stat = set_int32(minor_status, value, sec - t);
+	if (maj_stat != GSS_S_COMPLETE)
+	    return maj_stat;
+
+	*minor_status = 0;
 	return GSS_S_COMPLETE;
     }
 

@@ -61,6 +61,8 @@ _gsskrb5_delete_sec_context(OM_uint32 * minor_status,
     HEIMDAL_MUTEX_lock(&ctx->ctx_id_mutex);
 
     krb5_auth_con_free (context, ctx->auth_context);
+    if (ctx->kcred)
+	krb5_free_creds(context, ctx->kcred);
     if(ctx->source)
 	krb5_free_principal (context, ctx->source);
     if(ctx->target)
