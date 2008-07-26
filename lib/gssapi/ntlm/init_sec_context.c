@@ -99,6 +99,7 @@ static int
 get_user_ccache(const ntlm_name name, char **username, struct ntlm_buf *key)
 {
     krb5_context context = NULL;
+    krb5_principal client;
     krb5_ccache id = NULL;
     krb5_error_code ret;
     char *confname;
@@ -116,10 +117,22 @@ get_user_ccache(const ntlm_name name, char **username, struct ntlm_buf *key)
     if (ret)
 	goto out;
 
+    ret = krb5_cc_get_principal(context, id, &client);
+    if (ret)
+	goto out;
+
+    ret = krb5_unparse_name_flags(context, client,
+				  KRB5_PRINCIPAL_UNPARSE_NO_REALM,
+				  username);
+    krb5_free_principal(context, client);
+    if (ret)
+	goto out;
+
     asprintf(&confname, "ntlm-key-%s", name->domain);
     if (confname == NULL) {
 	krb5_clear_error_string(context);
-	return ENOMEM;
+	ret = ENOMEM;
+	goto out;
     }
 
     ret = krb5_cc_get_config(context, id, confname, &data);
