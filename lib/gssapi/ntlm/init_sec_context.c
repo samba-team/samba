@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006 Kungliga Tekniska Högskolan
+ * Copyright (c) 2006 - 2008 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -135,7 +135,8 @@ get_user_ccache(const ntlm_name name, char **username, struct ntlm_buf *key)
 	goto out;
     }
 
-    ret = krb5_cc_get_config(context, id, confname, &data);
+    ret = krb5_cc_get_config(context, id, NULL,
+			     confname, &data);
 
     key->data = malloc(data.length);
     if (key->data == NULL)
