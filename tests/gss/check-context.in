@@ -114,7 +114,7 @@ trap "kill ${kdcpid}; echo signal killing kdc; exit 1;" EXIT
 exitcode=0
 
 echo "Getting client initial tickets"
-${kinit} --password-file=${objdir}/foopassword user1@${R} || exitcode=1
+${kinit} --password-file=${objdir}/foopassword --forwardable user1@${R} || exitcode=1
 
 echo "======test unreadable/non existant keytab and its error message"
 ${context} --mech-type=krb5 host@lucid.test.h5l.se || \
@@ -243,8 +243,33 @@ ${context} \
 
 trap "" EXIT
 
+echo "Getting client initial tickets"
+${kinit} --forwardable \
+    --password-file=${objdir}/foopassword user1@${R} || exitcode=1
+
+echo "ok-as-delegate not used"
+${context} \
+    --mech-type=krb5 \
+    --delegate \
+    --name-type=hostbased-service host@lucid.test.h5l.se || \
+	{ exitcode=1 ; echo "test failed"; }
+
+echo "Getting client initial tickets with --ok-as-delgate"
+${kinit} --ok-as-delegate  --forwardable \
+    --password-file=${objdir}/foopassword user1@${R} || exitcode=1
+
+echo "ok-as-delegate"
+${context} \
+    --mech-type=krb5 \
+    --delegate \
+    --server-no-delegate \
+    --name-type=hostbased-service host@lucid.test.h5l.se || \
+	{ exitcode=1 ; echo "test failed"; }
+
 echo "killing kdc (${kdcpid})"
 kill ${kdcpid} 2> /dev/null
+
+[ "$exitcode" = 0 ] && echo "all ok"
 
 exit $exitcode
 
