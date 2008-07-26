@@ -98,18 +98,15 @@ get_user_file(const ntlm_name target_name,
 static int
 get_user_ccache(const ntlm_name name, char **username, struct ntlm_buf *key)
 {
-    krb5_principal client;
     krb5_context context = NULL;
-    krb5_error_code ret;
     krb5_ccache id = NULL;
-    krb5_creds mcreds, creds;
+    krb5_error_code ret;
+    char *confname;
+    krb5_data data;
 
     *username = NULL;
     key->length = 0;
     key->data = NULL;
-
-    memset(&creds, 0, sizeof(creds));
-    memset(&mcreds, 0, sizeof(mcreds));
 
     ret = krb5_init_context(&context);
     if (ret)
@@ -119,54 +116,24 @@ get_user_ccache(const ntlm_name name, char **username, struct ntlm_buf *key)
     if (ret)
 	goto out;
 
-    ret = krb5_cc_get_principal(context, id, &client);
-    if (ret)
-	goto out;
-
-    ret = krb5_unparse_name_flags(context, client,
-				  KRB5_PRINCIPAL_UNPARSE_NO_REALM,
-				  username);
-    if (ret)
-	goto out;
-
-    ret = krb5_make_principal(context, &mcreds.server,
-			      krb5_principal_get_realm(context, client),
-			      "@ntlm-key", name->domain, NULL);
-    krb5_free_principal(context, client);
-    if (ret)
-	goto out;
-
-    mcreds.session.keytype = ENCTYPE_ARCFOUR_HMAC_MD5;
-    ret = krb5_cc_retrieve_cred(context, id, KRB5_TC_MATCH_KEYTYPE, 
-				&mcreds, &creds);
-    if (ret) {
-	const char *s = krb5_get_error_message(context, ret);
-	krb5_free_error_message(context, s);
-	goto out;
+    asprintf(&confname, "ntlm-key-%s", name->domain);
+    if (confname == NULL) {
+	krb5_clear_error_string(context);
+	return ENOMEM;
     }
 
-    key->data = malloc(creds.session.keyvalue.length);
+    ret = krb5_cc_get_config(context, id, confname, &data);
+
+    key->data = malloc(data.length);
     if (key->data == NULL)
 	goto out;
-    key->length = creds.session.keyvalue.length;
-    memcpy(key->data, creds.session.keyvalue.data, key->length);
+    key->length = data.length;
+    memcpy(key->data, data.data, data.length);
 
-    krb5_free_cred_contents(context, &creds);
-
-    return 0;
-
-out:
-    if (*username) {
-	free(*username);
-	*username = NULL;
-    }
-    krb5_free_cred_contents(context, &creds);
-    if (mcreds.server)
-	krb5_free_principal(context, mcreds.server);
+ out:
+    krb5_data_free(&data);
     if (id)
 	krb5_cc_close(context, id);
-    if (context)
-	krb5_free_context(context);
 
     return ret;
 }
