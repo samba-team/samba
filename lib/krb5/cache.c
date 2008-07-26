@@ -1117,3 +1117,110 @@ krb5_cc_move(krb5_context context, krb5_ccache from, krb5_ccache to)
     }
     return ret;
 }
+
+/**
+ * Store some configuration for the credential cache in the cache.
+ * Existing configuration under the same name is over-written.
+ *
+ * @param context a Keberos context
+ * @param id the credential cache to store the data for
+ * @param name name under which the configuraion is stored.
+ * @param data data to store
+ */
+
+#define KRB5_CONF_NAME "@krb5_ccache_conf_data"
+
+static krb5_error_code
+build_conf_principals(krb5_context context, krb5_ccache id,
+		      const char *name, krb5_creds *cred)
+{
+    krb5_principal client;
+    krb5_error_code ret;
+
+    memset(cred, 0, sizeof(*cred));
+
+    ret = krb5_cc_get_principal(context, id, &client);
+    if (ret)
+	return ret;
+       
+    ret = krb5_make_principal(context, &cred->server,
+			      krb5_principal_get_realm(context, client),
+			      KRB5_CONF_NAME, name, NULL);
+    if (ret) {
+	krb5_free_principal(context, client);
+	return ret;
+    }
+    ret = krb5_copy_principal(context, client, &cred->client);
+    krb5_free_principal(context, client);
+    return ret;
+}
+		      
+
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_cc_set_config(krb5_context context, krb5_ccache id, 
+		   const char *name, krb5_data *data)
+{
+    krb5_error_code ret;
+    krb5_creds cred;
+
+    ret = build_conf_principals(context, id, name, &cred);
+    if (ret)
+	goto out;
+
+    /* Remove old configuration */
+    ret = krb5_cc_remove_cred(context, id, 0, &cred);
+    if (ret)
+	goto out;
+
+    /* not that anyone care when this expire */
+    cred.times.authtime = time(NULL);
+    cred.times.endtime = cred.times.authtime + 3600 * 24 * 30; 
+
+    ret = krb5_data_copy(&cred.ticket, data->data, data->length);
+    if (ret)
+	goto out;
+
+    ret = krb5_cc_store_cred(context, id, &cred);
+
+out:
+    krb5_free_cred_contents (context, &cred);
+    return ret;
+}
+
+/**
+ * Get some configuration for the credential cache in the cache.
+ *
+ * @param context a Keberos context
+ * @param id the credential cache to store the data for
+ * @param name name under which the configuraion is stored.
+ * @param data data to fetched, free with krb5_data_free()
+ */
+
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_cc_get_config(krb5_context context, krb5_ccache id, 
+		   const char *name, krb5_data *data)
+{
+    krb5_creds mcred, cred;
+    krb5_error_code ret;
+
+    memset(&cred, 0, sizeof(cred));
+    krb5_data_zero(data);
+
+    ret = build_conf_principals(context, id, name, &mcred);
+    if (ret)
+	goto out;
+
+    ret = krb5_cc_retrieve_cred(context, id, 0, &mcred, &cred);
+    if (ret)
+	goto out;
+
+    ret = krb5_data_copy(data, mcred.ticket.data, mcred.ticket.length);
+
+out:
+    krb5_free_cred_contents (context, &cred);
+    krb5_free_cred_contents (context, &mcred);
+    return ret;
+}
+
