@@ -1,5 +1,10 @@
-2008-05-20  Love Hörnquist Åstrand  <lha@kth.se>
+2008-07-26  Love Hörnquist Åstrand  <lha@h5l.org>
 
+	* krb-ipv6.m4: Patch from Björn Schlögl to enable disable-ness of
+	ipv6.
+
+2008-05-20  Love Hörnquist Åstrand  <lha@kth.se>
+	
 	* sunos.m4: Detect solaris2.11 and later and assume its sunos=58.
 	Bug report from Klas Heggemann.
 
