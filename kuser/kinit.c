@@ -66,6 +66,8 @@ char *pk_user_id	= NULL;
 char *pk_x509_anchors	= NULL;
 int pk_use_enckey	= 0;
 static int canonicalize_flag = 0;
+static int ok_as_delegate_flag = 0;
+static int windows_flag = 0;
 static char *ntlm_domain;
 
 static char *krb4_cc_name;
@@ -160,6 +162,12 @@ static struct getargs args[] = {
 #endif
     { "ntlm-domain",	0,  arg_string, &ntlm_domain,
       "NTLM domain", "domain" },
+
+    { "ok-as-delegate",	0,  arg_flag, &ok_as_delegate_flag,
+      "honor ok-as-delegate on tickets" },
+
+    { "windows",	0,  arg_flag, &windows_flag,
+      "get windows behavior" },
 
     { "version", 	0,   arg_flag, &version_flag },
     { "help",		0,   arg_flag, &help_flag }
@@ -342,7 +350,7 @@ store_ntlmkey(krb5_context context, krb5_ccache id,
 	return ENOMEM;
     }
     
-    data.data = buf->data;
+    data.length = buf->length;
     data.data = buf->data;
 
     ret = krb5_cc_set_config(context, id, name, &data);
@@ -588,6 +596,16 @@ get_new_tickets(krb5_context context,
 
     if (ntlm_domain && ntlmkey.data)
 	store_ntlmkey(context, ccache, ntlm_domain, &ntlmkey);
+
+    if (ok_as_delegate_flag || windows_flag) {
+	krb5_data data;
+
+	data.length = 1;
+	data.data = "\x01";
+
+	krb5_cc_set_config(context, ccache, "realm-config", &data);
+    }
+
 
     if (enctype)
 	free(enctype);
