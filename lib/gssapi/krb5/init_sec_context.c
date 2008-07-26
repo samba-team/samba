@@ -453,11 +453,22 @@ init_auth
      * KDC doesn't set ok-as-delegate.
      */
     if (!kcred->flags.b.ok_as_delegate) {
-	krb5_boolean delegate;
+	krb5_boolean delegate, realm_setting;
+	krb5_data data;
     
-	krb5_appdefault_boolean(context,
-				"gssapi", name->realm,
-				"ok-as-delegate", FALSE, &delegate);
+	realm_setting = FALSE;
+
+	ret = krb5_cc_get_config(context, ccache, "realm-config", &data);
+	if (ret == 0) {
+	    /* XXX 1 is use ok-as-delegate */
+	    if (data.length > 1 && (((unsigned char *)data.data)[0]) & 1)
+		realm_setting = TRUE;
+	    krb5_data_free(&data);
+	}
+
+	krb5_appdefault_boolean(context, "gssapi", name->realm,
+				"ok-as-delegate", realm_setting,
+				&delegate);
 	if (delegate)
 	    req_flags &= ~GSS_C_DELEG_FLAG;
     }
