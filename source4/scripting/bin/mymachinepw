@@ -2,6 +2,7 @@
 
 # Unix SMB/CIFS implementation.
 # Copyright (C) Volker Lendecke 2008
+# Copyright (C) Stefan Metzmacher 2008
 #
 # Extract our own machine pw from secrets.ldb
 #
@@ -29,17 +30,32 @@ loaded = False
 for o, v in optlist:
     if o == "-s":
         if not conf.load(v):
-            raise(v + " not found")
+            print(v + " not found")
+            exit(1)
         loaded = True
 
 if not loaded:
     conf.load_default()
 
+path=conf.get("private dir") + "/secrets.ldb"
+netbios=conf.get("netbios name")
+
 secrets = ldb.Ldb()
-secrets.connect(conf.get("private dir") + "/secrets.ldb")
+secrets.connect(path)
 
 search = "(&(objectclass=primaryDomain)(samaccountname=" + \
-	conf.get("netbios name") + "$))"
+	  netbios + "$))"
 
 msg = secrets.search(expression=search, attrs=['secret'])
-print(msg[0]['secret'][0])
+
+if not msg:
+    error =  "Error:\n"
+    error += "Password for host[" + netbios + "] not found in path[" + path + "].\n"
+    error += "You may want to pass the smb.conf location via the -s option."
+    print error
+    exit(1)
+
+password=msg[0]['secret'][0];
+
+print(password)
+exit(0)
