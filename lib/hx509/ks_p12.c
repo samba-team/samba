@@ -362,14 +362,14 @@ p12_init(hx509_context context,
 	goto out;
     }
 
-    ret = _hx509_map_file(residue, &buf, &len, NULL);
+    ret = rk_undumpdata(residue, &buf, &len);
     if (ret) {
 	hx509_clear_error_string(context);
 	goto out;
     }
 
     ret = decode_PKCS12_PFX(buf, len, &pfx, NULL);
-    _hx509_unmap_file(buf, len);
+    rk_xfree(buf);
     if (ret) {
 	hx509_set_error_string(context, 0, ret,
 			       "Failed to decode the PFX in %s", residue);

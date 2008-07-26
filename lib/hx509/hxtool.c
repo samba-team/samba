@@ -207,7 +207,7 @@ cms_verify_sd(struct cms_verify_sd_options *opt, int argc, char **argv)
 	if (ret)
 	    errx(1, "PEM reader failed: %d", ret);
     } else {
-	ret = _hx509_map_file(argv[0], &p, &sz, NULL);
+	ret = rk_undumpdata(argv[0], &p, &sz);
 	if (ret)
 	    err(1, "map_file: %s: %d", argv[0], ret);
 
@@ -216,7 +216,7 @@ cms_verify_sd(struct cms_verify_sd_options *opt, int argc, char **argv)
     }
 
     if (opt->signed_content_string) {
-	ret = _hx509_map_file_os(opt->signed_content_string, &signeddata, NULL);
+	ret = _hx509_map_file_os(opt->signed_content_string, &signeddata);
 	if (ret)
 	    errx(1, "map_file: %s: %d", opt->signed_content_string, ret);
 	sd = &signeddata;
@@ -272,7 +272,7 @@ cms_verify_sd(struct cms_verify_sd_options *opt, int argc, char **argv)
     if (opt->pem_flag)
 	der_free_octet_string(&co);
     else
-	_hx509_unmap_file(p, sz);
+	rk_xfree(p);
     if (sd)
 	_hx509_unmap_file_os(sd);
 
@@ -335,7 +335,7 @@ cms_create_sd(struct cms_create_sd_options *opt, int argc, char **argv)
     if (ret)
 	hx509_err(context, 1, ret, "hx509_certs_find");
 
-    ret = _hx509_map_file(argv[0], &p, &sz, NULL);
+    ret = rk_undumpdata(argv[0], &p, &sz);
     if (ret)
 	err(1, "map_file: %s: %d", argv[0], ret);
 
@@ -376,7 +376,7 @@ cms_create_sd(struct cms_create_sd_options *opt, int argc, char **argv)
     hx509_certs_free(&pool);
     hx509_cert_free(cert);
     hx509_certs_free(&store);
-    _hx509_unmap_file(p, sz);
+    rk_xfree(p);
     hx509_lock_free(lock);
     hx509_peer_info_free(peer);
     der_free_oid(&contentType);
@@ -438,7 +438,7 @@ cms_unenvelope(struct cms_unenvelope_options *opt, int argc, char **argv)
     hx509_lock_init(context, &lock);
     lock_strings(lock, &opt->pass_strings);
 
-    ret = _hx509_map_file(argv[0], &p, &sz, NULL);
+    ret = rk_undumpdata(argv[0], &p, &sz);
     if (ret)
 	err(1, "map_file: %s: %d", argv[0], ret);
 
@@ -473,7 +473,7 @@ cms_unenvelope(struct cms_unenvelope_options *opt, int argc, char **argv)
     if (ret)
 	hx509_err(context, 1, ret, "hx509_cms_unenvelope");
 
-    _hx509_unmap_file(p, sz);
+    rk_xfree(p);
     hx509_lock_free(lock);
     hx509_certs_free(&certs);
     der_free_oid(&contentType);
@@ -506,7 +506,7 @@ cms_create_enveloped(struct cms_envelope_options *opt, int argc, char **argv)
     hx509_lock_init(context, &lock);
     lock_strings(lock, &opt->pass_strings);
 
-    ret = _hx509_map_file(argv[0], &p, &sz, NULL);
+    ret = rk_undumpdata(argv[0], &p, &sz);
     if (ret)
 	err(1, "map_file: %s: %d", argv[0], ret);
 
@@ -541,7 +541,7 @@ cms_create_enveloped(struct cms_envelope_options *opt, int argc, char **argv)
 
     hx509_cert_free(cert);
     hx509_certs_free(&certs);
-    _hx509_unmap_file(p, sz);
+    rk_xfree(p);
     der_free_oid(&contentType);
 
     if (opt->content_info_flag) {
@@ -1075,7 +1075,7 @@ ocsp_verify(struct ocsp_verify_options *opt, int argc, char **argv)
     if (opt->ocsp_file_string == NULL)
 	errx(1, "no ocsp file given");
 
-    ret = _hx509_map_file(opt->ocsp_file_string, &os.data, &os.length, NULL);
+    ret = _hx509_map_file_os(opt->ocsp_file_string, &os);
     if (ret)
 	err(1, "map_file: %s: %d", argv[0], ret);
     
@@ -1090,7 +1090,7 @@ ocsp_verify(struct ocsp_verify_options *opt, int argc, char **argv)
     ret = hx509_certs_iter(context, certs, verify_o, &os);
 
     hx509_certs_free(&certs);
-    _hx509_unmap_file(os.data, os.length);
+    _hx509_unmap_file_os(&os);
     hx509_lock_free(lock);
 
     return ret;

@@ -401,7 +401,7 @@ file_init_common(hx509_context context,
 	    void *ptr;
 	    int i;
 
-	    ret = _hx509_map_file(p, &ptr, &length, NULL);
+	    ret = rk_undumpdata(p, &ptr, &length);
 	    if (ret) {
 		hx509_clear_error_string(context);
 		goto out;
@@ -412,7 +412,7 @@ file_init_common(hx509_context context,
 		if (ret == 0)
 		    break;
 	    }
-	    _hx509_unmap_file(ptr, length);
+	    rk_xfree(ptr);
 	    if (ret)
 		goto out;
 	}

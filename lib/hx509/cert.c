@@ -138,7 +138,7 @@ hx509_context_init(hx509_context *context)
 
 /**
  * Selects if the hx509_revoke_verify() function is going to require
- * the existans of a revokation method (OSCP, CRL) or not. Note that
+ * the existans of a revokation method (OCSP, CRL) or not. Note that
  * hx509_verify_path(), hx509_cms_verify_signed(), and other function
  * call hx509_revoke_verify().
  * 

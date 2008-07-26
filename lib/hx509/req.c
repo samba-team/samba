@@ -257,14 +257,14 @@ _hx509_request_parse(hx509_context context,
 
     /* XXX PEM request */
 
-    ret = _hx509_map_file(path, &p, &len, NULL);
+    ret = rk_undumpdata(path, &p, &len);
     if (ret) {
 	hx509_set_error_string(context, 0, ret, "Failed to map file %s", path);
 	return ret;
     }
 
     ret = decode_CertificationRequest(p, len, &r, &size);
-    _hx509_unmap_file(p, len);
+    rk_xfree(p);
     if (ret) {
 	hx509_set_error_string(context, 0, ret, "Failed to decode %s", path);
 	return ret;
