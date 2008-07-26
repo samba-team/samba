@@ -353,7 +353,7 @@ store_ntlmkey(krb5_context context, krb5_ccache id,
     data.length = buf->length;
     data.data = buf->data;
 
-    ret = krb5_cc_set_config(context, id, name, &data);
+    ret = krb5_cc_set_config(context, id, NULL, name, &data);
     free(name);
     return ret;
 }
@@ -603,7 +603,7 @@ get_new_tickets(krb5_context context,
 	data.length = 1;
 	data.data = "\x01";
 
-	krb5_cc_set_config(context, ccache, "realm-config", &data);
+	krb5_cc_set_config(context, ccache, NULL, "realm-config", &data);
     }
 
 
