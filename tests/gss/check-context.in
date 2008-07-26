@@ -93,8 +93,6 @@ ${kadmin} get host/no-aes.test.h5l.se@${R} > tempfile || exit 1
 ${kadmin} del_enctype host/no-aes.test.h5l.se@${R} \
     aes256-cts-hmac-sha1-96 aes128-cts-hmac-sha1-96 || exit 1
 ${kadmin} ext -k ${keytab} host/no-aes.test.h5l.se@${R} || exit 1
-echo "E: ${enctype_sans_aes}"
-
 
 echo "Doing database check"
 ${kadmin} check ${R} || exit 1
