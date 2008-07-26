@@ -49,7 +49,7 @@ keytab="FILE:${keytabfile}"
 cache="FILE:krb5ccfile"
 cacheds="FILE:krb5ccfile-ds"
 
-kinit="${TESTS_ENVIRONMENT} ../../kuser/kinit -c $cache --no-afslog"
+kinit="${TESTS_ENVIRONMENT} ../../kuser/kinit -c $cache --no-afslog --forwardable"
 kinitds="${TESTS_ENVIRONMENT} ../../kuser/kinit -c $cacheds --no-afslog"
 kadmin="${TESTS_ENVIRONMENT} ../../kadmin/kadmin -l -r $R"
 kdc="${TESTS_ENVIRONMENT} ../../kdc/kdc --addresses=localhost -P $port"
@@ -181,6 +181,7 @@ for arg in \
     KRB5_KTNAME="${keytab}-no"
     ${context} --mech-type=spnego \
         $arg \
+	--server-no-delegate \
         --name-type=hostbased-service \
         --ret-mech-type=ntlm \
         host@host.test.h5l.se || \
@@ -191,6 +192,7 @@ for arg in \
     KRB5CCNAME="${cache}-no"
     ${context} --mech-type=spnego \
         $arg \
+	--server-no-delegate \
         --name-type=hostbased-service \
         --ret-mech-type=ntlm \
         host@host.test.h5l.se || \
