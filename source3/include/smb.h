@@ -494,8 +494,8 @@ typedef struct files_struct {
 #include "sysquotas.h"
 
 struct vuid_cache_entry {
-	uint16 vuid;
 	struct auth_serversupplied_info *server_info;
+	uint16_t vuid;
 	bool read_only;
 	bool admin_user;
 };
