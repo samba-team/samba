@@ -403,6 +403,9 @@ rk_dumpdata (const char *, const void *, size_t);
 int ROKEN_LIB_FUNCTION
 rk_undumpdata (const char *, void **, size_t *);
 
+void ROKEN_LIB_FUNCTION
+rk_xfree (void *buf);
+
 ROKEN_CPP_END
 
 #endif /* __ROKEN_COMMON_H__ */
