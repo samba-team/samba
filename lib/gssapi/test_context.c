@@ -52,6 +52,7 @@ static char *gsskrb5_acceptor_identity = NULL;
 static char *session_enctype_string = NULL;
 static int client_time_offset = 0;
 static int server_time_offset = 0;
+static int max_loops = 0;
 static int version_flag = 0;
 static int verbose_flag = 0;
 static int help_flag	= 0;
@@ -95,6 +96,7 @@ loop(gss_OID mechoid,
      gss_cred_id_t *deleg_cred)
 {
     int server_done = 0, client_done = 0;
+    int num_loops = 0;
     OM_uint32 maj_stat, min_stat;
     gss_name_t gss_target_name;
     gss_buffer_desc input_token, output_token;
@@ -128,6 +130,7 @@ loop(gss_OID mechoid,
     input_token.value = NULL;
 
     while (!server_done || !client_done) {
+	num_loops++;
 
 	gsskrb5_set_time_offset(client_time_offset);
 
@@ -206,9 +209,14 @@ loop(gss_OID mechoid,
 	errx(1, "mech mismatch");
     *actual_mech = actual_mech_server;
 
+    if (max_loops && num_loops > max_loops)
+	errx(1, "num loops %d was lager then max loops %d",
+	     num_loops, max_loops);
+
     if (verbose_flag) {
 	printf("server time offset: %d\n", server_time_offset);
 	printf("client time offset: %d\n", client_time_offset);
+	printf("num loops %d\n", num_loops);
     }
 }
 
@@ -284,6 +292,7 @@ static struct getargs args[] = {
     {"session-enctype",	0, arg_string,	&session_enctype_string, "enctype", NULL },
     {"client-time-offset",	0, arg_integer,	&client_time_offset, "time", NULL },
     {"server-time-offset",	0, arg_integer,	&server_time_offset, "time", NULL },
+    {"max-loops",	0, arg_integer,	&max_loops, "time", NULL },
     {"version",	0,	arg_flag,	&version_flag, "print version", NULL },
     {"verbose",	'v',	arg_flag,	&verbose_flag, "verbose", NULL },
     {"help",	0,	arg_flag,	&help_flag,  NULL, NULL }
