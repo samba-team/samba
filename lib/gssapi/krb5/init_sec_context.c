@@ -889,6 +889,8 @@ OM_uint32 _gsskrb5_init_sec_context
 			output_token,
 			ret_flags,
 			time_rec);
+	if (ret != GSS_S_COMPLETE)
+	    break;	    
 	/* FALL THOUGH */
     case INITIATOR_RESTART:
 	ret = init_auth_restart(minor_status,
