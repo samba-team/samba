@@ -301,11 +301,8 @@ send_error_token(OM_uint32 *minor_status,
     if (ret)
 	return ret;
 
-    if (kret == KRB5KRB_AP_ERR_SKEW)
-	return GSS_S_CONTINUE_NEEDED;
-
     *minor_status = kret;
-    return GSS_S_FAILURE;
+    return GSS_S_CONTINUE_NEEDED;
 }
 
 
