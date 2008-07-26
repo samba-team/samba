@@ -51,6 +51,7 @@ cache="FILE:krb5ccfile"
 
 kinit="${TESTS_ENVIRONMENT} ../../kuser/kinit -c $cache --no-afslog"
 klist="${TESTS_ENVIRONMENT} ../../kuser/klist -c $cache"
+kgetcred="${TESTS_ENVIRONMENT} ../../kuser/kgetcred -c $cache"
 kadmin="${TESTS_ENVIRONMENT} ../../kadmin/kadmin -l -r $R"
 kdc="${TESTS_ENVIRONMENT} ../../kdc/kdc --addresses=localhost -P $port"
 
@@ -276,8 +277,10 @@ ${context} \
     --name-type=hostbased-service host@lucid.test.h5l.se || \
 	{ exitcode=1 ; echo "test failed"; }
 
+echo "Getting client initial ticket"
+${kinit} --password-file=${objdir}/foopassword user1@${R} || exitcode=1
+
 echo "Server time offset"
-../../libtool --mode=execute gdb --arg \
 ${context} \
     --verbose \
     --mech-type=krb5 \
@@ -286,8 +289,20 @@ ${context} \
     --name-type=hostbased-service host@lucid.test.h5l.se || \
 	{ exitcode=1 ; echo "test failed"; }
 
-${klist} --hidden
+echo "Getting client initial ticket"
+${kinit} --password-file=${objdir}/foopassword user1@${R} || exitcode=1
+# Pre-poplute the cache since tgs-req will fail since our time is wrong
+${kgetcred} host/lucid.test.h5l.se@${R} || exitcode=1
 
+echo "Client time offset"
+../../libtool --mode=execute gdb --arg \
+${context} \
+    --verbose \
+    --mech-type=krb5 \
+    --mutual-auth \
+    --client-time-offset=3600 \
+    --name-type=hostbased-service host@lucid.test.h5l.se || \
+	{ exitcode=1 ; echo "test failed"; }
 
 echo "killing kdc (${kdcpid})"
 kill ${kdcpid} 2> /dev/null
