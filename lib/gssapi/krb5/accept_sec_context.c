@@ -383,12 +383,10 @@ gsskrb5_acceptor_start(OM_uint32 * minor_status,
 			       in, &out);
 	krb5_rd_req_in_ctx_free(context, in);
 	if (kret) {
-	    /* No reply in not-MUTUAL mode */
-	    if (0 && !(ctx->flags & GSS_C_MUTUAL_FLAG)) {
-		ret = GSS_S_FAILURE;
-		*minor_status = kret;
-		return ret;
-	    }
+	    /* 
+	     * No reply in non-MUTUAL mode, but we don't know that its
+	     * non-MUTUAL mode yet, thats inside the 8003 checksum.
+	     */
 	    return send_error_token(minor_status, context, kret,
 				    server, &indata, output_token);
 	}
