@@ -389,11 +389,6 @@ krb5_verify_ap_req2(krb5_context context,
 					     t->ticket.crealm);
     if (ret) goto out;
 
-    /* save key */
-
-    ret = krb5_copy_keyblock(context, &t->ticket.key, &ac->keyblock);
-    if (ret) goto out;
-
     ret = decrypt_authenticator (context,
 				 &t->ticket.key,
 				 &ap_req->authenticator,
@@ -478,6 +473,10 @@ krb5_verify_ap_req2(krb5_context context,
 	    }
 	}
     }
+
+    /* save key */
+    ret = krb5_copy_keyblock(context, &t->ticket.key, &ac->keyblock);
+    if (ret) goto out;
 
     if (ap_req_options) {
 	*ap_req_options = 0;
