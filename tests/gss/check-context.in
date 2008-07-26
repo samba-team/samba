@@ -228,6 +228,8 @@ rm ${keytabfile}.new
 #	{ exitcode=1 ; echo "test failed"; }
 
 
+echo "====== gss-api session key check"
+
 # this will break when oneone invents a cooler enctype then aes256-cts-hmac-sha1-96
 coolenctype="aes256-cts-hmac-sha1-96"
 
@@ -235,7 +237,7 @@ echo "Getting client initial tickets"
 ${kinit} --password-file=${objdir}/foopassword user1@${R} || \
     { echo "kinit failed"; exitcode=1; }
 
-echo "Building context on cred w/o aes, but still aes session key"
+echo "Building context on cred w/o aes, but still ${coolenctype} session key"
 ${context} \
     --mech-type=krb5 \
     --mutual-auth \
@@ -243,7 +245,7 @@ ${context} \
     --name-type=hostbased-service host@no-aes.test.h5l.se || \
 	{ exitcode=1 ; echo "test failed"; }
 
-trap "" EXIT
+echo "====== ok-as-delegate"
 
 echo "Getting client initial tickets"
 ${kinit} --forwardable \
@@ -268,6 +270,8 @@ ${context} \
     --name-type=hostbased-service host@lucid.test.h5l.se || \
 	{ exitcode=1 ; echo "test failed"; }
 
+echo "======time diffs between client and server"
+
 echo "Getting client initial ticket"
 ${kinit} --password-file=${objdir}/foopassword user1@${R} || exitcode=1
 
@@ -282,10 +286,19 @@ ${kinit} --password-file=${objdir}/foopassword user1@${R} || exitcode=1
 
 echo "Server time offset"
 ${context} \
-    --verbose \
     --mech-type=krb5 \
     --mutual-auth \
     --server-time-offset=3600 \
+    --max-loops=3 \
+    --name-type=hostbased-service host@lucid.test.h5l.se || \
+	{ exitcode=1 ; echo "test failed"; }
+
+echo "Server time offset (cached ?)"
+${context} \
+    --mech-type=krb5 \
+    --mutual-auth \
+    --server-time-offset=3600 \
+    --max-loops=2 \
     --name-type=hostbased-service host@lucid.test.h5l.se || \
 	{ exitcode=1 ; echo "test failed"; }
 
@@ -296,12 +309,13 @@ ${kgetcred} host/lucid.test.h5l.se@${R} || exitcode=1
 
 echo "Client time offset"
 ${context} \
-    --verbose \
     --mech-type=krb5 \
     --mutual-auth \
     --client-time-offset=3600 \
     --name-type=hostbased-service host@lucid.test.h5l.se || \
 	{ exitcode=1 ; echo "test failed"; }
+
+trap "" EXIT
 
 echo "killing kdc (${kdcpid})"
 kill ${kdcpid} 2> /dev/null
