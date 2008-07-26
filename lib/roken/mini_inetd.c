@@ -83,10 +83,8 @@ mini_inetd_addrinfo (struct addrinfo *ai)
 
     for (i = 0, a = ai; a != NULL; a = a->ai_next) {
 	fds[i] = socket (a->ai_family, a->ai_socktype, a->ai_protocol);
-	if (fds[i] < 0) {
-	    warn ("socket af = %d", a->ai_family);
+	if (fds[i] < 0)
 	    continue;
-	}
 	socket_set_reuseaddr (fds[i], 1);
 	if (bind (fds[i], a->ai_addr, a->ai_addrlen) < 0) {
 	    warn ("bind af = %d", a->ai_family);
