@@ -1,5 +1,7 @@
 2008-07-25  Love Hörnquist Åstrand  <lha@h5l.org>
-	
+
+	* kuser/kinit.c: add --ok-as-delegate and --windows flags
+
 	* kpasswd/kpasswd-generator.c: Switch to krb5_set_password.
 
 	* kuser/kinit.c: Use krb5_cc_set_config.
