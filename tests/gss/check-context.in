@@ -295,7 +295,6 @@ ${kinit} --password-file=${objdir}/foopassword user1@${R} || exitcode=1
 ${kgetcred} host/lucid.test.h5l.se@${R} || exitcode=1
 
 echo "Client time offset"
-../../libtool --mode=execute gdb --arg \
 ${context} \
     --verbose \
     --mech-type=krb5 \
