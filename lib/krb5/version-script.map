@@ -550,6 +550,7 @@ HEIMDAL_KRB5_1.0 {
 		krb5_set_extra_addresses;
 		krb5_set_fcache_version;
 		krb5_set_ignore_addresses;
+		krb5_set_kdc_sec_offset;
 		krb5_set_max_time_skew;
 		krb5_set_password;
 		krb5_set_password_using_ccache;
