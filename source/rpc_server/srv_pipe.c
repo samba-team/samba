@@ -2284,6 +2284,9 @@ void free_pipe_rpc_context( PIPE_RPC_FNS *list )
 	return;	
 }
 
+static bool api_rpcTNP(pipes_struct *p, const char *rpc_name, 
+		       const struct api_struct *api_rpc_cmds, int n_cmds);
+
 /****************************************************************************
  Find the correct RPC function to call for this request.
  If the pipe is authenticated then become the correct UNIX user
@@ -2333,8 +2336,8 @@ bool api_pipe_request(pipes_struct *p)
  Calls the underlying RPC function for a named pipe.
  ********************************************************************/
 
-bool api_rpcTNP(pipes_struct *p, const char *rpc_name, 
-		const struct api_struct *api_rpc_cmds, int n_cmds)
+static bool api_rpcTNP(pipes_struct *p, const char *rpc_name, 
+		       const struct api_struct *api_rpc_cmds, int n_cmds)
 {
 	int fn_num;
 	fstring name;
