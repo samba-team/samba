@@ -461,7 +461,7 @@ init_auth
 	ret = krb5_cc_get_config(context, ccache, "realm-config", &data);
 	if (ret == 0) {
 	    /* XXX 1 is use ok-as-delegate */
-	    if (data.length > 1 && (((unsigned char *)data.data)[0]) & 1)
+	    if (data.length > 0 && (((unsigned char *)data.data)[0]) & 1)
 		realm_setting = TRUE;
 	    krb5_data_free(&data);
 	}
