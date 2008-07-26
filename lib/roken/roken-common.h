@@ -400,6 +400,9 @@ rk_strpoolfree(struct rk_strpool *);
 void ROKEN_LIB_FUNCTION
 rk_dumpdata (const char *, const void *, size_t);
 
+int ROKEN_LIB_FUNCTION
+rk_undumpdata (const char *, void **, size_t *);
+
 ROKEN_CPP_END
 
 #endif /* __ROKEN_COMMON_H__ */
