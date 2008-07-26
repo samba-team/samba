@@ -329,36 +329,25 @@ out:
 }
 
 static krb5_error_code
-store_ntlmkey(krb5_context context, krb5_ccache id, 
-	      const char *domain, krb5_const_principal client,
-	      struct ntlm_buf *buf)
+store_ntlmkey(krb5_context context, krb5_ccache id,
+	      const char *domain, struct ntlm_buf *buf)
 {
     krb5_error_code ret;
-    krb5_creds cred;
+    krb5_data data;
+    char *name;
+
+    asprintf(&name, "ntlm-key-%s", domain);
+    if (name == NULL) {
+	krb5_clear_error_string(context);
+	return ENOMEM;
+    }
     
-    memset(&cred, 0, sizeof(cred));
+    data.data = buf->data;
+    data.data = buf->data;
 
-    ret = krb5_make_principal(context, &cred.server,
-			      krb5_principal_get_realm(context, client),
-			      "@ntlm-key", domain, NULL);
-    if (ret)
-	goto out;
-    ret = krb5_copy_principal(context, client, &cred.client);
-    if (ret)
-	goto out;
-    
-    cred.times.authtime = time(NULL);
-    cred.times.endtime = time(NULL) + 3600 * 24 * 30; /* XXX */
-    cred.session.keytype = ENCTYPE_ARCFOUR_HMAC_MD5;
-    ret = krb5_data_copy(&cred.session.keyvalue, buf->data, buf->length);
-    if (ret)
-	goto out;
-
-    ret = krb5_cc_store_cred(context, id, &cred);
-
-out:
-    krb5_free_cred_contents (context, &cred);
-    return 0;
+    ret = krb5_cc_set_config(context, id, name, &data);
+    free(name);
+    return ret;
 }
 
 static krb5_error_code
@@ -598,7 +587,7 @@ get_new_tickets(krb5_context context,
 	krb5_err (context, 1, ret, "krb5_cc_move");
 
     if (ntlm_domain && ntlmkey.data)
-	store_ntlmkey(context, ccache, ntlm_domain, principal, &ntlmkey);
+	store_ntlmkey(context, ccache, ntlm_domain, &ntlmkey);
 
     if (enctype)
 	free(enctype);
