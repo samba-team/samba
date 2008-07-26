@@ -1,17 +1,19 @@
-2008-07-25  Love Hornquist Astrand  <lha@10a96laptop.local>
+2008-07-25  Love Hörnquist Åstrand  <lha@h5l.org>
+
+	* kuser/kinit.c: Use krb5_cc_set_config.
 
 	* lib/krb5/cache.c: Add krb5_cc_[gs]et_config.
 
-2008-07-22  Love Hornquist Astrand  <lha@10a96laptop.local>
+2008-07-22  Love Hörnquist Åstrand  <lha@h5l.org>
 
 	* lib/krb5/crypto.c: Allow numbers to be enctypes to as long as
 	they are valid.
 
-2008-07-17  Love Hornquist Astrand  <lha@kth.se>
+2008-07-17  Love Hörnquist Åstrand  <lha@h5l.org>
 
 	* lib/hdb/version-script.map: some random bits needed for libkadm
 
-2008-07-15  Love Hornquist Astrand  <lha@kth.se>
+2008-07-15  Love Hörnquist Åstrand  <lha@h5l.org>
 
 	* lib/krb5/send_to_kdc_plugin.h: add name for send_to_kdc plugin.
 	
