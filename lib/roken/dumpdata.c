@@ -90,7 +90,8 @@ rk_undumpdata(const char *filename, void **buf, size_t *size)
 	ret = EINVAL;
 	free(*buf);
 	*buf = NULL;
-    }
+    } else
+	ret = 0;
 
  out:
     close(fd);
