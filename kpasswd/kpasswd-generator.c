@@ -140,10 +140,14 @@ generate_requests (const char *filename, unsigned nreq)
 
 	krb5_free_principal (context, principal);
 
-	ret = krb5_change_password (context, &cred, new_pwd,
-				    &result_code,
-				    &result_code_string,
-				    &result_string);
+
+	ret = krb5_set_password (context,
+				 &cred,
+				 new_pwd,
+				 NULL,
+				 &result_code,
+				 &result_code_string,
+				 &result_string);
 	if (ret)
 	    krb5_err (context, 1, ret, "krb5_change_password");
 
