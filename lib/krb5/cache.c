@@ -1216,7 +1216,7 @@ krb5_cc_get_config(krb5_context context, krb5_ccache id,
     if (ret)
 	goto out;
 
-    ret = krb5_data_copy(data, mcred.ticket.data, mcred.ticket.length);
+    ret = krb5_data_copy(data, cred.ticket.data, cred.ticket.length);
 
 out:
     krb5_free_cred_contents (context, &cred);
