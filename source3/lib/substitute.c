@@ -21,8 +21,6 @@
 
 #include "includes.h"
 
-extern struct current_user current_user;
-
 userdom_struct current_user_info;
 fstring remote_proto="UNKNOWN";
 
