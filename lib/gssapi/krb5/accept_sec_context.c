@@ -301,7 +301,7 @@ send_error_token(OM_uint32 *minor_status,
     if (ret)
 	return ret;
 
-    *minor_status = kret;
+    *minor_status = 0;
     return GSS_S_CONTINUE_NEEDED;
 }
 
