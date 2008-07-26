@@ -101,6 +101,7 @@ libroken_la_SOURCES =		\
 	vis.h			\
 	warnerr.c		\
 	write_pid.c		\
+	xfree.c			\
 	xdbm.h
 
 EXTRA_libroken_la_SOURCES =	\
