@@ -47,6 +47,7 @@ static int dce_style_flag = 0;
 static int wrapunwrap_flag = 0;
 static int getverifymic_flag = 0;
 static int deleg_flag = 0;
+static int server_no_deleg_flag = 0;
 static char *gsskrb5_acceptor_identity = NULL;
 static char *session_enctype_string = NULL;
 static int version_flag = 0;
@@ -185,6 +186,15 @@ loop(gss_OID mechoid,
 	gss_release_buffer(&min_stat, &input_token);
     gss_release_name(&min_stat, &gss_target_name);
 
+    if (deleg_flag) {
+	if (server_no_deleg_flag) {
+	    if (*deleg_cred != GSS_C_NO_CREDENTIAL)
+		errx(1, "got delegated cred but didn't expect one");
+	} else if (*deleg_cred == GSS_C_NO_CREDENTIAL)
+	    errx(1, "asked for delegarated cred but did get one");
+    } else if (*deleg_cred != GSS_C_NO_CREDENTIAL)
+	  errx(1, "got deleg_cred cred but didn't ask");
+
     if (gss_oid_equal(actual_mech_server, actual_mech_client) == 0)
 	errx(1, "mech mismatch");
     *actual_mech = actual_mech_server;
@@ -256,6 +266,8 @@ static struct getargs args[] = {
     {"getverifymic",0,	arg_flag,	&getverifymic_flag, 
      "get and verify mic", NULL },
     {"delegate",0,	arg_flag,	&deleg_flag, "delegate credential", NULL },
+    {"server-no-delegate",0,	arg_flag,	&server_no_deleg_flag,
+     "server should get a credential", NULL },
     {"gsskrb5-acceptor-identity", 0, arg_string, &gsskrb5_acceptor_identity, "keytab", NULL },
     {"session-enctype",	0, arg_string,	&session_enctype_string, "enctype", NULL },
     {"version",	0,	arg_flag,	&version_flag, "print version", NULL },
@@ -552,8 +564,11 @@ main(int argc, char **argv)
     gss_delete_sec_context(&min_stat, &sctx, NULL);
 
     if (deleg_cred != GSS_C_NO_CREDENTIAL) {
+	gss_cred_id_t deleg_cred2 = GSS_C_NO_CREDENTIAL;
 
-	loop(mechoid, nameoid, argv[0], deleg_cred, &cctx, &sctx, &actual_mech, NULL);
+	loop(mechoid, nameoid, argv[0], deleg_cred, &cctx, &sctx, &actual_mech, &deleg_cred2);
+
+	gss_release_cred(&min_stat, &deleg_cred2);
 
 	gss_delete_sec_context(&min_stat, &cctx, NULL);
 	gss_delete_sec_context(&min_stat, &sctx, NULL);
