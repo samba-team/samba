@@ -84,7 +84,9 @@ read_string(const char *preprompt, const char *prompt,
 	    if (sigaction(i, &sa, &sigs[i]) == 0)
 		oksigs[i] = 1;
 
-    if((tty = fopen("/dev/tty", "r")) == NULL)
+    if((tty = fopen("/dev/tty", "r")) != NULL)
+	rk_cloexec_file(tty);
+    else
 	tty = stdin;
        
     fprintf(stderr, "%s%s", preprompt, prompt);
