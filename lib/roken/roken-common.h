@@ -404,7 +404,14 @@ int ROKEN_LIB_FUNCTION
 rk_undumpdata (const char *, void **, size_t *);
 
 void ROKEN_LIB_FUNCTION
-rk_xfree (void *buf);
+rk_xfree (void *);
+
+void ROKEN_LIB_FUNCTION
+rk_cloexec(int);
+
+void ROKEN_LIB_FUNCTION
+rk_cloexec_file(FILE *);
+
 
 ROKEN_CPP_END
 
