@@ -90,4 +90,10 @@ struct dsdb_pdc_fsmo {
 	struct ldb_dn *master_dn;
 };
 
+/*
+ * the schema_dn is passed as struct ldb_dn in
+ * req->op.extended.data
+ */
+#define DSDB_EXTENDED_SCHEMA_UPDATE_NOW_OID "1.3.6.1.4.1.7165.4.4.2"
+
 #endif /* __SAMDB_H__ */

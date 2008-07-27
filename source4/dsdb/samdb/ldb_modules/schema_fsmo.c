@@ -148,8 +148,70 @@ static int schema_fsmo_add(struct ldb_module *module, struct ldb_request *req)
 	return ldb_next_request(module, req);
 }
 
+static int schema_fsmo_extended(struct ldb_module *module, struct ldb_request *req)
+{
+	WERROR status;
+	struct ldb_dn *schema_dn;
+	struct dsdb_schema *schema;
+	char *error_string = NULL;
+	int ret;
+	TALLOC_CTX *mem_ctx;
+	
+	if (strcmp(req->op.extended.oid, DSDB_EXTENDED_SCHEMA_UPDATE_NOW_OID) != 0) {
+		return ldb_next_request(module, req);
+	}
+	
+	schema_dn = samdb_schema_dn(module->ldb);
+	if (!schema_dn) {
+		ldb_reset_err_string(module->ldb);
+		ldb_debug(module->ldb, LDB_DEBUG_WARNING,
+			  "schema_fsmo_extended: no schema dn present: (skip schema loading)\n");
+		return ldb_next_request(module, req);
+	}
+	
+	mem_ctx = talloc_new(module);
+	if (!mem_ctx) {
+		ldb_oom(module->ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	
+	ret = dsdb_schema_from_schema_dn(mem_ctx, module->ldb,
+					 lp_iconv_convenience(ldb_get_opaque(module->ldb, "loadparm")),
+					 schema_dn, &schema, &error_string);
+
+	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+		ldb_reset_err_string(module->ldb);
+		ldb_debug(module->ldb, LDB_DEBUG_WARNING,
+			  "schema_fsmo_extended: no schema head present: (skip schema loading)\n");
+		talloc_free(mem_ctx);
+		return ldb_next_request(module, req);
+	}
+
+	if (ret != LDB_SUCCESS) {
+		ldb_asprintf_errstring(module->ldb, 
+				       "schema_fsmo_extended: dsdb_schema load failed: %s",
+				       error_string);
+		talloc_free(mem_ctx);
+		return ldb_next_request(module, req);
+	}
+
+	/* Replace the old schema*/
+	ret = dsdb_set_schema(module->ldb, schema);
+	if (ret != LDB_SUCCESS) {
+		ldb_debug_set(module->ldb, LDB_DEBUG_FATAL,
+			      "schema_fsmo_extended: dsdb_set_schema() failed: %d:%s",
+			      ret, ldb_strerror(ret));
+		talloc_free(mem_ctx);
+		return ret;
+	}
+
+	talloc_free(mem_ctx);
+	return LDB_SUCCESS;
+}
+
 _PUBLIC_ const struct ldb_module_ops ldb_schema_fsmo_module_ops = {
 	.name		= "schema_fsmo",
 	.init_context	= schema_fsmo_init,
-	.add		= schema_fsmo_add
+	.add		= schema_fsmo_add,
+	.extended	= schema_fsmo_extended
 };

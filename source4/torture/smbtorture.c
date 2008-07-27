@@ -540,8 +540,9 @@ int main(int argc,char *argv[])
 	const char *basedir = NULL;
 	const char *extra_module = NULL;
 	static int list_tests = 0;
+	int num_extra_users = 0;
 	enum {OPT_LOADFILE=1000,OPT_UNCLIST,OPT_TIMELIMIT,OPT_DNS, OPT_LIST,
-	      OPT_DANGEROUS,OPT_SMB_PORTS,OPT_ASYNC,OPT_NUMPROGS};
+	      OPT_DANGEROUS,OPT_SMB_PORTS,OPT_ASYNC,OPT_NUMPROGS,OPT_EXTRA_USER};
 	
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -569,6 +570,8 @@ int main(int argc,char *argv[])
 		 "number of simultaneous async requests", NULL},
 		{"maximum-runtime", 0, POPT_ARG_INT, &max_runtime, 0, 
 		 "set maximum time for smbtorture to live", "seconds"},
+		{"extra-user",   0, POPT_ARG_STRING, NULL, OPT_EXTRA_USER,
+		 "extra user credentials", NULL},
 		POPT_COMMON_SAMBA
 		POPT_COMMON_CONNECTION
 		POPT_COMMON_CREDENTIALS
@@ -611,6 +614,15 @@ int main(int argc,char *argv[])
 			break;
 		case OPT_SMB_PORTS:
 			lp_set_cmdline(cmdline_lp_ctx, "smb ports", poptGetOptArg(pc));
+			break;
+		case OPT_EXTRA_USER:
+			{
+				char *option = talloc_asprintf(NULL, "torture:extra_user%u",
+							       ++num_extra_users);
+				char *value = poptGetOptArg(pc);
+				lp_set_cmdline(cmdline_lp_ctx, option, value);
+				talloc_free(option);
+			}
 			break;
 		}
 	}

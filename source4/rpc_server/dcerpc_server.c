@@ -36,6 +36,8 @@
 #include "libcli/security/security.h"
 #include "param/param.h"
 
+#define SAMBA_ACCOC_GROUP 0x12345678
+
 extern const struct dcesrv_interface dcesrv_mgmt_interface;
 
 /*
@@ -270,11 +272,20 @@ NTSTATUS dcesrv_generic_session_key(struct dcesrv_connection *p,
 
 /*
   fetch the user session key - may be default (above) or the SMB session key
+
+  The key is always truncated to 16 bytes 
 */
 _PUBLIC_ NTSTATUS dcesrv_fetch_session_key(struct dcesrv_connection *p,
 				  DATA_BLOB *session_key)
 {
-	return p->auth_state.session_key(p, session_key);
+	NTSTATUS status = p->auth_state.session_key(p, session_key);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	session_key->length = MIN(session_key->length, 16);
+
+	return NT_STATUS_OK;
 }
 
 
@@ -534,7 +545,18 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	uint32_t context_id;
 	const struct dcesrv_interface *iface;
 
-	if (call->pkt.u.bind.assoc_group_id != 0) {
+	/*
+	 * Association groups allow policy handles to be shared across
+	 * multiple client connections.  We don't implement this yet.
+	 *
+	 * So we just allow 0 if the client wants to create a new
+	 * association group.
+	 *
+	 * And we allow the 0x12345678 value, we give away as
+	 * assoc_group_id back to the clients
+	 */
+	if (call->pkt.u.bind.assoc_group_id != 0 &&
+	    call->pkt.u.bind.assoc_group_id != SAMBA_ACCOC_GROUP) {
 		return dcesrv_bind_nak(call, 0);	
 	}
 
@@ -609,7 +631,7 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	pkt.u.bind_ack.max_xmit_frag = 0x2000;
 	pkt.u.bind_ack.max_recv_frag = 0x2000;
 	/* we need to send a non zero assoc_group_id here to make longhorn happy, it also matches samba3 */
-	pkt.u.bind_ack.assoc_group_id = 0x12345678;
+	pkt.u.bind_ack.assoc_group_id = SAMBA_ACCOC_GROUP;
 	if (iface) {
 		/* FIXME: Use pipe name as specified by endpoint instead of interface name */
 		pkt.u.bind_ack.secondary_address = talloc_asprintf(call, "\\PIPE\\%s", iface->name);

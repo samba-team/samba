@@ -142,8 +142,17 @@ static void dreplsrv_out_drsuapi_bind_recv(struct rpc_request *req)
 			info24 = &st->bind_r.out.bind_info->info.info24;
 			st->drsuapi->remote_info28.supported_extensions	= info24->supported_extensions;
 			st->drsuapi->remote_info28.site_guid		= info24->site_guid;
-			st->drsuapi->remote_info28.u1			= info24->u1;
+			st->drsuapi->remote_info28.pid			= info24->pid;
 			st->drsuapi->remote_info28.repl_epoch		= 0;
+			break;
+		}
+		case 48: {
+			struct drsuapi_DsBindInfo48 *info48;
+			info48 = &st->bind_r.out.bind_info->info.info48;
+			st->drsuapi->remote_info28.supported_extensions	= info48->supported_extensions;
+			st->drsuapi->remote_info28.site_guid		= info48->site_guid;
+			st->drsuapi->remote_info28.pid			= info48->pid;
+			st->drsuapi->remote_info28.repl_epoch		= info48->repl_epoch;
 			break;
 		}
 		case 28:

@@ -360,6 +360,7 @@ _PUBLIC_ int cli_credentials_get_client_gss_creds(struct cli_credentials *cred,
 	struct gssapi_creds_container *gcc;
 	struct ccache_container *ccache;
 	gss_buffer_desc empty_buffer = GSS_C_EMPTY_BUFFER;
+	krb5_enctype *etypes = NULL;
 
 	if (cred->client_gss_creds_obtained >= cred->client_gss_creds_threshold && 
 	    cred->client_gss_creds_obtained > CRED_UNINITIALISED) {
@@ -389,6 +390,28 @@ _PUBLIC_ int cli_credentials_get_client_gss_creds(struct cli_credentials *cred,
 			ret = EINVAL;
 		}
 		return ret;
+	}
+
+	/* transfer the enctypes from the smb_krb5_context to the gssapi layer */
+	min_stat = krb5_get_default_in_tkt_etypes(ccache->smb_krb5_context->krb5_context,
+						  &etypes);
+	if (min_stat == 0) {
+		OM_uint32 num_ktypes;
+
+		for (num_ktypes = 0; etypes[num_ktypes]; num_ktypes++);
+
+		maj_stat = gss_krb5_set_allowable_enctypes(&min_stat, gcc->creds,
+							   num_ktypes, etypes);
+		krb5_xfree (etypes);
+		if (maj_stat) {
+			talloc_free(gcc);
+			if (min_stat) {
+				ret = min_stat;
+			} else {
+				ret = EINVAL;
+			}
+			return ret;
+		}
 	}
 
 	/* don't force GSS_C_CONF_FLAG and GSS_C_INTEG_FLAG */
