@@ -1034,35 +1034,22 @@ static NTSTATUS gensec_gssapi_sign_packet(struct gensec_security *gensec_securit
 		= talloc_get_type(gensec_security->private_data, struct gensec_gssapi_state);
 	OM_uint32 maj_stat, min_stat;
 	gss_buffer_desc input_token, output_token;
-	int conf_state;
-	ssize_t sig_length = 0;
 
 	input_token.length = length;
 	input_token.value = discard_const_p(uint8_t *, data);
 
-	maj_stat = gss_wrap(&min_stat, 
+	maj_stat = gss_get_mic(&min_stat,
 			    gensec_gssapi_state->gssapi_context,
-			    0,
 			    GSS_C_QOP_DEFAULT,
 			    &input_token,
-			    &conf_state,
 			    &output_token);
 	if (GSS_ERROR(maj_stat)) {
-		DEBUG(1, ("GSS Wrap failed: %s\n", 
+		DEBUG(1, ("GSS GetMic failed: %s\n",
 			  gssapi_error_string(mem_ctx, maj_stat, min_stat, gensec_gssapi_state->gss_oid)));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	if (output_token.length < input_token.length) {
-		DEBUG(1, ("gensec_gssapi_sign_packet: GSS Wrap length [%ld] *less* than caller length [%ld]\n", 
-			  (long)output_token.length, (long)length));
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-
-	/* Caller must pad to right boundary */
-	sig_length = output_token.length - input_token.length;
-
-	*sig = data_blob_talloc(mem_ctx, (uint8_t *)output_token.value, sig_length);
+	*sig = data_blob_talloc(mem_ctx, (uint8_t *)output_token.value, output_token.length);
 
 	dump_data_pw("gensec_gssapi_seal_packet: sig\n", sig->data, sig->length);
 
@@ -1080,38 +1067,28 @@ static NTSTATUS gensec_gssapi_check_packet(struct gensec_security *gensec_securi
 	struct gensec_gssapi_state *gensec_gssapi_state
 		= talloc_get_type(gensec_security->private_data, struct gensec_gssapi_state);
 	OM_uint32 maj_stat, min_stat;
-	gss_buffer_desc input_token, output_token;
-	int conf_state;
+	gss_buffer_desc input_token;
+	gss_buffer_desc input_message;
 	gss_qop_t qop_state;
-	DATA_BLOB in;
 
 	dump_data_pw("gensec_gssapi_seal_packet: sig\n", sig->data, sig->length);
 
-	in = data_blob_talloc(mem_ctx, NULL, sig->length + length);
+	input_message.length = length;
+	input_message.value = data;
 
-	memcpy(in.data, sig->data, sig->length);
-	memcpy(in.data + sig->length, data, length);
+	input_token.length = sig->length;
+	input_token.value = sig->data;
 
-	input_token.length = in.length;
-	input_token.value = in.data;
-	
-	maj_stat = gss_unwrap(&min_stat, 
+	maj_stat = gss_verify_mic(&min_stat,
 			      gensec_gssapi_state->gssapi_context, 
+			      &input_message,
 			      &input_token,
-			      &output_token, 
-			      &conf_state,
 			      &qop_state);
 	if (GSS_ERROR(maj_stat)) {
-		DEBUG(1, ("GSS UnWrap failed: %s\n", 
+		DEBUG(1, ("GSS VerifyMic failed: %s\n",
 			  gssapi_error_string(mem_ctx, maj_stat, min_stat, gensec_gssapi_state->gss_oid)));
 		return NT_STATUS_ACCESS_DENIED;
 	}
-
-	if (output_token.length != length) {
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-
-	gss_release_buffer(&min_stat, &output_token);
 
 	return NT_STATUS_OK;
 }

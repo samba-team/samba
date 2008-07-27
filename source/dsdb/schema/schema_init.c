@@ -268,49 +268,9 @@ WERROR dsdb_verify_oid_mappings_drsuapi(const struct dsdb_schema *schema, const 
 
 WERROR dsdb_map_oid2int(const struct dsdb_schema *schema, const char *in, uint32_t *out)
 {
-	uint32_t i;
-
-	for (i=0; i < schema->num_prefixes; i++) {
-		const char *val_str;
-		char *end_str;
-		unsigned val;
-
-		if (strncmp(schema->prefixes[i].oid, in, schema->prefixes[i].oid_len) != 0) {
-			continue;
-		}
-
-		val_str = in + schema->prefixes[i].oid_len;
-		end_str = NULL;
-		errno = 0;
-
-		if (val_str[0] == '\0') {
-			return WERR_INVALID_PARAM;
-		}
-
-		/* two '.' chars are invalid */
-		if (val_str[0] == '.') {
-			return WERR_INVALID_PARAM;
-		}
-
-		val = strtoul(val_str, &end_str, 10);
-		if (end_str[0] == '.' && end_str[1] != '\0') {
-			/*
-			 * if it's a '.' and not the last char
-			 * then maybe an other mapping apply
-			 */
-			continue;
-		} else if (end_str[0] != '\0') {
-			return WERR_INVALID_PARAM;
-		} else if (val > 0xFFFF) {
-			return WERR_INVALID_PARAM;
-		}
-
-		*out = schema->prefixes[i].id | val;
-		return WERR_OK;
-	}
-
-	return WERR_DS_NO_MSDS_INTID;
+	return dsdb_find_prefix_for_oid(schema->num_prefixes, schema->prefixes, in, out);
 }
+
 
 WERROR dsdb_map_int2oid(const struct dsdb_schema *schema, uint32_t in, TALLOC_CTX *mem_ctx, const char **out)
 {
@@ -339,22 +299,281 @@ WERROR dsdb_map_int2oid(const struct dsdb_schema *schema, uint32_t in, TALLOC_CT
  */
 WERROR dsdb_create_prefix_mapping(struct ldb_context *ldb, struct dsdb_schema *schema, const char *full_oid)
 {
+	WERROR status;
+	uint32_t num_prefixes;
+	struct dsdb_schema_oid_prefix *prefixes;
+	TALLOC_CTX *mem_ctx;
+	uint32_t out;
+
+	mem_ctx = talloc_new(ldb);
+	W_ERROR_HAVE_NO_MEMORY(mem_ctx);
+
+	/* Read prefixes from disk*/
+	status = dsdb_read_prefixes_from_ldb( mem_ctx, ldb, &num_prefixes, &prefixes ); 
+	if (!W_ERROR_IS_OK(status)) {
+		DEBUG(0,("dsdb_create_prefix_mapping: dsdb_read_prefixes_from_ldb: %s\n",
+			win_errstr(status)));
+		talloc_free(mem_ctx);
+		return status;
+	}
+
+	/* Check if there is a prefix for the oid in the prefixes array*/
+	status = dsdb_find_prefix_for_oid( num_prefixes, prefixes, full_oid, &out ); 
+	if (W_ERROR_IS_OK(status)) {
+		/* prefix found*/
+		talloc_free(mem_ctx);
+		return status;
+	} else if (!W_ERROR_EQUAL(WERR_DS_NO_MSDS_INTID, status)) {
+		/* error */
+		DEBUG(0,("dsdb_create_prefix_mapping: dsdb_find_prefix_for_oid: %s\n",
+			win_errstr(status)));
+		talloc_free(mem_ctx);
+		return status;
+	}
+
+	/* Create the new mapping for the prefix of full_oid */
+	status = dsdb_prefix_map_update(mem_ctx, &num_prefixes, &prefixes, full_oid);
+	if (!W_ERROR_IS_OK(status)) {
+		DEBUG(0,("dsdb_create_prefix_mapping: dsdb_prefix_map_update: %s\n",
+			win_errstr(status)));
+		talloc_free(mem_ctx);
+		return status;
+	}
+
+	/* Update prefixMap in ldb*/
+	status = dsdb_write_prefixes_to_ldb(mem_ctx, ldb, num_prefixes, prefixes);
+	if (!W_ERROR_IS_OK(status)) {
+		DEBUG(0,("dsdb_create_prefix_mapping: dsdb_write_prefixes_to_ldb: %s\n",
+			win_errstr(status)));
+		talloc_free(mem_ctx);
+		return status;
+	}
+
+	talloc_free(mem_ctx);
+	return status;
+}
+
+WERROR dsdb_prefix_map_update(TALLOC_CTX *mem_ctx, uint32_t *num_prefixes, struct dsdb_schema_oid_prefix **prefixes, const char *oid)
+{
+	uint32_t new_num_prefixes, index_new_prefix, new_entry_id;
+	const char* lastDotOffset;
+	size_t size;
+	
+	new_num_prefixes = *num_prefixes + 1;
+	index_new_prefix = *num_prefixes;
+
 	/*
-	 * TODO:
-	 *	- (maybe) read the old prefixMap attribute and parse it
+	 * this is the algorithm we use to create new mappings for now
 	 *
-	 *	- recheck the prefix doesn't exist (because the ldb
-	 *	  has maybe a more uptodate value than schem->prefixes
-	 *
-	 *	- calculate a new mapping for the oid prefix of full_oid
-	 *	- store the new prefixMap attribute
-	 *
-	 *	- (maybe) update schema->prefixes
-	 *	or
-	 *	- better find a way to indicate a schema reload,
-	 *	  so that other processes also notice the schema change
+	 * TODO: find what algorithm windows use
 	 */
-	return WERR_NOT_SUPPORTED;
+	new_entry_id = (*num_prefixes)<<16;
+
+	/* Extract the prefix from the oid*/
+	lastDotOffset = strrchr(oid, '.');
+	if (lastDotOffset == NULL) {
+		DEBUG(0,("dsdb_prefix_map_update: failed to find the last dot\n"));
+		return WERR_NOT_FOUND;
+	}
+
+	/* Calculate the size of the remainig string that should be the prefix of it */
+	size = strlen(oid) - strlen(lastDotOffset);
+	if (size <= 0) {
+		DEBUG(0,("dsdb_prefix_map_update: size of the remaining string invalid\n"));
+		return WERR_FOOBAR;
+	}
+	/* Add one because we need to copy the dot */
+	size += 1;
+
+	/* Create a spot in the prefixMap for one more prefix*/
+	(*prefixes) = talloc_realloc(mem_ctx, *prefixes, struct dsdb_schema_oid_prefix, new_num_prefixes);
+	W_ERROR_HAVE_NO_MEMORY(*prefixes);
+
+	/* Add the new prefix entry*/
+	(*prefixes)[index_new_prefix].id = new_entry_id;
+	(*prefixes)[index_new_prefix].oid = talloc_strndup(mem_ctx, oid, size);
+	(*prefixes)[index_new_prefix].oid_len = strlen((*prefixes)[index_new_prefix].oid);
+
+	/* Increase num_prefixes because new prefix has been added */
+	++(*num_prefixes);
+
+	return WERR_OK;
+}
+
+WERROR dsdb_find_prefix_for_oid(uint32_t num_prefixes, const struct dsdb_schema_oid_prefix *prefixes, const char *in, uint32_t *out)
+{
+	uint32_t i;
+
+	for (i=0; i < num_prefixes; i++) {
+		const char *val_str;
+		char *end_str;
+		unsigned val;
+
+		if (strncmp(prefixes[i].oid, in, prefixes[i].oid_len) != 0) {
+			continue;
+		}
+
+		val_str = in + prefixes[i].oid_len;
+		end_str = NULL;
+		errno = 0;
+
+		if (val_str[0] == '\0') {
+			return WERR_INVALID_PARAM;
+		}
+
+		/* two '.' chars are invalid */
+		if (val_str[0] == '.') {
+			return WERR_INVALID_PARAM;
+		}
+
+		val = strtoul(val_str, &end_str, 10);
+		if (end_str[0] == '.' && end_str[1] != '\0') {
+			/*
+			 * if it's a '.' and not the last char
+			 * then maybe an other mapping apply
+			 */
+			continue;
+		} else if (end_str[0] != '\0') {
+			return WERR_INVALID_PARAM;
+		} else if (val > 0xFFFF) {
+			return WERR_INVALID_PARAM;
+		}
+
+		*out = prefixes[i].id | val;
+		return WERR_OK;
+	}
+
+	return WERR_DS_NO_MSDS_INTID;
+}
+
+WERROR dsdb_write_prefixes_to_ldb(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
+				  uint32_t num_prefixes,
+				  const struct dsdb_schema_oid_prefix *prefixes)
+{
+	struct ldb_message msg;
+	struct ldb_dn *schema_dn;
+	struct ldb_message_element el;
+	struct prefixMapBlob pm;
+	struct ldb_val ndr_blob;
+	enum ndr_err_code ndr_err;
+	uint32_t i;
+	int ret;
+	
+	schema_dn = samdb_schema_dn(ldb);
+	if (!schema_dn) {
+		DEBUG(0,("dsdb_write_prefixes_to_ldb: no schema dn present\n"));	
+		return WERR_FOOBAR;
+	}
+
+	pm.version			= PREFIX_MAP_VERSION_DSDB;
+	pm.ctr.dsdb.num_mappings	= num_prefixes;
+	pm.ctr.dsdb.mappings		= talloc_array(mem_ctx,
+						struct drsuapi_DsReplicaOIDMapping,
+						pm.ctr.dsdb.num_mappings);
+	if (!pm.ctr.dsdb.mappings) {
+		return WERR_NOMEM;
+	}
+
+	for (i=0; i < num_prefixes; i++) {
+		pm.ctr.dsdb.mappings[i].id_prefix = prefixes[i].id>>16;
+		pm.ctr.dsdb.mappings[i].oid.oid = talloc_strdup(pm.ctr.dsdb.mappings, prefixes[i].oid);
+	}
+
+	ndr_err = ndr_push_struct_blob(&ndr_blob, ldb,
+				       lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")),
+				       &pm,
+				       (ndr_push_flags_fn_t)ndr_push_prefixMapBlob);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return WERR_FOOBAR;
+	}
+ 
+	el.num_values = 1;
+	el.values = &ndr_blob;
+	el.flags = LDB_FLAG_MOD_REPLACE;
+	el.name = talloc_strdup(mem_ctx, "prefixMap");
+ 
+	msg.dn = ldb_dn_copy(mem_ctx, schema_dn);
+	msg.num_elements = 1;
+	msg.elements = &el;
+ 
+	ret = ldb_modify( ldb, &msg );
+	if (ret != 0) {
+		DEBUG(0,("dsdb_write_prefixes_to_ldb: ldb_modify failed\n"));	
+		return WERR_FOOBAR;
+ 	}
+ 
+	return WERR_OK;
+}
+
+WERROR dsdb_read_prefixes_from_ldb(TALLOC_CTX *mem_ctx, struct ldb_context *ldb, uint32_t* num_prefixes, struct dsdb_schema_oid_prefix **prefixes)
+{
+	struct prefixMapBlob *blob;
+	enum ndr_err_code ndr_err;
+	uint32_t i;
+	const struct ldb_val *prefix_val;
+	struct ldb_dn *schema_dn;
+	struct ldb_result *schema_res;
+	int ret;    
+	static const char *schema_attrs[] = {
+		"prefixMap",
+		NULL
+	};
+
+	schema_dn = samdb_schema_dn(ldb);
+	if (!schema_dn) {
+		DEBUG(0,("dsdb_read_prefixes_from_ldb: no schema dn present\n"));
+		return WERR_FOOBAR;
+	}
+
+	ret = ldb_search(ldb, schema_dn, LDB_SCOPE_BASE,NULL, schema_attrs,&schema_res);
+	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+		DEBUG(0,("dsdb_read_prefixes_from_ldb: no prefix map present\n"));
+		return WERR_FOOBAR;
+	} else if (ret != LDB_SUCCESS) {
+		DEBUG(0,("dsdb_read_prefixes_from_ldb: failed to search the schema head\n"));
+		return WERR_FOOBAR;
+	}
+
+	prefix_val = ldb_msg_find_ldb_val(schema_res->msgs[0], "prefixMap");
+	if (!prefix_val) {
+		DEBUG(0,("dsdb_read_prefixes_from_ldb: no prefixMap attribute found\n"));
+		return WERR_FOOBAR;
+	}
+
+	blob = talloc(mem_ctx, struct prefixMapBlob);
+	W_ERROR_HAVE_NO_MEMORY(blob);
+
+	ndr_err = ndr_pull_struct_blob(prefix_val, blob, 
+					   lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")), 
+					   blob,
+					   (ndr_pull_flags_fn_t)ndr_pull_prefixMapBlob);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DEBUG(0,("dsdb_read_prefixes_from_ldb: ndr_pull_struct_blob failed\n"));
+		talloc_free(blob);
+		return WERR_FOOBAR;
+	}
+
+	if (blob->version != PREFIX_MAP_VERSION_DSDB) {
+		DEBUG(0,("dsdb_read_prefixes_from_ldb: blob->version incorect\n"));
+		talloc_free(blob);
+		return WERR_FOOBAR;
+	}
+	
+	*num_prefixes = blob->ctr.dsdb.num_mappings;
+	*prefixes = talloc_array(mem_ctx, struct dsdb_schema_oid_prefix, *num_prefixes);
+	if(!(*prefixes)) {
+		talloc_free(blob);
+		return WERR_NOMEM;
+	}
+	for (i=0; i < blob->ctr.dsdb.num_mappings; i++) {
+		(*prefixes)[i].id = blob->ctr.dsdb.mappings[i].id_prefix<<16;
+		(*prefixes)[i].oid = talloc_strdup(mem_ctx, blob->ctr.dsdb.mappings[i].oid.oid);
+		(*prefixes)[i].oid = talloc_asprintf_append((*prefixes)[i].oid, "."); 
+		(*prefixes)[i].oid_len = strlen(blob->ctr.dsdb.mappings[i].oid.oid);
+	}
+
+	talloc_free(blob);
+	return WERR_OK;
 }
 
 #define GET_STRING_LDB(msg, attr, mem_ctx, p, elem, strict) do { \
@@ -1534,6 +1753,11 @@ int dsdb_set_global_schema(struct ldb_context *ldb)
 		return ret;
 	}
 
+	/* Keep a reference to this schema, just incase the global copy is replaced */
+	if (talloc_reference(ldb, global_schema) == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
 	return LDB_SUCCESS;
 }
 
@@ -1569,6 +1793,10 @@ void dsdb_make_schema_global(struct ldb_context *ldb)
 	struct dsdb_schema *schema = dsdb_get_schema(ldb);
 	if (!schema) {
 		return;
+	}
+
+	if (global_schema) {
+		talloc_unlink(talloc_autofree_context(), schema);
 	}
 
 	talloc_steal(talloc_autofree_context(), schema);

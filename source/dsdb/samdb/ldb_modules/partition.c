@@ -699,6 +699,50 @@ static int partition_extended_replicated_objects(struct ldb_module *module, stru
 	return partition_replicate(module, req, ext->partition_dn);
 }
 
+static int partition_extended_schema_update_now(struct ldb_module *module, struct ldb_request *req)
+{
+	struct dsdb_control_current_partition *partition;
+	struct partition_private_data *data;
+	struct ldb_dn *schema_dn;
+	struct partition_context *ac;
+	struct ldb_module *backend;
+	int ret;
+
+	schema_dn = talloc_get_type(req->op.extended.data, struct ldb_dn);
+	if (!schema_dn) {
+		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "partition_extended: invalid extended data\n");
+		return LDB_ERR_PROTOCOL_ERROR;
+	}
+
+	data = talloc_get_type(module->private_data, struct partition_private_data);
+	if (!data) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	
+	partition = find_partition( data, schema_dn );
+	if (!partition) {
+		return ldb_next_request(module, req);
+	}
+
+	ac = partition_init_handle(req, module);
+	if (!ac) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	backend = make_module_for_next_request(req, module->ldb, partition->module);
+	if (!backend) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	ret = ldb_request_add_control(req, DSDB_CONTROL_CURRENT_PARTITION_OID, false, partition);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	return ldb_next_request(backend, req);
+}
+
+
 /* extended */
 static int partition_extended(struct ldb_module *module, struct ldb_request *req)
 {
@@ -707,6 +751,11 @@ static int partition_extended(struct ldb_module *module, struct ldb_request *req
 	if (strcmp(req->op.extended.oid, DSDB_EXTENDED_REPLICATED_OBJECTS_OID) == 0) {
 		return partition_extended_replicated_objects(module, req);
 	}
+
+	/* forward schemaUpdateNow operation to schema_fsmo module*/
+	if (strcmp(req->op.extended.oid, DSDB_EXTENDED_SCHEMA_UPDATE_NOW_OID) == 0) {
+		return partition_extended_schema_update_now( module, req );
+	}	
 
 	/* 
 	 * as the extended operation has no dn
