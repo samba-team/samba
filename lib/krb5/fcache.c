@@ -248,6 +248,7 @@ erase_file(krb5_context context, const char *filename)
 	else
 	    return errno;
     }
+    rk_cloexec(fd);
     ret = _krb5_xlock(context, fd, 1, filename);
     if (ret) {
 	close(fd);
@@ -372,7 +373,8 @@ fcc_open(krb5_context context,
 			       strerror(ret));
 	return ret;
     }
-	
+    rk_cloexec(fd);
+    
     if((ret = fcc_lock(context, id, fd, exclusive)) != 0) {
 	close(fd);
 	return ret;
