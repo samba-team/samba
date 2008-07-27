@@ -215,7 +215,7 @@ static NTSTATUS parse_dfs_path(connection_struct *conn,
  Note this CHANGES CWD !!!! JRA.
 *********************************************************/
 
-static NTSTATUS create_conn_struct(TALLOC_CTX *ctx,
+NTSTATUS create_conn_struct(TALLOC_CTX *ctx,
 				connection_struct **pconn,
 				int snum,
 				const char *path,
