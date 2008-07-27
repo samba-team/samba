@@ -391,6 +391,7 @@ file_init_common(hx509_context context,
 				   p, strerror(errno));
 	    goto out;
 	}
+	rk_cloexec_file(f);
 
 	ret = hx509_pem_read(context, f, pem_func, &pem_ctx);
 	fclose(f);		     
