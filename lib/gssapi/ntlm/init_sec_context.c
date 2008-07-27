@@ -45,6 +45,7 @@ from_file(const char *fn, const char *target_domain,
     f = fopen(fn, "r");
     if (f == NULL)
 	return ENOENT;
+    rk_cloexec_file(f);
 
     while (fgets(buf, sizeof(buf), f) != NULL) {
 	char *d, *u, *p;
