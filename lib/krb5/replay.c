@@ -210,6 +210,7 @@ krb5_rc_store(krb5_context context,
 			       strerror(ret));
 	return ret;
     }
+    rk_cloexec_file(f);
     fread(&tmp, sizeof(ent), 1, f);
     t = ent.stamp - tmp.stamp;
     while(fread(&tmp, sizeof(ent), 1, f)){
