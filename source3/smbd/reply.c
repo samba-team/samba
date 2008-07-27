@@ -2131,7 +2131,7 @@ void reply_ctemp(struct smb_request *req)
 		return;
 	}
 
-	status = check_name(conn, CONST_DISCARD(char *,fname));
+	status = check_name(conn, fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		END_PROFILE(SMBctemp);
