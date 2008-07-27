@@ -1872,6 +1872,7 @@ _krb5_parse_moduli(krb5_context context, const char *file,
 	*moduli = m;
 	return 0;
     }
+    rk_cloexec_file(f);
 
     while(fgets(buf, sizeof(buf), f) != NULL) {
 	struct krb5_dh_moduli *element;
