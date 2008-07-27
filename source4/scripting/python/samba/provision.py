@@ -133,26 +133,6 @@ findnss_uid = lambda names: findnss(pwd.getpwnam, names)[2]
 findnss_gid = lambda names: findnss(grp.getgrnam, names)[2]
 
 
-def open_ldb(session_info, credentials, lp, dbname):
-    """Open a LDB, thrashing it if it is corrupt.
-
-    :param session_info: auth session information
-    :param credentials: credentials
-    :param lp: Loadparm context
-    :param dbname: Path of the database to open.
-    :return: a Ldb object
-    """
-    assert session_info is not None
-    try:
-        return Ldb(dbname, session_info=session_info, credentials=credentials, 
-                   lp=lp)
-    except LdbError, e:
-        print e
-        os.unlink(dbname)
-        return Ldb(dbname, session_info=session_info, credentials=credentials,
-                   lp=lp)
-
-
 def read_and_sub_file(file, subst_vars):
     """Read a file and sub in variables found in it
     
@@ -1195,7 +1175,7 @@ def provision_backend(setup_dir=None, message=None,
     paths = provision_paths_from_lp(lp, names.dnsdomain)
 
     if not os.path.isdir(paths.ldapdir):
-        os.makedirs(paths.ldapdir)
+        os.makedirs(paths.ldapdir, 0700)
     schemadb_path = os.path.join(paths.ldapdir, "schema-tmp.ldb")
     try:
         os.unlink(schemadb_path)
@@ -1290,7 +1270,7 @@ def provision_backend(setup_dir=None, message=None,
         setup_db_config(setup_path, os.path.join(paths.ldapdir, "db", "schema"))
 
         if not os.path.exists(os.path.join(paths.ldapdir, "db", "samba",  "cn=samba")):
-            os.makedirs(os.path.join(paths.ldapdir, "db", "samba",  "cn=samba"))
+            os.makedirs(os.path.join(paths.ldapdir, "db", "samba",  "cn=samba"), 0700)
 
         setup_file(setup_path("cn=samba.ldif"), 
                    os.path.join(paths.ldapdir, "db", "samba",  "cn=samba.ldif"),
