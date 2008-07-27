@@ -306,6 +306,7 @@ krb5_addlog_dest(krb5_context context, krb5_log_facility *f, const char *orig)
 		free(fn);
 		return ret;
 	    }
+	    rk_cloexec(i);
 	    file = fdopen(i, "a");
 	    if(file == NULL){
 		ret = errno;
