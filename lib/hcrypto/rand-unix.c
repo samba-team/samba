@@ -63,8 +63,10 @@ get_device_fd(int flags)
 
     for(p = rnd_devices; *p; p++) {
 	int fd = open(*p, flags | O_NDELAY);
-	if(fd >= 0)
+	if(fd >= 0) {
+	    rk_cloexec(fd);
 	    return fd;
+	}
     }
     return -1;
 }
