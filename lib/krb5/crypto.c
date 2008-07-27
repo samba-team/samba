@@ -3455,6 +3455,7 @@ seed_something(void)
 	fd = open(seedfile, O_RDONLY);
 	if (fd >= 0) {
 	    ssize_t ret;
+	    rk_cloexec(fd);
 	    ret = read(fd, buf, sizeof(buf));
 	    if (ret > 0)
 		RAND_add(buf, ret, 0.0);
