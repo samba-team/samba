@@ -16,8 +16,8 @@ cat > conftest.c <<EOF
 int gss_init_creds(int foo) { return 0; }
 EOF
 
-  if AC_TRY_COMMAND([$SHELL ./libtool --tag=CC --mode=compile ${CC-cc} -c $CFLAGS conftest.c])  && 
-     AC_TRY_COMMAND([$SHELL ./libtool --tag=CC --mode=link ${CC-cc} -version-info 1:0:0 -Wl,--version-script,conftest.map -rpath `pwd` $CFLAGS $LDFLAGS -o libconftestlib.la conftest.lo]);
+  if AC_TRY_COMMAND([${CC-cc} -c $CFLAGS conftest.c])  && 
+     AC_TRY_COMMAND([${CC-cc} -Wl,--version-script,conftest.map $CFLAGS $LDFLAGS -o libconftestlib.so conftest.o]);
   then
     rk_cv_version_script=yes
   fi
