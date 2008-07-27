@@ -56,6 +56,7 @@ check_one_file(krb5_context context,
     f = fopen (filename, "r");
     if (f == NULL)
 	return errno;
+    rk_cloexec_file(f);
     
     /* check type and mode of file */
     if (fstat(fileno(f), &st) != 0) {
