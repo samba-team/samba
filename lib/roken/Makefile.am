@@ -58,6 +58,7 @@ libroken_la_SOURCES =		\
 	base64.c		\
 	bswap.c			\
 	concat.c		\
+	cloexec.c		\
 	dumpdata.c		\
 	environment.c		\
 	eread.c			\
