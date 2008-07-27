@@ -269,7 +269,7 @@ RAND_load_file(const char *filename, size_t size)
     fd = open(filename, O_RDONLY | O_BINARY, 0600);
     if (fd < 0)
 	return 0;
-
+    rk_cloexec(fd);
     len = 0;
     while(len < size) {
 	slen = read(fd, buf, sizeof(buf));
@@ -302,6 +302,7 @@ RAND_write_file(const char *filename)
     fd = open(filename, O_WRONLY | O_CREAT | O_BINARY, 0600);
     if (fd < 0)
 	return 0;
+    rk_cloexec(fd);
 
     len = 0;
     while(len < RAND_FILE_SIZE) {
