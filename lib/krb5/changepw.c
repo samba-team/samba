@@ -580,6 +580,7 @@ change_password_loop (krb5_context	context,
 	    sock = socket (a->ai_family, a->ai_socktype, a->ai_protocol);
 	    if (sock < 0)
 		continue;
+	    rk_cloexec(sock);
 
 	    ret = connect(sock, a->ai_addr, a->ai_addrlen);
 	    if (ret < 0) {
