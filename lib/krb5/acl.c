@@ -263,6 +263,7 @@ krb5_acl_match_file(krb5_context context,
 			       strerror(save_errno));
 	return save_errno;
     }
+    rk_cloexec_file(f);
 
     va_start(ap, format);
     ret = acl_parse_format(context, &acl, format, ap);
