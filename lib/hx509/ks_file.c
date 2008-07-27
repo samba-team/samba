@@ -526,6 +526,7 @@ file_store(hx509_context context,
 			       "Failed to open file %s for writing");
 	return ENOENT;
     }
+    rk_cloexec_file(sc.f);
     sc.format = f->format;
 
     ret = hx509_certs_iter(context, f->certs, store_func, &sc);
