@@ -9829,6 +9829,11 @@ NTSTATUS resolve_dfspath_wcard(TALLOC_CTX *ctx,
 				const char *name_in,
 				char **pp_name_out,
 				bool *ppath_contains_wcard);
+NTSTATUS create_conn_struct(TALLOC_CTX *ctx,
+				connection_struct **pconn,
+				int snum,
+				const char *path,
+			    char **poldcwd);
 
 /* The following definitions come from smbd/negprot.c  */
 
