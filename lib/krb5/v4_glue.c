@@ -162,6 +162,7 @@ write_v4_cc(krb5_context context, const char *tkfile,
 	free(path);
 	return ret;
     }
+    rk_cloexec(fd);
 
     if (fstat(fd, &sb) != 0 || !S_ISREG(sb.st_mode)) {
 	krb5_set_error_message(context, ret, 
