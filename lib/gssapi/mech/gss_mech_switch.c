@@ -229,6 +229,7 @@ _gss_load_mech(void)
 		HEIMDAL_MUTEX_unlock(&_gss_mech_mutex);
 		return;
 	}
+	rk_cloexec_file(fp);
 
 	while (fgets(buf, sizeof(buf), fp)) {
 		if (*buf == '#')
