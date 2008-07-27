@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2005 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2008 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -338,6 +338,7 @@ fkt_start_seq_get_int(krb5_context context,
 			       d->filename, strerror(ret));
 	return ret;
     }
+    rk_cloexec(c->fd);
     ret = _krb5_xlock(context, c->fd, exclusive, d->filename);
     if (ret) {
 	close(c->fd);
@@ -496,6 +497,8 @@ fkt_add_entry(krb5_context context,
 				   strerror(ret));
 	    return ret;
 	}
+	rk_cloexec(fd);
+
 	ret = _krb5_xlock(context, fd, 1, d->filename);
 	if (ret) {
 	    close(fd);
@@ -510,6 +513,9 @@ fkt_add_entry(krb5_context context,
 	storage_set_flags(context, sp, id->version);
     } else {
 	int8_t pvno, tag;
+
+	rk_cloexec(fd);
+
 	ret = _krb5_xlock(context, fd, 1, d->filename);
 	if (ret) {
 	    close(fd);
