@@ -2026,91 +2026,59 @@ WERROR _srvsvc_NetGetFileSecurity(pipes_struct *p,
 {
 	SEC_DESC *psd = NULL;
 	size_t sd_size;
-	DATA_BLOB null_pw;
-	char *filename_in = NULL;
-	char *filename = NULL;
-	char *qualname = NULL;
+	fstring servicename;
 	SMB_STRUCT_STAT st;
 	NTSTATUS nt_status;
-	WERROR werr = WERR_ACCESS_DENIED;
-	struct current_user user;
+	WERROR werr;
 	connection_struct *conn = NULL;
-	bool became_user = False;
-	TALLOC_CTX *ctx = p->mem_ctx;
 	struct sec_desc_buf *sd_buf = NULL;
 	files_struct *fsp = NULL;
+	int snum;
+	char *oldcwd = NULL;
 
 	ZERO_STRUCT(st);
 
-	qualname = talloc_strdup(ctx, r->in.share);
-	if (!qualname) {
+	fstrcpy(servicename, r->in.share);
+
+	snum = find_service(servicename);
+	if (snum == -1) {
+		DEBUG(10, ("Could not find service %s\n", servicename));
+		werr = WERR_NET_NAME_NOT_FOUND;
 		goto error_exit;
 	}
 
-	/* Null password is ok - we are already an authenticated user... */
-	null_pw = data_blob_null;
-
-	get_current_user(&user, p);
-
-	become_root();
-	conn = make_connection(qualname, null_pw, "A:", user.vuid, &nt_status);
-	unbecome_root();
-
-	if (conn == NULL) {
-		DEBUG(3,("_srvsvc_NetGetFileSecurity: Unable to connect to %s\n",
-			qualname));
+	nt_status = create_conn_struct(talloc_tos(), &conn, snum,
+				       lp_pathname(snum), &oldcwd);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DEBUG(10, ("create_conn_struct failed: %s\n",
+			   nt_errstr(nt_status)));
 		werr = ntstatus_to_werror(nt_status);
 		goto error_exit;
 	}
 
-	if (!become_user(conn, conn->vuid)) {
-		DEBUG(0,("_srvsvc_NetGetFileSecurity: Can't become connected user!\n"));
-		goto error_exit;
-	}
-	became_user = True;
+	conn->server_info = p->server_info;
 
-	filename_in = talloc_strdup(ctx, r->in.file);
-	if (!filename_in) {
-		goto error_exit;
-	}
-
-	nt_status = unix_convert(ctx, conn, filename_in, False, &filename, NULL, &st);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(3,("_srvsvc_NetGetFileSecurity: bad pathname %s\n",
-			filename));
-		goto error_exit;
-	}
-
-	nt_status = check_name(conn, filename);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(3,("_srvsvc_NetGetFileSecurity: can't access %s\n",
-			filename));
-		goto error_exit;
-	}
-
-	if (!(S_ISDIR(st.st_mode))) {
-        	nt_status = open_file_ntcreate(conn, NULL, filename, &st,
-				FILE_READ_ATTRIBUTES,
-				FILE_SHARE_READ|FILE_SHARE_WRITE,
-				FILE_OPEN,
-				0,
-				FILE_ATTRIBUTE_NORMAL,
-				0,
-				NULL, &fsp);
-
-	} else {
-		nt_status = open_directory(conn, NULL, filename, &st,
-				FILE_READ_ATTRIBUTES,
-				FILE_SHARE_READ|FILE_SHARE_WRITE,
-				FILE_OPEN,
-				0,
-				FILE_ATTRIBUTE_DIRECTORY,
-				NULL, &fsp);
-	}
+	nt_status = create_file(
+		conn,					/* conn */
+		NULL,					/* req */
+		0,					/* root_dir_fid */
+		r->in.file,				/* fname */
+		FILE_READ_ATTRIBUTES,			/* access_mask */
+		FILE_SHARE_READ|FILE_SHARE_WRITE,	/* share_access */
+		FILE_OPEN,				/* create_disposition*/
+		0,					/* create_options */
+		0,					/* file_attributes */
+		INTERNAL_OPEN_ONLY,			/* oplock_request */
+		0,					/* allocation_size */
+		NULL,					/* sd */
+		NULL,					/* ea_list */
+		&fsp,					/* result */
+		NULL,					/* pinfo */
+		NULL);					/* psbuf */
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(3,("_srvsvc_NetGetFileSecurity: can't open %s\n",
-			filename));
+			 r->in.file));
 		werr = ntstatus_to_werror(nt_status);
 		goto error_exit;
 	}
@@ -2121,15 +2089,15 @@ WERROR _srvsvc_NetGetFileSecurity(pipes_struct *p,
 					|DACL_SECURITY_INFORMATION), &psd);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(3,("_srvsvc_NetGetFileSecurity: Unable to get NT ACL for file %s\n",
-			filename));
+		DEBUG(3,("_srvsvc_NetGetFileSecurity: Unable to get NT ACL "
+			 "for file %s\n", r->in.file));
 		werr = ntstatus_to_werror(nt_status);
 		goto error_exit;
 	}
 
 	sd_size = ndr_size_security_descriptor(psd, 0);
 
-	sd_buf = TALLOC_ZERO_P(ctx, struct sec_desc_buf);
+	sd_buf = TALLOC_ZERO_P(p->mem_ctx, struct sec_desc_buf);
 	if (!sd_buf) {
 		werr = WERR_NOMEM;
 		goto error_exit;
@@ -2143,23 +2111,22 @@ WERROR _srvsvc_NetGetFileSecurity(pipes_struct *p,
 	psd->dacl->revision = NT4_ACL_REVISION;
 
 	close_file(fsp, NORMAL_CLOSE);
-
-	unbecome_user();
-	close_cnum(conn, user.vuid);
+	vfs_ChDir(conn, oldcwd);
+	conn_free_internal(conn);
 	return WERR_OK;
 
 error_exit:
 
-	if(fsp) {
+	if (fsp) {
 		close_file(fsp, NORMAL_CLOSE);
 	}
 
-	if (became_user) {
-		unbecome_user();
+	if (oldcwd) {
+		vfs_ChDir(conn, oldcwd);
 	}
 
 	if (conn) {
-		close_cnum(conn, user.vuid);
+		conn_free_internal(conn);
 	}
 
 	return werr;
@@ -2173,96 +2140,60 @@ error_exit:
 WERROR _srvsvc_NetSetFileSecurity(pipes_struct *p,
 				  struct srvsvc_NetSetFileSecurity *r)
 {
-	char *filename_in = NULL;
-	char *filename = NULL;
-	char *qualname = NULL;
-	DATA_BLOB null_pw;
+	fstring servicename;
 	files_struct *fsp = NULL;
 	SMB_STRUCT_STAT st;
 	NTSTATUS nt_status;
 	WERROR werr;
-	struct current_user user;
 	connection_struct *conn = NULL;
-	bool became_user = False;
-	TALLOC_CTX *ctx = p->mem_ctx;
+	int snum;
+	char *oldcwd = NULL;
 
 	ZERO_STRUCT(st);
 
-	werr = WERR_OK;
+	fstrcpy(servicename, r->in.share);
 
-	qualname = talloc_strdup(ctx, r->in.share);
-	if (!qualname) {
-		werr = WERR_ACCESS_DENIED;
+	snum = find_service(servicename);
+	if (snum == -1) {
+		DEBUG(10, ("Could not find service %s\n", servicename));
+		werr = WERR_NET_NAME_NOT_FOUND;
 		goto error_exit;
 	}
 
-	/* Null password is ok - we are already an authenticated user... */
-	null_pw = data_blob_null;
-
-	get_current_user(&user, p);
-
-	become_root();
-	conn = make_connection(qualname, null_pw, "A:", user.vuid, &nt_status);
-	unbecome_root();
-
-	if (conn == NULL) {
-		DEBUG(3,("_srvsvc_NetSetFileSecurity: Unable to connect to %s\n", qualname));
+	nt_status = create_conn_struct(talloc_tos(), &conn, snum,
+				       lp_pathname(snum), &oldcwd);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DEBUG(10, ("create_conn_struct failed: %s\n",
+			   nt_errstr(nt_status)));
 		werr = ntstatus_to_werror(nt_status);
 		goto error_exit;
 	}
 
-	if (!become_user(conn, conn->vuid)) {
-		DEBUG(0,("_srvsvc_NetSetFileSecurity: Can't become connected user!\n"));
-		werr = WERR_ACCESS_DENIED;
-		goto error_exit;
-	}
-	became_user = True;
+	conn->server_info = p->server_info;
 
-	filename_in = talloc_strdup(ctx, r->in.file);
-	if (!filename_in) {
-		werr = WERR_ACCESS_DENIED;
-		goto error_exit;
-	}
+	nt_status = create_file(
+		conn,					/* conn */
+		NULL,					/* req */
+		0,					/* root_dir_fid */
+		r->in.file,				/* fname */
+		FILE_WRITE_ATTRIBUTES,			/* access_mask */
+		FILE_SHARE_READ|FILE_SHARE_WRITE,	/* share_access */
+		FILE_OPEN,				/* create_disposition*/
+		0,					/* create_options */
+		0,					/* file_attributes */
+		INTERNAL_OPEN_ONLY,			/* oplock_request */
+		0,					/* allocation_size */
+		NULL,					/* sd */
+		NULL,					/* ea_list */
+		&fsp,					/* result */
+		NULL,					/* pinfo */
+		NULL);					/* psbuf */
 
-	nt_status = unix_convert(ctx, conn, filename, False, &filename, NULL, &st);
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(3,("_srvsvc_NetSetFileSecurity: bad pathname %s\n", filename));
-		werr = WERR_ACCESS_DENIED;
+		DEBUG(3,("_srvsvc_NetSetFileSecurity: can't open %s\n",
+			 r->in.file));
+		werr = ntstatus_to_werror(nt_status);
 		goto error_exit;
-	}
-
-	nt_status = check_name(conn, filename);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(3,("_srvsvc_NetSetFileSecurity: can't access %s\n", filename));
-		werr = WERR_ACCESS_DENIED;
-		goto error_exit;
-	}
-
-	nt_status = open_file_ntcreate(conn, NULL, filename, &st,
-				FILE_WRITE_ATTRIBUTES,
-				FILE_SHARE_READ|FILE_SHARE_WRITE,
-				FILE_OPEN,
-				0,
-				FILE_ATTRIBUTE_NORMAL,
-				INTERNAL_OPEN_ONLY,
-				NULL, &fsp);
-
-	if ( !NT_STATUS_IS_OK(nt_status) ) {
-		/* Perhaps it is a directory */
-		if (NT_STATUS_EQUAL(nt_status, NT_STATUS_FILE_IS_A_DIRECTORY))
-			nt_status = open_directory(conn, NULL, filename, &st,
-						FILE_WRITE_ATTRIBUTES,
-						FILE_SHARE_READ|FILE_SHARE_WRITE,
-						FILE_OPEN,
-						0,
-						FILE_ATTRIBUTE_DIRECTORY,
-						NULL, &fsp);
-
-		if ( !NT_STATUS_IS_OK(nt_status) ) {
-			DEBUG(3,("_srvsvc_NetSetFileSecurity: Unable to open file %s\n", filename));
-			werr = ntstatus_to_werror(nt_status);
-			goto error_exit;
-		}
 	}
 
 	nt_status = SMB_VFS_FSET_NT_ACL(fsp,
@@ -2270,28 +2201,29 @@ WERROR _srvsvc_NetSetFileSecurity(pipes_struct *p,
 				       r->in.sd_buf->sd);
 
 	if (!NT_STATUS_IS_OK(nt_status) ) {
-		DEBUG(3,("_srvsvc_NetSetFileSecurity: Unable to set NT ACL on file %s\n", filename));
+		DEBUG(3,("_srvsvc_NetSetFileSecurity: Unable to set NT ACL "
+			 "on file %s\n", r->in.share));
 		werr = WERR_ACCESS_DENIED;
 		goto error_exit;
 	}
 
 	close_file(fsp, NORMAL_CLOSE);
-	unbecome_user();
-	close_cnum(conn, user.vuid);
-	return werr;
+	vfs_ChDir(conn, oldcwd);
+	conn_free_internal(conn);
+	return WERR_OK;
 
 error_exit:
 
-	if(fsp) {
+	if (fsp) {
 		close_file(fsp, NORMAL_CLOSE);
 	}
 
-	if (became_user) {
-		unbecome_user();
+	if (oldcwd) {
+		vfs_ChDir(conn, oldcwd);
 	}
 
 	if (conn) {
-		close_cnum(conn, user.vuid);
+		conn_free_internal(conn);
 	}
 
 	return werr;
