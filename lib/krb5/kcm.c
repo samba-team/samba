@@ -71,6 +71,7 @@ try_door(krb5_context context,
     fd = open(k->door_path, O_RDWR);
     if (fd < 0)
 	return KRB5_CC_IO;
+    rk_cloexec(fd);
 
     arg.data_ptr = request_data->data;
     arg.data_size = request_data->length;
@@ -107,7 +108,8 @@ try_unix_socket(krb5_context context,
     fd = socket(AF_UNIX, SOCK_STREAM, 0);
     if (fd < 0)
 	return KRB5_CC_IO;
-    
+    rk_cloexec(fd);
+
     if (connect(fd, rk_UNCONST(&k->path), sizeof(k->path)) != 0) {
 	close(fd);
 	return KRB5_CC_IO;
