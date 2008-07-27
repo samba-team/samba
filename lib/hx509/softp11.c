@@ -696,6 +696,7 @@ read_conf_file(const char *fn, CK_USER_TYPE userType, const char *pin)
 	st_logf("can't open configuration file %s\n", fn);
 	return CKR_GENERAL_ERROR;
     }
+    rk_cloexec_file(f);
 
     while(fgets(buf, sizeof(buf), f) != NULL) {
 	buf[strcspn(buf, "\n")] = '\0';
