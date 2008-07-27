@@ -756,8 +756,11 @@ read_conf_file(const char *fn, CK_USER_TYPE userType, const char *pin)
 
 	    if (strcasecmp(name, "stdout") == 0)
 		soft_token.logfile = stdout;
-	    else
+	    else {
 		soft_token.logfile = fopen(name, "a");
+		if (soft_token.logfile)
+		    rk_cloexec_file(soft_token.logfile);
+	    }
 	    if (soft_token.logfile == NULL)
 		st_logf("failed to open file: %s\n", name);
 		
