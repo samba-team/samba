@@ -2972,6 +2972,7 @@ _hx509_query_statistic(hx509_context context, int type, const hx509_query *q)
     f = fopen(context->querystat, "a");
     if (f == NULL)
 	return;
+    rk_cloexec_file(f);
     fprintf(f, "%d %d\n", type, q->match);
     fclose(f);
 }
@@ -3042,6 +3043,7 @@ hx509_query_unparse_stats(hx509_context context, int printtype, FILE *out)
 		context->querystat, strerror(errno));
 	return;
     }
+    rk_cloexec_file(f);
     
     for (i = 0; i < sizeof(stats)/sizeof(stats[0]); i++) {
 	stats[i].index = i;
