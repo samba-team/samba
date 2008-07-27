@@ -76,6 +76,8 @@ connect_egd(const char *path)
     if (fd < 0)
 	return -1;
 
+    rk_cloexec(fd);
+
     if (connect(fd, (struct sockaddr *)&addr, sizeof(addr)) != 0) {
 	close(fd);
 	return -1;
