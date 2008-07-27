@@ -291,6 +291,7 @@ send_via_proxy (krb5_context context,
 	s = socket (a->ai_family, a->ai_socktype, a->ai_protocol);
 	if (s < 0)
 	    continue;
+	rk_cloexec(s);
 	if (connect (s, a->ai_addr, a->ai_addrlen) < 0) {
 	    close (s);
 	    continue;
@@ -413,6 +414,7 @@ krb5_sendto (krb5_context context,
 		 fd = socket (a->ai_family, a->ai_socktype, a->ai_protocol);
 		 if (fd < 0)
 		     continue;
+		 rk_cloexec(fd);
 		 if (connect (fd, a->ai_addr, a->ai_addrlen) < 0) {
 		     close (fd);
 		     continue;
