@@ -210,6 +210,7 @@ _krb5_plugin_find(krb5_context context,
 	d = opendir(*di);
 	if (d == NULL)
 	    continue;
+	rk_cloexec(dirfd(d));
 
 	while ((entry = readdir(d)) != NULL) {
 	    asprintf(&path, "%s/%s", *di, entry->d_name);
