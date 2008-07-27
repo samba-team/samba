@@ -523,7 +523,8 @@ plugin_get_hosts(krb5_context context,
     struct krb5_plugin *list = NULL, *e;
     krb5_error_code ret;
 
-    ret = _krb5_plugin_find(context, PLUGIN_TYPE_DATA, KRB5_PLUGIN_LOCATE, &list);
+    ret = _krb5_plugin_find(context, PLUGIN_TYPE_DATA,
+			    KRB5_PLUGIN_LOCATE, &list);
     if(ret != 0 || list == NULL)
 	return;
 
