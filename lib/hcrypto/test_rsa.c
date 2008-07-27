@@ -157,6 +157,7 @@ read_key(ENGINE *engine, const char *rsa_key)
     f = fopen(rsa_key, "r");
     if (f == NULL)
 	err(1, "could not open file %s", rsa_key);
+    rk_cloexec_file(f);
     
     size = fread(buf, 1, sizeof(buf), f);
     fclose(f);
