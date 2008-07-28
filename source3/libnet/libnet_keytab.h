@@ -24,6 +24,7 @@ struct libnet_keytab_entry {
 	const char *principal;
 	DATA_BLOB password;
 	uint32_t kvno;
+	krb5_enctype enctype;
 };
 
 struct libnet_keytab_context {
