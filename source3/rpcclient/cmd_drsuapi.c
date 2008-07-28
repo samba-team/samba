@@ -381,7 +381,7 @@ static WERROR cmd_drsuapi_getncchanges(struct rpc_pipe_client *cli,
 	info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_GETCHGREPLY_V7;
 	info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_VERIFY_OBJECT;
 	info28.site_guid		= GUID_zero();
-	info28.pid			= 508;
+	info28.pid			= 0;
 	info28.repl_epoch		= 0;
 
 	bind_info.length = 28;
