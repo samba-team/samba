@@ -5,7 +5,7 @@ Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
 Version: 1.0
-Release: 50
+Release: 51
 Epoch: 0
 License: GNU GPL version 3
 Group: System Environment/Daemons
@@ -118,6 +118,13 @@ fi
 %{_includedir}/ctdb_private.h
 
 %changelog
+* Mon Jul 28 2008 : Version 1.0.51
+ - Strip off the vlan tag from bond devices before we check in /proc
+   if the interface is up or not.
+ - Use testparm in the background in the scripts to allow probing
+   that the shares do exist.
+ - Fix a bug in the logging code to handle multiline entries better
+ - Rename private elements from private to private_data
 * Fri Jul 18 2008 : Version 1.0.50
  - Dont assume that just because we can establish a TCP connection
    that we are actually talking to a functioning ctdb daemon.
