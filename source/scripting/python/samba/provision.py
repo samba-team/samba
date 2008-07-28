@@ -1232,6 +1232,8 @@ def provision_backend(setup_dir=None, message=None,
         
         slapdcommand="Initailise Fedora DS with: setup-ds.pl --file=%s" % paths.fedoradsinf
        
+        ldapuser = "--simple-bind-dn=" + names.ldapmanagerdn
+
     elif ldap_backend_type == "openldap":
         attrs = ["linkID", "lDAPDisplayName"]
         res = schemadb.search(expression="(&(&(linkID=*)(!(linkID:1.2.840.113556.1.4.803:=1)))(objectclass=attributeSchema))", base=names.schemadn, scope=SCOPE_SUBTREE, attrs=attrs)
@@ -1293,6 +1295,8 @@ def provision_backend(setup_dir=None, message=None,
 
         slapdcommand="Start slapd with:    slapd -f " + paths.ldapdir + "/slapd.conf -h " + ldapi_uri + server_port_string
 
+        ldapuser = "--username=samba-admin"
+
             
     schema_command = "bin/ad2oLschema --option=convert:target=" + ldap_backend_type + " -I " + setup_path(mapping) + " -H tdb://" + schemadb_path + " -O " + os.path.join(paths.ldapdir, backend_schema)
             
@@ -1311,7 +1315,7 @@ def provision_backend(setup_dir=None, message=None,
 
     message("LDAP admin password: %s" % adminpass)
     message(slapdcommand)
-
+    message("Run provision with:  --ldap-backend=ldapi --ldap-backend-type=" + ldap_backend_type + " --password=" + adminpass + " " + ldapuser)
 
 def create_phpldapadmin_config(path, setup_path, ldapi_uri):
     """Create a PHP LDAP admin configuration file.
