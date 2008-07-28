@@ -779,7 +779,6 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
         setup_add_ldif(samdb, setup_path("provision_configuration_basedn.ldif"), {
             "CONFIGDN": names.configdn, 
             "ACI": aci,
-            "EXTENSIBLEOBJECT": "# no objectClass: extensibleObject for local ldb",
             })
         message("Modifying configuration container")
         setup_modify_ldif(samdb, setup_path("provision_configuration_basedn_modify.ldif"), {
@@ -791,7 +790,6 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
         setup_add_ldif(samdb, setup_path("provision_schema_basedn.ldif"), {
             "SCHEMADN": names.schemadn,
             "ACI": aci,
-            "EXTENSIBLEOBJECT": "# no objectClass: extensibleObject for local ldb"
             })
         message("Modifying schema container")
 
@@ -1189,7 +1187,6 @@ def provision_backend(setup_dir=None, message=None,
     setup_add_ldif(schemadb, setup_path("provision_schema_basedn.ldif"), 
                    {"SCHEMADN": names.schemadn,
                     "ACI": "#",
-                    "EXTENSIBLEOBJECT": "# no objectClass: extensibleObject for local ldb"
                     })
     setup_modify_ldif(schemadb, 
                       setup_path("provision_schema_basedn_modify.ldif"), \
