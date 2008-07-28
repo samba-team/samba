@@ -188,8 +188,8 @@ static void session_request_handler(struct smb2_request *req)
 	}
 
 	if (session->transport->signing_required) {
-		if (session->session_key.length != 16) {
-			DEBUG(2,("Wrong session key length %u for SMB2 signing\n",
+		if (session->session_key.length == 0) {
+			DEBUG(0,("Wrong session key length %u for SMB2 signing\n",
 				 (unsigned)session->session_key.length));
 			composite_error(c, NT_STATUS_ACCESS_DENIED);
 			return;
