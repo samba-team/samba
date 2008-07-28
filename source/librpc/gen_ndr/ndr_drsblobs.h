@@ -29,17 +29,15 @@ extern const struct ndr_interface_table ndr_table_drsblobs;
 
 #define NDR_DECODE_PRIMARYKERBEROS (0x08)
 
-#define NDR_DECODE_PRIMARYKERBEROSNEWER (0x09)
+#define NDR_DECODE_PRIMARYCLEARTEXT (0x09)
 
-#define NDR_DECODE_PRIMARYCLEARTEXT (0x0a)
+#define NDR_DECODE_PRIMARYWDIGEST (0x0a)
 
-#define NDR_DECODE_PRIMARYWDIGEST (0x0b)
+#define NDR_DECODE_TRUSTAUTHINOUT (0x0b)
 
-#define NDR_DECODE_TRUSTAUTHINOUT (0x0c)
+#define NDR_DECODE_DSCOMPRESSED (0x0c)
 
-#define NDR_DECODE_DSCOMPRESSED (0x0d)
-
-#define NDR_DRSBLOBS_CALL_COUNT (14)
+#define NDR_DRSBLOBS_CALL_COUNT (13)
 void ndr_print_replPropertyMetaData1(struct ndr_print *ndr, const char *name, const struct replPropertyMetaData1 *r);
 void ndr_print_replPropertyMetaDataCtr1(struct ndr_print *ndr, const char *name, const struct replPropertyMetaDataCtr1 *r);
 void ndr_print_replPropertyMetaDataCtr(struct ndr_print *ndr, const char *name, const union replPropertyMetaDataCtr *r);
@@ -89,18 +87,14 @@ enum ndr_err_code ndr_push_package_PackagesBlob(struct ndr_push *ndr, int ndr_fl
 enum ndr_err_code ndr_pull_package_PackagesBlob(struct ndr_pull *ndr, int ndr_flags, struct package_PackagesBlob *r);
 void ndr_print_package_PackagesBlob(struct ndr_print *ndr, const char *name, const struct package_PackagesBlob *r);
 void ndr_print_package_PrimaryKerberosString(struct ndr_print *ndr, const char *name, const struct package_PrimaryKerberosString *r);
-void ndr_print_package_PrimaryKerberosKey(struct ndr_print *ndr, const char *name, const struct package_PrimaryKerberosKey *r);
+void ndr_print_package_PrimaryKerberosKey3(struct ndr_print *ndr, const char *name, const struct package_PrimaryKerberosKey3 *r);
 void ndr_print_package_PrimaryKerberosCtr3(struct ndr_print *ndr, const char *name, const struct package_PrimaryKerberosCtr3 *r);
+void ndr_print_package_PrimaryKerberosKey4(struct ndr_print *ndr, const char *name, const struct package_PrimaryKerberosKey4 *r);
+void ndr_print_package_PrimaryKerberosCtr4(struct ndr_print *ndr, const char *name, const struct package_PrimaryKerberosCtr4 *r);
 void ndr_print_package_PrimaryKerberosCtr(struct ndr_print *ndr, const char *name, const union package_PrimaryKerberosCtr *r);
 enum ndr_err_code ndr_push_package_PrimaryKerberosBlob(struct ndr_push *ndr, int ndr_flags, const struct package_PrimaryKerberosBlob *r);
 enum ndr_err_code ndr_pull_package_PrimaryKerberosBlob(struct ndr_pull *ndr, int ndr_flags, struct package_PrimaryKerberosBlob *r);
 void ndr_print_package_PrimaryKerberosBlob(struct ndr_print *ndr, const char *name, const struct package_PrimaryKerberosBlob *r);
-void ndr_print_package_PrimaryKerberosNewerKey(struct ndr_print *ndr, const char *name, const struct package_PrimaryKerberosNewerKey *r);
-void ndr_print_package_PrimaryKerberosNewerCtr4(struct ndr_print *ndr, const char *name, const struct package_PrimaryKerberosNewerCtr4 *r);
-void ndr_print_package_PrimaryKerberosNewerCtr(struct ndr_print *ndr, const char *name, const union package_PrimaryKerberosNewerCtr *r);
-enum ndr_err_code ndr_push_package_PrimaryKerberosNewerBlob(struct ndr_push *ndr, int ndr_flags, const struct package_PrimaryKerberosNewerBlob *r);
-enum ndr_err_code ndr_pull_package_PrimaryKerberosNewerBlob(struct ndr_pull *ndr, int ndr_flags, struct package_PrimaryKerberosNewerBlob *r);
-void ndr_print_package_PrimaryKerberosNewerBlob(struct ndr_print *ndr, const char *name, const struct package_PrimaryKerberosNewerBlob *r);
 enum ndr_err_code ndr_push_package_PrimaryCLEARTEXTBlob(struct ndr_push *ndr, int ndr_flags, const struct package_PrimaryCLEARTEXTBlob *r);
 enum ndr_err_code ndr_pull_package_PrimaryCLEARTEXTBlob(struct ndr_pull *ndr, int ndr_flags, struct package_PrimaryCLEARTEXTBlob *r);
 void ndr_print_package_PrimaryCLEARTEXTBlob(struct ndr_print *ndr, const char *name, const struct package_PrimaryCLEARTEXTBlob *r);
@@ -132,7 +126,6 @@ void ndr_print_decode_ldapControlDirSync(struct ndr_print *ndr, const char *name
 void ndr_print_decode_supplementalCredentials(struct ndr_print *ndr, const char *name, int flags, const struct decode_supplementalCredentials *r);
 void ndr_print_decode_Packages(struct ndr_print *ndr, const char *name, int flags, const struct decode_Packages *r);
 void ndr_print_decode_PrimaryKerberos(struct ndr_print *ndr, const char *name, int flags, const struct decode_PrimaryKerberos *r);
-void ndr_print_decode_PrimaryKerberosNewer(struct ndr_print *ndr, const char *name, int flags, const struct decode_PrimaryKerberosNewer *r);
 void ndr_print_decode_PrimaryCLEARTEXT(struct ndr_print *ndr, const char *name, int flags, const struct decode_PrimaryCLEARTEXT *r);
 void ndr_print_decode_PrimaryWDigest(struct ndr_print *ndr, const char *name, int flags, const struct decode_PrimaryWDigest *r);
 void ndr_print_decode_trustAuthInOut(struct ndr_print *ndr, const char *name, int flags, const struct decode_trustAuthInOut *r);
