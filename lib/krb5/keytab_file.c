@@ -385,7 +385,7 @@ fkt_start_seq_get(krb5_context context,
 		  krb5_keytab id, 
 		  krb5_kt_cursor *c)
 {
-    return fkt_start_seq_get_int(context, id, O_RDONLY | O_BINARY, 0, c);
+    return fkt_start_seq_get_int(context, id, O_RDONLY | O_BINARY | O_CLOEXEC, 0, c);
 }
 
 static krb5_error_code
@@ -488,9 +488,9 @@ fkt_add_entry(krb5_context context,
     krb5_data keytab;
     int32_t len;
     
-    fd = open (d->filename, O_RDWR | O_BINARY);
+    fd = open (d->filename, O_RDWR | O_BINARY | O_CLOEXEC);
     if (fd < 0) {
-	fd = open (d->filename, O_RDWR | O_CREAT | O_EXCL | O_BINARY, 0600);
+	fd = open (d->filename, O_RDWR | O_CREAT | O_EXCL | O_BINARY | O_CLOEXEC, 0600);
 	if (fd < 0) {
 	    ret = errno;
 	    krb5_set_error_message(context, ret, "open(%s): %s", d->filename,
@@ -632,7 +632,7 @@ fkt_remove_entry(krb5_context context,
     int found = 0;
     krb5_error_code ret;
     
-    ret = fkt_start_seq_get_int(context, id, O_RDWR | O_BINARY, 1, &cursor);
+    ret = fkt_start_seq_get_int(context, id, O_RDWR | O_BINARY | O_CLOEXEC, 1, &cursor);
     if(ret != 0) 
 	goto out; /* return other error here? */
     while(fkt_next_entry_int(context, id, &e, &cursor, 

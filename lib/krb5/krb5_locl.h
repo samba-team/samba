@@ -176,6 +176,10 @@ struct _krb5_krb_auth_data;
 #define O_BINARY 0
 #endif
 
+#ifndef O_CLOEXEC
+#define O_CLOEXEC 0
+#endif
+
 #define KRB5_BUFSIZ 1024
 
 typedef enum {

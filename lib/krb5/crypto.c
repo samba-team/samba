@@ -3452,7 +3452,7 @@ seed_something(void)
        so use 0 for the entropy estimate */
     if (RAND_file_name(seedfile, sizeof(seedfile))) {
 	int fd;
-	fd = open(seedfile, O_RDONLY);
+	fd = open(seedfile, O_RDONLY | O_BINARY | O_CLOEXEC);
 	if (fd >= 0) {
 	    ssize_t ret;
 	    rk_cloexec(fd);
