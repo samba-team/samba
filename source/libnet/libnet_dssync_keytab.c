@@ -28,6 +28,7 @@ static NTSTATUS add_to_keytab_entries(TALLOC_CTX *mem_ctx,
 				      uint32_t kvno,
 				      const char *name,
 				      const char *prefix,
+				      const krb5_enctype enctype,
 				      DATA_BLOB blob)
 {
 	struct libnet_keytab_entry entry;
@@ -38,6 +39,7 @@ static NTSTATUS add_to_keytab_entries(TALLOC_CTX *mem_ctx,
 					  prefix ? prefix : "",
 					  prefix ? "/" : "",
 					  name, ctx->dns_domain_name);
+	entry.enctype = enctype;
 	entry.password = blob;
 	NT_STATUS_HAVE_NO_MEMORY(entry.name);
 	NT_STATUS_HAVE_NO_MEMORY(entry.principal);
@@ -126,7 +128,8 @@ static NTSTATUS keytab_finish(struct dssync_context *ctx, TALLOC_CTX *mem_ctx,
 		}
 
 		status = add_to_keytab_entries(mem_ctx, keytab_ctx, 0,
-					       ctx->nc_dn, "UTDV", blob);
+					       ctx->nc_dn, "UTDV",
+					       ENCTYPE_NULL, blob);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto done;
 		}
@@ -250,6 +253,7 @@ static NTSTATUS parse_object(TALLOC_CTX *mem_ctx,
 	DEBUGADD(1,("\n"));
 
 	status = add_to_keytab_entries(mem_ctx, ctx, kvno, name, NULL,
+				       ENCTYPE_ARCFOUR_HMAC,
 				       data_blob_talloc(mem_ctx, nt_passwd, 16));
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -272,6 +276,7 @@ static NTSTATUS parse_object(TALLOC_CTX *mem_ctx,
 
 	for (; i<pwd_history_len; i++) {
 		status = add_to_keytab_entries(mem_ctx, ctx, kvno--, name, NULL,
+				ENCTYPE_ARCFOUR_HMAC,
 				data_blob_talloc(mem_ctx, &pwd_history[i*16], 16));
 		if (!NT_STATUS_IS_OK(status)) {
 			break;
