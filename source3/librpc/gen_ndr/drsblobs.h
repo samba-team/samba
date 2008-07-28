@@ -190,7 +190,7 @@ struct package_PrimaryKerberosString {
 	const char * string;/* [relative,subcontext_size(size),subcontext(0),flag(LIBNDR_FLAG_STR_NOTERM|LIBNDR_FLAG_REMAINING)] */
 };
 
-struct package_PrimaryKerberosKey {
+struct package_PrimaryKerberosKey3 {
 	uint16_t reserved1;/* [value(0)] */
 	uint16_t reserved2;/* [value(0)] */
 	uint32_t reserved3;/* [value(0)] */
@@ -203,8 +203,8 @@ struct package_PrimaryKerberosCtr3 {
 	uint16_t num_keys;
 	uint16_t num_old_keys;
 	struct package_PrimaryKerberosString salt;
-	struct package_PrimaryKerberosKey *keys;
-	struct package_PrimaryKerberosKey *old_keys;
+	struct package_PrimaryKerberosKey3 *keys;
+	struct package_PrimaryKerberosKey3 *old_keys;
 	uint32_t padding1;/* [value(0)] */
 	uint32_t padding2;/* [value(0)] */
 	uint32_t padding3;/* [value(0)] */
@@ -212,16 +212,7 @@ struct package_PrimaryKerberosCtr3 {
 	uint32_t padding5;/* [value(0)] */
 };
 
-union package_PrimaryKerberosCtr {
-	struct package_PrimaryKerberosCtr3 ctr3;/* [case(3)] */
-}/* [nodiscriminant] */;
-
-struct package_PrimaryKerberosBlob {
-	uint32_t version;/* [value(3)] */
-	union package_PrimaryKerberosCtr ctr;/* [switch_is(version)] */
-}/* [public] */;
-
-struct package_PrimaryKerberosNewerKey {
+struct package_PrimaryKerberosKey4 {
 	uint16_t reserved1;/* [value(0)] */
 	uint16_t reserved2;/* [value(0)] */
 	uint32_t reserved3;/* [value(0)] */
@@ -231,26 +222,28 @@ struct package_PrimaryKerberosNewerKey {
 	DATA_BLOB *value;/* [relative,subcontext_size(value_len),subcontext(0),flag(LIBNDR_FLAG_REMAINING)] */
 };
 
-struct package_PrimaryKerberosNewerCtr4 {
+struct package_PrimaryKerberosCtr4 {
 	uint16_t num_keys;
 	uint16_t num_service_keys;/* [value(0)] */
 	uint16_t num_old_keys;
 	uint16_t num_older_keys;
 	struct package_PrimaryKerberosString salt;
 	uint32_t default_iteration_count;
-	struct package_PrimaryKerberosNewerKey *keys;
-	struct package_PrimaryKerberosNewerKey *service_keys;
-	struct package_PrimaryKerberosNewerKey *old_keys;
-	struct package_PrimaryKerberosNewerKey *older_keys;
+	struct package_PrimaryKerberosKey4 *keys;
+	struct package_PrimaryKerberosKey4 *service_keys;
+	struct package_PrimaryKerberosKey4 *old_keys;
+	struct package_PrimaryKerberosKey4 *older_keys;
 };
 
-union package_PrimaryKerberosNewerCtr {
-	struct package_PrimaryKerberosNewerCtr4 ctr4;/* [case(4)] */
+union package_PrimaryKerberosCtr {
+	struct package_PrimaryKerberosCtr3 ctr3;/* [case(3)] */
+	struct package_PrimaryKerberosCtr4 ctr4;/* [case(4)] */
 }/* [nodiscriminant] */;
 
-struct package_PrimaryKerberosNewerBlob {
-	uint32_t version;/* [value(4)] */
-	union package_PrimaryKerberosNewerCtr ctr;/* [switch_is(version)] */
+struct package_PrimaryKerberosBlob {
+	uint16_t version;
+	uint16_t flags;/* [value(0)] */
+	union package_PrimaryKerberosCtr ctr;/* [switch_is(version)] */
 }/* [public] */;
 
 struct package_PrimaryCLEARTEXTBlob {
@@ -395,14 +388,6 @@ struct decode_Packages {
 struct decode_PrimaryKerberos {
 	struct {
 		struct package_PrimaryKerberosBlob blob;
-	} in;
-
-};
-
-
-struct decode_PrimaryKerberosNewer {
-	struct {
-		struct package_PrimaryKerberosNewerBlob blob;
 	} in;
 
 };
