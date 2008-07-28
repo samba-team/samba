@@ -147,6 +147,7 @@ case $cmd in
 	for IFACE in $INTERFACES ; do
 	    case $IFACE in 
 	    bond*)
+		IFACE=`echo $IFACE |sed -e 's/\....$//'`
 		grep '^MII Status: up' /proc/net/bonding/$IFACE > /dev/null || {
 			echo "ERROR: public network interface $IFACE is down"
 			exit 1
