@@ -1857,9 +1857,10 @@ static enum ndr_err_code ndr_push_package_PrimaryKerberosNewerKey(struct ndr_pus
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, 0));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, 0));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0x00001000));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->iteration_count));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->keytype));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, (r->value?r->value->length:0)));
 		{
@@ -1894,9 +1895,10 @@ static enum ndr_err_code ndr_pull_package_PrimaryKerberosNewerKey(struct ndr_pul
 	TALLOC_CTX *_mem_save_value_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->unknown1));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->unknown2));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->unknown3));
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->reserved1));
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->reserved2));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->reserved3));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->iteration_count));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->keytype));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->value_len));
 		{
@@ -1941,9 +1943,10 @@ _PUBLIC_ void ndr_print_package_PrimaryKerberosNewerKey(struct ndr_print *ndr, c
 {
 	ndr_print_struct(ndr, name, "package_PrimaryKerberosNewerKey");
 	ndr->depth++;
-	ndr_print_uint32(ndr, "unknown1", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?0:r->unknown1);
-	ndr_print_uint32(ndr, "unknown2", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?0:r->unknown2);
-	ndr_print_uint32(ndr, "unknown3", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?0x00001000:r->unknown3);
+	ndr_print_uint16(ndr, "reserved1", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?0:r->reserved1);
+	ndr_print_uint16(ndr, "reserved2", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?0:r->reserved2);
+	ndr_print_uint32(ndr, "reserved3", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?0:r->reserved3);
+	ndr_print_uint32(ndr, "iteration_count", r->iteration_count);
 	ndr_print_uint32(ndr, "keytype", r->keytype);
 	ndr_print_uint32(ndr, "value_len", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?(r->value?r->value->length:0):r->value_len);
 	ndr_print_ptr(ndr, "value", r->value);
@@ -1958,24 +1961,28 @@ _PUBLIC_ void ndr_print_package_PrimaryKerberosNewerKey(struct ndr_print *ndr, c
 static enum ndr_err_code ndr_push_package_PrimaryKerberosNewerCtr4(struct ndr_push *ndr, int ndr_flags, const struct package_PrimaryKerberosNewerCtr4 *r)
 {
 	uint32_t cntr_keys_0;
-	uint32_t cntr_old_keys1_0;
-	uint32_t cntr_old_keys2_0;
+	uint32_t cntr_service_keys_0;
+	uint32_t cntr_old_keys_0;
+	uint32_t cntr_older_keys_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->num_keys));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, 0));
-		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->num_old_keys1));
-		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->num_old_keys2));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->num_old_keys));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->num_older_keys));
 		NDR_CHECK(ndr_push_package_PrimaryKerberosString(ndr, NDR_SCALARS, &r->salt));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0x00001000));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->default_iteration_count));
 		for (cntr_keys_0 = 0; cntr_keys_0 < r->num_keys; cntr_keys_0++) {
 			NDR_CHECK(ndr_push_package_PrimaryKerberosNewerKey(ndr, NDR_SCALARS, &r->keys[cntr_keys_0]));
 		}
-		for (cntr_old_keys1_0 = 0; cntr_old_keys1_0 < r->num_old_keys1; cntr_old_keys1_0++) {
-			NDR_CHECK(ndr_push_package_PrimaryKerberosNewerKey(ndr, NDR_SCALARS, &r->old_keys1[cntr_old_keys1_0]));
+		for (cntr_service_keys_0 = 0; cntr_service_keys_0 < 0; cntr_service_keys_0++) {
+			NDR_CHECK(ndr_push_package_PrimaryKerberosNewerKey(ndr, NDR_SCALARS, &r->service_keys[cntr_service_keys_0]));
 		}
-		for (cntr_old_keys2_0 = 0; cntr_old_keys2_0 < r->num_old_keys2; cntr_old_keys2_0++) {
-			NDR_CHECK(ndr_push_package_PrimaryKerberosNewerKey(ndr, NDR_SCALARS, &r->old_keys2[cntr_old_keys2_0]));
+		for (cntr_old_keys_0 = 0; cntr_old_keys_0 < r->num_old_keys; cntr_old_keys_0++) {
+			NDR_CHECK(ndr_push_package_PrimaryKerberosNewerKey(ndr, NDR_SCALARS, &r->old_keys[cntr_old_keys_0]));
+		}
+		for (cntr_older_keys_0 = 0; cntr_older_keys_0 < r->num_older_keys; cntr_older_keys_0++) {
+			NDR_CHECK(ndr_push_package_PrimaryKerberosNewerKey(ndr, NDR_SCALARS, &r->older_keys[cntr_older_keys_0]));
 		}
 	}
 	if (ndr_flags & NDR_BUFFERS) {
@@ -1983,11 +1990,14 @@ static enum ndr_err_code ndr_push_package_PrimaryKerberosNewerCtr4(struct ndr_pu
 		for (cntr_keys_0 = 0; cntr_keys_0 < r->num_keys; cntr_keys_0++) {
 			NDR_CHECK(ndr_push_package_PrimaryKerberosNewerKey(ndr, NDR_BUFFERS, &r->keys[cntr_keys_0]));
 		}
-		for (cntr_old_keys1_0 = 0; cntr_old_keys1_0 < r->num_old_keys1; cntr_old_keys1_0++) {
-			NDR_CHECK(ndr_push_package_PrimaryKerberosNewerKey(ndr, NDR_BUFFERS, &r->old_keys1[cntr_old_keys1_0]));
+		for (cntr_service_keys_0 = 0; cntr_service_keys_0 < 0; cntr_service_keys_0++) {
+			NDR_CHECK(ndr_push_package_PrimaryKerberosNewerKey(ndr, NDR_BUFFERS, &r->service_keys[cntr_service_keys_0]));
 		}
-		for (cntr_old_keys2_0 = 0; cntr_old_keys2_0 < r->num_old_keys2; cntr_old_keys2_0++) {
-			NDR_CHECK(ndr_push_package_PrimaryKerberosNewerKey(ndr, NDR_BUFFERS, &r->old_keys2[cntr_old_keys2_0]));
+		for (cntr_old_keys_0 = 0; cntr_old_keys_0 < r->num_old_keys; cntr_old_keys_0++) {
+			NDR_CHECK(ndr_push_package_PrimaryKerberosNewerKey(ndr, NDR_BUFFERS, &r->old_keys[cntr_old_keys_0]));
+		}
+		for (cntr_older_keys_0 = 0; cntr_older_keys_0 < r->num_older_keys; cntr_older_keys_0++) {
+			NDR_CHECK(ndr_push_package_PrimaryKerberosNewerKey(ndr, NDR_BUFFERS, &r->older_keys[cntr_older_keys_0]));
 		}
 	}
 	return NDR_ERR_SUCCESS;
@@ -1997,18 +2007,20 @@ static enum ndr_err_code ndr_pull_package_PrimaryKerberosNewerCtr4(struct ndr_pu
 {
 	uint32_t cntr_keys_0;
 	TALLOC_CTX *_mem_save_keys_0;
-	uint32_t cntr_old_keys1_0;
-	TALLOC_CTX *_mem_save_old_keys1_0;
-	uint32_t cntr_old_keys2_0;
-	TALLOC_CTX *_mem_save_old_keys2_0;
+	uint32_t cntr_service_keys_0;
+	TALLOC_CTX *_mem_save_service_keys_0;
+	uint32_t cntr_old_keys_0;
+	TALLOC_CTX *_mem_save_old_keys_0;
+	uint32_t cntr_older_keys_0;
+	TALLOC_CTX *_mem_save_older_keys_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->num_keys));
-		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->unknown1));
-		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->num_old_keys1));
-		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->num_old_keys2));
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->num_service_keys));
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->num_old_keys));
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->num_older_keys));
 		NDR_CHECK(ndr_pull_package_PrimaryKerberosString(ndr, NDR_SCALARS, &r->salt));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->unknown2));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->default_iteration_count));
 		NDR_PULL_ALLOC_N(ndr, r->keys, r->num_keys);
 		_mem_save_keys_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->keys, 0);
@@ -2016,20 +2028,27 @@ static enum ndr_err_code ndr_pull_package_PrimaryKerberosNewerCtr4(struct ndr_pu
 			NDR_CHECK(ndr_pull_package_PrimaryKerberosNewerKey(ndr, NDR_SCALARS, &r->keys[cntr_keys_0]));
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_keys_0, 0);
-		NDR_PULL_ALLOC_N(ndr, r->old_keys1, r->num_old_keys1);
-		_mem_save_old_keys1_0 = NDR_PULL_GET_MEM_CTX(ndr);
-		NDR_PULL_SET_MEM_CTX(ndr, r->old_keys1, 0);
-		for (cntr_old_keys1_0 = 0; cntr_old_keys1_0 < r->num_old_keys1; cntr_old_keys1_0++) {
-			NDR_CHECK(ndr_pull_package_PrimaryKerberosNewerKey(ndr, NDR_SCALARS, &r->old_keys1[cntr_old_keys1_0]));
+		NDR_PULL_ALLOC_N(ndr, r->service_keys, r->num_service_keys);
+		_mem_save_service_keys_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->service_keys, 0);
+		for (cntr_service_keys_0 = 0; cntr_service_keys_0 < r->num_service_keys; cntr_service_keys_0++) {
+			NDR_CHECK(ndr_pull_package_PrimaryKerberosNewerKey(ndr, NDR_SCALARS, &r->service_keys[cntr_service_keys_0]));
 		}
-		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_old_keys1_0, 0);
-		NDR_PULL_ALLOC_N(ndr, r->old_keys2, r->num_old_keys2);
-		_mem_save_old_keys2_0 = NDR_PULL_GET_MEM_CTX(ndr);
-		NDR_PULL_SET_MEM_CTX(ndr, r->old_keys2, 0);
-		for (cntr_old_keys2_0 = 0; cntr_old_keys2_0 < r->num_old_keys2; cntr_old_keys2_0++) {
-			NDR_CHECK(ndr_pull_package_PrimaryKerberosNewerKey(ndr, NDR_SCALARS, &r->old_keys2[cntr_old_keys2_0]));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_service_keys_0, 0);
+		NDR_PULL_ALLOC_N(ndr, r->old_keys, r->num_old_keys);
+		_mem_save_old_keys_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->old_keys, 0);
+		for (cntr_old_keys_0 = 0; cntr_old_keys_0 < r->num_old_keys; cntr_old_keys_0++) {
+			NDR_CHECK(ndr_pull_package_PrimaryKerberosNewerKey(ndr, NDR_SCALARS, &r->old_keys[cntr_old_keys_0]));
 		}
-		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_old_keys2_0, 0);
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_old_keys_0, 0);
+		NDR_PULL_ALLOC_N(ndr, r->older_keys, r->num_older_keys);
+		_mem_save_older_keys_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->older_keys, 0);
+		for (cntr_older_keys_0 = 0; cntr_older_keys_0 < r->num_older_keys; cntr_older_keys_0++) {
+			NDR_CHECK(ndr_pull_package_PrimaryKerberosNewerKey(ndr, NDR_SCALARS, &r->older_keys[cntr_older_keys_0]));
+		}
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_older_keys_0, 0);
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		NDR_CHECK(ndr_pull_package_PrimaryKerberosString(ndr, NDR_BUFFERS, &r->salt));
@@ -2039,18 +2058,24 @@ static enum ndr_err_code ndr_pull_package_PrimaryKerberosNewerCtr4(struct ndr_pu
 			NDR_CHECK(ndr_pull_package_PrimaryKerberosNewerKey(ndr, NDR_BUFFERS, &r->keys[cntr_keys_0]));
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_keys_0, 0);
-		_mem_save_old_keys1_0 = NDR_PULL_GET_MEM_CTX(ndr);
-		NDR_PULL_SET_MEM_CTX(ndr, r->old_keys1, 0);
-		for (cntr_old_keys1_0 = 0; cntr_old_keys1_0 < r->num_old_keys1; cntr_old_keys1_0++) {
-			NDR_CHECK(ndr_pull_package_PrimaryKerberosNewerKey(ndr, NDR_BUFFERS, &r->old_keys1[cntr_old_keys1_0]));
+		_mem_save_service_keys_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->service_keys, 0);
+		for (cntr_service_keys_0 = 0; cntr_service_keys_0 < r->num_service_keys; cntr_service_keys_0++) {
+			NDR_CHECK(ndr_pull_package_PrimaryKerberosNewerKey(ndr, NDR_BUFFERS, &r->service_keys[cntr_service_keys_0]));
 		}
-		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_old_keys1_0, 0);
-		_mem_save_old_keys2_0 = NDR_PULL_GET_MEM_CTX(ndr);
-		NDR_PULL_SET_MEM_CTX(ndr, r->old_keys2, 0);
-		for (cntr_old_keys2_0 = 0; cntr_old_keys2_0 < r->num_old_keys2; cntr_old_keys2_0++) {
-			NDR_CHECK(ndr_pull_package_PrimaryKerberosNewerKey(ndr, NDR_BUFFERS, &r->old_keys2[cntr_old_keys2_0]));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_service_keys_0, 0);
+		_mem_save_old_keys_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->old_keys, 0);
+		for (cntr_old_keys_0 = 0; cntr_old_keys_0 < r->num_old_keys; cntr_old_keys_0++) {
+			NDR_CHECK(ndr_pull_package_PrimaryKerberosNewerKey(ndr, NDR_BUFFERS, &r->old_keys[cntr_old_keys_0]));
 		}
-		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_old_keys2_0, 0);
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_old_keys_0, 0);
+		_mem_save_older_keys_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->older_keys, 0);
+		for (cntr_older_keys_0 = 0; cntr_older_keys_0 < r->num_older_keys; cntr_older_keys_0++) {
+			NDR_CHECK(ndr_pull_package_PrimaryKerberosNewerKey(ndr, NDR_BUFFERS, &r->older_keys[cntr_older_keys_0]));
+		}
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_older_keys_0, 0);
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -2058,16 +2083,17 @@ static enum ndr_err_code ndr_pull_package_PrimaryKerberosNewerCtr4(struct ndr_pu
 _PUBLIC_ void ndr_print_package_PrimaryKerberosNewerCtr4(struct ndr_print *ndr, const char *name, const struct package_PrimaryKerberosNewerCtr4 *r)
 {
 	uint32_t cntr_keys_0;
-	uint32_t cntr_old_keys1_0;
-	uint32_t cntr_old_keys2_0;
+	uint32_t cntr_service_keys_0;
+	uint32_t cntr_old_keys_0;
+	uint32_t cntr_older_keys_0;
 	ndr_print_struct(ndr, name, "package_PrimaryKerberosNewerCtr4");
 	ndr->depth++;
 	ndr_print_uint16(ndr, "num_keys", r->num_keys);
-	ndr_print_uint16(ndr, "unknown1", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?0:r->unknown1);
-	ndr_print_uint16(ndr, "num_old_keys1", r->num_old_keys1);
-	ndr_print_uint16(ndr, "num_old_keys2", r->num_old_keys2);
+	ndr_print_uint16(ndr, "num_service_keys", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?0:r->num_service_keys);
+	ndr_print_uint16(ndr, "num_old_keys", r->num_old_keys);
+	ndr_print_uint16(ndr, "num_older_keys", r->num_older_keys);
 	ndr_print_package_PrimaryKerberosString(ndr, "salt", &r->salt);
-	ndr_print_uint32(ndr, "unknown2", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?0x00001000:r->unknown2);
+	ndr_print_uint32(ndr, "default_iteration_count", r->default_iteration_count);
 	ndr->print(ndr, "%s: ARRAY(%d)", "keys", (int)r->num_keys);
 	ndr->depth++;
 	for (cntr_keys_0=0;cntr_keys_0<r->num_keys;cntr_keys_0++) {
@@ -2078,22 +2104,32 @@ _PUBLIC_ void ndr_print_package_PrimaryKerberosNewerCtr4(struct ndr_print *ndr, 
 		}
 	}
 	ndr->depth--;
-	ndr->print(ndr, "%s: ARRAY(%d)", "old_keys1", (int)r->num_old_keys1);
+	ndr->print(ndr, "%s: ARRAY(%d)", "service_keys", (int)r->num_service_keys);
 	ndr->depth++;
-	for (cntr_old_keys1_0=0;cntr_old_keys1_0<r->num_old_keys1;cntr_old_keys1_0++) {
+	for (cntr_service_keys_0=0;cntr_service_keys_0<r->num_service_keys;cntr_service_keys_0++) {
 		char *idx_0=NULL;
-		if (asprintf(&idx_0, "[%d]", cntr_old_keys1_0) != -1) {
-			ndr_print_package_PrimaryKerberosNewerKey(ndr, "old_keys1", &r->old_keys1[cntr_old_keys1_0]);
+		if (asprintf(&idx_0, "[%d]", cntr_service_keys_0) != -1) {
+			ndr_print_package_PrimaryKerberosNewerKey(ndr, "service_keys", &r->service_keys[cntr_service_keys_0]);
 			free(idx_0);
 		}
 	}
 	ndr->depth--;
-	ndr->print(ndr, "%s: ARRAY(%d)", "old_keys2", (int)r->num_old_keys2);
+	ndr->print(ndr, "%s: ARRAY(%d)", "old_keys", (int)r->num_old_keys);
 	ndr->depth++;
-	for (cntr_old_keys2_0=0;cntr_old_keys2_0<r->num_old_keys2;cntr_old_keys2_0++) {
+	for (cntr_old_keys_0=0;cntr_old_keys_0<r->num_old_keys;cntr_old_keys_0++) {
 		char *idx_0=NULL;
-		if (asprintf(&idx_0, "[%d]", cntr_old_keys2_0) != -1) {
-			ndr_print_package_PrimaryKerberosNewerKey(ndr, "old_keys2", &r->old_keys2[cntr_old_keys2_0]);
+		if (asprintf(&idx_0, "[%d]", cntr_old_keys_0) != -1) {
+			ndr_print_package_PrimaryKerberosNewerKey(ndr, "old_keys", &r->old_keys[cntr_old_keys_0]);
+			free(idx_0);
+		}
+	}
+	ndr->depth--;
+	ndr->print(ndr, "%s: ARRAY(%d)", "older_keys", (int)r->num_older_keys);
+	ndr->depth++;
+	for (cntr_older_keys_0=0;cntr_older_keys_0<r->num_older_keys;cntr_older_keys_0++) {
+		char *idx_0=NULL;
+		if (asprintf(&idx_0, "[%d]", cntr_older_keys_0) != -1) {
+			ndr_print_package_PrimaryKerberosNewerKey(ndr, "older_keys", &r->older_keys[cntr_older_keys_0]);
 			free(idx_0);
 		}
 	}

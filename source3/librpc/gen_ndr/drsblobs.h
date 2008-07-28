@@ -222,9 +222,10 @@ struct package_PrimaryKerberosBlob {
 }/* [public] */;
 
 struct package_PrimaryKerberosNewerKey {
-	uint32_t unknown1;/* [value(0)] */
-	uint32_t unknown2;/* [value(0)] */
-	uint32_t unknown3;/* [value(0x00001000)] */
+	uint16_t reserved1;/* [value(0)] */
+	uint16_t reserved2;/* [value(0)] */
+	uint32_t reserved3;/* [value(0)] */
+	uint32_t iteration_count;
 	uint32_t keytype;
 	uint32_t value_len;/* [value((value?value->length:0))] */
 	DATA_BLOB *value;/* [relative,subcontext_size(value_len),subcontext(0),flag(LIBNDR_FLAG_REMAINING)] */
@@ -232,14 +233,15 @@ struct package_PrimaryKerberosNewerKey {
 
 struct package_PrimaryKerberosNewerCtr4 {
 	uint16_t num_keys;
-	uint16_t unknown1;/* [value(0)] */
-	uint16_t num_old_keys1;
-	uint16_t num_old_keys2;
+	uint16_t num_service_keys;/* [value(0)] */
+	uint16_t num_old_keys;
+	uint16_t num_older_keys;
 	struct package_PrimaryKerberosString salt;
-	uint32_t unknown2;/* [value(0x00001000)] */
+	uint32_t default_iteration_count;
 	struct package_PrimaryKerberosNewerKey *keys;
-	struct package_PrimaryKerberosNewerKey *old_keys1;
-	struct package_PrimaryKerberosNewerKey *old_keys2;
+	struct package_PrimaryKerberosNewerKey *service_keys;
+	struct package_PrimaryKerberosNewerKey *old_keys;
+	struct package_PrimaryKerberosNewerKey *older_keys;
 };
 
 union package_PrimaryKerberosNewerCtr {
