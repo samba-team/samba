@@ -348,12 +348,12 @@ storage_to_etext(krb5_context context,
     krb5_ssize_t size;
     krb5_data data;
 
-    /* multiple of eight bytes */
+    /* multiple of eight bytes, don't round up */
 
     size = krb5_storage_seek(sp, 0, SEEK_END);
     if (size < 0)
 	return KRB4ET_RD_AP_UNDEC;
-    size = 8 - (size & 7);
+    size = ((size+7) & ~7) - size;
 
     ret = krb5_storage_write(sp, eightzeros, size);
     if (ret != size)
