@@ -1290,7 +1290,8 @@ def provision_backend(setup_dir=None, message=None,
             server_port_string = " -h ldap://0.0.0.0:%d" % ldap_backend_port
         else:
             server_port_string = ""
-            slapdcommand="Start slapd with:    slapd -f " + paths.ldapdir + "/slapd.conf -h " + ldapi_uri + server_port_string
+
+        slapdcommand="Start slapd with:    slapd -f " + paths.ldapdir + "/slapd.conf -h " + ldapi_uri + server_port_string
 
             
     schema_command = "bin/ad2oLschema --option=convert:target=" + ldap_backend_type + " -I " + setup_path(mapping) + " -H tdb://" + schemadb_path + " -O " + os.path.join(paths.ldapdir, backend_schema)
