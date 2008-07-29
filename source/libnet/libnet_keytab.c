@@ -105,6 +105,60 @@ krb5_error_code libnet_keytab_init(TALLOC_CTX *mem_ctx,
 /****************************************************************
 ****************************************************************/
 
+static krb5_error_code libnet_keytab_add_entry(krb5_context context,
+					       krb5_keytab keytab,
+					       krb5_kvno kvno,
+					       const char *princ_s,
+					       krb5_enctype enctype,
+					       krb5_data password)
+{
+	krb5_keyblock *keyp;
+	krb5_keytab_entry kt_entry;
+	krb5_error_code ret;
+
+	ZERO_STRUCT(kt_entry);
+
+	kt_entry.vno = kvno;
+
+	ret = smb_krb5_parse_name(context, princ_s, &kt_entry.principal);
+	if (ret) {
+		DEBUG(1, ("smb_krb5_parse_name(%s) failed (%s)\n",
+			  princ_s, error_message(ret)));
+		return ret;
+	}
+
+#if !defined(HAVE_KRB5_KEYTAB_ENTRY_KEY) && !defined(HAVE_KRB5_KEYTAB_ENTRY_KEYBLOCK)
+#error krb5_keytab_entry has no key or keyblock member
+#endif
+#ifdef HAVE_KRB5_KEYTAB_ENTRY_KEY               /* MIT */
+	keyp = &kt_entry.key;
+#endif
+#ifdef HAVE_KRB5_KEYTAB_ENTRY_KEYBLOCK          /* Heimdal */
+	keyp = &kt_entry.keyblock;
+#endif
+
+	if (create_kerberos_key_from_string(context, kt_entry.principal,
+					    &password, keyp, enctype, true))
+	{
+		ret = KRB5KRB_ERR_GENERIC;
+		goto done;
+	}
+
+	ret = krb5_kt_add_entry(context, keytab, &kt_entry);
+	if (ret) {
+		DEBUG(1, ("adding entry to keytab failed (%s)\n",
+			  error_message(ret)));
+	}
+
+done:
+	krb5_free_keyblock_contents(context, keyp);
+	krb5_free_principal(context, kt_entry.principal);
+	ZERO_STRUCT(kt_entry);
+	smb_krb5_kt_free_entry(context, &kt_entry);
+
+	return ret;
+}
+
 krb5_error_code libnet_keytab_add(struct libnet_keytab_context *ctx)
 {
 #if defined(ENCTYPE_ARCFOUR_HMAC)
