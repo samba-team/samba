@@ -202,6 +202,8 @@ static NTSTATUS parse_object(TALLOC_CTX *mem_ctx,
 
 	ZERO_STRUCT(nt_passwd);
 
+	DEBUG(3, ("parsing object '%s'\n", cur->object.identifier->dn));
+
 	for (i=0; i < cur->object.attribute_ctr.num_attributes; i++) {
 
 		attr = &cur->object.attribute_ctr.attributes[i];
