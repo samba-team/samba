@@ -73,7 +73,8 @@ static NTSTATUS keytab_startup(struct dssync_context *ctx, TALLOC_CTX *mem_ctx,
 				    ctx->nc_dn, ctx->dns_domain_name);
 	NT_STATUS_HAVE_NO_MEMORY(principal);
 
-	entry = libnet_keytab_search(keytab_ctx, principal, 0, mem_ctx);
+	entry = libnet_keytab_search(keytab_ctx, principal, 0, ENCTYPE_ARCFOUR_HMAC,
+				     mem_ctx);
 	if (entry) {
 		enum ndr_err_code ndr_err;
 		old_utdv = talloc(mem_ctx, struct replUpToDateVectorBlob);
@@ -129,7 +130,8 @@ static NTSTATUS keytab_finish(struct dssync_context *ctx, TALLOC_CTX *mem_ctx,
 
 		status = add_to_keytab_entries(mem_ctx, keytab_ctx, 0,
 					       ctx->nc_dn, "UTDV",
-					       ENCTYPE_NULL, blob);
+					       ENCTYPE_ARCFOUR_HMAC,
+					       blob);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto done;
 		}
