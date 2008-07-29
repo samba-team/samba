@@ -143,6 +143,7 @@ krb5_error_code libnet_keytab_add(struct libnet_keytab_context *ctx)
 
 struct libnet_keytab_entry *libnet_keytab_search(struct libnet_keytab_context *ctx,
 						 const char *principal, int kvno,
+						 const krb5_enctype enctype,
 						 TALLOC_CTX *mem_ctx)
 {
 	krb5_error_code ret = 0;
