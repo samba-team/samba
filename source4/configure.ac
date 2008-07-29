@@ -24,6 +24,7 @@ m4_include(lib/util/time.m4)
 m4_include(lib/popt/samba.m4)
 m4_include(lib/charset/config.m4)
 m4_include(lib/socket/config.m4)
+m4_include(lib/zlib.m4)
 m4_include(nsswitch/nsstest.m4)
 m4_include(pidl/config.m4)
 
