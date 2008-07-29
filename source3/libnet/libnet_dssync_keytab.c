@@ -113,6 +113,7 @@ static NTSTATUS keytab_finish(struct dssync_context *ctx, TALLOC_CTX *mem_ctx,
 	if (new_utdv) {
 		enum ndr_err_code ndr_err;
 		DATA_BLOB blob;
+		char *principal;
 
 		if (DEBUGLEVEL >= 10) {
 			NDR_PRINT_DEBUG(replUpToDateVectorBlob, new_utdv);
@@ -133,6 +134,24 @@ static NTSTATUS keytab_finish(struct dssync_context *ctx, TALLOC_CTX *mem_ctx,
 					       ENCTYPE_ARCFOUR_HMAC,
 					       blob);
 		if (!NT_STATUS_IS_OK(status)) {
+			goto done;
+		}
+
+		principal = talloc_asprintf(mem_ctx, "UTDV/%s@%s",
+					    ctx->nc_dn, ctx->dns_domain_name);
+		if (!principal) {
+			status = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
+
+		ret = libnet_keytab_remove_entries(keytab_ctx, principal,
+						   0, ENCTYPE_ARCFOUR_HMAC);
+		if (ret) {
+			status = krb5_to_nt_status(ret);
+			ctx->error_message = talloc_asprintf(mem_ctx,
+				"Failed to remove old UTDV entries from "
+				"keytab %s: %s", keytab_ctx->keytab_name,
+				error_message(ret));
 			goto done;
 		}
 	}
