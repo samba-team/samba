@@ -174,6 +174,15 @@ backend:
 		goto done;
 	}
 
+	if (dom_name[0] != '\0') {
+		/*
+		 * We had the task to go to a specific domain which
+		 * could not answer our request. Fail.
+		 */
+		idmap_cache_set_sid2uid(sid, -1);
+		return NT_STATUS_NONE_MAPPED;
+	}
+
 	ret = idmap_new_mapping(sid, ID_TYPE_UID, &map.xid);
 
 	if (!NT_STATUS_IS_OK(ret)) {
@@ -234,6 +243,15 @@ backend:
 			return NT_STATUS_NONE_MAPPED;
 		}
 		goto done;
+	}
+
+	if (domname[0] != '\0') {
+		/*
+		 * We had the task to go to a specific domain which
+		 * could not answer our request. Fail.
+		 */
+		idmap_cache_set_sid2uid(sid, -1);
+		return NT_STATUS_NONE_MAPPED;
 	}
 
 	ret = idmap_new_mapping(sid, ID_TYPE_GID, &map.xid);
