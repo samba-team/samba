@@ -130,7 +130,7 @@ NTSTATUS make_pdb_method_name(struct pdb_methods **methods, const char *selected
 	trim_char(module_name, ' ', ' ');
 
 
-	DEBUG(5,("Attempting to find an passdb backend to match %s (%s)\n", selected, module_name));
+	DEBUG(5,("Attempting to find a passdb backend to match %s (%s)\n", selected, module_name));
 
 	entry = pdb_find_backend_entry(module_name);
 	
