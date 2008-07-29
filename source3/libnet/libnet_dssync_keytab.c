@@ -242,7 +242,13 @@ static NTSTATUS parse_object(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	if (!got_pwd || !name) {
+	if (!name) {
+		DEBUG(10, ("no name (sAMAccountName) found - skipping.\n"));
+		return NT_STATUS_OK;
+	}
+
+	if (!got_pwd) {
+		DEBUG(10, ("no password (unicodePwd) found - skipping.\n"));
 		return NT_STATUS_OK;
 	}
 
