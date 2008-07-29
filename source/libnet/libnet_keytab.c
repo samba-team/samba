@@ -204,6 +204,8 @@ struct libnet_keytab_entry *libnet_keytab_search(struct libnet_keytab_context *c
 
 	ret = krb5_kt_start_seq_get(ctx->context, ctx->keytab, &cursor);
 	if (ret) {
+		DEBUG(10, ("krb5_kt_start_seq_get failed: %s",
+			  error_message(ret)));
 		return NULL;
 	}
 
@@ -231,24 +233,30 @@ struct libnet_keytab_entry *libnet_keytab_search(struct libnet_keytab_context *c
 
 		entry = talloc_zero(mem_ctx, struct libnet_keytab_entry);
 		if (!entry) {
+			DEBUG(3, ("talloc failed\n"));
 			goto fail;
 		}
 
 		entry->name = talloc_strdup(entry, princ_s);
 		if (!entry->name) {
+			DEBUG(3, ("talloc_strdup_failed\n"));
 			goto fail;
 		}
 
 		entry->principal = talloc_strdup(entry, princ_s);
 		if (!entry->principal) {
+			DEBUG(3, ("talloc_strdup_failed\n"));
 			goto fail;
 		}
 
 		entry->password = data_blob_talloc(entry, kt_entry.key.contents,
 						   kt_entry.key.length);
 		if (!entry->password.data) {
+			DEBUG(3, ("data_blob_talloc failed\n"));
 			goto fail;
 		}
+
+		DEBUG(10, ("found entry\n"));
 
 		smb_krb5_kt_free_entry(ctx->context, &kt_entry);
 		SAFE_FREE(princ_s);
