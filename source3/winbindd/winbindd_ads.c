@@ -1241,13 +1241,21 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 			
 			(*names)[ret_count] = CONST_DISCARD(char *, trusts.array[i].netbios_name);
 			(*alt_names)[ret_count] = CONST_DISCARD(char *, trusts.array[i].dns_name);
-			sid_copy(&(*dom_sids)[ret_count], trusts.array[i].sid);
+			if (trusts.array[i].sid) {
+				sid_copy(&(*dom_sids)[ret_count], trusts.array[i].sid);
+			} else {
+				sid_copy(&(*dom_sids)[ret_count], &global_sid_NULL);
+			}
 
 			/* add to the trusted domain cache */
 
 			fstrcpy( d.name,  trusts.array[i].netbios_name);
 			fstrcpy( d.alt_name, trusts.array[i].dns_name);
-			sid_copy( &d.sid, trusts.array[i].sid);
+			if (trusts.array[i].sid) {
+				sid_copy( &d.sid, trusts.array[i].sid);
+			} else {
+				sid_copy(&(*dom_sids)[ret_count], &global_sid_NULL);
+			}
 
 			if ( domain->primary ) {
 				DEBUG(10,("trusted_domains(ads):  Searching "
