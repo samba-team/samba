@@ -161,9 +161,7 @@ done:
 
 krb5_error_code libnet_keytab_add(struct libnet_keytab_context *ctx)
 {
-#if defined(ENCTYPE_ARCFOUR_HMAC)
 	krb5_error_code ret = 0;
-	krb5_enctype enctypes[2] = { ENCTYPE_ARCFOUR_HMAC, 0 };
 	int i;
 
 	for (i=0; i<ctx->count; i++) {
@@ -174,14 +172,12 @@ krb5_error_code libnet_keytab_add(struct libnet_keytab_context *ctx)
 		password.data = (char *)entry->password.data;
 		password.length = entry->password.length;
 
-		ret = smb_krb5_kt_add_entry_ext(ctx->context,
-						ctx->keytab,
-						entry->kvno,
-						entry->principal,
-						enctypes,
-						password,
-						true,
-						true);
+		ret = libnet_keytab_add_entry(ctx->context,
+					      ctx->keytab,
+					      entry->kvno,
+					      entry->principal,
+					      entry->enctype,
+					      password);
 		if (ret) {
 			DEBUG(1,("libnet_keytab_add: "
 				"Failed to add entry to keytab file\n"));
@@ -190,9 +186,6 @@ krb5_error_code libnet_keytab_add(struct libnet_keytab_context *ctx)
 	}
 
 	return ret;
-#else
-	return -1;
-#endif /* defined(ENCTYPE_ARCFOUR_HMAC) */
 }
 
 struct libnet_keytab_entry *libnet_keytab_search(struct libnet_keytab_context *ctx,
