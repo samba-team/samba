@@ -171,6 +171,8 @@ static NTSTATUS parse_object(TALLOC_CTX *mem_ctx,
 	bool got_pwd = false;
 
 	char *upn = NULL;
+	char **spn = NULL;
+	uint32_t num_spns = 0;
 	char *name = NULL;
 	uint32_t kvno = 0;
 	uint32_t uacc = 0;
@@ -184,6 +186,19 @@ static NTSTATUS parse_object(TALLOC_CTX *mem_ctx,
 	for (i=0; i < cur->object.attribute_ctr.num_attributes; i++) {
 
 		attr = &cur->object.attribute_ctr.attributes[i];
+
+		if (attr->attid == DRSUAPI_ATTRIBUTE_servicePrincipalName) {
+			uint32_t count;
+			num_spns = attr->value_ctr.num_values;
+			spn = TALLOC_ARRAY(mem_ctx, char *, num_spns);
+			for (count = 0; count < num_spns; count++) {
+				blob = attr->value_ctr.values[count].blob;
+				pull_string_talloc(spn, NULL, 0,
+						   &spn[count],
+						   blob->data, blob->length,
+						   STR_UNICODE);
+			}
+		}
 
 		if (attr->value_ctr.num_values != 1) {
 			continue;
@@ -257,6 +272,13 @@ static NTSTATUS parse_object(TALLOC_CTX *mem_ctx,
 		sam_type, uacc));
 	if (upn) {
 		DEBUGADD(1,(", upn: %s", upn));
+	}
+	if (num_spns > 0) {
+		DEBUGADD(1, (", spns: ["));
+		for (i = 0; i < num_spns; i++) {
+			DEBUGADD(1, ("%s%s", spn[i],
+				     (i+1 == num_spns)?"]":", "));
+		}
 	}
 	DEBUGADD(1,("\n"));
 
