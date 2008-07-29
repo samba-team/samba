@@ -167,6 +167,11 @@ struct libnet_keytab_entry *libnet_keytab_search(struct libnet_keytab_context *c
 			continue;
 		}
 
+		if (kt_entry.key.enctype != enctype) {
+			smb_krb5_kt_free_entry(ctx->context, &kt_entry);
+			continue;
+		}
+
 		ret = smb_krb5_unparse_name(ctx->context, kt_entry.principal, &princ_s);
 		if (ret) {
 			smb_krb5_kt_free_entry(ctx->context, &kt_entry);
