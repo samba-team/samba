@@ -36,6 +36,7 @@ struct dssync_context {
 	struct rpc_pipe_client *cli;
 	const char *nc_dn;
 	bool single;
+	bool repl_nodiff;
 	const char *object_dn;
 	struct policy_handle bind_handle;
 	DATA_BLOB session_key;
