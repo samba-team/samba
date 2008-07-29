@@ -253,10 +253,10 @@ static NTSTATUS parse_object(TALLOC_CTX *mem_ctx,
 	}
 
 	DEBUG(1,("#%02d: %s:%d, ", ctx->count, name, kvno));
-	DEBUGADD(1,("sAMAccountType: 0x%08x, userAccountControl: 0x%08x ",
+	DEBUGADD(1,("sAMAccountType: 0x%08x, userAccountControl: 0x%08x",
 		sam_type, uacc));
 	if (upn) {
-		DEBUGADD(1,("upn: %s", upn));
+		DEBUGADD(1,(", upn: %s", upn));
 	}
 	DEBUGADD(1,("\n"));
 
