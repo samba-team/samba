@@ -142,7 +142,8 @@ krb5_error_code libnet_keytab_add(struct libnet_keytab_context *ctx)
 }
 
 struct libnet_keytab_entry *libnet_keytab_search(struct libnet_keytab_context *ctx,
-						 const char *principal, int kvno,
+						 const char *principal,
+						 int kvno,
 						 const krb5_enctype enctype,
 						 TALLOC_CTX *mem_ctx)
 {
@@ -159,65 +160,63 @@ struct libnet_keytab_entry *libnet_keytab_search(struct libnet_keytab_context *c
 		return NULL;
 	}
 
-	while (krb5_kt_next_entry(ctx->context, ctx->keytab, &kt_entry, &cursor) == 0) {
+	while (krb5_kt_next_entry(ctx->context, ctx->keytab, &kt_entry, &cursor) == 0)
+	{
 		char *princ_s = NULL;
 
 		if (kt_entry.vno != kvno) {
-			smb_krb5_kt_free_entry(ctx->context, &kt_entry);
-			continue;
+			goto cont;
 		}
 
 		if (kt_entry.key.enctype != enctype) {
-			smb_krb5_kt_free_entry(ctx->context, &kt_entry);
-			continue;
+			goto cont;
 		}
 
-		ret = smb_krb5_unparse_name(ctx->context, kt_entry.principal, &princ_s);
+		ret = smb_krb5_unparse_name(ctx->context, kt_entry.principal,
+					    &princ_s);
 		if (ret) {
-			smb_krb5_kt_free_entry(ctx->context, &kt_entry);
-			continue;
+			goto cont;
 		}
 
 		if (strcmp(principal, princ_s) != 0) {
-			smb_krb5_kt_free_entry(ctx->context, &kt_entry);
-			SAFE_FREE(princ_s);
-			continue;
+			goto cont;
 		}
 
 		entry = talloc_zero(mem_ctx, struct libnet_keytab_entry);
 		if (!entry) {
-			smb_krb5_kt_free_entry(ctx->context, &kt_entry);
-			SAFE_FREE(princ_s);
-			break;
+			goto fail;
 		}
 
 		entry->name = talloc_strdup(entry, princ_s);
 		if (!entry->name) {
-			smb_krb5_kt_free_entry(ctx->context, &kt_entry);
-			SAFE_FREE(princ_s);
-			TALLOC_FREE(entry);
-			break;
+			goto fail;
 		}
 
 		entry->principal = talloc_strdup(entry, princ_s);
 		if (!entry->principal) {
-			smb_krb5_kt_free_entry(ctx->context, &kt_entry);
-			SAFE_FREE(princ_s);
-			TALLOC_FREE(entry);
-			break;
+			goto fail;
 		}
 
-		entry->password = data_blob_talloc(entry, kt_entry.key.contents, kt_entry.key.length);
+		entry->password = data_blob_talloc(entry, kt_entry.key.contents,
+						   kt_entry.key.length);
 		if (!entry->password.data) {
-			smb_krb5_kt_free_entry(ctx->context, &kt_entry);
-			SAFE_FREE(princ_s);
-			TALLOC_FREE(entry);
-			break;
+			goto fail;
 		}
 
 		smb_krb5_kt_free_entry(ctx->context, &kt_entry);
 		SAFE_FREE(princ_s);
 		break;
+
+fail:
+		smb_krb5_kt_free_entry(ctx->context, &kt_entry);
+		SAFE_FREE(princ_s);
+		TALLOC_FREE(entry);
+		break;
+
+cont:
+		smb_krb5_kt_free_entry(ctx->context, &kt_entry);
+		SAFE_FREE(princ_s);
+		continue;
 	}
 
 	krb5_kt_end_seq_get(ctx->context, ctx->keytab, &cursor);
