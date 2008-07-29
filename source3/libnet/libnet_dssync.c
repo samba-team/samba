@@ -410,7 +410,7 @@ static NTSTATUS libnet_dssync_process(TALLOC_CTX *mem_ctx,
 		goto out;
 	}
 
-	if (old_utdv) {
+	if (!ctx->repl_nodiff && old_utdv) {
 		pcursors = &cursors;
 		ZERO_STRUCTP(pcursors);
 

@@ -296,6 +296,8 @@ static NTSTATUS rpc_vampire_keytab_ds_internals(struct net_context *c,
 		return status;
 	}
 
+	ctx->repl_nodiff = c->opt_repl_nodiff ? true : false;
+
 	if (argc >= 1) {
 		ctx->output_filename = argv[0];
 	}
