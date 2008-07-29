@@ -2078,7 +2078,9 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 	for (i=0; i<(*num_domains); i++) {
 		(*names)[i] = centry_string(centry, mem_ctx);
 		(*alt_names)[i] = centry_string(centry, mem_ctx);
-		centry_sid(centry, mem_ctx, &(*dom_sids)[i]);
+		if (!centry_sid(centry, mem_ctx, &(*dom_sids)[i])) {
+			sid_copy(&(*dom_sids)[i], &global_sid_NULL);
+		}
 	}
 
  	status = centry->status;
@@ -3549,8 +3551,11 @@ static bool add_wbdomain_to_tdc_array( struct winbindd_domain *new_dom,
 	list[idx].domain_name = talloc_strdup( list, new_dom->name );
 	list[idx].dns_name = talloc_strdup( list, new_dom->alt_name );
 
-	if ( !is_null_sid( &new_dom->sid ) )
+	if ( !is_null_sid( &new_dom->sid ) ) {
 		sid_copy( &list[idx].sid, &new_dom->sid );
+	} else {
+		sid_copy(&list[idx].sid, &global_sid_NULL);
+	}
 
 	if ( new_dom->domain_flags != 0x0 )
 		list[idx].trust_flags = new_dom->domain_flags;	
