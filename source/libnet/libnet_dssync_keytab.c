@@ -170,6 +170,7 @@ static NTSTATUS parse_object(TALLOC_CTX *mem_ctx,
 	struct drsuapi_DsReplicaAttribute *attr;
 	bool got_pwd = false;
 
+	char *object_dn = NULL;
 	char *upn = NULL;
 	char **spn = NULL;
 	uint32_t num_spns = 0;
@@ -183,7 +184,12 @@ static NTSTATUS parse_object(TALLOC_CTX *mem_ctx,
 
 	ZERO_STRUCT(nt_passwd);
 
-	DEBUG(3, ("parsing object '%s'\n", cur->object.identifier->dn));
+	object_dn = talloc_strdup(mem_ctx, cur->object.identifier->dn);
+	if (!object_dn) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	DEBUG(3, ("parsing object '%s'\n", object_dn));
 
 	for (i=0; i < cur->object.attribute_ctr.num_attributes; i++) {
 
@@ -259,13 +265,57 @@ static NTSTATUS parse_object(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	if (!name) {
-		DEBUG(10, ("no name (sAMAccountName) found - skipping.\n"));
+	if (!got_pwd) {
+		DEBUG(10, ("no password (unicodePwd) found - skipping.\n"));
 		return NT_STATUS_OK;
 	}
 
-	if (!got_pwd) {
-		DEBUG(10, ("no password (unicodePwd) found - skipping.\n"));
+	if (name) {
+		status = add_to_keytab_entries(mem_ctx, ctx, 0, object_dn,
+					       "SAMACCOUNTNAME",
+					       ENCTYPE_NULL,
+					       data_blob_talloc(mem_ctx, name,
+							strlen(name) + 1));
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+	} else {
+		/* look into keytab ... */
+		struct libnet_keytab_entry *entry = NULL;
+		char *principal = NULL;
+
+		DEBUG(10, ("looking for SAMACCOUNTNAME/%s@%s in keytayb...\n",
+			   object_dn, ctx->dns_domain_name));
+
+		principal = talloc_asprintf(mem_ctx, "%s/%s@%s",
+					    "SAMACCOUNTNAME",
+					    object_dn,
+					    ctx->dns_domain_name);
+		if (!principal) {
+			DEBUG(1, ("talloc failed\n"));
+			return NT_STATUS_NO_MEMORY;
+		}
+		entry = libnet_keytab_search(ctx, principal, 0, ENCTYPE_NULL,
+					     mem_ctx);
+		if (entry) {
+			name = (char *)TALLOC_MEMDUP(mem_ctx,
+						     entry->password.data,
+						     entry->password.length);
+			if (!name) {
+				DEBUG(1, ("talloc failed!"));
+				return NT_STATUS_NO_MEMORY;
+			} else {
+				DEBUG(10, ("found name %s\n", name));
+			}
+			TALLOC_FREE(entry);
+		} else {
+			DEBUG(10, ("entry not found\n"));
+		}
+		TALLOC_FREE(principal);
+	}
+
+	if (!name) {
+		DEBUG(10, ("no name (sAMAccountName) found - skipping.\n"));
 		return NT_STATUS_OK;
 	}
 
