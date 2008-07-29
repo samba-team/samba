@@ -5,6 +5,9 @@
 
 /* @(#) $Id$ */
 
+#include "replace.h"
+#define Z_PREFIX
+
 #ifndef ZCONF_H
 #define ZCONF_H
 
