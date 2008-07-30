@@ -5,6 +5,8 @@ if [ $# -gt 0 ]; then
     NUMNODES=$1
 fi
 
+trap 'echo "Killing test"; killall -9 -q ctdbd ctdb_fetch; exit 1' INT TERM
+
 tests/start_daemons.sh $NUMNODES || exit 1
 
 
