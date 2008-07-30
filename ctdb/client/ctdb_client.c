@@ -1787,6 +1787,11 @@ static void traverse_handler(struct ctdb_context *ctdb, uint64_t srvid, TDB_DATA
 		return;
 	}
 
+	if (data.dsize == sizeof(struct ctdb_ltdb_header)) {
+		/* empty records are deleted records in ctdb */
+		return;
+	}
+
 	if (state->fn(ctdb, key, data, state->private_data) != 0) {
 		state->done = True;
 	}
@@ -2947,4 +2952,196 @@ int ctdb_ctrl_getcapabilities(struct ctdb_context *ctdb, struct timeval timeout,
 	ret = ctdb_ctrl_getcapabilities_recv(ctdb, tmp_ctx, state, capabilities);
 	talloc_free(tmp_ctx);
 	return ret;
+}
+
+struct ctdb_transaction_handle {
+	struct ctdb_db_context *ctdb_db;
+	struct ctdb_marshall_buffer *m;
+};
+
+/* start a transaction on a database */
+static int ctdb_transaction_destructor(struct ctdb_transaction_handle *h)
+{
+	tdb_transaction_cancel(h->ctdb_db->ltdb->tdb);
+	return 0;
+}
+
+/* start a transaction on a database */
+struct ctdb_transaction_handle *ctdb_transaction_start(struct ctdb_db_context *ctdb_db,
+						       TALLOC_CTX *mem_ctx)
+{
+	struct ctdb_record_handle *rh;
+	struct ctdb_transaction_handle *h;
+	TDB_DATA key;
+	struct ctdb_ltdb_header header;
+	TALLOC_CTX *tmp_ctx;
+	const char *keyname = CTDB_TRANSACTION_LOCK_KEY;
+	int ret;
+
+	key.dptr = discard_const(keyname);
+	key.dsize = strlen(keyname);
+
+	if (!ctdb_db->persistent) {
+		DEBUG(DEBUG_ERR,(__location__ " Attempted transaction on non-persistent database\n"));
+		return NULL;
+	}
+
+again:
+	tmp_ctx = talloc_new(mem_ctx);
+
+	rh = ctdb_fetch_lock(ctdb_db, tmp_ctx, key, NULL);
+	if (rh == NULL) {
+		DEBUG(DEBUG_ERR,(__location__ " Failed to fetch_lock database\n"));		
+		talloc_free(tmp_ctx);
+		return NULL;
+	}
+	talloc_free(rh);
+
+	ret = tdb_transaction_start(ctdb_db->ltdb->tdb);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,(__location__ " Failed to start tdb transaction\n"));
+		talloc_free(tmp_ctx);
+		return NULL;
+	}
+
+	ret = ctdb_ltdb_fetch(ctdb_db, key, &header, tmp_ctx, NULL);
+	if (ret != 0 || header.dmaster != ctdb_db->ctdb->pnn) {
+		tdb_transaction_cancel(ctdb_db->ltdb->tdb);
+		talloc_free(tmp_ctx);
+		goto again;
+	}
+
+	talloc_free(tmp_ctx);
+
+	/* we have a good transaction */
+	h = talloc_zero(mem_ctx, struct ctdb_transaction_handle);
+	if (h == NULL) {
+		tdb_transaction_cancel(ctdb_db->ltdb->tdb);
+		DEBUG(DEBUG_ERR,(__location__ " oom for transaction handle\n"));		
+		return NULL;
+	}
+
+	h->ctdb_db = ctdb_db;
+
+	talloc_set_destructor(h, ctdb_transaction_destructor);
+
+	return h;
+}
+
+
+
+/*
+  fetch a record inside a transaction
+ */
+int ctdb_transaction_fetch(struct ctdb_transaction_handle *h, 
+			   TALLOC_CTX *mem_ctx, 
+			   TDB_DATA key, TDB_DATA *data)
+{
+	struct ctdb_ltdb_header header;
+	int ret;
+
+	ZERO_STRUCT(header);
+
+	ret = ctdb_ltdb_fetch(h->ctdb_db, key, &header, mem_ctx, data);
+	if (ret == -1 && header.dmaster == (uint32_t)-1) {
+		/* record doesn't exist yet */
+		*data = tdb_null;
+		return 0;
+	}
+	return ret;
+}
+
+/*
+  stores a record inside a transaction
+ */
+int ctdb_transaction_store(struct ctdb_transaction_handle *h, 
+			   TDB_DATA key, TDB_DATA data)
+{
+	TALLOC_CTX *tmp_ctx = talloc_new(h);
+	struct ctdb_ltdb_header header;
+	int ret;
+
+	ZERO_STRUCT(header);
+
+	/* we need the header so we can update the RSN */
+	ret = ctdb_ltdb_fetch(h->ctdb_db, key, &header, tmp_ctx, NULL);
+	if (ret == -1 && header.dmaster == (uint32_t)-1) {
+		/* the record doesn't exist - create one with us as dmaster.
+		   This is only safe because we are in a transaction and this
+		   is a persistent database */
+		header.dmaster = h->ctdb_db->ctdb->pnn;
+		header.rsn = 0;
+	} else if (ret != 0) {
+		DEBUG(DEBUG_ERR,(__location__ " Failed to fetch record\n"));
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	header.rsn++;
+
+	h->m = ctdb_marshall_add(h, h->m, h->ctdb_db->db_id, 0, key, &header, data);
+	if (h->m == NULL) {
+		DEBUG(DEBUG_ERR,(__location__ " Failed to add to marshalling record\n"));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+	
+	ret = ctdb_ltdb_store(h->ctdb_db, key, &header, data);
+
+	talloc_free(tmp_ctx);
+	
+	return ret;
+}
+
+/*
+  commit a transaction
+ */
+int ctdb_transaction_commit(struct ctdb_transaction_handle *h)
+{
+	int ret;
+	int32_t status;
+	struct ctdb_context *ctdb = h->ctdb_db->ctdb;
+
+	talloc_set_destructor(h, NULL);
+
+	if (h->m == NULL) {
+		/* no changes were made */
+		talloc_free(h);
+		return 0;
+	}
+
+	/* tell ctdbd to commit to the other nodes */
+	ret = ctdb_control(ctdb, CTDB_CURRENT_NODE, h->ctdb_db->db_id, 
+			   CTDB_CONTROL_TRANS2_COMMIT, 0, 
+			   ctdb_marshall_finish(h->m), NULL, NULL, &status, NULL, NULL);
+	if (ret != 0 || status != 0) {
+		DEBUG(DEBUG_ERR,(__location__ " Control failed for remote transaction commit\n"));
+		talloc_free(h);
+		return -1;
+	}
+
+	/* do the real commit locally */
+	ret = tdb_transaction_commit(h->ctdb_db->ltdb->tdb);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,(__location__ " Failed to commit transaction\n"));
+		ctdb_control(ctdb, CTDB_CURRENT_NODE, h->ctdb_db->db_id, 
+			     CTDB_CONTROL_TRANS2_ERROR, CTDB_CTRL_FLAG_NOREPLY, 
+			     tdb_null, NULL, NULL, NULL, NULL, NULL);		
+		talloc_free(h);
+		return ret;
+	}
+
+	/* tell ctdbd that we are finished with our local commit */
+	ret = ctdb_control(ctdb, CTDB_CURRENT_NODE, h->ctdb_db->db_id, 
+			   CTDB_CONTROL_TRANS2_FINISHED, 0, 
+			   tdb_null, NULL, NULL, &status, NULL, NULL);
+	if (ret != 0 || status != 0) {
+		DEBUG(DEBUG_ERR,(__location__ " Control failed to finish transaction commit\n"));
+		talloc_free(h);
+		return -1;
+	}
+
+
+	talloc_free(h);
+	return 0;
 }
