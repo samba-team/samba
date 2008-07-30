@@ -363,11 +363,12 @@ static NTSTATUS libnet_dssync_build_request(TALLOC_CTX *mem_ctx,
 					    struct dssync_context *ctx,
 					    const char *dn,
 					    struct replUpToDateVectorBlob *utdv,
-					    int32_t level,
+					    int32_t *plevel,
 					    union drsuapi_DsGetNCChangesRequest *preq)
 {
 	NTSTATUS status;
 	uint32_t count;
+	int32_t level;
 	union drsuapi_DsGetNCChangesRequest req;
 	struct dom_sid null_sid;
 	enum drsuapi_DsExtendedOperation extended_op;
@@ -382,6 +383,14 @@ static NTSTATUS libnet_dssync_build_request(TALLOC_CTX *mem_ctx,
 
 	ZERO_STRUCT(null_sid);
 	ZERO_STRUCT(req);
+
+	if (ctx->remote_info28.supported_extensions
+	    & DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V8)
+	{
+		level = 8;
+	} else {
+		level = 5;
+	}
 
 	nc = TALLOC_ZERO_P(mem_ctx, struct drsuapi_DsReplicaObjectIdentifier);
 	if (!nc) {
@@ -447,6 +456,10 @@ static NTSTATUS libnet_dssync_build_request(TALLOC_CTX *mem_ctx,
 	} else {
 		status = NT_STATUS_INVALID_PARAMETER;
 		goto fail;
+	}
+
+	if (plevel) {
+		*plevel = level;
 	}
 
 	if (preq) {
@@ -627,21 +640,13 @@ static NTSTATUS libnet_dssync_process(TALLOC_CTX *mem_ctx,
 		goto out;
 	}
 
-	if (ctx->remote_info28.supported_extensions
-	    & DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V8)
-	{
-		level = 8;
-	} else {
-		level = 5;
-	}
-
 	if (ctx->single && ctx->object_dn) {
 		dn = ctx->object_dn;
 	} else {
 		dn = ctx->nc_dn;
 	}
 
-	status = libnet_dssync_build_request(mem_ctx, ctx, dn, old_utdv, level,
+	status = libnet_dssync_build_request(mem_ctx, ctx, dn, old_utdv, &level,
 					     &req);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto out;
