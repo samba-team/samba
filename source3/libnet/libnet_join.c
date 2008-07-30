@@ -642,6 +642,37 @@ static bool libnet_join_joindomain_store_secrets(TALLOC_CTX *mem_ctx,
 }
 
 /****************************************************************
+ Connect dc's IPC$ share
+****************************************************************/
+
+static NTSTATUS libnet_join_connect_dc_ipc(const char *dc,
+					   const char *user,
+					   const char *pass,
+					   bool use_kerberos,
+					   struct cli_state **cli)
+{
+	int flags = 0;
+
+	if (use_kerberos) {
+		flags |= CLI_FULL_CONNECTION_USE_KERBEROS;
+	}
+
+	if (use_kerberos && pass) {
+		flags |= CLI_FULL_CONNECTION_FALLBACK_AFTER_KERBEROS;
+	}
+
+	return cli_full_connection(cli, NULL,
+				   dc,
+				   NULL, 0,
+				   "IPC$", "IPC",
+				   user,
+				   NULL,
+				   pass,
+				   flags,
+				   Undefined, NULL);
+}
+
+/****************************************************************
  Lookup domain dc's info
 ****************************************************************/
 
@@ -654,16 +685,11 @@ static NTSTATUS libnet_join_lookup_dc_rpc(TALLOC_CTX *mem_ctx,
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	union lsa_PolicyInformation *info = NULL;
 
-	status = cli_full_connection(cli, NULL,
-				     r->in.dc_name,
-				     NULL, 0,
-				     "IPC$", "IPC",
-				     r->in.admin_account,
-				     NULL,
-				     r->in.admin_password,
-				     0,
-				     Undefined, NULL);
-
+	status = libnet_join_connect_dc_ipc(r->in.dc_name,
+					    r->in.admin_account,
+					    r->in.admin_password,
+					    r->in.use_kerberos,
+					    cli);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
@@ -1109,15 +1135,11 @@ static NTSTATUS libnet_join_unjoindomain_rpc(TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(domain_pol);
 	ZERO_STRUCT(user_pol);
 
-	status = cli_full_connection(&cli, NULL,
-				     r->in.dc_name,
-				     NULL, 0,
-				     "IPC$", "IPC",
-				     r->in.admin_account,
-				     NULL,
-				     r->in.admin_password,
-				     0, Undefined, NULL);
-
+	status = libnet_join_connect_dc_ipc(r->in.dc_name,
+					    r->in.admin_account,
+					    r->in.admin_password,
+					    r->in.use_kerberos,
+					    &cli);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}

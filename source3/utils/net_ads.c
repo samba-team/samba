@@ -879,7 +879,9 @@ static int net_ads_leave(struct net_context *c, int argc, const char **argv)
 		return -1;
 	}
 
-	use_in_memory_ccache();
+	if (!c->opt_kerberos) {
+		use_in_memory_ccache();
+	}
 
 	werr = libnet_init_UnjoinCtx(ctx, &r);
 	if (!W_ERROR_IS_OK(werr)) {
@@ -888,6 +890,7 @@ static int net_ads_leave(struct net_context *c, int argc, const char **argv)
 	}
 
 	r->in.debug		= true;
+	r->in.use_kerberos	= c->opt_kerberos;
 	r->in.dc_name		= c->opt_host;
 	r->in.domain_name	= lp_realm();
 	r->in.admin_account	= c->opt_user_name;
@@ -1192,7 +1195,9 @@ int net_ads_join(struct net_context *c, int argc, const char **argv)
 		goto fail;
 	}
 
-	use_in_memory_ccache();
+	if (!c->opt_kerberos) {
+		use_in_memory_ccache();
+	}
 
 	werr = libnet_init_JoinCtx(ctx, &r);
 	if (!W_ERROR_IS_OK(werr)) {
@@ -1250,6 +1255,7 @@ int net_ads_join(struct net_context *c, int argc, const char **argv)
 	r->in.admin_account	= c->opt_user_name;
 	r->in.admin_password	= net_prompt_pass(c, c->opt_user_name);
 	r->in.debug		= true;
+	r->in.use_kerberos	= c->opt_kerberos;
 	r->in.modify_config	= modify_config;
 	r->in.join_flags	= WKSSVC_JOIN_FLAGS_JOIN_TYPE |
 				  WKSSVC_JOIN_FLAGS_ACCOUNT_CREATE |
