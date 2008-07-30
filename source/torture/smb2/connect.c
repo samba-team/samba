@@ -193,6 +193,7 @@ bool torture_smb2_connect(struct torture_context *torture)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	struct smb2_tree *tree;
+	struct smb2_request *req;
 	struct smb2_handle h1, h2;
 	NTSTATUS status;
 
@@ -242,7 +243,15 @@ bool torture_smb2_connect(struct torture_context *torture)
 		return false;
 	}
 
-	status = smb2_logoff(tree->session);
+	req = smb2_logoff_send(tree->session);
+	if (!req) {
+		printf("smb2_logoff_send() failed\n");
+		return false;
+	}
+
+	req->session = NULL;
+
+	status = smb2_logoff_recv(req);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_USER_SESSION_DELETED)) {
 		printf("Logoff should have disabled session - %s\n", nt_errstr(status));
 		return false;

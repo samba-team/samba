@@ -235,11 +235,8 @@ void smb2srv_send_reply(struct smb2srv_request *req)
 		_smb2_setlen(req->out.buffer, req->out.size - NBT_HDR_SIZE);
 	}
 
-	/* if the request was signed or doing_signing is true, then we
-	   must sign the reply */
-	if (req->session &&
-	    (req->smb_conn->doing_signing ||
-	     (IVAL(req->in.hdr, SMB2_HDR_FLAGS) & SMB2_HDR_FLAG_SIGNED))) {
+	/* if signing is active on the session then sign the packet */
+	if (req->session && req->session->smb2_signing.active) {
 		status = smb2_sign_message(&req->out, 
 					   req->session->session_info->session_key);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -310,18 +307,22 @@ static NTSTATUS smb2srv_reply(struct smb2srv_request *req)
 	   should give a signed reply to any signed request */
 	if (flags & SMB2_HDR_FLAG_SIGNED) {
 		NTSTATUS status;
-		if (req->session == NULL) {
-			/* we can't check signing with no session */
-			smb2srv_send_error(req, NT_STATUS_ACCESS_DENIED);
-			return NT_STATUS_OK;			
+
+		if (!req->session) goto nosession;
+
+		if (!req->session->smb2_signing.active) {
+			/* TODO: workout the correct error code */
+			smb2srv_send_error(req, NT_STATUS_FOOBAR);
+			return NT_STATUS_OK;
 		}
+
 		status = smb2_check_signature(&req->in, 
 					      req->session->session_info->session_key);
 		if (!NT_STATUS_IS_OK(status)) {
 			smb2srv_send_error(req, status);
 			return NT_STATUS_OK;			
 		}
-	} else if (req->smb_conn->doing_signing && req->session != NULL) {
+	} else if (req->session && req->session->smb2_signing.active) {
 		/* we require signing and this request was not signed */
 		smb2srv_send_error(req, NT_STATUS_ACCESS_DENIED);
 		return NT_STATUS_OK;					
