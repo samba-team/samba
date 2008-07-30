@@ -7047,9 +7047,11 @@ static void lp_set_enum_parm( struct parm_struct *parm, const char *pszParmValue
 	for (i = 0; parm->enum_list[i].name; i++) {
 		if ( strequal(pszParmValue, parm->enum_list[i].name)) {
 			*ptr = parm->enum_list[i].value;
-			break;
+			return;
 		}
 	}
+	DEBUG(0, ("WARNING: Ignoring invalid value '%s' for parameter '%s'\n",
+		  pszParmValue, parm->label));
 }
 
 /***************************************************************************
