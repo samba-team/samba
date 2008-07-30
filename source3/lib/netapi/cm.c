@@ -165,7 +165,7 @@ WERROR libnetapi_open_pipe(struct libnetapi_ctx *ctx,
 			   const struct ndr_syntax_id *interface,
 			   struct rpc_pipe_client **presult)
 {
-	struct rpc_pipe_client *result;
+	struct rpc_pipe_client *result = NULL;
 	NTSTATUS status;
 
 	if (!cli || !presult) {
