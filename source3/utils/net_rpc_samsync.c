@@ -302,7 +302,8 @@ static NTSTATUS rpc_vampire_keytab_ds_internals(struct net_context *c,
 		ctx->output_filename = argv[0];
 	}
 	if (argc >= 2) {
-		ctx->object_dn = argv[1];
+		ctx->object_dns = &argv[1];
+		ctx->object_count = argc - 1;
 		ctx->single = true;
 	}
 
