@@ -533,7 +533,7 @@ static int pull_one_remote_database(struct ctdb_context *ctdb, uint32_t srcnode,
 {
 	int ret;
 	TDB_DATA outdata;
-	struct ctdb_control_pulldb_reply *reply;
+	struct ctdb_marshall_buffer *reply;
 	struct ctdb_rec_data *rec;
 	int i;
 	TALLOC_CTX *tmp_ctx = talloc_new(recdb);

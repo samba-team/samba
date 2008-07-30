@@ -219,7 +219,7 @@ ctdb_control_reload_nodes_file(struct ctdb_context *ctdb, uint32_t opcode)
  */
 struct pulldb_data {
 	struct ctdb_context *ctdb;
-	struct ctdb_control_pulldb_reply *pulldata;
+	struct ctdb_marshall_buffer *pulldata;
 	uint32_t len;
 	bool failed;
 };
