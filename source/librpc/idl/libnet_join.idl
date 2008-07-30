@@ -30,6 +30,7 @@ interface libnetjoin
 		[in] boolean8 modify_config,
 		[in] ads_struct *ads,
 		[in] boolean8 debug,
+		[in] boolean8 use_kerberos,
 		[in] netr_SchannelType secure_channel_type,
 		[in,noprint] messaging_context *msg_ctx,
 		[out] string account_name,
