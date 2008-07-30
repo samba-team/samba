@@ -853,7 +853,8 @@ static krb5_error_code LDB_fetch_krbtgt(krb5_context context, HDB *db,
 {
 	krb5_error_code ret;
 	struct ldb_message **msg = NULL;
-	struct ldb_message **realm_ref_msg = NULL;
+	struct ldb_message **realm_ref_msg_1 = NULL;
+	struct ldb_message **realm_ref_msg_2 = NULL;
 	struct ldb_dn *realm_dn;
 
 	krb5_principal alloc_principal = NULL;
@@ -864,14 +865,18 @@ static krb5_error_code LDB_fetch_krbtgt(krb5_context context, HDB *db,
 	}
 
 	/* krbtgt case.  Either us or a trusted realm */
+
 	if ((LDB_lookup_realm(context, (struct ldb_context *)db->hdb_db,
-			      mem_ctx, principal->name.name_string.val[1], &realm_ref_msg) == 0)) {
+			      mem_ctx, principal->realm, &realm_ref_msg_1) == 0)
+	    && (LDB_lookup_realm(context, (struct ldb_context *)db->hdb_db,
+				 mem_ctx, principal->name.name_string.val[1], &realm_ref_msg_2) == 0)
+	    && (ldb_dn_cmp(realm_ref_msg_1[0]->dn, realm_ref_msg_1[0]->dn) == 0)) {
 		/* us */		
  		/* Cludge, cludge cludge.  If the realm part of krbtgt/realm,
  		 * is in our db, then direct the caller at our primary
- 		 * krgtgt */
+ 		 * krbtgt */
  		
- 		const char *dnsdomain = ldb_msg_find_attr_as_string(realm_ref_msg[0], "dnsRoot", NULL);
+ 		const char *dnsdomain = ldb_msg_find_attr_as_string(realm_ref_msg_1[0], "dnsRoot", NULL);
  		char *realm_fixed = strupper_talloc(mem_ctx, dnsdomain);
  		if (!realm_fixed) {
  			krb5_set_error_string(context, "strupper_talloc: out of memory");
@@ -891,8 +896,26 @@ static krb5_error_code LDB_fetch_krbtgt(krb5_context context, HDB *db,
  			return ENOMEM;
  		}
  		principal = alloc_principal;
-		realm_dn = samdb_result_dn((struct ldb_context *)db->hdb_db, mem_ctx, realm_ref_msg[0], "nCName", NULL);
+		realm_dn = samdb_result_dn((struct ldb_context *)db->hdb_db, mem_ctx, realm_ref_msg_1[0], "nCName", NULL);
 	} else {
+		enum direction {
+			INBOUND,
+			OUTBOUND
+		}
+
+		struct loadparm_context *lp_ctx = talloc_get_type(ldb_get_opaque(ldb, "loadparm"), struct loadparm_context *);
+		/* Either an inbound or outbound trust */
+
+		if (strcasecmp(lp_realm(lp_ctx), principal->realm) == 0) {
+			/* look for inbound trust */
+		}
+
+		if (strcasecmp(lp_realm(lp_ctx), principal->name.name_string.val[1]) == 0) {
+			/* look for outbound trust */
+		}
+
+		/* Trusted domains are under CN=system */
+		
 		/* we should lookup trusted domains */
 		return HDB_ERR_NOENTRY;
 	}
@@ -1022,9 +1045,12 @@ static krb5_error_code LDB_fetch(krb5_context context, HDB *db,
 		if (ret != HDB_ERR_NOENTRY) goto done;
 	}
 	if (flags & HDB_F_GET_SERVER) {
-		ret = LDB_fetch_server(context, db, mem_ctx, principal, flags, entry_ex);
-		if (ret != HDB_ERR_NOENTRY) goto done;
+		/* krbtgt fits into this situation for trusted realms, and for resolving different versions of our own realm name */
 		ret = LDB_fetch_krbtgt(context, db, mem_ctx, principal, flags, entry_ex);
+		if (ret != HDB_ERR_NOENTRY) goto done;
+
+		/* We return 'no entry' if it does not start with krbtgt/, so move to the common case quickly */
+		ret = LDB_fetch_server(context, db, mem_ctx, principal, flags, entry_ex);
 		if (ret != HDB_ERR_NOENTRY) goto done;
 	}
 	if (flags & HDB_F_GET_KRBTGT) {
