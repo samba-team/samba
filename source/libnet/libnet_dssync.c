@@ -630,7 +630,9 @@ static NTSTATUS libnet_dssync_process(TALLOC_CTX *mem_ctx,
 	union drsuapi_DsGetNCChangesRequest req;
 	struct replUpToDateVectorBlob *old_utdv = NULL;
 	struct replUpToDateVectorBlob *pnew_utdv = NULL;
-	const char *dn;
+	const char **dns;
+	uint32_t dn_count;
+	uint32_t count;
 
 	status = ctx->ops->startup(ctx, mem_ctx, &old_utdv);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -640,25 +642,31 @@ static NTSTATUS libnet_dssync_process(TALLOC_CTX *mem_ctx,
 		goto out;
 	}
 
-	if (ctx->single && ctx->object_dn) {
-		dn = ctx->object_dn;
+	if (ctx->single && ctx->object_dns) {
+		dns = ctx->object_dns;
+		dn_count = ctx->object_count;
 	} else {
-		dn = ctx->nc_dn;
+		dns = &ctx->nc_dn;
+		dn_count = 1;
 	}
 
-	status = libnet_dssync_build_request(mem_ctx, ctx, dn, old_utdv, &level,
-					     &req);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto out;
-	}
+	for (count=0; count < dn_count; count++) {
+		status = libnet_dssync_build_request(mem_ctx, ctx,
+						     dns[count],
+						     old_utdv, &level,
+						     &req);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto out;
+		}
 
-	status = libnet_dssync_getncchanges(mem_ctx, ctx, level, &req,
-					    &pnew_utdv);
-	if (!NT_STATUS_IS_OK(status)) {
-		ctx->error_message = talloc_asprintf(mem_ctx,
-			"Failed to call DsGetNCCHanges: %s",
-			nt_errstr(status));
-		goto out;
+		status = libnet_dssync_getncchanges(mem_ctx, ctx, level, &req,
+						    &pnew_utdv);
+		if (!NT_STATUS_IS_OK(status)) {
+			ctx->error_message = talloc_asprintf(mem_ctx,
+				"Failed to call DsGetNCCHanges: %s",
+				nt_errstr(status));
+			goto out;
+		}
 	}
 
 	status = ctx->ops->finish(ctx, mem_ctx, pnew_utdv);

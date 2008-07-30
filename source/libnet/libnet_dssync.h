@@ -37,7 +37,8 @@ struct dssync_context {
 	const char *nc_dn;
 	bool single;
 	bool repl_nodiff;
-	const char *object_dn;
+	uint32_t object_count;
+	const char **object_dns;
 	struct policy_handle bind_handle;
 	DATA_BLOB session_key;
 	const char *output_filename;
