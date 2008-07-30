@@ -252,7 +252,7 @@ static NTSTATUS add_sid_to_builtin(const DOM_SID *builtin_sid,
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(3, ("add_sid_to_builtin %s could not be added to %s: "
+		DEBUG(4, ("add_sid_to_builtin %s could not be added to %s: "
 			  "%s\n", sid_string_dbg(dom_sid),
 			  sid_string_dbg(builtin_sid), nt_errstr(status)));
 	}
@@ -279,14 +279,9 @@ NTSTATUS create_builtin_users(const DOM_SID *dom_sid)
 	{
 		status = add_sid_to_builtin(&global_sid_Builtin_Users,
 					    &dom_users);
-		if ( !NT_STATUS_IS_OK(status) ) {
-			DEBUG(4,("create_builtin_administrators: Failed to add Domain Users to"
-				" Users\n"));
-			return status;
-		}
 	}
 
-	return NT_STATUS_OK;
+	return status;
 }
 
 /*******************************************************************
@@ -313,9 +308,7 @@ NTSTATUS create_builtin_administrators(const DOM_SID *dom_sid)
 	{
 		status = add_sid_to_builtin(&global_sid_Builtin_Administrators,
 					    &dom_admins);
-		if ( !NT_STATUS_IS_OK(status) ) {
-			DEBUG(4,("create_builtin_administrators: Failed to add Domain Admins"
-				" Administrators\n"));
+		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
 	}
@@ -332,14 +325,9 @@ NTSTATUS create_builtin_administrators(const DOM_SID *dom_sid)
 	if ( ret ) {
 		status = add_sid_to_builtin(&global_sid_Builtin_Administrators,
 					    &root_sid);
-		if ( !NT_STATUS_IS_OK(status) ) {
-			DEBUG(4,("create_builtin_administrators: Failed to add root"
-				" Administrators\n"));
-			return status;
-		}
 	}
 
-	return NT_STATUS_OK;
+	return status;
 }
 
 
