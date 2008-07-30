@@ -256,6 +256,7 @@ int ads_keytab_add_entry(ADS_STRUCT *ads, const char *srvPrinc)
 		ret = -1;
 		goto out;
 	}
+	ZERO_STRUCT(password);
 	password.data = password_s;
 	password.length = strlen(password_s);
 
