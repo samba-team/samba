@@ -56,6 +56,7 @@ struct net_context {
 	const char *opt_exclude;
 	const char *opt_destination;
 	int opt_testmode;
+	bool opt_kerberos;
 
 	int opt_have_ip;
 	struct sockaddr_storage opt_dest_ip;

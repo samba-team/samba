@@ -636,6 +636,7 @@ static struct functable net_func[] = {
 		{"stdin",	'i', POPT_ARG_NONE,   &c->opt_stdin},
 		{"timeout",	't', POPT_ARG_INT,    &c->opt_timeout},
 		{"machine-pass",'P', POPT_ARG_NONE,   &c->opt_machine_pass},
+		{"kerberos",    'k', POPT_ARG_NONE,   &c->opt_kerberos},
 		{"myworkgroup", 'W', POPT_ARG_STRING, &c->opt_workgroup},
 		{"verbose",	'v', POPT_ARG_NONE,   &c->opt_verbose},
 		{"test",	'T', POPT_ARG_NONE,   &c->opt_testmode},
