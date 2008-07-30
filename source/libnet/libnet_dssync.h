@@ -35,7 +35,7 @@ struct dssync_context {
 	const char *dns_domain_name;
 	struct rpc_pipe_client *cli;
 	const char *nc_dn;
-	bool single;
+	bool single_object_replication;
 	bool force_full_replication;
 	uint32_t object_count;
 	const char **object_dns;
