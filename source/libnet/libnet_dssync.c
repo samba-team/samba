@@ -461,56 +461,29 @@ fail:
 	return status;
 }
 
-static NTSTATUS libnet_dssync_process(TALLOC_CTX *mem_ctx,
-				      struct dssync_context *ctx)
+static NTSTATUS libnet_dssync_getncchanges(TALLOC_CTX *mem_ctx,
+					   struct dssync_context *ctx,
+					   int32_t level,
+					   union drsuapi_DsGetNCChangesRequest *req,
+					   struct replUpToDateVectorBlob **pnew_utdv)
 {
 	NTSTATUS status;
 	WERROR werr;
-
-	int32_t level;
-	int32_t level_out = 0;
-	union drsuapi_DsGetNCChangesRequest req;
 	union drsuapi_DsGetNCChangesCtr ctr;
-
 	struct drsuapi_DsGetNCChangesCtr1 *ctr1 = NULL;
 	struct drsuapi_DsGetNCChangesCtr6 *ctr6 = NULL;
-	struct replUpToDateVectorBlob *old_utdv = NULL;
-	struct replUpToDateVectorBlob new_utdv;
-	struct replUpToDateVectorBlob *pnew_utdv = NULL;
+	struct replUpToDateVectorBlob *new_utdv = NULL;
+	int32_t level_out = 0;
 	int32_t out_level = 0;
 	int y;
 	bool last_query;
-	const char *dn;
 
-	status = ctx->ops->startup(ctx, mem_ctx, &old_utdv);
-	if (!NT_STATUS_IS_OK(status)) {
-		ctx->error_message = talloc_asprintf(mem_ctx,
-			"Failed to call startup operation: %s",
-			nt_errstr(status));
-		goto out;
-	}
-
-	if (ctx->remote_info28.supported_extensions
-	    & DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V8)
-	{
-		level = 8;
-	} else {
-		level = 5;
-	}
-
-	if (ctx->single && ctx->object_dn) {
-		dn = ctx->object_dn;
-	} else {
-		dn = ctx->nc_dn;
-	}
-
-	status = libnet_dssync_build_request(mem_ctx, ctx, dn, old_utdv, level,
-					     &req);
-	if (!NT_STATUS_IS_OK(status)) {
-		ctx->error_message = talloc_asprintf(mem_ctx,
-			"Failed to build DsGetNCChanges request: %s",
-			nt_errstr(status));
-		goto out;
+	if (!ctx->single) {
+		new_utdv = TALLOC_ZERO_P(mem_ctx, struct replUpToDateVectorBlob);
+		if (!new_utdv) {
+			status = NT_STATUS_NO_MEMORY;
+			goto out;
+		}
 	}
 
 	for (y=0, last_query = false; !last_query; y++) {
@@ -519,18 +492,18 @@ static NTSTATUS libnet_dssync_process(TALLOC_CTX *mem_ctx,
 
 		if (level == 8) {
 			DEBUG(1,("start[%d] tmp_higest_usn: %llu , highest_usn: %llu\n",y,
-				(long long)req.req8.highwatermark.tmp_highest_usn,
-				(long long)req.req8.highwatermark.highest_usn));
+				(long long)req->req8.highwatermark.tmp_highest_usn,
+				(long long)req->req8.highwatermark.highest_usn));
 		} else if (level == 5) {
 			DEBUG(1,("start[%d] tmp_higest_usn: %llu , highest_usn: %llu\n",y,
-				(long long)req.req5.highwatermark.tmp_highest_usn,
-				(long long)req.req5.highwatermark.highest_usn));
+				(long long)req->req5.highwatermark.tmp_highest_usn,
+				(long long)req->req5.highwatermark.highest_usn));
 		}
 
 		status = rpccli_drsuapi_DsGetNCChanges(ctx->cli, mem_ctx,
 						       &ctx->bind_handle,
 						       level,
-						       &req,
+						       req,
 						       &level_out,
 						       &ctr,
 						       &werr);
@@ -571,15 +544,14 @@ static NTSTATUS libnet_dssync_process(TALLOC_CTX *mem_ctx,
 			mapping_ctr = &ctr1->mapping_ctr;
 
 			if (ctr1->more_data) {
-				req.req5.highwatermark = ctr1->new_highwatermark;
+				req->req5.highwatermark = ctr1->new_highwatermark;
 			} else {
 				last_query = true;
-				ZERO_STRUCT(new_utdv);
-				new_utdv.version = 1;
-				if (ctr1->uptodateness_vector) {
-					new_utdv.ctr.ctr1.count =
+				if (ctr1->uptodateness_vector && !ctx->single) {
+					new_utdv->version = 1;
+					new_utdv->ctr.ctr1.count =
 						ctr1->uptodateness_vector->count;
-					new_utdv.ctr.ctr1.cursors =
+					new_utdv->ctr.ctr1.cursors =
 						ctr1->uptodateness_vector->cursors;
 				}
 			}
@@ -592,15 +564,14 @@ static NTSTATUS libnet_dssync_process(TALLOC_CTX *mem_ctx,
 			mapping_ctr = &ctr6->mapping_ctr;
 
 			if (ctr6->more_data) {
-				req.req8.highwatermark = ctr6->new_highwatermark;
+				req->req8.highwatermark = ctr6->new_highwatermark;
 			} else {
 				last_query = true;
-				ZERO_STRUCT(new_utdv);
-				new_utdv.version = 2;
-				if (ctr6->uptodateness_vector) {
-					new_utdv.ctr.ctr2.count =
+				if (ctr6->uptodateness_vector && !ctx->single) {
+					new_utdv->version = 2;
+					new_utdv->ctr.ctr2.count =
 						ctr6->uptodateness_vector->count;
-					new_utdv.ctr.ctr2.cursors =
+					new_utdv->ctr.ctr2.cursors =
 						ctr6->uptodateness_vector->cursors;
 				}
 			}
@@ -631,8 +602,58 @@ static NTSTATUS libnet_dssync_process(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	if (!ctx->single) {
-		pnew_utdv = &new_utdv;
+	*pnew_utdv = new_utdv;
+
+out:
+	return status;
+}
+
+static NTSTATUS libnet_dssync_process(TALLOC_CTX *mem_ctx,
+				      struct dssync_context *ctx)
+{
+	NTSTATUS status;
+
+	int32_t level;
+	union drsuapi_DsGetNCChangesRequest req;
+	struct replUpToDateVectorBlob *old_utdv = NULL;
+	struct replUpToDateVectorBlob *pnew_utdv = NULL;
+	const char *dn;
+
+	status = ctx->ops->startup(ctx, mem_ctx, &old_utdv);
+	if (!NT_STATUS_IS_OK(status)) {
+		ctx->error_message = talloc_asprintf(mem_ctx,
+			"Failed to call startup operation: %s",
+			nt_errstr(status));
+		goto out;
+	}
+
+	if (ctx->remote_info28.supported_extensions
+	    & DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V8)
+	{
+		level = 8;
+	} else {
+		level = 5;
+	}
+
+	if (ctx->single && ctx->object_dn) {
+		dn = ctx->object_dn;
+	} else {
+		dn = ctx->nc_dn;
+	}
+
+	status = libnet_dssync_build_request(mem_ctx, ctx, dn, old_utdv, level,
+					     &req);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+
+	status = libnet_dssync_getncchanges(mem_ctx, ctx, level, &req,
+					    &pnew_utdv);
+	if (!NT_STATUS_IS_OK(status)) {
+		ctx->error_message = talloc_asprintf(mem_ctx,
+			"Failed to call DsGetNCCHanges: %s",
+			nt_errstr(status));
+		goto out;
 	}
 
 	status = ctx->ops->finish(ctx, mem_ctx, pnew_utdv);
