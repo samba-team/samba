@@ -40,8 +40,7 @@ if not loaded:
 path=conf.get("private dir") + "/secrets.ldb"
 netbios=conf.get("netbios name")
 
-secrets = ldb.Ldb()
-secrets.connect(path)
+secrets = ldb.Ldb(path)
 
 search = "(&(objectclass=primaryDomain)(samaccountname=" + \
 	  netbios + "$))"
@@ -49,13 +48,12 @@ search = "(&(objectclass=primaryDomain)(samaccountname=" + \
 msg = secrets.search(expression=search, attrs=['secret'])
 
 if not msg:
-    error =  "Error:\n"
-    error += "Password for host[" + netbios + "] not found in path[" + path + "].\n"
-    error += "You may want to pass the smb.conf location via the -s option."
-    print error
+    print "Error:"
+    print "Password for host[%s] not found in path[%s]." % (netbios, path)
+    print "You may want to pass the smb.conf location via the -s option."
     exit(1)
 
-password=msg[0]['secret'][0];
+password=msg[0]['secret'][0]
 
 print(password)
 exit(0)
