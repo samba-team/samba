@@ -359,28 +359,21 @@ static NTSTATUS libnet_dssync_init(TALLOC_CTX *mem_ctx,
 /****************************************************************
 ****************************************************************/
 
-static NTSTATUS libnet_dssync_process(TALLOC_CTX *mem_ctx,
-				      struct dssync_context *ctx)
+static NTSTATUS libnet_dssync_build_request(TALLOC_CTX *mem_ctx,
+					    struct dssync_context *ctx,
+					    const char *dn,
+					    struct replUpToDateVectorBlob *utdv,
+					    int32_t level,
+					    union drsuapi_DsGetNCChangesRequest *preq)
 {
 	NTSTATUS status;
-	WERROR werr;
-
-	int32_t level = 8;
-	int32_t level_out = 0;
+	uint32_t count;
 	union drsuapi_DsGetNCChangesRequest req;
-	union drsuapi_DsGetNCChangesCtr ctr;
-	struct drsuapi_DsReplicaObjectIdentifier nc;
 	struct dom_sid null_sid;
+	enum drsuapi_DsExtendedOperation extended_op;
+	struct drsuapi_DsReplicaObjectIdentifier *nc = NULL;
+	struct drsuapi_DsReplicaCursorCtrEx *cursors = NULL;
 
-	struct drsuapi_DsGetNCChangesCtr1 *ctr1 = NULL;
-	struct drsuapi_DsGetNCChangesCtr6 *ctr6 = NULL;
-	struct replUpToDateVectorBlob *old_utdv = NULL;
-	struct drsuapi_DsReplicaCursorCtrEx cursors;
-	struct drsuapi_DsReplicaCursorCtrEx *pcursors = NULL;
-	struct replUpToDateVectorBlob new_utdv;
-	struct replUpToDateVectorBlob *pnew_utdv = NULL;
-	int32_t out_level = 0;
-	int y;
 	uint32_t replica_flags	= DRSUAPI_DS_REPLICA_NEIGHBOUR_WRITEABLE |
 				  DRSUAPI_DS_REPLICA_NEIGHBOUR_SYNC_ON_STARTUP |
 				  DRSUAPI_DS_REPLICA_NEIGHBOUR_DO_SCHEDULED_SYNCS |
@@ -390,17 +383,103 @@ static NTSTATUS libnet_dssync_process(TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(null_sid);
 	ZERO_STRUCT(req);
 
-	if (ctx->single && ctx->object_dn) {
-		nc.dn = ctx->object_dn;
-	} else {
-		nc.dn = ctx->nc_dn;
+	nc = TALLOC_ZERO_P(mem_ctx, struct drsuapi_DsReplicaObjectIdentifier);
+	if (!nc) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
 	}
-	nc.guid = GUID_zero();
-	nc.sid = null_sid;
+	nc->dn = dn;
+	nc->guid = GUID_zero();
+	nc->sid = null_sid;
 
-	if (!ctx->single) {
-		pnew_utdv = &new_utdv;
+	if (!ctx->repl_nodiff && utdv) {
+		cursors = TALLOC_ZERO_P(mem_ctx,
+					 struct drsuapi_DsReplicaCursorCtrEx);
+		if (!cursors) {
+			status = NT_STATUS_NO_MEMORY;
+			goto fail;
+		}
+
+		switch (utdv->version) {
+		case 1:
+			cursors->count = utdv->ctr.ctr1.count;
+			cursors->cursors = utdv->ctr.ctr1.cursors;
+			break;
+		case 2:
+			cursors->count = utdv->ctr.ctr2.count;
+			cursors->cursors = talloc_array(cursors,
+						struct drsuapi_DsReplicaCursor,
+						cursors->count);
+			if (!cursors->cursors) {
+				status = NT_STATUS_NO_MEMORY;
+				goto fail;
+			}
+			for (count = 0; count < cursors->count; count++) {
+				cursors->cursors[count].source_dsa_invocation_id =
+					utdv->ctr.ctr2.cursors[count].source_dsa_invocation_id;
+				cursors->cursors[count].highest_usn =
+					utdv->ctr.ctr2.cursors[count].highest_usn;
+			}
+			break;
+		}
 	}
+
+	if (ctx->single) {
+		extended_op = DRSUAPI_EXOP_REPL_OBJ;
+	} else {
+		extended_op = DRSUAPI_EXOP_NONE;
+	}
+
+	if (level == 8) {
+		req.req8.naming_context		= nc;
+		req.req8.replica_flags		= replica_flags;
+		req.req8.max_object_count	= 402;
+		req.req8.max_ndr_size		= 402116;
+		req.req8.uptodateness_vector	= cursors;
+		req.req8.extended_op		= extended_op;
+	} else if (level == 5) {
+		req.req5.naming_context		= nc;
+		req.req5.replica_flags		= replica_flags;
+		req.req5.max_object_count	= 402;
+		req.req5.max_ndr_size		= 402116;
+		req.req5.uptodateness_vector	= cursors;
+		req.req5.extended_op		= extended_op;
+	} else {
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
+	}
+
+	if (preq) {
+		*preq = req;
+	}
+
+	return NT_STATUS_OK;
+
+fail:
+	TALLOC_FREE(nc);
+	TALLOC_FREE(cursors);
+	return status;
+}
+
+static NTSTATUS libnet_dssync_process(TALLOC_CTX *mem_ctx,
+				      struct dssync_context *ctx)
+{
+	NTSTATUS status;
+	WERROR werr;
+
+	int32_t level;
+	int32_t level_out = 0;
+	union drsuapi_DsGetNCChangesRequest req;
+	union drsuapi_DsGetNCChangesCtr ctr;
+
+	struct drsuapi_DsGetNCChangesCtr1 *ctr1 = NULL;
+	struct drsuapi_DsGetNCChangesCtr6 *ctr6 = NULL;
+	struct replUpToDateVectorBlob *old_utdv = NULL;
+	struct replUpToDateVectorBlob new_utdv;
+	struct replUpToDateVectorBlob *pnew_utdv = NULL;
+	int32_t out_level = 0;
+	int y;
+	const char *dn;
 
 	status = ctx->ops->startup(ctx, mem_ctx, &old_utdv);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -410,52 +489,31 @@ static NTSTATUS libnet_dssync_process(TALLOC_CTX *mem_ctx,
 		goto out;
 	}
 
-	if (!ctx->repl_nodiff && old_utdv) {
-		pcursors = &cursors;
-		ZERO_STRUCTP(pcursors);
-
-		switch (old_utdv->version) {
-		case 1:
-			pcursors->count = old_utdv->ctr.ctr1.count;
-			pcursors->cursors = old_utdv->ctr.ctr1.cursors;
-			break;
-		case 2:
-			pcursors->count = old_utdv->ctr.ctr2.count;
-			pcursors->cursors = talloc_array(mem_ctx,
-							 struct drsuapi_DsReplicaCursor,
-							 pcursors->count);
-			for (y = 0; y < pcursors->count; y++) {
-				pcursors->cursors[y].source_dsa_invocation_id =
-					old_utdv->ctr.ctr2.cursors[y].source_dsa_invocation_id;
-				pcursors->cursors[y].highest_usn =
-					old_utdv->ctr.ctr2.cursors[y].highest_usn;
-			}
-			break;
-		}
-	}
-
 	if (ctx->remote_info28.supported_extensions
 	    & DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V8)
 	{
 		level = 8;
-		req.req8.naming_context		= &nc;
-		req.req8.replica_flags		= replica_flags;
-		req.req8.max_object_count	= 402;
-		req.req8.max_ndr_size		= 402116;
-		req.req8.uptodateness_vector	= pcursors;
-		if (ctx->single) {
-			req.req8.extended_op	= DRSUAPI_EXOP_REPL_OBJ;
-		}
 	} else {
 		level = 5;
-		req.req5.naming_context		= &nc;
-		req.req5.replica_flags		= replica_flags;
-		req.req5.max_object_count	= 402;
-		req.req5.max_ndr_size		= 402116;
-		req.req5.uptodateness_vector	= pcursors;
-		if (ctx->single) {
-			req.req5.extended_op	= DRSUAPI_EXOP_REPL_OBJ;
-		}
+	}
+
+	if (ctx->single && ctx->object_dn) {
+		dn = ctx->object_dn;
+	} else {
+		dn = ctx->nc_dn;
+	}
+
+	status = libnet_dssync_build_request(mem_ctx, ctx, dn, old_utdv, level,
+					     &req);
+	if (!NT_STATUS_IS_OK(status)) {
+		ctx->error_message = talloc_asprintf(mem_ctx,
+			"Failed to build DsGetNCChanges request: %s",
+			nt_errstr(status));
+		goto out;
+	}
+
+	if (!ctx->single) {
+		pnew_utdv = &new_utdv;
 	}
 
 	for (y=0; ;y++) {
