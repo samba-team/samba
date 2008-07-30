@@ -546,9 +546,9 @@ static int pull_one_remote_database(struct ctdb_context *ctdb, uint32_t srcnode,
 		return -1;
 	}
 
-	reply = (struct ctdb_control_pulldb_reply *)outdata.dptr;
+	reply = (struct ctdb_marshall_buffer *)outdata.dptr;
 
-	if (outdata.dsize < offsetof(struct ctdb_control_pulldb_reply, data)) {
+	if (outdata.dsize < offsetof(struct ctdb_marshall_buffer, data)) {
 		DEBUG(DEBUG_ERR,(__location__ " invalid data in pulldb reply\n"));
 		talloc_free(tmp_ctx);
 		return -1;
@@ -764,7 +764,7 @@ struct vacuum_info {
 	struct ctdb_recoverd *rec;
 	uint32_t srcnode;
 	struct ctdb_db_context *ctdb_db;
-	struct ctdb_control_pulldb_reply *recs;
+	struct ctdb_marshall_buffer *recs;
 	struct ctdb_rec_data *r;
 };
 
@@ -866,7 +866,7 @@ static void vacuum_fetch_handler(struct ctdb_context *ctdb, uint64_t srvid,
 				 TDB_DATA data, void *private_data)
 {
 	struct ctdb_recoverd *rec = talloc_get_type(private_data, struct ctdb_recoverd);
-	struct ctdb_control_pulldb_reply *recs;
+	struct ctdb_marshall_buffer *recs;
 	int ret, i;
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 	const char *name;
@@ -877,7 +877,7 @@ static void vacuum_fetch_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	uint32_t srcnode;
 	struct vacuum_info *v;
 
-	recs = (struct ctdb_control_pulldb_reply *)data.dptr;
+	recs = (struct ctdb_marshall_buffer *)data.dptr;
 	r = (struct ctdb_rec_data *)&recs->data[0];
 
 	if (recs->count == 0) {
@@ -1136,7 +1136,7 @@ static struct tdb_wrap *create_recdb(struct ctdb_context *ctdb, TALLOC_CTX *mem_
  */
 struct recdb_data {
 	struct ctdb_context *ctdb;
-	struct ctdb_control_pulldb_reply *recdata;
+	struct ctdb_marshall_buffer *recdata;
 	uint32_t len;
 	bool failed;
 };
@@ -1184,7 +1184,7 @@ static int push_recdb_database(struct ctdb_context *ctdb, uint32_t dbid,
 			       struct tdb_wrap *recdb, struct ctdb_node_map *nodemap)
 {
 	struct recdb_data params;
-	struct ctdb_control_pulldb_reply *recdata;
+	struct ctdb_marshall_buffer *recdata;
 	TDB_DATA outdata;
 	TALLOC_CTX *tmp_ctx;
 	uint32_t *nodes;
@@ -1192,14 +1192,14 @@ static int push_recdb_database(struct ctdb_context *ctdb, uint32_t dbid,
 	tmp_ctx = talloc_new(ctdb);
 	CTDB_NO_MEMORY(ctdb, tmp_ctx);
 
-	recdata = talloc_zero(recdb, struct ctdb_control_pulldb_reply);
+	recdata = talloc_zero(recdb, struct ctdb_marshall_buffer);
 	CTDB_NO_MEMORY(ctdb, recdata);
 
 	recdata->db_id = dbid;
 
 	params.ctdb = ctdb;
 	params.recdata = recdata;
-	params.len = offsetof(struct ctdb_control_pulldb_reply, data);
+	params.len = offsetof(struct ctdb_marshall_buffer, data);
 	params.failed = false;
 
 	if (tdb_traverse_read(recdb->tdb, traverse_recdb, &params) == -1) {

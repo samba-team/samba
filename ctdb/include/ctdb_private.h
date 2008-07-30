@@ -1028,8 +1028,8 @@ struct ctdb_control_pulldb {
 	uint32_t lmaster;
 };
 
-/* structure used for pulldb control */
-struct ctdb_control_pulldb_reply {
+/* structure used for sending lists of records */
+struct ctdb_marshall_buffer {
 	uint32_t db_id;
 	uint32_t count;
 	uint8_t data[1];
