@@ -94,17 +94,23 @@ NTSTATUS connect_to_service(struct net_context *c,
 					const char *service_type)
 {
 	NTSTATUS nt_status;
+	int flags = 0;
 
 	c->opt_password = net_prompt_pass(c, c->opt_user_name);
-	if (!c->opt_password) {
-		return NT_STATUS_NO_MEMORY;
+
+	if (c->opt_kerberos) {
+		flags |= CLI_FULL_CONNECTION_USE_KERBEROS;
+	}
+
+	if (c->opt_kerberos && c->opt_password) {
+		flags |= CLI_FULL_CONNECTION_FALLBACK_AFTER_KERBEROS;
 	}
 
 	nt_status = cli_full_connection(cli_ctx, NULL, server_name,
 					server_ss, c->opt_port,
 					service_name, service_type,
 					c->opt_user_name, c->opt_workgroup,
-					c->opt_password, 0, Undefined, NULL);
+					c->opt_password, flags, Undefined, NULL);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		d_fprintf(stderr, "Could not connect to server %s\n", server_name);
 
@@ -535,6 +541,10 @@ const char *net_prompt_pass(struct net_context *c, const char *user)
 	}
 
 	if (c->opt_machine_pass) {
+		return NULL;
+	}
+
+	if (c->opt_kerberos && !c->opt_user_specified) {
 		return NULL;
 	}
 
