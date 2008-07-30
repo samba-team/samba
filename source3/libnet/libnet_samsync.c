@@ -22,7 +22,7 @@
 
 
 #include "includes.h"
-#include "libnet/libnet_samsync.h"
+#include "libnet/libnet.h"
 
 /**
  * Decrypt and extract the user's passwords.
