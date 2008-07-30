@@ -200,6 +200,106 @@ struct ctdb_rec_data *ctdb_marshall_record(TALLOC_CTX *mem_ctx, uint32_t reqid,
 	return d;
 }
 
+
+/* helper function for marshalling multiple records */
+struct ctdb_marshall_buffer *ctdb_marshall_add(TALLOC_CTX *mem_ctx, 
+					       struct ctdb_marshall_buffer *m,
+					       uint64_t db_id,
+					       uint32_t reqid,
+					       TDB_DATA key,
+					       struct ctdb_ltdb_header *header,
+					       TDB_DATA data)
+{
+	struct ctdb_rec_data *r;
+	size_t m_size, r_size;
+	struct ctdb_marshall_buffer *m2;
+
+	r = ctdb_marshall_record(mem_ctx, reqid, key, header, data);
+	if (r == NULL) {
+		talloc_free(m);
+		return NULL;
+	}
+
+	if (m == NULL) {
+		m = talloc_zero_size(mem_ctx, offsetof(struct ctdb_marshall_buffer, data));
+		if (m == NULL) {
+			return NULL;
+		}
+		m->db_id = db_id;
+	}
+
+	m_size = talloc_get_size(m);
+	r_size = talloc_get_size(r);
+
+	m2 = talloc_realloc_size(mem_ctx, m,  m_size + r_size);
+	if (m2 == NULL) {
+		talloc_free(m);
+		return NULL;
+	}
+
+	memcpy(m_size + (uint8_t *)m2, r, r_size);
+
+	talloc_free(r);
+
+	m2->count++;
+
+	return m2;
+}
+
+/* we've finished marshalling, return a data blob with the marshalled records */
+TDB_DATA ctdb_marshall_finish(struct ctdb_marshall_buffer *m)
+{
+	TDB_DATA data;
+	data.dptr = (uint8_t *)m;
+	data.dsize = talloc_get_size(m);
+	return data;
+}
+
+/* 
+   loop over a marshalling buffer 
+   
+     - pass r==NULL to start
+     - loop the number of times indicated by m->count
+*/
+struct ctdb_rec_data *ctdb_marshall_loop_next(struct ctdb_marshall_buffer *m, struct ctdb_rec_data *r,
+					      uint32_t *reqid,
+					      struct ctdb_ltdb_header *header,
+					      TDB_DATA *key, TDB_DATA *data)
+{
+	if (r == NULL) {
+		r = (struct ctdb_rec_data *)&m->data[0];
+	} else {
+		r = (struct ctdb_rec_data *)(r->length + (uint8_t *)r);
+	}
+
+	if (reqid != NULL) {
+		*reqid = r->reqid;
+	}
+	
+	if (key != NULL) {
+		key->dptr   = &r->data[0];
+		key->dsize  = r->keylen;
+	}
+	if (data != NULL) {
+		data->dptr  = &r->data[r->keylen];
+		data->dsize = r->datalen;
+		if (header != NULL) {
+			data->dptr += sizeof(*header);
+			data->dsize -= sizeof(*header);
+		}
+	}
+
+	if (header != NULL) {
+		if (r->datalen < sizeof(*header)) {
+			return NULL;
+		}
+		*header = *(struct ctdb_ltdb_header *)&r->data[r->keylen];
+	}
+
+	return r;
+}
+
+
 #if HAVE_SCHED_H
 #include <sched.h>
 #endif
