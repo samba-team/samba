@@ -479,6 +479,7 @@ static NTSTATUS libnet_dssync_process(TALLOC_CTX *mem_ctx,
 	struct replUpToDateVectorBlob *pnew_utdv = NULL;
 	int32_t out_level = 0;
 	int y;
+	bool last_query;
 	const char *dn;
 
 	status = ctx->ops->startup(ctx, mem_ctx, &old_utdv);
@@ -512,13 +513,9 @@ static NTSTATUS libnet_dssync_process(TALLOC_CTX *mem_ctx,
 		goto out;
 	}
 
-	if (!ctx->single) {
-		pnew_utdv = &new_utdv;
-	}
-
-	for (y=0; ;y++) {
-
-		bool last_query = true;
+	for (y=0, last_query = false; !last_query; y++) {
+		struct drsuapi_DsReplicaObjectListItemEx *first_object;
+		struct drsuapi_DsReplicaOIDMapping_Ctr *mapping_ctr;
 
 		if (level == 8) {
 			DEBUG(1,("start[%d] tmp_higest_usn: %llu , highest_usn: %llu\n",y,
@@ -555,55 +552,7 @@ static NTSTATUS libnet_dssync_process(TALLOC_CTX *mem_ctx,
 		} else if (level_out == 2) {
 			out_level = 1;
 			ctr1 = ctr.ctr2.ctr.mszip1.ctr1;
-		}
-
-		status = cli_get_session_key(mem_ctx, ctx->cli, &ctx->session_key);
-		if (!NT_STATUS_IS_OK(status)) {
-			ctx->error_message = talloc_asprintf(mem_ctx,
-				"Failed to get Session Key: %s",
-				nt_errstr(status));
-			return status;
-		}
-
-		if (out_level == 1) {
-			DEBUG(1,("end[%d] tmp_highest_usn: %llu , highest_usn: %llu\n",y,
-				(long long)ctr1->new_highwatermark.tmp_highest_usn,
-				(long long)ctr1->new_highwatermark.highest_usn));
-
-			libnet_dssync_decrypt_attributes(mem_ctx,
-							 &ctx->session_key,
-							 ctr1->first_object);
-
-			if (ctr1->more_data) {
-				req.req5.highwatermark = ctr1->new_highwatermark;
-				last_query = false;
-			}
-
-			if (ctx->ops->process_objects) {
-				status = ctx->ops->process_objects(ctx, mem_ctx,
-								   ctr1->first_object,
-								   &ctr1->mapping_ctr);
-				if (!NT_STATUS_IS_OK(status)) {
-					ctx->error_message = talloc_asprintf(mem_ctx,
-						"Failed to call processing function: %s",
-						nt_errstr(status));
-					goto out;
-				}
-			}
-
-			if (!last_query) {
-				continue;
-			}
-
-			ZERO_STRUCT(new_utdv);
-			new_utdv.version = 1;
-			if (ctr1->uptodateness_vector) {
-				new_utdv.ctr.ctr1.count = ctr1->uptodateness_vector->count;
-				new_utdv.ctr.ctr1.cursors = ctr1->uptodateness_vector->cursors;
-			}
-		}
-
-		if (level_out == 6) {
+		} else if (level_out == 6) {
 			out_level = 6;
 			ctr6 = &ctr.ctr6;
 		} else if (level_out == 7
@@ -613,53 +562,85 @@ static NTSTATUS libnet_dssync_process(TALLOC_CTX *mem_ctx,
 			ctr6 = ctr.ctr7.ctr.mszip6.ctr6;
 		}
 
-		if (out_level == 6) {
+		if (out_level == 1) {
+			DEBUG(1,("end[%d] tmp_highest_usn: %llu , highest_usn: %llu\n",y,
+				(long long)ctr1->new_highwatermark.tmp_highest_usn,
+				(long long)ctr1->new_highwatermark.highest_usn));
+
+			first_object = ctr1->first_object;
+			mapping_ctr = &ctr1->mapping_ctr;
+
+			if (ctr1->more_data) {
+				req.req5.highwatermark = ctr1->new_highwatermark;
+			} else {
+				last_query = true;
+				ZERO_STRUCT(new_utdv);
+				new_utdv.version = 1;
+				if (ctr1->uptodateness_vector) {
+					new_utdv.ctr.ctr1.count =
+						ctr1->uptodateness_vector->count;
+					new_utdv.ctr.ctr1.cursors =
+						ctr1->uptodateness_vector->cursors;
+				}
+			}
+		} else if (out_level == 6) {
 			DEBUG(1,("end[%d] tmp_highest_usn: %llu , highest_usn: %llu\n",y,
 				(long long)ctr6->new_highwatermark.tmp_highest_usn,
 				(long long)ctr6->new_highwatermark.highest_usn));
 
-			libnet_dssync_decrypt_attributes(mem_ctx,
-							 &ctx->session_key,
-							 ctr6->first_object);
+			first_object = ctr6->first_object;
+			mapping_ctr = &ctr6->mapping_ctr;
 
 			if (ctr6->more_data) {
 				req.req8.highwatermark = ctr6->new_highwatermark;
-				last_query = false;
-			}
-
-			if (ctx->ops->process_objects) {
-				status = ctx->ops->process_objects(ctx, mem_ctx,
-								   ctr6->first_object,
-								   &ctr6->mapping_ctr);
-				if (!NT_STATUS_IS_OK(status)) {
-					ctx->error_message = talloc_asprintf(mem_ctx,
-						"Failed to call processing function: %s",
-						nt_errstr(status));
-					goto out;
+			} else {
+				last_query = true;
+				ZERO_STRUCT(new_utdv);
+				new_utdv.version = 2;
+				if (ctr6->uptodateness_vector) {
+					new_utdv.ctr.ctr2.count =
+						ctr6->uptodateness_vector->count;
+					new_utdv.ctr.ctr2.cursors =
+						ctr6->uptodateness_vector->cursors;
 				}
-			}
-
-			if (!last_query) {
-				continue;
-			}
-
-			ZERO_STRUCT(new_utdv);
-			new_utdv.version = 2;
-			if (ctr6->uptodateness_vector) {
-				new_utdv.ctr.ctr2.count = ctr6->uptodateness_vector->count;
-				new_utdv.ctr.ctr2.cursors = ctr6->uptodateness_vector->cursors;
 			}
 		}
 
-		status = ctx->ops->finish(ctx, mem_ctx, pnew_utdv);
+		status = cli_get_session_key(mem_ctx, ctx->cli, &ctx->session_key);
 		if (!NT_STATUS_IS_OK(status)) {
 			ctx->error_message = talloc_asprintf(mem_ctx,
-				"Failed to call finishing operation: %s",
+				"Failed to get Session Key: %s",
 				nt_errstr(status));
 			goto out;
 		}
 
-		break;
+		libnet_dssync_decrypt_attributes(mem_ctx,
+						 &ctx->session_key,
+						 first_object);
+
+		if (ctx->ops->process_objects) {
+			status = ctx->ops->process_objects(ctx, mem_ctx,
+							   first_object,
+							   mapping_ctr);
+			if (!NT_STATUS_IS_OK(status)) {
+				ctx->error_message = talloc_asprintf(mem_ctx,
+					"Failed to call processing function: %s",
+					nt_errstr(status));
+				goto out;
+			}
+		}
+	}
+
+	if (!ctx->single) {
+		pnew_utdv = &new_utdv;
+	}
+
+	status = ctx->ops->finish(ctx, mem_ctx, pnew_utdv);
+	if (!NT_STATUS_IS_OK(status)) {
+		ctx->error_message = talloc_asprintf(mem_ctx,
+			"Failed to call finishing operation: %s",
+			nt_errstr(status));
+		goto out;
 	}
 
  out:
