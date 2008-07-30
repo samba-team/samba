@@ -222,8 +222,8 @@ static krb5_error_code smb_krb5_locator_call_cbfunc(const char *name,
  * @return krb5_error_code.
  */
 
-krb5_error_code smb_krb5_locator_init(krb5_context context,
-				      void **private_data)
+static krb5_error_code smb_krb5_locator_init(krb5_context context,
+					     void **private_data)
 {
 	return 0;
 }
@@ -236,7 +236,7 @@ krb5_error_code smb_krb5_locator_init(krb5_context context,
  * @return void.
  */
 
-void smb_krb5_locator_close(void *private_data)
+static void smb_krb5_locator_close(void *private_data)
 {
 	return;
 }
@@ -292,13 +292,13 @@ static bool ask_winbind(const char *realm, char **dcname)
  * @return krb5_error_code.
  */
 
-krb5_error_code smb_krb5_locator_lookup(void *private_data,
-					enum locate_service_type svc,
-					const char *realm,
-					int socktype,
-					int family,
-					int (*cbfunc)(void *, int, struct sockaddr *),
-					void *cbdata)
+static krb5_error_code smb_krb5_locator_lookup(void *private_data,
+					       enum locate_service_type svc,
+					       const char *realm,
+					       int socktype,
+					       int family,
+					       int (*cbfunc)(void *, int, struct sockaddr *),
+							void *cbdata)
 {
 	krb5_error_code ret;
 	struct addrinfo aihints;
