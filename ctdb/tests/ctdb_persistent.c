@@ -57,7 +57,7 @@ static void each_second(struct event_context *ev, struct timed_event *te,
 	uint32_t *old_counters;
 
 
-	printf("Counters: ");
+	printf("[%4u] Counters: ", getpid());
 	old_counters = (uint32_t *)old_data.dptr;
 	for (i=0;i<old_data.dsize/sizeof(uint32_t); i++) {
 		printf("%6u ", old_counters[i]);
@@ -78,7 +78,8 @@ static void check_counters(struct ctdb_context *ctdb, TDB_DATA data)
 	/* check that all the counters are monotonic increasing */
 	for (i=0; i<old_data.dsize/sizeof(uint32_t); i++) {
 		if (counters[i]<old_counters[i]) {
-			printf("ERROR: counters has decreased for node %u  From %u to %u\n", i, old_counters[i], counters[i]);
+			printf("[%4u] ERROR: counters has decreased for node %u  From %u to %u\n", 
+			       getpid(), i, old_counters[i], counters[i]);
 			success = false;
 		}
 	}
@@ -101,7 +102,6 @@ static void test_store_records(struct ctdb_context *ctdb, struct event_context *
 	int ret;
 	struct ctdb_record_handle *h;
 	uint32_t *counters;
-	int first_time = true;	
 	ctdb_db = ctdb_db_handle(ctdb, "persistent.tdb");
 
 	key.dptr = discard_const("testkey");
@@ -134,11 +134,6 @@ static void test_store_records(struct ctdb_context *ctdb, struct event_context *
 		}
 
 		counters = (uint32_t *)data.dptr;
-
-		if (first_time) {
-			counters[pnn] = 0;
-			first_time = false;
-		}
 
 		/* bump our counter */
 		counters[pnn]++;
@@ -180,6 +175,8 @@ int main(int argc, const char *argv[])
 	int extra_argc = 0;
 	poptContext pc;
 	struct event_context *ev;
+
+	setlinebuf(stdout);
 
 	pc = poptGetContext(argv[0], argc, argv, popt_options, POPT_CONTEXT_KEEP_FIRST);
 
