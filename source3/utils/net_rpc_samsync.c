@@ -296,7 +296,7 @@ static NTSTATUS rpc_vampire_keytab_ds_internals(struct net_context *c,
 		return status;
 	}
 
-	ctx->force_full_replication = c->opt_repl_nodiff ? true : false;
+	ctx->force_full_replication = c->opt_force_full_repl ? true : false;
 
 	if (argc >= 1) {
 		ctx->output_filename = argv[0];

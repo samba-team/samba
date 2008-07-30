@@ -653,7 +653,7 @@ static struct functable net_func[] = {
 		{"destination",	0, POPT_ARG_STRING,   &c->opt_destination},
 		{"tallocreport", 0, POPT_ARG_NONE,    &c->do_talloc_report},
 		/* Options for 'net rpc vampire (keytab)' */
-		{"repl-nodiff", 0, POPT_ARG_NONE, &c->opt_repl_nodiff},
+		{"force-full-repl", 0, POPT_ARG_NONE, &c->opt_force_full_repl},
 
 		POPT_COMMON_SAMBA
 		{ 0, 0, 0, 0}
