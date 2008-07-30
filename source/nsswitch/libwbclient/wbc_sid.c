@@ -124,7 +124,7 @@ wbcErr wbcStringToSid(const char *str,
 
 	p = q+1;
 	x = (uint32_t)strtol(p, &q, 10);
-	if (x==0 || !q || *q!='-') {
+	if (!q || *q!='-') {
 		wbc_status = WBC_ERR_INVALID_SID;
 		BAIL_ON_WBC_ERROR(wbc_status);
 	}
