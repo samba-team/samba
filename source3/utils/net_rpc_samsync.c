@@ -304,7 +304,7 @@ static NTSTATUS rpc_vampire_keytab_ds_internals(struct net_context *c,
 	if (argc >= 2) {
 		ctx->object_dns = &argv[1];
 		ctx->object_count = argc - 1;
-		ctx->single = true;
+		ctx->single_object_replication = true;
 	}
 
 	ctx->cli		= pipe_hnd;

@@ -401,7 +401,9 @@ static NTSTATUS libnet_dssync_build_request(TALLOC_CTX *mem_ctx,
 	nc->guid = GUID_zero();
 	nc->sid = null_sid;
 
-	if (!ctx->single && !ctx->force_full_replication && utdv) {
+	if (!ctx->single_object_replication &&
+	    !ctx->force_full_replication && utdv)
+	{
 		cursors = TALLOC_ZERO_P(mem_ctx,
 					 struct drsuapi_DsReplicaCursorCtrEx);
 		if (!cursors) {
@@ -433,7 +435,7 @@ static NTSTATUS libnet_dssync_build_request(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	if (ctx->single) {
+	if (ctx->single_object_replication) {
 		extended_op = DRSUAPI_EXOP_REPL_OBJ;
 	} else {
 		extended_op = DRSUAPI_EXOP_NONE;
@@ -491,7 +493,7 @@ static NTSTATUS libnet_dssync_getncchanges(TALLOC_CTX *mem_ctx,
 	int y;
 	bool last_query;
 
-	if (!ctx->single) {
+	if (!ctx->single_object_replication) {
 		new_utdv = TALLOC_ZERO_P(mem_ctx, struct replUpToDateVectorBlob);
 		if (!new_utdv) {
 			status = NT_STATUS_NO_MEMORY;
@@ -560,7 +562,9 @@ static NTSTATUS libnet_dssync_getncchanges(TALLOC_CTX *mem_ctx,
 				req->req5.highwatermark = ctr1->new_highwatermark;
 			} else {
 				last_query = true;
-				if (ctr1->uptodateness_vector && !ctx->single) {
+				if (ctr1->uptodateness_vector &&
+				    !ctx->single_object_replication)
+				{
 					new_utdv->version = 1;
 					new_utdv->ctr.ctr1.count =
 						ctr1->uptodateness_vector->count;
@@ -580,7 +584,9 @@ static NTSTATUS libnet_dssync_getncchanges(TALLOC_CTX *mem_ctx,
 				req->req8.highwatermark = ctr6->new_highwatermark;
 			} else {
 				last_query = true;
-				if (ctr6->uptodateness_vector && !ctx->single) {
+				if (ctr6->uptodateness_vector &&
+				    !ctx->single_object_replication)
+				{
 					new_utdv->version = 2;
 					new_utdv->ctr.ctr2.count =
 						ctr6->uptodateness_vector->count;
@@ -642,7 +648,7 @@ static NTSTATUS libnet_dssync_process(TALLOC_CTX *mem_ctx,
 		goto out;
 	}
 
-	if (ctx->single && ctx->object_dns) {
+	if (ctx->single_object_replication && ctx->object_dns) {
 		dns = ctx->object_dns;
 		dn_count = ctx->object_count;
 	} else {
