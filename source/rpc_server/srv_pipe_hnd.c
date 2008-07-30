@@ -61,7 +61,7 @@ static struct bitmap *bmap;
  * system _anyway_.  so that's the next step...
  */
 
-static int close_internal_rpc_pipe_hnd(struct pipes_struct *pipe);
+static int close_internal_rpc_pipe_hnd(struct pipes_struct *p);
 
 /****************************************************************************
  Internal Pipe iterator functions.
