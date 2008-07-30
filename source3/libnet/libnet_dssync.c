@@ -401,7 +401,7 @@ static NTSTATUS libnet_dssync_build_request(TALLOC_CTX *mem_ctx,
 	nc->guid = GUID_zero();
 	nc->sid = null_sid;
 
-	if (!ctx->single && !ctx->repl_nodiff && utdv) {
+	if (!ctx->single && !ctx->force_full_replication && utdv) {
 		cursors = TALLOC_ZERO_P(mem_ctx,
 					 struct drsuapi_DsReplicaCursorCtrEx);
 		if (!cursors) {
