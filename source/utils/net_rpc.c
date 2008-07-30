@@ -804,11 +804,11 @@ static NTSTATUS rpc_user_password_internals(const DOM_SID *domain_sid,
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	POLICY_HND connect_pol, domain_pol, user_pol;
-	uchar pwbuf[516];
 	const char *user;
 	const char *new_password;
 	char *prompt = NULL;
 	union samr_UserInfo info;
+	struct samr_CryptPassword crypt_pwd;
 
 	if (argc < 1) {
 		d_printf("User must be specified\n");
@@ -878,12 +878,11 @@ static NTSTATUS rpc_user_password_internals(const DOM_SID *domain_sid,
 
 	/* Set password on account */
 
-	encode_pw_buffer(pwbuf, new_password, STR_UNICODE);
+	init_samr_CryptPassword(new_password,
+				&cli->user_session_key,
+				&crypt_pwd);
 
-	init_samr_user_info24(&info.info24, pwbuf, 24);
-
-	SamOEMhashBlob(info.info24.password.data, 516,
-		       &cli->user_session_key);
+	init_samr_user_info24(&info.info24, crypt_pwd.data, 24);
 
 	result = rpccli_samr_SetUserInfo2(pipe_hnd, mem_ctx,
 					  &user_pol,
@@ -5418,9 +5417,7 @@ static NTSTATUS rpc_trustdom_add_internals(const DOM_SID *domain_sid,
 		struct samr_LogonHours hours;
 		struct lsa_BinaryString parameters;
 		const int units_per_week = 168;
-		uchar pwbuf[516];
-
-		encode_pw_buffer(pwbuf, argv[1], STR_UNICODE);
+		struct samr_CryptPassword crypt_pwd;
 
 		ZERO_STRUCT(notime);
 		ZERO_STRUCT(hours);
@@ -5434,6 +5431,10 @@ static NTSTATUS rpc_trustdom_add_internals(const DOM_SID *domain_sid,
 		hours.units_per_week = units_per_week;
 		memset(hours.bits, 0xFF, units_per_week);
 
+		init_samr_CryptPassword(argv[1],
+					&cli->user_session_key,
+					&crypt_pwd);
+
 		init_samr_user_info23(&info.info23,
 				      notime, notime, notime,
 				      notime, notime, notime,
@@ -5443,10 +5444,7 @@ static NTSTATUS rpc_trustdom_add_internals(const DOM_SID *domain_sid,
 				      SAMR_FIELD_ACCT_FLAGS | SAMR_FIELD_PASSWORD,
 				      hours,
 				      0, 0, 0, 0, 0, 0, 0,
-				      pwbuf, 24);
-
-		SamOEMhashBlob(info.info23.password.data, 516,
-			       &cli->user_session_key);
+				      crypt_pwd.data, 24);
 
 		result = rpccli_samr_SetUserInfo2(pipe_hnd, mem_ctx,
 						  &user_pol,

@@ -146,7 +146,7 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 	/* Password stuff */
 
 	char *clear_trust_password = NULL;
-	uchar pwbuf[516];
+	struct samr_CryptPassword crypt_pwd;
 	uchar md4_trust_password[16];
 	union samr_UserInfo set_info;
 
@@ -333,14 +333,13 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 		E_md4hash(clear_trust_password, md4_trust_password);
 	}
 
-	encode_pw_buffer(pwbuf, clear_trust_password, STR_UNICODE);
-
 	/* Set password on machine account */
 
-	init_samr_user_info24(&set_info.info24, pwbuf, 24);
+	init_samr_CryptPassword(clear_trust_password,
+				&cli->user_session_key,
+				&crypt_pwd);
 
-	SamOEMhashBlob(set_info.info24.password.data, 516,
-		       &cli->user_session_key);
+	init_samr_user_info24(&set_info.info24, crypt_pwd.data, 24);
 
 	CHECK_RPC_ERR(rpccli_samr_SetUserInfo2(pipe_hnd, mem_ctx,
 					       &user_pol,

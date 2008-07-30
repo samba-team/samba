@@ -734,14 +734,13 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 	struct lsa_String lsa_acct_name;
 	uint32_t user_rid;
 	uint32_t acct_flags = ACB_WSTRUST;
-	uchar pwbuf[532];
-	struct MD5Context md5ctx;
-	uchar md5buffer[16];
-	DATA_BLOB digested_session_key;
 	uchar md4_trust_password[16];
 	struct samr_Ids user_rids;
 	struct samr_Ids name_types;
 	union samr_UserInfo user_info;
+
+	struct samr_CryptPassword crypt_pwd;
+	struct samr_CryptPasswordEx crypt_pwd_ex;
 
 	ZERO_STRUCT(sam_pol);
 	ZERO_STRUCT(domain_pol);
@@ -873,19 +872,10 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 	/* Create a random machine account password and generate the hash */
 
 	E_md4hash(r->in.machine_password, md4_trust_password);
-	encode_pw_buffer(pwbuf, r->in.machine_password, STR_UNICODE);
 
-	generate_random_buffer((uint8_t*)md5buffer, sizeof(md5buffer));
-	digested_session_key = data_blob_talloc(mem_ctx, 0, 16);
-
-	MD5Init(&md5ctx);
-	MD5Update(&md5ctx, md5buffer, sizeof(md5buffer));
-	MD5Update(&md5ctx, cli->user_session_key.data,
-		  cli->user_session_key.length);
-	MD5Final(digested_session_key.data, &md5ctx);
-
-	SamOEMhashBlob(pwbuf, sizeof(pwbuf), &digested_session_key);
-	memcpy(&pwbuf[516], md5buffer, sizeof(md5buffer));
+	init_samr_CryptPasswordEx(r->in.machine_password,
+				  &cli->user_session_key,
+				  &crypt_pwd_ex);
 
 	/* Fill in the additional account flags now */
 
@@ -906,7 +896,8 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 					       SAMR_FIELD_ACCT_FLAGS;
 
 	user_info.info25.info.acct_flags = acct_flags;
-	memcpy(&user_info.info25.password.data, pwbuf, sizeof(pwbuf));
+	memcpy(&user_info.info25.password.data, crypt_pwd_ex.data,
+	       sizeof(crypt_pwd_ex.data));
 
 	status = rpccli_samr_SetUserInfo(pipe_hnd, mem_ctx,
 					 &user_pol,
@@ -915,15 +906,13 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS(DCERPC_FAULT_INVALID_TAG))) {
 
-		uchar pwbuf2[516];
-
-		encode_pw_buffer(pwbuf2, r->in.machine_password, STR_UNICODE);
-
 		/* retry with level 24 */
-		init_samr_user_info24(&user_info.info24, pwbuf2, 24);
 
-		SamOEMhashBlob(user_info.info24.password.data, 516,
-			       &cli->user_session_key);
+		init_samr_CryptPassword(r->in.machine_password,
+					&cli->user_session_key,
+					&crypt_pwd);
+
+		init_samr_user_info24(&user_info.info24, crypt_pwd.data, 24);
 
 		status = rpccli_samr_SetUserInfo2(pipe_hnd, mem_ctx,
 						  &user_pol,
