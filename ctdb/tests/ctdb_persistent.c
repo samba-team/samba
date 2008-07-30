@@ -96,12 +96,9 @@ static void check_counters(struct ctdb_context *ctdb, TDB_DATA data)
 
 static void test_store_records(struct ctdb_context *ctdb, struct event_context *ev)
 {
-	TDB_DATA key, data;
+	TDB_DATA key;
 	struct ctdb_db_context *ctdb_db;
-	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
-	int ret;
-	struct ctdb_record_handle *h;
-	uint32_t *counters;
+
 	ctdb_db = ctdb_db_handle(ctdb, "persistent.tdb");
 
 	key.dptr = discard_const("testkey");
@@ -109,6 +106,12 @@ static void test_store_records(struct ctdb_context *ctdb, struct event_context *
 
 	start_timer();
 	while (end_timer() < timelimit) {
+		TDB_DATA data;
+		TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
+		struct ctdb_record_handle *h;
+		int ret;
+		uint32_t *counters;
+
 		h = ctdb_fetch_lock(ctdb_db, tmp_ctx, key, &data);
 		if (h == NULL) {
 			printf("Failed to fetch record '%s' on node %d\n", 
@@ -150,9 +153,9 @@ static void test_store_records(struct ctdb_context *ctdb, struct event_context *
 		}
 
 		talloc_free(h);
+		talloc_free(tmp_ctx);
 	}
 
-	talloc_free(tmp_ctx);
 }
 
 /*
