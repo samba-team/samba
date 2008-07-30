@@ -90,6 +90,10 @@ static void smb2srv_sesssetup_callback(struct gensec_update_request *greq, void 
 	}
 	req->session = smb_sess;
 
+	if (smb_sess->smb2_signing.required) {
+		/* activate smb2 signing on the session */
+		smb_sess->smb2_signing.active = true;
+	}
 done:
 	io->smb2.out.uid = smb_sess->vuid;
 failed:
@@ -182,7 +186,15 @@ static void smb2srv_sesssetup_backend(struct smb2srv_request *req, union smb_ses
 	   This is deliberate as windows does not set it even when it does 
 	   set SMB2_NEGOTIATE_SIGNING_REQUIRED */
 	if (io->smb2.in.security_mode & SMB2_NEGOTIATE_SIGNING_REQUIRED) {
-		req->smb_conn->doing_signing = true;
+		smb_sess->smb2_signing.required = true;
+	} else if (req->smb_conn->smb2_signing_required) {
+		/*
+		 * if required signing was negotiates in SMB2 Negotiate
+		 * then the client made an error not using it here
+		 */
+		DEBUG(1, ("SMB2 signing required on the connection but not used on session\n"));
+		req->status = NT_STATUS_FOOBAR;
+		goto failed;
 	}
 
 	return;
@@ -212,11 +224,25 @@ void smb2srv_sesssetup_recv(struct smb2srv_request *req)
 	smb2srv_sesssetup_backend(req, io);
 }
 
-static NTSTATUS smb2srv_logoff_backend(struct smb2srv_request *req)
+static int smb2srv_cleanup_session_destructor(struct smbsrv_session **session)
 {
 	/* TODO: call ntvfs backends to close file of this session */
-	talloc_free(req->session);
-	req->session = NULL;
+	DEBUG(0,("free session[%p]\n", *session));
+	talloc_free(*session);
+	return 0;
+}
+
+static NTSTATUS smb2srv_logoff_backend(struct smb2srv_request *req)
+{
+	struct smbsrv_session **session_ptr;
+
+	/* we need to destroy the session after sending the reply */
+	session_ptr = talloc(req, struct smbsrv_session *);
+	NT_STATUS_HAVE_NO_MEMORY(session_ptr);
+
+	*session_ptr = req->session;
+	talloc_set_destructor(session_ptr, smb2srv_cleanup_session_destructor);
+
 	return NT_STATUS_OK;
 }
 

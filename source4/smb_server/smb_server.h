@@ -100,6 +100,11 @@ struct smbsrv_session {
 
 	struct auth_session_info *session_info;
 
+	struct {
+		bool required;
+		bool active;
+	} smb2_signing;
+
 	/* some statistics for the management tools */
 	struct {
 		/* the time when the session setup started */
@@ -380,7 +385,7 @@ struct smbsrv_connection {
 
 	struct loadparm_context *lp_ctx;
 
-	bool doing_signing;
+	bool smb2_signing_required;
 };
 
 struct model_ops;

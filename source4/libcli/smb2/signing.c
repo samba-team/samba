@@ -46,7 +46,7 @@ NTSTATUS smb2_sign_message(struct smb2_request_buffer *buf, DATA_BLOB session_ke
 		return NT_STATUS_OK;		
 	}
 
-	if (session_key.length != 16) {
+	if (session_key.length == 0) {
 		DEBUG(2,("Wrong session key length %u for SMB2 signing\n",
 			 (unsigned)session_key.length));
 		return NT_STATUS_ACCESS_DENIED;
@@ -57,10 +57,9 @@ NTSTATUS smb2_sign_message(struct smb2_request_buffer *buf, DATA_BLOB session_ke
 	SIVAL(buf->hdr, SMB2_HDR_FLAGS, IVAL(buf->hdr, SMB2_HDR_FLAGS) | SMB2_HDR_FLAG_SIGNED);
 
 	ZERO_STRUCT(m);
-	hmac_sha256_init(session_key.data, 16, &m);
+	hmac_sha256_init(session_key.data, MIN(session_key.length, 16), &m);
 	hmac_sha256_update(buf->buffer+NBT_HDR_SIZE, buf->size-NBT_HDR_SIZE, &m);
 	hmac_sha256_final(res, &m);
-
 	DEBUG(5,("signed SMB2 message of size %u\n", (unsigned)buf->size - NBT_HDR_SIZE));
 
 	memcpy(buf->hdr + SMB2_HDR_SIGNATURE, res, 16);
@@ -95,7 +94,7 @@ NTSTATUS smb2_check_signature(struct smb2_request_buffer *buf, DATA_BLOB session
 		return NT_STATUS_OK;
 	}
 
-	if (session_key.length != 16) {
+	if (session_key.length == 0) {
 		DEBUG(2,("Wrong session key length %u for SMB2 signing\n",
 			 (unsigned)session_key.length));
 		return NT_STATUS_ACCESS_DENIED;
@@ -106,7 +105,7 @@ NTSTATUS smb2_check_signature(struct smb2_request_buffer *buf, DATA_BLOB session
 	memset(buf->hdr + SMB2_HDR_SIGNATURE, 0, 16);
 
 	ZERO_STRUCT(m);
-	hmac_sha256_init(session_key.data, 16, &m);
+	hmac_sha256_init(session_key.data, MIN(session_key.length, 16), &m);
 	hmac_sha256_update(buf->hdr, buf->size-NBT_HDR_SIZE, &m);
 	hmac_sha256_final(res, &m);
 
