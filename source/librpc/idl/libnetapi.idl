@@ -510,6 +510,81 @@ interface libnetapi
 		);
 
 	/*******************************************/
+	/* NetUserModalsGet                        */
+	/*******************************************/
+
+	const int TIMEQ_FOREVER = (uint32_t)-1L;
+
+	typedef struct {
+		uint32 usrmod0_min_passwd_len;
+		uint32 usrmod0_max_passwd_age;
+		uint32 usrmod0_min_passwd_age;
+		uint32 usrmod0_force_logoff;
+		uint32 usrmod0_password_hist_len;
+	} USER_MODALS_INFO_0;
+
+	typedef struct {
+		uint32 usrmod1_role;
+		string usrmod1_primary;
+	} USER_MODALS_INFO_1;
+
+	typedef struct {
+		string usrmod2_domain_name;
+		domsid *usrmod2_domain_id;
+	} USER_MODALS_INFO_2;
+
+	typedef struct {
+		uint32 usrmod3_lockout_duration;
+		uint32 usrmod3_lockout_observation_window;
+		uint32 usrmod3_lockout_threshold;
+	} USER_MODALS_INFO_3;
+
+	typedef struct {
+		uint32 usrmod1001_min_passwd_len;
+	} USER_MODALS_INFO_1001;
+
+	typedef struct {
+		uint32 usrmod1002_max_passwd_age;
+	} USER_MODALS_INFO_1002;
+
+	typedef struct {
+		uint32 usrmod1003_min_passwd_age;
+	} USER_MODALS_INFO_1003;
+
+	typedef struct {
+		uint32 usrmod1004_force_logoff;
+	} USER_MODALS_INFO_1004;
+
+	typedef struct {
+		uint32 usrmod1005_password_hist_len;
+	} USER_MODALS_INFO_1005;
+
+	typedef struct {
+		uint32 usrmod1006_role;
+	} USER_MODALS_INFO_1006;
+
+	typedef struct {
+		string usrmod1007_primary;
+	} USER_MODALS_INFO_1007;
+
+	[nopush,nopull] NET_API_STATUS NetUserModalsGet(
+		[in] string server_name,
+		[in] uint32 level,
+		[out,ref] uint8 **buffer
+		);
+
+	/*******************************************/
+	/* NetUserModalsSet                        */
+	/*******************************************/
+
+	[nopush,nopull] NET_API_STATUS NetUserModalsSet(
+		[in] string server_name,
+		[in] uint32 level,
+		[in] uint8 *buffer,
+		[out,ref] uint32 *parm_err
+		);
+
+	/*******************************************/
 	/* NetQueryDisplayInformation              */
 	/*******************************************/
 
