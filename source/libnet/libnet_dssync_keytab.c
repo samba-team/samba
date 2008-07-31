@@ -159,6 +159,106 @@ done:
 /****************************************************************
 ****************************************************************/
 
+static  NTSTATUS parse_supplemental_credentials(TALLOC_CTX *mem_ctx,
+			const DATA_BLOB *blob,
+			struct package_PrimaryKerberosCtr3 **pkb3,
+			struct package_PrimaryKerberosCtr4 **pkb4)
+{
+	NTSTATUS status;
+	enum ndr_err_code ndr_err;
+	struct supplementalCredentialsBlob scb;
+	struct supplementalCredentialsPackage *scpk = NULL;
+	DATA_BLOB scpk_blob;
+	struct package_PrimaryKerberosBlob *pkb;
+	bool newer_keys = false;
+	uint32_t j;
+
+	ndr_err = ndr_pull_struct_blob_all(blob, mem_ctx, &scb,
+			(ndr_pull_flags_fn_t)ndr_pull_supplementalCredentialsBlob);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		status = ndr_map_error2ntstatus(ndr_err);
+		goto done;
+	}
+	if (scb.sub.signature !=
+	    SUPPLEMENTAL_CREDENTIALS_SIGNATURE)
+	{
+		if (DEBUGLEVEL >= 10) {
+			NDR_PRINT_DEBUG(supplementalCredentialsBlob, &scb);
+		}
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto done;
+	}
+	for (j=0; j < scb.sub.num_packages; j++) {
+		if (strcmp("Primary:Kerberos-Newer-Keys",
+		    scb.sub.packages[j].name) == 0)
+		{
+			scpk = &scb.sub.packages[j];
+			if (!scpk->data || !scpk->data[0]) {
+				scpk = NULL;
+				continue;
+			}
+			newer_keys = true;
+			break;
+		} else  if (strcmp("Primary:Kerberos",
+				   scb.sub.packages[j].name) == 0)
+		{
+			/*
+			 * grab this but don't break here:
+			 * there might still be newer-keys ...
+			 */
+			scpk = &scb.sub.packages[j];
+			if (!scpk->data || !scpk->data[0]) {
+				scpk = NULL;
+			}
+		}
+	}
+
+	if (!scpk) {
+		/* no data */
+		status = NT_STATUS_OK;
+		goto done;
+	}
+
+	scpk_blob = strhex_to_data_blob(mem_ctx, scpk->data);
+	if (!scpk_blob.data) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	pkb = TALLOC_ZERO_P(mem_ctx, struct package_PrimaryKerberosBlob);
+	if (!pkb) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+	ndr_err = ndr_pull_struct_blob(&scpk_blob, mem_ctx, pkb,
+			(ndr_pull_flags_fn_t)ndr_pull_package_PrimaryKerberosBlob);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		status = ndr_map_error2ntstatus(ndr_err);
+		goto done;
+	}
+
+	if (!newer_keys && pkb->version != 3) {
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto done;
+	}
+
+	if (newer_keys && pkb->version != 4) {
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto done;
+	}
+
+	if (pkb->version == 4 && pkb4) {
+		*pkb4 = &pkb->ctr.ctr4;
+	} else if (pkb->version == 3 && pkb3) {
+		*pkb3 = &pkb->ctr.ctr3;
+	}
+
+	status = NT_STATUS_OK;
+
+done:
+	return status;
+}
+
 static NTSTATUS parse_object(TALLOC_CTX *mem_ctx,
 			     struct libnet_keytab_context *ctx,
 			     struct drsuapi_DsReplicaObjectListItemEx *cur)
@@ -169,6 +269,9 @@ static NTSTATUS parse_object(TALLOC_CTX *mem_ctx,
 	int i = 0;
 	struct drsuapi_DsReplicaAttribute *attr;
 	bool got_pwd = false;
+
+	struct package_PrimaryKerberosCtr3 *pkb3 = NULL;
+	struct package_PrimaryKerberosCtr4 *pkb4 = NULL;
 
 	char *object_dn = NULL;
 	char *upn = NULL;
@@ -260,6 +363,17 @@ static NTSTATUS parse_object(TALLOC_CTX *mem_ctx,
 			case DRSUAPI_ATTRIBUTE_userAccountControl:
 				uacc = IVAL(blob->data, 0);
 				break;
+			case DRSUAPI_ATTRIBUTE_supplementalCredentials:
+				status = parse_supplemental_credentials(mem_ctx,
+									blob,
+									&pkb3,
+									&pkb4);
+				if (!NT_STATUS_IS_OK(status)) {
+					DEBUG(2, ("parsing of supplemental "
+						  "credentials failed: %s\n",
+						  nt_errstr(status)));
+				}
+				break;
 			default:
 				break;
 		}
@@ -340,6 +454,78 @@ static NTSTATUS parse_object(TALLOC_CTX *mem_ctx,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
+	}
+
+	/* add kerberos keys (if any) */
+
+	if (pkb4) {
+		for (i=0; i < pkb4->num_keys; i++) {
+			if (!pkb4->keys[i].value) {
+				continue;
+			}
+			status = add_to_keytab_entries(mem_ctx, ctx, kvno,
+						       name,
+						       NULL,
+						       pkb4->keys[i].keytype,
+						       *pkb4->keys[i].value);
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
+			}
+		}
+		for (i=0; i < pkb4->num_old_keys; i++) {
+			if (!pkb4->old_keys[i].value) {
+				continue;
+			}
+			status = add_to_keytab_entries(mem_ctx, ctx, kvno - 1,
+						       name,
+						       NULL,
+						       pkb4->old_keys[i].keytype,
+						       *pkb4->old_keys[i].value);
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
+			}
+		}
+		for (i=0; i < pkb4->num_older_keys; i++) {
+			if (!pkb4->older_keys[i].value) {
+				continue;
+			}
+			status = add_to_keytab_entries(mem_ctx, ctx, kvno - 2,
+						       name,
+						       NULL,
+						       pkb4->older_keys[i].keytype,
+						       *pkb4->older_keys[i].value);
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
+			}
+		}
+	}
+
+	if (pkb3) {
+		for (i=0; i < pkb3->num_keys; i++) {
+			if (!pkb3->keys[i].value) {
+				continue;
+			}
+			status = add_to_keytab_entries(mem_ctx, ctx, kvno, name,
+						       NULL,
+						       pkb3->keys[i].keytype,
+						       *pkb3->keys[i].value);
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
+			}
+		}
+		for (i=0; i < pkb3->num_old_keys; i++) {
+			if (!pkb3->old_keys[i].value) {
+				continue;
+			}
+			status = add_to_keytab_entries(mem_ctx, ctx, kvno - 1,
+						       name,
+						       NULL,
+						       pkb3->old_keys[i].keytype,
+						       *pkb3->old_keys[i].value);
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
+			}
+		}
 	}
 
 	if ((kvno < 0) && (kvno < pwd_history_len)) {
