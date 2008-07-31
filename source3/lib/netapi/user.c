@@ -1408,3 +1408,38 @@ WERROR NetUserSetInfo_l(struct libnetapi_ctx *ctx,
 	return WERR_NOT_SUPPORTED;
 }
 
+/****************************************************************
+****************************************************************/
+
+WERROR NetUserModalsGet_r(struct libnetapi_ctx *ctx,
+			  struct NetUserModalsGet *r)
+{
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR NetUserModalsGet_l(struct libnetapi_ctx *ctx,
+			  struct NetUserModalsGet *r)
+{
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR NetUserModalsSet_r(struct libnetapi_ctx *ctx,
+			  struct NetUserModalsSet *r)
+{
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR NetUserModalsSet_l(struct libnetapi_ctx *ctx,
+			  struct NetUserModalsSet *r)
+{
+	return WERR_NOT_SUPPORTED;
+}

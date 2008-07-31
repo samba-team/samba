@@ -125,6 +125,21 @@ WERROR NetUserSetInfo_r(struct libnetapi_ctx *ctx,
 			struct NetUserSetInfo *r);
 WERROR NetUserSetInfo_l(struct libnetapi_ctx *ctx,
 			struct NetUserSetInfo *r);
+NET_API_STATUS NetUserModalsGet(const char * server_name /* [in] */,
+				uint32_t level /* [in] */,
+				uint8_t **buffer /* [out] [ref] */);
+WERROR NetUserModalsGet_r(struct libnetapi_ctx *ctx,
+			  struct NetUserModalsGet *r);
+WERROR NetUserModalsGet_l(struct libnetapi_ctx *ctx,
+			  struct NetUserModalsGet *r);
+NET_API_STATUS NetUserModalsSet(const char * server_name /* [in] */,
+				uint32_t level /* [in] */,
+				uint8_t *buffer /* [in] [ref] */,
+				uint32_t *parm_err /* [out] [ref] */);
+WERROR NetUserModalsSet_r(struct libnetapi_ctx *ctx,
+			  struct NetUserModalsSet *r);
+WERROR NetUserModalsSet_l(struct libnetapi_ctx *ctx,
+			  struct NetUserModalsSet *r);
 NET_API_STATUS NetQueryDisplayInformation(const char * server_name /* [in] [unique] */,
 					  uint32_t level /* [in] */,
 					  uint32_t idx /* [in] */,
