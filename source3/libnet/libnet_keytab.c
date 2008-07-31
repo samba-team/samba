@@ -261,7 +261,7 @@ done:
 krb5_error_code libnet_keytab_add(struct libnet_keytab_context *ctx)
 {
 	krb5_error_code ret = 0;
-	int i;
+	uint32_t i;
 
 	for (i=0; i<ctx->count; i++) {
 
