@@ -36,6 +36,7 @@ struct libnet_keytab_context {
 	uint8_t zero_buf[16];
 	uint32_t count;
 	struct libnet_keytab_entry *entries;
+	bool clean_old_entries;
 };
 
 #endif /* HAVE_KRB5 */

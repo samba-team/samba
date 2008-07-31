@@ -96,6 +96,7 @@ krb5_error_code libnet_keytab_init(TALLOC_CTX *mem_ctx,
 	r->context = context;
 	r->keytab = keytab;
 	r->keytab_name = keytab_string;
+	r->clean_old_entries = false;
 
 	*ctx = r;
 
