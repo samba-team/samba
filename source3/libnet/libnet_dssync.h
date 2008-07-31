@@ -37,6 +37,7 @@ struct dssync_context {
 	const char *nc_dn;
 	bool single_object_replication;
 	bool force_full_replication;
+	bool clean_old_entries;
 	uint32_t object_count;
 	const char **object_dns;
 	struct policy_handle bind_handle;
