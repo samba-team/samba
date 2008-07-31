@@ -826,6 +826,90 @@ interface libnetapi
 		);
 
 	/*******************************************/
+	/* NetLocalGroupAddMembers                 */
+	/*******************************************/
+
+	typedef enum {
+		SidTypeUser		= 1,
+		SidTypeGroup		= 2,
+		SidTypeDomain		= 3,
+		SidTypeAlias		= 4,
+		SidTypeWellKnownGroup	= 5,
+		SidTypeDeletedAccount	= 6,
+		SidTypeInvalid		= 7,
+		SidTypeUnknown		= 8,
+		SidTypeComputer		= 9,
+		SidTypeLabel		= 10
+	} SID_NAME_USE;
+
+	typedef struct {
+		domsid *lgrmi0_sid;
+	} LOCALGROUP_MEMBERS_INFO_0;
+
+	typedef struct {
+		domsid *lgrmi1_sid;
+		SID_NAME_USE lgrmi1_sidusage;
+		string lgrmi1_name;
+	} LOCALGROUP_MEMBERS_INFO_1;
+
+	typedef struct {
+		domsid *lgrmi2_sid;
+		SID_NAME_USE lgrmi2_sidusage;
+		string lgrmi2_domainandname;
+	} LOCALGROUP_MEMBERS_INFO_2;
+
+	typedef struct {
+		string lgrmi3_domainandname;
+	} LOCALGROUP_MEMBERS_INFO_3;
+
+	[nopush,nopull] NET_API_STATUS NetLocalGroupAddMembers(
+		[in] string server_name,
+		[in] string group_name,
+		[in] uint32 level,
+		[in] uint8 *buffer,
+		[in] uint32 total_entries
+		);
+
+	/*******************************************/
+	/* NetLocalGroupDelMembers                 */
+	/*******************************************/
+
+	[nopush,nopull] NET_API_STATUS NetLocalGroupDelMembers(
+		[in] string server_name,
+		[in] string group_name,
+		[in] uint32 level,
+		[in] uint8 *buffer,
+		[in] uint32 total_entries
+		);
+
+	/*******************************************/
+	/* NetLocalGroupGetMembers                 */
+	/*******************************************/
+
+	[nopush,nopull] NET_API_STATUS NetLocalGroupGetMembers(
+		[in] string server_name,
+		[in] string local_group_name,
+		[in] uint32 level,
+		[out] uint8 **buffer,
+		[in] uint32 prefmaxlen,
+		[out] uint32 *entries_read,
+		[out] uint32 *total_entries,
+		[in,out] uint32 *resume_handle
+		);
+
+	/*******************************************/
+	/* NetLocalGroupSetMembers                 */
+	/*******************************************/
+
+	[nopush,nopull] NET_API_STATUS NetLocalGroupSetMembers(
+		[in] string server_name,
+		[in] string group_name,
+		[in] uint32 level,
+		[in] uint8 *buffer,
+		[in] uint32 total_entries
+		);
+
+	/*******************************************/
 	/* NetRemoteTOD                            */
 	/*******************************************/
 
