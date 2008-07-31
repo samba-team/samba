@@ -99,6 +99,7 @@ _PUBLIC_ void ndr_print_libnet_UnjoinCtx(struct ndr_print *ndr, const char *name
 		ndr_print_ads_struct(ndr, "ads", r->in.ads);
 		ndr->depth--;
 		ndr_print_uint8(ndr, "debug", r->in.debug);
+		ndr_print_uint8(ndr, "use_kerberos", r->in.use_kerberos);
 		ndr->depth--;
 	}
 	if (flags & NDR_OUT) {
