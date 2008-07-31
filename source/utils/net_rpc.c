@@ -1913,83 +1913,42 @@ static int rpc_group_add_internals(struct net_context *c, int argc, const char *
 	return 0;
 }
 
-static NTSTATUS rpc_alias_add_internals(struct net_context *c,
-					const DOM_SID *domain_sid,
-					const char *domain_name,
-					struct cli_state *cli,
-					struct rpc_pipe_client *pipe_hnd,
-					TALLOC_CTX *mem_ctx,
-					int argc,
-					const char **argv)
+static int rpc_alias_add_internals(struct net_context *c, int argc, const char **argv)
 {
-	POLICY_HND connect_pol, domain_pol, alias_pol;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	union samr_AliasInfo alias_info;
-	struct lsa_String alias_name;
-	uint32_t rid = 0;
+	NET_API_STATUS status;
+	struct LOCALGROUP_INFO_1 info1;
+	uint32_t parm_error = 0;
 
 	if (argc != 1 || c->display_usage) {
 		rpc_group_usage(c, argc, argv);
-		return NT_STATUS_OK;
+		return 0;
 	}
 
-	init_lsa_String(&alias_name, argv[0]);
+	ZERO_STRUCT(info1);
 
-	/* Get sam policy handle */
+	info1.lgrpi1_name = argv[0];
+	if (c->opt_comment && strlen(c->opt_comment) > 0) {
+		info1.lgrpi1_comment = c->opt_comment;
+	}
 
-	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
-				      pipe_hnd->desthost,
-				      MAXIMUM_ALLOWED_ACCESS,
-				      &connect_pol);
-	if (!NT_STATUS_IS_OK(result)) goto done;
+	status = NetLocalGroupAdd(c->opt_host, 1, (uint8_t *)&info1, &parm_error);
 
-	/* Get domain policy handle */
+	if (status != 0) {
+		d_fprintf(stderr, "Failed to add alias '%s' with: %s.\n",
+			argv[0], libnetapi_get_error_string(c->netapi_ctx,
+							    status));
+		return -1;
+	} else {
+		d_printf("Added alias '%s'.\n", argv[0]);
+	}
 
-	result = rpccli_samr_OpenDomain(pipe_hnd, mem_ctx,
-					&connect_pol,
-					MAXIMUM_ALLOWED_ACCESS,
-					CONST_DISCARD(struct dom_sid2 *, domain_sid),
-					&domain_pol);
-	if (!NT_STATUS_IS_OK(result)) goto done;
-
-	/* Create the group */
-
-	result = rpccli_samr_CreateDomAlias(pipe_hnd, mem_ctx,
-					    &domain_pol,
-					    &alias_name,
-					    MAXIMUM_ALLOWED_ACCESS,
-					    &alias_pol,
-					    &rid);
-	if (!NT_STATUS_IS_OK(result)) goto done;
-
-	if (strlen(c->opt_comment) == 0) goto done;
-
-	/* We've got a comment to set */
-
-	init_lsa_String(&alias_info.description, c->opt_comment);
-
-	result = rpccli_samr_SetAliasInfo(pipe_hnd, mem_ctx,
-					  &alias_pol,
-					  3,
-					  &alias_info);
-
-	if (!NT_STATUS_IS_OK(result)) goto done;
-
- done:
-	if (NT_STATUS_IS_OK(result))
-		DEBUG(5, ("add alias succeeded\n"));
-	else
-		d_fprintf(stderr, "add alias failed: %s\n", nt_errstr(result));
-
-	return result;
+	return 0;
 }
 
 static int rpc_group_add(struct net_context *c, int argc, const char **argv)
 {
 	if (c->opt_localgroup)
-		return run_rpc_command(c, NULL, &ndr_table_samr.syntax_id, 0,
-				       rpc_alias_add_internals,
-				       argc, argv);
+		return rpc_alias_add_internals(c, argc, argv);
 
 	return rpc_group_add_internals(c, argc, argv);
 }
