@@ -1411,10 +1411,380 @@ WERROR NetUserSetInfo_l(struct libnetapi_ctx *ctx,
 /****************************************************************
 ****************************************************************/
 
+static NTSTATUS query_USER_MODALS_INFO_rpc(TALLOC_CTX *mem_ctx,
+					   struct rpc_pipe_client *pipe_cli,
+					   struct policy_handle *domain_handle,
+					   struct samr_DomInfo1 *info1,
+					   struct samr_DomInfo3 *info3,
+					   struct samr_DomInfo5 *info5,
+					   struct samr_DomInfo6 *info6,
+					   struct samr_DomInfo7 *info7,
+					   struct samr_DomInfo12 *info12)
+{
+	NTSTATUS status;
+	union samr_DomainInfo *dom_info = NULL;
+
+	if (info1) {
+		status = rpccli_samr_QueryDomainInfo(pipe_cli, mem_ctx,
+						     domain_handle,
+						     1,
+						     &dom_info);
+		NT_STATUS_NOT_OK_RETURN(status);
+
+		*info1 = dom_info->info1;
+	}
+
+	if (info3) {
+		status = rpccli_samr_QueryDomainInfo(pipe_cli, mem_ctx,
+						     domain_handle,
+						     3,
+						     &dom_info);
+		NT_STATUS_NOT_OK_RETURN(status);
+
+		*info3 = dom_info->info3;
+	}
+
+	if (info5) {
+		status = rpccli_samr_QueryDomainInfo(pipe_cli, mem_ctx,
+						     domain_handle,
+						     5,
+						     &dom_info);
+		NT_STATUS_NOT_OK_RETURN(status);
+
+		*info5 = dom_info->info5;
+	}
+
+	if (info6) {
+		status = rpccli_samr_QueryDomainInfo(pipe_cli, mem_ctx,
+						     domain_handle,
+						     6,
+						     &dom_info);
+		NT_STATUS_NOT_OK_RETURN(status);
+
+		*info6 = dom_info->info6;
+	}
+
+	if (info7) {
+		status = rpccli_samr_QueryDomainInfo(pipe_cli, mem_ctx,
+						     domain_handle,
+						     7,
+						     &dom_info);
+		NT_STATUS_NOT_OK_RETURN(status);
+
+		*info7 = dom_info->info7;
+	}
+
+	if (info12) {
+		status = rpccli_samr_QueryDomainInfo2(pipe_cli, mem_ctx,
+						      domain_handle,
+						      12,
+						      &dom_info);
+		NT_STATUS_NOT_OK_RETURN(status);
+
+		*info12 = dom_info->info12;
+	}
+
+	return NT_STATUS_OK;
+}
+
+/****************************************************************
+****************************************************************/
+
+static NTSTATUS query_USER_MODALS_INFO_0(TALLOC_CTX *mem_ctx,
+					 struct rpc_pipe_client *pipe_cli,
+					 struct policy_handle *domain_handle,
+					 struct USER_MODALS_INFO_0 *info0)
+{
+	NTSTATUS status;
+	struct samr_DomInfo1 dom_info1;
+	struct samr_DomInfo3 dom_info3;
+
+	ZERO_STRUCTP(info0);
+
+	status = query_USER_MODALS_INFO_rpc(mem_ctx,
+					    pipe_cli,
+					    domain_handle,
+					    &dom_info1,
+					    &dom_info3,
+					    NULL,
+					    NULL,
+					    NULL,
+					    NULL);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	info0->usrmod0_min_passwd_len =
+		dom_info1.min_password_length;
+	info0->usrmod0_max_passwd_age =
+		nt_time_to_unix_abs((NTTIME *)&dom_info1.max_password_age);
+	info0->usrmod0_min_passwd_age =
+		nt_time_to_unix_abs((NTTIME *)&dom_info1.min_password_age);
+	info0->usrmod0_password_hist_len =
+		dom_info1.password_history_length;
+
+	info0->usrmod0_force_logoff =
+		nt_time_to_unix_abs(&dom_info3.force_logoff_time);
+
+	return NT_STATUS_OK;
+}
+
+/****************************************************************
+****************************************************************/
+
+static NTSTATUS query_USER_MODALS_INFO_1(TALLOC_CTX *mem_ctx,
+					 struct rpc_pipe_client *pipe_cli,
+					 struct policy_handle *domain_handle,
+					 struct USER_MODALS_INFO_1 *info1)
+{
+	NTSTATUS status;
+	struct samr_DomInfo6 dom_info6;
+	struct samr_DomInfo7 dom_info7;
+
+	status = query_USER_MODALS_INFO_rpc(mem_ctx,
+					    pipe_cli,
+					    domain_handle,
+					    NULL,
+					    NULL,
+					    NULL,
+					    &dom_info6,
+					    &dom_info7,
+					    NULL);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	info1->usrmod1_primary =
+		talloc_strdup(mem_ctx, dom_info6.primary.string);
+
+	info1->usrmod1_role = dom_info7.role;
+
+	return NT_STATUS_OK;
+}
+
+/****************************************************************
+****************************************************************/
+
+static NTSTATUS query_USER_MODALS_INFO_2(TALLOC_CTX *mem_ctx,
+					 struct rpc_pipe_client *pipe_cli,
+					 struct policy_handle *domain_handle,
+					 struct dom_sid *domain_sid,
+					 struct USER_MODALS_INFO_2 *info2)
+{
+	NTSTATUS status;
+	struct samr_DomInfo5 dom_info5;
+
+	status = query_USER_MODALS_INFO_rpc(mem_ctx,
+					    pipe_cli,
+					    domain_handle,
+					    NULL,
+					    NULL,
+					    &dom_info5,
+					    NULL,
+					    NULL,
+					    NULL);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	info2->usrmod2_domain_name =
+		talloc_strdup(mem_ctx, dom_info5.domain_name.string);
+	info2->usrmod2_domain_id =
+		(struct domsid *)sid_dup_talloc(mem_ctx, domain_sid);
+
+	NT_STATUS_HAVE_NO_MEMORY(info2->usrmod2_domain_name);
+	NT_STATUS_HAVE_NO_MEMORY(info2->usrmod2_domain_id);
+
+	return NT_STATUS_OK;
+}
+
+/****************************************************************
+****************************************************************/
+
+static NTSTATUS query_USER_MODALS_INFO_3(TALLOC_CTX *mem_ctx,
+					 struct rpc_pipe_client *pipe_cli,
+					 struct policy_handle *domain_handle,
+					 struct USER_MODALS_INFO_3 *info3)
+{
+	NTSTATUS status;
+	struct samr_DomInfo12 dom_info12;
+
+	status = query_USER_MODALS_INFO_rpc(mem_ctx,
+					    pipe_cli,
+					    domain_handle,
+					    NULL,
+					    NULL,
+					    NULL,
+					    NULL,
+					    NULL,
+					    &dom_info12);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	info3->usrmod3_lockout_duration =
+		nt_time_to_unix_abs(&dom_info12.lockout_duration);
+	info3->usrmod3_lockout_observation_window =
+		nt_time_to_unix_abs(&dom_info12.lockout_window);
+	info3->usrmod3_lockout_threshold =
+		dom_info12.lockout_threshold;
+
+	return NT_STATUS_OK;
+}
+
+/****************************************************************
+****************************************************************/
+
+static NTSTATUS query_USER_MODALS_INFO_to_buffer(TALLOC_CTX *mem_ctx,
+						 struct rpc_pipe_client *pipe_cli,
+						 uint32_t level,
+						 struct policy_handle *domain_handle,
+						 struct dom_sid *domain_sid,
+						 uint8_t **buffer)
+{
+	NTSTATUS status;
+
+	struct USER_MODALS_INFO_0 info0;
+	struct USER_MODALS_INFO_1 info1;
+	struct USER_MODALS_INFO_2 info2;
+	struct USER_MODALS_INFO_3 info3;
+
+	if (!buffer) {
+		return ERROR_INSUFFICIENT_BUFFER;
+	}
+
+	switch (level) {
+		case 0:
+			status = query_USER_MODALS_INFO_0(mem_ctx,
+							  pipe_cli,
+							  domain_handle,
+							  &info0);
+			NT_STATUS_NOT_OK_RETURN(status);
+
+			*buffer = (uint8_t *)talloc_memdup(mem_ctx, &info0,
+							   sizeof(info0));
+			break;
+
+		case 1:
+			status = query_USER_MODALS_INFO_1(mem_ctx,
+							  pipe_cli,
+							  domain_handle,
+							  &info1);
+			NT_STATUS_NOT_OK_RETURN(status);
+
+			*buffer = (uint8_t *)talloc_memdup(mem_ctx, &info1,
+							   sizeof(info1));
+			break;
+		case 2:
+			status = query_USER_MODALS_INFO_2(mem_ctx,
+							  pipe_cli,
+							  domain_handle,
+							  domain_sid,
+							  &info2);
+			NT_STATUS_NOT_OK_RETURN(status);
+
+			*buffer = (uint8_t *)talloc_memdup(mem_ctx, &info2,
+							   sizeof(info2));
+			break;
+		case 3:
+			status = query_USER_MODALS_INFO_3(mem_ctx,
+							  pipe_cli,
+							  domain_handle,
+							  &info3);
+			NT_STATUS_NOT_OK_RETURN(status);
+
+			*buffer = (uint8_t *)talloc_memdup(mem_ctx, &info3,
+							   sizeof(info3));
+			break;
+		default:
+			break;
+	}
+
+	NT_STATUS_HAVE_NO_MEMORY(*buffer);
+
+	return NT_STATUS_OK;
+}
+
+/****************************************************************
+****************************************************************/
+
 WERROR NetUserModalsGet_r(struct libnetapi_ctx *ctx,
 			  struct NetUserModalsGet *r)
 {
-	return WERR_NOT_SUPPORTED;
+	struct cli_state *cli = NULL;
+	struct rpc_pipe_client *pipe_cli = NULL;
+	NTSTATUS status;
+	WERROR werr;
+
+	struct policy_handle connect_handle, domain_handle;
+	struct dom_sid2 *domain_sid = NULL;
+	uint32_t access_mask = SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT;
+
+	ZERO_STRUCT(connect_handle);
+	ZERO_STRUCT(domain_handle);
+
+	if (!r->out.buffer) {
+		return WERR_INVALID_PARAM;
+	}
+
+	switch (r->in.level) {
+		case 0:
+			access_mask |= SAMR_DOMAIN_ACCESS_LOOKUP_INFO_1 |
+				       SAMR_DOMAIN_ACCESS_LOOKUP_INFO_2;
+			break;
+		case 1:
+		case 2:
+			access_mask |= SAMR_DOMAIN_ACCESS_LOOKUP_INFO_2;
+			break;
+		case 3:
+			access_mask |= SAMR_DOMAIN_ACCESS_LOOKUP_INFO_1;
+			break;
+		default:
+			werr = WERR_UNKNOWN_LEVEL;
+			goto done;
+	}
+
+	werr = libnetapi_open_ipc_connection(ctx, r->in.server_name, &cli);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	werr = libnetapi_open_pipe(ctx, cli, &ndr_table_samr.syntax_id,
+				   &pipe_cli);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	werr = libnetapi_samr_open_domain(ctx, pipe_cli,
+					  SAMR_ACCESS_ENUM_DOMAINS |
+					  SAMR_ACCESS_OPEN_DOMAIN,
+					  access_mask,
+					  &connect_handle,
+					  &domain_handle,
+					  &domain_sid);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	/* 0:  1 + 3 */
+	/* 1:  6 + 7 */
+	/* 2:  5 */
+	/* 3: 12 (DomainInfo2) */
+
+	status = query_USER_MODALS_INFO_to_buffer(ctx,
+						  pipe_cli,
+						  r->in.level,
+						  &domain_handle,
+						  domain_sid,
+						  r->out.buffer);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+ done:
+	if (!cli) {
+		return werr;
+	}
+
+	if (ctx->disable_policy_handle_cache) {
+		libnetapi_samr_close_domain_handle(ctx, &domain_handle);
+		libnetapi_samr_close_connect_handle(ctx, &connect_handle);
+	}
+
+	return werr;
 }
 
 /****************************************************************
@@ -1423,7 +1793,7 @@ WERROR NetUserModalsGet_r(struct libnetapi_ctx *ctx,
 WERROR NetUserModalsGet_l(struct libnetapi_ctx *ctx,
 			  struct NetUserModalsGet *r)
 {
-	return WERR_NOT_SUPPORTED;
+	return NetUserModalsGet_r(ctx, r);
 }
 
 /****************************************************************
