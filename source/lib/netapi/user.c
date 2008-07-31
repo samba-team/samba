@@ -1799,10 +1799,474 @@ WERROR NetUserModalsGet_l(struct libnetapi_ctx *ctx,
 /****************************************************************
 ****************************************************************/
 
+static NTSTATUS set_USER_MODALS_INFO_rpc(TALLOC_CTX *mem_ctx,
+					 struct rpc_pipe_client *pipe_cli,
+					 struct policy_handle *domain_handle,
+					 struct samr_DomInfo1 *info1,
+					 struct samr_DomInfo3 *info3,
+					 struct samr_DomInfo12 *info12)
+{
+	NTSTATUS status;
+	union samr_DomainInfo dom_info;
+
+	if (info1) {
+
+		ZERO_STRUCT(dom_info);
+
+		dom_info.info1 = *info1;
+
+		status = rpccli_samr_SetDomainInfo(pipe_cli, mem_ctx,
+						   domain_handle,
+						   1,
+						   &dom_info);
+		NT_STATUS_NOT_OK_RETURN(status);
+	}
+
+	if (info3) {
+
+		ZERO_STRUCT(dom_info);
+
+		dom_info.info3 = *info3;
+
+		status = rpccli_samr_SetDomainInfo(pipe_cli, mem_ctx,
+						   domain_handle,
+						   3,
+						   &dom_info);
+
+		NT_STATUS_NOT_OK_RETURN(status);
+	}
+
+	if (info12) {
+
+		ZERO_STRUCT(dom_info);
+
+		dom_info.info12 = *info12;
+
+		status = rpccli_samr_SetDomainInfo(pipe_cli, mem_ctx,
+						   domain_handle,
+						   12,
+						   &dom_info);
+
+		NT_STATUS_NOT_OK_RETURN(status);
+	}
+
+	return NT_STATUS_OK;
+}
+
+/****************************************************************
+****************************************************************/
+
+static NTSTATUS set_USER_MODALS_INFO_0_buffer(TALLOC_CTX *mem_ctx,
+					      struct rpc_pipe_client *pipe_cli,
+					      struct policy_handle *domain_handle,
+					      struct USER_MODALS_INFO_0 *info0)
+{
+	NTSTATUS status;
+	struct samr_DomInfo1 dom_info_1;
+	struct samr_DomInfo3 dom_info_3;
+
+	status = query_USER_MODALS_INFO_rpc(mem_ctx,
+					    pipe_cli,
+					    domain_handle,
+					    &dom_info_1,
+					    &dom_info_3,
+					    NULL,
+					    NULL,
+					    NULL,
+					    NULL);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	dom_info_1.min_password_length =
+		info0->usrmod0_min_passwd_len;
+	dom_info_1.password_history_length =
+		info0->usrmod0_password_hist_len;
+
+	unix_to_nt_time_abs((NTTIME *)&dom_info_1.max_password_age,
+		info0->usrmod0_max_passwd_age);
+	unix_to_nt_time_abs((NTTIME *)&dom_info_1.min_password_age,
+		info0->usrmod0_min_passwd_age);
+
+	unix_to_nt_time_abs(&dom_info_3.force_logoff_time,
+		info0->usrmod0_force_logoff);
+
+	return set_USER_MODALS_INFO_rpc(mem_ctx,
+					pipe_cli,
+					domain_handle,
+					&dom_info_1,
+					&dom_info_3,
+					NULL);
+}
+
+/****************************************************************
+****************************************************************/
+
+static NTSTATUS set_USER_MODALS_INFO_3_buffer(TALLOC_CTX *mem_ctx,
+					      struct rpc_pipe_client *pipe_cli,
+					      struct policy_handle *domain_handle,
+					      struct USER_MODALS_INFO_3 *info3)
+{
+	NTSTATUS status;
+	struct samr_DomInfo12 dom_info_12;
+
+	status = query_USER_MODALS_INFO_rpc(mem_ctx,
+					    pipe_cli,
+					    domain_handle,
+					    NULL,
+					    NULL,
+					    NULL,
+					    NULL,
+					    NULL,
+					    &dom_info_12);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	unix_to_nt_time_abs((NTTIME *)&dom_info_12.lockout_duration,
+		info3->usrmod3_lockout_duration);
+	unix_to_nt_time_abs((NTTIME *)&dom_info_12.lockout_window,
+		info3->usrmod3_lockout_observation_window);
+	dom_info_12.lockout_threshold = info3->usrmod3_lockout_threshold;
+
+	return set_USER_MODALS_INFO_rpc(mem_ctx,
+					pipe_cli,
+					domain_handle,
+					NULL,
+					NULL,
+					&dom_info_12);
+}
+
+/****************************************************************
+****************************************************************/
+
+static NTSTATUS set_USER_MODALS_INFO_1001_buffer(TALLOC_CTX *mem_ctx,
+						 struct rpc_pipe_client *pipe_cli,
+						 struct policy_handle *domain_handle,
+						 struct USER_MODALS_INFO_1001 *info1001)
+{
+	NTSTATUS status;
+	struct samr_DomInfo1 dom_info_1;
+
+	status = query_USER_MODALS_INFO_rpc(mem_ctx,
+					    pipe_cli,
+					    domain_handle,
+					    &dom_info_1,
+					    NULL,
+					    NULL,
+					    NULL,
+					    NULL,
+					    NULL);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	dom_info_1.min_password_length =
+		info1001->usrmod1001_min_passwd_len;
+
+	return set_USER_MODALS_INFO_rpc(mem_ctx,
+					pipe_cli,
+					domain_handle,
+					&dom_info_1,
+					NULL,
+					NULL);
+}
+
+/****************************************************************
+****************************************************************/
+
+static NTSTATUS set_USER_MODALS_INFO_1002_buffer(TALLOC_CTX *mem_ctx,
+						 struct rpc_pipe_client *pipe_cli,
+						 struct policy_handle *domain_handle,
+						 struct USER_MODALS_INFO_1002 *info1002)
+{
+	NTSTATUS status;
+	struct samr_DomInfo1 dom_info_1;
+
+	status = query_USER_MODALS_INFO_rpc(mem_ctx,
+					    pipe_cli,
+					    domain_handle,
+					    &dom_info_1,
+					    NULL,
+					    NULL,
+					    NULL,
+					    NULL,
+					    NULL);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	unix_to_nt_time_abs((NTTIME *)&dom_info_1.max_password_age,
+		info1002->usrmod1002_max_passwd_age);
+
+	return set_USER_MODALS_INFO_rpc(mem_ctx,
+					pipe_cli,
+					domain_handle,
+					&dom_info_1,
+					NULL,
+					NULL);
+}
+
+/****************************************************************
+****************************************************************/
+
+static NTSTATUS set_USER_MODALS_INFO_1003_buffer(TALLOC_CTX *mem_ctx,
+						 struct rpc_pipe_client *pipe_cli,
+						 struct policy_handle *domain_handle,
+						 struct USER_MODALS_INFO_1003 *info1003)
+{
+	NTSTATUS status;
+	struct samr_DomInfo1 dom_info_1;
+
+	status = query_USER_MODALS_INFO_rpc(mem_ctx,
+					    pipe_cli,
+					    domain_handle,
+					    &dom_info_1,
+					    NULL,
+					    NULL,
+					    NULL,
+					    NULL,
+					    NULL);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	unix_to_nt_time_abs((NTTIME *)&dom_info_1.min_password_age,
+		info1003->usrmod1003_min_passwd_age);
+
+	return set_USER_MODALS_INFO_rpc(mem_ctx,
+					pipe_cli,
+					domain_handle,
+					&dom_info_1,
+					NULL,
+					NULL);
+}
+
+/****************************************************************
+****************************************************************/
+
+static NTSTATUS set_USER_MODALS_INFO_1004_buffer(TALLOC_CTX *mem_ctx,
+						 struct rpc_pipe_client *pipe_cli,
+						 struct policy_handle *domain_handle,
+						 struct USER_MODALS_INFO_1004 *info1004)
+{
+	NTSTATUS status;
+	struct samr_DomInfo3 dom_info_3;
+
+	status = query_USER_MODALS_INFO_rpc(mem_ctx,
+					    pipe_cli,
+					    domain_handle,
+					    NULL,
+					    &dom_info_3,
+					    NULL,
+					    NULL,
+					    NULL,
+					    NULL);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	unix_to_nt_time_abs(&dom_info_3.force_logoff_time,
+		info1004->usrmod1004_force_logoff);
+
+	return set_USER_MODALS_INFO_rpc(mem_ctx,
+					pipe_cli,
+					domain_handle,
+					NULL,
+					&dom_info_3,
+					NULL);
+}
+
+/****************************************************************
+****************************************************************/
+
+static NTSTATUS set_USER_MODALS_INFO_1005_buffer(TALLOC_CTX *mem_ctx,
+						 struct rpc_pipe_client *pipe_cli,
+						 struct policy_handle *domain_handle,
+						 struct USER_MODALS_INFO_1005 *info1005)
+{
+	NTSTATUS status;
+	struct samr_DomInfo1 dom_info_1;
+
+	status = query_USER_MODALS_INFO_rpc(mem_ctx,
+					    pipe_cli,
+					    domain_handle,
+					    &dom_info_1,
+					    NULL,
+					    NULL,
+					    NULL,
+					    NULL,
+					    NULL);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	dom_info_1.password_history_length =
+		info1005->usrmod1005_password_hist_len;
+
+	return set_USER_MODALS_INFO_rpc(mem_ctx,
+					pipe_cli,
+					domain_handle,
+					&dom_info_1,
+					NULL,
+					NULL);
+}
+
+/****************************************************************
+****************************************************************/
+
+static NTSTATUS set_USER_MODALS_INFO_buffer(TALLOC_CTX *mem_ctx,
+					    struct rpc_pipe_client *pipe_cli,
+					    uint32_t level,
+					    struct policy_handle *domain_handle,
+					    struct dom_sid *domain_sid,
+					    uint8_t *buffer)
+{
+	struct USER_MODALS_INFO_0 *info0;
+	struct USER_MODALS_INFO_3 *info3;
+	struct USER_MODALS_INFO_1001 *info1001;
+	struct USER_MODALS_INFO_1002 *info1002;
+	struct USER_MODALS_INFO_1003 *info1003;
+	struct USER_MODALS_INFO_1004 *info1004;
+	struct USER_MODALS_INFO_1005 *info1005;
+
+	if (!buffer) {
+		return ERROR_INSUFFICIENT_BUFFER;
+	}
+
+	switch (level) {
+		case 0:
+			info0 = (struct USER_MODALS_INFO_0 *)buffer;
+			return set_USER_MODALS_INFO_0_buffer(mem_ctx,
+							     pipe_cli,
+							     domain_handle,
+							     info0);
+		case 3:
+			info3 = (struct USER_MODALS_INFO_3 *)buffer;
+			return set_USER_MODALS_INFO_3_buffer(mem_ctx,
+							     pipe_cli,
+							     domain_handle,
+							     info3);
+		case 1001:
+			info1001 = (struct USER_MODALS_INFO_1001 *)buffer;
+			return set_USER_MODALS_INFO_1001_buffer(mem_ctx,
+								pipe_cli,
+								domain_handle,
+								info1001);
+		case 1002:
+			info1002 = (struct USER_MODALS_INFO_1002 *)buffer;
+			return set_USER_MODALS_INFO_1002_buffer(mem_ctx,
+								pipe_cli,
+								domain_handle,
+								info1002);
+		case 1003:
+			info1003 = (struct USER_MODALS_INFO_1003 *)buffer;
+			return set_USER_MODALS_INFO_1003_buffer(mem_ctx,
+								pipe_cli,
+								domain_handle,
+								info1003);
+		case 1004:
+			info1004 = (struct USER_MODALS_INFO_1004 *)buffer;
+			return set_USER_MODALS_INFO_1004_buffer(mem_ctx,
+								pipe_cli,
+								domain_handle,
+								info1004);
+		case 1005:
+			info1005 = (struct USER_MODALS_INFO_1005 *)buffer;
+			return set_USER_MODALS_INFO_1005_buffer(mem_ctx,
+								pipe_cli,
+								domain_handle,
+								info1005);
+
+		default:
+			break;
+	}
+
+	return NT_STATUS_OK;
+}
+
+/****************************************************************
+****************************************************************/
+
 WERROR NetUserModalsSet_r(struct libnetapi_ctx *ctx,
 			  struct NetUserModalsSet *r)
 {
-	return WERR_NOT_SUPPORTED;
+	struct cli_state *cli = NULL;
+	struct rpc_pipe_client *pipe_cli = NULL;
+	NTSTATUS status;
+	WERROR werr;
+
+	struct policy_handle connect_handle, domain_handle;
+	struct dom_sid2 *domain_sid = NULL;
+	uint32_t access_mask = SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT;
+
+	ZERO_STRUCT(connect_handle);
+	ZERO_STRUCT(domain_handle);
+
+	if (!r->in.buffer) {
+		return WERR_INVALID_PARAM;
+	}
+
+	switch (r->in.level) {
+		case 0:
+			access_mask |= SAMR_DOMAIN_ACCESS_LOOKUP_INFO_1 |
+				       SAMR_DOMAIN_ACCESS_LOOKUP_INFO_2 |
+				       SAMR_DOMAIN_ACCESS_SET_INFO_1 |
+				       SAMR_DOMAIN_ACCESS_SET_INFO_2;
+			break;
+		case 3:
+		case 1001:
+		case 1002:
+		case 1003:
+		case 1005:
+			access_mask |= SAMR_DOMAIN_ACCESS_LOOKUP_INFO_1 |
+				       SAMR_DOMAIN_ACCESS_SET_INFO_1;
+			break;
+		case 1004:
+			access_mask |= SAMR_DOMAIN_ACCESS_LOOKUP_INFO_2 |
+				       SAMR_DOMAIN_ACCESS_SET_INFO_2;
+			break;
+		case 1:
+		case 2:
+		case 1006:
+		case 1007:
+			werr = WERR_NOT_SUPPORTED;
+			break;
+		default:
+			werr = WERR_UNKNOWN_LEVEL;
+			goto done;
+	}
+
+	werr = libnetapi_open_ipc_connection(ctx, r->in.server_name, &cli);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	werr = libnetapi_open_pipe(ctx, cli, &ndr_table_samr.syntax_id,
+				   &pipe_cli);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	werr = libnetapi_samr_open_domain(ctx, pipe_cli,
+					  SAMR_ACCESS_ENUM_DOMAINS |
+					  SAMR_ACCESS_OPEN_DOMAIN,
+					  access_mask,
+					  &connect_handle,
+					  &domain_handle,
+					  &domain_sid);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	status = set_USER_MODALS_INFO_buffer(ctx,
+					     pipe_cli,
+					     r->in.level,
+					     &domain_handle,
+					     domain_sid,
+					     r->in.buffer);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+ done:
+	if (!cli) {
+		return werr;
+	}
+
+	if (ctx->disable_policy_handle_cache) {
+		libnetapi_samr_close_domain_handle(ctx, &domain_handle);
+		libnetapi_samr_close_connect_handle(ctx, &connect_handle);
+	}
+
+	return werr;
 }
 
 /****************************************************************
@@ -1811,5 +2275,5 @@ WERROR NetUserModalsSet_r(struct libnetapi_ctx *ctx,
 WERROR NetUserModalsSet_l(struct libnetapi_ctx *ctx,
 			  struct NetUserModalsSet *r)
 {
-	return WERR_NOT_SUPPORTED;
+	return NetUserModalsSet_r(ctx, r);
 }
