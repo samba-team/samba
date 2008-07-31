@@ -62,6 +62,7 @@ struct libnet_UnjoinCtx {
 		struct dom_sid *domain_sid;/* [ref] */
 		struct ads_struct *ads;/* [ref] */
 		uint8_t debug;
+		uint8_t use_kerberos;
 		struct messaging_context *msg_ctx;/* [noprint,ref] */
 	} in;
 

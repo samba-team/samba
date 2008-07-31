@@ -57,6 +57,7 @@ interface libnetjoin
 		[in] dom_sid *domain_sid,
 		[in] ads_struct *ads,
 		[in] boolean8 debug,
+		[in] boolean8 use_kerberos,
 		[in,noprint] messaging_context *msg_ctx,
 		[out] string netbios_domain_name,
 		[out] string dns_domain_name,
