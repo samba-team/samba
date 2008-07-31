@@ -223,7 +223,7 @@ WERROR NetLocalGroupAdd_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	if (r->in.level == 1) {
+	if (r->in.level == 1 && info1->lgrpi1_comment) {
 
 		union samr_AliasInfo alias_info;
 
