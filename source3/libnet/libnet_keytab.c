@@ -265,6 +265,28 @@ krb5_error_code libnet_keytab_add(struct libnet_keytab_context *ctx)
 	krb5_error_code ret = 0;
 	uint32_t i;
 
+
+	if (ctx->clean_old_entries) {
+		DEBUG(0, ("cleaning old entries...\n"));
+		for (i=0; i < ctx->count; i++) {
+			struct libnet_keytab_entry *entry = &ctx->entries[i];
+
+			ret = libnet_keytab_remove_entries(ctx->context,
+							   ctx->keytab,
+							   entry->principal,
+							   0,
+							   entry->enctype,
+							   true);
+			if (ret) {
+				DEBUG(1,("libnet_keytab_add: Failed to remove "
+					 "old entries for %s (enctype %u): %s\n",
+					 entry->principal, entry->enctype,
+					 error_message(ret)));
+				return ret;
+			}
+		}
+	}
+
 	for (i=0; i<ctx->count; i++) {
 
 		struct libnet_keytab_entry *entry = &ctx->entries[i];
