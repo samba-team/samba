@@ -554,6 +554,24 @@ static NTSTATUS parse_object(TALLOC_CTX *mem_ctx,
 	return status;
 }
 
+static bool dn_is_in_object_list(struct dssync_context *ctx,
+				 const char *dn)
+{
+	uint32_t count;
+
+	if (ctx->object_count == 0) {
+		return true;
+	}
+
+	for (count = 0; count < ctx->object_count; count++) {
+		if (strequal(ctx->object_dns[count], dn)) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
 /****************************************************************
 ****************************************************************/
 
@@ -567,6 +585,16 @@ static NTSTATUS keytab_process_objects(struct dssync_context *ctx,
 		(struct libnet_keytab_context *)ctx->private_data;
 
 	for (; cur; cur = cur->next_object) {
+		/*
+		 * When not in single object replication mode,
+		 * the object_dn list is used as a positive write filter.
+		 */
+		if (!ctx->single_object_replication &&
+		    !dn_is_in_object_list(ctx, cur->object.identifier->dn))
+		{
+			continue;
+		}
+
 		status = parse_object(mem_ctx, keytab_ctx, cur);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto out;
