@@ -297,6 +297,7 @@ static NTSTATUS rpc_vampire_keytab_ds_internals(struct net_context *c,
 	}
 
 	ctx->force_full_replication = c->opt_force_full_repl ? true : false;
+	ctx->clean_old_entries = c->opt_clean_old_entries ? true : false;
 
 	if (argc >= 1) {
 		ctx->output_filename = argv[0];

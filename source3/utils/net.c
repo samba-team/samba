@@ -655,6 +655,7 @@ static struct functable net_func[] = {
 		/* Options for 'net rpc vampire (keytab)' */
 		{"force-full-repl", 0, POPT_ARG_NONE, &c->opt_force_full_repl},
 		{"single-obj-repl", 0, POPT_ARG_NONE, &c->opt_single_obj_repl},
+		{"clean-old-entries", 0, POPT_ARG_NONE, &c->opt_clean_old_entries},
 
 		POPT_COMMON_SAMBA
 		{ 0, 0, 0, 0}
