@@ -261,6 +261,45 @@ WERROR NetLocalGroupEnum_r(struct libnetapi_ctx *ctx,
 			   struct NetLocalGroupEnum *r);
 WERROR NetLocalGroupEnum_l(struct libnetapi_ctx *ctx,
 			   struct NetLocalGroupEnum *r);
+NET_API_STATUS NetLocalGroupAddMembers(const char * server_name /* [in] */,
+				       const char * group_name /* [in] */,
+				       uint32_t level /* [in] */,
+				       uint8_t *buffer /* [in] [ref] */,
+				       uint32_t total_entries /* [in] */);
+WERROR NetLocalGroupAddMembers_r(struct libnetapi_ctx *ctx,
+				 struct NetLocalGroupAddMembers *r);
+WERROR NetLocalGroupAddMembers_l(struct libnetapi_ctx *ctx,
+				 struct NetLocalGroupAddMembers *r);
+NET_API_STATUS NetLocalGroupDelMembers(const char * server_name /* [in] */,
+				       const char * group_name /* [in] */,
+				       uint32_t level /* [in] */,
+				       uint8_t *buffer /* [in] [ref] */,
+				       uint32_t total_entries /* [in] */);
+WERROR NetLocalGroupDelMembers_r(struct libnetapi_ctx *ctx,
+				 struct NetLocalGroupDelMembers *r);
+WERROR NetLocalGroupDelMembers_l(struct libnetapi_ctx *ctx,
+				 struct NetLocalGroupDelMembers *r);
+NET_API_STATUS NetLocalGroupGetMembers(const char * server_name /* [in] */,
+				       const char * local_group_name /* [in] */,
+				       uint32_t level /* [in] */,
+				       uint8_t **buffer /* [out] [ref] */,
+				       uint32_t prefmaxlen /* [in] */,
+				       uint32_t *entries_read /* [out] [ref] */,
+				       uint32_t *total_entries /* [out] [ref] */,
+				       uint32_t *resume_handle /* [in,out] [ref] */);
+WERROR NetLocalGroupGetMembers_r(struct libnetapi_ctx *ctx,
+				 struct NetLocalGroupGetMembers *r);
+WERROR NetLocalGroupGetMembers_l(struct libnetapi_ctx *ctx,
+				 struct NetLocalGroupGetMembers *r);
+NET_API_STATUS NetLocalGroupSetMembers(const char * server_name /* [in] */,
+				       const char * group_name /* [in] */,
+				       uint32_t level /* [in] */,
+				       uint8_t *buffer /* [in] [ref] */,
+				       uint32_t total_entries /* [in] */);
+WERROR NetLocalGroupSetMembers_r(struct libnetapi_ctx *ctx,
+				 struct NetLocalGroupSetMembers *r);
+WERROR NetLocalGroupSetMembers_l(struct libnetapi_ctx *ctx,
+				 struct NetLocalGroupSetMembers *r);
 NET_API_STATUS NetRemoteTOD(const char * server_name /* [in] */,
 			    uint8_t **buffer /* [out] [ref] */);
 WERROR NetRemoteTOD_r(struct libnetapi_ctx *ctx,

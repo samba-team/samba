@@ -956,3 +956,76 @@ WERROR NetLocalGroupEnum_l(struct libnetapi_ctx *ctx,
 {
 	return WERR_NOT_SUPPORTED;
 }
+
+/****************************************************************
+****************************************************************/
+
+WERROR NetLocalGroupAddMembers_r(struct libnetapi_ctx *ctx,
+				 struct NetLocalGroupAddMembers *r)
+{
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR NetLocalGroupAddMembers_l(struct libnetapi_ctx *ctx,
+				 struct NetLocalGroupAddMembers *r)
+{
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR NetLocalGroupDelMembers_r(struct libnetapi_ctx *ctx,
+				 struct NetLocalGroupDelMembers *r)
+{
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR NetLocalGroupDelMembers_l(struct libnetapi_ctx *ctx,
+				 struct NetLocalGroupDelMembers *r)
+{
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR NetLocalGroupGetMembers_r(struct libnetapi_ctx *ctx,
+				 struct NetLocalGroupGetMembers *r)
+{
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR NetLocalGroupGetMembers_l(struct libnetapi_ctx *ctx,
+				 struct NetLocalGroupGetMembers *r)
+{
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR NetLocalGroupSetMembers_r(struct libnetapi_ctx *ctx,
+				 struct NetLocalGroupSetMembers *r)
+{
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR NetLocalGroupSetMembers_l(struct libnetapi_ctx *ctx,
+				 struct NetLocalGroupSetMembers *r)
+{
+	return WERR_NOT_SUPPORTED;
+}
+

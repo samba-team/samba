@@ -1481,6 +1481,205 @@ NET_API_STATUS NetLocalGroupEnum(const char * server_name /* [in] */,
 }
 
 /****************************************************************
+ NetLocalGroupAddMembers
+****************************************************************/
+
+NET_API_STATUS NetLocalGroupAddMembers(const char * server_name /* [in] */,
+				       const char * group_name /* [in] */,
+				       uint32_t level /* [in] */,
+				       uint8_t *buffer /* [in] [ref] */,
+				       uint32_t total_entries /* [in] */)
+{
+	struct NetLocalGroupAddMembers r;
+	struct libnetapi_ctx *ctx = NULL;
+	NET_API_STATUS status;
+	WERROR werr;
+
+	status = libnetapi_getctx(&ctx);
+	if (status != 0) {
+		return status;
+	}
+
+	/* In parameters */
+	r.in.server_name = server_name;
+	r.in.group_name = group_name;
+	r.in.level = level;
+	r.in.buffer = buffer;
+	r.in.total_entries = total_entries;
+
+	/* Out parameters */
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(NetLocalGroupAddMembers, &r);
+	}
+
+	if (LIBNETAPI_LOCAL_SERVER(server_name)) {
+		werr = NetLocalGroupAddMembers_l(ctx, &r);
+	} else {
+		werr = NetLocalGroupAddMembers_r(ctx, &r);
+	}
+
+	r.out.result = W_ERROR_V(werr);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(NetLocalGroupAddMembers, &r);
+	}
+
+	return r.out.result;
+}
+
+/****************************************************************
+ NetLocalGroupDelMembers
+****************************************************************/
+
+NET_API_STATUS NetLocalGroupDelMembers(const char * server_name /* [in] */,
+				       const char * group_name /* [in] */,
+				       uint32_t level /* [in] */,
+				       uint8_t *buffer /* [in] [ref] */,
+				       uint32_t total_entries /* [in] */)
+{
+	struct NetLocalGroupDelMembers r;
+	struct libnetapi_ctx *ctx = NULL;
+	NET_API_STATUS status;
+	WERROR werr;
+
+	status = libnetapi_getctx(&ctx);
+	if (status != 0) {
+		return status;
+	}
+
+	/* In parameters */
+	r.in.server_name = server_name;
+	r.in.group_name = group_name;
+	r.in.level = level;
+	r.in.buffer = buffer;
+	r.in.total_entries = total_entries;
+
+	/* Out parameters */
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(NetLocalGroupDelMembers, &r);
+	}
+
+	if (LIBNETAPI_LOCAL_SERVER(server_name)) {
+		werr = NetLocalGroupDelMembers_l(ctx, &r);
+	} else {
+		werr = NetLocalGroupDelMembers_r(ctx, &r);
+	}
+
+	r.out.result = W_ERROR_V(werr);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(NetLocalGroupDelMembers, &r);
+	}
+
+	return r.out.result;
+}
+
+/****************************************************************
+ NetLocalGroupGetMembers
+****************************************************************/
+
+NET_API_STATUS NetLocalGroupGetMembers(const char * server_name /* [in] */,
+				       const char * local_group_name /* [in] */,
+				       uint32_t level /* [in] */,
+				       uint8_t **buffer /* [out] [ref] */,
+				       uint32_t prefmaxlen /* [in] */,
+				       uint32_t *entries_read /* [out] [ref] */,
+				       uint32_t *total_entries /* [out] [ref] */,
+				       uint32_t *resume_handle /* [in,out] [ref] */)
+{
+	struct NetLocalGroupGetMembers r;
+	struct libnetapi_ctx *ctx = NULL;
+	NET_API_STATUS status;
+	WERROR werr;
+
+	status = libnetapi_getctx(&ctx);
+	if (status != 0) {
+		return status;
+	}
+
+	/* In parameters */
+	r.in.server_name = server_name;
+	r.in.local_group_name = local_group_name;
+	r.in.level = level;
+	r.in.prefmaxlen = prefmaxlen;
+	r.in.resume_handle = resume_handle;
+
+	/* Out parameters */
+	r.out.buffer = buffer;
+	r.out.entries_read = entries_read;
+	r.out.total_entries = total_entries;
+	r.out.resume_handle = resume_handle;
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(NetLocalGroupGetMembers, &r);
+	}
+
+	if (LIBNETAPI_LOCAL_SERVER(server_name)) {
+		werr = NetLocalGroupGetMembers_l(ctx, &r);
+	} else {
+		werr = NetLocalGroupGetMembers_r(ctx, &r);
+	}
+
+	r.out.result = W_ERROR_V(werr);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(NetLocalGroupGetMembers, &r);
+	}
+
+	return r.out.result;
+}
+
+/****************************************************************
+ NetLocalGroupSetMembers
+****************************************************************/
+
+NET_API_STATUS NetLocalGroupSetMembers(const char * server_name /* [in] */,
+				       const char * group_name /* [in] */,
+				       uint32_t level /* [in] */,
+				       uint8_t *buffer /* [in] [ref] */,
+				       uint32_t total_entries /* [in] */)
+{
+	struct NetLocalGroupSetMembers r;
+	struct libnetapi_ctx *ctx = NULL;
+	NET_API_STATUS status;
+	WERROR werr;
+
+	status = libnetapi_getctx(&ctx);
+	if (status != 0) {
+		return status;
+	}
+
+	/* In parameters */
+	r.in.server_name = server_name;
+	r.in.group_name = group_name;
+	r.in.level = level;
+	r.in.buffer = buffer;
+	r.in.total_entries = total_entries;
+
+	/* Out parameters */
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(NetLocalGroupSetMembers, &r);
+	}
+
+	if (LIBNETAPI_LOCAL_SERVER(server_name)) {
+		werr = NetLocalGroupSetMembers_l(ctx, &r);
+	} else {
+		werr = NetLocalGroupSetMembers_r(ctx, &r);
+	}
+
+	r.out.result = W_ERROR_V(werr);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(NetLocalGroupSetMembers, &r);
+	}
+
+	return r.out.result;
+}
+
+/****************************************************************
  NetRemoteTOD
 ****************************************************************/
 
