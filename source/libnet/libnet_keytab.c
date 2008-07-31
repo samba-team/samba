@@ -113,7 +113,8 @@ static krb5_error_code libnet_keytab_remove_entries(krb5_context context,
 						    krb5_keytab keytab,
 						    const char *principal,
 						    int kvno,
-						    const krb5_enctype enctype)
+						    const krb5_enctype enctype,
+						    bool ignore_kvno)
 {
 	krb5_error_code ret;
 	krb5_kt_cursor cursor;
@@ -131,7 +132,7 @@ static krb5_error_code libnet_keytab_remove_entries(krb5_context context,
 	{
 		char *princ_s = NULL;
 
-		if (kt_entry.vno != kvno) {
+		if (kt_entry.vno != kvno && !ignore_kvno) {
 			goto cont;
 		}
 
@@ -210,7 +211,7 @@ static krb5_error_code libnet_keytab_add_entry(krb5_context context,
 
 	/* remove duplicates first ... */
 	ret = libnet_keytab_remove_entries(context, keytab, princ_s, kvno,
-					   enctype);
+					   enctype, false);
 	if (ret) {
 		DEBUG(1, ("libnet_keytab_remove_entries failed: %s\n",
 			  error_message(ret)));
