@@ -50,6 +50,7 @@ NTSTATUS libnet_dssync_init_context(TALLOC_CTX *mem_ctx,
 	NT_STATUS_HAVE_NO_MEMORY(ctx);
 
 	talloc_set_destructor(ctx, libnet_dssync_free_context);
+	ctx->clean_old_entries = false;
 
 	*ctx_p = ctx;
 

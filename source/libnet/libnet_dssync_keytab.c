@@ -67,6 +67,7 @@ static NTSTATUS keytab_startup(struct dssync_context *ctx, TALLOC_CTX *mem_ctx,
 	}
 
 	keytab_ctx->dns_domain_name = ctx->dns_domain_name;
+	keytab_ctx->clean_old_entries = ctx->clean_old_entries;
 	ctx->private_data = keytab_ctx;
 
 	principal = talloc_asprintf(mem_ctx, "UTDV/%s@%s",
