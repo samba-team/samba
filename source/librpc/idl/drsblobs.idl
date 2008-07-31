@@ -386,7 +386,7 @@ interface drsblobs {
 
 	typedef struct {
 		uint32 size;
-		[charset(UTF16)] uint8 password[size];
+		uint8 password[size];
 	} AuthInfoClear;
 
 	typedef struct {
@@ -422,11 +422,32 @@ interface drsblobs {
 		[flag(NDR_ALIGN4)] DATA_BLOB _pad;
 	} AuthenticationInformation;
 
+	typedef struct {
+		AuthenticationInformation info[1];
+	} AuthenticationInformation1;
+
+	typedef struct {
+		AuthenticationInformation info[2];
+	} AuthenticationInformation2;
+
+	typedef struct {
+		[relative] AuthenticationInformation1 *current;
+		[relative] AuthenticationInformation1 *previous;
+	} AuthenticationInformationCtr1;
+
+	typedef struct {
+		[relative] AuthenticationInformation2 *current;
+		[relative] AuthenticationInformation2 *previous;
+	} AuthenticationInformationCtr2;
+
+	typedef [nodiscriminant] union {
+		[case(1)] AuthenticationInformationCtr1 info1;
+		[case(2)] AuthenticationInformationCtr2 info2;
+	} AuthenticationInformationCtr;
+
 	typedef [public] struct {
 		uint32 count;
-		[relative] AuthenticationInformation *authinfo[count];
-		[relative] AuthenticationInformation *previous_authinfo[count];
-		
+		[switch_is(count)] AuthenticationInformationCtr auth;
 	} trustAuthInOutBlob;
 
 	void decode_trustAuthInOut(
