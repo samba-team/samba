@@ -34,6 +34,7 @@
 #include "libcli/auth/libcli_auth.h"
 #include "auth/gensec/gensec.h"
 #include "param/param.h"
+#include "dsdb/samdb/samdb.h"
 
 struct DsSyncBindInfo {
 	struct dcerpc_pipe *pipe;
@@ -312,6 +313,14 @@ static bool test_GetInfo(struct torture_context *tctx, struct DsSyncTest *ctx)
 		ctx->site_name = talloc_steal(ctx, search.out.netlogon.nt5_ex.client_site);
 		printf("cldap_netlogon() returned Client Site-Name: %s.\n",ctx->site_name);
 		printf("cldap_netlogon() returned Server Site-Name: %s.\n",search.out.netlogon.nt5_ex.server_site);
+	}
+
+	if (!ctx->domain_dn) {
+		struct ldb_context *ldb = ldb_init(ctx, tctx->ev);
+		struct ldb_dn *dn = samdb_dns_domain_to_dn(ldb, ctx, search.out.netlogon.nt5_ex.dns_domain);
+		ctx->domain_dn = ldb_dn_alloc_linearized(ctx, dn);
+		talloc_free(dn);
+		talloc_free(ldb);
 	}
 
 	return ret;
@@ -800,7 +809,10 @@ static bool test_FetchNT4Data(struct torture_context *tctx,
 		r.in.req.req1.data	= cookie.data;
 
 		status = dcerpc_drsuapi_DsGetNT4ChangeLog(ctx->new_dc.drsuapi.pipe, ctx, &r);
-		if (!NT_STATUS_IS_OK(status)) {
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED)) {
+			printf("DsGetNT4ChangeLog not supported by target server\n");
+			break;
+		} else if (!NT_STATUS_IS_OK(status)) {
 			const char *errstr = nt_errstr(status);
 			if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
 				errstr = dcerpc_errstr(ctx, ctx->new_dc.drsuapi.pipe->last_fault_code);
