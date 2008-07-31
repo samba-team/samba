@@ -58,6 +58,7 @@ struct net_context {
 	int opt_testmode;
 	bool opt_kerberos;
 	int opt_force_full_repl;
+	int opt_single_obj_repl;
 
 	int opt_have_ip;
 	struct sockaddr_storage opt_dest_ip;
