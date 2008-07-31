@@ -44,6 +44,7 @@ o   Jeremy Allison <jra@samba.org>
       '\\' characters.
     * Fix option processing in smbcacls - add POPT_COMMON_CONNECTION.
     * Fix bug creating files using DOS clients with mixed case files.
+    * Fix uninitialized variable.
 
 
 o   Jim Brown <jim.brown@miami.edu>
@@ -51,7 +52,9 @@ o   Jim Brown <jim.brown@miami.edu>
 
 
 o   Günther Deschner <gd@samba.org>
+    * BUG 5616: Fix session keys also in rpccli_netr_LogonSamLogonEx wrapper.
     * BUG 5570: Fix bogus error message during AD domain join.
+    * Fix trusted domain handling in Winbindd.
     * Fix build warning.
 
 
@@ -68,6 +71,8 @@ o   Volodymyr Khomenko <Volodymyr.Khomenko@exanet.com>
 
 o   Volker Lendecke <vl@samba.org>
     * BUG 5512: Fix alignment problems on sparc.
+    * BUG 5616: Fix share connections in setups with
+      "server signing = mandatory" or SMB signing set on the client side.
     * Fix a race condition in Winbind leading to a crash.
     * Fix a segfault in base64_encode_data_blob.
     * Fix some uninitialized variable references via ndr_print.
