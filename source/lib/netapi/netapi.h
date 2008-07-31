@@ -366,6 +366,39 @@ struct LOCALGROUP_INFO_1002 {
 	const char * lgrpi1002_comment;
 };
 
+enum SID_NAME_USE {
+	SidTypeUser=1,
+	SidTypeGroup=2,
+	SidTypeDomain=3,
+	SidTypeAlias=4,
+	SidTypeWellKnownGroup=5,
+	SidTypeDeletedAccount=6,
+	SidTypeInvalid=7,
+	SidTypeUnknown=8,
+	SidTypeComputer=9,
+	SidTypeLabel=10
+};
+
+struct LOCALGROUP_MEMBERS_INFO_0 {
+	struct domsid *lgrmi0_sid;/* [unique] */
+};
+
+struct LOCALGROUP_MEMBERS_INFO_1 {
+	struct domsid *lgrmi1_sid;/* [unique] */
+	enum SID_NAME_USE lgrmi1_sidusage;
+	const char * lgrmi1_name;
+};
+
+struct LOCALGROUP_MEMBERS_INFO_2 {
+	struct domsid *lgrmi2_sid;/* [unique] */
+	enum SID_NAME_USE lgrmi2_sidusage;
+	const char * lgrmi2_domainandname;
+};
+
+struct LOCALGROUP_MEMBERS_INFO_3 {
+	const char * lgrmi3_domainandname;
+};
+
 struct TIME_OF_DAY_INFO {
 	uint32_t tod_elapsedt;
 	uint32_t tod_msecs;
@@ -1127,6 +1160,30 @@ NET_API_STATUS NetLocalGroupEnum(const char * server_name /* [in] */,
 				 uint32_t *entries_read /* [out] [ref] */,
 				 uint32_t *total_entries /* [out] [ref] */,
 				 uint32_t *resume_handle /* [in,out] [ref] */);
+
+NET_API_STATUS NetLocalGroupAddMembers(const char * server_name /* [in] */,
+				       const char * group_name /* [in] */,
+				       uint32_t level /* [in] */,
+				       uint8_t *buffer /* [in] [ref] */,
+				       uint32_t total_entries /* [in] */);
+NET_API_STATUS NetLocalGroupDelMembers(const char * server_name /* [in] */,
+				       const char * group_name /* [in] */,
+				       uint32_t level /* [in] */,
+				       uint8_t *buffer /* [in] [ref] */,
+				       uint32_t total_entries /* [in] */);
+NET_API_STATUS NetLocalGroupGetMembers(const char * server_name /* [in] */,
+				       const char * local_group_name /* [in] */,
+				       uint32_t level /* [in] */,
+				       uint8_t **buffer /* [out] [ref] */,
+				       uint32_t prefmaxlen /* [in] */,
+				       uint32_t *entries_read /* [out] [ref] */,
+				       uint32_t *total_entries /* [out] [ref] */,
+				       uint32_t *resume_handle /* [in,out] [ref] */);
+NET_API_STATUS NetLocalGroupSetMembers(const char * server_name /* [in] */,
+				       const char * group_name /* [in] */,
+				       uint32_t level /* [in] */,
+				       uint8_t *buffer /* [in] [ref] */,
+				       uint32_t total_entries /* [in] */);
 
 /************************************************************//**
  *
