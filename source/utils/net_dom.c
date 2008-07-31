@@ -257,6 +257,9 @@ int net_dom(struct net_context *c, int argc, const char **argv)
 
 	libnetapi_set_username(c->netapi_ctx, c->opt_user_name);
 	libnetapi_set_password(c->netapi_ctx, c->opt_password);
+	if (c->opt_kerberos) {
+		libnetapi_set_use_kerberos(c->netapi_ctx);
+	}
 
 	return net_run_function(c, argc, argv, "net dom", func);
 }
