@@ -6144,6 +6144,7 @@ AC_SUBST(SMBD_LIBS)
 AC_OUTPUT(Makefile
 	  script/findsmb smbadduser script/gen-8bit-gap.sh script/installbin.sh script/uninstallbin.sh
 	  lib/netapi/examples/Makefile
+	  lib/netapi/tests/Makefile
 	  pkgconfig/smbclient.pc
 	  pkgconfig/wbclient.pc
 	  pkgconfig/netapi.pc
