@@ -71,6 +71,10 @@ static NTSTATUS server_get_challenge(struct auth_method_context *ctx, TALLOC_CTX
 
 	/* We don't want to get as far as the session setup */
 	io.in.credentials = cli_credentials_init_anon(mem_ctx);
+	cli_credentials_set_workstation(io.in.credentials,
+					lp_netbios_name(ctx->auth_ctx->lp_ctx),
+					CRED_SPECIFIED);
+
 	io.in.service = NULL;
 
 	io.in.workgroup = ""; /* only used with SPNEGO, disabled above */
