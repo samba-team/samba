@@ -90,7 +90,7 @@ static NTSTATUS keytab_startup(struct dssync_context *ctx, TALLOC_CTX *mem_ctx,
 				(ndr_pull_flags_fn_t)ndr_pull_replUpToDateVectorBlob);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
-			ctx->error_message = talloc_asprintf(mem_ctx,
+			ctx->error_message = talloc_asprintf(ctx,
 					"Failed to pull UpToDateVector: %s",
 					nt_errstr(status));
 			return status;
@@ -128,7 +128,7 @@ static NTSTATUS keytab_finish(struct dssync_context *ctx, TALLOC_CTX *mem_ctx,
 				(ndr_push_flags_fn_t)ndr_push_replUpToDateVectorBlob);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			status = ndr_map_error2ntstatus(ndr_err);
-			ctx->error_message = talloc_asprintf(mem_ctx,
+			ctx->error_message = talloc_asprintf(ctx,
 					"Failed to push UpToDateVector: %s",
 					nt_errstr(status));
 			goto done;
@@ -146,13 +146,13 @@ static NTSTATUS keytab_finish(struct dssync_context *ctx, TALLOC_CTX *mem_ctx,
 	ret = libnet_keytab_add(keytab_ctx);
 	if (ret) {
 		status = krb5_to_nt_status(ret);
-		ctx->error_message = talloc_asprintf(mem_ctx,
+		ctx->error_message = talloc_asprintf(ctx,
 			"Failed to add entries to keytab %s: %s",
 			keytab_ctx->keytab_name, error_message(ret));
 		goto done;
 	}
 
-	ctx->result_message = talloc_asprintf(mem_ctx,
+	ctx->result_message = talloc_asprintf(ctx,
 		"Vampired %d accounts to keytab %s",
 		keytab_ctx->count,
 		keytab_ctx->keytab_name);

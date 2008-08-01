@@ -308,7 +308,7 @@ static NTSTATUS libnet_dssync_lookup_nc(TALLOC_CTX *mem_ctx,
 					     &ctr,
 					     &werr);
 	if (!NT_STATUS_IS_OK(status)) {
-		ctx->error_message = talloc_asprintf(mem_ctx,
+		ctx->error_message = talloc_asprintf(ctx,
 			"Failed to lookup DN for domain name: %s",
 			get_friendly_werror_msg(werr));
 		return status;
@@ -525,7 +525,7 @@ static NTSTATUS libnet_dssync_getncchanges(TALLOC_CTX *mem_ctx,
 						       &ctr,
 						       &werr);
 		if (!NT_STATUS_IS_OK(status)) {
-			ctx->error_message = talloc_asprintf(mem_ctx,
+			ctx->error_message = talloc_asprintf(ctx,
 				"Failed to get NC Changes: %s",
 				get_friendly_werror_msg(werr));
 			goto out;
@@ -600,7 +600,7 @@ static NTSTATUS libnet_dssync_getncchanges(TALLOC_CTX *mem_ctx,
 
 		status = cli_get_session_key(mem_ctx, ctx->cli, &ctx->session_key);
 		if (!NT_STATUS_IS_OK(status)) {
-			ctx->error_message = talloc_asprintf(mem_ctx,
+			ctx->error_message = talloc_asprintf(ctx,
 				"Failed to get Session Key: %s",
 				nt_errstr(status));
 			goto out;
@@ -615,7 +615,7 @@ static NTSTATUS libnet_dssync_getncchanges(TALLOC_CTX *mem_ctx,
 							   first_object,
 							   mapping_ctr);
 			if (!NT_STATUS_IS_OK(status)) {
-				ctx->error_message = talloc_asprintf(mem_ctx,
+				ctx->error_message = talloc_asprintf(ctx,
 					"Failed to call processing function: %s",
 					nt_errstr(status));
 				goto out;
@@ -644,7 +644,7 @@ static NTSTATUS libnet_dssync_process(TALLOC_CTX *mem_ctx,
 
 	status = ctx->ops->startup(ctx, mem_ctx, &old_utdv);
 	if (!NT_STATUS_IS_OK(status)) {
-		ctx->error_message = talloc_asprintf(mem_ctx,
+		ctx->error_message = talloc_asprintf(ctx,
 			"Failed to call startup operation: %s",
 			nt_errstr(status));
 		goto out;
@@ -670,7 +670,7 @@ static NTSTATUS libnet_dssync_process(TALLOC_CTX *mem_ctx,
 		status = libnet_dssync_getncchanges(mem_ctx, ctx, level, &req,
 						    &pnew_utdv);
 		if (!NT_STATUS_IS_OK(status)) {
-			ctx->error_message = talloc_asprintf(mem_ctx,
+			ctx->error_message = talloc_asprintf(ctx,
 				"Failed to call DsGetNCCHanges: %s",
 				nt_errstr(status));
 			goto out;
@@ -679,7 +679,7 @@ static NTSTATUS libnet_dssync_process(TALLOC_CTX *mem_ctx,
 
 	status = ctx->ops->finish(ctx, mem_ctx, pnew_utdv);
 	if (!NT_STATUS_IS_OK(status)) {
-		ctx->error_message = talloc_asprintf(mem_ctx,
+		ctx->error_message = talloc_asprintf(ctx,
 			"Failed to call finishing operation: %s",
 			nt_errstr(status));
 		goto out;
