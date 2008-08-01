@@ -4379,6 +4379,9 @@ int cli_nt_create_full(struct cli_state *cli, const char *fname,
 		 uint8 SecuityFlags);
 int cli_nt_create(struct cli_state *cli, const char *fname, uint32 DesiredAccess);
 int cli_open(struct cli_state *cli, const char *fname, int flags, int share_mode);
+struct async_req *cli_close_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
+				 struct cli_state *cli, int fnum);
+NTSTATUS cli_close_recv(struct async_req *req);
 bool cli_close(struct cli_state *cli, int fnum);
 bool cli_ftruncate(struct cli_state *cli, int fnum, uint64_t size);
 NTSTATUS cli_locktype(struct cli_state *cli, int fnum,

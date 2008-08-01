@@ -865,28 +865,53 @@ int cli_open(struct cli_state *cli, const char *fname, int flags, int share_mode
  Close a file.
 ****************************************************************************/
 
-bool cli_close(struct cli_state *cli, int fnum)
+struct async_req *cli_close_send(TALLOC_CTX *mem_ctx, struct cli_state *cli,
+				 int fnum)
 {
-	memset(cli->outbuf,'\0',smb_size);
-	memset(cli->inbuf,'\0',smb_size);
+	uint16_t vwv[3];
 
-	cli_set_message(cli->outbuf,3,0,True);
+	SSVAL(vwv+0, 0, fnum);
+	SIVALS(vwv+1, 0, -1);
 
-	SCVAL(cli->outbuf,smb_com,SMBclose);
-	SSVAL(cli->outbuf,smb_tid,cli->cnum);
-	cli_setup_packet(cli);
-
-	SSVAL(cli->outbuf,smb_vwv0,fnum);
-	SIVALS(cli->outbuf,smb_vwv1,-1);
-
-	cli_send_smb(cli);
-	if (!cli_receive_smb(cli)) {
-		return False;
-	}
-
-	return !cli_is_error(cli);
+	return cli_request_send(mem_ctx, cli, SMBclose, 0, 3, vwv, 0, NULL);
 }
 
+NTSTATUS cli_close_recv(struct async_req *req)
+{
+	struct cli_request *cli_req = cli_request_get(req);
+
+	SMB_ASSERT(req->state >= ASYNC_REQ_DONE);
+	if (req->state == ASYNC_REQ_ERROR) {
+		return req->status;
+	}
+
+	return cli_pull_error(cli_req->inbuf);
+}
+
+bool cli_close(struct cli_state *cli, int fnum)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct async_req *req;
+	bool result = false;
+
+	if (cli_tmp_event_ctx(frame, cli) == NULL) {
+		goto fail;
+	}
+
+	req = cli_close_send(frame, cli, fnum);
+	if (req == NULL) {
+		goto fail;
+	}
+
+	while (req->state < ASYNC_REQ_DONE) {
+		event_loop_once(cli->event_ctx);
+	}
+
+	result = NT_STATUS_IS_OK(cli_close_recv(req));
+ fail:
+	TALLOC_FREE(frame);
+	return result;
+}
 
 /****************************************************************************
  Truncate a file to a specified size
