@@ -309,6 +309,33 @@ const char *libnetapi_get_error_string(struct libnetapi_ctx *ctx,
 /****************************************************************
 ****************************************************************/
 
+NET_API_STATUS NetApiBufferAllocate(uint32_t byte_count,
+				    void **buffer)
+{
+	void *buf = NULL;
+
+	if (!buffer) {
+		return W_ERROR_V(WERR_INSUFFICIENT_BUFFER);
+	}
+
+	if (byte_count == 0) {
+		goto done;
+	}
+
+	buf = talloc_size(NULL, byte_count);
+	if (!buf) {
+		return W_ERROR_V(WERR_NOMEM);
+	}
+
+ done:
+	*buffer = buf;
+
+	return NET_API_STATUS_SUCCESS;
+}
+
+/****************************************************************
+****************************************************************/
+
 NET_API_STATUS NetApiBufferFree(void *buffer)
 {
 	if (!buffer) {
