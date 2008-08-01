@@ -86,6 +86,14 @@ userAccountControl: %u
 """ % (user_dn, userAccountControl)
         self.modify_ldif(mod)
 
+    def domain_dn(self):
+        # find the DNs for the domain and the domain users group
+        res = self.search("", scope=ldb.SCOPE_BASE, 
+                          expression="(defaultNamingContext=*)", 
+                          attrs=["defaultNamingContext"])
+        assert(len(res) == 1 and res[0]["defaultNamingContext"] is not None)
+        return res[0]["defaultNamingContext"][0]
+
     def newuser(self, username, unixname, password):
         """add a new user record.
         
@@ -96,12 +104,7 @@ userAccountControl: %u
         # connect to the sam 
         self.transaction_start()
 
-        # find the DNs for the domain and the domain users group
-        res = self.search("", scope=ldb.SCOPE_BASE, 
-                          expression="(defaultNamingContext=*)", 
-                          attrs=["defaultNamingContext"])
-        assert(len(res) == 1 and res[0]["defaultNamingContext"] is not None)
-        domain_dn = res[0]["defaultNamingContext"][0]
+        domain_dn = self.domain_dn()
         assert(domain_dn is not None)
         user_dn = "CN=%s,CN=Users,%s" % (username, domain_dn)
 
