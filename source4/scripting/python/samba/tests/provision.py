@@ -87,7 +87,7 @@ class FindNssTests(unittest.TestCase):
         self.assertEquals("ha", findnss(x, ["bloe", "bla"]))
 
 
-class Disabled:
+class Disabled(object):
     def test_setup_templatesdb(self):
         raise NotImplementedError(self.test_setup_templatesdb)
 

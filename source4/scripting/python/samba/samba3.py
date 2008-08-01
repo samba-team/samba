@@ -308,7 +308,7 @@ class ShareInfoDatabase(TdbDatabase):
         return secdesc
 
 
-class Shares:
+class Shares(object):
     """Container for share objects."""
     def __init__(self, lp, shareinfo):
         self.lp = lp
@@ -371,7 +371,7 @@ def decode_acb(text):
     return ret
 
 
-class SAMUser:
+class SAMUser(object):
     """Samba 3 SAM User.
     
     :note: Unknown or unset fields are set to None.
@@ -421,7 +421,8 @@ class SAMUser:
             return False
         return self.__dict__ == other.__dict__
 
-class SmbpasswdFile:
+
+class SmbpasswdFile(object):
     """Samba 3 smbpasswd file reader."""
     def __init__(self, file):
         self.users = {}
@@ -482,7 +483,7 @@ TDBSAM_FORMAT_STRING_V2 = "dddddddBBBBBBBBBBBBddBBBwwdBwwd"
 TDBSAM_USER_PREFIX = "USER_"
 
 
-class LdapSam:
+class LdapSam(object):
     """Samba 3 LDAP passdb backend reader."""
     def __init__(self, url):
         self.ldap_url = ldap_url
@@ -605,7 +606,7 @@ def shellsplit(text):
     return ret
 
 
-class WinsDatabase:
+class WinsDatabase(object):
     """Samba 3 WINS database reader."""
     def __init__(self, file):
         self.entries = {}
@@ -643,7 +644,8 @@ class WinsDatabase:
     def close(self): # for consistency
         pass
 
-class Samba3:
+
+class Samba3(object):
     """Samba 3 configuration and state data reader."""
     def __init__(self, libdir, smbconfpath):
         """Open the configuration and data for a Samba 3 installation.

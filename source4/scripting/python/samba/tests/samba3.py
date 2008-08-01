@@ -153,6 +153,7 @@ class WinsDatabaseTestCase(unittest.TestCase):
     def tearDown(self):
         self.winsdb.close()
 
+
 class SmbpasswdTestCase(unittest.TestCase):
     def setUp(self):
         self.samdb = SmbpasswdFile(os.path.join(DATADIR, "smbpasswd"))

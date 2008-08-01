@@ -22,6 +22,7 @@ from samba.ndr import ndr_pack, ndr_unpack
 import unittest
 from samba.tests import RpcInterfaceTestCase
 
+
 class RpcEchoTests(RpcInterfaceTestCase):
     def setUp(self):
         self.conn = echo.rpcecho("ncalrpc:", self.get_loadparm())
@@ -55,6 +56,7 @@ class RpcEchoTests(RpcInterfaceTestCase):
 
     def test_server_name(self):
         self.assertEquals(None, self.conn.server_name)
+
 
 class NdrEchoTests(unittest.TestCase):
     def test_info1_push(self):
