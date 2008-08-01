@@ -960,10 +960,268 @@ WERROR NetLocalGroupEnum_l(struct libnetapi_ctx *ctx,
 /****************************************************************
 ****************************************************************/
 
+static NTSTATUS libnetapi_lsa_lookup_names3(TALLOC_CTX *mem_ctx,
+					    struct rpc_pipe_client *lsa_pipe,
+					    const char *name,
+					    struct dom_sid *sid)
+{
+	NTSTATUS status;
+	struct policy_handle lsa_handle;
+
+	struct lsa_RefDomainList *domains = NULL;
+	struct lsa_TransSidArray3 sids;
+	uint32_t count = 0;
+
+	struct lsa_String names;
+	uint32_t num_names = 1;
+
+	if (!sid || !name) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	ZERO_STRUCT(sids);
+
+	init_lsa_String(&names, name);
+
+	status = rpccli_lsa_open_policy2(lsa_pipe, mem_ctx,
+					 false,
+					 STD_RIGHT_READ_CONTROL_ACCESS |
+					 LSA_POLICY_VIEW_LOCAL_INFORMATION |
+					 LSA_POLICY_LOOKUP_NAMES,
+					 &lsa_handle);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	status = rpccli_lsa_LookupNames3(lsa_pipe, mem_ctx,
+					 &lsa_handle,
+					 num_names,
+					 &names,
+					 &domains,
+					 &sids,
+					 LSA_LOOKUP_NAMES_ALL, /* sure ? */
+					 &count,
+					 0, 0);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	if (count != 1 || sids.count != 1) {
+		return NT_STATUS_NONE_MAPPED;
+	}
+
+	sid_copy(sid, sids.sids[0].sid);
+
+	return NT_STATUS_OK;
+}
+
+/****************************************************************
+****************************************************************/
+
+static WERROR NetLocalGroupModifyMembers_r(struct libnetapi_ctx *ctx,
+					   struct NetLocalGroupAddMembers *add)
+{
+	struct NetLocalGroupAddMembers *r = NULL;
+
+	struct cli_state *cli = NULL;
+	struct rpc_pipe_client *pipe_cli = NULL;
+	struct rpc_pipe_client *lsa_pipe = NULL;
+	NTSTATUS status;
+	WERROR werr;
+	struct lsa_String lsa_account_name;
+	struct policy_handle connect_handle, domain_handle, builtin_handle, alias_handle;
+	struct dom_sid2 *domain_sid = NULL;
+	struct dom_sid *member_sids = NULL;
+	int i = 0;
+
+	struct LOCALGROUP_MEMBERS_INFO_0 *info0 = NULL;
+	struct LOCALGROUP_MEMBERS_INFO_3 *info3 = NULL;
+
+	struct dom_sid *add_sids = NULL;
+	size_t num_add_sids = 0;
+
+	if (!add) {
+		return WERR_INVALID_PARAM;
+	}
+
+	if (add) {
+		r = add;
+	}
+
+	if (!r->in.group_name) {
+		return WERR_INVALID_PARAM;
+	}
+
+	switch (r->in.level) {
+		case 0:
+		case 3:
+			break;
+		default:
+			return WERR_UNKNOWN_LEVEL;
+	}
+
+	if (r->in.total_entries == 0 || !r->in.buffer) {
+		return WERR_INVALID_PARAM;
+	}
+
+	ZERO_STRUCT(connect_handle);
+	ZERO_STRUCT(builtin_handle);
+	ZERO_STRUCT(domain_handle);
+	ZERO_STRUCT(alias_handle);
+
+	member_sids = TALLOC_ZERO_ARRAY(ctx, struct dom_sid,
+					r->in.total_entries);
+	W_ERROR_HAVE_NO_MEMORY(member_sids);
+
+	switch (r->in.level) {
+		case 0:
+			info0 = (struct LOCALGROUP_MEMBERS_INFO_0 *)r->in.buffer;
+			for (i=0; i < r->in.total_entries; i++) {
+				sid_copy(&member_sids[i], (struct dom_sid *)info0[i].lgrmi0_sid);
+			}
+			break;
+		case 3:
+			info3 = (struct LOCALGROUP_MEMBERS_INFO_3 *)r->in.buffer;
+			break;
+		default:
+			break;
+	}
+
+	werr = libnetapi_open_ipc_connection(ctx, r->in.server_name, &cli);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	if (r->in.level == 3) {
+		werr = libnetapi_open_pipe(ctx, cli, &ndr_table_lsarpc.syntax_id,
+					   &lsa_pipe);
+		if (!W_ERROR_IS_OK(werr)) {
+			goto done;
+		}
+
+		for (i=0; i < r->in.total_entries; i++) {
+			status = libnetapi_lsa_lookup_names3(ctx, lsa_pipe,
+							     info3[i].lgrmi3_domainandname,
+							     &member_sids[i]);
+			if (!NT_STATUS_IS_OK(status)) {
+				werr = ntstatus_to_werror(status);
+				goto done;
+			}
+		}
+		TALLOC_FREE(lsa_pipe);
+	}
+
+	werr = libnetapi_open_pipe(ctx, cli, &ndr_table_samr.syntax_id,
+				   &pipe_cli);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	werr = libnetapi_samr_open_builtin_domain(ctx, pipe_cli,
+						  SAMR_ACCESS_OPEN_DOMAIN |
+						  SAMR_ACCESS_ENUM_DOMAINS,
+						  SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
+						  &connect_handle,
+						  &builtin_handle);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	init_lsa_String(&lsa_account_name, r->in.group_name);
+
+	werr = libnetapi_samr_lookup_and_open_alias(ctx, pipe_cli,
+						    &builtin_handle,
+						    r->in.group_name,
+						    SAMR_ALIAS_ACCESS_ADD_MEMBER |
+						    SAMR_ALIAS_ACCESS_REMOVE_MEMBER |
+						    SAMR_ALIAS_ACCESS_GET_MEMBERS |
+						    SAMR_ALIAS_ACCESS_LOOKUP_INFO,
+						    &alias_handle);
+
+	if (ctx->disable_policy_handle_cache) {
+		libnetapi_samr_close_builtin_handle(ctx, &builtin_handle);
+	}
+
+	if (W_ERROR_IS_OK(werr)) {
+		goto modify_membership;
+	}
+
+	werr = libnetapi_samr_open_domain(ctx, pipe_cli,
+					  SAMR_ACCESS_ENUM_DOMAINS |
+					  SAMR_ACCESS_OPEN_DOMAIN,
+					  SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
+					  &connect_handle,
+					  &domain_handle,
+					  &domain_sid);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	werr = libnetapi_samr_lookup_and_open_alias(ctx, pipe_cli,
+						    &domain_handle,
+						    r->in.group_name,
+						    SAMR_ALIAS_ACCESS_ADD_MEMBER |
+						    SAMR_ALIAS_ACCESS_REMOVE_MEMBER |
+						    SAMR_ALIAS_ACCESS_GET_MEMBERS |
+						    SAMR_ALIAS_ACCESS_LOOKUP_INFO,
+						    &alias_handle);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	if (ctx->disable_policy_handle_cache) {
+		libnetapi_samr_close_domain_handle(ctx, &domain_handle);
+	}
+
+ modify_membership:
+
+	if (add) {
+		for (i=0; i < r->in.total_entries; i++) {
+			status = add_sid_to_array_unique(ctx, &member_sids[i],
+							 &add_sids,
+							 &num_add_sids);
+			if (!NT_STATUS_IS_OK(status)) {
+				werr = ntstatus_to_werror(status);
+				goto done;
+			}
+		}
+	}
+
+	/* add list */
+
+	for (i=0; i < num_add_sids; i++) {
+		status = rpccli_samr_AddAliasMember(pipe_cli, ctx,
+						    &alias_handle,
+						    &add_sids[i]);
+		if (!NT_STATUS_IS_OK(status)) {
+			werr = ntstatus_to_werror(status);
+			goto done;
+		}
+	}
+
+	werr = WERR_OK;
+
+ done:
+	if (!cli) {
+		return werr;
+	}
+
+	if (is_valid_policy_hnd(&alias_handle)) {
+		rpccli_samr_Close(pipe_cli, ctx, &alias_handle);
+	}
+
+	if (ctx->disable_policy_handle_cache) {
+		libnetapi_samr_close_domain_handle(ctx, &domain_handle);
+		libnetapi_samr_close_builtin_handle(ctx, &builtin_handle);
+		libnetapi_samr_close_connect_handle(ctx, &connect_handle);
+	}
+
+	return werr;
+}
+
+/****************************************************************
+****************************************************************/
+
 WERROR NetLocalGroupAddMembers_r(struct libnetapi_ctx *ctx,
 				 struct NetLocalGroupAddMembers *r)
 {
-	return WERR_NOT_SUPPORTED;
+	return NetLocalGroupModifyMembers_r(ctx, r);
 }
 
 /****************************************************************
@@ -972,7 +1230,7 @@ WERROR NetLocalGroupAddMembers_r(struct libnetapi_ctx *ctx,
 WERROR NetLocalGroupAddMembers_l(struct libnetapi_ctx *ctx,
 				 struct NetLocalGroupAddMembers *r)
 {
-	return WERR_NOT_SUPPORTED;
+	return NetLocalGroupAddMembers_r(ctx, r);
 }
 
 /****************************************************************
