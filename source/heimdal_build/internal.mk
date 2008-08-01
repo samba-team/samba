@@ -121,6 +121,7 @@ HEIMDAL_GSSAPI_OBJ_FILES = \
 	$(heimdalsrcdir)/lib/gssapi/mech/gss_inquire_context.o \
 	$(heimdalsrcdir)/lib/gssapi/mech/gss_release_name.o \
 	$(heimdalsrcdir)/lib/gssapi/mech/gss_set_cred_option.o \
+	$(heimdalsrcdir)/lib/gssapi/mech/gss_pseudo_random.o \
 	$(heimdalsrcdir)/lib/gssapi/asn1_GSSAPIContextToken.o \
 	$(heimdalsrcdir)/lib/gssapi/spnego/init_sec_context.o \
 	$(heimdalsrcdir)/lib/gssapi/spnego/external.o \
@@ -380,7 +381,11 @@ HEIMDAL_HX509_OBJ_FILES = \
 	$(heimdalsrcdir)/lib/hx509/print.o \
 	$(heimdalsrcdir)/lib/hx509/req.o \
 	$(heimdalsrcdir)/lib/hx509/revoke.o \
+	$(heimdalsrcdir)/lib/hx509/sel.o \
+	$(heimdalsrcdir)/lib/hx509/sel-lex.o \
+	$(heimdalsrcdir)/lib/hx509/sel-gram.o \
 	$(heimdalsrcdir)/lib/hx509/hx509_err.o
+
 
 #######################
 # Start SUBSYSTEM HEIMDAL_WIND
@@ -463,6 +468,8 @@ HEIMDAL_ROKEN_OBJ_FILES = \
 	$(heimdalsrcdir)/lib/roken/simple_exec.o \
 	$(heimdalsrcdir)/lib/roken/strcollect.o \
 	$(heimdalsrcdir)/lib/roken/rtbl.o \
+	$(heimdalsrcdir)/lib/roken/cloexec.o \
+	$(heimdalsrcdir)/lib/roken/xfree.o \
 	$(heimdalbuildsrcdir)/replace.o
 
 #######################
@@ -621,4 +628,5 @@ samba4kinit_OBJ_FILES = $(heimdalsrcdir)/kuser/kinit.o \
 $(samba4kinit_OBJ_FILES): CFLAGS+=-I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/roken
 
 dist:: $(heimdalsrcdir)/lib/asn1/lex.c $(heimdalsrcdir)/lib/com_err/lex.c \
-	$(heimdalsrcdir)/lib/asn1/parse.c $(heimdalsrcdir)/lib/com_err/parse.c
+	$(heimdalsrcdir)/lib/asn1/parse.c $(heimdalsrcdir)/lib/com_err/parse.c \
+	$(heimdalsrcdir)/lib/hx509/sel-lex.c $(heimdalsrcdir)/lib/hx509/sel-gram.c
