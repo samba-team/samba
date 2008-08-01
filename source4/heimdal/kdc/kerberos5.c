@@ -33,7 +33,7 @@
 
 #include "kdc_locl.h"
 
-RCSID("$Id: kerberos5.c 22071 2007-11-14 20:04:50Z lha $");
+RCSID("$Id: kerberos5.c 23316 2008-06-23 04:32:32Z lha $");
 
 #define MAX_TIME ((time_t)((1U << 31) - 1))
 
@@ -1648,7 +1648,7 @@ _kdc_as_rep(krb5_context context,
 	memset(&canon, 0, sizeof(canon));
 
 	canon.names.requested_name = *b->cname;
-	canon.names.real_name = client->entry.principal->name;
+	canon.names.mapped_name = client->entry.principal->name;
 
 	ASN1_MALLOC_ENCODE(PA_ClientCanonicalizedNames, data.data, data.length,
 			   &canon.names, &len, ret);
@@ -1807,7 +1807,7 @@ _kdc_tkt_add_if_relevant_ad(krb5_context context,
     if (tkt->authorization_data == NULL) {
 	tkt->authorization_data = calloc(1, sizeof(*tkt->authorization_data));
 	if (tkt->authorization_data == NULL) {
-	    krb5_set_error_string(context, "out of memory");
+	    krb5_set_error_message(context, ENOMEM, "out of memory");
 	    return ENOMEM;
 	}
     }
@@ -1822,7 +1822,7 @@ _kdc_tkt_add_if_relevant_ad(krb5_context context,
 
 	ret = add_AuthorizationData(&ad, &ade);
 	if (ret) {
-	    krb5_set_error_string(context, "add AuthorizationData failed");
+	    krb5_set_error_message(context, ret, "add AuthorizationData failed");
 	    return ret;
 	}
 
@@ -1833,8 +1833,8 @@ _kdc_tkt_add_if_relevant_ad(krb5_context context,
 			   &ad, &size, ret);
 	free_AuthorizationData(&ad);
 	if (ret) {
-	    krb5_set_error_string(context, "ASN.1 encode of "
-				  "AuthorizationData failed");
+	    krb5_set_error_message(context, ret, "ASN.1 encode of "
+				   "AuthorizationData failed");
 	    return ret;
 	}
 	if (ade.ad_data.length != size)
@@ -1843,7 +1843,7 @@ _kdc_tkt_add_if_relevant_ad(krb5_context context,
 	ret = add_AuthorizationData(tkt->authorization_data, &ade);
 	der_free_octet_string(&ade.ad_data);
 	if (ret) {
-	    krb5_set_error_string(context, "add AuthorizationData failed");
+	    krb5_set_error_message(context, ret, "add AuthorizationData failed");
 	    return ret;
 	}
     }

@@ -32,7 +32,7 @@
  */
 
 #include "kuser_locl.h"
-RCSID("$Id: kinit.c 22116 2007-12-03 21:22:58Z lha $");
+RCSID("$Id: kinit.c 23418 2008-07-26 18:36:48Z lha $");
 
 #include "krb5-v4compat.h"
 
@@ -66,6 +66,8 @@ char *pk_user_id	= NULL;
 char *pk_x509_anchors	= NULL;
 int pk_use_enckey	= 0;
 static int canonicalize_flag = 0;
+static int ok_as_delegate_flag = 0;
+static int windows_flag = 0;
 static char *ntlm_domain;
 
 static char *krb4_cc_name;
@@ -160,6 +162,12 @@ static struct getargs args[] = {
 #endif
     { "ntlm-domain",	0,  arg_string, &ntlm_domain,
       "NTLM domain", "domain" },
+
+    { "ok-as-delegate",	0,  arg_flag, &ok_as_delegate_flag,
+      "honor ok-as-delegate on tickets" },
+
+    { "windows",	0,  arg_flag, &windows_flag,
+      "get windows behavior" },
 
     { "version", 	0,   arg_flag, &version_flag },
     { "help",		0,   arg_flag, &help_flag }
@@ -329,36 +337,25 @@ out:
 }
 
 static krb5_error_code
-store_ntlmkey(krb5_context context, krb5_ccache id, 
-	      const char *domain, krb5_const_principal client,
-	      struct ntlm_buf *buf)
+store_ntlmkey(krb5_context context, krb5_ccache id,
+	      const char *domain, struct ntlm_buf *buf)
 {
     krb5_error_code ret;
-    krb5_creds cred;
+    krb5_data data;
+    char *name;
+
+    asprintf(&name, "ntlm-key-%s", domain);
+    if (name == NULL) {
+	krb5_clear_error_string(context);
+	return ENOMEM;
+    }
     
-    memset(&cred, 0, sizeof(cred));
+    data.length = buf->length;
+    data.data = buf->data;
 
-    ret = krb5_make_principal(context, &cred.server,
-			      krb5_principal_get_realm(context, client),
-			      "@ntlm-key", domain, NULL);
-    if (ret)
-	goto out;
-    ret = krb5_copy_principal(context, client, &cred.client);
-    if (ret)
-	goto out;
-    
-    cred.times.authtime = time(NULL);
-    cred.times.endtime = time(NULL) + 3600 * 24 * 30; /* XXX */
-    cred.session.keytype = ENCTYPE_ARCFOUR_HMAC_MD5;
-    ret = krb5_data_copy(&cred.session.keyvalue, buf->data, buf->length);
-    if (ret)
-	goto out;
-
-    ret = krb5_cc_store_cred(context, id, &cred);
-
-out:
-    krb5_free_cred_contents (context, &cred);
-    return 0;
+    ret = krb5_cc_set_config(context, id, NULL, name, &data);
+    free(name);
+    return ret;
 }
 
 static krb5_error_code
@@ -598,7 +595,17 @@ get_new_tickets(krb5_context context,
 	krb5_err (context, 1, ret, "krb5_cc_move");
 
     if (ntlm_domain && ntlmkey.data)
-	store_ntlmkey(context, ccache, ntlm_domain, principal, &ntlmkey);
+	store_ntlmkey(context, ccache, ntlm_domain, &ntlmkey);
+
+    if (ok_as_delegate_flag || windows_flag) {
+	krb5_data data;
+
+	data.length = 1;
+	data.data = "\x01";
+
+	krb5_cc_set_config(context, ccache, NULL, "realm-config", &data);
+    }
+
 
     if (enctype)
 	free(enctype);

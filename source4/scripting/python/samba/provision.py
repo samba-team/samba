@@ -133,26 +133,6 @@ findnss_uid = lambda names: findnss(pwd.getpwnam, names)[2]
 findnss_gid = lambda names: findnss(grp.getgrnam, names)[2]
 
 
-def open_ldb(session_info, credentials, lp, dbname):
-    """Open a LDB, thrashing it if it is corrupt.
-
-    :param session_info: auth session information
-    :param credentials: credentials
-    :param lp: Loadparm context
-    :param dbname: Path of the database to open.
-    :return: a Ldb object
-    """
-    assert session_info is not None
-    try:
-        return Ldb(dbname, session_info=session_info, credentials=credentials, 
-                   lp=lp)
-    except LdbError, e:
-        print e
-        os.unlink(dbname)
-        return Ldb(dbname, session_info=session_info, credentials=credentials,
-                   lp=lp)
-
-
 def read_and_sub_file(file, subst_vars):
     """Read a file and sub in variables found in it
     
@@ -799,7 +779,6 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
         setup_add_ldif(samdb, setup_path("provision_configuration_basedn.ldif"), {
             "CONFIGDN": names.configdn, 
             "ACI": aci,
-            "EXTENSIBLEOBJECT": "# no objectClass: extensibleObject for local ldb",
             })
         message("Modifying configuration container")
         setup_modify_ldif(samdb, setup_path("provision_configuration_basedn_modify.ldif"), {
@@ -811,7 +790,6 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
         setup_add_ldif(samdb, setup_path("provision_schema_basedn.ldif"), {
             "SCHEMADN": names.schemadn,
             "ACI": aci,
-            "EXTENSIBLEOBJECT": "# no objectClass: extensibleObject for local ldb"
             })
         message("Modifying schema container")
 
@@ -1195,7 +1173,7 @@ def provision_backend(setup_dir=None, message=None,
     paths = provision_paths_from_lp(lp, names.dnsdomain)
 
     if not os.path.isdir(paths.ldapdir):
-        os.makedirs(paths.ldapdir)
+        os.makedirs(paths.ldapdir, 0700)
     schemadb_path = os.path.join(paths.ldapdir, "schema-tmp.ldb")
     try:
         os.unlink(schemadb_path)
@@ -1209,7 +1187,6 @@ def provision_backend(setup_dir=None, message=None,
     setup_add_ldif(schemadb, setup_path("provision_schema_basedn.ldif"), 
                    {"SCHEMADN": names.schemadn,
                     "ACI": "#",
-                    "EXTENSIBLEOBJECT": "# no objectClass: extensibleObject for local ldb"
                     })
     setup_modify_ldif(schemadb, 
                       setup_path("provision_schema_basedn_modify.ldif"), \
@@ -1252,6 +1229,8 @@ def provision_backend(setup_dir=None, message=None,
         
         slapdcommand="Initailise Fedora DS with: setup-ds.pl --file=%s" % paths.fedoradsinf
        
+        ldapuser = "--simple-bind-dn=" + names.ldapmanagerdn
+
     elif ldap_backend_type == "openldap":
         attrs = ["linkID", "lDAPDisplayName"]
         res = schemadb.search(expression="(&(&(linkID=*)(!(linkID:1.2.840.113556.1.4.803:=1)))(objectclass=attributeSchema))", base=names.schemadn, scope=SCOPE_SUBTREE, attrs=attrs)
@@ -1290,7 +1269,7 @@ def provision_backend(setup_dir=None, message=None,
         setup_db_config(setup_path, os.path.join(paths.ldapdir, "db", "schema"))
 
         if not os.path.exists(os.path.join(paths.ldapdir, "db", "samba",  "cn=samba")):
-            os.makedirs(os.path.join(paths.ldapdir, "db", "samba",  "cn=samba"))
+            os.makedirs(os.path.join(paths.ldapdir, "db", "samba",  "cn=samba"), 0700)
 
         setup_file(setup_path("cn=samba.ldif"), 
                    os.path.join(paths.ldapdir, "db", "samba",  "cn=samba.ldif"),
@@ -1310,7 +1289,10 @@ def provision_backend(setup_dir=None, message=None,
             server_port_string = " -h ldap://0.0.0.0:%d" % ldap_backend_port
         else:
             server_port_string = ""
-            slapdcommand="Start slapd with:    slapd -f " + paths.ldapdir + "/slapd.conf -h " + ldapi_uri + server_port_string
+
+        slapdcommand="Start slapd with:    slapd -f " + paths.ldapdir + "/slapd.conf -h " + ldapi_uri + server_port_string
+
+        ldapuser = "--username=samba-admin"
 
             
     schema_command = "bin/ad2oLschema --option=convert:target=" + ldap_backend_type + " -I " + setup_path(mapping) + " -H tdb://" + schemadb_path + " -O " + os.path.join(paths.ldapdir, backend_schema)
@@ -1330,7 +1312,7 @@ def provision_backend(setup_dir=None, message=None,
 
     message("LDAP admin password: %s" % adminpass)
     message(slapdcommand)
-
+    message("Run provision with:  --ldap-backend=ldapi --ldap-backend-type=" + ldap_backend_type + " --password=" + adminpass + " " + ldapuser)
 
 def create_phpldapadmin_config(path, setup_path, ldapi_uri):
     """Create a PHP LDAP admin configuration file.

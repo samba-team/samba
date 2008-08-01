@@ -12,11 +12,13 @@
 extern "C" {
 #endif
 
-#ifndef KRB5_LIB_FUNCTION
+#ifndef KRB5_LIB
 #if defined(_WIN32)
-#define KRB5_LIB_FUNCTION _stdcall
+#define KRB5_LIB_FUNCTION _stdcall __declspec(dllimport)
+#define KRB5_LIB_VARIABLE __declspec(dllimport)
 #else
 #define KRB5_LIB_FUNCTION
+#define KRB5_LIB_VARIABLE
 #endif
 #endif
 
@@ -628,6 +630,14 @@ krb5_cc_gen_new (
 	krb5_ccache */*id*/);
 
 krb5_error_code KRB5_LIB_FUNCTION
+krb5_cc_get_config (
+	krb5_context /*context*/,
+	krb5_ccache /*id*/,
+	krb5_const_principal /*principal*/,
+	const char */*name*/,
+	krb5_data */*data*/);
+
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_cc_get_full_name (
 	krb5_context /*context*/,
 	krb5_ccache /*id*/,
@@ -727,6 +737,14 @@ krb5_cc_retrieve_cred (
 	krb5_creds */*creds*/);
 
 krb5_error_code KRB5_LIB_FUNCTION
+krb5_cc_set_config (
+	krb5_context /*context*/,
+	krb5_ccache /*id*/,
+	krb5_const_principal /*principal*/,
+	const char */*name*/,
+	krb5_data */*data*/);
+
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_cc_set_default_name (
 	krb5_context /*context*/,
 	const char */*name*/);
@@ -749,6 +767,11 @@ krb5_cc_store_cred (
 	krb5_ccache /*id*/,
 	krb5_creds */*creds*/);
 
+krb5_error_code
+krb5_cc_switch (
+	krb5_context /*context*/,
+	krb5_ccache /*id*/);
+
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_change_password (
 	krb5_context /*context*/,
@@ -756,7 +779,8 @@ krb5_change_password (
 	const char */*newpw*/,
 	int */*result_code*/,
 	krb5_data */*result_code_string*/,
-	krb5_data */*result_string*/);
+	krb5_data */*result_string*/)
+    __attribute__((deprecated));
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_check_transited (
@@ -764,14 +788,14 @@ krb5_check_transited (
 	krb5_const_realm /*client_realm*/,
 	krb5_const_realm /*server_realm*/,
 	krb5_realm */*realms*/,
-	int /*num_realms*/,
+	unsigned int /*num_realms*/,
 	int */*bad_realm*/);
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_check_transited_realms (
 	krb5_context /*context*/,
 	const char *const */*realms*/,
-	int /*num_realms*/,
+	unsigned int /*num_realms*/,
 	int */*bad_realm*/);
 
 krb5_error_code KRB5_LIB_FUNCTION
@@ -1462,14 +1486,14 @@ krb5_domain_x500_decode (
 	krb5_context /*context*/,
 	krb5_data /*tr*/,
 	char ***/*realms*/,
-	int */*num_realms*/,
+	unsigned int */*num_realms*/,
 	const char */*client_realm*/,
 	const char */*server_realm*/);
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_domain_x500_encode (
 	char **/*realms*/,
-	int /*num_realms*/,
+	unsigned int /*num_realms*/,
 	krb5_data */*encoding*/);
 
 krb5_error_code KRB5_LIB_FUNCTION
@@ -1731,9 +1755,9 @@ krb5_free_error_contents (
 	krb5_error */*error*/);
 
 void KRB5_LIB_FUNCTION
-krb5_free_error_string (
+krb5_free_error_message (
 	krb5_context /*context*/,
-	char */*str*/);
+	const char */*msg*/);
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_free_host_realm (
@@ -1939,7 +1963,7 @@ krb5_get_err_text (
 	krb5_context /*context*/,
 	krb5_error_code /*code*/);
 
-char * KRB5_LIB_FUNCTION
+const char * KRB5_LIB_FUNCTION
 krb5_get_error_message (
 	krb5_context /*context*/,
 	krb5_error_code /*code*/);
@@ -2969,6 +2993,12 @@ krb5_principal_match (
 	krb5_const_principal /*princ*/,
 	krb5_const_principal /*pattern*/);
 
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_principal_set_realm (
+	krb5_context /*context*/,
+	krb5_principal /*principal*/,
+	krb5_const_realm /*realm*/);
+
 void KRB5_LIB_FUNCTION
 krb5_principal_set_type (
 	krb5_context /*context*/,
@@ -3450,12 +3480,20 @@ krb5_set_dns_canonicalize_hostname (
 	krb5_context /*context*/,
 	krb5_boolean /*flag*/);
 
+void KRB5_LIB_FUNCTION
+krb5_set_error_message (
+	krb5_context /*context*/,
+	krb5_error_code /*ret*/,
+	const char */*fmt*/,
+	...)
+    __attribute__ ((format (printf, 3, 4)));
+
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_set_error_string (
 	krb5_context /*context*/,
 	const char */*fmt*/,
-	...)
-    __attribute__((format (printf, 2, 3)));
+	...) __attribute__((format (printf, 2, 3)))
+    __attribute__((deprecated));
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_set_extra_addresses (
@@ -3471,6 +3509,12 @@ krb5_error_code KRB5_LIB_FUNCTION
 krb5_set_ignore_addresses (
 	krb5_context /*context*/,
 	const krb5_addresses */*addresses*/);
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_set_kdc_sec_offset (
+	krb5_context /*context*/,
+	int32_t /*sec*/,
+	int32_t /*usec*/);
 
 void KRB5_LIB_FUNCTION
 krb5_set_max_time_skew (
@@ -4047,12 +4091,20 @@ krb5_vlog_msg (
 	va_list /*ap*/)
     __attribute__((format (printf, 5, 0)));
 
+void KRB5_LIB_FUNCTION
+krb5_vset_error_message (
+	krb5_context /*context*/,
+	krb5_error_code /*ret*/,
+	const char */*fmt*/,
+	va_list /*args*/)
+    __attribute__ ((format (printf, 3, 0)));
+
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_vset_error_string (
 	krb5_context /*context*/,
 	const char */*fmt*/,
-	va_list /*args*/)
-    __attribute__ ((format (printf, 2, 0)));
+	va_list args) __attribute__ ((format (printf, 2, 0)))
+    __attribute__((deprecated));
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_vwarn (
@@ -4106,6 +4158,9 @@ krb5_write_safe_message (
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_xfree (void */*ptr*/);
+
+void KRB5_LIB_FUNCTION 
+    __attribute__((deprecated)) krb5_free_error_string(krb5_context context, char *str);
 
 #ifdef __cplusplus
 }

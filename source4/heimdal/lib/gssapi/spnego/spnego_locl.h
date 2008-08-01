@@ -30,7 +30,7 @@
  * SUCH DAMAGE.
  */
 
-/* $Id: spnego_locl.h 19411 2006-12-18 15:42:03Z lha $ */
+/* $Id: spnego_locl.h 23161 2008-05-05 09:56:20Z lha $ */
 
 #ifndef SPNEGO_LOCL_H
 #define SPNEGO_LOCL_H
@@ -86,7 +86,6 @@ typedef struct {
 	OM_uint32		mech_flags;
 	OM_uint32		mech_time_rec;
 	gss_name_t		mech_src_name;
-	gss_cred_id_t		delegated_cred_id;
 	unsigned int		open : 1;
 	unsigned int		local : 1;
 	unsigned int		require_mic : 1;

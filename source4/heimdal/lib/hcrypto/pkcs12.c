@@ -35,7 +35,7 @@
 #include <config.h>
 #endif
 
-RCSID("$Id: pkcs12.c 21155 2007-06-18 21:59:44Z lha $");
+RCSID("$Id: pkcs12.c 23137 2008-04-29 05:46:48Z lha $");
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -55,19 +55,24 @@ PKCS12_key_gen(const void *key, size_t keylen,
     unsigned char *v, *I, hash[EVP_MAX_MD_SIZE];
     unsigned int size, size_I = 0;
     unsigned char idc = id;
-    EVP_MD_CTX ctx;
+    EVP_MD_CTX *ctx;
     unsigned char *outp = out;
     int i, vlen;
 
-    EVP_MD_CTX_init(&ctx);
+    ctx = EVP_MD_CTX_create();
+    if (ctx == NULL)
+	return 0;
 
     vlen = EVP_MD_block_size(md);
     v = malloc(vlen + 1);
-    if (v == NULL)
+    if (v == NULL) {
+	EVP_MD_CTX_destroy(ctx);
 	return 0;
+    }
 
     I = calloc(1, vlen * 2);
     if (I == NULL) {
+	EVP_MD_CTX_destroy(ctx);
 	free(v);
 	return 0;
     }
@@ -93,15 +98,16 @@ PKCS12_key_gen(const void *key, size_t keylen,
     while (1) {
 	BIGNUM *bnB, *bnOne;
 
-	if (!EVP_DigestInit_ex(&ctx, md, NULL)) {
+	if (!EVP_DigestInit_ex(ctx, md, NULL)) {
+	    EVP_MD_CTX_destroy(ctx);
 	    free(I);
 	    free(v);
 	    return 0;
 	}
 	for (i = 0; i < vlen; i++)
-	    EVP_DigestUpdate(&ctx, &idc, 1);
-	EVP_DigestUpdate(&ctx, I, size_I);
-	EVP_DigestFinal_ex(&ctx, hash, &size);
+	    EVP_DigestUpdate(ctx, &idc, 1);
+	EVP_DigestUpdate(ctx, I, size_I);
+	EVP_DigestFinal_ex(ctx, hash, &size);
 
 	for (i = 1; i < iteration; i++)
 	    EVP_Digest(hash, size, hash, &size, md, NULL);
@@ -145,7 +151,7 @@ PKCS12_key_gen(const void *key, size_t keylen,
 	size_I = vlen * 2;
     }
 
-    EVP_MD_CTX_cleanup(&ctx);
+    EVP_MD_CTX_destroy(ctx);
     free(I);
     free(v);
 

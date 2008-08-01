@@ -33,7 +33,7 @@
 
 #include "kdc_locl.h"
 
-RCSID("$Id: kaserver.c 21654 2007-07-21 17:30:18Z lha $");
+RCSID("$Id: kaserver.c 23110 2008-04-27 18:51:17Z lha $");
 
 #include <krb5-v4compat.h>
 #include <rx.h>
@@ -366,7 +366,7 @@ create_reply_ticket (krb5_context context,
 	DES_cblock deskey;
 	
 	memcpy (&deskey, key->keyvalue.data, sizeof(deskey));
-	DES_set_key (&deskey, &schedule);
+	DES_set_key_unchecked (&deskey, &schedule);
 	DES_pcbc_encrypt (enc_data.data,
 			  enc_data.data,
 			  enc_data.length,
@@ -524,7 +524,7 @@ do_authenticate (krb5_context context,
 	
 	/* try to decode the `request' */
 	memcpy (&key, ckey->key.keyvalue.data, sizeof(key));
-	DES_set_key (&key, &schedule);
+	DES_set_key_unchecked (&key, &schedule);
 	DES_pcbc_encrypt (request.data,
 			  request.data,
 			  request.length,
@@ -801,7 +801,7 @@ do_getticket (krb5_context context,
 
     /* decrypt the times */
     memcpy(&session, ad.session.keyvalue.data, sizeof(session));
-    DES_set_key (&session, &schedule);
+    DES_set_key_unchecked (&session, &schedule);
     DES_ecb_encrypt (times.data,
 		     times.data,
 		     &schedule,

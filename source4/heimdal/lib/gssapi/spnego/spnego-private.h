@@ -225,6 +225,15 @@ _gss_spnego_process_context_token (
 	const gss_buffer_t token_buffer );
 
 OM_uint32
+_gss_spnego_pseudo_random (
+	OM_uint32 */*minor_status*/,
+	gss_ctx_id_t /*context_handle*/,
+	int /*prf_key*/,
+	const gss_buffer_t /*prf_in*/,
+	ssize_t /*desired_output_len*/,
+	gss_buffer_t /*prf_out*/);
+
+OM_uint32
 _gss_spnego_release_cred (
 	OM_uint32 */*minor_status*/,
 	gss_cred_id_t */*cred_handle*/);
@@ -249,6 +258,13 @@ _gss_spnego_seal (
 	gss_buffer_t /*input_message_buffer*/,
 	int * /*conf_state*/,
 	gss_buffer_t output_message_buffer );
+
+OM_uint32
+_gss_spnego_set_cred_option (
+	OM_uint32 */*minor_status*/,
+	gss_cred_id_t */*cred_handle*/,
+	const gss_OID /*object*/,
+	const gss_buffer_t /*value*/);
 
 OM_uint32
 _gss_spnego_set_sec_context_option (

@@ -33,7 +33,7 @@
 
 #include "hx_locl.h"
 #include <pkcs10_asn1.h>
-RCSID("$Id: req.c 21344 2007-06-26 14:22:34Z lha $");
+RCSID("$Id: req.c 23413 2008-07-26 18:34:53Z lha $");
 
 struct hx509_request_data {
     hx509_name name;
@@ -257,14 +257,14 @@ _hx509_request_parse(hx509_context context,
 
     /* XXX PEM request */
 
-    ret = _hx509_map_file(path, &p, &len, NULL);
+    ret = rk_undumpdata(path, &p, &len);
     if (ret) {
 	hx509_set_error_string(context, 0, ret, "Failed to map file %s", path);
 	return ret;
     }
 
     ret = decode_CertificationRequest(p, len, &r, &size);
-    _hx509_unmap_file(p, len);
+    rk_xfree(p);
     if (ret) {
 	hx509_set_error_string(context, 0, ret, "Failed to decode %s", path);
 	return ret;

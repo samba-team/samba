@@ -33,7 +33,7 @@
 
 #include <krb5_locl.h>
 
-RCSID("$Id: get_for_creds.c 22504 2008-01-21 15:49:58Z lha $");
+RCSID("$Id: get_for_creds.c 23316 2008-06-23 04:32:32Z lha $");
 
 static krb5_error_code
 add_addrs(krb5_context context,
@@ -51,8 +51,8 @@ add_addrs(krb5_context context,
 
     tmp = realloc(addr->val, (addr->len + n) * sizeof(*addr->val));
     if (tmp == NULL && (addr->len + n) != 0) {
-	krb5_set_error_string(context, "malloc: out of memory");
 	ret = ENOMEM;
+	krb5_set_error_message(context, ret, "malloc: out of memory");
 	goto fail;
     }
     addr->val = tmp;
@@ -207,7 +207,6 @@ krb5_get_forwarded_creds (krb5_context	    context,
     krb5_kdc_flags kdc_flags;
     krb5_crypto crypto;
     struct addrinfo *ai;
-    int save_errno;
     krb5_creds *ticket;
 
     paddrs = NULL;
@@ -238,10 +237,10 @@ krb5_get_forwarded_creds (krb5_context	    context,
 
 	ret = getaddrinfo (hostname, NULL, NULL, &ai);
 	if (ret) {
-	    save_errno = errno;
-	    krb5_set_error_string(context, "resolving %s: %s",
+	    krb5_error_code ret2 = krb5_eai_to_heim_errno(ret, errno);
+	    krb5_set_error_message(context, ret2, "resolving %s: %s",
 				  hostname, gai_strerror(ret));
-	    return krb5_eai_to_heim_errno(ret, save_errno);
+	    return ret2;
 	}
 	
 	ret = add_addrs (context, &addrs, ai);
@@ -269,7 +268,7 @@ krb5_get_forwarded_creds (krb5_context	    context,
     ALLOC_SEQ(&cred.tickets, 1);
     if (cred.tickets.val == NULL) {
 	ret = ENOMEM;
-	krb5_set_error_string(context, "malloc: out of memory");
+	krb5_set_error_message(context, ret, "malloc: out of memory");
 	goto out2;
     }
     ret = decode_Ticket(out_creds->ticket.data,
@@ -282,7 +281,7 @@ krb5_get_forwarded_creds (krb5_context	    context,
     ALLOC_SEQ(&enc_krb_cred_part.ticket_info, 1);
     if (enc_krb_cred_part.ticket_info.val == NULL) {
 	ret = ENOMEM;
-	krb5_set_error_string(context, "malloc: out of memory");
+	krb5_set_error_message(context, ret, "malloc: out of memory");
 	goto out4;
     }
     
@@ -295,14 +294,14 @@ krb5_get_forwarded_creds (krb5_context	    context,
 	ALLOC(enc_krb_cred_part.timestamp, 1);
 	if (enc_krb_cred_part.timestamp == NULL) {
 	    ret = ENOMEM;
-	    krb5_set_error_string(context, "malloc: out of memory");
+	    krb5_set_error_message(context, ret, "malloc: out of memory");
 	    goto out4;
 	}
 	*enc_krb_cred_part.timestamp = sec;
 	ALLOC(enc_krb_cred_part.usec, 1);
 	if (enc_krb_cred_part.usec == NULL) {
 	    ret = ENOMEM;
-	    krb5_set_error_string(context, "malloc: out of memory");
+	    krb5_set_error_message(context, ret, "malloc: out of memory");
 	    goto out4;
 	}
 	*enc_krb_cred_part.usec      = usec;
@@ -346,7 +345,7 @@ krb5_get_forwarded_creds (krb5_context	    context,
 	    ALLOC(enc_krb_cred_part.r_address, 1);
 	    if (enc_krb_cred_part.r_address == NULL) {
 		ret = ENOMEM;
-		krb5_set_error_string(context, "malloc: out of memory");
+		krb5_set_error_message(context, ret, "malloc: out of memory");
 		goto out4;
 	    }
 

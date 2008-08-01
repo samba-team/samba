@@ -27,9 +27,9 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_create_empty_oid_set.c 19951 2007-01-17 10:14:58Z lha $");
+RCSID("$Id: gss_create_empty_oid_set.c 23025 2008-04-17 10:01:57Z lha $");
 
-OM_uint32
+OM_uint32 GSSAPI_LIB_FUNCTION
 gss_create_empty_oid_set(OM_uint32 *minor_status,
     gss_OID_set *oid_set)
 {

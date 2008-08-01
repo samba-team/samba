@@ -36,7 +36,68 @@
 #endif
 #include "windlocl.h"
 
-RCSID("$Id: utf8.c 22572 2008-02-05 20:22:39Z lha $");
+RCSID("$Id: utf8.c 23246 2008-06-01 22:29:04Z lha $");
+
+static int
+utf8toutf32(const unsigned char **pp, uint32_t *out)
+{
+    const unsigned char *p = *pp;
+    unsigned c = *p;
+
+    if (c & 0x80) {
+	if ((c & 0xE0) == 0xC0) {
+	    const unsigned c2 = *++p;
+	    if ((c2 & 0xC0) == 0x80) {
+		*out =  ((c  & 0x1F) << 6)
+		    | (c2 & 0x3F);
+	    } else {
+		return WIND_ERR_INVALID_UTF8;
+	    }
+	} else if ((c & 0xF0) == 0xE0) {
+	    const unsigned c2 = *++p;
+	    if ((c2 & 0xC0) == 0x80) {
+		const unsigned c3 = *++p;
+		if ((c3 & 0xC0) == 0x80) {
+		    *out =   ((c  & 0x0F) << 12)
+			| ((c2 & 0x3F) << 6)
+			|  (c3 & 0x3F);
+		} else {
+		    return WIND_ERR_INVALID_UTF8;
+		}
+	    } else {
+		return WIND_ERR_INVALID_UTF8;
+	    }
+	} else if ((c & 0xF8) == 0xF0) {
+	    const unsigned c2 = *++p;
+	    if ((c2 & 0xC0) == 0x80) {
+		const unsigned c3 = *++p;
+		if ((c3 & 0xC0) == 0x80) {
+		    const unsigned c4 = *++p;
+		    if ((c4 & 0xC0) == 0x80) {
+			*out =   ((c  & 0x07) << 18)
+			    | ((c2 & 0x3F) << 12)
+			    | ((c3 & 0x3F) <<  6)
+			    |  (c4 & 0x3F);
+		    } else {
+			return WIND_ERR_INVALID_UTF8;
+		    }
+		} else {
+		    return WIND_ERR_INVALID_UTF8;
+		}
+	    } else {
+		return WIND_ERR_INVALID_UTF8;
+	    }
+	} else {
+	    return WIND_ERR_INVALID_UTF8;
+	}
+    } else {
+	*out = c;
+    }
+
+    *pp = p;
+
+    return 0;
+}
 
 /**
  * Convert an UTF-8 string to an UCS4 string.
@@ -59,60 +120,15 @@ wind_utf8ucs4(const char *in, uint32_t *out, size_t *out_len)
 {
     const unsigned char *p;
     size_t o = 0;
+    int ret;
 
     for (p = (const unsigned char *)in; *p != '\0'; ++p) {
-	unsigned c = *p;
 	uint32_t u;
 
-	if (c & 0x80) {
-	    if ((c & 0xE0) == 0xC0) {
-		const unsigned c2 = *++p;
-		if ((c2 & 0xC0) == 0x80) {
-		    u =  ((c  & 0x1F) << 6)
-			| (c2 & 0x3F);
-		} else {
-		    return WIND_ERR_INVALID_UTF8;
-		}
-	    } else if ((c & 0xF0) == 0xE0) {
-		const unsigned c2 = *++p;
-		if ((c2 & 0xC0) == 0x80) {
-		    const unsigned c3 = *++p;
-		    if ((c3 & 0xC0) == 0x80) {
-			u =   ((c  & 0x0F) << 12)
-			    | ((c2 & 0x3F) << 6)
-			    |  (c3 & 0x3F);
-		    } else {
-			return WIND_ERR_INVALID_UTF8;
-		    }
-		} else {
-		    return WIND_ERR_INVALID_UTF8;
-		}
-	    } else if ((c & 0xF8) == 0xF0) {
-		const unsigned c2 = *++p;
-		if ((c2 & 0xC0) == 0x80) {
-		    const unsigned c3 = *++p;
-		    if ((c3 & 0xC0) == 0x80) {
-			const unsigned c4 = *++p;
-			if ((c4 & 0xC0) == 0x80) {
-			    u =   ((c  & 0x07) << 18)
-				| ((c2 & 0x3F) << 12)
-				| ((c3 & 0x3F) <<  6)
-				|  (c4 & 0x3F);
-			} else {
-			    return WIND_ERR_INVALID_UTF8;
-			}
-		    } else {
-			return WIND_ERR_INVALID_UTF8;
-		    }
-		} else {
-		    return WIND_ERR_INVALID_UTF8;
-		}
-	    } else {
-		return WIND_ERR_INVALID_UTF8;
-	    }
-	} else {
-	    u = c;
-	}
+	ret = utf8toutf32(&p, &u);
+	if (ret)
+	    return ret;
+
 	if (out) {
 	    if (o >= *out_len)
 		return WIND_ERR_OVERRUN;
@@ -363,6 +379,67 @@ wind_ucs2write(const uint16_t *in, size_t in_len, unsigned int *flags,
     return 0;
 }
 
+
+/**
+ * Convert an UTF-8 string to an UCS2 string.
+ *
+ * @param in an UTF-8 string to convert.
+ * @param out the resulting UCS2 strint, must be at least
+ * wind_utf8ucs2_length() long.  If out is NULL, the function will
+ * calculate the needed space for the out variable (just like
+ * wind_utf8ucs2_length()).
+ * @param out_len before processing out_len should be the length of
+ * the out variable, after processing it will be the length of the out
+ * string.
+ * 
+ * @return returns 0 on success, an wind error code otherwise
+ * @ingroup wind
+ */
+
+int
+wind_utf8ucs2(const char *in, uint16_t *out, size_t *out_len)
+{
+    const unsigned char *p;
+    size_t o = 0;
+    int ret;
+
+    for (p = (const unsigned char *)in; *p != '\0'; ++p) {
+	uint32_t u;
+
+	ret = utf8toutf32(&p, &u);
+	if (ret)
+	    return ret;
+
+	if (u & 0xffff0000)
+	    return WIND_ERR_NOT_UTF16;
+
+	if (out) {
+	    if (o >= *out_len)
+		return WIND_ERR_OVERRUN;
+	    out[o] = u;
+	}
+	o++;
+    }
+    *out_len = o;
+    return 0;
+}
+
+/**
+ * Calculate the length of from converting a UTF-8 string to a UCS2
+ * string.
+ *
+ * @param in an UTF-8 string to convert.
+ * @param out_len the length of the resulting UCS4 string.
+ * 
+ * @return returns 0 on success, an wind error code otherwise
+ * @ingroup wind
+ */
+
+int
+wind_utf8ucs2_length(const char *in, size_t *out_len)
+{
+    return wind_utf8ucs2(in, NULL, out_len);
+}
 
 /**
  * Convert an UCS2 string to a UTF-8 string.

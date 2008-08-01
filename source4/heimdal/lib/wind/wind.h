@@ -31,13 +31,13 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: wind.h 22595 2008-02-12 11:59:05Z lha $ */
+/* $Id: wind.h 23233 2008-06-01 22:25:25Z lha $ */
 
 #ifndef _WIND_H_
 #define _WIND_H_
 
 #include <stddef.h>
-#include <stdint.h>
+#include <krb5-types.h>
 
 #include <wind_err.h>
 
@@ -58,9 +58,9 @@ typedef unsigned int wind_profile_flags;
 #define WIND_RW_BE	2
 #define WIND_RW_BOM	4
 
-int wind_stringprep(const unsigned *in, size_t in_len,
-		    unsigned *out, size_t *out_len,
-		    wind_profile_flags flags);
+int wind_stringprep(const uint32_t *, size_t,
+		    uint32_t *, size_t *,
+		    wind_profile_flags);
 int wind_profile(const char *, wind_profile_flags *);
 
 int wind_punycode_label_toascii(const uint32_t *, size_t,
@@ -71,6 +71,9 @@ int wind_utf8ucs4_length(const char *, size_t *);
 
 int wind_ucs4utf8(const uint32_t *, size_t, char *, size_t *);
 int wind_ucs4utf8_length(const uint32_t *, size_t, size_t *);
+
+int wind_utf8ucs2(const char *, uint16_t *, size_t *);
+int wind_utf8ucs2_length(const char *, size_t *);
 
 int wind_ucs2utf8(const uint16_t *, size_t, char *, size_t *);
 int wind_ucs2utf8_length(const uint16_t *, size_t, size_t *);

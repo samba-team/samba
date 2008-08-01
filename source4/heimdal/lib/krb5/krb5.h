@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: krb5.h 22100 2007-12-03 17:15:00Z lha $ */
+/* $Id: krb5.h 23026 2008-04-17 10:02:03Z lha $ */
 
 #ifndef __KRB5_H__
 #define __KRB5_H__
@@ -363,6 +363,7 @@ typedef union {
 #define KRB5_GC_FORWARDABLE		(1U << 4)
 #define KRB5_GC_NO_TRANSIT_CHECK	(1U << 5)
 #define KRB5_GC_CONSTRAINED_DELEGATION	(1U << 6)
+#define KRB5_GC_CANONICALIZE		(1U << 7)
 
 /* constants for compare_creds (and cc_retrieve_cred) */
 #define KRB5_TC_DONT_MATCH_REALM	(1U << 31)
@@ -395,7 +396,10 @@ typedef struct krb5_creds {
 
 typedef struct krb5_cc_cache_cursor_data *krb5_cc_cache_cursor;
 
+#define KRB5_CC_OPS_VERSION 1
+
 typedef struct krb5_cc_ops {
+    int version;
     const char *prefix;
     const char* (*get_name)(krb5_context, krb5_ccache);
     krb5_error_code (*resolve)(krb5_context, krb5_ccache *, const char *);
@@ -419,7 +423,8 @@ typedef struct krb5_cc_ops {
     krb5_error_code (*get_cache_next)(krb5_context, krb5_cc_cursor, krb5_ccache *);
     krb5_error_code (*end_cache_get)(krb5_context, krb5_cc_cursor);
     krb5_error_code (*move)(krb5_context, krb5_ccache, krb5_ccache);
-    krb5_error_code (*default_name)(krb5_context, char **);
+    krb5_error_code (*get_default_name)(krb5_context, char **);
+    krb5_error_code (*set_default)(krb5_context, krb5_ccache);
 } krb5_cc_ops;
 
 struct krb5_log_facility;
@@ -589,11 +594,6 @@ typedef EncAPRepPart krb5_ap_rep_enc_part;
 
 #define KRB5_DIGEST_NAME ("digest")
 
-/* variables */
-
-extern const char *krb5_config_file;
-extern const char *krb5_defkeyname;
-
 typedef enum {
     KRB5_PROMPT_TYPE_PASSWORD		= 0x1,
     KRB5_PROMPT_TYPE_NEW_PASSWORD	= 0x2,
@@ -681,20 +681,6 @@ typedef struct krb5_verify_opt {
 #define KRB5_VERIFY_LREALMS		1
 #define KRB5_VERIFY_NO_ADDRESSES	2
 
-extern const krb5_cc_ops krb5_acc_ops;
-extern const krb5_cc_ops krb5_fcc_ops;
-extern const krb5_cc_ops krb5_mcc_ops;
-extern const krb5_cc_ops krb5_kcm_ops;
-
-extern const krb5_kt_ops krb5_fkt_ops;
-extern const krb5_kt_ops krb5_wrfkt_ops;
-extern const krb5_kt_ops krb5_javakt_ops;
-extern const krb5_kt_ops krb5_mkt_ops;
-extern const krb5_kt_ops krb5_akf_ops;
-extern const krb5_kt_ops krb4_fkt_ops;
-extern const krb5_kt_ops krb5_srvtab_fkt_ops;
-extern const krb5_kt_ops krb5_any_ops;
-
 #define KRB5_KPASSWD_VERS_CHANGEPW      1
 #define KRB5_KPASSWD_VERS_SETPW         0xff80
 
@@ -739,6 +725,7 @@ enum {
 typedef krb5_error_code (*krb5_send_to_kdc_func)(krb5_context, 
 						 void *, 
 						 krb5_krbhst_info *,
+						 time_t timeout,
 						 const krb5_data *,
 						 krb5_data *);
 
@@ -775,6 +762,27 @@ struct getargs;
 struct sockaddr;
 
 #include <krb5-protos.h>
+
+/* variables */
+
+extern KRB5_LIB_VARIABLE const char *krb5_config_file;
+extern KRB5_LIB_VARIABLE const char *krb5_defkeyname;
+
+
+extern KRB5_LIB_VARIABLE const krb5_cc_ops krb5_acc_ops;
+extern KRB5_LIB_VARIABLE const krb5_cc_ops krb5_fcc_ops;
+extern KRB5_LIB_VARIABLE const krb5_cc_ops krb5_mcc_ops;
+extern KRB5_LIB_VARIABLE const krb5_cc_ops krb5_kcm_ops;
+extern KRB5_LIB_VARIABLE const krb5_cc_ops krb5_scc_ops;
+
+extern KRB5_LIB_VARIABLE const krb5_kt_ops krb5_fkt_ops;
+extern KRB5_LIB_VARIABLE const krb5_kt_ops krb5_wrfkt_ops;
+extern KRB5_LIB_VARIABLE const krb5_kt_ops krb5_javakt_ops;
+extern KRB5_LIB_VARIABLE const krb5_kt_ops krb5_mkt_ops;
+extern KRB5_LIB_VARIABLE const krb5_kt_ops krb5_akf_ops;
+extern KRB5_LIB_VARIABLE const krb5_kt_ops krb4_fkt_ops;
+extern KRB5_LIB_VARIABLE const krb5_kt_ops krb5_srvtab_fkt_ops;
+extern KRB5_LIB_VARIABLE const krb5_kt_ops krb5_any_ops;
 
 #endif /* __KRB5_H__ */
 

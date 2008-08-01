@@ -35,7 +35,9 @@
 #include <config.h>
 #endif
 
-RCSID("$Id: evp.c 22379 2007-12-29 11:13:26Z lha $");
+RCSID("$Id: evp.c 23144 2008-04-29 05:47:16Z lha $");
+
+#define HC_DEPRECATED
 
 #include <sys/types.h>
 #include <stdio.h>
@@ -78,6 +80,13 @@ struct hc_evp_md {
     evp_md_final final;
     evp_md_cleanup cleanup;
 };
+
+struct hc_EVP_MD_CTX {
+    const EVP_MD *md;
+    ENGINE *engine;
+    void *ptr;
+};
+
 
 /**
  * Return the output size of the message digest function.
@@ -135,7 +144,7 @@ EVP_MD_CTX_create(void)
  * @ingroup hcrypto_evp
  */
 
-void
+void HC_DEPRECATED
 EVP_MD_CTX_init(EVP_MD_CTX *ctx)
 {
     memset(ctx, 0, sizeof(*ctx));
@@ -166,7 +175,7 @@ EVP_MD_CTX_destroy(EVP_MD_CTX *ctx)
  * @ingroup hcrypto_evp
  */
 
-int
+int HC_DEPRECATED
 EVP_MD_CTX_cleanup(EVP_MD_CTX *ctx)
 {
     if (ctx->md && ctx->md->cleanup)
@@ -508,7 +517,6 @@ EVP_md_null(void)
 }
 
 #if 0
-void	EVP_MD_CTX_init(EVP_MD_CTX *ctx);
 int	EVP_DigestInit(EVP_MD_CTX *ctx, const EVP_MD *type);
 int	EVP_DigestFinal(EVP_MD_CTX *ctx,unsigned char *md,unsigned int *s);
 int	EVP_SignFinal(EVP_MD_CTX *, void *, size_t *, EVP_PKEY *);
@@ -1050,10 +1058,19 @@ des_ede3_cbc_init(EVP_CIPHER_CTX *ctx,
 		  int encp)
 {
     struct des_ede3_cbc *k = ctx->cipher_data;
+    DES_cblock deskey;
 
-    DES_key_sched((DES_cblock *)(key), &k->ks[0]);
-    DES_key_sched((DES_cblock *)(key + 8), &k->ks[1]);
-    DES_key_sched((DES_cblock *)(key + 16), &k->ks[2]);
+    memcpy(&deskey, key, sizeof(deskey));
+    DES_set_odd_parity(&deskey);
+    DES_set_key_unchecked(&deskey, &k->ks[0]);
+
+    memcpy(&deskey, key + 8, sizeof(deskey));
+    DES_set_odd_parity(&deskey);
+    DES_set_key_unchecked(&deskey, &k->ks[1]);
+
+    memcpy(&deskey, key + 16, sizeof(deskey));
+    DES_set_odd_parity(&deskey);
+    DES_set_key_unchecked(&deskey, &k->ks[2]);
 
     return 1;
 }

@@ -50,7 +50,7 @@
  */
 
 #include "hx_locl.h"
-RCSID("$Id: revoke.c 22583 2008-02-11 20:46:21Z lha $");
+RCSID("$Id: revoke.c 23413 2008-07-26 18:34:53Z lha $");
 
 struct revoke_crl {
     char *path;
@@ -70,7 +70,7 @@ struct revoke_ocsp {
 
 
 struct hx509_revoke_ctx_data {
-    unsigned ref;
+    unsigned int ref;
     struct {
 	struct revoke_crl *val;
 	size_t len;
@@ -113,11 +113,11 @@ _hx509_revoke_ref(hx509_revoke_ctx ctx)
 {
     if (ctx == NULL)
 	return NULL;
-    if (ctx->ref <= 0)
-	_hx509_abort("revoke ctx refcount <= 0");
-    ctx->ref++;
     if (ctx->ref == 0)
-	_hx509_abort("revoke ctx refcount == 0");
+	_hx509_abort("revoke ctx refcount == 0 on ref");
+    ctx->ref++;
+    if (ctx->ref == UINT_MAX)
+	_hx509_abort("revoke ctx refcount == UINT_MAX on ref");
     return ctx;
 }
 
@@ -146,8 +146,8 @@ hx509_revoke_free(hx509_revoke_ctx *ctx)
     if (ctx == NULL || *ctx == NULL)
 	return;
 
-    if ((*ctx)->ref <= 0)
-	_hx509_abort("revoke ctx refcount <= 0 on free");
+    if ((*ctx)->ref == 0)
+	_hx509_abort("revoke ctx refcount == 0 on free");
     if (--(*ctx)->ref > 0)
 	return;
 
@@ -218,7 +218,7 @@ verify_ocsp(hx509_context context,
 	ret = _hx509_cert_is_parent_cmp(s, p, 0);
 	if (ret != 0) {
 	    ret = HX509_PARENT_NOT_CA;
-	    hx509_set_error_string(context, 0, ret, "Revoke OSCP signer is "
+	    hx509_set_error_string(context, 0, ret, "Revoke OCSP signer is "
 				   "doesn't have CA as signer certificate");
 	    goto out;
 	}
@@ -230,7 +230,7 @@ verify_ocsp(hx509_context context,
 						&s->signatureValue);
 	if (ret) {
 	    hx509_set_error_string(context, HX509_ERROR_APPEND, ret,
-				   "OSCP signer signature invalid");
+				   "OCSP signer signature invalid");
 	    goto out;
 	}
 
@@ -247,7 +247,7 @@ verify_ocsp(hx509_context context,
 					    &ocsp->ocsp.signature);
     if (ret) {
 	hx509_set_error_string(context, HX509_ERROR_APPEND, ret, 
-			       "OSCP signature invalid");
+			       "OCSP signature invalid");
 	goto out;
     }
 
@@ -333,12 +333,16 @@ load_ocsp(hx509_context context, struct revoke_ocsp *ocsp)
     void *data;
     int ret;
 
-    ret = _hx509_map_file(ocsp->path, &data, &length, &sb);
+    ret = rk_undumpdata(ocsp->path, &data, &length);
     if (ret)
 	return ret;
 
+    ret = stat(ocsp->path, &sb);
+    if (ret)
+	return errno;
+
     ret = parse_ocsp_basic(data, length, &basic);
-    _hx509_unmap_file(data, length);
+    rk_xfree(data);
     if (ret) {
 	hx509_set_error_string(context, 0, ret,
 			       "Failed to parse OCSP response");
@@ -567,14 +571,18 @@ load_crl(const char *path, time_t *t, CRLCertificateList *crl)
 
     memset(crl, 0, sizeof(*crl));
 
-    ret = _hx509_map_file(path, &data, &length, &sb);
+    ret = rk_undumpdata(path, &data, &length);
     if (ret)
 	return ret;
+
+    ret = stat(path, &sb);
+    if (ret)
+	return errno;
 
     *t = sb.st_mtime;
 
     ret = decode_CRLCertificateList(data, length, crl, &size);
-    _hx509_unmap_file(data, length);
+    rk_xfree(data);
     if (ret)
 	return ret;
 

@@ -16,6 +16,9 @@ export builddir;
 
 AC_SUBST(datarootdir)
 
+AC_SUBST(VPATH)
+VPATH="\$(builddir):\$(srcdir)"
+
 SMB_VERSION_STRING=`cat ${srcdir}/version.h | grep 'SAMBA_VERSION_OFFICIAL_STRING' | cut -d '"' -f2`
 echo "SAMBA VERSION: ${SMB_VERSION_STRING}"
 

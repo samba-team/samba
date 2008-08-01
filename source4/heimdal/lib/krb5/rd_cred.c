@@ -33,7 +33,7 @@
 
 #include <krb5_locl.h>
 
-RCSID("$Id: rd_cred.c 20304 2007-04-11 11:15:05Z lha $");
+RCSID("$Id: rd_cred.c 23316 2008-06-23 04:32:32Z lha $");
 
 static krb5_error_code
 compare_addrs(krb5_context context,
@@ -49,7 +49,8 @@ compare_addrs(krb5_context context,
 
     krb5_print_address (a, a_str, sizeof(a_str), &len);
     krb5_print_address (b, b_str, sizeof(b_str), &len);
-    krb5_set_error_string(context, "%s: %s != %s", message, b_str, a_str);
+    krb5_set_error_message(context, KRB5KRB_AP_ERR_BADADDR,
+			   "%s: %s != %s", message, b_str, a_str);
     return KRB5KRB_AP_ERR_BADADDR;
 }
 
@@ -244,7 +245,7 @@ krb5_rd_cred(krb5_context context,
 
     if (*ret_creds == NULL) {
 	ret = ENOMEM;
-	krb5_set_error_string (context, "malloc: out of memory");
+	krb5_set_error_message(context, ret, "malloc: out of memory");
 	goto out;
     }
 
@@ -255,7 +256,7 @@ krb5_rd_cred(krb5_context context,
 	creds = calloc(1, sizeof(*creds));
 	if(creds == NULL) {
 	    ret = ENOMEM;
-	    krb5_set_error_string (context, "malloc: out of memory");
+	    krb5_set_error_message(context, ret, "malloc: out of memory");
 	    goto out;
 	}
 

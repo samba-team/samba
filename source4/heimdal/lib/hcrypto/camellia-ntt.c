@@ -23,14 +23,12 @@
  *  http://info.isl.ntt.co.jp/crypt/eng/camellia/specifications.html
  */
 
+
 #include <string.h>
 #include <stdlib.h>
 
-#include "camellia.h"
-
-/* u32 must be 32bit word */
-typedef unsigned int u32;
-typedef unsigned char u8;
+#include <krb5-types.h>
+#include "camellia-ntt.h"
 
 /* key constants */
 
@@ -444,7 +442,7 @@ static const u32 camellia_sp4404[256] = {
 #define subl(x) subL[(x)]
 #define subr(x) subR[(x)]
 
-void camellia_setup128(const unsigned char *key, u32 *subkey)
+static void camellia_setup128(const unsigned char *key, u32 *subkey)
 {
     u32 kll, klr, krl, krr;
     u32 il, ir, t0, t1, w0, w1;
@@ -655,7 +653,7 @@ void camellia_setup128(const unsigned char *key, u32 *subkey)
     return;
 }
 
-void camellia_setup256(const unsigned char *key, u32 *subkey)
+static void camellia_setup256(const unsigned char *key, u32 *subkey)
 {
     u32 kll,klr,krl,krr;           /* left half of key */
     u32 krll,krlr,krrl,krrr;       /* right half of key */
@@ -941,7 +939,7 @@ void camellia_setup256(const unsigned char *key, u32 *subkey)
     return;
 }
 
-void camellia_setup192(const unsigned char *key, u32 *subkey)
+static void camellia_setup192(const unsigned char *key, u32 *subkey)
 {
     unsigned char kk[32];
     u32 krll, krlr, krrl,krrr;
@@ -963,7 +961,7 @@ void camellia_setup192(const unsigned char *key, u32 *subkey)
  *
  * "io" must be 4byte aligned and big-endian data.
  */
-void camellia_encrypt128(const u32 *subkey, u32 *io)
+static void camellia_encrypt128(const u32 *subkey, u32 *io)
 {
     u32 il, ir, t0, t1;
 
@@ -1053,7 +1051,7 @@ void camellia_encrypt128(const u32 *subkey, u32 *io)
     return;
 }
 
-void camellia_decrypt128(const u32 *subkey, u32 *io)
+static void camellia_decrypt128(const u32 *subkey, u32 *io)
 {
     u32 il,ir,t0,t1;               /* temporary valiables */
     
@@ -1146,7 +1144,7 @@ void camellia_decrypt128(const u32 *subkey, u32 *io)
 /**
  * stuff for 192 and 256bit encryption/decryption
  */
-void camellia_encrypt256(const u32 *subkey, u32 *io)
+static void camellia_encrypt256(const u32 *subkey, u32 *io)
 {
     u32 il,ir,t0,t1;           /* temporary valiables */
 
@@ -1260,7 +1258,7 @@ void camellia_encrypt256(const u32 *subkey, u32 *io)
     return;
 }
 
-void camellia_decrypt256(const u32 *subkey, u32 *io)
+static void camellia_decrypt256(const u32 *subkey, u32 *io)
 {
     u32 il,ir,t0,t1;           /* temporary valiables */
 

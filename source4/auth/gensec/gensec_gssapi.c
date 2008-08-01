@@ -24,7 +24,6 @@
 #include "includes.h"
 #include "lib/events/events.h"
 #include "system/kerberos.h"
-#include "heimdal/lib/gssapi/gssapi/gssapi.h"
 #include "auth/kerberos/kerberos.h"
 #include "librpc/gen_ndr/krb5pac.h"
 #include "auth/auth.h"
@@ -37,6 +36,7 @@
 #include "auth/gensec/gensec_proto.h"
 #include "param/param.h"
 #include "auth/session_proto.h"
+#include <gssapi/gssapi.h>
 
 enum gensec_gssapi_sasl_state 
 {

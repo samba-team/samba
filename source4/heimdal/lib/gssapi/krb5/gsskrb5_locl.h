@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2006 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2008 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: gsskrb5_locl.h 22655 2008-02-26 12:40:35Z lha $ */
+/* $Id: gsskrb5_locl.h 23435 2008-07-26 20:49:35Z lha $ */
 
 #ifndef GSSKRB5_LOCL_H
 #define GSSKRB5_LOCL_H
@@ -62,11 +62,14 @@ typedef struct {
   enum { LOCAL = 1, OPEN = 2, 
 	 COMPAT_OLD_DES3 = 4,
          COMPAT_OLD_DES3_SELECTED = 8,
-	 ACCEPTOR_SUBKEY = 16
+	 ACCEPTOR_SUBKEY = 16,
+	 RETRIED = 32,
+	 CLOSE_CCACHE = 64
   } more_flags;
   enum gss_ctx_id_t_state {
       /* initiator states */
       INITIATOR_START,
+      INITIATOR_RESTART,
       INITIATOR_WAIT_FOR_MUTAL,
       INITIATOR_READY,
       /* acceptor states */
@@ -74,6 +77,8 @@ typedef struct {
       ACCEPTOR_WAIT_FOR_DCESTYLE,
       ACCEPTOR_READY
   } state;
+  krb5_creds *kcred;
+  krb5_ccache ccache;
   struct krb5_ticket *ticket;
   OM_uint32 lifetime;
   HEIMDAL_MUTEX ctx_id_mutex;

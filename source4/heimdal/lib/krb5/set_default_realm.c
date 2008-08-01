@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: set_default_realm.c 13863 2004-05-25 21:46:46Z lha $");
+RCSID("$Id: set_default_realm.c 23309 2008-06-23 03:30:41Z lha $");
 
 /*
  * Convert the simple string `s' into a NULL-terminated and freshly allocated 
@@ -46,13 +46,13 @@ string_to_list (krb5_context context, const char *s, krb5_realm **list)
 
     *list = malloc (2 * sizeof(**list));
     if (*list == NULL) {
-	krb5_set_error_string (context, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
     (*list)[0] = strdup (s);
     if ((*list)[0] == NULL) {
 	free (*list);
-	krb5_set_error_string (context, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
     (*list)[1] = NULL;

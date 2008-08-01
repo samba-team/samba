@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: crc.c 17442 2006-05-05 09:31:15Z lha $");
+RCSID("$Id: crc.c 22862 2008-04-07 18:49:55Z lha $");
 
 static u_long table[256];
 
@@ -44,7 +44,7 @@ _krb5_crc_init_table(void)
 {
     static int flag = 0;
     unsigned long crc, poly;
-    int     i, j;
+    unsigned int i, j;
     
     if(flag) return;
     poly = CRC_GEN;

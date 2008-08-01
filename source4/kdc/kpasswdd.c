@@ -27,8 +27,6 @@
 #include "system/network.h"
 #include "lib/util/dlinklist.h"
 #include "lib/ldb/include/ldb.h"
-#include "heimdal/lib/krb5/krb5_locl.h"
-#include "heimdal/lib/krb5/krb5-private.h"
 #include "auth/gensec/gensec.h"
 #include "auth/credentials/credentials.h"
 #include "auth/credentials/credentials_krb5.h"
@@ -39,6 +37,10 @@
 #include "libcli/security/security.h"
 #include "param/param.h"
 #include "kdc/kdc.h"
+
+/* TODO: remove this */
+#include "heimdal/lib/krb5/krb5_locl.h"
+#include "heimdal/lib/krb5/krb5-private.h"
 
 /* hold information about one kdc socket */
 struct kpasswd_socket {

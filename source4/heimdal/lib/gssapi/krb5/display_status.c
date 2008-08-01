@@ -33,7 +33,7 @@
 
 #include "krb5/gsskrb5_locl.h"
 
-RCSID("$Id: display_status.c 19031 2006-11-13 18:02:57Z lha $");
+RCSID("$Id: display_status.c 23316 2008-06-23 04:32:32Z lha $");
 
 static const char *
 calling_error(OM_uint32 v)
@@ -135,7 +135,7 @@ _gsskrb5_set_status (const char *fmt, ...)
     vasprintf(&str, fmt, args);
     va_end(args);
     if (str) {
-	krb5_set_error_string(context, str);
+	krb5_set_error_message(context, 0, str);
 	free(str);
     }
 }

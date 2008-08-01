@@ -32,7 +32,7 @@
  */
 
 #include "hx_locl.h"
-RCSID("$Id: ks_dir.c 19778 2007-01-09 10:52:13Z lha $");
+RCSID("$Id: ks_dir.c 23460 2008-07-27 12:14:03Z lha $");
 #include <dirent.h>
 
 /*
@@ -116,6 +116,7 @@ dir_iter_start(hx509_context context,
 	free(d);
 	return errno;
     }
+    rk_cloexec(dirfd(d->dir));
     d->certs = NULL;
     d->iter = NULL;
 

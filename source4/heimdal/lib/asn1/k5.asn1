@@ -1,4 +1,4 @@
--- $Id: k5.asn1 21965 2007-10-18 18:24:36Z lha $
+-- $Id: k5.asn1 22745 2008-03-24 12:07:54Z lha $
 
 KERBEROS5 DEFINITIONS ::=
 BEGIN
@@ -634,24 +634,34 @@ KRB5SignedPath ::= SEQUENCE {
 }
 
 PA-ClientCanonicalizedNames ::= SEQUENCE{
-	requested-name [0] PrincipalName,
-	real-name      [1] PrincipalName
+	requested-name	[0] PrincipalName,
+	mapped-name	[1] PrincipalName
 }
 
 PA-ClientCanonicalized ::= SEQUENCE {
-	names          [0] PA-ClientCanonicalizedNames,
-	canon-checksum [1] Checksum
+	names		[0] PA-ClientCanonicalizedNames,
+	canon-checksum	[1] Checksum
 }
 
 AD-LoginAlias ::= SEQUENCE { -- ad-type number TBD --
-	login-alias  [0] PrincipalName,
-	checksum     [1] Checksum
+	login-alias	[0] PrincipalName,
+	checksum	[1] Checksum
 }
 
 -- old ms referral
 PA-SvrReferralData ::= SEQUENCE {
 	referred-name   [1] PrincipalName OPTIONAL,
 	referred-realm  [0] Realm
+}
+
+PA-SERVER-REFERRAL-DATA ::= EncryptedData
+
+PA-ServerReferralData ::= SEQUENCE {
+	referred-realm		[0] Realm OPTIONAL,
+	true-principal-name	[1] PrincipalName OPTIONAL,
+	requested-principal-name [2] PrincipalName OPTIONAL,
+	referral-valid-until     [3] KerberosTime OPTIONAL,
+	...
 }
 
 END

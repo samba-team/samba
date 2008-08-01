@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: init_creds.c 21711 2007-07-27 14:22:02Z lha $");
+RCSID("$Id: init_creds.c 23316 2008-06-23 04:32:32Z lha $");
 
 void KRB5_LIB_FUNCTION
 krb5_get_init_creds_opt_init(krb5_get_init_creds_opt *opt)
@@ -52,13 +52,13 @@ krb5_get_init_creds_opt_alloc(krb5_context context,
     *opt = NULL;
     o = calloc(1, sizeof(*o));
     if (o == NULL) {
-	krb5_set_error_string(context, "out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
     krb5_get_init_creds_opt_init(o);
     o->opt_private = calloc(1, sizeof(*o->opt_private));
     if (o->opt_private == NULL) {
-	krb5_set_error_string(context, "out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	free(o);
 	return ENOMEM;
     }
@@ -77,7 +77,7 @@ _krb5_get_init_creds_opt_copy(krb5_context context,
     *out = NULL;
     opt = calloc(1, sizeof(*opt));
     if (opt == NULL) {
-	krb5_set_error_string(context, "out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
     if (in)
@@ -85,7 +85,7 @@ _krb5_get_init_creds_opt_copy(krb5_context context,
     if(opt->opt_private == NULL) {
 	opt->opt_private = calloc(1, sizeof(*opt->opt_private));
 	if (opt->opt_private == NULL) {
-	    krb5_set_error_string(context, "out of memory");
+	    krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	    free(opt);
 	    return ENOMEM;
 	}
@@ -327,7 +327,7 @@ require_ext_opt(krb5_context context,
 		const char *type)
 {
     if (opt->opt_private == NULL) {
-	krb5_set_error_string(context, "%s on non extendable opt", type);
+	krb5_set_error_message(context, EINVAL, "%s on non extendable opt", type);
 	return EINVAL;
     }
     return 0;
@@ -381,7 +381,7 @@ krb5_get_init_creds_opt_get_error(krb5_context context,
 
     *error = malloc(sizeof(**error));
     if (*error == NULL) {
-	krb5_set_error_string(context, "malloc - out memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
 

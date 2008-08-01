@@ -34,7 +34,7 @@
 #include "krb5_locl.h"
 #include <err.h>
 
-RCSID("$Id: warn.c 19086 2006-11-21 08:06:40Z lha $");
+RCSID("$Id: warn.c 23206 2008-05-29 02:13:41Z lha $");
 
 static krb5_error_code _warnerr(krb5_context context, int do_errtext, 
 	 krb5_error_code code, int level, const char *fmt, va_list ap)
@@ -47,7 +47,7 @@ _warnerr(krb5_context context, int do_errtext,
     char xfmt[7] = "";
     const char *args[2], **arg;
     char *msg = NULL;
-    char *err_str = NULL;
+    const char *err_str = NULL;
     
     args[0] = args[1] = NULL;
     arg = args;
@@ -65,7 +65,7 @@ _warnerr(krb5_context context, int do_errtext,
 
 	strlcat(xfmt, "%s", sizeof(xfmt));
 
-	err_str = krb5_get_error_string(context);
+	err_str = krb5_get_error_message(context, code);
 	if (err_str != NULL) {
 	    *arg++ = err_str;
 	} else {
@@ -82,7 +82,7 @@ _warnerr(krb5_context context, int do_errtext,
     else
 	warnx(xfmt, args[0], args[1]);
     free(msg);
-    free(err_str);
+    krb5_free_error_message(context, err_str);
     return 0;
 }
 

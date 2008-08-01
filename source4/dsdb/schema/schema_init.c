@@ -566,9 +566,10 @@ WERROR dsdb_read_prefixes_from_ldb(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 		return WERR_NOMEM;
 	}
 	for (i=0; i < blob->ctr.dsdb.num_mappings; i++) {
+		char *oid;
 		(*prefixes)[i].id = blob->ctr.dsdb.mappings[i].id_prefix<<16;
-		(*prefixes)[i].oid = talloc_strdup(mem_ctx, blob->ctr.dsdb.mappings[i].oid.oid);
-		(*prefixes)[i].oid = talloc_asprintf_append((*prefixes)[i].oid, "."); 
+		oid = talloc_strdup(mem_ctx, blob->ctr.dsdb.mappings[i].oid.oid);
+		(*prefixes)[i].oid = talloc_asprintf_append(oid, "."); 
 		(*prefixes)[i].oid_len = strlen(blob->ctr.dsdb.mappings[i].oid.oid);
 	}
 

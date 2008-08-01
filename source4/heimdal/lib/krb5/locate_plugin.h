@@ -31,12 +31,14 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: locate_plugin.h 18998 2006-11-12 19:00:03Z lha $ */
+/* $Id: locate_plugin.h 23351 2008-07-15 11:22:39Z lha $ */
 
 #ifndef HEIMDAL_KRB5_LOCATE_PLUGIN_H
 #define HEIMDAL_KRB5_LOCATE_PLUGIN_H 1
 
 #include <krb5.h>
+
+#define KRB5_PLUGIN_LOCATE "resolve"
 
 enum locate_service_type {
     locate_service_kdc = 1,

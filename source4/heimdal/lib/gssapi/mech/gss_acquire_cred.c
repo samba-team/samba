@@ -27,9 +27,9 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_acquire_cred.c 21478 2007-07-10 16:32:01Z lha $");
+RCSID("$Id: gss_acquire_cred.c 23025 2008-04-17 10:01:57Z lha $");
 
-OM_uint32
+OM_uint32 GSSAPI_LIB_FUNCTION
 gss_acquire_cred(OM_uint32 *minor_status,
     const gss_name_t desired_name,
     OM_uint32 time_req,

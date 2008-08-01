@@ -35,7 +35,7 @@
 #include <config.h>
 #endif
 
-RCSID("$Id: pkcs5.c 17445 2006-05-05 10:37:46Z lha $");
+RCSID("$Id: pkcs5.c 23059 2008-04-18 13:04:08Z lha $");
 
 #ifdef KRB5
 #include <krb5-types.h>
@@ -48,6 +48,22 @@ RCSID("$Id: pkcs5.c 17445 2006-05-05 10:37:46Z lha $");
 #include <hmac.h>
 
 #include <roken.h>
+
+/**
+ * As descriped in PKCS5, convert a password, salt, and iteration counter into a crypto key.
+ *
+ * @param password Password.
+ * @param password_len Length of password.
+ * @param salt Salt
+ * @param salt_len Length of salt.
+ * @param iter iteration counter.
+ * @param keylen the output key length.
+ * @param key the output key.
+ *
+ * @return 1 on success, non 1 on failure.
+ *
+ * @ingroup hcrypto_misc
+ */
 
 int
 PKCS5_PBKDF2_HMAC_SHA1(const void * password, size_t password_len,

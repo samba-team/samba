@@ -34,6 +34,7 @@
 #include "libcli/auth/libcli_auth.h"
 #include "auth/gensec/gensec.h"
 #include "param/param.h"
+#include "dsdb/samdb/samdb.h"
 
 struct DsSyncBindInfo {
 	struct dcerpc_pipe *pipe;
@@ -314,6 +315,14 @@ static bool test_GetInfo(struct torture_context *tctx, struct DsSyncTest *ctx)
 		printf("cldap_netlogon() returned Server Site-Name: %s.\n",search.out.netlogon.nt5_ex.server_site);
 	}
 
+	if (!ctx->domain_dn) {
+		struct ldb_context *ldb = ldb_init(ctx, tctx->ev);
+		struct ldb_dn *dn = samdb_dns_domain_to_dn(ldb, ctx, search.out.netlogon.nt5_ex.dns_domain);
+		ctx->domain_dn = ldb_dn_alloc_linearized(ctx, dn);
+		talloc_free(dn);
+		talloc_free(ldb);
+	}
+
 	return ret;
 }
 
@@ -465,6 +474,9 @@ static void test_analyse_objects(struct torture_context *tctx,
 			DATA_BLOB *enc_data = NULL;
 			DATA_BLOB plain_data;
 			struct drsuapi_DsReplicaAttribute *attr;
+			ndr_pull_flags_fn_t pull_fn = NULL;
+			ndr_print_fn_t print_fn = NULL;
+			void *ptr = NULL;
 			attr = &cur->object.attribute_ctr.attributes[i];
 
 			switch (attr->attid) {
@@ -486,6 +498,9 @@ static void test_analyse_objects(struct torture_context *tctx,
 				break;
 			case DRSUAPI_ATTRIBUTE_supplementalCredentials:
 				name	= "supplementalCredentials";
+				pull_fn = (ndr_pull_flags_fn_t)ndr_pull_supplementalCredentialsBlob;
+				print_fn = (ndr_print_fn_t)ndr_print_supplementalCredentialsBlob;
+				ptr = talloc(ctx, struct supplementalCredentialsBlob);
 				break;
 			case DRSUAPI_ATTRIBUTE_priorValue:
 				name	= "priorValue";
@@ -495,9 +510,15 @@ static void test_analyse_objects(struct torture_context *tctx,
 				break;
 			case DRSUAPI_ATTRIBUTE_trustAuthOutgoing:
 				name	= "trustAuthOutgoing";
+				pull_fn = (ndr_pull_flags_fn_t)ndr_pull_trustAuthInOutBlob;
+				print_fn = (ndr_print_fn_t)ndr_print_trustAuthInOutBlob;
+				ptr = talloc(ctx, struct trustAuthInOutBlob);
 				break;
 			case DRSUAPI_ATTRIBUTE_trustAuthIncoming:
 				name	= "trustAuthIncoming";
+				pull_fn = (ndr_pull_flags_fn_t)ndr_pull_trustAuthInOutBlob;
+				print_fn = (ndr_print_fn_t)ndr_print_trustAuthInOutBlob;
+				ptr = talloc(ctx, struct trustAuthInOutBlob);
 				break;
 			case DRSUAPI_ATTRIBUTE_initialAuthOutgoing:
 				name	= "initialAuthOutgoing";
@@ -528,7 +549,6 @@ static void test_analyse_objects(struct torture_context *tctx,
 				    name, (long)enc_data->length, (long)plain_data.length));
 			if (plain_data.length) {
 				enum ndr_err_code ndr_err;
-				struct supplementalCredentialsBlob scb;
 				dump_data(0, plain_data.data, plain_data.length);
 				if (save_values_dir) {
 					char *fname;
@@ -545,15 +565,20 @@ static void test_analyse_objects(struct torture_context *tctx,
 					talloc_free(fname);
 				}
 
-				ndr_err = ndr_pull_struct_blob_all(&plain_data, tctx,
-					   lp_iconv_convenience(tctx->lp_ctx), &scb,
-					   (ndr_pull_flags_fn_t)ndr_pull_supplementalCredentialsBlob);
-				if (NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-					NDR_PRINT_DEBUG(supplementalCredentialsBlob, &scb);
+				if (pull_fn) {
+					ndr_err = ndr_pull_struct_blob_all(&plain_data, ptr,
+									   lp_iconv_convenience(tctx->lp_ctx), ptr,
+									   pull_fn);
+					if (NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+						ndr_print_debug(print_fn, name, ptr);
+					} else {
+						DEBUG(0, ("Failed to decode %s\n", name));
+					}
 				}
 			} else {
 				dump_data(0, enc_data->data, enc_data->length);
 			}
+			talloc_free(ptr);
 		}
 	}
 }
@@ -800,7 +825,10 @@ static bool test_FetchNT4Data(struct torture_context *tctx,
 		r.in.req.req1.data	= cookie.data;
 
 		status = dcerpc_drsuapi_DsGetNT4ChangeLog(ctx->new_dc.drsuapi.pipe, ctx, &r);
-		if (!NT_STATUS_IS_OK(status)) {
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED)) {
+			printf("DsGetNT4ChangeLog not supported by target server\n");
+			break;
+		} else if (!NT_STATUS_IS_OK(status)) {
 			const char *errstr = nt_errstr(status);
 			if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
 				errstr = dcerpc_errstr(ctx, ctx->new_dc.drsuapi.pipe->last_fault_code);

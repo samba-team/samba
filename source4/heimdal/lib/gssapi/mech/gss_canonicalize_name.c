@@ -27,9 +27,9 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_canonicalize_name.c 21476 2007-07-10 16:31:27Z lha $");
+RCSID("$Id: gss_canonicalize_name.c 23025 2008-04-17 10:01:57Z lha $");
 
-OM_uint32
+OM_uint32 GSSAPI_LIB_FUNCTION
 gss_canonicalize_name(OM_uint32 *minor_status,
     const gss_name_t input_name,
     const gss_OID mech_type,

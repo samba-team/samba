@@ -122,7 +122,7 @@ static NTSTATUS smb2srv_negprot_backend(struct smb2srv_request *req, struct smb2
 	case SMB_SIGNING_REQUIRED:
 		io->out.security_mode = SMB2_NEGOTIATE_SIGNING_ENABLED | SMB2_NEGOTIATE_SIGNING_REQUIRED;
 		/* force signing on immediately */
-		req->smb_conn->doing_signing = true;
+		req->smb_conn->smb2_signing_required = true;
 		break;
 	}
 	io->out.dialect_revision   = SMB2_DIALECT_REVISION;

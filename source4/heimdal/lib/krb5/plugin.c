@@ -32,7 +32,7 @@
  */
 
 #include "krb5_locl.h"
-RCSID("$Id: plugin.c 22033 2007-11-10 10:39:47Z lha $");
+RCSID("$Id: plugin.c 23451 2008-07-27 12:10:30Z lha $");
 #ifdef HAVE_DLFCN_H
 #include <dlfcn.h>
 #endif
@@ -87,7 +87,7 @@ loadlib(krb5_context context,
 {
     *e = calloc(1, sizeof(**e));
     if (*e == NULL) {
-	krb5_set_error_string(context, "out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
 
@@ -99,8 +99,8 @@ loadlib(krb5_context context,
     if ((*e)->dsohandle == NULL) {
 	free(*e);
 	*e = NULL;
-	krb5_set_error_string(context, "Failed to load %s: %s", 
-			      lib, dlerror());
+	krb5_set_error_message(context, ENOMEM, "Failed to load %s: %s", 
+			       lib, dlerror());
 	return ENOMEM;
     }
 
@@ -139,14 +139,14 @@ krb5_plugin_register(krb5_context context,
 
     e = calloc(1, sizeof(*e));
     if (e == NULL) {
-	krb5_set_error_string(context, "out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
     e->type = type;
     e->name = strdup(name);
     if (e->name == NULL) {
 	free(e);
-	krb5_set_error_string(context, "out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
     e->symbol = symbol;
@@ -185,8 +185,8 @@ _krb5_plugin_find(krb5_context context,
 	e = calloc(1, sizeof(*e));
 	if (e == NULL) {
 	    HEIMDAL_MUTEX_unlock(&plugin_mutex);
-	    krb5_set_error_string(context, "out of memory");
 	    ret = ENOMEM;
+	    krb5_set_error_message(context, ret, "malloc: out of memory");
 	    goto out;
 	}
 	e->symbol = p->symbol;
@@ -210,12 +210,13 @@ _krb5_plugin_find(krb5_context context,
 	d = opendir(*di);
 	if (d == NULL)
 	    continue;
+	rk_cloexec(dirfd(d));
 
 	while ((entry = readdir(d)) != NULL) {
 	    asprintf(&path, "%s/%s", *di, entry->d_name);
 	    if (path == NULL) {
-		krb5_set_error_string(context, "out of memory");
 		ret = ENOMEM;
+		krb5_set_error_message(context, ret, "malloc: out of memory");
 		goto out;
 	    }
 	    ret = loadlib(context, type, name, path, &e);
@@ -233,7 +234,7 @@ _krb5_plugin_find(krb5_context context,
 #endif /* HAVE_DLOPEN */
 
     if (*list == NULL) {
-	krb5_set_error_string(context, "Did not find a plugin for %s", name);
+	krb5_set_error_message(context, ENOENT, "Did not find a plugin for %s", name);
 	return ENOENT;
     }
 

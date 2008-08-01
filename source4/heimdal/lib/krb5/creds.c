@@ -33,10 +33,12 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: creds.c 22062 2007-11-11 15:41:50Z lha $");
+RCSID("$Id: creds.c 23280 2008-06-23 03:26:18Z lha $");
 
 #undef __attribute__
 #define __attribute__(X)
+
+#ifndef HEIMDAL_SMALLER
 
 /* keep this for compatibility with older code */
 krb5_error_code KRB5_LIB_FUNCTION __attribute__((deprecated))
@@ -44,6 +46,8 @@ krb5_free_creds_contents (krb5_context context, krb5_creds *c)
 {
     return krb5_free_cred_contents (context, c);
 }    
+
+#endif /* HEIMDAL_SMALLER */
 
 /**
  * Free content of krb5_creds.
@@ -152,7 +156,7 @@ krb5_copy_creds (krb5_context context,
 
     c = malloc (sizeof (*c));
     if (c == NULL) {
-	krb5_set_error_string (context, "malloc: out of memory");
+	krb5_set_error_message (context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
     memset (c, 0, sizeof(*c));

@@ -1830,7 +1830,12 @@ static bool test_EnumTrustDom(struct dcerpc_pipe *p,
 	
 	enum_status = dcerpc_lsa_EnumTrustDom(p, mem_ctx, &r);
 	
-	if (!(NT_STATUS_EQUAL(enum_status, STATUS_MORE_ENTRIES) || NT_STATUS_EQUAL(enum_status, NT_STATUS_NO_MORE_ENTRIES))) {
+	if (NT_STATUS_IS_OK(enum_status)) {
+		if (domains.count == 0) {
+			printf("EnumTrustDom failed - should have returned 'NT_STATUS_NO_MORE_ENTRIES' for 0 trusted domains\n");
+			return false;
+		}
+	} else if (!(NT_STATUS_EQUAL(enum_status, STATUS_MORE_ENTRIES) || NT_STATUS_EQUAL(enum_status, NT_STATUS_NO_MORE_ENTRIES))) {
 		printf("EnumTrustDom of zero size failed - %s\n", nt_errstr(enum_status));
 		return false;
 	}
