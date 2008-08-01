@@ -23,7 +23,6 @@
 
 #include "includes.h"
 #include "system/kerberos.h"
-#include "roken.h"
 
 #ifdef HAVE_KRB5
 
