@@ -739,7 +739,8 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
         samdb.set_invocation_id(invocationid)
 
     load_schema(setup_path, samdb, names.schemadn, names.netbiosname, 
-                names.configdn, names.sitename)
+                names.configdn, names.sitename, names.serverdn,
+                names.hostname)
 
     samdb.transaction_start()
         
@@ -1423,7 +1424,8 @@ def create_krb5_conf(path, setup_path, dnsdomain, hostname, realm):
         })
 
 
-def load_schema(setup_path, samdb, schemadn, netbiosname, configdn, sitename):
+def load_schema(setup_path, samdb, schemadn, netbiosname, configdn, sitename,
+                serverdn, servername):
     """Load schema for the SamDB.
     
     :param samdb: Load a schema into a SamDB.
@@ -1431,6 +1433,8 @@ def load_schema(setup_path, samdb, schemadn, netbiosname, configdn, sitename):
     :param schemadn: DN of the schema
     :param netbiosname: NetBIOS name of the host.
     :param configdn: DN of the configuration
+    :param serverdn: DN of the server
+    :param servername: Host name of the server
     """
     schema_data = open(setup_path("schema.ldif"), 'r').read()
     schema_data += open(setup_path("schema_samba4.ldif"), 'r').read()
@@ -1444,8 +1448,10 @@ def load_schema(setup_path, samdb, schemadn, netbiosname, configdn, sitename):
                     "SCHEMADN": schemadn,
                     "NETBIOSNAME": netbiosname,
                     "CONFIGDN": configdn,
-                    "DEFAULTSITE":sitename,
-                    "PREFIXMAP_B64":prefixmap
+                    "DEFAULTSITE": sitename,
+                    "PREFIXMAP_B64": prefixmap,
+                    "SERVERDN": serverdn,
+                    "SERVERNAME": servername,
     })
     check_all_substituted(head_data)
     samdb.attach_schema_from_ldif(head_data, schema_data)
