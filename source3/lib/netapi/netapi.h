@@ -424,6 +424,21 @@ int  ConvertSidToStringSid(const struct domsid *sid,
 
 /************************************************************//**
  *
+ * ConvertStringSidToSid
+ *
+ * @brief Convert a string into a domain sid
+ *
+ * @param[in] sid_string A pointer to a sid string.
+ * @param[in] sid A pointer that holds a pointer to a sid structure.
+ * Caller needs to free with free(3)
+ * @return bool
+ ***************************************************************/
+
+int ConvertStringSidToSid(const char *sid_string,
+			  struct domsid **sid);
+
+/************************************************************//**
+ *
  * NetJoinDomain
  *
  * @brief Join a computer to a domain or workgroup
