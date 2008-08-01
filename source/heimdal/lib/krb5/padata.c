@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: padata.c 15469 2005-06-17 04:28:35Z lha $");
+RCSID("$Id: padata.c 23300 2008-06-23 03:29:22Z lha $");
 
 PA_DATA *
 krb5_find_padata(PA_DATA *val, unsigned len, int type, int *idx)
@@ -52,7 +52,7 @@ krb5_padata_add(krb5_context context, METHOD_DATA *md,
 
     pa = realloc (md->val, (md->len + 1) * sizeof(*md->val));
     if (pa == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
     md->val = pa;

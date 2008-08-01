@@ -31,36 +31,38 @@
  * SUCH DAMAGE.
  */
 
-/* $Id: des.h 16480 2006-01-08 21:47:29Z lha $ */
+/* $Id: des.h 23148 2008-04-29 05:53:27Z biorn $ */
 
 #ifndef _DESperate_H
 #define _DESperate_H 1
 
 /* symbol renaming */
-#define DES_set_odd_parity hc_DES_set_odd_parity
+#define	_DES_ipfp_test _hc_DES_ipfp_test
+#define DES_cbc_cksum hc_DES_cbc_cksum
+#define DES_cbc_encrypt hc_DES_cbc_encrypt
+#define DES_cfb64_encrypt hc_DES_cfb64_encrypt
+#define DES_check_key_parity hc_DES_check_key_parity
+#define DES_ecb3_encrypt hc_DES_ecb3_encrypt
+#define DES_ecb_encrypt hc_DES_ecb_encrypt
+#define DES_ede3_cbc_encrypt hc_DES_ede3_cbc_encrypt
+#define DES_encrypt hc_DES_encrypt
+#define DES_generate_random_block hc_DES_generate_random_block
+#define DES_init_random_number_generator hc_DES_init_random_number_generator
 #define DES_is_weak_key hc_DES_is_weak_key
 #define DES_key_sched hc_DES_key_sched
+#define DES_new_random_key hc_DES_new_random_key
+#define DES_pcbc_encrypt hc_DES_pcbc_encrypt
+#define DES_rand_data hc_DES_rand_data
+#define DES_random_key hc_DES_random_key
+#define DES_read_password hc_DES_read_password
 #define DES_set_key hc_DES_set_key
 #define DES_set_key_checked hc_DES_set_key_checked
+#define DES_set_key_unchecked hc_DES_set_key_unchecked
 #define DES_set_key_sched hc_DES_set_key_sched
-#define DES_new_random_key hc_DES_new_random_key
-#define DES_string_to_key hc_DES_string_to_key
-#define DES_read_password hc_DES_read_password
-#define DES_rand_data hc_DES_rand_data
+#define DES_set_odd_parity hc_DES_set_odd_parity
 #define DES_set_random_generator_seed hc_DES_set_random_generator_seed
-#define DES_generate_random_block hc_DES_generate_random_block
 #define DES_set_sequence_number hc_DES_set_sequence_number
-#define DES_init_random_number_generator hc_DES_init_random_number_generator
-#define DES_random_key hc_DES_random_key
-#define DES_encrypt hc_DES_encrypt
-#define DES_ecb_encrypt hc_DES_ecb_encrypt
-#define DES_ecb3_encrypt hc_DES_ecb3_encrypt
-#define DES_pcbc_encrypt hc_DES_pcbc_encrypt
-#define DES_cbc_encrypt hc_DES_cbc_encrypt
-#define DES_cbc_cksum hc_DES_cbc_cksum
-#define DES_ede3_cbc_encrypt hc_DES_ede3_cbc_encrypt
-#define DES_cfb64_encrypt hc_DES_cfb64_encrypt
-#define	_DES_ipfp_test _hc_DES_ipfp_test
+#define DES_string_to_key hc_DES_string_to_key
 
 /*
  *
@@ -82,21 +84,35 @@ typedef struct DES_key_schedule
  *
  */
 
-int	DES_set_odd_parity(DES_cblock *);
+#if !defined(__GNUC__) && !defined(__attribute__)
+#define __attribute__(x)
+#endif
+
+#ifndef HC_DEPRECATED
+#define HC_DEPRECATED __attribute__((deprecated))
+#endif
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+void	DES_set_odd_parity(DES_cblock *);
+int	DES_check_key_parity(DES_cblock *);
 int	DES_is_weak_key(DES_cblock *);
-int	DES_set_key(DES_cblock *, DES_key_schedule *);
+int	HC_DEPRECATED DES_set_key(DES_cblock *, DES_key_schedule *);
 int	DES_set_key_checked(DES_cblock *, DES_key_schedule *);
+int	DES_set_key_unchecked(DES_cblock *, DES_key_schedule *);
 int	DES_key_sched(DES_cblock *, DES_key_schedule *);
-int	DES_new_random_key(DES_cblock *);
 void	DES_string_to_key(const char *, DES_cblock *);
 int	DES_read_password(DES_cblock *, char *, int);
 
-void	DES_rand_data(void *, int);
-void	DES_set_random_generator_seed(DES_cblock *);
-void	DES_generate_random_block(DES_cblock *);
-void	DES_set_sequence_number(void *);
-void 	DES_init_random_number_generator(DES_cblock *);
-void	DES_random_key(DES_cblock *);
+void	HC_DEPRECATED DES_rand_data(void *, int);
+void	HC_DEPRECATED DES_set_random_generator_seed(DES_cblock *);
+void	HC_DEPRECATED DES_generate_random_block(DES_cblock *);
+void	HC_DEPRECATED DES_set_sequence_number(void *);
+void 	HC_DEPRECATED DES_init_random_number_generator(DES_cblock *);
+void	HC_DEPRECATED DES_random_key(DES_cblock *);
+int	HC_DEPRECATED DES_new_random_key(DES_cblock *);
 
 
 void	DES_encrypt(uint32_t [2], DES_key_schedule *, int);
@@ -110,8 +126,8 @@ void	DES_cbc_encrypt(const void *, void *, long,
 void	DES_ede3_cbc_encrypt(const void *, void *, long, 
 			     DES_key_schedule *, DES_key_schedule *, 
 			     DES_key_schedule *, DES_cblock *, int);
-void DES_cfb64_encrypt(const void *, void *, long,
-		       DES_key_schedule *, DES_cblock *, int *, int);
+void	DES_cfb64_encrypt(const void *, void *, long,
+			  DES_key_schedule *, DES_cblock *, int *, int);
 
 
 uint32_t DES_cbc_cksum(const void *, DES_cblock *,
@@ -119,6 +135,10 @@ uint32_t DES_cbc_cksum(const void *, DES_cblock *,
 
 
 void	_DES_ipfp_test(void);
+
+#ifdef  __cplusplus
+}
+#endif
 
 
 #endif /* _DESperate_H */

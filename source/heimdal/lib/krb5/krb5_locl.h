@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: krb5_locl.h 22226 2007-12-08 21:31:53Z lha $ */
+/* $Id: krb5_locl.h 23324 2008-06-26 03:54:45Z lha $ */
 
 #ifndef __KRB5_LOCL_H__
 #define __KRB5_LOCL_H__
@@ -131,6 +131,8 @@ struct sockaddr_dl;
 #include <parse_time.h>
 #include <base64.h>
 
+#include <wind.h>
+
 #include "crypto-headers.h"
 
 
@@ -142,6 +144,7 @@ struct send_to_kdc;
 struct krb5_pk_identity;
 struct krb5_pk_cert;
 struct ContentInfo;
+struct AlgorithmIdentifier;
 typedef struct krb5_pk_init_ctx_data *krb5_pk_init_ctx;
 struct krb5_dh_moduli;
 
@@ -154,7 +157,7 @@ struct _krb5_krb_auth_data;
 #include <krb5_err.h>
 #include <asn1_err.h>
 #ifdef PKINIT
-#include <hx509_err.h>
+#include <hx509.h>
 #endif
 #include <krb5-private.h>
 
@@ -164,7 +167,7 @@ struct _krb5_krb_auth_data;
 #define ALLOC_SEQ(X, N) do { (X)->len = (N); ALLOC((X)->val, (N)); } while(0)
 
 /* should this be public? */
-#define KEYTAB_DEFAULT "ANY:FILE:" SYSCONFDIR "/krb5.keytab,krb4:" SYSCONFDIR "/srvtab"
+#define KEYTAB_DEFAULT "FILE:" SYSCONFDIR "/krb5.keytab"
 #define KEYTAB_DEFAULT_MODIFY "FILE:" SYSCONFDIR "/krb5.keytab"
 
 #define MODULI_FILE SYSCONFDIR "/krb5.moduli"
@@ -227,7 +230,7 @@ typedef struct krb5_context_data {
     struct krb5_keytab_data *kt_types;  /* registered keytab types */
     const char *date_fmt;
     char *error_string;
-    char error_buf[256];
+    krb5_error_code error_code;
     krb5_addresses *ignore_addresses;
     char *default_cc_name;
     char *default_cc_name_env;
@@ -247,6 +250,7 @@ typedef struct krb5_context_data {
 #define EXTRACT_TICKET_ALLOW_CNAME_MISMATCH		1
 #define EXTRACT_TICKET_ALLOW_SERVER_MISMATCH		2
 #define EXTRACT_TICKET_MATCH_REALM			4
+#define EXTRACT_TICKET_AS_REQ				8
 
 /*
  * Configurable options
@@ -263,5 +267,23 @@ typedef struct krb5_context_data {
 #ifndef KRB5_ADDRESSLESS_DEFAULT
 #define KRB5_ADDRESSLESS_DEFAULT TRUE
 #endif
+
+#ifdef PKINIT
+
+struct krb5_pk_identity {
+    hx509_context hx509ctx;
+    hx509_verify_ctx verify_ctx;
+    hx509_certs certs;
+    hx509_certs anchors;
+    hx509_certs certpool;
+    hx509_revoke_ctx revokectx;
+};
+
+enum krb5_pk_type {
+    PKINIT_WIN2K = 1,
+    PKINIT_27 = 2
+};
+
+#endif /* PKINIT */
 
 #endif /* __KRB5_LOCL_H__ */

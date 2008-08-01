@@ -8,11 +8,13 @@
 extern "C" {
 #endif
 
-#ifndef HX509_LIB_FUNCTION
+#ifndef HX509_LIB
 #if defined(_WIN32)
-#define HX509_LIB_FUNCTION _stdcall
+#define HX509_LIB_FUNCTION _stdcall __declspec(dllimport)
+#define HX509_LIB_VARIABLE __declspec(dllimport)
 #else
 #define HX509_LIB_FUNCTION
+#define HX509_LIB_VARIABLE
 #endif
 #endif
 
@@ -396,6 +398,7 @@ hx509_cms_unenvelope (
 	const void */*data*/,
 	size_t /*length*/,
 	const heim_octet_string */*encryptedContent*/,
+	time_t /*time_now*/,
 	heim_oid */*contentType*/,
 	heim_octet_string */*content*/);
 
@@ -564,17 +567,31 @@ hx509_crypto_set_random_key (
 int
 hx509_env_add (
 	hx509_context /*context*/,
-	hx509_env /*env*/,
+	hx509_env */*env*/,
 	const char */*key*/,
 	const char */*value*/);
 
+int
+hx509_env_add_binding (
+	hx509_context /*context*/,
+	hx509_env */*env*/,
+	const char */*key*/,
+	hx509_env /*list*/);
+
+const char *
+hx509_env_find (
+	hx509_context /*context*/,
+	hx509_env /*env*/,
+	const char */*key*/);
+
+hx509_env
+hx509_env_find_binding (
+	hx509_context /*context*/,
+	hx509_env /*env*/,
+	const char */*key*/);
+
 void
 hx509_env_free (hx509_env */*env*/);
-
-int
-hx509_env_init (
-	hx509_context /*context*/,
-	hx509_env */*env*/);
 
 const char *
 hx509_env_lfind (
@@ -826,6 +843,12 @@ hx509_query_match_eku (
 	const heim_oid */*eku*/);
 
 int
+hx509_query_match_expr (
+	hx509_context /*context*/,
+	hx509_query */*q*/,
+	const char */*expr*/);
+
+int
 hx509_query_match_friendly_name (
 	hx509_query */*q*/,
 	const char */*name*/);
@@ -1046,6 +1069,9 @@ hx509_verify_signature (
 
 void
 hx509_xfree (void */*ptr*/);
+
+int
+yywrap (void);
 
 #ifdef __cplusplus
 }

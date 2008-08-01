@@ -31,7 +31,13 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: hx509.h 22464 2008-01-16 14:24:50Z lha $ */
+/* $Id: hx509.h 22908 2008-04-08 08:16:32Z lha $ */
+
+#ifndef HEIMDAL_HX509_H
+#define HEIMDAL_HX509_H 1
+
+#include <heim_asn1.h>
+#include <rfc2459_asn1.h>
 
 typedef struct hx509_cert_attribute_data *hx509_cert_attribute;
 typedef struct hx509_cert_data *hx509_cert;
@@ -50,7 +56,7 @@ typedef struct hx509_request_data *hx509_request;
 typedef struct hx509_error_data *hx509_error;
 typedef struct hx509_peer_info *hx509_peer_info;
 typedef struct hx509_ca_tbs *hx509_ca_tbs;
-typedef struct hx509_env *hx509_env;
+typedef struct hx509_env_data *hx509_env;
 typedef struct hx509_crl *hx509_crl;
 
 typedef void (*hx509_vprint_func)(void *, const char *, va_list);
@@ -146,3 +152,6 @@ typedef enum  {
 } hx509_hostname_type;
 
 #include <hx509-protos.h>
+#include <hx509_err.h>
+
+#endif /* HEIMDAL_HX509_H */

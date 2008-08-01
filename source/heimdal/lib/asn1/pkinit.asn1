@@ -17,6 +17,11 @@ id-pkrkeydata  OBJECT IDENTIFIER  ::= { id-pkinit 3 }
 id-pkekuoid    OBJECT IDENTIFIER  ::= { id-pkinit 4 }
 id-pkkdcekuoid OBJECT IDENTIFIER  ::= { id-pkinit 5 }
 
+id-pkinit-kdf OBJECT IDENTIFIER           ::= { id-pkinit 6 }
+id-pkinit-kdf-ah-sha1 OBJECT IDENTIFIER   ::= { id-pkinit-kdf 1 }
+id-pkinit-kdf-ah-sha256 OBJECT IDENTIFIER ::= { id-pkinit-kdf 2 }
+id-pkinit-kdf-ah-sha512 OBJECT IDENTIFIER ::= { id-pkinit-kdf 3 }
+
 id-pkinit-san	OBJECT IDENTIFIER ::=
   { iso(1) org(3) dod(6) internet(1) security(5) kerberosv5(2)
     x509-sanan(2) }
@@ -169,6 +174,14 @@ ReplyKeyPack-Win2k ::= SEQUENCE {
         replyKey                [0] EncryptionKey,
         nonce                   [1] INTEGER (-2147483648..2147483647),
 	...
+}
+
+PkinitSP80056AOtherInfo ::= SEQUENCE { 
+	algorithmID   AlgorithmIdentifier, 
+	partyUInfo     [0] OCTET STRING, 
+	partyVInfo     [1] OCTET STRING, 
+	suppPubInfo    [2] OCTET STRING OPTIONAL, 
+	suppPrivInfo   [3] OCTET STRING OPTIONAL 
 }
 
 PkinitSuppPubInfo ::= SEQUENCE {

@@ -27,9 +27,9 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_import_sec_context.c 19956 2007-01-17 12:04:16Z lha $");
+RCSID("$Id: gss_import_sec_context.c 23025 2008-04-17 10:01:57Z lha $");
 
-OM_uint32
+OM_uint32 GSSAPI_LIB_FUNCTION
 gss_import_sec_context(OM_uint32 *minor_status,
     const gss_buffer_t interprocess_token,
     gss_ctx_id_t *context_handle)

@@ -35,7 +35,7 @@
 #include <config.h>
 #endif
 
-RCSID("$Id: rand-egd.c 21156 2007-06-18 22:00:59Z lha $");
+RCSID("$Id: rand-egd.c 23461 2008-07-27 12:14:20Z lha $");
 
 #include <sys/types.h>
 #ifdef HAVE_SYS_UN_H
@@ -75,6 +75,8 @@ connect_egd(const char *path)
     fd = socket(AF_UNIX, SOCK_STREAM, 0);
     if (fd < 0)
 	return -1;
+
+    rk_cloexec(fd);
 
     if (connect(fd, (struct sockaddr *)&addr, sizeof(addr)) != 0) {
 	close(fd);

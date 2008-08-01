@@ -32,9 +32,9 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_oid_to_str.c 21409 2007-07-04 14:19:11Z lha $");
+RCSID("$Id: gss_oid_to_str.c 23025 2008-04-17 10:01:57Z lha $");
 
-OM_uint32
+OM_uint32 GSSAPI_LIB_FUNCTION
 gss_oid_to_str(OM_uint32 *minor_status, gss_OID oid, gss_buffer_t oid_str)
 {
     int ret;

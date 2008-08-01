@@ -32,8 +32,9 @@
  */
 
 #include "krb5_locl.h"
+#include "send_to_kdc_plugin.h"
 
-RCSID("$Id: send_to_kdc.c 21934 2007-08-27 14:21:04Z lha $");
+RCSID("$Id: send_to_kdc.c 23448 2008-07-27 12:09:22Z lha $");
 
 struct send_to_kdc {
     krb5_send_to_kdc_func func;
@@ -290,6 +291,7 @@ send_via_proxy (krb5_context context,
 	s = socket (a->ai_family, a->ai_socktype, a->ai_protocol);
 	if (s < 0)
 	    continue;
+	rk_cloexec(s);
 	if (connect (s, a->ai_addr, a->ai_addrlen) < 0) {
 	    close (s);
 	    continue;
@@ -315,6 +317,46 @@ send_via_proxy (krb5_context context,
 	return 0;
     return 1;
 }
+
+static krb5_error_code
+send_via_plugin(krb5_context context,
+		krb5_krbhst_info *hi,
+		time_t timeout,
+		const krb5_data *send_data,
+		krb5_data *receive)
+{
+    struct krb5_plugin *list = NULL, *e;
+    krb5_error_code ret;
+
+    ret = _krb5_plugin_find(context, PLUGIN_TYPE_DATA, KRB5_PLUGIN_SEND_TO_KDC, &list);
+    if(ret != 0 || list == NULL)
+	return KRB5_PLUGIN_NO_HANDLE;
+
+    for (e = list; e != NULL; e = _krb5_plugin_get_next(e)) {
+	krb5plugin_send_to_kdc_ftable *service;
+	void *ctx;
+
+	service = _krb5_plugin_get_symbol(e);
+	if (service->minor_version != 0)
+	    continue;
+	
+	(*service->init)(context, &ctx);
+	ret = (*service->send_to_kdc)(context, ctx, hi, 
+				      timeout, send_data, receive);
+	(*service->fini)(ctx);
+	if (ret == 0)
+	    break;
+	if (ret != KRB5_PLUGIN_NO_HANDLE) {
+	    krb5_set_error_message(context, ret,
+				   "Plugin %s failed to lookup with error: %d", 
+				   KRB5_PLUGIN_SEND_TO_KDC, ret);
+	    break;
+	}
+    }
+    _krb5_plugin_free(list);
+    return KRB5_PLUGIN_NO_HANDLE;
+}
+
 
 /*
  * Send the data `send' to one host from `handle` and get back the reply
@@ -343,11 +385,18 @@ krb5_sendto (krb5_context context,
 		 struct send_to_kdc *s = context->send_to_kdc;
 
 		 ret = (*s->func)(context, s->data, 
-				  hi, send_data, receive);
+				  hi, context->kdc_timeout, send_data, receive);
 		 if (ret == 0 && receive->length != 0)
 		     goto out;
 		 continue;
 	     }
+
+	     ret = send_via_plugin(context, hi, context->kdc_timeout,
+				   send_data, receive);
+	     if (ret == 0 && receive->length != 0)
+		 goto out;
+	     else if (ret != KRB5_PLUGIN_NO_HANDLE)
+		 continue;
 
 	     if(hi->proto == KRB5_KRBHST_HTTP && context->http_proxy) {
 		 if (send_via_proxy (context, hi, send_data, receive) == 0) {
@@ -365,6 +414,7 @@ krb5_sendto (krb5_context context,
 		 fd = socket (a->ai_family, a->ai_socktype, a->ai_protocol);
 		 if (fd < 0)
 		     continue;
+		 rk_cloexec(fd);
 		 if (connect (fd, a->ai_addr, a->ai_addrlen) < 0) {
 		     close (fd);
 		     continue;
@@ -439,7 +489,7 @@ krb5_set_send_to_kdc_func(krb5_context context,
 
     context->send_to_kdc = malloc(sizeof(*context->send_to_kdc));
     if (context->send_to_kdc == NULL) {
-	krb5_set_error_string(context, "Out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
 
@@ -460,7 +510,7 @@ krb5_sendto_ctx_alloc(krb5_context context, krb5_sendto_ctx *ctx)
 {
     *ctx = calloc(1, sizeof(**ctx));
     if (*ctx == NULL) {
-	krb5_set_error_string(context, "out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
     return 0;
@@ -566,8 +616,8 @@ krb5_sendto_context(krb5_context context,
     if (handle)
 	krb5_krbhst_free(context, handle);
     if (ret == KRB5_KDC_UNREACH)
-	krb5_set_error_string(context, 
-			      "unable to reach any KDC in realm %s", realm);
+	krb5_set_error_message(context, ret,
+			       "unable to reach any KDC in realm %s", realm);
     if (ret)
 	krb5_data_free(receive);
     if (freectx)

@@ -33,7 +33,7 @@
 
 #include "der_locl.h"
 
-RCSID("$Id: der_free.c 19539 2006-12-28 17:15:05Z lha $");
+RCSID("$Id: der_free.c 23182 2008-05-22 02:59:04Z lha $");
 
 void
 der_free_general_string (heim_general_string *str)

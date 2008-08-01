@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: rd_error.c 21057 2007-06-12 17:22:31Z lha $");
+RCSID("$Id: rd_error.c 23316 2008-06-23 04:32:32Z lha $");
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_rd_error(krb5_context context,
@@ -78,7 +78,7 @@ krb5_error_from_rd_error(krb5_context context,
 
     ret = error->error_code;
     if (error->e_text != NULL) {
-	krb5_set_error_string(context, "%s", *error->e_text);
+	krb5_set_error_message(context, ret, "%s", *error->e_text);
     } else {
 	char clientname[256], servername[256];
 
@@ -91,28 +91,28 @@ krb5_error_from_rd_error(krb5_context context,
 
 	switch (ret) {
 	case KRB5KDC_ERR_NAME_EXP :
-	    krb5_set_error_string(context, "Client %s%s%s expired",
-				  creds ? "(" : "",
-				  creds ? clientname : "",
-				  creds ? ")" : "");
+	    krb5_set_error_message(context, ret, "Client %s%s%s expired",
+				   creds ? "(" : "",
+				   creds ? clientname : "",
+				   creds ? ")" : "");
 	    break;
 	case KRB5KDC_ERR_SERVICE_EXP :
-	    krb5_set_error_string(context, "Server %s%s%s expired",
-				  creds ? "(" : "",
-				  creds ? servername : "",
-				  creds ? ")" : "");
+	    krb5_set_error_message(context, ret, "Server %s%s%s expired",
+				   creds ? "(" : "",
+				   creds ? servername : "",
+				   creds ? ")" : "");
 	    break;
 	case KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN :
-	    krb5_set_error_string(context, "Client %s%s%s unknown",
-				  creds ? "(" : "",
-				  creds ? clientname : "",
-				  creds ? ")" : "");
+	    krb5_set_error_message(context, ret, "Client %s%s%s unknown",
+				   creds ? "(" : "",
+				   creds ? clientname : "",
+				   creds ? ")" : "");
 	    break;
 	case KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN :
-	    krb5_set_error_string(context, "Server %s%s%s unknown",
-				  creds ? "(" : "",
-				  creds ? servername : "",
-				  creds ? ")" : "");
+	    krb5_set_error_message(context, ret, "Server %s%s%s unknown",
+				   creds ? "(" : "",
+				   creds ? servername : "",
+				   creds ? ")" : "");
 	    break;
 	default :
 	    krb5_clear_error_string(context);

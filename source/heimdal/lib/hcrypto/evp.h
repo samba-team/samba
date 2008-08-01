@@ -31,7 +31,7 @@
  * SUCH DAMAGE.
  */
 
-/* $Id: evp.h 21687 2007-07-24 16:29:05Z lha $ */
+/* $Id: evp.h 23141 2008-04-29 05:47:04Z lha $ */
 
 #ifndef HEIM_EVP_H
 #define HEIM_EVP_H 1
@@ -155,11 +155,17 @@ struct hc_CIPHER_CTX {
     unsigned char final[EVP_MAX_BLOCK_LENGTH];
 };
 
-struct hc_EVP_MD_CTX {
-    const EVP_MD *md;
-    ENGINE *engine;
-    void *ptr;
-};
+#if !defined(__GNUC__) && !defined(__attribute__)
+#define __attribute__(x)
+#endif
+
+#ifndef HC_DEPRECATED
+#define HC_DEPRECATED __attribute__((deprecated))
+#endif
+
+#ifdef  __cplusplus
+extern "C" {
+#endif
 
 /*
  * Avaible crypto algs
@@ -201,9 +207,9 @@ size_t	EVP_MD_CTX_block_size(EVP_MD_CTX *);
 
 EVP_MD_CTX *
 	EVP_MD_CTX_create(void);
-void	EVP_MD_CTX_init(EVP_MD_CTX *);
+void	HC_DEPRECATED EVP_MD_CTX_init(EVP_MD_CTX *);
 void	EVP_MD_CTX_destroy(EVP_MD_CTX *);
-int	EVP_MD_CTX_cleanup(EVP_MD_CTX *);
+int	HC_DEPRECATED EVP_MD_CTX_cleanup(EVP_MD_CTX *);
 
 int	EVP_DigestInit_ex(EVP_MD_CTX *, const EVP_MD *, ENGINE *);
 int	EVP_DigestUpdate(EVP_MD_CTX *,const void *, size_t);
@@ -257,5 +263,9 @@ int	EVP_BytesToKey(const EVP_CIPHER *, const EVP_MD *,
 void	OpenSSL_add_all_algorithms(void);
 void	OpenSSL_add_all_algorithms_conf(void);
 void	OpenSSL_add_all_algorithms_noconf(void);
+
+#ifdef  __cplusplus
+}
+#endif
 
 #endif /* HEIM_EVP_H */

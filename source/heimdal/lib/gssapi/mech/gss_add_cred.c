@@ -27,7 +27,7 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_add_cred.c 21474 2007-07-10 16:30:23Z lha $");
+RCSID("$Id: gss_add_cred.c 23025 2008-04-17 10:01:57Z lha $");
 
 static struct _gss_mechanism_cred *
 _gss_copy_cred(struct _gss_mechanism_cred *mc)
@@ -71,7 +71,7 @@ _gss_copy_cred(struct _gss_mechanism_cred *mc)
 	return (new_mc);
 }
 
-OM_uint32
+OM_uint32 GSSAPI_LIB_FUNCTION
 gss_add_cred(OM_uint32 *minor_status,
     const gss_cred_id_t input_cred_handle,
     const gss_name_t desired_name,

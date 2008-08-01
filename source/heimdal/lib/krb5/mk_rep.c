@@ -33,7 +33,7 @@
 
 #include <krb5_locl.h>
 
-RCSID("$Id: mk_rep.c 13863 2004-05-25 21:46:46Z lha $");
+RCSID("$Id: mk_rep.c 23316 2008-06-23 04:32:32Z lha $");
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_mk_rep(krb5_context context,
@@ -61,18 +61,18 @@ krb5_mk_rep(krb5_context context,
 						    auth_context,
 						    auth_context->keyblock);
 	    if(ret) {
-		krb5_set_error_string (context,
-				       "krb5_mk_rep: generating subkey");
 		free_EncAPRepPart(&body);
+		krb5_set_error_message(context, ret,
+				       "krb5_mk_rep: generating subkey");
 		return ret;
 	    }
 	}
 	ret = krb5_copy_keyblock(context, auth_context->local_subkey,
 				 &body.subkey);
 	if (ret) {
-	    krb5_set_error_string (context,
-				   "krb5_copy_keyblock: out of memory");
 	    free_EncAPRepPart(&body);
+	    krb5_set_error_message(context, ENOMEM,
+				   "krb5_copy_keyblock: out of memory");
 	    return ENOMEM;
 	}
     } else
@@ -84,7 +84,7 @@ krb5_mk_rep(krb5_context context,
 				      &auth_context->local_seqnumber);
 	ALLOC(body.seq_number, 1);
 	if (body.seq_number == NULL) {
-	    krb5_set_error_string (context, "malloc: out of memory");
+	    krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	    free_EncAPRepPart(&body);
 	    return ENOMEM;
 	}

@@ -36,10 +36,10 @@
 #endif
 #include "windlocl.h"
 #include <stdlib.h>
-#include <strings.h>
+#include <string.h>
 #include <errno.h>
 
-RCSID("$Id: stringprep.c 22593 2008-02-12 11:58:01Z lha $");
+RCSID("$Id: stringprep.c 23063 2008-04-21 11:18:04Z lha $");
 
 /**
  * Process a input UCS4 string according a string-prep profile.

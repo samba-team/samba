@@ -27,7 +27,7 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_import_name.c 19954 2007-01-17 11:50:23Z lha $");
+RCSID("$Id: gss_import_name.c 23025 2008-04-17 10:01:57Z lha $");
 
 static OM_uint32
 _gss_import_export_name(OM_uint32 *minor_status,
@@ -139,7 +139,7 @@ _gss_import_export_name(OM_uint32 *minor_status,
 	return (GSS_S_COMPLETE);
 }
 
-OM_uint32
+OM_uint32 GSSAPI_LIB_FUNCTION
 gss_import_name(OM_uint32 *minor_status,
     const gss_buffer_t input_name_buffer,
     const gss_OID input_name_type,

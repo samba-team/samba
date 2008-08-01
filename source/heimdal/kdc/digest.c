@@ -34,7 +34,7 @@
 #include "kdc_locl.h"
 #include <hex.h>
 
-RCSID("$Id: digest.c 22374 2007-12-28 18:36:52Z lha $");
+RCSID("$Id: digest.c 23316 2008-06-23 04:32:32Z lha $");
 
 #define MS_CHAP_V2	0x20
 #define CHAP_MD5	0x10
@@ -44,13 +44,13 @@ RCSID("$Id: digest.c 22374 2007-12-28 18:36:52Z lha $");
 #define NTLM_V1		0x01
 
 const struct units _kdc_digestunits[] = {
-	{"ms-chap-v2",		1U << 5},
-	{"chap-md5",		1U << 4},
-	{"digest-md5",		1U << 3},
-	{"ntlm-v2",		1U << 2},
-	{"ntlm-v1-session",	1U << 1},
-	{"ntlm-v1",		1U << 0},
-	{NULL,	0}
+    {"ms-chap-v2",		1U << 5},
+    {"chap-md5",		1U << 4},
+    {"digest-md5",		1U << 3},
+    {"ntlm-v2",		1U << 2},
+    {"ntlm-v1-session",	1U << 1},
+    {"ntlm-v1",		1U << 0},
+    {NULL,	0}
 };
 
 
@@ -121,10 +121,10 @@ fill_targetinfo(krb5_context context,
 	 strcmp("imap", str) == 0 ||
 	 strcmp("pop", str) == 0 ||
 	 strcmp("smtp", str)))
-    {
-	str = krb5_principal_get_comp_string(context, p, 1);
-	ti.dnsservername = rk_UNCONST(str);
-    }
+	{
+	    str = krb5_principal_get_comp_string(context, p, 1);
+	    ti.dnsservername = rk_UNCONST(str);
+	}
     
     ret = heim_ntlm_encode_targetinfo(&ti, 1, &d);
     if (ret)
@@ -186,7 +186,7 @@ get_password_entry(krb5_context context,
     if (ret || password == NULL) {
 	if (ret == 0) {
 	    ret = EINVAL;
-	    krb5_set_error_string(context, "password missing");
+	    krb5_set_error_message(context, ret, "password missing");
 	}
 	memset(user, 0, sizeof(*user));
     }
@@ -263,7 +263,7 @@ _kdc_do_digest(krb5_context context,
 	    goto out;
 
 	ret = EINVAL;
-	krb5_set_error_string(context, "Wrong digest server principal used");
+	krb5_set_error_message(context, ret, "Wrong digest server principal used");
 	p = krb5_principal_get_comp_string(context, principal, 0);
 	if (p == NULL) {
 	    krb5_free_principal(context, principal);
@@ -323,9 +323,9 @@ _kdc_do_digest(krb5_context context,
 		    "Client %s tried to use digest "
 		    "but is not allowed to", 
 		    client_name);
-	    krb5_set_error_string(context, 
-				  "Client is not permitted to use digest");
 	    ret = KRB5KDC_ERR_POLICY;
+	    krb5_set_error_message(context, ret,
+				   "Client is not permitted to use digest");
 	    goto out;
 	}
     }
@@ -338,8 +338,8 @@ _kdc_do_digest(krb5_context context,
 	if (ret)
 	    goto out;
 	if (key == NULL) {
-	    krb5_set_error_string(context, "digest: remote subkey not found");
 	    ret = EINVAL;
+	    krb5_set_error_message(context, ret, "digest: remote subkey not found");
 	    goto out;
 	}
 
@@ -359,7 +359,7 @@ _kdc_do_digest(krb5_context context,
     ret = decode_DigestReqInner(buf.data, buf.length, &ireq, NULL);
     krb5_data_free(&buf);
     if (ret) {
-	krb5_set_error_string(context, "Failed to decode digest inner request");
+	krb5_set_error_message(context, ret, "Failed to decode digest inner request");
 	goto out;
     }
 
@@ -386,15 +386,15 @@ _kdc_do_digest(krb5_context context,
 
 	hex_encode(server_nonce, sizeof(server_nonce), &r.u.initReply.nonce);
 	if (r.u.initReply.nonce == NULL) {
-	    krb5_set_error_string(context, "Failed to decode server nonce");
 	    ret = ENOMEM;
+	    krb5_set_error_message(context, ret, "Failed to decode server nonce");
 	    goto out;
 	}
 
 	sp = krb5_storage_emem();
 	if (sp == NULL) {
 	    ret = ENOMEM;
-	    krb5_set_error_string(context, "out of memory");
+	    krb5_set_error_message(context, ret, "malloc: out of memory");
 	    goto out;
 	}
 	ret = krb5_store_stringz(sp, ireq.u.init.type);
@@ -410,9 +410,9 @@ _kdc_do_digest(krb5_context context,
 		     ireq.u.init.channel->cb_type,
 		     ireq.u.init.channel->cb_binding);
 	    if (s == NULL) {
-		krb5_set_error_string(context, "Failed to allocate "
-				      "channel binding");
 		ret = ENOMEM;
+		krb5_set_error_message(context, ret,
+				       "Failed to allocate channel binding");
 		goto out;
 	    }
 	    free(r.u.initReply.nonce);
@@ -429,15 +429,15 @@ _kdc_do_digest(krb5_context context,
 	    r.u.initReply.identifier = 
 		malloc(sizeof(*r.u.initReply.identifier));
 	    if (r.u.initReply.identifier == NULL) {
-		krb5_set_error_string(context, "out of memory");
 		ret = ENOMEM;
+		krb5_set_error_message(context, ret, "malloc: out of memory");
 		goto out;
 	    }
 
 	    asprintf(r.u.initReply.identifier, "%02X", identifier & 0xff);
 	    if (*r.u.initReply.identifier == NULL) {
-		krb5_set_error_string(context, "out of memory");
 		ret = ENOMEM;
+		krb5_set_error_message(context, ret, "malloc: out of memory");
 		goto out;
 	    }
 
@@ -478,8 +478,8 @@ _kdc_do_digest(krb5_context context,
 	ASN1_MALLOC_ENCODE(Checksum, buf.data, buf.length, &res, &size, ret);
 	free_Checksum(&res);
 	if (ret) {
-	    krb5_set_error_string(context, "Failed to encode "
-				  "checksum in digest request");
+	    krb5_set_error_message(context, ret, "Failed to encode "
+				   "checksum in digest request");
 	    goto out;
 	}
 	if (size != buf.length)
@@ -502,7 +502,7 @@ _kdc_do_digest(krb5_context context,
 	sp = krb5_storage_emem();
 	if (sp == NULL) {
 	    ret = ENOMEM;
-	    krb5_set_error_string(context, "out of memory");
+	    krb5_set_error_message(context, ret, "malloc: out of memory");
 	    goto out;
 	}
 	ret = krb5_store_stringz(sp, ireq.u.digestRequest.type);
@@ -524,15 +524,15 @@ _kdc_do_digest(krb5_context context,
 	buf.length = strlen(ireq.u.digestRequest.opaque);
 	buf.data = malloc(buf.length);
 	if (buf.data == NULL) {
-	    krb5_set_error_string(context, "out of memory");
 	    ret = ENOMEM;
+	    krb5_set_error_message(context, ret, "malloc: out of memory");
 	    goto out;
 	}
 
 	ret = hex_decode(ireq.u.digestRequest.opaque, buf.data, buf.length);
 	if (ret <= 0) {
-	    krb5_set_error_string(context, "Failed to decode opaque");
 	    ret = ENOMEM;
+	    krb5_set_error_message(context, ret, "Failed to decode opaque");
 	    goto out;
 	}
 	buf.length = ret;
@@ -540,7 +540,7 @@ _kdc_do_digest(krb5_context context,
 	ret = decode_Checksum(buf.data, buf.length, &res, NULL);
 	free(buf.data);
 	if (ret) {
-	    krb5_set_error_string(context, "Failed to decode digest Checksum");
+	    krb5_set_error_message(context, ret, "Failed to decode digest Checksum");
 	    goto out;
 	}
 	
@@ -553,8 +553,8 @@ _kdc_do_digest(krb5_context context,
 	serverNonce.length = strlen(ireq.u.digestRequest.serverNonce);
 	serverNonce.data = malloc(serverNonce.length);
 	if (serverNonce.data == NULL) {
-	    krb5_set_error_string(context, "out of memory");
 	    ret = ENOMEM;
+	    krb5_set_error_message(context, ret, "malloc: out of memory");
 	    goto out;
 	}
 	    
@@ -568,8 +568,8 @@ _kdc_do_digest(krb5_context context,
 	    ssize = hex_decode(ireq.u.digestRequest.serverNonce, 
 			       serverNonce.data, serverNonce.length);
 	    if (ssize <= 0) {
-		krb5_set_error_string(context, "Failed to decode serverNonce");
 		ret = ENOMEM;
+		krb5_set_error_message(context, ret, "Failed to decode serverNonce");
 		goto out;
 	    }
 	    serverNonce.length = ssize;
@@ -593,15 +593,15 @@ _kdc_do_digest(krb5_context context,
 	    uint32_t t;
 	    
 	    if (serverNonce.length < 4) {
-		krb5_set_error_string(context, "server nonce too short");
 		ret = EINVAL;
+		krb5_set_error_message(context, ret, "server nonce too short");
 		goto out;
 	    }
 	    t = p[0] | (p[1] << 8) | (p[2] << 16) | (p[3] << 24);
 
 	    if (abs((kdc_time & 0xffffffff) - t) > context->max_skew) {
-		krb5_set_error_string(context, "time screw in server nonce ");
 		ret = EINVAL;
+		krb5_set_error_message(context, ret, "time screw in server nonce ");
 		goto out;
 	    }
 	}
@@ -618,15 +618,15 @@ _kdc_do_digest(krb5_context context,
 	    }
 
 	    if (ireq.u.digestRequest.identifier == NULL) {
-		krb5_set_error_string(context, "Identifier missing "
-				      "from CHAP request");
 		ret = EINVAL;
+		krb5_set_error_message(context, ret, "Identifier missing "
+				       "from CHAP request");
 		goto out;
 	    }
 	    
 	    if (hex_decode(*ireq.u.digestRequest.identifier, &id, 1) != 1) {
-		krb5_set_error_string(context, "failed to decode identifier");
 		ret = EINVAL;
+		krb5_set_error_message(context, ret, "failed to decode identifier");
 		goto out;
 	    }
 	    
@@ -714,8 +714,8 @@ _kdc_do_digest(krb5_context context,
 	    MD5_Final(md, &ctx);
 	    hex_encode(md, sizeof(md), &A1);
 	    if (A1 == NULL) {
-		krb5_set_error_string(context, "out of memory");
 		ret = ENOMEM;
+		krb5_set_error_message(context, ret, "malloc: out of memory");
 		goto failed;
 	    }
 	    
@@ -733,8 +733,8 @@ _kdc_do_digest(krb5_context context,
 	    MD5_Final(md, &ctx);
 	    hex_encode(md, sizeof(md), &A2);
 	    if (A2 == NULL) {
-		krb5_set_error_string(context, "out of memory");
 		ret = ENOMEM;
+		krb5_set_error_message(context, ret, "malloc: out of memory");
 		free(A1);
 		goto failed;
 	    }
@@ -795,15 +795,15 @@ _kdc_do_digest(krb5_context context,
 	    }
 
 	    if (ireq.u.digestRequest.clientNonce == NULL)  {
-		krb5_set_error_string(context, 
-				      "MS-CHAP-V2 clientNonce missing");
 		ret = EINVAL;
+		krb5_set_error_message(context, ret, 
+				       "MS-CHAP-V2 clientNonce missing");
 		goto failed;
 	    }	    
 	    if (serverNonce.length != 16) {
-		krb5_set_error_string(context, 
-				      "MS-CHAP-V2 serverNonce wrong length");
 		ret = EINVAL;
+		krb5_set_error_message(context, ret, 
+				       "MS-CHAP-V2 serverNonce wrong length");
 		goto failed;
 	    }
 
@@ -824,16 +824,16 @@ _kdc_do_digest(krb5_context context,
 		clientNonce.data = malloc(clientNonce.length);
 		if (clientNonce.data == NULL) {
 		    ret = ENOMEM;
-		    krb5_set_error_string(context, "out of memory");
+		    krb5_set_error_message(context, ret, "malloc: out of memory");
 		    goto out;
 		}
 
 		ssize = hex_decode(*ireq.u.digestRequest.clientNonce, 
 				   clientNonce.data, clientNonce.length);
 		if (ssize != 16) {
-		    krb5_set_error_string(context, 
-					  "Failed to decode clientNonce");
 		    ret = ENOMEM;
+		    krb5_set_error_message(context, ret, 
+					   "Failed to decode clientNonce");
 		    goto out;
 		}
 		SHA1_Update(&ctx, clientNonce.data, ssize);
@@ -852,18 +852,18 @@ _kdc_do_digest(krb5_context context,
 				HDB_F_GET_CLIENT, NULL, &user);
 	    krb5_free_principal(context, clientprincipal);
 	    if (ret) {
-		krb5_set_error_string(context, 
-				      "MS-CHAP-V2 user %s not in database",
-				      username);
+		krb5_set_error_message(context, ret, 
+				       "MS-CHAP-V2 user %s not in database",
+				       username);
 		goto failed;
 	    }
 
 	    ret = hdb_enctype2key(context, &user->entry, 
 				  ETYPE_ARCFOUR_HMAC_MD5, &key);
 	    if (ret) {
-		krb5_set_error_string(context, 
-				      "MS-CHAP-V2 missing arcfour key %s",
-				      username);
+		krb5_set_error_message(context, ret, 
+				       "MS-CHAP-V2 missing arcfour key %s",
+				       username);
 		goto failed;
 	    }
 
@@ -872,7 +872,7 @@ _kdc_do_digest(krb5_context context,
 					    key->key.keyvalue.length,
 					    challange, &answer);
 	    if (ret) {
-		krb5_set_error_string(context, "NTLM missing arcfour key");
+		krb5_set_error_message(context, ret, "NTLM missing arcfour key");
 		goto failed;
 	    }
 	    
@@ -967,8 +967,8 @@ _kdc_do_digest(krb5_context context,
 	    asprintf(&r.u.error.reason, "Unsupported digest type %s", 
 		     ireq.u.digestRequest.type);
 	    if (r.u.error.reason == NULL) {
-		krb5_set_error_string(context, "out of memory");
 		ret = ENOMEM;
+		krb5_set_error_message(context, ret, "malloc: out of memory");
 		goto out;
 	    }
 	    r.u.error.code = EINVAL;
@@ -1021,29 +1021,29 @@ _kdc_do_digest(krb5_context context,
 	r.u.ntlmInitReply.targetname = 
 	    get_ntlm_targetname(context, client);
 	if (r.u.ntlmInitReply.targetname == NULL) {
-	    krb5_set_error_string(context, "out of memory");
 	    ret = ENOMEM;
+	    krb5_set_error_message(context, ret, "malloc: out of memory");
 	    goto out;
 	}
 	r.u.ntlmInitReply.challange.data = malloc(8);
 	if (r.u.ntlmInitReply.challange.data == NULL) {
-	    krb5_set_error_string(context, "out of memory");
 	    ret = ENOMEM;
+	    krb5_set_error_message(context, ret, "malloc: out of memory");
 	    goto out;
 	}
 	r.u.ntlmInitReply.challange.length = 8;
 	if (RAND_bytes(r.u.ntlmInitReply.challange.data,
 		       r.u.ntlmInitReply.challange.length) != 1) 
-	{
-	    krb5_set_error_string(context, "out of random error");
-	    ret = ENOMEM;
-	    goto out;
-	}
+	    {
+		ret = ENOMEM;
+		krb5_set_error_message(context, ret, "out of random error");
+		goto out;
+	    }
 	/* XXX fix targetinfo */
 	ALLOC(r.u.ntlmInitReply.targetinfo);
 	if (r.u.ntlmInitReply.targetinfo == NULL) {
-	    krb5_set_error_string(context, "out of memory");
 	    ret = ENOMEM;
+	    krb5_set_error_message(context, ret, "malloc: out of memory");
 	    goto out;
 	}
 
@@ -1052,8 +1052,8 @@ _kdc_do_digest(krb5_context context,
 			      client,
 			      r.u.ntlmInitReply.targetinfo);
 	if (ret) {
-	    krb5_set_error_string(context, "out of memory");
 	    ret = ENOMEM;
+	    krb5_set_error_message(context, ret, "malloc: out of memory");
 	    goto out;
 	}
 
@@ -1064,14 +1064,14 @@ _kdc_do_digest(krb5_context context,
 	sp = krb5_storage_emem();
 	if (sp == NULL) {
 	    ret = ENOMEM;
-	    krb5_set_error_string(context, "out of memory");
+	    krb5_set_error_message(context, ret, "malloc: out of memory");
 	    goto out;
 	}
 	
 	ret = krb5_storage_write(sp, r.u.ntlmInitReply.challange.data, 8);
 	if (ret != 8) {
 	    ret = ENOMEM;
-	    krb5_set_error_string(context, "storage write challange");
+	    krb5_set_error_message(context, ret, "storage write challange");
 	    goto out;
 	}
 	ret = krb5_store_uint32(sp, r.u.ntlmInitReply.flags);
@@ -1127,8 +1127,8 @@ _kdc_do_digest(krb5_context context,
 			    HDB_F_GET_CLIENT, NULL, &user);
 	krb5_free_principal(context, clientprincipal);
 	if (ret) {
-	    krb5_set_error_string(context, "NTLM user %s not in database",
-				  ireq.u.ntlmRequest.username);
+	    krb5_set_error_message(context, ret, "NTLM user %s not in database",
+				   ireq.u.ntlmRequest.username);
 	    goto failed;
 	}
 
@@ -1150,33 +1150,33 @@ _kdc_do_digest(krb5_context context,
 	sp = krb5_storage_from_data(&buf);
 	if (sp == NULL) {
 	    ret = ENOMEM;
-	    krb5_set_error_string(context, "out of memory");
+	    krb5_set_error_message(context, ret, "malloc: out of memory");
 	    goto out;
 	}
 	
 	ret = krb5_storage_read(sp, challange, sizeof(challange));
 	if (ret != sizeof(challange)) {
-	    krb5_set_error_string(context, "NTLM storage read challange");
 	    ret = ENOMEM;
+	    krb5_set_error_message(context, ret, "NTLM storage read challange");
 	    goto out;
 	}
 	ret = krb5_ret_uint32(sp, &flags);
 	if (ret) {
-	    krb5_set_error_string(context, "NTLM storage read flags");
+	    krb5_set_error_message(context, ret, "NTLM storage read flags");
 	    goto out;
 	}
 	krb5_data_free(&buf);
 
 	if ((flags & NTLM_NEG_NTLM) == 0) {
 	    ret = EINVAL;
-	    krb5_set_error_string(context, "NTLM not negotiated");
+	    krb5_set_error_message(context, ret, "NTLM not negotiated");
 	    goto out;
 	}
 
 	ret = hdb_enctype2key(context, &user->entry, 
 			      ETYPE_ARCFOUR_HMAC_MD5, &key);
 	if (ret) {
-	    krb5_set_error_string(context, "NTLM missing arcfour key");
+	    krb5_set_error_message(context, ret, "NTLM missing arcfour key");
 	    goto out;
 	}
 
@@ -1194,8 +1194,8 @@ _kdc_do_digest(krb5_context context,
 
 	    targetname = get_ntlm_targetname(context, client);
 	    if (targetname == NULL) {
-		krb5_set_error_string(context, "out of memory");
 		ret = ENOMEM;
+		krb5_set_error_message(context, ret, "malloc: out of memory");
 		goto out;
 	    }
 
@@ -1213,7 +1213,7 @@ _kdc_do_digest(krb5_context context,
 					 sessionkey);
 	    free(targetname);
 	    if (ret) {
-		krb5_set_error_string(context, "NTLM v2 verify failed");
+		krb5_set_error_message(context, ret, "NTLM v2 verify failed");
 		goto failed;
 	    }
 
@@ -1238,9 +1238,9 @@ _kdc_do_digest(krb5_context context,
 		}
 
 		if (ireq.u.ntlmRequest.lm.length != 24) {
-		    krb5_set_error_string(context, "LM hash have wrong length "
-					  "for NTLM session key");
 		    ret = EINVAL;
+		    krb5_set_error_message(context, ret, "LM hash have wrong length "
+					   "for NTLM session key");
 		    goto failed;
 		}
 		
@@ -1260,18 +1260,18 @@ _kdc_do_digest(krb5_context context,
 					    key->key.keyvalue.length,
 					    challange, &answer);
 	    if (ret) {
-		krb5_set_error_string(context, "NTLM missing arcfour key");
+		krb5_set_error_message(context, ret, "NTLM missing arcfour key");
 		goto failed;
 	    }
 	    
 	    if (ireq.u.ntlmRequest.ntlm.length != answer.length ||
 		memcmp(ireq.u.ntlmRequest.ntlm.data, answer.data, answer.length) != 0)
-	    {
-		free(answer.data);
-		ret = EINVAL;
-		krb5_set_error_string(context, "NTLM hash mismatch");
-		goto failed;
-	    }
+		{
+		    free(answer.data);
+		    ret = EINVAL;
+		    krb5_set_error_message(context, ret, "NTLM hash mismatch");
+		    goto failed;
+		}
 	    free(answer.data);
 
 	    {
@@ -1290,18 +1290,19 @@ _kdc_do_digest(krb5_context context,
 	    size_t len;
 	    
 	    if ((flags & NTLM_NEG_KEYEX) == 0) {
-		krb5_set_error_string(context,
-				      "NTLM client failed to neg key "
-				      "exchange but still sent key");
 		ret = EINVAL;
+		krb5_set_error_message(context, ret,
+				       "NTLM client failed to neg key "
+				       "exchange but still sent key");
 		goto failed;
 	    }
 	    
 	    len = ireq.u.ntlmRequest.sessionkey->length;
 	    if (len != sizeof(masterkey)){
-		krb5_set_error_string(context,
-				      "NTLM master key wrong length: %lu",
-				      (unsigned long)len);
+		ret = EINVAL;
+		krb5_set_error_message(context, ret,
+				       "NTLM master key wrong length: %lu",
+				       (unsigned long)len);
 		goto failed;
 	    }
 	    
@@ -1315,14 +1316,15 @@ _kdc_do_digest(krb5_context context,
 	    r.u.ntlmResponse.sessionkey = 
 		malloc(sizeof(*r.u.ntlmResponse.sessionkey));
 	    if (r.u.ntlmResponse.sessionkey == NULL) {
-		krb5_set_error_string(context, "out of memory");
+		ret = EINVAL;
+		krb5_set_error_message(context, ret, "malloc: out of memory");
 		goto out;
 	    }
 	    
 	    ret = krb5_data_copy(r.u.ntlmResponse.sessionkey,
 				 masterkey, sizeof(masterkey));
 	    if (ret) {
-		krb5_set_error_string(context, "out of memory");
+		krb5_set_error_message(context, ret, "malloc: out of memory");
 		goto out;
 	    }
 	}
@@ -1354,11 +1356,11 @@ _kdc_do_digest(krb5_context context,
 	break;
 
     default: {
-	char *s;
-	krb5_set_error_string(context, "unknown operation to digest");
+	const char *s;
 	ret = EINVAL;
+	krb5_set_error_message(context, ret, "unknown operation to digest");
 
-    failed:
+	failed:
 
 	s = krb5_get_error_message(context, ret);
 	if (s == NULL) {
@@ -1370,10 +1372,10 @@ _kdc_do_digest(krb5_context context,
 
 	r.element = choice_DigestRepInner_error;
 	r.u.error.reason = strdup("unknown error");
-	krb5_free_error_string(context, s);
+	krb5_free_error_message(context, s);
 	if (r.u.error.reason == NULL) {
-	    krb5_set_error_string(context, "out of memory");
 	    ret = ENOMEM;
+	    krb5_set_error_message(context, ret, "malloc: out of memory");
 	    goto out;
 	}
 	r.u.error.code = EINVAL;
@@ -1383,7 +1385,7 @@ _kdc_do_digest(krb5_context context,
 
     ASN1_MALLOC_ENCODE(DigestRepInner, buf.data, buf.length, &r, &size, ret);
     if (ret) {
-	krb5_set_error_string(context, "Failed to encode inner digest reply");
+	krb5_set_error_message(context, ret, "Failed to encode inner digest reply");
 	goto out;
     }
     if (size != buf.length)
@@ -1414,14 +1416,14 @@ _kdc_do_digest(krb5_context context,
     
     ASN1_MALLOC_ENCODE(DigestREP, reply->data, reply->length, &rep, &size, ret);
     if (ret) {
-	krb5_set_error_string(context, "Failed to encode digest reply");
+	krb5_set_error_message(context, ret, "Failed to encode digest reply");
 	goto out;
     }
     if (size != reply->length)
 	krb5_abortx(context, "ASN1 internal error");
 
     
-out:
+ out:
     if (ac)
 	krb5_auth_con_free(context, ac);
     if (ret)

@@ -32,7 +32,7 @@
  */
 
 #include "hx_locl.h"
-RCSID("$Id: keyset.c 22466 2008-01-16 14:26:35Z lha $");
+RCSID("$Id: keyset.c 22851 2008-04-07 18:49:07Z lha $");
 
 /**
  * @page page_keyset Certificate store operations
@@ -59,7 +59,7 @@ RCSID("$Id: keyset.c 22466 2008-01-16 14:26:35Z lha $");
  */
 
 struct hx509_certs_data {
-    int ref;
+    unsigned int ref;
     struct hx509_keyset_ops *ops;
     void *ops_data;
 };
@@ -203,11 +203,11 @@ _hx509_certs_ref(hx509_certs certs)
 {
     if (certs == NULL)
 	return NULL;
-    if (certs->ref <= 0)
-	_hx509_abort("certs refcount <= 0");
-    certs->ref++;
     if (certs->ref == 0)
-	_hx509_abort("certs refcount == 0");
+	_hx509_abort("certs refcount == 0 on ref");
+    if (certs->ref == UINT_MAX)
+	_hx509_abort("certs refcount == UINT_MAX on ref");
+    certs->ref++;
     return certs;
 }
 
@@ -223,8 +223,8 @@ void
 hx509_certs_free(hx509_certs *certs)
 {
     if (*certs) {
-	if ((*certs)->ref <= 0)
-	    _hx509_abort("refcount <= 0");
+	if ((*certs)->ref == 0)
+	    _hx509_abort("cert refcount == 0 on free");
 	if (--(*certs)->ref > 0)
 	    return;
 

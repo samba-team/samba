@@ -98,6 +98,12 @@ _hx509_cert_set_release (
 	void */*ctx*/);
 
 int
+_hx509_cert_to_env (
+	hx509_context /*context*/,
+	hx509_cert /*cert*/,
+	hx509_env */*env*/);
+
+int
 _hx509_certs_keys_add (
 	hx509_context /*context*/,
 	hx509_certs /*certs*/,
@@ -182,6 +188,18 @@ _hx509_create_signature_bitstring (
 	heim_bit_string */*sig*/);
 
 int
+_hx509_expr_eval (
+	hx509_context /*context*/,
+	hx509_env /*env*/,
+	struct hx_expr */*expr*/);
+
+void
+_hx509_expr_free (struct hx_expr */*expr*/);
+
+struct hx_expr *
+_hx509_expr_parse (const char */*buf*/);
+
+int
 _hx509_find_extension_subject_key_id (
 	const Certificate */*issuer*/,
 	SubjectKeyIdentifier */*si*/);
@@ -253,18 +271,16 @@ _hx509_lock_get_passwords (hx509_lock /*lock*/);
 hx509_certs
 _hx509_lock_unlock_certs (hx509_lock /*lock*/);
 
-int
-_hx509_map_file (
-	const char */*fn*/,
-	void **/*data*/,
-	size_t */*length*/,
-	struct stat */*rsb*/);
+struct hx_expr *
+_hx509_make_expr (
+	enum hx_expr_op /*op*/,
+	void */*arg1*/,
+	void */*arg2*/);
 
 int
 _hx509_map_file_os (
 	const char */*fn*/,
-	heim_octet_string */*os*/,
-	struct stat */*rsb*/);
+	heim_octet_string */*os*/);
 
 int
 _hx509_match_keys (
@@ -486,6 +502,9 @@ _hx509_request_to_pkcs10 (
 hx509_revoke_ctx
 _hx509_revoke_ref (hx509_revoke_ctx /*ctx*/);
 
+void
+_hx509_sel_yyerror (char */*s*/);
+
 int
 _hx509_set_cert_attribute (
 	hx509_context /*context*/,
@@ -494,17 +513,15 @@ _hx509_set_cert_attribute (
 	const heim_octet_string */*attr*/);
 
 void
-_hx509_unmap_file (
-	void */*data*/,
-	size_t /*len*/);
-
-void
 _hx509_unmap_file_os (heim_octet_string */*os*/);
 
 int
 _hx509_unparse_Name (
 	const Name */*aname*/,
 	char **/*str*/);
+
+time_t
+_hx509_verify_get_time (hx509_verify_ctx /*ctx*/);
 
 int
 _hx509_verify_signature (

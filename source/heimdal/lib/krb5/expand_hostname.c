@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: expand_hostname.c 22229 2007-12-08 21:40:59Z lha $");
+RCSID("$Id: expand_hostname.c 23280 2008-06-23 03:26:18Z lha $");
 
 static krb5_error_code
 copy_hostname(krb5_context context,
@@ -42,7 +42,7 @@ copy_hostname(krb5_context context,
 {
     *new_hostname = strdup (orig_hostname);
     if (*new_hostname == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
     strlwr (*new_hostname);
@@ -76,7 +76,8 @@ krb5_expand_hostname (krb5_context context,
 	    *new_hostname = strdup (a->ai_canonname);
 	    freeaddrinfo (ai);
 	    if (*new_hostname == NULL) {
-		krb5_set_error_string(context, "malloc: out of memory");
+		krb5_set_error_message(context, ENOMEM,
+				       "malloc: out of memory");
 		return ENOMEM;
 	    } else {
 		return 0;

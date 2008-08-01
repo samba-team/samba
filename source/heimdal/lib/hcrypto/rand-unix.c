@@ -35,7 +35,7 @@
 #include <config.h>
 #endif
 
-RCSID("$Id: rand-unix.c 20028 2007-01-21 09:54:56Z lha $");
+RCSID("$Id: rand-unix.c 23462 2008-07-27 12:14:42Z lha $");
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -63,8 +63,10 @@ get_device_fd(int flags)
 
     for(p = rnd_devices; *p; p++) {
 	int fd = open(*p, flags | O_NDELAY);
-	if(fd >= 0)
+	if(fd >= 0) {
+	    rk_cloexec(fd);
 	    return fd;
+	}
     }
     return -1;
 }

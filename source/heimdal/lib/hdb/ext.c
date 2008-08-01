@@ -34,7 +34,7 @@
 #include "hdb_locl.h"
 #include <der.h>
 
-RCSID("$Id: ext.c 21113 2007-06-18 12:59:32Z lha $");
+RCSID("$Id: ext.c 23316 2008-06-23 04:32:32Z lha $");
 
 krb5_error_code
 hdb_entry_check_mandatory(krb5_context context, const hdb_entry *ent)
@@ -53,8 +53,9 @@ hdb_entry_check_mandatory(krb5_context context, const hdb_entry *ent)
 	    choice_HDB_extension_data_asn1_ellipsis)
 	    continue;
 	if (ent->extensions->val[i].mandatory) {
-	    krb5_set_error_string(context,  "Principal have unknown "
-				  "mandatory extension");
+	    krb5_set_error_message(context, HDB_ERR_MANDATORY_OPTION,
+				   "Principal have unknown "
+				   "mandatory extension");
 	    return HDB_ERR_MANDATORY_OPTION;
 	}
     }
@@ -95,7 +96,7 @@ hdb_replace_extension(krb5_context context,
     if (entry->extensions == NULL) {
 	entry->extensions = calloc(1, sizeof(*entry->extensions));
 	if (entry->extensions == NULL) {
-	    krb5_set_error_string(context, "malloc: out of memory");
+	    krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	    return ENOMEM;
 	}
     } else if (ext->data.element != choice_HDB_extension_data_asn1_ellipsis) {
@@ -120,8 +121,8 @@ hdb_replace_extension(krb5_context context,
 			  &replace_class, &replace_type, &replace_tag,
 			  &size);
 	if (ret) {
-	    krb5_set_error_string(context, "hdb: failed to decode "
-				  "replacement hdb extention");
+	    krb5_set_error_message(context, ret, "hdb: failed to decode "
+				   "replacement hdb extention");
 	    return ret;
 	}
 
@@ -136,8 +137,8 @@ hdb_replace_extension(krb5_context context,
 			      &list_class, &list_type, &list_tag,
 			      &size);
 	    if (ret) {
-		krb5_set_error_string(context, "hdb: failed to decode "
-				      "present hdb extention");
+		krb5_set_error_message(context, ret, "hdb: failed to decode "
+				       "present hdb extention");
 		return ret;
 	    }
 
@@ -153,15 +154,15 @@ hdb_replace_extension(krb5_context context,
 	free_HDB_extension(ext2);
 	ret = copy_HDB_extension(ext, ext2);
 	if (ret)
-	    krb5_set_error_string(context, "hdb: failed to copy replacement "
-				  "hdb extention");
+	    krb5_set_error_message(context, ret, "hdb: failed to copy replacement "
+				   "hdb extention");
 	return ret;
     }
 
     es = realloc(entry->extensions->val, 
 		 (entry->extensions->len+1)*sizeof(entry->extensions->val[0]));
     if (es == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
     entry->extensions->val = es;
@@ -171,7 +172,7 @@ hdb_replace_extension(krb5_context context,
     if (ret == 0)
 	entry->extensions->len++;
     else
-	krb5_set_error_string(context, "hdb: failed to copy new extension");
+	krb5_set_error_message(context, ret, "hdb: failed to copy new extension");
 
     return ret;
 }
@@ -283,8 +284,9 @@ hdb_entry_get_password(krb5_context context, HDB *db,
 				       db->hdb_master_key);
 
 	    if (key == NULL) {
-		krb5_set_error_string(context, "master key %d missing",
-				      *ext->data.u.password.mkvno);
+		krb5_set_error_message(context, HDB_ERR_NO_MKEY,
+				       "master key %d missing",
+				       *ext->data.u.password.mkvno);
 		return HDB_ERR_NO_MKEY;
 	    }
 
@@ -302,7 +304,7 @@ hdb_entry_get_password(krb5_context context, HDB *db,
 
 	str = pw.data;
 	if (str[pw.length - 1] != '\0') {
-	    krb5_set_error_string(context, "password malformated");
+	    krb5_set_error_message(context, EINVAL, "password malformated");
 	    return EINVAL;
 	}
 
@@ -310,7 +312,7 @@ hdb_entry_get_password(krb5_context context, HDB *db,
 
 	der_free_octet_string(&pw);
 	if (*p == NULL) {
-	    krb5_set_error_string(context, "malloc: out of memory");
+	    krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	    return ENOMEM;
 	}
 	return 0;
@@ -318,7 +320,7 @@ hdb_entry_get_password(krb5_context context, HDB *db,
 
     ret = krb5_unparse_name(context, entry->principal, &str);
     if (ret == 0) {
-	krb5_set_error_string(context, "no password attributefor %s", str);
+	krb5_set_error_message(context, ENOENT, "no password attributefor %s", str);
 	free(str);
     } else 
 	krb5_clear_error_string(context);
@@ -341,8 +343,9 @@ hdb_entry_set_password(krb5_context context, HDB *db,
 
 	key = _hdb_find_master_key(NULL, db->hdb_master_key);
 	if (key == NULL) {
-	    krb5_set_error_string(context, "hdb_entry_set_password: "
-				  "failed to find masterkey");
+	    krb5_set_error_message(context, HDB_ERR_NO_MKEY,
+				   "hdb_entry_set_password: "
+				   "failed to find masterkey");
 	    return HDB_ERR_NO_MKEY;
 	}
 
@@ -356,7 +359,7 @@ hdb_entry_set_password(krb5_context context, HDB *db,
 	    malloc(sizeof(*ext.data.u.password.mkvno));
 	if (ext.data.u.password.mkvno == NULL) {
 	    free_HDB_extension(&ext);
-	    krb5_set_error_string(context, "malloc: out of memory");
+	    krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	    return ENOMEM;
 	}
 	*ext.data.u.password.mkvno = _hdb_mkey_version(key);
@@ -367,7 +370,7 @@ hdb_entry_set_password(krb5_context context, HDB *db,
 	ret = krb5_data_copy(&ext.data.u.password.password, 
 			     p, strlen(p) + 1);
 	if (ret) {
-	    krb5_set_error_string(context, "malloc: out of memory");
+	    krb5_set_error_message(context, ret, "malloc: out of memory");
 	    free_HDB_extension(&ext);
 	    return ret;
 	}

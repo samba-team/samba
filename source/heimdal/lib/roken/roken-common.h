@@ -31,7 +31,7 @@
  * SUCH DAMAGE.
  */
 
-/* $Id: roken-common.h 20867 2007-06-03 21:00:45Z lha $ */
+/* $Id: roken-common.h 23468 2008-07-27 12:16:56Z lha $ */
 
 #ifndef __ROKEN_COMMON_H__
 #define __ROKEN_COMMON_H__
@@ -399,6 +399,19 @@ rk_strpoolfree(struct rk_strpool *);
 
 void ROKEN_LIB_FUNCTION
 rk_dumpdata (const char *, const void *, size_t);
+
+int ROKEN_LIB_FUNCTION
+rk_undumpdata (const char *, void **, size_t *);
+
+void ROKEN_LIB_FUNCTION
+rk_xfree (void *);
+
+void ROKEN_LIB_FUNCTION
+rk_cloexec(int);
+
+void ROKEN_LIB_FUNCTION
+rk_cloexec_file(FILE *);
+
 
 ROKEN_CPP_END
 

@@ -36,7 +36,7 @@
 #define O_BINARY 0
 #endif
 
-RCSID("$Id: mkey.c 21745 2007-07-31 16:11:25Z lha $");
+RCSID("$Id: mkey.c 23316 2008-06-23 04:32:32Z lha $");
 
 struct hdb_master_key_data {
     krb5_keytab_entry keytab;
@@ -67,7 +67,7 @@ hdb_process_master_key(krb5_context context,
 
     *mkey = calloc(1, sizeof(**mkey));
     if(*mkey == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
     (*mkey)->keytab.vno = kvno;
@@ -159,8 +159,8 @@ read_master_mit(krb5_context context, const char *filename,
     fd = open(filename, O_RDONLY | O_BINARY);
     if(fd < 0) {
 	int save_errno = errno;
-	krb5_set_error_string(context, "failed to open %s: %s", filename,
-			      strerror(save_errno));
+	krb5_set_error_message(context, save_errno, "failed to open %s: %s",
+			       filename, strerror(save_errno));
 	return save_errno;
     }
     sp = krb5_storage_from_fd(fd);
@@ -176,9 +176,9 @@ read_master_mit(krb5_context context, const char *filename,
 #else
     ret = krb5_ret_int16(sp, &enctype);
     if((htons(enctype) & 0xff00) == 0x3000) {
-	krb5_set_error_string(context, "unknown keytype in %s: %#x, expected %#x", 
-			      filename, htons(enctype), 0x3000);
 	ret = HEIM_ERR_BAD_MKEY;
+	krb5_set_error_message(context, ret, "unknown keytype in %s: %#x, expected %#x", 
+			       filename, htons(enctype), 0x3000);
 	goto out;
     }
     key.keytype = enctype;
@@ -209,7 +209,7 @@ read_master_encryptionkey(krb5_context context, const char *filename,
     fd = open(filename, O_RDONLY | O_BINARY);
     if(fd < 0) {
 	int save_errno = errno;
-	krb5_set_error_string(context, "failed to open %s: %s", 
+	krb5_set_error_message(context, save_errno, "failed to open %s: %s", 
 			      filename, strerror(save_errno));
 	return save_errno;
     }
@@ -218,7 +218,7 @@ read_master_encryptionkey(krb5_context context, const char *filename,
     close(fd);
     if(len < 0) {
 	int save_errno = errno;
-	krb5_set_error_string(context, "error reading %s: %s", 
+	krb5_set_error_message(context, save_errno, "error reading %s: %s", 
 			      filename, strerror(save_errno));
 	return save_errno;
     }
@@ -255,8 +255,8 @@ read_master_krb4(krb5_context context, const char *filename,
     fd = open(filename, O_RDONLY | O_BINARY);
     if(fd < 0) {
 	int save_errno = errno;
-	krb5_set_error_string(context, "failed to open %s: %s", 
-			      filename, strerror(save_errno));
+	krb5_set_error_message(context, save_errno, "failed to open %s: %s", 
+			       filename, strerror(save_errno));
 	return save_errno;
     }
     
@@ -264,12 +264,13 @@ read_master_krb4(krb5_context context, const char *filename,
     close(fd);
     if(len < 0) {
 	int save_errno = errno;
-	krb5_set_error_string(context, "error reading %s: %s", 
-			      filename, strerror(save_errno));
+	krb5_set_error_message(context, save_errno, "error reading %s: %s", 
+			       filename, strerror(save_errno));
 	return save_errno;
     }
     if(len != 8) {
-	krb5_set_error_string(context, "bad contents of %s", filename);
+	krb5_set_error_message(context, HEIM_ERR_EOF, 
+			       "bad contents of %s", filename);
 	return HEIM_ERR_EOF; /* XXX file might be too large */
     }
 
@@ -303,14 +304,14 @@ hdb_read_master_key(krb5_context context, const char *filename,
     f = fopen(filename, "r");
     if(f == NULL) {
 	int save_errno = errno;
-	krb5_set_error_string(context, "failed to open %s: %s", 
-			      filename, strerror(save_errno));
+	krb5_set_error_message(context, save_errno, "failed to open %s: %s", 
+			       filename, strerror(save_errno));
 	return save_errno;
     }
     
     if(fread(buf, 1, 2, f) != 2) {
-	krb5_set_error_string(context, "end of file reading %s", filename);
 	fclose(f);
+	krb5_set_error_message(context, HEIM_ERR_EOF, "end of file reading %s", filename);
 	return HEIM_ERR_EOF;
     }
     

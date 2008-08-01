@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: keytab.c 22532 2008-01-27 11:59:18Z lha $");
+RCSID("$Id: keytab.c 23316 2008-06-23 04:32:32Z lha $");
 
 /*
  * Register a new keytab in `ops'
@@ -47,14 +47,15 @@ krb5_kt_register(krb5_context context,
     struct krb5_keytab_data *tmp;
 
     if (strlen(ops->prefix) > KRB5_KT_PREFIX_MAX_LEN - 1) {
-	krb5_set_error_string(context, "krb5_kt_register; prefix too long");
+	krb5_set_error_message(context, KRB5_KT_BADNAME, 
+			       "krb5_kt_register; prefix too long");
 	return KRB5_KT_BADNAME;
     }
 
     tmp = realloc(context->kt_types,
 		  (context->num_kt_types + 1) * sizeof(*context->kt_types));
     if(tmp == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
     memcpy(&tmp[context->num_kt_types], ops,
@@ -97,14 +98,15 @@ krb5_kt_resolve(krb5_context context,
 	    break;
     }
     if(i == context->num_kt_types) {
-	krb5_set_error_string(context, "unknown keytab type %.*s", 
-			      (int)type_len, type);
+	krb5_set_error_message(context, KRB5_KT_UNKNOWN_TYPE,
+			       "unknown keytab type %.*s", 
+			       (int)type_len, type);
 	return KRB5_KT_UNKNOWN_TYPE;
     }
     
     k = malloc (sizeof(*k));
     if (k == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
     memcpy(k, &context->kt_types[i], sizeof(*k));
@@ -265,7 +267,7 @@ krb5_kt_get_full_name(krb5_context context,
 	return ret;
 
     if (asprintf(str, "%s:%s", type, name) == -1) {
-	krb5_set_error_string(context, "malloc - out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	*str = NULL;
 	return ENOMEM;
     }
@@ -377,12 +379,12 @@ krb5_kt_get_entry(krb5_context context,
 	else
 	    kvno_str[0] = '\0';
 
-	krb5_set_error_string (context,
- 			       "Failed to find %s%s in keytab %s (%s)",
-			       princ,
-			       kvno_str,
-			       kt_name ? kt_name : "unknown keytab",
-			       enctype_str ? enctype_str : "unknown enctype");
+	krb5_set_error_message (context, KRB5_KT_NOTFOUND,
+				"Failed to find %s%s in keytab %s (%s)",
+				princ,
+				kvno_str,
+				kt_name ? kt_name : "unknown keytab",
+				enctype_str ? enctype_str : "unknown enctype");
 	free(kt_name);
 	free(enctype_str);
 	return KRB5_KT_NOTFOUND;
@@ -443,9 +445,9 @@ krb5_kt_start_seq_get(krb5_context context,
 		      krb5_kt_cursor *cursor)
 {
     if(id->start_seq_get == NULL) {
-	krb5_set_error_string(context,
-			      "start_seq_get is not supported in the %s "
-			      " keytab", id->prefix);
+	krb5_set_error_message(context, HEIM_ERR_OPNOTSUPP,
+			       "start_seq_get is not supported in the %s "
+			       " keytab", id->prefix);
 	return HEIM_ERR_OPNOTSUPP;
     }
     return (*id->start_seq_get)(context, id, cursor);
@@ -464,9 +466,9 @@ krb5_kt_next_entry(krb5_context context,
 		   krb5_kt_cursor *cursor)
 {
     if(id->next_entry == NULL) {
-	krb5_set_error_string(context,
-			      "next_entry is not supported in the %s "
-			      " keytab", id->prefix);
+	krb5_set_error_message(context, HEIM_ERR_OPNOTSUPP,
+			       "next_entry is not supported in the %s "
+			       " keytab", id->prefix);
 	return HEIM_ERR_OPNOTSUPP;
     }
     return (*id->next_entry)(context, id, entry, cursor);
@@ -482,9 +484,9 @@ krb5_kt_end_seq_get(krb5_context context,
 		    krb5_kt_cursor *cursor)
 {
     if(id->end_seq_get == NULL) {
-	krb5_set_error_string(context,
-			      "end_seq_get is not supported in the %s "
-			      " keytab", id->prefix);
+	krb5_set_error_message(context, HEIM_ERR_OPNOTSUPP,
+			       "end_seq_get is not supported in the %s "
+			       " keytab", id->prefix);
 	return HEIM_ERR_OPNOTSUPP;
     }
     return (*id->end_seq_get)(context, id, cursor);
@@ -501,8 +503,9 @@ krb5_kt_add_entry(krb5_context context,
 		  krb5_keytab_entry *entry)
 {
     if(id->add == NULL) {
-	krb5_set_error_string(context, "Add is not supported in the %s keytab",
-			      id->prefix);
+	krb5_set_error_message(context, KRB5_KT_NOWRITE,
+			       "Add is not supported in the %s keytab",
+			       id->prefix);
 	return KRB5_KT_NOWRITE;
     }
     entry->timestamp = time(NULL);
@@ -520,9 +523,9 @@ krb5_kt_remove_entry(krb5_context context,
 		     krb5_keytab_entry *entry)
 {
     if(id->remove == NULL) {
-	krb5_set_error_string(context,
-			      "Remove is not supported in the %s keytab",
-			      id->prefix);
+	krb5_set_error_message(context, KRB5_KT_NOWRITE,
+			       "Remove is not supported in the %s keytab",
+			       id->prefix);
 	return KRB5_KT_NOWRITE;
     }
     return (*id->remove)(context, id, entry);

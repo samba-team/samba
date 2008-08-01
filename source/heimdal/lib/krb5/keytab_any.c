@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: keytab_any.c 17035 2006-04-10 09:20:13Z lha $");
+RCSID("$Id: keytab_any.c 23316 2008-06-23 04:32:32Z lha $");
 
 struct any_data {
     krb5_keytab kt;
@@ -72,8 +72,8 @@ any_resolve(krb5_context context, const char *name, krb5_keytab id)
 	    a0 = a;
 	    a->name = strdup(buf);
 	    if (a->name == NULL) {
-		krb5_set_error_string(context, "malloc: out of memory");
 		ret = ENOMEM;
+		krb5_set_error_message(context, ret, "malloc: out of memory");
 		goto fail;
 	    }
 	} else
@@ -87,7 +87,7 @@ any_resolve(krb5_context context, const char *name, krb5_keytab id)
 	prev = a;
     }
     if (a0 == NULL) {
-	krb5_set_error_string(context, "empty ANY: keytab");
+	krb5_set_error_message(context, ENOENT, "empty ANY: keytab");
 	return ENOENT;
     }
     id->data = a0;
@@ -134,7 +134,7 @@ any_start_seq_get(krb5_context context,
 
     c->data = malloc (sizeof(struct any_cursor_extra_data));
     if(c->data == NULL){
-	krb5_set_error_string (context, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
     ed = (struct any_cursor_extra_data *)c->data;
@@ -206,8 +206,8 @@ any_add_entry(krb5_context context,
     while(a != NULL) {
 	ret = krb5_kt_add_entry(context, a->kt, entry);
 	if(ret != 0 && ret != KRB5_KT_NOWRITE) {
-	    krb5_set_error_string(context, "failed to add entry to %s", 
-				  a->name);
+	    krb5_set_error_message(context, ret, "failed to add entry to %s", 
+				   a->name);
 	    return ret;
 	}
 	a = a->next;
@@ -229,8 +229,9 @@ any_remove_entry(krb5_context context,
 	    found++;
 	else {
 	    if(ret != KRB5_KT_NOWRITE && ret != KRB5_KT_NOTFOUND) {
-		krb5_set_error_string(context, "failed to remove entry from %s", 
-				      a->name);
+		krb5_set_error_message(context, ret, 
+				       "Failed to remove keytab entry from %s", 
+				       a->name);
 		return ret;
 	    }
 	}

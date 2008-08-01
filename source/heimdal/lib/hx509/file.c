@@ -35,13 +35,13 @@
 RCSID("$ID$");
 
 int
-_hx509_map_file_os(const char *fn, heim_octet_string *os, struct stat *rsb)
+_hx509_map_file_os(const char *fn, heim_octet_string *os)
 {
     size_t length;
     void *data;
     int ret;
 
-    ret = _hx509_map_file(fn, &data, &length, rsb);
+    ret = rk_undumpdata(fn, &data, &length);
 
     os->data = data;
     os->length = length;
@@ -52,86 +52,13 @@ _hx509_map_file_os(const char *fn, heim_octet_string *os, struct stat *rsb)
 void
 _hx509_unmap_file_os(heim_octet_string *os)
 {
-    _hx509_unmap_file(os->data, os->length);
-}
-
-int
-_hx509_map_file(const char *fn, void **data, size_t *length, struct stat *rsb)
-{
-    struct stat sb;
-    size_t len;
-    ssize_t l;
-    int ret;
-    void *d;
-    int fd;
-
-    *data = NULL;
-    *length = 0;
-
-    fd = open(fn, O_RDONLY);
-    if (fd < 0)
-	return errno;
-    
-    if (fstat(fd, &sb) < 0) {
-	ret = errno;
-	close(fd);
-	return ret;
-    }
-
-    len = sb.st_size;
-
-    d = malloc(len);
-    if (d == NULL) {
-	close(fd);
-	return ENOMEM;
-    }
-    
-    l = read(fd, d, len);
-    close(fd);
-    if (l < 0 || l != len) {
-	free(d);
-	return EINVAL;
-    }
-
-    if (rsb)
-	*rsb = sb;
-    *data = d;
-    *length = len;
-    return 0;
-}
-
-void
-_hx509_unmap_file(void *data, size_t len)
-{
-    free(data);
+    rk_xfree(os->data);
 }
 
 int
 _hx509_write_file(const char *fn, const void *data, size_t length)
 {
-    ssize_t sz;
-    const unsigned char *p = data;
-    int fd;
-
-    fd = open(fn, O_WRONLY|O_TRUNC|O_CREAT, 0644);
-    if (fd < 0)
-	return errno;
-
-    do {
-	sz = write(fd, p, length);
-	if (sz < 0) {
-	    int saved_errno = errno;
-	    close(fd);
-	    return saved_errno;
-	}
-	if (sz == 0)
-	    break;
-	length -= sz;
-    } while (length > 0);
-		
-    if (close(fd) == -1)
-	return errno;
-
+    rk_dumpdata(fn, data, length);
     return 0;
 }
 

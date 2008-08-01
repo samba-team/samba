@@ -27,9 +27,9 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_inquire_mechs_for_name.c 17844 2006-07-20 02:04:00Z lha $");
+RCSID("$Id: gss_inquire_mechs_for_name.c 23025 2008-04-17 10:01:57Z lha $");
 
-OM_uint32
+OM_uint32 GSSAPI_LIB_FUNCTION
 gss_inquire_mechs_for_name(OM_uint32 *minor_status,
     const gss_name_t input_name,
     gss_OID_set *mech_types)

@@ -33,7 +33,7 @@
 
 #include <krb5_locl.h>
 
-RCSID("$Id: generate_subkey.c 14455 2005-01-05 02:39:21Z lukeh $");
+RCSID("$Id: generate_subkey.c 23280 2008-06-23 03:26:18Z lha $");
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_generate_subkey(krb5_context context,
@@ -53,7 +53,7 @@ krb5_generate_subkey_extended(krb5_context context,
 
     ALLOC(*subkey, 1);
     if (*subkey == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
 

@@ -31,7 +31,46 @@
  * SUCH DAMAGE.
  */
 
-/*
+/**
+ * @page page_des DES - Data Encryption Standard crypto interface
+ *
+ * See the library functions here: @ref hcrypto_des
+ *
+ * DES was created by IBM, modififed by NSA and then adopted by NBS
+ * (now NIST) and published ad FIPS PUB 46 (updated by FIPS 46-1).
+ *
+ * Since the 19th May 2005 DES was withdrawn by NIST and should no
+ * longer be used. See @ref page_evp for replacement encryption
+ * algorithms and interfaces.
+ *
+ * Read more the iteresting history of DES on Wikipedia
+ * http://www.wikipedia.org/wiki/Data_Encryption_Standard .
+ *
+ * @section des_keygen DES key generation
+ *
+ * To generate a DES key safely you have to use the code-snippet
+ * below. This is because the DES_random_key() can fail with an
+ * abort() in case of and failure to start the random generator.
+ *
+ * There is a replacement function DES_new_random_key(), however that
+ * function does not exists in OpenSSL.
+ *
+ * @code
+ * DES_cblock key;
+ * do {
+ *     if (RAND_rand(&key, sizeof(key)) != 1)
+ *          goto failure;
+ *     DES_set_odd_parity(key);
+ * } while (DES_is_weak_key(&key));
+ * @endcode
+ *
+ * @section des_impl DES implementation history
+ *
+ * There was no complete BSD licensed, fast, GPL compatible
+ * implementation of DES, so Love wrote the part that was missing,
+ * fast key schedule setup and adapted the interface to the orignal
+ * libdes.
+ *
  * The document that got me started for real was "Efficient
  * Implementation of the Data Encryption Standard" by Dag Arne Osvik.
  * I never got to the PC1 transformation was working, instead I used
@@ -45,8 +84,10 @@
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
-RCSID("$Id: des.c 17211 2006-04-24 14:26:19Z lha $");
+RCSID("$Id: des.c 23117 2008-04-28 10:29:36Z lha $");
 #endif
+
+#define HC_DEPRECATED
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -70,17 +111,39 @@ static void FP(uint32_t [2]);
 	x = ( ((x)<<(2)) & 0xffffffc) | ((x) >> 26);	\
     }
 
-/*
+/**
+ * Set the parity of the key block, used to generate a des key from a
+ * random key. See @ref des_keygen.
  *
+ * @param key key to fixup the parity for.
+ * @ingroup hcrypto_des
  */
 
-int
+void
 DES_set_odd_parity(DES_cblock *key)
 {
-    int i;
+    unsigned int i;
     for (i = 0; i < DES_CBLOCK_LEN; i++)
 	(*key)[i] = odd_parity[(*key)[i]];
-    return 0;
+}
+
+/**
+ * Check if the key have correct parity.
+ *
+ * @param key key to check the parity.
+ * @return 1 on success, 0 on failure.
+ * @ingroup hcrypto_des
+ */
+
+int HC_DEPRECATED
+DES_check_key_parity(DES_cblock *key)
+{
+    unsigned int i;
+
+    for (i = 0; i <  DES_CBLOCK_LEN; i++)
+	if ((*key)[i] != odd_parity[(*key)[i]])
+	    return 0;
+    return 1;
 }
 
 /*
@@ -107,6 +170,16 @@ static DES_cblock weak_keys[] = {
     {0xFE,0xE0,0xFE,0xE0,0xFE,0xF1,0xFE,0xF1}
 };
 
+/**
+ * Checks if the key is any of the weaks keys that makes DES attacks
+ * trival.
+ *
+ * @param key key to check.
+ *
+ * @return 1 if the key is weak, 0 otherwise.
+ * @ingroup hcrypto_des
+ */
+
 int
 DES_is_weak_key(DES_cblock *key)
 {
@@ -119,13 +192,38 @@ DES_is_weak_key(DES_cblock *key)
     return 0;
 }
 
-
-/*
+/**
+ * Setup a des key schedule from a key. Deprecated function, use
+ * DES_set_key_unchecked() or DES_set_key_checked() instead.
  *
+ * @param key a key to initialize the key schedule with.
+ * @param ks a key schedule to initialize.
+ *
+ * @return 0 on success
+ * @ingroup hcrypto_des
+ */
+
+int HC_DEPRECATED
+DES_set_key(DES_cblock *key, DES_key_schedule *ks)
+{
+    return DES_set_key_checked(key, ks);
+}
+
+/**
+ * Setup a des key schedule from a key. The key is no longer needed
+ * after this transaction and can cleared.
+ *
+ * Does NOT check that the key is weak for or have wrong parity.
+ *
+ * @param key a key to initialize the key schedule with.
+ * @param ks a key schedule to initialize.
+ *
+ * @return 0 on success
+ * @ingroup hcrypto_des
  */
 
 int
-DES_set_key(DES_cblock *key, DES_key_schedule *ks)
+DES_set_key_unchecked(DES_cblock *key, DES_key_schedule *ks)
 {
     uint32_t t1, t2;
     uint32_t c, d;
@@ -184,28 +282,46 @@ DES_set_key(DES_cblock *key, DES_key_schedule *ks)
     return 0;
 }
 
-/*
+/**
+ * Just like DES_set_key_unchecked() except checking that the key is
+ * not weak for or have correct parity.
  *
+ * @param key a key to initialize the key schedule with.
+ * @param ks a key schedule to initialize.
+ *
+ * @return 0 on success, -1 on invalid parity, -2 on weak key.
+ * @ingroup hcrypto_des
  */
 
 int
 DES_set_key_checked(DES_cblock *key, DES_key_schedule *ks)
 {
+    if (!DES_check_key_parity(key)) {
+	memset(ks, 0, sizeof(*ks));
+	return -1;
+    }
     if (DES_is_weak_key(key)) {
 	memset(ks, 0, sizeof(*ks));
-	return 1;
+	return -2;
     }
-    return DES_set_key(key, ks);
+    return DES_set_key_unchecked(key, ks);
 }
 
-/*
- * Compatibility function for eay libdes
+/**
+ * Compatibility function for eay libdes, works just like
+ * DES_set_key_checked().
+ *
+ * @param key a key to initialize the key schedule with.
+ * @param ks a key schedule to initialize.
+ *
+ * @return 0 on success, -1 on invalid parity, -2 on weak key.
+ * @ingroup hcrypto_des
  */
 
 int
 DES_key_sched(DES_cblock *key, DES_key_schedule *ks)
 {
-    return DES_set_key(key, ks);
+    return DES_set_key_checked(key, ks);
 }
 
 /*
@@ -238,39 +354,63 @@ store(const uint32_t v[2], unsigned char *b)
     b[7] = (v[1] >>  0) & 0xff;
 }
 
-/*
+/**
+ * Encrypt/decrypt a block using DES. Also called ECB mode
  *
+ * @param u data to encrypt
+ * @param ks key schedule to use
+ * @param encp if non zero, encrypt. if zero, decrypt.
+ *
+ * @ingroup hcrypto_des
  */
 
 void
-DES_encrypt(uint32_t u[2], DES_key_schedule *ks, int forward_encrypt)
+DES_encrypt(uint32_t u[2], DES_key_schedule *ks, int encp)
 {
     IP(u);
-    desx(u, ks, forward_encrypt);
+    desx(u, ks, encp);
     FP(u);
 }
 
-/*
+/**
+ * Encrypt/decrypt a block using DES.
  *
+ * @param input data to encrypt
+ * @param output data to encrypt
+ * @param ks key schedule to use
+ * @param encp if non zero, encrypt. if zero, decrypt.
+ *
+ * @ingroup hcrypto_des
  */
 
 void
 DES_ecb_encrypt(DES_cblock *input, DES_cblock *output,
-		DES_key_schedule *ks, int forward_encrypt)
+		DES_key_schedule *ks, int encp)
 {
     uint32_t u[2];
     load(*input, u);
-    DES_encrypt(u, ks, forward_encrypt);
+    DES_encrypt(u, ks, encp);
     store(u, *output);
 }
 
-/*
+/**
+ * Encrypt/decrypt a block using DES in Chain Block Cipher mode (cbc).
  *
+ * The IV must always be diffrent for diffrent input data blocks.
+ *
+ * @param in data to encrypt
+ * @param out data to encrypt
+ * @param length length of data
+ * @param ks key schedule to use
+ * @param iv initial vector to use
+ * @param encp if non zero, encrypt. if zero, decrypt.
+ *
+ * @ingroup hcrypto_des
  */
 
 void
 DES_cbc_encrypt(const void *in, void *out, long length,
-		DES_key_schedule *ks, DES_cblock *iv, int forward_encrypt)
+		DES_key_schedule *ks, DES_cblock *iv, int encp)
 {
     const unsigned char *input = in;
     unsigned char *output = out;
@@ -279,7 +419,7 @@ DES_cbc_encrypt(const void *in, void *out, long length,
 
     load(*iv, uiv);
 
-    if (forward_encrypt) {
+    if (encp) {
 	while (length >= DES_CBLOCK_LEN) {
 	    load(input, u);
 	    u[0] ^= uiv[0]; u[1] ^= uiv[1];
@@ -327,13 +467,26 @@ DES_cbc_encrypt(const void *in, void *out, long length,
     uiv[0] = 0; u[0] = 0; uiv[1] = 0; u[1] = 0;
 }
 
-/*
+/**
+ * Encrypt/decrypt a block using DES in Propagating Cipher Block
+ * Chaining mode. This mode is only used for Kerberos 4, and it should
+ * stay that way.
  *
+ * The IV must always be diffrent for diffrent input data blocks.
+ *
+ * @param in data to encrypt
+ * @param out data to encrypt
+ * @param length length of data
+ * @param ks key schedule to use
+ * @param iv initial vector to use
+ * @param encp if non zero, encrypt. if zero, decrypt.
+ *
+ * @ingroup hcrypto_des
  */
 
 void
 DES_pcbc_encrypt(const void *in, void *out, long length,
-		 DES_key_schedule *ks, DES_cblock *iv, int forward_encrypt)
+		 DES_key_schedule *ks, DES_cblock *iv, int encp)
 {
     const unsigned char *input = in;
     unsigned char *output = out;
@@ -342,7 +495,7 @@ DES_pcbc_encrypt(const void *in, void *out, long length,
 
     load(*iv, uiv);
 
-    if (forward_encrypt) {
+    if (encp) {
 	uint32_t t[2];
 	while (length >= DES_CBLOCK_LEN) {
 	    load(input, u);
@@ -397,10 +550,10 @@ DES_pcbc_encrypt(const void *in, void *out, long length,
 
 static void
 _des3_encrypt(uint32_t u[2], DES_key_schedule *ks1, DES_key_schedule *ks2, 
-	      DES_key_schedule *ks3, int forward_encrypt)
+	      DES_key_schedule *ks3, int encp)
 {
     IP(u);
-    if (forward_encrypt) {
+    if (encp) {
 	desx(u, ks1, 1); /* IP + FP cancel out each other */
 	desx(u, ks2, 0);
 	desx(u, ks3, 1);
@@ -412,8 +565,18 @@ _des3_encrypt(uint32_t u[2], DES_key_schedule *ks1, DES_key_schedule *ks2,
     FP(u);
 }
 
-/*
+/**
+ * Encrypt/decrypt a block using triple DES using EDE mode,
+ * encrypt/decrypt/encrypt.
  *
+ * @param input data to encrypt
+ * @param output data to encrypt
+ * @param ks1 key schedule to use
+ * @param ks2 key schedule to use
+ * @param ks3 key schedule to use
+ * @param encp if non zero, encrypt. if zero, decrypt.
+ *
+ * @ingroup hcrypto_des
  */
 
 void
@@ -422,24 +585,37 @@ DES_ecb3_encrypt(DES_cblock *input,
 		 DES_key_schedule *ks1,
 		 DES_key_schedule *ks2,
 		 DES_key_schedule *ks3,
-		 int forward_encrypt)
+		 int encp)
 {
     uint32_t u[2];
     load(*input, u);
-    _des3_encrypt(u, ks1, ks2, ks3, forward_encrypt);
+    _des3_encrypt(u, ks1, ks2, ks3, encp);
     store(u, *output);
     return;
 }
 
-/*
+/**
+ * Encrypt/decrypt using Triple DES in Chain Block Cipher mode (cbc).
  *
+ * The IV must always be diffrent for diffrent input data blocks.
+ *
+ * @param in data to encrypt
+ * @param out data to encrypt
+ * @param length length of data
+ * @param ks1 key schedule to use
+ * @param ks2 key schedule to use
+ * @param ks3 key schedule to use
+ * @param iv initial vector to use
+ * @param encp if non zero, encrypt. if zero, decrypt.
+ *
+ * @ingroup hcrypto_des
  */
 
 void
 DES_ede3_cbc_encrypt(const void *in, void *out,
 		     long length, DES_key_schedule *ks1, 
 		     DES_key_schedule *ks2, DES_key_schedule *ks3,
-		     DES_cblock *iv, int forward_encrypt)
+		     DES_cblock *iv, int encp)
 {
     const unsigned char *input = in;
     unsigned char *output = out;
@@ -448,7 +624,7 @@ DES_ede3_cbc_encrypt(const void *in, void *out,
 
     load(*iv, uiv);
 
-    if (forward_encrypt) {
+    if (encp) {
 	while (length >= DES_CBLOCK_LEN) {
 	    load(input, u);
 	    u[0] ^= uiv[0]; u[1] ^= uiv[1];
@@ -497,14 +673,27 @@ DES_ede3_cbc_encrypt(const void *in, void *out,
     uiv[0] = 0; u[0] = 0; uiv[1] = 0; u[1] = 0;
 }
 
-/*
+/**
+ * Encrypt/decrypt using DES in cipher feedback mode with 64 bit
+ * feedback.
  *
+ * The IV must always be diffrent for diffrent input data blocks.
+ *
+ * @param in data to encrypt
+ * @param out data to encrypt
+ * @param length length of data
+ * @param ks key schedule to use
+ * @param iv initial vector to use
+ * @param num offset into in cipher block encryption/decryption stop last time.
+ * @param encp if non zero, encrypt. if zero, decrypt.
+ *
+ * @ingroup hcrypto_des
  */
 
 void
 DES_cfb64_encrypt(const void *in, void *out, 
 		  long length, DES_key_schedule *ks, DES_cblock *iv,
-		  int *num, int forward_encrypt)
+		  int *num, int encp)
 {
     const unsigned char *input = in;
     unsigned char *output = out;
@@ -515,7 +704,7 @@ DES_cfb64_encrypt(const void *in, void *out,
 
     assert(*num >= 0 && *num < DES_CBLOCK_LEN);
 
-    if (forward_encrypt) {
+    if (encp) {
 	int i = *num;
 
 	while (length > 0) {
@@ -562,8 +751,19 @@ DES_cfb64_encrypt(const void *in, void *out,
     }
 }
 
-/*
+/**
+ * Crete a checksum using DES in CBC encryption mode. This mode is
+ * only used for Kerberos 4, and it should stay that way.
  *
+ * The IV must always be diffrent for diffrent input data blocks.
+ *
+ * @param in data to checksum
+ * @param output the checksum
+ * @param length length of data
+ * @param ks key schedule to use
+ * @param iv initial vector to use
+ *
+ * @ingroup hcrypto_des
  */
 
 uint32_t
@@ -616,6 +816,16 @@ bitswap8(unsigned char b)
     return r;
 }
 
+/**
+ * Convert a string to a DES key. Use something like
+ * PKCS5_PBKDF2_HMAC_SHA1() to create key from passwords.
+ *
+ * @param str The string to convert to a key
+ * @param key the resulting key
+ *
+ * @ingroup hcrypto_des
+ */
+
 void
 DES_string_to_key(const char *str, DES_cblock *key)
 {
@@ -646,8 +856,16 @@ DES_string_to_key(const char *str, DES_cblock *key)
 	k[7] ^= 0xF0;
 }
 
-/*
+/**
+ * Read password from prompt and create a DES key. Internal uses
+ * DES_string_to_key(). Really, go use a really string2key function
+ * like PKCS5_PBKDF2_HMAC_SHA1().
  *
+ * @param key key to convert to
+ * @param prompt prompt to display user
+ * @param verify prompt twice.
+ *
+ * @return 1 on success, non 1 on failure.
  */
 
 int
@@ -657,7 +875,7 @@ DES_read_password(DES_cblock *key, char *prompt, int verify)
     int ret;
 
     ret = UI_UTIL_read_pw_string(buf, sizeof(buf) - 1, prompt, verify);
-    if (ret == 0)
+    if (ret == 1)
 	DES_string_to_key(buf, key);
     return ret;
 }
@@ -892,7 +1110,7 @@ FP(uint32_t v[2])
 }
 
 static void
-desx(uint32_t block[2], DES_key_schedule *ks, int forward_encrypt)
+desx(uint32_t block[2], DES_key_schedule *ks, int encp)
 {
     uint32_t *keys;
     uint32_t fval, work, right, left;
@@ -901,7 +1119,7 @@ desx(uint32_t block[2], DES_key_schedule *ks, int forward_encrypt)
     left = block[0];
     right = block[1];
 
-    if (forward_encrypt) {
+    if (encp) {
 	keys = &ks->ks[0];
 
 	for( round = 0; round < 8; round++ ) {

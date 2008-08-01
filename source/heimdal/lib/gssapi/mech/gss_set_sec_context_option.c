@@ -31,9 +31,9 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_set_sec_context_option.c 19928 2007-01-16 10:37:54Z lha $");
+RCSID("$Id: gss_set_sec_context_option.c 23025 2008-04-17 10:01:57Z lha $");
 
-OM_uint32
+OM_uint32 GSSAPI_LIB_FUNCTION
 gss_set_sec_context_option (OM_uint32 *minor_status,
 			    gss_ctx_id_t *context_handle,
 			    const gss_OID object,

@@ -32,7 +32,7 @@
  */
 
 #include "krb5_locl.h"
-RCSID("$Id: v4_glue.c 22071 2007-11-14 20:04:50Z lha $");
+RCSID("$Id: v4_glue.c 23452 2008-07-27 12:10:54Z lha $");
 
 #include "krb5-v4compat.h"
 
@@ -147,7 +147,7 @@ write_v4_cc(krb5_context context, const char *tkfile,
 
     ret = get_krb4_cc_name(tkfile, &path);
     if (ret) {
-	krb5_set_error_string(context, 
+	krb5_set_error_message(context, ret, 
 			      "krb5_krb_tf_setup: failed getting "
 			      "the krb4 credentials cache name"); 
 	return ret;
@@ -156,15 +156,16 @@ write_v4_cc(krb5_context context, const char *tkfile,
     fd = open(path, O_WRONLY|O_CREAT, 0600);
     if (fd < 0) {
 	ret = errno;
-	krb5_set_error_string(context, 
+	krb5_set_error_message(context, ret, 
 			      "krb5_krb_tf_setup: error opening file %s", 
 			      path);
 	free(path);
 	return ret;
     }
+    rk_cloexec(fd);
 
     if (fstat(fd, &sb) != 0 || !S_ISREG(sb.st_mode)) {
-	krb5_set_error_string(context, 
+	krb5_set_error_message(context, ret, 
 			      "krb5_krb_tf_setup: tktfile %s is not a file",
 			      path);
 	free(path);
@@ -179,9 +180,9 @@ write_v4_cc(krb5_context context, const char *tkfile,
 	    break;
     }
     if (i == KRB5_TF_LCK_RETRY_COUNT) {
-	krb5_set_error_string(context,
-			      "krb5_krb_tf_setup: failed to lock %s",
-			      path);
+	krb5_set_error_message(context, KRB5_FCC_PERM,
+			       "krb5_krb_tf_setup: failed to lock %s",
+			       path);
 	free(path);
 	close(fd);
 	return KRB5_FCC_PERM;
@@ -191,9 +192,9 @@ write_v4_cc(krb5_context context, const char *tkfile,
 	ret = ftruncate(fd, 0);
 	if (ret < 0) {
 	    flock(fd, LOCK_UN);
-	    krb5_set_error_string(context,
-				  "krb5_krb_tf_setup: failed to truncate %s",
-				  path);
+	    krb5_set_error_message(context, KRB5_FCC_PERM,
+				   "krb5_krb_tf_setup: failed to truncate %s",
+				   path);
 	    free(path);
 	    close(fd);
 	    return KRB5_FCC_PERM;
@@ -291,7 +292,7 @@ _krb5_krb_dest_tkt(krb5_context context, const char *tkfile)
 
     ret = get_krb4_cc_name(tkfile, &path);
     if (ret) {
-	krb5_set_error_string(context, 
+	krb5_set_error_message(context, ret, 
 			      "krb5_krb_tf_setup: failed getting "
 			      "the krb4 credentials cache name"); 
 	return ret;
@@ -299,7 +300,7 @@ _krb5_krb_dest_tkt(krb5_context context, const char *tkfile)
 
     if (unlink(path) < 0) {
 	ret = errno;
-	krb5_set_error_string(context, 
+	krb5_set_error_message(context, ret, 
 			      "krb5_krb_dest_tkt failed removing the cache "
 			      "with error %s", strerror(ret));
     }
@@ -421,7 +422,7 @@ _krb5_krb_create_ticket(krb5_context context,
 
     sp = krb5_storage_emem();
     if (sp == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
     krb5_storage_set_byteorder(sp, KRB5_STORAGE_BYTEORDER_BE);
@@ -448,7 +449,7 @@ _krb5_krb_create_ticket(krb5_context context,
  error:
     krb5_storage_free(sp);
     if (ret)
-	krb5_set_error_string(context, "Failed to encode kerberos 4 ticket");
+	krb5_set_error_message(context, ret, "Failed to encode kerberos 4 ticket");
 
     return ret;
 }
@@ -477,7 +478,7 @@ _krb5_krb_create_ciph(krb5_context context,
 
     sp = krb5_storage_emem();
     if (sp == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
     krb5_storage_set_byteorder(sp, KRB5_STORAGE_BYTEORDER_BE);
@@ -507,7 +508,7 @@ _krb5_krb_create_ciph(krb5_context context,
  error:
     krb5_storage_free(sp);
     if (ret)
-	krb5_set_error_string(context, "Failed to encode kerberos 4 ticket");
+	krb5_set_error_message(context, ret, "Failed to encode kerberos 4 ticket");
 
     return ret;
 }
@@ -535,7 +536,7 @@ _krb5_krb_create_auth_reply(krb5_context context,
 
     sp = krb5_storage_emem();
     if (sp == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
     krb5_storage_set_byteorder(sp, KRB5_STORAGE_BYTEORDER_BE);
@@ -559,7 +560,7 @@ _krb5_krb_create_auth_reply(krb5_context context,
  error:
     krb5_storage_free(sp);
     if (ret)
-	krb5_set_error_string(context, "Failed to encode kerberos 4 ticket");
+	krb5_set_error_message(context, ret, "Failed to encode kerberos 4 ticket");
 	
     return ret;
 }
@@ -590,7 +591,7 @@ _krb5_krb_cr_err_reply(krb5_context context,
 
     sp = krb5_storage_emem();
     if (sp == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
     krb5_storage_set_byteorder(sp, KRB5_STORAGE_BYTEORDER_BE);
@@ -610,7 +611,7 @@ _krb5_krb_cr_err_reply(krb5_context context,
  error:
     krb5_storage_free(sp);
     if (ret)
-	krb5_set_error_string(context, "Failed to encode kerberos 4 error");
+	krb5_set_error_message(context, ret, "Failed to encode kerberos 4 error");
 	
     return 0;
 }
@@ -661,7 +662,7 @@ _krb5_krb_decomp_ticket(krb5_context context,
     sp = krb5_storage_from_data(&ticket);
     if (sp == NULL) {
 	krb5_data_free(&ticket);
-	krb5_set_error_string(context, "alloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, "alloc: out of memory");
 	return ENOMEM;
     }
 
@@ -720,7 +721,7 @@ _krb5_krb_decomp_ticket(krb5_context context,
 	    *sinstance = NULL;
 	}
 	_krb5_krb_free_auth_data(context, ad);
-	krb5_set_error_string(context, "Failed to decode v4 ticket");
+	krb5_set_error_message(context, ret, "Failed to decode v4 ticket");
     }
     return ret;
 }
@@ -769,7 +770,7 @@ _krb5_krb_rd_req(krb5_context context,
 
     sp = krb5_storage_from_data(authent);
     if (sp == NULL) {
-	krb5_set_error_string(context, "alloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, "alloc: out of memory");
 	return ENOMEM;
     }
 
@@ -777,19 +778,19 @@ _krb5_krb_rd_req(krb5_context context,
 
     ret = krb5_ret_int8(sp, &pvno);
     if (ret) {
-	krb5_set_error_string(context, "Failed reading v4 pvno");
+	krb5_set_error_message(context, ret, "Failed reading v4 pvno");
 	goto error;
     }
 
     if (pvno != KRB_PROT_VERSION) {
 	ret = KRB4ET_RD_AP_VERSION;
-	krb5_set_error_string(context, "Failed v4 pvno not 4");
+	krb5_set_error_message(context, ret, "Failed v4 pvno not 4");
 	goto error;
     }
 
     ret = krb5_ret_int8(sp, &type);
     if (ret) {
-	krb5_set_error_string(context, "Failed readin v4 type");
+	krb5_set_error_message(context, ret, "Failed readin v4 type");
 	goto error;
     }
 
@@ -798,7 +799,7 @@ _krb5_krb_rd_req(krb5_context context,
     
     if(type != AUTH_MSG_APPL_REQUEST && type != AUTH_MSG_APPL_REQUEST_MUTUAL) {
 	ret = KRB4ET_RD_AP_MSG_TYPE;
-	krb5_set_error_string(context, "Not a valid v4 request type");
+	krb5_set_error_message(context, ret, "Not a valid v4 request type");
 	goto error;
     }
 
@@ -811,7 +812,7 @@ _krb5_krb_rd_req(krb5_context context,
     size = krb5_storage_read(sp, ticket.data, ticket.length);
     if (size != ticket.length) {
 	ret = KRB4ET_INTK_PROT;
-	krb5_set_error_string(context, "Failed reading v4 ticket");
+	krb5_set_error_message(context, ret, "Failed reading v4 ticket");
 	goto error;
     }
 
@@ -826,7 +827,7 @@ _krb5_krb_rd_req(krb5_context context,
     size = krb5_storage_read(sp, eaut.data, eaut.length);
     if (size != eaut.length) {
 	ret = KRB4ET_INTK_PROT;
-	krb5_set_error_string(context, "Failed reading v4 authenticator");
+	krb5_set_error_message(context, ret, "Failed reading v4 authenticator");
 	goto error;
     }
 
@@ -840,7 +841,7 @@ _krb5_krb_rd_req(krb5_context context,
     sp = krb5_storage_from_data(&aut);
     if (sp == NULL) {
 	ret = ENOMEM;
-	krb5_set_error_string(context, "alloc: out of memory");
+	krb5_set_error_message(context, ret, "alloc: out of memory");
 	goto error;
     }
 
@@ -860,14 +861,14 @@ _krb5_krb_rd_req(krb5_context context,
     if (strcmp(ad->pname, r_name) != 0 ||
 	strcmp(ad->pinst, r_instance) != 0 ||
 	strcmp(ad->prealm, r_realm) != 0) {
-	krb5_set_error_string(context, "v4 principal mismatch");
 	ret = KRB4ET_RD_AP_INCON;
+	krb5_set_error_message(context, ret, "v4 principal mismatch");
 	goto error;
     }
     
     if (from_addr && ad->address && from_addr != ad->address) {
-	krb5_set_error_string(context, "v4 bad address in ticket");
 	ret = KRB4ET_RD_AP_BADD;
+	krb5_set_error_message(context, ret, "v4 bad address in ticket");
 	goto error;
     }
 
@@ -875,7 +876,7 @@ _krb5_krb_rd_req(krb5_context context,
     delta_t = abs((int)(tv.tv_sec - r_time_sec));
     if (delta_t > CLOCK_SKEW) {
         ret = KRB4ET_RD_AP_TIME;
-	krb5_set_error_string(context, "v4 clock skew");
+	krb5_set_error_message(context, ret, "v4 clock skew");
 	goto error;
     }
 
@@ -885,13 +886,13 @@ _krb5_krb_rd_req(krb5_context context,
     
     if ((tkt_age < 0) && (-tkt_age > CLOCK_SKEW)) {
         ret = KRB4ET_RD_AP_NYV;
-	krb5_set_error_string(context, "v4 clock skew for expiration");
+	krb5_set_error_message(context, ret, "v4 clock skew for expiration");
 	goto error;
     }
 
     if (tv.tv_sec > _krb5_krb_life_to_time(ad->time_sec, ad->life)) {
 	ret = KRB4ET_RD_AP_EXP;
-	krb5_set_error_string(context, "v4 ticket expired");
+	krb5_set_error_message(context, ret, "v4 ticket expired");
 	goto error;
     }
 

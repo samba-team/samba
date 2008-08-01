@@ -32,7 +32,7 @@
  * SUCH DAMAGE.
  */
 
-/* $Id: roken.h.in,v 1.182 2006/10/19 16:35:16 lha Exp $ */
+/* $Id: roken.h.in 18612 2006-10-19 16:35:16Z lha $ */
 
 #include <stdio.h>
 #include <stdlib.h>

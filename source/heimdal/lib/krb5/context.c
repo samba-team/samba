@@ -34,7 +34,7 @@
 #include "krb5_locl.h"
 #include <com_err.h>
 
-RCSID("$Id: context.c 22293 2007-12-14 05:25:59Z lha $");
+RCSID("$Id: context.c 23420 2008-07-26 18:37:48Z lha $");
 
 #define INIT_FIELD(C, T, E, D, F)					\
     (C)->E = krb5_config_get_ ## T ## _default ((C), NULL, (D), 	\
@@ -68,7 +68,7 @@ set_etypes (krb5_context context,
 	etypes = malloc((i+1) * sizeof(*etypes));
 	if (etypes == NULL) {
 	    krb5_config_free_strings (etypes_str);
-	    krb5_set_error_string (context, "malloc: out of memory");
+	    krb5_set_error_message (context, ENOMEM, "malloc: out of memory");
 	    return ENOMEM;
 	}
 	for(j = 0, k = 0; j < i; j++) {
@@ -246,6 +246,9 @@ krb5_init_context(krb5_context *context)
     krb5_cc_register(p, &krb5_acc_ops, TRUE);
     krb5_cc_register(p, &krb5_fcc_ops, TRUE);
     krb5_cc_register(p, &krb5_mcc_ops, TRUE);
+#if 0
+    krb5_cc_register(p, &krb5_scc_ops, TRUE);
+#endif
 #ifdef HAVE_KCM
     krb5_cc_register(p, &krb5_kcm_ops, TRUE);
 #endif
@@ -257,8 +260,6 @@ krb5_init_context(krb5_context *context)
     krb5_kt_register (p, &krb5_javakt_ops);
     krb5_kt_register (p, &krb5_mkt_ops);
     krb5_kt_register (p, &krb5_akf_ops);
-    krb5_kt_register (p, &krb4_fkt_ops);
-    krb5_kt_register (p, &krb5_srvtab_fkt_ops);
     krb5_kt_register (p, &krb5_any_ops);
 
 out:
@@ -552,7 +553,7 @@ default_etypes(krb5_context context, krb5_enctype **etype)
 	ep = realloc(e, (n + 2) * sizeof(*e));
 	if (ep == NULL) {
 	    free(e);
-	    krb5_set_error_string (context, "malloc: out of memory");
+	    krb5_set_error_message (context, ENOMEM, "malloc: out of memory");
 	    return ENOMEM;
 	}
 	e = ep;
@@ -594,7 +595,7 @@ krb5_set_default_in_tkt_etypes(krb5_context context,
 	++i;
 	ALLOC(p, i);
 	if(!p) {
-	    krb5_set_error_string (context, "malloc: out of memory");
+	    krb5_set_error_message (context, ENOMEM, "malloc: out of memory");
 	    return ENOMEM;
 	}
 	memmove(p, etypes, i * sizeof(krb5_enctype));
@@ -623,26 +624,26 @@ krb5_error_code KRB5_LIB_FUNCTION
 krb5_get_default_in_tkt_etypes(krb5_context context,
 			       krb5_enctype **etypes)
 {
-  krb5_enctype *p;
-  int i;
-  krb5_error_code ret;
-
-  if(context->etypes) {
-    for(i = 0; context->etypes[i]; i++);
-    ++i;
-    ALLOC(p, i);
-    if(!p) {
-      krb5_set_error_string (context, "malloc: out of memory");
-      return ENOMEM;
+    krb5_enctype *p;
+    int i;
+    krb5_error_code ret;
+    
+    if(context->etypes) {
+	for(i = 0; context->etypes[i]; i++);
+	++i;
+	ALLOC(p, i);
+	if(!p) {
+	    krb5_set_error_message (context, ENOMEM, "malloc: out of memory");
+	    return ENOMEM;
+	}
+	memmove(p, context->etypes, i * sizeof(krb5_enctype));
+    } else {
+	ret = default_etypes(context, &p);
+	if (ret)
+	    return ret;
     }
-    memmove(p, context->etypes, i * sizeof(krb5_enctype));
-  } else {
-    ret = default_etypes(context, &p);
-    if (ret)
-      return ret;
-  }
-  *etypes = p;
-  return 0;
+    *etypes = p;
+    return 0;
 }
 
 /**
@@ -776,7 +777,7 @@ krb5_set_extra_addresses(krb5_context context, const krb5_addresses *addresses)
     if(context->extra_addresses == NULL) {
 	context->extra_addresses = malloc(sizeof(*context->extra_addresses));
 	if(context->extra_addresses == NULL) {
-	    krb5_set_error_string (context, "malloc: out of memory");
+	    krb5_set_error_message (context, ENOMEM, "malloc: out of memory");
 	    return ENOMEM;
 	}
     }
@@ -858,7 +859,7 @@ krb5_set_ignore_addresses(krb5_context context, const krb5_addresses *addresses)
     if(context->ignore_addresses == NULL) {
 	context->ignore_addresses = malloc(sizeof(*context->ignore_addresses));
 	if(context->ignore_addresses == NULL) {
-	    krb5_set_error_string (context, "malloc: out of memory");
+	    krb5_set_error_message (context, ENOMEM, "malloc: out of memory");
 	    return ENOMEM;
 	}
     }
@@ -986,7 +987,7 @@ krb5_get_dns_canonicalize_hostname (krb5_context context)
  * @param sec seconds part of offset.
  * @param usec micro seconds part of offset.
  *
- * @return return non zero if the library uses DNS to canonicalize hostnames.
+ * @return returns zero
  *
  * @ingroup krb5
  */
@@ -998,6 +999,27 @@ krb5_get_kdc_sec_offset (krb5_context context, int32_t *sec, int32_t *usec)
 	*sec = context->kdc_sec_offset;
     if (usec)
 	*usec = context->kdc_usec_offset;
+    return 0;
+}
+
+/**
+ * Set current offset in time to the KDC.
+ *
+ * @param context Kerberos 5 context.
+ * @param sec seconds part of offset.
+ * @param usec micro seconds part of offset.
+ *
+ * @return returns zero
+ *
+ * @ingroup krb5
+ */
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_set_kdc_sec_offset (krb5_context context, int32_t sec, int32_t usec)
+{
+    context->kdc_sec_offset = sec;
+    if (usec >= 0)
+	context->kdc_usec_offset = usec;
     return 0;
 }
 

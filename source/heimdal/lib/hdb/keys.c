@@ -33,7 +33,7 @@
 
 #include "hdb_locl.h"
 
-RCSID("$Id: keys.c 22071 2007-11-14 20:04:50Z lha $");
+RCSID("$Id: keys.c 23316 2008-06-23 04:32:32Z lha $");
 
 /*
  * free all the memory used by (len, keys)
@@ -153,7 +153,7 @@ parse_key_set(krb5_context context, const char *key,
 	       v4 compat, and a cell name for afs compat */
 	    salt->saltvalue.data = strdup(buf[i]);
 	    if (salt->saltvalue.data == NULL) {
-		krb5_set_error_string(context, "out of memory");
+		krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 		return ENOMEM;
 	    }
 	    salt->saltvalue.length = strlen(buf[i]);
@@ -161,7 +161,7 @@ parse_key_set(krb5_context context, const char *key,
     }
     
     if(enctypes == NULL || salt->salttype == 0) {
-	krb5_set_error_string(context, "bad value for default_keys `%s'", key);
+	krb5_set_error_message(context, EINVAL, "bad value for default_keys `%s'", key);
 	return EINVAL;
     }
     
@@ -173,8 +173,9 @@ parse_key_set(krb5_context context, const char *key,
 	    krb5_realm *realm = krb5_princ_realm(context, principal);
 	    salt->saltvalue.data = strdup(*realm);
 	    if(salt->saltvalue.data == NULL) {
-		krb5_set_error_string(context, "out of memory while "
-				      "parsing salt specifiers");
+		krb5_set_error_message(context, ENOMEM,
+				       "out of memory while "
+				       "parsing salt specifiers");
 		return ENOMEM;
 	    }
 	    strlwr(salt->saltvalue.data);
@@ -185,7 +186,7 @@ parse_key_set(krb5_context context, const char *key,
     *ret_enctypes = malloc(sizeof(enctypes[0]) * num_enctypes);
     if (*ret_enctypes == NULL) {
 	krb5_free_salt(context, *salt);
-	krb5_set_error_string(context, "out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
     memcpy(*ret_enctypes, enctypes, sizeof(enctypes[0]) * num_enctypes);

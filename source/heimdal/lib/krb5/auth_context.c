@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: auth_context.c 21745 2007-07-31 16:11:25Z lha $");
+RCSID("$Id: auth_context.c 23273 2008-06-23 03:25:00Z lha $");
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_auth_con_init(krb5_context context,
@@ -43,13 +43,13 @@ krb5_auth_con_init(krb5_context context,
 
     ALLOC(p, 1);
     if(!p) {
-	krb5_set_error_string(context, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
     memset(p, 0, sizeof(*p));
     ALLOC(p->authenticator, 1);
     if (!p->authenticator) {
-	krb5_set_error_string(context, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	free(p);
 	return ENOMEM;
     }
@@ -174,7 +174,8 @@ krb5_auth_con_genaddrs(krb5_context context,
 	    len = sizeof(ss_local);
 	    if(getsockname(fd, local, &len) < 0) {
 		ret = errno;
-		krb5_set_error_string (context, "getsockname: %s",
+		krb5_set_error_message(context, ret,
+				       "getsockname: %s",
 				       strerror(ret));
 		goto out;
 	    }
@@ -191,7 +192,8 @@ krb5_auth_con_genaddrs(krb5_context context,
 	len = sizeof(ss_remote);
 	if(getpeername(fd, remote, &len) < 0) {
 	    ret = errno;
-	    krb5_set_error_string (context, "getpeername: %s", strerror(ret));
+	    krb5_set_error_message(context, ret, 
+				   "getpeername: %s", strerror(ret));
 	    goto out;
 	}
 	ret = krb5_sockaddr2address (context, remote, &remote_k_address);
@@ -239,7 +241,7 @@ krb5_auth_con_getaddrs(krb5_context context,
 	krb5_free_address (context, *local_addr);
     *local_addr = malloc (sizeof(**local_addr));
     if (*local_addr == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
     krb5_copy_address(context,
@@ -250,7 +252,7 @@ krb5_auth_con_getaddrs(krb5_context context,
 	krb5_free_address (context, *remote_addr);
     *remote_addr = malloc (sizeof(**remote_addr));
     if (*remote_addr == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	krb5_free_address (context, *local_addr);
 	*local_addr = NULL;
 	return ENOMEM;
@@ -450,7 +452,7 @@ krb5_auth_con_getauthenticator(krb5_context context,
 {
     *authenticator = malloc(sizeof(**authenticator));
     if (*authenticator == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
 

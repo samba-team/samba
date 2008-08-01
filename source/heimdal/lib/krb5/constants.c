@@ -33,11 +33,11 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: constants.c 14253 2004-09-23 07:57:37Z joda $");
+RCSID("$Id: constants.c 23026 2008-04-17 10:02:03Z lha $");
 
-const char *krb5_config_file = 
+KRB5_LIB_VARIABLE const char *krb5_config_file = 
 #ifdef __APPLE__
 "/Library/Preferences/edu.mit.Kerberos:"
 #endif
 SYSCONFDIR "/krb5.conf:/etc/krb5.conf";
-const char *krb5_defkeyname = KEYTAB_DEFAULT;
+KRB5_LIB_VARIABLE const char *krb5_defkeyname = KEYTAB_DEFAULT;
