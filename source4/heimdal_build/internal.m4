@@ -236,8 +236,12 @@ AC_MSG_RESULT($LEX_YACC)
 # of the samba source tree.  
 
 # if we ever get to using a host kerberos, we might add conditionals here
+AC_DEFINE(HAVE_COM_ERR,1,[Whether com_err is available])
+HAVE_COM_ERR=YES
 AC_DEFINE(HAVE_KRB5,1,[Whether kerberos is available])
 HAVE_KRB5=YES
+AC_DEFINE(HAVE_GSSAPI,1,[Whether GSSAPI is available])
+HAVE_GSSAPI=YES
 SMB_ENABLE(KERBEROS_LIB, YES)
 SMB_ENABLE(asn1_compile, YES)
 SMB_ENABLE(compile_et, YES)
@@ -257,5 +261,7 @@ if test t$ac_cv_func_getprogname != tyes; then
 fi
 
 VPATH="$VPATH:\$(HEIMDAL_VPATH)"
+
+AC_DEFINE(SAMBA4_INTERNAL_HEIMDAL,1,[Whether we use in internal heimdal build])
 
 SMB_INCLUDE_MK(heimdal_build/internal.mk)
