@@ -208,6 +208,7 @@ static void smb_krb5_socket_handler(struct event_context *ev, struct fd_event *f
 krb5_error_code smb_krb5_send_and_recv_func(krb5_context context,
 					    void *data,
 					    krb5_krbhst_info *hi,
+					    time_t timeout,
 					    const krb5_data *send_buf,
 					    krb5_data *recv_buf)
 {
@@ -298,7 +299,7 @@ krb5_error_code smb_krb5_send_and_recv_func(krb5_context context,
 		socket_set_flags(smb_krb5->sock, SOCKET_FLAG_NOCLOSE);
 
 		event_add_timed(ev, smb_krb5, 
-				timeval_current_ofs(context->kdc_timeout, 0),
+				timeval_current_ofs(timeout, 0),
 				smb_krb5_request_timeout, smb_krb5);
 
 		
