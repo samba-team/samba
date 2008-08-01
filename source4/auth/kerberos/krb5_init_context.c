@@ -22,13 +22,11 @@
 
 #include "includes.h"
 #include "system/kerberos.h"
-#include "heimdal/lib/krb5/krb5_locl.h"
 #include "auth/kerberos/kerberos.h"
 #include "lib/socket/socket.h"
 #include "lib/stream/packet.h"
 #include "system/network.h"
 #include "lib/events/events.h"
-#include "roken.h"
 #include "param/param.h"
 #include "libcli/resolve/resolve.h"
 
