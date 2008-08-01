@@ -24,6 +24,10 @@
 
 #if defined(HAVE_ADS) && defined(ENCTYPE_ARCFOUR_HMAC)
 
+/**
+ * Internal helper function to add data to the list
+ * of keytab entries. It builds the prefix from the input.
+ */
 static NTSTATUS add_to_keytab_entries(TALLOC_CTX *mem_ctx,
 				      struct libnet_keytab_context *ctx,
 				      uint32_t kvno,
