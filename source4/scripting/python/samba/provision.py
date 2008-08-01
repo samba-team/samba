@@ -1453,6 +1453,7 @@ def load_schema(setup_path, samdb, schemadn, netbiosname, configdn, sitename):
     schema_data = open(setup_path("schema.ldif"), 'r').read()
     schema_data += open(setup_path("schema_samba4.ldif"), 'r').read()
     schema_data = substitute_var(schema_data, {"SCHEMADN": schemadn})
+    check_all_substituted(schema_data)
     prefixmap = open(setup_path("prefixMap.txt"), 'r').read()
     prefixmap = b64encode(prefixmap)
 
@@ -1464,5 +1465,6 @@ def load_schema(setup_path, samdb, schemadn, netbiosname, configdn, sitename):
                     "DEFAULTSITE":sitename,
                     "PREFIXMAP_B64":prefixmap
     })
+    check_all_substituted(head_data)
     samdb.attach_schema_from_ldif(head_data, schema_data)
 
