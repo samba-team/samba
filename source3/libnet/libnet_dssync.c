@@ -696,18 +696,25 @@ NTSTATUS libnet_dssync(TALLOC_CTX *mem_ctx,
 		       struct dssync_context *ctx)
 {
 	NTSTATUS status;
+	TALLOC_CTX *tmp_ctx;
 
-	status = libnet_dssync_init(mem_ctx, ctx);
+	tmp_ctx = talloc_new(mem_ctx);
+	if (!tmp_ctx) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = libnet_dssync_init(tmp_ctx, ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto out;
 	}
 
-	status = libnet_dssync_process(mem_ctx, ctx);
+	status = libnet_dssync_process(tmp_ctx, ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto out;
 	}
 
  out:
+	TALLOC_FREE(tmp_ctx);
 	return status;
 }
 
