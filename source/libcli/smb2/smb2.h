@@ -27,11 +27,6 @@
 
 struct smb2_handle;
 
-struct smb2_signing_context {
-	bool doing_signing;
-	bool signing_started;
-};
-
 /*
   information returned from the negotiate process
 */
@@ -78,7 +73,8 @@ struct smb2_transport {
 	} oplock;
 
 	struct smbcli_options options;
-	struct smb2_signing_context signing;
+
+	bool signing_required;
 };
 
 
@@ -98,6 +94,7 @@ struct smb2_session {
 	struct gensec_security *gensec;
 	uint64_t uid;
 	DATA_BLOB session_key;
+	bool signing_active;
 };
 
 

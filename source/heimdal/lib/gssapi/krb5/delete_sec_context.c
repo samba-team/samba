@@ -33,7 +33,7 @@
 
 #include "krb5/gsskrb5_locl.h"
 
-RCSID("$Id: delete_sec_context.c 19031 2006-11-13 18:02:57Z lha $");
+RCSID("$Id: delete_sec_context.c 23420 2008-07-26 18:37:48Z lha $");
 
 OM_uint32
 _gsskrb5_delete_sec_context(OM_uint32 * minor_status,
@@ -61,6 +61,8 @@ _gsskrb5_delete_sec_context(OM_uint32 * minor_status,
     HEIMDAL_MUTEX_lock(&ctx->ctx_id_mutex);
 
     krb5_auth_con_free (context, ctx->auth_context);
+    if (ctx->kcred)
+	krb5_free_creds(context, ctx->kcred);
     if(ctx->source)
 	krb5_free_principal (context, ctx->source);
     if(ctx->target)

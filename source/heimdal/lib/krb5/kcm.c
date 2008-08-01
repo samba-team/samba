@@ -43,7 +43,7 @@
 
 #include "kcm.h"
 
-RCSID("$Id: kcm.c 22108 2007-12-03 17:23:53Z lha $");
+RCSID("$Id: kcm.c 23446 2008-07-27 12:08:37Z lha $");
 
 typedef struct krb5_kcmcache {
     char *name;
@@ -56,7 +56,8 @@ typedef struct krb5_kcmcache {
 #define KCMCURSOR(C)	(*(uint32_t *)(C))
 
 static krb5_error_code
-try_door(krb5_context context, const krb5_kcmcache *k,
+try_door(krb5_context context,
+	 krb5_kcmcache *k,
 	 krb5_data *request_data,
 	 krb5_data *response_data)
 {
@@ -70,6 +71,7 @@ try_door(krb5_context context, const krb5_kcmcache *k,
     fd = open(k->door_path, O_RDWR);
     if (fd < 0)
 	return KRB5_CC_IO;
+    rk_cloexec(fd);
 
     arg.data_ptr = request_data->data;
     arg.data_size = request_data->length;
@@ -95,7 +97,8 @@ try_door(krb5_context context, const krb5_kcmcache *k,
 }
 
 static krb5_error_code
-try_unix_socket(krb5_context context, const krb5_kcmcache *k,
+try_unix_socket(krb5_context context,
+		krb5_kcmcache *k,
 		krb5_data *request_data,
 		krb5_data *response_data)
 {
@@ -105,7 +108,8 @@ try_unix_socket(krb5_context context, const krb5_kcmcache *k,
     fd = socket(AF_UNIX, SOCK_STREAM, 0);
     if (fd < 0)
 	return KRB5_CC_IO;
-    
+    rk_cloexec(fd);
+
     if (connect(fd, rk_UNCONST(&k->path), sizeof(k->path)) != 0) {
 	close(fd);
 	return KRB5_CC_IO;
@@ -136,7 +140,7 @@ kcm_send_request(krb5_context context,
 	return KRB5_CC_NOMEM;
     }
 
-    ret = KRB5_CC_IO;
+    ret = KRB5_CC_NOSUPP;
 
     for (i = 0; i < context->max_retries; i++) {
 	ret = try_door(context, k, &request_data, response_data);
@@ -151,7 +155,7 @@ kcm_send_request(krb5_context context,
 
     if (ret) {
 	krb5_clear_error_string(context);
-	ret = KRB5_CC_IO;
+	ret = KRB5_CC_NOSUPP;
     }
 
     return ret;
@@ -169,7 +173,7 @@ kcm_storage_request(krb5_context context,
 
     sp = krb5_storage_emem();
     if (sp == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
+	krb5_set_error_message(context, KRB5_CC_NOMEM, "malloc: out of memory");
 	return KRB5_CC_NOMEM;
     }
 
@@ -187,7 +191,7 @@ kcm_storage_request(krb5_context context,
     *storage_p = sp;
  fail:
     if (ret) {
-	krb5_set_error_string(context, "Failed to encode request");
+	krb5_set_error_message(context, ret, "Failed to encode request");
 	krb5_storage_free(sp);
     }
    
@@ -202,7 +206,7 @@ kcm_alloc(krb5_context context, const char *name, krb5_ccache *id)
 
     k = malloc(sizeof(*k));
     if (k == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
+	krb5_set_error_message(context, KRB5_CC_NOMEM, "malloc: out of memory");
 	return KRB5_CC_NOMEM;
     }
 
@@ -210,7 +214,7 @@ kcm_alloc(krb5_context context, const char *name, krb5_ccache *id)
 	k->name = strdup(name);
 	if (k->name == NULL) {
 	    free(k);
-	    krb5_set_error_string(context, "malloc: out of memory");
+	    krb5_set_error_message(context, KRB5_CC_NOMEM, "malloc: out of memory");
 	    return KRB5_CC_NOMEM;
 	}
     } else
@@ -822,7 +826,7 @@ kcm_set_flags(krb5_context context,
     return ret;
 }
 
-static krb5_error_code
+static int
 kcm_get_version(krb5_context context,
 		krb5_ccache id)
 {
@@ -832,8 +836,30 @@ kcm_get_version(krb5_context context,
 static krb5_error_code
 kcm_move(krb5_context context, krb5_ccache from, krb5_ccache to)
 {
-    krb5_set_error_string(context, "kcm_move not implemented");
-    return EINVAL;
+    krb5_error_code ret;
+    krb5_kcmcache *oldk = KCMCACHE(from);
+    krb5_kcmcache *newk = KCMCACHE(to);
+    krb5_storage *request;
+
+    ret = kcm_storage_request(context, KCM_OP_MOVE_CACHE, &request);
+    if (ret)
+	return ret;
+
+    ret = krb5_store_stringz(request, oldk->name);
+    if (ret) {
+	krb5_storage_free(request);
+	return ret;
+    }
+
+    ret = krb5_store_stringz(request, newk->name);
+    if (ret) {
+	krb5_storage_free(request);
+	return ret;
+    }
+    ret = kcm_call(context, oldk, request, NULL, NULL);
+
+    krb5_storage_free(request);
+    return ret;
 }
 
 static krb5_error_code
@@ -850,7 +876,8 @@ kcm_default_name(krb5_context context, char **str)
  * @ingroup krb5_ccache
  */
 
-const krb5_cc_ops krb5_kcm_ops = {
+KRB5_LIB_VARIABLE const krb5_cc_ops krb5_kcm_ops = {
+    KRB5_CC_OPS_VERSION,
     "KCM",
     kcm_get_name,
     kcm_resolve,
@@ -1117,6 +1144,5 @@ _krb5_kcm_get_ticket(krb5_context context,
     krb5_storage_free(request);
     return ret;
 }
-
 
 #endif /* HAVE_KCM */

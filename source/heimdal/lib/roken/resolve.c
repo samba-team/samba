@@ -45,7 +45,7 @@
 
 #include <assert.h>
 
-RCSID("$Id: resolve.c 19869 2007-01-12 16:03:14Z lha $");
+RCSID("$Id: resolve.c 22873 2008-04-07 18:50:39Z lha $");
 
 #ifdef _AIX /* AIX have broken res_nsearch() in 5.1 (5.0 also ?) */
 #undef HAVE_RES_NSEARCH
@@ -128,7 +128,8 @@ parse_record(const unsigned char *data, const unsigned char *end_data,
 	     const unsigned char **pp, struct resource_record **ret_rr)
 {
     struct resource_record *rr;
-    int type, class, ttl, size;
+    int type, class, ttl;
+    unsigned size;
     int status;
     char host[MAXDNAME];
     const unsigned char *p = *pp;

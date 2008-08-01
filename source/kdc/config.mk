@@ -6,7 +6,7 @@
 INIT_FUNCTION = server_service_kdc_init
 SUBSYSTEM = smbd
 PRIVATE_DEPENDENCIES = \
-		LIBLDB HEIMDAL HEIMDAL_KDC HEIMDAL_HDB SAMDB
+		HEIMDAL_KDC HDB_LDB
 # End SUBSYSTEM KDC
 #######################
 
@@ -17,8 +17,8 @@ KDC_OBJ_FILES = $(addprefix $(kdcsrcdir)/, kdc.o kpasswdd.o)
 [SUBSYSTEM::HDB_LDB]
 CFLAGS = -Iheimdal/kdc -Iheimdal/lib/hdb
 PRIVATE_DEPENDENCIES = \
-		LIBLDB auth_sam auth_sam_reply HEIMDAL CREDENTIALS \
-		HEIMDAL_HDB_ASN1
+		LIBLDB auth_sam auth_sam_reply CREDENTIALS \
+		HEIMDAL_HDB
 # End SUBSYSTEM KDC
 #######################
 

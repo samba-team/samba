@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: get_default_principal.c 14870 2005-04-20 20:53:29Z lha $");
+RCSID("$Id: get_default_principal.c 23280 2008-06-23 03:26:18Z lha $");
 
 /*
  * Try to find out what's a reasonable default principal.
@@ -85,8 +85,8 @@ _krb5_get_default_principal_local (krb5_context context,
 		user = getlogin();
 	}
 	if(user == NULL) {
-	    krb5_set_error_string(context,
-				  "unable to figure out current principal");
+	    krb5_set_error_message(context, ENOTTY,
+				   "unable to figure out current principal");
 	    return ENOTTY; /* XXX */
 	}
 	ret = krb5_make_principal(context, princ, NULL, user, NULL);

@@ -32,7 +32,7 @@
  */
 
 #include "hx_locl.h"
-RCSID("$Id: ks_p12.c 21146 2007-06-18 21:37:25Z lha $");
+RCSID("$Id: ks_p12.c 23413 2008-07-26 18:34:53Z lha $");
 
 struct ks_pkcs12 {
     hx509_certs certs;
@@ -276,6 +276,7 @@ envelopedData_parser(hx509_context context,
 			       0,
 			       data, length,
 			       NULL,
+			       0,
 			       &contentType,
 			       &content);
     if (ret) {
@@ -361,14 +362,14 @@ p12_init(hx509_context context,
 	goto out;
     }
 
-    ret = _hx509_map_file(residue, &buf, &len, NULL);
+    ret = rk_undumpdata(residue, &buf, &len);
     if (ret) {
 	hx509_clear_error_string(context);
 	goto out;
     }
 
     ret = decode_PKCS12_PFX(buf, len, &pfx, NULL);
-    _hx509_unmap_file(buf, len);
+    rk_xfree(buf);
     if (ret) {
 	hx509_set_error_string(context, 0, ret,
 			       "Failed to decode the PFX in %s", residue);

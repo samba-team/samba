@@ -392,7 +392,17 @@ _PUBLIC_ int cli_credentials_get_client_gss_creds(struct cli_credentials *cred,
 		return ret;
 	}
 
-	/* transfer the enctypes from the smb_krb5_context to the gssapi layer */
+	/*
+	 * transfer the enctypes from the smb_krb5_context to the gssapi layer
+	 *
+	 * We use 'our' smb_krb5_context to do the AS-REQ and it is possible
+	 * to configure the enctypes via the krb5.conf.
+	 *
+	 * And the gss_init_sec_context() creates it's own krb5_context and
+	 * the TGS-REQ had all enctypes in it and only the ones configured
+	 * and used for the AS-REQ, so it wasn't possible to disable the usage
+	 * of AES keys.
+	 */
 	min_stat = krb5_get_default_in_tkt_etypes(ccache->smb_krb5_context->krb5_context,
 						  &etypes);
 	if (min_stat == 0) {

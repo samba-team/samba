@@ -33,7 +33,7 @@
 
 #include <krb5_locl.h>
 
-RCSID("$Id: rd_req.c 22235 2007-12-08 21:52:07Z lha $");
+RCSID("$Id: rd_req.c 23415 2008-07-26 18:35:44Z lha $");
 
 static krb5_error_code
 decrypt_tkt_enc_part (krb5_context context,
@@ -133,7 +133,7 @@ static krb5_error_code
 check_transited(krb5_context context, Ticket *ticket, EncTicketPart *enc)
 {
     char **realms;
-    int num_realms;
+    unsigned int num_realms;
     krb5_error_code ret;
 	    
     /* 
@@ -389,11 +389,6 @@ krb5_verify_ap_req2(krb5_context context,
 					     t->ticket.crealm);
     if (ret) goto out;
 
-    /* save key */
-
-    ret = krb5_copy_keyblock(context, &t->ticket.key, &ac->keyblock);
-    if (ret) goto out;
-
     ret = decrypt_authenticator (context,
 				 &t->ticket.key,
 				 &ap_req->authenticator,
@@ -479,6 +474,10 @@ krb5_verify_ap_req2(krb5_context context,
 	}
     }
 
+    /* save key */
+    ret = krb5_copy_keyblock(context, &t->ticket.key, &ac->keyblock);
+    if (ret) goto out;
+
     if (ap_req_options) {
 	*ap_req_options = 0;
 	if (ac->keytype != ETYPE_NULL)
@@ -533,7 +532,7 @@ krb5_rd_req_in_ctx_alloc(krb5_context context, krb5_rd_req_in_ctx *ctx)
 {
     *ctx = calloc(1, sizeof(**ctx));
     if (*ctx == NULL) {
-	krb5_set_error_string(context, "out of memory");
+	krb5_set_error_message(context, ENOMEM, "out of memory");
 	return ENOMEM;
     }
     (*ctx)->check_pac = (context->flags & KRB5_CTX_F_CHECK_PAC) ? 1 : 0;
@@ -616,7 +615,7 @@ _krb5_rd_req_out_ctx_alloc(krb5_context context, krb5_rd_req_out_ctx *ctx)
 {
     *ctx = calloc(1, sizeof(**ctx));
     if (*ctx == NULL) {
-	krb5_set_error_string(context, "out of memory");
+	krb5_set_error_message(context, ENOMEM, "out of memory");
 	return ENOMEM;
     }
     return 0;
@@ -805,9 +804,9 @@ krb5_rd_req_ctx(krb5_context context,
     }
     if (ap_req.ap_options.use_session_key &&
 	(*auth_context)->keyblock == NULL) {
-	krb5_set_error_string(context, "krb5_rd_req: user to user auth "
-			      "without session key given");
 	ret = KRB5KRB_AP_ERR_NOKEY;
+	krb5_set_error_message(context, ret, "krb5_rd_req: user to user auth "
+			       "without session key given");
 	goto out;
     }
 

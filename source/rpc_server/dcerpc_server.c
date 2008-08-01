@@ -947,7 +947,6 @@ _PUBLIC_ NTSTATUS dcesrv_reply(struct dcesrv_call_state *call)
 		uint32_t length;
 		struct data_blob_list_item *rep;
 		struct ncacn_packet pkt;
-		const uint32_t overhead = (DCERPC_MAX_SIGN_SIZE+DCERPC_RESPONSE_LENGTH);
 
 		rep = talloc(call, struct data_blob_list_item);
 		NT_STATUS_HAVE_NO_MEMORY(rep);

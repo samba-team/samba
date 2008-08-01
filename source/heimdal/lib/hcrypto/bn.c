@@ -35,7 +35,7 @@
 #include <config.h>
 #endif
 
-RCSID("$Id: bn.c 22261 2007-12-09 06:24:18Z lha $");
+RCSID("$Id: bn.c 22850 2008-04-07 18:49:01Z lha $");
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -297,13 +297,13 @@ BN_set_word(BIGNUM *bn, unsigned long num)
     for (num2 = num, i = 0; num2 > 0; i++)
 	num2 = num2 >> 8;
 
-    len = i - 1;
+    len = i;
     for (; i > 0; i--) {
 	p[i - 1] = (num & 0xff);
 	num = num >> 8;
     }
 
-    bn = BN_bin2bn(p, len + 1, bn);
+    bn = BN_bin2bn(p, len, bn);
     return bn != NULL;
 }
 

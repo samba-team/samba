@@ -33,9 +33,9 @@
 
 #include "mech_locl.h"
 
-RCSID("$Id: gss_release_oid.c 17747 2006-06-30 09:34:54Z lha $");
+RCSID("$Id: gss_release_oid.c 23025 2008-04-17 10:01:57Z lha $");
 
-OM_uint32
+OM_uint32 GSSAPI_LIB_FUNCTION
 gss_release_oid(OM_uint32 *minor_status, gss_OID *oid)
 {
     gss_OID o = *oid;

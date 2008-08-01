@@ -32,5 +32,6 @@ void smb_krb5_free_context(struct smb_krb5_context *smb_krb5_context);
 krb5_error_code smb_krb5_send_and_recv_func(krb5_context context,
 					    void *data,
 					    krb5_krbhst_info *hi,
+					    time_t timeout,
 					    const krb5_data *send_buf,
 					    krb5_data *recv_buf);

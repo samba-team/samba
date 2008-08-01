@@ -157,6 +157,10 @@ NTSTATUS ntlmssp_server_negotiate(struct gensec_security *gensec_security,
 
 	/* Ask our caller what challenge they would like in the packet */
 	cryptkey = gensec_ntlmssp_state->get_challenge(gensec_ntlmssp_state);
+	if (!cryptkey) {
+		DEBUG(1, ("ntlmssp_server_negotiate: backend doesn't give a challenge\n"));
+		return NT_STATUS_INTERNAL_ERROR;
+	}
 
 	/* Check if we may set the challenge */
 	if (!gensec_ntlmssp_state->may_set_challenge(gensec_ntlmssp_state)) {
@@ -614,6 +618,8 @@ static const uint8_t *auth_ntlmssp_get_challenge(const struct gensec_ntlmssp_sta
 
 	status = auth_get_challenge(gensec_ntlmssp_state->auth_context, &chal);
 	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("auth_ntlmssp_get_challenge: failed to get challenge: %s\n",
+			nt_errstr(status)));
 		return NULL;
 	}
 

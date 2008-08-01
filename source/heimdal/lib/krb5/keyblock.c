@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: keyblock.c 15167 2005-05-18 04:21:57Z lha $");
+RCSID("$Id: keyblock.c 23316 2008-06-23 04:32:32Z lha $");
 
 void KRB5_LIB_FUNCTION
 krb5_keyblock_zero(krb5_keyblock *keyblock)
@@ -81,7 +81,7 @@ krb5_copy_keyblock (krb5_context context,
 
     k = malloc (sizeof(*k));
     if (k == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
     *to = k;
@@ -116,15 +116,16 @@ krb5_keyblock_init(krb5_context context,
 	return ret;
 
     if (len != size) {
-	krb5_set_error_string(context, "Encryption key %d is %lu bytes "
-			      "long, %lu was passed in",
-			      type, (unsigned long)len, (unsigned long)size);
+	krb5_set_error_message(context, KRB5_PROG_ETYPE_NOSUPP,
+			       "Encryption key %d is %lu bytes "
+			       "long, %lu was passed in",
+			       type, (unsigned long)len, (unsigned long)size);
 	return KRB5_PROG_ETYPE_NOSUPP;
     }
     ret = krb5_data_copy(&key->keyvalue, data, len);
     if(ret) {
-	krb5_set_error_string(context, "malloc failed: %lu",
-			      (unsigned long)len);
+	krb5_set_error_message(context, ret, "malloc failed: %lu",
+			       (unsigned long)len);
 	return ret;
     }
     key->keytype = type;

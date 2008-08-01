@@ -150,7 +150,6 @@ static int schema_fsmo_add(struct ldb_module *module, struct ldb_request *req)
 
 static int schema_fsmo_extended(struct ldb_module *module, struct ldb_request *req)
 {
-	WERROR status;
 	struct ldb_dn *schema_dn;
 	struct dsdb_schema *schema;
 	char *error_string = NULL;

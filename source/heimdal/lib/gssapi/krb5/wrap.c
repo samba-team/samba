@@ -33,7 +33,7 @@
 
 #include "krb5/gsskrb5_locl.h"
 
-RCSID("$Id: wrap.c 19035 2006-11-14 09:49:56Z lha $");
+RCSID("$Id: wrap.c 23316 2008-06-23 04:32:32Z lha $");
 
 /*
  * Return initiator subkey, or if that doesn't exists, the subkey.
@@ -61,7 +61,7 @@ _gsskrb5i_get_initiator_subkey(const gsskrb5_ctx ctx,
 				   ctx->auth_context, 
 				   key);
     if (ret == 0 && *key == NULL) {
-	krb5_set_error_string(context, "No initiator subkey available");
+	krb5_set_error_message(context, 0, "No initiator subkey available");
 	return GSS_KRB5_S_KG_NO_SUBKEY;
     }
     return ret;
@@ -85,7 +85,7 @@ _gsskrb5i_get_acceptor_subkey(const gsskrb5_ctx ctx,
 				     key);
     }
     if (ret == 0 && *key == NULL) {
-	krb5_set_error_string(context, "No acceptor subkey available");
+	krb5_set_error_message(context, 0, "No acceptor subkey available");
 	return GSS_KRB5_S_KG_NO_SUBKEY;
     }
     return ret;
@@ -106,7 +106,7 @@ _gsskrb5i_get_token_key(const gsskrb5_ctx ctx,
 	    _gsskrb5i_get_initiator_subkey(ctx, context, key);
     }
     if (*key == NULL) {
-	krb5_set_error_string(context, "No token key available");
+	krb5_set_error_message(context, 0, "No token key available");
 	return GSS_KRB5_S_KG_NO_SUBKEY;
     }
     return 0;
@@ -259,7 +259,7 @@ wrap_des
 
   memset (&zero, 0, sizeof(zero));
   memcpy (&deskey, key->keyvalue.data, sizeof(deskey));
-  DES_set_key (&deskey, &schedule);
+  DES_set_key_unchecked (&deskey, &schedule);
   DES_cbc_cksum ((void *)hash, (void *)hash, sizeof(hash),
 		 &schedule, &zero);
   memcpy (p - 8, hash, 8);
@@ -279,7 +279,7 @@ wrap_des
 	  (ctx->more_flags & LOCAL) ? 0 : 0xFF,
 	  4);
 
-  DES_set_key (&deskey, &schedule);
+  DES_set_key_unchecked (&deskey, &schedule);
   DES_cbc_encrypt ((void *)p, (void *)p, 8,
 		   &schedule, (DES_cblock *)(p + 8), DES_ENCRYPT);
 
@@ -296,7 +296,7 @@ wrap_des
 
       for (i = 0; i < sizeof(deskey); ++i)
 	  deskey[i] ^= 0xf0;
-      DES_set_key (&deskey, &schedule);
+      DES_set_key_unchecked (&deskey, &schedule);
       memset (&zero, 0, sizeof(zero));
       DES_cbc_encrypt ((void *)p,
 		       (void *)p,

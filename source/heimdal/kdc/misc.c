@@ -33,7 +33,7 @@
 
 #include "kdc_locl.h"
 
-RCSID("$Id: misc.c 21106 2007-06-18 10:18:11Z lha $");
+RCSID("$Id: misc.c 23316 2008-06-23 04:32:32Z lha $");
 
 struct timeval _kdc_now;
 
@@ -51,7 +51,7 @@ _kdc_db_fetch(krb5_context context,
 
     ent = calloc (1, sizeof (*ent));
     if (ent == NULL) {
-	krb5_set_error_string(context, "out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
 
@@ -76,8 +76,8 @@ _kdc_db_fetch(krb5_context context,
 	}
     }
     free(ent);
-    krb5_set_error_string(context, "no such entry found in hdb");
-    return  HDB_ERR_NOENTRY;
+    krb5_set_error_message(context, HDB_ERR_NOENTRY, "no such entry found in hdb");
+    return HDB_ERR_NOENTRY;
 }
 
 void
@@ -116,7 +116,8 @@ _kdc_get_preferred_key(krb5_context context,
 	}
     }
 
-    krb5_set_error_string(context, "No valid kerberos key found for %s", name);
+    krb5_set_error_message(context, EINVAL, 
+			   "No valid kerberos key found for %s", name);
     return EINVAL;
 }
 

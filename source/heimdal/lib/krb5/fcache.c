@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: fcache.c 22517 2008-01-24 11:45:51Z lha $");
+RCSID("$Id: fcache.c 23444 2008-07-27 12:07:47Z lha $");
 
 typedef struct krb5_fcache{
     char *filename;
@@ -93,12 +93,12 @@ _krb5_xlock(krb5_context context, int fd, krb5_boolean exclusive,
 	ret = 0; 
 	break;
     case EAGAIN:
-	krb5_set_error_string(context, "timed out locking cache file %s", 
-			      filename);
+	krb5_set_error_message(context, ret, "timed out locking cache file %s", 
+			       filename);
 	break;
     default:
-	krb5_set_error_string(context, "error locking cache file %s: %s",
-			      filename, strerror(ret));
+	krb5_set_error_message(context, ret, "error locking cache file %s: %s",
+			       filename, strerror(ret));
 	break;
     }
     return ret;
@@ -127,12 +127,38 @@ _krb5_xunlock(krb5_context context, int fd)
 	ret = 0; 
 	break;
     default:
-	krb5_set_error_string(context, 
-			      "Failed to unlock file: %s", strerror(ret));
+	krb5_set_error_message(context, ret,
+			       "Failed to unlock file: %s",
+			       strerror(ret));
 	break;
     }
     return ret;
 }
+
+static krb5_error_code
+write_storage(krb5_context context, krb5_storage *sp, int fd)
+{
+    krb5_error_code ret;
+    krb5_data data;
+    ssize_t sret;
+
+    ret = krb5_storage_to_data(sp, &data);
+    if (ret) {
+	krb5_set_error_message(context, ret, "malloc: out of memory");
+	return ret;
+    }
+    sret = write(fd, data.data, data.length);
+    ret = (sret != data.length);
+    krb5_data_free(&data);
+    if (ret) {
+	ret = errno;
+	krb5_set_error_message(context, ret,
+			       "Failed to write FILE credential data");
+	return ret;
+    }
+    return 0;
+}
+
 
 static krb5_error_code
 fcc_lock(krb5_context context, krb5_ccache id,
@@ -153,13 +179,15 @@ fcc_resolve(krb5_context context, krb5_ccache *id, const char *res)
     krb5_fcache *f;
     f = malloc(sizeof(*f));
     if(f == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
+	krb5_set_error_message(context, KRB5_CC_NOMEM,
+			       "malloc: out of memory");
 	return KRB5_CC_NOMEM;
     }
     f->filename = strdup(res);
     if(f->filename == NULL){
 	free(f);
-	krb5_set_error_string(context, "malloc: out of memory");
+	krb5_set_error_message(context, KRB5_CC_NOMEM,
+			       "malloc: out of memory");
 	return KRB5_CC_NOMEM;
     }
     f->version = 0;
@@ -203,7 +231,7 @@ scrub_file (int fd)
  */
 
 static krb5_error_code
-erase_file(const char *filename)
+erase_file(krb5_context context, const char *filename)
 {
     int fd;
     struct stat sb1, sb2;
@@ -220,12 +248,20 @@ erase_file(const char *filename)
 	else
 	    return errno;
     }
+    rk_cloexec(fd);
+    ret = _krb5_xlock(context, fd, 1, filename);
+    if (ret) {
+	close(fd);
+	return ret;
+    }
     if (unlink(filename) < 0) {
+	_krb5_xunlock(context, fd);
         close (fd);
         return errno;
     }
     ret = fstat (fd, &sb2);
     if (ret < 0) {
+	_krb5_xunlock(context, fd);
 	close (fd);
 	return errno;
     }
@@ -233,6 +269,7 @@ erase_file(const char *filename)
     /* check if someone was playing with symlinks */
 
     if (sb1.st_dev != sb2.st_dev || sb1.st_ino != sb2.st_ino) {
+	_krb5_xunlock(context, fd);
 	close (fd);
 	return EPERM;
     }
@@ -240,11 +277,18 @@ erase_file(const char *filename)
     /* there are still hard links to this file */
 
     if (sb2.st_nlink != 0) {
+	_krb5_xunlock(context, fd);
         close (fd);
         return 0;
     }
 
     ret = scrub_file (fd);
+    if (ret) {
+	_krb5_xunlock(context, fd);
+	close(fd);
+	return ret;
+    }
+    ret = _krb5_xunlock(context, fd);
     close (fd);
     return ret;
 }
@@ -258,19 +302,21 @@ fcc_gen_new(krb5_context context, krb5_ccache *id)
 
     f = malloc(sizeof(*f));
     if(f == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
+	krb5_set_error_message(context, KRB5_CC_NOMEM,
+			       "malloc: out of memory");
 	return KRB5_CC_NOMEM;
     }
     asprintf (&file, "%sXXXXXX", KRB5_DEFAULT_CCFILE_ROOT);
     if(file == NULL) {
 	free(f);
-	krb5_set_error_string(context, "malloc: out of memory");
+	krb5_set_error_message(context, KRB5_CC_NOMEM,
+			       "malloc: out of memory");
 	return KRB5_CC_NOMEM;
     }
     fd = mkstemp(file);
     if(fd < 0) {
 	int ret = errno;
-	krb5_set_error_string(context, "mkstemp %s", file);
+	krb5_set_error_message(context, ret, "mkstemp %s", file);
 	free(f);
 	free(file);
 	return ret;
@@ -323,11 +369,12 @@ fcc_open(krb5_context context,
     fd = open(filename, flags, mode);
     if(fd < 0) {
 	ret = errno;
-	krb5_set_error_string(context, "open(%s): %s", filename,
-			      strerror(ret));
+	krb5_set_error_message(context, ret, "open(%s): %s", filename,
+			       strerror(ret));
 	return ret;
     }
-	
+    rk_cloexec(fd);
+    
     if((ret = fcc_lock(context, id, fd, exclusive)) != 0) {
 	close(fd);
 	return ret;
@@ -353,7 +400,7 @@ fcc_initialize(krb5_context context,
 	return ret;
     {
 	krb5_storage *sp;    
-	sp = krb5_storage_from_fd(fd);
+	sp = krb5_storage_emem();
 	krb5_storage_set_eof_code(sp, KRB5_CC_END);
 	if(context->fcache_vno != 0)
 	    f->version = context->fcache_vno;
@@ -376,14 +423,16 @@ fcc_initialize(krb5_context context,
 	}
 	ret |= krb5_store_principal(sp, primary_principal);
 	
+	ret |= write_storage(context, sp, fd);
+
 	krb5_storage_free(sp);
     }
     fcc_unlock(context, fd);
     if (close(fd) < 0)
 	if (ret == 0) {
 	    ret = errno;
-	    krb5_set_error_string (context, "close %s: %s", 
-				   FILENAME(id), strerror(ret));
+	    krb5_set_error_message (context, ret, "close %s: %s", 
+				    FILENAME(id), strerror(ret));
 	}
     return ret;
 }
@@ -401,7 +450,7 @@ static krb5_error_code
 fcc_destroy(krb5_context context,
 	    krb5_ccache id)
 {
-    erase_file(FILENAME(id));
+    erase_file(context, FILENAME(id));
     return 0;
 }
 
@@ -418,7 +467,8 @@ fcc_store_cred(krb5_context context,
 	return ret;
     {
 	krb5_storage *sp;
-	sp = krb5_storage_from_fd(fd);
+
+	sp = krb5_storage_emem();
 	krb5_storage_set_eof_code(sp, KRB5_CC_END);
 	storage_set_flags(context, sp, FCACHE(id)->version);
 	if (!krb5_config_get_bool_default(context, NULL, TRUE,
@@ -427,15 +477,18 @@ fcc_store_cred(krb5_context context,
 					  NULL))
 	    krb5_storage_set_flags(sp, KRB5_STORAGE_CREDS_FLAGS_WRONG_BITORDER);
 	ret = krb5_store_creds(sp, creds);
+	if (ret == 0)
+	    ret = write_storage(context, sp, fd);
 	krb5_storage_free(sp);
     }
     fcc_unlock(context, fd);
-    if (close(fd) < 0)
+    if (close(fd) < 0) {
 	if (ret == 0) {
 	    ret = errno;
-	    krb5_set_error_string (context, "close %s: %s", 
-				   FILENAME(id), strerror(ret));
+	    krb5_set_error_message (context, ret, "close %s: %s", 
+				    FILENAME(id), strerror(ret));
 	}
+    }
     return ret;
 }
 
@@ -464,25 +517,27 @@ init_fcc (krb5_context context,
     ret = krb5_ret_int8(sp, &pvno);
     if(ret != 0) {
 	if(ret == KRB5_CC_END) {
-	    krb5_set_error_string(context, "Empty credential cache file: %s",
-				  FILENAME(id));
 	    ret = ENOENT;
+	    krb5_set_error_message(context, ret, 
+				   "Empty credential cache file: %s",
+				   FILENAME(id));
 	} else
-	    krb5_set_error_string(context, "Error reading pvno in "
-				  "cache file: %s", FILENAME(id));
+	    krb5_set_error_message(context, ret,  "Error reading pvno in "
+				   "cache file: %s", FILENAME(id));
 	goto out;
     }
     if(pvno != 5) {
-	krb5_set_error_string(context, "Bad version number in credential "
-			      "cache file: %s", FILENAME(id));
 	ret = KRB5_CCACHE_BADVNO;
+	krb5_set_error_message(context, ret, "Bad version number in "
+			       "credential cache file: %s",
+			       FILENAME(id));
 	goto out;
     }
     ret = krb5_ret_int8(sp, &tag); /* should not be host byte order */
     if(ret != 0) {
-	krb5_set_error_string(context, "Error reading tag in "
-			      "cache file: %s", FILENAME(id));
 	ret = KRB5_CC_FORMAT;
+	krb5_set_error_message(context, ret, "Error reading tag in "
+			      "cache file: %s", FILENAME(id));
 	goto out;
     }
     FCACHE(id)->version = tag;
@@ -494,8 +549,9 @@ init_fcc (krb5_context context,
 	ret = krb5_ret_int16 (sp, &length);
 	if(ret) {
 	    ret = KRB5_CC_FORMAT;
-	    krb5_set_error_string(context, "Error reading tag length in "
-			      "cache file: %s", FILENAME(id));
+	    krb5_set_error_message(context, ret, 
+				   "Error reading tag length in "
+				   "cache file: %s", FILENAME(id));
 	    goto out;
 	}
 	while(length > 0) {
@@ -505,32 +561,32 @@ init_fcc (krb5_context context,
 
 	    ret = krb5_ret_int16 (sp, &dtag);
 	    if(ret) {
-		krb5_set_error_string(context, "Error reading dtag in "
-				      "cache file: %s", FILENAME(id));
 		ret = KRB5_CC_FORMAT;
+		krb5_set_error_message(context, ret, "Error reading dtag in "
+				       "cache file: %s", FILENAME(id));
 		goto out;
 	    }
 	    ret = krb5_ret_int16 (sp, &data_len);
 	    if(ret) {
-		krb5_set_error_string(context, "Error reading dlength in "
-				      "cache file: %s", FILENAME(id));
 		ret = KRB5_CC_FORMAT;
+		krb5_set_error_message(context, ret, "Error reading dlength in "
+				       "cache file: %s", FILENAME(id));
 		goto out;
 	    }
 	    switch (dtag) {
 	    case FCC_TAG_DELTATIME :
 		ret = krb5_ret_int32 (sp, &context->kdc_sec_offset);
 		if(ret) {
-		    krb5_set_error_string(context, "Error reading kdc_sec in "
-					  "cache file: %s", FILENAME(id));
 		    ret = KRB5_CC_FORMAT;
+		    krb5_set_error_message(context, ret, "Error reading kdc_sec in "
+					   "cache file: %s", FILENAME(id));
 		    goto out;
 		}
 		ret = krb5_ret_int32 (sp, &context->kdc_usec_offset);
 		if(ret) {
-		    krb5_set_error_string(context, "Error reading kdc_usec in "
-					  "cache file: %s", FILENAME(id));
 		    ret = KRB5_CC_FORMAT;
+		    krb5_set_error_message(context, ret, "Error reading kdc_usec in "
+					   "cache file: %s", FILENAME(id));
 		    goto out;
 		}
 		break;
@@ -538,10 +594,11 @@ init_fcc (krb5_context context,
 		for (i = 0; i < data_len; ++i) {
 		    ret = krb5_ret_int8 (sp, &dummy);
 		    if(ret) {
-			krb5_set_error_string(context, "Error reading unknown "
-					      "tag in cache file: %s", 
-					      FILENAME(id));
 			ret = KRB5_CC_FORMAT;
+			krb5_set_error_message(context, ret,
+					       "Error reading unknown "
+					       "tag in cache file: %s", 
+					       FILENAME(id));
 			goto out;
 		    }
 		}
@@ -557,9 +614,9 @@ init_fcc (krb5_context context,
 	break;
     default :
 	ret = KRB5_CCACHE_BADVNO;
-	krb5_set_error_string(context, "Unknown version number (%d) in "
-			      "credential cache file: %s",
-			      (int)tag, FILENAME(id));
+	krb5_set_error_message(context, ret, "Unknown version number (%d) in "
+			       "credential cache file: %s",
+			       (int)tag, FILENAME(id));
 	goto out;
     }
     *ret_sp = sp;
@@ -610,7 +667,7 @@ fcc_get_first (krb5_context context,
 
     *cursor = malloc(sizeof(struct fcc_cursor));
     if (*cursor == NULL) {
-        krb5_set_error_string (context, "malloc: out of memory");
+        krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
     memset(*cursor, 0, sizeof(struct fcc_cursor));
@@ -670,7 +727,7 @@ fcc_remove_cred(krb5_context context,
 		 krb5_creds *cred)
 {
     krb5_error_code ret;
-    krb5_ccache copy;
+    krb5_ccache copy, newfile;
 
     ret = krb5_cc_gen_new(context, &krb5_mcc_ops, &copy);
     if (ret)
@@ -688,12 +745,20 @@ fcc_remove_cred(krb5_context context,
 	return ret;
     }
 
-    fcc_destroy(context, id);
+    ret = krb5_cc_gen_new(context, &krb5_fcc_ops, &newfile);
+    if (ret) {
+	krb5_cc_destroy(context, copy);
+	return ret;
+    }
 
-    ret = krb5_cc_copy_cache(context, copy, id);
+    ret = krb5_cc_copy_cache(context, copy, newfile);
     krb5_cc_destroy(context, copy);
+    if (ret) {
+	krb5_cc_destroy(context, newfile);
+	return ret;
+    }
 
-    return ret;
+    return krb5_cc_move(context, newfile, id);
 }
 
 static krb5_error_code
@@ -704,7 +769,7 @@ fcc_set_flags(krb5_context context,
     return 0; /* XXX */
 }
 
-static krb5_error_code
+static int
 fcc_get_version(krb5_context context,
 		krb5_ccache id)
 {
@@ -722,7 +787,7 @@ fcc_get_cache_first(krb5_context context, krb5_cc_cursor *cursor)
 
     iter = calloc(1, sizeof(*iter));
     if (iter == NULL) {
-	krb5_set_error_string(context, "malloc - out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }    
     iter->first = 1;
@@ -775,10 +840,10 @@ fcc_move(krb5_context context, krb5_ccache from, krb5_ccache to)
     ret = rename(FILENAME(from), FILENAME(to));
     if (ret && errno != EXDEV) {
 	ret = errno;
-	krb5_set_error_string(context,
-			      "Rename of file from %s to %s failed: %s", 
-			      FILENAME(from), FILENAME(to),
-			      strerror(ret));
+	krb5_set_error_message(context, ret,
+			       "Rename of file from %s to %s failed: %s", 
+			       FILENAME(from), FILENAME(to),
+			       strerror(ret));
 	return ret;
     } else if (ret && errno == EXDEV) {
 	/* make a copy and delete the orignal */
@@ -801,21 +866,19 @@ fcc_move(krb5_context context, krb5_ccache from, krb5_ccache to)
 	    sz2 = write(fd2, buf, sz1);
 	    if (sz1 != sz2) {
 		ret = EIO;
-		krb5_set_error_string(context,
-				      "Failed to write data from one file "
-				      "credential cache to the other");
+		krb5_set_error_message(context, ret,
+				       "Failed to write data from one file "
+				       "credential cache to the other");
 		goto out2;
 	    }
 	}
 	if (sz1 < 0) {
 	    ret = EIO;
-	    krb5_set_error_string(context,
-				  "Failed to read data from one file "
-				  "credential cache to the other");
+	    krb5_set_error_message(context, ret,
+				   "Failed to read data from one file "
+				   "credential cache to the other");
 	    goto out2;
 	}
-	erase_file(FILENAME(from));
-	    
     out2:
 	fcc_unlock(context, fd2);
 	close(fd2);
@@ -824,8 +887,10 @@ fcc_move(krb5_context context, krb5_ccache from, krb5_ccache to)
 	fcc_unlock(context, fd1);
 	close(fd1);
 
+	erase_file(context, FILENAME(from));
+
 	if (ret) {
-	    erase_file(FILENAME(to));
+	    erase_file(context, FILENAME(to));
 	    return ret;
 	}
     }
@@ -856,7 +921,8 @@ fcc_default_name(krb5_context context, char **str)
  * @ingroup krb5_ccache
  */
 
-const krb5_cc_ops krb5_fcc_ops = {
+KRB5_LIB_VARIABLE const krb5_cc_ops krb5_fcc_ops = {
+    KRB5_CC_OPS_VERSION,
     "FILE",
     fcc_get_name,
     fcc_resolve,

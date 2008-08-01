@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: hx_locl.h 22538 2008-01-27 13:05:47Z lha $ */
+/* $Id: hx_locl.h 23189 2008-05-23 15:04:27Z lha $ */
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -45,6 +45,8 @@
 #include <assert.h>
 #include <stdarg.h>
 #include <err.h>
+#include <limits.h>
+
 #include <getarg.h>
 #include <base64.h>
 #include <hex.h>
@@ -79,6 +81,8 @@ typedef struct hx509_path hx509_path;
 typedef void (*_hx509_cert_release_func)(struct hx509_cert_data *, void *);
 
 typedef struct hx509_private_key_ops hx509_private_key_ops;
+
+#include "sel.h"
 
 #include <hx509-private.h>
 #include <hx509_err.h>
@@ -129,7 +133,8 @@ struct hx509_query_data {
 #define HX509_QUERY_MATCH_KEY_HASH_SHA1		0x100000
 #define HX509_QUERY_MATCH_TIME			0x200000
 #define HX509_QUERY_MATCH_EKU			0x400000
-#define HX509_QUERY_MASK			0x7fffff
+#define HX509_QUERY_MATCH_EXPR			0x800000
+#define HX509_QUERY_MASK			0xffffff
     Certificate *subject;
     Certificate *certificate;
     heim_integer *serial;
@@ -144,6 +149,7 @@ struct hx509_query_data {
     heim_octet_string *keyhash_sha1;
     time_t timenow;
     heim_oid *eku;
+    struct hx_expr *expr;
 };
 
 struct hx509_keyset_ops {
@@ -187,6 +193,18 @@ struct hx509_context_data {
 
 /* _hx509_calculate_path flag field */
 #define HX509_CALCULATE_PATH_NO_ANCHOR 1
+
+/* environment */
+struct hx509_env_data {
+    enum { env_string, env_list } type;
+    char *name;
+    struct hx509_env_data *next;
+    union {
+	char *string;
+	struct hx509_env_data *list;
+    } u;
+};
+
 
 extern const AlgorithmIdentifier * _hx509_crypto_default_sig_alg;
 extern const AlgorithmIdentifier * _hx509_crypto_default_digest_alg;

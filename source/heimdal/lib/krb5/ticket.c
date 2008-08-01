@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: ticket.c 19544 2006-12-28 20:49:18Z lha $");
+RCSID("$Id: ticket.c 23310 2008-06-23 03:30:49Z lha $");
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_free_ticket(krb5_context context,
@@ -57,7 +57,7 @@ krb5_copy_ticket(krb5_context context,
     *to = NULL;
     tmp = malloc(sizeof(*tmp));
     if(tmp == NULL) {
-	krb5_set_error_string (context, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
     if((ret = copy_EncTicketPart(&from->ticket, &tmp->ticket))){
@@ -118,9 +118,10 @@ find_type_in_ad(krb5_context context,
     int i;
 
     if (level > 9) {
-	krb5_set_error_string(context, "Authorization data nested deeper "
-			      "then %d levels, stop searching", level);
 	ret = ENOENT; /* XXX */
+	krb5_set_error_message(context, ret, 
+			       "Authorization data nested deeper "
+			       "then %d levels, stop searching", level);
 	goto out;
     }
 
@@ -133,7 +134,7 @@ find_type_in_ad(krb5_context context,
 	if (!*found && ad->val[i].ad_type == type) {
 	    ret = der_copy_octet_string(&ad->val[i].ad_data, data);
 	    if (ret) {
-		krb5_set_error_string(context, "malloc - out of memory");
+		krb5_set_error_message(context, ret, "malloc: out of memory");
 		goto out;
 	    }
 	    *found = TRUE;
@@ -147,8 +148,8 @@ find_type_in_ad(krb5_context context,
 					   &child,
 					   NULL);
 	    if (ret) {
-		krb5_set_error_string(context, "Failed to decode "
-				      "IF_RELEVANT with %d", ret);
+		krb5_set_error_message(context, ret, "Failed to decode "
+				       "IF_RELEVANT with %d", (int)ret);
 		goto out;
 	    }
 	    ret = find_type_in_ad(context, type, data, found, FALSE,
@@ -167,8 +168,8 @@ find_type_in_ad(krb5_context context,
 				      &child,
 				      NULL);
 	    if (ret) {
-		krb5_set_error_string(context, "Failed to decode "
-				      "AD_KDCIssued with %d", ret);
+		krb5_set_error_message(context, ret, "Failed to decode "
+				       "AD_KDCIssued with %d", ret);
 		goto out;
 	    }
 	    if (failp) {
@@ -211,17 +212,17 @@ find_type_in_ad(krb5_context context,
 	case KRB5_AUTHDATA_AND_OR:
 	    if (!failp)
 		break;
-	    krb5_set_error_string(context, "Authorization data contains "
-				  "AND-OR element that is unknown to the "
-				  "application");
 	    ret = ENOENT; /* XXX */
+	    krb5_set_error_message(context, ret, "Authorization data contains "
+				   "AND-OR element that is unknown to the "
+				   "application");
 	    goto out;
 	default:
 	    if (!failp)
 		break;
-	    krb5_set_error_string(context, "Authorization data contains "
-				  "unknown type (%d) ", ad->val[i].ad_type);
 	    ret = ENOENT; /* XXX */
+	    krb5_set_error_message(context, ret, "Authorization data contains "
+				   "unknown type (%d) ", ad->val[i].ad_type);
 	    goto out;
 	}
     }
@@ -255,7 +256,8 @@ krb5_ticket_get_authorization_data_type(krb5_context context,
 
     ad = ticket->ticket.authorization_data;
     if (ticket->ticket.authorization_data == NULL) {
-	krb5_set_error_string(context, "Ticket have not authorization data");
+	krb5_set_error_message(context, ENOENT,
+			       "Ticket have not authorization data");
 	return ENOENT; /* XXX */
     }
 
@@ -264,8 +266,8 @@ krb5_ticket_get_authorization_data_type(krb5_context context,
     if (ret)
 	return ret;
     if (!found) {
-	krb5_set_error_string(context, "Ticket have not authorization "
-			  "data of type %d", type);
+	krb5_set_error_message(context, ENOENT, "Ticket have not "
+			       "authorization data of type %d", type);
 	return ENOENT; /* XXX */
     }
     return 0;

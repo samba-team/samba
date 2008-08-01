@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: mcache.c 22107 2007-12-03 17:22:51Z lha $");
+RCSID("$Id: mcache.c 23316 2008-06-23 04:32:32Z lha $");
 
 typedef struct krb5_mcache {
     char *name;
@@ -119,7 +119,7 @@ mcc_resolve(krb5_context context, krb5_ccache *id, const char *res)
 
     m = mcc_alloc(res);
     if (m == NULL) {
-	krb5_set_error_string (context, "malloc: out of memory");
+	krb5_set_error_message(context, KRB5_CC_NOMEM, "malloc: out of memory");
 	return KRB5_CC_NOMEM;
     }
     
@@ -138,7 +138,7 @@ mcc_gen_new(krb5_context context, krb5_ccache *id)
     m = mcc_alloc(NULL);
 
     if (m == NULL) {
-	krb5_set_error_string (context, "malloc: out of memory");
+	krb5_set_error_message(context, KRB5_CC_NOMEM, "malloc: out of memory");
 	return KRB5_CC_NOMEM;
     }
 
@@ -237,7 +237,7 @@ mcc_store_cred(krb5_context context,
 
     l = malloc (sizeof(*l));
     if (l == NULL) {
-	krb5_set_error_string (context, "malloc: out of memory");
+	krb5_set_error_message(context, KRB5_CC_NOMEM, "malloc: out of memory");
 	return KRB5_CC_NOMEM;
     }
     l->next = m->creds;
@@ -348,7 +348,7 @@ mcc_get_cache_first(krb5_context context, krb5_cc_cursor *cursor)
 
     iter = calloc(1, sizeof(*iter));
     if (iter == NULL) {
-	krb5_set_error_string(context, "malloc - out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }    
 
@@ -439,7 +439,7 @@ mcc_default_name(krb5_context context, char **str)
 {
     *str = strdup("MEMORY:");
     if (*str == NULL) {
-	krb5_set_error_string(context, "out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
     return 0;
@@ -452,7 +452,8 @@ mcc_default_name(krb5_context context, char **str)
  * @ingroup krb5_ccache
  */
 
-const krb5_cc_ops krb5_mcc_ops = {
+KRB5_LIB_VARIABLE const krb5_cc_ops krb5_mcc_ops = {
+    KRB5_CC_OPS_VERSION,
     "MEMORY",
     mcc_get_name,
     mcc_resolve,

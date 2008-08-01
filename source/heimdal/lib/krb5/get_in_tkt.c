@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2002 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2008 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: get_in_tkt.c 20226 2007-02-16 03:31:50Z lha $");
+RCSID("$Id: get_in_tkt.c 23316 2008-06-23 04:32:32Z lha $");
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_init_etype (krb5_context context,
@@ -41,7 +41,7 @@ krb5_init_etype (krb5_context context,
 		 krb5_enctype **val,
 		 const krb5_enctype *etypes)
 {
-    int i;
+    unsigned int i;
     krb5_error_code ret;
     krb5_enctype *tmp = NULL;
 
@@ -60,7 +60,7 @@ krb5_init_etype (krb5_context context,
     *val = malloc(i * sizeof(**val));
     if (i != 0 && *val == NULL) {
 	ret = ENOMEM;
-	krb5_set_error_string(context, "malloc: out of memory");
+	krb5_set_error_message(context, ret, "malloc: out of memory");
 	goto cleanup;
     }
     memmove (*val,
@@ -71,6 +71,225 @@ cleanup:
 	free (tmp);
     return ret;
 }
+
+static krb5_error_code
+check_server_referral(krb5_context context,
+		      krb5_kdc_rep *rep,
+		      unsigned flags,
+		      krb5_const_principal requested,
+		      krb5_const_principal returned,
+		      const krb5_keyblock const * key)
+{
+    krb5_error_code ret;
+    PA_ServerReferralData ref;
+    krb5_crypto session;
+    EncryptedData ed;
+    size_t len;
+    krb5_data data;
+    PA_DATA *pa;
+    int i = 0, cmp;
+
+    if (rep->kdc_rep.padata == NULL)
+	goto noreferral;
+
+    pa = krb5_find_padata(rep->kdc_rep.padata->val,
+			  rep->kdc_rep.padata->len, 
+			  KRB5_PADATA_SERVER_REFERRAL, &i);
+    if (pa == NULL)
+	goto noreferral;
+
+    memset(&ed, 0, sizeof(ed));
+    memset(&ref, 0, sizeof(ref));
+    
+    ret = decode_EncryptedData(pa->padata_value.data, 
+			       pa->padata_value.length,
+			       &ed, &len);
+    if (ret)
+	return ret;
+    if (len != pa->padata_value.length) {
+	free_EncryptedData(&ed);
+	krb5_set_error_message(context, KRB5KRB_AP_ERR_MODIFIED, "Referral EncryptedData wrong");
+	return KRB5KRB_AP_ERR_MODIFIED;
+    }
+    
+    ret = krb5_crypto_init(context, key, 0, &session);
+    if (ret) {
+	free_EncryptedData(&ed);
+	return ret;
+    }
+    
+    ret = krb5_decrypt_EncryptedData(context, session,
+				     KRB5_KU_PA_SERVER_REFERRAL,
+				     &ed, &data);
+    free_EncryptedData(&ed);
+    krb5_crypto_destroy(context, session);
+    if (ret)
+	return ret;
+    
+    ret = decode_PA_ServerReferralData(data.data, data.length, &ref, &len);
+    if (ret) {
+	krb5_data_free(&data);
+	return ret;
+    }
+    krb5_data_free(&data);
+    
+    if (strcmp(requested->realm, returned->realm) != 0) {
+	free_PA_ServerReferralData(&ref);
+	krb5_set_error_message(context, KRB5KRB_AP_ERR_MODIFIED,
+			       "server ref realm mismatch");
+	return KRB5KRB_AP_ERR_MODIFIED;
+    }
+
+    if (returned->name.name_string.len == 2 &&
+	strcmp(returned->name.name_string.val[0], KRB5_TGS_NAME) == 0)
+    {
+	const char *realm = returned->name.name_string.val[1];
+
+	if (ref.referred_realm == NULL
+	    || strcmp(*ref.referred_realm, realm) != 0)
+	{
+	    free_PA_ServerReferralData(&ref);
+	    krb5_set_error_message(context, KRB5KRB_AP_ERR_MODIFIED,
+				   "tgt returned with wrong ref");
+	    return KRB5KRB_AP_ERR_MODIFIED;
+	}
+    } else if (krb5_principal_compare(context, returned, requested) == 0) {
+	free_PA_ServerReferralData(&ref);
+	krb5_set_error_message(context, KRB5KRB_AP_ERR_MODIFIED,
+			      "req princ no same as returned");
+	return KRB5KRB_AP_ERR_MODIFIED;
+    }
+
+    if (ref.requested_principal_name) {
+	cmp = _krb5_principal_compare_PrincipalName(context,
+						    requested,
+						    ref.requested_principal_name);
+	if (!cmp) {
+	    free_PA_ServerReferralData(&ref);
+	    krb5_set_error_message(context, KRB5KRB_AP_ERR_MODIFIED,
+				   "compare requested failed");
+	    return KRB5KRB_AP_ERR_MODIFIED;
+	}
+    } else if (flags & EXTRACT_TICKET_AS_REQ) {
+	free_PA_ServerReferralData(&ref);
+	krb5_set_error_message(context, KRB5KRB_AP_ERR_MODIFIED,
+			       "Requested principal missing on AS-REQ");
+	return KRB5KRB_AP_ERR_MODIFIED;
+    }
+
+    free_PA_ServerReferralData(&ref);
+
+    return ret;
+noreferral:
+    if (krb5_principal_compare(context, requested, returned) == FALSE) {
+	krb5_set_error_message(context, KRB5KRB_AP_ERR_MODIFIED,
+			       "Not same server principal returned "
+			      "as requested");
+	return KRB5KRB_AP_ERR_MODIFIED;
+    }
+    return 0;
+}
+
+
+/*
+ * Verify referral data
+ */
+
+
+static krb5_error_code
+check_client_referral(krb5_context context,
+		      krb5_kdc_rep *rep,
+		      krb5_const_principal requested,
+		      krb5_const_principal mapped,
+		      krb5_keyblock const * key)
+{
+    krb5_error_code ret;
+    PA_ClientCanonicalized canon;
+    krb5_crypto crypto;
+    krb5_data data;
+    PA_DATA *pa;
+    size_t len;
+    int i = 0;
+
+    if (rep->kdc_rep.padata == NULL)
+	goto noreferral;
+
+    pa = krb5_find_padata(rep->kdc_rep.padata->val,
+			  rep->kdc_rep.padata->len, 
+			  KRB5_PADATA_CLIENT_CANONICALIZED, &i);
+    if (pa == NULL)
+	goto noreferral;
+
+    ret = decode_PA_ClientCanonicalized(pa->padata_value.data, 
+					pa->padata_value.length,
+					&canon, &len);
+    if (ret) {
+	krb5_set_error_message(context, ret, "Failed to decode "
+			       "PA_ClientCanonicalized");
+	return ret;
+    }
+    
+    ASN1_MALLOC_ENCODE(PA_ClientCanonicalizedNames, data.data, data.length,
+		       &canon.names, &len, ret);
+    if (ret) {
+	free_PA_ClientCanonicalized(&canon);
+	return ret;
+    }
+    if (data.length != len)
+	krb5_abortx(context, "internal asn.1 error");
+    
+    ret = krb5_crypto_init(context, key, 0, &crypto);
+    if (ret) {
+	free(data.data);
+	free_PA_ClientCanonicalized(&canon);
+	return ret;
+    }
+    
+    ret = krb5_verify_checksum(context, crypto, KRB5_KU_CANONICALIZED_NAMES,
+			       data.data, data.length,
+			       &canon.canon_checksum);
+    krb5_crypto_destroy(context, crypto);
+    free(data.data);
+    if (ret) {
+	krb5_set_error_message(context, ret, "Failed to verify "
+			      "client canonicalized data");
+	free_PA_ClientCanonicalized(&canon);
+	return ret;
+    }
+
+    if (!_krb5_principal_compare_PrincipalName(context, 
+					       requested,
+					       &canon.names.requested_name))
+    {
+	free_PA_ClientCanonicalized(&canon);
+	krb5_set_error_message(context, KRB5_PRINC_NOMATCH,
+			       "Requested name doesn't match"
+			      " in client referral");
+	return KRB5_PRINC_NOMATCH;
+    }
+    if (!_krb5_principal_compare_PrincipalName(context,
+					       mapped,
+					       &canon.names.mapped_name))
+    {
+	free_PA_ClientCanonicalized(&canon);
+	krb5_set_error_message(context, KRB5_PRINC_NOMATCH,
+			       "Mapped name doesn't match"
+			      " in client referral");
+	return KRB5_PRINC_NOMATCH;
+    }
+
+    return 0;
+
+noreferral:
+    if (krb5_principal_compare(context, requested, mapped) == FALSE) {
+	krb5_set_error_message(context, KRB5KRB_AP_ERR_MODIFIED,
+			       "Not same client principal returned "
+			      "as requested");
+	return KRB5KRB_AP_ERR_MODIFIED;
+    }
+    return 0;
+}
+
 
 
 static krb5_error_code
@@ -117,9 +336,9 @@ decrypt_tkt (krb5_context context,
 }
 
 int
-_krb5_extract_ticket(krb5_context context, 
-		     krb5_kdc_rep *rep, 
-		     krb5_creds *creds,		
+_krb5_extract_ticket(krb5_context context,
+		     krb5_kdc_rep *rep,
+		     krb5_creds *creds,
 		     krb5_keyblock *key,
 		     krb5_const_pointer keyseed,
 		     krb5_key_usage key_usage,
@@ -131,75 +350,10 @@ _krb5_extract_ticket(krb5_context context,
 {
     krb5_error_code ret;
     krb5_principal tmp_principal;
-    int tmp;
     size_t len;
     time_t tmp_time;
     krb5_timestamp sec_now;
 
-/*
- * HACK:
- * this is really a ugly hack, to support using the Netbios Domain Name
- * as realm against windows KDC's, they always return the full realm
- * based on the DNS Name.
- */
-flags |= EXTRACT_TICKET_ALLOW_SERVER_MISMATCH;
-flags |=EXTRACT_TICKET_ALLOW_CNAME_MISMATCH ;
-
-   ret = _krb5_principalname2krb5_principal (context,
-					      &tmp_principal,
-					      rep->kdc_rep.cname,
-					      rep->kdc_rep.crealm);
-    if (ret)
-	goto out;
-
-    /* compare client */
-
-    if((flags & EXTRACT_TICKET_ALLOW_CNAME_MISMATCH) == 0){
-	tmp = krb5_principal_compare (context, tmp_principal, creds->client);
-	if (!tmp) {
-	    krb5_free_principal (context, tmp_principal);
-	    krb5_clear_error_string (context);
-	    ret = KRB5KRB_AP_ERR_MODIFIED;
-	    goto out;
-	}
-    }
-
-    krb5_free_principal (context, creds->client);
-    creds->client = tmp_principal;
-
-    /* extract ticket */
-    ASN1_MALLOC_ENCODE(Ticket, creds->ticket.data, creds->ticket.length, 
-		       &rep->kdc_rep.ticket, &len, ret);
-    if(ret)
-	goto out;
-    if (creds->ticket.length != len)
-	krb5_abortx(context, "internal error in ASN.1 encoder");
-    creds->second_ticket.length = 0;
-    creds->second_ticket.data   = NULL;
-
-    /* compare server */
-
-    ret = _krb5_principalname2krb5_principal (context,
-					      &tmp_principal,
-					      rep->kdc_rep.ticket.sname,
-					      rep->kdc_rep.ticket.realm);
-    if (ret)
-	goto out;
-    if(flags & EXTRACT_TICKET_ALLOW_SERVER_MISMATCH){
-	krb5_free_principal(context, creds->server);
-	creds->server = tmp_principal;
-	tmp_principal = NULL;
-    } else {
-	tmp = krb5_principal_compare (context, tmp_principal,
-				      creds->server);
-	krb5_free_principal (context, tmp_principal);
-	if (!tmp) {
-	    ret = KRB5KRB_AP_ERR_MODIFIED;
-	    krb5_clear_error_string (context);
-	    goto out;
-	}
-    }
-    
     /* decrypt */
 
     if (decrypt_proc == NULL)
@@ -208,6 +362,74 @@ flags |=EXTRACT_TICKET_ALLOW_CNAME_MISMATCH ;
     ret = (*decrypt_proc)(context, key, key_usage, decryptarg, rep);
     if (ret)
 	goto out;
+
+    /* save session key */
+
+    creds->session.keyvalue.length = 0;
+    creds->session.keyvalue.data   = NULL;
+    creds->session.keytype = rep->enc_part.key.keytype;
+    ret = krb5_data_copy (&creds->session.keyvalue,
+			  rep->enc_part.key.keyvalue.data,
+			  rep->enc_part.key.keyvalue.length);
+    if (ret) {
+	krb5_clear_error_string(context);
+	goto out;
+    }
+
+    /*
+     * HACK:
+     * this is really a ugly hack, to support using the Netbios Domain Name
+     * as realm against windows KDC's, they always return the full realm
+     * based on the DNS Name.
+     */
+    flags |= EXTRACT_TICKET_ALLOW_SERVER_MISMATCH;
+    flags |=EXTRACT_TICKET_ALLOW_CNAME_MISMATCH ;
+    
+
+   /* compare client and save */
+    ret = _krb5_principalname2krb5_principal (context,
+					      &tmp_principal,
+					      rep->kdc_rep.cname,
+					      rep->kdc_rep.crealm);
+    if (ret)
+	goto out;
+
+    /* check client referral and save principal */
+    /* anonymous here ? */
+    if((flags & EXTRACT_TICKET_ALLOW_CNAME_MISMATCH) == 0) {
+	ret = check_client_referral(context, rep,
+				    creds->client,
+				    tmp_principal,
+				    &creds->session);
+	if (ret) {
+	    krb5_free_principal (context, tmp_principal);
+	    goto out;
+	}
+    }
+    krb5_free_principal (context, creds->client);
+    creds->client = tmp_principal;
+
+    /* check server referral and save principal */
+    ret = _krb5_principalname2krb5_principal (context,
+					      &tmp_principal,
+					      rep->kdc_rep.ticket.sname,
+					      rep->kdc_rep.ticket.realm);
+    if (ret)
+	goto out;
+    if((flags & EXTRACT_TICKET_ALLOW_SERVER_MISMATCH) == 0){
+	ret = check_server_referral(context,
+				    rep, 
+				    flags,
+				    creds->server,
+				    tmp_principal,
+				    &creds->session);
+	if (ret) {
+	    krb5_free_principal (context, tmp_principal);
+	    goto out;
+	}
+    }
+    krb5_free_principal(context, creds->server);
+    creds->server = tmp_principal;
 
     /* verify names */
     if(flags & EXTRACT_TICKET_MATCH_REALM){
@@ -227,7 +449,7 @@ flags |=EXTRACT_TICKET_ALLOW_CNAME_MISMATCH ;
 
     if (nonce != rep->enc_part.nonce) {
 	ret = KRB5KRB_AP_ERR_MODIFIED;
-	krb5_set_error_string(context, "malloc: out of memory");
+	krb5_set_error_message(context, ret, "malloc: out of memory");
 	goto out;
     }
 
@@ -254,7 +476,7 @@ flags |=EXTRACT_TICKET_ALLOW_CNAME_MISMATCH ;
     if (creds->times.starttime == 0
 	&& abs(tmp_time - sec_now) > context->max_skew) {
 	ret = KRB5KRB_AP_ERR_SKEW;
-	krb5_set_error_string (context,
+	krb5_set_error_message (context, ret,
 			       "time skew (%d) larger than max (%d)",
 			       abs(tmp_time - sec_now),
 			       (int)context->max_skew);
@@ -307,12 +529,17 @@ flags |=EXTRACT_TICKET_ALLOW_CNAME_MISMATCH ;
 	  
     creds->authdata.len = 0;
     creds->authdata.val = NULL;
-    creds->session.keyvalue.length = 0;
-    creds->session.keyvalue.data   = NULL;
-    creds->session.keytype = rep->enc_part.key.keytype;
-    ret = krb5_data_copy (&creds->session.keyvalue,
-			  rep->enc_part.key.keyvalue.data,
-			  rep->enc_part.key.keyvalue.length);
+
+    /* extract ticket */
+    ASN1_MALLOC_ENCODE(Ticket, creds->ticket.data, creds->ticket.length, 
+		       &rep->kdc_rep.ticket, &len, ret);
+    if(ret)
+	goto out;
+    if (creds->ticket.length != len)
+	krb5_abortx(context, "internal error in ASN.1 encoder");
+    creds->second_ticket.length = 0;
+    creds->second_ticket.data   = NULL;
+
 
 out:
     memset (rep->enc_part.key.keyvalue.data, 0,
@@ -402,7 +629,7 @@ add_padata(krb5_context context,
     }
     pa2 = realloc (md->val, (md->len + netypes) * sizeof(*md->val));
     if (pa2 == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
     md->val = pa2;
@@ -449,13 +676,13 @@ init_as_req (krb5_context context,
     a->req_body.cname = malloc(sizeof(*a->req_body.cname));
     if (a->req_body.cname == NULL) {
 	ret = ENOMEM;
-	krb5_set_error_string(context, "malloc: out of memory");
+	krb5_set_error_message(context, ret, "malloc: out of memory");
 	goto fail;
     }
     a->req_body.sname = malloc(sizeof(*a->req_body.sname));
     if (a->req_body.sname == NULL) {
 	ret = ENOMEM;
-	krb5_set_error_string(context, "malloc: out of memory");
+	krb5_set_error_message(context, ret, "malloc: out of memory");
 	goto fail;
     }
     ret = _krb5_principal2principalname (a->req_body.cname, creds->client);
@@ -472,7 +699,7 @@ init_as_req (krb5_context context,
 	a->req_body.from = malloc(sizeof(*a->req_body.from));
 	if (a->req_body.from == NULL) {
 	    ret = ENOMEM;
-	    krb5_set_error_string(context, "malloc: out of memory");
+	    krb5_set_error_message(context, ret, "malloc: out of memory");
 	    goto fail;
 	}
 	*a->req_body.from = creds->times.starttime;
@@ -485,7 +712,7 @@ init_as_req (krb5_context context,
 	a->req_body.rtime = malloc(sizeof(*a->req_body.rtime));
 	if (a->req_body.rtime == NULL) {
 	    ret = ENOMEM;
-	    krb5_set_error_string(context, "malloc: out of memory");
+	    krb5_set_error_message(context, ret, "malloc: out of memory");
 	    goto fail;
 	}
 	*a->req_body.rtime = creds->times.renew_till;
@@ -508,7 +735,7 @@ init_as_req (krb5_context context,
 	a->req_body.addresses = malloc(sizeof(*a->req_body.addresses));
 	if (a->req_body.addresses == NULL) {
 	    ret = ENOMEM;
-	    krb5_set_error_string(context, "malloc: out of memory");
+	    krb5_set_error_message(context, ret, "malloc: out of memory");
 	    goto fail;
 	}
 
@@ -533,7 +760,7 @@ init_as_req (krb5_context context,
 	ALLOC(a->padata, 1);
 	if(a->padata == NULL) {
 	    ret = ENOMEM;
-	    krb5_set_error_string(context, "malloc: out of memory");
+	    krb5_set_error_message(context, ret, "malloc: out of memory");
 	    goto fail;
 	}
 	a->padata->val = NULL;
@@ -572,7 +799,7 @@ init_as_req (krb5_context context,
 	ALLOC(a->padata, 1);
 	if (a->padata == NULL) {
 	    ret = ENOMEM;
-	    krb5_set_error_string(context, "malloc: out of memory");
+	    krb5_set_error_message(context, ret, "malloc: out of memory");
 	    goto fail;
 	}
 	a->padata->len = 0;
@@ -590,9 +817,9 @@ init_as_req (krb5_context context,
 		   key_proc, keyseed, a->req_body.etype.val,
 		   a->req_body.etype.len, &salt);
     } else {
-	krb5_set_error_string (context, "pre-auth type %d not supported",
-			       *ptypes);
 	ret = KRB5_PREAUTH_BAD_TYPE;
+	krb5_set_error_message (context, ret, "pre-auth type %d not supported",
+			       *ptypes);
 	goto fail;
     }
     return 0;

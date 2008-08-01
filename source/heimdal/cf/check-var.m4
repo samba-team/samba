@@ -1,4 +1,4 @@
-dnl $Id: check-var.m4,v 1.12 2005/06/16 18:59:10 lha Exp $
+dnl $Id: check-var.m4 15422 2005-06-16 18:59:29Z lha $
 dnl
 dnl rk_CHECK_VAR(variable, includes)
 AC_DEFUN([rk_CHECK_VAR], [
@@ -23,4 +23,5 @@ if test "$ac_foo" = yes; then
 fi
 ])
 
+dnl AC_WARNING_ENABLE([obsolete])
 AU_DEFUN([AC_CHECK_VAR], [rk_CHECK_VAR([$2], [$1])], [foo])

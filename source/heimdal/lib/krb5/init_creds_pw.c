@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: init_creds_pw.c 21931 2007-08-27 14:11:55Z lha $");
+RCSID("$Id: init_creds_pw.c 23316 2008-06-23 04:32:32Z lha $");
 
 typedef struct krb5_get_init_creds_ctx {
     KDCOptions flags;
@@ -165,14 +165,10 @@ init_cred (krb5_context context,
     }
 
     if (in_tkt_service) {
-	krb5_realm server_realm;
-
 	ret = krb5_parse_name (context, in_tkt_service, &cred->server);
 	if (ret)
 	    goto out;
-	server_realm = strdup (client_realm);
-	free (*krb5_princ_realm(context, cred->server));
-	krb5_princ_set_realm (context, cred->server, &server_realm);
+	krb5_principal_set_realm (context, cred->server, client_realm);
     } else {
 	ret = krb5_make_principal(context, &cred->server, 
 				  client_realm, KRB5_TGS_NAME, client_realm,
@@ -340,7 +336,7 @@ get_init_creds_common(krb5_context context,
 	etypes = malloc((options->etype_list_length + 1)
 			* sizeof(krb5_enctype));
 	if (etypes == NULL) {
-	    krb5_set_error_string(context, "malloc: out of memory");
+	    krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	    return ENOMEM;
 	}
 	memcpy (etypes, options->etype_list,
@@ -352,7 +348,7 @@ get_init_creds_common(krb5_context context,
 	pre_auth_types = malloc((options->preauth_list_length + 1)
 				* sizeof(krb5_preauthtype));
 	if (pre_auth_types == NULL) {
-	    krb5_set_error_string(context, "malloc: out of memory");
+	    krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	    return ENOMEM;
 	}
 	memcpy (pre_auth_types, options->preauth_list,
@@ -445,12 +441,13 @@ change_password (krb5_context context,
 	memset (buf2, 0, sizeof(buf2));
     }
     
-    ret = krb5_change_password (context,
-				&cpw_cred,
-				buf1,
-				&result_code,
-				&result_code_string,
-				&result_string);
+    ret = krb5_set_password (context,
+			     &cpw_cred,
+			     buf1,
+			     client,
+			     &result_code,
+			     &result_code_string,
+			     &result_string);
     if (ret)
 	goto out;
     asprintf (&p, "%s: %.*s\n",
@@ -464,8 +461,8 @@ change_password (krb5_context context,
 	strlcpy (newpw, buf1, newpw_sz);
 	ret = 0;
     } else {
-	krb5_set_error_string (context, "failed changing password");
 	ret = ENOTTY;
+	krb5_set_error_message(context, ret, "failed changing password");
     }
 
 out:
@@ -507,8 +504,8 @@ krb5_get_init_creds_keytab(krb5_context context,
 
     a = malloc (sizeof(*a));
     if (a == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
 	ret = ENOMEM;
+	krb5_set_error_message(context, ret, "malloc: out of memory");
 	goto out;
     }
     a->principal = ctx.cred.client;
@@ -560,13 +557,13 @@ init_creds_init_as_req (krb5_context context,
     a->req_body.cname = malloc(sizeof(*a->req_body.cname));
     if (a->req_body.cname == NULL) {
 	ret = ENOMEM;
-	krb5_set_error_string(context, "malloc: out of memory");
+	krb5_set_error_message(context, ret, "malloc: out of memory");
 	goto fail;
     }
     a->req_body.sname = malloc(sizeof(*a->req_body.sname));
     if (a->req_body.sname == NULL) {
 	ret = ENOMEM;
-	krb5_set_error_string(context, "malloc: out of memory");
+	krb5_set_error_message(context, ret, "malloc: out of memory");
 	goto fail;
     }
 
@@ -585,7 +582,7 @@ init_creds_init_as_req (krb5_context context,
 	a->req_body.from = malloc(sizeof(*a->req_body.from));
 	if (a->req_body.from == NULL) {
 	    ret = ENOMEM;
-	    krb5_set_error_string(context, "malloc: out of memory");
+	    krb5_set_error_message(context, ret, "malloc: out of memory");
 	    goto fail;
 	}
 	*a->req_body.from = creds->times.starttime;
@@ -598,7 +595,7 @@ init_creds_init_as_req (krb5_context context,
 	a->req_body.rtime = malloc(sizeof(*a->req_body.rtime));
 	if (a->req_body.rtime == NULL) {
 	    ret = ENOMEM;
-	    krb5_set_error_string(context, "malloc: out of memory");
+	    krb5_set_error_message(context, ret, "malloc: out of memory");
 	    goto fail;
 	}
 	*a->req_body.rtime = creds->times.renew_till;
@@ -621,7 +618,7 @@ init_creds_init_as_req (krb5_context context,
 	a->req_body.addresses = malloc(sizeof(*a->req_body.addresses));
 	if (a->req_body.addresses == NULL) {
 	    ret = ENOMEM;
-	    krb5_set_error_string(context, "malloc: out of memory");
+	    krb5_set_error_message(context, ret, "malloc: out of memory");
 	    goto fail;
 	}
 
@@ -1036,7 +1033,7 @@ pa_data_to_md_pkinit(krb5_context context,
 			     ctx->pk_nonce,
 			     md);
 #else
-    krb5_set_error_string(context, "no support for PKINIT compiled in");
+    krb5_set_error_message(context, EINVAL, "no support for PKINIT compiled in");
     return EINVAL;
 #endif
 }
@@ -1093,7 +1090,7 @@ process_pa_data_to_md(krb5_context context,
 
     ALLOC(*out_md, 1);
     if (*out_md == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
     (*out_md)->len = 0;
@@ -1191,15 +1188,15 @@ process_pa_data_to_key(krb5_context context,
 				   pa,
 				   key);
 #else
-	krb5_set_error_string(context, "no support for PKINIT compiled in");
 	ret = EINVAL;
+	krb5_set_error_message(context, ret, "no support for PKINIT compiled in");
 #endif
     } else if (ctx->password)
 	ret = pa_data_to_key_plain(context, creds->client, ctx, 
 				   paid.salt, paid.s2kparams, etype, key);
     else {
-	krb5_set_error_string(context, "No usable pa data type");
 	ret = EINVAL;
+	krb5_set_error_message(context, ret, "No usable pa data type");
     }
 
     free_paid(context, &paid);
@@ -1325,8 +1322,8 @@ init_cred_loop(krb5_context context,
 					     &md, 
 					     NULL);
 		    if (ret)
-			krb5_set_error_string(context,
-					      "failed to decode METHOD DATA");
+			krb5_set_error_message(context, ret,
+					       "failed to decode METHOD DATA");
 		} else {
 		    /* XXX guess what the server want here add add md */
 		}
@@ -1348,15 +1345,16 @@ init_cred_loop(krb5_context context,
 
     {
 	krb5_keyblock *key = NULL;
-	unsigned flags = 0;
+	unsigned flags = EXTRACT_TICKET_AS_REQ;
 
 	if (ctx->flags.request_anonymous)
 	    flags |= EXTRACT_TICKET_ALLOW_SERVER_MISMATCH;
 	if (ctx->flags.canonicalize) {
-	    flags |= EXTRACT_TICKET_ALLOW_CNAME_MISMATCH;
 	    flags |= EXTRACT_TICKET_ALLOW_SERVER_MISMATCH;
 	    flags |= EXTRACT_TICKET_MATCH_REALM;
 	}
+	if (ctx->ic_flags & KRB5_INIT_CREDS_NO_C_CANON_CHECK)
+	    flags |= EXTRACT_TICKET_ALLOW_CNAME_MISMATCH;
 
 	ret = process_pa_data_to_key(context, ctx, creds, 
 				     &ctx->as_req, &rep, hi, &key);
@@ -1375,60 +1373,6 @@ init_cred_loop(krb5_context context,
 				   NULL,
 				   NULL);
 	krb5_free_keyblock(context, key);
-    }
-    /*
-     * Verify referral data
-     */
-    if ((ctx->ic_flags & KRB5_INIT_CREDS_CANONICALIZE) &&
-	(ctx->ic_flags & KRB5_INIT_CREDS_NO_C_CANON_CHECK) == 0)
-    {
-	PA_ClientCanonicalized canon;
-	krb5_crypto crypto;
-	krb5_data data;
-	PA_DATA *pa;
-	size_t len;
-
-	pa = find_pa_data(rep.kdc_rep.padata, KRB5_PADATA_CLIENT_CANONICALIZED);
-	if (pa == NULL) {
-	    ret = EINVAL;
-	    krb5_set_error_string(context, "Client canonicalizion not signed");
-	    goto out;
-	}
-	
-	ret = decode_PA_ClientCanonicalized(pa->padata_value.data, 
-					    pa->padata_value.length,
-					    &canon, &len);
-	if (ret) {
-	    krb5_set_error_string(context, "Failed to decode "
-				  "PA_ClientCanonicalized");
-	    goto out;
-	}
-
-	ASN1_MALLOC_ENCODE(PA_ClientCanonicalizedNames, data.data, data.length,
-			   &canon.names, &len, ret);
-	if (ret) 
-	    goto out;
-	if (data.length != len)
-	    krb5_abortx(context, "internal asn.1 error");
-
-	ret = krb5_crypto_init(context, &creds->session, 0, &crypto);
-	if (ret) {
-	    free(data.data);
-	    free_PA_ClientCanonicalized(&canon);
-	    goto out;
-	}
-
-	ret = krb5_verify_checksum(context, crypto, KRB5_KU_CANONICALIZED_NAMES,
-				   data.data, data.length,
-				   &canon.canon_checksum);
-	krb5_crypto_destroy(context, crypto);
-	free(data.data);
-	free_PA_ClientCanonicalized(&canon);
-	if (ret) {
-	    krb5_set_error_string(context, "Failed to verify "
-				  "client canonicalized data");
-	    goto out;
-	}
     }
 out:
     if (stctx)

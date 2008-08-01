@@ -27,9 +27,9 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_release_buffer.c 19962 2007-01-17 15:59:04Z lha $");
+RCSID("$Id: gss_release_buffer.c 23025 2008-04-17 10:01:57Z lha $");
 
-OM_uint32
+OM_uint32 GSSAPI_LIB_FUNCTION
 gss_release_buffer(OM_uint32 *minor_status,
 		   gss_buffer_t buffer)
 {

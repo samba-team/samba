@@ -32,7 +32,7 @@
  */
 
 #include "hx_locl.h"
-RCSID("$Id: test_name.c 19882 2007-01-13 01:02:57Z lha $");
+RCSID("$Id: test_name.c 22677 2008-03-13 17:35:49Z lha $");
 
 static int
 test_name(hx509_context context, const char *name)
@@ -72,13 +72,12 @@ test_name_fail(hx509_context context, const char *name)
 static int
 test_expand(hx509_context context, const char *name, const char *expected)
 {
-    hx509_env env;
+    hx509_env env = NULL;
     hx509_name n;
     char *s;
     int ret;
 
-    hx509_env_init(context, &env);
-    hx509_env_add(context, env, "uid", "lha");
+    hx509_env_add(context, &env, "uid", "lha");
 
     ret = hx509_parse_name(context, name, &n);
     if (ret)

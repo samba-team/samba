@@ -28,7 +28,7 @@
 
 #include "mech_locl.h"
 #include <heim_threads.h>
-RCSID("$Id: gss_mech_switch.c 21698 2007-07-26 19:07:11Z lha $");
+RCSID("$Id: gss_mech_switch.c 23471 2008-07-27 12:17:49Z lha $");
 
 #ifndef _PATH_GSS_MECH
 #define _PATH_GSS_MECH	"/etc/gss/mech"
@@ -46,7 +46,7 @@ static int
 _gss_string_to_oid(const char* s, gss_OID oid)
 {
 	int			number_count, i, j;
-	int			byte_count;
+	size_t			byte_count;
 	const char		*p, *q;
 	char			*res;
 
@@ -118,7 +118,7 @@ _gss_string_to_oid(const char* s, gss_OID oid)
 				 * The number is encoded in seven bit chunks.
 				 */
 				unsigned int t;
-				int bytes;
+				unsigned int bytes;
 
 				bytes = 0;
 				for (t = number; t; t >>= 7)
@@ -229,6 +229,7 @@ _gss_load_mech(void)
 		HEIMDAL_MUTEX_unlock(&_gss_mech_mutex);
 		return;
 	}
+	rk_cloexec_file(fp);
 
 	while (fgets(buf, sizeof(buf), fp)) {
 		if (*buf == '#')

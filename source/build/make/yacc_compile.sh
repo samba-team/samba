@@ -29,10 +29,12 @@ if [ -r $DEST ]; then
 	fi
 fi
 TOP=`pwd`
+echo "info: running $YACC -d $file"
 if cd $dir && $YACC -d $file; then
 	if [ -r y.tab.h -a -r y.tab.c ];then
-		#echo "info: move files"
+		echo "info: move y.tab.h to $base.h"
 		sed -e "/^#/!b" -e "s|y\.tab\.h|$SRC|" -e "s|\"$base.y|\"$SRC|"  y.tab.h > $base.h
+		echo "info: move y.tab.c to $base.c"
 		sed -e "s|y\.tab\.c|$SRC|" -e "s|\"$base.y|\"$SRC|" y.tab.c > $base.c
 		rm -f y.tab.c y.tab.h
 	elif [ ! -r $base.h -a ! -r $base.c]; then

@@ -112,19 +112,19 @@ static void continue_negprot(struct smb2_request *req)
 			composite_error(c, NT_STATUS_ACCESS_DENIED);
 			return;
 		}
-		transport->signing.doing_signing = false;
+		transport->signing_required = false;
 		break;
 	case SMB_SIGNING_SUPPORTED:
 	case SMB_SIGNING_AUTO:
 		if (transport->negotiate.security_mode & SMB2_NEGOTIATE_SIGNING_REQUIRED) {
-			transport->signing.doing_signing = true;
+			transport->signing_required = true;
 		} else {
-			transport->signing.doing_signing = false;
+			transport->signing_required = false;
 		}
 		break;
 	case SMB_SIGNING_REQUIRED:
 		if (transport->negotiate.security_mode & SMB2_NEGOTIATE_SIGNING_ENABLED) {
-			transport->signing.doing_signing = true;
+			transport->signing_required = true;
 		} else {
 			composite_error(c, NT_STATUS_ACCESS_DENIED);
 			return;

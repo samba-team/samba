@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: windc_plugin.h 19798 2007-01-10 15:24:51Z lha $ */
+/* $Id: windc_plugin.h 22693 2008-03-19 08:57:49Z lha $ */
 
 #ifndef HEIMDAL_KRB5_PAC_PLUGIN_H
 #define HEIMDAL_KRB5_PAC_PLUGIN_H 1
@@ -67,7 +67,7 @@ typedef krb5_error_code
     void *, krb5_context, struct hdb_entry_ex *, KDC_REQ *, krb5_data *);
 
 
-#define KRB5_WINDC_PLUGING_MINOR		2
+#define KRB5_WINDC_PLUGING_MINOR		3
 
 typedef struct krb5plugin_windc_ftable {
     int			minor_version;

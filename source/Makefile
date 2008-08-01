@@ -10,8 +10,6 @@ include mkconfig.mk
 
 pidldir := $(srcdir)/pidl
 
-VPATH = $(builddir):$(srcdir):$(srcdir)/heimdal_build:$(heimdalsrcdir)/lib/asn1:$(heimdalsrcdir)/lib/krb5:$(heimdalsrcdir)/lib/gssapi:$(heimdalsrcdir)/lib/hdb:$(heimdalsrcdir)/lib/roken:$(heimdalsrcdir)/lib/des
-
 BASEDIR = $(prefix)
 TORTUREDIR = $(libdir)/torture
 SWATDIR = $(datadir)/swat
@@ -138,7 +136,7 @@ libraries:: $(STATIC_LIBS) $(SHARED_LIBS)
 modules:: $(PLUGINS)
 headers:: $(PUBLIC_HEADERS) $(DEFAULT_HEADERS)
 manpages:: $(MANPAGES)
-all:: showflags $(ALL_PREDEP) bin/asn1_compile bin/compile_et binaries modules pythonmods libraries headers
+all:: showflags $(ALL_PREDEP) binaries modules pythonmods libraries headers
 everything:: all
 
 LD_LIBPATH_OVERRIDE = $(LIB_PATH_VAR)=$(builddir)/bin/shared

@@ -38,12 +38,6 @@ _krb5_dh_group_ok (
 	struct krb5_dh_moduli **/*moduli*/,
 	char **/*name*/);
 
-krb5_error_code KRB5_LIB_FUNCTION
-_krb5_enctype_to_oid (
-	krb5_context /*context*/,
-	krb5_enctype /*etype*/,
-	heim_oid */*oid*/);
-
 krb5_error_code
 _krb5_expand_default_cc_name (
 	krb5_context /*context*/,
@@ -283,12 +277,6 @@ _krb5_n_fold (
 	void */*key*/,
 	size_t /*size*/);
 
-krb5_error_code KRB5_LIB_FUNCTION
-_krb5_oid_to_enctype (
-	krb5_context /*context*/,
-	const heim_oid */*oid*/,
-	krb5_enctype */*etype*/);
-
 krb5_error_code
 _krb5_pac_sign (
 	krb5_context /*context*/,
@@ -320,6 +308,20 @@ _krb5_pk_allow_proxy_certificate (
 
 void KRB5_LIB_FUNCTION
 _krb5_pk_cert_free (struct krb5_pk_cert */*cert*/);
+
+krb5_error_code
+_krb5_pk_kdf (
+	krb5_context /*context*/,
+	const struct AlgorithmIdentifier */*ai*/,
+	const void */*dhdata*/,
+	size_t /*dhsize*/,
+	krb5_const_principal /*client*/,
+	krb5_const_principal /*server*/,
+	krb5_enctype /*enctype*/,
+	const krb5_data */*as_req*/,
+	const krb5_data */*pk_as_rep*/,
+	const Ticket */*ticket*/,
+	krb5_keyblock */*key*/);
 
 krb5_error_code KRB5_LIB_FUNCTION
 _krb5_pk_load_id (
@@ -400,6 +402,12 @@ krb5_error_code KRB5_LIB_FUNCTION
 _krb5_principal2principalname (
 	PrincipalName */*p*/,
 	const krb5_principal /*from*/);
+
+krb5_boolean KRB5_LIB_FUNCTION
+_krb5_principal_compare_PrincipalName (
+	krb5_context /*context*/,
+	krb5_const_principal /*princ1*/,
+	PrincipalName */*princ2*/);
 
 krb5_error_code KRB5_LIB_FUNCTION
 _krb5_principalname2krb5_principal (

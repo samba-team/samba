@@ -70,7 +70,11 @@ static NTSTATUS server_get_challenge(struct auth_method_context *ctx, TALLOC_CTX
 	io.in.called_name = strupper_talloc(mem_ctx, io.in.dest_host);
 
 	/* We don't want to get as far as the session setup */
-	io.in.credentials = NULL;
+	io.in.credentials = cli_credentials_init_anon(mem_ctx);
+	cli_credentials_set_workstation(io.in.credentials,
+					lp_netbios_name(ctx->auth_ctx->lp_ctx),
+					CRED_SPECIFIED);
+
 	io.in.service = NULL;
 
 	io.in.workgroup = ""; /* only used with SPNEGO, disabled above */
@@ -79,10 +83,10 @@ static NTSTATUS server_get_challenge(struct auth_method_context *ctx, TALLOC_CTX
 
 	status = smb_composite_connect(&io, mem_ctx, lp_resolve_context(ctx->auth_ctx->lp_ctx),
 				       ctx->auth_ctx->event_ctx);
-	if (!NT_STATUS_IS_OK(status)) {
-		*_blob = io.out.tree->session->transport->negotiate.secblob;
-		ctx->private_data = talloc_steal(ctx, io.out.tree->session);
-	}
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	*_blob = io.out.tree->session->transport->negotiate.secblob;
+	ctx->private_data = talloc_steal(ctx, io.out.tree->session);
 	return NT_STATUS_OK;
 }
 

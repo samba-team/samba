@@ -3,7 +3,7 @@
 #
 # This might look like a com_err file, but is not
 #
-id "$Id: wind_err.et 22559 2008-02-03 16:35:07Z lha $"
+id "$Id: wind_err.et 23233 2008-06-01 22:25:25Z lha $"
 
 error_table wind
 
@@ -18,5 +18,6 @@ error_code INVALID_UTF8,	"Invalid UTF-8 combination in string"
 error_code INVALID_UTF16,	"Invalid UTF-16 combination in string"
 error_code INVALID_UTF32,	"Invalid UTF-32 combination in string"
 error_code NO_BOM,		"No byte order mark (BOM) in string"
+error_code NOT_UTF16,		"Code can't be represented as UTF-16"
 
 end
