@@ -33,7 +33,7 @@
 
 #include <config.h>
 
-RCSID("$Id: ntlm.c 22370 2007-12-28 16:12:01Z lha $");
+RCSID("$Id: ntlm.c 23169 2008-05-22 02:52:07Z lha $");
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -68,7 +68,7 @@ RCSID("$Id: ntlm.c 22370 2007-12-28 16:12:01Z lha $");
  * Heimdal to implement and GSS-API mechanism. There is also support
  * in the KDC to do remote digest authenticiation, this to allow
  * services to authenticate users w/o direct access to the users ntlm
- * hashes (same as Kerberos arcfour enctype hashes).
+ * hashes (same as Kerberos arcfour enctype keys).
  *
  * More information about the NTLM protocol can found here
  * http://davenport.sourceforge.net/ntlm.html .
@@ -876,7 +876,7 @@ splitandenc(unsigned char *hash,
     ((unsigned char*)key)[7] = (hash[6] << 1);
 
     DES_set_odd_parity(&key);
-    DES_set_key(&key, &sched);
+    DES_set_key_unchecked(&key, &sched);
     DES_ecb_encrypt((DES_cblock *)challange, (DES_cblock *)answer, &sched, 1);
     memset(&sched, 0, sizeof(sched));
     memset(key, 0, sizeof(key));

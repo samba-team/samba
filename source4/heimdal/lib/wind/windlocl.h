@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: windlocl.h 22582 2008-02-11 20:43:50Z lha $ */
+/* $Id: windlocl.h 23187 2008-05-23 15:04:07Z lha $ */
 
 #ifndef _WINDLOCL_H_
 #define _WINDLOCL_H_
@@ -39,6 +39,8 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+
+#include <krb5-types.h>
 
 #include "wind.h"
 #include "wind_err.h"

@@ -33,7 +33,7 @@
 
 #include "hx_locl.h"
 #include <pkinit_asn1.h>
-RCSID("$Id: ca.c 22456 2008-01-15 20:22:53Z lha $");
+RCSID("$Id: ca.c 22995 2008-04-15 19:31:29Z lha $");
 
 /**
  * @page page_ca Hx509 CA functions
@@ -1225,7 +1225,7 @@ ca_sign(hx509_context context,
     {
 	BasicConstraints bc;
 	int aCA = 1;
-	uint32_t path;
+	unsigned int path;
 
 	memset(&bc, 0, sizeof(bc));
 

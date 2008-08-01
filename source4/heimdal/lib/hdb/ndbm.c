@@ -33,7 +33,7 @@
 
 #include "hdb_locl.h"
 
-RCSID("$Id: ndbm.c 16395 2005-12-13 11:54:10Z lha $");
+RCSID("$Id: ndbm.c 23316 2008-06-23 04:32:32Z lha $");
 
 #if HAVE_NDBM
 
@@ -110,9 +110,9 @@ NDBM_seq(krb5_context context, HDB *db,
     if (ret == 0 && entry->entry.principal == NULL) {
 	entry->entry.principal = malloc (sizeof(*entry->entry.principal));
 	if (entry->entry.principal == NULL) {
-	    ret = ENOMEM;
 	    hdb_free_entry (context, entry);
-	    krb5_set_error_string(context, "malloc: out of memory");
+	    ret = ENOMEM;
+	    krb5_set_error_message(context, ret, "malloc: out of memory");
 	} else {
 	    hdb_key2principal (context, &key_data, entry->entry.principal);
 	}
@@ -152,15 +152,15 @@ NDBM_rename(krb5_context context, HDB *db, const char *new_name)
     asprintf(&new_lock, "%s.lock", new_name);
     if(new_lock == NULL) {
 	db->hdb_unlock(context, db);
-	krb5_set_error_string(context, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
     lock_fd = open(new_lock, O_RDWR | O_CREAT, 0600);
     if(lock_fd < 0) {
 	ret = errno;
 	db->hdb_unlock(context, db);
-	krb5_set_error_string(context, "open(%s): %s", new_lock,
-			      strerror(ret));
+	krb5_set_error_message(context, ret, "open(%s): %s", new_lock,
+			       strerror(ret));
 	free(new_lock);
 	return ret;
     }
@@ -188,7 +188,7 @@ NDBM_rename(krb5_context context, HDB *db, const char *new_name)
     if(ret) {
 	ret = errno;
 	close(lock_fd);
-	krb5_set_error_string(context, "rename: %s", strerror(ret));
+	krb5_set_error_message(context, ret, "rename: %s", strerror(ret));
 	return ret;
     }
 
@@ -284,13 +284,13 @@ NDBM_open(krb5_context context, HDB *db, int flags, mode_t mode)
     char *lock_file;
 
     if(d == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
     asprintf(&lock_file, "%s.lock", (char*)db->hdb_name);
     if(lock_file == NULL) {
 	free(d);
-	krb5_set_error_string(context, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
     d->db = dbm_open((char*)db->hdb_name, flags, mode);
@@ -298,8 +298,8 @@ NDBM_open(krb5_context context, HDB *db, int flags, mode_t mode)
 	ret = errno;
 	free(d);
 	free(lock_file);
-	krb5_set_error_string(context, "dbm_open(%s): %s", db->hdb_name,
-			      strerror(ret));
+	krb5_set_error_message(context, ret, "dbm_open(%s): %s", db->hdb_name,
+			       strerror(ret));
 	return ret;
     }
     d->lock_fd = open(lock_file, O_RDWR | O_CREAT, 0600);
@@ -307,8 +307,8 @@ NDBM_open(krb5_context context, HDB *db, int flags, mode_t mode)
 	ret = errno;
 	dbm_close(d->db);
 	free(d);
-	krb5_set_error_string(context, "open(%s): %s", lock_file,
-			      strerror(ret));
+	krb5_set_error_message(context, ret, "open(%s): %s", lock_file,
+			       strerror(ret));
 	free(lock_file);
 	return ret;
     }
@@ -322,10 +322,10 @@ NDBM_open(krb5_context context, HDB *db, int flags, mode_t mode)
 	return 0;
     if (ret) {
 	NDBM_close(context, db);
-	krb5_set_error_string(context, "hdb_open: failed %s database %s",
-			      (flags & O_ACCMODE) == O_RDONLY ? 
-			      "checking format of" : "initialize", 
-			      db->hdb_name);
+	krb5_set_error_message(context, ret, "hdb_open: failed %s database %s",
+			       (flags & O_ACCMODE) == O_RDONLY ? 
+			       "checking format of" : "initialize", 
+			       db->hdb_name);
     }
     return ret;
 }
@@ -336,16 +336,16 @@ hdb_ndbm_create(krb5_context context, HDB **db,
 {
     *db = calloc(1, sizeof(**db));
     if (*db == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
 
     (*db)->hdb_db = NULL;
     (*db)->hdb_name = strdup(filename);
     if ((*db)->hdb_name == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
 	free(*db);
 	*db = NULL;
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
     (*db)->hdb_master_key_set = 0;

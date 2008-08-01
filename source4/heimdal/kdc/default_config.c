@@ -36,7 +36,7 @@
 #include <getarg.h>
 #include <parse_bytes.h>
 
-RCSID("$Id: default_config.c 21405 2007-07-04 10:35:45Z lha $");
+RCSID("$Id: default_config.c 23316 2008-06-23 04:32:32Z lha $");
 
 krb5_error_code
 krb5_kdc_get_config(krb5_context context, krb5_kdc_configuration **config)
@@ -45,7 +45,7 @@ krb5_kdc_get_config(krb5_context context, krb5_kdc_configuration **config)
 
     c = calloc(1, sizeof(*c));
     if (c == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
 

@@ -33,7 +33,7 @@
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
-RCSID("$Id: dumpdata.c 21005 2007-06-08 01:54:35Z lha $");
+RCSID("$Id: dumpdata.c 23412 2008-07-26 18:34:23Z lha $");
 #endif
 
 #include <unistd.h>
@@ -54,4 +54,46 @@ rk_dumpdata (const char *filename, const void *buf, size_t size)
 	return;
     net_write(fd, buf, size);
     close(fd);
+}
+
+/*
+ * Read all data from a filename, care about errors.
+ */
+
+int ROKEN_LIB_FUNCTION
+rk_undumpdata(const char *filename, void **buf, size_t *size)
+{
+    struct stat sb;
+    int fd, ret;
+    ssize_t sret;
+
+    *buf = NULL;
+
+    fd = open(filename, O_RDONLY, 0);
+    if (fd < 0)
+	return errno;
+    if (fstat(fd, &sb) != 0){
+	ret = errno;
+	goto out;
+    }
+    *buf = malloc(sb.st_size);
+    if (*buf == NULL) {
+	ret = ENOMEM;
+	goto out;
+    }
+    *size = sb.st_size;
+
+    sret = net_read(fd, *buf, *size);
+    if (sret < 0)
+	ret = errno;
+    else if (sret != *size) {
+	ret = EINVAL;
+	free(*buf);
+	*buf = NULL;
+    } else
+	ret = 0;
+
+ out:
+    close(fd);
+    return ret;
 }

@@ -33,7 +33,7 @@
 
 #include <krb5_locl.h>
 
-RCSID("$Id: build_auth.c 17033 2006-04-10 08:53:21Z lha $");
+RCSID("$Id: build_auth.c 23273 2008-06-23 03:25:00Z lha $");
 
 static krb5_error_code
 make_etypelist(krb5_context context,
@@ -62,7 +62,7 @@ make_etypelist(krb5_context context,
     ALLOC_SEQ(&ad, 1);
     if (ad.val == NULL) {
 	free(buf);
-	krb5_set_error_string(context, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
 
@@ -81,14 +81,14 @@ make_etypelist(krb5_context context,
 
     ALLOC(*auth_data, 1);
     if (*auth_data == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
 
     ALLOC_SEQ(*auth_data, 1);
     if ((*auth_data)->val == NULL) {
 	free(buf);
-	krb5_set_error_string(context, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
 
@@ -118,7 +118,7 @@ krb5_build_authenticator (krb5_context context,
 
     auth = calloc(1, sizeof(*auth));
     if (auth == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
 

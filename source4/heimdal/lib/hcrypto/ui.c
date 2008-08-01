@@ -33,7 +33,7 @@
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
-RCSID("$Id: ui.c 18158 2006-09-22 15:45:57Z lha $");
+RCSID("$Id: ui.c 23466 2008-07-27 12:16:15Z lha $");
 #endif
 
 #include <stdio.h>
@@ -84,7 +84,9 @@ read_string(const char *preprompt, const char *prompt,
 	    if (sigaction(i, &sa, &sigs[i]) == 0)
 		oksigs[i] = 1;
 
-    if((tty = fopen("/dev/tty", "r")) == NULL)
+    if((tty = fopen("/dev/tty", "r")) != NULL)
+	rk_cloexec_file(tty);
+    else
 	tty = stdin;
        
     fprintf(stderr, "%s%s", preprompt, prompt);
@@ -116,7 +118,7 @@ read_string(const char *preprompt, const char *prompt,
     *p = 0;
     
     if(echo == 0){
-	printf("\n");
+	fprintf(stderr, "\n");
 	tcsetattr(fileno(tty), TCSANOW, &t_old);
     }
     

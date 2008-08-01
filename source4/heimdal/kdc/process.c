@@ -34,7 +34,7 @@
 
 #include "kdc_locl.h"
 
-RCSID("$Id: process.c 20959 2007-06-07 04:46:06Z lha $");
+RCSID("$Id: process.c 23316 2008-06-23 04:32:32Z lha $");
 
 /*
  *
@@ -177,14 +177,15 @@ krb5_kdc_save_request(krb5_context context,
 
     fd = open(fn, O_WRONLY|O_CREAT|O_APPEND, 0600);
     if (fd < 0) {
-	krb5_set_error_string(context, "Failed to open: %s", fn);
-	return errno;
+	int saved_errno = errno;
+	krb5_set_error_message(context, saved_errno, "Failed to open: %s", fn);
+	return saved_errno;
     }
     
     sp = krb5_storage_from_fd(fd);
     close(fd);
     if (sp == NULL) {
-	krb5_set_error_string(context, "Storage failed to open fd");
+	krb5_set_error_message(context, ENOMEM, "Storage failed to open fd");
 	return ENOMEM;
     }
 

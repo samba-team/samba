@@ -33,7 +33,7 @@
 
 #include "krb5/gsskrb5_locl.h"
 
-RCSID("$Id: get_mic.c 19031 2006-11-13 18:02:57Z lha $");
+RCSID("$Id: get_mic.c 23112 2008-04-27 18:51:26Z lha $");
 
 static OM_uint32
 mic_des
@@ -88,7 +88,7 @@ mic_des
 
   memset (&zero, 0, sizeof(zero));
   memcpy (&deskey, key->keyvalue.data, sizeof(deskey));
-  DES_set_key (&deskey, &schedule);
+  DES_set_key_unchecked (&deskey, &schedule);
   DES_cbc_cksum ((void *)hash, (void *)hash, sizeof(hash),
 		 &schedule, &zero);
   memcpy (p - 8, hash, 8);	/* SGN_CKSUM */
@@ -108,7 +108,7 @@ mic_des
 	  (ctx->more_flags & LOCAL) ? 0 : 0xFF,
 	  4);
 
-  DES_set_key (&deskey, &schedule);
+  DES_set_key_unchecked (&deskey, &schedule);
   DES_cbc_encrypt ((void *)p, (void *)p, 8,
 		   &schedule, (DES_cblock *)(p + 8), DES_ENCRYPT);
 

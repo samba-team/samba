@@ -33,12 +33,20 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: time.c 14308 2004-10-13 17:57:11Z lha $");
+RCSID("$Id: time.c 23260 2008-06-21 15:22:37Z lha $");
 
-/*
+/**
  * Set the absolute time that the caller knows the kdc has so the
  * kerberos library can calculate the relative diffrence beteen the
  * KDC time and local system time.
+ *
+ * @param context Keberos 5 context.
+ * @param sec The applications new of "now" in seconds
+ * @param usec The applications new of "now" in micro seconds
+
+ * @return Kerberos 5 error code, see krb5_get_error_message().
+ *
+ * @ingroup krb5
  */
 
 krb5_error_code KRB5_LIB_FUNCTION
@@ -51,12 +59,21 @@ krb5_set_real_time (krb5_context context,
     gettimeofday(&tv, NULL);
 
     context->kdc_sec_offset = sec - tv.tv_sec;
-    context->kdc_usec_offset = usec - tv.tv_usec;
 
-    if (context->kdc_usec_offset < 0) {
-	context->kdc_sec_offset--;
-	context->kdc_usec_offset += 1000000;
-    }
+    /**
+     * If the caller passes in a negative usec, its assumed to be
+     * unknown and the function will use the current time usec.
+     */
+    if (usec >= 0) {
+	context->kdc_usec_offset = usec - tv.tv_usec;
+
+	if (context->kdc_usec_offset < 0) {
+	    context->kdc_sec_offset--;
+	    context->kdc_usec_offset += 1000000;
+	}
+    } else 
+	context->kdc_usec_offset = tv.tv_usec;
+
     return 0;
 }
 

@@ -33,7 +33,7 @@
 
 #include "krb5/gsskrb5_locl.h"
 
-RCSID("$Id: unwrap.c 19031 2006-11-13 18:02:57Z lha $");
+RCSID("$Id: unwrap.c 23112 2008-04-27 18:51:26Z lha $");
 
 static OM_uint32
 unwrap_des
@@ -93,7 +93,7 @@ unwrap_des
 
       for (i = 0; i < sizeof(deskey); ++i)
 	  deskey[i] ^= 0xf0;
-      DES_set_key (&deskey, &schedule);
+      DES_set_key_unchecked (&deskey, &schedule);
       memset (&zero, 0, sizeof(zero));
       DES_cbc_encrypt ((void *)p,
 		       (void *)p,
@@ -119,7 +119,7 @@ unwrap_des
 
   memset (&zero, 0, sizeof(zero));
   memcpy (&deskey, key->keyvalue.data, sizeof(deskey));
-  DES_set_key (&deskey, &schedule);
+  DES_set_key_unchecked (&deskey, &schedule);
   DES_cbc_cksum ((void *)hash, (void *)hash, sizeof(hash),
 		 &schedule, &zero);
   if (memcmp (p - 8, hash, 8) != 0)
@@ -130,7 +130,7 @@ unwrap_des
   HEIMDAL_MUTEX_lock(&context_handle->ctx_id_mutex);
 
   p -= 16;
-  DES_set_key (&deskey, &schedule);
+  DES_set_key_unchecked (&deskey, &schedule);
   DES_cbc_encrypt ((void *)p, (void *)p, 8,
 		   &schedule, (DES_cblock *)hash, DES_DECRYPT);
 

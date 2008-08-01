@@ -33,7 +33,7 @@
 
 #include <krb5_locl.h>
 
-RCSID("$Id: rd_rep.c 17890 2006-08-21 09:19:22Z lha $");
+RCSID("$Id: rd_rep.c 23304 2008-06-23 03:29:56Z lha $");
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_rd_rep(krb5_context context,
@@ -79,7 +79,7 @@ krb5_rd_rep(krb5_context context,
     *repl = malloc(sizeof(**repl));
     if (*repl == NULL) {
 	ret = ENOMEM;
-	krb5_set_error_string (context, "malloc: out of memory");
+	krb5_set_error_message(context, ret, "malloc: out of memory");
 	goto out;
     }
     ret = krb5_decode_EncAPRepPart(context,

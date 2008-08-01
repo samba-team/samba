@@ -27,9 +27,9 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_wrap_size_limit.c 19965 2007-01-17 16:23:47Z lha $");
+RCSID("$Id: gss_wrap_size_limit.c 23025 2008-04-17 10:01:57Z lha $");
 
-OM_uint32
+OM_uint32 GSSAPI_LIB_FUNCTION
 gss_wrap_size_limit(OM_uint32 *minor_status,
     const gss_ctx_id_t context_handle,
     int conf_req_flag,

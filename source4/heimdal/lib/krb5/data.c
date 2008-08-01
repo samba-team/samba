@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: data.c 22064 2007-11-11 16:28:14Z lha $");
+RCSID("$Id: data.c 23280 2008-06-23 03:26:18Z lha $");
 
 /**
  * Reset the (potentially uninitalized) krb5_data structure.
@@ -192,7 +192,7 @@ krb5_copy_data(krb5_context context,
     krb5_error_code ret;
     ALLOC(*outdata, 1);
     if(*outdata == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
     ret = der_copy_octet_string(indata, *outdata);

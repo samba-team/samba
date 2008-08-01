@@ -32,7 +32,7 @@
  */
 
 #include "hx_locl.h"
-RCSID("$Id: ks_file.c 22465 2008-01-16 14:25:24Z lha $");
+RCSID("$Id: ks_file.c 23459 2008-07-27 12:13:31Z lha $");
 
 typedef enum { USE_PEM, USE_DER } outformat;
 
@@ -391,6 +391,7 @@ file_init_common(hx509_context context,
 				   p, strerror(errno));
 	    goto out;
 	}
+	rk_cloexec_file(f);
 
 	ret = hx509_pem_read(context, f, pem_func, &pem_ctx);
 	fclose(f);		     
@@ -401,7 +402,7 @@ file_init_common(hx509_context context,
 	    void *ptr;
 	    int i;
 
-	    ret = _hx509_map_file(p, &ptr, &length, NULL);
+	    ret = rk_undumpdata(p, &ptr, &length);
 	    if (ret) {
 		hx509_clear_error_string(context);
 		goto out;
@@ -412,7 +413,7 @@ file_init_common(hx509_context context,
 		if (ret == 0)
 		    break;
 	    }
-	    _hx509_unmap_file(ptr, length);
+	    rk_xfree(ptr);
 	    if (ret)
 		goto out;
 	}
@@ -525,6 +526,7 @@ file_store(hx509_context context,
 			       "Failed to open file %s for writing");
 	return ENOENT;
     }
+    rk_cloexec_file(sc.f);
     sc.format = f->format;
 
     ret = hx509_certs_iter(context, f->certs, store_func, &sc);

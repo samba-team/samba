@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: copy_host_realm.c 22057 2007-11-11 15:13:13Z lha $");
+RCSID("$Id: copy_host_realm.c 23280 2008-06-23 03:26:18Z lha $");
 
 /**
  * Copy the list of realms from `from' to `to'.
@@ -53,24 +53,23 @@ krb5_copy_host_realm(krb5_context context,
 		     const krb5_realm *from,
 		     krb5_realm **to)
 {
-    int n, i;
+    unsigned int n, i;
     const krb5_realm *p;
 
-    for (n = 0, p = from; *p != NULL; ++p)
+    for (n = 1, p = from; *p != NULL; ++p)
 	++n;
-    ++n;
-    *to = malloc (n * sizeof(**to));
+
+    *to = calloc (n, sizeof(**to));
     if (*to == NULL) {
-	krb5_set_error_string (context, "malloc: out of memory");
+	krb5_set_error_message (context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
-    for (i = 0; i < n; ++i)
-	(*to)[i] = NULL;
+
     for (i = 0, p = from; *p != NULL; ++p, ++i) {
 	(*to)[i] = strdup(*p);
 	if ((*to)[i] == NULL) {
 	    krb5_free_host_realm (context, *to);
-	    krb5_set_error_string (context, "malloc: out of memory");
+	    krb5_set_error_message (context, ENOMEM, "malloc: out of memory");
 	    return ENOMEM;
 	}
     }

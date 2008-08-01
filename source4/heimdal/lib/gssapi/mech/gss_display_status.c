@@ -59,7 +59,7 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_display_status.c 21247 2007-06-21 00:37:27Z lha $");
+RCSID("$Id: gss_display_status.c 23025 2008-04-17 10:01:57Z lha $");
 
 static const char *
 calling_error(OM_uint32 v)
@@ -136,7 +136,7 @@ supplementary_error(OM_uint32 v)
 }
 
 
-OM_uint32
+OM_uint32 GSSAPI_LIB_FUNCTION
 gss_display_status(OM_uint32 *minor_status,
     OM_uint32 status_value,
     int status_type,

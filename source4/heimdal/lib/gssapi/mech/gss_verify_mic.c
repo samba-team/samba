@@ -27,9 +27,9 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_verify_mic.c 19965 2007-01-17 16:23:47Z lha $");
+RCSID("$Id: gss_verify_mic.c 23025 2008-04-17 10:01:57Z lha $");
 
-OM_uint32
+OM_uint32 GSSAPI_LIB_FUNCTION
 gss_verify_mic(OM_uint32 *minor_status,
     const gss_ctx_id_t context_handle,
     const gss_buffer_t message_buffer,

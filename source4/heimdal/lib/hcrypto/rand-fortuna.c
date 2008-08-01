@@ -33,7 +33,7 @@
 #include <config.h>
 #endif
 
-RCSID("$Id: rand-fortuna.c 21196 2007-06-20 05:08:58Z lha $");
+RCSID("$Id: rand-fortuna.c 23463 2008-07-27 12:15:06Z lha $");
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -118,6 +118,7 @@ struct fortuna_state
     unsigned		pool0_bytes;
     unsigned		rnd_pos;
     int			tricks_done;
+    pid_t		pid;
 };
 typedef struct fortuna_state FState;
 
@@ -175,6 +176,7 @@ init_state(FState * st)
     memset(st, 0, sizeof(*st));
     for (i = 0; i < NUM_POOLS; i++)
 	md_init(&st->pool[i]);
+    st->pid = getpid();
 }
 
 /*
@@ -275,6 +277,9 @@ reseed(FState * st)
 
     /* add old key into mix too */
     md_update(&key_md, st->key, BLOCK);
+
+    /* add pid to make output diverse after fork() */
+    md_update(&key_md, (const unsigned char *)&st->pid, sizeof(st->pid));
 
     /* now we have new key */
     md_result(&key_md, st->key);
@@ -384,6 +389,7 @@ extract_data(FState * st, unsigned count, unsigned char *dst)
 {
     unsigned	n;
     unsigned	block_nr = 0;
+    pid_t	pid = getpid();
 
     /* Should we reseed? */
     if (st->pool0_bytes >= POOL0_FILL || st->reseed_count == 0)
@@ -393,6 +399,12 @@ extract_data(FState * st, unsigned count, unsigned char *dst)
     /* Do some randomization on first call */
     if (!st->tricks_done)
 	startup_tricks(st);
+
+    /* If we forked, force a reseed again */
+    if (pid != st->pid) {
+	st->pid = pid;
+	reseed(st);
+    }
 
     while (count > 0)
     {
@@ -493,6 +505,7 @@ fortuna_reseed(void)
 	fd = open("/etc/shadow", O_RDONLY, 0);
 	if (fd >= 0) {
 	    ssize_t n;
+	    rk_cloexec(fd);
 	    /* add_entropy will hash the buf */
 	    while ((n = read(fd, (char *)u.shad, sizeof(u.shad))) > 0)
 		add_entropy(&main_state, u.shad, sizeof(u.shad));

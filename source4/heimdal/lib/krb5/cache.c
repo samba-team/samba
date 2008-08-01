@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: cache.c 22127 2007-12-04 00:54:37Z lha $");
+RCSID("$Id: cache.c 23417 2008-07-26 18:36:33Z lha $");
 
 /**
  * Add a new ccache type with operations `ops', overwriting any
@@ -59,9 +59,10 @@ krb5_cc_register(krb5_context context,
     for(i = 0; i < context->num_cc_ops && context->cc_ops[i].prefix; i++) {
 	if(strcmp(context->cc_ops[i].prefix, ops->prefix) == 0) {
 	    if(!override) {
-		krb5_set_error_string(context,
-				      "ccache type %s already exists",
-				      ops->prefix);
+		krb5_set_error_message(context, 
+				       KRB5_CC_TYPE_EXISTS,
+				       "ccache type %s already exists",
+				       ops->prefix);
 		return KRB5_CC_TYPE_EXISTS;
 	    }
 	    break;
@@ -72,7 +73,8 @@ krb5_cc_register(krb5_context context,
 				 (context->num_cc_ops + 1) *
 				 sizeof(*context->cc_ops));
 	if(o == NULL) {
-	    krb5_set_error_string(context, "malloc: out of memory");
+	    krb5_set_error_message(context, KRB5_CC_NOMEM, 
+				   "malloc: out of memory");
 	    return KRB5_CC_NOMEM;
 	}
 	context->num_cc_ops++;
@@ -98,7 +100,7 @@ _krb5_cc_allocate(krb5_context context,
 
     p = malloc (sizeof(*p));
     if(p == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
+	krb5_set_error_message(context, KRB5_CC_NOMEM, "malloc: out of memory");
 	return KRB5_CC_NOMEM;
     }
     p->ops = ops;
@@ -166,7 +168,8 @@ krb5_cc_resolve(krb5_context context,
     if (strchr (name, ':') == NULL)
 	return allocate_ccache (context, &krb5_fcc_ops, name, id);
     else {
-	krb5_set_error_string(context, "unknown ccache type %s", name);
+	krb5_set_error_message(context, KRB5_CC_UNKNOWN_TYPE,
+			       "unknown ccache type %s", name);
 	return KRB5_CC_UNKNOWN_TYPE;
     }
 }
@@ -204,16 +207,14 @@ krb5_error_code KRB5_LIB_FUNCTION
 krb5_cc_new_unique(krb5_context context, const char *type, 
 		   const char *hint, krb5_ccache *id)
 {
-    const krb5_cc_ops *ops = KRB5_DEFAULT_CCTYPE;
+    const krb5_cc_ops *ops;
     krb5_error_code ret;
 
-    if (type) {
-	ops = krb5_cc_get_prefix_ops(context, type);
-	if (ops == NULL) {
-	    krb5_set_error_string(context,
-				  "Credential cache type %s is unknown", type);
-	    return KRB5_CC_UNKNOWN_TYPE;
-	}
+    ops = krb5_cc_get_prefix_ops(context, type);
+    if (ops == NULL) {
+	krb5_set_error_message(context, KRB5_CC_UNKNOWN_TYPE,
+			      "Credential cache type %s is unknown", type);
+	return KRB5_CC_UNKNOWN_TYPE;
     }
 
     ret = _krb5_cc_allocate(context, ops, id);
@@ -270,18 +271,20 @@ krb5_cc_get_full_name(krb5_context context,
 
     type = krb5_cc_get_type(context, id);
     if (type == NULL) {
-	krb5_set_error_string(context, "cache have no name of type");
+	krb5_set_error_message(context, KRB5_CC_UNKNOWN_TYPE,
+			       "cache have no name of type");
 	return KRB5_CC_UNKNOWN_TYPE;
     }
 
     name = krb5_cc_get_name(context, id);
     if (name == NULL) {
-	krb5_set_error_string(context, "cache of type %s have no name", type);
+	krb5_set_error_message(context, KRB5_CC_BADNAME,
+			       "cache of type %s have no name", type);
 	return KRB5_CC_BADNAME;
     }
     
     if (asprintf(str, "%s:%s", type, name) == -1) {
-	krb5_set_error_string(context, "malloc - out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	*str = NULL;
 	return ENOMEM;
     }
@@ -327,7 +330,8 @@ _krb5_expand_default_cc_name(krb5_context context, const char *str, char **res)
 	    if (tmp2 == NULL) {
 		free(*res);
 		*res = NULL;
-		krb5_set_error_string(context, "variable missing }");
+		krb5_set_error_message(context, KRB5_CONFIG_BADFORMAT,
+				       "variable missing }");
 		return KRB5_CONFIG_BADFORMAT;
 	    }
 	    if (strncasecmp(tmp, "%{uid}", 6) == 0)
@@ -337,10 +341,11 @@ _krb5_expand_default_cc_name(krb5_context context, const char *str, char **res)
 	    else {
 		free(*res);
 		*res = NULL;
-		krb5_set_error_string(context, 
-				      "expand default cache unknown "
-				      "variable \"%.*s\"",
-				      (int)(tmp2 - tmp) - 2, tmp + 2);
+		krb5_set_error_message(context, 
+				       KRB5_CONFIG_BADFORMAT,
+				       "expand default cache unknown "
+				       "variable \"%.*s\"",
+				       (int)(tmp2 - tmp) - 2, tmp + 2);
 		return KRB5_CONFIG_BADFORMAT;
 	    }
 	    str = tmp2 + 1;
@@ -351,7 +356,7 @@ _krb5_expand_default_cc_name(krb5_context context, const char *str, char **res)
 	if (append == NULL) {
 	    free(*res);
 	    *res = NULL;
-	    krb5_set_error_string(context, "malloc - out of memory");
+	    krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	    return ENOMEM;
 	}
 	
@@ -361,7 +366,8 @@ _krb5_expand_default_cc_name(krb5_context context, const char *str, char **res)
 	    free(append);
 	    free(*res);
 	    *res = NULL;
-	    krb5_set_error_string(context, "malloc - out of memory");
+	    krb5_set_error_message(context, ENOMEM, 
+				   "malloc: out of memory");
 	    return ENOMEM;
 	}
 	*res = tmp;
@@ -406,11 +412,29 @@ environment_changed(krb5_context context)
 }
 
 /**
- * Set the default cc name for `context' to `name'.
+ * Switch the default default credential cache for a specific
+ * credcache type (and name for some implementations).
+ *
+ * @return Returns 0 or an error code.
  *
  * @ingroup krb5_ccache
  */
 
+krb5_error_code
+krb5_cc_switch(krb5_context context, krb5_ccache id)
+{
+
+    if (id->ops->set_default == NULL)
+	return 0;
+
+    return (*id->ops->set_default)(context, id);
+}
+
+/**
+ * Set the default cc name for `context' to `name'.
+ *
+ * @ingroup krb5_ccache
+ */
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_cc_set_default_name(krb5_context context, const char *name)
@@ -440,7 +464,19 @@ krb5_cc_set_default_name(krb5_context context, const char *name)
 	    }
 	    if (e == NULL) {
 		const krb5_cc_ops *ops = KRB5_DEFAULT_CCTYPE;
-		ret = (*ops->default_name)(context, &p);
+		e = krb5_config_get_string(context, NULL, "libdefaults",
+					   "default_cc_type", NULL);
+		if (e) {
+		    ops = krb5_cc_get_prefix_ops(context, e);
+		    if (ops == NULL) {
+			krb5_set_error_message(context,
+					       KRB5_CC_UNKNOWN_TYPE,
+					       "Credential cache type %s "
+					      "is unknown", e);
+			return KRB5_CC_UNKNOWN_TYPE;
+		    }
+		}
+		ret = (*ops->get_default_name)(context, &p);
 		if (ret)
 		    return ret;
 	    }
@@ -452,7 +488,7 @@ krb5_cc_set_default_name(krb5_context context, const char *name)
     }
 
     if (p == NULL) {
-	krb5_set_error_string(context, "malloc - out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
 
@@ -499,7 +535,7 @@ krb5_cc_default(krb5_context context,
     const char *p = krb5_cc_default_name(context);
 
     if (p == NULL) {
-	krb5_set_error_string(context, "malloc - out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
     return krb5_cc_resolve(context, p, id);
@@ -728,9 +764,10 @@ krb5_cc_remove_cred(krb5_context context,
 		    krb5_creds *cred)
 {
     if(id->ops->remove_cred == NULL) {
-	krb5_set_error_string(context,
-			      "ccache %s does not support remove_cred",
-			      id->ops->prefix);
+	krb5_set_error_message(context,
+			       EACCES,
+			       "ccache %s does not support remove_cred",
+			       id->ops->prefix);
 	return EACCES; /* XXX */
     }
     return (*id->ops->remove_cred)(context, id, which, cred);
@@ -846,10 +883,12 @@ krb5_cc_clear_mcred(krb5_creds *mcred)
 
 /**
  * Get the cc ops that is registered in `context' to handle the
- * `prefix'. `prefix' can be a complete credential cache name or a
+ * prefix. prefix can be a complete credential cache name or a
  * prefix, the function will only use part up to the first colon (:)
- * if there is one.
- * Returns NULL if ops not found.
+ * if there is one. If prefix the argument is NULL, the default ccache
+ * implemtation is returned.
+ 
+ * @return Returns NULL if ops not found.
  *
  * @ingroup krb5_ccache
  */
@@ -861,12 +900,14 @@ krb5_cc_get_prefix_ops(krb5_context context, const char *prefix)
     char *p, *p1;
     int i;
     
+    if (prefix == NULL)
+	return KRB5_DEFAULT_CCTYPE;
     if (prefix[0] == '/')
 	return &krb5_fcc_ops;
 
     p = strdup(prefix);
     if (p == NULL) {
-	krb5_set_error_string(context, "malloc - out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return NULL;
     }
     p1 = strchr(p, ':');
@@ -911,20 +952,22 @@ krb5_cc_cache_get_first (krb5_context context,
 
     ops = krb5_cc_get_prefix_ops(context, type);
     if (ops == NULL) {
-	krb5_set_error_string(context, "Unknown type \"%s\" when iterating "
-			      "trying to iterate the credential caches", type);
+	krb5_set_error_message(context, KRB5_CC_UNKNOWN_TYPE,
+			       "Unknown type \"%s\" when iterating "
+			       "trying to iterate the credential caches", type);
 	return KRB5_CC_UNKNOWN_TYPE;
     }
 
     if (ops->get_cache_first == NULL) {
-	krb5_set_error_string(context, "Credential cache type %s doesn't support "
-			      "iterations over caches", ops->prefix);
+	krb5_set_error_message(context, KRB5_CC_NOSUPP,
+			       "Credential cache type %s doesn't support "
+			       "iterations over caches", ops->prefix);
 	return KRB5_CC_NOSUPP;
     }
 
     *cursor = calloc(1, sizeof(**cursor));
     if (*cursor == NULL) {
-	krb5_set_error_string(context, "malloc - out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
 
@@ -1028,8 +1071,10 @@ krb5_cc_cache_match (krb5_context context,
 
 	krb5_unparse_name(context, client, &str);
 
-	krb5_set_error_string(context, "Principal %s not found in a "
-			  "credential cache", str ? str : "<out of memory>");
+	krb5_set_error_message(context, KRB5_CC_NOTFOUND,
+			       "Principal %s not found in a "
+			       "credential cache", 
+			       str ? str : "<out of memory>");
 	if (str)
 	    free(str);
 	return KRB5_CC_NOTFOUND;
@@ -1059,8 +1104,9 @@ krb5_cc_move(krb5_context context, krb5_ccache from, krb5_ccache to)
     krb5_error_code ret;
 
     if (strcmp(from->ops->prefix, to->ops->prefix) != 0) {
-	krb5_set_error_string(context, "Moving credentials between diffrent "
-			      "types not yet supported");
+	krb5_set_error_message(context, KRB5_CC_NOSUPP,
+			       "Moving credentials between diffrent "
+			       "types not yet supported");
 	return KRB5_CC_NOSUPP;
     }
 
@@ -1071,3 +1117,123 @@ krb5_cc_move(krb5_context context, krb5_ccache from, krb5_ccache to)
     }
     return ret;
 }
+
+#define KRB5_CONF_NAME "@krb5_ccache_conf_data"
+
+static krb5_error_code
+build_conf_principals(krb5_context context, krb5_ccache id,
+		      krb5_const_principal principal,
+		      const char *name, krb5_creds *cred)
+{
+    krb5_principal client;
+    krb5_error_code ret;
+    char *pname = NULL;
+
+    memset(cred, 0, sizeof(*cred));
+
+    ret = krb5_cc_get_principal(context, id, &client);
+    if (ret)
+	return ret;
+       
+    if (principal) {
+	ret = krb5_unparse_name(context, principal, &pname);
+	if (ret)
+	    return ret;
+    }
+
+    ret = krb5_make_principal(context, &cred->server,
+			      krb5_principal_get_realm(context, client),
+			      KRB5_CONF_NAME, name, pname, NULL);
+    free(pname);
+    if (ret) {
+	krb5_free_principal(context, client);
+	return ret;
+    }
+    ret = krb5_copy_principal(context, client, &cred->client);
+    krb5_free_principal(context, client);
+    return ret;
+}
+		      
+/**
+ * Store some configuration for the credential cache in the cache.
+ * Existing configuration under the same name is over-written.
+ *
+ * @param context a Keberos context
+ * @param id the credential cache to store the data for
+ * @param principal configuration for a specific principal, if
+ * NULL, global for the whole cache.
+ * @param name name under which the configuraion is stored.
+ * @param data data to store
+ */
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_cc_set_config(krb5_context context, krb5_ccache id, 
+		   krb5_const_principal principal,
+		   const char *name, krb5_data *data)
+{
+    krb5_error_code ret;
+    krb5_creds cred;
+
+    ret = build_conf_principals(context, id, principal, name, &cred);
+    if (ret)
+	goto out;
+
+    /* Remove old configuration */
+    ret = krb5_cc_remove_cred(context, id, 0, &cred);
+    if (ret)
+	goto out;
+
+    /* not that anyone care when this expire */
+    cred.times.authtime = time(NULL);
+    cred.times.endtime = cred.times.authtime + 3600 * 24 * 30; 
+
+    ret = krb5_data_copy(&cred.ticket, data->data, data->length);
+    if (ret)
+	goto out;
+
+    ret = krb5_cc_store_cred(context, id, &cred);
+
+out:
+    krb5_free_cred_contents (context, &cred);
+    return ret;
+}
+
+/**
+ * Get some configuration for the credential cache in the cache.
+ *
+ * @param context a Keberos context
+ * @param id the credential cache to store the data for
+ * @param principal configuration for a specific principal, if
+ * NULL, global for the whole cache.
+ * @param name name under which the configuraion is stored.
+ * @param data data to fetched, free with krb5_data_free()
+ */
+
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_cc_get_config(krb5_context context, krb5_ccache id,
+		   krb5_const_principal principal,
+		   const char *name, krb5_data *data)
+{
+    krb5_creds mcred, cred;
+    krb5_error_code ret;
+
+    memset(&cred, 0, sizeof(cred));
+    krb5_data_zero(data);
+
+    ret = build_conf_principals(context, id, principal, name, &mcred);
+    if (ret)
+	goto out;
+
+    ret = krb5_cc_retrieve_cred(context, id, 0, &mcred, &cred);
+    if (ret)
+	goto out;
+
+    ret = krb5_data_copy(data, cred.ticket.data, cred.ticket.length);
+
+out:
+    krb5_free_cred_contents (context, &cred);
+    krb5_free_cred_contents (context, &mcred);
+    return ret;
+}
+

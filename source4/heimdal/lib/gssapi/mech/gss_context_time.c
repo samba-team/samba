@@ -27,9 +27,9 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_context_time.c 17700 2006-06-28 09:00:26Z lha $");
+RCSID("$Id: gss_context_time.c 23025 2008-04-17 10:01:57Z lha $");
 
-OM_uint32
+OM_uint32 GSSAPI_LIB_FUNCTION
 gss_context_time(OM_uint32 *minor_status,
     const gss_ctx_id_t context_handle,
     OM_uint32 *time_rec)

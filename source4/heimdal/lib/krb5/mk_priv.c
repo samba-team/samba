@@ -33,7 +33,7 @@
 
 #include <krb5_locl.h>
 
-RCSID("$Id: mk_priv.c 16680 2006-02-01 12:39:26Z lha $");
+RCSID("$Id: mk_priv.c 23297 2008-06-23 03:28:53Z lha $");
 
       
 krb5_error_code KRB5_LIB_FUNCTION
@@ -138,7 +138,7 @@ krb5_mk_priv(krb5_context context,
 
     ret = krb5_data_copy(outbuf, buf + buf_size - len, len);
     if (ret) {
-	krb5_set_error_string (context, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	free(buf);
 	return ENOMEM;
     }

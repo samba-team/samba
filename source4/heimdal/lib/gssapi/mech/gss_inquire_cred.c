@@ -27,7 +27,7 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_inquire_cred.c 20626 2007-05-08 13:56:49Z lha $");
+RCSID("$Id: gss_inquire_cred.c 23025 2008-04-17 10:01:57Z lha $");
 
 #define AUSAGE 1
 #define IUSAGE 2
@@ -43,7 +43,7 @@ updateusage(gss_cred_usage_t usage, int *usagemask)
 	*usagemask |= IUSAGE;
 }
 
-OM_uint32
+OM_uint32 GSSAPI_LIB_FUNCTION
 gss_inquire_cred(OM_uint32 *minor_status,
     const gss_cred_id_t cred_handle,
     gss_name_t *name_ret,

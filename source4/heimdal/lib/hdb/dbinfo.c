@@ -33,7 +33,7 @@
 
 #include "hdb_locl.h"
 
-RCSID("$Id: dbinfo.c 22306 2007-12-14 12:22:38Z lha $");
+RCSID("$Id: dbinfo.c 23316 2008-06-23 04:32:32Z lha $");
 
 struct hdb_dbinfo {
     char *label;
@@ -63,7 +63,7 @@ get_dbinfo(krb5_context context,
 
     di = calloc(1, sizeof(*di));
     if (di == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
     di->label = strdup(label);
