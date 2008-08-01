@@ -1,5 +1,7 @@
 heimdalbuildsrcdir = $(heimdalsrcdir)/../heimdal_build
 
+HEIMDAL_VPATH = $(heimdalbuildsrcdir):$(heimdalsrcdir)/lib/asn1:$(heimdalsrcdir)/lib/krb5:$(heimdalsrcdir)/lib/gssapi:$(heimdalsrcdir)/lib/hdb:$(heimdalsrcdir)/lib/roken:$(heimdalsrcdir)/lib/des
+
 #######################
 # Start SUBSYSTEM HEIMDAL_KDC
 [SUBSYSTEM::HEIMDAL_KDC]

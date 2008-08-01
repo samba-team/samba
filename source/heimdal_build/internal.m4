@@ -255,3 +255,7 @@ if test t$ac_cv_func_getprogname != tyes; then
 	SMB_ENABLE(HEIMDAL_ROKEN_GETPROGNAME, YES)
 	SMB_ENABLE(HEIMDAL_ROKEN_GETPROGNAME_H, YES)
 fi
+
+VPATH="$VPATH:\$(HEIMDAL_VPATH)"
+
+SMB_INCLUDE_MK(heimdal_build/internal.mk)

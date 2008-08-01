@@ -10,8 +10,6 @@ include mkconfig.mk
 
 pidldir := $(srcdir)/pidl
 
-VPATH = $(builddir):$(srcdir):$(srcdir)/heimdal_build:$(heimdalsrcdir)/lib/asn1:$(heimdalsrcdir)/lib/krb5:$(heimdalsrcdir)/lib/gssapi:$(heimdalsrcdir)/lib/hdb:$(heimdalsrcdir)/lib/roken:$(heimdalsrcdir)/lib/des
-
 BASEDIR = $(prefix)
 TORTUREDIR = $(libdir)/torture
 SWATDIR = $(datadir)/swat
