@@ -62,8 +62,6 @@ struct async_req *cli_read_andx_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	req = cli_request_get(result);
-
 	req->data.read.ofs = offset;
 	req->data.read.size = size;
 	req->data.read.received = 0;
