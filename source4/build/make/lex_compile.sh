@@ -31,20 +31,29 @@ if [ -r $DEST ]; then
 	fi
 fi
 TOP=`pwd`
+echo "info: running $LEX $ARGS $file"
 if cd $dir && $LEX $ARGS $file; then
-	if [ -r $base.yy.c ];then
+	if [ -r lex.yy.c ];then
 	        # we must guarantee that config.h comes first
+		echo "info: move lex.yy.c to $base.c"
+	        echo "#include \"config.h\"" > $base.c
+		sed -e "s|lex\.yy\.c|$DEST|" lex.yy.c >> $base.c
+		rm -f $base.yy.c
+	elif [ -r $base.yy.c ];then
+	        # we must guarantee that config.h comes first
+		echo "info: move $base.yy.c to $base.c"
 	        echo "#include \"config.h\"" > $base.c
 		sed -e "s|$base\.yy\.c|$DEST|" $base.yy.c >> $base.c
 		rm -f $base.yy.c
 	elif [ -r $base.c ];then
 	        # we must guarantee that config.h comes first
+		echo "info: add #include \"config.h\" to $base.c"
 		mv $base.c $base.c.tmp
 	        echo "#include \"config.h\"" > $base.c
 		sed -e "s|$base\.yy\.c|$DEST|" $base.c.tmp >> $base.c
 		rm -f $base.c.tmp
 	elif [ ! -r base.c ]; then
-		echo "$base.c nor $base.yy.c generated."
+		echo "$base.c nor $base.yy.c nor lex.yy.c generated."
 		exit 1
 	fi
 fi
