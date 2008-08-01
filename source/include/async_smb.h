@@ -20,14 +20,14 @@
 #include "includes.h"
 
 /*
- * Create a fresh async smb request
+ * Ship a new smb request to the server
  */
 
-struct async_req *cli_request_new(TALLOC_CTX *mem_ctx,
-				  struct event_context *ev,
-				  struct cli_state *cli,
-				  uint8_t num_words, size_t num_bytes,
-				  struct cli_request **preq);
+struct async_req *cli_request_send(TALLOC_CTX *mem_ctx, struct cli_state *cli,
+				   uint8_t smb_command,
+				   uint8_t additional_flags,
+				   uint8_t wct, const uint16_t *vwv,
+				   uint16_t num_bytes, const uint8_t *bytes);
 
 /*
  * Convenience function to get the SMB part out of an async_req

@@ -47,7 +47,9 @@ struct async_req *cli_read_andx_send(TALLOC_CTX *mem_ctx,
 	struct async_req *result;
 	struct cli_request *req;
 	bool bigoffset = False;
-	char *enc_buf;
+
+	uint16_t vwv[12];
+	uint8_t wct = 10;
 
 	if (size > cli_read_max_bufsize(cli)) {
 		DEBUG(0, ("cli_read_andx_send got size=%d, can only handle "
@@ -56,59 +58,36 @@ struct async_req *cli_read_andx_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	result = cli_request_new(mem_ctx, cli->event_ctx, cli, 12, 0, &req);
+	SCVAL(vwv + 0, 0, 0xFF);
+	SCVAL(vwv + 0, 1, 0);
+	SSVAL(vwv + 1, 0, 0);
+	SSVAL(vwv + 2, 0, fnum);
+	SIVAL(vwv + 3, 0, offset);
+	SSVAL(vwv + 5, 0, size);
+	SSVAL(vwv + 6, 0, size);
+	SSVAL(vwv + 7, 0, (size >> 16));
+	SSVAL(vwv + 8, 0, 0);
+	SSVAL(vwv + 9, 0, 0);
+
+	if ((SMB_BIG_UINT)offset >> 32) {
+		bigoffset = True;
+		SIVAL(vwv + 10, 0,
+		      (((SMB_BIG_UINT)offset)>>32) & 0xffffffff);
+		wct += 2;
+	}
+
+	result = cli_request_send(mem_ctx, cli, SMBreadX, 0, wct, vwv,
+				  0, NULL);
 	if (result == NULL) {
-		DEBUG(0, ("cli_request_new failed\n"));
 		return NULL;
 	}
+
+	req = cli_request_get(result);
 
 	req->data.read.ofs = offset;
 	req->data.read.size = size;
 	req->data.read.received = 0;
 	req->data.read.rcvbuf = NULL;
-
-	if ((SMB_BIG_UINT)offset >> 32)
-		bigoffset = True;
-
-	cli_set_message(req->outbuf, bigoffset ? 12 : 10, 0, False);
-
-	SCVAL(req->outbuf,smb_com,SMBreadX);
-	SSVAL(req->outbuf,smb_tid,cli->cnum);
-	cli_setup_packet_buf(cli, req->outbuf);
-
-	SCVAL(req->outbuf,smb_vwv0,0xFF);
-	SCVAL(req->outbuf,smb_vwv0+1,0);
-	SSVAL(req->outbuf,smb_vwv1,0);
-	SSVAL(req->outbuf,smb_vwv2,fnum);
-	SIVAL(req->outbuf,smb_vwv3,offset);
-	SSVAL(req->outbuf,smb_vwv5,size);
-	SSVAL(req->outbuf,smb_vwv6,size);
-	SSVAL(req->outbuf,smb_vwv7,(size >> 16));
-	SSVAL(req->outbuf,smb_vwv8,0);
-	SSVAL(req->outbuf,smb_vwv9,0);
-	SSVAL(req->outbuf,smb_mid,req->mid);
-
-	if (bigoffset) {
-		SIVAL(req->outbuf, smb_vwv10,
-		      (((SMB_BIG_UINT)offset)>>32) & 0xffffffff);
-	}
-
-	cli_calculate_sign_mac(cli, req->outbuf);
-
-	event_fd_set_writeable(cli->fd_event);
-
-	if (cli_encryption_on(cli)) {
-		NTSTATUS status;
-		status = cli_encrypt_message(cli, req->outbuf, &enc_buf);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0, ("Error in encrypting client message. "
-				  "Error %s\n",	nt_errstr(status)));
-			TALLOC_FREE(req);
-			return NULL;
-		}
-		req->outbuf = enc_buf;
-		req->enc_state = cli->trans_enc_state;
-	}
 
 	return result;
 }

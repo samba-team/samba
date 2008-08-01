@@ -114,11 +114,11 @@ static int cli_request_destructor(struct cli_request *req)
  * Create a fresh async smb request
  */
 
-struct async_req *cli_request_new(TALLOC_CTX *mem_ctx,
-				  struct event_context *ev,
-				  struct cli_state *cli,
-				  uint8_t num_words, size_t num_bytes,
-				  struct cli_request **preq)
+static struct async_req *cli_request_new(TALLOC_CTX *mem_ctx,
+					 struct event_context *ev,
+					 struct cli_state *cli,
+					 uint8_t num_words, size_t num_bytes,
+					 struct cli_request **preq)
 {
 	struct async_req *result;
 	struct cli_request *cli_req;
@@ -157,6 +157,58 @@ struct async_req *cli_request_new(TALLOC_CTX *mem_ctx,
 	DEBUG(10, ("cli_request_new: mid=%d\n", cli_req->mid));
 
 	*preq = cli_req;
+	return result;
+}
+
+/*
+ * Ship a new smb request to the server
+ */
+struct async_req *cli_request_send(TALLOC_CTX *mem_ctx, struct cli_state *cli,
+				   uint8_t smb_command,
+				   uint8_t additional_flags,
+				   uint8_t wct, const uint16_t *vwv,
+				   uint16_t num_bytes, const uint8_t *bytes)
+{
+	struct async_req *result;
+	struct cli_request *req;
+
+	result = cli_request_new(mem_ctx, cli->event_ctx, cli, wct, num_bytes,
+				 &req);
+	if (result == NULL) {
+		DEBUG(0, ("cli_request_new failed\n"));
+		return NULL;
+	}
+
+	cli_set_message(req->outbuf, wct, num_bytes, false);
+	SCVAL(req->outbuf, smb_com, smb_command);
+	SSVAL(req->outbuf, smb_tid, cli->cnum);
+	cli_setup_packet_buf(cli, req->outbuf);
+
+	memcpy(req->outbuf + smb_vwv0, vwv, sizeof(uint16_t) * wct);
+	memcpy(smb_buf(req->outbuf), bytes, num_bytes);
+	SSVAL(req->outbuf, smb_mid, req->mid);
+	SCVAL(cli->outbuf, smb_flg,
+	      CVAL(cli->outbuf,smb_flg) | additional_flags);
+
+	cli_calculate_sign_mac(cli, req->outbuf);
+
+	if (cli_encryption_on(cli)) {
+		NTSTATUS status;
+		char *enc_buf;
+
+		status = cli_encrypt_message(cli, req->outbuf, &enc_buf);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("Error in encrypting client message. "
+				  "Error %s\n",	nt_errstr(status)));
+			TALLOC_FREE(req);
+			return NULL;
+		}
+		req->outbuf = enc_buf;
+		req->enc_state = cli->trans_enc_state;
+	}
+
+	event_fd_set_writeable(cli->fd_event);
+
 	return result;
 }
 

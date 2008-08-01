@@ -4201,21 +4201,6 @@ bool asn1_write_enumerated(ASN1_DATA *data, uint8 v);
 bool ber_write_OID_String(DATA_BLOB *blob, const char *OID);
 bool ber_read_OID_String(TALLOC_CTX *mem_ctx, DATA_BLOB blob, const char **OID);
 
-/* The following definitions come from libsmb/async_smb.c  */
-
-NTSTATUS cli_pull_error(char *buf);
-void cli_set_error(struct cli_state *cli, NTSTATUS status);
-struct async_req *cli_request_new(TALLOC_CTX *mem_ctx,
-				  struct event_context *ev,
-				  struct cli_state *cli,
-				  uint8_t num_words, size_t num_bytes,
-				  struct cli_request **preq);
-struct cli_request *cli_request_get(struct async_req *req);
-struct cli_tmp_event *cli_tmp_event_ctx(TALLOC_CTX *mem_ctx,
-					struct cli_state *cli);
-NTSTATUS cli_add_event_ctx(struct cli_state *cli,
-			   struct event_context *event_ctx);
-
 /* The following definitions come from libsmb/cliconnect.c  */
 
 ADS_STATUS cli_session_setup_spnego(struct cli_state *cli, const char *user, 
