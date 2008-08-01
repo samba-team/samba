@@ -22,6 +22,7 @@ from samba.dcerpc import ClientConnection
 from unittest import TestCase
 from samba.tests import cmdline_loadparm
 
+
 class BareTestCase(TestCase):
     def test_bare(self):
         # Connect to the echo pipe

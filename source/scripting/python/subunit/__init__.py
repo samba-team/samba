@@ -376,7 +376,7 @@ def run_isolated(klass, self, result):
     return result
 
 
-class SubunitTestRunner:
+class SubunitTestRunner(object):
     def __init__(self, stream=sys.stdout):
         self.stream = stream
 

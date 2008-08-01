@@ -97,7 +97,8 @@ def call_fn(fn, pipe, args):
 
     return result;
    
-class SamrHandle:
+
+class SamrHandle(object):
 
     def __init__(self, pipe, handle):
 
@@ -137,6 +138,7 @@ class SamrHandle:
 
         call_fn(dcerpc.dcerpc_samr_SetSecurity, self.pipe, r)
         
+
 class ConnectHandle(SamrHandle):
 
     def EnumDomains(self):
@@ -211,6 +213,7 @@ class ConnectHandle(SamrHandle):
         r.data_in.unknown3 = unknown3
 
         call_fn(dcerpc.dcerpc_samr_SetBootKeyInformation, self.pipe, r)
+
 
 class DomainHandle(SamrHandle):
 
@@ -517,6 +520,7 @@ class DomainHandle(SamrHandle):
 
         call_fn(dcerpc.dcerpc_samr_TestPrivateFunctionsDomain, self.pipe, r)
 
+
 class UserHandle(SamrHandle):
 
     def DeleteUser(self):
@@ -576,6 +580,7 @@ class UserHandle(SamrHandle):
 
         call_fn(dcerpc.dcerpc_samr_TestPrivateFunctionsUser, self.pipe, r)
             
+
 class GroupHandle(SamrHandle):
 
     def QueryGroupInfo(self, level):
@@ -608,6 +613,7 @@ class GroupHandle(SamrHandle):
                  dcerpc.uint32_array_getitem(r.data_out.rids.unknown, x))
                 for x in range(r.data_out.rids.count)]
     
+
 class AliasHandle(SamrHandle):
 
     def DeleteDomAlias(self):

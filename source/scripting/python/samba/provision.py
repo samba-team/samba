@@ -53,7 +53,7 @@ class InvalidNetbiosName(Exception):
         super(InvalidNetbiosName, self).__init__("The name '%r' is not a valid NetBIOS name" % name)
 
 
-class ProvisionPaths:
+class ProvisionPaths(object):
     def __init__(self):
         self.shareconf = None
         self.hklm = None
@@ -77,7 +77,8 @@ class ProvisionPaths:
         self.fedoradsinf = None
         self.fedoradspartitions = None
  
-class ProvisionNames:
+
+class ProvisionNames(object):
     def __init__(self):
         self.rootdn = None
         self.domaindn = None
@@ -92,7 +93,8 @@ class ProvisionNames:
         self.sitename = None
         self.smbconf = None
     
-class ProvisionResult:
+
+class ProvisionResult(object):
     def __init__(self):
         self.paths = None
         self.domaindn = None
