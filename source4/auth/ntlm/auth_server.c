@@ -79,10 +79,10 @@ static NTSTATUS server_get_challenge(struct auth_method_context *ctx, TALLOC_CTX
 
 	status = smb_composite_connect(&io, mem_ctx, lp_resolve_context(ctx->auth_ctx->lp_ctx),
 				       ctx->auth_ctx->event_ctx);
-	if (!NT_STATUS_IS_OK(status)) {
-		*_blob = io.out.tree->session->transport->negotiate.secblob;
-		ctx->private_data = talloc_steal(ctx, io.out.tree->session);
-	}
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	*_blob = io.out.tree->session->transport->negotiate.secblob;
+	ctx->private_data = talloc_steal(ctx, io.out.tree->session);
 	return NT_STATUS_OK;
 }
 
