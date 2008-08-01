@@ -400,6 +400,12 @@ const char *libnetapi_errstr(NET_API_STATUS status);
 const char *libnetapi_get_error_string(struct libnetapi_ctx *ctx,
 				       NET_API_STATUS status);
 
+/****************************************************************
+ NetApiBufferAllocate
+****************************************************************/
+
+NET_API_STATUS NetApiBufferAllocate(uint32_t byte_count,
+				    void **buffer);
 
 /****************************************************************
  NetApiBufferFree
