@@ -15,7 +15,6 @@ import samba.getopt as options
 import optparse
 from getpass import getpass
 from samba.auth import system_session
-from samba.samdb import SamDB
 
 parser = optparse.OptionParser("newuser [options] <username> [<password>]")
 sambaopts = options.SambaOptions(parser)
@@ -44,6 +43,6 @@ if opts.unixname is None:
 lp = sambaopts.get_loadparm()
 creds = credopts.get_credentials(lp)
 
-samdb = SamDB(url=lp.get("sam database"), session_info=system_session(), 
-              credentials=creds, lp=lp)
+samdb = sambaopts.get_hostconfig().get_samdb(session_info=system_session(), 
+		                                     credentials=creds)
 samdb.newuser(username, opts.unixname, password)

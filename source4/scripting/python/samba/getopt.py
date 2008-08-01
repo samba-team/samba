@@ -21,6 +21,7 @@
 
 import optparse
 from credentials import Credentials, AUTO_USE_KERBEROS, DONT_USE_KERBEROS, MUST_USE_KERBEROS
+from hostconfig import Hostconfig
 
 __docformat__ = "restructuredText"
 
@@ -51,6 +52,9 @@ class SambaOptions(optparse.OptionGroup):
         else:
             lp.load_default()
         return lp
+
+    def get_hostconfig(self):
+        return Hostconfig(self.get_loadparm())
 
 
 class VersionOptions(optparse.OptionGroup):
