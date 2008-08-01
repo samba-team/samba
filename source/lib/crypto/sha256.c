@@ -39,7 +39,6 @@
  */
 
 #include "includes.h"
-#include "heimdal/lib/hcrypto/hash.h"
 #include "sha256.h"
 
 #define Ch(x,y,z) (((x) & (y)) ^ ((~(x)) & (z)))
@@ -148,6 +147,26 @@ calc (SHA256_CTX *m, uint32_t *in)
  */
 
 #if !defined(WORDS_BIGENDIAN) || defined(_CRAY)
+/* Vector Crays doesn't have a good 32-bit type, or more precisely,
+   int32_t as defined by <bind/bitypes.h> isn't 32 bits, and we don't
+   want to depend in being able to redefine this type.  To cope with
+   this we have to clamp the result in some places to [0,2^32); no
+   need to do this on other machines.  Did I say this was a mess?
+   */
+
+#ifdef _CRAY
+#define CRAYFIX(X) ((X) & 0xffffffff)
+#else
+#define CRAYFIX(X) (X)
+#endif
+
+static inline uint32_t
+cshift (uint32_t x, unsigned int n)
+{
+    x = CRAYFIX(x);
+    return CRAYFIX((x << n) | (x >> (32 - n)));
+}
+
 static inline uint32_t
 swap_uint32_t (uint32_t t)
 {
@@ -179,7 +198,7 @@ SHA256_Update (SHA256_CTX *m, const void *v, size_t len)
 	++m->sz[1];
     offset = (old_sz / 8) % 64;
     while(len > 0){
-	size_t l = min(len, 64 - offset);
+	size_t l = MIN(len, 64 - offset);
 	memcpy(m->save + offset, p, l);
 	offset += l;
 	p += l;
