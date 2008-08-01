@@ -360,7 +360,7 @@ $(librpcsrcdir)/idl-deps:
 clean:: 
 	rm -f $(librpcsrcdir)/idl-deps
 
-include $(librpcsrcdir)/idl-deps
+-include $(librpcsrcdir)/idl-deps
 
 $(gen_ndrsrcdir)/tables.c: $(IDL_NDR_PARSE_H_FILES)
 	@echo Generating $@

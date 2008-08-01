@@ -38,9 +38,11 @@
 #include "param/param.h"
 #include "kdc/kdc.h"
 
-/* TODO: remove this */
-#include "heimdal/lib/krb5/krb5_locl.h"
+/* TODO: remove all SAMBA4_INTERNAL_HEIMDAL stuff from this file */
+#ifdef SAMBA4_INTERNAL_HEIMDAL
+#include "heimdal/lib/hcrypto/aes.h"
 #include "heimdal/lib/krb5/krb5-private.h"
+#endif
 
 /* hold information about one kdc socket */
 struct kpasswd_socket {
@@ -285,6 +287,7 @@ static bool kpasswd_process_request(struct kdc_server *kdc,
 							reply);
 		}
 		if (chpw.targname && chpw.targrealm) {
+#ifdef SAMBA4_INTERNAL_HEIMDAL
 			if (_krb5_principalname2krb5_principal(kdc->smb_krb5_context->krb5_context,
 							       &principal, *chpw.targname, 
 							       *chpw.targrealm) != 0) {
@@ -295,6 +298,12 @@ static bool kpasswd_process_request(struct kdc_server *kdc,
 								reply);
 				
 			}
+#else /* SAMBA4_INTERNAL_HEIMDAL */
+				return kpasswdd_make_error_reply(kdc, mem_ctx,
+								KRB5_KPASSWD_BAD_VERSION,
+								"Operation Not Implemented",
+								reply);
+#endif /* SAMBA4_INTERNAL_HEIMDAL */
 		} else {
 			free_ChangePasswdDataMS(&chpw);
 			return kpasswdd_change_password(kdc, mem_ctx, session_info, 

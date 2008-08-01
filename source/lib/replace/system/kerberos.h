@@ -129,8 +129,9 @@
 /* Whether krb5_princ_realm returns krb5_realm or krb5_data */
 #define KRB5_PRINC_REALM_RETURNS_REALM 1
 
-#include "heimdal/lib/krb5/krb5.h"
-#include "heimdal/lib/com_err/com_err.h"
+#include <krb5.h>
+#include <com_err.h>
+
 #endif
 
 #endif
