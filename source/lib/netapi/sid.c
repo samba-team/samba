@@ -48,3 +48,29 @@ int ConvertSidToStringSid(const struct domsid *sid,
 
 	return true;
 }
+
+/****************************************************************
+****************************************************************/
+
+int ConvertStringSidToSid(const char *sid_string,
+			  struct domsid **sid)
+{
+	struct dom_sid _sid;
+
+	if (!sid_string || !sid) {
+		return false;
+	}
+
+	if (!string_to_sid(&_sid, sid_string)) {
+		return false;
+	}
+
+	*sid = (struct domsid *)SMB_MALLOC(sizeof(struct domsid));
+	if (!*sid) {
+		return false;
+	}
+
+	sid_copy((struct dom_sid*)*sid, &_sid);
+
+	return true;
+}
