@@ -70,7 +70,7 @@ static NTSTATUS server_get_challenge(struct auth_method_context *ctx, TALLOC_CTX
 	io.in.called_name = strupper_talloc(mem_ctx, io.in.dest_host);
 
 	/* We don't want to get as far as the session setup */
-	io.in.credentials = NULL;
+	io.in.credentials = cli_credentials_init_anon(mem_ctx);
 	io.in.service = NULL;
 
 	io.in.workgroup = ""; /* only used with SPNEGO, disabled above */
