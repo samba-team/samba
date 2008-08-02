@@ -781,19 +781,61 @@ int cli_nt_create(struct cli_state *cli, const char *fname, uint32 DesiredAccess
 				FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_OPEN, 0x0, 0x0);
 }
 
+static uint8_t *smb_bytes_push_str(uint8_t *buf, bool ucs2, const char *str)
+{
+	size_t buflen = talloc_get_size(buf);
+	char *converted;
+	size_t converted_size;
+
+	/*
+	 * We're pushing into an SMB buffer, align odd
+	 */
+	if (ucs2 && (buflen % 2 == 0)) {
+		buf = TALLOC_REALLOC_ARRAY(NULL, buf, uint8_t, buflen + 1);
+		if (buf == NULL) {
+			return NULL;
+		}
+		buf[buflen] = '\0';
+		buflen += 1;
+	}
+
+	if (!convert_string_allocate(talloc_tos(), CH_UNIX,
+				     ucs2 ? CH_UTF16LE : CH_DOS,
+				     str, strlen(str)+1, &converted,
+				     &converted_size, true)) {
+		return NULL;
+	}
+
+	buf = TALLOC_REALLOC_ARRAY(NULL, buf, uint8_t,
+				   buflen + converted_size);
+	if (buf == NULL) {
+		return NULL;
+	}
+
+	memcpy(buf + buflen, converted, converted_size);
+
+	TALLOC_FREE(converted);
+	return buf;
+}
+
 /****************************************************************************
  Open a file
  WARNING: if you open with O_WRONLY then getattrE won't work!
 ****************************************************************************/
 
-int cli_open(struct cli_state *cli, const char *fname, int flags, int share_mode)
+struct async_req *cli_open_send(TALLOC_CTX *mem_ctx, struct cli_state *cli,
+				const char *fname, int flags, int share_mode)
 {
-	char *p;
-	unsigned openfn=0;
-	unsigned accessmode=0;
+	unsigned openfn = 0;
+	unsigned accessmode = 0;
+	uint8_t additional_flags = 0;
+	uint8_t *bytes;
+	uint16_t vwv[15];
+	struct async_req *result;
 
-	if (flags & O_CREAT)
+	if (flags & O_CREAT) {
 		openfn |= (1<<4);
+	}
 	if (!(flags & O_EXCL)) {
 		if (flags & O_TRUNC)
 			openfn |= (1<<1);
@@ -819,46 +861,88 @@ int cli_open(struct cli_state *cli, const char *fname, int flags, int share_mode
 		accessmode = 0xFF;
 	}
 
-	memset(cli->outbuf,'\0',smb_size);
-	memset(cli->inbuf,'\0',smb_size);
-
-	cli_set_message(cli->outbuf,15,0, true);
-
-	SCVAL(cli->outbuf,smb_com,SMBopenX);
-	SSVAL(cli->outbuf,smb_tid,cli->cnum);
-	cli_setup_packet(cli);
-
-	SSVAL(cli->outbuf,smb_vwv0,0xFF);
-	SSVAL(cli->outbuf,smb_vwv2,0);  /* no additional info */
-	SSVAL(cli->outbuf,smb_vwv3,accessmode);
-	SSVAL(cli->outbuf,smb_vwv4,aSYSTEM | aHIDDEN);
-	SSVAL(cli->outbuf,smb_vwv5,0);
-	SSVAL(cli->outbuf,smb_vwv8,openfn);
+	SCVAL(vwv + 0, 0, 0xFF);
+	SCVAL(vwv + 0, 1, 0);
+	SSVAL(vwv + 1, 0, 0);
+	SSVAL(vwv + 2, 0, 0);  /* no additional info */
+	SSVAL(vwv + 3, 0, accessmode);
+	SSVAL(vwv + 4, 0, aSYSTEM | aHIDDEN);
+	SSVAL(vwv + 5, 0, 0);
+	SIVAL(vwv + 6, 0, 0);
+	SSVAL(vwv + 8, 0, openfn);
+	SIVAL(vwv + 9, 0, 0);
+	SIVAL(vwv + 11, 0, 0);
+	SIVAL(vwv + 13, 0, 0);
 
 	if (cli->use_oplocks) {
 		/* if using oplocks then ask for a batch oplock via
                    core and extended methods */
-		SCVAL(cli->outbuf,smb_flg, CVAL(cli->outbuf,smb_flg)|
-			FLAG_REQUEST_OPLOCK|FLAG_REQUEST_BATCH_OPLOCK);
-		SSVAL(cli->outbuf,smb_vwv2,SVAL(cli->outbuf,smb_vwv2) | 6);
+		additional_flags =
+			FLAG_REQUEST_OPLOCK|FLAG_REQUEST_BATCH_OPLOCK;
+		SSVAL(vwv+2, 0, SVAL(vwv+2, 0) | 6);
 	}
 
-	p = smb_buf(cli->outbuf);
-	p += clistr_push(cli, p, fname,
-			cli->bufsize - PTR_DIFF(p,cli->outbuf), STR_TERMINATE);
-
-	cli_setup_bcc(cli, p);
-
-	cli_send_smb(cli);
-	if (!cli_receive_smb(cli)) {
-		return -1;
+	bytes = talloc_array(talloc_tos(), uint8_t, 0);
+	if (bytes == NULL) {
+		return NULL;
 	}
 
-	if (cli_is_error(cli)) {
-		return -1;
+	bytes = smb_bytes_push_str(
+		bytes, (cli->capabilities & CAP_UNICODE) != 0, fname);
+	if (bytes == NULL) {
+		return NULL;
 	}
 
-	return SVAL(cli->inbuf,smb_vwv2);
+	result = cli_request_send(mem_ctx, cli, SMBopenX, additional_flags,
+				  15, vwv, talloc_get_size(bytes), bytes);
+	TALLOC_FREE(bytes);
+	return result;
+}
+
+NTSTATUS cli_open_recv(struct async_req *req, int *fnum)
+{
+	struct cli_request *cli_req = cli_request_get(req);
+	NTSTATUS status;
+
+	SMB_ASSERT(req->state >= ASYNC_REQ_DONE);
+	if (req->state == ASYNC_REQ_ERROR) {
+		return req->status;
+	}
+
+	status = cli_pull_error(cli_req->inbuf);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	*fnum = SVAL(cli_req->inbuf, smb_vwv2);
+
+	return NT_STATUS_OK;
+}
+
+int cli_open(struct cli_state *cli, const char *fname, int flags,
+	     int share_mode)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct async_req *req;
+	int result = -1;
+
+	if (cli_tmp_event_ctx(frame, cli) == NULL) {
+		goto fail;
+	}
+
+	req = cli_open_send(frame, cli, fname, flags, share_mode);
+	if (req == NULL) {
+		goto fail;
+	}
+
+	while (req->state < ASYNC_REQ_DONE) {
+		event_loop_once(cli->event_ctx);
+	}
+
+	cli_open_recv(req, &result);
+ fail:
+	TALLOC_FREE(frame);
+	return result;
 }
 
 /****************************************************************************
