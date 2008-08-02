@@ -4378,6 +4378,9 @@ int cli_nt_create_full(struct cli_state *cli, const char *fname,
 		 uint32 CreateDisposition, uint32 CreateOptions,
 		 uint8 SecuityFlags);
 int cli_nt_create(struct cli_state *cli, const char *fname, uint32 DesiredAccess);
+struct async_req *cli_open_send(TALLOC_CTX *mem_ctx, struct cli_state *cli,
+				const char *fname, int flags, int share_mode);
+NTSTATUS cli_open_recv(struct async_req *req, int *fnum);
 int cli_open(struct cli_state *cli, const char *fname, int flags, int share_mode);
 struct async_req *cli_close_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 				 struct cli_state *cli, int fnum);
