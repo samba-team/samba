@@ -24,6 +24,16 @@
 
 #ifdef HAVE_KRB5
 
+#ifdef HAVE_KRB5_KEYBLOCK_KEYVALUE /* Heimdal */
+#define KRB5_KEY_TYPE(k)	((k)->keytype)
+#define KRB5_KEY_LENGTH(k)	((k)->keyvalue.length)
+#define KRB5_KEY_DATA(k)	((k)->keyvalue.data)
+#else /* MIT */
+#define	KRB5_KEY_TYPE(k)	((k)->enctype)
+#define KRB5_KEY_LENGTH(k)	((k)->length)
+#define KRB5_KEY_DATA(k)	((k)->contents)
+#endif /* HAVE_KRB5_KEYBLOCK_KEYVALUE */
+
 /****************************************************************
 ****************************************************************/
 
@@ -131,13 +141,24 @@ static krb5_error_code libnet_keytab_remove_entries(krb5_context context,
 
 	while (krb5_kt_next_entry(context, keytab, &kt_entry, &cursor) == 0)
 	{
+		krb5_keyblock *keyp;
 		char *princ_s = NULL;
 
 		if (kt_entry.vno != kvno && !ignore_kvno) {
 			goto cont;
 		}
 
-		if (kt_entry.key.enctype != enctype) {
+#if !defined(HAVE_KRB5_KEYTAB_ENTRY_KEY) && !defined(HAVE_KRB5_KEYTAB_ENTRY_KEYBLOCK)
+#error krb5_keytab_entry has no key or keyblock member
+#endif
+#ifdef HAVE_KRB5_KEYTAB_ENTRY_KEY               /* MIT */
+	keyp = &kt_entry.key;
+#endif
+#ifdef HAVE_KRB5_KEYTAB_ENTRY_KEYBLOCK          /* Heimdal */
+	keyp = &kt_entry.keyblock;
+#endif
+
+		if (KRB5_KEY_TYPE(keyp) != enctype) {
 			goto cont;
 		}
 
@@ -157,7 +178,7 @@ static krb5_error_code libnet_keytab_remove_entries(krb5_context context,
 
 		DEBUG(10, ("found entry for principal %s, kvno %d, "
 			   "enctype %d - trying to remove it\n",
-			   princ_s, kt_entry.vno, kt_entry.key.enctype));
+			   princ_s, kt_entry.vno, KRB5_KEY_TYPE(keyp)));
 
 		ret = krb5_kt_end_seq_get(context, keytab, &cursor);
 		ZERO_STRUCT(cursor);
@@ -176,7 +197,7 @@ static krb5_error_code libnet_keytab_remove_entries(krb5_context context,
 		}
 		DEBUG(10, ("removed entry for principal %s, kvno %d, "
 			   "enctype %d\n", princ_s, kt_entry.vno,
-			   kt_entry.key.enctype));
+			   KRB5_KEY_TYPE(keyp)));
 
 		ret = krb5_kt_start_seq_get(context, keytab, &cursor);
 		if (ret) {
@@ -335,13 +356,24 @@ struct libnet_keytab_entry *libnet_keytab_search(struct libnet_keytab_context *c
 
 	while (krb5_kt_next_entry(ctx->context, ctx->keytab, &kt_entry, &cursor) == 0)
 	{
+		krb5_keyblock *keyp;
 		char *princ_s = NULL;
 
 		if (kt_entry.vno != kvno) {
 			goto cont;
 		}
 
-		if (kt_entry.key.enctype != enctype) {
+#if !defined(HAVE_KRB5_KEYTAB_ENTRY_KEY) && !defined(HAVE_KRB5_KEYTAB_ENTRY_KEYBLOCK)
+#error krb5_keytab_entry has no key or keyblock member
+#endif
+#ifdef HAVE_KRB5_KEYTAB_ENTRY_KEY               /* MIT */
+	keyp = &kt_entry.key;
+#endif
+#ifdef HAVE_KRB5_KEYTAB_ENTRY_KEYBLOCK          /* Heimdal */
+	keyp = &kt_entry.keyblock;
+#endif
+
+		if (KRB5_KEY_TYPE(keyp) != enctype) {
 			goto cont;
 		}
 
@@ -373,8 +405,8 @@ struct libnet_keytab_entry *libnet_keytab_search(struct libnet_keytab_context *c
 			goto fail;
 		}
 
-		entry->password = data_blob_talloc(entry, kt_entry.key.contents,
-						   kt_entry.key.length);
+		entry->password = data_blob_talloc(entry, KRB5_KEY_DATA(keyp),
+						   KRB5_KEY_LENGTH(keyp));
 		if (!entry->password.data) {
 			DEBUG(3, ("data_blob_talloc failed\n"));
 			goto fail;
