@@ -50,8 +50,6 @@ static void ctdb_persistent_callback(struct ctdb_context *ctdb,
 			 status, errormsg));
 		state->status = status;
 		state->errormsg = errormsg;
-		DEBUG(DEBUG_ERR,(__location__ " Forcing recovery\n"));
-		ctdb->recovery_mode = CTDB_RECOVERY_ACTIVE;
 	}
 	state->num_pending--;
 	if (state->num_pending == 0) {
@@ -69,8 +67,6 @@ static void ctdb_persistent_store_timeout(struct event_context *ev, struct timed
 	struct ctdb_persistent_state *state = talloc_get_type(private_data, struct ctdb_persistent_state);
 	
 	ctdb_request_control_reply(state->ctdb, state->c, NULL, -1, "timeout in ctdb_persistent_state");
-	DEBUG(DEBUG_ERR,(__location__ " Forcing recovery\n"));
-	state->ctdb->recovery_mode = CTDB_RECOVERY_ACTIVE;
 
 	talloc_free(state);
 }
@@ -415,7 +411,7 @@ int32_t ctdb_control_update_record(struct ctdb_context *ctdb,
 	struct ctdb_marshall_buffer *m = (struct ctdb_marshall_buffer *)recdata.dptr;
 
 	if (ctdb->recovery_mode != CTDB_RECOVERY_NORMAL) {
-		DEBUG(DEBUG_DEBUG,("rejecting ctdb_control_update_record when recovery active\n"));
+		DEBUG(DEBUG_INFO,("rejecting ctdb_control_update_record when recovery active\n"));
 		return -1;
 	}
 
