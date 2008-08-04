@@ -1144,8 +1144,7 @@ bool regdb_store_values( const char *key, REGVAL_CTR *values )
 		goto done;
 	}
 
-	status = dbwrap_trans_store(regdb, string_term_tdb_data(keystr), data,
-				    TDB_REPLACE);
+	status = dbwrap_trans_store_bystring(regdb, keystr, data, TDB_REPLACE);
 
 	result = NT_STATUS_IS_OK(status);
 
@@ -1219,8 +1218,7 @@ static WERROR regdb_set_secdesc(const char *key,
 
 	if (secdesc == NULL) {
 		/* assuming a delete */
-		status = dbwrap_trans_delete(regdb,
-					     string_term_tdb_data(tdbkey));
+		status = dbwrap_trans_delete_bystring(regdb, tdbkey);
 		if (NT_STATUS_IS_OK(status)) {
 			err = WERR_OK;
 		} else {
@@ -1236,8 +1234,7 @@ static WERROR regdb_set_secdesc(const char *key,
 		goto done;
 	}
 
-	status = dbwrap_trans_store(regdb, string_term_tdb_data(tdbkey),
-				    tdbdata, 0);
+	status = dbwrap_trans_store_bystring(regdb, tdbkey, tdbdata, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		err = ntstatus_to_werror(status);
 		goto done;
