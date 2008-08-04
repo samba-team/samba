@@ -2019,7 +2019,7 @@ static NTSTATUS fetch_database_to_ldif(struct rpc_pipe_client *pipe_hnd,
 {
 	char *suffix;
 	const char *builtin_sid = "S-1-5-32";
-	char *add_name = NULL, *mod_name = NULL;
+	char *add_name = NULL, *mod_filename = NULL;
 	const char *add_template = "/tmp/add.ldif.XXXXXX";
 	const char *mod_template = "/tmp/mod.ldif.XXXXXX";
 	fstring sid, domainname;
@@ -2064,8 +2064,8 @@ static NTSTATUS fetch_database_to_ldif(struct rpc_pipe_client *pipe_hnd,
 	}
 
 	add_name = talloc_strdup(mem_ctx, add_template);
-	mod_name = talloc_strdup(mem_ctx, mod_template);
- 	if (!add_name || !mod_name) {
+	mod_filename = talloc_strdup(mem_ctx, mod_template);
+	if (!add_name || !mod_filename) {
 		ret = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
@@ -2076,8 +2076,8 @@ static NTSTATUS fetch_database_to_ldif(struct rpc_pipe_client *pipe_hnd,
 		ret = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
-	if (!(mod_file = fdopen(smb_mkstemp(mod_name),"w"))) {
-		DEBUG(1, ("Could not open %s\n", mod_name));
+	if (!(mod_file = fdopen(smb_mkstemp(mod_filename),"w"))) {
+		DEBUG(1, ("Could not open %s\n", mod_filename));
 		ret = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
@@ -2315,10 +2315,10 @@ static NTSTATUS fetch_database_to_ldif(struct rpc_pipe_client *pipe_hnd,
 		fclose(mod_file);
 	}
 
-	if ((mod_name != NULL) &&
-	    strcmp(mod_name, mod_template) && (unlink(mod_name))) {
+	if ((mod_filename != NULL) &&
+	    strcmp(mod_filename, mod_template) && (unlink(mod_filename))) {
 		DEBUG(1,("unlink(%s) failed, error was (%s)\n",
-			 mod_name, strerror(errno)));
+			 mod_filename, strerror(errno)));
 	}
 
 	if (ldif_file && (ldif_file != stdout)) {
