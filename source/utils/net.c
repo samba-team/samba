@@ -496,7 +496,7 @@ struct cli_state *net_make_ipc_connection_ex( const char *domain, const char *se
 		server_ip = *ip;
 	}
 
-	if (opt_user_name && opt_password) {
+	if (opt_user_name) {
 		nt_status = connect_to_ipc(&cli, &server_ip, server_name);
 		if (NT_STATUS_IS_OK(nt_status)) {
 			goto connected;
