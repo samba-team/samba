@@ -31,10 +31,12 @@
 #define KRB5_KEY_TYPE(k)	((k)->keytype) 
 #define KRB5_KEY_LENGTH(k)	((k)->keyvalue.length)
 #define KRB5_KEY_DATA(k)	((k)->keyvalue.data)
+#define KRB5_KEY_DATA_CAST	void
 #else /* MIT */
 #define	KRB5_KEY_TYPE(k)	((k)->enctype)
 #define KRB5_KEY_LENGTH(k)	((k)->length)
 #define KRB5_KEY_DATA(k)	((k)->contents)
+#define KRB5_KEY_DATA_CAST	krb5_octet
 #endif /* HAVE_KRB5_KEYBLOCK_KEYVALUE */
 
 /**************************************************************
@@ -214,31 +216,21 @@ static int create_kerberos_key_from_string_direct(krb5_context context,
 						  krb5_principal host_princ,
 						  krb5_data *password,
 						  krb5_keyblock *key,
-						  krb5_enctype enctype,
-						  bool no_salt)
+						  krb5_enctype enctype)
 {
 	int ret = 0;
 	krb5_data salt;
 	krb5_encrypt_block eblock;
 
-	if (no_salt) {
-		key->contents = (krb5_octet *)SMB_MALLOC(password->length);
-		if (!key->contents) {
-			return ENOMEM;
-		}
-		memcpy(key->contents, password->data, password->length);
-		key->length = password->length;
-		key->enctype = enctype;
-	} else {
-		ret = krb5_principal2salt(context, host_princ, &salt);
-		if (ret) {
-			DEBUG(1,("krb5_principal2salt failed (%s)\n", error_message(ret)));
-			return ret;
-		}
-		krb5_use_enctype(context, &eblock, enctype);
-		ret = krb5_string_to_key(context, &eblock, key, password, &salt);
-		SAFE_FREE(salt.data);
+	ret = krb5_principal2salt(context, host_princ, &salt);
+	if (ret) {
+		DEBUG(1,("krb5_principal2salt failed (%s)\n", error_message(ret)));
+		return ret;
 	}
+	krb5_use_enctype(context, &eblock, enctype);
+	ret = krb5_string_to_key(context, &eblock, key, password, &salt);
+	SAFE_FREE(salt.data);
+
 	return ret;
 }
 #elif defined(HAVE_KRB5_GET_PW_SALT) && defined(HAVE_KRB5_STRING_TO_KEY_SALT)
@@ -246,26 +238,19 @@ static int create_kerberos_key_from_string_direct(krb5_context context,
 						  krb5_principal host_princ,
 						  krb5_data *password,
 						  krb5_keyblock *key,
-						  krb5_enctype enctype,
-						  bool no_salt)
+						  krb5_enctype enctype)
 {
 	int ret;
 	krb5_salt salt;
 
-	if (no_salt) {
-		return krb5_keyblock_init(context, enctype,
-					  password->data, password->length,
-					  key);
-	} else {
-		ret = krb5_get_pw_salt(context, host_princ, &salt);
-		if (ret) {
-			DEBUG(1,("krb5_get_pw_salt failed (%s)\n", error_message(ret)));
-			return ret;
-		}
-
-		ret = krb5_string_to_key_salt(context, enctype, (const char *)password->data, salt, key);
-		krb5_free_salt(context, salt);
+	ret = krb5_get_pw_salt(context, host_princ, &salt);
+	if (ret) {
+		DEBUG(1,("krb5_get_pw_salt failed (%s)\n", error_message(ret)));
+		return ret;
 	}
+
+	ret = krb5_string_to_key_salt(context, enctype, (const char *)password->data, salt, key);
+	krb5_free_salt(context, salt);
 
 	return ret;
 }
@@ -287,8 +272,18 @@ static int create_kerberos_key_from_string_direct(krb5_context context,
 	 * principal/enctype in a non-obvious way.  If it is, try to match
 	 * its behavior.
 	 */
+	if (no_salt) {
+		KRB5_KEY_DATA(key) = (KRB5_KEY_DATA_CAST *)SMB_MALLOC(password->length);
+		if (!KRB5_KEY_DATA(key)) {
+			return ENOMEM;
+		}
+		memcpy(KRB5_KEY_DATA(key), password->data, password->length);
+		KRB5_KEY_LENGTH(key) = password->length;
+		KRB5_KEY_TYPE(key) = enctype;
+		return 0;
+	}
 	salt_princ = kerberos_fetch_salt_princ_for_host_princ(context, host_princ, enctype);
-	ret = create_kerberos_key_from_string_direct(context, salt_princ ? salt_princ : host_princ, password, key, enctype, no_salt);
+	ret = create_kerberos_key_from_string_direct(context, salt_princ ? salt_princ : host_princ, password, key, enctype);
 	if (salt_princ) {
 		krb5_free_principal(context, salt_princ);
 	}
