@@ -5,7 +5,7 @@ Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
 Version: 1.0
-Release: 51
+Release: 52
 Epoch: 0
 License: GNU GPL version 3
 Group: System Environment/Daemons
@@ -118,6 +118,12 @@ fi
 %{_includedir}/ctdb_private.h
 
 %changelog
+* Mon Aug 4 2008 : Version 1.0.52
+ - Send an explicit gratious arp when starting sending the tcp tickles.
+ - When doing failover, issue a killtcp to non-NFS/non-CIFS clients
+   so that they fail quickly. NFS and CIFS already fail and recover 
+   quickly.
+ - Update the test scripts to handle CTRL-C to kill off the test.
 * Mon Jul 28 2008 : Version 1.0.51
  - Strip off the vlan tag from bond devices before we check in /proc
    if the interface is up or not.
