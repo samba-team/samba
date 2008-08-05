@@ -400,6 +400,15 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 	case CTDB_CONTROL_CANCEL_PERSISTENT_UPDATE:
 		return ctdb_control_cancel_persistent_update(ctdb, c, indata);
 
+	case CTDB_CONTROL_TRANS2_COMMIT:
+		return ctdb_control_trans2_commit(ctdb, c, indata, async_reply);
+
+	case CTDB_CONTROL_TRANS2_ERROR:
+		return ctdb_control_trans2_error(ctdb, c);
+
+	case CTDB_CONTROL_TRANS2_FINISHED:
+		return ctdb_control_trans2_finished(ctdb, c);
+
 	default:
 		DEBUG(DEBUG_CRIT,(__location__ " Unknown CTDB control opcode %u\n", opcode));
 		return -1;

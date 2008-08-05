@@ -219,7 +219,7 @@ ctdb_control_reload_nodes_file(struct ctdb_context *ctdb, uint32_t opcode)
  */
 struct pulldb_data {
 	struct ctdb_context *ctdb;
-	struct ctdb_control_pulldb_reply *pulldata;
+	struct ctdb_marshall_buffer *pulldata;
 	uint32_t len;
 	bool failed;
 };
@@ -258,7 +258,7 @@ int32_t ctdb_control_pull_db(struct ctdb_context *ctdb, TDB_DATA indata, TDB_DAT
 	struct ctdb_control_pulldb *pull;
 	struct ctdb_db_context *ctdb_db;
 	struct pulldb_data params;
-	struct ctdb_control_pulldb_reply *reply;
+	struct ctdb_marshall_buffer *reply;
 
 	if (ctdb->freeze_mode != CTDB_FREEZE_FROZEN) {
 		DEBUG(DEBUG_DEBUG,("rejecting ctdb_control_pull_db when not frozen\n"));
@@ -273,14 +273,14 @@ int32_t ctdb_control_pull_db(struct ctdb_context *ctdb, TDB_DATA indata, TDB_DAT
 		return -1;
 	}
 
-	reply = talloc_zero(outdata, struct ctdb_control_pulldb_reply);
+	reply = talloc_zero(outdata, struct ctdb_marshall_buffer);
 	CTDB_NO_MEMORY(ctdb, reply);
 
 	reply->db_id = pull->db_id;
 
 	params.ctdb = ctdb;
 	params.pulldata = reply;
-	params.len = offsetof(struct ctdb_control_pulldb_reply, data);
+	params.len = offsetof(struct ctdb_marshall_buffer, data);
 	params.failed = false;
 
 	if (ctdb_lock_all_databases_mark(ctdb) != 0) {
@@ -308,7 +308,7 @@ int32_t ctdb_control_pull_db(struct ctdb_context *ctdb, TDB_DATA indata, TDB_DAT
  */
 int32_t ctdb_control_push_db(struct ctdb_context *ctdb, TDB_DATA indata)
 {
-	struct ctdb_control_pulldb_reply *reply = (struct ctdb_control_pulldb_reply *)indata.dptr;
+	struct ctdb_marshall_buffer *reply = (struct ctdb_marshall_buffer *)indata.dptr;
 	struct ctdb_db_context *ctdb_db;
 	int i, ret;
 	struct ctdb_rec_data *rec;
@@ -318,7 +318,7 @@ int32_t ctdb_control_push_db(struct ctdb_context *ctdb, TDB_DATA indata)
 		return -1;
 	}
 
-	if (indata.dsize < offsetof(struct ctdb_control_pulldb_reply, data)) {
+	if (indata.dsize < offsetof(struct ctdb_marshall_buffer, data)) {
 		DEBUG(DEBUG_ERR,(__location__ " invalid data in pulldb reply\n"));
 		return -1;
 	}
@@ -887,13 +887,13 @@ int32_t ctdb_control_get_reclock_file(struct ctdb_context *ctdb, TDB_DATA *outda
 */
 int32_t ctdb_control_try_delete_records(struct ctdb_context *ctdb, TDB_DATA indata, TDB_DATA *outdata)
 {
-	struct ctdb_control_pulldb_reply *reply = (struct ctdb_control_pulldb_reply *)indata.dptr;
+	struct ctdb_marshall_buffer *reply = (struct ctdb_marshall_buffer *)indata.dptr;
 	struct ctdb_db_context *ctdb_db;
 	int i;
 	struct ctdb_rec_data *rec;
-	struct ctdb_control_pulldb_reply *records;
+	struct ctdb_marshall_buffer *records;
 
-	if (indata.dsize < offsetof(struct ctdb_control_pulldb_reply, data)) {
+	if (indata.dsize < offsetof(struct ctdb_marshall_buffer, data)) {
 		DEBUG(DEBUG_ERR,(__location__ " invalid data in try_delete_records\n"));
 		return -1;
 	}
@@ -910,9 +910,9 @@ int32_t ctdb_control_try_delete_records(struct ctdb_context *ctdb, TDB_DATA inda
 
 
 	/* create a blob to send back the records we couldnt delete */	
-	records = (struct ctdb_control_pulldb_reply *)
+	records = (struct ctdb_marshall_buffer *)
 			talloc_zero_size(outdata, 
-				    offsetof(struct ctdb_control_pulldb_reply, data));
+				    offsetof(struct ctdb_marshall_buffer, data));
 	if (records == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " Out of memory\n"));
 		return -1;

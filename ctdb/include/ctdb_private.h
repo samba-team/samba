@@ -430,7 +430,6 @@ struct ctdb_db_context {
 	struct ctdb_registered_call *calls; /* list of registered calls */
 	uint32_t seqnum;
 	struct timed_event *te;
-	uint32_t client_tdb_flags;
 };
 
 
@@ -547,6 +546,9 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_GET_CAPABILITIES	 = 80,
 		    CTDB_CONTROL_START_PERSISTENT_UPDATE = 81,
 		    CTDB_CONTROL_CANCEL_PERSISTENT_UPDATE= 82,
+		    CTDB_CONTROL_TRANS2_COMMIT           = 83,
+		    CTDB_CONTROL_TRANS2_FINISHED         = 84,
+		    CTDB_CONTROL_TRANS2_ERROR            = 85,
 };	
 
 /*
@@ -813,8 +815,6 @@ int ctdb_ltdb_fetch(struct ctdb_db_context *ctdb_db,
 		    TALLOC_CTX *mem_ctx, TDB_DATA *data);
 int ctdb_ltdb_store(struct ctdb_db_context *ctdb_db, TDB_DATA key, 
 		    struct ctdb_ltdb_header *header, TDB_DATA data);
-int ctdb_ltdb_persistent_store(struct ctdb_db_context *ctdb_db, TDB_DATA key, 
-		    struct ctdb_ltdb_header *header, TDB_DATA data);
 int32_t ctdb_control_start_persistent_update(struct ctdb_context *ctdb, 
 			struct ctdb_req_control *c,
 			TDB_DATA recdata);
@@ -1028,8 +1028,8 @@ struct ctdb_control_pulldb {
 	uint32_t lmaster;
 };
 
-/* structure used for pulldb control */
-struct ctdb_control_pulldb_reply {
+/* structure used for sending lists of records */
+struct ctdb_marshall_buffer {
 	uint32_t db_id;
 	uint32_t count;
 	uint8_t data[1];
@@ -1120,6 +1120,11 @@ int32_t ctdb_ltdb_set_seqnum_frequency(struct ctdb_context *ctdb, uint32_t frequ
 
 struct ctdb_rec_data *ctdb_marshall_record(TALLOC_CTX *mem_ctx, uint32_t reqid,	
 					   TDB_DATA key, struct ctdb_ltdb_header *, TDB_DATA data);
+
+struct ctdb_rec_data *ctdb_marshall_loop_next(struct ctdb_marshall_buffer *m, struct ctdb_rec_data *r,
+					      uint32_t *reqid,
+					      struct ctdb_ltdb_header *header,
+					      TDB_DATA *key, TDB_DATA *data);
 
 int32_t ctdb_control_pull_db(struct ctdb_context *ctdb, TDB_DATA indata, TDB_DATA *outdata);
 int32_t ctdb_control_push_db(struct ctdb_context *ctdb, TDB_DATA indata);
@@ -1308,6 +1313,9 @@ int32_t ctdb_control_persistent_store(struct ctdb_context *ctdb,
 int32_t ctdb_control_update_record(struct ctdb_context *ctdb, 
 				   struct ctdb_req_control *c, TDB_DATA recdata, 
 				   bool *async_reply);
+int32_t ctdb_control_trans2_commit(struct ctdb_context *ctdb, 
+				   struct ctdb_req_control *c, 
+				   TDB_DATA recdata, bool *async_reply);
 
 int32_t ctdb_control_transaction_start(struct ctdb_context *ctdb, uint32_t id);
 int32_t ctdb_control_transaction_commit(struct ctdb_context *ctdb, uint32_t id);
@@ -1352,5 +1360,10 @@ int ctdb_control_reload_nodes_file(struct ctdb_context *ctdb, uint32_t opcode);
 
 int32_t ctdb_dump_memory(struct ctdb_context *ctdb, TDB_DATA *outdata);
 int32_t ctdb_control_get_capabilities(struct ctdb_context *ctdb, TDB_DATA *outdata);
+
+int32_t ctdb_control_trans2_finished(struct ctdb_context *ctdb, 
+				     struct ctdb_req_control *c);
+int32_t ctdb_control_trans2_error(struct ctdb_context *ctdb, 
+				  struct ctdb_req_control *c);
 
 #endif
