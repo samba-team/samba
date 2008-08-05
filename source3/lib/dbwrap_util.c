@@ -98,6 +98,13 @@ bool dbwrap_store_uint32(struct db_context *db, const char *keystr, uint32_t v)
 	return NT_STATUS_IS_OK(status) ? 0 : -1;
 }
 
+/**
+ * Atomic unsigned integer change (addition):
+ *
+ * if value does not exist yet in the db, use *oldval as initial old value.
+ * return old value in *oldval.
+ * store *oldval + change_val to db.
+ */
 uint32_t dbwrap_change_uint32_atomic(struct db_context *db, const char *keystr,
 				     uint32_t *oldval, uint32_t change_val)
 {
