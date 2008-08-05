@@ -186,22 +186,17 @@ static NTSTATUS db_ctdb_store_persistent(struct db_record *rec, TDB_DATA data, i
 
 static NTSTATUS db_ctdb_delete(struct db_record *rec)
 {
-	struct db_ctdb_rec *crec = talloc_get_type_abort(
-		rec->private_data, struct db_ctdb_rec);
 	TDB_DATA data;
-	int ret;
 
 	/*
 	 * We have to store the header with empty data. TODO: Fix the
 	 * tdb-level cleanup
 	 */
 
-	data.dptr = (uint8 *)&crec->header;
-	data.dsize = sizeof(crec->header);
+	ZERO_STRUCT(data);
 
-	ret = tdb_store(crec->ctdb_ctx->wtdb->tdb, rec->key, data, TDB_REPLACE);
+	return db_ctdb_store(rec, data, 0);
 
-	return (ret == 0) ? NT_STATUS_OK : NT_STATUS_INTERNAL_DB_CORRUPTION;
 }
 
 static int db_ctdb_record_destr(struct db_record* data)
