@@ -929,6 +929,13 @@
 		</varlistentry>
 
 		<varlistentry>
+		<term>rename &lt;old filename&gt; &lt;new filename&gt;</term>
+		<listitem><para>Rename files in the current working directory on the
+		server from <replaceable>old filename</replaceable> to
+		<replaceable>new filename</replaceable>. </para></listitem>
+		</varlistentry>
+
+		<varlistentry>
 		<term>rm &lt;mask&gt;</term>
 		<listitem><para>Remove all files matching <replaceable>mask</replaceable> from the current
 		working directory on the server. </para></listitem>
