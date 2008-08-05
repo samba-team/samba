@@ -1,5 +1,5 @@
 ##
-## Coding conventions in the Samba 3.0 tree
+## Coding conventions in the Samba 3 tree
 ##
 
 ===========
@@ -7,11 +7,11 @@ Quick Start
 ===========
 
 Coding style guidelines are about reducing the number of unnecessary
-reformatting patches and making things easier developers to work together.
+reformatting patches and making things easier for developers to work together.
 You don't have to like them or even agree with them, but once put in place
 we all have to abide by them (or vote to change them).  However, coding
 style should never outweigh coding itself and so the the guidelines
-described here are hopefully easier enough to follow as they are very
+described here are hopefully easy enough to follow as they are very
 common and supported by tools and editors.
 
 The basic style, also mentioned in the SAMBA_4_0/prog_guide.txt is the
