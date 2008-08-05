@@ -517,8 +517,11 @@ static int parse_options(char ** optionsp, int * filesys_flags)
 				printf("CIFS: UNC name too long\n");
 				return 1;
 			}
-		} else if ((strncmp(data, "domain", 6) == 0)
-			   || (strncmp(data, "workgroup", 9) == 0)) {
+		} else if ((strncmp(data, "dom" /* domain */, 3) == 0)
+			   || (strncmp(data, "workg", 5) == 0)) {
+			/* note this allows for synonyms of "domain"
+			   such as "DOM" and "dom" and "workgroup"
+			   and "WORKGRP" etc. */
 			if (!value || !*value) {
 				printf("CIFS: invalid domain name\n");
 				return 1;	/* needs_arg; */
