@@ -199,6 +199,21 @@ static NTSTATUS db_ctdb_delete(struct db_record *rec)
 
 }
 
+static NTSTATUS db_ctdb_delete_persistent(struct db_record *rec)
+{
+	TDB_DATA data;
+
+	/*
+	 * We have to store the header with empty data. TODO: Fix the
+	 * tdb-level cleanup
+	 */
+
+	ZERO_STRUCT(data);
+
+	return db_ctdb_store_persistent(rec, data, 0);
+
+}
+
 static int db_ctdb_record_destr(struct db_record* data)
 {
 	struct db_ctdb_rec *crec = talloc_get_type_abort(
@@ -274,10 +289,11 @@ again:
 
 	if (persistent) {
 		result->store = db_ctdb_store_persistent;
+		result->delete_rec = db_ctdb_delete_persistent;
 	} else {
 		result->store = db_ctdb_store;
+		result->delete_rec = db_ctdb_delete;
 	}
-	result->delete_rec = db_ctdb_delete;
 	talloc_set_destructor(result, db_ctdb_record_destr);
 
 	ctdb_data = tdb_fetch(ctx->wtdb->tdb, key);
