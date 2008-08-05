@@ -47,6 +47,10 @@ o   Jeremy Allison <jra@samba.org>
     * Fix uninitialized variable.
 
 
+o   Yannick Bergeron <yaberger@ca.ibm.com>
+    * Fix compile error on AIX 6.1
+
+
 o   Jim Brown <jim.brown@miami.edu>
     * Fix SGI compiler warnings.
 
