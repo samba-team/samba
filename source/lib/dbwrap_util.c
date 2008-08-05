@@ -150,9 +150,13 @@ int32 dbwrap_change_int32_atomic(struct db_context *db, const char *keystr,
 		return -1;
 	}
 
-	if ((rec->value.dptr != NULL)
-	    && (rec->value.dsize == sizeof(val))) {
+	if (rec->value.dptr == NULL) {
+		val = *oldval;
+	} else if (rec->value.dsize == sizeof(val)) {
 		val = IVAL(rec->value.dptr, 0);
+		*oldval = val;
+	} else {
+		return -1;
 	}
 
 	val += change_val;
