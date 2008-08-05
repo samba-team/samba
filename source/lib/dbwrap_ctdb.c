@@ -86,6 +86,32 @@ static NTSTATUS db_ctdb_store_persistent(struct db_record *rec, TDB_DATA data, i
 		status = (ret == 0) ? NT_STATUS_OK : NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
+	/*
+	 * release the lock *now* in order to prevent deadlocks.
+	 *
+	 * There is a tradeoff: Usually, the record is still locked
+	 * after db->store operation. This lock is usually released
+	 * via the talloc destructor with the TALLOC_FREE to
+	 * the record. So we have two choices:
+	 *
+	 * - Either re-lock the record after the call to persistent_store
+	 *   or cancel_persistent update and this way not changing any
+	 *   assumptions callers may have about the state, but possibly
+	 *   introducing new race conditions.
+	 *
+	 * - Or don't lock the record again but just remove the
+	 *   talloc_destructor. This is less racy but assumes that
+	 *   the lock is always released via TALLOC_FREE of the record.
+	 *
+	 * I choose the first variant for now since it seems less racy.
+	 * We can't guarantee that we succeed in getting the lock
+	 * anyways. The only real danger here is that a caller
+	 * performs multiple store operations after a fetch_locked()
+	 * which is currently not the case.
+	 */
+	tdb_chainunlock(crec->ctdb_ctx->wtdb->tdb, rec->key);
+	talloc_set_destructor(rec, NULL);
+
 	/* now tell ctdbd to update this record on all other nodes */
 	if (NT_STATUS_IS_OK(status)) {
 		status = ctdbd_persistent_store(messaging_ctdbd_connection(), crec->ctdb_ctx->db_id, rec->key, cdata);
