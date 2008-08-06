@@ -191,6 +191,7 @@ static NTSTATUS db_ctdb_store_persistent(struct db_record *rec, TDB_DATA data, i
 					crec->ctdb_ctx->db_id,
 					rec->key,
 					cdata);
+			break;
 		}
 
 		SAFE_FREE(cdata.dptr);
