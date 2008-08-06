@@ -383,15 +383,18 @@ static TDB_DATA tdb2_fetch_bystring(TALLOC_CTX *mem_ctx, const char *keystr)
 static NTSTATUS tdb2_store_bystring(const char *keystr, TDB_DATA data, int flags)
 {
 	NTSTATUS ret;
-	NTSTATUS status = idmap_tdb2_open_perm_db();
-	if (!NT_STATUS_IS_OK(status)) {
-		return NT_STATUS_UNSUCCESSFUL;
+
+	ret = idmap_tdb2_open_perm_db();
+	if (!NT_STATUS_IS_OK(ret)) {
+		return ret;
 	}
 	ret = dbwrap_store_bystring(idmap_tdb2_perm, keystr, data, flags);
 	if (!NT_STATUS_IS_OK(ret)) {
-		ret = tdb_store_bystring(idmap_tdb2_tmp, keystr, data, flags) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
+		return ret;
 	}
-	return ret;
+	return (tdb_store_bystring(idmap_tdb2_tmp, keystr, data, flags) == 0)
+		? NT_STATUS_OK
+		: NT_STATUS_UNSUCCESSFUL;
 }
 
 /*
