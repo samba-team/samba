@@ -198,7 +198,7 @@ static NTSTATUS db_ctdb_store_persistent(struct db_record *rec, TDB_DATA data, i
 	} /* retry-loop */
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(5, ("ctdbd_persistent_store still failed after "
+		DEBUG(5, ("ctdbd_persistent_store failed after "
 			  "%d retries with error %s - giving up.\n",
 			  count, nt_errstr(status)));
 	}
