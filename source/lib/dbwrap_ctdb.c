@@ -488,6 +488,11 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 	/* only pass through specific flags */
 	tdb_flags &= TDB_SEQNUM;
 
+	/* honor permissions if user has specified O_CREAT */
+	if (open_flags & O_CREAT) {
+		chmod(db_path, mode);
+	}
+
 	db_ctdb->wtdb = tdb_wrap_open(db_ctdb, db_path, hash_size, tdb_flags, O_RDWR, 0);
 	if (db_ctdb->wtdb == NULL) {
 		DEBUG(0, ("Could not open tdb %s: %s\n", db_path, strerror(errno)));
