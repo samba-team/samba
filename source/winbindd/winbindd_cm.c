@@ -1312,6 +1312,7 @@ static bool find_new_dc(TALLOC_CTX *mem_ctx,
 	TALLOC_FREE(addrs);
 	num_addrs = 0;
 
+	close(*fd);
 	*fd = -1;
 
 	goto again;
