@@ -38,6 +38,26 @@ static struct db_record *fetch_locked_internal(struct db_ctdb_ctx *ctx,
 					       TDB_DATA key,
 					       bool persistent);
 
+static NTSTATUS tdb_error_to_ntstatus(struct tdb_context *tdb)
+{
+	NTSTATUS status;
+	enum TDB_ERROR tret = tdb_error(tdb);
+
+	switch (tret) {
+	case TDB_ERR_EXISTS:
+		status = NT_STATUS_OBJECT_NAME_COLLISION;
+		break;
+	case TDB_ERR_NOEXIST:
+		status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		break;
+	default:
+		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
+		break;
+	}
+
+	return status;
+}
+
 static NTSTATUS db_ctdb_store(struct db_record *rec, TDB_DATA data, int flag)
 {
 	struct db_ctdb_rec *crec = talloc_get_type_abort(
@@ -58,7 +78,8 @@ static NTSTATUS db_ctdb_store(struct db_record *rec, TDB_DATA data, int flag)
 
 	SAFE_FREE(cdata.dptr);
 
-	return (ret == 0) ? NT_STATUS_OK : NT_STATUS_INTERNAL_DB_CORRUPTION;
+	return (ret == 0) ? NT_STATUS_OK
+			  : tdb_error_to_ntstatus(crec->ctdb_ctx->wtdb->tdb);
 }
 
 
@@ -125,8 +146,10 @@ static NTSTATUS db_ctdb_store_persistent(struct db_record *rec, TDB_DATA data, i
 		if (NT_STATUS_IS_OK(status)) {
 			ret = tdb_store(crec->ctdb_ctx->wtdb->tdb, rec->key,
 					cdata, TDB_REPLACE);
-			status = (ret == 0) ? NT_STATUS_OK
-					    : NT_STATUS_INTERNAL_DB_CORRUPTION;
+			status = (ret == 0)
+					? NT_STATUS_OK
+					: tdb_error_to_ntstatus(
+						crec->ctdb_ctx->wtdb->tdb);
 		}
 
 		/*
