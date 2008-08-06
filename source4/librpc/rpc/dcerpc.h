@@ -163,6 +163,9 @@ struct dcerpc_pipe {
 /* this triggers the DCERPC_PFC_FLAG_CONC_MPX flag in the bind request */
 #define DCERPC_CONCURRENT_MULTIPLEX     (1<<19)
 
+/* this triggers the DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN flag in the bind request */
+#define DCERPC_HEADER_SIGNING          (1<<20)
+
 /* this describes a binding to a particular transport/pipe */
 struct dcerpc_binding {
 	enum dcerpc_transport_t transport;

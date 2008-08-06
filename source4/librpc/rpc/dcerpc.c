@@ -658,6 +658,16 @@ static void dcerpc_bind_recv_handler(struct rpc_request *req,
 	conn->srv_max_xmit_frag = pkt->u.bind_ack.max_xmit_frag;
 	conn->srv_max_recv_frag = pkt->u.bind_ack.max_recv_frag;
 
+	if ((req->p->binding->flags & DCERPC_CONCURRENT_MULTIPLEX) &&
+	    (pkt->pfc_flags & DCERPC_PFC_FLAG_CONC_MPX)) {
+		conn->flags |= DCERPC_CONCURRENT_MULTIPLEX;
+	}
+
+	if ((req->p->binding->flags & DCERPC_HEADER_SIGNING) &&
+	    (pkt->pfc_flags & DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN)) {
+		conn->flags |= DCERPC_HEADER_SIGNING;
+	}
+
 	/* the bind_ack might contain a reply set of credentials */
 	if (conn->security_state.auth_info &&
 	    pkt->u.bind_ack.auth_info.length) {
@@ -729,6 +739,10 @@ struct composite_context *dcerpc_bind_send(struct dcerpc_pipe *p,
 
 	if (p->binding->flags & DCERPC_CONCURRENT_MULTIPLEX) {
 		pkt.pfc_flags |= DCERPC_PFC_FLAG_CONC_MPX;
+	}
+
+	if (p->binding->flags & DCERPC_HEADER_SIGNING) {
+		pkt.pfc_flags |= DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN;
 	}
 
 	pkt.u.bind.max_xmit_frag = 5840;
@@ -805,6 +819,14 @@ NTSTATUS dcerpc_auth3(struct dcerpc_pipe *p,
 	pkt.auth_length = 0;
 	pkt.u.auth3._pad = 0;
 	pkt.u.auth3.auth_info = data_blob(NULL, 0);
+
+	if (p->binding->flags & DCERPC_CONCURRENT_MULTIPLEX) {
+		pkt.pfc_flags |= DCERPC_PFC_FLAG_CONC_MPX;
+	}
+
+	if (p->binding->flags & DCERPC_HEADER_SIGNING) {
+		pkt.pfc_flags |= DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN;
+	}
 
 	/* construct the NDR form of the packet */
 	status = ncacn_push_auth(&blob, mem_ctx,
@@ -1628,6 +1650,10 @@ struct composite_context *dcerpc_alter_context_send(struct dcerpc_pipe *p,
 
 	if (p->binding->flags & DCERPC_CONCURRENT_MULTIPLEX) {
 		pkt.pfc_flags |= DCERPC_PFC_FLAG_CONC_MPX;
+	}
+
+	if (p->binding->flags & DCERPC_HEADER_SIGNING) {
+		pkt.pfc_flags |= DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN;
 	}
 
 	pkt.u.alter.max_xmit_frag = 5840;
