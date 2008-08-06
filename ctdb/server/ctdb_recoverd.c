@@ -41,7 +41,6 @@ struct ban_state {
  */
 struct ctdb_recoverd {
 	struct ctdb_context *ctdb;
-	int rec_file_fd;
 	uint32_t recmaster;
 	uint32_t num_active;
 	uint32_t num_connected;
@@ -2143,148 +2142,6 @@ static enum monitor_result verify_recmaster(struct ctdb_recoverd *rec, struct ct
 	return status;
 }
 
-/*
-  this function writes the number of connected nodes we have for this pnn
-  to the pnn slot in the reclock file
-*/
-static void
-ctdb_recoverd_write_pnn_connect_count(struct ctdb_recoverd *rec)
-{
-	const char count = rec->num_connected;
-	struct ctdb_context *ctdb = talloc_get_type(rec->ctdb, struct ctdb_context);
-
-	if (rec->rec_file_fd == -1) {
-		DEBUG(DEBUG_CRIT,(__location__ " Unable to write pnn count. pnnfile is not open.\n"));
-		return;
-	} 
-
-	if (pwrite(rec->rec_file_fd, &count, 1, ctdb->pnn) == -1) {
-		DEBUG(DEBUG_CRIT, (__location__ " Failed to write pnn count\n"));
-		close(rec->rec_file_fd);
-		rec->rec_file_fd = -1;
-	}
-}
-
-/* 
-  this function opens the reclock file and sets a byterage lock for the single
-  byte at position pnn+1.
-  the existence/non-existence of such a lock provides an alternative mechanism
-  to know whether a remote node(recovery daemon) is running or not.
-*/
-static void
-ctdb_recoverd_get_pnn_lock(struct ctdb_recoverd *rec)
-{
-	struct ctdb_context *ctdb = talloc_get_type(rec->ctdb, struct ctdb_context);
-	struct flock lock;
-	char *pnnfile = NULL;
-
-	DEBUG(DEBUG_INFO, ("Setting PNN lock for pnn:%d\n", ctdb->pnn));
-
-	if (rec->rec_file_fd != -1) {
-		close(rec->rec_file_fd);
-		rec->rec_file_fd = -1;
-	}
-
-	pnnfile = talloc_asprintf(rec, "%s.pnn", ctdb->recovery_lock_file);
-	CTDB_NO_MEMORY_FATAL(ctdb, pnnfile);
-
-	rec->rec_file_fd = open(pnnfile, O_RDWR|O_CREAT, 0600);
-	if (rec->rec_file_fd == -1) {
-		DEBUG(DEBUG_CRIT,(__location__ " Unable to open %s - (%s)\n", 
-			 pnnfile, strerror(errno)));
-		talloc_free(pnnfile);
-		return;
-	}
-
-	set_close_on_exec(rec->rec_file_fd);
-	lock.l_type = F_WRLCK;
-	lock.l_whence = SEEK_SET;
-	lock.l_start = ctdb->pnn;
-	lock.l_len = 1;
-	lock.l_pid = 0;
-
-	if (fcntl(rec->rec_file_fd, F_SETLK, &lock) != 0) {
-		close(rec->rec_file_fd);
-		rec->rec_file_fd = -1;
-		DEBUG(DEBUG_CRIT,(__location__ " Failed to get pnn lock on '%s'\n", pnnfile));
-		talloc_free(pnnfile);
-		return;
-	}
-
-
-	DEBUG(DEBUG_NOTICE,(__location__ " Got pnn lock on '%s'\n", pnnfile));
-	talloc_free(pnnfile);
-
-	/* we start out with 0 connected nodes */
-	ctdb_recoverd_write_pnn_connect_count(rec);
-}
-
-/*
-  called when we need to do the periodical reclock pnn count update
- */
-static void ctdb_update_pnn_count(struct event_context *ev, struct timed_event *te, 
-				  struct timeval t, void *p)
-{
-	int i, count;
-	struct ctdb_recoverd *rec     = talloc_get_type(p, struct ctdb_recoverd);
-	struct ctdb_context *ctdb     = rec->ctdb;
-	struct ctdb_node_map *nodemap = rec->nodemap;
-
-	/* close and reopen the pnn lock file */
-	ctdb_recoverd_get_pnn_lock(rec);
-
-	ctdb_recoverd_write_pnn_connect_count(rec);
-
-	event_add_timed(rec->ctdb->ev, rec->ctdb,
-		timeval_current_ofs(ctdb->tunable.reclock_ping_period, 0), 
-		ctdb_update_pnn_count, rec);
-
-	/* check if there is a split cluster and yeld the recmaster role
-	   it the other half of the cluster is larger 
-	*/
-	DEBUG(DEBUG_DEBUG, ("CHECK FOR SPLIT CLUSTER\n"));
-	if (rec->nodemap == NULL) {
-		return;
-	}
-	if (rec->rec_file_fd == -1) {
-		return;
-	}
-	/* only test this if we think we are the recmaster */
-	if (ctdb->pnn != rec->recmaster) {
-		DEBUG(DEBUG_DEBUG, ("We are not recmaster, skip test\n"));
-		return;
-	}
-	if (ctdb->recovery_lock_fd == -1) {
-		DEBUG(DEBUG_ERR, (__location__ " Lost reclock pnn file. Yielding recmaster role\n"));
-		close(ctdb->recovery_lock_fd);
-		ctdb->recovery_lock_fd = -1;
-		force_election(rec, ctdb->pnn, rec->nodemap);
-		return;
-	}
-	for (i=0; i<nodemap->num; i++) {
-		/* we dont need to check ourself */
-		if (nodemap->nodes[i].pnn == ctdb->pnn) {
-			continue;
-		}
-		/* dont check nodes that are connected to us */
-		if (!(nodemap->nodes[i].flags & NODE_FLAGS_DISCONNECTED)) {
-			continue;
-		}
-		/* check if the node is "connected" and how connected it it */
-		count = ctdb_read_pnn_lock(rec->rec_file_fd, nodemap->nodes[i].pnn);
-		if (count < 0) {
-			continue;
-		}
-		/* check if that node is more connected that us */
-		if (count > rec->num_connected) {
-			DEBUG(DEBUG_ERR, ("DISCONNECTED Node %u is more connected than we are, yielding recmaster role\n", nodemap->nodes[i].pnn));
-			close(ctdb->recovery_lock_fd);
-			ctdb->recovery_lock_fd = -1;
-			force_election(rec, ctdb->pnn, rec->nodemap);
-			return;
-		}
-	}
-}
 
 /* called to check that the allocation of public ip addresses is ok.
 */
@@ -2419,10 +2276,6 @@ static void monitor_cluster(struct ctdb_context *ctdb)
 
 	rec->priority_time = timeval_current();
 
-	/* open the rec file fd and lock our slot */
-	rec->rec_file_fd = -1;
-	ctdb_recoverd_get_pnn_lock(rec);
-
 	/* register a message port for sending memory dumps */
 	ctdb_set_message_handler(ctdb, CTDB_SRVID_MEM_DUMP, mem_dump_handler, rec);
 
@@ -2440,11 +2293,6 @@ static void monitor_cluster(struct ctdb_context *ctdb)
 
 	/* register a message port for vacuum fetch */
 	ctdb_set_message_handler(ctdb, CTDB_SRVID_VACUUM_FETCH, vacuum_fetch_handler, rec);
-
-	/* update the reclock pnn file connected count on a regular basis */
-	event_add_timed(ctdb->ev, ctdb,
-		timeval_current_ofs(ctdb->tunable.reclock_ping_period, 0), 
-		ctdb_update_pnn_count, rec);
 
 again:
 	if (mem_ctx) {

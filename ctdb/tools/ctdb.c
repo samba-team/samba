@@ -1491,60 +1491,6 @@ static int control_getdbmap(struct ctdb_context *ctdb, int argc, const char **ar
 }
 
 /*
-  get the filename of the reclock file
- */
-static int control_getreclock(struct ctdb_context *ctdb, int argc, const char **argv)
-{
-	int i, ret, fd;
-	const char *reclock;
-	struct ctdb_node_map *nodemap=NULL;
-	char *pnnfile;
-
-	ret = ctdb_ctrl_getreclock(ctdb, TIMELIMIT(), options.pnn, ctdb, &reclock);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, ("Unable to get reclock file from node %u\n", options.pnn));
-		return ret;
-	}
-
-	ret = ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), options.pnn, ctdb, &nodemap);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, ("Unable to get nodemap from node %u\n", options.pnn));
-		return ret;
-	}
-
-
-	pnnfile = talloc_asprintf(ctdb, "%s.pnn", reclock);
-	CTDB_NO_MEMORY(ctdb, pnnfile);
-
-	fd = open(pnnfile, O_RDONLY);
-	if (fd == -1) {
-		DEBUG(DEBUG_CRIT,(__location__ " Failed to open reclock pnn file %s - (%s)\n", 
-			 pnnfile, strerror(errno)));
-		exit(10);
-	}
-
-
-	printf("Reclock file : %s\n", reclock);
-	for (i=0; i<nodemap->num; i++) {
-		int count;
-
-		count = ctdb_read_pnn_lock(fd, nodemap->nodes[i].pnn);
-
-		printf("pnn:%d %-16s", nodemap->nodes[i].pnn,
-		       inet_ntoa(nodemap->nodes[i].sin.sin_addr));
-		if (count == -1) {
-			printf(" NOT ACTIVE\n");
-		} else {
-			printf(" ACTIVE with %d connections\n", count);
-		}
-	}
-
-	close(fd);
-	return 0;
-}
-
-
-/*
   check if the local node is recmaster or not
   it will return 1 if this node is the recmaster and 0 if it is not
   or if the local ctdb daemon could not be contacted
@@ -2030,7 +1976,6 @@ static const struct {
 	{ "repack",          ctdb_repack,		false, "repack all databases", "[max_freelist]"},
 	{ "listnodes",       control_listnodes,		false, "list all nodes in the cluster"},
 	{ "reloadnodes",     control_reload_nodes_file,		false, "reload the nodes file and restart the transport on all nodes"},
-	{ "getreclock",      control_getreclock,        false,  "get the path to the reclock file" },
 	{ "moveip",          control_moveip,		false, "move/failover an ip address to another node", "<ip> <node>"},
 	{ "addip",           control_addip,		true, "add a ip address to a node", "<ip/mask> <iface>"},
 	{ "delip",           control_delip,		false, "delete an ip address from a node", "<ip>"},
