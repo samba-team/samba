@@ -403,15 +403,18 @@ static NTSTATUS tdb2_store_bystring(const char *keystr, TDB_DATA data, int flags
 static NTSTATUS tdb2_delete_bystring(const char *keystr)
 {
 	NTSTATUS ret;
-	NTSTATUS status = idmap_tdb2_open_perm_db();
-	if (!NT_STATUS_IS_OK(status)) {
-		return NT_STATUS_UNSUCCESSFUL;
+
+	ret = idmap_tdb2_open_perm_db();
+	if (!NT_STATUS_IS_OK(ret)) {
+		return ret;
 	}
 	ret = dbwrap_delete_bystring(idmap_tdb2_perm, keystr);
 	if (!NT_STATUS_IS_OK(ret)) {
-		ret = tdb_delete_bystring(idmap_tdb2_tmp, keystr)  ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
+		return ret;
 	}
-	return ret;
+	return (tdb_delete_bystring(idmap_tdb2_tmp, keystr) == 0)
+		? NT_STATUS_OK
+		: NT_STATUS_UNSUCCESSFUL;
 }
 
 /*
