@@ -167,7 +167,8 @@ AC_CACHE_CHECK([for immediate structures],libreplace_cv_immediate_structures,[
 			FOOBAR y; 
 		} f2[] = {
 			{FOO_ONE}
-		};   
+		};
+		static const FOOBAR f3[] = {FOO_ONE};
 	],
 	libreplace_cv_immediate_structures=yes,
 	libreplace_cv_immediate_structures=no,
