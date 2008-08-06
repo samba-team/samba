@@ -124,6 +124,11 @@ NTSTATUS dcesrv_auth_bind_ack(struct dcesrv_call_state *call, struct ncacn_packe
 			return status;
 		}
 
+		if (dce_conn->state_flags & DCESRV_CALL_STATE_FLAG_HEADER_SIGNING) {
+			gensec_want_feature(dce_conn->auth_state.gensec_security,
+					    GENSEC_FEATURE_SIGN_PKT_HEADER);
+		}
+
 		/* Now that we are authenticated, go back to the generic session key... */
 		dce_conn->auth_state.session_key = dcesrv_generic_session_key;
 		return NT_STATUS_OK;

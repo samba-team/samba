@@ -544,6 +544,7 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	uint32_t result=0, reason=0;
 	uint32_t context_id;
 	const struct dcesrv_interface *iface;
+	uint32_t extra_flags = 0;
 
 	/*
 	 * Association groups allow policy handles to be shared across
@@ -617,6 +618,12 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 		call->conn->cli_max_recv_frag = call->pkt.u.bind.max_recv_frag;
 	}
 
+	if ((call->pkt.pfc_flags & DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN) &&
+	    lp_parm_bool(call->conn->dce_ctx->lp_ctx, NULL, "dcesrv","header signing", false)) {
+		call->conn->state_flags |= DCESRV_CALL_STATE_FLAG_HEADER_SIGNING;
+		extra_flags |= DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN;
+	}
+
 	/* handle any authentication that is being requested */
 	if (!dcesrv_auth_bind(call)) {
 		return dcesrv_bind_nak(call, DCERPC_BIND_REASON_INVALID_AUTH_TYPE);
@@ -627,7 +634,7 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	pkt.auth_length = 0;
 	pkt.call_id = call->pkt.call_id;
 	pkt.ptype = DCERPC_PKT_BIND_ACK;
-	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
+	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST | extra_flags;
 	pkt.u.bind_ack.max_xmit_frag = 0x2000;
 	pkt.u.bind_ack.max_recv_frag = 0x2000;
 	/* we need to send a non zero assoc_group_id here to make longhorn happy, it also matches samba3 */
