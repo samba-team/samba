@@ -146,7 +146,7 @@ static void bind_auth_next_step(struct composite_context *c)
 
 	if (!more_processing) {
 		/* NO reply expected, so just send it */
-		c->status = dcerpc_auth3(state->pipe->conn, state);
+		c->status = dcerpc_auth3(state->pipe, state);
 		if (!composite_is_ok(c)) return;
 
 		composite_done(c);

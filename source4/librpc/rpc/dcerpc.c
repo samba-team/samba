@@ -790,30 +790,33 @@ NTSTATUS dcerpc_bind_recv(struct composite_context *ctx)
 /* 
    perform a continued bind (and auth3)
 */
-NTSTATUS dcerpc_auth3(struct dcerpc_connection *c, 
+NTSTATUS dcerpc_auth3(struct dcerpc_pipe *p,
 		      TALLOC_CTX *mem_ctx)
 {
 	struct ncacn_packet pkt;
 	NTSTATUS status;
 	DATA_BLOB blob;
 
-	init_ncacn_hdr(c, &pkt);
+	init_ncacn_hdr(p->conn, &pkt);
 
 	pkt.ptype = DCERPC_PKT_AUTH3;
 	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
-	pkt.call_id = next_call_id(c);
+	pkt.call_id = next_call_id(p->conn);
 	pkt.auth_length = 0;
 	pkt.u.auth3._pad = 0;
 	pkt.u.auth3.auth_info = data_blob(NULL, 0);
 
 	/* construct the NDR form of the packet */
-	status = ncacn_push_auth(&blob, mem_ctx, c->iconv_convenience, &pkt, c->security_state.auth_info);
+	status = ncacn_push_auth(&blob, mem_ctx,
+				 p->conn->iconv_convenience,
+				 &pkt,
+				 p->conn->security_state.auth_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
 	/* send it on its way */
-	status = c->transport.send_request(c, &blob, false);
+	status = p->conn->transport.send_request(p->conn, &blob, false);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
