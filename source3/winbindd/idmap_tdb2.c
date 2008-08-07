@@ -133,9 +133,9 @@ static NTSTATUS idmap_tdb2_alloc_load(void)
 	if (((low_id = dbwrap_fetch_int32(idmap_tdb2,
 					  HWM_USER)) == -1) ||
 	    (low_id < idmap_tdb2_state.low_uid)) {
-		if (dbwrap_store_int32(
-			    idmap_tdb2, HWM_USER,
-			    idmap_tdb2_state.low_uid) == -1) {
+		if (!NT_STATUS_IS_OK(dbwrap_trans_store_int32(
+					     idmap_tdb2, HWM_USER,
+					     idmap_tdb2_state.low_uid))) {
 			DEBUG(0, ("Unable to initialise user hwm in idmap "
 				  "database\n"));
 			return NT_STATUS_INTERNAL_DB_ERROR;
@@ -151,9 +151,9 @@ static NTSTATUS idmap_tdb2_alloc_load(void)
 	if (((low_id = dbwrap_fetch_int32(idmap_tdb2,
 					  HWM_GROUP)) == -1) ||
 	    (low_id < idmap_tdb2_state.low_gid)) {
-		if (dbwrap_store_int32(
-			    idmap_tdb2, HWM_GROUP,
-			    idmap_tdb2_state.low_gid) == -1) {
+		if (!NT_STATUS_IS_OK(dbwrap_trans_store_int32(
+					     idmap_tdb2, HWM_GROUP,
+					     idmap_tdb2_state.low_gid))) {
 			DEBUG(0, ("Unable to initialise group hwm in idmap "
 				  "database\n"));
 			return NT_STATUS_INTERNAL_DB_ERROR;
@@ -186,7 +186,7 @@ static NTSTATUS idmap_tdb2_allocate_id(struct unixid *xid)
 	const char *hwmtype;
 	uint32_t high_hwm;
 	uint32_t hwm;
-	NTSTATUS status;
+	int res;
 
 	/* Get current high water mark */
 	switch (xid->type) {
@@ -208,7 +208,14 @@ static NTSTATUS idmap_tdb2_allocate_id(struct unixid *xid)
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
+	res = idmap_tdb2->transaction_start(idmap_tdb2);
+	if (res != 0) {
+		DEBUG(1,(__location__ " Failed to start transaction\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
 	if ((hwm = dbwrap_fetch_int32(idmap_tdb2, hwmkey)) == -1) {
+		idmap_tdb2->transaction_cancel(idmap_tdb2);
 		return NT_STATUS_INTERNAL_DB_ERROR;
 	}
 
@@ -216,6 +223,7 @@ static NTSTATUS idmap_tdb2_allocate_id(struct unixid *xid)
 	if (hwm > high_hwm) {
 		DEBUG(1, ("Fatal Error: %s range full!! (max: %lu)\n", 
 			  hwmtype, (unsigned long)high_hwm));
+		idmap_tdb2->transaction_cancel(idmap_tdb2);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -223,6 +231,7 @@ static NTSTATUS idmap_tdb2_allocate_id(struct unixid *xid)
 	ret = dbwrap_change_uint32_atomic(idmap_tdb2, hwmkey, &hwm, 1);
 	if (ret == -1) {
 		DEBUG(1, ("Fatal error while fetching a new %s value\n!", hwmtype));
+		idmap_tdb2->transaction_cancel(idmap_tdb2);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -230,6 +239,13 @@ static NTSTATUS idmap_tdb2_allocate_id(struct unixid *xid)
 	if (hwm > high_hwm) {
 		DEBUG(1, ("Fatal Error: %s range full!! (max: %lu)\n", 
 			  hwmtype, (unsigned long)high_hwm));
+		idmap_tdb2->transaction_cancel(idmap_tdb2);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	res = idmap_tdb2->transaction_commit(idmap_tdb2);
+	if (res != 0) {
+		DEBUG(1,(__location__ " Failed to commit transaction\n"));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 	
@@ -683,7 +699,8 @@ static NTSTATUS idmap_tdb2_set_mapping(struct idmap_domain *dom, const struct id
 	NTSTATUS ret;
 	TDB_DATA data;
 	char *ksidstr, *kidstr;
-	struct db_record *update_lock = NULL;
+	int res;
+	bool started_transaction = false;
 
 	if (!map || !map->sid) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -724,19 +741,15 @@ static NTSTATUS idmap_tdb2_set_mapping(struct idmap_domain *dom, const struct id
 
 	DEBUG(10, ("Storing %s <-> %s map\n", ksidstr, kidstr));
 
-	/*
-	 * Get us the update lock. This is necessary to get the lock orders
-	 * right, we need to deal with two records under a lock.
-	 */
-
-	if (!(update_lock = idmap_tdb2->fetch_locked(
-		      idmap_tdb2, ctx,
-		      string_term_tdb_data("UPDATELOCK")))) {
-		DEBUG(10,("Failed to lock record %s\n", ksidstr));
+	res = idmap_tdb2->transaction_start(idmap_tdb2);
+	if (res != 0) {
+		DEBUG(1,(__location__ " Failed to start transaction\n"));
 		ret = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
 
+	started_transaction = true;
+	
 	/* check wheter sid mapping is already present in db */
 	data = dbwrap_fetch_bystring(idmap_tdb2, ksidstr, ksidstr);
 	if (data.dptr) {
@@ -759,13 +772,24 @@ static NTSTATUS idmap_tdb2_set_mapping(struct idmap_domain *dom, const struct id
 		goto done;
 	}
 
+	started_transaction = false;
+
+	res = idmap_tdb2->transaction_commit(idmap_tdb2);
+	if (res != 0) {
+		DEBUG(1,(__location__ " Failed to commit transaction\n"));
+		ret = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
 	DEBUG(10,("Stored %s <-> %s\n", ksidstr, kidstr));
 	ret = NT_STATUS_OK;
 
 done:
+	if (started_transaction) {
+		idmap_tdb2->transaction_cancel(idmap_tdb2);
+	}
 	talloc_free(ksidstr);
 	talloc_free(kidstr);
-	TALLOC_FREE(update_lock);
 	return ret;
 }
 
