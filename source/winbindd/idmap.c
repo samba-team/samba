@@ -705,6 +705,15 @@ NTSTATUS idmap_new_mapping(const struct dom_sid *psid, enum id_type type,
 
 	status = dom->methods->set_mapping(dom, &map);
 
+	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_COLLISION)) {
+		struct id_map *ids[2];
+		DEBUG(5, ("Mapping for %s exists - retrying to map sid\n",
+			  sid_string_dbg(map.sid)));
+		ids[0] = &map;
+		ids[1] = NULL;
+		status = dom->methods->sids_to_unixids(dom, ids);
+	}
+
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("Could not store the new mapping: %s\n",
 			  nt_errstr(status)));
