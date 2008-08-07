@@ -3,9 +3,8 @@
 
    idmap TDB2 backend, used for clustered Samba setups.
 
-   This uses 2 tdb files. One is permanent, and is in shared storage
-   on the cluster (using "tdb:idmap2.tdb =" in smb.conf). The other is a
-   temporary cache tdb on local storage.
+   This uses dbwrap to access tdb files. The location can be set
+   using tdb:idmap2.tdb =" in smb.conf
 
    Copyright (C) Andrew Tridgell 2007
 
@@ -50,46 +49,19 @@ static struct idmap_tdb2_state {
 
 
 
-/* tdb context for the local cache tdb */
-static TDB_CONTEXT *idmap_tdb2_tmp;
-
 /* handle to the permanent tdb */
-static struct db_context *idmap_tdb2_perm;
-
-/*
-  open the cache tdb
- */
-static NTSTATUS idmap_tdb2_open_cache_db(void)
-{
-	const char *db_path;
-
-	if (idmap_tdb2_tmp) {
-		/* its already open */
-		return NT_STATUS_OK;
-	}
-
-	db_path = lock_path("idmap2_cache.tdb");
-
-	/* Open idmap repository */
-	if (!(idmap_tdb2_tmp = tdb_open_log(db_path, 0, TDB_CLEAR_IF_FIRST, O_RDWR|O_CREAT, 0644))) {
-		DEBUG(0, ("Unable to open cache idmap database '%s'\n", db_path));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	return NT_STATUS_OK;
-}
-
+static struct db_context *idmap_tdb2;
 
 static NTSTATUS idmap_tdb2_alloc_load(void);
 
 /*
   open the permanent tdb
  */
-static NTSTATUS idmap_tdb2_open_perm_db(void)
+static NTSTATUS idmap_tdb2_open_db(void)
 {
 	char *db_path;
 	
-	if (idmap_tdb2_perm) {
+	if (idmap_tdb2) {
 		/* its already open */
 		return NT_STATUS_OK;
 	}
@@ -103,12 +75,11 @@ static NTSTATUS idmap_tdb2_open_perm_db(void)
 	NT_STATUS_HAVE_NO_MEMORY(db_path);
 
 	/* Open idmap repository */
-	idmap_tdb2_perm = db_open(NULL, db_path, 0, TDB_DEFAULT,
-				  O_RDWR|O_CREAT, 0644);
+	idmap_tdb2 = db_open(NULL, db_path, 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0644);
 	TALLOC_FREE(db_path);
 
-	if (idmap_tdb2_perm == NULL) {
-		DEBUG(0, ("Unable to open permanent idmap database '%s'\n",
+	if (idmap_tdb2 == NULL) {
+		DEBUG(0, ("Unable to open idmap_tdb2 database '%s'\n",
 			  db_path));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -159,11 +130,11 @@ static NTSTATUS idmap_tdb2_alloc_load(void)
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	if (((low_id = dbwrap_fetch_int32(idmap_tdb2_perm,
+	if (((low_id = dbwrap_fetch_int32(idmap_tdb2,
 					  HWM_USER)) == -1) ||
 	    (low_id < idmap_tdb2_state.low_uid)) {
 		if (dbwrap_store_int32(
-			    idmap_tdb2_perm, HWM_USER,
+			    idmap_tdb2, HWM_USER,
 			    idmap_tdb2_state.low_uid) == -1) {
 			DEBUG(0, ("Unable to initialise user hwm in idmap "
 				  "database\n"));
@@ -177,11 +148,11 @@ static NTSTATUS idmap_tdb2_alloc_load(void)
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	if (((low_id = dbwrap_fetch_int32(idmap_tdb2_perm,
+	if (((low_id = dbwrap_fetch_int32(idmap_tdb2,
 					  HWM_GROUP)) == -1) ||
 	    (low_id < idmap_tdb2_state.low_gid)) {
 		if (dbwrap_store_int32(
-			    idmap_tdb2_perm, HWM_GROUP,
+			    idmap_tdb2, HWM_GROUP,
 			    idmap_tdb2_state.low_gid) == -1) {
 			DEBUG(0, ("Unable to initialise group hwm in idmap "
 				  "database\n"));
@@ -217,9 +188,6 @@ static NTSTATUS idmap_tdb2_allocate_id(struct unixid *xid)
 	uint32_t hwm;
 	NTSTATUS status;
 
-	status = idmap_tdb2_open_perm_db();
-	NT_STATUS_NOT_OK_RETURN(status);
-
 	/* Get current high water mark */
 	switch (xid->type) {
 
@@ -240,7 +208,7 @@ static NTSTATUS idmap_tdb2_allocate_id(struct unixid *xid)
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if ((hwm = dbwrap_fetch_int32(idmap_tdb2_perm, hwmkey)) == -1) {
+	if ((hwm = dbwrap_fetch_int32(idmap_tdb2, hwmkey)) == -1) {
 		return NT_STATUS_INTERNAL_DB_ERROR;
 	}
 
@@ -252,7 +220,7 @@ static NTSTATUS idmap_tdb2_allocate_id(struct unixid *xid)
 	}
 
 	/* fetch a new id and increment it */
-	ret = dbwrap_change_uint32_atomic(idmap_tdb2_perm, hwmkey, &hwm, 1);
+	ret = dbwrap_change_uint32_atomic(idmap_tdb2, hwmkey, &hwm, 1);
 	if (ret == -1) {
 		DEBUG(1, ("Fatal error while fetching a new %s value\n!", hwmtype));
 		return NT_STATUS_UNSUCCESSFUL;
@@ -300,7 +268,7 @@ static NTSTATUS idmap_tdb2_get_hwm(struct unixid *xid)
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if ((hwm = dbwrap_fetch_int32(idmap_tdb2_perm, hwmkey)) == -1) {
+	if ((hwm = dbwrap_fetch_int32(idmap_tdb2, hwmkey)) == -1) {
 		return NT_STATUS_INTERNAL_DB_ERROR;
 	}
 
@@ -344,80 +312,6 @@ struct idmap_tdb2_context {
 };
 
 /*
-  try fetching from the cache tdb, and if that fails then
-  fetch from the permanent tdb
- */
-static TDB_DATA tdb2_fetch_bystring(TALLOC_CTX *mem_ctx, const char *keystr)
-{
-	TDB_DATA ret;
-	NTSTATUS status;
-
-	ret = tdb_fetch_bystring(idmap_tdb2_tmp, keystr);
-	if (ret.dptr != NULL) {
-		/* got it from cache */
-		unsigned char *tmp;
-
-		tmp = (unsigned char *)talloc_memdup(mem_ctx, ret.dptr,
-						     ret.dsize);
-		SAFE_FREE(ret.dptr);
-		ret.dptr = tmp;
-
-		if (ret.dptr == NULL) {
-			return make_tdb_data(NULL, 0);
-		}
-		return ret;
-	}
-	
-	status = idmap_tdb2_open_perm_db();
-	if (!NT_STATUS_IS_OK(status)) {
-		return ret;
-	}
-
-	/* fetch from the permanent tdb */
-	return dbwrap_fetch_bystring(idmap_tdb2_perm, mem_ctx, keystr);
-}
-
-/*
-  store into both databases
- */
-static NTSTATUS tdb2_store_bystring(const char *keystr, TDB_DATA data, int flags)
-{
-	NTSTATUS ret;
-
-	ret = idmap_tdb2_open_perm_db();
-	if (!NT_STATUS_IS_OK(ret)) {
-		return ret;
-	}
-	ret = dbwrap_store_bystring(idmap_tdb2_perm, keystr, data, flags);
-	if (!NT_STATUS_IS_OK(ret)) {
-		return ret;
-	}
-	return (tdb_store_bystring(idmap_tdb2_tmp, keystr, data, flags) == 0)
-		? NT_STATUS_OK
-		: NT_STATUS_UNSUCCESSFUL;
-}
-
-/*
-  delete from both databases
- */
-static NTSTATUS tdb2_delete_bystring(const char *keystr)
-{
-	NTSTATUS ret;
-
-	ret = idmap_tdb2_open_perm_db();
-	if (!NT_STATUS_IS_OK(ret)) {
-		return ret;
-	}
-	ret = dbwrap_delete_bystring(idmap_tdb2_perm, keystr);
-	if (!NT_STATUS_IS_OK(ret)) {
-		return ret;
-	}
-	return (tdb_delete_bystring(idmap_tdb2_tmp, keystr) == 0)
-		? NT_STATUS_OK
-		: NT_STATUS_UNSUCCESSFUL;
-}
-
-/*
   Initialise idmap database. 
 */
 static NTSTATUS idmap_tdb2_db_init(struct idmap_domain *dom,
@@ -429,7 +323,7 @@ static NTSTATUS idmap_tdb2_db_init(struct idmap_domain *dom,
 	const char *range;
 	NTSTATUS status;
 
-	status = idmap_tdb2_open_cache_db();
+	status = idmap_tdb2_open_db();
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	ctx = talloc(dom, struct idmap_tdb2_context);
@@ -581,7 +475,7 @@ static NTSTATUS idmap_tdb2_id_to_sid(struct idmap_tdb2_context *ctx, struct id_m
 	DEBUG(10,("Fetching record %s\n", keystr));
 
 	/* Check if the mapping exists */
-	data = tdb2_fetch_bystring(keystr, keystr);
+	data = dbwrap_fetch_bystring(idmap_tdb2, keystr, keystr);
 
 	if (!data.dptr) {
 		fstring sidstr;
@@ -601,10 +495,10 @@ static NTSTATUS idmap_tdb2_id_to_sid(struct idmap_tdb2_context *ctx, struct id_m
 
 		if (sid_to_fstring(sidstr, map->sid)) {
 			/* both forward and reverse mappings */
-			tdb2_store_bystring(keystr,
+			dbwrap_store_bystring(idmap_tdb2, keystr,
 					    string_term_tdb_data(sidstr), 
 					    TDB_REPLACE);
-			tdb2_store_bystring(sidstr,
+			dbwrap_store_bystring(idmap_tdb2, sidstr,
 					    string_term_tdb_data(keystr), 
 					    TDB_REPLACE);
 		}
@@ -646,7 +540,7 @@ static NTSTATUS idmap_tdb2_sid_to_id(struct idmap_tdb2_context *ctx, struct id_m
 	DEBUG(10,("Fetching record %s\n", keystr));
 
 	/* Check if sid is present in database */
-	data = tdb2_fetch_bystring(keystr, keystr);
+	data = dbwrap_fetch_bystring(idmap_tdb2, keystr, keystr);
 	if (!data.dptr) {
 		fstring idstr;
 
@@ -667,9 +561,9 @@ static NTSTATUS idmap_tdb2_sid_to_id(struct idmap_tdb2_context *ctx, struct id_m
 			 map->xid.type == ID_TYPE_UID?'U':'G',
 			 (unsigned long)map->xid.id);
 		/* store both forward and reverse mappings */
-		tdb2_store_bystring(keystr, string_term_tdb_data(idstr),
+		dbwrap_store_bystring(idmap_tdb2, keystr, string_term_tdb_data(idstr),
 				    TDB_REPLACE);
-		tdb2_store_bystring(idstr, string_term_tdb_data(keystr),
+		dbwrap_store_bystring(idmap_tdb2, idstr, string_term_tdb_data(keystr),
 				    TDB_REPLACE);
 		goto done;
 	}
@@ -835,8 +729,8 @@ static NTSTATUS idmap_tdb2_set_mapping(struct idmap_domain *dom, const struct id
 	 * right, we need to deal with two records under a lock.
 	 */
 
-	if (!(update_lock = idmap_tdb2_perm->fetch_locked(
-		      idmap_tdb2_perm, ctx,
+	if (!(update_lock = idmap_tdb2->fetch_locked(
+		      idmap_tdb2, ctx,
 		      string_term_tdb_data("UPDATELOCK")))) {
 		DEBUG(10,("Failed to lock record %s\n", ksidstr));
 		ret = NT_STATUS_UNSUCCESSFUL;
@@ -844,24 +738,24 @@ static NTSTATUS idmap_tdb2_set_mapping(struct idmap_domain *dom, const struct id
 	}
 
 	/* check wheter sid mapping is already present in db */
-	data = tdb2_fetch_bystring(ksidstr, ksidstr);
+	data = dbwrap_fetch_bystring(idmap_tdb2, ksidstr, ksidstr);
 	if (data.dptr) {
 		ret = NT_STATUS_OBJECT_NAME_COLLISION;
 		goto done;
 	}
 
-	ret = tdb2_store_bystring(ksidstr, string_term_tdb_data(kidstr),
+	ret = dbwrap_store_bystring(idmap_tdb2, ksidstr, string_term_tdb_data(kidstr),
 				  TDB_INSERT);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(0, ("Error storing SID -> ID: %s\n", nt_errstr(ret)));
 		goto done;
 	}
-	ret = tdb2_store_bystring(kidstr, string_term_tdb_data(ksidstr),
+	ret = dbwrap_store_bystring(idmap_tdb2, kidstr, string_term_tdb_data(ksidstr),
 				  TDB_INSERT);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(0, ("Error storing ID -> SID: %s\n", nt_errstr(ret)));
 		/* try to remove the previous stored SID -> ID map */
-		tdb2_delete_bystring(ksidstr);
+		dbwrap_delete_bystring(idmap_tdb2, ksidstr);
 		goto done;
 	}
 
