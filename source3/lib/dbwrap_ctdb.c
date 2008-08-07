@@ -460,6 +460,14 @@ static int db_ctdb_transaction_store(struct db_ctdb_transaction_handle *h,
 		header.dmaster = get_my_vnn();
 	} else {
 		memcpy(&header, rec.dptr, sizeof(struct ctdb_ltdb_header));
+		rec.dsize -= sizeof(struct ctdb_ltdb_header);
+		/* a special case, we are writing the same data that is there now */
+		if (data.dsize == rec.dsize &&
+		    memcmp(data.dptr, rec.dptr + sizeof(struct ctdb_ltdb_header), data.dsize) == 0) {
+			SAFE_FREE(rec.dptr);
+			talloc_free(tmp_ctx);
+			return 0;
+		}
 		SAFE_FREE(rec.dptr);
 	}
 
@@ -472,13 +480,13 @@ static int db_ctdb_transaction_store(struct db_ctdb_transaction_handle *h,
 			talloc_free(tmp_ctx);
 			return -1;
 		}
+	}
 		
-		h->m_write = db_ctdb_marshall_add(h, h->m_write, h->ctx->db_id, 0, key, &header, data);
-		if (h->m_write == NULL) {
-			DEBUG(0,(__location__ " Failed to add to marshalling record\n"));
-			talloc_free(tmp_ctx);
-			return -1;
-		}
+	h->m_write = db_ctdb_marshall_add(h, h->m_write, h->ctx->db_id, 0, key, &header, data);
+	if (h->m_write == NULL) {
+		DEBUG(0,(__location__ " Failed to add to marshalling record\n"));
+		talloc_free(tmp_ctx);
+		return -1;
 	}
 	
 	rec.dsize = data.dsize + sizeof(struct ctdb_ltdb_header);
@@ -541,6 +549,8 @@ static int ctdb_replay_transaction(struct db_ctdb_transaction_handle *h)
 	struct ctdb_rec_data *rec = NULL;
 
 	h->in_replay = true;
+	talloc_free(h->m_write);
+	h->m_write = NULL;
 
 	ret = db_ctdb_transaction_fetch_start(h);
 	if (ret != 0) {
@@ -599,6 +609,7 @@ static int db_ctdb_transaction_commit(struct db_context *db)
 	int status;
 	int retries = 0;
 	struct db_ctdb_transaction_handle *h = ctx->transaction;
+	enum ctdb_controls failure_control = CTDB_CONTROL_TRANS2_ERROR;
 
 	if (h == NULL) {
 		DEBUG(0,(__location__ " transaction commit with no open transaction on db 0x%08x\n", ctx->db_id));
@@ -606,13 +617,6 @@ static int db_ctdb_transaction_commit(struct db_context *db)
 	}
 
 	DEBUG(5,(__location__ " Commit transaction on db 0x%08x\n", ctx->db_id));
-
-	if (h->m_write == NULL) {
-		/* no changes were made */
-		talloc_free(h);
-		ctx->transaction = NULL;
-		return 0;
-	}
 
 	talloc_set_destructor(h, NULL);
 
@@ -632,6 +636,14 @@ static int db_ctdb_transaction_commit(struct db_context *db)
 	*/
 
 again:
+	if (h->m_write == NULL) {
+		/* no changes were made, potentially after a retry */
+		tdb_transaction_cancel(h->ctx->wtdb->tdb);
+		talloc_free(h);
+		ctx->transaction = NULL;
+		return 0;
+	}
+
 	/* tell ctdbd to commit to the other nodes */
 	rets = ctdbd_control_local(messaging_ctdbd_connection(), 
 				  CTDB_CONTROL_TRANS2_COMMIT, h->ctx->db_id, 0,
@@ -639,9 +651,23 @@ again:
 	if (!NT_STATUS_IS_OK(rets) || status != 0) {
 		tdb_transaction_cancel(h->ctx->wtdb->tdb);
 		sleep(1);
+
+		/* work out what error code we will give if we 
+		   have to fail the operation */
+		switch ((enum ctdb_trans2_commit_error)status) {
+		case CTDB_TRANS2_COMMIT_SUCCESS:
+		case CTDB_TRANS2_COMMIT_SOMEFAIL:
+		case CTDB_TRANS2_COMMIT_TIMEOUT:
+			failure_control = CTDB_CONTROL_TRANS2_ERROR;
+			break;
+		case CTDB_TRANS2_COMMIT_ALLFAIL:
+			failure_control = CTDB_CONTROL_TRANS2_FINISHED;
+			break;
+		}
+
 		if (ctdb_replay_transaction(h) != 0) {
 			DEBUG(0,(__location__ " Failed to replay transaction\n"));
-			ctdbd_control_local(messaging_ctdbd_connection(), CTDB_CONTROL_TRANS2_ERROR,
+			ctdbd_control_local(messaging_ctdbd_connection(), failure_control,
 					    h->ctx->db_id, CTDB_CTRL_FLAG_NOREPLY, 
 					    tdb_null, NULL, NULL, NULL);
 			h->ctx->transaction = NULL;
@@ -649,10 +675,10 @@ again:
 			ctx->transaction = NULL;
 			return -1;
 		}
-		if (retries++ == 10) {
+		if (++retries == 10) {
 			DEBUG(0,(__location__ " Giving up transaction on db 0x%08x after %d retries\n", 
 				 h->ctx->db_id, retries));
-			ctdbd_control_local(messaging_ctdbd_connection(), CTDB_CONTROL_TRANS2_ERROR,
+			ctdbd_control_local(messaging_ctdbd_connection(), failure_control,
 					    h->ctx->db_id, CTDB_CTRL_FLAG_NOREPLY, 
 					    tdb_null, NULL, NULL, NULL);
 			h->ctx->transaction = NULL;
