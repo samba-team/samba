@@ -405,7 +405,10 @@ static int db_ctdb_record_destructor(struct db_record *rec)
 {
 	struct db_ctdb_transaction_handle *h = talloc_get_type_abort(
 		rec->private_data, struct db_ctdb_transaction_handle);
-	h->ctx->db->transaction_cancel(h->ctx->db);
+	int ret = h->ctx->db->transaction_commit(h->ctx->db);
+	if (ret != 0) {
+		DEBUG(0,(__location__ " transaction_commit failed\n"));
+	}
 	return 0;
 }
 
