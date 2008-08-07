@@ -5,7 +5,7 @@ Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
 Version: 1.0
-Release: 52
+Release: 53
 Epoch: 0
 License: GNU GPL version 3
 Group: System Environment/Daemons
@@ -118,6 +118,9 @@ fi
 %{_includedir}/ctdb_private.h
 
 %changelog
+* Thu Aug 7 2008 : Version 1.0.53
+ - Remove the reclock.pnn file   it can cause gpfs to fail to umount
+ - New transaction code
 * Mon Aug 4 2008 : Version 1.0.52
  - Send an explicit gratious arp when starting sending the tcp tickles.
  - When doing failover, issue a killtcp to non-NFS/non-CIFS clients
