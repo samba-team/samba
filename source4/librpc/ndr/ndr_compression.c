@@ -145,10 +145,12 @@ static enum ndr_err_code ndr_pull_compression_mszip_chunk(struct ndr_pull *ndrpu
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_push_compression_mszip(struct ndr_push *subndr,
-					   struct ndr_push *comndr)
+static enum ndr_err_code ndr_push_compression_mszip_chunk(struct ndr_push *ndrpush,
+							  struct ndr_pull *ndrpull,
+							  z_stream *z,
+							  bool *last)
 {
-	return ndr_push_error(subndr, NDR_ERR_COMPRESSION, "Sorry MSZIP compression is not supported yet (PUSH)");
+	return ndr_push_error(ndrpush, NDR_ERR_COMPRESSION, "MSZIP compression is not supported yet (PUSH)");
 }
 
 static enum ndr_err_code ndr_pull_compression_xpress_chunk(struct ndr_pull *ndrpull,
@@ -194,10 +196,11 @@ static enum ndr_err_code ndr_pull_compression_xpress_chunk(struct ndr_pull *ndrp
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_push_compression_xpress(struct ndr_push *subndr,
-					    struct ndr_push *comndr)
+static enum ndr_err_code ndr_push_compression_xpress_chunk(struct ndr_push *ndrpush,
+							   struct ndr_pull *ndrpull,
+							   bool *last)
 {
-	return ndr_push_error(subndr, NDR_ERR_COMPRESSION, "XPRESS compression is not supported yet (PUSH)");
+	return ndr_push_error(ndrpush, NDR_ERR_COMPRESSION, "XPRESS compression is not supported yet (PUSH)");
 }
 
 /*
@@ -273,17 +276,27 @@ enum ndr_err_code ndr_pull_compression_end(struct ndr_pull *subndr,
   push a compressed subcontext
 */
 enum ndr_err_code ndr_push_compression_start(struct ndr_push *subndr,
-				    struct ndr_push **_comndr,
+				    struct ndr_push **_uncomndr,
 				    enum ndr_compression_alg compression_alg,
 				    ssize_t decompressed_len)
 {
-	struct ndr_push *comndr;
+	struct ndr_push *uncomndr;
 
-	comndr = ndr_push_init_ctx(subndr, subndr->iconv_convenience);
-	NDR_ERR_HAVE_NO_MEMORY(comndr);
-	comndr->flags	= subndr->flags;
+	switch (compression_alg) {
+	case NDR_COMPRESSION_MSZIP:
+	case NDR_COMPRESSION_XPRESS:
+		break;
+	default:
+		return ndr_push_error(subndr, NDR_ERR_COMPRESSION,
+				      "Bad compression algorithm %d (PUSH)",
+				      compression_alg);
+	}
 
-	*_comndr = comndr;
+	uncomndr = ndr_push_init_ctx(subndr, subndr->iconv_convenience);
+	NDR_ERR_HAVE_NO_MEMORY(uncomndr);
+	uncomndr->flags	= subndr->flags;
+
+	*_uncomndr = uncomndr;
 	return NDR_ERR_SUCCESS;
 }
 
@@ -291,18 +304,42 @@ enum ndr_err_code ndr_push_compression_start(struct ndr_push *subndr,
   push a compressed subcontext
 */
 enum ndr_err_code ndr_push_compression_end(struct ndr_push *subndr,
-				  struct ndr_push *comndr,
+				  struct ndr_push *uncomndr,
 				  enum ndr_compression_alg compression_alg,
 				  ssize_t decompressed_len)
 {
+	struct ndr_pull *ndrpull;
+	bool last = false;
+	z_stream z;
+
+	ndrpull = talloc_zero(uncomndr, struct ndr_pull);
+	NDR_ERR_HAVE_NO_MEMORY(ndrpull);
+	ndrpull->flags		= uncomndr->flags;
+	ndrpull->data		= uncomndr->data;
+	ndrpull->data_size	= uncomndr->offset;
+	ndrpull->offset		= 0;
+
+	ndrpull->iconv_convenience = talloc_reference(ndrpull, subndr->iconv_convenience);
+
 	switch (compression_alg) {
 	case NDR_COMPRESSION_MSZIP:
-		return ndr_push_compression_mszip(subndr, comndr);
+		ZERO_STRUCT(z);
+		while (!last) {
+			NDR_CHECK(ndr_push_compression_mszip_chunk(subndr, ndrpull, &z, &last));
+		}
+		break;
+
 	case NDR_COMPRESSION_XPRESS:
-		return ndr_push_compression_xpress(subndr, comndr);
+		while (!last) {
+			NDR_CHECK(ndr_push_compression_xpress_chunk(subndr, ndrpull, &last));
+		}
+		break;
+
 	default:
 		return ndr_push_error(subndr, NDR_ERR_COMPRESSION, "Bad compression algorithm %d (PUSH)", 
 				      compression_alg);
 	}
+
+	talloc_free(uncomndr);
 	return NDR_ERR_SUCCESS;
 }
