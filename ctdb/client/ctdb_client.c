@@ -3028,7 +3028,6 @@ struct ctdb_transaction_handle *ctdb_transaction_start(struct ctdb_db_context *c
 	struct ctdb_transaction_handle *h;
 	int ret;
 
-	/* we have a good transaction */
 	h = talloc_zero(mem_ctx, struct ctdb_transaction_handle);
 	if (h == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " oom for transaction handle\n"));		
@@ -3200,13 +3199,13 @@ int ctdb_transaction_commit(struct ctdb_transaction_handle *h)
 	struct ctdb_context *ctdb = h->ctdb_db->ctdb;
 	struct timeval timeout;
 
-	talloc_set_destructor(h, NULL);
-
 	if (h->m_write == NULL) {
 		/* no changes were made */
 		talloc_free(h);
 		return 0;
 	}
+
+	talloc_set_destructor(h, NULL);
 
 	/* our commit strategy is quite complex.
 
@@ -3258,7 +3257,7 @@ again:
 	/* tell ctdbd that we are finished with our local commit */
 	ctdb_control(ctdb, CTDB_CURRENT_NODE, h->ctdb_db->db_id, 
 		     CTDB_CONTROL_TRANS2_FINISHED, CTDB_CTRL_FLAG_NOREPLY, 
-		     tdb_null, NULL, NULL, &status, NULL, NULL);
+		     tdb_null, NULL, NULL, NULL, NULL, NULL);
 	talloc_free(h);
 	return 0;
 }
