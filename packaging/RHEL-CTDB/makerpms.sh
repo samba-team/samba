@@ -21,7 +21,7 @@ SRCDIR=`rpm --eval %_sourcedir`
 
 # At this point the SPECDIR and SRCDIR variables must have a value!
 
-VERSION='3.2.0'
+VERSION='3.2.1'
 REVISION='ctdb'
 SPECFILE="samba.spec"
 DOCS="docs.tar.bz2"
