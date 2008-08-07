@@ -748,7 +748,7 @@ static bool test_FetchData(struct torture_context *tctx, struct DsSyncTest *ctx)
 				ctr1 = &r.out.ctr.ctr1;
 			} else if (ret == true && *r.out.level == 2) {
 				out_level = 1;
-				ctr1 = r.out.ctr.ctr2.ctr.mszip1.ctr1;
+				ctr1 = r.out.ctr.ctr2.mszip1.ctr1;
 			}
 
 			if (out_level == 1) {
