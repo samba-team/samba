@@ -321,12 +321,16 @@ static int db_ctdb_transaction_fetch(struct db_ctdb_ctx *db,
 	if (data->dptr != NULL) {
 		uint8_t *oldptr = (uint8_t *)data->dptr;
 		data->dsize -= sizeof(struct ctdb_ltdb_header);
-		data->dptr = (uint8 *)
-			talloc_memdup(
-				mem_ctx, data->dptr+sizeof(struct ctdb_ltdb_header),
-				data->dsize);
+		if (data->dsize == 0) {
+			data->dptr = NULL;
+		} else {
+			data->dptr = (uint8 *)
+				talloc_memdup(
+					mem_ctx, data->dptr+sizeof(struct ctdb_ltdb_header),
+					data->dsize);
+		}
 		SAFE_FREE(oldptr);
-		if (data->dptr == NULL) {
+		if (data->dptr == NULL && data->dsize != 0) {
 			return -1;
 		}
 	}
@@ -439,7 +443,8 @@ static int db_ctdb_transaction_store(struct db_ctdb_transaction_handle *h,
 		}
 	}
 	
-	rec.dptr = talloc_size(tmp_ctx, data.dsize + sizeof(struct ctdb_ltdb_header));
+	rec.dsize = data.dsize + sizeof(struct ctdb_ltdb_header);
+	rec.dptr = talloc_size(tmp_ctx, rec.dsize);
 	if (rec.dptr == NULL) {
 		DEBUG(0,(__location__ " Failed to alloc record\n"));
 		talloc_free(tmp_ctx);
