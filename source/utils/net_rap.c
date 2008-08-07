@@ -695,7 +695,7 @@ static int rap_printq_info(struct net_context *c, int argc, const char **argv)
 	struct cli_state *cli;
 	int ret;
 
-	if (argc == 0i || c->display_usage)
+	if (argc == 0 || c->display_usage)
                 return net_rap_printq_usage(c, argc, argv);
 
 	if (!NT_STATUS_IS_OK(net_make_ipc_connection(c, 0, &cli)))
