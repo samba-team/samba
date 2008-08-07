@@ -21,14 +21,24 @@
 */
 
 #include "includes.h"
-#include "lib/compression/mszip.h"
 #include "lib/compression/lzxpress.h"
 #include "librpc/ndr/libndr.h"
 #include "librpc/ndr/ndr_compression.h"
+#include <zlib.h>
+
+static voidpf ndr_zlib_alloc(voidpf opaque, uInt items, uInt size)
+{
+	return talloc_zero_size(opaque, items * size);
+}
+
+static void  ndr_zlib_free(voidpf opaque, voidpf address)
+{
+	talloc_free(address);
+}
 
 static enum ndr_err_code ndr_pull_compression_mszip_chunk(struct ndr_pull *ndrpull,
 						 struct ndr_push *ndrpush,
-						 struct decomp_state *decomp_state,
+						 z_stream *z,
 						 bool *last)
 {
 	DATA_BLOB comp_chunk;
@@ -37,7 +47,7 @@ static enum ndr_err_code ndr_pull_compression_mszip_chunk(struct ndr_pull *ndrpu
 	DATA_BLOB plain_chunk;
 	uint32_t plain_chunk_offset;
 	uint32_t plain_chunk_size;
-	int ret;
+	int z_ret;
 
 	NDR_CHECK(ndr_pull_uint32(ndrpull, NDR_SCALARS, &plain_chunk_size));
 	if (plain_chunk_size > 0x00008000) {
@@ -60,10 +70,71 @@ static enum ndr_err_code ndr_pull_compression_mszip_chunk(struct ndr_pull *ndrpu
 	plain_chunk.length = plain_chunk_size;
 	plain_chunk.data = ndrpush->data + plain_chunk_offset;
 
-	ret = ZIPdecompress(decomp_state, &comp_chunk, &plain_chunk);
-	if (ret != DECR_OK) {
-		return ndr_pull_error(ndrpull, NDR_ERR_COMPRESSION, "Bad ZIPdecompress() error %d (PULL)",
-				      ret);
+	if (comp_chunk.length < 2) {
+		return ndr_pull_error(ndrpull, NDR_ERR_COMPRESSION,
+				      "Bad MSZIP comp chunk size %u < 2 (PULL)",
+				      (unsigned int)comp_chunk.length);
+	}
+	/* CK = Chris Kirmse, official Microsoft purloiner */
+	if (comp_chunk.data[0] != 'C' ||
+	    comp_chunk.data[1] != 'K') {
+		return ndr_pull_error(ndrpull, NDR_ERR_COMPRESSION,
+				      "Bad MSZIP invalid prefix [%c%c] != [CK]",
+				      comp_chunk.data[0], comp_chunk.data[1]);
+	}
+
+	z->next_in	= comp_chunk.data + 2;
+	z->avail_in	= comp_chunk.length -2;
+	z->total_in	= 0;
+
+	z->next_out	= plain_chunk.data;
+	z->avail_out	= plain_chunk.length;
+	z->total_out	= 0;
+
+	if (!z->opaque) {
+		/* the first time we need to intialize completely */
+		z->zalloc	= ndr_zlib_alloc;
+		z->zfree	= ndr_zlib_free;
+		z->opaque	= ndrpull;
+
+		z_ret = inflateInit2(z, -15);
+		if (z_ret != Z_OK) {
+			return ndr_pull_error(ndrpull, NDR_ERR_COMPRESSION,
+					      "Bad inflateInit2 error %s(%d) (PULL)",
+					      zError(z_ret), z_ret);
+
+		}
+	} else {
+		z_ret = inflateReset2(z, Z_RESET_KEEP_WINDOW);
+		if (z_ret != Z_OK) {
+			return ndr_pull_error(ndrpull, NDR_ERR_COMPRESSION,
+					      "Bad inflateReset2 error %s(%d) (PULL)",
+					      zError(z_ret), z_ret);
+		}
+	}
+
+	/* call inflate untill we get Z_STREAM_END or an error */
+	while (true) {
+		z_ret = inflate(z, Z_BLOCK);
+		if (z_ret != Z_OK) break;
+	}
+
+	if (z_ret != Z_STREAM_END) {
+		return ndr_pull_error(ndrpull, NDR_ERR_COMPRESSION,
+				      "Bad inflate(Z_BLOCK) error %s(%d) (PULL)",
+				      zError(z_ret), z_ret);
+	}
+
+	if (z->avail_in) {
+		return ndr_pull_error(ndrpull, NDR_ERR_COMPRESSION,
+				      "MSZIP not all avail_in[%u] bytes consumed (PULL)",
+				      z->avail_in);
+	}
+
+	if (z->avail_out) {
+		return ndr_pull_error(ndrpull, NDR_ERR_COMPRESSION,
+				      "MSZIP not all avail_out[%u] bytes consumed (PULL)",
+				      z->avail_out);
 	}
 
 	if ((plain_chunk_size < 0x00008000) || (ndrpull->offset+4 >= ndrpull->data_size)) {
@@ -85,17 +156,16 @@ static enum ndr_err_code ndr_pull_compression_mszip(struct ndr_pull *subndr,
 	uint32_t payload_size;
 	uint32_t payload_offset;
 	uint8_t *payload;
-	struct decomp_state *decomp_state;
+	z_stream z;
 	bool last = false;
 
 	ndrpush = ndr_push_init_ctx(subndr, subndr->iconv_convenience);
 	NDR_ERR_HAVE_NO_MEMORY(ndrpush);
 
-	decomp_state = ZIPdecomp_state(subndr);
-	NDR_ERR_HAVE_NO_MEMORY(decomp_state);
+	ZERO_STRUCT(z);
 
 	while (!last) {
-		NDR_CHECK(ndr_pull_compression_mszip_chunk(subndr, ndrpush, decomp_state, &last));
+		NDR_CHECK(ndr_pull_compression_mszip_chunk(subndr, ndrpush, &z, &last));
 	}
 
 	uncompressed = ndr_push_blob(ndrpush);
