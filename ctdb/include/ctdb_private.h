@@ -789,6 +789,16 @@ struct ctdb_req_keepalive {
 	struct ctdb_req_header hdr;
 };
 
+
+/* types of failures possible from TRANS2_COMMIT */
+enum ctdb_trans2_commit_error {
+	CTDB_TRANS2_COMMIT_SUCCESS=0, /* all nodes committed successfully */
+	CTDB_TRANS2_COMMIT_TIMEOUT=1, /* at least one node timed out */
+	CTDB_TRANS2_COMMIT_ALLFAIL=2, /* all nodes failed the commit */
+	CTDB_TRANS2_COMMIT_SOMEFAIL=3 /* some nodes failed the commit, some allowed it */
+};
+
+
 /* internal prototypes */
 void ctdb_set_error(struct ctdb_context *ctdb, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
 void ctdb_fatal(struct ctdb_context *ctdb, const char *msg);

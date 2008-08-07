@@ -32,7 +32,15 @@ struct ctdb_persistent_state {
 	const char *errormsg;
 	uint32_t num_pending;
 	int32_t status;
+	uint32_t num_failed, num_sent;
 };
+
+/*
+  1) all nodes fail, and all nodes reply
+  2) some nodes fail, all nodes reply
+  3) some nodes timeout
+  4) all nodes succeed
+ */
 
 /*
   called when a node has acknowledged a ctdb_control_update_record call
@@ -50,10 +58,19 @@ static void ctdb_persistent_callback(struct ctdb_context *ctdb,
 			 status, errormsg));
 		state->status = status;
 		state->errormsg = errormsg;
+		state->num_failed++;
 	}
 	state->num_pending--;
 	if (state->num_pending == 0) {
-		ctdb_request_control_reply(state->ctdb, state->c, NULL, state->status, state->errormsg);
+		enum ctdb_trans2_commit_error etype;
+		if (state->num_failed == state->num_sent) {
+			etype = CTDB_TRANS2_COMMIT_ALLFAIL;
+		} else if (state->num_failed != 0) {
+			etype = CTDB_TRANS2_COMMIT_SOMEFAIL;
+		} else {
+			etype = CTDB_TRANS2_COMMIT_SUCCESS;
+		}
+		ctdb_request_control_reply(state->ctdb, state->c, NULL, etype, state->errormsg);
 		talloc_free(state);
 	}
 }
@@ -66,7 +83,8 @@ static void ctdb_persistent_store_timeout(struct event_context *ev, struct timed
 {
 	struct ctdb_persistent_state *state = talloc_get_type(private_data, struct ctdb_persistent_state);
 	
-	ctdb_request_control_reply(state->ctdb, state->c, NULL, -1, "timeout in ctdb_persistent_state");
+	ctdb_request_control_reply(state->ctdb, state->c, NULL, CTDB_TRANS2_COMMIT_TIMEOUT, 
+				   "timeout in ctdb_persistent_state");
 
 	talloc_free(state);
 }
@@ -141,6 +159,7 @@ int32_t ctdb_control_trans2_commit(struct ctdb_context *ctdb,
 		}
 
 		state->num_pending++;
+		state->num_sent++;
 	}
 
 	if (state->num_pending == 0) {
