@@ -3235,6 +3235,9 @@ again:
 		sleep(1);
 		if (ctdb_replay_transaction(h) != 0) {
 			DEBUG(DEBUG_ERR,(__location__ " Failed to replay transaction\n"));
+			ctdb_control(ctdb, CTDB_CURRENT_NODE, h->ctdb_db->db_id, 
+				     CTDB_CONTROL_TRANS2_ERROR, CTDB_CTRL_FLAG_NOREPLY, 
+				     tdb_null, NULL, NULL, NULL, NULL, NULL);		
 			talloc_free(h);
 			return -1;
 		}

@@ -463,6 +463,8 @@ int32_t ctdb_control_trans2_finished(struct ctdb_context *ctdb,
 
 	if (client->num_persistent_updates == 0) {
 		DEBUG(DEBUG_ERR, (__location__ " ERROR: num_persistent_updates == 0\n"));
+		DEBUG(DEBUG_ERR,(__location__ " Forcing recovery\n"));
+		client->ctdb->recovery_mode = CTDB_RECOVERY_ACTIVE;
 		return -1;
 	}
 	client->num_persistent_updates--;
@@ -481,9 +483,9 @@ int32_t ctdb_control_trans2_error(struct ctdb_context *ctdb,
 	
 	if (client->num_persistent_updates == 0) {
 		DEBUG(DEBUG_ERR, (__location__ " ERROR: num_persistent_updates == 0\n"));
-		return -1;
+	} else {
+		client->num_persistent_updates--;
 	}
-	client->num_persistent_updates--;
 
 	DEBUG(DEBUG_ERR,(__location__ " Forcing recovery\n"));
 	client->ctdb->recovery_mode = CTDB_RECOVERY_ACTIVE;
