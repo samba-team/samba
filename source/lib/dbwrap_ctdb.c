@@ -597,6 +597,7 @@ static int db_ctdb_transaction_commit(struct db_context *db)
 	NTSTATUS rets;
 	int ret;
 	int status;
+	int retries = 0;
 	struct db_ctdb_transaction_handle *h = ctx->transaction;
 
 	if (h == NULL) {
@@ -647,6 +648,17 @@ again:
 			talloc_free(h);
 			ctx->transaction = NULL;
 			return -1;
+		}
+		if (retries++ == 10) {
+			DEBUG(0,(__location__ " Giving up transaction on db 0x%08x after %d retries\n", 
+				 h->ctx->db_id, retries));
+			ctdbd_control_local(messaging_ctdbd_connection(), CTDB_CONTROL_TRANS2_ERROR,
+					    h->ctx->db_id, CTDB_CTRL_FLAG_NOREPLY, 
+					    tdb_null, NULL, NULL, NULL);
+			h->ctx->transaction = NULL;
+			talloc_free(h);
+			ctx->transaction = NULL;
+			return -1;			
 		}
 		goto again;
 	}
