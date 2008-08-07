@@ -1097,8 +1097,6 @@ extern void build_options(bool screen);
 
 	TimeInit();
 
-	db_tdb2_setup_messaging(NULL, false);
-
 #ifdef HAVE_SET_AUTH_PARAMETERS
 	set_auth_parameters(argc,argv);
 #endif
@@ -1229,11 +1227,6 @@ extern void build_options(bool screen);
 
 	if (smbd_messaging_context() == NULL)
 		exit(1);
-
-	/*
-	 * Do this before reload_services.
-	 */
-	db_tdb2_setup_messaging(smbd_messaging_context(), true);
 
 	if (!reload_services(False))
 		return(-1);	
