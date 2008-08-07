@@ -219,7 +219,6 @@ static int db_ctdb_transaction_fetch_start(struct db_ctdb_transaction_handle *h)
 {
 	struct db_record *rh;
 	TDB_DATA key;
-	struct ctdb_ltdb_header header;
 	TALLOC_CTX *tmp_ctx;
 	const char *keyname = CTDB_TRANSACTION_LOCK_KEY;
 	int ret;
@@ -301,6 +300,8 @@ static int db_ctdb_transaction_start(struct db_context *db)
 
 	ctx->transaction = h;
 
+	DEBUG(5,(__location__ " Started transaction on db 0x%08x\n", ctx->db_id));
+
 	return 0;
 }
 
@@ -352,9 +353,7 @@ static struct db_record *db_ctdb_fetch_locked_transaction(struct db_ctdb_ctx *ct
 							  TDB_DATA key)
 {
 	struct db_record *result;
-	NTSTATUS status;
 	TDB_DATA ctdb_data;
-	int migrate_attempts = 0;
 
 	if (!(result = talloc(mem_ctx, struct db_record))) {
 		DEBUG(0, ("talloc failed\n"));
@@ -555,7 +554,6 @@ static int db_ctdb_transaction_commit(struct db_context *db)
 	NTSTATUS rets;
 	int ret;
 	int status;
-	struct timeval timeout;
 	struct db_ctdb_transaction_handle *h = ctx->transaction;
 
 	if (h == NULL) {
@@ -563,13 +561,16 @@ static int db_ctdb_transaction_commit(struct db_context *db)
 		return -1;
 	}
 
-	talloc_set_destructor(h, NULL);
+	DEBUG(5,(__location__ " Commit transaction on db 0x%08x\n", ctx->db_id));
 
 	if (h->m_write == NULL) {
 		/* no changes were made */
 		talloc_free(h);
+		ctx->transaction = NULL;
 		return 0;
 	}
+
+	talloc_set_destructor(h, NULL);
 
 	/* our commit strategy is quite complex.
 
@@ -601,6 +602,7 @@ again:
 					    tdb_null, NULL, NULL, NULL);
 			h->ctx->transaction = NULL;
 			talloc_free(h);
+			ctx->transaction = NULL;
 			return -1;
 		}
 		goto again;
@@ -640,6 +642,8 @@ static int db_ctdb_transaction_cancel(struct db_context *db)
 		DEBUG(0,(__location__ " transaction cancel with no open transaction on db 0x%08x\n", ctx->db_id));
 		return -1;
 	}
+
+	DEBUG(5,(__location__ " Cancel transaction on db 0x%08x\n", ctx->db_id));
 
 	ctx->transaction = NULL;
 	talloc_free(h);
@@ -1174,14 +1178,6 @@ static int db_ctdb_get_seqnum(struct db_context *db)
 	return tdb_get_seqnum(ctx->wtdb->tdb);
 }
 
-static int db_ctdb_trans_dummy(struct db_context *db)
-{
-	/*
-	 * Not implemented yet, just return ok
-	 */
-	return 0;
-}
-
 struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 				const char *name,
 				int hash_size, int tdb_flags,
@@ -1207,6 +1203,8 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 		TALLOC_FREE(result);
 		return NULL;
 	}
+
+	db_ctdb->transaction = NULL;
 
 	if (!NT_STATUS_IS_OK(ctdbd_db_attach(messaging_ctdbd_connection(),name, &db_ctdb->db_id, tdb_flags))) {
 		DEBUG(0, ("ctdbd_db_attach failed for %s\n", name));
