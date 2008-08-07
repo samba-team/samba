@@ -32,6 +32,7 @@
 #  define inflateSyncPoint      z_inflateSyncPoint
 #  define inflateCopy           z_inflateCopy
 #  define inflateReset          z_inflateReset
+#  define inflateReset2         z_inflateReset2
 #  define inflateBack           z_inflateBack
 #  define inflateBackEnd        z_inflateBackEnd
 #  define compress              z_compress
