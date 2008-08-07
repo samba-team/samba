@@ -381,8 +381,6 @@ static int traverse_sessionid(struct db_record *db, void *state)
 		goto done;
 	}
 
-	db_tdb2_setup_messaging(msg_ctx, true);
-
 	if (!lp_load(get_dyn_CONFIGFILE(),False,False,False,True)) {
 		fprintf(stderr, "Can't load %s - run testparm to debug it\n",
 			get_dyn_CONFIGFILE());

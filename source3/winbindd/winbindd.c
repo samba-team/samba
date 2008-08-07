@@ -1024,8 +1024,6 @@ int main(int argc, char **argv, char **envp)
 
 	load_case_tables();
 
-	db_tdb2_setup_messaging(NULL, false);
-
 	/* Initialise for running in non-root mode */
 
 	sec_init();
@@ -1115,8 +1113,6 @@ int main(int argc, char **argv, char **envp)
 	if (winbind_messaging_context() == NULL) {
 		exit(1);
 	}
-
-	db_tdb2_setup_messaging(winbind_messaging_context(), true);
 
 	if (!reload_services_file(NULL)) {
 		DEBUG(0, ("error opening config file\n"));

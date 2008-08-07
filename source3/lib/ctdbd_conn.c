@@ -43,7 +43,7 @@ struct ctdbd_connection {
 
 static NTSTATUS ctdbd_control(struct ctdbd_connection *conn,
 			      uint32_t vnn, uint32 opcode, 
-			      uint64_t srvid, TDB_DATA data, 
+			      uint64_t srvid, uint32_t flags, TDB_DATA data, 
 			      TALLOC_CTX *mem_ctx, TDB_DATA *outdata,
 			      int *cstatus);
 
@@ -83,7 +83,7 @@ static NTSTATUS register_with_ctdbd(struct ctdbd_connection *conn,
 
 	int cstatus;
 	return ctdbd_control(conn, CTDB_CURRENT_NODE,
-			     CTDB_CONTROL_REGISTER_SRVID, srvid,
+			     CTDB_CONTROL_REGISTER_SRVID, srvid, 0,
 			     tdb_null, NULL, NULL, &cstatus);
 }
 
@@ -95,7 +95,7 @@ static NTSTATUS get_cluster_vnn(struct ctdbd_connection *conn, uint32 *vnn)
 	int32_t cstatus=-1;
 	NTSTATUS status;
 	status = ctdbd_control(conn,
-			       CTDB_CURRENT_NODE, CTDB_CONTROL_GET_PNN, 0,
+			       CTDB_CURRENT_NODE, CTDB_CONTROL_GET_PNN, 0, 0,
 			       tdb_null, NULL, NULL, &cstatus);
 	if (!NT_STATUS_IS_OK(status)) {
 		cluster_fatal("ctdbd_control failed\n");
@@ -680,7 +680,8 @@ NTSTATUS ctdbd_messaging_send(struct ctdbd_connection *conn,
  */
 static NTSTATUS ctdbd_control(struct ctdbd_connection *conn,
 			      uint32_t vnn, uint32 opcode, 
-			      uint64_t srvid, TDB_DATA data, 
+			      uint64_t srvid, uint32_t flags, 
+			      TDB_DATA data, 
 			      TALLOC_CTX *mem_ctx, TDB_DATA *outdata,
 			      int *cstatus)
 {
@@ -732,6 +733,11 @@ static NTSTATUS ctdbd_control(struct ctdbd_connection *conn,
 		cluster_fatal("cluster dispatch daemon control write error\n");
 	}
 
+	if (flags & CTDB_CTRL_FLAG_NOREPLY) {
+		TALLOC_FREE(new_conn);
+		return NT_STATUS_OK;
+	}
+
 	status = ctdb_read_req(conn, req.hdr.reqid, NULL, (void *)&reply);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -776,7 +782,7 @@ bool ctdbd_process_exists(struct ctdbd_connection *conn, uint32 vnn, pid_t pid)
 	data.dptr = (uint8_t*)&pid;
 	data.dsize = sizeof(pid);
 
-	status = ctdbd_control(conn, vnn, CTDB_CONTROL_PROCESS_EXISTS, 0,
+	status = ctdbd_control(conn, vnn, CTDB_CONTROL_PROCESS_EXISTS, 0, 0,
 			       data, NULL, NULL, &cstatus);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, (__location__ " ctdb_control for process_exists "
@@ -801,7 +807,7 @@ char *ctdbd_dbpath(struct ctdbd_connection *conn,
 	data.dsize = sizeof(db_id);
 
 	status = ctdbd_control(conn, CTDB_CURRENT_NODE,
-			       CTDB_CONTROL_GETDBPATH, 0, data, 
+			       CTDB_CONTROL_GETDBPATH, 0, 0, data, 
 			       mem_ctx, &data, &cstatus);
 	if (!NT_STATUS_IS_OK(status) || cstatus != 0) {
 		DEBUG(0,(__location__ " ctdb_control for getdbpath failed\n"));
@@ -829,7 +835,7 @@ NTSTATUS ctdbd_db_attach(struct ctdbd_connection *conn,
 			       persistent
 			       ? CTDB_CONTROL_DB_ATTACH_PERSISTENT
 			       : CTDB_CONTROL_DB_ATTACH,
-			       0, data, NULL, &data, &cstatus);
+			       0, 0, data, NULL, &data, &cstatus);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, (__location__ " ctdb_control for db_attach "
 			  "failed: %s\n", nt_errstr(status)));
@@ -852,7 +858,7 @@ NTSTATUS ctdbd_db_attach(struct ctdbd_connection *conn,
 	data.dsize = sizeof(*db_id);
 
 	status = ctdbd_control(conn, CTDB_CURRENT_NODE,
-			       CTDB_CONTROL_ENABLE_SEQNUM, 0, data, 
+			       CTDB_CONTROL_ENABLE_SEQNUM, 0, 0, data, 
 			       NULL, NULL, &cstatus);
 	if (!NT_STATUS_IS_OK(status) || cstatus != 0) {
 		DEBUG(0,(__location__ " ctdb_control for enable seqnum "
@@ -1087,7 +1093,7 @@ NTSTATUS ctdbd_traverse(uint32 db_id,
 	data.dsize = sizeof(t);
 
 	status = ctdbd_control(conn, CTDB_CURRENT_NODE,
-			       CTDB_CONTROL_TRAVERSE_START, conn->rand_srvid,
+			       CTDB_CONTROL_TRAVERSE_START, conn->rand_srvid, 0,
 			       data, NULL, NULL, &cstatus);
 
 	if (!NT_STATUS_IS_OK(status) || (cstatus != 0)) {
@@ -1194,7 +1200,7 @@ NTSTATUS ctdbd_register_ips(struct ctdbd_connection *conn,
 	data.dsize = sizeof(p);
 
 	return ctdbd_control(conn, CTDB_CURRENT_NODE, 
-			     CTDB_CONTROL_TCP_CLIENT, 
+			     CTDB_CONTROL_TCP_CLIENT, 0,
 			     CTDB_CTRL_FLAG_NOREPLY, data, NULL, NULL, NULL);
 }
 
@@ -1233,7 +1239,7 @@ static NTSTATUS ctdbd_persistent_call(struct ctdbd_connection *conn, uint32_t op
        recdata.dsize = length;
 
        status = ctdbd_control(conn, CTDB_CURRENT_NODE, opcode,
-                              0, recdata, NULL, NULL, &cstatus);
+                              0, 0, recdata, NULL, NULL, &cstatus);
        if (cstatus != 0) {
                return NT_STATUS_INTERNAL_DB_CORRUPTION;
        }
@@ -1274,6 +1280,20 @@ NTSTATUS ctdbd_cancel_persistent_update(struct ctdbd_connection *conn, uint32_t 
 				CTDB_CONTROL_CANCEL_PERSISTENT_UPDATE, 
 				db_id, key, data);
 }
+
+/*
+  call a control on the local node
+ */
+NTSTATUS ctdbd_control_local(struct ctdbd_connection *conn, uint32 opcode, 
+			     uint64_t srvid, uint32_t flags, TDB_DATA data, 
+			     TALLOC_CTX *mem_ctx, TDB_DATA *outdata,
+			     int *cstatus)
+{
+	return ctdbd_control(conn, CTDB_CURRENT_NODE, opcode, srvid, flags, data, mem_ctx, outdata, cstatus);
+}
+
+
+
 
 #else
 

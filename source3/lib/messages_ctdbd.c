@@ -55,8 +55,6 @@ struct ctdbd_connection *messaging_ctdbd_connection(void)
 			DEBUG(0,("messaging_init failed\n"));
 			return NULL;
 		}
-
-		db_tdb2_setup_messaging(msg, false);
 	}
 
 	if (global_ctdb_connection_pid != getpid()) {

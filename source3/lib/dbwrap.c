@@ -43,7 +43,7 @@ static int dbwrap_fallback_fetch(struct db_context *db, TALLOC_CTX *mem_ctx,
 }
 
 /**
- * If you need transaction support use db_open_trans()
+ * open a database
  */
 struct db_context *db_open(TALLOC_CTX *mem_ctx,
 			   const char *name,
@@ -103,80 +103,6 @@ struct db_context *db_open(TALLOC_CTX *mem_ctx,
 	}
 
 	return result;
-}
-
-/**
- * If you use this you can only modify with a transaction
- */
-struct db_context *db_open_trans(TALLOC_CTX *mem_ctx,
-				 const char *name,
-				 int hash_size, int tdb_flags,
-				 int open_flags, mode_t mode)
-{
-	bool use_tdb2 = lp_parm_bool(-1, "dbwrap", "use_tdb2", false);
-#ifdef CLUSTER_SUPPORT
-	const char *sockname = lp_ctdbd_socket();
-#endif
-
-	if (tdb_flags & TDB_CLEAR_IF_FIRST) {
-		DEBUG(0,("db_open_trans: called with TDB_CLEAR_IF_FIRST: %s\n",
-			 name));
-		return NULL;
-	}
-
-#ifdef CLUSTER_SUPPORT
-	if(!sockname || !*sockname) {
-		sockname = CTDB_PATH;
-	}
-
-	if (lp_clustering()) {
-		const char *partname;
-
-		if (!socket_exist(sockname)) {
-			DEBUG(1, ("ctdb socket does not exist - is ctdb not "
-				  "running?\n"));
-			return NULL;
-		}
-
-		/* ctdb only wants the file part of the name */
-		partname = strrchr(name, '/');
-		if (partname) {
-			partname++;
-		} else {
-			partname = name;
-		}
-		/* allow ctdb for individual databases to be disabled */
-		if (lp_parm_bool(-1, "ctdb", partname, true)) {
-			struct db_context *result = NULL;
-			result = db_open_ctdb(mem_ctx, partname, hash_size,
-					      tdb_flags, open_flags, mode);
-			if (result == NULL) {
-				DEBUG(0,("failed to attach to ctdb %s\n",
-					 partname));
-			}
-			return result;
-		}
-	}
-#endif
-
-	if (use_tdb2) {
-		const char *partname;
-		/* tdb2 only wants the file part of the name */
-		partname = strrchr(name, '/');
-		if (partname) {
-			partname++;
-		} else {
-			partname = name;
-		}
-		/* allow ctdb for individual databases to be disabled */
-		if (lp_parm_bool(-1, "tdb2", partname, true)) {
-			return db_open_tdb2(mem_ctx, partname, hash_size,
-					    tdb_flags, open_flags, mode);
-		}
-	}
-
-	return db_open_tdb(mem_ctx, name, hash_size,
-			   tdb_flags, open_flags, mode);
 }
 
 NTSTATUS dbwrap_delete_bystring(struct db_context *db, const char *key)
