@@ -296,7 +296,7 @@ static void remove_child_pid(pid_t pid, bool unclean_shutdown)
 		/* a child terminated uncleanly so tickle all processes to see 
 		   if they can grab any of the pending locks
 		*/
-		DEBUG(0,(__location__ " Unclean shutdown of pid %u\n", pid));
+		DEBUG(3,(__location__ " Unclean shutdown of pid %u\n", pid));
 		messaging_send_buf(smbd_messaging_context(), procid_self(), 
 				   MSG_SMB_BRL_VALIDATE, NULL, 0);
 		message_send_all(smbd_messaging_context(), 
@@ -891,6 +891,7 @@ static void exit_server_common(enum server_exit_reason how,
 	const char *const reason)
 {
 	static int firsttime=1;
+	bool had_open_conn;
 
 	if (!firsttime)
 		exit(0);
@@ -902,7 +903,7 @@ static void exit_server_common(enum server_exit_reason how,
 		(negprot_global_auth_context->free)(&negprot_global_auth_context);
 	}
 
-	conn_close_all();
+	had_open_conn = conn_close_all();
 
 	invalidate_all_vuids();
 
@@ -952,7 +953,11 @@ static void exit_server_common(enum server_exit_reason how,
 			(reason ? reason : "normal exit")));
 	}
 
-	exit(0);
+	if (had_open_conn) {
+		exit(1);
+	} else {
+		exit(0);
+	}
 }
 
 void exit_server(const char *const explanation)
