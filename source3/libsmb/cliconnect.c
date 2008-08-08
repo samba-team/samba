@@ -797,7 +797,6 @@ ADS_STATUS cli_session_setup_spnego(struct cli_state *cli, const char *user,
 	char *principal = NULL;
 	char *OIDs[ASN1_MAX_OIDS];
 	int i;
-	bool got_kerberos_mechanism = False;
 	DATA_BLOB blob;
 	const char *p = NULL;
 	char *account = NULL;
@@ -832,7 +831,7 @@ ADS_STATUS cli_session_setup_spnego(struct cli_state *cli, const char *user,
 		DEBUG(3,("got OID=%s\n", OIDs[i]));
 		if (strcmp(OIDs[i], OID_KERBEROS5_OLD) == 0 ||
 		    strcmp(OIDs[i], OID_KERBEROS5) == 0) {
-			got_kerberos_mechanism = True;
+			cli->got_kerberos_mechanism = True;
 		}
 		free(OIDs[i]);
 	}
@@ -845,7 +844,7 @@ ADS_STATUS cli_session_setup_spnego(struct cli_state *cli, const char *user,
 	/* If password is set we reauthenticate to kerberos server
 	 * and do not store results */
 
-	if (got_kerberos_mechanism && cli->use_kerberos) {
+	if (cli->got_kerberos_mechanism && cli->use_kerberos) {
 		ADS_STATUS rc;
 
 		if (pass && *pass) {
