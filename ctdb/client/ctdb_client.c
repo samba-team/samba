@@ -3185,6 +3185,7 @@ int ctdb_transaction_commit(struct ctdb_transaction_handle *h)
 	int32_t status;
 	struct ctdb_context *ctdb = h->ctdb_db->ctdb;
 	struct timeval timeout;
+	enum ctdb_controls failure_control = CTDB_CONTROL_TRANS2_ERROR;
 
 	talloc_set_destructor(h, NULL);
 
@@ -3220,15 +3221,35 @@ again:
 	if (ret != 0 || status != 0) {
 		tdb_transaction_cancel(h->ctdb_db->ltdb->tdb);
 		sleep(1);
+
+		if (ret != 0) {
+			failure_control = CTDB_CONTROL_TRANS2_ERROR;
+		} else {
+			/* work out what error code we will give if we 
+			   have to fail the operation */
+			switch ((enum ctdb_trans2_commit_error)status) {
+			case CTDB_TRANS2_COMMIT_SUCCESS:
+			case CTDB_TRANS2_COMMIT_SOMEFAIL:
+			case CTDB_TRANS2_COMMIT_TIMEOUT:
+				failure_control = CTDB_CONTROL_TRANS2_ERROR;
+				break;
+			case CTDB_TRANS2_COMMIT_ALLFAIL:
+				failure_control = CTDB_CONTROL_TRANS2_FINISHED;
+				break;
+			}
+		}
+
 		if (ctdb_replay_transaction(h) != 0) {
 			DEBUG(DEBUG_ERR,(__location__ " Failed to replay transaction\n"));
 			ctdb_control(ctdb, CTDB_CURRENT_NODE, h->ctdb_db->db_id, 
-				     CTDB_CONTROL_TRANS2_ERROR, CTDB_CTRL_FLAG_NOREPLY, 
+				     failure_control, CTDB_CTRL_FLAG_NOREPLY, 
 				     tdb_null, NULL, NULL, NULL, NULL, NULL);		
 			talloc_free(h);
 			return -1;
 		}
 		goto again;
+	} else {
+		failure_control = CTDB_CONTROL_TRANS2_ERROR;
 	}
 
 	/* do the real commit locally */
@@ -3236,7 +3257,7 @@ again:
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR,(__location__ " Failed to commit transaction\n"));
 		ctdb_control(ctdb, CTDB_CURRENT_NODE, h->ctdb_db->db_id, 
-			     CTDB_CONTROL_TRANS2_ERROR, CTDB_CTRL_FLAG_NOREPLY, 
+			     failure_control, CTDB_CTRL_FLAG_NOREPLY, 
 			     tdb_null, NULL, NULL, NULL, NULL, NULL);		
 		talloc_free(h);
 		return ret;
