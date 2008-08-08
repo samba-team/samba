@@ -41,7 +41,7 @@
 #define GSSAPI_BNDLENGTH     16                 /* Bind Length (rfc-1964 pg.3) */
 #define GSSAPI_CHECKSUM_SIZE (12+GSSAPI_BNDLENGTH)
 
-#if defined(TKT_FLG_OK_AS_DELEGATE ) && defined(HAVE_KRB5_FWD_TGT_CREDS) && defined(HAVE_KRB5_AUTH_CON_SET_REQ_CKSUMTYPE)
+#if defined(TKT_FLG_OK_AS_DELEGATE ) && defined(HAVE_KRB5_FWD_TGT_CREDS) && defined(HAVE_KRB5_AUTH_CON_SET_REQ_CKSUMTYPE) && defined(KRB5_AUTH_CONTEXT_USE_SUBKEY)
 static krb5_error_code ads_krb5_get_fwd_ticket( krb5_context context,
                                          krb5_auth_context *auth_context,
                                          krb5_creds *credsp,
@@ -705,7 +705,7 @@ static krb5_error_code ads_krb5_mk_req(krb5_context context,
 		*expire_time = (time_t)credsp->times.endtime;
 	}
 
-#if defined(TKT_FLG_OK_AS_DELEGATE ) && defined(HAVE_KRB5_FWD_TGT_CREDS) && defined(HAVE_KRB5_AUTH_CON_SET_REQ_CKSUMTYPE)
+#if defined(TKT_FLG_OK_AS_DELEGATE ) && defined(HAVE_KRB5_FWD_TGT_CREDS) && defined(HAVE_KRB5_AUTH_CON_SET_REQ_CKSUMTYPE) && defined(KRB5_AUTH_CONTEXT_USE_SUBKEY)
 	if( credsp->ticket_flags & TKT_FLG_OK_AS_DELEGATE ) {
 		/* Fetch a forwarded TGT from the KDC so that we can hand off a 2nd ticket
 		 as part of the kerberos exchange. */
@@ -1773,7 +1773,7 @@ done:
  	return ret;
 }
 
-#if defined(TKT_FLG_OK_AS_DELEGATE ) && defined(HAVE_KRB5_FWD_TGT_CREDS) && defined(HAVE_KRB5_AUTH_CON_SET_REQ_CKSUMTYPE)
+#if defined(TKT_FLG_OK_AS_DELEGATE ) && defined(HAVE_KRB5_FWD_TGT_CREDS) && defined(HAVE_KRB5_AUTH_CON_SET_REQ_CKSUMTYPE) && defined(KRB5_AUTH_CONTEXT_USE_SUBKEY)
 /**************************************************************
 Routine: ads_krb5_get_fwd_ticket
  Description:
