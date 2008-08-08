@@ -26,6 +26,8 @@
 #include "includes.h"
 #include "libnet/libnet_samsync.h"
 
+#ifdef HAVE_LDAP
+
 /* uid's and gid's for writing deltas to ldif */
 static uint32 ldif_gid = 999;
 static uint32 ldif_uid = 999;
@@ -1212,3 +1214,16 @@ NTSTATUS fetch_sam_entries_ldif(TALLOC_CTX *mem_ctx,
 
 	return status;
 }
+
+#else /* HAVE_LDAP */
+
+NTSTATUS fetch_sam_entries_ldif(TALLOC_CTX *mem_ctx,
+				enum netr_SamDatabaseID database_id,
+				struct netr_DELTA_ENUM_ARRAY *r,
+				bool last_query,
+				struct samsync_context *ctx)
+{
+	return NT_STATUS_NOT_SUPPORTED;
+}
+
+#endif
