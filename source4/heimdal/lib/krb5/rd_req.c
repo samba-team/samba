@@ -463,6 +463,8 @@ krb5_verify_ap_req2(krb5_context context,
 
     ac->keytype = ETYPE_NULL;
 
+#if 0
+/* it's bad to use a different enctype as the client */
     if (etypes.val) {
 	int i;
 
@@ -473,6 +475,7 @@ krb5_verify_ap_req2(krb5_context context,
 	    }
 	}
     }
+#endif
 
     /* save key */
     ret = krb5_copy_keyblock(context, &t->ticket.key, &ac->keyblock);
