@@ -549,6 +549,7 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_TRANS2_COMMIT           = 83,
 		    CTDB_CONTROL_TRANS2_FINISHED         = 84,
 		    CTDB_CONTROL_TRANS2_ERROR            = 85,
+		    CTDB_CONTROL_TRANS2_COMMIT_RETRY     = 86,
 };	
 
 /*

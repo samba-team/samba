@@ -397,6 +397,7 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		return ctdb_control_cancel_persistent_update(ctdb, c, indata);
 
 	case CTDB_CONTROL_TRANS2_COMMIT:
+	case CTDB_CONTROL_TRANS2_COMMIT_RETRY:
 		return ctdb_control_trans2_commit(ctdb, c, indata, async_reply);
 
 	case CTDB_CONTROL_TRANS2_ERROR:
