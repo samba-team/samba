@@ -646,8 +646,9 @@ again:
 
 	/* tell ctdbd to commit to the other nodes */
 	rets = ctdbd_control_local(messaging_ctdbd_connection(), 
-				  CTDB_CONTROL_TRANS2_COMMIT, h->ctx->db_id, 0,
-				  db_ctdb_marshall_finish(h->m_write), NULL, NULL, &status);
+				   retries==0?CTDB_CONTROL_TRANS2_COMMIT:CTDB_CONTROL_TRANS2_COMMIT_RETRY, 
+				   h->ctx->db_id, 0,
+				   db_ctdb_marshall_finish(h->m_write), NULL, NULL, &status);
 	if (!NT_STATUS_IS_OK(rets) || status != 0) {
 		tdb_transaction_cancel(h->ctx->wtdb->tdb);
 		sleep(1);
