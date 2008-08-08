@@ -5637,6 +5637,7 @@ struct response_record *queue_node_status( struct subnet_record *subrec,
 void reply_netbios_packet(struct packet_struct *orig_packet,
                           int rcode, enum netbios_reply_type_code rcv_code, int opcode,
                           int ttl, char *data,int len);
+void queue_packet(struct packet_struct *packet);
 void run_packet_queue(void);
 void retransmit_or_expire_response_records(time_t t);
 bool listen_for_packets(bool run_election);
