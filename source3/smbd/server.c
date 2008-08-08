@@ -953,6 +953,10 @@ static void exit_server_common(enum server_exit_reason how,
 			(reason ? reason : "normal exit")));
 	}
 
+	/* if we had any open SMB connections when we exited then we
+	   need to tell the parent smbd so that it can trigger a retry
+	   of any locks we may have been holding or open files we were
+	   blocking */
 	if (had_open_conn) {
 		exit(1);
 	} else {
