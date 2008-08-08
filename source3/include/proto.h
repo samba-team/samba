@@ -294,6 +294,8 @@ char *lang_tdb_current(void);
 /* The following definitions come from lib/access.c  */
 
 bool client_match(const char *tok, const void *item);
+bool list_match(const char **list,const void *item,
+		bool (*match_fn)(const char *, const void *));
 bool allow_access(const char **deny_list,
 		const char **allow_list,
 		const char *cname,

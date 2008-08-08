@@ -211,7 +211,7 @@ bool client_match(const char *tok, const void *item)
 }
 
 /* list_match - match an item against a list of tokens with exceptions */
-static bool list_match(const char **list,const void *item,
+bool list_match(const char **list,const void *item,
 		bool (*match_fn)(const char *, const void *))
 {
 	bool match = false;
