@@ -210,7 +210,8 @@ NTSTATUS dbwrap_trans_store(struct db_context *db, TDB_DATA key, TDB_DATA dbuf,
 	if (res != 0) {
 		DEBUG(5, ("tdb_transaction_commit failed\n"));
 		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
-		goto cancel;
+		TALLOC_FREE(rec);
+		return status;
 	}
 
 	return NT_STATUS_OK;
@@ -255,7 +256,8 @@ NTSTATUS dbwrap_trans_delete(struct db_context *db, TDB_DATA key)
 	if (res != 0) {
 		DEBUG(5, ("tdb_transaction_commit failed\n"));
 		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
-		goto cancel;
+		TALLOC_FREE(rec);
+		return status;		
 	}
 
 	return NT_STATUS_OK;
