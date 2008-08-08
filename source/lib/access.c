@@ -175,7 +175,7 @@ static bool string_match(const char *tok,const char *s)
 }
 
 /* client_match - match host name and address against token */
-static bool client_match(const char *tok, const void *item)
+bool client_match(const char *tok, const void *item)
 {
 	const char **client = (const char **)item;
 
