@@ -3367,6 +3367,7 @@ if test x"$with_ads_support" != x"no"; then
   AC_CHECK_FUNC_EXT(krb5_get_init_creds_opt_free, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_get_init_creds_opt_get_error, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_enctype_to_string, $KRB5_LIBS)
+  AC_CHECK_FUNC_EXT(krb5_fwd_tgt_creds, $KRB5_LIBS)
 
   LIBS="$KRB5_LIBS $LIBS"
 
