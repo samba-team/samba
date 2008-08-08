@@ -504,8 +504,8 @@ static NTSTATUS libnet_dssync_getncchanges(TALLOC_CTX *mem_ctx,
 	}
 
 	for (y=0, last_query = false; !last_query; y++) {
-		struct drsuapi_DsReplicaObjectListItemEx *first_object;
-		struct drsuapi_DsReplicaOIDMapping_Ctr *mapping_ctr;
+		struct drsuapi_DsReplicaObjectListItemEx *first_object = NULL;
+		struct drsuapi_DsReplicaOIDMapping_Ctr *mapping_ctr = NULL;
 
 		if (level == 8) {
 			DEBUG(1,("start[%d] tmp_higest_usn: %llu , highest_usn: %llu\n",y,
@@ -634,7 +634,7 @@ static NTSTATUS libnet_dssync_process(TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 
-	int32_t level;
+	int32_t level = 0;
 	union drsuapi_DsGetNCChangesRequest req;
 	struct replUpToDateVectorBlob *old_utdv = NULL;
 	struct replUpToDateVectorBlob *pnew_utdv = NULL;

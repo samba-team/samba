@@ -314,6 +314,7 @@ krb5_error_code libnet_keytab_add(struct libnet_keytab_context *ctx)
 		struct libnet_keytab_entry *entry = &ctx->entries[i];
 		krb5_data password;
 
+		ZERO_STRUCT(password);
 		password.data = (char *)entry->password.data;
 		password.length = entry->password.length;
 
