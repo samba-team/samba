@@ -161,16 +161,19 @@ find_again:
 
 /****************************************************************************
  Close all conn structures.
+return true if any were closed
 ****************************************************************************/
-
-void conn_close_all(void)
+bool conn_close_all(void)
 {
 	connection_struct *conn, *next;
+	bool ret = false;
 	for (conn=Connections;conn;conn=next) {
 		next=conn->next;
 		set_current_service(conn, 0, True);
 		close_cnum(conn, conn->vuid);
+		ret = true;
 	}
+	return ret;
 }
 
 /****************************************************************************
