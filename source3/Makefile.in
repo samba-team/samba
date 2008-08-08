@@ -311,6 +311,7 @@ LIB_OBJ = $(LIBSAMBAUTIL_OBJ) \
 	  lib/messages_ctdbd.o lib/packet.o lib/ctdbd_conn.o lib/talloc_stack.o \
 	  lib/interfaces.o lib/rbtree.o lib/memcache.o \
 	  lib/util_transfer_file.o lib/async_req.o \
+	  lib/async_sock.o \
 	  $(TDB_OBJ) \
 	  $(VERSION_OBJ) lib/charcnv.o lib/debug.o lib/fault.o \
 	  lib/interface.o lib/md4.o \
