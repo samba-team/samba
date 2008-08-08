@@ -31,6 +31,8 @@ struct db_ctdb_transaction_handle {
 	*/
 	struct ctdb_marshall_buffer *m_all;
 	struct ctdb_marshall_buffer *m_write;
+	uint32_t nesting;
+	bool nested_cancel;
 };
 
 struct db_ctdb_ctx {
@@ -279,8 +281,8 @@ static int db_ctdb_transaction_start(struct db_context *db)
 	}
 
 	if (ctx->transaction) {
-		DEBUG(0,("Nested transactions not supported on db 0x%08x\n", ctx->db_id));
-		return -1;
+		ctx->transaction->nesting++;
+		return 0;
 	}
 
 	h = talloc_zero(db, struct db_ctdb_transaction_handle);
@@ -616,6 +618,17 @@ static int db_ctdb_transaction_commit(struct db_context *db)
 		return -1;
 	}
 
+	if (h->nested_cancel) {
+		db->transaction_cancel(db);
+		DEBUG(5,(__location__ " Failed transaction commit after nested cancel\n"));
+		return -1;
+	}
+
+	if (h->nesting != 0) {
+		h->nesting--;
+		return 0;
+	}
+
 	DEBUG(5,(__location__ " Commit transaction on db 0x%08x\n", ctx->db_id));
 
 	talloc_set_destructor(h, NULL);
@@ -732,6 +745,12 @@ static int db_ctdb_transaction_cancel(struct db_context *db)
 	if (h == NULL) {
 		DEBUG(0,(__location__ " transaction cancel with no open transaction on db 0x%08x\n", ctx->db_id));
 		return -1;
+	}
+
+	if (h->nesting != 0) {
+		h->nesting--;
+		h->nested_cancel = true;
+		return 0;
 	}
 
 	DEBUG(5,(__location__ " Cancel transaction on db 0x%08x\n", ctx->db_id));
