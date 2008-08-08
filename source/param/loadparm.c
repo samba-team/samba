@@ -273,6 +273,8 @@ struct global {
 	int  iPreferredMaster;
 	int iDomainMaster;
 	bool bDomainLogons;
+	char **szInitLogonDelayedHosts;
+	int InitLogonDelay;
 	bool bEncryptPasswords;
 	bool bUpdateEncrypt;
 	int  clientSchannel;
@@ -3190,6 +3192,23 @@ static struct parm_struct parm_table[] = {
 		.flags		= FLAG_ADVANCED,
 	},
 
+	{
+		.label		= "init logon delayed hosts",
+		.type		= P_LIST,
+		.p_class	= P_GLOBAL,
+		.ptr		= &Globals.szInitLogonDelayedHosts,
+		.flags		= FLAG_ADVANCED,
+	},
+
+	{
+		.label		= "init logon delay",
+		.type		= P_INTEGER,
+		.p_class	= P_GLOBAL,
+		.ptr		= &Globals.InitLogonDelay,
+		.flags		= FLAG_ADVANCED,
+
+	},
+
 	{N_("Browse Options"), P_SEP, P_SEPARATOR},
 
 	{
@@ -4797,6 +4816,9 @@ static void init_globals(bool first_time_only)
 	Globals.bWINSsupport = False;
 	Globals.bWINSproxy = False;
 
+	TALLOC_FREE(Globals.szInitLogonDelayedHosts);
+	Globals.InitLogonDelay = 100; /* 100 ms default delay */
+
 	Globals.bDNSproxy = True;
 
 	/* this just means to use them if they exist */
@@ -5109,6 +5131,8 @@ FN_GLOBAL_BOOL(lp_we_are_a_wins_server, &Globals.bWINSsupport)
 FN_GLOBAL_BOOL(lp_wins_proxy, &Globals.bWINSproxy)
 FN_GLOBAL_BOOL(lp_local_master, &Globals.bLocalMaster)
 FN_GLOBAL_BOOL(lp_domain_logons, &Globals.bDomainLogons)
+FN_GLOBAL_LIST(lp_init_logon_delayed_hosts, &Globals.szInitLogonDelayedHosts)
+FN_GLOBAL_INTEGER(lp_init_logon_delay, &Globals.InitLogonDelay)
 FN_GLOBAL_BOOL(lp_load_printers, &Globals.bLoadPrinters)
 FN_GLOBAL_BOOL(lp_readraw, &Globals.bReadRaw)
 FN_GLOBAL_BOOL(lp_large_readwrite, &Globals.bLargeReadwrite)
