@@ -456,6 +456,12 @@ DNS_ERROR dns_create_tsig_record(TALLOC_CTX *mem_ctx, const char *keyname,
 				 struct dns_rrec **prec);
 DNS_ERROR dns_add_rrec(TALLOC_CTX *mem_ctx, struct dns_rrec *rec,
 		       uint16 *num_records, struct dns_rrec ***records);
+DNS_ERROR dns_create_update_request(TALLOC_CTX *mem_ctx,
+				    const char *domainname,
+				    const char *hostname,
+				    const struct sockaddr_storage *ip_addr,
+				    size_t num_adds,
+				    struct dns_update_request **preq);
 
 /* from dnssock.c */
 
@@ -523,12 +529,6 @@ DNS_ERROR dns_sign_update(struct dns_update_request *req,
 			  const char *keyname,
 			  const char *algorithmname,
 			  time_t time_signed, uint16 fudge);
-DNS_ERROR dns_create_update_request(TALLOC_CTX *mem_ctx,
-				    const char *domainname,
-				    const char *hostname,
-				    const struct sockaddr_storage *ip_addr,
-				    size_t num_adds,
-				    struct dns_update_request **preq);
 
 #endif	/* HAVE_GSSAPI_SUPPORT */
 
