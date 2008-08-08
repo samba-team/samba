@@ -804,7 +804,7 @@ static bool tdbsam_convert(struct db_context *db, int32 from)
 
 	if (db->transaction_commit(db) != 0) {
 		DEBUG(0, ("Could not commit transaction\n"));
-		goto cancel;
+		return false;
 	}
 
 	return true;
@@ -1064,7 +1064,7 @@ static NTSTATUS tdbsam_delete_sam_account(struct pdb_methods *my_methods,
 
 	if (db_sam->transaction_commit(db_sam) != 0) {
 		DEBUG(0, ("Could not commit transaction\n"));
-		goto cancel;
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
 	return NT_STATUS_OK;
@@ -1191,7 +1191,7 @@ static bool tdb_update_sam(struct pdb_methods *my_methods, struct samu* newpwd,
 
 	if (db_sam->transaction_commit(db_sam) != 0) {
 		DEBUG(0, ("Could not commit transaction\n"));
-		goto cancel;
+		return false;
 	}
 
 	return true;
@@ -1344,7 +1344,8 @@ static NTSTATUS tdbsam_rename_sam_account(struct pdb_methods *my_methods,
 		 * account back?
 		 */
 		DEBUG(0, ("transaction_commit failed\n"));
-		goto cancel;
+		TALLOC_FREE(new_acct);
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;	
 	}
 
 	TALLOC_FREE(new_acct );

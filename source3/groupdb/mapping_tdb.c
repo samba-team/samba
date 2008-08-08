@@ -521,7 +521,7 @@ static NTSTATUS add_aliasmem(const DOM_SID *alias, const DOM_SID *member)
 	if (db->transaction_commit(db) != 0) {
 		DEBUG(0, ("transaction_commit failed\n"));
 		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
-		goto cancel;
+		return status;
 	}
 
 	return NT_STATUS_OK;
@@ -705,7 +705,7 @@ static NTSTATUS del_aliasmem(const DOM_SID *alias, const DOM_SID *member)
 	if (db->transaction_commit(db) != 0) {
 		DEBUG(0, ("transaction_commit failed\n"));
 		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
-		goto cancel;
+		return status;
 	}
 
 	return NT_STATUS_OK;

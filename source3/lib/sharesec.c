@@ -109,7 +109,7 @@ static bool share_info_db_init(void)
 
 	if (share_db->transaction_commit(share_db) != 0) {
 		DEBUG(0, ("transaction_commit failed\n"));
-		goto cancel;
+		return false;
 	}
 
 	return true;
