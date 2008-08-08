@@ -723,6 +723,7 @@ typedef char fstring[FSTRING_LEN];
 #include "memcache.h"
 #include "async_req.h"
 #include "async_smb.h"
+#include "async_sock.h"
 
 #include "lib/smbconf/smbconf.h"
 
