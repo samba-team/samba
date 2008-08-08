@@ -652,17 +652,21 @@ again:
 		tdb_transaction_cancel(h->ctx->wtdb->tdb);
 		sleep(1);
 
-		/* work out what error code we will give if we 
-		   have to fail the operation */
-		switch ((enum ctdb_trans2_commit_error)status) {
-		case CTDB_TRANS2_COMMIT_SUCCESS:
-		case CTDB_TRANS2_COMMIT_SOMEFAIL:
-		case CTDB_TRANS2_COMMIT_TIMEOUT:
-			failure_control = CTDB_CONTROL_TRANS2_ERROR;
-			break;
-		case CTDB_TRANS2_COMMIT_ALLFAIL:
-			failure_control = CTDB_CONTROL_TRANS2_FINISHED;
-			break;
+		if (!NT_STATUS_IS_OK(rets)) {
+			failure_control = CTDB_CONTROL_TRANS2_ERROR;			
+		} else {
+			/* work out what error code we will give if we 
+			   have to fail the operation */
+			switch ((enum ctdb_trans2_commit_error)status) {
+			case CTDB_TRANS2_COMMIT_SUCCESS:
+			case CTDB_TRANS2_COMMIT_SOMEFAIL:
+			case CTDB_TRANS2_COMMIT_TIMEOUT:
+				failure_control = CTDB_CONTROL_TRANS2_ERROR;
+				break;
+			case CTDB_TRANS2_COMMIT_ALLFAIL:
+				failure_control = CTDB_CONTROL_TRANS2_FINISHED;
+				break;
+			}
 		}
 
 		if (ctdb_replay_transaction(h) != 0) {
@@ -687,13 +691,15 @@ again:
 			return -1;			
 		}
 		goto again;
+	} else {
+		failure_control = CTDB_CONTROL_TRANS2_ERROR;
 	}
 
 	/* do the real commit locally */
 	ret = tdb_transaction_commit(h->ctx->wtdb->tdb);
 	if (ret != 0) {
 		DEBUG(0,(__location__ " Failed to commit transaction\n"));
-		ctdbd_control_local(messaging_ctdbd_connection(), CTDB_CONTROL_TRANS2_ERROR, h->ctx->db_id, 
+		ctdbd_control_local(messaging_ctdbd_connection(), failure_control, h->ctx->db_id, 
 				    CTDB_CTRL_FLAG_NOREPLY, tdb_null, NULL, NULL, NULL);
 		h->ctx->transaction = NULL;
 		talloc_free(h);
