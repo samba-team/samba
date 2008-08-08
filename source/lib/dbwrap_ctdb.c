@@ -669,19 +669,9 @@ again:
 			}
 		}
 
-		if (ctdb_replay_transaction(h) != 0) {
-			DEBUG(0,(__location__ " Failed to replay transaction\n"));
-			ctdbd_control_local(messaging_ctdbd_connection(), failure_control,
-					    h->ctx->db_id, CTDB_CTRL_FLAG_NOREPLY, 
-					    tdb_null, NULL, NULL, NULL);
-			h->ctx->transaction = NULL;
-			talloc_free(h);
-			ctx->transaction = NULL;
-			return -1;
-		}
 		if (++retries == 10) {
-			DEBUG(0,(__location__ " Giving up transaction on db 0x%08x after %d retries\n", 
-				 h->ctx->db_id, retries));
+			DEBUG(0,(__location__ " Giving up transaction on db 0x%08x after %d retries failure_control=%u\n", 
+				 h->ctx->db_id, retries, (unsigned)failure_control));
 			ctdbd_control_local(messaging_ctdbd_connection(), failure_control,
 					    h->ctx->db_id, CTDB_CTRL_FLAG_NOREPLY, 
 					    tdb_null, NULL, NULL, NULL);
@@ -689,6 +679,18 @@ again:
 			talloc_free(h);
 			ctx->transaction = NULL;
 			return -1;			
+		}
+
+		if (ctdb_replay_transaction(h) != 0) {
+			DEBUG(0,(__location__ " Failed to replay transaction failure_control=%u\n",
+				 (unsigned)failure_control));
+			ctdbd_control_local(messaging_ctdbd_connection(), failure_control,
+					    h->ctx->db_id, CTDB_CTRL_FLAG_NOREPLY, 
+					    tdb_null, NULL, NULL, NULL);
+			h->ctx->transaction = NULL;
+			talloc_free(h);
+			ctx->transaction = NULL;
+			return -1;
 		}
 		goto again;
 	} else {
@@ -698,7 +700,8 @@ again:
 	/* do the real commit locally */
 	ret = tdb_transaction_commit(h->ctx->wtdb->tdb);
 	if (ret != 0) {
-		DEBUG(0,(__location__ " Failed to commit transaction\n"));
+		DEBUG(0,(__location__ " Failed to commit transaction failure_control=%u\n",
+			 (unsigned)failure_control));
 		ctdbd_control_local(messaging_ctdbd_connection(), failure_control, h->ctx->db_id, 
 				    CTDB_CTRL_FLAG_NOREPLY, tdb_null, NULL, NULL, NULL);
 		h->ctx->transaction = NULL;

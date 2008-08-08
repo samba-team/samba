@@ -283,7 +283,8 @@ bool init_account_policy(void)
 
 	if (db->transaction_commit(db) != 0) {
 		DEBUG(0, ("transaction_commit failed\n"));
-		goto cancel;
+		TALLOC_FREE(db);
+		return false;
 	}
 
 	return True;
