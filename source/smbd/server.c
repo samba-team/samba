@@ -296,6 +296,7 @@ static void remove_child_pid(pid_t pid, bool unclean_shutdown)
 		/* a child terminated uncleanly so tickle all processes to see 
 		   if they can grab any of the pending locks
 		*/
+		DEBUG(0,(__location__ " Unclean shutdown of pid %u\n", pid));
 		messaging_send_buf(smbd_messaging_context(), procid_self(), 
 				   MSG_SMB_BRL_VALIDATE, NULL, 0);
 		message_send_all(smbd_messaging_context(), 
