@@ -28,8 +28,6 @@ extern int global_nmb_port;
 
 extern int num_response_packets;
 
-static void queue_packet(struct packet_struct *packet);
-
 bool rescan_listen_set = False;
 
 
@@ -1004,7 +1002,7 @@ for id %hu\n", packet_type, nmb_namestr(&orig_nmb->question.question_name),
   Queue a packet into a packet queue
 ******************************************************************/
 
-static void queue_packet(struct packet_struct *packet)
+void queue_packet(struct packet_struct *packet)
 {
 	struct packet_struct *p;
 
