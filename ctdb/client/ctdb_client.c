@@ -3181,7 +3181,7 @@ failed:
  */
 int ctdb_transaction_commit(struct ctdb_transaction_handle *h)
 {
-	int ret;
+	int ret, retries=0;
 	int32_t status;
 	struct ctdb_context *ctdb = h->ctdb_db->ctdb;
 	struct timeval timeout;
@@ -3215,7 +3215,7 @@ again:
 	/* tell ctdbd to commit to the other nodes */
 	timeout = timeval_current_ofs(1, 0);
 	ret = ctdb_control(ctdb, CTDB_CURRENT_NODE, h->ctdb_db->db_id, 
-			   CTDB_CONTROL_TRANS2_COMMIT, 0, 
+			   retries==0?CTDB_CONTROL_TRANS2_COMMIT:CTDB_CONTROL_TRANS2_COMMIT_RETRY, 0, 
 			   ctdb_marshall_finish(h->m_write), NULL, NULL, &status, 
 			   &timeout, NULL);
 	if (ret != 0 || status != 0) {
@@ -3238,6 +3238,16 @@ again:
 				break;
 			}
 		}
+
+		if (++retries == 10) {
+			DEBUG(DEBUG_ERR,(__location__ " Giving up transaction on db 0x%08x after %d retries failure_control=%u\n", 
+					 h->ctdb_db->db_id, retries, (unsigned)failure_control));
+			ctdb_control(ctdb, CTDB_CURRENT_NODE, h->ctdb_db->db_id, 
+				     failure_control, CTDB_CTRL_FLAG_NOREPLY, 
+				     tdb_null, NULL, NULL, NULL, NULL, NULL);		
+			talloc_free(h);
+			return -1;
+		}		
 
 		if (ctdb_replay_transaction(h) != 0) {
 			DEBUG(DEBUG_ERR,(__location__ " Failed to replay transaction\n"));

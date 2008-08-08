@@ -121,12 +121,18 @@ int32_t ctdb_control_trans2_commit(struct ctdb_context *ctdb,
 	        then have it decremented in ctdb_control_trans2_error
 	        or ctdb_control_trans2_finished
 	*/
-	if (c->opcode == CTDB_CONTROL_PERSISTENT_STORE) {
+	switch (c->opcode) {
+	case CTDB_CONTROL_PERSISTENT_STORE:
 		if (client->num_persistent_updates > 0) {
 			client->num_persistent_updates--;
-		}		
-	} else {
+		}
+		break;
+	case CTDB_CONTROL_TRANS2_COMMIT:
 		client->num_persistent_updates++;
+		break;
+	case CTDB_CONTROL_TRANS2_COMMIT_RETRY:
+		/* already updated from the first commit */
+		break;
 	}
 
 	state = talloc_zero(ctdb, struct ctdb_persistent_state);
