@@ -5,7 +5,7 @@ Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
 Version: 1.0
-Release: 53.transactions2
+Release: 54
 Epoch: 0
 License: GNU GPL version 3
 Group: System Environment/Daemons
@@ -118,6 +118,10 @@ fi
 %{_includedir}/ctdb_private.h
 
 %changelog
+* Fri Aug 8 2008 : Version 1.0.54
+ - fix a looping error in the transaction code
+ - provide a more detailed error code for persistent store errors
+   so clients can make more intelligent choices on how to try to recover
 * Thu Aug 7 2008 : Version 1.0.53
  - Remove the reclock.pnn file   it can cause gpfs to fail to umount
  - New transaction code
