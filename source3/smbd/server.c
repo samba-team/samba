@@ -986,7 +986,9 @@ static void release_ip(const char *ip, void *priv)
 		   away */
 		DEBUG(0,("Got release IP message for our IP %s - exiting immediately\n",
 			ip));
-		_exit(0);
+		/* note we must exit with non-zero status so the unclean handler gets
+		   called in the parent, so that the brl database is tickled */
+		_exit(1);
 	}
 }
 
