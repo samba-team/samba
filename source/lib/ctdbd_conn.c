@@ -1190,6 +1190,8 @@ NTSTATUS ctdbd_register_ips(struct ctdbd_connection *conn,
 	 */
 	SMB_ASSERT(conn->release_ip_handler == NULL);
 
+	conn->release_ip_handler = release_ip_handler;
+
 	/*
 	 * We want to be told about IP releases
 	 */
