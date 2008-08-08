@@ -353,6 +353,14 @@ static NTSTATUS ctdb_read_req(struct ctdbd_connection *conn, uint32 reqid,
 			goto next_pkt;
 		}
 
+		if (msg->srvid == CTDB_SRVID_RECONFIGURE) {
+			DEBUG(0,("Got cluster reconfigure message in ctdb_read_req\n"));
+			messaging_send(conn->msg_ctx, procid_self(),
+				       MSG_SMB_BRL_VALIDATE, &data_blob_null);
+			TALLOC_FREE(hdr);
+			goto next_pkt;
+		}
+
 		if (!(msg_state = TALLOC_P(NULL, struct deferred_msg_state))) {
 			DEBUG(0, ("talloc failed\n"));
 			TALLOC_FREE(hdr);
