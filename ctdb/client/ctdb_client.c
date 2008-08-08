@@ -3068,12 +3068,13 @@ int ctdb_transaction_store(struct ctdb_transaction_handle *h,
 {
 	TALLOC_CTX *tmp_ctx = talloc_new(h);
 	struct ctdb_ltdb_header header;
+	TDB_DATA olddata;
 	int ret;
 
 	ZERO_STRUCT(header);
 
 	/* we need the header so we can update the RSN */
-	ret = ctdb_ltdb_fetch(h->ctdb_db, key, &header, tmp_ctx, NULL);
+	ret = ctdb_ltdb_fetch(h->ctdb_db, key, &header, tmp_ctx, &olddata);
 	if (ret == -1 && header.dmaster == (uint32_t)-1) {
 		/* the record doesn't exist - create one with us as dmaster.
 		   This is only safe because we are in a transaction and this
@@ -3086,6 +3087,13 @@ int ctdb_transaction_store(struct ctdb_transaction_handle *h,
 		return ret;
 	}
 
+	if (data.dsize == olddata.dsize &&
+	    memcmp(data.dptr, olddata.dptr, data.dsize) == 0) {
+		/* save writing the same data */
+		talloc_free(tmp_ctx);
+		return 0;
+	}
+
 	header.rsn++;
 
 	if (!h->in_replay) {
@@ -3095,13 +3103,13 @@ int ctdb_transaction_store(struct ctdb_transaction_handle *h,
 			talloc_free(tmp_ctx);
 			return -1;
 		}
-		
-		h->m_write = ctdb_marshall_add(h, h->m_write, h->ctdb_db->db_id, 0, key, &header, data);
-		if (h->m_write == NULL) {
-			DEBUG(DEBUG_ERR,(__location__ " Failed to add to marshalling record\n"));
-			talloc_free(tmp_ctx);
-			return -1;
-		}
+	}		
+
+	h->m_write = ctdb_marshall_add(h, h->m_write, h->ctdb_db->db_id, 0, key, &header, data);
+	if (h->m_write == NULL) {
+		DEBUG(DEBUG_ERR,(__location__ " Failed to add to marshalling record\n"));
+		talloc_free(tmp_ctx);
+		return -1;
 	}
 	
 	ret = ctdb_ltdb_store(h->ctdb_db, key, &header, data);
@@ -3120,6 +3128,8 @@ static int ctdb_replay_transaction(struct ctdb_transaction_handle *h)
 	struct ctdb_rec_data *rec = NULL;
 
 	h->in_replay = true;
+	talloc_free(h->m_write);
+	h->m_write = NULL;
 
 	ret = ctdb_transaction_fetch_start(h);
 	if (ret != 0) {
@@ -3175,12 +3185,7 @@ int ctdb_transaction_commit(struct ctdb_transaction_handle *h)
 	int32_t status;
 	struct ctdb_context *ctdb = h->ctdb_db->ctdb;
 	struct timeval timeout;
-
-	if (h->m_write == NULL) {
-		/* no changes were made */
-		talloc_free(h);
-		return 0;
-	}
+	enum ctdb_controls failure_control = CTDB_CONTROL_TRANS2_ERROR;
 
 	talloc_set_destructor(h, NULL);
 
@@ -3200,6 +3205,13 @@ int ctdb_transaction_commit(struct ctdb_transaction_handle *h)
 	*/
 
 again:
+	if (h->m_write == NULL) {
+		/* no changes were made */
+		tdb_transaction_cancel(h->ctdb_db->ltdb->tdb);
+		talloc_free(h);
+		return 0;
+	}
+
 	/* tell ctdbd to commit to the other nodes */
 	timeout = timeval_current_ofs(1, 0);
 	ret = ctdb_control(ctdb, CTDB_CURRENT_NODE, h->ctdb_db->db_id, 
@@ -3209,15 +3221,35 @@ again:
 	if (ret != 0 || status != 0) {
 		tdb_transaction_cancel(h->ctdb_db->ltdb->tdb);
 		sleep(1);
+
+		if (ret != 0) {
+			failure_control = CTDB_CONTROL_TRANS2_ERROR;
+		} else {
+			/* work out what error code we will give if we 
+			   have to fail the operation */
+			switch ((enum ctdb_trans2_commit_error)status) {
+			case CTDB_TRANS2_COMMIT_SUCCESS:
+			case CTDB_TRANS2_COMMIT_SOMEFAIL:
+			case CTDB_TRANS2_COMMIT_TIMEOUT:
+				failure_control = CTDB_CONTROL_TRANS2_ERROR;
+				break;
+			case CTDB_TRANS2_COMMIT_ALLFAIL:
+				failure_control = CTDB_CONTROL_TRANS2_FINISHED;
+				break;
+			}
+		}
+
 		if (ctdb_replay_transaction(h) != 0) {
 			DEBUG(DEBUG_ERR,(__location__ " Failed to replay transaction\n"));
 			ctdb_control(ctdb, CTDB_CURRENT_NODE, h->ctdb_db->db_id, 
-				     CTDB_CONTROL_TRANS2_ERROR, CTDB_CTRL_FLAG_NOREPLY, 
+				     failure_control, CTDB_CTRL_FLAG_NOREPLY, 
 				     tdb_null, NULL, NULL, NULL, NULL, NULL);		
 			talloc_free(h);
 			return -1;
 		}
 		goto again;
+	} else {
+		failure_control = CTDB_CONTROL_TRANS2_ERROR;
 	}
 
 	/* do the real commit locally */
@@ -3225,7 +3257,7 @@ again:
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR,(__location__ " Failed to commit transaction\n"));
 		ctdb_control(ctdb, CTDB_CURRENT_NODE, h->ctdb_db->db_id, 
-			     CTDB_CONTROL_TRANS2_ERROR, CTDB_CTRL_FLAG_NOREPLY, 
+			     failure_control, CTDB_CTRL_FLAG_NOREPLY, 
 			     tdb_null, NULL, NULL, NULL, NULL, NULL);		
 		talloc_free(h);
 		return ret;
