@@ -6,7 +6,7 @@ Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name:         samba
 Version:      3.2.1
-Release:      ctdb.42
+Release:      ctdb.43
 Epoch:        0
 License: GNU GPL version 3
 Group: System Environment/Daemons
