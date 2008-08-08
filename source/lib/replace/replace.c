@@ -170,7 +170,7 @@ int rep_initgroups(char *name, gid_t id)
 #include <grp.h>
 
 	gid_t *grouplst = NULL;
-	int max_gr = 32;
+	int max_gr = NGROUPS_MAX;
 	int ret;
 	int    i,j;
 	struct group *g;
