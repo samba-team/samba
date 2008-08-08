@@ -52,11 +52,19 @@
 
 enum hdb_ldb_ent_type 
 { HDB_LDB_ENT_TYPE_CLIENT, HDB_LDB_ENT_TYPE_SERVER, 
-  HDB_LDB_ENT_TYPE_KRBTGT, HDB_LDB_ENT_TYPE_ANY };
+  HDB_LDB_ENT_TYPE_KRBTGT, HDB_LDB_ENT_TYPE_TRUST, HDB_LDB_ENT_TYPE_ANY };
 
 static const char *realm_ref_attrs[] = {
 	"nCName", 
 	"dnsRoot", 
+	NULL
+};
+
+static const char *trust_attrs[] = {
+	"trustPartner",
+	"trustAuthIncoming",
+	"trustAuthOutgoing",
+	"whenCreated",
 	NULL
 };
 
@@ -745,6 +753,41 @@ static krb5_error_code LDB_lookup_principal(krb5_context context, struct ldb_con
 	return 0;
 }
 
+static krb5_error_code LDB_lookup_trust(krb5_context context, struct ldb_context *ldb_ctx, 					
+					TALLOC_CTX *mem_ctx,
+					const char *realm,
+					enum hdb_ldb_ent_type ent_type,
+					struct ldb_dn *realm_dn,
+					struct ldb_message ***pmsg)
+{
+	int lret;
+	char *filter = NULL;
+	const char * const *attrs = trust_attrs;
+
+	struct ldb_result *res = NULL;
+	filter = talloc_asprintf(mem_ctx, "(&(objectClass=trustedDomain)(|(flatname=%s)(trustPartner=%s)))", realm, realm);
+
+	if (!filter) {
+		krb5_set_error_string(context, "talloc_asprintf: out of memory");
+		return ENOMEM;
+	}
+
+	lret = ldb_search(ldb_ctx, ldb_get_default_basedn(ldb_ctx), LDB_SCOPE_SUBTREE, filter, attrs, &res);
+
+	if (lret != LDB_SUCCESS) {
+		DEBUG(3, ("Failed to search for %s: %s\n", filter, ldb_errstring(ldb_ctx)));
+		return HDB_ERR_NOENTRY;
+	} else if (res->count == 0 || res->count > 1) {
+		DEBUG(3, ("Failed find a single entry for %s: got %d\n", filter, res->count));
+		talloc_free(res);
+		return HDB_ERR_NOENTRY;
+	}
+	talloc_steal(mem_ctx, res->msgs);
+	*pmsg = res->msgs;
+	talloc_free(res);
+	return 0;
+}
+
 static krb5_error_code LDB_lookup_realm(krb5_context context, struct ldb_context *ldb_ctx, 
 					TALLOC_CTX *mem_ctx,
 					const char *realm,
@@ -856,6 +899,7 @@ static krb5_error_code LDB_fetch_krbtgt(krb5_context context, HDB *db,
 	struct ldb_message **realm_ref_msg_1 = NULL;
 	struct ldb_message **realm_ref_msg_2 = NULL;
 	struct ldb_dn *realm_dn;
+	const char *realm;
 
 	krb5_principal alloc_principal = NULL;
 	if (principal->name.name_string.len != 2
@@ -870,7 +914,7 @@ static krb5_error_code LDB_fetch_krbtgt(krb5_context context, HDB *db,
 			      mem_ctx, principal->realm, &realm_ref_msg_1) == 0)
 	    && (LDB_lookup_realm(context, (struct ldb_context *)db->hdb_db,
 				 mem_ctx, principal->name.name_string.val[1], &realm_ref_msg_2) == 0)
-	    && (ldb_dn_cmp(realm_ref_msg_1[0]->dn, realm_ref_msg_1[0]->dn) == 0)) {
+	    && (ldb_dn_compare(realm_ref_msg_1[0]->dn, realm_ref_msg_1[0]->dn) == 0)) {
 		/* us */		
  		/* Cludge, cludge cludge.  If the realm part of krbtgt/realm,
  		 * is in our db, then direct the caller at our primary
@@ -897,48 +941,72 @@ static krb5_error_code LDB_fetch_krbtgt(krb5_context context, HDB *db,
  		}
  		principal = alloc_principal;
 		realm_dn = samdb_result_dn((struct ldb_context *)db->hdb_db, mem_ctx, realm_ref_msg_1[0], "nCName", NULL);
-	} else {
-		enum direction {
-			INBOUND,
-			OUTBOUND
+		
+		ret = LDB_lookup_principal(context, (struct ldb_context *)db->hdb_db, 
+					   mem_ctx, 
+					   principal, HDB_LDB_ENT_TYPE_KRBTGT, realm_dn, &msg);
+		
+		if (ret != 0) {
+			krb5_warnx(context, "LDB_fetch: could not find principal in DB");
+			krb5_set_error_string(context, "LDB_fetch: could not find principal in DB");
+			return ret;
 		}
+		
+		ret = LDB_message2entry(context, db, mem_ctx, 
+					principal, HDB_LDB_ENT_TYPE_KRBTGT, 
+					msg[0], realm_ref_msg_1[0], entry_ex);
+		if (ret != 0) {
+			krb5_warnx(context, "LDB_fetch: message2entry failed");	
+		}
+		return ret;
 
-		struct loadparm_context *lp_ctx = talloc_get_type(ldb_get_opaque(ldb, "loadparm"), struct loadparm_context *);
+	} else {
+		enum {
+			INBOUND,
+			OUTBOUND,
+			UNKNOWN
+		} direction = UNKNOWN;
+
+		struct loadparm_context *lp_ctx = talloc_get_type(ldb_get_opaque(db->hdb_db, "loadparm"), struct loadparm_context);
 		/* Either an inbound or outbound trust */
 
 		if (strcasecmp(lp_realm(lp_ctx), principal->realm) == 0) {
 			/* look for inbound trust */
+			direction = INBOUND;
+			realm = principal->name.name_string.val[1];
 		}
 
 		if (strcasecmp(lp_realm(lp_ctx), principal->name.name_string.val[1]) == 0) {
 			/* look for outbound trust */
+			direction = OUTBOUND;
+			realm = principal->realm;
 		}
 
 		/* Trusted domains are under CN=system */
+		
+		ret = LDB_lookup_trust(context, (struct ldb_context *)db->hdb_db, 
+				       mem_ctx, 
+				       realm, HDB_LDB_ENT_TYPE_TRUST, realm_dn, &msg);
+		
+		if (ret != 0) {
+			krb5_warnx(context, "LDB_fetch: could not find principal in DB");
+			krb5_set_error_string(context, "LDB_fetch: could not find principal in DB");
+			return ret;
+		}
+		
+		ret = LDB_message2entry(context, db, mem_ctx, 
+					principal, HDB_LDB_ENT_TYPE_KRBTGT, 
+					msg[0], realm_ref_msg_1[0], entry_ex);
+		if (ret != 0) {
+			krb5_warnx(context, "LDB_fetch: message2entry failed");	
+		}
+		return ret;
+
 		
 		/* we should lookup trusted domains */
 		return HDB_ERR_NOENTRY;
 	}
 
-	realm_dn = samdb_result_dn((struct ldb_context *)db->hdb_db, mem_ctx, realm_ref_msg[0], "nCName", NULL);
-	
-	ret = LDB_lookup_principal(context, (struct ldb_context *)db->hdb_db, 
-				   mem_ctx, 
-				   principal, HDB_LDB_ENT_TYPE_KRBTGT, realm_dn, &msg);
-	
-	if (ret != 0) {
-		krb5_warnx(context, "LDB_fetch: could not find principal in DB");
-		krb5_set_error_string(context, "LDB_fetch: could not find principal in DB");
-		return ret;
-	}
-
-	ret = LDB_message2entry(context, db, mem_ctx, 
-				principal, HDB_LDB_ENT_TYPE_KRBTGT, 
-				msg[0], realm_ref_msg[0], entry_ex);
-	if (ret != 0) {
-		krb5_warnx(context, "LDB_fetch: message2entry failed");	
-	}
-	return ret;
 }
 
 static krb5_error_code LDB_fetch_server(krb5_context context, HDB *db, 
