@@ -31,6 +31,40 @@ struct sam_database_info {
         uint32 date_lo, date_hi;
 };
 
+/**
+ * check whether the client belongs to the hosts
+ * for which initial logon should be delayed...
+ */
+static bool delay_logon(const char *peer_name, const char *peer_addr)
+{
+	const char **delay_list = lp_init_logon_delayed_hosts();
+	const char *peer[2];
+
+	if (delay_list == NULL) {
+		return False;
+	}
+
+	peer[0] = peer_name;
+	peer[1] = peer_addr;
+
+	return list_match(delay_list, (const char *)peer, client_match);
+}
+
+static void delayed_init_logon_handler(struct event_context *event_ctx,
+				       struct timed_event *te,
+				       const struct timeval *now,
+				       void *private_data)
+{
+	struct packet_struct *p = (struct packet_struct *)private_data;
+
+	DEBUG(10, ("delayed_init_logon_handler (%lx): re-queuing packet.\n",
+		   (unsigned long)te));
+
+	queue_packet(p);
+
+	TALLOC_FREE(te);
+}
+
 /****************************************************************************
 Process a domain logon packet
 **************************************************************************/
@@ -280,6 +314,7 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 			{
 				fstring getdc_str;
 				fstring source_name;
+				char *source_addr;
 				char *q = buf + 2;
 				fstring asccomp;
 
@@ -591,13 +626,58 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 
 				pull_ascii_fstring(getdc_str, getdc);
 				pull_ascii_nstring(source_name, sizeof(source_name), dgram->source_name.name);
+				source_addr = SMB_STRDUP(inet_ntoa(dgram->header.source_ip));
+				if (source_addr == NULL) {
+					DEBUG(3, ("out of memory copying client"
+						  " address string\n"));
+					return;
+				}
 
-				send_mailslot(True, getdc,
-					outbuf,PTR_DIFF(q,outbuf),
-					global_myname(), 0x0,
-					source_name,
-					dgram->source_name.name_type,
-					p->ip, ip, p->port);
+				/*
+				 * handle delay.
+				 * packets requeued after delay are marked as
+				 * locked.
+				 */
+				if ((p->locked == False) &&
+				    (strlen(ascuser) == 0) &&
+				    delay_logon(source_name, source_addr))
+				{
+					struct timeval when;
+
+					DEBUG(3, ("process_logon_packet: "
+						  "delaying initial logon "
+						  "reply for client %s(%s) for "
+						  "%u milliseconds\n",
+						  source_name, source_addr,
+						  lp_init_logon_delay()));
+
+					when = timeval_current_ofs(0,
+						lp_init_logon_delay() * 1000);
+					p->locked = true;
+					event_add_timed(nmbd_event_context(),
+							NULL,
+							when,
+							"delayed_init_logon",
+							delayed_init_logon_handler,
+							p);
+				} else {
+					DEBUG(3, ("process_logon_packet: "
+						  "processing delayed initial "
+						  "logon reply for client "
+						  "%s(%s)\n",
+						  source_name, source_addr));
+
+					p->locked = false;
+					send_mailslot(true, getdc,
+						outbuf,PTR_DIFF(q,outbuf),
+						global_myname(), 0x0,
+						source_name,
+						dgram->source_name.name_type,
+						p->ip, ip, p->port);
+				}
+
+				SAFE_FREE(source_addr);
+
 				break;
 			}
 
