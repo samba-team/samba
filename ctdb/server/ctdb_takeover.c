@@ -304,12 +304,17 @@ static void release_ip_callback(struct ctdb_context *ctdb, int status,
 	/* send a message to all clients of this node telling them
 	   that the cluster has been reconfigured and they should
 	   release any sockets on this IP */
+#if 1
+	strncpy(ip, inet_ntoa(state->addr->ip.sin_addr), sizeof(ip)-1);
+#else
 	if (inet_ntop(state->addr->sa.sa_family, &state->addr->sa.sa_data[0], ip, sizeof(ip)) == NULL) {
 		DEBUG(DEBUG_ERR, (__location__ " inet_ntop() failed\n"));
 	}
-	
+#endif
 	data.dptr = (uint8_t *)ip;
 	data.dsize = strlen(ip)+1;
+
+	DEBUG(DEBUG_INFO,(__location__ " sending RELEASE_IP for '%s'\n", data.dptr));
 
 	ctdb_daemon_send_message(ctdb, ctdb->pnn, CTDB_SRVID_RELEASE_IP, data);
 
