@@ -1416,7 +1416,7 @@ size_t gensec_gssapi_sig_size(struct gensec_security *gensec_security, size_t da
 			 * TODO: windows uses 76 here, but we don't know
 			 *       gss_wrap works with aes keys yet
 			 */
-			gensec_gssapi_state->sig_size = 60;
+			gensec_gssapi_state->sig_size = 76;
 		} else {
 			gensec_gssapi_state->sig_size = 28;
 		}
