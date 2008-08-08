@@ -566,9 +566,10 @@ static void test_analyse_objects(struct torture_context *tctx,
 				}
 
 				if (pull_fn) {
-					ndr_err = ndr_pull_struct_blob_all(&plain_data, ptr,
-									   lp_iconv_convenience(tctx->lp_ctx), ptr,
-									   pull_fn);
+					/* Can't use '_all' because of PIDL bugs with relative pointers */
+					ndr_err = ndr_pull_struct_blob(&plain_data, ptr,
+								       lp_iconv_convenience(tctx->lp_ctx), ptr,
+								       pull_fn);
 					if (NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 						ndr_print_debug(print_fn, name, ptr);
 					} else {
