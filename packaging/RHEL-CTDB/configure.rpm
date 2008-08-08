@@ -8,7 +8,6 @@ case `uname -m` in
 	;;
 esac
 
-
 CFLAGS="-Wall -g -D_GNU_SOURCE" ./configure \
         --prefix=/usr \
         --localstatedir=/var \
@@ -21,23 +20,23 @@ CFLAGS="-Wall -g -D_GNU_SOURCE" ./configure \
         --with-privatedir=/etc/samba \
         --with-sambabook=/usr/share/swat/using_samba \
         --with-swatdir=/usr/share/swat \
-        --enable-cups \
+	--disable-cups \
         --with-acl-support \
-        --with-ads \
+	--with-ads \
         --with-automount \
         --with-fhs \
-        --with-pam_smbpass \
-        --with-libsmbclient \
-        --with-libsmbsharemodes \
+	--with-pam_smbpass \
+	--with-libsmbclient \
+	--with-libsmbsharemodes \
         --without-smbwrapper \
-        --with-pam \
-        --with-quotas \
-        --with-shared-modules=idmap_rid,idmap_ad,idmap_tdb2 \
-        --with-syslog \
-        --with-utmp \
-        --with-cluster-support \
-        --with-ctdb=/usr/include \
-        --without-ldb \
-        --with-dnsupdate \
-        --with-aio-support \
+	--with-pam \
+	--with-quotas \
+	--with-shared-modules=idmap_rid,idmap_ad,idmap_tdb2 \
+	--with-syslog \
+	--with-utmp \
+	--with-cluster-support \
+	--with-ctdb=/usr/include \
+	--without-ldb \
+	--with-dnsupdate \
+	--with-aio-support \
 	$*
