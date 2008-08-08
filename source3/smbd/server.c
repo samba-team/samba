@@ -573,6 +573,10 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 			   MSG_SMB_STAT_CACHE_DELETE, smb_stat_cache_delete);
 	brl_register_msgs(smbd_messaging_context());
 
+#ifdef CLUSTER_SUPPORT
+	ctdbd_register_reconfigure(messaging_ctdbd_connection());
+#endif
+
 #ifdef DEVELOPER
 	messaging_register(smbd_messaging_context(), NULL,
 			   MSG_SMB_INJECT_FAULT, msg_inject_fault);
