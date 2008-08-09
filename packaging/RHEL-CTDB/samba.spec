@@ -172,7 +172,7 @@ CFLAGS="$RPM_OPT_FLAGS $EXTRA -D_GNU_SOURCE" ./configure \
 	--with-cluster-support \
 	--with-ctdb=/usr/include \
 	--without-ldb \
-	--with-dnsupdate \
+	--without-dnsupdate \
 	--with-aio-support
 
 make showlayout
