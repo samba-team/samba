@@ -60,8 +60,6 @@ enum protocol_types Protocol = PROTOCOL_COREPLUS;
 /* this is used by the chaining code */
 int chain_size = 0;
 
-int trans_num = 0;
-
 static enum remote_arch_types ra_type = RA_UNKNOWN;
 
 /***********************************************************************
