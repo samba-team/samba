@@ -2527,7 +2527,7 @@ NTSTATUS unlink_internals(connection_struct *conn, struct smb_request *req,
 		TALLOC_FREE(dir_hnd);
 	}
 
-	if (count == 0 && NT_STATUS_IS_OK(status)) {
+	if (count == 0 && NT_STATUS_IS_OK(status) && errno != 0) {
 		status = map_nt_error_from_unix(errno);
 	}
 
@@ -5910,7 +5910,7 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 	}
 	TALLOC_FREE(dir_hnd);
 
-	if (count == 0 && NT_STATUS_IS_OK(status)) {
+	if (count == 0 && NT_STATUS_IS_OK(status) && errno != 0) {
 		status = map_nt_error_from_unix(errno);
 	}
 
