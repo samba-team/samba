@@ -107,8 +107,16 @@ NTSTATUS map_nt_error_from_unix(int unix_error)
 {
 	int i = 0;
 
-	if (unix_error == 0)
-		return NT_STATUS_OK;
+	if (unix_error == 0) {
+		/* we map this to an error, not success, as this
+		   function is only called in an error path. Lots of
+		   our virtualised functions may fail without making a
+		   unix system call that fails (such as when they are
+		   checking for some handle existing), so unix_error
+		   may be unset
+		*/
+		return NT_STATUS_UNSUCCESSFUL;
+	}
 
 	/* Look through list */
 	while(unix_dos_nt_errmap[i].unix_error != 0) {
