@@ -1696,7 +1696,7 @@ void chain_reply(struct smb_request *req)
 	 * remember how much the caller added to the chain, only counting
 	 * stuff after the parameter words
 	 */
-	chain_size += outsize_padded - smb_wct;
+	chain_size += (outsize_padded - smb_wct);
 
 	/*
 	 * work out pointers into the original packets. The
@@ -1824,6 +1824,12 @@ void chain_reply(struct smb_request *req)
 
 	SAFE_FREE(caller_output);
 	TALLOC_FREE(req2);
+
+	/*
+	 * Reset the chain_size for our caller's offset calculations
+	 */
+
+	chain_size -= (outsize_padded - smb_wct);
 
 	return;
 }
