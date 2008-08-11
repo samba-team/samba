@@ -439,6 +439,12 @@ _gss_ntlm_init_sec_context
 	    ret = krb5_data_copy(&ctx->sessionkey, 
 				 sessionkey.data, sessionkey.length);
 	    free(sessionkey.data);
+	    if (ret) {
+		_gss_ntlm_delete_sec_context(minor_status,
+					     context_handle, NULL);
+		*minor_status = ret;
+		return GSS_S_FAILURE;
+	    }
 	}
 
 	if (ctx->flags & NTLM_NEG_NTLM2_SESSION) {
