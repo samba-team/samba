@@ -18,6 +18,36 @@ Changes since 3.2.1
 -------------------
 
 
+o   Michael Adam <obnox@samba.org>
+    * Fix replacement of random seed generator.
+    * Fix a race condition in idmap_tdb2_allocate_id().
+
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 5675: Fix smbspool program assuming Kerberos authentication by
+      mistake.
+    * Several build fixes.
+
+
+o   Andrew Bartlett <abartlet@samba.org>
+    * Include stdlib.h to get a prototype for free().
+
+
+o   Yannick Bergeron <yaberger@ca.ibm.com>
+    * Solve an IBM XL C/C++ compiler error encountered in get_exit_code()
+      auth_errors array initialization in client/smbspool.c.
+    * Use NGROUPS_MAX instead of 32 for the max group value in
+      rep_initgroups().
+
+
+o   Volker Lendecke <vl@samba.org>
+    * Fix smb_len calculation for chained requests.
+
+
+o   Andrew Tridgell <tridge@samba.org>
+    * Fix a fd leak when trying to regain contact to a domain controller
+      in Winbind.
+    * Fix permissions on ctdb databases.
 
 
 ######################################################################
