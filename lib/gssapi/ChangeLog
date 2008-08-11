@@ -1,3 +1,8 @@
+2008-08-02  Love Hörnquist Åstrand  <lha@h5l.org>
+
+	* mech/gss_canonicalize_name.c: Not init m, return never
+	used (overwritten later).
+
 2008-07-25  Love Hörnquist Åstrand  <lha@kth.se>
 
 	* ntlm/init_sec_context.c: Use krb5_cc_get_config.
