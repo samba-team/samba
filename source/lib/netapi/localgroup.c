@@ -1015,7 +1015,8 @@ static NTSTATUS libnetapi_lsa_lookup_names3(TALLOC_CTX *mem_ctx,
 ****************************************************************/
 
 static WERROR NetLocalGroupModifyMembers_r(struct libnetapi_ctx *ctx,
-					   struct NetLocalGroupAddMembers *add)
+					   struct NetLocalGroupAddMembers *add,
+					   struct NetLocalGroupDelMembers *del)
 {
 	struct NetLocalGroupAddMembers *r = NULL;
 
@@ -1034,14 +1035,20 @@ static WERROR NetLocalGroupModifyMembers_r(struct libnetapi_ctx *ctx,
 	struct LOCALGROUP_MEMBERS_INFO_3 *info3 = NULL;
 
 	struct dom_sid *add_sids = NULL;
+	struct dom_sid *del_sids = NULL;
 	size_t num_add_sids = 0;
+	size_t num_del_sids = 0;
 
-	if (!add) {
+	if ((!add && !del) || (add && del)) {
 		return WERR_INVALID_PARAM;
 	}
 
 	if (add) {
 		r = add;
+	}
+
+	if (del) {
+		r = (struct NetLocalGroupAddMembers *)del;
 	}
 
 	if (!r->in.group_name) {
@@ -1183,12 +1190,36 @@ static WERROR NetLocalGroupModifyMembers_r(struct libnetapi_ctx *ctx,
 		}
 	}
 
+	if (del) {
+		for (i=0; i < r->in.total_entries; i++) {
+			status = add_sid_to_array_unique(ctx, &member_sids[i],
+							 &del_sids,
+							 &num_del_sids);
+			if (!NT_STATUS_IS_OK(status)) {
+				werr = ntstatus_to_werror(status);
+				goto done;
+			}
+		}
+	}
+
 	/* add list */
 
 	for (i=0; i < num_add_sids; i++) {
 		status = rpccli_samr_AddAliasMember(pipe_cli, ctx,
 						    &alias_handle,
 						    &add_sids[i]);
+		if (!NT_STATUS_IS_OK(status)) {
+			werr = ntstatus_to_werror(status);
+			goto done;
+		}
+	}
+
+	/* del list */
+
+	for (i=0; i < num_del_sids; i++) {
+		status = rpccli_samr_DeleteAliasMember(pipe_cli, ctx,
+						       &alias_handle,
+						       &del_sids[i]);
 		if (!NT_STATUS_IS_OK(status)) {
 			werr = ntstatus_to_werror(status);
 			goto done;
@@ -1221,7 +1252,7 @@ static WERROR NetLocalGroupModifyMembers_r(struct libnetapi_ctx *ctx,
 WERROR NetLocalGroupAddMembers_r(struct libnetapi_ctx *ctx,
 				 struct NetLocalGroupAddMembers *r)
 {
-	return NetLocalGroupModifyMembers_r(ctx, r);
+	return NetLocalGroupModifyMembers_r(ctx, r, NULL);
 }
 
 /****************************************************************
@@ -1239,7 +1270,7 @@ WERROR NetLocalGroupAddMembers_l(struct libnetapi_ctx *ctx,
 WERROR NetLocalGroupDelMembers_r(struct libnetapi_ctx *ctx,
 				 struct NetLocalGroupDelMembers *r)
 {
-	return WERR_NOT_SUPPORTED;
+	return NetLocalGroupModifyMembers_r(ctx, NULL, r);
 }
 
 /****************************************************************
@@ -1248,7 +1279,7 @@ WERROR NetLocalGroupDelMembers_r(struct libnetapi_ctx *ctx,
 WERROR NetLocalGroupDelMembers_l(struct libnetapi_ctx *ctx,
 				 struct NetLocalGroupDelMembers *r)
 {
-	return WERR_NOT_SUPPORTED;
+	return NetLocalGroupDelMembers_r(ctx, r);
 }
 
 /****************************************************************
