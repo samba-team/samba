@@ -134,11 +134,14 @@ static OM_uint32 acquire_initiator_cred
      * errors while searching.
      */
 
-    if (handle->principal)
+    if (handle->principal) {
 	kret = krb5_cc_cache_match (context,
 				    handle->principal,
 				    NULL,
 				    &ccache);
+	if (kret)
+	    goto end;
+    }
     
     if (ccache == NULL) {
 	kret = krb5_cc_default(context, &ccache);
