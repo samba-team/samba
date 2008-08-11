@@ -154,6 +154,8 @@ interface dcerpc
 		[flag(NDR_REMAINING)] DATA_BLOB credentials;
 	} dcerpc_auth;
 
+	const uint8 DCERPC_AUTH_TRAILER_LENGTH = 8;
+
 	typedef [public] struct {
 		uint32 _pad;
 		[flag(NDR_REMAINING)] DATA_BLOB auth_info;
