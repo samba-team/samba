@@ -503,7 +503,7 @@ iterate_entries(hx509_context context,
 {
     CK_OBJECT_HANDLE object;
     CK_ULONG object_count;
-    int ret, i;
+    int ret, ret2, i;
 
     ret = P11FUNC(p, FindObjectsInit, (session, search_data, num_search_data));
     if (ret != CKR_OK) {
@@ -557,13 +557,12 @@ iterate_entries(hx509_context context,
 	query[i].pValue = NULL;
     }
 
-    ret = P11FUNC(p, FindObjectsFinal, (session));
-    if (ret != CKR_OK) {
-	return -2;
+    ret2 = P11FUNC(p, FindObjectsFinal, (session));
+    if (ret2 != CKR_OK) {
+	return ret2;
     }
 
-
-    return 0;
+    return ret;
 }
 		
 static BIGNUM *
