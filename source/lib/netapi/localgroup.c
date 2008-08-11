@@ -1016,7 +1016,8 @@ static NTSTATUS libnetapi_lsa_lookup_names3(TALLOC_CTX *mem_ctx,
 
 static WERROR NetLocalGroupModifyMembers_r(struct libnetapi_ctx *ctx,
 					   struct NetLocalGroupAddMembers *add,
-					   struct NetLocalGroupDelMembers *del)
+					   struct NetLocalGroupDelMembers *del,
+					   struct NetLocalGroupSetMembers *set)
 {
 	struct NetLocalGroupAddMembers *r = NULL;
 
@@ -1029,7 +1030,7 @@ static WERROR NetLocalGroupModifyMembers_r(struct libnetapi_ctx *ctx,
 	struct policy_handle connect_handle, domain_handle, builtin_handle, alias_handle;
 	struct dom_sid2 *domain_sid = NULL;
 	struct dom_sid *member_sids = NULL;
-	int i = 0;
+	int i = 0, k = 0;
 
 	struct LOCALGROUP_MEMBERS_INFO_0 *info0 = NULL;
 	struct LOCALGROUP_MEMBERS_INFO_3 *info3 = NULL;
@@ -1039,7 +1040,7 @@ static WERROR NetLocalGroupModifyMembers_r(struct libnetapi_ctx *ctx,
 	size_t num_add_sids = 0;
 	size_t num_del_sids = 0;
 
-	if ((!add && !del) || (add && del)) {
+	if ((!add && !del && !set) || (add && del && set)) {
 		return WERR_INVALID_PARAM;
 	}
 
@@ -1049,6 +1050,10 @@ static WERROR NetLocalGroupModifyMembers_r(struct libnetapi_ctx *ctx,
 
 	if (del) {
 		r = (struct NetLocalGroupAddMembers *)del;
+	}
+
+	if (set) {
+		r = (struct NetLocalGroupAddMembers *)set;
 	}
 
 	if (!r->in.group_name) {
@@ -1202,6 +1207,63 @@ static WERROR NetLocalGroupModifyMembers_r(struct libnetapi_ctx *ctx,
 		}
 	}
 
+	if (set) {
+
+		struct lsa_SidArray current_sids;
+
+		status = rpccli_samr_GetMembersInAlias(pipe_cli, ctx,
+						       &alias_handle,
+						       &current_sids);
+		if (!NT_STATUS_IS_OK(status)) {
+			werr = ntstatus_to_werror(status);
+			goto done;
+		}
+
+		/* add list */
+
+		for (i=0; i < r->in.total_entries; i++) {
+			bool already_member = false;
+			for (k=0; k < current_sids.num_sids; k++) {
+				if (sid_equal(&member_sids[i],
+					      current_sids.sids[k].sid)) {
+					already_member = true;
+					break;
+				}
+			}
+			if (!already_member) {
+				status = add_sid_to_array_unique(ctx,
+					&member_sids[i],
+					&add_sids, &num_add_sids);
+				if (!NT_STATUS_IS_OK(status)) {
+					werr = ntstatus_to_werror(status);
+					goto done;
+				}
+			}
+		}
+
+		/* del list */
+
+		for (k=0; k < current_sids.num_sids; k++) {
+			bool keep_member = false;
+			for (i=0; i < r->in.total_entries; i++) {
+				if (sid_equal(&member_sids[i],
+					      current_sids.sids[k].sid)) {
+					keep_member = true;
+					break;
+				}
+			}
+			if (!keep_member) {
+				status = add_sid_to_array_unique(ctx,
+						current_sids.sids[k].sid,
+						&del_sids, &num_del_sids);
+				if (!NT_STATUS_IS_OK(status)) {
+					werr = ntstatus_to_werror(status);
+					goto done;
+				}
+			}
+		}
+	}
+
 	/* add list */
 
 	for (i=0; i < num_add_sids; i++) {
@@ -1252,7 +1314,7 @@ static WERROR NetLocalGroupModifyMembers_r(struct libnetapi_ctx *ctx,
 WERROR NetLocalGroupAddMembers_r(struct libnetapi_ctx *ctx,
 				 struct NetLocalGroupAddMembers *r)
 {
-	return NetLocalGroupModifyMembers_r(ctx, r, NULL);
+	return NetLocalGroupModifyMembers_r(ctx, r, NULL, NULL);
 }
 
 /****************************************************************
@@ -1270,7 +1332,7 @@ WERROR NetLocalGroupAddMembers_l(struct libnetapi_ctx *ctx,
 WERROR NetLocalGroupDelMembers_r(struct libnetapi_ctx *ctx,
 				 struct NetLocalGroupDelMembers *r)
 {
-	return NetLocalGroupModifyMembers_r(ctx, NULL, r);
+	return NetLocalGroupModifyMembers_r(ctx, NULL, r, NULL);
 }
 
 /****************************************************************
@@ -1306,7 +1368,7 @@ WERROR NetLocalGroupGetMembers_l(struct libnetapi_ctx *ctx,
 WERROR NetLocalGroupSetMembers_r(struct libnetapi_ctx *ctx,
 				 struct NetLocalGroupSetMembers *r)
 {
-	return WERR_NOT_SUPPORTED;
+	return NetLocalGroupModifyMembers_r(ctx, NULL, NULL, r);
 }
 
 /****************************************************************
@@ -1315,6 +1377,6 @@ WERROR NetLocalGroupSetMembers_r(struct libnetapi_ctx *ctx,
 WERROR NetLocalGroupSetMembers_l(struct libnetapi_ctx *ctx,
 				 struct NetLocalGroupSetMembers *r)
 {
-	return WERR_NOT_SUPPORTED;
+	return NetLocalGroupSetMembers_r(ctx, r);
 }
 
