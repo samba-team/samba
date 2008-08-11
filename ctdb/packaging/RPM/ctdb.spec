@@ -5,7 +5,7 @@ Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
 Version: 1.0
-Release: 54
+Release: 55
 Epoch: 0
 License: GNU GPL version 3
 Group: System Environment/Daemons
@@ -118,6 +118,8 @@ fi
 %{_includedir}/ctdb_private.h
 
 %changelog
+* Mon Aug 11 2008: Version 1.0.55
+ - Fix the releaseip message we seond to samba.
 * Fri Aug 8 2008 : Version 1.0.54
  - fix a looping error in the transaction code
  - provide a more detailed error code for persistent store errors
