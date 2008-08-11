@@ -1,5 +1,7 @@
 2008-08-02  Love Hörnquist Åstrand  <lha@h5l.org>
-	
+
+	* ntlm/init_sec_context.c: Catch error
+
 	* krb5/inquire_sec_context_by_oid.c: Catch store failure.
 
 	* mech/gss_canonicalize_name.c: Not init m, return never
