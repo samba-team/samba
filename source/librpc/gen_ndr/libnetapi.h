@@ -16,6 +16,7 @@
 #define FILTER_INTERDOMAIN_TRUST_ACCOUNT	( 0x0008 )
 #define FILTER_WORKSTATION_TRUST_ACCOUNT	( 0x0010 )
 #define FILTER_SERVER_TRUST_ACCOUNT	( 0x0020 )
+#define TIMEQ_FOREVER	( (uint32_t)-1L )
 enum NET_API_STATUS
 #ifndef USE_UINT_ENUMS
  {
@@ -340,6 +341,58 @@ struct USER_INFO_X {
 	uint32_t usriX_code_page;
 };
 
+struct USER_MODALS_INFO_0 {
+	uint32_t usrmod0_min_passwd_len;
+	uint32_t usrmod0_max_passwd_age;
+	uint32_t usrmod0_min_passwd_age;
+	uint32_t usrmod0_force_logoff;
+	uint32_t usrmod0_password_hist_len;
+};
+
+struct USER_MODALS_INFO_1 {
+	uint32_t usrmod1_role;
+	const char * usrmod1_primary;
+};
+
+struct USER_MODALS_INFO_2 {
+	const char * usrmod2_domain_name;
+	struct domsid *usrmod2_domain_id;/* [unique] */
+};
+
+struct USER_MODALS_INFO_3 {
+	uint32_t usrmod3_lockout_duration;
+	uint32_t usrmod3_lockout_observation_window;
+	uint32_t usrmod3_lockout_threshold;
+};
+
+struct USER_MODALS_INFO_1001 {
+	uint32_t usrmod1001_min_passwd_len;
+};
+
+struct USER_MODALS_INFO_1002 {
+	uint32_t usrmod1002_max_passwd_age;
+};
+
+struct USER_MODALS_INFO_1003 {
+	uint32_t usrmod1003_min_passwd_age;
+};
+
+struct USER_MODALS_INFO_1004 {
+	uint32_t usrmod1004_force_logoff;
+};
+
+struct USER_MODALS_INFO_1005 {
+	uint32_t usrmod1005_password_hist_len;
+};
+
+struct USER_MODALS_INFO_1006 {
+	uint32_t usrmod1006_role;
+};
+
+struct USER_MODALS_INFO_1007 {
+	const char * usrmod1007_primary;
+};
+
 struct NET_DISPLAY_USER {
 	const char * usri1_name;
 	const char * usri1_comment;
@@ -653,6 +706,35 @@ struct NetUserSetInfo {
 	struct {
 		const char * server_name;
 		const char * user_name;
+		uint32_t level;
+		uint8_t *buffer;/* [ref] */
+	} in;
+
+	struct {
+		uint32_t *parm_err;/* [ref] */
+		enum NET_API_STATUS result;
+	} out;
+
+};
+
+
+struct NetUserModalsGet {
+	struct {
+		const char * server_name;
+		uint32_t level;
+	} in;
+
+	struct {
+		uint8_t **buffer;/* [ref] */
+		enum NET_API_STATUS result;
+	} out;
+
+};
+
+
+struct NetUserModalsSet {
+	struct {
+		const char * server_name;
 		uint32_t level;
 		uint8_t *buffer;/* [ref] */
 	} in;

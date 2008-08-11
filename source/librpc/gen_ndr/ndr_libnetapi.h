@@ -36,37 +36,41 @@
 
 #define NDR_NETUSERSETINFO (0x0e)
 
-#define NDR_NETQUERYDISPLAYINFORMATION (0x0f)
+#define NDR_NETUSERMODALSGET (0x0f)
 
-#define NDR_NETGROUPADD (0x10)
+#define NDR_NETUSERMODALSSET (0x10)
 
-#define NDR_NETGROUPDEL (0x11)
+#define NDR_NETQUERYDISPLAYINFORMATION (0x11)
 
-#define NDR_NETGROUPENUM (0x12)
+#define NDR_NETGROUPADD (0x12)
 
-#define NDR_NETGROUPSETINFO (0x13)
+#define NDR_NETGROUPDEL (0x13)
 
-#define NDR_NETGROUPGETINFO (0x14)
+#define NDR_NETGROUPENUM (0x14)
 
-#define NDR_NETGROUPADDUSER (0x15)
+#define NDR_NETGROUPSETINFO (0x15)
 
-#define NDR_NETGROUPDELUSER (0x16)
+#define NDR_NETGROUPGETINFO (0x16)
 
-#define NDR_NETGROUPGETUSERS (0x17)
+#define NDR_NETGROUPADDUSER (0x17)
 
-#define NDR_NETLOCALGROUPADD (0x18)
+#define NDR_NETGROUPDELUSER (0x18)
 
-#define NDR_NETLOCALGROUPDEL (0x19)
+#define NDR_NETGROUPGETUSERS (0x19)
 
-#define NDR_NETLOCALGROUPGETINFO (0x1a)
+#define NDR_NETLOCALGROUPADD (0x1a)
 
-#define NDR_NETLOCALGROUPSETINFO (0x1b)
+#define NDR_NETLOCALGROUPDEL (0x1b)
 
-#define NDR_NETLOCALGROUPENUM (0x1c)
+#define NDR_NETLOCALGROUPGETINFO (0x1c)
 
-#define NDR_NETREMOTETOD (0x1d)
+#define NDR_NETLOCALGROUPSETINFO (0x1d)
 
-#define NDR_LIBNETAPI_CALL_COUNT (30)
+#define NDR_NETLOCALGROUPENUM (0x1e)
+
+#define NDR_NETREMOTETOD (0x1f)
+
+#define NDR_LIBNETAPI_CALL_COUNT (32)
 enum ndr_err_code ndr_push_NET_API_STATUS(struct ndr_push *ndr, int ndr_flags, enum NET_API_STATUS r);
 enum ndr_err_code ndr_pull_NET_API_STATUS(struct ndr_pull *ndr, int ndr_flags, enum NET_API_STATUS *r);
 void ndr_print_NET_API_STATUS(struct ndr_print *ndr, const char *name, enum NET_API_STATUS r);
@@ -235,6 +239,12 @@ void ndr_print_NetUserGetInfo(struct ndr_print *ndr, const char *name, int flags
 enum ndr_err_code ndr_push_NetUserSetInfo(struct ndr_push *ndr, int flags, const struct NetUserSetInfo *r);
 enum ndr_err_code ndr_pull_NetUserSetInfo(struct ndr_pull *ndr, int flags, struct NetUserSetInfo *r);
 void ndr_print_NetUserSetInfo(struct ndr_print *ndr, const char *name, int flags, const struct NetUserSetInfo *r);
+enum ndr_err_code ndr_push_NetUserModalsGet(struct ndr_push *ndr, int flags, const struct NetUserModalsGet *r);
+enum ndr_err_code ndr_pull_NetUserModalsGet(struct ndr_pull *ndr, int flags, struct NetUserModalsGet *r);
+void ndr_print_NetUserModalsGet(struct ndr_print *ndr, const char *name, int flags, const struct NetUserModalsGet *r);
+enum ndr_err_code ndr_push_NetUserModalsSet(struct ndr_push *ndr, int flags, const struct NetUserModalsSet *r);
+enum ndr_err_code ndr_pull_NetUserModalsSet(struct ndr_pull *ndr, int flags, struct NetUserModalsSet *r);
+void ndr_print_NetUserModalsSet(struct ndr_print *ndr, const char *name, int flags, const struct NetUserModalsSet *r);
 enum ndr_err_code ndr_push_NetQueryDisplayInformation(struct ndr_push *ndr, int flags, const struct NetQueryDisplayInformation *r);
 enum ndr_err_code ndr_pull_NetQueryDisplayInformation(struct ndr_pull *ndr, int flags, struct NetQueryDisplayInformation *r);
 void ndr_print_NetQueryDisplayInformation(struct ndr_print *ndr, const char *name, int flags, const struct NetQueryDisplayInformation *r);
