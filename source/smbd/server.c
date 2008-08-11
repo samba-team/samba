@@ -575,7 +575,9 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 	brl_register_msgs(smbd_messaging_context());
 
 #ifdef CLUSTER_SUPPORT
-	ctdbd_register_reconfigure(messaging_ctdbd_connection());
+	if (lp_clustering()) {
+		ctdbd_register_reconfigure(messaging_ctdbd_connection());
+	}
 #endif
 
 #ifdef DEVELOPER
