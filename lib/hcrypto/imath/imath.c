@@ -1,8 +1,8 @@
 /*
   Name:     imath.c
   Purpose:  Arbitrary precision integer arithmetic routines.
-  Author:   M. J. Fromberger <http://www.dartmouth.edu/~sting/>
-  Info:     $Id$
+  Author:   M. J. Fromberger <http://spinning-yarns.org/michael/>
+  Info:     $Id: imath.c 645 2008-08-03 04:00:30Z sting $
 
   Copyright (C) 2002-2007 Michael J. Fromberger, All Rights Reserved.
 
@@ -53,6 +53,7 @@ const mp_result MP_RANGE  = -3; /* argument out of range  */
 const mp_result MP_UNDEF  = -4; /* result undefined       */
 const mp_result MP_TRUNC  = -5; /* output truncated       */
 const mp_result MP_BADARG = -6; /* invalid null argument  */
+const mp_result MP_MINERR = -6;
 
 const mp_sign   MP_NEG  = 1;    /* value is strictly negative */
 const mp_sign   MP_ZPOS = 0;    /* value is non-negative      */
@@ -65,7 +66,7 @@ static const char *s_error_msg[] = {
   "argument out of range",
   "result undefined",
   "output truncated",
-  "invalid null argument",
+  "invalid argument",
   NULL
 };
 
@@ -97,14 +98,7 @@ static const double s_log2[] = {
    0.218104292, 0.215338279, 0.212746054, 0.210309918, 	/* 24 25 26 27 */
    0.208014598, 0.205846832, 0.203795047, 0.201849087, 	/* 28 29 30 31 */
    0.200000000, 0.198239863, 0.196561632, 0.194959022, 	/* 32 33 34 35 */
-   0.193426404, 0.191958720, 0.190551412, 0.189200360, 	/* 36 37 38 39 */
-   0.187901825, 0.186652411, 0.185449023, 0.184288833, 	/* 40 41 42 43 */
-   0.183169251, 0.182087900, 0.181042597, 0.180031327, 	/* 44 45 46 47 */
-   0.179052232, 0.178103594, 0.177183820, 0.176291434, 	/* 48 49 50 51 */
-   0.175425064, 0.174583430, 0.173765343, 0.172969690, 	/* 52 53 54 55 */
-   0.172195434, 0.171441601, 0.170707280, 0.169991616, 	/* 56 57 58 59 */
-   0.169293808, 0.168613099, 0.167948779, 0.167300179, 	/* 60 61 62 63 */
-   0.166666667
+   0.193426404,                                         /* 36          */
 };
 
 /* }}} */
@@ -130,31 +124,38 @@ memcpy(q__,p__,i__);}while(0)
 #define REV(T, A, N) \
 do{T *u_=(A),*v_=u_+(N)-1;while(u_<v_){T xch=*u_;*u_++=*v_;*v_--=xch;}}while(0)
 
-#if TRACEABLE_CLAMP
-#define CLAMP(Z) s_clamp(Z)
-#else
 #define CLAMP(Z) \
 do{mp_int z_=(Z);mp_size uz_=MP_USED(z_);mp_digit *dz_=MP_DIGITS(z_)+uz_-1;\
 while(uz_ > 1 && (*dz_-- == 0)) --uz_;MP_USED(z_)=uz_;}while(0)
-#endif
 
+/* Select min/max.  Do not provide expressions for which multiple
+   evaluation would be problematic, e.g. x++ */
 #define MIN(A, B) ((B)<(A)?(B):(A))
 #define MAX(A, B) ((B)>(A)?(B):(A))
+
+/* Exchange lvalues A and B of type T, e.g.
+   SWAP(int, x, y) where x and y are variables of type int. */
 #define SWAP(T, A, B) do{T t_=(A);A=(B);B=t_;}while(0)
 
+/* Used to set up and access simple temp stacks within functions. */
 #define TEMP(K) (temp + (K))
 #define SETUP(E, C) \
 do{if((res = (E)) != MP_OK) goto CLEANUP; ++(C);}while(0)
 
+/* Compare value to zero. */
 #define CMPZ(Z) \
 (((Z)->used==1&&(Z)->digits[0]==0)?0:((Z)->sign==MP_NEG)?-1:1)
 
+/* Multiply X by Y into Z, ignoring signs.  Requires that Z have
+   enough storage preallocated to hold the result. */
 #define UMUL(X, Y, Z) \
 do{mp_size ua_=MP_USED(X),ub_=MP_USED(Y);mp_size o_=ua_+ub_;\
 ZERO(MP_DIGITS(Z),o_);\
 (void) s_kmul(MP_DIGITS(X),MP_DIGITS(Y),MP_DIGITS(Z),ua_,ub_);\
 MP_USED(Z)=o_;CLAMP(Z);}while(0)
 
+/* Square X into Z.  Requires that Z have enough storage to hold the
+   result. */
 #define USQR(X, Z) \
 do{mp_size ua_=MP_USED(X),o_=ua_+ua_;ZERO(MP_DIGITS(Z),o_);\
 (void) s_ksqr(MP_DIGITS(X),MP_DIGITS(Z),ua_);MP_USED(Z)=o_;CLAMP(Z);}while(0)
@@ -194,25 +195,20 @@ static void s_free(void *ptr);
    necessary.  Returns true if successful, false if out of memory. */
 static int  s_pad(mp_int z, mp_size min);
 
-/* Normalize by removing leading zeroes (except when z = 0) */
-#if TRACEABLE_CLAMP
-static void      s_clamp(mp_int z);
-#endif
-
 /* Fill in a "fake" mp_int on the stack with a given value */
-static void      s_fake(mp_int z, int value, mp_digit vbuf[]);
+static void      s_fake(mp_int z, mp_small value, mp_digit vbuf[]);
 
 /* Compare two runs of digits of given length, returns <0, 0, >0 */
 static int       s_cdig(mp_digit *da, mp_digit *db, mp_size len);
 
 /* Pack the unsigned digits of v into array t */
-static int       s_vpack(int v, mp_digit t[]);
+static int       s_vpack(mp_small v, mp_digit t[]);
 
 /* Compare magnitudes of a and b, returns <0, 0, >0 */
 static int       s_ucmp(mp_int a, mp_int b);
 
 /* Compare magnitudes of a and v, returns <0, 0, >0 */
-static int       s_vcmp(mp_int a, int v);
+static int       s_vcmp(mp_int a, mp_small v);
 
 /* Unsigned magnitude addition; assumes dc is big enough.
    Carry out is returned (no memory allocated). */
@@ -272,7 +268,7 @@ static int       s_dp2k(mp_int z);
 static int       s_isp2(mp_int z);
 
 /* Set z to 2^k.  May allocate; returns false in case this fails. */
-static int       s_2expt(mp_int z, int k);
+static int       s_2expt(mp_int z, mp_small k);
 
 /* Normalize a and b for division, returns normalization constant */
 static int       s_norm(mp_int a, mp_int b);
@@ -410,7 +406,7 @@ mp_result mp_int_init_copy(mp_int z, mp_int old)
 
 /* {{{ mp_int_init_value(z, value) */
 
-mp_result mp_int_init_value(mp_int z, int value)
+mp_result mp_int_init_value(mp_int z, mp_small value)
 {
   mpz_t     vtmp;
   mp_digit  vbuf[MP_VALUE_DIGITS(value)];
@@ -423,7 +419,7 @@ mp_result mp_int_init_value(mp_int z, int value)
 
 /* {{{ mp_int_set_value(z, value) */
 
-mp_result  mp_int_set_value(mp_int z, int value)
+mp_result  mp_int_set_value(mp_int z, mp_small value)
 {
   mpz_t    vtmp;
   mp_digit vbuf[MP_VALUE_DIGITS(value)];
@@ -589,12 +585,18 @@ mp_result mp_int_add(mp_int a, mp_int b, mp_int c)
     mp_int  x, y;
     int     cmp = s_ucmp(a, b); /* magnitude comparision, sign ignored */
 
-    /* Set x to max(a, b), y to min(a, b) to simplify later code */
-    if(cmp >= 0) {
-      x = a; y = b;
-    } 
+    /* Set x to max(a, b), y to min(a, b) to simplify later code.
+       A special case yields zero for equal magnitudes.
+    */
+    if(cmp == 0) {
+      mp_int_zero(c);
+      return MP_OK;
+    }
+    else if(cmp < 0) {
+      x = b; y = a;
+    }
     else {
-      x = b; y = a; 
+      x = a; y = b;
     }
 
     if(!s_pad(c, MP_USED(x)))
@@ -616,7 +618,7 @@ mp_result mp_int_add(mp_int a, mp_int b, mp_int c)
 
 /* {{{ mp_int_add_value(a, value, c) */
 
-mp_result mp_int_add_value(mp_int a, int value, mp_int c)
+mp_result mp_int_add_value(mp_int a, mp_small value, mp_int c)
 {
   mpz_t     vtmp;
   mp_digit  vbuf[MP_VALUE_DIGITS(value)];
@@ -694,7 +696,7 @@ mp_result mp_int_sub(mp_int a, mp_int b, mp_int c)
 
 /* {{{ mp_int_sub_value(a, value, c) */
 
-mp_result mp_int_sub_value(mp_int a, int value, mp_int c)
+mp_result mp_int_sub_value(mp_int a, mp_small value, mp_int c)
 {
   mpz_t     vtmp;
   mp_digit  vbuf[MP_VALUE_DIGITS(value)];
@@ -770,7 +772,7 @@ mp_result mp_int_mul(mp_int a, mp_int b, mp_int c)
 
 /* {{{ mp_int_mul_value(a, value, c) */
 
-mp_result mp_int_mul_value(mp_int a, int value, mp_int c)
+mp_result mp_int_mul_value(mp_int a, mp_small value, mp_int c)
 {
   mpz_t     vtmp;
   mp_digit  vbuf[MP_VALUE_DIGITS(value)];
@@ -784,7 +786,7 @@ mp_result mp_int_mul_value(mp_int a, int value, mp_int c)
 
 /* {{{ mp_int_mul_pow2(a, p2, c) */
 
-mp_result mp_int_mul_pow2(mp_int a, int p2, mp_int c)
+mp_result mp_int_mul_pow2(mp_int a, mp_small p2, mp_int c)
 {
   mp_result res;
   CHECK(a != NULL && c != NULL && p2 >= 0);
@@ -896,16 +898,22 @@ mp_result mp_int_div(mp_int a, mp_int b, mp_int q, mp_int r)
      or to overlap with the inputs.
    */
   if((lg = s_isp2(b)) < 0) {
-    if(q && b != q && (res = mp_int_copy(a, q)) == MP_OK) {
-      qout = q;
+    if(q && b != q) { 
+      if((res = mp_int_copy(a, q)) != MP_OK)
+	goto CLEANUP;
+      else
+	qout = q;
     } 
     else {
       qout = TEMP(last);
       SETUP(mp_int_init_copy(TEMP(last), a), last);
     }
 
-    if(r && a != r && (res = mp_int_copy(b, r)) == MP_OK) {
-      rout = r;
+    if(r && a != r) {
+      if((res = mp_int_copy(b, r)) != MP_OK)
+	goto CLEANUP;
+      else
+	rout = r;
     } 
     else {
       rout = TEMP(last);
@@ -981,7 +989,7 @@ mp_result mp_int_mod(mp_int a, mp_int m, mp_int c)
 
 /* {{{ mp_int_div_value(a, value, q, r) */
 
-mp_result mp_int_div_value(mp_int a, int value, mp_int q, int *r)
+mp_result mp_int_div_value(mp_int a, mp_small value, mp_int q, mp_small *r)
 {
   mpz_t     vtmp, rtmp;
   mp_digit  vbuf[MP_VALUE_DIGITS(value)];
@@ -1005,7 +1013,7 @@ mp_result mp_int_div_value(mp_int a, int value, mp_int q, int *r)
 
 /* {{{ mp_int_div_pow2(a, p2, q, r) */
 
-mp_result mp_int_div_pow2(mp_int a, int p2, mp_int q, mp_int r)
+mp_result mp_int_div_pow2(mp_int a, mp_small p2, mp_int q, mp_int r)
 {
   mp_result res = MP_OK;
 
@@ -1024,7 +1032,7 @@ mp_result mp_int_div_pow2(mp_int a, int p2, mp_int q, mp_int r)
 
 /* {{{ mp_int_expt(a, b, c) */
 
-mp_result mp_int_expt(mp_int a, int b, mp_int c)
+mp_result mp_int_expt(mp_int a, mp_small b, mp_int c)
 {
   mpz_t     t;
   mp_result res;
@@ -1058,7 +1066,7 @@ mp_result mp_int_expt(mp_int a, int b, mp_int c)
 
 /* {{{ mp_int_expt_value(a, b, c) */
 
-mp_result mp_int_expt_value(int a, int b, mp_int c)
+mp_result mp_int_expt_value(mp_small a, mp_small b, mp_int c)
 {
   mpz_t     t;
   mp_result res;
@@ -1149,7 +1157,7 @@ int       mp_int_compare_zero(mp_int z)
 
 /* {{{ mp_int_compare_value(z, value) */
 
-int       mp_int_compare_value(mp_int z, int value)
+int       mp_int_compare_value(mp_int z, mp_small value)
 {
   mp_sign vsign = (value < 0) ? MP_NEG : MP_ZPOS;
   int     cmp;
@@ -1224,7 +1232,7 @@ mp_result mp_int_exptmod(mp_int a, mp_int b, mp_int m, mp_int c)
 
 /* {{{ mp_int_exptmod_evalue(a, value, m, c) */
 
-mp_result mp_int_exptmod_evalue(mp_int a, int value, mp_int m, mp_int c)
+mp_result mp_int_exptmod_evalue(mp_int a, mp_small value, mp_int m, mp_int c)
 {
   mpz_t    vtmp;
   mp_digit vbuf[MP_VALUE_DIGITS(value)];
@@ -1238,7 +1246,7 @@ mp_result mp_int_exptmod_evalue(mp_int a, int value, mp_int m, mp_int c)
 
 /* {{{ mp_int_exptmod_bvalue(v, b, m, c) */
 
-mp_result mp_int_exptmod_bvalue(int value, mp_int b,
+mp_result mp_int_exptmod_bvalue(mp_small value, mp_int b,
 				mp_int m, mp_int c)
 {
   mpz_t    vtmp;
@@ -1555,11 +1563,45 @@ mp_result mp_int_egcd(mp_int a, mp_int b, mp_int c,
 
 /* }}} */
 
+/* {{{ mp_int_lcm(a, b, c) */
+
+mp_result mp_int_lcm(mp_int a, mp_int b, mp_int c)
+{
+  mpz_t     lcm;
+  mp_result res;
+
+  CHECK(a != NULL && b != NULL && c != NULL);
+
+  /* Since a * b = gcd(a, b) * lcm(a, b), we can compute 
+     lcm(a, b) = (a / gcd(a, b)) * b.  
+
+     This formulation insures everything works even if the input
+     variables share space.
+   */
+  if((res = mp_int_init(&lcm)) != MP_OK)
+    return res;
+  if((res = mp_int_gcd(a, b, &lcm)) != MP_OK)
+    goto CLEANUP;
+  if((res = mp_int_div(a, &lcm, &lcm, NULL)) != MP_OK)
+    goto CLEANUP;
+  if((res = mp_int_mul(&lcm, b, &lcm)) != MP_OK)
+    goto CLEANUP;
+
+  res = mp_int_copy(&lcm, c);
+
+  CLEANUP:
+    mp_int_clear(&lcm);
+
+  return res;
+}
+
+/* }}} */
+
 /* {{{ mp_int_divisible_value(a, v) */
 
-int       mp_int_divisible_value(mp_int a, int v)
+int       mp_int_divisible_value(mp_int a, mp_small v)
 {
-  int       rem = 0;
+  mp_small rem = 0;
 
   if(mp_int_div_value(a, v, NULL, &rem) != MP_OK)
     return 0;
@@ -1580,61 +1622,87 @@ int       mp_int_is_pow2(mp_int z)
 
 /* }}} */
 
-/* {{{ mp_int_sqrt(a, c) */
+/* {{{ mp_int_root(a, b, c) */
 
-mp_result mp_int_sqrt(mp_int a, mp_int c)
+/* Implementation of Newton's root finding method, based loosely on a
+   patch contributed by Hal Finkel <half@halssoftware.com>
+   modified by M. J. Fromberger.
+ */
+mp_result mp_int_root(mp_int a, mp_small b, mp_int c)
 {
   mp_result  res = MP_OK;
-  mpz_t      temp[2];
+  mpz_t      temp[5];
   int        last = 0;
+  int        flips = 0;
 
-  CHECK(a != NULL && c != NULL);
+  CHECK(a != NULL && c != NULL && b > 0);
 
-  /* The square root of a negative value does not exist in the integers. */
-  if(MP_SIGN(a) == MP_NEG)
-    return MP_UNDEF;
+  if(b == 1) {
+    return mp_int_copy(a, c);
+  }
+  if(MP_SIGN(a) == MP_NEG) {
+    if(b % 2 == 0)
+      return MP_UNDEF; /* root does not exist for negative a with even b */
+    else
+      flips = 1;
+  }
 
   SETUP(mp_int_init_copy(TEMP(last), a), last);
+  SETUP(mp_int_init_copy(TEMP(last), a), last);
+  SETUP(mp_int_init(TEMP(last)), last);
+  SETUP(mp_int_init(TEMP(last)), last);
   SETUP(mp_int_init(TEMP(last)), last);
 
+  (void) mp_int_abs(TEMP(0), TEMP(0));
+  (void) mp_int_abs(TEMP(1), TEMP(1));
+
   for(;;) {
-    if((res = mp_int_sqr(TEMP(0), TEMP(1))) != MP_OK)
+    if((res = mp_int_expt(TEMP(1), b, TEMP(2))) != MP_OK)
       goto CLEANUP;
 
-    if(mp_int_compare_unsigned(a, TEMP(1)) == 0) break;
+    if(mp_int_compare_unsigned(TEMP(2), TEMP(0)) <= 0)
+      break;
 
-    if((res = mp_int_copy(a, TEMP(1))) != MP_OK) 
+    if((res = mp_int_sub(TEMP(2), TEMP(0), TEMP(2))) != MP_OK)
       goto CLEANUP;
-    if((res = mp_int_div(TEMP(1), TEMP(0), TEMP(1), NULL)) != MP_OK) 
+    if((res = mp_int_expt(TEMP(1), b - 1, TEMP(3))) != MP_OK)
       goto CLEANUP;
-    if((res = mp_int_add(TEMP(0), TEMP(1), TEMP(1))) != MP_OK) 
+    if((res = mp_int_mul_value(TEMP(3), b, TEMP(3))) != MP_OK)
       goto CLEANUP;
-    if((res = mp_int_div_pow2(TEMP(1), 1, TEMP(1), NULL)) != MP_OK)
+    if((res = mp_int_div(TEMP(2), TEMP(3), TEMP(4), NULL)) != MP_OK)
+      goto CLEANUP;
+    if((res = mp_int_sub(TEMP(1), TEMP(4), TEMP(4))) != MP_OK)
       goto CLEANUP;
 
-    if(mp_int_compare_unsigned(TEMP(0), TEMP(1)) == 0) break;
-    if((res = mp_int_sub_value(TEMP(0), 1, TEMP(0))) != MP_OK) goto CLEANUP;
-    if(mp_int_compare_unsigned(TEMP(0), TEMP(1)) == 0) break;
-
-    if((res = mp_int_copy(TEMP(1), TEMP(0))) != MP_OK) goto CLEANUP;
+    if(mp_int_compare_unsigned(TEMP(1), TEMP(4)) == 0) {
+      if((res = mp_int_sub_value(TEMP(4), 1, TEMP(4))) != MP_OK)
+	goto CLEANUP;
+    }
+    if((res = mp_int_copy(TEMP(4), TEMP(1))) != MP_OK)
+      goto CLEANUP;
   }
   
-  res = mp_int_copy(TEMP(0), c);
+  if((res = mp_int_copy(TEMP(1), c)) != MP_OK)
+    goto CLEANUP;
+
+  /* If the original value of a was negative, flip the output sign. */
+  if(flips)
+    (void) mp_int_neg(c, c); /* cannot fail */
 
  CLEANUP:
   while(--last >= 0)
     mp_int_clear(TEMP(last));
-  
-  return res;
+
+  return res;  
 }
 
 /* }}} */
 
 /* {{{ mp_int_to_int(z, out) */
 
-mp_result mp_int_to_int(mp_int z, int *out)
+mp_result mp_int_to_int(mp_int z, mp_small *out)
 {
-  unsigned int uv = 0;
+  mp_usmall uv = 0;
   mp_size   uz;
   mp_digit *dz;
   mp_sign   sz;
@@ -1643,8 +1711,8 @@ mp_result mp_int_to_int(mp_int z, int *out)
 
   /* Make sure the value is representable as an int */
   sz = MP_SIGN(z);
-  if((sz == MP_ZPOS && mp_int_compare_value(z, INT_MAX) > 0) ||
-     mp_int_compare_value(z, INT_MIN) < 0)
+  if((sz == MP_ZPOS && mp_int_compare_value(z, MP_SMALL_MAX) > 0) ||
+     mp_int_compare_value(z, MP_SMALL_MIN) < 0)
     return MP_RANGE;
      
   uz = MP_USED(z);
@@ -1657,8 +1725,41 @@ mp_result mp_int_to_int(mp_int z, int *out)
   }
 
   if(out)
-    *out = (sz == MP_NEG) ? -(int)uv : (int)uv;
+    *out = (sz == MP_NEG) ? -(mp_small)uv : (mp_small)uv;
 
+  return MP_OK;
+}
+
+/* }}} */
+
+/* {{{ mp_int_to_uint(z, *out) */
+
+mp_result mp_int_to_uint(mp_int z, mp_usmall *out)
+{
+  mp_usmall uv = 0;
+  mp_size   uz;
+  mp_digit *dz;
+  mp_sign   sz;
+  
+  CHECK(z != NULL);
+
+  /* Make sure the value is representable as an int */
+  sz = MP_SIGN(z);
+  if(!(sz == MP_ZPOS && mp_int_compare_value(z, UINT_MAX) <= 0))
+    return MP_RANGE;
+     
+  uz = MP_USED(z);
+  dz = MP_DIGITS(z) + uz - 1;
+  
+  while(uz > 0) {
+    uv <<= MP_DIGIT_BIT/2;
+    uv = (uv << (MP_DIGIT_BIT/2)) | *dz--;
+    --uz;
+  }
+  
+  if(out)
+    *out = uv;
+  
   return MP_OK;
 }
 
@@ -1769,7 +1870,7 @@ mp_result mp_int_read_cstring(mp_int z, mp_size radix, const char *str, char **e
     return MP_RANGE;
 
   /* Skip leading whitespace */
-  while(isspace((unsigned char)*str))
+  while(isspace((int)*str))
     ++str;
 
   /* Handle leading sign tag (+/-, positive default) */
@@ -2091,26 +2192,9 @@ static int      s_pad(mp_int z, mp_size min)
 
 /* }}} */
 
-/* {{{ s_clamp(z) */
-
-#if TRACEABLE_CLAMP
-static void     s_clamp(mp_int z)
-{
-  mp_size   uz = MP_USED(z);
-  mp_digit *zd = MP_DIGITS(z) + uz - 1;
-
-  while(uz > 1 && (*zd-- == 0))
-    --uz;
-
-  MP_USED(z) = uz;
-}
-#endif
-
-/* }}} */
-
 /* {{{ s_fake(z, value, vbuf) */
 
-static void      s_fake(mp_int z, int value, mp_digit vbuf[])
+static void      s_fake(mp_int z, mp_small value, mp_digit vbuf[])
 {
   mp_size uv = (mp_size) s_vpack(value, vbuf);
 
@@ -2142,9 +2226,9 @@ static int      s_cdig(mp_digit *da, mp_digit *db, mp_size len)
 
 /* {{{ s_vpack(v, t[]) */
 
-static int       s_vpack(int v, mp_digit t[])
+static int       s_vpack(mp_small v, mp_digit t[])
 {
-  unsigned int uv = (unsigned int)((v < 0) ? -v : v);
+  mp_usmall    uv = (mp_usmall) ((v < 0) ? -v : v);
   int          ndig = 0;
   
   if(uv == 0)
@@ -2180,7 +2264,7 @@ static int      s_ucmp(mp_int a, mp_int b)
 
 /* {{{ s_vcmp(a, v) */
 
-static int      s_vcmp(mp_int a, int v)
+static int      s_vcmp(mp_int a, mp_small v)
 {
   mp_digit     vdig[MP_VALUE_DIGITS(v)];
   int          ndig = 0;
@@ -2814,7 +2898,7 @@ static int       s_isp2(mp_int z)
 
 /* {{{ s_2expt(z, k) */
 
-static int       s_2expt(mp_int z, int k)
+static int       s_2expt(mp_int z, mp_small k)
 {
   mp_size  ndig, rest;
   mp_digit *dz;
@@ -3100,11 +3184,12 @@ static mp_result s_udiv(mp_int a, mp_int b)
 
 /* {{{ s_outlen(z, r) */
 
-/* Precondition:  2 <= r < 64 */
 static int       s_outlen(mp_int z, mp_size r)
 {
   mp_result  bits;
   double     raw;
+
+  assert(r >= MP_MIN_RADIX && r <= MP_MAX_RADIX);
 
   bits = mp_int_count_bits(z);
   raw = (double)bits * s_log2[r];
@@ -3135,7 +3220,7 @@ static int       s_ch2val(char c, int r)
   if(isdigit((unsigned char) c))
     out = c - '0';
   else if(r > 10 && isalpha((unsigned char) c))
-      out = toupper((unsigned char)c) - 'A' + 10;
+    out = toupper(c) - 'A' + 10;
   else
     return -1;
 
