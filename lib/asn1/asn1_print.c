@@ -261,7 +261,7 @@ doit (const char *filename)
     close (fd);
     ret = loop (buf, len, 0);
     free (buf);
-    return 0;
+    return ret;
 }
 
 
