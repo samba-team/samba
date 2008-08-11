@@ -107,6 +107,8 @@ proto (int sock, const char *service)
 	krb5_err(context, 1, status, "krb5_get_credentials");
 
     status = krb5_cc_default(context, &ccache);
+    if(status)
+	krb5_err(context, 1, status, "krb5_cc_default");
 
     status = krb5_sendauth(context, 
 			   &auth_context,
