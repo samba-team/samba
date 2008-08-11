@@ -424,8 +424,7 @@ doit_active (kx_context *kc)
 	errx (1, "%s: %.*s", host, (int)u32, p);
     } else if (*p != ACK) {
 	errx (1, "%s: strange msg %d", host, *p);
-    } else
-	p++;
+    }
 
     tmp2 = get_xsockets (&nsockets, &sockets, kc->tcp_flag);
     if (tmp2 < 0)
