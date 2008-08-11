@@ -624,12 +624,14 @@ _kdc_do_version4(krb5_context context,
 	break;
     }
     case AUTH_MSG_ERR_REPLY:
+	ret = EINVAL;
 	break;
     default:
 	kdc_log(context, config, 0, "Unknown message type (krb4): %d from %s", 
 		msg_type, from);
 	
 	make_err_reply(context, reply, KFAILURE, "Unknown message type");
+	ret = EINVAL;
     }
  out:
     if(name)
@@ -647,7 +649,7 @@ _kdc_do_version4(krb5_context context,
     if(server)
 	_kdc_free_ent(context, server);
     krb5_storage_free(sp);
-    return 0;
+    return ret;
 }
 
 krb5_error_code
