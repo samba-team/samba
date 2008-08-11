@@ -100,9 +100,9 @@ krb5_kdc_process_request(krb5_context context,
 	return ret;
     } else if(_kdc_maybe_version4(buf, len)){
 	*prependlength = FALSE; /* elbitapmoc sdrawkcab XXX */
-	_kdc_do_version4(context, config, buf, len, reply, from, 
-			 (struct sockaddr_in*)addr);
-	return 0;
+	ret = _kdc_do_version4(context, config, buf, len, reply, from, 
+			       (struct sockaddr_in*)addr);
+	return ret;
     } else if (config->enable_kaserver) {
 	ret = _kdc_do_kaserver(context, config, buf, len, reply, from,
 			       (struct sockaddr_in*)addr);
