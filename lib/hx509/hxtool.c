@@ -2047,6 +2047,9 @@ crl_sign(struct crl_sign_options *opt, int argc, char **argv)
 
 	ret = hx509_certs_init(context, "MEMORY:revoked-certs", 0,
 			       NULL, &revoked);
+	if (ret)
+	    hx509_err(context, 1, ret, 
+		      "hx509_certs_init: MEMORY cert");
 
 	for (i = 0; i < argc; i++) {
 	    ret = hx509_certs_append(context, revoked, lock, argv[i]);
