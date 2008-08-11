@@ -249,7 +249,7 @@ _gss_load_mech(void)
 #define RTLD_LOCAL 0
 #endif
 
-		so = dlopen(lib, RTLD_LOCAL);
+		so = dlopen(lib, RTLD_LAZY | RTLD_LOCAL);
 		if (!so) {
 /*			fprintf(stderr, "dlopen: %s\n", dlerror()); */
 			continue;
