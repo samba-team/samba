@@ -288,7 +288,7 @@ send_via_proxy (krb5_context context,
 	return krb5_eai_to_heim_errno(ret, errno);
 
     for (a = ai; a != NULL; a = a->ai_next) {
-	s = socket (a->ai_family, a->ai_socktype, a->ai_protocol);
+	s = socket (a->ai_family, a->ai_socktype, a->ai_protocol | SOCK_CLOEXEC);
 	if (s < 0)
 	    continue;
 	rk_cloexec(s);
@@ -411,7 +411,7 @@ krb5_sendto (krb5_context context,
 		 continue;
 
 	     for (a = ai; a != NULL; a = a->ai_next) {
-		 fd = socket (a->ai_family, a->ai_socktype, a->ai_protocol);
+		 fd = socket (a->ai_family, a->ai_socktype | SOCK_CLOEXEC, a->ai_protocol);
 		 if (fd < 0)
 		     continue;
 		 rk_cloexec(fd);

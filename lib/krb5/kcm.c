@@ -105,7 +105,7 @@ try_unix_socket(krb5_context context,
     krb5_error_code ret;
     int fd;
 
-    fd = socket(AF_UNIX, SOCK_STREAM, 0);
+    fd = socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
     if (fd < 0)
 	return KRB5_CC_IO;
     rk_cloexec(fd);

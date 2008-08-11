@@ -180,6 +180,11 @@ struct _krb5_krb_auth_data;
 #define O_CLOEXEC 0
 #endif
 
+#ifndef SOCK_CLOEXEC
+#define SOCK_CLOEXEC 0
+#endif
+
+
 #define KRB5_BUFSIZ 1024
 
 typedef enum {
