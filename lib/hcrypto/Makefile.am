@@ -149,6 +149,8 @@ imathsource =			\
 
 $(libhcrypto_la_OBJECTS): hcrypto-link
 
+libhcrypto_la_CPPFLAGS = -DIMATH_LARGE_PRIME_TABLE $(AM_CPPFLAGS)
+
 if versionscript
 libhcrypto_la_LDFLAGS += $(LDFLAGS_VERSION_SCRIPT)$(srcdir)/version-script.map
 endif
