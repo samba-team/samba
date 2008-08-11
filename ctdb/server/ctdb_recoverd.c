@@ -2153,7 +2153,7 @@ static int verify_ip_allocation(struct ctdb_context *ctdb, uint32_t pnn)
 	struct ctdb_uptime *uptime2 = NULL;
 	int ret, j;
 
-	ret = ctdb_ctrl_uptime(ctdb, ctdb, CONTROL_TIMEOUT(),
+	ret = ctdb_ctrl_uptime(ctdb, mem_ctx, CONTROL_TIMEOUT(),
 				CTDB_CURRENT_NODE, &uptime1);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, ("Unable to get uptime from local node %u\n", pnn));
@@ -2169,7 +2169,7 @@ static int verify_ip_allocation(struct ctdb_context *ctdb, uint32_t pnn)
 		return -1;
 	}
 
-	ret = ctdb_ctrl_uptime(ctdb, ctdb, CONTROL_TIMEOUT(),
+	ret = ctdb_ctrl_uptime(ctdb, mem_ctx, CONTROL_TIMEOUT(),
 				CTDB_CURRENT_NODE, &uptime2);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, ("Unable to get uptime from local node %u\n", pnn));
