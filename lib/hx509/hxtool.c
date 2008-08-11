@@ -1730,6 +1730,8 @@ hxtool_ca(struct certificate_sign_options *opt, int argc, char **argv)
 	ret = _hx509_generate_private_key_init(context, 
 					       oid_id_pkcs1_rsaEncryption(),
 					       &keyctx);
+	if (ret)
+	    hx509_err(context, 1, ret, "generate private key");
 
 	if (opt->issue_ca_flag)
 	    _hx509_generate_private_key_is_ca(context, keyctx);
