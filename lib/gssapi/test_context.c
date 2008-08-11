@@ -47,6 +47,7 @@ static int dce_style_flag = 0;
 static int wrapunwrap_flag = 0;
 static int getverifymic_flag = 0;
 static int deleg_flag = 0;
+static int policy_deleg_flag = 0;
 static int server_no_deleg_flag = 0;
 static char *gsskrb5_acceptor_identity = NULL;
 static char *session_enctype_string = NULL;
@@ -115,6 +116,8 @@ loop(gss_OID mechoid,
 	flags |= GSS_C_DCE_STYLE;
     if (deleg_flag)
 	flags |= GSS_C_DELEG_FLAG;
+    if (policy_deleg_flag)
+	flags |= GSS_C_DELEG_POLICY_FLAG;
 
     input_token.value = rk_UNCONST(target);
     input_token.length = strlen(target);
