@@ -270,7 +270,7 @@ void ROKEN_LIB_FUNCTION
 print_units_table (const struct units *units, FILE *f)
 {
     const struct units *u, *u2;
-    unsigned max_sz = 0;
+    int max_sz = 0;
 
     for (u = units; u->name; ++u) {
 	max_sz = max(max_sz, strlen(u->name));
