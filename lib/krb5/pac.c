@@ -819,7 +819,7 @@ pac_checksum(krb5_context context,
 	return ret;
 
     ret = krb5_crypto_get_checksum_type(context, crypto, &cktype);
-    ret = krb5_crypto_destroy(context, crypto);
+    krb5_crypto_destroy(context, crypto);
     if (ret)
 	return ret;
 
