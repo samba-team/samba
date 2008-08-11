@@ -62,6 +62,7 @@ Bugfixes, documentation, encouragement, and code has been contributed by:
 @item Michael B Allen
 @item Michael Fromberger
 @item Michal Vocu
+@item Milosz Kmieciak
 @item Miroslav Ruda
 @item Petr Holub
 @item Phil Fisher
