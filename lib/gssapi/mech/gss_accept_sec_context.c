@@ -151,7 +151,7 @@ OM_uint32 gss_accept_sec_context(OM_uint32 *minor_status,
     OM_uint32 *time_rec,
     gss_cred_id_t *delegated_cred_handle)
 {
-	OM_uint32 major_status, mech_ret_flags;
+	OM_uint32 major_status, mech_ret_flags, junk;
 	gssapi_mech_interface m;
 	struct _gss_context *ctx = (struct _gss_context *) *context_handle;
 	struct _gss_cred *cred = (struct _gss_cred *) acceptor_cred_handle;
@@ -200,18 +200,19 @@ OM_uint32 gss_accept_sec_context(OM_uint32 *minor_status,
 			free(ctx);
 			return (GSS_S_BAD_MECH);
 		}
-		allocated_ctx = 1;
+		*context_handle = (gss_ctx_id_t) ctx;
 	} else {
 		m = ctx->gc_mech;
-		allocated_ctx = 0;
 	}
 
 	if (cred) {
 		SLIST_FOREACH(mc, &cred->gc_mc, gmc_link)
 			if (mc->gmc_mech == m)
 				break;
-		if (!mc)
+		if (!mc) {
+		        gss_delete_sec_context(&junk, context_handle, NULL);
 			return (GSS_S_BAD_MECH);
+		}
 		acceptor_mc = mc->gmc_cred;
 	} else {
 		acceptor_mc = GSS_C_NO_CREDENTIAL;
@@ -234,6 +235,7 @@ OM_uint32 gss_accept_sec_context(OM_uint32 *minor_status,
 	    major_status != GSS_S_CONTINUE_NEEDED)
 	{
 		_gss_mg_error(m, major_status, *minor_status);
+		gss_delete_sec_context(&junk, context_handle, NULL);
 		return (major_status);
 	}
 
@@ -245,11 +247,12 @@ OM_uint32 gss_accept_sec_context(OM_uint32 *minor_status,
 
 		if (!name) {
 			m->gm_release_name(minor_status, &src_mn);
+		        gss_delete_sec_context(&junk, context_handle, NULL);
 			return (GSS_S_FAILURE);
 		}
 		*src_name = (gss_name_t) name;
 	} else if (src_mn) {
-	    m->gm_release_name(minor_status, &src_mn);
+		m->gm_release_name(minor_status, &src_mn);
 	}
 
 	if (mech_ret_flags & GSS_C_DELEG_FLAG) {
@@ -263,6 +266,7 @@ OM_uint32 gss_accept_sec_context(OM_uint32 *minor_status,
 			dcred = malloc(sizeof(struct _gss_cred));
 			if (!dcred) {
 				*minor_status = ENOMEM;
+				gss_delete_sec_context(&junk, context_handle, NULL);
 				return (GSS_S_FAILURE);
 			}
 			SLIST_INIT(&dcred->gc_mc);
@@ -270,6 +274,7 @@ OM_uint32 gss_accept_sec_context(OM_uint32 *minor_status,
 			if (!dmc) {
 				free(dcred);
 				*minor_status = ENOMEM;
+				gss_delete_sec_context(&junk, context_handle, NULL);
 				return (GSS_S_FAILURE);
 			}
 			dmc->gmc_mech = m;
@@ -283,6 +288,5 @@ OM_uint32 gss_accept_sec_context(OM_uint32 *minor_status,
 
 	if (ret_flags)
 	    *ret_flags = mech_ret_flags;
-	*context_handle = (gss_ctx_id_t) ctx;
 	return (major_status);
 }
