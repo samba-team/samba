@@ -119,7 +119,7 @@ fi
 
 %changelog
 * Mon Aug 11 2008 : Version 1.0.56
- - Fixed a memory leak in the recovery daemon
+ - fix a memory leak in the recovery daemon.
 * Mon Aug 11 2008 : Version 1.0.55
  - Fix the releaseip message we seond to samba.
 * Fri Aug 8 2008 : Version 1.0.54
