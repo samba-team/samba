@@ -524,7 +524,7 @@ acceptor_complete(OM_uint32 * minor_status,
 	    free(buf.value);
 
     } else
-	*get_mic = verify_mic = 0;
+	*get_mic = 0;
     
     return GSS_S_COMPLETE;
 }
