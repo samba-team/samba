@@ -118,7 +118,7 @@ fi
 %{_includedir}/ctdb_private.h
 
 %changelog
-* Mon Aug 11 2008: Version 1.0.55
+* Mon Aug 11 2008 : Version 1.0.55
  - Fix the releaseip message we seond to samba.
 * Fri Aug 8 2008 : Version 1.0.54
  - fix a looping error in the transaction code
