@@ -347,7 +347,7 @@ doit_active (kx_context *kc)
     int nsockets;
     struct x_socket *sockets;
     u_char msg[1024], *p;
-    int len = strlen(kc->user);
+    int len;
     int tmp, tmp2;
     char *str;
     int i;
