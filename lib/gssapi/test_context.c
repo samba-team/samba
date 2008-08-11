@@ -199,7 +199,7 @@ loop(gss_OID mechoid,
 	gss_release_buffer(&min_stat, &input_token);
     gss_release_name(&min_stat, &gss_target_name);
 
-    if (deleg_flag) {
+    if (deleg_flag || policy_deleg_flag) {
 	if (server_no_deleg_flag) {
 	    if (*deleg_cred != GSS_C_NO_CREDENTIAL)
 		errx(1, "got delegated cred but didn't expect one");

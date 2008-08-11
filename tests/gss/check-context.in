@@ -83,6 +83,11 @@ ${kadmin} ext -k ${keytab} host/lucid.test.h5l.se@${R} || exit 1
 ${kadmin} add -p p1 --use-defaults host/lucid@${R} || exit 1
 ${kadmin} ext -k ${keytab} host/lucid@${R} || exit 1
 
+${kadmin} add -p p1 --use-defaults host/ok-delegate.test.h5l.se@${R} || exit 1
+${kadmin} mod --attributes=+ok-as-delegate host/ok-delegate.test.h5l.se@${R} || exit 1
+${kadmin} get host/ok-delegate.test.h5l.se@${R} || exit 1
+
+
 ${kadmin} add -p kaka --use-defaults digest/${R}@${R} || exit 1
 
 ${kadmin} add -p u1 --use-defaults user1@${R} || exit 1
@@ -255,6 +260,29 @@ ${context} \
     --delegate \
     --name-type=hostbased-service host@lucid.test.h5l.se || \
 	{ exitcode=1 ; echo "test failed"; }
+
+echo "ok-as-delegate not used"
+${context} \
+    --mech-type=krb5 \
+    --policy-delegate \
+    --name-type=hostbased-service host@lucid.test.h5l.se || \
+	{ exitcode=1 ; echo "test failed"; }
+
+echo "ok-as-delegate not used"
+${context} \
+    --mech-type=krb5 \
+    --policy-delegate \
+    --server-no-delegate \
+    --name-type=hostbased-service host@lucid.test.h5l.se || \
+	{ exitcode=1 ; echo "test failed"; }
+
+echo "ok-as-delegate used by policy"
+${context} \
+    --mech-type=krb5 \
+    --policy-delegate \
+    --name-type=hostbased-service ok-delegate.test.h5l.se || \
+	{ exitcode=1 ; echo "test failed"; }
+
 
 echo "Getting client initial tickets with --ok-as-delgate"
 ${kinit} --ok-as-delegate  --forwardable \
