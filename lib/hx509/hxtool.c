@@ -190,7 +190,11 @@ cms_verify_sd(struct cms_verify_sd_options *opt, int argc, char **argv)
     ret = hx509_verify_init_ctx(context, &ctx);
 
     ret = hx509_certs_init(context, "MEMORY:cms-anchors", 0, NULL, &anchors);
+    if (ret)
+	hx509_err(context, 1, ret, "hx509_certs_init: MEMORY");
     ret = hx509_certs_init(context, "MEMORY:cert-store", 0, NULL, &store);
+    if (ret)
+	hx509_err(context, 1, ret, "hx509_certs_init: MEMORY");
 
     certs_strings(context, "anchors", anchors, lock, &opt->anchors_strings);
     certs_strings(context, "store", store, lock, &opt->certificate_strings);
@@ -303,7 +307,9 @@ cms_create_sd(struct cms_create_sd_options *opt, int argc, char **argv)
     lock_strings(lock, &opt->pass_strings);
 
     ret = hx509_certs_init(context, "MEMORY:cert-store", 0, NULL, &store);
+    if (ret) hx509_err(context, 1, ret, "hx509_certs_init: MEMORY");
     ret = hx509_certs_init(context, "MEMORY:cert-pool", 0, NULL, &pool);
+    if (ret) hx509_err(context, 1, ret, "hx509_certs_init: MEMORY");
 
     certs_strings(context, "store", store, lock, &opt->certificate_strings);
     certs_strings(context, "pool", pool, lock, &opt->pool_strings);
@@ -311,6 +317,7 @@ cms_create_sd(struct cms_create_sd_options *opt, int argc, char **argv)
     if (opt->anchors_strings.num_strings) {
 	ret = hx509_certs_init(context, "MEMORY:cert-anchors", 
 			       0, NULL, &anchors);
+	if (ret) hx509_err(context, 1, ret, "hx509_certs_init: MEMORY");
 	certs_strings(context, "anchors", anchors, lock, &opt->anchors_strings);
     } else
 	anchors = NULL;
@@ -511,6 +518,7 @@ cms_create_enveloped(struct cms_envelope_options *opt, int argc, char **argv)
 	err(1, "map_file: %s: %d", argv[0], ret);
 
     ret = hx509_certs_init(context, "MEMORY:cert-store", 0, NULL, &certs);
+    if (ret) hx509_err(context, 1, ret, "hx509_certs_init: MEMORY");
 
     certs_strings(context, "store", certs, lock, &opt->certificate_strings);
 
@@ -792,8 +800,11 @@ pcert_verify(struct verify_options *opt, int argc, char **argv)
 
     ret = hx509_verify_init_ctx(context, &ctx);
     ret = hx509_certs_init(context, "MEMORY:anchors", 0, NULL, &anchors);
+    if (ret) hx509_err(context, 1, ret, "hx509_certs_init: MEMORY");
     ret = hx509_certs_init(context, "MEMORY:chain", 0, NULL, &chain);
+    if (ret) hx509_err(context, 1, ret, "hx509_certs_init: MEMORY");
     ret = hx509_certs_init(context, "MEMORY:certs", 0, NULL, &certs);
+    if (ret) hx509_err(context, 1, ret, "hx509_certs_init: MEMORY");
 
     if (opt->allow_proxy_certificate_flag)
 	hx509_verify_set_proxy_certificate(ctx, 1);
@@ -909,6 +920,7 @@ query(struct query_options *opt, int argc, char **argv)
     lock_strings(lock, &opt->pass_strings);
 
     ret = hx509_certs_init(context, "MEMORY:cert-store", 0, NULL, &certs);
+    if (ret) hx509_err(context, 1, ret, "hx509_certs_init: MEMORY");
 
     while (argc > 0) {
 
@@ -987,12 +999,14 @@ ocsp_fetch(struct ocsp_fetch_options *opt, int argc, char **argv)
 	url = opt->url_path_string;
 
     ret = hx509_certs_init(context, "MEMORY:ocsp-pool", 0, NULL, &pool);
+    if (ret) hx509_err(context, 1, ret, "hx509_certs_init: MEMORY");
 
     certs_strings(context, "ocsp-pool", pool, lock, &opt->pool_strings);
 
     file = argv[0];
 
     ret = hx509_certs_init(context, "MEMORY:ocsp-req", 0, NULL, &reqcerts);
+    if (ret) hx509_err(context, 1, ret, "hx509_certs_init: MEMORY");
 
     for (i = 1; i < argc; i++) {
 	ret = hx509_certs_append(context, reqcerts, lock, argv[i]);
@@ -1080,6 +1094,7 @@ ocsp_verify(struct ocsp_verify_options *opt, int argc, char **argv)
 	err(1, "map_file: %s: %d", argv[0], ret);
     
     ret = hx509_certs_init(context, "MEMORY:test-certs", 0, NULL, &certs);
+    if (ret) hx509_err(context, 1, ret, "hx509_certs_init: MEMORY");
 
     for (i = 0; i < argc; i++) {
 	ret = hx509_certs_append(context, certs, lock, argv[i]);
@@ -1952,6 +1967,7 @@ test_crypto(struct test_crypto_options *opt, int argc, char ** argv)
     lock_strings(lock, &opt->pass_strings);
 
     ret = hx509_certs_init(context, "MEMORY:test-crypto", 0, NULL, &certs);
+    if (ret) hx509_err(context, 1, ret, "hx509_certs_init: MEMORY");
 
     for (i = 0; i < argc; i++) {
 	ret = hx509_certs_append(context, certs, lock, argv[i]);
