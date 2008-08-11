@@ -158,7 +158,6 @@ OM_uint32 gss_accept_sec_context(OM_uint32 *minor_status,
 	struct _gss_mechanism_cred *mc;
 	gss_cred_id_t acceptor_mc, delegated_mc;
 	gss_name_t src_mn;
-	int allocated_ctx;
 
 	*minor_status = 0;
 	if (src_name)
