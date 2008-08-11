@@ -471,6 +471,55 @@ struct LOCALGROUP_INFO_1002 {
 	const char * lgrpi1002_comment;
 };
 
+enum SID_NAME_USE
+#ifndef USE_UINT_ENUMS
+ {
+	SidTypeUser=1,
+	SidTypeGroup=2,
+	SidTypeDomain=3,
+	SidTypeAlias=4,
+	SidTypeWellKnownGroup=5,
+	SidTypeDeletedAccount=6,
+	SidTypeInvalid=7,
+	SidTypeUnknown=8,
+	SidTypeComputer=9,
+	SidTypeLabel=10
+}
+#else
+ { __donnot_use_enum_SID_NAME_USE=0x7FFFFFFF}
+#define SidTypeUser ( 1 )
+#define SidTypeGroup ( 2 )
+#define SidTypeDomain ( 3 )
+#define SidTypeAlias ( 4 )
+#define SidTypeWellKnownGroup ( 5 )
+#define SidTypeDeletedAccount ( 6 )
+#define SidTypeInvalid ( 7 )
+#define SidTypeUnknown ( 8 )
+#define SidTypeComputer ( 9 )
+#define SidTypeLabel ( 10 )
+#endif
+;
+
+struct LOCALGROUP_MEMBERS_INFO_0 {
+	struct domsid *lgrmi0_sid;/* [unique] */
+};
+
+struct LOCALGROUP_MEMBERS_INFO_1 {
+	struct domsid *lgrmi1_sid;/* [unique] */
+	enum SID_NAME_USE lgrmi1_sidusage;
+	const char * lgrmi1_name;
+};
+
+struct LOCALGROUP_MEMBERS_INFO_2 {
+	struct domsid *lgrmi2_sid;/* [unique] */
+	enum SID_NAME_USE lgrmi2_sidusage;
+	const char * lgrmi2_domainandname;
+};
+
+struct LOCALGROUP_MEMBERS_INFO_3 {
+	const char * lgrmi3_domainandname;
+};
+
 struct TIME_OF_DAY_INFO {
 	uint32_t tod_elapsedt;
 	uint32_t tod_msecs;
@@ -963,6 +1012,74 @@ struct NetLocalGroupEnum {
 		uint32_t *entries_read;/* [ref] */
 		uint32_t *total_entries;/* [ref] */
 		uint32_t *resume_handle;/* [ref] */
+		enum NET_API_STATUS result;
+	} out;
+
+};
+
+
+struct NetLocalGroupAddMembers {
+	struct {
+		const char * server_name;
+		const char * group_name;
+		uint32_t level;
+		uint8_t *buffer;/* [ref] */
+		uint32_t total_entries;
+	} in;
+
+	struct {
+		enum NET_API_STATUS result;
+	} out;
+
+};
+
+
+struct NetLocalGroupDelMembers {
+	struct {
+		const char * server_name;
+		const char * group_name;
+		uint32_t level;
+		uint8_t *buffer;/* [ref] */
+		uint32_t total_entries;
+	} in;
+
+	struct {
+		enum NET_API_STATUS result;
+	} out;
+
+};
+
+
+struct NetLocalGroupGetMembers {
+	struct {
+		const char * server_name;
+		const char * local_group_name;
+		uint32_t level;
+		uint32_t prefmaxlen;
+		uint32_t *resume_handle;/* [ref] */
+	} in;
+
+	struct {
+		uint8_t **buffer;/* [ref] */
+		uint32_t *entries_read;/* [ref] */
+		uint32_t *total_entries;/* [ref] */
+		uint32_t *resume_handle;/* [ref] */
+		enum NET_API_STATUS result;
+	} out;
+
+};
+
+
+struct NetLocalGroupSetMembers {
+	struct {
+		const char * server_name;
+		const char * group_name;
+		uint32_t level;
+		uint8_t *buffer;/* [ref] */
+		uint32_t total_entries;
+	} in;
+
+	struct {
 		enum NET_API_STATUS result;
 	} out;
 
