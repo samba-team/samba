@@ -479,6 +479,7 @@ init_auth_restart
     krb5_enctype enctype;
     krb5_data fwd_data, timedata;
     int32_t offset = 0, oldoffset;
+    int delegate = 0;
 
     krb5_data_zero(&outbuf);
     krb5_data_zero(&fwd_data);
@@ -486,18 +487,13 @@ init_auth_restart
     *minor_status = 0;
 
     /* 
-     * If the credential doesn't have ok-as-delegate, check what local
-     * policy say about ok-as-delegate, default is FALSE that makes
-     * code ignore the KDC setting and follow what the application
-     * requested. If it is TRUE, strip of the GSS_C_DELEG_FLAG if the
-     * KDC doesn't set ok-as-delegate.
+     * If the credential doesn't have ok-as-delegate, check if there
+     * is a realm setting and use that.
      */
     if (!ctx->kcred->flags.b.ok_as_delegate) {
-	krb5_boolean delegate, realm_setting;
+	krb5_boolean realm_setting = FALSE;
 	krb5_data data;
-    
-	realm_setting = FALSE;
-
+	
 	ret = krb5_cc_get_config(context, ctx->ccache, NULL,
 				 "realm-config", &data);
 	if (ret == 0) {
@@ -506,17 +502,21 @@ init_auth_restart
 		realm_setting = TRUE;
 	    krb5_data_free(&data);
 	}
-
-	krb5_appdefault_boolean(context, "gssapi", ctx->target->realm,
-				"ok-as-delegate", realm_setting,
-				&delegate);
-	if (delegate)
+	if (!realm_setting)
 	    req_flags &= ~GSS_C_DELEG_FLAG;
     }
 
+    /* if we used GSS_C_DELEG_POLICY_FLAG, trust KDC */
+    if (req_flags & GSS_C_DELEG_POLICY_FLAG)
+	delegate = ctx->kcred->flags.b.ok_as_delegate;
+    /* if there still is a GSS_C_DELEG_FLAG, use that */
+    if (req_flags & GSS_C_DELEG_FLAG)
+	delegate = 1;
+
+
     flags = 0;
     ap_options = 0;
-    if (req_flags & GSS_C_DELEG_FLAG)
+    if (delegate)
 	do_delegation (context,
 		       ctx->auth_context,
 		       ctx->ccache, ctx->kcred, ctx->target,
