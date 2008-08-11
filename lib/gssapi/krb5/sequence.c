@@ -255,16 +255,16 @@ _gssapi_msg_order_import(OM_uint32 *minor_status,
     kret = krb5_ret_int32(sp, &flags);
     if (kret)
 	goto failed;
-    ret = krb5_ret_int32(sp, &start);
+    kret = krb5_ret_int32(sp, &start);
     if (kret)
 	goto failed;
-    ret = krb5_ret_int32(sp, &length);
+    kret = krb5_ret_int32(sp, &length);
     if (kret)
 	goto failed;
-    ret = krb5_ret_int32(sp, &jitter_window);
+    kret = krb5_ret_int32(sp, &jitter_window);
     if (kret)
 	goto failed;
-    ret = krb5_ret_int32(sp, &first_seq);
+    kret = krb5_ret_int32(sp, &first_seq);
     if (kret)
 	goto failed;
     
