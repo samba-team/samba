@@ -38,7 +38,7 @@ gss_canonicalize_name(OM_uint32 *minor_status,
 	OM_uint32 major_status;
 	struct _gss_name *name = (struct _gss_name *) input_name;
 	struct _gss_mechanism_name *mn;
-	gssapi_mech_interface m = __gss_get_mechanism(mech_type);
+	gssapi_mech_interface m;
 	gss_name_t new_canonical_name;
 
 	*minor_status = 0;
