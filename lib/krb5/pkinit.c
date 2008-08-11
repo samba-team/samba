@@ -381,7 +381,7 @@ build_auth_pack(krb5_context context,
 	    ret = krb5_data_alloc(a->clientDHNonce, 40);
 	    if (a->clientDHNonce == NULL) {
 		krb5_clear_error_string(context);
-		return ENOMEM;
+		return ret;
 	    }
 	    memset(a->clientDHNonce->data, 0, a->clientDHNonce->length);
 	    ret = krb5_copy_data(context, a->clientDHNonce, 
