@@ -242,7 +242,6 @@ static OM_uint32 acquire_acceptor_cred
     OM_uint32 ret;
     krb5_error_code kret;
 
-    kret = 0;
     ret = GSS_S_FAILURE;
     kret = get_keytab(context, &handle->keytab);
     if (kret)
