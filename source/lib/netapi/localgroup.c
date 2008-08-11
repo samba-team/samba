@@ -24,15 +24,14 @@
 #include "lib/netapi/netapi_private.h"
 #include "lib/netapi/libnetapi.h"
 
-static WERROR libnetapi_samr_lookup_and_open_alias(TALLOC_CTX *mem_ctx,
-						   struct rpc_pipe_client *pipe_cli,
-						   struct policy_handle *domain_handle,
-						   const char *group_name,
-						   uint32_t access_rights,
-						   struct policy_handle *alias_handle)
+static NTSTATUS libnetapi_samr_lookup_and_open_alias(TALLOC_CTX *mem_ctx,
+						     struct rpc_pipe_client *pipe_cli,
+						     struct policy_handle *domain_handle,
+						     const char *group_name,
+						     uint32_t access_rights,
+						     struct policy_handle *alias_handle)
 {
 	NTSTATUS status;
-	WERROR werr;
 
 	struct lsa_String lsa_account_name;
 	struct samr_Ids user_rids, name_types;
@@ -46,8 +45,7 @@ static WERROR libnetapi_samr_lookup_and_open_alias(TALLOC_CTX *mem_ctx,
 					 &user_rids,
 					 &name_types);
 	if (!NT_STATUS_IS_OK(status)) {
-		werr = ntstatus_to_werror(status);
-		goto done;
+		return status;
 	}
 
 	switch (name_types.ids[0]) {
@@ -55,23 +53,14 @@ static WERROR libnetapi_samr_lookup_and_open_alias(TALLOC_CTX *mem_ctx,
 		case SID_NAME_WKN_GRP:
 			break;
 		default:
-			return WERR_INVALID_DATATYPE;
+			return NT_STATUS_INVALID_SID;
 	}
 
-	status = rpccli_samr_OpenAlias(pipe_cli, mem_ctx,
-				       domain_handle,
-				       access_rights,
-				       user_rids.ids[0],
-				       alias_handle);
-	if (NT_STATUS_IS_OK(status)) {
-		werr = ntstatus_to_werror(status);
-		goto done;
-	}
-
-	werr = WERR_OK;
-
- done:
-	return werr;
+	return rpccli_samr_OpenAlias(pipe_cli, mem_ctx,
+				     domain_handle,
+				     access_rights,
+				     user_rids.ids[0],
+				     alias_handle);
 }
 
 /****************************************************************
@@ -182,17 +171,16 @@ WERROR NetLocalGroupAdd_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	werr = libnetapi_samr_lookup_and_open_alias(ctx, pipe_cli,
-						    &builtin_handle,
-						    alias_name,
-						    SAMR_ALIAS_ACCESS_LOOKUP_INFO,
-						    &alias_handle);
-
+	status = libnetapi_samr_lookup_and_open_alias(ctx, pipe_cli,
+						      &builtin_handle,
+						      alias_name,
+						      SAMR_ALIAS_ACCESS_LOOKUP_INFO,
+						      &alias_handle);
 	if (ctx->disable_policy_handle_cache) {
 		libnetapi_samr_close_builtin_handle(ctx, &builtin_handle);
 	}
 
-	if (W_ERROR_IS_OK(werr)) {
+	if (NT_STATUS_IS_OK(status)) {
 		werr = WERR_ALIAS_EXISTS;
 		goto done;
 	}
@@ -312,17 +300,17 @@ WERROR NetLocalGroupDel_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	werr = libnetapi_samr_lookup_and_open_alias(ctx, pipe_cli,
-						    &builtin_handle,
-						    r->in.group_name,
-						    SEC_STD_DELETE,
-						    &alias_handle);
+	status = libnetapi_samr_lookup_and_open_alias(ctx, pipe_cli,
+						      &builtin_handle,
+						      r->in.group_name,
+						      SEC_STD_DELETE,
+						      &alias_handle);
 
 	if (ctx->disable_policy_handle_cache) {
 		libnetapi_samr_close_builtin_handle(ctx, &builtin_handle);
 	}
 
-	if (W_ERROR_IS_OK(werr)) {
+	if (NT_STATUS_IS_OK(status)) {
 		goto delete_alias;
 	}
 
@@ -338,17 +326,18 @@ WERROR NetLocalGroupDel_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	werr = libnetapi_samr_lookup_and_open_alias(ctx, pipe_cli,
-						    &domain_handle,
-						    r->in.group_name,
-						    SEC_STD_DELETE,
-						    &alias_handle);
+	status = libnetapi_samr_lookup_and_open_alias(ctx, pipe_cli,
+						      &domain_handle,
+						      r->in.group_name,
+						      SEC_STD_DELETE,
+						      &alias_handle);
 
 	if (ctx->disable_policy_handle_cache) {
 		libnetapi_samr_close_domain_handle(ctx, &domain_handle);
 	}
 
-	if (!W_ERROR_IS_OK(werr)) {
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
 		goto done;
 	}
 
@@ -492,17 +481,17 @@ WERROR NetLocalGroupGetInfo_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	werr = libnetapi_samr_lookup_and_open_alias(ctx, pipe_cli,
-						    &builtin_handle,
-						    r->in.group_name,
-						    SAMR_ALIAS_ACCESS_LOOKUP_INFO,
-						    &alias_handle);
+	status = libnetapi_samr_lookup_and_open_alias(ctx, pipe_cli,
+						      &builtin_handle,
+						      r->in.group_name,
+						      SAMR_ALIAS_ACCESS_LOOKUP_INFO,
+						      &alias_handle);
 
 	if (ctx->disable_policy_handle_cache) {
 		libnetapi_samr_close_builtin_handle(ctx, &builtin_handle);
 	}
 
-	if (W_ERROR_IS_OK(werr)) {
+	if (NT_STATUS_IS_OK(status)) {
 		goto query_alias;
 	}
 
@@ -518,17 +507,18 @@ WERROR NetLocalGroupGetInfo_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	werr = libnetapi_samr_lookup_and_open_alias(ctx, pipe_cli,
-						    &domain_handle,
-						    r->in.group_name,
-						    SAMR_ALIAS_ACCESS_LOOKUP_INFO,
-						    &alias_handle);
+	status = libnetapi_samr_lookup_and_open_alias(ctx, pipe_cli,
+						      &domain_handle,
+						      r->in.group_name,
+						      SAMR_ALIAS_ACCESS_LOOKUP_INFO,
+						      &alias_handle);
 
 	if (ctx->disable_policy_handle_cache) {
 		libnetapi_samr_close_domain_handle(ctx, &domain_handle);
 	}
 
-	if (!W_ERROR_IS_OK(werr)) {
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
 		goto done;
 	}
 
@@ -673,17 +663,17 @@ WERROR NetLocalGroupSetInfo_r(struct libnetapi_ctx *ctx,
 
 	init_lsa_String(&lsa_account_name, r->in.group_name);
 
-	werr = libnetapi_samr_lookup_and_open_alias(ctx, pipe_cli,
-						    &builtin_handle,
-						    r->in.group_name,
-						    SAMR_ALIAS_ACCESS_SET_INFO,
-						    &alias_handle);
+	status = libnetapi_samr_lookup_and_open_alias(ctx, pipe_cli,
+						      &builtin_handle,
+						      r->in.group_name,
+						      SAMR_ALIAS_ACCESS_SET_INFO,
+						      &alias_handle);
 
 	if (ctx->disable_policy_handle_cache) {
 		libnetapi_samr_close_builtin_handle(ctx, &builtin_handle);
 	}
 
-	if (W_ERROR_IS_OK(werr)) {
+	if (NT_STATUS_IS_OK(status)) {
 		goto set_alias;
 	}
 
@@ -698,12 +688,13 @@ WERROR NetLocalGroupSetInfo_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	werr = libnetapi_samr_lookup_and_open_alias(ctx, pipe_cli,
-						    &domain_handle,
-						    r->in.group_name,
-						    SAMR_ALIAS_ACCESS_SET_INFO,
-						    &alias_handle);
-	if (!W_ERROR_IS_OK(werr)) {
+	status = libnetapi_samr_lookup_and_open_alias(ctx, pipe_cli,
+						      &domain_handle,
+						      r->in.group_name,
+						      SAMR_ALIAS_ACCESS_SET_INFO,
+						      &alias_handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
 		goto done;
 	}
 
@@ -1137,20 +1128,20 @@ static WERROR NetLocalGroupModifyMembers_r(struct libnetapi_ctx *ctx,
 
 	init_lsa_String(&lsa_account_name, r->in.group_name);
 
-	werr = libnetapi_samr_lookup_and_open_alias(ctx, pipe_cli,
-						    &builtin_handle,
-						    r->in.group_name,
-						    SAMR_ALIAS_ACCESS_ADD_MEMBER |
-						    SAMR_ALIAS_ACCESS_REMOVE_MEMBER |
-						    SAMR_ALIAS_ACCESS_GET_MEMBERS |
-						    SAMR_ALIAS_ACCESS_LOOKUP_INFO,
-						    &alias_handle);
+	status = libnetapi_samr_lookup_and_open_alias(ctx, pipe_cli,
+						      &builtin_handle,
+						      r->in.group_name,
+						      SAMR_ALIAS_ACCESS_ADD_MEMBER |
+						      SAMR_ALIAS_ACCESS_REMOVE_MEMBER |
+						      SAMR_ALIAS_ACCESS_GET_MEMBERS |
+						      SAMR_ALIAS_ACCESS_LOOKUP_INFO,
+						      &alias_handle);
 
 	if (ctx->disable_policy_handle_cache) {
 		libnetapi_samr_close_builtin_handle(ctx, &builtin_handle);
 	}
 
-	if (W_ERROR_IS_OK(werr)) {
+	if (NT_STATUS_IS_OK(status)) {
 		goto modify_membership;
 	}
 
@@ -1165,15 +1156,16 @@ static WERROR NetLocalGroupModifyMembers_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	werr = libnetapi_samr_lookup_and_open_alias(ctx, pipe_cli,
-						    &domain_handle,
-						    r->in.group_name,
-						    SAMR_ALIAS_ACCESS_ADD_MEMBER |
-						    SAMR_ALIAS_ACCESS_REMOVE_MEMBER |
-						    SAMR_ALIAS_ACCESS_GET_MEMBERS |
-						    SAMR_ALIAS_ACCESS_LOOKUP_INFO,
-						    &alias_handle);
-	if (!W_ERROR_IS_OK(werr)) {
+	status = libnetapi_samr_lookup_and_open_alias(ctx, pipe_cli,
+						      &domain_handle,
+						      r->in.group_name,
+						      SAMR_ALIAS_ACCESS_ADD_MEMBER |
+						      SAMR_ALIAS_ACCESS_REMOVE_MEMBER |
+						      SAMR_ALIAS_ACCESS_GET_MEMBERS |
+						      SAMR_ALIAS_ACCESS_LOOKUP_INFO,
+						      &alias_handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
 		goto done;
 	}
 
