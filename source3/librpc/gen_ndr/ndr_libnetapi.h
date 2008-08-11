@@ -68,9 +68,17 @@
 
 #define NDR_NETLOCALGROUPENUM (0x1e)
 
-#define NDR_NETREMOTETOD (0x1f)
+#define NDR_NETLOCALGROUPADDMEMBERS (0x1f)
 
-#define NDR_LIBNETAPI_CALL_COUNT (32)
+#define NDR_NETLOCALGROUPDELMEMBERS (0x20)
+
+#define NDR_NETLOCALGROUPGETMEMBERS (0x21)
+
+#define NDR_NETLOCALGROUPSETMEMBERS (0x22)
+
+#define NDR_NETREMOTETOD (0x23)
+
+#define NDR_LIBNETAPI_CALL_COUNT (36)
 enum ndr_err_code ndr_push_NET_API_STATUS(struct ndr_push *ndr, int ndr_flags, enum NET_API_STATUS r);
 enum ndr_err_code ndr_pull_NET_API_STATUS(struct ndr_pull *ndr, int ndr_flags, enum NET_API_STATUS *r);
 void ndr_print_NET_API_STATUS(struct ndr_print *ndr, const char *name, enum NET_API_STATUS r);
@@ -287,6 +295,18 @@ void ndr_print_NetLocalGroupSetInfo(struct ndr_print *ndr, const char *name, int
 enum ndr_err_code ndr_push_NetLocalGroupEnum(struct ndr_push *ndr, int flags, const struct NetLocalGroupEnum *r);
 enum ndr_err_code ndr_pull_NetLocalGroupEnum(struct ndr_pull *ndr, int flags, struct NetLocalGroupEnum *r);
 void ndr_print_NetLocalGroupEnum(struct ndr_print *ndr, const char *name, int flags, const struct NetLocalGroupEnum *r);
+enum ndr_err_code ndr_push_NetLocalGroupAddMembers(struct ndr_push *ndr, int flags, const struct NetLocalGroupAddMembers *r);
+enum ndr_err_code ndr_pull_NetLocalGroupAddMembers(struct ndr_pull *ndr, int flags, struct NetLocalGroupAddMembers *r);
+void ndr_print_NetLocalGroupAddMembers(struct ndr_print *ndr, const char *name, int flags, const struct NetLocalGroupAddMembers *r);
+enum ndr_err_code ndr_push_NetLocalGroupDelMembers(struct ndr_push *ndr, int flags, const struct NetLocalGroupDelMembers *r);
+enum ndr_err_code ndr_pull_NetLocalGroupDelMembers(struct ndr_pull *ndr, int flags, struct NetLocalGroupDelMembers *r);
+void ndr_print_NetLocalGroupDelMembers(struct ndr_print *ndr, const char *name, int flags, const struct NetLocalGroupDelMembers *r);
+enum ndr_err_code ndr_push_NetLocalGroupGetMembers(struct ndr_push *ndr, int flags, const struct NetLocalGroupGetMembers *r);
+enum ndr_err_code ndr_pull_NetLocalGroupGetMembers(struct ndr_pull *ndr, int flags, struct NetLocalGroupGetMembers *r);
+void ndr_print_NetLocalGroupGetMembers(struct ndr_print *ndr, const char *name, int flags, const struct NetLocalGroupGetMembers *r);
+enum ndr_err_code ndr_push_NetLocalGroupSetMembers(struct ndr_push *ndr, int flags, const struct NetLocalGroupSetMembers *r);
+enum ndr_err_code ndr_pull_NetLocalGroupSetMembers(struct ndr_pull *ndr, int flags, struct NetLocalGroupSetMembers *r);
+void ndr_print_NetLocalGroupSetMembers(struct ndr_print *ndr, const char *name, int flags, const struct NetLocalGroupSetMembers *r);
 enum ndr_err_code ndr_push_NetRemoteTOD(struct ndr_push *ndr, int flags, const struct NetRemoteTOD *r);
 enum ndr_err_code ndr_pull_NetRemoteTOD(struct ndr_pull *ndr, int flags, struct NetRemoteTOD *r);
 void ndr_print_NetRemoteTOD(struct ndr_print *ndr, const char *name, int flags, const struct NetRemoteTOD *r);
