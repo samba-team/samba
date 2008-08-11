@@ -243,5 +243,5 @@ main (int argc, char **argv)
     }
 
     krb5_free_context (context);
-    return ret;
+    return exit_value;
 }
