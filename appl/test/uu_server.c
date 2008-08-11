@@ -87,7 +87,11 @@ proto (int sock, const char *service)
     
     memset(&in_creds, 0, sizeof(in_creds));
     status = krb5_cc_default(context, &ccache);
+    if(status)
+	krb5_err(context, 1, status, "krb5_cc_default");
     status = krb5_cc_get_principal(context, ccache, &in_creds.client);
+    if(status)
+	krb5_err(context, 1, status, "krb5_cc_get_principal");
 
     status = krb5_read_message(context, &sock, &in_creds.second_ticket);
     if(status)
