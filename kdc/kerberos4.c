@@ -258,20 +258,6 @@ _kdc_do_version4(krb5_context context,
 	    goto out1;
 	}
 
-#if 0
-	/* this is not necessary with the new code in libkrb */
-	/* find a properly salted key */
-	while(ckey->salt == NULL || ckey->salt->salt.length != 0)
-	    ret = hdb_next_keytype2key(context, &client->entry, KEYTYPE_DES, &ckey);
-	if(ret){
-	    kdc_log(context, config, 0, "No version-4 salted key in database -- %s.%s@%s", 
-		    name, inst, realm);
-	    make_err_reply(context, reply, KRB4ET_KDC_NULL_KEY, 
-			   "No version-4 salted key in database");
-	    goto out1;
-	}
-#endif
-	
 	ret = _kdc_get_des_key(context, server, TRUE, FALSE, &skey);
 	if(ret){
 	    kdc_log(context, config, 0, "no suitable DES key for server");
