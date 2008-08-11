@@ -1837,7 +1837,7 @@ static krb5_error_code ads_krb5_get_fwd_ticket( krb5_context context,
 	   (APPLICATION 22) so that we can pack it on the end of the structure.
 	*/
 
-	pChksum	= SMB_MALLOC(GSSAPI_CHECKSUM_SIZE + fwdData.length );
+	pChksum	= (char *)SMB_MALLOC(GSSAPI_CHECKSUM_SIZE + fwdData.length );
 	if (!pChksum) {
 		retval = ENOMEM;
 		goto out;
