@@ -34,6 +34,7 @@
 #include <pkinit_asn1.h>
 #include <err.h>
 #include <getarg.h>
+#include <hex.h>
 
 RCSID("$Id$");
 
@@ -152,6 +153,25 @@ test_dh2key(krb5_context context, int i, struct testcase *c)
     if (ret)
 	krb5_err(context, 1, ret, "parse_name: %s", c->server);
 
+    {
+	char *str;
+	hex_encode(c->Z.data, c->Z.length, &str);
+	printf("Z: %s\n", str);
+	free(str);
+	printf("client: %s\n", c->client);
+	printf("server: %s\n", c->server);
+	printf("enctype: %d\n", (int)c->enctype);
+	hex_encode(c->as_req.data, c->as_req.length, &str);
+	printf("as-req: %s\n", str);
+	free(str);
+	hex_encode(c->pk_as_rep.data, c->pk_as_rep.length, &str);
+	printf("pk-as-rep: %s\n", str);
+	free(str);
+	hex_encode(c->ticket.data, c->ticket.length, &str);
+	printf("ticket: %s\n", str);
+	free(str);
+    }
+
     ret = _krb5_pk_kdf(context,
 		       &ai,
 		       c->Z.data,
@@ -167,6 +187,13 @@ test_dh2key(krb5_context context, int i, struct testcase *c)
     krb5_free_principal(context, server);
     if (ret)
 	krb5_err(context, 1, ret, "_krb5_pk_kdf: %d", i);
+
+    {
+	char *str;
+	hex_encode(key.keyvalue.data, key.keyvalue.length, &str);
+	printf("key: %s\n", str);
+	free(str);
+    }
 
     if (key.keyvalue.length != c->key.length ||
 	memcmp(key.keyvalue.data, c->key.data, c->key.length) != 0)
