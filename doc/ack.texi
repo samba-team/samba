@@ -64,6 +64,7 @@ Bugfixes, documentation, encouragement, and code has been contributed by:
 @item Michal Vocu
 @item Milosz Kmieciak
 @item Miroslav Ruda
+@item Mustafa A. Hashmi
 @item Petr Holub
 @item Phil Fisher
 @item Rafal Malinowski
