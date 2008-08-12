@@ -850,9 +850,39 @@ NET_API_STATUS NetUserSetInfo(const char * server_name /* [in] */,
 			      uint8_t *buffer /* [in] [ref] */,
 			      uint32_t *parm_err /* [out] [ref] */);
 
+/************************************************************//**
+ *
+ * NetUserModalsGet
+ *
+ * @brief Get SAM domain and password information
+ *
+ * @param[in] server_name The server name to connect to
+ * @param[in] level The level defining which USER_MODALS_INFO_X buffer to query
+ * @param[out] buffer The returned USER_MODALS_INFO_X buffer
+ * @return NET_API_STATUS
+ *
+ * example user/user_modalsget.c
+ ***************************************************************/
+
 NET_API_STATUS NetUserModalsGet(const char * server_name /* [in] */,
 				uint32_t level /* [in] */,
 				uint8_t **buffer /* [out] [ref] */);
+
+/************************************************************//**
+ *
+ * NetUserModalsSet
+ *
+ * @brief Set SAM domain and password information
+ *
+ * @param[in] server_name The server name to connect to
+ * @param[in] level The level defining which USER_MODALS_INFO_X buffer to query
+ * @param[out] buffer The buffer conntaing a USER_MODALS_INFO_X structure
+ * @param[out] parm_err The returned parameter error number if any
+ * @return NET_API_STATUS
+ *
+ * example user/user_modalsset.c
+ ***************************************************************/
+
 NET_API_STATUS NetUserModalsSet(const char * server_name /* [in] */,
 				uint32_t level /* [in] */,
 				uint8_t *buffer /* [in] [ref] */,
