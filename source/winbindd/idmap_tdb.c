@@ -313,12 +313,11 @@ static NTSTATUS idmap_tdb_alloc_init( const char *params )
 {
 	NTSTATUS ret;
 	TALLOC_CTX *ctx;
-	const char *range;
 	uid_t low_uid = 0;
 	uid_t high_uid = 0;
 	gid_t low_gid = 0;
 	gid_t high_gid = 0;
-	uint32_t low_id, high_id;
+	uint32_t low_id;
 
 	/* use our own context here */
 	ctx = talloc_new(NULL);
