@@ -77,13 +77,13 @@ popd
 echo "$(basename $0): Getting Ready to build release package"
 pushd ${SPECDIR}
 ${RPM} -ba $EXTRA_OPTIONS $SPECFILE
-[ `arch` = "x86_64" ] && {
+if [ "x$?" = "x0" ] && [ `arch` = "x86_64" ]; then
     echo "Building 32 bit winbind libs"
     # hi ho, a hacking we will go ...
     ln -sf /lib/libcom_err.so.2 /lib/libcom_err.so
     ln -sf /lib/libuuid.so.1 /lib/libuuid.so
     ${RPM} -ba --rebuild --target=i386 $SPECFILE
-}
+fi
 
 popd
 
