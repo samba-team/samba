@@ -1121,10 +1121,10 @@ static NTSTATUS gensec_gssapi_check_packet(struct gensec_security *gensec_securi
 
 	if (gensec_security->want_features & GENSEC_FEATURE_SIGN_PKT_HEADER) {
 		input_message.length = pdu_length;
-		input_message.value = whole_pdu;
+		input_message.value = discard_const(whole_pdu);
 	} else {
 		input_message.length = length;
-		input_message.value = data;
+		input_message.value = discard_const(data);
 	}
 
 	input_token.length = sig->length;
