@@ -137,6 +137,10 @@ static void bind_auth_next_step(struct composite_context *c)
 
 	if (!composite_is_ok(c)) return;
 
+	if (state->pipe->conn->flags & DCERPC_HEADER_SIGNING) {
+		gensec_want_feature(sec->generic_state, GENSEC_FEATURE_SIGN_PKT_HEADER);
+	}
+
 	if (state->credentials.length == 0) {
 		composite_done(c);
 		return;
@@ -146,7 +150,7 @@ static void bind_auth_next_step(struct composite_context *c)
 
 	if (!more_processing) {
 		/* NO reply expected, so just send it */
-		c->status = dcerpc_auth3(state->pipe->conn, state);
+		c->status = dcerpc_auth3(state->pipe, state);
 		if (!composite_is_ok(c)) return;
 
 		composite_done(c);

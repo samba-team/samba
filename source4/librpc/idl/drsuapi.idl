@@ -662,13 +662,7 @@ interface drsuapi
 	} drsuapi_DsGetNCChangesCompressedCtr;
 
 	typedef struct {
-		/* 
-		 * this is a bit ugly, as the compression depends on the flags
-		 * in the DsBind(), but only w2k uses DsGetNCChangesReq5
-		 * and will get DsGetNCChangesCtr2 replies, and w2k only knowns
-		 * about MSZIP and level 1 replies
-		 */
-		[switch_is(1|(DRSUAPI_COMPRESSION_TYPE_MSZIP<<16))] drsuapi_DsGetNCChangesCompressedCtr ctr;
+		drsuapi_DsGetNCChangesMSZIPCtr1 mszip1;
 	} drsuapi_DsGetNCChangesCtr2;
 
 	typedef struct {
