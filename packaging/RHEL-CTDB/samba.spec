@@ -177,8 +177,6 @@ CFLAGS="$RPM_OPT_FLAGS $EXTRA -D_GNU_SOURCE" ./configure \
 
 make showlayout
 
-make CFLAGS="$RPM_OPT_FLAGS -D_GNU_SOURCE"  proto 
-
 ## check for gcc 3.4 or later
 CC_VERSION=`${CC} --version | head -1 | awk '{print $3}'`
 CC_MAJOR=`echo ${CC_VERSION} | cut -d. -f 1`
