@@ -47,6 +47,7 @@ PROGS = bin/getdc@EXEEXT@ \
 	bin/localgroup_addmembers@EXEEXT@ \
 	bin/localgroup_delmembers@EXEEXT@ \
 	bin/localgroup_setmembers@EXEEXT@ \
+	bin/localgroup_getmembers@EXEEXT@ \
 	bin/remote_tod@EXEEXT@
 
 all: $(PROGS)
@@ -106,6 +107,7 @@ LOCALGROUPENUM_OBJ = localgroup/localgroup_enum.o $(CMDLINE_OBJ)
 LOCALGROUPADDMEMBERS_OBJ = localgroup/localgroup_addmembers.o $(CMDLINE_OBJ)
 LOCALGROUPDELMEMBERS_OBJ = localgroup/localgroup_delmembers.o $(CMDLINE_OBJ)
 LOCALGROUPSETMEMBERS_OBJ = localgroup/localgroup_setmembers.o $(CMDLINE_OBJ)
+LOCALGROUPGETMEMBERS_OBJ = localgroup/localgroup_getmembers.o $(CMDLINE_OBJ)
 REMOTETOD_OBJ = server/remote_tod.o $(CMDLINE_OBJ)
 
 bin/getdc@EXEEXT@: $(BINARY_PREREQS) $(GETDC_OBJ)
@@ -227,6 +229,10 @@ bin/localgroup_delmembers@EXEEXT@: $(BINARY_PREREQS) $(LOCALGROUPDELMEMBERS_OBJ)
 bin/localgroup_setmembers@EXEEXT@: $(BINARY_PREREQS) $(LOCALGROUPSETMEMBERS_OBJ)
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(LOCALGROUPSETMEMBERS_OBJ) $(LDFLAGS) $(DYNEXP) $(CMDLINE_LIBS)
+
+bin/localgroup_getmembers@EXEEXT@: $(BINARY_PREREQS) $(LOCALGROUPGETMEMBERS_OBJ)
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(LOCALGROUPGETMEMBERS_OBJ) $(LDFLAGS) $(DYNEXP) $(CMDLINE_LIBS)
 
 bin/remote_tod@EXEEXT@: $(BINARY_PREREQS) $(REMOTETOD_OBJ)
 	@echo Linking $@
