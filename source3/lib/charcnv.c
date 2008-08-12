@@ -47,6 +47,7 @@ char lp_failed_convert_char(void)
 
 static smb_iconv_t conv_handles[NUM_CHARSETS][NUM_CHARSETS];
 static bool conv_silent; /* Should we do a debug if the conversion fails ? */
+static bool initialized;
 
 /**
  * Return the name of a charset to give to iconv().
@@ -92,12 +93,10 @@ static const char *charset_name(charset_t ch)
 
 void lazy_initialize_conv(void)
 {
-	static int initialized = False;
-
 	if (!initialized) {
-		initialized = True;
 		load_case_tables();
 		init_iconv();
+		initialized = true;
 	}
 }
 
@@ -116,6 +115,7 @@ void gfree_charcnv(void)
 			}
 		}
 	}
+	initialized = false;
 }
 
 /**
