@@ -70,12 +70,9 @@ WERROR NetServerGetInfo_r(struct libnetapi_ctx *ctx,
 	WERROR werr;
 	union srvsvc_NetSrvInfo info;
 
-	werr = libnetapi_open_ipc_connection(ctx, r->in.server_name, &cli);
-	if (!W_ERROR_IS_OK(werr)) {
-		goto done;
-	}
-
-	werr = libnetapi_open_pipe(ctx, cli, &ndr_table_srvsvc.syntax_id,
+	werr = libnetapi_open_pipe(ctx, r->in.server_name,
+				   &ndr_table_srvsvc.syntax_id,
+				   &cli,
 				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -171,12 +168,9 @@ WERROR NetServerSetInfo_r(struct libnetapi_ctx *ctx,
 	WERROR werr;
 	union srvsvc_NetSrvInfo info;
 
-	werr = libnetapi_open_ipc_connection(ctx, r->in.server_name, &cli);
-	if (!W_ERROR_IS_OK(werr)) {
-		goto done;
-	}
-
-	werr = libnetapi_open_pipe(ctx, cli, &ndr_table_srvsvc.syntax_id,
+	werr = libnetapi_open_pipe(ctx, r->in.server_name,
+				   &ndr_table_srvsvc.syntax_id,
+				   &cli,
 				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -218,12 +212,9 @@ WERROR NetRemoteTOD_r(struct libnetapi_ctx *ctx,
 	WERROR werr;
 	struct srvsvc_NetRemoteTODInfo *info = NULL;
 
-	werr = libnetapi_open_ipc_connection(ctx, r->in.server_name, &cli);
-	if (!W_ERROR_IS_OK(werr)) {
-		goto done;
-	}
-
-	werr = libnetapi_open_pipe(ctx, cli, &ndr_table_srvsvc.syntax_id,
+	werr = libnetapi_open_pipe(ctx, r->in.server_name,
+				   &ndr_table_srvsvc.syntax_id,
+				   &cli,
 				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
