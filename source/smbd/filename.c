@@ -477,7 +477,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 				}
 
 				/* ENOENT is the only valid error here. */
-				if (errno != ENOENT) {
+				if ((errno != 0) && (errno != ENOENT)) {
 					/*
 					 * ENOTDIR and ELOOP both map to
 					 * NT_STATUS_OBJECT_PATH_NOT_FOUND
