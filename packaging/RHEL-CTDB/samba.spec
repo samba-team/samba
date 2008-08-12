@@ -5,8 +5,8 @@ Summary: Samba SMB client and server
 Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name:         samba
-Version:      3.2.1
-Release:      ctdb.47
+Version:      3.3.0
+Release:      ctdb.1
 Epoch:        0
 License: GNU GPL version 3
 Group: System Environment/Daemons
