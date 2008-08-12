@@ -50,13 +50,11 @@ NET_API_STATUS libnetapi_get_username(struct libnetapi_ctx *ctx, char **username
 NET_API_STATUS libnetapi_set_error_string(struct libnetapi_ctx *ctx, const char *format, ...);
 NET_API_STATUS libnetapi_get_debuglevel(struct libnetapi_ctx *ctx, char **debuglevel);
 
-WERROR libnetapi_open_ipc_connection(struct libnetapi_ctx *ctx,
-				     const char *server_name,
-				     struct cli_state **cli);
 WERROR libnetapi_shutdown_cm(struct libnetapi_ctx *ctx);
 WERROR libnetapi_open_pipe(struct libnetapi_ctx *ctx,
-			   struct cli_state *cli,
+			   const char *server_name,
 			   const struct ndr_syntax_id *interface,
+			   struct cli_state **pcli,
 			   struct rpc_pipe_client **presult);
 WERROR libnetapi_samr_open_domain(struct libnetapi_ctx *mem_ctx,
 				  struct rpc_pipe_client *pipe_cli,

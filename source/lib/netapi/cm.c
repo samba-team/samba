@@ -25,9 +25,9 @@
 /********************************************************************
 ********************************************************************/
 
-WERROR libnetapi_open_ipc_connection(struct libnetapi_ctx *ctx,
-				     const char *server_name,
-				     struct cli_state **cli)
+static WERROR libnetapi_open_ipc_connection(struct libnetapi_ctx *ctx,
+					    const char *server_name,
+					    struct cli_state **cli)
 {
 	struct cli_state *cli_ipc = NULL;
 
@@ -161,15 +161,23 @@ static NTSTATUS pipe_cm_open(TALLOC_CTX *ctx,
 ********************************************************************/
 
 WERROR libnetapi_open_pipe(struct libnetapi_ctx *ctx,
-			   struct cli_state *cli,
+			   const char *server_name,
 			   const struct ndr_syntax_id *interface,
+			   struct cli_state **pcli,
 			   struct rpc_pipe_client **presult)
 {
 	struct rpc_pipe_client *result = NULL;
 	NTSTATUS status;
+	WERROR werr;
+	struct cli_state *cli = NULL;
 
-	if (!cli || !presult) {
+	if (!presult) {
 		return WERR_INVALID_PARAM;
+	}
+
+	werr = libnetapi_open_ipc_connection(ctx, server_name, &cli);
+	if (!W_ERROR_IS_OK(werr)) {
+		return werr;
 	}
 
 	status = pipe_cm_open(ctx, cli, interface, &result);
@@ -182,6 +190,8 @@ WERROR libnetapi_open_pipe(struct libnetapi_ctx *ctx,
 	}
 
 	*presult = result;
+	*pcli = cli;
+
 	return WERR_OK;
 }
 

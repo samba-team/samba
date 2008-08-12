@@ -71,12 +71,9 @@ WERROR NetGroupAdd_r(struct libnetapi_ctx *ctx,
 			goto done;
 	}
 
-	werr = libnetapi_open_ipc_connection(ctx, r->in.server_name, &cli);
-	if (!W_ERROR_IS_OK(werr)) {
-		goto done;
-	}
-
-	werr = libnetapi_open_pipe(ctx, cli, &ndr_table_samr.syntax_id,
+	werr = libnetapi_open_pipe(ctx, r->in.server_name,
+				   &ndr_table_samr.syntax_id,
+				   &cli,
 				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -251,12 +248,9 @@ WERROR NetGroupDel_r(struct libnetapi_ctx *ctx,
 		return WERR_INVALID_PARAM;
 	}
 
-	werr = libnetapi_open_ipc_connection(ctx, r->in.server_name, &cli);
-	if (!W_ERROR_IS_OK(werr)) {
-		goto done;
-	}
-
-	werr = libnetapi_open_pipe(ctx, cli, &ndr_table_samr.syntax_id,
+	werr = libnetapi_open_pipe(ctx, r->in.server_name,
+				   &ndr_table_samr.syntax_id,
+				   &cli,
 				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -425,12 +419,9 @@ WERROR NetGroupSetInfo_r(struct libnetapi_ctx *ctx,
 		return WERR_INVALID_PARAM;
 	}
 
-	werr = libnetapi_open_ipc_connection(ctx, r->in.server_name, &cli);
-	if (!W_ERROR_IS_OK(werr)) {
-		goto done;
-	}
-
-	werr = libnetapi_open_pipe(ctx, cli, &ndr_table_samr.syntax_id,
+	werr = libnetapi_open_pipe(ctx, r->in.server_name,
+				   &ndr_table_samr.syntax_id,
+				   &cli,
 				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -669,12 +660,9 @@ WERROR NetGroupGetInfo_r(struct libnetapi_ctx *ctx,
 		return WERR_INVALID_PARAM;
 	}
 
-	werr = libnetapi_open_ipc_connection(ctx, r->in.server_name, &cli);
-	if (!W_ERROR_IS_OK(werr)) {
-		goto done;
-	}
-
-	werr = libnetapi_open_pipe(ctx, cli, &ndr_table_samr.syntax_id,
+	werr = libnetapi_open_pipe(ctx, r->in.server_name,
+				   &ndr_table_samr.syntax_id,
+				   &cli,
 				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -794,12 +782,9 @@ WERROR NetGroupAddUser_r(struct libnetapi_ctx *ctx,
 		return WERR_INVALID_PARAM;
 	}
 
-	werr = libnetapi_open_ipc_connection(ctx, r->in.server_name, &cli);
-	if (!W_ERROR_IS_OK(werr)) {
-		goto done;
-	}
-
-	werr = libnetapi_open_pipe(ctx, cli, &ndr_table_samr.syntax_id,
+	werr = libnetapi_open_pipe(ctx, r->in.server_name,
+				   &ndr_table_samr.syntax_id,
+				   &cli,
 				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -924,12 +909,9 @@ WERROR NetGroupDelUser_r(struct libnetapi_ctx *ctx,
 		return WERR_INVALID_PARAM;
 	}
 
-	werr = libnetapi_open_ipc_connection(ctx, r->in.server_name, &cli);
-	if (!W_ERROR_IS_OK(werr)) {
-		goto done;
-	}
-
-	werr = libnetapi_open_pipe(ctx, cli, &ndr_table_samr.syntax_id,
+	werr = libnetapi_open_pipe(ctx, r->in.server_name,
+				   &ndr_table_samr.syntax_id,
+				   &cli,
 				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -1211,12 +1193,9 @@ WERROR NetGroupEnum_r(struct libnetapi_ctx *ctx,
 			return WERR_UNKNOWN_LEVEL;
 	}
 
-	werr = libnetapi_open_ipc_connection(ctx, r->in.server_name, &cli);
-	if (!W_ERROR_IS_OK(werr)) {
-		goto done;
-	}
-
-	werr = libnetapi_open_pipe(ctx, cli, &ndr_table_samr.syntax_id,
+	werr = libnetapi_open_pipe(ctx, r->in.server_name,
+				   &ndr_table_samr.syntax_id,
+				   &cli,
 				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
