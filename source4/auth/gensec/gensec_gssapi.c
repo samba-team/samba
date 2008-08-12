@@ -1165,9 +1165,9 @@ static NTSTATUS gensec_gssapi_session_key(struct gensec_security *gensec_securit
 		return NT_STATUS_OK;
 	}
 
-	maj_stat = gsskrb5_get_initiator_subkey(&min_stat, 
-						gensec_gssapi_state->gssapi_context,
-						&subkey);
+	maj_stat = gsskrb5_get_subkey(&min_stat,
+				      gensec_gssapi_state->gssapi_context,
+				      &subkey);
 	if (maj_stat != 0) {
 		DEBUG(1, ("NO session key for this mech\n"));
 		return NT_STATUS_NO_USER_SESSION_KEY;
@@ -1416,7 +1416,7 @@ size_t gensec_gssapi_sig_size(struct gensec_security *gensec_security, size_t da
 			 * TODO: windows uses 76 here, but we don't know
 			 *       gss_wrap works with aes keys yet
 			 */
-			gensec_gssapi_state->sig_size = 60;
+			gensec_gssapi_state->sig_size = 76;
 		} else {
 			gensec_gssapi_state->sig_size = 28;
 		}

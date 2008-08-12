@@ -661,6 +661,7 @@ _gsskrb5cfx_max_wrap_length_cfx (
 
 krb5_error_code
 _gsskrb5cfx_wrap_length_cfx (
+	const gsskrb5_ctx /*context_handle*/,
 	krb5_context /*context*/,
 	krb5_crypto /*crypto*/,
 	int /*conf_req_flag*/,
