@@ -256,12 +256,12 @@ ln -s libsmbclient.so.0 $RPM_BUILD_ROOT%{_libarchdir}/libsmbclient.so
 #ln -s /%{_libarchdir}/libmsrpc.so $RPM_BUILD_ROOT%{_libarchdir}/libmsrpc.so.0
 
 # make install puts libsmbsharemodes.so in the wrong place on x86_64
-rm -f $RPM_BUILD_ROOT/usr/lib*/samba/libsmbsharemodes.so $RPM_BUILD_ROOT/usr/lib*/samba/libsmbsharemodes.a || true
-install -m 755 source/bin/libsmbsharemodes.so $RPM_BUILD_ROOT%{_libarchdir}/libsmbsharemodes.so
+rm -f $RPM_BUILD_ROOT/usr/lib*/samba/libsmbsharemodes.so* $RPM_BUILD_ROOT/usr/lib*/samba/libsmbsharemodes.a || true
+install -m 755 source/bin/libsmbsharemodes.so.0 $RPM_BUILD_ROOT%{_libarchdir}/libsmbsharemodes.so.0
 install -m 755 source/bin/libsmbsharemodes.a $RPM_BUILD_ROOT%{_libarchdir}/libsmbsharemodes.a
 install -m 644 source/include/smb_share_modes.h $RPM_BUILD_ROOT%{_includedir}
 rm -f $RPM_BUILD_ROOT%{_libarchdir}/samba/libsmbsharemodes.*
-ln -s /%{_libarchdir}/libsmbsharemodes.so $RPM_BUILD_ROOT%{_libarchdir}/libsmbsharemodes.so.0
+ln -s libsmbsharemodes.so.0 $RPM_BUILD_ROOT%{_libarchdir}/libsmbsharemodes.so
 
 # Install pam_smbpass.so
 install -m755 source/bin/pam_smbpass.so $RPM_BUILD_ROOT/%{_libarch}/security/pam_smbpass.so
