@@ -241,11 +241,11 @@ install -m 755 source/nsswitch/libnss_winbind.so $RPM_BUILD_ROOT/%{_libarch}/lib
 # ( cd $RPM_BUILD_ROOT/%{_libarch}; ln -sf libnss_wins.so  libnss_wins.so.2 )
 
 # make install puts libsmbclient.so in the wrong place on x86_64
-rm -f $RPM_BUILD_ROOT/usr/lib*/samba/libsmbclient.so $RPM_BUILD_ROOT/usr/lib*/samba/libsmbclient.a || true
-install -m 755 source/bin/libsmbclient.so $RPM_BUILD_ROOT%{_libarchdir}/libsmbclient.so
+rm -f $RPM_BUILD_ROOT/usr/lib*/samba/libsmbclient.so* $RPM_BUILD_ROOT/usr/lib*/samba/libsmbclient.a || true
+install -m 755 source/bin/libsmbclient.so.0 $RPM_BUILD_ROOT%{_libarchdir}/libsmbclient.so.0
 install -m 755 source/bin/libsmbclient.a $RPM_BUILD_ROOT%{_libarchdir}/libsmbclient.a
 install -m 644 source/include/libsmbclient.h $RPM_BUILD_ROOT%{_includedir}
-ln -s %{_libarchdir}/libsmbclient.so $RPM_BUILD_ROOT%{_libarchdir}/libsmbclient.so.0
+ln -s libsmbclient.so.0 $RPM_BUILD_ROOT%{_libarchdir}/libsmbclient.so
 
 # make install puts libmsrpc.so in the wrong place on x86_64
 #rm -f $RPM_BUILD_ROOT/usr/lib*/samba/libmsrpc.so $RPM_BUILD_ROOT/usr/lib*/samba/libmsrpc.a || true
