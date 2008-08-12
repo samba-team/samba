@@ -1084,6 +1084,7 @@ struct smb_Dir *OpenDir(TALLOC_CTX *mem_ctx, connection_struct *conn,
 
 	dirp->dir_path = talloc_strdup(dirp, name);
 	if (!dirp->dir_path) {
+		errno = ENOMEM;
 		goto fail;
 	}
 
