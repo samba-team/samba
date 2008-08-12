@@ -1177,6 +1177,31 @@ static bool gensec_gssapi_have_feature(struct gensec_security *gensec_security,
 	if (feature & GENSEC_FEATURE_DCE_STYLE) {
 		return gensec_gssapi_state->got_flags & GSS_C_DCE_STYLE;
 	}
+	if (feature & GENSEC_FEATURE_NEW_SPNEGO) {
+		NTSTATUS status;
+
+		if (!(gensec_gssapi_state->got_flags & GSS_C_INTEG_FLAG)) {
+			return false;
+		}
+
+		if (lp_parm_bool(gensec_security->lp_ctx, NULL, "gensec_gssapi", "force_new_spnego", false)) {
+			return true;
+		}
+		if (lp_parm_bool(gensec_security->lp_ctx, NULL, "gensec_gssapi", "disable_new_spnego", false)) {
+			return false;
+		}
+
+		status = gensec_gssapi_init_lucid(gensec_gssapi_state);
+		if (!NT_STATUS_IS_OK(status)) {
+			return false;
+		}
+
+		if (gensec_gssapi_state->lucid->protocol == 1) {
+			return true;
+		}
+
+		return false;
+	}
 	/* We can always do async (rather than strict request/reply) packets.  */
 	if (feature & GENSEC_FEATURE_ASYNC_REPLIES) {
 		return true;
