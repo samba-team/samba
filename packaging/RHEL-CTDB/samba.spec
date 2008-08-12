@@ -271,22 +271,22 @@ install -m755 source/bin/pam_smbpass.so $RPM_BUILD_ROOT/%{_libarch}/security/pam
 #
 # libwbclient
 rm -f $RPM_BUILD_ROOT%{_libarchdir}/samba/libwbclient.so*
-install -m 755 source/bin/libwbclient.so \
+install -m 755 source/bin/libwbclient.so.0 \
 	$RPM_BUILD_ROOT%{_libarchdir}/libwbclient.so.0
 ln -s libwbclient.so.0 $RPM_BUILD_ROOT%{_libarchdir}/libwbclient.so
 # libtalloc
 rm -f $RPM_BUILD_ROOT%{_libarchdir}/samba/libtalloc.so*
-install -m 755 source/bin/libtalloc.so \
+install -m 755 source/bin/libtalloc.so.1 \
 	$RPM_BUILD_ROOT%{_libarchdir}/libtalloc.so.1
 ln -s libtalloc.so.1 $RPM_BUILD_ROOT%{_libarchdir}/libtalloc.so
 # libtdb
 rm -f $RPM_BUILD_ROOT%{_libarchdir}/samba/libtdb.so*
-install -m 755 source/bin/libtdb.so \
+install -m 755 source/bin/libtdb.so.1 \
 	$RPM_BUILD_ROOT%{_libarchdir}/libtdb.so.1
 ln -s libtdb.so.1 $RPM_BUILD_ROOT%{_libarchdir}/libtdb.so
 # libnetapi
 rm -f $RPM_BUILD_ROOT%{_libarchdir}/samba/libnetapi.so*
-install -m 755 source/bin/libnetapi.so \
+install -m 755 source/bin/libnetapi.so.0 \
 	$RPM_BUILD_ROOT%{_libarchdir}/libnetapi.so.0
 ln -s libnetapi.so.0 $RPM_BUILD_ROOT%{_libarchdir}/libnetapi.so
 
