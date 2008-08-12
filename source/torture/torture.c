@@ -3685,7 +3685,8 @@ static bool run_rename(int dummy)
 	}
 
 	if (!cli_rename(cli1, fname, fname1)) {
-		printf("Fifth rename failed (SHARE_READ | SHARE_WRITE | SHARE_DELETE) - this should have failed ! \n");
+		printf("Fifth rename failed (SHARE_READ | SHARE_WRITE | SHARE_DELETE) - this should have succeeded - %s ! \n",
+			cli_errstr(cli1));
 		correct = False;
 	} else {
 		printf("Fifth rename succeeded (SHARE_READ | SHARE_WRITE | SHARE_DELETE) (this is correct) - %s\n", cli_errstr(cli1));
