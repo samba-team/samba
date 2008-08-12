@@ -374,3 +374,35 @@ out:
 	return ret;
 }
 
+bool spnego_write_mech_types(TALLOC_CTX *mem_ctx,
+			     const char **mech_types,
+			     DATA_BLOB *blob)
+{
+	struct asn1_data *asn1 = asn1_init(mem_ctx);
+
+	/* Write mechTypes */
+	if (mech_types && *mech_types) {
+		int i;
+
+		asn1_push_tag(asn1, ASN1_SEQUENCE(0));
+		for (i = 0; mech_types[i]; i++) {
+			asn1_write_OID(asn1, mech_types[i]);
+		}
+		asn1_pop_tag(asn1);
+	}
+
+	if (asn1->has_error) {
+		asn1_free(asn1);
+		return false;
+	}
+
+	*blob = data_blob_talloc(mem_ctx, asn1->data, asn1->length);
+	if (blob->length != asn1->length) {
+		asn1_free(asn1);
+		return false;
+	}
+
+	asn1_free(asn1);
+
+	return true;
+}
