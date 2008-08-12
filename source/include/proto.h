@@ -9538,7 +9538,7 @@ int conn_num_open(void);
 bool conn_snum_used(int snum);
 connection_struct *conn_find(unsigned cnum);
 connection_struct *conn_new(void);
-void conn_close_all(void);
+bool conn_close_all(void);
 bool conn_idle_all(time_t t);
 void conn_clear_vuid_caches(uint16 vuid);
 void conn_free_internal(connection_struct *conn);
