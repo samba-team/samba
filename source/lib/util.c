@@ -191,12 +191,9 @@ void gfree_all( void )
 	gfree_names();
 	gfree_loadparm();
 	gfree_case_tables();
-	gfree_debugsyms();
 	gfree_charcnv();
 	gfree_interfaces();
-
-	/* release the talloc null_context memory last */
-	talloc_disable_null_tracking();
+	gfree_debugsyms();
 }
 
 const char *my_netbios_names(int i)
