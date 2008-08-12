@@ -253,7 +253,7 @@ WERROR NetLocalGroupAdd_r(struct libnetapi_ctx *ctx,
 WERROR NetLocalGroupAdd_l(struct libnetapi_ctx *ctx,
 			  struct NetLocalGroupAdd *r)
 {
-	return NetLocalGroupAdd_r(ctx, r);
+	LIBNETAPI_REDIRECT_TO_LOCALHOST(ctx, r, NetLocalGroupAdd);
 }
 
 /****************************************************************
@@ -378,7 +378,7 @@ WERROR NetLocalGroupDel_r(struct libnetapi_ctx *ctx,
 WERROR NetLocalGroupDel_l(struct libnetapi_ctx *ctx,
 			  struct NetLocalGroupDel *r)
 {
-	return NetLocalGroupDel_r(ctx, r);
+	LIBNETAPI_REDIRECT_TO_LOCALHOST(ctx, r, NetLocalGroupDel);
 }
 
 /****************************************************************
@@ -562,7 +562,7 @@ WERROR NetLocalGroupGetInfo_r(struct libnetapi_ctx *ctx,
 WERROR NetLocalGroupGetInfo_l(struct libnetapi_ctx *ctx,
 			      struct NetLocalGroupGetInfo *r)
 {
-	return NetLocalGroupGetInfo_r(ctx, r);
+	LIBNETAPI_REDIRECT_TO_LOCALHOST(ctx, r, NetLocalGroupGetInfo);
 }
 
 /****************************************************************
@@ -745,7 +745,7 @@ WERROR NetLocalGroupSetInfo_r(struct libnetapi_ctx *ctx,
 WERROR NetLocalGroupSetInfo_l(struct libnetapi_ctx *ctx,
 			      struct NetLocalGroupSetInfo *r)
 {
-	return NetLocalGroupSetInfo_r(ctx, r);
+	LIBNETAPI_REDIRECT_TO_LOCALHOST(ctx, r, NetLocalGroupSetInfo);
 }
 
 /****************************************************************
@@ -945,7 +945,7 @@ WERROR NetLocalGroupEnum_r(struct libnetapi_ctx *ctx,
 WERROR NetLocalGroupEnum_l(struct libnetapi_ctx *ctx,
 			   struct NetLocalGroupEnum *r)
 {
-	return WERR_NOT_SUPPORTED;
+	LIBNETAPI_REDIRECT_TO_LOCALHOST(ctx, r, NetLocalGroupEnum);
 }
 
 /****************************************************************
@@ -1315,7 +1315,7 @@ WERROR NetLocalGroupAddMembers_r(struct libnetapi_ctx *ctx,
 WERROR NetLocalGroupAddMembers_l(struct libnetapi_ctx *ctx,
 				 struct NetLocalGroupAddMembers *r)
 {
-	return NetLocalGroupAddMembers_r(ctx, r);
+	LIBNETAPI_REDIRECT_TO_LOCALHOST(ctx, r, NetLocalGroupAddMembers);
 }
 
 /****************************************************************
@@ -1333,7 +1333,7 @@ WERROR NetLocalGroupDelMembers_r(struct libnetapi_ctx *ctx,
 WERROR NetLocalGroupDelMembers_l(struct libnetapi_ctx *ctx,
 				 struct NetLocalGroupDelMembers *r)
 {
-	return NetLocalGroupDelMembers_r(ctx, r);
+	LIBNETAPI_REDIRECT_TO_LOCALHOST(ctx, r, NetLocalGroupDelMembers);
 }
 
 /****************************************************************
@@ -1351,7 +1351,7 @@ WERROR NetLocalGroupGetMembers_r(struct libnetapi_ctx *ctx,
 WERROR NetLocalGroupGetMembers_l(struct libnetapi_ctx *ctx,
 				 struct NetLocalGroupGetMembers *r)
 {
-	return WERR_NOT_SUPPORTED;
+	LIBNETAPI_REDIRECT_TO_LOCALHOST(ctx, r, NetLocalGroupGetMembers);
 }
 
 /****************************************************************
@@ -1369,6 +1369,6 @@ WERROR NetLocalGroupSetMembers_r(struct libnetapi_ctx *ctx,
 WERROR NetLocalGroupSetMembers_l(struct libnetapi_ctx *ctx,
 				 struct NetLocalGroupSetMembers *r)
 {
-	return NetLocalGroupSetMembers_r(ctx, r);
+	LIBNETAPI_REDIRECT_TO_LOCALHOST(ctx, r, NetLocalGroupSetMembers);
 }
 

@@ -361,12 +361,7 @@ WERROR NetUserAdd_r(struct libnetapi_ctx *ctx,
 WERROR NetUserAdd_l(struct libnetapi_ctx *ctx,
 		    struct NetUserAdd *r)
 {
-	/* for now just talk to local RPC server */
-	if (!r->in.server_name) {
-		r->in.server_name = "localhost";
-	}
-
-	return NetUserAdd_r(ctx, r);
+	LIBNETAPI_REDIRECT_TO_LOCALHOST(ctx, r, NetUserAdd);
 }
 
 /****************************************************************
@@ -488,12 +483,7 @@ WERROR NetUserDel_r(struct libnetapi_ctx *ctx,
 WERROR NetUserDel_l(struct libnetapi_ctx *ctx,
 		    struct NetUserDel *r)
 {
-	/* for now just talk to local RPC server */
-	if (!r->in.server_name) {
-		r->in.server_name = "localhost";
-	}
-
-	return NetUserDel_r(ctx, r);
+	LIBNETAPI_REDIRECT_TO_LOCALHOST(ctx, r, NetUserDel);
 }
 
 /****************************************************************
@@ -859,7 +849,7 @@ WERROR NetUserEnum_r(struct libnetapi_ctx *ctx,
 WERROR NetUserEnum_l(struct libnetapi_ctx *ctx,
 		     struct NetUserEnum *r)
 {
-	return WERR_NOT_SUPPORTED;
+	LIBNETAPI_REDIRECT_TO_LOCALHOST(ctx, r, NetUserEnum);
 }
 
 /****************************************************************
@@ -1123,7 +1113,7 @@ WERROR NetQueryDisplayInformation_r(struct libnetapi_ctx *ctx,
 WERROR NetQueryDisplayInformation_l(struct libnetapi_ctx *ctx,
 				    struct NetQueryDisplayInformation *r)
 {
-	return WERR_NOT_SUPPORTED;
+	LIBNETAPI_REDIRECT_TO_LOCALHOST(ctx, r, NetQueryDisplayInformation);
 }
 
 /****************************************************************
@@ -1265,7 +1255,7 @@ WERROR NetUserGetInfo_r(struct libnetapi_ctx *ctx,
 WERROR NetUserGetInfo_l(struct libnetapi_ctx *ctx,
 			struct NetUserGetInfo *r)
 {
-	return WERR_NOT_SUPPORTED;
+	LIBNETAPI_REDIRECT_TO_LOCALHOST(ctx, r, NetUserGetInfo);
 }
 
 /****************************************************************
@@ -1405,7 +1395,7 @@ WERROR NetUserSetInfo_r(struct libnetapi_ctx *ctx,
 WERROR NetUserSetInfo_l(struct libnetapi_ctx *ctx,
 			struct NetUserSetInfo *r)
 {
-	return WERR_NOT_SUPPORTED;
+	LIBNETAPI_REDIRECT_TO_LOCALHOST(ctx, r, NetUserSetInfo);
 }
 
 /****************************************************************
@@ -1793,7 +1783,7 @@ WERROR NetUserModalsGet_r(struct libnetapi_ctx *ctx,
 WERROR NetUserModalsGet_l(struct libnetapi_ctx *ctx,
 			  struct NetUserModalsGet *r)
 {
-	return NetUserModalsGet_r(ctx, r);
+	LIBNETAPI_REDIRECT_TO_LOCALHOST(ctx, r, NetUserModalsGet);
 }
 
 /****************************************************************
@@ -2275,5 +2265,5 @@ WERROR NetUserModalsSet_r(struct libnetapi_ctx *ctx,
 WERROR NetUserModalsSet_l(struct libnetapi_ctx *ctx,
 			  struct NetUserModalsSet *r)
 {
-	return NetUserModalsSet_r(ctx, r);
+	LIBNETAPI_REDIRECT_TO_LOCALHOST(ctx, r, NetUserModalsSet);
 }

@@ -31,7 +31,7 @@
 WERROR NetGetDCName_l(struct libnetapi_ctx *ctx,
 		      struct NetGetDCName *r)
 {
-	return WERR_NOT_SUPPORTED;
+	LIBNETAPI_REDIRECT_TO_LOCALHOST(ctx, r, NetGetDCName);
 }
 
 /********************************************************************
@@ -72,7 +72,7 @@ WERROR NetGetDCName_r(struct libnetapi_ctx *ctx,
 WERROR NetGetAnyDCName_l(struct libnetapi_ctx *ctx,
 			 struct NetGetAnyDCName *r)
 {
-	return WERR_NOT_SUPPORTED;
+	LIBNETAPI_REDIRECT_TO_LOCALHOST(ctx, r, NetGetAnyDCName);
 }
 
 /********************************************************************
