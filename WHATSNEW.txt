@@ -8,7 +8,7 @@ intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
 
-Major enhancements in Samba 3.2.0 include:
+Major enhancements in Samba 3.3.0 include:
 
 o
 
