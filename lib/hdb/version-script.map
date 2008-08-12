@@ -84,6 +84,9 @@ HEIMDAL_HDB_1.0 {
 		free_HDB_extension;
 		free_HDB_extensions;
 		free_Key;
+		free_hdb_entry;
+		asn1_HDBFlags_units;
+		HDBFlags2int;
 		length_HDB_Ext_Aliases;
 
 	local:
