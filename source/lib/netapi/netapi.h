@@ -1165,16 +1165,73 @@ NET_API_STATUS NetLocalGroupEnum(const char * server_name /* [in] */,
 				 uint32_t *total_entries /* [out] [ref] */,
 				 uint32_t *resume_handle /* [in,out] [ref] */);
 
+/************************************************************//**
+ *
+ * NetLocalGroupAddMembers
+ *
+ * @brief Add Members to a Local Group
+ *
+ * @param[in] server_name The server name to connect to
+ * @param[in] group_name The name of the group that is going to modified
+ * @param[in] level The level defining the LOCALGROUP_MEMBERS_INFO_X structure
+ * @param[in] buffer The buffer containing a LOCALGROUP_MEMBERS_INFO_X structure
+ * @param[in] total_entries The number of LOCALGROUP_MEMBERS_INFO_X entries in
+ * the buffer
+ * @return NET_API_STATUS
+ *
+ * example localgroup/localgroup_addmembers.c
+ ***************************************************************/
+
 NET_API_STATUS NetLocalGroupAddMembers(const char * server_name /* [in] */,
 				       const char * group_name /* [in] */,
 				       uint32_t level /* [in] */,
 				       uint8_t *buffer /* [in] [ref] */,
 				       uint32_t total_entries /* [in] */);
+
+/************************************************************//**
+ *
+ * NetLocalGroupDelMembers
+ *
+ * @brief Delete Members from a Local Group
+ *
+ * @param[in] server_name The server name to connect to
+ * @param[in] group_name The name of the group that is going to modified
+ * @param[in] level The level defining the LOCALGROUP_MEMBERS_INFO_X structure
+ * @param[in] buffer The buffer containing a LOCALGROUP_MEMBERS_INFO_X structure
+ * @param[in] total_entries The number of LOCALGROUP_MEMBERS_INFO_X entries in
+ * the buffer
+ * @return NET_API_STATUS
+ *
+ * example localgroup/localgroup_delmembers.c
+ ***************************************************************/
+
 NET_API_STATUS NetLocalGroupDelMembers(const char * server_name /* [in] */,
 				       const char * group_name /* [in] */,
 				       uint32_t level /* [in] */,
 				       uint8_t *buffer /* [in] [ref] */,
 				       uint32_t total_entries /* [in] */);
+
+/************************************************************//**
+ *
+ * NetLocalGroupGetMembers
+ *
+ * @brief Enumerate Members in a local group
+ *
+ * @param[in] server_name The server name to connect to
+ * @param[in] local_group_name The localgroup that is going to be queried
+ * @param[in] level The level defining the LOCALGROUP_MEMBERS_INFO_X structure
+ * @param[out] buffer The buffer containing a LOCALGROUP_MEMBERS_INFO_X
+ * structure
+ * @param[in] prefmaxlen The requested maximal buffer size
+ * @param[out] entries_read The number of LOCALGROUP_MEMBERS_INFO_X entries in the buffer
+ * @param[out] total_entries The total number of LOCALGROUP_MEMBERS_INFO_X entries for that group
+ * @param[in,out] resume_handle A handle passed in and returned for resuming
+ * operations
+ * @return NET_API_STATUS
+ *
+ * example localgroup/localgroup_getmembers.c
+ ***************************************************************/
+
 NET_API_STATUS NetLocalGroupGetMembers(const char * server_name /* [in] */,
 				       const char * local_group_name /* [in] */,
 				       uint32_t level /* [in] */,
@@ -1183,6 +1240,24 @@ NET_API_STATUS NetLocalGroupGetMembers(const char * server_name /* [in] */,
 				       uint32_t *entries_read /* [out] [ref] */,
 				       uint32_t *total_entries /* [out] [ref] */,
 				       uint32_t *resume_handle /* [in,out] [ref] */);
+
+/************************************************************//**
+ *
+ * NetLocalGroupSetMembers
+ *
+ * @brief Set Members in a Local Group
+ *
+ * @param[in] server_name The server name to connect to
+ * @param[in] group_name The name of the group that is going to modified
+ * @param[in] level The level defining the LOCALGROUP_MEMBERS_INFO_X structure
+ * @param[in] buffer The buffer containing a LOCALGROUP_MEMBERS_INFO_X structure
+ * @param[in] total_entries The number of LOCALGROUP_MEMBERS_INFO_X entries in
+ * the buffer
+ * @return NET_API_STATUS
+ *
+ * example localgroup/localgroup_setmembers.c
+ ***************************************************************/
+
 NET_API_STATUS NetLocalGroupSetMembers(const char * server_name /* [in] */,
 				       const char * group_name /* [in] */,
 				       uint32_t level /* [in] */,
