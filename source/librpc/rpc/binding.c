@@ -83,7 +83,8 @@ static const struct {
 	{"print", DCERPC_DEBUG_PRINT_BOTH},
 	{"padcheck", DCERPC_DEBUG_PAD_CHECK},
 	{"bigendian", DCERPC_PUSH_BIGENDIAN},
-	{"smb2", DCERPC_SMB2}
+	{"smb2", DCERPC_SMB2},
+	{"hdrsign", DCERPC_HEADER_SIGNING}
 };
 
 const char *epm_floor_string(TALLOC_CTX *mem_ctx, struct epm_floor *epm_floor)

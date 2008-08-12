@@ -156,6 +156,8 @@ static NTSTATUS authsam_password_ok(struct auth_context *auth_context,
 		if (lp_null_passwords(auth_context->lp_ctx)) {
 			DEBUG(3,("Account for user '%s' has no password and null passwords are allowed.\n", 
 				 user_info->mapped.account_name));
+			*lm_sess_key = data_blob(NULL, 0);
+			*user_sess_key = data_blob(NULL, 0);
 			return NT_STATUS_OK;
 		} else {
 			DEBUG(3,("Account for user '%s' has no password and null passwords are NOT allowed.\n", 

@@ -544,6 +544,7 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	uint32_t result=0, reason=0;
 	uint32_t context_id;
 	const struct dcesrv_interface *iface;
+	uint32_t extra_flags = 0;
 
 	/*
 	 * Association groups allow policy handles to be shared across
@@ -617,6 +618,12 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 		call->conn->cli_max_recv_frag = call->pkt.u.bind.max_recv_frag;
 	}
 
+	if ((call->pkt.pfc_flags & DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN) &&
+	    lp_parm_bool(call->conn->dce_ctx->lp_ctx, NULL, "dcesrv","header signing", false)) {
+		call->conn->state_flags |= DCESRV_CALL_STATE_FLAG_HEADER_SIGNING;
+		extra_flags |= DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN;
+	}
+
 	/* handle any authentication that is being requested */
 	if (!dcesrv_auth_bind(call)) {
 		return dcesrv_bind_nak(call, DCERPC_BIND_REASON_INVALID_AUTH_TYPE);
@@ -627,7 +634,7 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	pkt.auth_length = 0;
 	pkt.call_id = call->pkt.call_id;
 	pkt.ptype = DCERPC_PKT_BIND_ACK;
-	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
+	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST | extra_flags;
 	pkt.u.bind_ack.max_xmit_frag = 0x2000;
 	pkt.u.bind_ack.max_recv_frag = 0x2000;
 	/* we need to send a non zero assoc_group_id here to make longhorn happy, it also matches samba3 */
@@ -910,6 +917,7 @@ _PUBLIC_ NTSTATUS dcesrv_reply(struct dcesrv_call_state *call)
 	DATA_BLOB stub;
 	uint32_t total_length, chunk_size;
 	struct dcesrv_connection_context *context = call->context;
+	size_t sig_size = 0;
 
 	/* call the reply function */
 	status = context->iface->reply(call, call, call->r);
@@ -941,7 +949,15 @@ _PUBLIC_ NTSTATUS dcesrv_reply(struct dcesrv_call_state *call)
 
 	/* we can write a full max_recv_frag size, minus the dcerpc
 	   request header size */
-	chunk_size = call->conn->cli_max_recv_frag - (DCERPC_MAX_SIGN_SIZE+DCERPC_REQUEST_LENGTH);
+	chunk_size = call->conn->cli_max_recv_frag;
+	chunk_size -= DCERPC_REQUEST_LENGTH;
+	if (call->conn->auth_state.gensec_security) {
+		chunk_size -= DCERPC_AUTH_TRAILER_LENGTH;
+		sig_size = gensec_sig_size(call->conn->auth_state.gensec_security,
+					   call->conn->cli_max_recv_frag);
+		chunk_size -= sig_size;
+		chunk_size -= (chunk_size % 16);
+	}
 
 	do {
 		uint32_t length;
@@ -971,7 +987,7 @@ _PUBLIC_ NTSTATUS dcesrv_reply(struct dcesrv_call_state *call)
 		pkt.u.response.stub_and_verifier.data = stub.data;
 		pkt.u.response.stub_and_verifier.length = length;
 
-		if (!dcesrv_auth_response(call, &rep->blob, &pkt)) {
+		if (!dcesrv_auth_response(call, &rep->blob, sig_size, &pkt)) {
 			return dcesrv_fault(call, DCERPC_FAULT_OTHER);		
 		}
 

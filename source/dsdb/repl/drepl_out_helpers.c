@@ -316,7 +316,7 @@ static void dreplsrv_op_pull_source_get_changes_recv(struct rpc_request *req)
 		ctr1 = &r->out.ctr.ctr1;
 	} else if (*r->out.level == 2) {
 		ctr_level = 1;
-		ctr1 = r->out.ctr.ctr2.ctr.mszip1.ctr1;
+		ctr1 = r->out.ctr.ctr2.mszip1.ctr1;
 	} else if (*r->out.level == 6) {
 		ctr_level = 6;
 		ctr6 = &r->out.ctr.ctr6;

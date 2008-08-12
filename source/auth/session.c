@@ -98,14 +98,14 @@ _PUBLIC_ NTSTATUS auth_anonymous_server_info(TALLOC_CTX *mem_ctx,
 	server_info->n_domain_groups = 0;
 	server_info->domain_groups = NULL;
 
-	/* annoying, but the Anonymous really does have a session key, 
-	   and it is all zeros! */
+	/* annoying, but the Anonymous really does have a session key... */
 	server_info->user_session_key = data_blob_talloc(server_info, NULL, 16);
 	NT_STATUS_HAVE_NO_MEMORY(server_info->user_session_key.data);
 
 	server_info->lm_session_key = data_blob_talloc(server_info, NULL, 16);
 	NT_STATUS_HAVE_NO_MEMORY(server_info->lm_session_key.data);
 
+	/*  and it is all zeros! */
 	data_blob_clear(&server_info->user_session_key);
 	data_blob_clear(&server_info->lm_session_key);
 

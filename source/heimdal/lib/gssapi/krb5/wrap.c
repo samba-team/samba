@@ -210,10 +210,19 @@ wrap_des
   int32_t seq_number;
   size_t len, total_len, padlength, datalen;
 
-  padlength = 8 - (input_message_buffer->length % 8);
-  datalen = input_message_buffer->length + padlength + 8;
-  len = datalen + 22;
-  _gsskrb5_encap_length (len, &len, &total_len, GSS_KRB5_MECHANISM);
+  if (IS_DCE_STYLE(ctx)) {
+    padlength = 0;
+    datalen = input_message_buffer->length;
+    len = 22 + 8;
+    _gsskrb5_encap_length (len, &len, &total_len, GSS_KRB5_MECHANISM);
+    total_len += datalen;
+    datalen += 8;
+  } else {
+    padlength = 8 - (input_message_buffer->length % 8);
+    datalen = input_message_buffer->length + padlength + 8;
+    len = datalen + 22;
+    _gsskrb5_encap_length (len, &len, &total_len, GSS_KRB5_MECHANISM);
+  }
 
   output_message_buffer->length = total_len;
   output_message_buffer->value  = malloc (total_len);
@@ -336,10 +345,19 @@ wrap_des3
   Checksum cksum;
   krb5_data encdata;
 
-  padlength = 8 - (input_message_buffer->length % 8);
-  datalen = input_message_buffer->length + padlength + 8;
-  len = datalen + 34;
-  _gsskrb5_encap_length (len, &len, &total_len, GSS_KRB5_MECHANISM);
+  if (IS_DCE_STYLE(ctx)) {
+    padlength = 0;
+    datalen = input_message_buffer->length;
+    len = 34 + 8;
+    _gsskrb5_encap_length (len, &len, &total_len, GSS_KRB5_MECHANISM);
+    total_len += datalen;
+    datalen += 8;
+  } else {
+    padlength = 8 - (input_message_buffer->length % 8);
+    datalen = input_message_buffer->length + padlength + 8;
+    len = datalen + 34;
+    _gsskrb5_encap_length (len, &len, &total_len, GSS_KRB5_MECHANISM);
+  }
 
   output_message_buffer->length = total_len;
   output_message_buffer->value  = malloc (total_len);

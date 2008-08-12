@@ -124,6 +124,11 @@ NTSTATUS dcesrv_auth_bind_ack(struct dcesrv_call_state *call, struct ncacn_packe
 			return status;
 		}
 
+		if (dce_conn->state_flags & DCESRV_CALL_STATE_FLAG_HEADER_SIGNING) {
+			gensec_want_feature(dce_conn->auth_state.gensec_security,
+					    GENSEC_FEATURE_SIGN_PKT_HEADER);
+		}
+
 		/* Now that we are authenticated, go back to the generic session key... */
 		dce_conn->auth_state.session_key = dcesrv_generic_session_key;
 		return NT_STATUS_OK;
@@ -393,7 +398,8 @@ bool dcesrv_auth_request(struct dcesrv_call_state *call, DATA_BLOB *full_packet)
    push a signed or sealed dcerpc request packet into a blob
 */
 bool dcesrv_auth_response(struct dcesrv_call_state *call,
-			  DATA_BLOB *blob, struct ncacn_packet *pkt)
+			  DATA_BLOB *blob, size_t sig_size,
+			  struct ncacn_packet *pkt)
 {
 	struct dcesrv_connection *dce_conn = call->conn;
 	NTSTATUS status;
@@ -440,9 +446,7 @@ bool dcesrv_auth_response(struct dcesrv_call_state *call,
 		 * GENSEC mech does AEAD signing of the packet
 		 * headers */
 		dce_conn->auth_state.auth_info->credentials
-			= data_blob_talloc(call, NULL, 
-					   gensec_sig_size(dce_conn->auth_state.gensec_security, 
-							   payload_length));
+			= data_blob_talloc(call, NULL, sig_size);
 		data_blob_clear(&dce_conn->auth_state.auth_info->credentials);
 	}
 

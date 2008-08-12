@@ -37,6 +37,7 @@
 #include "param/param.h"
 #include "auth/session_proto.h"
 #include <gssapi/gssapi.h>
+#include <gssapi/gssapi_krb5.h>
 
 enum gensec_gssapi_sasl_state 
 {
@@ -77,6 +78,7 @@ struct gensec_gssapi_state {
 
 	size_t max_wrap_buf_size;
 	int gss_exchange_count;
+	size_t sig_size;
 };
 
 static size_t gensec_gssapi_max_input_size(struct gensec_security *gensec_security);
@@ -191,6 +193,7 @@ static NTSTATUS gensec_gssapi_start(struct gensec_security *gensec_security)
 	gensec_gssapi_state->pac = data_blob(NULL, 0);
 
 	gensec_gssapi_state->delegated_cred_handle = GSS_C_NO_CREDENTIAL;
+	gensec_gssapi_state->sig_size = 0;
 
 	talloc_set_destructor(gensec_gssapi_state, gensec_gssapi_destructor);
 
@@ -1035,8 +1038,13 @@ static NTSTATUS gensec_gssapi_sign_packet(struct gensec_security *gensec_securit
 	OM_uint32 maj_stat, min_stat;
 	gss_buffer_desc input_token, output_token;
 
-	input_token.length = length;
-	input_token.value = discard_const_p(uint8_t *, data);
+	if (gensec_security->want_features & GENSEC_FEATURE_SIGN_PKT_HEADER) {
+		input_token.length = pdu_length;
+		input_token.value = discard_const_p(uint8_t *, whole_pdu);
+	} else {
+		input_token.length = length;
+		input_token.value = discard_const_p(uint8_t *, data);
+	}
 
 	maj_stat = gss_get_mic(&min_stat,
 			    gensec_gssapi_state->gssapi_context,
@@ -1073,8 +1081,13 @@ static NTSTATUS gensec_gssapi_check_packet(struct gensec_security *gensec_securi
 
 	dump_data_pw("gensec_gssapi_seal_packet: sig\n", sig->data, sig->length);
 
-	input_message.length = length;
-	input_message.value = data;
+	if (gensec_security->want_features & GENSEC_FEATURE_SIGN_PKT_HEADER) {
+		input_message.length = pdu_length;
+		input_message.value = whole_pdu;
+	} else {
+		input_message.length = length;
+		input_message.value = data;
+	}
 
 	input_token.length = sig->length;
 	input_token.value = sig->data;
@@ -1152,9 +1165,9 @@ static NTSTATUS gensec_gssapi_session_key(struct gensec_security *gensec_securit
 		return NT_STATUS_OK;
 	}
 
-	maj_stat = gsskrb5_get_initiator_subkey(&min_stat, 
-						gensec_gssapi_state->gssapi_context,
-						&subkey);
+	maj_stat = gsskrb5_get_subkey(&min_stat,
+				      gensec_gssapi_state->gssapi_context,
+				      &subkey);
 	if (maj_stat != 0) {
 		DEBUG(1, ("NO session key for this mech\n"));
 		return NT_STATUS_NO_USER_SESSION_KEY;
@@ -1369,6 +1382,70 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 	return NT_STATUS_OK;
 }
 
+size_t gensec_gssapi_sig_size(struct gensec_security *gensec_security, size_t data_size)
+{
+	struct gensec_gssapi_state *gensec_gssapi_state
+		= talloc_get_type(gensec_security->private_data, struct gensec_gssapi_state);
+	OM_uint32 maj_stat, min_stat;
+	gss_krb5_lucid_context_v1_t *lucid = NULL;
+
+	if (gensec_gssapi_state->sig_size) {
+		return gensec_gssapi_state->sig_size;
+	}
+
+	if (gensec_gssapi_state->got_flags & GSS_C_CONF_FLAG) {
+		gensec_gssapi_state->sig_size = 45;
+	} else {
+		gensec_gssapi_state->sig_size = 37;
+	}
+
+	maj_stat = gss_krb5_export_lucid_sec_context(&min_stat,
+						     &gensec_gssapi_state->gssapi_context,
+						     1, (void **)&lucid);
+	if (maj_stat != GSS_S_COMPLETE) {
+		return gensec_gssapi_state->sig_size;
+	}
+
+	if (lucid->version != 1) {
+		return gensec_gssapi_state->sig_size;
+	}
+
+	if (lucid->protocol == 1) {
+		if (gensec_gssapi_state->got_flags & GSS_C_CONF_FLAG) {
+			/*
+			 * TODO: windows uses 76 here, but we don't know
+			 *       gss_wrap works with aes keys yet
+			 */
+			gensec_gssapi_state->sig_size = 76;
+		} else {
+			gensec_gssapi_state->sig_size = 28;
+		}
+	} else if (lucid->protocol == 0) {
+		switch (lucid->rfc1964_kd.ctx_key.type) {
+		case KEYTYPE_DES:
+		case KEYTYPE_ARCFOUR:
+		case KEYTYPE_ARCFOUR_56:
+			if (gensec_gssapi_state->got_flags & GSS_C_CONF_FLAG) {
+				gensec_gssapi_state->sig_size = 45;
+			} else {
+				gensec_gssapi_state->sig_size = 37;
+			}
+			break;
+		case KEYTYPE_DES3:
+			if (gensec_gssapi_state->got_flags & GSS_C_CONF_FLAG) {
+				gensec_gssapi_state->sig_size = 57;
+			} else {
+				gensec_gssapi_state->sig_size = 49;
+			}
+			break;
+		}
+	}
+
+	gss_krb5_free_lucid_sec_context(&min_stat, lucid);
+
+	return gensec_gssapi_state->sig_size;
+}
+
 static const char *gensec_gssapi_krb5_oids[] = { 
 	GENSEC_OID_KERBEROS5_OLD,
 	GENSEC_OID_KERBEROS5,
@@ -1415,6 +1492,7 @@ static const struct gensec_security_ops gensec_gssapi_krb5_security_ops = {
 	.update 	= gensec_gssapi_update,
 	.session_key	= gensec_gssapi_session_key,
 	.session_info	= gensec_gssapi_session_info,
+	.sig_size	= gensec_gssapi_sig_size,
 	.sign_packet	= gensec_gssapi_sign_packet,
 	.check_packet	= gensec_gssapi_check_packet,
 	.seal_packet	= gensec_gssapi_seal_packet,
