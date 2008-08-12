@@ -8693,6 +8693,7 @@ void gfree_loadparm(void)
 		SAFE_FREE( f );
 		f = next;
 	}
+	file_lists = NULL;
 
 	/* Free resources allocated to services */
 

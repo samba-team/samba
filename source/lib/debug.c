@@ -94,7 +94,7 @@ static TALLOC_CTX *tmp_debug_ctx;
 
 /*
  * This is to allow assignment to DEBUGLEVEL before the debug
- * system has been initialised.
+ * system has been initialized.
  */
 static int debug_all_class_hack = 1;
 static bool debug_all_class_isset_hack = True;
@@ -183,6 +183,8 @@ static char **classname_table = NULL;
  Free memory pointed to by global pointers.
 ****************************************************************************/
 
+static bool initialized;
+
 void gfree_debugsyms(void)
 {
 	int i;
@@ -194,13 +196,23 @@ void gfree_debugsyms(void)
 		SAFE_FREE( classname_table );
 	}
 
-	if ( DEBUGLEVEL_CLASS != &debug_all_class_hack )
+	if ( DEBUGLEVEL_CLASS != &debug_all_class_hack ) {
 		SAFE_FREE( DEBUGLEVEL_CLASS );
+		DEBUGLEVEL_CLASS = &debug_all_class_hack;
+	}
 
-	if ( DEBUGLEVEL_CLASS_ISSET != &debug_all_class_isset_hack )
+	if ( DEBUGLEVEL_CLASS_ISSET != &debug_all_class_isset_hack ) {
 		SAFE_FREE( DEBUGLEVEL_CLASS_ISSET );
+		DEBUGLEVEL_CLASS_ISSET = &debug_all_class_isset_hack;
+	}
 
 	SAFE_FREE(format_bufr);
+
+	debug_num_classes = 0;
+
+	debug_level = DEBUGLEVEL_CLASS;
+
+	initialized = false;
 }
 
 /****************************************************************************
@@ -530,13 +542,12 @@ Init debugging (one time stuff)
 
 void debug_init(void)
 {
-	static bool initialised = False;
 	const char **p;
 
-	if (initialised)
+	if (initialized)
 		return;
 
-	initialised = True;
+	initialized = true;
 
 	for(p = default_classname_table; *p; p++) {
 		debug_add_class(*p);

@@ -33,6 +33,7 @@ static uint8 *valid_table;
 static bool upcase_table_use_unmap;
 static bool lowcase_table_use_unmap;
 static bool valid_table_use_unmap;
+static bool initialized;
 
 /**
  * Destroy global objects allocated by load_case_tables()
@@ -59,6 +60,7 @@ void gfree_case_tables(void)
 		else
 			SAFE_FREE(valid_table);
 	}
+	initialized = false;
 }
 
 /**
@@ -70,15 +72,14 @@ void gfree_case_tables(void)
 
 void load_case_tables(void)
 {
-	static int initialised;
 	char *old_locale = NULL, *saved_locale = NULL;
 	int i;
 	TALLOC_CTX *frame = NULL;
 
-	if (initialised) {
+	if (initialized) {
 		return;
 	}
-	initialised = 1;
+	initialized = true;
 
 	frame = talloc_stackframe();
 

@@ -94,6 +94,10 @@ testwrite: testwrite.o
 	@echo Linking testwrite
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $< $(LIBSMBCLIENT) -lpopt
 
+testctx: testctx.o
+	@echo Linking testctx
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $< $(LIBSMBCLIENT) -lpopt
+
 smbsh:
 	make -C smbwrapper
 

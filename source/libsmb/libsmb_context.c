@@ -30,9 +30,8 @@
 /*
  * Is the logging working / configfile read ? 
  */
-static int SMBC_initialized = 0;
-
-
+static bool SMBC_initialized;
+static unsigned int initialized_ctx_count;
 
 /*
  * Get a new empty handle to fill in with your own info
@@ -201,22 +200,19 @@ smbc_free_context(SMBCCTX *context,
         
         DEBUG(3, ("Context %p successfully freed\n", context));
 
-	gfree_names();
-	gfree_loadparm();
-	gfree_case_tables();
-	gfree_charcnv();
-	gfree_interfaces();
-
-	gencache_shutdown();
-	secrets_shutdown();
-
-	/* release the talloc null_context memory last */
-	talloc_disable_null_tracking();
-
-	gfree_debugsyms();
-
-        SAFE_FREE(context->internal);
+	SAFE_FREE(context->internal);
         SAFE_FREE(context);
+
+	if (initialized_ctx_count) {
+		initialized_ctx_count--;
+	}
+
+	if (initialized_ctx_count == 0 && SMBC_initialized) {
+		gencache_shutdown();
+		secrets_shutdown();
+		gfree_all();
+		SMBC_initialized = false;
+	}
         return 0;
 }
 
@@ -427,9 +423,6 @@ smbc_init_context(SMBCCTX *context)
         char *user = NULL;
         char *home = NULL;
         
-        /* track talloc null_context memory */
-        talloc_enable_null_tracking();
-
         if (!context) {
                 errno = EBADF;
                 return NULL;
@@ -527,7 +520,7 @@ smbc_init_context(SMBCCTX *context)
                 BlockSignals(True, SIGPIPE);
                 
                 /* Done with one-time initialisation */
-                SMBC_initialized = 1;
+                SMBC_initialized = true;
                 
                 TALLOC_FREE(frame);
         }
@@ -616,7 +609,8 @@ smbc_init_context(SMBCCTX *context)
          */
         
         context->internal->initialized = True;
-        
+	initialized_ctx_count++;
+
         return context;
 }
 
