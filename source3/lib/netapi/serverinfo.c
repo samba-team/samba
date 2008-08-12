@@ -252,6 +252,6 @@ WERROR NetRemoteTOD_r(struct libnetapi_ctx *ctx,
 WERROR NetRemoteTOD_l(struct libnetapi_ctx *ctx,
 		      struct NetRemoteTOD *r)
 {
-	return NetRemoteTOD_r(ctx, r);
+	LIBNETAPI_REDIRECT_TO_LOCALHOST(ctx, r, NetRemoteTOD);
 }
 

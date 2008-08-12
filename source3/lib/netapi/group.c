@@ -220,7 +220,7 @@ WERROR NetGroupAdd_r(struct libnetapi_ctx *ctx,
 WERROR NetGroupAdd_l(struct libnetapi_ctx *ctx,
 		     struct NetGroupAdd *r)
 {
-	return NetGroupAdd_r(ctx, r);
+	LIBNETAPI_REDIRECT_TO_LOCALHOST(ctx, r, NetGroupAdd);
 }
 
 /****************************************************************
@@ -390,7 +390,7 @@ WERROR NetGroupDel_r(struct libnetapi_ctx *ctx,
 WERROR NetGroupDel_l(struct libnetapi_ctx *ctx,
 		     struct NetGroupDel *r)
 {
-	return NetGroupDel_r(ctx, r);
+	LIBNETAPI_REDIRECT_TO_LOCALHOST(ctx, r, NetGroupDel);
 }
 
 /****************************************************************
@@ -578,7 +578,7 @@ WERROR NetGroupSetInfo_r(struct libnetapi_ctx *ctx,
 WERROR NetGroupSetInfo_l(struct libnetapi_ctx *ctx,
 			 struct NetGroupSetInfo *r)
 {
-	return NetGroupSetInfo_r(ctx, r);
+	LIBNETAPI_REDIRECT_TO_LOCALHOST(ctx, r, NetGroupSetInfo);
 }
 
 /****************************************************************
@@ -766,7 +766,7 @@ WERROR NetGroupGetInfo_r(struct libnetapi_ctx *ctx,
 WERROR NetGroupGetInfo_l(struct libnetapi_ctx *ctx,
 			 struct NetGroupGetInfo *r)
 {
-	return NetGroupGetInfo_r(ctx, r);
+	LIBNETAPI_REDIRECT_TO_LOCALHOST(ctx, r, NetGroupGetInfo);
 }
 
 /****************************************************************
@@ -896,7 +896,7 @@ WERROR NetGroupAddUser_r(struct libnetapi_ctx *ctx,
 WERROR NetGroupAddUser_l(struct libnetapi_ctx *ctx,
 			 struct NetGroupAddUser *r)
 {
-	return NetGroupAddUser_r(ctx, r);
+	LIBNETAPI_REDIRECT_TO_LOCALHOST(ctx, r, NetGroupAddUser);
 }
 
 /****************************************************************
@@ -1025,7 +1025,7 @@ WERROR NetGroupDelUser_r(struct libnetapi_ctx *ctx,
 WERROR NetGroupDelUser_l(struct libnetapi_ctx *ctx,
 			 struct NetGroupDelUser *r)
 {
-	return NetGroupDelUser_r(ctx, r);
+	LIBNETAPI_REDIRECT_TO_LOCALHOST(ctx, r, NetGroupDelUser);
 }
 
 /****************************************************************
@@ -1304,7 +1304,7 @@ WERROR NetGroupEnum_r(struct libnetapi_ctx *ctx,
 WERROR NetGroupEnum_l(struct libnetapi_ctx *ctx,
 		      struct NetGroupEnum *r)
 {
-	return NetGroupEnum_r(ctx, r);
+	LIBNETAPI_REDIRECT_TO_LOCALHOST(ctx, r, NetGroupEnum);
 }
 
 /****************************************************************
@@ -1322,5 +1322,5 @@ WERROR NetGroupGetUsers_r(struct libnetapi_ctx *ctx,
 WERROR NetGroupGetUsers_l(struct libnetapi_ctx *ctx,
 			  struct NetGroupGetUsers *r)
 {
-	return WERR_NOT_SUPPORTED;
+	LIBNETAPI_REDIRECT_TO_LOCALHOST(ctx, r, NetGroupGetUsers);
 }
