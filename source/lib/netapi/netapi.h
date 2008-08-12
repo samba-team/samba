@@ -20,6 +20,10 @@
 #ifndef __LIB_NETAPI_H__
 #define __LIB_NETAPI_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif /* __cplusplus */
+
 /****************************************************************
  NET_API_STATUS
 ****************************************************************/
@@ -1200,5 +1204,8 @@ NET_API_STATUS NetLocalGroupSetMembers(const char * server_name /* [in] */,
 
 NET_API_STATUS NetRemoteTOD(const char * server_name /* [in] */,
 			    uint8_t **buf /* [out] [ref] */);
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
 
-#endif
+#endif /* __LIB_NETAPI_H__ */
