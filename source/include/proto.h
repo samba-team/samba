@@ -5384,24 +5384,6 @@ ssize_t vfswrap_llistxattr(struct vfs_handle_struct *handle, const char *path, c
 ssize_t vfswrap_flistxattr(struct vfs_handle_struct *handle, struct files_struct *fsp, char *list, size_t size);
 NTSTATUS vfs_default_init(void);
 
-/* The following definitions come from modules/vfs_posixacl.c  */
-
-SMB_ACL_T posixacl_sys_acl_get_file(vfs_handle_struct *handle,
-				    const char *path_p,
-				    SMB_ACL_TYPE_T type);
-SMB_ACL_T posixacl_sys_acl_get_fd(vfs_handle_struct *handle,
-				  files_struct *fsp);
-int posixacl_sys_acl_set_file(vfs_handle_struct *handle,
-			      const char *name,
-			      SMB_ACL_TYPE_T type,
-			      SMB_ACL_T theacl);
-int posixacl_sys_acl_set_fd(vfs_handle_struct *handle,
-			    files_struct *fsp,
-			    SMB_ACL_T theacl);
-int posixacl_sys_acl_delete_def_file(vfs_handle_struct *handle,
-				     const char *path);
-NTSTATUS vfs_posixacl_init(void);
-
 /* The following definitions come from nmbd/asyncdns.c  */
 
 int asyncdns_fd(void);
