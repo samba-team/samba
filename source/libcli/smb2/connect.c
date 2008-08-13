@@ -115,8 +115,14 @@ static void continue_negprot(struct smb2_request *req)
 		transport->signing_required = false;
 		break;
 	case SMB_SIGNING_SUPPORTED:
-	case SMB_SIGNING_AUTO:
 		if (transport->negotiate.security_mode & SMB2_NEGOTIATE_SIGNING_REQUIRED) {
+			transport->signing_required = true;
+		} else {
+			transport->signing_required = false;
+		}
+		break;
+	case SMB_SIGNING_AUTO:
+		if (transport->negotiate.security_mode & SMB2_NEGOTIATE_SIGNING_ENABLED) {
 			transport->signing_required = true;
 		} else {
 			transport->signing_required = false;
