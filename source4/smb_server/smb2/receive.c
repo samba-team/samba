@@ -236,7 +236,7 @@ void smb2srv_send_reply(struct smb2srv_request *req)
 	}
 
 	/* if signing is active on the session then sign the packet */
-	if (req->session && req->session->smb2_signing.active) {
+	if (req->is_signed) {
 		status = smb2_sign_message(&req->out, 
 					   req->session->session_info->session_key);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -310,12 +310,7 @@ static NTSTATUS smb2srv_reply(struct smb2srv_request *req)
 
 		if (!req->session) goto nosession;
 
-		if (!req->session->smb2_signing.active) {
-			/* TODO: workout the correct error code */
-			smb2srv_send_error(req, NT_STATUS_FOOBAR);
-			return NT_STATUS_OK;
-		}
-
+		req->is_signed = true;
 		status = smb2_check_signature(&req->in, 
 					      req->session->session_info->session_key);
 		if (!NT_STATUS_IS_OK(status)) {
