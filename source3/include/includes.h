@@ -802,6 +802,10 @@ enum flush_reason_enum {
 #include "modules/vfs_tru64acl.h"
 #endif
 
+#if defined(HAVE_SOLARIS_ACLS) || defined(HAVE_UNIXWARE_ACLS)
+#include "modules/vfs_solarisacl.h"
+#endif
+
 #ifdef HAVE_LDAP
 #include "ads_protos.h"
 #endif
