@@ -5,6 +5,7 @@
    
    Copyright (C) Jim McDonough <jmcd@us.ibm.com>      2003
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2004-2005
+   Copyright (C) Stefan Metzmacher <metze@samba.org>  2004-2008
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -44,6 +45,8 @@ struct spnego_state {
 	bool no_response_expected;
 
 	const char *neg_oid;
+
+	DATA_BLOB mech_types;
 };
 
 
@@ -60,6 +63,7 @@ static NTSTATUS gensec_spnego_client_start(struct gensec_security *gensec_securi
 	spnego_state->state_position = SPNEGO_CLIENT_START;
 	spnego_state->sub_sec_security = NULL;
 	spnego_state->no_response_expected = false;
+	spnego_state->mech_types = data_blob(NULL, 0);
 
 	gensec_security->private_data = spnego_state;
 	return NT_STATUS_OK;
@@ -78,6 +82,7 @@ static NTSTATUS gensec_spnego_server_start(struct gensec_security *gensec_securi
 	spnego_state->state_position = SPNEGO_SERVER_START;
 	spnego_state->sub_sec_security = NULL;
 	spnego_state->no_response_expected = false;
+	spnego_state->mech_types = data_blob(NULL, 0);
 
 	gensec_security->private_data = spnego_state;
 	return NT_STATUS_OK;
@@ -392,12 +397,22 @@ static NTSTATUS gensec_spnego_parse_negTokenInit(struct gensec_security *gensec_
 	int i;
 	NTSTATUS nt_status = NT_STATUS_INVALID_PARAMETER;
 	DATA_BLOB null_data_blob = data_blob(NULL,0);
+	bool ok;
 
 	const struct gensec_security_ops_wrapper *all_sec
 		= gensec_security_by_oid_list(gensec_security, 
 					      out_mem_ctx, 
 					      mechType,
 					      GENSEC_OID_SPNEGO);
+
+	ok = spnego_write_mech_types(spnego_state,
+				     mechType,
+				     &spnego_state->mech_types);
+	if (!ok) {
+		DEBUG(1, ("SPNEGO: Failed to write mechTypes\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	if (spnego_state->state_position == SPNEGO_SERVER_START) {
 		for (i=0; all_sec && all_sec[i].op; i++) {
 			/* optomisitic token */
@@ -556,6 +571,9 @@ static NTSTATUS gensec_spnego_create_negTokenInit(struct gensec_security *gensec
 					      GENSEC_OID_SPNEGO);
 	for (i=0; all_sec && all_sec[i].op; i++) {
 		struct spnego_data spnego_out;
+		const char **send_mech_types;
+		bool ok;
+
 		nt_status = gensec_subcontext_start(spnego_state,
 						    gensec_security,
 						    &spnego_state->sub_sec_security);
@@ -591,10 +609,20 @@ static NTSTATUS gensec_spnego_create_negTokenInit(struct gensec_security *gensec
 		}
 
 		spnego_out.type = SPNEGO_NEG_TOKEN_INIT;
-		
+
+		send_mech_types = gensec_security_oids_from_ops_wrapped(out_mem_ctx,
+									&all_sec[i]);
+
+		ok = spnego_write_mech_types(spnego_state,
+					     send_mech_types,
+					     &spnego_state->mech_types);
+		if (!ok) {
+			DEBUG(1, ("SPNEGO: Failed to write mechTypes\n"));
+			return NT_STATUS_NO_MEMORY;
+		}
+
 		/* List the remaining mechs as options */
-		spnego_out.negTokenInit.mechTypes = gensec_security_oids_from_ops_wrapped(out_mem_ctx, 
-											  &all_sec[i]);
+		spnego_out.negTokenInit.mechTypes = send_mech_types;
 		spnego_out.negTokenInit.reqFlags = 0;
 		
 		if (spnego_state->state_position == SPNEGO_SERVER_START) {
@@ -644,7 +672,9 @@ static NTSTATUS gensec_spnego_server_negTokenTarg(struct gensec_security *gensec
 						  struct spnego_state *spnego_state,
 						  TALLOC_CTX *out_mem_ctx, 
 						  NTSTATUS nt_status,
-						  const DATA_BLOB unwrapped_out, DATA_BLOB *out) 
+						  const DATA_BLOB unwrapped_out,
+						  DATA_BLOB mech_list_mic,
+						  DATA_BLOB *out)
 {
 	struct spnego_data spnego_out;
 	DATA_BLOB null_data_blob = data_blob(NULL, 0);
@@ -664,6 +694,7 @@ static NTSTATUS gensec_spnego_server_negTokenTarg(struct gensec_security *gensec
 			spnego_out.negTokenTarg.supportedMech = spnego_state->neg_oid;
 		}
 		spnego_out.negTokenTarg.negResult = SPNEGO_ACCEPT_COMPLETED;
+		spnego_out.negTokenTarg.mechListMIC = mech_list_mic;
 		spnego_state->state_position = SPNEGO_DONE;
 	} else {
 		spnego_out.negTokenTarg.negResult = SPNEGO_REJECT;
@@ -687,6 +718,7 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 {
 	struct spnego_state *spnego_state = (struct spnego_state *)gensec_security->private_data;
 	DATA_BLOB null_data_blob = data_blob(NULL, 0);
+	DATA_BLOB mech_list_mic = data_blob(NULL, 0);
 	DATA_BLOB unwrapped_out = data_blob(NULL, 0);
 	struct spnego_data spnego_out;
 	struct spnego_data spnego;
@@ -737,7 +769,8 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 								      spnego_state,
 								      out_mem_ctx,
 								      nt_status,
-								      unwrapped_out, 
+								      unwrapped_out,
+								      null_data_blob,
 								      out);
 			
 			spnego_free_data(&spnego);
@@ -829,6 +862,8 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 	case SPNEGO_SERVER_TARG:
 	{
 		NTSTATUS nt_status;
+		bool new_spnego = false;
+
 		if (!in.length) {
 			return NT_STATUS_INVALID_PARAMETER;
 		}
@@ -860,12 +895,40 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 					  out_mem_ctx, 
 					  spnego.negTokenTarg.responseToken,
 					  &unwrapped_out);
+		if (NT_STATUS_IS_OK(nt_status) && spnego.negTokenTarg.mechListMIC.length > 0) {
+			new_spnego = true;
+			nt_status = gensec_check_packet(spnego_state->sub_sec_security,
+							out_mem_ctx,
+							spnego_state->mech_types.data,
+							spnego_state->mech_types.length,
+							spnego_state->mech_types.data,
+							spnego_state->mech_types.length,
+							&spnego.negTokenTarg.mechListMIC);
+			if (!NT_STATUS_IS_OK(nt_status)) {
+				DEBUG(2,("GENSEC SPNEGO: failed to verify mechListMIC: %s\n",
+					nt_errstr(nt_status)));
+			}
+		}
+		if (NT_STATUS_IS_OK(nt_status) && new_spnego) {
+			nt_status = gensec_sign_packet(spnego_state->sub_sec_security,
+						       out_mem_ctx,
+						       spnego_state->mech_types.data,
+						       spnego_state->mech_types.length,
+						       spnego_state->mech_types.data,
+						       spnego_state->mech_types.length,
+						       &mech_list_mic);
+			if (!NT_STATUS_IS_OK(nt_status)) {
+				DEBUG(2,("GENSEC SPNEGO: failed to sign mechListMIC: %s\n",
+					nt_errstr(nt_status)));
+			}
+		}
 
 		nt_status = gensec_spnego_server_negTokenTarg(gensec_security,
 							      spnego_state,
 							      out_mem_ctx, 
 							      nt_status,
-							      unwrapped_out, 
+							      unwrapped_out,
+							      mech_list_mic,
 							      out);
 		
 		spnego_free_data(&spnego);
@@ -940,12 +1003,44 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 			} else {
 				nt_status = NT_STATUS_OK;
 			}
+			if (NT_STATUS_IS_OK(nt_status) && spnego.negTokenTarg.mechListMIC.length > 0) {
+				nt_status = gensec_check_packet(spnego_state->sub_sec_security,
+								out_mem_ctx,
+								spnego_state->mech_types.data,
+								spnego_state->mech_types.length,
+								spnego_state->mech_types.data,
+								spnego_state->mech_types.length,
+								&spnego.negTokenTarg.mechListMIC);
+				if (!NT_STATUS_IS_OK(nt_status)) {
+					DEBUG(2,("GENSEC SPNEGO: failed to verify mechListMIC: %s\n",
+						nt_errstr(nt_status)));
+				}
+			}
 		} else {
+			bool new_spnego = false;
+
 			nt_status = gensec_update(spnego_state->sub_sec_security,
 						  out_mem_ctx, 
 						  spnego.negTokenTarg.responseToken, 
 						  &unwrapped_out);
 
+			if (NT_STATUS_IS_OK(nt_status)) {
+				new_spnego = gensec_have_feature(spnego_state->sub_sec_security,
+								 GENSEC_FEATURE_NEW_SPNEGO);
+			}
+			if (NT_STATUS_IS_OK(nt_status) && new_spnego) {
+				nt_status = gensec_sign_packet(spnego_state->sub_sec_security,
+							       out_mem_ctx,
+							       spnego_state->mech_types.data,
+							       spnego_state->mech_types.length,
+							       spnego_state->mech_types.data,
+							       spnego_state->mech_types.length,
+							       &mech_list_mic);
+				if (!NT_STATUS_IS_OK(nt_status)) {
+					DEBUG(2,("GENSEC SPNEGO: failed to sign mechListMIC: %s\n",
+						nt_errstr(nt_status)));
+				}
+			}
 			if (NT_STATUS_IS_OK(nt_status)) {
 				spnego_state->no_response_expected = true;
 			}
@@ -967,7 +1062,7 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 			spnego_out.negTokenTarg.negResult = SPNEGO_NONE_RESULT;
 			spnego_out.negTokenTarg.supportedMech = NULL;
 			spnego_out.negTokenTarg.responseToken = unwrapped_out;
-			spnego_out.negTokenTarg.mechListMIC = null_data_blob;
+			spnego_out.negTokenTarg.mechListMIC = mech_list_mic;
 			
 			if (spnego_write_data(out_mem_ctx, out, &spnego_out) == -1) {
 				DEBUG(1, ("Failed to write SPNEGO reply to NEG_TOKEN_TARG\n"));
