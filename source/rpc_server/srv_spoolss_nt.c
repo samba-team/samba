@@ -5037,8 +5037,10 @@ static WERROR getprinter_level_7(Printer_entry *print_hnd, int snum, RPC_BUFFER 
 	if((printer=SMB_MALLOC_P(PRINTER_INFO_7))==NULL)
 		return WERR_NOMEM;
 
-	if (!construct_printer_info_7(print_hnd, printer, snum))
-		return WERR_NOMEM;
+	if (!construct_printer_info_7(print_hnd, printer, snum)) {
+		result = WERR_NOMEM;
+		goto out;
+	}
 
 	/* check the required size. */
 	*needed += spoolss_size_printer_info_7(printer);
