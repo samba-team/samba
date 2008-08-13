@@ -7,7 +7,9 @@ This is the third stable release of Samba 3.2.
 
 Major bug fixes included in Samba 3.2.2 are:
 
-  o
+  o Fix removal of dead records in tdb files. This can lead to very large
+    tdb files and to overflowing partitions as a consequence on systems
+    running an nmbd daemon.
 
 
 ######################################################################
@@ -21,11 +23,14 @@ Changes since 3.2.1
 o   Michael Adam <obnox@samba.org>
     * Fix replacement of random seed generator.
     * Fix a race condition in idmap_tdb2_allocate_id().
+    * Fix unix_convert() for "*" after changing map_nt_error_from_unix().
+    * Make sure to always set errno on error path in OpenDir.
 
 
 o   Jeremy Allison <jra@samba.org>
     * BUG 5675: Fix smbspool program assuming Kerberos authentication by
       mistake.
+    * BUG 5686: Fix segfaults in libsmbclient.
     * Several build fixes.
 
 
@@ -40,14 +45,26 @@ o   Yannick Bergeron <yaberger@ca.ibm.com>
       rep_initgroups().
 
 
+o   Günther Deschner <gd@samba.org>
+    * Fix build warning.
+    * Add add c++ guard to netapi.
+
+
 o   Volker Lendecke <vl@samba.org>
+    * BUG 5684: Fix removal of dead records in tdb files.
     * Fix smb_len calculation for chained requests.
+
+
+o   Herb Lewis <herb@samba.org>
+    * Fix output of test status.
 
 
 o   Andrew Tridgell <tridge@samba.org>
     * Fix a fd leak when trying to regain contact to a domain controller
       in Winbind.
     * Fix permissions on ctdb databases.
+    * Fix passing back success when a function had in fact failed in two
+      places.
 
 
 ######################################################################
