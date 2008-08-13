@@ -4672,6 +4672,8 @@ void reply_printclose(struct smb_request *req)
 		return;
 	}
 
+	reply_outbuf(req, 0, 0);
+
 	END_PROFILE(SMBsplclose);
 	return;
 }
