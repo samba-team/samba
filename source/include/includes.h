@@ -810,6 +810,10 @@ enum flush_reason_enum {
 #include "modules/vfs_hpuxacl.h"
 #endif
 
+#if defined(HAVE_IRIX_ACLS)
+#include "modules/vfs_irixacl.h"
+#endif
+
 #ifdef HAVE_LDAP
 #include "ads_protos.h"
 #endif
