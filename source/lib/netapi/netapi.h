@@ -511,7 +511,7 @@ NET_API_STATUS NetApiBufferFree(void *buffer);
  * @brief Convert a domain sid into a string
  *
  * @param[in] sid A pointer to a sid structure
- * @param[in] sid_string A pointer that holds a pointer to a sid string. Caller
+ * @param[in,out] sid_string A pointer that holds a pointer to a sid string. Caller
  * needs to free with free(3)
  * @return bool
  ***************************************************************/
@@ -526,7 +526,7 @@ int  ConvertSidToStringSid(const struct domsid *sid,
  * @brief Convert a string into a domain sid
  *
  * @param[in] sid_string A pointer to a sid string.
- * @param[in] sid A pointer that holds a pointer to a sid structure.
+ * @param[in,out] sid A pointer that holds a pointer to a sid structure.
  * Caller needs to free with free(3)
  * @return bool
  ***************************************************************/
@@ -837,7 +837,7 @@ NET_API_STATUS NetUserGetInfo(const char * server_name /* [in] */,
  * @param[in] server_name The server name to connect to
  * @param[in] user_name The name of the user that is going to be modified
  * @param[in] level The level defining the requested USER_INFO_X structure
- * @param[in] buf The buffer containing a USER_INFO_X structure
+ * @param[in] buffer The buffer containing a USER_INFO_X structure
  * @param[out] parm_err The returned parameter error number if any
  * @return NET_API_STATUS
  *
