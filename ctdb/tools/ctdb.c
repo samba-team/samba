@@ -1751,7 +1751,7 @@ static int control_attach(struct ctdb_context *ctdb, int argc, const char **argv
 }
 
 /*
-  dump memory usage
+  run an eventscript on a node
  */
 static int control_eventscript(struct ctdb_context *ctdb, int argc, const char **argv)
 {
@@ -1778,6 +1778,272 @@ static int control_eventscript(struct ctdb_context *ctdb, int argc, const char *
 		talloc_free(tmp_ctx);
 		return -1;
 	}
+	talloc_free(tmp_ctx);
+	return 0;
+}
+
+struct db_file_header {
+	unsigned long persistent;
+	unsigned long size;
+};
+
+/*
+ * backup a database to a file 
+ */
+static int control_backupdb(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	int i, ret;
+	struct ctdb_dbid_map *dbmap=NULL;
+	struct ctdb_node_map *nodemap=NULL;
+	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
+	TDB_DATA outdata;
+	struct db_file_header dbhdr;
+	int fh;
+	uint32_t *nodes;
+
+	if (argc != 2) {
+		DEBUG(DEBUG_ERR,("Invalid arguments\n"));
+		return -1;
+	}
+
+	ret = ctdb_ctrl_getdbmap(ctdb, TIMELIMIT(), options.pnn, tmp_ctx, &dbmap);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to get dbids from node %u\n", options.pnn));
+		return ret;
+	}
+
+	for(i=0;i<dbmap->num;i++){
+		const char *name;
+
+		ctdb_ctrl_getdbname(ctdb, TIMELIMIT(), options.pnn, dbmap->dbs[i].dbid, tmp_ctx, &name);
+		if(!strcmp(argv[0], name)){
+			talloc_free(discard_const(name));
+			break;
+		}
+		talloc_free(discard_const(name));
+	}
+	if (i == dbmap->num) {
+		DEBUG(DEBUG_ERR,("No database with name '%s' found\n", argv[0]));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	ret = ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), options.pnn, ctdb, &nodemap);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to get nodemap from node %u\n", options.pnn));
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	/* freeze all nodes */
+	nodes = list_of_active_nodes(ctdb, nodemap, tmp_ctx, true);
+	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_FREEZE,
+					nodes, TIMELIMIT(),
+					false, tdb_null,
+					NULL, NULL,
+					NULL) != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to freeze nodes.\n"));
+		ctdb_ctrl_setrecmode(ctdb, TIMELIMIT(), options.pnn, CTDB_RECOVERY_ACTIVE);
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	ret = ctdb_ctrl_pulldb(ctdb, options.pnn, dbmap->dbs[i].dbid,
+			CTDB_LMASTER_ANY, tmp_ctx,
+			TIMELIMIT(), &outdata);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,(__location__ " Unable to copy db from node %u\n", options.pnn));
+		ctdb_ctrl_setrecmode(ctdb, TIMELIMIT(), options.pnn, CTDB_RECOVERY_ACTIVE);
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	/* thaw all nodes */
+	nodes = list_of_active_nodes(ctdb, nodemap, tmp_ctx, true);
+	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_THAW,
+					nodes, TIMELIMIT(),
+					false, tdb_null,
+					NULL, NULL,
+					NULL) != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to thaw nodes.\n"));
+		ctdb_ctrl_setrecmode(ctdb, TIMELIMIT(), options.pnn, CTDB_RECOVERY_ACTIVE);
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	fh = open(argv[1], O_RDWR|O_CREAT, 0600);
+	if (fh == -1) {
+		DEBUG(DEBUG_ERR,("Failed to open file '%s'\n", argv[1]));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	dbhdr.persistent = dbmap->dbs[i].persistent;
+	dbhdr.size = outdata.dsize;
+	write(fh, &dbhdr, sizeof(dbhdr));
+	write(fh, outdata.dptr, outdata.dsize);
+
+	close(fh);
+	talloc_free(tmp_ctx);
+	return 0;
+}
+
+/*
+ * restore a database from a file 
+ */
+static int control_restoredb(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	int ret;
+	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
+	TDB_DATA outdata;
+	TDB_DATA data;
+	struct db_file_header dbhdr;
+	struct ctdb_db_context *ctdb_db;
+	struct ctdb_node_map *nodemap=NULL;
+	struct ctdb_vnn_map *vnnmap=NULL;
+	int fh;
+	struct ctdb_control_wipe_database w;
+	uint32_t *nodes;
+	uint32_t generation;
+
+	if (argc != 2) {
+		DEBUG(DEBUG_ERR,("Invalid arguments\n"));
+		return -1;
+	}
+
+	fh = open(argv[1], O_RDONLY);
+	if (fh == -1) {
+		DEBUG(DEBUG_ERR,("Failed to open file '%s'\n", argv[1]));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	read(fh, &dbhdr, sizeof(dbhdr));
+	outdata.dsize = dbhdr.size;
+	outdata.dptr = talloc_size(tmp_ctx, outdata.dsize);
+	if (outdata.dptr == NULL) {
+		DEBUG(DEBUG_ERR,("Failed to allocate data of size '%lu'\n", dbhdr.size));
+		close(fh);
+		talloc_free(tmp_ctx);
+		return -1;
+	}		
+	read(fh, outdata.dptr, outdata.dsize);
+	close(fh);
+
+
+	ctdb_db = ctdb_attach(ctdb, argv[0], dbhdr.persistent, 0);
+	if (ctdb_db == NULL) {
+		DEBUG(DEBUG_ERR,("Unable to attach to database '%s'\n", argv[0]));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	ret = ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), options.pnn, ctdb, &nodemap);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to get nodemap from node %u\n", options.pnn));
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+
+	ret = ctdb_ctrl_getvnnmap(ctdb, TIMELIMIT(), options.pnn, tmp_ctx, &vnnmap);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to get vnnmap from node %u\n", options.pnn));
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	/* freeze all nodes */
+	nodes = list_of_active_nodes(ctdb, nodemap, tmp_ctx, true);
+	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_FREEZE,
+					nodes, TIMELIMIT(),
+					false, tdb_null,
+					NULL, NULL,
+					NULL) != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to freeze nodes.\n"));
+		ctdb_ctrl_setrecmode(ctdb, TIMELIMIT(), options.pnn, CTDB_RECOVERY_ACTIVE);
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	generation = vnnmap->generation;
+	data.dptr = (void *)&generation;
+	data.dsize = sizeof(generation);
+
+	/* start a cluster wide transaction */
+	nodes = list_of_active_nodes(ctdb, nodemap, tmp_ctx, true);
+	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_TRANSACTION_START,
+					nodes,
+					TIMELIMIT(), false, data,
+					NULL, NULL,
+					NULL) != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to start cluster wide transactions.\n"));
+		return -1;
+	}
+
+
+	w.db_id = ctdb_db->db_id;
+	w.transaction_id = generation;
+
+	data.dptr = (void *)&w;
+	data.dsize = sizeof(w);
+
+	/* wipe all the remote databases. */
+	nodes = list_of_active_nodes(ctdb, nodemap, tmp_ctx, true);
+	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_WIPE_DATABASE,
+					nodes,
+					TIMELIMIT(), false, data,
+					NULL, NULL,
+					NULL) != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to wipe database.\n"));
+		ctdb_ctrl_setrecmode(ctdb, TIMELIMIT(), options.pnn, CTDB_RECOVERY_ACTIVE);
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+	
+	/* push the database */
+	nodes = list_of_active_nodes(ctdb, nodemap, tmp_ctx, true);
+	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_PUSH_DB,
+					nodes,
+					TIMELIMIT(), false, outdata,
+					NULL, NULL,
+					NULL) != 0) {
+		DEBUG(DEBUG_ERR, ("Failed to push database.\n"));
+		ctdb_ctrl_setrecmode(ctdb, TIMELIMIT(), options.pnn, CTDB_RECOVERY_ACTIVE);
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	data.dptr = (void *)&generation;
+	data.dsize = sizeof(generation);
+
+	/* commit all the changes */
+	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_TRANSACTION_COMMIT,
+					nodes,
+					TIMELIMIT(), false, data,
+					NULL, NULL,
+					NULL) != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to commit databases.\n"));
+		ctdb_ctrl_setrecmode(ctdb, TIMELIMIT(), options.pnn, CTDB_RECOVERY_ACTIVE);
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+
+	/* thaw all nodes */
+	nodes = list_of_active_nodes(ctdb, nodemap, tmp_ctx, true);
+	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_THAW,
+					nodes, TIMELIMIT(),
+					false, tdb_null,
+					NULL, NULL,
+					NULL) != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to thaw nodes.\n"));
+		ctdb_ctrl_setrecmode(ctdb, TIMELIMIT(), options.pnn, CTDB_RECOVERY_ACTIVE);
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+
 	talloc_free(tmp_ctx);
 	return 0;
 }
@@ -1980,6 +2246,8 @@ static const struct {
 	{ "addip",           control_addip,		true, "add a ip address to a node", "<ip/mask> <iface>"},
 	{ "delip",           control_delip,		false, "delete an ip address from a node", "<ip>"},
 	{ "eventscript",     control_eventscript,	true, "run the eventscript with the given parameters on a node", "<arguments>"},
+	{ "backupdb",        control_backupdb,          false, "backup the database into a file.", "<database> <file>"},
+	{ "restoredb",        control_restoredb,          false, "restore the database from a file.", "<database> <file>"},
 };
 
 /*
