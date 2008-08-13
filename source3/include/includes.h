@@ -806,6 +806,10 @@ enum flush_reason_enum {
 #include "modules/vfs_solarisacl.h"
 #endif
 
+#if defined(HAVE_HPUX_ACLS)
+#include "modules/vfs_hpuxacl.h"
+#endif
+
 #ifdef HAVE_LDAP
 #include "ads_protos.h"
 #endif
