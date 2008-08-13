@@ -1887,12 +1887,12 @@ static int control_backupdb(struct ctdb_context *ctdb, int argc, const char **ar
 	dbhdr.timestamp = time(NULL);
 	dbhdr.persistent = dbmap->dbs[i].persistent;
 	dbhdr.size = outdata.dsize;
-	if (strlen(argv[1]) >= MAX_DB_NAME) {
+	if (strlen(argv[0]) >= MAX_DB_NAME) {
 		DEBUG(DEBUG_ERR,("Too long dbname\n"));
 		talloc_free(tmp_ctx);
 		return -1;
 	}
-	strncpy(discard_const(dbhdr.name), argv[1], MAX_DB_NAME);
+	strncpy(discard_const(dbhdr.name), argv[0], MAX_DB_NAME);
 	write(fh, &dbhdr, sizeof(dbhdr));
 	write(fh, outdata.dptr, outdata.dsize);
 
