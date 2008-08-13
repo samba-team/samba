@@ -235,6 +235,17 @@ static NTSTATUS smb2_transport_finish_recv(void *private, DATA_BLOB blob)
 	req->in.body_size = req->in.size - (SMB2_HDR_BODY+NBT_HDR_SIZE);
 	req->status       = NT_STATUS(IVAL(hdr, SMB2_HDR_STATUS));
 
+	if ((flags & SMB2_HDR_FLAG_ASYNC) &&
+	    NT_STATUS_EQUAL(req->status, STATUS_PENDING)) {
+		req->cancel.can_cancel = true;
+		req->cancel.pending_id = IVAL(hdr, SMB2_HDR_PID);
+		for (i=0; i< req->cancel.do_cancel; i++) {
+			smb2_cancel(req);
+		}
+		talloc_free(buffer);
+		return NT_STATUS_OK;
+	}
+
 	if (req->session && req->session->signing_active) {
 		status = smb2_check_signature(&req->in, 
 					      req->session->session_key);
@@ -243,19 +254,6 @@ static NTSTATUS smb2_transport_finish_recv(void *private, DATA_BLOB blob)
 			talloc_free(buffer);
 			return status;
 		}
-	}
-	
-
-	if (NT_STATUS_EQUAL(req->status, STATUS_PENDING)) {
-		if (flags & 0x00000002) {
-			req->cancel.can_cancel = true;
-			req->cancel.pending_id = IVAL(hdr, SMB2_HDR_PID);
-			for (i=0; i< req->cancel.do_cancel; i++) {
-				smb2_cancel(req);
-			}
-		}
-		talloc_free(buffer);
-		return NT_STATUS_OK;
 	}
 
 	buffer_code = SVAL(req->in.body, 0);
