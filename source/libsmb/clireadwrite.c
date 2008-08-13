@@ -138,6 +138,10 @@ NTSTATUS cli_read_andx_recv(struct async_req *req, ssize_t *received,
 		return status;
 	}
 
+	if (wct < 12) {
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+
 	/* size is the number of bytes the server returned.
 	 * Might be zero. */
 	size = SVAL(cli_req->inbuf, smb_vwv5);
