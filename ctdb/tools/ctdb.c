@@ -1782,9 +1782,14 @@ static int control_eventscript(struct ctdb_context *ctdb, int argc, const char *
 	return 0;
 }
 
+#define DB_VERSION 1
+#define MAX_DB_NAME 64
 struct db_file_header {
+	unsigned long version;
+	time_t timestamp;
 	unsigned long persistent;
 	unsigned long size;
+	const char name[MAX_DB_NAME];
 };
 
 /*
@@ -1878,8 +1883,16 @@ static int control_backupdb(struct ctdb_context *ctdb, int argc, const char **ar
 		return -1;
 	}
 
+	dbhdr.version = DB_VERSION;
+	dbhdr.timestamp = time(NULL);
 	dbhdr.persistent = dbmap->dbs[i].persistent;
 	dbhdr.size = outdata.dsize;
+	if (strlen(argv[1]) >= MAX_DB_NAME) {
+		DEBUG(DEBUG_ERR,("Too long dbname\n"));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+	strncpy(discard_const(dbhdr.name), argv[1], MAX_DB_NAME);
 	write(fh, &dbhdr, sizeof(dbhdr));
 	write(fh, outdata.dptr, outdata.dsize);
 
@@ -1905,20 +1918,28 @@ static int control_restoredb(struct ctdb_context *ctdb, int argc, const char **a
 	struct ctdb_control_wipe_database w;
 	uint32_t *nodes;
 	uint32_t generation;
+	struct tm *tm;
+	char tbuf[100];
 
-	if (argc != 2) {
+	if (argc != 1) {
 		DEBUG(DEBUG_ERR,("Invalid arguments\n"));
 		return -1;
 	}
 
-	fh = open(argv[1], O_RDONLY);
+	fh = open(argv[0], O_RDONLY);
 	if (fh == -1) {
-		DEBUG(DEBUG_ERR,("Failed to open file '%s'\n", argv[1]));
+		DEBUG(DEBUG_ERR,("Failed to open file '%s'\n", argv[0]));
 		talloc_free(tmp_ctx);
 		return -1;
 	}
 
 	read(fh, &dbhdr, sizeof(dbhdr));
+	if (dbhdr.version != DB_VERSION) {
+		DEBUG(DEBUG_ERR,("Invalid version of database dump. File is version %lu but expected version was %u\n", dbhdr.version, DB_VERSION));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
 	outdata.dsize = dbhdr.size;
 	outdata.dptr = talloc_size(tmp_ctx, outdata.dsize);
 	if (outdata.dptr == NULL) {
@@ -1930,10 +1951,15 @@ static int control_restoredb(struct ctdb_context *ctdb, int argc, const char **a
 	read(fh, outdata.dptr, outdata.dsize);
 	close(fh);
 
+	tm = localtime(&dbhdr.timestamp);
+	strftime(tbuf,sizeof(tbuf)-1,"%Y/%m/%d %H:%M:%S", tm);
+	printf("Restoring database '%s' from backup @ %s\n",
+		dbhdr.name, tbuf);
 
-	ctdb_db = ctdb_attach(ctdb, argv[0], dbhdr.persistent, 0);
+
+	ctdb_db = ctdb_attach(ctdb, dbhdr.name, dbhdr.persistent, 0);
 	if (ctdb_db == NULL) {
-		DEBUG(DEBUG_ERR,("Unable to attach to database '%s'\n", argv[0]));
+		DEBUG(DEBUG_ERR,("Unable to attach to database '%s'\n", dbhdr.name));
 		talloc_free(tmp_ctx);
 		return -1;
 	}
@@ -2247,7 +2273,7 @@ static const struct {
 	{ "delip",           control_delip,		false, "delete an ip address from a node", "<ip>"},
 	{ "eventscript",     control_eventscript,	true, "run the eventscript with the given parameters on a node", "<arguments>"},
 	{ "backupdb",        control_backupdb,          false, "backup the database into a file.", "<database> <file>"},
-	{ "restoredb",        control_restoredb,          false, "restore the database from a file.", "<database> <file>"},
+	{ "restoredb",        control_restoredb,          false, "restore the database from a file.", "<file>"},
 };
 
 /*
