@@ -79,12 +79,12 @@ struct smb2srv_request *smb2srv_init_request(struct smbsrv_connection *smb_conn)
 NTSTATUS smb2srv_setup_reply(struct smb2srv_request *req, uint16_t body_fixed_size,
 			     bool body_dynamic_present, uint32_t body_dynamic_size)
 {
-	uint32_t flags = 0x00000001;
+	uint32_t flags = SMB2_HDR_FLAG_REDIRECT;
 	uint32_t pid = IVAL(req->in.hdr, SMB2_HDR_PID);
 	uint32_t tid = IVAL(req->in.hdr, SMB2_HDR_TID);
 
 	if (req->pending_id) {
-		flags |= 0x00000002;
+		flags |= SMB2_HDR_FLAG_ASYNC;
 		pid = req->pending_id;
 		tid = 0;
 	}
@@ -545,7 +545,7 @@ void smb2srv_cancel_recv(struct smb2srv_request *req)
 	flags		= IVAL(req->in.hdr, SMB2_HDR_FLAGS);
 	pending_id	= IVAL(req->in.hdr, SMB2_HDR_PID);
 
-	if (!(flags & 0x00000002)) {
+	if (!(flags & SMB2_HDR_FLAG_ASYNC)) {
 		/* TODO: what to do here? */
 		goto done;
 	}
