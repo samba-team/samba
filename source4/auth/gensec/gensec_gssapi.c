@@ -65,6 +65,7 @@ struct gensec_gssapi_state {
 	struct smb_krb5_context *smb_krb5_context;
 	struct gssapi_creds_container *client_cred;
 	struct gssapi_creds_container *server_cred;
+	gss_krb5_lucid_context_v1_t *lucid;
 
 	gss_cred_id_t delegated_cred_handle;
 
@@ -143,7 +144,43 @@ static int gensec_gssapi_destructor(struct gensec_gssapi_state *gensec_gssapi_st
 	if (gensec_gssapi_state->client_name != GSS_C_NO_NAME) {
 		maj_stat = gss_release_name(&min_stat, &gensec_gssapi_state->client_name);
 	}
+
+	if (gensec_gssapi_state->lucid) {
+		gss_krb5_free_lucid_sec_context(&min_stat, gensec_gssapi_state->lucid);
+	}
+
 	return 0;
+}
+
+static NTSTATUS gensec_gssapi_init_lucid(struct gensec_gssapi_state *gensec_gssapi_state)
+{
+	OM_uint32 maj_stat, min_stat;
+
+	if (gensec_gssapi_state->lucid) {
+		return NT_STATUS_OK;
+	}
+
+	maj_stat = gss_krb5_export_lucid_sec_context(&min_stat,
+						     &gensec_gssapi_state->gssapi_context,
+						     1,
+						     (void **)&gensec_gssapi_state->lucid);
+	if (maj_stat != GSS_S_COMPLETE) {
+		DEBUG(0,("gensec_gssapi_init_lucid: %s\n",
+			gssapi_error_string(gensec_gssapi_state,
+					    maj_stat, min_stat,
+					    gensec_gssapi_state->gss_oid)));
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	if (gensec_gssapi_state->lucid->version != 1) {
+		DEBUG(0,("gensec_gssapi_init_lucid: lucid version[%d] != 1\n",
+			gensec_gssapi_state->lucid->version));
+		gss_krb5_free_lucid_sec_context(&min_stat, gensec_gssapi_state->lucid);
+		gensec_gssapi_state->lucid = NULL;
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS gensec_gssapi_start(struct gensec_security *gensec_security)
@@ -169,6 +206,7 @@ static NTSTATUS gensec_gssapi_start(struct gensec_security *gensec_security)
 	gensec_gssapi_state->gssapi_context = GSS_C_NO_CONTEXT;
 	gensec_gssapi_state->server_name = GSS_C_NO_NAME;
 	gensec_gssapi_state->client_name = GSS_C_NO_NAME;
+	gensec_gssapi_state->lucid = NULL;
 
 	/* TODO: Fill in channel bindings */
 	gensec_gssapi_state->input_chan_bindings = GSS_C_NO_CHANNEL_BINDINGS;
@@ -1083,10 +1121,10 @@ static NTSTATUS gensec_gssapi_check_packet(struct gensec_security *gensec_securi
 
 	if (gensec_security->want_features & GENSEC_FEATURE_SIGN_PKT_HEADER) {
 		input_message.length = pdu_length;
-		input_message.value = whole_pdu;
+		input_message.value = discard_const(whole_pdu);
 	} else {
 		input_message.length = length;
-		input_message.value = data;
+		input_message.value = discard_const(data);
 	}
 
 	input_token.length = sig->length;
@@ -1138,6 +1176,31 @@ static bool gensec_gssapi_have_feature(struct gensec_security *gensec_security,
 	}
 	if (feature & GENSEC_FEATURE_DCE_STYLE) {
 		return gensec_gssapi_state->got_flags & GSS_C_DCE_STYLE;
+	}
+	if (feature & GENSEC_FEATURE_NEW_SPNEGO) {
+		NTSTATUS status;
+
+		if (!(gensec_gssapi_state->got_flags & GSS_C_INTEG_FLAG)) {
+			return false;
+		}
+
+		if (lp_parm_bool(gensec_security->lp_ctx, NULL, "gensec_gssapi", "force_new_spnego", false)) {
+			return true;
+		}
+		if (lp_parm_bool(gensec_security->lp_ctx, NULL, "gensec_gssapi", "disable_new_spnego", false)) {
+			return false;
+		}
+
+		status = gensec_gssapi_init_lucid(gensec_gssapi_state);
+		if (!NT_STATUS_IS_OK(status)) {
+			return false;
+		}
+
+		if (gensec_gssapi_state->lucid->protocol == 1) {
+			return true;
+		}
+
+		return false;
 	}
 	/* We can always do async (rather than strict request/reply) packets.  */
 	if (feature & GENSEC_FEATURE_ASYNC_REPLIES) {
@@ -1386,8 +1449,7 @@ size_t gensec_gssapi_sig_size(struct gensec_security *gensec_security, size_t da
 {
 	struct gensec_gssapi_state *gensec_gssapi_state
 		= talloc_get_type(gensec_security->private_data, struct gensec_gssapi_state);
-	OM_uint32 maj_stat, min_stat;
-	gss_krb5_lucid_context_v1_t *lucid = NULL;
+	NTSTATUS status;
 
 	if (gensec_gssapi_state->sig_size) {
 		return gensec_gssapi_state->sig_size;
@@ -1399,18 +1461,12 @@ size_t gensec_gssapi_sig_size(struct gensec_security *gensec_security, size_t da
 		gensec_gssapi_state->sig_size = 37;
 	}
 
-	maj_stat = gss_krb5_export_lucid_sec_context(&min_stat,
-						     &gensec_gssapi_state->gssapi_context,
-						     1, (void **)&lucid);
-	if (maj_stat != GSS_S_COMPLETE) {
+	status = gensec_gssapi_init_lucid(gensec_gssapi_state);
+	if (!NT_STATUS_IS_OK(status)) {
 		return gensec_gssapi_state->sig_size;
 	}
 
-	if (lucid->version != 1) {
-		return gensec_gssapi_state->sig_size;
-	}
-
-	if (lucid->protocol == 1) {
+	if (gensec_gssapi_state->lucid->protocol == 1) {
 		if (gensec_gssapi_state->got_flags & GSS_C_CONF_FLAG) {
 			/*
 			 * TODO: windows uses 76 here, but we don't know
@@ -1420,8 +1476,8 @@ size_t gensec_gssapi_sig_size(struct gensec_security *gensec_security, size_t da
 		} else {
 			gensec_gssapi_state->sig_size = 28;
 		}
-	} else if (lucid->protocol == 0) {
-		switch (lucid->rfc1964_kd.ctx_key.type) {
+	} else if (gensec_gssapi_state->lucid->protocol == 0) {
+		switch (gensec_gssapi_state->lucid->rfc1964_kd.ctx_key.type) {
 		case KEYTYPE_DES:
 		case KEYTYPE_ARCFOUR:
 		case KEYTYPE_ARCFOUR_56:
@@ -1440,8 +1496,6 @@ size_t gensec_gssapi_sig_size(struct gensec_security *gensec_security, size_t da
 			break;
 		}
 	}
-
-	gss_krb5_free_lucid_sec_context(&min_stat, lucid);
 
 	return gensec_gssapi_state->sig_size;
 }
