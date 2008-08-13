@@ -73,6 +73,14 @@ LIBCLI_NETLOGON_OBJ_FILES = $(addprefix $(libclisrcdir)/, \
 
 $(eval $(call proto_header_template,$(libclisrcdir)/netlogon_proto.h,$(LIBCLI_NETLOGON_OBJ_FILES:.o=.c)))
 
+[SUBSYSTEM::LIBCLI_DRSBLOBS]
+PUBLIC_DEPENDENCIES = LIBNDR 
+
+LIBCLI_DRSBLOBS_OBJ_FILES = $(addprefix $(libclisrcdir)/, \
+	drsblobs.o)
+
+$(eval $(call proto_header_template,$(libclisrcdir)/drsblobs_proto.h,$(LIBCLI_DRSBLOBS_OBJ_FILES:.o=.c)))
+
 [PYTHON::python_netbios]
 LIBRARY_REALNAME = samba/netbios.$(SHLIBEXT)
 PUBLIC_DEPENDENCIES = LIBCLI_NBT DYNCONFIG LIBSAMBA-HOSTCONFIG
