@@ -233,7 +233,7 @@ main(int argc,			/* I - Number of command-line arguments */
 
 		port = atoi(sep);
 	} else {
-		port = 445;
+		port = 0;
 	}
 
 	/*
