@@ -794,6 +794,10 @@ enum flush_reason_enum {
 #include "proto.h"
 #endif
 
+#if defined(HAVE_POSIX_ACLS)
+#include "modules/vfs_posixacl.h"
+#endif
+
 #ifdef HAVE_LDAP
 #include "ads_protos.h"
 #endif
