@@ -1799,12 +1799,10 @@ static int control_backupdb(struct ctdb_context *ctdb, int argc, const char **ar
 {
 	int i, ret;
 	struct ctdb_dbid_map *dbmap=NULL;
-	struct ctdb_node_map *nodemap=NULL;
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 	TDB_DATA outdata;
 	struct db_file_header dbhdr;
 	int fh;
-	uint32_t *nodes;
 
 	if (argc != 2) {
 		DEBUG(DEBUG_ERR,("Invalid arguments\n"));
@@ -1833,21 +1831,10 @@ static int control_backupdb(struct ctdb_context *ctdb, int argc, const char **ar
 		return -1;
 	}
 
-	ret = ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), options.pnn, ctdb, &nodemap);
+	/* freeze the node */
+	ret = ctdb_ctrl_freeze(ctdb, TIMELIMIT(), options.pnn);
 	if (ret != 0) {
-		DEBUG(DEBUG_ERR, ("Unable to get nodemap from node %u\n", options.pnn));
-		talloc_free(tmp_ctx);
-		return ret;
-	}
-
-	/* freeze all nodes */
-	nodes = list_of_active_nodes(ctdb, nodemap, tmp_ctx, true);
-	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_FREEZE,
-					nodes, TIMELIMIT(),
-					false, tdb_null,
-					NULL, NULL,
-					NULL) != 0) {
-		DEBUG(DEBUG_ERR, ("Unable to freeze nodes.\n"));
+		DEBUG(DEBUG_ERR, ("Unable to freeze node\n"));
 		ctdb_ctrl_setrecmode(ctdb, TIMELIMIT(), options.pnn, CTDB_RECOVERY_ACTIVE);
 		talloc_free(tmp_ctx);
 		return -1;
@@ -1863,14 +1850,10 @@ static int control_backupdb(struct ctdb_context *ctdb, int argc, const char **ar
 		return -1;
 	}
 
-	/* thaw all nodes */
-	nodes = list_of_active_nodes(ctdb, nodemap, tmp_ctx, true);
-	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_THAW,
-					nodes, TIMELIMIT(),
-					false, tdb_null,
-					NULL, NULL,
-					NULL) != 0) {
-		DEBUG(DEBUG_ERR, ("Unable to thaw nodes.\n"));
+	/* thaw the node */
+	ret = ctdb_ctrl_thaw(ctdb, TIMELIMIT(), options.pnn);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to thaw node.\n"));
 		ctdb_ctrl_setrecmode(ctdb, TIMELIMIT(), options.pnn, CTDB_RECOVERY_ACTIVE);
 		talloc_free(tmp_ctx);
 		return -1;
