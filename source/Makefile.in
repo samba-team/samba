@@ -1715,9 +1715,9 @@ bin/libaddns.@SHLIBEXT@: $(BINARY_PREREQS) $(LIBADDNS_OBJ) @LIBTALLOC_SHARED@
 		$(KRB5LIBS) $(UUID_LIBS) @LIBTALLOC_LIBS@ \
 		@SONAMEFLAG@`basename $@`.$(SONAME_VER)
 
-bin/libaddns.a: $(BINARY_PREREQS) $(LIBADDNS_OBJ0)
+bin/libaddns.a: $(BINARY_PREREQS) $(LIBADDNS_OBJ)
 	@echo Linking non-shared library $@
-	@-$(AR) -rc $@ $(LIBADDNS_OBJ0)
+	@-$(AR) -rc $@ $(LIBADDNS_OBJ)
 
 
 #-------------------------------------------------------------------
