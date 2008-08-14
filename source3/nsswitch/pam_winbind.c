@@ -784,8 +784,6 @@ static int pam_winbind_request_log(struct pwb_context *ctx,
 		/* Otherwise, the authentication looked good */
 #if 0
 		switch (req_type) {
-			case WINBINDD_INFO:
-				break;
 			case WINBINDD_PAM_AUTH:
 				_pam_log(ctx, LOG_NOTICE,
 					 "user '%s' granted access", user);
@@ -2053,19 +2051,24 @@ static int get_warn_pwd_expire_from_config(struct pwb_context *ctx)
 
 static char winbind_get_separator(struct pwb_context *ctx)
 {
-	struct winbindd_request request;
-	struct winbindd_response response;
+	wbcErr wbc_status;
+	static struct wbcInterfaceDetails *details = NULL;
 
-	ZERO_STRUCT(request);
-	ZERO_STRUCT(response);
-
-	if (pam_winbind_request_log(ctx, WINBINDD_INFO,
-				    &request, &response, NULL)) {
+	wbc_status = wbcInterfaceDetails(&details);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		_pam_log(ctx, LOG_ERR,
+			 "Could not retrieve winbind interface details: %s",
+			 wbcErrorString(wbc_status));
 		return '\0';
 	}
 
-	return response.data.info.winbind_separator;
+	if (!details) {
+		return '\0';
+	}
+
+	return details->winbind_separator;
 }
+
 
 /**
  * Convert a upn to a name.
