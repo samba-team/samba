@@ -182,31 +182,6 @@ void debug_nt_user_token(int dbg_class, int dbg_lev, NT_USER_TOKEN *token);
 void debug_unix_user_token(int dbg_class, int dbg_lev, uid_t uid, gid_t gid,
 			   int n_groups, gid_t *groups);
 
-/* The following definitions come from dynconfig.c  */
-
-const char *get_dyn_CONFIGFILE(void);
-const char *set_dyn_CONFIGFILE(const char *newpath);
-const char *get_dyn_LOGFILEBASE(void);
-const char *set_dyn_LOGFILEBASE(const char *newpath);
-const char *get_dyn_LMHOSTSFILE(void);
-const char *set_dyn_LMHOSTSFILE(const char *newpath);
-const char *get_dyn_CODEPAGEDIR(void);
-const char *set_dyn_CODEPAGEDIR(const char *newpath);
-const char *get_dyn_LIBDIR(void);
-const char *set_dyn_LIBDIR(const char *newpath);
-const char *get_dyn_SHLIBEXT(void);
-const char *set_dyn_SHLIBEXT(const char *newpath);
-const char *get_dyn_LOCKDIR(void);
-const char *set_dyn_LOCKDIR(const char *newpath);
-const char *get_dyn_PIDDIR(void);
-const char *set_dyn_PIDDIR(const char *newpath);
-const char *get_dyn_SMB_PASSWD_FILE(void);
-const char *set_dyn_SMB_PASSWD_FILE(const char *newpath);
-const char *get_dyn_PRIVATE_DIR(void);
-const char *set_dyn_PRIVATE_DIR(const char *newpath);
-const char *get_dyn_STATEDIR(void);
-const char *get_dyn_CACHEDIR(void);
-
 /* The following definitions come from groupdb/mapping.c  */
 
 NTSTATUS add_initial_entry(gid_t gid, const char *sid, enum lsa_SidType sid_name_use, const char *nt_name, const char *comment);
