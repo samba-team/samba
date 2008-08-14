@@ -87,7 +87,14 @@ HEIMDAL_HDB_1.0 {
 		free_hdb_entry;
 		asn1_HDBFlags_units;
 		HDBFlags2int;
+		int2HDBFlags;
 		length_HDB_Ext_Aliases;
+		decode_HDB_Ext_PKINIT_acl;
+		free_HDB_Ext_PKINIT_acl;
+		decode_HDB_Ext_Aliases;
+		free_HDB_Ext_Aliases;
+		length_HDB_extension;
+		encode_HDB_extension;
 
 	local:
 		*;
