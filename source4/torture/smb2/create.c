@@ -174,6 +174,9 @@ static bool test_create_gentest(struct torture_context *torture, struct smb2_tre
 		int i;
 		for (i=0;i<32;i++) {
 			io.in.file_attributes = 1<<i;
+			if (io.in.file_attributes & FILE_ATTRIBUTE_ENCRYPTED) {
+				continue;
+			}
 			smb2_deltree(tree, FNAME);
 			status = smb2_create(tree, tmp_ctx, &io);
 			if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER)) {
@@ -195,10 +198,26 @@ static bool test_create_gentest(struct torture_context *torture, struct smb2_tre
 		}
 	}
 
-	CHECK_EQUAL(ok_mask,                0x00007fb7);
+	CHECK_EQUAL(ok_mask,                0x00003fb7);
 	CHECK_EQUAL(invalid_parameter_mask, 0xffff8048);
 	CHECK_EQUAL(unexpected_mask,        0x00000000);
-	CHECK_EQUAL(file_attributes_set,    0x00005127);
+	CHECK_EQUAL(file_attributes_set,    0x00001127);
+
+	smb2_deltree(tree, FNAME);
+
+	/*
+	 * Standalone servers doesn't support encryption
+	 */
+	io.in.file_attributes = FILE_ATTRIBUTE_ENCRYPTED;
+	status = smb2_create(tree, tmp_ctx, &io);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+		printf("FILE_ATTRIBUTE_ENCRYPTED returned %s\n", nt_errstr(status));
+	} else {
+		CHECK_STATUS(status, NT_STATUS_OK);
+		CHECK_EQUAL(io.out.file_attr, (FILE_ATTRIBUTE_ENCRYPTED | FILE_ATTRIBUTE_ARCHIVE));
+		status = smb2_util_close(tree, io.out.file.handle);
+		CHECK_STATUS(status, NT_STATUS_OK);
+	}
 
 	smb2_deltree(tree, FNAME);
 
