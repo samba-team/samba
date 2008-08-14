@@ -3,13 +3,15 @@
 
                    ==============================
 
-This is the third stable release of Samba 3.2.
+This is a bug fix release of the Samba 3.2 series.
 
 Major bug fixes included in Samba 3.2.2 are:
 
   o Fix removal of dead records in tdb files. This can lead to very large
     tdb files and to overflowing partitions as a consequence on systems
     running an nmbd daemon.
+
+  o Fix freezing Windows Explorer on WinXP while browsing Samba shares.
 
 
 ######################################################################
@@ -31,7 +33,13 @@ o   Jeremy Allison <jra@samba.org>
     * BUG 5675: Fix smbspool program assuming Kerberos authentication by
       mistake.
     * BUG 5686: Fix segfaults in libsmbclient.
+    * Fix coverity ID 594 (resource leak on error path).
     * Several build fixes.
+
+
+o   Bartosz Antosik <antosik@gmail.com>
+    * BUG #5617: Fix freezing Windows Explorer on WinXP while browsing
+      Samba shares.
 
 
 o   Andrew Bartlett <abartlet@samba.org>
@@ -50,6 +58,10 @@ o   Günther Deschner <gd@samba.org>
     * Add add c++ guard to netapi.
 
 
+o   SATOH Fumiyasu <fumiyas@osstech.co.jp>
+    * BUG 5688: Fix orphaned LPQ processes if socket address is invalid.
+
+
 o   Volker Lendecke <vl@samba.org>
     * BUG 5684: Fix removal of dead records in tdb files.
     * Fix smb_len calculation for chained requests.
@@ -57,6 +69,10 @@ o   Volker Lendecke <vl@samba.org>
 
 o   Herb Lewis <herb@samba.org>
     * Fix output of test status.
+
+
+o   Jim McDonough <jmcd@samba.org>
+    * Fix smbclient connections to older servers.
 
 
 o   Andrew Tridgell <tridge@samba.org>
