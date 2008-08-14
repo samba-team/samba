@@ -1236,12 +1236,16 @@ static NTSTATUS gensec_gssapi_session_key(struct gensec_security *gensec_securit
 		return NT_STATUS_NO_USER_SESSION_KEY;
 	}
 	
-	DEBUG(10, ("Got KRB5 session key of length %d\n",  
-		   (int)KRB5_KEY_LENGTH(subkey)));
-	gensec_gssapi_state->session_key = data_blob_talloc(gensec_gssapi_state, 
-							    KRB5_KEY_DATA(subkey), KRB5_KEY_LENGTH(subkey));
+	DEBUG(10, ("Got KRB5 session key of length %d%s\n",
+		   (int)KRB5_KEY_LENGTH(subkey),
+		   (gensec_gssapi_state->sasl_state == STAGE_DONE)?" (done)":""));
+	*session_key = data_blob_talloc(gensec_gssapi_state,
+					KRB5_KEY_DATA(subkey), KRB5_KEY_LENGTH(subkey));
 	krb5_free_keyblock(gensec_gssapi_state->smb_krb5_context->krb5_context, subkey);
-	*session_key = gensec_gssapi_state->session_key;
+	if (gensec_gssapi_state->sasl_state == STAGE_DONE) {
+		/* only cache in the done stage */
+		gensec_gssapi_state->session_key = *session_key;
+	}
 	dump_data_pw("KRB5 Session Key:\n", session_key->data, session_key->length);
 
 	return NT_STATUS_OK;
