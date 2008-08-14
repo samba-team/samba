@@ -94,7 +94,8 @@ static const char *_pam_error_code_str(int err)
 #define _PAM_LOG_FUNCTION_LEAVE(function, ctx, retval) \
 	do { \
 		_pam_log_debug(ctx, LOG_DEBUG, "[pamh: %p] LEAVE: " \
-			       function " returning %d", ctx->pamh, retval); \
+			       function " returning %d (%s)", ctx->pamh, retval, \
+			       _pam_error_code_str(retval)); \
 		_pam_log_state(ctx); \
 	} while (0)
 
