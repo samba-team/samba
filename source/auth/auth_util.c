@@ -641,39 +641,44 @@ NTSTATUS make_server_info_sam(auth_serversupplied_info **server_info,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS log_nt_token(TALLOC_CTX *tmp_ctx, NT_USER_TOKEN *token)
+static NTSTATUS log_nt_token(NT_USER_TOKEN *token)
 {
+	TALLOC_CTX *frame = talloc_stackframe();
 	char *command;
 	char *group_sidstr;
 	size_t i;
 
 	if ((lp_log_nt_token_command() == NULL) ||
 	    (strlen(lp_log_nt_token_command()) == 0)) {
+		TALLOC_FREE(frame);
 		return NT_STATUS_OK;
 	}
 
-	group_sidstr = talloc_strdup(tmp_ctx, "");
+	group_sidstr = talloc_strdup(frame, "");
 	for (i=1; i<token->num_sids; i++) {
 		group_sidstr = talloc_asprintf(
-			tmp_ctx, "%s %s", group_sidstr,
-			sid_string_talloc(tmp_ctx, &token->user_sids[i]));
+			frame, "%s %s", group_sidstr,
+			sid_string_talloc(frame, &token->user_sids[i]));
 	}
 
 	command = talloc_string_sub(
-		tmp_ctx, lp_log_nt_token_command(),
-		"%s", sid_string_talloc(tmp_ctx, &token->user_sids[0]));
-	command = talloc_string_sub(tmp_ctx, command, "%t", group_sidstr);
+		frame, lp_log_nt_token_command(),
+		"%s", sid_string_talloc(frame, &token->user_sids[0]));
+	command = talloc_string_sub(frame, command, "%t", group_sidstr);
 
 	if (command == NULL) {
+		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	DEBUG(8, ("running command: [%s]\n", command));
 	if (smbrun(command, NULL) != 0) {
 		DEBUG(0, ("Could not log NT token\n"));
+		TALLOC_FREE(frame);
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
+	TALLOC_FREE(frame);
 	return NT_STATUS_OK;
 }
 
@@ -684,16 +689,8 @@ static NTSTATUS log_nt_token(TALLOC_CTX *tmp_ctx, NT_USER_TOKEN *token)
 
 NTSTATUS create_local_token(auth_serversupplied_info *server_info)
 {
-	TALLOC_CTX *mem_ctx;
 	NTSTATUS status;
 	size_t i;
-	
-
-	mem_ctx = talloc_new(NULL);
-	if (mem_ctx == NULL) {
-		DEBUG(0, ("talloc_new failed\n"));
-		return NT_STATUS_NO_MEMORY;
-	}
 
 	/*
 	 * If winbind is not around, we can not make much use of the SIDs the
@@ -710,7 +707,7 @@ NTSTATUS create_local_token(auth_serversupplied_info *server_info)
 						    &server_info->utok.gid,
 						    &server_info->unix_name,
 						    &server_info->ptok);
-		
+
 	} else {
 		server_info->ptok = create_local_nt_token(
 			server_info,
@@ -722,10 +719,9 @@ NTSTATUS create_local_token(auth_serversupplied_info *server_info)
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(mem_ctx);
 		return status;
 	}
-	
+
 	/* Convert the SIDs to gids. */
 
 	server_info->utok.ngroups = 0;
@@ -746,12 +742,10 @@ NTSTATUS create_local_token(auth_serversupplied_info *server_info)
 					&server_info->utok.groups,
 					&server_info->utok.ngroups);
 	}
-	
+
 	debug_nt_user_token(DBGC_AUTH, 10, server_info->ptok);
 
-	status = log_nt_token(mem_ctx, server_info->ptok);
-
-	TALLOC_FREE(mem_ctx);
+	status = log_nt_token(server_info->ptok);
 	return status;
 }
 
