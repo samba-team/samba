@@ -53,6 +53,7 @@ static bool test_create_gentest(struct torture_context *torture, struct smb2_tre
 	NTSTATUS status;
 	TALLOC_CTX *tmp_ctx = talloc_new(tree);
 	uint32_t access_mask, file_attributes, file_attributes_set, denied_mask;
+	uint32_t ok_mask, not_supported_mask, invalid_parameter_mask;
 	union smb_fileinfo q;
 
 	ZERO_STRUCT(io);
@@ -75,14 +76,6 @@ static bool test_create_gentest(struct torture_context *torture, struct smb2_tre
 	io.in.create_options = 0xF0000000;
 	status = smb2_create(tree, tmp_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
-
-	io.in.create_options = 0x00100000;
-	status = smb2_create(tree, tmp_ctx, &io);
-	CHECK_STATUS(status, NT_STATUS_NOT_SUPPORTED);
-
-	io.in.create_options = 0xF0100000;
-	status = smb2_create(tree, tmp_ctx, &io);
-	CHECK_STATUS(status, NT_STATUS_NOT_SUPPORTED);
 
 	io.in.create_options = 0;
 
@@ -107,6 +100,37 @@ static bool test_create_gentest(struct torture_context *torture, struct smb2_tre
 	io.in.desired_access = 0x04000000;
 	status = smb2_create(tree, tmp_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);
+
+	io.in.file_attributes = 0;
+	io.in.create_disposition = NTCREATEX_DISP_OPEN_IF;
+	io.in.desired_access     = SEC_FLAG_MAXIMUM_ALLOWED;
+	ok_mask = not_supported_mask = invalid_parameter_mask = 0;
+	{
+		int i;
+		for (i=0;i<32;i++) {
+			io.in.create_options = 1<<i;
+			if (io.in.create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE) {
+				continue;
+			}
+			status = smb2_create(tree, tmp_ctx, &io);
+			if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED)) {
+				not_supported_mask |= 1<<i;
+			} else if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER)) {
+				invalid_parameter_mask |= 1<<i;
+			} else if (NT_STATUS_EQUAL(status, NT_STATUS_OK)) {
+				ok_mask |= 1<<i;
+				status = smb2_util_close(tree, io.out.file.handle);
+				CHECK_STATUS(status, NT_STATUS_OK);
+			} else {
+				printf("create option 0x%08x returned %s\n", 1<<i, nt_errstr(status));
+			}
+		}
+	}
+	io.in.create_options = 0;
+
+	CHECK_EQUAL(ok_mask,                0x00efcf7e);
+	CHECK_EQUAL(not_supported_mask,     0x00102080);
+	CHECK_EQUAL(invalid_parameter_mask, 0xff000000);
 
 	io.in.create_disposition = NTCREATEX_DISP_OPEN_IF;
 	io.in.file_attributes = 0;
