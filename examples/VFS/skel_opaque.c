@@ -307,7 +307,7 @@ static size_t skel_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 	return 0;
 }
 
-static size_t skel_get_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
+static size_t skel_get_nt_acl(vfs_handle_struct *handle,
 	const char *name, uint32 security_info, SEC_DESC **ppdesc)
 {
 	errno = ENOSYS;
