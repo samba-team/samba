@@ -23,22 +23,6 @@
  * @brief Exported global configurations.
  **/
 
-#if 0
-const char *get_dyn_SBINDIR(void);
-const char *get_dyn_BINDIR(void);
-const char *get_dyn_SWATDIR(void);
-
-extern char dyn_CONFIGFILE[1024];
-extern char dyn_LOGFILEBASE[1024], dyn_LMHOSTSFILE[1024];
-extern char dyn_LIBDIR[1024];
-extern char dyn_CODEPAGEDIR[1024];
-extern fstring dyn_SHLIBEXT;
-extern char dyn_LOCKDIR[1024];
-extern char dyn_PIDDIR[1024];
-extern char dyn_SMB_PASSWD_FILE[1024];
-extern char dyn_PRIVATE_DIR[1024];
-#endif
-
 const char *get_dyn_SBINDIR(void);
 const char *set_dyn_SBINDIR(const char *newpath);
 bool is_default_dyn_SBINDIR(void);
