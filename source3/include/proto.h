@@ -1340,6 +1340,7 @@ char *myhostname(void);
 char *lock_path(const char *name);
 char *pid_path(const char *name);
 char *lib_path(const char *name);
+char *modules_path(const char *name);
 char *data_path(const char *name);
 char *state_path(const char *name);
 const char *shlib_ext(void);
