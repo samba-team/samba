@@ -520,16 +520,36 @@ gsskrb5_acceptor_start(OM_uint32 * minor_status,
     
     if(ctx->flags & GSS_C_MUTUAL_FLAG) {
 	krb5_data outbuf;
+	int use_subkey = 0;
 	    
 	_gsskrb5i_is_cfx(ctx, &is_cfx);
 	    
-	if (is_cfx != 0 
-	    || (ap_options & AP_OPTS_USE_SUBKEY)) {
-	    kret = krb5_auth_con_addflags(context,
-					  ctx->auth_context,
-					  KRB5_AUTH_CONTEXT_USE_SUBKEY,
-					  NULL);
+	if (is_cfx || (ap_options & AP_OPTS_USE_SUBKEY)) {
+	    use_subkey = 1;
+	} else {
+	    krb5_keyblock *rkey;
+
+	    /* 
+	     * If there is a initiator subkey, copy that to acceptor
+	     * subkey to match Windows behavior
+	     */
+	    kret = krb5_auth_con_getremotesubkey(context,
+						 ctx->auth_context,
+						 &rkey);
+	    if (kret == 0) {
+		kret = krb5_auth_con_setlocalsubkey(context, 
+						    ctx->auth_context,
+						    rkey);
+		if (kret == 0)
+		    use_subkey = 1;
+		krb5_free_keyblock(context, rkey);
+	    }
+	}
+	if (use_subkey) {
 	    ctx->more_flags |= ACCEPTOR_SUBKEY;
+	    krb5_auth_con_addflags(context, ctx->auth_context,
+				   KRB5_AUTH_CONTEXT_USE_SUBKEY,
+				   NULL);
 	}
 	    
 	kret = krb5_mk_rep(context,
