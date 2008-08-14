@@ -532,16 +532,14 @@ NTSTATUS ntvfs_map_open(struct ntvfs_module_context *ntvfs,
 		}
 
 		/* we need to check these bits before we check the private mask */
-		if (io2->generic.in.create_options & NTCREATEX_OPTIONS_NOT_SUPPORTED_MASK) {
+		if (io2->generic.in.create_options & SMB2_CREATE_OPTIONS_NOT_SUPPORTED_MASK) {
 			status = NT_STATUS_NOT_SUPPORTED;
 			break;
 		}
 
-		/* we use a couple of bits of the create options internally */
-		if (io2->generic.in.create_options & NTCREATEX_OPTIONS_PRIVATE_MASK) {
-			status = NT_STATUS_INVALID_PARAMETER;
-			break;
-		}
+		/* TODO: find out why only SMB2 ignores these */
+		io2->generic.in.create_options &= ~NTCREATEX_OPTIONS_SYNC_ALERT;
+		io2->generic.in.create_options &= ~NTCREATEX_OPTIONS_ASYNC_ALERT;
 
 		status = ntvfs->ops->open(ntvfs, req, io2);		
 		break;
