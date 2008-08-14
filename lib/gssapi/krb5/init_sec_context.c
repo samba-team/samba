@@ -271,6 +271,7 @@ do_delegation (krb5_context context,
 	       krb5_creds *cred,
 	       krb5_const_principal name,
 	       krb5_data *fwd_data,
+	       uint32_t flagmask,
 	       uint32_t *flags)
 {
     krb5_creds creds;
@@ -314,9 +315,9 @@ do_delegation (krb5_context context,
        
  out:
     if (kret)
-	*flags &= ~GSS_C_DELEG_FLAG;
+	*flags &= ~flagmask;
     else
-	*flags |= GSS_C_DELEG_FLAG;
+	*flags |= flagmask;
        
     if (creds.client)
 	krb5_free_principal(context, creds.client);
@@ -479,7 +480,7 @@ init_auth_restart
     krb5_enctype enctype;
     krb5_data fwd_data, timedata;
     int32_t offset = 0, oldoffset;
-    int delegate = 0;
+    uint32_t flagmask;
 
     krb5_data_zero(&outbuf);
     krb5_data_zero(&fwd_data);
@@ -491,36 +492,37 @@ init_auth_restart
      * is a realm setting and use that.
      */
     if (!ctx->kcred->flags.b.ok_as_delegate) {
-	krb5_boolean realm_setting = FALSE;
 	krb5_data data;
 	
 	ret = krb5_cc_get_config(context, ctx->ccache, NULL,
 				 "realm-config", &data);
 	if (ret == 0) {
 	    /* XXX 1 is use ok-as-delegate */
-	    if (data.length > 0 && (((unsigned char *)data.data)[0]) & 1)
-		realm_setting = TRUE;
+	    if (data.length < 1 || ((((unsigned char *)data.data)[0]) & 1) == 0)
+		req_flags &= ~(GSS_C_DELEG_FLAG|GSS_C_DELEG_POLICY_FLAG);
 	    krb5_data_free(&data);
 	}
-	if (!realm_setting)
-	    req_flags &= ~GSS_C_DELEG_FLAG;
     }
 
+    flagmask = 0;
+
     /* if we used GSS_C_DELEG_POLICY_FLAG, trust KDC */
-    if (req_flags & GSS_C_DELEG_POLICY_FLAG)
-	delegate = ctx->kcred->flags.b.ok_as_delegate;
+    if ((req_flags & GSS_C_DELEG_POLICY_FLAG)
+	&& ctx->kcred->flags.b.ok_as_delegate)
+	flagmask |= GSS_C_DELEG_FLAG | GSS_C_DELEG_POLICY_FLAG;
     /* if there still is a GSS_C_DELEG_FLAG, use that */
     if (req_flags & GSS_C_DELEG_FLAG)
-	delegate = 1;
+	flagmask |= GSS_C_DELEG_FLAG;
 
 
     flags = 0;
     ap_options = 0;
-    if (delegate)
+    if (flagmask & GSS_C_DELEG_FLAG) {
 	do_delegation (context,
 		       ctx->auth_context,
 		       ctx->ccache, ctx->kcred, ctx->target,
-		       &fwd_data, &flags);
+		       &fwd_data, flagmask, &flags);
+    }
     
     if (req_flags & GSS_C_MUTUAL_FLAG) {
 	flags |= GSS_C_MUTUAL_FLAG;
