@@ -737,7 +737,6 @@ static int pam_winbind_request(struct pwb_context *ctx,
 	/* no need to check for pam_error codes for getpwnam() */
 	switch (req_type) {
 
-		case WINBINDD_GETPWNAM:
 		case WINBINDD_LOOKUPNAME:
 			if (strlen(response->data.auth.nt_status_string) > 0) {
 				_pam_log(ctx, LOG_ERR,
@@ -1741,29 +1740,26 @@ static int valid_user(struct pwb_context *ctx,
 	 * sure it's really a winbind user, this is important when stacking PAM
 	 * modules in the 'account' or 'password' facility. */
 
+	wbcErr wbc_status;
 	struct passwd *pwd = NULL;
-	struct winbindd_request request;
-	struct winbindd_response response;
-	int ret;
-
-	ZERO_STRUCT(request);
-	ZERO_STRUCT(response);
+	struct passwd *wb_pwd = NULL;
 
 	pwd = getpwnam(user);
 	if (pwd == NULL) {
 		return 1;
 	}
 
-	strncpy(request.data.username, user,
-		sizeof(request.data.username) - 1);
+	wbc_status = wbcGetpwnam(user, &wb_pwd);
+	wbcFreeMemory(wb_pwd);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		_pam_log(ctx, LOG_DEBUG, "valid_user: wbcGetpwnam gave %s\n",
+			wbcErrorString(wbc_status));
+	}
 
-	ret = pam_winbind_request_log(ctx, WINBINDD_GETPWNAM,
-				      &request, &response, user);
-
-	switch (ret) {
-		case PAM_USER_UNKNOWN:
+	switch (wbc_status) {
+		case WBC_ERR_UNKNOWN_USER:
 			return 1;
-		case PAM_SUCCESS:
+		case WBC_ERR_SUCCESS:
 			return 0;
 		default:
 			break;
