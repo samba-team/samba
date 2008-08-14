@@ -286,7 +286,7 @@ static char *catia_realpath(vfs_handle_struct *handle,
         return SMB_VFS_NEXT_REALPATH(handle, path, resolved_path);
 }
 
-static NTSTATUS catia_get_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
+static NTSTATUS catia_get_nt_acl(vfs_handle_struct *handle,
 			       const char *name, uint32 security_info,
 			       struct  security_descriptor **ppdesc)
 {
