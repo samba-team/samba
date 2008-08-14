@@ -52,7 +52,7 @@ static bool test_create_gentest(struct torture_context *torture, struct smb2_tre
 	struct smb2_create io;
 	NTSTATUS status;
 	TALLOC_CTX *tmp_ctx = talloc_new(tree);
-	uint32_t access_mask, file_attributes, file_attributes_set, denied_mask;
+	uint32_t access_mask, file_attributes_set;
 	uint32_t ok_mask, not_supported_mask, invalid_parameter_mask;
 	uint32_t not_a_directory_mask, unexpected_mask;
 	union smb_fileinfo q;
@@ -166,9 +166,10 @@ static bool test_create_gentest(struct torture_context *torture, struct smb2_tre
 	io.in.create_disposition = NTCREATEX_DISP_OPEN_IF;
 	io.in.desired_access = SEC_FLAG_MAXIMUM_ALLOWED;
 	io.in.file_attributes = 0;
-	file_attributes = 0;
+	ok_mask = 0;
+	invalid_parameter_mask = 0;
+	unexpected_mask = 0;
 	file_attributes_set = 0;
-	denied_mask = 0;
 	{
 		int i;
 		for (i=0;i<32;i++) {
@@ -176,21 +177,28 @@ static bool test_create_gentest(struct torture_context *torture, struct smb2_tre
 			smb2_deltree(tree, FNAME);
 			status = smb2_create(tree, tmp_ctx, &io);
 			if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER)) {
-				file_attributes |= io.in.file_attributes;
-			} else if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
-				denied_mask |= io.in.file_attributes;
-			} else {
-				CHECK_STATUS(status, NT_STATUS_OK);
+				invalid_parameter_mask |= 1<<i;
+			} else if (NT_STATUS_IS_OK(status)) {
+				uint32_t expected;
+				ok_mask |= 1<<i;
+
+				expected = (io.in.file_attributes | FILE_ATTRIBUTE_ARCHIVE) & 0x00005127;
+				CHECK_EQUAL(io.out.file_attr, expected);
+				file_attributes_set |= io.out.file_attr;
+
 				status = smb2_util_close(tree, io.out.file.handle);
 				CHECK_STATUS(status, NT_STATUS_OK);
-				file_attributes_set |= io.out.file_attr;
+			} else {
+				unexpected_mask |= 1<<i;
+				printf("file attribute 0x%08x returned %s\n", 1<<i, nt_errstr(status));
 			}
 		}
 	}
 
-	CHECK_EQUAL(file_attributes, 0xffff8048);
-	CHECK_EQUAL(denied_mask, 0x4000);
-	CHECK_EQUAL(file_attributes_set, 0x00001127);
+	CHECK_EQUAL(ok_mask,                0x00007fb7);
+	CHECK_EQUAL(invalid_parameter_mask, 0xffff8048);
+	CHECK_EQUAL(unexpected_mask,        0x00000000);
+	CHECK_EQUAL(file_attributes_set,    0x00005127);
 
 	smb2_deltree(tree, FNAME);
 
