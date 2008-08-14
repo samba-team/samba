@@ -199,7 +199,7 @@ static bool read_init_file( const char *servicename, struct rcinit_file_informat
 
 	/* attempt the file open */
 
-	filepath = talloc_asprintf(info, "%s/%s/%s", get_dyn_LIBDIR(),
+	filepath = talloc_asprintf(info, "%s/%s/%s", get_dyn_MODULESDIR(),
 				SVCCTL_SCRIPT_DIR, servicename);
 	if (!filepath) {
 		TALLOC_FREE(info);
@@ -277,7 +277,7 @@ static void fill_service_values( const char *name, REGVAL_CTR *values )
 		if ( strequal( name, builtin_svcs[i].servicename ) ) {
 			char *pstr = NULL;
 			if (asprintf(&pstr, "%s/%s/%s",
-					get_dyn_LIBDIR(), SVCCTL_SCRIPT_DIR,
+					get_dyn_MODULESDIR(), SVCCTL_SCRIPT_DIR,
 					builtin_svcs[i].daemon) > 0) {
 				init_unistr2( &ipath, pstr, UNI_STR_TERMINATE );
 				SAFE_FREE(pstr);
@@ -297,7 +297,7 @@ static void fill_service_values( const char *name, REGVAL_CTR *values )
 		char *dispname = NULL;
 		struct rcinit_file_information *init_info = NULL;
 
-		if (asprintf(&pstr, "%s/%s/%s",get_dyn_LIBDIR(),
+		if (asprintf(&pstr, "%s/%s/%s",get_dyn_MODULESDIR(),
 					SVCCTL_SCRIPT_DIR, name) > 0) {
 			init_unistr2( &ipath, pstr, UNI_STR_TERMINATE );
 			SAFE_FREE(pstr);
