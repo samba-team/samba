@@ -698,7 +698,7 @@ NTSTATUS create_local_token(auth_serversupplied_info *server_info)
 		
 	} else {
 		server_info->ptok = create_local_nt_token(
-			server_info,
+			mem_ctx,
 			pdb_get_user_sid(server_info->sam_account),
 			server_info->guest,
 			server_info->num_sids, server_info->sids);
