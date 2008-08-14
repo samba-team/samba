@@ -184,6 +184,7 @@ struct poptOption popt_common_debuglevel[] = {
  *		--swatdir
  *		--lmhostsfile
  *		--libdir
+ *		--modulesdir
  *		--shlibext
  *		--lockdir
  *		--piddir
@@ -197,6 +198,7 @@ enum dyn_item{
 	DYN_SWATDIR,
 	DYN_LMHOSTSFILE,
 	DYN_LIBDIR,
+	DYN_MODULESDIR,
 	DYN_SHLIBEXT,
 	DYN_LOCKDIR,
 	DYN_PIDDIR,
@@ -239,6 +241,12 @@ static void popt_dynconfig_callback(poptContext con,
 	case DYN_LIBDIR:
 		if (arg) {
 			set_dyn_LIBDIR(arg);
+		}
+		break;
+
+	case DYN_MODULESDIR:
+		if (arg) {
+			set_dyn_MODULESDIR(arg);
 		}
 		break;
 
@@ -289,6 +297,8 @@ const struct poptOption popt_common_dynconfig[] = {
 	    "Path to lmhosts file", "LMHOSTSFILE" },
 	{ "libdir", '\0' , POPT_ARG_STRING, NULL, DYN_LIBDIR,
 	    "Path to shared library directory", "LIBDIR" },
+	{ "modulesdir", '\0' , POPT_ARG_STRING, NULL, DYN_MODULESDIR,
+	    "Path to shared modules directory", "MODULESDIR" },
 	{ "shlibext", '\0' , POPT_ARG_STRING, NULL, DYN_SHLIBEXT,
 	    "Shared library extension", "SHLIBEXT" },
 	{ "lockdir", '\0' , POPT_ARG_STRING, NULL, DYN_LOCKDIR,
