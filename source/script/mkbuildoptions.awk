@@ -84,6 +84,7 @@ BEGIN {
 	print "       output(screen,\"   LMHOSTSFILE: %s\\n\",get_dyn_LMHOSTSFILE());";
 
 	print "       output(screen,\"   LIBDIR: %s\\n\",get_dyn_LIBDIR());";
+	print "       output(screen,\"   MODULESDIR: %s\\n\",get_dyn_MODULESDIR());";
 	print "       output(screen,\"   SHLIBEXT: %s\\n\",get_dyn_SHLIBEXT());";
 
 	print "       output(screen,\"   LOCKDIR: %s\\n\",get_dyn_LOCKDIR());";
