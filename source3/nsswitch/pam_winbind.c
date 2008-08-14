@@ -437,6 +437,10 @@ static int _pam_parse(const pam_handle_t *pamh,
 		ctrl |= WINBIND_WARN_PWD_EXPIRE;
 	}
 
+	if (iniparser_getboolean(d, "global:mkhomedir", false)) {
+		ctrl |= WINBIND_MKHOMEDIR;
+	}
+
 config_from_pam:
 	/* step through arguments */
 	for (i=argc,v=argv; i-- > 0; ++v) {
@@ -469,6 +473,8 @@ config_from_pam:
 			ctrl |= WINBIND_KRB5_CCACHE_TYPE;
 		else if (!strcasecmp(*v, "cached_login"))
 			ctrl |= WINBIND_CACHED_LOGIN;
+		else if (!strcasecmp(*v, "mkhomedir"))
+			ctrl |= WINBIND_MKHOMEDIR;
 		else {
 			__pam_log(pamh, ctrl, LOG_ERR,
 				 "pam_parse: unknown option: %s", *v);
@@ -1376,6 +1382,127 @@ static char *_pam_compose_pwd_restriction_string(struct pwb_context *ctx,
  failed:
 	TALLOC_FREE(str);
 	return NULL;
+}
+
+static int _pam_create_homedir(struct pwb_context *ctx,
+			       const char *dirname,
+			       mode_t mode)
+{
+	struct stat sbuf;
+
+	if (stat(dirname, &sbuf) == 0) {
+		return PAM_SUCCESS;
+	}
+
+	if (mkdir(dirname, mode) != 0) {
+
+		_make_remark_format(ctx, PAM_TEXT_INFO,
+				    "Creating directory: %s failed: %s",
+				    dirname, strerror(errno));
+		_pam_log(ctx, LOG_ERR, "could not create dir: %s (%s)",
+		 dirname, strerror(errno));
+		 return PAM_PERM_DENIED;
+	}
+
+	return PAM_SUCCESS;
+}
+
+static int _pam_chown_homedir(struct pwb_context *ctx,
+			      const char *dirname,
+			      uid_t uid,
+			      gid_t gid)
+{
+	if (chown(dirname, uid, gid) != 0) {
+		_pam_log(ctx, LOG_ERR, "failed to chown user homedir: %s (%s)",
+			 dirname, strerror(errno));
+		return PAM_PERM_DENIED;
+	}
+
+	return PAM_SUCCESS;
+}
+
+static int _pam_mkhomedir(struct pwb_context *ctx)
+{
+	struct passwd *pwd = NULL;
+	char *token = NULL;
+	char *create_dir = NULL;
+	char *user_dir = NULL;
+	int ret;
+	const char *username;
+	mode_t mode = 0700;
+	char *safe_ptr = NULL;
+	char *p = NULL;
+
+	/* Get the username */
+	ret = pam_get_user(ctx->pamh, &username, NULL);
+	if ((ret != PAM_SUCCESS) || (!username)) {
+		_pam_log_debug(ctx, LOG_DEBUG, "can not get the username");
+		return PAM_SERVICE_ERR;
+	}
+
+	pwd = getpwnam(username);
+	if (pwd == NULL) {
+		_pam_log_debug(ctx, LOG_DEBUG, "can not get the username");
+		return PAM_USER_UNKNOWN;
+	}
+	_pam_log_debug(ctx, LOG_DEBUG, "homedir is: %s", pwd->pw_dir);
+
+	ret = _pam_create_homedir(ctx, pwd->pw_dir, 0700);
+	if (ret == PAM_SUCCESS) {
+		ret = _pam_chown_homedir(ctx, pwd->pw_dir,
+					 pwd->pw_uid,
+					 pwd->pw_gid);
+	}
+
+	if (ret == PAM_SUCCESS) {
+		return ret;
+	}
+
+	/* maybe we need to create parent dirs */
+	create_dir = talloc_strdup(ctx, "/");
+	if (!create_dir) {
+		return PAM_BUF_ERR;
+	}
+
+	/* find final directory */
+	user_dir = strrchr(pwd->pw_dir, '/');
+	if (!user_dir) {
+		return PAM_BUF_ERR;
+	}
+	user_dir++;
+
+	_pam_log(ctx, LOG_DEBUG, "final directory: %s", user_dir);
+
+	p = pwd->pw_dir;
+
+	while ((token = strtok_r(p, "/", &safe_ptr)) != NULL) {
+
+		mode = 0755;
+
+		p = NULL;
+
+		_pam_log_debug(ctx, LOG_DEBUG, "token is %s", token);
+
+		create_dir = talloc_asprintf_append(create_dir, "%s/", token);
+		if (!create_dir) {
+			return PAM_BUF_ERR;
+		}
+		_pam_log_debug(ctx, LOG_DEBUG, "current_dir is %s", create_dir);
+
+		if (strcmp(token, user_dir) == 0) {
+			_pam_log_debug(ctx, LOG_DEBUG, "assuming last directory: %s", token);
+			mode = 0700;
+		}
+
+		ret = _pam_create_homedir(ctx, create_dir, mode);
+		if (ret) {
+			return ret;
+		}
+	}
+
+	return _pam_chown_homedir(ctx, create_dir,
+				  pwd->pw_uid,
+				  pwd->pw_gid);
 }
 
 /* talk to winbindd */
@@ -2470,7 +2597,7 @@ PAM_EXTERN
 int pam_sm_open_session(pam_handle_t *pamh, int flags,
 			int argc, const char **argv)
 {
-	int ret = PAM_SYSTEM_ERR;
+	int ret = PAM_SUCCESS;
 	struct pwb_context *ctx = NULL;
 
 	ret = _pam_winbind_init_context(pamh, flags, argc, argv, &ctx);
@@ -2480,8 +2607,10 @@ int pam_sm_open_session(pam_handle_t *pamh, int flags,
 
 	_PAM_LOG_FUNCTION_ENTER("pam_sm_open_session", ctx);
 
-	ret = PAM_SUCCESS;
-
+	if (ctx->ctrl & WINBIND_MKHOMEDIR) {
+		/* check and create homedir */
+		ret = _pam_mkhomedir(ctx);
+	}
  out:
 	_PAM_LOG_FUNCTION_LEAVE("pam_sm_open_session", ctx, ret);
 
