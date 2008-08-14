@@ -55,6 +55,10 @@ const char *get_dyn_LIBDIR(void);
 const char *set_dyn_LIBDIR(const char *newpath);
 bool is_default_dyn_LIBDIR(void);
 
+const char *get_dyn_MODULESDIR(void);
+const char *set_dyn_MODULESDIR(const char *newpath);
+bool is_default_dyn_MODULESDIR(void);
+
 const char *get_dyn_SHLIBEXT(void);
 const char *set_dyn_SHLIBEXT(const char *newpath);
 bool is_default_dyn_SHLIBEXT(void);
