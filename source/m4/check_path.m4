@@ -22,10 +22,11 @@ test "${mandir}" || mandir="\${prefix}/man"
 logfilebase="\${VARDIR}"
 privatedir="\${prefix}/private"
 test "${libdir}" || libdir="\${prefix}/lib"
+modulesdir="\${LIBDIR}"
 pammodulesdir="\${LIBDIR}/security"
 configdir="\${LIBDIR}"
 swatdir="\${prefix}/swat"
-codepagedir="\${LIBDIR}"
+codepagedir="\${MODULESDIR}"
 statedir="\${LOCKDIR}"
 cachedir="\${LOCKDIR}"
 
@@ -39,9 +40,10 @@ AC_ARG_WITH(fhs,
     logfilebase="\${VARDIR}/log/samba"
     privatedir="\${CONFIGDIR}/private"
     test "${libdir}" || libdir="\${prefix}/lib/samba"
+    modulesdir="\${LIBDIR}"
     configdir="\${sysconfdir}/samba"
     swatdir="\${DATADIR}/samba/swat"
-    codepagedir="\${LIBDIR}"
+    codepagedir="\${MODULESDIR}"
     statedir="\${VARDIR}/lib/samba"
     cachedir="\${VARDIR}/lib/samba"
     AC_DEFINE(FHS_COMPATIBLE, 1, [Whether to use fully FHS-compatible paths])
@@ -191,6 +193,22 @@ AC_ARG_WITH(libdir,
   esac])
 
 #################################################
+# set shared modules (internal lib) directory location
+AC_ARG_WITH(modulesdir,
+[AS_HELP_STRING([--with-modulesdir=DIR], [Where to put shared modules ($libdir)])],
+[ case "$withval" in
+  yes|no)
+  #
+  # Just in case anybody does it
+  #
+    AC_MSG_WARN([--with-modulesdir without argument - will use default])
+  ;;
+  * )
+    modulesdir="$withval"
+    ;;
+  esac])
+
+#################################################
 # set PAM modules directory location
 AC_ARG_WITH(pammodulesdir,
 [AS_HELP_STRING([--with-pammodulesdir=DIR], [Which directory to use for PAM modules ($ac_default_prefix/$libdir/security)])],
@@ -236,6 +254,7 @@ AC_SUBST(statedir)
 AC_SUBST(cachedir)
 AC_SUBST(rootsbindir)
 AC_SUBST(pammodulesdir)
+AC_SUBST(modulesdir)
 
 #################################################
 # set prefix for 'make test'
