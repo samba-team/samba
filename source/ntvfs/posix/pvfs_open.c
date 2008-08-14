@@ -1181,6 +1181,7 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	int fd;
 	struct odb_lock *lck;
 	uint32_t create_options;
+	uint32_t create_options_must_ignore_mask;
 	uint32_t share_access;
 	uint32_t access_mask;
 	uint32_t create_action = NTCREATEX_ACTION_EXISTED;
@@ -1206,11 +1207,20 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	/* These options are ignored */
-	create_options &= ~NTCREATEX_OPTIONS_MUST_IGNORE_MASK;
+	/*
+	 * These options are ignored,
+	 * but we reuse some of them as private values for the generic mapping
+	 */
+	create_options_must_ignore_mask = NTCREATEX_OPTIONS_MUST_IGNORE_MASK;
+	create_options_must_ignore_mask &= ~NTCREATEX_OPTIONS_PRIVATE_MASK;
+	create_options &= ~create_options_must_ignore_mask;
 
 	if (create_options & NTCREATEX_OPTIONS_NOT_SUPPORTED_MASK) {
 		return NT_STATUS_NOT_SUPPORTED;
+	}
+
+	if (create_options & NTCREATEX_OPTIONS_INVALID_PARAM_MASK) {
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	/* TODO: When we implement HSM, add a hook here not to pull

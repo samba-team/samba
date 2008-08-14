@@ -52,7 +52,9 @@ static bool test_create_gentest(struct torture_context *torture, struct smb2_tre
 	struct smb2_create io;
 	NTSTATUS status;
 	TALLOC_CTX *tmp_ctx = talloc_new(tree);
-	uint32_t access_mask, file_attributes, file_attributes_set, denied_mask;
+	uint32_t access_mask, file_attributes_set;
+	uint32_t ok_mask, not_supported_mask, invalid_parameter_mask;
+	uint32_t not_a_directory_mask, unexpected_mask;
 	union smb_fileinfo q;
 
 	ZERO_STRUCT(io);
@@ -75,14 +77,6 @@ static bool test_create_gentest(struct torture_context *torture, struct smb2_tre
 	io.in.create_options = 0xF0000000;
 	status = smb2_create(tree, tmp_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
-
-	io.in.create_options = 0x00100000;
-	status = smb2_create(tree, tmp_ctx, &io);
-	CHECK_STATUS(status, NT_STATUS_NOT_SUPPORTED);
-
-	io.in.create_options = 0xF0100000;
-	status = smb2_create(tree, tmp_ctx, &io);
-	CHECK_STATUS(status, NT_STATUS_NOT_SUPPORTED);
 
 	io.in.create_options = 0;
 
@@ -108,6 +102,46 @@ static bool test_create_gentest(struct torture_context *torture, struct smb2_tre
 	status = smb2_create(tree, tmp_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);
 
+	io.in.file_attributes = 0;
+	io.in.create_disposition = NTCREATEX_DISP_OPEN_IF;
+	io.in.desired_access     = SEC_FLAG_MAXIMUM_ALLOWED;
+	ok_mask = 0;
+	not_supported_mask = 0;
+	invalid_parameter_mask = 0;
+	not_a_directory_mask = 0;
+	unexpected_mask = 0;
+	{
+		int i;
+		for (i=0;i<32;i++) {
+			io.in.create_options = 1<<i;
+			if (io.in.create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE) {
+				continue;
+			}
+			status = smb2_create(tree, tmp_ctx, &io);
+			if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED)) {
+				not_supported_mask |= 1<<i;
+			} else if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER)) {
+				invalid_parameter_mask |= 1<<i;
+			} else if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_A_DIRECTORY)) {
+				not_a_directory_mask |= 1<<i;
+			} else if (NT_STATUS_EQUAL(status, NT_STATUS_OK)) {
+				ok_mask |= 1<<i;
+				status = smb2_util_close(tree, io.out.file.handle);
+				CHECK_STATUS(status, NT_STATUS_OK);
+			} else {
+				unexpected_mask |= 1<<i;
+				printf("create option 0x%08x returned %s\n", 1<<i, nt_errstr(status));
+			}
+		}
+	}
+	io.in.create_options = 0;
+
+	CHECK_EQUAL(ok_mask,                0x00efcf7e);
+	CHECK_EQUAL(not_a_directory_mask,   0x00000001);
+	CHECK_EQUAL(not_supported_mask,     0x00102080);
+	CHECK_EQUAL(invalid_parameter_mask, 0xff000000);
+	CHECK_EQUAL(unexpected_mask,        0x00000000);
+
 	io.in.create_disposition = NTCREATEX_DISP_OPEN_IF;
 	io.in.file_attributes = 0;
 	access_mask = 0;
@@ -132,31 +166,58 @@ static bool test_create_gentest(struct torture_context *torture, struct smb2_tre
 	io.in.create_disposition = NTCREATEX_DISP_OPEN_IF;
 	io.in.desired_access = SEC_FLAG_MAXIMUM_ALLOWED;
 	io.in.file_attributes = 0;
-	file_attributes = 0;
+	ok_mask = 0;
+	invalid_parameter_mask = 0;
+	unexpected_mask = 0;
 	file_attributes_set = 0;
-	denied_mask = 0;
 	{
 		int i;
 		for (i=0;i<32;i++) {
 			io.in.file_attributes = 1<<i;
+			if (io.in.file_attributes & FILE_ATTRIBUTE_ENCRYPTED) {
+				continue;
+			}
 			smb2_deltree(tree, FNAME);
 			status = smb2_create(tree, tmp_ctx, &io);
 			if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER)) {
-				file_attributes |= io.in.file_attributes;
-			} else if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
-				denied_mask |= io.in.file_attributes;
-			} else {
-				CHECK_STATUS(status, NT_STATUS_OK);
+				invalid_parameter_mask |= 1<<i;
+			} else if (NT_STATUS_IS_OK(status)) {
+				uint32_t expected;
+				ok_mask |= 1<<i;
+
+				expected = (io.in.file_attributes | FILE_ATTRIBUTE_ARCHIVE) & 0x00005127;
+				CHECK_EQUAL(io.out.file_attr, expected);
+				file_attributes_set |= io.out.file_attr;
+
 				status = smb2_util_close(tree, io.out.file.handle);
 				CHECK_STATUS(status, NT_STATUS_OK);
-				file_attributes_set |= io.out.file_attr;
+			} else {
+				unexpected_mask |= 1<<i;
+				printf("file attribute 0x%08x returned %s\n", 1<<i, nt_errstr(status));
 			}
 		}
 	}
 
-	CHECK_EQUAL(file_attributes, 0xffff8048);
-	CHECK_EQUAL(denied_mask, 0x4000);
-	CHECK_EQUAL(file_attributes_set, 0x00001127);
+	CHECK_EQUAL(ok_mask,                0x00003fb7);
+	CHECK_EQUAL(invalid_parameter_mask, 0xffff8048);
+	CHECK_EQUAL(unexpected_mask,        0x00000000);
+	CHECK_EQUAL(file_attributes_set,    0x00001127);
+
+	smb2_deltree(tree, FNAME);
+
+	/*
+	 * Standalone servers doesn't support encryption
+	 */
+	io.in.file_attributes = FILE_ATTRIBUTE_ENCRYPTED;
+	status = smb2_create(tree, tmp_ctx, &io);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+		printf("FILE_ATTRIBUTE_ENCRYPTED returned %s\n", nt_errstr(status));
+	} else {
+		CHECK_STATUS(status, NT_STATUS_OK);
+		CHECK_EQUAL(io.out.file_attr, (FILE_ATTRIBUTE_ENCRYPTED | FILE_ATTRIBUTE_ARCHIVE));
+		status = smb2_util_close(tree, io.out.file.handle);
+		CHECK_STATUS(status, NT_STATUS_OK);
+	}
 
 	smb2_deltree(tree, FNAME);
 
