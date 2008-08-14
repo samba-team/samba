@@ -715,22 +715,6 @@ static int pam_winbind_request(struct pwb_context *ctx,
 		return PAM_SUCCESS;
 	}
 
-	/* no need to check for pam_error codes for getpwnam() */
-	switch (req_type) {
-
-		case WINBINDD_LOOKUPNAME:
-			if (strlen(response->data.auth.nt_status_string) > 0) {
-				_pam_log(ctx, LOG_ERR,
-					 "request failed, NT error was %s",
-					 response->data.auth.nt_status_string);
-			} else {
-				_pam_log(ctx, LOG_ERR, "request failed");
-			}
-			return PAM_USER_UNKNOWN;
-		default:
-			break;
-	}
-
 	if (response->data.auth.pam_error != PAM_SUCCESS) {
 		_pam_log(ctx, LOG_ERR,
 			 "request failed: %s, "
@@ -1018,33 +1002,33 @@ static bool winbind_name_to_sid_string(struct pwb_context *ctx,
 				       int sid_list_buffer_size)
 {
 	const char* sid_string;
-	struct winbindd_response sid_response;
 
 	/* lookup name? */
 	if (IS_SID_STRING(name)) {
 		sid_string = name;
 	} else {
-		struct winbindd_request sid_request;
-
-		ZERO_STRUCT(sid_request);
-		ZERO_STRUCT(sid_response);
+		wbcErr wbc_status;
+		struct wbcDomainSid sid;
+		enum wbcSidType type;
+		char *sid_str;
 
 		_pam_log_debug(ctx, LOG_DEBUG,
 			       "no sid given, looking up: %s\n", name);
 
-		/* fortunatly winbindd can handle non-separated names */
-		strncpy(sid_request.data.name.name, name,
-			sizeof(sid_request.data.name.name) - 1);
-
-		if (pam_winbind_request_log(ctx, WINBINDD_LOOKUPNAME,
-					    &sid_request, &sid_response,
-					    user)) {
+		wbc_status = wbcLookupName("", name, &sid, &type);
+		if (!WBC_ERROR_IS_OK(wbc_status)) {
 			_pam_log(ctx, LOG_INFO,
 				 "could not lookup name: %s\n", name);
 			return false;
 		}
 
-		sid_string = sid_response.data.sid.sid;
+		wbc_status = wbcSidToString(&sid, &sid_str);
+		if (!WBC_ERROR_IS_OK(wbc_status)) {
+			return false;
+		}
+
+		wbcFreeMemory(sid_str);
+		sid_string = sid_str;
 	}
 
 	if (!safe_append_string(sid_list_buffer, sid_string,
@@ -2082,10 +2066,12 @@ static char winbind_get_separator(struct pwb_context *ctx)
 static char* winbind_upn_to_username(struct pwb_context *ctx,
 				     const char *upn)
 {
-	struct winbindd_request req;
-	struct winbindd_response resp;
-	int retval;
 	char sep;
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+	struct wbcDomainSid sid;
+	enum wbcSidType type;
+	char *domain;
+	char *name;
 
 	/* This cannot work when the winbind separator = @ */
 
@@ -2096,33 +2082,19 @@ static char* winbind_upn_to_username(struct pwb_context *ctx,
 
 	/* Convert the UPN to a SID */
 
-	ZERO_STRUCT(req);
-	ZERO_STRUCT(resp);
-
-	strncpy(req.data.name.dom_name, "",
-		sizeof(req.data.name.dom_name) - 1);
-	strncpy(req.data.name.name, upn,
-		sizeof(req.data.name.name) - 1);
-	retval = pam_winbind_request_log(ctx, WINBINDD_LOOKUPNAME,
-					 &req, &resp, upn);
-	if (retval != PAM_SUCCESS) {
+	wbc_status = wbcLookupName("", upn, &sid, &type);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
 		return NULL;
 	}
 
 	/* Convert the the SID back to the sAMAccountName */
 
-	ZERO_STRUCT(req);
-	strncpy(req.data.sid, resp.data.sid.sid, sizeof(req.data.sid)-1);
-	ZERO_STRUCT(resp);
-	retval =  pam_winbind_request_log(ctx, WINBINDD_LOOKUPSID,
-					  &req, &resp, upn);
-	if (retval != PAM_SUCCESS) {
+	wbc_status = wbcLookupSid(&sid, &domain, &name, &type);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
 		return NULL;
 	}
 
-	return talloc_asprintf(ctx, "%s\\%s",
-			       resp.data.name.dom_name,
-			       resp.data.name.name);
+	return talloc_asprintf(ctx, "%s\\%s", domain, name);
 }
 
 PAM_EXTERN
