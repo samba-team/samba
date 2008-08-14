@@ -2548,6 +2548,7 @@ showlayout::
 	@echo "  lockdir:     $(LOCKDIR)"
 	@echo "  piddir:      $(PIDDIR)"
 	@echo "  swatdir:     $(SWATDIR)"
+	@echo "  codepagedir: $(CODEPAGEDIR)"
 
 
 uninstall:: uninstallman uninstallservers uninstallbin @UNINSTALL_CIFSMOUNT@ @UNINSTALL_CIFSUPCALL@ uninstallscripts uninstalldat uninstallswat uninstallmodules uninstalllibs @UNINSTALL_PAM_MODULES@
