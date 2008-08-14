@@ -1,3 +1,8 @@
+2008-08-14  Love Hornquist Astrand  <lha@10a140laptop.local>
+
+	* krb5/accept_sec_context.c: If there is a initiator subkey, copy
+	that to acceptor subkey to match windows behavior. From Metze.
+
 2008-08-02  Love Hörnquist Åstrand  <lha@h5l.org>
 
 	* ntlm/init_sec_context.c: Catch error
