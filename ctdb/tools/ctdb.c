@@ -29,6 +29,7 @@
 #include "../include/ctdb.h"
 #include "../include/ctdb_private.h"
 #include "../common/rb_tree.h"
+#include "db_wrap.h"
 
 static void usage(void);
 
@@ -1792,6 +1793,40 @@ struct db_file_header {
 	const char name[MAX_DB_NAME];
 };
 
+struct backup_data {
+	struct ctdb_marshall_buffer *records;
+	uint32_t len;
+	uint32_t total;
+	bool traverse_error;
+};
+
+static int backup_traverse(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *private)
+{
+	struct backup_data *bd = talloc_get_type(private, struct backup_data);
+	struct ctdb_rec_data *rec;
+
+	/* add the record */
+	rec = ctdb_marshall_record(bd->records, 0, key, NULL, data);
+	if (rec == NULL) {
+		bd->traverse_error = true;
+		DEBUG(DEBUG_ERR,("Failed to marshall record\n"));
+		return -1;
+	}
+	bd->records = talloc_realloc_size(NULL, bd->records, rec->length + bd->len);
+	if (bd->records == NULL) {
+		DEBUG(DEBUG_ERR,("Failed to expand marshalling buffer\n"));
+		bd->traverse_error = true;
+		return -1;
+	}
+	bd->records->count++;
+	memcpy(bd->len+(uint8_t *)bd->records, rec, rec->length);
+	bd->len += rec->length;
+	talloc_free(rec);
+
+	bd->total++;
+	return 0;
+}
+
 /*
  * backup a database to a file 
  */
@@ -1800,8 +1835,9 @@ static int control_backupdb(struct ctdb_context *ctdb, int argc, const char **ar
 	int i, ret;
 	struct ctdb_dbid_map *dbmap=NULL;
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
-	TDB_DATA outdata;
 	struct db_file_header dbhdr;
+	struct ctdb_db_context *ctdb_db;
+	struct backup_data *bd;
 	int fh;
 
 	if (argc != 2) {
@@ -1831,33 +1867,48 @@ static int control_backupdb(struct ctdb_context *ctdb, int argc, const char **ar
 		return -1;
 	}
 
-	/* freeze the node */
-	ret = ctdb_ctrl_freeze(ctdb, TIMELIMIT(), options.pnn);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, ("Unable to freeze node\n"));
-		ctdb_ctrl_setrecmode(ctdb, TIMELIMIT(), options.pnn, CTDB_RECOVERY_ACTIVE);
+
+	ctdb_db = ctdb_attach(ctdb, argv[0], dbmap->dbs[i].persistent, 0);
+	if (ctdb_db == NULL) {
+		DEBUG(DEBUG_ERR,("Unable to attach to database '%s'\n", argv[0]));
+		return -1;
+	}
+
+
+	ret = tdb_transaction_start(ctdb_db->ltdb->tdb);
+	if (ret == -1) {
+		DEBUG(DEBUG_ERR,("Failed to start transaction\n"));
 		talloc_free(tmp_ctx);
 		return -1;
 	}
 
-	ret = ctdb_ctrl_pulldb(ctdb, options.pnn, dbmap->dbs[i].dbid,
-			CTDB_LMASTER_ANY, tmp_ctx,
-			TIMELIMIT(), &outdata);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR,(__location__ " Unable to copy db from node %u\n", options.pnn));
-		ctdb_ctrl_setrecmode(ctdb, TIMELIMIT(), options.pnn, CTDB_RECOVERY_ACTIVE);
+
+	bd = talloc_zero(tmp_ctx, struct backup_data);
+	if (bd == NULL) {
+		DEBUG(DEBUG_ERR,("Failed to allocate backup_data\n"));
 		talloc_free(tmp_ctx);
 		return -1;
 	}
 
-	/* thaw the node */
-	ret = ctdb_ctrl_thaw(ctdb, TIMELIMIT(), options.pnn);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, ("Unable to thaw node.\n"));
-		ctdb_ctrl_setrecmode(ctdb, TIMELIMIT(), options.pnn, CTDB_RECOVERY_ACTIVE);
+	bd->records = talloc_zero(bd, struct ctdb_marshall_buffer);
+	if (bd->records == NULL) {
+		DEBUG(DEBUG_ERR,("Failed to allocate ctdb_marshall_buffer\n"));
 		talloc_free(tmp_ctx);
 		return -1;
 	}
+
+	bd->len = offsetof(struct ctdb_marshall_buffer, data);
+	bd->records->db_id = ctdb_db->db_id;
+	/* traverse the database collecting all records */
+	if (tdb_traverse_read(ctdb_db->ltdb->tdb, backup_traverse, bd) == -1 ||
+	    bd->traverse_error) {
+		DEBUG(DEBUG_ERR,("Traverse error\n"));
+		talloc_free(tmp_ctx);
+		return -1;		
+	}
+
+	tdb_transaction_cancel(ctdb_db->ltdb->tdb);
+
 
 	fh = open(argv[1], O_RDWR|O_CREAT, 0600);
 	if (fh == -1) {
@@ -1869,7 +1920,7 @@ static int control_backupdb(struct ctdb_context *ctdb, int argc, const char **ar
 	dbhdr.version = DB_VERSION;
 	dbhdr.timestamp = time(NULL);
 	dbhdr.persistent = dbmap->dbs[i].persistent;
-	dbhdr.size = outdata.dsize;
+	dbhdr.size = bd->len;
 	if (strlen(argv[0]) >= MAX_DB_NAME) {
 		DEBUG(DEBUG_ERR,("Too long dbname\n"));
 		talloc_free(tmp_ctx);
@@ -1877,7 +1928,7 @@ static int control_backupdb(struct ctdb_context *ctdb, int argc, const char **ar
 	}
 	strncpy(discard_const(dbhdr.name), argv[0], MAX_DB_NAME);
 	write(fh, &dbhdr, sizeof(dbhdr));
-	write(fh, outdata.dptr, outdata.dsize);
+	write(fh, bd->records, bd->len);
 
 	close(fh);
 	talloc_free(tmp_ctx);
