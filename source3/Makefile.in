@@ -2182,10 +2182,10 @@ bin/winbind_krb5_locator.@SHLIBEXT@: $(BINARY_PREREQS) $(WINBIND_KRB5_LOCATOR_OB
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(WINBIND_KRB5_LOCATOR_OBJ) $(WINBIND_LIBS) \
 		@SONAMEFLAG@`basename $@`
 
-bin/pam_winbind.@SHLIBEXT@: $(BINARY_PREREQS) $(PAM_WINBIND_OBJ)
+bin/pam_winbind.@SHLIBEXT@: $(BINARY_PREREQS) $(PAM_WINBIND_OBJ) @LIBTALLOC_SHARED@
 	@echo "Linking shared library $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(PAM_WINBIND_OBJ) -lpam @INIPARSERLIBS@ \
-		$(PAM_WINBIND_EXTRA_LIBS) @SONAMEFLAG@`basename $@`
+		$(PAM_WINBIND_EXTRA_LIBS) $(LIBTALLOC_LIBS) @SONAMEFLAG@`basename $@`
 
 bin/builtin.@SHLIBEXT@: $(BINARY_PREREQS) $(AUTH_BUILTIN_OBJ)
 	@echo "Building plugin $@"

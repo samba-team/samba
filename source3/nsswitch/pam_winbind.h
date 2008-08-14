@@ -7,6 +7,7 @@
 #include "../lib/replace/replace.h"
 #include "system/syslog.h"
 #include "system/time.h"
+#include <talloc.h>
 
 #define MODULE_NAME "pam_winbind"
 #define PAM_SM_AUTH
@@ -209,3 +210,8 @@ struct pwb_context {
 	dictionary *dict;
 	uint32_t ctrl;
 };
+
+#define TALLOC_FREE(ctx) do { if ((ctx) != NULL) {talloc_free(ctx); ctx=NULL;} } while(0)
+#define TALLOC_ZERO_P(ctx, type) (type *)_talloc_zero(ctx, sizeof(type), #type)
+#define TALLOC_P(ctx, type) (type *)talloc_named_const(ctx, sizeof(type), #type)
+
