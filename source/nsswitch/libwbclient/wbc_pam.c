@@ -503,6 +503,101 @@ wbcErr wbcCheckTrustCredentials(const char *domain,
 	return wbc_status;
 }
 
+/** @brief Trigger an extended logoff notification to Winbind for a specific user
+ *
+ * @param params      A wbcLogoffUserParams structure
+ * @param error       User output details on error
+ *
+ * @return #wbcErr
+ *
+ **/
+
+wbcErr wbcLogoffUserEx(const struct wbcLogoffUserParams *params,
+		       struct wbcAuthErrorInfo **error)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+	int i;
+
+	/* validate input */
+
+	if (!params || !params->username) {
+		wbc_status = WBC_ERR_INVALID_PARAM;
+		BAIL_ON_WBC_ERROR(wbc_status);
+	}
+
+	if ((params->num_blobs > 0) && (params->blobs == NULL)) {
+		wbc_status = WBC_ERR_INVALID_PARAM;
+		BAIL_ON_WBC_ERROR(wbc_status);
+	}
+	if ((params->num_blobs == 0) && (params->blobs != NULL)) {
+		wbc_status = WBC_ERR_INVALID_PARAM;
+		BAIL_ON_WBC_ERROR(wbc_status);
+	}
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	strncpy(request.data.logoff.user, params->username,
+		sizeof(request.data.logoff.user)-1);
+
+	for (i=0; i<params->num_blobs; i++) {
+
+		if (strcasecmp(params->blobs[i].name, "ccfilename") == 0) {
+			if (params->blobs[i].blob.data) {
+				strncpy(request.data.logoff.krb5ccname,
+					(const char *)params->blobs[i].blob.data,
+					sizeof(request.data.logoff.krb5ccname) - 1);
+			}
+			continue;
+		}
+
+		if (strcasecmp(params->blobs[i].name, "user_uid") == 0) {
+			if (params->blobs[i].blob.data) {
+				memcpy(&request.data.logoff.uid,
+					params->blobs[i].blob.data,
+					MIN(params->blobs[i].blob.length,
+					    sizeof(request.data.logoff.uid)));
+			}
+			continue;
+		}
+
+		if (strcasecmp(params->blobs[i].name, "flags") == 0) {
+			if (params->blobs[i].blob.data) {
+				memcpy(&request.flags,
+					params->blobs[i].blob.data,
+					MIN(params->blobs[i].blob.length,
+					    sizeof(request.flags)));
+			}
+			continue;
+		}
+	}
+
+	/* Send request */
+
+	wbc_status = wbcRequestResponse(WINBINDD_PAM_LOGOFF,
+					&request,
+					&response);
+
+	/* Take the response above and return it to the caller */
+	if (response.data.auth.nt_status != 0) {
+		if (error) {
+			wbc_status = wbc_create_error_info(NULL,
+							   &response,
+							   error);
+			BAIL_ON_WBC_ERROR(wbc_status);
+		}
+
+		wbc_status = WBC_ERR_AUTH_ERROR;
+		BAIL_ON_WBC_ERROR(wbc_status);
+	}
+	BAIL_ON_WBC_ERROR(wbc_status);
+
+ done:
+	return wbc_status;
+}
+
 /** @brief Trigger a logoff notification to Winbind for a specific user
  *
  * @param username    Name of user to remove from Winbind's list of
