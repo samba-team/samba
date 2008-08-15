@@ -339,7 +339,7 @@ LIB_OBJ = $(LIBSAMBAUTIL_OBJ) \
 	  lib/module.o lib/events.o lib/ldap_escape.o @CHARSET_STATIC@ \
 	  lib/secdesc.o lib/util_seaccess.o lib/secace.o lib/secacl.o \
 	  libads/krb5_errs.o lib/system_smbd.o lib/audit.o $(LIBNDR_OBJ) \
-	  lib/file_id.o
+	  lib/file_id.o lib/idmap_cache.o
 
 LIB_DUMMY_OBJ = lib/dummysmbd.o lib/dummyroot.o
 LIB_NONSMBD_OBJ = $(LIB_OBJ) $(LIB_DUMMY_OBJ)
@@ -980,7 +980,7 @@ PAM_SMBPASS_OBJ = $(PAM_SMBPASS_OBJ_0) $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) $(PASSDB_
 		$(SMBLDAP_OBJ) $(LIBSAMBA_OBJ) \
 		$(LDB_OBJ)
 
-IDMAP_OBJ     = winbindd/idmap.o winbindd/idmap_cache.o winbindd/idmap_util.o @IDMAP_STATIC@
+IDMAP_OBJ     = winbindd/idmap.o winbindd/idmap_util.o @IDMAP_STATIC@
 
 NSS_INFO_OBJ = winbindd/nss_info.o @NSS_INFO_STATIC@
 
