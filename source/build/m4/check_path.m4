@@ -182,7 +182,7 @@ AC_ARG_WITH(selftest-prefix,
 
 debug=no
 AC_ARG_ENABLE(debug,
-[  --enable-debug          Turn on compiler debugging information (default=no)],
+[AS_HELP_STRING([--enable-debug],[Turn on compiler debugging information (default=no)])],
     [if test x$enable_debug = xyes; then
         debug=yes
     fi])
