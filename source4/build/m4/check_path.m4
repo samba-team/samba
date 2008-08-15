@@ -105,7 +105,7 @@ AC_ARG_WITH(ntp-signd-socket-dir,
 #################################################
 # set lock directory location
 AC_ARG_WITH(lockdir,
-[  --with-lockdir=DIR      Where to put lock files ($ac_default_prefix/var/locks)],
+[AS_HELP_STRING([--with-lockdir=DIR],[Where to put lock files ($ac_default_prefix/var/locks)])],
 [ case "$withval" in
   yes|no)
   #
