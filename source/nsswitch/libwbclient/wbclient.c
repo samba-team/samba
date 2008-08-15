@@ -116,6 +116,8 @@ const char *wbcErrorString(wbcErr error)
 		return "WBC_ERR_UNKNOWN_GROUP";
 	case WBC_ERR_AUTH_ERROR:
 		return "WBC_ERR_AUTH_ERROR";
+	case WBC_ERR_PWD_CHANGE_FAILED:
+		return "WBC_ERR_PWD_CHANGE_FAILED";
 	}
 
 	return "unknown wbcErr value";
