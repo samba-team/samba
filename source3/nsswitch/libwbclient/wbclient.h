@@ -404,6 +404,16 @@ enum wbcPasswordChangeRejectReason {
 	WBC_PWD_CHANGE_REJECT_COMPLEXITY=5
 };
 
+/**
+ * @brief Logoff User Parameters
+ **/
+
+struct wbcLogoffUserParams {
+	const char *username;
+	size_t num_blobs;
+	struct wbcNamedBlob *blobs;
+};
+
 /*
  * DomainControllerInfo struct
  */
@@ -606,6 +616,9 @@ wbcErr wbcAuthenticateUserEx(const struct wbcAuthUserParams *params,
 wbcErr wbcLogoffUser(const char *username,
 		     uid_t uid,
 		     const char *ccfilename);
+
+wbcErr wbcLogoffUserEx(const struct wbcLogoffUserParams *params,
+		       struct wbcAuthErrorInfo **error);
 
 wbcErr wbcChangeUserPassword(const char *username,
 			     const char *old_password,
