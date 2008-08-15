@@ -1599,8 +1599,8 @@ WERROR dsdb_linked_attribute_lDAPDisplayName_list(const struct dsdb_schema *sche
 	return WERR_OK;
 }
 
-static char **merge_attr_list(TALLOC_CTX *mem_ctx, 
-			      char **attrs, const char **new_attrs) 
+char **merge_attr_list(TALLOC_CTX *mem_ctx, 
+		       char **attrs, const char **new_attrs) 
 {
 	char **ret_attrs;
 	int i;
@@ -1618,60 +1618,73 @@ static char **merge_attr_list(TALLOC_CTX *mem_ctx,
 		new_len = orig_len + str_list_length(new_attrs);
 
 		ret_attrs[new_len] = NULL;
-
 	}
 
 	return ret_attrs;
 }
 
-char **dsdb_full_attribute_list_internal(TALLOC_CTX *mem_ctx, 
-					 const struct dsdb_schema *schema, 
-					 const char **class_list,
-					 enum dsdb_attr_list_query query)
+/*
+  Return a merged list of the attributes of exactly one class (not
+  considering subclasses, auxillary classes etc)
+*/
+
+char **dsdb_attribute_list(TALLOC_CTX *mem_ctx, const struct dsdb_class *class, enum dsdb_attr_list_query query)
+{
+	char **attr_list = NULL;
+	switch (query) {
+	case DSDB_SCHEMA_ALL_MAY:
+		attr_list = merge_attr_list(mem_ctx, attr_list, class->mayContain);
+		attr_list = merge_attr_list(mem_ctx, attr_list, class->systemMayContain);
+		break;
+		
+	case DSDB_SCHEMA_ALL_MUST:
+		attr_list = merge_attr_list(mem_ctx, attr_list, class->mustContain);
+		attr_list = merge_attr_list(mem_ctx, attr_list, class->systemMustContain);
+		break;
+		
+	case DSDB_SCHEMA_SYS_MAY:
+		attr_list = merge_attr_list(mem_ctx, attr_list, class->systemMayContain);
+		break;
+		
+	case DSDB_SCHEMA_SYS_MUST:
+		attr_list = merge_attr_list(mem_ctx, attr_list, class->systemMustContain);
+		break;
+		
+	case DSDB_SCHEMA_MAY:
+		attr_list = merge_attr_list(mem_ctx, attr_list, class->mayContain);
+		break;
+		
+	case DSDB_SCHEMA_MUST:
+		attr_list = merge_attr_list(mem_ctx, attr_list, class->mustContain);
+		break;
+		
+	case DSDB_SCHEMA_ALL:
+		attr_list = merge_attr_list(mem_ctx, attr_list, class->mayContain);
+		attr_list = merge_attr_list(mem_ctx, attr_list, class->systemMayContain);
+		attr_list = merge_attr_list(mem_ctx, attr_list, class->mustContain);
+		attr_list = merge_attr_list(mem_ctx, attr_list, class->systemMustContain);
+		break;
+	}
+	return attr_list;
+}
+
+static char **dsdb_full_attribute_list_internal(TALLOC_CTX *mem_ctx, 
+						const struct dsdb_schema *schema, 
+						const char **class_list,
+						enum dsdb_attr_list_query query)
 {
 	int i;
 	const struct dsdb_class *class;
 	
 	char **attr_list = NULL;
+	char **this_class_list;
 	char **recursive_list;
 
 	for (i=0; class_list && class_list[i]; i++) {
 		class = dsdb_class_by_lDAPDisplayName(schema, class_list[i]);
 		
-		switch (query) {
-		case DSDB_SCHEMA_ALL_MAY:
-			attr_list = merge_attr_list(mem_ctx, attr_list, class->mayContain);
-			attr_list = merge_attr_list(mem_ctx, attr_list, class->systemMayContain);
-			break;
-
-		case DSDB_SCHEMA_ALL_MUST:
-			attr_list = merge_attr_list(mem_ctx, attr_list, class->mustContain);
-			attr_list = merge_attr_list(mem_ctx, attr_list, class->systemMustContain);
-			break;
-
-		case DSDB_SCHEMA_SYS_MAY:
-			attr_list = merge_attr_list(mem_ctx, attr_list, class->systemMayContain);
-			break;
-
-		case DSDB_SCHEMA_SYS_MUST:
-			attr_list = merge_attr_list(mem_ctx, attr_list, class->systemMustContain);
-			break;
-
-		case DSDB_SCHEMA_MAY:
-			attr_list = merge_attr_list(mem_ctx, attr_list, class->mayContain);
-			break;
-
-		case DSDB_SCHEMA_MUST:
-			attr_list = merge_attr_list(mem_ctx, attr_list, class->mustContain);
-			break;
-
-		case DSDB_SCHEMA_ALL:
-			attr_list = merge_attr_list(mem_ctx, attr_list, class->mayContain);
-			attr_list = merge_attr_list(mem_ctx, attr_list, class->systemMayContain);
-			attr_list = merge_attr_list(mem_ctx, attr_list, class->mustContain);
-			attr_list = merge_attr_list(mem_ctx, attr_list, class->systemMustContain);
-			break;
-		}
+		this_class_list = dsdb_attribute_list(mem_ctx, class, query);
+		attr_list = merge_attr_list(mem_ctx, attr_list, (const char **)this_class_list);
 
 		recursive_list = dsdb_full_attribute_list_internal(mem_ctx, schema, 
 								   class->systemAuxiliaryClass, 
@@ -1682,7 +1695,7 @@ char **dsdb_full_attribute_list_internal(TALLOC_CTX *mem_ctx,
 		recursive_list = dsdb_full_attribute_list_internal(mem_ctx, schema, 
 								   class->auxiliaryClass, 
 								   query);
-
+		
 		attr_list = merge_attr_list(mem_ctx, attr_list, (const char **)recursive_list);
 		
 	}

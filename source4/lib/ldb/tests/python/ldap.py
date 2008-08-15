@@ -970,6 +970,34 @@ class BaseDnTests(unittest.TestCase):
                 attrs=["netlogon", "highestCommittedUSN"])
         self.assertEquals(len(res), 0)
 
+class SchemaTests(unittest.TestCase):
+    def find_schemadn(self, ldb):
+        res = ldb.search(base="", expression="", scope=SCOPE_BASE, attrs=["schemaNamingContext"])
+        self.assertEquals(len(res), 1)
+        return res[0]["schemaNamingContext"][0]
+
+    def setUp(self):
+        self.ldb = ldb
+        self.schema_dn = self.find_schemadn(ldb)
+
+    def test_generated_schema(self):
+        """Testing we can read the generated schema via LDAP"""
+        res = self.ldb.search("cn=aggregate,"+self.schema_dn, scope=SCOPE_BASE, 
+                attrs=["objectClasses", "attributeTypes", "dITContentRules"])
+        self.assertEquals(len(res), 1)
+        self.assertTrue("dITContentRules" in res[0])
+        self.assertTrue("objectClasses" in res[0])
+        self.assertTrue("attributeTypes" in res[0])
+
+    def test_generated_schema_is_operational(self):
+        """Testing we don't get the generated schema via LDAP by default"""
+        res = self.ldb.search("cn=aggregate,"+self.schema_dn, scope=SCOPE_BASE, 
+                attrs=["*"])
+        self.assertEquals(len(res), 1)
+        self.assertFalse("dITContentRules" in res[0])
+        self.assertFalse("objectClasses" in res[0])
+        self.assertFalse("attributeTypes" in res[0])
+ 
 if not "://" in host:
     host = "ldap://%s" % host
 
@@ -982,5 +1010,7 @@ rc = 0
 if not runner.run(unittest.makeSuite(BaseDnTests)).wasSuccessful():
     rc = 1
 if not runner.run(unittest.makeSuite(BasicTests)).wasSuccessful():
+    rc = 1
+if not runner.run(unittest.makeSuite(SchemaTests)).wasSuccessful():
     rc = 1
 sys.exit(rc)
