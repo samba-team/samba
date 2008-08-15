@@ -844,6 +844,8 @@ static bool test_nttrans_create(struct smbcli_state *cli, struct torture_context
 	int fnum = -1;
 	bool ret = true;
 	int i;
+	uint32_t ok_mask, not_supported_mask, invalid_parameter_mask;
+	uint32_t not_a_directory_mask, unexpected_mask;
 	struct {
 		uint32_t open_disp;
 		bool with_file;
@@ -982,6 +984,10 @@ static bool test_nttrans_create(struct smbcli_state *cli, struct torture_context
 		}
 		io.ntcreatex.in.create_options = create_option;
 		status = smb_raw_open(cli->tree, tctx, &io);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("ntcreatex create option 0x%08x gave %s - should give NT_STATUS_OK\n",
+			       create_option, nt_errstr(status));
+		}
 		CHECK_STATUS(status, NT_STATUS_OK);
 		fnum = io.ntcreatex.out.file.fnum;
 
@@ -998,6 +1004,44 @@ static bool test_nttrans_create(struct smbcli_state *cli, struct torture_context
 		CHECK_VAL(io.ntcreatex.out.file_type, FILE_TYPE_DISK);
 		smbcli_close(cli->tree, fnum);
 	}
+
+	io.ntcreatex.in.file_attr = 0;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN_IF;
+	io.ntcreatex.in.access_mask     = SEC_FLAG_MAXIMUM_ALLOWED;
+
+	/* Check for options that should return NOT_SUPPORTED, OK or INVALID_PARAMETER */
+	ok_mask = 0;
+	not_supported_mask = 0;
+	invalid_parameter_mask = 0;
+	not_a_directory_mask = 0;
+	unexpected_mask = 0;
+	for (i=0; i < 32; i++) {
+		uint32_t create_option = 1<<i;
+		if (create_option & NTCREATEX_OPTIONS_DELETE_ON_CLOSE) {
+			continue;
+		}
+		io.ntcreatex.in.create_options = create_option;
+		status = smb_raw_open(cli->tree, tctx, &io);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED)) {
+			not_supported_mask |= create_option;
+		} else if (NT_STATUS_EQUAL(status, NT_STATUS_OK)) {
+			ok_mask |= create_option;
+			smbcli_close(cli->tree, io.ntcreatex.out.file.fnum);
+		} else if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER)) {
+			invalid_parameter_mask |= create_option;
+		} else if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_A_DIRECTORY)) {
+			not_a_directory_mask |= 1<<i;
+		} else {
+			unexpected_mask |= 1<<i;
+			printf("create option 0x%08x returned %s\n", create_option, nt_errstr(status));
+		}
+	}
+
+	CHECK_VAL(ok_mask,                0x00efcfce);
+	CHECK_VAL(not_a_directory_mask,   0x00000001);
+	CHECK_VAL(not_supported_mask,     0x00002000);
+	CHECK_VAL(invalid_parameter_mask, 0xff100030);
+	CHECK_VAL(unexpected_mask,        0x00000000);
 
 	smbcli_unlink(cli->tree, fname);
 

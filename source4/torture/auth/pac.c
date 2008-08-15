@@ -279,7 +279,7 @@ static bool torture_pac_saved_check(struct torture_context *tctx)
 	struct auth_serversupplied_info *server_info_out;
 
 	krb5_keyblock server_keyblock;
-	krb5_keyblock krbtgt_keyblock;
+	krb5_keyblock krbtgt_keyblock, *krbtgt_keyblock_p;
 	struct samr_Password *krbtgt_bytes, *krbsrv_bytes;
 	
 	krb5_error_code ret;
@@ -309,9 +309,13 @@ static bool torture_pac_saved_check(struct torture_context *tctx)
 	/* The krbtgt key in use when the above PAC was generated.
 	 * This is an arcfour-hmac-md5 key, extracted with our 'net
 	 * samdump' tool. */
-	krbtgt_bytes = smbpasswd_gethexpwd(mem_ctx, pac_kdc_key);
-	if (!krbtgt_bytes) {
-		torture_fail(tctx, "(saved test) Could not interpret krbtgt key");
+	if (*pac_kdc_key == 0) {
+		krbtgt_bytes = NULL;
+	} else {
+		krbtgt_bytes = smbpasswd_gethexpwd(mem_ctx, pac_kdc_key);
+		if (!krbtgt_bytes) {
+			torture_fail(tctx, "(saved test) Could not interpret krbtgt key");
+		}
 	}
 
 	krbsrv_bytes = smbpasswd_gethexpwd(mem_ctx, pac_member_key);
@@ -329,18 +333,23 @@ static bool torture_pac_saved_check(struct torture_context *tctx)
 				       smb_get_krb5_error_message(smb_krb5_context->krb5_context, 
 								  ret, mem_ctx)));
 
-	ret = krb5_keyblock_init(smb_krb5_context->krb5_context,
-				 ENCTYPE_ARCFOUR_HMAC,
-				 krbtgt_bytes->hash, sizeof(krbtgt_bytes->hash),
-				 &krbtgt_keyblock);
-	if (ret) {
-		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
-					    &server_keyblock);
-		torture_fail(tctx, 
-			     talloc_asprintf(tctx, 
-					     "(saved test) Server Keyblock encoding failed: %s", 
-					     smb_get_krb5_error_message(smb_krb5_context->krb5_context, 
-									ret, mem_ctx)));
+	if (krbtgt_bytes) {
+		ret = krb5_keyblock_init(smb_krb5_context->krb5_context,
+					 ENCTYPE_ARCFOUR_HMAC,
+					 krbtgt_bytes->hash, sizeof(krbtgt_bytes->hash),
+					 &krbtgt_keyblock);
+		if (ret) {
+			krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
+						    &server_keyblock);
+			torture_fail(tctx, 
+				     talloc_asprintf(tctx, 
+						     "(saved test) Server Keyblock encoding failed: %s", 
+						     smb_get_krb5_error_message(smb_krb5_context->krb5_context, 
+										ret, mem_ctx)));
+		}
+		krbtgt_keyblock_p = &krbtgt_keyblock;
+	} else {
+		krbtgt_keyblock_p = NULL;
 	}
 
 	pac_file = torture_setting_string(tctx, "pac_file", NULL);
@@ -363,7 +372,7 @@ static bool torture_pac_saved_check(struct torture_context *tctx)
 			      &client_principal);
 	if (ret) {
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
-					    &krbtgt_keyblock);
+					    krbtgt_keyblock_p);
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
 					    &server_keyblock);
 		torture_fail(tctx,  
@@ -379,12 +388,12 @@ static bool torture_pac_saved_check(struct torture_context *tctx)
 					&pac_data,
 					tmp_blob,
 					smb_krb5_context->krb5_context,
-					&krbtgt_keyblock,
+					krbtgt_keyblock_p,
 					&server_keyblock, 
 					client_principal, authtime, NULL);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
-					    &krbtgt_keyblock);
+					    krbtgt_keyblock_p);
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
 					    &server_keyblock);
 		krb5_free_principal(smb_krb5_context->krb5_context, client_principal);
@@ -400,13 +409,13 @@ static bool torture_pac_saved_check(struct torture_context *tctx)
 					    &logon_info,
 					    tmp_blob,
 					    smb_krb5_context->krb5_context,
-					    &krbtgt_keyblock,
+					    krbtgt_keyblock_p,
 					    &server_keyblock,
 					    client_principal, authtime, NULL);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
-					    &krbtgt_keyblock);
+					    krbtgt_keyblock_p);
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
 					    &server_keyblock);
 		krb5_free_principal(smb_krb5_context->krb5_context, client_principal);
@@ -424,7 +433,7 @@ static bool torture_pac_saved_check(struct torture_context *tctx)
 							 &server_info_out); 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
-					    &krbtgt_keyblock);
+					    krbtgt_keyblock_p);
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
 					    &server_keyblock);
 		krb5_free_principal(smb_krb5_context->krb5_context, client_principal);
@@ -440,7 +449,7 @@ static bool torture_pac_saved_check(struct torture_context *tctx)
 						"S-1-5-21-3048156945-3961193616-3706469200-1005"), 
 			   server_info_out->account_sid)) {
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
-					    &krbtgt_keyblock);
+					    krbtgt_keyblock_p);
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
 					    &server_keyblock);
 		krb5_free_principal(smb_krb5_context->krb5_context, client_principal);
@@ -452,17 +461,25 @@ static bool torture_pac_saved_check(struct torture_context *tctx)
 					     dom_sid_string(mem_ctx, server_info_out->account_sid)));
 	}
 
+	if (krbtgt_bytes == NULL) {
+		torture_comment(tctx, "skipping PAC encoding tests as non kdc key\n");
+		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
+					    &server_keyblock);
+		krb5_free_principal(smb_krb5_context->krb5_context, client_principal);
+		return true;
+	}
+
 	ret = kerberos_encode_pac(mem_ctx, 
 				  lp_iconv_convenience(tctx->lp_ctx),
 				  pac_data,
 				  smb_krb5_context->krb5_context,
-				  &krbtgt_keyblock,
+				  krbtgt_keyblock_p,
 				  &server_keyblock,
 				  &validate_blob);
 
 	if (ret != 0) {
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
-					    &krbtgt_keyblock);
+					    krbtgt_keyblock_p);
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
 					    &server_keyblock);
 		krb5_free_principal(smb_krb5_context->krb5_context, client_principal);
@@ -478,7 +495,7 @@ static bool torture_pac_saved_check(struct torture_context *tctx)
 	 */
 	if (tmp_blob.length != validate_blob.length) {
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
-					    &krbtgt_keyblock);
+					    krbtgt_keyblock_p);
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
 					    &server_keyblock);
 		krb5_free_principal(smb_krb5_context->krb5_context, client_principal);
@@ -491,7 +508,7 @@ static bool torture_pac_saved_check(struct torture_context *tctx)
 
 	if (memcmp(tmp_blob.data, validate_blob.data, tmp_blob.length) != 0) {
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
-					    &krbtgt_keyblock);
+					    krbtgt_keyblock_p);
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
 					    &server_keyblock);
 		krb5_free_principal(smb_krb5_context->krb5_context, client_principal);
@@ -508,14 +525,14 @@ static bool torture_pac_saved_check(struct torture_context *tctx)
 				  lp_iconv_convenience(tctx->lp_ctx),
 				  server_info_out,
 				  smb_krb5_context->krb5_context,
-				  &krbtgt_keyblock,
+				  krbtgt_keyblock_p,
 				  &server_keyblock,
 				  client_principal, authtime,
 				  &validate_blob);
 
 	if (ret != 0) {
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
-					    &krbtgt_keyblock);
+					    krbtgt_keyblock_p);
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
 					    &server_keyblock);
 		krb5_free_principal(smb_krb5_context->krb5_context, client_principal);
@@ -541,7 +558,7 @@ static bool torture_pac_saved_check(struct torture_context *tctx)
 		NDR_PRINT_DEBUG(PAC_DATA, &pac_data2);
 
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
-					    &krbtgt_keyblock);
+					    krbtgt_keyblock_p);
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
 					    &server_keyblock);
 		krb5_free_principal(smb_krb5_context->krb5_context, client_principal);
@@ -563,7 +580,7 @@ static bool torture_pac_saved_check(struct torture_context *tctx)
 		NDR_PRINT_DEBUG(PAC_DATA, &pac_data2);
 
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
-					    &krbtgt_keyblock);
+					    krbtgt_keyblock_p);
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
 					    &server_keyblock);
 		krb5_free_principal(smb_krb5_context->krb5_context, client_principal);
@@ -583,14 +600,14 @@ static bool torture_pac_saved_check(struct torture_context *tctx)
 					&pac_data,
 					tmp_blob,
 					smb_krb5_context->krb5_context,
-					&krbtgt_keyblock,
+					krbtgt_keyblock_p,
 					&server_keyblock,
 					client_principal, 
 					authtime + 1, NULL);
 	if (NT_STATUS_IS_OK(nt_status)) {
 
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
-					    &krbtgt_keyblock);
+					    krbtgt_keyblock_p);
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
 					    &server_keyblock);
 		krb5_free_principal(smb_krb5_context->krb5_context, client_principal);
@@ -608,7 +625,7 @@ static bool torture_pac_saved_check(struct torture_context *tctx)
 	if (ret) {
 
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
-					    &krbtgt_keyblock);
+					    krbtgt_keyblock_p);
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
 					    &server_keyblock);
 		torture_fail(tctx, talloc_asprintf(tctx, 
@@ -621,13 +638,13 @@ static bool torture_pac_saved_check(struct torture_context *tctx)
 					&pac_data,
 					tmp_blob,
 					smb_krb5_context->krb5_context,
-					&krbtgt_keyblock,
+					krbtgt_keyblock_p,
 					&server_keyblock,
 					client_principal, 
 					authtime, NULL);
 	if (NT_STATUS_IS_OK(nt_status)) {
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
-					    &krbtgt_keyblock);
+					    krbtgt_keyblock_p);
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
 					    &server_keyblock);
 		torture_fail(tctx, "(saved test) PAC decoding DID NOT fail on modified principal");
@@ -641,20 +658,20 @@ static bool torture_pac_saved_check(struct torture_context *tctx)
 					&pac_data,
 					tmp_blob,
 					smb_krb5_context->krb5_context,
-					&krbtgt_keyblock,
+					krbtgt_keyblock_p,
 					&server_keyblock,
 					client_principal, 
 					authtime, NULL);
 	if (NT_STATUS_IS_OK(nt_status)) {
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
-					    &krbtgt_keyblock);
+					    krbtgt_keyblock_p);
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
 					    &server_keyblock);
 		torture_fail(tctx, "(saved test) PAC decoding DID NOT fail on broken checksum");
 	}
 
 	krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
-				    &krbtgt_keyblock);
+				    krbtgt_keyblock_p);
 	krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
 				    &server_keyblock);
 	return true;
@@ -666,9 +683,7 @@ struct torture_suite *torture_pac(TALLOC_CTX *mem_ctx)
 
 	torture_suite_add_simple_test(suite, "self check", 
 				      torture_pac_self_check);
-
 	torture_suite_add_simple_test(suite, "saved check",
 				      torture_pac_saved_check);
-
 	return suite;
 }
