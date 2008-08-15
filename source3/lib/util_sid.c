@@ -678,9 +678,7 @@ NTSTATUS sid_array_from_info3(TALLOC_CTX *mem_ctx,
 	int i;
 
 	if (include_user_group_rid) {
-
-		if (!sid_compose(&sid, info3->base.domain_sid, info3->base.rid))
-		{
+		if (!sid_compose(&sid, info3->base.domain_sid, info3->base.rid)) {
 			DEBUG(3, ("could not compose user SID from rid 0x%x\n",
 				  info3->base.rid));
 			return NT_STATUS_INVALID_PARAMETER;
@@ -691,25 +689,27 @@ NTSTATUS sid_array_from_info3(TALLOC_CTX *mem_ctx,
 				  info3->base.rid));
 			return status;
 		}
+	}
 
-		if (!sid_compose(&sid, info3->base.domain_sid, info3->base.primary_gid))
-		{
-			DEBUG(3, ("could not compose group SID from rid 0x%x\n",
-				  info3->base.primary_gid));
-			return NT_STATUS_INVALID_PARAMETER;
-		}
-		status = add_sid_to_array(mem_ctx, &sid, &sid_array, &num_sids);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(3, ("could not append group SID from rid 0x%x\n",
-				  info3->base.rid));
-			return status;
-		}
+	if (!sid_compose(&sid, info3->base.domain_sid, info3->base.primary_gid)) {
+		DEBUG(3, ("could not compose group SID from rid 0x%x\n",
+			  info3->base.primary_gid));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	status = add_sid_to_array(mem_ctx, &sid, &sid_array, &num_sids);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(3, ("could not append group SID from rid 0x%x\n",
+			  info3->base.rid));
+		return status;
 	}
 
 	for (i = 0; i < info3->base.groups.count; i++) {
+		/* Don't add the primary group sid twice. */
+		if (info3->base.primary_gid == info3->base.groups.rids[i].rid) {
+			continue;
+		}
 		if (!sid_compose(&sid, info3->base.domain_sid,
-				 info3->base.groups.rids[i].rid))
-		{
+				 info3->base.groups.rids[i].rid)) {
 			DEBUG(3, ("could not compose SID from additional group "
 				  "rid 0x%x\n", info3->base.groups.rids[i].rid));
 			return NT_STATUS_INVALID_PARAMETER;
