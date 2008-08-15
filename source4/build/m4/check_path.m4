@@ -89,7 +89,7 @@ AC_ARG_WITH(winbindd-privileged-socket-dir,
 #################################################
 # set where the NTP signing deamon socket should be put
 AC_ARG_WITH(ntp-signd-socket-dir,
-[  --with-ntp-signd-socket-dir=DIR   Where to put the NTP signing deamon socket ($ac_default_prefix/run/ntp_signd)],
+[AS_HELP_STRING([--with-ntp-signd-socket-dir=DIR],[Where to put the NTP signing deamon socket ($ac_default_prefix/run/ntp_signd)])],
 [ case "$withval" in
   yes|no)
   #
