@@ -168,6 +168,20 @@ enum dsdb_attr_list_query {
 	DSDB_SCHEMA_ALL
 };
 
+enum dsdb_schema_convert_target {
+	TARGET_OPENLDAP,
+	TARGET_FEDORA_DS,
+	TARGET_AD_SCHEMA_SUBENTRY
+};
+
+struct dsdb_syntax_map {
+	const char *Standard_OID;
+	const char *AD_OID;
+	const char *equality;
+	const char *substring;
+	const char *comment;
+};
+
 #include "dsdb/schema/proto.h"
 
 #endif /* _DSDB_SCHEMA_H */

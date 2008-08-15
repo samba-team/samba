@@ -65,7 +65,8 @@ static bool test_JobEnum(struct torture_context *tctx, struct dcerpc_pipe *p)
 	NTSTATUS status;
 	struct atsvc_JobEnum r;
 	struct atsvc_enum_ctr ctr;
-	uint32_t resume_handle = 0, i;
+	uint32_t resume_handle = 0, i, total_entries = 0;
+	
 	bool ret = true;
 
 	r.in.servername = dcerpc_server_name(p);
@@ -74,6 +75,7 @@ static bool test_JobEnum(struct torture_context *tctx, struct dcerpc_pipe *p)
 	r.in.ctr = r.out.ctr = &ctr;
 	r.in.preferred_max_len = 0xffffffff;
 	r.in.resume_handle = r.out.resume_handle = &resume_handle;
+	r.out.total_entries = &total_entries;
 
 	status = dcerpc_atsvc_JobEnum(p, tctx, &r);
 
