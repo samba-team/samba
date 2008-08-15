@@ -14,9 +14,7 @@ var options = GetOptions(ARGV,
 			 "POPT_COMMON_CREDENTIALS",
 			 "verbose",
 			 "classes",
-			 "attributes",
-			 "subschema",
-			 "subschema-auto");
+			 "attributes");
 if (options == undefined) {
    println("Failed to parse options");
    return -1;
@@ -25,8 +23,6 @@ verbose = options["verbose"];
 dump_all = "yes";
 dump_classes = options["classes"];
 dump_attributes = options["attributes"];
-dump_subschema = options["subschema"];
-dump_subschema_auto = options["subschema-auto"];
 
 if (dump_classes != undefined) {
 	dump_all = undefined;
@@ -34,18 +30,9 @@ if (dump_classes != undefined) {
 if (dump_attributes != undefined) {
 	dump_all = undefined;
 }
-if (dump_subschema != undefined) {
-	dump_all = undefined;
-}
-if (dump_subschema_auto != undefined) {
-	dump_all = undefined;
-	dump_subschema = "yes";
-}
 if (dump_all != undefined) {
 	dump_classes = "yes";
 	dump_attributes = "yes";
-	dump_subschema = "yes";
-	dump_subschema_auto = "yes";
 }
 
 if (options.ARGV.length != 2) {
@@ -697,28 +684,6 @@ function write_aggregate_attribute(attrib) {
 }
 
 
-/*
-  write the aggregate record
-*/
-function write_aggregate() {
-	printf("dn: CN=Aggregate,${SCHEMADN}\n");
-	print("objectClass: top
-objectClass: subSchema
-");
-	if (dump_subschema_auto == undefined) {
-		return;	
-	}
-
-	for (i in objectclasses) {
-		write_aggregate_objectclass(objectclasses[i]);
-	}
-	for (i in attributes) {
-		write_aggregate_attribute(attributes[i]);
-	}
-	for (i in objectclasses) {
-		write_aggregate_ditcontentrule(objectclasses[i]);
-	}
-}
 
 /*
   load a list from a file
@@ -813,10 +778,6 @@ if (dump_attributes != undefined) {
 if (dump_classes != undefined) {
 	write_ldif(objectclasses, class_attrs);
 }
-if (dump_subschema != undefined) {
-	write_aggregate();
-}
-
 if (verbose == undefined) {
 	exit(0);
 }
