@@ -44,7 +44,8 @@ enum _wbcErrType {
 	WBC_ERR_NSS_ERROR,            /**< NSS_STATUS error **/
 	WBC_ERR_AUTH_ERROR,        /**< Authentication failed **/
 	WBC_ERR_UNKNOWN_USER,      /**< User account cannot be found */
-	WBC_ERR_UNKNOWN_GROUP      /**< Group account cannot be found */
+	WBC_ERR_UNKNOWN_GROUP,     /**< Group account cannot be found */
+	WBC_ERR_PWD_CHANGE_FAILED  /**< Password Change has failed */
 };
 
 typedef enum _wbcErrType wbcErr;
@@ -204,6 +205,41 @@ struct wbcAuthUserParams {
 	} password;
 };
 
+/**
+ * @brief ChangePassword Parameters
+ **/
+
+struct wbcChangePasswordParams {
+	const char *account_name;
+	const char *domain_name;
+
+	uint32_t flags;
+
+	enum wbcChangePasswordLevel {
+		WBC_CHANGE_PASSWORD_LEVEL_PLAIN = 1,
+		WBC_CHANGE_PASSWORD_LEVEL_RESPONSE = 2
+	} level;
+
+	union {
+		const char *plaintext;
+		struct {
+			uint32_t old_nt_hash_enc_length;
+			uint8_t *old_nt_hash_enc_data;
+			uint32_t old_lm_hash_enc_length;
+			uint8_t *old_lm_hash_enc_data;
+		} response;
+	} old_password;
+	union {
+		const char *plaintext;
+		struct {
+			uint32_t nt_length;
+			uint8_t *nt_data;
+			uint32_t lm_length;
+			uint8_t *lm_data;
+		} response;
+	} new_password;
+};
+
 /* wbcAuthUserParams->parameter_control */
 
 #define WBC_MSV1_0_CLEARTEXT_PASSWORD_ALLOWED		0x00000002
@@ -302,6 +338,38 @@ struct wbcAuthErrorInfo {
 	char *nt_string;
 	int32_t pam_error;
 	char *display_string;
+};
+
+/**
+ * @brief User Password Policy Information
+ **/
+
+/* wbcUserPasswordPolicyInfo->password_properties */
+
+#define WBC_DOMAIN_PASSWORD_COMPLEX		0x00000001
+#define WBC_DOMAIN_PASSWORD_NO_ANON_CHANGE	0x00000002
+#define WBC_DOMAIN_PASSWORD_NO_CLEAR_CHANGE	0x00000004
+#define WBC_DOMAIN_PASSWORD_LOCKOUT_ADMINS	0x00000008
+#define WBC_DOMAIN_PASSWORD_STORE_CLEARTEXT	0x00000010
+#define WBC_DOMAIN_REFUSE_PASSWORD_CHANGE	0x00000020
+
+struct wbcUserPasswordPolicyInfo {
+	uint32_t min_length_password;
+	uint32_t password_history;
+	uint32_t password_properties;
+	uint64_t expire;
+	uint64_t min_passwordage;
+};
+
+/**
+ * @brief Change Password Reject Reason
+ **/
+
+enum wbcPasswordChangeRejectReason {
+	WBC_PWD_CHANGE_REJECT_OTHER=0,
+	WBC_PWD_CHANGE_REJECT_TOO_SHORT=1,
+	WBC_PWD_CHANGE_REJECT_IN_HISTORY=2,
+	WBC_PWD_CHANGE_REJECT_COMPLEXITY=5
 };
 
 /*
@@ -478,6 +546,14 @@ wbcErr wbcLogoffUser(const char *username,
 		     uid_t uid,
 		     const char *ccfilename);
 
+wbcErr wbcChangeUserPassword(const char *username,
+			     const char *old_password,
+			     const char *new_password);
+
+wbcErr wbcChangeUserPasswordEx(const struct wbcChangePasswordParams *params,
+			       struct wbcAuthErrorInfo **error,
+			       enum wbcPasswordChangeRejectReason *reject_reason,
+			       struct wbcUserPasswordPolicyInfo **policy);
 
 /*
  * Resolve functions
