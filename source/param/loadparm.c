@@ -4850,7 +4850,7 @@ static void init_globals(bool first_time_only)
 	Globals.bWinbindRefreshTickets = False;
 	Globals.bWinbindOfflineLogon = False;
 
-	Globals.iIdmapCacheTime = 900; /* 15 minutes by default */
+	Globals.iIdmapCacheTime = 86400 * 7; /* a week by default */
 	Globals.iIdmapNegativeCacheTime = 120; /* 2 minutes by default */
 
 	Globals.bPassdbExpandExplicit = False;
