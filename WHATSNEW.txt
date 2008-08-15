@@ -10,8 +10,9 @@ Major bug fixes included in Samba 3.2.2 are:
   o Fix removal of dead records in tdb files. This can lead to very large
     tdb files and to overflowing partitions as a consequence on systems
     running an nmbd daemon.
-
   o Fix freezing Windows Explorer on WinXP while browsing Samba shares.
+  o Fix assigning of primary group memberships when authenticating via
+    Winbind.
 
 
 ######################################################################
@@ -33,7 +34,10 @@ o   Jeremy Allison <jra@samba.org>
     * BUG 5675: Fix smbspool program assuming Kerberos authentication by
       mistake.
     * BUG 5686: Fix segfaults in libsmbclient.
+    * BUG 5692: Fix coredump in full_audit.so.
     * Fix coverity ID 594 (resource leak on error path).
+    * Fix assigning of primary group memberships when authenticating via
+      Winbind.
     * Several build fixes.
 
 
