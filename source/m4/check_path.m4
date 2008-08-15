@@ -177,22 +177,6 @@ AC_ARG_WITH(ctdb,
   esac])
 
 #################################################
-# set lib directory location
-AC_ARG_WITH(libdir,
-[AS_HELP_STRING([--with-libdir=DIR], [Where to put libdir ($libdir)])],
-[ case "$withval" in
-  yes|no)
-  #
-  # Just in case anybody does it
-  #
-    AC_MSG_WARN([--with-libdir without argument - will use default])
-  ;;
-  * )
-    libdir="$withval"
-    ;;
-  esac])
-
-#################################################
 # set shared modules (internal lib) directory location
 AC_ARG_WITH(modulesdir,
 [AS_HELP_STRING([--with-modulesdir=DIR], [Where to put shared modules ($libdir)])],
