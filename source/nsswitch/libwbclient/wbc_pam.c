@@ -236,6 +236,30 @@ done:
 	return wbc_status;
 }
 
+static wbcErr wbc_create_password_policy_info(TALLOC_CTX *mem_ctx,
+					      const struct winbindd_response *resp,
+					      struct wbcUserPasswordPolicyInfo **_i)
+{
+	wbcErr wbc_status = WBC_ERR_SUCCESS;
+	struct wbcUserPasswordPolicyInfo *i;
+
+	i = talloc(mem_ctx, struct wbcUserPasswordPolicyInfo);
+	BAIL_ON_PTR_ERROR(i, wbc_status);
+
+	i->min_passwordage	= resp->data.auth.policy.min_passwordage;
+	i->min_length_password	= resp->data.auth.policy.min_length_password;
+	i->password_history	= resp->data.auth.policy.password_history;
+	i->password_properties	= resp->data.auth.policy.password_properties;
+	i->expire		= resp->data.auth.policy.expire;
+
+	*_i = i;
+	i = NULL;
+
+done:
+	talloc_free(i);
+	return wbc_status;
+}
+
 /** @brief Authenticate with more detailed information
  *
  * @param params       Input parameters, WBC_AUTH_USER_LEVEL_HASH
@@ -521,5 +545,252 @@ wbcErr wbcLogoffUser(const char *username,
 	/* Take the response above and return it to the caller */
 
  done:
+	return wbc_status;
+}
+
+/** @brief Change a password for a user with more detailed information upon
+ * 	   failure
+ * @param params                Input parameters
+ * @param error                 User output details on WBC_ERR_PWD_CHANGE_FAILED
+ * @param reject_reason         New password reject reason on WBC_ERR_PWD_CHANGE_FAILED
+ * @param policy                Password policy output details on WBC_ERR_PWD_CHANGE_FAILED
+ *
+ * @return #wbcErr
+ **/
+
+wbcErr wbcChangeUserPasswordEx(const struct wbcChangePasswordParams *params,
+			       struct wbcAuthErrorInfo **error,
+			       enum wbcPasswordChangeRejectReason *reject_reason,
+			       struct wbcUserPasswordPolicyInfo **policy)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+	int cmd = 0;
+
+	/* validate input */
+
+	if (!params->account_name) {
+		wbc_status = WBC_ERR_INVALID_PARAM;
+		BAIL_ON_WBC_ERROR(wbc_status);
+	}
+
+	if (error) {
+		*error = NULL;
+	}
+
+	if (policy) {
+		*policy = NULL;
+	}
+
+	if (reject_reason) {
+		*reject_reason = -1;
+	}
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	switch (params->level) {
+	case WBC_CHANGE_PASSWORD_LEVEL_PLAIN:
+		cmd = WINBINDD_PAM_CHAUTHTOK;
+
+		if (!params->account_name) {
+			wbc_status = WBC_ERR_INVALID_PARAM;
+			BAIL_ON_WBC_ERROR(wbc_status);
+		}
+
+		strncpy(request.data.chauthtok.user, params->account_name,
+			sizeof(request.data.chauthtok.user) - 1);
+
+		if (params->old_password.plaintext) {
+			strncpy(request.data.chauthtok.oldpass,
+				params->old_password.plaintext,
+				sizeof(request.data.chauthtok.oldpass) - 1);
+		}
+
+		if (params->new_password.plaintext) {
+			strncpy(request.data.chauthtok.newpass,
+				params->new_password.plaintext,
+				sizeof(request.data.chauthtok.newpass) - 1);
+		}
+		break;
+
+	case WBC_CHANGE_PASSWORD_LEVEL_RESPONSE:
+		cmd = WINBINDD_PAM_CHNG_PSWD_AUTH_CRAP;
+
+		if (!params->account_name || !params->domain_name) {
+			wbc_status = WBC_ERR_INVALID_PARAM;
+			BAIL_ON_WBC_ERROR(wbc_status);
+		}
+
+		if (params->old_password.response.old_lm_hash_enc_length &&
+		    !params->old_password.response.old_lm_hash_enc_data) {
+			wbc_status = WBC_ERR_INVALID_PARAM;
+			BAIL_ON_WBC_ERROR(wbc_status);
+		}
+
+		if (params->old_password.response.old_lm_hash_enc_length == 0 &&
+		    params->old_password.response.old_lm_hash_enc_data) {
+			wbc_status = WBC_ERR_INVALID_PARAM;
+			BAIL_ON_WBC_ERROR(wbc_status);
+		}
+
+		if (params->old_password.response.old_nt_hash_enc_length &&
+		    !params->old_password.response.old_nt_hash_enc_data) {
+			wbc_status = WBC_ERR_INVALID_PARAM;
+			BAIL_ON_WBC_ERROR(wbc_status);
+		}
+
+		if (params->old_password.response.old_nt_hash_enc_length == 0 &&
+		    params->old_password.response.old_nt_hash_enc_data) {
+			wbc_status = WBC_ERR_INVALID_PARAM;
+			BAIL_ON_WBC_ERROR(wbc_status);
+		}
+
+		if (params->new_password.response.lm_length &&
+		    !params->new_password.response.lm_data) {
+			wbc_status = WBC_ERR_INVALID_PARAM;
+			BAIL_ON_WBC_ERROR(wbc_status);
+		}
+
+		if (params->new_password.response.lm_length == 0 &&
+		    params->new_password.response.lm_data) {
+			wbc_status = WBC_ERR_INVALID_PARAM;
+			BAIL_ON_WBC_ERROR(wbc_status);
+		}
+
+		if (params->new_password.response.nt_length &&
+		    !params->new_password.response.nt_data) {
+			wbc_status = WBC_ERR_INVALID_PARAM;
+			BAIL_ON_WBC_ERROR(wbc_status);
+		}
+
+		if (params->new_password.response.nt_length == 0 &&
+		    params->new_password.response.nt_data) {
+			wbc_status = WBC_ERR_INVALID_PARAM;
+			BAIL_ON_WBC_ERROR(wbc_status);
+		}
+
+		strncpy(request.data.chng_pswd_auth_crap.user,
+			params->account_name,
+			sizeof(request.data.chng_pswd_auth_crap.user) - 1);
+
+		strncpy(request.data.chng_pswd_auth_crap.domain,
+			params->domain_name,
+			sizeof(request.data.chng_pswd_auth_crap.domain) - 1);
+
+		if (params->new_password.response.nt_data) {
+			memcpy(request.data.chng_pswd_auth_crap.new_nt_pswd,
+			       params->new_password.response.nt_data,
+			       request.data.chng_pswd_auth_crap.new_nt_pswd_len);
+			request.data.chng_pswd_auth_crap.new_nt_pswd_len =
+				params->new_password.response.nt_length;
+		}
+
+		if (params->new_password.response.lm_data) {
+			memcpy(request.data.chng_pswd_auth_crap.new_lm_pswd,
+			       params->new_password.response.lm_data,
+			       request.data.chng_pswd_auth_crap.new_lm_pswd_len);
+			request.data.chng_pswd_auth_crap.new_lm_pswd_len =
+				params->new_password.response.lm_length;
+		}
+
+		if (params->old_password.response.old_nt_hash_enc_data) {
+			memcpy(request.data.chng_pswd_auth_crap.old_nt_hash_enc,
+			       params->old_password.response.old_nt_hash_enc_data,
+			       request.data.chng_pswd_auth_crap.old_nt_hash_enc_len);
+			request.data.chng_pswd_auth_crap.old_nt_hash_enc_len =
+				params->old_password.response.old_nt_hash_enc_length;
+		}
+
+		if (params->old_password.response.old_lm_hash_enc_data) {
+			memcpy(request.data.chng_pswd_auth_crap.old_lm_hash_enc,
+			       params->old_password.response.old_lm_hash_enc_data,
+			       request.data.chng_pswd_auth_crap.old_lm_hash_enc_len);
+			request.data.chng_pswd_auth_crap.old_lm_hash_enc_len =
+				params->old_password.response.old_lm_hash_enc_length;
+		}
+
+		break;
+	default:
+		wbc_status = WBC_ERR_INVALID_PARAM;
+		BAIL_ON_WBC_ERROR(wbc_status);
+		break;
+	}
+
+	if (cmd == 0) {
+		wbc_status = WBC_ERR_INVALID_PARAM;
+		BAIL_ON_WBC_ERROR(wbc_status);
+	}
+
+	/* Send request */
+
+	wbc_status = wbcRequestResponse(cmd,
+					&request,
+					&response);
+	if (WBC_ERROR_IS_OK(wbc_status)) {
+		goto done;
+	}
+
+	/* Take the response above and return it to the caller */
+
+	if (response.data.auth.nt_status != 0) {
+		if (error) {
+			wbc_status = wbc_create_error_info(NULL,
+							   &response,
+							   error);
+			BAIL_ON_WBC_ERROR(wbc_status);
+		}
+
+	}
+
+	if (policy) {
+		wbc_status = wbc_create_password_policy_info(NULL,
+							     &response,
+							     policy);
+		BAIL_ON_WBC_ERROR(wbc_status);
+	}
+
+	if (reject_reason) {
+		*reject_reason = response.data.auth.reject_reason;
+	}
+
+	wbc_status = WBC_ERR_PWD_CHANGE_FAILED;
+	BAIL_ON_WBC_ERROR(wbc_status);
+
+ done:
+	return wbc_status;
+}
+
+/** @brief Change a password for a user
+ *
+ * @param username		Name of user to authenticate
+ * @param old_password		Old clear text password of user
+ * @param new_password		New clear text password of user
+ *
+ * @return #wbcErr
+ **/
+
+wbcErr wbcChangeUserPassword(const char *username,
+			     const char *old_password,
+			     const char *new_password)
+{
+	wbcErr wbc_status = WBC_ERR_SUCCESS;
+	struct wbcChangePasswordParams params;
+
+	ZERO_STRUCT(params);
+
+	params.account_name		= username;
+	params.level			= WBC_CHANGE_PASSWORD_LEVEL_PLAIN;
+	params.old_password.plaintext	= old_password;
+	params.new_password.plaintext	= new_password;
+
+	wbc_status = wbcChangeUserPasswordEx(&params,
+					     NULL,
+					     NULL,
+					     NULL);
+	BAIL_ON_WBC_ERROR(wbc_status);
+
+done:
 	return wbc_status;
 }
