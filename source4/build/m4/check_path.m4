@@ -87,22 +87,6 @@ AC_ARG_WITH(winbindd-privileged-socket-dir,
   esac])
 
 #################################################
-# set where the winbindd privilaged socket should be put
-AC_ARG_WITH(winbindd-socket-dir,
-[  --with-winbindd-socket-dir=DIR   Where to put the winbindd socket ($ac_default_prefix/run/winbind_pipe)],
-[ case "$withval" in
-  yes|no)
-  #
-  # Just in case anybody calls it without argument
-  #
-    AC_MSG_WARN([--with-winbind-socketdir called without argument - will use default])
-  ;;
-  * )
-    winbindd_socket_dir="$withval"
-    ;;
-  esac])
-
-#################################################
 # set where the NTP signing deamon socket should be put
 AC_ARG_WITH(ntp-signd-socket-dir,
 [  --with-ntp-signd-socket-dir=DIR   Where to put the NTP signing deamon socket ($ac_default_prefix/run/ntp_signd)],
