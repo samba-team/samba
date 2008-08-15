@@ -57,7 +57,7 @@ AC_ARG_WITH(privatedir,
 #################################################
 # set where the winbindd socket should be put
 AC_ARG_WITH(winbindd-socket-dir,
-[  --with-winbindd-socket-dir=DIR   Where to put the winbindd socket ($winbindd_socket_dir)],
+[AS_HELP_STRING([--with-winbindd-socket-dir=DIR],[Where to put the winbindd socket ($winbindd_socket_dir)])],
 [ case "$withval" in
   yes|no)
   #
