@@ -35,7 +35,6 @@
 #include "ldb_includes.h"
 #include "system/locale.h"
 #include "lib/ldb/tools/cmdline.h"
-#include "utils/schema_convert.h"
 #include "param/param.h"
 #include "lib/cmdline/popt_common.h"
 #include "dsdb/samdb/samdb.h"
@@ -44,11 +43,6 @@ struct schema_conv {
 	int count;
 	int skipped;
 	int failures;
-};
-
-enum convert_target {
-	TARGET_OPENLDAP,
-	TARGET_FEDORA_DS
 };
 	
 
@@ -122,179 +116,7 @@ static struct ldb_dn *find_schema_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ct
 }
 
 
-#define IF_NULL_FAIL_RET(x) do {     \
-		if (!x) {		\
-			return NULL;	\
-		}			\
-	} while (0) 
-
-
-static char *schema_attribute_description(TALLOC_CTX *mem_ctx, 
-					  enum convert_target target,
-					  const char *seperator,
-					  const char *oid, 
-					  const char *name,
-					  const char *description,
-					  struct syntax_map *map,
-					  const char *syntax,
-					  bool single_value, bool operational)
-{
-	char *schema_entry = talloc_asprintf(mem_ctx, 
-					     "(%s%s%s", seperator, oid, seperator);
-	
-	schema_entry = talloc_asprintf_append(schema_entry, 
-					      "NAME '%s'%s", name, seperator);
-	IF_NULL_FAIL_RET(schema_entry);
-	
-	if (description) {
-#if 0		
-		/* Need a way to escape ' characters from the description */
-		schema_entry = talloc_asprintf_append(schema_entry, 
-						      "DESC '%s'%s", description, seperator);
-		IF_NULL_FAIL_RET(schema_entry);
-#endif
-	}
-
-	if (map) {
-		if (map->equality) {
-			schema_entry = talloc_asprintf_append(schema_entry, 
-							      "EQUALITY %s%s", map->equality, seperator);
-			IF_NULL_FAIL_RET(schema_entry);
-		}
-		if (map->substring) {
-			schema_entry = talloc_asprintf_append(schema_entry, 
-							      "SUBSTR %s%s", map->substring, seperator);
-			IF_NULL_FAIL_RET(schema_entry);
-		}
-		
-		syntax = map->Standard_OID;
-	}
-	
-	schema_entry = talloc_asprintf_append(schema_entry, 
-					      "SYNTAX %s%s", syntax, seperator);
-	IF_NULL_FAIL_RET(schema_entry);
-	
-	if (single_value) {
-		schema_entry = talloc_asprintf_append(schema_entry, 
-						      "SINGLE-VALUE%s", seperator);
-		IF_NULL_FAIL_RET(schema_entry);
-	}
-	
-	if (operational) {
-		schema_entry = talloc_asprintf_append(schema_entry, 
-						      "NO-USER-MODIFICATION%s", seperator);
-		IF_NULL_FAIL_RET(schema_entry);
-	}
-	
-	schema_entry = talloc_asprintf_append(schema_entry, 
-					      ")");
-	return schema_entry;
-}
-
-static char *schema_class_description(TALLOC_CTX *mem_ctx, 
-				      enum convert_target target,
-				      const char *seperator,
-				      const char *oid, 
-				      const char *name,
-				      const char *description,
-				      const char *subClassOf,
-				      int objectClassCategory,
-				      char **must,
-				      char **may)
-{
-	char *schema_entry = talloc_asprintf(mem_ctx, 
-					     "(%s%s%s", seperator, oid, seperator);
-	
-	IF_NULL_FAIL_RET(schema_entry);
-
-	schema_entry = talloc_asprintf_append(schema_entry, 
-					      "NAME '%s'%s", name, seperator);
-	IF_NULL_FAIL_RET(schema_entry);
-	
-	if (description) {
-		schema_entry = talloc_asprintf_append(schema_entry, 
-						      "DESC '%s'%s", description, seperator);
-		IF_NULL_FAIL_RET(schema_entry);
-	}
-
-	if (subClassOf) {
-		schema_entry = talloc_asprintf_append(schema_entry, 
-						      "SUP %s%s", subClassOf, seperator);
-		IF_NULL_FAIL_RET(schema_entry);
-	}
-	
-	switch (objectClassCategory) {
-	case 1:
-		schema_entry = talloc_asprintf_append(schema_entry, 
-						      "STRUCTURAL%s", seperator);
-		IF_NULL_FAIL_RET(schema_entry);
-		break;
-	case 2:
-		schema_entry = talloc_asprintf_append(schema_entry, 
-						      "ABSTRACT%s", seperator);
-		IF_NULL_FAIL_RET(schema_entry);
-		break;
-	case 3:
-		schema_entry = talloc_asprintf_append(schema_entry, 
-						      "AUXILIARY%s", seperator);
-		IF_NULL_FAIL_RET(schema_entry);
-		break;
-	}
-	
-#define APPEND_ATTRS(attributes)				\
-	do {								\
-		int k;							\
-		for (k=0; attributes && attributes[k]; k++) {		\
-			const char *attr_name = attributes[k];		\
-									\
-			schema_entry = talloc_asprintf_append(schema_entry, \
-							      "%s ",	\
-							      attr_name); \
-			IF_NULL_FAIL_RET(schema_entry);			\
-			if (attributes[k+1]) {				\
-				IF_NULL_FAIL_RET(schema_entry);		\
-				if (target == TARGET_OPENLDAP && ((k+1)%5 == 0)) { \
-					schema_entry = talloc_asprintf_append(schema_entry, \
-									      "$%s ", seperator); \
-					IF_NULL_FAIL_RET(schema_entry);	\
-				} else {				\
-					schema_entry = talloc_asprintf_append(schema_entry, \
-									      "$ "); \
-				}					\
-			}						\
-		}							\
-	} while (0)
-	
-	if (must) {
-		schema_entry = talloc_asprintf_append(schema_entry, 
-						      "MUST ( ");
-		IF_NULL_FAIL_RET(schema_entry);
-		
-		APPEND_ATTRS(must);
-		
-		schema_entry = talloc_asprintf_append(schema_entry, 
-						      ")%s", seperator);
-		IF_NULL_FAIL_RET(schema_entry);
-	}
-	
-	if (may) {
-		schema_entry = talloc_asprintf_append(schema_entry, 
-						      "MAY ( ");
-		IF_NULL_FAIL_RET(schema_entry);
-		
-		APPEND_ATTRS(may);
-		
-		schema_entry = talloc_asprintf_append(schema_entry, 
-						      ")%s", seperator);
-		IF_NULL_FAIL_RET(schema_entry);
-	}
-	
-	schema_entry = talloc_asprintf_append(schema_entry, 
-					      ")");
-	return schema_entry;
-}
-
-static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_target target, FILE *in, FILE *out) 
+static struct schema_conv process_convert(struct ldb_context *ldb, enum dsdb_schema_convert_target target, FILE *in, FILE *out) 
 {
 	/* Read list of attributes to skip, OIDs to map */
 	TALLOC_CTX *mem_ctx = talloc_new(ldb);
@@ -404,10 +226,10 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_
 		const char *description = attribute->adminDescription;
 		const char *oid = attribute->attributeID_oid;
 		const char *syntax = attribute->attributeSyntax_oid;
+		const char *equality = NULL, *substring = NULL;
 		bool single_value = attribute->isSingleValued;
 
-		const struct syntax_map *const_map = find_syntax_map_by_ad_oid(syntax);
-		struct syntax_map map, *map_p = NULL;
+		const struct dsdb_syntax_map *map = find_syntax_map_by_ad_oid(syntax);
 		char *schema_entry = NULL;
 		int j;
 
@@ -425,20 +247,21 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_
 			}
 		}
 		
-		if (const_map) {
-			map = *const_map;
-			
+		if (map) {
 			/* We might have been asked to remap this oid,
 			 * due to a conflict, or lack of
 			 * implementation */
-			for (j=0; map.Standard_OID && oid_map && oid_map[j].old_oid; j++) {
-				if (strcasecmp(map.Standard_OID, oid_map[j].old_oid) == 0) {
-					map.Standard_OID =  oid_map[j].new_oid;
+			syntax = map->Standard_OID;
+			/* We might have been asked to remap this oid, due to a conflict */
+			for (j=0; syntax && oid_map && oid_map[j].old_oid; j++) {
+				if (strcasecmp(syntax, oid_map[j].old_oid) == 0) {
+					syntax =  oid_map[j].new_oid;
 					break;
 				}
 			}
-
-			map_p = &map;
+			
+			equality = map->equality;
+			substring = map->substring;
 		}
 
 		/* We might have been asked to remap this name, due to a conflict */
@@ -449,7 +272,7 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_
 			}
 		}
 		
-		schema_entry = schema_attribute_description(mem_ctx, target, seperator, oid, name, description, map_p, syntax, single_value, false);
+		schema_entry = schema_attribute_description(mem_ctx, target, seperator, oid, name, description, equality, substring, syntax, single_value, false);
 
 		if (schema_entry == NULL) {
 			ret.failures++;
@@ -534,6 +357,7 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_
 							seperator,
 							oid, 
 							name,
+							NULL, 
 							description,
 							subClassOf,
 							objectClassCategory,
@@ -567,7 +391,7 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_
 	struct ldb_context *ldb;
 	struct schema_conv ret;
 	const char *target_str;
-	enum convert_target target;
+	enum dsdb_schema_convert_target target;
 
 	ctx = talloc_new(NULL);
 	ldb = ldb_init(ctx, NULL);

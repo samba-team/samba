@@ -2,51 +2,38 @@
    ldb database library
 
    Copyright (C) Simo Sorce 2005
-
-     ** NOTE! The following LGPL license applies to the ldb
-     ** library. This does NOT imply that all of Samba is released
-     ** under the LGPL
    
-   This library is free software; you can redistribute it and/or
-   modify it under the terms of the GNU Lesser General Public
-   License as published by the Free Software Foundation; either
-   version 3 of the License, or (at your option) any later version.
-
-   This library is distributed in the hope that it will be useful,
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 3 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Lesser General Public License for more details.
-
-   You should have received a copy of the GNU Lesser General Public
-   License along with this library; if not, see <http://www.gnu.org/licenses/>.
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "schema_convert.h"
-#include "ldb_includes.h"
+#include "includes.h"
+#include "dsdb/samdb/samdb.h"
 
 /* Shared map for converting syntax between formats */
-static const struct syntax_map syntax_map[] = {
+static const struct dsdb_syntax_map syntax_map[] = {
 	{ 
 		.Standard_OID = "1.3.6.1.4.1.1466.115.121.1.12", 
 		.AD_OID = "2.5.5.1", 
 		.equality = "distinguishedNameMatch",
 		.comment = "Object(DS-DN) == a DN" 
 	},
-#if 0
 	{
 		.Standard_OID =  "1.3.6.1.4.1.1466.115.121.1.38",
 		.AD_OID =  "2.5.5.2",
 		.equality = "objectIdentifierMatch",
 		.comment =  "OID String"
 	},
-#else 
-	{ 
-		.Standard_OID =  "1.2.840.113556.1.4.905", 
-		.AD_OID =  "2.5.5.2",
-		.equality = "caseIgnoreMatch",
-		.comment =   "OID as a Case Insensitive String" 
-	},
-#endif
 	{ 
 		.Standard_OID =  "1.2.840.113556.1.4.905", 
 		.AD_OID =  "2.5.5.4",
@@ -150,7 +137,7 @@ static const struct syntax_map syntax_map[] = {
 };
 
 
-const struct syntax_map *find_syntax_map_by_ad_oid(const char *ad_oid) 
+const struct dsdb_syntax_map *find_syntax_map_by_ad_oid(const char *ad_oid) 
 {
 	int i;
 	for (i=0; syntax_map[i].Standard_OID; i++) {
@@ -161,7 +148,7 @@ const struct syntax_map *find_syntax_map_by_ad_oid(const char *ad_oid)
 	return NULL;
 }
 
-const struct syntax_map *find_syntax_map_by_standard_oid(const char *standard_oid) 
+const struct dsdb_syntax_map *find_syntax_map_by_standard_oid(const char *standard_oid) 
 {
 	int i;
 	for (i=0; syntax_map[i].Standard_OID; i++) {
