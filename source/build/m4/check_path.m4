@@ -121,7 +121,7 @@ AC_ARG_WITH(lockdir,
 #################################################
 # set pid directory location
 AC_ARG_WITH(piddir,
-[  --with-piddir=DIR       Where to put pid files ($ac_default_prefix/var/locks)],
+[AS_HELP_STRING([--with-piddir=DIR],[Where to put pid files ($ac_default_prefix/var/locks)])],
 [ case "$withval" in
   yes|no)
   #
