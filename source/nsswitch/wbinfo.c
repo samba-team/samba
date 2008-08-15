@@ -1341,6 +1341,28 @@ static bool wbinfo_ping(void)
 	return WBC_ERROR_IS_OK(wbc_status);
 }
 
+static bool wbinfo_change_user_password(const char *username)
+{
+	wbcErr wbc_status;
+	char *old_password = NULL;
+	char *new_password = NULL;
+
+	old_password = wbinfo_prompt_pass("old", username);
+	new_password = wbinfo_prompt_pass("new", username);
+
+	wbc_status = wbcChangeUserPassword(username, old_password, new_password);
+
+	/* Display response */
+
+	d_printf("Password change for user %s %s\n", username,
+		WBC_ERROR_IS_OK(wbc_status) ? "succeeded" : "failed");
+
+	SAFE_FREE(old_password);
+	SAFE_FREE(new_password);
+
+	return WBC_ERROR_IS_OK(wbc_status);
+}
+
 /* Main program */
 
 enum {
@@ -1360,7 +1382,8 @@ enum {
 	OPT_UID_INFO,
 	OPT_GROUP_INFO,
 	OPT_VERBOSE,
-	OPT_ONLINESTATUS
+	OPT_ONLINESTATUS,
+	OPT_CHANGE_USER_PASSWORD
 };
 
 int main(int argc, char **argv, char **envp)
@@ -1427,6 +1450,7 @@ int main(int argc, char **argv, char **envp)
 #endif
 		{ "separator", 0, POPT_ARG_NONE, 0, OPT_SEPARATOR, "Get the active winbind separator", NULL },
 		{ "verbose", 0, POPT_ARG_NONE, 0, OPT_VERBOSE, "Print additional information per command", NULL },
+		{ "change-user-password", 0, POPT_ARG_STRING, &string_arg, OPT_CHANGE_USER_PASSWORD, "Change the password for a user", NULL },
 		POPT_COMMON_CONFIGFILE
 		POPT_COMMON_VERSION
 		POPT_TABLEEND
@@ -1707,6 +1731,14 @@ int main(int argc, char **argv, char **envp)
 				goto done;
 			}
 			break;
+		case OPT_CHANGE_USER_PASSWORD:
+			if (!wbinfo_change_user_password(string_arg)) {
+				d_fprintf(stderr, "Could not change user password "
+					 "for user %s\n", string_arg);
+				goto done;
+			}
+			break;
+
 		/* generic configuration options */
 		case OPT_DOMAIN_NAME:
 			break;
