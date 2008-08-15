@@ -2432,6 +2432,7 @@ int pam_sm_close_session(pam_handle_t *pamh, int flags,
 {
 	int retval = PAM_SUCCESS;
 	struct pwb_context *ctx = NULL;
+	struct wbcLogoffUserParams logoff;
 
 	retval = _pam_winbind_init_context(pamh, flags, argc, argv, &ctx);
 	if (retval) {
@@ -2448,14 +2449,14 @@ int pam_sm_close_session(pam_handle_t *pamh, int flags,
 	if (ctx->ctrl & WINBIND_KRB5_AUTH) {
 
 		/* destroy the ccache here */
-		struct winbindd_request request;
-		struct winbindd_response response;
+
+		wbcErr wbc_status;
+		struct wbcAuthErrorInfo *error = NULL;
+
+		uint32_t flags = 0;
 		const char *user;
 		const char *ccname = NULL;
 		struct passwd *pwd = NULL;
-
-		ZERO_STRUCT(request);
-		ZERO_STRUCT(response);
 
 		retval = pam_get_user(pamh, &user, "Username: ");
 		if (retval) {
@@ -2480,30 +2481,66 @@ int pam_sm_close_session(pam_handle_t *pamh, int flags,
 				       "user has no KRB5CCNAME environment");
 		}
 
-		strncpy(request.data.logoff.user, user,
-			sizeof(request.data.logoff.user) - 1);
-
-		if (ccname) {
-			strncpy(request.data.logoff.krb5ccname, ccname,
-				sizeof(request.data.logoff.krb5ccname) - 1);
-		}
-
 		pwd = getpwnam(user);
 		if (pwd == NULL) {
 			retval = PAM_USER_UNKNOWN;
 			goto out;
 		}
-		request.data.logoff.uid = pwd->pw_uid;
 
-		request.flags = WBFLAG_PAM_KRB5 |
-				WBFLAG_PAM_CONTACT_TRUSTDOM;
+		flags = WBFLAG_PAM_KRB5 |
+			WBFLAG_PAM_CONTACT_TRUSTDOM;
 
-	        retval = pam_winbind_request_log(ctx,
-						 WINBINDD_PAM_LOGOFF,
-						 &request, &response, user);
+		ZERO_STRUCT(logoff);
+
+		logoff.username		= user;
+
+		wbc_status = wbcAddNamedBlob(&logoff.num_blobs,
+					     &logoff.blobs,
+					     "ccfilename",
+					     0,
+					     (uint8_t *)ccname,
+					     strlen(ccname)+1);
+		if (!WBC_ERROR_IS_OK(wbc_status)) {
+			goto out;
+		}
+
+		wbc_status = wbcAddNamedBlob(&logoff.num_blobs,
+					     &logoff.blobs,
+					     "flags",
+					     0,
+					     (uint8_t *)&flags,
+					     sizeof(flags));
+		if (!WBC_ERROR_IS_OK(wbc_status)) {
+			goto out;
+		}
+
+		wbc_status = wbcAddNamedBlob(&logoff.num_blobs,
+					     &logoff.blobs,
+					     "user_uid",
+					     0,
+					     (uint8_t *)&pwd->pw_uid,
+					     sizeof(pwd->pw_uid));
+		if (!WBC_ERROR_IS_OK(wbc_status)) {
+			goto out;
+		}
+
+		wbc_status = wbcLogoffUserEx(&logoff, &error);
+		retval = wbc_auth_error_to_pam_error(ctx, error, wbc_status,
+						     user, "wbcLogoffUser");
+		wbcFreeMemory(error);
+		wbcFreeMemory(logoff.blobs);
+
+		if (!WBC_ERROR_IS_OK(wbc_status)) {
+			_pam_log(ctx, LOG_INFO,
+				 "failed to logoff user %s: %s\n",
+					 user, wbcErrorString(wbc_status));
+		}
 	}
 
 out:
+	if (logoff.blobs) {
+		wbcFreeMemory(logoff.blobs);
+	}
 
 	_PAM_LOG_FUNCTION_LEAVE("pam_sm_close_session", ctx, retval);
 
