@@ -35,7 +35,8 @@ PRIVATE_DEPENDENCIES = SAMDB_COMMON NDR_DRSUAPI NDR_DRSBLOBS
 SAMDB_SCHEMA_OBJ_FILES = $(addprefix $(dsdbsrcdir)/schema/, \
 		schema_init.o \
 		schema_syntax.o \
-		schema_constructed.o)
+		schema_description.o \
+		schema_convert.o)
 
 $(eval $(call proto_header_template,$(dsdbsrcdir)/schema/proto.h,$(SAMDB_SCHEMA_OBJ_FILES:.o=.c)))
 # PUBLIC_HEADERS += dsdb/schema/schema.h
