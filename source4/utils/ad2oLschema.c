@@ -152,6 +152,7 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_
 	struct ldb_dn *schemadn;
 	struct schema_conv ret;
 	struct dsdb_schema *schema;
+	const char *seperator;
 	char *error_string;
 
 	int ldb_ret;
@@ -223,8 +224,10 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_
 
 	switch (target) {
 	case TARGET_OPENLDAP:
+		seperator = "\n  ";
 		break;
 	case TARGET_FEDORA_DS:
+		seperator = "\n  ";
 		fprintf(out, "dn: cn=schema\n");
 		break;
 	}
@@ -236,7 +239,8 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_
 		const char *syntax = attribute->attributeSyntax_oid;
 		bool single_value = attribute->isSingleValued;
 
-		const struct syntax_map *map = find_syntax_map_by_ad_oid(syntax);
+		const struct syntax_map *const_map = find_syntax_map_by_ad_oid(syntax);
+		struct syntax_map map, *map_p = NULL;
 		char *schema_entry = NULL;
 		int j;
 
@@ -254,19 +258,21 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_
 			}
 		}
 		
-		switch (target) {
-		case TARGET_OPENLDAP:
-			schema_entry = talloc_asprintf(mem_ctx, 
-						       "attributetype (\n"
-						       "  %s\n", oid);
-			break;
-		case TARGET_FEDORA_DS:
-			schema_entry = talloc_asprintf(mem_ctx, 
-						       "attributeTypes: (\n"
-						       "  %s\n", oid);
-			break;
+		if (const_map) {
+			map = *const_map;
+			
+			/* We might have been asked to remap this oid,
+			 * due to a conflict, or lack of
+			 * implementation */
+			for (j=0; map.Standard_OID && oid_map && oid_map[j].old_oid; j++) {
+				if (strcasecmp(map.Standard_OID, oid_map[j].old_oid) == 0) {
+					map.Standard_OID =  oid_map[j].new_oid;
+					break;
+				}
+			}
+
+			map_p = &map;
 		}
-		IF_NULL_FAIL_RET(schema_entry);
 
 		/* We might have been asked to remap this name, due to a conflict */
 		for (j=0; name && attr_map && attr_map[j].old_attr; j++) {
@@ -276,53 +282,60 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_
 			}
 		}
 		
+		switch (target) {
+		case TARGET_OPENLDAP:
+			schema_entry = talloc_asprintf(mem_ctx, 
+						       "attributetype (");
+			break;
+		case TARGET_FEDORA_DS:
+			schema_entry = talloc_asprintf(mem_ctx, 
+						       "attributeTypes: (");
+			break;
+		}
+		IF_NULL_FAIL_RET(schema_entry);
+
 		schema_entry = talloc_asprintf_append(schema_entry, 
-						      "  NAME '%s'\n", name);
+						      "%s%s%s", seperator, oid, seperator);
+
+		schema_entry = talloc_asprintf_append(schema_entry, 
+						      "NAME '%s'%s", name, seperator);
 		IF_NULL_FAIL_RET(schema_entry);
 
 		if (description) {
 #if 0 /* If you want to re-enable this, you must first figure out a sane escaping of ' in the description */
 			schema_entry = talloc_asprintf_append(schema_entry, 
-							      "  DESC '%s'\n", description);
+							      "DESC '%s' ", description);
 			IF_NULL_FAIL_RET(schema_entry);
 #endif
 		}
 
-		if (map) {
-			const char *syntax_oid;
-			if (map->equality) {
+		if (map_p) {
+			if (map_p->equality) {
 				schema_entry = talloc_asprintf_append(schema_entry, 
-								      "  EQUALITY %s\n", map->equality);
+								      "EQUALITY %s%s", map_p->equality, seperator);
 				IF_NULL_FAIL_RET(schema_entry);
 			}
-			if (map->substring) {
+			if (map_p->substring) {
 				schema_entry = talloc_asprintf_append(schema_entry, 
-								      "  SUBSTR %s\n", map->substring);
+								      "SUBSTR %s%s", map_p->substring, seperator);
 				IF_NULL_FAIL_RET(schema_entry);
 			}
-			syntax_oid = map->Standard_OID;
-			/* We might have been asked to remap this oid,
-			 * due to a conflict, or lack of
-			 * implementation */
-			for (j=0; syntax_oid && oid_map && oid_map[j].old_oid; j++) {
-				if (strcasecmp(syntax_oid, oid_map[j].old_oid) == 0) {
-					syntax_oid =  oid_map[j].new_oid;
-					break;
-				}
-			}
-			schema_entry = talloc_asprintf_append(schema_entry, 
-							      "  SYNTAX %s\n", syntax_oid);
-			IF_NULL_FAIL_RET(schema_entry);
+
+			syntax = map_p->Standard_OID;
 		}
+
+		schema_entry = talloc_asprintf_append(schema_entry, 
+						      "SYNTAX %s%s", syntax, seperator);
+		IF_NULL_FAIL_RET(schema_entry);
 
 		if (single_value) {
 			schema_entry = talloc_asprintf_append(schema_entry, 
-							      "  SINGLE-VALUE\n");
+							      "SINGLE-VALUE%s", seperator);
 			IF_NULL_FAIL_RET(schema_entry);
 		}
 		
 		schema_entry = talloc_asprintf_append(schema_entry, 
-						      "  )");
+						      ")");
 
 		switch (target) {
 		case TARGET_OPENLDAP:
@@ -357,10 +370,6 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_
 			continue;
 		}
 
-		may = dsdb_full_attribute_list(mem_ctx, schema, objectclass_name_as_list, DSDB_SCHEMA_ALL_MAY);
-
-		must = dsdb_full_attribute_list(mem_ctx, schema, objectclass_name_as_list, DSDB_SCHEMA_ALL_MUST);
-
 		/* We might have been asked to remap this oid, due to a conflict */
 		for (j=0; oid_map && oid_map[j].old_oid; j++) {
 			if (strcasecmp(oid, oid_map[j].old_oid) == 0) {
@@ -369,24 +378,6 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_
 			}
 		}
 		
-		switch (target) {
-		case TARGET_OPENLDAP:
-			schema_entry = talloc_asprintf(mem_ctx, 
-						       "objectclass (\n"
-						       "  %s\n", oid);
-			break;
-		case TARGET_FEDORA_DS:
-			schema_entry = talloc_asprintf(mem_ctx, 
-						       "objectClasses: (\n"
-						       "  %s\n", oid);
-			break;
-		}
-		IF_NULL_FAIL_RET(schema_entry);
-		if (!schema_entry) {
-			ret.failures++;
-			break;
-		}
-
 		/* We might have been asked to remap this name, due to a conflict */
 		for (j=0; name && attr_map && attr_map[j].old_attr; j++) {
 			if (strcasecmp(name, attr_map[j].old_attr) == 0) {
@@ -395,38 +386,61 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_
 			}
 		}
 		
+		may = dsdb_full_attribute_list(mem_ctx, schema, objectclass_name_as_list, DSDB_SCHEMA_ALL_MAY);
+
+		must = dsdb_full_attribute_list(mem_ctx, schema, objectclass_name_as_list, DSDB_SCHEMA_ALL_MUST);
+
+		switch (target) {
+		case TARGET_OPENLDAP:
+			schema_entry = talloc_asprintf(mem_ctx, 
+						       "objectclass (");
+			break;
+		case TARGET_FEDORA_DS:
+			schema_entry = talloc_asprintf(mem_ctx, 
+						       "objectClasses: (");
+			break;
+		}
 		schema_entry = talloc_asprintf_append(schema_entry, 
-						      "  NAME '%s'\n", name);
+						      "%s%s%s", seperator, oid, seperator);
+						      
+		IF_NULL_FAIL_RET(schema_entry);
+		if (!schema_entry) {
+			ret.failures++;
+			break;
+		}
+
+		schema_entry = talloc_asprintf_append(schema_entry, 
+						      "NAME '%s'%s", name, seperator);
 		IF_NULL_FAIL_RET(schema_entry);
 
 		if (!schema_entry) return ret;
 
 		if (description) {
 			schema_entry = talloc_asprintf_append(schema_entry, 
-							      "  DESC '%s'\n", description);
+							      "DESC '%s'%s", description, seperator);
 			IF_NULL_FAIL_RET(schema_entry);
 		}
 
 		if (subClassOf) {
 			schema_entry = talloc_asprintf_append(schema_entry, 
-							      "  SUP %s\n", subClassOf);
+							      "SUP %s%s", subClassOf, seperator);
 			IF_NULL_FAIL_RET(schema_entry);
 		}
 		
 		switch (objectClassCategory) {
 		case 1:
 			schema_entry = talloc_asprintf_append(schema_entry, 
-							      "  STRUCTURAL\n");
+							      "STRUCTURAL%s", seperator);
 			IF_NULL_FAIL_RET(schema_entry);
 			break;
 		case 2:
 			schema_entry = talloc_asprintf_append(schema_entry, 
-							      "  ABSTRACT\n");
+							      "ABSTRACT%s", seperator);
 			IF_NULL_FAIL_RET(schema_entry);
 			break;
 		case 3:
 			schema_entry = talloc_asprintf_append(schema_entry, 
-							      "  AUXILIARY\n");
+							      "AUXILIARY%s", seperator);
 			IF_NULL_FAIL_RET(schema_entry);
 			break;
 		}
@@ -446,17 +460,18 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_
 				}					\
 									\
 				schema_entry = talloc_asprintf_append(schema_entry, \
-								      " %s", \
+								      "%s ", \
 								      attr_name); \
 				IF_NULL_FAIL_RET(schema_entry);		\
 				if (attributes[k+1]) { \
-					schema_entry = talloc_asprintf_append(schema_entry, \
-									      " $"); \
 					IF_NULL_FAIL_RET(schema_entry);	\
 					if (target == TARGET_OPENLDAP && ((k+1)%5 == 0)) { \
 						schema_entry = talloc_asprintf_append(schema_entry, \
-										      "\n  "); \
+										      "$%s ", seperator); \
 						IF_NULL_FAIL_RET(schema_entry);	\
+					} else {			\
+						schema_entry = talloc_asprintf_append(schema_entry, \
+										      "$ "); \
 					}				\
 				}					\
 			}						\
@@ -464,30 +479,30 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_
 
 		if (must) {
 			schema_entry = talloc_asprintf_append(schema_entry, 
-							      "  MUST (");
+							      "MUST ( ");
 			IF_NULL_FAIL_RET(schema_entry);
 
 			APPEND_ATTRS(must);
 
 			schema_entry = talloc_asprintf_append(schema_entry, 
-							      " )\n");
+							      ")%s", seperator);
 			IF_NULL_FAIL_RET(schema_entry);
 		}
 
 		if (may) {
 			schema_entry = talloc_asprintf_append(schema_entry, 
-							      "  MAY (");
+							      "MAY ( ");
 			IF_NULL_FAIL_RET(schema_entry);
 
 			APPEND_ATTRS(may);
 
 			schema_entry = talloc_asprintf_append(schema_entry, 
-							      " )\n");
+							      ")%s", seperator);
 			IF_NULL_FAIL_RET(schema_entry);
 		}
 
 		schema_entry = talloc_asprintf_append(schema_entry, 
-						      "  )");
+						      ")");
 
 		switch (target) {
 		case TARGET_OPENLDAP:
