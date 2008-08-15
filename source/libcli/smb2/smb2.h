@@ -276,7 +276,9 @@ struct smb2_request {
 #define SMB2_CREATE_TAG_TWRP "TWrp"
 #define SMB2_CREATE_TAG_QFID "QFid"
 
-
+/* SMB2 Create ignore some more create_options */
+#define SMB2_CREATE_OPTIONS_NOT_SUPPORTED_MASK	(NTCREATEX_OPTIONS_TREE_CONNECTION | \
+						 NTCREATEX_OPTIONS_OPFILTER)
 
 /*
   check that a body has the expected size

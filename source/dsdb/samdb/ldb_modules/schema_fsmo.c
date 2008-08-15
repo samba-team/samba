@@ -32,6 +32,40 @@
 #include "lib/util/dlinklist.h"
 #include "param/param.h"
 
+static int generate_objectClasses(struct ldb_context *ldb, struct ldb_message *msg,
+				  const struct dsdb_schema *schema);
+static int generate_attributeTypes(struct ldb_context *ldb, struct ldb_message *msg,
+				   const struct dsdb_schema *schema);
+static int generate_dITContentRules(struct ldb_context *ldb, struct ldb_message *msg,
+				    const struct dsdb_schema *schema);
+
+static const struct {
+	const char *attr;
+	int (*fn)(struct ldb_context *, struct ldb_message *, const struct dsdb_schema *);
+} generated_attrs[] = {
+	{
+		.attr = "objectClasses",
+		.fn = generate_objectClasses
+	},
+	{
+		.attr = "attributeTypes",
+		.fn = generate_attributeTypes
+	},
+	{
+		.attr = "dITContentRules",
+		.fn = generate_dITContentRules
+	}
+};
+
+struct schema_fsmo_private_data {
+	struct ldb_dn *aggregate_dn;
+};
+
+struct schema_fsmo_search_data {
+	struct schema_fsmo_private_data *module_context;
+	struct ldb_request *orig_req;
+};
+
 static int schema_fsmo_init(struct ldb_module *module)
 {
 	TALLOC_CTX *mem_ctx;
@@ -39,16 +73,32 @@ static int schema_fsmo_init(struct ldb_module *module)
 	struct dsdb_schema *schema;
 	char *error_string = NULL;
 	int ret;
-
-	if (dsdb_get_schema(module->ldb)) {
-		return ldb_next_init(module);
-	}
+	struct schema_fsmo_private_data *data;
 
 	schema_dn = samdb_schema_dn(module->ldb);
 	if (!schema_dn) {
 		ldb_reset_err_string(module->ldb);
 		ldb_debug(module->ldb, LDB_DEBUG_WARNING,
 			  "schema_fsmo_init: no schema dn present: (skip schema loading)\n");
+		return ldb_next_init(module);
+	}
+
+	data = talloc(module, struct schema_fsmo_private_data);
+	if (data == NULL) {
+		ldb_oom(module->ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	/* Check to see if this is a result on the CN=Aggregate schema */
+	data->aggregate_dn = ldb_dn_copy(data, schema_dn);
+	if (!ldb_dn_add_child_fmt(data->aggregate_dn, "CN=Aggregate")) {
+		ldb_oom(module->ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	module->private_data = data;
+
+	if (dsdb_get_schema(module->ldb)) {
 		return ldb_next_init(module);
 	}
 
@@ -208,9 +258,155 @@ static int schema_fsmo_extended(struct ldb_module *module, struct ldb_request *r
 	return LDB_SUCCESS;
 }
 
+static int generate_objectClasses(struct ldb_context *ldb, struct ldb_message *msg,
+				  const struct dsdb_schema *schema) 
+{
+	const struct dsdb_class *class;
+	int ret;
+
+	for (class = schema->classes; class; class = class->next) {
+		ret = ldb_msg_add_string(msg, "objectClasses", schema_class_to_description(msg, class));
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	}
+	return LDB_SUCCESS;
+}
+static int generate_attributeTypes(struct ldb_context *ldb, struct ldb_message *msg,
+				  const struct dsdb_schema *schema) 
+{
+	const struct dsdb_attribute *attribute;
+	int ret;
+	
+	for (attribute = schema->attributes; attribute; attribute = attribute->next) {
+		ret = ldb_msg_add_string(msg, "attributeTypes", schema_attribute_to_description(msg, attribute));
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	}
+	return LDB_SUCCESS;
+}
+
+static int generate_dITContentRules(struct ldb_context *ldb, struct ldb_message *msg,
+				    const struct dsdb_schema *schema) 
+{
+	const struct dsdb_class *class;
+	int ret;
+
+	for (class = schema->classes; class; class = class->next) {
+		if (class->auxiliaryClass || class->systemAuxiliaryClass) {
+			char *ditcontentrule = schema_class_to_dITContentRule(msg, class, schema);
+			if (!ditcontentrule) {
+				ldb_oom(ldb);
+				return LDB_ERR_OPERATIONS_ERROR;
+			}
+			ret = ldb_msg_add_steal_string(msg, "dITContentRules", ditcontentrule);
+			if (ret != LDB_SUCCESS) {
+				return ret;
+			}
+		}
+	}
+	return 0;
+}
+
+
+
+/* Add objectClasses, attributeTypes and dITContentRules from the
+   schema object (they are not stored in the database)
+ */
+static int schema_fsmo_search_callback(struct ldb_context *ldb, void *context, struct ldb_reply *ares) 
+{
+	const struct dsdb_schema *schema = dsdb_get_schema(ldb);
+	struct schema_fsmo_search_data *search_data = talloc_get_type(context, struct schema_fsmo_search_data);
+	struct ldb_request *orig_req = search_data->orig_req;
+	TALLOC_CTX *mem_ctx;
+	int i, ret;
+
+	/* Only entries are interesting, and we handle the case of the parent seperatly */
+	if (ares->type != LDB_REPLY_ENTRY) {
+		return orig_req->callback(ldb, orig_req->context, ares);
+	}
+
+	if (ldb_dn_compare(ares->message->dn, search_data->module_context->aggregate_dn) != 0) {
+		talloc_free(mem_ctx);
+		return orig_req->callback(ldb, orig_req->context, ares);
+	}
+
+	mem_ctx = talloc_new(ares);
+	if (!mem_ctx) {
+		ldb_oom(ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	for (i=0; i < ARRAY_SIZE(generated_attrs); i++) {
+		if (ldb_attr_in_list(orig_req->op.search.attrs, generated_attrs[i].attr)) {
+			ret = generated_attrs[i].fn(ldb, ares->message, schema);
+			if (ret != LDB_SUCCESS) {
+				return ret;
+			}
+		}
+	}
+
+	talloc_free(mem_ctx);
+	return orig_req->callback(ldb, orig_req->context, ares);
+}
+
+/* search */
+static int schema_fsmo_search(struct ldb_module *module, struct ldb_request *req)
+{
+	int i, ret;
+	struct schema_fsmo_search_data *search_context;
+	struct ldb_request *down_req;
+	struct dsdb_schema *schema = dsdb_get_schema(module->ldb);
+
+	if (!schema || !module->private_data) {
+		/* If there is no schema, there is little we can do */
+		return ldb_next_request(module, req);
+	}
+	for (i=0; i < ARRAY_SIZE(generated_attrs); i++) {
+		if (ldb_attr_in_list(req->op.search.attrs, generated_attrs[i].attr)) {
+			break;
+		}
+	}
+	if (i == ARRAY_SIZE(generated_attrs)) {
+		/* No request for a generated attr found, nothing to
+		 * see here, move along... */
+		return ldb_next_request(module, req);
+	}
+
+	search_context = talloc(req, struct schema_fsmo_search_data);
+	if (!search_context) {
+		ldb_oom(module->ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	down_req = talloc(req, struct ldb_request);	
+	if (!down_req) {
+		ldb_oom(module->ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	
+	*down_req = *req;
+	search_context->orig_req = req;
+	search_context->module_context = talloc_get_type(module->private_data, struct schema_fsmo_private_data);
+	down_req->context = search_context;
+
+	down_req->callback = schema_fsmo_search_callback;
+
+	ret = ldb_next_request(module, down_req);
+
+	/* do not free down_req as the call results may be linked to it,
+	 * it will be freed when the upper level request get freed */
+	if (ret == LDB_SUCCESS) {
+		req->handle = down_req->handle;
+	}
+	return ret;
+}
+
+
 _PUBLIC_ const struct ldb_module_ops ldb_schema_fsmo_module_ops = {
 	.name		= "schema_fsmo",
 	.init_context	= schema_fsmo_init,
 	.add		= schema_fsmo_add,
-	.extended	= schema_fsmo_extended
+	.extended	= schema_fsmo_extended,
+	.search         = schema_fsmo_search
 };
