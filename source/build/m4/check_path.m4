@@ -198,7 +198,7 @@ AC_ARG_ENABLE(developer,
 
 dnl disable these external libs 
 AC_ARG_WITH(disable-ext-lib,
-[  --with-disable-ext-lib=LIB Comma-seperated list of external libraries],
+[AS_HELP_STRING([--with-disable-ext-lib=LIB],[Comma-seperated list of external libraries])],
 [ if test $withval; then
 	for i in `echo $withval | sed -e's/,/ /g'`
 	do
