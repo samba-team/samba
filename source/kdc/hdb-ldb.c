@@ -49,10 +49,17 @@
 #include "param/param.h"
 #include "events/events.h"
 #include "kdc/kdc.h"
+#include "lib/crypto/md4.h"
 
 enum hdb_ldb_ent_type 
 { HDB_LDB_ENT_TYPE_CLIENT, HDB_LDB_ENT_TYPE_SERVER, 
   HDB_LDB_ENT_TYPE_KRBTGT, HDB_LDB_ENT_TYPE_TRUST, HDB_LDB_ENT_TYPE_ANY };
+
+enum trust_direction {
+	INBOUND,
+	OUTBOUND,
+	UNKNOWN
+};
 
 static const char *realm_ref_attrs[] = {
 	"nCName", 
@@ -65,6 +72,10 @@ static const char *trust_attrs[] = {
 	"trustAuthIncoming",
 	"trustAuthOutgoing",
 	"whenCreated",
+	"msDS-SupportedEncryptionTypes",
+	"trustAttributes",
+	"trustDirection",
+	"trustType",
 	NULL
 };
 
@@ -683,6 +694,182 @@ out:
 	return ret;
 }
 
+/*
+ * Construct an hdb_entry from a directory entry.
+ */
+static krb5_error_code LDB_trust_message2entry(krb5_context context, HDB *db, 
+					       struct loadparm_context *lp_ctx,
+					       TALLOC_CTX *mem_ctx, krb5_const_principal principal,
+					       enum trust_direction direction,
+					       struct ldb_message *msg,
+					       hdb_entry_ex *entry_ex)
+{
+	
+	const char *dnsdomain;
+	char *realm;
+	char *strdup_realm;
+	DATA_BLOB password_utf16;
+	struct samr_Password password_hash;
+	const struct ldb_val *password_val;
+	struct trustAuthInOutBlob password_blob;
+	struct hdb_ldb_private *private;
+
+	enum ndr_err_code ndr_err;
+	int i, ret, trust_direction_flags;
+
+	private = talloc(mem_ctx, struct hdb_ldb_private);
+	if (!private) {
+		ret = ENOMEM;
+		goto out;
+	}
+
+	private->entry_ex = entry_ex;
+	private->iconv_convenience = lp_iconv_convenience(lp_ctx);
+	private->netbios_name = lp_netbios_name(lp_ctx);
+
+	talloc_set_destructor(private, hdb_ldb_destrutor);
+
+	entry_ex->ctx = private;
+	entry_ex->free_entry = hdb_ldb_free_entry;
+
+	/* use 'whenCreated' */
+	entry_ex->entry.created_by.time = ldb_msg_find_krb5time_ldap_time(msg, "whenCreated", 0);
+	/* use '???' */
+	entry_ex->entry.created_by.principal = NULL;
+
+	entry_ex->entry.valid_start = NULL;
+
+	trust_direction_flags = ldb_msg_find_attr_as_int(msg, "trustDirection", 0);
+
+	if (direction == INBOUND) {
+		realm = strupper_talloc(mem_ctx, lp_realm(lp_ctx));
+		password_val = ldb_msg_find_ldb_val(msg, "trustAuthIncoming");
+
+	} else { /* OUTBOUND */
+		dnsdomain = ldb_msg_find_attr_as_string(msg, "trustPartner", NULL);
+		realm = strupper_talloc(mem_ctx, dnsdomain);
+		password_val = ldb_msg_find_ldb_val(msg, "trustAuthOutgoing");
+	}
+
+	ndr_err = ndr_pull_struct_blob_all(password_val, mem_ctx, private->iconv_convenience, &password_blob,
+					   (ndr_pull_flags_fn_t)ndr_pull_trustAuthInOutBlob);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		ret = EINVAL;
+		goto out;
+	}
+
+	for (i=0; i < password_blob.count; i++) {
+		if (password_blob.current->array[i].AuthType == TRUST_AUTH_TYPE_CLEAR) {
+			password_utf16 = data_blob_const(password_blob.current->array[i].AuthInfo.clear.password,
+							 password_blob.current->array[i].AuthInfo.clear.size);
+			/* In the future, generate all sorts of
+			 * hashes, but for now we can't safely convert
+			 * the random strings windows uses into
+			 * utf8 */
+
+			/* but as it is utf16 already, we can get the NT password/arcfour-hmac-md5 key */
+			mdfour(password_hash.hash, password_utf16.data, password_utf16.length);
+			break;
+		} else if (password_blob.current->array[i].AuthType == TRUST_AUTH_TYPE_NT4OWF) {
+			password_hash = password_blob.current->array[i].AuthInfo.nt4owf.password;
+			break;
+		}
+	}
+	entry_ex->entry.keys.len = 0;
+	entry_ex->entry.keys.val = NULL;
+
+	if (i < password_blob.count) {
+		Key key;
+		/* Must have found a cleartext or MD4 password */
+		entry_ex->entry.keys.val = calloc(1, sizeof(Key));
+
+		key.mkvno = 0;
+		key.salt = NULL; /* No salt for this enc type */
+
+		if (entry_ex->entry.keys.val == NULL) {
+			ret = ENOMEM;
+			goto out;
+		}
+		
+		ret = krb5_keyblock_init(context,
+					 ENCTYPE_ARCFOUR_HMAC_MD5,
+					 password_hash.hash, sizeof(password_hash.hash), 
+					 &key.key);
+		
+		entry_ex->entry.keys.val[entry_ex->entry.keys.len] = key;
+		entry_ex->entry.keys.len++;
+	}
+		
+	ret = copy_Principal(principal, entry_ex->entry.principal);
+	if (ret) {
+		krb5_clear_error_string(context);
+		goto out;
+	}
+	
+	/* While we have copied the client principal, tests
+	 * show that Win2k3 returns the 'corrected' realm, not
+	 * the client-specified realm.  This code attempts to
+	 * replace the client principal's realm with the one
+	 * we determine from our records */
+	
+	/* this has to be with malloc() */
+	strdup_realm = strdup(realm);
+	if (!strdup_realm) {
+		ret = ENOMEM;
+		krb5_clear_error_string(context);
+		goto out;
+	}
+	free(*krb5_princ_realm(context, entry_ex->entry.principal));
+	krb5_princ_set_realm(context, entry_ex->entry.principal, &strdup_realm);
+	
+	entry_ex->entry.flags = int2HDBFlags(0);
+	entry_ex->entry.flags.immutable = 1;
+	entry_ex->entry.flags.invalid = 0;
+	entry_ex->entry.flags.server = 1;
+	entry_ex->entry.flags.require_preauth = 1;
+
+	entry_ex->entry.pw_end = NULL;
+			
+	entry_ex->entry.max_life = NULL;
+
+	entry_ex->entry.max_renew = NULL;
+
+	entry_ex->entry.generation = NULL;
+
+	entry_ex->entry.etypes = malloc(sizeof(*(entry_ex->entry.etypes)));
+	if (entry_ex->entry.etypes == NULL) {
+		krb5_clear_error_string(context);
+		ret = ENOMEM;
+		goto out;
+	}
+	entry_ex->entry.etypes->len = entry_ex->entry.keys.len;
+	entry_ex->entry.etypes->val = calloc(entry_ex->entry.etypes->len, sizeof(int));
+	if (entry_ex->entry.etypes->val == NULL) {
+		krb5_clear_error_string(context);
+		ret = ENOMEM;
+		goto out;
+	}
+	for (i=0; i < entry_ex->entry.etypes->len; i++) {
+		entry_ex->entry.etypes->val[i] = entry_ex->entry.keys.val[i].key.keytype;
+	}
+
+
+	private->msg = talloc_steal(private, msg);
+	private->realm_ref_msg = NULL;
+	private->samdb = (struct ldb_context *)db->hdb_db;
+	
+out:
+	if (ret != 0) {
+		/* This doesn't free ent itself, that is for the eventual caller to do */
+		hdb_free_entry(context, entry_ex);
+	} else {
+		talloc_steal(db, entry_ex->ctx);
+	}
+
+	return ret;
+
+}
+
 static krb5_error_code LDB_lookup_principal(krb5_context context, struct ldb_context *ldb_ctx, 					
 					    TALLOC_CTX *mem_ctx,
 					    krb5_const_principal principal,
@@ -717,8 +904,7 @@ static krb5_error_code LDB_lookup_principal(krb5_context context, struct ldb_con
 
 	switch (ent_type) {
 	case HDB_LDB_ENT_TYPE_CLIENT:
-		/* Can't happen */
-		return EINVAL;
+	case HDB_LDB_ENT_TYPE_TRUST:
 	case HDB_LDB_ENT_TYPE_ANY:
 		/* Can't happen */
 		return EINVAL;
@@ -756,7 +942,6 @@ static krb5_error_code LDB_lookup_principal(krb5_context context, struct ldb_con
 static krb5_error_code LDB_lookup_trust(krb5_context context, struct ldb_context *ldb_ctx, 					
 					TALLOC_CTX *mem_ctx,
 					const char *realm,
-					enum hdb_ldb_ent_type ent_type,
 					struct ldb_dn *realm_dn,
 					struct ldb_message ***pmsg)
 {
@@ -961,11 +1146,7 @@ static krb5_error_code LDB_fetch_krbtgt(krb5_context context, HDB *db,
 		return ret;
 
 	} else {
-		enum {
-			INBOUND,
-			OUTBOUND,
-			UNKNOWN
-		} direction = UNKNOWN;
+		enum trust_direction direction = UNKNOWN;
 
 		struct loadparm_context *lp_ctx = talloc_get_type(ldb_get_opaque(db->hdb_db, "loadparm"), struct loadparm_context);
 		/* Either an inbound or outbound trust */
@@ -986,7 +1167,7 @@ static krb5_error_code LDB_fetch_krbtgt(krb5_context context, HDB *db,
 		
 		ret = LDB_lookup_trust(context, (struct ldb_context *)db->hdb_db, 
 				       mem_ctx, 
-				       realm, HDB_LDB_ENT_TYPE_TRUST, realm_dn, &msg);
+				       realm, realm_dn, &msg);
 		
 		if (ret != 0) {
 			krb5_warnx(context, "LDB_fetch: could not find principal in DB");
@@ -994,9 +1175,9 @@ static krb5_error_code LDB_fetch_krbtgt(krb5_context context, HDB *db,
 			return ret;
 		}
 		
-		ret = LDB_message2entry(context, db, mem_ctx, 
-					principal, HDB_LDB_ENT_TYPE_KRBTGT, 
-					msg[0], realm_ref_msg_1[0], entry_ex);
+		ret = LDB_trust_message2entry(context, db, lp_ctx, mem_ctx, 
+					      principal, direction, 
+					      msg[0], entry_ex);
 		if (ret != 0) {
 			krb5_warnx(context, "LDB_fetch: message2entry failed");	
 		}
