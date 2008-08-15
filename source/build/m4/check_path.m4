@@ -137,7 +137,7 @@ AC_ARG_WITH(piddir,
 #################################################
 # set log directory location
 AC_ARG_WITH(logfilebase,
-[  --with-logfilebase=DIR  Where to put log files (\$(VARDIR))],
+[AS_HELP_STRING([--with-logfilebase=DIR],[Where to put log files (\$(VARDIR))])],
 [ case "$withval" in
   yes|no)
   #
