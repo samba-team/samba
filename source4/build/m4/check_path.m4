@@ -41,7 +41,7 @@ AC_ARG_WITH(fhs,
 #################################################
 # set private directory location
 AC_ARG_WITH(privatedir,
-[  --with-privatedir=DIR   Where to put sam.ldb and other private files containing key material ($ac_default_prefix/private)],
+[AS_HELP_STRING([--with-privatedir=DIR],[Where to put sam.ldb and other private files containing key material ($ac_default_prefix/private)])],
 [ case "$withval" in
   yes|no)
   #
