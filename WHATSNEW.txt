@@ -1,6 +1,6 @@
                    ==============================
                    Release Notes for Samba 3.2.2
-
+			  August, 18 2008
                    ==============================
 
 This is a bug fix release of the Samba 3.2 series.
@@ -11,6 +11,7 @@ Major bug fixes included in Samba 3.2.2 are:
     tdb files and to overflowing partitions as a consequence on systems
     running an nmbd daemon.
   o Fix freezing Windows Explorer on WinXP while browsing Samba shares.
+    This one led to timeouts during printing as well.
   o Fix assigning of primary group memberships when authenticating via
     Winbind.
 
