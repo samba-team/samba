@@ -24,7 +24,7 @@ winbindd_privileged_socket_dir="${localstatedir}/lib/winbindd_privileged"
 ntp_signd_socket_dir="${localstatedir}/run/ntp_signd"
 
 AC_ARG_WITH(fhs, 
-[  --with-fhs              Use FHS-compliant paths (default=no)],
+[AS_HELP_STRING([--with-fhs],[Use FHS-compliant paths (default=no)])],
     lockdir="${localstatedir}/lib/samba"
     piddir="${localstatedir}/run/samba"
     logfilebase="${localstatedir}/log/samba"
