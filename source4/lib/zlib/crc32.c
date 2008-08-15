@@ -11,6 +11,8 @@
 
 /* @(#) $Id$ */
 
+#include "zutil.h"      /* for STDC and FAR definitions */
+
 /*
   Note on the use of DYNAMIC_CRC_TABLE: there is no mutex or semaphore
   protection on the static variables used to control the first-use generation
@@ -25,8 +27,6 @@
 #    define DYNAMIC_CRC_TABLE
 #  endif /* !DYNAMIC_CRC_TABLE */
 #endif /* MAKECRCH */
-
-#include "zutil.h"      /* for STDC and FAR definitions */
 
 #define local static
 
