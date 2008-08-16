@@ -928,11 +928,16 @@ OM_uint32 _gsskrb5_init_sec_context
 	 * If we get there, the caller have called
 	 * gss_init_sec_context() one time too many.
 	 */
-	*minor_status = 0;
+	_gsskrb5_set_status(EINVAL, "init_sec_context "
+			    "called one time too many");
+	*minor_status = EINVAL;
 	ret = GSS_S_BAD_STATUS;
 	break;
     default:
-	*minor_status = 0;
+	_gsskrb5_set_status(EINVAL, "init_sec_context "
+			    "invalid state %d for client",
+			    (int)ctx->state);
+	*minor_status = EINVAL;
 	ret = GSS_S_BAD_STATUS;
 	break;
     }
