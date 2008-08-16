@@ -85,7 +85,6 @@ ${kadmin} ext -k ${keytab} host/lucid@${R} || exit 1
 
 ${kadmin} add -p p1 --use-defaults host/ok-delegate.test.h5l.se@${R} || exit 1
 ${kadmin} mod --attributes=+ok-as-delegate host/ok-delegate.test.h5l.se@${R} || exit 1
-${kadmin} get host/ok-delegate.test.h5l.se@${R} || exit 1
 
 
 ${kadmin} add -p kaka --use-defaults digest/${R}@${R} || exit 1
