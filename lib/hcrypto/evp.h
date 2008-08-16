@@ -162,6 +162,21 @@ struct hc_CIPHER_CTX {
     unsigned char final[EVP_MAX_BLOCK_LENGTH];
 };
 
+typedef int (*hc_evp_md_init)(EVP_MD_CTX *);
+typedef int (*hc_evp_md_update)(EVP_MD_CTX *,const void *, size_t);
+typedef int (*hc_evp_md_final)(void *, EVP_MD_CTX *);
+typedef int (*hc_evp_md_cleanup)(EVP_MD_CTX *);
+
+struct hc_evp_md {
+    int hash_size;
+    int block_size;
+    int ctx_size;
+    hc_evp_md_init init;
+    hc_evp_md_update update;
+    hc_evp_md_final final;
+    hc_evp_md_cleanup cleanup;
+};
+
 #if !defined(__GNUC__) && !defined(__attribute__)
 #define __attribute__(x)
 #endif
