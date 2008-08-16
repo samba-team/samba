@@ -3680,10 +3680,10 @@ static void
 free_key_data(krb5_context context, struct key_data *key,
 	      struct encryption_type *et)
 {
-    if (et->keytype->cleanup)
-	(*et->keytype->cleanup)(context, key);
     krb5_free_keyblock(context, key->key);
     if(key->schedule) {
+	if (et->keytype->cleanup)
+	    (*et->keytype->cleanup)(context, key);
 	memset(key->schedule->data, 0, key->schedule->length);
 	krb5_free_data(context, key->schedule);
     }
