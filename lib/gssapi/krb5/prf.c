@@ -72,14 +72,14 @@ _gsskrb5_pseudo_random(OM_uint32 *minor_status,
 	_gsskrb5i_get_initiator_subkey(ctx, context, &key);
 	break;
     default:
-	_gsskrb5_set_status("unknown kerberos prf_key");
-	*minor_status = 0;
+	_gsskrb5_set_status(EINVAL, "unknown kerberos prf_key");
+	*minor_status = EINVAL;
 	return GSS_S_FAILURE;
     }
 
     if (key == NULL) {
-	_gsskrb5_set_status("no prf_key found");
-	*minor_status = 0;
+	_gsskrb5_set_status(EINVAL, "no prf_key found");
+	*minor_status = EINVAL;
 	return GSS_S_FAILURE;
     }
 
@@ -92,7 +92,7 @@ _gsskrb5_pseudo_random(OM_uint32 *minor_status,
 
     prf_out->value = malloc(desired_output_len);
     if (prf_out->value == NULL) {
-	_gsskrb5_set_status("Out of memory");
+	_gsskrb5_set_status(GSS_KRB5_S_KG_INPUT_TOO_LONG, "Out of memory");
 	*minor_status = GSS_KRB5_S_KG_INPUT_TOO_LONG;
 	krb5_crypto_destroy(context, crypto);
 	return GSS_S_FAILURE;
@@ -105,7 +105,7 @@ _gsskrb5_pseudo_random(OM_uint32 *minor_status,
     input.data = malloc(prf_in->length + 4);
     if (input.data == NULL) {
 	OM_uint32 junk;
-	_gsskrb5_set_status("Out of memory");
+	_gsskrb5_set_status(GSS_KRB5_S_KG_INPUT_TOO_LONG, "Out of memory");
 	*minor_status = GSS_KRB5_S_KG_INPUT_TOO_LONG;
 	gss_release_buffer(&junk, prf_out);
 	krb5_crypto_destroy(context, crypto);
