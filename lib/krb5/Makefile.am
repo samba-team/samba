@@ -177,6 +177,11 @@ dist_libkrb5_la_SOURCES =			\
 	warn.c					\
 	write_message.c
 
+if HAVE_OPENSSL
+dist_libkrb5_la_SOURCES += ../hcrypto/evp-aes-cts.c
+endif
+
+
 nodist_libkrb5_la_SOURCES =			\
 	$(ERR_FILES)
 
