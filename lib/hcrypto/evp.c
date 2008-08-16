@@ -64,22 +64,6 @@ RCSID("$Id$");
  * See the library functions here: @ref hcrypto_evp
  */
 
-
-typedef int (*evp_md_init)(EVP_MD_CTX *);
-typedef int (*evp_md_update)(EVP_MD_CTX *,const void *, size_t);
-typedef int (*evp_md_final)(void *, EVP_MD_CTX *);
-typedef int (*evp_md_cleanup)(EVP_MD_CTX *);
-
-struct hc_evp_md {
-    int hash_size;
-    int block_size;
-    int ctx_size;
-    evp_md_init init;
-    evp_md_update update;
-    evp_md_final final;
-    evp_md_cleanup cleanup;
-};
-
 struct hc_EVP_MD_CTX {
     const EVP_MD *md;
     ENGINE *engine;
@@ -360,9 +344,9 @@ EVP_sha256(void)
 	32,
 	64,
 	sizeof(SHA256_CTX),
-	(evp_md_init)SHA256_Init,
-	(evp_md_update)SHA256_Update,
-	(evp_md_final)SHA256_Final,
+	(hc_evp_md_init)SHA256_Init,
+	(hc_evp_md_update)SHA256_Update,
+	(hc_evp_md_final)SHA256_Final,
 	NULL
     };
     return &sha256;
@@ -372,9 +356,9 @@ static const struct hc_evp_md sha1 = {
     20,
     64,
     sizeof(SHA_CTX),
-    (evp_md_init)SHA1_Init,
-    (evp_md_update)SHA1_Update,
-    (evp_md_final)SHA1_Final,
+    (hc_evp_md_init)SHA1_Init,
+    (hc_evp_md_update)SHA1_Update,
+    (hc_evp_md_final)SHA1_Final,
     NULL
 };
 
@@ -421,9 +405,9 @@ EVP_md5(void)
 	16,
 	64,
 	sizeof(MD5_CTX),
-	(evp_md_init)MD5_Init,
-	(evp_md_update)MD5_Update,
-	(evp_md_final)MD5_Final,
+	(hc_evp_md_init)MD5_Init,
+	(hc_evp_md_update)MD5_Update,
+	(hc_evp_md_final)MD5_Final,
 	NULL
     };
     return &md5;
@@ -444,9 +428,9 @@ EVP_md4(void)
 	16,
 	64,
 	sizeof(MD4_CTX),
-	(evp_md_init)MD4_Init,
-	(evp_md_update)MD4_Update,
-	(evp_md_final)MD4_Final,
+	(hc_evp_md_init)MD4_Init,
+	(hc_evp_md_update)MD4_Update,
+	(hc_evp_md_final)MD4_Final,
 	NULL
     };
     return &md4;
@@ -467,9 +451,9 @@ EVP_md2(void)
 	16,
 	16,
 	sizeof(MD2_CTX),
-	(evp_md_init)MD2_Init,
-	(evp_md_update)MD2_Update,
-	(evp_md_final)MD2_Final,
+	(hc_evp_md_init)MD2_Init,
+	(hc_evp_md_update)MD2_Update,
+	(hc_evp_md_final)MD2_Final,
 	NULL
     };
     return &md2;
@@ -507,9 +491,9 @@ EVP_md_null(void)
 	0,
 	0,
 	0,
-	(evp_md_init)null_Init,
-	(evp_md_update)null_Update,
-	(evp_md_final)null_Final,
+	(hc_evp_md_init)null_Init,
+	(hc_evp_md_update)null_Update,
+	(hc_evp_md_final)null_Final,
 	NULL
     };
     return &null;
