@@ -171,8 +171,11 @@ OM_uint32 _gsskrb5_display_status
 		      calling_error(GSS_CALLING_ERROR(status_value)),
 		      routine_error(GSS_ROUTINE_ERROR(status_value)));
     } else if (status_type == GSS_C_MECH_CODE) {
-	buf = krb5_get_error_message(context, status_value);
-	if (buf == NULL) {
+	const char *buf2 = krb5_get_error_message(context, status_value);
+	if (buf2) {
+	    buf = strdup(buf2);
+	    krb5_free_error_message(context, buf2);
+	} else {
 	    asprintf(&buf, "unknown mech error-code %u",
 		     (unsigned)status_value);
 	}
