@@ -107,6 +107,7 @@ get_user_ccache(const ntlm_name name, char **username, struct ntlm_buf *key)
     krb5_data data;
 
     *username = NULL;
+    krb5_data_zero(&data);
     key->length = 0;
     key->data = NULL;
 
@@ -138,10 +139,14 @@ get_user_ccache(const ntlm_name name, char **username, struct ntlm_buf *key)
 
     ret = krb5_cc_get_config(context, id, NULL,
 			     confname, &data);
+    if (ret)
+	goto out;
 
     key->data = malloc(data.length);
-    if (key->data == NULL)
+    if (key->data == NULL) {
+	ret = ENOMEM;
 	goto out;
+    }
     key->length = data.length;
     memcpy(key->data, data.data, data.length);
 
