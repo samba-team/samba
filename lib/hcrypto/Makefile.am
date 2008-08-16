@@ -104,6 +104,7 @@ libhcrypto_la_SOURCES =	\
 	doxygen.c	\
 	evp.c		\
 	evp.h		\
+	evp-hcrypto.c	\
 	engine.c	\
 	engine.h	\
 	hash.h		\
