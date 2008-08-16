@@ -94,6 +94,7 @@ struct key_type {
     void (*schedule)(krb5_context, struct key_data *);
     struct salt_type *string_to_key;
     void (*random_to_key)(krb5_context, krb5_keyblock*, const void*, size_t);
+    void (*cleanup)(krb5_context, struct key_data *);
 };
 
 struct checksum_type {
@@ -157,7 +158,9 @@ static krb5_error_code hmac(krb5_context context,
 			    unsigned usage,
 			    struct key_data *keyblock,
 			    Checksum *result);
-static void free_key_data(krb5_context context, struct key_data *key);
+static void free_key_data(krb5_context, 
+			  struct key_data *,
+			  struct encryption_type *);
 static krb5_error_code usage2arcfour (krb5_context, unsigned *);
 static void xor (DES_cblock *, const unsigned char *);
 
@@ -662,7 +665,7 @@ AES_string_to_key(krb5_context context,
 				 iter, 
 				 et->keytype->size, kd.key->keyvalue.data);
     if (ret != 1) {
-	free_key_data(context, &kd);
+	free_key_data(context, &kd, et);
 	krb5_set_error_message(context, KRB5_PROG_KEYTYPE_NOSUPP,
 			       "Error calculating s2k");
 	return KRB5_PROG_KEYTYPE_NOSUPP;
@@ -671,7 +674,7 @@ AES_string_to_key(krb5_context context,
     ret = derive_key(context, et, &kd, "kerberos", strlen("kerberos"));
     if (ret == 0)
 	ret = krb5_copy_keyblock_contents(context, kd.key, key);
-    free_key_data(context, &kd);
+    free_key_data(context, &kd, et);
 
     return ret;
 }
@@ -703,6 +706,14 @@ AES_schedule(krb5_context context,
 
     EVP_CipherInit_ex(&key->ectx, c, NULL, kd->key->keyvalue.data, NULL, 1);
     EVP_CipherInit_ex(&key->dctx, c, NULL, kd->key->keyvalue.data, NULL, 0);
+}
+
+static void
+AES_cleanup(krb5_context context, struct key_data *kd)
+{
+    struct krb5_aes_schedule *key = kd->schedule->data;
+    EVP_CIPHER_CTX_cleanup(&key->ectx);
+    EVP_CIPHER_CTX_cleanup(&key->dctx);
 }
 
 /*
@@ -820,7 +831,9 @@ static struct key_type keytype_aes128 = {
     sizeof(struct krb5_aes_schedule),
     NULL,
     AES_schedule,
-    AES_salt
+    AES_salt,
+    NULL,
+    AES_cleanup
 };
 
 static struct key_type keytype_aes256 = {
@@ -831,7 +844,9 @@ static struct key_type keytype_aes256 = {
     sizeof(struct krb5_aes_schedule),
     NULL,
     AES_schedule,
-    AES_salt
+    AES_salt,
+    NULL,
+    AES_cleanup
 };
 
 static struct key_type keytype_arcfour = {
@@ -3587,7 +3602,7 @@ krb5_derive_key(krb5_context context,
     ret = derive_key(context, et, &d, constant, constant_len);
     if (ret == 0)
 	ret = krb5_copy_keyblock(context, d.key, derived_key);
-    free_key_data(context, &d);    
+    free_key_data(context, &d, et);    
     return ret;
 }
 
@@ -3662,8 +3677,11 @@ krb5_crypto_init(krb5_context context,
 }
 
 static void
-free_key_data(krb5_context context, struct key_data *key)
+free_key_data(krb5_context context, struct key_data *key,
+	      struct encryption_type *et)
 {
+    if (et->keytype->cleanup)
+	(*et->keytype->cleanup)(context, key);
     krb5_free_keyblock(context, key->key);
     if(key->schedule) {
 	memset(key->schedule->data, 0, key->schedule->length);
@@ -3672,9 +3690,10 @@ free_key_data(krb5_context context, struct key_data *key)
 }
 
 static void
-free_key_usage(krb5_context context, struct key_usage *ku)
+free_key_usage(krb5_context context, struct key_usage *ku,
+	       struct encryption_type *et)
 {
-    free_key_data(context, &ku->key);
+    free_key_data(context, &ku->key, et);
 }
 
 krb5_error_code KRB5_LIB_FUNCTION
@@ -3684,9 +3703,9 @@ krb5_crypto_destroy(krb5_context context,
     int i;
     
     for(i = 0; i < crypto->num_key_usage; i++)
-	free_key_usage(context, &crypto->key_usage[i]);
+	free_key_usage(context, &crypto->key_usage[i], crypto->et);
     free(crypto->key_usage);
-    free_key_data(context, &crypto->key);
+    free_key_data(context, &crypto->key, crypto->et);
     free (crypto);
     return 0;
 }
@@ -3798,7 +3817,7 @@ krb5_string_to_key_derived(krb5_context context,
 		     "kerberos", /* XXX well known constant */
 		     strlen("kerberos"));
     ret = krb5_copy_keyblock_contents(context, kd.key, key);
-    free_key_data(context, &kd);
+    free_key_data(context, &kd, et);
     return ret;
 }
 
