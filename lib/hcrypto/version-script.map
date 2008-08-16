@@ -136,6 +136,12 @@ HEIMDAL_CRYPTO_1.0 {
 		hc_EVP_aes_128_cbc;
 		hc_EVP_aes_192_cbc;
 		hc_EVP_aes_256_cbc;
+		hc_EVP_hcrypto_aes_128_cbc;
+		hc_EVP_hcrypto_aes_192_cbc;
+		hc_EVP_hcrypto_aes_256_cbc;
+		hc_EVP_hcrypto_aes_cts_128_cbc;
+		hc_EVP_hcrypto_aes_cts_192_cbc;
+		hc_EVP_hcrypto_aes_cts_256_cbc;
 		hc_EVP_des_ede3_cbc;
 		hc_EVP_camellia_128_cbc;
 		hc_EVP_camellia_192_cbc;
