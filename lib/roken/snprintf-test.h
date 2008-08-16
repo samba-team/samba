@@ -32,21 +32,22 @@
  */
 
 /* $Id$ */
-
-#ifndef __SNPRINTF_TEST_H__
-#define __SNPRINTF_TEST_H__
-
 /*
  * we cannot use the real names of the functions when testing, since
  * they might have different prototypes as the system functions, hence
  * these evil hacks
  */
 
-#define snprintf test_snprintf
-#define asprintf test_asprintf
-#define asnprintf test_asnprintf
-#define vasprintf test_vasprintf
-#define vasnprintf test_vasnprintf
-#define vsnprintf test_vsnprintf
 
-#endif /* __SNPRINTF_TEST_H__ */
+#undef snprintf
+#define snprintf test_snprintf
+#undef asprintf
+#define asprintf test_asprintf
+#undef asnprintf
+#define asnprintf test_asnprintf
+#undef vasprintf
+#define vasprintf test_vasprintf
+#undef vasnprintf
+#define vasnprintf test_vasnprintf
+#undef vsnprintf
+#define vsnprintf test_vsnprintf
