@@ -341,6 +341,7 @@ krb5_kt_get_entry(krb5_context context,
     if (ret) {
 	/* This is needed for krb5_verify_init_creds, but keep error
 	 * string from previous error for the human. */
+	context->error_code = KRB5_KT_NOTFOUND;
 	return KRB5_KT_NOTFOUND;
     }
 
