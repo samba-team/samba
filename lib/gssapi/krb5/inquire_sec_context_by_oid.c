@@ -84,7 +84,7 @@ static OM_uint32 inquire_sec_context_tkt_flags
 
     if (context_handle->ticket == NULL) {
 	HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
-	_gsskrb5_set_status("No ticket from which to obtain flags");
+	_gsskrb5_set_status(EINVAL, "No ticket from which to obtain flags");
 	*minor_status = EINVAL;
 	return GSS_S_BAD_MECH;
     }
@@ -137,7 +137,7 @@ static OM_uint32 inquire_sec_context_get_subkey
 	ret = _gsskrb5i_get_token_key(context_handle, context, &key);
 	break;
     default:
-	_gsskrb5_set_status("%d is not a valid subkey type", keytype);
+	_gsskrb5_set_status(EINVAL, "%d is not a valid subkey type", keytype);
 	ret = EINVAL;
 	break;
    }
@@ -145,7 +145,7 @@ static OM_uint32 inquire_sec_context_get_subkey
     if (ret) 
 	goto out;
     if (key == NULL) {
-	_gsskrb5_set_status("have no subkey of type %d", keytype);
+	_gsskrb5_set_status(EINVAL, "have no subkey of type %d", keytype);
 	ret = EINVAL;
 	goto out;
     }
@@ -199,7 +199,7 @@ static OM_uint32 inquire_sec_context_authz_data
     if (context_handle->ticket == NULL) {
 	HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
 	*minor_status = EINVAL;
-	_gsskrb5_set_status("No ticket to obtain authz data from");
+	_gsskrb5_set_status(EINVAL, "No ticket to obtain authz data from");
 	return GSS_S_NO_CONTEXT;
     }
 
@@ -405,7 +405,7 @@ get_authtime(OM_uint32 *minor_status,
     HEIMDAL_MUTEX_lock(&ctx->ctx_id_mutex);
     if (ctx->ticket == NULL) {
 	HEIMDAL_MUTEX_unlock(&ctx->ctx_id_mutex);
-	_gsskrb5_set_status("No ticket to obtain auth time from");
+	_gsskrb5_set_status(EINVAL, "No ticket to obtain auth time from");
 	*minor_status = EINVAL;
 	return GSS_S_FAILURE;
     }
@@ -445,7 +445,7 @@ get_service_keyblock
     HEIMDAL_MUTEX_lock(&ctx->ctx_id_mutex);
     if (ctx->service_keyblock == NULL) {
 	HEIMDAL_MUTEX_unlock(&ctx->ctx_id_mutex);
-	_gsskrb5_set_status("No service keyblock on gssapi context");
+	_gsskrb5_set_status(EINVAL, "No service keyblock on gssapi context");
 	*minor_status = EINVAL;
 	return GSS_S_FAILURE; 
     }
