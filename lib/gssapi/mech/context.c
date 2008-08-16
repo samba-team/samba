@@ -74,8 +74,14 @@ _gss_mg_get_error(const gss_OID mech, OM_uint32 type,
     if (mg == NULL)
 	return GSS_S_BAD_STATUS;
 
+#if 0
+    /* 
+     * We cant check the mech here since a pseudo-mech might have
+     * called an lower layer and then the mech info is all broken
+     */
     if (mech != NULL && gss_oid_equal(mg->mech, mech) == 0)
 	return GSS_S_BAD_STATUS;
+#endif
 
     switch (type) {
     case GSS_C_GSS_CODE: {
