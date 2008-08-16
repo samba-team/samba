@@ -289,6 +289,7 @@ static struct getargs args[] = {
     {"getverifymic",0,	arg_flag,	&getverifymic_flag, 
      "get and verify mic", NULL },
     {"delegate",0,	arg_flag,	&deleg_flag, "delegate credential", NULL },
+    {"policy-delegate",0,	arg_flag,	&policy_deleg_flag, "policy delegate credential", NULL },
     {"server-no-delegate",0,	arg_flag,	&server_no_deleg_flag,
      "server should get a credential", NULL },
     {"gsskrb5-acceptor-identity", 0, arg_string, &gsskrb5_acceptor_identity, "keytab", NULL },
