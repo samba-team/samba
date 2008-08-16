@@ -217,7 +217,7 @@ static NTSTATUS rids_to_names(struct winbindd_domain *domain,
 			(*names)[i] = CONST_DISCARD(char *, nam);
 		}
 
-		if (domain_name == NULL) {
+		if (*domain_name == NULL) {
 			*domain_name = CONST_DISCARD(char *, dom);
 		} else {
 			char *dname = CONST_DISCARD(char *, dom);
