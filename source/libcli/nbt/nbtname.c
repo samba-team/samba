@@ -420,7 +420,7 @@ _PUBLIC_ void nbt_choose_called_name(TALLOC_CTX *mem_ctx,
 	n->scope = NULL;
 	n->type = type;
 
-	if (is_ipaddress(name) || name == NULL) {
+	if ((name == NULL) || is_ipaddress(name)) {
 		n->name = "*SMBSERVER";
 		return;
 	}
