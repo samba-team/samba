@@ -122,7 +122,7 @@ _gsskrb5_clear_status (void)
 }
 
 void
-_gsskrb5_set_status (const char *fmt, ...)
+_gsskrb5_set_status (int ret, const char *fmt, ...)
 {
     krb5_context context;
     va_list args;
@@ -135,7 +135,7 @@ _gsskrb5_set_status (const char *fmt, ...)
     vasprintf(&str, fmt, args);
     va_end(args);
     if (str) {
-	krb5_set_error_message(context, 0, str);
+	krb5_set_error_message(context, ret, str);
 	free(str);
     }
 }
@@ -171,14 +171,10 @@ OM_uint32 _gsskrb5_display_status
 		      calling_error(GSS_CALLING_ERROR(status_value)),
 		      routine_error(GSS_ROUTINE_ERROR(status_value)));
     } else if (status_type == GSS_C_MECH_CODE) {
-	buf = krb5_get_error_string(context);
+	buf = krb5_get_error_message(context, status_value);
 	if (buf == NULL) {
-	    const char *tmp = krb5_get_err_text (context, status_value);
-	    if (tmp == NULL)
-		asprintf(&buf, "unknown mech error-code %u",
-			 (unsigned)status_value);
-	    else
-		buf = strdup(tmp);
+	    asprintf(&buf, "unknown mech error-code %u",
+		     (unsigned)status_value);
 	}
     } else {
 	*minor_status = EINVAL;
