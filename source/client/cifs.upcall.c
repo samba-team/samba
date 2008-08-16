@@ -1,5 +1,5 @@
 /*
-* CIFS SPNEGO user-space helper.
+* CIFS user-space helper.
 * Copyright (C) Igor Mammedov (niallain@gmail.com) 2007
 *
 * Used by /sbin/request-key for handling
@@ -8,8 +8,8 @@
 * You should have keyutils installed and add following line to
 * /etc/request-key.conf file
 
-create cifs.spnego * * /usr/local/sbin/cifs.spnego [-v][-c] %k
-create cifs.resolver * * /usr/local/sbin/cifs.spnego [-v] %k
+create cifs.spnego * * /usr/local/sbin/cifs.upcall [-v][-c] %k
+create cifs.resolver * * /usr/local/sbin/cifs.upcall [-v] %k
 
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -30,7 +30,7 @@ create cifs.resolver * * /usr/local/sbin/cifs.spnego [-v] %k
 #include "cifs_spnego.h"
 
 const char *CIFSSPNEGO_VERSION = "1.1";
-static const char *prog = "cifs.spnego";
+static const char *prog = "cifs.upcall";
 typedef enum _secType {
 	KRB5,
 	MS_KRB5
@@ -200,6 +200,13 @@ int cifs_resolver(const key_serial_t key, const char *key_descr)
 	return 0;
 }
 
+void
+usage(const char *prog)
+{
+	syslog(LOG_WARNING, "Usage: %s [-c] [-v] key_serial", prog);
+	fprintf(stderr, "Usage: %s [-c] [-v] key_serial\n", prog);
+}
+
 int main(const int argc, char *const argv[])
 {
 	struct cifs_spnego_msg *keydata = NULL;
@@ -215,10 +222,6 @@ int main(const int argc, char *const argv[])
 	char *buf, *hostname = NULL;
 
 	openlog(prog, 0, LOG_DAEMON);
-	if (argc < 1) {
-		syslog(LOG_WARNING, "Usage: %s [-c] key_serial", prog);
-		goto out;
-	}
 
 	while ((c = getopt(argc, argv, "cv")) != -1) {
 		switch (c) {
@@ -227,9 +230,8 @@ int main(const int argc, char *const argv[])
 			break;
 			}
 		case 'v':{
-			syslog(LOG_WARNING, "version: %s", CIFSSPNEGO_VERSION);
-			fprintf(stderr, "version: %s", CIFSSPNEGO_VERSION);
-			break;
+			printf("version: %s\n", CIFSSPNEGO_VERSION);
+			goto out;
 			}
 		default:{
 			syslog(LOG_WARNING, "unknow option: %c", c);
@@ -237,6 +239,13 @@ int main(const int argc, char *const argv[])
 			}
 		}
 	}
+
+	/* is there a key? */
+	if (argc <= optind) {
+		usage(prog);
+		goto out;
+	}
+
 	/* get key and keyring values */
 	errno = 0;
 	key = strtol(argv[optind], NULL, 10);
