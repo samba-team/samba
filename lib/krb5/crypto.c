@@ -40,6 +40,11 @@ RCSID("$Id$");
 static void krb5_crypto_debug(krb5_context, int, size_t, krb5_keyblock*);
 #endif
 
+#ifdef HAVE_OPENSSL /* XXX forward decl for hcrypto glue */
+const EVP_CIPHER * EVP_hcrypto_aes_128_cts(void);
+const EVP_CIPHER * EVP_hcrypto_aes_192_cts(void);
+const EVP_CIPHER * EVP_hcrypto_aes_256_cts(void);
+#endif
 
 struct key_data {
     krb5_keyblock *key;
@@ -672,8 +677,8 @@ AES_string_to_key(krb5_context context,
 }
 
 struct krb5_aes_schedule {
-    AES_KEY ekey;
-    AES_KEY dkey;
+    EVP_CIPHER_CTX ectx;
+    EVP_CIPHER_CTX dctx;
 };
 
 static void
@@ -681,11 +686,23 @@ AES_schedule(krb5_context context,
 	     struct key_data *kd)
 {
     struct krb5_aes_schedule *key = kd->schedule->data;
-    int bits = kd->key->keyvalue.length * 8;
+    const EVP_CIPHER *c;
+
+    if (kd->key->keyvalue.length == 16)
+	c = EVP_hcrypto_aes_128_cts();
+    else if (kd->key->keyvalue.length == 24)
+	c = EVP_hcrypto_aes_192_cts();
+    else if (kd->key->keyvalue.length == 32)
+	c = EVP_hcrypto_aes_256_cts();
+    else
+	abort();
 
     memset(key, 0, sizeof(*key));
-    AES_set_encrypt_key(kd->key->keyvalue.data, bits, &key->ekey);
-    AES_set_decrypt_key(kd->key->keyvalue.data, bits, &key->dkey);
+    EVP_CIPHER_CTX_init(&key->ectx);
+    EVP_CIPHER_CTX_init(&key->dctx);
+
+    EVP_CipherInit_ex(&key->ectx, c, NULL, kd->key->keyvalue.data, NULL, 1);
+    EVP_CipherInit_ex(&key->dctx, c, NULL, kd->key->keyvalue.data, NULL, 0);
 }
 
 /*
@@ -2293,27 +2310,22 @@ AES_CTS_encrypt(krb5_context context,
 {
     struct krb5_aes_schedule *aeskey = key->schedule->data;
     char local_ivec[AES_BLOCK_SIZE];
-    AES_KEY *k;
+    EVP_CIPHER_CTX *k;
 
     if (encryptp)
-	k = &aeskey->ekey;
+	k = &aeskey->ectx;
     else
-	k = &aeskey->dkey;
+	k = &aeskey->dctx;
     
-    if (len < AES_BLOCK_SIZE)
-	krb5_abortx(context, "invalid use of AES_CTS_encrypt");
-    if (len == AES_BLOCK_SIZE) {
-	if (encryptp)
-	    AES_encrypt(data, data, k);
-	else
-	    AES_decrypt(data, data, k);
-    } else {
-	if(ivec == NULL) {
-	    memset(local_ivec, 0, sizeof(local_ivec));
-	    ivec = local_ivec;
-	}
-	_krb5_aes_cts_encrypt(data, data, len, k, ivec, encryptp);
+    if(ivec == NULL) {
+	memset(local_ivec, 0, sizeof(local_ivec));
+	ivec = local_ivec;
     }
+
+    EVP_CipherInit_ex(k, NULL, NULL, NULL, ivec, -1);
+
+    if (EVP_Cipher(k, data, data, len) != 1)
+	krb5_abortx(context, "EVP_Cipher failed for aes-cts");
 
     return 0;
 }
