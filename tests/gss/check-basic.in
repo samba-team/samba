@@ -48,9 +48,12 @@ keytabfile=${objdir}/server.keytab
 keytab="FILE:${keytabfile}"
 nokeytab="FILE:no-such-keytab"
 cache="FILE:krb5ccfile"
+cache2="FILE:krb5ccfile2"
 nocache="FILE:no-such-cache"
 
 kinit="${TESTS_ENVIRONMENT} ../../kuser/kinit -c $cache --no-afslog"
+kdestroy="${TESTS_ENVIRONMENT} ../../kuser/kdestroy -c $cache --no-unlog"
+klist="${TESTS_ENVIRONMENT} ../../kuser/klist -c $cache"
 kadmin="${TESTS_ENVIRONMENT} ../../kadmin/kadmin -l -r $R"
 kdc="${TESTS_ENVIRONMENT} ../../kdc/kdc --addresses=localhost -P $port"
 
@@ -110,17 +113,21 @@ echo "keytab"
 ${acquire_cred} \
     --acquire-type=accept \
     --acquire-name=host@host.test.h5l.se || exit 1
+
 echo "keytab w/o name"
 ${acquire_cred} \
     --acquire-type=accept || exit 1
+
 echo "keytab w/ wrong name"
 ${acquire_cred} \
     --acquire-type=accept \
     --acquire-name=host@host2.test.h5l.se 2>/dev/null && exit 1
+
 echo "init using keytab"
 ${acquire_cred} \
     --acquire-type=initiate \
     --acquire-name=host@host.test.h5l.se || exit 1
+
 echo "init using existing cc"
 ${acquire_cred} \
     --name-type=user-name \
@@ -135,7 +142,7 @@ ${acquire_cred} \
     --acquire-type=initiate \
     --acquire-name=user 2>/dev/null && exit 1
 
-echo "use gss_krb5_ccache_name"
+echo "use gss_krb5_ccache_name for user"
 ${acquire_cred} \
     --name-type=user-name \
     --ccache=${cache} \
@@ -147,6 +154,21 @@ KRB5_KTNAME=${nokeytab}
 
 echo "kcred"
 ${test_kcred} || exit 1
+
+${kdestroy}
+
+KRB5_KTNAME="${keytab}"
+
+echo "init using keytab"
+${acquire_cred} \
+    --acquire-type=initiate \
+    --acquire-name=host@host.test.h5l.se 2>/dev/null || exit 1
+
+echo "init using keytab (ccache)"
+${acquire_cred} \
+    --acquire-type=initiate \
+    --ccache=${cache} \
+    --acquire-name=host@host.test.h5l.se 2>/dev/null || exit 1
 
 trap "" EXIT
 
