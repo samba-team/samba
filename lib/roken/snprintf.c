@@ -46,6 +46,10 @@ RCSID("$Id$");
 #include "roken.h"
 #include <assert.h>
 
+#if defined(TEST_SNPRINTF)
+#include "snprintf-test.h"
+#endif /* TEST_SNPRINTF */
+
 enum format_flags {
     minus_flag     =  1,
     plus_flag      =  2,
