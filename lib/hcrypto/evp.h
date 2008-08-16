@@ -72,6 +72,12 @@
 #define EVP_aes_128_cbc hc_EVP_aes_128_cbc
 #define EVP_aes_192_cbc hc_EVP_aes_192_cbc
 #define EVP_aes_256_cbc hc_EVP_aes_256_cbc
+#define EVP_hcrypto_aes_128_cbc hc_EVP_hcrypto_aes_128_cbc
+#define EVP_hcrypto_aes_192_cbc hc_EVP_hcrypto_aes_192_cbc
+#define EVP_hcrypto_aes_256_cbc hc_EVP_hcrypto_aes_256_cbc
+#define EVP_hcrypto_aes_128_cts hc_EVP_hcrypto_aes_128_cts
+#define EVP_hcrypto_aes_192_cts hc_EVP_hcrypto_aes_192_cts
+#define EVP_hcrypto_aes_256_cts hc_EVP_hcrypto_aes_256_cts
 #define EVP_des_ede3_cbc hc_EVP_des_ede3_cbc
 #define EVP_enc_null hc_EVP_enc_null
 #define EVP_md2 hc_EVP_md2
@@ -121,6 +127,7 @@ struct hc_CIPHER {
      * cipher is used in (use EVP_CIPHER.._mode() to extract the
      * mode). The rest of the flag field is a bitfield.
      */
+#define EVP_CIPH_STREAM_CIPHER		0
 #define EVP_CIPH_CBC_MODE		2
 #define EVP_CIPH_MODE			0x7
 
@@ -182,6 +189,12 @@ const EVP_MD *EVP_sha256(void);
 const EVP_CIPHER * EVP_aes_128_cbc(void);
 const EVP_CIPHER * EVP_aes_192_cbc(void);
 const EVP_CIPHER * EVP_aes_256_cbc(void);
+const EVP_CIPHER * EVP_hcrypto_aes_128_cbc(void);
+const EVP_CIPHER * EVP_hcrypto_aes_192_cbc(void);
+const EVP_CIPHER * EVP_hcrypto_aes_256_cbc(void);
+const EVP_CIPHER * EVP_hcrypto_aes_128_cts(void);
+const EVP_CIPHER * EVP_hcrypto_aes_192_cts(void);
+const EVP_CIPHER * EVP_hcrypto_aes_256_cts(void);
 const EVP_CIPHER * EVP_des_ede3_cbc(void);
 const EVP_CIPHER * EVP_enc_null(void);
 const EVP_CIPHER * EVP_rc2_40_cbc(void);
