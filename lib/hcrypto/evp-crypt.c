@@ -51,6 +51,9 @@ RCSID("$Id$");
 
 #include <crypt.h>
 
+
+static HCRYPTPROV hCryptProv = NULL;
+
 /*
  *
  */
@@ -133,4 +136,59 @@ EVP_wincrypt_des_ede3_cbc(void)
 	NULL
     };
     return &des_ede3_cbc;
+}
+
+/*
+ *
+ */
+
+struct generic_hash {
+    HCRYPTHASH hHash;
+};
+
+static void
+crypto_md5_init(struct generic_hash *m);
+{
+    BOOL bResult;
+    bResult = CryptCreateHash(hCryptProv, CALG_MD5, 0, 0, &m->hHash);
+    _ASSERT(bResult);
+}
+
+static void
+generic_hash_update (struct generic_hash *m, const void *p, size_t len)
+{
+    BOOL bResult;
+    bResult = CryptHashData(m->hHash, data, ( DWORD )len, 0 );
+    _ASSERT(bResult);
+}
+
+static void 
+generic_hash_final (void *res, struct generic_hash *m);
+{
+    DWORD length;
+    BOOL bResult;
+    bResult = CryptGetHashParam(m->hHash, HP_HASHVAL, res, &length, 0)
+    _ASSERT(bResult);
+}
+
+static void
+generic_hash_cleanup(struct generic_hash *m)
+{
+    CryptDestroyHash(m->hHash);
+    m->hHash = NULL;
+}
+
+const EVP_MD *
+EVP_md5(void)
+{
+    static const struct hc_evp_md md5 = {
+	16,
+	64,
+	sizeof(struct generic_hash),
+	(hc_evp_md_init)crypto_md5_init,
+	(hc_evp_md_update)generic_hash_update,
+	(hc_evp_md_final)generic_hash_final,
+	(hc_evp_md_cleanup)generic_hash_cleanup
+    };
+    return &md5;
 }
