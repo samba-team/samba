@@ -1243,11 +1243,8 @@ RSA_MD4_checksum(krb5_context context,
 		 unsigned usage,
 		 Checksum *C)
 {
-    MD4_CTX m;
-
-    MD4_Init (&m);
-    MD4_Update (&m, data, len);
-    MD4_Final (C->checksum.data, &m);
+    if (EVP_Digest(data, len, C->checksum.data, NULL, EVP_md4(), NULL) != 1)
+	krb5_abortx(context, "md4 checksum failed");
 }
 
 static void
@@ -1270,7 +1267,7 @@ RSA_MD4_DES_checksum(krb5_context context,
     memset (&ivec, 0, sizeof(ivec));
     DES_cbc_encrypt(p, 
 		    p, 
-		    24, 
+		    24,
 		    key->schedule->data, 
 		    &ivec, 
 		    DES_ENCRYPT);
@@ -1318,11 +1315,8 @@ RSA_MD5_checksum(krb5_context context,
 		 unsigned usage,
 		 Checksum *C)
 {
-    MD5_CTX m;
-
-    MD5_Init  (&m);
-    MD5_Update(&m, data, len);
-    MD5_Final (C->checksum.data, &m);
+    if (EVP_Digest(data, len, C->checksum.data, NULL, EVP_md5(), NULL) != 1)
+	krb5_abortx(context, "md5 checksum failed");
 }
 
 static void
@@ -1456,11 +1450,8 @@ SHA1_checksum(krb5_context context,
 	      unsigned usage,
 	      Checksum *C)
 {
-    SHA_CTX m;
-
-    SHA1_Init(&m);
-    SHA1_Update(&m, data, len);
-    SHA1_Final(C->checksum.data, &m);
+    if (EVP_Digest(data, len, C->checksum.data, NULL, EVP_sha1(), NULL) != 1)
+	krb5_abortx(context, "sha1 checksum failed");
 }
 
 /* HMAC according to RFC2104 */
