@@ -45,11 +45,21 @@ RCSID("$Id$");
 #include <string.h>
 #include <assert.h>
 
-#include <evp.h>
 
 #include <krb5-types.h>
 
+#if defined(BUILD_KRB5_LIB) && defined(HAVE_OPENSSL)
+#include <openssl/evp.h>
+#include <openssl/aes.h>
+
+const EVP_CIPHER * EVP_hcrypto_aes_128_cts(void);
+const EVP_CIPHER * EVP_hcrypto_aes_192_cts(void);
+const EVP_CIPHER * EVP_hcrypto_aes_256_cts(void);
+
+#else
+#include <evp.h>
 #include <aes.h>
+#endif
 
 /*
  *
@@ -144,7 +154,6 @@ aes_cts_do_cipher(EVP_CIPHER_CTX *ctx,
 		  unsigned int len)
 {
     AES_KEY *k = ctx->cipher_data;
-    unsigned char local_ivec[AES_BLOCK_SIZE], *ivec;
 
     if (len < AES_BLOCK_SIZE)
 	abort();  /* krb5_abortx(context, "invalid use of AES_CTS_encrypt"); */
@@ -154,12 +163,7 @@ aes_cts_do_cipher(EVP_CIPHER_CTX *ctx,
 	else
 	    AES_decrypt(in, out, k);
     } else {
-	ivec = ctx->iv;
-	if(ivec == NULL) {
-	    memset(local_ivec, 0, sizeof(local_ivec));
-	    ivec = local_ivec;
-	}
-	_krb5_aes_cts_encrypt(in, out, len, k, ivec, ctx->encrypt);
+	_krb5_aes_cts_encrypt(in, out, len, k, ctx->iv, ctx->encrypt);
     }
 
     return 1;
