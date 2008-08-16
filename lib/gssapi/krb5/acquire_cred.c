@@ -139,8 +139,10 @@ static OM_uint32 acquire_initiator_cred
 				    handle->principal,
 				    NULL,
 				    &ccache);
-	if (kret)
-	    goto end;
+	if (kret == 0) {
+	    ret = GSS_S_COMPLETE;
+	    goto found;
+	}
     }
     
     if (ccache == NULL) {
@@ -214,7 +216,7 @@ static OM_uint32 acquire_initiator_cred
 	}
 	kret = 0;
     }
-
+ found:
     handle->ccache = ccache;
     ret = GSS_S_COMPLETE;
 
