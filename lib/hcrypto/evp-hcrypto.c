@@ -118,9 +118,9 @@ EVP_hcrypto_aes_128_cbc(void)
 }
 
 /**
- * The AES-128 cipher type (hcrypto)
+ * The AES-192 cipher type (hcrypto)
  *
- * @return the AES-128 EVP_CIPHER pointer.
+ * @return the AES-192 EVP_CIPHER pointer.
  *
  * @ingroup hcrypto_evp
  */
