@@ -40,6 +40,12 @@ RCSID("$Id$");
 static void krb5_crypto_debug(krb5_context, int, size_t, krb5_keyblock*);
 #endif
 
+#ifndef HEIMDAL_SMALLER
+#define WEAK_ENCTYPES 1
+#define DES3_OLD_ENCTYPE 1
+#endif
+
+
 #ifdef HAVE_OPENSSL /* XXX forward decl for hcrypto glue */
 const EVP_CIPHER * _krb5_EVP_hcrypto_aes_128_cts(void);
 const EVP_CIPHER * _krb5_EVP_hcrypto_aes_256_cts(void);
@@ -186,6 +192,7 @@ krb5_DES_random_key(krb5_context context,
     } while(DES_is_weak_key(k));
 }
 
+#ifdef WEAK_ENCTYPES
 static void
 krb5_DES_schedule_old(krb5_context context,
 		      struct key_type *kt,
@@ -193,6 +200,8 @@ krb5_DES_schedule_old(krb5_context context,
 {
     DES_set_key_unchecked(key->key->keyvalue.data, key->schedule->data);
 }
+#endif /* WEAK_ENCTYPES */
+
 
 #ifdef ENABLE_AFS_STRING_TO_KEY
 
@@ -427,6 +436,7 @@ xor (DES_cblock *key, const unsigned char *b)
     a[7] ^= b[7];
 }
 
+#ifdef DES3_OLD_ENCTYPE
 static krb5_error_code
 DES3_string_to_key(krb5_context context,
 		   krb5_enctype enctype,
@@ -490,6 +500,7 @@ DES3_string_to_key(krb5_context context,
     free(str);
     return 0;
 }
+#endif
 
 static krb5_error_code
 DES3_string_to_key_derived(krb5_context context,
@@ -738,6 +749,7 @@ static struct salt_type des_salt[] = {
     { 0 }
 };
 
+#ifdef DES3_OLD_ENCTYPE
 static struct salt_type des3_salt[] = {
     {
 	KRB5_PW_SALT,
@@ -746,6 +758,7 @@ static struct salt_type des3_salt[] = {
     },
     { 0 }
 };
+#endif
 
 static struct salt_type des3_salt_derived[] = {
     {
@@ -789,6 +802,7 @@ static struct key_type keytype_null = {
     NULL
 };
 
+#ifdef WEAK_ENCTYPES
 static struct key_type keytype_des_old = {
     KEYTYPE_DES,
     "des-old",
@@ -800,6 +814,7 @@ static struct key_type keytype_des_old = {
     des_salt,
     krb5_DES_random_to_key
 };
+#endif /* WEAK_ENCTYPES */
 
 static struct key_type keytype_des = {
     KEYTYPE_DES,
@@ -815,6 +830,7 @@ static struct key_type keytype_des = {
     EVP_des_cbc
 };
 
+#ifdef DES3_OLD_ENCTYPE
 static struct key_type keytype_des3 = {
     KEYTYPE_DES3,
     "des3",
@@ -826,6 +842,7 @@ static struct key_type keytype_des3 = {
     des3_salt,
     DES3_random_to_key
 };
+#endif
 
 static struct key_type keytype_des3_derived = {
     KEYTYPE_DES3,
@@ -882,7 +899,9 @@ static struct key_type *keytypes[] = {
     &keytype_null,
     &keytype_des,
     &keytype_des3_derived,
+#ifdef DES3_OLD_ENCTYPE
     &keytype_des3,
+#endif
     &keytype_aes128,
     &keytype_aes256,
     &keytype_arcfour
@@ -2141,25 +2160,6 @@ NULL_encrypt(krb5_context context,
 }
 
 static krb5_error_code
-evp_des_encrypt_null_ivec(krb5_context context,
-			  struct key_data *key, 
-			  void *data, 
-			  size_t len, 
-			  krb5_boolean encryptp,
-			  int usage,
-			  void *ignore_ivec)
-{
-    struct evp_schedule *ctx = key->schedule->data;
-    EVP_CIPHER_CTX *c;
-    DES_cblock ivec;
-    memset(&ivec, 0, sizeof(ivec));
-    c = encryptp ? &ctx->ectx : &ctx->dctx;
-    EVP_CipherInit_ex(c, NULL, NULL, NULL, (void *)&ivec, -1);
-    EVP_Cipher(c, data, data, len);
-    return 0;
-}
-
-static krb5_error_code
 evp_encrypt(krb5_context context,
 	    struct key_data *key, 
 	    void *data, 
@@ -2188,6 +2188,26 @@ evp_encrypt(krb5_context context,
     return 0;
 }
 
+#ifdef WEAK_ENCTYPES
+static krb5_error_code
+evp_des_encrypt_null_ivec(krb5_context context,
+			  struct key_data *key, 
+			  void *data, 
+			  size_t len, 
+			  krb5_boolean encryptp,
+			  int usage,
+			  void *ignore_ivec)
+{
+    struct evp_schedule *ctx = key->schedule->data;
+    EVP_CIPHER_CTX *c;
+    DES_cblock ivec;
+    memset(&ivec, 0, sizeof(ivec));
+    c = encryptp ? &ctx->ectx : &ctx->dctx;
+    EVP_CipherInit_ex(c, NULL, NULL, NULL, (void *)&ivec, -1);
+    EVP_Cipher(c, data, data, len);
+    return 0;
+}
+
 static krb5_error_code
 evp_des_encrypt_key_ivec(krb5_context context,
 			 struct key_data *key, 
@@ -2204,25 +2224,6 @@ evp_des_encrypt_key_ivec(krb5_context context,
     c = encryptp ? &ctx->ectx : &ctx->dctx;
     EVP_CipherInit_ex(c, NULL, NULL, NULL, (void *)&ivec, -1);
     EVP_Cipher(c, data, data, len);
-    return 0;
-}
-
-static krb5_error_code
-DES3_CBC_encrypt(krb5_context context,
-		 struct key_data *key, 
-		 void *data, 
-		 size_t len, 
-		 krb5_boolean encryptp,
-		 int usage,
-		 void *ivec)
-{
-    DES_cblock local_ivec;
-    DES_key_schedule *s = key->schedule->data;
-    if(ivec == NULL) {
-	ivec = &local_ivec;
-	memset(local_ivec, 0, sizeof(local_ivec));
-    }
-    DES_ede3_cbc_encrypt(data, data, len, &s[0], &s[1], &s[2], ivec, encryptp);
     return 0;
 }
 
@@ -2258,6 +2259,26 @@ DES_PCBC_encrypt_key_ivec(krb5_context context,
     memcpy(&ivec, key->key->keyvalue.data, sizeof(ivec));
 
     DES_pcbc_encrypt(data, data, len, s, &ivec, encryptp);
+    return 0;
+}
+#endif
+
+static krb5_error_code
+DES3_CBC_encrypt(krb5_context context,
+		 struct key_data *key, 
+		 void *data, 
+		 size_t len, 
+		 krb5_boolean encryptp,
+		 int usage,
+		 void *ivec)
+{
+    DES_cblock local_ivec;
+    DES_key_schedule *s = key->schedule->data;
+    if(ivec == NULL) {
+	ivec = &local_ivec;
+	memset(local_ivec, 0, sizeof(local_ivec));
+    }
+    DES_ede3_cbc_encrypt(data, data, len, &s[0], &s[1], &s[2], ivec, encryptp);
     return 0;
 }
 
@@ -2526,6 +2547,109 @@ static struct encryption_type enctype_null = {
     0,
     NULL
 };
+static struct encryption_type enctype_arcfour_hmac_md5 = {
+    ETYPE_ARCFOUR_HMAC_MD5,
+    "arcfour-hmac-md5",
+    1,
+    1,
+    8,
+    &keytype_arcfour,
+    &checksum_hmac_md5,
+    NULL,
+    F_SPECIAL,
+    ARCFOUR_encrypt,
+    0,
+    NULL
+};
+#ifdef DES3_OLD_ENCTYPE
+static struct encryption_type enctype_des3_cbc_md5 = { 
+    ETYPE_DES3_CBC_MD5,
+    "des3-cbc-md5",
+    8,
+    8,
+    8,
+    &keytype_des3,
+    &checksum_rsa_md5,
+    &checksum_rsa_md5_des3,
+    0,
+    DES3_CBC_encrypt,
+    0,
+    NULL
+};
+#endif
+static struct encryption_type enctype_des3_cbc_sha1 = {
+    ETYPE_DES3_CBC_SHA1,
+    "des3-cbc-sha1",
+    8,
+    8,
+    8,
+    &keytype_des3_derived,
+    &checksum_sha1,
+    &checksum_hmac_sha1_des3,
+    F_DERIVED,
+    DES3_CBC_encrypt,
+    0,
+    NULL
+};
+#ifdef DES3_OLD_ENCTYPE
+static struct encryption_type enctype_old_des3_cbc_sha1 = {
+    ETYPE_OLD_DES3_CBC_SHA1,
+    "old-des3-cbc-sha1",
+    8,
+    8,
+    8,
+    &keytype_des3,
+    &checksum_sha1,
+    &checksum_hmac_sha1_des3,
+    0,
+    DES3_CBC_encrypt,
+    0,
+    NULL
+};
+#endif
+static struct encryption_type enctype_aes128_cts_hmac_sha1 = {
+    ETYPE_AES128_CTS_HMAC_SHA1_96,
+    "aes128-cts-hmac-sha1-96",
+    16,
+    1,
+    16,
+    &keytype_aes128,
+    &checksum_sha1,
+    &checksum_hmac_sha1_aes128,
+    F_DERIVED,
+    evp_encrypt,
+    16,
+    AES_PRF
+};
+static struct encryption_type enctype_aes256_cts_hmac_sha1 = {
+    ETYPE_AES256_CTS_HMAC_SHA1_96,
+    "aes256-cts-hmac-sha1-96",
+    16,
+    1,
+    16,
+    &keytype_aes256,
+    &checksum_sha1,
+    &checksum_hmac_sha1_aes256,
+    F_DERIVED,
+    evp_encrypt,
+    16,
+    AES_PRF
+};
+static struct encryption_type enctype_des3_cbc_none = {
+    ETYPE_DES3_CBC_NONE,
+    "des3-cbc-none",
+    8,
+    8,
+    0,
+    &keytype_des3_derived,
+    &checksum_none,
+    NULL,
+    F_PSEUDO,
+    DES3_CBC_encrypt,
+    0,
+    NULL
+};
+#ifdef WEAK_ENCTYPES
 static struct encryption_type enctype_des_cbc_crc = {
     ETYPE_DES_CBC_CRC,
     "des-cbc-crc",
@@ -2567,90 +2691,6 @@ static struct encryption_type enctype_des_cbc_md5 = {
     evp_des_encrypt_null_ivec,
     0,
     NULL
-};
-static struct encryption_type enctype_arcfour_hmac_md5 = {
-    ETYPE_ARCFOUR_HMAC_MD5,
-    "arcfour-hmac-md5",
-    1,
-    1,
-    8,
-    &keytype_arcfour,
-    &checksum_hmac_md5,
-    NULL,
-    F_SPECIAL,
-    ARCFOUR_encrypt,
-    0,
-    NULL
-};
-static struct encryption_type enctype_des3_cbc_md5 = { 
-    ETYPE_DES3_CBC_MD5,
-    "des3-cbc-md5",
-    8,
-    8,
-    8,
-    &keytype_des3,
-    &checksum_rsa_md5,
-    &checksum_rsa_md5_des3,
-    0,
-    DES3_CBC_encrypt,
-    0,
-    NULL
-};
-static struct encryption_type enctype_des3_cbc_sha1 = {
-    ETYPE_DES3_CBC_SHA1,
-    "des3-cbc-sha1",
-    8,
-    8,
-    8,
-    &keytype_des3_derived,
-    &checksum_sha1,
-    &checksum_hmac_sha1_des3,
-    F_DERIVED,
-    DES3_CBC_encrypt,
-    0,
-    NULL
-};
-static struct encryption_type enctype_old_des3_cbc_sha1 = {
-    ETYPE_OLD_DES3_CBC_SHA1,
-    "old-des3-cbc-sha1",
-    8,
-    8,
-    8,
-    &keytype_des3,
-    &checksum_sha1,
-    &checksum_hmac_sha1_des3,
-    0,
-    DES3_CBC_encrypt,
-    0,
-    NULL
-};
-static struct encryption_type enctype_aes128_cts_hmac_sha1 = {
-    ETYPE_AES128_CTS_HMAC_SHA1_96,
-    "aes128-cts-hmac-sha1-96",
-    16,
-    1,
-    16,
-    &keytype_aes128,
-    &checksum_sha1,
-    &checksum_hmac_sha1_aes128,
-    F_DERIVED,
-    evp_encrypt,
-    16,
-    AES_PRF
-};
-static struct encryption_type enctype_aes256_cts_hmac_sha1 = {
-    ETYPE_AES256_CTS_HMAC_SHA1_96,
-    "aes256-cts-hmac-sha1-96",
-    16,
-    1,
-    16,
-    &keytype_aes256,
-    &checksum_sha1,
-    &checksum_hmac_sha1_aes256,
-    F_DERIVED,
-    evp_encrypt,
-    16,
-    AES_PRF
 };
 static struct encryption_type enctype_des_cbc_none = {
     ETYPE_DES_CBC_NONE,
@@ -2694,36 +2734,27 @@ static struct encryption_type enctype_des_pcbc_none = {
     0,
     NULL
 };
-static struct encryption_type enctype_des3_cbc_none = {
-    ETYPE_DES3_CBC_NONE,
-    "des3-cbc-none",
-    8,
-    8,
-    0,
-    &keytype_des3_derived,
-    &checksum_none,
-    NULL,
-    F_PSEUDO,
-    DES3_CBC_encrypt,
-    0,
-    NULL
-};
+#endif /* WEAK_ENCTYPES */
 
 static struct encryption_type *etypes[] = {
-    &enctype_null,
+    &enctype_aes256_cts_hmac_sha1,
+    &enctype_aes128_cts_hmac_sha1,
+    &enctype_des3_cbc_sha1,
+    &enctype_des3_cbc_none, /* used by the gss-api mech */
+    &enctype_arcfour_hmac_md5,
+#ifdef DES3_OLD_ENCTYPE
+    &enctype_des3_cbc_md5, 
+    &enctype_old_des3_cbc_sha1,
+#endif
+#ifdef WEAK_ENCTYPES
     &enctype_des_cbc_crc,
     &enctype_des_cbc_md4,
     &enctype_des_cbc_md5,
-    &enctype_arcfour_hmac_md5,
-    &enctype_des3_cbc_md5, 
-    &enctype_des3_cbc_sha1,
-    &enctype_old_des3_cbc_sha1,
-    &enctype_aes128_cts_hmac_sha1,
-    &enctype_aes256_cts_hmac_sha1,
     &enctype_des_cbc_none,
     &enctype_des_cfb64_none,
     &enctype_des_pcbc_none,
-    &enctype_des3_cbc_none
+#endif
+    &enctype_null
 };
 
 static unsigned num_etypes = sizeof(etypes) / sizeof(etypes[0]);
