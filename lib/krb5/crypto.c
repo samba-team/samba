@@ -41,8 +41,10 @@ static void krb5_crypto_debug(krb5_context, int, size_t, krb5_keyblock*);
 #endif
 
 #ifdef HAVE_OPENSSL /* XXX forward decl for hcrypto glue */
-const EVP_CIPHER * EVP_hcrypto_aes_128_cts(void);
-const EVP_CIPHER * EVP_hcrypto_aes_256_cts(void);
+const EVP_CIPHER * _krb5_EVP_hcrypto_aes_128_cts(void);
+const EVP_CIPHER * _krb5_EVP_hcrypto_aes_256_cts(void);
+#define EVP_hcrypto_aes_128_cts _krb5_EVP_hcrypto_aes_128_cts
+#define EVP_hcrypto_aes_256_cts _krb5_EVP_hcrypto_aes_256_cts
 #endif
 
 struct key_data {
@@ -2533,7 +2535,7 @@ static struct encryption_type enctype_des_cbc_crc = {
     &keytype_des,
     &checksum_crc32,
     NULL,
-    0,
+    F_DISABLED,
     evp_des_encrypt_key_ivec,
     0,
     NULL
@@ -2547,7 +2549,7 @@ static struct encryption_type enctype_des_cbc_md4 = {
     &keytype_des,
     &checksum_rsa_md4,
     &checksum_rsa_md4_des,
-    0,
+    F_DISABLED,
     evp_des_encrypt_null_ivec,
     0,
     NULL
@@ -2561,7 +2563,7 @@ static struct encryption_type enctype_des_cbc_md5 = {
     &keytype_des,
     &checksum_rsa_md5,
     &checksum_rsa_md5_des,
-    0,
+    F_DISABLED,
     evp_des_encrypt_null_ivec,
     0,
     NULL
@@ -2659,7 +2661,7 @@ static struct encryption_type enctype_des_cbc_none = {
     &keytype_des,
     &checksum_none,
     NULL,
-    F_PSEUDO,
+    F_PSEUDO|F_DISABLED,
     evp_des_encrypt_null_ivec,
     0,
     NULL
@@ -2673,7 +2675,7 @@ static struct encryption_type enctype_des_cfb64_none = {
     &keytype_des_old,
     &checksum_none,
     NULL,
-    F_PSEUDO,
+    F_PSEUDO|F_DISABLED,
     DES_CFB64_encrypt_null_ivec,
     0,
     NULL
@@ -2687,7 +2689,7 @@ static struct encryption_type enctype_des_pcbc_none = {
     &keytype_des_old,
     &checksum_none,
     NULL,
-    F_PSEUDO,
+    F_PSEUDO|F_DISABLED,
     DES_PCBC_encrypt_key_ivec,
     0,
     NULL
