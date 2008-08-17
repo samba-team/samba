@@ -1030,6 +1030,71 @@ EVP_rc4_40(void)
  *
  */
 
+static int
+des_cbc_init(EVP_CIPHER_CTX *ctx,
+	     const unsigned char * key,
+	     const unsigned char * iv,
+	     int encp)
+{
+    DES_key_schedule *k = ctx->cipher_data;
+    DES_cblock deskey;
+    memcpy(&deskey, key, sizeof(deskey));
+    DES_set_key_unchecked(&deskey, k);
+    return 1;
+}
+
+static int
+des_cbc_do_cipher(EVP_CIPHER_CTX *ctx,
+		  unsigned char *out,
+		  const unsigned char *in,
+		  unsigned int size)
+{
+    DES_key_schedule *k = ctx->cipher_data;
+    DES_ede3_cbc_encrypt(in, out, size,
+			 k, (DES_cblock *)ctx->iv, ctx->encrypt);
+    return 1;
+}
+
+static int
+des_cbc_cleanup(EVP_CIPHER_CTX *ctx)
+{
+    memset(ctx->cipher_data, 0, sizeof(struct des_ede3_cbc));
+    return 1;
+}
+
+/**
+ * The DES cipher type
+ *
+ * @return the DES-CBC EVP_CIPHER pointer.
+ *
+ * @ingroup hcrypto_evp
+ */
+
+const EVP_CIPHER *
+EVP_des_cbc(void)
+{
+    static const EVP_CIPHER des_ede3_cbc = {
+	0,
+	8,
+	8,
+	8,
+	EVP_CIPH_CBC_MODE,
+	des_cbc_init,
+	des_cbc_do_cipher,
+	des_cbc_cleanup,
+	sizeof(DES_key_schedule),
+	NULL,
+	NULL,
+	NULL,
+	NULL
+    };
+    return &des_ede3_cbc;
+}
+
+/*
+ *
+ */
+
 struct des_ede3_cbc {
     DES_key_schedule ks[3];
 };
