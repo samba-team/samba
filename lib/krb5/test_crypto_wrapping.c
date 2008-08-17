@@ -155,6 +155,8 @@ main(int argc, char **argv)
 	errx (1, "krb5_init_context failed: %d", ret);
 
     for (i = 0; i < sizeof(enctypes)/sizeof(enctypes[0]); i++) {
+	krb5_enctype_enable(context, enctypes[i]);
+
 	test_wrapping(context, 0, 1024, 1, enctypes[i]);
 	test_wrapping(context, 1024, 1024 * 100, 1024, enctypes[i]);
     }
