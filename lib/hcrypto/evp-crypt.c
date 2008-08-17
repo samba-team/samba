@@ -63,18 +63,6 @@ struct generic_key {
 };
 
 static int
-crypto_des_ede3_cbc_init(EVP_CIPHER_CTX *ctx,
-			 const unsigned char * key,
-			 const unsigned char * iv,
-			 int encp)
-{
-    struct generic_key *gk = ctx->cipher_data;
-    BYTE *k = key->key->keyvalue.data;
-    gk->hKey = importKey3DES_CBC(&k[0], &k[8], &k[16]);
-    return 1;
-}
-
-static int
 generic_cbc_do_cipher(EVP_CIPHER_CTX *ctx,
 		       unsigned char *out,
 		       const unsigned char *in,
@@ -82,19 +70,17 @@ generic_cbc_do_cipher(EVP_CIPHER_CTX *ctx,
 {
     struct generic_key *gk = ctx->cipher_data;
     BOOL bResult;
-    DWORD paramData;
+    DWORD length = size;
 
     bResult = CryptSetKeyParam(gk->hKey, KP_IV, ctx->iv, 0);
     _ASSERT(bResult);
 
-    paramData = CRYPT_MODE_CBC;
-    bResult = CryptSetKeyParam(gk->hKey, KP_MODE, (BYTE*)&paramData, 0);
-    _ASSERT(bResult);
+    memcpy(out, in, size);
 
     if (ctx->encrypt)
-	bResult = encryptData(in, out, size, gk->hKey);
+	bResult = CryptEncrypt(gk->hKey, 0, TRUE, 0, out, &length, size);
     else
-	bResult = decryptData(in, out, size, gk->hKey);
+	bResult = CryptDecrypt(gk->hKey, 0, TRUE, 0, out, &length);
     _ASSERT(bResult);
 
     return 1;
@@ -109,8 +95,52 @@ generic_cleanup(EVP_CIPHER_CTX *ctx)
     return 1;
 }
 
+static HCRYPTKEY
+import_key(int alg, const unsigned char *key, size_t keylen)
+{
+    struct {
+	BLOBHEADER hdr;
+	DWORD len;
+	BYTE key[1];
+    } *key_blob;
+    size_t bloblen = sizeof(*key_blob) - 1 + keylen;
+    
+    key_blob = malloc(bloblen);
+
+    key_blob->hdr.bType = PLAINTEXTKEYBLOB;
+    key_blob->hdr.bVersion = CUR_BLOB_VERSION;
+    key_blob->hdr.reserved = 0;
+    key_blob->hdr.aiKeyAlg = alg;
+    key_blob->len = 24;
+    memcpy(key_blob->key, key, keylen);
+
+    bResult = CryptImportKey(hCryptProv,
+			     (void *)key_blob, bloblen, 0, 0,
+			     &gk->hKey);
+    free(key_blob);
+    _ASSERT(bResult);
+
+    return hKey;
+}
+
+static int
+crypto_des_ede3_cbc_init(EVP_CIPHER_CTX *ctx,
+			 const unsigned char * key,
+			 const unsigned char * iv,
+			 int encp)
+{
+    struct generic_key *gk = ctx->cipher_data;
+    DWORD paramData;
+
+    gk->hKey = import_key(CALG_3DES,
+			  key->key->keyvalue.data, 
+			  key->key->keyvalue.len);
+
+    return 1;
+}
+
 /**
- * The tripple DES cipher type
+ * The tripple DES cipher type (Micrsoft crypt provider)
  *
  * @return the DES-EDE3-CBC EVP_CIPHER pointer.
  *
