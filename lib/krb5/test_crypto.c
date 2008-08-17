@@ -196,6 +196,8 @@ main(int argc, char **argv)
 
     for (i = 0; i < sizeof(enctypes)/sizeof(enctypes[0]); i++) {
 
+	krb5_enctype_enable(context, enctypes[i]);
+
 	time_encryption(context, 16, enctypes[i], enciter);
 	time_encryption(context, 32, enctypes[i], enciter);
 	time_encryption(context, 512, enctypes[i], enciter);
