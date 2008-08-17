@@ -162,6 +162,7 @@ _kdc_do_version4(krb5_context context,
 	kdc_log(context, config, 0,
 		"Protocol version mismatch (krb4) (%d)", pvno);
 	make_err_reply(context, reply, KRB4ET_KDC_PKT_VER, "protocol mismatch");
+	ret = KRB4ET_KDC_PKT_VER;
 	goto out;
     }
     RCHECK(krb5_ret_int8(sp, &msg_type), out);
