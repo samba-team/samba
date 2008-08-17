@@ -42,7 +42,6 @@ static void krb5_crypto_debug(krb5_context, int, size_t, krb5_keyblock*);
 
 #ifdef HAVE_OPENSSL /* XXX forward decl for hcrypto glue */
 const EVP_CIPHER * EVP_hcrypto_aes_128_cts(void);
-const EVP_CIPHER * EVP_hcrypto_aes_192_cts(void);
 const EVP_CIPHER * EVP_hcrypto_aes_256_cts(void);
 #endif
 
@@ -88,10 +87,11 @@ struct key_type {
     size_t size;
     size_t schedule_size;
     void (*random_key)(krb5_context, krb5_keyblock*);
-    void (*schedule)(krb5_context, struct key_data *);
+    void (*schedule)(krb5_context, struct key_type *, struct key_data *);
     struct salt_type *string_to_key;
     void (*random_to_key)(krb5_context, krb5_keyblock*, const void*, size_t);
     void (*cleanup)(krb5_context, struct key_data *);
+    const EVP_CIPHER *(*evp)(void);
 };
 
 struct checksum_type {
@@ -186,23 +186,10 @@ krb5_DES_random_key(krb5_context context,
 
 static void
 krb5_DES_schedule_old(krb5_context context,
+		      struct key_type *kt,
 		      struct key_data *key)
 {
     DES_set_key_unchecked(key->key->keyvalue.data, key->schedule->data);
-}
-
-
-static void
-krb5_DES_schedule(krb5_context context,
-		  struct key_data *key)
-{
-    struct evp_schedule *ctx = key->schedule->data;
-    EVP_CIPHER_CTX_init(&ctx->ectx);
-    EVP_CipherInit_ex(&ctx->ectx, EVP_des_cbc(), NULL,
-		      key->key->keyvalue.data, NULL, 1);
-    EVP_CIPHER_CTX_init(&ctx->dctx);
-    EVP_CipherInit_ex(&ctx->dctx, EVP_des_cbc(), NULL,
-		      key->key->keyvalue.data, NULL, 0);
 }
 
 #ifdef ENABLE_AFS_STRING_TO_KEY
@@ -410,6 +397,7 @@ DES3_random_key(krb5_context context,
 
 static void
 DES3_schedule(krb5_context context,
+	      struct key_type *kt,
 	      struct key_data *key)
 {
     DES_cblock *k = key->key->keyvalue.data;
@@ -570,6 +558,7 @@ DES3_random_to_key(krb5_context context,
 
 static void
 ARCFOUR_schedule(krb5_context context, 
+		 struct key_type *kt,
 		 struct key_data *kd)
 {
     RC4_set_key (kd->schedule->data,
@@ -707,20 +696,11 @@ AES_string_to_key(krb5_context context,
 }
 
 static void
-AES_schedule(krb5_context context,
-	     struct key_data *kd)
+evp_schedule(krb5_context context, struct key_type *kt, struct key_data *kd)
 {
     struct evp_schedule *key = kd->schedule->data;
-    const EVP_CIPHER *c;
+    const EVP_CIPHER *c = (*kt->evp)();
 
-    if (kd->key->keyvalue.length == 16)
-	c = EVP_hcrypto_aes_128_cts();
-    else if (kd->key->keyvalue.length == 32)
-	c = EVP_hcrypto_aes_256_cts();
-    else
-	krb5_abortx(context, "Invalid key size to AES");
-
-    memset(key, 0, sizeof(*key));
     EVP_CIPHER_CTX_init(&key->ectx);
     EVP_CIPHER_CTX_init(&key->dctx);
 
@@ -826,10 +806,11 @@ static struct key_type keytype_des = {
     8,
     sizeof(struct evp_schedule),
     krb5_DES_random_key,
-    krb5_DES_schedule,
+    evp_schedule,
     des_salt,
     krb5_DES_random_to_key,
-    evp_cleanup
+    evp_cleanup,
+    EVP_des_cbc
 };
 
 static struct key_type keytype_des3 = {
@@ -863,10 +844,11 @@ static struct key_type keytype_aes128 = {
     16,
     sizeof(struct evp_schedule),
     NULL,
-    AES_schedule,
+    evp_schedule,
     AES_salt,
     NULL,
-    evp_cleanup
+    evp_cleanup,
+    EVP_hcrypto_aes_128_cts
 };
 
 static struct key_type keytype_aes256 = {
@@ -876,10 +858,11 @@ static struct key_type keytype_aes256 = {
     32,
     sizeof(struct evp_schedule),
     NULL,
-    AES_schedule,
+    evp_schedule,
     AES_salt,
     NULL,
-    evp_cleanup
+    evp_cleanup,
+    EVP_hcrypto_aes_256_cts
 };
 
 static struct key_type keytype_arcfour = {
@@ -1247,7 +1230,7 @@ _key_schedule(krb5_context context,
 	key->schedule = NULL;
 	return ret;
     }
-    (*kt->schedule)(context, key);
+    (*kt->schedule)(context, kt, key);
     return 0;
 }
 
@@ -2508,24 +2491,15 @@ AES_PRF(krb5_context context,
 	krb5_abortx(context, "malloc failed");
     
     { 
-#if 1
-	AES_KEY key;
-
-	AES_set_encrypt_key(derived->keyvalue.data, 
-			    crypto->et->keytype->bits, &key);
-	AES_encrypt(result.checksum.data, out->data, &key);
-	memset(&key, 0, sizeof(key));
-#else
 	EVP_CIPHER_CTX ctx;
 	unsigned char ivec[16];
 
 	memset(ivec, 0, sizeof(ivec));
 	EVP_CIPHER_CTX_init(&ctx);
-	EVP_CipherInit_ex(&ctx, NULL /* EVP_ ...*/,
-			  NULL, kd->key->keyvalue.data, ivec, 1);
+	EVP_CipherInit_ex(&ctx, (*crypto->et->keytype->evp)(),
+			  NULL, derived->keyvalue.data, ivec, 1);
 	EVP_Cipher(&ctx, out->data, result.checksum.data, 16);
 	EVP_CIPHER_CTX_cleanup(&ctx);
-#endif
     }
 
     krb5_data_free(&result.checksum);
