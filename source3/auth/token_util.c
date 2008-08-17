@@ -291,7 +291,6 @@ NTSTATUS create_builtin_administrators(const DOM_SID *dom_sid)
 {
 	NTSTATUS status;
 	DOM_SID dom_admins, root_sid;
-	fstring root_name;
 	enum lsa_SidType type;
 	TALLOC_CTX *ctx;
 	bool ret;
@@ -317,9 +316,9 @@ NTSTATUS create_builtin_administrators(const DOM_SID *dom_sid)
 	if ( (ctx = talloc_init("create_builtin_administrators")) == NULL ) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	fstr_sprintf( root_name, "%s\\root", get_global_sam_name() );
-	ret = lookup_name(ctx, root_name, LOOKUP_NAME_DOMAIN, NULL, NULL,
-			  &root_sid, &type);
+	ret = lookup_domain_name(ctx, get_global_sam_name(), "root",
+				 LOOKUP_NAME_DOMAIN,
+				 NULL, NULL, &root_sid, &type);
 	TALLOC_FREE( ctx );
 
 	if ( ret ) {
