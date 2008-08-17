@@ -1,5 +1,8 @@
 # $Id$
 
+[libdefaults]
+	allow_weak_crypto = TRUE
+
 [kdc]
 	database = {
 		dbname = @objdir@/current-db
