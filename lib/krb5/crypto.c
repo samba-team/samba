@@ -1278,7 +1278,7 @@ RSA_MD4_checksum(krb5_context context,
 
 
 static krb5_error_code
-RSA_checksum(krb5_context context, 
+des_checksum(krb5_context context, 
 	     const EVP_MD *evp_md,
 	     struct key_data *key,
 	     const void *data, 
@@ -1313,28 +1313,18 @@ RSA_checksum(krb5_context context,
 }
 
 static krb5_error_code
-RSA_MD4_DES_checksum(krb5_context context, 
-		     struct key_data *key,
-		     const void *data, 
-		     size_t len, 
-		     unsigned usage,
-		     Checksum *cksum)
-{
-    return RSA_checksum(context, EVP_md4(), key, data, len, cksum);
-}
-
-static krb5_error_code
-RSA_MD4_DES_verify(krb5_context context,
-		   struct key_data *key,
-		   const void *data,
-		   size_t len,
-		   unsigned usage,
-		   Checksum *C)
+des_verify(krb5_context context,
+	   const EVP_MD *evp_md,
+	   struct key_data *key,
+	   const void *data,
+	   size_t len,
+	   Checksum *C)
 {
     EVP_MD_CTX *m;
     unsigned char tmp[24];
     unsigned char res[16];
     DES_cblock ivec;
+    DES_key_schedule *sched = key->schedule->data;
     krb5_error_code ret = 0;
 
     m = EVP_MD_CTX_create();
@@ -1344,13 +1334,13 @@ RSA_MD4_DES_verify(krb5_context context,
     }
 
     memset(&ivec, 0, sizeof(ivec));
-    DES_cbc_encrypt(C->checksum.data,
+    DES_cbc_encrypt(C->checksum.data, 
 		    (void*)tmp, 
 		    C->checksum.length, 
-		    key->schedule->data,
+		    &sched[0],
 		    &ivec,
 		    DES_DECRYPT);
-    EVP_DigestInit_ex(m, EVP_md4(), NULL);
+    EVP_DigestInit_ex(m, evp_md, NULL);
     EVP_DigestUpdate(m, tmp, 8); /* confounder */
     EVP_DigestUpdate(m, data, len);
     EVP_DigestFinal_ex (m, res, NULL);
@@ -1362,6 +1352,28 @@ RSA_MD4_DES_verify(krb5_context context,
     memset(tmp, 0, sizeof(tmp));
     memset(res, 0, sizeof(res));
     return ret;
+}
+
+static krb5_error_code
+RSA_MD4_DES_checksum(krb5_context context, 
+		     struct key_data *key,
+		     const void *data, 
+		     size_t len, 
+		     unsigned usage,
+		     Checksum *cksum)
+{
+    return des_checksum(context, EVP_md4(), key, data, len, cksum);
+}
+
+static krb5_error_code
+RSA_MD4_DES_verify(krb5_context context,
+		   struct key_data *key,
+		   const void *data,
+		   size_t len,
+		   unsigned usage,
+		   Checksum *C)
+{
+    return des_verify(context, EVP_md5(), key, data, len, C);
 }
 
 static krb5_error_code
@@ -1385,7 +1397,7 @@ RSA_MD5_DES_checksum(krb5_context context,
 		     unsigned usage,
 		     Checksum *C)
 {
-    return RSA_checksum(context, EVP_md5(), key, data, len, C);
+    return des_checksum(context, EVP_md5(), key, data, len, C);
 }
 
 static krb5_error_code
@@ -1396,31 +1408,7 @@ RSA_MD5_DES_verify(krb5_context context,
 		   unsigned usage,
 		   Checksum *C)
 {
-    MD5_CTX md5;
-    unsigned char tmp[24];
-    unsigned char res[16];
-    DES_cblock ivec;
-    DES_key_schedule *sched = key->schedule->data;
-    krb5_error_code ret = 0;
-
-    memset(&ivec, 0, sizeof(ivec));
-    DES_cbc_encrypt(C->checksum.data, 
-		    (void*)tmp, 
-		    C->checksum.length, 
-		    &sched[0],
-		    &ivec,
-		    DES_DECRYPT);
-    MD5_Init (&md5);
-    MD5_Update (&md5, tmp, 8); /* confounder */
-    MD5_Update (&md5, data, len);
-    MD5_Final (res, &md5);
-    if(memcmp(res, tmp + 8, sizeof(res)) != 0) {
-	krb5_clear_error_string (context);
-	ret = KRB5KRB_AP_ERR_BAD_INTEGRITY;
-    }
-    memset(tmp, 0, sizeof(tmp));
-    memset(res, 0, sizeof(res));
-    return ret;
+    return des_verify(context, EVP_md5(), key, data, len, C);
 }
 
 static krb5_error_code
