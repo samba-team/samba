@@ -1,15 +1,15 @@
 /*
-* CIFS SPNEGO user-space helper.
+* CIFS user-space helper.
 * Copyright (C) Igor Mammedov (niallain@gmail.com) 2007
 *
 * Used by /sbin/request-key for handling
 * cifs upcall for kerberos authorization of access to share and
 * cifs upcall for DFS srver name resolving (IPv4/IPv6 aware).
-* You should have keyutils installed and add following line to
-* /etc/request-key.conf file
+* You should have keyutils installed and add something like the
+* following lines to /etc/request-key.conf file:
 
-create cifs.spnego * * /usr/local/sbin/cifs.spnego [-v][-c] %k
-create cifs.resolver * * /usr/local/sbin/cifs.spnego [-v] %k
+create cifs.spnego * * /usr/local/sbin/cifs.upcall %k
+create dns_resolver * * /usr/local/sbin/cifs.upcall %k
 
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -30,7 +30,7 @@ create cifs.resolver * * /usr/local/sbin/cifs.spnego [-v] %k
 #include "cifs_spnego.h"
 
 const char *CIFSSPNEGO_VERSION = "1.1";
-static const char *prog = "cifs.spnego";
+static const char *prog = "cifs.upcall";
 typedef enum _secType {
 	KRB5,
 	MS_KRB5
@@ -200,13 +200,20 @@ int cifs_resolver(const key_serial_t key, const char *key_descr)
 	return 0;
 }
 
+void
+usage(void)
+{
+	syslog(LOG_WARNING, "Usage: %s [-c] [-v] key_serial", prog);
+	fprintf(stderr, "Usage: %s [-c] [-v] key_serial\n", prog);
+}
+
 int main(const int argc, char *const argv[])
 {
 	struct cifs_spnego_msg *keydata = NULL;
 	DATA_BLOB secblob = data_blob_null;
 	DATA_BLOB sess_key = data_blob_null;
 	secType_t sectype;
-	key_serial_t key;
+	key_serial_t key = 0;
 	size_t datalen;
 	long rc = 1;
 	uid_t uid;
@@ -215,10 +222,6 @@ int main(const int argc, char *const argv[])
 	char *buf, *hostname = NULL;
 
 	openlog(prog, 0, LOG_DAEMON);
-	if (argc < 1) {
-		syslog(LOG_WARNING, "Usage: %s [-c] key_serial", prog);
-		goto out;
-	}
 
 	while ((c = getopt(argc, argv, "cv")) != -1) {
 		switch (c) {
@@ -227,20 +230,27 @@ int main(const int argc, char *const argv[])
 			break;
 			}
 		case 'v':{
-			syslog(LOG_WARNING, "version: %s", CIFSSPNEGO_VERSION);
-			fprintf(stderr, "version: %s", CIFSSPNEGO_VERSION);
-			break;
+			printf("version: %s\n", CIFSSPNEGO_VERSION);
+			goto out;
 			}
 		default:{
-			syslog(LOG_WARNING, "unknow option: %c", c);
+			syslog(LOG_WARNING, "unknown option: %c", c);
 			goto out;
 			}
 		}
 	}
+
+	/* is there a key? */
+	if (argc <= optind) {
+		usage();
+		goto out;
+	}
+
 	/* get key and keyring values */
 	errno = 0;
 	key = strtol(argv[optind], NULL, 10);
 	if (errno != 0) {
+		key = 0;
 		syslog(LOG_WARNING, "Invalid key format: %s", strerror(errno));
 		goto out;
 	}
@@ -253,7 +263,8 @@ int main(const int argc, char *const argv[])
 		goto out;
 	}
 
-	if (strncmp(buf, "cifs.resolver", sizeof("cifs.resolver")-1) == 0) {
+	if ((strncmp(buf, "cifs.resolver", sizeof("cifs.resolver")-1) == 0) ||
+	    (strncmp(buf, "dns_resolver", sizeof("dns_resolver")-1) == 0)) {
 		rc = cifs_resolver(key, buf);
 		goto out;
 	}
@@ -351,7 +362,14 @@ int main(const int argc, char *const argv[])
 	/* BB: maybe we need use timeout for key: for example no more then
 	 * ticket lifietime? */
 	/* keyctl_set_timeout( key, 60); */
-      out:
+out:
+	/*
+	 * on error, negatively instantiate the key ourselves so that we can
+	 * make sure the kernel doesn't hang it off of a searchable keyring
+	 * and interfere with the next attempt to instantiate the key.
+	 */
+	if (rc != 0  && key == 0)
+		keyctl_negate(key, 1, KEY_REQKEY_DEFL_DEFAULT);
 	data_blob_free(&secblob);
 	data_blob_free(&sess_key);
 	SAFE_FREE(hostname);
