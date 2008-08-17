@@ -836,11 +836,13 @@ static struct key_type keytype_des3 = {
     "des3",
     168,
     24, 
-    3 * sizeof(DES_key_schedule), 
+    sizeof(struct evp_schedule), 
     DES3_random_key,
-    DES3_schedule,
+    evp_schedule,
     des3_salt,
-    DES3_random_to_key
+    DES3_random_to_key,
+    evp_cleanup,
+    EVP_des_ede3_cbc
 };
 #endif
 
@@ -849,11 +851,13 @@ static struct key_type keytype_des3_derived = {
     "des3",
     168,
     24,
-    3 * sizeof(DES_key_schedule), 
+    sizeof(struct evp_schedule),
     DES3_random_key,
-    DES3_schedule,
+    evp_schedule,
     des3_salt_derived,
-    DES3_random_to_key
+    DES3_random_to_key,
+    evp_cleanup,
+    EVP_des_ede3_cbc
 };
 
 static struct key_type keytype_aes128 = {
@@ -1439,24 +1443,7 @@ RSA_MD5_DES3_checksum(krb5_context context,
 		      unsigned usage,
 		      Checksum *C)
 {
-    MD5_CTX md5;
-    DES_cblock ivec;
-    unsigned char *p = C->checksum.data;
-    DES_key_schedule *sched = key->schedule->data;
-    
-    krb5_generate_random_block(p, 8);
-    MD5_Init (&md5);
-    MD5_Update (&md5, p, 8);
-    MD5_Update (&md5, data, len);
-    MD5_Final (p + 8, &md5);
-    memset (&ivec, 0, sizeof(ivec));
-    DES_ede3_cbc_encrypt(p, 
-			 p, 
-			 24, 
-			 &sched[0], &sched[1], &sched[2],
-			 &ivec, 
-			 DES_ENCRYPT);
-    return 0;
+    return des_checksum(context, EVP_md5(), key, data, len, C);
 }
 
 static krb5_error_code
@@ -1467,31 +1454,7 @@ RSA_MD5_DES3_verify(krb5_context context,
 		    unsigned usage,
 		    Checksum *C)
 {
-    MD5_CTX md5;
-    unsigned char tmp[24];
-    unsigned char res[16];
-    DES_cblock ivec;
-    DES_key_schedule *sched = key->schedule->data;
-    krb5_error_code ret = 0;
-
-    memset(&ivec, 0, sizeof(ivec));
-    DES_ede3_cbc_encrypt(C->checksum.data, 
-			 (void*)tmp, 
-			 C->checksum.length, 
-			 &sched[0], &sched[1], &sched[2],
-			 &ivec,
-			 DES_DECRYPT);
-    MD5_Init (&md5);
-    MD5_Update (&md5, tmp, 8); /* confounder */
-    MD5_Update (&md5, data, len);
-    MD5_Final (res, &md5);
-    if(memcmp(res, tmp + 8, sizeof(res)) != 0) {
-	krb5_clear_error_string (context);
-	ret = KRB5KRB_AP_ERR_BAD_INTEGRITY;
-    }
-    memset(tmp, 0, sizeof(tmp));
-    memset(res, 0, sizeof(res));
-    return ret;
+    return des_verify(context, EVP_md5(), key, data, len, C);
 }
 
 static krb5_error_code
@@ -1755,6 +1718,7 @@ static struct checksum_type checksum_rsa_md5_des = {
     RSA_MD5_DES_checksum,
     RSA_MD5_DES_verify
 };
+#ifdef DES3_OLD_ENCTYPE
 static struct checksum_type checksum_rsa_md5_des3 = {
     CKSUMTYPE_RSA_MD5_DES3,
     "rsa-md5-des3",
@@ -1764,6 +1728,7 @@ static struct checksum_type checksum_rsa_md5_des3 = {
     RSA_MD5_DES3_checksum,
     RSA_MD5_DES3_verify
 };
+#endif
 static struct checksum_type checksum_sha1 = {
     CKSUMTYPE_SHA1,
     "sha1",
@@ -1830,7 +1795,9 @@ static struct checksum_type *checksum_types[] = {
     &checksum_rsa_md4_des,
     &checksum_rsa_md5,
     &checksum_rsa_md5_des,
+#ifdef DES3_OLD_ENCTYPE
     &checksum_rsa_md5_des3,
+#endif
     &checksum_sha1,
     &checksum_hmac_sha1_des3,
     &checksum_hmac_sha1_aes128,
@@ -2572,7 +2539,7 @@ static struct encryption_type enctype_des3_cbc_md5 = {
     &checksum_rsa_md5,
     &checksum_rsa_md5_des3,
     0,
-    DES3_CBC_encrypt,
+    evp_encrypt,
     0,
     NULL
 };
@@ -2587,7 +2554,7 @@ static struct encryption_type enctype_des3_cbc_sha1 = {
     &checksum_sha1,
     &checksum_hmac_sha1_des3,
     F_DERIVED,
-    DES3_CBC_encrypt,
+    evp_encrypt,
     0,
     NULL
 };
@@ -2602,7 +2569,7 @@ static struct encryption_type enctype_old_des3_cbc_sha1 = {
     &checksum_sha1,
     &checksum_hmac_sha1_des3,
     0,
-    DES3_CBC_encrypt,
+    evp_encrypt,
     0,
     NULL
 };
@@ -2645,7 +2612,7 @@ static struct encryption_type enctype_des3_cbc_none = {
     &checksum_none,
     NULL,
     F_PSEUDO,
-    DES3_CBC_encrypt,
+    evp_encrypt,
     0,
     NULL
 };
