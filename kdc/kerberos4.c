@@ -134,7 +134,7 @@ _kdc_do_version4(krb5_context context,
 		 struct sockaddr_in *addr)
 {
     krb5_storage *sp;
-    krb5_error_code ret;
+    krb5_error_code ret = EINVAL;
     hdb_entry_ex *client = NULL, *server = NULL;
     Key *ckey, *skey;
     int8_t pvno;
