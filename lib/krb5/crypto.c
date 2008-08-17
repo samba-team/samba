@@ -3742,6 +3742,18 @@ krb5_crypto_getconfoundersize(krb5_context context,
     return 0;
 }
 
+
+/**
+ * Disable enctyption type
+ *
+ * @param context Kerberos 5 context
+ * @param enctype encryption type to disable
+ *
+ * @return Return an error code or 0.
+ *
+ * @ingroup krb5
+ */
+
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_enctype_disable(krb5_context context,
 		     krb5_enctype enctype)
@@ -3757,6 +3769,34 @@ krb5_enctype_disable(krb5_context context,
     et->flags |= F_DISABLED;
     return 0;
 }
+
+/**
+ * Enable enctyption type
+ *
+ * @param context Kerberos 5 context
+ * @param enctype encryption type to enable
+ *
+ * @return Return an error code or 0.
+ *
+ * @ingroup krb5
+ */
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_enctype_enable(krb5_context context,
+		    krb5_enctype enctype)
+{
+    struct encryption_type *et = _find_enctype(enctype);
+    if(et == NULL) {
+	if (context)
+	    krb5_set_error_message (context, KRB5_PROG_ETYPE_NOSUPP,
+				    "encryption type %d not supported",
+				    enctype);
+	return KRB5_PROG_ETYPE_NOSUPP;
+    }
+    et->flags &= ~F_DISABLED;
+    return 0;
+}
+
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_string_to_key_derived(krb5_context context,
