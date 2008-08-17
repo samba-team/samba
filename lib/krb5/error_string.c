@@ -199,7 +199,7 @@ krb5_free_error_message(krb5_context context, const char *msg)
  * @param context Kerberos context
  * @param msg error message to free
  *
- * @ingroup krb5_error
+ * @ingroup krb5_deprecated
  */
 
 void KRB5_LIB_FUNCTION __attribute__((deprecated))
@@ -207,6 +207,16 @@ krb5_free_error_string(krb5_context context, char *str)
 {
     krb5_free_error_message(context, str);
 }
+
+/**
+ * Set the error message returned by krb5_get_error_string(),
+ * deprecated, use krb5_set_error_message().
+ *
+ * @param context Kerberos context
+ * @param msg error message to free
+ *
+ * @ingroup krb5_deprecated
+ */
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_set_error_string(krb5_context context, const char *fmt, ...)
@@ -219,6 +229,16 @@ krb5_set_error_string(krb5_context context, const char *fmt, ...)
     va_end(ap);
     return 0;
 }
+
+/**
+ * Set the error message returned by krb5_get_error_string(),
+ * deprecated, use krb5_set_error_message().
+ *
+ * @param context Kerberos context
+ * @param msg error message to free
+ *
+ * @ingroup krb5_deprecated
+ */
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_vset_error_string(krb5_context context, const char *fmt, va_list args)
