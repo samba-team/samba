@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2005 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2008 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -87,9 +87,6 @@ struct key_type {
     size_t bits;
     size_t size;
     size_t schedule_size;
-#if 0
-    krb5_enctype best_etype;
-#endif
     void (*random_key)(krb5_context, krb5_keyblock*);
     void (*schedule)(krb5_context, struct key_data *);
     struct salt_type *string_to_key;
@@ -168,8 +165,13 @@ static void xor (DES_cblock *, const unsigned char *);
  *                                                          *
  ************************************************************/
 
-static HEIMDAL_MUTEX crypto_mutex = HEIMDAL_MUTEX_INITIALIZER;
+struct evp_schedule {
+    EVP_CIPHER_CTX ectx;
+    EVP_CIPHER_CTX dctx;
+};
 
+
+static HEIMDAL_MUTEX crypto_mutex = HEIMDAL_MUTEX_INITIALIZER;
 
 static void
 krb5_DES_random_key(krb5_context context,
@@ -183,10 +185,24 @@ krb5_DES_random_key(krb5_context context,
 }
 
 static void
+krb5_DES_schedule_old(krb5_context context,
+		      struct key_data *key)
+{
+    DES_set_key_unchecked(key->key->keyvalue.data, key->schedule->data);
+}
+
+
+static void
 krb5_DES_schedule(krb5_context context,
 		  struct key_data *key)
 {
-    DES_set_key_unchecked(key->key->keyvalue.data, key->schedule->data);
+    struct evp_schedule *ctx = key->schedule->data;
+    EVP_CIPHER_CTX_init(&ctx->ectx);
+    EVP_CipherInit_ex(&ctx->ectx, EVP_des_cbc(), NULL,
+		      key->key->keyvalue.data, NULL, 1);
+    EVP_CIPHER_CTX_init(&ctx->dctx);
+    EVP_CipherInit_ex(&ctx->dctx, EVP_des_cbc(), NULL,
+		      key->key->keyvalue.data, NULL, 0);
 }
 
 #ifdef ENABLE_AFS_STRING_TO_KEY
@@ -690,26 +706,19 @@ AES_string_to_key(krb5_context context,
     return ret;
 }
 
-struct krb5_aes_schedule {
-    EVP_CIPHER_CTX ectx;
-    EVP_CIPHER_CTX dctx;
-};
-
 static void
 AES_schedule(krb5_context context,
 	     struct key_data *kd)
 {
-    struct krb5_aes_schedule *key = kd->schedule->data;
+    struct evp_schedule *key = kd->schedule->data;
     const EVP_CIPHER *c;
 
     if (kd->key->keyvalue.length == 16)
 	c = EVP_hcrypto_aes_128_cts();
-    else if (kd->key->keyvalue.length == 24)
-	c = EVP_hcrypto_aes_192_cts();
     else if (kd->key->keyvalue.length == 32)
 	c = EVP_hcrypto_aes_256_cts();
     else
-	abort();
+	krb5_abortx(context, "Invalid key size to AES");
 
     memset(key, 0, sizeof(*key));
     EVP_CIPHER_CTX_init(&key->ectx);
@@ -720,9 +729,9 @@ AES_schedule(krb5_context context,
 }
 
 static void
-AES_cleanup(krb5_context context, struct key_data *kd)
+evp_cleanup(krb5_context context, struct key_data *kd)
 {
-    struct krb5_aes_schedule *key = kd->schedule->data;
+    struct evp_schedule *key = kd->schedule->data;
     EVP_CIPHER_CTX_cleanup(&key->ectx);
     EVP_CIPHER_CTX_cleanup(&key->dctx);
 }
@@ -798,23 +807,36 @@ static struct key_type keytype_null = {
     NULL
 };
 
+static struct key_type keytype_des_old = {
+    KEYTYPE_DES,
+    "des-old",
+    56,
+    8,
+    sizeof(DES_key_schedule),
+    krb5_DES_random_key,
+    krb5_DES_schedule_old,
+    des_salt,
+    krb5_DES_random_to_key
+};
+
 static struct key_type keytype_des = {
     KEYTYPE_DES,
     "des",
     56,
-    sizeof(DES_cblock),
-    sizeof(DES_key_schedule),
+    8,
+    sizeof(struct evp_schedule),
     krb5_DES_random_key,
     krb5_DES_schedule,
     des_salt,
-    krb5_DES_random_to_key
+    krb5_DES_random_to_key,
+    evp_cleanup
 };
 
 static struct key_type keytype_des3 = {
     KEYTYPE_DES3,
     "des3",
     168,
-    3 * sizeof(DES_cblock), 
+    24, 
     3 * sizeof(DES_key_schedule), 
     DES3_random_key,
     DES3_schedule,
@@ -826,7 +848,7 @@ static struct key_type keytype_des3_derived = {
     KEYTYPE_DES3,
     "des3",
     168,
-    3 * sizeof(DES_cblock),
+    24,
     3 * sizeof(DES_key_schedule), 
     DES3_random_key,
     DES3_schedule,
@@ -839,12 +861,12 @@ static struct key_type keytype_aes128 = {
     "aes-128",
     128,
     16,
-    sizeof(struct krb5_aes_schedule),
+    sizeof(struct evp_schedule),
     NULL,
     AES_schedule,
     AES_salt,
     NULL,
-    AES_cleanup
+    evp_cleanup
 };
 
 static struct key_type keytype_aes256 = {
@@ -852,12 +874,12 @@ static struct key_type keytype_aes256 = {
     "aes-256",
     256,
     32,
-    sizeof(struct krb5_aes_schedule),
+    sizeof(struct evp_schedule),
     NULL,
     AES_schedule,
     AES_salt,
     NULL,
-    AES_cleanup
+    evp_cleanup
 };
 
 static struct key_type keytype_arcfour = {
@@ -1276,7 +1298,6 @@ RSA_MD4_checksum(krb5_context context,
     return 0;
 }
 
-
 static krb5_error_code
 des_checksum(krb5_context context, 
 	     const EVP_MD *evp_md,
@@ -1285,6 +1306,7 @@ des_checksum(krb5_context context,
 	     size_t len, 
 	     Checksum *cksum)
 {
+    struct evp_schedule *ctx = key->schedule->data;
     EVP_MD_CTX *m;
     DES_cblock ivec;
     unsigned char *p = cksum->checksum.data;
@@ -1303,12 +1325,9 @@ des_checksum(krb5_context context,
     EVP_DigestFinal_ex (m, p + 8, NULL);
     EVP_MD_CTX_destroy(m);
     memset (&ivec, 0, sizeof(ivec));
-    DES_cbc_encrypt(p, 
-		    p, 
-		    24,
-		    key->schedule->data, 
-		    &ivec, 
-		    DES_ENCRYPT);
+    EVP_CipherInit_ex(&ctx->ectx, NULL, NULL, NULL, (void *)&ivec, -1);
+    EVP_Cipher(&ctx->ectx, p, p, 24);
+
     return 0;
 }
 
@@ -1320,11 +1339,11 @@ des_verify(krb5_context context,
 	   size_t len,
 	   Checksum *C)
 {
+    struct evp_schedule *ctx = key->schedule->data;
     EVP_MD_CTX *m;
     unsigned char tmp[24];
     unsigned char res[16];
     DES_cblock ivec;
-    DES_key_schedule *sched = key->schedule->data;
     krb5_error_code ret = 0;
 
     m = EVP_MD_CTX_create();
@@ -1334,12 +1353,9 @@ des_verify(krb5_context context,
     }
 
     memset(&ivec, 0, sizeof(ivec));
-    DES_cbc_encrypt(C->checksum.data, 
-		    (void*)tmp, 
-		    C->checksum.length, 
-		    &sched[0],
-		    &ivec,
-		    DES_DECRYPT);
+    EVP_CipherInit_ex(&ctx->dctx, NULL, NULL, NULL, (void *)&ivec, -1);
+    EVP_Cipher(&ctx->dctx, tmp, C->checksum.data, 24);
+
     EVP_DigestInit_ex(m, evp_md, NULL);
     EVP_DigestUpdate(m, tmp, 8); /* confounder */
     EVP_DigestUpdate(m, data, len);
@@ -1717,33 +1733,6 @@ static struct checksum_type checksum_rsa_md4_des = {
     RSA_MD4_DES_checksum,
     RSA_MD4_DES_verify
 };
-#if 0
-static struct checksum_type checksum_des_mac = { 
-    CKSUMTYPE_DES_MAC,
-    "des-mac",
-    0,
-    0,
-    0,
-    DES_MAC_checksum
-};
-static struct checksum_type checksum_des_mac_k = {
-    CKSUMTYPE_DES_MAC_K,
-    "des-mac-k",
-    0,
-    0,
-    0,
-    DES_MAC_K_checksum
-};
-static struct checksum_type checksum_rsa_md4_des_k = {
-    CKSUMTYPE_RSA_MD4_DES_K, 
-    "rsa-md4-des-k", 
-    0, 
-    0, 
-    0, 
-    RSA_MD4_DES_K_checksum,
-    RSA_MD4_DES_K_verify
-};
-#endif
 static struct checksum_type checksum_rsa_md5 = {
     CKSUMTYPE_RSA_MD5,
     "rsa-md5",
@@ -1835,11 +1824,6 @@ static struct checksum_type *checksum_types[] = {
     &checksum_crc32,
     &checksum_rsa_md4,
     &checksum_rsa_md4_des,
-#if 0
-    &checksum_des_mac, 
-    &checksum_des_mac_k,
-    &checksum_rsa_md4_des_k,
-#endif
     &checksum_rsa_md5,
     &checksum_rsa_md5_des,
     &checksum_rsa_md5_des3,
@@ -2172,7 +2156,7 @@ NULL_encrypt(krb5_context context,
 }
 
 static krb5_error_code
-DES_CBC_encrypt_null_ivec(krb5_context context,
+evp_des_encrypt_null_ivec(krb5_context context,
 			  struct key_data *key, 
 			  void *data, 
 			  size_t len, 
@@ -2180,15 +2164,47 @@ DES_CBC_encrypt_null_ivec(krb5_context context,
 			  int usage,
 			  void *ignore_ivec)
 {
+    struct evp_schedule *ctx = key->schedule->data;
+    EVP_CIPHER_CTX *c;
     DES_cblock ivec;
-    DES_key_schedule *s = key->schedule->data;
     memset(&ivec, 0, sizeof(ivec));
-    DES_cbc_encrypt(data, data, len, s, &ivec, encryptp);
+    c = encryptp ? &ctx->ectx : &ctx->dctx;
+    EVP_CipherInit_ex(c, NULL, NULL, NULL, (void *)&ivec, -1);
+    EVP_Cipher(c, data, data, len);
     return 0;
 }
 
 static krb5_error_code
-DES_CBC_encrypt_key_ivec(krb5_context context,
+evp_encrypt(krb5_context context,
+	    struct key_data *key, 
+	    void *data, 
+	    size_t len, 
+	    krb5_boolean encryptp,
+	    int usage,
+	    void *ivec)
+{
+    struct evp_schedule *ctx = key->schedule->data;
+    EVP_CIPHER_CTX *c;
+    c = encryptp ? &ctx->ectx : &ctx->dctx;
+    if (ivec == NULL) {
+	/* alloca ? */
+	size_t len = EVP_CIPHER_CTX_iv_length(c);
+	void *loiv = malloc(len);
+	if (loiv == NULL) {
+	    krb5_clear_error_string(context);
+	    return ENOMEM;
+	}
+	memset(loiv, 0, len);
+	EVP_CipherInit_ex(c, NULL, NULL, NULL, loiv, -1);
+	free(loiv);
+    } else
+	EVP_CipherInit_ex(c, NULL, NULL, NULL, ivec, -1);
+    EVP_Cipher(c, data, data, len);
+    return 0;
+}
+
+static krb5_error_code
+evp_des_encrypt_key_ivec(krb5_context context,
 			 struct key_data *key, 
 			 void *data, 
 			 size_t len, 
@@ -2196,10 +2212,13 @@ DES_CBC_encrypt_key_ivec(krb5_context context,
 			 int usage,
 			 void *ignore_ivec)
 {
+    struct evp_schedule *ctx = key->schedule->data;
+    EVP_CIPHER_CTX *c;
     DES_cblock ivec;
-    DES_key_schedule *s = key->schedule->data;
     memcpy(&ivec, key->key->keyvalue.data, sizeof(ivec));
-    DES_cbc_encrypt(data, data, len, s, &ivec, encryptp);
+    c = encryptp ? &ctx->ectx : &ctx->dctx;
+    EVP_CipherInit_ex(c, NULL, NULL, NULL, (void *)&ivec, -1);
+    EVP_Cipher(c, data, data, len);
     return 0;
 }
 
@@ -2254,41 +2273,6 @@ DES_PCBC_encrypt_key_ivec(krb5_context context,
     memcpy(&ivec, key->key->keyvalue.data, sizeof(ivec));
 
     DES_pcbc_encrypt(data, data, len, s, &ivec, encryptp);
-    return 0;
-}
-
-/*
- * AES draft-raeburn-krb-rijndael-krb-02
- */
-
-static krb5_error_code
-AES_CTS_encrypt(krb5_context context,
-		struct key_data *key,
-		void *data,
-		size_t len,
-		krb5_boolean encryptp,
-		int usage,
-		void *ivec)
-{
-    struct krb5_aes_schedule *aeskey = key->schedule->data;
-    char local_ivec[AES_BLOCK_SIZE];
-    EVP_CIPHER_CTX *k;
-
-    if (encryptp)
-	k = &aeskey->ectx;
-    else
-	k = &aeskey->dctx;
-    
-    if(ivec == NULL) {
-	memset(local_ivec, 0, sizeof(local_ivec));
-	ivec = local_ivec;
-    }
-
-    EVP_CipherInit_ex(k, NULL, NULL, NULL, ivec, -1);
-
-    if (EVP_Cipher(k, data, data, len) != 1)
-	krb5_abortx(context, "EVP_Cipher failed for aes-cts");
-
     return 0;
 }
 
@@ -2524,12 +2508,24 @@ AES_PRF(krb5_context context,
 	krb5_abortx(context, "malloc failed");
     
     { 
+#if 1
 	AES_KEY key;
 
 	AES_set_encrypt_key(derived->keyvalue.data, 
 			    crypto->et->keytype->bits, &key);
 	AES_encrypt(result.checksum.data, out->data, &key);
 	memset(&key, 0, sizeof(key));
+#else
+	EVP_CIPHER_CTX ctx;
+	unsigned char ivec[16];
+
+	memset(ivec, 0, sizeof(ivec));
+	EVP_CIPHER_CTX_init(&ctx);
+	EVP_CipherInit_ex(&ctx, NULL /* EVP_ ...*/,
+			  NULL, kd->key->keyvalue.data, ivec, 1);
+	EVP_Cipher(&ctx, out->data, result.checksum.data, 16);
+	EVP_CIPHER_CTX_cleanup(&ctx);
+#endif
     }
 
     krb5_data_free(&result.checksum);
@@ -2566,7 +2562,7 @@ static struct encryption_type enctype_des_cbc_crc = {
     &checksum_crc32,
     NULL,
     0,
-    DES_CBC_encrypt_key_ivec,
+    evp_des_encrypt_key_ivec,
     0,
     NULL
 };
@@ -2580,7 +2576,7 @@ static struct encryption_type enctype_des_cbc_md4 = {
     &checksum_rsa_md4,
     &checksum_rsa_md4_des,
     0,
-    DES_CBC_encrypt_null_ivec,
+    evp_des_encrypt_null_ivec,
     0,
     NULL
 };
@@ -2594,7 +2590,7 @@ static struct encryption_type enctype_des_cbc_md5 = {
     &checksum_rsa_md5,
     &checksum_rsa_md5_des,
     0,
-    DES_CBC_encrypt_null_ivec,
+    evp_des_encrypt_null_ivec,
     0,
     NULL
 };
@@ -2664,7 +2660,7 @@ static struct encryption_type enctype_aes128_cts_hmac_sha1 = {
     &checksum_sha1,
     &checksum_hmac_sha1_aes128,
     F_DERIVED,
-    AES_CTS_encrypt,
+    evp_encrypt,
     16,
     AES_PRF
 };
@@ -2678,7 +2674,7 @@ static struct encryption_type enctype_aes256_cts_hmac_sha1 = {
     &checksum_sha1,
     &checksum_hmac_sha1_aes256,
     F_DERIVED,
-    AES_CTS_encrypt,
+    evp_encrypt,
     16,
     AES_PRF
 };
@@ -2692,7 +2688,7 @@ static struct encryption_type enctype_des_cbc_none = {
     &checksum_none,
     NULL,
     F_PSEUDO,
-    DES_CBC_encrypt_null_ivec,
+    evp_des_encrypt_null_ivec,
     0,
     NULL
 };
@@ -2702,7 +2698,7 @@ static struct encryption_type enctype_des_cfb64_none = {
     1,
     1,
     0,
-    &keytype_des,
+    &keytype_des_old,
     &checksum_none,
     NULL,
     F_PSEUDO,
@@ -2716,7 +2712,7 @@ static struct encryption_type enctype_des_pcbc_none = {
     8,
     8,
     0,
-    &keytype_des,
+    &keytype_des_old,
     &checksum_none,
     NULL,
     F_PSEUDO,
