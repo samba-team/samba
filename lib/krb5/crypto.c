@@ -406,18 +406,6 @@ DES3_random_key(krb5_context context,
 	    DES_is_weak_key(&k[2]));
 }
 
-static void
-DES3_schedule(krb5_context context,
-	      struct key_type *kt,
-	      struct key_data *key)
-{
-    DES_cblock *k = key->key->keyvalue.data;
-    DES_key_schedule *s = key->schedule->data;
-    DES_set_key_unchecked(&k[0], &s[0]);
-    DES_set_key_unchecked(&k[1], &s[1]);
-    DES_set_key_unchecked(&k[2], &s[2]);
-}
-
 /*
  * A = A xor B. A & B are 8 bytes.
  */
@@ -2229,25 +2217,6 @@ DES_PCBC_encrypt_key_ivec(krb5_context context,
     return 0;
 }
 #endif
-
-static krb5_error_code
-DES3_CBC_encrypt(krb5_context context,
-		 struct key_data *key, 
-		 void *data, 
-		 size_t len, 
-		 krb5_boolean encryptp,
-		 int usage,
-		 void *ivec)
-{
-    DES_cblock local_ivec;
-    DES_key_schedule *s = key->schedule->data;
-    if(ivec == NULL) {
-	ivec = &local_ivec;
-	memset(local_ivec, 0, sizeof(local_ivec));
-    }
-    DES_ede3_cbc_encrypt(data, data, len, &s[0], &s[1], &s[2], ivec, encryptp);
-    return 0;
-}
 
 /*
  * section 6 of draft-brezak-win2k-krb-rc4-hmac-03
