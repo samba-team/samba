@@ -2491,14 +2491,12 @@ AES_PRF(krb5_context context,
 	krb5_abortx(context, "malloc failed");
     
     { 
+	const EVP_CIPHER *c = (*crypto->et->keytype->evp)();
 	EVP_CIPHER_CTX ctx;
-	unsigned char ivec[16];
-
-	memset(ivec, 0, sizeof(ivec));
-	EVP_CIPHER_CTX_init(&ctx);
-	EVP_CipherInit_ex(&ctx, (*crypto->et->keytype->evp)(),
-			  NULL, derived->keyvalue.data, ivec, 1);
-	EVP_Cipher(&ctx, out->data, result.checksum.data, 16);
+	/* XXX blksz 1 for cts, so we can't use that */
+	EVP_CIPHER_CTX_init(&ctx); /* ivec all zero */
+	EVP_CipherInit_ex(&ctx, c, NULL, derived->keyvalue.data, NULL, 1);
+	EVP_Cipher(&ctx, out->data, result.checksum.data, 16); 
 	EVP_CIPHER_CTX_cleanup(&ctx);
     }
 
