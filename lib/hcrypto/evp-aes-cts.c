@@ -52,13 +52,22 @@ RCSID("$Id$");
 #include <openssl/evp.h>
 #include <openssl/aes.h>
 
-const EVP_CIPHER * EVP_hcrypto_aes_128_cts(void);
-const EVP_CIPHER * EVP_hcrypto_aes_192_cts(void);
-const EVP_CIPHER * EVP_hcrypto_aes_256_cts(void);
+#define _hc_EVP_hcrypto_aes_128_cts _krb5_EVP_hcrypto_aes_128_cts
+#define _hc_EVP_hcrypto_aes_192_cts _krb5_EVP_hcrypto_aes_192_cts
+#define _hc_EVP_hcrypto_aes_256_cts _krb5_EVP_hcrypto_aes_256_cts
+
+const EVP_CIPHER * _krb5_EVP_hcrypto_aes_128_cts(void);
+const EVP_CIPHER * _krb5_EVP_hcrypto_aes_192_cts(void);
+const EVP_CIPHER * _krb5_EVP_hcrypto_aes_256_cts(void);
 
 #else
 #include <evp.h>
 #include <aes.h>
+
+#define _hc_EVP_hcrypto_aes_128_cts hc_EVP_hcrypto_aes_128_cts
+#define _hc_EVP_hcrypto_aes_192_cts hc_EVP_hcrypto_aes_192_cts
+#define _hc_EVP_hcrypto_aes_256_cts hc_EVP_hcrypto_aes_256_cts
+
 #endif
 
 /*
@@ -186,7 +195,7 @@ aes_cts_cleanup(EVP_CIPHER_CTX *ctx)
  */
 
 const EVP_CIPHER *
-EVP_hcrypto_aes_128_cts(void)
+_hc_EVP_hcrypto_aes_128_cts(void)
 {
     static const EVP_CIPHER aes_128_cts = {
 	0,
@@ -216,7 +225,7 @@ EVP_hcrypto_aes_128_cts(void)
  */
 
 const EVP_CIPHER *
-EVP_hcrypto_aes_192_cts(void)
+_hc_EVP_hcrypto_aes_192_cts(void)
 {
     static const EVP_CIPHER aes_192_cts = {
 	0,
@@ -246,7 +255,7 @@ EVP_hcrypto_aes_192_cts(void)
  */
 
 const EVP_CIPHER *
-EVP_hcrypto_aes_256_cts(void)
+_hc_EVP_hcrypto_aes_256_cts(void)
 {
     static const EVP_CIPHER aes_256_cts = {
 	0,
