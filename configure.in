@@ -78,6 +78,16 @@ if test "$enable_pk_init" != no ;then
 fi
 AM_CONDITIONAL(PKINIT, test "$enable_pk_init" != no)
 
+dnl Check for sqlite
+rk_TEST_PACKAGE(sqlite3,
+[#include <sqlite3.h>],
+[-lsqlite3],,,SQLITE3)
+
+if test "X$with_sqlite3" != Xyes ; then
+   INCLUDE_sqlite="-I\$(srcdir)/lib/sqlite"
+   LIB_sqlite="\$(top_builddir)/lib/sqlit/libsqlite.la"
+fi
+AM_CONDITIONAL(SQLITE3,  test "X$with_sqlite3" = Xyes)
 
 dnl path where the hdb directory is stored
 AC_ARG_WITH([hdbdir], 
