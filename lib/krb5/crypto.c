@@ -3751,7 +3751,7 @@ krb5_crypto_getconfoundersize(krb5_context context,
  *
  * @return Return an error code or 0.
  *
- * @ingroup krb5
+ * @ingroup krb5_crypto
  */
 
 krb5_error_code KRB5_LIB_FUNCTION
@@ -3778,7 +3778,7 @@ krb5_enctype_disable(krb5_context context,
  *
  * @return Return an error code or 0.
  *
- * @ingroup krb5
+ * @ingroup krb5_crypto
  */
 
 krb5_error_code KRB5_LIB_FUNCTION
