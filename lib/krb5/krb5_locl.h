@@ -133,6 +133,7 @@ struct sockaddr_dl;
 
 #include <wind.h>
 
+#define HC_DEPRECATED_CRYPTO
 #include "crypto-headers.h"
 
 
