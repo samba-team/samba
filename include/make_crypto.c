@@ -75,7 +75,6 @@ main(int argc, char **argv)
     fputs("#include <openssl/md4.h>\n", f);
     fputs("#include <openssl/md5.h>\n", f);
     fputs("#include <openssl/sha.h>\n", f);
-    fputs("#include <openssl/aes.h>\n", f);
     fputs("#include <openssl/ui.h>\n", f);
     fputs("#include <openssl/rand.h>\n", f);
     fputs("#include <openssl/engine.h>\n", f);
@@ -98,7 +97,6 @@ main(int argc, char **argv)
     fputs("#include <hcrypto/sha.h>\n", f);
     fputs("#include <hcrypto/rc4.h>\n", f);
     fputs("#include <hcrypto/rc2.h>\n", f);
-    fputs("#include <hcrypto/aes.h>\n", f);
     fputs("#include <hcrypto/ui.h>\n", f);
     fputs("#include <hcrypto/rand.h>\n", f);
     fputs("#include <hcrypto/engine.h>\n", f);
