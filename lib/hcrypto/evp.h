@@ -185,6 +185,10 @@ struct hc_evp_md {
 #ifndef HC_DEPRECATED
 #define HC_DEPRECATED __attribute__((deprecated))
 #endif
+#ifndef HC_DEPRECATED_CRYPTO
+#define HC_DEPRECATED_CRYPTO __attribute__((deprecated))
+#endif
+
 
 #ifdef  __cplusplus
 extern "C" {
@@ -195,9 +199,9 @@ extern "C" {
  */
 
 const EVP_MD *EVP_md_null(void);
-const EVP_MD *EVP_md2(void);
-const EVP_MD *EVP_md4(void);
-const EVP_MD *EVP_md5(void);
+const EVP_MD *EVP_md2(void) HC_DEPRECATED_CRYPTO;
+const EVP_MD *EVP_md4(void) HC_DEPRECATED_CRYPTO;
+const EVP_MD *EVP_md5(void) HC_DEPRECATED_CRYPTO;
 const EVP_MD *EVP_sha(void);
 const EVP_MD *EVP_sha1(void);
 const EVP_MD *EVP_sha256(void);
@@ -211,14 +215,14 @@ const EVP_CIPHER * EVP_hcrypto_aes_256_cbc(void);
 const EVP_CIPHER * EVP_hcrypto_aes_128_cts(void);
 const EVP_CIPHER * EVP_hcrypto_aes_192_cts(void);
 const EVP_CIPHER * EVP_hcrypto_aes_256_cts(void);
-const EVP_CIPHER * EVP_des_cbc(void);
+const EVP_CIPHER * EVP_des_cbc(void) HC_DEPRECATED_CRYPTO;
 const EVP_CIPHER * EVP_des_ede3_cbc(void);
 const EVP_CIPHER * EVP_enc_null(void);
-const EVP_CIPHER * EVP_rc2_40_cbc(void);
-const EVP_CIPHER * EVP_rc2_64_cbc(void);
-const EVP_CIPHER * EVP_rc2_cbc(void);
+const EVP_CIPHER * EVP_rc2_40_cbc(void) HC_DEPRECATED_CRYPTO;
+const EVP_CIPHER * EVP_rc2_64_cbc(void) HC_DEPRECATED_CRYPTO;
+const EVP_CIPHER * EVP_rc2_cbc(void) HC_DEPRECATED_CRYPTO;
 const EVP_CIPHER * EVP_rc4(void);
-const EVP_CIPHER * EVP_rc4_40(void);
+const EVP_CIPHER * EVP_rc4_40(void) HC_DEPRECATED_CRYPTO;
 const EVP_CIPHER * EVP_camellia_128_cbc(void);
 const EVP_CIPHER * EVP_camellia_192_cbc(void);
 const EVP_CIPHER * EVP_camellia_256_cbc(void);
