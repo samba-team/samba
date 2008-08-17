@@ -103,11 +103,11 @@ struct checksum_type {
     size_t blocksize;
     size_t checksumsize;
     unsigned flags;
-    void (*checksum)(krb5_context context,
-		     struct key_data *key,
-		     const void *buf, size_t len,
-		     unsigned usage,
-		     Checksum *csum);
+    krb5_enctype (*checksum)(krb5_context context,
+			     struct key_data *key,
+			     const void *buf, size_t len,
+			     unsigned usage,
+			     Checksum *csum);
     krb5_error_code (*verify)(krb5_context context,
 			      struct key_data *key,
 			      const void *buf, size_t len,
@@ -580,13 +580,7 @@ ARCFOUR_string_to_key(krb5_context context,
 	goto out;
     }
 
-    if (EVP_DigestInit_ex(m, EVP_md4(), NULL) != 1) {
-	krb5_set_error_message(context, KRB5_CRYPTO_INTERNAL,
-			       "MD5 init failed");
-	ret = KRB5_CRYPTO_INTERNAL;
-	goto out;
-    }
-	
+    EVP_DigestInit_ex(m, EVP_md4(), NULL);
 
     ret = wind_utf8ucs2_length(password.data, &len);
     if (ret) {
@@ -1239,7 +1233,7 @@ _key_schedule(krb5_context context,
  *                                                          *
  ************************************************************/
 
-static void
+static krb5_error_code
 NONE_checksum(krb5_context context,
 	      struct key_data *key,
 	      const void *data,
@@ -1247,9 +1241,10 @@ NONE_checksum(krb5_context context,
 	      unsigned usage,
 	      Checksum *C)
 {
+    return 0;
 }
 
-static void
+static krb5_error_code
 CRC32_checksum(krb5_context context,
 	       struct key_data *key,
 	       const void *data,
@@ -1265,9 +1260,10 @@ CRC32_checksum(krb5_context context,
     r[1] = (crc >> 8)  & 0xff;
     r[2] = (crc >> 16) & 0xff;
     r[3] = (crc >> 24) & 0xff;
+    return 0;
 }
 
-static void
+static krb5_error_code
 RSA_MD4_checksum(krb5_context context,
 		 struct key_data *key,
 		 const void *data,
@@ -1277,25 +1273,35 @@ RSA_MD4_checksum(krb5_context context,
 {
     if (EVP_Digest(data, len, C->checksum.data, NULL, EVP_md4(), NULL) != 1)
 	krb5_abortx(context, "md4 checksum failed");
+    return 0;
 }
 
-static void
-RSA_MD4_DES_checksum(krb5_context context, 
-		     struct key_data *key,
-		     const void *data, 
-		     size_t len, 
-		     unsigned usage,
-		     Checksum *cksum)
+
+static krb5_error_code
+RSA_checksum(krb5_context context, 
+	     const EVP_MD *evp_md,
+	     struct key_data *key,
+	     const void *data, 
+	     size_t len, 
+	     Checksum *cksum)
 {
-    MD4_CTX md4;
+    EVP_MD_CTX *m;
     DES_cblock ivec;
     unsigned char *p = cksum->checksum.data;
     
     krb5_generate_random_block(p, 8);
-    MD4_Init (&md4);
-    MD4_Update (&md4, p, 8);
-    MD4_Update (&md4, data, len);
-    MD4_Final (p + 8, &md4);
+
+    m = EVP_MD_CTX_create();
+    if (m == NULL) {
+	krb5_set_error_message(context, ENOMEM, "Malloc: out of memory");
+	return ENOMEM;
+    }
+
+    EVP_DigestInit_ex(m, evp_md, NULL);
+    EVP_DigestUpdate(m, p, 8);
+    EVP_DigestUpdate(m, data, len);
+    EVP_DigestFinal_ex (m, p + 8, NULL);
+    EVP_MD_CTX_destroy(m);
     memset (&ivec, 0, sizeof(ivec));
     DES_cbc_encrypt(p, 
 		    p, 
@@ -1303,6 +1309,18 @@ RSA_MD4_DES_checksum(krb5_context context,
 		    key->schedule->data, 
 		    &ivec, 
 		    DES_ENCRYPT);
+    return 0;
+}
+
+static krb5_error_code
+RSA_MD4_DES_checksum(krb5_context context, 
+		     struct key_data *key,
+		     const void *data, 
+		     size_t len, 
+		     unsigned usage,
+		     Checksum *cksum)
+{
+    return RSA_checksum(context, EVP_md4(), key, data, len, cksum);
 }
 
 static krb5_error_code
@@ -1313,11 +1331,17 @@ RSA_MD4_DES_verify(krb5_context context,
 		   unsigned usage,
 		   Checksum *C)
 {
-    MD4_CTX md4;
+    EVP_MD_CTX *m;
     unsigned char tmp[24];
     unsigned char res[16];
     DES_cblock ivec;
     krb5_error_code ret = 0;
+
+    m = EVP_MD_CTX_create();
+    if (m == NULL) {
+	krb5_set_error_message(context, ENOMEM, "Malloc: out of memory");
+	return ENOMEM;
+    }
 
     memset(&ivec, 0, sizeof(ivec));
     DES_cbc_encrypt(C->checksum.data,
@@ -1326,10 +1350,11 @@ RSA_MD4_DES_verify(krb5_context context,
 		    key->schedule->data,
 		    &ivec,
 		    DES_DECRYPT);
-    MD4_Init (&md4);
-    MD4_Update (&md4, tmp, 8); /* confounder */
-    MD4_Update (&md4, data, len);
-    MD4_Final (res, &md4);
+    EVP_DigestInit_ex(m, EVP_md4(), NULL);
+    EVP_DigestUpdate(m, tmp, 8); /* confounder */
+    EVP_DigestUpdate(m, data, len);
+    EVP_DigestFinal_ex (m, res, NULL);
+    EVP_MD_CTX_destroy(m);
     if(memcmp(res, tmp + 8, sizeof(res)) != 0) {
 	krb5_clear_error_string (context);
 	ret = KRB5KRB_AP_ERR_BAD_INTEGRITY;
@@ -1339,7 +1364,7 @@ RSA_MD4_DES_verify(krb5_context context,
     return ret;
 }
 
-static void
+static krb5_error_code
 RSA_MD5_checksum(krb5_context context,
 		 struct key_data *key,
 		 const void *data,
@@ -1349,9 +1374,10 @@ RSA_MD5_checksum(krb5_context context,
 {
     if (EVP_Digest(data, len, C->checksum.data, NULL, EVP_md5(), NULL) != 1)
 	krb5_abortx(context, "md5 checksum failed");
+    return 0;
 }
 
-static void
+static krb5_error_code
 RSA_MD5_DES_checksum(krb5_context context,
 		     struct key_data *key,
 		     const void *data,
@@ -1359,22 +1385,7 @@ RSA_MD5_DES_checksum(krb5_context context,
 		     unsigned usage,
 		     Checksum *C)
 {
-    MD5_CTX md5;
-    DES_cblock ivec;
-    unsigned char *p = C->checksum.data;
-    
-    krb5_generate_random_block(p, 8);
-    MD5_Init (&md5);
-    MD5_Update (&md5, p, 8);
-    MD5_Update (&md5, data, len);
-    MD5_Final (p + 8, &md5);
-    memset (&ivec, 0, sizeof(ivec));
-    DES_cbc_encrypt(p, 
-		    p, 
-		    24, 
-		    key->schedule->data, 
-		    &ivec, 
-		    DES_ENCRYPT);
+    return RSA_checksum(context, EVP_md5(), key, data, len, C);
 }
 
 static krb5_error_code
@@ -1412,7 +1423,7 @@ RSA_MD5_DES_verify(krb5_context context,
     return ret;
 }
 
-static void
+static krb5_error_code
 RSA_MD5_DES3_checksum(krb5_context context,
 		      struct key_data *key,
 		      const void *data,
@@ -1437,6 +1448,7 @@ RSA_MD5_DES3_checksum(krb5_context context,
 			 &sched[0], &sched[1], &sched[2],
 			 &ivec, 
 			 DES_ENCRYPT);
+    return 0;
 }
 
 static krb5_error_code
@@ -1474,7 +1486,7 @@ RSA_MD5_DES3_verify(krb5_context context,
     return ret;
 }
 
-static void
+static krb5_error_code
 SHA1_checksum(krb5_context context,
 	      struct key_data *key,
 	      const void *data,
@@ -1484,6 +1496,7 @@ SHA1_checksum(krb5_context context,
 {
     if (EVP_Digest(data, len, C->checksum.data, NULL, EVP_sha1(), NULL) != 1)
 	krb5_abortx(context, "sha1 checksum failed");
+    return 0;
 }
 
 /* HMAC according to RFC2104 */
@@ -1575,7 +1588,7 @@ krb5_hmac(krb5_context context,
     return ret;
  }
 
-static void
+static krb5_error_code
 SP_HMAC_SHA1_checksum(krb5_context context,
 		      struct key_data *key, 
 		      const void *data, 
@@ -1595,13 +1608,14 @@ SP_HMAC_SHA1_checksum(krb5_context context,
     if (ret)
 	krb5_abortx(context, "hmac failed");
     memcpy(result->checksum.data, res.checksum.data, result->checksum.length);
+    return 0;
 }
 
 /*
  * checksum according to section 5. of draft-brezak-win2k-krb-rc4-hmac-03.txt
  */
 
-static void
+static krb5_error_code
 HMAC_MD5_checksum(krb5_context context,
 		  struct key_data *key,
 		  const void *data,
@@ -1638,13 +1652,14 @@ HMAC_MD5_checksum(krb5_context context,
     ret = hmac(context, c, tmp, sizeof(tmp), 0, &ksign, result);
     if (ret)
 	krb5_abortx(context, "hmac failed");
+    return 0;
 }
 
 /*
  * same as previous but being used while encrypting.
  */
 
-static void
+static krb5_error_code
 HMAC_MD5_checksum_enc(krb5_context context,
 		      struct key_data *key,
 		      const void *data,
@@ -1675,6 +1690,7 @@ HMAC_MD5_checksum_enc(krb5_context context,
     ret = hmac(context, c, data, len, 0, &ksign, result);
     if (ret)
 	krb5_abortx(context, "hmac failed");
+    return 0;
 }
 
 static struct checksum_type checksum_none = {
@@ -1926,8 +1942,7 @@ create_checksum (krb5_context context,
     ret = krb5_data_alloc(&result->checksum, ct->checksumsize);
     if (ret)
 	return (ret);
-    (*ct->checksum)(context, dkey, data, len, usage, result);
-    return 0;
+    return (*ct->checksum)(context, dkey, data, len, usage, result);
 }
 
 static int
@@ -2019,7 +2034,11 @@ verify_checksum(krb5_context context,
     if (ret)
 	return ret;
 
-    (*ct->checksum)(context, dkey, data, len, usage, &c);
+    ret = (*ct->checksum)(context, dkey, data, len, usage, &c);
+    if (ret) {
+	krb5_data_free(&c.checksum);
+	return ret;
+    }
 
     if(c.checksum.length != cksum->checksum.length || 
        memcmp(c.checksum.data, cksum->checksum.data, c.checksum.length)) {
@@ -2497,7 +2516,11 @@ AES_PRF(krb5_context context,
 	return ret;
     }
 
-    (*ct->checksum)(context, NULL, in->data, in->length, 0, &result);
+    ret = (*ct->checksum)(context, NULL, in->data, in->length, 0, &result);
+    if (ret) {
+	krb5_data_free(&result.checksum);
+	return ret;
+    }
 
     if (result.checksum.length < crypto->et->blocksize)
 	krb5_abortx(context, "internal prf error");
