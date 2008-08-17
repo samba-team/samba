@@ -569,20 +569,36 @@ ARCFOUR_string_to_key(krb5_context context,
 		  krb5_keyblock *key)
 {
     krb5_error_code ret;
-    uint16_t *s;
+    uint16_t *s = NULL;
     size_t len, i;
-    MD4_CTX m;
+    EVP_MD_CTX *m;
+
+    m = EVP_MD_CTX_create();
+    if (m == NULL) {
+	ret = ENOMEM;
+	krb5_set_error_message(context, ret, "Malloc: out of memory");
+	goto out;
+    }
+
+    if (EVP_DigestInit_ex(m, EVP_md4(), NULL) != 1) {
+	krb5_set_error_message(context, KRB5_CRYPTO_INTERNAL,
+			       "MD5 init failed");
+	ret = KRB5_CRYPTO_INTERNAL;
+	goto out;
+    }
+	
 
     ret = wind_utf8ucs2_length(password.data, &len);
     if (ret) {
 	krb5_set_error_message (context, ret, "Password not an UCS2 string");
-	return ret;
+	goto out;
     }
 	
     s = malloc (len * sizeof(s[0]));
     if (len != 0 && s == NULL) {
 	krb5_set_error_message (context, ENOMEM, "malloc: out of memory");
-	return ENOMEM;
+	ret = ENOMEM;
+	goto out;
     }
 
     ret = wind_utf8ucs2(password.data, s, &len);
@@ -592,13 +608,12 @@ ARCFOUR_string_to_key(krb5_context context,
     }
 
     /* LE encoding */
-    MD4_Init (&m);
     for (i = 0; i < len; i++) {
 	unsigned char p;
 	p = (s[i] & 0xff);
-	MD4_Update (&m, &p, 1);
+	EVP_DigestUpdate (m, &p, 1);
 	p = (s[i] >> 8) & 0xff;
-	MD4_Update (&m, &p, 1);
+	EVP_DigestUpdate (m, &p, 1);
     }
 
     key->keytype = enctype;
@@ -607,10 +622,12 @@ ARCFOUR_string_to_key(krb5_context context,
 	krb5_set_error_message (context, ENOMEM, "malloc: out of memory");
 	goto out;
     }
-    MD4_Final (key->keyvalue.data, &m);
-    ret = 0;
+    EVP_DigestFinal_ex (m, key->keyvalue.data, NULL);
+
 out:
-    memset (s, 0, len);
+    EVP_MD_CTX_destroy(m);
+    if (s)
+	memset (s, 0, len);
     free (s);
     return ret;
 }
