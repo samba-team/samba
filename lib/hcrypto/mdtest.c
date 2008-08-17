@@ -36,6 +36,8 @@
 RCSID("$Id$");
 #endif
 
+#define HC_DEPRECATED_CRYPTO
+
 #include <stdio.h>
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h>
