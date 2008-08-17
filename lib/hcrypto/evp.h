@@ -78,6 +78,7 @@
 #define EVP_hcrypto_aes_128_cts hc_EVP_hcrypto_aes_128_cts
 #define EVP_hcrypto_aes_192_cts hc_EVP_hcrypto_aes_192_cts
 #define EVP_hcrypto_aes_256_cts hc_EVP_hcrypto_aes_256_cts
+#define EVP_des_cbc hc_EVP_des_cbc
 #define EVP_des_ede3_cbc hc_EVP_des_ede3_cbc
 #define EVP_enc_null hc_EVP_enc_null
 #define EVP_md2 hc_EVP_md2
@@ -210,6 +211,7 @@ const EVP_CIPHER * EVP_hcrypto_aes_256_cbc(void);
 const EVP_CIPHER * EVP_hcrypto_aes_128_cts(void);
 const EVP_CIPHER * EVP_hcrypto_aes_192_cts(void);
 const EVP_CIPHER * EVP_hcrypto_aes_256_cts(void);
+const EVP_CIPHER * EVP_des_cbc(void);
 const EVP_CIPHER * EVP_des_ede3_cbc(void);
 const EVP_CIPHER * EVP_enc_null(void);
 const EVP_CIPHER * EVP_rc2_40_cbc(void);
