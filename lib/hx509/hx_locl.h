@@ -69,6 +69,7 @@
 
 #include <der.h>
 
+#define HC_DEPRECATED_CRYPTO
 #include "crypto-headers.h"
 
 struct hx509_keyset_ops;
