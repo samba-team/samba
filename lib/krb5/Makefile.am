@@ -2,7 +2,7 @@
 
 include $(top_srcdir)/Makefile.am.common
 
-AM_CPPFLAGS += $(INCLUDE_krb4) $(INCLUDE_hcrypto) -I../com_err -I$(srcdir)/../com_err -I$(srcdir)/../sqlite
+AM_CPPFLAGS += $(INCLUDE_krb4) $(INCLUDE_hcrypto) -I../com_err -I$(srcdir)/../com_err $(INCLUDE_sqlite3)
 
 bin_PROGRAMS = verify_krb5_conf
 
@@ -53,7 +53,7 @@ endif
 
 libkrb5_la_LIBADD = \
 	$(LIB_pkinit) \
-	../sqlite/libsqlite.la \
+	$(LIB_sqlite3) \
 	$(LIB_com_err) \
 	$(LIB_hcrypto) \
 	$(top_builddir)/lib/asn1/libasn1.la \
