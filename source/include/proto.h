@@ -6201,6 +6201,10 @@ bool lookup_name(TALLOC_CTX *mem_ctx,
 		 const char *full_name, int flags,
 		 const char **ret_domain, const char **ret_name,
 		 DOM_SID *ret_sid, enum lsa_SidType *ret_type);
+bool lookup_domain_name(TALLOC_CTX *mem_ctx,
+		 const char *domain, const char *name, int flags,
+		 const char **ret_domain, const char **ret_name,
+		 DOM_SID *ret_sid, enum lsa_SidType *ret_type);
 bool lookup_name_smbconf(TALLOC_CTX *mem_ctx,
 		 const char *full_name, int flags,
 		 const char **ret_domain, const char **ret_name,
