@@ -32,7 +32,7 @@
  */
 
 #include "krb5_locl.h"
-#include "sqlite3.h"
+#include <sqlite3.h>
 
 RCSID("$Id$");
 
