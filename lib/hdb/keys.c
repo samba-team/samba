@@ -68,11 +68,13 @@ hdb_free_keys (krb5_context context, int len, Key *keys)
  *	afs or afs3 == des:afs3-salt
  */
 
-/* the 3 DES types must be first */
-static const krb5_enctype all_etypes[] = { 
+static const krb5_enctype des_etypes[] = { 
     ETYPE_DES_CBC_MD5,
     ETYPE_DES_CBC_MD4,
-    ETYPE_DES_CBC_CRC,
+    ETYPE_DES_CBC_CRC
+};
+
+static const krb5_enctype all_etypes[] = { 
     ETYPE_AES256_CTS_HMAC_SHA1_96,
     ETYPE_ARCFOUR_HMAC_MD5,
     ETYPE_DES3_CBC_SHA1
@@ -110,8 +112,8 @@ parse_key_set(krb5_context context, const char *key,
 	    /* XXX there should be a string_to_etypes handling
 	       special cases like `des' and `all' */
 	    if(strcmp(buf[i], "des") == 0) {
-		enctypes = all_etypes;
-		num_enctypes = 3;
+		enctypes = des_etypes;
+		num_enctypes = sizeof(des_etypes)/sizeof(des_etypes[0]);
 	    } else if(strcmp(buf[i], "des3") == 0) {
 		e = ETYPE_DES3_CBC_SHA1;
 		enctypes = &e;
@@ -139,8 +141,8 @@ parse_key_set(krb5_context context, const char *key,
 		salt->salttype = KRB5_PW_SALT;
 	    } else if(strcmp(buf[i], "afs3-salt") == 0) {
 		if(enctypes == NULL) {
-		    enctypes = all_etypes;
-		    num_enctypes = 3;
+		    enctypes = des_etypes;
+		    num_enctypes = sizeof(des_etypes)/sizeof(des_etypes[0]);
 		}
 		salt->salttype = KRB5_AFS3_SALT;
 	    }
