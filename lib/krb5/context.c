@@ -192,6 +192,19 @@ init_context_from_config_file(krb5_context context)
     INIT_FLAG(context, flags, KRB5_CTX_F_CHECK_PAC, TRUE, "check_pac");
     context->default_cc_name = NULL;
     context->default_cc_name_set = 0;
+
+    ret = krb5_config_get_bool_default(context, NULL, FALSE, 
+				       "libdefaults",
+				       "allow_weak_crypto", NULL);
+    if (ret) {
+	krb5_enctype_enable(context, ETYPE_DES_CBC_CRC);
+	krb5_enctype_enable(context, ETYPE_DES_CBC_MD4);
+	krb5_enctype_enable(context, ETYPE_DES_CBC_MD5);
+	krb5_enctype_enable(context, ETYPE_DES_CBC_NONE);
+	krb5_enctype_enable(context, ETYPE_DES_CFB64_NONE);
+	krb5_enctype_enable(context, ETYPE_DES_PCBC_NONE);
+    }
+
     return 0;
 }
 
