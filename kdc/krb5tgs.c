@@ -678,6 +678,7 @@ tgs_make_reply(krb5_context context,
     EncTicketPart et;
     KDCOptions f = b->kdc_options;
     krb5_error_code ret;
+    int is_weak = 0;
 
     memset(&rep, 0, sizeof(rep));
     memset(&et, 0, sizeof(et));
@@ -885,6 +886,14 @@ tgs_make_reply(krb5_context context,
 	    goto out;
     }
 
+    if (krb5_enctype_valid(context, et.key.keytype) != 0
+	&& _kdc_is_weak_expection(server->entry.principal, et.key.keytype)) 
+    {
+	krb5_enctype_enable(context, et.key.keytype);
+	is_weak = 1;
+    }
+
+
     /* It is somewhat unclear where the etype in the following
        encryption should come from. What we have is a session
        key in the passed tgt, and a list of preferred etypes
@@ -899,6 +908,9 @@ tgs_make_reply(krb5_context context,
 			    &rep, &et, &ek, et.key.keytype,
 			    kvno,
 			    serverkey, 0, &tgt->key, e_text, reply);
+    if (is_weak)
+	krb5_enctype_disable(context, et.key.keytype);
+
 out:
     free_TGS_REP(&rep);
     free_TransitedEncoding(&et.transited);
