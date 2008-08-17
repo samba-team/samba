@@ -4,6 +4,7 @@ include $(top_srcdir)/Makefile.am.common
 
 noinst_DATA = \
 	krb5.conf \
+	krb5-no-weak.conf \
 	krb5-pkinit.conf \
 	krb5-pkinit-win.conf \
 	krb5-slave.conf
@@ -13,6 +14,7 @@ check_SCRIPTS = $(SCRIPT_TESTS)
 
 SCRIPT_TESTS = \
 	check-cc \
+	check-des \
 	check-digest \
 	check-kadmin \
 	check-kdc \
@@ -95,13 +97,26 @@ check-cc: check-cc.in Makefile
 	chmod +x check-cc.tmp
 	mv check-cc.tmp check-cc
 
+check-des: check-des.in Makefile krb5-no-weak.conf
+	$(do_subst) < $(srcdir)/check-des.in > check-des.tmp
+	chmod +x check-des.tmp
+	mv check-des.tmp check-des
+
 krb5.conf: krb5.conf.in Makefile
 	$(do_subst) \
+	   -e 's,[@]WEAK[@],true,g' \
 	   -e 's,[@]kdc[@],,g' < $(srcdir)/krb5.conf.in > krb5.conf.tmp
 	mv krb5.conf.tmp krb5.conf
 
+krb5-no-weak.conf: krb5.conf.in Makefile
+	$(do_subst) \
+	   -e 's,[@]WEAK[@],false,g' \
+	   -e 's,[@]kdc[@],,g' < $(srcdir)/krb5.conf.in > krb5-no-weak.conf.tmp
+	mv krb5-no-weak.conf.tmp krb5-no-weak.conf
+
 krb5-slave.conf: krb5.conf.in Makefile
 	$(do_subst) \
+	   -e 's,[@]WEAK[@],true,g' \
 	   -e 's,[@]kdc[@],.slave,g' < $(srcdir)/krb5.conf.in > krb5-slave.conf.tmp
 	mv krb5-slave.conf.tmp krb5-slave.conf
 
@@ -127,6 +142,7 @@ CLEANFILES= \
 	digest-reply \
 	foopassword \
 	krb5.conf \
+	krb5-no-weak.conf \
 	krb5.conf.keys \
 	krb5-cc.conf \
 	krb5-slave.conf \
@@ -155,6 +171,7 @@ CLEANFILES= \
 
 EXTRA_DIST = \
 	check-cc.in \
+	check-des.in \
 	check-digest.in \
 	check-iprop.in \
 	check-kadmin.in \
