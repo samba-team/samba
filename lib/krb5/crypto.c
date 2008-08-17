@@ -3744,7 +3744,7 @@ krb5_crypto_getconfoundersize(krb5_context context,
 
 
 /**
- * Disable enctyption type
+ * Disable encryption type
  *
  * @param context Kerberos 5 context
  * @param enctype encryption type to disable
@@ -3771,7 +3771,7 @@ krb5_enctype_disable(krb5_context context,
 }
 
 /**
- * Enable enctyption type
+ * Enable encryption type
  *
  * @param context Kerberos 5 context
  * @param enctype encryption type to enable
