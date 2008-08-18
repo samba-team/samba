@@ -39,6 +39,7 @@
 #include <string.h>
 #include <err.h>
 
+/* key and initial vector */
 static char key[16] =
     "\xaa\xbb\x45\xd4\xaa\xbb\x45\xd4"
     "\xaa\xbb\x45\xd4\xaa\xbb\x45\xd4";
@@ -95,27 +96,45 @@ main(int argc, char **argv)
     if (out == NULL)
 	errx(1, "failed to open output file");
     
+    /* Check that key and ivec are long enough */
+    assert(EVP_CIPHER_key_length(c) <= sizeof(key));
+    assert(EVP_CIPHER_iv_length(c) <= sizeof(ivec));
+
+    /* 
+     * Allocate buffer, the output buffer is at least
+     * EVP_CIPHER_block_size() longer 
+     */
     ibuf = malloc(block_size);
     obuf = malloc(block_size + EVP_CIPHER_block_size(c));
 
+    /*
+     * Init the memory used for EVP_CIPHER_CTX and set the key and
+     * ivec.
+     */
     EVP_CIPHER_CTX_init(&ctx);
     EVP_CipherInit_ex(&ctx, c, NULL, key, ivec, encryptp);
 	
+    /* read in buffer */
     while ((ilen = fread(ibuf, 1, block_size, in)) > 0) {
+	/* encrypto/decrypt */
 	ret = EVP_CipherUpdate(&ctx, obuf, &olen, ibuf, ilen);
 	if (ret != 1) {
 	    EVP_CIPHER_CTX_cleanup(&ctx);
 	    errx(1, "EVP_CipherUpdate failed");
 	}
+	/* write out to output file */
 	fwrite(obuf, 1, olen, out);
     }
+    /* done reading */
     fclose(in);
 
+    /* clear up any last bytes left in the output buffer */
     ret = EVP_CipherFinal_ex(&ctx, obuf, &olen);
     EVP_CIPHER_CTX_cleanup(&ctx);
     if (ret != 1)
 	errx(1, "EVP_CipherFinal_ex failed");
 
+    /* write the last bytes out and close */
     fwrite(obuf, 1, olen, out);
     fclose(out);
     
