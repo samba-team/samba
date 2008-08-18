@@ -63,6 +63,17 @@ RCSID("$Id$");
  * @page page_evp EVP - generic crypto interface
  *
  * See the library functions here: @ref hcrypto_evp
+ *
+ * @section evp_cipher EVP Cipher
+ *
+ * The use of EVP_CipherInit_ex() and EVP_Cipher() is pretty easy to
+ * understand forward, then EVP_CipherUpdate() and
+ * EVP_CipherFinal_ex() really needs an example to explain.
+ *
+ * @example example_evp_cipher.c
+ * 
+ * This is an example how to use EVP_CipherInit_ex(),
+ * EVP_CipherUpdate() and EVP_CipherFinal_ex().
  */
 
 struct hc_EVP_MD_CTX {
@@ -800,6 +811,11 @@ EVP_CipherInit_ex(EVP_CIPHER_CTX *ctx, const EVP_CIPHER *c, ENGINE *engine,
  * @param in input data to the operation.
  * @param inlen length of data.
  *
+ * The output buffer length should at least be EVP_CIPHER_block_size()
+ * byte longer then the input length.
+ *
+ * See @ref evp_cipher for an example how to use this function.
+ *
  * @return 1 on success.
  */
 
@@ -816,6 +832,11 @@ EVP_CipherUpdate(EVP_CIPHER_CTX *ctx, void *out, int *outlen,
  * @param ctx the cipher context.
  * @param out output data from the operation.
  * @param outlen output length
+ *
+ * The input length needs to be at least EVP_CIPHER_block_size() bytes
+ * long.
+ *
+ * See @ref evp_cipher for an example how to use this function.
  *
  * @return 1 on success.
  */
@@ -1087,15 +1108,15 @@ des_cbc_do_cipher(EVP_CIPHER_CTX *ctx,
 		  unsigned int size)
 {
     DES_key_schedule *k = ctx->cipher_data;
-    DES_ede3_cbc_encrypt(in, out, size,
-			 k, (DES_cblock *)ctx->iv, ctx->encrypt);
+    DES_cbc_encrypt(in, out, size,
+		    k, (DES_cblock *)ctx->iv, ctx->encrypt);
     return 1;
 }
 
 static int
 des_cbc_cleanup(EVP_CIPHER_CTX *ctx)
 {
-    memset(ctx->cipher_data, 0, sizeof(struct des_ede3_cbc));
+    memset(ctx->cipher_data, 0, sizeof(struct DES_key_schedule));
     return 1;
 }
 
