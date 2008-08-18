@@ -37,8 +37,14 @@
 extern "C" {
 #endif
 
-#define ZLIB_VERSION "1.2.3"
-#define ZLIB_VERNUM 0x1230
+#define ZLIB_VERSION "1.2.3.1.Samba"
+#define ZLIB_VERNUM 0x1231
+/*
+ * Modified for Samba by Stefan Metzmacher <metze@samba.org> 2008
+ *
+ * inflateReset2() added and compiler warnings fixed
+ */
+
 
 /*
      The 'zlib' compression library provides in-memory compression and
