@@ -1609,44 +1609,6 @@ HMAC_MD5_checksum(krb5_context context,
     return 0;
 }
 
-/*
- * same as previous but being used while encrypting.
- */
-
-static krb5_error_code
-HMAC_MD5_checksum_enc(krb5_context context,
-		      struct key_data *key,
-		      const void *data,
-		      size_t len,
-		      unsigned usage,
-		      Checksum *result)
-{
-    struct checksum_type *c = _find_checksum (CKSUMTYPE_RSA_MD5);
-    Checksum ksign_c;
-    struct key_data ksign;
-    krb5_keyblock kb;
-    unsigned char t[4];
-    unsigned char ksign_c_data[16];
-    krb5_error_code ret;
-
-    t[0] = (usage >>  0) & 0xFF;
-    t[1] = (usage >>  8) & 0xFF;
-    t[2] = (usage >> 16) & 0xFF;
-    t[3] = (usage >> 24) & 0xFF;
-
-    ksign_c.checksum.length = sizeof(ksign_c_data);
-    ksign_c.checksum.data   = ksign_c_data;
-    ret = hmac(context, c, t, sizeof(t), 0, key, &ksign_c);
-    if (ret)
-	krb5_abortx(context, "hmac failed");
-    ksign.key = &kb;
-    kb.keyvalue = ksign_c.checksum;
-    ret = hmac(context, c, data, len, 0, &ksign, result);
-    if (ret)
-	krb5_abortx(context, "hmac failed");
-    return 0;
-}
-
 static struct checksum_type checksum_none = {
     CKSUMTYPE_NONE, 
     "none", 
@@ -1761,16 +1723,6 @@ static struct checksum_type checksum_hmac_md5 = {
     NULL
 };
 
-static struct checksum_type checksum_hmac_md5_enc = {
-    CKSUMTYPE_HMAC_MD5_ENC,
-    "hmac-md5-enc",
-    64,
-    16,
-    F_KEYED | F_CPROOF | F_PSEUDO,
-    HMAC_MD5_checksum_enc,
-    NULL
-};
-
 static struct checksum_type *checksum_types[] = {
     &checksum_none,
     &checksum_crc32,
@@ -1785,8 +1737,7 @@ static struct checksum_type *checksum_types[] = {
     &checksum_hmac_sha1_des3,
     &checksum_hmac_sha1_aes128,
     &checksum_hmac_sha1_aes256,
-    &checksum_hmac_md5,
-    &checksum_hmac_md5_enc
+    &checksum_hmac_md5
 };
 
 static int num_checksums = sizeof(checksum_types) / sizeof(checksum_types[0]);
