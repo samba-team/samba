@@ -151,7 +151,7 @@ struct hc_CIPHER_CTX {
     const EVP_CIPHER *cipher;
     ENGINE *engine;
     int encrypt;
-    int buf_len;
+    int buf_len; /* bytes stored in buf for EVP_CipherUpdate */
     unsigned char oiv[EVP_MAX_IV_LENGTH];
     unsigned char iv[EVP_MAX_IV_LENGTH];
     unsigned char buf[EVP_MAX_BLOCK_LENGTH];
