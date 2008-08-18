@@ -1577,7 +1577,7 @@ HMAC_MD5_checksum(krb5_context context,
 		  unsigned usage,
 		  Checksum *result)
 {
-    MD5_CTX md5;
+    EVP_MD_CTX *m;
     struct checksum_type *c = _find_checksum (CKSUMTYPE_RSA_MD5);
     const char signature[] = "signaturekey";
     Checksum ksign_c;
@@ -1588,24 +1588,33 @@ HMAC_MD5_checksum(krb5_context context,
     unsigned char ksign_c_data[16];
     krb5_error_code ret;
 
+    m = EVP_MD_CTX_create();
+    if (m == NULL) {
+	krb5_set_error_message(context, ENOMEM, "Malloc: out of memory");
+	return ENOMEM;
+    }
     ksign_c.checksum.length = sizeof(ksign_c_data);
     ksign_c.checksum.data   = ksign_c_data;
     ret = hmac(context, c, signature, sizeof(signature), 0, key, &ksign_c);
-    if (ret)
-	krb5_abortx(context, "hmac failed");
+    if (ret) {
+	EVP_MD_CTX_destroy(m);
+	return ret;
+    }
     ksign.key = &kb;
     kb.keyvalue = ksign_c.checksum;
-    MD5_Init (&md5);
+    EVP_DigestInit_ex(m, EVP_md5(), NULL);
     t[0] = (usage >>  0) & 0xFF;
     t[1] = (usage >>  8) & 0xFF;
     t[2] = (usage >> 16) & 0xFF;
     t[3] = (usage >> 24) & 0xFF;
-    MD5_Update (&md5, t, 4);
-    MD5_Update (&md5, data, len);
-    MD5_Final (tmp, &md5);
+    EVP_DigestUpdate(m, t, 4);
+    EVP_DigestUpdate(m, data, len);
+    EVP_DigestFinal_ex (m, tmp, NULL);
+    EVP_MD_CTX_destroy(m);
+
     ret = hmac(context, c, tmp, sizeof(tmp), 0, &ksign, result);
     if (ret)
-	krb5_abortx(context, "hmac failed");
+	return ret;
     return 0;
 }
 
