@@ -57,8 +57,8 @@ PROGRAM_TESTS = \
 	test_engine_dso \
 	test_hmac \
 	test_imath \
-	test_pkcs5 \
-	test_pkcs12
+	test_pkcs12 \
+	test_pkcs5
 
 libhctest_la_SOURCES = \
 	imath/imath.c	\
@@ -76,7 +76,7 @@ SCRIPT_TESTS = \
 
 noinst_PROGRAMS = test_rand
 
-check_PROGRAMS = $(PROGRAM_TESTS) test_rsa test_dh
+check_PROGRAMS = $(PROGRAM_TESTS) test_rsa test_dh example_evp_cipher
 check_SCRIPTS = $(SCRIPT_TESTS)
 
 TESTS = $(PROGRAM_TESTS) $(SCRIPT_TESTS)
