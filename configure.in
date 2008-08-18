@@ -80,7 +80,10 @@ AM_CONDITIONAL(PKINIT, test "$enable_pk_init" != no)
 
 dnl Check for sqlite
 rk_TEST_PACKAGE(sqlite3,
-[#include <sqlite3.h>],
+[#include <sqlite3.h>
+#ifndef SQLITE_OPEN_CREATE
+#error "old version"
+#endif],
 [-lsqlite3],,,SQLITE3)
 
 if test "X$with_sqlite3" != Xyes ; then
