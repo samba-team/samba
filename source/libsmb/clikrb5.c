@@ -1910,7 +1910,7 @@ static krb5_error_code ads_krb5_get_fwd_ticket( krb5_context context,
 	}
 
 	/* We now have a service ticket, now turn it into an AP-REQ. */
-	authenticator->length = ntohs(fwdData.length + GSSAPI_CHECKSUM_SIZE);
+	authenticator->length = fwdData.length + GSSAPI_CHECKSUM_SIZE;
 
 	/* Caller should call free() when they're done with this. */
 	authenticator->data = (char *)pChksum;
