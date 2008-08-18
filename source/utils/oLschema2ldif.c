@@ -433,12 +433,12 @@ static struct ldb_message *process_entry(TALLOC_CTX *mem_ctx, const char *entry)
 
 		case SCHEMA_SYNTAX:
 		{
-			const struct dsdb_syntax_map *map = 
+			const struct dsdb_syntax *map = 
 				find_syntax_map_by_standard_oid(token->value);
 			if (!map) {
 				break;
 			}
-			MSG_ADD_STRING("attributeSyntax", map->AD_OID);
+			MSG_ADD_STRING("attributeSyntax", map->attributeSyntax_oid);
 			break;
 		}
 		case SCHEMA_DESC:

@@ -229,7 +229,7 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum dsdb_sch
 		const char *equality = NULL, *substring = NULL;
 		bool single_value = attribute->isSingleValued;
 
-		const struct dsdb_syntax_map *map = find_syntax_map_by_ad_oid(syntax);
+		const struct dsdb_syntax *map = find_syntax_map_by_ad_syntax(attribute->oMSyntax);
 		char *schema_entry = NULL;
 		int j;
 
@@ -251,7 +251,7 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum dsdb_sch
 			/* We might have been asked to remap this oid,
 			 * due to a conflict, or lack of
 			 * implementation */
-			syntax = map->Standard_OID;
+			syntax = map->ldap_oid;
 			/* We might have been asked to remap this oid, due to a conflict */
 			for (j=0; syntax && oid_map && oid_map[j].old_oid; j++) {
 				if (strcasecmp(syntax, oid_map[j].old_oid) == 0) {
