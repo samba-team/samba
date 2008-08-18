@@ -68,7 +68,8 @@ RCSID("$Id$");
  *
  * The use of EVP_CipherInit_ex() and EVP_Cipher() is pretty easy to
  * understand forward, then EVP_CipherUpdate() and
- * EVP_CipherFinal_ex() really needs an example to explain.
+ * EVP_CipherFinal_ex() really needs an example to explain @ref
+ * example_evp_cipher.c .
  *
  * @example example_evp_cipher.c
  * 
