@@ -765,6 +765,8 @@ int
 EVP_CipherInit_ex(EVP_CIPHER_CTX *ctx, const EVP_CIPHER *c, ENGINE *engine,
 		  const void *key, const void *iv, int encp)
 {
+    ctx->buf_len = 0;
+
     if (encp == -1)
 	encp = ctx->encrypt;
     else
@@ -846,6 +848,7 @@ EVP_CipherUpdate(EVP_CIPHER_CTX *ctx, void *out, int *outlen,
 	    *outlen = 0;
 	return ret;
     }
+    ctx->buf_len += (inlen & ctx->block_mask);
     return 0;
 }
 
