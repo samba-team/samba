@@ -789,8 +789,6 @@ ZEXTERN int ZEXPORT inflateCopy OF((z_streamp dest,
    destination.
 */
 
-ZEXTERN int ZEXPORT inflateReset2 OF((z_streamp strm, unsigned flags));
-
 ZEXTERN int ZEXPORT inflateReset OF((z_streamp strm));
 /*
      This function is equivalent to inflateEnd followed by inflateInit,
