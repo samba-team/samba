@@ -326,38 +326,3 @@ UPDATE ldb_attributes
       integer_p = 0
   WHERE attr_name = 'dn'
 
--- ----------------------------------------------------------------------
-
-/*
- * dn: @SUBCLASSES
- * top: domain
- * top: person
- * domain: domainDNS
- * person: organizationalPerson
- * person: fooPerson
- * organizationalPerson: user
- * organizationalPerson: OpenLDAPperson
- * user: computer
- */
--- insertSubclass
-
-/* NOT YET UPDATED!!! *
-
-
-INSERT OR REPLACE INTO ldb_object_classes (class_name, tree_key)
-  SELECT 'domain', /* next_tree_key('top') */ '00010001';
-INSERT OR REPLACE INTO ldb_object_classes (class_name, tree_key)
-  SELECT 'person', /* next_tree_key('top') */ '00010002';
-INSERT OR REPLACE INTO ldb_object_classes (class_name, tree_key)
-  SELECT 'domainDNS', /* next_tree_key('domain') */ '000100010001';
-INSERT OR REPLACE INTO ldb_object_classes (class_name, tree_key)
-  SELECT 'organizationalPerson', /* next_tree_key('person') */ '000100020001';
-INSERT OR REPLACE INTO ldb_object_classes (class_name, tree_key)
-  SELECT 'fooPerson', /* next_tree_key('person') */ '000100020002';
-INSERT OR REPLACE INTO ldb_object_classes (class_name, tree_key)
-  SELECT 'user', /* next_tree_key('organizationalPerson') */ '0001000200010001';
-INSERT OR REPLACE INTO ldb_object_classes (class_name, tree_key)
-  SELECT 'OpenLDAPperson', /* next_tree_key('organizationPerson') */ '0001000200010002';
-INSERT OR REPLACE INTO ldb_object_classes (class_name, tree_key)
-  SELECT 'computer', /* next_tree_key('user') */ '0001000200010001';
- 
