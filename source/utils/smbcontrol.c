@@ -1228,9 +1228,9 @@ static struct server_id parse_dest(const char *dest)
 	struct server_id result = {-1};
 	pid_t pid;
 
-	/* Zero is a special return value for broadcast smbd */
+	/* Zero is a special return value for broadcast to all processes */
 
-	if (strequal(dest, "smbd")) {
+	if (strequal(dest, "all")) {
 		return interpret_pid(MSG_BROADCAST_PID_STR);
 	}
 
@@ -1245,7 +1245,6 @@ static struct server_id parse_dest(const char *dest)
 		dest = "winbindd";
 	}
 
-	
 	if (!(strequal(dest, "winbindd") || strequal(dest, "nmbd"))) {
 		/* Check for numeric pid number */
 
@@ -1266,7 +1265,7 @@ static struct server_id parse_dest(const char *dest)
 	fprintf(stderr,"Can't find pid for destination '%s'\n", dest);
 
 	return result;
-}	
+}
 
 /* Execute smbcontrol command */
 
