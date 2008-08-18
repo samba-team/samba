@@ -792,7 +792,43 @@ EVP_CipherInit_ex(EVP_CIPHER_CTX *ctx, const EVP_CIPHER *c, ENGINE *engine,
 }
 
 /**
- * Encypher/decypher data
+ * Encipher/decipher partial data
+ *
+ * @param ctx the cipher context.
+ * @param out output data from the operation.
+ * @param outlen output length
+ * @param in input data to the operation.
+ * @param inlen length of data.
+ *
+ * @return 1 on success.
+ */
+
+int
+EVP_CipherUpdate(EVP_CIPHER_CTX *ctx, void *out, int *outlen,
+		 void *in, size_t inlen)
+{
+    return 0;
+}
+
+/**
+ * Encipher/decipher final data
+ *
+ * @param ctx the cipher context.
+ * @param out output data from the operation.
+ * @param outlen output length
+ *
+ * @return 1 on success.
+ */
+
+
+int
+EVP_CipherFinal_ex(EVP_CIPHER_CTX *ctx, void *out, int *outlen)
+{
+    return 0;
+}
+
+/**
+ * Encipher/decipher data
  *
  * @param ctx the cipher context.
  * @param out out data from the operation.
