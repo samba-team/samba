@@ -56,6 +56,8 @@
 #define EVP_CIPHER_key_length hc_EVP_CIPHER_key_length
 #define EVP_Cipher hc_EVP_Cipher
 #define EVP_CipherInit_ex hc_EVP_CipherInit_ex
+#define EVP_CipherUpdate hc_EVP_CipherUpdate
+#define EVP_CipherFinal_ex hc_EVP_CipherFinal_ex
 #define EVP_Digest hc_EVP_Digest
 #define EVP_DigestFinal_ex hc_EVP_DigestFinal_ex
 #define EVP_DigestInit_ex hc_EVP_DigestInit_ex
@@ -279,6 +281,8 @@ void	EVP_CIPHER_CTX_set_app_data(EVP_CIPHER_CTX *, void *);
 
 int	EVP_CipherInit_ex(EVP_CIPHER_CTX *,const EVP_CIPHER *, ENGINE *,
 			  const void *, const void *, int);
+int	EVP_CipherUpdate(EVP_CIPHER_CTX *, void *, int *, void *, size_t);
+int	EVP_CipherFinal_ex(EVP_CIPHER_CTX *, void *, int *);
 
 int	EVP_Cipher(EVP_CIPHER_CTX *,void *,const void *,size_t);
 
