@@ -244,6 +244,7 @@ HEIMDAL_KRB5_1.0 {
 		krb5_encrypt;
 		krb5_encrypt_EncryptedData;
 		krb5_encrypt_ivec;
+		krb5_enctype_enable;
 		krb5_enctype_disable;
 		krb5_enctype_keybits;
 		krb5_enctype_keysize;
