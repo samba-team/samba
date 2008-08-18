@@ -25,6 +25,7 @@ Changes since 3.2.1
 
 
 o   Michael Adam <obnox@samba.org>
+    * Fix creation and installation of shared libraries.
     * Fix replacement of random seed generator.
     * Fix a race condition in idmap_tdb2_allocate_id().
     * Fix unix_convert() for "*" after changing map_nt_error_from_unix().
@@ -36,6 +37,9 @@ o   Jeremy Allison <jra@samba.org>
       mistake.
     * BUG 5686: Fix segfaults in libsmbclient.
     * BUG 5692: Fix coredump in full_audit.so.
+    * BUG 5696: Fix "force group" in setups using Winbind.
+    * Rename cifs.spnego to cifs.upcall.
+    * Fix segfault in cifs.upcall when it is called without any arguments.
     * Fix coverity ID 594 (resource leak on error path).
     * Fix assigning of primary group memberships when authenticating via
       Winbind.
@@ -63,12 +67,18 @@ o   Günther Deschner <gd@samba.org>
     * Add add c++ guard to netapi.
 
 
+o   Steve French <stevef@smf-t60p.smfdom>
+    * Fix compile warning in cifs.upcall.
+    * Add "dns_resolver" key type to cifs.upcall.
+
+
 o   SATOH Fumiyasu <fumiyas@osstech.co.jp>
     * BUG 5688: Fix orphaned LPQ processes if socket address is invalid.
 
 
 o   Volker Lendecke <vl@samba.org>
     * BUG 5684: Fix removal of dead records in tdb files.
+    * Fix coverity IDs 595, 596.
     * Fix smb_len calculation for chained requests.
 
 
