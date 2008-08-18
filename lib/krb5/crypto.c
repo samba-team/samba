@@ -35,11 +35,6 @@
 RCSID("$Id$");
 #include <pkinit_asn1.h>
 
-#undef CRYPTO_DEBUG
-#ifdef CRYPTO_DEBUG
-static void krb5_crypto_debug(krb5_context, int, size_t, krb5_keyblock*);
-#endif
-
 #ifndef HEIMDAL_SMALLER
 #define WEAK_ENCTYPES 1
 #define DES3_OLD_ENCTYPE 1
@@ -2947,9 +2942,6 @@ encrypt_internal_derived(krb5_context context,
     ret = _key_schedule(context, dkey);
     if(ret)
 	goto fail;
-#ifdef CRYPTO_DEBUG
-    krb5_crypto_debug(context, 1, block_sz, dkey->key);
-#endif
     ret = (*et->encrypt)(context, dkey, p, block_sz, 1, usage, ivec);
     if (ret)
 	goto fail;
@@ -3013,9 +3005,6 @@ encrypt_internal(krb5_context context,
     ret = _key_schedule(context, &crypto->key);
     if(ret)
 	goto fail;
-#ifdef CRYPTO_DEBUG
-    krb5_crypto_debug(context, 1, block_sz, crypto->key.key);
-#endif
     ret = (*et->encrypt)(context, &crypto->key, p, block_sz, 1, 0, ivec);
     if (ret) {
 	memset(p, 0, block_sz);
@@ -3117,9 +3106,6 @@ decrypt_internal_derived(krb5_context context,
 	free(p);
 	return ret;
     }
-#ifdef CRYPTO_DEBUG
-    krb5_crypto_debug(context, 0, len, dkey->key);
-#endif
     ret = (*et->encrypt)(context, dkey, p, len, 0, usage, ivec);
     if (ret) {
 	free(p);
@@ -3184,9 +3170,6 @@ decrypt_internal(krb5_context context,
 	free(p);
 	return ret;
     }
-#ifdef CRYPTO_DEBUG
-    krb5_crypto_debug(context, 0, len, crypto->key.key);
-#endif
     ret = (*et->encrypt)(context, &crypto->key, p, len, 0, 0, ivec);
     if (ret) {
 	free(p);
@@ -4224,43 +4207,3 @@ krb5_crypto_prf(krb5_context context,
 
     return (*et->prf)(context, crypto, input, output);
 }
-	
-
-
-
-#ifdef CRYPTO_DEBUG
-
-static krb5_error_code
-krb5_get_keyid(krb5_context context,
-	       krb5_keyblock *key,
-	       uint32_t *keyid)
-{
-    MD5_CTX md5;
-    unsigned char tmp[16];
-
-    MD5_Init (&md5);
-    MD5_Update (&md5, key->keyvalue.data, key->keyvalue.length);
-    MD5_Final (tmp, &md5);
-    *keyid = (tmp[12] << 24) | (tmp[13] << 16) | (tmp[14] << 8) | tmp[15];
-    return 0;
-}
-
-static void
-krb5_crypto_debug(krb5_context context,
-		  int encryptp,
-		  size_t len,
-		  krb5_keyblock *key)
-{
-    uint32_t keyid;
-    char *kt;
-    krb5_get_keyid(context, key, &keyid);
-    krb5_enctype_to_string(context, key->keytype, &kt);
-    krb5_warnx(context, "%s %lu bytes with key-id %#x (%s)", 
-	       encryptp ? "encrypting" : "decrypting",
-	       (unsigned long)len,
-	       keyid,
-	       kt);
-    free(kt);
-}
-
-#endif /* CRYPTO_DEBUG */
