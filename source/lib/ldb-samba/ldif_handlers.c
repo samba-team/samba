@@ -561,8 +561,6 @@ static int ldif_comparison_prefixMap(struct ldb_context *ldb, void *mem_ctx,
 	return ret;
 }
 
-#define LDB_SYNTAX_SAMBA_SID			"LDB_SYNTAX_SAMBA_SID"
-#define LDB_SYNTAX_SAMBA_SECURITY_DESCRIPTOR	"LDB_SYNTAX_SAMBA_SECURITY_DESCRIPTOR"
 #define LDB_SYNTAX_SAMBA_GUID			"LDB_SYNTAX_SAMBA_GUID"
 #define LDB_SYNTAX_SAMBA_OBJECT_CATEGORY	"LDB_SYNTAX_SAMBA_OBJECT_CATEGORY"
 #define LDB_SYNTAX_SAMBA_PREFIX_MAP	"LDB_SYNTAX_SAMBA_PREFIX_MAP"
@@ -635,6 +633,21 @@ static const struct {
 	{ "prefixMap",                  LDB_SYNTAX_SAMBA_PREFIX_MAP }
 };
 
+const struct ldb_schema_syntax *ldb_samba_syntax_by_name(struct ldb_context *ldb, const char *name)
+{
+	uint32_t j;
+	const struct ldb_schema_syntax *s = NULL;
+	
+	for (j=0; j < ARRAY_SIZE(samba_syntaxes); j++) {
+		if (strcmp(name, samba_syntaxes[j].name) == 0) {
+			s = &samba_syntaxes[j];
+			break;
+		}
+	}
+	return s;
+}
+
+
 /*
   register the samba ldif handlers
 */
@@ -644,15 +657,9 @@ int ldb_register_samba_handlers(struct ldb_context *ldb)
 
 	for (i=0; i < ARRAY_SIZE(samba_attributes); i++) {
 		int ret;
-		uint32_t j;
 		const struct ldb_schema_syntax *s = NULL;
 
-		for (j=0; j < ARRAY_SIZE(samba_syntaxes); j++) {
-			if (strcmp(samba_attributes[i].syntax, samba_syntaxes[j].name) == 0) {
-				s = &samba_syntaxes[j];
-				break;
-			}
-		}
+		s = ldb_samba_syntax_by_name(ldb, samba_attributes[i].syntax);
 
 		if (!s) {
 			s = ldb_standard_syntax_by_name(ldb, samba_attributes[i].syntax);
