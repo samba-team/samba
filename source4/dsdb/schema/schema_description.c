@@ -90,8 +90,8 @@ char *schema_attribute_description(TALLOC_CTX *mem_ctx,
 char *schema_attribute_to_description(TALLOC_CTX *mem_ctx, const struct dsdb_attribute *attribute) 
 {
 	char *schema_description;
-	const struct dsdb_syntax_map *map = find_syntax_map_by_ad_oid(attribute->attributeSyntax_oid);
-	const char *syntax = map ? map->Standard_OID : attribute->attributeSyntax_oid;
+	const struct dsdb_syntax *map = find_syntax_map_by_ad_oid(attribute->attributeSyntax_oid);
+	const char *syntax = map ? map->ldap_oid : attribute->attributeSyntax_oid;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	if (!tmp_ctx) {
 		return NULL;
