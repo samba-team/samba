@@ -35,6 +35,7 @@ struct dsdb_syntax {
 	const char *equality;
 	const char *substring;
 	const char *comment;
+	const char *ldb_syntax;
 
 	WERROR (*drsuapi_to_ldb)(const struct dsdb_schema *schema,
 				 const struct dsdb_attribute *attr,

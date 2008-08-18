@@ -1,0 +1,13 @@
+#ifndef __LIB_LDB_SAMBA_LDIF_HANDLERS_H__
+#define __LIB_LDB_SAMBA_LDIF_HANDLERS_H__
+
+#define LDB_SYNTAX_SAMBA_SID			"LDB_SYNTAX_SAMBA_SID"
+#define LDB_SYNTAX_SAMBA_SECURITY_DESCRIPTOR	"1.2.840.113556.1.4.907"
+
+#include "lib/ldb-samba/ldif_handlers_proto.h"
+
+#undef _PRINTF_ATTRIBUTE
+#define _PRINTF_ATTRIBUTE(a1, a2)
+
+#endif /* __LIB_LDB_SAMBA_LDIF_HANDLERS_H__ */
+
