@@ -779,6 +779,9 @@ EVP_CipherInit_ex(EVP_CIPHER_CTX *ctx, const EVP_CIPHER *c, ENGINE *engine,
 	if (ctx->cipher_data == NULL && c->ctx_size != 0)
 	    return 0;
 
+	/* assume block size is a multiple of 2 */
+	ctx->block_mask = EVP_CIPHER_block_size(c) - 1;
+
     } else if (ctx->cipher == NULL) {
 	/* reuse of cipher, but not any cipher ever set! */
 	return 0;
@@ -818,12 +821,31 @@ EVP_CipherInit_ex(EVP_CIPHER_CTX *ctx, const EVP_CIPHER *c, ENGINE *engine,
  * See @ref evp_cipher for an example how to use this function.
  *
  * @return 1 on success.
+ *
+ * @ingroup hcrypto_evp
  */
 
 int
 EVP_CipherUpdate(EVP_CIPHER_CTX *ctx, void *out, int *outlen,
 		 void *in, size_t inlen)
 {
+    int ret;
+    
+    /**
+     * If there in no spare bytes in the left from last Update and the
+     * input length is on the block boundery, the EVP_CipherUpdate()
+     * function can take a shortcut (and preformance gain) and
+     * directly encrypt the data, otherwise we hav to fix it up and
+     * store extra it the EVP_CIPHER_CTX.
+     */
+    if (ctx->buf_len == 0 && (inlen & ctx->block_mask) == 0) {
+	ret = (*ctx->cipher->do_cipher)(ctx, out, in, inlen);
+	if (ret == 1)
+	    *outlen = inlen;
+	else
+	    *outlen = 0;
+	return ret;
+    }
     return 0;
 }
 
@@ -840,12 +862,15 @@ EVP_CipherUpdate(EVP_CIPHER_CTX *ctx, void *out, int *outlen,
  * See @ref evp_cipher for an example how to use this function.
  *
  * @return 1 on success.
+ *
+ * @ingroup hcrypto_evp
  */
-
 
 int
 EVP_CipherFinal_ex(EVP_CIPHER_CTX *ctx, void *out, int *outlen)
 {
+    if (ctx->buf_len == 0)
+	return 1;
     return 0;
 }
 
