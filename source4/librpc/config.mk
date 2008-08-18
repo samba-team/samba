@@ -43,7 +43,7 @@ MANPAGES += $(librpcsrcdir)/tools/ndrdump.1
 ################################################
 # Start SUBSYSTEM NDR_COMPRESSION
 [SUBSYSTEM::NDR_COMPRESSION]
-PRIVATE_DEPENDENCIES = LIBCOMPRESSION ZLIB
+PRIVATE_DEPENDENCIES = ZLIB LZXPRESS
 PUBLIC_DEPENDENCIES = LIBSAMBA-ERRORS LIBNDR
 # End SUBSYSTEM NDR_COMPRESSION
 ################################################
