@@ -26,9 +26,58 @@
 #include "lib/events/events.h"
 #include <netinet/if_ether.h>
 #include <netinet/ip6.h>
+#include <netinet/icmp6.h>
 #include <net/if_arp.h>
 
 
+#ifndef ETHERTYPE_IP6
+#define ETHERTYPE_IP6 0x86dd
+#endif
+
+/*
+  uint16 checksum for n bytes
+ */
+static uint32_t uint16_checksum(uint16_t *data, size_t n)
+{
+	uint32_t sum=0;
+	while (n>=2) {
+		sum += (uint32_t)ntohs(*data);
+		data++;
+		n -= 2;
+	}
+	if (n == 1) {
+		sum += (uint32_t)ntohs(*(uint8_t *)data);
+	}
+	return sum;
+}
+
+/*
+  calculate the tcp checksum for tcp over ipv6
+*/
+static uint16_t tcp_checksum6(uint16_t *data, size_t n, struct ip6_hdr *ip6)
+{
+	uint32_t phdr[2];
+	uint32_t sum = 0;
+	uint16_t sum2;
+
+	sum += uint16_checksum((uint16_t *)(void *)&ip6->ip6_src, 16);
+	sum += uint16_checksum((uint16_t *)(void *)&ip6->ip6_dst, 16);
+
+	phdr[0] = htonl(n);
+	phdr[1] = htonl(ip6->ip6_nxt);
+	sum += uint16_checksum((uint16_t *)phdr, 8);
+
+	sum += uint16_checksum(data, n);
+
+	sum = (sum & 0xFFFF) + (sum >> 16);
+	sum = (sum & 0xFFFF) + (sum >> 16);
+	sum2 = htons(sum);
+	sum2 = ~sum2;
+	if (sum2 == 0) {
+		return 0xFFFF;
+	}
+	return sum2;
+}
 
 /*
   send gratuitous arp reply after we have taken over an ip address
@@ -42,8 +91,10 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 	struct sockaddr sa;
 	struct ether_header *eh;
 	struct arphdr *ah;
+	struct ip6_hdr *ip6;
+	struct icmp6_hdr *icmp6;
 	struct ifreq if_hwaddr;
-	unsigned char buffer[64]; /*minimum eth frame size */
+	unsigned char buffer[78]; /* ipv6 neigh solicitation size */
 	char *ptr;
 
 	ZERO_STRUCT(sa);
@@ -131,31 +182,72 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 
 		close(s);
 		break;
+	case AF_INET6:
+		s = socket(AF_INET, SOCK_PACKET, htons(ETHERTYPE_IP6));
+		if (s == -1){
+			DEBUG(DEBUG_CRIT,(__location__ " failed to open raw socket\n"));
+			return -1;
+		}
+
+		/* get the mac address */
+		strcpy(if_hwaddr.ifr_name, iface);
+		ret = ioctl(s, SIOCGIFHWADDR, &if_hwaddr);
+		if ( ret < 0 ) {
+			close(s);
+			DEBUG(DEBUG_CRIT,(__location__ " ioctl failed\n"));
+			return -1;
+		}
+		if (ARPHRD_LOOPBACK == if_hwaddr.ifr_hwaddr.sa_family) {
+			DEBUG(DEBUG_DEBUG,("Ignoring loopback arp request\n"));
+			close(s);
+			return 0;
+		}
+		if (if_hwaddr.ifr_hwaddr.sa_family != AF_LOCAL) {
+			close(s);
+			errno = EINVAL;
+			DEBUG(DEBUG_CRIT,(__location__ " not an ethernet address family (0x%x)\n",
+				 if_hwaddr.ifr_hwaddr.sa_family));
+			return -1;
+		}
+
+		memset(buffer, 0 , sizeof(buffer));
+		eh = (struct ether_header *)buffer;
+		memset(eh->ether_dhost, 0xff, ETH_ALEN);
+		memcpy(eh->ether_shost, if_hwaddr.ifr_hwaddr.sa_data, ETH_ALEN);
+		eh->ether_type = htons(ETHERTYPE_IP6);
+
+		ip6 = (struct ip6_hdr *)(eh+1);
+		ip6->ip6_vfc  = 0x60;
+		ip6->ip6_plen = htons(24);
+		ip6->ip6_nxt  = IPPROTO_ICMPV6;
+		ip6->ip6_hlim = 255;
+		ip6->ip6_dst  = addr->ip6.sin6_addr;
+
+		icmp6 = (struct icmp6_hdr *)(ip6+1);
+		icmp6->icmp6_type = ND_NEIGHBOR_SOLICIT;
+		icmp6->icmp6_code = 0;
+		memcpy(&icmp6->icmp6_data32[1], &addr->ip6.sin6_addr, 16);
+
+		icmp6->icmp6_cksum = tcp_checksum6((uint16_t *)icmp6, ntohs(ip6->ip6_plen), ip6);
+
+		strncpy(sa.sa_data, iface, sizeof(sa.sa_data));
+		ret = sendto(s, buffer, 78, 0, &sa, sizeof(sa));
+		if (ret < 0 ){
+			close(s);
+			DEBUG(DEBUG_CRIT,(__location__ " failed sendto\n"));
+			return -1;
+		}	
+
+		close(s);
+		break;
 	default:
-		DEBUG(DEBUG_CRIT,(__location__ " not an ipv4 address (family is %u)\n", addr->ip.sin_family));
+		DEBUG(DEBUG_CRIT,(__location__ " not an ipv4/ipv6 address (family is %u)\n", addr->ip.sin_family));
 		return -1;
 	}
 
 	return 0;
 }
 
-
-/*
-  uint16 checksum for n bytes
- */
-static uint32_t uint16_checksum(uint16_t *data, size_t n)
-{
-	uint32_t sum=0;
-	while (n>=2) {
-		sum += (uint32_t)ntohs(*data);
-		data++;
-		n -= 2;
-	}
-	if (n == 1) {
-		sum += (uint32_t)ntohs(*(uint8_t *)data);
-	}
-	return sum;
-}
 
 /*
   simple TCP checksum - assumes data is multiple of 2 bytes long
@@ -169,29 +261,6 @@ static uint16_t tcp_checksum(uint16_t *data, size_t n, struct iphdr *ip)
 	sum += uint16_checksum((uint16_t *)(void *)&ip->daddr,
 			       sizeof(ip->daddr));
 	sum += ip->protocol + n;
-	sum = (sum & 0xFFFF) + (sum >> 16);
-	sum = (sum & 0xFFFF) + (sum >> 16);
-	sum2 = htons(sum);
-	sum2 = ~sum2;
-	if (sum2 == 0) {
-		return 0xFFFF;
-	}
-	return sum2;
-}
-
-/*
-  calculate the tcp checksum for tcp over ipv6
-*/
-static uint16_t tcp_checksum6(uint16_t *data, size_t n, struct ip6_hdr *ip6)
-{
-	uint32_t sum = uint16_checksum(data, n);
-	uint16_t sum2;
-
-	sum += uint16_checksum((uint16_t *)(void *)&ip6->ip6_src, 16);
-	sum += uint16_checksum((uint16_t *)(void *)&ip6->ip6_dst, 16);
-	sum += ip6->ip6_plen;
-	sum += ip6->ip6_nxt;
-			
 	sum = (sum & 0xFFFF) + (sum >> 16);
 	sum = (sum & 0xFFFF) + (sum >> 16);
 	sum2 = htons(sum);
@@ -285,7 +354,7 @@ int ctdb_sys_send_tcp(const ctdb_sock_addr *dest,
 	case AF_INET6:
 		ZERO_STRUCT(ip6pkt);
 		ip6pkt.ip6.ip6_vfc  = 0x60;
-		ip6pkt.ip6.ip6_plen = 20;
+		ip6pkt.ip6.ip6_plen = htons(20);
 		ip6pkt.ip6.ip6_nxt  = IPPROTO_TCP;
 		ip6pkt.ip6.ip6_hlim = 64;
 		ip6pkt.ip6.ip6_src  = src->ip6.sin6_addr;
@@ -451,9 +520,6 @@ int ctdb_sys_read_tcp_packet(int s, void *private_data,
 		*seq                    = tcp->seq;
 
 		return 0;
-#ifndef ETHERTYPE_IP6
-#define ETHERTYPE_IP6 0x86dd
-#endif
 	} else if (ntohs(eth->ether_type) == ETHERTYPE_IP6) {
 		/* IP6 */
 		ip6 = (struct ip6_hdr *)(eth+1);
