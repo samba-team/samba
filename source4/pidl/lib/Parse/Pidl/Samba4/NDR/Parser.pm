@@ -936,9 +936,9 @@ sub ParseMemCtxPullFlags($$$$)
 	return $mem_flags;
 }
 
-sub ParseMemCtxPullStart($$$$)
+sub ParseMemCtxPullStart($$$$$)
 {
-	my ($self, $e, $l, $ptr_name) = @_;
+	my ($self, $e, $l, $ndr, $ptr_name) = @_;
 
 	my $mem_r_ctx = "_mem_save_$e->{NAME}_$l->{LEVEL_INDEX}";
 	my $mem_c_ctx = $ptr_name;
@@ -946,20 +946,20 @@ sub ParseMemCtxPullStart($$$$)
 
 	return unless defined($mem_c_flags);
 
-	$self->pidl("$mem_r_ctx = NDR_PULL_GET_MEM_CTX(ndr);");
-	$self->pidl("NDR_PULL_SET_MEM_CTX(ndr, $mem_c_ctx, $mem_c_flags);");
+	$self->pidl("$mem_r_ctx = NDR_PULL_GET_MEM_CTX($ndr);");
+	$self->pidl("NDR_PULL_SET_MEM_CTX($ndr, $mem_c_ctx, $mem_c_flags);");
 }
 
-sub ParseMemCtxPullEnd($$$)
+sub ParseMemCtxPullEnd($$$$)
 {
-	my ($self, $e, $l) = @_;
+	my ($self, $e, $l, $ndr) = @_;
 
 	my $mem_r_ctx = "_mem_save_$e->{NAME}_$l->{LEVEL_INDEX}";
 	my $mem_r_flags = $self->ParseMemCtxPullFlags($e, $l);
 
 	return unless defined($mem_r_flags);
 
-	$self->pidl("NDR_PULL_SET_MEM_CTX(ndr, $mem_r_ctx, $mem_r_flags);");
+	$self->pidl("NDR_PULL_SET_MEM_CTX($ndr, $mem_r_ctx, $mem_r_flags);");
 }
 
 sub CheckStringTerminator($$$$$)
@@ -1027,12 +1027,12 @@ sub ParseElementPullLevel
 			}
 		}
 
-		$self->ParseMemCtxPullStart($e, $l, $var_name);
+		$self->ParseMemCtxPullStart($e, $l, $ndr, $var_name);
 
 		$var_name = get_value_of($var_name);
 		$self->ParseElementPullLevel($e, GetNextLevel($e,$l), $ndr, $var_name, $env, 1, 1);
 
-		$self->ParseMemCtxPullEnd($e,$l);
+		$self->ParseMemCtxPullEnd($e, $l, $ndr);
 
 		if ($l->{POINTER_TYPE} ne "ref") {
     			if ($l->{POINTER_TYPE} eq "relative") {
@@ -1049,7 +1049,7 @@ sub ParseElementPullLevel
 
 		$var_name = get_array_element($var_name, $counter);
 
-		$self->ParseMemCtxPullStart($e, $l, $array_name);
+		$self->ParseMemCtxPullStart($e, $l, $ndr, $array_name);
 
 		if (($primitives and not $l->{IS_DEFERRED}) or ($deferred and $l->{IS_DEFERRED})) {
 			my $nl = GetNextLevel($e,$l);
@@ -1073,7 +1073,7 @@ sub ParseElementPullLevel
 			$self->pidl("}");
 		}
 
-		$self->ParseMemCtxPullEnd($e, $l);
+		$self->ParseMemCtxPullEnd($e, $l, $ndr);
 
 	} elsif ($l->{TYPE} eq "SWITCH") {
 		$self->ParseElementPullLevel($e, GetNextLevel($e,$l), $ndr, $var_name, $env, $primitives, $deferred);
