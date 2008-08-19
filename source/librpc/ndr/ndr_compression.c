@@ -212,10 +212,6 @@ enum ndr_err_code ndr_pull_compression_start(struct ndr_pull *subndr,
 	struct ndr_push *ndrpush;
 	struct ndr_pull *comndr;
 	DATA_BLOB uncompressed;
-	uint32_t payload_header[4];
-	uint32_t payload_size;
-	uint32_t payload_offset;
-	uint8_t *payload;
 	bool last = false;
 	z_stream z;
 
@@ -260,38 +256,6 @@ enum ndr_err_code ndr_pull_compression_start(struct ndr_pull *subndr,
 	comndr->offset		= 0;
 
 	comndr->iconv_convenience = talloc_reference(comndr, subndr->iconv_convenience);
-
-	NDR_CHECK(ndr_pull_uint32(comndr, NDR_SCALARS, &payload_header[0]));
-	NDR_CHECK(ndr_pull_uint32(comndr, NDR_SCALARS, &payload_header[1]));
-	NDR_CHECK(ndr_pull_uint32(comndr, NDR_SCALARS, &payload_header[2]));
-	NDR_CHECK(ndr_pull_uint32(comndr, NDR_SCALARS, &payload_header[3]));
-
-	if (payload_header[0] != 0x00081001) {
-		return ndr_pull_error(subndr, NDR_ERR_COMPRESSION,
-				      "Bad XPRESS payload_header[0] [0x%08X] != [0x00081001] (PULL)",
-				      payload_header[0]);
-	}
-	if (payload_header[1] != 0xCCCCCCCC) {
-		return ndr_pull_error(subndr, NDR_ERR_COMPRESSION,
-				      "Bad XPRESS payload_header[1] [0x%08X] != [0xCCCCCCCC] (PULL)",
-				      payload_header[1]);
-	}
-
-	payload_size = payload_header[2];
-
-	if (payload_header[3] != 0x00000000) {
-		return ndr_pull_error(subndr, NDR_ERR_COMPRESSION,
-				      "Bad XPRESS payload_header[3] [0x%08X] != [0x00000000] (PULL)",
-				      payload_header[3]);
-	}
-
-	payload_offset = comndr->offset;
-	NDR_CHECK(ndr_pull_advance(comndr, payload_size));
-	payload = comndr->data + payload_offset;
-
-	comndr->data		= payload;
-	comndr->data_size	= payload_size;
-	comndr->offset		= 0;
 
 	*_comndr = comndr;
 	return NDR_ERR_SUCCESS;
