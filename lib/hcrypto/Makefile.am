@@ -178,6 +178,7 @@ CLEANFILES = \
 	hcrypto-link \
 	test.file \
 	test_crypto \
+	test-out* \
 	test_crypto.tmp \
 	test_crypto.tmp
 
