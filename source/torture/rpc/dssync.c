@@ -747,9 +747,10 @@ static bool test_FetchData(struct torture_context *tctx, struct DsSyncTest *ctx)
 			if (ret == true && *r.out.level == 1) {
 				out_level = 1;
 				ctr1 = &r.out.ctr.ctr1;
-			} else if (ret == true && *r.out.level == 2) {
+			} else if (ret == true && *r.out.level == 2 &&
+				   r.out.ctr.ctr2.mszip1.ts) {
 				out_level = 1;
-				ctr1 = r.out.ctr.ctr2.mszip1.ctr1;
+				ctr1 = &r.out.ctr.ctr2.mszip1.ts->ctr1;
 			}
 
 			if (out_level == 1) {
@@ -770,14 +771,16 @@ static bool test_FetchData(struct torture_context *tctx, struct DsSyncTest *ctx)
 				ctr6 = &r.out.ctr.ctr6;
 			} else if (ret == true && *r.out.level == 7
 				   && r.out.ctr.ctr7.level == 6
-				   && r.out.ctr.ctr7.type == DRSUAPI_COMPRESSION_TYPE_MSZIP) {
+				   && r.out.ctr.ctr7.type == DRSUAPI_COMPRESSION_TYPE_MSZIP
+				   && r.out.ctr.ctr7.ctr.mszip6.ts) {
 				out_level = 6;
-				ctr6 = r.out.ctr.ctr7.ctr.mszip6.ctr6;
+				ctr6 = &r.out.ctr.ctr7.ctr.mszip6.ts->ctr6;
 			} else if (ret == true && *r.out.level == 7
 				   && r.out.ctr.ctr7.level == 6
-				   && r.out.ctr.ctr7.type == DRSUAPI_COMPRESSION_TYPE_XPRESS) {
+				   && r.out.ctr.ctr7.type == DRSUAPI_COMPRESSION_TYPE_XPRESS
+				   && r.out.ctr.ctr7.ctr.xpress6.ts) {
 				out_level = 6;
-				ctr6 = r.out.ctr.ctr7.ctr.xpress6.ctr6;
+				ctr6 = &r.out.ctr.ctr7.ctr.xpress6.ts->ctr6;
 			}
 
 			if (out_level == 6) {
