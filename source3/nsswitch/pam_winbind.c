@@ -749,15 +749,9 @@ static int pam_winbind_request(struct pwb_context *ctx,
 }
 
 static int pam_winbind_request_log(struct pwb_context *ctx,
-				   enum winbindd_cmd req_type,
-				   struct winbindd_request *request,
-				   struct winbindd_response *response,
+				   int retval,
 				   const char *user)
 {
-	int retval;
-
-	retval = pam_winbind_request(ctx, req_type, request, response);
-
 	switch (retval) {
 	case PAM_AUTH_ERR:
 		/* incorrect password */
@@ -789,6 +783,7 @@ static int pam_winbind_request_log(struct pwb_context *ctx,
 		return retval;
 	case PAM_SUCCESS:
 		/* Otherwise, the authentication looked good */
+#if 0
 		switch (req_type) {
 			case WINBINDD_INFO:
 				break;
@@ -805,7 +800,7 @@ static int pam_winbind_request_log(struct pwb_context *ctx,
 					 "user '%s' OK", user);
 				break;
 		}
-
+#endif
 		return retval;
 	default:
 		/* we don't know anything about this return value */
@@ -815,6 +810,48 @@ static int pam_winbind_request_log(struct pwb_context *ctx,
 		return retval;
 	}
 }
+
+static int wbc_auth_error_to_pam_error(struct pwb_context *ctx,
+				       struct wbcAuthErrorInfo *e,
+				       wbcErr status,
+				       const char *username,
+				       const char *fn)
+{
+	int ret = PAM_AUTH_ERR;
+
+	if (WBC_ERROR_IS_OK(status)) {
+		_pam_log_debug(ctx, LOG_DEBUG, "request %s succeeded",
+			fn);
+		ret = PAM_SUCCESS;
+		return pam_winbind_request_log(ctx, ret, username);
+	}
+
+	if (e) {
+		if (e->pam_error != PAM_SUCCESS) {
+			_pam_log(ctx, LOG_ERR,
+				 "request %s failed: %s, "
+				 "PAM error: %s (%d), NTSTATUS: %s, "
+				 "Error message was: %s",
+				 fn,
+				 wbcErrorString(status),
+				 _pam_error_code_str(e->pam_error),
+				 e->pam_error,
+				 e->nt_string,
+				 e->display_string);
+			ret = e->pam_error;
+			return pam_winbind_request_log(ctx, ret, username);
+		}
+
+		_pam_log(ctx, LOG_ERR, "request %s failed, but PAM error 0!", fn);
+
+		ret = PAM_SERVICE_ERR;
+		return pam_winbind_request_log(ctx, ret, username);
+	}
+
+	ret = wbc_error_to_pam_error(status);
+	return pam_winbind_request_log(ctx, ret, username);
+}
+
 
 /**
  * send a password expiry message if required
