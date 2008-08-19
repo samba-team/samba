@@ -262,20 +262,23 @@ is(TypeFunctionName("ndr_push", {TYPE => "STRUCT", NAME => "bar"}), "ndr_push_ST
 $generator = new Parse::Pidl::Samba4::NDR::Parser();
 $generator->ParseElementPrint({ NAME => "x", TYPE => "rt", REPRESENTATION_TYPE => "rt", 
 				    PROPERTIES => { noprint => 1},
-				    LEVELS => [ { TYPE => "DATA", DATA_TYPE => "rt"} ]}, "var", { "x" => "r->foobar" } );
+				    LEVELS => [ { TYPE => "DATA", DATA_TYPE => "rt"} ]},
+				    "ndr", "var", { "x" => "r->foobar" } );
 is($generator->{res}, "");
 
 $generator = new Parse::Pidl::Samba4::NDR::Parser();
 $generator->ParseElementPrint({ NAME => "x", TYPE => "rt", REPRESENTATION_TYPE => "rt", 
 				    PROPERTIES => {},
-				    LEVELS => [ { TYPE => "DATA", DATA_TYPE => "rt" }]}, "var", { "x" => "r->foobar" } );
+				    LEVELS => [ { TYPE => "DATA", DATA_TYPE => "rt" }]},
+				    "ndr", "var", { "x" => "r->foobar" } );
 is($generator->{res}, "ndr_print_rt(ndr, \"x\", &var);\n");
 
 # make sure that a print function for an element with value() set works
 $generator = new Parse::Pidl::Samba4::NDR::Parser();
 $generator->ParseElementPrint({ NAME => "x", TYPE => "uint32", REPRESENTATION_TYPE => "uint32", 
 				    PROPERTIES => { value => "23" },
-				    LEVELS => [ { TYPE => "DATA", DATA_TYPE => "uint32"} ]}, "var", { "x" => "r->foobar" } );
+				    LEVELS => [ { TYPE => "DATA", DATA_TYPE => "uint32"} ]},
+				    "ndr", "var", { "x" => "r->foobar" } );
 is($generator->{res}, "ndr_print_uint32(ndr, \"x\", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?23:var);\n");
 
 $generator = new Parse::Pidl::Samba4::NDR::Parser();

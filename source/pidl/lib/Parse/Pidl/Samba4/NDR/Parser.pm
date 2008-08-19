@@ -720,27 +720,27 @@ sub ParseDataPrint($$$$)
 
 #####################################################################
 # print scalars in a structure element
-sub ParseElementPrint($$$$)
+sub ParseElementPrint($$$$$)
 {
-	my($self, $e, $var_name, $env) = @_;
+	my($self, $e, $ndr, $var_name, $env) = @_;
 
 	return if (has_property($e, "noprint"));
 
 	if ($e->{REPRESENTATION_TYPE} ne $e->{TYPE}) {
-		$self->pidl("ndr_print_$e->{REPRESENTATION_TYPE}(ndr, \"$e->{NAME}\", $var_name);");
+		$self->pidl("ndr_print_$e->{REPRESENTATION_TYPE}($ndr, \"$e->{NAME}\", $var_name);");
 		return;
 	}
 
 	$var_name = append_prefix($e, $var_name);
 
 	if (defined(my $value = has_property($e, "value"))) {
-		$var_name = "(ndr->flags & LIBNDR_PRINT_SET_VALUES)?" . ParseExpr($value,$env, $e->{ORIGINAL}) . ":$var_name";
+		$var_name = "($ndr->flags & LIBNDR_PRINT_SET_VALUES)?" . ParseExpr($value,$env, $e->{ORIGINAL}) . ":$var_name";
 	}
 
 	foreach my $l (@{$e->{LEVELS}}) {
 		if ($l->{TYPE} eq "POINTER") {
-			$self->pidl("ndr_print_ptr(ndr, \"$e->{NAME}\", $var_name);");
-			$self->pidl("ndr->depth++;");
+			$self->pidl("ndr_print_ptr($ndr, \"$e->{NAME}\", $var_name);");
+			$self->pidl("$ndr->depth++;");
 			if ($l->{POINTER_TYPE} ne "ref") {
 				$self->pidl("if ($var_name) {");
 				$self->indent;
@@ -761,17 +761,17 @@ sub ParseElementPrint($$$$)
 			}
 
 			if (is_charset_array($e,$l)) {
-				$self->pidl("ndr_print_string(ndr, \"$e->{NAME}\", $var_name);");
+				$self->pidl("ndr_print_string($ndr, \"$e->{NAME}\", $var_name);");
 				last;
 			} elsif (has_fast_array($e, $l)) {
 				my $nl = GetNextLevel($e, $l);
-				$self->pidl("ndr_print_array_$nl->{DATA_TYPE}(ndr, \"$e->{NAME}\", $var_name, $length);");
+				$self->pidl("ndr_print_array_$nl->{DATA_TYPE}($ndr, \"$e->{NAME}\", $var_name, $length);");
 				last;
 			} else {
 				my $counter = "cntr_$e->{NAME}_$l->{LEVEL_INDEX}";
 
-				$self->pidl("ndr->print(ndr, \"\%s: ARRAY(\%d)\", \"$e->{NAME}\", (int)$length);");
-				$self->pidl("ndr->depth++;");
+				$self->pidl("$ndr->print($ndr, \"\%s: ARRAY(\%d)\", \"$e->{NAME}\", (int)$length);");
+				$self->pidl("$ndr->depth++;");
 				$self->pidl("for ($counter=0;$counter<$length;$counter++) {");
 				$self->indent;
 				$self->pidl("char *idx_$l->{LEVEL_INDEX}=NULL;");
@@ -785,7 +785,7 @@ sub ParseElementPrint($$$$)
 		} elsif ($l->{TYPE} eq "SWITCH") {
 			my $switch_var = ParseExprExt($l->{SWITCH_IS}, $env, $e->{ORIGINAL}, 
 						check_null_pointer($e, $env, sub { $self->pidl(shift); }, "return;"), check_fully_dereferenced($e, $env));
-			$self->pidl("ndr_print_set_switch_value(ndr, " . get_pointer_to($var_name) . ", $switch_var);");
+			$self->pidl("ndr_print_set_switch_value($ndr, " . get_pointer_to($var_name) . ", $switch_var);");
 		} 
 	}
 
@@ -795,7 +795,7 @@ sub ParseElementPrint($$$$)
 				$self->deindent;
 				$self->pidl("}");
 			}
-			$self->pidl("ndr->depth--;");
+			$self->pidl("$ndr->depth--;");
 		} elsif (($l->{TYPE} eq "ARRAY")
 			and not is_charset_array($e,$l)
 			and not has_fast_array($e,$l)) {
@@ -804,7 +804,7 @@ sub ParseElementPrint($$$$)
 			$self->pidl("}");
 			$self->deindent;
 			$self->pidl("}");
-			$self->pidl("ndr->depth--;");
+			$self->pidl("$ndr->depth--;");
 		}
 	}
 }
@@ -1287,9 +1287,9 @@ sub ParseEnumPull($$$$)
 
 #####################################################################
 # generate a print function for an enum
-sub ParseEnumPrint($$$$)
+sub ParseEnumPrint($$$$$)
 {
-	my($self,$enum,$name,$varname) = @_;
+	my($self,$enum,$ndr,$name,$varname) = @_;
 
 	$self->pidl("const char *val = NULL;");
 	$self->pidl("");
@@ -1311,7 +1311,7 @@ sub ParseEnumPrint($$$$)
 	$self->deindent;
 	$self->pidl("}");
 	
-	$self->pidl("ndr_print_enum(ndr, name, \"$enum->{TYPE}\", val, $varname);");
+	$self->pidl("ndr_print_enum($ndr, name, \"$enum->{TYPE}\", val, $varname);");
 
 	$self->end_flags($enum);
 }
@@ -1362,9 +1362,9 @@ sub ParseBitmapPull($$$$)
 
 #####################################################################
 # generate a print function for an bitmap
-sub ParseBitmapPrintElement($$$$$)
+sub ParseBitmapPrintElement($$$$$$)
 {
-	my($self,$e,$bitmap,$name,$varname) = @_;
+	my($self,$e,$bitmap,$ndr,$name,$varname) = @_;
 	my($type_decl) = mapTypeName($bitmap->{BASE_TYPE});
 	my($type_fn) = $bitmap->{BASE_TYPE};
 	my($flag);
@@ -1375,26 +1375,26 @@ sub ParseBitmapPrintElement($$$$$)
 		die "Bitmap: \"$name\" invalid Flag: \"$e\"";
 	}
 
-	$self->pidl("ndr_print_bitmap_flag(ndr, sizeof($type_decl), \"$flag\", $flag, $varname);");
+	$self->pidl("ndr_print_bitmap_flag($ndr, sizeof($type_decl), \"$flag\", $flag, $varname);");
 }
 
 #####################################################################
 # generate a print function for an bitmap
-sub ParseBitmapPrint($$$$)
+sub ParseBitmapPrint($$$$$)
 {
-	my($self,$bitmap,$name,$varname) = @_;
+	my($self,$bitmap,$ndr,$name,$varname) = @_;
 	my($type_decl) = mapTypeName($bitmap->{TYPE});
 	my($type_fn) = $bitmap->{BASE_TYPE};
 
 	$self->start_flags($bitmap);
 
-	$self->pidl("ndr_print_$type_fn(ndr, name, $varname);");
+	$self->pidl("ndr_print_$type_fn($ndr, name, $varname);");
 
-	$self->pidl("ndr->depth++;");
+	$self->pidl("$ndr->depth++;");
 	foreach my $e (@{$bitmap->{ELEMENTS}}) {
-		$self->ParseBitmapPrintElement($e, $bitmap, $name, $varname);
+		$self->ParseBitmapPrintElement($e, $bitmap, $ndr, $name, $varname);
 	}
-	$self->pidl("ndr->depth--;");
+	$self->pidl("$ndr->depth--;");
 
 	$self->end_flags($bitmap);
 }
@@ -1415,9 +1415,9 @@ $typefamily{BITMAP} = {
 
 #####################################################################
 # generate a struct print function
-sub ParseStructPrint($$$$)
+sub ParseStructPrint($$$$$)
 {
-	my($self,$struct,$name,$varname) = @_;
+	my($self,$struct,$ndr,$name,$varname) = @_;
 
 	return unless defined $struct->{ELEMENTS};
 
@@ -1425,15 +1425,15 @@ sub ParseStructPrint($$$$)
 
 	$self->DeclareArrayVariables($_) foreach (@{$struct->{ELEMENTS}});
 
-	$self->pidl("ndr_print_struct(ndr, name, \"$name\");");
+	$self->pidl("ndr_print_struct($ndr, name, \"$name\");");
 
 	$self->start_flags($struct);
 
-	$self->pidl("ndr->depth++;");
+	$self->pidl("$ndr->depth++;");
 	
-	$self->ParseElementPrint($_, $env->{$_->{NAME}}, $env) 
+	$self->ParseElementPrint($_, $ndr, $env->{$_->{NAME}}, $env)
 		foreach (@{$struct->{ELEMENTS}});
-	$self->pidl("ndr->depth--;");
+	$self->pidl("$ndr->depth--;");
 
 	$self->end_flags($struct);
 }
@@ -1695,9 +1695,9 @@ sub ParseUnionPush($$$$)
 
 #####################################################################
 # print a union
-sub ParseUnionPrint($$$$)
+sub ParseUnionPrint($$$$$)
 {
-	my ($self,$e,$name,$varname) = @_;
+	my ($self,$e,$ndr,$name,$varname) = @_;
 	my $have_default = 0;
 
 	$self->pidl("int level;");
@@ -1707,9 +1707,9 @@ sub ParseUnionPrint($$$$)
 
 	$self->start_flags($e);
 
-	$self->pidl("level = ndr_print_get_switch_value(ndr, $varname);");
+	$self->pidl("level = ndr_print_get_switch_value($ndr, $varname);");
 
-	$self->pidl("ndr_print_union(ndr, name, level, \"$name\");");
+	$self->pidl("ndr_print_union($ndr, name, level, \"$name\");");
 
 	$self->pidl("switch (level) {");
 	$self->indent;
@@ -1720,7 +1720,7 @@ sub ParseUnionPrint($$$$)
 		$self->pidl("$el->{CASE}:");
 		if ($el->{TYPE} ne "EMPTY") {
 			$self->indent;
-			$self->ParseElementPrint($el, "$varname->$el->{NAME}", {});
+			$self->ParseElementPrint($el, $ndr, "$varname->$el->{NAME}", {});
 			$self->deindent;
 		}
 		$self->pidl("break;");
@@ -1728,7 +1728,7 @@ sub ParseUnionPrint($$$$)
 	}
 	if (! $have_default) {
 		$self->pidl("default:");
-		$self->pidl("\tndr_print_bad_level(ndr, name, level);");
+		$self->pidl("\tndr_print_bad_level($ndr, name, level);");
 	}
 	$self->deindent;
 	$self->pidl("}");
@@ -1901,11 +1901,11 @@ sub ParseTypedefPull($$$$)
 
 #####################################################################
 # parse a typedef - print side
-sub ParseTypedefPrint($$$$)
+sub ParseTypedefPrint($$$$$)
 {
-	my($self,$e,$name,$varname) = @_;
+	my($self,$e,$ndr,$name,$varname) = @_;
 
-	$typefamily{$e->{DATA}->{TYPE}}->{PRINT_FN_BODY}->($self, $e->{DATA}, $name, $varname);
+	$typefamily{$e->{DATA}->{TYPE}}->{PRINT_FN_BODY}->($self, $e->{DATA}, $ndr, $name, $varname);
 }
 
 #####################################################################
@@ -1973,7 +1973,7 @@ sub ParseFunctionPrint($$)
 
 	foreach my $e (@{$fn->{ELEMENTS}}) {
 		if (grep(/in/,@{$e->{DIRECTION}})) {
-			$self->ParseElementPrint($e, $env->{$e->{NAME}}, $env);
+			$self->ParseElementPrint($e, "ndr", $env->{$e->{NAME}}, $env);
 		}
 	}
 	$self->pidl("ndr->depth--;");
@@ -1988,7 +1988,7 @@ sub ParseFunctionPrint($$)
 	$env = GenerateFunctionOutEnv($fn);
 	foreach my $e (@{$fn->{ELEMENTS}}) {
 		if (grep(/out/,@{$e->{DIRECTION}})) {
-			$self->ParseElementPrint($e, $env->{$e->{NAME}}, $env);
+			$self->ParseElementPrint($e, "ndr", $env->{$e->{NAME}}, $env);
 		}
 	}
 	if ($fn->{RETURN_TYPE}) {
@@ -2423,7 +2423,7 @@ sub ParseTypePrint($$$)
 {
 	my ($self, $e, $varname) = @_;
 
-	$typefamily{$e->{TYPE}}->{PRINT_FN_BODY}->($self, $e, $e->{NAME}, $varname);
+	$typefamily{$e->{TYPE}}->{PRINT_FN_BODY}->($self, $e, "ndr", $e->{NAME}, $varname);
 }
 
 sub ParseTypePrintFunction($$$)
