@@ -51,7 +51,7 @@ static krb5_error_code make_pac(krb5_context context,
 				struct auth_serversupplied_info *server_info,
 				krb5_pac *pac) 
 {
-	struct PAC_LOGON_INFO_CTR logon_info;
+	union PAC_INFO info;
 	struct netr_SamInfo3 *info3;
 	krb5_data pac_data;
 	NTSTATUS nt_status;
@@ -59,7 +59,7 @@ static krb5_error_code make_pac(krb5_context context,
 	DATA_BLOB pac_out;
 	krb5_error_code ret;
 
-	ZERO_STRUCT(logon_info);
+	ZERO_STRUCT(info);
 
 	nt_status = auth_convert_server_info_saminfo3(mem_ctx, server_info, &info3);
 	if (!NT_STATUS_IS_OK(nt_status)) {
@@ -67,15 +67,16 @@ static krb5_error_code make_pac(krb5_context context,
 		return EINVAL;
 	}
 
-	logon_info.info = talloc_zero(mem_ctx, struct PAC_LOGON_INFO);
+	info.logon_info.info = talloc_zero(mem_ctx, struct PAC_LOGON_INFO);
 	if (!mem_ctx) {
 		return ENOMEM;
 	}
 
-	logon_info.info->info3 = *info3;
+	info.logon_info.info->info3 = *info3;
 
-	ndr_err = ndr_push_struct_blob(&pac_out, mem_ctx, iconv_convenience, &logon_info,
-				       (ndr_push_flags_fn_t)ndr_push_PAC_LOGON_INFO_CTR);
+	ndr_err = ndr_push_union_blob(&pac_out, mem_ctx, iconv_convenience, &info,
+				      PAC_TYPE_LOGON_INFO,
+				      (ndr_push_flags_fn_t)ndr_push_PAC_INFO);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		nt_status = ndr_map_error2ntstatus(ndr_err);
 		DEBUG(1, ("PAC (presig) push failed: %s\n", nt_errstr(nt_status)));
@@ -162,7 +163,7 @@ krb5_error_code samba_kdc_reget_pac(void *priv, krb5_context context,
 	krb5_data k5pac_in;
 	DATA_BLOB pac_in;
 
-	struct PAC_LOGON_INFO_CTR logon_info;
+	union PAC_INFO info;
 	union netr_Validation validation;
 	struct auth_serversupplied_info *server_info_out;
 
@@ -191,9 +192,10 @@ krb5_error_code samba_kdc_reget_pac(void *priv, krb5_context context,
 		return ENOMEM;
 	}
 		
-	ndr_err = ndr_pull_struct_blob(&pac_in, mem_ctx, private->iconv_convenience, &logon_info,
-				       (ndr_pull_flags_fn_t)ndr_pull_PAC_LOGON_INFO_CTR);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err) || !logon_info.info) {
+	ndr_err = ndr_pull_union_blob(&pac_in, mem_ctx, private->iconv_convenience, &info,
+				      PAC_TYPE_LOGON_INFO,
+				      (ndr_pull_flags_fn_t)ndr_pull_PAC_INFO);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err) || !info.logon_info.info) {
 		nt_status = ndr_map_error2ntstatus(ndr_err);
 		DEBUG(0,("can't parse the PAC LOGON_INFO: %s\n", nt_errstr(nt_status)));
 		talloc_free(mem_ctx);
@@ -201,7 +203,7 @@ krb5_error_code samba_kdc_reget_pac(void *priv, krb5_context context,
 	}
 
 	/* Pull this right into the normal auth sysstem structures */
-	validation.sam3 = &logon_info.info->info3;
+	validation.sam3 = &info.logon_info.info->info3;
 	nt_status = make_server_info_netlogon_validation(mem_ctx,
 							 "",
 							 3, &validation,
