@@ -1944,12 +1944,13 @@ $typefamily{TYPEDEF} = {
 sub ParseFunctionPrint($$)
 {
 	my($self, $fn) = @_;
+	my $ndr = "ndr";
 
-	$self->pidl_hdr("void ndr_print_$fn->{NAME}(struct ndr_print *ndr, const char *name, int flags, const struct $fn->{NAME} *r);");
+	$self->pidl_hdr("void ndr_print_$fn->{NAME}(struct ndr_print *$ndr, const char *name, int flags, const struct $fn->{NAME} *r);");
 
 	return if has_property($fn, "noprint");
 
-	$self->pidl("_PUBLIC_ void ndr_print_$fn->{NAME}(struct ndr_print *ndr, const char *name, int flags, const struct $fn->{NAME} *r)");
+	$self->pidl("_PUBLIC_ void ndr_print_$fn->{NAME}(struct ndr_print *$ndr, const char *name, int flags, const struct $fn->{NAME} *r)");
 	$self->pidl("{");
 	$self->indent;
 
@@ -1957,48 +1958,48 @@ sub ParseFunctionPrint($$)
 		$self->DeclareArrayVariables($e);
 	}
 
-	$self->pidl("ndr_print_struct(ndr, name, \"$fn->{NAME}\");");
-	$self->pidl("ndr->depth++;");
+	$self->pidl("ndr_print_struct($ndr, name, \"$fn->{NAME}\");");
+	$self->pidl("$ndr->depth++;");
 
 	$self->pidl("if (flags & NDR_SET_VALUES) {");
-	$self->pidl("\tndr->flags |= LIBNDR_PRINT_SET_VALUES;");
+	$self->pidl("\t$ndr->flags |= LIBNDR_PRINT_SET_VALUES;");
 	$self->pidl("}");
 
 	$self->pidl("if (flags & NDR_IN) {");
 	$self->indent;
-	$self->pidl("ndr_print_struct(ndr, \"in\", \"$fn->{NAME}\");");
-	$self->pidl("ndr->depth++;");
+	$self->pidl("ndr_print_struct($ndr, \"in\", \"$fn->{NAME}\");");
+	$self->pidl("$ndr->depth++;");
 
 	my $env = GenerateFunctionInEnv($fn);
 
 	foreach my $e (@{$fn->{ELEMENTS}}) {
 		if (grep(/in/,@{$e->{DIRECTION}})) {
-			$self->ParseElementPrint($e, "ndr", $env->{$e->{NAME}}, $env);
+			$self->ParseElementPrint($e, $ndr, $env->{$e->{NAME}}, $env);
 		}
 	}
-	$self->pidl("ndr->depth--;");
+	$self->pidl("$ndr->depth--;");
 	$self->deindent;
 	$self->pidl("}");
 	
 	$self->pidl("if (flags & NDR_OUT) {");
 	$self->indent;
-	$self->pidl("ndr_print_struct(ndr, \"out\", \"$fn->{NAME}\");");
-	$self->pidl("ndr->depth++;");
+	$self->pidl("ndr_print_struct($ndr, \"out\", \"$fn->{NAME}\");");
+	$self->pidl("$ndr->depth++;");
 
 	$env = GenerateFunctionOutEnv($fn);
 	foreach my $e (@{$fn->{ELEMENTS}}) {
 		if (grep(/out/,@{$e->{DIRECTION}})) {
-			$self->ParseElementPrint($e, "ndr", $env->{$e->{NAME}}, $env);
+			$self->ParseElementPrint($e, $ndr, $env->{$e->{NAME}}, $env);
 		}
 	}
 	if ($fn->{RETURN_TYPE}) {
-		$self->pidl("ndr_print_$fn->{RETURN_TYPE}(ndr, \"result\", r->out.result);");
+		$self->pidl("ndr_print_$fn->{RETURN_TYPE}($ndr, \"result\", r->out.result);");
 	}
-	$self->pidl("ndr->depth--;");
+	$self->pidl("$ndr->depth--;");
 	$self->deindent;
 	$self->pidl("}");
 	
-	$self->pidl("ndr->depth--;");
+	$self->pidl("$ndr->depth--;");
 	$self->deindent;
 	$self->pidl("}");
 	$self->pidl("");
@@ -2009,8 +2010,9 @@ sub ParseFunctionPrint($$)
 sub ParseFunctionPush($$)
 { 
 	my($self, $fn) = @_;
+	my $ndr = "ndr";
 
-	$self->fn_declare("push", $fn, "enum ndr_err_code ndr_push_$fn->{NAME}(struct ndr_push *ndr, int flags, const struct $fn->{NAME} *r)") or return;
+	$self->fn_declare("push", $fn, "enum ndr_err_code ndr_push_$fn->{NAME}(struct ndr_push *$ndr, int flags, const struct $fn->{NAME} *r)") or return;
 
 	return if has_property($fn, "nopush");
 
@@ -2030,7 +2032,7 @@ sub ParseFunctionPush($$)
 
 	foreach my $e (@{$fn->{ELEMENTS}}) {
 		if (grep(/in/,@{$e->{DIRECTION}})) {
-			$self->ParseElementPush($e, "ndr", $env, 1, 1);
+			$self->ParseElementPush($e, $ndr, $env, 1, 1);
 		}
 	}
 
@@ -2043,12 +2045,12 @@ sub ParseFunctionPush($$)
 	$env = GenerateFunctionOutEnv($fn);
 	foreach my $e (@{$fn->{ELEMENTS}}) {
 		if (grep(/out/,@{$e->{DIRECTION}})) {
-			$self->ParseElementPush($e, "ndr", $env, 1, 1);
+			$self->ParseElementPush($e, $ndr, $env, 1, 1);
 		}
 	}
 
 	if ($fn->{RETURN_TYPE}) {
-		$self->pidl("NDR_CHECK(ndr_push_$fn->{RETURN_TYPE}(ndr, NDR_SCALARS, r->out.result));");
+		$self->pidl("NDR_CHECK(ndr_push_$fn->{RETURN_TYPE}($ndr, NDR_SCALARS, r->out.result));");
 	}
     
 	$self->deindent;
@@ -2086,9 +2088,10 @@ sub AllocateArrayLevel($$$$$$)
 sub ParseFunctionPull($$)
 { 
 	my($self,$fn) = @_;
+	my $ndr = "ndr";
 
 	# pull function args
-	$self->fn_declare("pull", $fn, "enum ndr_err_code ndr_pull_$fn->{NAME}(struct ndr_pull *ndr, int flags, struct $fn->{NAME} *r)") or return;
+	$self->fn_declare("pull", $fn, "enum ndr_err_code ndr_pull_$fn->{NAME}(struct ndr_pull *$ndr, int flags, struct $fn->{NAME} *r)") or return;
 
 	$self->pidl("{");
 	$self->indent;
@@ -2125,7 +2128,7 @@ sub ParseFunctionPull($$)
 
 	foreach my $e (@{$fn->{ELEMENTS}}) {
 		next unless (grep(/in/, @{$e->{DIRECTION}}));
-		$self->ParseElementPull($e, "ndr", $env, 1, 1);
+		$self->ParseElementPull($e, $ndr, $env, 1, 1);
 	}
 
 	# allocate the "simple" out ref variables. FIXME: Shouldn't this have it's
@@ -2143,9 +2146,9 @@ sub ParseFunctionPull($$)
 		if ($e->{LEVELS}[1]->{TYPE} eq "ARRAY") {
 			my $size = ParseExprExt($e->{LEVELS}[1]->{SIZE_IS}, $env, $e->{ORIGINAL},
 				check_null_pointer($e, $env, sub { $self->pidl(shift); },
-						   "return ndr_pull_error(ndr, NDR_ERR_INVALID_POINTER, \"NULL Pointer for size_is()\");"),
+						   "return ndr_pull_error($ndr, NDR_ERR_INVALID_POINTER, \"NULL Pointer for size_is()\");"),
 				check_fully_dereferenced($e, $env));
-			$self->pidl("NDR_PULL_ALLOC_N(ndr, r->out.$e->{NAME}, $size);");
+			$self->pidl("NDR_PULL_ALLOC_N($ndr, r->out.$e->{NAME}, $size);");
 
 			if (grep(/in/, @{$e->{DIRECTION}})) {
 				$self->pidl("memcpy(r->out.$e->{NAME}, r->in.$e->{NAME}, ($size) * sizeof(*r->in.$e->{NAME}));");
@@ -2153,7 +2156,7 @@ sub ParseFunctionPull($$)
 				$self->pidl("memset(r->out.$e->{NAME}, 0, ($size) * sizeof(*r->out.$e->{NAME}));");
 			}
 		} else {
-			$self->pidl("NDR_PULL_ALLOC(ndr, r->out.$e->{NAME});");
+			$self->pidl("NDR_PULL_ALLOC($ndr, r->out.$e->{NAME});");
 		
 			if (grep(/in/, @{$e->{DIRECTION}})) {
 				$self->pidl("*r->out.$e->{NAME} = *r->in.$e->{NAME};");
@@ -2173,11 +2176,11 @@ sub ParseFunctionPull($$)
 	$env = GenerateFunctionOutEnv($fn);
 	foreach my $e (@{$fn->{ELEMENTS}}) {
 		next unless grep(/out/, @{$e->{DIRECTION}});
-		$self->ParseElementPull($e, "ndr", $env, 1, 1);
+		$self->ParseElementPull($e, $ndr, $env, 1, 1);
 	}
 
 	if ($fn->{RETURN_TYPE}) {
-		$self->pidl("NDR_CHECK(ndr_pull_$fn->{RETURN_TYPE}(ndr, NDR_SCALARS, &r->out.result));");
+		$self->pidl("NDR_CHECK(ndr_pull_$fn->{RETURN_TYPE}($ndr, NDR_SCALARS, &r->out.result));");
 	}
 
 	$self->add_deferred();
