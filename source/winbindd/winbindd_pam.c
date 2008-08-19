@@ -1699,13 +1699,7 @@ done:
 		result = NT_STATUS_NO_LOGON_SERVERS;
 	}
 
-	state->response.data.auth.nt_status = NT_STATUS_V(result);
-	fstrcpy(state->response.data.auth.nt_status_string, nt_errstr(result));
-
-	/* we might have given a more useful error above */
-	if (!*state->response.data.auth.error_string)
-		fstrcpy(state->response.data.auth.error_string, get_friendly_nt_error_msg(result));
-	state->response.data.auth.pam_error = nt_status_to_pam(result);
+	set_auth_errors(&state->response, result);
 
 	DEBUG(NT_STATUS_IS_OK(result) ? 5 : 2, ("Plain-text authentication for user %s returned %s (PAM: %d)\n",
 	      state->request.data.auth.user,
@@ -1971,14 +1965,7 @@ done:
 		result = nt_status_squash(result);
 	}
 
-	state->response.data.auth.nt_status = NT_STATUS_V(result);
-	fstrcpy(state->response.data.auth.nt_status_string, nt_errstr(result));
-
-	/* we might have given a more useful error above */
-	if (!*state->response.data.auth.error_string) {
-		fstrcpy(state->response.data.auth.error_string, get_friendly_nt_error_msg(result));
-	}
-	state->response.data.auth.pam_error = nt_status_to_pam(result);
+	set_auth_errors(&state->response, result);
 
 	DEBUG(NT_STATUS_IS_OK(result) ? 5 : 2,
 	      ("NTLM CRAP authentication for user [%s]\\[%s] returned %s (PAM: %d)\n",
@@ -2164,10 +2151,7 @@ done:
 
 process_result:
 
-	state->response.data.auth.nt_status = NT_STATUS_V(result);
-	fstrcpy(state->response.data.auth.nt_status_string, nt_errstr(result));
-	fstrcpy(state->response.data.auth.error_string, get_friendly_nt_error_msg(result));
-	state->response.data.auth.pam_error = nt_status_to_pam(result);
+	set_auth_errors(&state->response, result);
 
 	DEBUG(NT_STATUS_IS_OK(result) ? 5 : 2,
 	      ("Password change for user [%s]\\[%s] returned %s (PAM: %d)\n",
@@ -2300,10 +2284,7 @@ process_result:
 
 	winbindd_delete_memory_creds(state->request.data.logoff.user);
 
-	state->response.data.auth.nt_status = NT_STATUS_V(result);
-	fstrcpy(state->response.data.auth.nt_status_string, nt_errstr(result));
-	fstrcpy(state->response.data.auth.error_string, get_friendly_nt_error_msg(result));
-	state->response.data.auth.pam_error = nt_status_to_pam(result);
+	set_auth_errors(&state->response, result);
 
 	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
 }
@@ -2449,11 +2430,8 @@ enum winbindd_result winbindd_dual_pam_chng_pswd_auth_crap(struct winbindd_domai
 		new_lm_password, old_lm_hash_enc);
 
  done:
-	state->response.data.auth.nt_status = NT_STATUS_V(result);
-	fstrcpy(state->response.data.auth.nt_status_string, nt_errstr(result));
-	fstrcpy(state->response.data.auth.error_string,
-		get_friendly_nt_error_msg(result));
-	state->response.data.auth.pam_error = nt_status_to_pam(result);
+
+	set_auth_errors(&state->response, result);
 
 	DEBUG(NT_STATUS_IS_OK(result) ? 5 : 2,
 	      ("Password change for user [%s]\\[%s] returned %s (PAM: %d)\n",
