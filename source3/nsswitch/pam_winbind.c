@@ -902,29 +902,34 @@ static bool _pam_send_password_expiry_message(struct pwb_context *ctx,
  */
 
 static void _pam_warn_password_expiry(struct pwb_context *ctx,
-				      const struct winbindd_response *response,
+				      const struct wbcAuthUserInfo *info,
+				      const struct wbcUserPasswordPolicyInfo *policy,
 				      int warn_pwd_expire,
 				      bool *already_expired)
 {
 	time_t now = time(NULL);
 	time_t next_change = 0;
 
+	if (!info || !policy) {
+		return;
+	}
+
 	if (already_expired) {
 		*already_expired = false;
 	}
 
 	/* accounts with ACB_PWNOEXP set never receive a warning */
-	if (response->data.auth.info3.acct_flags & ACB_PWNOEXP) {
+	if (info->acct_flags & ACB_PWNOEXP) {
 		return;
 	}
 
 	/* no point in sending a warning if this is a grace logon */
-	if (PAM_WB_GRACE_LOGON(response->data.auth.info3.user_flgs)) {
+	if (PAM_WB_GRACE_LOGON(info->user_flags)) {
 		return;
 	}
 
 	/* check if the info3 must change timestamp has been set */
-	next_change = response->data.auth.info3.pass_must_change_time;
+	next_change = info->pass_must_change_time;
 
 	if (_pam_send_password_expiry_message(ctx, next_change, now,
 					      warn_pwd_expire,
@@ -935,12 +940,11 @@ static void _pam_warn_password_expiry(struct pwb_context *ctx,
 	/* now check for the global password policy */
 	/* good catch from Ralf Haferkamp: an expiry of "never" is translated
 	 * to -1 */
-	if (response->data.auth.policy.expire <= 0) {
+	if (policy->expire <= 0) {
 		return;
 	}
 
-	next_change = response->data.auth.info3.pass_last_set_time +
-		      response->data.auth.policy.expire;
+	next_change = info->pass_last_set_time + policy->expire;
 
 	if (_pam_send_password_expiry_message(ctx, next_change, now,
 					      warn_pwd_expire,
@@ -1109,13 +1113,26 @@ out:
  */
 
 static void _pam_setup_krb5_env(struct pwb_context *ctx,
-				const char *krb5ccname)
+				struct wbcLogonUserInfo *info)
 {
 	char var[PATH_MAX];
 	int ret;
+	uint32_t i;
+	const char *krb5ccname = NULL;
 
 	if (off(ctx->ctrl, WINBIND_KRB5_AUTH)) {
 		return;
+	}
+
+	if (!info) {
+		return;
+	}
+
+	for (i=0; i < info->num_blobs; i++) {
+		if (strcasecmp(info->blobs[i].name, "krb5ccname") == 0) {
+			krb5ccname = (const char *)info->blobs[i].blob.data;
+			break;
+		}
 	}
 
 	if (!krb5ccname || (strlen(krb5ccname) == 0)) {
@@ -1135,6 +1152,41 @@ static void _pam_setup_krb5_env(struct pwb_context *ctx,
 			 "failed to set KRB5CCNAME to %s: %s",
 			 var, pam_strerror(ctx->pamh, ret));
 	}
+}
+
+/**
+ * Copy unix username if available (further processed in PAM).
+ *
+ * @param ctx PAM winbind context
+ * @param user_ret A pointer that holds a pointer to a string
+ * @param unix_username A username
+ *
+ * @return void.
+ */
+
+static void _pam_setup_unix_username(struct pwb_context *ctx,
+				     char **user_ret,
+				     struct wbcLogonUserInfo *info)
+{
+	const char *unix_username = NULL;
+	uint32_t i;
+
+	if (!user_ret || !info) {
+		return;
+	}
+
+	for (i=0; i < info->num_blobs; i++) {
+		if (strcasecmp(info->blobs[i].name, "unix_username") == 0) {
+			unix_username = (const char *)info->blobs[i].blob.data;
+			break;
+		}
+	}
+
+	if (!unix_username || !unix_username[0]) {
+		return;
+	}
+
+	*user_ret = strdup(unix_username);
 }
 
 /**
@@ -1178,16 +1230,16 @@ static void _pam_set_data_string(struct pwb_context *ctx,
  */
 
 static void _pam_set_data_info3(struct pwb_context *ctx,
-				struct winbindd_response *response)
+				const struct wbcAuthUserInfo *info)
 {
 	_pam_set_data_string(ctx, PAM_WINBIND_HOMEDIR,
-			     response->data.auth.info3.home_dir);
+			     info->home_directory);
 	_pam_set_data_string(ctx, PAM_WINBIND_LOGONSCRIPT,
-			     response->data.auth.info3.logon_script);
+			     info->logon_script);
 	_pam_set_data_string(ctx, PAM_WINBIND_LOGONSERVER,
-			     response->data.auth.info3.logon_srv);
+			     info->logon_server);
 	_pam_set_data_string(ctx, PAM_WINBIND_PROFILEPATH,
-			     response->data.auth.info3.profile_path);
+			     info->profile_path);
 }
 
 /**
@@ -1384,37 +1436,52 @@ static int winbind_auth_request(struct pwb_context *ctx,
 				const char *member,
 				const char *cctype,
 				const int warn_pwd_expire,
-				struct winbindd_response *p_response,
+				struct wbcAuthErrorInfo **p_error,
+				struct wbcLogonUserInfo **p_info,
+				struct wbcUserPasswordPolicyInfo **p_policy,
 				time_t *pwd_last_set,
 				char **user_ret)
 {
-	struct winbindd_request request;
-	struct winbindd_response response;
-	int ret;
-	bool already_expired = false;
+	wbcErr wbc_status;
 
-	ZERO_STRUCT(request);
-	ZERO_STRUCT(response);
+	struct wbcLogonUserParams logon;
+	char membership_of[1024];
+	uid_t user_uid = -1;
+	uint32_t flags = WBFLAG_PAM_INFO3_TEXT |
+			 WBFLAG_PAM_GET_PWD_POLICY;
+
+	struct wbcLogonUserInfo *info = NULL;
+	struct wbcAuthUserInfo *user_info = NULL;
+	struct wbcAuthErrorInfo *error = NULL;
+	struct wbcUserPasswordPolicyInfo *policy = NULL;
+
+	int ret = PAM_AUTH_ERR;
+	int i;
+	const char *codes[] = {
+		"NT_STATUS_PASSWORD_EXPIRED",
+		"NT_STATUS_PASSWORD_MUST_CHANGE",
+		"NT_STATUS_INVALID_WORKSTATION",
+		"NT_STATUS_INVALID_LOGON_HOURS",
+		"NT_STATUS_ACCOUNT_EXPIRED",
+		"NT_STATUS_ACCOUNT_DISABLED",
+		"NT_STATUS_ACCOUNT_LOCKED_OUT",
+		"NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT",
+		"NT_STATUS_NOLOGON_SERVER_TRUST_ACCOUNT",
+		"NT_STATUS_NOLOGON_INTERDOMAIN_TRUST_ACCOUNT",
+		"NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND",
+		"NT_STATUS_NO_LOGON_SERVERS",
+		"NT_STATUS_WRONG_PASSWORD",
+		"NT_STATUS_ACCESS_DENIED"
+	};
 
 	if (pwd_last_set) {
 		*pwd_last_set = 0;
 	}
 
-	strncpy(request.data.auth.user, user,
-		sizeof(request.data.auth.user)-1);
-
-	strncpy(request.data.auth.pass, pass,
-		sizeof(request.data.auth.pass)-1);
-
-	request.data.auth.krb5_cc_type[0] = '\0';
-	request.data.auth.uid = -1;
-
-	request.flags = WBFLAG_PAM_INFO3_TEXT | WBFLAG_PAM_GET_PWD_POLICY;
-
 	/* Krb5 auth always has to go against the KDC of the user's realm */
 
 	if (ctx->ctrl & WINBIND_KRB5_AUTH) {
-		request.flags |= WBFLAG_PAM_CONTACT_TRUSTDOM;
+		flags		|= WBFLAG_PAM_CONTACT_TRUSTDOM;
 	}
 
 	if (ctx->ctrl & (WINBIND_KRB5_AUTH|WINBIND_CACHED_LOGIN)) {
@@ -1424,7 +1491,7 @@ static int winbind_auth_request(struct pwb_context *ctx,
 		if (pwd == NULL) {
 			return PAM_USER_UNKNOWN;
 		}
-		request.data.auth.uid = pwd->pw_uid;
+		user_uid	= pwd->pw_uid;
 	}
 
 	if (ctx->ctrl & WINBIND_KRB5_AUTH) {
@@ -1432,38 +1499,34 @@ static int winbind_auth_request(struct pwb_context *ctx,
 		_pam_log_debug(ctx, LOG_DEBUG,
 			       "enabling krb5 login flag\n");
 
-		request.flags |= WBFLAG_PAM_KRB5 |
-				 WBFLAG_PAM_FALLBACK_AFTER_KRB5;
+		flags		|= WBFLAG_PAM_KRB5 |
+				   WBFLAG_PAM_FALLBACK_AFTER_KRB5;
 	}
 
 	if (ctx->ctrl & WINBIND_CACHED_LOGIN) {
 		_pam_log_debug(ctx, LOG_DEBUG,
 			       "enabling cached login flag\n");
-		request.flags |= WBFLAG_PAM_CACHED_LOGIN;
+		flags		|= WBFLAG_PAM_CACHED_LOGIN;
 	}
 
 	if (user_ret) {
 		*user_ret = NULL;
-		request.flags |= WBFLAG_PAM_UNIX_NAME;
+		flags		|= WBFLAG_PAM_UNIX_NAME;
 	}
 
 	if (cctype != NULL) {
-		strncpy(request.data.auth.krb5_cc_type, cctype,
-			sizeof(request.data.auth.krb5_cc_type) - 1);
 		_pam_log_debug(ctx, LOG_DEBUG,
 			       "enabling request for a %s krb5 ccache\n",
 			       cctype);
 	}
 
-	request.data.auth.require_membership_of_sid[0] = '\0';
-
 	if (member != NULL) {
 
-		if (!winbind_name_list_to_sid_string_list(ctx, user,
-			member,
-			request.data.auth.require_membership_of_sid,
-			sizeof(request.data.auth.require_membership_of_sid))) {
+		ZERO_STRUCT(membership_of);
 
+		if (!winbind_name_list_to_sid_string_list(ctx, user, member,
+							  membership_of,
+							  sizeof(membership_of))) {
 			_pam_log_debug(ctx, LOG_ERR,
 				       "failed to serialize membership of sid "
 				       "\"%s\"\n", member);
@@ -1471,60 +1534,100 @@ static int winbind_auth_request(struct pwb_context *ctx,
 		}
 	}
 
-	ret = pam_winbind_request_log(ctx, WINBINDD_PAM_AUTH,
-				      &request, &response, user);
+	ZERO_STRUCT(logon);
 
-	if (pwd_last_set) {
-		*pwd_last_set = response.data.auth.info3.pass_last_set_time;
+	logon.username			= user;
+	logon.password			= pass;
+
+	wbc_status = wbcAddNamedBlob(&logon.num_blobs,
+				     &logon.blobs,
+				     "krb5_cc_type",
+				     0,
+				     (uint8_t *)cctype,
+				     strlen(cctype)+1);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		goto done;
 	}
 
-	if (p_response) {
-		/* We want to process the response in the caller. */
-		*p_response = response;
+	wbc_status = wbcAddNamedBlob(&logon.num_blobs,
+				     &logon.blobs,
+				     "flags",
+				     0,
+				     (uint8_t *)&flags,
+				     sizeof(flags));
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		goto done;
+	}
+
+	wbc_status = wbcAddNamedBlob(&logon.num_blobs,
+				     &logon.blobs,
+				     "user_uid",
+				     0,
+				     (uint8_t *)&user_uid,
+				     sizeof(user_uid));
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		goto done;
+	}
+
+	wbc_status = wbcAddNamedBlob(&logon.num_blobs,
+				     &logon.blobs,
+				     "membership_of",
+				     0,
+				     (uint8_t *)membership_of,
+				     sizeof(membership_of));
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		goto done;
+	}
+
+	wbc_status = wbcLogonUser(&logon, &info, &error, &policy);
+	ret = wbc_auth_error_to_pam_error(ctx, error, wbc_status,
+					  user, "wbcLogonUser");
+	wbcFreeMemory(logon.blobs);
+	logon.blobs = NULL;
+
+	if (info && info->info) {
+		user_info = info->info;
+	}
+
+	if (pwd_last_set && user_info) {
+		*pwd_last_set = user_info->pass_last_set_time;
+	}
+
+	if (p_info && info) {
+		*p_info = info;
+	}
+
+	if (p_policy && policy) {
+		*p_policy = policy;
+	}
+
+	if (p_error && error) {
+		/* We want to process the error in the caller. */
+		*p_error = error;
 		return ret;
 	}
 
-	if (ret) {
-		PAM_WB_REMARK_CHECK_RESPONSE_RET(ctx, response,
-						 "NT_STATUS_PASSWORD_EXPIRED");
-		PAM_WB_REMARK_CHECK_RESPONSE_RET(ctx, response,
-						 "NT_STATUS_PASSWORD_MUST_CHANGE");
-		PAM_WB_REMARK_CHECK_RESPONSE_RET(ctx, response,
-						 "NT_STATUS_INVALID_WORKSTATION");
-		PAM_WB_REMARK_CHECK_RESPONSE_RET(ctx, response,
-						 "NT_STATUS_INVALID_LOGON_HOURS");
-		PAM_WB_REMARK_CHECK_RESPONSE_RET(ctx, response,
-						 "NT_STATUS_ACCOUNT_EXPIRED");
-		PAM_WB_REMARK_CHECK_RESPONSE_RET(ctx, response,
-						 "NT_STATUS_ACCOUNT_DISABLED");
-		PAM_WB_REMARK_CHECK_RESPONSE_RET(ctx, response,
-						 "NT_STATUS_ACCOUNT_LOCKED_OUT");
-		PAM_WB_REMARK_CHECK_RESPONSE_RET(ctx, response,
-						 "NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT");
-		PAM_WB_REMARK_CHECK_RESPONSE_RET(ctx, response,
-						 "NT_STATUS_NOLOGON_SERVER_TRUST_ACCOUNT");
-		PAM_WB_REMARK_CHECK_RESPONSE_RET(ctx, response,
-						 "NT_STATUS_NOLOGON_INTERDOMAIN_TRUST_ACCOUNT");
-		PAM_WB_REMARK_CHECK_RESPONSE_RET(ctx, response,
-						 "NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND");
-		PAM_WB_REMARK_CHECK_RESPONSE_RET(ctx, response,
-						 "NT_STATUS_NO_LOGON_SERVERS");
-		PAM_WB_REMARK_CHECK_RESPONSE_RET(ctx, response,
-						 "NT_STATUS_WRONG_PASSWORD");
-		PAM_WB_REMARK_CHECK_RESPONSE_RET(ctx, response,
-						 "NT_STATUS_ACCESS_DENIED");
+	for (i=0; i<ARRAY_SIZE(codes); i++) {
+		int _ret = ret;
+		if (_pam_check_remark_auth_err(ctx, error, codes[i], &_ret)) {
+			ret = _ret;
+			goto done;
+		}
 	}
 
-	if (ret == PAM_SUCCESS) {
+	if ((ret == PAM_SUCCESS) && user_info && policy && info) {
+
+		bool already_expired = false;
 
 		/* warn a user if the password is about to expire soon */
-		_pam_warn_password_expiry(ctx, &response,
+		_pam_warn_password_expiry(ctx, user_info, policy,
 					  warn_pwd_expire,
 					  &already_expired);
 
 		if (already_expired == true) {
-			SMB_TIME_T last_set;
-			last_set = response.data.auth.info3.pass_last_set_time;
+
+			SMB_TIME_T last_set = user_info->pass_last_set_time;
+
 			_pam_log_debug(ctx, LOG_DEBUG,
 				       "Password has expired "
 				       "(Password was last set: %lld, "
@@ -1532,33 +1635,44 @@ static int winbind_auth_request(struct pwb_context *ctx,
 				       "%lld (now it's: %lu))\n",
 				       (long long int)last_set,
 				       (long long int)last_set +
-				       response.data.auth.policy.expire,
+				       policy->expire,
 				       time(NULL));
 
 			return PAM_AUTHTOK_EXPIRED;
 		}
 
 		/* inform about logon type */
-		_pam_warn_logon_type(ctx, user,
-				     response.data.auth.info3.user_flgs);
+		_pam_warn_logon_type(ctx, user, user_info->user_flags);
 
 		/* inform about krb5 failures */
-		_pam_warn_krb5_failure(ctx, user,
-				       response.data.auth.info3.user_flgs);
+		_pam_warn_krb5_failure(ctx, user, user_info->user_flags);
 
 		/* set some info3 info for other modules in the stack */
-		_pam_set_data_info3(ctx, &response);
+		_pam_set_data_info3(ctx, user_info);
 
 		/* put krb5ccname into env */
-		_pam_setup_krb5_env(ctx, response.data.auth.krb5ccname);
+		_pam_setup_krb5_env(ctx, info);
 
 		/* If winbindd returned a username, return the pointer to it
 		 * here. */
-		if (user_ret && response.data.auth.unix_username[0]) {
-			/* We have to trust it's a null terminated string. */
-			*user_ret = strndup(response.data.auth.unix_username,
-				    sizeof(response.data.auth.unix_username) - 1);
-		}
+		_pam_setup_unix_username(ctx, user_ret, info);
+	}
+
+ done:
+	if (logon.blobs) {
+		wbcFreeMemory(logon.blobs);
+	}
+	if (info && info->blobs) {
+		wbcFreeMemory(info->blobs);
+	}
+	if (error && !p_error) {
+		wbcFreeMemory(error);
+	}
+	if (info && !p_info) {
+		wbcFreeMemory(info);
+	}
+	if (policy && !p_policy) {
+		wbcFreeMemory(policy);
 	}
 
 	return ret;
@@ -2193,7 +2307,8 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 
 	/* Now use the username to look up password */
 	retval = winbind_auth_request(ctx, real_username, password,
-				      member, cctype, warn_pwd_expire, NULL,
+				      member, cctype, warn_pwd_expire,
+				      NULL, NULL, NULL,
 				      NULL, &username_ret);
 
 	if (retval == PAM_NEW_AUTHTOK_REQD ||
@@ -2616,10 +2731,8 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 
 	int retry = 0;
 	char *username_ret = NULL;
-	struct winbindd_response response;
+	struct wbcAuthErrorInfo *error = NULL;
 	struct pwb_context *ctx = NULL;
-
-	ZERO_STRUCT(response);
 
 	ret = _pam_winbind_init_context(pamh, flags, argc, argv, &ctx);
 	if (ret) {
@@ -2700,7 +2813,8 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 		/* verify that this is the password for this user */
 
 		ret = winbind_auth_request(ctx, user, pass_old,
-					   NULL, NULL, 0, &response,
+					   NULL, NULL, 0,
+					   &error, NULL, NULL,
 					   &pwdlastset_prelim, NULL);
 
 		if (ret != PAM_ACCT_EXPIRED &&
@@ -2809,6 +2923,8 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 			const char *member = NULL;
 			const char *cctype = NULL;
 			int warn_pwd_expire;
+			struct wbcLogonUserInfo *info = NULL;
+			struct wbcUserPasswordPolicyInfo *policy = NULL;
 
 			member = get_member_from_config(ctx);
 			cctype = get_krb5_cc_type_from_config(ctx);
@@ -2823,7 +2939,8 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 			 * */
 
 			ret = winbind_auth_request(ctx, user, pass_new,
-						   member, cctype, 0, &response,
+						   member, cctype, 0,
+						   &error, &info, &policy,
 						   NULL, &username_ret);
 			_pam_overwrite(pass_new);
 			_pam_overwrite(pass_old);
@@ -2831,19 +2948,24 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 
 			if (ret == PAM_SUCCESS) {
 
+				struct wbcAuthUserInfo *user_info = NULL;
+
+				if (info && info->info) {
+					user_info = info->info;
+				}
+
 				/* warn a user if the password is about to
 				 * expire soon */
-				_pam_warn_password_expiry(ctx, &response,
+				_pam_warn_password_expiry(ctx, user_info, policy,
 							  warn_pwd_expire,
 							  NULL);
 
 				/* set some info3 info for other modules in the
 				 * stack */
-				_pam_set_data_info3(ctx, &response);
+				_pam_set_data_info3(ctx, user_info);
 
 				/* put krb5ccname into env */
-				_pam_setup_krb5_env(ctx,
-						    response.data.auth.krb5ccname);
+				_pam_setup_krb5_env(ctx, info);
 
 				if (username_ret) {
 					pam_set_item(pamh, PAM_USER,
@@ -2853,6 +2975,9 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 						       username_ret);
 					free(username_ret);
 				}
+
+				wbcFreeMemory(info);
+				wbcFreeMemory(policy);
 			}
 
 			goto out;
@@ -2862,14 +2987,24 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 	}
 
 out:
+	{
+		/* Deal with offline errors. */
+		int i;
+		const char *codes[] = {
+			"NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND",
+			"NT_STATUS_NO_LOGON_SERVERS",
+			"NT_STATUS_ACCESS_DENIED"
+		};
 
-	/* Deal with offline errors. */
-	PAM_WB_REMARK_CHECK_RESPONSE(ctx, response,
-				     "NT_STATUS_NO_LOGON_SERVERS");
-	PAM_WB_REMARK_CHECK_RESPONSE(ctx, response,
-				     "NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND");
-	PAM_WB_REMARK_CHECK_RESPONSE(ctx, response,
-				     "NT_STATUS_ACCESS_DENIED");
+		for (i=0; i<ARRAY_SIZE(codes); i++) {
+			int _ret;
+			if (_pam_check_remark_auth_err(ctx, error, codes[i], &_ret)) {
+				break;
+			}
+		}
+	}
+
+	wbcFreeMemory(error);
 
 	_PAM_LOG_FUNCTION_LEAVE("pam_sm_chauthtok", ctx, ret);
 
