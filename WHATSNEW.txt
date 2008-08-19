@@ -1,103 +1,22 @@
                    ==============================
-                   Release Notes for Samba 3.2.2
-			  August, 19 2008
+                   Release Notes for Samba 3.2.3
+
                    ==============================
 
 This is a bug fix release of the Samba 3.2 series.
 
-Major bug fixes included in Samba 3.2.2 are:
+Major bug fixes included in Samba 3.2.3 are:
 
-  o Fix removal of dead records in tdb files. This can lead to very large
-    tdb files and to overflowing partitions as a consequence on systems
-    running an nmbd daemon.
-  o Fix "force group" in setups using Winbind.
-  o Fix freezing Windows Explorer on WinXP while browsing Samba shares.
-    This one led to timeouts during printing as well.
-  o Fix assigning of primary group memberships when authenticating via
-    Winbind.
-  o Fix creation and installation of shared libraries.
 
 
 ######################################################################
 Changes
 #######
 
-Changes since 3.2.1
+Changes since 3.2.2
 -------------------
 
 
-o   Michael Adam <obnox@samba.org>
-    * BUG 5592: Fix creation and installation of shared libraries.
-    * Fix replacement of random seed generator.
-    * Fix a race condition in idmap_tdb2_allocate_id().
-    * Fix unix_convert() for "*" after changing map_nt_error_from_unix().
-    * Make sure to always set errno on error path in OpenDir.
-
-
-o   Jeremy Allison <jra@samba.org>
-    * BUG 5675: Fix smbspool program assuming Kerberos authentication by
-      mistake.
-    * BUG 5686: Fix segfaults in libsmbclient.
-    * BUG 5692: Fix coredump in full_audit.so.
-    * BUG 5696: Fix "force group" in setups using Winbind.
-    * Rename cifs.spnego to cifs.upcall.
-    * Fix segfault in cifs.upcall when it is called without any arguments.
-    * Fix coverity ID 594 (resource leak on error path).
-    * Fix assigning of primary group memberships when authenticating via
-      Winbind.
-    * Several build fixes.
-
-
-o   Bartosz Antosik <antosik@gmail.com>
-    * BUG #5617: Fix freezing Windows Explorer on WinXP while browsing
-      Samba shares.
-
-
-o   Andrew Bartlett <abartlet@samba.org>
-    * Include stdlib.h to get a prototype for free().
-
-
-o   Yannick Bergeron <yaberger@ca.ibm.com>
-    * Solve an IBM XL C/C++ compiler error encountered in get_exit_code()
-      auth_errors array initialization in client/smbspool.c.
-    * Use NGROUPS_MAX instead of 32 for the max group value in
-      rep_initgroups().
-
-
-o   Günther Deschner <gd@samba.org>
-    * Fix build warning.
-    * Add add c++ guard to netapi.
-
-
-o   Steve French <stevef@smf-t60p.smfdom>
-    * Fix compile warning in cifs.upcall.
-    * Add "dns_resolver" key type to cifs.upcall.
-
-
-o   SATOH Fumiyasu <fumiyas@osstech.co.jp>
-    * BUG 5688: Fix orphaned LPQ processes if socket address is invalid.
-
-
-o   Volker Lendecke <vl@samba.org>
-    * BUG 5684: Fix removal of dead records in tdb files.
-    * Fix coverity IDs 595, 596.
-    * Fix smb_len calculation for chained requests.
-
-
-o   Herb Lewis <herb@samba.org>
-    * Fix output of test status.
-
-
-o   Jim McDonough <jmcd@samba.org>
-    * Fix smbclient connections to older servers.
-
-
-o   Andrew Tridgell <tridge@samba.org>
-    * Fix a fd leak when trying to regain contact to a domain controller
-      in Winbind.
-    * Fix permissions on ctdb databases.
-    * Fix passing back success when a function had in fact failed in two
-      places.
 
 
 ######################################################################
