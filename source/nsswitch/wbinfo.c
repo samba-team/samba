@@ -914,6 +914,7 @@ static bool wbinfo_auth_krb5(char *username, const char *cctype, uint32 flags)
 	struct winbindd_response response;
 	NSS_STATUS result;
 	char *p;
+	char *password;
 
 	/* Send off request */
 
@@ -927,8 +928,12 @@ static bool wbinfo_auth_krb5(char *username, const char *cctype, uint32 flags)
 		fstrcpy(request.data.auth.user, username);
 		fstrcpy(request.data.auth.pass, p + 1);
 		*p = '%';
-	} else
+	} else {
 		fstrcpy(request.data.auth.user, username);
+		password = wbinfo_prompt_pass(NULL, username);
+		fstrcpy(request.data.auth.pass, password);
+		SAFE_FREE(password);
+	}
 
 	request.flags = flags;
 
@@ -974,7 +979,7 @@ static bool wbinfo_auth(char *username)
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
 	char *s = NULL;
 	char *p = NULL;
-	const char *password = NULL;
+	char *password = NULL;
 	char *name = NULL;
 
 	if ((s = SMB_STRDUP(username)) == NULL) {
@@ -984,16 +989,9 @@ static bool wbinfo_auth(char *username)
 	if ((p = strchr(s, '%')) != NULL) {
 		*p = 0;
 		p++;
-		password = p;
+		password = SMB_STRDUP(p);
 	} else {
-		char *prompt;
-		asprintf(&prompt, "Enter %s's password:", username);
-		if (!prompt) {
-			return false;
-		}
-
-		password = getpass(prompt);
-		SAFE_FREE(prompt);
+		password = wbinfo_prompt_pass(NULL, username);
 	}
 
 	name = s;
@@ -1012,6 +1010,7 @@ static bool wbinfo_auth(char *username)
 #endif
 
 	SAFE_FREE(s);
+	SAFE_FREE(password);
 
 	return WBC_ERROR_IS_OK(wbc_status);
 }
@@ -1028,26 +1027,18 @@ static bool wbinfo_auth_crap(char *username)
 	DATA_BLOB nt = data_blob_null;
 	fstring name_user;
 	fstring name_domain;
-	fstring pass;
+	char *pass;
 	char *p;
 
 	p = strchr(username, '%');
 
 	if (p) {
 		*p = 0;
-		fstrcpy(pass, p + 1);
+		pass = SMB_STRDUP(p + 1);
 	} else {
-		char *prompt;
-		asprintf(&prompt, "Enter %s's password:", username);
-		if (!prompt) {
-			return false;
-		}
-
-		fstrcpy(pass, getpass(prompt));
-		SAFE_FREE(prompt);
-
+		pass = wbinfo_prompt_pass(NULL, username);
 	}
-		
+
 	parse_wbinfo_domain_user(username, name_domain, name_user);
 
 	params.account_name	= name_user;
@@ -1076,6 +1067,7 @@ static bool wbinfo_auth_crap(char *username)
 				      &lm, &nt, NULL)) {
 			data_blob_free(&names_blob);
 			data_blob_free(&server_chal);
+			SAFE_FREE(pass);
 			return false;
 		}
 		data_blob_free(&names_blob);
@@ -1120,6 +1112,7 @@ static bool wbinfo_auth_crap(char *username)
 
 	data_blob_free(&nt);
 	data_blob_free(&lm);
+	SAFE_FREE(pass);
 
 	return WBC_ERROR_IS_OK(wbc_status);
 }
