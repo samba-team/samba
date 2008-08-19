@@ -243,13 +243,13 @@ def provision_paths_from_lp(lp, dnsdomain):
     paths.memberofconf = os.path.join(paths.ldapdir, 
                                       "memberof.conf")
     paths.fedoradsinf = os.path.join(paths.ldapdir, 
-                                   "fedorads.inf")
+                                     "fedorads.inf")
+    paths.fedoradspartitions = os.path.join(paths.ldapdir, 
+                                            "fedorads-partitions.ldif")
     paths.olmmrserveridsconf = os.path.join(paths.ldapdir, 
-                                      "mmr_serverids.conf")
+                                            "mmr_serverids.conf")
     paths.olmmrsyncreplconf = os.path.join(paths.ldapdir, 
-                                      "mmr_syncrepl.conf")
-    paths.olmmron = os.path.join(paths.ldapdir, 
-                                      "mmr_on.conf")
+                                           "mmr_syncrepl.conf")
     paths.hklm = "hklm.ldb"
     paths.hkcr = "hkcr.ldb"
     paths.hkcu = "hkcu.ldb"
@@ -1148,10 +1148,7 @@ def provision_backend(setup_dir=None, message=None,
                       rootdn=None, domaindn=None, schemadn=None, configdn=None,
                       domain=None, hostname=None, adminpass=None, root=None, serverrole=None, 
                       ldap_backend_type=None, ldap_backend_port=None,
-		      ol_mmr_urls=None, mmr_serverids_config=None, mmr_on_config=None, 
-		      mmr_syncrepl_schema_config=None,
-		      mmr_syncrepl_config_config=None,
-		      mmr_syncrepl_user_config=None ):
+		      ol_mmr_urls=None):
 
     def setup_path(file):
         return os.path.join(setup_dir, file)
@@ -1266,61 +1263,48 @@ def provision_backend(setup_dir=None, message=None,
         refint_config = read_and_sub_file(setup_path("refint.conf"),
                                             { "LINK_ATTRS" : refint_attributes})
 
-########################################################
-### generate serverids and ldap-urls for mmr hosts   ###
-########################################################
-
-	mmr_on_config = " "
-	mmr_serverids_config = " "
-
+# generate serverids, ldap-urls and syncrepl-blocks for mmr hosts
+	mmr_on_config = ""
+	mmr_serverids_config = ""
+        mmr_syncrepl_schema_config = "" 
+	mmr_syncrepl_config_config = "" 
+	mmr_syncrepl_user_config = "" 
+	
 	if ol_mmr_urls is not None:
-		mmr_hosts=ol_mmr_urls
-		mmr_hosts=filter(None,mmr_hosts.split(' ')) 
+		mmr_hosts=filter(None,ol_mmr_urls.split(' ')) 
+                if (len(mmr_hosts) == 1):
+                    mmr_hosts=filter(None,ol_mmr_urls.split(',')) 
+                     
+
+		mmr_on_config = "MirrorMode On"
  		
-		mmr_serverids_config = "# Generated from template mmr_serverids.conf\n" 
 		z=0
 		for i in mmr_hosts:
 			z=z+1
 			mmr_serverids_config += read_and_sub_file(setup_path("mmr_serverids.conf"),
 								     { "SERVERID" : str(z),
         		                                               "LDAPSERVER" : i })
-		mmr_on_config = "MirrorMode On"
 
-########################################################
-### generate syncrepl-blocks for mmr hosts           ###
-########################################################
-
-	mmr_syncrepl_schema_config = " " 
-	mmr_syncrepl_config_config = " " 
-	mmr_syncrepl_user_config = " " 
-	
-	if ol_mmr_urls is not None:
-		mmr_hosts=ol_mmr_urls
-		mmr_hosts=filter(None,mmr_hosts.split(' ')) 
-		mmr_syncrepl_schema_config = "# Generated from template mmr_syncrepl.conf\n" 
-		mmr_syncrepl_config_config = "# Generated from template mmr_syncrepl.conf\n" 
-		mmr_syncrepl_user_config = "# Generated from template mmr_syncrepl.conf\n" 
-		z=0
-		for i in mmr_hosts:
 			z=z+1
 			mmr_syncrepl_schema_config += read_and_sub_file(setup_path("mmr_syncrepl.conf"),
 								     { 	"RID" : str(z),
                     							"MMRDN": names.schemadn,
-        		                                               	"LDAPSERVER" : i })
+        		                                               	"LDAPSERVER" : i,
+                                                                        "MMR_PASSWORD": adminpass})
 
-		for i in mmr_hosts:
 			z=z+1
 			mmr_syncrepl_config_config += read_and_sub_file(setup_path("mmr_syncrepl.conf"),
 								     { 	"RID" : str(z),
                     							"MMRDN": names.configdn,
-        		                                               	"LDAPSERVER" : i })
+        		                                               	"LDAPSERVER" : i,
+                                                                        "MMR_PASSWORD": adminpass})
 
-		for i in mmr_hosts:
 			z=z+1
 			mmr_syncrepl_user_config += read_and_sub_file(setup_path("mmr_syncrepl.conf"),
 								     { 	"RID" : str(z),
                     							"MMRDN": names.domaindn,
-        		                                               	"LDAPSERVER" : i })
+        		                                               	"LDAPSERVER" : i,
+                                                                        "MMR_PASSWORD": adminpass })
 
 
         setup_file(setup_path("slapd.conf"), paths.slapdconf,
@@ -1335,6 +1319,7 @@ def provision_backend(setup_dir=None, message=None,
                     "MMR_SYNCREPL_SCHEMA_CONFIG": mmr_syncrepl_schema_config,
                     "MMR_SYNCREPL_CONFIG_CONFIG": mmr_syncrepl_config_config,
                     "MMR_SYNCREPL_USER_CONFIG": mmr_syncrepl_user_config,
+                    "MMR_PASSWORD": adminpass,
                     "REFINT_CONFIG": refint_config})
 	setup_file(setup_path("modules.conf"), paths.modulesconf,
                    {"REALM": names.realm})
