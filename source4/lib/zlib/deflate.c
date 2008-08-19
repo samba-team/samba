@@ -154,9 +154,6 @@ local const config configuration_table[10] = {
  * meaning.
  */
 
-#define EQUAL 0
-/* result of memcmp for equal strings */
-
 #ifndef NO_DUMMY_DECL
 struct static_tree_desc_s {int dummy;}; /* for buggy compilers */
 #endif
@@ -297,7 +294,7 @@ int ZEXPORT deflateInit2_(strm, level, method, windowBits, memLevel, strategy,
     if (s->window == Z_NULL || s->prev == Z_NULL || s->head == Z_NULL ||
         s->pending_buf == Z_NULL) {
         s->status = FINISH_STATE;
-        strm->msg = (char*)ERR_MSG(Z_MEM_ERROR);
+        strm->msg = ERR_MSG(Z_MEM_ERROR);
         deflateEnd (strm);
         return Z_MEM_ERROR;
     }
@@ -1226,6 +1223,9 @@ local uInt longest_match_fast(s, cur_match)
 }
 
 #ifdef DEBUG
+#define EQUAL 0
+/* result of memcmp for equal strings */
+
 /* ===========================================================================
  * Check that the match at match_start is indeed a match.
  */

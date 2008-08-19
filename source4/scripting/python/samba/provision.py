@@ -623,7 +623,17 @@ def setup_templatesdb(path, setup_path, session_info, credentials, lp):
     """
     templates_ldb = SamDB(path, session_info=session_info,
                           credentials=credentials, lp=lp)
-    templates_ldb.erase()
+    # Wipes the database
+    try:
+        templates_ldb.erase()
+    except:
+        os.unlink(path)
+
+    templates_ldb.load_ldif_file_add(setup_path("provision_templates_init.ldif"))
+
+    templates_ldb = SamDB(path, session_info=session_info,
+                          credentials=credentials, lp=lp)
+
     templates_ldb.load_ldif_file_add(setup_path("provision_templates.ldif"))
 
 

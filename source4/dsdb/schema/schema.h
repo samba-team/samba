@@ -32,6 +32,10 @@ struct dsdb_syntax {
 	uint32_t oMSyntax;
 	struct ldb_val oMObjectClass;
 	const char *attributeSyntax_oid;
+	const char *equality;
+	const char *substring;
+	const char *comment;
+	const char *ldb_syntax;
 
 	WERROR (*drsuapi_to_ldb)(const struct dsdb_schema *schema,
 				 const struct dsdb_attribute *attr,
@@ -172,14 +176,6 @@ enum dsdb_schema_convert_target {
 	TARGET_OPENLDAP,
 	TARGET_FEDORA_DS,
 	TARGET_AD_SCHEMA_SUBENTRY
-};
-
-struct dsdb_syntax_map {
-	const char *Standard_OID;
-	const char *AD_OID;
-	const char *equality;
-	const char *substring;
-	const char *comment;
 };
 
 #include "dsdb/schema/proto.h"

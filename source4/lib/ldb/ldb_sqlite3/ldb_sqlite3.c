@@ -349,23 +349,7 @@ static char *parsetree_to_sql(struct ldb_module *module,
 			return NULL;
 		}
 
-		if (strcasecmp(t->u.equality.attr, "objectclass") == 0) {
-		/*
-		 * For object classes, we want to search for all objectclasses
-		 * that are subclasses as well.
-		*/
-			return lsqlite3_tprintf(mem_ctx,
-					"SELECT eid  FROM ldb_attribute_values\n"
-					"WHERE norm_attr_name = 'OBJECTCLASS' "
-					"AND norm_attr_value IN\n"
-					"  (SELECT class_name FROM ldb_object_classes\n"
-					"   WHERE tree_key GLOB\n"
-					"     (SELECT tree_key FROM ldb_object_classes\n"
-					"      WHERE class_name = '%q'\n"
-					"     ) || '*'\n"
-					"  )\n", value.data);
-
-		} else if (strcasecmp(t->u.equality.attr, "dn") == 0) {
+		if (strcasecmp(t->u.equality.attr, "dn") == 0) {
 			/* DN query is a special ldb case */
 		 	const char *cdn = ldb_dn_get_casefold(
 						ldb_dn_new(mem_ctx, module->ldb,
@@ -1039,16 +1023,8 @@ static int lsql_add(struct ldb_module *module, struct ldb_request *req)
 
         /* See if this is an ltdb special */
 	if (ldb_dn_is_special(msg->dn)) {
-		struct ldb_dn *c;
-
-		c = ldb_dn_new(lsql_ac, module->ldb, "@SUBCLASSES");
-		if (ldb_dn_compare(msg->dn, c) == 0) {
-#warning "insert subclasses into object class tree"
-			ret = LDB_ERR_UNWILLING_TO_PERFORM;
-			goto done;
-		}
-
 /*
+		struct ldb_dn *c;
 		c = ldb_dn_new(local_ctx, module->ldb, "@INDEXLIST");
 		if (ldb_dn_compare(module->ldb, msg->dn, c) == 0) {
 #warning "should we handle indexes somehow ?"
@@ -1177,15 +1153,6 @@ static int lsql_modify(struct ldb_module *module, struct ldb_request *req)
 
         /* See if this is an ltdb special */
 	if (ldb_dn_is_special(msg->dn)) {
-		struct ldb_dn *c;
-
-		c = ldb_dn_new(lsql_ac, module->ldb, "@SUBCLASSES");
-		if (ldb_dn_compare(msg->dn, c) == 0) {
-#warning "modify subclasses into object class tree"
-			ret = LDB_ERR_UNWILLING_TO_PERFORM;
-			goto done;
-		}
-
                 /* Others return an error */
 		ret = LDB_ERR_UNWILLING_TO_PERFORM;
                 goto done;

@@ -55,7 +55,7 @@ source/ldap_server/proto.h
 source/lib/db_wrap_proto.h
 source/lib/charset/charset_proto.h
 source/lib/cmdline/credentials.h
-source/lib/ldb/samba/ldif_handlers.h
+source/lib/ldb/samba/ldif_handlers_proto.h
 source/lib/registry/regf.h
 source/lib/registry/tdr_regf.c
 source/lib/registry/tdr_regf.h
