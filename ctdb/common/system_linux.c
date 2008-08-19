@@ -538,7 +538,7 @@ int ctdb_sys_read_tcp_packet(int s, void *private_data,
 		src->ip6.sin6_addr   = ip6->ip6_src;
 
 		dst->ip6.sin6_family = AF_INET6;
-		dst->ip6.sin6_port   = tcp->source;
+		dst->ip6.sin6_port   = tcp->dest;
 		dst->ip6.sin6_addr   = ip6->ip6_dst;
 
 		*ack_seq             = tcp->ack_seq;
