@@ -8,17 +8,17 @@
    Copyright (C) Gerald (Jerry) Carter     2003-2005.
    Copyright (C) Volker Lendecke           2004-2005
    Copyright (C) Jeremy Allison		   2006
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	 See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -27,14 +27,14 @@
    We need to manage connections to domain controllers without having to
    mess up the main winbindd code with other issues.  The aim of the
    connection manager is to:
-  
+
        - make connections to domain controllers and cache them
        - re-establish connections when networks or servers go down
        - centralise the policy on connection timeouts, domain controller
 	 selection etc
        - manage re-entrancy for when winbindd becomes able to handle
 	 multiple outstanding rpc requests
-  
+
    Why not have connection management as part of the rpc layer like tng?
    Good question.  This code may morph into libsmb/rpc_cache.c or something
    like that but at the moment it's simply staying as part of winbind.	I
@@ -383,7 +383,7 @@ void set_domain_offline(struct winbindd_domain *domain)
 
 	if ( domain->primary ) {
 		struct winbindd_child *idmap = idmap_child();
-		
+
 		if ( idmap->pid != 0 ) {
 			messaging_send_buf(winbind_messaging_context(),
 					   pid_to_procid(idmap->pid), 
@@ -462,7 +462,7 @@ static void set_domain_online(struct winbindd_domain *domain)
 
 	if ( domain->primary ) {
 		struct winbindd_child *idmap = idmap_child();
-		
+
 		if ( idmap->pid != 0 ) {
 			messaging_send_buf(winbind_messaging_context(),
 					   pid_to_procid(idmap->pid), 
@@ -553,7 +553,7 @@ void winbind_add_failed_connection_entry(const struct winbindd_domain *domain,
    an authenticated connection if DCs have the RestrictAnonymous registry
    entry set > 0, or the "Additional restrictions for anonymous
    connections" set in the win2k Local Security Policy. 
-   
+
    Caller to free() result in domain, username, password
 */
 
@@ -562,12 +562,12 @@ static void cm_get_ipc_userpass(char **username, char **domain, char **password)
 	*username = (char *)secrets_fetch(SECRETS_AUTH_USER, NULL);
 	*domain = (char *)secrets_fetch(SECRETS_AUTH_DOMAIN, NULL);
 	*password = (char *)secrets_fetch(SECRETS_AUTH_PASSWORD, NULL);
-	
+
 	if (*username && **username) {
 
 		if (!*domain || !**domain)
 			*domain = smb_xstrdup(lp_workgroup());
-		
+
 		if (!*password || !**password)
 			*password = smb_xstrdup("");
 
@@ -703,7 +703,7 @@ static NTSTATUS get_trust_creds(const struct winbindd_domain *domain,
 {
 	const char *account_name;
 	const char *name = NULL;
-	
+
 	/* If we are a DC and this is not our own domain */
 
 	if (IS_DC) {
@@ -713,10 +713,10 @@ static NTSTATUS get_trust_creds(const struct winbindd_domain *domain,
 
 		if (!our_domain)
 			return NT_STATUS_INVALID_SERVER_STATE;		
-		
+
 		name = our_domain->name;		
 	}	
-	
+
 	if (!get_trust_pw_clear(name, machine_password,
 				&account_name, NULL))
 	{
@@ -738,7 +738,7 @@ static NTSTATUS get_trust_creds(const struct winbindd_domain *domain,
 		if (!our_domain) {
 			return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;			
 		}
-		
+
 		if (asprintf(machine_krb5_principal, "%s$@%s",
 			     account_name, our_domain->alt_name) == -1)
 		{
@@ -1342,7 +1342,7 @@ static bool find_new_dc(TALLOC_CTX *mem_ctx,
 
 	TALLOC_FREE(dcnames);
 	num_dcnames = 0;
-	
+
 	TALLOC_FREE(addrs);
 	num_addrs = 0;
 
@@ -1368,7 +1368,7 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 
 	/* we have to check the server affinity cache here since 
 	   later we selecte a DC based on response time and not preference */
-	   
+
 	/* Check the negative connection cache
 	   before talking to it. It going down may have
 	   triggered the reconnection. */
@@ -1618,26 +1618,26 @@ static bool set_dc_type_and_flags_trustinfo( struct winbindd_domain *domain )
 	TALLOC_CTX *mem_ctx = NULL;
 
 	DEBUG(5, ("set_dc_type_and_flags_trustinfo: domain %s\n", domain->name ));
-	
+
 	/* Our primary domain doesn't need to worry about trust flags.
 	   Force it to go through the network setup */
 	if ( domain->primary ) {		
 		return False;		
 	}
-	
+
 	our_domain = find_our_domain();
-	
+
 	if ( !connection_ok(our_domain) ) {
 		DEBUG(3,("set_dc_type_and_flags_trustinfo: No connection to our domain!\n"));		
 		return False;
 	}
 
 	/* This won't work unless our domain is AD */
-	 
+
 	if ( !our_domain->active_directory ) {
 		return False;
 	}
-	
+
 	/* Use DsEnumerateDomainTrusts to get us the trust direction
 	   and type */
 
@@ -1698,13 +1698,13 @@ static bool set_dc_type_and_flags_trustinfo( struct winbindd_domain *domain )
 
 			if ( !winbindd_can_contact_domain( domain) )
 				domain->internal = True;
-			
+
 			break;
 		}		
 	}
-	
+
 	talloc_destroy( mem_ctx );
-	
+
 	return domain->initialized;	
 }
 
@@ -1801,7 +1801,7 @@ no_dssetup:
 
 	result = rpccli_lsa_open_policy2(cli, mem_ctx, True, 
 					 SEC_RIGHTS_MAXIMUM_ALLOWED, &pol);
-		
+
 	if (NT_STATUS_IS_OK(result)) {
 		/* This particular query is exactly what Win2k clients use 
 		   to determine that the DC is active directory */
@@ -2334,7 +2334,7 @@ NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(3, ("Could not open schannel'ed NETLOGON pipe. Error "
 			  "was %s\n", nt_errstr(result)));
-			  
+
 		/* make sure we return something besides OK */
 		return !NT_STATUS_IS_OK(result) ? result : NT_STATUS_PIPE_NOT_AVAILABLE;
 	}
