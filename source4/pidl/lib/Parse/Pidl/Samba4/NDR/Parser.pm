@@ -1172,9 +1172,9 @@ sub ParsePtrPull($$$$$)
 	$self->pidl("}");
 }
 
-sub ParseStructPushPrimitives($$$$)
+sub ParseStructPushPrimitives($$$$$)
 {
-	my ($self, $struct, $varname, $env) = @_;
+	my ($self, $struct, $ndr, $varname, $env) = @_;
 
 	# see if the structure contains a conformant array. If it
 	# does, then it must be the last element of the structure, and
@@ -1198,39 +1198,39 @@ sub ParseStructPushPrimitives($$$$)
 				$size = ParseExpr($e->{LEVELS}[0]->{SIZE_IS}, $env, $e->{ORIGINAL});
 			}
 
-			$self->pidl("NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, $size));");
+			$self->pidl("NDR_CHECK(ndr_push_uint32($ndr, NDR_SCALARS, $size));");
 		} else {
-			$self->pidl("NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_string_array_size(ndr, $varname->$e->{NAME})));");
+			$self->pidl("NDR_CHECK(ndr_push_uint32($ndr, NDR_SCALARS, ndr_string_array_size($ndr, $varname->$e->{NAME})));");
 		}
 	}
 
-	$self->pidl("NDR_CHECK(ndr_push_align(ndr, $struct->{ALIGN}));");
+	$self->pidl("NDR_CHECK(ndr_push_align($ndr, $struct->{ALIGN}));");
 
 	if (defined($struct->{PROPERTIES}{relative_base})) {
 		# set the current offset as base for relative pointers
 		# and store it based on the toplevel struct/union
-		$self->pidl("NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, $varname, ndr->offset));");
+		$self->pidl("NDR_CHECK(ndr_push_setup_relative_base_offset1($ndr, $varname, $ndr->offset));");
 	}
 
-	$self->ParseElementPush($_, "ndr", $env, 1, 0) foreach (@{$struct->{ELEMENTS}});
+	$self->ParseElementPush($_, $ndr, $env, 1, 0) foreach (@{$struct->{ELEMENTS}});
 }
 
-sub ParseStructPushDeferred($$$)
+sub ParseStructPushDeferred($$$$)
 {
-	my ($self, $struct, $varname, $env) = @_;
+	my ($self, $struct, $ndr, $varname, $env) = @_;
 	if (defined($struct->{PROPERTIES}{relative_base})) {
 		# retrieve the current offset as base for relative pointers
 		# based on the toplevel struct/union
-		$self->pidl("NDR_CHECK(ndr_push_setup_relative_base_offset2(ndr, $varname));");
+		$self->pidl("NDR_CHECK(ndr_push_setup_relative_base_offset2($ndr, $varname));");
 	}
-	$self->ParseElementPush($_, "ndr", $env, 0, 1) foreach (@{$struct->{ELEMENTS}});
+	$self->ParseElementPush($_, $ndr, $env, 0, 1) foreach (@{$struct->{ELEMENTS}});
 }
 
 #####################################################################
 # parse a struct
-sub ParseStructPush($$$)
+sub ParseStructPush($$$$)
 {
-	my ($self, $struct, $varname) = @_;
+	my ($self, $struct, $ndr, $varname) = @_;
 	
 	return unless defined($struct->{ELEMENTS});
 
@@ -1244,13 +1244,13 @@ sub ParseStructPush($$$)
 
 	$self->pidl("if (ndr_flags & NDR_SCALARS) {");
 	$self->indent;
-	$self->ParseStructPushPrimitives($struct, $varname, $env);
+	$self->ParseStructPushPrimitives($struct, $ndr, $varname, $env);
 	$self->deindent;
 	$self->pidl("}");
 
 	$self->pidl("if (ndr_flags & NDR_BUFFERS) {");
 	$self->indent;
-	$self->ParseStructPushDeferred($struct, $varname, $env);
+	$self->ParseStructPushDeferred($struct, $ndr, $varname, $env);
 	$self->deindent;
 	$self->pidl("}");
 
@@ -1259,13 +1259,13 @@ sub ParseStructPush($$$)
 
 #####################################################################
 # generate a push function for an enum
-sub ParseEnumPush($$$)
+sub ParseEnumPush($$$$)
 {
-	my($self,$enum,$varname) = @_;
+	my($self,$enum,$ndr,$varname) = @_;
 	my($type_fn) = $enum->{BASE_TYPE};
 
 	$self->start_flags($enum);
-	$self->pidl("NDR_CHECK(ndr_push_$type_fn(ndr, NDR_SCALARS, $varname));");
+	$self->pidl("NDR_CHECK(ndr_push_$type_fn($ndr, NDR_SCALARS, $varname));");
 	$self->end_flags($enum);
 }
 
@@ -1332,14 +1332,14 @@ $typefamily{ENUM} = {
 
 #####################################################################
 # generate a push function for a bitmap
-sub ParseBitmapPush($$$)
+sub ParseBitmapPush($$$$)
 {
-	my($self,$bitmap,$varname) = @_;
+	my($self,$bitmap,$ndr,$varname) = @_;
 	my($type_fn) = $bitmap->{BASE_TYPE};
 
 	$self->start_flags($bitmap);
 
-	$self->pidl("NDR_CHECK(ndr_push_$type_fn(ndr, NDR_SCALARS, $varname));");
+	$self->pidl("NDR_CHECK(ndr_push_$type_fn($ndr, NDR_SCALARS, $varname));");
 
 	$self->end_flags($bitmap);
 }
@@ -1592,16 +1592,16 @@ sub ParseUnionNdrSize($$$)
 	$self->pidl("return ndr_size_union($varname, flags, level, (ndr_push_flags_fn_t)ndr_push_$name);");
 }
 
-sub ParseUnionPushPrimitives($$$)
+sub ParseUnionPushPrimitives($$$$)
 {
-	my ($self, $e, $varname) = @_;
+	my ($self, $e, $ndr ,$varname) = @_;
 
 	my $have_default = 0;
 
-	$self->pidl("int level = ndr_push_get_switch_value(ndr, $varname);");
+	$self->pidl("int level = ndr_push_get_switch_value($ndr, $varname);");
 
 	if (defined($e->{SWITCH_TYPE})) {
-		$self->pidl("NDR_CHECK(ndr_push_$e->{SWITCH_TYPE}(ndr, NDR_SCALARS, level));");
+		$self->pidl("NDR_CHECK(ndr_push_$e->{SWITCH_TYPE}($ndr, NDR_SCALARS, level));");
 	}
 
 	$self->pidl("switch (level) {");
@@ -1615,13 +1615,13 @@ sub ParseUnionPushPrimitives($$$)
 		if ($el->{TYPE} ne "EMPTY") {
 			$self->indent;
 			if (defined($e->{PROPERTIES}{relative_base})) {
-				$self->pidl("NDR_CHECK(ndr_push_align(ndr, $el->{ALIGN}));");
+				$self->pidl("NDR_CHECK(ndr_push_align($ndr, $el->{ALIGN}));");
 				# set the current offset as base for relative pointers
 				# and store it based on the toplevel struct/union
-				$self->pidl("NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, $varname, ndr->offset));");
+				$self->pidl("NDR_CHECK(ndr_push_setup_relative_base_offset1($ndr, $varname, $ndr->offset));");
 			}
 			$self->DeclareArrayVariables($el);
-			$self->ParseElementPush($el, "ndr", {$el->{NAME} => "$varname->$el->{NAME}"}, 1, 0);
+			$self->ParseElementPush($el, $ndr, {$el->{NAME} => "$varname->$el->{NAME}"}, 1, 0);
 			$self->deindent;
 		}
 		$self->pidl("break; }");
@@ -1629,23 +1629,23 @@ sub ParseUnionPushPrimitives($$$)
 	}
 	if (! $have_default) {
 		$self->pidl("default:");
-		$self->pidl("\treturn ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, \"Bad switch value \%u\", level);");
+		$self->pidl("\treturn ndr_push_error($ndr, NDR_ERR_BAD_SWITCH, \"Bad switch value \%u\", level);");
 	}
 	$self->deindent;
 	$self->pidl("}");
 }
 
-sub ParseUnionPushDeferred($$$)
+sub ParseUnionPushDeferred($$$$)
 {
-	my ($self,$e,$varname) = @_;
+	my ($self,$e,$ndr,$varname) = @_;
 
 	my $have_default = 0;
 
-	$self->pidl("int level = ndr_push_get_switch_value(ndr, $varname);");
+	$self->pidl("int level = ndr_push_get_switch_value($ndr, $varname);");
 	if (defined($e->{PROPERTIES}{relative_base})) {
 		# retrieve the current offset as base for relative pointers
 		# based on the toplevel struct/union
-		$self->pidl("NDR_CHECK(ndr_push_setup_relative_base_offset2(ndr, $varname));");
+		$self->pidl("NDR_CHECK(ndr_push_setup_relative_base_offset2($ndr, $varname));");
 	}
 	$self->pidl("switch (level) {");
 	$self->indent;
@@ -1657,7 +1657,7 @@ sub ParseUnionPushDeferred($$$)
 		$self->pidl("$el->{CASE}:");
 		if ($el->{TYPE} ne "EMPTY") {
 			$self->indent;
-			$self->ParseElementPush($el, "ndr", {$el->{NAME} => "$varname->$el->{NAME}"}, 0, 1);
+			$self->ParseElementPush($el, $ndr, {$el->{NAME} => "$varname->$el->{NAME}"}, 0, 1);
 			$self->deindent;
 		}
 		$self->pidl("break;");
@@ -1665,7 +1665,7 @@ sub ParseUnionPushDeferred($$$)
 	}
 	if (! $have_default) {
 		$self->pidl("default:");
-		$self->pidl("\treturn ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, \"Bad switch value \%u\", level);");
+		$self->pidl("\treturn ndr_push_error($ndr, NDR_ERR_BAD_SWITCH, \"Bad switch value \%u\", level);");
 	}
 	$self->deindent;
 	$self->pidl("}");
@@ -1673,21 +1673,21 @@ sub ParseUnionPushDeferred($$$)
 
 #####################################################################
 # parse a union - push side
-sub ParseUnionPush($$$)
+sub ParseUnionPush($$$$)
 {
-	my ($self,$e,$varname) = @_;
+	my ($self,$e,$ndr,$varname) = @_;
 	my $have_default = 0;
 
 	$self->start_flags($e);
 
 	$self->pidl("if (ndr_flags & NDR_SCALARS) {");
 	$self->indent;
-	$self->ParseUnionPushPrimitives($e, $varname);
+	$self->ParseUnionPushPrimitives($e, $ndr, $varname);
 	$self->deindent;
 	$self->pidl("}");
 	$self->pidl("if (ndr_flags & NDR_BUFFERS) {");
 	$self->indent;
-	$self->ParseUnionPushDeferred($e, $varname);
+	$self->ParseUnionPushDeferred($e, $ndr, $varname);
 	$self->deindent;
 	$self->pidl("}");
 	$self->end_flags($e);
@@ -1883,11 +1883,11 @@ $typefamily{UNION} = {
 	
 #####################################################################
 # parse a typedef - push side
-sub ParseTypedefPush($$$)
+sub ParseTypedefPush($$$$)
 {
-	my($self,$e,$varname) = @_;
+	my($self,$e,$ndr,$varname) = @_;
 
-	$typefamily{$e->{DATA}->{TYPE}}->{PUSH_FN_BODY}->($self, $e->{DATA}, $varname);
+	$typefamily{$e->{DATA}->{TYPE}}->{PUSH_FN_BODY}->($self, $e->{DATA}, $ndr, $varname);
 }
 
 #####################################################################
@@ -2370,7 +2370,7 @@ sub ParseTypePush($$$$$)
 
 	# save the old relative_base_offset
 	$self->pidl("uint32_t _save_relative_base_offset = ndr_push_get_relative_base_offset(ndr);") if defined(has_property($e, "relative_base"));
-	$typefamily{$e->{TYPE}}->{PUSH_FN_BODY}->($self, $e, $varname);
+	$typefamily{$e->{TYPE}}->{PUSH_FN_BODY}->($self, $e, "ndr", $varname);
 	# restore the old relative_base_offset
 	$self->pidl("ndr_push_restore_relative_base_offset(ndr, _save_relative_base_offset);") if defined(has_property($e, "relative_base"));
 }
