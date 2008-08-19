@@ -331,12 +331,12 @@ sub ParseArrayPullHeader($$$$$$)
 	} else {
 		$length = $size = ParseExprExt($l->{SIZE_IS}, $env, $e->{ORIGINAL},
 			check_null_pointer($e, $env, sub { $self->pidl(shift); },
-					   "return ndr_pull_error(ndr, NDR_ERR_INVALID_POINTER, \"NULL Pointer for size_is()\");"),
+					   "return ndr_pull_error($ndr, NDR_ERR_INVALID_POINTER, \"NULL Pointer for size_is()\");"),
 			check_fully_dereferenced($e, $env));
 	}
 
 	if ((!$l->{IS_SURROUNDING}) and $l->{IS_CONFORMANT}) {
-		$self->pidl("NDR_CHECK(ndr_pull_array_size(ndr, " . get_pointer_to($var_name) . "));");
+		$self->pidl("NDR_CHECK(ndr_pull_array_size($ndr, " . get_pointer_to($var_name) . "));");
 	}
 
 	if ($l->{IS_VARYING}) {
@@ -357,9 +357,9 @@ sub ParseArrayPullHeader($$$$$$)
 		$self->defer_indent;
 		my $size = ParseExprExt($l->{SIZE_IS}, $env, $e->{ORIGINAL},
 			check_null_pointer($e, $env, sub { $self->defer(shift); },
-					   "return ndr_pull_error(ndr, NDR_ERR_INVALID_POINTER, \"NULL Pointer for size_is()\");"),
+					   "return ndr_pull_error($ndr, NDR_ERR_INVALID_POINTER, \"NULL Pointer for size_is()\");"),
 			check_fully_dereferenced($e, $env));
-		$self->defer("NDR_CHECK(ndr_check_array_size(ndr, (void*)" . get_pointer_to($var_name) . ", $size));");
+		$self->defer("NDR_CHECK(ndr_check_array_size($ndr, (void*)" . get_pointer_to($var_name) . ", $size));");
 		$self->defer_deindent;
 		$self->defer("}");
 	}
@@ -369,9 +369,9 @@ sub ParseArrayPullHeader($$$$$$)
 		$self->defer_indent;
 		my $length = ParseExprExt($l->{LENGTH_IS}, $env, $e->{ORIGINAL}, 
 			check_null_pointer($e, $env, sub { $self->defer(shift); },
-					   "return ndr_pull_error(ndr, NDR_ERR_INVALID_POINTER, \"NULL Pointer for length_is()\");"),
+					   "return ndr_pull_error($ndr, NDR_ERR_INVALID_POINTER, \"NULL Pointer for length_is()\");"),
 			check_fully_dereferenced($e, $env));
-		$self->defer("NDR_CHECK(ndr_check_array_length(ndr, (void*)" . get_pointer_to($var_name) . ", $length));");
+		$self->defer("NDR_CHECK(ndr_check_array_length($ndr, (void*)" . get_pointer_to($var_name) . ", $length));");
 		$self->defer_deindent;
 		$self->defer("}");
 	}
@@ -569,7 +569,7 @@ sub ParseElementPushLevel
 			$self->pidl("if ($var_name) {");
 			$self->indent;
 			if ($l->{POINTER_TYPE} eq "relative") {
-				$self->pidl("NDR_CHECK(ndr_push_relative_ptr2(ndr, $var_name));");
+				$self->pidl("NDR_CHECK(ndr_push_relative_ptr2($ndr, $var_name));");
 			}
 		}
 		$var_name = get_value_of($var_name);
@@ -816,7 +816,7 @@ sub ParseSwitchPull($$$$$$)
 	my($self,$e,$l,$ndr,$var_name,$env) = @_;
 	my $switch_var = ParseExprExt($l->{SWITCH_IS}, $env, $e->{ORIGINAL}, 
 		check_null_pointer($e, $env, sub { $self->pidl(shift); },
-				   "return ndr_pull_error(ndr, NDR_ERR_INVALID_POINTER, \"NULL Pointer for switch_is()\");"),
+				   "return ndr_pull_error($ndr, NDR_ERR_INVALID_POINTER, \"NULL Pointer for switch_is()\");"),
 		check_fully_dereferenced($e, $env));
 
 	$var_name = get_pointer_to($var_name);
@@ -830,7 +830,7 @@ sub ParseSwitchPush($$$$$$)
 	my($self,$e,$l,$ndr,$var_name,$env) = @_;
 	my $switch_var = ParseExprExt($l->{SWITCH_IS}, $env, $e->{ORIGINAL}, 
 		check_null_pointer($e, $env, sub { $self->pidl(shift); },
-				   "return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, \"NULL Pointer for switch_is()\");"),
+				   "return ndr_push_error($ndr, NDR_ERR_INVALID_POINTER, \"NULL Pointer for switch_is()\");"),
 		check_fully_dereferenced($e, $env));
 
 	$var_name = get_pointer_to($var_name);
@@ -1022,8 +1022,8 @@ sub ParseElementPullLevel
 
 			if ($l->{POINTER_TYPE} eq "relative") {
 				$self->pidl("uint32_t _relative_save_offset;");
-				$self->pidl("_relative_save_offset = ndr->offset;");
-				$self->pidl("NDR_CHECK(ndr_pull_relative_ptr2(ndr, $var_name));");
+				$self->pidl("_relative_save_offset = $ndr->offset;");
+				$self->pidl("NDR_CHECK(ndr_pull_relative_ptr2($ndr, $var_name));");
 			}
 		}
 
@@ -1036,7 +1036,7 @@ sub ParseElementPullLevel
 
 		if ($l->{POINTER_TYPE} ne "ref") {
     			if ($l->{POINTER_TYPE} eq "relative") {
-				$self->pidl("ndr->offset = _relative_save_offset;");
+				$self->pidl("$ndr->offset = _relative_save_offset;");
 			}
 			$self->deindent;
 			$self->pidl("}");
@@ -1131,7 +1131,7 @@ sub ParsePtrPull($$$$$)
 	if ($l->{POINTER_TYPE} eq "ref" and $l->{LEVEL} eq "TOP") {
 
 		if (!$next_is_array and !$next_is_string) {
-			$self->pidl("if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {");
+			$self->pidl("if ($ndr->flags & LIBNDR_FLAG_REF_ALLOC) {");
 			$self->pidl("\tNDR_PULL_ALLOC($ndr, $var_name);"); 
 			$self->pidl("}");
 		}
@@ -2068,7 +2068,7 @@ sub AllocateArrayLevel($$$$$$)
 	    $pl->{TYPE} eq "POINTER" and 
 	    $pl->{POINTER_TYPE} eq "ref"
 	    and not $l->{IS_ZERO_TERMINATED}) {
-		$self->pidl("if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {");
+		$self->pidl("if ($ndr->flags & LIBNDR_FLAG_REF_ALLOC) {");
 		$self->pidl("\tNDR_PULL_ALLOC_N($ndr, $var, $size);");
 		$self->pidl("}");
 		if (grep(/in/,@{$e->{DIRECTION}}) and
