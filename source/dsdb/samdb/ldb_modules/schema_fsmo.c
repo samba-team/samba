@@ -125,6 +125,7 @@ static int schema_fsmo_init(struct ldb_module *module)
 				       "schema_fsmo_init: dsdb_schema load failed: %s",
 				       error_string);
 		talloc_free(mem_ctx);
+		return ret;
 	}
 
 	/* dsdb_set_schema() steal schema into the ldb_context */
