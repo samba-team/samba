@@ -68,5 +68,12 @@ for a in unix fortuna egd ;do
 	cmp crypto-test crypto-test2 && { echo "rand output same!" ; exit 1; }
 done
 
+./example_evp_cipher 1 ${srcdir}/test_crypto.in test-out-1 || \
+    { echo "1 failed" ; exit 1; }
+
+for a in 7 15 16 17 31 32 33 ; do
+    ./example_evp_cipher $a ${srcdir}/test_crypto.in test-out-$a
+    cmp test-out-1 test-out-$a || { echo "cmp $a failed" ; exit 1; }
+done
 
 exit 0
