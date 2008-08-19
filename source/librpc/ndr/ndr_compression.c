@@ -145,80 +145,6 @@ static enum ndr_err_code ndr_pull_compression_mszip_chunk(struct ndr_pull *ndrpu
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_compression_mszip(struct ndr_pull *subndr,
-					   struct ndr_pull **_comndr,
-					   ssize_t decompressed_len)
-{
-	struct ndr_push *ndrpush;
-	struct ndr_pull *comndr;
-	DATA_BLOB uncompressed;
-	uint32_t payload_header[4];
-	uint32_t payload_size;
-	uint32_t payload_offset;
-	uint8_t *payload;
-	z_stream z;
-	bool last = false;
-
-	ndrpush = ndr_push_init_ctx(subndr, subndr->iconv_convenience);
-	NDR_ERR_HAVE_NO_MEMORY(ndrpush);
-
-	ZERO_STRUCT(z);
-
-	while (!last) {
-		NDR_CHECK(ndr_pull_compression_mszip_chunk(subndr, ndrpush, &z, &last));
-	}
-
-	uncompressed = ndr_push_blob(ndrpush);
-
-	if (uncompressed.length != decompressed_len) {
-		return ndr_pull_error(subndr, NDR_ERR_COMPRESSION, "Bad MSZIP uncompressed_len [%u] != [%d] (PULL)",
-				      (int)uncompressed.length, (int)decompressed_len);
-	}
-
-	comndr = talloc_zero(subndr, struct ndr_pull);
-	NDR_ERR_HAVE_NO_MEMORY(comndr);
-	comndr->flags		= subndr->flags;
-	comndr->current_mem_ctx	= subndr->current_mem_ctx;
-
-	comndr->data		= uncompressed.data;
-	comndr->data_size	= uncompressed.length;
-	comndr->offset		= 0;
-
-	comndr->iconv_convenience = talloc_reference(comndr, subndr->iconv_convenience);
-
-	NDR_CHECK(ndr_pull_uint32(comndr, NDR_SCALARS, &payload_header[0]));
-	NDR_CHECK(ndr_pull_uint32(comndr, NDR_SCALARS, &payload_header[1]));
-	NDR_CHECK(ndr_pull_uint32(comndr, NDR_SCALARS, &payload_header[2]));
-	NDR_CHECK(ndr_pull_uint32(comndr, NDR_SCALARS, &payload_header[3]));
-
-	if (payload_header[0] != 0x00081001) {
-		return ndr_pull_error(subndr, NDR_ERR_COMPRESSION, "Bad MSZIP payload_header[0] [0x%08X] != [0x00081001] (PULL)",
-				      payload_header[0]);
-	}
-	if (payload_header[1] != 0xCCCCCCCC) {
-		return ndr_pull_error(subndr, NDR_ERR_COMPRESSION, "Bad MSZIP payload_header[1] [0x%08X] != [0xCCCCCCCC] (PULL)",
-				      payload_header[1]);
-	}
-
-	payload_size = payload_header[2];
-
-	if (payload_header[3] != 0x00000000) {
-		return ndr_pull_error(subndr, NDR_ERR_COMPRESSION, "Bad MSZIP payload_header[3] [0x%08X] != [0x00000000] (PULL)",
-				      payload_header[3]);
-	}
-
-	payload_offset = comndr->offset;
-	NDR_CHECK(ndr_pull_advance(comndr, payload_size));
-	payload = comndr->data + payload_offset;
-
-	comndr->data		= payload;
-	comndr->data_size	= payload_size;
-	comndr->offset		= 0;
-
-	*_comndr = comndr;
-	return NDR_ERR_SUCCESS;
-}
-
 static enum ndr_err_code ndr_push_compression_mszip(struct ndr_push *subndr,
 					   struct ndr_push *comndr)
 {
@@ -268,9 +194,20 @@ static enum ndr_err_code ndr_pull_compression_xpress_chunk(struct ndr_pull *ndrp
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_compression_xpress(struct ndr_pull *subndr,
-					    struct ndr_pull **_comndr,
-					    ssize_t decompressed_len)
+static enum ndr_err_code ndr_push_compression_xpress(struct ndr_push *subndr,
+					    struct ndr_push *comndr)
+{
+	return ndr_push_error(subndr, NDR_ERR_COMPRESSION, "XPRESS compression is not supported yet (PUSH)");
+}
+
+/*
+  handle compressed subcontext buffers, which in midl land are user-marshalled, but
+  we use magic in pidl to make them easier to cope with
+*/
+enum ndr_err_code ndr_pull_compression_start(struct ndr_pull *subndr,
+				    struct ndr_pull **_comndr,
+				    enum ndr_compression_alg compression_alg,
+				    ssize_t decompressed_len)
 {
 	struct ndr_push *ndrpush;
 	struct ndr_pull *comndr;
@@ -280,18 +217,34 @@ static enum ndr_err_code ndr_pull_compression_xpress(struct ndr_pull *subndr,
 	uint32_t payload_offset;
 	uint8_t *payload;
 	bool last = false;
+	z_stream z;
 
 	ndrpush = ndr_push_init_ctx(subndr, subndr->iconv_convenience);
 	NDR_ERR_HAVE_NO_MEMORY(ndrpush);
 
-	while (!last) {
-		NDR_CHECK(ndr_pull_compression_xpress_chunk(subndr, ndrpush, &last));
+	switch (compression_alg) {
+	case NDR_COMPRESSION_MSZIP:
+		ZERO_STRUCT(z);
+		while (!last) {
+			NDR_CHECK(ndr_pull_compression_mszip_chunk(subndr, ndrpush, &z, &last));
+		}
+		break;
+
+	case NDR_COMPRESSION_XPRESS:
+		while (!last) {
+			NDR_CHECK(ndr_pull_compression_xpress_chunk(subndr, ndrpush, &last));
+		}
+		break;
+
+	default:
+		return ndr_pull_error(subndr, NDR_ERR_COMPRESSION, "Bad compression algorithm %d (PULL)",
+				      compression_alg);
 	}
 
 	uncompressed = ndr_push_blob(ndrpush);
 	if (uncompressed.length != decompressed_len) {
 		return ndr_pull_error(subndr, NDR_ERR_COMPRESSION,
-				      "Bad XPRESS uncompressed_len [%u] != [%u](0x%08X) (PULL)",
+				      "Bad uncompressed_len [%u] != [%u](0x%08X) (PULL)",
 				      (int)uncompressed.length,
 				      (int)decompressed_len,
 				      (int)decompressed_len);
@@ -341,33 +294,6 @@ static enum ndr_err_code ndr_pull_compression_xpress(struct ndr_pull *subndr,
 	comndr->offset		= 0;
 
 	*_comndr = comndr;
-	return NDR_ERR_SUCCESS;
-}
-
-static enum ndr_err_code ndr_push_compression_xpress(struct ndr_push *subndr,
-					    struct ndr_push *comndr)
-{
-	return ndr_push_error(subndr, NDR_ERR_COMPRESSION, "XPRESS compression is not supported yet (PUSH)");
-}
-
-/*
-  handle compressed subcontext buffers, which in midl land are user-marshalled, but
-  we use magic in pidl to make them easier to cope with
-*/
-enum ndr_err_code ndr_pull_compression_start(struct ndr_pull *subndr,
-				    struct ndr_pull **_comndr,
-				    enum ndr_compression_alg compression_alg,
-				    ssize_t decompressed_len)
-{
-	switch (compression_alg) {
-	case NDR_COMPRESSION_MSZIP:
-		return ndr_pull_compression_mszip(subndr, _comndr, decompressed_len);
-	case NDR_COMPRESSION_XPRESS:
-		return ndr_pull_compression_xpress(subndr, _comndr, decompressed_len);
-	default:
-		return ndr_pull_error(subndr, NDR_ERR_COMPRESSION, "Bad compression algorithm %d (PULL)", 
-				      compression_alg);
-	}
 	return NDR_ERR_SUCCESS;
 }
 
