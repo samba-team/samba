@@ -393,6 +393,21 @@ static void set_auth_errors(struct winbindd_response *resp, NTSTATUS result)
 	resp->data.auth.pam_error = nt_status_to_pam(result);
 }
 
+static void fill_in_password_policy(struct winbindd_response *r,
+				    const struct samr_DomInfo1 *p)
+{
+	r->data.auth.policy.min_length_password =
+		p->min_password_length;
+	r->data.auth.policy.password_history =
+		p->password_history_length;
+	r->data.auth.policy.password_properties =
+		p->password_properties;
+	r->data.auth.policy.expire	=
+		nt_time_to_unix_abs((NTTIME *)&(p->max_password_age));
+	r->data.auth.policy.min_passwordage =
+		nt_time_to_unix_abs((NTTIME *)&(p->min_password_age));
+}
+
 static NTSTATUS fillup_password_policy(struct winbindd_domain *domain,
 				       struct winbindd_cli_state *state)
 {
@@ -413,16 +428,7 @@ static NTSTATUS fillup_password_policy(struct winbindd_domain *domain,
 		return status;
 	}
 
-	state->response.data.auth.policy.min_length_password =
-		password_policy.min_password_length;
-	state->response.data.auth.policy.password_history =
-		password_policy.password_history_length;
-	state->response.data.auth.policy.password_properties =
-		password_policy.password_properties;
-	state->response.data.auth.policy.expire	=
-		nt_time_to_unix_abs((NTTIME *)&(password_policy.max_password_age));
-	state->response.data.auth.policy.min_passwordage =
-		nt_time_to_unix_abs((NTTIME *)&(password_policy.min_password_age));
+	fill_in_password_policy(&state->response, &password_policy);
 
 	return NT_STATUS_OK;
 }
@@ -2068,16 +2074,8 @@ enum winbindd_result winbindd_dual_pam_chauthtok(struct winbindd_domain *contact
  	/* Windows 2003 returns NT_STATUS_PASSWORD_RESTRICTION */
 
 	if (NT_STATUS_EQUAL(result, NT_STATUS_PASSWORD_RESTRICTION) ) {
-		state->response.data.auth.policy.min_length_password =
-			info->min_password_length;
-		state->response.data.auth.policy.password_history =
-			info->password_history_length;
-		state->response.data.auth.policy.password_properties =
-			info->password_properties;
-		state->response.data.auth.policy.expire =
-			nt_time_to_unix_abs((NTTIME *)&info->max_password_age);
-		state->response.data.auth.policy.min_passwordage =
-			nt_time_to_unix_abs((NTTIME *)&info->min_password_age);
+
+		fill_in_password_policy(&state->response, info);
 
 		state->response.data.auth.reject_reason =
 			reject->reason;
