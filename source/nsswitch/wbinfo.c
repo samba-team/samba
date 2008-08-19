@@ -879,6 +879,33 @@ static bool wbinfo_lookupname(const char *full_name)
 	return true;
 }
 
+static char *wbinfo_prompt_pass(const char *prefix,
+				const char *username)
+{
+	char *prompt;
+	const char *ret = NULL;
+
+	prompt = talloc_asprintf(talloc_tos(), "Enter %s's ", username);
+	if (!prompt) {
+		return NULL;
+	}
+	if (prefix) {
+		prompt = talloc_asprintf_append(prompt, "%s ", prefix);
+		if (!prompt) {
+			return NULL;
+		}
+	}
+	prompt = talloc_asprintf_append(prompt, "password: ");
+	if (!prompt) {
+		return NULL;
+	}
+
+	ret = getpass(prompt);
+	TALLOC_FREE(prompt);
+
+	return SMB_STRDUP(ret);
+}
+
 /* Authenticate a user with a plaintext password */
 
 static bool wbinfo_auth_krb5(char *username, const char *cctype, uint32 flags)
