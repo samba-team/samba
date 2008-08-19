@@ -1,0 +1,10 @@
+dn: @OPTIONS
+checkBaseOnSearch: TRUE
+
+dn: @INDEXLIST
+@IDXATTR: cn
+
+dn: @ATTRIBUTES
+cn: CASE_INSENSITIVE
+dn: CASE_INSENSITIVE
+
