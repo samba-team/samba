@@ -831,8 +831,10 @@ int
 EVP_CipherUpdate(EVP_CIPHER_CTX *ctx, void *out, int *outlen,
 		 void *in, size_t inlen)
 {
-    int ret;
+    int ret, left, blocksize;
     
+    *outlen = 0;
+
     /**
      * If there in no spare bytes in the left from last Update and the
      * input length is on the block boundery, the EVP_CipherUpdate()
@@ -848,8 +850,50 @@ EVP_CipherUpdate(EVP_CIPHER_CTX *ctx, void *out, int *outlen,
 	    *outlen = 0;
 	return ret;
     }
-    ctx->buf_len += (inlen & ctx->block_mask);
-    return 0;
+
+
+    blocksize = EVP_CIPHER_CTX_block_size(ctx);
+    left = blocksize - ctx->buf_len;
+    assert(left > 0);
+
+    if (ctx->buf_len) {
+
+	/* if total buffer is smaller then input, store locally */
+	if (inlen < left) {
+	    memcpy(ctx->buf + ctx->buf_len, in, inlen);
+	    ctx->buf_len += inlen;
+	    return 1;
+	}
+	
+	/* fill in local buffer and encrypt */
+	memcpy(ctx->buf + ctx->buf_len, in, left);
+	ret = (*ctx->cipher->do_cipher)(ctx, out, ctx->buf, blocksize);
+	memset(ctx->buf, 0, blocksize);
+	if (ret != 1)
+	    return ret;
+
+	*outlen += blocksize;
+	inlen -= left;
+	in = ((unsigned char *)in) + left;
+	out = ((unsigned char *)out) + blocksize;
+	ctx->buf_len = 0;
+    }
+
+    if (inlen) {
+	ctx->buf_len = (inlen & ctx->block_mask);
+	inlen &= ~ctx->block_mask;
+	
+	ret = (*ctx->cipher->do_cipher)(ctx, out, in, inlen);
+	if (ret != 1)
+	    return ret;
+
+	*outlen += inlen;
+
+	in = ((unsigned char *)in) + inlen;
+	memcpy(ctx->buf, in, ctx->buf_len);
+    }
+
+    return 1;
 }
 
 /**
@@ -872,9 +916,27 @@ EVP_CipherUpdate(EVP_CIPHER_CTX *ctx, void *out, int *outlen,
 int
 EVP_CipherFinal_ex(EVP_CIPHER_CTX *ctx, void *out, int *outlen)
 {
-    if (ctx->buf_len == 0)
-	return 1;
-    return 0;
+    *outlen = 0;
+
+    if (ctx->buf_len) {
+	int ret, left, blocksize;
+
+	blocksize = EVP_CIPHER_CTX_block_size(ctx);
+
+	left = blocksize - ctx->buf_len;
+	assert(left > 0);
+
+	/* zero fill local buffer */
+	memset(ctx->buf + ctx->buf_len, 0, left);
+	ret = (*ctx->cipher->do_cipher)(ctx, out, ctx->buf, blocksize);
+	memset(ctx->buf, 0, blocksize);
+	if (ret != 1)
+	    return ret;
+
+	*outlen += blocksize;
+    }
+
+    return 1;
 }
 
 /**
