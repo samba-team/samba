@@ -314,23 +314,31 @@ static void dreplsrv_op_pull_source_get_changes_recv(struct rpc_request *req)
 	if (*r->out.level == 1) {
 		ctr_level = 1;
 		ctr1 = &r->out.ctr.ctr1;
-	} else if (*r->out.level == 2) {
+	} else if (*r->out.level == 2 &&
+		   r->out.ctr.ctr2.mszip1.ts) {
 		ctr_level = 1;
-		ctr1 = r->out.ctr.ctr2.mszip1.ctr1;
+		ctr1 = &r->out.ctr.ctr2.mszip1.ts->ctr1;
 	} else if (*r->out.level == 6) {
 		ctr_level = 6;
 		ctr6 = &r->out.ctr.ctr6;
 	} else if (*r->out.level == 7 &&
 		   r->out.ctr.ctr7.level == 6 &&
-		   r->out.ctr.ctr7.type == DRSUAPI_COMPRESSION_TYPE_MSZIP) {
+		   r->out.ctr.ctr7.type == DRSUAPI_COMPRESSION_TYPE_MSZIP &&
+		   r->out.ctr.ctr7.ctr.mszip6.ts) {
 		ctr_level = 6;
-		ctr6 = r->out.ctr.ctr7.ctr.mszip6.ctr6;
+		ctr6 = &r->out.ctr.ctr7.ctr.mszip6.ts->ctr6;
 	} else if (*r->out.level == 7 &&
 		   r->out.ctr.ctr7.level == 6 &&
-		   r->out.ctr.ctr7.type == DRSUAPI_COMPRESSION_TYPE_XPRESS) {
+		   r->out.ctr.ctr7.type == DRSUAPI_COMPRESSION_TYPE_XPRESS &&
+		   r->out.ctr.ctr7.ctr.xpress6.ts) {
 		ctr_level = 6;
-		ctr6 = r->out.ctr.ctr7.ctr.xpress6.ctr6;
+		ctr6 = &r->out.ctr.ctr7.ctr.xpress6.ts->ctr6;
 	} else {
+		composite_error(c, werror_to_ntstatus(WERR_BAD_NET_RESP));
+		return;
+	}
+
+	if (!ctr1 && !ctr6) {
 		composite_error(c, werror_to_ntstatus(WERR_BAD_NET_RESP));
 		return;
 	}
