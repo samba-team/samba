@@ -771,8 +771,7 @@ static int pam_winbind_request_log(struct pwb_context *ctx,
 /**
  * send a password expiry message if required
  *
- * @param pamh PAM handle
- * @param ctrl PAM winbind options.
+ * @param ctx PAM winbind context.
  * @param next_change expected (calculated) next expiry date.
  * @param already_expired pointer to a boolean to indicate if the password is
  *        already expired.
@@ -833,8 +832,7 @@ static bool _pam_send_password_expiry_message(struct pwb_context *ctx,
 /**
  * Send a warning if the password expires in the near future
  *
- * @param pamh PAM handle
- * @param ctrl PAM winbind options.
+ * @param ctx PAM winbind context.
  * @param response The full authentication response structure.
  * @param already_expired boolean, is the pwd already expired?
  *
@@ -923,8 +921,7 @@ static bool safe_append_string(char *dest,
 /**
  * Convert a names into a SID string, appending it to a buffer.
  *
- * @param pamh PAM handle
- * @param ctrl PAM winbind options.
+ * @param ctx PAM winbind context.
  * @param user User in PAM request.
  * @param name Name to convert.
  * @param sid_list_buffer Where to append the string sid.
@@ -979,8 +976,7 @@ static bool winbind_name_to_sid_string(struct pwb_context *ctx,
 /**
  * Convert a list of names into a list of sids.
  *
- * @param pamh PAM handle
- * @param ctrl PAM winbind options.
+ * @param ctx PAM winbind context.
  * @param user User in PAM request.
  * @param name_list List of names or string sids, separated by commas.
  * @param sid_list_buffer Where to put the list of string sids.
@@ -1044,8 +1040,7 @@ out:
 /**
  * put krb5ccname variable into environment
  *
- * @param pamh PAM handle
- * @param ctrl PAM winbind options.
+ * @param ctx PAM winbind context.
  * @param krb5ccname env variable retrieved from winbindd.
  *
  * @return void.
@@ -1083,8 +1078,7 @@ static void _pam_setup_krb5_env(struct pwb_context *ctx,
 /**
  * Set string into the PAM stack.
  *
- * @param pamh PAM handle
- * @param ctrl PAM winbind options.
+ * @param ctx PAM winbind context.
  * @param data_name Key name for pam_set_data.
  * @param value String value.
  *
@@ -1115,8 +1109,7 @@ static void _pam_set_data_string(struct pwb_context *ctx,
 /**
  * Set info3 strings into the PAM stack.
  *
- * @param pamh PAM handle
- * @param ctrl PAM winbind options.
+ * @param ctx PAM winbind context.
  * @param data_name Key name for pam_set_data.
  * @param value String value.
  *
@@ -1155,8 +1148,7 @@ static void _pam_free_data_info3(pam_handle_t *pamh)
 /**
  * Send PAM_ERROR_MSG for cached or grace logons.
  *
- * @param pamh PAM handle
- * @param ctrl PAM winbind options.
+ * @param ctx PAM winbind context.
  * @param username User in PAM request.
  * @param info3_user_flgs Info3 flags containing logon type bits.
  *
@@ -1193,8 +1185,7 @@ static void _pam_warn_logon_type(struct pwb_context *ctx,
 /**
  * Send PAM_ERROR_MSG for krb5 errors.
  *
- * @param pamh PAM handle
- * @param ctrl PAM winbind options.
+ * @param ctx PAM winbind context.
  * @param username User in PAM request.
  * @param info3_user_flgs Info3 flags containing logon type bits.
  *
@@ -1942,8 +1933,7 @@ static int get_warn_pwd_expire_from_config(struct pwb_context *ctx)
 /**
  * Retrieve the winbind separator.
  *
- * @param pamh PAM handle
- * @param ctrl PAM winbind options.
+ * @param ctx PAM winbind context.
  *
  * @return string separator character. NULL on failure.
  */
@@ -1967,8 +1957,7 @@ static char winbind_get_separator(struct pwb_context *ctx)
 /**
  * Convert a upn to a name.
  *
- * @param pamh PAM handle
- * @param ctrl PAM winbind options.
+ * @param ctx PAM winbind context.
  * @param upn  USer UPN to be trabslated.
  *
  * @return converted name. NULL pointer on failure. Caller needs to free.
@@ -2443,8 +2432,7 @@ out:
  * evaluate whether we need to re-authenticate with kerberos after a
  * password change
  *
- * @param pamh PAM handle
- * @param ctrl PAM winbind options.
+ * @param ctx PAM winbind context.
  * @param user The username
  *
  * @return boolean Returns true if required, false if not.
