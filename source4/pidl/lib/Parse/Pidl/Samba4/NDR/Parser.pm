@@ -543,7 +543,7 @@ sub ParseElementPushLevel
 			$self->ParseElementPushLevel($e, GetNextLevel($e, $l), $subndr, $var_name, $env, 1, 1);
 			$self->ParseSubcontextPushEnd($e, $l, $ndr, $env);
 		} elsif ($l->{TYPE} eq "POINTER") {
-			$self->ParsePtrPush($e, $l, $var_name);
+			$self->ParsePtrPush($e, $l, $ndr, $var_name);
 		} elsif ($l->{TYPE} eq "ARRAY") {
 			my $length = $self->ParseArrayPushHeader($e, $l, $ndr, $var_name, $env); 
 
@@ -647,25 +647,25 @@ sub ParseElementPush($$$$$$)
 
 #####################################################################
 # parse a pointer in a struct element or function
-sub ParsePtrPush($$$$)
+sub ParsePtrPush($$$$$)
 {
-	my ($self,$e,$l,$var_name) = @_;
+	my ($self,$e,$l,$ndr,$var_name) = @_;
 
 	if ($l->{POINTER_TYPE} eq "ref") {
 		$self->pidl("if ($var_name == NULL) {");
 		$self->indent;
-		$self->pidl("return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, \"NULL [ref] pointer\");");
+		$self->pidl("return ndr_push_error($ndr, NDR_ERR_INVALID_POINTER, \"NULL [ref] pointer\");");
 		$self->deindent;
 		$self->pidl("}");
 		if ($l->{LEVEL} eq "EMBEDDED") {
 			$self->pidl("NDR_CHECK(ndr_push_ref_ptr(ndr));");
 		}
 	} elsif ($l->{POINTER_TYPE} eq "relative") {
-		$self->pidl("NDR_CHECK(ndr_push_relative_ptr1(ndr, $var_name));");
+		$self->pidl("NDR_CHECK(ndr_push_relative_ptr1($ndr, $var_name));");
 	} elsif ($l->{POINTER_TYPE} eq "unique") {
-		$self->pidl("NDR_CHECK(ndr_push_unique_ptr(ndr, $var_name));");
+		$self->pidl("NDR_CHECK(ndr_push_unique_ptr($ndr, $var_name));");
 	} elsif ($l->{POINTER_TYPE} eq "full") {
-		$self->pidl("NDR_CHECK(ndr_push_full_ptr(ndr, $var_name));");
+		$self->pidl("NDR_CHECK(ndr_push_full_ptr($ndr, $var_name));");
 	} else {
 		die("Unhandled pointer type $l->{POINTER_TYPE}");
 	}
