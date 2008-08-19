@@ -182,8 +182,6 @@ do {                             \
 	};\
 };
 
-#define ACB_PWNOEXP			0x00000200
-
 /* from netlogon.idl */
 #define NETLOGON_CACHED_ACCOUNT		0x00000004
 #define NETLOGON_GRACE_LOGON		0x01000000

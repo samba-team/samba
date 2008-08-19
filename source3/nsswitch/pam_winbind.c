@@ -918,8 +918,8 @@ static void _pam_warn_password_expiry(struct pwb_context *ctx,
 		*already_expired = false;
 	}
 
-	/* accounts with ACB_PWNOEXP set never receive a warning */
-	if (info->acct_flags & ACB_PWNOEXP) {
+	/* accounts with WBC_ACB_PWNOEXP set never receive a warning */
+	if (info->acct_flags & WBC_ACB_PWNOEXP) {
 		return;
 	}
 
