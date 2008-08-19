@@ -47,7 +47,7 @@ class MapBaseTestCase(TestCaseInTempDir):
 
         ldb.add({"dn": "@PARTITION",
             "partition": [s4.basedn + ":" + s4.url, s3.basedn + ":" + s3.url],
-            "replicateEntries": ["@SUBCLASSES", "@ATTRIBUTES", "@INDEXLIST"]})
+            "replicateEntries": ["@ATTRIBUTES", "@INDEXLIST"]})
 
     def setUp(self):
         super(MapBaseTestCase, self).setUp()

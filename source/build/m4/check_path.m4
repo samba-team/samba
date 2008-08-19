@@ -24,7 +24,7 @@ winbindd_privileged_socket_dir="${localstatedir}/lib/winbindd_privileged"
 ntp_signd_socket_dir="${localstatedir}/run/ntp_signd"
 
 AC_ARG_WITH(fhs, 
-[  --with-fhs              Use FHS-compliant paths (default=no)],
+[AS_HELP_STRING([--with-fhs],[Use FHS-compliant paths (default=no)])],
     lockdir="${localstatedir}/lib/samba"
     piddir="${localstatedir}/run/samba"
     logfilebase="${localstatedir}/log/samba"
@@ -41,7 +41,7 @@ AC_ARG_WITH(fhs,
 #################################################
 # set private directory location
 AC_ARG_WITH(privatedir,
-[  --with-privatedir=DIR   Where to put sam.ldb and other private files containing key material ($ac_default_prefix/private)],
+[AS_HELP_STRING([--with-privatedir=DIR],[Where to put sam.ldb and other private files containing key material ($ac_default_prefix/private)])],
 [ case "$withval" in
   yes|no)
   #
@@ -57,7 +57,7 @@ AC_ARG_WITH(privatedir,
 #################################################
 # set where the winbindd socket should be put
 AC_ARG_WITH(winbindd-socket-dir,
-[  --with-winbindd-socket-dir=DIR   Where to put the winbindd socket ($winbindd_socket_dir)],
+[AS_HELP_STRING([--with-winbindd-socket-dir=DIR],[Where to put the winbindd socket ($winbindd_socket_dir)])],
 [ case "$withval" in
   yes|no)
   #
@@ -73,7 +73,7 @@ AC_ARG_WITH(winbindd-socket-dir,
 #################################################
 # set where the winbindd privilaged socket should be put
 AC_ARG_WITH(winbindd-privileged-socket-dir,
-[  --with-winbindd-privileged-socket-dir=DIR   Where to put the winbindd socket ($winbindd_privileged_socket_dir)],
+[AS_HELP_STRING([--with-winbindd-privileged-socket-dir=DIR],[Where to put the winbindd socket ($winbindd_privileged_socket_dir)])],
 [ case "$withval" in
   yes|no)
   #
@@ -87,25 +87,9 @@ AC_ARG_WITH(winbindd-privileged-socket-dir,
   esac])
 
 #################################################
-# set where the winbindd privilaged socket should be put
-AC_ARG_WITH(winbindd-socket-dir,
-[  --with-winbindd-socket-dir=DIR   Where to put the winbindd socket ($ac_default_prefix/run/winbind_pipe)],
-[ case "$withval" in
-  yes|no)
-  #
-  # Just in case anybody calls it without argument
-  #
-    AC_MSG_WARN([--with-winbind-socketdir called without argument - will use default])
-  ;;
-  * )
-    winbindd_socket_dir="$withval"
-    ;;
-  esac])
-
-#################################################
 # set where the NTP signing deamon socket should be put
 AC_ARG_WITH(ntp-signd-socket-dir,
-[  --with-ntp-signd-socket-dir=DIR   Where to put the NTP signing deamon socket ($ac_default_prefix/run/ntp_signd)],
+[AS_HELP_STRING([--with-ntp-signd-socket-dir=DIR],[Where to put the NTP signing deamon socket ($ac_default_prefix/run/ntp_signd)])],
 [ case "$withval" in
   yes|no)
   #
@@ -121,7 +105,7 @@ AC_ARG_WITH(ntp-signd-socket-dir,
 #################################################
 # set lock directory location
 AC_ARG_WITH(lockdir,
-[  --with-lockdir=DIR      Where to put lock files ($ac_default_prefix/var/locks)],
+[AS_HELP_STRING([--with-lockdir=DIR],[Where to put lock files ($ac_default_prefix/var/locks)])],
 [ case "$withval" in
   yes|no)
   #
@@ -137,7 +121,7 @@ AC_ARG_WITH(lockdir,
 #################################################
 # set pid directory location
 AC_ARG_WITH(piddir,
-[  --with-piddir=DIR       Where to put pid files ($ac_default_prefix/var/locks)],
+[AS_HELP_STRING([--with-piddir=DIR],[Where to put pid files ($ac_default_prefix/var/locks)])],
 [ case "$withval" in
   yes|no)
   #
@@ -153,7 +137,7 @@ AC_ARG_WITH(piddir,
 #################################################
 # set log directory location
 AC_ARG_WITH(logfilebase,
-[  --with-logfilebase=DIR  Where to put log files (\$(VARDIR))],
+[AS_HELP_STRING([--with-logfilebase=DIR],[Where to put log files (\$(VARDIR))])],
 [ case "$withval" in
   yes|no)
   #
@@ -186,7 +170,7 @@ AC_SUBST(modulesdir)
 selftest_prefix="./st"
 AC_SUBST(selftest_prefix)
 AC_ARG_WITH(selftest-prefix,
-[  --with-selftest-prefix=DIR    The prefix where make test will be run ($selftest_prefix)],
+[AS_HELP_STRING([--with-selftest-prefix=DIR],[The prefix where make test will be run ($selftest_prefix)])],
 [ case "$withval" in
   yes|no)
     AC_MSG_WARN([--with-selftest-prefix called without argument - will use default])
@@ -198,7 +182,7 @@ AC_ARG_WITH(selftest-prefix,
 
 debug=no
 AC_ARG_ENABLE(debug,
-[  --enable-debug          Turn on compiler debugging information (default=no)],
+[AS_HELP_STRING([--enable-debug],[Turn on compiler debugging information (default=no)])],
     [if test x$enable_debug = xyes; then
         debug=yes
     fi])
@@ -206,7 +190,7 @@ AC_ARG_ENABLE(debug,
 developer=no
 AC_SUBST(developer)
 AC_ARG_ENABLE(developer,
-[  --enable-developer      Turn on developer warnings and debugging (default=no)],
+[AS_HELP_STRING([--enable-developer],[Turn on developer warnings and debugging (default=no)])],
     [if test x$enable_developer = xyes; then
 	debug=yes
         developer=yes
@@ -214,7 +198,7 @@ AC_ARG_ENABLE(developer,
 
 dnl disable these external libs 
 AC_ARG_WITH(disable-ext-lib,
-[  --with-disable-ext-lib=LIB Comma-seperated list of external libraries],
+[AS_HELP_STRING([--with-disable-ext-lib=LIB],[Comma-seperated list of external libraries])],
 [ if test $withval; then
 	for i in `echo $withval | sed -e's/,/ /g'`
 	do
