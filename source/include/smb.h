@@ -1377,12 +1377,19 @@ struct bitmap {
 #define FILE_DELETE_ON_CLOSE      0x1000
 #define FILE_OPEN_BY_FILE_ID	  0x2000
 
-/* Private create options used by the ntcreatex processing code. From Samba4. */
-#define NTCREATEX_OPTIONS_PRIVATE_DENY_DOS     0x01000000
-#define NTCREATEX_OPTIONS_PRIVATE_DENY_FCB     0x02000000
+#define NTCREATEX_OPTIONS_MUST_IGNORE_MASK      (0x008F0480)
+
+#define NTCREATEX_OPTIONS_INVALID_PARAM_MASK    (0xFF100030)
+
+/*
+ * Private create options used by the ntcreatex processing code. From Samba4.
+ * We reuse some ignored flags for private use.
+ */
+#define NTCREATEX_OPTIONS_PRIVATE_DENY_DOS     0x00010000
+#define NTCREATEX_OPTIONS_PRIVATE_DENY_FCB     0x00020000
 
 /* Private options for streams support */
-#define NTCREATEX_OPTIONS_PRIVATE_STREAM_DELETE 0x04000000
+#define NTCREATEX_OPTIONS_PRIVATE_STREAM_DELETE 0x00040000
 
 /* Responses when opening a file. */
 #define FILE_WAS_SUPERSEDED 0
