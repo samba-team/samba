@@ -176,7 +176,7 @@ static NTSTATUS append_unix_username(TALLOC_CTX *mem_ctx,
 	}
 
 	fill_domain_username(state->response.data.auth.unix_username,
-			     nt_domain, nt_username, True);
+			     nt_domain, nt_username, true);
 
 	DEBUG(5,("Setting unix username to [%s]\n",
 		state->response.data.auth.unix_username));
@@ -490,7 +490,7 @@ static const char *generate_krb5_ccache(TALLOC_CTX *mem_ctx,
 
 	const char *gen_cc = NULL;
 
-	*internal_ccache = True;
+	*internal_ccache = true;
 
 	if (uid == -1) {
 		goto memory_ccache;
@@ -509,7 +509,7 @@ static const char *generate_krb5_ccache(TALLOC_CTX *mem_ctx,
 		goto memory_ccache;
 	}
 
-	*internal_ccache = False;
+	*internal_ccache = false;
 	goto done;
 
   memory_ccache:
@@ -583,7 +583,7 @@ static NTSTATUS winbindd_raw_kerberos_login(struct winbindd_domain *domain,
 	uid_t uid = -1;
 	ADS_STRUCT *ads;
 	time_t time_offset = 0;
-	bool internal_ccache = True;
+	bool internal_ccache = true;
 
 	ZERO_STRUCTP(info3);
 
@@ -650,8 +650,8 @@ static NTSTATUS winbindd_raw_kerberos_login(struct winbindd_domain *domain,
 						&ticket_lifetime,
 						&renewal_until,
 						cc,
-						True,
-						True,
+						true,
+						true,
 						WINBINDD_PAM_AUTH_KRB5_RENEW_TIME,
 						info3);
 	if (!internal_ccache) {
@@ -683,7 +683,7 @@ static NTSTATUS winbindd_raw_kerberos_login(struct winbindd_domain *domain,
 					    time(NULL),
 					    ticket_lifetime,
 					    renewal_until,
-					    False);
+					    false);
 
 		if (!NT_STATUS_IS_OK(result)) {
 			DEBUG(10,("winbindd_raw_kerberos_login: failed to add ccache to list: %s\n",
@@ -743,12 +743,12 @@ static bool check_request_flags(uint32_t flags)
 	     ( (flags & flags_edata) == WBFLAG_PAM_INFO3_NDR) ||
 	     ( (flags & flags_edata) == WBFLAG_PAM_INFO3_TEXT)||
 	      !(flags & flags_edata) ) {
-		return True;
+		return true;
 	}
 
 	DEBUG(1,("check_request_flags: invalid request flags[0x%08X]\n",flags));
 
-	return False;
+	return false;
 }
 
 /****************************************************************
@@ -884,7 +884,7 @@ NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 	const uint8 *cached_salt;
 	struct netr_SamInfo3 *my_info3;
 	time_t kickoff_time, must_change_time;
-	bool password_good = False;
+	bool password_good = false;
 #ifdef HAVE_KRB5
 	struct winbindd_tdc_domain *tdc_domain = NULL;
 #endif
@@ -942,11 +942,11 @@ NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 		E_md5hash(cached_salt, new_nt_pass, salted_hash);
 
 		password_good = (memcmp(cached_nt_pass, salted_hash, NT_HASH_LEN) == 0) ?
-			True : False;
+			true : false;
 	} else {
 		/* Old cached cred - direct store of nt_hash (bad bad bad !). */
 		password_good = (memcmp(cached_nt_pass, new_nt_pass, NT_HASH_LEN) == 0) ?
-			True : False;
+			true : false;
 	}
 
 	if (password_good) {
@@ -1005,7 +1005,7 @@ NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 			char *realm = NULL;
 			const char *principal_s = NULL;
 			const char *service = NULL;
-			bool internal_ccache = False;
+			bool internal_ccache = false;
 
 			uid = get_uid_from_state(state);
 			if (uid == -1) {
@@ -1047,7 +1047,7 @@ NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 							    time(NULL),
 							    time(NULL) + lp_winbind_cache_time(),
 							    time(NULL) + WINBINDD_PAM_AUTH_KRB5_RENEW_TIME,
-							    True);
+							    true);
 
 				if (!NT_STATUS_IS_OK(result)) {
 					DEBUG(10,("winbindd_dual_pam_auth_cached: failed "
@@ -1306,7 +1306,7 @@ NTSTATUS winbindd_dual_pam_auth_samlogon(struct winbindd_domain *domain,
 		netlogon_fn_t logon_fn;
 
 		ZERO_STRUCTP(my_info3);
-		retry = False;
+		retry = false;
 
 		result = cm_connect_netlogon(contact_domain, &netlogon_pipe);
 
@@ -1357,8 +1357,8 @@ NTSTATUS winbindd_dual_pam_auth_samlogon(struct winbindd_domain *domain,
 		    && contact_domain->can_do_samlogon_ex) {
 			DEBUG(3, ("Got a DC that can not do NetSamLogonEx, "
 				  "retrying with NetSamLogon\n"));
-			contact_domain->can_do_samlogon_ex = False;
-			retry = True;
+			contact_domain->can_do_samlogon_ex = false;
+			retry = true;
 			continue;
 		}
 
@@ -1367,7 +1367,7 @@ NTSTATUS winbindd_dual_pam_auth_samlogon(struct winbindd_domain *domain,
 		   our connection. */
 
 		if (NT_STATUS_EQUAL(result, NT_STATUS_UNSUCCESSFUL)) {
-			retry = True;
+			retry = true;
 			continue;
 		}
 
@@ -1383,7 +1383,7 @@ NTSTATUS winbindd_dual_pam_auth_samlogon(struct winbindd_domain *domain,
 				 "Killing connections to domain %s\n",
 				name_domain));
 			invalidate_cm_connection(&contact_domain->conn);
-			retry = True;
+			retry = true;
 		}
 
 	} while ( (attempts < 2) && retry );
@@ -1481,7 +1481,7 @@ enum winbindd_result winbindd_dual_pam_auth(struct winbindd_domain *domain,
 
 	parse_domain_user(state->request.data.auth.user, name_domain, name_user);
 
-	if (domain->online == False) {
+	if (domain->online == false) {
 		result = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
 		if (domain->startup) {
 			/* Logons are very important to users. If we're offline and
@@ -1867,7 +1867,7 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 	do {
 		netlogon_fn_t logon_fn;
 
-		retry = False;
+		retry = false;
 
 		netlogon_pipe = NULL;
 		result = cm_connect_netlogon(contact_domain, &netlogon_pipe);
@@ -1899,8 +1899,8 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 		    && contact_domain->can_do_samlogon_ex) {
 			DEBUG(3, ("Got a DC that can not do NetSamLogonEx, "
 				  "retrying with NetSamLogon\n"));
-			contact_domain->can_do_samlogon_ex = False;
-			retry = True;
+			contact_domain->can_do_samlogon_ex = false;
+			retry = true;
 			continue;
 		}
 
@@ -1911,7 +1911,7 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 		   our connection. */
 
 		if (NT_STATUS_EQUAL(result, NT_STATUS_UNSUCCESSFUL)) {
-			retry = True;
+			retry = true;
 			continue;
 		}
 
@@ -1926,7 +1926,7 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 				 "Killing connections to domain %s\n",
 				name_domain));
 			invalidate_cm_connection(&contact_domain->conn);
-			retry = True;
+			retry = true;
 		}
 
 	} while ( (attempts < 2) && retry );
@@ -2021,7 +2021,7 @@ enum winbindd_result winbindd_dual_pam_chauthtok(struct winbindd_domain *contact
 	char *newpass = NULL;
 	POLICY_HND dom_pol;
 	struct rpc_pipe_client *cli;
-	bool got_info = False;
+	bool got_info = false;
 	struct samr_DomInfo1 *info = NULL;
 	struct samr_ChangeReject *reject = NULL;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
@@ -2067,7 +2067,7 @@ enum winbindd_result winbindd_dual_pam_chauthtok(struct winbindd_domain *contact
 		state->response.data.auth.reject_reason =
 			reject->reason;
 
-		got_info = True;
+		got_info = true;
 	}
 
 	/* only fallback when the chgpasswd_user3 call is not supported */
