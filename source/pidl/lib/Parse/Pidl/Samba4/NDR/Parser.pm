@@ -702,19 +702,19 @@ sub need_pointer_to($$$)
 	return 0;
 }
 
-sub ParseDataPrint($$$$)
+sub ParseDataPrint($$$$$)
 {
-	my ($self, $e, $l, $var_name) = @_;
-	
+	my ($self, $e, $l, $ndr, $var_name) = @_;
+
 	if (not ref($l->{DATA_TYPE}) or defined($l->{DATA_TYPE}->{NAME})) {
 
 		if (need_pointer_to($e, $l, 1)) {
 			$var_name = get_pointer_to($var_name);
 		}
 
-		$self->pidl(TypeFunctionName("ndr_print", $l->{DATA_TYPE})."(ndr, \"$e->{NAME}\", $var_name);");
+		$self->pidl(TypeFunctionName("ndr_print", $l->{DATA_TYPE})."($ndr, \"$e->{NAME}\", $var_name);");
 	} else {
-		$self->ParseTypePrint($l->{DATA_TYPE}, $var_name);
+		$self->ParseTypePrint($l->{DATA_TYPE}, $ndr, $var_name);
 	}
 }
 
@@ -781,7 +781,7 @@ sub ParseElementPrint($$$$$)
 				$var_name = get_array_element($var_name, $counter);
 			}
 		} elsif ($l->{TYPE} eq "DATA") {
-			$self->ParseDataPrint($e, $l, $var_name);
+			$self->ParseDataPrint($e, $l, $ndr, $var_name);
 		} elsif ($l->{TYPE} eq "SWITCH") {
 			my $switch_var = ParseExprExt($l->{SWITCH_IS}, $env, $e->{ORIGINAL}, 
 						check_null_pointer($e, $env, sub { $self->pidl(shift); }, "return;"), check_fully_dereferenced($e, $env));
@@ -861,7 +861,7 @@ sub ParseDataPull($$$$$$$)
 			$self->pidl("}");
 		}
 	} else {
-		$self->ParseTypePull($l->{DATA_TYPE}, $var_name, $primitives, $deferred);
+		$self->ParseTypePull($l->{DATA_TYPE}, $ndr, $var_name, $primitives, $deferred);
 	}
 }
 
@@ -880,7 +880,7 @@ sub ParseDataPush($$$$$$$)
 
 		$self->pidl("NDR_CHECK(".TypeFunctionName("ndr_push", $l->{DATA_TYPE})."($ndr, $ndr_flags, $var_name));");
 	} else {
-		$self->ParseTypePush($l->{DATA_TYPE}, $var_name, $primitives, $deferred);
+		$self->ParseTypePush($l->{DATA_TYPE}, $ndr, $var_name, $primitives, $deferred);
 	}
 }
 
@@ -2364,81 +2364,86 @@ sub HeaderInterface($$$)
 
 }
 
-sub ParseTypePush($$$$$)
+sub ParseTypePush($$$$$$)
 {
-	my ($self,$e,$varname, $primitives, $deferred) = @_;
+	my ($self,$e, $ndr, $varname, $primitives, $deferred) = @_;
 
 	# save the old relative_base_offset
-	$self->pidl("uint32_t _save_relative_base_offset = ndr_push_get_relative_base_offset(ndr);") if defined(has_property($e, "relative_base"));
-	$typefamily{$e->{TYPE}}->{PUSH_FN_BODY}->($self, $e, "ndr", $varname);
+	$self->pidl("uint32_t _save_relative_base_offset = ndr_push_get_relative_base_offset($ndr);") if defined(has_property($e, "relative_base"));
+	$typefamily{$e->{TYPE}}->{PUSH_FN_BODY}->($self, $e, $ndr, $varname);
 	# restore the old relative_base_offset
-	$self->pidl("ndr_push_restore_relative_base_offset(ndr, _save_relative_base_offset);") if defined(has_property($e, "relative_base"));
+	$self->pidl("ndr_push_restore_relative_base_offset($ndr, _save_relative_base_offset);") if defined(has_property($e, "relative_base"));
 }
 
 sub ParseTypePushFunction($$$)
 {
 	my ($self, $e, $varname) = @_;
+	my $ndr = "ndr";
 
 	my $args = $typefamily{$e->{TYPE}}->{DECL}->($e, "push", $e->{NAME}, $varname);
-	$self->fn_declare("push", $e, "enum ndr_err_code ".TypeFunctionName("ndr_push", $e)."(struct ndr_push *ndr, int ndr_flags, $args)") or return;
+
+	$self->fn_declare("push", $e, "enum ndr_err_code ".TypeFunctionName("ndr_push", $e)."(struct ndr_push *$ndr, int ndr_flags, $args)") or return;
 
 	$self->pidl("{");
 	$self->indent;
-	$self->ParseTypePush($e, $varname, 1, 1);
+	$self->ParseTypePush($e, $ndr, $varname, 1, 1);
 	$self->pidl("return NDR_ERR_SUCCESS;");
 	$self->deindent;
 	$self->pidl("}");
 	$self->pidl("");;
 }
 
-sub ParseTypePull($$$$$)
+sub ParseTypePull($$$$$$)
 {
-	my ($self, $e, $varname, $primitives, $deferred) = @_;
+	my ($self, $e, $ndr, $varname, $primitives, $deferred) = @_;
 
 	# save the old relative_base_offset
-	$self->pidl("uint32_t _save_relative_base_offset = ndr_pull_get_relative_base_offset(ndr);") if defined(has_property($e, "relative_base"));
-	$typefamily{$e->{TYPE}}->{PULL_FN_BODY}->($self, $e, "ndr", $varname);
+	$self->pidl("uint32_t _save_relative_base_offset = ndr_pull_get_relative_base_offset($ndr);") if defined(has_property($e, "relative_base"));
+	$typefamily{$e->{TYPE}}->{PULL_FN_BODY}->($self, $e, $ndr, $varname);
 	# restore the old relative_base_offset
-	$self->pidl("ndr_pull_restore_relative_base_offset(ndr, _save_relative_base_offset);") if defined(has_property($e, "relative_base"));
+	$self->pidl("ndr_pull_restore_relative_base_offset($ndr, _save_relative_base_offset);") if defined(has_property($e, "relative_base"));
 }
 
 sub ParseTypePullFunction($$)
 {
 	my ($self, $e, $varname) = @_;
+	my $ndr = "ndr";
 
 	my $args = $typefamily{$e->{TYPE}}->{DECL}->($e, "pull", $e->{NAME}, $varname);
 
-	$self->fn_declare("pull", $e, "enum ndr_err_code ".TypeFunctionName("ndr_pull", $e)."(struct ndr_pull *ndr, int ndr_flags, $args)") or return;
+	$self->fn_declare("pull", $e, "enum ndr_err_code ".TypeFunctionName("ndr_pull", $e)."(struct ndr_pull *$ndr, int ndr_flags, $args)") or return;
 
 	$self->pidl("{");
 	$self->indent;
-	$self->ParseTypePull($e, $varname, 1, 1);
+	$self->ParseTypePull($e, $ndr, $varname, 1, 1);
 	$self->pidl("return NDR_ERR_SUCCESS;");
 	$self->deindent;
 	$self->pidl("}");
 	$self->pidl("");
 }
 
-sub ParseTypePrint($$$)
+sub ParseTypePrint($$$$)
 {
-	my ($self, $e, $varname) = @_;
+	my ($self, $e, $ndr, $varname) = @_;
 
-	$typefamily{$e->{TYPE}}->{PRINT_FN_BODY}->($self, $e, "ndr", $e->{NAME}, $varname);
+	$typefamily{$e->{TYPE}}->{PRINT_FN_BODY}->($self, $e, $ndr, $e->{NAME}, $varname);
 }
 
 sub ParseTypePrintFunction($$$)
 {
 	my ($self, $e, $varname) = @_;
+	my $ndr = "ndr";
+
 	my $args = $typefamily{$e->{TYPE}}->{DECL}->($e, "print", $e->{NAME}, $varname);
 
 	$self->pidl_hdr("void ".TypeFunctionName("ndr_print", $e)."(struct ndr_print *ndr, const char *name, $args);");
 
 	return if (has_property($e, "noprint"));
 
-	$self->pidl("_PUBLIC_ void ".TypeFunctionName("ndr_print", $e)."(struct ndr_print *ndr, const char *name, $args)");
+	$self->pidl("_PUBLIC_ void ".TypeFunctionName("ndr_print", $e)."(struct ndr_print *$ndr, const char *name, $args)");
 	$self->pidl("{");
 	$self->indent;
-	$self->ParseTypePrint($e, $varname);
+	$self->ParseTypePrint($e, $ndr, $varname);
 	$self->deindent;
 	$self->pidl("}");
 	$self->pidl("");
