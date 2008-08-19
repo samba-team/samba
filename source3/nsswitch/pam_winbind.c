@@ -733,7 +733,8 @@ static int pam_winbind_request(struct pwb_context *ctx,
 
 static int pam_winbind_request_log(struct pwb_context *ctx,
 				   int retval,
-				   const char *user)
+				   const char *user,
+				   const char *fn)
 {
 	switch (retval) {
 	case PAM_AUTH_ERR:
@@ -766,24 +767,19 @@ static int pam_winbind_request_log(struct pwb_context *ctx,
 		return retval;
 	case PAM_SUCCESS:
 		/* Otherwise, the authentication looked good */
-#if 0
-		switch (req_type) {
-			case WINBINDD_PAM_AUTH:
-				_pam_log(ctx, LOG_NOTICE,
-					 "user '%s' granted access", user);
-				break;
-			default:
-				_pam_log(ctx, LOG_NOTICE,
-					 "user '%s' OK", user);
-				break;
+		if (strcmp(fn, "wbcLogonUser") == 0) {
+			_pam_log(ctx, LOG_NOTICE,
+				 "user '%s' granted access", user);
+		} else {
+			_pam_log(ctx, LOG_NOTICE,
+				 "user '%s' OK", user);
 		}
-#endif
 		return retval;
 	default:
 		/* we don't know anything about this return value */
 		_pam_log(ctx, LOG_ERR,
-			 "internal module error (retval = %d, user = '%s')",
-			 retval, user);
+			 "internal module error (retval = %s(%d), user = '%s')",
+			_pam_error_code_str(retval), retval, user);
 		return retval;
 	}
 }
@@ -800,7 +796,7 @@ static int wbc_auth_error_to_pam_error(struct pwb_context *ctx,
 		_pam_log_debug(ctx, LOG_DEBUG, "request %s succeeded",
 			fn);
 		ret = PAM_SUCCESS;
-		return pam_winbind_request_log(ctx, ret, username);
+		return pam_winbind_request_log(ctx, ret, username, fn);
 	}
 
 	if (e) {
@@ -816,17 +812,17 @@ static int wbc_auth_error_to_pam_error(struct pwb_context *ctx,
 				 e->nt_string,
 				 e->display_string);
 			ret = e->pam_error;
-			return pam_winbind_request_log(ctx, ret, username);
+			return pam_winbind_request_log(ctx, ret, username, fn);
 		}
 
 		_pam_log(ctx, LOG_ERR, "request %s failed, but PAM error 0!", fn);
 
 		ret = PAM_SERVICE_ERR;
-		return pam_winbind_request_log(ctx, ret, username);
+		return pam_winbind_request_log(ctx, ret, username, fn);
 	}
 
 	ret = wbc_error_to_pam_error(status);
-	return pam_winbind_request_log(ctx, ret, username);
+	return pam_winbind_request_log(ctx, ret, username, fn);
 }
 
 
