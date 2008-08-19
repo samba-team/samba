@@ -332,7 +332,7 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 		printf(":Node:IP:Disconnected:Banned:Disabled:Unhealthy:\n");
 		for(i=0;i<nodemap->num;i++){
 			printf(":%d:%s:%d:%d:%d:%d:\n", nodemap->nodes[i].pnn,
-				inet_ntoa(nodemap->nodes[i].sin.sin_addr),
+				ctdb_addr_to_str(&nodemap->nodes[i].addr),
 			       !!(nodemap->nodes[i].flags&NODE_FLAGS_DISCONNECTED),
 			       !!(nodemap->nodes[i].flags&NODE_FLAGS_BANNED),
 			       !!(nodemap->nodes[i].flags&NODE_FLAGS_PERMANENTLY_DISABLED),
@@ -370,7 +370,7 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 			CTDB_NO_MEMORY_FATAL(ctdb, flags_str);
 		}
 		printf("pnn:%d %-16s %s%s\n", nodemap->nodes[i].pnn,
-		       inet_ntoa(nodemap->nodes[i].sin.sin_addr),
+		       ctdb_addr_to_str(&nodemap->nodes[i].addr),
 		       flags_str,
 		       nodemap->nodes[i].pnn == mypnn?" (THIS NODE)":"");
 		talloc_free(flags_str);
@@ -414,30 +414,29 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 static int control_get_tickles(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	struct ctdb_control_tcp_tickle_list *list;
-	struct sockaddr_in ip;
+	ctdb_sock_addr addr;
 	int i, ret;
 
 	if (argc < 1) {
 		usage();
 	}
 
-	ip.sin_family = AF_INET;
-	if (inet_aton(argv[0], &ip.sin_addr) == 0) {
+	if (parse_ip(argv[0], &addr) == 0) {
 		DEBUG(DEBUG_ERR,("Wrongly formed ip address '%s'\n", argv[0]));
 		return -1;
 	}
 
-	ret = ctdb_ctrl_get_tcp_tickles(ctdb, TIMELIMIT(), options.pnn, ctdb, &ip, &list);
+	ret = ctdb_ctrl_get_tcp_tickles(ctdb, TIMELIMIT(), options.pnn, ctdb, &addr, &list);
 	if (ret == -1) {
 		DEBUG(DEBUG_ERR, ("Unable to list tickles\n"));
 		return -1;
 	}
 
-	printf("Tickles for ip:%s\n", inet_ntoa(list->ip.sin_addr));
+	printf("Tickles for ip:%s\n", ctdb_addr_to_str(&list->addr));
 	printf("Num tickles:%u\n", list->tickles.num);
 	for (i=0;i<list->tickles.num;i++) {
-		printf("SRC: %s:%u   ", inet_ntoa(list->tickles.connections[i].saddr.sin_addr), ntohs(list->tickles.connections[i].saddr.sin_port));
-		printf("DST: %s:%u\n", inet_ntoa(list->tickles.connections[i].daddr.sin_addr), ntohs(list->tickles.connections[i].daddr.sin_port));
+		printf("SRC: %s:%u   ", ctdb_addr_to_str(&list->tickles.connections[i].src_addr), ntohs(list->tickles.connections[i].src_addr.ip.sin_port));
+		printf("DST: %s:%u\n", ctdb_addr_to_str(&list->tickles.connections[i].dst_addr), ntohs(list->tickles.connections[i].dst_addr.ip.sin_port));
 	}
 
 	talloc_free(list);
@@ -447,7 +446,7 @@ static int control_get_tickles(struct ctdb_context *ctdb, int argc, const char *
 
 /* send a release ip to all nodes */
 static int control_send_release(struct ctdb_context *ctdb, uint32_t pnn,
-struct sockaddr_in *sin)
+ctdb_sock_addr *addr)
 {
 	int ret;
 	struct ctdb_public_ip pip;
@@ -461,11 +460,10 @@ struct sockaddr_in *sin)
 	}
 
 	/* send a moveip message to the recovery master */
-	pip.pnn = pnn;
-	pip.sin.sin_family = AF_INET;
-	pip.sin.sin_addr   = sin->sin_addr;
+	pip.pnn    = pnn;
+	pip.addr   = *addr;
 	data.dsize = sizeof(pip);
-	data.dptr = (unsigned char *)&pip;
+	data.dptr  = (unsigned char *)&pip;
 
 
 	/* send release ip to all nodes */
@@ -486,7 +484,7 @@ struct sockaddr_in *sin)
 static int control_moveip(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	uint32_t pnn;
-	struct sockaddr_in ip;
+	ctdb_sock_addr addr;
 	uint32_t value;
 	struct ctdb_all_public_ips *ips;
 	int i, ret;
@@ -495,8 +493,7 @@ static int control_moveip(struct ctdb_context *ctdb, int argc, const char **argv
 		usage();
 	}
 
-	ip.sin_family = AF_INET;
-	if (inet_aton(argv[0], &ip.sin_addr) == 0) {
+	if (parse_ip(argv[0], &addr) == 0) {
 		DEBUG(DEBUG_ERR,("Wrongly formed ip address '%s'\n", argv[0]));
 		return -1;
 	}
@@ -535,22 +532,22 @@ static int control_moveip(struct ctdb_context *ctdb, int argc, const char **argv
 	}
 
 	for (i=0;i<ips->num;i++) {
-		if (ctdb_same_ipv4(&ip, &ips->ips[i].sin)) {
+		if (ctdb_same_ip(&addr, &ips->ips[i].addr)) {
 			break;
 		}
 	}
 	if (i==ips->num) {
 		DEBUG(DEBUG_ERR, ("Node %u can not host ip address '%s'\n",
-			pnn, inet_ntoa(ip.sin_addr)));
+			pnn, ctdb_addr_to_str(&addr)));
 		return -1;
 	}
 	if (ips->ips[i].pnn == pnn) {
 		DEBUG(DEBUG_ERR, ("Host %u is already hosting '%s'\n",
-			pnn, inet_ntoa(ips->ips[i].sin.sin_addr)));
+			pnn, ctdb_addr_to_str(&ips->ips[i].addr)));
 		return -1;
 	}
 
-	ret = control_send_release(ctdb, pnn, &ips->ips[i].sin);
+	ret = control_send_release(ctdb, pnn, &ips->ips[i].addr);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, ("Failed to send 'change ip' to all nodes\n"));;
 		return -1;
@@ -559,20 +556,15 @@ static int control_moveip(struct ctdb_context *ctdb, int argc, const char **argv
 	return 0;
 }
 
-struct node_ip {
-	uint32_t pnn;
-	struct sockaddr_in sin;
-};
-
 void getips_store_callback(void *param, void *data)
 {
-	struct node_ip *node_ip = (struct node_ip *)data;
+	struct ctdb_public_ip *node_ip = (struct ctdb_public_ip *)data;
 	struct ctdb_all_public_ips *ips = param;
 	int i;
 
 	i = ips->num++;
-	ips->ips[i].pnn = node_ip->pnn;
-	ips->ips[i].sin = node_ip->sin;
+	ips->ips[i].pnn  = node_ip->pnn;
+	ips->ips[i].addr = node_ip->addr;
 }
 
 void getips_count_callback(void *param, void *data)
@@ -612,13 +604,13 @@ control_get_all_public_ips(struct ctdb_context *ctdb, TALLOC_CTX *tmp_ctx, struc
 		}
 	
 		for (j=0; j<tmp_ips->num;j++) {
-			struct node_ip *node_ip;
+			struct ctdb_public_ip *node_ip;
 
-			node_ip = talloc(tmp_ctx, struct node_ip);
-			node_ip->pnn = tmp_ips->ips[j].pnn;
-			node_ip->sin = tmp_ips->ips[j].sin;
+			node_ip = talloc(tmp_ctx, struct ctdb_public_ip);
+			node_ip->pnn  = tmp_ips->ips[j].pnn;
+			node_ip->addr = tmp_ips->ips[j].addr;
 
-			trbt_insert32(tree, tmp_ips->ips[j].sin.sin_addr.s_addr, node_ip);
+			trbt_insert32(tree, tmp_ips->ips[j].addr.ip.sin_addr.s_addr, node_ip);
 		}
 		talloc_free(tmp_ips);
 	}
@@ -643,7 +635,7 @@ control_get_all_public_ips(struct ctdb_context *ctdb, TALLOC_CTX *tmp_ctx, struc
  * ip address or -1
  */
 static int
-find_other_host_for_public_ip(struct ctdb_context *ctdb, struct sockaddr_in *addr)
+find_other_host_for_public_ip(struct ctdb_context *ctdb, ctdb_sock_addr *addr)
 {
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 	struct ctdb_all_public_ips *ips;
@@ -673,7 +665,7 @@ find_other_host_for_public_ip(struct ctdb_context *ctdb, struct sockaddr_in *add
 		}
 
 		for (j=0;j<ips->num;j++) {
-			if (ctdb_same_ipv4(addr, &ips->ips[j].sin)) {
+			if (ctdb_same_ip(addr, &ips->ips[j].addr)) {
 				talloc_free(tmp_ctx);
 				return nodemap->nodes[i].pnn;
 			}
@@ -693,7 +685,7 @@ static int control_addip(struct ctdb_context *ctdb, int argc, const char **argv)
 	int i, ret;
 	int len;
 	unsigned mask;
-	struct sockaddr_in addr;
+	ctdb_sock_addr addr;
 	struct ctdb_control_ip_iface *pub;
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 	struct ctdb_all_public_ips *ips;
@@ -721,7 +713,7 @@ static int control_addip(struct ctdb_context *ctdb, int argc, const char **argv)
 	pub = talloc_size(tmp_ctx, len); 
 	CTDB_NO_MEMORY(ctdb, pub);
 
-	pub->sin   = addr;
+	pub->addr  = addr;
 	pub->mask  = mask;
 	pub->len   = strlen(argv[1])+1;
 	memcpy(&pub->iface[0], argv[1], strlen(argv[1])+1);
@@ -738,7 +730,7 @@ static int control_addip(struct ctdb_context *ctdb, int argc, const char **argv)
 	 * we will claim it
 	 */
 	for (i=0;i<ips->num;i++) {
-		if (ctdb_same_ipv4(&addr, &ips->ips[i].sin)) {
+		if (ctdb_same_ip(&addr, &ips->ips[i].addr)) {
 			break;
 		}
 	}
@@ -764,7 +756,7 @@ static int control_addip(struct ctdb_context *ctdb, int argc, const char **argv)
 static int control_delip(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	int i, ret;
-	struct sockaddr_in addr;
+	ctdb_sock_addr addr;
 	struct ctdb_control_ip_iface pub;
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 	struct ctdb_all_public_ips *ips;
@@ -774,13 +766,12 @@ static int control_delip(struct ctdb_context *ctdb, int argc, const char **argv)
 		usage();
 	}
 
-	addr.sin_family = AF_INET;
-	if (inet_aton(argv[0], &addr.sin_addr) == 0) {
+	if (parse_ip(argv[0], &addr) == 0) {
 		DEBUG(DEBUG_ERR,("Wrongly formed ip address '%s'\n", argv[0]));
 		return -1;
 	}
 
-	pub.sin   = addr;
+	pub.addr  = addr;
 	pub.mask  = 0;
 	pub.len   = 0;
 
@@ -792,14 +783,14 @@ static int control_delip(struct ctdb_context *ctdb, int argc, const char **argv)
 	}
 	
 	for (i=0;i<ips->num;i++) {
-		if (ctdb_same_ipv4(&addr, &ips->ips[i].sin)) {
+		if (ctdb_same_ip(&addr, &ips->ips[i].addr)) {
 			break;
 		}
 	}
 
 	if (i==ips->num) {
 		DEBUG(DEBUG_ERR, ("This node does not support this public address '%s'\n",
-			inet_ntoa(addr.sin_addr)));
+			ctdb_addr_to_str(&addr)));
 		talloc_free(tmp_ctx);
 		return -1;
 	}
@@ -837,12 +828,12 @@ static int kill_tcp(struct ctdb_context *ctdb, int argc, const char **argv)
 		usage();
 	}
 
-	if (!parse_ip_port(argv[0], (ctdb_sock_addr *)&killtcp.src)) {
+	if (!parse_ip_port(argv[0], &killtcp.src_addr)) {
 		DEBUG(DEBUG_ERR, ("Bad IP:port '%s'\n", argv[0]));
 		return -1;
 	}
 
-	if (!parse_ip_port(argv[1], (ctdb_sock_addr *)&killtcp.dst)) {
+	if (!parse_ip_port(argv[1], &killtcp.dst_addr)) {
 		DEBUG(DEBUG_ERR, ("Bad IP:port '%s'\n", argv[1]));
 		return -1;
 	}
@@ -1052,9 +1043,9 @@ static int control_ip(struct ctdb_context *ctdb, int argc, const char **argv)
 
 	for (i=1;i<=ips->num;i++) {
 		if (options.machinereadable){
-			printf(":%s:%d:\n", inet_ntoa(ips->ips[ips->num-i].sin.sin_addr), ips->ips[ips->num-i].pnn);
+			printf(":%s:%d:\n", ctdb_addr_to_str(&ips->ips[ips->num-i].addr), ips->ips[ips->num-i].pnn);
 		} else {
-			printf("%s %d\n", inet_ntoa(ips->ips[ips->num-i].sin.sin_addr), ips->ips[ips->num-i].pnn);
+			printf("%s %d\n", ctdb_addr_to_str(&ips->ips[ips->num-i].addr), ips->ips[ips->num-i].pnn);
 		}
 	}
 
@@ -1316,7 +1307,8 @@ static int control_lvs(struct ctdb_context *ctdb, int argc, const char **argv)
 			}
 		}
 
-		printf("%d:%s\n", i, inet_ntoa(nodemap->nodes[i].sin.sin_addr));
+		printf("%d:%s\n", i, 
+			ctdb_addr_to_str(&nodemap->nodes[i].addr));
 	}
 
 	return 0;
@@ -2194,7 +2186,7 @@ static int control_listnodes(struct ctdb_context *ctdb, int argc, const char **a
 	}
 
 	for(i=0;i<nodemap->num;i++){
-		printf("%s\n", inet_ntoa(nodemap->nodes[i].sin.sin_addr));
+		printf("%s\n", ctdb_addr_to_str(&nodemap->nodes[i].addr));
 	}
 
 	return 0;

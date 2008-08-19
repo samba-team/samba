@@ -362,40 +362,6 @@ void set_close_on_exec(int fd)
 }
 
 
-/*
-  parse a ip:num pair with the given separator
- */
-static bool parse_ip_num(const char *s, struct in_addr *addr, unsigned *num, const char sep)
-{
-	const char *p;
-	char *endp = NULL;
-	char buf[16];
-
-	p = strchr(s, sep);
-	if (p == NULL) {
-		return false;
-	}
-
-	if (p - s > 15) {
-		return false;
-	}
-
-	*num = strtoul(p+1, &endp, 10);
-	if (endp == NULL || *endp != 0) {
-		/* trailing garbage */
-		return false;
-	}
-
-	strlcpy(buf, s, 1+p-s);
-
-	if (inet_aton(buf, addr) == 0) {
-		return false;
-	}
-
-	return true;
-}
-
-
 static bool parse_ipv4(const char *s, unsigned port, ctdb_sock_addr *saddr)
 {
 	saddr->ip.sin_family = AF_INET;
@@ -492,31 +458,51 @@ bool parse_ip(const char *addr, ctdb_sock_addr *saddr)
 /*
   parse a ip/mask pair
  */
-bool parse_ip_mask(const char *s, struct sockaddr_in *ip, unsigned *mask)
+bool parse_ip_mask(const char *str, ctdb_sock_addr *addr, unsigned *mask)
 {
-	ZERO_STRUCT(*ip);
+	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
+	char *s, *p;
+	char *endp = NULL;
+	bool ret;
 
-	if (!parse_ip_num(s, &ip->sin_addr, mask, '/')) {
+	ZERO_STRUCT(*addr);
+	s = talloc_strdup(tmp_ctx, str);
+	if (s == NULL) {
+		DEBUG(DEBUG_ERR, (__location__ " Failed strdup()\n"));
+		talloc_free(tmp_ctx);
 		return false;
 	}
-	if (*mask > 32) {
+
+	p = rindex(s, '/');
+	if (p == NULL) {
+		DEBUG(DEBUG_ERR, (__location__ " This addr: %s does not contain a mask\n", s));
+		talloc_free(tmp_ctx);
 		return false;
 	}
-	ip->sin_family = AF_INET;
-	ip->sin_port   = 0;
-	return true;
+
+	*mask = strtoul(p+1, &endp, 10);
+	if (endp == NULL || *endp != 0) {
+		/* trailing garbage */
+		DEBUG(DEBUG_ERR, (__location__ " Trailing garbage after the mask in %s\n", s));
+		talloc_free(tmp_ctx);
+		return false;
+	}
+	*p = 0;
+
+
+	/* now is this a ipv4 or ipv6 address ?*/
+	p = index(s, ':');
+	if (p == NULL) {
+		ret = parse_ipv4(s, 0, addr);
+	} else {
+		ret = parse_ipv6(s, 0, addr);
+	}
+
+	talloc_free(tmp_ctx);
+	return ret;
 }
 
-/*
-  compare two sockaddr_in structures - matching only on IP
- */
-bool ctdb_same_ipv4(const struct sockaddr_in *ip1, const struct sockaddr_in *ip2)
-{
-	return ip1->sin_family == ip2->sin_family &&
-		ip1->sin_addr.s_addr == ip2->sin_addr.s_addr;
-}
-
-bool ctdb_same_ip(ctdb_sock_addr *ip1, ctdb_sock_addr *ip2)
+bool ctdb_same_ip(const ctdb_sock_addr *ip1, const ctdb_sock_addr *ip2)
 {
 	if (ip1->sa.sa_family != ip2->sa.sa_family) {
 		return false;
@@ -538,13 +524,30 @@ bool ctdb_same_ip(ctdb_sock_addr *ip1, ctdb_sock_addr *ip2)
 }
 
 /*
-  compare two sockaddr_in structures
+  compare two ctdb_sock_addr structures
  */
-bool ctdb_same_sockaddr(const struct sockaddr_in *ip1, const struct sockaddr_in *ip2)
+bool ctdb_same_sockaddr(const ctdb_sock_addr *ip1, const ctdb_sock_addr *ip2)
 {
-	return ctdb_same_ipv4(ip1, ip2) && ip1->sin_port == ip2->sin_port;
+	return ctdb_same_ip(ip1, ip2) && ip1->ip.sin_port == ip2->ip.sin_port;
 }
 
+char *ctdb_addr_to_str(ctdb_sock_addr *addr)
+{
+	static char cip[128] = "";
+
+	switch (addr->sa.sa_family) {
+	case AF_INET:
+		inet_ntop(addr->ip.sin_family, &addr->ip.sin_addr, cip, sizeof(cip));
+		break;
+	case AF_INET6:
+		inet_ntop(addr->ip6.sin6_family, &addr->ip6.sin6_addr, cip, sizeof(cip));
+		break;
+	default:
+		DEBUG(DEBUG_ERR, (__location__ " ERROR, unknown family %u\n", addr->sa.sa_family));
+	}
+
+	return cip;
+}
 
 
 void ctdb_block_signal(int signum)

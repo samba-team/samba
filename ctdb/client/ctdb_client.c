@@ -2422,15 +2422,15 @@ int ctdb_ctrl_gratious_arp(struct ctdb_context *ctdb,
 int ctdb_ctrl_get_tcp_tickles(struct ctdb_context *ctdb, 
 			      struct timeval timeout, uint32_t destnode, 
 			      TALLOC_CTX *mem_ctx, 
-			      struct sockaddr_in *ip,
+			      ctdb_sock_addr *addr,
 			      struct ctdb_control_tcp_tickle_list **list)
 {
 	int ret;
 	TDB_DATA data, outdata;
 	int32_t status;
 
-	data.dptr = (uint8_t*)ip;
-	data.dsize = sizeof(struct sockaddr_in);
+	data.dptr = (uint8_t*)addr;
+	data.dsize = sizeof(ctdb_sock_addr);
 
 	ret = ctdb_control(ctdb, destnode, 0, 
 			   CTDB_CONTROL_GET_TCP_TICKLE_LIST, 0, data, 

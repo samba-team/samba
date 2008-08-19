@@ -535,7 +535,7 @@ static void ctdb_daemon_read_cb(uint8_t *data, size_t cnt, void *args)
 static void ctdb_accept_client(struct event_context *ev, struct fd_event *fde, 
 			 uint16_t flags, void *private_data)
 {
-	struct sockaddr_in addr;
+	struct sockaddr_un addr;
 	socklen_t len;
 	int fd;
 	struct ctdb_context *ctdb = talloc_get_type(private_data, struct ctdb_context);

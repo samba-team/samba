@@ -4,12 +4,17 @@ NUMNODES=2
 if [ $# -gt 0 ]; then
     NUMNODES=$1
 fi
-NODES="./tests/nodes.txt"
 shift
 
+NODES="./tests/nodes.txt"
 rm -f $NODES
 for i in `seq 1 $NUMNODES`; do
-  echo 127.0.0.$i >> $NODES
+  if [ "${CTDB_USE_IPV6}x" != "x" ]; then
+    echo ::$i >> $NODES
+    ip addr add ::$i/128 dev lo
+  else
+    echo 127.0.0.$i >> $NODES
+  fi
 done
 
 killall -q ctdbd

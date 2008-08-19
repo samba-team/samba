@@ -271,13 +271,11 @@ int main(int argc, const char *argv[])
 		svnn->iface = talloc_strdup(svnn, options.public_interface);
 		CTDB_NO_MEMORY(ctdb, svnn->iface);
 
-		if (inet_aton(options.single_public_ip, 
-				&svnn->public_address.sin_addr) == 0) {
+		if (parse_ip(options.single_public_ip, 
+				&svnn->public_address) == 0) {
 			DEBUG(DEBUG_ALERT,("Invalid --single-public-ip argument : %s . This is not a valid ip address. Exiting.\n", options.single_public_ip));
 			exit(10);
 		}
-		svnn->public_address.sin_family = AF_INET;
-		svnn->public_address.sin_port   = 0;
 	}
 
 	if (options.public_address_list) {

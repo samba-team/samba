@@ -61,8 +61,8 @@ typedef union {
   a tcp connection description
  */
 struct ctdb_tcp_connection {
-	struct sockaddr_in saddr;
-	struct sockaddr_in daddr;
+	ctdb_sock_addr src_addr;
+	ctdb_sock_addr dst_addr;
 };
 
 /* the wire representation for a tcp tickle array */
@@ -73,7 +73,7 @@ struct ctdb_tcp_wire_array {
 
 /* the list of tcp tickles used by get/set tcp tickle list */
 struct ctdb_control_tcp_tickle_list {
-	struct sockaddr_in ip;
+	ctdb_sock_addr addr;
 	struct ctdb_tcp_wire_array tickles;
 };
 
@@ -170,7 +170,7 @@ struct ctdb_vnn {
 	struct ctdb_vnn *prev, *next;
 
 	const char *iface;
-	struct sockaddr_in public_address;
+	ctdb_sock_addr public_address;
 	uint8_t public_netmask_bits;
 
 	/* the node number that is serving this public address, if any. 
@@ -563,26 +563,27 @@ struct ctdb_control_set_call {
 
 /*
   struct for tcp_client control
+  used by samba   can not modify
  */
-struct ctdb_control_tcp {
-	struct sockaddr_in src;
-	struct sockaddr_in dest;
+struct ctdb_tcp_client {
+	struct sockaddr_in src; // samba uses this
+	struct sockaddr_in dest;// samba uses this
 };
 
 /*
   struct for kill_tcp control
  */
 struct ctdb_control_killtcp {
-	struct sockaddr_in src;
-	struct sockaddr_in dst;
+	ctdb_sock_addr src_addr;
+	ctdb_sock_addr dst_addr;
 };
 
 /*
-  struct holding a sockaddr_in and an interface name,
+  struct holding a ctdb_sock_addr and an interface name,
   used to add/remove public addresses
  */
 struct ctdb_control_ip_iface {
-	struct sockaddr_in sin;
+	ctdb_sock_addr addr;
 	uint32_t mask;
 	uint32_t len;
 	char iface[1];
@@ -603,8 +604,8 @@ struct ctdb_control_gratious_arp {
   struct for tcp_add and tcp_remove controls
  */
 struct ctdb_control_tcp_vnn {
-	struct sockaddr_in src;
-	struct sockaddr_in dest;
+	ctdb_sock_addr src;
+	ctdb_sock_addr dest;
 };
 
 /*
@@ -804,13 +805,11 @@ enum ctdb_trans2_commit_error {
 void ctdb_set_error(struct ctdb_context *ctdb, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
 void ctdb_fatal(struct ctdb_context *ctdb, const char *msg);
 bool ctdb_same_address(struct ctdb_address *a1, struct ctdb_address *a2);
-bool parse_ip_mask(const char *s, struct sockaddr_in *ip, unsigned *mask);
 int ctdb_parse_address(struct ctdb_context *ctdb,
 		       TALLOC_CTX *mem_ctx, const char *str,
 		       struct ctdb_address *address);
-bool ctdb_same_ipv4(const struct sockaddr_in *ip1, const struct sockaddr_in *ip2);
-bool ctdb_same_ip(ctdb_sock_addr *ip1, ctdb_sock_addr *ip2);
-bool ctdb_same_sockaddr(const struct sockaddr_in *ip1, const struct sockaddr_in *ip2);
+bool ctdb_same_ip(const ctdb_sock_addr *ip1, const ctdb_sock_addr *ip2);
+bool ctdb_same_sockaddr(const ctdb_sock_addr *ip1, const ctdb_sock_addr *ip2);
 uint32_t ctdb_hash(const TDB_DATA *key);
 uint32_t ctdb_hash_string(const char *str);
 void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
@@ -1085,8 +1084,7 @@ struct ctdb_control_list_tunable {
 struct ctdb_node_and_flags {
 	uint32_t pnn;
 	uint32_t flags;
-	struct sockaddr_in sin;
-
+	ctdb_sock_addr addr;
 };
 
 struct ctdb_node_map {
@@ -1191,7 +1189,7 @@ int32_t ctdb_control_end_recovery(struct ctdb_context *ctdb,
 
 struct ctdb_public_ip {
 	uint32_t pnn;
-	struct sockaddr_in sin;
+	ctdb_sock_addr addr;
 };
 int ctdb_ctrl_takeover_ip(struct ctdb_context *ctdb, struct timeval timeout, 
 			  uint32_t destnode, struct ctdb_public_ip *ip);
@@ -1210,7 +1208,7 @@ int ctdb_ctrl_get_public_ips(struct ctdb_context *ctdb,
 
 /* from takeover/system.c */
 int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface);
-bool ctdb_sys_have_ip(struct sockaddr_in ip);
+bool ctdb_sys_have_ip(ctdb_sock_addr *addr);
 int ctdb_sys_send_tcp(const ctdb_sock_addr *dest, 
 		      const ctdb_sock_addr *src,
 		      uint32_t seq, uint32_t ack, int rst);
@@ -1266,13 +1264,14 @@ int ctdb_ctrl_get_all_tunables(struct ctdb_context *ctdb,
 
 void ctdb_start_freeze(struct ctdb_context *ctdb);
 
-bool parse_ip_port(const char *s, ctdb_sock_addr *saddr);
-bool parse_ip(const char *s, ctdb_sock_addr *saddr);
+bool parse_ip_mask(const char *s, ctdb_sock_addr *addr, unsigned *mask);
+bool parse_ip_port(const char *s, ctdb_sock_addr *addr);
+bool parse_ip(const char *s, ctdb_sock_addr *addr);
+ 
 
 int ctdb_sys_open_capture_socket(const char *iface, void **private_data);
 int ctdb_sys_close_capture_socket(void *private_data);
-int ctdb_sys_read_tcp_packet(int s, void *private_data, struct sockaddr_in *src, struct sockaddr_in *dst,
-			     uint32_t *ack_seq, uint32_t *seq);
+int ctdb_sys_read_tcp_packet(int s, void *private_data, ctdb_sock_addr *src, ctdb_sock_addr *dst, uint32_t *ack_seq, uint32_t *seq);
 
 int ctdb_ctrl_killtcp(struct ctdb_context *ctdb, 
 		      struct timeval timeout, 
@@ -1299,7 +1298,7 @@ int ctdb_ctrl_get_tcp_tickles(struct ctdb_context *ctdb,
 		      struct timeval timeout, 
 		      uint32_t destnode,
 		      TALLOC_CTX *mem_ctx,
-		      struct sockaddr_in *ip,
+		      ctdb_sock_addr *addr,
 		      struct ctdb_control_tcp_tickle_list **list);
 
 
@@ -1375,5 +1374,7 @@ int32_t ctdb_control_trans2_finished(struct ctdb_context *ctdb,
 				     struct ctdb_req_control *c);
 int32_t ctdb_control_trans2_error(struct ctdb_context *ctdb, 
 				  struct ctdb_req_control *c);
+
+char *ctdb_addr_to_str(ctdb_sock_addr *addr);
 
 #endif
