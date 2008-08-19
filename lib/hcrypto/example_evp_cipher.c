@@ -38,6 +38,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <err.h>
+#include <assert.h>
 
 /* key and initial vector */
 static char key[16] =
@@ -46,6 +47,9 @@ static char key[16] =
 static char ivec[16] =
     "\xaa\xbb\x45\xd4\xaa\xbb\x45\xd4"
     "\xaa\xbb\x45\xd4\xaa\xbb\x45\xd4";
+
+static void
+usage(int exit_code) __attribute__((noreturn));
 
 static void
 usage(int exit_code)
@@ -77,22 +81,20 @@ main(int argc, char **argv)
 	}
 	if (strcmp(argv[1], "--help") == 0)
 	    usage(0);
-    } else if (argc == 3) {
-	ifn = argv[1];
-	ofn = argv[2];
+	usage(1);
+    } else if (argc == 4) {
+	block_size = atoi(argv[1]);
+	if (block_size == 0)
+	    errx(1, "invalid blocksize %s", argv[1]);
+	ifn = argv[2];
+	ofn = argv[3];
     } else
 	usage(1);
 
-    /* 
-     * Size is prime to trigger mis-match between io block size and
-     * encryption block size.
-     */
-    block_size = 1021;
-
-    in = fopen("in", "r");
+    in = fopen(ifn, "r");
     if (in == NULL)
 	errx(1, "failed to open input file");
-    out = fopen("out", "w");
+    out = fopen(ofn, "w+");
     if (out == NULL)
 	errx(1, "failed to open output file");
     
