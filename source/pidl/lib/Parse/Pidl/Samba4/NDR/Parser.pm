@@ -158,26 +158,26 @@ sub fn_declare($$$$)
 
 ###################################################################
 # setup any special flags for an element or structure
-sub start_flags($$)
+sub start_flags($$$)
 {
-	my ($self, $e) = @_;
+	my ($self, $e, $ndr) = @_;
 	my $flags = has_property($e, "flag");
 	if (defined $flags) {
 		$self->pidl("{");
 		$self->indent;
-		$self->pidl("uint32_t _flags_save_$e->{TYPE} = ndr->flags;");
-		$self->pidl("ndr_set_flags(&ndr->flags, $flags);");
+		$self->pidl("uint32_t _flags_save_$e->{TYPE} = $ndr->flags;");
+		$self->pidl("ndr_set_flags(&$ndr->flags, $flags);");
 	}
 }
 
 ###################################################################
 # end any special flags for an element or structure
-sub end_flags($$)
+sub end_flags($$$)
 {
-	my ($self, $e) = @_;
+	my ($self, $e, $ndr) = @_;
 	my $flags = has_property($e, "flag");
 	if (defined $flags) {
-		$self->pidl("ndr->flags = _flags_save_$e->{TYPE};");
+		$self->pidl("$ndr->flags = _flags_save_$e->{TYPE};");
 		$self->deindent;
 		$self->pidl("}");
 	}
@@ -629,7 +629,7 @@ sub ParseElementPush($$$$$$)
 
 	$var_name = append_prefix($e, $var_name);
 
-	$self->start_flags($e);
+	$self->start_flags($e, $ndr);
 
 	if (defined(my $value = has_property($e, "value"))) {
 		$var_name = ParseExpr($value, $env, $e->{ORIGINAL});
@@ -637,7 +637,7 @@ sub ParseElementPush($$$$$$)
 
 	$self->ParseElementPushLevel($e, $e->{LEVELS}[0], $ndr, $var_name, $env, $primitives, $deferred);
 
-	$self->end_flags($e);
+	$self->end_flags($e, $ndr);
 
 	if ($e->{REPRESENTATION_TYPE} ne $e->{TYPE}) {
 		$self->deindent;
@@ -1103,11 +1103,11 @@ sub ParseElementPull($$$$$$)
 
 	$var_name = append_prefix($e, $var_name);
 
-	$self->start_flags($e);
+	$self->start_flags($e, $ndr);
 
 	$self->ParseElementPullLevel($e,$e->{LEVELS}[0],$ndr,$var_name,$env,$primitives,$deferred);
 
-	$self->end_flags($e);
+	$self->end_flags($e, $ndr);
 
 	# Representation type is different from transmit_as
 	if ($e->{REPRESENTATION_TYPE} ne $e->{TYPE}) {
@@ -1240,7 +1240,7 @@ sub ParseStructPush($$$$)
 
 	$self->DeclareArrayVariables($_) foreach (@{$struct->{ELEMENTS}});
 
-	$self->start_flags($struct);
+	$self->start_flags($struct, $ndr);
 
 	$self->pidl("if (ndr_flags & NDR_SCALARS) {");
 	$self->indent;
@@ -1254,7 +1254,7 @@ sub ParseStructPush($$$$)
 	$self->deindent;
 	$self->pidl("}");
 
-	$self->end_flags($struct);
+	$self->end_flags($struct, $ndr);
 }
 
 #####################################################################
@@ -1264,9 +1264,9 @@ sub ParseEnumPush($$$$)
 	my($self,$enum,$ndr,$varname) = @_;
 	my($type_fn) = $enum->{BASE_TYPE};
 
-	$self->start_flags($enum);
+	$self->start_flags($enum, $ndr);
 	$self->pidl("NDR_CHECK(ndr_push_$type_fn($ndr, NDR_SCALARS, $varname));");
-	$self->end_flags($enum);
+	$self->end_flags($enum, $ndr);
 }
 
 #####################################################################
@@ -1278,11 +1278,11 @@ sub ParseEnumPull($$$$)
 	my($type_v_decl) = mapTypeName($type_fn);
 
 	$self->pidl("$type_v_decl v;");
-	$self->start_flags($enum);
+	$self->start_flags($enum, $ndr);
 	$self->pidl("NDR_CHECK(ndr_pull_$type_fn($ndr, NDR_SCALARS, &v));");
 	$self->pidl("*$varname = v;");
 
-	$self->end_flags($enum);
+	$self->end_flags($enum, $ndr);
 }
 
 #####################################################################
@@ -1294,7 +1294,7 @@ sub ParseEnumPrint($$$$$)
 	$self->pidl("const char *val = NULL;");
 	$self->pidl("");
 
-	$self->start_flags($enum);
+	$self->start_flags($enum, $ndr);
 
 	$self->pidl("switch ($varname) {");
 	$self->indent;
@@ -1313,7 +1313,7 @@ sub ParseEnumPrint($$$$$)
 	
 	$self->pidl("ndr_print_enum($ndr, name, \"$enum->{TYPE}\", val, $varname);");
 
-	$self->end_flags($enum);
+	$self->end_flags($enum, $ndr);
 }
 
 sub DeclEnum($$$$)
@@ -1337,11 +1337,11 @@ sub ParseBitmapPush($$$$)
 	my($self,$bitmap,$ndr,$varname) = @_;
 	my($type_fn) = $bitmap->{BASE_TYPE};
 
-	$self->start_flags($bitmap);
+	$self->start_flags($bitmap, $ndr);
 
 	$self->pidl("NDR_CHECK(ndr_push_$type_fn($ndr, NDR_SCALARS, $varname));");
 
-	$self->end_flags($bitmap);
+	$self->end_flags($bitmap, $ndr);
 }
 
 #####################################################################
@@ -1353,11 +1353,11 @@ sub ParseBitmapPull($$$$)
 	my($type_decl) = mapTypeName($bitmap->{BASE_TYPE});
 
 	$self->pidl("$type_decl v;");
-	$self->start_flags($bitmap);
+	$self->start_flags($bitmap, $ndr);
 	$self->pidl("NDR_CHECK(ndr_pull_$type_fn($ndr, NDR_SCALARS, &v));");
 	$self->pidl("*$varname = v;");
 
-	$self->end_flags($bitmap);
+	$self->end_flags($bitmap, $ndr);
 }
 
 #####################################################################
@@ -1386,7 +1386,7 @@ sub ParseBitmapPrint($$$$$)
 	my($type_decl) = mapTypeName($bitmap->{TYPE});
 	my($type_fn) = $bitmap->{BASE_TYPE};
 
-	$self->start_flags($bitmap);
+	$self->start_flags($bitmap, $ndr);
 
 	$self->pidl("ndr_print_$type_fn($ndr, name, $varname);");
 
@@ -1396,7 +1396,7 @@ sub ParseBitmapPrint($$$$$)
 	}
 	$self->pidl("$ndr->depth--;");
 
-	$self->end_flags($bitmap);
+	$self->end_flags($bitmap, $ndr);
 }
 
 sub DeclBitmap($$$$)
@@ -1427,7 +1427,7 @@ sub ParseStructPrint($$$$$)
 
 	$self->pidl("ndr_print_struct($ndr, name, \"$name\");");
 
-	$self->start_flags($struct);
+	$self->start_flags($struct, $ndr);
 
 	$self->pidl("$ndr->depth++;");
 	
@@ -1435,7 +1435,7 @@ sub ParseStructPrint($$$$$)
 		foreach (@{$struct->{ELEMENTS}});
 	$self->pidl("$ndr->depth--;");
 
-	$self->end_flags($struct);
+	$self->end_flags($struct, $ndr);
 }
 
 sub DeclarePtrVariables($$)
@@ -1526,7 +1526,7 @@ sub ParseStructPull($$$$)
 		$self->DeclareMemCtxVariables($e);
 	}
 
-	$self->start_flags($struct);
+	$self->start_flags($struct, $ndr);
 
 	my $env = GenerateStructEnv($struct, $varname);
 
@@ -1541,7 +1541,7 @@ sub ParseStructPull($$$$)
 	$self->deindent;
 	$self->pidl("}");
 
-	$self->end_flags($struct);
+	$self->end_flags($struct, $ndr);
 }
 
 #####################################################################
@@ -1678,7 +1678,7 @@ sub ParseUnionPush($$$$)
 	my ($self,$e,$ndr,$varname) = @_;
 	my $have_default = 0;
 
-	$self->start_flags($e);
+	$self->start_flags($e, $ndr);
 
 	$self->pidl("if (ndr_flags & NDR_SCALARS) {");
 	$self->indent;
@@ -1690,7 +1690,7 @@ sub ParseUnionPush($$$$)
 	$self->ParseUnionPushDeferred($e, $ndr, $varname);
 	$self->deindent;
 	$self->pidl("}");
-	$self->end_flags($e);
+	$self->end_flags($e, $ndr);
 }
 
 #####################################################################
@@ -1705,7 +1705,7 @@ sub ParseUnionPrint($$$$$)
 		$self->DeclareArrayVariables($el);
 	}
 
-	$self->start_flags($e);
+	$self->start_flags($e, $ndr);
 
 	$self->pidl("level = ndr_print_get_switch_value($ndr, $varname);");
 
@@ -1733,7 +1733,7 @@ sub ParseUnionPrint($$$$$)
 	$self->deindent;
 	$self->pidl("}");
 
-	$self->end_flags($e);
+	$self->end_flags($e, $ndr);
 }
 
 sub ParseUnionPullPrimitives($$$$$)
@@ -1839,7 +1839,7 @@ sub ParseUnionPull($$$$)
 		$double_cases{"$el->{NAME}"} = 1;
 	}
 
-	$self->start_flags($e);
+	$self->start_flags($e, $ndr);
 
 	$self->pidl("level = ndr_pull_get_switch_value($ndr, $varname);");
 
@@ -1857,7 +1857,7 @@ sub ParseUnionPull($$$$)
 
 	$self->add_deferred();
 
-	$self->end_flags($e);
+	$self->end_flags($e, $ndr);
 }
 
 sub DeclUnion($$$$)
