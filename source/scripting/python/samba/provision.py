@@ -1281,39 +1281,38 @@ def provision_backend(setup_dir=None, message=None,
 	mmr_syncrepl_user_config = "" 
 	
 	if ol_mmr_urls is not None:
-		mmr_hosts=filter(None,ol_mmr_urls.split(' ')) 
-                if (len(mmr_hosts) == 1):
-                    mmr_hosts=filter(None,ol_mmr_urls.split(',')) 
+		url_list=filter(None,ol_mmr_urls.split(' ')) 
+                if (len(url_list) == 1):
+                    url_list=filter(None,ol_mmr_urls.split(',')) 
                      
 
 		mmr_on_config = "MirrorMode On"
- 		
-		z=0
-		for i in mmr_hosts:
-			z=z+1
+ 		serverid=0
+		for url in url_list:
+			serverid=serverid+1
 			mmr_serverids_config += read_and_sub_file(setup_path("mmr_serverids.conf"),
-								     { "SERVERID" : str(z),
-        		                                               "LDAPSERVER" : i })
-
-			z=z+1
+								     { "SERVERID" : str(serverid),
+        		                                               "LDAPSERVER" : url })
+                        rid=serverid*10
+			rid=rid+1
 			mmr_syncrepl_schema_config += read_and_sub_file(setup_path("mmr_syncrepl.conf"),
-								     { 	"RID" : str(z),
+								     { 	"RID" : str(rid),
                     							"MMRDN": names.schemadn,
-        		                                               	"LDAPSERVER" : i,
+        		                                               	"LDAPSERVER" : url,
                                                                         "MMR_PASSWORD": adminpass})
 
-			z=z+1
+			rid=rid+1
 			mmr_syncrepl_config_config += read_and_sub_file(setup_path("mmr_syncrepl.conf"),
-								     { 	"RID" : str(z),
+								     { 	"RID" : str(rid),
                     							"MMRDN": names.configdn,
-        		                                               	"LDAPSERVER" : i,
+        		                                               	"LDAPSERVER" : url,
                                                                         "MMR_PASSWORD": adminpass})
 
-			z=z+1
+			rid=rid+1
 			mmr_syncrepl_user_config += read_and_sub_file(setup_path("mmr_syncrepl.conf"),
-								     { 	"RID" : str(z),
+								     { 	"RID" : str(rid),
                     							"MMRDN": names.domaindn,
-        		                                               	"LDAPSERVER" : i,
+        		                                               	"LDAPSERVER" : url,
                                                                         "MMR_PASSWORD": adminpass })
 
 
