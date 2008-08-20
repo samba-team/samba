@@ -123,7 +123,7 @@ static NTSTATUS ntp_signd_recv(void *private, DATA_BLOB wrapped_input)
 	struct signed_reply signed_reply;
 	enum ndr_err_code ndr_err;
 	struct ldb_result *res;
-	const char *attrs[] = { "unicodePwd", "userAccountControl", NULL };
+	const char *attrs[] = { "unicodePwd", "userAccountControl", "cn", NULL };
 	struct MD5Context ctx;
 	struct samr_Password *nt_hash;
 	uint32_t user_account_control;
@@ -168,7 +168,7 @@ static NTSTATUS ntp_signd_recv(void *private, DATA_BLOB wrapped_input)
 
 	ret = ldb_search_exp_fmt(ntp_signdconn->ntp_signd->samdb, tmp_ctx,
 				 &res, samdb_base_dn(ntp_signdconn->ntp_signd->samdb),
-				 LDB_SCOPE_SUBTREE, attrs, "(&(objectSid=%s)(objectClass=computer))",
+				 LDB_SCOPE_SUBTREE, attrs, "(&(objectSid=%s)(objectClass=user))",
 				 dom_sid_string(tmp_ctx, sid));
 	if (ret != LDB_SUCCESS) {
 		DEBUG(2, ("Failed to search for SID %s in SAM for NTP signing: %s\n", dom_sid_string(tmp_ctx, sid),
@@ -188,7 +188,13 @@ static NTSTATUS ntp_signd_recv(void *private, DATA_BLOB wrapped_input)
 	user_account_control = ldb_msg_find_attr_as_uint(res->msgs[0], "userAccountControl", 0);
 
 	if (user_account_control & UF_ACCOUNTDISABLE) {
-		DEBUG(1, ("Account for SID [%s] is disabled\n", dom_sid_string(tmp_ctx, sid)));
+		DEBUG(1, ("Account %s for SID [%s] is disabled\n", ldb_dn_get_linearized(res->msgs[0]->dn), dom_sid_string(tmp_ctx, sid)));
+		talloc_free(tmp_ctx);
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	if (!(user_account_control & (UF_INTERDOMAIN_TRUST_ACCOUNT|UF_SERVER_TRUST_ACCOUNT|UF_WORKSTATION_TRUST_ACCOUNT))) {
+		DEBUG(1, ("Account %s for SID [%s] is not a trust account\n", ldb_dn_get_linearized(res->msgs[0]->dn), dom_sid_string(tmp_ctx, sid)));
 		talloc_free(tmp_ctx);
 		return NT_STATUS_ACCESS_DENIED;
 	}

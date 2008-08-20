@@ -94,12 +94,6 @@ NTSTATUS smb2_check_signature(struct smb2_request_buffer *buf, DATA_BLOB session
 		return NT_STATUS_OK;
 	}
 
-	if (session_key.length == 0) {
-		DEBUG(2,("Wrong session key length %u for SMB2 signing\n",
-			 (unsigned)session_key.length));
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
 	memcpy(sig, buf->hdr+SMB2_HDR_SIGNATURE, 16);
 
 	memset(buf->hdr + SMB2_HDR_SIGNATURE, 0, 16);

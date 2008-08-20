@@ -79,12 +79,12 @@ struct smb2srv_request *smb2srv_init_request(struct smbsrv_connection *smb_conn)
 NTSTATUS smb2srv_setup_reply(struct smb2srv_request *req, uint16_t body_fixed_size,
 			     bool body_dynamic_present, uint32_t body_dynamic_size)
 {
-	uint32_t flags = 0x00000001;
+	uint32_t flags = SMB2_HDR_FLAG_REDIRECT;
 	uint32_t pid = IVAL(req->in.hdr, SMB2_HDR_PID);
 	uint32_t tid = IVAL(req->in.hdr, SMB2_HDR_TID);
 
 	if (req->pending_id) {
-		flags |= 0x00000002;
+		flags |= SMB2_HDR_FLAG_ASYNC;
 		pid = req->pending_id;
 		tid = 0;
 	}
@@ -236,7 +236,7 @@ void smb2srv_send_reply(struct smb2srv_request *req)
 	}
 
 	/* if signing is active on the session then sign the packet */
-	if (req->session && req->session->smb2_signing.active) {
+	if (req->is_signed) {
 		status = smb2_sign_message(&req->out, 
 					   req->session->session_info->session_key);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -310,12 +310,7 @@ static NTSTATUS smb2srv_reply(struct smb2srv_request *req)
 
 		if (!req->session) goto nosession;
 
-		if (!req->session->smb2_signing.active) {
-			/* TODO: workout the correct error code */
-			smb2srv_send_error(req, NT_STATUS_FOOBAR);
-			return NT_STATUS_OK;
-		}
-
+		req->is_signed = true;
 		status = smb2_check_signature(&req->in, 
 					      req->session->session_info->session_key);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -511,6 +506,8 @@ static NTSTATUS smb2srv_init_pending(struct smbsrv_connection *smb_conn)
 
 NTSTATUS smb2srv_queue_pending(struct smb2srv_request *req)
 {
+	NTSTATUS status;
+	bool signing_used = false;
 	int id;
 
 	if (req->pending_id) {
@@ -526,10 +523,35 @@ NTSTATUS smb2srv_queue_pending(struct smb2srv_request *req)
 	DLIST_ADD_END(req->smb_conn->requests2.list, req, struct smb2srv_request *);
 	req->pending_id = id;
 
-	talloc_set_destructor(req, smb2srv_request_deny_destructor);
-	smb2srv_send_error(req, STATUS_PENDING);
-	talloc_set_destructor(req, smb2srv_request_destructor);
+	if (req->smb_conn->connection->event.fde == NULL) {
+		/* the socket has been destroyed - no point trying to send an error! */
+		return NT_STATUS_REMOTE_DISCONNECT;
+	}
 
+	talloc_set_destructor(req, smb2srv_request_deny_destructor);
+
+	status = smb2srv_setup_reply(req, 8, true, 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	SIVAL(req->out.hdr, SMB2_HDR_STATUS, NT_STATUS_V(STATUS_PENDING));
+
+	SSVAL(req->out.body, 0x02, 0);
+	SIVAL(req->out.body, 0x04, 0);
+
+	/* if the real reply will be signed set the signed flags, but don't sign */
+	if (req->is_signed) {
+		SIVAL(req->out.hdr, SMB2_HDR_FLAGS, IVAL(req->out.hdr, SMB2_HDR_FLAGS) | SMB2_HDR_FLAG_SIGNED);
+		signing_used = req->is_signed;
+		req->is_signed = false;
+	}
+
+	smb2srv_send_reply(req);
+
+	req->is_signed = signing_used;
+
+	talloc_set_destructor(req, smb2srv_request_destructor);
 	return NT_STATUS_OK;
 }
 
@@ -545,7 +567,7 @@ void smb2srv_cancel_recv(struct smb2srv_request *req)
 	flags		= IVAL(req->in.hdr, SMB2_HDR_FLAGS);
 	pending_id	= IVAL(req->in.hdr, SMB2_HDR_PID);
 
-	if (!(flags & 0x00000002)) {
+	if (!(flags & SMB2_HDR_FLAG_ASYNC)) {
 		/* TODO: what to do here? */
 		goto done;
 	}

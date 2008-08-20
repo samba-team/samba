@@ -2,16 +2,6 @@
 # Templates to be put in templates.ldb.  Not part of main samdb any more.
 ###
 
-dn: @OPTIONS
-checkBaseOnSearch: TRUE
-
-dn: @INDEXLIST
-@IDXATTR: cn
-
-dn: @ATTRIBUTES
-cn: CASE_INSENSITIVE
-dn: CASE_INSENSITIVE
-
 dn: CN=Templates
 objectClass: top
 objectClass: container

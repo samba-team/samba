@@ -76,7 +76,9 @@ class ProvisionPaths(object):
         self.memberofconf = None
         self.fedoradsinf = None
         self.fedoradspartitions = None
- 
+	self.olmmron = None
+	self.olmmrserveridsconf = None
+	self.olmmrsyncreplconf = None
 
 class ProvisionNames(object):
     def __init__(self):
@@ -241,9 +243,13 @@ def provision_paths_from_lp(lp, dnsdomain):
     paths.memberofconf = os.path.join(paths.ldapdir, 
                                       "memberof.conf")
     paths.fedoradsinf = os.path.join(paths.ldapdir, 
-                                   "fedorads.inf")
+                                     "fedorads.inf")
     paths.fedoradspartitions = os.path.join(paths.ldapdir, 
                                             "fedorads-partitions.ldif")
+    paths.olmmrserveridsconf = os.path.join(paths.ldapdir, 
+                                            "mmr_serverids.conf")
+    paths.olmmrsyncreplconf = os.path.join(paths.ldapdir, 
+                                           "mmr_syncrepl.conf")
     paths.hklm = "hklm.ldb"
     paths.hkcr = "hkcr.ldb"
     paths.hkcu = "hkcu.ldb"
@@ -331,7 +337,7 @@ def guess_names(lp=None, hostname=None, domain=None, dnsdomain=None, serverrole=
     names.hostname = hostname
     names.sitename = sitename
     names.serverdn = "CN=%s,CN=Servers,CN=%s,CN=Sites,%s" % (netbiosname, sitename, configdn)
-    
+ 
     return names
     
 
@@ -617,7 +623,17 @@ def setup_templatesdb(path, setup_path, session_info, credentials, lp):
     """
     templates_ldb = SamDB(path, session_info=session_info,
                           credentials=credentials, lp=lp)
-    templates_ldb.erase()
+    # Wipes the database
+    try:
+        templates_ldb.erase()
+    except:
+        os.unlink(path)
+
+    templates_ldb.load_ldif_file_add(setup_path("provision_templates_init.ldif"))
+
+    templates_ldb = SamDB(path, session_info=session_info,
+                          credentials=credentials, lp=lp)
+
     templates_ldb.load_ldif_file_add(setup_path("provision_templates.ldif"))
 
 
@@ -1141,7 +1157,8 @@ def provision_backend(setup_dir=None, message=None,
                       smbconf=None, targetdir=None, realm=None, 
                       rootdn=None, domaindn=None, schemadn=None, configdn=None,
                       domain=None, hostname=None, adminpass=None, root=None, serverrole=None, 
-                      ldap_backend_type=None, ldap_backend_port=None):
+                      ldap_backend_type=None, ldap_backend_port=None,
+		      ol_mmr_urls=None):
 
     def setup_path(file):
         return os.path.join(setup_dir, file)
@@ -1255,7 +1272,51 @@ def provision_backend(setup_dir=None, message=None,
 
         refint_config = read_and_sub_file(setup_path("refint.conf"),
                                             { "LINK_ATTRS" : refint_attributes})
-    
+
+# generate serverids, ldap-urls and syncrepl-blocks for mmr hosts
+	mmr_on_config = ""
+	mmr_serverids_config = ""
+        mmr_syncrepl_schema_config = "" 
+	mmr_syncrepl_config_config = "" 
+	mmr_syncrepl_user_config = "" 
+	
+	if ol_mmr_urls is not None:
+		mmr_hosts=filter(None,ol_mmr_urls.split(' ')) 
+                if (len(mmr_hosts) == 1):
+                    mmr_hosts=filter(None,ol_mmr_urls.split(',')) 
+                     
+
+		mmr_on_config = "MirrorMode On"
+ 		
+		z=0
+		for i in mmr_hosts:
+			z=z+1
+			mmr_serverids_config += read_and_sub_file(setup_path("mmr_serverids.conf"),
+								     { "SERVERID" : str(z),
+        		                                               "LDAPSERVER" : i })
+
+			z=z+1
+			mmr_syncrepl_schema_config += read_and_sub_file(setup_path("mmr_syncrepl.conf"),
+								     { 	"RID" : str(z),
+                    							"MMRDN": names.schemadn,
+        		                                               	"LDAPSERVER" : i,
+                                                                        "MMR_PASSWORD": adminpass})
+
+			z=z+1
+			mmr_syncrepl_config_config += read_and_sub_file(setup_path("mmr_syncrepl.conf"),
+								     { 	"RID" : str(z),
+                    							"MMRDN": names.configdn,
+        		                                               	"LDAPSERVER" : i,
+                                                                        "MMR_PASSWORD": adminpass})
+
+			z=z+1
+			mmr_syncrepl_user_config += read_and_sub_file(setup_path("mmr_syncrepl.conf"),
+								     { 	"RID" : str(z),
+                    							"MMRDN": names.domaindn,
+        		                                               	"LDAPSERVER" : i,
+                                                                        "MMR_PASSWORD": adminpass })
+
+
         setup_file(setup_path("slapd.conf"), paths.slapdconf,
                    {"DNSDOMAIN": names.dnsdomain,
                     "LDAPDIR": paths.ldapdir,
@@ -1263,8 +1324,14 @@ def provision_backend(setup_dir=None, message=None,
                     "CONFIGDN": names.configdn,
                     "SCHEMADN": names.schemadn,
                     "MEMBEROF_CONFIG": memberof_config,
+                    "MIRRORMODE": mmr_on_config,
+                    "MMR_SERVERIDS_CONFIG": mmr_serverids_config,
+                    "MMR_SYNCREPL_SCHEMA_CONFIG": mmr_syncrepl_schema_config,
+                    "MMR_SYNCREPL_CONFIG_CONFIG": mmr_syncrepl_config_config,
+                    "MMR_SYNCREPL_USER_CONFIG": mmr_syncrepl_user_config,
+                    "MMR_PASSWORD": adminpass,
                     "REFINT_CONFIG": refint_config})
-        setup_file(setup_path("modules.conf"), paths.modulesconf,
+	setup_file(setup_path("modules.conf"), paths.modulesconf,
                    {"REALM": names.realm})
         
         setup_db_config(setup_path, os.path.join(paths.ldapdir, "db", "user"))
