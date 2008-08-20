@@ -12,6 +12,7 @@ source/include/stamp-h
 source/include/version.h
 source/Makefile
 source/lib/netapi/examples/Makefile
+source/lib/netapi/tests/Makefile
 source/config.log
 source/config.status
 source/configure
