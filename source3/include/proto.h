@@ -6049,6 +6049,7 @@ int lp_directory_name_cache_size(int );
 int lp_smb_encrypt(int );
 char lp_magicchar(const struct share_params *p );
 int lp_winbind_cache_time(void);
+int lp_winbind_reconnect_delay(void);
 const char **lp_winbind_nss_info(void);
 int lp_algorithmic_rid_base(void);
 int lp_name_cache_timeout(void);
