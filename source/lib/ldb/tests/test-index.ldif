@@ -5,7 +5,3 @@ dn: @INDEXLIST
 dn: @ATTRIBUTES
 uid: CASE_INSENSITIVE
 
-dn: @SUBCLASSES
-top: person
-person: organizationalPerson
-organizationalPerson: OpenLDAPperson

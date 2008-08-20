@@ -6701,7 +6701,6 @@ static bool test_conflict_owned_active_vs_replica(struct torture_context *tctx,
 /* 
  * unique vs. unique section
  */
-#if METZE_NEEDS_TO_LOOK_AT_THIS_ONE
 	/*
 	 * unique,active vs. unique,active with same ip(s), unchecked
 	 */
@@ -6728,7 +6727,6 @@ static bool test_conflict_owned_active_vs_replica(struct torture_context *tctx,
 			.apply_expected	= true
 		},
 	},
-#endif
 	/*
 	 * unique,active vs. unique,active with different ip(s), positive response
 	 */
@@ -8967,7 +8965,6 @@ static bool test_conflict_owned_active_vs_replica(struct torture_context *tctx,
 			.sgroup_merge	= true
 		},
 	},
-#if 0
 	/*
 	 * sgroup,active vs. sgroup,active with same ip(s)
 	 */
@@ -9157,7 +9154,6 @@ static bool test_conflict_owned_active_vs_replica(struct torture_context *tctx,
 			.apply_expected	= false
 		},
 	},
-#endif
 	};
 
 	if (!ctx->nbtsock_srv) {
@@ -9543,7 +9539,9 @@ static void test_conflict_owned_active_vs_replica_handler_query(struct nbt_name_
 	talloc_free(rep_packet);
 
 	/* make sure we push the reply to the wire */
-	event_loop_once(nbtsock->event_ctx);
+	while (nbtsock->send_queue) {
+		event_loop_once(nbtsock->event_ctx);
+	}
 	msleep(1000);
 
 	rec->defend.timeout	= 0;
@@ -9598,7 +9596,9 @@ static void test_conflict_owned_active_vs_replica_handler_release(
 	talloc_free(rep_packet);
 
 	/* make sure we push the reply to the wire */
-	event_loop_once(nbtsock->event_ctx);
+	while (nbtsock->send_queue) {
+		event_loop_once(nbtsock->event_ctx);
+	}
 	msleep(1000);
 
 	rec->defend.timeout	= 0;

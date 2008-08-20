@@ -62,6 +62,8 @@ struct smb2srv_request {
 	uint8_t _chained_file_handle[16];
 	uint8_t *chained_file_handle;
 
+	bool is_signed;
+
 	struct smb2_request_buffer in;
 	struct smb2_request_buffer out;
 };
