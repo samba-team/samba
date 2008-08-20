@@ -204,6 +204,7 @@ struct winbindd_domain {
 	uint32_t id_range_low, id_range_high;
 
 	/* A working DC */
+	pid_t dc_probe_pid; /* Child we're using to detect the DC. */
 	fstring dcname;
 	struct sockaddr_storage dcaddr;
 
