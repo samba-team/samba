@@ -64,6 +64,7 @@ examples/libsmbclient/teststat3
 examples/libsmbclient/testutime
 examples/libsmbclient/testwrite
 examples/libsmbclient/testtruncate
+examples/libsmbclient/tree
 source/librpc/gen_ndr/cli_krb5pac.*
 source/librpc/gen_ndr/cli_messaging.*
 source/librpc/gen_ndr/cli_misc.*
