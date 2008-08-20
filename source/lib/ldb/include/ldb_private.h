@@ -91,13 +91,6 @@ struct ldb_schema {
 	/* attribute handling table */
 	unsigned num_attributes;
 	struct ldb_schema_attribute *attributes;
-
-	/* objectclass information */
-	unsigned num_classes;
-	struct ldb_subclass {
-		char *name;
-		char **subclasses;
-	} *classes;
 };
 
 /*
