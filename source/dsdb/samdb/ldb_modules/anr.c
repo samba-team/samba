@@ -146,7 +146,7 @@ struct ldb_parse_tree *anr_replace_callback(TALLOC_CTX *mem_ctx,
 		op = LDB_OP_SUBSTRING;
 	}
 	for (cur = schema->attributes; cur; cur = cur->next) {
-		if (!(cur->searchFlags & 0x4)) continue;
+		if (!(cur->searchFlags & SEARCH_FLAG_ANR)) continue;
 		match_tree = make_match_tree(module, mem_ctx, op, cur->lDAPDisplayName, match);
 
 		if (tree) {
