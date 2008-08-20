@@ -224,6 +224,7 @@ kill_tcp_connections() {
     _killcount=0
     connfile="$CTDB_BASE/state/connections.$_IP"
     netstat -tn |egrep "^tcp.*[[:space:]]+$_IP:.*ESTABLISHED" | awk '{print $4" "$5}' > $connfile
+    netstat -tn |egrep "^tcp.*[[:space:]]+::ffff:$_IP:.*ESTABLISHED" | awk '{print $4" "$5}' >> $connfile
 
     while read dest src; do
 	srcip=`echo $src | sed -e "s/:[^:]*$//"`
