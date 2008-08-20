@@ -131,15 +131,18 @@ int iface_count(void)
 }
 
 /****************************************************************************
- How many interfaces do we have (v4 only) ?
+ How many non-loopback IPv4 interfaces do we have ?
 **************************************************************************/
 
-int iface_count_v4(void)
+int iface_count_v4_nl(void)
 {
 	int ret = 0;
 	struct interface *i;
 
 	for (i=local_interfaces;i;i=i->next) {
+		if (is_loopback_addr(&i->ip)) {
+			continue;
+		}
 		if (i->ip.ss_family == AF_INET) {
 			ret++;
 		}

@@ -293,8 +293,8 @@ static void reload_interfaces(time_t t)
 
 		BlockSignals(false, SIGTERM);
 
-		/* We only count IPv4 interfaces here. */
-		while (iface_count_v4() == 0 && !got_sig_term) {
+		/* We only count IPv4, non-loopback interfaces here. */
+		while (iface_count_v4_nl() == 0 && !got_sig_term) {
 			sleep(5);
 			load_interfaces();
 		}
