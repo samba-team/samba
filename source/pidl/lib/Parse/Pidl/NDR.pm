@@ -287,6 +287,22 @@ sub GetElementLevelTable($$)
 	return $order;
 }
 
+sub GetTypedefLevelTable($$$)
+{
+	my ($e, $data, $pointer_default) = @_;
+
+	my $order = [];
+
+	push (@$order, {
+		TYPE => "TYPEDEF"
+	});
+
+	my $i = 0;
+	foreach (@$order) { $_->{LEVEL_INDEX} = $i; $i+=1; }
+
+	return $order;
+}
+
 #####################################################################
 # see if a type contains any deferred data 
 sub can_contain_deferred($)
@@ -575,6 +591,7 @@ sub ParseTypedef($$)
 		NAME => $d->{NAME},
 		TYPE => $d->{TYPE},
 		PROPERTIES => $d->{PROPERTIES},
+		LEVELS => GetTypedefLevelTable($d, $data, $pointer_default),
 		DATA => $data,
 		ORIGINAL => $d
 	};
