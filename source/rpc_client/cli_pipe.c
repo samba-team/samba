@@ -823,8 +823,8 @@ static NTSTATUS rpc_api_pipe(struct rpc_pipe_client *cli,
 
 	while(1) {
 		RPC_HDR rhdr;
-		char *ret_data;
-		uint32 ret_data_len;
+		char *ret_data = NULL;
+		uint32 ret_data_len = 0;
 
 		/* Ensure we have enough data for a pdu. */
 		ret = cli_pipe_get_current_pdu(cli, &rhdr, &current_pdu);
