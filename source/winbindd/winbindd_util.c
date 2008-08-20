@@ -180,11 +180,11 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 	domain->initialized = False;
 	domain->online = is_internal_domain(sid);
 	domain->check_online_timeout = 0;
+	domain->dc_probe_pid = (pid_t)-1;
 	if (sid) {
 		sid_copy(&domain->sid, sid);
 	}
 
-	
 	/* Link to domain list */
 	DLIST_ADD_END(_domain_list, domain, struct winbindd_domain *);
         

@@ -171,20 +171,33 @@ static bool fork_child_dc_connect(struct winbindd_domain *domain)
 	struct dc_name_ip *dcs = NULL;
 	int num_dcs = 0;
 	TALLOC_CTX *mem_ctx = NULL;
-	pid_t child_pid;
 	pid_t parent_pid = sys_getpid();
 
 	/* Stop zombies */
 	CatchChild();
 
-	child_pid = sys_fork();
+	if (domain->dc_probe_pid != (pid_t)-1) {
+		/*
+		 * We might already have a DC probe
+		 * child working, check.
+		 */
+		if (process_exists_by_pid(domain->dc_probe_pid)) {
+			DEBUG(10,("fork_child_dc_connect: pid %u already "
+				"checking for DC's.\n",
+				(unsigned int)domain->dc_probe_pid));
+			return true;
+		}
+		domain->dc_probe_pid = (pid_t)-1;
+	}
 
-	if (child_pid == -1) {
+	domain->dc_probe_pid = sys_fork();
+
+	if (domain->dc_probe_pid == (pid_t)-1) {
 		DEBUG(0, ("fork_child_dc_connect: Could not fork: %s\n", strerror(errno)));
 		return False;
 	}
 
-	if (child_pid != 0) {
+	if (domain->dc_probe_pid != (pid_t)0) {
 		/* Parent */
 		messaging_register(winbind_messaging_context(), NULL,
 				   MSG_WINBIND_TRY_TO_GO_ONLINE,
@@ -201,6 +214,11 @@ static bool fork_child_dc_connect(struct winbindd_domain *domain)
 
 	if (!reinit_after_fork(winbind_messaging_context(), true)) {
 		DEBUG(0,("reinit_after_fork() failed\n"));
+		messaging_send_buf(winbind_messaging_context(),
+				   pid_to_procid(parent_pid),
+				   MSG_WINBIND_FAILED_TO_GO_ONLINE,
+				   (uint8 *)domain->name,
+				   strlen(domain->name)+1);
 		_exit(0);
 	}
 
@@ -218,6 +236,11 @@ static bool fork_child_dc_connect(struct winbindd_domain *domain)
 	mem_ctx = talloc_init("fork_child_dc_connect");
 	if (!mem_ctx) {
 		DEBUG(0,("talloc_init failed.\n"));
+		messaging_send_buf(winbind_messaging_context(),
+				   pid_to_procid(parent_pid),
+				   MSG_WINBIND_FAILED_TO_GO_ONLINE,
+				   (uint8 *)domain->name,
+				   strlen(domain->name)+1);
 		_exit(0);
 	}
 
@@ -291,12 +314,12 @@ static void check_domain_online_handler(struct event_context *ctx,
 
 static void calc_new_online_timeout_check(struct winbindd_domain *domain)
 {
-	int wbc = lp_winbind_cache_time();
+	int wbr = lp_winbind_reconnect_delay();
 
 	if (domain->startup) {
 		domain->check_online_timeout = 10;
-	} else if (domain->check_online_timeout < wbc) {
-		domain->check_online_timeout = wbc;
+	} else if (domain->check_online_timeout < wbr) {
+		domain->check_online_timeout = wbr;
 	}
 }
 
@@ -336,7 +359,7 @@ void set_domain_offline(struct winbindd_domain *domain)
 	}
 
 	/* If we're in statup mode, check again in 10 seconds, not in
-	   lp_winbind_cache_time() seconds (which is 5 mins by default). */
+	   lp_winbind_reconnect_delay() seconds (which is 30 seconds by default). */
 
 	calc_new_online_timeout_check(domain);
 
