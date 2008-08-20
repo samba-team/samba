@@ -566,5 +566,4 @@ int ctdb_transaction_store(struct ctdb_transaction_handle *h,
 			   TDB_DATA key, TDB_DATA data);
 int ctdb_transaction_commit(struct ctdb_transaction_handle *h);
 
-
 #endif

@@ -1376,5 +1376,7 @@ int32_t ctdb_control_trans2_error(struct ctdb_context *ctdb,
 				  struct ctdb_req_control *c);
 
 char *ctdb_addr_to_str(ctdb_sock_addr *addr);
+void ctdb_canonicalize_ip(const ctdb_sock_addr *ip, ctdb_sock_addr *cip);
+
 
 #endif

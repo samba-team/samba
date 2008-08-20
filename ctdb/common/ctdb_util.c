@@ -505,7 +505,7 @@ bool parse_ip_mask(const char *str, ctdb_sock_addr *addr, unsigned *mask)
 /*
    This is used to canonicalize a ctdb_sock_addr structure.
 */
-static void canonicalize_ip(const ctdb_sock_addr *ip, ctdb_sock_addr *cip)
+void ctdb_canonicalize_ip(const ctdb_sock_addr *ip, ctdb_sock_addr *cip)
 {
 	char prefix[12] = { 0,0,0,0,0,0,0,0,0,0,0xff,0xff };
 
@@ -527,8 +527,8 @@ bool ctdb_same_ip(const ctdb_sock_addr *tip1, const ctdb_sock_addr *tip2)
 {
 	ctdb_sock_addr ip1, ip2;
 
-	canonicalize_ip(tip1, &ip1);
-	canonicalize_ip(tip2, &ip2);
+	ctdb_canonicalize_ip(tip1, &ip1);
+	ctdb_canonicalize_ip(tip2, &ip2);
 	
 	if (ip1.sa.sa_family != ip2.sa.sa_family) {
 		return false;
