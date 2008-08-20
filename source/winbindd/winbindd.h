@@ -153,6 +153,7 @@ struct winbindd_child {
 
 	struct fd_event event;
 	struct timed_event *lockout_policy_event;
+	struct timed_event *machine_password_change_event;
 	struct winbindd_async_request *requests;
 
 	const struct winbindd_child_dispatch_table *table;
