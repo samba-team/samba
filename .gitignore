@@ -32,6 +32,7 @@ source/cscope.out
 source/torture.tdb
 source/pkgconfig/*.pc
 source/st
+source/exports/libsmbclient.syms
 source/exports/libnetapi.syms
 source/exports/libtalloc.syms
 source/exports/libtdb.syms
