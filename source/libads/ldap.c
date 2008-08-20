@@ -393,9 +393,6 @@ static NTSTATUS ads_lookup_site(void)
 	ADS_STRUCT *ads = NULL;
 	ADS_STATUS ads_status;
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
-	struct nbt_cldap_netlogon_5 cldap_reply;
-
-	ZERO_STRUCT(cldap_reply);
 
 	ads = ads_init(lp_realm(), NULL, NULL);
 	if (!ads) {
