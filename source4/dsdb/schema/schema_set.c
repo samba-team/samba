@@ -23,8 +23,47 @@
 #include "includes.h"
 #include "dsdb/samdb/samdb.h"
 #include "lib/ldb/include/ldb_errors.h"
+#include "lib/ldb/include/ldb_private.h"
 #include "lib/util/dlinklist.h"
 #include "param/param.h"
+
+
+static int schema_set_attributes(struct ldb_context *ldb, struct dsdb_schema *schema)
+{
+	int ret = LDB_SUCCESS;
+	
+	struct dsdb_attribute *attr;
+	
+	for (attr = schema->attributes; attr; attr = attr->next) {
+		const struct ldb_schema_syntax *s;
+		if (!attr->syntax) {
+			continue;
+		}
+		if (attr->syntax->ldb_syntax) {
+			ret = ldb_schema_attribute_add(ldb, attr->lDAPDisplayName, 0,
+						       attr->syntax->ldb_syntax);
+		} else {
+			s = ldb_standard_syntax_by_name(ldb, attr->syntax->ldap_oid);
+			if (s) {
+				ret = ldb_schema_attribute_add_with_syntax(ldb, attr->lDAPDisplayName, 0, s);
+			} else {
+				s = ldb_samba_syntax_by_name(ldb, attr->syntax->ldap_oid);
+				if (s) {
+					ret = ldb_schema_attribute_add_with_syntax(ldb, attr->lDAPDisplayName, 0, s);
+				} else {
+					ret = LDB_SUCCESS; /* Nothing to do here */
+				}
+			}
+		}
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	}
+
+	/* Now put back the hardcoded Samba special handlers */
+	return ldb_register_samba_handlers(ldb);
+}
+
 
 /**
  * Attach the schema to an opaque pointer on the ldb, so ldb modules
@@ -36,6 +75,11 @@ int dsdb_set_schema(struct ldb_context *ldb, struct dsdb_schema *schema)
 	int ret;
 
 	ret = ldb_set_opaque(ldb, "dsdb_schema", schema);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	ret = schema_set_attributes(ldb, schema);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -60,6 +104,11 @@ int dsdb_set_global_schema(struct ldb_context *ldb)
 		return LDB_SUCCESS;
 	}
 	ret = ldb_set_opaque(ldb, "dsdb_schema", global_schema);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	ret = schema_set_attributes(ldb, global_schema);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
