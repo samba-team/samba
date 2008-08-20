@@ -795,20 +795,21 @@ sub ContainsDeferred($$)
 sub el_name($)
 {
 	my $e = shift;
+	my $name = "<ANONYMOUS>";
 
-	if ($e->{PARENT} && $e->{PARENT}->{NAME}) {
-		return "$e->{PARENT}->{NAME}.$e->{NAME}";
+	$name = $e->{NAME} if defined($e->{NAME});
+
+	if (defined($e->{PARENT}) and defined($e->{PARENT}->{NAME})) {
+		return "$e->{PARENT}->{NAME}.$name";
 	}
 
-	if ($e->{PARENT} && $e->{PARENT}->{PARENT}->{NAME}) {
-		return "$e->{PARENT}->{PARENT}->{NAME}.$e->{NAME}";
+	if (defined($e->{PARENT}) and
+	    defined($e->{PARENT}->{PARENT}) and
+	    defined($e->{PARENT}->{PARENT}->{NAME})) {
+		return "$e->{PARENT}->{PARENT}->{NAME}.$name";
 	}
 
-	if ($e->{PARENT}) {
-		return "$e->{PARENT}->{NAME}.$e->{NAME}";
-	}
-
-	return $e->{NAME};
+	return $name;
 }
 
 ###################################
@@ -858,25 +859,25 @@ my %property_list = (
 	"unique"		=> ["ELEMENT"],
 	"ignore"		=> ["ELEMENT"],
 	"relative"		=> ["ELEMENT"],
-	"relative_base"		=> ["TYPEDEF"],
+	"relative_base"		=> ["TYPEDEF", "STRUCT", "UNION"],
 
-	"gensize"		=> ["TYPEDEF"],
+	"gensize"		=> ["TYPEDEF", "STRUCT", "UNION"],
 	"value"			=> ["ELEMENT"],
-	"flag"			=> ["ELEMENT", "TYPEDEF"],
+	"flag"			=> ["ELEMENT", "TYPEDEF", "STRUCT", "UNION", "ENUM", "BITMAP"],
 
 	# generic
-	"public"		=> ["FUNCTION", "TYPEDEF"],
-	"nopush"		=> ["FUNCTION", "TYPEDEF"],
-	"nopull"		=> ["FUNCTION", "TYPEDEF"],
-	"nosize"		=> ["FUNCTION", "TYPEDEF"],
-	"noprint"		=> ["FUNCTION", "TYPEDEF"],
-	"noejs"			=> ["FUNCTION", "TYPEDEF"],
+	"public"		=> ["FUNCTION", "TYPEDEF", "STRUCT", "UNION", "ENUM", "BITMAP"],
+	"nopush"		=> ["FUNCTION", "TYPEDEF", "STRUCT", "UNION", "ENUM", "BITMAP"],
+	"nopull"		=> ["FUNCTION", "TYPEDEF", "STRUCT", "UNION", "ENUM", "BITMAP"],
+	"nosize"		=> ["FUNCTION", "TYPEDEF", "STRUCT", "UNION", "ENUM", "BITMAP"],
+	"noprint"		=> ["FUNCTION", "TYPEDEF", "STRUCT", "UNION", "ENUM", "BITMAP", "ELEMENT"],
+	"noejs"			=> ["FUNCTION", "TYPEDEF", "STRUCT", "UNION", "ENUM", "BITMAP"],
 	"todo"			=> ["FUNCTION"],
 
 	# union
 	"switch_is"		=> ["ELEMENT"],
-	"switch_type"		=> ["ELEMENT", "TYPEDEF"],
-	"nodiscriminant"	=> ["TYPEDEF"],
+	"switch_type"		=> ["ELEMENT", "UNION"],
+	"nodiscriminant"	=> ["UNION"],
 	"case"			=> ["ELEMENT"],
 	"default"		=> ["ELEMENT"],
 
@@ -889,15 +890,15 @@ my %property_list = (
 	"compression"		=> ["ELEMENT"],
 
 	# enum
-	"enum8bit"		=> ["TYPEDEF"],
-	"enum16bit"		=> ["TYPEDEF"],
-	"v1_enum"		=> ["TYPEDEF"],
+	"enum8bit"		=> ["ENUM"],
+	"enum16bit"		=> ["ENUM"],
+	"v1_enum"		=> ["ENUM"],
 
 	# bitmap
-	"bitmap8bit"		=> ["TYPEDEF"],
-	"bitmap16bit"		=> ["TYPEDEF"],
-	"bitmap32bit"		=> ["TYPEDEF"],
-	"bitmap64bit"		=> ["TYPEDEF"],
+	"bitmap8bit"		=> ["BITMAP"],
+	"bitmap16bit"		=> ["BITMAP"],
+	"bitmap32bit"		=> ["BITMAP"],
+	"bitmap64bit"		=> ["BITMAP"],
 
 	# array
 	"range"			=> ["ELEMENT"],
@@ -921,7 +922,7 @@ sub ValidProperties($$)
 			unless defined($property_list{$key});
 
    		fatal($e, el_name($e) . ": property '$key' not allowed on '$t'")
-			unless grep($t, @{$property_list{$key}});
+			unless grep(/^$t$/, @{$property_list{$key}});
 	}
 }
 
@@ -1100,6 +1101,9 @@ sub ValidTypedef($)
 	ValidProperties($typedef, "TYPEDEF");
 
 	$data->{PARENT} = $typedef;
+
+	$data->{FILE} = $typedef->{FILE} unless defined($data->{FILE});
+	$data->{LINE} = $typedef->{LINE} unless defined($data->{LINE});
 
 	ValidType($data) if (ref($data) eq "HASH");
 }
