@@ -561,6 +561,8 @@ sub ParseElementPushLevel
 			$self->ParseSwitchPush($e, $l, $ndr, $var_name, $env);
 		} elsif ($l->{TYPE} eq "DATA") {
 			$self->ParseDataPush($e, $l, $ndr, $var_name, $primitives, $deferred);
+		} elsif ($l->{TYPE} eq "TYPEDEF") {
+			$typefamily{$e->{DATA}->{TYPE}}->{PUSH_FN_BODY}->($self, $e->{DATA}, $ndr, $var_name);
 		}
 	}
 
@@ -1011,6 +1013,8 @@ sub ParseElementPullLevel
 			$self->ParseSwitchPull($e, $l, $ndr, $var_name, $env);
 		} elsif ($l->{TYPE} eq "DATA") {
 			$self->ParseDataPull($e, $l, $ndr, $var_name, $primitives, $deferred);
+		} elsif ($l->{TYPE} eq "TYPEDEF") {
+			$typefamily{$e->{DATA}->{TYPE}}->{PULL_FN_BODY}->($self, $e->{DATA}, $ndr, $var_name);
 		}
 	}
 
@@ -1887,7 +1891,11 @@ sub ParseTypedefPush($$$$)
 {
 	my($self,$e,$ndr,$varname) = @_;
 
-	$typefamily{$e->{DATA}->{TYPE}}->{PUSH_FN_BODY}->($self, $e->{DATA}, $ndr, $varname);
+	my $env;
+
+	$env->{$e->{NAME}} = $varname;
+
+	$self->ParseElementPushLevel($e, $e->{LEVELS}[0], $ndr, $varname, $env, 1, 1);
 }
 
 #####################################################################
@@ -1896,7 +1904,11 @@ sub ParseTypedefPull($$$$)
 {
 	my($self,$e,$ndr,$varname) = @_;
 
-	$typefamily{$e->{DATA}->{TYPE}}->{PULL_FN_BODY}->($self, $e->{DATA}, $ndr, $varname);
+	my $env;
+
+	$env->{$e->{NAME}} = $varname;
+
+	$self->ParseElementPullLevel($e, $e->{LEVELS}[0], $ndr, $varname, $env, 1, 1);
 }
 
 #####################################################################
