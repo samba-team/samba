@@ -149,6 +149,11 @@ void ldb_schema_attribute_remove(struct ldb_context *ldb, const char *name)
 		return;
 	}
 
+	/* FIXED attributes are never removed */
+	if (a->flags & LDB_ATTR_FLAG_FIXED) {
+		return;
+	}
+
 	if (a->flags & LDB_ATTR_FLAG_ALLOCATED) {
 		talloc_free(discard_const_p(char, a->name));
 	}
