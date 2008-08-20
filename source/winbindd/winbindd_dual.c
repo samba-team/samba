@@ -871,6 +871,110 @@ static void account_lockout_policy_handler(struct event_context *ctx,
 						      child);
 }
 
+static time_t get_machine_password_timeout(void)
+{
+	/* until we have gpo support use lp setting */
+	return lp_machine_password_timeout();
+}
+
+static bool calculate_next_machine_pwd_change(const char *domain,
+					      struct timeval *t)
+{
+	time_t pass_last_set_time;
+	time_t timeout;
+	time_t next_change;
+
+	if (!secrets_fetch_machine_password(domain,
+					    &pass_last_set_time,
+					    NULL)) {
+		DEBUG(0,("cannot fetch own machine password ????"));
+		return false;
+	}
+
+	timeout = get_machine_password_timeout();
+	if (timeout == 0) {
+		DEBUG(10,("machine password never expires\n"));
+		return false;
+	}
+
+	if (time(NULL) < (pass_last_set_time + timeout)) {
+		next_change = pass_last_set_time + timeout;
+		DEBUG(10,("machine password still valid until: %s\n",
+			http_timestring(next_change)));
+		*t = timeval_set(next_change, 0);
+		return true;
+	}
+
+	DEBUG(10,("machine password expired, needs immediate change\n"));
+
+	*t = timeval_zero();
+
+	return true;
+}
+
+static void machine_password_change_handler(struct event_context *ctx,
+					    struct timed_event *te,
+					    const struct timeval *now,
+					    void *private_data)
+{
+	struct winbindd_child *child =
+		(struct winbindd_child *)private_data;
+	struct rpc_pipe_client *netlogon_pipe = NULL;
+	TALLOC_CTX *mem_ctx = NULL;
+	NTSTATUS result;
+	struct timeval next_change;
+
+	DEBUG(10,("machine_password_change_handler called\n"));
+
+	TALLOC_FREE(child->machine_password_change_event);
+
+	if (!calculate_next_machine_pwd_change(child->domain->name,
+					       &next_change)) {
+		return;
+	}
+
+	if (!winbindd_can_contact_domain(child->domain)) {
+		DEBUG(10,("machine_password_change_handler: Removing myself since I "
+			  "do not have an incoming trust to domain %s\n",
+			  child->domain->name));
+		return;
+	}
+
+	mem_ctx = talloc_init("machine_password_change_handler ");
+	if (!mem_ctx) {
+		return;
+	}
+
+	result = cm_connect_netlogon(child->domain, &netlogon_pipe);
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(10,("machine_password_change_handler: "
+			"failed to connect netlogon pipe: %s\n",
+			 nt_errstr(result)));
+		TALLOC_FREE(mem_ctx);
+		return;
+	}
+
+	result = trust_pw_find_change_and_store_it(netlogon_pipe,
+						   mem_ctx,
+						   child->domain->name);
+	TALLOC_FREE(mem_ctx);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(10,("machine_password_change_handler: "
+			"failed to change machine password: %s\n",
+			 nt_errstr(result)));
+	} else {
+		DEBUG(10,("machine_password_change_handler: "
+			"successfully changed machine password\n"));
+	}
+
+	child->machine_password_change_event = event_add_timed(winbind_event_context(), NULL,
+							      next_change,
+							      "machine_password_change_handler",
+							      machine_password_change_handler,
+							      child);
+}
+
 /* Deal with a request to go offline. */
 
 static void child_msg_offline(struct messaging_context *msg,
@@ -1171,6 +1275,21 @@ static bool fork_domain_child(struct winbindd_child *child)
 			"account_lockout_policy_handler",
 			account_lockout_policy_handler,
 			child);
+	}
+
+	if (child->domain && !(child->domain->internal) &&
+	    lp_server_role() == ROLE_DOMAIN_MEMBER) {
+
+		struct timeval next_change;
+
+		if (calculate_next_machine_pwd_change(child->domain->name,
+						       &next_change)) {
+			child->machine_password_change_event = event_add_timed(
+				winbind_event_context(), NULL, next_change,
+				"machine_password_change_handler",
+				machine_password_change_handler,
+				child);
+		}
 	}
 
 	while (1) {
