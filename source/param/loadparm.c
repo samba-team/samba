@@ -240,6 +240,7 @@ struct global {
 	int map_to_guest;
 	int oplock_break_wait_time;
 	int winbind_cache_time;
+	int winbind_reconnect_delay;
 	int winbind_max_idle_children;
 	char **szWinbindNssInfo;
 	int iLockSpinTime;
@@ -4363,6 +4364,15 @@ static struct parm_struct parm_table[] = {
 		.flags		= FLAG_ADVANCED,
 	},
 	{
+		.label		= "winbind reconnect delay",
+		.type		= P_INTEGER,
+		.p_class	= P_GLOBAL,
+		.ptr		= &Globals.winbind_reconnect_delay,
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
+	},
+	{
 		.label		= "winbind enum users",
 		.type		= P_BOOL,
 		.p_class	= P_GLOBAL,
@@ -4829,6 +4839,7 @@ static void init_globals(bool first_time_only)
 	Globals.clustering = False;
 
 	Globals.winbind_cache_time = 300;	/* 5 minutes */
+	Globals.winbind_reconnect_delay = 30;	/* 30 seconds */
 	Globals.bWinbindEnumUsers = False;
 	Globals.bWinbindEnumGroups = False;
 	Globals.bWinbindUseDefaultDomain = False;
@@ -5341,6 +5352,7 @@ FN_LOCAL_INTEGER(lp_directory_name_cache_size, iDirectoryNameCacheSize)
 FN_LOCAL_INTEGER(lp_smb_encrypt, ismb_encrypt)
 FN_LOCAL_CHAR(lp_magicchar, magic_char)
 FN_GLOBAL_INTEGER(lp_winbind_cache_time, &Globals.winbind_cache_time)
+FN_GLOBAL_INTEGER(lp_winbind_reconnect_delay, &Globals.winbind_reconnect_delay)
 FN_GLOBAL_LIST(lp_winbind_nss_info, &Globals.szWinbindNssInfo)
 FN_GLOBAL_INTEGER(lp_algorithmic_rid_base, &Globals.AlgorithmicRidBase)
 FN_GLOBAL_INTEGER(lp_name_cache_timeout, &Globals.name_cache_timeout)
