@@ -648,7 +648,7 @@ bool is_local_net(const struct sockaddr_storage *from);
 void setup_linklocal_scope_id(struct sockaddr_storage *pss);
 bool is_local_net_v4(struct in_addr from);
 int iface_count(void);
-int iface_count_v4(void);
+int iface_count_v4_nl(void);
 const struct in_addr *first_ipv4_iface(void);
 struct interface *get_interface(int n);
 const struct sockaddr_storage *iface_n_sockaddr_storage(int n);
