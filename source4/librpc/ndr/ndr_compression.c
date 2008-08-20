@@ -323,7 +323,55 @@ static enum ndr_err_code ndr_push_compression_xpress_chunk(struct ndr_push *ndrp
 							   struct ndr_pull *ndrpull,
 							   bool *last)
 {
-	return ndr_push_error(ndrpush, NDR_ERR_COMPRESSION, "XPRESS compression is not supported yet (PUSH)");
+	DATA_BLOB comp_chunk;
+	uint32_t comp_chunk_size_offset;
+	DATA_BLOB plain_chunk;
+	uint32_t plain_chunk_size;
+	uint32_t plain_chunk_offset;
+	uint32_t max_plain_size = 0x00010000;
+	uint32_t max_comp_size = 0x00020000 + 2; /* TODO: use the correct value here */
+	uint32_t tmp_offset;
+	ssize_t ret;
+
+	plain_chunk_size = MIN(max_plain_size, ndrpull->data_size - ndrpull->offset);
+	plain_chunk_offset = ndrpull->offset;
+	NDR_CHECK(ndr_pull_advance(ndrpull, plain_chunk_size));
+
+	plain_chunk.data = ndrpull->data + plain_chunk_offset;
+	plain_chunk.length = plain_chunk_size;
+
+	if (plain_chunk_size < max_plain_size) {
+		*last = true;
+	}
+
+	NDR_CHECK(ndr_push_uint32(ndrpush, NDR_SCALARS, plain_chunk_size));
+	comp_chunk_size_offset = ndrpush->offset;
+	NDR_CHECK(ndr_push_uint32(ndrpush, NDR_SCALARS, 0xFEFEFEFE));
+
+	NDR_CHECK(ndr_push_expand(ndrpush, max_comp_size));
+
+	comp_chunk.data = ndrpush->data + ndrpush->offset;
+	comp_chunk.length = max_comp_size;
+
+	/* Compressing the buffer using LZ Xpress algorithm */
+	ret = lzxpress_compress(plain_chunk.data,
+				plain_chunk.length,
+				comp_chunk.data,
+				comp_chunk.length);
+	if (ret < 0) {
+		return ndr_pull_error(ndrpull, NDR_ERR_COMPRESSION,
+				      "XPRESS lzxpress_compress() returned %d\n",
+				      ret);
+	}
+	comp_chunk.length = ret;
+
+	tmp_offset = ndrpush->offset;
+	ndrpush->offset = comp_chunk_size_offset;
+	NDR_CHECK(ndr_push_uint32(ndrpush, NDR_SCALARS, comp_chunk.length));
+	ndrpush->offset = tmp_offset;
+
+	ndrpush->offset += comp_chunk.length;
+	return NDR_ERR_SUCCESS;
 }
 
 /*
