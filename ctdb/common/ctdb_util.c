@@ -502,21 +502,47 @@ bool parse_ip_mask(const char *str, ctdb_sock_addr *addr, unsigned *mask)
 	return ret;
 }
 
-bool ctdb_same_ip(const ctdb_sock_addr *ip1, const ctdb_sock_addr *ip2)
+/*
+   This is used to canonicalize a ctdb_sock_addr structure.
+*/
+static void canonicalize_ip(const ctdb_sock_addr *ip, ctdb_sock_addr *cip)
 {
-	if (ip1->sa.sa_family != ip2->sa.sa_family) {
+	char prefix[12] = { 0,0,0,0,0,0,0,0,0,0,0xff,0xff };
+
+	memcpy(cip, ip, sizeof (*cip));
+
+	if ( (ip->sa.sa_family == AF_INET6)
+	&& !memcmp(&ip->ip6.sin6_addr, prefix, 12)) {
+		memset(cip, 0, sizeof(*cip));
+#ifdef HAVE_SOCK_SIN_LEN
+		cip->ip.sin_len = sizeof(*cip);
+#endif
+		cip->ip.sin_family = AF_INET;
+		cip->ip.sin_port   = ip->ip6.sin6_port;
+		memcpy(&cip->ip.sin_addr, &ip->ip6.sin6_addr.s6_addr32[3], 4);
+	}
+}
+
+bool ctdb_same_ip(const ctdb_sock_addr *tip1, const ctdb_sock_addr *tip2)
+{
+	ctdb_sock_addr ip1, ip2;
+
+	canonicalize_ip(tip1, &ip1);
+	canonicalize_ip(tip2, &ip2);
+	
+	if (ip1.sa.sa_family != ip2.sa.sa_family) {
 		return false;
 	}
 
-	switch (ip1->sa.sa_family) {
+	switch (ip1.sa.sa_family) {
 	case AF_INET:
-		return ip1->ip.sin_addr.s_addr == ip2->ip.sin_addr.s_addr;
+		return ip1.ip.sin_addr.s_addr == ip2.ip.sin_addr.s_addr;
 	case AF_INET6:
-		return !memcmp(&ip1->ip6.sin6_addr.s6_addr[0],
-				&ip2->ip6.sin6_addr.s6_addr[0],
+		return !memcmp(&ip1.ip6.sin6_addr.s6_addr[0],
+				&ip2.ip6.sin6_addr.s6_addr[0],
 				16);
 	default:
-		DEBUG(DEBUG_ERR, (__location__ " CRITICAL Can not compare sockaddr structures of type %u\n", ip1->sa.sa_family));
+		DEBUG(DEBUG_ERR, (__location__ " CRITICAL Can not compare sockaddr structures of type %u\n", ip1.sa.sa_family));
 		return false;
 	}
 
