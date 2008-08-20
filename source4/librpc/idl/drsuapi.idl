@@ -617,15 +617,15 @@ interface drsuapi
 		WERROR drs_error;
 	} drsuapi_DsGetNCChangesCtr6;
 
-	typedef struct {
+	typedef [public] struct {
 		[subcontext(0xFFFFFC01)] drsuapi_DsGetNCChangesCtr1 ctr1;
 	} drsuapi_DsGetNCChangesCtr1TS;
 
-	typedef struct {
+	typedef [public] struct {
 		[subcontext(0xFFFFFC01)] drsuapi_DsGetNCChangesCtr6 ctr6;
 	} drsuapi_DsGetNCChangesCtr6TS;
 
-	typedef struct {
+	typedef [nopush] struct {
 		uint32 decompressed_length;
 		uint32 compressed_length;
 		[subcontext(4),subcontext_size(compressed_length),
@@ -633,7 +633,7 @@ interface drsuapi
 		 drsuapi_DsGetNCChangesCtr1TS *ts;
 	} drsuapi_DsGetNCChangesMSZIPCtr1;
 
-	typedef struct {
+	typedef [nopush] struct {
 		uint32 decompressed_length;
 		uint32 compressed_length;
 		[subcontext(4),subcontext_size(compressed_length),
@@ -641,7 +641,7 @@ interface drsuapi
 		 drsuapi_DsGetNCChangesCtr6TS *ts;
 	} drsuapi_DsGetNCChangesMSZIPCtr6;
 
-	typedef struct {
+	typedef [nopush] struct {
 		uint32 decompressed_length;
 		uint32 compressed_length;
 		[subcontext(4),subcontext_size(compressed_length),
@@ -649,7 +649,7 @@ interface drsuapi
 		 drsuapi_DsGetNCChangesCtr1TS *ts;
 	} drsuapi_DsGetNCChangesXPRESSCtr1;
 
-	typedef struct {
+	typedef [nopush] struct {
 		uint32 decompressed_length;
 		uint32 compressed_length;
 		[subcontext(4),subcontext_size(compressed_length),
