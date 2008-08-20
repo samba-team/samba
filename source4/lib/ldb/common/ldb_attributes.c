@@ -64,6 +64,10 @@ int ldb_schema_attribute_add_with_syntax(struct ldb_context *ldb,
 	for (i = 0; i < ldb->schema.num_attributes; i++) {
 		int cmp = ldb_attr_cmp(attribute, a[i].name);
 		if (cmp == 0) {
+			/* silently ignore attempts to overwrite fixed attributes */
+			if (a[i].flags & LDB_ATTR_FLAG_FIXED) {
+				return 0;
+			}
 			if (a[i].flags & LDB_ATTR_FLAG_ALLOCATED) {
 				talloc_free(discard_const_p(char, a[i].name));
 			}
