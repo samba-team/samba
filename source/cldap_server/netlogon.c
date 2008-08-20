@@ -256,7 +256,8 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 	server_type      = 
 		NBT_SERVER_DS | NBT_SERVER_TIMESERV |
 		NBT_SERVER_CLOSEST | NBT_SERVER_WRITABLE | 
-		NBT_SERVER_GOOD_TIMESERV;
+		NBT_SERVER_GOOD_TIMESERV | NBT_SERVER_DS_DNS_CONTR |
+		NBT_SERVER_DS_DNS_DOMAIN;
 
 	if (samdb_is_pdc(sam_ctx)) {
 		server_type |= NBT_SERVER_PDC;
@@ -274,6 +275,10 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 		server_type |= NBT_SERVER_KDC;
 	}
 
+	if (!ldb_dn_compare_base(ldb_get_root_basedn(sam_ctx), ldb_get_default_basedn(sam_ctx))) {
+		server_type |= NBT_SERVER_DS_DNS_FOREST;
+	}
+
 	pdc_name         = talloc_asprintf(mem_ctx, "\\\\%s", lp_netbios_name(lp_ctx));
 	domain_uuid      = samdb_result_guid(dom_res->msgs[0], "objectGUID");
 	realm            = samdb_result_string(ref_res->msgs[0], "dnsRoot", lp_realm(lp_ctx));
@@ -285,6 +290,7 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 
 	flatname         = samdb_result_string(ref_res->msgs[0], "nETBIOSName", 
 					       lp_workgroup(lp_ctx));
+	/* FIXME: Hardcoded site names */
 	server_site      = "Default-First-Site-Name";
 	client_site      = "Default-First-Site-Name";
 	load_interfaces(mem_ctx, lp_interfaces(lp_ctx), &ifaces);
