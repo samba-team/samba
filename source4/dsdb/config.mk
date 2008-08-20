@@ -34,6 +34,8 @@ PRIVATE_DEPENDENCIES = SAMDB_COMMON NDR_DRSUAPI NDR_DRSBLOBS
 
 SAMDB_SCHEMA_OBJ_FILES = $(addprefix $(dsdbsrcdir)/schema/, \
 		schema_init.o \
+		schema_set.o \
+		schema_query.o \
 		schema_syntax.o \
 		schema_description.o)
 
