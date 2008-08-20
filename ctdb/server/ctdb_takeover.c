@@ -1453,21 +1453,25 @@ static void *add_killtcp_callback(void *parm, void *data)
   add a tcp socket to the list of connections we want to RST
  */
 static int ctdb_killtcp_add_connection(struct ctdb_context *ctdb, 
-				       ctdb_sock_addr *src,
-				       ctdb_sock_addr *dst)
+				       ctdb_sock_addr *s,
+				       ctdb_sock_addr *d)
 {
+	ctdb_sock_addr src, dst;
 	struct ctdb_kill_tcp *killtcp;
 	struct ctdb_killtcp_con *con;
 	struct ctdb_vnn *vnn;
 
-	vnn = find_public_ip_vnn(ctdb, dst);
+	ctdb_canonicalize_ip(s, &src);
+	ctdb_canonicalize_ip(d, &dst);
+
+	vnn = find_public_ip_vnn(ctdb, &dst);
 	if (vnn == NULL) {
-		vnn = find_public_ip_vnn(ctdb, src);
+		vnn = find_public_ip_vnn(ctdb, &src);
 	}
 	if (vnn == NULL) {
 		/* if it is not a public ip   it could be our 'single ip' */
 		if (ctdb->single_ip_vnn) {
-			if (ctdb_same_ip(&ctdb->single_ip_vnn->public_address, dst)) {
+			if (ctdb_same_ip(&ctdb->single_ip_vnn->public_address, &dst)) {
 				vnn = ctdb->single_ip_vnn;
 			}
 		}
@@ -1502,8 +1506,8 @@ static int ctdb_killtcp_add_connection(struct ctdb_context *ctdb,
 	*/
 	con = talloc(killtcp, struct ctdb_killtcp_con);
 	CTDB_NO_MEMORY(ctdb, con);
-	con->src_addr = *src;
-	con->dst_addr = *dst;
+	con->src_addr = src;
+	con->dst_addr = dst;
 	con->count    = 0;
 	con->killtcp  = killtcp;
 
