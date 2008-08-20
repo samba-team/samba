@@ -358,9 +358,9 @@ const struct ldb_schema_attribute *ldb_schema_attribute_by_name(struct ldb_conte
 #define LDB_ATTR_FLAG_ALLOCATED    (1<<1) 
 
 /**
-   The attribute is constructed from other attributes
+   The attribute is supplied by the application and should not be removed
 */
-#define LDB_ATTR_FLAG_CONSTRUCTED  (1<<1) 
+#define LDB_ATTR_FLAG_FIXED        (1<<2) 
 
 /**
   LDAP attribute syntax for a DN
