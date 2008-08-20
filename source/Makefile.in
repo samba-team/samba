@@ -1824,7 +1824,7 @@ shlibs test_shlibs: @LIBADDNS_SHARED@
 #
 #-------------------------------------------------------------------
 
-LIBNETAPI_OBJ1 = lib/netapi/netapi.o \
+LIBNETAPI_OBJ0 = lib/netapi/netapi.o \
 		 lib/netapi/cm.o \
 		 librpc/gen_ndr/ndr_libnetapi.o \
 		 lib/netapi/libnetapi.o \
@@ -1837,7 +1837,7 @@ LIBNETAPI_OBJ1 = lib/netapi/netapi.o \
 		 lib/netapi/samr.o \
 		 lib/netapi/sid.o
 
-LIBNETAPI_OBJ  = $(LIBNETAPI_OBJ1) $(LIBNET_OBJ) \
+LIBNETAPI_OBJ  = $(LIBNETAPI_OBJ0) $(LIBNET_OBJ) \
 		 $(LIBSMBCONF_OBJ) \
 		 $(REG_SMBCONF_OBJ) \
 		 $(PARAM_WITHOUT_REG_OBJ) $(LIB_NONSMBD_OBJ) \
@@ -1869,9 +1869,9 @@ $(LIBNETAPI_SHARED_TARGET): $(LIBNETAPI_SHARED_TARGET_SONAME)
 	@rm -f $@
 	@ln -s -f `basename $(LIBNETAPI_SHARED_TARGET_SONAME)` $@
 
-$(LIBNETAPI_STATIC_TARGET): $(BINARY_PREREQS) $(LIBNETAPI_OBJ1)
+$(LIBNETAPI_STATIC_TARGET): $(BINARY_PREREQS) $(LIBNETAPI_OBJ0)
 	@echo Linking non-shared library $@
-	@-$(AR) -rc $@ $(LIBNETAPI_OBJ1)
+	@-$(AR) -rc $@ $(LIBNETAPI_OBJ0)
 
 libnetapi: $(LIBNETAPI)
 
