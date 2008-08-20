@@ -248,7 +248,7 @@ static void reload_interfaces(time_t t)
 
 		BlockSignals(false, SIGTERM);
 
-                while (iface_count() == 0 && !got_sig_term) {
+                while (iface_count_nl() == 0 && !got_sig_term) {
 			sleep(5);
 			load_interfaces();
 		}

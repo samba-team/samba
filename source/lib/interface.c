@@ -301,6 +301,23 @@ int iface_count(void)
 }
 
 /****************************************************************************
+  how many non-loopback interfaces do we have
+  **************************************************************************/
+int iface_count_nl(void)
+{
+	int ret = 0;
+	struct interface *i;
+
+	for (i=local_interfaces;i;i=i->next) {
+		if (ip_equal(i->ip, loopback_ip)) {
+			continue;
+		}
+		ret++;
+	}
+	return ret;
+}
+
+/****************************************************************************
   return the Nth interface
   **************************************************************************/
 struct interface *get_interface(int n)

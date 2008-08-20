@@ -186,12 +186,12 @@ BOOL create_subnets(void)
 
   try_interfaces_again:
 
-	if (iface_count() == 0) {
-		DEBUG(0,("create_subnets: No local interfaces !\n"));
+	if (iface_count_nl() == 0) {
+		DEBUG(0,("create_subnets: No non-loopback local interfaces !\n"));
 		DEBUG(0,("create_subnets: Waiting for an interface to appear ...\n"));
 	}
 
-	while (iface_count() == 0) {
+	while (iface_count_nl() == 0) {
 		void (*saved_handler)(int);
 
 		/* 
