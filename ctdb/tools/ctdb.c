@@ -574,12 +574,42 @@ void getips_count_callback(void *param, void *data)
 	(*count)++;
 }
 
+#define IP_KEYLEN	4
+static uint32_t *ip_key(ctdb_sock_addr *ip)
+{
+	static uint32_t key[IP_KEYLEN];
+
+	bzero(key, sizeof(key));
+
+	switch (ip->sa.sa_family) {
+	case AF_INET:
+		key[0]	= ip->ip.sin_addr.s_addr;
+		break;
+	case AF_INET6:
+		key[0]	= ip->ip6.sin6_addr.s6_addr32[3];
+		key[1]	= ip->ip6.sin6_addr.s6_addr32[2];
+		key[2]	= ip->ip6.sin6_addr.s6_addr32[1];
+		key[3]	= ip->ip6.sin6_addr.s6_addr32[0];
+		break;
+	default:
+		DEBUG(DEBUG_ERR, (__location__ " ERROR, unknown family passed :%u\n", ip->sa.sa_family));
+		return key;
+	}
+
+	return key;
+}
+
+static void *add_ip_callback(void *parm, void *data)
+{
+	return parm;
+}
+
 static int
 control_get_all_public_ips(struct ctdb_context *ctdb, TALLOC_CTX *tmp_ctx, struct ctdb_all_public_ips **ips)
 {
 	struct ctdb_all_public_ips *tmp_ips;
 	struct ctdb_node_map *nodemap=NULL;
-	trbt_tree_t *tree;
+	trbt_tree_t *ip_tree;
 	int i, j, len, ret;
 	uint32_t count;
 
@@ -589,7 +619,7 @@ control_get_all_public_ips(struct ctdb_context *ctdb, TALLOC_CTX *tmp_ctx, struc
 		return ret;
 	}
 
-	tree = trbt_create(tmp_ctx, 0);
+	ip_tree = trbt_create(tmp_ctx, 0);
 
 	for(i=0;i<nodemap->num;i++){
 		if (nodemap->nodes[i].flags & NODE_FLAGS_DISCONNECTED) {
@@ -610,19 +640,22 @@ control_get_all_public_ips(struct ctdb_context *ctdb, TALLOC_CTX *tmp_ctx, struc
 			node_ip->pnn  = tmp_ips->ips[j].pnn;
 			node_ip->addr = tmp_ips->ips[j].addr;
 
-			trbt_insert32(tree, tmp_ips->ips[j].addr.ip.sin_addr.s_addr, node_ip);
+			trbt_insertarray32_callback(ip_tree,
+				IP_KEYLEN, ip_key(&tmp_ips->ips[j].addr),
+				add_ip_callback,
+				node_ip);
 		}
 		talloc_free(tmp_ips);
 	}
 
 	/* traverse */
 	count = 0;
-	trbt_traversearray32(tree, 1, getips_count_callback, &count);
+	trbt_traversearray32(ip_tree, IP_KEYLEN, getips_count_callback, &count);
 
 	len = offsetof(struct ctdb_all_public_ips, ips) + 
 		count*sizeof(struct ctdb_public_ip);
 	tmp_ips = talloc_zero_size(tmp_ctx, len);
-	trbt_traversearray32(tree, 1, getips_store_callback, tmp_ips);
+	trbt_traversearray32(ip_tree, IP_KEYLEN, getips_store_callback, tmp_ips);
 
 	*ips = tmp_ips;
 
