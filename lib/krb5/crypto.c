@@ -3556,7 +3556,6 @@ krb5_decrypt_iov_ivec(krb5_context context,
 size_t KRB5_LIB_FUNCTION
 krb5_crypto_length(krb5_context context,
 		   krb5_crypto crypto,
-		   size_t len,
 		   int type)
 {
     if (!derived_crypto(context, crypto))
@@ -3590,9 +3589,9 @@ krb5_encrypt_ivec_new(krb5_context context,
     size_t total_len;
     
     total_len = 
-	krb5_crypto_length(context, crypto, len, KRB5_CRYPTO_TYPE_HEADER) +
+	krb5_crypto_length(context, crypto, KRB5_CRYPTO_TYPE_HEADER) +
 	len + 
-	krb5_crypto_length(context, crypto, len, KRB5_CRYPTO_TYPE_TRAILER);
+	krb5_crypto_length(context, crypto, KRB5_CRYPTO_TYPE_TRAILER);
 
     ret = krb5_data_alloc(result, total_len);
     if (ret) {
@@ -3601,7 +3600,7 @@ krb5_encrypt_ivec_new(krb5_context context,
     }
 
     iov[0].flags = KRB5_CRYPTO_TYPE_HEADER;
-    iov[0].data.length = krb5_crypto_length(context, crypto, len, iov[0].flags);
+    iov[0].data.length = krb5_crypto_length(context, crypto, iov[0].flags);
     iov[0].data.data = result->data;
 
     iov[1].flags = KRB5_CRYPTO_TYPE_DATA;
@@ -3610,7 +3609,7 @@ krb5_encrypt_ivec_new(krb5_context context,
     memcpy(iov[0].data.data, data, len);
 
     iov[2].flags = KRB5_CRYPTO_TYPE_TRAILER;
-    iov[2].data.length = krb5_crypto_length(context, crypto, len, iov[2].flags);
+    iov[2].data.length = krb5_crypto_length(context, crypto, iov[2].flags);
     iov[2].data.data = ((char *)result->data) + iov[0].data.length + len;
 
     ret = krb5_encrypt_iov_ivec(context, crypto, usage, 
