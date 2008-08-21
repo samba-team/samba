@@ -28,40 +28,162 @@
 #include "param/param.h"
 
 
-static int schema_set_attributes(struct ldb_context *ldb, struct dsdb_schema *schema)
+static int dsdb_schema_set_attributes(struct ldb_context *ldb, struct dsdb_schema *schema, bool write_attributes)
 {
 	int ret = LDB_SUCCESS;
-	
+	struct ldb_result *res;
+	struct ldb_result *res_idx;
 	struct dsdb_attribute *attr;
+	struct ldb_message *mod_msg;
+	TALLOC_CTX *mem_ctx = talloc_new(ldb);
 	
+	struct ldb_message *msg;
+	struct ldb_message *msg_idx;
+
+	if (!mem_ctx) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	msg = ldb_msg_new(mem_ctx);
+	if (!msg) {
+		ldb_oom(ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	msg_idx = ldb_msg_new(mem_ctx);
+	if (!msg_idx) {
+		ldb_oom(ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	msg->dn = ldb_dn_new(msg, ldb, "@ATTRIBUTES");
+	if (!msg->dn) {
+		ldb_oom(ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	msg_idx->dn = ldb_dn_new(msg, ldb, "@INDEXLIST");
+	if (!msg_idx->dn) {
+		ldb_oom(ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
 	for (attr = schema->attributes; attr; attr = attr->next) {
 		const struct ldb_schema_syntax *s;
+		const char *syntax = attr->syntax->ldb_syntax;
+		if (!syntax) {
+			syntax = attr->syntax->ldap_oid;
+		}
+
+		/* Write out a rough approximation of the schema as an @ATTRIBUTES value, for bootstrapping */
+		if (strcmp(syntax, LDB_SYNTAX_INTEGER) == 0) {
+			ret = ldb_msg_add_string(msg, attr->lDAPDisplayName, "INTEGER");
+		} else if (strcmp(syntax, LDB_SYNTAX_DIRECTORY_STRING) == 0) {
+			ret = ldb_msg_add_string(msg, attr->lDAPDisplayName, "CASE_INSENSITIVE");
+		} 
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+
+		if (attr->searchFlags & SEARCH_FLAG_ATTINDEX) {
+			ret = ldb_msg_add_string(msg_idx, "@IDXATTR", attr->lDAPDisplayName);
+			if (ret != LDB_SUCCESS) {
+				return ret;
+			}
+		}
+
 		if (!attr->syntax) {
 			continue;
 		}
-		if (attr->syntax->ldb_syntax) {
-			ret = ldb_schema_attribute_add(ldb, attr->lDAPDisplayName, 0,
-						       attr->syntax->ldb_syntax);
-		} else {
-			s = ldb_standard_syntax_by_name(ldb, attr->syntax->ldap_oid);
+
+		ret = ldb_schema_attribute_add(ldb, attr->lDAPDisplayName, LDB_ATTR_FLAG_FIXED,
+					       syntax);
+		if (ret != LDB_SUCCESS) {
+			s = ldb_samba_syntax_by_name(ldb, attr->syntax->ldap_oid);
 			if (s) {
-				ret = ldb_schema_attribute_add_with_syntax(ldb, attr->lDAPDisplayName, 0, s);
+				ret = ldb_schema_attribute_add_with_syntax(ldb, attr->lDAPDisplayName, LDB_ATTR_FLAG_FIXED, s);
 			} else {
-				s = ldb_samba_syntax_by_name(ldb, attr->syntax->ldap_oid);
-				if (s) {
-					ret = ldb_schema_attribute_add_with_syntax(ldb, attr->lDAPDisplayName, 0, s);
-				} else {
-					ret = LDB_SUCCESS; /* Nothing to do here */
-				}
+				ret = LDB_SUCCESS; /* Nothing to do here */
 			}
 		}
+		
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
 	}
 
-	/* Now put back the hardcoded Samba special handlers */
-	return ldb_register_samba_handlers(ldb);
+	if (!write_attributes) {
+		talloc_free(mem_ctx);
+		return ret;
+	}
+
+	ret = ldb_transaction_start(ldb);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	/* Try to avoid churning the attributes too much - we only want to do this if they have changed */
+	ret = ldb_search_exp_fmt(ldb, mem_ctx, &res, msg->dn, LDB_SCOPE_BASE, NULL, "dn=%s", ldb_dn_get_linearized(msg->dn));
+	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+		ret = ldb_add(ldb, msg);
+	} else if (ret != LDB_SUCCESS) {
+		talloc_free(mem_ctx);
+		ldb_transaction_cancel(ldb);
+		return ret;
+	} else {
+
+		if (res->count != 1) {
+			talloc_free(mem_ctx);
+			ldb_transaction_cancel(ldb);
+			return LDB_ERR_NO_SUCH_OBJECT;
+		}
+		
+		ret = LDB_SUCCESS;
+		mod_msg = ldb_msg_diff(ldb, res->msgs[0], msg);
+		if (mod_msg->num_elements > 0) {
+			ret = ldb_modify(ldb, mod_msg);
+		}
+	}
+
+	if (ret == LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS) {
+		/* We might be on a read-only DB */
+		talloc_free(mem_ctx);
+		ret = ldb_transaction_cancel(ldb);
+		return ret;
+	} else if (ret != LDB_SUCCESS) {
+		ldb_transaction_cancel(ldb);
+		return ret;
+	}
+
+	/* Now write out the indexs, as found in the schema (if they have changed) */
+
+	ret = ldb_search_exp_fmt(ldb, mem_ctx, &res_idx, msg_idx->dn, LDB_SCOPE_BASE, NULL, "dn=%s", ldb_dn_get_linearized(msg_idx->dn));
+	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+		ret = ldb_add(ldb, msg_idx);
+	} else if (ret != LDB_SUCCESS) {
+		talloc_free(mem_ctx);
+		ldb_transaction_cancel(ldb);
+		return ret;
+	} else {
+		if (res_idx->count != 1) {
+			talloc_free(mem_ctx);
+			ldb_transaction_cancel(ldb);
+			return LDB_ERR_NO_SUCH_OBJECT;
+		}
+		
+		mod_msg = ldb_msg_diff(ldb, res_idx->msgs[0], msg_idx);
+		if (mod_msg->num_elements > 0) {
+			ret = ldb_modify(ldb, mod_msg);
+		}
+	}
+	if (ret == LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS) {
+		/* We might be on a read-only DB */
+		talloc_free(mem_ctx);
+		return ldb_transaction_cancel(ldb);
+	} else if (ret == LDB_SUCCESS) {
+		ret = ldb_transaction_commit(ldb);
+	} else {
+		ldb_transaction_cancel(ldb);
+	}
+	talloc_free(mem_ctx);
+	return ret;
 }
 
 
@@ -79,7 +201,8 @@ int dsdb_set_schema(struct ldb_context *ldb, struct dsdb_schema *schema)
 		return ret;
 	}
 
-	ret = schema_set_attributes(ldb, schema);
+	/* Set the new attributes based on the new schema */
+	ret = dsdb_schema_set_attributes(ldb, schema, true);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -108,7 +231,8 @@ int dsdb_set_global_schema(struct ldb_context *ldb)
 		return ret;
 	}
 
-	ret = schema_set_attributes(ldb, global_schema);
+	/* Set the new attributes based on the new schema */
+	ret = dsdb_schema_set_attributes(ldb, global_schema, false);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
