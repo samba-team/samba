@@ -3576,51 +3576,6 @@ krb5_crypto_length(krb5_context context,
 }
 
 krb5_error_code KRB5_LIB_FUNCTION
-krb5_encrypt_ivec_new(krb5_context context,
-		      krb5_crypto crypto,
-		      unsigned usage,
-		      const void *data,
-		      size_t len,
-		      krb5_data *result,
-		      void *ivec)
-{
-    krb5_crypto_iov iov[3];
-    krb5_error_code ret;
-    size_t total_len;
-    
-    total_len = 
-	krb5_crypto_length(context, crypto, KRB5_CRYPTO_TYPE_HEADER) +
-	len + 
-	krb5_crypto_length(context, crypto, KRB5_CRYPTO_TYPE_TRAILER);
-
-    ret = krb5_data_alloc(result, total_len);
-    if (ret) {
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
-	return ret;
-    }
-
-    iov[0].flags = KRB5_CRYPTO_TYPE_HEADER;
-    iov[0].data.length = krb5_crypto_length(context, crypto, iov[0].flags);
-    iov[0].data.data = result->data;
-
-    iov[1].flags = KRB5_CRYPTO_TYPE_DATA;
-    iov[1].data.length = len;
-    iov[1].data.data = ((char *)result->data) + iov[0].data.length;
-    memcpy(iov[0].data.data, data, len);
-
-    iov[2].flags = KRB5_CRYPTO_TYPE_TRAILER;
-    iov[2].data.length = krb5_crypto_length(context, crypto, iov[2].flags);
-    iov[2].data.data = ((char *)result->data) + iov[0].data.length + len;
-
-    ret = krb5_encrypt_iov_ivec(context, crypto, usage, 
-				iov, sizeof(iov)/sizeof(iov[0]), ivec);
-    if (ret)
-	krb5_data_free(result);
-    return ret;
-}
-
-
-krb5_error_code KRB5_LIB_FUNCTION
 krb5_encrypt_ivec(krb5_context context,
 		  krb5_crypto crypto,
 		  unsigned usage,
