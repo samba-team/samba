@@ -3204,16 +3204,6 @@ decrypt_internal_special(krb5_context context,
     return 0;
 }
 
-typedef struct krb5_crypto_iov {
-    unsigned int flags;
-#define KRB5_CRYPTO_TYPE_EMPTY		0 /* ignored */
-#define KRB5_CRYPTO_TYPE_SIGNATURE	1 /* OUT krb5_crypto_length_signature */
-#define KRB5_CRYPTO_TYPE_DATA		2 /* IN and OUT */
-#define KRB5_CRYPTO_TYPE_SIGN_ONLY	3 /* IN */
-#define KRB5_CRYPTO_TYPE_PADDING	4 /* OUT krb5_crypto_length_padding */
-    krb5_data data;
-} krb5_crypto_iov;
-
 /**
  * Inline encrypt a kerberos message
  *
@@ -3229,38 +3219,361 @@ typedef struct krb5_crypto_iov {
  *
  * Kerberos encrypted data look like this:
  * 
- * 1. KRB5_CRYPTO_TYPE_SIGNATURE
+ * 1. KRB5_CRYPTO_TYPE_HEADER
  * 2. array KRB5_CRYPTO_TYPE_DATA and KRB5_CRYPTO_TYPE_SIGN_ONLY in
  *  any order, however the receiver have to aware of the
  *  order. KRB5_CRYPTO_TYPE_SIGN_ONLY is commonly used headers and
  *  trailers.
- * 3. KRB5_CRYPTO_TYPE_PADDING (0 for cfx and rc4, 8 for des types)
+ * 3. KRB5_CRYPTO_TYPE_TRAILER
  */
+
+static krb5_crypto_iov *
+find_iv(krb5_crypto_iov *data, int num_data, int type)
+{
+    int i;
+    for (i = 0; i < num_data; i++)
+	if (data[i].flags == type)
+	    return &data[i];
+    return NULL;
+}
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_encrypt_iov_ivec(krb5_context context,
 		      krb5_crypto crypto,
 		      unsigned usage,
-		      krb5_crypto_iov **data,
+		      krb5_crypto_iov *data,
 		      size_t num_data,
 		      void *ivec)
 {
-    krb5_clear_error_string(context);
-    return KRB5_CRYPTO_INTERNAL;
+    size_t headersz, trailersz, len;
+    size_t i, sz, block_sz, pad_sz;
+    Checksum cksum;
+    unsigned char *p, *q;
+    krb5_error_code ret;
+    struct key_data *dkey;
+    const struct encryption_type *et = crypto->et;
+    krb5_crypto_iov *tiv, *piv, *hiv;
+    
+    if(!derived_crypto(context, crypto)) { 
+	krb5_clear_error_string(context);
+	return KRB5_CRYPTO_INTERNAL;
+    }
+
+    headersz = et->confoundersize;
+    trailersz = CHECKSUMSIZE(et->keyed_checksum);
+    
+    for (len = 0, i = 0; i < num_data; i++) {
+	if (data[i].flags != KRB5_CRYPTO_TYPE_HEADER &&
+	    data[i].flags == KRB5_CRYPTO_TYPE_DATA) {
+	    len += data[i].data.length;
+	}
+    }
+
+    sz = headersz + len;
+    block_sz = (sz + et->padsize - 1) &~ (et->padsize - 1); /* pad */
+
+    pad_sz = block_sz - sz;
+    trailersz += pad_sz;
+
+    /* header */
+
+    hiv = find_iv(data, num_data, KRB5_CRYPTO_TYPE_HEADER);
+    if (hiv == NULL || hiv->data.length != headersz)
+	return KRB5_BAD_MSIZE;
+
+    krb5_generate_random_block(hiv->data.data, hiv->data.length);
+
+    /* padding */
+
+    piv = find_iv(data, num_data, KRB5_CRYPTO_TYPE_PADDING);
+    /* its ok to have no TYPE_PADDING if there is no padding */
+    if (piv == NULL && pad_sz != 0)
+	return KRB5_BAD_MSIZE;
+    if (piv) {
+	if (piv->data.length < pad_sz)
+	    return KRB5_BAD_MSIZE;
+	piv->data.length = pad_sz;
+    }
+
+
+    /* trailer */
+
+    tiv = find_iv(data, num_data, KRB5_CRYPTO_TYPE_TRAILER);
+    if (tiv == NULL || tiv->data.length != trailersz)
+	return KRB5_BAD_MSIZE;
+
+
+    /*
+     * XXX replace with EVP_Sign? at least make create_checksum an iov
+     * function.
+     */
+
+    for (len = 0, i = 0; i < num_data; i++) {
+	if (data[i].flags != KRB5_CRYPTO_TYPE_HEADER &&
+	    data[i].flags != KRB5_CRYPTO_TYPE_DATA &&
+	    data[i].flags != KRB5_CRYPTO_TYPE_SIGN_ONLY)
+	    continue;
+	len += data[i].data.length;
+    }
+
+    p = q = malloc(len);
+
+    for (i = 0; i < num_data; i++) {
+	if (data[i].flags != KRB5_CRYPTO_TYPE_HEADER &&
+	    data[i].flags != KRB5_CRYPTO_TYPE_DATA &&
+	    data[i].flags != KRB5_CRYPTO_TYPE_SIGN_ONLY)
+	    continue;
+	memcpy(q, data[i].data.data, data[i].data.length);
+	q += data[i].data.length;
+    }
+
+    ret = create_checksum(context, 
+			  et->keyed_checksum,
+			  crypto, 
+			  INTEGRITY_USAGE(usage),
+			  p, 
+			  len,
+			  &cksum);
+    free(p);
+    if(ret == 0 && cksum.checksum.length != trailersz) {
+	free_Checksum (&cksum);
+	krb5_clear_error_string (context);
+	ret = KRB5_CRYPTO_INTERNAL;
+    }
+    if(ret)
+	goto fail;
+
+    /* save cksum at end */
+    memcpy(tiv->data.data, cksum.checksum.data, cksum.checksum.length);
+    free_Checksum (&cksum);
+
+    /* now encrypt data */
+
+    ret = _get_derived_key(context, crypto, ENCRYPTION_USAGE(usage), &dkey);
+    if(ret)
+	goto fail;
+    ret = _key_schedule(context, dkey);
+    if(ret)
+	goto fail;
+
+    /* XXX replace with EVP_Cipher */
+
+    for (len = 0, i = 0; i < num_data; i++) {
+	if (data[i].flags != KRB5_CRYPTO_TYPE_HEADER &&
+	    data[i].flags != KRB5_CRYPTO_TYPE_DATA &&
+	    data[i].flags != KRB5_CRYPTO_TYPE_PADDING)
+	    continue;
+	len += data[i].data.length;
+    }
+
+    p = q = malloc(len);
+
+    for (i = 0; i < num_data; i++) {
+	if (data[i].flags != KRB5_CRYPTO_TYPE_HEADER &&
+	    data[i].flags != KRB5_CRYPTO_TYPE_DATA &&
+	    data[i].flags != KRB5_CRYPTO_TYPE_PADDING)
+	    continue;
+	memcpy(q, data[i].data.data, data[i].data.length);
+	q += data[i].data.length;
+    }
+
+    ret = _get_derived_key(context, crypto, ENCRYPTION_USAGE(usage), &dkey);
+    if(ret) {
+	free(p);
+	return ret;
+    }
+    ret = _key_schedule(context, dkey);
+    if(ret) {
+	free(p);
+	return ret;
+    }
+
+    ret = (*et->encrypt)(context, dkey, p, len, 1, usage, ivec);
+    if (ret) {
+	free(p);
+	goto fail;
+    }
+
+    /* now copy data back to buffers */
+    for (q = p, i = 0; i < num_data; i++) {
+	if (data[i].flags != KRB5_CRYPTO_TYPE_HEADER &&
+	    data[i].flags != KRB5_CRYPTO_TYPE_DATA &&
+	    data[i].flags != KRB5_CRYPTO_TYPE_PADDING)
+	    continue;
+	memcpy(data[i].data.data, q, data[i].data.length);
+	q += data[i].data.length;
+	len -= data[i].data.length;
+    }
+    if (len)
+	krb5_abortx(context, "crypto: failed to get padsize right");
+    free(p);
+
+ fail:
+    return ret;
 }
 
 krb5_error_code KRB5_LIB_FUNCTION
-krb5_crypto_length_signature(krb5_crypto crypto, size_t len)
+krb5_decrypt_iov_ivec(krb5_context context,
+		      krb5_crypto crypto,
+		      unsigned usage,
+		      krb5_crypto_iov *data,
+		      size_t num_data,
+		      void *ivec)
 {
-    krb5_clear_error_string(context);
-    return KRB5_CRYPTO_INTERNAL;
+    size_t headersz, trailersz, len;
+    size_t i, sz, block_sz, pad_sz;
+    Checksum cksum;
+    unsigned char *p, *q;
+    krb5_error_code ret;
+    struct key_data *dkey;
+    struct encryption_type *et = crypto->et;
+    krb5_crypto_iov *tiv, *hiv;
+    
+    if(!derived_crypto(context, crypto)) { 
+	krb5_clear_error_string(context);
+	return KRB5_CRYPTO_INTERNAL;
+    }
+
+    headersz = et->confoundersize;
+    trailersz = CHECKSUMSIZE(et->keyed_checksum);
+    
+    for (len = 0, i = 0; i < num_data; i++)
+	if (data[i].flags == KRB5_CRYPTO_TYPE_DATA)
+	    len += data[i].data.length;
+
+    sz = headersz + len;
+    block_sz = (sz + et->padsize - 1) &~ (et->padsize - 1); /* pad */
+
+    pad_sz = block_sz - sz;
+    trailersz += pad_sz;
+
+    /* header */
+
+    hiv = find_iv(data, num_data, KRB5_CRYPTO_TYPE_HEADER);
+    if (hiv == NULL || hiv->data.length < headersz)
+	return KRB5_BAD_MSIZE;
+    hiv->data.length = headersz;
+
+    /* trailer */
+
+    tiv = find_iv(data, num_data, KRB5_CRYPTO_TYPE_TRAILER);
+    if (tiv == NULL || tiv->data.length < trailersz)
+	return KRB5_BAD_MSIZE;
+    tiv->data.length = trailersz;
+
+    /* body */
+
+    /* XXX replace with EVP_Cipher */
+
+    for (len = 0, i = 0; i < num_data; i++) {
+	if (data[i].flags != KRB5_CRYPTO_TYPE_HEADER &&
+	    data[i].flags != KRB5_CRYPTO_TYPE_DATA)
+	    continue;
+	len += data[i].data.length;
+    }
+
+    p = q = malloc(len);
+    if (p == NULL)
+	return ENOMEM;
+
+    for (i = 0; i < num_data; i++) {
+	if (data[i].flags != KRB5_CRYPTO_TYPE_HEADER &&
+	    data[i].flags != KRB5_CRYPTO_TYPE_DATA)
+	    continue;
+	memcpy(q, data[i].data.data, data[i].data.length);
+	q += data[i].data.length;
+    }
+
+    ret = _get_derived_key(context, crypto, ENCRYPTION_USAGE(usage), &dkey);
+    if(ret) {
+	free(p);
+	return ret;
+    }
+    ret = _key_schedule(context, dkey);
+    if(ret) {
+	free(p);
+	return ret;
+    }
+
+    ret = (*et->encrypt)(context, dkey, p, len, 0, usage, ivec);
+    if (ret) {
+	free(p);
+	return ret;
+    }
+
+    /* XXX now copy data back to buffers */
+    for (q = p, i = 0; i < num_data; i++) {
+	if (data[i].flags != KRB5_CRYPTO_TYPE_HEADER &&
+	    data[i].flags != KRB5_CRYPTO_TYPE_DATA)
+	    continue;
+	if (len < data[i].data.length)
+	    data[i].data.length = len;
+	memcpy(data[i].data.data, q, data[i].data.length);
+	q += data[i].data.length;
+	len -= data[i].data.length;
+    }
+    free(p);
+    if (len)
+	krb5_abortx(context, "data still in the buffer");
+
+    for (len = 0, i = 0; i < num_data; i++) {
+	if (data[i].flags != KRB5_CRYPTO_TYPE_HEADER &&
+	    data[i].flags != KRB5_CRYPTO_TYPE_DATA &&
+	    data[i].flags != KRB5_CRYPTO_TYPE_SIGN_ONLY)
+	    continue;
+	len += data[i].data.length;
+    }
+
+    p = q = malloc(len);
+
+    for (i = 0; i < num_data; i++) {
+	if (data[i].flags != KRB5_CRYPTO_TYPE_HEADER &&
+	    data[i].flags != KRB5_CRYPTO_TYPE_DATA &&
+	    data[i].flags != KRB5_CRYPTO_TYPE_SIGN_ONLY)
+	    continue;
+	memcpy(q, data[i].data.data, data[i].data.length);
+	q += data[i].data.length;
+    }
+
+    cksum.checksum.data   = tiv->data.data;
+    cksum.checksum.length = tiv->data.length;
+    cksum.cksumtype       = CHECKSUMTYPE(et->keyed_checksum);
+
+    ret = verify_checksum(context,
+			  crypto,
+			  INTEGRITY_USAGE(usage),
+			  p,
+			  len,
+			  &cksum);
+    free(p);
+    if(ret)
+	return ret;
+
+    return 0;
 }
 
-krb5_error_code KRB5_LIB_FUNCTION
-krb5_crypto_length_padding(krb5_crypto crypto, size_t len)
+
+size_t KRB5_LIB_FUNCTION
+krb5_crypto_length(krb5_context context,
+		   krb5_crypto crypto,
+		   size_t len,
+		   int type)
 {
-    krb5_clear_error_string(context);
-    return KRB5_CRYPTO_INTERNAL;
+    if (!derived_crypto(context, crypto))
+	return (size_t)-1;
+    switch(type) {
+    case KRB5_CRYPTO_TYPE_EMPTY:
+	return 0;
+    case KRB5_CRYPTO_TYPE_HEADER:
+	return crypto->et->blocksize;
+    case KRB5_CRYPTO_TYPE_PADDING:
+	if (crypto->et->padsize > 1)
+	    return crypto->et->padsize;
+	return 0;
+    case KRB5_CRYPTO_TYPE_TRAILER:
+	return CHECKSUMSIZE(crypto->et->keyed_checksum);
+    }
+    return (size_t)-1;
 }
 
 krb5_error_code KRB5_LIB_FUNCTION
@@ -3277,8 +3590,9 @@ krb5_encrypt_ivec_new(krb5_context context,
     size_t total_len;
     
     total_len = 
-	krb5_crypto_signature_length(crypto, len) + len + 
-	krb5_crypto_padding_length(crypto, len);
+	krb5_crypto_length(context, crypto, len, KRB5_CRYPTO_TYPE_HEADER) +
+	len + 
+	krb5_crypto_length(context, crypto, len, KRB5_CRYPTO_TYPE_TRAILER);
 
     ret = krb5_data_alloc(result, total_len);
     if (ret) {
@@ -3286,21 +3600,21 @@ krb5_encrypt_ivec_new(krb5_context context,
 	return ret;
     }
 
-    iov[0].flags = KRB5_CRYPTO_TYPE_SIGNATURE;
-    iov[0].data.length = krb5_crypto_length_signature(crypto, len);
+    iov[0].flags = KRB5_CRYPTO_TYPE_HEADER;
+    iov[0].data.length = krb5_crypto_length(context, crypto, len, iov[0].flags);
     iov[0].data.data = result->data;
 
     iov[1].flags = KRB5_CRYPTO_TYPE_DATA;
     iov[1].data.length = len;
     iov[1].data.data = ((char *)result->data) + iov[0].data.length;
-    memcpy(iov[0].data.data, data);
+    memcpy(iov[0].data.data, data, len);
 
-    iov[2].flags = KRB5_CRYPTO_TYPE_PADDING;
-    iov[2].data.length = krb5_crypto_length_padding(crypto, len);
+    iov[2].flags = KRB5_CRYPTO_TYPE_TRAILER;
+    iov[2].data.length = krb5_crypto_length(context, crypto, len, iov[2].flags);
     iov[2].data.data = ((char *)result->data) + iov[0].data.length + len;
 
     ret = krb5_encrypt_iov_ivec(context, crypto, usage, 
-				&iov, sizeof(iov)/sizeof(iov[0]), ivec);
+				iov, sizeof(iov)/sizeof(iov[0]), ivec);
     if (ret)
 	krb5_data_free(result);
     return ret;
