@@ -768,6 +768,10 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 	struct ldb_message_element *el, *el2;
 	int ret;
 	unsigned int group_type, user_account_control, account_type;
+	if (ldb_dn_is_special(req->op.mod.message->dn)) { /* do not manipulate our control entries */
+		return ldb_next_request(module, req);
+	}
+
 	if (ldb_msg_find_element(req->op.mod.message, "sAMAccountType") != NULL) {
 		ldb_asprintf_errstring(module->ldb, "sAMAccountType must not be specified");
 		return LDB_ERR_UNWILLING_TO_PERFORM;
