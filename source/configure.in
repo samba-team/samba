@@ -6164,6 +6164,7 @@ AC_OUTPUT(Makefile
 	  pkgconfig/wbclient.pc
 	  pkgconfig/netapi.pc
 	  pkgconfig/smbsharemodes.pc
+	  ../examples/libsmbclient/Makefile.internal
 	  )
 
 #################################################
