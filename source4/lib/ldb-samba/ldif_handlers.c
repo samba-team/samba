@@ -617,19 +617,6 @@ static const struct {
 	{ "fRSReplicaSetGUID",		LDB_SYNTAX_SAMBA_GUID },
 	{ "netbootGUID",		LDB_SYNTAX_SAMBA_GUID },
 	{ "objectCategory",		LDB_SYNTAX_SAMBA_OBJECT_CATEGORY },
-	{ "member",			LDB_SYNTAX_DN },
-	{ "memberOf",			LDB_SYNTAX_DN },
-	{ "nCName",			LDB_SYNTAX_DN },
-	{ "schemaNamingContext",	LDB_SYNTAX_DN },
-	{ "configurationNamingContext",	LDB_SYNTAX_DN },
-	{ "rootDomainNamingContext",	LDB_SYNTAX_DN },
-	{ "defaultNamingContext",	LDB_SYNTAX_DN },
-	{ "subRefs",			LDB_SYNTAX_DN },
-	{ "dMDLocation",		LDB_SYNTAX_DN },
-	{ "serverReference",		LDB_SYNTAX_DN },
-	{ "masteredBy",			LDB_SYNTAX_DN },
-	{ "msDs-masteredBy",		LDB_SYNTAX_DN },
-	{ "fSMORoleOwner",		LDB_SYNTAX_DN },
 	{ "prefixMap",                  LDB_SYNTAX_SAMBA_PREFIX_MAP }
 };
 
@@ -669,7 +656,7 @@ int ldb_register_samba_handlers(struct ldb_context *ldb)
 			return -1;
 		}
 
-		ret = ldb_schema_attribute_add_with_syntax(ldb, samba_attributes[i].name, 0, s);
+		ret = ldb_schema_attribute_add_with_syntax(ldb, samba_attributes[i].name, LDB_ATTR_FLAG_FIXED, s);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
