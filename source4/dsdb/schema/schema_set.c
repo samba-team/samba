@@ -114,6 +114,7 @@ static int dsdb_schema_set_attributes(struct ldb_context *ldb, struct dsdb_schem
 		return ret;
 	}
 
+
 	ret = ldb_transaction_start(ldb);
 	if (ret != LDB_SUCCESS) {
 		return ret;
@@ -136,6 +137,9 @@ static int dsdb_schema_set_attributes(struct ldb_context *ldb, struct dsdb_schem
 		}
 		
 		ret = LDB_SUCCESS;
+		/* Annoyingly added to our search results */
+		ldb_msg_remove_attr(res->msgs[0], "distinguishedName");
+
 		mod_msg = ldb_msg_diff(ldb, res->msgs[0], msg);
 		if (mod_msg->num_elements > 0) {
 			ret = ldb_modify(ldb, mod_msg);
@@ -168,6 +172,9 @@ static int dsdb_schema_set_attributes(struct ldb_context *ldb, struct dsdb_schem
 			return LDB_ERR_NO_SUCH_OBJECT;
 		}
 		
+		/* Annoyingly added to our search results */
+		ldb_msg_remove_attr(res_idx->msgs[0], "distinguishedName");
+
 		mod_msg = ldb_msg_diff(ldb, res_idx->msgs[0], msg_idx);
 		if (mod_msg->num_elements > 0) {
 			ret = ldb_modify(ldb, mod_msg);
