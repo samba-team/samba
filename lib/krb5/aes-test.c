@@ -319,6 +319,71 @@ krb_enc(krb5_context context,
 }
 
 static int
+krb_enc_iov(krb5_context context,
+	    krb5_crypto crypto, 
+	    unsigned usage,
+	    krb5_data *cipher, 
+	    krb5_data *clear)
+{
+    krb5_crypto_iov iov[4];
+    int ret;
+    char *p;
+    size_t len;
+
+    p = cipher->data;
+    len = cipher->length;
+    
+    iov[0].flags = KRB5_CRYPTO_TYPE_HEADER;
+    iov[0].data.length = krb5_crypto_length(context, crypto, cipher->length, iov[0].flags);
+    iov[0].data.data = emalloc(iov[0].data.length);
+    memcpy(iov[0].data.data, p, iov[0].data.length);
+    p += iov[0].data.length;
+    len -= iov[0].data.length;
+    
+    iov[1].flags = KRB5_CRYPTO_TYPE_TRAILER;
+    iov[1].data.length = krb5_crypto_length(context, crypto, cipher->length, iov[1].flags);
+    iov[1].data.data = emalloc(iov[3].data.length);
+    memcpy(iov[1].data.data, p + len - iov[1].data.length, iov[1].data.length);
+    len -= iov[1].data.length;
+
+    
+    iov[2].flags = KRB5_CRYPTO_TYPE_DATA;
+    iov[2].data.length = 16;
+    iov[2].data.data = emalloc(iov[2].data.length);
+    memcpy(iov[2].data.data, p, iov[2].data.length);
+    p += iov[2].data.length;
+    len -= iov[2].data.length;
+    
+    iov[3].flags = KRB5_CRYPTO_TYPE_DATA;
+    iov[3].data.length = len;
+    iov[3].data.data = emalloc(iov[3].data.length);
+    memcpy(iov[1].data.data, p, iov[3].data.length);
+    p += iov[3].data.length;
+    len -= iov[3].data.length;
+    
+    if (len != 0)
+	abort();
+    
+    ret = krb5_decrypt_iov_ivec(context, crypto, usage, 
+				iov, sizeof(iov)/sizeof(iov[0]), NULL);
+    if (ret)
+	errx(1, "iov failed: %d", ret);
+    
+    if (clear->length != iov[2].data.length + iov[3].data.length)
+	errx(1, "length incorrect");
+    
+    p = clear->data;
+    if (memcmp(iov[2].data.data, p, iov[2].data.length) != 0)
+	errx(1, "iov[2] incorrect");
+    p += iov[2].data.length;
+    if (memcmp(iov[3].data.data, p, iov[3].data.length) != 0)
+	errx(1, "iov[3] incorrect");
+
+    return 0;
+}
+
+
+static int
 krb_enc_mit(krb5_context context,
 	    krb5_enctype enctype,
 	    krb5_keyblock *key,
@@ -394,7 +459,7 @@ krb_enc_test(krb5_context context)
     krb5_crypto crypto;
     krb5_keyblock kb;
     krb5_data cipher, plain;
-    int i, failed = 0;
+    int i;
 
     for (i = 0; i < sizeof(krbencs)/sizeof(krbencs[0]); i++) {
 
@@ -411,22 +476,22 @@ krb_enc_test(krb5_context context)
 	
 	ret = krb_enc(context, crypto, krbencs[i].usage, &cipher, &plain);
 		       
-	if (ret) {
-	    failed = 1;
-	    printf("krb_enc failed with %d\n", ret);
-	}
+	if (ret) 
+	    errx(1, "krb_enc failed with %d for test %d", ret, i);
+
+	ret = krb_enc_iov(context, crypto, krbencs[i].usage, &cipher, &plain);
+	if (ret)
+	    errx(1, "krb_enc_iov failed with %d for test %d", ret, i);
+
 	krb5_crypto_destroy(context, crypto);
 
 	ret = krb_enc_mit(context, krbencs[i].enctype, &kb, 
 			  krbencs[i].usage, &cipher, &plain);
-	if (ret) {
-	    failed = 1;
-	    printf("krb_enc_mit failed with %d\n", ret);
-	}
-
+	if (ret)
+	    errx(1, "krb_enc_mit failed with %d for test %d", ret, i);
     }
 
-    return failed;
+    return 0;
 }
 
 
