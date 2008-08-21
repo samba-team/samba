@@ -768,15 +768,15 @@ typedef struct krb5_crypto_iov {
     unsigned int flags;
     /* ignored */
 #define KRB5_CRYPTO_TYPE_EMPTY		0
-    /* OUT krb5_crypto_length(crypto, len, KRB5_CRYPTO_TYPE_HEADER) */
+    /* OUT krb5_crypto_length(len, KRB5_CRYPTO_TYPE_HEADER) */
 #define KRB5_CRYPTO_TYPE_HEADER		1
     /* IN and OUT */
 #define KRB5_CRYPTO_TYPE_DATA		2
     /* IN */
 #define KRB5_CRYPTO_TYPE_SIGN_ONLY	3
-   /* (only for encryption) OUT krb5_crypto_length(crypto, len, KRB5_CRYPTO_TYPE_TRAILER) */
+   /* (only for encryption) OUT krb5_crypto_length(len, KRB5_CRYPTO_TYPE_TRAILER) */
 #define KRB5_CRYPTO_TYPE_PADDING	4
-   /* OUT krb5_crypto_length(crypto, len, KRB5_CRYPTO_TYPE_TRAILER) */
+   /* OUT krb5_crypto_length(len, KRB5_CRYPTO_TYPE_TRAILER) */
 #define KRB5_CRYPTO_TYPE_TRAILER	5
     krb5_data data;
 } krb5_crypto_iov;
