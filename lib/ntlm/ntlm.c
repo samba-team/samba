@@ -46,6 +46,8 @@ RCSID("$Id$");
 #include <krb5.h>
 #include <roken.h>
 
+#define HC_DEPRECATED_CRYPTO
+
 #include "krb5-types.h"
 #include "crypto-headers.h"
 
