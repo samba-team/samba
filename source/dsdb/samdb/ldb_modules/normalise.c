@@ -112,7 +112,7 @@ static int normalise_search_callback(struct ldb_context *ldb, void *context, str
 		}
 		for (j = 0; j < ares->message->elements[i].num_values; j++) {
 			const char *dn_str;
-			struct ldb_dn *dn = ldb_dn_new(mem_ctx, ldb, (const char *)ares->message->elements[i].values[j].data);
+			struct ldb_dn *dn = ldb_dn_from_ldb_val(mem_ctx, ldb, &ares->message->elements[i].values[j]);
 			if (!dn) {
 				talloc_free(mem_ctx);
 				return LDB_ERR_OPERATIONS_ERROR;
