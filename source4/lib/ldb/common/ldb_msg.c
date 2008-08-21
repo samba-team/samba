@@ -389,10 +389,10 @@ int ldb_msg_find_attr_as_bool(const struct ldb_message *msg,
 	if (!v || !v->data) {
 		return default_value;
 	}
-	if (strcasecmp((const char *)v->data, "FALSE") == 0) {
+	if (v->length == 5 && strncasecmp((const char *)v->data, "FALSE", 5) == 0) {
 		return 0;
 	}
-	if (strcasecmp((const char *)v->data, "TRUE") == 0) {
+	if (v->length == 4 && strncasecmp((const char *)v->data, "TRUE", 4) == 0) {
 		return 1;
 	}
 	return default_value;
@@ -421,7 +421,7 @@ struct ldb_dn *ldb_msg_find_attr_as_dn(struct ldb_context *ldb,
 	if (!v || !v->data) {
 		return NULL;
 	}
-	res_dn = ldb_dn_new(mem_ctx, ldb, (const char *)v->data);
+	res_dn = ldb_dn_from_ldb_val(mem_ctx, ldb, v);
 	if ( ! ldb_dn_validate(res_dn)) {
 		talloc_free(res_dn);
 		return NULL;

@@ -1381,6 +1381,7 @@ int ldb_base64_decode(char *s);
 
 struct ldb_dn *ldb_dn_new(TALLOC_CTX *mem_ctx, struct ldb_context *ldb, const char *dn);
 struct ldb_dn *ldb_dn_new_fmt(TALLOC_CTX *mem_ctx, struct ldb_context *ldb, const char *new_fmt, ...) PRINTF_ATTRIBUTE(3,4);
+struct ldb_dn *ldb_dn_from_ldb_val(void *mem_ctx, struct ldb_context *ldb, const struct ldb_val *strdn);
 bool ldb_dn_validate(struct ldb_dn *dn);
 
 char *ldb_dn_escape_value(TALLOC_CTX *mem_ctx, struct ldb_val value);

@@ -152,6 +152,21 @@ struct dom_sid *dom_sid_parse_talloc(TALLOC_CTX *mem_ctx, const char *sidstr)
 }
 
 /*
+  convert a string to a dom_sid, returning a talloc'd dom_sid
+*/
+struct dom_sid *dom_sid_parse_length(TALLOC_CTX *mem_ctx, const DATA_BLOB *sid)
+{
+	struct dom_sid *ret;
+	char *p = talloc_strndup(mem_ctx, sid->data, sid->length);
+	if (!p) {
+		return NULL;
+	}
+	ret = dom_sid_parse_talloc(mem_ctx, p);
+	talloc_free(p);
+	return ret;
+}
+
+/*
   copy a dom_sid structure
 */
 struct dom_sid *dom_sid_dup(TALLOC_CTX *mem_ctx, const struct dom_sid *dom_sid)

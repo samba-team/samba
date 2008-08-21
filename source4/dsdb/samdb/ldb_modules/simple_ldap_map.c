@@ -154,7 +154,7 @@ static struct ldb_val objectCategory_always_dn(struct ldb_module *module, TALLOC
 	struct ldb_val out = data_blob(NULL, 0);
 	const struct ldb_schema_attribute *a = ldb_schema_attribute_by_name(module->ldb, "objectCategory");
 
-	dn = ldb_dn_new(ctx, module->ldb, val->data);
+	dn = ldb_dn_from_ldb_val(ctx, module->ldb, val);
 	if (dn && ldb_dn_validate(dn)) {
 		talloc_free(dn);
 		return val_copy(module, ctx, val);

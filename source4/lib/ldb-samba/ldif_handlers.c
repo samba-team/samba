@@ -38,7 +38,7 @@ static int ldif_read_objectSid(struct ldb_context *ldb, void *mem_ctx,
 {
 	enum ndr_err_code ndr_err;
 	struct dom_sid *sid;
-	sid = dom_sid_parse_talloc(mem_ctx, (const char *)in->data);
+	sid = dom_sid_parse_length(mem_ctx, in);
 	if (sid == NULL) {
 		return -1;
 	}
@@ -70,12 +70,11 @@ static int ldif_write_objectSid(struct ldb_context *ldb, void *mem_ctx,
 		talloc_free(sid);
 		return -1;
 	}
-	out->data = (uint8_t *)dom_sid_string(mem_ctx, sid);
+	*out = data_blob_string_const(dom_sid_string(mem_ctx, sid));
 	talloc_free(sid);
 	if (out->data == NULL) {
 		return -1;
 	}
-	out->length = strlen((const char *)out->data);
 	return 0;
 }
 
@@ -146,10 +145,16 @@ static int ldif_read_objectGUID(struct ldb_context *ldb, void *mem_ctx,
 			        const struct ldb_val *in, struct ldb_val *out)
 {
 	struct GUID guid;
+	char *guid_string;
 	NTSTATUS status;
 	enum ndr_err_code ndr_err;
+	guid_string = talloc_strndup(mem_ctx, in->data, in->length);
+	if (!guid_string) {
+		return -1;
+	}
 
-	status = GUID_from_string((const char *)in->data, &guid);
+	status = GUID_from_string(guid_string, &guid);
+	talloc_free(guid_string);
 	if (!NT_STATUS_IS_OK(status)) {
 		return -1;
 	}
@@ -324,7 +329,7 @@ static int ldif_canonicalise_objectCategory(struct ldb_context *ldb, void *mem_c
 		}
 		return LDB_SUCCESS;
 	}
-	dn1 = ldb_dn_new(tmp_ctx, ldb, (char *)in->data);
+	dn1 = ldb_dn_from_ldb_val(tmp_ctx, ldb, in);
 	if ( ! ldb_dn_validate(dn1)) {
 		const char *lDAPDisplayName = talloc_strndup(tmp_ctx, (char *)in->data, in->length);
 		class = dsdb_class_by_lDAPDisplayName(schema, lDAPDisplayName);
