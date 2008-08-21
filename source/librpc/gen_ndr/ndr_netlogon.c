@@ -12310,8 +12310,14 @@ static enum ndr_err_code ndr_push_netr_ServerPasswordSet2(struct ndr_push *ndr, 
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.computer_name, CH_UTF16)));
 		NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->in.computer_name, ndr_charset_length(r->in.computer_name, CH_UTF16), sizeof(uint16_t), CH_UTF16));
-		NDR_CHECK(ndr_push_netr_Authenticator(ndr, NDR_SCALARS, &r->in.credential));
-		NDR_CHECK(ndr_push_netr_CryptPassword(ndr, NDR_SCALARS, &r->in.new_password));
+		if (r->in.credential == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_netr_Authenticator(ndr, NDR_SCALARS, r->in.credential));
+		if (r->in.new_password == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_netr_CryptPassword(ndr, NDR_SCALARS, r->in.new_password));
 	}
 	if (flags & NDR_OUT) {
 		if (r->out.return_authenticator == NULL) {
@@ -12327,7 +12333,9 @@ static enum ndr_err_code ndr_pull_netr_ServerPasswordSet2(struct ndr_pull *ndr, 
 {
 	uint32_t _ptr_server_name;
 	TALLOC_CTX *_mem_save_server_name_0;
+	TALLOC_CTX *_mem_save_credential_0;
 	TALLOC_CTX *_mem_save_return_authenticator_0;
+	TALLOC_CTX *_mem_save_new_password_0;
 	if (flags & NDR_IN) {
 		ZERO_STRUCT(r->out);
 
@@ -12364,8 +12372,20 @@ static enum ndr_err_code ndr_pull_netr_ServerPasswordSet2(struct ndr_pull *ndr, 
 		}
 		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.computer_name), sizeof(uint16_t)));
 		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.computer_name, ndr_get_array_length(ndr, &r->in.computer_name), sizeof(uint16_t), CH_UTF16));
-		NDR_CHECK(ndr_pull_netr_Authenticator(ndr, NDR_SCALARS, &r->in.credential));
-		NDR_CHECK(ndr_pull_netr_CryptPassword(ndr, NDR_SCALARS, &r->in.new_password));
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->in.credential);
+		}
+		_mem_save_credential_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->in.credential, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_netr_Authenticator(ndr, NDR_SCALARS, r->in.credential));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_credential_0, LIBNDR_FLAG_REF_ALLOC);
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->in.new_password);
+		}
+		_mem_save_new_password_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->in.new_password, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_netr_CryptPassword(ndr, NDR_SCALARS, r->in.new_password));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_new_password_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_PULL_ALLOC(ndr, r->out.return_authenticator);
 		ZERO_STRUCTP(r->out.return_authenticator);
 	}
@@ -12401,8 +12421,14 @@ _PUBLIC_ void ndr_print_netr_ServerPasswordSet2(struct ndr_print *ndr, const cha
 		ndr_print_string(ndr, "account_name", r->in.account_name);
 		ndr_print_netr_SchannelType(ndr, "secure_channel_type", r->in.secure_channel_type);
 		ndr_print_string(ndr, "computer_name", r->in.computer_name);
-		ndr_print_netr_Authenticator(ndr, "credential", &r->in.credential);
-		ndr_print_netr_CryptPassword(ndr, "new_password", &r->in.new_password);
+		ndr_print_ptr(ndr, "credential", r->in.credential);
+		ndr->depth++;
+		ndr_print_netr_Authenticator(ndr, "credential", r->in.credential);
+		ndr->depth--;
+		ndr_print_ptr(ndr, "new_password", r->in.new_password);
+		ndr->depth++;
+		ndr_print_netr_CryptPassword(ndr, "new_password", r->in.new_password);
+		ndr->depth--;
 		ndr->depth--;
 	}
 	if (flags & NDR_OUT) {
