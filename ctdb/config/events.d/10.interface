@@ -59,7 +59,6 @@ case $cmd in
 	}
 	/sbin/ip addr add $ip/$maskbits dev $iface || {
 		 echo "Failed to add $ip/$maskbits on dev $iface"
-		 exit 1
 	}
 	# cope with the script being killed while we have the interface blocked
 	iptables -D INPUT -i $iface -d $ip -j DROP 2> /dev/null
