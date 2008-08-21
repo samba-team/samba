@@ -3306,6 +3306,7 @@ krb5_encrypt_iov_ivec(krb5_context context,
     /*
      * XXX replace with EVP_Sign? at least make create_checksum an iov
      * function.
+     * XXX CTS EVP is broken, can't handle multi buffers :(
      */
 
     for (len = 0, i = 0; i < num_data; i++) {
