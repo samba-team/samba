@@ -3309,9 +3309,9 @@ krb5_encrypt_iov_ivec(krb5_context context,
      * XXX CTS EVP is broken, can't handle multi buffers :(
      */
 
-    for (len = 0, i = 0; i < num_data; i++) {
-	if (data[i].flags != KRB5_CRYPTO_TYPE_HEADER &&
-	    data[i].flags != KRB5_CRYPTO_TYPE_DATA &&
+    len = hiv->data.length;
+    for (i = 0; i < num_data; i++) {
+	if (data[i].flags != KRB5_CRYPTO_TYPE_DATA &&
 	    data[i].flags != KRB5_CRYPTO_TYPE_SIGN_ONLY)
 	    continue;
 	len += data[i].data.length;
@@ -3319,9 +3319,10 @@ krb5_encrypt_iov_ivec(krb5_context context,
 
     p = q = malloc(len);
 
+    memcpy(q, hiv->data.data, hiv->data.length);
+    q += hiv->data.length;
     for (i = 0; i < num_data; i++) {
-	if (data[i].flags != KRB5_CRYPTO_TYPE_HEADER &&
-	    data[i].flags != KRB5_CRYPTO_TYPE_DATA &&
+	if (data[i].flags != KRB5_CRYPTO_TYPE_DATA &&
 	    data[i].flags != KRB5_CRYPTO_TYPE_SIGN_ONLY)
 	    continue;
 	memcpy(q, data[i].data.data, data[i].data.length);
@@ -3342,7 +3343,7 @@ krb5_encrypt_iov_ivec(krb5_context context,
 	ret = KRB5_CRYPTO_INTERNAL;
     }
     if(ret)
-	goto fail;
+	return ret;
 
     /* save cksum at end */
     memcpy(tiv->data.data, cksum.checksum.data, cksum.checksum.length);
@@ -3352,26 +3353,29 @@ krb5_encrypt_iov_ivec(krb5_context context,
 
     ret = _get_derived_key(context, crypto, ENCRYPTION_USAGE(usage), &dkey);
     if(ret)
-	goto fail;
+	return ret;
     ret = _key_schedule(context, dkey);
     if(ret)
-	goto fail;
+	return ret;
 
     /* XXX replace with EVP_Cipher */
 
-    for (len = 0, i = 0; i < num_data; i++) {
-	if (data[i].flags != KRB5_CRYPTO_TYPE_HEADER &&
-	    data[i].flags != KRB5_CRYPTO_TYPE_DATA &&
+    len = hiv->data.length;
+    for (i = 0; i < num_data; i++) {
+	if (data[i].flags != KRB5_CRYPTO_TYPE_DATA &&
 	    data[i].flags != KRB5_CRYPTO_TYPE_PADDING)
 	    continue;
 	len += data[i].data.length;
     }
 
     p = q = malloc(len);
+    if(p == NULL)
+	return ENOMEM;
 
+    memcpy(q, hiv->data.data, hiv->data.length);
+    q += hiv->data.length;
     for (i = 0; i < num_data; i++) {
-	if (data[i].flags != KRB5_CRYPTO_TYPE_HEADER &&
-	    data[i].flags != KRB5_CRYPTO_TYPE_DATA &&
+	if (data[i].flags != KRB5_CRYPTO_TYPE_DATA &&
 	    data[i].flags != KRB5_CRYPTO_TYPE_PADDING)
 	    continue;
 	memcpy(q, data[i].data.data, data[i].data.length);
@@ -3392,24 +3396,23 @@ krb5_encrypt_iov_ivec(krb5_context context,
     ret = (*et->encrypt)(context, dkey, p, len, 1, usage, ivec);
     if (ret) {
 	free(p);
-	goto fail;
+	return ret;
     }
 
     /* now copy data back to buffers */
-    for (q = p, i = 0; i < num_data; i++) {
-	if (data[i].flags != KRB5_CRYPTO_TYPE_HEADER &&
-	    data[i].flags != KRB5_CRYPTO_TYPE_DATA &&
+    q = p;
+    memcpy(hiv->data.data, q, hiv->data.length);
+    q += hiv->data.length;
+
+    for (i = 0; i < num_data; i++) {
+	if (data[i].flags != KRB5_CRYPTO_TYPE_DATA &&
 	    data[i].flags != KRB5_CRYPTO_TYPE_PADDING)
 	    continue;
 	memcpy(data[i].data.data, q, data[i].data.length);
 	q += data[i].data.length;
-	len -= data[i].data.length;
     }
-    if (len)
-	krb5_abortx(context, "crypto: failed to get padsize right");
     free(p);
 
- fail:
     return ret;
 }
 
@@ -3477,9 +3480,10 @@ krb5_decrypt_iov_ivec(krb5_context context,
     if (p == NULL)
 	return ENOMEM;
 
+    memcpy(q, hiv->data.data, hiv->data.length);
+    q += hiv->data.length;
     for (i = 0; i < num_data; i++) {
-	if (data[i].flags != KRB5_CRYPTO_TYPE_HEADER &&
-	    data[i].flags != KRB5_CRYPTO_TYPE_DATA)
+	if (data[i].flags != KRB5_CRYPTO_TYPE_DATA)
 	    continue;
 	memcpy(q, data[i].data.data, data[i].data.length);
 	q += data[i].data.length;
@@ -3503,9 +3507,13 @@ krb5_decrypt_iov_ivec(krb5_context context,
     }
 
     /* XXX now copy data back to buffers */
-    for (q = p, i = 0; i < num_data; i++) {
-	if (data[i].flags != KRB5_CRYPTO_TYPE_HEADER &&
-	    data[i].flags != KRB5_CRYPTO_TYPE_DATA)
+    q = p;
+    memcpy(hiv->data.data, q, hiv->data.length);
+    q += hiv->data.length;
+    len -= hiv->data.length;
+
+    for (i = 0; i < num_data; i++) {
+	if (data[i].flags != KRB5_CRYPTO_TYPE_DATA)
 	    continue;
 	if (len < data[i].data.length)
 	    data[i].data.length = len;
@@ -3517,9 +3525,9 @@ krb5_decrypt_iov_ivec(krb5_context context,
     if (len)
 	krb5_abortx(context, "data still in the buffer");
 
-    for (len = 0, i = 0; i < num_data; i++) {
-	if (data[i].flags != KRB5_CRYPTO_TYPE_HEADER &&
-	    data[i].flags != KRB5_CRYPTO_TYPE_DATA &&
+    len = hiv->data.length;
+    for (i = 0; i < num_data; i++) {
+	if (data[i].flags != KRB5_CRYPTO_TYPE_DATA &&
 	    data[i].flags != KRB5_CRYPTO_TYPE_SIGN_ONLY)
 	    continue;
 	len += data[i].data.length;
@@ -3527,9 +3535,10 @@ krb5_decrypt_iov_ivec(krb5_context context,
 
     p = q = malloc(len);
 
+    memcpy(q, hiv->data.data, hiv->data.length);
+    q += hiv->data.length;
     for (i = 0; i < num_data; i++) {
-	if (data[i].flags != KRB5_CRYPTO_TYPE_HEADER &&
-	    data[i].flags != KRB5_CRYPTO_TYPE_DATA &&
+	if (data[i].flags != KRB5_CRYPTO_TYPE_DATA &&
 	    data[i].flags != KRB5_CRYPTO_TYPE_SIGN_ONLY)
 	    continue;
 	memcpy(q, data[i].data.data, data[i].data.length);
