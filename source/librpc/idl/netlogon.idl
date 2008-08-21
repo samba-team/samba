@@ -1182,9 +1182,9 @@ interface netlogon
 		[in]  [string,charset(UTF16)] uint16 account_name[],
 		[in]  netr_SchannelType secure_channel_type,
 		[in]  [string,charset(UTF16)] uint16 computer_name[],
-		[in]  netr_Authenticator credential,
-		[in]  netr_CryptPassword new_password,
-		[out,ref] netr_Authenticator *return_authenticator
+		[in,ref] netr_Authenticator *credential,
+		[out,ref] netr_Authenticator *return_authenticator,
+		[in,ref] netr_CryptPassword *new_password
 		);
 
 	/****************/
