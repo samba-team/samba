@@ -2720,3 +2720,14 @@ valgrindtest:: all torture timelimit
 	 SMBD_VALGRIND="xterm -n smbd -e valgrind -q --db-attach=yes --num-callers=30" \
 	 VALGRIND="valgrind -q --num-callers=30 --log-file=${selftest_prefix}/valgrind.log" \
 	 PERL="$(PERL)" $(srcdir)/script/tests/selftest.sh ${selftest_prefix} all "${smbtorture4_path}"
+
+
+##
+## Examples:
+##
+
+libsmbclient_examples:
+	$(MAKE) -C ../examples/libsmbclient -f Makefile.internal
+
+clean_libsmbclient_examples:
+	$(MAKE) -C ../examples/libsmbclient -f Makefile.internal clean
