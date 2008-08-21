@@ -745,12 +745,6 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
     samdb = SamDB(path, session_info=session_info, 
                   credentials=credentials, lp=lp)
 
-    if fill == FILL_DRS:
-       # We want to finish here, but setup the index before we do so
-        message("Setting up sam.ldb index")
-        samdb.load_ldif_file_add(setup_path("provision_index.ldif"))
-        return samdb
-
     message("Pre-loading the Samba 4 and AD schema")
     samdb.set_domain_sid(domainsid)
     if serverrole == "domain controller":
@@ -886,9 +880,6 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
                                 domainsid=domainsid, policyguid=policyguid,
                                 setup_path=setup_path)
 
-    #We want to setup the index last, as adds are faster unindexed
-        message("Setting up sam.ldb index")
-        samdb.load_ldif_file_add(setup_path("provision_index.ldif"))
     except:
         samdb.transaction_cancel()
         raise
