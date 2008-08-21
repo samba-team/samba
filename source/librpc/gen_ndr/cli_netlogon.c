@@ -1534,9 +1534,9 @@ NTSTATUS rpccli_netr_ServerPasswordSet2(struct rpc_pipe_client *cli,
 					const char *account_name /* [in] [charset(UTF16)] */,
 					enum netr_SchannelType secure_channel_type /* [in]  */,
 					const char *computer_name /* [in] [charset(UTF16)] */,
-					struct netr_Authenticator credential /* [in]  */,
-					struct netr_CryptPassword new_password /* [in]  */,
-					struct netr_Authenticator *return_authenticator /* [out] [ref] */)
+					struct netr_Authenticator *credential /* [in] [ref] */,
+					struct netr_Authenticator *return_authenticator /* [out] [ref] */,
+					struct netr_CryptPassword *new_password /* [in] [ref] */)
 {
 	struct netr_ServerPasswordSet2 r;
 	NTSTATUS status;
