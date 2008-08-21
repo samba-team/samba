@@ -97,13 +97,14 @@ static int ldb_comparison_objectSid(struct ldb_context *ldb, void *mem_ctx,
 				    const struct ldb_val *v1, const struct ldb_val *v2)
 {
 	if (ldb_comparision_objectSid_isString(v1) && ldb_comparision_objectSid_isString(v2)) {
-		return strcmp((const char *)v1->data, (const char *)v2->data);
+		return ldb_comparison_binary(ldb, mem_ctx, v1, v2);
 	} else if (ldb_comparision_objectSid_isString(v1)
 		   && !ldb_comparision_objectSid_isString(v2)) {
 		struct ldb_val v;
 		int ret;
 		if (ldif_read_objectSid(ldb, mem_ctx, v1, &v) != 0) {
-			return -1;
+			/* Perhaps not a string after all */
+			return ldb_comparison_binary(ldb, mem_ctx, v1, v2);
 		}
 		ret = ldb_comparison_binary(ldb, mem_ctx, &v, v2);
 		talloc_free(v.data);
@@ -113,7 +114,8 @@ static int ldb_comparison_objectSid(struct ldb_context *ldb, void *mem_ctx,
 		struct ldb_val v;
 		int ret;
 		if (ldif_read_objectSid(ldb, mem_ctx, v2, &v) != 0) {
-			return -1;
+			/* Perhaps not a string after all */
+			return ldb_comparison_binary(ldb, mem_ctx, v1, v2);
 		}
 		ret = ldb_comparison_binary(ldb, mem_ctx, v1, &v);
 		talloc_free(v.data);
@@ -129,7 +131,10 @@ static int ldb_canonicalise_objectSid(struct ldb_context *ldb, void *mem_ctx,
 				      const struct ldb_val *in, struct ldb_val *out)
 {
 	if (ldb_comparision_objectSid_isString(in)) {
-		return ldif_read_objectSid(ldb, mem_ctx, in, out);
+		if (ldif_read_objectSid(ldb, mem_ctx, in, out) != 0) {
+			/* Perhaps not a string after all */
+			return ldb_handler_copy(ldb, mem_ctx, in, out);
+		}
 	}
 	return ldb_handler_copy(ldb, mem_ctx, in, out);
 }
@@ -203,13 +208,14 @@ static int ldb_comparison_objectGUID(struct ldb_context *ldb, void *mem_ctx,
 				     const struct ldb_val *v1, const struct ldb_val *v2)
 {
 	if (ldb_comparision_objectGUID_isString(v1) && ldb_comparision_objectGUID_isString(v2)) {
-		return strcmp((const char *)v1->data, (const char *)v2->data);
+		return ldb_comparison_binary(ldb, mem_ctx, v1, v2);
 	} else if (ldb_comparision_objectGUID_isString(v1)
 		   && !ldb_comparision_objectGUID_isString(v2)) {
 		struct ldb_val v;
 		int ret;
 		if (ldif_read_objectGUID(ldb, mem_ctx, v1, &v) != 0) {
-			return -1;
+			/* Perhaps it wasn't a valid string after all */
+			return ldb_comparison_binary(ldb, mem_ctx, v1, v2);
 		}
 		ret = ldb_comparison_binary(ldb, mem_ctx, &v, v2);
 		talloc_free(v.data);
@@ -219,7 +225,8 @@ static int ldb_comparison_objectGUID(struct ldb_context *ldb, void *mem_ctx,
 		struct ldb_val v;
 		int ret;
 		if (ldif_read_objectGUID(ldb, mem_ctx, v2, &v) != 0) {
-			return -1;
+			/* Perhaps it wasn't a valid string after all */
+			return ldb_comparison_binary(ldb, mem_ctx, v1, v2);
 		}
 		ret = ldb_comparison_binary(ldb, mem_ctx, v1, &v);
 		talloc_free(v.data);
@@ -235,7 +242,10 @@ static int ldb_canonicalise_objectGUID(struct ldb_context *ldb, void *mem_ctx,
 				       const struct ldb_val *in, struct ldb_val *out)
 {
 	if (ldb_comparision_objectGUID_isString(in)) {
-		return ldif_read_objectGUID(ldb, mem_ctx, in, out);
+		if (ldif_read_objectGUID(ldb, mem_ctx, in, out) != 0) {
+			/* Perhaps it wasn't a valid string after all */
+			return ldb_handler_copy(ldb, mem_ctx, in, out);
+		}
 	}
 	return ldb_handler_copy(ldb, mem_ctx, in, out);
 }
