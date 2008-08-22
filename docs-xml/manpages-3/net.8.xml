@@ -850,7 +850,20 @@ to run this against the PDC, from a Samba machine joined as a BDC. </para>
 <para>Export users, aliases and groups from remote server to 
 local server.  You need to run this against the PDC, from a Samba machine joined as a BDC. 
 </para>
+</refsect2>
 
+<refsect2>
+<title>RPC VAMPIRE KEYTAB</title>
+
+<para>Dump remote SAM database to local Kerberos keytab file.
+</para>
+</refsect2>
+
+<refsect2>
+<title>RPC VAMPIRE LDIF</title>
+
+<para>Dump remote SAM database to local LDIF file or standard output.
+</para>
 </refsect2>
 
 <refsect2>
