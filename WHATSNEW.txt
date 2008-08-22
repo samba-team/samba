@@ -10,7 +10,7 @@ system at https://bugzilla.samba.org/.
 
 Major enhancements in Samba 3.3.0 include:
 
- Conifguration/installation:
+ Configuration/installation:
  o Splitting of library directory into library directory and separate
    modules directory.
 
@@ -19,8 +19,11 @@ Major enhancements in Samba 3.3.0 include:
 
  Winbind:
  o Simplyfied idmap configuration.
+ o Added new parameter "winbind reconnect delay".
 
  Administrative tools:
+ o The destination "all" of smbcontrol does now affect all running
+   daemons including nmbd and winbindd.
  o New 'net rpc vampire keytab' command.
 
 
@@ -44,6 +47,7 @@ allocate IDs. In the default distribution the tdb and ldap backends can
 allocate, the ad and rid backends can not. The idmap alloc range is now
 being set with the "old" parameters "idmap uid" and "idmap gid".
 
+The "idmap domains" parameter has been removed.
 
 
 ######################################################################
@@ -53,6 +57,12 @@ Changes
 smb.conf changes
 ----------------
 
+    Parameter Name                      Description     Default
+    --------------                      -----------     -------
+    idmap backend			Changed Default tdb
+    idmap domains			Removed
+    init logon delayed hosts		New		""
+    init logon delay			New		100
 
 
 ######################################################################
