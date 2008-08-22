@@ -134,6 +134,7 @@ static int ldb_canonicalise_objectSid(struct ldb_context *ldb, void *mem_ctx,
 			/* Perhaps not a string after all */
 			return ldb_handler_copy(ldb, mem_ctx, in, out);
 		}
+		return 0;
 	}
 	return ldb_handler_copy(ldb, mem_ctx, in, out);
 }
@@ -148,7 +149,7 @@ static int ldif_read_objectGUID(struct ldb_context *ldb, void *mem_ctx,
 	char *guid_string;
 	NTSTATUS status;
 	enum ndr_err_code ndr_err;
-	guid_string = talloc_strndup(mem_ctx, in->data, in->length);
+	guid_string = talloc_strndup(mem_ctx, (const char *)in->data, in->length);
 	if (!guid_string) {
 		return -1;
 	}
@@ -251,6 +252,7 @@ static int ldb_canonicalise_objectGUID(struct ldb_context *ldb, void *mem_ctx,
 			/* Perhaps it wasn't a valid string after all */
 			return ldb_handler_copy(ldb, mem_ctx, in, out);
 		}
+		return 0;
 	}
 	return ldb_handler_copy(ldb, mem_ctx, in, out);
 }
