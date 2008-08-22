@@ -925,7 +925,7 @@ static int partition_init(struct ldb_module *module)
 		}
 		
 		for (i=0; i < replicate_attributes->num_values; i++) {
-			data->replicate[i] = ldb_dn_new(data->replicate, module->ldb, (const char *)replicate_attributes->values[i].data);
+			data->replicate[i] = ldb_dn_from_ldb_val(data->replicate, module->ldb, &replicate_attributes->values[i]);
 			if (!ldb_dn_validate(data->replicate[i])) {
 				ldb_asprintf_errstring(module->ldb, 
 							"partition_init: "

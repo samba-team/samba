@@ -65,7 +65,7 @@ parser.add_option("--server-role", type="choice", metavar="ROLE",
 parser.add_option("--targetdir", type="string", metavar="DIR", 
 		          help="Set target directory")
 parser.add_option("--ol-mmr-urls", type="string", metavar="LDAPSERVER",
-                help="List of LDAP-URLS separated with whitespaces for Use with OpenLDAP-MMR")
+                help="List of LDAP-URLS [ ldap://<FQDN>:port/  (where port != 389) ] separated with whitespaces for use with OpenLDAP-MMR")
 
 
 opts = parser.parse_args()[0]

@@ -22,6 +22,6 @@ int gendb_search_dn(struct ldb_context *ldb,
 		 struct ldb_message ***res,
 		 const char * const *attrs);
 int gendb_add_ldif(struct ldb_context *ldb, const char *ldif_string);
-char *wrap_casefold(void *context, void *mem_ctx, const char *s);
+char *wrap_casefold(void *context, void *mem_ctx, const char *s, size_t n);
 
 #endif /* __LIB_UTIL_UTIL_LDB_H__ */
