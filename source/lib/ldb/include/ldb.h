@@ -203,7 +203,7 @@ struct ldb_debug_ops {
 */
 struct ldb_utf8_fns {
 	void *context;
-	char *(*casefold)(void *context, TALLOC_CTX *mem_ctx, const char *s);
+	char *(*casefold)(void *context, TALLOC_CTX *mem_ctx, const char *s, size_t n);
 };
 
 /**
@@ -1216,7 +1216,7 @@ void ldb_set_utf8_default(struct ldb_context *ldb);
    \note The default function is not yet UTF8 aware. Provide your own
          set of functions through ldb_set_utf8_fns()
 */
-char *ldb_casefold(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, const char *s);
+char *ldb_casefold(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, const char *s, size_t n);
 
 /**
    Check the attribute name is valid according to rfc2251
@@ -1603,8 +1603,8 @@ int ldb_set_debug(struct ldb_context *ldb,
   this allows the user to set custom utf8 function for error reporting
 */
 void ldb_set_utf8_fns(struct ldb_context *ldb,
-			void *context,
-			char *(*casefold)(void *, void *, const char *));
+		      void *context,
+		      char *(*casefold)(void *, void *, const char *, size_t n));
 
 /**
    this sets up debug to print messages on stderr

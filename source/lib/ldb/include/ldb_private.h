@@ -235,7 +235,7 @@ int save_controls(struct ldb_control *exclude, struct ldb_request *req, struct l
 int check_critical_controls(struct ldb_control **controls);
 
 /* The following definitions come from lib/ldb/common/ldb_utf8.c */
-char *ldb_casefold_default(void *context, void *mem_ctx, const char *s);
+char *ldb_casefold_default(void *context, void *mem_ctx, const char *s, size_t n);
 
 void ldb_msg_remove_element(struct ldb_message *msg, struct ldb_message_element *el);
 
