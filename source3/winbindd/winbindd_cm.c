@@ -875,7 +875,7 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 			result = ads_ntstatus(ads_status);
 			if (NT_STATUS_IS_OK(result)) {
 				/* Ensure creds are stored for NTLMSSP authenticated pipe access. */
-				cli_init_creds(*cli, machine_account, domain->name, machine_password);
+				cli_init_creds(*cli, machine_account, lp_workgroup(), machine_password);
 				goto session_setup_done;
 			}
 		}
@@ -900,7 +900,7 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 		result = ads_ntstatus(ads_status);
 		if (NT_STATUS_IS_OK(result)) {
 			/* Ensure creds are stored for NTLMSSP authenticated pipe access. */
-			cli_init_creds(*cli, machine_account, domain->name, machine_password);
+			cli_init_creds(*cli, machine_account, lp_workgroup(), machine_password);
 			goto session_setup_done;
 		}
 	}
@@ -1927,6 +1927,10 @@ static bool cm_get_schannel_dcinfo(struct winbindd_domain *domain,
 	/* Return a pointer to the struct dcinfo from the
 	   netlogon pipe. */
 
+	if (!domain->conn.netlogon_pipe->dc) {
+		return false;
+	}
+
 	*ppdc = domain->conn.netlogon_pipe->dc;
 	return True;
 }
@@ -1952,6 +1956,7 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	if (conn->samr_pipe != NULL) {
 		goto done;
 	}
+
 
 	/*
 	 * No SAMR pipe yet. Attempt to get an NTLMSSP SPNEGO authenticated
