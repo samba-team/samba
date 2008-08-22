@@ -24,16 +24,6 @@
 
 #ifdef HAVE_KRB5
 
-#ifdef HAVE_KRB5_KEYBLOCK_KEYVALUE /* Heimdal */
-#define KRB5_KEY_TYPE(k)	((k)->keytype)
-#define KRB5_KEY_LENGTH(k)	((k)->keyvalue.length)
-#define KRB5_KEY_DATA(k)	((k)->keyvalue.data)
-#else /* MIT */
-#define	KRB5_KEY_TYPE(k)	((k)->enctype)
-#define KRB5_KEY_LENGTH(k)	((k)->length)
-#define KRB5_KEY_DATA(k)	((k)->contents)
-#endif /* HAVE_KRB5_KEYBLOCK_KEYVALUE */
-
 /****************************************************************
 ****************************************************************/
 
