@@ -10,7 +10,49 @@ system at https://bugzilla.samba.org/.
 
 Major enhancements in Samba 3.3.0 include:
 
-o
+ Conifguration/installation:
+ o Splitting of library directory into library directory and separate
+   modules directory.
+
+ File Serving:
+ o Extended Cluster support.
+
+ Winbind:
+ o Simplyfied idmap configuration.
+
+ Administrative tools:
+ o New 'net rpc vampire keytab' command.
+
+
+Winbind idmap backend changes
+=============================
+
+The idmap configuration has changed with version 3.3 to something that
+allows a smoother upgrade path from pre-3.0.25 configurations that use
+"idmap backend". The reason for this change is that to many, also to Samba
+developers, the 3.0.25 style configuration with "idmap config" turned out
+to be very complex. Version 3.3 no longer deprecates the "idmap backend"
+parameter, instead with "idmap backend" the default idmap backend is
+specified.
+
+Accordingly, the "idmap config <domain> : default = yes" setting is no
+longer being looked at. As another simplification, there can be only one
+allocating backend.
+
+The alloc backend defaults to the default backend, which should be able to
+allocate IDs. In the default distribution the tdb and ldap backends can
+allocate, the ad and rid backends can not. The idmap alloc range is now
+being set with the "old" parameters "idmap uid" and "idmap gid".
+
+
+
+######################################################################
+Changes
+#######
+
+smb.conf changes
+----------------
+
 
 
 ######################################################################
