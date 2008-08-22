@@ -180,6 +180,9 @@ HEIMDAL_KRB5_1.0 {
 		krb5_crypto_overhead;
 		krb5_crypto_prf;
 		krb5_crypto_prf_length;
+		krb5_crypto_length;
+		krb5_decrypt_iov_ivec;
+		krb5_encrypt_iov_ivec;
 		krb5_data_alloc;
 		krb5_data_cmp;
 		krb5_data_copy;
