@@ -1506,14 +1506,16 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 		return ERROR_NT(nt_status_squash(NT_STATUS_LOGON_FAILURE));
 	}
 
-	nt_status = create_local_token(server_info);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(10, ("create_local_token failed: %s\n",
-			   nt_errstr(nt_status)));
-		data_blob_free(&nt_resp);
-		data_blob_free(&lm_resp);
-		data_blob_clear_free(&plaintext_password);
-		return ERROR_NT(nt_status_squash(nt_status));
+	if (!server_info->ptok) {
+		nt_status = create_local_token(server_info);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			DEBUG(10, ("create_local_token failed: %s\n",
+				   nt_errstr(nt_status)));
+			data_blob_free(&nt_resp);
+			data_blob_free(&lm_resp);
+			data_blob_clear_free(&plaintext_password);
+			return ERROR_NT(nt_status_squash(nt_status));
+		}
 	}
 
 	if (server_info->user_session_key.data) {
