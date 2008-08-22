@@ -138,15 +138,7 @@ static krb5_error_code libnet_keytab_remove_entries(krb5_context context,
 			goto cont;
 		}
 
-#if !defined(HAVE_KRB5_KEYTAB_ENTRY_KEY) && !defined(HAVE_KRB5_KEYTAB_ENTRY_KEYBLOCK)
-#error krb5_keytab_entry has no key or keyblock member
-#endif
-#ifdef HAVE_KRB5_KEYTAB_ENTRY_KEY               /* MIT */
-	keyp = &kt_entry.key;
-#endif
-#ifdef HAVE_KRB5_KEYTAB_ENTRY_KEYBLOCK          /* Heimdal */
-	keyp = &kt_entry.keyblock;
-#endif
+		keyp = KRB5_KT_KEY(&kt_entry);
 
 		if (KRB5_KEY_TYPE(keyp) != enctype) {
 			goto cont;
@@ -240,15 +232,7 @@ static krb5_error_code libnet_keytab_add_entry(krb5_context context,
 		return ret;
 	}
 
-#if !defined(HAVE_KRB5_KEYTAB_ENTRY_KEY) && !defined(HAVE_KRB5_KEYTAB_ENTRY_KEYBLOCK)
-#error krb5_keytab_entry has no key or keyblock member
-#endif
-#ifdef HAVE_KRB5_KEYTAB_ENTRY_KEY               /* MIT */
-	keyp = &kt_entry.key;
-#endif
-#ifdef HAVE_KRB5_KEYTAB_ENTRY_KEYBLOCK          /* Heimdal */
-	keyp = &kt_entry.keyblock;
-#endif
+	keyp = KRB5_KT_KEY(&kt_entry);
 
 	if (create_kerberos_key_from_string(context, kt_entry.principal,
 					    &password, keyp, enctype, true))
@@ -354,15 +338,7 @@ struct libnet_keytab_entry *libnet_keytab_search(struct libnet_keytab_context *c
 			goto cont;
 		}
 
-#if !defined(HAVE_KRB5_KEYTAB_ENTRY_KEY) && !defined(HAVE_KRB5_KEYTAB_ENTRY_KEYBLOCK)
-#error krb5_keytab_entry has no key or keyblock member
-#endif
-#ifdef HAVE_KRB5_KEYTAB_ENTRY_KEY               /* MIT */
-	keyp = &kt_entry.key;
-#endif
-#ifdef HAVE_KRB5_KEYTAB_ENTRY_KEYBLOCK          /* Heimdal */
-	keyp = &kt_entry.keyblock;
-#endif
+		keyp = KRB5_KT_KEY(&kt_entry);
 
 		if (KRB5_KEY_TYPE(keyp) != enctype) {
 			goto cont;
