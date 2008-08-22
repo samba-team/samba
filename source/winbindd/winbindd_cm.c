@@ -908,6 +908,9 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
  anon_fallback:
 
 	/* Fall back to anonymous connection, this might fail later */
+	DEBUG(10,("cm_prepare_connection: falling back to anonymous "
+		"connection for DC %s\n",
+		controller ));
 
 	if (NT_STATUS_IS_OK(cli_session_setup(*cli, "", NULL, 0,
 					      NULL, 0, ""))) {
