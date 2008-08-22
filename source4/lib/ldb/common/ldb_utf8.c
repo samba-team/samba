@@ -40,8 +40,8 @@
   function to handle utf8 caseless comparisons
  */
 void ldb_set_utf8_fns(struct ldb_context *ldb,
-			void *context,
-			char *(*casefold)(void *, void *, const char *))
+		      void *context,
+		      char *(*casefold)(void *, void *, const char *, size_t))
 {
 	if (context)
 		ldb->utf8_fns.context = context;
@@ -53,10 +53,10 @@ void ldb_set_utf8_fns(struct ldb_context *ldb,
   a simple case folding function
   NOTE: does not handle UTF8
 */
-char *ldb_casefold_default(void *context, void *mem_ctx, const char *s)
+char *ldb_casefold_default(void *context, void *mem_ctx, const char *s, size_t n)
 {
 	int i;
-	char *ret = talloc_strdup(mem_ctx, s);
+	char *ret = talloc_strndup(mem_ctx, s, n);
 	if (!s) {
 		errno = ENOMEM;
 		return NULL;
@@ -72,9 +72,9 @@ void ldb_set_utf8_default(struct ldb_context *ldb)
 	ldb_set_utf8_fns(ldb, NULL, ldb_casefold_default);
 }
 
-char *ldb_casefold(struct ldb_context *ldb, void *mem_ctx, const char *s)
+char *ldb_casefold(struct ldb_context *ldb, void *mem_ctx, const char *s, size_t n)
 {
-	return ldb->utf8_fns.casefold(ldb->utf8_fns.context, mem_ctx, s);
+	return ldb->utf8_fns.casefold(ldb->utf8_fns.context, mem_ctx, s, n);
 }
 
 /*
