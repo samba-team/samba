@@ -745,12 +745,6 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
     samdb = SamDB(path, session_info=session_info, 
                   credentials=credentials, lp=lp)
 
-    if fill == FILL_DRS:
-       # We want to finish here, but setup the index before we do so
-        message("Setting up sam.ldb index")
-        samdb.load_ldif_file_add(setup_path("provision_index.ldif"))
-        return samdb
-
     message("Pre-loading the Samba 4 and AD schema")
     samdb.set_domain_sid(domainsid)
     if serverrole == "domain controller":
@@ -886,9 +880,6 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
                                 domainsid=domainsid, policyguid=policyguid,
                                 setup_path=setup_path)
 
-    #We want to setup the index last, as adds are faster unindexed
-        message("Setting up sam.ldb index")
-        samdb.load_ldif_file_add(setup_path("provision_index.ldif"))
     except:
         samdb.transaction_cancel()
         raise
@@ -1281,39 +1272,38 @@ def provision_backend(setup_dir=None, message=None,
 	mmr_syncrepl_user_config = "" 
 	
 	if ol_mmr_urls is not None:
-		mmr_hosts=filter(None,ol_mmr_urls.split(' ')) 
-                if (len(mmr_hosts) == 1):
-                    mmr_hosts=filter(None,ol_mmr_urls.split(',')) 
+		url_list=filter(None,ol_mmr_urls.split(' ')) 
+                if (len(url_list) == 1):
+                    url_list=filter(None,ol_mmr_urls.split(',')) 
                      
 
 		mmr_on_config = "MirrorMode On"
- 		
-		z=0
-		for i in mmr_hosts:
-			z=z+1
+ 		serverid=0
+		for url in url_list:
+			serverid=serverid+1
 			mmr_serverids_config += read_and_sub_file(setup_path("mmr_serverids.conf"),
-								     { "SERVERID" : str(z),
-        		                                               "LDAPSERVER" : i })
-
-			z=z+1
+								     { "SERVERID" : str(serverid),
+        		                                               "LDAPSERVER" : url })
+                        rid=serverid*10
+			rid=rid+1
 			mmr_syncrepl_schema_config += read_and_sub_file(setup_path("mmr_syncrepl.conf"),
-								     { 	"RID" : str(z),
+								     { 	"RID" : str(rid),
                     							"MMRDN": names.schemadn,
-        		                                               	"LDAPSERVER" : i,
+        		                                               	"LDAPSERVER" : url,
                                                                         "MMR_PASSWORD": adminpass})
 
-			z=z+1
+			rid=rid+1
 			mmr_syncrepl_config_config += read_and_sub_file(setup_path("mmr_syncrepl.conf"),
-								     { 	"RID" : str(z),
+								     { 	"RID" : str(rid),
                     							"MMRDN": names.configdn,
-        		                                               	"LDAPSERVER" : i,
+        		                                               	"LDAPSERVER" : url,
                                                                         "MMR_PASSWORD": adminpass})
 
-			z=z+1
+			rid=rid+1
 			mmr_syncrepl_user_config += read_and_sub_file(setup_path("mmr_syncrepl.conf"),
-								     { 	"RID" : str(z),
+								     { 	"RID" : str(rid),
                     							"MMRDN": names.domaindn,
-        		                                               	"LDAPSERVER" : i,
+        		                                               	"LDAPSERVER" : url,
                                                                         "MMR_PASSWORD": adminpass })
 
 

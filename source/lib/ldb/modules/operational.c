@@ -291,12 +291,6 @@ static int operational_init(struct ldb_module *ctx)
 {
 	int ret = 0;
 
-	/* setup some standard attribute handlers */
-	ret |= ldb_schema_attribute_add(ctx->ldb, "whenCreated", 0, LDB_SYNTAX_UTC_TIME);
-	ret |= ldb_schema_attribute_add(ctx->ldb, "whenChanged", 0, LDB_SYNTAX_UTC_TIME);
-	ret |= ldb_schema_attribute_add(ctx->ldb, "subschemaSubentry", 0, LDB_SYNTAX_DN);
-	ret |= ldb_schema_attribute_add(ctx->ldb, "structuralObjectClass", 0, LDB_SYNTAX_OBJECTCLASS);
-
 	if (ret != 0) {
 		return ret;
 	}

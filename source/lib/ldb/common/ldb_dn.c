@@ -71,7 +71,7 @@ struct ldb_dn {
 };
 
 /* strdn may be NULL */
-struct ldb_dn *ldb_dn_new(void *mem_ctx, struct ldb_context *ldb, const char *strdn)
+struct ldb_dn *ldb_dn_from_ldb_val(void *mem_ctx, struct ldb_context *ldb, const struct ldb_val *strdn)
 {
 	struct ldb_dn *dn;
 
@@ -82,27 +82,27 @@ struct ldb_dn *ldb_dn_new(void *mem_ctx, struct ldb_context *ldb, const char *st
 
 	dn->ldb = ldb;
 
-	if (strdn) {
-		if (strdn[0] == '@') {
+	if (strdn->data && strdn->length) {
+		if (strdn->data[0] == '@') {
 			dn->special = true;
 		}
-		if (strncasecmp(strdn, "<GUID=", 6) == 0) {
+		if (strdn->length >= 6 && strncasecmp((const char *)strdn->data, "<GUID=", 6) == 0) {
 			/* this is special DN returned when the
 			 * exploded_dn control is used */
 			dn->special = true;
 			/* FIXME: add a GUID string to ldb_dn structure */
-		} else if (strncasecmp(strdn, "<SID=", 8) == 0) {
+		} else if (strdn->length >= 8 && strncasecmp((const char *)strdn->data, "<SID=", 8) == 0) {
 			/* this is special DN returned when the
 			 * exploded_dn control is used */
 			dn->special = true;
 			/* FIXME: add a SID string to ldb_dn structure */
-		} else if (strncasecmp(strdn, "<WKGUID=", 8) == 0) {
+		} else if (strdn->length >= 8 && strncasecmp((const char *)strdn->data, "<WKGUID=", 8) == 0) {
 			/* this is special DN returned when the
 			 * exploded_dn control is used */
 			dn->special = true;
 			/* FIXME: add a WKGUID string to ldb_dn structure */
 		}
-		dn->linearized = talloc_strdup(dn, strdn);
+		dn->linearized = talloc_strndup(dn, (const char *)strdn->data, strdn->length);
 	} else {
 		dn->linearized = talloc_strdup(dn, "");
 	}
@@ -113,6 +113,15 @@ struct ldb_dn *ldb_dn_new(void *mem_ctx, struct ldb_context *ldb, const char *st
 failed:
 	talloc_free(dn);
 	return NULL;
+}
+
+/* strdn may be NULL */
+struct ldb_dn *ldb_dn_new(void *mem_ctx, struct ldb_context *ldb, const char *strdn)
+{
+	struct ldb_val blob;
+	blob.data = strdn;
+	blob.length = strdn ? strlen(strdn) : 0;
+	return ldb_dn_from_ldb_val(mem_ctx, ldb, &blob);
 }
 
 struct ldb_dn *ldb_dn_new_fmt(void *mem_ctx, struct ldb_context *ldb, const char *new_fmt, ...)

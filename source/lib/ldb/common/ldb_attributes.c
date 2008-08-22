@@ -51,6 +51,10 @@ int ldb_schema_attribute_add_with_syntax(struct ldb_context *ldb,
 	int i, n;
 	struct ldb_schema_attribute *a;
 
+	if (!syntax) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
 	n = ldb->schema.num_attributes + 1;
 
 	a = talloc_realloc(ldb, ldb->schema.attributes,

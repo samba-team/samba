@@ -331,15 +331,15 @@ servicePrincipalName: host/ldaptest2computer29
         print "Testing Ambigious Name Resolution"
         # Testing ldb.search for (&(anr=ldap testy)(objectClass=user))
         res = ldb.search(expression="(&(anr=ldap testy)(objectClass=user))")
-        self.assertEquals(len(res), 3, "Could not find (&(anr=ldap testy)(objectClass=user))")
+        self.assertEquals(len(res), 3, "Found only %d of 3 for (&(anr=ldap testy)(objectClass=user))" % len(res))
 
         # Testing ldb.search for (&(anr=testy ldap)(objectClass=user))
         res = ldb.search(expression="(&(anr=testy ldap)(objectClass=user))")
-        self.assertEquals(len(res), 2, "Found only %d for (&(anr=testy ldap)(objectClass=user))" % len(res))
+        self.assertEquals(len(res), 2, "Found only %d of 2 for (&(anr=testy ldap)(objectClass=user))" % len(res))
 
         # Testing ldb.search for (&(anr=ldap)(objectClass=user))
         res = ldb.search(expression="(&(anr=ldap)(objectClass=user))")
-        self.assertEquals(len(res), 4, "Found only %d for (&(anr=ldap)(objectClass=user))" % len(res))
+        self.assertEquals(len(res), 4, "Found only %d of 4 for (&(anr=ldap)(objectClass=user))" % len(res))
 
         # Testing ldb.search for (&(anr==ldap)(objectClass=user))
         res = ldb.search(expression="(&(anr==ldap)(objectClass=user))")
@@ -353,13 +353,13 @@ servicePrincipalName: host/ldaptest2computer29
         res = ldb.search(expression="(&(anr=testy)(objectClass=user))")
         self.assertEquals(len(res), 2, "Found only %d for (&(anr=testy)(objectClass=user))" % len(res))
 
-        # Testing ldb.search for (&(anr=ldap testy)(objectClass=user))
+        # Testing ldb.search for (&(anr=testy ldap)(objectClass=user))
         res = ldb.search(expression="(&(anr=testy ldap)(objectClass=user))")
-        self.assertEquals(len(res), 2, "Found only %d for (&(anr=ldap testy)(objectClass=user))" % len(res))
+        self.assertEquals(len(res), 2, "Found only %d for (&(anr=testy ldap)(objectClass=user))" % len(res))
 
-        # Testing ldb.search for (&(anr==ldap testy)(objectClass=user))
+        # Testing ldb.search for (&(anr==testy ldap)(objectClass=user))
         res = ldb.search(expression="(&(anr==testy ldap)(objectClass=user))")
-        self.assertEquals(len(res), 1, "Found only %d for (&(anr==ldap testy)(objectClass=user))" % len(res))
+        self.assertEquals(len(res), 1, "Found only %d for (&(anr==testy ldap)(objectClass=user))" % len(res))
 
         self.assertEquals(str(res[0].dn), ("CN=ldaptestuser,CN=Users," + self.base_dn))
         self.assertEquals(res[0]["cn"][0], "ldaptestuser")

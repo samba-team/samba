@@ -29,7 +29,7 @@ struct cli_credentials;
 struct loadparm_context;
 struct event_context;
 
-char *wrap_casefold(void *context, void *mem_ctx, const char *s);
+char *wrap_casefold(void *context, void *mem_ctx, const char *s, size_t n);
 
 struct ldb_context *ldb_wrap_connect(TALLOC_CTX *mem_ctx,
 				     struct event_context *ev,
