@@ -182,7 +182,7 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 			ret = ldb_search_exp_fmt(sam_ctx, mem_ctx, &dom_res,
 						 NULL, LDB_SCOPE_SUBTREE, 
 						 dom_attrs, 
-						 "(&(objectCategory=Domain-DNS)(objectGUID=%s))", 
+						 "(&(objectCategory=DomainDNS)(objectGUID=%s))", 
 						 ldb_binary_encode(mem_ctx, guid_val));
 		} else { /* domain_sid case */
 			struct dom_sid *sid;
@@ -199,7 +199,7 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 			ret = ldb_search_exp_fmt(sam_ctx, mem_ctx, &dom_res,
 						 NULL, LDB_SCOPE_SUBTREE, 
 						 dom_attrs, 
-						 "(&(objectCategory=Domain-DNS)(objectSID=%s))", 
+						 "(&(objectCategory=DomainDNS)(objectSID=%s))", 
 						 ldb_binary_encode(mem_ctx, sid_val));
 		}
 		
