@@ -376,6 +376,18 @@ typedef struct {
 } smb_krb5_addresses;
 #endif
 
+#ifdef HAVE_KRB5_KEYBLOCK_KEYVALUE /* Heimdal */
+#define KRB5_KEY_TYPE(k)	((k)->keytype)
+#define KRB5_KEY_LENGTH(k)	((k)->keyvalue.length)
+#define KRB5_KEY_DATA(k)	((k)->keyvalue.data)
+#define KRB5_KEY_DATA_CAST	void
+#else /* MIT */
+#define	KRB5_KEY_TYPE(k)	((k)->enctype)
+#define KRB5_KEY_LENGTH(k)	((k)->length)
+#define KRB5_KEY_DATA(k)	((k)->contents)
+#define KRB5_KEY_DATA_CAST	krb5_octet
+#endif /* HAVE_KRB5_KEYBLOCK_KEYVALUE */
+
 enum ads_extended_dn_flags {
 	ADS_EXTENDED_DN_HEX_STRING	= 0,
 	ADS_EXTENDED_DN_STRING		= 1 /* not supported on win2k */
