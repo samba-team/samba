@@ -83,7 +83,7 @@ objectClass: top
 objectClass: group
 cn: Cert Publishers
 description: Members of this group are permitted to publish certificates to the Active Directory
-groupType: 2147483652
+groupType: -2147483644
 objectSid: ${DOMAINSID}-517
 sAMAccountName: Cert Publishers
 isCriticalSystemObject: TRUE
@@ -134,7 +134,7 @@ cn: RAS and IAS Servers
 description: Servers in this group can access remote access properties of users
 objectSid: ${DOMAINSID}-553
 sAMAccountName: RAS and IAS Servers
-groupType: 2147483652
+groupType: -2147483644
 isCriticalSystemObject: TRUE
 
 dn: CN=Administrators,CN=Builtin,${DOMAINDN}
@@ -149,7 +149,7 @@ objectSid: S-1-5-32-544
 adminCount: 1
 sAMAccountName: Administrators
 systemFlags: 2348810240
-groupType: 2147483653
+groupType: -2147483643
 isCriticalSystemObject: TRUE
 privilege: SeSecurityPrivilege
 privilege: SeBackupPrivilege
@@ -185,7 +185,7 @@ member: CN=Domain Users,CN=Users,${DOMAINDN}
 objectSid: S-1-5-32-545
 sAMAccountName: Users
 systemFlags: 2348810240
-groupType: 2147483653
+groupType: -2147483643
 isCriticalSystemObject: TRUE
 
 dn: CN=Guests,CN=Builtin,${DOMAINDN}
@@ -198,7 +198,7 @@ member: CN=Guest,CN=Users,${DOMAINDN}
 objectSid: S-1-5-32-546
 sAMAccountName: Guests
 systemFlags: 2348810240
-groupType: 2147483653
+groupType: -2147483643
 isCriticalSystemObject: TRUE
 
 dn: CN=Print Operators,CN=Builtin,${DOMAINDN}
@@ -210,7 +210,7 @@ objectSid: S-1-5-32-550
 adminCount: 1
 sAMAccountName: Print Operators
 systemFlags: 2348810240
-groupType: 2147483653
+groupType: -2147483643
 isCriticalSystemObject: TRUE
 privilege: SeLoadDriverPrivilege
 privilege: SeShutdownPrivilege
@@ -225,7 +225,7 @@ objectSid: S-1-5-32-551
 adminCount: 1
 sAMAccountName: Backup Operators
 systemFlags: 2348810240
-groupType: 2147483653
+groupType: -2147483643
 isCriticalSystemObject: TRUE
 privilege: SeBackupPrivilege
 privilege: SeRestorePrivilege
@@ -241,7 +241,7 @@ objectSid: S-1-5-32-552
 adminCount: 1
 sAMAccountName: Replicator
 systemFlags: 2348810240
-groupType: 2147483653
+groupType: -2147483643
 isCriticalSystemObject: TRUE
 
 dn: CN=Remote Desktop Users,CN=Builtin,${DOMAINDN}
@@ -252,7 +252,7 @@ description: Members in this group are granted the right to logon remotely
 objectSid: S-1-5-32-555
 sAMAccountName: Remote Desktop Users
 systemFlags: 2348810240
-groupType: 2147483653
+groupType: -2147483643
 isCriticalSystemObject: TRUE
 
 dn: CN=Network Configuration Operators,CN=Builtin,${DOMAINDN}
@@ -263,7 +263,7 @@ description: Members in this group can have some administrative privileges to ma
 objectSid: S-1-5-32-556
 sAMAccountName: Network Configuration Operators
 systemFlags: 2348810240
-groupType: 2147483653
+groupType: -2147483643
 isCriticalSystemObject: TRUE
 
 dn: CN=Performance Monitor Users,CN=Builtin,${DOMAINDN}
@@ -274,7 +274,7 @@ description: Members of this group have remote access to monitor this computer
 objectSid: S-1-5-32-558
 sAMAccountName: Performance Monitor Users
 systemFlags: 2348810240
-groupType: 2147483653
+groupType: -2147483643
 isCriticalSystemObject: TRUE
 
 dn: CN=Performance Log Users,CN=Builtin,${DOMAINDN}
@@ -285,7 +285,7 @@ description: Members of this group have remote access to schedule logging of per
 objectSid: S-1-5-32-559
 sAMAccountName: Performance Log Users
 systemFlags: 2348810240
-groupType: 2147483653
+groupType: -2147483643
 isCriticalSystemObject: TRUE
 
 dn: CN=Server Operators,CN=Builtin,${DOMAINDN}
@@ -297,7 +297,7 @@ objectSid: S-1-5-32-549
 adminCount: 1
 sAMAccountName: Server Operators
 systemFlags: 2348810240
-groupType: 2147483653
+groupType: -2147483643
 isCriticalSystemObject: TRUE
 privilege: SeBackupPrivilege
 privilege: SeSystemtimePrivilege
@@ -315,7 +315,7 @@ objectSid: S-1-5-32-548
 adminCount: 1
 sAMAccountName: Account Operators
 systemFlags: 2348810240
-groupType: 2147483653
+groupType: -2147483643
 isCriticalSystemObject: TRUE
 privilege: SeInteractiveLogonRight
 
@@ -327,7 +327,7 @@ description: A backward compatibility group which allows read access on all user
 objectSid: S-1-5-32-554
 sAMAccountName: Pre-Windows 2000 Compatible Access
 systemFlags: 2348810240
-groupType: 2147483653
+groupType: -2147483643
 isCriticalSystemObject: TRUE
 privilege: SeRemoteInteractiveLogonRight
 privilege: SeChangeNotifyPrivilege
@@ -340,7 +340,7 @@ description: Members of this group can create incoming, one-way trusts to this f
 objectSid: S-1-5-32-557
 sAMAccountName: Incoming Forest Trust Builders
 systemFlags: 2348810240
-groupType: 2147483653
+groupType: -2147483643
 isCriticalSystemObject: TRUE
 
 dn: CN=Windows Authorization Access Group,CN=Builtin,${DOMAINDN}
@@ -351,7 +351,7 @@ description: Members of this group have access to the computed tokenGroupsGlobal
 objectSid: S-1-5-32-560
 sAMAccountName: Windows Authorization Access Group
 systemFlags: 2348810240
-groupType: 2147483653
+groupType: -2147483643
 isCriticalSystemObject: TRUE
 
 dn: CN=Terminal Server License Servers,CN=Builtin,${DOMAINDN}
@@ -362,7 +362,7 @@ description: Terminal Server License Servers
 objectSid: S-1-5-32-561
 sAMAccountName: Terminal Server License Servers
 systemFlags: 2348810240
-groupType: 2147483653
+groupType: -2147483643
 isCriticalSystemObject: TRUE
 
 dn: CN=Distributed COM Users,CN=Builtin,${DOMAINDN}
@@ -373,7 +373,7 @@ description: Members are allowed to launch, activate and use Distributed COM obj
 objectSid: S-1-5-32-562
 sAMAccountName: Distributed COM Users
 systemFlags: 2348810240
-groupType: 2147483653
+groupType: -2147483643
 isCriticalSystemObject: TRUE
 
 dn: CN=WellKnown Security Principals,${CONFIGDN}
