@@ -63,6 +63,7 @@ smb.conf changes
     idmap domains			Removed
     init logon delayed hosts		New		""
     init logon delay			New		100
+    winbind reconnect delay		New		30
 
 
 ######################################################################
