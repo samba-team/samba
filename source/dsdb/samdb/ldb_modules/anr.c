@@ -224,30 +224,26 @@ struct ldb_parse_tree *anr_replace_subtrees(struct ldb_parse_tree *tree,
 					    void *context)
 {
 	int i;
+	struct ldb_parse_tree *tmp;
+
 	switch (tree->operation) {
 	case LDB_OP_AND:
 	case LDB_OP_OR:
 		for (i=0;i<tree->u.list.num_elements;i++) {
-			tree->u.list.elements[i] = anr_replace_subtrees(tree->u.list.elements[i],
-									attr, callback, context);
-			if (!tree->u.list.elements[i]) {
-				return NULL;
-			}
+			tmp = anr_replace_subtrees(tree->u.list.elements[i],
+						   attr, callback, context);
+			if (tmp) tree->u.list.elements[i] = tmp;
 		}
 		break;
 	case LDB_OP_NOT:
-		tree->u.isnot.child = anr_replace_subtrees(tree->u.isnot.child, attr, callback, context);
-			if (!tree->u.isnot.child) {
-				return NULL;
-			}
+		tmp = anr_replace_subtrees(tree->u.isnot.child, attr, callback, context);
+		if (tmp) tree->u.isnot.child = tmp;
 		break;
 	case LDB_OP_EQUALITY:
 		if (ldb_attr_cmp(tree->u.equality.attr, attr) == 0) {
-			tree = callback(tree, &tree->u.equality.value, 
+			tmp = callback(tree, &tree->u.equality.value, 
 					context);
-			if (!tree) {
-				return NULL;
-			}
+			if (tmp) tree = tmp;
 		}
 		break;
 	case LDB_OP_SUBSTRING:
@@ -256,10 +252,8 @@ struct ldb_parse_tree *anr_replace_subtrees(struct ldb_parse_tree *tree,
 			    tree->u.substring.end_with_wildcard == 1 && 
 			    tree->u.substring.chunks[0] != NULL && 
 			    tree->u.substring.chunks[1] == NULL) {
-				tree = callback(tree, tree->u.substring.chunks[0], context);
-				if (!tree) {
-					return NULL;
-				}
+				tmp = callback(tree, tree->u.substring.chunks[0], context);
+				if (tmp) tree = tmp;
 			}
 		}
 		break;
@@ -280,17 +274,29 @@ static int anr_search(struct ldb_module *module, struct ldb_request *req)
 	context->module = module;
 	context->found_anr = false;
 
+#if 0
+	printf("oldanr : %s\n", ldb_filter_from_tree (0, req->op.search.tree));
+#endif
+
 	/* Yes, this is a problem with req->op.search.tree being const... */
 	anr_tree = anr_replace_subtrees(req->op.search.tree, "anr", anr_replace_callback, context);
 	if (!anr_tree) {
+		talloc_free(context);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	if (context->found_anr) {
 		/* The above function modifies the tree if it finds "anr", so no
 		 * point just setting this on the down_req */
+#if 0
+		printf("newtree: %s\n", ldb_filter_from_tree (0, anr_tree));
+#endif
 		req->op.search.tree = talloc_steal(req, anr_tree);
-
+	} else {
+		if (anr_tree != req->op.search.tree) {
+			talloc_free(anr_tree);
+		}
+		talloc_free(context);
 	}
 	return ldb_next_request(module, req);
 }
