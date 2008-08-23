@@ -108,7 +108,7 @@ static void loadfile_callback(struct composite_context *ctx)
 	}
 
 	for (i=0;i<FILE_SIZE;i++) {
-		if (state->loadfile->out.data[i] != state->fnumber % 256) {
+		if (state->loadfile->out.data[i] != 1+(state->fnumber % 255)) {
 			printf("Bad data in file %u\n", state->fnumber);
 			test_failed++;
 			return;
@@ -436,7 +436,7 @@ bool torture_test_offline(struct torture_context *torture)
 		char buf[FILE_SIZE];
 		NTSTATUS status;
 
-		memset(buf, i % 256, sizeof(buf));
+		memset(buf, 1+(i % 255), sizeof(buf));
 
 		fnum = smbcli_open(state[0].tree, fname, O_RDWR|O_CREAT, DENY_NONE);
 		if (fnum == -1) {
