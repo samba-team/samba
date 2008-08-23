@@ -883,13 +883,18 @@ static bool calculate_next_machine_pwd_change(const char *domain,
 	time_t pass_last_set_time;
 	time_t timeout;
 	time_t next_change;
+	char *pw;
 
-	if (!secrets_fetch_machine_password(domain,
+	pw = secrets_fetch_machine_password(domain,
 					    &pass_last_set_time,
-					    NULL)) {
+					    NULL);
+
+	if (pw == NULL) {
 		DEBUG(0,("cannot fetch own machine password ????"));
 		return false;
 	}
+
+	SAFE_FREE(pw);
 
 	timeout = get_machine_password_timeout();
 	if (timeout == 0) {
