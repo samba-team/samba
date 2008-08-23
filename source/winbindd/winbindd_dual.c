@@ -925,7 +925,7 @@ static void machine_password_change_handler(struct event_context *ctx,
 	struct winbindd_child *child =
 		(struct winbindd_child *)private_data;
 	struct rpc_pipe_client *netlogon_pipe = NULL;
-	TALLOC_CTX *mem_ctx = NULL;
+	TALLOC_CTX *frame;
 	NTSTATUS result;
 	struct timeval next_change;
 
@@ -945,24 +945,20 @@ static void machine_password_change_handler(struct event_context *ctx,
 		return;
 	}
 
-	mem_ctx = talloc_init("machine_password_change_handler ");
-	if (!mem_ctx) {
-		return;
-	}
-
 	result = cm_connect_netlogon(child->domain, &netlogon_pipe);
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(10,("machine_password_change_handler: "
 			"failed to connect netlogon pipe: %s\n",
 			 nt_errstr(result)));
-		TALLOC_FREE(mem_ctx);
 		return;
 	}
 
+	frame = talloc_stackframe();
+
 	result = trust_pw_find_change_and_store_it(netlogon_pipe,
-						   mem_ctx,
+						   frame,
 						   child->domain->name);
-	TALLOC_FREE(mem_ctx);
+	TALLOC_FREE(frame);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(10,("machine_password_change_handler: "
