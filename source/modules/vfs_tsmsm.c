@@ -200,9 +200,9 @@ static bool tsmsm_is_offline(struct vfs_handle_struct *handle,
 		goto done;
 	}
 
-	lerrno = 0;
-
 	do {
+		lerrno = 0;
+
 		ret = dm_get_dmattr(*dmsession_id, dmhandle, dmhandle_len, 
 				    DM_NO_TOKEN, &dmname, buflen, buf, &rlen);
 		if (ret == -1 && errno == EINVAL) {
