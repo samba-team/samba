@@ -2,17 +2,17 @@
    Unix SMB/CIFS implementation.
    Database interface wrapper around ctdbd
    Copyright (C) Volker Lendecke 2007
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -76,7 +76,7 @@ static NTSTATUS tdb_error_to_ntstatus(struct tdb_context *tdb)
 
 /*
   form a ctdb_rec_data record from a key/data pair
-  
+
   note that header may be NULL. If not NULL then it is included in the data portion
   of the record
  */
@@ -168,7 +168,7 @@ static TDB_DATA db_ctdb_marshall_finish(struct ctdb_marshall_buffer *m)
 
 /* 
    loop over a marshalling buffer 
-   
+
      - pass r==NULL to start
      - loop the number of times indicated by m->count
 */
@@ -186,7 +186,7 @@ static struct ctdb_rec_data *db_ctdb_marshall_loop_next(struct ctdb_marshall_buf
 	if (reqid != NULL) {
 		*reqid = r->reqid;
 	}
-	
+
 	if (key != NULL) {
 		key->dptr   = &r->data[0];
 		key->dsize  = r->keylen;
@@ -493,14 +493,14 @@ static int db_ctdb_transaction_store(struct db_ctdb_transaction_handle *h,
 			return -1;
 		}
 	}
-		
+
 	h->m_write = db_ctdb_marshall_add(h, h->m_write, h->ctx->db_id, 0, key, &header, data);
 	if (h->m_write == NULL) {
 		DEBUG(0,(__location__ " Failed to add to marshalling record\n"));
 		talloc_free(tmp_ctx);
 		return -1;
 	}
-	
+
 	rec.dsize = data.dsize + sizeof(struct ctdb_ltdb_header);
 	rec.dptr = (uint8_t *)talloc_size(tmp_ctx, rec.dsize);
 	if (rec.dptr == NULL) {
@@ -514,7 +514,7 @@ static int db_ctdb_transaction_store(struct db_ctdb_transaction_handle *h,
 	ret = tdb_store(h->ctx->wtdb->tdb, key, rec, TDB_REPLACE);
 
 	talloc_free(tmp_ctx);
-	
+
 	return ret;
 }
 
@@ -600,7 +600,7 @@ static int ctdb_replay_transaction(struct db_ctdb_transaction_handle *h)
 			talloc_free(tmp_ctx);
 		}
 	}
-	
+
 	return 0;
 
 failed:
@@ -878,7 +878,7 @@ again:
 			   (int)crec->ctdb_ctx->db_id, keystr));
 		TALLOC_FREE(keystr);
 	}
-	
+
 	if (tdb_chainlock(ctx->wtdb->tdb, key) != 0) {
 		DEBUG(3, ("tdb_chainlock failed\n"));
 		TALLOC_FREE(result);
