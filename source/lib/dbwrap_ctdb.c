@@ -130,7 +130,8 @@ static struct ctdb_marshall_buffer *db_ctdb_marshall_add(TALLOC_CTX *mem_ctx,
 	}
 
 	if (m == NULL) {
-		m = talloc_zero_size(mem_ctx, offsetof(struct ctdb_marshall_buffer, data));
+		m = (struct ctdb_marshall_buffer *)talloc_zero_size(
+			mem_ctx, offsetof(struct ctdb_marshall_buffer, data));
 		if (m == NULL) {
 			return NULL;
 		}
@@ -140,7 +141,8 @@ static struct ctdb_marshall_buffer *db_ctdb_marshall_add(TALLOC_CTX *mem_ctx,
 	m_size = talloc_get_size(m);
 	r_size = talloc_get_size(r);
 
-	m2 = talloc_realloc_size(mem_ctx, m,  m_size + r_size);
+	m2 = (struct ctdb_marshall_buffer *)talloc_realloc_size(
+		mem_ctx, m,  m_size + r_size);
 	if (m2 == NULL) {
 		talloc_free(m);
 		return NULL;
@@ -228,7 +230,7 @@ static int db_ctdb_transaction_fetch_start(struct db_ctdb_transaction_handle *h)
 	struct db_ctdb_ctx *ctx = h->ctx;
 	TDB_DATA data;
 
-	key.dptr = discard_const(keyname);
+	key.dptr = (uint8_t *)discard_const(keyname);
 	key.dsize = strlen(keyname);
 
 again:
@@ -500,7 +502,7 @@ static int db_ctdb_transaction_store(struct db_ctdb_transaction_handle *h,
 	}
 	
 	rec.dsize = data.dsize + sizeof(struct ctdb_ltdb_header);
-	rec.dptr = talloc_size(tmp_ctx, rec.dsize);
+	rec.dptr = (uint8_t *)talloc_size(tmp_ctx, rec.dsize);
 	if (rec.dptr == NULL) {
 		DEBUG(0,(__location__ " Failed to alloc record\n"));
 		talloc_free(tmp_ctx);
