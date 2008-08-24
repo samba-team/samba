@@ -108,8 +108,11 @@ static void loadfile_callback(struct composite_context *ctx)
 	}
 
 	for (i=0;i<FILE_SIZE;i++) {
-		if (state->loadfile->out.data[i] != state->fnumber % 256) {
-			printf("Bad data in file %u\n", state->fnumber);
+		if (state->loadfile->out.data[i] != 1+(state->fnumber % 255)) {
+			printf("Bad data in file %u (got %u expected %u)\n", 
+			       state->fnumber, 
+			       state->loadfile->out.data[i],
+			       1+(state->fnumber % 255));
 			test_failed++;
 			return;
 		}
@@ -253,7 +256,7 @@ static void test_offline(struct offline_state *state)
 		state->savefile->in.fname = state->fname;
 		state->savefile->in.data  = talloc_size(state->savefile, FILE_SIZE);
 		state->savefile->in.size  = FILE_SIZE;
-		memset(state->savefile->in.data, state->fnumber, FILE_SIZE);
+		memset(state->savefile->in.data, 1+(state->fnumber%255), FILE_SIZE);
 	
 		ctx = smb_composite_savefile_send(state->tree, state->savefile);
 		if (ctx == NULL) {
@@ -344,12 +347,16 @@ static void report_rate(struct event_context *ev, struct timed_event *te,
 		total_online += state[i].online_count;
 		total_offline += state[i].offline_count;
 	}
-	printf("ops/s=%4u  offline=%5u online=%4u  set_lat=%.1f get_lat=%.1f save_lat=%.1f load_lat=%.1f\r",
+	printf("ops/s=%4u  offline=%5u online=%4u  set_lat=%.1f/%.1f get_lat=%.1f/%.1f save_lat=%.1f/%.1f load_lat=%.1f/%.1f\n",
 	       total, total_offline, total_online,
 	       latencies[OP_SETOFFLINE],
+	       worst_latencies[OP_SETOFFLINE],
 	       latencies[OP_GETOFFLINE],
+	       worst_latencies[OP_GETOFFLINE],
 	       latencies[OP_SAVEFILE],
-	       latencies[OP_LOADFILE]);
+	       worst_latencies[OP_SAVEFILE],
+	       latencies[OP_LOADFILE],
+	       worst_latencies[OP_LOADFILE]);
 	fflush(stdout);
 	event_add_timed(ev, state, timeval_current_ofs(1, 0), report_rate, state);
 
@@ -436,7 +443,7 @@ bool torture_test_offline(struct torture_context *torture)
 		char buf[FILE_SIZE];
 		NTSTATUS status;
 
-		memset(buf, i % 256, sizeof(buf));
+		memset(buf, 1+(i % 255), sizeof(buf));
 
 		fnum = smbcli_open(state[0].tree, fname, O_RDWR|O_CREAT, DENY_NONE);
 		if (fnum == -1) {

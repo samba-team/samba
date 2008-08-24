@@ -767,7 +767,7 @@ int ltdb_search_indexed(struct ldb_handle *handle)
 
 	if ((ac->scope == LDB_SCOPE_ONELEVEL && (idxattr+idxone == 0)) ||
 	    (ac->scope == LDB_SCOPE_SUBTREE && idxattr == 0)) {
-		/* no indexs? must do full search */
+		/* no indexes? must do full search */
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 

@@ -176,7 +176,7 @@ _PUBLIC_ DATA_BLOB data_blob_string_const(const char *str)
 {
 	DATA_BLOB blob;
 	blob.data = discard_const_p(uint8_t, str);
-	blob.length = strlen(str);
+	blob.length = str ? strlen(str) : 0;
 	return blob;
 }
 

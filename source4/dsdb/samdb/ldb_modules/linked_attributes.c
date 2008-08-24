@@ -160,7 +160,7 @@ static int setup_modifies(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 				ldb_oom(ldb);
 				return LDB_ERR_OPERATIONS_ERROR;
 			}
-			new_msg->dn = ldb_dn_new(new_msg, ldb, (char *)el->values[j].data);
+			new_msg->dn = ldb_dn_from_ldb_val(new_msg, ldb, &el->values[j]);
 			if (!new_msg->dn) {
 				ldb_asprintf_errstring(ldb, 
 						       "attribute %s value %s was not a valid DN", msg->elements[i].name,
@@ -330,7 +330,7 @@ static int linked_attributes_mod_replace_search_callback(struct ldb_context *ldb
 			/* Add all the existing elements, marking as 'proposed for delete' by setting .add = false */
 			for (i=0; i < search_el->num_values; i++) {
 				merged_list = talloc_realloc(ares, merged_list, struct merge, size + 1);
-				merged_list[size].dn = ldb_dn_new(merged_list, ldb, (char *)search_el->values[i].data);
+				merged_list[size].dn = ldb_dn_from_ldb_val(merged_list, ldb, &search_el->values[i]);
 				merged_list[size].add = false;
 				merged_list[size].ignore = false;
 				size++;
@@ -339,7 +339,7 @@ static int linked_attributes_mod_replace_search_callback(struct ldb_context *ldb
 			/* Add all the new replacement elements, marking as 'proposed for add' by setting .add = true */
 			for (i=0; i < ac2->el->num_values; i++) {
 				merged_list = talloc_realloc(ares, merged_list, struct merge, size + 1);
-				merged_list[size].dn = ldb_dn_new(merged_list, ldb, (char *)ac2->el->values[i].data);
+				merged_list[size].dn = ldb_dn_from_ldb_val(merged_list, ldb, &ac2->el->values[i]);
 				merged_list[size].add = true;
 				merged_list[size].ignore = false;
 				size++;
@@ -610,7 +610,7 @@ static int linked_attributes_modify(struct ldb_module *module, struct ldb_reques
 				ldb_oom(module->ldb);
 				return LDB_ERR_OPERATIONS_ERROR;
 			}
-			new_msg->dn = ldb_dn_new(new_msg, module->ldb, (char *)el->values[j].data);
+			new_msg->dn = ldb_dn_from_ldb_val(new_msg, module->ldb, &el->values[j]);
 			if (!new_msg->dn) {
 				ldb_asprintf_errstring(module->ldb, 
 					       "attribute %s value %s was not a valid DN", req->op.mod.message->elements[i].name,
