@@ -284,7 +284,7 @@ int main(const int argc, char *const argv[])
 	}
 	SAFE_FREE(buf);
 
-	if (kernel_upcall_version != CIFS_SPNEGO_UPCALL_VERSION) {
+	if (kernel_upcall_version > CIFS_SPNEGO_UPCALL_VERSION) {
 		syslog(LOG_WARNING,
 		       "incompatible kernel upcall version: 0x%x",
 		       kernel_upcall_version);
@@ -353,7 +353,7 @@ int main(const int argc, char *const argv[])
 		rc = 1;
 		goto out;
 	}
-	keydata->version = CIFS_SPNEGO_UPCALL_VERSION;
+	keydata->version = kernel_upcall_version;
 	keydata->flags = 0;
 	keydata->sesskey_len = sess_key.length;
 	keydata->secblob_len = secblob.length;
