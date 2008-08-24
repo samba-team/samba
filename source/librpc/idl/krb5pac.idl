@@ -70,7 +70,7 @@ interface krb5pac
 		[case(PAC_TYPE_SRV_CHECKSUM)]	PAC_SIGNATURE_DATA srv_cksum;
 		[case(PAC_TYPE_KDC_CHECKSUM)]	PAC_SIGNATURE_DATA kdc_cksum;
 		[case(PAC_TYPE_LOGON_NAME)]	PAC_LOGON_NAME logon_name;
-		[case(PAC_TYPE_UNKNOWN_12)]	[subcontext(0)] DATA_BLOB_REM unknown;
+		[default]			[subcontext(0)] DATA_BLOB_REM unknown;
 		/* [case(PAC_TYPE_UNKNOWN_12)]	PAC_UNKNOWN_12 unknown; */
 	} PAC_INFO;
 
