@@ -1,3 +1,8 @@
+#These attributes are only used as far as the bootstrapping of the
+# schema.  After that, the attributes from the schema are used.
+#
+# Therefore, they must strictly match the schema
+
 dn: @ATTRIBUTES
 userPrincipalName: CASE_INSENSITIVE
 servicePrincipalName: CASE_INSENSITIVE
@@ -7,6 +12,8 @@ nETBIOSName: CASE_INSENSITIVE
 cn: CASE_INSENSITIVE
 dc: CASE_INSENSITIVE
 name: CASE_INSENSITIVE
+lDAPDisplayName: CASE_INSENSITIVE
+subClassOf: CASE_INSENSITIVE
 dn: CASE_INSENSITIVE
 sAMAccountName: CASE_INSENSITIVE
 objectClass: CASE_INSENSITIVE

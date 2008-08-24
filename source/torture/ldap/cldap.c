@@ -228,6 +228,75 @@ static bool test_cldap_netlogon(struct torture_context *tctx, const char *dest)
 }
 
 /*
+  test cldap netlogon server type flags
+*/
+static bool test_cldap_netlogon_flags(struct torture_context *tctx,
+	const char *dest)
+{
+	struct cldap_socket *cldap;
+	NTSTATUS status;
+	struct cldap_netlogon search;
+	struct netlogon_samlogon_response n1;
+	uint32_t server_type;
+
+	cldap = cldap_socket_init(tctx, tctx->ev, lp_iconv_convenience(tctx->lp_ctx));
+
+	printf("Printing out netlogon server type flags:\n");
+
+	ZERO_STRUCT(search);
+	search.in.dest_address = dest;
+	search.in.dest_port = lp_cldap_port(tctx->lp_ctx);
+	search.in.acct_control = -1;
+	search.in.version = NETLOGON_NT_VERSION_5 | NETLOGON_NT_VERSION_5EX;
+	search.in.map_response = true;
+
+	status = cldap_netlogon(cldap, tctx, &search);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	n1 = search.out.netlogon;
+	if (n1.ntver == NETLOGON_NT_VERSION_5)
+		server_type = n1.nt5.server_type;
+	else if (n1.ntver == NETLOGON_NT_VERSION_5EX)
+		server_type = n1.nt5_ex.server_type;	
+
+	printf("The word is: %i\n", server_type);
+	if (server_type & NBT_SERVER_PDC)
+		printf("NBT_SERVER_PDC ");
+	if (server_type & NBT_SERVER_GC)
+		printf("NBT_SERVER_GC ");
+	if (server_type & NBT_SERVER_LDAP)
+		printf("NBT_SERVER_LDAP ");
+	if (server_type & NBT_SERVER_DS)
+		printf("NBT_SERVER_DS ");
+	if (server_type & NBT_SERVER_KDC)
+		printf("NBT_SERVER_KDC ");
+	if (server_type & NBT_SERVER_TIMESERV)
+		printf("NBT_SERVER_TIMESERV ");
+	if (server_type & NBT_SERVER_CLOSEST)
+		printf("NBT_SERVER_CLOSEST ");
+	if (server_type & NBT_SERVER_WRITABLE)
+		printf("NBT_SERVER_WRITABLE ");
+	if (server_type & NBT_SERVER_GOOD_TIMESERV)
+		printf("NBT_SERVER_GOOD_TIMESERV ");
+	if (server_type & NBT_SERVER_NDNC)
+		printf("NBT_SERVER_NDNC ");
+	if (server_type & NBT_SERVER_SEL_SEC_DOM_6)
+		printf("NBT_SERVER_SEL_SEC_DOM_6 ");
+	if (server_type & NBT_SERVER_FUL_SEC_DOM_6)
+		printf("NBT_SERVER_FUL_SEC_DOM_6 ");
+	if (server_type & NBT_SERVER_DS_DNS_CONTR)
+		printf("NBT_SERVER_DS_DNS_CONTR ");
+	if (server_type & NBT_SERVER_DS_DNS_DOMAIN)
+		printf("NBT_SERVER_DS_DNS_DOMAIN ");
+	if (server_type & NBT_SERVER_DS_DNS_FOREST)
+		printf("NBT_SERVER_DS_DNS_FOREST ");
+
+	printf("\n");
+
+	return true;
+}
+
+/*
   convert a ldap result message to a ldb message. This allows us to
   use the convenient ldif dump routines in ldb to print out cldap
   search results
@@ -264,6 +333,81 @@ static void cldap_dump_results(struct cldap_search *search)
 	ldb_ldif_write_file(ldb, stdout, &ldif);
 
 	talloc_free(ldb);
+}
+
+
+/*
+  test cldap netlogon server type flag "NBT_SERVER_DS_DNS_FOREST"
+*/
+static bool test_cldap_netlogon_flag_ds_dns_forest(struct torture_context *tctx,
+	const char *dest)
+{
+	struct cldap_socket *cldap;
+	NTSTATUS status;
+	struct cldap_netlogon search;
+	uint32_t server_type;
+	struct netlogon_samlogon_response n1;
+
+	bool result = true;
+
+	cldap = cldap_socket_init(tctx, tctx->ev, lp_iconv_convenience(tctx->lp_ctx));
+
+	printf("Testing netlogon server type flag NBT_SERVER_DS_DNS_FOREST: ");
+
+	ZERO_STRUCT(search);
+	search.in.dest_address = dest;
+	search.in.dest_port = lp_cldap_port(tctx->lp_ctx);
+	search.in.acct_control = -1;
+	search.in.version = NETLOGON_NT_VERSION_5 | NETLOGON_NT_VERSION_5EX;
+	search.in.map_response = true;
+
+	status = cldap_netlogon(cldap, tctx, &search);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	n1 = search.out.netlogon;
+	if (n1.ntver == NETLOGON_NT_VERSION_5)
+		server_type = n1.nt5.server_type;
+	else if (n1.ntver == NETLOGON_NT_VERSION_5EX)
+		server_type = n1.nt5_ex.server_type;
+
+	if (server_type & NBT_SERVER_DS_DNS_FOREST) {
+		struct cldap_search search2;
+		const char *attrs[] = { "defaultNamingContext", "rootDomainNamingContext", 
+			NULL };
+		struct ldb_context *ldb;
+		struct ldb_message *msg;
+
+		/* Trying to fetch the attributes "defaultNamingContext" and
+		   "rootDomainNamingContext" */
+		ZERO_STRUCT(search2);
+		search2.in.dest_address = dest;
+		search2.in.dest_port = lp_cldap_port(tctx->lp_ctx);
+		search2.in.timeout = 10;
+		search2.in.retries = 3;
+		search2.in.filter = "(objectclass=*)";
+		search2.in.attributes = attrs;
+
+		status = cldap_search(cldap, tctx, &search2);
+		CHECK_STATUS(status, NT_STATUS_OK);
+
+		ldb = ldb_init(NULL, NULL);
+
+		msg = ldap_msg_to_ldb(ldb, ldb, search2.out.response);
+
+		/* Try to compare the two attributes */
+		if (ldb_msg_element_compare(ldb_msg_find_element(msg, attrs[0]),
+			ldb_msg_find_element(msg, attrs[1])))
+			result = false;
+
+		talloc_free(ldb);
+	}
+
+	if (result)
+		printf("passed\n");
+	else
+		printf("failed\n");
+
+	return result;
 }
 
 /*
@@ -343,6 +487,8 @@ bool torture_cldap(struct torture_context *torture)
 	const char *host = torture_setting_string(torture, "host", NULL);
 
 	ret &= test_cldap_netlogon(torture, host);
+	ret &= test_cldap_netlogon_flags(torture, host);
+	ret &= test_cldap_netlogon_flag_ds_dns_forest(torture, host);
 	ret &= test_cldap_generic(torture, host);
 
 	return ret;

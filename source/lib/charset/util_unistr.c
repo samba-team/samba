@@ -518,8 +518,9 @@ _PUBLIC_ char *strlower_talloc(TALLOC_CTX *ctx, const char *src)
 
 /**
  Convert a string to UPPER case, allocated with talloc
+ source length limited to n bytes
 **/
-_PUBLIC_ char *strupper_talloc(TALLOC_CTX *ctx, const char *src)
+_PUBLIC_ char *strupper_talloc_n(TALLOC_CTX *ctx, const char *src, size_t n)
 {
 	size_t size=0;
 	char *dest;
@@ -531,12 +532,12 @@ _PUBLIC_ char *strupper_talloc(TALLOC_CTX *ctx, const char *src)
 
 	/* this takes advantage of the fact that upper/lower can't
 	   change the length of a character by more than 1 byte */
-	dest = talloc_array(ctx, char, 2*(strlen(src))+1);
+	dest = talloc_array(ctx, char, 2*(n+1));
 	if (dest == NULL) {
 		return NULL;
 	}
 
-	while (*src) {
+	while (*src && n--) {
 		size_t c_size;
 		codepoint_t c = next_codepoint(iconv_convenience, src, &c_size);
 		src += c_size;
@@ -560,6 +561,16 @@ _PUBLIC_ char *strupper_talloc(TALLOC_CTX *ctx, const char *src)
 
 	return dest;
 }
+
+/**
+ Convert a string to UPPER case, allocated with talloc
+**/
+_PUBLIC_ char *strupper_talloc(TALLOC_CTX *ctx, const char *src)
+{
+	return strupper_talloc_n(ctx, src, src?strlen(src):0);
+}
+
+
 
 /**
  Convert a string to lower case.
