@@ -256,7 +256,7 @@ static void test_offline(struct offline_state *state)
 		state->savefile->in.fname = state->fname;
 		state->savefile->in.data  = talloc_size(state->savefile, FILE_SIZE);
 		state->savefile->in.size  = FILE_SIZE;
-		memset(state->savefile->in.data, state->fnumber, FILE_SIZE);
+		memset(state->savefile->in.data, 1+(state->fnumber%255), FILE_SIZE);
 	
 		ctx = smb_composite_savefile_send(state->tree, state->savefile);
 		if (ctx == NULL) {
