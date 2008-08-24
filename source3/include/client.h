@@ -204,7 +204,15 @@ struct cli_state {
 	bool force_dos_errors;
 	bool case_sensitive; /* False by default. */
 
-	struct event_context *event_ctx;
+	/**
+	 * fd_event is around while we have async requests outstanding or are
+	 * building a chained request.
+	 *
+	 * (fd_event!=NULL) && (outstanding_request!=NULL)
+	 *
+	 * should always be true, as well as the reverse: If both cli_request
+	 * pointers are NULL, no fd_event is around.
+	 */
 	struct fd_event *fd_event;
 	char *evt_inbuf;
 

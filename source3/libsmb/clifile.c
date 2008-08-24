@@ -823,7 +823,8 @@ static uint8_t *smb_bytes_push_str(uint8_t *buf, bool ucs2, const char *str)
  WARNING: if you open with O_WRONLY then getattrE won't work!
 ****************************************************************************/
 
-struct async_req *cli_open_send(TALLOC_CTX *mem_ctx, struct cli_state *cli,
+struct async_req *cli_open_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
+				struct cli_state *cli,
 				const char *fname, int flags, int share_mode)
 {
 	unsigned openfn = 0;
@@ -893,7 +894,7 @@ struct async_req *cli_open_send(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 		return NULL;
 	}
 
-	result = cli_request_send(mem_ctx, cli, SMBopenX, additional_flags,
+	result = cli_request_send(mem_ctx, ev, cli, SMBopenX, additional_flags,
 				  15, vwv, talloc_get_size(bytes), bytes);
 	TALLOC_FREE(bytes);
 	return result;
@@ -923,20 +924,30 @@ int cli_open(struct cli_state *cli, const char *fname, int flags,
 	     int share_mode)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
+	struct event_context *ev;
 	struct async_req *req;
 	int result = -1;
 
-	if (cli_tmp_event_ctx(frame, cli) == NULL) {
+	if (cli->fd_event != NULL) {
+		/*
+		 * Can't use sync call while an async call is in flight
+		 */
+		cli_set_error(cli, NT_STATUS_INVALID_PARAMETER);
 		goto fail;
 	}
 
-	req = cli_open_send(frame, cli, fname, flags, share_mode);
+	ev = event_context_init(frame);
+	if (ev == NULL) {
+		goto fail;
+	}
+
+	req = cli_open_send(frame, ev, cli, fname, flags, share_mode);
 	if (req == NULL) {
 		goto fail;
 	}
 
 	while (req->state < ASYNC_REQ_DONE) {
-		event_loop_once(cli->event_ctx);
+		event_loop_once(ev);
 	}
 
 	cli_open_recv(req, &result);
@@ -949,15 +960,16 @@ int cli_open(struct cli_state *cli, const char *fname, int flags,
  Close a file.
 ****************************************************************************/
 
-struct async_req *cli_close_send(TALLOC_CTX *mem_ctx, struct cli_state *cli,
-				 int fnum)
+struct async_req *cli_close_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
+				 struct cli_state *cli, int fnum)
 {
 	uint16_t vwv[3];
 
 	SSVAL(vwv+0, 0, fnum);
 	SIVALS(vwv+1, 0, -1);
 
-	return cli_request_send(mem_ctx, cli, SMBclose, 0, 3, vwv, 0, NULL);
+	return cli_request_send(mem_ctx, ev, cli, SMBclose, 0, 3, vwv,
+				0, NULL);
 }
 
 NTSTATUS cli_close_recv(struct async_req *req)
@@ -975,20 +987,30 @@ NTSTATUS cli_close_recv(struct async_req *req)
 bool cli_close(struct cli_state *cli, int fnum)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
+	struct event_context *ev;
 	struct async_req *req;
 	bool result = false;
 
-	if (cli_tmp_event_ctx(frame, cli) == NULL) {
+	if (cli->fd_event != NULL) {
+		/*
+		 * Can't use sync call while an async call is in flight
+		 */
+		cli_set_error(cli, NT_STATUS_INVALID_PARAMETER);
 		goto fail;
 	}
 
-	req = cli_close_send(frame, cli, fnum);
+	ev = event_context_init(frame);
+	if (ev == NULL) {
+		goto fail;
+	}
+
+	req = cli_close_send(frame, ev, cli, fnum);
 	if (req == NULL) {
 		goto fail;
 	}
 
 	while (req->state < ASYNC_REQ_DONE) {
-		event_loop_once(cli->event_ctx);
+		event_loop_once(ev);
 	}
 
 	result = NT_STATUS_IS_OK(cli_close_recv(req));

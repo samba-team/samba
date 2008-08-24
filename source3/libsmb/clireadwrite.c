@@ -41,6 +41,7 @@ static size_t cli_read_max_bufsize(struct cli_state *cli)
  */
 
 struct async_req *cli_read_andx_send(TALLOC_CTX *mem_ctx,
+				     struct event_context *ev,
 				     struct cli_state *cli, int fnum,
 				     off_t offset, size_t size)
 {
@@ -76,7 +77,7 @@ struct async_req *cli_read_andx_send(TALLOC_CTX *mem_ctx,
 		wct += 2;
 	}
 
-	result = cli_request_send(mem_ctx, cli, SMBreadX, 0, wct, vwv,
+	result = cli_request_send(mem_ctx, ev, cli, SMBreadX, 0, wct, vwv,
 				  0, NULL);
 	if (result == NULL) {
 		return NULL;
@@ -144,6 +145,7 @@ NTSTATUS cli_read_andx_recv(struct async_req *req, ssize_t *received,
 struct cli_pull_state {
 	struct async_req *req;
 
+	struct event_context *ev;
 	struct cli_state *cli;
 	uint16_t fnum;
 	off_t start_offset;
@@ -202,7 +204,9 @@ static void cli_pull_read_done(struct async_req *read_req);
  * Prepare an async pull request
  */
 
-struct async_req *cli_pull_send(TALLOC_CTX *mem_ctx, struct cli_state *cli,
+struct async_req *cli_pull_send(TALLOC_CTX *mem_ctx,
+				struct event_context *ev,
+				struct cli_state *cli,
 				uint16_t fnum, off_t start_offset,
 				SMB_OFF_T size, size_t window_size,
 				NTSTATUS (*sink)(char *buf, size_t n,
@@ -213,7 +217,7 @@ struct async_req *cli_pull_send(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 	struct cli_pull_state *state;
 	int i;
 
-	result = async_req_new(mem_ctx, cli->event_ctx);
+	result = async_req_new(mem_ctx, ev);
 	if (result == NULL) {
 		goto failed;
 	}
@@ -226,6 +230,7 @@ struct async_req *cli_pull_send(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 	state->req = result;
 
 	state->cli = cli;
+	state->ev = ev;
 	state->fnum = fnum;
 	state->start_offset = start_offset;
 	state->size = size;
@@ -268,7 +273,7 @@ struct async_req *cli_pull_send(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 		request_thistime = MIN(size_left, state->chunk_size);
 
 		state->reqs[i] = cli_read_andx_send(
-			state->reqs, cli, fnum,
+			state->reqs, ev, cli, fnum,
 			state->start_offset + state->requested,
 			request_thistime);
 
@@ -363,7 +368,8 @@ static void cli_pull_read_done(struct async_req *read_req)
 				   state->top_req));
 
 			new_req = cli_read_andx_send(
-				state->reqs, state->cli, state->fnum,
+				state->reqs, state->ev, state->cli,
+				state->fnum,
 				state->start_offset + state->requested,
 				request_thistime);
 
@@ -403,21 +409,30 @@ NTSTATUS cli_pull(struct cli_state *cli, uint16_t fnum,
 		  void *priv, SMB_OFF_T *received)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
+	struct event_context *ev;
 	struct async_req *req;
 	NTSTATUS result = NT_STATUS_NO_MEMORY;
 
-	if (cli_tmp_event_ctx(frame, cli) == NULL) {
+	if (cli->fd_event != NULL) {
+		/*
+		 * Can't use sync call while an async call is in flight
+		 */
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	ev = event_context_init(frame);
+	if (ev == NULL) {
 		goto nomem;
 	}
 
-	req = cli_pull_send(frame, cli, fnum, start_offset, size, window_size,
-			    sink, priv);
+	req = cli_pull_send(frame, ev, cli, fnum, start_offset, size,
+			    window_size, sink, priv);
 	if (req == NULL) {
 		goto nomem;
 	}
 
 	while (req->state < ASYNC_REQ_DONE) {
-		event_loop_once(cli->event_ctx);
+		event_loop_once(ev);
 	}
 
 	result = cli_pull_recv(req, received);
