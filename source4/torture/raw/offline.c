@@ -109,7 +109,10 @@ static void loadfile_callback(struct composite_context *ctx)
 
 	for (i=0;i<FILE_SIZE;i++) {
 		if (state->loadfile->out.data[i] != 1+(state->fnumber % 255)) {
-			printf("Bad data in file %u\n", state->fnumber);
+			printf("Bad data in file %u (got %u expected %u)\n", 
+			       state->fnumber, 
+			       state->loadfile->out.data[i],
+			       1+(state->fnumber % 255));
 			test_failed++;
 			return;
 		}
@@ -344,12 +347,16 @@ static void report_rate(struct event_context *ev, struct timed_event *te,
 		total_online += state[i].online_count;
 		total_offline += state[i].offline_count;
 	}
-	printf("ops/s=%4u  offline=%5u online=%4u  set_lat=%.1f get_lat=%.1f save_lat=%.1f load_lat=%.1f\r",
+	printf("ops/s=%4u  offline=%5u online=%4u  set_lat=%.1f/%.1f get_lat=%.1f/%.1f save_lat=%.1f/%.1f load_lat=%.1f/%.1f\n",
 	       total, total_offline, total_online,
 	       latencies[OP_SETOFFLINE],
+	       worst_latencies[OP_SETOFFLINE],
 	       latencies[OP_GETOFFLINE],
+	       worst_latencies[OP_GETOFFLINE],
 	       latencies[OP_SAVEFILE],
-	       latencies[OP_LOADFILE]);
+	       worst_latencies[OP_SAVEFILE],
+	       latencies[OP_LOADFILE],
+	       worst_latencies[OP_LOADFILE]);
 	fflush(stdout);
 	event_add_timed(ev, state, timeval_current_ofs(1, 0), report_rate, state);
 
