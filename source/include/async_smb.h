@@ -23,7 +23,9 @@
  * Ship a new smb request to the server
  */
 
-struct async_req *cli_request_send(TALLOC_CTX *mem_ctx, struct cli_state *cli,
+struct async_req *cli_request_send(TALLOC_CTX *mem_ctx,
+				   struct event_context *ev,
+				   struct cli_state *cli,
 				   uint8_t smb_command,
 				   uint8_t additional_flags,
 				   uint8_t wct, const uint16_t *vwv,
@@ -46,17 +48,3 @@ NTSTATUS cli_pull_error(char *buf);
  */
 
 void cli_set_error(struct cli_state *cli, NTSTATUS status);
-
-/*
- * Create a temporary event context for use in the sync helper functions
- */
-
-struct cli_tmp_event *cli_tmp_event_ctx(TALLOC_CTX *mem_ctx,
-					struct cli_state *cli);
-
-/*
- * Attach an event context permanently to a cli_struct
- */
-
-NTSTATUS cli_add_event_ctx(struct cli_state *cli,
-			   struct event_context *event_ctx);

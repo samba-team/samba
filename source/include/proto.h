@@ -4378,7 +4378,8 @@ int cli_nt_create_full(struct cli_state *cli, const char *fname,
 		 uint32 CreateDisposition, uint32 CreateOptions,
 		 uint8 SecuityFlags);
 int cli_nt_create(struct cli_state *cli, const char *fname, uint32 DesiredAccess);
-struct async_req *cli_open_send(TALLOC_CTX *mem_ctx, struct cli_state *cli,
+struct async_req *cli_open_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
+				struct cli_state *cli,
 				const char *fname, int flags, int share_mode);
 NTSTATUS cli_open_recv(struct async_req *req, int *fnum);
 int cli_open(struct cli_state *cli, const char *fname, int flags, int share_mode);
@@ -4618,11 +4619,14 @@ int cli_NetConnectionEnum(struct cli_state *cli, const char *qualifier,
 /* The following definitions come from libsmb/clireadwrite.c  */
 
 struct async_req *cli_read_andx_send(TALLOC_CTX *mem_ctx,
+				     struct event_context *ev,
 				     struct cli_state *cli, int fnum,
 				     off_t offset, size_t size);
 NTSTATUS cli_read_andx_recv(struct async_req *req, ssize_t *received,
 			    uint8_t **rcvbuf);
-struct async_req *cli_pull_send(TALLOC_CTX *mem_ctx, struct cli_state *cli,
+struct async_req *cli_pull_send(TALLOC_CTX *mem_ctx,
+				struct event_context *ev,
+				struct cli_state *cli,
 				uint16_t fnum, off_t start_offset,
 				SMB_OFF_T size, size_t window_size,
 				NTSTATUS (*sink)(char *buf, size_t n,

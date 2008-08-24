@@ -19,6 +19,9 @@
 
 #include "includes.h"
 
+static void cli_state_handler(struct event_context *event_ctx,
+			      struct fd_event *event, uint16 flags, void *p);
+
 /*
  * Fetch an error out of a NBT packet
  */
@@ -107,6 +110,9 @@ static int cli_request_destructor(struct cli_request *req)
 		common_free_enc_buffer(req->enc_state, req->outbuf);
 	}
 	DLIST_REMOVE(req->cli->outstanding_requests, req);
+	if (req->cli->outstanding_requests == NULL) {
+		TALLOC_FREE(req->cli->fd_event);
+	}
 	return 0;
 }
 
@@ -163,7 +169,9 @@ static struct async_req *cli_request_new(TALLOC_CTX *mem_ctx,
 /*
  * Ship a new smb request to the server
  */
-struct async_req *cli_request_send(TALLOC_CTX *mem_ctx, struct cli_state *cli,
+struct async_req *cli_request_send(TALLOC_CTX *mem_ctx,
+				   struct event_context *ev,
+				   struct cli_state *cli,
 				   uint8_t smb_command,
 				   uint8_t additional_flags,
 				   uint8_t wct, const uint16_t *vwv,
@@ -172,10 +180,20 @@ struct async_req *cli_request_send(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 	struct async_req *result;
 	struct cli_request *req;
 
-	result = cli_request_new(mem_ctx, cli->event_ctx, cli, wct, num_bytes,
-				 &req);
+	if (cli->fd_event == NULL) {
+		SMB_ASSERT(cli->outstanding_requests == NULL);
+		cli->fd_event = event_add_fd(ev, cli, cli->fd,
+					     EVENT_FD_READ,
+					     cli_state_handler, cli);
+		if (cli->fd_event == NULL) {
+			return NULL;
+		}
+	}
+
+	result = cli_request_new(mem_ctx, ev, cli, wct, num_bytes, &req);
 	if (result == NULL) {
 		DEBUG(0, ("cli_request_new failed\n"));
+		TALLOC_FREE(cli->fd_event);
 		return NULL;
 	}
 
@@ -446,7 +464,9 @@ static void cli_state_handler(struct event_context *event_ctx,
 		}
 
 		if (req == NULL) {
-			event_fd_set_not_writeable(event);
+			if (cli->fd_event != NULL) {
+				event_fd_set_not_writeable(cli->fd_event);
+			}
 			return;
 		}
 
@@ -473,70 +493,4 @@ static void cli_state_handler(struct event_context *event_ctx,
 	TALLOC_FREE(cli->fd_event);
 	close(cli->fd);
 	cli->fd = -1;
-}
-
-/*
- * Holder for a talloc_destructor, we need to zero out the pointers in cli
- * when deleting
- */
-struct cli_tmp_event {
-	struct cli_state *cli;
-};
-
-static int cli_tmp_event_destructor(struct cli_tmp_event *e)
-{
-	TALLOC_FREE(e->cli->fd_event);
-	TALLOC_FREE(e->cli->event_ctx);
-	return 0;
-}
-
-/*
- * Create a temporary event context for use in the sync helper functions
- */
-
-struct cli_tmp_event *cli_tmp_event_ctx(TALLOC_CTX *mem_ctx,
-					struct cli_state *cli)
-{
-	struct cli_tmp_event *state;
-
-	if (cli->event_ctx != NULL) {
-		return NULL;
-	}
-
-	state = talloc(mem_ctx, struct cli_tmp_event);
-	if (state == NULL) {
-		return NULL;
-	}
-	state->cli = cli;
-	talloc_set_destructor(state, cli_tmp_event_destructor);
-
-	cli->event_ctx = event_context_init(state);
-	if (cli->event_ctx == NULL) {
-		TALLOC_FREE(state);
-		return NULL;
-	}
-
-	cli->fd_event = event_add_fd(cli->event_ctx, state, cli->fd,
-				     EVENT_FD_READ, cli_state_handler, cli);
-	if (cli->fd_event == NULL) {
-		TALLOC_FREE(state);
-		return NULL;
-	}
-	return state;
-}
-
-/*
- * Attach an event context permanently to a cli_struct
- */
-
-NTSTATUS cli_add_event_ctx(struct cli_state *cli,
-			   struct event_context *event_ctx)
-{
-	cli->event_ctx = event_ctx;
-	cli->fd_event = event_add_fd(event_ctx, cli, cli->fd, EVENT_FD_READ,
-				     cli_state_handler, cli);
-	if (cli->fd_event == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	return NT_STATUS_OK;
 }
