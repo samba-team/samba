@@ -5,7 +5,7 @@ Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
 Version: 1.0
-Release: 56
+Release: 57
 Epoch: 0
 License: GNU GPL version 3
 Group: System Environment/Daemons
@@ -118,6 +118,8 @@ fi
 %{_includedir}/ctdb_private.h
 
 %changelog
+* Mon Aug 25 2008 : Version 1.0.57
+ - initial support for IPv6
 * Mon Aug 11 2008 : Version 1.0.56
  - fix a memory leak in the recovery daemon.
 * Mon Aug 11 2008 : Version 1.0.55
