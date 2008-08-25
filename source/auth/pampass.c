@@ -63,6 +63,7 @@ typedef int (*smb_pam_conv_fn)(int, const struct pam_message **, struct pam_resp
  *  Macros to help make life easy
  */
 #define COPY_STRING(s) (s) ? SMB_STRDUP(s) : NULL
+#define COPY_FSTRING(s) (s[0]) ? SMB_STRDUP(s) : NULL
 
 /*******************************************************************
  PAM error handler.
@@ -327,7 +328,7 @@ static int smb_pam_passchange_conv(int num_msg,
 					DEBUG(100,("smb_pam_passchange_conv: PAM_PROMPT_ECHO_ON: We actualy sent: %s\n", current_reply));
 #endif
 					reply[replies].resp_retcode = PAM_SUCCESS;
-					reply[replies].resp = COPY_STRING(current_reply);
+					reply[replies].resp = COPY_FSTRING(current_reply);
 					found = True;
 					break;
 				}
@@ -355,7 +356,7 @@ static int smb_pam_passchange_conv(int num_msg,
 					DEBUG(10,("smb_pam_passchange_conv: PAM_PROMPT_ECHO_OFF: We sent: %s\n", current_reply));
 					pwd_sub(current_reply, udp->PAM_username, udp->PAM_password, udp->PAM_newpassword);
 					reply[replies].resp_retcode = PAM_SUCCESS;
-					reply[replies].resp = COPY_STRING(current_reply);
+					reply[replies].resp = COPY_FSTRING(current_reply);
 #ifdef DEBUG_PASSWORD
 					DEBUG(100,("smb_pam_passchange_conv: PAM_PROMPT_ECHO_OFF: We actualy sent: %s\n", current_reply));
 #endif
