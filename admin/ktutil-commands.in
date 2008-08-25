@@ -227,6 +227,11 @@ command = {
 	min_args = "2"
 	max_args = "2"
 	help = "Renames an entry in the keytab."
+	option = {
+		long = "delete"
+		type = "-flag"
+		help = "don't delete orignal entry"
+	}
 }
 command = {
 	name = "srvconvert"
