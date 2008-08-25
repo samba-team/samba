@@ -1544,3 +1544,15 @@ void winbindd_unset_locator_kdc_env(const struct winbindd_domain *domain)
 }
 
 #endif /* HAVE_KRB5_LOCATE_PLUGIN_H */
+
+void set_auth_errors(struct winbindd_response *resp, NTSTATUS result)
+{
+	resp->data.auth.nt_status = NT_STATUS_V(result);
+	fstrcpy(resp->data.auth.nt_status_string, nt_errstr(result));
+
+	/* we might have given a more useful error above */
+	if (*resp->data.auth.error_string == '\0')
+		fstrcpy(resp->data.auth.error_string,
+			get_friendly_nt_error_msg(result));
+	resp->data.auth.pam_error = nt_status_to_pam(result);
+}
