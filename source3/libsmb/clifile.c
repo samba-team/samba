@@ -902,7 +902,10 @@ struct async_req *cli_open_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 
 NTSTATUS cli_open_recv(struct async_req *req, int *fnum)
 {
-	struct cli_request *cli_req = cli_request_get(req);
+	uint8_t wct;
+	uint16_t *vwv;
+	uint16_t num_bytes;
+	uint8_t *bytes;
 	NTSTATUS status;
 
 	SMB_ASSERT(req->state >= ASYNC_REQ_DONE);
@@ -910,12 +913,16 @@ NTSTATUS cli_open_recv(struct async_req *req, int *fnum)
 		return req->status;
 	}
 
-	status = cli_pull_error(cli_req->inbuf);
+	status = cli_pull_reply(req, &wct, &vwv, &num_bytes, &bytes);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	*fnum = SVAL(cli_req->inbuf, smb_vwv2);
+	if (wct < 3) {
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+
+	*fnum = SVAL(vwv+2, 0);
 
 	return NT_STATUS_OK;
 }
@@ -974,14 +981,17 @@ struct async_req *cli_close_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 
 NTSTATUS cli_close_recv(struct async_req *req)
 {
-	struct cli_request *cli_req = cli_request_get(req);
+	uint8_t wct;
+	uint16_t *vwv;
+	uint16_t num_bytes;
+	uint8_t *bytes;
 
 	SMB_ASSERT(req->state >= ASYNC_REQ_DONE);
 	if (req->state == ASYNC_REQ_ERROR) {
 		return req->status;
 	}
 
-	return cli_pull_error(cli_req->inbuf);
+	return cli_pull_reply(req, &wct, &vwv, &num_bytes, &bytes);
 }
 
 bool cli_close(struct cli_state *cli, int fnum)

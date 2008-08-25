@@ -37,6 +37,10 @@ struct async_req *cli_request_send(TALLOC_CTX *mem_ctx,
 
 struct cli_request *cli_request_get(struct async_req *req);
 
+NTSTATUS cli_pull_reply(struct async_req *req,
+			uint8_t *pwct, uint16_t **pvwv,
+			uint16_t *pnum_bytes, uint8_t **pbytes);
+
 /*
  * Fetch an error out of a NBT packet
  */

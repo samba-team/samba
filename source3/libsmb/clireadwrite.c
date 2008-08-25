@@ -104,6 +104,10 @@ NTSTATUS cli_read_andx_recv(struct async_req *req, ssize_t *received,
 			    uint8_t **rcvbuf)
 {
 	struct cli_request *cli_req = cli_request_get(req);
+	uint8_t wct;
+	uint16_t *vwv;
+	uint16_t num_bytes;
+	uint8_t *bytes;
 	NTSTATUS status;
 	size_t size;
 
@@ -112,24 +116,27 @@ NTSTATUS cli_read_andx_recv(struct async_req *req, ssize_t *received,
 		return req->status;
 	}
 
-	status = cli_pull_error(cli_req->inbuf);
+	status = cli_pull_reply(req, &wct, &vwv, &num_bytes, &bytes);
 
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
 
+	if (wct < 12) {
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+
 	/* size is the number of bytes the server returned.
 	 * Might be zero. */
-	size = SVAL(cli_req->inbuf, smb_vwv5);
-	size |= (((unsigned int)(SVAL(cli_req->inbuf, smb_vwv7))) << 16);
+	size = SVAL(vwv + 5, 0);
+	size |= (((unsigned int)SVAL(vwv + 7, 0)) << 16);
 
 	if (size > cli_req->data.read.size) {
 		DEBUG(5,("server returned more than we wanted!\n"));
 		return NT_STATUS_UNEXPECTED_IO_ERROR;
 	}
 
-	*rcvbuf = (uint8_t *)
-		(smb_base(cli_req->inbuf) + SVAL(cli_req->inbuf, smb_vwv6));
+	*rcvbuf = (uint8_t *)(smb_base(cli_req->inbuf) + SVAL(vwv + 6, 0));
 	*received = size;
 	return NT_STATUS_OK;
 }

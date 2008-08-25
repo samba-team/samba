@@ -230,6 +230,60 @@ struct async_req *cli_request_send(TALLOC_CTX *mem_ctx,
 	return result;
 }
 
+/**
+ * @brief Pull reply data out of a request
+ * @param[in] req		The request that we just received a reply for
+ * @param[out] pwct		How many words did the server send?
+ * @param[out] pvwv		The words themselves
+ * @param[out] pnum_bytes	How many bytes did the server send?
+ * @param[out] pbytes		The bytes themselves
+ * @retval Was the reply formally correct?
+ */
+
+NTSTATUS cli_pull_reply(struct async_req *req,
+			uint8_t *pwct, uint16_t **pvwv,
+			uint16_t *pnum_bytes, uint8_t **pbytes)
+{
+	struct cli_request *cli_req = cli_request_get(req);
+	uint8_t wct, cmd;
+	uint16_t num_bytes;
+	size_t wct_ofs, bytes_offset;
+	NTSTATUS status;
+
+	status = cli_pull_error(cli_req->inbuf);
+
+	if (NT_STATUS_IS_ERR(status)) {
+		cli_set_error(cli_req->cli, status);
+		return status;
+	}
+
+	cmd = CVAL(cli_req->inbuf, smb_com);
+	wct_ofs = smb_wct;
+
+	wct = CVAL(cli_req->inbuf, wct_ofs);
+
+	bytes_offset = wct_ofs + 1 + wct * sizeof(uint16_t);
+	num_bytes = SVAL(cli_req->inbuf, bytes_offset);
+
+	/*
+	 * wct_ofs is a 16-bit value plus 4, wct is a 8-bit value, num_bytes
+	 * is a 16-bit value. So bytes_offset being size_t should be far from
+	 * wrapping.
+	 */
+
+	if ((bytes_offset + 2 > talloc_get_size(cli_req->inbuf))
+	    || (bytes_offset > 0xffff)) {
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+
+	*pwct = wct;
+	*pvwv = (uint16_t *)(cli_req->inbuf + wct_ofs + 1);
+	*pnum_bytes = num_bytes;
+	*pbytes = (uint8_t *)cli_req->inbuf + bytes_offset + 2;
+
+	return NT_STATUS_OK;
+}
+
 /*
  * Convenience function to get the SMB part out of an async_req
  */
