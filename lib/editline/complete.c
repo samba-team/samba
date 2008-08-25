@@ -113,7 +113,7 @@ static int SplitPath(char *path, char **dirpart, char **filepart)
 	if ((dpart = strdup(path)) == NULL)
 	    return -1;
 	dpart[fpart - path] = '\0';
-	if ((fpart = strdup(++fpart)) == NULL) {
+	if ((fpart = strdup(fpart + 1)) == NULL) {
 	    free(dpart);
 	    return -1;
 	}
