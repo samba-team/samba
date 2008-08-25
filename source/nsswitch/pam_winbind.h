@@ -148,53 +148,6 @@ do {                             \
 	};\
 };
 
-#define PAM_WB_REMARK_DIRECT_RET(h,f,x)\
-{\
-	const char *error_string = NULL; \
-	error_string = _get_ntstatus_error_string(x);\
-	if (error_string != NULL) {\
-		_make_remark(h, f, PAM_ERROR_MSG, error_string);\
-		return ret;\
-	};\
-	_make_remark(h, f, PAM_ERROR_MSG, x);\
-	return ret;\
-};
-
-#define PAM_WB_REMARK_CHECK_RESPONSE(c,x,y)\
-{\
-	const char *ntstatus = x.data.auth.nt_status_string; \
-	const char *error_string = NULL; \
-	if (!strcasecmp(ntstatus,y)) {\
-		error_string = _get_ntstatus_error_string(y);\
-		if (error_string != NULL) {\
-			_make_remark(c, PAM_ERROR_MSG, error_string);\
-		};\
-		if (x.data.auth.error_string[0] != '\0') {\
-			_make_remark(c, PAM_ERROR_MSG, x.data.auth.error_string);\
-		};\
-		_make_remark(c, PAM_ERROR_MSG, y);\
-	};\
-};
-
-#define PAM_WB_REMARK_CHECK_RESPONSE_RET(c,x,y)\
-{\
-	const char *ntstatus = x.data.auth.nt_status_string; \
-	const char *error_string = NULL; \
-	if (!strcasecmp(ntstatus,y)) {\
-		error_string = _get_ntstatus_error_string(y);\
-		if (error_string != NULL) {\
-			_make_remark(c, PAM_ERROR_MSG, error_string);\
-			return ret;\
-		};\
-		if (x.data.auth.error_string[0] != '\0') {\
-			_make_remark(c, PAM_ERROR_MSG, x.data.auth.error_string);\
-			return ret;\
-		};\
-		_make_remark(c, PAM_ERROR_MSG, y);\
-		return ret;\
-	};\
-};
-
 #define LOGON_KRB5_FAIL_CLOCK_SKEW	0x02000000
 
 #define PAM_WB_CACHED_LOGON(x) (x & WBC_AUTH_USER_INFO_CACHED_ACCOUNT)
