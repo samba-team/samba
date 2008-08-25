@@ -1,6 +1,6 @@
                    =================================
                    Release Notes for Samba 3.3.0pre1
-                            August 19, 2008
+                            August 26, 2008
                    =================================
 
 This is the first preview release of Samba 3.3.0.  This is *not*
@@ -24,7 +24,16 @@ Major enhancements in Samba 3.3.0 include:
  Administrative tools:
  o The destination "all" of smbcontrol does now affect all running
    daemons including nmbd and winbindd.
- o New 'net rpc vampire keytab' command.
+ o New 'net rpc vampire keytab' and  'net rpc vampire ldif' commands.
+
+
+Configure changes
+=================
+
+The configure option "--with-libdir" has been removed. The library
+directory can still be specified by using the existing "--libdir" option.
+A new option "--with-modulesdir" has been added to allow the specification
+of a separate driectory for the shared modules.
 
 
 Winbind idmap backend changes
@@ -50,6 +59,14 @@ being set with the "old" parameters "idmap uid" and "idmap gid".
 The "idmap domains" parameter has been removed.
 
 
+winbind reconnect delay
+=======================
+
+This is a new parameter which specifies the number of seconds the Winbind
+daemon will wait between attempts to contact a Domain controller for a domain
+that is determined to be down or not contactable.
+
+
 ######################################################################
 Changes
 #######
@@ -59,7 +76,6 @@ smb.conf changes
 
     Parameter Name                      Description     Default
     --------------                      -----------     -------
-    idmap backend			Changed Default tdb
     idmap domains			Removed
     init logon delayed hosts		New		""
     init logon delay			New		100
