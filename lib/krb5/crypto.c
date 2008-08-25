@@ -35,6 +35,9 @@
 RCSID("$Id$");
 #include <pkinit_asn1.h>
 
+#undef __attribute__
+#define __attribute__(X)
+
 #ifndef HEIMDAL_SMALLER
 #define WEAK_ENCTYPES 1
 #define DES3_OLD_ENCTYPE 1
@@ -1114,51 +1117,6 @@ krb5_string_to_key_salt_opaque (krb5_context context,
 }
 
 krb5_error_code KRB5_LIB_FUNCTION
-krb5_keytype_to_string(krb5_context context,
-		       krb5_keytype keytype,
-		       char **string)
-{
-    struct key_type *kt = _find_keytype(keytype);
-    if(kt == NULL) {
-	krb5_set_error_message(context, KRB5_PROG_KEYTYPE_NOSUPP,
-			       "key type %d not supported", keytype);
-	return KRB5_PROG_KEYTYPE_NOSUPP;
-    }
-    *string = strdup(kt->name);
-    if(*string == NULL) {
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
-	return ENOMEM;
-    }
-    return 0;
-}
-
-krb5_error_code KRB5_LIB_FUNCTION
-krb5_string_to_keytype(krb5_context context,
-		       const char *string,
-		       krb5_keytype *keytype)
-{
-    char *end;
-    int i;
-
-    for(i = 0; i < num_keytypes; i++)
-	if(strcasecmp(keytypes[i]->name, string) == 0){
-	    *keytype = keytypes[i]->type;
-	    return 0;
-	}
-
-    /* check if the enctype is a number */
-    *keytype = strtol(string, &end, 0);
-    if(*end == '\0' && *keytype != 0) {
-	if (krb5_enctype_valid(context, *keytype) == 0)
-	    return 0;
-    }
-
-    krb5_set_error_message(context, KRB5_PROG_KEYTYPE_NOSUPP,
-			   "key type %s not supported", string);
-    return KRB5_PROG_KEYTYPE_NOSUPP;
-}
-
-krb5_error_code KRB5_LIB_FUNCTION
 krb5_enctype_keysize(krb5_context context,
 		     krb5_enctype type,
 		     size_t *keysize)
@@ -1909,9 +1867,11 @@ verify_checksum(krb5_context context,
 				ct->name);
 	return KRB5_PROG_SUMTYPE_NOSUPP; /* XXX */
     }
-    if(keyed_checksum)
+    if(keyed_checksum) {
 	ret = get_checksum_key(context, crypto, usage, ct, &dkey);
-    else
+	if (ret)
+	    return ret;
+    } else
 	dkey = NULL;
     if(ct->verify)
 	return (*ct->verify)(context, dkey, data, len, usage, cksum);
@@ -2743,37 +2703,6 @@ krb5_keytype_to_enctypes (krb5_context context,
 	    && !(etypes[i]->flags & F_PSEUDO))
 	    ret[n++] = etypes[i]->type;
     }
-    *len = n;
-    *val = ret;
-    return 0;
-}
-
-/*
- * First take the configured list of etypes for `keytype' if available,
- * else, do `krb5_keytype_to_enctypes'.
- */
-
-krb5_error_code KRB5_LIB_FUNCTION
-krb5_keytype_to_enctypes_default (krb5_context context,
-				  krb5_keytype keytype,
-				  unsigned *len,
-				  krb5_enctype **val)
-{
-    unsigned int i, n;
-    krb5_enctype *ret;
-
-    if (keytype != KEYTYPE_DES || context->etypes_des == NULL)
-	return krb5_keytype_to_enctypes (context, keytype, len, val);
-
-    for (n = 0; context->etypes_des[n]; ++n)
-	;
-    ret = malloc (n * sizeof(*ret));
-    if (ret == NULL && n != 0) {
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
-	return ENOMEM;
-    }
-    for (i = 0; i < n; ++i)
-	ret[i] = context->etypes_des[i];
     *len = n;
     *val = ret;
     return 0;
@@ -4547,3 +4476,86 @@ krb5_crypto_prf(krb5_context context,
 
     return (*et->prf)(context, crypto, input, output);
 }
+
+#ifndef HEIMDAL_SMALLER
+
+/*
+ * First take the configured list of etypes for `keytype' if available,
+ * else, do `krb5_keytype_to_enctypes'.
+ */
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_keytype_to_enctypes_default (krb5_context context,
+				  krb5_keytype keytype,
+				  unsigned *len,
+				  krb5_enctype **val)
+    __attribute__((deprecated))
+{
+    unsigned int i, n;
+    krb5_enctype *ret;
+
+    if (keytype != KEYTYPE_DES || context->etypes_des == NULL)
+	return krb5_keytype_to_enctypes (context, keytype, len, val);
+
+    for (n = 0; context->etypes_des[n]; ++n)
+	;
+    ret = malloc (n * sizeof(*ret));
+    if (ret == NULL && n != 0) {
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	return ENOMEM;
+    }
+    for (i = 0; i < n; ++i)
+	ret[i] = context->etypes_des[i];
+    *len = n;
+    *val = ret;
+    return 0;
+}
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_keytype_to_string(krb5_context context,
+		       krb5_keytype keytype,
+		       char **string)
+    __attribute__((deprecated))
+{
+    struct key_type *kt = _find_keytype(keytype);
+    if(kt == NULL) {
+	krb5_set_error_message(context, KRB5_PROG_KEYTYPE_NOSUPP,
+			       "key type %d not supported", keytype);
+	return KRB5_PROG_KEYTYPE_NOSUPP;
+    }
+    *string = strdup(kt->name);
+    if(*string == NULL) {
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	return ENOMEM;
+    }
+    return 0;
+}
+
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_string_to_keytype(krb5_context context,
+		       const char *string,
+		       krb5_keytype *keytype)
+    __attribute__((deprecated))
+{
+    char *end;
+    int i;
+
+    for(i = 0; i < num_keytypes; i++)
+	if(strcasecmp(keytypes[i]->name, string) == 0){
+	    *keytype = keytypes[i]->type;
+	    return 0;
+	}
+
+    /* check if the enctype is a number */
+    *keytype = strtol(string, &end, 0);
+    if(*end == '\0' && *keytype != 0) {
+	if (krb5_enctype_valid(context, *keytype) == 0)
+	    return 0;
+    }
+
+    krb5_set_error_message(context, KRB5_PROG_KEYTYPE_NOSUPP,
+			   "key type %s not supported", string);
+    return KRB5_PROG_KEYTYPE_NOSUPP;
+}
+#endif
