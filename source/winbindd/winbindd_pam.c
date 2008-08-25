@@ -381,18 +381,6 @@ struct winbindd_domain *find_auth_domain(struct winbindd_cli_state *state,
 	return find_our_domain();
 }
 
-static void set_auth_errors(struct winbindd_response *resp, NTSTATUS result)
-{
-	resp->data.auth.nt_status = NT_STATUS_V(result);
-	fstrcpy(resp->data.auth.nt_status_string, nt_errstr(result));
-
-	/* we might have given a more useful error above */
-	if (*resp->data.auth.error_string == '\0')
-		fstrcpy(resp->data.auth.error_string,
-			get_friendly_nt_error_msg(result));
-	resp->data.auth.pam_error = nt_status_to_pam(result);
-}
-
 static void fill_in_password_policy(struct winbindd_response *r,
 				    const struct samr_DomInfo1 *p)
 {
