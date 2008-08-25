@@ -188,7 +188,7 @@ case "$1" in
   stop)
   	stop
 	;;
-  restart)
+  restart|reload)
   	restart
 	;;
   status)
