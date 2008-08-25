@@ -271,8 +271,7 @@ OM_uint32 _gss_ntlm_get_mic
     ntlm_ctx ctx = (ntlm_ctx)context_handle;
     OM_uint32 junk;
 
-    if (minor_status)
-	*minor_status = 0;
+    *minor_status = 0;
     if (message_token) {
 	message_token->length = 0;
 	message_token->value = NULL;
@@ -469,8 +468,7 @@ OM_uint32 _gss_ntlm_wrap
     ntlm_ctx ctx = (ntlm_ctx)context_handle;
     OM_uint32 ret;
 
-    if (minor_status)
-	*minor_status = 0;
+    *minor_status = 0;
     if (conf_state)
 	*conf_state = 0;
     if (output_message_buffer == GSS_C_NO_BUFFER)
@@ -539,8 +537,7 @@ OM_uint32 _gss_ntlm_unwrap
     ntlm_ctx ctx = (ntlm_ctx)context_handle;
     OM_uint32 ret;
 
-    if (minor_status)
-	*minor_status = 0;
+    *minor_status = 0;
     if (output_message_buffer) {
 	output_message_buffer->value = NULL;
 	output_message_buffer->length = 0;
