@@ -4073,6 +4073,10 @@ krb5_string_to_key_derived(krb5_context context,
 		     &kd,
 		     "kerberos", /* XXX well known constant */
 		     strlen("kerberos"));
+    if (ret) {
+	free_key_data(context, &kd, et);
+	return ret;
+    }
     ret = krb5_copy_keyblock_contents(context, kd.key, key);
     free_key_data(context, &kd, et);
     return ret;
