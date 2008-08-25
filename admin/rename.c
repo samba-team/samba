@@ -36,7 +36,7 @@
 RCSID("$Id$");
 
 int
-kt_rename(void *opt, int argc, char **argv)
+kt_rename(struct rename_options *opt, int argc, char **argv)
 {
     krb5_error_code ret = 0;
     krb5_keytab_entry entry;
@@ -89,13 +89,15 @@ kt_rename(void *opt, int argc, char **argv)
 		krb5_warn(context, ret, "adding entry");
 		break;
 	    }
-	    entry.principal = from_princ;
-	    ret = krb5_kt_remove_entry(context, keytab, &entry);
-	    if(ret) {
-		entry.principal = NULL;
-		krb5_kt_free_entry(context, &entry);
-		krb5_warn(context, ret, "removing entry");
-		break;
+	    if (opt->delete_flag) {
+		entry.principal = from_princ;
+		ret = krb5_kt_remove_entry(context, keytab, &entry);
+		if(ret) {
+		    entry.principal = NULL;
+		    krb5_kt_free_entry(context, &entry);
+		    krb5_warn(context, ret, "removing entry");
+		    break;
+		}
 	    }
 	    entry.principal = NULL;
 	}
