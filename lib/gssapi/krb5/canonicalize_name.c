@@ -42,5 +42,19 @@ OM_uint32 _gsskrb5_canonicalize_name (
             gss_name_t * output_name
            )
 {
-    return _gsskrb5_duplicate_name (minor_status, input_name, output_name);
+    krb5_context context;
+    krb5_principal name;
+    OM_uint32 ret;
+
+    *output_name = NULL;
+
+    GSSAPI_KRB5_INIT (&context);
+
+    ret = _gsskrb5_canon_name(minor_status, context, 1, input_name, &name);
+    if (ret)
+	return ret;
+
+    *output_name = (gss_name_t)name;
+
+    return GSS_S_COMPLETE;
 }

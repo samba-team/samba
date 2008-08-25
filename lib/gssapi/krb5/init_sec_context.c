@@ -335,7 +335,7 @@ init_auth
  gsskrb5_cred cred,
  gsskrb5_ctx ctx,
  krb5_context context,
- krb5_const_principal name,
+ gss_name_t name,
  const gss_OID mech_type,
  OM_uint32 req_flags,
  OM_uint32 time_req,
@@ -351,6 +351,7 @@ init_auth
     krb5_data outbuf;
     krb5_data fwd_data;
     OM_uint32 lifetime_rec;
+    int use_dns = 1;
 
     krb5_data_zero(&outbuf);
     krb5_data_zero(&fwd_data);
@@ -378,12 +379,20 @@ init_auth
 	goto failure;
     }
 
-    kret = krb5_copy_principal (context, name, &ctx->target);
-    if (kret) {
-	*minor_status = kret;
-	ret = GSS_S_FAILURE;
-	goto failure;
+    /* canon name if needed for client + target realm */
+    kret = krb5_cc_get_config(context, ctx->ccache, NULL,
+			      "realm-config", &outbuf);
+    if (kret == 0) {
+	/* XXX 2 is no server canon */
+	if (outbuf.length < 1 || ((((unsigned char *)outbuf.data)[0]) & 2))
+	    use_dns = 0;
+	krb5_data_free(&outbuf);
     }
+
+    ret = _gsskrb5_canon_name(minor_status, context, use_dns, 
+			      name, &ctx->target);
+    if (ret)
+	goto failure;
 
     ret = _gss_DES3_get_mic_compat(minor_status, ctx, context);
     if (ret)
@@ -819,7 +828,6 @@ OM_uint32 _gsskrb5_init_sec_context
 {
     krb5_context context;
     gsskrb5_cred cred = (gsskrb5_cred)cred_handle;
-    krb5_const_principal name = (krb5_const_principal)target_name;
     gsskrb5_ctx ctx;
     OM_uint32 ret;
 
@@ -882,7 +890,7 @@ OM_uint32 _gsskrb5_init_sec_context
 			cred,
 			ctx,
 			context,
-			name,
+			target_name,
 			mech_type,
 			req_flags,
 			time_req,
