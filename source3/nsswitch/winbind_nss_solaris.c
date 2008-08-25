@@ -359,7 +359,9 @@ parse_response(int af, nss_XbyY_args_t* argp, struct winbindd_response *response
 	int addrcount = 0;
 	int len = 0;
 	struct in_addr *addrp;
+#if defined(AF_INET6)
 	struct in6_addr *addrp6;
+#endif
 	int i;
 
 	/* response is tab separated list of ip addresses with hostname
@@ -391,7 +393,9 @@ parse_response(int af, nss_XbyY_args_t* argp, struct winbindd_response *response
 		addrp -= addrcount;
 		he->h_addr_list = (char **)ROUND_DOWN(addrp, sizeof (char*));
 		he->h_addr_list -= addrcount+1;
-	} else {
+	}
+#if defined(AF_INET6)
+        else {
 		he->h_length = sizeof(struct in6_addr);
 		addrp6 = (struct in6_addr *)ROUND_DOWN(buffer + buflen,
 						sizeof(struct in6_addr));
@@ -399,6 +403,7 @@ parse_response(int af, nss_XbyY_args_t* argp, struct winbindd_response *response
 		he->h_addr_list = (char **)ROUND_DOWN(addrp6, sizeof (char*));
 		he->h_addr_list -= addrcount+1;
 	}
+#endif
 
 	/* buffer too small?! */
 	if((char *)he->h_addr_list < buffer ) {
@@ -418,7 +423,9 @@ parse_response(int af, nss_XbyY_args_t* argp, struct winbindd_response *response
 		    argp->erange = 1;
 		    return NSS_STR_PARSE_ERANGE;
 		  }
-		} else {
+		}
+#if defined(AF_INET6)
+                else {
 		  he->h_addr_list[i] = (char *)&addrp6[i];
 		  if (strchr(data, ':') != 0) {
 			if (inet_pton(AF_INET6, data, &addrp6[i]) != 1) {
@@ -434,6 +441,7 @@ parse_response(int af, nss_XbyY_args_t* argp, struct winbindd_response *response
 			IN6_INADDR_TO_V4MAPPED(&in4, &addrp6[i]);
 		  }
 		}
+#endif
 		data = p+1;
 	}
 
@@ -481,6 +489,7 @@ _nss_winbind_ipnodes_getbyname(nss_backend_t* be, void *args)
 	   AF_INET or for AF_INET6 and AI_ALL|AI_V4MAPPED we have to map
 	   IPv4 to IPv6.
 	 */
+#if defined(AF_INET6)
 #ifdef HAVE_NSS_XBYY_KEY_IPNODE
 	af = argp->key.ipnode.af_family;
 	if(af == AF_INET6 && argp->key.ipnode.flags == 0) {
@@ -490,6 +499,7 @@ _nss_winbind_ipnodes_getbyname(nss_backend_t* be, void *args)
 #else
 	/* I'm not that sure if this is correct, but... */
 	af = AF_INET6;
+#endif
 #endif
 
 	strncpy(request.data.winsreq, argp->key.name, sizeof(request.data.winsreq) - 1);
@@ -539,6 +549,7 @@ _nss_winbind_hosts_getbyaddr(nss_backend_t* be, void *args)
 	ZERO_STRUCT(response);
 	ZERO_STRUCT(request);
 
+#if defined(AF_INET6)
 	/* winbindd currently does not resolve IPv6 */
 	if(argp->key.hostaddr.type == AF_INET6) {
 		argp->h_errno = NO_DATA;
@@ -546,7 +557,15 @@ _nss_winbind_hosts_getbyaddr(nss_backend_t* be, void *args)
 	}
 
 	p = inet_ntop(argp->key.hostaddr.type, argp->key.hostaddr.addr,
-			request.data.winsreq, INET6_ADDRSTRLEN);
+			request.data.winsreq, sizeof request.data.winsreq);
+#else
+        snprintf(request.data.winsreq, sizeof request.data.winsreq,
+                "%u.%u.%u.%u", 
+                ((unsigned char *)argp->key.hostaddr.addr)[0],
+                ((unsigned char *)argp->key.hostaddr.addr)[1],
+                ((unsigned char *)argp->key.hostaddr.addr)[2],
+                ((unsigned char *)argp->key.hostaddr.addr)[3]);
+#endif
 
 	ret = winbindd_request_response(WINBINDD_WINS_BYIP, &request, &response);
 
