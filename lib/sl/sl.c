@@ -315,7 +315,6 @@ sl_command_loop(SL_cmd *cmds, const char *prompt, void **data)
     int argc;
     char **argv;
 	
-    ret = 0;
     buf = sl_readline(prompt);
     if(buf == NULL)
 	return -2;
