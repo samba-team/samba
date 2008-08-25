@@ -64,7 +64,7 @@ base64_encode(const void *data, int size, char **str)
     if (p == NULL)
 	return -1;
     q = (const unsigned char *) data;
-    i = 0;
+
     for (i = 0; i < size;) {
 	c = q[i++];
 	c *= 256;
