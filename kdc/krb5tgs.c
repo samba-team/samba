@@ -662,6 +662,7 @@ tgs_make_reply(krb5_context context,
 	       krb5_kvno kvno,
 	       AuthorizationData *auth_data,
 	       hdb_entry_ex *server,
+	       krb5_principal server_principal,
 	       const char *server_name,
 	       hdb_entry_ex *client,
 	       krb5_principal client_principal,
@@ -730,9 +731,9 @@ tgs_make_reply(krb5_context context,
     if(ret)
 	goto out;
 
-    copy_Realm(krb5_princ_realm(context, server->entry.principal),
+    copy_Realm(krb5_princ_realm(context, server_principal),
 	       &rep.ticket.realm);
-    _krb5_principal2principalname(&rep.ticket.sname, server->entry.principal);
+    _krb5_principal2principalname(&rep.ticket.sname, server_principal);
     copy_Realm(&tgt_name->realm, &rep.crealm);
 /*
     if (f.request_anonymous)
@@ -1474,7 +1475,8 @@ tgs_build_reply(krb5_context context,
      */
 
 server_lookup:
-    ret = _kdc_db_fetch(context, config, sp, HDB_F_GET_SERVER, NULL, &server);
+    ret = _kdc_db_fetch(context, config, sp, HDB_F_GET_SERVER | HDB_F_CANON,
+			NULL, &server);
 
     if(ret){
 	const char *new_rlm;
@@ -1533,7 +1535,8 @@ server_lookup:
 	goto out;
     }
 
-    ret = _kdc_db_fetch(context, config, cp, HDB_F_GET_CLIENT, NULL, &client);
+    ret = _kdc_db_fetch(context, config, cp, HDB_F_GET_CLIENT | HDB_F_CANON,
+			NULL, &client);
     if(ret) {
 	const char *krbtgt_realm;
 
@@ -1939,6 +1942,7 @@ server_lookup:
 			 kvno,
 			 *auth_data,
 			 server,
+			 sp,
 			 spn,
 			 client,
 			 cp,
