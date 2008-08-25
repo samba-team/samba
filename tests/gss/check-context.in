@@ -54,6 +54,7 @@ klist="${TESTS_ENVIRONMENT} ../../kuser/klist -c $cache"
 kgetcred="${TESTS_ENVIRONMENT} ../../kuser/kgetcred -c $cache"
 kadmin="${TESTS_ENVIRONMENT} ../../kadmin/kadmin -l -r $R"
 kdc="${TESTS_ENVIRONMENT} ../../kdc/kdc --addresses=localhost -P $port"
+ktutil="${TESTS_ENVIRONMENT} ../../admin/ktutil"
 
 context="${TESTS_ENVIRONMENT} ../../lib/gssapi/test_context"
 
@@ -89,7 +90,10 @@ ${kadmin} ext -k ${keytab} host/ok-delegate.test.h5l.se@${R} || exit 1
 
 
 ${kadmin} add -p p1 --use-defaults host/short@${R} || exit 1
+${kadmin} mod --alias=host/long.test.h5l.se@${R} host/short@${R} || exit 1
+# XXX ext should ext aliases too
 ${kadmin} ext -k ${keytab} host/short@${R} || exit 1
+${ktutil} -k ${keytab} rename --no-delete host/short@${R} host/long.test.h5l.se@${R}
 
 ${kadmin} add -p kaka --use-defaults digest/${R}@${R} || exit 1
 
@@ -349,12 +353,27 @@ ${kinit} \
     --password-file=${objdir}/foopassword \
     --use-referrals user1@${R} || exitcode=1
 
-# XXX this test really need to use somethat that resolve to something
-${context} --mech-type=krb5 host@short || \
+# XXX these tests really need to use somethat that resolve to something
+${context} \
+    --mech-type=krb5 \
+    host@short || \
 	{ exitcode=1 ; echo "test failed"; }
 
+${context} \
+    --mech-type=krb5 \
+    --name-type=krb5-principal-name host/short || \
+	{ exitcode=1 ; echo "test failed"; }
 
+${context} \
+    --mech-type=krb5 \
+    host@long.test.h5l.se || \
+	{ exitcode=1 ; echo "test failed"; }
 
+${context} \
+    --mech-type=krb5 \
+    --name-type=krb5-principal-name \
+    host/long.test.h5l.se || \
+	{ exitcode=1 ; echo "test failed"; }
 
 trap "" EXIT
 
