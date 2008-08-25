@@ -22,8 +22,10 @@
 static void cli_state_handler(struct event_context *event_ctx,
 			      struct fd_event *event, uint16 flags, void *p);
 
-/*
+/**
  * Fetch an error out of a NBT packet
+ * @param[in] buf	The SMB packet
+ * @retval		The error, converted to NTSTATUS
  */
 
 NTSTATUS cli_pull_error(char *buf)
@@ -43,8 +45,10 @@ NTSTATUS cli_pull_error(char *buf)
 	return NT_STATUS_DOS(CVAL(buf, smb_rcls), SVAL(buf,smb_err));
 }
 
-/*
+/**
  * Compatibility helper for the sync APIs: Fake NTSTATUS in cli->inbuf
+ * @param[in] cli	The client connection that just received an error
+ * @param[in] status	The error to set on "cli"
  */
 
 void cli_set_error(struct cli_state *cli, NTSTATUS status)
@@ -64,8 +68,10 @@ void cli_set_error(struct cli_state *cli, NTSTATUS status)
 	return;
 }
 
-/*
+/**
  * Allocate a new mid
+ * @param[in] cli	The client connection
+ * @retval		The new, unused mid
  */
 
 static uint16_t cli_new_mid(struct cli_state *cli)
@@ -91,6 +97,13 @@ static uint16_t cli_new_mid(struct cli_state *cli)
 	}
 }
 
+/**
+ * Print an async req that happens to be a cli_request
+ * @param[in] mem_ctx	The TALLOC_CTX to put the result on
+ * @param[in] req	The request to print
+ * @retval		The string representation of "req"
+ */
+
 static char *cli_request_print(TALLOC_CTX *mem_ctx, struct async_req *req)
 {
 	char *result = async_req_print(mem_ctx, req);
@@ -103,6 +116,12 @@ static char *cli_request_print(TALLOC_CTX *mem_ctx, struct async_req *req)
 	return talloc_asprintf_append_buffer(
 		result, "mid=%d\n", cli_req->mid);
 }
+
+/**
+ * Destroy a cli_request
+ * @param[in] req	The cli_request to kill
+ * @retval Can't fail
+ */
 
 static int cli_request_destructor(struct cli_request *req)
 {
@@ -284,8 +303,10 @@ NTSTATUS cli_pull_reply(struct async_req *req,
 	return NT_STATUS_OK;
 }
 
-/*
+/**
  * Convenience function to get the SMB part out of an async_req
+ * @param[in] req	The request to look at
+ * @retval The private_data as struct cli_request
  */
 
 struct cli_request *cli_request_get(struct async_req *req)
@@ -296,8 +317,9 @@ struct cli_request *cli_request_get(struct async_req *req)
 	return talloc_get_type_abort(req->private_data, struct cli_request);
 }
 
-/*
+/**
  * A PDU has arrived on cli->evt_inbuf
+ * @param[in] cli	The cli_state that received something
  */
 
 static void handle_incoming_pdu(struct cli_state *cli)
@@ -434,8 +456,12 @@ static void handle_incoming_pdu(struct cli_state *cli)
 	return;
 }
 
-/*
+/**
  * fd event callback. This is the basic connection to the socket
+ * @param[in] event_ctx	The event context that called us
+ * @param[in] event	The event that fired
+ * @param[in] flags	EVENT_FD_READ | EVENT_FD_WRITE
+ * @param[in] p		private_data, in this case the cli_state
  */
 
 static void cli_state_handler(struct event_context *event_ctx,
