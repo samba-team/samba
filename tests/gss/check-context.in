@@ -87,6 +87,10 @@ ${kadmin} add -p p1 --use-defaults host/ok-delegate.test.h5l.se@${R} || exit 1
 ${kadmin} mod --attributes=+ok-as-delegate host/ok-delegate.test.h5l.se@${R} || exit 1
 ${kadmin} ext -k ${keytab} host/ok-delegate.test.h5l.se@${R} || exit 1
 
+
+${kadmin} add -p p1 --use-defaults host/short@${R} || exit 1
+${kadmin} ext -k ${keytab} host/short@${R} || exit 1
+
 ${kadmin} add -p kaka --use-defaults digest/${R}@${R} || exit 1
 
 ${kadmin} add -p u1 --use-defaults user1@${R} || exit 1
@@ -339,6 +343,18 @@ ${context} \
     --client-time-offset=3600 \
     --name-type=hostbased-service host@lucid.test.h5l.se || \
 	{ exitcode=1 ; echo "test failed"; }
+
+echo "Getting client initial tickets (use-referrals)"
+${kinit} \
+    --password-file=${objdir}/foopassword \
+    --use-referrals user1@${R} || exitcode=1
+
+# XXX this test really need to use somethat that resolve to something
+${context} --mech-type=krb5 host@short || \
+	{ exitcode=1 ; echo "test failed"; }
+
+
+
 
 trap "" EXIT
 
