@@ -1259,7 +1259,14 @@ krb5_sname_to_principal (krb5_context context,
 	return KRB5_SNAME_UNSUPP_NAMETYPE;
     }
     if(hostname == NULL) {
-	gethostname(localhost, sizeof(localhost));
+	ret = gethostname(localhost, sizeof(localhost) - 1);
+	if (ret != 0) {
+	    ret = errno;
+	    krb5_set_error_message(context, ret,
+				   "Failed to get local hostname");
+	    return ret;
+	}	    
+	localhost[sizeof(localhost) - 1] = '\0';
 	hostname = localhost;
     }
     if(sname == NULL)
