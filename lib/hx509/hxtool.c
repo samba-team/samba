@@ -799,12 +799,17 @@ pcert_verify(struct verify_options *opt, int argc, char **argv)
 	hx509_context_set_missing_revoke(context, 1);
 
     ret = hx509_verify_init_ctx(context, &ctx);
+    if (ret)
+	hx509_err(context, 1, ret, "hx509_verify_init_ctx");
     ret = hx509_certs_init(context, "MEMORY:anchors", 0, NULL, &anchors);
-    if (ret) hx509_err(context, 1, ret, "hx509_certs_init: MEMORY");
+    if (ret)
+	hx509_err(context, 1, ret, "hx509_certs_init: MEMORY");
     ret = hx509_certs_init(context, "MEMORY:chain", 0, NULL, &chain);
-    if (ret) hx509_err(context, 1, ret, "hx509_certs_init: MEMORY");
+    if (ret)
+	hx509_err(context, 1, ret, "hx509_certs_init: MEMORY");
     ret = hx509_certs_init(context, "MEMORY:certs", 0, NULL, &certs);
-    if (ret) hx509_err(context, 1, ret, "hx509_certs_init: MEMORY");
+    if (ret)
+	hx509_err(context, 1, ret, "hx509_certs_init: MEMORY");
 
     if (opt->allow_proxy_certificate_flag)
 	hx509_verify_set_proxy_certificate(ctx, 1);
