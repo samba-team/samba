@@ -374,6 +374,13 @@ static void defval_int(const char *name, struct assignment *defval)
     else
 	cprint(1, "opt.%s = 0;\n", name);
 }
+static void defval_neg_flag(const char *name, struct assignment *defval)
+{
+    if(defval != NULL)
+	cprint(1, "opt.%s = %s;\n", name, defval->u.value);
+    else
+	cprint(1, "opt.%s = 1;\n", name);
+}
 static void defval_string(const char *name, struct assignment *defval) 
 {
     if(defval != NULL)
@@ -426,7 +433,7 @@ struct type_handler {
 	{ "-flag",
 	  "int",
 	  "arg_negative_flag",
-	  defval_int,
+	  defval_neg_flag,
 	  NULL
 	},
 	{ NULL }
