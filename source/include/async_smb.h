@@ -17,7 +17,68 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifndef __ASYNC_SMB_H__
+#define __ASYNC_SMB_H__
+
 #include "includes.h"
+
+struct cli_request {
+	/**
+	 * "prev" and "next" form the doubly linked list in
+	 * cli_state->outstanding_requests
+	 */
+	struct cli_request *prev, *next;
+
+	/**
+	 * "our" struct async_req;
+	 */
+	struct async_req *async;
+
+	/**
+	 * The client connection for this request
+	 */
+	struct cli_state *cli;
+
+	/**
+	 * The enc_state to decrypt the reply
+	 */
+	struct smb_trans_enc_state *enc_state;
+
+	/**
+	 * The mid we used for this request. Mainly used to demultiplex on
+	 * receiving replies.
+	 */
+	uint16_t mid;
+
+	/**
+	 * The bytes we have to ship to the server
+	 */
+	char *outbuf;
+
+	/**
+	 * How much from "outbuf" did we already send
+	 */
+	size_t sent;
+
+	/**
+	 * The reply comes in here. Its intended size is implicit by
+	 * smb_len(), its current size can be read via talloc_get_size()
+	 */
+	char *inbuf;
+
+	/**
+	 * Specific requests might add stuff here. Maybe convert this to a
+	 * private_pointer at some point.
+	 */
+	union {
+		struct {
+			off_t ofs;
+			size_t size;
+			ssize_t received;
+			uint8_t *rcvbuf;
+		} read;
+	} data;
+};
 
 /*
  * Ship a new smb request to the server
@@ -52,3 +113,5 @@ NTSTATUS cli_pull_error(char *buf);
  */
 
 void cli_set_error(struct cli_state *cli, NTSTATUS status);
+
+#endif

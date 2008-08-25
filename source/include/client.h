@@ -216,31 +216,10 @@ struct cli_state {
 	struct fd_event *fd_event;
 	char *evt_inbuf;
 
+	/**
+	 * A linked list of requests that are waiting for a reply
+	 */
 	struct cli_request *outstanding_requests;
-};
-
-struct cli_request {
-	struct cli_request *prev, *next;
-	struct async_req *async;
-
-	struct cli_state *cli;
-
-	struct smb_trans_enc_state *enc_state;
-
-	uint16_t mid;
-
-	char *outbuf;
-	size_t sent;
-	char *inbuf;
-
-	union {
-		struct {
-			off_t ofs;
-			size_t size;
-			ssize_t received;
-			uint8_t *rcvbuf;
-		} read;
-	} data;
 };
 
 typedef struct file_info {
