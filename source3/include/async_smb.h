@@ -22,6 +22,13 @@
 
 #include "includes.h"
 
+/**
+ * struct cli_request is the state holder for an async client request we sent
+ * to the server. It can consist of more than one struct async_req that we
+ * have to server if the application did a cli_chain_cork() and
+ * cli_chain_uncork()
+ */
+
 struct cli_request {
 	/**
 	 * "prev" and "next" form the doubly linked list in
@@ -30,9 +37,15 @@ struct cli_request {
 	struct cli_request *prev, *next;
 
 	/**
-	 * "our" struct async_req;
+	 * num_async: How many chained requests do we serve?
 	 */
-	struct async_req *async;
+	int num_async;
+
+	/**
+	 * async: This is the list of chained requests that were queued up by
+	 * cli_request_chain before we sent out this request
+	 */
+	struct async_req **async;
 
 	/**
 	 * The client connection for this request
@@ -91,6 +104,10 @@ struct async_req *cli_request_send(TALLOC_CTX *mem_ctx,
 				   uint8_t additional_flags,
 				   uint8_t wct, const uint16_t *vwv,
 				   uint16_t num_bytes, const uint8_t *bytes);
+
+bool cli_chain_cork(struct cli_state *cli, struct event_context *ev,
+		    size_t size_hint);
+void cli_chain_uncork(struct cli_state *cli);
 
 /*
  * Convenience function to get the SMB part out of an async_req

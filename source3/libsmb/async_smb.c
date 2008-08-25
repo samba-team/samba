@@ -135,8 +135,6 @@ static int cli_request_destructor(struct cli_request *req)
 	return 0;
 }
 
-#if 0
-
 /**
  * Is the SMB command able to hold an AND_X successor
  * @param[in] cmd	The SMB command in question
@@ -667,176 +665,6 @@ NTSTATUS cli_pull_reply(struct async_req *req,
 	return NT_STATUS_OK;
 }
 
-#endif
-
-/*
- * Create a fresh async smb request
- */
-
-static struct async_req *cli_request_new(TALLOC_CTX *mem_ctx,
-					 struct event_context *ev,
-					 struct cli_state *cli,
-					 uint8_t num_words, size_t num_bytes,
-					 struct cli_request **preq)
-{
-	struct async_req *result;
-	struct cli_request *cli_req;
-	size_t bufsize = smb_size + num_words * 2 + num_bytes;
-
-	result = async_req_new(mem_ctx, ev);
-	if (result == NULL) {
-		return NULL;
-	}
-
-	cli_req = (struct cli_request *)talloc_size(
-		result, sizeof(*cli_req) + bufsize);
-	if (cli_req == NULL) {
-		TALLOC_FREE(result);
-		return NULL;
-	}
-	talloc_set_name_const(cli_req, "struct cli_request");
-	result->private_data = cli_req;
-	result->print = cli_request_print;
-
-	cli_req->async = result;
-	cli_req->cli = cli;
-	cli_req->outbuf = ((char *)cli_req + sizeof(*cli_req));
-	cli_req->sent = 0;
-	cli_req->mid = cli_new_mid(cli);
-	cli_req->inbuf = NULL;
-	cli_req->enc_state = NULL;
-
-	SCVAL(cli_req->outbuf, smb_wct, num_words);
-	SSVAL(cli_req->outbuf, smb_vwv + num_words * 2, num_bytes);
-
-	DLIST_ADD_END(cli->outstanding_requests, cli_req,
-		      struct cli_request *);
-	talloc_set_destructor(cli_req, cli_request_destructor);
-
-	DEBUG(10, ("cli_request_new: mid=%d\n", cli_req->mid));
-
-	*preq = cli_req;
-	return result;
-}
-
-/*
- * Ship a new smb request to the server
- */
-struct async_req *cli_request_send(TALLOC_CTX *mem_ctx,
-				   struct event_context *ev,
-				   struct cli_state *cli,
-				   uint8_t smb_command,
-				   uint8_t additional_flags,
-				   uint8_t wct, const uint16_t *vwv,
-				   uint16_t num_bytes, const uint8_t *bytes)
-{
-	struct async_req *result;
-	struct cli_request *req;
-
-	if (cli->fd_event == NULL) {
-		SMB_ASSERT(cli->outstanding_requests == NULL);
-		cli->fd_event = event_add_fd(ev, cli, cli->fd,
-					     EVENT_FD_READ,
-					     cli_state_handler, cli);
-		if (cli->fd_event == NULL) {
-			return NULL;
-		}
-	}
-
-	result = cli_request_new(mem_ctx, ev, cli, wct, num_bytes, &req);
-	if (result == NULL) {
-		DEBUG(0, ("cli_request_new failed\n"));
-		TALLOC_FREE(cli->fd_event);
-		return NULL;
-	}
-
-	cli_set_message(req->outbuf, wct, num_bytes, false);
-	SCVAL(req->outbuf, smb_com, smb_command);
-	SSVAL(req->outbuf, smb_tid, cli->cnum);
-	cli_setup_packet_buf(cli, req->outbuf);
-
-	memcpy(req->outbuf + smb_vwv0, vwv, sizeof(uint16_t) * wct);
-	memcpy(smb_buf(req->outbuf), bytes, num_bytes);
-	SSVAL(req->outbuf, smb_mid, req->mid);
-	SCVAL(cli->outbuf, smb_flg,
-	      CVAL(cli->outbuf,smb_flg) | additional_flags);
-
-	cli_calculate_sign_mac(cli, req->outbuf);
-
-	if (cli_encryption_on(cli)) {
-		NTSTATUS status;
-		char *enc_buf;
-
-		status = cli_encrypt_message(cli, req->outbuf, &enc_buf);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0, ("Error in encrypting client message. "
-				  "Error %s\n",	nt_errstr(status)));
-			TALLOC_FREE(req);
-			return NULL;
-		}
-		req->outbuf = enc_buf;
-		req->enc_state = cli->trans_enc_state;
-	}
-
-	event_fd_set_writeable(cli->fd_event);
-
-	return result;
-}
-
-/**
- * @brief Pull reply data out of a request
- * @param[in] req		The request that we just received a reply for
- * @param[out] pwct		How many words did the server send?
- * @param[out] pvwv		The words themselves
- * @param[out] pnum_bytes	How many bytes did the server send?
- * @param[out] pbytes		The bytes themselves
- * @retval Was the reply formally correct?
- */
-
-NTSTATUS cli_pull_reply(struct async_req *req,
-			uint8_t *pwct, uint16_t **pvwv,
-			uint16_t *pnum_bytes, uint8_t **pbytes)
-{
-	struct cli_request *cli_req = cli_request_get(req);
-	uint8_t wct, cmd;
-	uint16_t num_bytes;
-	size_t wct_ofs, bytes_offset;
-	NTSTATUS status;
-
-	status = cli_pull_error(cli_req->inbuf);
-
-	if (NT_STATUS_IS_ERR(status)) {
-		cli_set_error(cli_req->cli, status);
-		return status;
-	}
-
-	cmd = CVAL(cli_req->inbuf, smb_com);
-	wct_ofs = smb_wct;
-
-	wct = CVAL(cli_req->inbuf, wct_ofs);
-
-	bytes_offset = wct_ofs + 1 + wct * sizeof(uint16_t);
-	num_bytes = SVAL(cli_req->inbuf, bytes_offset);
-
-	/*
-	 * wct_ofs is a 16-bit value plus 4, wct is a 8-bit value, num_bytes
-	 * is a 16-bit value. So bytes_offset being size_t should be far from
-	 * wrapping.
-	 */
-
-	if ((bytes_offset + 2 > talloc_get_size(cli_req->inbuf))
-	    || (bytes_offset > 0xffff)) {
-		return NT_STATUS_INVALID_NETWORK_RESPONSE;
-	}
-
-	*pwct = wct;
-	*pvwv = (uint16_t *)(cli_req->inbuf + wct_ofs + 1);
-	*pnum_bytes = num_bytes;
-	*pbytes = (uint8_t *)cli_req->inbuf + bytes_offset + 2;
-
-	return NT_STATUS_OK;
-}
-
 /**
  * Convenience function to get the SMB part out of an async_req
  * @param[in] req	The request to look at
@@ -862,7 +690,10 @@ static void handle_incoming_pdu(struct cli_state *cli)
 	uint16_t mid;
 	size_t raw_pdu_len, buf_len, pdu_len, rest_len;
 	char *pdu;
+	int i;
 	NTSTATUS status;
+
+	int num_async;
 
 	/*
 	 * The encrypted PDU len might differ from the unencrypted one
@@ -976,7 +807,24 @@ static void handle_incoming_pdu(struct cli_state *cli)
 
 	req->inbuf = talloc_move(req, &pdu);
 
-	async_req_done(req->async);
+	/*
+	 * Freeing the last async_req will free the req (see
+	 * cli_async_req_destructor). So make a copy of req->num_async, we
+	 * can't reference it in the last round.
+	 */
+
+	num_async = req->num_async;
+
+	for (i=0; i<num_async; i++) {
+		/**
+		 * A request might have been talloc_free()'ed before we arrive
+		 * here. It will have removed itself from req->async via its
+		 * destructor cli_async_req_destructor().
+		 */
+		if (req->async[i] != NULL) {
+			async_req_done(req->async[i]);
+		}
+	}
 	return;
 
  invalidate_requests:
@@ -985,7 +833,7 @@ static void handle_incoming_pdu(struct cli_state *cli)
 		   nt_errstr(status)));
 
 	for (req = cli->outstanding_requests; req; req = req->next) {
-		async_req_error(req->async, status);
+		async_req_error(req->async[0], status);
 	}
 	return;
 }
@@ -1101,8 +949,11 @@ static void cli_state_handler(struct event_context *event_ctx,
 
  sock_error:
 	for (req = cli->outstanding_requests; req; req = req->next) {
-		req->async->state = ASYNC_REQ_ERROR;
-		req->async->status = map_nt_error_from_unix(errno);
+		int i;
+		for (i=0; i<req->num_async; i++) {
+			req->async[i]->state = ASYNC_REQ_ERROR;
+			req->async[i]->status = map_nt_error_from_unix(errno);
+		}
 	}
 	TALLOC_FREE(cli->fd_event);
 	close(cli->fd);
