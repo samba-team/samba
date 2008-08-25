@@ -33,7 +33,7 @@ Configure changes
 The configure option "--with-libdir" has been removed. The library
 directory can still be specified by using the existing "--libdir" option.
 A new option "--with-modulesdir" has been added to allow the specification
-of a separate driectory for the shared modules.
+of a separate directory for the shared modules.
 
 
 Winbind idmap backend changes
