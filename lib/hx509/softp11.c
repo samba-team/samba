@@ -686,7 +686,6 @@ static CK_RV
 read_conf_file(const char *fn, CK_USER_TYPE userType, const char *pin)
 {
     char buf[1024], *type, *s, *p;
-    int anchor;
     FILE *f;
     CK_RV ret = CKR_OK;
     CK_RV failed = CKR_OK;
@@ -700,8 +699,6 @@ read_conf_file(const char *fn, CK_USER_TYPE userType, const char *pin)
 
     while(fgets(buf, sizeof(buf), f) != NULL) {
 	buf[strcspn(buf, "\n")] = '\0';
-
-	anchor = 0;
 
 	st_logf("line: %s\n", buf);
 
