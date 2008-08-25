@@ -1515,16 +1515,21 @@ hx509_crl_sign(hx509_context context,
 					    &c.signatureAlgorithm,
 					    &c.signatureValue);
     free(os->data);
+    if (ret) {
+	hx509_set_error_string(context, 0, ret, "Failed to sign CRL");
+	goto out;
+    }
 
     ASN1_MALLOC_ENCODE(CRLCertificateList, os->data, os->length,
 		       &c, &size, ret);
-    free_CRLCertificateList(&c);
     if (ret) {
 	hx509_set_error_string(context, 0, ret, "failed to encode CRL");
 	goto out;
     }
     if (size != os->length)
 	_hx509_abort("internal ASN.1 encoder error");
+
+    free_CRLCertificateList(&c);
 
     return 0;
 
