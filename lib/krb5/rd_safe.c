@@ -93,15 +93,19 @@ krb5_rd_safe(krb5_context context,
     KRB_SAFE safe;
     size_t len;
 
-    if (outbuf)
-	krb5_data_zero(outbuf);
+    krb5_data_zero(outbuf);
 
     if ((auth_context->flags & 
-	 (KRB5_AUTH_CONTEXT_RET_TIME | KRB5_AUTH_CONTEXT_RET_SEQUENCE)) &&
-	outdata == NULL) {
-	krb5_set_error_message(context, KRB5_RC_REQUIRED,
-			      "rd_safe: need outdata to return data");
-	return KRB5_RC_REQUIRED; /* XXX better error, MIT returns this */
+	 (KRB5_AUTH_CONTEXT_RET_TIME | KRB5_AUTH_CONTEXT_RET_SEQUENCE)))
+    {
+	if (outdata == NULL) {
+	    krb5_set_error_message(context, KRB5_RC_REQUIRED,
+				   "rd_safe: need outdata to return data");
+	    return KRB5_RC_REQUIRED; /* XXX better error, MIT returns this */
+	}
+	/* if these fields are not present in the safe-part, silently
+           return zero */
+	memset(outdata, 0, sizeof(*outdata));
     }
 
     ret = decode_KRB_SAFE (inbuf->data, inbuf->length, &safe, &len);
@@ -197,9 +201,7 @@ krb5_rd_safe(krb5_context context,
 
     if ((auth_context->flags & 
 	 (KRB5_AUTH_CONTEXT_RET_TIME | KRB5_AUTH_CONTEXT_RET_SEQUENCE))) {
-	/* if these fields are not present in the safe-part, silently
-           return zero */
-	memset(outdata, 0, sizeof(*outdata));
+
 	if(safe.safe_body.timestamp)
 	    outdata->timestamp = *safe.safe_body.timestamp;
 	if(safe.safe_body.usec)
