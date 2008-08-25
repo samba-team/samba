@@ -1,4 +1,72 @@
                    ===============================
+                   Release Notes for Samba 3.0.32
+                             Aug 25, 2008
+                   ===============================
+
+This is a bug fix release of the Samba 3.0 production series
+and is the version that servers should be run for all current
+Samba 3.0 bug fixes.
+
+User visible bug fixes in this release include:
+
+    o Prevent crash bug in Winbind caused by a race condition
+      when a child process becomes unresponsive.
+    o Fix interactive password prompting in the "net" command.
+    o Documentation clarifications and typographical fixes.
+
+
+######################################################################
+Changes
+#######
+
+Changes since 3.0.31
+--------------------
+
+o   Michael Adam <obnox@samba.org>
+    * Docs fix for "password server" parameter.
+    * Fix IPC connections with interactive password prompt.
+
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 5697: nmbd spins in reload_interfaces when only loopback
+      exists.
+    * Don't re-initialize a token when we already have one.
+
+
+o   Gerald (Jerry) Carter <jerry@samba.org>
+    * When returning NSS_UNAVAIL from libnss_winbind, squash errno
+      to ENOENT.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * Fix a race condition in winbind leading to a crash.
+
+
+o   Jim McDonough <jmcd@samba.org>
+    * Correct interaction between Winbind log files and the 
+      "log file" smb.conf parameter upon a reload.
+
+
+o   Karolin Seeger <kseeger@samba.org>
+    * Fix scope description of the "printcap name" parameter in 
+      smb.conf(5).
+    * Fix typos in smbclient man page.
+
+
+o   Bo Yang <boyang@novell.com>
+    * Allow %u parameters for print job username.
+
+
+o   Christoph Zauner <christoph.zauner@sernet.de>
+    * Corrections to various man pages.
+
+
+
+
+Release notes for older releases follow:
+
+      --------------------------------------------------
+                   ===============================
                    Release Notes for Samba 3.0.31
                              July 10, 2008
                    ===============================
@@ -9,7 +77,7 @@ Samba 3.0 bug fixes.
 
 User visible bug fixes in this release include:
 
-    o Correct issues with running Winbind runing on a Samba PDC.
+    o Correct issues with running Winbind running on a Samba PDC.
     o Problems with trusted Windows 2008 domains.
     o Difficulty joining an NT4 or Windows 2000 AD domain.
 
@@ -119,9 +187,6 @@ o   Bo Yang <boyang@novell.com>
 o   Chere Zhou <czhou@isilon.com>
     * Memory leak fixes.
 
-
-
-Release notes for older releases follow:
 
       --------------------------------------------------
                    ===============================
