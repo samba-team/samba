@@ -1277,7 +1277,7 @@ static bool fork_domain_child(struct winbindd_child *child)
 			child);
 	}
 
-	if (child->domain && !(child->domain->internal) &&
+	if (child->domain && child->domain->primary &&
 	    lp_server_role() == ROLE_DOMAIN_MEMBER) {
 
 		struct timeval next_change;
