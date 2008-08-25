@@ -1211,7 +1211,6 @@ scc_get_cache_next(krb5_context context,
     struct cache_iter *ctx = cursor;
     krb5_error_code ret;
     const char *name;
-    krb5_scache *s = NULL;
 
 again:
     ret = sqlite3_step(ctx->stmt);
@@ -1220,7 +1219,7 @@ again:
         return KRB5_CC_END;
     } else if (ret != SQLITE_ROW) {
 	krb5_set_error_message(context, KRB5_CC_IO, "Database failed: %s",
-			       sqlite3_errmsg(s->db));
+			       sqlite3_errmsg(ctx->db));
         return KRB5_CC_IO;
     }
 
