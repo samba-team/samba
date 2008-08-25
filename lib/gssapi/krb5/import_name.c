@@ -111,12 +111,7 @@ import_hostbased_name (OM_uint32 *minor_status,
 	*p = '\0';
 	host = p + 1;
     } else {
-	if (gethostname(local_hostname, sizeof(local_hostname)) < 0) {
-	    *minor_status = errno;
-	    free (tmp);
-	    return GSS_S_FAILURE;
-	}
-	host = local_hostname;
+	host = NULL;
     }
 
     kerr = krb5_sname_to_principal (context,
