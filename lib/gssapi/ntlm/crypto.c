@@ -272,10 +272,6 @@ OM_uint32 _gss_ntlm_get_mic
     OM_uint32 junk;
 
     *minor_status = 0;
-    if (message_token) {
-	message_token->length = 0;
-	message_token->value = NULL;
-    }
 
     message_token->value = malloc(16);
     message_token->length = 16;
@@ -538,10 +534,9 @@ OM_uint32 _gss_ntlm_unwrap
     OM_uint32 ret;
 
     *minor_status = 0;
-    if (output_message_buffer) {
-	output_message_buffer->value = NULL;
-	output_message_buffer->length = 0;
-    }
+    output_message_buffer->value = NULL;
+    output_message_buffer->length = 0;
+
     if (conf_state)
 	*conf_state = 0;
     if (qop_state)
