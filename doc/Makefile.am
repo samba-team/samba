@@ -58,6 +58,7 @@ doxygen: krb5.dxy ntlm.dxy hx509.dxy hcrypto.dxy wind.dxy
 heimdal_TEXINFOS = \
 	ack.texi \
 	apps.texi \
+	copyright.texi \
 	heimdal.texi \
 	install.texi \
 	intro.texi \
