@@ -2,6 +2,8 @@
 
 include $(top_srcdir)/Makefile.am.common
 
+AM_CPPFLAGS += $(INCLUDE_hcrypto)
+
 lib_LTLIBRARIES	= libheimntlm.la
 
 include_HEADERS = heimntlm.h heimntlm-protos.h
@@ -17,6 +19,7 @@ $(libheimntlm_la_OBJECTS): $(srcdir)/version-script.map
 
 libheimntlm_la_LIBADD = \
 	../krb5/libkrb5.la \
+	$(LIB_hcrypto) \
 	$(LIBADD_roken)
 
 $(srcdir)/heimntlm-protos.h:
