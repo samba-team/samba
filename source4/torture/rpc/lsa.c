@@ -779,6 +779,7 @@ static bool test_LookupPrivName(struct dcerpc_pipe *p,
 
 static bool test_RemovePrivilegesFromAccount(struct dcerpc_pipe *p, 
 					     TALLOC_CTX *mem_ctx, 				  
+					     struct policy_handle *handle,
 					     struct policy_handle *acct_handle,
 					     struct lsa_LUID *luid)
 {
@@ -801,7 +802,25 @@ static bool test_RemovePrivilegesFromAccount(struct dcerpc_pipe *p,
 
 	status = dcerpc_lsa_RemovePrivilegesFromAccount(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("RemovePrivilegesFromAccount failed - %s\n", nt_errstr(status));
+		
+		struct lsa_LookupPrivName r_name;
+		
+		r_name.in.handle = handle;
+		r_name.in.luid = luid;
+		
+		status = dcerpc_lsa_LookupPrivName(p, mem_ctx, &r_name);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("\nLookupPrivName failed - %s\n", nt_errstr(status));
+			return false;
+		}
+		/* Windows 2008 does not allow this to be removed */
+		if (strcmp("SeAuditPrivilege", r_name.out.name->string) == 0) {
+			return ret;
+		}
+
+		printf("RemovePrivilegesFromAccount failed to remove %s - %s\n", 
+		       r_name.out.name->string, 
+		       nt_errstr(status));
 		return false;
 	}
 
@@ -864,7 +883,7 @@ static bool test_EnumPrivsAccount(struct dcerpc_pipe *p,
 					    &r.out.privs->set[i].luid);
 		}
 
-		ret &= test_RemovePrivilegesFromAccount(p, mem_ctx, acct_handle, 
+		ret &= test_RemovePrivilegesFromAccount(p, mem_ctx, handle, acct_handle, 
 							&r.out.privs->set[0].luid);
 		ret &= test_AddPrivilegesToAccount(p, mem_ctx, acct_handle, 
 						   &r.out.privs->set[0].luid);
@@ -2036,10 +2055,6 @@ static bool test_QueryDomainInfoPolicy(struct dcerpc_pipe *p,
 	NTSTATUS status;
 	int i;
 	bool ret = true;
-	if (torture_setting_bool(tctx, "samba4", false)) {
-		printf("skipping QueryDomainInformationPolicy test against Samba4\n");
-		return true;
-	}
 
 	printf("\nTesting QueryDomainInformationPolicy\n");
 
@@ -2051,7 +2066,10 @@ static bool test_QueryDomainInfoPolicy(struct dcerpc_pipe *p,
 
 		status = dcerpc_lsa_QueryDomainInformationPolicy(p, tctx, &r);
 
-		if (!NT_STATUS_IS_OK(status)) {
+		/* If the server does not support EFS, then this is the correct return */
+		if (i == LSA_DOMAIN_INFO_POLICY_EFS && NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+			continue;
+		} else if (!NT_STATUS_IS_OK(status)) {
 			printf("QueryDomainInformationPolicy failed - %s\n", nt_errstr(status));
 			ret = false;
 			continue;
