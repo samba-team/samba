@@ -291,7 +291,7 @@ PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN HEIMDAL_COM_ERR
 # End SUBSYSTEM HEIMDAL_KRB5
 #######################
 
-HEIMDAL_HEIM_ASN1_OBJ_FILES = \
+HEIMDAL_HEIM_ASN1_DER_OBJ_FILES = \
 	$(heimdalsrcdir)/lib/asn1/der_get.o \
 	$(heimdalsrcdir)/lib/asn1/der_put.o \
 	$(heimdalsrcdir)/lib/asn1/der_free.o \
@@ -299,6 +299,9 @@ HEIMDAL_HEIM_ASN1_OBJ_FILES = \
 	$(heimdalsrcdir)/lib/asn1/der_length.o \
 	$(heimdalsrcdir)/lib/asn1/der_copy.o \
 	$(heimdalsrcdir)/lib/asn1/der_cmp.o \
+
+HEIMDAL_HEIM_ASN1_OBJ_FILES = \
+	$(HEIMDAL_HEIM_ASN1_DER_OBJ_FILES) \
 	$(heimdalsrcdir)/lib/asn1/extra.o \
 	$(heimdalsrcdir)/lib/asn1/timegm.o \
 	$(heimdalsrcdir)/lib/asn1/asn1_err.o
@@ -498,23 +501,14 @@ HEIMDAL_COM_ERR_OBJ_FILES = \
 	$(heimdalsrcdir)/lib/com_err/error.o
 
 #######################
-# Start SUBSYSTEM HEIMDAL_ASN1_COMPILE_LEX
-[SUBSYSTEM::HEIMDAL_ASN1_COMPILE_LEX]
-# End SUBSYSTEM HEIMDAL_ASN1_COMPILE_LEX
-#######################
-
-HEIMDAL_ASN1_COMPILE_LEX_OBJ_FILES = $(heimdalsrcdir)/lib/asn1/lex.ho 
-$(HEIMDAL_ASN1_COMPILE_LEX_OBJ_FILES): CFLAGS+=-I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/asn1 -I$(heimdalsrcdir)/lib/roken -I$(socketwrappersrcdir)
-
-#######################
 # Start BINARY asn1_compile
 [BINARY::asn1_compile]
 USE_HOSTCC = YES
-PRIVATE_DEPENDENCIES = HEIMDAL_ASN1_COMPILE_LEX HEIMDAL_ROKEN_GETPROGNAME_H LIBREPLACE_NETWORK
+PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN_GETPROGNAME_H LIBREPLACE_NETWORK
 
 ASN1C = $(builddir)/bin/asn1_compile
 
-asn1_compile_OBJ_FILES = \
+asn1_compile_ASN1_OBJ_FILES = \
 	$(heimdalsrcdir)/lib/asn1/main.ho \
 	$(heimdalsrcdir)/lib/asn1/gen.ho \
 	$(heimdalsrcdir)/lib/asn1/gen_copy.ho \
@@ -525,7 +519,12 @@ asn1_compile_OBJ_FILES = \
 	$(heimdalsrcdir)/lib/asn1/gen_length.ho \
 	$(heimdalsrcdir)/lib/asn1/gen_seq.ho \
 	$(heimdalsrcdir)/lib/asn1/hash.ho \
+	$(heimdalsrcdir)/lib/asn1/symbol.ho \
 	$(heimdalsrcdir)/lib/asn1/parse.ho \
+	$(heimdalsrcdir)/lib/asn1/lex.ho
+
+asn1_compile_OBJ_FILES = \
+	$(asn1_compile_ASN1_OBJ_FILES) \
 	$(heimdalsrcdir)/lib/roken/emalloc.ho \
 	$(heimdalsrcdir)/lib/roken/getarg.ho \
 	$(heimdalsrcdir)/lib/roken/setprogname.ho \
@@ -533,12 +532,11 @@ asn1_compile_OBJ_FILES = \
 	$(heimdalsrcdir)/lib/roken/get_window_size.ho \
 	$(heimdalsrcdir)/lib/roken/estrdup.ho \
 	$(heimdalsrcdir)/lib/roken/ecalloc.ho \
-	$(heimdalsrcdir)/lib/asn1/symbol.ho \
 	$(heimdalsrcdir)/lib/vers/print_version.ho \
 	$(socketwrappersrcdir)/socket_wrapper.ho \
 	$(heimdalbuildsrcdir)/replace.ho
 
-$(asn1_compile_OBJ_FILES): CFLAGS+=-I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/roken -I$(heimdalsrcdir)/lib/asn1
+$(asn1_compile_OBJ_FILES): CFLAGS+=-I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/asn1 -I$(heimdalsrcdir)/lib/roken -I$(socketwrappersrcdir)
 
 # End BINARY asn1_compile
 #######################
