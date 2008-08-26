@@ -72,6 +72,9 @@ static void convert_USER_INFO_X_to_samr_user_info21(struct USER_INFO_X *infoX,
 	if (infoX->usriX_usr_comment) {
 		fields_present |= SAMR_FIELD_COMMENT;
 	}
+	if (infoX->usriX_profile) {
+		fields_present |= SAMR_FIELD_PROFILE_PATH;
+	}
 
 	unix_to_nt_time_abs(&password_age, infoX->usriX_password_age);
 
@@ -88,7 +91,7 @@ static void convert_USER_INFO_X_to_samr_user_info21(struct USER_INFO_X *infoX,
 			      infoX->usriX_home_dir,
 			      NULL,
 			      infoX->usriX_script_path,
-			      NULL,
+			      infoX->usriX_profile,
 			      infoX->usriX_comment,
 			      NULL,
 			      infoX->usriX_usr_comment,
@@ -123,6 +126,7 @@ static NTSTATUS construct_USER_INFO_X(uint32_t level,
 	struct USER_INFO_1009 *u1009 = NULL;
 	struct USER_INFO_1011 *u1011 = NULL;
 	struct USER_INFO_1012 *u1012 = NULL;
+	struct USER_INFO_1052 *u1052 = NULL;
 
 	if (!buffer || !uX) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -197,6 +201,11 @@ static NTSTATUS construct_USER_INFO_X(uint32_t level,
 			u1012 = (struct USER_INFO_1012 *)buffer;
 			uX->usriX_usr_comment	= u1012->usri1012_usr_comment;
 			break;
+		case 1052:
+			u1052 = (struct USER_INFO_1052 *)buffer;
+			uX->usriX_profile	= u1052->usri1052_profile;
+			break;
+
 		case 3:
 		case 4:
 		default:
@@ -1336,6 +1345,7 @@ WERROR NetUserSetInfo_r(struct libnetapi_ctx *ctx,
 		case 1007:
 		case 1009:
 		case 1011:
+		case 1052:
 			user_mask = SAMR_USER_ACCESS_SET_ATTRIBUTES;
 			break;
 		case 1012:
