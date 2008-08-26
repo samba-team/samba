@@ -24,7 +24,7 @@ Major enhancements in Samba 3.3.0 include:
  Administrative tools:
  o The destination "all" of smbcontrol does now affect all running
    daemons including nmbd and winbindd.
- o New 'net rpc vampire keytab' and  'net rpc vampire ldif' commands.
+ o New 'net rpc vampire keytab' and 'net rpc vampire ldif' commands.
 
 
 Configure changes
@@ -80,6 +80,29 @@ smb.conf changes
     init logon delayed hosts		New		""
     init logon delay			New		100
     winbind reconnect delay		New		30
+
+
+Commit Highlights:
+------------------
+
+o   Michael Adam <obnox@samba.org>
+    * Remove configure option "--with-libdir" and add
+      "--with-modulesdir".
+    * Add "net rpc vampire keytab" and "net rpc vampire ldif".
+
+
+o   Jeremy Allison <jra@samba.org>
+    * Add new "winbind reconnect delay" parameter.
+    * Make the change to smbcontrol for "all" to mean broadcast,
+      and "smbd" to mean the main smb daemon.
+
+
+o   Guenther Deschner <gd@samba.org>
+    * BUG 5710: Fix changing of machine account passwords.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * Rework of the Winbind idmap backend.
 
 
 ######################################################################
