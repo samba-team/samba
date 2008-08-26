@@ -46,6 +46,7 @@ source/heimdal/lib/krb5/heim_err.?
 source/heimdal/lib/krb5/k524_err.?
 source/heimdal/lib/krb5/krb5_err.?
 source/heimdal/lib/roken/vis.h
+source/heimdal/lib/wind/*_table.?
 source/include/build.h
 config.h
 config.h.in
