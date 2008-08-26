@@ -2011,22 +2011,14 @@ static NTSTATUS dcesrv_lsa_SetSecret(struct dcesrv_call_state *dce_call, TALLOC_
 		}
 
 		if (!r->in.new_val) {
-			/* This behaviour varies depending of if this is a local, or a global secret... */
-			if (secret_state->global) {
-				/* set old value mtime */
-				if (samdb_msg_add_uint64(secret_state->sam_ldb, 
-							 mem_ctx, msg, "lastSetTime", nt_now) != 0) { 
-					return NT_STATUS_NO_MEMORY; 
-				}
-			} else {
-				if (samdb_msg_add_delete(secret_state->sam_ldb, 
-							 mem_ctx, msg, "currentValue")) {
-					return NT_STATUS_NO_MEMORY;
-				}
-				if (samdb_msg_add_delete(secret_state->sam_ldb, 
-							 mem_ctx, msg, "lastSetTime")) {
-					return NT_STATUS_NO_MEMORY;
-				}
+			/* set old value mtime */
+			if (samdb_msg_add_uint64(secret_state->sam_ldb, 
+						 mem_ctx, msg, "lastSetTime", nt_now) != 0) { 
+				return NT_STATUS_NO_MEMORY; 
+			}
+			if (samdb_msg_add_delete(secret_state->sam_ldb, 
+						 mem_ctx, msg, "currentValue")) {
+				return NT_STATUS_NO_MEMORY;
 			}
 		}
 	}
