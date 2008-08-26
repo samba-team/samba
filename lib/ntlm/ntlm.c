@@ -1048,7 +1048,7 @@ heim_ntlm_ntlmv2_key(const void *key, size_t len,
     HMAC_Init_ex(&c, key, len, EVP_md5(), NULL);
     {
 	struct ntlm_buf buf;
-	/* uppercase username and turn it inte ucs2-le */
+	/* uppercase username and turn it into ucs2-le */
 	ascii2ucs2le(username, 1, &buf);
 	HMAC_Update(&c, buf.data, buf.length);
 	free(buf.data);
