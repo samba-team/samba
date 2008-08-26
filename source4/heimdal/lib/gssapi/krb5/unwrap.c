@@ -59,17 +59,10 @@ unwrap_des
   OM_uint32 ret;
   int cstate;
   int cmp;
-  int token_len;
-
-  if (IS_DCE_STYLE(context_handle)) {
-     token_len = 22 + 8 + 15; /* 45 */
-  } else {
-     token_len = input_message_buffer->length;
-  }
 
   p = input_message_buffer->value;
   ret = _gsskrb5_verify_header (&p,
-				   token_len,
+				   input_message_buffer->length,
 				   "\x02\x01",
 				   GSS_KRB5_MECHANISM);
   if (ret)
@@ -112,17 +105,12 @@ unwrap_des
       memset (deskey, 0, sizeof(deskey));
       memset (&schedule, 0, sizeof(schedule));
   }
-
-  if (IS_DCE_STYLE(context_handle)) {
-    padlength = 0;
-  } else {
-    /* check pad */
-    ret = _gssapi_verify_pad(input_message_buffer,
-			     input_message_buffer->length - len,
-			     &padlength);
-    if (ret)
-        return ret;
-  }
+  /* check pad */
+  ret = _gssapi_verify_pad(input_message_buffer, 
+			   input_message_buffer->length - len,
+			   &padlength);
+  if (ret)
+      return ret;
 
   MD5_Init (&md5);
   MD5_Update (&md5, p - 24, 8);
@@ -207,17 +195,10 @@ unwrap_des3
   krb5_crypto crypto;
   Checksum csum;
   int cmp;
-  int token_len;
-
-  if (IS_DCE_STYLE(context_handle)) {
-     token_len = 34 + 8 + 15; /* 57 */
-  } else {
-     token_len = input_message_buffer->length;
-  }
 
   p = input_message_buffer->value;
   ret = _gsskrb5_verify_header (&p,
-				   token_len,
+				   input_message_buffer->length,
 				   "\x02\x01",
 				   GSS_KRB5_MECHANISM);
   if (ret)
@@ -264,17 +245,12 @@ unwrap_des3
       memcpy (p, tmp.data, tmp.length);
       krb5_data_free(&tmp);
   }
-
-  if (IS_DCE_STYLE(context_handle)) {
-    padlength = 0;
-  } else {
-    /* check pad */
-    ret = _gssapi_verify_pad(input_message_buffer,
-			     input_message_buffer->length - len,
-			     &padlength);
-    if (ret)
-        return ret;
-  }
+  /* check pad */
+  ret = _gssapi_verify_pad(input_message_buffer, 
+			   input_message_buffer->length - len,
+			   &padlength);
+  if (ret)
+      return ret;
 
   /* verify sequence number */
   
