@@ -2213,8 +2213,9 @@ void send_file_readbraw(connection_struct *conn, files_struct *fsp, SMB_OFF_T st
 		header.free = NULL;
 
 		if ( SMB_VFS_SENDFILE( smbd_server_fd(), fsp, fsp->fh->fd, &header, startpos, nread) == -1) {
-			/* Returning ENOSYS means no data at all was sent. Do this as a normal read. */
-			if (errno == ENOSYS) {
+			/* Returning ENOSYS or EINVAL means no data at all was sent.
+			   Do this as a normal read. */
+			if (errno == ENOSYS || errno == EINVAL) {
 				goto normal_readbraw;
 			}
 
