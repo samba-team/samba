@@ -339,6 +339,9 @@ struct USER_INFO_X {
 	const char * usriX_logon_server;
 	uint32_t usriX_country_code;
 	uint32_t usriX_code_page;
+	const char * usriX_profile;
+	const char * usriX_home_dir_drive;
+	uint32_t usriX_primary_group_id;
 };
 
 struct USER_MODALS_INFO_0 {
