@@ -30,16 +30,18 @@
 static void convert_USER_INFO_X_to_samr_user_info21(struct USER_INFO_X *infoX,
 						    struct samr_UserInfo21 *info21)
 {
-	uint32_t fields_present = SAMR_FIELD_ACCT_FLAGS;
+	uint32_t fields_present = 0;
 	struct samr_LogonHours zero_logon_hours;
 	struct lsa_BinaryString zero_parameters;
-	uint32_t acct_flags = 0;
 	NTTIME password_age;
 
 	ZERO_STRUCTP(info21);
 	ZERO_STRUCT(zero_logon_hours);
 	ZERO_STRUCT(zero_parameters);
 
+	if (infoX->usriX_flags) {
+		fields_present |= SAMR_FIELD_ACCT_FLAGS;
+	}
 	if (infoX->usriX_name) {
 		fields_present |= SAMR_FIELD_ACCOUNT_NAME;
 	}
@@ -68,8 +70,6 @@ static void convert_USER_INFO_X_to_samr_user_info21(struct USER_INFO_X *infoX,
 		fields_present |= SAMR_FIELD_FULL_NAME;
 	}
 
-	acct_flags |= infoX->usriX_flags | ACB_NORMAL;
-
 	unix_to_nt_time_abs(&password_age, infoX->usriX_password_age);
 
 	/* TODO: infoX->usriX_priv */
@@ -92,7 +92,7 @@ static void convert_USER_INFO_X_to_samr_user_info21(struct USER_INFO_X *infoX,
 			      &zero_parameters,
 			      0,
 			      0,
-			      acct_flags,
+			      infoX->usriX_flags,
 			      fields_present,
 			      zero_logon_hours,
 			      0,
@@ -358,6 +358,8 @@ WERROR NetUserAdd_r(struct libnetapi_ctx *ctx,
 		werr = ntstatus_to_werror(status);
 		goto done;
 	}
+
+	uX.usriX_flags |= ACB_NORMAL;
 
 	status = set_user_info_USER_INFO_X(ctx, pipe_cli,
 					   &cli->user_session_key,
