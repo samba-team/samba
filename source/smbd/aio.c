@@ -253,12 +253,15 @@ BOOL schedule_aio_read_and_X(connection_struct *conn,
 	a->aio_sigevent.sigev_signo  = RT_SIGNAL_AIO;
 	a->aio_sigevent.sigev_value.sival_int = aio_ex->mid;
 
+	become_root();
 	if (SMB_VFS_AIO_READ(fsp,a) == -1) {
 		DEBUG(0,("schedule_aio_read_and_X: aio_read failed. "
 			 "Error %s\n", strerror(errno) ));
 		delete_aio_ex(aio_ex);
+		unbecome_root();
 		return False;
 	}
+	unbecome_root();
 
 	DEBUG(10,("schedule_aio_read_and_X: scheduled aio_read for file %s, "
 		  "offset %.0f, len = %u (mid = %u)\n",
@@ -343,12 +346,15 @@ BOOL schedule_aio_write_and_X(connection_struct *conn,
 	a->aio_sigevent.sigev_signo  = RT_SIGNAL_AIO;
 	a->aio_sigevent.sigev_value.sival_int = aio_ex->mid;
 
+	become_root();
 	if (SMB_VFS_AIO_WRITE(fsp,a) == -1) {
 		DEBUG(3,("schedule_aio_wrote_and_X: aio_write failed. "
 			 "Error %s\n", strerror(errno) ));
 		delete_aio_ex(aio_ex);
+		unbecome_root();
 		return False;
 	}
+	unbecome_root();
 
 	if (!write_through && !lp_syncalways(SNUM(fsp->conn))
 	    && fsp->aio_write_behind) {
