@@ -1286,20 +1286,25 @@ static bool legacy_sid_to_gid(const DOM_SID *psid, gid_t *pgid)
 
 void uid_to_sid(DOM_SID *psid, uid_t uid)
 {
+	bool expired = true;
 	ZERO_STRUCTP(psid);
 
 	if (fetch_sid_from_uid_cache(psid, uid))
 		return;
 
-	if (!winbind_uid_to_sid(psid, uid)) {
-		if (!winbind_ping()) {
-			legacy_uid_to_sid(psid, uid);
+	/* Check the winbindd cache directly. */
+	if (!idmap_cache_find_uid2sid(uid, psid, &expired) || expired) {
+		/* Not in cache. Ask winbindd. */
+		if (!winbind_uid_to_sid(psid, uid)) {
+			if (!winbind_ping()) {
+				legacy_uid_to_sid(psid, uid);
+				return;
+			}
+
+			DEBUG(5, ("uid_to_sid: winbind failed to find a sid for uid %u\n",
+				uid));
 			return;
 		}
-
-		DEBUG(5, ("uid_to_sid: winbind failed to find a sid for uid %u\n",
-			uid));
-		return;
 	}
 
 	DEBUG(10,("uid %u -> sid %s\n", (unsigned int)uid,
@@ -1315,25 +1320,30 @@ void uid_to_sid(DOM_SID *psid, uid_t uid)
 
 void gid_to_sid(DOM_SID *psid, gid_t gid)
 {
+	bool expired = true;
 	ZERO_STRUCTP(psid);
 
 	if (fetch_sid_from_gid_cache(psid, gid))
 		return;
 
-	if (!winbind_gid_to_sid(psid, gid)) {
-		if (!winbind_ping()) {
-			legacy_gid_to_sid(psid, gid);
+	/* Check the winbindd cache directly. */
+	if (!idmap_cache_find_gid2sid(gid, psid, &expired) || expired) {
+		/* Not in cache. Ask winbindd. */
+		if (!winbind_gid_to_sid(psid, gid)) {
+			if (!winbind_ping()) {
+				legacy_gid_to_sid(psid, gid);
+				return;
+			}
+
+			DEBUG(5, ("gid_to_sid: winbind failed to find a sid for gid %u\n",
+				gid));
 			return;
 		}
-
-		DEBUG(5, ("gid_to_sid: winbind failed to find a sid for gid %u\n",
-			gid));
-		return;
 	}
 
 	DEBUG(10,("gid %u -> sid %s\n", (unsigned int)gid,
 		  sid_string_dbg(psid)));
-	
+
 	store_gid_sid_cache(psid, gid);
 	return;
 }
@@ -1344,6 +1354,7 @@ void gid_to_sid(DOM_SID *psid, gid_t gid)
 
 bool sid_to_uid(const DOM_SID *psid, uid_t *puid)
 {
+	bool expired = true;
 	uint32 rid;
 	gid_t gid;
 
@@ -1366,14 +1377,18 @@ bool sid_to_uid(const DOM_SID *psid, uid_t *puid)
 		return true;
 	}
 
-	if (!winbind_sid_to_uid(puid, psid)) {
-		if (!winbind_ping()) {
-			return legacy_sid_to_uid(psid, puid);
-		}
+	/* Check the winbindd cache directly. */
+	if (!idmap_cache_find_sid2uid(psid, puid, &expired) || expired) {
+		/* Not in cache. Ask winbindd. */
+		if (!winbind_sid_to_uid(puid, psid)) {
+			if (!winbind_ping()) {
+				return legacy_sid_to_uid(psid, puid);
+			}
 
-		DEBUG(5, ("winbind failed to find a uid for sid %s\n",
-			  sid_string_dbg(psid)));
-		return false;
+			DEBUG(5, ("winbind failed to find a uid for sid %s\n",
+				  sid_string_dbg(psid)));
+			return false;
+		}
 	}
 
 	/* TODO: Here would be the place to allocate both a gid and a uid for
@@ -1393,6 +1408,7 @@ bool sid_to_uid(const DOM_SID *psid, uid_t *puid)
 
 bool sid_to_gid(const DOM_SID *psid, gid_t *pgid)
 {
+	bool expired = true;
 	uint32 rid;
 	uid_t uid;
 
@@ -1414,24 +1430,26 @@ bool sid_to_gid(const DOM_SID *psid, gid_t *pgid)
 		return true;
 	}
 
-	/* Ask winbindd if it can map this sid to a gid.
-	 * (Idmap will check it is a valid SID and of the right type) */
+	/* Check the winbindd cache directly. */
+	if (!idmap_cache_find_sid2gid(psid, pgid, &expired) || expired) {
+		/* Not in cache. Ask winbindd. */
+		/* Ask winbindd if it can map this sid to a gid.
+		 * (Idmap will check it is a valid SID and of the right type) */
 
-	if ( !winbind_sid_to_gid(pgid, psid) ) {
-		if (!winbind_ping()) {
-			return legacy_sid_to_gid(psid, pgid);
+		if ( !winbind_sid_to_gid(pgid, psid) ) {
+			if (!winbind_ping()) {
+				return legacy_sid_to_gid(psid, pgid);
+			}
+
+			DEBUG(10,("winbind failed to find a gid for sid %s\n",
+				  sid_string_dbg(psid)));
+			return false;
 		}
-
-		DEBUG(10,("winbind failed to find a gid for sid %s\n",
-			  sid_string_dbg(psid)));
-		return false;
 	}
 
 	DEBUG(10,("sid %s -> gid %u\n", sid_string_dbg(psid),
 		  (unsigned int)*pgid ));
 
 	store_gid_sid_cache(psid, *pgid);
-	
 	return true;
 }
-
