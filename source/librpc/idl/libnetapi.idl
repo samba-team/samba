@@ -436,6 +436,9 @@ interface libnetapi
 		string usriX_logon_server;
 		uint32 usriX_country_code;
 		uint32 usriX_code_page;
+		string usriX_profile;
+		string usriX_home_dir_drive;
+		uint32 usriX_primary_group_id;
 	} USER_INFO_X;
 
 	[nopush,nopull] NET_API_STATUS NetUserAdd(
