@@ -33,7 +33,7 @@
 
 #include "hx_locl.h"
 #include <wind.h>
-RCSID("$Id: name.c 22677 2008-03-13 17:35:49Z lha $");
+RCSID("$Id$");
 
 /**
  * @page page_name PKIX/X.509 Names

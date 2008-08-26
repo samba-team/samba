@@ -31,7 +31,7 @@
  * SUCH DAMAGE.
  */
 
-/* $Id: roken-common.h 23468 2008-07-27 12:16:56Z lha $ */
+/* $Id$ */
 
 #ifndef __ROKEN_COMMON_H__
 #define __ROKEN_COMMON_H__

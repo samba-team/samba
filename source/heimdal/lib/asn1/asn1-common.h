@@ -1,4 +1,4 @@
-/* $Id: asn1-common.h 22429 2008-01-13 10:25:50Z lha $ */
+/* $Id$ */
 
 #include <stddef.h>
 #include <time.h>

@@ -33,7 +33,7 @@
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
-RCSID("$Id: simple_exec.c 21005 2007-06-08 01:54:35Z lha $");
+RCSID("$Id$");
 #endif
 
 #include <stdarg.h>
@@ -49,7 +49,7 @@ RCSID("$Id: simple_exec.c 21005 2007-06-08 01:54:35Z lha $");
 #endif
 #include <errno.h>
 
-#include <roken.h>
+#include "roken.h"
 
 #define EX_NOEXEC	126
 #define EX_NOTFOUND	127

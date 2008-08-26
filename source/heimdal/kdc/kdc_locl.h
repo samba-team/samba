@@ -32,7 +32,7 @@
  */
 
 /* 
- * $Id: kdc_locl.h 22247 2007-12-08 23:49:41Z lha $ 
+ * $Id$ 
  */
 
 #ifndef __KDC_LOCL_H__

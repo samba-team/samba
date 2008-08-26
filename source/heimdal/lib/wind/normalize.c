@@ -42,7 +42,7 @@
 
 #include "normalize_table.h"
 
-RCSID("$Id: normalize.c 22581 2008-02-11 20:42:25Z lha $");
+RCSID("$Id$");
 
 static int
 translation_cmp(const void *key, const void *data)

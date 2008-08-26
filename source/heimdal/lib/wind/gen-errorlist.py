@@ -1,7 +1,7 @@
 #!/usr/local/bin/python
 # -*- coding: iso-8859-1 -*-
 
-# $Id: gen-errorlist.py 23242 2008-06-01 22:27:54Z lha $
+# $Id$
 
 # Copyright (c) 2004 Kungliga Tekniska Högskolan
 # (Royal Institute of Technology, Stockholm, Sweden). 

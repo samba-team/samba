@@ -33,7 +33,7 @@
 
 #include "krb5/gsskrb5_locl.h"
 
-RCSID("$Id: acquire_cred.c 22596 2008-02-18 18:05:55Z lha $");
+RCSID("$Id$");
 
 OM_uint32
 __gsskrb5_ccache_lifetime(OM_uint32 *minor_status,
@@ -134,11 +134,16 @@ static OM_uint32 acquire_initiator_cred
      * errors while searching.
      */
 
-    if (handle->principal)
+    if (handle->principal) {
 	kret = krb5_cc_cache_match (context,
 				    handle->principal,
 				    NULL,
 				    &ccache);
+	if (kret == 0) {
+	    ret = GSS_S_COMPLETE;
+	    goto found;
+	}
+    }
     
     if (ccache == NULL) {
 	kret = krb5_cc_default(context, &ccache);
@@ -211,7 +216,7 @@ static OM_uint32 acquire_initiator_cred
 	}
 	kret = 0;
     }
-
+ found:
     handle->ccache = ccache;
     ret = GSS_S_COMPLETE;
 
@@ -242,7 +247,6 @@ static OM_uint32 acquire_acceptor_cred
     OM_uint32 ret;
     krb5_error_code kret;
 
-    kret = 0;
     ret = GSS_S_FAILURE;
     kret = get_keytab(context, &handle->keytab);
     if (kret)
@@ -336,13 +340,13 @@ OM_uint32 _gsskrb5_acquire_cred
     HEIMDAL_MUTEX_init(&handle->cred_id_mutex);
 
     if (desired_name != GSS_C_NO_NAME) {
-	krb5_principal name = (krb5_principal)desired_name;
-	ret = krb5_copy_principal(context, name, &handle->principal);
+
+	ret = _gsskrb5_canon_name(minor_status, context, 0, desired_name, 
+				  &handle->principal);
 	if (ret) {
 	    HEIMDAL_MUTEX_destroy(&handle->cred_id_mutex);
-	    *minor_status = ret;
 	    free(handle);
-	    return GSS_S_FAILURE;
+	    return ret;
 	}
     }
     if (cred_usage == GSS_C_INITIATE || cred_usage == GSS_C_BOTH) {

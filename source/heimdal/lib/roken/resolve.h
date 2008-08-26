@@ -31,7 +31,7 @@
  * SUCH DAMAGE.
  */
 
-/* $Id: resolve.h 14773 2005-04-12 11:29:18Z lha $ */
+/* $Id$ */
 
 #ifndef __RESOLVE_H__
 #define __RESOLVE_H__

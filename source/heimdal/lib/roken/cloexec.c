@@ -39,7 +39,7 @@ RCSID("$Id$");
 #include <unistd.h>
 #include <fcntl.h>
 
-#include <roken.h>
+#include "roken.h"
 
 void ROKEN_LIB_FUNCTION
 rk_cloexec(int fd)

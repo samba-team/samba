@@ -1,10 +1,10 @@
 /*
   Name:     iprime.h
   Purpose:  Pseudoprimality testing routines
-  Author:   M. J. Fromberger <http://www.dartmouth.edu/~sting/>
-  Info:     $Id: iprime.h 18759 2006-10-21 16:32:36Z lha $
+  Author:   M. J. Fromberger <http://spinning-yarns.org/michael/>
+  Info:     $Id: iprime.h 635 2008-01-08 18:19:40Z sting $
 
-  Copyright (C) 2002 Michael J. Fromberger, All Rights Reserved.
+  Copyright (C) 2002-2008 Michael J. Fromberger, All Rights Reserved.
 
   Permission is hereby granted, free of charge, to any person
   obtaining a copy of this software and associated documentation files

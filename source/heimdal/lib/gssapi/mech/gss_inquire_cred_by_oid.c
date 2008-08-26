@@ -31,7 +31,7 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_inquire_cred_by_oid.c 23025 2008-04-17 10:01:57Z lha $");
+RCSID("$Id$");
 
 OM_uint32 GSSAPI_LIB_FUNCTION
 gss_inquire_cred_by_oid (OM_uint32 *minor_status,

@@ -33,10 +33,10 @@
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
-RCSID("$Id: getipnodebyaddr.c 14773 2005-04-12 11:29:18Z lha $");
+RCSID("$Id$");
 #endif
 
-#include <roken.h>
+#include "roken.h"
 
 /*
  * lookup `src, len' (address family `af') in DNS and return a pointer

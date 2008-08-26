@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: gssapi_spnego.h 23025 2008-04-17 10:01:57Z lha $ */
+/* $Id$ */
 
 #ifndef GSSAPI_SPNEGO_H_
 #define GSSAPI_SPNEGO_H_

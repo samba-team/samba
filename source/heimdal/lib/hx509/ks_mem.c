@@ -195,8 +195,8 @@ mem_addkey(hx509_context context,
 	return ENOMEM;
     }
     mem->keys = ptr;
-    mem->keys[i++] = _hx509_private_key_ref(key);
-    mem->keys[i++] = NULL;
+    mem->keys[i] = _hx509_private_key_ref(key);
+    mem->keys[i + 1] = NULL;
     return 0;
 }
 

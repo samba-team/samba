@@ -33,7 +33,7 @@
 
 #include "krb5/gsskrb5_locl.h"
 
-RCSID("$Id: copy_ccache.c 20688 2007-05-17 18:44:31Z lha $");
+RCSID("$Id$");
 
 #if 0
 OM_uint32

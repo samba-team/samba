@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: kuser_locl.h 20458 2007-04-19 20:41:27Z lha $ */
+/* $Id$ */
 
 #ifndef __KUSER_LOCL_H__
 #define __KUSER_LOCL_H__

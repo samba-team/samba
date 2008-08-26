@@ -34,7 +34,7 @@
 #include "der_locl.h"
 #include "heim_asn1.h"
 
-RCSID("$Id: extra.c 16672 2006-01-31 09:44:54Z lha $");
+RCSID("$Id$");
 
 int
 encode_heim_any(unsigned char *p, size_t len, 

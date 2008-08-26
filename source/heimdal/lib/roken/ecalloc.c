@@ -33,13 +33,13 @@
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
-RCSID("$Id: ecalloc.c 21005 2007-06-08 01:54:35Z lha $");
+RCSID("$Id$");
 #endif
 
 #include <stdlib.h>
 #include <err.h>
 
-#include <roken.h>
+#include "roken.h"
 
 /*
  * Like calloc but never fails.

@@ -33,13 +33,13 @@
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
-RCSID("$Id: parse_units.c 21005 2007-06-08 01:54:35Z lha $");
+RCSID("$Id$");
 #endif
 
 #include <stdio.h>
 #include <ctype.h>
 #include <string.h>
-#include <roken.h>
+#include "roken.h"
 #include "parse_units.h"
 
 /*
@@ -270,7 +270,7 @@ void ROKEN_LIB_FUNCTION
 print_units_table (const struct units *units, FILE *f)
 {
     const struct units *u, *u2;
-    unsigned max_sz = 0;
+    int max_sz = 0;
 
     for (u = units; u->name; ++u) {
 	max_sz = max(max_sz, strlen(u->name));

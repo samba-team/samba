@@ -3,7 +3,7 @@
 #
 # This might look like a com_err file, but is not
 #
-id "$Id: hx509_err.et 22329 2007-12-15 05:13:14Z lha $"
+id "$Id$"
 
 error_table hx
 prefix HX509

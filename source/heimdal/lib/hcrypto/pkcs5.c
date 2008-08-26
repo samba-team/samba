@@ -35,7 +35,7 @@
 #include <config.h>
 #endif
 
-RCSID("$Id: pkcs5.c 23059 2008-04-18 13:04:08Z lha $");
+RCSID("$Id$");
 
 #ifdef KRB5
 #include <krb5-types.h>

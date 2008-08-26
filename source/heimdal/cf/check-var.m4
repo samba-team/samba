@@ -1,4 +1,4 @@
-dnl $Id: check-var.m4 15422 2005-06-16 18:59:29Z lha $
+dnl $Id$
 dnl
 dnl rk_CHECK_VAR(variable, includes)
 AC_DEFUN([rk_CHECK_VAR], [

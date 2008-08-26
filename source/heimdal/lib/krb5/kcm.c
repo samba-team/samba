@@ -43,7 +43,7 @@
 
 #include "kcm.h"
 
-RCSID("$Id: kcm.c 23446 2008-07-27 12:08:37Z lha $");
+RCSID("$Id$");
 
 typedef struct krb5_kcmcache {
     char *name;
@@ -105,7 +105,7 @@ try_unix_socket(krb5_context context,
     krb5_error_code ret;
     int fd;
 
-    fd = socket(AF_UNIX, SOCK_STREAM, 0);
+    fd = socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
     if (fd < 0)
 	return KRB5_CC_IO;
     rk_cloexec(fd);

@@ -32,7 +32,7 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_duplicate_oid.c 19954 2007-01-17 11:50:23Z lha $");
+RCSID("$Id$");
 
 OM_uint32 gss_duplicate_oid (
         OM_uint32 *minor_status,

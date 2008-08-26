@@ -39,7 +39,7 @@
 #include <string.h>
 #include <errno.h>
 
-RCSID("$Id: stringprep.c 23063 2008-04-21 11:18:04Z lha $");
+RCSID("$Id$");
 
 /**
  * Process a input UCS4 string according a string-prep profile.

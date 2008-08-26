@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: fcache.c 23444 2008-07-27 12:07:47Z lha $");
+RCSID("$Id$");
 
 typedef struct krb5_fcache{
     char *filename;
@@ -395,7 +395,7 @@ fcc_initialize(krb5_context context,
 
     unlink (filename);
   
-    ret = fcc_open(context, id, &fd, O_RDWR | O_CREAT | O_EXCL | O_BINARY, 0600);
+    ret = fcc_open(context, id, &fd, O_RDWR | O_CREAT | O_EXCL | O_BINARY | O_CLOEXEC, 0600);
     if(ret)
 	return ret;
     {
@@ -462,7 +462,7 @@ fcc_store_cred(krb5_context context,
     int ret;
     int fd;
 
-    ret = fcc_open(context, id, &fd, O_WRONLY | O_APPEND | O_BINARY, 0);
+    ret = fcc_open(context, id, &fd, O_WRONLY | O_APPEND | O_BINARY | O_CLOEXEC, 0);
     if(ret)
 	return ret;
     {
@@ -503,7 +503,7 @@ init_fcc (krb5_context context,
     krb5_storage *sp;
     krb5_error_code ret;
 
-    ret = fcc_open(context, id, &fd, O_RDONLY | O_BINARY, 0);
+    ret = fcc_open(context, id, &fd, O_RDONLY | O_BINARY | O_CLOEXEC, 0);
     if(ret)
 	return ret;
     
@@ -851,14 +851,14 @@ fcc_move(krb5_context context, krb5_ccache from, krb5_ccache to)
 	int fd1, fd2;
 	char buf[BUFSIZ];
 
-	ret = fcc_open(context, from, &fd1, O_RDONLY | O_BINARY, 0);
+	ret = fcc_open(context, from, &fd1, O_RDONLY | O_BINARY | O_CLOEXEC, 0);
 	if(ret)
 	    return ret;
 
 	unlink(FILENAME(to));
 
 	ret = fcc_open(context, to, &fd2, 
-		       O_WRONLY | O_CREAT | O_EXCL | O_BINARY, 0600);
+		       O_WRONLY | O_CREAT | O_EXCL | O_BINARY | O_CLOEXEC, 0600);
 	if(ret)
 	    goto out1;
 

@@ -1,4 +1,4 @@
--- $Id: hdb.asn1 20236 2007-02-16 23:52:29Z lha $
+-- $Id$
 HDB DEFINITIONS ::=
 BEGIN
 

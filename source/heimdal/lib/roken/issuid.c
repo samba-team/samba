@@ -33,10 +33,10 @@
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
-RCSID("$Id: issuid.c 15131 2005-05-13 07:42:03Z lha $");
+RCSID("$Id$");
 #endif
 
-#include <roken.h>
+#include "roken.h"
 
 int ROKEN_LIB_FUNCTION
 issuid(void)

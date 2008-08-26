@@ -1,7 +1,7 @@
 #!/usr/local/bin/python
 # -*- coding: iso-8859-1 -*-
 
-# $Id: gen-bidi.py 23332 2008-06-27 14:42:17Z lha $
+# $Id$
 
 # Copyright (c) 2004 Kungliga Tekniska Högskolan
 # (Royal Institute of Technology, Stockholm, Sweden). 

@@ -33,9 +33,9 @@
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
-RCSID("$Id: hex.c 16504 2006-01-09 17:09:29Z lha $");
+RCSID("$Id$");
 #endif
-#include <roken.h>
+#include "roken.h"
 #include <ctype.h>
 #include "hex.h"
 

@@ -3,7 +3,7 @@
 #
 # This might look like a com_err file, but is not
 #
-id "$Id: krb5_err.et 23354 2008-07-15 11:23:34Z lha $"
+id "$Id$"
 
 error_table krb5
 
@@ -110,7 +110,7 @@ error_code PUBLIC_KEY_ENCRYPTION_NOT_SUPPORTED, "Public key encryption not suppo
 
 index 128
 prefix
-error_code KRB5_ERR_RCSID,	"$Id: krb5_err.et 23354 2008-07-15 11:23:34Z lha $"
+error_code KRB5_ERR_RCSID,	"$Id$"
 
 error_code KRB5_LIBOS_BADLOCKFLAG,	"Invalid flag for file lock mode"
 error_code KRB5_LIBOS_CANTREADPWD,	"Cannot read password"
