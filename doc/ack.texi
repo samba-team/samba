@@ -1,6 +1,6 @@
 @c $Id$
 
-@node  Acknowledgments, , Migration, Top
+@node  Acknowledgments, Copyrights and Licenses, Migration, Top
 @comment  node-name,  next,  previous,  up
 @appendix Acknowledgments
 
