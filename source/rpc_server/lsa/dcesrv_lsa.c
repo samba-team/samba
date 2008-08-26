@@ -23,6 +23,8 @@
 #include "rpc_server/lsa/lsa.h"
 #include "util/util_ldb.h"
 #include "libcli/ldap/ldap_ndr.h"
+#include "system/kerberos.h"
+#include "auth/kerberos/kerberos.h"
 
 /*
   this type allows us to distinguish handle types
@@ -2502,7 +2504,42 @@ static NTSTATUS dcesrv_lsa_QueryDomainInformationPolicy(struct dcesrv_call_state
 						 TALLOC_CTX *mem_ctx,
 						 struct lsa_QueryDomainInformationPolicy *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	r->out.info = talloc(mem_ctx, union lsa_DomainInformationPolicy);
+	if (!r->out.info) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	switch (r->in.level) {
+	case LSA_DOMAIN_INFO_POLICY_EFS:
+		talloc_free(r->out.info);
+		r->out.info = NULL;
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	case LSA_DOMAIN_INFO_POLICY_KERBEROS:
+	{
+		struct lsa_DomainInfoKerberos *k = &r->out.info->kerberos_info;
+		struct smb_krb5_context *smb_krb5_context;
+		int ret = smb_krb5_init_context(mem_ctx, 
+							dce_call->event_ctx, 
+							dce_call->conn->dce_ctx->lp_ctx,
+							&smb_krb5_context);
+		if (ret != 0) {
+			talloc_free(r->out.info);
+			r->out.info = NULL;
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+		k->enforce_restrictions = 0; /* FIXME, details missing from MS-LSAD 2.2.53 */
+		k->service_tkt_lifetime = 0; /* Need to find somewhere to store this, and query in KDC too */
+		k->user_tkt_lifetime = 0;    /* Need to find somewhere to store this, and query in KDC too */
+		k->user_tkt_renewaltime = 0; /* Need to find somewhere to store this, and query in KDC too */
+		k->clock_skew = krb5_get_max_time_skew(smb_krb5_context->krb5_context);
+		talloc_free(smb_krb5_context);
+		return NT_STATUS_OK;
+	}
+	default:
+		talloc_free(r->out.info);
+		r->out.info = NULL;
+		return NT_STATUS_INVALID_INFO_CLASS;
+	}
 }
 
 /*
