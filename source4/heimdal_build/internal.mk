@@ -67,7 +67,64 @@ PRIVATE_DEPENDENCIES = HEIMDAL_HCRYPTO HEIMDAL_HEIM_ASN1 HEIMDAL_SPNEGO_ASN1 HEI
 # End SUBSYSTEM HEIMDAL_GSSAPI
 #######################
 
+HEIMDAL_GSSAPI_SPNEGO_OBJ_FILES = \
+	$(heimdalsrcdir)/lib/gssapi/spnego/init_sec_context.o \
+	$(heimdalsrcdir)/lib/gssapi/spnego/external.o \
+	$(heimdalsrcdir)/lib/gssapi/spnego/compat.o \
+	$(heimdalsrcdir)/lib/gssapi/spnego/context_stubs.o \
+	$(heimdalsrcdir)/lib/gssapi/spnego/cred_stubs.o \
+	$(heimdalsrcdir)/lib/gssapi/spnego/accept_sec_context.o \
+
+HEIMDAL_GSSAPI_KRB5_OBJ_FILES = \
+	$(heimdalsrcdir)/lib/gssapi/krb5/copy_ccache.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/delete_sec_context.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/init_sec_context.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/context_time.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/init.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/address_to_krb5addr.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/get_mic.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/inquire_context.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/add_cred.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/inquire_cred.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/inquire_cred_by_oid.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/inquire_cred_by_mech.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/inquire_mechs_for_name.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/inquire_names_for_mech.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/indicate_mechs.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/inquire_sec_context_by_oid.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/export_sec_context.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/import_sec_context.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/duplicate_name.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/import_name.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/compare_name.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/export_name.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/canonicalize_name.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/unwrap.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/wrap.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/release_name.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/cfx.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/8003.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/arcfour.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/encapsulate.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/display_name.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/sequence.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/display_status.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/release_buffer.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/external.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/compat.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/acquire_cred.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/release_cred.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/set_cred_option.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/decapsulate.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/verify_mic.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/accept_sec_context.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/set_sec_context_option.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/process_context_token.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/prf.o
+
 HEIMDAL_GSSAPI_OBJ_FILES = \
+	$(HEIMDAL_GSSAPI_SPNEGO_OBJ_FILES) \
+	$(HEIMDAL_GSSAPI_KRB5_OBJ_FILES) \
 	$(heimdalsrcdir)/lib/gssapi/mech/context.o \
 	$(heimdalsrcdir)/lib/gssapi/mech/gss_krb5.o \
 	$(heimdalsrcdir)/lib/gssapi/mech/gss_mech_switch.o \
@@ -124,57 +181,6 @@ HEIMDAL_GSSAPI_OBJ_FILES = \
 	$(heimdalsrcdir)/lib/gssapi/mech/gss_set_cred_option.o \
 	$(heimdalsrcdir)/lib/gssapi/mech/gss_pseudo_random.o \
 	$(heimdalsrcdir)/lib/gssapi/asn1_GSSAPIContextToken.o \
-	$(heimdalsrcdir)/lib/gssapi/spnego/init_sec_context.o \
-	$(heimdalsrcdir)/lib/gssapi/spnego/external.o \
-	$(heimdalsrcdir)/lib/gssapi/spnego/compat.o \
-	$(heimdalsrcdir)/lib/gssapi/spnego/context_stubs.o \
-	$(heimdalsrcdir)/lib/gssapi/spnego/cred_stubs.o \
-	$(heimdalsrcdir)/lib/gssapi/spnego/accept_sec_context.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/copy_ccache.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/delete_sec_context.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/init_sec_context.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/context_time.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/init.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/address_to_krb5addr.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/get_mic.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/inquire_context.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/add_cred.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/inquire_cred.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/inquire_cred_by_oid.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/inquire_cred_by_mech.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/inquire_mechs_for_name.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/inquire_names_for_mech.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/indicate_mechs.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/inquire_sec_context_by_oid.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/export_sec_context.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/import_sec_context.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/duplicate_name.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/import_name.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/compare_name.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/export_name.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/canonicalize_name.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/unwrap.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/wrap.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/release_name.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/cfx.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/8003.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/arcfour.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/encapsulate.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/display_name.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/sequence.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/display_status.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/release_buffer.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/external.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/compat.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/acquire_cred.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/release_cred.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/set_cred_option.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/decapsulate.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/verify_mic.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/accept_sec_context.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/set_sec_context_option.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/process_context_token.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/prf.o \
 	$(heimdalbuildsrcdir)/gssapi-glue.o
 
 #######################
