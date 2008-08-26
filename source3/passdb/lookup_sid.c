@@ -1287,13 +1287,16 @@ static bool legacy_sid_to_gid(const DOM_SID *psid, gid_t *pgid)
 void uid_to_sid(DOM_SID *psid, uid_t uid)
 {
 	bool expired = true;
+	bool ret;
 	ZERO_STRUCTP(psid);
 
 	if (fetch_sid_from_uid_cache(psid, uid))
 		return;
 
 	/* Check the winbindd cache directly. */
-	if (!idmap_cache_find_uid2sid(uid, psid, &expired) || expired) {
+	ret = idmap_cache_find_uid2sid(uid, psid, &expired);
+
+	if (!ret || expired || (ret && is_null_sid(psid))) {
 		/* Not in cache. Ask winbindd. */
 		if (!winbind_uid_to_sid(psid, uid)) {
 			if (!winbind_ping()) {
@@ -1321,13 +1324,16 @@ void uid_to_sid(DOM_SID *psid, uid_t uid)
 void gid_to_sid(DOM_SID *psid, gid_t gid)
 {
 	bool expired = true;
+	bool ret;
 	ZERO_STRUCTP(psid);
 
 	if (fetch_sid_from_gid_cache(psid, gid))
 		return;
 
 	/* Check the winbindd cache directly. */
-	if (!idmap_cache_find_gid2sid(gid, psid, &expired) || expired) {
+	ret = idmap_cache_find_gid2sid(gid, psid, &expired);
+
+	if (!ret || expired || (ret && is_null_sid(psid))) {
 		/* Not in cache. Ask winbindd. */
 		if (!winbind_gid_to_sid(psid, gid)) {
 			if (!winbind_ping()) {
@@ -1355,6 +1361,7 @@ void gid_to_sid(DOM_SID *psid, gid_t gid)
 bool sid_to_uid(const DOM_SID *psid, uid_t *puid)
 {
 	bool expired = true;
+	bool ret;
 	uint32 rid;
 	gid_t gid;
 
@@ -1378,7 +1385,9 @@ bool sid_to_uid(const DOM_SID *psid, uid_t *puid)
 	}
 
 	/* Check the winbindd cache directly. */
-	if (!idmap_cache_find_sid2uid(psid, puid, &expired) || expired) {
+	ret = idmap_cache_find_sid2uid(psid, puid, &expired);
+
+	if (!ret || expired || (ret && (*puid == (uid_t)-1))) {
 		/* Not in cache. Ask winbindd. */
 		if (!winbind_sid_to_uid(puid, psid)) {
 			if (!winbind_ping()) {
@@ -1409,6 +1418,7 @@ bool sid_to_uid(const DOM_SID *psid, uid_t *puid)
 bool sid_to_gid(const DOM_SID *psid, gid_t *pgid)
 {
 	bool expired = true;
+	bool ret;
 	uint32 rid;
 	uid_t uid;
 
@@ -1431,8 +1441,10 @@ bool sid_to_gid(const DOM_SID *psid, gid_t *pgid)
 	}
 
 	/* Check the winbindd cache directly. */
-	if (!idmap_cache_find_sid2gid(psid, pgid, &expired) || expired) {
-		/* Not in cache. Ask winbindd. */
+	ret = idmap_cache_find_sid2gid(psid, pgid, &expired);
+
+	if (!ret || expired || (ret && (*pgid == (gid_t)-1))) {
+		/* Not in cache or negative. Ask winbindd. */
 		/* Ask winbindd if it can map this sid to a gid.
 		 * (Idmap will check it is a valid SID and of the right type) */
 
