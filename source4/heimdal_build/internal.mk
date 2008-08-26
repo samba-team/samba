@@ -241,7 +241,6 @@ HEIMDAL_KRB5_OBJ_FILES = \
 	$(heimdalsrcdir)/lib/krb5/keytab_file.o \
 	$(heimdalsrcdir)/lib/krb5/keytab_memory.o \
 	$(heimdalsrcdir)/lib/krb5/keytab_keyfile.o \
-	$(heimdalsrcdir)/lib/krb5/keytab_krb4.o \
 	$(heimdalsrcdir)/lib/krb5/krbhst.o \
 	$(heimdalsrcdir)/lib/krb5/log.o \
 	$(heimdalsrcdir)/lib/krb5/mcache.o \
