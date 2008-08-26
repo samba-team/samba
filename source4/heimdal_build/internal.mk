@@ -368,7 +368,7 @@ PRIVATE_DEPENDENCIES = \
 # End SUBSYSTEM HEIMDAL_HX509
 #######################
 
-HEIMDAL_HX509_OBJ_FILES = \
+HEIMDAL_HX509_OBJH_FILES = \
 	$(heimdalsrcdir)/lib/hx509/ca.o \
 	$(heimdalsrcdir)/lib/hx509/cert.o \
 	$(heimdalsrcdir)/lib/hx509/cms.o \
@@ -392,10 +392,13 @@ HEIMDAL_HX509_OBJ_FILES = \
 	$(heimdalsrcdir)/lib/hx509/req.o \
 	$(heimdalsrcdir)/lib/hx509/revoke.o \
 	$(heimdalsrcdir)/lib/hx509/sel.o \
-	$(heimdalsrcdir)/lib/hx509/sel-lex.o \
-	$(heimdalsrcdir)/lib/hx509/sel-gram.o \
 	$(heimdalsrcdir)/lib/hx509/hx509_err.o
 
+HEIMDAL_HX509_OBJG_FILES = \
+	$(heimdalsrcdir)/lib/hx509/sel-lex.o \
+	$(heimdalsrcdir)/lib/hx509/sel-gram.o
+
+HEIMDAL_HX509_OBJ_FILES = $(HEIMDAL_HX509_OBJH_FILES) $(HEIMDAL_HX509_OBJG_FILES)
 
 #######################
 # Start SUBSYSTEM HEIMDAL_WIND
