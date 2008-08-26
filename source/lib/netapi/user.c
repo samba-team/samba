@@ -1286,7 +1286,7 @@ WERROR NetUserSetInfo_r(struct libnetapi_ctx *ctx,
 	struct lsa_String lsa_account_name;
 	struct dom_sid2 *domain_sid = NULL;
 	struct samr_Ids user_rids, name_types;
-	union samr_UserInfo user_info;
+	uint32_t user_mask = 0;
 
 	struct USER_INFO_X uX;
 
@@ -1301,7 +1301,11 @@ WERROR NetUserSetInfo_r(struct libnetapi_ctx *ctx,
 
 	switch (r->in.level) {
 		case 0:
+		case 1003:
+			user_mask = SAMR_USER_ACCESS_SET_PASSWORD;
+			break;
 		case 1007:
+			user_mask = SAMR_USER_ACCESS_SET_ATTRIBUTES;
 			break;
 		default:
 			werr = WERR_NOT_SUPPORTED;
@@ -1354,7 +1358,7 @@ WERROR NetUserSetInfo_r(struct libnetapi_ctx *ctx,
 
 	status = rpccli_samr_OpenUser(pipe_cli, ctx,
 				      &domain_handle,
-				      SAMR_USER_ACCESS_SET_ATTRIBUTES,
+				      user_mask,
 				      user_rids.ids[0],
 				      &user_handle);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1368,12 +1372,10 @@ WERROR NetUserSetInfo_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	convert_USER_INFO_X_to_samr_user_info21(&uX, &user_info.info21);
-
-	status = rpccli_samr_SetUserInfo(pipe_cli, ctx,
-					 &user_handle,
-					 21,
-					 &user_info);
+	status = set_user_info_USER_INFO_X(ctx, pipe_cli,
+					   &cli->user_session_key,
+					   &user_handle,
+					   &uX);
 	if (!NT_STATUS_IS_OK(status)) {
 		werr = ntstatus_to_werror(status);
 		goto done;
