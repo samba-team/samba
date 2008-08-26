@@ -116,6 +116,7 @@ static NTSTATUS construct_USER_INFO_X(uint32_t level,
 	struct USER_INFO_2 *u2 = NULL;
 	struct USER_INFO_1003 *u1003 = NULL;
 	struct USER_INFO_1007 *u1007 = NULL;
+	struct USER_INFO_1009 *u1009 = NULL;
 	struct USER_INFO_1011 *u1011 = NULL;
 
 	if (!buffer || !uX) {
@@ -174,6 +175,10 @@ static NTSTATUS construct_USER_INFO_X(uint32_t level,
 		case 1007:
 			u1007 = (struct USER_INFO_1007 *)buffer;
 			uX->usriX_comment	= u1007->usri1007_comment;
+			break;
+		case 1009:
+			u1009 = (struct USER_INFO_1009 *)buffer;
+			uX->usriX_script_path	= u1009->usri1009_script_path;
 			break;
 		case 1011:
 			u1011 = (struct USER_INFO_1011 *)buffer;
@@ -1313,6 +1318,7 @@ WERROR NetUserSetInfo_r(struct libnetapi_ctx *ctx,
 			user_mask = SAMR_USER_ACCESS_SET_PASSWORD;
 			break;
 		case 1007:
+		case 1009:
 		case 1011:
 			user_mask = SAMR_USER_ACCESS_SET_ATTRIBUTES;
 			break;
