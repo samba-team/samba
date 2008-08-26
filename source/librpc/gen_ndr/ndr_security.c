@@ -548,7 +548,7 @@ _PUBLIC_ void ndr_print_security_acl(struct ndr_print *ndr, const char *name, co
 	ndr_print_security_acl_revision(ndr, "revision", r->revision);
 	ndr_print_uint16(ndr, "size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?ndr_size_security_acl(r, ndr->flags):r->size);
 	ndr_print_uint32(ndr, "num_aces", r->num_aces);
-	ndr->print(ndr, "%s: ARRAY(%d)", "aces", r->num_aces);
+	ndr->print(ndr, "%s: ARRAY(%d)", "aces", (int)r->num_aces);
 	ndr->depth++;
 	for (cntr_aces_0=0;cntr_aces_0<r->num_aces;cntr_aces_0++) {
 		char *idx_0=NULL;
@@ -976,7 +976,7 @@ _PUBLIC_ void ndr_print_security_token(struct ndr_print *ndr, const char *name, 
 	}
 	ndr->depth--;
 	ndr_print_uint32(ndr, "num_sids", r->num_sids);
-	ndr->print(ndr, "%s: ARRAY(%d)", "sids", r->num_sids);
+	ndr->print(ndr, "%s: ARRAY(%d)", "sids", (int)r->num_sids);
 	ndr->depth++;
 	for (cntr_sids_0=0;cntr_sids_0<r->num_sids;cntr_sids_0++) {
 		char *idx_0=NULL;

@@ -1054,7 +1054,7 @@ _PUBLIC_ void ndr_print_netr_SamBaseInfo(struct ndr_print *ndr, const char *name
 	ndr->depth--;
 	ndr_print_netr_LMSessionKey(ndr, "LMSessKey", &r->LMSessKey);
 	ndr_print_samr_AcctFlags(ndr, "acct_flags", r->acct_flags);
-	ndr->print(ndr, "%s: ARRAY(%d)", "unknown", 7);
+	ndr->print(ndr, "%s: ARRAY(%d)", "unknown", (int)7);
 	ndr->depth++;
 	for (cntr_unknown_0=0;cntr_unknown_0<7;cntr_unknown_0++) {
 		char *idx_0=NULL;
@@ -1229,7 +1229,7 @@ _PUBLIC_ void ndr_print_netr_SamInfo3(struct ndr_print *ndr, const char *name, c
 	ndr_print_ptr(ndr, "sids", r->sids);
 	ndr->depth++;
 	if (r->sids) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "sids", r->sidcount);
+		ndr->print(ndr, "%s: ARRAY(%d)", "sids", (int)r->sidcount);
 		ndr->depth++;
 		for (cntr_sids_1=0;cntr_sids_1<r->sidcount;cntr_sids_1++) {
 			char *idx_1=NULL;
@@ -1337,7 +1337,7 @@ _PUBLIC_ void ndr_print_netr_SamInfo6(struct ndr_print *ndr, const char *name, c
 	ndr_print_ptr(ndr, "sids", r->sids);
 	ndr->depth++;
 	if (r->sids) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "sids", r->sidcount);
+		ndr->print(ndr, "%s: ARRAY(%d)", "sids", (int)r->sidcount);
 		ndr->depth++;
 		for (cntr_sids_1=0;cntr_sids_1<r->sidcount;cntr_sids_1++) {
 			char *idx_1=NULL;
@@ -1351,7 +1351,7 @@ _PUBLIC_ void ndr_print_netr_SamInfo6(struct ndr_print *ndr, const char *name, c
 	ndr->depth--;
 	ndr_print_lsa_String(ndr, "forest", &r->forest);
 	ndr_print_lsa_String(ndr, "principle", &r->principle);
-	ndr->print(ndr, "%s: ARRAY(%d)", "unknown4", 20);
+	ndr->print(ndr, "%s: ARRAY(%d)", "unknown4", (int)20);
 	ndr->depth++;
 	for (cntr_unknown4_0=0;cntr_unknown4_0<20;cntr_unknown4_0++) {
 		char *idx_0=NULL;
@@ -1497,7 +1497,7 @@ _PUBLIC_ void ndr_print_netr_PacInfo(struct ndr_print *ndr, const char *name, co
 	}
 	ndr->depth--;
 	ndr_print_netr_UserSessionKey(ndr, "user_session_key", &r->user_session_key);
-	ndr->print(ndr, "%s: ARRAY(%d)", "expansionroom", 10);
+	ndr->print(ndr, "%s: ARRAY(%d)", "expansionroom", (int)10);
 	ndr->depth++;
 	for (cntr_expansionroom_0=0;cntr_expansionroom_0<10;cntr_expansionroom_0++) {
 		char *idx_0=NULL;
@@ -2773,7 +2773,7 @@ _PUBLIC_ void ndr_print_netr_DELTA_GROUP_MEMBER(struct ndr_print *ndr, const cha
 	ndr_print_ptr(ndr, "rids", r->rids);
 	ndr->depth++;
 	if (r->rids) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "rids", r->num_rids);
+		ndr->print(ndr, "%s: ARRAY(%d)", "rids", (int)r->num_rids);
 		ndr->depth++;
 		for (cntr_rids_1=0;cntr_rids_1<r->num_rids;cntr_rids_1++) {
 			char *idx_1=NULL;
@@ -2788,7 +2788,7 @@ _PUBLIC_ void ndr_print_netr_DELTA_GROUP_MEMBER(struct ndr_print *ndr, const cha
 	ndr_print_ptr(ndr, "attribs", r->attribs);
 	ndr->depth++;
 	if (r->attribs) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "attribs", r->num_rids);
+		ndr->print(ndr, "%s: ARRAY(%d)", "attribs", (int)r->num_rids);
 		ndr->depth++;
 		for (cntr_attribs_1=0;cntr_attribs_1<r->num_rids;cntr_attribs_1++) {
 			char *idx_1=NULL;
@@ -3104,7 +3104,7 @@ _PUBLIC_ void ndr_print_netr_DELTA_POLICY(struct ndr_print *ndr, const char *nam
 	ndr_print_ptr(ndr, "eventauditoptions", r->eventauditoptions);
 	ndr->depth++;
 	if (r->eventauditoptions) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "eventauditoptions", r->maxauditeventcount + 1);
+		ndr->print(ndr, "%s: ARRAY(%d)", "eventauditoptions", (int)r->maxauditeventcount + 1);
 		ndr->depth++;
 		for (cntr_eventauditoptions_1=0;cntr_eventauditoptions_1<r->maxauditeventcount + 1;cntr_eventauditoptions_1++) {
 			char *idx_1=NULL;
@@ -3245,7 +3245,7 @@ _PUBLIC_ void ndr_print_netr_DELTA_TRUSTED_DOMAIN(struct ndr_print *ndr, const c
 	ndr_print_ptr(ndr, "controller_names", r->controller_names);
 	ndr->depth++;
 	if (r->controller_names) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "controller_names", r->num_controllers);
+		ndr->print(ndr, "%s: ARRAY(%d)", "controller_names", (int)r->num_controllers);
 		ndr->depth++;
 		for (cntr_controller_names_1=0;cntr_controller_names_1<r->num_controllers;cntr_controller_names_1++) {
 			char *idx_1=NULL;
@@ -3443,7 +3443,7 @@ _PUBLIC_ void ndr_print_netr_DELTA_ACCOUNT(struct ndr_print *ndr, const char *na
 	ndr_print_ptr(ndr, "privilege_attrib", r->privilege_attrib);
 	ndr->depth++;
 	if (r->privilege_attrib) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "privilege_attrib", r->privilege_entries);
+		ndr->print(ndr, "%s: ARRAY(%d)", "privilege_attrib", (int)r->privilege_entries);
 		ndr->depth++;
 		for (cntr_privilege_attrib_1=0;cntr_privilege_attrib_1<r->privilege_entries;cntr_privilege_attrib_1++) {
 			char *idx_1=NULL;
@@ -3458,7 +3458,7 @@ _PUBLIC_ void ndr_print_netr_DELTA_ACCOUNT(struct ndr_print *ndr, const char *na
 	ndr_print_ptr(ndr, "privilege_name", r->privilege_name);
 	ndr->depth++;
 	if (r->privilege_name) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "privilege_name", r->privilege_entries);
+		ndr->print(ndr, "%s: ARRAY(%d)", "privilege_name", (int)r->privilege_entries);
 		ndr->depth++;
 		for (cntr_privilege_name_1=0;cntr_privilege_name_1<r->privilege_entries;cntr_privilege_name_1++) {
 			char *idx_1=NULL;
@@ -5248,7 +5248,7 @@ _PUBLIC_ void ndr_print_netr_DELTA_ENUM_ARRAY(struct ndr_print *ndr, const char 
 	ndr_print_ptr(ndr, "delta_enum", r->delta_enum);
 	ndr->depth++;
 	if (r->delta_enum) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "delta_enum", r->num_deltas);
+		ndr->print(ndr, "%s: ARRAY(%d)", "delta_enum", (int)r->num_deltas);
 		ndr->depth++;
 		for (cntr_delta_enum_1=0;cntr_delta_enum_1<r->num_deltas;cntr_delta_enum_1++) {
 			char *idx_1=NULL;
@@ -6475,7 +6475,7 @@ _PUBLIC_ void ndr_print_netr_BinaryString(struct ndr_print *ndr, const char *nam
 		ndr_print_ptr(ndr, "data", r->data);
 		ndr->depth++;
 		if (r->data) {
-			ndr->print(ndr, "%s: ARRAY(%d)", "data", r->length / 2);
+			ndr->print(ndr, "%s: ARRAY(%d)", "data", (int)r->length / 2);
 			ndr->depth++;
 			for (cntr_data_1=0;cntr_data_1<r->length / 2;cntr_data_1++) {
 				char *idx_1=NULL;
@@ -6748,7 +6748,7 @@ _PUBLIC_ void ndr_print_netr_DomainQuery1(struct ndr_print *ndr, const char *nam
 	ndr_print_lsa_String(ndr, "product", &r->product);
 	ndr_print_lsa_String(ndr, "unknown5", &r->unknown5);
 	ndr_print_lsa_String(ndr, "unknown6", &r->unknown6);
-	ndr->print(ndr, "%s: ARRAY(%d)", "unknown7", 4);
+	ndr->print(ndr, "%s: ARRAY(%d)", "unknown7", (int)4);
 	ndr->depth++;
 	for (cntr_unknown7_0=0;cntr_unknown7_0<4;cntr_unknown7_0++) {
 		char *idx_0=NULL;
@@ -6985,7 +6985,7 @@ _PUBLIC_ void ndr_print_netr_DomainTrustInfo(struct ndr_print *ndr, const char *
 		ndr_print_dom_sid2(ndr, "sid", r->sid);
 	}
 	ndr->depth--;
-	ndr->print(ndr, "%s: ARRAY(%d)", "unknown1", 4);
+	ndr->print(ndr, "%s: ARRAY(%d)", "unknown1", (int)4);
 	ndr->depth++;
 	for (cntr_unknown1_0=0;cntr_unknown1_0<4;cntr_unknown1_0++) {
 		char *idx_0=NULL;
@@ -6995,7 +6995,7 @@ _PUBLIC_ void ndr_print_netr_DomainTrustInfo(struct ndr_print *ndr, const char *
 		}
 	}
 	ndr->depth--;
-	ndr->print(ndr, "%s: ARRAY(%d)", "unknown", 4);
+	ndr->print(ndr, "%s: ARRAY(%d)", "unknown", (int)4);
 	ndr->depth++;
 	for (cntr_unknown_0=0;cntr_unknown_0<4;cntr_unknown_0++) {
 		char *idx_0=NULL;
@@ -7093,7 +7093,7 @@ _PUBLIC_ void ndr_print_netr_DomainInfo1(struct ndr_print *ndr, const char *name
 	ndr_print_ptr(ndr, "trusts", r->trusts);
 	ndr->depth++;
 	if (r->trusts) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "trusts", r->num_trusts);
+		ndr->print(ndr, "%s: ARRAY(%d)", "trusts", (int)r->num_trusts);
 		ndr->depth++;
 		for (cntr_trusts_1=0;cntr_trusts_1<r->num_trusts;cntr_trusts_1++) {
 			char *idx_1=NULL;
@@ -7105,7 +7105,7 @@ _PUBLIC_ void ndr_print_netr_DomainInfo1(struct ndr_print *ndr, const char *name
 		ndr->depth--;
 	}
 	ndr->depth--;
-	ndr->print(ndr, "%s: ARRAY(%d)", "unknown", 14);
+	ndr->print(ndr, "%s: ARRAY(%d)", "unknown", (int)14);
 	ndr->depth++;
 	for (cntr_unknown_0=0;cntr_unknown_0<14;cntr_unknown_0++) {
 		char *idx_0=NULL;
@@ -7369,7 +7369,7 @@ _PUBLIC_ void ndr_print_netr_DsRAddressToSitenamesWCtr(struct ndr_print *ndr, co
 	ndr_print_ptr(ndr, "sitename", r->sitename);
 	ndr->depth++;
 	if (r->sitename) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "sitename", r->count);
+		ndr->print(ndr, "%s: ARRAY(%d)", "sitename", (int)r->count);
 		ndr->depth++;
 		for (cntr_sitename_1=0;cntr_sitename_1<r->count;cntr_sitename_1++) {
 			char *idx_1=NULL;
@@ -7731,7 +7731,7 @@ _PUBLIC_ void ndr_print_netr_DomainTrustList(struct ndr_print *ndr, const char *
 	ndr_print_ptr(ndr, "array", r->array);
 	ndr->depth++;
 	if (r->array) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "array", r->count);
+		ndr->print(ndr, "%s: ARRAY(%d)", "array", (int)r->count);
 		ndr->depth++;
 		for (cntr_array_1=0;cntr_array_1<r->count;cntr_array_1++) {
 			char *idx_1=NULL;
@@ -7858,7 +7858,7 @@ _PUBLIC_ void ndr_print_netr_DsRAddressToSitenamesExWCtr(struct ndr_print *ndr, 
 	ndr_print_ptr(ndr, "sitename", r->sitename);
 	ndr->depth++;
 	if (r->sitename) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "sitename", r->count);
+		ndr->print(ndr, "%s: ARRAY(%d)", "sitename", (int)r->count);
 		ndr->depth++;
 		for (cntr_sitename_1=0;cntr_sitename_1<r->count;cntr_sitename_1++) {
 			char *idx_1=NULL;
@@ -7873,7 +7873,7 @@ _PUBLIC_ void ndr_print_netr_DsRAddressToSitenamesExWCtr(struct ndr_print *ndr, 
 	ndr_print_ptr(ndr, "subnetname", r->subnetname);
 	ndr->depth++;
 	if (r->subnetname) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "subnetname", r->count);
+		ndr->print(ndr, "%s: ARRAY(%d)", "subnetname", (int)r->count);
 		ndr->depth++;
 		for (cntr_subnetname_1=0;cntr_subnetname_1<r->count;cntr_subnetname_1++) {
 			char *idx_1=NULL;
@@ -7959,7 +7959,7 @@ _PUBLIC_ void ndr_print_DcSitesCtr(struct ndr_print *ndr, const char *name, cons
 	ndr_print_ptr(ndr, "sites", r->sites);
 	ndr->depth++;
 	if (r->sites) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "sites", r->num_sites);
+		ndr->print(ndr, "%s: ARRAY(%d)", "sites", (int)r->num_sites);
 		ndr->depth++;
 		for (cntr_sites_1=0;cntr_sites_1<r->num_sites;cntr_sites_1++) {
 			char *idx_1=NULL;
@@ -12773,7 +12773,7 @@ _PUBLIC_ void ndr_print_netr_DsRAddressToSitenamesW(struct ndr_print *ndr, const
 		ndr_print_uint32(ndr, "count", r->in.count);
 		ndr_print_ptr(ndr, "addresses", r->in.addresses);
 		ndr->depth++;
-		ndr->print(ndr, "%s: ARRAY(%d)", "addresses", r->in.count);
+		ndr->print(ndr, "%s: ARRAY(%d)", "addresses", (int)r->in.count);
 		ndr->depth++;
 		for (cntr_addresses_1=0;cntr_addresses_1<r->in.count;cntr_addresses_1++) {
 			char *idx_1=NULL;
@@ -13316,7 +13316,7 @@ _PUBLIC_ void ndr_print_netr_DsRAddressToSitenamesExW(struct ndr_print *ndr, con
 		ndr_print_uint32(ndr, "count", r->in.count);
 		ndr_print_ptr(ndr, "addresses", r->in.addresses);
 		ndr->depth++;
-		ndr->print(ndr, "%s: ARRAY(%d)", "addresses", r->in.count);
+		ndr->print(ndr, "%s: ARRAY(%d)", "addresses", (int)r->in.count);
 		ndr->depth++;
 		for (cntr_addresses_1=0;cntr_addresses_1<r->in.count;cntr_addresses_1++) {
 			char *idx_1=NULL;

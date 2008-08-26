@@ -172,7 +172,7 @@ _PUBLIC_ void ndr_print_eventlog_Record(struct ndr_print *ndr, const char *name,
 	ndr_print_uint32(ndr, "data_offset", r->data_offset);
 	ndr_print_string(ndr, "source_name", r->source_name);
 	ndr_print_string(ndr, "computer_name", r->computer_name);
-	ndr->print(ndr, "%s: ARRAY(%d)", "strings", r->num_of_strings);
+	ndr->print(ndr, "%s: ARRAY(%d)", "strings", (int)r->num_of_strings);
 	ndr->depth++;
 	for (cntr_strings_0=0;cntr_strings_0<r->num_of_strings;cntr_strings_0++) {
 		char *idx_0=NULL;

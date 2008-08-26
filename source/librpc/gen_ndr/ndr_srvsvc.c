@@ -136,7 +136,7 @@ _PUBLIC_ void ndr_print_srvsvc_NetCharDevCtr0(struct ndr_print *ndr, const char 
 	ndr_print_ptr(ndr, "array", r->array);
 	ndr->depth++;
 	if (r->array) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "array", r->count);
+		ndr->print(ndr, "%s: ARRAY(%d)", "array", (int)r->count);
 		ndr->depth++;
 		for (cntr_array_1=0;cntr_array_1<r->count;cntr_array_1++) {
 			char *idx_1=NULL;
@@ -321,7 +321,7 @@ _PUBLIC_ void ndr_print_srvsvc_NetCharDevCtr1(struct ndr_print *ndr, const char 
 	ndr_print_ptr(ndr, "array", r->array);
 	ndr->depth++;
 	if (r->array) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "array", r->count);
+		ndr->print(ndr, "%s: ARRAY(%d)", "array", (int)r->count);
 		ndr->depth++;
 		for (cntr_array_1=0;cntr_array_1<r->count;cntr_array_1++) {
 			char *idx_1=NULL;
@@ -743,7 +743,7 @@ _PUBLIC_ void ndr_print_srvsvc_NetCharDevQCtr0(struct ndr_print *ndr, const char
 	ndr_print_ptr(ndr, "array", r->array);
 	ndr->depth++;
 	if (r->array) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "array", r->count);
+		ndr->print(ndr, "%s: ARRAY(%d)", "array", (int)r->count);
 		ndr->depth++;
 		for (cntr_array_1=0;cntr_array_1<r->count;cntr_array_1++) {
 			char *idx_1=NULL;
@@ -931,7 +931,7 @@ _PUBLIC_ void ndr_print_srvsvc_NetCharDevQCtr1(struct ndr_print *ndr, const char
 	ndr_print_ptr(ndr, "array", r->array);
 	ndr->depth++;
 	if (r->array) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "array", r->count);
+		ndr->print(ndr, "%s: ARRAY(%d)", "array", (int)r->count);
 		ndr->depth++;
 		for (cntr_array_1=0;cntr_array_1<r->count;cntr_array_1++) {
 			char *idx_1=NULL;
@@ -1317,7 +1317,7 @@ _PUBLIC_ void ndr_print_srvsvc_NetConnCtr0(struct ndr_print *ndr, const char *na
 	ndr_print_ptr(ndr, "array", r->array);
 	ndr->depth++;
 	if (r->array) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "array", r->count);
+		ndr->print(ndr, "%s: ARRAY(%d)", "array", (int)r->count);
 		ndr->depth++;
 		for (cntr_array_1=0;cntr_array_1<r->count;cntr_array_1++) {
 			char *idx_1=NULL;
@@ -1511,7 +1511,7 @@ _PUBLIC_ void ndr_print_srvsvc_NetConnCtr1(struct ndr_print *ndr, const char *na
 	ndr_print_ptr(ndr, "array", r->array);
 	ndr->depth++;
 	if (r->array) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "array", r->count);
+		ndr->print(ndr, "%s: ARRAY(%d)", "array", (int)r->count);
 		ndr->depth++;
 		for (cntr_array_1=0;cntr_array_1<r->count;cntr_array_1++) {
 			char *idx_1=NULL;
@@ -1797,7 +1797,7 @@ _PUBLIC_ void ndr_print_srvsvc_NetFileCtr2(struct ndr_print *ndr, const char *na
 	ndr_print_ptr(ndr, "array", r->array);
 	ndr->depth++;
 	if (r->array) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "array", r->count);
+		ndr->print(ndr, "%s: ARRAY(%d)", "array", (int)r->count);
 		ndr->depth++;
 		for (cntr_array_1=0;cntr_array_1<r->count;cntr_array_1++) {
 			char *idx_1=NULL;
@@ -1985,7 +1985,7 @@ _PUBLIC_ void ndr_print_srvsvc_NetFileCtr3(struct ndr_print *ndr, const char *na
 	ndr_print_ptr(ndr, "array", r->array);
 	ndr->depth++;
 	if (r->array) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "array", r->count);
+		ndr->print(ndr, "%s: ARRAY(%d)", "array", (int)r->count);
 		ndr->depth++;
 		for (cntr_array_1=0;cntr_array_1<r->count;cntr_array_1++) {
 			char *idx_1=NULL;
@@ -2445,7 +2445,7 @@ _PUBLIC_ void ndr_print_srvsvc_NetSessCtr0(struct ndr_print *ndr, const char *na
 	ndr_print_ptr(ndr, "array", r->array);
 	ndr->depth++;
 	if (r->array) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "array", r->count);
+		ndr->print(ndr, "%s: ARRAY(%d)", "array", (int)r->count);
 		ndr->depth++;
 		for (cntr_array_1=0;cntr_array_1<r->count;cntr_array_1++) {
 			char *idx_1=NULL;
@@ -2636,7 +2636,7 @@ _PUBLIC_ void ndr_print_srvsvc_NetSessCtr1(struct ndr_print *ndr, const char *na
 	ndr_print_ptr(ndr, "array", r->array);
 	ndr->depth++;
 	if (r->array) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "array", r->count);
+		ndr->print(ndr, "%s: ARRAY(%d)", "array", (int)r->count);
 		ndr->depth++;
 		for (cntr_array_1=0;cntr_array_1<r->count;cntr_array_1++) {
 			char *idx_1=NULL;
@@ -2860,7 +2860,7 @@ _PUBLIC_ void ndr_print_srvsvc_NetSessCtr2(struct ndr_print *ndr, const char *na
 	ndr_print_ptr(ndr, "array", r->array);
 	ndr->depth++;
 	if (r->array) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "array", r->count);
+		ndr->print(ndr, "%s: ARRAY(%d)", "array", (int)r->count);
 		ndr->depth++;
 		for (cntr_array_1=0;cntr_array_1<r->count;cntr_array_1++) {
 			char *idx_1=NULL;
@@ -3045,7 +3045,7 @@ _PUBLIC_ void ndr_print_srvsvc_NetSessCtr10(struct ndr_print *ndr, const char *n
 	ndr_print_ptr(ndr, "array", r->array);
 	ndr->depth++;
 	if (r->array) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "array", r->count);
+		ndr->print(ndr, "%s: ARRAY(%d)", "array", (int)r->count);
 		ndr->depth++;
 		for (cntr_array_1=0;cntr_array_1<r->count;cntr_array_1++) {
 			char *idx_1=NULL;
@@ -3302,7 +3302,7 @@ _PUBLIC_ void ndr_print_srvsvc_NetSessCtr502(struct ndr_print *ndr, const char *
 	ndr_print_ptr(ndr, "array", r->array);
 	ndr->depth++;
 	if (r->array) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "array", r->count);
+		ndr->print(ndr, "%s: ARRAY(%d)", "array", (int)r->count);
 		ndr->depth++;
 		for (cntr_array_1=0;cntr_array_1<r->count;cntr_array_1++) {
 			char *idx_1=NULL;
@@ -3791,7 +3791,7 @@ _PUBLIC_ void ndr_print_srvsvc_NetShareCtr0(struct ndr_print *ndr, const char *n
 	ndr_print_ptr(ndr, "array", r->array);
 	ndr->depth++;
 	if (r->array) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "array", r->count);
+		ndr->print(ndr, "%s: ARRAY(%d)", "array", (int)r->count);
 		ndr->depth++;
 		for (cntr_array_1=0;cntr_array_1<r->count;cntr_array_1++) {
 			char *idx_1=NULL;
@@ -3973,7 +3973,7 @@ _PUBLIC_ void ndr_print_srvsvc_NetShareCtr1(struct ndr_print *ndr, const char *n
 	ndr_print_ptr(ndr, "array", r->array);
 	ndr->depth++;
 	if (r->array) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "array", r->count);
+		ndr->print(ndr, "%s: ARRAY(%d)", "array", (int)r->count);
 		ndr->depth++;
 		for (cntr_array_1=0;cntr_array_1<r->count;cntr_array_1++) {
 			char *idx_1=NULL;
@@ -4230,7 +4230,7 @@ _PUBLIC_ void ndr_print_srvsvc_NetShareCtr2(struct ndr_print *ndr, const char *n
 	ndr_print_ptr(ndr, "array", r->array);
 	ndr->depth++;
 	if (r->array) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "array", r->count);
+		ndr->print(ndr, "%s: ARRAY(%d)", "array", (int)r->count);
 		ndr->depth++;
 		for (cntr_array_1=0;cntr_array_1<r->count;cntr_array_1++) {
 			char *idx_1=NULL;
@@ -4415,7 +4415,7 @@ _PUBLIC_ void ndr_print_srvsvc_NetShareCtr501(struct ndr_print *ndr, const char 
 	ndr_print_ptr(ndr, "array", r->array);
 	ndr->depth++;
 	if (r->array) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "array", r->count);
+		ndr->print(ndr, "%s: ARRAY(%d)", "array", (int)r->count);
 		ndr->depth++;
 		for (cntr_array_1=0;cntr_array_1<r->count;cntr_array_1++) {
 			char *idx_1=NULL;
@@ -4677,7 +4677,7 @@ _PUBLIC_ void ndr_print_srvsvc_NetShareCtr502(struct ndr_print *ndr, const char 
 	ndr_print_ptr(ndr, "array", r->array);
 	ndr->depth++;
 	if (r->array) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "array", r->count);
+		ndr->print(ndr, "%s: ARRAY(%d)", "array", (int)r->count);
 		ndr->depth++;
 		for (cntr_array_1=0;cntr_array_1<r->count;cntr_array_1++) {
 			char *idx_1=NULL;
@@ -4823,7 +4823,7 @@ _PUBLIC_ void ndr_print_srvsvc_NetShareCtr1004(struct ndr_print *ndr, const char
 	ndr_print_ptr(ndr, "array", r->array);
 	ndr->depth++;
 	if (r->array) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "array", r->count);
+		ndr->print(ndr, "%s: ARRAY(%d)", "array", (int)r->count);
 		ndr->depth++;
 		for (cntr_array_1=0;cntr_array_1<r->count;cntr_array_1++) {
 			char *idx_1=NULL;
@@ -4956,7 +4956,7 @@ _PUBLIC_ void ndr_print_srvsvc_NetShareCtr1005(struct ndr_print *ndr, const char
 	ndr_print_ptr(ndr, "array", r->array);
 	ndr->depth++;
 	if (r->array) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "array", r->count);
+		ndr->print(ndr, "%s: ARRAY(%d)", "array", (int)r->count);
 		ndr->depth++;
 		for (cntr_array_1=0;cntr_array_1<r->count;cntr_array_1++) {
 			char *idx_1=NULL;
@@ -5066,7 +5066,7 @@ _PUBLIC_ void ndr_print_srvsvc_NetShareCtr1006(struct ndr_print *ndr, const char
 	ndr_print_ptr(ndr, "array", r->array);
 	ndr->depth++;
 	if (r->array) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "array", r->count);
+		ndr->print(ndr, "%s: ARRAY(%d)", "array", (int)r->count);
 		ndr->depth++;
 		for (cntr_array_1=0;cntr_array_1<r->count;cntr_array_1++) {
 			char *idx_1=NULL;
@@ -5215,7 +5215,7 @@ _PUBLIC_ void ndr_print_srvsvc_NetShareCtr1007(struct ndr_print *ndr, const char
 	ndr_print_ptr(ndr, "array", r->array);
 	ndr->depth++;
 	if (r->array) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "array", r->count);
+		ndr->print(ndr, "%s: ARRAY(%d)", "array", (int)r->count);
 		ndr->depth++;
 		for (cntr_array_1=0;cntr_array_1<r->count;cntr_array_1++) {
 			char *idx_1=NULL;
@@ -5301,7 +5301,7 @@ _PUBLIC_ void ndr_print_srvsvc_NetShareCtr1501(struct ndr_print *ndr, const char
 	ndr_print_ptr(ndr, "array", r->array);
 	ndr->depth++;
 	if (r->array) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "array", r->count);
+		ndr->print(ndr, "%s: ARRAY(%d)", "array", (int)r->count);
 		ndr->depth++;
 		for (cntr_array_1=0;cntr_array_1<r->count;cntr_array_1++) {
 			char *idx_1=NULL;
@@ -11580,7 +11580,7 @@ _PUBLIC_ void ndr_print_srvsvc_NetDiskInfo(struct ndr_print *ndr, const char *na
 	ndr_print_ptr(ndr, "disks", r->disks);
 	ndr->depth++;
 	if (r->disks) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "disks", r->count);
+		ndr->print(ndr, "%s: ARRAY(%d)", "disks", (int)r->count);
 		ndr->depth++;
 		for (cntr_disks_1=0;cntr_disks_1<r->count;cntr_disks_1++) {
 			char *idx_1=NULL;
@@ -11873,7 +11873,7 @@ _PUBLIC_ void ndr_print_srvsvc_NetTransportCtr0(struct ndr_print *ndr, const cha
 	ndr_print_ptr(ndr, "array", r->array);
 	ndr->depth++;
 	if (r->array) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "array", r->count);
+		ndr->print(ndr, "%s: ARRAY(%d)", "array", (int)r->count);
 		ndr->depth++;
 		for (cntr_array_1=0;cntr_array_1<r->count;cntr_array_1++) {
 			char *idx_1=NULL;
@@ -12121,7 +12121,7 @@ _PUBLIC_ void ndr_print_srvsvc_NetTransportCtr1(struct ndr_print *ndr, const cha
 	ndr_print_ptr(ndr, "array", r->array);
 	ndr->depth++;
 	if (r->array) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "array", r->count);
+		ndr->print(ndr, "%s: ARRAY(%d)", "array", (int)r->count);
 		ndr->depth++;
 		for (cntr_array_1=0;cntr_array_1<r->count;cntr_array_1++) {
 			char *idx_1=NULL;
@@ -12372,7 +12372,7 @@ _PUBLIC_ void ndr_print_srvsvc_NetTransportCtr2(struct ndr_print *ndr, const cha
 	ndr_print_ptr(ndr, "array", r->array);
 	ndr->depth++;
 	if (r->array) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "array", r->count);
+		ndr->print(ndr, "%s: ARRAY(%d)", "array", (int)r->count);
 		ndr->depth++;
 		for (cntr_array_1=0;cntr_array_1<r->count;cntr_array_1++) {
 			char *idx_1=NULL;
@@ -12629,7 +12629,7 @@ _PUBLIC_ void ndr_print_srvsvc_NetTransportCtr3(struct ndr_print *ndr, const cha
 	ndr_print_ptr(ndr, "array", r->array);
 	ndr->depth++;
 	if (r->array) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "array", r->count);
+		ndr->print(ndr, "%s: ARRAY(%d)", "array", (int)r->count);
 		ndr->depth++;
 		for (cntr_array_1=0;cntr_array_1<r->count;cntr_array_1++) {
 			char *idx_1=NULL;

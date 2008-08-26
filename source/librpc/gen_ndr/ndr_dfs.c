@@ -502,7 +502,7 @@ _PUBLIC_ void ndr_print_dfs_Info3(struct ndr_print *ndr, const char *name, const
 	ndr_print_ptr(ndr, "stores", r->stores);
 	ndr->depth++;
 	if (r->stores) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "stores", r->num_stores);
+		ndr->print(ndr, "%s: ARRAY(%d)", "stores", (int)r->num_stores);
 		ndr->depth++;
 		for (cntr_stores_1=0;cntr_stores_1<r->num_stores;cntr_stores_1++) {
 			char *idx_1=NULL;
@@ -665,7 +665,7 @@ _PUBLIC_ void ndr_print_dfs_Info4(struct ndr_print *ndr, const char *name, const
 	ndr_print_ptr(ndr, "stores", r->stores);
 	ndr->depth++;
 	if (r->stores) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "stores", r->num_stores);
+		ndr->print(ndr, "%s: ARRAY(%d)", "stores", (int)r->num_stores);
 		ndr->depth++;
 		for (cntr_stores_1=0;cntr_stores_1<r->num_stores;cntr_stores_1++) {
 			char *idx_1=NULL;
@@ -1073,7 +1073,7 @@ _PUBLIC_ void ndr_print_dfs_Info6(struct ndr_print *ndr, const char *name, const
 	ndr_print_ptr(ndr, "stores", r->stores);
 	ndr->depth++;
 	if (r->stores) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "stores", r->num_stores);
+		ndr->print(ndr, "%s: ARRAY(%d)", "stores", (int)r->num_stores);
 		ndr->depth++;
 		for (cntr_stores_1=0;cntr_stores_1<r->num_stores;cntr_stores_1++) {
 			char *idx_1=NULL;
@@ -2264,7 +2264,7 @@ _PUBLIC_ void ndr_print_dfs_EnumArray1(struct ndr_print *ndr, const char *name, 
 	ndr_print_ptr(ndr, "s", r->s);
 	ndr->depth++;
 	if (r->s) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "s", r->count);
+		ndr->print(ndr, "%s: ARRAY(%d)", "s", (int)r->count);
 		ndr->depth++;
 		for (cntr_s_1=0;cntr_s_1<r->count;cntr_s_1++) {
 			char *idx_1=NULL;
@@ -2350,7 +2350,7 @@ _PUBLIC_ void ndr_print_dfs_EnumArray2(struct ndr_print *ndr, const char *name, 
 	ndr_print_ptr(ndr, "s", r->s);
 	ndr->depth++;
 	if (r->s) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "s", r->count);
+		ndr->print(ndr, "%s: ARRAY(%d)", "s", (int)r->count);
 		ndr->depth++;
 		for (cntr_s_1=0;cntr_s_1<r->count;cntr_s_1++) {
 			char *idx_1=NULL;
@@ -2436,7 +2436,7 @@ _PUBLIC_ void ndr_print_dfs_EnumArray3(struct ndr_print *ndr, const char *name, 
 	ndr_print_ptr(ndr, "s", r->s);
 	ndr->depth++;
 	if (r->s) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "s", r->count);
+		ndr->print(ndr, "%s: ARRAY(%d)", "s", (int)r->count);
 		ndr->depth++;
 		for (cntr_s_1=0;cntr_s_1<r->count;cntr_s_1++) {
 			char *idx_1=NULL;
@@ -2522,7 +2522,7 @@ _PUBLIC_ void ndr_print_dfs_EnumArray4(struct ndr_print *ndr, const char *name, 
 	ndr_print_ptr(ndr, "s", r->s);
 	ndr->depth++;
 	if (r->s) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "s", r->count);
+		ndr->print(ndr, "%s: ARRAY(%d)", "s", (int)r->count);
 		ndr->depth++;
 		for (cntr_s_1=0;cntr_s_1<r->count;cntr_s_1++) {
 			char *idx_1=NULL;
@@ -2608,7 +2608,7 @@ _PUBLIC_ void ndr_print_dfs_EnumArray5(struct ndr_print *ndr, const char *name, 
 	ndr_print_ptr(ndr, "s", r->s);
 	ndr->depth++;
 	if (r->s) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "s", r->count);
+		ndr->print(ndr, "%s: ARRAY(%d)", "s", (int)r->count);
 		ndr->depth++;
 		for (cntr_s_1=0;cntr_s_1<r->count;cntr_s_1++) {
 			char *idx_1=NULL;
@@ -2694,7 +2694,7 @@ _PUBLIC_ void ndr_print_dfs_EnumArray6(struct ndr_print *ndr, const char *name, 
 	ndr_print_ptr(ndr, "s", r->s);
 	ndr->depth++;
 	if (r->s) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "s", r->count);
+		ndr->print(ndr, "%s: ARRAY(%d)", "s", (int)r->count);
 		ndr->depth++;
 		for (cntr_s_1=0;cntr_s_1<r->count;cntr_s_1++) {
 			char *idx_1=NULL;
@@ -2780,7 +2780,7 @@ _PUBLIC_ void ndr_print_dfs_EnumArray200(struct ndr_print *ndr, const char *name
 	ndr_print_ptr(ndr, "s", r->s);
 	ndr->depth++;
 	if (r->s) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "s", r->count);
+		ndr->print(ndr, "%s: ARRAY(%d)", "s", (int)r->count);
 		ndr->depth++;
 		for (cntr_s_1=0;cntr_s_1<r->count;cntr_s_1++) {
 			char *idx_1=NULL;
@@ -2866,7 +2866,7 @@ _PUBLIC_ void ndr_print_dfs_EnumArray300(struct ndr_print *ndr, const char *name
 	ndr_print_ptr(ndr, "s", r->s);
 	ndr->depth++;
 	if (r->s) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "s", r->count);
+		ndr->print(ndr, "%s: ARRAY(%d)", "s", (int)r->count);
 		ndr->depth++;
 		for (cntr_s_1=0;cntr_s_1<r->count;cntr_s_1++) {
 			char *idx_1=NULL;
