@@ -1296,7 +1296,16 @@ void uid_to_sid(DOM_SID *psid, uid_t uid)
 	/* Check the winbindd cache directly. */
 	ret = idmap_cache_find_uid2sid(uid, psid, &expired);
 
-	if (!ret || expired || (ret && is_null_sid(psid))) {
+	if (ret && is_null_sid(psid)) {
+		/*
+		 * Negative cache entry, we already asked.
+		 * do legacy.
+		 */
+		legacy_uid_to_sid(psid, uid);
+		return;
+	}
+
+	if (!ret || expired) {
 		/* Not in cache. Ask winbindd. */
 		if (!winbind_uid_to_sid(psid, uid)) {
 			if (!winbind_ping()) {
@@ -1333,7 +1342,16 @@ void gid_to_sid(DOM_SID *psid, gid_t gid)
 	/* Check the winbindd cache directly. */
 	ret = idmap_cache_find_gid2sid(gid, psid, &expired);
 
-	if (!ret || expired || (ret && is_null_sid(psid))) {
+	if (ret && is_null_sid(psid)) {
+		/*
+		 * Negative cache entry, we already asked.
+		 * do legacy.
+		 */
+		legacy_gid_to_sid(psid, gid);
+		return;
+	}
+
+	if (!ret || expired) {
 		/* Not in cache. Ask winbindd. */
 		if (!winbind_gid_to_sid(psid, gid)) {
 			if (!winbind_ping()) {
@@ -1387,7 +1405,15 @@ bool sid_to_uid(const DOM_SID *psid, uid_t *puid)
 	/* Check the winbindd cache directly. */
 	ret = idmap_cache_find_sid2uid(psid, puid, &expired);
 
-	if (!ret || expired || (ret && (*puid == (uid_t)-1))) {
+	if (ret && (*puid == (uid_t)-1)) {
+		/*
+		 * Negative cache entry, we already asked.
+		 * do legacy.
+		 */
+		return legacy_sid_to_uid(psid, puid);
+	}
+
+	if (!ret || expired) {
 		/* Not in cache. Ask winbindd. */
 		if (!winbind_sid_to_uid(puid, psid)) {
 			if (!winbind_ping()) {
@@ -1443,7 +1469,15 @@ bool sid_to_gid(const DOM_SID *psid, gid_t *pgid)
 	/* Check the winbindd cache directly. */
 	ret = idmap_cache_find_sid2gid(psid, pgid, &expired);
 
-	if (!ret || expired || (ret && (*pgid == (gid_t)-1))) {
+	if (ret && (*pgid == (gid_t)-1)) {
+		/*
+		 * Negative cache entry, we already asked.
+		 * do legacy.
+		 */
+		return legacy_sid_to_gid(psid, pgid);
+	}
+
+	if (!ret || expired) {
 		/* Not in cache or negative. Ask winbindd. */
 		/* Ask winbindd if it can map this sid to a gid.
 		 * (Idmap will check it is a valid SID and of the right type) */
