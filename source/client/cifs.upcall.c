@@ -1,15 +1,15 @@
 /*
-* CIFS SPNEGO user-space helper.
+* CIFS user-space helper.
 * Copyright (C) Igor Mammedov (niallain@gmail.com) 2007
 *
 * Used by /sbin/request-key for handling
 * cifs upcall for kerberos authorization of access to share and
 * cifs upcall for DFS srver name resolving (IPv4/IPv6 aware).
-* You should have keyutils installed and add following line to
-* /etc/request-key.conf file
+* You should have keyutils installed and add something like the
+* following lines to /etc/request-key.conf file:
 
-create cifs.spnego * * /usr/local/sbin/cifs.spnego [-v][-c] %k
-create cifs.resolver * * /usr/local/sbin/cifs.spnego [-v] %k
+create cifs.spnego * * /usr/local/sbin/cifs.upcall %k
+create dns_resolver * * /usr/local/sbin/cifs.upcall %k
 
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -29,8 +29,8 @@ create cifs.resolver * * /usr/local/sbin/cifs.spnego [-v] %k
 
 #include "cifs_spnego.h"
 
-const char *CIFSSPNEGO_VERSION = "1.1";
-static const char *prog = "cifs.spnego";
+const char *CIFSSPNEGO_VERSION = "1.2";
+static const char *prog = "cifs.upcall";
 typedef enum _secType {
 	KRB5,
 	MS_KRB5
@@ -73,7 +73,7 @@ int handle_krb5_mech(const char *oid, const char *principal,
 	tkt_wrapped = spnego_gen_krb5_wrap(tkt, TOK_ID_KRB_AP_REQ);
 
 	/* and wrap that in a shiny SPNEGO wrapper */
-	*secblob = gen_negTokenInit(OID_KERBEROS5, tkt_wrapped);
+	*secblob = gen_negTokenInit(oid, tkt_wrapped);
 
 	data_blob_free(&tkt_wrapped);
 	data_blob_free(&tkt);
@@ -118,6 +118,9 @@ int decode_key_description(const char *desc, int *ver, secType_t * sec,
 			if (strncmp(tkn + 4, "krb5", 4) == 0) {
 				retval |= DKD_HAVE_SEC;
 				*sec = KRB5;
+			} else if (strncmp(tkn + 4, "mskrb5", 6) == 0) {
+				retval |= DKD_HAVE_SEC;
+				*sec = MS_KRB5;
 			}
 		} else if (strncmp(tkn, "uid=", 4) == 0) {
 			errno = 0;
@@ -200,25 +203,29 @@ int cifs_resolver(const key_serial_t key, const char *key_descr)
 	return 0;
 }
 
+void
+usage(void)
+{
+	syslog(LOG_WARNING, "Usage: %s [-c] [-v] key_serial", prog);
+	fprintf(stderr, "Usage: %s [-c] [-v] key_serial\n", prog);
+}
+
 int main(const int argc, char *const argv[])
 {
 	struct cifs_spnego_msg *keydata = NULL;
 	DATA_BLOB secblob = data_blob_null;
 	DATA_BLOB sess_key = data_blob_null;
 	secType_t sectype;
-	key_serial_t key;
+	key_serial_t key = 0;
 	size_t datalen;
 	long rc = 1;
 	uid_t uid;
 	int kernel_upcall_version;
 	int c, use_cifs_service_prefix = 0;
 	char *buf, *hostname = NULL;
+	const char *oid;
 
 	openlog(prog, 0, LOG_DAEMON);
-	if (argc < 1) {
-		syslog(LOG_WARNING, "Usage: %s [-c] key_serial", prog);
-		goto out;
-	}
 
 	while ((c = getopt(argc, argv, "cv")) != -1) {
 		switch (c) {
@@ -227,20 +234,27 @@ int main(const int argc, char *const argv[])
 			break;
 			}
 		case 'v':{
-			syslog(LOG_WARNING, "version: %s", CIFSSPNEGO_VERSION);
-			fprintf(stderr, "version: %s", CIFSSPNEGO_VERSION);
-			break;
+			printf("version: %s\n", CIFSSPNEGO_VERSION);
+			goto out;
 			}
 		default:{
-			syslog(LOG_WARNING, "unknow option: %c", c);
+			syslog(LOG_WARNING, "unknown option: %c", c);
 			goto out;
 			}
 		}
 	}
+
+	/* is there a key? */
+	if (argc <= optind) {
+		usage();
+		goto out;
+	}
+
 	/* get key and keyring values */
 	errno = 0;
 	key = strtol(argv[optind], NULL, 10);
 	if (errno != 0) {
+		key = 0;
 		syslog(LOG_WARNING, "Invalid key format: %s", strerror(errno));
 		goto out;
 	}
@@ -253,7 +267,8 @@ int main(const int argc, char *const argv[])
 		goto out;
 	}
 
-	if (strncmp(buf, "cifs.resolver", sizeof("cifs.resolver")-1) == 0) {
+	if ((strncmp(buf, "cifs.resolver", sizeof("cifs.resolver")-1) == 0) ||
+	    (strncmp(buf, "dns_resolver", sizeof("dns_resolver")-1) == 0)) {
 		rc = cifs_resolver(key, buf);
 		goto out;
 	}
@@ -269,7 +284,7 @@ int main(const int argc, char *const argv[])
 	}
 	SAFE_FREE(buf);
 
-	if (kernel_upcall_version != CIFS_SPNEGO_UPCALL_VERSION) {
+	if (kernel_upcall_version > CIFS_SPNEGO_UPCALL_VERSION) {
 		syslog(LOG_WARNING,
 		       "incompatible kernel upcall version: 0x%x",
 		       kernel_upcall_version);
@@ -290,6 +305,7 @@ int main(const int argc, char *const argv[])
 
 	// do mech specific authorization
 	switch (sectype) {
+	case MS_KRB5:
 	case KRB5:{
 			char *princ;
 			size_t len;
@@ -308,8 +324,12 @@ int main(const int argc, char *const argv[])
 			}
 			strlcpy(princ + 5, hostname, len - 5);
 
-			rc = handle_krb5_mech(OID_KERBEROS5, princ,
-					      &secblob, &sess_key);
+			if (sectype == MS_KRB5)
+				oid = OID_KERBEROS5_OLD;
+			else
+				oid = OID_KERBEROS5;
+
+			rc = handle_krb5_mech(oid, princ, &secblob, &sess_key);
 			SAFE_FREE(princ);
 			break;
 		}
@@ -333,7 +353,7 @@ int main(const int argc, char *const argv[])
 		rc = 1;
 		goto out;
 	}
-	keydata->version = CIFS_SPNEGO_UPCALL_VERSION;
+	keydata->version = kernel_upcall_version;
 	keydata->flags = 0;
 	keydata->sesskey_len = sess_key.length;
 	keydata->secblob_len = secblob.length;
@@ -351,7 +371,14 @@ int main(const int argc, char *const argv[])
 	/* BB: maybe we need use timeout for key: for example no more then
 	 * ticket lifietime? */
 	/* keyctl_set_timeout( key, 60); */
-      out:
+out:
+	/*
+	 * on error, negatively instantiate the key ourselves so that we can
+	 * make sure the kernel doesn't hang it off of a searchable keyring
+	 * and interfere with the next attempt to instantiate the key.
+	 */
+	if (rc != 0  && key == 0)
+		keyctl_negate(key, 1, KEY_REQKEY_DEFL_DEFAULT);
 	data_blob_free(&secblob);
 	data_blob_free(&sess_key);
 	SAFE_FREE(hostname);

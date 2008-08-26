@@ -1,116 +1,22 @@
                    ==============================
-                   Release Notes for Samba 3.2.1
-                           August 5, 2008
+                   Release Notes for Samba 3.2.3
+
                    ==============================
 
-This is the second stable release of Samba 3.2.
+This is a bug fix release of the Samba 3.2 series.
 
-Major bug fixes included in Samba 3.2.1 are:
+Major bug fixes included in Samba 3.2.3 are:
 
-  o Regression in Winbindd offline mode.
-  o Flushing of smb.conf when creating a new share using SWAT.
-  o Setting of ACEs in setups with "dos filemode = yes".
 
 
 ######################################################################
 Changes
 #######
 
-Changes since 3.2.0
+Changes since 3.2.2
 -------------------
 
 
-o   Michael Adam <obnox@samba.org>
-    * BUG 5608: Fix link creation for libtalloc.so.1 (and friends) on
-      Solaris 8.
-    * BUG 5594: Fix "make test" by adding and using a new testparm
-      switch "--skip-logic-checks".
-    * Fix creation of libaddns.a, libsmbclient.a and libsharemodes.a.
-    * Update the section about net conf in the net(8) manpage.
-    * Improve processing of registry shares.
-    * Fix listing of registry shares with testparm.
-    * Fix several build issues.
-
-
-o   Jeremy Allison <jra@samba.org>
-    * BUG 5578: Fix error from strlcat.
-    * BUG 5613: Fix flushing of smb.conf when creating a new share using SWAT.
-    * Ensure consistent use of pdb_get_nt_passwd instead of
-      pdb_get_lanman_passwd.
-    * Remove worrying warning message when safe_strcpy tries to copy a
-      pseaudo interface name that's too long.
-    * Canonicalize servername in the printer functions to remove leading
-      '\\' characters.
-    * Fix option processing in smbcacls - add POPT_COMMON_CONNECTION.
-
-
-o   Jim Brown <jim.brown@miami.edu>
-    * Fix SGI compiler warnings.
-
-
-o   Günther Deschner <gd@samba.org>
-    * BUG 5570: Fix bogus error message during AD domain join.
-    * Fix build warning.
-
-
-o   SATOH Fumiyasu <fumiyas@osstech.co.jp>
-    * BUG 5202: Fix setting of ACEs for users/groups with write access
-      in setups with 'dos filemode = yes'.
-    * Re-activate 'acl group control' parameter and make it only apply
-      to owning group.
-
-
-o   Volodymyr Khomenko <Volodymyr.Khomenko@exanet.com>
-    * Make ntimes function more like POSIX and allow NULL arg.
-
-
-o   Volker Lendecke <vl@samba.org>
-    * BUG 5512: Fix alignment problems on sparc.
-    * Fix a segfault in base64_encode_data_blob.
-    * Fix some uninitialized variable references via ndr_print.
-    * Fix error message if trying to join with a non-privileged user.
-    * Fix setups using "include = registry" without [global] settings
-      in the registry.
-    * Fix "net sam rights" on domain member servers.
-    * Add documentation for the vfs streams modules.
-
-
-o   Herb Lewis <herb@samba.org>
-    * Cleanup some duplicate code by passing the password to the wbinfo_auth*
-      functions.
-    * Allow SID with 0 in subauthority to be converted properly.
-
-
-o   Zach Loafman <zachary.loafman@isilon.com>
-    * Set sin[6]_family instead of ss_family in in[6]_addr_to_sockaddr_storage.
-    * Fix realpath() check so that it doesn't generate a core() when it fails.
-
-
-o   Jim McDonough <jmcd@samba.org>
-    * Fix overwriting of winbind logfiles.
-
-
-o   Lars Müller <lars@samba.org>
-    * Fix "vfs_full_audit.c: name table not in sync with vfs.h" panic.
-
-
-o   Darshan Purandare <dpurandare@isilon.com>
-    * Add broadcasting of the debug message to all winbindd children.
-
-
-o   Andreas Schneider <anschneider@suse.de>
-    * Release still reachable memory if the smbclient context is freed.
-
-
-o   Simo Sorce <idra@samba.org>
-    * BUG 5540: Fix "set primary group script" user option substitution.
-    * Fix regression in Winbindd offline mode.
-
-
-o   Bo Yang <boyang@novell.com>
-    * Allow authentication and memory credential refresh after password
-      change from gdm/xdm.
-    * Allow %u parameters for print job username.
 
 
 ######################################################################

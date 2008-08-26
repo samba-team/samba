@@ -528,7 +528,7 @@ static NTSTATUS make_cli_gss_blob(struct smb_trans_enc_state *es,
 				&es->s.gss_state->gss_ctx,
 				srv_name,
 				GSS_C_NO_OID, /* default OID. */
-				GSS_C_MUTUAL_FLAG | GSS_C_REPLAY_FLAG | GSS_C_SEQUENCE_FLAG,
+				GSS_C_MUTUAL_FLAG | GSS_C_REPLAY_FLAG | GSS_C_SEQUENCE_FLAG | GSS_C_DELEG_FLAG,
 				GSS_C_INDEFINITE,	/* requested ticket lifetime. */
 				NULL,   /* no channel bindings */
 				p_tok_in,

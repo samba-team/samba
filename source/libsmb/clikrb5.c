@@ -37,6 +37,18 @@
 #define KRB5_KEY_DATA(k)	((k)->contents)
 #endif /* HAVE_KRB5_KEYBLOCK_KEYVALUE */
 
+#define GSSAPI_CHECKSUM      0x8003             /* Checksum type value for Kerberos */
+#define GSSAPI_BNDLENGTH     16                 /* Bind Length (rfc-1964 pg.3) */
+#define GSSAPI_CHECKSUM_SIZE (12+GSSAPI_BNDLENGTH)
+
+#if defined(TKT_FLG_OK_AS_DELEGATE ) && defined(HAVE_KRB5_FWD_TGT_CREDS) && defined(HAVE_KRB5_AUTH_CON_SET_REQ_CKSUMTYPE) && defined(KRB5_AUTH_CONTEXT_USE_SUBKEY)
+static krb5_error_code ads_krb5_get_fwd_ticket( krb5_context context,
+                                         krb5_auth_context *auth_context,
+                                         krb5_creds *credsp,
+                                         krb5_ccache ccache,
+                                         krb5_data *authenticator);
+#endif
+
 /**************************************************************
  Wrappers around kerberos string functions that convert from
  utf8 -> unix charset and vica versa.
@@ -636,6 +648,8 @@ static krb5_error_code ads_krb5_mk_req(krb5_context context,
 	bool creds_ready = False;
 	int i = 0, maxtries = 3;
 	
+	ZERO_STRUCT(in_data);
+
 	retval = smb_krb5_parse_name(context, principal, &server);
 	if (retval) {
 		DEBUG(1,("ads_krb5_mk_req: Failed to parse principal %s\n", principal));
@@ -691,14 +705,69 @@ static krb5_error_code ads_krb5_mk_req(krb5_context context,
 		*expire_time = (time_t)credsp->times.endtime;
 	}
 
-	in_data.length = 0;
+#if defined(TKT_FLG_OK_AS_DELEGATE ) && defined(HAVE_KRB5_FWD_TGT_CREDS) && defined(HAVE_KRB5_AUTH_CON_SET_REQ_CKSUMTYPE) && defined(KRB5_AUTH_CONTEXT_USE_SUBKEY)
+	if( credsp->ticket_flags & TKT_FLG_OK_AS_DELEGATE ) {
+		/* Fetch a forwarded TGT from the KDC so that we can hand off a 2nd ticket
+		 as part of the kerberos exchange. */
+
+		DEBUG( 3, ("ads_krb5_mk_req: server marked as OK to delegate to, building forwardable TGT\n")  );
+
+		if( *auth_context == NULL ) {
+			/* Allocate if it has not yet been allocated. */
+			retval = krb5_auth_con_init( context, auth_context );
+			if (retval) {
+				DEBUG(1,("ads_krb5_mk_req: krb5_auth_con_init failed (%s)\n",
+					error_message(retval)));
+				goto cleanup_creds;
+			}
+		}
+
+		retval = krb5_auth_con_setuseruserkey( context, *auth_context, &credsp->keyblock );
+		if (retval) {
+			DEBUG(1,("ads_krb5_mk_req: krb5_auth_con_setuseruserkey failed (%s)\n",
+				error_message(retval)));
+			goto cleanup_creds;
+		}
+
+		/* Must use a subkey for forwarded tickets. */
+		retval = krb5_auth_con_setflags( context, *auth_context, KRB5_AUTH_CONTEXT_USE_SUBKEY);
+		if (retval) {
+			DEBUG(1,("ads_krb5_mk_req: krb5_auth_con_setflags failed (%s)\n",
+				error_message(retval)));
+			goto cleanup_creds;
+		}
+
+		retval = ads_krb5_get_fwd_ticket( context,
+						auth_context,
+						credsp,
+						ccache,
+						&in_data );
+		if (retval) {
+			DEBUG( 1, ("ads_krb5_get_fwd_ticket failed (%s)\n", error_message( retval ) ) );
+			goto cleanup_creds;
+		}
+
+		if (retval) {
+			DEBUG( 1, ("krb5_auth_con_set_req_cksumtype failed (%s)\n",
+				error_message( retval ) ) );
+			goto cleanup_creds;
+		}
+
+	}
+#endif
+
 	retval = krb5_mk_req_extended(context, auth_context, ap_req_options, 
 				      &in_data, credsp, outbuf);
 	if (retval) {
 		DEBUG(1,("ads_krb5_mk_req: krb5_mk_req_extended failed (%s)\n", 
 			 error_message(retval)));
 	}
-	
+
+	if (in_data.data) {
+		free( in_data.data );
+		in_data.length = 0;
+	}
+
 	krb5_free_creds(context, credsp);
 
 cleanup_creds:
@@ -1703,6 +1772,119 @@ done:
  	TALLOC_FREE(mem_ctx);
  	return ret;
 }
+
+#if defined(TKT_FLG_OK_AS_DELEGATE ) && defined(HAVE_KRB5_FWD_TGT_CREDS) && defined(HAVE_KRB5_AUTH_CON_SET_REQ_CKSUMTYPE) && defined(KRB5_AUTH_CONTEXT_USE_SUBKEY)
+/**************************************************************
+Routine: ads_krb5_get_fwd_ticket
+ Description:
+    When a service ticket is flagged as trusted
+    for delegation we should provide a forwardable
+    ticket so that the remote host can act on our
+    behalf.  This is done by taking the 2nd forwardable
+    TGT and storing it in the GSS-API authenticator
+    "checksum".  This routine will populate
+    the krb5_data authenticator with this TGT.
+ Parameters:
+    krb5_context context: The kerberos context for this authentication.
+    krb5_auth_context:    The authentication context.
+    krb5_creds *credsp:   The ticket credentials (AS-REP).
+    krb5_ccache ccache:   The credentials cache.
+    krb5_data &authenticator: The checksum field that will store the TGT, and
+     authenticator.data must be freed by the caller.
+
+ Returns:
+    krb5_error_code: 0 if no errors, otherwise set.
+**************************************************************/
+
+static krb5_error_code ads_krb5_get_fwd_ticket( krb5_context context,
+					 krb5_auth_context *auth_context,
+					 krb5_creds *credsp,
+					 krb5_ccache ccache,
+					 krb5_data *authenticator)
+{
+	krb5_data fwdData;
+	krb5_error_code retval = 0;
+	char *pChksum = NULL;
+	char *p = NULL;
+
+	ZERO_STRUCT(fwdData);
+	ZERO_STRUCTP(authenticator);
+
+	retval = krb5_fwd_tgt_creds(context,/* Krb5 context [in] */
+				*auth_context,  /* Authentication context [in] */
+				CONST_DISCARD(char *, KRB5_TGS_NAME),  /* Ticket service name ("krbtgt") [in] */
+				credsp->client, /* Client principal for the tgt [in] */
+				credsp->server, /* Server principal for the tgt [in] */
+				ccache,         /* Credential cache to use for storage [in] */
+				1,              /* Turn on for "Forwardable ticket" [in] */
+				&fwdData );     /* Resulting response [out] */
+
+
+	if (retval) {
+		DEBUG(1,("ads_krb5_get_fwd_ticket: krb5_fwd_tgt_creds failed (%s)\n", 
+			error_message(retval)));
+		goto out;
+	}
+
+	if ((unsigned int)GSSAPI_CHECKSUM_SIZE + (unsigned int)fwdData.length <
+		(unsigned int)GSSAPI_CHECKSUM_SIZE) {
+		retval = EINVAL;
+		goto out;
+	}
+
+	/* We're going to allocate a gssChecksum structure with a little
+	   extra data the length of the kerberos credentials length
+	   (APPLICATION 22) so that we can pack it on the end of the structure.
+	*/
+
+	pChksum	= (char *)SMB_MALLOC(GSSAPI_CHECKSUM_SIZE + fwdData.length );
+	if (!pChksum) {
+		retval = ENOMEM;
+		goto out;
+	}
+
+	p = pChksum;
+
+	SIVAL(p, 0, GSSAPI_BNDLENGTH);
+	p += 4;
+
+	/* Zero out the bindings fields */
+	memset(p, '\0', GSSAPI_BNDLENGTH );
+	p += GSSAPI_BNDLENGTH;
+
+	SIVAL(p, 0, GSS_C_DELEG_FLAG );
+	p += 4;
+	SSVAL(p, 0, 1 );
+	p += 2;
+	SSVAL(p, 0, fwdData.length );
+	p += 2;
+
+	/* Migrate the kerberos KRB_CRED data to the checksum delegation */
+	memcpy(p, fwdData.data, fwdData.length );
+	p += fwdData.length;
+
+	/* We need to do this in order to allow our GSS-API  */
+	retval = krb5_auth_con_set_req_cksumtype( context, *auth_context, GSSAPI_CHECKSUM );
+	if (retval) {
+		goto out;
+	}
+
+	/* We now have a service ticket, now turn it into an AP-REQ. */
+	authenticator->length = fwdData.length + GSSAPI_CHECKSUM_SIZE;
+
+	/* Caller should call free() when they're done with this. */
+	authenticator->data = (char *)pChksum;
+
+  out:
+
+ 	/* Remove that input data, we never needed it anyway. */
+   	if (fwdData.length > 0) {
+  		krb5_free_data_contents( context, &fwdData );
+   	}
+
+	return retval;
+}
+#endif
 
 #else /* HAVE_KRB5 */
  /* this saves a few linking headaches */

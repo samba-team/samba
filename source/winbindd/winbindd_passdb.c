@@ -94,6 +94,7 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 			    DOM_SID *sid,
 			    enum lsa_SidType *type)
 {
+	const char *fullname;
 	uint32 flags = LOOKUP_NAME_ALL;
 
 	switch ( original_cmd ) {
@@ -107,12 +108,27 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 		break;
 	}
 	
-	DEBUG(10, ("Finding name %s\n", name));
+	if (domain_name && domain_name[0] && strchr_m(name, '\\') == NULL) {
+		fullname = talloc_asprintf(mem_ctx, "%s\\%s",
+				domain_name, name);
+		if (fullname == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+	} else {
+		fullname = name;
+	}
 
-	if ( !lookup_name( mem_ctx, name, flags, NULL, NULL, sid, type ) ) {
+	DEBUG(10, ("Finding fullname %s\n", fullname));
+
+	if ( !lookup_name( mem_ctx, fullname, flags, NULL, NULL, sid, type ) ) {
 		return NT_STATUS_NONE_MAPPED;
 	}
 
+	DEBUG(10, ("name_to_sid for %s returned %s (%s)\n",
+		fullname,
+		sid_string_dbg(sid),
+		sid_type_lookup((uint32)*type)));
+		
 	return NT_STATUS_OK;
 }
 
@@ -217,7 +233,7 @@ static NTSTATUS rids_to_names(struct winbindd_domain *domain,
 			(*names)[i] = CONST_DISCARD(char *, nam);
 		}
 
-		if (domain_name == NULL) {
+		if (*domain_name == NULL) {
 			*domain_name = CONST_DISCARD(char *, dom);
 		} else {
 			char *dname = CONST_DISCARD(char *, dom);

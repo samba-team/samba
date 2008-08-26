@@ -1735,16 +1735,19 @@ void reply_sesssetup_and_X(struct smb_request *req)
 		return;
 	}
 
-	nt_status = create_local_token(server_info);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(10, ("create_local_token failed: %s\n",
-			   nt_errstr(nt_status)));
-		data_blob_free(&nt_resp);
-		data_blob_free(&lm_resp);
-		data_blob_clear_free(&plaintext_password);
-		reply_nterror(req, nt_status_squash(nt_status));
-		END_PROFILE(SMBsesssetupX);
-		return;
+	if (!server_info->ptok) {
+		nt_status = create_local_token(server_info);
+
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			DEBUG(10, ("create_local_token failed: %s\n",
+				   nt_errstr(nt_status)));
+			data_blob_free(&nt_resp);
+			data_blob_free(&lm_resp);
+			data_blob_clear_free(&plaintext_password);
+			reply_nterror(req, nt_status_squash(nt_status));
+			END_PROFILE(SMBsesssetupX);
+			return;
+		}
 	}
 
 	if (server_info->user_session_key.data) {

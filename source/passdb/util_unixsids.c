@@ -38,13 +38,13 @@ bool sid_check_is_in_unix_users(const DOM_SID *sid)
 bool uid_to_unix_users_sid(uid_t uid, DOM_SID *sid)
 {
 	sid_copy(sid, &global_sid_Unix_Users);
-	return sid_append_rid(sid, uid);
+	return sid_append_rid(sid, (uint32_t)uid);
 }
 
 bool gid_to_unix_groups_sid(gid_t gid, DOM_SID *sid)
 {
 	sid_copy(sid, &global_sid_Unix_Groups);
-	return sid_append_rid(sid, gid);
+	return sid_append_rid(sid, (uint32_t)gid);
 }
 
 const char *unix_users_domain_name(void)
@@ -62,7 +62,7 @@ bool lookup_unix_user_name(const char *name, DOM_SID *sid)
 	}
 
 	sid_copy(sid, &global_sid_Unix_Users);
-	sid_append_rid(sid, pwd->pw_uid); /* For 64-bit uid's we have enough
+	sid_append_rid(sid, (uint32_t)pwd->pw_uid); /* For 64-bit uid's we have enough
 					  * space ... */
 	TALLOC_FREE(pwd);
 	return True;
@@ -93,13 +93,13 @@ bool lookup_unix_group_name(const char *name, DOM_SID *sid)
 {
 	struct group *grp;
 
-	grp = getgrnam(name);
+	grp = sys_getgrnam(name);
 	if (grp == NULL) {
 		return False;
 	}
 
 	sid_copy(sid, &global_sid_Unix_Groups);
-	sid_append_rid(sid, grp->gr_gid); /* For 64-bit uid's we have enough
+	sid_append_rid(sid, (uint32_t)grp->gr_gid); /* For 64-bit uid's we have enough
 					   * space ... */
 	return True;
 }

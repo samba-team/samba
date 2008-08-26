@@ -2614,6 +2614,11 @@ NTSTATUS create_file_unixpath(connection_struct *conn,
 		goto fail;
 	}
 
+	if (create_options & NTCREATEX_OPTIONS_INVALID_PARAM_MASK) {
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
+	}
+
 	if (req == NULL) {
 		oplock_request |= INTERNAL_OPEN_ONLY;
 	}
@@ -3051,6 +3056,11 @@ NTSTATUS create_file(connection_struct *conn,
 
 			ZERO_STRUCT(sbuf);
 			goto done;
+		}
+
+		if (!(conn->fs_capabilities & FILE_NAMED_STREAMS)) {
+			status = NT_STATUS_OBJECT_PATH_NOT_FOUND;
+			goto fail;
 		}
 	}
 

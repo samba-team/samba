@@ -63,7 +63,7 @@
 
 	<para>
 	The values following the equals sign in parameters are all either a string (no quotes needed) or a boolean,
-	which may be given as yes/no, 0/1 or true/false. Case is not significant in boolean values, but is preserved
+	which may be given as yes/no, 1/0 or true/false. Case is not significant in boolean values, but is preserved
 	in string values. Some items such as create masks are numeric.
 	</para>
 

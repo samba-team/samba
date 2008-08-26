@@ -665,9 +665,8 @@
 		</varlistentry>
 
 		<varlistentry>
-		<term>hardlink &lt;src&gt; &lt;dest&lt;</term>
+		<term>hardlink &lt;src&gt; &lt;dest&gt;</term>
 		<listitem><para>Creates a hardlink on the server using Windows CIFS semantics.
-		the POSIX ACL on a file.
 		</para></listitem>
 		</varlistentry>
 
@@ -927,6 +926,13 @@
 		working directory on the source machine that match the mask specified
 		to the mget or mput commands will be copied, and any mask specified
 		using the mask command will be ignored. </para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>rename &lt;old filename&gt; &lt;new filename&gt;</term>
+		<listitem><para>Rename files in the current working directory on the
+		server from <replaceable>old filename</replaceable> to
+		<replaceable>new filename</replaceable>. </para></listitem>
 		</varlistentry>
 
 		<varlistentry>

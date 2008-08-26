@@ -98,6 +98,13 @@ bool dbwrap_store_uint32(struct db_context *db, const char *keystr, uint32_t v)
 	return NT_STATUS_IS_OK(status) ? 0 : -1;
 }
 
+/**
+ * Atomic unsigned integer change (addition):
+ *
+ * if value does not exist yet in the db, use *oldval as initial old value.
+ * return old value in *oldval.
+ * store *oldval + change_val to db.
+ */
 uint32_t dbwrap_change_uint32_atomic(struct db_context *db, const char *keystr,
 				     uint32_t *oldval, uint32_t change_val)
 {
@@ -110,9 +117,13 @@ uint32_t dbwrap_change_uint32_atomic(struct db_context *db, const char *keystr,
 		return -1;
 	}
 
-	if ((rec->value.dptr != NULL)
-	    && (rec->value.dsize == sizeof(val))) {
+	if (rec->value.dptr == NULL) {
+		val = *oldval;
+	} else if (rec->value.dsize == sizeof(val)) {
 		val = IVAL(rec->value.dptr, 0);
+		*oldval = val;
+	} else {
+		return -1;
 	}
 
 	val += change_val;
@@ -127,6 +138,13 @@ uint32_t dbwrap_change_uint32_atomic(struct db_context *db, const char *keystr,
 	return 0;
 }
 
+/**
+ * Atomic integer change (addition):
+ *
+ * if value does not exist yet in the db, use *oldval as initial old value.
+ * return old value in *oldval.
+ * store *oldval + change_val to db.
+ */
 int32 dbwrap_change_int32_atomic(struct db_context *db, const char *keystr,
 				 int32 *oldval, int32 change_val)
 {
@@ -139,9 +157,13 @@ int32 dbwrap_change_int32_atomic(struct db_context *db, const char *keystr,
 		return -1;
 	}
 
-	if ((rec->value.dptr != NULL)
-	    && (rec->value.dsize == sizeof(val))) {
+	if (rec->value.dptr == NULL) {
+		val = *oldval;
+	} else if (rec->value.dsize == sizeof(val)) {
 		val = IVAL(rec->value.dptr, 0);
+		*oldval = val;
+	} else {
+		return -1;
 	}
 
 	val += change_val;

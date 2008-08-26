@@ -27,6 +27,34 @@
 #define DBGC_CLASS DBGC_AUTH
 
 /****************************************************************************
+ Ensure primary group SID is always at position 0 in a 
+ auth_serversupplied_info struct.
+****************************************************************************/
+
+static void sort_sid_array_for_smbd(auth_serversupplied_info *result,
+				const DOM_SID *pgroup_sid)
+{
+	unsigned int i;
+
+	if (!result->sids) {
+		return;
+	}
+
+	if (sid_compare(&result->sids[0], pgroup_sid)==0) {
+		return;
+	}
+
+	for (i = 1; i < result->num_sids; i++) {
+		if (sid_compare(pgroup_sid,
+				&result->sids[i]) == 0) {
+			sid_copy(&result->sids[i], &result->sids[0]);
+			sid_copy(&result->sids[0], pgroup_sid);
+			return;
+		}
+	}
+}
+
+/****************************************************************************
  Create a UNIX user on demand.
 ****************************************************************************/
 
@@ -1679,6 +1707,9 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 		return nt_status;
 	}
 
+	/* Ensure the primary group sid is at position 0. */
+	sort_sid_array_for_smbd(result, &group_sid);
+
 	result->login_server = talloc_strdup(result,
 					     info3->base.logon_server.string);
 
@@ -1914,6 +1945,9 @@ NTSTATUS make_server_info_wbcAuthUserInfo(TALLOC_CTX *mem_ctx,
 	for (i=0; i < result->num_sids; i++) {
 		memcpy(&result->sids[i], &info->sids[i+2].sid, sizeof(result->sids[i]));
 	}
+
+	/* Ensure the primary group sid is at position 0. */
+	sort_sid_array_for_smbd(result, &group_sid);
 
 	/* ensure we are never given NULL session keys */
 

@@ -31,6 +31,12 @@ NTSTATUS cli_pull_error(char *buf)
 		return NT_STATUS(IVAL(buf, smb_rcls));
 	}
 
+	/* if the client uses dos errors, but there is no error,
+	   we should return no error here, otherwise it looks
+	   like an unknown bad NT_STATUS. jmcd */
+	if (CVAL(buf, smb_rcls) == 0)
+		return NT_STATUS_OK;
+
 	return NT_STATUS_DOS(CVAL(buf, smb_rcls), SVAL(buf,smb_err));
 }
 

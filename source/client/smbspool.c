@@ -233,7 +233,7 @@ main(int argc,			/* I - Number of command-line arguments */
 
 		port = atoi(sep);
 	} else {
-		port = 445;
+		port = 0;
 	}
 
 	/*
@@ -347,7 +347,7 @@ get_exit_code(struct cli_state * cli,
 		}
 
 		if (cli) {
-			if (cli->use_kerberos || (cli->capabilities & CAP_EXTENDED_SECURITY))
+			if (cli->use_kerberos && cli->got_kerberos_mechanism)
 				fputs("ATTR: auth-info-required=negotiate\n", stderr);
 			else
 				fputs("ATTR: auth-info-required=username,password\n", stderr);

@@ -79,10 +79,6 @@ AC_SUBST(INSTALLLIBCMD_SH)
 AC_SUBST(INSTALLLIBCMD_A)
 AC_SUBST(UNINSTALLLIBCMD_SH)
 AC_SUBST(UNINSTALLLIBCMD_A)
-AC_SUBST(INSTALL_LIBADDNS)
-AC_SUBST(UNINSTALL_LIBADDNS)
-AC_SUBST(LIBADDNS_SHARED)
-AC_SUBST(LIBADDNS)
 
 AC_SUBST(INSTALL_LIBWBCLIENT)
 AC_SUBST(UNINSTALL_LIBWBCLIENT)
@@ -90,19 +86,11 @@ AC_SUBST(LIBWBCLIENT_SHARED_TARGET)
 AC_SUBST(LIBWBCLIENT_SHARED)
 AC_SUBST(LIBWBCLIENT_STATIC_TARGET)
 AC_SUBST(LIBWBCLIENT_STATIC)
+AC_SUBST(LIBWBCLIENT_SOVER)
 AC_SUBST(LIBWBCLIENT)
 AC_SUBST(WINBIND_LIBS)
 
 AC_SUBST(LIBSAMBAUTIL_SHARED)
-
-AC_SUBST(INSTALL_LIBSMBCLIENT)
-AC_SUBST(UNINSTALL_LIBSMBCLIENT)
-AC_SUBST(LIBSMBCLIENT_SHARED)
-AC_SUBST(LIBSMBCLIENT)
-AC_SUBST(INSTALL_LIBSMBSHAREMODES)
-AC_SUBST(UNINSTALL_LIBSMBSHAREMODES)
-AC_SUBST(LIBSMBSHAREMODES_SHARED)
-AC_SUBST(LIBSMBSHAREMODES)
 
 AC_SUBST(PRINT_LIBS)
 AC_SUBST(AUTH_LIBS)
@@ -120,9 +108,9 @@ AC_SUBST(EXTRA_BIN_PROGS)
 AC_SUBST(CIFSMOUNT_PROGS)
 AC_SUBST(INSTALL_CIFSMOUNT)
 AC_SUBST(UNINSTALL_CIFSMOUNT)
-AC_SUBST(CIFSSPNEGO_PROGS)
-AC_SUBST(INSTALL_CIFSSPNEGO)
-AC_SUBST(UNINSTALL_CIFSSPNEGO)
+AC_SUBST(CIFSUPCALL_PROGS)
+AC_SUBST(INSTALL_CIFSUPCALL)
+AC_SUBST(UNINSTALL_CIFSUPCALL)
 AC_SUBST(EXTRA_SBIN_PROGS)
 AC_SUBST(EXTRA_ALL_TARGETS)
 AC_SUBST(CONFIG_LIBS)
@@ -2615,19 +2603,6 @@ AC_CHECK_FUNCS(getpagesize)
 ################################################
 # look for a method of setting the effective uid
 seteuid=no;
-if test $seteuid = no; then
-AC_CACHE_CHECK([for setresuid],samba_cv_USE_SETRESUID,[
-AC_TRY_RUN([
-#define AUTOCONF_TEST 1
-#define USE_SETRESUID 1
-#include "confdefs.h"
-#include "${srcdir-.}/lib/util_sec.c"],
-           samba_cv_USE_SETRESUID=yes,samba_cv_USE_SETRESUID=no,samba_cv_USE_SETRESUID=cross)])
-if test x"$samba_cv_USE_SETRESUID" = x"yes"; then
-    seteuid=yes;AC_DEFINE(USE_SETRESUID,1,[Whether setresuid() is available])
-fi
-fi
-
 
 if test $seteuid = no; then
 AC_CACHE_CHECK([for setreuid],samba_cv_USE_SETREUID,[
@@ -2639,6 +2614,21 @@ AC_TRY_RUN([
            samba_cv_USE_SETREUID=yes,samba_cv_USE_SETREUID=no,samba_cv_USE_SETREUID=cross)])
 if test x"$samba_cv_USE_SETREUID" = x"yes"; then
     seteuid=yes;AC_DEFINE(USE_SETREUID,1,[Whether setreuid() is available])
+fi
+fi
+
+# we check for setresuid second as it conflicts with AIO on Linux. 
+# see http://samba.org/~tridge/junkcode/aio_uid.c
+if test $seteuid = no; then
+AC_CACHE_CHECK([for setresuid],samba_cv_USE_SETRESUID,[
+AC_TRY_RUN([
+#define AUTOCONF_TEST 1
+#define USE_SETRESUID 1
+#include "confdefs.h"
+#include "${srcdir-.}/lib/util_sec.c"],
+           samba_cv_USE_SETRESUID=yes,samba_cv_USE_SETRESUID=no,samba_cv_USE_SETRESUID=cross)])
+if test x"$samba_cv_USE_SETRESUID" = x"yes"; then
+    seteuid=yes;AC_DEFINE(USE_SETRESUID,1,[Whether setresuid() is available])
 fi
 fi
 
@@ -3367,6 +3357,8 @@ if test x"$with_ads_support" != x"no"; then
   AC_CHECK_FUNC_EXT(krb5_get_init_creds_opt_free, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_get_init_creds_opt_get_error, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_enctype_to_string, $KRB5_LIBS)
+  AC_CHECK_FUNC_EXT(krb5_fwd_tgt_creds, $KRB5_LIBS)
+  AC_CHECK_FUNC_EXT(krb5_auth_con_set_req_cksumtype, $KRB5_LIBS)
 
   LIBS="$KRB5_LIBS $LIBS"
 
@@ -3747,6 +3739,7 @@ if test x"$with_ads_support" != x"no"; then
     AC_CACHE_CHECK([for krb5_error_code krb5_enctype_to_string(krb5_context context, krb5_enctype enctype, char **str)],
         smb_krb5_cv_enctype_to_string_takes_krb5_context_arg,[
 	AC_TRY_RUN_STRICT([
+		#include <stdlib.h>
 		#include <krb5.h>
 		int main(void) {
 			krb5_context context = NULL;
@@ -4023,14 +4016,14 @@ AC_ARG_WITH(cifsmount,
 )
 
 #################################################
-# check for cifs.spnego support
+# check for cifs.upcall support
 AC_CHECK_HEADERS([keyutils.h], [HAVE_KEYUTILS_H=1], [HAVE_KEYUTILS_H=0])
-CIFSSPNEGO_PROGS=""
-INSTALL_CIFSSPNEGO=""
-UNINSTALL_CIFSSPNEGO=""
-AC_MSG_CHECKING(whether to build cifs.spnego)
-AC_ARG_WITH(cifsspnego,
-[AS_HELP_STRING([--with-cifsspnego], [Include cifs.spnego (Linux only) support (default=no)])],
+CIFSUPCALL_PROGS=""
+INSTALL_CIFSUPCALL=""
+UNINSTALL_CIFSUPCALL=""
+AC_MSG_CHECKING(whether to build cifs.upcall)
+AC_ARG_WITH(cifsupcall,
+[AS_HELP_STRING([--with-cifsupcall], [Include cifs.upcall (Linux only) support (default=no)])],
 [ case "$withval" in
   no)
 	AC_MSG_RESULT(no)
@@ -4039,15 +4032,15 @@ AC_ARG_WITH(cifsspnego,
 	case "$host_os" in
 	*linux*)
 		if test x"$use_ads" != x"yes"; then
-			AC_MSG_ERROR(ADS support should be enabled for building cifs.spnego)
+			AC_MSG_ERROR(ADS support should be enabled for building cifs.upcall)
 		elif test x"$HAVE_KEYUTILS_H" != "x1"; then
-			AC_MSG_ERROR(keyutils package is required for cifs.spnego)
+			AC_MSG_ERROR(keyutils package is required for cifs.upcall)
 		else
 			AC_MSG_RESULT(yes)
-			AC_DEFINE(WITH_CIFSSPNEGO,1,[whether to build cifs.spnego])
-			CIFSSPNEGO_PROGS="bin/cifs.spnego"
-			INSTALL_CIFSSPNEGO="installcifsspnego"
-			UNINSTALL_CIFSSPNEGO="uninstallcifsspnego"
+			AC_DEFINE(WITH_CIFSUPCALL,1,[whether to build cifs.upcall])
+			CIFSUPCALL_PROGS="bin/cifs.upcall"
+			INSTALL_CIFSUPCALL="installcifsupcall"
+			UNINSTALL_CIFSUPCALL="uninstallcifsupcall"
 		fi
 		;;
 	*)
@@ -4668,131 +4661,22 @@ AC_ARG_WITH([static-libs],
 #
 LINK_LIBNETAPI=STATIC
 
-SMB_LIBRARY(talloc)
-SMB_LIBRARY(tdb)
-SMB_LIBRARY(netapi)
+LINK_LIBSMBCLIENT=STATIC
 
+#
+#  The library versions are hardcoded here
+#  and filled into the LIBFOO_SOVER variable.
+#
+#  TODO: for talloc and tdb (at least), these should
+#  be extracted from their respective source directories
+#
+SMB_LIBRARY(talloc, 1)
+SMB_LIBRARY(tdb, 1)
+SMB_LIBRARY(netapi, 0)
+SMB_LIBRARY(smbclient, 0)
+SMB_LIBRARY(smbsharemodes, 0)
+SMB_LIBRARY(addns, 0, no, [undefined API])
 
-#################################################
-# should we build libaddns?
-INSTALL_LIBADDNS=
-UNINSTALL_LIBADDNS=
-LIBADDNS_SHARED=
-LIBADDNS=
-AC_MSG_CHECKING(whether to build the libaddns shared library)
-AC_ARG_WITH(libaddns,
-[AS_HELP_STRING([--with-libaddns], [Build the libaddns shared library (default=no undefined API)])],
-[ case "$withval" in
-  *)
-     AC_MSG_RESULT(no)
-     ;;
-  yes)
-     if test $BLDSHARED = true; then
-        LIBADDNS_SHARED=bin/libaddns.$SHLIBEXT
-        LIBADDNS=libaddns
-        AC_MSG_RESULT(yes)
-     else
-	enable_static=yes
-        AC_MSG_RESULT(no shared library support -- will supply static library)
-     fi
-     if test $enable_static = yes; then
-        LIBADDNS=libaddns
-     fi
-     INSTALL_LIBADDNS=installlibaddns
-     UNINSTALL_LIBADDNS=uninstalllibaddns
-     ;;
-  esac ],
-[AC_MSG_RESULT(no)]
-)
-
-#################################################
-# should we build libsmbclient?
-
-INSTALL_LIBSMBCLIENT=
-UNINSTALL_LIBSMBCLIENT=
-LIBSMBCLIENT_SHARED=
-LIBSMBCLIENT=
-AC_MSG_CHECKING(whether to build the libsmbclient shared library)
-AC_ARG_WITH(libsmbclient,
-[AS_HELP_STRING([--with-libsmbclient], [Build the libsmbclient shared library (default=yes if shared libs supported)])],
-[ case "$withval" in
-  no)
-     AC_MSG_RESULT(no)
-     ;;
-  *)
-     if test $BLDSHARED = true; then
-        LIBSMBCLIENT_SHARED=bin/libsmbclient.$SHLIBEXT
-        LIBSMBCLIENT=libsmbclient
-        AC_MSG_RESULT(yes)
-     else
-	enable_static=yes
-        AC_MSG_RESULT(no shared library support -- will supply static library)
-     fi
-     if test $enable_static = yes; then
-        LIBSMBCLIENT=libsmbclient
-     fi
-     INSTALL_LIBSMBCLIENT=installclientlib
-     UNINSTALL_LIBSMBCLIENT=uninstallclientlib
-     ;;
-  esac ],
-[
-# if unspecified, default is to build it if possible.
-  if test $BLDSHARED = true; then
-     LIBSMBCLIENT_SHARED=bin/libsmbclient.$SHLIBEXT
-     LIBSMBCLIENT=libsmbclient
-     AC_MSG_RESULT(yes)
-   else
-     enable_static=yes
-     AC_MSG_RESULT(no shared library support -- will supply static library)
-   fi
-   if test $enable_static = yes; then
-     LIBSMBCLIENT=libsmbclient
-  fi]
-  INSTALL_LIBSMBCLIENT=installclientlib
-  UNINSTALL_LIBSMBCLIENT=uninstallclientlib
-)
-
-INSTALL_LIBSMBSHAREMODES=
-LIBSMBSHAREMODES_SHARED=
-LIBSMBSHAREMODES=
-AC_MSG_CHECKING(whether to build the libsmbsharemodes shared library)
-AC_ARG_WITH(libsmbsharemodes,
-[AS_HELP_STRING([--with-libsmbsharemodes], [Build the libsmbsharemodes shared library (default=yes if shared libs supported)])],
-[ case "$withval" in
-  no)
-     AC_MSG_RESULT(no)
-     ;;
-  *)
-     if test $BLDSHARED = true; then
-        LIBSMBSHAREMODES_SHARED=bin/libsmbsharemodes.$SHLIBEXT
-        LIBSMBSHAREMODES=libsmbsharemodes
-        AC_MSG_RESULT(yes)
-     else
-        enable_static=yes
-        AC_MSG_RESULT(no shared library support -- will supply static library)
-     fi
-     if test $enable_static = yes; then
-        LIBSMBSHAREMODES=libsmbsharemodes
-     fi
-     INSTALL_LIBSMBSHAREMODES=installlibsmbsharemodes
-     UNINSTALL_LIBSMBSHAREMODES=uninstalllibsmbsharemodes
-     ;;
-  esac ],
-[
-# if unspecified, default is to build it if possible.
-  if test $BLDSHARED = true; then
-     LIBSMBSHAREMODES_SHARED=bin/libsmbsharemodes.$SHLIBEXT
-     LIBSMBSHAREMODES=libsmbsharemodes
-     AC_MSG_RESULT(yes)
-   else
-     enable_static=yes
-     AC_MSG_RESULT(no shared library support -- will supply static library)
-   fi
-   if test $enable_static = yes; then
-     LIBSMBSHAREMODES=libsmbsharemodes
-  fi]
-  INSTALL_LIBSMBSHAREMODES=installlibsmbsharemodes
-)
 
 
 #################################################
@@ -5728,6 +5612,7 @@ fi
 
 LIBWBCLIENT_SHARED_TARGET=bin/libwbclient.$SHLIBEXT
 LIBWBCLIENT_STATIC_TARGET=bin/libwbclient.a
+LIBWBCLIENT_SOVER=0
 if test $BLDSHARED = true -a x"$HAVE_WINBIND" = x"yes" -a x"$BUILD_LIBWBCLIENT_SHARED" = x"yes"; then
 	NSS_MODULES="${WINBIND_NSS} ${WINBIND_WINS_NSS}"
 	## Only worry about libwbclient if we have shared library support
@@ -6216,7 +6101,7 @@ fi
 SMBD_LIBS="$samba_dmapi_libs"
 AC_SUBST(SMBD_LIBS)
 
-AC_OUTPUT(Makefile library-versions
+AC_OUTPUT(Makefile
 	  script/findsmb smbadduser script/gen-8bit-gap.sh script/installbin.sh script/uninstallbin.sh
 	  lib/netapi/examples/Makefile
 	  pkgconfig/smbclient.pc

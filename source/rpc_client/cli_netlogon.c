@@ -424,8 +424,6 @@ NTSTATUS rpccli_netlogon_sam_network_logon(struct rpc_pipe_client *cli,
 	union netr_Validation validation;
 	struct netr_ChallengeResponse lm;
 	struct netr_ChallengeResponse nt;
-	struct netr_UserSessionKey user_session_key;
-	struct netr_LMSessionKey lmsesskey;
 
 	*info3 = NULL;
 
@@ -500,15 +498,14 @@ NTSTATUS rpccli_netlogon_sam_network_logon(struct rpc_pipe_client *cli,
 		return result;
 	}
 
-	user_session_key = validation.sam3->base.key;
-	lmsesskey = validation.sam3->base.LMSessKey;
-
-	if (memcmp(zeros, user_session_key.key, 16) != 0) {
-		SamOEMhash(user_session_key.key, cli->dc->sess_key, 16);
+	if (memcmp(zeros, validation.sam3->base.key.key, 16) != 0) {
+		SamOEMhash(validation.sam3->base.key.key,
+			   cli->dc->sess_key, 16);
 	}
 
-	if (memcmp(zeros, lmsesskey.key, 8) != 0) {
-		SamOEMhash(lmsesskey.key, cli->dc->sess_key, 8);
+	if (memcmp(zeros, validation.sam3->base.LMSessKey.key, 8) != 0) {
+		SamOEMhash(validation.sam3->base.LMSessKey.key,
+			   cli->dc->sess_key, 8);
 	}
 
 	if (memcmp(zeros, ret_creds.cred.data, sizeof(ret_creds.cred.data)) != 0) {
@@ -547,8 +544,6 @@ NTSTATUS rpccli_netlogon_sam_network_logon_ex(struct rpc_pipe_client *cli,
 	union netr_Validation validation;
 	struct netr_ChallengeResponse lm;
 	struct netr_ChallengeResponse nt;
-	struct netr_UserSessionKey user_session_key;
-	struct netr_LMSessionKey lmsesskey;
 	uint32_t flags = 0;
 
 	*info3 = NULL;
@@ -620,15 +615,14 @@ NTSTATUS rpccli_netlogon_sam_network_logon_ex(struct rpc_pipe_client *cli,
 		return result;
 	}
 
-	user_session_key = validation.sam3->base.key;
-	lmsesskey = validation.sam3->base.LMSessKey;
-
-	if (memcmp(zeros, user_session_key.key, 16) != 0) {
-		SamOEMhash(user_session_key.key, cli->dc->sess_key, 16);
+	if (memcmp(zeros, validation.sam3->base.key.key, 16) != 0) {
+		SamOEMhash(validation.sam3->base.key.key,
+			   cli->dc->sess_key, 16);
 	}
 
-	if (memcmp(zeros, lmsesskey.key, 8) != 0) {
-		SamOEMhash(lmsesskey.key, cli->dc->sess_key, 8);
+	if (memcmp(zeros, validation.sam3->base.LMSessKey.key, 8) != 0) {
+		SamOEMhash(validation.sam3->base.LMSessKey.key,
+			   cli->dc->sess_key, 8);
 	}
 
 	*info3 = validation.sam3;

@@ -2000,7 +2000,7 @@ void reply_mknew(struct smb_request *req)
 	}
 
 	ts[0] = get_atimespec(&sbuf); /* atime. */
-	status = smb_set_file_time(conn, fsp, fname, &sbuf, ts, true);
+	status = smb_set_file_time(conn, fsp, fsp->fsp_name, &sbuf, ts, true);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBcreate);
 		reply_openerror(req, status);
@@ -2497,7 +2497,7 @@ NTSTATUS unlink_internals(connection_struct *conn, struct smb_request *req,
 		TALLOC_FREE(dir_hnd);
 	}
 
-	if (count == 0 && NT_STATUS_IS_OK(status)) {
+	if (count == 0 && NT_STATUS_IS_OK(status) && errno != 0) {
 		status = map_nt_error_from_unix(errno);
 	}
 
@@ -3168,8 +3168,9 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 		setup_readX_header((char *)headerbuf, smb_maxcnt);
 
 		if ((nread = SMB_VFS_SENDFILE(smbd_server_fd(), fsp, &header, startpos, smb_maxcnt)) == -1) {
-			/* Returning ENOSYS means no data at all was sent. Do this as a normal read. */
-			if (errno == ENOSYS) {
+			/* Returning ENOSYS or EINVAL means no data at all was sent. 
+			   Do this as a normal read. */
+			if (errno == ENOSYS || errno == EINVAL) {
 				goto normal_read;
 			}
 
@@ -4672,6 +4673,8 @@ void reply_printclose(struct smb_request *req)
 		return;
 	}
 
+	reply_outbuf(req, 0, 0);
+
 	END_PROFILE(SMBsplclose);
 	return;
 }
@@ -5880,7 +5883,7 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 	}
 	TALLOC_FREE(dir_hnd);
 
-	if (count == 0 && NT_STATUS_IS_OK(status)) {
+	if (count == 0 && NT_STATUS_IS_OK(status) && errno != 0) {
 		status = map_nt_error_from_unix(errno);
 	}
 

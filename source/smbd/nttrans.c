@@ -490,6 +490,12 @@ void reply_ntcreate_and_X(struct smb_request *req)
 			fname));
 
 	/*
+	 * we need to remove ignored bits when they come directly from the client
+	 * because we reuse some of them for internal stuff
+	 */
+	create_options &= ~NTCREATEX_OPTIONS_MUST_IGNORE_MASK;
+
+	/*
 	 * If it's an IPC, use the pipe handler.
 	 */
 
@@ -898,6 +904,12 @@ static void call_nt_transact_create(connection_struct *conn,
 #ifdef LARGE_SMB_OFF_T
 	allocation_size |= (((SMB_BIG_UINT)IVAL(params,16)) << 32);
 #endif
+
+	/*
+	 * we need to remove ignored bits when they come directly from the client
+	 * because we reuse some of them for internal stuff
+	 */
+	create_options &= ~NTCREATEX_OPTIONS_MUST_IGNORE_MASK;
 
 	/* Ensure the data_len is correct for the sd and ea values given. */
 	if ((ea_len + sd_len > data_count)

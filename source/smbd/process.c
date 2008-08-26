@@ -1636,6 +1636,7 @@ void chain_reply(struct smb_request *req)
 	char *outbuf = (char *)req->outbuf;
 	size_t outsize = smb_len(outbuf) + 4;
 	size_t outsize_padded;
+	size_t padding;
 	size_t ofs, to_move;
 
 	struct smb_request *req2;
@@ -1674,12 +1675,13 @@ void chain_reply(struct smb_request *req)
 	 */
 
 	outsize_padded = (outsize + 3) & ~3;
+	padding = outsize_padded - outsize;
 
 	/*
 	 * remember how much the caller added to the chain, only counting
 	 * stuff after the parameter words
 	 */
-	chain_size += outsize_padded - smb_wct;
+	chain_size += (outsize_padded - smb_wct);
 
 	/*
 	 * work out pointers into the original packets. The
@@ -1787,17 +1789,17 @@ void chain_reply(struct smb_request *req)
 	SCVAL(outbuf, smb_vwv0, smb_com2);
 	SSVAL(outbuf, smb_vwv1, chain_size + smb_wct - 4);
 
-	if (outsize_padded > outsize) {
+	if (padding != 0) {
 
 		/*
 		 * Due to padding we have some uninitialized bytes after the
 		 * caller's output
 		 */
 
-		memset(outbuf + outsize, 0, outsize_padded - outsize);
+		memset(outbuf + outsize, 0, padding);
 	}
 
-	smb_setlen(outbuf, outsize2 + chain_size - 4);
+	smb_setlen(outbuf, outsize2 + caller_outputlen + padding - 4);
 
 	/*
 	 * restore the saved data, being careful not to overwrite any data
@@ -1807,6 +1809,12 @@ void chain_reply(struct smb_request *req)
 
 	SAFE_FREE(caller_output);
 	TALLOC_FREE(req2);
+
+	/*
+	 * Reset the chain_size for our caller's offset calculations
+	 */
+
+	chain_size -= (outsize_padded - smb_wct);
 
 	return;
 }

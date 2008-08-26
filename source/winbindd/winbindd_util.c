@@ -1299,7 +1299,7 @@ NTSTATUS lookup_usergroups_cached(struct winbindd_domain *domain,
 	status = sid_array_from_info3(mem_ctx, info3,
 				      user_sids,
 				      &num_groups,
-				      true, true);
+				      false, true);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(info3);

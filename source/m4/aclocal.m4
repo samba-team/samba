@@ -54,7 +54,7 @@ AC_DEFUN(SMB_SUBSYSTEM,
 ])
 
 
-dnl SMB_LIBRARY(name)
+dnl SMB_LIBRARY(name, version, default, reason)
 dnl
 dnl configure build and use of an (internal) shared library
 dnl
@@ -69,24 +69,57 @@ LIBUC[_STATIC_TARGET]=bin/LIBNAME.a
 LIBUC[_SHARED]=
 LIBUC[_STATIC]=
 LIBUC[_LIBS]=
+[INSTALL_]LIBUC=
+[UNINSTALL_]LIBUC=
+
+m4_if([$2], [], [LIBUC[_SOVER]=0], [LIBUC[_SOVER]=$2])
 
 AC_SUBST(LIBUC[_SHARED_TARGET])
 AC_SUBST(LIBUC[_STATIC_TARGET])
 AC_SUBST(LIBUC[_SHARED])
 AC_SUBST(LIBUC[_STATIC])
 AC_SUBST(LIBUC[_LIBS])
+AC_SUBST([INSTALL_]LIBUC)
+AC_SUBST([UNINSTALL_]LIBUC)
+AC_SUBST(LIBUC[_SOVER])
 
 AC_MSG_CHECKING([whether to build the LIBNAME shared library])
+m4_if([$3], [no], [
+dnl set the default to not build the shared lib
+AC_ARG_WITH(LIBNAME,
+AS_HELP_STRING([--with-]LIBNAME,
+	m4_if([$4], [],
+		[Build the LIBNAME shared library (default=no)],
+		[Build the LIBNAME shared library (default=no ($4))])),
+[
+case "$withval" in
+	yes)
+		build_lib=yes
+		;;
+	*)
+		AC_MSG_RESULT(yes)
+		build_lib=no
+		;;
+esac
+],
+[
+# if unspecified, default is not to build
+AC_MSG_RESULT(yes)
+build_lib=no
+]
+)
+],[
+dnl by default, try to build the shared lib
 AC_ARG_WITH(LIBNAME,
 AS_HELP_STRING([--with-]LIBNAME,
 	[Build the LIBNAME shared library (default=yes if shared libs supported)]),
 [
 case "$withval" in
-	*)
+	no)
 		AC_MSG_RESULT(no)
 		build_lib=no
 		;;
-	yes)
+	*)
 		build_lib=yes
 		;;
 esac
@@ -96,21 +129,30 @@ esac
 build_lib=yes
 ]
 )
+])
 
-if eval test x"$build_lib" = "xyes" -a $BLDSHARED = true; then
-	LIBUC[_SHARED]=$LIBUC[_SHARED_TARGET]
-	AC_MSG_RESULT(yes)
-	if test x"$USESHARED" != x"true" -o x"$[LINK_]LIBUC" = "xSTATIC" ; then
-		LIBUC[_STATIC]=$LIBUC[_STATIC_TARGET]
+if eval test x"$build_lib" = "xyes" ; then
+	# only set the install targets if the user chose the library
+	[INSTALL_]LIBUC=[install]LIBNAME
+	[UNINSTALL_]LIBUC=[uninstall]LIBNAME
+	if eval $BLDSHARED = true; then
+		LIBUC[_SHARED]=$LIBUC[_SHARED_TARGET]
+		AC_MSG_RESULT(yes)
+		if test x"$USESHARED" != x"true" -o x"$[LINK_]LIBUC" = "xSTATIC" ; then
+			enable_static=yes
+		else
+			LIBUC[_LIBS]=LIBLIBS
+		fi
 	else
-		LIBUC[_LIBS]=LIBLIBS
+		enable_static=yes
+		AC_MSG_RESULT(no shared library support -- will supply static library)
 	fi
 else
 	enable_static=yes
-	AC_MSG_RESULT(no shared library support -- will supply static library)
+	AC_MSG_RESULT(shared library not selected, but will supply static library)
 fi
 if test $enable_static = yes; then
-	LIBUC[_STATIC]=$LIBUC[_STATIC_TARGET]
+	LIBUC[_STATIC]=[\$\(]LIBUC[_OBJ0\)]
 fi
 
 m4_popdef([LIBNAME])
