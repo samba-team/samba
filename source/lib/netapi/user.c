@@ -178,6 +178,66 @@ static NTSTATUS construct_USER_INFO_X(uint32_t level,
 /****************************************************************
 ****************************************************************/
 
+static NTSTATUS set_user_info_USER_INFO_X(TALLOC_CTX *ctx,
+					  struct rpc_pipe_client *pipe_cli,
+					  DATA_BLOB *session_key,
+					  struct policy_handle *user_handle,
+					  struct USER_INFO_X *uX)
+{
+	union samr_UserInfo user_info;
+	struct samr_UserInfo21 info21;
+	NTSTATUS status;
+
+	if (!uX) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	convert_USER_INFO_X_to_samr_user_info21(uX, &info21);
+
+	ZERO_STRUCT(user_info);
+
+	if (uX->usriX_password) {
+
+		user_info.info25.info = info21;
+
+		init_samr_CryptPasswordEx(uX->usriX_password,
+					  session_key,
+					  &user_info.info25.password);
+
+		status = rpccli_samr_SetUserInfo2(pipe_cli, ctx,
+						  user_handle,
+						  25,
+						  &user_info);
+
+		if (NT_STATUS_EQUAL(status, NT_STATUS(DCERPC_FAULT_INVALID_TAG))) {
+
+			user_info.info23.info = info21;
+
+			init_samr_CryptPassword(uX->usriX_password,
+						session_key,
+						&user_info.info23.password);
+
+			status = rpccli_samr_SetUserInfo2(pipe_cli, ctx,
+							  user_handle,
+							  23,
+							  &user_info);
+		}
+	} else {
+
+		user_info.info21 = info21;
+
+		status = rpccli_samr_SetUserInfo(pipe_cli, ctx,
+						 user_handle,
+						 21,
+						 &user_info);
+	}
+
+	return status;
+}
+
+/****************************************************************
+****************************************************************/
+
 WERROR NetUserAdd_r(struct libnetapi_ctx *ctx,
 		    struct NetUserAdd *r)
 {
@@ -188,7 +248,6 @@ WERROR NetUserAdd_r(struct libnetapi_ctx *ctx,
 	POLICY_HND connect_handle, domain_handle, user_handle;
 	struct lsa_String lsa_account_name;
 	struct dom_sid2 *domain_sid = NULL;
-	struct samr_UserInfo21 info21;
 	union samr_UserInfo *user_info = NULL;
 	struct samr_PwInfo pw_info;
 	uint32_t access_granted = 0;
@@ -282,47 +341,10 @@ WERROR NetUserAdd_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	convert_USER_INFO_X_to_samr_user_info21(&uX,
-						&info21);
-
-	ZERO_STRUCTP(user_info);
-
-	if (uX.usriX_password) {
-
-		user_info->info25.info = info21;
-
-		init_samr_CryptPasswordEx(uX.usriX_password,
-					  &cli->user_session_key,
-					  &user_info->info25.password);
-
-		status = rpccli_samr_SetUserInfo2(pipe_cli, ctx,
-						  &user_handle,
-						  25,
-						  user_info);
-
-		if (NT_STATUS_EQUAL(status, NT_STATUS(DCERPC_FAULT_INVALID_TAG))) {
-
-			user_info->info23.info = info21;
-
-			init_samr_CryptPassword(uX.usriX_password,
-						&cli->user_session_key,
-						&user_info->info23.password);
-
-			status = rpccli_samr_SetUserInfo2(pipe_cli, ctx,
-							  &user_handle,
-							  23,
-							  user_info);
-		}
-	} else {
-
-		user_info->info21 = info21;
-
-		status = rpccli_samr_SetUserInfo(pipe_cli, ctx,
-						 &user_handle,
-						 21,
-						 user_info);
-
-	}
+	status = set_user_info_USER_INFO_X(ctx, pipe_cli,
+					   &cli->user_session_key,
+					   &user_handle,
+					   &uX);
 	if (!NT_STATUS_IS_OK(status)) {
 		werr = ntstatus_to_werror(status);
 		goto failed;
