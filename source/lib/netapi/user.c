@@ -111,6 +111,7 @@ static NTSTATUS construct_USER_INFO_X(uint32_t level,
 	struct USER_INFO_0 *u0 = NULL;
 	struct USER_INFO_1 *u1 = NULL;
 	struct USER_INFO_2 *u2 = NULL;
+	struct USER_INFO_1003 *u1003 = NULL;
 	struct USER_INFO_1007 *u1007 = NULL;
 
 	if (!buffer || !uX) {
@@ -161,6 +162,10 @@ static NTSTATUS construct_USER_INFO_X(uint32_t level,
 			uX->usriX_logon_server	= u2->usri2_logon_server;
 			uX->usriX_country_code	= u2->usri2_country_code;
 			uX->usriX_code_page	= u2->usri2_code_page;
+			break;
+		case 1003:
+			u1003 = (struct USER_INFO_1003 *)buffer;
+			uX->usriX_password	= u1003->usri1003_password;
 			break;
 		case 1007:
 			u1007 = (struct USER_INFO_1007 *)buffer;
