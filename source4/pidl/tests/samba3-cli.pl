@@ -44,7 +44,6 @@ is($x->{res},
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_FOO,
 				&ndr_table_foo,
 				NDR_BAR,
 				&r);
@@ -89,7 +88,6 @@ is($x->{res},
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
-				PI_FOO,
 				&ndr_table_foo,
 				NDR_BAR,
 				&r);

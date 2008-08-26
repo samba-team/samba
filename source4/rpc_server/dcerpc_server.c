@@ -917,6 +917,7 @@ _PUBLIC_ NTSTATUS dcesrv_reply(struct dcesrv_call_state *call)
 	DATA_BLOB stub;
 	uint32_t total_length, chunk_size;
 	struct dcesrv_connection_context *context = call->context;
+	size_t sig_size = 0;
 
 	/* call the reply function */
 	status = context->iface->reply(call, call, call->r);
@@ -948,7 +949,15 @@ _PUBLIC_ NTSTATUS dcesrv_reply(struct dcesrv_call_state *call)
 
 	/* we can write a full max_recv_frag size, minus the dcerpc
 	   request header size */
-	chunk_size = call->conn->cli_max_recv_frag - (DCERPC_MAX_SIGN_SIZE+DCERPC_REQUEST_LENGTH);
+	chunk_size = call->conn->cli_max_recv_frag;
+	chunk_size -= DCERPC_REQUEST_LENGTH;
+	if (call->conn->auth_state.gensec_security) {
+		chunk_size -= DCERPC_AUTH_TRAILER_LENGTH;
+		sig_size = gensec_sig_size(call->conn->auth_state.gensec_security,
+					   call->conn->cli_max_recv_frag);
+		chunk_size -= sig_size;
+		chunk_size -= (chunk_size % 16);
+	}
 
 	do {
 		uint32_t length;
@@ -978,7 +987,7 @@ _PUBLIC_ NTSTATUS dcesrv_reply(struct dcesrv_call_state *call)
 		pkt.u.response.stub_and_verifier.data = stub.data;
 		pkt.u.response.stub_and_verifier.length = length;
 
-		if (!dcesrv_auth_response(call, &rep->blob, &pkt)) {
+		if (!dcesrv_auth_response(call, &rep->blob, sig_size, &pkt)) {
 			return dcesrv_fault(call, DCERPC_FAULT_OTHER);		
 		}
 

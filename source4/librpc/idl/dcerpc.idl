@@ -30,7 +30,6 @@ interface dcerpc
 	} dcerpc_bind;
 
 	const uint8 DCERPC_REQUEST_LENGTH = 24;
-	const uint8 DCERPC_MAX_SIGN_SIZE  = 64;
 
 	typedef struct {
 	} dcerpc_empty;
@@ -153,6 +152,8 @@ interface dcerpc
 		uint32 auth_context_id;
 		[flag(NDR_REMAINING)] DATA_BLOB credentials;
 	} dcerpc_auth;
+
+	const uint8 DCERPC_AUTH_TRAILER_LENGTH = 8;
 
 	typedef [public] struct {
 		uint32 _pad;

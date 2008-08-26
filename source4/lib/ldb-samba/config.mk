@@ -7,5 +7,5 @@ PRIVATE_DEPENDENCIES = LIBSECURITY SAMDB_SCHEMA LIBNDR NDR_MISC NDR_DRSBLOBS
 ################################################
 
 LDBSAMBA_OBJ_FILES = $(ldb_sambasrcdir)/ldif_handlers.o
-$(eval $(call proto_header_template,$(ldb_sambasrcdir)/ldif_handlers.h,$(LDBSAMBA_OBJ_FILES:.o=.c)))
+$(eval $(call proto_header_template,$(ldb_sambasrcdir)/ldif_handlers_proto.h,$(LDBSAMBA_OBJ_FILES:.o=.c)))
 

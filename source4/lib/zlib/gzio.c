@@ -7,8 +7,6 @@
 
 /* @(#) $Id$ */
 
-#include <stdio.h>
-
 #include "zutil.h"
 
 #ifdef NO_DEFLATE       /* for compatibility with old definition */
@@ -46,7 +44,7 @@ extern void   free   OF((voidpf ptr));
 static int const gz_magic[2] = {0x1f, 0x8b}; /* gzip magic header */
 
 /* gzip flag byte */
-#define ASCII_FLAG   0x01 /* bit 0 set: file probably ascii text */
+/*#define ASCII_FLAG   0x01 *//* bit 0 set: file probably ascii text */
 #define HEAD_CRC     0x02 /* bit 1 set: header CRC present */
 #define EXTRA_FIELD  0x04 /* bit 2 set: extra field present */
 #define ORIG_NAME    0x08 /* bit 3 set: original file name present */
@@ -98,7 +96,7 @@ local gzFile gz_open (path, mode, fd)
     int err;
     int level = Z_DEFAULT_COMPRESSION; /* compression level */
     int strategy = Z_DEFAULT_STRATEGY; /* compression strategy */
-    char *p = (char*)mode;
+    const char *p = mode;
     gz_stream *s;
     char fmode[80]; /* copy of mode, without the compression level */
     char *m = fmode;
@@ -565,7 +563,7 @@ int ZEXPORT gzwrite (file, buf, len)
 
     if (s == NULL || s->mode != 'w') return Z_STREAM_ERROR;
 
-    s->stream.next_in = (Bytef*)buf;
+    s->stream.next_in = (const Bytef*)buf;
     s->stream.avail_in = len;
 
     while (s->stream.avail_in != 0) {
@@ -694,7 +692,7 @@ int ZEXPORT gzputs(file, s)
     gzFile file;
     const char *s;
 {
-    return gzwrite(file, (char*)s, (unsigned)strlen(s));
+    return gzwrite(file, (voidpc)s, (unsigned)strlen(s));
 }
 
 
@@ -988,7 +986,7 @@ const char * ZEXPORT gzerror (file, errnum)
     gzFile file;
     int *errnum;
 {
-    char *m;
+    const char *m;
     gz_stream *s = (gz_stream*)file;
 
     if (s == NULL) {
@@ -998,9 +996,9 @@ const char * ZEXPORT gzerror (file, errnum)
     *errnum = s->z_err;
     if (*errnum == Z_OK) return (const char*)"";
 
-    m = (char*)(*errnum == Z_ERRNO ? zstrerror(errno) : s->stream.msg);
+    m = (*errnum == Z_ERRNO ? zstrerror(errno) : s->stream.msg);
 
-    if (m == NULL || *m == '\0') m = (char*)ERR_MSG(s->z_err);
+    if (m == NULL || *m == '\0') m = ERR_MSG(s->z_err);
 
     TRYFREE(s->msg);
     s->msg = (char*)ALLOC(strlen(s->path) + strlen(m) + 3);

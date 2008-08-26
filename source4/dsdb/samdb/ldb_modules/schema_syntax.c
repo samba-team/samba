@@ -248,7 +248,7 @@ static int schema_validate_dn(struct ldb_context *ldb, struct ldb_val *val, int 
 	struct ldb_dn *dn;
 	int ret = LDB_SUCCESS;
 
-	dn = ldb_dn_new(ldb, ldb, (const char *)val->data);
+	dn = ldb_dn_from_ldb_val(ldb, ldb, val);
 	if ( ! ldb_dn_validate(dn)) {
 		ret = LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
 	}

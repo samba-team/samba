@@ -469,6 +469,9 @@ static size_t iconv_copy(void *cd, const char **inbuf, size_t *inbytesleft,
 	return 0;
 }
 
+/*
+  this takes a UTF8 sequence and produces a UTF16 sequence
+ */
 static size_t utf8_pull(void *cd, const char **inbuf, size_t *inbytesleft,
 			 char **outbuf, size_t *outbytesleft)
 {
@@ -586,6 +589,10 @@ error:
 	return -1;
 }
 
+
+/*
+  this takes a UTF16 sequence and produces a UTF8 sequence
+ */
 static size_t utf8_push(void *cd, const char **inbuf, size_t *inbytesleft,
 			char **outbuf, size_t *outbytesleft)
 {

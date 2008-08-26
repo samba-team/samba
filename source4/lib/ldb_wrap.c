@@ -147,15 +147,19 @@ struct ldb_context *ldb_wrap_connect(TALLOC_CTX *mem_ctx,
 		talloc_free(ldb);
 		return NULL;
 	}
-	
-	if (lp_ctx != NULL && strcmp(lp_sam_url(lp_ctx), url) == 0) {
-		dsdb_set_global_schema(ldb);
-	}
 
+	/* This must be done before we load the schema, as these
+	 * handlers for objectSid and objectGUID etc must take
+	 * precedence over the 'binary attribute' declaration in the
+	 * schema */
 	ret = ldb_register_samba_handlers(ldb);
 	if (ret == -1) {
 		talloc_free(ldb);
 		return NULL;
+	}
+
+	if (lp_ctx != NULL && strcmp(lp_sam_url(lp_ctx), url) == 0) {
+		dsdb_set_global_schema(ldb);
 	}
 
 	ldb_set_debug(ldb, ldb_wrap_debug, NULL);

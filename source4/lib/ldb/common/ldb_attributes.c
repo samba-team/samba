@@ -51,6 +51,10 @@ int ldb_schema_attribute_add_with_syntax(struct ldb_context *ldb,
 	int i, n;
 	struct ldb_schema_attribute *a;
 
+	if (!syntax) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
 	n = ldb->schema.num_attributes + 1;
 
 	a = talloc_realloc(ldb, ldb->schema.attributes,
@@ -62,11 +66,24 @@ int ldb_schema_attribute_add_with_syntax(struct ldb_context *ldb,
 	ldb->schema.attributes = a;
 
 	for (i = 0; i < ldb->schema.num_attributes; i++) {
-		if (ldb_attr_cmp(attribute, a[i].name) < 0) {
+		int cmp = ldb_attr_cmp(attribute, a[i].name);
+		if (cmp == 0) {
+			/* silently ignore attempts to overwrite fixed attributes */
+			if (a[i].flags & LDB_ATTR_FLAG_FIXED) {
+				return 0;
+			}
+			if (a[i].flags & LDB_ATTR_FLAG_ALLOCATED) {
+				talloc_free(discard_const_p(char, a[i].name));
+			}
+			/* To cancel out increment below */
+			ldb->schema.num_attributes--;
+			break;
+		} else if (cmp < 0) {
 			memmove(a+i+1, a+i, sizeof(*a) * (ldb->schema.num_attributes-i));
 			break;
 		}
 	}
+	ldb->schema.num_attributes++;
 
 	a[i].name	= attribute;
 	a[i].flags	= flags;
@@ -80,7 +97,6 @@ int ldb_schema_attribute_add_with_syntax(struct ldb_context *ldb,
 		}
 	}
 
-	ldb->schema.num_attributes++;
 	return 0;
 }
 
@@ -145,7 +161,12 @@ void ldb_schema_attribute_remove(struct ldb_context *ldb, const char *name)
 	int i;
 
 	a = ldb_schema_attribute_by_name(ldb, name);
-	if (a == NULL) {
+	if (a == NULL || a->name == NULL) {
+		return;
+	}
+
+	/* FIXED attributes are never removed */
+	if (a->flags & LDB_ATTR_FLAG_FIXED) {
 		return;
 	}
 

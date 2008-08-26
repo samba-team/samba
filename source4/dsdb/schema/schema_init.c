@@ -809,7 +809,6 @@ int dsdb_schema_from_ldb_results(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 	if (!prefix_val) {
 		*error_string = talloc_asprintf(mem_ctx, 
 						"schema_fsmo_init: no prefixMap attribute found");
-		talloc_free(mem_ctx);
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 	info_val = ldb_msg_find_ldb_val(schema_res->msgs[0], "schemaInfo");
@@ -828,7 +827,6 @@ int dsdb_schema_from_ldb_results(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 		*error_string = talloc_asprintf(mem_ctx, 
 			      "schema_fsmo_init: failed to load oid mappings: %s",
 			      win_errstr(status));
-		talloc_free(mem_ctx);
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 
@@ -847,7 +845,6 @@ int dsdb_schema_from_ldb_results(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 				      "schema_fsmo_init: failed to load attribute definition: %s:%s",
 				      ldb_dn_get_linearized(attrs_res->msgs[i]->dn),
 				      win_errstr(status));
-			talloc_free(mem_ctx);
 			return LDB_ERR_CONSTRAINT_VIOLATION;
 		}
 
@@ -869,7 +866,6 @@ int dsdb_schema_from_ldb_results(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 				      "schema_fsmo_init: failed to load class definition: %s:%s",
 				      ldb_dn_get_linearized(objectclass_res->msgs[i]->dn),
 				      win_errstr(status));
-			talloc_free(mem_ctx);
 			return LDB_ERR_CONSTRAINT_VIOLATION;
 		}
 
@@ -914,7 +910,6 @@ static int fetch_oc_recursive(struct ldb_context *ldb, struct ldb_dn *schemadn,
 					"(&(&(objectClass=classSchema)(subClassOf=%s))(!(lDAPDisplayName=%s)))",
 					name, name);
 		if (ret != LDB_SUCCESS) {
-			printf("Search failed: %s\n", ldb_errstring(ldb));
 			return ret;
 		}
 		
@@ -940,7 +935,8 @@ static int fetch_oc_recursive(struct ldb_context *ldb, struct ldb_dn *schemadn,
 
 static int fetch_objectclass_schema(struct ldb_context *ldb, struct ldb_dn *schemadn, 
 				    TALLOC_CTX *mem_ctx, 
-				    struct ldb_result **objectclasses_res)
+				    struct ldb_result **objectclasses_res,
+				    char **error_string)
 {
 	TALLOC_CTX *local_ctx = talloc_new(mem_ctx);
 	struct ldb_result *top_res, *ret_res;
@@ -949,19 +945,23 @@ static int fetch_objectclass_schema(struct ldb_context *ldb, struct ldb_dn *sche
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	
-	/* Downlaod 'top' */
+	/* Download 'top' */
 	ret = ldb_search(ldb, schemadn, LDB_SCOPE_SUBTREE, 
 			 "(&(objectClass=classSchema)(lDAPDisplayName=top))", 
 			 NULL, &top_res);
 	if (ret != LDB_SUCCESS) {
-		printf("Search failed: %s\n", ldb_errstring(ldb));
-		return LDB_ERR_OPERATIONS_ERROR;
+		*error_string = talloc_asprintf(mem_ctx, 
+						"dsdb_schema: failed to search for top classSchema object: %s",
+						ldb_errstring(ldb));
+		return ret;
 	}
 
 	talloc_steal(local_ctx, top_res);
 
 	if (top_res->count != 1) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		*error_string = talloc_asprintf(mem_ctx, 
+						"dsdb_schema: failed to find top classSchema object");
+		return LDB_ERR_NO_SUCH_OBJECT;
 	}
 
 	ret_res = talloc_zero(local_ctx, struct ldb_result);
@@ -972,8 +972,7 @@ static int fetch_objectclass_schema(struct ldb_context *ldb, struct ldb_dn *sche
 	ret = fetch_oc_recursive(ldb, schemadn, local_ctx, top_res, ret_res); 
 
 	if (ret != LDB_SUCCESS) {
-		printf("Search failed: %s\n", ldb_errstring(ldb));
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ret;
 	}
 
 	*objectclasses_res = talloc_move(mem_ctx, &ret_res);
@@ -1051,10 +1050,10 @@ int dsdb_schema_from_schema_dn(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 	/*
 	 * load the objectClass definitions
 	 */
-	ret = fetch_objectclass_schema(ldb, schema_dn, tmp_ctx, &c_res);
+	ret = fetch_objectclass_schema(ldb, schema_dn, tmp_ctx, &c_res, &error_string);
 	if (ret != LDB_SUCCESS) {
 		*error_string_out = talloc_asprintf(mem_ctx, 
-				       "Failed to fetch objectClass schema elements: %s\n", ldb_errstring(ldb));
+				       "Failed to fetch objectClass schema elements: %s", error_string);
 		talloc_free(tmp_ctx);
 		return ret;
 	}
@@ -1410,535 +1409,3 @@ WERROR dsdb_class_from_drsuapi(struct dsdb_schema *schema,
 	return WERR_OK;
 }
 
-const struct dsdb_attribute *dsdb_attribute_by_attributeID_id(const struct dsdb_schema *schema,
-							      uint32_t id)
-{
-	struct dsdb_attribute *cur;
-
-	/*
-	 * 0xFFFFFFFF is used as value when no mapping table is available,
-	 * so don't try to match with it
-	 */
-	if (id == 0xFFFFFFFF) return NULL;
-
-	/* TODO: add binary search */
-	for (cur = schema->attributes; cur; cur = cur->next) {
-		if (cur->attributeID_id != id) continue;
-
-		return cur;
-	}
-
-	return NULL;
-}
-
-const struct dsdb_attribute *dsdb_attribute_by_attributeID_oid(const struct dsdb_schema *schema,
-							       const char *oid)
-{
-	struct dsdb_attribute *cur;
-
-	if (!oid) return NULL;
-
-	/* TODO: add binary search */
-	for (cur = schema->attributes; cur; cur = cur->next) {
-		if (strcmp(cur->attributeID_oid, oid) != 0) continue;
-
-		return cur;
-	}
-
-	return NULL;
-}
-
-const struct dsdb_attribute *dsdb_attribute_by_lDAPDisplayName(const struct dsdb_schema *schema,
-							       const char *name)
-{
-	struct dsdb_attribute *cur;
-
-	if (!name) return NULL;
-
-	/* TODO: add binary search */
-	for (cur = schema->attributes; cur; cur = cur->next) {
-		if (strcasecmp(cur->lDAPDisplayName, name) != 0) continue;
-
-		return cur;
-	}
-
-	return NULL;
-}
-
-const struct dsdb_attribute *dsdb_attribute_by_linkID(const struct dsdb_schema *schema,
-						      int linkID)
-{
-	struct dsdb_attribute *cur;
-
-	/* TODO: add binary search */
-	for (cur = schema->attributes; cur; cur = cur->next) {
-		if (cur->linkID != linkID) continue;
-
-		return cur;
-	}
-
-	return NULL;
-}
-
-const struct dsdb_class *dsdb_class_by_governsID_id(const struct dsdb_schema *schema,
-						    uint32_t id)
-{
-	struct dsdb_class *cur;
-
-	/*
-	 * 0xFFFFFFFF is used as value when no mapping table is available,
-	 * so don't try to match with it
-	 */
-	if (id == 0xFFFFFFFF) return NULL;
-
-	/* TODO: add binary search */
-	for (cur = schema->classes; cur; cur = cur->next) {
-		if (cur->governsID_id != id) continue;
-
-		return cur;
-	}
-
-	return NULL;
-}
-
-const struct dsdb_class *dsdb_class_by_governsID_oid(const struct dsdb_schema *schema,
-						     const char *oid)
-{
-	struct dsdb_class *cur;
-
-	if (!oid) return NULL;
-
-	/* TODO: add binary search */
-	for (cur = schema->classes; cur; cur = cur->next) {
-		if (strcmp(cur->governsID_oid, oid) != 0) continue;
-
-		return cur;
-	}
-
-	return NULL;
-}
-
-const struct dsdb_class *dsdb_class_by_lDAPDisplayName(const struct dsdb_schema *schema,
-						       const char *name)
-{
-	struct dsdb_class *cur;
-
-	if (!name) return NULL;
-
-	/* TODO: add binary search */
-	for (cur = schema->classes; cur; cur = cur->next) {
-		if (strcasecmp(cur->lDAPDisplayName, name) != 0) continue;
-
-		return cur;
-	}
-
-	return NULL;
-}
-
-const struct dsdb_class *dsdb_class_by_cn(const struct dsdb_schema *schema,
-					  const char *cn)
-{
-	struct dsdb_class *cur;
-
-	if (!cn) return NULL;
-
-	/* TODO: add binary search */
-	for (cur = schema->classes; cur; cur = cur->next) {
-		if (strcasecmp(cur->cn, cn) != 0) continue;
-
-		return cur;
-	}
-
-	return NULL;
-}
-
-const char *dsdb_lDAPDisplayName_by_id(const struct dsdb_schema *schema,
-				       uint32_t id)
-{
-	const struct dsdb_attribute *a;
-	const struct dsdb_class *c;
-
-	/* TODO: add binary search */
-	a = dsdb_attribute_by_attributeID_id(schema, id);
-	if (a) {
-		return a->lDAPDisplayName;
-	}
-
-	c = dsdb_class_by_governsID_id(schema, id);
-	if (c) {
-		return c->lDAPDisplayName;
-	}
-
-	return NULL;
-}
-
-/** 
-    Return a list of linked attributes, in lDAPDisplayName format.
-
-    This may be used to determine if a modification would require
-    backlinks to be updated, for example
-*/
-
-WERROR dsdb_linked_attribute_lDAPDisplayName_list(const struct dsdb_schema *schema, TALLOC_CTX *mem_ctx, const char ***attr_list_ret)
-{
-	const char **attr_list = NULL;
-	struct dsdb_attribute *cur;
-	int i = 0;
-	for (cur = schema->attributes; cur; cur = cur->next) {
-		if (cur->linkID == 0) continue;
-		
-		attr_list = talloc_realloc(mem_ctx, attr_list, const char *, i+2);
-		if (!attr_list) {
-			return WERR_NOMEM;
-		}
-		attr_list[i] = cur->lDAPDisplayName;
-		i++;
-	}
-	attr_list[i] = NULL;
-	*attr_list_ret = attr_list;
-	return WERR_OK;
-}
-
-static char **merge_attr_list(TALLOC_CTX *mem_ctx, 
-			      char **attrs, const char **new_attrs) 
-{
-	char **ret_attrs;
-	int i;
-	size_t new_len, orig_len = str_list_length((const char **)attrs);
-	if (!new_attrs) {
-		return attrs;
-	}
-
-	ret_attrs = talloc_realloc(mem_ctx, 
-				   attrs, char *, orig_len + str_list_length(new_attrs) + 1);
-	if (ret_attrs) {
-		for (i=0; i < str_list_length(new_attrs); i++) {
-			ret_attrs[orig_len + i] = new_attrs[i];
-		}
-		new_len = orig_len + str_list_length(new_attrs);
-
-		ret_attrs[new_len] = NULL;
-
-	}
-
-	return ret_attrs;
-}
-
-char **dsdb_full_attribute_list_internal(TALLOC_CTX *mem_ctx, 
-					 const struct dsdb_schema *schema, 
-					 const char **class_list,
-					 enum dsdb_attr_list_query query)
-{
-	int i;
-	const struct dsdb_class *class;
-	
-	char **attr_list = NULL;
-	char **recursive_list;
-
-	for (i=0; class_list && class_list[i]; i++) {
-		class = dsdb_class_by_lDAPDisplayName(schema, class_list[i]);
-		
-		switch (query) {
-		case DSDB_SCHEMA_ALL_MAY:
-			attr_list = merge_attr_list(mem_ctx, attr_list, class->mayContain);
-			attr_list = merge_attr_list(mem_ctx, attr_list, class->systemMayContain);
-			break;
-
-		case DSDB_SCHEMA_ALL_MUST:
-			attr_list = merge_attr_list(mem_ctx, attr_list, class->mustContain);
-			attr_list = merge_attr_list(mem_ctx, attr_list, class->systemMustContain);
-			break;
-
-		case DSDB_SCHEMA_SYS_MAY:
-			attr_list = merge_attr_list(mem_ctx, attr_list, class->systemMayContain);
-			break;
-
-		case DSDB_SCHEMA_SYS_MUST:
-			attr_list = merge_attr_list(mem_ctx, attr_list, class->systemMustContain);
-			break;
-
-		case DSDB_SCHEMA_MAY:
-			attr_list = merge_attr_list(mem_ctx, attr_list, class->mayContain);
-			break;
-
-		case DSDB_SCHEMA_MUST:
-			attr_list = merge_attr_list(mem_ctx, attr_list, class->mustContain);
-			break;
-
-		case DSDB_SCHEMA_ALL:
-			attr_list = merge_attr_list(mem_ctx, attr_list, class->mayContain);
-			attr_list = merge_attr_list(mem_ctx, attr_list, class->systemMayContain);
-			attr_list = merge_attr_list(mem_ctx, attr_list, class->mustContain);
-			attr_list = merge_attr_list(mem_ctx, attr_list, class->systemMustContain);
-			break;
-		}
-
-		recursive_list = dsdb_full_attribute_list_internal(mem_ctx, schema, 
-								   class->systemAuxiliaryClass, 
-								   query);
-		
-		attr_list = merge_attr_list(mem_ctx, attr_list, (const char **)recursive_list);
-		
-		recursive_list = dsdb_full_attribute_list_internal(mem_ctx, schema, 
-								   class->auxiliaryClass, 
-								   query);
-
-		attr_list = merge_attr_list(mem_ctx, attr_list, (const char **)recursive_list);
-		
-	}
-	return attr_list;
-}
-
-char **dsdb_full_attribute_list(TALLOC_CTX *mem_ctx, 
-				const struct dsdb_schema *schema, 
-				const char **class_list,
-				enum dsdb_attr_list_query query)
-{
-	char **attr_list = dsdb_full_attribute_list_internal(mem_ctx, schema, class_list, query);
-	size_t new_len = str_list_length((const char **)attr_list);
-
-	/* Remove duplicates */
-	if (new_len > 1) {
-		int i;
-		qsort(attr_list, new_len,
-		      sizeof(*attr_list),
-		      (comparison_fn_t)strcasecmp);
-		
-		for (i=1 ; i < new_len; i++) {
-			char **val1 = &attr_list[i-1];
-			char **val2 = &attr_list[i];
-			if (ldb_attr_cmp(*val1, *val2) == 0) {
-				memmove(val1, val2, (new_len - i) * sizeof( *attr_list)); 
-				new_len--;
-				i--;
-			}
-		}
-	}
-	return attr_list;
-}
-/**
- * Attach the schema to an opaque pointer on the ldb, so ldb modules
- * can find it 
- */
-
-int dsdb_set_schema(struct ldb_context *ldb, struct dsdb_schema *schema)
-{
-	int ret;
-
-	ret = ldb_set_opaque(ldb, "dsdb_schema", schema);
-	if (ret != LDB_SUCCESS) {
-		return ret;
-	}
-
-	talloc_steal(ldb, schema);
-
-	return LDB_SUCCESS;
-}
-
-/**
- * Global variable to hold one copy of the schema, used to avoid memory bloat
- */
-static struct dsdb_schema *global_schema;
-
-/**
- * Make this ldb use the 'global' schema, setup to avoid having multiple copies in this process
- */
-int dsdb_set_global_schema(struct ldb_context *ldb)
-{
-	int ret;
-	if (!global_schema) {
-		return LDB_SUCCESS;
-	}
-	ret = ldb_set_opaque(ldb, "dsdb_schema", global_schema);
-	if (ret != LDB_SUCCESS) {
-		return ret;
-	}
-
-	/* Keep a reference to this schema, just incase the global copy is replaced */
-	if (talloc_reference(ldb, global_schema) == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	return LDB_SUCCESS;
-}
-
-/**
- * Find the schema object for this ldb
- */
-
-struct dsdb_schema *dsdb_get_schema(struct ldb_context *ldb)
-{
-	const void *p;
-	struct dsdb_schema *schema;
-
-	/* see if we have a cached copy */
-	p = ldb_get_opaque(ldb, "dsdb_schema");
-	if (!p) {
-		return NULL;
-	}
-
-	schema = talloc_get_type(p, struct dsdb_schema);
-	if (!schema) {
-		return NULL;
-	}
-
-	return schema;
-}
-
-/**
- * Make the schema found on this ldb the 'global' schema
- */
-
-void dsdb_make_schema_global(struct ldb_context *ldb)
-{
-	struct dsdb_schema *schema = dsdb_get_schema(ldb);
-	if (!schema) {
-		return;
-	}
-
-	if (global_schema) {
-		talloc_unlink(talloc_autofree_context(), schema);
-	}
-
-	talloc_steal(talloc_autofree_context(), schema);
-	global_schema = schema;
-
-	dsdb_set_global_schema(ldb);
-}
-
-
-/**
- * Rather than read a schema from the LDB itself, read it from an ldif
- * file.  This allows schema to be loaded and used while adding the
- * schema itself to the directory.
- */
-
-WERROR dsdb_attach_schema_from_ldif_file(struct ldb_context *ldb, const char *pf, const char *df)
-{
-	struct ldb_ldif *ldif;
-	struct ldb_message *msg;
-	TALLOC_CTX *mem_ctx;
-	WERROR status;
-	int ret;
-	struct dsdb_schema *schema;
-	const struct ldb_val *prefix_val;
-	const struct ldb_val *info_val;
-	struct ldb_val info_val_default;
-
-	mem_ctx = talloc_new(ldb);
-	if (!mem_ctx) {
-		goto nomem;
-	}
-
-	schema = dsdb_new_schema(mem_ctx, lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")));
-
-	schema->fsmo.we_are_master = true;
-	schema->fsmo.master_dn = ldb_dn_new_fmt(schema, ldb, "@PROVISION_SCHEMA_MASTER");
-	if (!schema->fsmo.master_dn) {
-		goto nomem;
-	}
-
-	/*
-	 * load the prefixMap attribute from pf
-	 */
-	ldif = ldb_ldif_read_string(ldb, &pf);
-	if (!ldif) {
-		status = WERR_INVALID_PARAM;
-		goto failed;
-	}
-	talloc_steal(mem_ctx, ldif);
-
-	msg = ldb_msg_canonicalize(ldb, ldif->msg);
-	if (!msg) {
-		goto nomem;
-	}
-	talloc_steal(mem_ctx, msg);
-	talloc_free(ldif);
-
-	prefix_val = ldb_msg_find_ldb_val(msg, "prefixMap");
-	if (!prefix_val) {
-	    	status = WERR_INVALID_PARAM;
-		goto failed;
-	}
-
-	info_val = ldb_msg_find_ldb_val(msg, "schemaInfo");
-	if (!info_val) {
-		info_val_default = strhex_to_data_blob("FF0000000000000000000000000000000000000000");
-		if (!info_val_default.data) {
-			goto nomem;
-		}
-		talloc_steal(mem_ctx, info_val_default.data);
-		info_val = &info_val_default;
-	}
-
-	status = dsdb_load_oid_mappings_ldb(schema, prefix_val, info_val);
-	if (!W_ERROR_IS_OK(status)) {
-		goto failed;
-	}
-
-	/*
-	 * load the attribute and class definitions outof df
-	 */
-	while ((ldif = ldb_ldif_read_string(ldb, &df))) {
-		bool is_sa;
-		bool is_sc;
-
-		talloc_steal(mem_ctx, ldif);
-
-		msg = ldb_msg_canonicalize(ldb, ldif->msg);
-		if (!msg) {
-			goto nomem;
-		}
-
-		talloc_steal(mem_ctx, msg);
-		talloc_free(ldif);
-
-		is_sa = ldb_msg_check_string_attribute(msg, "objectClass", "attributeSchema");
-		is_sc = ldb_msg_check_string_attribute(msg, "objectClass", "classSchema");
-
-		if (is_sa) {
-			struct dsdb_attribute *sa;
-
-			sa = talloc_zero(schema, struct dsdb_attribute);
-			if (!sa) {
-				goto nomem;
-			}
-
-			status = dsdb_attribute_from_ldb(schema, msg, sa, sa);
-			if (!W_ERROR_IS_OK(status)) {
-				goto failed;
-			}
-
-			DLIST_ADD_END(schema->attributes, sa, struct dsdb_attribute *);
-		} else if (is_sc) {
-			struct dsdb_class *sc;
-
-			sc = talloc_zero(schema, struct dsdb_class);
-			if (!sc) {
-				goto nomem;
-			}
-
-			status = dsdb_class_from_ldb(schema, msg, sc, sc);
-			if (!W_ERROR_IS_OK(status)) {
-				goto failed;
-			}
-
-			DLIST_ADD_END(schema->classes, sc, struct dsdb_class *);
-		}
-	}
-
-	ret = dsdb_set_schema(ldb, schema);
-	if (ret != LDB_SUCCESS) {
-		status = WERR_FOOBAR;
-		goto failed;
-	}
-
-	goto done;
-
-nomem:
-	status = WERR_NOMEM;
-failed:
-done:
-	talloc_free(mem_ctx);
-	return status;
-}
