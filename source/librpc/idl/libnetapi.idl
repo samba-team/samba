@@ -289,7 +289,7 @@ interface libnetapi
 		uint32 usri20_user_id;
 	} USER_INFO_20;
 
-	const int ENCRYPTED_PWLEN = 256;
+	const int ENCRYPTED_PWLEN = 16;
 
 	[public] typedef struct {
 		uint8 usri21_password[ENCRYPTED_PWLEN];
