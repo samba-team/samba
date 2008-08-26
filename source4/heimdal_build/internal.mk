@@ -427,6 +427,46 @@ HEIMDAL_WIND_OBJ_FILES = \
 # End SUBSYSTEM HEIMDAL_WIND
 #######################
 
+$(HEIMDAL_WIND_OBJ_FILES) $(HEIMDAL_WIND_OBJ_FILES:.o=.d):: $(heimdalsrcdir)/lib/wind/map_table.h
+
+$(heimdalsrcdir)/lib/wind/map_table.h $(heimdalsrcdir)/lib/wind/map_table.c: $(heimdalsrcdir)/lib/wind/rfc3454.txt $(heimdalsrcdir)/lib/wind/gen-map.py $(heimdalsrcdir)/lib/wind/stringprep.py
+	$(PYTHON) $(heimdalsrcdir)/lib/wind/gen-map.py $(heimdalsrcdir)/lib/wind/rfc3454.txt $(heimdalsrcdir)/lib/wind/
+
+clean::
+	@rm -f $(heimdalsrcdir)/lib/wind/map_table.h $(heimdalsrcdir)/lib/wind/map_table.c
+
+$(HEIMDAL_WIND_OBJ_FILES) $(HEIMDAL_WIND_OBJ_FILES:.o=.d):: $(heimdalsrcdir)/lib/wind/errorlist_table.h
+
+$(heimdalsrcdir)/lib/wind/errorlist_table.h $(heimdalsrcdir)/lib/wind/errorlist_table.c: $(heimdalsrcdir)/lib/wind/rfc3454.txt $(heimdalsrcdir)/lib/wind/gen-errorlist.py $(heimdalsrcdir)/lib/wind/stringprep.py
+	$(PYTHON) $(heimdalsrcdir)/lib/wind/gen-errorlist.py $(heimdalsrcdir)/lib/wind/rfc3454.txt $(heimdalsrcdir)/lib/wind/
+
+clean::
+	@rm -f $(heimdalsrcdir)/lib/wind/errorlist_table.h $(heimdalsrcdir)/lib/wind/errorlist_table.c
+
+$(HEIMDAL_WIND_OBJ_FILES) $(HEIMDAL_WIND_OBJ_FILES:.o=.d):: $(heimdalsrcdir)/lib/wind/normalize_table.h
+
+$(heimdalsrcdir)/lib/wind/normalize_table.h $(heimdalsrcdir)/lib/wind/normalize_table.c: $(heimdalsrcdir)/lib/wind/UnicodeData.txt $(heimdalsrcdir)/lib/wind/CompositionExclusions-3.2.0.txt $(heimdalsrcdir)/lib/wind/gen-normalize.py
+	$(PYTHON) $(heimdalsrcdir)/lib/wind/gen-normalize.py $(heimdalsrcdir)/lib/wind/UnicodeData.txt $(heimdalsrcdir)/lib/wind/CompositionExclusions-3.2.0.txt $(heimdalsrcdir)/lib/wind/
+
+clean::
+	@rm -f $(heimdalsrcdir)/lib/wind/normalize_table.h $(heimdalsrcdir)/lib/wind/normalize_table.c
+
+$(HEIMDAL_WIND_OBJ_FILES) $(HEIMDAL_WIND_OBJ_FILES:.o=.d):: $(heimdalsrcdir)/lib/wind/combining_table.h
+
+$(heimdalsrcdir)/lib/wind/combining_table.h $(heimdalsrcdir)/lib/wind/combining_table.c: $(heimdalsrcdir)/lib/wind/UnicodeData.txt $(heimdalsrcdir)/lib/wind/gen-combining.py
+	$(PYTHON) $(heimdalsrcdir)/lib/wind/gen-combining.py $(heimdalsrcdir)/lib/wind/UnicodeData.txt $(heimdalsrcdir)/lib/wind/
+
+clean::
+	@rm -f $(heimdalsrcdir)/lib/wind/combining_table.h $(heimdalsrcdir)/lib/wind/combining_table.c
+
+$(HEIMDAL_WIND_OBJ_FILES) $(HEIMDAL_WIND_OBJ_FILES:.o=.d):: $(heimdalsrcdir)/lib/wind/bidi_table.h
+
+$(heimdalsrcdir)/lib/wind/bidi_table.h $(heimdalsrcdir)/lib/wind/bidi_table.c: $(heimdalsrcdir)/lib/wind/rfc3454.txt $(heimdalsrcdir)/lib/wind/gen-bidi.py
+	$(PYTHON) $(heimdalsrcdir)/lib/wind/gen-bidi.py $(heimdalsrcdir)/lib/wind/rfc3454.txt $(heimdalsrcdir)/lib/wind/
+
+clean::
+	@rm -f $(heimdalsrcdir)/lib/wind/bidi_table.h $(heimdalsrcdir)/lib/wind/bidi_table.c
+
 [SUBSYSTEM::HEIMDAL_ROKEN_GETPROGNAME]
 
 HEIMDAL_ROKEN_GETPROGNAME_OBJ_FILES = $(heimdalsrcdir)/lib/roken/getprogname.o
