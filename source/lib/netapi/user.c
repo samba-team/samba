@@ -41,7 +41,7 @@ static void convert_USER_INFO_X_to_samr_user_info21(struct USER_INFO_X *infoX,
 	ZERO_STRUCT(zero_parameters);
 
 	if (infoX->usriX_name) {
-		fields_present |= SAMR_FIELD_FULL_NAME;
+		fields_present |= SAMR_FIELD_ACCOUNT_NAME;
 	}
 	if (infoX->usriX_password) {
 		fields_present |= SAMR_FIELD_PASSWORD;
@@ -77,8 +77,8 @@ static void convert_USER_INFO_X_to_samr_user_info21(struct USER_INFO_X *infoX,
 			      0,
 			      0,
 			      password_age,
-			      NULL,
 			      infoX->usriX_name,
+			      NULL,
 			      infoX->usriX_home_dir,
 			      NULL,
 			      infoX->usriX_script_path,
