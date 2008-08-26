@@ -2475,7 +2475,7 @@ install-everything:: install installmodules
 # is not used
 
 installdirs::
-	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(BINDIR) $(SBINDIR) $(LIBDIR) $(VARDIR) $(PRIVATEDIR) $(PIDDIR) $(LOCKDIR) $(MANDIR)
+	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(BINDIR) $(SBINDIR) $(LIBDIR) $(VARDIR) $(PRIVATEDIR) $(PIDDIR) $(LOCKDIR) $(MANDIR) $(CODEPAGEDIR) $(MODULESDIR)
 
 installservers:: all installdirs
 	@$(SHELL) script/installbin.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(SBINDIR) $(SBIN_PROGS)
