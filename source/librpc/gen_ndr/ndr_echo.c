@@ -623,7 +623,7 @@ _PUBLIC_ void ndr_print_echo_Surrounding(struct ndr_print *ndr, const char *name
 	ndr_print_struct(ndr, name, "echo_Surrounding");
 	ndr->depth++;
 	ndr_print_uint32(ndr, "x", r->x);
-	ndr->print(ndr, "%s: ARRAY(%d)", "surrounding", r->x);
+	ndr->print(ndr, "%s: ARRAY(%d)", "surrounding", (int)r->x);
 	ndr->depth++;
 	for (cntr_surrounding_0=0;cntr_surrounding_0<r->x;cntr_surrounding_0++) {
 		char *idx_0=NULL;

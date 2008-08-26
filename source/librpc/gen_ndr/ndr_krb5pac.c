@@ -507,7 +507,7 @@ _PUBLIC_ void ndr_print_PAC_DATA(struct ndr_print *ndr, const char *name, const 
 	ndr->depth++;
 	ndr_print_uint32(ndr, "num_buffers", r->num_buffers);
 	ndr_print_uint32(ndr, "version", r->version);
-	ndr->print(ndr, "%s: ARRAY(%d)", "buffers", r->num_buffers);
+	ndr->print(ndr, "%s: ARRAY(%d)", "buffers", (int)r->num_buffers);
 	ndr->depth++;
 	for (cntr_buffers_0=0;cntr_buffers_0<r->num_buffers;cntr_buffers_0++) {
 		char *idx_0=NULL;
@@ -669,7 +669,7 @@ _PUBLIC_ void ndr_print_PAC_DATA_RAW(struct ndr_print *ndr, const char *name, co
 	ndr->depth++;
 	ndr_print_uint32(ndr, "num_buffers", r->num_buffers);
 	ndr_print_uint32(ndr, "version", r->version);
-	ndr->print(ndr, "%s: ARRAY(%d)", "buffers", r->num_buffers);
+	ndr->print(ndr, "%s: ARRAY(%d)", "buffers", (int)r->num_buffers);
 	ndr->depth++;
 	for (cntr_buffers_0=0;cntr_buffers_0<r->num_buffers;cntr_buffers_0++) {
 		char *idx_0=NULL;

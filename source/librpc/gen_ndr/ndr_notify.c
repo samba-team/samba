@@ -116,7 +116,7 @@ _PUBLIC_ void ndr_print_notify_depth(struct ndr_print *ndr, const char *name, co
 	ndr_print_uint32(ndr, "max_mask", r->max_mask);
 	ndr_print_uint32(ndr, "max_mask_subdir", r->max_mask_subdir);
 	ndr_print_uint32(ndr, "num_entries", r->num_entries);
-	ndr->print(ndr, "%s: ARRAY(%d)", "entries", r->num_entries);
+	ndr->print(ndr, "%s: ARRAY(%d)", "entries", (int)r->num_entries);
 	ndr->depth++;
 	for (cntr_entries_0=0;cntr_entries_0<r->num_entries;cntr_entries_0++) {
 		char *idx_0=NULL;
@@ -179,7 +179,7 @@ _PUBLIC_ void ndr_print_notify_array(struct ndr_print *ndr, const char *name, co
 	ndr_print_struct(ndr, name, "notify_array");
 	ndr->depth++;
 	ndr_print_uint32(ndr, "num_depths", r->num_depths);
-	ndr->print(ndr, "%s: ARRAY(%d)", "depth", r->num_depths);
+	ndr->print(ndr, "%s: ARRAY(%d)", "depth", (int)r->num_depths);
 	ndr->depth++;
 	for (cntr_depth_0=0;cntr_depth_0<r->num_depths;cntr_depth_0++) {
 		char *idx_0=NULL;

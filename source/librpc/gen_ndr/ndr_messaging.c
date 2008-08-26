@@ -99,7 +99,7 @@ _PUBLIC_ void ndr_print_messaging_array(struct ndr_print *ndr, const char *name,
 	ndr_print_struct(ndr, name, "messaging_array");
 	ndr->depth++;
 	ndr_print_uint32(ndr, "num_messages", r->num_messages);
-	ndr->print(ndr, "%s: ARRAY(%d)", "messages", r->num_messages);
+	ndr->print(ndr, "%s: ARRAY(%d)", "messages", (int)r->num_messages);
 	ndr->depth++;
 	for (cntr_messages_0=0;cntr_messages_0<r->num_messages;cntr_messages_0++) {
 		char *idx_0=NULL;
@@ -180,7 +180,7 @@ _PUBLIC_ void ndr_print_dbwrap_tdb2_changes(struct ndr_print *ndr, const char *n
 	ndr_print_uint32(ndr, "new_seqnum", r->new_seqnum);
 	ndr_print_uint32(ndr, "num_changes", r->num_changes);
 	ndr_print_uint32(ndr, "num_keys", r->num_keys);
-	ndr->print(ndr, "%s: ARRAY(%d)", "keys", r->num_keys);
+	ndr->print(ndr, "%s: ARRAY(%d)", "keys", (int)r->num_keys);
 	ndr->depth++;
 	for (cntr_keys_0=0;cntr_keys_0<r->num_keys;cntr_keys_0++) {
 		char *idx_0=NULL;

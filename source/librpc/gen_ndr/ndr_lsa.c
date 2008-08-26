@@ -217,7 +217,7 @@ _PUBLIC_ void ndr_print_lsa_Strings(struct ndr_print *ndr, const char *name, con
 	ndr_print_ptr(ndr, "names", r->names);
 	ndr->depth++;
 	if (r->names) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "names", r->count);
+		ndr->print(ndr, "%s: ARRAY(%d)", "names", (int)r->count);
 		ndr->depth++;
 		for (cntr_names_1=0;cntr_names_1<r->count;cntr_names_1++) {
 			char *idx_1=NULL;
@@ -451,7 +451,7 @@ _PUBLIC_ void ndr_print_lsa_BinaryString(struct ndr_print *ndr, const char *name
 	ndr_print_ptr(ndr, "array", r->array);
 	ndr->depth++;
 	if (r->array) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "array", r->length / 2);
+		ndr->print(ndr, "%s: ARRAY(%d)", "array", (int)r->length / 2);
 		ndr->depth++;
 		for (cntr_array_1=0;cntr_array_1<r->length / 2;cntr_array_1++) {
 			char *idx_1=NULL;
@@ -605,7 +605,7 @@ _PUBLIC_ void ndr_print_lsa_PrivArray(struct ndr_print *ndr, const char *name, c
 	ndr_print_ptr(ndr, "privs", r->privs);
 	ndr->depth++;
 	if (r->privs) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "privs", r->count);
+		ndr->print(ndr, "%s: ARRAY(%d)", "privs", (int)r->count);
 		ndr->depth++;
 		for (cntr_privs_1=0;cntr_privs_1<r->count;cntr_privs_1++) {
 			char *idx_1=NULL;
@@ -973,7 +973,7 @@ _PUBLIC_ void ndr_print_lsa_AuditEventsInfo(struct ndr_print *ndr, const char *n
 	ndr_print_ptr(ndr, "settings", r->settings);
 	ndr->depth++;
 	if (r->settings) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "settings", r->count);
+		ndr->print(ndr, "%s: ARRAY(%d)", "settings", (int)r->count);
 		ndr->depth++;
 		for (cntr_settings_1=0;cntr_settings_1<r->count;cntr_settings_1++) {
 			char *idx_1=NULL;
@@ -1805,7 +1805,7 @@ _PUBLIC_ void ndr_print_lsa_SidArray(struct ndr_print *ndr, const char *name, co
 	ndr_print_ptr(ndr, "sids", r->sids);
 	ndr->depth++;
 	if (r->sids) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "sids", r->num_sids);
+		ndr->print(ndr, "%s: ARRAY(%d)", "sids", (int)r->num_sids);
 		ndr->depth++;
 		for (cntr_sids_1=0;cntr_sids_1<r->num_sids;cntr_sids_1++) {
 			char *idx_1=NULL;
@@ -1891,7 +1891,7 @@ _PUBLIC_ void ndr_print_lsa_DomainList(struct ndr_print *ndr, const char *name, 
 	ndr_print_ptr(ndr, "domains", r->domains);
 	ndr->depth++;
 	if (r->domains) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "domains", r->count);
+		ndr->print(ndr, "%s: ARRAY(%d)", "domains", (int)r->count);
 		ndr->depth++;
 		for (cntr_domains_1=0;cntr_domains_1<r->count;cntr_domains_1++) {
 			char *idx_1=NULL;
@@ -2043,7 +2043,7 @@ _PUBLIC_ void ndr_print_lsa_TransSidArray(struct ndr_print *ndr, const char *nam
 	ndr_print_ptr(ndr, "sids", r->sids);
 	ndr->depth++;
 	if (r->sids) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "sids", r->count);
+		ndr->print(ndr, "%s: ARRAY(%d)", "sids", (int)r->count);
 		ndr->depth++;
 		for (cntr_sids_1=0;cntr_sids_1<r->count;cntr_sids_1++) {
 			char *idx_1=NULL;
@@ -2134,7 +2134,7 @@ _PUBLIC_ void ndr_print_lsa_RefDomainList(struct ndr_print *ndr, const char *nam
 	ndr_print_ptr(ndr, "domains", r->domains);
 	ndr->depth++;
 	if (r->domains) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "domains", r->count);
+		ndr->print(ndr, "%s: ARRAY(%d)", "domains", (int)r->count);
 		ndr->depth++;
 		for (cntr_domains_1=0;cntr_domains_1<r->count;cntr_domains_1++) {
 			char *idx_1=NULL;
@@ -2291,7 +2291,7 @@ _PUBLIC_ void ndr_print_lsa_TransNameArray(struct ndr_print *ndr, const char *na
 	ndr_print_ptr(ndr, "names", r->names);
 	ndr->depth++;
 	if (r->names) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "names", r->count);
+		ndr->print(ndr, "%s: ARRAY(%d)", "names", (int)r->count);
 		ndr->depth++;
 		for (cntr_names_1=0;cntr_names_1<r->count;cntr_names_1++) {
 			char *idx_1=NULL;
@@ -2391,7 +2391,7 @@ _PUBLIC_ void ndr_print_lsa_PrivilegeSet(struct ndr_print *ndr, const char *name
 	ndr->depth++;
 	ndr_print_uint32(ndr, "count", r->count);
 	ndr_print_uint32(ndr, "unknown", r->unknown);
-	ndr->print(ndr, "%s: ARRAY(%d)", "set", r->count);
+	ndr->print(ndr, "%s: ARRAY(%d)", "set", (int)r->count);
 	ndr->depth++;
 	for (cntr_set_0=0;cntr_set_0<r->count;cntr_set_0++) {
 		char *idx_0=NULL;
@@ -3512,7 +3512,7 @@ _PUBLIC_ void ndr_print_lsa_RightSet(struct ndr_print *ndr, const char *name, co
 	ndr_print_ptr(ndr, "names", r->names);
 	ndr->depth++;
 	if (r->names) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "names", r->count);
+		ndr->print(ndr, "%s: ARRAY(%d)", "names", (int)r->count);
 		ndr->depth++;
 		for (cntr_names_1=0;cntr_names_1<r->count;cntr_names_1++) {
 			char *idx_1=NULL;
@@ -3598,7 +3598,7 @@ _PUBLIC_ void ndr_print_lsa_DomainListEx(struct ndr_print *ndr, const char *name
 	ndr_print_ptr(ndr, "domains", r->domains);
 	ndr->depth++;
 	if (r->domains) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "domains", r->count);
+		ndr->print(ndr, "%s: ARRAY(%d)", "domains", (int)r->count);
 		ndr->depth++;
 		for (cntr_domains_1=0;cntr_domains_1<r->count;cntr_domains_1++) {
 			char *idx_1=NULL;
@@ -3926,7 +3926,7 @@ _PUBLIC_ void ndr_print_lsa_TransNameArray2(struct ndr_print *ndr, const char *n
 	ndr_print_ptr(ndr, "names", r->names);
 	ndr->depth++;
 	if (r->names) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "names", r->count);
+		ndr->print(ndr, "%s: ARRAY(%d)", "names", (int)r->count);
 		ndr->depth++;
 		for (cntr_names_1=0;cntr_names_1<r->count;cntr_names_1++) {
 			char *idx_1=NULL;
@@ -4048,7 +4048,7 @@ _PUBLIC_ void ndr_print_lsa_TransSidArray2(struct ndr_print *ndr, const char *na
 	ndr_print_ptr(ndr, "sids", r->sids);
 	ndr->depth++;
 	if (r->sids) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "sids", r->count);
+		ndr->print(ndr, "%s: ARRAY(%d)", "sids", (int)r->count);
 		ndr->depth++;
 		for (cntr_sids_1=0;cntr_sids_1<r->count;cntr_sids_1++) {
 			char *idx_1=NULL;
@@ -4197,7 +4197,7 @@ _PUBLIC_ void ndr_print_lsa_TransSidArray3(struct ndr_print *ndr, const char *na
 	ndr_print_ptr(ndr, "sids", r->sids);
 	ndr->depth++;
 	if (r->sids) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "sids", r->count);
+		ndr->print(ndr, "%s: ARRAY(%d)", "sids", (int)r->count);
 		ndr->depth++;
 		for (cntr_sids_1=0;cntr_sids_1<r->count;cntr_sids_1++) {
 			char *idx_1=NULL;
@@ -4619,7 +4619,7 @@ _PUBLIC_ void ndr_print_lsa_ForestTrustInformation(struct ndr_print *ndr, const 
 	ndr_print_ptr(ndr, "entries", r->entries);
 	ndr->depth++;
 	if (r->entries) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "entries", r->count);
+		ndr->print(ndr, "%s: ARRAY(%d)", "entries", (int)r->count);
 		ndr->depth++;
 		for (cntr_entries_1=0;cntr_entries_1<r->count;cntr_entries_1++) {
 			char *idx_1=NULL;
@@ -6013,7 +6013,7 @@ _PUBLIC_ void ndr_print_lsa_LookupNames(struct ndr_print *ndr, const char *name,
 		ndr_print_policy_handle(ndr, "handle", r->in.handle);
 		ndr->depth--;
 		ndr_print_uint32(ndr, "num_names", r->in.num_names);
-		ndr->print(ndr, "%s: ARRAY(%d)", "names", r->in.num_names);
+		ndr->print(ndr, "%s: ARRAY(%d)", "names", (int)r->in.num_names);
 		ndr->depth++;
 		for (cntr_names_0=0;cntr_names_0<r->in.num_names;cntr_names_0++) {
 			char *idx_0=NULL;
@@ -10319,7 +10319,7 @@ _PUBLIC_ void ndr_print_lsa_LookupNames2(struct ndr_print *ndr, const char *name
 		ndr_print_policy_handle(ndr, "handle", r->in.handle);
 		ndr->depth--;
 		ndr_print_uint32(ndr, "num_names", r->in.num_names);
-		ndr->print(ndr, "%s: ARRAY(%d)", "names", r->in.num_names);
+		ndr->print(ndr, "%s: ARRAY(%d)", "names", (int)r->in.num_names);
 		ndr->depth++;
 		for (cntr_names_0=0;cntr_names_0<r->in.num_names;cntr_names_0++) {
 			char *idx_0=NULL;
@@ -10902,7 +10902,7 @@ _PUBLIC_ void ndr_print_lsa_LookupNames3(struct ndr_print *ndr, const char *name
 		ndr_print_policy_handle(ndr, "handle", r->in.handle);
 		ndr->depth--;
 		ndr_print_uint32(ndr, "num_names", r->in.num_names);
-		ndr->print(ndr, "%s: ARRAY(%d)", "names", r->in.num_names);
+		ndr->print(ndr, "%s: ARRAY(%d)", "names", (int)r->in.num_names);
 		ndr->depth++;
 		for (cntr_names_0=0;cntr_names_0<r->in.num_names;cntr_names_0++) {
 			char *idx_0=NULL;
@@ -11636,7 +11636,7 @@ _PUBLIC_ void ndr_print_lsa_LookupNames4(struct ndr_print *ndr, const char *name
 		ndr_print_struct(ndr, "in", "lsa_LookupNames4");
 		ndr->depth++;
 		ndr_print_uint32(ndr, "num_names", r->in.num_names);
-		ndr->print(ndr, "%s: ARRAY(%d)", "names", r->in.num_names);
+		ndr->print(ndr, "%s: ARRAY(%d)", "names", (int)r->in.num_names);
 		ndr->depth++;
 		for (cntr_names_0=0;cntr_names_0<r->in.num_names;cntr_names_0++) {
 			char *idx_0=NULL;
