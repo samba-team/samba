@@ -1,5 +1,4 @@
-/*	$NetBSD: vis.h,v 1.11 1999/11/25 16:55:50 wennmach Exp $	*/
-/*	$Id$	*/
+/*	$NetBSD: vis.h,v 1.16 2005/09/13 01:44:32 christos Exp $	*/
 
 /*-
  * Copyright (c) 1990, 1993
@@ -43,6 +42,8 @@
 #endif
 #endif
 
+#include <sys/types.h>
+
 /*
  * to select alternate encoding format
  */
@@ -63,6 +64,7 @@
  * other
  */
 #define	VIS_NOSLASH	0x40	/* inhibit printing '\' */
+#define	VIS_HTTPSTYLE	0x80	/* http-style escape % HEX HEX */
 
 /*
  * unvis return codes
@@ -78,22 +80,28 @@
  */
 #define	UNVIS_END	1	/* no more characters */
 
-char ROKEN_LIB_FUNCTION
-	*rk_vis (char *, int, int, int);
-char ROKEN_LIB_FUNCTION
-	*rk_svis (char *, int, int, int, const char *);
+#include <sys/cdefs.h>
+
+__BEGIN_DECLS
+char * ROKEN_LIB_FUNCTION
+	rk_vis(char *, int, int, int);
+char * ROKEN_LIB_FUNCTION
+	rk_svis(char *, int, int, int, const char *);
 int ROKEN_LIB_FUNCTION
-	rk_strvis (char *, const char *, int);
+	rk_strvis(char *, const char *, int);
 int ROKEN_LIB_FUNCTION
-	rk_strsvis (char *, const char *, int, const char *);
+	rk_strsvis(char *, const char *, int, const char *);
 int ROKEN_LIB_FUNCTION
-	rk_strvisx (char *, const char *, size_t, int);
+	rk_strvisx(char *, const char *, size_t, int);
 int ROKEN_LIB_FUNCTION
-	rk_strsvisx (char *, const char *, size_t, int, const char *);
+	rk_strsvisx(char *, const char *, size_t, int, const char *);
 int ROKEN_LIB_FUNCTION
-	rk_strunvis (char *, const char *);
+	rk_strunvis(char *, const char *);
 int ROKEN_LIB_FUNCTION
-	rk_unvis (char *, int, int *, int);
+	rk_strunvisx(char *, const char *, int);
+int ROKEN_LIB_FUNCTION
+	rk_unvis(char *, int, int *, int);
+__END_DECLS
 
 #undef vis
 #define vis(a,b,c,d) rk_vis(a,b,c,d)
