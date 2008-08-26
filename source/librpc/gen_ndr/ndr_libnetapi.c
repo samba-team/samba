@@ -1716,6 +1716,9 @@ _PUBLIC_ enum ndr_err_code ndr_push_USER_INFO_X(struct ndr_push *ndr, int ndr_fl
 		NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->usriX_logon_server));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->usriX_country_code));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->usriX_code_page));
+		NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->usriX_profile));
+		NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->usriX_home_dir_drive));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->usriX_primary_group_id));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		if (r->usriX_logon_hours) {
@@ -1760,6 +1763,9 @@ _PUBLIC_ enum ndr_err_code ndr_pull_USER_INFO_X(struct ndr_pull *ndr, int ndr_fl
 		NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->usriX_logon_server));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->usriX_country_code));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->usriX_code_page));
+		NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->usriX_profile));
+		NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->usriX_home_dir_drive));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->usriX_primary_group_id));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		if (r->usriX_logon_hours) {
@@ -1805,6 +1811,9 @@ _PUBLIC_ void ndr_print_USER_INFO_X(struct ndr_print *ndr, const char *name, con
 	ndr_print_string(ndr, "usriX_logon_server", r->usriX_logon_server);
 	ndr_print_uint32(ndr, "usriX_country_code", r->usriX_country_code);
 	ndr_print_uint32(ndr, "usriX_code_page", r->usriX_code_page);
+	ndr_print_string(ndr, "usriX_profile", r->usriX_profile);
+	ndr_print_string(ndr, "usriX_home_dir_drive", r->usriX_home_dir_drive);
+	ndr_print_uint32(ndr, "usriX_primary_group_id", r->usriX_primary_group_id);
 	ndr->depth--;
 }
 
