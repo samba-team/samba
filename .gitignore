@@ -12,6 +12,7 @@ source/include/stamp-h
 source/include/version.h
 source/Makefile
 source/lib/netapi/examples/Makefile
+source/lib/netapi/tests/Makefile
 source/config.log
 source/config.status
 source/configure
@@ -32,6 +33,8 @@ source/cscope.out
 source/torture.tdb
 source/pkgconfig/*.pc
 source/st
+source/exports/libsmbclient.syms
+source/exports/libsmbsharemodes.syms
 source/exports/libnetapi.syms
 source/exports/libtalloc.syms
 source/exports/libtdb.syms
@@ -61,6 +64,8 @@ examples/libsmbclient/teststat3
 examples/libsmbclient/testutime
 examples/libsmbclient/testwrite
 examples/libsmbclient/testtruncate
+examples/libsmbclient/tree
+examples/libsmbclient/Makefile.internal
 source/librpc/gen_ndr/cli_krb5pac.*
 source/librpc/gen_ndr/cli_messaging.*
 source/librpc/gen_ndr/cli_misc.*

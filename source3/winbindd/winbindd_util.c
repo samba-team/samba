@@ -180,11 +180,11 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 	domain->initialized = False;
 	domain->online = is_internal_domain(sid);
 	domain->check_online_timeout = 0;
+	domain->dc_probe_pid = (pid_t)-1;
 	if (sid) {
 		sid_copy(&domain->sid, sid);
 	}
 
-	
 	/* Link to domain list */
 	DLIST_ADD_END(_domain_list, domain, struct winbindd_domain *);
         
@@ -1544,3 +1544,15 @@ void winbindd_unset_locator_kdc_env(const struct winbindd_domain *domain)
 }
 
 #endif /* HAVE_KRB5_LOCATE_PLUGIN_H */
+
+void set_auth_errors(struct winbindd_response *resp, NTSTATUS result)
+{
+	resp->data.auth.nt_status = NT_STATUS_V(result);
+	fstrcpy(resp->data.auth.nt_status_string, nt_errstr(result));
+
+	/* we might have given a more useful error above */
+	if (*resp->data.auth.error_string == '\0')
+		fstrcpy(resp->data.auth.error_string,
+			get_friendly_nt_error_msg(result));
+	resp->data.auth.pam_error = nt_status_to_pam(result);
+}

@@ -139,7 +139,7 @@ if eval test x"$build_lib" = "xyes" ; then
 		LIBUC[_SHARED]=$LIBUC[_SHARED_TARGET]
 		AC_MSG_RESULT(yes)
 		if test x"$USESHARED" != x"true" -o x"$[LINK_]LIBUC" = "xSTATIC" ; then
-			LIBUC[_STATIC]=$LIBUC[_STATIC_TARGET]
+			enable_static=yes
 		else
 			LIBUC[_LIBS]=LIBLIBS
 		fi
@@ -152,7 +152,7 @@ else
 	AC_MSG_RESULT(shared library not selected, but will supply static library)
 fi
 if test $enable_static = yes; then
-	LIBUC[_STATIC]=$LIBUC[_STATIC_TARGET]
+	LIBUC[_STATIC]=[\$\(]LIBUC[_OBJ0\)]
 fi
 
 m4_popdef([LIBNAME])

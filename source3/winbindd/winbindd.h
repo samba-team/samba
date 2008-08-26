@@ -153,6 +153,7 @@ struct winbindd_child {
 
 	struct fd_event event;
 	struct timed_event *lockout_policy_event;
+	struct timed_event *machine_password_change_event;
 	struct winbindd_async_request *requests;
 
 	const struct winbindd_child_dispatch_table *table;
@@ -204,6 +205,7 @@ struct winbindd_domain {
 	uint32_t id_range_low, id_range_high;
 
 	/* A working DC */
+	pid_t dc_probe_pid; /* Child we're using to detect the DC. */
 	fstring dcname;
 	struct sockaddr_storage dcaddr;
 
