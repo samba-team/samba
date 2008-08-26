@@ -196,7 +196,7 @@ static int open_cred_file(char * file_name)
 	line_buf = (char *)malloc(4096);
 	if(line_buf == NULL) {
 		fclose(fs);
-		return -ENOMEM;
+		return ENOMEM;
 	}
 
 	while(fgets(line_buf,4096,fs)) {
@@ -533,7 +533,8 @@ static int parse_options(char ** optionsp, int * filesys_flags)
 			if (value && *value) {
 				rc = open_cred_file(value);
 				if(rc) {
-					printf("error %d opening credential file %s\n",rc, value);
+					printf("error %d (%s) opening credential file %s\n",
+						rc, strerror(rc), value);
 					return 1;
 				}
 			} else {
