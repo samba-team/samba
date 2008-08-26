@@ -487,6 +487,16 @@ HEIMDAL_ROKEN_OBJ_FILES = \
 	$(heimdalsrcdir)/lib/roken/xfree.o \
 	$(heimdalbuildsrcdir)/replace.o
 
+$(HEIMDAL_ROKEN_OBJ_FILES) $(HEIMDAL_ROKEN_OBJ_FILES:.o=.d):: $(heimdalsrcdir)/lib/roken/roken.h
+$(HEIMDAL_ROKEN_OBJ_FILES:.o=.ho) $(HEIMDAL_ROKEN_OBJ_FILES:.o=.hd):: $(heimdalsrcdir)/lib/roken/roken.h
+
+$(heimdalsrcdir)/lib/roken/roken.h:
+	@echo 'Creating $(heimdalsrcdir)/lib/roken/roken.h'
+	@echo '#include "heimdal_build/roken.h"' > $(heimdalsrcdir)/lib/roken/roken.h
+
+clean::
+	@rm -f $(heimdalsrcdir)/lib/roken/roken.h
+
 #######################
 # Start SUBSYSTEM HEIMDAL_COM_ERR
 [SUBSYSTEM::HEIMDAL_COM_ERR]
