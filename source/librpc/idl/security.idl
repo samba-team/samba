@@ -386,4 +386,12 @@ interface security
 		SECINFO_PROTECTED_SACL	     = 0x40000000,
 		SECINFO_PROTECTED_DACL	     = 0x80000000
 	} security_secinfo;
+
+	typedef [public,bitmap32bit] bitmap {
+		KERB_ENCTYPE_DES_CBC_CRC             = 0x00000001,
+		KERB_ENCTYPE_DES_CBC_MD5             = 0x00000002,
+		KERB_ENCTYPE_RC4_HMAC_MD5            = 0x00000004,
+		KERB_ENCTYPE_AES128_CTS_HMAC_SHA1_96 = 0x00000008,
+		KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96 = 0x00000010
+	} kerb_EncTypes;
 }
