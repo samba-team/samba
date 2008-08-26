@@ -23,6 +23,8 @@
 #include "rpc_server/lsa/lsa.h"
 #include "util/util_ldb.h"
 #include "libcli/ldap/ldap_ndr.h"
+#include "system/kerberos.h"
+#include "auth/kerberos/kerberos.h"
 
 /*
   this type allows us to distinguish handle types
@@ -95,6 +97,16 @@ static NTSTATUS dcesrv_lsa_Close(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 static NTSTATUS dcesrv_lsa_Delete(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 			   struct lsa_Delete *r)
 {
+	return NT_STATUS_NOT_SUPPORTED;
+}
+
+
+/* 
+  lsa_DeleteObject
+*/
+static NTSTATUS dcesrv_lsa_DeleteObject(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct lsa_DeleteObject *r)
+{
 	struct dcesrv_handle *h;
 	int ret;
 
@@ -121,6 +133,8 @@ static NTSTATUS dcesrv_lsa_Delete(struct dcesrv_call_state *dce_call, TALLOC_CTX
 			return NT_STATUS_INVALID_HANDLE;
 		}
 
+		ZERO_STRUCTP(r->out.handle);
+
 		return NT_STATUS_OK;
 	} else if (h->wire_handle.handle_type == LSA_HANDLE_TRUSTED_DOMAIN) {
 		struct lsa_trusted_domain_state *trusted_domain_state = h->data;
@@ -130,6 +144,8 @@ static NTSTATUS dcesrv_lsa_Delete(struct dcesrv_call_state *dce_call, TALLOC_CTX
 		if (ret != 0) {
 			return NT_STATUS_INVALID_HANDLE;
 		}
+
+		ZERO_STRUCTP(r->out.handle);
 
 		return NT_STATUS_OK;
 	} else if (h->wire_handle.handle_type == LSA_HANDLE_ACCOUNT) {
@@ -167,6 +183,8 @@ static NTSTATUS dcesrv_lsa_Delete(struct dcesrv_call_state *dce_call, TALLOC_CTX
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
+
+		ZERO_STRUCTP(r->out.handle);
 	} 
 	
 	return NT_STATUS_INVALID_HANDLE;
@@ -861,7 +879,7 @@ static NTSTATUS dcesrv_lsa_DeleteTrustedDomain(struct dcesrv_call_state *dce_cal
 {
 	NTSTATUS status;
 	struct lsa_OpenTrustedDomain open;
-	struct lsa_Delete delete;
+	struct lsa_DeleteObject delete;
 	struct dcesrv_handle *h;
 
 	open.in.handle = r->in.handle;
@@ -880,7 +898,8 @@ static NTSTATUS dcesrv_lsa_DeleteTrustedDomain(struct dcesrv_call_state *dce_cal
 	talloc_steal(mem_ctx, h);
 
 	delete.in.handle = open.out.trustdom_handle;
-	status = dcesrv_lsa_Delete(dce_call, mem_ctx, &delete);
+	delete.out.handle = open.out.trustdom_handle;
+	status = dcesrv_lsa_DeleteObject(dce_call, mem_ctx, &delete);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -924,6 +943,7 @@ static NTSTATUS dcesrv_lsa_QueryTrustedDomainInfo(struct dcesrv_call_state *dce_
 		"trustDirection",
 		"trustType",
 		"trustAttributes", 
+		"msDs-supportedEncryptionTypes",
 		NULL
 	};
 
@@ -967,12 +987,19 @@ static NTSTATUS dcesrv_lsa_QueryTrustedDomainInfo(struct dcesrv_call_state *dce_
 		ZERO_STRUCT(r->out.info->full_info);
 		return fill_trust_domain_ex(mem_ctx, msg, &r->out.info->full_info.info_ex);
 
-	case LSA_TRUSTED_DOMAIN_INFO_INFO_ALL:
-		ZERO_STRUCT(r->out.info->info_all);
-		return fill_trust_domain_ex(mem_ctx, msg, &r->out.info->info_all.info_ex);
+	case LSA_TRUSTED_DOMAIN_INFO_FULL_INFO_2_INTERNAL:
+		ZERO_STRUCT(r->out.info->info2_internal);
+		r->out.info->info2_internal.posix_offset.posix_offset
+			= samdb_result_uint(msg, "posixOffset", 0);					   
+		return fill_trust_domain_ex(mem_ctx, msg, &r->out.info->info2_internal.info_ex);
+		
+	case LSA_TRUSTED_DOMAIN_SUPPORTED_ENCRTYPION_TYPES:
+		r->out.info->enc_types.enc_types
+			= samdb_result_uint(msg, "msDs-supportedEncryptionTypes", KERB_ENCTYPE_RC4_HMAC_MD5);
+		break;
 
-	case LSA_TRUSTED_DOMAIN_INFO_CONTROLLERS_INFO:
-	case LSA_TRUSTED_DOMAIN_INFO_11:
+	case LSA_TRUSTED_DOMAIN_INFO_CONTROLLERS:
+	case LSA_TRUSTED_DOMAIN_INFO_INFO_EX2_INTERNAL:
 		/* oops, we don't want to return the info after all */
 		talloc_free(r->out.info);
 		r->out.info = NULL;
@@ -1986,22 +2013,14 @@ static NTSTATUS dcesrv_lsa_SetSecret(struct dcesrv_call_state *dce_call, TALLOC_
 		}
 
 		if (!r->in.new_val) {
-			/* This behaviour varies depending of if this is a local, or a global secret... */
-			if (secret_state->global) {
-				/* set old value mtime */
-				if (samdb_msg_add_uint64(secret_state->sam_ldb, 
-							 mem_ctx, msg, "lastSetTime", nt_now) != 0) { 
-					return NT_STATUS_NO_MEMORY; 
-				}
-			} else {
-				if (samdb_msg_add_delete(secret_state->sam_ldb, 
-							 mem_ctx, msg, "currentValue")) {
-					return NT_STATUS_NO_MEMORY;
-				}
-				if (samdb_msg_add_delete(secret_state->sam_ldb, 
-							 mem_ctx, msg, "lastSetTime")) {
-					return NT_STATUS_NO_MEMORY;
-				}
+			/* set old value mtime */
+			if (samdb_msg_add_uint64(secret_state->sam_ldb, 
+						 mem_ctx, msg, "lastSetTime", nt_now) != 0) { 
+				return NT_STATUS_NO_MEMORY; 
+			}
+			if (samdb_msg_add_delete(secret_state->sam_ldb, 
+						 mem_ctx, msg, "currentValue")) {
+				return NT_STATUS_NO_MEMORY;
 			}
 		}
 	}
@@ -2311,16 +2330,6 @@ static NTSTATUS dcesrv_lsa_LookupPrivDisplayName(struct dcesrv_call_state *dce_c
 
 
 /* 
-  lsa_DeleteObject
-*/
-static NTSTATUS dcesrv_lsa_DeleteObject(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct lsa_DeleteObject *r)
-{
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
-}
-
-
-/* 
   lsa_EnumAccountsWithUserRight
 */
 static NTSTATUS dcesrv_lsa_EnumAccountsWithUserRight(struct dcesrv_call_state *dce_call, 
@@ -2495,7 +2504,42 @@ static NTSTATUS dcesrv_lsa_QueryDomainInformationPolicy(struct dcesrv_call_state
 						 TALLOC_CTX *mem_ctx,
 						 struct lsa_QueryDomainInformationPolicy *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	r->out.info = talloc(mem_ctx, union lsa_DomainInformationPolicy);
+	if (!r->out.info) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	switch (r->in.level) {
+	case LSA_DOMAIN_INFO_POLICY_EFS:
+		talloc_free(r->out.info);
+		r->out.info = NULL;
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	case LSA_DOMAIN_INFO_POLICY_KERBEROS:
+	{
+		struct lsa_DomainInfoKerberos *k = &r->out.info->kerberos_info;
+		struct smb_krb5_context *smb_krb5_context;
+		int ret = smb_krb5_init_context(mem_ctx, 
+							dce_call->event_ctx, 
+							dce_call->conn->dce_ctx->lp_ctx,
+							&smb_krb5_context);
+		if (ret != 0) {
+			talloc_free(r->out.info);
+			r->out.info = NULL;
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+		k->enforce_restrictions = 0; /* FIXME, details missing from MS-LSAD 2.2.53 */
+		k->service_tkt_lifetime = 0; /* Need to find somewhere to store this, and query in KDC too */
+		k->user_tkt_lifetime = 0;    /* Need to find somewhere to store this, and query in KDC too */
+		k->user_tkt_renewaltime = 0; /* Need to find somewhere to store this, and query in KDC too */
+		k->clock_skew = krb5_get_max_time_skew(smb_krb5_context->krb5_context);
+		talloc_free(smb_krb5_context);
+		return NT_STATUS_OK;
+	}
+	default:
+		talloc_free(r->out.info);
+		r->out.info = NULL;
+		return NT_STATUS_INVALID_INFO_CLASS;
+	}
 }
 
 /*
