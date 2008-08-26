@@ -480,6 +480,9 @@ HEIMDAL_HX509_OBJG_FILES = \
 	$(heimdalsrcdir)/lib/hx509/sel-lex.o \
 	$(heimdalsrcdir)/lib/hx509/sel-gram.o
 
+$(heimdalsrcdir)/lib/hx509/sel-lex.c:: $(heimdalsrcdir)/lib/hx509/sel-gram.c
+dist:: $(heimdalsrcdir)/lib/hx509/sel-lex.c
+
 HEIMDAL_HX509_OBJ_FILES = $(HEIMDAL_HX509_OBJH_FILES) $(HEIMDAL_HX509_OBJG_FILES)
 
 $(eval $(call heimdal_proto_header_template, \
@@ -666,6 +669,9 @@ asn1_compile_ASN1_OBJ_FILES = \
 	$(heimdalsrcdir)/lib/asn1/parse.ho \
 	$(heimdalsrcdir)/lib/asn1/lex.ho
 
+$(heimdalsrcdir)/lib/asn1/lex.c:: $(heimdalsrcdir)/lib/asn1/parse.c
+dist:: $(heimdalsrcdir)/lib/asn1/lex.c
+
 asn1_compile_OBJ_FILES = \
 	$(asn1_compile_ASN1_OBJ_FILES) \
 	$(heimdalsrcdir)/lib/roken/emalloc.ho \
@@ -692,19 +698,10 @@ $(eval $(call heimdal_proto_header_template, \
 #######################
 
 #######################
-# Start SUBSYSTEM HEIMDAL_COM_ERR_COMPILE_LEX
-[SUBSYSTEM::HEIMDAL_COM_ERR_COMPILE_LEX]
-CFLAGS = -I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/com_err -I$(heimdalsrcdir)/lib/roken  -I$(socketwrappersrcdir)
-# End SUBSYSTEM HEIMDAL_COM_ERR_COMPILE_LEX
-#######################
-
-HEIMDAL_COM_ERR_COMPILE_LEX_OBJ_FILES = $(heimdalsrcdir)/lib/com_err/lex.ho 
-
-#######################
 # Start BINARY compile_et
 [BINARY::compile_et]
 USE_HOSTCC = YES
-PRIVATE_DEPENDENCIES = HEIMDAL_COM_ERR_COMPILE_LEX HEIMDAL_ROKEN_GETPROGNAME_H LIBREPLACE_NETWORK
+PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN_GETPROGNAME_H LIBREPLACE_NETWORK
 # End BINARY compile_et
 #######################
 
@@ -712,6 +709,7 @@ ET_COMPILER = $(builddir)/bin/compile_et
 
 compile_et_OBJ_FILES = $(heimdalsrcdir)/lib/vers/print_version.ho \
 	$(heimdalsrcdir)/lib/com_err/parse.ho \
+	$(heimdalsrcdir)/lib/com_err/lex.ho \
 	$(heimdalsrcdir)/lib/com_err/compile_et.ho \
 	$(heimdalsrcdir)/lib/roken/getarg.ho \
 	$(heimdalsrcdir)/lib/roken/get_window_size.ho \
@@ -720,7 +718,10 @@ compile_et_OBJ_FILES = $(heimdalsrcdir)/lib/vers/print_version.ho \
 	$(socketwrappersrcdir)/socket_wrapper.ho \
 	$(heimdalbuildsrcdir)/replace.ho
 
-$(compile_et_OBJ_FILES): CFLAGS+=-I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/roken
+$(compile_et_OBJ_FILES): CFLAGS+=-I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/com_err -I$(heimdalsrcdir)/lib/roken  -I$(socketwrappersrcdir)
+
+$(heimdalsrcdir)/lib/com_err/lex.c:: $(heimdalsrcdir)/lib/com_err/parse.c
+dist:: $(heimdalsrcdir)/lib/com_err/lex.c
 
 mkinclude perl_path_wrapper.sh asn1_deps.pl lib/hdb/hdb.asn1 hdb_asn1 \$\(heimdalsrcdir\)/lib/hdb |
 mkinclude perl_path_wrapper.sh asn1_deps.pl lib/gssapi/spnego/spnego.asn1 spnego_asn1 \$\(heimdalsrcdir\)/lib/gssapi --sequence=MechTypeList |
@@ -763,7 +764,3 @@ samba4kinit_OBJ_FILES = $(heimdalsrcdir)/kuser/kinit.o \
 	$(heimdalsrcdir)/lib/roken/getarg.o 
 
 $(samba4kinit_OBJ_FILES): CFLAGS+=-I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/roken
-
-dist:: $(heimdalsrcdir)/lib/asn1/lex.c $(heimdalsrcdir)/lib/com_err/lex.c \
-	$(heimdalsrcdir)/lib/asn1/parse.c $(heimdalsrcdir)/lib/com_err/parse.c \
-	$(heimdalsrcdir)/lib/hx509/sel-lex.c $(heimdalsrcdir)/lib/hx509/sel-gram.c
