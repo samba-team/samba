@@ -51,8 +51,7 @@ OM_uint32 _gss_ntlm_acquire_cred
     ntlm_ctx ctx;
 
     *min_stat = 0;
-    if (output_cred_handle)
-	*output_cred_handle = GSS_C_NO_CREDENTIAL;
+    *output_cred_handle = GSS_C_NO_CREDENTIAL;
     if (actual_mechs)
 	*actual_mechs = GSS_C_NO_OID_SET;
     if (time_rec)
