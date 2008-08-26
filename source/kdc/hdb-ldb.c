@@ -45,6 +45,7 @@
 #include "dsdb/samdb/samdb.h"
 #include "librpc/ndr/libndr.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
+#include "librpc/gen_ndr/lsa.h"
 #include "libcli/auth/libcli_auth.h"
 #include "param/param.h"
 #include "events/events.h"
@@ -56,9 +57,9 @@ enum hdb_ldb_ent_type
   HDB_LDB_ENT_TYPE_KRBTGT, HDB_LDB_ENT_TYPE_TRUST, HDB_LDB_ENT_TYPE_ANY };
 
 enum trust_direction {
-	INBOUND,
-	OUTBOUND,
-	UNKNOWN
+	UNKNOWN = 0,
+	INBOUND = LSA_TRUST_DIRECTION_INBOUND, 
+	OUTBOUND = LSA_TRUST_DIRECTION_OUTBOUND
 };
 
 static const char *realm_ref_attrs[] = {
@@ -749,6 +750,11 @@ static krb5_error_code LDB_trust_message2entry(krb5_context context, HDB *db,
 		dnsdomain = ldb_msg_find_attr_as_string(msg, "trustPartner", NULL);
 		realm = strupper_talloc(mem_ctx, dnsdomain);
 		password_val = ldb_msg_find_ldb_val(msg, "trustAuthOutgoing");
+	}
+
+	if (!password_val || !(trust_direction_flags & direction)) {
+		ret = ENOENT;
+		goto out;
 	}
 
 	ndr_err = ndr_pull_struct_blob_all(password_val, mem_ctx, private->iconv_convenience, &password_blob,
