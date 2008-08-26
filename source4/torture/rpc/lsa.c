@@ -28,7 +28,6 @@
 #include "libcli/auth/libcli_auth.h"
 #include "torture/rpc/rpc.h"
 #include "param/param.h"
-
 #define TEST_MACHINENAME "lsatestmach"
 
 static void init_lsa_String(struct lsa_String *name, const char *s)
@@ -1162,7 +1161,7 @@ static bool test_CreateSecret(struct dcerpc_pipe *p,
 							      &blob1, &session_key);
 				
 				if (strcmp(secret1, secret2) != 0) {
-					printf("Returned secret '%s' doesn't match '%s'\n", 
+					printf("Returned secret (r4) '%s' doesn't match '%s'\n", 
 					       secret2, secret1);
 					ret = false;
 				}
@@ -1177,7 +1176,9 @@ static bool test_CreateSecret(struct dcerpc_pipe *p,
 		r5.in.new_val->data = enc_key.data;
 		r5.in.new_val->length = enc_key.length;
 		r5.in.new_val->size = enc_key.length;
-		
+
+
+		msleep(200);
 		printf("Testing SetSecret (existing value should move to old)\n");
 		
 		status = dcerpc_lsa_SetSecret(p, mem_ctx, &r5);
@@ -1241,8 +1242,10 @@ static bool test_CreateSecret(struct dcerpc_pipe *p,
 				}
 				
 				if (*r6.out.new_mtime == *r6.out.old_mtime) {
-					printf("Returned secret %s had same mtime for both secrets: %s\n", 
+					printf("Returned secret (r6-%d) %s must not have same mtime for both secrets: %s != %s\n", 
+					       i,
 					       secname[i],
+					       nt_time_string(mem_ctx, *r6.out.old_mtime), 
 					       nt_time_string(mem_ctx, *r6.out.new_mtime));
 					ret = false;
 				}
@@ -1310,7 +1313,7 @@ static bool test_CreateSecret(struct dcerpc_pipe *p,
 				}
 				
 				if (*r8.out.new_mtime != *r8.out.old_mtime) {
-					printf("Returned secret %s should have had same mtime for both secrets: %s != %s\n", 
+					printf("Returned secret (r8) %s did not had same mtime for both secrets: %s != %s\n", 
 					       secname[i],
 					       nt_time_string(mem_ctx, *r8.out.old_mtime),
 					       nt_time_string(mem_ctx, *r8.out.new_mtime));
