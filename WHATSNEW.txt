@@ -91,8 +91,8 @@ Commit Highlights:
 ------------------
 
 o   Michael Adam <obnox@samba.org>
-    * Remove configure option "--with-libdir" and add
-      "--with-modulesdir" (bug #5609).
+    * BUG 5609: Remove configure option "--with-libdir" and add
+      "--with-modulesdir".
     * Extend "net rpc vampire keytab" to support differential replication
       and storing of kerberos keys.
     * Rework internal logic of registry tdb code.
