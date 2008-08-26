@@ -88,7 +88,8 @@ Commit Highlights:
 o   Michael Adam <obnox@samba.org>
     * Remove configure option "--with-libdir" and add
       "--with-modulesdir".
-    * Add "net rpc vampire keytab" and "net rpc vampire ldif".
+    * Extend "net rpc vampire keytab" to support differential replication
+      and storing of kerberos keys.
 
 
 o   Jeremy Allison <jra@samba.org>
@@ -99,6 +100,7 @@ o   Jeremy Allison <jra@samba.org>
 
 o   Guenther Deschner <gd@samba.org>
     * BUG 5710: Fix changing of machine account passwords.
+    * Add "net rpc vampire keytab" and "net rpc vampire ldif".
 
 
 o   Volker Lendecke <vl@samba.org>
