@@ -319,7 +319,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_PAC_INFO(struct ndr_push *ndr, int ndr_flags
 				NDR_CHECK(ndr_push_PAC_LOGON_NAME(ndr, NDR_SCALARS, &r->logon_name));
 			break; }
 
-			case PAC_TYPE_UNKNOWN_12: {
+			default: {
 				{
 					struct ndr_push *_ndr_unknown;
 					NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_unknown, 0, -1));
@@ -328,8 +328,6 @@ _PUBLIC_ enum ndr_err_code ndr_push_PAC_INFO(struct ndr_push *ndr, int ndr_flags
 				}
 			break; }
 
-			default:
-				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
 		}
 	}
 	if (ndr_flags & NDR_BUFFERS) {
@@ -348,11 +346,9 @@ _PUBLIC_ enum ndr_err_code ndr_push_PAC_INFO(struct ndr_push *ndr, int ndr_flags
 			case PAC_TYPE_LOGON_NAME:
 			break;
 
-			case PAC_TYPE_UNKNOWN_12:
+			default:
 			break;
 
-			default:
-				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
 		}
 	}
 	return NDR_ERR_SUCCESS;
@@ -380,7 +376,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_PAC_INFO(struct ndr_pull *ndr, int ndr_flags
 				NDR_CHECK(ndr_pull_PAC_LOGON_NAME(ndr, NDR_SCALARS, &r->logon_name));
 			break; }
 
-			case PAC_TYPE_UNKNOWN_12: {
+			default: {
 				{
 					struct ndr_pull *_ndr_unknown;
 					NDR_CHECK(ndr_pull_subcontext_start(ndr, &_ndr_unknown, 0, -1));
@@ -389,8 +385,6 @@ _PUBLIC_ enum ndr_err_code ndr_pull_PAC_INFO(struct ndr_pull *ndr, int ndr_flags
 				}
 			break; }
 
-			default:
-				return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
 		}
 	}
 	if (ndr_flags & NDR_BUFFERS) {
@@ -408,11 +402,9 @@ _PUBLIC_ enum ndr_err_code ndr_pull_PAC_INFO(struct ndr_pull *ndr, int ndr_flags
 			case PAC_TYPE_LOGON_NAME:
 			break;
 
-			case PAC_TYPE_UNKNOWN_12:
+			default:
 			break;
 
-			default:
-				return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
 		}
 	}
 	return NDR_ERR_SUCCESS;
@@ -440,12 +432,10 @@ _PUBLIC_ void ndr_print_PAC_INFO(struct ndr_print *ndr, const char *name, const 
 			ndr_print_PAC_LOGON_NAME(ndr, "logon_name", &r->logon_name);
 		break;
 
-		case PAC_TYPE_UNKNOWN_12:
+		default:
 			ndr_print_DATA_BLOB_REM(ndr, "unknown", &r->unknown);
 		break;
 
-		default:
-			ndr_print_bad_level(ndr, name, level);
 	}
 }
 
