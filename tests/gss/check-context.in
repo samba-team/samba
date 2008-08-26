@@ -93,7 +93,7 @@ ${kadmin} add -p p1 --use-defaults host/short@${R} || exit 1
 ${kadmin} mod --alias=host/long.test.h5l.se@${R} host/short@${R} || exit 1
 # XXX ext should ext aliases too
 ${kadmin} ext -k ${keytab} host/short@${R} || exit 1
-${ktutil} -k ${keytab} rename --no-delete host/short@${R} host/long.test.h5l.se@${R}
+${ktutil} -k ${keytab} rename --no-delete host/short@${R} host/long.test.h5l.se@${R} || exit 1
 
 ${kadmin} add -p kaka --use-defaults digest/${R}@${R} || exit 1
 
