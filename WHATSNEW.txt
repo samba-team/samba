@@ -25,6 +25,11 @@ Major enhancements in Samba 3.3.0 include:
  o The destination "all" of smbcontrol does now affect all running
    daemons including nmbd and winbindd.
  o New 'net rpc vampire keytab' and 'net rpc vampire ldif' commands.
+ o The 'net' utility can now use kerberos for joining and authentication.
+
+ Libraries:
+ o NetApi library implements various new calls for User- and Group
+   Account Management.
 
 
 Configure changes
