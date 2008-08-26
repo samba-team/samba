@@ -1,9 +1,9 @@
                    =================================
-                   Release Notes for Samba 3.3.0pre1
-                            August 26, 2008
+                   Release Notes for Samba 3.3.0pre2
+                            
                    =================================
 
-This is the first preview release of Samba 3.3.0.  This is *not*
+This is the second preview release of Samba 3.3.0.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
