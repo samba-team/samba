@@ -178,9 +178,9 @@ PATH_FLAGS = -DSMB_PASSWD_FILE=\"$(SMB_PASSWD_FILE)\" \
 
 # Note that all executable programs now provide for an optional executable suffix.
 
-SBIN_PROGS = bin/smbd@EXEEXT@ bin/nmbd@EXEEXT@ @SWAT_SBIN_TARGETS@ @EXTRA_SBIN_PROGS@
+SBIN_PROGS = bin/smbd@EXEEXT@ bin/nmbd@EXEEXT@ @SWAT_SBIN_TARGETS@ @EXTRA_SBIN_PROGS@ @CIFSUPCALL_PROGS@
 
-ROOT_SBIN_PROGS = @CIFSMOUNT_PROGS@ @CIFSUPCALL_PROGS@
+ROOT_SBIN_PROGS = @CIFSMOUNT_PROGS@
 
 BIN_PROGS1 = bin/smbclient@EXEEXT@ bin/net@EXEEXT@ bin/smbspool@EXEEXT@ \
 	bin/testparm@EXEEXT@ bin/smbstatus@EXEEXT@ bin/smbget@EXEEXT@
@@ -339,7 +339,7 @@ LIB_OBJ = $(LIBSAMBAUTIL_OBJ) \
 	  lib/module.o lib/events.o lib/ldap_escape.o @CHARSET_STATIC@ \
 	  lib/secdesc.o lib/util_seaccess.o lib/secace.o lib/secacl.o \
 	  libads/krb5_errs.o lib/system_smbd.o lib/audit.o $(LIBNDR_OBJ) \
-	  lib/file_id.o
+	  lib/file_id.o lib/idmap_cache.o
 
 LIB_DUMMY_OBJ = lib/dummysmbd.o lib/dummyroot.o
 LIB_NONSMBD_OBJ = $(LIB_OBJ) $(LIB_DUMMY_OBJ)
@@ -980,7 +980,7 @@ PAM_SMBPASS_OBJ = $(PAM_SMBPASS_OBJ_0) $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) $(PASSDB_
 		$(SMBLDAP_OBJ) $(LIBSAMBA_OBJ) \
 		$(LDB_OBJ)
 
-IDMAP_OBJ     = winbindd/idmap.o winbindd/idmap_cache.o winbindd/idmap_util.o @IDMAP_STATIC@
+IDMAP_OBJ     = winbindd/idmap.o winbindd/idmap_util.o @IDMAP_STATIC@
 
 NSS_INFO_OBJ = winbindd/nss_info.o @NSS_INFO_STATIC@
 
@@ -1350,7 +1350,7 @@ bin/cifs.upcall@EXEEXT@: $(BINARY_PREREQS) $(CIFS_UPCALL_OBJ) $(LIBSMBCLIENT_OBJ
 	@$(CC) $(FLAGS) -o $@ $(CIFS_UPCALL_OBJ) $(DYNEXP) $(LDFLAGS) \
 		-lkeyutils $(LIBS) $(LIBSMBCLIENT_OBJ1) $(KRB5LIBS) \
 		$(LDAP_LIBS) $(POPT_LIBS) $(LIBTALLOC_LIBS) $(WINBIND_LIBS) \
-		$(LIBTDB_LIBS)
+		$(LIBTDB_LIBS) $(NSCD_LIBS)
 
 bin/testparm@EXEEXT@: $(BINARY_PREREQS) $(TESTPARM_OBJ) @BUILD_POPT@ @LIBTALLOC_SHARED@ @LIBTDB_SHARED@
 	@echo Linking $@
@@ -1824,7 +1824,7 @@ shlibs test_shlibs: @LIBADDNS_SHARED@
 #
 #-------------------------------------------------------------------
 
-LIBNETAPI_OBJ1 = lib/netapi/netapi.o \
+LIBNETAPI_OBJ0 = lib/netapi/netapi.o \
 		 lib/netapi/cm.o \
 		 librpc/gen_ndr/ndr_libnetapi.o \
 		 lib/netapi/libnetapi.o \
@@ -1837,7 +1837,7 @@ LIBNETAPI_OBJ1 = lib/netapi/netapi.o \
 		 lib/netapi/samr.o \
 		 lib/netapi/sid.o
 
-LIBNETAPI_OBJ  = $(LIBNETAPI_OBJ1) $(LIBNET_OBJ) \
+LIBNETAPI_OBJ  = $(LIBNETAPI_OBJ0) $(LIBNET_OBJ) \
 		 $(LIBSMBCONF_OBJ) \
 		 $(REG_SMBCONF_OBJ) \
 		 $(PARAM_WITHOUT_REG_OBJ) $(LIB_NONSMBD_OBJ) \
@@ -1869,9 +1869,9 @@ $(LIBNETAPI_SHARED_TARGET): $(LIBNETAPI_SHARED_TARGET_SONAME)
 	@rm -f $@
 	@ln -s -f `basename $(LIBNETAPI_SHARED_TARGET_SONAME)` $@
 
-$(LIBNETAPI_STATIC_TARGET): $(BINARY_PREREQS) $(LIBNETAPI_OBJ1)
+$(LIBNETAPI_STATIC_TARGET): $(BINARY_PREREQS) $(LIBNETAPI_OBJ0)
 	@echo Linking non-shared library $@
-	@-$(AR) -rc $@ $(LIBNETAPI_OBJ1)
+	@-$(AR) -rc $@ $(LIBNETAPI_OBJ0)
 
 libnetapi: $(LIBNETAPI)
 
@@ -1917,10 +1917,13 @@ LIBSMBCLIENT_SOVER=@LIBSMBCLIENT_SOVER@
 LIBSMBCLIENT_SHARED_TARGET_SONAME=$(LIBSMBCLIENT_SHARED_TARGET).$(LIBSMBCLIENT_SOVER)
 LIBSMBCLIENT_STATIC_TARGET=@LIBSMBCLIENT_STATIC_TARGET@
 LIBSMBCLIENT=$(LIBSMBCLIENT_STATIC_TARGET) @LIBSMBCLIENT_SHARED@
-#LIBSMBCLIENT_SYMS=$(srcdir)/exports/libsmbclient.@SYMSEXT@
+LIBSMBCLIENT_SYMS=$(srcdir)/exports/libsmbclient.@SYMSEXT@
 LIBSMBCLIENT_HEADERS=$(srcdir)/include/libsmbclient.h
 
-$(LIBSMBCLIENT_SHARED_TARGET_SONAME): $(BINARY_PREREQS) $(LIBSMBCLIENT_OBJ) @LIBTALLOC_SHARED@ @LIBTDB_SHARED@ @LIBWBCLIENT_SHARED@
+$(LIBSMBCLIENT_SYMS): $(LIBSMBCLIENT_HEADERS)
+	@$(MKSYMS_SH) $(AWK) $@ $(LIBSMBCLIENT_HEADERS)
+
+$(LIBSMBCLIENT_SHARED_TARGET_SONAME): $(BINARY_PREREQS) $(LIBSMBCLIENT_OBJ) $(LIBSMBCLIENT_SYMS) @LIBTALLOC_SHARED@ @LIBTDB_SHARED@ @LIBWBCLIENT_SHARED@
 	@echo Linking shared library $@
 	@$(SHLD_DSO) $(LIBSMBCLIENT_OBJ) \
 		$(LIBTALLOC_LIBS) $(LIBTDB_LIBS) $(WINBIND_LIBS) $(LIBS) \
@@ -1986,12 +1989,13 @@ LIBSMBSHAREMODES_SOVER=@LIBSMBSHAREMODES_SOVER@
 LIBSMBSHAREMODES_SHARED_TARGET_SONAME=$(LIBSMBSHAREMODES_SHARED_TARGET).$(LIBSMBSHAREMODES_SOVER)
 LIBSMBSHAREMODES_STATIC_TARGET=@LIBSMBSHAREMODES_STATIC_TARGET@
 LIBSMBSHAREMODES=$(LIBSMBSHAREMODES_STATIC_TARGET) @LIBSMBSHAREMODES_SHARED@
-#LIBSMBSHAREMODES_SYMS=$(srcdir)/exports/libsmbsharemodes.@SYMSEXT@
+LIBSMBSHAREMODES_SYMS=$(srcdir)/exports/libsmbsharemodes.@SYMSEXT@
 LIBSMBSHAREMODES_HEADERS=$(srcdir)/include/smb_share_modes.h
 
-LIBSMBSHAREMODES=bin/libsmbsharemodes.a @LIBSMBSHAREMODES_SHARED@
+$(LIBSMBSHAREMODES_SYMS): $(LIBSMBSHAREMODES_HEADERS)
+	@$(MKSYMS_SH) $(AWK) $@ $(LIBSMBSHAREMODES_HEADERS)
 
-$(LIBSMBSHAREMODES_SHARED_TARGET_SONAME): $(BINARY_PREREQS) $(LIBSMBSHAREMODES_OBJ) @LIBTALLOC_SHARED@ @LIBTDB_SHARED@
+$(LIBSMBSHAREMODES_SHARED_TARGET_SONAME): $(BINARY_PREREQS) $(LIBSMBSHAREMODES_OBJ) $(LIBSMBSHAREMODES_SYMS) @LIBTALLOC_SHARED@ @LIBTDB_SHARED@
 	@echo Linking shared library $@
 	@$(SHLD_DSO) $(LIBSMBSHAREMODES_OBJ) \
 		$(LIBS) $(LIBTALLOC_LIBS) $(LIBTDB_LIBS) \
@@ -2471,7 +2475,7 @@ install-everything:: install installmodules
 # is not used
 
 installdirs::
-	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(BINDIR) $(SBINDIR) $(LIBDIR) $(VARDIR) $(PRIVATEDIR) $(PIDDIR) $(LOCKDIR) $(MANDIR)
+	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(BINDIR) $(SBINDIR) $(LIBDIR) $(VARDIR) $(PRIVATEDIR) $(PIDDIR) $(LOCKDIR) $(MANDIR) $(CODEPAGEDIR) $(MODULESDIR)
 
 installservers:: all installdirs
 	@$(SHELL) script/installbin.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(SBINDIR) $(SBIN_PROGS)
@@ -2484,8 +2488,8 @@ installcifsmount:: @CIFSMOUNT_PROGS@
 	@$(SHELL) script/installbin.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(ROOTSBINDIR) @CIFSMOUNT_PROGS@
 
 installcifsupcall:: @CIFSUPCALL_PROGS@
-	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(ROOTSBINDIR)
-	@$(SHELL) script/installbin.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(ROOTSBINDIR) @CIFSUPCALL_PROGS@
+	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(SBINDIR)
+	@$(SHELL) script/installbin.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(SBINDIR) @CIFSUPCALL_PROGS@
 
 # Some symlinks are required for the 'probing' of modules.
 # This mechanism should go at some point..
@@ -2716,3 +2720,14 @@ valgrindtest:: all torture timelimit
 	 SMBD_VALGRIND="xterm -n smbd -e valgrind -q --db-attach=yes --num-callers=30" \
 	 VALGRIND="valgrind -q --num-callers=30 --log-file=${selftest_prefix}/valgrind.log" \
 	 PERL="$(PERL)" $(srcdir)/script/tests/selftest.sh ${selftest_prefix} all "${smbtorture4_path}"
+
+
+##
+## Examples:
+##
+
+libsmbclient_examples:
+	$(MAKE) -C ../examples/libsmbclient -f Makefile.internal
+
+clean_libsmbclient_examples:
+	$(MAKE) -C ../examples/libsmbclient -f Makefile.internal clean

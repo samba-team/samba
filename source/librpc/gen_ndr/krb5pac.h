@@ -76,7 +76,7 @@ union PAC_INFO {
 	struct PAC_SIGNATURE_DATA srv_cksum;/* [case(PAC_TYPE_SRV_CHECKSUM)] */
 	struct PAC_SIGNATURE_DATA kdc_cksum;/* [case(PAC_TYPE_KDC_CHECKSUM)] */
 	struct PAC_LOGON_NAME logon_name;/* [case(PAC_TYPE_LOGON_NAME)] */
-	struct DATA_BLOB_REM unknown;/* [subcontext(0),case(PAC_TYPE_UNKNOWN_12)] */
+	struct DATA_BLOB_REM unknown;/* [subcontext(0),default] */
 }/* [gensize,nodiscriminant,public] */;
 
 struct PAC_BUFFER {

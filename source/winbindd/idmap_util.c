@@ -87,7 +87,7 @@ NTSTATUS idmap_gid_to_sid(const char *domname, DOM_SID *sid, gid_t gid)
 
 	DEBUG(10,("gid = [%lu]\n", (unsigned long)gid));
 
-	if (idmap_cache_find_uid2sid(gid, sid, &expired)) {
+	if (idmap_cache_find_gid2sid(gid, sid, &expired)) {
 		DEBUG(10, ("idmap_cache_find_gid2sid found %d%s\n", gid,
 			   expired ? " (expired)": ""));
 		if (expired && idmap_is_online()) {

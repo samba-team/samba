@@ -86,10 +86,7 @@ enum winbindd_result winbindd_dual_check_machine_acct(struct winbindd_domain *do
                   "good" : "bad"));
 
  done:
-	state->response.data.auth.nt_status = NT_STATUS_V(result);
-	fstrcpy(state->response.data.auth.nt_status_string, nt_errstr(result));
-	fstrcpy(state->response.data.auth.error_string, nt_errstr(result));
-	state->response.data.auth.pam_error = nt_status_to_pam(result);
+	set_auth_errors(&state->response, result);
 
 	DEBUG(NT_STATUS_IS_OK(result) ? 5 : 2, ("Checking the trust account password returned %s\n", 
 						state->response.data.auth.nt_status_string));

@@ -1355,8 +1355,8 @@ struct netr_ServerPasswordSet2 {
 		const char *account_name;/* [charset(UTF16)] */
 		enum netr_SchannelType secure_channel_type;
 		const char *computer_name;/* [charset(UTF16)] */
-		struct netr_Authenticator credential;
-		struct netr_CryptPassword new_password;
+		struct netr_Authenticator *credential;/* [ref] */
+		struct netr_CryptPassword *new_password;/* [ref] */
 	} in;
 
 	struct {

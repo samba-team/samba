@@ -476,7 +476,7 @@ bool net_find_pdc(struct sockaddr_storage *server_ss,
 NTSTATUS net_make_ipc_connection(struct net_context *c, unsigned flags,
 				 struct cli_state **pcli)
 {
-	return net_make_ipc_connection_ex(c, NULL, NULL, NULL, flags, pcli);
+	return net_make_ipc_connection_ex(c, c->opt_workgroup, NULL, NULL, flags, pcli);
 }
 
 NTSTATUS net_make_ipc_connection_ex(struct net_context *c ,const char *domain,
@@ -492,7 +492,8 @@ NTSTATUS net_make_ipc_connection_ex(struct net_context *c ,const char *domain,
 	if ( !server || !pss ) {
 		if (!net_find_server(c, domain, flags, &server_ss,
 				     &server_name)) {
-			d_fprintf(stderr, "Unable to find a suitable server\n");
+			d_fprintf(stderr, "Unable to find a suitable server "
+				"for domain %s\n", domain);
 			nt_status = NT_STATUS_UNSUCCESSFUL;
 			goto done;
 		}

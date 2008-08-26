@@ -200,9 +200,9 @@ static bool tsmsm_is_offline(struct vfs_handle_struct *handle,
 		goto done;
 	}
 
-	lerrno = 0;
-
 	do {
+		lerrno = 0;
+
 		ret = dm_get_dmattr(*dmsession_id, dmhandle, dmhandle_len, 
 				    DM_NO_TOKEN, &dmname, buflen, buf, &rlen);
 		if (ret == -1 && errno == EINVAL) {
@@ -279,10 +279,13 @@ static ssize_t tsmsm_aio_return(struct vfs_handle_struct *handle, struct files_s
 static ssize_t tsmsm_sendfile(vfs_handle_struct *handle, int tofd, files_struct *fsp, const DATA_BLOB *hdr,
 			      SMB_OFF_T offset, size_t n)
 {
-	bool file_online = tsmsm_aio_force(handle, fsp);
+	bool file_offline = tsmsm_aio_force(handle, fsp);
 
-	if(!file_online) 
-	    return ENOSYS;
+	if (file_offline) {
+		DEBUG(10,("tsmsm_sendfile on offline file - rejecting\n"));
+		errno = ENOSYS;
+		return -1;
+	}
 	    
 	return SMB_VFS_NEXT_SENDFILE(handle, tofd, fsp, hdr, offset, n);
 }
@@ -333,7 +336,7 @@ static int tsmsm_set_offline(struct vfs_handle_struct *handle,
 
 	if (tsmd->hsmscript == NULL) {
 		/* no script enabled */
-		DEBUG(1, ("tsmsm_set_offline: No tsmsm:hsmscript configured\n"));
+		DEBUG(1, ("tsmsm_set_offline: No 'tsmsm:hsm script' configured\n"));
 		return 0;
 	}
 

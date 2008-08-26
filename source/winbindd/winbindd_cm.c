@@ -8,17 +8,17 @@
    Copyright (C) Gerald (Jerry) Carter     2003-2005.
    Copyright (C) Volker Lendecke           2004-2005
    Copyright (C) Jeremy Allison		   2006
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	 See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -27,14 +27,14 @@
    We need to manage connections to domain controllers without having to
    mess up the main winbindd code with other issues.  The aim of the
    connection manager is to:
-  
+
        - make connections to domain controllers and cache them
        - re-establish connections when networks or servers go down
        - centralise the policy on connection timeouts, domain controller
 	 selection etc
        - manage re-entrancy for when winbindd becomes able to handle
 	 multiple outstanding rpc requests
-  
+
    Why not have connection management as part of the rpc layer like tng?
    Good question.  This code may morph into libsmb/rpc_cache.c or something
    like that but at the moment it's simply staying as part of winbind.	I
@@ -171,20 +171,33 @@ static bool fork_child_dc_connect(struct winbindd_domain *domain)
 	struct dc_name_ip *dcs = NULL;
 	int num_dcs = 0;
 	TALLOC_CTX *mem_ctx = NULL;
-	pid_t child_pid;
 	pid_t parent_pid = sys_getpid();
 
 	/* Stop zombies */
 	CatchChild();
 
-	child_pid = sys_fork();
+	if (domain->dc_probe_pid != (pid_t)-1) {
+		/*
+		 * We might already have a DC probe
+		 * child working, check.
+		 */
+		if (process_exists_by_pid(domain->dc_probe_pid)) {
+			DEBUG(10,("fork_child_dc_connect: pid %u already "
+				"checking for DC's.\n",
+				(unsigned int)domain->dc_probe_pid));
+			return true;
+		}
+		domain->dc_probe_pid = (pid_t)-1;
+	}
 
-	if (child_pid == -1) {
+	domain->dc_probe_pid = sys_fork();
+
+	if (domain->dc_probe_pid == (pid_t)-1) {
 		DEBUG(0, ("fork_child_dc_connect: Could not fork: %s\n", strerror(errno)));
 		return False;
 	}
 
-	if (child_pid != 0) {
+	if (domain->dc_probe_pid != (pid_t)0) {
 		/* Parent */
 		messaging_register(winbind_messaging_context(), NULL,
 				   MSG_WINBIND_TRY_TO_GO_ONLINE,
@@ -201,6 +214,11 @@ static bool fork_child_dc_connect(struct winbindd_domain *domain)
 
 	if (!reinit_after_fork(winbind_messaging_context(), true)) {
 		DEBUG(0,("reinit_after_fork() failed\n"));
+		messaging_send_buf(winbind_messaging_context(),
+				   pid_to_procid(parent_pid),
+				   MSG_WINBIND_FAILED_TO_GO_ONLINE,
+				   (uint8 *)domain->name,
+				   strlen(domain->name)+1);
 		_exit(0);
 	}
 
@@ -218,6 +236,11 @@ static bool fork_child_dc_connect(struct winbindd_domain *domain)
 	mem_ctx = talloc_init("fork_child_dc_connect");
 	if (!mem_ctx) {
 		DEBUG(0,("talloc_init failed.\n"));
+		messaging_send_buf(winbind_messaging_context(),
+				   pid_to_procid(parent_pid),
+				   MSG_WINBIND_FAILED_TO_GO_ONLINE,
+				   (uint8 *)domain->name,
+				   strlen(domain->name)+1);
 		_exit(0);
 	}
 
@@ -291,12 +314,12 @@ static void check_domain_online_handler(struct event_context *ctx,
 
 static void calc_new_online_timeout_check(struct winbindd_domain *domain)
 {
-	int wbc = lp_winbind_cache_time();
+	int wbr = lp_winbind_reconnect_delay();
 
 	if (domain->startup) {
 		domain->check_online_timeout = 10;
-	} else if (domain->check_online_timeout < wbc) {
-		domain->check_online_timeout = wbc;
+	} else if (domain->check_online_timeout < wbr) {
+		domain->check_online_timeout = wbr;
 	}
 }
 
@@ -336,7 +359,7 @@ void set_domain_offline(struct winbindd_domain *domain)
 	}
 
 	/* If we're in statup mode, check again in 10 seconds, not in
-	   lp_winbind_cache_time() seconds (which is 5 mins by default). */
+	   lp_winbind_reconnect_delay() seconds (which is 30 seconds by default). */
 
 	calc_new_online_timeout_check(domain);
 
@@ -360,7 +383,7 @@ void set_domain_offline(struct winbindd_domain *domain)
 
 	if ( domain->primary ) {
 		struct winbindd_child *idmap = idmap_child();
-		
+
 		if ( idmap->pid != 0 ) {
 			messaging_send_buf(winbind_messaging_context(),
 					   pid_to_procid(idmap->pid), 
@@ -439,7 +462,7 @@ static void set_domain_online(struct winbindd_domain *domain)
 
 	if ( domain->primary ) {
 		struct winbindd_child *idmap = idmap_child();
-		
+
 		if ( idmap->pid != 0 ) {
 			messaging_send_buf(winbind_messaging_context(),
 					   pid_to_procid(idmap->pid), 
@@ -530,7 +553,7 @@ void winbind_add_failed_connection_entry(const struct winbindd_domain *domain,
    an authenticated connection if DCs have the RestrictAnonymous registry
    entry set > 0, or the "Additional restrictions for anonymous
    connections" set in the win2k Local Security Policy. 
-   
+
    Caller to free() result in domain, username, password
 */
 
@@ -539,12 +562,12 @@ static void cm_get_ipc_userpass(char **username, char **domain, char **password)
 	*username = (char *)secrets_fetch(SECRETS_AUTH_USER, NULL);
 	*domain = (char *)secrets_fetch(SECRETS_AUTH_DOMAIN, NULL);
 	*password = (char *)secrets_fetch(SECRETS_AUTH_PASSWORD, NULL);
-	
+
 	if (*username && **username) {
 
 		if (!*domain || !**domain)
 			*domain = smb_xstrdup(lp_workgroup());
-		
+
 		if (!*password || !**password)
 			*password = smb_xstrdup("");
 
@@ -680,7 +703,7 @@ static NTSTATUS get_trust_creds(const struct winbindd_domain *domain,
 {
 	const char *account_name;
 	const char *name = NULL;
-	
+
 	/* If we are a DC and this is not our own domain */
 
 	if (IS_DC) {
@@ -690,10 +713,10 @@ static NTSTATUS get_trust_creds(const struct winbindd_domain *domain,
 
 		if (!our_domain)
 			return NT_STATUS_INVALID_SERVER_STATE;		
-		
+
 		name = our_domain->name;		
 	}	
-	
+
 	if (!get_trust_pw_clear(name, machine_password,
 				&account_name, NULL))
 	{
@@ -715,7 +738,7 @@ static NTSTATUS get_trust_creds(const struct winbindd_domain *domain,
 		if (!our_domain) {
 			return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;			
 		}
-		
+
 		if (asprintf(machine_krb5_principal, "%s$@%s",
 			     account_name, our_domain->alt_name) == -1)
 		{
@@ -852,7 +875,7 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 			result = ads_ntstatus(ads_status);
 			if (NT_STATUS_IS_OK(result)) {
 				/* Ensure creds are stored for NTLMSSP authenticated pipe access. */
-				cli_init_creds(*cli, machine_account, domain->name, machine_password);
+				cli_init_creds(*cli, machine_account, lp_workgroup(), machine_password);
 				goto session_setup_done;
 			}
 		}
@@ -877,7 +900,7 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 		result = ads_ntstatus(ads_status);
 		if (NT_STATUS_IS_OK(result)) {
 			/* Ensure creds are stored for NTLMSSP authenticated pipe access. */
-			cli_init_creds(*cli, machine_account, domain->name, machine_password);
+			cli_init_creds(*cli, machine_account, lp_workgroup(), machine_password);
 			goto session_setup_done;
 		}
 	}
@@ -914,6 +937,9 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
  anon_fallback:
 
 	/* Fall back to anonymous connection, this might fail later */
+	DEBUG(10,("cm_prepare_connection: falling back to anonymous "
+		"connection for DC %s\n",
+		controller ));
 
 	if (NT_STATUS_IS_OK(cli_session_setup(*cli, "", NULL, 0,
 					      NULL, 0, ""))) {
@@ -1316,7 +1342,7 @@ static bool find_new_dc(TALLOC_CTX *mem_ctx,
 
 	TALLOC_FREE(dcnames);
 	num_dcnames = 0;
-	
+
 	TALLOC_FREE(addrs);
 	num_addrs = 0;
 
@@ -1342,7 +1368,7 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 
 	/* we have to check the server affinity cache here since 
 	   later we selecte a DC based on response time and not preference */
-	   
+
 	/* Check the negative connection cache
 	   before talking to it. It going down may have
 	   triggered the reconnection. */
@@ -1592,26 +1618,26 @@ static bool set_dc_type_and_flags_trustinfo( struct winbindd_domain *domain )
 	TALLOC_CTX *mem_ctx = NULL;
 
 	DEBUG(5, ("set_dc_type_and_flags_trustinfo: domain %s\n", domain->name ));
-	
+
 	/* Our primary domain doesn't need to worry about trust flags.
 	   Force it to go through the network setup */
 	if ( domain->primary ) {		
 		return False;		
 	}
-	
+
 	our_domain = find_our_domain();
-	
+
 	if ( !connection_ok(our_domain) ) {
 		DEBUG(3,("set_dc_type_and_flags_trustinfo: No connection to our domain!\n"));		
 		return False;
 	}
 
 	/* This won't work unless our domain is AD */
-	 
+
 	if ( !our_domain->active_directory ) {
 		return False;
 	}
-	
+
 	/* Use DsEnumerateDomainTrusts to get us the trust direction
 	   and type */
 
@@ -1672,13 +1698,13 @@ static bool set_dc_type_and_flags_trustinfo( struct winbindd_domain *domain )
 
 			if ( !winbindd_can_contact_domain( domain) )
 				domain->internal = True;
-			
+
 			break;
 		}		
 	}
-	
+
 	talloc_destroy( mem_ctx );
-	
+
 	return domain->initialized;	
 }
 
@@ -1775,7 +1801,7 @@ no_dssetup:
 
 	result = rpccli_lsa_open_policy2(cli, mem_ctx, True, 
 					 SEC_RIGHTS_MAXIMUM_ALLOWED, &pol);
-		
+
 	if (NT_STATUS_IS_OK(result)) {
 		/* This particular query is exactly what Win2k clients use 
 		   to determine that the DC is active directory */
@@ -1904,6 +1930,10 @@ static bool cm_get_schannel_dcinfo(struct winbindd_domain *domain,
 	/* Return a pointer to the struct dcinfo from the
 	   netlogon pipe. */
 
+	if (!domain->conn.netlogon_pipe->dc) {
+		return false;
+	}
+
 	*ppdc = domain->conn.netlogon_pipe->dc;
 	return True;
 }
@@ -1929,6 +1959,7 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	if (conn->samr_pipe != NULL) {
 		goto done;
 	}
+
 
 	/*
 	 * No SAMR pipe yet. Attempt to get an NTLMSSP SPNEGO authenticated
@@ -2303,7 +2334,7 @@ NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(3, ("Could not open schannel'ed NETLOGON pipe. Error "
 			  "was %s\n", nt_errstr(result)));
-			  
+
 		/* make sure we return something besides OK */
 		return !NT_STATUS_IS_OK(result) ? result : NT_STATUS_PIPE_NOT_AVAILABLE;
 	}
