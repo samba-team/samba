@@ -42,7 +42,7 @@ static bool test_CreateSecret_basic(struct dcerpc_pipe *p,
 	struct lsa_SetSecret r3;
 	struct lsa_QuerySecret r4;
 	struct policy_handle sec_handle;
-	struct lsa_Delete d;
+	struct lsa_DeleteObject d;
 	struct lsa_DATA_BUF buf1;
 	struct lsa_DATA_BUF_PTR bufp1;
 	DATA_BLOB enc_key;
@@ -128,7 +128,8 @@ static bool test_CreateSecret_basic(struct dcerpc_pipe *p,
 	torture_assert_str_equal(tctx, secret1, secret2, "Returned secret invalid");
 
 	d.in.handle = &sec_handle;
-	status = dcerpc_lsa_Delete(p, tctx, &d);
+	d.out.handle = &sec_handle;
+	status = dcerpc_lsa_DeleteObject(p, tctx, &d);
 	torture_assert_ntstatus_ok(tctx, status, "delete should have returned OKINVALID_HANDLE");
 	return true;
 }
