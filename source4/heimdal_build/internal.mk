@@ -174,15 +174,16 @@ HEIMDAL_GSSAPI_OBJ_FILES = \
 	$(heimdalsrcdir)/lib/gssapi/krb5/accept_sec_context.o \
 	$(heimdalsrcdir)/lib/gssapi/krb5/set_sec_context_option.o \
 	$(heimdalsrcdir)/lib/gssapi/krb5/process_context_token.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/prf.o
-
+	$(heimdalsrcdir)/lib/gssapi/krb5/prf.o \
+	$(heimdalbuildsrcdir)/gssapi-glue.o
 
 #######################
 # Start SUBSYSTEM HEIMDAL_KRB5
 [SUBSYSTEM::HEIMDAL_KRB5]
 CFLAGS = -I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/krb5 -I$(heimdalsrcdir)/lib/asn1 -I$(heimdalsrcdir)/lib/com_err 
 PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN HEIMDAL_PKINIT_ASN1 HEIMDAL_WIND \
-		HEIMDAL_KRB5_ASN1 HEIMDAL_GLUE HEIMDAL_HX509 HEIMDAL_HCRYPTO
+		HEIMDAL_KRB5_ASN1 HEIMDAL_HX509 HEIMDAL_HCRYPTO \
+		LIBNETIF LIBSAMBA-HOSTCONFIG
 PUBLIC_DEPENDENCIES = HEIMDAL_COM_ERR
 # End SUBSYSTEM HEIMDAL_KRB5
 #######################
@@ -273,7 +274,8 @@ HEIMDAL_KRB5_OBJ_FILES = \
 	$(heimdalsrcdir)/lib/krb5/krb5_err.o \
 	$(heimdalsrcdir)/lib/krb5/heim_err.o \
 	$(heimdalsrcdir)/lib/krb5/k524_err.o \
-	$(heimdalsrcdir)/lib/krb5/krb_err.o
+	$(heimdalsrcdir)/lib/krb5/krb_err.o \
+	$(heimdalbuildsrcdir)/krb5-glue.o
 
 #######################
 # Start SUBSYSTEM HEIMDAL_HEIM_ASN1
@@ -473,16 +475,6 @@ HEIMDAL_ROKEN_OBJ_FILES = \
 	$(heimdalsrcdir)/lib/roken/cloexec.o \
 	$(heimdalsrcdir)/lib/roken/xfree.o \
 	$(heimdalbuildsrcdir)/replace.o
-
-#######################
-# Start SUBSYSTEM HEIMDAL_GLUE
-[SUBSYSTEM::HEIMDAL_GLUE]
-CFLAGS = -I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/krb5 -I$(heimdalsrcdir)/lib/asn1 -I$(heimdalsrcdir)/lib/com_err 
-PRIVATE_DEPENDENCIES = LIBNETIF LIBSAMBA-HOSTCONFIG
-# End SUBSYSTEM HEIMDAL_GLUE
-#######################
-
-HEIMDAL_GLUE_OBJ_FILES = $(heimdalbuildsrcdir)/glue.o
 
 #######################
 # Start SUBSYSTEM HEIMDAL_COM_ERR

@@ -57,9 +57,3 @@ krb5_error_code KRB5_LIB_FUNCTION krb5_get_all_client_addrs(krb5_context context
 
 	return 0;
 }
-
-
-void *__gss_ntlm_initialize(void)
-{
-	return NULL;
-}
