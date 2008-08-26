@@ -43,7 +43,7 @@
 
 #include "imath/imath.h"
 
-RCSID("$Id: dh-imath.c 22368 2007-12-28 15:27:52Z lha $");
+RCSID("$Id$");
 
 static void
 BN2mpz(mpz_t *s, const BIGNUM *bn)

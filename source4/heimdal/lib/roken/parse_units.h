@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: parse_units.h 14773 2005-04-12 11:29:18Z lha $ */
+/* $Id$ */
 
 #ifndef __PARSE_UNITS_H__
 #define __PARSE_UNITS_H__

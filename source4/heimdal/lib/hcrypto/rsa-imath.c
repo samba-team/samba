@@ -35,7 +35,7 @@
 #include <config.h>
 #endif
 
-RCSID("$Id: rsa-imath.c 21154 2007-06-18 21:58:12Z lha $");
+RCSID("$Id$");
 
 #include <stdio.h>
 #include <stdlib.h>

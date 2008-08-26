@@ -33,7 +33,7 @@
 
 #include "krb5/gsskrb5_locl.h"
 
-RCSID("$Id: display_name.c 21077 2007-06-12 22:42:56Z lha $");
+RCSID("$Id$");
 
 OM_uint32 _gsskrb5_display_name
            (OM_uint32 * minor_status,

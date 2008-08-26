@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: gssapi_krb5.h 23420 2008-07-26 18:37:48Z lha $ */
+/* $Id$ */
 
 #ifndef GSSAPI_KRB5_H_
 #define GSSAPI_KRB5_H_

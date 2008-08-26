@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: appdefault.c 14465 2005-01-05 05:40:59Z lukeh $");
+RCSID("$Id$");
 
 void KRB5_LIB_FUNCTION
 krb5_appdefault_boolean(krb5_context context, const char *appname, 

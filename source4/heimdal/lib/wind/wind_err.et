@@ -3,7 +3,7 @@
 #
 # This might look like a com_err file, but is not
 #
-id "$Id: wind_err.et 23233 2008-06-01 22:25:25Z lha $"
+id "$Id$"
 
 error_table wind
 

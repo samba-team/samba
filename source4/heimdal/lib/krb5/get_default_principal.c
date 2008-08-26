@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: get_default_principal.c 23280 2008-06-23 03:26:18Z lha $");
+RCSID("$Id$");
 
 /*
  * Try to find out what's a reasonable default principal.

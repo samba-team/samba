@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: hx_locl.h 23189 2008-05-23 15:04:27Z lha $ */
+/* $Id$ */
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -69,6 +69,7 @@
 
 #include <der.h>
 
+#define HC_DEPRECATED_CRYPTO
 #include "crypto-headers.h"
 
 struct hx509_keyset_ops;

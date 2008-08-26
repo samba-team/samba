@@ -36,7 +36,7 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 
-RCSID("$Id: rc4.c 13640 2004-03-25 16:40:59Z lha $");
+RCSID("$Id$");
 #endif
 
 #include <rc4.h>

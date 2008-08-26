@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: windc_plugin.h 22693 2008-03-19 08:57:49Z lha $ */
+/* $Id$ */
 
 #ifndef HEIMDAL_KRB5_PAC_PLUGIN_H
 #define HEIMDAL_KRB5_PAC_PLUGIN_H 1

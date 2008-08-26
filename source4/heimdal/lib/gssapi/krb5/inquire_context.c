@@ -33,7 +33,7 @@
 
 #include "krb5/gsskrb5_locl.h"
 
-RCSID("$Id: inquire_context.c 19031 2006-11-13 18:02:57Z lha $");
+RCSID("$Id$");
 
 OM_uint32 _gsskrb5_inquire_context (
     OM_uint32 * minor_status,

@@ -34,7 +34,7 @@
 #include "krb5_locl.h"
 #include <vis.h>
 
-RCSID("$Id: replay.c 23467 2008-07-27 12:16:37Z lha $");
+RCSID("$Id$");
 
 struct krb5_rcache_data {
     char *name;

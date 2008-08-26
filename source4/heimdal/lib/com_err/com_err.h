@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: com_err.h 15566 2005-07-07 14:58:07Z lha $ */
+/* $Id$ */
 
 /* MIT compatible com_err library */
 

@@ -32,7 +32,7 @@
  */
 
 #include "hx_locl.h"
-RCSID("$Id: cms.c 23268 2008-06-23 03:23:47Z lha $");
+RCSID("$Id$");
 
 /**
  * @page page_cms CMS/PKCS7 message functions.

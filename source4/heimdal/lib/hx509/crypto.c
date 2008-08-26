@@ -32,7 +32,7 @@
  */
 
 #include "hx_locl.h"
-RCSID("$Id: crypto.c 22855 2008-04-07 18:49:24Z lha $");
+RCSID("$Id$");
 
 struct hx509_crypto;
 

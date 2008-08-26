@@ -34,9 +34,9 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#include <roken.h>
+#include "roken.h"
 
-RCSID("$Id: bswap.c 14773 2005-04-12 11:29:18Z lha $");
+RCSID("$Id$");
 
 #ifndef HAVE_BSWAP32
 

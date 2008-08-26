@@ -1,7 +1,7 @@
 #!/usr/local/bin/python
 # -*- coding: iso-8859-1 -*-
 
-# $Id: rfc4518.py 22551 2008-02-01 16:22:22Z lha $
+# $Id$
 
 # Copyright (c) 2004, 2008 Kungliga Tekniska Högskolan
 # (Royal Institute of Technology, Stockholm, Sweden). 

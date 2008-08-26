@@ -32,7 +32,7 @@
  */
 
 #include "kuser_locl.h"
-RCSID("$Id: kinit.c 23418 2008-07-26 18:36:48Z lha $");
+RCSID("$Id$");
 
 #include "krb5-v4compat.h"
 
@@ -67,6 +67,7 @@ char *pk_x509_anchors	= NULL;
 int pk_use_enckey	= 0;
 static int canonicalize_flag = 0;
 static int ok_as_delegate_flag = 0;
+static int use_referrals_flag = 0;
 static int windows_flag = 0;
 static char *ntlm_domain;
 
@@ -165,6 +166,9 @@ static struct getargs args[] = {
 
     { "ok-as-delegate",	0,  arg_flag, &ok_as_delegate_flag,
       "honor ok-as-delegate on tickets" },
+
+    { "use-referrals",	0,  arg_flag, &use_referrals_flag,
+      "only use referrals, no dns canalisation" },
 
     { "windows",	0,  arg_flag, &windows_flag,
       "get windows behavior" },
@@ -597,11 +601,17 @@ get_new_tickets(krb5_context context,
     if (ntlm_domain && ntlmkey.data)
 	store_ntlmkey(context, ccache, ntlm_domain, &ntlmkey);
 
-    if (ok_as_delegate_flag || windows_flag) {
+    if (ok_as_delegate_flag || windows_flag || use_referrals_flag) {
+	unsigned char d = 0;
 	krb5_data data;
 
+	if (ok_as_delegate_flag || windows_flag)
+	    d |= 1;
+	if (use_referrals_flag || windows_flag)
+	    d |= 2;
+
 	data.length = 1;
-	data.data = "\x01";
+	data.data = &d;
 
 	krb5_cc_set_config(context, ccache, NULL, "realm-config", &data);
     }

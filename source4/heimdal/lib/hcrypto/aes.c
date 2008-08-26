@@ -34,7 +34,7 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 
-RCSID("$Id: aes.c 15495 2005-06-18 22:47:33Z lha $");
+RCSID("$Id$");
 #endif
 
 #ifdef KRB5

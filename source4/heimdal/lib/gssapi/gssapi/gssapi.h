@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: gssapi.h 23025 2008-04-17 10:01:57Z lha $ */
+/* $Id$ */
 
 #ifndef GSSAPI_GSSAPI_H_
 #define GSSAPI_GSSAPI_H_
@@ -123,6 +123,7 @@ typedef OM_uint32 gss_qop_t;
 #define GSS_C_DCE_STYLE 4096
 #define GSS_C_IDENTIFY_FLAG 8192
 #define GSS_C_EXTENDED_ERROR_FLAG 16384
+#define GSS_C_DELEG_POLICY_FLAG 32768
 
 /*
  * Credential usage options

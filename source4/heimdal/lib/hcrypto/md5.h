@@ -31,7 +31,7 @@
  * SUCH DAMAGE.
  */
 
-/* $Id: md5.h 17450 2006-05-05 11:11:43Z lha $ */
+/* $Id$ */
 
 #ifndef HEIM_MD5_H
 #define HEIM_MD5_H 1

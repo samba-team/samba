@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: krb5.h 23026 2008-04-17 10:02:03Z lha $ */
+/* $Id$ */
 
 #ifndef __KRB5_H__
 #define __KRB5_H__
@@ -760,6 +760,28 @@ enum krb5_plugin_type {
 struct credentials; /* this is to keep the compiler happy */
 struct getargs;
 struct sockaddr;
+
+/**
+ * Semi private, not stable yet
+ */
+
+typedef struct krb5_crypto_iov {
+    unsigned int flags;
+    /* ignored */
+#define KRB5_CRYPTO_TYPE_EMPTY		0
+    /* OUT krb5_crypto_length(KRB5_CRYPTO_TYPE_HEADER) */
+#define KRB5_CRYPTO_TYPE_HEADER		1
+    /* IN and OUT */
+#define KRB5_CRYPTO_TYPE_DATA		2
+    /* IN */
+#define KRB5_CRYPTO_TYPE_SIGN_ONLY	3
+   /* (only for encryption) OUT krb5_crypto_length(KRB5_CRYPTO_TYPE_TRAILER) */
+#define KRB5_CRYPTO_TYPE_PADDING	4
+   /* OUT krb5_crypto_length(KRB5_CRYPTO_TYPE_TRAILER) */
+#define KRB5_CRYPTO_TYPE_TRAILER	5
+    krb5_data data;
+} krb5_crypto_iov;
+
 
 #include <krb5-protos.h>
 

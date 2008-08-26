@@ -33,7 +33,7 @@
 
 #include "krb5/gsskrb5_locl.h"
 
-RCSID("$Id: compat.c 19031 2006-11-13 18:02:57Z lha $");
+RCSID("$Id$");
 
 
 static krb5_error_code

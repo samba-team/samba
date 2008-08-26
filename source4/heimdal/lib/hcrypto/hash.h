@@ -30,7 +30,7 @@
  * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 
-/* $Id: hash.h 17450 2006-05-05 11:11:43Z lha $ */
+/* $Id$ */
 
 /* stuff in common between md4, md5, and sha1 */
 

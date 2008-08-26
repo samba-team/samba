@@ -33,7 +33,7 @@
 
 #include "der_locl.h"
 
-RCSID("$Id: der_length.c 19539 2006-12-28 17:15:05Z lha $");
+RCSID("$Id$");
 
 size_t
 _heim_len_unsigned (unsigned val)

@@ -27,7 +27,7 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_inquire_cred.c 23025 2008-04-17 10:01:57Z lha $");
+RCSID("$Id$");
 
 #define AUSAGE 1
 #define IUSAGE 2

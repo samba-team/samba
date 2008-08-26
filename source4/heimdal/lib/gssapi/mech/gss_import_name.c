@@ -27,7 +27,7 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_import_name.c 23025 2008-04-17 10:01:57Z lha $");
+RCSID("$Id$");
 
 static OM_uint32
 _gss_import_export_name(OM_uint32 *minor_status,

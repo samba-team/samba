@@ -31,7 +31,7 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 
-RCSID("$Id: rijndael-alg-fst.c 17445 2006-05-05 10:37:46Z lha $");
+RCSID("$Id$");
 #endif
 
 #ifdef KRB5

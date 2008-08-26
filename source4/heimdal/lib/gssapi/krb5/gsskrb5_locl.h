@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: gsskrb5_locl.h 23435 2008-07-26 20:49:35Z lha $ */
+/* $Id$ */
 
 #ifndef GSSKRB5_LOCL_H
 #define GSSKRB5_LOCL_H
@@ -136,5 +136,8 @@ struct gssapi_thr_context {
 #define SC_KEYBLOCK	  0x04
 #define SC_LOCAL_SUBKEY	  0x08
 #define SC_REMOTE_SUBKEY  0x10
+
+/* type to signal that that dns canon maybe should be done */
+#define MAGIC_HOSTBASED_NAME_TYPE 4711
 
 #endif

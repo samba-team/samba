@@ -36,7 +36,7 @@
 #endif
 #include "windlocl.h"
 
-RCSID("$Id: utf8.c 23246 2008-06-01 22:29:04Z lha $");
+RCSID("$Id$");
 
 static int
 utf8toutf32(const unsigned char **pp, uint32_t *out)

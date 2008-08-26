@@ -38,7 +38,7 @@ RCSID("$Id$");
 
 #include <unistd.h>
 
-#include <roken.h>
+#include "roken.h"
 
 void ROKEN_LIB_FUNCTION
 rk_xfree (void *buf)

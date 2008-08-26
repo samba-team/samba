@@ -33,7 +33,7 @@
 
 #include "spnego/spnego_locl.h"
 
-RCSID("$Id: accept_sec_context.c 23158 2008-05-02 09:45:28Z lha $");
+RCSID("$Id$");
 
 static OM_uint32
 send_reject (OM_uint32 *minor_status,
@@ -524,7 +524,7 @@ acceptor_complete(OM_uint32 * minor_status,
 	    free(buf.value);
 
     } else
-	*get_mic = verify_mic = 0;
+	*get_mic = 0;
     
     return GSS_S_COMPLETE;
 }

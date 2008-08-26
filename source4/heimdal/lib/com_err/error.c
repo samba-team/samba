@@ -33,7 +33,7 @@
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
-RCSID("$Id: error.c 9724 2001-02-28 20:00:13Z joda $");
+RCSID("$Id$");
 #endif
 #include <stdio.h>
 #include <stdlib.h>

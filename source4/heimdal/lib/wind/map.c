@@ -40,7 +40,7 @@
 
 #include "map_table.h"
 
-RCSID("$Id: map.c 22556 2008-02-01 16:38:46Z lha $");
+RCSID("$Id$");
 
 static int
 translation_cmp(const void *key, const void *data)

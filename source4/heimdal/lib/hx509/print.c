@@ -32,7 +32,7 @@
  */
 
 #include "hx_locl.h"
-RCSID("$Id: print.c 22538 2008-01-27 13:05:47Z lha $");
+RCSID("$Id$");
 
 /**
  * @page page_print Hx509 printing functions

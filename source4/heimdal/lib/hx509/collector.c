@@ -32,7 +32,7 @@
  */
 
 #include "hx_locl.h"
-RCSID("$Id: collector.c 20778 2007-06-01 22:04:13Z lha $");
+RCSID("$Id$");
 
 struct private_key {
     AlgorithmIdentifier alg;
