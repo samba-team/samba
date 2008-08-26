@@ -4,12 +4,3 @@ cn: CASE_INSENSITIVE
 ou: CASE_INSENSITIVE
 dn: CASE_INSENSITIVE
 
-dn: @SUBCLASSES
-top: domain
-top: person
-domain: domainDNS
-person: organizationalPerson
-person: fooPerson
-organizationalPerson: user
-organizationalPerson: OpenLDAPperson
-user: computer

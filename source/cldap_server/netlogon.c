@@ -71,6 +71,7 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 	struct ldb_dn *partitions_basedn;
 	struct interface *ifaces;
 	bool user_known;
+	NTSTATUS status;
 
 	partitions_basedn = samdb_partitions_dn(sam_ctx, mem_ctx);
 
@@ -87,7 +88,7 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 					 partitions_basedn, LDB_SCOPE_ONELEVEL, 
 					 ref_attrs, 
 					 "(&(&(objectClass=crossRef)(dnsRoot=%s))(nETBIOSName=*))",
-					 domain);
+					 ldb_binary_encode_string(mem_ctx, domain));
 	
 		if (ret != LDB_SUCCESS) {
 			DEBUG(2,("Unable to find referece to '%s' in sam: %s\n",
@@ -126,7 +127,7 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 					 partitions_basedn, LDB_SCOPE_ONELEVEL, 
 					 ref_attrs, 
 					 "(&(objectClass=crossRef)(ncName=*)(nETBIOSName=%s))",
-					 netbios_domain);
+					 ldb_binary_encode_string(mem_ctx, netbios_domain));
 	
 		if (ret != LDB_SUCCESS) {
 			DEBUG(2,("Unable to find referece to '%s' in sam: %s\n",
@@ -161,17 +162,45 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 		ref_res = NULL;
 
 		if (domain_guid) {
+			struct GUID binary_guid;
+			struct ldb_val guid_val;
+			enum ndr_err_code ndr_err;
+
+			/* By this means, we ensure we don't have funny stuff in the GUID */
+
+			status = GUID_from_string(domain_guid, &binary_guid);
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
+			}
+
+			/* And this gets the result into the binary format we want anyway */
+			ndr_err = ndr_push_struct_blob(&guid_val, mem_ctx, NULL, &binary_guid,
+						       (ndr_push_flags_fn_t)ndr_push_GUID);
+			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+				return NT_STATUS_INVALID_PARAMETER;
+			}
 			ret = ldb_search_exp_fmt(sam_ctx, mem_ctx, &dom_res,
 						 NULL, LDB_SCOPE_SUBTREE, 
 						 dom_attrs, 
-						 "(&(objectClass=domainDNS)(objectGUID=%s))", 
-						 domain_guid);
+						 "(&(objectCategory=DomainDNS)(objectGUID=%s))", 
+						 ldb_binary_encode(mem_ctx, guid_val));
 		} else { /* domain_sid case */
+			struct dom_sid *sid;
+			struct ldb_val sid_val;
+			enum ndr_err_code ndr_err;
+			
+			/* Rather than go via the string, just push into the NDR form */
+			ndr_err = ndr_push_struct_blob(&sid_val, mem_ctx, NULL, &sid,
+						       (ndr_push_flags_fn_t)ndr_push_dom_sid);
+			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+				return NT_STATUS_INVALID_PARAMETER;
+			}
+
 			ret = ldb_search_exp_fmt(sam_ctx, mem_ctx, &dom_res,
 						 NULL, LDB_SCOPE_SUBTREE, 
 						 dom_attrs, 
-						 "(&(objectClass=domainDNS)(objectSID=%s))", 
-						 dom_sid_string(mem_ctx, domain_sid));
+						 "(&(objectCategory=DomainDNS)(objectSID=%s))", 
+						 ldb_binary_encode(mem_ctx, sid_val));
 		}
 		
 		if (ret != LDB_SUCCESS) {
@@ -237,7 +266,8 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 					 "(&(objectClass=user)(samAccountName=%s)"
 					 "(!(userAccountControl:" LDB_OID_COMPARATOR_AND ":=%u))"
 					 "(userAccountControl:" LDB_OID_COMPARATOR_OR ":=%u))", 
-					 user, UF_ACCOUNTDISABLE, samdb_acb2uf(acct_control));
+					 ldb_binary_encode_string(mem_ctx, user),
+					 UF_ACCOUNTDISABLE, samdb_acb2uf(acct_control));
 		if (ret != LDB_SUCCESS) {
 			DEBUG(2,("Unable to find referece to user '%s' with ACB 0x%8x under %s: %s\n",
 				 user, acct_control, ldb_dn_get_linearized(dom_res->msgs[0]->dn),
@@ -256,7 +286,8 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 	server_type      = 
 		NBT_SERVER_DS | NBT_SERVER_TIMESERV |
 		NBT_SERVER_CLOSEST | NBT_SERVER_WRITABLE | 
-		NBT_SERVER_GOOD_TIMESERV;
+		NBT_SERVER_GOOD_TIMESERV | NBT_SERVER_DS_DNS_CONTR |
+		NBT_SERVER_DS_DNS_DOMAIN;
 
 	if (samdb_is_pdc(sam_ctx)) {
 		server_type |= NBT_SERVER_PDC;
@@ -274,6 +305,10 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 		server_type |= NBT_SERVER_KDC;
 	}
 
+	if (!ldb_dn_compare_base(ldb_get_root_basedn(sam_ctx), ldb_get_default_basedn(sam_ctx))) {
+		server_type |= NBT_SERVER_DS_DNS_FOREST;
+	}
+
 	pdc_name         = talloc_asprintf(mem_ctx, "\\\\%s", lp_netbios_name(lp_ctx));
 	domain_uuid      = samdb_result_guid(dom_res->msgs[0], "objectGUID");
 	realm            = samdb_result_string(ref_res->msgs[0], "dnsRoot", lp_realm(lp_ctx));
@@ -285,6 +320,7 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 
 	flatname         = samdb_result_string(ref_res->msgs[0], "nETBIOSName", 
 					       lp_workgroup(lp_ctx));
+	/* FIXME: Hardcoded site names */
 	server_site      = "Default-First-Site-Name";
 	client_site      = "Default-First-Site-Name";
 	load_interfaces(mem_ctx, lp_interfaces(lp_ctx), &ifaces);

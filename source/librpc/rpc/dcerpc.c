@@ -334,6 +334,7 @@ static NTSTATUS ncacn_pull_request_auth(struct dcerpc_connection *c, TALLOC_CTX 
 */
 static NTSTATUS ncacn_push_request_sign(struct dcerpc_connection *c, 
 					 DATA_BLOB *blob, TALLOC_CTX *mem_ctx, 
+					 size_t sig_size,
 					 struct ncacn_packet *pkt)
 {
 	NTSTATUS status;
@@ -384,8 +385,7 @@ static NTSTATUS ncacn_push_request_sign(struct dcerpc_connection *c,
 		 * GENSEC mech does AEAD signing of the packet
 		 * headers */
 		c->security_state.auth_info->credentials
-			= data_blob_talloc(mem_ctx, NULL, gensec_sig_size(c->security_state.generic_state, 
-									  payload_length));
+			= data_blob_talloc(mem_ctx, NULL, sig_size);
 		data_blob_clear(&c->security_state.auth_info->credentials);
 		break;
 
@@ -1042,6 +1042,7 @@ static void dcerpc_ship_next_request(struct dcerpc_connection *c)
 	DATA_BLOB blob;
 	uint32_t remaining, chunk_size;
 	bool first_packet = true;
+	size_t sig_size = 0;
 
 	req = c->request_queue;
 	if (req == NULL) {
@@ -1065,7 +1066,15 @@ static void dcerpc_ship_next_request(struct dcerpc_connection *c)
 
 	/* we can write a full max_recv_frag size, minus the dcerpc
 	   request header size */
-	chunk_size = p->conn->srv_max_recv_frag - (DCERPC_MAX_SIGN_SIZE+DCERPC_REQUEST_LENGTH);
+	chunk_size = p->conn->srv_max_recv_frag;
+	chunk_size -= DCERPC_REQUEST_LENGTH;
+	if (c->security_state.generic_state) {
+		chunk_size -= DCERPC_AUTH_TRAILER_LENGTH;
+		sig_size = gensec_sig_size(c->security_state.generic_state,
+					   p->conn->srv_max_recv_frag);
+		chunk_size -= sig_size;
+		chunk_size -= (chunk_size % 16);
+	}
 
 	pkt.ptype = DCERPC_PKT_REQUEST;
 	pkt.call_id = req->call_id;
@@ -1101,7 +1110,7 @@ static void dcerpc_ship_next_request(struct dcerpc_connection *c)
 			(stub_data->length - remaining);
 		pkt.u.request.stub_and_verifier.length = chunk;
 
-		req->status = ncacn_push_request_sign(p->conn, &blob, req, &pkt);
+		req->status = ncacn_push_request_sign(p->conn, &blob, req, sig_size, &pkt);
 		if (!NT_STATUS_IS_OK(req->status)) {
 			req->state = RPC_REQUEST_DONE;
 			DLIST_REMOVE(p->conn->pending, req);

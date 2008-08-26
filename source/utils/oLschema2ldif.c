@@ -31,9 +31,10 @@
  *  Author: Simo Sorce
  */
 
+#include "includes.h"
 #include "ldb_includes.h"
 #include "tools/cmdline.h"
-#include "utils/schema_convert.h"
+#include "dsdb/samdb/samdb.h"
 
 #define SCHEMA_UNKNOWN 0
 #define SCHEMA_NAME 1
@@ -432,12 +433,12 @@ static struct ldb_message *process_entry(TALLOC_CTX *mem_ctx, const char *entry)
 
 		case SCHEMA_SYNTAX:
 		{
-			const struct syntax_map *map = 
+			const struct dsdb_syntax *map = 
 				find_syntax_map_by_standard_oid(token->value);
 			if (!map) {
 				break;
 			}
-			MSG_ADD_STRING("attributeSyntax", map->AD_OID);
+			MSG_ADD_STRING("attributeSyntax", map->attributeSyntax_oid);
 			break;
 		}
 		case SCHEMA_DESC:

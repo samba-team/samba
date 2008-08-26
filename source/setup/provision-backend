@@ -64,6 +64,9 @@ parser.add_option("--server-role", type="choice", metavar="ROLE",
 		help="Set server role to provision for (default standalone)")
 parser.add_option("--targetdir", type="string", metavar="DIR", 
 		          help="Set target directory")
+parser.add_option("--ol-mmr-urls", type="string", metavar="LDAPSERVER",
+                help="List of LDAP-URLS [ ldap://<FQDN>:port/  (where port != 389) ] separated with whitespaces for use with OpenLDAP-MMR")
+
 
 opts = parser.parse_args()[0]
 
@@ -99,4 +102,6 @@ provision_backend(setup_dir=setup_dir, message=message, smbconf=smbconf, targetd
 		  adminpass=opts.ldap_admin_pass,
 		  root=opts.root, serverrole=server_role, 
 		  ldap_backend_type=opts.ldap_backend_type,
-		  ldap_backend_port=opts.ldap_backend_port)
+		  ldap_backend_port=opts.ldap_backend_port,
+		  ol_mmr_urls=opts.ol_mmr_urls)
+

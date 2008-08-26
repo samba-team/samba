@@ -4,6 +4,7 @@
    libndr compression support
 
    Copyright (C) Stefan Metzmacher 2005
+   Copyright (C) Matthieu Suiche 2008
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -20,13 +21,24 @@
 */
 
 #include "includes.h"
-#include "lib/compression/mszip.h"
+#include "lib/compression/lzxpress.h"
 #include "librpc/ndr/libndr.h"
 #include "librpc/ndr/ndr_compression.h"
+#include <zlib.h>
+
+static voidpf ndr_zlib_alloc(voidpf opaque, uInt items, uInt size)
+{
+	return talloc_zero_size(opaque, items * size);
+}
+
+static void  ndr_zlib_free(voidpf opaque, voidpf address)
+{
+	talloc_free(address);
+}
 
 static enum ndr_err_code ndr_pull_compression_mszip_chunk(struct ndr_pull *ndrpull,
 						 struct ndr_push *ndrpush,
-						 struct decomp_state *decomp_state,
+						 z_stream *z,
 						 bool *last)
 {
 	DATA_BLOB comp_chunk;
@@ -35,7 +47,7 @@ static enum ndr_err_code ndr_pull_compression_mszip_chunk(struct ndr_pull *ndrpu
 	DATA_BLOB plain_chunk;
 	uint32_t plain_chunk_offset;
 	uint32_t plain_chunk_size;
-	int ret;
+	int z_ret;
 
 	NDR_CHECK(ndr_pull_uint32(ndrpull, NDR_SCALARS, &plain_chunk_size));
 	if (plain_chunk_size > 0x00008000) {
@@ -58,10 +70,71 @@ static enum ndr_err_code ndr_pull_compression_mszip_chunk(struct ndr_pull *ndrpu
 	plain_chunk.length = plain_chunk_size;
 	plain_chunk.data = ndrpush->data + plain_chunk_offset;
 
-	ret = ZIPdecompress(decomp_state, &comp_chunk, &plain_chunk);
-	if (ret != DECR_OK) {
-		return ndr_pull_error(ndrpull, NDR_ERR_COMPRESSION, "Bad ZIPdecompress() error %d (PULL)",
-				      ret);
+	if (comp_chunk.length < 2) {
+		return ndr_pull_error(ndrpull, NDR_ERR_COMPRESSION,
+				      "Bad MSZIP comp chunk size %u < 2 (PULL)",
+				      (unsigned int)comp_chunk.length);
+	}
+	/* CK = Chris Kirmse, official Microsoft purloiner */
+	if (comp_chunk.data[0] != 'C' ||
+	    comp_chunk.data[1] != 'K') {
+		return ndr_pull_error(ndrpull, NDR_ERR_COMPRESSION,
+				      "Bad MSZIP invalid prefix [%c%c] != [CK]",
+				      comp_chunk.data[0], comp_chunk.data[1]);
+	}
+
+	z->next_in	= comp_chunk.data + 2;
+	z->avail_in	= comp_chunk.length -2;
+	z->total_in	= 0;
+
+	z->next_out	= plain_chunk.data;
+	z->avail_out	= plain_chunk.length;
+	z->total_out	= 0;
+
+	if (!z->opaque) {
+		/* the first time we need to intialize completely */
+		z->zalloc	= ndr_zlib_alloc;
+		z->zfree	= ndr_zlib_free;
+		z->opaque	= ndrpull;
+
+		z_ret = inflateInit2(z, -15);
+		if (z_ret != Z_OK) {
+			return ndr_pull_error(ndrpull, NDR_ERR_COMPRESSION,
+					      "Bad inflateInit2 error %s(%d) (PULL)",
+					      zError(z_ret), z_ret);
+
+		}
+	} else {
+		z_ret = inflateReset2(z, Z_RESET_KEEP_WINDOW);
+		if (z_ret != Z_OK) {
+			return ndr_pull_error(ndrpull, NDR_ERR_COMPRESSION,
+					      "Bad inflateReset2 error %s(%d) (PULL)",
+					      zError(z_ret), z_ret);
+		}
+	}
+
+	/* call inflate untill we get Z_STREAM_END or an error */
+	while (true) {
+		z_ret = inflate(z, Z_BLOCK);
+		if (z_ret != Z_OK) break;
+	}
+
+	if (z_ret != Z_STREAM_END) {
+		return ndr_pull_error(ndrpull, NDR_ERR_COMPRESSION,
+				      "Bad inflate(Z_BLOCK) error %s(%d) (PULL)",
+				      zError(z_ret), z_ret);
+	}
+
+	if (z->avail_in) {
+		return ndr_pull_error(ndrpull, NDR_ERR_COMPRESSION,
+				      "MSZIP not all avail_in[%u] bytes consumed (PULL)",
+				      z->avail_in);
+	}
+
+	if (z->avail_out) {
+		return ndr_pull_error(ndrpull, NDR_ERR_COMPRESSION,
+				      "MSZIP not all avail_out[%u] bytes consumed (PULL)",
+				      z->avail_out);
 	}
 
 	if ((plain_chunk_size < 0x00008000) || (ndrpull->offset+4 >= ndrpull->data_size)) {
@@ -72,85 +145,109 @@ static enum ndr_err_code ndr_pull_compression_mszip_chunk(struct ndr_pull *ndrpu
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_compression_mszip(struct ndr_pull *subndr,
-					   struct ndr_pull **_comndr,
-					   ssize_t decompressed_len)
+static enum ndr_err_code ndr_push_compression_mszip_chunk(struct ndr_push *ndrpush,
+							  struct ndr_pull *ndrpull,
+							  z_stream *z,
+							  bool *last)
 {
-	struct ndr_push *ndrpush;
-	struct ndr_pull *comndr;
-	DATA_BLOB uncompressed;
-	uint32_t payload_header[4];
-	uint32_t payload_size;
-	uint32_t payload_offset;
-	uint8_t *payload;
-	struct decomp_state *decomp_state;
-	bool last = false;
+	DATA_BLOB comp_chunk;
+	uint32_t comp_chunk_size;
+	uint32_t comp_chunk_size_offset;
+	DATA_BLOB plain_chunk;
+	uint32_t plain_chunk_size;
+	uint32_t plain_chunk_offset;
+	uint32_t max_plain_size = 0x00008000;
+	uint32_t max_comp_size = 0x00008000 + 2 + 12 /*TODO: what value do we really need here?*/;
+	uint32_t tmp_offset;
+	int z_ret;
 
-	ndrpush = ndr_push_init_ctx(subndr, subndr->iconv_convenience);
-	NDR_ERR_HAVE_NO_MEMORY(ndrpush);
+	plain_chunk_size = MIN(max_plain_size, ndrpull->data_size - ndrpull->offset);
+	plain_chunk_offset = ndrpull->offset;
+	NDR_CHECK(ndr_pull_advance(ndrpull, plain_chunk_size));
 
-	decomp_state = ZIPdecomp_state(subndr);
-	NDR_ERR_HAVE_NO_MEMORY(decomp_state);
+	plain_chunk.data = ndrpull->data + plain_chunk_offset;
+	plain_chunk.length = plain_chunk_size;
 
-	while (!last) {
-		NDR_CHECK(ndr_pull_compression_mszip_chunk(subndr, ndrpush, decomp_state, &last));
+	if (plain_chunk_size < max_plain_size) {
+		*last = true;
 	}
 
-	uncompressed = ndr_push_blob(ndrpush);
+	NDR_CHECK(ndr_push_uint32(ndrpush, NDR_SCALARS, plain_chunk_size));
+	comp_chunk_size_offset = ndrpush->offset;
+	NDR_CHECK(ndr_push_uint32(ndrpush, NDR_SCALARS, 0xFEFEFEFE));
 
-	if (uncompressed.length != decompressed_len) {
-		return ndr_pull_error(subndr, NDR_ERR_COMPRESSION, "Bad MSZIP uncompressed_len [%u] != [%d] (PULL)",
-				      (int)uncompressed.length, (int)decompressed_len);
+	NDR_CHECK(ndr_push_expand(ndrpush, max_comp_size));
+
+	comp_chunk.data = ndrpush->data + ndrpush->offset;
+	comp_chunk.length = max_comp_size;
+
+	/* CK = Chris Kirmse, official Microsoft purloiner */
+	comp_chunk.data[0] = 'C';
+	comp_chunk.data[1] = 'K';
+
+	z->next_in	= plain_chunk.data;
+	z->avail_in	= plain_chunk.length;
+	z->total_in	= 0;
+
+	z->next_out	= comp_chunk.data + 2;
+	z->avail_out	= comp_chunk.length - 2;
+	z->total_out	= 0;
+
+	if (!z->opaque) {
+		/* the first time we need to intialize completely */
+		z->zalloc	= ndr_zlib_alloc;
+		z->zfree	= ndr_zlib_free;
+		z->opaque	= ndrpull;
+
+		/* TODO: find how to trigger the same parameters windows uses */
+		z_ret = deflateInit2(z,
+				     Z_DEFAULT_COMPRESSION,
+				     Z_DEFLATED,
+				     -15,
+				     9,
+				     Z_DEFAULT_STRATEGY);
+		if (z_ret != Z_OK) {
+			return ndr_push_error(ndrpush, NDR_ERR_COMPRESSION,
+					      "Bad deflateInit2 error %s(%d) (PUSH)",
+					      zError(z_ret), z_ret);
+
+		}
+	} else {
+		/* TODO: keep the window */
+		z_ret = deflateReset(z);
+		if (z_ret != Z_OK) {
+			return ndr_push_error(ndrpush, NDR_ERR_COMPRESSION,
+					      "Bad delateReset2 error %s(%d) (PUSH)",
+					      zError(z_ret), z_ret);
+		}
 	}
 
-	comndr = talloc_zero(subndr, struct ndr_pull);
-	NDR_ERR_HAVE_NO_MEMORY(comndr);
-	comndr->flags		= subndr->flags;
-	comndr->current_mem_ctx	= subndr->current_mem_ctx;
-
-	comndr->data		= uncompressed.data;
-	comndr->data_size	= uncompressed.length;
-	comndr->offset		= 0;
-
-	comndr->iconv_convenience = talloc_reference(comndr, subndr->iconv_convenience);
-
-	NDR_CHECK(ndr_pull_uint32(comndr, NDR_SCALARS, &payload_header[0]));
-	NDR_CHECK(ndr_pull_uint32(comndr, NDR_SCALARS, &payload_header[1]));
-	NDR_CHECK(ndr_pull_uint32(comndr, NDR_SCALARS, &payload_header[2]));
-	NDR_CHECK(ndr_pull_uint32(comndr, NDR_SCALARS, &payload_header[3]));
-
-	if (payload_header[0] != 0x00081001) {
-		return ndr_pull_error(subndr, NDR_ERR_COMPRESSION, "Bad MSZIP payload_header[0] [0x%08X] != [0x00081001] (PULL)",
-				      payload_header[0]);
+	/* call deflate untill we get Z_STREAM_END or an error */
+	while (true) {
+		z_ret = deflate(z, Z_FINISH);
+		if (z_ret != Z_OK) break;
 	}
-	if (payload_header[1] != 0xCCCCCCCC) {
-		return ndr_pull_error(subndr, NDR_ERR_COMPRESSION, "Bad MSZIP payload_header[1] [0x%08X] != [0xCCCCCCCC] (PULL)",
-				      payload_header[1]);
+	if (z_ret != Z_STREAM_END) {
+		return ndr_push_error(ndrpush, NDR_ERR_COMPRESSION,
+				      "Bad delate(Z_BLOCK) error %s(%d) (PUSH)",
+				      zError(z_ret), z_ret);
 	}
 
-	payload_size = payload_header[2];
-
-	if (payload_header[3] != 0x00000000) {
-		return ndr_pull_error(subndr, NDR_ERR_COMPRESSION, "Bad MSZIP payload_header[3] [0x%08X] != [0x00000000] (PULL)",
-				      payload_header[3]);
+	if (z->avail_in) {
+		return ndr_push_error(ndrpush, NDR_ERR_COMPRESSION,
+				      "MSZIP not all avail_in[%u] bytes consumed (PUSH)",
+				      z->avail_in);
 	}
 
-	payload_offset = comndr->offset;
-	NDR_CHECK(ndr_pull_advance(comndr, payload_size));
-	payload = comndr->data + payload_offset;
+	comp_chunk_size = 2 + z->total_out;
 
-	comndr->data		= payload;
-	comndr->data_size	= payload_size;
-	comndr->offset		= 0;
+	tmp_offset = ndrpush->offset;
+	ndrpush->offset = comp_chunk_size_offset;
+	NDR_CHECK(ndr_push_uint32(ndrpush, NDR_SCALARS, comp_chunk_size));
+	ndrpush->offset = tmp_offset;
 
-	*_comndr = comndr;
+	ndrpush->offset += comp_chunk_size;
 	return NDR_ERR_SUCCESS;
-}
-
-static enum ndr_err_code ndr_push_compression_mszip(struct ndr_push *subndr,
-					   struct ndr_push *comndr)
-{
-	return ndr_push_error(subndr, NDR_ERR_COMPRESSION, "Sorry MSZIP compression is not supported yet (PUSH)");
 }
 
 static enum ndr_err_code ndr_pull_compression_xpress_chunk(struct ndr_pull *ndrpull,
@@ -158,11 +255,11 @@ static enum ndr_err_code ndr_pull_compression_xpress_chunk(struct ndr_pull *ndrp
 						  bool *last)
 {
 	DATA_BLOB comp_chunk;
+	DATA_BLOB plain_chunk;
 	uint32_t comp_chunk_offset;
+	uint32_t plain_chunk_offset;
 	uint32_t comp_chunk_size;
 	uint32_t plain_chunk_size;
-
-	comp_chunk_offset = ndrpull->offset;
 
 	NDR_CHECK(ndr_pull_uint32(ndrpull, NDR_SCALARS, &plain_chunk_size));
 	if (plain_chunk_size > 0x00010000) {
@@ -172,15 +269,21 @@ static enum ndr_err_code ndr_pull_compression_xpress_chunk(struct ndr_pull *ndrp
 
 	NDR_CHECK(ndr_pull_uint32(ndrpull, NDR_SCALARS, &comp_chunk_size));
 
+	comp_chunk_offset = ndrpull->offset;
 	NDR_CHECK(ndr_pull_advance(ndrpull, comp_chunk_size));
-	comp_chunk.length = comp_chunk_size + 8;
+	comp_chunk.length = comp_chunk_size;
 	comp_chunk.data = ndrpull->data + comp_chunk_offset;
+
+	plain_chunk_offset = ndrpush->offset;
+	NDR_CHECK(ndr_push_zero(ndrpush, plain_chunk_size));
+	plain_chunk.length = plain_chunk_size;
+	plain_chunk.data = ndrpush->data + plain_chunk_offset;
 
 	DEBUG(10,("XPRESS plain_chunk_size: %08X (%u) comp_chunk_size: %08X (%u)\n",
 		  plain_chunk_size, plain_chunk_size, comp_chunk_size, comp_chunk_size));
 
-	/* For now, we just copy over the compressed blob */
-	NDR_CHECK(ndr_push_bytes(ndrpush, comp_chunk.data, comp_chunk.length));
+	/* Uncompressing the buffer using LZ Xpress algorithm */
+	lzxpress_decompress(&comp_chunk, &plain_chunk);
 
 	if ((plain_chunk_size < 0x00010000) || (ndrpull->offset+4 >= ndrpull->data_size)) {
 		/* this is the last chunk */
@@ -190,43 +293,11 @@ static enum ndr_err_code ndr_pull_compression_xpress_chunk(struct ndr_pull *ndrp
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_compression_xpress(struct ndr_pull *subndr,
-					    struct ndr_pull **_comndr,
-					    ssize_t decompressed_len)
+static enum ndr_err_code ndr_push_compression_xpress_chunk(struct ndr_push *ndrpush,
+							   struct ndr_pull *ndrpull,
+							   bool *last)
 {
-	struct ndr_push *ndrpush;
-	struct ndr_pull *comndr;
-	DATA_BLOB uncompressed;
-	bool last = false;
-
-	ndrpush = ndr_push_init_ctx(subndr, subndr->iconv_convenience);
-	NDR_ERR_HAVE_NO_MEMORY(ndrpush);
-
-	while (!last) {
-		NDR_CHECK(ndr_pull_compression_xpress_chunk(subndr, ndrpush, &last));
-	}
-
-	uncompressed = ndr_push_blob(ndrpush);
-
-	comndr = talloc_zero(subndr, struct ndr_pull);
-	NDR_ERR_HAVE_NO_MEMORY(comndr);
-	comndr->flags		= subndr->flags;
-	comndr->current_mem_ctx	= subndr->current_mem_ctx;
-
-	comndr->data		= uncompressed.data;
-	comndr->data_size	= uncompressed.length;
-	comndr->offset		= 0;
-
-	comndr->iconv_convenience = talloc_reference(comndr, subndr->iconv_convenience);
-
-	*_comndr = comndr;
-	return NDR_ERR_SUCCESS;
-}
-
-static enum ndr_err_code ndr_push_compression_xpress(struct ndr_push *subndr,
-					    struct ndr_push *comndr)
-{
-	return ndr_push_error(subndr, NDR_ERR_COMPRESSION, "XPRESS compression is not supported yet (PUSH)");
+	return ndr_push_error(ndrpush, NDR_ERR_COMPRESSION, "XPRESS compression is not supported yet (PUSH)");
 }
 
 /*
@@ -238,15 +309,55 @@ enum ndr_err_code ndr_pull_compression_start(struct ndr_pull *subndr,
 				    enum ndr_compression_alg compression_alg,
 				    ssize_t decompressed_len)
 {
+	struct ndr_push *ndrpush;
+	struct ndr_pull *comndr;
+	DATA_BLOB uncompressed;
+	bool last = false;
+	z_stream z;
+
+	ndrpush = ndr_push_init_ctx(subndr, subndr->iconv_convenience);
+	NDR_ERR_HAVE_NO_MEMORY(ndrpush);
+
 	switch (compression_alg) {
 	case NDR_COMPRESSION_MSZIP:
-		return ndr_pull_compression_mszip(subndr, _comndr, decompressed_len);
+		ZERO_STRUCT(z);
+		while (!last) {
+			NDR_CHECK(ndr_pull_compression_mszip_chunk(subndr, ndrpush, &z, &last));
+		}
+		break;
+
 	case NDR_COMPRESSION_XPRESS:
-		return ndr_pull_compression_xpress(subndr, _comndr, decompressed_len);
+		while (!last) {
+			NDR_CHECK(ndr_pull_compression_xpress_chunk(subndr, ndrpush, &last));
+		}
+		break;
+
 	default:
-		return ndr_pull_error(subndr, NDR_ERR_COMPRESSION, "Bad compression algorithm %d (PULL)", 
+		return ndr_pull_error(subndr, NDR_ERR_COMPRESSION, "Bad compression algorithm %d (PULL)",
 				      compression_alg);
 	}
+
+	uncompressed = ndr_push_blob(ndrpush);
+	if (uncompressed.length != decompressed_len) {
+		return ndr_pull_error(subndr, NDR_ERR_COMPRESSION,
+				      "Bad uncompressed_len [%u] != [%u](0x%08X) (PULL)",
+				      (int)uncompressed.length,
+				      (int)decompressed_len,
+				      (int)decompressed_len);
+	}
+
+	comndr = talloc_zero(subndr, struct ndr_pull);
+	NDR_ERR_HAVE_NO_MEMORY(comndr);
+	comndr->flags		= subndr->flags;
+	comndr->current_mem_ctx	= subndr->current_mem_ctx;
+
+	comndr->data		= uncompressed.data;
+	comndr->data_size	= uncompressed.length;
+	comndr->offset		= 0;
+
+	comndr->iconv_convenience = talloc_reference(comndr, subndr->iconv_convenience);
+
+	*_comndr = comndr;
 	return NDR_ERR_SUCCESS;
 }
 
@@ -262,17 +373,27 @@ enum ndr_err_code ndr_pull_compression_end(struct ndr_pull *subndr,
   push a compressed subcontext
 */
 enum ndr_err_code ndr_push_compression_start(struct ndr_push *subndr,
-				    struct ndr_push **_comndr,
+				    struct ndr_push **_uncomndr,
 				    enum ndr_compression_alg compression_alg,
 				    ssize_t decompressed_len)
 {
-	struct ndr_push *comndr;
+	struct ndr_push *uncomndr;
 
-	comndr = ndr_push_init_ctx(subndr, subndr->iconv_convenience);
-	NDR_ERR_HAVE_NO_MEMORY(comndr);
-	comndr->flags	= subndr->flags;
+	switch (compression_alg) {
+	case NDR_COMPRESSION_MSZIP:
+	case NDR_COMPRESSION_XPRESS:
+		break;
+	default:
+		return ndr_push_error(subndr, NDR_ERR_COMPRESSION,
+				      "Bad compression algorithm %d (PUSH)",
+				      compression_alg);
+	}
 
-	*_comndr = comndr;
+	uncomndr = ndr_push_init_ctx(subndr, subndr->iconv_convenience);
+	NDR_ERR_HAVE_NO_MEMORY(uncomndr);
+	uncomndr->flags	= subndr->flags;
+
+	*_uncomndr = uncomndr;
 	return NDR_ERR_SUCCESS;
 }
 
@@ -280,18 +401,42 @@ enum ndr_err_code ndr_push_compression_start(struct ndr_push *subndr,
   push a compressed subcontext
 */
 enum ndr_err_code ndr_push_compression_end(struct ndr_push *subndr,
-				  struct ndr_push *comndr,
+				  struct ndr_push *uncomndr,
 				  enum ndr_compression_alg compression_alg,
 				  ssize_t decompressed_len)
 {
+	struct ndr_pull *ndrpull;
+	bool last = false;
+	z_stream z;
+
+	ndrpull = talloc_zero(uncomndr, struct ndr_pull);
+	NDR_ERR_HAVE_NO_MEMORY(ndrpull);
+	ndrpull->flags		= uncomndr->flags;
+	ndrpull->data		= uncomndr->data;
+	ndrpull->data_size	= uncomndr->offset;
+	ndrpull->offset		= 0;
+
+	ndrpull->iconv_convenience = talloc_reference(ndrpull, subndr->iconv_convenience);
+
 	switch (compression_alg) {
 	case NDR_COMPRESSION_MSZIP:
-		return ndr_push_compression_mszip(subndr, comndr);
+		ZERO_STRUCT(z);
+		while (!last) {
+			NDR_CHECK(ndr_push_compression_mszip_chunk(subndr, ndrpull, &z, &last));
+		}
+		break;
+
 	case NDR_COMPRESSION_XPRESS:
-		return ndr_push_compression_xpress(subndr, comndr);
+		while (!last) {
+			NDR_CHECK(ndr_push_compression_xpress_chunk(subndr, ndrpull, &last));
+		}
+		break;
+
 	default:
 		return ndr_push_error(subndr, NDR_ERR_COMPRESSION, "Bad compression algorithm %d (PUSH)", 
 				      compression_alg);
 	}
+
+	talloc_free(uncomndr);
 	return NDR_ERR_SUCCESS;
 }

@@ -55,11 +55,12 @@ int ldb_handler_fold(struct ldb_context *ldb, void *mem_ctx,
 {
 	char *s, *t;
 	int l;
+
 	if (!in || !out || !(in->data)) {
 		return -1;
 	}
 
-	out->data = (uint8_t *)ldb_casefold(ldb, mem_ctx, (const char *)(in->data));
+	out->data = (uint8_t *)ldb_casefold(ldb, mem_ctx, (const char *)(in->data), in->length);
 	if (out->data == NULL) {
 		ldb_debug(ldb, LDB_DEBUG_ERROR, "ldb_handler_fold: unable to casefold string [%s]", in->data);
 		return -1;
@@ -153,13 +154,14 @@ int ldb_comparison_fold(struct ldb_context *ldb, void *mem_ctx,
 			       const struct ldb_val *v1, const struct ldb_val *v2)
 {
 	const char *s1=(const char *)v1->data, *s2=(const char *)v2->data;
+	size_t n1 = v1->length, n2 = v2->length;
 	const char *u1, *u2;
 	char *b1, *b2;
 	int ret;
-	while (*s1 == ' ') s1++;
-	while (*s2 == ' ') s2++;
+	while (*s1 == ' ' && n1) { s1++; n1--; };
+	while (*s2 == ' ' && n2) { s2++; n2--; };
 	/* TODO: make utf8 safe, possibly with helper function from application */
-	while (*s1 && *s2) {
+	while (*s1 && *s2 && n1 && n2) {
 		/* the first 127 (0x7F) chars are ascii and utf8 guarantes they
 		 * never appear in multibyte sequences */
 		if (((unsigned char)s1[0]) & 0x80) goto utf8str;
@@ -167,10 +169,11 @@ int ldb_comparison_fold(struct ldb_context *ldb, void *mem_ctx,
 		if (toupper((unsigned char)*s1) != toupper((unsigned char)*s2))
 			break;
 		if (*s1 == ' ') {
-			while (s1[0] == s1[1]) s1++;
-			while (s2[0] == s2[1]) s2++;
+			while (s1[0] == s1[1] && n1) { s1++; n1--; }
+			while (s2[0] == s2[1] && n2) { s2++; n2--; }
 		}
 		s1++; s2++;
+		n1--; n2--;
 	}
 	if (! (*s1 && *s2)) {
 		/* check for trailing spaces only if one of the pointers
@@ -178,15 +181,18 @@ int ldb_comparison_fold(struct ldb_context *ldb, void *mem_ctx,
 		 * can mistakenly match.
 		 * ex. "domain users" <-> "domainUpdates"
 		 */
-		while (*s1 == ' ') s1++;
-		while (*s2 == ' ') s2++;
+		while (*s1 == ' ') { s1++; n1--; }
+		while (*s2 == ' ') { s2++; n2--; }
+	}
+	if (n1 != n2) {
+		return n1 - n2;
 	}
 	return (int)(toupper(*s1)) - (int)(toupper(*s2));
 
 utf8str:
 	/* no need to recheck from the start, just from the first utf8 char found */
-	b1 = ldb_casefold(ldb, mem_ctx, s1);
-	b2 = ldb_casefold(ldb, mem_ctx, s2);
+	b1 = ldb_casefold(ldb, mem_ctx, s1, n1);
+	b2 = ldb_casefold(ldb, mem_ctx, s2, n2);
 
 	if (b1 && b2) {
 		/* Both strings converted correctly */
@@ -220,6 +226,7 @@ utf8str:
 	
 	return ret;
 }
+
 
 /*
   canonicalise a attribute in DN format

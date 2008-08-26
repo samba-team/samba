@@ -38,7 +38,7 @@ static int ldif_read_objectSid(struct ldb_context *ldb, void *mem_ctx,
 {
 	enum ndr_err_code ndr_err;
 	struct dom_sid *sid;
-	sid = dom_sid_parse_talloc(mem_ctx, (const char *)in->data);
+	sid = dom_sid_parse_length(mem_ctx, in);
 	if (sid == NULL) {
 		return -1;
 	}
@@ -70,12 +70,11 @@ static int ldif_write_objectSid(struct ldb_context *ldb, void *mem_ctx,
 		talloc_free(sid);
 		return -1;
 	}
-	out->data = (uint8_t *)dom_sid_string(mem_ctx, sid);
+	*out = data_blob_string_const(dom_sid_string(mem_ctx, sid));
 	talloc_free(sid);
 	if (out->data == NULL) {
 		return -1;
 	}
-	out->length = strlen((const char *)out->data);
 	return 0;
 }
 
@@ -97,13 +96,14 @@ static int ldb_comparison_objectSid(struct ldb_context *ldb, void *mem_ctx,
 				    const struct ldb_val *v1, const struct ldb_val *v2)
 {
 	if (ldb_comparision_objectSid_isString(v1) && ldb_comparision_objectSid_isString(v2)) {
-		return strcmp((const char *)v1->data, (const char *)v2->data);
+		return ldb_comparison_binary(ldb, mem_ctx, v1, v2);
 	} else if (ldb_comparision_objectSid_isString(v1)
 		   && !ldb_comparision_objectSid_isString(v2)) {
 		struct ldb_val v;
 		int ret;
 		if (ldif_read_objectSid(ldb, mem_ctx, v1, &v) != 0) {
-			return -1;
+			/* Perhaps not a string after all */
+			return ldb_comparison_binary(ldb, mem_ctx, v1, v2);
 		}
 		ret = ldb_comparison_binary(ldb, mem_ctx, &v, v2);
 		talloc_free(v.data);
@@ -113,7 +113,8 @@ static int ldb_comparison_objectSid(struct ldb_context *ldb, void *mem_ctx,
 		struct ldb_val v;
 		int ret;
 		if (ldif_read_objectSid(ldb, mem_ctx, v2, &v) != 0) {
-			return -1;
+			/* Perhaps not a string after all */
+			return ldb_comparison_binary(ldb, mem_ctx, v1, v2);
 		}
 		ret = ldb_comparison_binary(ldb, mem_ctx, v1, &v);
 		talloc_free(v.data);
@@ -129,7 +130,11 @@ static int ldb_canonicalise_objectSid(struct ldb_context *ldb, void *mem_ctx,
 				      const struct ldb_val *in, struct ldb_val *out)
 {
 	if (ldb_comparision_objectSid_isString(in)) {
-		return ldif_read_objectSid(ldb, mem_ctx, in, out);
+		if (ldif_read_objectSid(ldb, mem_ctx, in, out) != 0) {
+			/* Perhaps not a string after all */
+			return ldb_handler_copy(ldb, mem_ctx, in, out);
+		}
+		return 0;
 	}
 	return ldb_handler_copy(ldb, mem_ctx, in, out);
 }
@@ -141,10 +146,16 @@ static int ldif_read_objectGUID(struct ldb_context *ldb, void *mem_ctx,
 			        const struct ldb_val *in, struct ldb_val *out)
 {
 	struct GUID guid;
+	char *guid_string;
 	NTSTATUS status;
 	enum ndr_err_code ndr_err;
+	guid_string = talloc_strndup(mem_ctx, (const char *)in->data, in->length);
+	if (!guid_string) {
+		return -1;
+	}
 
-	status = GUID_from_string((const char *)in->data, &guid);
+	status = GUID_from_string(guid_string, &guid);
+	talloc_free(guid_string);
 	if (!NT_STATUS_IS_OK(status)) {
 		return -1;
 	}
@@ -203,13 +214,14 @@ static int ldb_comparison_objectGUID(struct ldb_context *ldb, void *mem_ctx,
 				     const struct ldb_val *v1, const struct ldb_val *v2)
 {
 	if (ldb_comparision_objectGUID_isString(v1) && ldb_comparision_objectGUID_isString(v2)) {
-		return strcmp((const char *)v1->data, (const char *)v2->data);
+		return ldb_comparison_binary(ldb, mem_ctx, v1, v2);
 	} else if (ldb_comparision_objectGUID_isString(v1)
 		   && !ldb_comparision_objectGUID_isString(v2)) {
 		struct ldb_val v;
 		int ret;
 		if (ldif_read_objectGUID(ldb, mem_ctx, v1, &v) != 0) {
-			return -1;
+			/* Perhaps it wasn't a valid string after all */
+			return ldb_comparison_binary(ldb, mem_ctx, v1, v2);
 		}
 		ret = ldb_comparison_binary(ldb, mem_ctx, &v, v2);
 		talloc_free(v.data);
@@ -219,7 +231,8 @@ static int ldb_comparison_objectGUID(struct ldb_context *ldb, void *mem_ctx,
 		struct ldb_val v;
 		int ret;
 		if (ldif_read_objectGUID(ldb, mem_ctx, v2, &v) != 0) {
-			return -1;
+			/* Perhaps it wasn't a valid string after all */
+			return ldb_comparison_binary(ldb, mem_ctx, v1, v2);
 		}
 		ret = ldb_comparison_binary(ldb, mem_ctx, v1, &v);
 		talloc_free(v.data);
@@ -235,7 +248,11 @@ static int ldb_canonicalise_objectGUID(struct ldb_context *ldb, void *mem_ctx,
 				       const struct ldb_val *in, struct ldb_val *out)
 {
 	if (ldb_comparision_objectGUID_isString(in)) {
-		return ldif_read_objectGUID(ldb, mem_ctx, in, out);
+		if (ldif_read_objectGUID(ldb, mem_ctx, in, out) != 0) {
+			/* Perhaps it wasn't a valid string after all */
+			return ldb_handler_copy(ldb, mem_ctx, in, out);
+		}
+		return 0;
 	}
 	return ldb_handler_copy(ldb, mem_ctx, in, out);
 }
@@ -314,7 +331,7 @@ static int ldif_canonicalise_objectCategory(struct ldb_context *ldb, void *mem_c
 		}
 		return LDB_SUCCESS;
 	}
-	dn1 = ldb_dn_new(tmp_ctx, ldb, (char *)in->data);
+	dn1 = ldb_dn_from_ldb_val(tmp_ctx, ldb, in);
 	if ( ! ldb_dn_validate(dn1)) {
 		const char *lDAPDisplayName = talloc_strndup(tmp_ctx, (char *)in->data, in->length);
 		class = dsdb_class_by_lDAPDisplayName(schema, lDAPDisplayName);
@@ -561,8 +578,6 @@ static int ldif_comparison_prefixMap(struct ldb_context *ldb, void *mem_ctx,
 	return ret;
 }
 
-#define LDB_SYNTAX_SAMBA_SID			"LDB_SYNTAX_SAMBA_SID"
-#define LDB_SYNTAX_SAMBA_SECURITY_DESCRIPTOR	"LDB_SYNTAX_SAMBA_SECURITY_DESCRIPTOR"
 #define LDB_SYNTAX_SAMBA_GUID			"LDB_SYNTAX_SAMBA_GUID"
 #define LDB_SYNTAX_SAMBA_OBJECT_CATEGORY	"LDB_SYNTAX_SAMBA_OBJECT_CATEGORY"
 #define LDB_SYNTAX_SAMBA_PREFIX_MAP	"LDB_SYNTAX_SAMBA_PREFIX_MAP"
@@ -619,21 +634,23 @@ static const struct {
 	{ "fRSReplicaSetGUID",		LDB_SYNTAX_SAMBA_GUID },
 	{ "netbootGUID",		LDB_SYNTAX_SAMBA_GUID },
 	{ "objectCategory",		LDB_SYNTAX_SAMBA_OBJECT_CATEGORY },
-	{ "member",			LDB_SYNTAX_DN },
-	{ "memberOf",			LDB_SYNTAX_DN },
-	{ "nCName",			LDB_SYNTAX_DN },
-	{ "schemaNamingContext",	LDB_SYNTAX_DN },
-	{ "configurationNamingContext",	LDB_SYNTAX_DN },
-	{ "rootDomainNamingContext",	LDB_SYNTAX_DN },
-	{ "defaultNamingContext",	LDB_SYNTAX_DN },
-	{ "subRefs",			LDB_SYNTAX_DN },
-	{ "dMDLocation",		LDB_SYNTAX_DN },
-	{ "serverReference",		LDB_SYNTAX_DN },
-	{ "masteredBy",			LDB_SYNTAX_DN },
-	{ "msDs-masteredBy",		LDB_SYNTAX_DN },
-	{ "fSMORoleOwner",		LDB_SYNTAX_DN },
 	{ "prefixMap",                  LDB_SYNTAX_SAMBA_PREFIX_MAP }
 };
+
+const struct ldb_schema_syntax *ldb_samba_syntax_by_name(struct ldb_context *ldb, const char *name)
+{
+	uint32_t j;
+	const struct ldb_schema_syntax *s = NULL;
+	
+	for (j=0; j < ARRAY_SIZE(samba_syntaxes); j++) {
+		if (strcmp(name, samba_syntaxes[j].name) == 0) {
+			s = &samba_syntaxes[j];
+			break;
+		}
+	}
+	return s;
+}
+
 
 /*
   register the samba ldif handlers
@@ -644,15 +661,9 @@ int ldb_register_samba_handlers(struct ldb_context *ldb)
 
 	for (i=0; i < ARRAY_SIZE(samba_attributes); i++) {
 		int ret;
-		uint32_t j;
 		const struct ldb_schema_syntax *s = NULL;
 
-		for (j=0; j < ARRAY_SIZE(samba_syntaxes); j++) {
-			if (strcmp(samba_attributes[i].syntax, samba_syntaxes[j].name) == 0) {
-				s = &samba_syntaxes[j];
-				break;
-			}
-		}
+		s = ldb_samba_syntax_by_name(ldb, samba_attributes[i].syntax);
 
 		if (!s) {
 			s = ldb_standard_syntax_by_name(ldb, samba_attributes[i].syntax);
@@ -662,7 +673,7 @@ int ldb_register_samba_handlers(struct ldb_context *ldb)
 			return -1;
 		}
 
-		ret = ldb_schema_attribute_add_with_syntax(ldb, samba_attributes[i].name, 0, s);
+		ret = ldb_schema_attribute_add_with_syntax(ldb, samba_attributes[i].name, LDB_ATTR_FLAG_FIXED, s);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
