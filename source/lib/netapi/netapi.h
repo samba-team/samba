@@ -91,6 +91,10 @@ struct USER_INFO_0 {
 	const char * usri0_name;
 };
 
+#define USER_PRIV_GUEST	( 0 )
+#define USER_PRIV_USER	( 1 )
+#define USER_PRIV_ADMIN	( 2 )
+
 struct USER_INFO_1 {
 	const char * usri1_name;
 	const char * usri1_password;
