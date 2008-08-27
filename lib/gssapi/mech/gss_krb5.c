@@ -922,7 +922,7 @@ gsskrb5_get_time_offset(int *offset)
 }
 
 OM_uint32 GSSAPI_LIB_FUNCTION
-gsskrb5_plugin_register(struct gsskrb5_krb5_plugin *c);
+gsskrb5_plugin_register(struct gsskrb5_krb5_plugin *c)
 {
     struct _gss_mech_switch *m;
     gss_buffer_desc buffer;
@@ -941,3 +941,4 @@ gsskrb5_plugin_register(struct gsskrb5_krb5_plugin *c);
     }
 
     return (GSS_S_COMPLETE);
+}
