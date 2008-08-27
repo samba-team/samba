@@ -854,8 +854,9 @@ WERROR NetUserEnum_r(struct libnetapi_ctx *ctx,
 		case 2:
 		case 3:
 		case 11:
-		default:
 			return WERR_NOT_SUPPORTED;
+		default:
+			return WERR_UNKNOWN_LEVEL;
 	}
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
