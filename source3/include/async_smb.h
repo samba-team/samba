@@ -90,6 +90,10 @@ struct cli_request {
 			ssize_t received;
 			uint8_t *rcvbuf;
 		} read;
+		struct {
+			DATA_BLOB data;
+			uint16_t num_echos;
+		} echo;
 	} data;
 
 	/**
