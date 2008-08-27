@@ -1,12 +1,19 @@
                    ==============================
                    Release Notes for Samba 3.2.3
-
+			  August, 27 2008
                    ==============================
 
-This is a bug fix release of the Samba 3.2 series.
+This is a security release in order to address CVE-2008-3789 ("Wrong
+permissions of group_mapping.ldb").
 
-Major bug fixes included in Samba 3.2.3 are:
+   o CVE-2008-3789
+     The file group_mapping.ldb is created with
+     the permissions 0666. That means everyone
+     is able to edit this file and might map any
+     SID to root.
 
+The original security announcement for this and past advisories can
+be found http://www.samba.org/samba/security/
 
 
 ######################################################################
@@ -16,7 +23,8 @@ Changes
 Changes since 3.2.2
 -------------------
 
-
+o   Andrew Tridgell <tridge@samba.org>
+    * Fix for CVE-2008-3789.
 
 
 ######################################################################
