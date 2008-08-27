@@ -80,7 +80,9 @@
 
 #define NDR_NETREMOTETOD (0x24)
 
-#define NDR_LIBNETAPI_CALL_COUNT (37)
+#define NDR_NETSHAREADD (0x25)
+
+#define NDR_LIBNETAPI_CALL_COUNT (38)
 enum ndr_err_code ndr_push_NET_API_STATUS(struct ndr_push *ndr, int ndr_flags, enum NET_API_STATUS r);
 enum ndr_err_code ndr_pull_NET_API_STATUS(struct ndr_pull *ndr, int ndr_flags, enum NET_API_STATUS *r);
 void ndr_print_NET_API_STATUS(struct ndr_print *ndr, const char *name, enum NET_API_STATUS r);
@@ -315,4 +317,7 @@ void ndr_print_NetLocalGroupSetMembers(struct ndr_print *ndr, const char *name, 
 enum ndr_err_code ndr_push_NetRemoteTOD(struct ndr_push *ndr, int flags, const struct NetRemoteTOD *r);
 enum ndr_err_code ndr_pull_NetRemoteTOD(struct ndr_pull *ndr, int flags, struct NetRemoteTOD *r);
 void ndr_print_NetRemoteTOD(struct ndr_print *ndr, const char *name, int flags, const struct NetRemoteTOD *r);
+enum ndr_err_code ndr_push_NetShareAdd(struct ndr_push *ndr, int flags, const struct NetShareAdd *r);
+enum ndr_err_code ndr_pull_NetShareAdd(struct ndr_pull *ndr, int flags, struct NetShareAdd *r);
+void ndr_print_NetShareAdd(struct ndr_print *ndr, const char *name, int flags, const struct NetShareAdd *r);
 #endif /* _HEADER_NDR_libnetapi */
