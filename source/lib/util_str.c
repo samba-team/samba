@@ -2006,7 +2006,6 @@ bool str_list_sub_basic( char **list, const char *smb_name,
 
 bool str_list_substitute(char **list, const char *pattern, const char *insert)
 {
-	TALLOC_CTX *ctx = list;
 	char *p, *s, *t;
 	ssize_t ls, lp, li, ld, i, d;
 
@@ -2029,7 +2028,7 @@ bool str_list_substitute(char **list, const char *pattern, const char *insert)
 			t = *list;
 			d = p -t;
 			if (ld) {
-				t = TALLOC_ARRAY(ctx, char, ls +ld +1);
+				t = (char *) SMB_MALLOC(ls +ld +1);
 				if (!t) {
 					DEBUG(0,("str_list_substitute: "
 						"Unable to allocate memory"));
@@ -2037,7 +2036,7 @@ bool str_list_substitute(char **list, const char *pattern, const char *insert)
 				}
 				memcpy(t, *list, d);
 				memcpy(t +d +li, p +lp, ls -d -lp +1);
-				TALLOC_FREE(*list);
+				SAFE_FREE(*list);
 				*list = t;
 				ls += ld;
 				s = t +d +li;
