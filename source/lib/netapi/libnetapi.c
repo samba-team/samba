@@ -1773,3 +1773,49 @@ NET_API_STATUS NetRemoteTOD(const char * server_name /* [in] */,
 	return r.out.result;
 }
 
+/****************************************************************
+ NetShareAdd
+****************************************************************/
+
+NET_API_STATUS NetShareAdd(const char * server_name /* [in] */,
+			   uint32_t level /* [in] */,
+			   uint8_t *buffer /* [in] [ref] */,
+			   uint32_t *parm_err /* [out] [ref] */)
+{
+	struct NetShareAdd r;
+	struct libnetapi_ctx *ctx = NULL;
+	NET_API_STATUS status;
+	WERROR werr;
+
+	status = libnetapi_getctx(&ctx);
+	if (status != 0) {
+		return status;
+	}
+
+	/* In parameters */
+	r.in.server_name = server_name;
+	r.in.level = level;
+	r.in.buffer = buffer;
+
+	/* Out parameters */
+	r.out.parm_err = parm_err;
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(NetShareAdd, &r);
+	}
+
+	if (LIBNETAPI_LOCAL_SERVER(server_name)) {
+		werr = NetShareAdd_l(ctx, &r);
+	} else {
+		werr = NetShareAdd_r(ctx, &r);
+	}
+
+	r.out.result = W_ERROR_V(werr);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(NetShareAdd, &r);
+	}
+
+	return r.out.result;
+}
+
