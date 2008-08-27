@@ -675,6 +675,18 @@ static NTSTATUS libnetapi_samr_lookup_user(TALLOC_CTX *mem_ctx,
 /****************************************************************
 ****************************************************************/
 
+static uint32_t samr_acb_flags_to_netapi_flags(uint32_t acb)
+{
+	uint32_t fl = UF_SCRIPT; /* god knows why */
+
+	fl |= ads_acb2uf(acb);
+
+	return fl;
+}
+
+/****************************************************************
+****************************************************************/
+
 static NTSTATUS libnetapi_samr_lookup_user_map_USER_INFO(TALLOC_CTX *mem_ctx,
 							 struct rpc_pipe_client *pipe_cli,
 							 struct dom_sid *domain_sid,
@@ -763,7 +775,8 @@ static NTSTATUS libnetapi_samr_lookup_user_map_USER_INFO(TALLOC_CTX *mem_ctx,
 			info20.usri20_full_name = talloc_strdup(mem_ctx,
 				info21->full_name.string);
 
-			info20.usri20_flags = info21->acct_flags;
+			info20.usri20_flags =
+				samr_acb_flags_to_netapi_flags(info21->acct_flags);
 			info20.usri20_user_id = rid;
 
 			ADD_TO_ARRAY(mem_ctx, struct USER_INFO_20, info20,
@@ -780,7 +793,8 @@ static NTSTATUS libnetapi_samr_lookup_user_map_USER_INFO(TALLOC_CTX *mem_ctx,
 			info23.usri23_full_name = talloc_strdup(mem_ctx,
 				info21->full_name.string);
 
-			info23.usri23_flags = info21->acct_flags;
+			info23.usri23_flags =
+				samr_acb_flags_to_netapi_flags(info21->acct_flags);
 
 			if (!sid_compose(&sid, domain_sid, rid)) {
 				return NT_STATUS_NO_MEMORY;
