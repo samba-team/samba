@@ -1263,13 +1263,19 @@ WERROR NetUserGetInfo_r(struct libnetapi_ctx *ctx,
 
 	switch (r->in.level) {
 		case 0:
-		/* case 1: */
 		case 10:
 		case 20:
 		case 23:
 			break;
-		default:
+		case 1:
+		case 2:
+		case 3:
+		case 4:
+		case 11:
 			werr = WERR_NOT_SUPPORTED;
+			goto done;
+		default:
+			werr = WERR_UNKNOWN_LEVEL;
 			goto done;
 	}
 
