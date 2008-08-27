@@ -23,7 +23,6 @@ SRCDIR=`rpm --eval %_sourcedir`
 
 DIRNAME=$(dirname $0)
 
-REVISION='ctdb'
 SPECFILE="samba.spec"
 VERSION=$(grep ^Version ${DIRNAME}/${SPECFILE} | sed -e 's/^Version:\ \+//')
 DOCS="docs.tar.bz2"
