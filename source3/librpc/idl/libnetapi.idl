@@ -166,6 +166,14 @@ interface libnetapi
 		string usri1_script_path;
 	} USER_INFO_1;
 
+	/* auth_flags in USER_INFO_2 */
+
+	const int AF_OP_PRINT		= 0x1;
+	const int AF_OP_COMM		= 0x2;
+	const int AF_OP_SERVER		= 0x4;
+	const int AF_OP_ACCOUNTS	= 0x8;
+	const int AF_SETTABLE_BITS	= (AF_OP_PRINT | AF_OP_COMM | AF_OP_SERVER | AF_OP_ACCOUNTS);
+
 	[public] typedef struct {
 		string usri2_name;
 		string usri2_password;
