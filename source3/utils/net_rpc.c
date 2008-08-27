@@ -768,120 +768,6 @@ static int rpc_user_password(struct net_context *c, int argc, const char **argv)
 }
 
 /**
- * List user's groups on a remote RPC server.
- *
- * All parameters are provided by the run_rpc_command function, except for
- * argc, argv which are passed through.
- *
- * @param domain_sid The domain sid acquired from the remote server.
- * @param cli A cli_state connected to the server.
- * @param mem_ctx Talloc context, destroyed on completion of the function.
- * @param argc  Standard main() style argc.
- * @param argv  Standard main() style argv. Initial components are already
- *              stripped.
- *
- * @return Normal NTSTATUS return.
- **/
-
-static NTSTATUS rpc_user_info_internals(struct net_context *c,
-			const DOM_SID *domain_sid,
-			const char *domain_name,
-			struct cli_state *cli,
-			struct rpc_pipe_client *pipe_hnd,
-			TALLOC_CTX *mem_ctx,
-			int argc,
-			const char **argv)
-{
-	POLICY_HND connect_pol, domain_pol, user_pol;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	int i;
-	struct samr_RidWithAttributeArray *rid_array = NULL;
-	struct lsa_Strings names;
-	struct samr_Ids types;
-	uint32_t *lrids = NULL;
-	struct samr_Ids rids, name_types;
-	struct lsa_String lsa_acct_name;
-
-
-	if (argc < 1 || c->display_usage) {
-		rpc_user_usage(c, argc, argv);
-		return NT_STATUS_OK;
-	}
-	/* Get sam policy handle */
-
-	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
-				      pipe_hnd->desthost,
-				      MAXIMUM_ALLOWED_ACCESS,
-				      &connect_pol);
-	if (!NT_STATUS_IS_OK(result)) goto done;
-
-	/* Get domain policy handle */
-
-	result = rpccli_samr_OpenDomain(pipe_hnd, mem_ctx,
-					&connect_pol,
-					MAXIMUM_ALLOWED_ACCESS,
-					CONST_DISCARD(struct dom_sid2 *, domain_sid),
-					&domain_pol);
-	if (!NT_STATUS_IS_OK(result)) goto done;
-
-	/* Get handle on user */
-
-	init_lsa_String(&lsa_acct_name, argv[0]);
-
-	result = rpccli_samr_LookupNames(pipe_hnd, mem_ctx,
-					 &domain_pol,
-					 1,
-					 &lsa_acct_name,
-					 &rids,
-					 &name_types);
-
-	if (!NT_STATUS_IS_OK(result)) goto done;
-
-	result = rpccli_samr_OpenUser(pipe_hnd, mem_ctx,
-				      &domain_pol,
-				      MAXIMUM_ALLOWED_ACCESS,
-				      rids.ids[0],
-				      &user_pol);
-	if (!NT_STATUS_IS_OK(result)) goto done;
-
-	result = rpccli_samr_GetGroupsForUser(pipe_hnd, mem_ctx,
-					      &user_pol,
-					      &rid_array);
-
-	if (!NT_STATUS_IS_OK(result)) goto done;
-
-	/* Look up rids */
-
-	if (rid_array->count) {
-		if ((lrids = TALLOC_ARRAY(mem_ctx, uint32, rid_array->count)) == NULL) {
-			result = NT_STATUS_NO_MEMORY;
-			goto done;
-		}
-
-		for (i = 0; i < rid_array->count; i++)
-			lrids[i] = rid_array->rids[i].rid;
-
-		result = rpccli_samr_LookupRids(pipe_hnd, mem_ctx,
-						&domain_pol,
-						rid_array->count,
-						lrids,
-						&names,
-						&types);
-
-		if (!NT_STATUS_IS_OK(result)) {
-			goto done;
-		}
-
-		/* Display results */
-
-		for (i = 0; i < names.count; i++)
-			printf("%s\n", names.names[i].string);
-	}
- done:
-	return result;
-}
-
-/**
  * List a user's groups from a remote RPC server.
  *
  * @param argc  Standard main() style argc.
@@ -892,9 +778,40 @@ static NTSTATUS rpc_user_info_internals(struct net_context *c,
  **/
 
 static int rpc_user_info(struct net_context *c, int argc, const char **argv)
+
 {
-	return run_rpc_command(c, NULL, &ndr_table_samr.syntax_id, 0,
-			       rpc_user_info_internals, argc, argv);
+	NET_API_STATUS status;
+	struct GROUP_USERS_INFO_0 *u0 = NULL;
+	uint32_t entries_read = 0;
+	uint32_t total_entries = 0;
+	int i;
+
+
+	if (argc < 1 || c->display_usage) {
+		rpc_user_usage(c, argc, argv);
+		return 0;
+	}
+
+	status = NetUserGetGroups(c->opt_host,
+				  argv[0],
+				  0,
+				  (uint8_t **)&u0,
+				  (uint32_t)-1,
+				  &entries_read,
+				  &total_entries);
+	if (status != 0) {
+		d_fprintf(stderr, "Failed to get groups for '%s' with: %s.\n",
+			argv[0], libnetapi_get_error_string(c->netapi_ctx,
+							    status));
+		return -1;
+	}
+
+	for (i=0; i < entries_read; i++) {
+		printf("%s\n", u0->grui0_name);
+		u0++;
+	}
+
+	return 0;
 }
 
 /**
@@ -1058,9 +975,7 @@ static NTSTATUS rpc_sh_user_info(struct net_context *c,
 				 struct rpc_pipe_client *pipe_hnd,
 				 int argc, const char **argv)
 {
-	return rpc_user_info_internals(c, ctx->domain_sid, ctx->domain_name,
-				       ctx->cli, pipe_hnd, mem_ctx,
-				       argc, argv);
+	return werror_to_ntstatus(W_ERROR(rpc_user_info(c, argc, argv)));
 }
 
 static NTSTATUS rpc_sh_handle_user(struct net_context *c,
