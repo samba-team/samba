@@ -543,7 +543,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_USER_INFO_4(struct ndr_push *ndr, int ndr_fl
 			NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, *r->usri4_logon_hours));
 		}
 		if (r->usri4_user_sid) {
-			NDR_CHECK(ndr_push_dom_sid(ndr, NDR_SCALARS|NDR_BUFFERS, r->usri4_user_sid));
+			NDR_CHECK(ndr_push_domsid(ndr, NDR_SCALARS, r->usri4_user_sid));
 		}
 	}
 	return NDR_ERR_SUCCESS;
@@ -607,7 +607,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_USER_INFO_4(struct ndr_pull *ndr, int ndr_fl
 		if (r->usri4_user_sid) {
 			_mem_save_usri4_user_sid_0 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->usri4_user_sid, 0);
-			NDR_CHECK(ndr_pull_dom_sid(ndr, NDR_SCALARS|NDR_BUFFERS, r->usri4_user_sid));
+			NDR_CHECK(ndr_pull_domsid(ndr, NDR_SCALARS, r->usri4_user_sid));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_usri4_user_sid_0, 0);
 		}
 	}
@@ -650,7 +650,7 @@ _PUBLIC_ void ndr_print_USER_INFO_4(struct ndr_print *ndr, const char *name, con
 	ndr_print_ptr(ndr, "usri4_user_sid", r->usri4_user_sid);
 	ndr->depth++;
 	if (r->usri4_user_sid) {
-		ndr_print_dom_sid(ndr, "usri4_user_sid", r->usri4_user_sid);
+		ndr_print_domsid(ndr, "usri4_user_sid", r->usri4_user_sid);
 	}
 	ndr->depth--;
 	ndr_print_uint32(ndr, "usri4_primary_group_id", r->usri4_primary_group_id);
