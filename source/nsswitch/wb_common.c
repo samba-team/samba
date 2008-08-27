@@ -176,13 +176,11 @@ static int winbind_named_pipe_sock(const char *dir)
 	/* Check permissions on unix socket directory */
 
 	if (lstat(dir, &st) == -1) {
-		errno = ENOENT;
 		return -1;
 	}
 
 	if (!S_ISDIR(st.st_mode) ||
 	    (st.st_uid != 0 && st.st_uid != geteuid())) {
-		errno = ENOENT;
 		return -1;
 	}
 
@@ -201,7 +199,6 @@ static int winbind_named_pipe_sock(const char *dir)
 	   the winbindd daemon is not running. */
 
 	if (lstat(path, &st) == -1) {
-		errno = ENOENT;
 		SAFE_FREE(path);
 		return -1;
 	}
@@ -211,7 +208,6 @@ static int winbind_named_pipe_sock(const char *dir)
 
 	if (!S_ISSOCK(st.st_mode) ||
 	    (st.st_uid != 0 && st.st_uid != geteuid())) {
-		errno = ENOENT;
 		return -1;
 	}
 
@@ -372,7 +368,6 @@ int winbind_write_sock(void *buffer, int count, int recursing, int need_priv)
  restart:
 	
 	if (winbind_open_pipe_sock(recursing, need_priv) == -1) {
-		errno = ENOENT;
 		return -1;
 	}
 	
@@ -569,11 +564,7 @@ NSS_STATUS winbindd_send_request(int req_type, int need_priv,
 	
 	if (winbind_write_sock(request, sizeof(*request),
 			       request->wb_flags & WBFLAG_RECURSE,
-			       need_priv) == -1) 
-	{
-		/* Set ENOENT for consistency.  Required by some apps */
-		errno = ENOENT;
-		
+			       need_priv) == -1) {
 		return NSS_STATUS_UNAVAIL;
 	}
 
@@ -581,11 +572,7 @@ NSS_STATUS winbindd_send_request(int req_type, int need_priv,
 	    (winbind_write_sock(request->extra_data.data,
 	    			request->extra_len,
 				request->wb_flags & WBFLAG_RECURSE,
-				need_priv) == -1)) 
-	{
-		/* Set ENOENT for consistency.  Required by some apps */
-		errno = ENOENT;
-
+				need_priv) == -1)) {
 		return NSS_STATUS_UNAVAIL;
 	}
 	
@@ -609,9 +596,6 @@ NSS_STATUS winbindd_get_response(struct winbindd_response *response)
 
 	/* Wait for reply */
 	if (winbindd_read_reply(response) == -1) {
-		/* Set ENOENT for consistency.  Required by some apps */
-		errno = ENOENT;
-
 		return NSS_STATUS_UNAVAIL;
 	}
 
