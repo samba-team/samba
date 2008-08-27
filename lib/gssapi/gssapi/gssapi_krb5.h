@@ -167,7 +167,7 @@ OM_uint32 GSSAPI_LIB_FUNCTION
 gsskrb5_get_time_offset(int *);
 
 struct gsskrb5_krb5_plugin {
-    enum krb5_plugin_type type;
+    int type;
     char *name;
     void *symbol;
 };
