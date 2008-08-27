@@ -3364,3 +3364,34 @@ _PUBLIC_ void ndr_print_NetRemoteTOD(struct ndr_print *ndr, const char *name, in
 	ndr->depth--;
 }
 
+_PUBLIC_ void ndr_print_NetShareAdd(struct ndr_print *ndr, const char *name, int flags, const struct NetShareAdd *r)
+{
+	ndr_print_struct(ndr, name, "NetShareAdd");
+	ndr->depth++;
+	if (flags & NDR_SET_VALUES) {
+		ndr->flags |= LIBNDR_PRINT_SET_VALUES;
+	}
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "NetShareAdd");
+		ndr->depth++;
+		ndr_print_string(ndr, "server_name", r->in.server_name);
+		ndr_print_uint32(ndr, "level", r->in.level);
+		ndr_print_ptr(ndr, "buffer", r->in.buffer);
+		ndr->depth++;
+		ndr_print_uint8(ndr, "buffer", *r->in.buffer);
+		ndr->depth--;
+		ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "NetShareAdd");
+		ndr->depth++;
+		ndr_print_ptr(ndr, "parm_err", r->out.parm_err);
+		ndr->depth++;
+		ndr_print_uint32(ndr, "parm_err", *r->out.parm_err);
+		ndr->depth--;
+		ndr_print_NET_API_STATUS(ndr, "result", r->out.result);
+		ndr->depth--;
+	}
+	ndr->depth--;
+}
+
