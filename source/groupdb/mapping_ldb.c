@@ -74,7 +74,13 @@ static bool init_group_mapping(void)
 	if (ret != LDB_SUCCESS) {
 		goto failed;
 	}
-	
+
+	/* force the permissions on the ldb to 0600 - this will fix
+	   existing databases as well as new ones */
+	if (chmod(db_path, 0600) != 0) {
+		goto failed;
+	}
+
 	if (!existed) {
 		/* initialise the ldb with an index */
 		struct ldb_ldif *ldif;
