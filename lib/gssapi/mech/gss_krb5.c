@@ -920,3 +920,24 @@ gsskrb5_get_time_offset(int *offset)
 
 	return (GSS_S_UNAVAILABLE);
 }
+
+OM_uint32 GSSAPI_LIB_FUNCTION
+gsskrb5_plugin_register(struct gsskrb5_krb5_plugin *c);
+{
+    struct _gss_mech_switch *m;
+    gss_buffer_desc buffer;
+    OM_uint32 junk;
+
+    _gss_load_mech();
+
+    buffer.value = c;
+    buffer.length = sizeof(*c);
+
+    SLIST_FOREACH(m, &_gss_mechs, gm_link) {
+	if (m->gm_mech.gm_set_sec_context_option == NULL)
+	    continue;
+	m->gm_mech.gm_set_sec_context_option(&junk, NULL,
+	    GSS_KRB5_PLUGIN_REGISTER_X, &buffer);
+    }
+
+    return (GSS_S_COMPLETE);

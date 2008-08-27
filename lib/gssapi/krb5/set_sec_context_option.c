@@ -244,6 +244,18 @@ _gsskrb5_set_sec_context_option
 
 	*minor_status = 0;
 	return GSS_S_COMPLETE;
+    } else if (gss_oid_equal(desired_object, GSS_KRB5_PLUGIN_REGISTER_X)) {
+	struct gsskrb5_krb5_plugin c;
+
+	if (value->length != sizeof(c)) {
+	    *minor_status = EINVAL;
+	    return GSS_S_FAILURE;
+	}
+	memcpy(&c, value->value, sizeof(c));
+	krb5_plugin_register(context, c.type, c.name, c.symbol);
+
+	*minor_status = 0;
+	return GSS_S_COMPLETE;
     }
 
     *minor_status = EINVAL;
