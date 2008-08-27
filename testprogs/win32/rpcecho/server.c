@@ -193,7 +193,7 @@ void main(int argc, char **argv)
 		exit(status);
 	}
 
-	status = RpcServerRegisterAuthInfo(NULL, RPC_C_AUTHN_WINNT, NULL, NULL);
+	status = RpcServerRegisterAuthInfo(NULL, RPC_C_AUTHN_GSS_NEGOTIATE, NULL, NULL);
 	if (status) {
 		printf("Failed to setup auth info\n");
 	}

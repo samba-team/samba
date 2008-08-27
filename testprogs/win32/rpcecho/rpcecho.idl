@@ -99,7 +99,7 @@ interface rpcecho
 	} echo_Info;
 
 	long TestCall2 (
-		[in]                     uint16 level,
+		[in]                     short level,
 		[out,switch_is(level)]   echo_Info **info
 		);
 
