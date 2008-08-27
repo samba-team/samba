@@ -1008,80 +1008,54 @@ static int rpc_user_info(struct net_context *c, int argc, const char **argv)
  * @return Normal NTSTATUS return.
  **/
 
-static NTSTATUS rpc_user_list_internals(struct net_context *c,
-					const DOM_SID *domain_sid,
-					const char *domain_name,
-					struct cli_state *cli,
-					struct rpc_pipe_client *pipe_hnd,
-					TALLOC_CTX *mem_ctx,
-					int argc,
-					const char **argv)
+static int rpc_user_list(struct net_context *c, int argc, const char **argv)
 {
-	POLICY_HND connect_pol, domain_pol;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	uint32 start_idx=0, num_entries, i, loop_count = 0;
-
-	/* Get sam policy handle */
-
-	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
-				      pipe_hnd->desthost,
-				      MAXIMUM_ALLOWED_ACCESS,
-				      &connect_pol);
-	if (!NT_STATUS_IS_OK(result)) {
-		goto done;
-	}
-
-	/* Get domain policy handle */
-
-	result = rpccli_samr_OpenDomain(pipe_hnd, mem_ctx,
-					&connect_pol,
-					MAXIMUM_ALLOWED_ACCESS,
-					CONST_DISCARD(struct dom_sid2 *, domain_sid),
-					&domain_pol);
-	if (!NT_STATUS_IS_OK(result)) {
-		goto done;
-	}
+	NET_API_STATUS status;
+	uint32_t start_idx=0, num_entries, i, loop_count = 0;
+	struct NET_DISPLAY_USER *info = NULL;
+	void *buffer = NULL;
 
 	/* Query domain users */
 	if (c->opt_long_list_entries)
 		d_printf("\nUser name             Comment"
 			 "\n-----------------------------\n");
 	do {
-		const char *user = NULL;
-		const char *desc = NULL;
-		uint32 max_entries, max_size;
-		uint32_t total_size, returned_size;
-		union samr_DispInfo info;
+		uint32_t max_entries, max_size;
 
 		get_query_dispinfo_params(
 			loop_count, &max_entries, &max_size);
 
-		result = rpccli_samr_QueryDisplayInfo(pipe_hnd, mem_ctx,
-						      &domain_pol,
-						      1,
-						      start_idx,
-						      max_entries,
-						      max_size,
-						      &total_size,
-						      &returned_size,
-						      &info);
-		loop_count++;
-		start_idx += info.info1.count;
-		num_entries = info.info1.count;
+		status = NetQueryDisplayInformation(c->opt_host,
+						    1,
+						    start_idx,
+						    max_entries,
+						    max_size,
+						    &num_entries,
+						    &buffer);
+		if (status != 0 && status != ERROR_MORE_DATA) {
+			return status;
+		}
+
+		info = (struct NET_DISPLAY_USER *)buffer;
 
 		for (i = 0; i < num_entries; i++) {
-			user = info.info1.entries[i].account_name.string;
-			if (c->opt_long_list_entries)
-				desc = info.info1.entries[i].description.string;
-			if (c->opt_long_list_entries)
-				printf("%-21.21s %s\n", user, desc);
-			else
-				printf("%s\n", user);
-		}
-	} while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
 
- done:
-	return result;
+			if (c->opt_long_list_entries)
+				printf("%-21.21s %s\n", info->usri1_name,
+					info->usri1_comment);
+			else
+				printf("%s\n", info->usri1_name);
+			info++;
+		}
+
+		NetApiBufferFree(buffer);
+
+		loop_count++;
+		start_idx += num_entries;
+
+	} while (status == ERROR_MORE_DATA);
+
+	return status;
 }
 
 /**
@@ -1158,9 +1132,7 @@ int net_rpc_user(struct net_context *c, int argc, const char **argv)
 			return 0;
 		}
 
-		return run_rpc_command(c, NULL, &ndr_table_samr.syntax_id, 0,
-				       rpc_user_list_internals,
-				       argc, argv);
+		return rpc_user_list(c, argc, argv);
 	}
 
 	return net_run_function(c, argc, argv, "net rpc user", func);
@@ -1172,9 +1144,7 @@ static NTSTATUS rpc_sh_user_list(struct net_context *c,
 				 struct rpc_pipe_client *pipe_hnd,
 				 int argc, const char **argv)
 {
-	return rpc_user_list_internals(c, ctx->domain_sid, ctx->domain_name,
-				       ctx->cli, pipe_hnd, mem_ctx,
-				       argc, argv);
+	return werror_to_ntstatus(W_ERROR(rpc_user_list(c, argc, argv)));
 }
 
 static NTSTATUS rpc_sh_user_info(struct net_context *c,
