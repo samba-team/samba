@@ -36,49 +36,51 @@
 
 #define NDR_NETUSERSETINFO (0x0e)
 
-#define NDR_NETUSERMODALSGET (0x0f)
+#define NDR_NETUSERGETGROUPS (0x0f)
 
-#define NDR_NETUSERMODALSSET (0x10)
+#define NDR_NETUSERMODALSGET (0x10)
 
-#define NDR_NETQUERYDISPLAYINFORMATION (0x11)
+#define NDR_NETUSERMODALSSET (0x11)
 
-#define NDR_NETGROUPADD (0x12)
+#define NDR_NETQUERYDISPLAYINFORMATION (0x12)
 
-#define NDR_NETGROUPDEL (0x13)
+#define NDR_NETGROUPADD (0x13)
 
-#define NDR_NETGROUPENUM (0x14)
+#define NDR_NETGROUPDEL (0x14)
 
-#define NDR_NETGROUPSETINFO (0x15)
+#define NDR_NETGROUPENUM (0x15)
 
-#define NDR_NETGROUPGETINFO (0x16)
+#define NDR_NETGROUPSETINFO (0x16)
 
-#define NDR_NETGROUPADDUSER (0x17)
+#define NDR_NETGROUPGETINFO (0x17)
 
-#define NDR_NETGROUPDELUSER (0x18)
+#define NDR_NETGROUPADDUSER (0x18)
 
-#define NDR_NETGROUPGETUSERS (0x19)
+#define NDR_NETGROUPDELUSER (0x19)
 
-#define NDR_NETLOCALGROUPADD (0x1a)
+#define NDR_NETGROUPGETUSERS (0x1a)
 
-#define NDR_NETLOCALGROUPDEL (0x1b)
+#define NDR_NETLOCALGROUPADD (0x1b)
 
-#define NDR_NETLOCALGROUPGETINFO (0x1c)
+#define NDR_NETLOCALGROUPDEL (0x1c)
 
-#define NDR_NETLOCALGROUPSETINFO (0x1d)
+#define NDR_NETLOCALGROUPGETINFO (0x1d)
 
-#define NDR_NETLOCALGROUPENUM (0x1e)
+#define NDR_NETLOCALGROUPSETINFO (0x1e)
 
-#define NDR_NETLOCALGROUPADDMEMBERS (0x1f)
+#define NDR_NETLOCALGROUPENUM (0x1f)
 
-#define NDR_NETLOCALGROUPDELMEMBERS (0x20)
+#define NDR_NETLOCALGROUPADDMEMBERS (0x20)
 
-#define NDR_NETLOCALGROUPGETMEMBERS (0x21)
+#define NDR_NETLOCALGROUPDELMEMBERS (0x21)
 
-#define NDR_NETLOCALGROUPSETMEMBERS (0x22)
+#define NDR_NETLOCALGROUPGETMEMBERS (0x22)
 
-#define NDR_NETREMOTETOD (0x23)
+#define NDR_NETLOCALGROUPSETMEMBERS (0x23)
 
-#define NDR_LIBNETAPI_CALL_COUNT (36)
+#define NDR_NETREMOTETOD (0x24)
+
+#define NDR_LIBNETAPI_CALL_COUNT (37)
 enum ndr_err_code ndr_push_NET_API_STATUS(struct ndr_push *ndr, int ndr_flags, enum NET_API_STATUS r);
 enum ndr_err_code ndr_pull_NET_API_STATUS(struct ndr_pull *ndr, int ndr_flags, enum NET_API_STATUS *r);
 void ndr_print_NET_API_STATUS(struct ndr_print *ndr, const char *name, enum NET_API_STATUS r);
@@ -187,6 +189,12 @@ void ndr_print_USER_INFO_1053(struct ndr_print *ndr, const char *name, const str
 enum ndr_err_code ndr_push_USER_INFO_X(struct ndr_push *ndr, int ndr_flags, const struct USER_INFO_X *r);
 enum ndr_err_code ndr_pull_USER_INFO_X(struct ndr_pull *ndr, int ndr_flags, struct USER_INFO_X *r);
 void ndr_print_USER_INFO_X(struct ndr_print *ndr, const char *name, const struct USER_INFO_X *r);
+enum ndr_err_code ndr_push_GROUP_USERS_INFO_0(struct ndr_push *ndr, int ndr_flags, const struct GROUP_USERS_INFO_0 *r);
+enum ndr_err_code ndr_pull_GROUP_USERS_INFO_0(struct ndr_pull *ndr, int ndr_flags, struct GROUP_USERS_INFO_0 *r);
+void ndr_print_GROUP_USERS_INFO_0(struct ndr_print *ndr, const char *name, const struct GROUP_USERS_INFO_0 *r);
+enum ndr_err_code ndr_push_GROUP_USERS_INFO_1(struct ndr_push *ndr, int ndr_flags, const struct GROUP_USERS_INFO_1 *r);
+enum ndr_err_code ndr_pull_GROUP_USERS_INFO_1(struct ndr_pull *ndr, int ndr_flags, struct GROUP_USERS_INFO_1 *r);
+void ndr_print_GROUP_USERS_INFO_1(struct ndr_print *ndr, const char *name, const struct GROUP_USERS_INFO_1 *r);
 enum ndr_err_code ndr_push_NET_DISPLAY_USER(struct ndr_push *ndr, int ndr_flags, const struct NET_DISPLAY_USER *r);
 enum ndr_err_code ndr_pull_NET_DISPLAY_USER(struct ndr_pull *ndr, int ndr_flags, struct NET_DISPLAY_USER *r);
 void ndr_print_NET_DISPLAY_USER(struct ndr_print *ndr, const char *name, const struct NET_DISPLAY_USER *r);
@@ -196,12 +204,6 @@ void ndr_print_NET_DISPLAY_MACHINE(struct ndr_print *ndr, const char *name, cons
 enum ndr_err_code ndr_push_NET_DISPLAY_GROUP(struct ndr_push *ndr, int ndr_flags, const struct NET_DISPLAY_GROUP *r);
 enum ndr_err_code ndr_pull_NET_DISPLAY_GROUP(struct ndr_pull *ndr, int ndr_flags, struct NET_DISPLAY_GROUP *r);
 void ndr_print_NET_DISPLAY_GROUP(struct ndr_print *ndr, const char *name, const struct NET_DISPLAY_GROUP *r);
-enum ndr_err_code ndr_push_GROUP_USERS_INFO_0(struct ndr_push *ndr, int ndr_flags, const struct GROUP_USERS_INFO_0 *r);
-enum ndr_err_code ndr_pull_GROUP_USERS_INFO_0(struct ndr_pull *ndr, int ndr_flags, struct GROUP_USERS_INFO_0 *r);
-void ndr_print_GROUP_USERS_INFO_0(struct ndr_print *ndr, const char *name, const struct GROUP_USERS_INFO_0 *r);
-enum ndr_err_code ndr_push_GROUP_USERS_INFO_1(struct ndr_push *ndr, int ndr_flags, const struct GROUP_USERS_INFO_1 *r);
-enum ndr_err_code ndr_pull_GROUP_USERS_INFO_1(struct ndr_pull *ndr, int ndr_flags, struct GROUP_USERS_INFO_1 *r);
-void ndr_print_GROUP_USERS_INFO_1(struct ndr_print *ndr, const char *name, const struct GROUP_USERS_INFO_1 *r);
 enum ndr_err_code ndr_push_NetJoinDomain(struct ndr_push *ndr, int flags, const struct NetJoinDomain *r);
 enum ndr_err_code ndr_pull_NetJoinDomain(struct ndr_pull *ndr, int flags, struct NetJoinDomain *r);
 void ndr_print_NetJoinDomain(struct ndr_print *ndr, const char *name, int flags, const struct NetJoinDomain *r);
@@ -247,6 +249,9 @@ void ndr_print_NetUserGetInfo(struct ndr_print *ndr, const char *name, int flags
 enum ndr_err_code ndr_push_NetUserSetInfo(struct ndr_push *ndr, int flags, const struct NetUserSetInfo *r);
 enum ndr_err_code ndr_pull_NetUserSetInfo(struct ndr_pull *ndr, int flags, struct NetUserSetInfo *r);
 void ndr_print_NetUserSetInfo(struct ndr_print *ndr, const char *name, int flags, const struct NetUserSetInfo *r);
+enum ndr_err_code ndr_push_NetUserGetGroups(struct ndr_push *ndr, int flags, const struct NetUserGetGroups *r);
+enum ndr_err_code ndr_pull_NetUserGetGroups(struct ndr_pull *ndr, int flags, struct NetUserGetGroups *r);
+void ndr_print_NetUserGetGroups(struct ndr_print *ndr, const char *name, int flags, const struct NetUserGetGroups *r);
 enum ndr_err_code ndr_push_NetUserModalsGet(struct ndr_push *ndr, int flags, const struct NetUserModalsGet *r);
 enum ndr_err_code ndr_pull_NetUserModalsGet(struct ndr_pull *ndr, int flags, struct NetUserModalsGet *r);
 void ndr_print_NetUserModalsGet(struct ndr_print *ndr, const char *name, int flags, const struct NetUserModalsGet *r);
