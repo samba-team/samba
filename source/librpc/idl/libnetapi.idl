@@ -150,6 +150,11 @@ interface libnetapi
 		string usri0_name;
 	} USER_INFO_0;
 
+	/* priv */
+	const int USER_PRIV_GUEST	= 0;
+	const int USER_PRIV_USER	= 1;
+	const int USER_PRIV_ADMIN	= 2;
+
 	[public] typedef struct {
 		string usri1_name;
 		string usri1_password;
