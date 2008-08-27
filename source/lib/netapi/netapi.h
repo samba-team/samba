@@ -537,6 +537,17 @@ struct TIME_OF_DAY_INFO {
 	uint32_t tod_weekday;
 };
 
+struct SHARE_INFO_2 {
+	const char * shi2_netname;
+	uint32_t shi2_type;
+	const char * shi2_remark;
+	uint32_t shi2_permissions;
+	uint32_t shi2_max_uses;
+	uint32_t shi2_current_uses;
+	const char * shi2_path;
+	const char * shi2_passwd;
+};
+
 #endif /* _HEADER_libnetapi */
 
 /****************************************************************
@@ -1455,6 +1466,27 @@ NET_API_STATUS NetLocalGroupSetMembers(const char * server_name /* [in] */,
 
 NET_API_STATUS NetRemoteTOD(const char * server_name /* [in] */,
 			    uint8_t **buf /* [out] [ref] */);
+
+/************************************************************//**
+ *
+ * NetShareAdd
+ *
+ * @brief Add Share
+ *
+ * @param[in] server_name The server name to connect to
+ * @param[in] level The level defining the requested SHARE_INFO_X structure
+ * @param[in] buf The buffer containing a SHARE_INFO_X structure
+ * @param[out] parm_err The returned parameter error number if any
+ * @return NET_API_STATUS
+ *
+ * example share/share_add.c
+ ***************************************************************/
+
+NET_API_STATUS NetShareAdd(const char * server_name /* [in] */,
+			   uint32_t level /* [in] */,
+			   uint8_t *buffer /* [in] [ref] */,
+			   uint32_t *parm_err /* [out] [ref] */);
+
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */
