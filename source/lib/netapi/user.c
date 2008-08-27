@@ -675,6 +675,21 @@ static NTSTATUS libnetapi_samr_lookup_user(TALLOC_CTX *mem_ctx,
 /****************************************************************
 ****************************************************************/
 
+static uint32_t samr_rid_to_priv_level(uint32_t rid)
+{
+	switch (rid) {
+		case DOMAIN_RID_ADMINISTRATOR:
+			return USER_PRIV_ADMIN;
+		case DOMAIN_RID_GUEST:
+			return USER_PRIV_GUEST;
+		default:
+			return USER_PRIV_USER;
+	}
+}
+
+/****************************************************************
+****************************************************************/
+
 static uint32_t samr_acb_flags_to_netapi_flags(uint32_t acb)
 {
 	uint32_t fl = UF_SCRIPT; /* god knows why */
