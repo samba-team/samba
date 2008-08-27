@@ -81,6 +81,9 @@ static void convert_USER_INFO_X_to_samr_user_info21(struct USER_INFO_X *infoX,
 	if (infoX->usriX_primary_group_id) {
 		fields_present |= SAMR_FIELD_PRIMARY_GID;
 	}
+	if (infoX->usriX_country_code) {
+		fields_present |= SAMR_FIELD_COUNTRY_CODE;
+	}
 
 	unix_to_nt_time_abs(&password_age, infoX->usriX_password_age);
 
@@ -109,7 +112,7 @@ static void convert_USER_INFO_X_to_samr_user_info21(struct USER_INFO_X *infoX,
 			      zero_logon_hours,
 			      0,
 			      0,
-			      0,
+			      infoX->usriX_country_code,
 			      0,
 			      0,
 			      0,
@@ -132,6 +135,7 @@ static NTSTATUS construct_USER_INFO_X(uint32_t level,
 	struct USER_INFO_1009 *u1009 = NULL;
 	struct USER_INFO_1011 *u1011 = NULL;
 	struct USER_INFO_1012 *u1012 = NULL;
+	struct USER_INFO_1024 *u1024 = NULL;
 	struct USER_INFO_1051 *u1051 = NULL;
 	struct USER_INFO_1052 *u1052 = NULL;
 	struct USER_INFO_1053 *u1053 = NULL;
@@ -208,6 +212,10 @@ static NTSTATUS construct_USER_INFO_X(uint32_t level,
 		case 1012:
 			u1012 = (struct USER_INFO_1012 *)buffer;
 			uX->usriX_usr_comment	= u1012->usri1012_usr_comment;
+			break;
+		case 1024:
+			u1024 = (struct USER_INFO_1024 *)buffer;
+			uX->usriX_country_code	= u1024->usri1024_country_code;
 			break;
 		case 1051:
 			u1051 = (struct USER_INFO_1051 *)buffer;
@@ -1365,6 +1373,7 @@ WERROR NetUserSetInfo_r(struct libnetapi_ctx *ctx,
 			user_mask = SAMR_USER_ACCESS_SET_ATTRIBUTES;
 			break;
 		case 1012:
+		case 1024:
 			user_mask = SAMR_USER_ACCESS_SET_LOC_COM;
 		case 1051:
 			user_mask = SAMR_USER_ACCESS_SET_ATTRIBUTES |
