@@ -106,6 +106,11 @@ struct USER_INFO_1 {
 	const char * usri1_script_path;
 };
 
+#define AF_OP_PRINT	( 0x1 )
+#define AF_OP_COMM	( 0x2 )
+#define AF_OP_SERVER	( 0x4 )
+#define AF_OP_ACCOUNTS	( 0x8 )
+
 struct USER_INFO_2 {
 	const char * usri2_name;
 	const char * usri2_password;
