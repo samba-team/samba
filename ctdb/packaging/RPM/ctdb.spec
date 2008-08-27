@@ -5,7 +5,7 @@ Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
 Version: 1.0
-Release: 57
+Release: 58
 Epoch: 0
 License: GNU GPL version 3
 Group: System Environment/Daemons
@@ -118,6 +118,10 @@ fi
 %{_includedir}/ctdb_private.h
 
 %changelog
+* Wed Aug 27 2008 : Version 1.0.58
+ - revert the name change tcp_tcp_client back to tcp_control_tcp so
+   samba can build.
+ - Updates to the init script from Abhijith Das <adas@redhat.com>
 * Mon Aug 25 2008 : Version 1.0.57
  - initial support for IPv6
 * Mon Aug 11 2008 : Version 1.0.56
