@@ -637,41 +637,153 @@ bool cli_send_keepalive(struct cli_state *cli)
         return true;
 }
 
-/****************************************************************************
- Send/receive a SMBecho command: ping the server
-****************************************************************************/
+/**
+ * @brief: Collect a echo reply
+ * @param[in] req	The corresponding async request
+ *
+ * There might be more than one echo reply. This helper pulls the reply out of
+ * the data stream. If all expected replies have arrived, declare the
+ * async_req done.
+ */
 
-bool cli_echo(struct cli_state *cli, uint16 num_echos,
-	      unsigned char *data, size_t length)
+static void cli_echo_recv_helper(struct async_req *req)
 {
-	char *p;
-	int i;
+	struct cli_request *cli_req;
+	uint8_t wct;
+	uint16_t *vwv;
+	uint16_t num_bytes;
+	uint8_t *bytes;
+	NTSTATUS status;
 
-	SMB_ASSERT(length < 1024);
-
-	memset(cli->outbuf,'\0',smb_size);
-	cli_set_message(cli->outbuf,1,length,true);
-	SCVAL(cli->outbuf,smb_com,SMBecho);
-	SSVAL(cli->outbuf,smb_tid,65535);
-	SSVAL(cli->outbuf,smb_vwv0,num_echos);
-	cli_setup_packet(cli);
-	p = smb_buf(cli->outbuf);
-	memcpy(p, data, length);
-	p += length;
-
-	cli_setup_bcc(cli, p);
-
-	cli_send_smb(cli);
-
-	for (i=0; i<num_echos; i++) {
-		if (!cli_receive_smb(cli)) {
-			return false;
-		}
-
-		if (cli_is_error(cli)) {
-			return false;
-		}
+	status = cli_pull_reply(req, &wct, &vwv, &num_bytes, &bytes);
+	if (!NT_STATUS_IS_OK(status)) {
+		async_req_error(req, status);
+		return;
 	}
 
-	return true;
+	cli_req = cli_request_get(req);
+
+	if ((num_bytes != cli_req->data.echo.data.length)
+	    || (memcmp(cli_req->data.echo.data.data, bytes,
+		       num_bytes) != 0)) {
+		async_req_error(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+		return;
+	}
+
+	cli_req->data.echo.num_echos -= 1;
+
+	if (cli_req->data.echo.num_echos == 0) {
+		client_set_trans_sign_state_off(cli_req->cli, cli_req->mid);
+		async_req_done(req);
+		return;
+	}
+
+	return;
+}
+
+/**
+ * @brief Send SMBEcho requests
+ * @param[in] mem_ctx	The memory context to put the async_req on
+ * @param[in] ev	The event context that will call us back
+ * @param[in] cli	The connection to send the echo to
+ * @param[in] num_echos	How many times do we want to get the reply?
+ * @param[in] data	The data we want to get back
+ * @retval The async request
+ */
+
+struct async_req *cli_echo_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
+				struct cli_state *cli, uint16_t num_echos,
+				DATA_BLOB data)
+{
+	uint16_t vwv[1];
+	uint8_t *data_copy;
+	struct async_req *result;
+	struct cli_request *req;
+
+	SSVAL(vwv, 0, num_echos);
+
+	data_copy = (uint8_t *)talloc_memdup(mem_ctx, data.data, data.length);
+	if (data_copy == NULL) {
+		return NULL;
+	}
+
+	result = cli_request_send(mem_ctx, ev, cli, SMBecho, 0, 1, vwv,
+				  data.length, data.data);
+	if (result == NULL) {
+		TALLOC_FREE(data_copy);
+		return NULL;
+	}
+	req = cli_request_get(result);
+
+	client_set_trans_sign_state_on(cli, req->mid);
+
+	req->data.echo.num_echos = num_echos;
+	req->data.echo.data.data = talloc_move(req, &data_copy);
+	req->data.echo.data.length = data.length;
+
+	req->recv_helper.fn = cli_echo_recv_helper;
+
+	return result;
+}
+
+/**
+ * Get the result out from an echo request
+ * @param[in] req	The async_req from cli_echo_send
+ * @retval Did the server reply correctly?
+ */
+
+NTSTATUS cli_echo_recv(struct async_req *req)
+{
+	SMB_ASSERT(req->state >= ASYNC_REQ_DONE);
+	if (req->state == ASYNC_REQ_ERROR) {
+		return req->status;
+	}
+
+	return NT_STATUS_OK;
+}
+
+/**
+ * @brief Send/Receive SMBEcho requests
+ * @param[in] mem_ctx	The memory context to put the async_req on
+ * @param[in] ev	The event context that will call us back
+ * @param[in] cli	The connection to send the echo to
+ * @param[in] num_echos	How many times do we want to get the reply?
+ * @param[in] data	The data we want to get back
+ * @retval Did the server reply correctly?
+ */
+
+NTSTATUS cli_echo(struct cli_state *cli, uint16_t num_echos, DATA_BLOB data)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct event_context *ev;
+	struct async_req *req;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+
+	if (cli->fd_event != NULL) {
+		/*
+		 * Can't use sync call while an async call is in flight
+		 */
+		cli_set_error(cli, NT_STATUS_INVALID_PARAMETER);
+		goto fail;
+	}
+
+	ev = event_context_init(frame);
+	if (ev == NULL) {
+		goto fail;
+	}
+
+	req = cli_echo_send(frame, ev, cli, num_echos, data);
+	if (req == NULL) {
+		goto fail;
+	}
+
+	while (req->state < ASYNC_REQ_DONE) {
+		event_loop_once(ev);
+	}
+
+	status = cli_echo_recv(req);
+
+ fail:
+	TALLOC_FREE(frame);
+	return status;
 }

@@ -4338,8 +4338,11 @@ void cli_sockopt(struct cli_state *cli, const char *options);
 uint16 cli_setpid(struct cli_state *cli, uint16 pid);
 bool cli_set_case_sensitive(struct cli_state *cli, bool case_sensitive);
 bool cli_send_keepalive(struct cli_state *cli);
-bool cli_echo(struct cli_state *cli, uint16 num_echos,
-	      unsigned char *data, size_t length);
+struct async_req *cli_echo_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
+				struct cli_state *cli, uint16_t num_echos,
+				DATA_BLOB data);
+NTSTATUS cli_echo_recv(struct async_req *req);
+NTSTATUS cli_echo(struct cli_state *cli, uint16_t num_echos, DATA_BLOB data);
 
 /* The following definitions come from libsmb/clierror.c  */
 

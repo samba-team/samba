@@ -4976,6 +4976,38 @@ static bool run_chain1(int dummy)
 	return True;
 }
 
+static bool run_cli_echo(int dummy)
+{
+	struct cli_state *cli;
+	struct event_context *ev = event_context_init(NULL);
+	struct async_req *req;
+	NTSTATUS status;
+
+	printf("starting chain1 test\n");
+	if (!torture_open_connection(&cli, 0)) {
+		return false;
+	}
+	cli_sockopt(cli, sockops);
+
+	req = cli_echo_send(ev, ev, cli, 5, data_blob_const("hello", 5));
+	if (req == NULL) {
+		d_printf("cli_echo_send failed\n");
+		return false;
+	}
+
+	while (req->state < ASYNC_REQ_DONE) {
+		event_loop_once(ev);
+	}
+
+	status = cli_echo_recv(req);
+	d_printf("cli_echo returned %s\n", nt_errstr(status));
+
+	TALLOC_FREE(req);
+
+	torture_close_connection(cli);
+	return NT_STATUS_IS_OK(status);
+}
+
 static bool run_local_substitute(int dummy)
 {
 	bool ok = true;
@@ -5474,6 +5506,7 @@ static struct {
 	{ "EATEST", run_eatest, 0},
 	{ "SESSSETUP_BENCH", run_sesssetup_bench, 0},
 	{ "CHAIN1", run_chain1, 0},
+	{ "CLI_ECHO", run_cli_echo, 0},
 	{ "LOCAL-SUBSTITUTE", run_local_substitute, 0},
 	{ "LOCAL-GENCACHE", run_local_gencache, 0},
 	{ "LOCAL-RBTREE", run_local_rbtree, 0},
