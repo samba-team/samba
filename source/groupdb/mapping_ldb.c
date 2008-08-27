@@ -60,6 +60,9 @@ static bool init_group_mapping(void)
 	ldb = ldb_init(NULL);
 	if (ldb == NULL) goto failed;
 
+	/* Ensure this db is created read/write for root only. */
+	ldb_set_create_perms(ldb, 0600);
+
 	existed = file_exist(db_path, NULL);
 
 	if (lp_parm_bool(-1, "groupmap", "nosync", False)) {
