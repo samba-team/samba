@@ -10,6 +10,9 @@
 #define _HEADER_libnetapi
 
 #define ERROR_MORE_DATA	( 234L )
+#define USER_PRIV_GUEST	( 0 )
+#define USER_PRIV_USER	( 1 )
+#define USER_PRIV_ADMIN	( 2 )
 #define ENCRYPTED_PWLEN	( 16 )
 #define FILTER_TEMP_DUPLICATE_ACCOUNT	( 0x0001 )
 #define FILTER_NORMAL_ACCOUNT	( 0x0002 )
