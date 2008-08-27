@@ -137,6 +137,11 @@ krb5_plugin_register(krb5_context context,
 {
     struct plugin *e;
 
+    /* check for duplicates */
+    for (e = registered; e != NULL; e = e->next)
+	if (e->type == type && strcmp(e->name,name)== 0 && e->symbol == symbol)
+	    return 0;
+
     e = calloc(1, sizeof(*e));
     if (e == NULL) {
 	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
