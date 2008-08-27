@@ -956,7 +956,7 @@ int32_t ctdb_control_tcp_client(struct ctdb_context *ctdb, uint32_t client_id,
 				TDB_DATA indata)
 {
 	struct ctdb_client *client = ctdb_reqid_find(ctdb, client_id, struct ctdb_client);
-	struct ctdb_tcp_client *p = (struct ctdb_tcp_client *)indata.dptr;
+	struct ctdb_control_tcp *p = (struct ctdb_control_tcp *)indata.dptr;
 	struct ctdb_tcp_list *tcp;
 	struct ctdb_control_tcp_vnn t;
 	int ret;

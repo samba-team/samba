@@ -565,7 +565,7 @@ struct ctdb_control_set_call {
   struct for tcp_client control
   used by samba   can not modify
  */
-struct ctdb_tcp_client {
+struct ctdb_control_tcp {
 	struct sockaddr_in src; // samba uses this
 	struct sockaddr_in dest;// samba uses this
 };
