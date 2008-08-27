@@ -414,7 +414,7 @@ gss_OID GSSAPI_LIB_VARIABLE GSS_KRB5_GET_TIME_OFFSET_X =
 static gss_OID_desc gss_krb5_plugin_register_x_desc =
     {6, rk_UNCONST("\x2a\x85\x70\x2b\x0d\x13")};
 
-gss_OID GSSAPI_LIB_VARIABLE GSS_KRB5_PLUGIN_REGISTER_KDC_X =
+gss_OID GSSAPI_LIB_VARIABLE GSS_KRB5_PLUGIN_REGISTER_X =
     &gss_krb5_plugin_register_x_desc;
 
 /* 1.2.752.43.14.1 */
