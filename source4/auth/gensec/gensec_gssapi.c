@@ -38,49 +38,7 @@
 #include "auth/session_proto.h"
 #include <gssapi/gssapi.h>
 #include <gssapi/gssapi_krb5.h>
-
-enum gensec_gssapi_sasl_state 
-{
-	STAGE_GSS_NEG,
-	STAGE_SASL_SSF_NEG,
-	STAGE_SASL_SSF_ACCEPT,
-	STAGE_DONE
-};
-
-#define NEG_SEAL 0x4
-#define NEG_SIGN 0x2
-#define NEG_NONE 0x1
-
-struct gensec_gssapi_state {
-	gss_ctx_id_t gssapi_context;
-	struct gss_channel_bindings_struct *input_chan_bindings;
-	gss_name_t server_name;
-	gss_name_t client_name;
-	OM_uint32 want_flags, got_flags;
-	gss_OID gss_oid;
-
-	DATA_BLOB session_key;
-	DATA_BLOB pac;
-
-	struct smb_krb5_context *smb_krb5_context;
-	struct gssapi_creds_container *client_cred;
-	struct gssapi_creds_container *server_cred;
-	gss_krb5_lucid_context_v1_t *lucid;
-
-	gss_cred_id_t delegated_cred_handle;
-
-	bool sasl; /* We have two different mechs in this file: One
-		    * for SASL wrapped GSSAPI and another for normal
-		    * GSSAPI */
-	enum gensec_gssapi_sasl_state sasl_state;
-	uint8_t sasl_protection; /* What was negotiated at the SASL
-				  * layer, independent of the GSSAPI
-				  * layer... */
-
-	size_t max_wrap_buf_size;
-	int gss_exchange_count;
-	size_t sig_size;
-};
+#include "auth/gensec/gensec_gssapi.h"
 
 static size_t gensec_gssapi_max_input_size(struct gensec_security *gensec_security);
 static size_t gensec_gssapi_max_wrapped_size(struct gensec_security *gensec_security);
