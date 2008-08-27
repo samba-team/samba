@@ -1000,6 +1000,33 @@ NET_API_STATUS NetUserModalsSet(const char * server_name /* [in] */,
 
 /************************************************************//**
  *
+ * NetUserGetGroups
+ *
+ * @brief Enumerate grouplist of a user on a server
+ *
+ * @param[in] server_name The server name to connect to
+ * @param[in] user_name The user name to query
+ * @param[in] level The enumeration level used for the query (Currently only
+ * level 0 is supported)
+ * @param[out] buffer The returned enumeration buffer
+ * @param[in] prefmaxlen The requested maximal buffer size
+ * @param[out] entries_read The number of returned entries
+ * @param[out] total_entries The number of total entries
+ * @return NET_API_STATUS
+ *
+ * example user/user_getgroups.c
+ ***************************************************************/
+
+NET_API_STATUS NetUserGetGroups(const char * server_name /* [in] */,
+				const char * user_name /* [in] */,
+				uint32_t level /* [in] */,
+				uint8_t **buffer /* [out] [ref] */,
+				uint32_t prefmaxlen /* [in] */,
+				uint32_t *entries_read /* [out] [ref] */,
+				uint32_t *total_entries /* [out] [ref] */);
+
+/************************************************************//**
+ *
  * NetQueryDisplayInformation
  *
  * @brief Enumerate accounts on a server
