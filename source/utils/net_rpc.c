@@ -725,128 +725,6 @@ static int rpc_user_delete(struct net_context *c, int argc, const char **argv)
 }
 
 /**
- * Set a password for a user on a remote RPC server.
- *
- * All parameters are provided by the run_rpc_command function, except for
- * argc, argv which are passed through.
- *
- * @param domain_sid The domain sid acquired from the remote server.
- * @param cli A cli_state connected to the server.
- * @param mem_ctx Talloc context, destroyed on completion of the function.
- * @param argc  Standard main() style argc.
- * @param argv  Standard main() style argv. Initial components are already
- *              stripped.
- *
- * @return Normal NTSTATUS return.
- **/
-
-static NTSTATUS rpc_user_password_internals(struct net_context *c,
-					const DOM_SID *domain_sid,
-					const char *domain_name,
-					struct cli_state *cli,
-					struct rpc_pipe_client *pipe_hnd,
-					TALLOC_CTX *mem_ctx,
-					int argc,
-					const char **argv)
-{
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	POLICY_HND connect_pol, domain_pol, user_pol;
-	const char *user;
-	const char *new_password;
-	char *prompt = NULL;
-	union samr_UserInfo info;
-	struct samr_CryptPassword crypt_pwd;
-
-	if (argc < 1 || c->display_usage) {
-		rpc_user_usage(c, argc, argv);
-		return NT_STATUS_OK;
-	}
-
-	user = argv[0];
-
-	if (argv[1]) {
-		new_password = argv[1];
-	} else {
-		asprintf(&prompt, "Enter new password for %s:", user);
-		new_password = getpass(prompt);
-		SAFE_FREE(prompt);
-	}
-
-	/* Get sam policy and domain handles */
-
-	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
-				      pipe_hnd->desthost,
-				      MAXIMUM_ALLOWED_ACCESS,
-				      &connect_pol);
-
-	if (!NT_STATUS_IS_OK(result)) {
-		goto done;
-	}
-
-	result = rpccli_samr_OpenDomain(pipe_hnd, mem_ctx,
-					&connect_pol,
-					MAXIMUM_ALLOWED_ACCESS,
-					CONST_DISCARD(struct dom_sid2 *, domain_sid),
-					&domain_pol);
-
-	if (!NT_STATUS_IS_OK(result)) {
-		goto done;
-	}
-
-	/* Get handle on user */
-
-	{
-		struct samr_Ids user_rids, name_types;
-		struct lsa_String lsa_acct_name;
-
-		init_lsa_String(&lsa_acct_name, user);
-
-		result = rpccli_samr_LookupNames(pipe_hnd, mem_ctx,
-						 &domain_pol,
-						 1,
-						 &lsa_acct_name,
-						 &user_rids,
-						 &name_types);
-		if (!NT_STATUS_IS_OK(result)) {
-			goto done;
-		}
-
-		result = rpccli_samr_OpenUser(pipe_hnd, mem_ctx,
-					      &domain_pol,
-					      MAXIMUM_ALLOWED_ACCESS,
-					      user_rids.ids[0],
-					      &user_pol);
-
-		if (!NT_STATUS_IS_OK(result)) {
-			goto done;
-		}
-	}
-
-	/* Set password on account */
-
-	init_samr_CryptPassword(new_password,
-				&cli->user_session_key,
-				&crypt_pwd);
-
-	init_samr_user_info24(&info.info24, crypt_pwd.data, 24);
-
-	result = rpccli_samr_SetUserInfo2(pipe_hnd, mem_ctx,
-					  &user_pol,
-					  24,
-					  &info);
-
-	if (!NT_STATUS_IS_OK(result)) {
-		goto done;
-	}
-
-	/* Display results */
-
- done:
-	return result;
-
-}
-
-/**
  * Set a user's password on a remote RPC server.
  *
  * @param argc  Standard main() style argc.
@@ -858,8 +736,35 @@ static NTSTATUS rpc_user_password_internals(struct net_context *c,
 
 static int rpc_user_password(struct net_context *c, int argc, const char **argv)
 {
-	return run_rpc_command(c, NULL, &ndr_table_samr.syntax_id, 0,
-			       rpc_user_password_internals, argc, argv);
+	NET_API_STATUS status;
+	char *prompt = NULL;
+	struct USER_INFO_1003 u1003;
+	uint32_t parm_err = 0;
+
+	if (argc < 1 || c->display_usage) {
+		rpc_user_usage(c, argc, argv);
+		return 0;
+	}
+
+	if (argv[1]) {
+		u1003.usri1003_password = argv[1];
+	} else {
+		asprintf(&prompt, "Enter new password for %s:", argv[0]);
+		u1003.usri1003_password = getpass(prompt);
+		SAFE_FREE(prompt);
+	}
+
+	status = NetUserSetInfo(c->opt_host, argv[0], 1003, (uint8_t *)&u1003, &parm_err);
+
+	/* Display results */
+	if (status != 0) {
+		d_fprintf(stderr, "Failed to set password for '%s' with: %s.\n",
+			argv[0], libnetapi_get_error_string(c->netapi_ctx,
+							    status));
+		return -1;
+	}
+
+	return 0;
 }
 
 /**
