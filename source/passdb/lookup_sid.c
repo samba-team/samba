@@ -1296,7 +1296,7 @@ void uid_to_sid(DOM_SID *psid, uid_t uid)
 	/* Check the winbindd cache directly. */
 	ret = idmap_cache_find_uid2sid(uid, psid, &expired);
 
-	if (ret && is_null_sid(psid)) {
+	if (ret && !expired && is_null_sid(psid)) {
 		/*
 		 * Negative cache entry, we already asked.
 		 * do legacy.
@@ -1342,7 +1342,7 @@ void gid_to_sid(DOM_SID *psid, gid_t gid)
 	/* Check the winbindd cache directly. */
 	ret = idmap_cache_find_gid2sid(gid, psid, &expired);
 
-	if (ret && is_null_sid(psid)) {
+	if (ret && !expired && is_null_sid(psid)) {
 		/*
 		 * Negative cache entry, we already asked.
 		 * do legacy.
@@ -1405,7 +1405,7 @@ bool sid_to_uid(const DOM_SID *psid, uid_t *puid)
 	/* Check the winbindd cache directly. */
 	ret = idmap_cache_find_sid2uid(psid, puid, &expired);
 
-	if (ret && (*puid == (uid_t)-1)) {
+	if (ret && !expired && (*puid == (uid_t)-1)) {
 		/*
 		 * Negative cache entry, we already asked.
 		 * do legacy.
@@ -1469,7 +1469,7 @@ bool sid_to_gid(const DOM_SID *psid, gid_t *pgid)
 	/* Check the winbindd cache directly. */
 	ret = idmap_cache_find_sid2gid(psid, pgid, &expired);
 
-	if (ret && (*pgid == (gid_t)-1)) {
+	if (ret && !expired && (*pgid == (gid_t)-1)) {
 		/*
 		 * Negative cache entry, we already asked.
 		 * do legacy.
