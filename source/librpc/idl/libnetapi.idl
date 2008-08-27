@@ -962,4 +962,26 @@ interface libnetapi
 		[in] string server_name,
 		[out,ref] uint8 **buffer
 		);
+
+	/*******************************************/
+	/* NetShareAdd                             */
+	/*******************************************/
+
+	typedef struct {
+		string shi2_netname;
+		uint32 shi2_type;
+		string shi2_remark;
+		uint32 shi2_permissions;
+		uint32 shi2_max_uses;
+		uint32 shi2_current_uses;
+		string shi2_path;
+		string shi2_passwd;
+	} SHARE_INFO_2;
+
+	[nopush,nopull] NET_API_STATUS NetShareAdd(
+		[in] string server_name,
+		[in] uint32 level,
+		[in] uint8 *buffer,
+		[out] uint32 *parm_err
+		);
 }
