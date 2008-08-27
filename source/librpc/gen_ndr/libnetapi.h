@@ -546,6 +546,17 @@ struct TIME_OF_DAY_INFO {
 	uint32_t tod_weekday;
 };
 
+struct SHARE_INFO_2 {
+	const char * shi2_netname;
+	uint32_t shi2_type;
+	const char * shi2_remark;
+	uint32_t shi2_permissions;
+	uint32_t shi2_max_uses;
+	uint32_t shi2_current_uses;
+	const char * shi2_path;
+	const char * shi2_passwd;
+};
+
 
 struct NetJoinDomain {
 	struct {
@@ -1122,6 +1133,21 @@ struct NetRemoteTOD {
 
 	struct {
 		uint8_t **buffer;/* [ref] */
+		enum NET_API_STATUS result;
+	} out;
+
+};
+
+
+struct NetShareAdd {
+	struct {
+		const char * server_name;
+		uint32_t level;
+		uint8_t *buffer;/* [ref] */
+	} in;
+
+	struct {
+		uint32_t *parm_err;/* [ref] */
 		enum NET_API_STATUS result;
 	} out;
 
