@@ -2354,3 +2354,21 @@ WERROR NetUserModalsSet_l(struct libnetapi_ctx *ctx,
 {
 	LIBNETAPI_REDIRECT_TO_LOCALHOST(ctx, r, NetUserModalsSet);
 }
+
+/****************************************************************
+****************************************************************/
+
+WERROR NetUserGetGroups_r(struct libnetapi_ctx *ctx,
+			  struct NetUserGetGroups *r)
+{
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR NetUserGetGroups_l(struct libnetapi_ctx *ctx,
+			  struct NetUserGetGroups *r)
+{
+	LIBNETAPI_REDIRECT_TO_LOCALHOST(ctx, r, NetUserGetGroups);
+}
