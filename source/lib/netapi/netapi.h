@@ -185,7 +185,7 @@ struct USER_INFO_4 {
 	const char * usri4_logon_server;
 	uint32_t usri4_country_code;
 	uint32_t usri4_code_page;
-	struct dom_sid *usri4_user_sid;/* [unique] */
+	struct domsid *usri4_user_sid;/* [unique] */
 	uint32_t usri4_primary_group_id;
 	const char * usri4_profile;
 	const char * usri4_home_dir_drive;
