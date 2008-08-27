@@ -33,14 +33,14 @@
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
-RCSID("$Id: net_read.c 21005 2007-06-08 01:54:35Z lha $");
+RCSID("$Id$");
 #endif
 
 #include <sys/types.h>
 #include <unistd.h>
 #include <errno.h>
 
-#include <roken.h>
+#include "roken.h"
 
 /*
  * Like read but never return partial data.

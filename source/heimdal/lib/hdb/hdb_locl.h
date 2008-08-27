@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: hdb_locl.h 22209 2007-12-07 19:03:41Z lha $ */
+/* $Id$ */
 
 #ifndef __HDB_LOCL_H__
 #define __HDB_LOCL_H__
@@ -66,12 +66,5 @@
 
 #define HDB_DEFAULT_DB HDB_DB_DIR "/heimdal"
 #define HDB_DB_FORMAT_ENTRY "hdb/db-format"
-
-krb5_error_code
-hdb_ldb_create (
-       krb5_context /*context*/,
-       HDB ** /*db*/,
-       const char */*arg*/);
-
 
 #endif /* __HDB_LOCL_H__ */

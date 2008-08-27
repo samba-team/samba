@@ -33,7 +33,7 @@
 
 #include "krb5/gsskrb5_locl.h"
 
-RCSID("$Id: accept_sec_context.c 23433 2008-07-26 18:44:26Z lha $");
+RCSID("$Id$");
 
 HEIMDAL_MUTEX gssapi_keytab_mutex = HEIMDAL_MUTEX_INITIALIZER;
 krb5_keytab _gsskrb5_keytab;
@@ -371,9 +371,8 @@ gsskrb5_acceptor_start(OM_uint32 * minor_status,
 	if (kret) {
 	    if (in)
 		krb5_rd_req_in_ctx_free(context, in);
-	    ret = GSS_S_FAILURE;
 	    *minor_status = kret;
-	    return ret;
+	    return GSS_S_FAILURE;
 	}
 
 	kret = krb5_rd_req_ctx(context,
@@ -382,13 +381,18 @@ gsskrb5_acceptor_start(OM_uint32 * minor_status,
 			       server,
 			       in, &out);
 	krb5_rd_req_in_ctx_free(context, in);
-	if (kret) {
+	if (kret == KRB5KRB_AP_ERR_SKEW) {
 	    /* 
 	     * No reply in non-MUTUAL mode, but we don't know that its
-	     * non-MUTUAL mode yet, thats inside the 8003 checksum.
+	     * non-MUTUAL mode yet, thats inside the 8003 checksum, so
+	     * lets only send the error token on clock skew, that
+	     * limit when send error token for non-MUTUAL.
 	     */
 	    return send_error_token(minor_status, context, kret,
 				    server, &indata, output_token);
+	} else if (kret) {
+	    *minor_status = kret;
+	    return GSS_S_FAILURE;
 	}
 
 	/*
@@ -524,24 +528,30 @@ gsskrb5_acceptor_start(OM_uint32 * minor_status,
 	    
 	_gsskrb5i_is_cfx(ctx, &is_cfx);
 	    
-	if (is_cfx != 0 
-	    || (ap_options & AP_OPTS_USE_SUBKEY)) {
+	if (is_cfx || (ap_options & AP_OPTS_USE_SUBKEY)) {
 	    use_subkey = 1;
 	} else {
 	    krb5_keyblock *rkey;
-	    kret = krb5_auth_con_getremotesubkey(context, ctx->auth_context, &rkey);
+
+	    /* 
+	     * If there is a initiator subkey, copy that to acceptor
+	     * subkey to match Windows behavior
+	     */
+	    kret = krb5_auth_con_getremotesubkey(context,
+						 ctx->auth_context,
+						 &rkey);
 	    if (kret == 0) {
-		kret = krb5_auth_con_setlocalsubkey(context, ctx->auth_context, rkey);
-		if (kret == 0) {
+		kret = krb5_auth_con_setlocalsubkey(context, 
+						    ctx->auth_context,
+						    rkey);
+		if (kret == 0)
 		    use_subkey = 1;
-		}
 		krb5_free_keyblock(context, rkey);
 	    }
 	}
 	if (use_subkey) {
 	    ctx->more_flags |= ACCEPTOR_SUBKEY;
-	    krb5_auth_con_addflags(context,
-				   ctx->auth_context,
+	    krb5_auth_con_addflags(context, ctx->auth_context,
 				   KRB5_AUTH_CONTEXT_USE_SUBKEY,
 				   NULL);
 	}

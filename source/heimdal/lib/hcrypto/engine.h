@@ -32,7 +32,7 @@
  */
 
 /*
- * $Id: engine.h 17475 2006-05-06 12:34:36Z lha $
+ * $Id$
  */
 
 #ifndef _HEIM_ENGINE_H

@@ -33,9 +33,9 @@
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
-RCSID ("$Id: rtbl.c 17758 2006-06-30 13:41:40Z lha $");
+RCSID ("$Id$");
 #endif
-#include <roken.h>
+#include "roken.h"
 #include "rtbl.h"
 
 struct column_entry {

@@ -31,7 +31,7 @@
  * SUCH DAMAGE.
  */
 
-/* $Id: aes.h 22958 2008-04-11 11:33:22Z lha $ */
+/* $Id$ */
 
 #ifndef HEIM_AES_H
 #define HEIM_AES_H 1

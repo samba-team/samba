@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: hx509.h 22908 2008-04-08 08:16:32Z lha $ */
+/* $Id$ */
 
 #ifndef HEIMDAL_HX509_H
 #define HEIMDAL_HX509_H 1

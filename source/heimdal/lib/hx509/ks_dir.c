@@ -32,7 +32,7 @@
  */
 
 #include "hx_locl.h"
-RCSID("$Id: ks_dir.c 23460 2008-07-27 12:14:03Z lha $");
+RCSID("$Id$");
 #include <dirent.h>
 
 /*

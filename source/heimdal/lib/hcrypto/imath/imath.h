@@ -1,8 +1,8 @@
 /*
   Name:     imath.h
   Purpose:  Arbitrary precision integer arithmetic routines.
-  Author:   M. J. Fromberger <http://www.dartmouth.edu/~sting/>
-  Info:     $Id: imath.h 20764 2007-06-01 03:55:14Z lha $
+  Author:   M. J. Fromberger <http://spinning-yarns.org/michael/>
+  Info:     $Id: imath.h 635 2008-01-08 18:19:40Z sting $
 
   Copyright (C) 2002-2007 Michael J. Fromberger, All Rights Reserved.
 
@@ -39,6 +39,8 @@ extern "C" {
 typedef unsigned char      mp_sign;
 typedef unsigned int       mp_size;
 typedef int                mp_result;
+typedef long               mp_small;  /* must be a signed type */
+typedef unsigned long      mp_usmall; /* must be an unsigned type */
 #ifdef USE_LONG_LONG
 typedef unsigned int       mp_digit;
 typedef unsigned long long mp_word;
@@ -68,9 +70,14 @@ extern const mp_result MP_RANGE;
 extern const mp_result MP_UNDEF;
 extern const mp_result MP_TRUNC;
 extern const mp_result MP_BADARG;
+extern const mp_result MP_MINERR;
 
 #define MP_DIGIT_BIT    (sizeof(mp_digit) * CHAR_BIT)
 #define MP_WORD_BIT     (sizeof(mp_word) * CHAR_BIT)
+#define MP_SMALL_MIN    LONG_MIN
+#define MP_SMALL_MAX    LONG_MAX
+#define MP_USMALL_MIN   ULONG_MIN
+#define MP_USMALL_MAX   ULONG_MAX
 
 #ifdef USE_LONG_LONG
 #  ifndef ULONG_LONG_MAX
@@ -108,8 +115,8 @@ mp_result mp_int_init(mp_int z);
 mp_int    mp_int_alloc(void);
 mp_result mp_int_init_size(mp_int z, mp_size prec);
 mp_result mp_int_init_copy(mp_int z, mp_int old);
-mp_result mp_int_init_value(mp_int z, int value);
-mp_result mp_int_set_value(mp_int z, int value);
+mp_result mp_int_init_value(mp_int z, mp_small value);
+mp_result mp_int_set_value(mp_int z, mp_small value);
 void      mp_int_clear(mp_int z);
 void      mp_int_free(mp_int z);
 
@@ -119,40 +126,40 @@ void      mp_int_zero(mp_int z);                     /* z = 0     */
 mp_result mp_int_abs(mp_int a, mp_int c);            /* c = |a|   */
 mp_result mp_int_neg(mp_int a, mp_int c);            /* c = -a    */
 mp_result mp_int_add(mp_int a, mp_int b, mp_int c);  /* c = a + b */
-mp_result mp_int_add_value(mp_int a, int value, mp_int c);
+mp_result mp_int_add_value(mp_int a, mp_small value, mp_int c);
 mp_result mp_int_sub(mp_int a, mp_int b, mp_int c);  /* c = a - b */
-mp_result mp_int_sub_value(mp_int a, int value, mp_int c);
+mp_result mp_int_sub_value(mp_int a, mp_small value, mp_int c);
 mp_result mp_int_mul(mp_int a, mp_int b, mp_int c);  /* c = a * b */
-mp_result mp_int_mul_value(mp_int a, int value, mp_int c);
-mp_result mp_int_mul_pow2(mp_int a, int p2, mp_int c);
+mp_result mp_int_mul_value(mp_int a, mp_small value, mp_int c);
+mp_result mp_int_mul_pow2(mp_int a, mp_small p2, mp_int c);
 mp_result mp_int_sqr(mp_int a, mp_int c);            /* c = a * a */
 mp_result mp_int_div(mp_int a, mp_int b,             /* q = a / b */
 		     mp_int q, mp_int r);            /* r = a % b */
-mp_result mp_int_div_value(mp_int a, int value,      /* q = a / value */
-			   mp_int q, int *r);        /* r = a % value */
-mp_result mp_int_div_pow2(mp_int a, int p2,          /* q = a / 2^p2  */
+mp_result mp_int_div_value(mp_int a, mp_small value, /* q = a / value */
+			   mp_int q, mp_small *r);   /* r = a % value */
+mp_result mp_int_div_pow2(mp_int a, mp_small p2,     /* q = a / 2^p2  */
 			  mp_int q, mp_int r);       /* r = q % 2^p2  */
 mp_result mp_int_mod(mp_int a, mp_int m, mp_int c);  /* c = a % m */
 #define   mp_int_mod_value(A, V, R) mp_int_div_value((A), (V), 0, (R))
-mp_result mp_int_expt(mp_int a, int b, mp_int c);    /* c = a^b   */
-mp_result mp_int_expt_value(int a, int b, mp_int c); /* c = a^b   */
+mp_result mp_int_expt(mp_int a, mp_small b, mp_int c);         /* c = a^b */
+mp_result mp_int_expt_value(mp_small a, mp_small b, mp_int c); /* c = a^b */
 
 int       mp_int_compare(mp_int a, mp_int b);          /* a <=> b     */
 int       mp_int_compare_unsigned(mp_int a, mp_int b); /* |a| <=> |b| */
-int       mp_int_compare_zero(mp_int z);               /* a <=> 0     */
-int       mp_int_compare_value(mp_int z, int value);   /* a <=> v     */
+int       mp_int_compare_zero(mp_int z);                  /* a <=> 0  */
+int       mp_int_compare_value(mp_int z, mp_small value); /* a <=> v  */
 
 /* Returns true if v|a, false otherwise (including errors) */
-int       mp_int_divisible_value(mp_int a, int v);
+int       mp_int_divisible_value(mp_int a, mp_small v);
 
 /* Returns k >= 0 such that z = 2^k, if one exists; otherwise < 0 */
 int       mp_int_is_pow2(mp_int z);
 
 mp_result mp_int_exptmod(mp_int a, mp_int b, mp_int m,
 			 mp_int c);                    /* c = a^b (mod m) */
-mp_result mp_int_exptmod_evalue(mp_int a, int value, 
+mp_result mp_int_exptmod_evalue(mp_int a, mp_small value, 
 				mp_int m, mp_int c);   /* c = a^v (mod m) */
-mp_result mp_int_exptmod_bvalue(int value, mp_int b,
+mp_result mp_int_exptmod_bvalue(mp_small value, mp_int b,
 				mp_int m, mp_int c);   /* c = v^b (mod m) */
 mp_result mp_int_exptmod_known(mp_int a, mp_int b,
 			       mp_int m, mp_int mu,
@@ -166,10 +173,14 @@ mp_result mp_int_gcd(mp_int a, mp_int b, mp_int c);    /* c = gcd(a, b)   */
 mp_result mp_int_egcd(mp_int a, mp_int b, mp_int c,    /* c = gcd(a, b)   */
 		      mp_int x, mp_int y);             /* c = ax + by     */
 
-mp_result mp_int_sqrt(mp_int a, mp_int c);          /* c = floor(sqrt(q)) */
+mp_result mp_int_lcm(mp_int a, mp_int b, mp_int c);    /* c = lcm(a, b)   */
 
-/* Convert to an int, if representable (returns MP_RANGE if not). */
-mp_result mp_int_to_int(mp_int z, int *out);
+mp_result mp_int_root(mp_int a, mp_small b, mp_int c); /* c = floor(a^{1/b}) */
+#define   mp_int_sqrt(a, c) mp_int_root(a, 2, c)       /* c = floor(sqrt(a)) */
+
+/* Convert to a small int, if representable; else MP_RANGE */
+mp_result mp_int_to_int(mp_int z, mp_small *out);
+mp_result mp_int_to_uint(mp_int z, mp_usmall *out);
 
 /* Convert to nul-terminated string with the specified radix, writing at
    most limit characters including the nul terminator  */

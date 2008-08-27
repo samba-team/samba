@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: time.c 23260 2008-06-21 15:22:37Z lha $");
+RCSID("$Id$");
 
 /**
  * Set the absolute time that the caller knows the kdc has so the

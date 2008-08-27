@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: init_creds_pw.c 23316 2008-06-23 04:32:32Z lha $");
+RCSID("$Id$");
 
 typedef struct krb5_get_init_creds_ctx {
     KDCOptions flags;

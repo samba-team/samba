@@ -32,7 +32,7 @@
  */
 
 #include "krb5_locl.h"
-RCSID("$Id: mit_glue.c 20042 2007-01-23 20:37:43Z lha $");
+RCSID("$Id$");
 
 /*
  * Glue for MIT API

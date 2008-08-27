@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: wind.h 23233 2008-06-01 22:25:25Z lha $ */
+/* $Id$ */
 
 #ifndef _WIND_H_
 #define _WIND_H_

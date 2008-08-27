@@ -40,8 +40,7 @@
 
 /* TODO: remove all SAMBA4_INTERNAL_HEIMDAL stuff from this file */
 #ifdef SAMBA4_INTERNAL_HEIMDAL
-#include "heimdal/lib/hcrypto/aes.h"
-#include "heimdal/lib/krb5/krb5-private.h"
+#include "heimdal_build/kpasswdd-glue.h"
 #endif
 
 /* hold information about one kdc socket */

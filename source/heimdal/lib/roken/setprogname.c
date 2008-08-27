@@ -33,10 +33,10 @@
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
-RCSID("$Id: setprogname.c 15955 2005-08-23 10:19:20Z lha $");
+RCSID("$Id$");
 #endif
 
-#include <roken.h>
+#include "roken.h"
 
 #ifndef HAVE___PROGNAME
 extern const char *__progname;

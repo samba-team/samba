@@ -33,7 +33,7 @@
 
 #include "krb5/gsskrb5_locl.h"
 
-RCSID("$Id: import_name.c 19031 2006-11-13 18:02:57Z lha $");
+RCSID("$Id$");
 
 static OM_uint32
 parse_krb5_name (OM_uint32 *minor_status,
@@ -83,18 +83,56 @@ import_krb5_name (OM_uint32 *minor_status,
     return ret;
 }
 
+OM_uint32
+_gsskrb5_canon_name(OM_uint32 *minor_status, krb5_context context,
+		    int use_dns, gss_name_t name, krb5_principal *out)
+{
+    krb5_principal p = (krb5_principal)name;
+    krb5_error_code ret;
+    char *hostname = NULL, *service;
+
+    *minor_status = 0;
+
+    /* If its not a hostname */
+    if (krb5_principal_get_type(context, p) != MAGIC_HOSTBASED_NAME_TYPE) {
+	ret = krb5_copy_principal(context, p, out);
+    } else if (!use_dns) {
+	ret = krb5_copy_principal(context, p, out);
+	if (ret == 0)
+	    krb5_principal_set_type(context, *out, KRB5_NT_SRV_HST);
+    } else {
+	if (p->name.name_string.len == 0)
+	    return GSS_S_BAD_NAME;
+	else if (p->name.name_string.len > 1)
+	    hostname = p->name.name_string.val[1];
+	
+	service = p->name.name_string.val[0];
+	
+	ret = krb5_sname_to_principal(context,
+				      hostname,
+				      service,
+				      KRB5_NT_SRV_HST,
+				      out);
+    }
+
+    if (ret) {
+	*minor_status = ret;
+	return GSS_S_FAILURE;
+    }
+
+    return 0;
+}
+
+
 static OM_uint32
 import_hostbased_name (OM_uint32 *minor_status,
 		       krb5_context context,
 		       const gss_buffer_t input_name_buffer,
 		       gss_name_t *output_name)
 {
-    krb5_error_code kerr;
-    char *tmp;
-    char *p;
-    char *host;
-    char local_hostname[MAXHOSTNAMELEN];
     krb5_principal princ = NULL;
+    krb5_error_code kerr;
+    char *tmp, *p, *host = NULL;
 
     tmp = malloc (input_name_buffer->length + 1);
     if (tmp == NULL) {
@@ -110,31 +148,20 @@ import_hostbased_name (OM_uint32 *minor_status,
     if (p != NULL) {
 	*p = '\0';
 	host = p + 1;
-    } else {
-	if (gethostname(local_hostname, sizeof(local_hostname)) < 0) {
-	    *minor_status = errno;
-	    free (tmp);
-	    return GSS_S_FAILURE;
-	}
-	host = local_hostname;
     }
 
-    kerr = krb5_sname_to_principal (context,
-				    host,
-				    tmp,
-				    KRB5_NT_SRV_HST,
-				    &princ);
+    kerr = krb5_make_principal(context, &princ, NULL, tmp, host, NULL);
     free (tmp);
     *minor_status = kerr;
-    if (kerr == 0) {
-	*output_name = (gss_name_t)princ;
-	return GSS_S_COMPLETE;
-    }
-
     if (kerr == KRB5_PARSE_ILLCHAR || kerr == KRB5_PARSE_MALFORMED)
 	return GSS_S_BAD_NAME;
+    else if (kerr)
+	return GSS_S_FAILURE;
 
-    return GSS_S_FAILURE;
+    krb5_principal_set_type(context, princ, MAGIC_HOSTBASED_NAME_TYPE);
+    *output_name = (gss_name_t)princ;
+
+    return 0;
 }
 
 static OM_uint32

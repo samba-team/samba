@@ -30,7 +30,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
-/* $Id: rtbl.h 17760 2006-06-30 13:42:39Z lha $ */
+/* $Id$ */
 
 #ifndef __rtbl_h__
 #define __rtbl_h__

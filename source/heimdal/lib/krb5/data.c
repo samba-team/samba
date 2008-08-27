@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: data.c 23280 2008-06-23 03:26:18Z lha $");
+RCSID("$Id$");
 
 /**
  * Reset the (potentially uninitalized) krb5_data structure.

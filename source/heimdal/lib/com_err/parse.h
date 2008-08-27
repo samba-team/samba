@@ -64,13 +64,13 @@
 
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 typedef union YYSTYPE
-#line 53 "parse.y"
+#line 53 "heimdal/lib/com_err/parse.y"
 {
   char *string;
   int number;
 }
 /* Line 1489 of yacc.c.  */
-#line 74 "parse.h"
+#line 74 "heimdal/lib/com_err/parse.y"
 	YYSTYPE;
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
 # define YYSTYPE_IS_DECLARED 1

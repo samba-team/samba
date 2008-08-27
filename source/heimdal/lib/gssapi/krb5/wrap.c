@@ -33,7 +33,7 @@
 
 #include "krb5/gsskrb5_locl.h"
 
-RCSID("$Id: wrap.c 23316 2008-06-23 04:32:32Z lha $");
+RCSID("$Id$");
 
 /*
  * Return initiator subkey, or if that doesn't exists, the subkey.

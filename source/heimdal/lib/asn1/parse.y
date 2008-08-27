@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: parse.y 21597 2007-07-16 18:48:58Z lha $ */
+/* $Id$ */
 
 %{
 #ifdef HAVE_CONFIG_H
@@ -45,7 +45,7 @@
 #include "gen_locl.h"
 #include "der.h"
 
-RCSID("$Id: parse.y 21597 2007-07-16 18:48:58Z lha $");
+RCSID("$Id$");
 
 static Type *new_type (Typetype t);
 static struct constraint_spec *new_constraint_spec(enum ctype);

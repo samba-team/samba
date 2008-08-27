@@ -32,7 +32,7 @@
  */
 
 /*
- * $Id: randi.h 21101 2007-06-18 03:53:46Z lha $
+ * $Id$
  */
 
 #ifndef _HEIM_RANDI_H

@@ -32,7 +32,7 @@
  */
 
 #include "hx_locl.h"
-RCSID("$Id: env.c 22677 2008-03-13 17:35:49Z lha $");
+RCSID("$Id$");
 
 /**
  * @page page_env Hx509 enviroment functions

@@ -33,7 +33,7 @@
 
 #include "krb5/gsskrb5_locl.h"
 
-RCSID("$Id: release_cred.c 20753 2007-05-31 22:50:06Z lha $");
+RCSID("$Id$");
 
 OM_uint32 _gsskrb5_release_cred
            (OM_uint32 * minor_status,

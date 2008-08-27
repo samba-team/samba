@@ -34,7 +34,7 @@
 #include "krb5_locl.h"
 #include "store-int.h"
 
-RCSID("$Id: store_fd.c 17779 2006-06-30 21:23:19Z lha $");
+RCSID("$Id$");
 
 typedef struct fd_storage {
     int fd;

@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: heim_threads.h 14409 2004-12-18 16:03:38Z lha $ */
+/* $Id$ */
 
 /*
  * Provide wrapper macros for thread synchronization primitives so we

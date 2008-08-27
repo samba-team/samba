@@ -34,7 +34,7 @@
 #include "hdb_locl.h"
 #include <der.h>
 
-RCSID("$Id: ext.c 23316 2008-06-23 04:32:32Z lha $");
+RCSID("$Id$");
 
 krb5_error_code
 hdb_entry_check_mandatory(krb5_context context, const hdb_entry *ent)

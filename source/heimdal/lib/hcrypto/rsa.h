@@ -32,7 +32,7 @@
  */
 
 /*
- * $Id: rsa.h 22269 2007-12-11 10:59:22Z lha $
+ * $Id$
  */
 
 #ifndef _HEIM_RSA_H

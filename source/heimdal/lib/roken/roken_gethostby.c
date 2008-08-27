@@ -33,10 +33,10 @@
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
-RCSID("$Id: roken_gethostby.c 21157 2007-06-18 22:03:13Z lha $");
+RCSID("$Id$");
 #endif
 
-#include <roken.h>
+#include "roken.h"
 
 #undef roken_gethostbyname
 #undef roken_gethostbyaddr

@@ -31,7 +31,7 @@
  * SUCH DAMAGE.
  */
 
-/* $Id: hmac.h 16564 2006-01-13 15:26:52Z lha $ */
+/* $Id$ */
 
 #ifndef HEIM_HMAC_H
 #define HEIM_HMAC_H 1

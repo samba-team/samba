@@ -32,7 +32,7 @@
 
 #include "krb5/gsskrb5_locl.h"
 
-RCSID("$Id: set_cred_option.c 23331 2008-06-27 12:01:48Z lha $");
+RCSID("$Id$");
 
 /* 1.2.752.43.13.17 */
 static gss_OID_desc gss_krb5_cred_no_ci_flags_x_oid_desc =
