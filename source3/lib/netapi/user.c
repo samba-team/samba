@@ -1388,8 +1388,21 @@ WERROR NetUserSetInfo_r(struct libnetapi_ctx *ctx,
 			user_mask = SAMR_USER_ACCESS_SET_ATTRIBUTES |
 				    SAMR_USER_ACCESS_GET_GROUPS;
 			break;
-		default:
+		case 1:
+		case 2:
+		case 3:
+		case 4:
+		case 21:
+		case 22:
+		case 1005:
+		case 1008:
+		case 1010:
+		case 1017:
+		case 1020:
 			werr = WERR_NOT_SUPPORTED;
+			goto done;
+		default:
+			werr = WERR_UNKNOWN_LEVEL;
 			goto done;
 	}
 
