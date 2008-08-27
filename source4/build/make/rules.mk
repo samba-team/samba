@@ -2,10 +2,10 @@
 # This relies on GNU make.
 #
 # Dependencies command
-DEPENDS = $(CC) -M -MG -MP -MT $(<:.c=.o) -MT $@ \
+DEPENDS = $(CC) -M -MG -MP -MT $(<:.c=.o) -MT $@ -MT : \
     $(CFLAGS) $(CPPFLAGS) $< -o $@
 # Dependencies for host objects
-HDEPENDS = $(CC) -M -MG -MP -MT $(<:.c=.ho) -MT $@ \
+HDEPENDS = $(CC) -M -MG -MP -MT $(<:.c=.ho) -MT $@ -MT : \
     $(HOSTCC_FLAGS) $(CPPFLAGS) $< -o $@
 # Dependencies for precompiled headers
 PCHDEPENDS = $(CC) -M -MG -MT include/includes.h.gch -MT $@ \

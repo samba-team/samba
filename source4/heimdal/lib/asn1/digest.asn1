@@ -1,4 +1,4 @@
--- $Id: digest.asn1 22152 2007-12-04 19:59:18Z lha $
+-- $Id$
 
 DIGEST DEFINITIONS ::=
 BEGIN

@@ -33,7 +33,7 @@
 
 #include <krb5_locl.h>
 
-RCSID("$Id: eai_to_heim_errno.c 22065 2007-11-11 16:41:06Z lha $");
+RCSID("$Id$");
 
 /**
  * Convert the getaddrinfo() error code to a Kerberos et error code.

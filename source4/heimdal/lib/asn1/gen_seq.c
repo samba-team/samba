@@ -33,7 +33,7 @@
 
 #include "gen_locl.h"
 
-RCSID("$Id: gen_seq.c 20561 2007-04-24 16:14:30Z lha $");
+RCSID("$Id$");
 
 void
 generate_type_seq (const Symbol *s)

@@ -33,7 +33,7 @@
 
 #include <krb5_locl.h>
 
-RCSID("$Id: rd_priv.c 21751 2007-07-31 20:42:20Z lha $");
+RCSID("$Id$");
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_rd_priv(krb5_context context,
@@ -50,14 +50,18 @@ krb5_rd_priv(krb5_context context,
     krb5_keyblock *key;
     krb5_crypto crypto;
 
-    if (outbuf)
-	krb5_data_zero(outbuf);
+    krb5_data_zero(outbuf);
 
     if ((auth_context->flags & 
-	 (KRB5_AUTH_CONTEXT_RET_TIME | KRB5_AUTH_CONTEXT_RET_SEQUENCE)) &&
-	outdata == NULL) {
-	krb5_clear_error_string (context);
-	return KRB5_RC_REQUIRED; /* XXX better error, MIT returns this */
+	 (KRB5_AUTH_CONTEXT_RET_TIME | KRB5_AUTH_CONTEXT_RET_SEQUENCE)))
+    {
+	if (outdata == NULL) {
+	    krb5_clear_error_string (context);
+	    return KRB5_RC_REQUIRED; /* XXX better error, MIT returns this */
+	}
+	/* if these fields are not present in the priv-part, silently
+           return zero */
+	memset(outdata, 0, sizeof(*outdata));
     }
 
     memset(&priv, 0, sizeof(priv));
@@ -165,9 +169,6 @@ krb5_rd_priv(krb5_context context,
 
     if ((auth_context->flags & 
 	 (KRB5_AUTH_CONTEXT_RET_TIME | KRB5_AUTH_CONTEXT_RET_SEQUENCE))) {
-	/* if these fields are not present in the priv-part, silently
-           return zero */
-	memset(outdata, 0, sizeof(*outdata));
 	if(part.timestamp)
 	    outdata->timestamp = *part.timestamp;
 	if(part.usec)

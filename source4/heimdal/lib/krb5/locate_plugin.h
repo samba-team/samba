@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: locate_plugin.h 23351 2008-07-15 11:22:39Z lha $ */
+/* $Id$ */
 
 #ifndef HEIMDAL_KRB5_LOCATE_PLUGIN_H
 #define HEIMDAL_KRB5_LOCATE_PLUGIN_H 1

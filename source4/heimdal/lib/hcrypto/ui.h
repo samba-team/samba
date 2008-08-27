@@ -31,7 +31,7 @@
  * SUCH DAMAGE.
  */
 
-/* $Id: ui.h 16480 2006-01-08 21:47:29Z lha $ */
+/* $Id$ */
 
 #ifndef _HEIM_UI_H
 #define _HEIM_UI_H 1

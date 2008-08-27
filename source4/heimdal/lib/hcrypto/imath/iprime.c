@@ -1,10 +1,10 @@
 /*
   Name:     iprime.c
   Purpose:  Pseudoprimality testing routines
-  Author:   M. J. Fromberger <http://www.dartmouth.edu/~sting/>
-  Info:     $Id: iprime.c 19737 2007-01-05 21:01:48Z lha $
+  Author:   M. J. Fromberger <http://spinning-yarns.org/michael/>
+  Info:     $Id: iprime.c 635 2008-01-08 18:19:40Z sting $
 
-  Copyright (C) 2002 Michael J. Fromberger, All Rights Reserved.
+  Copyright (C) 2002-2008 Michael J. Fromberger, All Rights Reserved.
 
   Permission is hereby granted, free of charge, to any person
   obtaining a copy of this software and associated documentation files
@@ -47,7 +47,9 @@ static const int s_ptab[] = {
     773, 787, 797, 809, 811, 821, 823, 827, 829, 839,
     853, 857, 859, 863, 877, 881, 883, 887, 907, 911,
     919, 929, 937, 941, 947, 953, 967, 971, 977, 983,
-    991, 997, 1009, 1013, 1019, 1021, 1031, 1033,
+    991, 997
+#ifdef IMATH_LARGE_PRIME_TABLE
+    , 1009, 1013, 1019, 1021, 1031, 1033,
     1039, 1049, 1051, 1061, 1063, 1069, 1087, 1091,
     1093, 1097, 1103, 1109, 1117, 1123, 1129, 1151,
     1153, 1163, 1171, 1181, 1187, 1193, 1201, 1213,
@@ -110,9 +112,9 @@ static const int s_ptab[] = {
     4801, 4813, 4817, 4831, 4861, 4871, 4877, 4889,
     4903, 4909, 4919, 4931, 4933, 4937, 4943, 4951,
     4957, 4967, 4969, 4973, 4987, 4993, 4999
+#endif
 };
 static const int s_ptab_size = sizeof(s_ptab)/sizeof(s_ptab[0]);
-
 
 /* {{{ mp_int_is_prime(z) */
 
@@ -122,7 +124,8 @@ static const int s_ptab_size = sizeof(s_ptab)/sizeof(s_ptab[0]);
  */
 mp_result mp_int_is_prime(mp_int z)
 {
-  int       i, rem;
+  int       i;
+  mp_small  rem;
   mp_result res;
 
   /* First check for divisibility by small primes; this eliminates a

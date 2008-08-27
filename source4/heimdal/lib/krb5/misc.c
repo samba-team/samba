@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: misc.c 21174 2007-06-19 10:10:58Z lha $");
+RCSID("$Id$");
 
 krb5_error_code KRB5_LIB_FUNCTION
 _krb5_s4u2self_to_checksumdata(krb5_context context, 

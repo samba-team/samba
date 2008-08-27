@@ -34,7 +34,7 @@
 #include "der_locl.h"
 #include <hex.h>
 
-RCSID("$Id: der_format.c 20861 2007-06-03 20:18:29Z lha $");
+RCSID("$Id$");
 
 int
 der_parse_hex_heim_integer (const char *p, heim_integer *data)

@@ -33,7 +33,7 @@
 
 #include "kdc_locl.h"
 
-RCSID("$Id: pkinit.c 23316 2008-06-23 04:32:32Z lha $");
+RCSID("$Id$");
 
 #ifdef PKINIT
 

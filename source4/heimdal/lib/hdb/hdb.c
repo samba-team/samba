@@ -33,7 +33,7 @@
 
 #include "hdb_locl.h"
 
-RCSID("$Id: hdb.c 23316 2008-06-23 04:32:32Z lha $");
+RCSID("$Id$");
 
 #ifdef HAVE_DLFCN_H
 #include <dlfcn.h>
@@ -54,9 +54,6 @@ static struct hdb_method methods[] = {
 #if defined(OPENLDAP) && !defined(OPENLDAP_MODULE)
     {"ldap:",	hdb_ldap_create},
     {"ldapi:",	hdb_ldapi_create},
-#endif
-#ifdef _SAMBA_BUILD_
-    {"ldb:",   hdb_ldb_create},
 #endif
 #ifdef HAVE_LDB /* Used for integrated samba build */
     {"ldb:",	hdb_ldb_create},

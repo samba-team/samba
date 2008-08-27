@@ -33,7 +33,7 @@
 
 #include "kdc_locl.h"
 
-RCSID("$Id: kerberos5.c 23316 2008-06-23 04:32:32Z lha $");
+RCSID("$Id$");
 
 #define MAX_TIME ((time_t)((1U << 31) - 1))
 
@@ -85,6 +85,24 @@ _kdc_find_padata(const KDC_REQ *req, int *start, int type)
 }
 
 /*
+ * This is a hack to allow predefined weak services, like afs to
+ * still use weak types
+ */
+
+krb5_boolean
+_kdc_is_weak_expection(krb5_principal principal, krb5_enctype etype)
+{
+    if (principal->name.name_string.len > 0 &&
+	strcmp(principal->name.name_string.val[0], "afs") == 0 &&
+	(etype == ETYPE_DES_CBC_CRC
+	 || etype == ETYPE_DES_CBC_MD4
+	 || etype == ETYPE_DES_CBC_MD5))
+	return TRUE;
+    return FALSE;
+}
+
+
+/*
  * Detect if `key' is the using the the precomputed `default_salt'.
  */
 
@@ -120,7 +138,8 @@ _kdc_find_etype(krb5_context context, const hdb_entry_ex *princ,
     for(i = 0; ret != 0 && i < len ; i++) {
 	Key *key = NULL;
 
-	if (krb5_enctype_valid(context, etypes[i]) != 0)
+	if (krb5_enctype_valid(context, etypes[i]) != 0 &&
+	    !_kdc_is_weak_expection(princ->entry.principal, etypes[i]))
 	    continue;
 
 	while (hdb_next_enctype2key(context, &princ->entry, etypes[i], &key) == 0) {

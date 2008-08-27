@@ -33,7 +33,7 @@
 
 #include "krb5/gsskrb5_locl.h"
 
-RCSID("$Id: duplicate_name.c 19031 2006-11-13 18:02:57Z lha $");
+RCSID("$Id$");
 
 OM_uint32 _gsskrb5_duplicate_name (
             OM_uint32 * minor_status,
@@ -41,18 +41,19 @@ OM_uint32 _gsskrb5_duplicate_name (
             gss_name_t * dest_name
            )
 {
-    krb5_context context;
     krb5_const_principal src = (krb5_const_principal)src_name;
-    krb5_principal *dest = (krb5_principal *)dest_name;
+    krb5_context context;
+    krb5_principal dest;
     krb5_error_code kret;
 
     GSSAPI_KRB5_INIT (&context);
 
-    kret = krb5_copy_principal (context, src, dest);
+    kret = krb5_copy_principal (context, src, &dest);
     if (kret) {
 	*minor_status = kret;
 	return GSS_S_FAILURE;
     } else {
+	*dest_name = (gss_name_t)dest;
 	*minor_status = 0;
 	return GSS_S_COMPLETE;
     }

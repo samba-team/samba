@@ -36,7 +36,7 @@
 #include <rfc2459_asn1.h>
 #include <hx509.h>
 
-RCSID("$Id: kx509.c 23316 2008-06-23 04:32:32Z lha $");
+RCSID("$Id$");
 
 /*
  *

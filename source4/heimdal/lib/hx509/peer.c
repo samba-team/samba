@@ -32,7 +32,7 @@
  */
 
 #include "hx_locl.h"
-RCSID("$Id: peer.c 22345 2007-12-26 19:03:51Z lha $");
+RCSID("$Id$");
 
 /**
  * @page page_peer Hx509 crypto selecting functions

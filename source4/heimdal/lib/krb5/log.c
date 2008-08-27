@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: log.c 23443 2008-07-27 12:07:25Z lha $");
+RCSID("$Id$");
 
 struct facility {
     int min;
@@ -358,12 +358,12 @@ krb5_openlog(krb5_context context,
     if(p == NULL)
 	p = krb5_config_get_strings(context, NULL, "logging", "default", NULL);
     if(p){
-	for(q = p; *q; q++)
+	for(q = p; *q && ret == 0; q++)
 	    ret = krb5_addlog_dest(context, *fac, *q);
 	krb5_config_free_strings(p);
     }else
 	ret = krb5_addlog_dest(context, *fac, "SYSLOG");
-    return 0;
+    return ret;
 }
 
 krb5_error_code KRB5_LIB_FUNCTION

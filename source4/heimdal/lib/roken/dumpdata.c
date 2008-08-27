@@ -33,12 +33,12 @@
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
-RCSID("$Id: dumpdata.c 23412 2008-07-26 18:34:23Z lha $");
+RCSID("$Id$");
 #endif
 
 #include <unistd.h>
 
-#include <roken.h>
+#include "roken.h"
 
 /*
  * Write datablob to a filename, don't care about errors.

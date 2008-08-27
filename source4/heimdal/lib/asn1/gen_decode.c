@@ -34,7 +34,7 @@
 #include "gen_locl.h"
 #include "lex.h"
 
-RCSID("$Id: gen_decode.c 21503 2007-07-12 11:57:19Z lha $");
+RCSID("$Id$");
 
 static void
 decode_primitive (const char *typename, const char *name, const char *forwstr)

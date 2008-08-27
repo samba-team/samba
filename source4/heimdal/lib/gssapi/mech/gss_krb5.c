@@ -27,7 +27,7 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_krb5.c 23420 2008-07-26 18:37:48Z lha $");
+RCSID("$Id$");
 
 #include <krb5.h>
 #include <roken.h>
@@ -52,7 +52,7 @@ gss_krb5_copy_ccache(OM_uint32 *minor_status,
     if (ret)
 	return ret;
 
-    if (data_set == GSS_C_NO_BUFFER_SET || data_set->count != 1) {
+    if (data_set == GSS_C_NO_BUFFER_SET || data_set->count < 1) {
 	gss_release_buffer_set(minor_status, &data_set);
 	*minor_status = EINVAL;
 	return GSS_S_FAILURE;

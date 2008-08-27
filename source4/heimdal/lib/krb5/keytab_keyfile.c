@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: keytab_keyfile.c 23316 2008-06-23 04:32:32Z lha $");
+RCSID("$Id$");
 
 /* afs keyfile operations --------------------------------------- */
 
@@ -194,7 +194,7 @@ akf_start_seq_get(krb5_context context,
     int32_t ret;
     struct akf_data *d = id->data;
 
-    c->fd = open (d->filename, O_RDONLY|O_BINARY, 0600);
+    c->fd = open (d->filename, O_RDONLY | O_BINARY | O_CLOEXEC, 0600);
     if (c->fd < 0) {
 	ret = errno;
 	krb5_set_error_message(context, ret, "keytab afs keyfil open %s failed: %s",
@@ -301,10 +301,10 @@ akf_add_entry(krb5_context context,
 	return 0;
     }
 
-    fd = open (d->filename, O_RDWR | O_BINARY);
+    fd = open (d->filename, O_RDWR | O_BINARY | O_CLOEXEC);
     if (fd < 0) {
 	fd = open (d->filename,
-		   O_RDWR | O_BINARY | O_CREAT | O_EXCL, 0600);
+		   O_RDWR | O_BINARY | O_CREAT | O_EXCL | O_CLOEXEC, 0600);
 	if (fd < 0) {
 	    ret = errno;
 	    krb5_set_error_message(context, ret, "open(%s): %s", d->filename,

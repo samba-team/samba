@@ -33,11 +33,11 @@
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
-RCSID("$Id: signal.c 14773 2005-04-12 11:29:18Z lha $");
+RCSID("$Id$");
 #endif
 
 #include <signal.h>
-#include <roken.h>
+#include "roken.h"
 
 /*
  * We would like to always use this signal but there is a link error

@@ -1,6 +1,6 @@
 dnl stuff used by DNS resolv code in roken
 dnl
-dnl $Id: resolv.m4 16009 2005-09-02 10:17:38Z lha $
+dnl $Id$
 dnl
 
 AC_DEFUN([rk_RESOLV],[

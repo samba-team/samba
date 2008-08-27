@@ -31,7 +31,7 @@
  * SUCH DAMAGE.
  */
 
-/* $Id: md2.h 16480 2006-01-08 21:47:29Z lha $ */
+/* $Id$ */
 
 #ifndef HEIM_MD2_H
 #define HEIM_MD2_H 1

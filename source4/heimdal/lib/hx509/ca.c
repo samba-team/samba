@@ -33,7 +33,7 @@
 
 #include "hx_locl.h"
 #include <pkinit_asn1.h>
-RCSID("$Id: ca.c 22995 2008-04-15 19:31:29Z lha $");
+RCSID("$Id$");
 
 /**
  * @page page_ca Hx509 CA functions

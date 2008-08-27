@@ -33,7 +33,7 @@
 
 #include "krb5/gsskrb5_locl.h"
 
-RCSID("$Id: get_mic.c 23112 2008-04-27 18:51:26Z lha $");
+RCSID("$Id$");
 
 static OM_uint32
 mic_des

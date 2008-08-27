@@ -27,7 +27,7 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_display_name.c 23025 2008-04-17 10:01:57Z lha $");
+RCSID("$Id$");
 
 OM_uint32 GSSAPI_LIB_FUNCTION
 gss_display_name(OM_uint32 *minor_status,

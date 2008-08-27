@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: mech_locl.h 19948 2007-01-17 10:03:07Z lha $ */
+/* $Id$ */
 
 #include <config.h>
 

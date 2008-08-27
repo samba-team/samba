@@ -84,7 +84,7 @@
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
-RCSID("$Id: des.c 23117 2008-04-28 10:29:36Z lha $");
+RCSID("$Id$");
 #endif
 
 #define HC_DEPRECATED

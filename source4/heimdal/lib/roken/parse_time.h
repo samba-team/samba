@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: parse_time.h 14773 2005-04-12 11:29:18Z lha $ */
+/* $Id$ */
 
 #ifndef __PARSE_TIME_H__
 #define __PARSE_TIME_H__
