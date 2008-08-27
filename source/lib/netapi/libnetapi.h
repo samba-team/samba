@@ -317,4 +317,12 @@ WERROR NetRemoteTOD_r(struct libnetapi_ctx *ctx,
 		      struct NetRemoteTOD *r);
 WERROR NetRemoteTOD_l(struct libnetapi_ctx *ctx,
 		      struct NetRemoteTOD *r);
+NET_API_STATUS NetShareAdd(const char * server_name /* [in] */,
+			   uint32_t level /* [in] */,
+			   uint8_t *buffer /* [in] [ref] */,
+			   uint32_t *parm_err /* [out] [ref] */);
+WERROR NetShareAdd_r(struct libnetapi_ctx *ctx,
+		     struct NetShareAdd *r);
+WERROR NetShareAdd_l(struct libnetapi_ctx *ctx,
+		     struct NetShareAdd *r);
 #endif /* __LIBNETAPI_LIBNETAPI__ */
