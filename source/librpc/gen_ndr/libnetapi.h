@@ -344,6 +344,15 @@ struct USER_INFO_X {
 	uint32_t usriX_primary_group_id;
 };
 
+struct GROUP_USERS_INFO_0 {
+	const char * grui0_name;
+};
+
+struct GROUP_USERS_INFO_1 {
+	const char * grui1_name;
+	uint32_t grui1_attributes;
+};
+
 struct USER_MODALS_INFO_0 {
 	uint32_t usrmod0_min_passwd_len;
 	uint32_t usrmod0_max_passwd_age;
@@ -450,15 +459,6 @@ struct GROUP_INFO_1002 {
 
 struct GROUP_INFO_1005 {
 	uint32_t grpi1005_attributes;
-};
-
-struct GROUP_USERS_INFO_0 {
-	const char * grui0_name;
-};
-
-struct GROUP_USERS_INFO_1 {
-	const char * grui1_name;
-	uint32_t grui1_attributes;
 };
 
 struct LOCALGROUP_INFO_0 {
@@ -764,6 +764,24 @@ struct NetUserSetInfo {
 
 	struct {
 		uint32_t *parm_err;/* [ref] */
+		enum NET_API_STATUS result;
+	} out;
+
+};
+
+
+struct NetUserGetGroups {
+	struct {
+		const char * server_name;
+		const char * user_name;
+		uint32_t level;
+		uint32_t prefmaxlen;
+	} in;
+
+	struct {
+		uint8_t **buffer;/* [ref] */
+		uint32_t *entries_read;/* [ref] */
+		uint32_t *total_entries;/* [ref] */
 		enum NET_API_STATUS result;
 	} out;
 
