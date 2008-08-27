@@ -27,10 +27,100 @@
 /****************************************************************
 ****************************************************************/
 
+static NTSTATUS map_SHARE_INFO_buffer_to_srvsvc_share_info(TALLOC_CTX *mem_ctx,
+							   uint8_t *buffer,
+							   uint32_t level,
+							   union srvsvc_NetShareInfo *info)
+{
+	struct SHARE_INFO_2 *i2 = NULL;
+	struct srvsvc_NetShareInfo2 *s2 = NULL;
+
+	if (!buffer) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	switch (level) {
+		case 2:
+			i2 = (struct SHARE_INFO_2 *)buffer;
+
+			s2 = TALLOC_P(mem_ctx, struct srvsvc_NetShareInfo2);
+			NT_STATUS_HAVE_NO_MEMORY(s2);
+
+			s2->name		= i2->shi2_netname;
+			s2->type		= i2->shi2_type;
+			s2->comment		= i2->shi2_remark;
+			s2->permissions		= i2->shi2_permissions;
+			s2->max_users		= i2->shi2_max_uses;
+			s2->current_users	= i2->shi2_current_uses;
+			s2->path		= i2->shi2_path;
+			s2->password		= i2->shi2_passwd;
+
+			info->info2 = s2;
+
+			break;
+		default:
+			return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	return NT_STATUS_OK;
+}
+
+/****************************************************************
+****************************************************************/
+
 WERROR NetShareAdd_r(struct libnetapi_ctx *ctx,
 		     struct NetShareAdd *r)
 {
-	return WERR_NOT_SUPPORTED;
+	WERROR werr;
+	NTSTATUS status;
+	struct cli_state *cli = NULL;
+	struct rpc_pipe_client *pipe_cli = NULL;
+	union srvsvc_NetShareInfo info;
+
+	if (!r->in.buffer) {
+		return WERR_INVALID_PARAM;
+	}
+
+	switch (r->in.level) {
+		case 2:
+			break;
+		default:
+			return WERR_UNKNOWN_LEVEL;
+	}
+
+	werr = libnetapi_open_pipe(ctx, r->in.server_name,
+				   &ndr_table_srvsvc.syntax_id,
+				   &cli,
+				   &pipe_cli);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	status = map_SHARE_INFO_buffer_to_srvsvc_share_info(ctx,
+							    r->in.buffer,
+							    r->in.level,
+							    &info);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	status = rpccli_srvsvc_NetShareAdd(pipe_cli, ctx,
+					   r->in.server_name,
+					   r->in.level,
+					   &info,
+					   r->out.parm_err,
+					   &werr);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+ done:
+	if (!cli) {
+		return werr;
+	}
+
+	return werr;
 }
 
 /****************************************************************
