@@ -217,6 +217,15 @@ int net_rpc_shell(struct net_context *c, int argc, const char **argv)
 		return -1;
 	}
 
+	if (libnetapi_init(&c->netapi_ctx) != 0) {
+		return -1;
+	}
+	libnetapi_set_username(c->netapi_ctx, c->opt_user_name);
+	libnetapi_set_password(c->netapi_ctx, c->opt_password);
+	if (c->opt_kerberos) {
+		libnetapi_set_use_kerberos(c->netapi_ctx);
+	}
+
 	ctx = TALLOC_P(NULL, struct rpc_sh_ctx);
 	if (ctx == NULL) {
 		d_fprintf(stderr, "talloc failed\n");
