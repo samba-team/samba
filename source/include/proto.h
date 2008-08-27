@@ -1185,7 +1185,6 @@ void srv_put_dos_date2(char *buf,int offset, time_t unixdate);
 void srv_put_dos_date3(char *buf,int offset,time_t unixdate);
 void put_long_date_timespec(char *p, struct timespec ts);
 void put_long_date(char *p, time_t t);
-time_t get_create_time(const SMB_STRUCT_STAT *st,bool fake_dirs);
 struct timespec get_create_timespec(const SMB_STRUCT_STAT *st,bool fake_dirs);
 struct timespec get_atimespec(const SMB_STRUCT_STAT *pst);
 void set_atimespec(SMB_STRUCT_STAT *pst, struct timespec ts);
