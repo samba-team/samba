@@ -100,6 +100,14 @@ interface krb5pac
 		PAC_BUFFER_RAW buffers[num_buffers];
 	} PAC_DATA_RAW;
 
+	typedef [public] struct {
+		uint32 MessageType;
+		uint32 ChecksumLength;
+		uint32 SignatureType;
+		uint32 SignatureLength;
+		[size_is(ChecksumLength),length_is(ChecksumLength)] uint8 *data;
+	} PAC_Validate;
+
 	void decode_pac(
 		[in] PAC_DATA pac
 		);
@@ -111,4 +119,10 @@ interface krb5pac
 	void decode_login_info(
 		[in] PAC_LOGON_INFO logon_info
 		);
+
+	void decode_pac_validate(
+		[in] PAC_Validate pac_validate
+		);
+
+
 }

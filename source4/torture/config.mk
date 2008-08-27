@@ -114,7 +114,7 @@ torture_rpc_OBJ_FILES = $(addprefix $(torturesrcdir)/rpc/, \
 		drsuapi_cracknames.o dssync.o spoolss.o spoolss_notify.o spoolss_win.o \
 		unixinfo.o samr.o samr_accessmask.o wkssvc.o srvsvc.o svcctl.o atsvc.o \
 		eventlog.o epmapper.o winreg.o initshutdown.o oxidresolve.o remact.o mgmt.o \
-		scanner.o autoidl.o countcalls.o testjoin.o schannel.o netlogon.o samlogon.o \
+		scanner.o autoidl.o countcalls.o testjoin.o schannel.o netlogon.o remote_pac.o samlogon.o \
 		samsync.o bind.o dssetup.o alter_context.o bench.o samba3rpc.o rpc.o async_bind.o \
 		handles.o frsapi.o)
 
