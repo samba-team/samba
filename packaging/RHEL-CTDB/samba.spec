@@ -233,9 +233,13 @@ cd ..
 # NSS & PAM winbind support
 install -m 755 source/bin/pam_winbind.so $RPM_BUILD_ROOT/%{_libarch}/security/pam_winbind.so
 install -m 755 source/nsswitch/libnss_winbind.so $RPM_BUILD_ROOT/%{_libarch}/libnss_winbind.so
-#install -m 755 source/nsswitch/libnss_wins.so $RPM_BUILD_ROOT/%{_libarch}/libnss_wins.so
 ( cd $RPM_BUILD_ROOT/%{_libarch};
   ln -sf libnss_winbind.so  libnss_winbind.so.2 )
+#
+# do not install libnss_wins.so in order to reduce dependencies
+# (we do not need it for the samba-ctdb scenario)
+#
+#install -m 755 source/nsswitch/libnss_wins.so $RPM_BUILD_ROOT/%{_libarch}/libnss_wins.so
 # ( cd $RPM_BUILD_ROOT/%{_libarch}; ln -sf libnss_wins.so  libnss_wins.so.2 )
 
 # Install pam_smbpass.so
