@@ -25,8 +25,10 @@
 #include "torture/torture.h"
 #include "lib/events/events.h"
 #include "auth/auth.h"
+#include "auth/gensec/gensec.h"
 #include "lib/cmdline/popt_common.h"
 #include "torture/rpc/rpc.h"
+#include "torture/rpc/netlogon.h"
 #include "libcli/auth/libcli_auth.h"
 #include "librpc/gen_ndr/ndr_netlogon_c.h"
 #include "librpc/gen_ndr/ndr_lsa_c.h"
@@ -67,8 +69,8 @@ static bool test_LogonUasLogoff(struct torture_context *tctx,
 }
 
 static bool test_SetupCredentials(struct dcerpc_pipe *p, struct torture_context *tctx,
-			   struct cli_credentials *credentials,
-			   struct creds_CredentialState **creds_out)
+				  struct cli_credentials *credentials,
+				  struct creds_CredentialState **creds_out)
 {
 	NTSTATUS status;
 	struct netr_ServerReqChallenge r;
@@ -113,6 +115,13 @@ static bool test_SetupCredentials(struct dcerpc_pipe *p, struct torture_context 
 	torture_comment(tctx, "Testing ServerAuthenticate\n");
 
 	status = dcerpc_netr_ServerAuthenticate(p, tctx, &a);
+
+	/* This allows the tests to continue against the more fussy windows 2008 */
+	if (NT_STATUS_EQUAL(status, NT_STATUS_DOWNGRADE_DETECTED)) {
+		return test_SetupCredentials2(p, tctx, NETLOGON_NEG_AUTH2_ADS_FLAGS, 
+					      credentials, SEC_CHAN_BDC, creds_out);
+	}
+
 	torture_assert_ntstatus_ok(tctx, status, "ServerAuthenticate");
 
 	torture_assert(tctx, creds_client_check(creds, &credentials3), 
@@ -122,7 +131,7 @@ static bool test_SetupCredentials(struct dcerpc_pipe *p, struct torture_context 
 	return true;
 }
 
-static bool test_SetupCredentials2(struct dcerpc_pipe *p, struct torture_context *tctx,
+bool test_SetupCredentials2(struct dcerpc_pipe *p, struct torture_context *tctx,
 			    uint32_t negotiate_flags,
 			    struct cli_credentials *machine_credentials,
 			    int sec_chan_type,

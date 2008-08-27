@@ -127,7 +127,7 @@ interface netlogon
 		netr_IdentityInfo identity_info;
 		lsa_String  package_name;
 		uint32 length;
-		[size_is(length),length_is(length)] uint8 *data;
+		[size_is(length)] uint8 *data;
 	} netr_GenericInfo;
 
 	typedef enum {
@@ -240,12 +240,20 @@ interface netlogon
 		lsa_String unknown4;
 	} netr_PacInfo;
 
+	typedef enum {
+		NetlogonValidationUasInfo = 1,
+		NetlogonValidationSamInfo = 2,
+		NetlogonValidationSamInfo2 = 3,
+		NetlogonValidationGenericInfo2 = 5,
+		NetlogonValidationSamInfo4 = 6
+	} netr_ValidationInfoClass;
+
 	typedef [public,switch_type(uint16)] union {
-		[case(2)] netr_SamInfo2 *sam2;
-		[case(3)] netr_SamInfo3 *sam3;
+		[case(NetlogonValidationSamInfo)] netr_SamInfo2 *sam2;
+		[case(NetlogonValidationSamInfo2)] netr_SamInfo3 *sam3;
 		[case(4)] netr_PacInfo  *pac;
-		[case(5)] netr_PacInfo  *pac;
-		[case(6)] netr_SamInfo6 *sam6;
+		[case(NetlogonValidationGenericInfo2)] netr_PacInfo  *pac;
+		[case(NetlogonValidationSamInfo4)] netr_SamInfo6 *sam6;
 	} netr_Validation;
 
 	typedef [public, flag(NDR_PAHEX)] struct {
