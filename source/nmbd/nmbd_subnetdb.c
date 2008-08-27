@@ -195,20 +195,19 @@ struct subnet_record *make_normal_subnet(const struct interface *iface)
 bool create_subnets(void)
 {
 	/* We only count IPv4 interfaces whilst we're waiting. */
-	int num_interfaces;
+	int num_interfaces = iface_count_v4();
 	int i;
 	struct in_addr unicast_ip, ipzero;
 
   try_interfaces_again:
 
-	/* Only count IPv4, non-loopback interfaces. */
-	if (iface_count_v4_nl() == 0) {
-		DEBUG(0,("create_subnets: No local IPv4 non-loopback interfaces !\n"));
+	if (iface_count_v4() == 0) {
+		DEBUG(0,("create_subnets: No local interfaces !\n"));
 		DEBUG(0,("create_subnets: Waiting for an interface to appear ...\n"));
 	}
 
-	/* We only count IPv4, non-loopback interfaces here. */
-	while (iface_count_v4_nl() == 0) {
+	/* We only count IPv4 interfaces here. */
+	while (iface_count_v4() == 0) {
 		void (*saved_handler)(int);
 
 		/*
