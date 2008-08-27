@@ -2614,11 +2614,6 @@ NTSTATUS create_file_unixpath(connection_struct *conn,
 		goto fail;
 	}
 
-	if (create_options & NTCREATEX_OPTIONS_INVALID_PARAM_MASK) {
-		status = NT_STATUS_INVALID_PARAMETER;
-		goto fail;
-	}
-
 	if (req == NULL) {
 		oplock_request |= INTERNAL_OPEN_ONLY;
 	}
