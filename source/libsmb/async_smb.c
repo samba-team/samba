@@ -409,6 +409,7 @@ bool cli_chain_cork(struct cli_state *cli, struct event_context *ev,
 	req->async = NULL;
 
 	req->enc_state = NULL;
+	req->recv_helper.fn = NULL;
 
 	SSVAL(req->outbuf, smb_tid, cli->cnum);
 	cli_setup_packet_buf(cli, req->outbuf);
@@ -822,7 +823,11 @@ static void handle_incoming_pdu(struct cli_state *cli)
 		 * destructor cli_async_req_destructor().
 		 */
 		if (req->async[i] != NULL) {
-			async_req_done(req->async[i]);
+			if (req->recv_helper.fn != NULL) {
+				req->recv_helper.fn(req->async[i]);
+			} else {
+				async_req_done(req->async[i]);
+			}
 		}
 	}
 	return;

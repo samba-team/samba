@@ -91,6 +91,18 @@ struct cli_request {
 			uint8_t *rcvbuf;
 		} read;
 	} data;
+
+	/**
+	 * For requests that don't follow the strict request/reply pattern
+	 * such as the transaction request family and echo requests it is
+	 * necessary to break the standard procedure in
+	 * handle_incoming_pdu(). For a simple example look at
+	 * cli_echo_recv_helper().
+	 */
+	struct {
+		void (*fn)(struct async_req *req);
+		void *priv;
+	} recv_helper;
 };
 
 /*
