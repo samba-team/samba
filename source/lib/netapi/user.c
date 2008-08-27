@@ -2371,10 +2371,183 @@ WERROR NetUserModalsSet_l(struct libnetapi_ctx *ctx,
 /****************************************************************
 ****************************************************************/
 
+static NTSTATUS add_GROUP_USERS_INFO_X_buffer(TALLOC_CTX *mem_ctx,
+					      uint32_t level,
+					      const char *group_name,
+					      uint32_t attributes,
+					      uint8_t **buffer,
+					      uint32_t *num_entries)
+{
+	struct GROUP_USERS_INFO_0 u0;
+	struct GROUP_USERS_INFO_1 u1;
+
+	switch (level) {
+		case 0:
+			u0.grui0_name = talloc_strdup(mem_ctx, group_name);
+			NT_STATUS_HAVE_NO_MEMORY(u0.grui0_name);
+
+			ADD_TO_ARRAY(mem_ctx, struct GROUP_USERS_INFO_0, u0,
+				     (struct GROUP_USERS_INFO_0 **)buffer, num_entries);
+			break;
+		case 1:
+			u1.grui1_name = talloc_strdup(mem_ctx, group_name);
+			NT_STATUS_HAVE_NO_MEMORY(u1.grui1_name);
+
+			u1.grui1_attributes = attributes;
+
+			ADD_TO_ARRAY(mem_ctx, struct GROUP_USERS_INFO_1, u1,
+				     (struct GROUP_USERS_INFO_1 **)buffer, num_entries);
+			break;
+		default:
+			return NT_STATUS_INVALID_INFO_CLASS;
+	}
+
+	return NT_STATUS_OK;
+}
+
+/****************************************************************
+****************************************************************/
+
 WERROR NetUserGetGroups_r(struct libnetapi_ctx *ctx,
 			  struct NetUserGetGroups *r)
 {
-	return WERR_NOT_SUPPORTED;
+	struct cli_state *cli = NULL;
+	struct rpc_pipe_client *pipe_cli = NULL;
+	struct policy_handle connect_handle, domain_handle, user_handle;
+	struct lsa_String lsa_account_name;
+	struct dom_sid2 *domain_sid = NULL;
+	struct samr_Ids user_rids, name_types;
+	struct samr_RidWithAttributeArray *rid_array = NULL;
+	struct lsa_Strings names;
+	struct samr_Ids types;
+	uint32_t *rids = NULL;
+
+	int i;
+	uint32_t entries_read = 0;
+
+	NTSTATUS status = NT_STATUS_OK;
+	WERROR werr;
+
+	ZERO_STRUCT(connect_handle);
+	ZERO_STRUCT(domain_handle);
+
+	if (!r->out.buffer) {
+		return WERR_INVALID_PARAM;
+	}
+
+	*r->out.buffer = NULL;
+	*r->out.entries_read = 0;
+
+	switch (r->in.level) {
+		case 0:
+		case 1:
+			break;
+		default:
+			return WERR_UNKNOWN_LEVEL;
+	}
+
+	werr = libnetapi_open_pipe(ctx, r->in.server_name,
+				   &ndr_table_samr.syntax_id,
+				   &cli,
+				   &pipe_cli);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	werr = libnetapi_samr_open_domain(ctx, pipe_cli,
+					  SAMR_ACCESS_ENUM_DOMAINS |
+					  SAMR_ACCESS_OPEN_DOMAIN,
+					  SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
+					  &connect_handle,
+					  &domain_handle,
+					  &domain_sid);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	init_lsa_String(&lsa_account_name, r->in.user_name);
+
+	status = rpccli_samr_LookupNames(pipe_cli, ctx,
+					 &domain_handle,
+					 1,
+					 &lsa_account_name,
+					 &user_rids,
+					 &name_types);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	status = rpccli_samr_OpenUser(pipe_cli, ctx,
+				      &domain_handle,
+				      SAMR_USER_ACCESS_GET_GROUPS,
+				      user_rids.ids[0],
+				      &user_handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	status = rpccli_samr_GetGroupsForUser(pipe_cli, ctx,
+					      &user_handle,
+					      &rid_array);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	rids = talloc_array(ctx, uint32_t, rid_array->count);
+	if (!rids) {
+		werr = WERR_NOMEM;
+		goto done;
+	}
+
+	for (i=0; i < rid_array->count; i++) {
+		rids[i] = rid_array->rids[i].rid;
+	}
+
+	status = rpccli_samr_LookupRids(pipe_cli, ctx,
+					&domain_handle,
+					rid_array->count,
+					rids,
+					&names,
+					&types);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	for (i=0; i < rid_array->count; i++) {
+		status = add_GROUP_USERS_INFO_X_buffer(ctx,
+						       r->in.level,
+						       names.names[i].string,
+						       rid_array->rids[i].attributes,
+						       r->out.buffer,
+						       &entries_read);
+		if (!NT_STATUS_IS_OK(status)) {
+			werr = ntstatus_to_werror(status);
+			goto done;
+		}
+	}
+
+	if (r->out.entries_read) {
+		*r->out.entries_read = entries_read;
+	}
+	if (r->out.total_entries) {
+		*r->out.total_entries = entries_read;
+	}
+
+ done:
+	if (!cli) {
+		return werr;
+	}
+
+	if (ctx->disable_policy_handle_cache) {
+		libnetapi_samr_close_domain_handle(ctx, &domain_handle);
+		libnetapi_samr_close_connect_handle(ctx, &connect_handle);
+	}
+
+	return werr;
 }
 
 /****************************************************************
