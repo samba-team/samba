@@ -1817,6 +1817,69 @@ _PUBLIC_ void ndr_print_USER_INFO_X(struct ndr_print *ndr, const char *name, con
 	ndr->depth--;
 }
 
+_PUBLIC_ enum ndr_err_code ndr_push_GROUP_USERS_INFO_0(struct ndr_push *ndr, int ndr_flags, const struct GROUP_USERS_INFO_0 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->grui0_name));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_GROUP_USERS_INFO_0(struct ndr_pull *ndr, int ndr_flags, struct GROUP_USERS_INFO_0 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->grui0_name));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_GROUP_USERS_INFO_0(struct ndr_print *ndr, const char *name, const struct GROUP_USERS_INFO_0 *r)
+{
+	ndr_print_struct(ndr, name, "GROUP_USERS_INFO_0");
+	ndr->depth++;
+	ndr_print_string(ndr, "grui0_name", r->grui0_name);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_GROUP_USERS_INFO_1(struct ndr_push *ndr, int ndr_flags, const struct GROUP_USERS_INFO_1 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->grui1_name));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->grui1_attributes));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_GROUP_USERS_INFO_1(struct ndr_pull *ndr, int ndr_flags, struct GROUP_USERS_INFO_1 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->grui1_name));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->grui1_attributes));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_GROUP_USERS_INFO_1(struct ndr_print *ndr, const char *name, const struct GROUP_USERS_INFO_1 *r)
+{
+	ndr_print_struct(ndr, name, "GROUP_USERS_INFO_1");
+	ndr->depth++;
+	ndr_print_string(ndr, "grui1_name", r->grui1_name);
+	ndr_print_uint32(ndr, "grui1_attributes", r->grui1_attributes);
+	ndr->depth--;
+}
+
 _PUBLIC_ enum ndr_err_code ndr_push_NET_DISPLAY_USER(struct ndr_push *ndr, int ndr_flags, const struct NET_DISPLAY_USER *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
@@ -1943,69 +2006,6 @@ _PUBLIC_ void ndr_print_NET_DISPLAY_GROUP(struct ndr_print *ndr, const char *nam
 	ndr_print_uint32(ndr, "grpi3_group_id", r->grpi3_group_id);
 	ndr_print_uint32(ndr, "grpi3_attributes", r->grpi3_attributes);
 	ndr_print_uint32(ndr, "grpi3_next_index", r->grpi3_next_index);
-	ndr->depth--;
-}
-
-_PUBLIC_ enum ndr_err_code ndr_push_GROUP_USERS_INFO_0(struct ndr_push *ndr, int ndr_flags, const struct GROUP_USERS_INFO_0 *r)
-{
-	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_push_align(ndr, 4));
-		NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->grui0_name));
-	}
-	if (ndr_flags & NDR_BUFFERS) {
-	}
-	return NDR_ERR_SUCCESS;
-}
-
-_PUBLIC_ enum ndr_err_code ndr_pull_GROUP_USERS_INFO_0(struct ndr_pull *ndr, int ndr_flags, struct GROUP_USERS_INFO_0 *r)
-{
-	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_pull_align(ndr, 4));
-		NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->grui0_name));
-	}
-	if (ndr_flags & NDR_BUFFERS) {
-	}
-	return NDR_ERR_SUCCESS;
-}
-
-_PUBLIC_ void ndr_print_GROUP_USERS_INFO_0(struct ndr_print *ndr, const char *name, const struct GROUP_USERS_INFO_0 *r)
-{
-	ndr_print_struct(ndr, name, "GROUP_USERS_INFO_0");
-	ndr->depth++;
-	ndr_print_string(ndr, "grui0_name", r->grui0_name);
-	ndr->depth--;
-}
-
-_PUBLIC_ enum ndr_err_code ndr_push_GROUP_USERS_INFO_1(struct ndr_push *ndr, int ndr_flags, const struct GROUP_USERS_INFO_1 *r)
-{
-	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_push_align(ndr, 4));
-		NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->grui1_name));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->grui1_attributes));
-	}
-	if (ndr_flags & NDR_BUFFERS) {
-	}
-	return NDR_ERR_SUCCESS;
-}
-
-_PUBLIC_ enum ndr_err_code ndr_pull_GROUP_USERS_INFO_1(struct ndr_pull *ndr, int ndr_flags, struct GROUP_USERS_INFO_1 *r)
-{
-	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_pull_align(ndr, 4));
-		NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->grui1_name));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->grui1_attributes));
-	}
-	if (ndr_flags & NDR_BUFFERS) {
-	}
-	return NDR_ERR_SUCCESS;
-}
-
-_PUBLIC_ void ndr_print_GROUP_USERS_INFO_1(struct ndr_print *ndr, const char *name, const struct GROUP_USERS_INFO_1 *r)
-{
-	ndr_print_struct(ndr, name, "GROUP_USERS_INFO_1");
-	ndr->depth++;
-	ndr_print_string(ndr, "grui1_name", r->grui1_name);
-	ndr_print_uint32(ndr, "grui1_attributes", r->grui1_attributes);
 	ndr->depth--;
 }
 
@@ -2615,6 +2615,48 @@ _PUBLIC_ void ndr_print_NetUserSetInfo(struct ndr_print *ndr, const char *name, 
 		ndr_print_ptr(ndr, "parm_err", r->out.parm_err);
 		ndr->depth++;
 		ndr_print_uint32(ndr, "parm_err", *r->out.parm_err);
+		ndr->depth--;
+		ndr_print_NET_API_STATUS(ndr, "result", r->out.result);
+		ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+_PUBLIC_ void ndr_print_NetUserGetGroups(struct ndr_print *ndr, const char *name, int flags, const struct NetUserGetGroups *r)
+{
+	ndr_print_struct(ndr, name, "NetUserGetGroups");
+	ndr->depth++;
+	if (flags & NDR_SET_VALUES) {
+		ndr->flags |= LIBNDR_PRINT_SET_VALUES;
+	}
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "NetUserGetGroups");
+		ndr->depth++;
+		ndr_print_string(ndr, "server_name", r->in.server_name);
+		ndr_print_string(ndr, "user_name", r->in.user_name);
+		ndr_print_uint32(ndr, "level", r->in.level);
+		ndr_print_uint32(ndr, "prefmaxlen", r->in.prefmaxlen);
+		ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "NetUserGetGroups");
+		ndr->depth++;
+		ndr_print_ptr(ndr, "buffer", r->out.buffer);
+		ndr->depth++;
+		ndr_print_ptr(ndr, "buffer", *r->out.buffer);
+		ndr->depth++;
+		if (*r->out.buffer) {
+			ndr_print_uint8(ndr, "buffer", **r->out.buffer);
+		}
+		ndr->depth--;
+		ndr->depth--;
+		ndr_print_ptr(ndr, "entries_read", r->out.entries_read);
+		ndr->depth++;
+		ndr_print_uint32(ndr, "entries_read", *r->out.entries_read);
+		ndr->depth--;
+		ndr_print_ptr(ndr, "total_entries", r->out.total_entries);
+		ndr->depth++;
+		ndr_print_uint32(ndr, "total_entries", *r->out.total_entries);
 		ndr->depth--;
 		ndr_print_NET_API_STATUS(ndr, "result", r->out.result);
 		ndr->depth--;
