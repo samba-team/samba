@@ -748,7 +748,8 @@ static NTSTATUS libnetapi_samr_lookup_user_map_USER_INFO(TALLOC_CTX *mem_ctx,
 
 	switch (level) {
 		case 10:
-			info10.usri10_name = talloc_strdup(mem_ctx, user_name);
+			info10.usri10_name = talloc_strdup(mem_ctx,
+				info21->account_name.string);
 			NT_STATUS_HAVE_NO_MEMORY(info10.usri10_name);
 
 			info10.usri10_comment = talloc_strdup(mem_ctx,
@@ -766,7 +767,8 @@ static NTSTATUS libnetapi_samr_lookup_user_map_USER_INFO(TALLOC_CTX *mem_ctx,
 			break;
 
 		case 20:
-			info20.usri20_name = talloc_strdup(mem_ctx, user_name);
+			info20.usri20_name = talloc_strdup(mem_ctx,
+				info21->account_name.string);
 			NT_STATUS_HAVE_NO_MEMORY(info20.usri20_name);
 
 			info20.usri20_comment = talloc_strdup(mem_ctx,
@@ -784,7 +786,8 @@ static NTSTATUS libnetapi_samr_lookup_user_map_USER_INFO(TALLOC_CTX *mem_ctx,
 
 			break;
 		case 23:
-			info23.usri23_name = talloc_strdup(mem_ctx, user_name);
+			info23.usri23_name = talloc_strdup(mem_ctx,
+				info21->account_name.string);
 			NT_STATUS_HAVE_NO_MEMORY(info23.usri23_name);
 
 			info23.usri23_comment = talloc_strdup(mem_ctx,
