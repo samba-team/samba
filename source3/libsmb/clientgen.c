@@ -661,7 +661,7 @@ static void cli_echo_recv_helper(struct async_req *req)
 		return;
 	}
 
-	cli_req = cli_request_get(req);
+	cli_req = talloc_get_type_abort(req->private_data, struct cli_request);
 
 	if ((num_bytes != cli_req->data.echo.data.length)
 	    || (memcmp(cli_req->data.echo.data.data, bytes,
@@ -713,7 +713,7 @@ struct async_req *cli_echo_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 		TALLOC_FREE(data_copy);
 		return NULL;
 	}
-	req = cli_request_get(result);
+	req = talloc_get_type_abort(result->private_data, struct cli_request);
 
 	client_set_trans_sign_state_on(cli, req->mid);
 

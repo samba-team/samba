@@ -125,12 +125,6 @@ bool cli_chain_cork(struct cli_state *cli, struct event_context *ev,
 		    size_t size_hint);
 void cli_chain_uncork(struct cli_state *cli);
 
-/*
- * Convenience function to get the SMB part out of an async_req
- */
-
-struct cli_request *cli_request_get(struct async_req *req);
-
 NTSTATUS cli_pull_reply(struct async_req *req,
 			uint8_t *pwct, uint16_t **pvwv,
 			uint16_t *pnum_bytes, uint8_t **pbytes);

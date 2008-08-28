@@ -107,7 +107,8 @@ static uint16_t cli_new_mid(struct cli_state *cli)
 static char *cli_request_print(TALLOC_CTX *mem_ctx, struct async_req *req)
 {
 	char *result = async_req_print(mem_ctx, req);
-	struct cli_request *cli_req = cli_request_get(req);
+	struct cli_request *cli_req = talloc_get_type_abort(
+		req->private_data, struct cli_request);
 
 	if (result == NULL) {
 		return NULL;
@@ -216,7 +217,8 @@ static bool find_andx_cmd_ofs(char *buf, size_t *pofs)
 
 static int cli_async_req_destructor(struct async_req *req)
 {
-	struct cli_request *cli_req = cli_request_get(req);
+	struct cli_request *cli_req = talloc_get_type_abort(
+		req->private_data, struct cli_request);
 	int i, pending;
 	bool found = false;
 
@@ -560,7 +562,8 @@ NTSTATUS cli_pull_reply(struct async_req *req,
 			uint8_t *pwct, uint16_t **pvwv,
 			uint16_t *pnum_bytes, uint8_t **pbytes)
 {
-	struct cli_request *cli_req = cli_request_get(req);
+	struct cli_request *cli_req = talloc_get_type_abort(
+		req->private_data, struct cli_request);
 	uint8_t wct, cmd;
 	uint16_t num_bytes;
 	size_t wct_ofs, bytes_offset;
@@ -664,20 +667,6 @@ NTSTATUS cli_pull_reply(struct async_req *req,
 	*pbytes = (uint8_t *)cli_req->inbuf + bytes_offset + 2;
 
 	return NT_STATUS_OK;
-}
-
-/**
- * Convenience function to get the SMB part out of an async_req
- * @param[in] req	The request to look at
- * @retval The private_data as struct cli_request
- */
-
-struct cli_request *cli_request_get(struct async_req *req)
-{
-	if (req == NULL) {
-		return NULL;
-	}
-	return talloc_get_type_abort(req->private_data, struct cli_request);
 }
 
 /**

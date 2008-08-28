@@ -83,7 +83,7 @@ struct async_req *cli_read_andx_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	req = cli_request_get(result);
+	req = talloc_get_type_abort(result->private_data, struct cli_request);
 
 	req->data.read.ofs = offset;
 	req->data.read.size = size;
@@ -103,7 +103,8 @@ struct async_req *cli_read_andx_send(TALLOC_CTX *mem_ctx,
 NTSTATUS cli_read_andx_recv(struct async_req *req, ssize_t *received,
 			    uint8_t **rcvbuf)
 {
-	struct cli_request *cli_req = cli_request_get(req);
+	struct cli_request *cli_req = talloc_get_type_abort(
+		req->private_data, struct cli_request);
 	uint8_t wct;
 	uint16_t *vwv;
 	uint16_t num_bytes;
@@ -311,7 +312,8 @@ static void cli_pull_read_done(struct async_req *read_req)
 		read_req->async.priv, struct async_req);
 	struct cli_pull_state *state = talloc_get_type_abort(
 		pull_req->private_data, struct cli_pull_state);
-	struct cli_request *read_state = cli_request_get(read_req);
+	struct cli_request *read_state = talloc_get_type_abort(
+		read_req->private_data, struct cli_request);
 	NTSTATUS status;
 
 	status = cli_read_andx_recv(read_req, &read_state->data.read.received,
@@ -342,7 +344,9 @@ static void cli_pull_read_done(struct async_req *read_req)
 			return;
 		}
 
-		top_read = cli_request_get(state->reqs[state->top_req]);
+		top_read = talloc_get_type_abort(
+			state->reqs[state->top_req]->private_data,
+			struct cli_request);
 
 		DEBUG(10, ("cli_pull_read_done: Pushing %d bytes, %d already "
 			   "pushed\n", (int)top_read->data.read.received,
