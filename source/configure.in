@@ -1334,6 +1334,96 @@ if test x"$samba_cv_stat_hires_notimespec" = x"yes" ; then
 	    [whether struct stat has sub-second timestamps without struct timespec])
 fi
 
+AC_CACHE_CHECK([whether struct stat has st_birthtimespec], samba_cv_stat_st_birthtimespec,
+    [
+	AC_TRY_COMPILE(
+	    [
+#if TIME_WITH_SYS_TIME
+# include <sys/time.h>
+# include <time.h>
+#else
+# if HAVE_SYS_TIME_H
+#  include <sys/time.h>
+# else
+#  include <time.h>
+# endif
+#endif
+#ifdef HAVE_SYS_STAT_H
+#include <sys/stat.h>
+#endif
+	    ],
+	    [
+		struct timespec t;
+		struct stat s = {0};
+		t = s.st_birthtimespec;
+	    ],
+	    samba_cv_stat_st_birthtimespec=yes, samba_cv_stat_birthtimespec=no)
+    ])
+
+if test x"$samba_cv_stat_st_birthtimespec" = x"yes" ; then
+    AC_DEFINE(HAVE_STAT_ST_BIRTHTIMESPEC, 1, [whether struct stat contains st_birthtimespec])
+fi
+
+AC_CACHE_CHECK([whether struct stat has st_birthtimensec], samba_cv_stat_st_birthtimensec,
+    [
+	AC_TRY_COMPILE(
+	    [
+#if TIME_WITH_SYS_TIME
+# include <sys/time.h>
+# include <time.h>
+#else
+# if HAVE_SYS_TIME_H
+#  include <sys/time.h>
+# else
+#  include <time.h>
+# endif
+#endif
+#ifdef HAVE_SYS_STAT_H
+#include <sys/stat.h>
+#endif
+	    ],
+	    [
+		struct timespec t;
+		struct stat s = {0};
+		t.tv_nsec = s.st_birthtimensec;
+	    ],
+	    samba_cv_stat_st_birthtimensec=yes, samba_cv_stat_birthtimensec=no)
+    ])
+
+if test x"$samba_cv_stat_st_birthtimensec" = x"yes" ; then
+    AC_DEFINE(HAVE_STAT_ST_BIRTHTIMENSEC, 1, [whether struct stat contains st_birthtimensec])
+fi
+
+AC_CACHE_CHECK([whether struct stat has st_birthtime], samba_cv_stat_st_birthtime,
+    [
+	AC_TRY_COMPILE(
+	    [
+#if TIME_WITH_SYS_TIME
+# include <sys/time.h>
+# include <time.h>
+#else
+# if HAVE_SYS_TIME_H
+#  include <sys/time.h>
+# else
+#  include <time.h>
+# endif
+#endif
+#ifdef HAVE_SYS_STAT_H
+#include <sys/stat.h>
+#endif
+	    ],
+	    [
+		struct time_t t;
+		struct stat s = {0};
+		t = s.st_birthtime;
+	    ],
+	    samba_cv_stat_st_birthtime=yes, samba_cv_stat_birthtime=no)
+    ])
+
+if test x"$samba_cv_stat_st_birthtime" = x"yes" ; then
+    AC_DEFINE(HAVE_STAT_ST_BIRTHTIME, 1, [whether struct stat contains st_birthtime])
+fi
+
 #####################################
 # needed for SRV lookups
 AC_CHECK_LIB(resolv, dn_expand)
