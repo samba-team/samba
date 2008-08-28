@@ -808,6 +808,49 @@ static NTSTATUS info21_to_USER_INFO_2(TALLOC_CTX *mem_ctx,
 /****************************************************************
 ****************************************************************/
 
+static NTSTATUS info21_to_USER_INFO_3(TALLOC_CTX *mem_ctx,
+				      const struct samr_UserInfo21 *i21,
+				      uint32_t auth_flag,
+				      struct USER_INFO_3 *i)
+{
+	ZERO_STRUCTP(i);
+
+	i->usri3_name		= talloc_strdup(mem_ctx, i21->account_name.string);
+	NT_STATUS_HAVE_NO_MEMORY(i->usri3_name);
+	i->usri3_password_age	= time(NULL) - nt_time_to_unix(i21->last_password_change);
+	i->usri3_priv		= samr_rid_to_priv_level(i21->rid);
+	i->usri3_home_dir	= talloc_strdup(mem_ctx, i21->home_directory.string);
+	i->usri3_comment	= talloc_strdup(mem_ctx, i21->description.string);
+	i->usri3_flags		= samr_acb_flags_to_netapi_flags(i21->acct_flags);
+	i->usri3_script_path	= talloc_strdup(mem_ctx, i21->logon_script.string);
+	i->usri3_auth_flags	= auth_flag;
+	i->usri3_full_name	= talloc_strdup(mem_ctx, i21->full_name.string);
+	i->usri3_usr_comment	= talloc_strdup(mem_ctx, i21->comment.string);
+	i->usri3_parms		= talloc_strndup(mem_ctx, (const char *)i21->parameters.array, i21->parameters.size/2);
+	i->usri3_workstations	= talloc_strdup(mem_ctx, i21->workstations.string);
+	i->usri3_last_logon	= nt_time_to_unix(i21->last_logon);
+	i->usri3_last_logoff	= nt_time_to_unix(i21->last_logoff);
+	i->usri3_acct_expires	= nt_time_to_unix(i21->acct_expiry);
+	i->usri3_max_storage	= USER_MAXSTORAGE_UNLIMITED; /* FIXME */
+	i->usri3_units_per_week	= i21->logon_hours.units_per_week;
+	i->usri3_logon_hours	= (uint8_t *)talloc_memdup(mem_ctx, i21->logon_hours.bits, 21);
+	i->usri3_bad_pw_count	= i21->bad_password_count;
+	i->usri3_num_logons	= i21->logon_count;
+	i->usri3_logon_server	= talloc_strdup(mem_ctx, "\\\\*");
+	i->usri3_country_code	= i21->country_code;
+	i->usri3_code_page	= i21->code_page;
+	i->usri3_user_id	= i21->rid;
+	i->usri3_primary_group_id = i21->primary_gid;
+	i->usri3_profile	= talloc_strdup(mem_ctx, i21->profile_path.string);
+	i->usri3_home_dir_drive	= talloc_strdup(mem_ctx, i21->home_drive.string);
+	i->usri3_password_expired = i21->password_expired;
+
+	return NT_STATUS_OK;
+}
+
+/****************************************************************
+****************************************************************/
+
 static NTSTATUS info21_to_USER_INFO_10(TALLOC_CTX *mem_ctx,
 				       const struct samr_UserInfo21 *i21,
 				       struct USER_INFO_10 *i)
@@ -890,6 +933,7 @@ static NTSTATUS libnetapi_samr_lookup_user_map_USER_INFO(TALLOC_CTX *mem_ctx,
 	struct USER_INFO_0 info0;
 	struct USER_INFO_1 info1;
 	struct USER_INFO_2 info2;
+	struct USER_INFO_3 info3;
 	struct USER_INFO_10 info10;
 	struct USER_INFO_20 info20;
 	struct USER_INFO_23 info23;
@@ -951,6 +995,14 @@ static NTSTATUS libnetapi_samr_lookup_user_map_USER_INFO(TALLOC_CTX *mem_ctx,
 
 			ADD_TO_ARRAY(mem_ctx, struct USER_INFO_2, info2,
 				     (struct USER_INFO_2 **)buffer, num_entries);
+
+			break;
+		case 3:
+			status = info21_to_USER_INFO_3(mem_ctx, info21, auth_flag, &info3);
+			NT_STATUS_NOT_OK_RETURN(status);
+
+			ADD_TO_ARRAY(mem_ctx, struct USER_INFO_3, info3,
+				     (struct USER_INFO_3 **)buffer, num_entries);
 
 			break;
 		case 10:
@@ -1019,11 +1071,11 @@ WERROR NetUserEnum_r(struct libnetapi_ctx *ctx,
 		case 0:
 		case 1:
 		case 2:
+		case 3:
 		case 10:
 		case 20:
 		case 23:
 			break;
-		case 3:
 		case 11:
 			return WERR_NOT_SUPPORTED;
 		default:
@@ -1449,11 +1501,11 @@ WERROR NetUserGetInfo_r(struct libnetapi_ctx *ctx,
 		case 0:
 		case 1:
 		case 2:
+		case 3:
 		case 10:
 		case 20:
 		case 23:
 			break;
-		case 3:
 		case 4:
 		case 11:
 			werr = WERR_NOT_SUPPORTED;
