@@ -507,6 +507,11 @@ exit 0
 %{_mandir}/man8/net.8*
 %{_mandir}/man7/pam_winbind.7*
 %{_mandir}/man7/libsmbclient.7*
+%{_mandir}/man1/ldbadd.1*
+%{_mandir}/man1/ldbdel.1*
+%{_mandir}/man1/ldbedit.1*
+%{_mandir}/man1/ldbmodify.1*
+%{_mandir}/man1/ldbsearch.1*
 
 %ifarch i386 i486 i586 i686 ppc s390
 %files winbind-32bit
