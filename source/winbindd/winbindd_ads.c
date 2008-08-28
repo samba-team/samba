@@ -1254,7 +1254,7 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 			if (trusts.array[i].sid) {
 				sid_copy( &d.sid, trusts.array[i].sid);
 			} else {
-				sid_copy(&(*dom_sids)[ret_count], &global_sid_NULL);
+				sid_copy(&d.sid, &global_sid_NULL);
 			}
 
 			if ( domain->primary ) {
