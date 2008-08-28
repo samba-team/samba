@@ -227,6 +227,8 @@ static NTSTATUS rpc_changetrustpw_internals(const DOM_SID *domain_sid,
 
 int net_rpc_changetrustpw(int argc, const char **argv) 
 {
+	net_use_machine_account();
+
 	return run_rpc_command(NULL, PI_NETLOGON, NET_FLAGS_ANONYMOUS | NET_FLAGS_PDC, 
 			       rpc_changetrustpw_internals,
 			       argc, argv);
