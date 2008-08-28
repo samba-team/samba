@@ -59,48 +59,30 @@ bool netsamlogon_cache_shutdown(void)
  Clear cache getpwnam and getgroups entries from the winbindd cache
 ***********************************************************************/
 
-void netsamlogon_clear_cached_user(TDB_CONTEXT *tdb, struct netr_SamInfo3 *info3)
+void netsamlogon_clear_cached_user(struct netr_SamInfo3 *info3)
 {
-	bool got_tdb = false;
-	DOM_SID sid;
-	fstring key_str, sid_string;
+	DOM_SID	user_sid;
+	fstring keystr, tmp;
 
-	/* We may need to call this function from smbd which will not have
-	   winbindd_cache.tdb open.  Open the tdb if a NULL is passed. */
-
-	if (!tdb) {
-		tdb = tdb_open_log(lock_path("winbindd_cache.tdb"),
-				   WINBINDD_CACHE_TDB_DEFAULT_HASH_SIZE,
-				   TDB_DEFAULT, O_RDWR, 0600);
-		if (!tdb) {
-			DEBUG(5, ("netsamlogon_clear_cached_user: failed to open cache\n"));
-			return;
-		}
-		got_tdb = true;
+	if (!info3) {
+		return;
 	}
 
-	sid_copy(&sid, info3->base.domain_sid);
-	sid_append_rid(&sid, info3->base.rid);
-
-	/* Clear U/SID cache entry */
-
-	fstr_sprintf(key_str, "U/%s", sid_to_fstring(sid_string, &sid));
-
-	DEBUG(10, ("netsamlogon_clear_cached_user: clearing %s\n", key_str));
-
-	tdb_delete(tdb, string_tdb_data(key_str));
-
-	/* Clear UG/SID cache entry */
-
-	fstr_sprintf(key_str, "UG/%s", sid_to_fstring(sid_string, &sid));
-
-	DEBUG(10, ("netsamlogon_clear_cached_user: clearing %s\n", key_str));
-
-	tdb_delete(tdb, string_tdb_data(key_str));
-
-	if (got_tdb) {
-		tdb_close(tdb);
+	if (!netsamlogon_cache_init()) {
+		DEBUG(0,("netsamlogon_clear_cached_user: cannot open "
+			"%s for write!\n",
+			NETSAMLOGON_TDB));
+		return;
 	}
+	sid_copy(&user_sid, info3->base.domain_sid);
+	sid_append_rid(&user_sid, info3->base.rid);
+
+	/* Prepare key as DOMAIN-SID/USER-RID string */
+	slprintf(keystr, sizeof(keystr), "%s", sid_to_fstring(tmp, &user_sid));
+
+	DEBUG(10,("netsamlogon_clear_cached_user: SID [%s]\n", keystr));
+
+	tdb_delete_bystring(netsamlogon_tdb, keystr);
 }
 
 /***********************************************************************
