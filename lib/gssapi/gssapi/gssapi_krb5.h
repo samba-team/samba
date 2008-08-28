@@ -46,6 +46,11 @@ extern "C" {
 #define __attribute__(x)
 #endif
 
+#ifdef GSSKRB5_FUNCTION_DEPRECATED
+#define GSSKRB5_FUNCTION_DEPRECATED __attribute__((deprecated))
+#endif
+
+
 /*
  * This is for kerberos5 names.
  */
@@ -142,7 +147,7 @@ struct gsskrb5_send_to_kdc {
 
 OM_uint32 GSSAPI_LIB_FUNCTION
 gsskrb5_set_send_to_kdc(struct gsskrb5_send_to_kdc *)
-    __attribute__((deprecated));
+    GSSKRB5_FUNCTION_DEPRECATED;
 
 OM_uint32 GSSAPI_LIB_FUNCTION
 gsskrb5_set_default_realm(const char *);
