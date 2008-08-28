@@ -611,8 +611,13 @@ static NTSTATUS libnetapi_samr_lookup_user(TALLOC_CTX *mem_ctx,
 			break;
 		case 2:
 		case 3:
-		case 10:
+		case 4:
 		case 11:
+			access_mask |= SAMR_USER_ACCESS_GET_LOGONINFO |
+				       SAMR_USER_ACCESS_GET_GROUPS |
+				       SAMR_USER_ACCESS_GET_LOCALE;
+			break;
+		case 10:
 		case 20:
 		case 23:
 			break;
@@ -851,6 +856,56 @@ static NTSTATUS info21_to_USER_INFO_3(TALLOC_CTX *mem_ctx,
 /****************************************************************
 ****************************************************************/
 
+static NTSTATUS info21_to_USER_INFO_4(TALLOC_CTX *mem_ctx,
+				      const struct samr_UserInfo21 *i21,
+				      uint32_t auth_flag,
+				      struct dom_sid *domain_sid,
+				      struct USER_INFO_4 *i)
+{
+	struct dom_sid sid;
+
+	ZERO_STRUCTP(i);
+
+	i->usri4_name		= talloc_strdup(mem_ctx, i21->account_name.string);
+	NT_STATUS_HAVE_NO_MEMORY(i->usri4_name);
+	i->usri4_password_age	= time(NULL) - nt_time_to_unix(i21->last_password_change);
+	i->usri4_password	= NULL;
+	i->usri4_priv		= samr_rid_to_priv_level(i21->rid);
+	i->usri4_home_dir	= talloc_strdup(mem_ctx, i21->home_directory.string);
+	i->usri4_comment	= talloc_strdup(mem_ctx, i21->description.string);
+	i->usri4_flags		= samr_acb_flags_to_netapi_flags(i21->acct_flags);
+	i->usri4_script_path	= talloc_strdup(mem_ctx, i21->logon_script.string);
+	i->usri4_auth_flags	= auth_flag;
+	i->usri4_full_name	= talloc_strdup(mem_ctx, i21->full_name.string);
+	i->usri4_usr_comment	= talloc_strdup(mem_ctx, i21->comment.string);
+	i->usri4_parms		= talloc_strndup(mem_ctx, (const char *)i21->parameters.array, i21->parameters.size/2);
+	i->usri4_workstations	= talloc_strdup(mem_ctx, i21->workstations.string);
+	i->usri4_last_logon	= nt_time_to_unix(i21->last_logon);
+	i->usri4_last_logoff	= nt_time_to_unix(i21->last_logoff);
+	i->usri4_acct_expires	= nt_time_to_unix(i21->acct_expiry);
+	i->usri4_max_storage	= USER_MAXSTORAGE_UNLIMITED; /* FIXME */
+	i->usri4_units_per_week	= i21->logon_hours.units_per_week;
+	i->usri4_logon_hours	= (uint8_t *)talloc_memdup(mem_ctx, i21->logon_hours.bits, 21);
+	i->usri4_bad_pw_count	= i21->bad_password_count;
+	i->usri4_num_logons	= i21->logon_count;
+	i->usri4_logon_server	= talloc_strdup(mem_ctx, "\\\\*");
+	i->usri4_country_code	= i21->country_code;
+	i->usri4_code_page	= i21->code_page;
+	if (!sid_compose(&sid, domain_sid, i21->rid)) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	i->usri4_user_sid	= (struct domsid *)sid_dup_talloc(mem_ctx, &sid);
+	i->usri4_primary_group_id = i21->primary_gid;
+	i->usri4_profile	= talloc_strdup(mem_ctx, i21->profile_path.string);
+	i->usri4_home_dir_drive	= talloc_strdup(mem_ctx, i21->home_drive.string);
+	i->usri4_password_expired = i21->password_expired;
+
+	return NT_STATUS_OK;
+}
+
+/****************************************************************
+****************************************************************/
+
 static NTSTATUS info21_to_USER_INFO_10(TALLOC_CTX *mem_ctx,
 				       const struct samr_UserInfo21 *i21,
 				       struct USER_INFO_10 *i)
@@ -934,6 +989,7 @@ static NTSTATUS libnetapi_samr_lookup_user_map_USER_INFO(TALLOC_CTX *mem_ctx,
 	struct USER_INFO_1 info1;
 	struct USER_INFO_2 info2;
 	struct USER_INFO_3 info3;
+	struct USER_INFO_4 info4;
 	struct USER_INFO_10 info10;
 	struct USER_INFO_20 info20;
 	struct USER_INFO_23 info23;
@@ -943,6 +999,7 @@ static NTSTATUS libnetapi_samr_lookup_user_map_USER_INFO(TALLOC_CTX *mem_ctx,
 		case 1:
 		case 2:
 		case 3:
+		case 4:
 		case 10:
 		case 11:
 		case 20:
@@ -1003,6 +1060,14 @@ static NTSTATUS libnetapi_samr_lookup_user_map_USER_INFO(TALLOC_CTX *mem_ctx,
 
 			ADD_TO_ARRAY(mem_ctx, struct USER_INFO_3, info3,
 				     (struct USER_INFO_3 **)buffer, num_entries);
+
+			break;
+		case 4:
+			status = info21_to_USER_INFO_4(mem_ctx, info21, auth_flag, domain_sid, &info4);
+			NT_STATUS_NOT_OK_RETURN(status);
+
+			ADD_TO_ARRAY(mem_ctx, struct USER_INFO_4, info4,
+				     (struct USER_INFO_4 **)buffer, num_entries);
 
 			break;
 		case 10:
@@ -1072,6 +1137,7 @@ WERROR NetUserEnum_r(struct libnetapi_ctx *ctx,
 		case 1:
 		case 2:
 		case 3:
+		case 4:
 		case 10:
 		case 20:
 		case 23:
@@ -1502,11 +1568,11 @@ WERROR NetUserGetInfo_r(struct libnetapi_ctx *ctx,
 		case 1:
 		case 2:
 		case 3:
+		case 4:
 		case 10:
 		case 20:
 		case 23:
 			break;
-		case 4:
 		case 11:
 			werr = WERR_NOT_SUPPORTED;
 			goto done;
