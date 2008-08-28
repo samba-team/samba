@@ -1599,8 +1599,8 @@ process_result:
 			goto done;
 		}
 
-		netsamlogon_cache_store(name_user, info3);
 		wcache_invalidate_samlogon(find_domain_from_name(name_domain), info3);
+		netsamlogon_cache_store(name_user, info3);
 
 		/* save name_to_sid info as early as possible (only if
 		   this is our primary domain so we don't invalidate
@@ -1941,8 +1941,8 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 
 	if (NT_STATUS_IS_OK(result)) {
 
-		netsamlogon_cache_store(name_user, info3);
 		wcache_invalidate_samlogon(find_domain_from_name(name_domain), info3);
+		netsamlogon_cache_store(name_user, info3);
 
 		/* Check if the user is in the right group */
 
