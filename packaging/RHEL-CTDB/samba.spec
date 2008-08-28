@@ -512,6 +512,7 @@ exit 0
 %{_mandir}/man1/ldbedit.1*
 %{_mandir}/man1/ldbmodify.1*
 %{_mandir}/man1/ldbsearch.1*
+%{_mandir}/man8/cifs.upcall.8*
 
 %ifarch i386 i486 i586 i686 ppc s390
 %files winbind-32bit
