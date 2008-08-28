@@ -2265,6 +2265,8 @@ static int traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf,
 void wcache_invalidate_samlogon(struct winbindd_domain *domain, 
 				struct netr_SamInfo3 *info3)
 {
+        DOM_SID sid;
+        fstring key_str, sid_string;
 	struct winbind_cache *cache;
 
 	/* dont clear cached U/SID and UG/SID entries when we want to logon
@@ -2278,7 +2280,26 @@ void wcache_invalidate_samlogon(struct winbindd_domain *domain,
 		return;
 
 	cache = get_cache(domain);
-	netsamlogon_clear_cached_user(cache->tdb, info3);
+
+        if (!cache->tdb) {
+                return;
+        }
+
+	sid_copy(&sid, info3->base.domain_sid);
+	sid_append_rid(&sid, info3->base.rid);
+
+	/* Clear U/SID cache entry */
+	fstr_sprintf(key_str, "U/%s", sid_to_fstring(sid_string, &sid));
+	DEBUG(10, ("wcache_invalidate_samlogon: clearing %s\n", key_str));
+	tdb_delete(cache->tdb, string_tdb_data(key_str));
+
+	/* Clear UG/SID cache entry */
+	fstr_sprintf(key_str, "UG/%s", sid_to_fstring(sid_string, &sid));
+	DEBUG(10, ("wcache_invalidate_samlogon: clearing %s\n", key_str));
+	tdb_delete(cache->tdb, string_tdb_data(key_str));
+
+	/* Samba/winbindd never needs this. */
+	netsamlogon_clear_cached_user(info3);
 }
 
 bool wcache_invalidate_cache(void)
