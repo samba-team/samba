@@ -762,6 +762,25 @@ static NTSTATUS info21_to_USER_INFO_10(TALLOC_CTX *mem_ctx,
 /****************************************************************
 ****************************************************************/
 
+static NTSTATUS info21_to_USER_INFO_20(TALLOC_CTX *mem_ctx,
+				       const struct samr_UserInfo21 *i21,
+				       struct USER_INFO_20 *i)
+{
+	ZERO_STRUCTP(i);
+
+	i->usri20_name		= talloc_strdup(mem_ctx, i21->account_name.string);
+	NT_STATUS_HAVE_NO_MEMORY(i->usri20_name);
+	i->usri20_comment	= talloc_strdup(mem_ctx, i21->description.string);
+	i->usri20_full_name	= talloc_strdup(mem_ctx, i21->full_name.string);
+	i->usri20_flags		= samr_acb_flags_to_netapi_flags(i21->acct_flags);
+	i->usri20_user_id	= i21->rid;
+
+	return NT_STATUS_OK;
+}
+
+/****************************************************************
+****************************************************************/
+
 static NTSTATUS libnetapi_samr_lookup_user_map_USER_INFO(TALLOC_CTX *mem_ctx,
 							 struct rpc_pipe_client *pipe_cli,
 							 struct dom_sid *domain_sid,
@@ -834,19 +853,8 @@ static NTSTATUS libnetapi_samr_lookup_user_map_USER_INFO(TALLOC_CTX *mem_ctx,
 			break;
 
 		case 20:
-			info20.usri20_name = talloc_strdup(mem_ctx,
-				info21->account_name.string);
-			NT_STATUS_HAVE_NO_MEMORY(info20.usri20_name);
-
-			info20.usri20_comment = talloc_strdup(mem_ctx,
-				info21->description.string);
-
-			info20.usri20_full_name = talloc_strdup(mem_ctx,
-				info21->full_name.string);
-
-			info20.usri20_flags =
-				samr_acb_flags_to_netapi_flags(info21->acct_flags);
-			info20.usri20_user_id = rid;
+			status = info21_to_USER_INFO_20(mem_ctx, info21, &info20);
+			NT_STATUS_NOT_OK_RETURN(status);
 
 			ADD_TO_ARRAY(mem_ctx, struct USER_INFO_20, info20,
 				     (struct USER_INFO_20 **)buffer, num_entries);
