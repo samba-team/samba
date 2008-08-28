@@ -1080,7 +1080,7 @@ static int do_get(const char *rname, const char *lname_in, bool reget)
 		get_total_time_ms += this_time;
 		get_total_size += nread;
 
-		DEBUG(1,("(%3.1f kb/s) (average %3.1f kb/s)\n",
+		DEBUG(1,("(%3.1f KiloBytes/sec) (average %3.1f KiloBytes/sec)\n",
 			 nread / (1.024*this_time + 1.0e-4),
 			 get_total_size / (1.024*get_total_time_ms)));
 	}
