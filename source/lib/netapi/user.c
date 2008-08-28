@@ -884,7 +884,7 @@ WERROR NetUserEnum_r(struct libnetapi_ctx *ctx,
 	struct rpc_pipe_client *pipe_cli = NULL;
 	struct policy_handle connect_handle;
 	struct dom_sid2 *domain_sid = NULL;
-	struct policy_handle domain_handle;
+	struct policy_handle domain_handle, builtin_handle;
 	struct samr_SamArray *sam = NULL;
 	uint32_t filter = ACB_NORMAL;
 	int i;
@@ -895,6 +895,7 @@ WERROR NetUserEnum_r(struct libnetapi_ctx *ctx,
 
 	ZERO_STRUCT(connect_handle);
 	ZERO_STRUCT(domain_handle);
+	ZERO_STRUCT(builtin_handle);
 
 	if (!r->out.buffer) {
 		return WERR_INVALID_PARAM;
@@ -922,6 +923,17 @@ WERROR NetUserEnum_r(struct libnetapi_ctx *ctx,
 				   &ndr_table_samr.syntax_id,
 				   &cli,
 				   &pipe_cli);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	werr = libnetapi_samr_open_builtin_domain(ctx, pipe_cli,
+						  SAMR_ACCESS_ENUM_DOMAINS |
+						  SAMR_ACCESS_OPEN_DOMAIN,
+						  SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT |
+						  SAMR_DOMAIN_ACCESS_LOOKUP_ALIAS,
+						  &connect_handle,
+						  &builtin_handle);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
@@ -977,7 +989,7 @@ WERROR NetUserEnum_r(struct libnetapi_ctx *ctx,
 		status = libnetapi_samr_lookup_user_map_USER_INFO(ctx, pipe_cli,
 								  domain_sid,
 								  &domain_handle,
-								  NULL, /*&builtin_handle, */
+								  &builtin_handle,
 								  sam->entries[i].name.string,
 								  sam->entries[i].idx,
 								  r->in.level,
@@ -1000,6 +1012,7 @@ WERROR NetUserEnum_r(struct libnetapi_ctx *ctx,
 
 		if (ctx->disable_policy_handle_cache) {
 			libnetapi_samr_close_domain_handle(ctx, &domain_handle);
+			libnetapi_samr_close_builtin_handle(ctx, &builtin_handle);
 			libnetapi_samr_close_connect_handle(ctx, &connect_handle);
 		}
 	}
