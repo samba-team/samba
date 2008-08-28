@@ -696,8 +696,20 @@ out:
 }
 
 
-/*
+/**
+ * Verify the PAC.
  *
+ * @param context Kerberos 5 context.
+ * @param pac the pac structure returned by krb5_pac_parse().
+ * @param authtime The time of the ticket the PAC belongs to.
+ * @param principal the principal to verify.
+ * @param server The service key, most always be given.
+ * @param privsvr The KDC key, may be given.
+
+ * @return Returns 0 to indicate success. Otherwise an kerberos et
+ * error code is returned, see krb5_get_error_message().
+ *
+ * @ingroup krb5_pac
  */
 
 krb5_error_code
@@ -766,6 +778,7 @@ krb5_pac_verify(krb5_context context,
 	    return ret;
     }
     if (privsvr) {
+	/* The priv checksum covers the server checksum */
 	ret = verify_checksum(context,
 			      pac->privsvr_checksum,
 			      &pac->data,
