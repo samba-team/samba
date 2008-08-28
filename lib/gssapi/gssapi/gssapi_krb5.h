@@ -46,7 +46,7 @@ extern "C" {
 #define __attribute__(x)
 #endif
 
-#ifdef GSSKRB5_FUNCTION_DEPRECATED
+#ifndef GSSKRB5_FUNCTION_DEPRECATED
 #define GSSKRB5_FUNCTION_DEPRECATED __attribute__((deprecated))
 #endif
 
