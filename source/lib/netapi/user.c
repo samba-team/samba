@@ -924,6 +924,41 @@ static NTSTATUS info21_to_USER_INFO_10(TALLOC_CTX *mem_ctx,
 /****************************************************************
 ****************************************************************/
 
+static NTSTATUS info21_to_USER_INFO_11(TALLOC_CTX *mem_ctx,
+				       const struct samr_UserInfo21 *i21,
+				       uint32_t auth_flag,
+				       struct USER_INFO_11 *i)
+{
+	ZERO_STRUCTP(i);
+
+	i->usri11_name		= talloc_strdup(mem_ctx, i21->account_name.string);
+	NT_STATUS_HAVE_NO_MEMORY(i->usri11_name);
+	i->usri11_comment	= talloc_strdup(mem_ctx, i21->description.string);
+	i->usri11_usr_comment	= talloc_strdup(mem_ctx, i21->comment.string);
+	i->usri11_full_name	= talloc_strdup(mem_ctx, i21->full_name.string);
+	i->usri11_priv		= samr_rid_to_priv_level(i21->rid);
+	i->usri11_auth_flags	= auth_flag;
+	i->usri11_password_age	= time(NULL) - nt_time_to_unix(i21->last_password_change);
+	i->usri11_home_dir	= talloc_strdup(mem_ctx, i21->home_directory.string);
+	i->usri11_parms		= talloc_strndup(mem_ctx, (const char *)i21->parameters.array, i21->parameters.size/2);
+	i->usri11_last_logon	= nt_time_to_unix(i21->last_logon);
+	i->usri11_last_logoff	= nt_time_to_unix(i21->last_logoff);
+	i->usri11_bad_pw_count	= i21->bad_password_count;
+	i->usri11_num_logons	= i21->logon_count;
+	i->usri11_logon_server	= talloc_strdup(mem_ctx, "\\\\*");
+	i->usri11_country_code	= i21->country_code;
+	i->usri11_workstations	= talloc_strdup(mem_ctx, i21->workstations.string);
+	i->usri11_max_storage	= USER_MAXSTORAGE_UNLIMITED; /* FIXME */
+	i->usri11_units_per_week = i21->logon_hours.units_per_week;
+	i->usri11_logon_hours	= (uint8_t *)talloc_memdup(mem_ctx, i21->logon_hours.bits, 21);
+	i->usri11_code_page	= i21->code_page;
+
+	return NT_STATUS_OK;
+}
+
+/****************************************************************
+****************************************************************/
+
 static NTSTATUS info21_to_USER_INFO_20(TALLOC_CTX *mem_ctx,
 				       const struct samr_UserInfo21 *i21,
 				       struct USER_INFO_20 *i)
@@ -991,6 +1026,7 @@ static NTSTATUS libnetapi_samr_lookup_user_map_USER_INFO(TALLOC_CTX *mem_ctx,
 	struct USER_INFO_3 info3;
 	struct USER_INFO_4 info4;
 	struct USER_INFO_10 info10;
+	struct USER_INFO_11 info11;
 	struct USER_INFO_20 info20;
 	struct USER_INFO_23 info23;
 
@@ -1078,7 +1114,14 @@ static NTSTATUS libnetapi_samr_lookup_user_map_USER_INFO(TALLOC_CTX *mem_ctx,
 				     (struct USER_INFO_10 **)buffer, num_entries);
 
 			break;
+		case 11:
+			status = info21_to_USER_INFO_11(mem_ctx, info21, auth_flag, &info11);
+			NT_STATUS_NOT_OK_RETURN(status);
 
+			ADD_TO_ARRAY(mem_ctx, struct USER_INFO_11, info11,
+				     (struct USER_INFO_11 **)buffer, num_entries);
+
+			break;
 		case 20:
 			status = info21_to_USER_INFO_20(mem_ctx, info21, &info20);
 			NT_STATUS_NOT_OK_RETURN(status);
@@ -1139,11 +1182,10 @@ WERROR NetUserEnum_r(struct libnetapi_ctx *ctx,
 		case 3:
 		case 4:
 		case 10:
+		case 11:
 		case 20:
 		case 23:
 			break;
-		case 11:
-			return WERR_NOT_SUPPORTED;
 		default:
 			return WERR_UNKNOWN_LEVEL;
 	}
@@ -1570,12 +1612,10 @@ WERROR NetUserGetInfo_r(struct libnetapi_ctx *ctx,
 		case 3:
 		case 4:
 		case 10:
+		case 11:
 		case 20:
 		case 23:
 			break;
-		case 11:
-			werr = WERR_NOT_SUPPORTED;
-			goto done;
 		default:
 			werr = WERR_UNKNOWN_LEVEL;
 			goto done;
