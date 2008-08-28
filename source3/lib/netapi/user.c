@@ -584,10 +584,12 @@ static NTSTATUS libnetapi_samr_lookup_user(TALLOC_CTX *mem_ctx,
 					   struct policy_handle *domain_handle,
 					   struct policy_handle *builtin_handle,
 					   const char *user_name,
+					   const struct dom_sid *domain_sid,
 					   uint32_t rid,
 					   uint32_t level,
 					   struct samr_UserInfo21 **info21,
-					   struct sec_desc_buf **sec_desc)
+					   struct sec_desc_buf **sec_desc,
+					   uint32_t *auth_flag_p)
 {
 	NTSTATUS status;
 
@@ -643,7 +645,14 @@ static NTSTATUS libnetapi_samr_lookup_user(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	if (level == 1) {
+	if (access_mask & SAMR_USER_ACCESS_GET_GROUPS) {
+
+		struct lsa_SidArray sid_array;
+		struct samr_Ids alias_rids;
+		int i;
+		uint32_t auth_flag = 0;
+		struct dom_sid sid;
+
 		status = rpccli_samr_GetGroupsForUser(pipe_cli, mem_ctx,
 						      &user_handle,
 						      &rid_array);
@@ -651,15 +660,48 @@ static NTSTATUS libnetapi_samr_lookup_user(TALLOC_CTX *mem_ctx,
 			goto done;
 		}
 
-#if 0
-		status = rpccli_samr_GetAliasMembership(pipe_cli, ctx,
-							&builtin_handle,
-							&sids,
-							&rids);
+		sid_array.num_sids = rid_array->count + 1;
+		sid_array.sids = talloc_array(mem_ctx, struct lsa_SidPtr,
+					      sid_array.num_sids);
+		NT_STATUS_HAVE_NO_MEMORY(sid_array.sids);
+
+		for (i=0; i<rid_array->count; i++) {
+			sid_compose(&sid, domain_sid, rid_array->rids[i].rid);
+			sid_array.sids[i].sid = sid_dup_talloc(mem_ctx, &sid);
+			NT_STATUS_HAVE_NO_MEMORY(sid_array.sids[i].sid);
+		}
+
+		sid_compose(&sid, domain_sid, rid);
+		sid_array.sids[i].sid = sid_dup_talloc(mem_ctx, &sid);
+		NT_STATUS_HAVE_NO_MEMORY(sid_array.sids[i].sid);
+
+		status = rpccli_samr_GetAliasMembership(pipe_cli, mem_ctx,
+							builtin_handle,
+							&sid_array,
+							&alias_rids);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto done;
 		}
-#endif
+
+		for (i=0; i<alias_rids.count; i++) {
+			switch (alias_rids.ids[i]) {
+				case 550: /* Print Operators */
+					auth_flag |= AF_OP_PRINT;
+					break;
+				case 549: /* Server Operators */
+					auth_flag |= AF_OP_SERVER;
+					break;
+				case 548: /* Account Operators */
+					auth_flag |= AF_OP_ACCOUNTS;
+					break;
+				default:
+					break;
+			}
+		}
+
+		if (auth_flag_p) {
+			*auth_flag_p = auth_flag;
+		}
 	}
 
 	*info21 = &user_info->info21;
@@ -717,7 +759,7 @@ static NTSTATUS libnetapi_samr_lookup_user_map_USER_INFO(TALLOC_CTX *mem_ctx,
 
 	struct samr_UserInfo21 *info21 = NULL;
 	struct sec_desc_buf *sec_desc = NULL;
-	struct dom_sid sid;
+	uint32_t auth_flag = 0;
 
 	struct USER_INFO_0 info0;
 	struct USER_INFO_10 info10;
@@ -752,10 +794,12 @@ static NTSTATUS libnetapi_samr_lookup_user_map_USER_INFO(TALLOC_CTX *mem_ctx,
 					    domain_handle,
 					    builtin_handle,
 					    user_name,
+					    domain_sid,
 					    rid,
 					    level,
 					    &info21,
-					    &sec_desc);
+					    &sec_desc,
+					    &auth_flag);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
