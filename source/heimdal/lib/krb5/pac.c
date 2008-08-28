@@ -324,20 +324,6 @@ krb5_pac_get_buffer(krb5_context context, krb5_pac p,
     krb5_error_code ret;
     uint32_t i;
 
-    /*
-     * Hide the checksums from external consumers
-     */
-
-    if (type == PAC_PRIVSVR_CHECKSUM || type == PAC_SERVER_CHECKSUM) {
-	ret = krb5_data_alloc(data, 16);
-	if (ret) {
-	    krb5_set_error_message(context, ret, "malloc: out of memory");
-	    return ret;
-	}
-	memset(data->data, 0, data->length);
-	return 0;
-    }
-
     for (i = 0; i < p->pac->numbuffers; i++) {
 	size_t len = p->pac->buffers[i].buffersize;
 	size_t offset = p->pac->buffers[i].offset_lo;
