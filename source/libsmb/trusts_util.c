@@ -32,18 +32,14 @@
 
 static NTSTATUS just_change_the_password(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 					 const unsigned char orig_trust_passwd_hash[16],
+					 const char *new_trust_pwd_cleartext,
 					 const unsigned char new_trust_passwd_hash[16],
 					 uint32 sec_channel_type)
 {
 	NTSTATUS result;
+	uint32_t neg_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS;
 
-	/* Check if the netlogon pipe is open using schannel. If so we
-	   already have valid creds. If not we must set them up. */
-
-	if (cli->auth.auth_type != PIPE_AUTH_TYPE_SCHANNEL) {
-		uint32_t neg_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS;
-
-		result = rpccli_netlogon_setup_creds(cli, 
+	result = rpccli_netlogon_setup_creds(cli,
 					cli->cli->desthost, /* server name */
 					lp_workgroup(), /* domain */
 					global_myname(), /* client name */
@@ -52,14 +48,19 @@ static NTSTATUS just_change_the_password(struct rpc_pipe_client *cli, TALLOC_CTX
 					sec_channel_type,
 					&neg_flags);
 
-		if (!NT_STATUS_IS_OK(result)) {
-			DEBUG(3,("just_change_the_password: unable to setup creds (%s)!\n",
-				 nt_errstr(result)));
-			return result;
-		}
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(3,("just_change_the_password: unable to setup creds (%s)!\n",
+			 nt_errstr(result)));
+		return result;
 	}
 
-	result = rpccli_net_srv_pwset(cli, mem_ctx, global_myname(), new_trust_passwd_hash);
+	if (neg_flags & NETLOGON_NEG_PASSWORD_SET2) {
+		result = rpccli_net_srv_pwset2(cli, mem_ctx, global_myname(),
+					       new_trust_pwd_cleartext);
+	} else {
+		result = rpccli_net_srv_pwset(cli, mem_ctx, global_myname(),
+					      new_trust_passwd_hash);
+	}
 
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(0,("just_change_the_password: unable to change password (%s)!\n",
@@ -95,6 +96,7 @@ NTSTATUS trust_pw_change_and_store_it(struct rpc_pipe_client *cli, TALLOC_CTX *m
 	E_md4hash(new_trust_passwd, new_trust_passwd_hash);
 
 	nt_status = just_change_the_password(cli, mem_ctx, orig_trust_passwd_hash,
+					     new_trust_passwd,
 					     new_trust_passwd_hash, sec_channel_type);
 	
 	if (NT_STATUS_IS_OK(nt_status)) {
