@@ -339,7 +339,7 @@ krb_enc_iov2(krb5_context context,
     
     iov[1].flags = KRB5_CRYPTO_TYPE_TRAILER;
     iov[1].data.length = krb5_crypto_length(context, crypto, iov[1].flags);
-    iov[1].data.data = emalloc(iov[3].data.length);
+    iov[1].data.data = emalloc(iov[1].data.length);
 
     iov[2].flags = KRB5_CRYPTO_TYPE_DATA;
     iov[2].data.length = 10;
@@ -426,7 +426,7 @@ krb_enc_iov(krb5_context context,
     
     iov[1].flags = KRB5_CRYPTO_TYPE_TRAILER;
     iov[1].data.length = krb5_crypto_length(context, crypto, iov[1].flags);
-    iov[1].data.data = emalloc(iov[3].data.length);
+    iov[1].data.data = emalloc(iov[1].data.length);
     memcpy(iov[1].data.data, p + len - iov[1].data.length, iov[1].data.length);
     len -= iov[1].data.length;
 
