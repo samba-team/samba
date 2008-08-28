@@ -105,7 +105,7 @@ interface krb5pac
 		uint32 ChecksumLength;
 		uint32 SignatureType;
 		uint32 SignatureLength;
-		[size_is(ChecksumLength),length_is(ChecksumLength)] uint8 *data;
+		[flag(NDR_REMAINING)] DATA_BLOB ChecksumAndSignature;
 	} PAC_Validate;
 
 	void decode_pac(
