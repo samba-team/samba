@@ -42,6 +42,7 @@
 #define NET_AUTH3		0x1a
 #define NET_DSR_GETDCNAMEEX	0x1b
 #define NET_DSR_GETSITENAME	0x1c
+#define NET_SRVPWSET2		0x1e
 #define NET_DSR_GETDCNAMEEX2	0x22
 #define NET_SAMLOGON_EX		0x27
 
@@ -529,6 +530,23 @@ typedef struct net_r_srv_pwset_info {
 
 	NTSTATUS status; /* return code */
 } NET_R_SRV_PWSET;
+
+typedef struct net_crypt_password {
+        uint8_t data[512];
+        uint32_t length;
+} NET_CRYPT_PWD;
+
+/* NET_Q_SRV_PWSET2 */
+typedef struct net_q_srv_pwset2_info {
+	DOM_CLNT_INFO clnt_id; /* client identification/authentication info */
+	NET_CRYPT_PWD pwd; /* new password */
+} NET_Q_SRV_PWSET2;
+
+/* NET_R_SRV_PWSET2 */
+typedef struct net_r_srv_pwset2_info {
+	DOM_CRED srv_cred;     /* server-calculated credentials */
+	NTSTATUS status; /* return code */
+} NET_R_SRV_PWSET2;
 
 /* NET_ID_INFO_2 */
 typedef struct net_network_info_2 {
