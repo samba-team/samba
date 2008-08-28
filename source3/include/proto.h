@@ -5002,7 +5002,7 @@ void pwd_get_cleartext(struct pwd_info *pwd, fstring clr);
 
 bool netsamlogon_cache_init(void);
 bool netsamlogon_cache_shutdown(void);
-void netsamlogon_clear_cached_user(TDB_CONTEXT *tdb, struct netr_SamInfo3 *info3);
+void netsamlogon_clear_cached_user(struct netr_SamInfo3 *info3);
 bool netsamlogon_cache_store(const char *username, struct netr_SamInfo3 *info3);
 struct netr_SamInfo3 *netsamlogon_cache_get(TALLOC_CTX *mem_ctx, const DOM_SID *user_sid);
 bool netsamlogon_cache_have(const DOM_SID *user_sid);
