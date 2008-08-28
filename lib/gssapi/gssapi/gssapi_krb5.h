@@ -42,6 +42,10 @@
 extern "C" {
 #endif
 
+#if !defined(__GNUC__) && !defined(__attribute__)
+#define __attribute__(x)
+#endif
+
 /*
  * This is for kerberos5 names.
  */
@@ -137,7 +141,8 @@ struct gsskrb5_send_to_kdc {
 };
 
 OM_uint32 GSSAPI_LIB_FUNCTION
-gsskrb5_set_send_to_kdc(struct gsskrb5_send_to_kdc *);
+gsskrb5_set_send_to_kdc(struct gsskrb5_send_to_kdc *)
+    __attribute__((deprecated));
 
 OM_uint32 GSSAPI_LIB_FUNCTION
 gsskrb5_set_default_realm(const char *);
