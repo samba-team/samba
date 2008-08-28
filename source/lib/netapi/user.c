@@ -781,6 +781,31 @@ static NTSTATUS info21_to_USER_INFO_20(TALLOC_CTX *mem_ctx,
 /****************************************************************
 ****************************************************************/
 
+static NTSTATUS info21_to_USER_INFO_23(TALLOC_CTX *mem_ctx,
+				       const struct samr_UserInfo21 *i21,
+				       struct dom_sid *domain_sid,
+				       struct USER_INFO_23 *i)
+{
+	struct dom_sid sid;
+
+	ZERO_STRUCTP(i);
+
+	i->usri23_name		= talloc_strdup(mem_ctx, i21->account_name.string);
+	NT_STATUS_HAVE_NO_MEMORY(i->usri23_name);
+	i->usri23_comment	= talloc_strdup(mem_ctx, i21->description.string);
+	i->usri23_full_name	= talloc_strdup(mem_ctx, i21->full_name.string);
+	i->usri23_flags		= samr_acb_flags_to_netapi_flags(i21->acct_flags);
+	if (!sid_compose(&sid, domain_sid, i21->rid)) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	i->usri23_user_sid	= (struct domsid *)sid_dup_talloc(mem_ctx, &sid);
+
+	return NT_STATUS_OK;
+}
+
+/****************************************************************
+****************************************************************/
+
 static NTSTATUS libnetapi_samr_lookup_user_map_USER_INFO(TALLOC_CTX *mem_ctx,
 							 struct rpc_pipe_client *pipe_cli,
 							 struct dom_sid *domain_sid,
@@ -861,29 +886,14 @@ static NTSTATUS libnetapi_samr_lookup_user_map_USER_INFO(TALLOC_CTX *mem_ctx,
 
 			break;
 		case 23:
-			info23.usri23_name = talloc_strdup(mem_ctx,
-				info21->account_name.string);
-			NT_STATUS_HAVE_NO_MEMORY(info23.usri23_name);
-
-			info23.usri23_comment = talloc_strdup(mem_ctx,
-				info21->description.string);
-
-			info23.usri23_full_name = talloc_strdup(mem_ctx,
-				info21->full_name.string);
-
-			info23.usri23_flags =
-				samr_acb_flags_to_netapi_flags(info21->acct_flags);
-
-			if (!sid_compose(&sid, domain_sid, rid)) {
-				return NT_STATUS_NO_MEMORY;
-			}
-
-			info23.usri23_user_sid =
-				(struct domsid *)sid_dup_talloc(mem_ctx, &sid);
+			status = info21_to_USER_INFO_23(mem_ctx, info21, domain_sid, &info23);
+			NT_STATUS_NOT_OK_RETURN(status);
 
 			ADD_TO_ARRAY(mem_ctx, struct USER_INFO_23, info23,
 				     (struct USER_INFO_23 **)buffer, num_entries);
 			break;
+		default:
+			return NT_STATUS_INVALID_LEVEL;
 	}
 
  done:
