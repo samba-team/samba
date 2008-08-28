@@ -1221,14 +1221,8 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 		= talloc_get_type(gensec_security->private_data, struct gensec_gssapi_state);
 	struct auth_serversupplied_info *server_info = NULL;
 	struct auth_session_info *session_info = NULL;
-	struct PAC_LOGON_INFO *logon_info;
 	OM_uint32 maj_stat, min_stat;
-	gss_buffer_desc name_token;
 	gss_buffer_desc pac;
-	krb5_keyblock *keyblock;
-	time_t authtime;
-	krb5_principal principal;
-	char *principal_string;
 	DATA_BLOB pac_blob;
 	
 	if ((gensec_gssapi_state->gss_oid->length != gss_mech_krb5->length)
@@ -1240,28 +1234,6 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 		
 	mem_ctx = talloc_named(gensec_gssapi_state, 0, "gensec_gssapi_session_info context"); 
 	NT_STATUS_HAVE_NO_MEMORY(mem_ctx);
-
-	maj_stat = gss_display_name (&min_stat,
-				     gensec_gssapi_state->client_name,
-				     &name_token,
-				     NULL);
-	if (GSS_ERROR(maj_stat)) {
-		DEBUG(1, ("GSS display_name failed: %s\n", 
-			  gssapi_error_string(mem_ctx, maj_stat, min_stat, gensec_gssapi_state->gss_oid)));
-		talloc_free(mem_ctx);
-		return NT_STATUS_FOOBAR;
-	}
-
-	principal_string = talloc_strndup(mem_ctx, 
-					  (const char *)name_token.value, 
-					  name_token.length);
-
-	gss_release_buffer(&min_stat, &name_token);
-
-	if (!principal_string) {
-		talloc_free(mem_ctx);
-		return NT_STATUS_NO_MEMORY;
-	}
 
 	maj_stat = gsskrb5_extract_authz_data_from_sec_context(&min_stat, 
 							       gensec_gssapi_state->gssapi_context, 
@@ -1282,82 +1254,63 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 	 * kind... 
 	 */
 	if (pac_blob.length) {
-		krb5_error_code ret;
-		union netr_Validation validation;
-
-		maj_stat = gsskrb5_extract_authtime_from_sec_context(&min_stat,
-								     gensec_gssapi_state->gssapi_context, 
-								     &authtime);
-		
-		if (GSS_ERROR(maj_stat)) {
-			DEBUG(1, ("gsskrb5_extract_authtime_from_sec_context: %s\n", 
-				  gssapi_error_string(mem_ctx, maj_stat, min_stat, gensec_gssapi_state->gss_oid)));
-			talloc_free(mem_ctx);
-			return NT_STATUS_FOOBAR;
-		}
-
-		maj_stat = gsskrb5_extract_service_keyblock(&min_stat, 
-							    gensec_gssapi_state->gssapi_context, 
-							    &keyblock);
-		
-		if (GSS_ERROR(maj_stat)) {
-			DEBUG(1, ("gsskrb5_copy_service_keyblock failed: %s\n", 
-				  gssapi_error_string(mem_ctx, maj_stat, min_stat, gensec_gssapi_state->gss_oid)));
-			talloc_free(mem_ctx);
-			return NT_STATUS_FOOBAR;
-		} 
-
-		ret = krb5_parse_name_flags(gensec_gssapi_state->smb_krb5_context->krb5_context,
-					    principal_string, 
-					    KRB5_PRINCIPAL_PARSE_MUST_REALM,
-					    &principal);
-		if (ret) {
-			krb5_free_keyblock(gensec_gssapi_state->smb_krb5_context->krb5_context,
-					   keyblock);
-			talloc_free(mem_ctx);
-			return NT_STATUS_INVALID_PARAMETER;
-		}
-		
-		/* decode and verify the pac */
-		nt_status = kerberos_pac_logon_info(mem_ctx, lp_iconv_convenience(gensec_security->lp_ctx), &logon_info, pac_blob,
-						    gensec_gssapi_state->smb_krb5_context->krb5_context,
-						    NULL, keyblock, principal, authtime, NULL);
-		krb5_free_principal(gensec_gssapi_state->smb_krb5_context->krb5_context, principal);
-		krb5_free_keyblock(gensec_gssapi_state->smb_krb5_context->krb5_context,
-				   keyblock);
-
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			talloc_free(mem_ctx);
-			return nt_status;
-		}
-		validation.sam3 = &logon_info->info3;
-		nt_status = make_server_info_netlogon_validation(gensec_gssapi_state, 
-								 NULL,
-								 3, &validation,
-								 &server_info); 
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			talloc_free(mem_ctx);
-			return nt_status;
-		}
-	} else if (!lp_parm_bool(gensec_security->lp_ctx, NULL, "gensec", "require_pac", false)) {
-		DEBUG(1, ("Unable to find PAC, resorting to local user lookup: %s\n",
-			  gssapi_error_string(mem_ctx, maj_stat, min_stat, gensec_gssapi_state->gss_oid)));
-		nt_status = sam_get_server_info_principal(mem_ctx, gensec_security->event_ctx, gensec_security->lp_ctx, principal_string,
-							  &server_info);
-
+		nt_status = kerberos_pac_blob_to_server_info(mem_ctx, 
+							     lp_iconv_convenience(gensec_security->lp_ctx),
+							     pac_blob, 
+							     gensec_gssapi_state->smb_krb5_context->krb5_context,
+							     &server_info);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			talloc_free(mem_ctx);
 			return nt_status;
 		}
 	} else {
-		DEBUG(1, ("Unable to find PAC in ticket from %s, failing to allow access: %s\n",
-			  principal_string,
-			  gssapi_error_string(mem_ctx, maj_stat, min_stat, gensec_gssapi_state->gss_oid)));
-		return NT_STATUS_ACCESS_DENIED;
+		gss_buffer_desc name_token;
+		char *principal_string;
+
+		maj_stat = gss_display_name (&min_stat,
+					     gensec_gssapi_state->client_name,
+					     &name_token,
+					     NULL);
+		if (GSS_ERROR(maj_stat)) {
+			DEBUG(1, ("GSS display_name failed: %s\n", 
+				  gssapi_error_string(mem_ctx, maj_stat, min_stat, gensec_gssapi_state->gss_oid)));
+			talloc_free(mem_ctx);
+			return NT_STATUS_FOOBAR;
+		}
+		
+		principal_string = talloc_strndup(mem_ctx, 
+						  (const char *)name_token.value, 
+						  name_token.length);
+		
+		gss_release_buffer(&min_stat, &name_token);
+		
+		if (!principal_string) {
+			talloc_free(mem_ctx);
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		if (!lp_parm_bool(gensec_security->lp_ctx, NULL, "gensec", "require_pac", false)) {
+			DEBUG(1, ("Unable to find PAC, resorting to local user lookup: %s\n",
+				  gssapi_error_string(mem_ctx, maj_stat, min_stat, gensec_gssapi_state->gss_oid)));
+			nt_status = sam_get_server_info_principal(mem_ctx, gensec_security->event_ctx, 
+								  gensec_security->lp_ctx, principal_string,
+								  &server_info);
+			
+			if (!NT_STATUS_IS_OK(nt_status)) {
+				talloc_free(mem_ctx);
+				return nt_status;
+			}
+		} else {
+			DEBUG(1, ("Unable to find PAC in ticket from %s, failing to allow access: %s\n",
+				  principal_string,
+				  gssapi_error_string(mem_ctx, maj_stat, min_stat, gensec_gssapi_state->gss_oid)));
+			return NT_STATUS_ACCESS_DENIED;
+		}
 	}
 
 	/* references the server_info into the session_info */
-	nt_status = auth_generate_session_info(mem_ctx, gensec_security->event_ctx, gensec_security->lp_ctx, server_info, &session_info);
+	nt_status = auth_generate_session_info(mem_ctx, gensec_security->event_ctx, 
+					       gensec_security->lp_ctx, server_info, &session_info);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(mem_ctx);
 		return nt_status;

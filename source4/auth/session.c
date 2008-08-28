@@ -333,6 +333,9 @@ _PUBLIC_ NTSTATUS make_server_info_netlogon_validation(TALLOC_CTX *mem_ctx,
 		NT_STATUS_HAVE_NO_MEMORY(server_info->lm_session_key.data);
 	}
 
+	ZERO_STRUCT(server_info->pac_srv_sig);
+	ZERO_STRUCT(server_info->pac_kdc_sig);
+
 	*_server_info = server_info;
 	return NT_STATUS_OK;
 }

@@ -21,6 +21,8 @@
 #ifndef _SAMBA_AUTH_H
 #define _SAMBA_AUTH_H
 
+#include "librpc/gen_ndr/ndr_krb5pac.h"
+
 extern const char *user_attrs[];
 
 union netr_Validation;
@@ -115,6 +117,8 @@ struct auth_serversupplied_info
 	uint32_t acct_flags;
 
 	bool authenticated;
+
+	struct PAC_SIGNATURE_DATA pac_srv_sig, pac_kdc_sig;
 };
 
 struct auth_method_context;
