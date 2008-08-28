@@ -604,7 +604,11 @@ static NTSTATUS libnetapi_samr_lookup_user(TALLOC_CTX *mem_ctx,
 
 	switch (level) {
 		case 0:
+			break;
 		case 1:
+			access_mask |= SAMR_USER_ACCESS_GET_LOGONINFO |
+				       SAMR_USER_ACCESS_GET_GROUPS;
+			break;
 		case 2:
 		case 3:
 		case 10:
@@ -744,6 +748,27 @@ static uint32_t samr_acb_flags_to_netapi_flags(uint32_t acb)
 /****************************************************************
 ****************************************************************/
 
+static NTSTATUS info21_to_USER_INFO_1(TALLOC_CTX *mem_ctx,
+				      const struct samr_UserInfo21 *i21,
+				      struct USER_INFO_1 *i)
+{
+	ZERO_STRUCTP(i);
+	i->usri1_name		= talloc_strdup(mem_ctx, i21->account_name.string);
+	NT_STATUS_HAVE_NO_MEMORY(i->usri1_name);
+	i->usri1_password	= NULL;
+	i->usri1_password_age	= time(NULL) - nt_time_to_unix(i21->last_password_change);
+	i->usri1_priv		= samr_rid_to_priv_level(i21->rid);
+	i->usri1_home_dir	= talloc_strdup(mem_ctx, i21->home_directory.string);
+	i->usri1_comment	= talloc_strdup(mem_ctx, i21->description.string);
+	i->usri1_flags		= samr_acb_flags_to_netapi_flags(i21->acct_flags);
+	i->usri1_script_path	= talloc_strdup(mem_ctx, i21->logon_script.string);
+
+	return NT_STATUS_OK;
+}
+
+/****************************************************************
+****************************************************************/
+
 static NTSTATUS info21_to_USER_INFO_10(TALLOC_CTX *mem_ctx,
 				       const struct samr_UserInfo21 *i21,
 				       struct USER_INFO_10 *i)
@@ -824,6 +849,7 @@ static NTSTATUS libnetapi_samr_lookup_user_map_USER_INFO(TALLOC_CTX *mem_ctx,
 	uint32_t auth_flag = 0;
 
 	struct USER_INFO_0 info0;
+	struct USER_INFO_1 info1;
 	struct USER_INFO_10 info10;
 	struct USER_INFO_20 info20;
 	struct USER_INFO_23 info23;
@@ -868,6 +894,17 @@ static NTSTATUS libnetapi_samr_lookup_user_map_USER_INFO(TALLOC_CTX *mem_ctx,
 	}
 
 	switch (level) {
+		case 0:
+			/* already returned above */
+			break;
+		case 1:
+			status = info21_to_USER_INFO_1(mem_ctx, info21, &info1);
+			NT_STATUS_NOT_OK_RETURN(status);
+
+			ADD_TO_ARRAY(mem_ctx, struct USER_INFO_1, info1,
+				     (struct USER_INFO_1 **)buffer, num_entries);
+
+			break;
 		case 10:
 			status = info21_to_USER_INFO_10(mem_ctx, info21, &info10);
 			NT_STATUS_NOT_OK_RETURN(status);
@@ -932,11 +969,11 @@ WERROR NetUserEnum_r(struct libnetapi_ctx *ctx,
 
 	switch (r->in.level) {
 		case 0:
+		case 1:
 		case 10:
 		case 20:
 		case 23:
 			break;
-		case 1:
 		case 2:
 		case 3:
 		case 11:
@@ -1362,11 +1399,11 @@ WERROR NetUserGetInfo_r(struct libnetapi_ctx *ctx,
 
 	switch (r->in.level) {
 		case 0:
+		case 1:
 		case 10:
 		case 20:
 		case 23:
 			break;
-		case 1:
 		case 2:
 		case 3:
 		case 4:
