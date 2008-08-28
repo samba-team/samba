@@ -1082,3 +1082,53 @@ NTSTATUS rpccli_net_srv_pwset(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 
 	return result;
 }
+
+/***************************************************************************
+LSA Server Password Set2.
+****************************************************************************/
+
+NTSTATUS rpccli_net_srv_pwset2(struct rpc_pipe_client *cli,
+			       TALLOC_CTX *mem_ctx,
+			       const char *machine_name,
+			       const char *clear_text_mach_pwd)
+{
+	prs_struct rbuf;
+	prs_struct qbuf;
+	DOM_CRED clnt_creds;
+	NET_Q_SRV_PWSET2 q;
+	NET_R_SRV_PWSET2 r;
+	uint16 sec_chan_type = 2;
+	NTSTATUS result;
+
+	creds_client_step(cli->dc, &clnt_creds);
+
+	DEBUG(4,("cli_net_srv_pwset2: srv:%s acct:%s sc: %d mc: %s\n",
+		 cli->dc->remote_machine, cli->dc->mach_acct, sec_chan_type, machine_name));
+
+        /* store the parameters */
+	init_q_srv_pwset2(&q, cli->dc->remote_machine, (const char *)cli->dc->sess_key,
+			  cli->dc->mach_acct, sec_chan_type, machine_name,
+			  &clnt_creds, clear_text_mach_pwd);
+
+	CLI_DO_RPC(cli, mem_ctx, PI_NETLOGON, NET_SRVPWSET2,
+		q, r,
+		qbuf, rbuf,
+		net_io_q_srv_pwset2,
+		net_io_r_srv_pwset2,
+		NT_STATUS_UNSUCCESSFUL);
+
+	result = r.status;
+
+	if (!NT_STATUS_IS_OK(result)) {
+		/* report error code */
+		DEBUG(0,("cli_net_srv_pwset2: %s\n", nt_errstr(result)));
+	}
+
+	/* Always check returned credentials. */
+	if (!creds_client_check(cli->dc, &r.srv_cred.challenge)) {
+		DEBUG(0,("rpccli_net_srv_pwset2: credentials chain check failed\n"));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	return result;
+}

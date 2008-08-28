@@ -996,6 +996,86 @@ BOOL net_io_r_srv_pwset(const char *desc, NET_R_SRV_PWSET *r_s, prs_struct *ps, 
 	return True;
 }
 
+/*******************************************************************
+ Inits a NET_Q_SRV_PWSET2.
+********************************************************************/
+
+void init_q_srv_pwset2(NET_Q_SRV_PWSET2 *q_s,
+		       const char *logon_srv,
+		       const char *sess_key,
+		       const char *acct_name,
+		       uint16 sec_chan,
+		       const char *comp_name,
+		       DOM_CRED *cred,
+		       const char *clear_text_mach_pwd)
+{
+	uint8_t password_buf[516];
+	NET_CRYPT_PWD new_password;
+
+	DEBUG(5,("init_q_srv_pwset2\n"));
+
+	/* Process the new password. */
+
+	encode_pw_buffer(password_buf, clear_text_mach_pwd, STR_UNICODE);
+
+	SamOEMhash(password_buf, (const unsigned char *)sess_key, 516);
+	memcpy(new_password.data, password_buf, 512);
+	new_password.length = IVAL(password_buf, 512);
+
+	init_clnt_info(&q_s->clnt_id, logon_srv, acct_name, sec_chan, comp_name, cred);
+
+	memcpy(&q_s->pwd, &new_password, sizeof(q_s->pwd));
+}
+
+/*******************************************************************
+ Reads or writes a structure.
+********************************************************************/
+
+BOOL net_io_q_srv_pwset2(const char *desc, NET_Q_SRV_PWSET2 *q_s, prs_struct *ps, int depth)
+{
+	if (q_s == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "net_io_q_srv_pwset2");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!smb_io_clnt_info("", &q_s->clnt_id, ps, depth)) /* client identification/authentication info */
+		return False;
+	if(!prs_uint8s(False, "pwd.data", ps, depth, q_s->pwd.data, 516)) /* new password - undocumented */
+		return False;
+	if(!prs_uint32("pwd.length", ps, depth, &q_s->pwd.length)) /* new password - undocumented */
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ Reads or writes a structure.
+********************************************************************/
+
+BOOL net_io_r_srv_pwset2(const char *desc, NET_R_SRV_PWSET2 *r_s, prs_struct *ps, int depth)
+{
+	if (r_s == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "net_io_r_srv_pwset2");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!smb_io_cred("", &r_s->srv_cred, ps, depth)) /* server challenge */
+		return False;
+
+	if(!prs_ntstatus("status", ps, depth, &r_s->status))
+		return False;
+
+	return True;
+}
+
 /*************************************************************************
  Init DOM_SID2 array from a string containing multiple sids
  *************************************************************************/
