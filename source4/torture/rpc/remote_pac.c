@@ -34,13 +34,6 @@
 #include "lib/messaging/irpc.h"
 #include "cluster/cluster.h"
 
-#include "system/kerberos.h"
-#include "auth/kerberos/kerberos.h"
-#include "librpc/gen_ndr/krb5pac.h"
-#include <gssapi/gssapi.h>
-#include <gssapi/gssapi_krb5.h>
-#include "auth/gensec/gensec_gssapi.h"
-
 #define TEST_MACHINE_NAME "torturepactest"
 
 /* Check to see if we can pass the PAC across to the NETLOGON server for validation */
@@ -62,11 +55,9 @@ static bool test_PACVerify(struct torture_context *tctx,
 	struct creds_CredentialState *creds;
 	struct gensec_security *gensec_client_context;
 	struct gensec_security *gensec_server_context;
-	struct gensec_gssapi_state *gensec_gssapi_state;
 
 	struct messaging_context *msg_server_ctx;
-	DATA_BLOB client_to_server, server_to_client, pac_blob, pac_wrapped;
-	gss_buffer_desc pac;
+	DATA_BLOB client_to_server, server_to_client, pac_wrapped, payload;
 	struct PAC_Validate pac_wrapped_struct;
 	
 	enum ndr_err_code ndr_err;
@@ -74,7 +65,6 @@ static bool test_PACVerify(struct torture_context *tctx,
 	struct auth_session_info *session_info;
 
 	char *tmp_dir;
-	OM_uint32 maj_stat, min_stat;
 
 	TALLOC_CTX *tmp_ctx = talloc_new(tctx);
 	
@@ -143,30 +133,22 @@ static bool test_PACVerify(struct torture_context *tctx,
 	/* Extract the PAC using Samba's code */
 
 	status = gensec_session_info(gensec_server_context, &session_info);
-	torture_assert_ntstatus_ok(tctx, status, "gensec_gssapi_session_info failed");
+	torture_assert_ntstatus_ok(tctx, status, "gensec_session_info failed");
 	
-	/* Extract a raw PAC */
-
-	gensec_gssapi_state = talloc_get_type(gensec_server_context->private_data, struct gensec_gssapi_state);
-
-	maj_stat = gsskrb5_extract_authz_data_from_sec_context(&min_stat, 
-							       gensec_gssapi_state->gssapi_context, 
-							       KRB5_AUTHDATA_WIN2K_PAC,
-							       &pac);
-	
-	if (maj_stat == 0) {
-		pac_blob = data_blob_talloc(tmp_ctx, pac.value, pac.length);
-		gss_release_buffer(&min_stat, &pac);
-
-	} else {
-		pac_blob = data_blob(NULL, 0);
-	}
-
 	pac_wrapped_struct.MessageType = 0x3;
-	pac_wrapped_struct.ChecksumLength = pac_blob.length;
-	pac_wrapped_struct.SignatureType = 0;
-	pac_wrapped_struct.SignatureLength = 0;
-	pac_wrapped_struct.data = pac_blob.data;
+	pac_wrapped_struct.ChecksumLength = session_info->server_info->pac_srv_sig.signature.length;
+	pac_wrapped_struct.SignatureType = session_info->server_info->pac_kdc_sig.type;
+	pac_wrapped_struct.SignatureLength = session_info->server_info->pac_kdc_sig.signature.length;
+	pac_wrapped_struct.ChecksumAndSignature = payload
+		= data_blob_talloc(tmp_ctx, NULL, 
+				   pac_wrapped_struct.ChecksumLength
+				   + pac_wrapped_struct.SignatureLength);
+	memcpy(&payload.data[0], 
+	       session_info->server_info->pac_srv_sig.signature.data, 
+	       pac_wrapped_struct.ChecksumLength);
+	memcpy(&payload.data[pac_wrapped_struct.ChecksumLength], 
+	       session_info->server_info->pac_kdc_sig.signature.data, 
+	       pac_wrapped_struct.SignatureLength);
 
 	ndr_err = ndr_push_struct_blob(&pac_wrapped, tmp_ctx, lp_iconv_convenience(tctx->lp_ctx), &pac_wrapped_struct,
 				       (ndr_push_flags_fn_t)ndr_push_PAC_Validate);
@@ -210,7 +192,6 @@ struct torture_suite *torture_rpc_remote_pac(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "PAC");
 	struct torture_rpc_tcase *tcase;
-	struct torture_test *test;
 
 	tcase = torture_suite_add_machine_rpc_iface_tcase(suite, "netlogon", 
 						  &ndr_table_netlogon, TEST_MACHINE_NAME);
