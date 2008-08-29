@@ -51,7 +51,8 @@ PROGS = bin/getdc@EXEEXT@ \
 	bin/localgroup_getmembers@EXEEXT@ \
 	bin/remote_tod@EXEEXT@ \
 	bin/share_add@EXEEXT@ \
-	bin/share_del@EXEEXT@
+	bin/share_del@EXEEXT@ \
+	bin/share_enum@EXEEXT@
 
 all: $(PROGS)
 
@@ -115,6 +116,7 @@ LOCALGROUPGETMEMBERS_OBJ = localgroup/localgroup_getmembers.o $(CMDLINE_OBJ)
 REMOTETOD_OBJ = server/remote_tod.o $(CMDLINE_OBJ)
 SHAREADD_OBJ = share/share_add.o $(CMDLINE_OBJ)
 SHAREDEL_OBJ = share/share_del.o $(CMDLINE_OBJ)
+SHAREENUM_OBJ = share/share_enum.o $(CMDLINE_OBJ)
 
 bin/getdc@EXEEXT@: $(BINARY_PREREQS) $(GETDC_OBJ)
 	@echo Linking $@
@@ -255,6 +257,10 @@ bin/share_add@EXEEXT@: $(BINARY_PREREQS) $(SHAREADD_OBJ)
 bin/share_del@EXEEXT@: $(BINARY_PREREQS) $(SHAREDEL_OBJ)
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SHAREDEL_OBJ) $(LDFLAGS) $(DYNEXP) $(CMDLINE_LIBS)
+
+bin/share_enum@EXEEXT@: $(BINARY_PREREQS) $(SHAREENUM_OBJ)
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(SHAREENUM_OBJ) $(LDFLAGS) $(DYNEXP) $(CMDLINE_LIBS)
 
 clean:
 	-rm -f $(PROGS)
