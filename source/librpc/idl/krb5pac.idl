@@ -100,8 +100,10 @@ interface krb5pac
 		PAC_BUFFER_RAW buffers[num_buffers];
 	} PAC_DATA_RAW;
 
+	const int NETLOGON_GENERIC_KRB5_PAC_VALIDATE = 3;
+
 	typedef [public] struct {
-		uint32 MessageType;
+		[value(NETLOGON_GENERIC_KRB5_PAC_VALIDATE)] uint32 MessageType;
 		uint32 ChecksumLength;
 		uint32 SignatureType;
 		uint32 SignatureLength;
