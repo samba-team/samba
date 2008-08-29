@@ -1463,20 +1463,22 @@ static WERROR libnet_join_post_processing(TALLOC_CTX *mem_ctx,
 		return werr;
 	}
 
-	if (r->in.join_flags & WKSSVC_JOIN_FLAGS_JOIN_TYPE) {
-		saf_store(r->in.domain_name, r->in.dc_name);
+	if (!(r->in.join_flags & WKSSVC_JOIN_FLAGS_JOIN_TYPE)) {
+		return WERR_OK;
+	}
+
+	saf_store(r->in.domain_name, r->in.dc_name);
 
 #ifdef WITH_ADS
-		if (r->out.domain_is_ad) {
-			ADS_STATUS ads_status;
+	if (r->out.domain_is_ad) {
+		ADS_STATUS ads_status;
 
-			ads_status  = libnet_join_post_processing_ads(mem_ctx, r);
-			if (!ADS_ERR_OK(ads_status)) {
-				return WERR_GENERAL_FAILURE;
-			}
+		ads_status  = libnet_join_post_processing_ads(mem_ctx, r);
+		if (!ADS_ERR_OK(ads_status)) {
+			return WERR_GENERAL_FAILURE;
 		}
-#endif /* WITH_ADS */
 	}
+#endif /* WITH_ADS */
 
 	return WERR_OK;
 }
