@@ -76,6 +76,7 @@ CLEANFILES =			\
 	roken.h			\
 	rtbl.h			\
 	sl.h			\
+	send_to_kdc_plugin.h	\
 	test-mem.h		\
 	vers.h			\
 	vis.h			\
