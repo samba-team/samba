@@ -87,6 +87,39 @@ _PUBLIC_ void ndr_print_domsid(struct ndr_print *ndr, const char *name, const st
 	ndr->depth--;
 }
 
+_PUBLIC_ enum ndr_err_code ndr_push_NetJoinFlags(struct ndr_push *ndr, int ndr_flags, uint32_t r)
+{
+	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_NetJoinFlags(struct ndr_pull *ndr, int ndr_flags, uint32_t *r)
+{
+	uint32_t v;
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_NetJoinFlags(struct ndr_print *ndr, const char *name, uint32_t r)
+{
+	ndr_print_uint32(ndr, name, r);
+	ndr->depth++;
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETSETUP_JOIN_DOMAIN", NETSETUP_JOIN_DOMAIN, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETSETUP_ACCT_CREATE", NETSETUP_ACCT_CREATE, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETSETUP_ACCT_DELETE", NETSETUP_ACCT_DELETE, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETSETUP_WIN9X_UPGRADE", NETSETUP_WIN9X_UPGRADE, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETSETUP_DOMAIN_JOIN_IF_JOINED", NETSETUP_DOMAIN_JOIN_IF_JOINED, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETSETUP_JOIN_UNSECURE", NETSETUP_JOIN_UNSECURE, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETSETUP_MACHINE_PWD_PASSED", NETSETUP_MACHINE_PWD_PASSED, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETSETUP_DEFER_SPN_SET", NETSETUP_DEFER_SPN_SET, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETSETUP_JOIN_DC_ACCOUNT", NETSETUP_JOIN_DC_ACCOUNT, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETSETUP_JOIN_WITH_NEW_NAME", NETSETUP_JOIN_WITH_NEW_NAME, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETSETUP_INSTALL_INVOCATION", NETSETUP_INSTALL_INVOCATION, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETSETUP_IGNORE_UNSUPPORTED_FLAGS", NETSETUP_IGNORE_UNSUPPORTED_FLAGS, r);
+	ndr->depth--;
+}
+
 _PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1005(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1005 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
@@ -2047,7 +2080,7 @@ _PUBLIC_ void ndr_print_NetJoinDomain(struct ndr_print *ndr, const char *name, i
 			ndr_print_string(ndr, "password", r->in.password);
 		}
 		ndr->depth--;
-		ndr_print_uint32(ndr, "join_flags", r->in.join_flags);
+		ndr_print_NetJoinFlags(ndr, "join_flags", r->in.join_flags);
 		ndr->depth--;
 	}
 	if (flags & NDR_OUT) {
@@ -2087,7 +2120,7 @@ _PUBLIC_ void ndr_print_NetUnjoinDomain(struct ndr_print *ndr, const char *name,
 			ndr_print_string(ndr, "password", r->in.password);
 		}
 		ndr->depth--;
-		ndr_print_uint32(ndr, "unjoin_flags", r->in.unjoin_flags);
+		ndr_print_NetJoinFlags(ndr, "unjoin_flags", r->in.unjoin_flags);
 		ndr->depth--;
 	}
 	if (flags & NDR_OUT) {
