@@ -1040,4 +1040,18 @@ interface libnetapi
 		[in] string net_name,
 		[in] uint32 reserved
 		);
+
+	/*******************************************/
+	/* NetShareEnum                            */
+	/*******************************************/
+
+	[nopush,nopull] NET_API_STATUS NetShareEnum(
+		[in] string server_name,
+		[in] uint32 level,
+		[out] uint8 **buffer,
+		[in] uint32 prefmaxlen,
+		[out] uint32 *entries_read,
+		[out] uint32 *total_entries,
+		[in,out] uint32 *resume_handle
+		);
 }
