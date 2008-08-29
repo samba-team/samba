@@ -29,13 +29,28 @@ interface libnetapi
 	/* NetJoinDomain                           */
 	/*******************************************/
 
+	typedef [public,bitmap32bit] bitmap {
+		NETSETUP_JOIN_DOMAIN			= 0x00000001,
+		NETSETUP_ACCT_CREATE			= 0x00000002,
+		NETSETUP_ACCT_DELETE			= 0x00000004,
+		NETSETUP_WIN9X_UPGRADE			= 0x00000010,
+		NETSETUP_DOMAIN_JOIN_IF_JOINED		= 0x00000020,
+		NETSETUP_JOIN_UNSECURE			= 0x00000040,
+		NETSETUP_MACHINE_PWD_PASSED		= 0x00000080,
+		NETSETUP_DEFER_SPN_SET			= 0x00000100,
+		NETSETUP_JOIN_DC_ACCOUNT		= 0x00000200,
+		NETSETUP_JOIN_WITH_NEW_NAME		= 0x00000400,
+		NETSETUP_INSTALL_INVOCATION		= 0x00040000,
+		NETSETUP_IGNORE_UNSUPPORTED_FLAGS	= 0x10000000
+	} NetJoinFlags;
+
 	[nopush,nopull] NET_API_STATUS NetJoinDomain(
 		[in,unique] string *server,
 		[in,ref] string *domain,
 		[in,unique] string *account_ou,
 		[in,unique] string *account,
 		[in,unique] string *password,
-		[in] uint32 join_flags
+		[in] NetJoinFlags join_flags
 		);
 
 	/*******************************************/
@@ -46,7 +61,7 @@ interface libnetapi
 		[in,unique] string *server_name,
 		[in,unique] string *account,
 		[in,unique] string *password,
-		[in] uint32 unjoin_flags
+		[in] NetJoinFlags unjoin_flags
 		);
 
 	/*******************************************/
