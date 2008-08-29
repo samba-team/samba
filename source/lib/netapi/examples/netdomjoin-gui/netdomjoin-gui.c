@@ -818,9 +818,13 @@ static void callback_enter_hostname_and_unlock(GtkWidget *widget,
 	}
 	state->hostname_changed = TRUE;
 	if (state->name_type_initial == NetSetupDomainName) {
-		asprintf(&str, "%s.%s", entry_text, state->my_dnsdomain);
+		if (asprintf(&str, "%s.%s", entry_text, state->my_dnsdomain) == -1) {
+			return;
+		}
 	} else {
-		asprintf(&str, "%s.", entry_text);
+		if (asprintf(&str, "%s.", entry_text) == -1) {
+			return;
+		}
 	}
 	gtk_label_set_text(GTK_LABEL(state->label_full_computer_name), str);
 	free(str);
@@ -1127,10 +1131,14 @@ static void callback_do_change(GtkWidget *widget,
 		char *str = NULL;
 		entry_text = gtk_entry_get_text(GTK_ENTRY(entry));
 		if (state->name_type_initial == NetSetupDomainName) {
-			asprintf(&str, "%s.%s", entry_text,
-				 state->my_dnsdomain);
+			if (asprintf(&str, "%s.%s", entry_text,
+				 state->my_dnsdomain) == -1) {
+				return;
+			}
 		} else {
-			asprintf(&str, "%s.", entry_text);
+			if (asprintf(&str, "%s.", entry_text) == -1) {
+				return;
+			}
 		}
 		gtk_label_set_text(GTK_LABEL(state->label_full_computer_name),
 				   str);
@@ -1431,10 +1439,14 @@ static int draw_main_window(struct join_state *state)
 		/* Label */
 		char *str = NULL;
 		if (state->name_type_initial == NetSetupDomainName) {
-			asprintf(&str, "%s.%s", state->my_hostname,
-				 state->my_dnsdomain);
+			if (asprintf(&str, "%s.%s", state->my_hostname,
+				 state->my_dnsdomain) == -1) {
+				return -1;
+			}
 		} else {
-			asprintf(&str, "%s.", state->my_hostname);
+			if (asprintf(&str, "%s.", state->my_hostname) == -1) {
+				return -1;
+			}
 		}
 
 		label = gtk_label_new(str);
