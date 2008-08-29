@@ -141,7 +141,38 @@ WERROR NetShareAdd_l(struct libnetapi_ctx *ctx,
 WERROR NetShareDel_r(struct libnetapi_ctx *ctx,
 		     struct NetShareDel *r)
 {
-	return WERR_NOT_SUPPORTED;
+	WERROR werr;
+	NTSTATUS status;
+	struct cli_state *cli = NULL;
+	struct rpc_pipe_client *pipe_cli = NULL;
+
+	if (!r->in.net_name) {
+		return WERR_INVALID_PARAM;
+	}
+
+	werr = libnetapi_open_pipe(ctx, r->in.server_name,
+				   &ndr_table_srvsvc.syntax_id,
+				   &cli,
+				   &pipe_cli);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	status = rpccli_srvsvc_NetShareDel(pipe_cli, ctx,
+					   r->in.server_name,
+					   r->in.net_name,
+					   r->in.reserved,
+					   &werr);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+ done:
+	if (!cli) {
+		return werr;
+	}
+
+	return werr;
 }
 
 /****************************************************************
