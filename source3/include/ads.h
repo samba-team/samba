@@ -372,9 +372,30 @@ typedef struct {
 	krb5_addresses *addrs;
 #else
 #error UNKNOWN_KRB5_ADDRESS_TYPE
-#endif
+#endif /* defined(HAVE_MAGIC_IN_KRB5_ADDRESS) && defined(HAVE_ADDRTYPE_IN_KRB5_ADDRESS) */
 } smb_krb5_addresses;
-#endif
+
+#ifdef HAVE_KRB5_KEYBLOCK_KEYVALUE /* Heimdal */
+#define KRB5_KEY_TYPE(k)	((k)->keytype)
+#define KRB5_KEY_LENGTH(k)	((k)->keyvalue.length)
+#define KRB5_KEY_DATA(k)	((k)->keyvalue.data)
+#define KRB5_KEY_DATA_CAST	void
+#else /* MIT */
+#define KRB5_KEY_TYPE(k)	((k)->enctype)
+#define KRB5_KEY_LENGTH(k)	((k)->length)
+#define KRB5_KEY_DATA(k)	((k)->contents)
+#define KRB5_KEY_DATA_CAST	krb5_octet
+#endif /* HAVE_KRB5_KEYBLOCK_KEYVALUE */
+
+#ifdef HAVE_KRB5_KEYTAB_ENTRY_KEY               /* MIT */
+#define KRB5_KT_KEY(k)		(&(k)->key)
+#elif HAVE_KRB5_KEYTAB_ENTRY_KEYBLOCK          /* Heimdal */
+#define KRB5_KT_KEY(k)		(&(k)->keyblock)
+#else
+#error krb5_keytab_entry has no key or keyblock member
+#endif /* HAVE_KRB5_KEYTAB_ENTRY_KEY */
+
+#endif /* HAVE_KRB5 */
 
 enum ads_extended_dn_flags {
 	ADS_EXTENDED_DN_HEX_STRING	= 0,

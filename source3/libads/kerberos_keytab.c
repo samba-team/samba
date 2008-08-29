@@ -161,15 +161,8 @@ int smb_krb5_kt_add_entry_ext(krb5_context context,
 	for (i = 0; enctypes[i]; i++) {
 		krb5_keyblock *keyp;
 
-#if !defined(HAVE_KRB5_KEYTAB_ENTRY_KEY) && !defined(HAVE_KRB5_KEYTAB_ENTRY_KEYBLOCK)
-#error krb5_keytab_entry has no key or keyblock member
-#endif
-#ifdef HAVE_KRB5_KEYTAB_ENTRY_KEY               /* MIT */
-		keyp = &kt_entry.key;
-#endif
-#ifdef HAVE_KRB5_KEYTAB_ENTRY_KEYBLOCK          /* Heimdal */
-		keyp = &kt_entry.keyblock;
-#endif
+		keyp = KRB5_KT_KEY(&kt_entry);
+
 		if (create_kerberos_key_from_string(context, princ, &password, keyp, enctypes[i], no_salt)) {
 			continue;
 		}
