@@ -860,20 +860,26 @@ struct timespec get_create_timespec(const SMB_STRUCT_STAT *pst,bool fake_dirs)
 	}
 
 #if defined(HAVE_STAT_ST_BIRTHTIMESPEC)
-	return pst->st_birthtimespec;
+	ret = pst->st_birthtimespec;
 #elif defined(HAVE_STAT_ST_BIRTHTIMENSEC)
 	ret.tv_sec = pst->st_birthtime;
 	ret.tv_nsec = pst->st_birthtimenspec;
-	return ret;
 #elif defined(HAVE_STAT_ST_BIRTHTIME)
 	ret.tv_sec = pst->st_birthtime;
 	ret.tv_nsec = 0;
-	return ret;
 #else
 	ret.tv_sec = calc_create_time(pst);
 	ret.tv_nsec = 0;
-	return ret;
 #endif
+
+	/* Deal with systems that don't initialize birthtime correctly.
+	 * Pointed out by SATOH Fumiyasu <fumiyas@osstech.jp>.
+	 */
+	if (null_timespec(ret)) {
+		ret.tv_sec = calc_create_time(pst);
+		ret.tv_nsec = 0;
+	}
+	return ret;
 }
 
 /****************************************************************************
