@@ -1,4 +1,5 @@
-%define main_release 2
+
+%define main_release 5
 %define alpha_version 5
 %define samba_version 4.0.0alpha%{alpha_version}
 %define tarball_name samba-4.0.0alpha%{alpha_version}
@@ -13,11 +14,15 @@ Summary: The Samba4 CIFS and AD client and server suite
 Name: samba4
 Version: 4.0.0
 Release: 0.%{main_release}.alpha%{alpha_version}%{?dist}
-License: GPLv3+, LGPLv3+, BSD
+License: GPLv3+ and LGPLv3+
 Group: System Environment/Daemons
 URL: http://www.samba.org/
 
 Source: http://download.samba.org/samba/ftp/samba4/%{tarball_name}.tar.gz
+
+# To be removed when samba4 alpha6 is released
+# From http://git.samba.org/?p=samba.git;a=commitdiff;h=7ca421eb32bed3c400f863b654712d922c82bfb9
+Patch0: cplusplus-headers.patch
 
 # Red Hat specific replacement-files
 Source1: %{name}.log
@@ -95,8 +100,6 @@ and Wireshark to parse IDL and similar protocols
 Summary: Files used by both Samba servers and clients
 Group: Applications/System
 Requires: %{name}-libs = %{version}-%{release}
-Requires(post): /sbin/chkconfig, /sbin/service
-Requires(preun): /sbin/chkconfig, /sbin/service
 
 %description common
 %{Name}-common provides files necessary for both the server and client
@@ -121,7 +124,7 @@ domains and to use Windows user and group accounts on Linux.
 # copy Red Hat specific scripts
 
 # Upstream patches
-#(none)
+%patch0 -p1 -b .
 
 mv source/VERSION source/VERSION.orig
 sed -e 's/SAMBA_VERSION_VENDOR_SUFFIX=$/&%{release}/' < source/VERSION.orig > source/VERSION
@@ -138,7 +141,7 @@ cd source
 	--with-piddir=/var/run \
 	--with-privatedir=/var/lib/%{name}/private \
 	--with-logfilebase=/var/log/%{name} \
-	--with-configdir=%{_sysconfdir}/%{name} \
+	--sysconfdir=%{_sysconfdir}/%{name} \
 	--with-winbindd-socket-dir=/var/run/winbind \
 	--with-ntp-signd-socket-dir=/var/run/ntp_signd \
 	--disable-gnutls
@@ -350,6 +353,18 @@ exit 0
 %doc WHATSNEW.txt
 
 %changelog
+* Fri Aug 29 2008 Andrew Bartlett <abartlet@samba.org> - 0:4.0.0-0.5.alpha5.fc10
+- Fix licence tag (the binaries are built into a GPLv3 whole, so the BSD licence need not be mentioned)
+
+* Fri Jul 25 2008 Andrew Bartlett <abartlet@samba.org> - 0:4.0.0-0.4.alpha5.fc10
+- Remove talloc and tdb dependency (per https://bugzilla.redhat.com/show_bug.cgi?id=453083)
+- Fix deps on chkconfig and service to main pkg (not -common) 
+  (per https://bugzilla.redhat.com/show_bug.cgi?id=453083)
+
+* Mon Jul 21 2008 Brad Hards <bradh@frogmouth.ent> - 0:4.0.0-0.3.alpha5.fc10
+- Use --sysconfdir instead of --with-configdir
+- Add patch for C++ header compatibility
+
 * Mon Jun 30 2008 Andrew Bartlett <abartlet@samba.org> - 0:4.0.0-0.2.alpha5.fc9
 - Update per review feedback
 - Update for alpha5
