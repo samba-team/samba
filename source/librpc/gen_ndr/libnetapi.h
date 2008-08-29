@@ -10,7 +10,16 @@
 #define _HEADER_libnetapi
 
 #define ERROR_MORE_DATA	( 234L )
-#define ENCRYPTED_PWLEN	( 256 )
+#define USER_PRIV_GUEST	( 0 )
+#define USER_PRIV_USER	( 1 )
+#define USER_PRIV_ADMIN	( 2 )
+#define AF_OP_PRINT	( 0x1 )
+#define AF_OP_COMM	( 0x2 )
+#define AF_OP_SERVER	( 0x4 )
+#define AF_OP_ACCOUNTS	( 0x8 )
+#define AF_SETTABLE_BITS	( (AF_OP_PRINT|AF_OP_COMM|AF_OP_SERVER|AF_OP_ACCOUNTS) )
+#define USER_MAXSTORAGE_UNLIMITED	( (uint32_t)-1L )
+#define ENCRYPTED_PWLEN	( 16 )
 #define FILTER_TEMP_DUPLICATE_ACCOUNT	( 0x0001 )
 #define FILTER_NORMAL_ACCOUNT	( 0x0002 )
 #define FILTER_INTERDOMAIN_TRUST_ACCOUNT	( 0x0008 )
@@ -34,6 +43,20 @@ struct domsid {
 	uint8_t id_auth[6];
 	uint32_t *sub_auths;
 };
+
+/* bitmap NetJoinFlags */
+#define NETSETUP_JOIN_DOMAIN ( 0x00000001 )
+#define NETSETUP_ACCT_CREATE ( 0x00000002 )
+#define NETSETUP_ACCT_DELETE ( 0x00000004 )
+#define NETSETUP_WIN9X_UPGRADE ( 0x00000010 )
+#define NETSETUP_DOMAIN_JOIN_IF_JOINED ( 0x00000020 )
+#define NETSETUP_JOIN_UNSECURE ( 0x00000040 )
+#define NETSETUP_MACHINE_PWD_PASSED ( 0x00000080 )
+#define NETSETUP_DEFER_SPN_SET ( 0x00000100 )
+#define NETSETUP_JOIN_DC_ACCOUNT ( 0x00000200 )
+#define NETSETUP_JOIN_WITH_NEW_NAME ( 0x00000400 )
+#define NETSETUP_INSTALL_INVOCATION ( 0x00040000 )
+#define NETSETUP_IGNORE_UNSUPPORTED_FLAGS ( 0x10000000 )
 
 struct SERVER_INFO_1005 {
 	const char * sv1005_comment;
@@ -149,7 +172,7 @@ struct USER_INFO_4 {
 	const char * usri4_logon_server;
 	uint32_t usri4_country_code;
 	uint32_t usri4_code_page;
-	struct dom_sid *usri4_user_sid;/* [unique] */
+	struct domsid *usri4_user_sid;/* [unique] */
 	uint32_t usri4_primary_group_id;
 	const char * usri4_profile;
 	const char * usri4_home_dir_drive;
@@ -339,6 +362,18 @@ struct USER_INFO_X {
 	const char * usriX_logon_server;
 	uint32_t usriX_country_code;
 	uint32_t usriX_code_page;
+	const char * usriX_profile;
+	const char * usriX_home_dir_drive;
+	uint32_t usriX_primary_group_id;
+};
+
+struct GROUP_USERS_INFO_0 {
+	const char * grui0_name;
+};
+
+struct GROUP_USERS_INFO_1 {
+	const char * grui1_name;
+	uint32_t grui1_attributes;
 };
 
 struct USER_MODALS_INFO_0 {
@@ -449,15 +484,6 @@ struct GROUP_INFO_1005 {
 	uint32_t grpi1005_attributes;
 };
 
-struct GROUP_USERS_INFO_0 {
-	const char * grui0_name;
-};
-
-struct GROUP_USERS_INFO_1 {
-	const char * grui1_name;
-	uint32_t grui1_attributes;
-};
-
 struct LOCALGROUP_INFO_0 {
 	const char * lgrpi0_name;
 };
@@ -533,6 +559,17 @@ struct TIME_OF_DAY_INFO {
 	uint32_t tod_month;
 	uint32_t tod_year;
 	uint32_t tod_weekday;
+};
+
+struct SHARE_INFO_2 {
+	const char * shi2_netname;
+	uint32_t shi2_type;
+	const char * shi2_remark;
+	uint32_t shi2_permissions;
+	uint32_t shi2_max_uses;
+	uint32_t shi2_current_uses;
+	const char * shi2_path;
+	const char * shi2_passwd;
 };
 
 
@@ -761,6 +798,24 @@ struct NetUserSetInfo {
 
 	struct {
 		uint32_t *parm_err;/* [ref] */
+		enum NET_API_STATUS result;
+	} out;
+
+};
+
+
+struct NetUserGetGroups {
+	struct {
+		const char * server_name;
+		const char * user_name;
+		uint32_t level;
+		uint32_t prefmaxlen;
+	} in;
+
+	struct {
+		uint8_t **buffer;/* [ref] */
+		uint32_t *entries_read;/* [ref] */
+		uint32_t *total_entries;/* [ref] */
 		enum NET_API_STATUS result;
 	} out;
 
@@ -1093,6 +1148,21 @@ struct NetRemoteTOD {
 
 	struct {
 		uint8_t **buffer;/* [ref] */
+		enum NET_API_STATUS result;
+	} out;
+
+};
+
+
+struct NetShareAdd {
+	struct {
+		const char * server_name;
+		uint32_t level;
+		uint8_t *buffer;/* [ref] */
+	} in;
+
+	struct {
+		uint32_t *parm_err;/* [ref] */
 		enum NET_API_STATUS result;
 	} out;
 

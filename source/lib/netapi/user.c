@@ -30,18 +30,20 @@
 static void convert_USER_INFO_X_to_samr_user_info21(struct USER_INFO_X *infoX,
 						    struct samr_UserInfo21 *info21)
 {
-	uint32_t fields_present = SAMR_FIELD_ACCT_FLAGS;
+	uint32_t fields_present = 0;
 	struct samr_LogonHours zero_logon_hours;
 	struct lsa_BinaryString zero_parameters;
-	uint32_t acct_flags = 0;
 	NTTIME password_age;
 
 	ZERO_STRUCTP(info21);
 	ZERO_STRUCT(zero_logon_hours);
 	ZERO_STRUCT(zero_parameters);
 
+	if (infoX->usriX_flags) {
+		fields_present |= SAMR_FIELD_ACCT_FLAGS;
+	}
 	if (infoX->usriX_name) {
-		fields_present |= SAMR_FIELD_FULL_NAME;
+		fields_present |= SAMR_FIELD_ACCOUNT_NAME;
 	}
 	if (infoX->usriX_password) {
 		fields_present |= SAMR_FIELD_PASSWORD;
@@ -64,8 +66,27 @@ static void convert_USER_INFO_X_to_samr_user_info21(struct USER_INFO_X *infoX,
 	if (infoX->usriX_password_age) {
 		fields_present |= SAMR_FIELD_FORCE_PWD_CHANGE;
 	}
-
-	acct_flags |= infoX->usriX_flags | ACB_NORMAL;
+	if (infoX->usriX_full_name) {
+		fields_present |= SAMR_FIELD_FULL_NAME;
+	}
+	if (infoX->usriX_usr_comment) {
+		fields_present |= SAMR_FIELD_COMMENT;
+	}
+	if (infoX->usriX_profile) {
+		fields_present |= SAMR_FIELD_PROFILE_PATH;
+	}
+	if (infoX->usriX_home_dir_drive) {
+		fields_present |= SAMR_FIELD_HOME_DRIVE;
+	}
+	if (infoX->usriX_primary_group_id) {
+		fields_present |= SAMR_FIELD_PRIMARY_GID;
+	}
+	if (infoX->usriX_country_code) {
+		fields_present |= SAMR_FIELD_COUNTRY_CODE;
+	}
+	if (infoX->usriX_workstations) {
+		fields_present |= SAMR_FIELD_WORKSTATIONS;
+	}
 
 	unix_to_nt_time_abs(&password_age, infoX->usriX_password_age);
 
@@ -77,24 +98,24 @@ static void convert_USER_INFO_X_to_samr_user_info21(struct USER_INFO_X *infoX,
 			      0,
 			      0,
 			      password_age,
-			      NULL,
 			      infoX->usriX_name,
+			      infoX->usriX_full_name,
 			      infoX->usriX_home_dir,
-			      NULL,
+			      infoX->usriX_home_dir_drive,
 			      infoX->usriX_script_path,
-			      NULL,
+			      infoX->usriX_profile,
 			      infoX->usriX_comment,
-			      NULL,
-			      NULL,
+			      infoX->usriX_workstations,
+			      infoX->usriX_usr_comment,
 			      &zero_parameters,
 			      0,
-			      0,
-			      acct_flags,
+			      infoX->usriX_primary_group_id,
+			      infoX->usriX_flags,
 			      fields_present,
 			      zero_logon_hours,
 			      0,
 			      0,
-			      0,
+			      infoX->usriX_country_code,
 			      0,
 			      0,
 			      0,
@@ -111,7 +132,17 @@ static NTSTATUS construct_USER_INFO_X(uint32_t level,
 	struct USER_INFO_0 *u0 = NULL;
 	struct USER_INFO_1 *u1 = NULL;
 	struct USER_INFO_2 *u2 = NULL;
+	struct USER_INFO_1003 *u1003 = NULL;
+	struct USER_INFO_1006 *u1006 = NULL;
 	struct USER_INFO_1007 *u1007 = NULL;
+	struct USER_INFO_1009 *u1009 = NULL;
+	struct USER_INFO_1011 *u1011 = NULL;
+	struct USER_INFO_1012 *u1012 = NULL;
+	struct USER_INFO_1014 *u1014 = NULL;
+	struct USER_INFO_1024 *u1024 = NULL;
+	struct USER_INFO_1051 *u1051 = NULL;
+	struct USER_INFO_1052 *u1052 = NULL;
+	struct USER_INFO_1053 *u1053 = NULL;
 
 	if (!buffer || !uX) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -162,9 +193,49 @@ static NTSTATUS construct_USER_INFO_X(uint32_t level,
 			uX->usriX_country_code	= u2->usri2_country_code;
 			uX->usriX_code_page	= u2->usri2_code_page;
 			break;
+		case 1003:
+			u1003 = (struct USER_INFO_1003 *)buffer;
+			uX->usriX_password	= u1003->usri1003_password;
+			break;
+		case 1006:
+			u1006 = (struct USER_INFO_1006 *)buffer;
+			uX->usriX_home_dir	= u1006->usri1006_home_dir;
+			break;
 		case 1007:
 			u1007 = (struct USER_INFO_1007 *)buffer;
 			uX->usriX_comment	= u1007->usri1007_comment;
+			break;
+		case 1009:
+			u1009 = (struct USER_INFO_1009 *)buffer;
+			uX->usriX_script_path	= u1009->usri1009_script_path;
+			break;
+		case 1011:
+			u1011 = (struct USER_INFO_1011 *)buffer;
+			uX->usriX_full_name	= u1011->usri1011_full_name;
+			break;
+		case 1012:
+			u1012 = (struct USER_INFO_1012 *)buffer;
+			uX->usriX_usr_comment	= u1012->usri1012_usr_comment;
+			break;
+		case 1014:
+			u1014 = (struct USER_INFO_1014 *)buffer;
+			uX->usriX_workstations	= u1014->usri1014_workstations;
+			break;
+		case 1024:
+			u1024 = (struct USER_INFO_1024 *)buffer;
+			uX->usriX_country_code	= u1024->usri1024_country_code;
+			break;
+		case 1051:
+			u1051 = (struct USER_INFO_1051 *)buffer;
+			uX->usriX_primary_group_id = u1051->usri1051_primary_group_id;
+			break;
+		case 1052:
+			u1052 = (struct USER_INFO_1052 *)buffer;
+			uX->usriX_profile	= u1052->usri1052_profile;
+			break;
+		case 1053:
+			u1053 = (struct USER_INFO_1053 *)buffer;
+			uX->usriX_home_dir_drive = u1053->usri1053_home_dir_drive;
 			break;
 		case 3:
 		case 4:
@@ -173,6 +244,66 @@ static NTSTATUS construct_USER_INFO_X(uint32_t level,
 	}
 
 	return NT_STATUS_OK;
+}
+
+/****************************************************************
+****************************************************************/
+
+static NTSTATUS set_user_info_USER_INFO_X(TALLOC_CTX *ctx,
+					  struct rpc_pipe_client *pipe_cli,
+					  DATA_BLOB *session_key,
+					  struct policy_handle *user_handle,
+					  struct USER_INFO_X *uX)
+{
+	union samr_UserInfo user_info;
+	struct samr_UserInfo21 info21;
+	NTSTATUS status;
+
+	if (!uX) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	convert_USER_INFO_X_to_samr_user_info21(uX, &info21);
+
+	ZERO_STRUCT(user_info);
+
+	if (uX->usriX_password) {
+
+		user_info.info25.info = info21;
+
+		init_samr_CryptPasswordEx(uX->usriX_password,
+					  session_key,
+					  &user_info.info25.password);
+
+		status = rpccli_samr_SetUserInfo2(pipe_cli, ctx,
+						  user_handle,
+						  25,
+						  &user_info);
+
+		if (NT_STATUS_EQUAL(status, NT_STATUS(DCERPC_FAULT_INVALID_TAG))) {
+
+			user_info.info23.info = info21;
+
+			init_samr_CryptPassword(uX->usriX_password,
+						session_key,
+						&user_info.info23.password);
+
+			status = rpccli_samr_SetUserInfo2(pipe_cli, ctx,
+							  user_handle,
+							  23,
+							  &user_info);
+		}
+	} else {
+
+		user_info.info21 = info21;
+
+		status = rpccli_samr_SetUserInfo(pipe_cli, ctx,
+						 user_handle,
+						 21,
+						 &user_info);
+	}
+
+	return status;
 }
 
 /****************************************************************
@@ -188,7 +319,6 @@ WERROR NetUserAdd_r(struct libnetapi_ctx *ctx,
 	POLICY_HND connect_handle, domain_handle, user_handle;
 	struct lsa_String lsa_account_name;
 	struct dom_sid2 *domain_sid = NULL;
-	struct samr_UserInfo21 info21;
 	union samr_UserInfo *user_info = NULL;
 	struct samr_PwInfo pw_info;
 	uint32_t access_granted = 0;
@@ -282,47 +412,12 @@ WERROR NetUserAdd_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	convert_USER_INFO_X_to_samr_user_info21(&uX,
-						&info21);
+	uX.usriX_flags |= ACB_NORMAL;
 
-	ZERO_STRUCTP(user_info);
-
-	if (uX.usriX_password) {
-
-		user_info->info25.info = info21;
-
-		init_samr_CryptPasswordEx(uX.usriX_password,
-					  &cli->user_session_key,
-					  &user_info->info25.password);
-
-		status = rpccli_samr_SetUserInfo2(pipe_cli, ctx,
-						  &user_handle,
-						  25,
-						  user_info);
-
-		if (NT_STATUS_EQUAL(status, NT_STATUS(DCERPC_FAULT_INVALID_TAG))) {
-
-			user_info->info23.info = info21;
-
-			init_samr_CryptPassword(uX.usriX_password,
-						&cli->user_session_key,
-						&user_info->info23.password);
-
-			status = rpccli_samr_SetUserInfo2(pipe_cli, ctx,
-							  &user_handle,
-							  23,
-							  user_info);
-		}
-	} else {
-
-		user_info->info21 = info21;
-
-		status = rpccli_samr_SetUserInfo(pipe_cli, ctx,
-						 &user_handle,
-						 21,
-						 user_info);
-
-	}
+	status = set_user_info_USER_INFO_X(ctx, pipe_cli,
+					   &cli->user_session_key,
+					   &user_handle,
+					   &uX);
 	if (!NT_STATUS_IS_OK(status)) {
 		werr = ntstatus_to_werror(status);
 		goto failed;
@@ -489,10 +584,12 @@ static NTSTATUS libnetapi_samr_lookup_user(TALLOC_CTX *mem_ctx,
 					   struct policy_handle *domain_handle,
 					   struct policy_handle *builtin_handle,
 					   const char *user_name,
+					   const struct dom_sid *domain_sid,
 					   uint32_t rid,
 					   uint32_t level,
 					   struct samr_UserInfo21 **info21,
-					   struct sec_desc_buf **sec_desc)
+					   struct sec_desc_buf **sec_desc,
+					   uint32_t *auth_flag_p)
 {
 	NTSTATUS status;
 
@@ -507,11 +604,20 @@ static NTSTATUS libnetapi_samr_lookup_user(TALLOC_CTX *mem_ctx,
 
 	switch (level) {
 		case 0:
+			break;
 		case 1:
+			access_mask |= SAMR_USER_ACCESS_GET_LOGONINFO |
+				       SAMR_USER_ACCESS_GET_GROUPS;
+			break;
 		case 2:
 		case 3:
-		case 10:
+		case 4:
 		case 11:
+			access_mask |= SAMR_USER_ACCESS_GET_LOGONINFO |
+				       SAMR_USER_ACCESS_GET_GROUPS |
+				       SAMR_USER_ACCESS_GET_LOCALE;
+			break;
+		case 10:
 		case 20:
 		case 23:
 			break;
@@ -548,7 +654,14 @@ static NTSTATUS libnetapi_samr_lookup_user(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	if (level == 1) {
+	if (access_mask & SAMR_USER_ACCESS_GET_GROUPS) {
+
+		struct lsa_SidArray sid_array;
+		struct samr_Ids alias_rids;
+		int i;
+		uint32_t auth_flag = 0;
+		struct dom_sid sid;
+
 		status = rpccli_samr_GetGroupsForUser(pipe_cli, mem_ctx,
 						      &user_handle,
 						      &rid_array);
@@ -556,15 +669,48 @@ static NTSTATUS libnetapi_samr_lookup_user(TALLOC_CTX *mem_ctx,
 			goto done;
 		}
 
-#if 0
-		status = rpccli_samr_GetAliasMembership(pipe_cli, ctx,
-							&builtin_handle,
-							&sids,
-							&rids);
+		sid_array.num_sids = rid_array->count + 1;
+		sid_array.sids = talloc_array(mem_ctx, struct lsa_SidPtr,
+					      sid_array.num_sids);
+		NT_STATUS_HAVE_NO_MEMORY(sid_array.sids);
+
+		for (i=0; i<rid_array->count; i++) {
+			sid_compose(&sid, domain_sid, rid_array->rids[i].rid);
+			sid_array.sids[i].sid = sid_dup_talloc(mem_ctx, &sid);
+			NT_STATUS_HAVE_NO_MEMORY(sid_array.sids[i].sid);
+		}
+
+		sid_compose(&sid, domain_sid, rid);
+		sid_array.sids[i].sid = sid_dup_talloc(mem_ctx, &sid);
+		NT_STATUS_HAVE_NO_MEMORY(sid_array.sids[i].sid);
+
+		status = rpccli_samr_GetAliasMembership(pipe_cli, mem_ctx,
+							builtin_handle,
+							&sid_array,
+							&alias_rids);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto done;
 		}
-#endif
+
+		for (i=0; i<alias_rids.count; i++) {
+			switch (alias_rids.ids[i]) {
+				case 550: /* Print Operators */
+					auth_flag |= AF_OP_PRINT;
+					break;
+				case 549: /* Server Operators */
+					auth_flag |= AF_OP_SERVER;
+					break;
+				case 548: /* Account Operators */
+					auth_flag |= AF_OP_ACCOUNTS;
+					break;
+				default:
+					break;
+			}
+		}
+
+		if (auth_flag_p) {
+			*auth_flag_p = auth_flag;
+		}
 	}
 
 	*info21 = &user_info->info21;
@@ -575,6 +721,283 @@ static NTSTATUS libnetapi_samr_lookup_user(TALLOC_CTX *mem_ctx,
 	}
 
 	return status;
+}
+
+/****************************************************************
+****************************************************************/
+
+static uint32_t samr_rid_to_priv_level(uint32_t rid)
+{
+	switch (rid) {
+		case DOMAIN_RID_ADMINISTRATOR:
+			return USER_PRIV_ADMIN;
+		case DOMAIN_RID_GUEST:
+			return USER_PRIV_GUEST;
+		default:
+			return USER_PRIV_USER;
+	}
+}
+
+/****************************************************************
+****************************************************************/
+
+static uint32_t samr_acb_flags_to_netapi_flags(uint32_t acb)
+{
+	uint32_t fl = UF_SCRIPT; /* god knows why */
+
+	fl |= ads_acb2uf(acb);
+
+	return fl;
+}
+
+/****************************************************************
+****************************************************************/
+
+static NTSTATUS info21_to_USER_INFO_1(TALLOC_CTX *mem_ctx,
+				      const struct samr_UserInfo21 *i21,
+				      struct USER_INFO_1 *i)
+{
+	ZERO_STRUCTP(i);
+	i->usri1_name		= talloc_strdup(mem_ctx, i21->account_name.string);
+	NT_STATUS_HAVE_NO_MEMORY(i->usri1_name);
+	i->usri1_password	= NULL;
+	i->usri1_password_age	= time(NULL) - nt_time_to_unix(i21->last_password_change);
+	i->usri1_priv		= samr_rid_to_priv_level(i21->rid);
+	i->usri1_home_dir	= talloc_strdup(mem_ctx, i21->home_directory.string);
+	i->usri1_comment	= talloc_strdup(mem_ctx, i21->description.string);
+	i->usri1_flags		= samr_acb_flags_to_netapi_flags(i21->acct_flags);
+	i->usri1_script_path	= talloc_strdup(mem_ctx, i21->logon_script.string);
+
+	return NT_STATUS_OK;
+}
+
+/****************************************************************
+****************************************************************/
+
+static NTSTATUS info21_to_USER_INFO_2(TALLOC_CTX *mem_ctx,
+				      const struct samr_UserInfo21 *i21,
+				      uint32_t auth_flag,
+				      struct USER_INFO_2 *i)
+{
+	ZERO_STRUCTP(i);
+
+	i->usri2_name		= talloc_strdup(mem_ctx, i21->account_name.string);
+	NT_STATUS_HAVE_NO_MEMORY(i->usri2_name);
+	i->usri2_password	= NULL;
+	i->usri2_password_age	= time(NULL) - nt_time_to_unix(i21->last_password_change);
+	i->usri2_priv		= samr_rid_to_priv_level(i21->rid);
+	i->usri2_home_dir	= talloc_strdup(mem_ctx, i21->home_directory.string);
+	i->usri2_comment	= talloc_strdup(mem_ctx, i21->description.string);
+	i->usri2_flags		= samr_acb_flags_to_netapi_flags(i21->acct_flags);
+	i->usri2_script_path	= talloc_strdup(mem_ctx, i21->logon_script.string);
+	i->usri2_auth_flags	= auth_flag;
+	i->usri2_full_name	= talloc_strdup(mem_ctx, i21->full_name.string);
+	i->usri2_usr_comment	= talloc_strdup(mem_ctx, i21->comment.string);
+	i->usri2_parms		= talloc_strndup(mem_ctx, (const char *)i21->parameters.array, i21->parameters.size/2);
+	i->usri2_workstations	= talloc_strdup(mem_ctx, i21->workstations.string);
+	i->usri2_last_logon	= nt_time_to_unix(i21->last_logon);
+	i->usri2_last_logoff	= nt_time_to_unix(i21->last_logoff);
+	i->usri2_acct_expires	= nt_time_to_unix(i21->acct_expiry);
+	i->usri2_max_storage	= USER_MAXSTORAGE_UNLIMITED; /* FIXME */
+	i->usri2_units_per_week	= i21->logon_hours.units_per_week;
+	i->usri2_logon_hours	= (uint8_t *)talloc_memdup(mem_ctx, i21->logon_hours.bits, 21);
+	i->usri2_bad_pw_count	= i21->bad_password_count;
+	i->usri2_num_logons	= i21->logon_count;
+	i->usri2_logon_server	= talloc_strdup(mem_ctx, "\\\\*");
+	i->usri2_country_code	= i21->country_code;
+	i->usri2_code_page	= i21->code_page;
+
+	return NT_STATUS_OK;
+}
+
+/****************************************************************
+****************************************************************/
+
+static NTSTATUS info21_to_USER_INFO_3(TALLOC_CTX *mem_ctx,
+				      const struct samr_UserInfo21 *i21,
+				      uint32_t auth_flag,
+				      struct USER_INFO_3 *i)
+{
+	ZERO_STRUCTP(i);
+
+	i->usri3_name		= talloc_strdup(mem_ctx, i21->account_name.string);
+	NT_STATUS_HAVE_NO_MEMORY(i->usri3_name);
+	i->usri3_password_age	= time(NULL) - nt_time_to_unix(i21->last_password_change);
+	i->usri3_priv		= samr_rid_to_priv_level(i21->rid);
+	i->usri3_home_dir	= talloc_strdup(mem_ctx, i21->home_directory.string);
+	i->usri3_comment	= talloc_strdup(mem_ctx, i21->description.string);
+	i->usri3_flags		= samr_acb_flags_to_netapi_flags(i21->acct_flags);
+	i->usri3_script_path	= talloc_strdup(mem_ctx, i21->logon_script.string);
+	i->usri3_auth_flags	= auth_flag;
+	i->usri3_full_name	= talloc_strdup(mem_ctx, i21->full_name.string);
+	i->usri3_usr_comment	= talloc_strdup(mem_ctx, i21->comment.string);
+	i->usri3_parms		= talloc_strndup(mem_ctx, (const char *)i21->parameters.array, i21->parameters.size/2);
+	i->usri3_workstations	= talloc_strdup(mem_ctx, i21->workstations.string);
+	i->usri3_last_logon	= nt_time_to_unix(i21->last_logon);
+	i->usri3_last_logoff	= nt_time_to_unix(i21->last_logoff);
+	i->usri3_acct_expires	= nt_time_to_unix(i21->acct_expiry);
+	i->usri3_max_storage	= USER_MAXSTORAGE_UNLIMITED; /* FIXME */
+	i->usri3_units_per_week	= i21->logon_hours.units_per_week;
+	i->usri3_logon_hours	= (uint8_t *)talloc_memdup(mem_ctx, i21->logon_hours.bits, 21);
+	i->usri3_bad_pw_count	= i21->bad_password_count;
+	i->usri3_num_logons	= i21->logon_count;
+	i->usri3_logon_server	= talloc_strdup(mem_ctx, "\\\\*");
+	i->usri3_country_code	= i21->country_code;
+	i->usri3_code_page	= i21->code_page;
+	i->usri3_user_id	= i21->rid;
+	i->usri3_primary_group_id = i21->primary_gid;
+	i->usri3_profile	= talloc_strdup(mem_ctx, i21->profile_path.string);
+	i->usri3_home_dir_drive	= talloc_strdup(mem_ctx, i21->home_drive.string);
+	i->usri3_password_expired = i21->password_expired;
+
+	return NT_STATUS_OK;
+}
+
+/****************************************************************
+****************************************************************/
+
+static NTSTATUS info21_to_USER_INFO_4(TALLOC_CTX *mem_ctx,
+				      const struct samr_UserInfo21 *i21,
+				      uint32_t auth_flag,
+				      struct dom_sid *domain_sid,
+				      struct USER_INFO_4 *i)
+{
+	struct dom_sid sid;
+
+	ZERO_STRUCTP(i);
+
+	i->usri4_name		= talloc_strdup(mem_ctx, i21->account_name.string);
+	NT_STATUS_HAVE_NO_MEMORY(i->usri4_name);
+	i->usri4_password_age	= time(NULL) - nt_time_to_unix(i21->last_password_change);
+	i->usri4_password	= NULL;
+	i->usri4_priv		= samr_rid_to_priv_level(i21->rid);
+	i->usri4_home_dir	= talloc_strdup(mem_ctx, i21->home_directory.string);
+	i->usri4_comment	= talloc_strdup(mem_ctx, i21->description.string);
+	i->usri4_flags		= samr_acb_flags_to_netapi_flags(i21->acct_flags);
+	i->usri4_script_path	= talloc_strdup(mem_ctx, i21->logon_script.string);
+	i->usri4_auth_flags	= auth_flag;
+	i->usri4_full_name	= talloc_strdup(mem_ctx, i21->full_name.string);
+	i->usri4_usr_comment	= talloc_strdup(mem_ctx, i21->comment.string);
+	i->usri4_parms		= talloc_strndup(mem_ctx, (const char *)i21->parameters.array, i21->parameters.size/2);
+	i->usri4_workstations	= talloc_strdup(mem_ctx, i21->workstations.string);
+	i->usri4_last_logon	= nt_time_to_unix(i21->last_logon);
+	i->usri4_last_logoff	= nt_time_to_unix(i21->last_logoff);
+	i->usri4_acct_expires	= nt_time_to_unix(i21->acct_expiry);
+	i->usri4_max_storage	= USER_MAXSTORAGE_UNLIMITED; /* FIXME */
+	i->usri4_units_per_week	= i21->logon_hours.units_per_week;
+	i->usri4_logon_hours	= (uint8_t *)talloc_memdup(mem_ctx, i21->logon_hours.bits, 21);
+	i->usri4_bad_pw_count	= i21->bad_password_count;
+	i->usri4_num_logons	= i21->logon_count;
+	i->usri4_logon_server	= talloc_strdup(mem_ctx, "\\\\*");
+	i->usri4_country_code	= i21->country_code;
+	i->usri4_code_page	= i21->code_page;
+	if (!sid_compose(&sid, domain_sid, i21->rid)) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	i->usri4_user_sid	= (struct domsid *)sid_dup_talloc(mem_ctx, &sid);
+	i->usri4_primary_group_id = i21->primary_gid;
+	i->usri4_profile	= talloc_strdup(mem_ctx, i21->profile_path.string);
+	i->usri4_home_dir_drive	= talloc_strdup(mem_ctx, i21->home_drive.string);
+	i->usri4_password_expired = i21->password_expired;
+
+	return NT_STATUS_OK;
+}
+
+/****************************************************************
+****************************************************************/
+
+static NTSTATUS info21_to_USER_INFO_10(TALLOC_CTX *mem_ctx,
+				       const struct samr_UserInfo21 *i21,
+				       struct USER_INFO_10 *i)
+{
+	ZERO_STRUCTP(i);
+
+	i->usri10_name		= talloc_strdup(mem_ctx, i21->account_name.string);
+	NT_STATUS_HAVE_NO_MEMORY(i->usri10_name);
+	i->usri10_comment	= talloc_strdup(mem_ctx, i21->description.string);
+	i->usri10_full_name	= talloc_strdup(mem_ctx, i21->full_name.string);
+	i->usri10_usr_comment	= talloc_strdup(mem_ctx, i21->comment.string);
+
+	return NT_STATUS_OK;
+}
+
+/****************************************************************
+****************************************************************/
+
+static NTSTATUS info21_to_USER_INFO_11(TALLOC_CTX *mem_ctx,
+				       const struct samr_UserInfo21 *i21,
+				       uint32_t auth_flag,
+				       struct USER_INFO_11 *i)
+{
+	ZERO_STRUCTP(i);
+
+	i->usri11_name		= talloc_strdup(mem_ctx, i21->account_name.string);
+	NT_STATUS_HAVE_NO_MEMORY(i->usri11_name);
+	i->usri11_comment	= talloc_strdup(mem_ctx, i21->description.string);
+	i->usri11_usr_comment	= talloc_strdup(mem_ctx, i21->comment.string);
+	i->usri11_full_name	= talloc_strdup(mem_ctx, i21->full_name.string);
+	i->usri11_priv		= samr_rid_to_priv_level(i21->rid);
+	i->usri11_auth_flags	= auth_flag;
+	i->usri11_password_age	= time(NULL) - nt_time_to_unix(i21->last_password_change);
+	i->usri11_home_dir	= talloc_strdup(mem_ctx, i21->home_directory.string);
+	i->usri11_parms		= talloc_strndup(mem_ctx, (const char *)i21->parameters.array, i21->parameters.size/2);
+	i->usri11_last_logon	= nt_time_to_unix(i21->last_logon);
+	i->usri11_last_logoff	= nt_time_to_unix(i21->last_logoff);
+	i->usri11_bad_pw_count	= i21->bad_password_count;
+	i->usri11_num_logons	= i21->logon_count;
+	i->usri11_logon_server	= talloc_strdup(mem_ctx, "\\\\*");
+	i->usri11_country_code	= i21->country_code;
+	i->usri11_workstations	= talloc_strdup(mem_ctx, i21->workstations.string);
+	i->usri11_max_storage	= USER_MAXSTORAGE_UNLIMITED; /* FIXME */
+	i->usri11_units_per_week = i21->logon_hours.units_per_week;
+	i->usri11_logon_hours	= (uint8_t *)talloc_memdup(mem_ctx, i21->logon_hours.bits, 21);
+	i->usri11_code_page	= i21->code_page;
+
+	return NT_STATUS_OK;
+}
+
+/****************************************************************
+****************************************************************/
+
+static NTSTATUS info21_to_USER_INFO_20(TALLOC_CTX *mem_ctx,
+				       const struct samr_UserInfo21 *i21,
+				       struct USER_INFO_20 *i)
+{
+	ZERO_STRUCTP(i);
+
+	i->usri20_name		= talloc_strdup(mem_ctx, i21->account_name.string);
+	NT_STATUS_HAVE_NO_MEMORY(i->usri20_name);
+	i->usri20_comment	= talloc_strdup(mem_ctx, i21->description.string);
+	i->usri20_full_name	= talloc_strdup(mem_ctx, i21->full_name.string);
+	i->usri20_flags		= samr_acb_flags_to_netapi_flags(i21->acct_flags);
+	i->usri20_user_id	= i21->rid;
+
+	return NT_STATUS_OK;
+}
+
+/****************************************************************
+****************************************************************/
+
+static NTSTATUS info21_to_USER_INFO_23(TALLOC_CTX *mem_ctx,
+				       const struct samr_UserInfo21 *i21,
+				       struct dom_sid *domain_sid,
+				       struct USER_INFO_23 *i)
+{
+	struct dom_sid sid;
+
+	ZERO_STRUCTP(i);
+
+	i->usri23_name		= talloc_strdup(mem_ctx, i21->account_name.string);
+	NT_STATUS_HAVE_NO_MEMORY(i->usri23_name);
+	i->usri23_comment	= talloc_strdup(mem_ctx, i21->description.string);
+	i->usri23_full_name	= talloc_strdup(mem_ctx, i21->full_name.string);
+	i->usri23_flags		= samr_acb_flags_to_netapi_flags(i21->acct_flags);
+	if (!sid_compose(&sid, domain_sid, i21->rid)) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	i->usri23_user_sid	= (struct domsid *)sid_dup_talloc(mem_ctx, &sid);
+
+	return NT_STATUS_OK;
 }
 
 /****************************************************************
@@ -595,10 +1018,15 @@ static NTSTATUS libnetapi_samr_lookup_user_map_USER_INFO(TALLOC_CTX *mem_ctx,
 
 	struct samr_UserInfo21 *info21 = NULL;
 	struct sec_desc_buf *sec_desc = NULL;
-	struct dom_sid sid;
+	uint32_t auth_flag = 0;
 
 	struct USER_INFO_0 info0;
+	struct USER_INFO_1 info1;
+	struct USER_INFO_2 info2;
+	struct USER_INFO_3 info3;
+	struct USER_INFO_4 info4;
 	struct USER_INFO_10 info10;
+	struct USER_INFO_11 info11;
 	struct USER_INFO_20 info20;
 	struct USER_INFO_23 info23;
 
@@ -607,6 +1035,7 @@ static NTSTATUS libnetapi_samr_lookup_user_map_USER_INFO(TALLOC_CTX *mem_ctx,
 		case 1:
 		case 2:
 		case 3:
+		case 4:
 		case 10:
 		case 11:
 		case 20:
@@ -630,73 +1059,86 @@ static NTSTATUS libnetapi_samr_lookup_user_map_USER_INFO(TALLOC_CTX *mem_ctx,
 					    domain_handle,
 					    builtin_handle,
 					    user_name,
+					    domain_sid,
 					    rid,
 					    level,
 					    &info21,
-					    &sec_desc);
+					    &sec_desc,
+					    &auth_flag);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
 
 	switch (level) {
+		case 0:
+			/* already returned above */
+			break;
+		case 1:
+			status = info21_to_USER_INFO_1(mem_ctx, info21, &info1);
+			NT_STATUS_NOT_OK_RETURN(status);
+
+			ADD_TO_ARRAY(mem_ctx, struct USER_INFO_1, info1,
+				     (struct USER_INFO_1 **)buffer, num_entries);
+
+			break;
+		case 2:
+			status = info21_to_USER_INFO_2(mem_ctx, info21, auth_flag, &info2);
+			NT_STATUS_NOT_OK_RETURN(status);
+
+			ADD_TO_ARRAY(mem_ctx, struct USER_INFO_2, info2,
+				     (struct USER_INFO_2 **)buffer, num_entries);
+
+			break;
+		case 3:
+			status = info21_to_USER_INFO_3(mem_ctx, info21, auth_flag, &info3);
+			NT_STATUS_NOT_OK_RETURN(status);
+
+			ADD_TO_ARRAY(mem_ctx, struct USER_INFO_3, info3,
+				     (struct USER_INFO_3 **)buffer, num_entries);
+
+			break;
+		case 4:
+			status = info21_to_USER_INFO_4(mem_ctx, info21, auth_flag, domain_sid, &info4);
+			NT_STATUS_NOT_OK_RETURN(status);
+
+			ADD_TO_ARRAY(mem_ctx, struct USER_INFO_4, info4,
+				     (struct USER_INFO_4 **)buffer, num_entries);
+
+			break;
 		case 10:
-			info10.usri10_name = talloc_strdup(mem_ctx, user_name);
-			NT_STATUS_HAVE_NO_MEMORY(info10.usri10_name);
-
-			info10.usri10_comment = talloc_strdup(mem_ctx,
-				info21->description.string);
-
-			info10.usri10_full_name = talloc_strdup(mem_ctx,
-				info21->full_name.string);
-
-			info10.usri10_usr_comment = talloc_strdup(mem_ctx,
-				info21->comment.string);
+			status = info21_to_USER_INFO_10(mem_ctx, info21, &info10);
+			NT_STATUS_NOT_OK_RETURN(status);
 
 			ADD_TO_ARRAY(mem_ctx, struct USER_INFO_10, info10,
 				     (struct USER_INFO_10 **)buffer, num_entries);
 
 			break;
+		case 11:
+			status = info21_to_USER_INFO_11(mem_ctx, info21, auth_flag, &info11);
+			NT_STATUS_NOT_OK_RETURN(status);
 
+			ADD_TO_ARRAY(mem_ctx, struct USER_INFO_11, info11,
+				     (struct USER_INFO_11 **)buffer, num_entries);
+
+			break;
 		case 20:
-			info20.usri20_name = talloc_strdup(mem_ctx, user_name);
-			NT_STATUS_HAVE_NO_MEMORY(info20.usri20_name);
-
-			info20.usri20_comment = talloc_strdup(mem_ctx,
-				info21->description.string);
-
-			info20.usri20_full_name = talloc_strdup(mem_ctx,
-				info21->full_name.string);
-
-			info20.usri20_flags = info21->acct_flags;
-			info20.usri20_user_id = rid;
+			status = info21_to_USER_INFO_20(mem_ctx, info21, &info20);
+			NT_STATUS_NOT_OK_RETURN(status);
 
 			ADD_TO_ARRAY(mem_ctx, struct USER_INFO_20, info20,
 				     (struct USER_INFO_20 **)buffer, num_entries);
 
 			break;
 		case 23:
-			info23.usri23_name = talloc_strdup(mem_ctx, user_name);
-			NT_STATUS_HAVE_NO_MEMORY(info23.usri23_name);
-
-			info23.usri23_comment = talloc_strdup(mem_ctx,
-				info21->description.string);
-
-			info23.usri23_full_name = talloc_strdup(mem_ctx,
-				info21->full_name.string);
-
-			info23.usri23_flags = info21->acct_flags;
-
-			if (!sid_compose(&sid, domain_sid, rid)) {
-				return NT_STATUS_NO_MEMORY;
-			}
-
-			info23.usri23_user_sid =
-				(struct domsid *)sid_dup_talloc(mem_ctx, &sid);
+			status = info21_to_USER_INFO_23(mem_ctx, info21, domain_sid, &info23);
+			NT_STATUS_NOT_OK_RETURN(status);
 
 			ADD_TO_ARRAY(mem_ctx, struct USER_INFO_23, info23,
 				     (struct USER_INFO_23 **)buffer, num_entries);
 			break;
+		default:
+			return NT_STATUS_INVALID_LEVEL;
 	}
 
  done:
@@ -713,7 +1155,7 @@ WERROR NetUserEnum_r(struct libnetapi_ctx *ctx,
 	struct rpc_pipe_client *pipe_cli = NULL;
 	struct policy_handle connect_handle;
 	struct dom_sid2 *domain_sid = NULL;
-	struct policy_handle domain_handle;
+	struct policy_handle domain_handle, builtin_handle;
 	struct samr_SamArray *sam = NULL;
 	uint32_t filter = ACB_NORMAL;
 	int i;
@@ -724,6 +1166,7 @@ WERROR NetUserEnum_r(struct libnetapi_ctx *ctx,
 
 	ZERO_STRUCT(connect_handle);
 	ZERO_STRUCT(domain_handle);
+	ZERO_STRUCT(builtin_handle);
 
 	if (!r->out.buffer) {
 		return WERR_INVALID_PARAM;
@@ -734,22 +1177,34 @@ WERROR NetUserEnum_r(struct libnetapi_ctx *ctx,
 
 	switch (r->in.level) {
 		case 0:
-		case 10:
-		case 20:
-		case 23:
-			break;
 		case 1:
 		case 2:
 		case 3:
+		case 4:
+		case 10:
 		case 11:
+		case 20:
+		case 23:
+			break;
 		default:
-			return WERR_NOT_SUPPORTED;
+			return WERR_UNKNOWN_LEVEL;
 	}
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
 				   &ndr_table_samr.syntax_id,
 				   &cli,
 				   &pipe_cli);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	werr = libnetapi_samr_open_builtin_domain(ctx, pipe_cli,
+						  SAMR_ACCESS_ENUM_DOMAINS |
+						  SAMR_ACCESS_OPEN_DOMAIN,
+						  SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT |
+						  SAMR_DOMAIN_ACCESS_LOOKUP_ALIAS,
+						  &connect_handle,
+						  &builtin_handle);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
@@ -805,7 +1260,7 @@ WERROR NetUserEnum_r(struct libnetapi_ctx *ctx,
 		status = libnetapi_samr_lookup_user_map_USER_INFO(ctx, pipe_cli,
 								  domain_sid,
 								  &domain_handle,
-								  NULL, /*&builtin_handle, */
+								  &builtin_handle,
 								  sam->entries[i].name.string,
 								  sam->entries[i].idx,
 								  r->in.level,
@@ -828,6 +1283,7 @@ WERROR NetUserEnum_r(struct libnetapi_ctx *ctx,
 
 		if (ctx->disable_policy_handle_cache) {
 			libnetapi_samr_close_domain_handle(ctx, &domain_handle);
+			libnetapi_samr_close_builtin_handle(ctx, &builtin_handle);
 			libnetapi_samr_close_connect_handle(ctx, &connect_handle);
 		}
 	}
@@ -1151,13 +1607,17 @@ WERROR NetUserGetInfo_r(struct libnetapi_ctx *ctx,
 
 	switch (r->in.level) {
 		case 0:
-		/* case 1: */
+		case 1:
+		case 2:
+		case 3:
+		case 4:
 		case 10:
+		case 11:
 		case 20:
 		case 23:
 			break;
 		default:
-			werr = WERR_NOT_SUPPORTED;
+			werr = WERR_UNKNOWN_LEVEL;
 			goto done;
 	}
 
@@ -1259,7 +1719,7 @@ WERROR NetUserSetInfo_r(struct libnetapi_ctx *ctx,
 	struct lsa_String lsa_account_name;
 	struct dom_sid2 *domain_sid = NULL;
 	struct samr_Ids user_rids, name_types;
-	union samr_UserInfo user_info;
+	uint32_t user_mask = 0;
 
 	struct USER_INFO_X uX;
 
@@ -1274,10 +1734,40 @@ WERROR NetUserSetInfo_r(struct libnetapi_ctx *ctx,
 
 	switch (r->in.level) {
 		case 0:
-		case 1007:
+		case 1003:
+			user_mask = SAMR_USER_ACCESS_SET_PASSWORD;
 			break;
-		default:
+		case 1006:
+		case 1007:
+		case 1009:
+		case 1011:
+		case 1014:
+		case 1052:
+		case 1053:
+			user_mask = SAMR_USER_ACCESS_SET_ATTRIBUTES;
+			break;
+		case 1012:
+		case 1024:
+			user_mask = SAMR_USER_ACCESS_SET_LOC_COM;
+		case 1051:
+			user_mask = SAMR_USER_ACCESS_SET_ATTRIBUTES |
+				    SAMR_USER_ACCESS_GET_GROUPS;
+			break;
+		case 1:
+		case 2:
+		case 3:
+		case 4:
+		case 21:
+		case 22:
+		case 1005:
+		case 1008:
+		case 1010:
+		case 1017:
+		case 1020:
 			werr = WERR_NOT_SUPPORTED;
+			goto done;
+		default:
+			werr = WERR_UNKNOWN_LEVEL;
 			goto done;
 	}
 
@@ -1327,7 +1817,7 @@ WERROR NetUserSetInfo_r(struct libnetapi_ctx *ctx,
 
 	status = rpccli_samr_OpenUser(pipe_cli, ctx,
 				      &domain_handle,
-				      SAMR_USER_ACCESS_SET_ATTRIBUTES,
+				      user_mask,
 				      user_rids.ids[0],
 				      &user_handle);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1341,12 +1831,10 @@ WERROR NetUserSetInfo_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	convert_USER_INFO_X_to_samr_user_info21(&uX, &user_info.info21);
-
-	status = rpccli_samr_SetUserInfo(pipe_cli, ctx,
-					 &user_handle,
-					 21,
-					 &user_info);
+	status = set_user_info_USER_INFO_X(ctx, pipe_cli,
+					   &cli->user_session_key,
+					   &user_handle,
+					   &uX);
 	if (!NT_STATUS_IS_OK(status)) {
 		werr = ntstatus_to_werror(status);
 		goto done;
@@ -2243,4 +2731,195 @@ WERROR NetUserModalsSet_l(struct libnetapi_ctx *ctx,
 			  struct NetUserModalsSet *r)
 {
 	LIBNETAPI_REDIRECT_TO_LOCALHOST(ctx, r, NetUserModalsSet);
+}
+
+/****************************************************************
+****************************************************************/
+
+static NTSTATUS add_GROUP_USERS_INFO_X_buffer(TALLOC_CTX *mem_ctx,
+					      uint32_t level,
+					      const char *group_name,
+					      uint32_t attributes,
+					      uint8_t **buffer,
+					      uint32_t *num_entries)
+{
+	struct GROUP_USERS_INFO_0 u0;
+	struct GROUP_USERS_INFO_1 u1;
+
+	switch (level) {
+		case 0:
+			u0.grui0_name = talloc_strdup(mem_ctx, group_name);
+			NT_STATUS_HAVE_NO_MEMORY(u0.grui0_name);
+
+			ADD_TO_ARRAY(mem_ctx, struct GROUP_USERS_INFO_0, u0,
+				     (struct GROUP_USERS_INFO_0 **)buffer, num_entries);
+			break;
+		case 1:
+			u1.grui1_name = talloc_strdup(mem_ctx, group_name);
+			NT_STATUS_HAVE_NO_MEMORY(u1.grui1_name);
+
+			u1.grui1_attributes = attributes;
+
+			ADD_TO_ARRAY(mem_ctx, struct GROUP_USERS_INFO_1, u1,
+				     (struct GROUP_USERS_INFO_1 **)buffer, num_entries);
+			break;
+		default:
+			return NT_STATUS_INVALID_INFO_CLASS;
+	}
+
+	return NT_STATUS_OK;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR NetUserGetGroups_r(struct libnetapi_ctx *ctx,
+			  struct NetUserGetGroups *r)
+{
+	struct cli_state *cli = NULL;
+	struct rpc_pipe_client *pipe_cli = NULL;
+	struct policy_handle connect_handle, domain_handle, user_handle;
+	struct lsa_String lsa_account_name;
+	struct dom_sid2 *domain_sid = NULL;
+	struct samr_Ids user_rids, name_types;
+	struct samr_RidWithAttributeArray *rid_array = NULL;
+	struct lsa_Strings names;
+	struct samr_Ids types;
+	uint32_t *rids = NULL;
+
+	int i;
+	uint32_t entries_read = 0;
+
+	NTSTATUS status = NT_STATUS_OK;
+	WERROR werr;
+
+	ZERO_STRUCT(connect_handle);
+	ZERO_STRUCT(domain_handle);
+
+	if (!r->out.buffer) {
+		return WERR_INVALID_PARAM;
+	}
+
+	*r->out.buffer = NULL;
+	*r->out.entries_read = 0;
+
+	switch (r->in.level) {
+		case 0:
+		case 1:
+			break;
+		default:
+			return WERR_UNKNOWN_LEVEL;
+	}
+
+	werr = libnetapi_open_pipe(ctx, r->in.server_name,
+				   &ndr_table_samr.syntax_id,
+				   &cli,
+				   &pipe_cli);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	werr = libnetapi_samr_open_domain(ctx, pipe_cli,
+					  SAMR_ACCESS_ENUM_DOMAINS |
+					  SAMR_ACCESS_OPEN_DOMAIN,
+					  SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
+					  &connect_handle,
+					  &domain_handle,
+					  &domain_sid);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	init_lsa_String(&lsa_account_name, r->in.user_name);
+
+	status = rpccli_samr_LookupNames(pipe_cli, ctx,
+					 &domain_handle,
+					 1,
+					 &lsa_account_name,
+					 &user_rids,
+					 &name_types);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	status = rpccli_samr_OpenUser(pipe_cli, ctx,
+				      &domain_handle,
+				      SAMR_USER_ACCESS_GET_GROUPS,
+				      user_rids.ids[0],
+				      &user_handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	status = rpccli_samr_GetGroupsForUser(pipe_cli, ctx,
+					      &user_handle,
+					      &rid_array);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	rids = talloc_array(ctx, uint32_t, rid_array->count);
+	if (!rids) {
+		werr = WERR_NOMEM;
+		goto done;
+	}
+
+	for (i=0; i < rid_array->count; i++) {
+		rids[i] = rid_array->rids[i].rid;
+	}
+
+	status = rpccli_samr_LookupRids(pipe_cli, ctx,
+					&domain_handle,
+					rid_array->count,
+					rids,
+					&names,
+					&types);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	for (i=0; i < rid_array->count; i++) {
+		status = add_GROUP_USERS_INFO_X_buffer(ctx,
+						       r->in.level,
+						       names.names[i].string,
+						       rid_array->rids[i].attributes,
+						       r->out.buffer,
+						       &entries_read);
+		if (!NT_STATUS_IS_OK(status)) {
+			werr = ntstatus_to_werror(status);
+			goto done;
+		}
+	}
+
+	if (r->out.entries_read) {
+		*r->out.entries_read = entries_read;
+	}
+	if (r->out.total_entries) {
+		*r->out.total_entries = entries_read;
+	}
+
+ done:
+	if (!cli) {
+		return werr;
+	}
+
+	if (ctx->disable_policy_handle_cache) {
+		libnetapi_samr_close_domain_handle(ctx, &domain_handle);
+		libnetapi_samr_close_connect_handle(ctx, &connect_handle);
+	}
+
+	return werr;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR NetUserGetGroups_l(struct libnetapi_ctx *ctx,
+			  struct NetUserGetGroups *r)
+{
+	LIBNETAPI_REDIRECT_TO_LOCALHOST(ctx, r, NetUserGetGroups);
 }

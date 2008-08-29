@@ -29,13 +29,28 @@ interface libnetapi
 	/* NetJoinDomain                           */
 	/*******************************************/
 
+	typedef [public,bitmap32bit] bitmap {
+		NETSETUP_JOIN_DOMAIN			= 0x00000001,
+		NETSETUP_ACCT_CREATE			= 0x00000002,
+		NETSETUP_ACCT_DELETE			= 0x00000004,
+		NETSETUP_WIN9X_UPGRADE			= 0x00000010,
+		NETSETUP_DOMAIN_JOIN_IF_JOINED		= 0x00000020,
+		NETSETUP_JOIN_UNSECURE			= 0x00000040,
+		NETSETUP_MACHINE_PWD_PASSED		= 0x00000080,
+		NETSETUP_DEFER_SPN_SET			= 0x00000100,
+		NETSETUP_JOIN_DC_ACCOUNT		= 0x00000200,
+		NETSETUP_JOIN_WITH_NEW_NAME		= 0x00000400,
+		NETSETUP_INSTALL_INVOCATION		= 0x00040000,
+		NETSETUP_IGNORE_UNSUPPORTED_FLAGS	= 0x10000000
+	} NetJoinFlags;
+
 	[nopush,nopull] NET_API_STATUS NetJoinDomain(
 		[in,unique] string *server,
 		[in,ref] string *domain,
 		[in,unique] string *account_ou,
 		[in,unique] string *account,
 		[in,unique] string *password,
-		[in] uint32 join_flags
+		[in] NetJoinFlags join_flags
 		);
 
 	/*******************************************/
@@ -46,7 +61,7 @@ interface libnetapi
 		[in,unique] string *server_name,
 		[in,unique] string *account,
 		[in,unique] string *password,
-		[in] uint32 unjoin_flags
+		[in] NetJoinFlags unjoin_flags
 		);
 
 	/*******************************************/
@@ -150,6 +165,11 @@ interface libnetapi
 		string usri0_name;
 	} USER_INFO_0;
 
+	/* priv */
+	const int USER_PRIV_GUEST	= 0;
+	const int USER_PRIV_USER	= 1;
+	const int USER_PRIV_ADMIN	= 2;
+
 	[public] typedef struct {
 		string usri1_name;
 		string usri1_password;
@@ -160,6 +180,16 @@ interface libnetapi
 		uint32 usri1_flags;
 		string usri1_script_path;
 	} USER_INFO_1;
+
+	/* auth_flags in USER_INFO_2 */
+
+	const int AF_OP_PRINT		= 0x1;
+	const int AF_OP_COMM		= 0x2;
+	const int AF_OP_SERVER		= 0x4;
+	const int AF_OP_ACCOUNTS	= 0x8;
+	const int AF_SETTABLE_BITS	= (AF_OP_PRINT | AF_OP_COMM | AF_OP_SERVER | AF_OP_ACCOUNTS);
+
+	const int USER_MAXSTORAGE_UNLIMITED = (uint32_t)-1L;
 
 	[public] typedef struct {
 		string usri2_name;
@@ -244,7 +274,7 @@ interface libnetapi
 		string usri4_logon_server;
 		uint32 usri4_country_code;
 		uint32 usri4_code_page;
-		dom_sid *usri4_user_sid;
+		domsid *usri4_user_sid;
 		uint32 usri4_primary_group_id;
 		string usri4_profile;
 		string usri4_home_dir_drive;
@@ -289,7 +319,7 @@ interface libnetapi
 		uint32 usri20_user_id;
 	} USER_INFO_20;
 
-	const int ENCRYPTED_PWLEN = 256;
+	const int ENCRYPTED_PWLEN = 16;
 
 	[public] typedef struct {
 		uint8 usri21_password[ENCRYPTED_PWLEN];
@@ -436,6 +466,9 @@ interface libnetapi
 		string usriX_logon_server;
 		uint32 usriX_country_code;
 		uint32 usriX_code_page;
+		string usriX_profile;
+		string usriX_home_dir_drive;
+		uint32 usriX_primary_group_id;
 	} USER_INFO_X;
 
 	[nopush,nopull] NET_API_STATUS NetUserAdd(
@@ -507,6 +540,29 @@ interface libnetapi
 		[in] uint32 level,
 		[in] uint8 *buffer,
 		[out] uint32 *parm_err
+		);
+
+	/*******************************************/
+	/* NetUserGetGroups                        */
+	/*******************************************/
+
+	[public] typedef struct {
+		string grui0_name;
+	} GROUP_USERS_INFO_0;
+
+	[public] typedef struct {
+		string grui1_name;
+		uint32 grui1_attributes;
+	} GROUP_USERS_INFO_1;
+
+	[nopush,nopull] NET_API_STATUS NetUserGetGroups(
+		[in] string server_name,
+		[in] string user_name,
+		[in] uint32 level,
+		[out] uint8 **buffer,
+		[in] uint32 prefmaxlen,
+		[out,ref] uint32 *entries_read,
+		[out,ref] uint32 *total_entries
 		);
 
 	/*******************************************/
@@ -735,15 +791,6 @@ interface libnetapi
 	/* NetGroupGetUsers                        */
 	/*******************************************/
 
-	[public] typedef struct {
-		string grui0_name;
-	} GROUP_USERS_INFO_0;
-
-	[public] typedef struct {
-		string grui1_name;
-		uint32 grui1_attributes;
-	} GROUP_USERS_INFO_1;
-
 	[nopush,nopull] NET_API_STATUS NetGroupGetUsers(
 		[in] string server_name,
 		[in] string group_name,
@@ -931,5 +978,27 @@ interface libnetapi
 	[nopush,nopull] NET_API_STATUS NetRemoteTOD(
 		[in] string server_name,
 		[out,ref] uint8 **buffer
+		);
+
+	/*******************************************/
+	/* NetShareAdd                             */
+	/*******************************************/
+
+	typedef struct {
+		string shi2_netname;
+		uint32 shi2_type;
+		string shi2_remark;
+		uint32 shi2_permissions;
+		uint32 shi2_max_uses;
+		uint32 shi2_current_uses;
+		string shi2_path;
+		string shi2_passwd;
+	} SHARE_INFO_2;
+
+	[nopush,nopull] NET_API_STATUS NetShareAdd(
+		[in] string server_name,
+		[in] uint32 level,
+		[in] uint8 *buffer,
+		[out] uint32 *parm_err
 		);
 }
