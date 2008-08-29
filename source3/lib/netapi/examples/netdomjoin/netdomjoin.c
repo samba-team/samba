@@ -39,7 +39,9 @@ int main(int argc, const char **argv)
 	const char *account_ou = NULL;
 	const char *account = NULL;
 	const char *password = NULL;
-	uint32_t join_flags = 0x00000023;
+	uint32_t join_flags = NETSETUP_JOIN_DOMAIN |
+			      NETSETUP_ACCT_CREATE |
+			      NETSETUP_DOMAIN_JOIN_IF_JOINED;
 	struct libnetapi_ctx *ctx = NULL;
 
 	poptContext pc;

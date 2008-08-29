@@ -38,11 +38,6 @@
 #define SAMBA_IMAGE_PATH "/usr/share/pixmaps/samba/logo.png"
 #define SAMBA_IMAGE_PATH_SMALL "/usr/share/pixmaps/samba/logo-small.png"
 
-#define WKSSVC_JOIN_FLAGS_DOMAIN_JOIN_IF_JOINED ( 0x00000020 )
-#define WKSSVC_JOIN_FLAGS_ACCOUNT_DELETE ( 0x00000004 )
-#define WKSSVC_JOIN_FLAGS_ACCOUNT_CREATE ( 0x00000002 )
-#define WKSSVC_JOIN_FLAGS_JOIN_TYPE ( 0x00000001 )
-
 #define NetSetupWorkgroupName ( 2 )
 #define NetSetupDomainName ( 3 )
 
@@ -631,9 +626,9 @@ static void callback_do_join(GtkWidget *widget,
 	if (state->name_type_new == NetSetupDomainName) {
 		domain_join = TRUE;
 		join_creds_required = TRUE;
-		join_flags = WKSSVC_JOIN_FLAGS_JOIN_TYPE |
-			     WKSSVC_JOIN_FLAGS_ACCOUNT_CREATE |
-			     WKSSVC_JOIN_FLAGS_DOMAIN_JOIN_IF_JOINED; /* for testing */
+		join_flags = NETSETUP_JOIN_DOMAIN |
+			     NETSETUP_ACCT_CREATE |
+			     NETSETUP_DOMAIN_JOIN_IF_JOINED; /* for testing */
 	}
 
 	if ((state->name_type_initial == NetSetupDomainName) &&
@@ -641,8 +636,8 @@ static void callback_do_join(GtkWidget *widget,
 		try_unjoin = TRUE;
 		unjoin_creds_required = TRUE;
 		join_creds_required = FALSE;
-		unjoin_flags = WKSSVC_JOIN_FLAGS_JOIN_TYPE |
-			       WKSSVC_JOIN_FLAGS_ACCOUNT_DELETE;
+		unjoin_flags = NETSETUP_JOIN_DOMAIN |
+			       NETSETUP_ACCT_DELETE;
 	}
 
 	if (try_unjoin) {
