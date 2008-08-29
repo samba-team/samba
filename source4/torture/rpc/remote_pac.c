@@ -154,7 +154,9 @@ static bool test_PACVerify(struct torture_context *tctx,
 				       (ndr_push_flags_fn_t)ndr_push_PAC_Validate);
 	torture_assert(tctx, NDR_ERR_CODE_IS_SUCCESS(ndr_err), "ndr_push_struct_blob of PACValidate structure failed");
 		
-	
+	torture_assert(tctx, (creds->negotiate_flags & NETLOGON_NEG_ARCFOUR), "not willing to even try a PACValidate without RC4 encryption");
+	creds_arcfour_crypt(creds, pac_wrapped.data, pac_wrapped.length);
+
 	/* Validate it over the netlogon pipe */
 
 	generic.identity_info.parameter_control = 0;
