@@ -1465,6 +1465,17 @@ static WERROR libnet_join_post_processing(TALLOC_CTX *mem_ctx,
 
 	if (r->in.join_flags & WKSSVC_JOIN_FLAGS_JOIN_TYPE) {
 		saf_store(r->in.domain_name, r->in.dc_name);
+
+#ifdef WITH_ADS
+		if (r->out.domain_is_ad) {
+			ADS_STATUS ads_status;
+
+			ads_status  = libnet_join_post_processing_ads(mem_ctx, r);
+			if (!ADS_ERR_OK(ads_status)) {
+				return WERR_GENERAL_FAILURE;
+			}
+		}
+#endif /* WITH_ADS */
 	}
 
 	return WERR_OK;
@@ -1711,16 +1722,6 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 		werr = WERR_SETUP_NOT_JOINED;
 		goto done;
 	}
-
-#ifdef WITH_ADS
-	if (r->out.domain_is_ad) {
-		ads_status  = libnet_join_post_processing_ads(mem_ctx, r);
-		if (!ADS_ERR_OK(ads_status)) {
-			werr = WERR_GENERAL_FAILURE;
-			goto done;
-		}
-	}
-#endif /* WITH_ADS */
 
 	werr = WERR_OK;
 
