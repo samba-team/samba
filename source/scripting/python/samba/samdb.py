@@ -27,6 +27,7 @@ import misc
 import ldb
 from samba.idmap import IDmapDB
 import pwd
+import time
 
 __docformat__ = "restructuredText"
 
@@ -192,3 +193,35 @@ userPassword: %s
     	:param invocation_id: GUID of the invocation id.
     	"""
     	misc.dsdb_set_ntds_invocation_id(self, invocation_id)
+
+    def setexpiry(self, user, expiry_seconds, noexpiry):
+        """Set the password expiry for a user
+        
+        :param expiry_seconds: expiry time from now in seconds
+        :param noexpiry: if set, then don't expire password
+        """
+        self.transaction_start();
+        res = self.search(base=self.domain_dn(), scope=ldb.SCOPE_SUBTREE,
+                          expression=("(samAccountName=%s)" % user),
+                          attrs=["userAccountControl", "accountExpires"])
+        assert len(res) == 1
+        userAccountControl = int(res[0]["userAccountControl"][0])
+        accountExpires     = int(res[0]["accountExpires"][0])
+        if noexpiry:
+            userAccountControl = userAccountControl | 0x10000
+            accountExpires = 0
+        else:
+            userAccountControl = userAccountControl & ~0x10000
+            accountExpires = misc.unix2nttime(expiry_seconds + int(time.time()))
+
+        mod = """
+dn: %s
+changetype: modify
+replace: userAccountControl
+userAccountControl: %u
+replace: accountExpires
+accountExpires: %u
+""" % (res[0].dn, userAccountControl, accountExpires)
+        # now change the database
+        self.modify_ldif(mod)
+        self.transaction_commit();

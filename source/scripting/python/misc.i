@@ -100,3 +100,16 @@ bool dsdb_set_ntds_invocation_id(struct ldb_context *ldb, const char *guid)
 char *private_path(TALLOC_CTX* mem_ctx, struct loadparm_context *lp_ctx,
                const char *name);
 
+typedef unsigned long time_t;
+
+/*
+  convert from unix time to NT time
+*/
+%inline %{
+uint64_t unix2nttime(time_t t)
+{
+	NTTIME nt;
+	unix_to_nt_time(&nt, t);
+	return (uint64_t)nt;
+}
+%}
