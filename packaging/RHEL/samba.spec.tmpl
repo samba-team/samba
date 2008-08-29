@@ -449,6 +449,8 @@ fi
 %files common
 %defattr(-,root,root)
 %dir %{_sysconfdir}/samba
+%dir %{_libarchdir}/samba
+%dir %{_libarchdir}/samba/charset
 %config(noreplace) %{_sysconfdir}/samba/smb.conf
 %config(noreplace) %{_sysconfdir}/samba/lmhosts
 
@@ -465,6 +467,15 @@ fi
 %{_libdir}/samba/*.dat
 %{_libdir}/samba/*.msg
 %{_libdir}/samba/charset/*.so
+
+%{_includedir}/netapi.h
+%{_includedir}/wbclient.h
+%{_includedir}/talloc.h
+%{_includedir}/tdb.h
+%{_libarchdir}/libnetapi.so*
+%{_libarchdir}/libtalloc.so*
+%{_libarchdir}/libtdb.so*
+%{_libarchdir}/libwbclient.so*
 
 %{_bindir}/testparm
 %{_bindir}/smbpasswd
