@@ -32,7 +32,7 @@
  */
 
 #include "hx_locl.h"
-RCSID("$Id: lock.c 22327 2007-12-15 04:49:37Z lha $");
+RCSID("$Id$");
 
 /**
  * @page page_lock Locking and unlocking certificates and encrypted data.

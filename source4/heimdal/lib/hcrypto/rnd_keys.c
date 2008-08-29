@@ -34,7 +34,7 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 
-RCSID("$Id: rnd_keys.c 23093 2008-04-27 18:49:51Z lha $");
+RCSID("$Id$");
 #endif
 
 #define HC_DEPRECATED

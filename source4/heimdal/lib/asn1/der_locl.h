@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: der_locl.h 18608 2006-10-19 16:24:02Z lha $ */
+/* $Id$ */
 
 #ifndef __DER_LOCL_H__
 #define __DER_LOCL_H__

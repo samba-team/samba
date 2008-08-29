@@ -33,7 +33,7 @@
 
 #include "kdc_locl.h"
 
-RCSID("$Id: krb5tgs.c 23316 2008-06-23 04:32:32Z lha $");
+RCSID("$Id$");
 
 /*
  * return the realm of a krbtgt-ticket or NULL
@@ -662,6 +662,7 @@ tgs_make_reply(krb5_context context,
 	       krb5_kvno kvno,
 	       AuthorizationData *auth_data,
 	       hdb_entry_ex *server,
+	       krb5_principal server_principal,
 	       const char *server_name,
 	       hdb_entry_ex *client,
 	       krb5_principal client_principal,
@@ -678,6 +679,7 @@ tgs_make_reply(krb5_context context,
     EncTicketPart et;
     KDCOptions f = b->kdc_options;
     krb5_error_code ret;
+    int is_weak = 0;
 
     memset(&rep, 0, sizeof(rep));
     memset(&et, 0, sizeof(et));
@@ -729,9 +731,9 @@ tgs_make_reply(krb5_context context,
     if(ret)
 	goto out;
 
-    copy_Realm(krb5_princ_realm(context, server->entry.principal),
+    copy_Realm(krb5_princ_realm(context, server_principal),
 	       &rep.ticket.realm);
-    _krb5_principal2principalname(&rep.ticket.sname, server->entry.principal);
+    _krb5_principal2principalname(&rep.ticket.sname, server_principal);
     copy_Realm(&tgt_name->realm, &rep.crealm);
 /*
     if (f.request_anonymous)
@@ -885,6 +887,14 @@ tgs_make_reply(krb5_context context,
 	    goto out;
     }
 
+    if (krb5_enctype_valid(context, et.key.keytype) != 0
+	&& _kdc_is_weak_expection(server->entry.principal, et.key.keytype)) 
+    {
+	krb5_enctype_enable(context, et.key.keytype);
+	is_weak = 1;
+    }
+
+
     /* It is somewhat unclear where the etype in the following
        encryption should come from. What we have is a session
        key in the passed tgt, and a list of preferred etypes
@@ -899,6 +909,9 @@ tgs_make_reply(krb5_context context,
 			    &rep, &et, &ek, et.key.keytype,
 			    kvno,
 			    serverkey, 0, &tgt->key, e_text, reply);
+    if (is_weak)
+	krb5_enctype_disable(context, et.key.keytype);
+
 out:
     free_TGS_REP(&rep);
     free_TransitedEncoding(&et.transited);
@@ -1462,7 +1475,8 @@ tgs_build_reply(krb5_context context,
      */
 
 server_lookup:
-    ret = _kdc_db_fetch(context, config, sp, HDB_F_GET_SERVER, NULL, &server);
+    ret = _kdc_db_fetch(context, config, sp, HDB_F_GET_SERVER | HDB_F_CANON,
+			NULL, &server);
 
     if(ret){
 	const char *new_rlm;
@@ -1521,7 +1535,8 @@ server_lookup:
 	goto out;
     }
 
-    ret = _kdc_db_fetch(context, config, cp, HDB_F_GET_CLIENT, NULL, &client);
+    ret = _kdc_db_fetch(context, config, cp, HDB_F_GET_CLIENT | HDB_F_CANON,
+			NULL, &client);
     if(ret) {
 	const char *krbtgt_realm;
 
@@ -1927,6 +1942,7 @@ server_lookup:
 			 kvno,
 			 *auth_data,
 			 server,
+			 sp,
 			 spn,
 			 client,
 			 cp,

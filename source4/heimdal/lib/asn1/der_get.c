@@ -33,7 +33,7 @@
 
 #include "der_locl.h"
 
-RCSID("$Id: der_get.c 21369 2007-06-27 10:14:39Z lha $");
+RCSID("$Id$");
 
 #include <version.h>
 

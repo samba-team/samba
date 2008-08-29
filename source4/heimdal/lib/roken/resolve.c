@@ -34,7 +34,7 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#include <roken.h>
+#include "roken.h"
 #ifdef HAVE_ARPA_NAMESER_H
 #include <arpa/nameser.h>
 #endif
@@ -45,7 +45,7 @@
 
 #include <assert.h>
 
-RCSID("$Id: resolve.c 22873 2008-04-07 18:50:39Z lha $");
+RCSID("$Id$");
 
 #ifdef _AIX /* AIX have broken res_nsearch() in 5.1 (5.0 also ?) */
 #undef HAVE_RES_NSEARCH

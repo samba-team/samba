@@ -40,7 +40,7 @@
 #include <hex.h>
 #include <err.h>
 
-RCSID("$Id: asn1_gen.c 16666 2006-01-30 15:06:03Z lha $");
+RCSID("$Id$");
 
 static int
 doit(const char *fn)

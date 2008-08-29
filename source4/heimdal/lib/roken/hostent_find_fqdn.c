@@ -33,10 +33,10 @@
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
-RCSID("$Id: hostent_find_fqdn.c 14773 2005-04-12 11:29:18Z lha $");
+RCSID("$Id$");
 #endif
 
-#include <roken.h>
+#include "roken.h"
 
 /*
  * Try to find a fqdn (with `.') in he if possible, else return h_name

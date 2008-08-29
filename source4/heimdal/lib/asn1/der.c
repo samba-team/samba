@@ -38,7 +38,7 @@
 #include <getarg.h>
 #include <err.h>
 
-RCSID("$Id: der.c 22429 2008-01-13 10:25:50Z lha $");
+RCSID("$Id$");
 
 
 static const char *class_names[] = {

@@ -32,7 +32,7 @@
 
 #include "spnego/spnego_locl.h"
 
-RCSID("$Id: cred_stubs.c 22688 2008-03-16 11:33:58Z lha $");
+RCSID("$Id$");
 
 OM_uint32
 _gss_spnego_release_cred(OM_uint32 *minor_status, gss_cred_id_t *cred_handle)

@@ -421,9 +421,10 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 	user_info->remote_host = NULL;
 
 	switch (r->in.logon_level) {
-	case 1:
-	case 3:
-	case 5:
+	case NetlogonInteractiveInformation:
+	case NetlogonServiceInformation:
+	case NetlogonInteractiveTransitiveInformation:
+	case NetlogonServiceTransitiveInformation:
 		if (creds->negotiate_flags & NETLOGON_NEG_ARCFOUR) {
 			creds_arcfour_crypt(creds, 
 					    r->in.logon.password->lmpassword.hash, 
@@ -460,8 +461,8 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 		*user_info->password.hash.nt = r->in.logon.password->ntpassword;
 
 		break;
-	case 2:
-	case 6:
+	case NetlogonNetworkInformation:
+	case NetlogonNetworkTransitiveInformation:
 
 		/* TODO: we need to deny anonymous access here */
 		nt_status = auth_context_create(mem_ctx, 
@@ -483,6 +484,13 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 		user_info->password.response.nt = data_blob_talloc(mem_ctx, r->in.logon.network->nt.data, r->in.logon.network->nt.length);
 	
 		break;
+
+		
+	case NetlogonGenericInformation:
+	{
+		/* Until we get enough information for an implemetnation */
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 	default:
 		return NT_STATUS_INVALID_PARAMETER;
 	}

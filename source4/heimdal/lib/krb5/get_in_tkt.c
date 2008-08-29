@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: get_in_tkt.c 23316 2008-06-23 04:32:32Z lha $");
+RCSID("$Id$");
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_init_etype (krb5_context context,
@@ -383,8 +383,7 @@ _krb5_extract_ticket(krb5_context context,
      * based on the DNS Name.
      */
     flags |= EXTRACT_TICKET_ALLOW_SERVER_MISMATCH;
-    flags |=EXTRACT_TICKET_ALLOW_CNAME_MISMATCH ;
-    
+    flags |= EXTRACT_TICKET_ALLOW_CNAME_MISMATCH;
 
    /* compare client and save */
     ret = _krb5_principalname2krb5_principal (context,

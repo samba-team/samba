@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: heimntlm.h 22376 2007-12-28 18:38:23Z lha $ */
+/* $Id$ */
 
 #ifndef HEIM_NTLM_H
 #define HEIM_NTLM_H

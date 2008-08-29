@@ -35,7 +35,7 @@
 #include <config.h>
 #endif
 
-RCSID("$Id: rand.c 23464 2008-07-27 12:15:21Z lha $");
+RCSID("$Id$");
 
 #include <stdio.h>
 #include <stdlib.h>

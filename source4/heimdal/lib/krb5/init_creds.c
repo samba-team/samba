@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: init_creds.c 23316 2008-06-23 04:32:32Z lha $");
+RCSID("$Id$");
 
 void KRB5_LIB_FUNCTION
 krb5_get_init_creds_opt_init(krb5_get_init_creds_opt *opt)

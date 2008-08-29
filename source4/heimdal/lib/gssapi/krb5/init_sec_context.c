@@ -33,7 +33,7 @@
 
 #include "krb5/gsskrb5_locl.h"
 
-RCSID("$Id: init_sec_context.c 23422 2008-07-26 18:38:29Z lha $");
+RCSID("$Id$");
 
 /*
  * copy the addresses from `input_chan_bindings' (if any) to
@@ -271,6 +271,7 @@ do_delegation (krb5_context context,
 	       krb5_creds *cred,
 	       krb5_const_principal name,
 	       krb5_data *fwd_data,
+	       uint32_t flagmask,
 	       uint32_t *flags)
 {
     krb5_creds creds;
@@ -314,9 +315,9 @@ do_delegation (krb5_context context,
        
  out:
     if (kret)
-	*flags &= ~GSS_C_DELEG_FLAG;
+	*flags &= ~flagmask;
     else
-	*flags |= GSS_C_DELEG_FLAG;
+	*flags |= flagmask;
        
     if (creds.client)
 	krb5_free_principal(context, creds.client);
@@ -334,7 +335,7 @@ init_auth
  gsskrb5_cred cred,
  gsskrb5_ctx ctx,
  krb5_context context,
- krb5_const_principal name,
+ gss_name_t name,
  const gss_OID mech_type,
  OM_uint32 req_flags,
  OM_uint32 time_req,
@@ -350,6 +351,7 @@ init_auth
     krb5_data outbuf;
     krb5_data fwd_data;
     OM_uint32 lifetime_rec;
+    int use_dns = 1;
 
     krb5_data_zero(&outbuf);
     krb5_data_zero(&fwd_data);
@@ -377,12 +379,20 @@ init_auth
 	goto failure;
     }
 
-    kret = krb5_copy_principal (context, name, &ctx->target);
-    if (kret) {
-	*minor_status = kret;
-	ret = GSS_S_FAILURE;
-	goto failure;
+    /* canon name if needed for client + target realm */
+    kret = krb5_cc_get_config(context, ctx->ccache, NULL,
+			      "realm-config", &outbuf);
+    if (kret == 0) {
+	/* XXX 2 is no server canon */
+	if (outbuf.length < 1 || ((((unsigned char *)outbuf.data)[0]) & 2))
+	    use_dns = 0;
+	krb5_data_free(&outbuf);
     }
+
+    ret = _gsskrb5_canon_name(minor_status, context, use_dns, 
+			      name, &ctx->target);
+    if (ret)
+	goto failure;
 
     ret = _gss_DES3_get_mic_compat(minor_status, ctx, context);
     if (ret)
@@ -479,6 +489,7 @@ init_auth_restart
     krb5_enctype enctype;
     krb5_data fwd_data, timedata;
     int32_t offset = 0, oldoffset;
+    uint32_t flagmask;
 
     krb5_data_zero(&outbuf);
     krb5_data_zero(&fwd_data);
@@ -486,41 +497,41 @@ init_auth_restart
     *minor_status = 0;
 
     /* 
-     * If the credential doesn't have ok-as-delegate, check what local
-     * policy say about ok-as-delegate, default is FALSE that makes
-     * code ignore the KDC setting and follow what the application
-     * requested. If it is TRUE, strip of the GSS_C_DELEG_FLAG if the
-     * KDC doesn't set ok-as-delegate.
+     * If the credential doesn't have ok-as-delegate, check if there
+     * is a realm setting and use that.
      */
     if (!ctx->kcred->flags.b.ok_as_delegate) {
-	krb5_boolean delegate, realm_setting;
 	krb5_data data;
-    
-	realm_setting = FALSE;
-
+	
 	ret = krb5_cc_get_config(context, ctx->ccache, NULL,
 				 "realm-config", &data);
 	if (ret == 0) {
 	    /* XXX 1 is use ok-as-delegate */
-	    if (data.length > 0 && (((unsigned char *)data.data)[0]) & 1)
-		realm_setting = TRUE;
+	    if (data.length < 1 || ((((unsigned char *)data.data)[0]) & 1) == 0)
+		req_flags &= ~(GSS_C_DELEG_FLAG|GSS_C_DELEG_POLICY_FLAG);
 	    krb5_data_free(&data);
 	}
-
-	krb5_appdefault_boolean(context, "gssapi", ctx->target->realm,
-				"ok-as-delegate", realm_setting,
-				&delegate);
-	if (delegate)
-	    req_flags &= ~GSS_C_DELEG_FLAG;
     }
+
+    flagmask = 0;
+
+    /* if we used GSS_C_DELEG_POLICY_FLAG, trust KDC */
+    if ((req_flags & GSS_C_DELEG_POLICY_FLAG)
+	&& ctx->kcred->flags.b.ok_as_delegate)
+	flagmask |= GSS_C_DELEG_FLAG | GSS_C_DELEG_POLICY_FLAG;
+    /* if there still is a GSS_C_DELEG_FLAG, use that */
+    if (req_flags & GSS_C_DELEG_FLAG)
+	flagmask |= GSS_C_DELEG_FLAG;
+
 
     flags = 0;
     ap_options = 0;
-    if (req_flags & GSS_C_DELEG_FLAG)
+    if (flagmask & GSS_C_DELEG_FLAG) {
 	do_delegation (context,
 		       ctx->auth_context,
 		       ctx->ccache, ctx->kcred, ctx->target,
-		       &fwd_data, &flags);
+		       &fwd_data, flagmask, &flags);
+    }
     
     if (req_flags & GSS_C_MUTUAL_FLAG) {
 	flags |= GSS_C_MUTUAL_FLAG;
@@ -817,7 +828,6 @@ OM_uint32 _gsskrb5_init_sec_context
 {
     krb5_context context;
     gsskrb5_cred cred = (gsskrb5_cred)cred_handle;
-    krb5_const_principal name = (krb5_const_principal)target_name;
     gsskrb5_ctx ctx;
     OM_uint32 ret;
 
@@ -880,7 +890,7 @@ OM_uint32 _gsskrb5_init_sec_context
 			cred,
 			ctx,
 			context,
-			name,
+			target_name,
 			mech_type,
 			req_flags,
 			time_req,
@@ -926,11 +936,16 @@ OM_uint32 _gsskrb5_init_sec_context
 	 * If we get there, the caller have called
 	 * gss_init_sec_context() one time too many.
 	 */
-	*minor_status = 0;
+	_gsskrb5_set_status(EINVAL, "init_sec_context "
+			    "called one time too many");
+	*minor_status = EINVAL;
 	ret = GSS_S_BAD_STATUS;
 	break;
     default:
-	*minor_status = 0;
+	_gsskrb5_set_status(EINVAL, "init_sec_context "
+			    "invalid state %d for client",
+			    (int)ctx->state);
+	*minor_status = EINVAL;
 	ret = GSS_S_BAD_STATUS;
 	break;
     }

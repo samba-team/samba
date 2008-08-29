@@ -33,7 +33,7 @@
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
-RCSID("$Id: closefrom.c 21005 2007-06-08 01:54:35Z lha $");
+RCSID("$Id$");
 #endif
 
 #ifdef HAVE_SYS_TYPES_H
@@ -43,7 +43,7 @@ RCSID("$Id: closefrom.c 21005 2007-06-08 01:54:35Z lha $");
 #include <unistd.h>
 #endif
 
-#include <roken.h>
+#include "roken.h"
 
 int ROKEN_LIB_FUNCTION
 closefrom(int fd)

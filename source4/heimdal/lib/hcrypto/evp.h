@@ -31,7 +31,7 @@
  * SUCH DAMAGE.
  */
 
-/* $Id: evp.h 23141 2008-04-29 05:47:04Z lha $ */
+/* $Id$ */
 
 #ifndef HEIM_EVP_H
 #define HEIM_EVP_H 1
@@ -56,6 +56,8 @@
 #define EVP_CIPHER_key_length hc_EVP_CIPHER_key_length
 #define EVP_Cipher hc_EVP_Cipher
 #define EVP_CipherInit_ex hc_EVP_CipherInit_ex
+#define EVP_CipherUpdate hc_EVP_CipherUpdate
+#define EVP_CipherFinal_ex hc_EVP_CipherFinal_ex
 #define EVP_Digest hc_EVP_Digest
 #define EVP_DigestFinal_ex hc_EVP_DigestFinal_ex
 #define EVP_DigestInit_ex hc_EVP_DigestInit_ex
@@ -72,6 +74,13 @@
 #define EVP_aes_128_cbc hc_EVP_aes_128_cbc
 #define EVP_aes_192_cbc hc_EVP_aes_192_cbc
 #define EVP_aes_256_cbc hc_EVP_aes_256_cbc
+#define EVP_hcrypto_aes_128_cbc hc_EVP_hcrypto_aes_128_cbc
+#define EVP_hcrypto_aes_192_cbc hc_EVP_hcrypto_aes_192_cbc
+#define EVP_hcrypto_aes_256_cbc hc_EVP_hcrypto_aes_256_cbc
+#define EVP_hcrypto_aes_128_cts hc_EVP_hcrypto_aes_128_cts
+#define EVP_hcrypto_aes_192_cts hc_EVP_hcrypto_aes_192_cts
+#define EVP_hcrypto_aes_256_cts hc_EVP_hcrypto_aes_256_cts
+#define EVP_des_cbc hc_EVP_des_cbc
 #define EVP_des_ede3_cbc hc_EVP_des_ede3_cbc
 #define EVP_enc_null hc_EVP_enc_null
 #define EVP_md2 hc_EVP_md2
@@ -121,6 +130,7 @@ struct hc_CIPHER {
      * cipher is used in (use EVP_CIPHER.._mode() to extract the
      * mode). The rest of the flag field is a bitfield.
      */
+#define EVP_CIPH_STREAM_CIPHER		0
 #define EVP_CIPH_CBC_MODE		2
 #define EVP_CIPH_MODE			0x7
 
@@ -141,7 +151,7 @@ struct hc_CIPHER_CTX {
     const EVP_CIPHER *cipher;
     ENGINE *engine;
     int encrypt;
-    int buf_len;
+    int buf_len; /* bytes stored in buf for EVP_CipherUpdate */
     unsigned char oiv[EVP_MAX_IV_LENGTH];
     unsigned char iv[EVP_MAX_IV_LENGTH];
     unsigned char buf[EVP_MAX_BLOCK_LENGTH];
@@ -155,6 +165,21 @@ struct hc_CIPHER_CTX {
     unsigned char final[EVP_MAX_BLOCK_LENGTH];
 };
 
+typedef int (*hc_evp_md_init)(EVP_MD_CTX *);
+typedef int (*hc_evp_md_update)(EVP_MD_CTX *,const void *, size_t);
+typedef int (*hc_evp_md_final)(void *, EVP_MD_CTX *);
+typedef int (*hc_evp_md_cleanup)(EVP_MD_CTX *);
+
+struct hc_evp_md {
+    int hash_size;
+    int block_size;
+    int ctx_size;
+    hc_evp_md_init init;
+    hc_evp_md_update update;
+    hc_evp_md_final final;
+    hc_evp_md_cleanup cleanup;
+};
+
 #if !defined(__GNUC__) && !defined(__attribute__)
 #define __attribute__(x)
 #endif
@@ -162,6 +187,10 @@ struct hc_CIPHER_CTX {
 #ifndef HC_DEPRECATED
 #define HC_DEPRECATED __attribute__((deprecated))
 #endif
+#ifndef HC_DEPRECATED_CRYPTO
+#define HC_DEPRECATED_CRYPTO __attribute__((deprecated))
+#endif
+
 
 #ifdef  __cplusplus
 extern "C" {
@@ -172,9 +201,9 @@ extern "C" {
  */
 
 const EVP_MD *EVP_md_null(void);
-const EVP_MD *EVP_md2(void);
-const EVP_MD *EVP_md4(void);
-const EVP_MD *EVP_md5(void);
+const EVP_MD *EVP_md2(void) HC_DEPRECATED_CRYPTO;
+const EVP_MD *EVP_md4(void) HC_DEPRECATED_CRYPTO;
+const EVP_MD *EVP_md5(void) HC_DEPRECATED_CRYPTO;
 const EVP_MD *EVP_sha(void);
 const EVP_MD *EVP_sha1(void);
 const EVP_MD *EVP_sha256(void);
@@ -182,13 +211,20 @@ const EVP_MD *EVP_sha256(void);
 const EVP_CIPHER * EVP_aes_128_cbc(void);
 const EVP_CIPHER * EVP_aes_192_cbc(void);
 const EVP_CIPHER * EVP_aes_256_cbc(void);
+const EVP_CIPHER * EVP_hcrypto_aes_128_cbc(void);
+const EVP_CIPHER * EVP_hcrypto_aes_192_cbc(void);
+const EVP_CIPHER * EVP_hcrypto_aes_256_cbc(void);
+const EVP_CIPHER * EVP_hcrypto_aes_128_cts(void);
+const EVP_CIPHER * EVP_hcrypto_aes_192_cts(void);
+const EVP_CIPHER * EVP_hcrypto_aes_256_cts(void);
+const EVP_CIPHER * EVP_des_cbc(void) HC_DEPRECATED_CRYPTO;
 const EVP_CIPHER * EVP_des_ede3_cbc(void);
 const EVP_CIPHER * EVP_enc_null(void);
-const EVP_CIPHER * EVP_rc2_40_cbc(void);
-const EVP_CIPHER * EVP_rc2_64_cbc(void);
-const EVP_CIPHER * EVP_rc2_cbc(void);
+const EVP_CIPHER * EVP_rc2_40_cbc(void) HC_DEPRECATED_CRYPTO;
+const EVP_CIPHER * EVP_rc2_64_cbc(void) HC_DEPRECATED_CRYPTO;
+const EVP_CIPHER * EVP_rc2_cbc(void) HC_DEPRECATED_CRYPTO;
 const EVP_CIPHER * EVP_rc4(void);
-const EVP_CIPHER * EVP_rc4_40(void);
+const EVP_CIPHER * EVP_rc4_40(void) HC_DEPRECATED_CRYPTO;
 const EVP_CIPHER * EVP_camellia_128_cbc(void);
 const EVP_CIPHER * EVP_camellia_192_cbc(void);
 const EVP_CIPHER * EVP_camellia_256_cbc(void);
@@ -245,6 +281,8 @@ void	EVP_CIPHER_CTX_set_app_data(EVP_CIPHER_CTX *, void *);
 
 int	EVP_CipherInit_ex(EVP_CIPHER_CTX *,const EVP_CIPHER *, ENGINE *,
 			  const void *, const void *, int);
+int	EVP_CipherUpdate(EVP_CIPHER_CTX *, void *, int *, void *, size_t);
+int	EVP_CipherFinal_ex(EVP_CIPHER_CTX *, void *, int *);
 
 int	EVP_Cipher(EVP_CIPHER_CTX *,void *,const void *,size_t);
 

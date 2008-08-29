@@ -32,7 +32,7 @@
  */
 
 #include "hx_locl.h"
-RCSID("$Id: ks_keychain.c 22084 2007-11-16 20:12:30Z lha $");
+RCSID("$Id$");
 
 #ifdef HAVE_FRAMEWORK_SECURITY
 

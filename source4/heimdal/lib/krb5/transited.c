@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: transited.c 23316 2008-06-23 04:32:32Z lha $");
+RCSID("$Id$");
 
 /* this is an attempt at one of the most horrible `compression'
    schemes that has ever been invented; it's so amazingly brain-dead

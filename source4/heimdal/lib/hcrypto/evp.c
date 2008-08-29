@@ -35,9 +35,10 @@
 #include <config.h>
 #endif
 
-RCSID("$Id: evp.c 23144 2008-04-29 05:47:16Z lha $");
+RCSID("$Id$");
 
 #define HC_DEPRECATED
+#define HC_DEPRECATED_CRYPTO
 
 #include <sys/types.h>
 #include <stdio.h>
@@ -49,7 +50,6 @@ RCSID("$Id: evp.c 23144 2008-04-29 05:47:16Z lha $");
 
 #include <krb5-types.h>
 
-#include <aes.h>
 #include "camellia.h"
 #include <des.h>
 #include <sha.h>
@@ -63,23 +63,19 @@ RCSID("$Id: evp.c 23144 2008-04-29 05:47:16Z lha $");
  * @page page_evp EVP - generic crypto interface
  *
  * See the library functions here: @ref hcrypto_evp
+ *
+ * @section evp_cipher EVP Cipher
+ *
+ * The use of EVP_CipherInit_ex() and EVP_Cipher() is pretty easy to
+ * understand forward, then EVP_CipherUpdate() and
+ * EVP_CipherFinal_ex() really needs an example to explain @ref
+ * example_evp_cipher.c .
+ *
+ * @example example_evp_cipher.c
+ * 
+ * This is an example how to use EVP_CipherInit_ex(),
+ * EVP_CipherUpdate() and EVP_CipherFinal_ex().
  */
-
-
-typedef int (*evp_md_init)(EVP_MD_CTX *);
-typedef int (*evp_md_update)(EVP_MD_CTX *,const void *, size_t);
-typedef int (*evp_md_final)(void *, EVP_MD_CTX *);
-typedef int (*evp_md_cleanup)(EVP_MD_CTX *);
-
-struct hc_evp_md {
-    int hash_size;
-    int block_size;
-    int ctx_size;
-    evp_md_init init;
-    evp_md_update update;
-    evp_md_final final;
-    evp_md_cleanup cleanup;
-};
 
 struct hc_EVP_MD_CTX {
     const EVP_MD *md;
@@ -361,9 +357,9 @@ EVP_sha256(void)
 	32,
 	64,
 	sizeof(SHA256_CTX),
-	(evp_md_init)SHA256_Init,
-	(evp_md_update)SHA256_Update,
-	(evp_md_final)SHA256_Final,
+	(hc_evp_md_init)SHA256_Init,
+	(hc_evp_md_update)SHA256_Update,
+	(hc_evp_md_final)SHA256_Final,
 	NULL
     };
     return &sha256;
@@ -373,9 +369,9 @@ static const struct hc_evp_md sha1 = {
     20,
     64,
     sizeof(SHA_CTX),
-    (evp_md_init)SHA1_Init,
-    (evp_md_update)SHA1_Update,
-    (evp_md_final)SHA1_Final,
+    (hc_evp_md_init)SHA1_Init,
+    (hc_evp_md_update)SHA1_Update,
+    (hc_evp_md_final)SHA1_Final,
     NULL
 };
 
@@ -422,9 +418,9 @@ EVP_md5(void)
 	16,
 	64,
 	sizeof(MD5_CTX),
-	(evp_md_init)MD5_Init,
-	(evp_md_update)MD5_Update,
-	(evp_md_final)MD5_Final,
+	(hc_evp_md_init)MD5_Init,
+	(hc_evp_md_update)MD5_Update,
+	(hc_evp_md_final)MD5_Final,
 	NULL
     };
     return &md5;
@@ -445,9 +441,9 @@ EVP_md4(void)
 	16,
 	64,
 	sizeof(MD4_CTX),
-	(evp_md_init)MD4_Init,
-	(evp_md_update)MD4_Update,
-	(evp_md_final)MD4_Final,
+	(hc_evp_md_init)MD4_Init,
+	(hc_evp_md_update)MD4_Update,
+	(hc_evp_md_final)MD4_Final,
 	NULL
     };
     return &md4;
@@ -468,9 +464,9 @@ EVP_md2(void)
 	16,
 	16,
 	sizeof(MD2_CTX),
-	(evp_md_init)MD2_Init,
-	(evp_md_update)MD2_Update,
-	(evp_md_final)MD2_Final,
+	(hc_evp_md_init)MD2_Init,
+	(hc_evp_md_update)MD2_Update,
+	(hc_evp_md_final)MD2_Final,
 	NULL
     };
     return &md2;
@@ -508,9 +504,9 @@ EVP_md_null(void)
 	0,
 	0,
 	0,
-	(evp_md_init)null_Init,
-	(evp_md_update)null_Update,
-	(evp_md_final)null_Final,
+	(hc_evp_md_init)null_Init,
+	(hc_evp_md_update)null_Update,
+	(hc_evp_md_final)null_Final,
 	NULL
     };
     return &null;
@@ -769,6 +765,8 @@ int
 EVP_CipherInit_ex(EVP_CIPHER_CTX *ctx, const EVP_CIPHER *c, ENGINE *engine,
 		  const void *key, const void *iv, int encp)
 {
+    ctx->buf_len = 0;
+
     if (encp == -1)
 	encp = ctx->encrypt;
     else
@@ -782,6 +780,9 @@ EVP_CipherInit_ex(EVP_CIPHER_CTX *ctx, const EVP_CIPHER *c, ENGINE *engine,
 	ctx->cipher_data = malloc(c->ctx_size);
 	if (ctx->cipher_data == NULL && c->ctx_size != 0)
 	    return 0;
+
+	/* assume block size is a multiple of 2 */
+	ctx->block_mask = EVP_CIPHER_block_size(c) - 1;
 
     } else if (ctx->cipher == NULL) {
 	/* reuse of cipher, but not any cipher ever set! */
@@ -808,7 +809,138 @@ EVP_CipherInit_ex(EVP_CIPHER_CTX *ctx, const EVP_CIPHER *c, ENGINE *engine,
 }
 
 /**
- * Encypher/decypher data
+ * Encipher/decipher partial data
+ *
+ * @param ctx the cipher context.
+ * @param out output data from the operation.
+ * @param outlen output length
+ * @param in input data to the operation.
+ * @param inlen length of data.
+ *
+ * The output buffer length should at least be EVP_CIPHER_block_size()
+ * byte longer then the input length.
+ *
+ * See @ref evp_cipher for an example how to use this function.
+ *
+ * @return 1 on success.
+ *
+ * @ingroup hcrypto_evp
+ */
+
+int
+EVP_CipherUpdate(EVP_CIPHER_CTX *ctx, void *out, int *outlen,
+		 void *in, size_t inlen)
+{
+    int ret, left, blocksize;
+    
+    *outlen = 0;
+
+    /**
+     * If there in no spare bytes in the left from last Update and the
+     * input length is on the block boundery, the EVP_CipherUpdate()
+     * function can take a shortcut (and preformance gain) and
+     * directly encrypt the data, otherwise we hav to fix it up and
+     * store extra it the EVP_CIPHER_CTX.
+     */
+    if (ctx->buf_len == 0 && (inlen & ctx->block_mask) == 0) {
+	ret = (*ctx->cipher->do_cipher)(ctx, out, in, inlen);
+	if (ret == 1)
+	    *outlen = inlen;
+	else
+	    *outlen = 0;
+	return ret;
+    }
+
+
+    blocksize = EVP_CIPHER_CTX_block_size(ctx);
+    left = blocksize - ctx->buf_len;
+    assert(left > 0);
+
+    if (ctx->buf_len) {
+
+	/* if total buffer is smaller then input, store locally */
+	if (inlen < left) {
+	    memcpy(ctx->buf + ctx->buf_len, in, inlen);
+	    ctx->buf_len += inlen;
+	    return 1;
+	}
+	
+	/* fill in local buffer and encrypt */
+	memcpy(ctx->buf + ctx->buf_len, in, left);
+	ret = (*ctx->cipher->do_cipher)(ctx, out, ctx->buf, blocksize);
+	memset(ctx->buf, 0, blocksize);
+	if (ret != 1)
+	    return ret;
+
+	*outlen += blocksize;
+	inlen -= left;
+	in = ((unsigned char *)in) + left;
+	out = ((unsigned char *)out) + blocksize;
+	ctx->buf_len = 0;
+    }
+
+    if (inlen) {
+	ctx->buf_len = (inlen & ctx->block_mask);
+	inlen &= ~ctx->block_mask;
+	
+	ret = (*ctx->cipher->do_cipher)(ctx, out, in, inlen);
+	if (ret != 1)
+	    return ret;
+
+	*outlen += inlen;
+
+	in = ((unsigned char *)in) + inlen;
+	memcpy(ctx->buf, in, ctx->buf_len);
+    }
+
+    return 1;
+}
+
+/**
+ * Encipher/decipher final data
+ *
+ * @param ctx the cipher context.
+ * @param out output data from the operation.
+ * @param outlen output length
+ *
+ * The input length needs to be at least EVP_CIPHER_block_size() bytes
+ * long.
+ *
+ * See @ref evp_cipher for an example how to use this function.
+ *
+ * @return 1 on success.
+ *
+ * @ingroup hcrypto_evp
+ */
+
+int
+EVP_CipherFinal_ex(EVP_CIPHER_CTX *ctx, void *out, int *outlen)
+{
+    *outlen = 0;
+
+    if (ctx->buf_len) {
+	int ret, left, blocksize;
+
+	blocksize = EVP_CIPHER_CTX_block_size(ctx);
+
+	left = blocksize - ctx->buf_len;
+	assert(left > 0);
+
+	/* zero fill local buffer */
+	memset(ctx->buf + ctx->buf_len, 0, left);
+	ret = (*ctx->cipher->do_cipher)(ctx, out, ctx->buf, blocksize);
+	memset(ctx->buf, 0, blocksize);
+	if (ret != 1)
+	    return ret;
+
+	*outlen += blocksize;
+    }
+
+    return 1;
+}
+
+/**
+ * Encipher/decipher data
  *
  * @param ctx the cipher context.
  * @param out out data from the operation.
@@ -1047,6 +1179,71 @@ EVP_rc4_40(void)
  *
  */
 
+static int
+des_cbc_init(EVP_CIPHER_CTX *ctx,
+	     const unsigned char * key,
+	     const unsigned char * iv,
+	     int encp)
+{
+    DES_key_schedule *k = ctx->cipher_data;
+    DES_cblock deskey;
+    memcpy(&deskey, key, sizeof(deskey));
+    DES_set_key_unchecked(&deskey, k);
+    return 1;
+}
+
+static int
+des_cbc_do_cipher(EVP_CIPHER_CTX *ctx,
+		  unsigned char *out,
+		  const unsigned char *in,
+		  unsigned int size)
+{
+    DES_key_schedule *k = ctx->cipher_data;
+    DES_cbc_encrypt(in, out, size,
+		    k, (DES_cblock *)ctx->iv, ctx->encrypt);
+    return 1;
+}
+
+static int
+des_cbc_cleanup(EVP_CIPHER_CTX *ctx)
+{
+    memset(ctx->cipher_data, 0, sizeof(struct DES_key_schedule));
+    return 1;
+}
+
+/**
+ * The DES cipher type
+ *
+ * @return the DES-CBC EVP_CIPHER pointer.
+ *
+ * @ingroup hcrypto_evp
+ */
+
+const EVP_CIPHER *
+EVP_des_cbc(void)
+{
+    static const EVP_CIPHER des_ede3_cbc = {
+	0,
+	8,
+	8,
+	8,
+	EVP_CIPH_CBC_MODE,
+	des_cbc_init,
+	des_cbc_do_cipher,
+	des_cbc_cleanup,
+	sizeof(DES_key_schedule),
+	NULL,
+	NULL,
+	NULL,
+	NULL
+    };
+    return &des_ede3_cbc;
+}
+
+/*
+ *
+ */
+
 struct des_ede3_cbc {
     DES_key_schedule ks[3];
 };
@@ -1124,42 +1321,6 @@ EVP_des_ede3_cbc(void)
     return &des_ede3_cbc;
 }
 
-/*
- *
- */
-
-static int
-aes_init(EVP_CIPHER_CTX *ctx,
-	 const unsigned char * key,
-	 const unsigned char * iv,
-	 int encp)
-{
-    AES_KEY *k = ctx->cipher_data;
-    if (ctx->encrypt)
-	AES_set_encrypt_key(key, ctx->cipher->key_len * 8, k);
-    else
-	AES_set_decrypt_key(key, ctx->cipher->key_len * 8, k);
-    return 1;
-}
-
-static int
-aes_do_cipher(EVP_CIPHER_CTX *ctx,
-	      unsigned char *out,
-	      const unsigned char *in,
-	      unsigned int size)
-{
-    AES_KEY *k = ctx->cipher_data;
-    AES_cbc_encrypt(in, out, size, k, ctx->iv, ctx->encrypt);
-    return 1;
-}
-
-static int
-aes_cleanup(EVP_CIPHER_CTX *ctx)
-{
-    memset(ctx->cipher_data, 0, sizeof(AES_KEY));
-    return 1;
-}
-
 /**
  * The AES-128 cipher type
  *
@@ -1171,22 +1332,7 @@ aes_cleanup(EVP_CIPHER_CTX *ctx)
 const EVP_CIPHER *
 EVP_aes_128_cbc(void)
 {
-    static const EVP_CIPHER aes_128_cbc = {
-	0,
-	16,
-	16,
-	16,
-	EVP_CIPH_CBC_MODE,
-	aes_init,
-	aes_do_cipher,
-	aes_cleanup,
-	sizeof(AES_KEY),
-	NULL,
-	NULL,
-	NULL,
-	NULL
-    };
-    return &aes_128_cbc;
+    return EVP_hcrypto_aes_128_cbc();
 }
 
 /**
@@ -1200,22 +1346,7 @@ EVP_aes_128_cbc(void)
 const EVP_CIPHER *
 EVP_aes_192_cbc(void)
 {
-    static const EVP_CIPHER aes_192_cbc = {
-	0,
-	16,
-	24,
-	16,
-	EVP_CIPH_CBC_MODE,
-	aes_init,
-	aes_do_cipher,
-	aes_cleanup,
-	sizeof(AES_KEY),
-	NULL,
-	NULL,
-	NULL,
-	NULL
-    };
-    return &aes_192_cbc;
+    return EVP_hcrypto_aes_192_cbc();
 }
 
 /**
@@ -1229,22 +1360,7 @@ EVP_aes_192_cbc(void)
 const EVP_CIPHER *
 EVP_aes_256_cbc(void)
 {
-    static const EVP_CIPHER aes_256_cbc = {
-	0,
-	16,
-	32,
-	16,
-	EVP_CIPH_CBC_MODE,
-	aes_init,
-	aes_do_cipher,
-	aes_cleanup,
-	sizeof(AES_KEY),
-	NULL,
-	NULL,
-	NULL,
-	NULL
-    };
-    return &aes_256_cbc;
+    return EVP_hcrypto_aes_256_cbc();
 }
 
 static int

@@ -33,7 +33,7 @@
 
 #include "krb5/gsskrb5_locl.h"
 
-RCSID("$Id: inquire_names_for_mech.c 20688 2007-05-17 18:44:31Z lha $");
+RCSID("$Id$");
 
 
 static gss_OID *name_list[] = {

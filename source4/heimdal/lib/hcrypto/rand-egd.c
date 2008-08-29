@@ -35,7 +35,7 @@
 #include <config.h>
 #endif
 
-RCSID("$Id: rand-egd.c 23461 2008-07-27 12:14:20Z lha $");
+RCSID("$Id$");
 
 #include <sys/types.h>
 #ifdef HAVE_SYS_UN_H

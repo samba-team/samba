@@ -32,7 +32,7 @@
 
 #include "spnego/spnego_locl.h"
 
-RCSID("$Id: context_stubs.c 22688 2008-03-16 11:33:58Z lha $");
+RCSID("$Id$");
 
 static OM_uint32
 spnego_supported_mechs(OM_uint32 *minor_status, gss_OID_set *mechs)

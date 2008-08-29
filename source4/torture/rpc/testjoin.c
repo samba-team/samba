@@ -400,6 +400,7 @@ _PUBLIC_ struct test_join *torture_join_domain(struct torture_context *tctx,
 	}
 	cli_credentials_set_username(*machine_credentials, libnet_r->in.account_name, CRED_SPECIFIED);
 	cli_credentials_set_password(*machine_credentials, libnet_r->out.join_password, CRED_SPECIFIED);
+	cli_credentials_set_kvno(*machine_credentials, libnet_r->out.kvno);
 	if (acct_flags & ACB_SVRTRUST) {
 		cli_credentials_set_secure_channel_type(*machine_credentials,
 							SEC_CHAN_BDC);

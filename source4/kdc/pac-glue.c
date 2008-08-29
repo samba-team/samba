@@ -153,18 +153,12 @@ krb5_error_code samba_kdc_reget_pac(void *priv, krb5_context context,
 				struct hdb_entry_ex *client,  
 				struct hdb_entry_ex *server, krb5_pac *pac)
 {
-	NTSTATUS nt_status;
-	enum ndr_err_code ndr_err;
 	krb5_error_code ret;
 
 	unsigned int userAccountControl;
 
 	struct hdb_ldb_private *private = talloc_get_type(server->ctx, struct hdb_ldb_private);
-	krb5_data k5pac_in;
-	DATA_BLOB pac_in;
 
-	union PAC_INFO info;
-	union netr_Validation validation;
 	struct auth_serversupplied_info *server_info_out;
 
 	TALLOC_CTX *mem_ctx = talloc_named(private, 0, "samba_get_pac context");
@@ -176,45 +170,21 @@ krb5_error_code samba_kdc_reget_pac(void *priv, krb5_context context,
 	/* The service account may be set not to want the PAC */
 	userAccountControl = ldb_msg_find_attr_as_uint(private->msg, "userAccountControl", 0);
 	if (userAccountControl & UF_NO_AUTH_DATA_REQUIRED) {
+		talloc_free(mem_ctx);
 		*pac = NULL;
 		return 0;
 	}
 
-	ret = krb5_pac_get_buffer(context, *pac, PAC_TYPE_LOGON_INFO, &k5pac_in);
-	if (ret != 0) {
-		return ret;
-	}
-
-	pac_in = data_blob_talloc(mem_ctx, k5pac_in.data, k5pac_in.length);
-	krb5_data_free(&k5pac_in);
-	if (!pac_in.data) {
-		talloc_free(mem_ctx);
-		return ENOMEM;
-	}
-		
-	ndr_err = ndr_pull_union_blob(&pac_in, mem_ctx, private->iconv_convenience, &info,
-				      PAC_TYPE_LOGON_INFO,
-				      (ndr_pull_flags_fn_t)ndr_pull_PAC_INFO);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err) || !info.logon_info.info) {
-		nt_status = ndr_map_error2ntstatus(ndr_err);
-		DEBUG(0,("can't parse the PAC LOGON_INFO: %s\n", nt_errstr(nt_status)));
-		talloc_free(mem_ctx);
-		return EINVAL;
-	}
-
-	/* Pull this right into the normal auth sysstem structures */
-	validation.sam3 = &info.logon_info.info->info3;
-	nt_status = make_server_info_netlogon_validation(mem_ctx,
-							 "",
-							 3, &validation,
-							 &server_info_out); 
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		talloc_free(mem_ctx);
-		return ENOMEM;
-	}
+	ret = kerberos_pac_to_server_info(mem_ctx, private->iconv_convenience,
+					  *pac, context, &server_info_out);
 
 	/* We will compleatly regenerate this pac */
 	krb5_pac_free(context, *pac);
+
+	if (ret) {
+		talloc_free(mem_ctx);
+		return ret;
+	}
 
 	ret = make_pac(context, mem_ctx, private->iconv_convenience, server_info_out, pac);
 

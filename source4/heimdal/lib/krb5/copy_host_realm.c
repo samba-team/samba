@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: copy_host_realm.c 23280 2008-06-23 03:26:18Z lha $");
+RCSID("$Id$");
 
 /**
  * Copy the list of realms from `from' to `to'.

@@ -32,7 +32,7 @@
  */
 
 #include "hx_locl.h"
-RCSID("$Id: ks_file.c 23459 2008-07-27 12:13:31Z lha $");
+RCSID("$Id$");
 
 typedef enum { USE_PEM, USE_DER } outformat;
 

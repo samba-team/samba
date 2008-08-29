@@ -31,7 +31,7 @@
  * SUCH DAMAGE.
  */
 
-/* $Id: hex.h 14773 2005-04-12 11:29:18Z lha $ */
+/* $Id$ */
 
 #ifndef _rk_HEX_H_
 #define _rk_HEX_H_ 1

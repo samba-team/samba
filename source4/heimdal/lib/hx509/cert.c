@@ -32,7 +32,7 @@
  */
 
 #include "hx_locl.h"
-RCSID("$Id: cert.c 23457 2008-07-27 12:12:56Z lha $");
+RCSID("$Id$");
 #include "crypto-headers.h"
 #include <rtbl.h>
 

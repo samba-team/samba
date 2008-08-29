@@ -34,7 +34,7 @@
 #include "krb5_locl.h"
 #include <wind.h>
 
-RCSID("$Id: pac.c 23316 2008-06-23 04:32:32Z lha $");
+RCSID("$Id$");
 
 struct PAC_INFO_BUFFER {
     uint32_t type;
@@ -323,20 +323,6 @@ krb5_pac_get_buffer(krb5_context context, krb5_pac p,
 {
     krb5_error_code ret;
     uint32_t i;
-
-    /*
-     * Hide the checksums from external consumers
-     */
-
-    if (type == PAC_PRIVSVR_CHECKSUM || type == PAC_SERVER_CHECKSUM) {
-	ret = krb5_data_alloc(data, 16);
-	if (ret) {
-	    krb5_set_error_message(context, ret, "malloc: out of memory");
-	    return ret;
-	}
-	memset(data->data, 0, data->length);
-	return 0;
-    }
 
     for (i = 0; i < p->pac->numbuffers; i++) {
 	size_t len = p->pac->buffers[i].buffersize;
@@ -819,7 +805,7 @@ pac_checksum(krb5_context context,
 	return ret;
 
     ret = krb5_crypto_get_checksum_type(context, crypto, &cktype);
-    ret = krb5_crypto_destroy(context, crypto);
+    krb5_crypto_destroy(context, crypto);
     if (ret)
 	return ret;
 

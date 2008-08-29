@@ -33,7 +33,7 @@
 
 #include <krb5_locl.h>
 
-RCSID("$Id: rd_rep.c 23304 2008-06-23 03:29:56Z lha $");
+RCSID("$Id$");
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_rd_rep(krb5_context context,

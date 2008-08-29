@@ -35,7 +35,7 @@
 #include <getarg.h>
 #include "lex.h"
 
-RCSID("$Id: main.c 20858 2007-06-03 18:56:41Z lha $");
+RCSID("$Id$");
 
 extern FILE *yyin;
 

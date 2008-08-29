@@ -59,7 +59,7 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_display_status.c 23025 2008-04-17 10:01:57Z lha $");
+RCSID("$Id$");
 
 static const char *
 calling_error(OM_uint32 v)

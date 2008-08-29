@@ -32,7 +32,7 @@
  */
 
 /*
- * $Id: dsa.h 16564 2006-01-13 15:26:52Z lha $
+ * $Id$
  */
 
 #ifndef _HEIM_DSA_H

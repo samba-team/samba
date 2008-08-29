@@ -3,7 +3,7 @@
 
    Create and parse the krb5 PAC
    
-   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2004-2005
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2004-2005,2008
    Copyright (C) Andrew Tridgell 2001
    Copyright (C) Luke Howard 2002-2003
    Copyright (C) Stefan Metzmacher 2004-2005
@@ -25,6 +25,7 @@
 
 #include "includes.h"
 #include "system/kerberos.h"
+#include "auth/auth.h"
 #include "auth/kerberos/kerberos.h"
 #include "librpc/gen_ndr/ndr_krb5pac.h"
 #include "lib/ldb/include/ldb.h"
@@ -654,3 +655,123 @@ static krb5_error_code make_pac_checksum(TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
+krb5_error_code kerberos_pac_to_server_info(TALLOC_CTX *mem_ctx,
+						struct smb_iconv_convenience *iconv_convenience,
+						krb5_pac pac,
+						krb5_context context,
+						struct auth_serversupplied_info **server_info) 
+{
+	NTSTATUS nt_status;
+	enum ndr_err_code ndr_err;
+	krb5_error_code ret;
+
+	DATA_BLOB pac_logon_info_in, pac_srv_checksum_in, pac_kdc_checksum_in;
+	krb5_data k5pac_logon_info_in, k5pac_srv_checksum_in, k5pac_kdc_checksum_in;
+
+	union PAC_INFO info;
+	union netr_Validation validation;
+	struct auth_serversupplied_info *server_info_out;
+
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+
+	if (!tmp_ctx) {
+		return ENOMEM;
+	}
+
+	ret = krb5_pac_get_buffer(context, pac, PAC_TYPE_LOGON_INFO, &k5pac_logon_info_in);
+	if (ret != 0) {
+		talloc_free(tmp_ctx);
+		return EINVAL;
+	}
+
+	pac_logon_info_in = data_blob_const(k5pac_logon_info_in.data, k5pac_logon_info_in.length);
+
+	ndr_err = ndr_pull_union_blob(&pac_logon_info_in, tmp_ctx, iconv_convenience, &info,
+				      PAC_TYPE_LOGON_INFO,
+				      (ndr_pull_flags_fn_t)ndr_pull_PAC_INFO);
+	krb5_data_free(&k5pac_logon_info_in);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err) || !info.logon_info.info) {
+		nt_status = ndr_map_error2ntstatus(ndr_err);
+		DEBUG(0,("can't parse the PAC LOGON_INFO: %s\n", nt_errstr(nt_status)));
+		talloc_free(tmp_ctx);
+		return EINVAL;
+	}
+
+	/* Pull this right into the normal auth sysstem structures */
+	validation.sam3 = &info.logon_info.info->info3;
+	nt_status = make_server_info_netlogon_validation(mem_ctx,
+							 "",
+							 3, &validation,
+							 &server_info_out); 
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		talloc_free(tmp_ctx);
+		return EINVAL;
+	}
+	
+	ret = krb5_pac_get_buffer(context, pac, PAC_TYPE_SRV_CHECKSUM, &k5pac_srv_checksum_in);
+	if (ret != 0) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	pac_srv_checksum_in = data_blob_const(k5pac_srv_checksum_in.data, k5pac_srv_checksum_in.length);
+		
+	ndr_err = ndr_pull_struct_blob(&pac_srv_checksum_in, server_info_out, 
+				       iconv_convenience, &server_info_out->pac_srv_sig,
+				       (ndr_pull_flags_fn_t)ndr_pull_PAC_SIGNATURE_DATA);
+	krb5_data_free(&k5pac_srv_checksum_in);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		nt_status = ndr_map_error2ntstatus(ndr_err);
+		DEBUG(0,("can't parse the KDC signature: %s\n",
+			nt_errstr(nt_status)));
+		return EINVAL;
+	}
+
+	ret = krb5_pac_get_buffer(context, pac, PAC_TYPE_KDC_CHECKSUM, &k5pac_kdc_checksum_in);
+	if (ret != 0) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	pac_kdc_checksum_in = data_blob_const(k5pac_kdc_checksum_in.data, k5pac_kdc_checksum_in.length);
+		
+	ndr_err = ndr_pull_struct_blob(&pac_kdc_checksum_in, server_info_out, 
+				       iconv_convenience, &server_info_out->pac_kdc_sig,
+				       (ndr_pull_flags_fn_t)ndr_pull_PAC_SIGNATURE_DATA);
+	krb5_data_free(&k5pac_kdc_checksum_in);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		nt_status = ndr_map_error2ntstatus(ndr_err);
+		DEBUG(0,("can't parse the KDC signature: %s\n",
+			nt_errstr(nt_status)));
+		return EINVAL;
+	}
+
+	*server_info = server_info_out;
+	
+	return 0;
+}
+
+
+NTSTATUS kerberos_pac_blob_to_server_info(TALLOC_CTX *mem_ctx,
+						     struct smb_iconv_convenience *iconv_convenience,
+						     DATA_BLOB pac_blob, 
+						     krb5_context context,
+						     struct auth_serversupplied_info **server_info) 
+{
+	krb5_error_code ret;
+	krb5_pac pac;
+	ret = krb5_pac_parse(context, 
+			     pac_blob.data, pac_blob.length, 
+			     &pac);
+	if (ret) {
+		return map_nt_error_from_unix(ret);
+	}
+
+
+	ret = kerberos_pac_to_server_info(mem_ctx, iconv_convenience, pac, context, server_info);
+	krb5_pac_free(context, pac);
+	if (ret) {
+		return map_nt_error_from_unix(ret);
+	}
+	return NT_STATUS_OK;
+}

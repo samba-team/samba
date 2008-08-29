@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006 - 2007 Kungliga Tekniska Högskolan
+ * Copyright (c) 2006 - 2008 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -33,7 +33,7 @@
 
 #include <config.h>
 
-RCSID("$Id: ntlm.c 23169 2008-05-22 02:52:07Z lha $");
+RCSID("$Id$");
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -45,6 +45,8 @@ RCSID("$Id: ntlm.c 23169 2008-05-22 02:52:07Z lha $");
 
 #include <krb5.h>
 #include <roken.h>
+
+#define HC_DEPRECATED_CRYPTO
 
 #include "krb5-types.h"
 #include "crypto-headers.h"
@@ -1046,7 +1048,7 @@ heim_ntlm_ntlmv2_key(const void *key, size_t len,
     HMAC_Init_ex(&c, key, len, EVP_md5(), NULL);
     {
 	struct ntlm_buf buf;
-	/* uppercase username and turn it inte ucs2-le */
+	/* uppercase username and turn it into ucs2-le */
 	ascii2ucs2le(username, 1, &buf);
 	HMAC_Update(&c, buf.data, buf.length);
 	free(buf.data);

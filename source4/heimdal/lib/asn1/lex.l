@@ -32,7 +32,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: lex.l 18738 2006-10-21 11:57:22Z lha $ */
+/* $Id$ */
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
