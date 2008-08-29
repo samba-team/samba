@@ -1548,6 +1548,33 @@ NET_API_STATUS NetShareDel(const char * server_name /* [in] */,
 			   const char * net_name /* [in] */,
 			   uint32_t reserved /* [in] */);
 
+/************************************************************//**
+ *
+ * NetShareEnum
+ *
+ * @brief Enumerate Shares
+ *
+ * @param[in] server_name The server name to connect to
+ * @param[in] level The level defining the SHARE_INFO_X structure
+ * @param[out] buffer The buffer containing a SHARE_INFO_X structure
+ * @param[in] prefmaxlen The requested maximal buffer size
+ * @param[out] entries_read The number of SHARE_INFO_X entries in the buffer
+ * @param[out] total_entries The total number of SHARE_INFO_X entries
+ * @param[in,out] resume_handle A handle passed in and returned for resuming
+ * operations
+ * @return NET_API_STATUS
+ *
+ * example share/share_enum.c
+ ***************************************************************/
+
+NET_API_STATUS NetShareEnum(const char * server_name /* [in] */,
+			    uint32_t level /* [in] */,
+			    uint8_t **buffer /* [out] [ref] */,
+			    uint32_t prefmaxlen /* [in] */,
+			    uint32_t *entries_read /* [out] [ref] */,
+			    uint32_t *total_entries /* [out] [ref] */,
+			    uint32_t *resume_handle /* [in,out] [ref] */);
+
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */
