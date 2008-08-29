@@ -184,3 +184,20 @@ WERROR NetShareDel_l(struct libnetapi_ctx *ctx,
 	LIBNETAPI_REDIRECT_TO_LOCALHOST(ctx, r, NetShareDel);
 }
 
+/****************************************************************
+****************************************************************/
+
+WERROR NetShareEnum_r(struct libnetapi_ctx *ctx,
+		      struct NetShareEnum *r)
+{
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR NetShareEnum_l(struct libnetapi_ctx *ctx,
+		      struct NetShareEnum *r)
+{
+	LIBNETAPI_REDIRECT_TO_LOCALHOST(ctx, r, NetShareEnum);
+}
