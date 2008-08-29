@@ -1168,4 +1168,18 @@ struct NetShareAdd {
 
 };
 
+
+struct NetShareDel {
+	struct {
+		const char * server_name;
+		const char * net_name;
+		uint32_t reserved;
+	} in;
+
+	struct {
+		enum NET_API_STATUS result;
+	} out;
+
+};
+
 #endif /* _HEADER_libnetapi */
