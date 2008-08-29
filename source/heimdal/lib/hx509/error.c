@@ -32,7 +32,7 @@
  */
 
 #include "hx_locl.h"
-RCSID("$Id: error.c 22332 2007-12-17 01:03:22Z lha $");
+RCSID("$Id$");
 
 /**
  * @page page_error Hx509 error reporting functions

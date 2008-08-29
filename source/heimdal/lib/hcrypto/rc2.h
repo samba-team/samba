@@ -31,7 +31,7 @@
  * SUCH DAMAGE.
  */
 
-/* $Id: rc2.h 16480 2006-01-08 21:47:29Z lha $ */
+/* $Id$ */
 
 /* symbol renaming */
 #define RC2_set_key hc_RC2_set_key 

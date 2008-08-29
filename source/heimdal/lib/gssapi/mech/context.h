@@ -24,7 +24,7 @@
  * SUCH DAMAGE.
  *
  *	$FreeBSD: src/lib/libgssapi/context.h,v 1.1 2005/12/29 14:40:20 dfr Exp $
- *	$Id: context.h 19925 2007-01-16 10:19:27Z lha $
+ *	$Id$
  */
 
 #include <gssapi_mech.h>

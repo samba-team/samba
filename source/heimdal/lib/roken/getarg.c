@@ -33,13 +33,13 @@
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
-RCSID("$Id: getarg.c 21005 2007-06-08 01:54:35Z lha $");
+RCSID("$Id$");
 #endif
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <roken.h>
+#include "roken.h"
 #include "getarg.h"
 
 #define ISFLAG(X) ((X).type == arg_flag || (X).type == arg_negative_flag)
@@ -277,7 +277,7 @@ arg_printusage (struct getargs *args,
 	max_len = max(max_len, len);
     }
     if (extra_string) {
-	col = check_column(stderr, col, strlen(extra_string) + 1, columns);
+	check_column(stderr, col, strlen(extra_string) + 1, columns);
 	fprintf (stderr, " %s\n", extra_string);
     } else
 	fprintf (stderr, "\n");

@@ -27,7 +27,7 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_init_sec_context.c 23025 2008-04-17 10:01:57Z lha $");
+RCSID("$Id$");
 
 static gss_cred_id_t
 _gss_mech_cred_find(gss_cred_id_t cred_handle, gss_OID mech_type)

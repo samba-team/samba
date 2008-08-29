@@ -31,7 +31,7 @@
  * SUCH DAMAGE.
  */
 
-/* $Id: err.hin 14773 2005-04-12 11:29:18Z lha $ */
+/* $Id$ */
 
 #ifndef __ERR_H__
 #define __ERR_H__

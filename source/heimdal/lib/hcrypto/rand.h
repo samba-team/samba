@@ -33,7 +33,7 @@
  */
 
 /*
- * $Id: rand.h 20063 2007-01-30 18:30:36Z lha $
+ * $Id$
  */
 
 #ifndef _HEIM_RAND_H

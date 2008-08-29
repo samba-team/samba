@@ -1,4 +1,4 @@
--- $Id: kx509.asn1 19546 2006-12-28 21:05:23Z lha $
+-- $Id$
 
 KX509 DEFINITIONS ::=
 BEGIN

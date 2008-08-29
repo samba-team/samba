@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: gen_locl.h 18008 2006-09-05 12:29:18Z lha $ */
+/* $Id$ */
 
 #ifndef __GEN_LOCL_H__
 #define __GEN_LOCL_H__

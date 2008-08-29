@@ -1,5 +1,7 @@
 m4_define([upcase],`echo $1 | tr abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ`)dnl
 
+m4_ifndef([AC_WARNING_ENABLE],[AC_DEFUN([AC_WARNING_ENABLE],[])])
+
 dnl love_FIND_FUNC(func, includes, arguments)
 dnl kind of like AC_CHECK_FUNC, but with headerfiles
 AC_DEFUN([love_FIND_FUNC], [

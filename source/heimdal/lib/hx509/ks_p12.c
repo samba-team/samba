@@ -32,7 +32,7 @@
  */
 
 #include "hx_locl.h"
-RCSID("$Id: ks_p12.c 23413 2008-07-26 18:34:53Z lha $");
+RCSID("$Id$");
 
 struct ks_pkcs12 {
     hx509_certs certs;

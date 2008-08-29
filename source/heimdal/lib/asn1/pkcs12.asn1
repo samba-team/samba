@@ -1,4 +1,4 @@
--- $Id: pkcs12.asn1 15715 2005-07-23 11:08:47Z lha $ --
+-- $Id$ --
 
 PKCS12 DEFINITIONS ::=
 

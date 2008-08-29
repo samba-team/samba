@@ -2,6 +2,23 @@ heimdalbuildsrcdir = $(heimdalsrcdir)/../heimdal_build
 
 HEIMDAL_VPATH = $(heimdalbuildsrcdir):$(heimdalsrcdir)/lib/asn1:$(heimdalsrcdir)/lib/krb5:$(heimdalsrcdir)/lib/gssapi:$(heimdalsrcdir)/lib/hdb:$(heimdalsrcdir)/lib/roken:$(heimdalsrcdir)/lib/des
 
+# Create a prototype header
+# Arguments: header file, arguments, c files, deps
+define heimdal_proto_header_template
+
+proto:: $(1)
+
+clean:: ;
+	rm -f $(1)
+
+$(4):: $(1)
+
+$(1): $(3) ;
+	@echo "Creating $$@"
+	@$$(PERL) $$(heimdalsrcdir)/cf/make-proto.pl $(2) $(1) $(3)
+
+endef
+
 #######################
 # Start SUBSYSTEM HEIMDAL_KDC
 [SUBSYSTEM::HEIMDAL_KDC]
@@ -27,12 +44,33 @@ HEIMDAL_KDC_OBJ_FILES = \
 	$(heimdalsrcdir)/kdc/windc.o \
 	$(heimdalsrcdir)/kdc/kx509.o
 
+$(eval $(call heimdal_proto_header_template, \
+  $(heimdalsrcdir)/kdc/kdc-protos.h, \
+  -q -P comment -o, \
+  $(HEIMDAL_KDC_OBJ_FILES:.o=.c), \
+  $(HEIMDAL_KDC_OBJ_FILES) $(HEIMDAL_KDC_OBJ_FILES:.o=.d) \
+))
+
+$(eval $(call heimdal_proto_header_template, \
+  $(heimdalsrcdir)/kdc/kdc-private.h, \
+  -q -P comment -p, \
+  $(HEIMDAL_KDC_OBJ_FILES:.o=.c), \
+  $(HEIMDAL_KDC_OBJ_FILES) $(HEIMDAL_KDC_OBJ_FILES:.o=.d) \
+))
+
 [SUBSYSTEM::HEIMDAL_NTLM]
 CFLAGS = -I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/ntlm
 PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN HEIMDAL_HCRYPTO HEIMDAL_KRB5
 
 HEIMDAL_NTLM_OBJ_FILES = \
 	$(heimdalsrcdir)/lib/ntlm/ntlm.o
+
+$(eval $(call heimdal_proto_header_template, \
+  $(heimdalsrcdir)/lib/ntlm/heimntlm-protos.h, \
+  -q -P comment -o, \
+  $(HEIMDAL_NTLM_OBJ_FILES:.o=.c), \
+  $(HEIMDAL_NTLM_OBJ_FILES) $(HEIMDAL_NTLM_OBJ_FILES:.o=.d) \
+))
 
 [SUBSYSTEM::HEIMDAL_HDB_KEYS]
 CFLAGS = -I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/hdb
@@ -59,6 +97,20 @@ HEIMDAL_HDB_OBJ_FILES = \
 	$(heimdalsrcdir)/lib/hdb/ndbm.o \
 	$(heimdalsrcdir)/lib/hdb/hdb_err.o
 
+$(eval $(call heimdal_proto_header_template, \
+  $(heimdalsrcdir)/lib/hdb/hdb-protos.h, \
+  -q -P comment -o, \
+  $(HEIMDAL_HDB_OBJ_FILES:.o=.c), \
+  $(HEIMDAL_HDB_OBJ_FILES) $(HEIMDAL_HDB_OBJ_FILES:.o=.d) \
+))
+
+$(eval $(call heimdal_proto_header_template, \
+  $(heimdalsrcdir)/lib/hdb/hdb-private.h, \
+  -q -P comment -p, \
+  $(HEIMDAL_HDB_OBJ_FILES:.o=.c), \
+  $(HEIMDAL_HDB_OBJ_FILES) $(HEIMDAL_HDB_OBJ_FILES:.o=.d) \
+))
+
 #######################
 # Start SUBSYSTEM HEIMDAL_GSSAPI
 [SUBSYSTEM::HEIMDAL_GSSAPI]
@@ -67,7 +119,78 @@ PRIVATE_DEPENDENCIES = HEIMDAL_HCRYPTO HEIMDAL_HEIM_ASN1 HEIMDAL_SPNEGO_ASN1 HEI
 # End SUBSYSTEM HEIMDAL_GSSAPI
 #######################
 
+HEIMDAL_GSSAPI_SPNEGO_OBJ_FILES = \
+	$(heimdalsrcdir)/lib/gssapi/spnego/init_sec_context.o \
+	$(heimdalsrcdir)/lib/gssapi/spnego/external.o \
+	$(heimdalsrcdir)/lib/gssapi/spnego/compat.o \
+	$(heimdalsrcdir)/lib/gssapi/spnego/context_stubs.o \
+	$(heimdalsrcdir)/lib/gssapi/spnego/cred_stubs.o \
+	$(heimdalsrcdir)/lib/gssapi/spnego/accept_sec_context.o \
+
+$(eval $(call heimdal_proto_header_template, \
+  $(heimdalsrcdir)/lib/gssapi/spnego/spnego-private.h, \
+  -q -P comment -p, \
+  $(HEIMDAL_GSSAPI_SPNEGO_OBJ_FILES:.o=.c), \
+  $(HEIMDAL_GSSAPI_SPNEGO_OBJ_FILES) $(HEIMDAL_GSSAPI_SPNEGO_OBJ_FILES:.o=.d) \
+))
+
+HEIMDAL_GSSAPI_KRB5_OBJ_FILES = \
+	$(heimdalsrcdir)/lib/gssapi/krb5/copy_ccache.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/delete_sec_context.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/init_sec_context.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/context_time.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/init.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/address_to_krb5addr.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/get_mic.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/inquire_context.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/add_cred.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/inquire_cred.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/inquire_cred_by_oid.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/inquire_cred_by_mech.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/inquire_mechs_for_name.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/inquire_names_for_mech.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/indicate_mechs.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/inquire_sec_context_by_oid.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/export_sec_context.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/import_sec_context.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/duplicate_name.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/import_name.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/compare_name.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/export_name.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/canonicalize_name.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/unwrap.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/wrap.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/release_name.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/cfx.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/8003.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/arcfour.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/encapsulate.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/display_name.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/sequence.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/display_status.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/release_buffer.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/external.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/compat.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/acquire_cred.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/release_cred.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/set_cred_option.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/decapsulate.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/verify_mic.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/accept_sec_context.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/set_sec_context_option.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/process_context_token.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/prf.o
+
+$(eval $(call heimdal_proto_header_template, \
+  $(heimdalsrcdir)/lib/gssapi/krb5/gsskrb5-private.h, \
+  -q -P comment -p, \
+  $(HEIMDAL_GSSAPI_KRB5_OBJ_FILES:.o=.c), \
+  $(HEIMDAL_GSSAPI_KRB5_OBJ_FILES) $(HEIMDAL_GSSAPI_KRB5_OBJ_FILES:.o=.d) \
+))
+
 HEIMDAL_GSSAPI_OBJ_FILES = \
+	$(HEIMDAL_GSSAPI_SPNEGO_OBJ_FILES) \
+	$(HEIMDAL_GSSAPI_KRB5_OBJ_FILES) \
 	$(heimdalsrcdir)/lib/gssapi/mech/context.o \
 	$(heimdalsrcdir)/lib/gssapi/mech/gss_krb5.o \
 	$(heimdalsrcdir)/lib/gssapi/mech/gss_mech_switch.o \
@@ -124,65 +247,15 @@ HEIMDAL_GSSAPI_OBJ_FILES = \
 	$(heimdalsrcdir)/lib/gssapi/mech/gss_set_cred_option.o \
 	$(heimdalsrcdir)/lib/gssapi/mech/gss_pseudo_random.o \
 	$(heimdalsrcdir)/lib/gssapi/asn1_GSSAPIContextToken.o \
-	$(heimdalsrcdir)/lib/gssapi/spnego/init_sec_context.o \
-	$(heimdalsrcdir)/lib/gssapi/spnego/external.o \
-	$(heimdalsrcdir)/lib/gssapi/spnego/compat.o \
-	$(heimdalsrcdir)/lib/gssapi/spnego/context_stubs.o \
-	$(heimdalsrcdir)/lib/gssapi/spnego/cred_stubs.o \
-	$(heimdalsrcdir)/lib/gssapi/spnego/accept_sec_context.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/copy_ccache.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/delete_sec_context.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/init_sec_context.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/context_time.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/init.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/address_to_krb5addr.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/get_mic.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/inquire_context.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/add_cred.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/inquire_cred.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/inquire_cred_by_oid.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/inquire_cred_by_mech.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/inquire_mechs_for_name.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/inquire_names_for_mech.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/indicate_mechs.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/inquire_sec_context_by_oid.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/export_sec_context.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/import_sec_context.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/duplicate_name.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/import_name.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/compare_name.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/export_name.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/canonicalize_name.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/unwrap.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/wrap.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/release_name.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/cfx.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/8003.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/arcfour.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/encapsulate.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/display_name.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/sequence.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/display_status.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/release_buffer.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/external.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/compat.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/acquire_cred.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/release_cred.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/set_cred_option.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/decapsulate.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/verify_mic.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/accept_sec_context.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/set_sec_context_option.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/process_context_token.o \
-	$(heimdalsrcdir)/lib/gssapi/krb5/prf.o
-
+	$(heimdalbuildsrcdir)/gssapi-glue.o
 
 #######################
 # Start SUBSYSTEM HEIMDAL_KRB5
 [SUBSYSTEM::HEIMDAL_KRB5]
 CFLAGS = -I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/krb5 -I$(heimdalsrcdir)/lib/asn1 -I$(heimdalsrcdir)/lib/com_err 
 PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN HEIMDAL_PKINIT_ASN1 HEIMDAL_WIND \
-		HEIMDAL_KRB5_ASN1 HEIMDAL_GLUE HEIMDAL_HX509 HEIMDAL_HCRYPTO
+		HEIMDAL_KRB5_ASN1 HEIMDAL_HX509 HEIMDAL_HCRYPTO \
+		LIBNETIF LIBSAMBA-HOSTCONFIG
 PUBLIC_DEPENDENCIES = HEIMDAL_COM_ERR
 # End SUBSYSTEM HEIMDAL_KRB5
 #######################
@@ -234,7 +307,6 @@ HEIMDAL_KRB5_OBJ_FILES = \
 	$(heimdalsrcdir)/lib/krb5/keytab_file.o \
 	$(heimdalsrcdir)/lib/krb5/keytab_memory.o \
 	$(heimdalsrcdir)/lib/krb5/keytab_keyfile.o \
-	$(heimdalsrcdir)/lib/krb5/keytab_krb4.o \
 	$(heimdalsrcdir)/lib/krb5/krbhst.o \
 	$(heimdalsrcdir)/lib/krb5/log.o \
 	$(heimdalsrcdir)/lib/krb5/mcache.o \
@@ -273,7 +345,23 @@ HEIMDAL_KRB5_OBJ_FILES = \
 	$(heimdalsrcdir)/lib/krb5/krb5_err.o \
 	$(heimdalsrcdir)/lib/krb5/heim_err.o \
 	$(heimdalsrcdir)/lib/krb5/k524_err.o \
-	$(heimdalsrcdir)/lib/krb5/krb_err.o
+	$(heimdalsrcdir)/lib/krb5/krb_err.o \
+	$(heimdalsrcdir)/lib/hcrypto/evp-aes-cts.o \
+	$(heimdalbuildsrcdir)/krb5-glue.o
+
+$(eval $(call heimdal_proto_header_template, \
+  $(heimdalsrcdir)/lib/krb5/krb5-protos.h, \
+  -E KRB5_LIB -q -P comment -o, \
+  $(HEIMDAL_KRB5_OBJ_FILES:.o=.c), \
+  $(HEIMDAL_KRB5_OBJ_FILES) $(HEIMDAL_KRB5_OBJ_FILES:.o=.d) \
+))
+
+$(eval $(call heimdal_proto_header_template, \
+  $(heimdalsrcdir)/lib/krb5/krb5-private.h, \
+  -q -P comment -p, \
+  $(HEIMDAL_KRB5_OBJ_FILES:.o=.c), \
+  $(HEIMDAL_KRB5_OBJ_FILES) $(HEIMDAL_KRB5_OBJ_FILES:.o=.d) \
+))
 
 #######################
 # Start SUBSYSTEM HEIMDAL_HEIM_ASN1
@@ -283,7 +371,7 @@ PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN HEIMDAL_COM_ERR
 # End SUBSYSTEM HEIMDAL_KRB5
 #######################
 
-HEIMDAL_HEIM_ASN1_OBJ_FILES = \
+HEIMDAL_HEIM_ASN1_DER_OBJ_FILES = \
 	$(heimdalsrcdir)/lib/asn1/der_get.o \
 	$(heimdalsrcdir)/lib/asn1/der_put.o \
 	$(heimdalsrcdir)/lib/asn1/der_free.o \
@@ -291,6 +379,9 @@ HEIMDAL_HEIM_ASN1_OBJ_FILES = \
 	$(heimdalsrcdir)/lib/asn1/der_length.o \
 	$(heimdalsrcdir)/lib/asn1/der_copy.o \
 	$(heimdalsrcdir)/lib/asn1/der_cmp.o \
+
+HEIMDAL_HEIM_ASN1_OBJ_FILES = \
+	$(HEIMDAL_HEIM_ASN1_DER_OBJ_FILES) \
 	$(heimdalsrcdir)/lib/asn1/extra.o \
 	$(heimdalsrcdir)/lib/asn1/timegm.o \
 	$(heimdalsrcdir)/lib/asn1/asn1_err.o
@@ -334,6 +425,7 @@ HEIMDAL_HCRYPTO_OBJ_FILES = \
 	$(heimdalsrcdir)/lib/hcrypto/sha256.o \
 	$(heimdalsrcdir)/lib/hcrypto/ui.o \
 	$(heimdalsrcdir)/lib/hcrypto/evp.o \
+	$(heimdalsrcdir)/lib/hcrypto/evp-hcrypto.o \
 	$(heimdalsrcdir)/lib/hcrypto/pkcs5.o \
 	$(heimdalsrcdir)/lib/hcrypto/pkcs12.o \
 	$(heimdalsrcdir)/lib/hcrypto/rand.o \
@@ -360,7 +452,7 @@ PRIVATE_DEPENDENCIES = \
 # End SUBSYSTEM HEIMDAL_HX509
 #######################
 
-HEIMDAL_HX509_OBJ_FILES = \
+HEIMDAL_HX509_OBJH_FILES = \
 	$(heimdalsrcdir)/lib/hx509/ca.o \
 	$(heimdalsrcdir)/lib/hx509/cert.o \
 	$(heimdalsrcdir)/lib/hx509/cms.o \
@@ -384,10 +476,30 @@ HEIMDAL_HX509_OBJ_FILES = \
 	$(heimdalsrcdir)/lib/hx509/req.o \
 	$(heimdalsrcdir)/lib/hx509/revoke.o \
 	$(heimdalsrcdir)/lib/hx509/sel.o \
-	$(heimdalsrcdir)/lib/hx509/sel-lex.o \
-	$(heimdalsrcdir)/lib/hx509/sel-gram.o \
 	$(heimdalsrcdir)/lib/hx509/hx509_err.o
 
+HEIMDAL_HX509_OBJG_FILES = \
+	$(heimdalsrcdir)/lib/hx509/sel-lex.o \
+	$(heimdalsrcdir)/lib/hx509/sel-gram.o
+
+$(heimdalsrcdir)/lib/hx509/sel-lex.c:: $(heimdalsrcdir)/lib/hx509/sel-gram.c
+dist:: $(heimdalsrcdir)/lib/hx509/sel-lex.c
+
+HEIMDAL_HX509_OBJ_FILES = $(HEIMDAL_HX509_OBJH_FILES) $(HEIMDAL_HX509_OBJG_FILES)
+
+$(eval $(call heimdal_proto_header_template, \
+  $(heimdalsrcdir)/lib/hx509/hx509-protos.h, \
+  -R '^(_|^C)' -E HX509_LIB -q -P comment -o, \
+  $(HEIMDAL_HX509_OBJH_FILES:.o=.c), \
+  $(HEIMDAL_HX509_OBJH_FILES) $(HEIMDAL_HX509_OBJH_FILES:.o=.d) \
+))
+
+$(eval $(call heimdal_proto_header_template, \
+  $(heimdalsrcdir)/lib/hx509/hx509-private.h, \
+  -q -P comment -p, \
+  $(HEIMDAL_HX509_OBJH_FILES:.o=.c), \
+  $(HEIMDAL_HX509_OBJH_FILES) $(HEIMDAL_HX509_OBJH_FILES:.o=.d) \
+))
 
 #######################
 # Start SUBSYSTEM HEIMDAL_WIND
@@ -413,6 +525,46 @@ HEIMDAL_WIND_OBJ_FILES = \
 	$(heimdalsrcdir)/lib/wind/map_table.o
 # End SUBSYSTEM HEIMDAL_WIND
 #######################
+
+$(HEIMDAL_WIND_OBJ_FILES) $(HEIMDAL_WIND_OBJ_FILES:.o=.d):: $(heimdalsrcdir)/lib/wind/map_table.h
+
+$(heimdalsrcdir)/lib/wind/map_table.h $(heimdalsrcdir)/lib/wind/map_table.c: $(heimdalsrcdir)/lib/wind/rfc3454.txt $(heimdalsrcdir)/lib/wind/gen-map.py $(heimdalsrcdir)/lib/wind/stringprep.py
+	$(PYTHON) $(heimdalsrcdir)/lib/wind/gen-map.py $(heimdalsrcdir)/lib/wind/rfc3454.txt $(heimdalsrcdir)/lib/wind/
+
+clean::
+	@rm -f $(heimdalsrcdir)/lib/wind/map_table.h $(heimdalsrcdir)/lib/wind/map_table.c
+
+$(HEIMDAL_WIND_OBJ_FILES) $(HEIMDAL_WIND_OBJ_FILES:.o=.d):: $(heimdalsrcdir)/lib/wind/errorlist_table.h
+
+$(heimdalsrcdir)/lib/wind/errorlist_table.h $(heimdalsrcdir)/lib/wind/errorlist_table.c: $(heimdalsrcdir)/lib/wind/rfc3454.txt $(heimdalsrcdir)/lib/wind/gen-errorlist.py $(heimdalsrcdir)/lib/wind/stringprep.py
+	$(PYTHON) $(heimdalsrcdir)/lib/wind/gen-errorlist.py $(heimdalsrcdir)/lib/wind/rfc3454.txt $(heimdalsrcdir)/lib/wind/
+
+clean::
+	@rm -f $(heimdalsrcdir)/lib/wind/errorlist_table.h $(heimdalsrcdir)/lib/wind/errorlist_table.c
+
+$(HEIMDAL_WIND_OBJ_FILES) $(HEIMDAL_WIND_OBJ_FILES:.o=.d):: $(heimdalsrcdir)/lib/wind/normalize_table.h
+
+$(heimdalsrcdir)/lib/wind/normalize_table.h $(heimdalsrcdir)/lib/wind/normalize_table.c: $(heimdalsrcdir)/lib/wind/UnicodeData.txt $(heimdalsrcdir)/lib/wind/CompositionExclusions-3.2.0.txt $(heimdalsrcdir)/lib/wind/gen-normalize.py
+	$(PYTHON) $(heimdalsrcdir)/lib/wind/gen-normalize.py $(heimdalsrcdir)/lib/wind/UnicodeData.txt $(heimdalsrcdir)/lib/wind/CompositionExclusions-3.2.0.txt $(heimdalsrcdir)/lib/wind/
+
+clean::
+	@rm -f $(heimdalsrcdir)/lib/wind/normalize_table.h $(heimdalsrcdir)/lib/wind/normalize_table.c
+
+$(HEIMDAL_WIND_OBJ_FILES) $(HEIMDAL_WIND_OBJ_FILES:.o=.d):: $(heimdalsrcdir)/lib/wind/combining_table.h
+
+$(heimdalsrcdir)/lib/wind/combining_table.h $(heimdalsrcdir)/lib/wind/combining_table.c: $(heimdalsrcdir)/lib/wind/UnicodeData.txt $(heimdalsrcdir)/lib/wind/gen-combining.py
+	$(PYTHON) $(heimdalsrcdir)/lib/wind/gen-combining.py $(heimdalsrcdir)/lib/wind/UnicodeData.txt $(heimdalsrcdir)/lib/wind/
+
+clean::
+	@rm -f $(heimdalsrcdir)/lib/wind/combining_table.h $(heimdalsrcdir)/lib/wind/combining_table.c
+
+$(HEIMDAL_WIND_OBJ_FILES) $(HEIMDAL_WIND_OBJ_FILES:.o=.d):: $(heimdalsrcdir)/lib/wind/bidi_table.h
+
+$(heimdalsrcdir)/lib/wind/bidi_table.h $(heimdalsrcdir)/lib/wind/bidi_table.c: $(heimdalsrcdir)/lib/wind/rfc3454.txt $(heimdalsrcdir)/lib/wind/gen-bidi.py
+	$(PYTHON) $(heimdalsrcdir)/lib/wind/gen-bidi.py $(heimdalsrcdir)/lib/wind/rfc3454.txt $(heimdalsrcdir)/lib/wind/
+
+clean::
+	@rm -f $(heimdalsrcdir)/lib/wind/bidi_table.h $(heimdalsrcdir)/lib/wind/bidi_table.c
 
 [SUBSYSTEM::HEIMDAL_ROKEN_GETPROGNAME]
 
@@ -474,15 +626,15 @@ HEIMDAL_ROKEN_OBJ_FILES = \
 	$(heimdalsrcdir)/lib/roken/xfree.o \
 	$(heimdalbuildsrcdir)/replace.o
 
-#######################
-# Start SUBSYSTEM HEIMDAL_GLUE
-[SUBSYSTEM::HEIMDAL_GLUE]
-CFLAGS = -I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/krb5 -I$(heimdalsrcdir)/lib/asn1 -I$(heimdalsrcdir)/lib/com_err 
-PRIVATE_DEPENDENCIES = LIBNETIF LIBSAMBA-HOSTCONFIG
-# End SUBSYSTEM HEIMDAL_GLUE
-#######################
+$(HEIMDAL_ROKEN_OBJ_FILES) $(HEIMDAL_ROKEN_OBJ_FILES:.o=.d):: $(heimdalsrcdir)/lib/roken/roken.h
+$(HEIMDAL_ROKEN_OBJ_FILES:.o=.ho) $(HEIMDAL_ROKEN_OBJ_FILES:.o=.hd):: $(heimdalsrcdir)/lib/roken/roken.h
 
-HEIMDAL_GLUE_OBJ_FILES = $(heimdalbuildsrcdir)/glue.o
+$(heimdalsrcdir)/lib/roken/roken.h:
+	@echo 'Creating $(heimdalsrcdir)/lib/roken/roken.h'
+	@echo '#include "heimdal_build/roken.h"' > $(heimdalsrcdir)/lib/roken/roken.h
+
+clean::
+	@rm -f $(heimdalsrcdir)/lib/roken/roken.h
 
 #######################
 # Start SUBSYSTEM HEIMDAL_COM_ERR
@@ -497,23 +649,14 @@ HEIMDAL_COM_ERR_OBJ_FILES = \
 	$(heimdalsrcdir)/lib/com_err/error.o
 
 #######################
-# Start SUBSYSTEM HEIMDAL_ASN1_COMPILE_LEX
-[SUBSYSTEM::HEIMDAL_ASN1_COMPILE_LEX]
-# End SUBSYSTEM HEIMDAL_ASN1_COMPILE_LEX
-#######################
-
-HEIMDAL_ASN1_COMPILE_LEX_OBJ_FILES = $(heimdalsrcdir)/lib/asn1/lex.ho 
-$(HEIMDAL_ASN1_COMPILE_LEX_OBJ_FILES): CFLAGS+=-I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/asn1 -I$(heimdalsrcdir)/lib/roken -I$(socketwrappersrcdir)
-
-#######################
 # Start BINARY asn1_compile
 [BINARY::asn1_compile]
 USE_HOSTCC = YES
-PRIVATE_DEPENDENCIES = HEIMDAL_ASN1_COMPILE_LEX HEIMDAL_ROKEN_GETPROGNAME_H LIBREPLACE_NETWORK
+PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN_GETPROGNAME_H LIBREPLACE_NETWORK
 
 ASN1C = $(builddir)/bin/asn1_compile
 
-asn1_compile_OBJ_FILES = \
+asn1_compile_ASN1_OBJ_FILES = \
 	$(heimdalsrcdir)/lib/asn1/main.ho \
 	$(heimdalsrcdir)/lib/asn1/gen.ho \
 	$(heimdalsrcdir)/lib/asn1/gen_copy.ho \
@@ -524,7 +667,15 @@ asn1_compile_OBJ_FILES = \
 	$(heimdalsrcdir)/lib/asn1/gen_length.ho \
 	$(heimdalsrcdir)/lib/asn1/gen_seq.ho \
 	$(heimdalsrcdir)/lib/asn1/hash.ho \
+	$(heimdalsrcdir)/lib/asn1/symbol.ho \
 	$(heimdalsrcdir)/lib/asn1/parse.ho \
+	$(heimdalsrcdir)/lib/asn1/lex.ho
+
+$(heimdalsrcdir)/lib/asn1/lex.c:: $(heimdalsrcdir)/lib/asn1/parse.c
+dist:: $(heimdalsrcdir)/lib/asn1/lex.c
+
+asn1_compile_OBJ_FILES = \
+	$(asn1_compile_ASN1_OBJ_FILES) \
 	$(heimdalsrcdir)/lib/roken/emalloc.ho \
 	$(heimdalsrcdir)/lib/roken/getarg.ho \
 	$(heimdalsrcdir)/lib/roken/setprogname.ho \
@@ -532,30 +683,27 @@ asn1_compile_OBJ_FILES = \
 	$(heimdalsrcdir)/lib/roken/get_window_size.ho \
 	$(heimdalsrcdir)/lib/roken/estrdup.ho \
 	$(heimdalsrcdir)/lib/roken/ecalloc.ho \
-	$(heimdalsrcdir)/lib/asn1/symbol.ho \
 	$(heimdalsrcdir)/lib/vers/print_version.ho \
 	$(socketwrappersrcdir)/socket_wrapper.ho \
 	$(heimdalbuildsrcdir)/replace.ho
 
-$(asn1_compile_OBJ_FILES): CFLAGS+=-I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/roken -I$(heimdalsrcdir)/lib/asn1
+$(asn1_compile_OBJ_FILES): CFLAGS+=-I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/asn1 -I$(heimdalsrcdir)/lib/roken -I$(socketwrappersrcdir)
+
+$(eval $(call heimdal_proto_header_template, \
+  $(heimdalsrcdir)/lib/asn1/der-protos.h, \
+  -q -P comment -o, \
+  $(HEIMDAL_HEIM_ASN1_DER_OBJ_FILES:.o=.c), \
+  $(asn1_compile_ASN1_OBJ_FILES) $(asn1_compile_ASN1_OBJ_FILES:.ho=.hd) \
+))
 
 # End BINARY asn1_compile
 #######################
 
 #######################
-# Start SUBSYSTEM HEIMDAL_COM_ERR_COMPILE_LEX
-[SUBSYSTEM::HEIMDAL_COM_ERR_COMPILE_LEX]
-CFLAGS = -I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/com_err -I$(heimdalsrcdir)/lib/roken  -I$(socketwrappersrcdir)
-# End SUBSYSTEM HEIMDAL_COM_ERR_COMPILE_LEX
-#######################
-
-HEIMDAL_COM_ERR_COMPILE_LEX_OBJ_FILES = $(heimdalsrcdir)/lib/com_err/lex.ho 
-
-#######################
 # Start BINARY compile_et
 [BINARY::compile_et]
 USE_HOSTCC = YES
-PRIVATE_DEPENDENCIES = HEIMDAL_COM_ERR_COMPILE_LEX HEIMDAL_ROKEN_GETPROGNAME_H LIBREPLACE_NETWORK
+PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN_GETPROGNAME_H LIBREPLACE_NETWORK
 # End BINARY compile_et
 #######################
 
@@ -563,6 +711,7 @@ ET_COMPILER = $(builddir)/bin/compile_et
 
 compile_et_OBJ_FILES = $(heimdalsrcdir)/lib/vers/print_version.ho \
 	$(heimdalsrcdir)/lib/com_err/parse.ho \
+	$(heimdalsrcdir)/lib/com_err/lex.ho \
 	$(heimdalsrcdir)/lib/com_err/compile_et.ho \
 	$(heimdalsrcdir)/lib/roken/getarg.ho \
 	$(heimdalsrcdir)/lib/roken/get_window_size.ho \
@@ -571,7 +720,10 @@ compile_et_OBJ_FILES = $(heimdalsrcdir)/lib/vers/print_version.ho \
 	$(socketwrappersrcdir)/socket_wrapper.ho \
 	$(heimdalbuildsrcdir)/replace.ho
 
-$(compile_et_OBJ_FILES): CFLAGS+=-I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/roken
+$(compile_et_OBJ_FILES): CFLAGS+=-I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/com_err -I$(heimdalsrcdir)/lib/roken  -I$(socketwrappersrcdir)
+
+$(heimdalsrcdir)/lib/com_err/lex.c:: $(heimdalsrcdir)/lib/com_err/parse.c
+dist:: $(heimdalsrcdir)/lib/com_err/lex.c
 
 mkinclude perl_path_wrapper.sh asn1_deps.pl lib/hdb/hdb.asn1 hdb_asn1 \$\(heimdalsrcdir\)/lib/hdb |
 mkinclude perl_path_wrapper.sh asn1_deps.pl lib/gssapi/spnego/spnego.asn1 spnego_asn1 \$\(heimdalsrcdir\)/lib/gssapi --sequence=MechTypeList |
@@ -614,7 +766,3 @@ samba4kinit_OBJ_FILES = $(heimdalsrcdir)/kuser/kinit.o \
 	$(heimdalsrcdir)/lib/roken/getarg.o 
 
 $(samba4kinit_OBJ_FILES): CFLAGS+=-I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/roken
-
-dist:: $(heimdalsrcdir)/lib/asn1/lex.c $(heimdalsrcdir)/lib/com_err/lex.c \
-	$(heimdalsrcdir)/lib/asn1/parse.c $(heimdalsrcdir)/lib/com_err/parse.c \
-	$(heimdalsrcdir)/lib/hx509/sel-lex.c $(heimdalsrcdir)/lib/hx509/sel-gram.c

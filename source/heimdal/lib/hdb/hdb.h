@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: hdb.h 22198 2007-12-07 13:09:25Z lha $ */
+/* $Id$ */
 
 #ifndef __HDB_H__
 #define __HDB_H__

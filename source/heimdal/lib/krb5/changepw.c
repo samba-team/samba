@@ -33,7 +33,7 @@
 
 #include <krb5_locl.h>
 
-RCSID("$Id: changepw.c 23445 2008-07-27 12:08:03Z lha $");
+RCSID("$Id$");
 
 #undef __attribute__
 #define __attribute__(X)
@@ -577,7 +577,7 @@ change_password_loop (krb5_context	context,
 	for (a = ai; !done && a != NULL; a = a->ai_next) {
 	    int replied = 0;
 
-	    sock = socket (a->ai_family, a->ai_socktype, a->ai_protocol);
+	    sock = socket (a->ai_family, a->ai_socktype | SOCK_CLOEXEC, a->ai_protocol);
 	    if (sock < 0)
 		continue;
 	    rk_cloexec(sock);

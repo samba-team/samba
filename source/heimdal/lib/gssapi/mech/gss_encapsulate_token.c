@@ -32,7 +32,7 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_encapsulate_token.c 23025 2008-04-17 10:01:57Z lha $");
+RCSID("$Id$");
 
 OM_uint32 GSSAPI_LIB_FUNCTION
 gss_encapsulate_token(gss_buffer_t input_token,

@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: keytab.c 23316 2008-06-23 04:32:32Z lha $");
+RCSID("$Id$");
 
 /*
  * Register a new keytab in `ops'
@@ -341,6 +341,7 @@ krb5_kt_get_entry(krb5_context context,
     if (ret) {
 	/* This is needed for krb5_verify_init_creds, but keep error
 	 * string from previous error for the human. */
+	context->error_code = KRB5_KT_NOTFOUND;
 	return KRB5_KT_NOTFOUND;
     }
 

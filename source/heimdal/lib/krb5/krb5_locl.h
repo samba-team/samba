@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: krb5_locl.h 23324 2008-06-26 03:54:45Z lha $ */
+/* $Id$ */
 
 #ifndef __KRB5_LOCL_H__
 #define __KRB5_LOCL_H__
@@ -133,6 +133,7 @@ struct sockaddr_dl;
 
 #include <wind.h>
 
+#define HC_DEPRECATED_CRYPTO
 #include "crypto-headers.h"
 
 
@@ -175,6 +176,15 @@ struct _krb5_krb_auth_data;
 #ifndef O_BINARY
 #define O_BINARY 0
 #endif
+
+#ifndef O_CLOEXEC
+#define O_CLOEXEC 0
+#endif
+
+#ifndef SOCK_CLOEXEC
+#define SOCK_CLOEXEC 0
+#endif
+
 
 #define KRB5_BUFSIZ 1024
 

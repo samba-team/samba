@@ -33,7 +33,7 @@
 
 #include "gen_locl.h"
 
-RCSID("$Id: gen_copy.c 19539 2006-12-28 17:15:05Z lha $");
+RCSID("$Id$");
 
 static int used_fail;
 

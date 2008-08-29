@@ -31,7 +31,7 @@
  * SUCH DAMAGE.
  */
 
-/* $Id: des.h 23148 2008-04-29 05:53:27Z biorn $ */
+/* $Id$ */
 
 #ifndef _DESperate_H
 #define _DESperate_H 1

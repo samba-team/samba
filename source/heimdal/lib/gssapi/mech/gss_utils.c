@@ -27,7 +27,7 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_utils.c 19965 2007-01-17 16:23:47Z lha $");
+RCSID("$Id$");
 
 OM_uint32
 _gss_copy_oid(OM_uint32 *minor_status,

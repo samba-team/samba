@@ -33,12 +33,12 @@
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
-RCSID("$Id: strpool.c 21005 2007-06-08 01:54:35Z lha $");
+RCSID("$Id$");
 #endif
 
 #include <stdarg.h>
 #include <stdlib.h>
-#include <roken.h>
+#include "roken.h"
 
 struct rk_strpool {
     char *str;

@@ -35,7 +35,7 @@
 
 #include <krb5-v4compat.h>
 
-RCSID("$Id: kerberos4.c 21577 2007-07-16 08:14:06Z lha $");
+RCSID("$Id$");
 
 #ifndef swap32
 static uint32_t
@@ -134,7 +134,7 @@ _kdc_do_version4(krb5_context context,
 		 struct sockaddr_in *addr)
 {
     krb5_storage *sp;
-    krb5_error_code ret;
+    krb5_error_code ret = EINVAL;
     hdb_entry_ex *client = NULL, *server = NULL;
     Key *ckey, *skey;
     int8_t pvno;
@@ -162,6 +162,7 @@ _kdc_do_version4(krb5_context context,
 	kdc_log(context, config, 0,
 		"Protocol version mismatch (krb4) (%d)", pvno);
 	make_err_reply(context, reply, KRB4ET_KDC_PKT_VER, "protocol mismatch");
+	ret = KRB4ET_KDC_PKT_VER;
 	goto out;
     }
     RCHECK(krb5_ret_int8(sp, &msg_type), out);
@@ -258,20 +259,6 @@ _kdc_do_version4(krb5_context context,
 	    goto out1;
 	}
 
-#if 0
-	/* this is not necessary with the new code in libkrb */
-	/* find a properly salted key */
-	while(ckey->salt == NULL || ckey->salt->salt.length != 0)
-	    ret = hdb_next_keytype2key(context, &client->entry, KEYTYPE_DES, &ckey);
-	if(ret){
-	    kdc_log(context, config, 0, "No version-4 salted key in database -- %s.%s@%s", 
-		    name, inst, realm);
-	    make_err_reply(context, reply, KRB4ET_KDC_NULL_KEY, 
-			   "No version-4 salted key in database");
-	    goto out1;
-	}
-#endif
-	
 	ret = _kdc_get_des_key(context, server, TRUE, FALSE, &skey);
 	if(ret){
 	    kdc_log(context, config, 0, "no suitable DES key for server");
@@ -624,12 +611,14 @@ _kdc_do_version4(krb5_context context,
 	break;
     }
     case AUTH_MSG_ERR_REPLY:
+	ret = EINVAL;
 	break;
     default:
 	kdc_log(context, config, 0, "Unknown message type (krb4): %d from %s", 
 		msg_type, from);
 	
 	make_err_reply(context, reply, KFAILURE, "Unknown message type");
+	ret = EINVAL;
     }
  out:
     if(name)
@@ -647,7 +636,7 @@ _kdc_do_version4(krb5_context context,
     if(server)
 	_kdc_free_ent(context, server);
     krb5_storage_free(sp);
-    return 0;
+    return ret;
 }
 
 krb5_error_code

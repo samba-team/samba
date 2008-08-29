@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: windlocl.h 23187 2008-05-23 15:04:07Z lha $ */
+/* $Id$ */
 
 #ifndef _WINDLOCL_H_
 #define _WINDLOCL_H_

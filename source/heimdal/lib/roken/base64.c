@@ -33,7 +33,7 @@
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
-RCSID("$Id: base64.c 15506 2005-06-23 10:47:57Z lha $");
+RCSID("$Id$");
 #endif
 #include <stdlib.h>
 #include <string.h>
@@ -64,7 +64,7 @@ base64_encode(const void *data, int size, char **str)
     if (p == NULL)
 	return -1;
     q = (const unsigned char *) data;
-    i = 0;
+
     for (i = 0; i < size;) {
 	c = q[i++];
 	c *= 256;

@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: lex.h 15617 2005-07-12 06:27:42Z lha $ */
+/* $Id$ */
 
 #include <roken.h>
 

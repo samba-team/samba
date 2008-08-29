@@ -32,7 +32,7 @@
  */
 
 #include "hx_locl.h"
-RCSID("$Id: ks_null.c 20901 2007-06-04 23:14:08Z lha $");
+RCSID("$Id$");
 
 
 static int

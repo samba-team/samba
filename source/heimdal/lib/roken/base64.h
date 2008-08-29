@@ -31,7 +31,7 @@
  * SUCH DAMAGE.
  */
 
-/* $Id: base64.h 15535 2005-06-30 07:13:33Z lha $ */
+/* $Id$ */
 
 #ifndef _BASE64_H_
 #define _BASE64_H_

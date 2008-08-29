@@ -28,7 +28,6 @@
 #include "libcli/auth/libcli_auth.h"
 #include "torture/rpc/rpc.h"
 #include "param/param.h"
-
 #define TEST_MACHINENAME "lsatestmach"
 
 static void init_lsa_String(struct lsa_String *name, const char *s)
@@ -614,7 +613,8 @@ bool test_many_LookupSids(struct dcerpc_pipe *p,
 		if (!test_LookupNames(p, mem_ctx, handle, &names)) {
 			return false;
 		}
-	} else {
+	} else if (p->conn->security_state.auth_info->auth_type == DCERPC_AUTH_TYPE_SCHANNEL &&
+		   p->conn->security_state.auth_info->auth_level >= DCERPC_AUTH_LEVEL_INTEGRITY) {
 		struct lsa_LookupSids3 r;
 		struct lsa_TransNameArray2 names;
 
@@ -779,6 +779,7 @@ static bool test_LookupPrivName(struct dcerpc_pipe *p,
 
 static bool test_RemovePrivilegesFromAccount(struct dcerpc_pipe *p, 
 					     TALLOC_CTX *mem_ctx, 				  
+					     struct policy_handle *handle,
 					     struct policy_handle *acct_handle,
 					     struct lsa_LUID *luid)
 {
@@ -801,7 +802,25 @@ static bool test_RemovePrivilegesFromAccount(struct dcerpc_pipe *p,
 
 	status = dcerpc_lsa_RemovePrivilegesFromAccount(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("RemovePrivilegesFromAccount failed - %s\n", nt_errstr(status));
+		
+		struct lsa_LookupPrivName r_name;
+		
+		r_name.in.handle = handle;
+		r_name.in.luid = luid;
+		
+		status = dcerpc_lsa_LookupPrivName(p, mem_ctx, &r_name);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("\nLookupPrivName failed - %s\n", nt_errstr(status));
+			return false;
+		}
+		/* Windows 2008 does not allow this to be removed */
+		if (strcmp("SeAuditPrivilege", r_name.out.name->string) == 0) {
+			return ret;
+		}
+
+		printf("RemovePrivilegesFromAccount failed to remove %s - %s\n", 
+		       r_name.out.name->string, 
+		       nt_errstr(status));
 		return false;
 	}
 
@@ -864,7 +883,7 @@ static bool test_EnumPrivsAccount(struct dcerpc_pipe *p,
 					    &r.out.privs->set[i].luid);
 		}
 
-		ret &= test_RemovePrivilegesFromAccount(p, mem_ctx, acct_handle, 
+		ret &= test_RemovePrivilegesFromAccount(p, mem_ctx, handle, acct_handle, 
 							&r.out.privs->set[0].luid);
 		ret &= test_AddPrivilegesToAccount(p, mem_ctx, acct_handle, 
 						   &r.out.privs->set[0].luid);
@@ -884,6 +903,26 @@ static bool test_Delete(struct dcerpc_pipe *p,
 
 	r.in.handle = handle;
 	status = dcerpc_lsa_Delete(p, mem_ctx, &r);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED)) {
+		printf("Delete should have failed NT_STATUS_NOT_SUPPORTED - %s\n", nt_errstr(status));
+		return false;
+	}
+
+	return true;
+}
+
+static bool test_DeleteObject(struct dcerpc_pipe *p, 
+			      TALLOC_CTX *mem_ctx, 
+			      struct policy_handle *handle)
+{
+	NTSTATUS status;
+	struct lsa_DeleteObject r;
+
+	printf("testing DeleteObject\n");
+
+	r.in.handle = handle;
+	r.out.handle = handle;
+	status = dcerpc_lsa_DeleteObject(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Delete failed - %s\n", nt_errstr(status));
 		return false;
@@ -912,12 +951,28 @@ static bool test_CreateAccount(struct dcerpc_pipe *p,
 	r.out.acct_handle = &acct_handle;
 
 	status = dcerpc_lsa_CreateAccount(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_COLLISION)) {
+		struct lsa_OpenAccount r_o;
+		r_o.in.handle = handle;
+		r_o.in.sid = newsid;
+		r_o.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+		r_o.out.acct_handle = &acct_handle;
+		
+		status = dcerpc_lsa_OpenAccount(p, mem_ctx, &r_o);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("OpenAccount failed - %s\n", nt_errstr(status));
+			return false;
+		}
+	} else if (!NT_STATUS_IS_OK(status)) {
 		printf("CreateAccount failed - %s\n", nt_errstr(status));
 		return false;
 	}
 
 	if (!test_Delete(p, mem_ctx, &acct_handle)) {
+		return false;
+	}
+
+	if (!test_DeleteObject(p, mem_ctx, &acct_handle)) {
 		return false;
 	}
 
@@ -945,6 +1000,10 @@ static bool test_DeleteTrustedDomain(struct dcerpc_pipe *p,
 	}
 
 	if (!test_Delete(p, mem_ctx, &trustdom_handle)) {
+		return false;
+	}
+
+	if (!test_DeleteObject(p, mem_ctx, &trustdom_handle)) {
 		return false;
 	}
 
@@ -986,7 +1045,7 @@ static bool test_CreateSecret(struct dcerpc_pipe *p,
 	struct lsa_SetSecret r7;
 	struct lsa_QuerySecret r8;
 	struct policy_handle sec_handle, sec_handle2, sec_handle3;
-	struct lsa_Delete d;
+	struct lsa_DeleteObject d_o;
 	struct lsa_DATA_BUF buf1;
 	struct lsa_DATA_BUF_PTR bufp1;
 	struct lsa_DATA_BUF_PTR bufp2;
@@ -1121,7 +1180,7 @@ static bool test_CreateSecret(struct dcerpc_pipe *p,
 							      &blob1, &session_key);
 				
 				if (strcmp(secret1, secret2) != 0) {
-					printf("Returned secret '%s' doesn't match '%s'\n", 
+					printf("Returned secret (r4) '%s' doesn't match '%s'\n", 
 					       secret2, secret1);
 					ret = false;
 				}
@@ -1136,7 +1195,9 @@ static bool test_CreateSecret(struct dcerpc_pipe *p,
 		r5.in.new_val->data = enc_key.data;
 		r5.in.new_val->length = enc_key.length;
 		r5.in.new_val->size = enc_key.length;
-		
+
+
+		msleep(200);
 		printf("Testing SetSecret (existing value should move to old)\n");
 		
 		status = dcerpc_lsa_SetSecret(p, mem_ctx, &r5);
@@ -1200,8 +1261,10 @@ static bool test_CreateSecret(struct dcerpc_pipe *p,
 				}
 				
 				if (*r6.out.new_mtime == *r6.out.old_mtime) {
-					printf("Returned secret %s had same mtime for both secrets: %s\n", 
+					printf("Returned secret (r6-%d) %s must not have same mtime for both secrets: %s != %s\n", 
+					       i,
 					       secname[i],
+					       nt_time_string(mem_ctx, *r6.out.old_mtime), 
 					       nt_time_string(mem_ctx, *r6.out.new_mtime));
 					ret = false;
 				}
@@ -1245,35 +1308,16 @@ static bool test_CreateSecret(struct dcerpc_pipe *p,
 			if (!r8.out.new_val || !r8.out.old_val) {
 				printf("in/out pointers not returned, despite being set on in for QuerySecret\n");
 				ret = false;
-			} else if (r8.out.new_val->buf == NULL) {
-				if (i != LOCAL) { 
-					printf("NEW secret buffer not returned after GLOBAL OLD set\n");
-					ret = false;
-				}
+			} else if (r8.out.new_val->buf != NULL) {
+				printf("NEW secret buffer must not be returned after OLD set\n");
+				ret = false;
 			} else if (r8.out.old_val->buf == NULL) {
-				printf("OLD secret buffer not returned after OLD set\n");
+				printf("OLD secret buffer was not returned after OLD set\n");
 				ret = false;
 			} else if (r8.out.new_mtime == NULL || r8.out.old_mtime == NULL) {
 				printf("Both times not returned after OLD set\n");
 				ret = false;
 			} else {
-				if (i == LOCAL) { 
-					printf("NEW secret buffer should not be returned after LOCAL OLD set\n");
-					ret = false;
-				}
-				blob1.data = r8.out.new_val->buf->data;
-				blob1.length = r8.out.new_val->buf->length;
-				
-				blob2 = data_blob_talloc(mem_ctx, NULL, blob1.length);
-				
-				secret6 = sess_decrypt_string(mem_ctx,
-							      &blob1, &session_key);
-				
-				if (strcmp(secret3, secret4) != 0) {
-					printf("Returned NEW secret '%s' doesn't match '%s'\n", secret4, secret3);
-					ret = false;
-				}
-
 				blob1.data = r8.out.old_val->buf->data;
 				blob1.length = r8.out.old_val->buf->size;
 				
@@ -1287,15 +1331,8 @@ static bool test_CreateSecret(struct dcerpc_pipe *p,
 					ret = false;
 				}
 				
-				if (*r8.out.new_mtime == *r8.out.old_mtime) {
-					if (i != GLOBAL) { 
-						printf("Returned secret %s had same mtime for both secrets: %s\n", 
-						       secname[i],
-						       nt_time_string(mem_ctx, *r8.out.new_mtime));
-						ret = false;
-					}
-				} else {
-					printf("Returned secret %s should have had same mtime for both secrets: %s != %s\n", 
+				if (*r8.out.new_mtime != *r8.out.old_mtime) {
+					printf("Returned secret (r8) %s did not had same mtime for both secrets: %s != %s\n", 
 					       secname[i],
 					       nt_time_string(mem_ctx, *r8.out.old_mtime),
 					       nt_time_string(mem_ctx, *r8.out.new_mtime));
@@ -1308,8 +1345,13 @@ static bool test_CreateSecret(struct dcerpc_pipe *p,
 			ret = false;
 		}
 		
-		d.in.handle = &sec_handle2;
-		status = dcerpc_lsa_Delete(p, mem_ctx, &d);
+		if (!test_DeleteObject(p, mem_ctx, &sec_handle)) {
+			return false;
+		}
+
+		d_o.in.handle = &sec_handle2;
+		d_o.out.handle = &sec_handle2;
+		status = dcerpc_lsa_DeleteObject(p, mem_ctx, &d_o);
 		if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_HANDLE)) {
 			printf("Second delete expected INVALID_HANDLE - %s\n", nt_errstr(status));
 			ret = false;
@@ -1454,9 +1496,9 @@ static bool test_EnumAccounts(struct dcerpc_pipe *p,
 			return false;
 		}
 
-		if (!test_LookupSids3(p, mem_ctx, &sids1)) {
-			return false;
-		}
+		/* Can't test lookupSids3 here, as clearly we must not
+		 * be on schannel, or we would not be able to do the
+		 * rest */
 
 		printf("testing all accounts\n");
 		for (i=0;i<sids1.num_sids;i++) {
@@ -1667,8 +1709,8 @@ static bool test_query_each_TrustDom(struct dcerpc_pipe *p,
 		struct policy_handle handle2;
 		struct lsa_Close c;
 		struct lsa_CloseTrustedDomainEx c_trust;
-		int levels [] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
-		int ok[]      = {1, 0, 1, 0, 0, 1, 0, 1, 0,  0,  0,  1};
+		int levels [] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13};
+		int ok[]      = {1, 0, 1, 0, 0, 1, 0, 1, 0,  0,  0,  1, 1};
 
 		if (domains->domains[i].sid) {
 			trust.in.handle = handle;
@@ -1912,8 +1954,6 @@ static bool test_EnumTrustDom(struct dcerpc_pipe *p,
 				       r_ex.in.max_size,
 				       LSA_ENUM_TRUST_DOMAIN_EX_MULTIPLIER, 
 				       r_ex.in.max_size / LSA_ENUM_TRUST_DOMAIN_EX_MULTIPLIER);
-				ret = false;
-				exit(1);
 			}
 		} else if (!NT_STATUS_IS_OK(enum_status)) {
 			printf("EnumTrustedDomainEx failed - %s\n", nt_errstr(enum_status));
@@ -2015,10 +2055,6 @@ static bool test_QueryDomainInfoPolicy(struct dcerpc_pipe *p,
 	NTSTATUS status;
 	int i;
 	bool ret = true;
-	if (torture_setting_bool(tctx, "samba4", false)) {
-		printf("skipping QueryDomainInformationPolicy test against Samba4\n");
-		return true;
-	}
 
 	printf("\nTesting QueryDomainInformationPolicy\n");
 
@@ -2030,7 +2066,10 @@ static bool test_QueryDomainInfoPolicy(struct dcerpc_pipe *p,
 
 		status = dcerpc_lsa_QueryDomainInformationPolicy(p, tctx, &r);
 
-		if (!NT_STATUS_IS_OK(status)) {
+		/* If the server does not support EFS, then this is the correct return */
+		if (i == LSA_DOMAIN_INFO_POLICY_EFS && NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+			continue;
+		} else if (!NT_STATUS_IS_OK(status)) {
 			printf("QueryDomainInformationPolicy failed - %s\n", nt_errstr(status));
 			ret = false;
 			continue;
@@ -2311,11 +2350,9 @@ bool torture_rpc_lsa(struct torture_context *tctx)
 			ret = false;
 		}
 		
-#if 0
 		if (!test_Delete(p, tctx, handle)) {
 			ret = false;
 		}
-#endif
 		
 		if (!test_many_LookupSids(p, tctx, handle)) {
 			ret = false;

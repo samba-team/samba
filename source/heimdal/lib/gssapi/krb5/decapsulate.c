@@ -33,7 +33,7 @@
 
 #include "krb5/gsskrb5_locl.h"
 
-RCSID("$Id: decapsulate.c 18334 2006-10-07 22:16:04Z lha $");
+RCSID("$Id$");
 
 /*
  * return the length of the mechanism in token or -1

@@ -28,7 +28,7 @@
 
 #include "mech_locl.h"
 #include <heim_threads.h>
-RCSID("$Id: gss_mech_switch.c 23471 2008-07-27 12:17:49Z lha $");
+RCSID("$Id$");
 
 #ifndef _PATH_GSS_MECH
 #define _PATH_GSS_MECH	"/etc/gss/mech"
@@ -249,7 +249,7 @@ _gss_load_mech(void)
 #define RTLD_LOCAL 0
 #endif
 
-		so = dlopen(lib, RTLD_LOCAL);
+		so = dlopen(lib, RTLD_LAZY | RTLD_LOCAL);
 		if (!so) {
 /*			fprintf(stderr, "dlopen: %s\n", dlerror()); */
 			continue;

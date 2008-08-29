@@ -31,7 +31,7 @@
  * SUCH DAMAGE.
  */
 
-/* $Id: sha.h 17450 2006-05-05 11:11:43Z lha $ */
+/* $Id$ */
 
 #ifndef HEIM_SHA_H
 #define HEIM_SHA_H 1
