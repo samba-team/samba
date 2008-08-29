@@ -965,6 +965,7 @@ int32_t ctdb_control_tcp_client(struct ctdb_context *ctdb, uint32_t client_id,
 	struct ctdb_vnn *vnn;
 	ctdb_sock_addr addr;
 
+	ZERO_STRUCT(addr);
 	addr.ip = p->dest;
 	vnn = find_public_ip_vnn(ctdb, &addr);
 	if (vnn == NULL) {
