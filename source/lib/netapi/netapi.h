@@ -1501,6 +1501,24 @@ NET_API_STATUS NetShareAdd(const char * server_name /* [in] */,
 			   uint8_t *buffer /* [in] [ref] */,
 			   uint32_t *parm_err /* [out] [ref] */);
 
+/************************************************************//**
+ *
+ * NetShareDel
+ *
+ * @brief Delete Share
+ *
+ * @param[in] server_name The server name to connect to
+ * @param[in] net_name The name of the share to delete
+ * @param[in] reserved
+ * @return NET_API_STATUS
+ *
+ * example share/share_del.c
+ ***************************************************************/
+
+NET_API_STATUS NetShareDel(const char * server_name /* [in] */,
+			   const char * net_name /* [in] */,
+			   uint32_t reserved /* [in] */);
+
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */
