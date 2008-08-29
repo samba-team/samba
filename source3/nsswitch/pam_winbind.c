@@ -684,53 +684,6 @@ static int _make_remark_format(struct pwb_context *ctx, int type, const char *fo
 	return ret;
 }
 
-static int pam_winbind_request(struct pwb_context *ctx,
-			       enum winbindd_cmd req_type,
-			       struct winbindd_request *request,
-			       struct winbindd_response *response)
-{
-	/* Fill in request and send down pipe */
-	winbindd_init_request(request, req_type);
-
-	if (winbind_write_sock(request, sizeof(*request), 0, 0) == -1) {
-		_pam_log(ctx, LOG_ERR,
-			 "pam_winbind_request: write to socket failed!");
-		winbind_close_sock();
-		return PAM_SERVICE_ERR;
-	}
-
-	/* Wait for reply */
-	if (winbindd_read_reply(response) == -1) {
-		_pam_log(ctx, LOG_ERR,
-			 "pam_winbind_request: read from socket failed!");
-		winbind_close_sock();
-		return PAM_SERVICE_ERR;
-	}
-
-	/* We are done with the socket - close it and avoid mischeif */
-	winbind_close_sock();
-
-	/* Copy reply data from socket */
-	if (response->result == WINBINDD_OK) {
-		return PAM_SUCCESS;
-	}
-
-	if (response->data.auth.pam_error != PAM_SUCCESS) {
-		_pam_log(ctx, LOG_ERR,
-			 "request failed: %s, "
-			 "PAM error was %s (%d), NT error was %s",
-			 response->data.auth.error_string,
-			 pam_strerror(ctx->pamh, response->data.auth.pam_error),
-			 response->data.auth.pam_error,
-			 response->data.auth.nt_status_string);
-		return response->data.auth.pam_error;
-	}
-
-	_pam_log(ctx, LOG_ERR, "request failed, but PAM error 0!");
-
-	return PAM_SERVICE_ERR;
-}
-
 static int pam_winbind_request_log(struct pwb_context *ctx,
 				   int retval,
 				   const char *user,
