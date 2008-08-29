@@ -60,6 +60,7 @@ CLEANFILES= \
 	krb5.conf \
 	current-db* \
 	*.log \
+	tempfile \
 	check-basic.tmp \
 	check-gss.tmp \
 	check-gssmask.tmp \
