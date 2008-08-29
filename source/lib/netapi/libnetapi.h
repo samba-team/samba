@@ -325,4 +325,11 @@ WERROR NetShareAdd_r(struct libnetapi_ctx *ctx,
 		     struct NetShareAdd *r);
 WERROR NetShareAdd_l(struct libnetapi_ctx *ctx,
 		     struct NetShareAdd *r);
+NET_API_STATUS NetShareDel(const char * server_name /* [in] */,
+			   const char * net_name /* [in] */,
+			   uint32_t reserved /* [in] */);
+WERROR NetShareDel_r(struct libnetapi_ctx *ctx,
+		     struct NetShareDel *r);
+WERROR NetShareDel_l(struct libnetapi_ctx *ctx,
+		     struct NetShareDel *r);
 #endif /* __LIBNETAPI_LIBNETAPI__ */

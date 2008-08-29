@@ -134,3 +134,22 @@ WERROR NetShareAdd_l(struct libnetapi_ctx *ctx,
 {
 	LIBNETAPI_REDIRECT_TO_LOCALHOST(ctx, r, NetShareAdd);
 }
+
+/****************************************************************
+****************************************************************/
+
+WERROR NetShareDel_r(struct libnetapi_ctx *ctx,
+		     struct NetShareDel *r)
+{
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR NetShareDel_l(struct libnetapi_ctx *ctx,
+		     struct NetShareDel *r)
+{
+	LIBNETAPI_REDIRECT_TO_LOCALHOST(ctx, r, NetShareDel);
+}
+
