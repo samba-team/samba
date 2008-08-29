@@ -1211,4 +1211,23 @@ struct NetShareDel {
 
 };
 
+
+struct NetShareEnum {
+	struct {
+		const char * server_name;
+		uint32_t level;
+		uint32_t prefmaxlen;
+		uint32_t *resume_handle;/* [ref] */
+	} in;
+
+	struct {
+		uint8_t **buffer;/* [ref] */
+		uint32_t *entries_read;/* [ref] */
+		uint32_t *total_entries;/* [ref] */
+		uint32_t *resume_handle;/* [ref] */
+		enum NET_API_STATUS result;
+	} out;
+
+};
+
 #endif /* _HEADER_libnetapi */
