@@ -36,10 +36,15 @@ int main(int argc, const char **argv)
 	uint8_t *buffer = NULL;
 	uint32_t level = 0;
 	char *sid_str = NULL;
+	int i;
 
 	struct USER_INFO_0 *u0;
 	struct USER_INFO_1 *u1;
+	struct USER_INFO_2 *u2;
+	struct USER_INFO_3 *u3;
+	struct USER_INFO_4 *u4;
 	struct USER_INFO_10 *u10;
+	struct USER_INFO_11 *u11;
 	struct USER_INFO_20 *u20;
 	struct USER_INFO_23 *u23;
 
@@ -107,12 +112,156 @@ int main(int argc, const char **argv)
 			printf("flags: 0x%08x\n", u1->usri1_flags);
 			printf("script: %s\n", u1->usri1_script_path);
 			break;
+		case 2:
+			u2 = (struct USER_INFO_2 *)buffer;
+			printf("name: %s\n", u2->usri2_name);
+			printf("password: %s\n", u2->usri2_password);
+			printf("password_age: %d\n", u2->usri2_password_age);
+			printf("priv: %d\n", u2->usri2_priv);
+			printf("homedir: %s\n", u2->usri2_home_dir);
+			printf("comment: %s\n", u2->usri2_comment);
+			printf("flags: 0x%08x\n", u2->usri2_flags);
+			printf("script: %s\n", u2->usri2_script_path);
+			printf("auth flags: 0x%08x\n", u2->usri2_auth_flags);
+			printf("full name: %s\n", u2->usri2_full_name);
+			printf("user comment: %s\n", u2->usri2_usr_comment);
+			printf("user parameters: %s\n", u2->usri2_parms);
+			printf("workstations: %s\n", u2->usri2_workstations);
+			printf("last logon (seconds since jan. 1, 1970 GMT): %d\n",
+				u2->usri2_last_logon);
+			printf("last logoff (seconds since jan. 1, 1970 GMT): %d\n",
+				u2->usri2_last_logoff);
+			printf("account expires (seconds since jan. 1, 1970 GMT): %d\n",
+				u2->usri2_acct_expires);
+			printf("max storage: %d\n", u2->usri2_max_storage);
+			printf("units per week: %d\n", u2->usri2_units_per_week);
+			printf("logon hours:");
+			for (i=0; i<21; i++) {
+				printf(" %x", (uint8_t)u2->usri2_logon_hours[i]);
+			}
+			printf("\n");
+			printf("bad password count: %d\n", u2->usri2_bad_pw_count);
+			printf("logon count: %d\n", u2->usri2_num_logons);
+			printf("logon server: %s\n", u2->usri2_logon_server);
+			printf("country code: %d\n", u2->usri2_country_code);
+			printf("code page: %d\n", u2->usri2_code_page);
+			break;
+		case 3:
+			u3 = (struct USER_INFO_3 *)buffer;
+			printf("name: %s\n", u3->usri3_name);
+			printf("password_age: %d\n", u3->usri3_password_age);
+			printf("priv: %d\n", u3->usri3_priv);
+			printf("homedir: %s\n", u3->usri3_home_dir);
+			printf("comment: %s\n", u3->usri3_comment);
+			printf("flags: 0x%08x\n", u3->usri3_flags);
+			printf("script: %s\n", u3->usri3_script_path);
+			printf("auth flags: 0x%08x\n", u3->usri3_auth_flags);
+			printf("full name: %s\n", u3->usri3_full_name);
+			printf("user comment: %s\n", u3->usri3_usr_comment);
+			printf("user parameters: %s\n", u3->usri3_parms);
+			printf("workstations: %s\n", u3->usri3_workstations);
+			printf("last logon (seconds since jan. 1, 1970 GMT): %d\n",
+				u3->usri3_last_logon);
+			printf("last logoff (seconds since jan. 1, 1970 GMT): %d\n",
+				u3->usri3_last_logoff);
+			printf("account expires (seconds since jan. 1, 1970 GMT): %d\n",
+				u3->usri3_acct_expires);
+			printf("max storage: %d\n", u3->usri3_max_storage);
+			printf("units per week: %d\n", u3->usri3_units_per_week);
+			printf("logon hours:");
+			for (i=0; i<21; i++) {
+				printf(" %x", (uint8_t)u3->usri3_logon_hours[i]);
+			}
+			printf("\n");
+			printf("bad password count: %d\n", u3->usri3_bad_pw_count);
+			printf("logon count: %d\n", u3->usri3_num_logons);
+			printf("logon server: %s\n", u3->usri3_logon_server);
+			printf("country code: %d\n", u3->usri3_country_code);
+			printf("code page: %d\n", u3->usri3_code_page);
+			printf("user id: %d\n", u3->usri3_user_id);
+			printf("primary group id: %d\n", u3->usri3_primary_group_id);
+			printf("profile: %s\n", u3->usri3_profile);
+			printf("home dir drive: %s\n", u3->usri3_home_dir_drive);
+			printf("password expired: %d\n", u3->usri3_password_expired);
+			break;
+		case 4:
+			u4 = (struct USER_INFO_4 *)buffer;
+			printf("name: %s\n", u4->usri4_name);
+			printf("password: %s\n", u4->usri4_password);
+			printf("password_age: %d\n", u4->usri4_password_age);
+			printf("priv: %d\n", u4->usri4_priv);
+			printf("homedir: %s\n", u4->usri4_home_dir);
+			printf("comment: %s\n", u4->usri4_comment);
+			printf("flags: 0x%08x\n", u4->usri4_flags);
+			printf("script: %s\n", u4->usri4_script_path);
+			printf("auth flags: 0x%08x\n", u4->usri4_auth_flags);
+			printf("full name: %s\n", u4->usri4_full_name);
+			printf("user comment: %s\n", u4->usri4_usr_comment);
+			printf("user parameters: %s\n", u4->usri4_parms);
+			printf("workstations: %s\n", u4->usri4_workstations);
+			printf("last logon (seconds since jan. 1, 1970 GMT): %d\n",
+				u4->usri4_last_logon);
+			printf("last logoff (seconds since jan. 1, 1970 GMT): %d\n",
+				u4->usri4_last_logoff);
+			printf("account expires (seconds since jan. 1, 1970 GMT): %d\n",
+				u4->usri4_acct_expires);
+			printf("max storage: %d\n", u4->usri4_max_storage);
+			printf("units per week: %d\n", u4->usri4_units_per_week);
+			printf("logon hours:");
+			for (i=0; i<21; i++) {
+				printf(" %x", (uint8_t)u4->usri4_logon_hours[i]);
+			}
+			printf("\n");
+			printf("bad password count: %d\n", u4->usri4_bad_pw_count);
+			printf("logon count: %d\n", u4->usri4_num_logons);
+			printf("logon server: %s\n", u4->usri4_logon_server);
+			printf("country code: %d\n", u4->usri4_country_code);
+			printf("code page: %d\n", u4->usri4_code_page);
+			if (ConvertSidToStringSid(u4->usri4_user_sid,
+						  &sid_str)) {
+				printf("user_sid: %s\n", sid_str);
+				free(sid_str);
+			}
+			printf("primary group id: %d\n", u4->usri4_primary_group_id);
+			printf("profile: %s\n", u4->usri4_profile);
+			printf("home dir drive: %s\n", u4->usri4_home_dir_drive);
+			printf("password expired: %d\n", u4->usri4_password_expired);
+			break;
 		case 10:
 			u10 = (struct USER_INFO_10 *)buffer;
 			printf("name: %s\n", u10->usri10_name);
 			printf("comment: %s\n", u10->usri10_comment);
 			printf("usr_comment: %s\n", u10->usri10_usr_comment);
 			printf("full_name: %s\n", u10->usri10_full_name);
+			break;
+		case 11:
+			u11 = (struct USER_INFO_11 *)buffer;
+			printf("name: %s\n", u11->usri11_name);
+			printf("comment: %s\n", u11->usri11_comment);
+			printf("user comment: %s\n", u11->usri11_usr_comment);
+			printf("full name: %s\n", u11->usri11_full_name);
+			printf("priv: %d\n", u11->usri11_priv);
+			printf("auth flags: 0x%08x\n", u11->usri11_auth_flags);
+			printf("password_age: %d\n", u11->usri11_password_age);
+			printf("homedir: %s\n", u11->usri11_home_dir);
+			printf("user parameters: %s\n", u11->usri11_parms);
+			printf("last logon (seconds since jan. 1, 1970 GMT): %d\n",
+				u11->usri11_last_logon);
+			printf("last logoff (seconds since jan. 1, 1970 GMT): %d\n",
+				u11->usri11_last_logoff);
+			printf("bad password count: %d\n", u11->usri11_bad_pw_count);
+			printf("logon count: %d\n", u11->usri11_num_logons);
+			printf("logon server: %s\n", u11->usri11_logon_server);
+			printf("country code: %d\n", u11->usri11_country_code);
+			printf("workstations: %s\n", u11->usri11_workstations);
+			printf("max storage: %d\n", u11->usri11_max_storage);
+			printf("units per week: %d\n", u11->usri11_units_per_week);
+			printf("logon hours:");
+			for (i=0; i<21; i++) {
+				printf(" %x", (uint8_t)u11->usri11_logon_hours[i]);
+			}
+			printf("\n");
+			printf("code page: %d\n", u11->usri11_code_page);
 			break;
 		case 20:
 			u20 = (struct USER_INFO_20 *)buffer;

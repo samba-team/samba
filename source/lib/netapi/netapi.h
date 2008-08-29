@@ -33,6 +33,8 @@ typedef enum {
 
 #define ERROR_MORE_DATA	( 234L )
 
+#define ENCRYPTED_PWLEN	( 16 )
+
 /****************************************************************
 ****************************************************************/
 
@@ -73,6 +75,20 @@ struct DOMAIN_CONTROLLER_INFO {
 	const char * client_site_name;
 };
 
+/* bitmap NetJoinFlags */
+#define NETSETUP_JOIN_DOMAIN ( 0x00000001 )
+#define NETSETUP_ACCT_CREATE ( 0x00000002 )
+#define NETSETUP_ACCT_DELETE ( 0x00000004 )
+#define NETSETUP_WIN9X_UPGRADE ( 0x00000010 )
+#define NETSETUP_DOMAIN_JOIN_IF_JOINED ( 0x00000020 )
+#define NETSETUP_JOIN_UNSECURE ( 0x00000040 )
+#define NETSETUP_MACHINE_PWD_PASSED ( 0x00000080 )
+#define NETSETUP_DEFER_SPN_SET ( 0x00000100 )
+#define NETSETUP_JOIN_DC_ACCOUNT ( 0x00000200 )
+#define NETSETUP_JOIN_WITH_NEW_NAME ( 0x00000400 )
+#define NETSETUP_INSTALL_INVOCATION ( 0x00040000 )
+#define NETSETUP_IGNORE_UNSUPPORTED_FLAGS ( 0x10000000 )
+
 #define FILTER_TEMP_DUPLICATE_ACCOUNT	( 0x0001 )
 #define FILTER_NORMAL_ACCOUNT	( 0x0002 )
 #define FILTER_INTERDOMAIN_TRUST_ACCOUNT	( 0x0008 )
@@ -89,6 +105,10 @@ struct USER_INFO_0 {
 	const char * usri0_name;
 };
 
+#define USER_PRIV_GUEST	( 0 )
+#define USER_PRIV_USER	( 1 )
+#define USER_PRIV_ADMIN	( 2 )
+
 struct USER_INFO_1 {
 	const char * usri1_name;
 	const char * usri1_password;
@@ -99,6 +119,11 @@ struct USER_INFO_1 {
 	uint32_t usri1_flags;
 	const char * usri1_script_path;
 };
+
+#define AF_OP_PRINT	( 0x1 )
+#define AF_OP_COMM	( 0x2 )
+#define AF_OP_SERVER	( 0x4 )
+#define AF_OP_ACCOUNTS	( 0x8 )
 
 struct USER_INFO_2 {
 	const char * usri2_name;
@@ -183,7 +208,7 @@ struct USER_INFO_4 {
 	const char * usri4_logon_server;
 	uint32_t usri4_country_code;
 	uint32_t usri4_code_page;
-	struct dom_sid *usri4_user_sid;/* [unique] */
+	struct domsid *usri4_user_sid;/* [unique] */
 	uint32_t usri4_primary_group_id;
 	const char * usri4_profile;
 	const char * usri4_home_dir_drive;
@@ -228,6 +253,37 @@ struct USER_INFO_20 {
 	uint32_t usri20_user_id;
 };
 
+struct USER_INFO_21 {
+	uint8_t *usri21_password;
+};
+
+struct USER_INFO_22 {
+	const char * usri22_name;
+	uint8_t *usri22_password;
+	uint32_t usri22_password_age;
+	uint32_t usri22_priv;
+	const char * usri22_home_dir;
+	const char * usri22_comment;
+	uint32_t usri22_flags;
+	uint32_t usri22_script_path;
+	uint32_t usri22_auth_flags;
+	const char * usri22_full_name;
+	const char * usri22_usr_comment;
+	const char * usri22_parms;
+	const char * usri22_workstations;
+	uint32_t usri22_last_logon;
+	uint32_t usri22_last_logoff;
+	uint32_t usri22_acct_expires;
+	uint32_t usri22_max_storage;
+	uint32_t usri22_units_per_week;
+	uint8_t *usri22_logon_hours;/* [unique] */
+	uint32_t usri22_bad_pw_count;
+	uint32_t usri22_num_logons;
+	const char * usri22_logon_server;
+	uint32_t usri22_country_code;
+	uint32_t usri22_code_page;
+};
+
 struct USER_INFO_23 {
 	const char * usri23_name;
 	const char * usri23_full_name;
@@ -236,8 +292,85 @@ struct USER_INFO_23 {
 	struct domsid *usri23_user_sid;/* [unique] */
 };
 
+struct USER_INFO_1003 {
+	const char * usri1003_password;
+};
+
+struct USER_INFO_1005 {
+	uint32_t usri1005_priv;
+};
+
+struct USER_INFO_1006 {
+	const char * usri1006_home_dir;
+};
+
 struct USER_INFO_1007 {
 	const char * usri1007_comment;
+};
+
+struct USER_INFO_1008 {
+	uint32_t usri1008_flags;
+};
+
+struct USER_INFO_1009 {
+	const char * usri1009_script_path;
+};
+
+struct USER_INFO_1010 {
+	uint32_t usri1010_auth_flags;
+};
+
+struct USER_INFO_1011 {
+	const char * usri1011_full_name;
+};
+
+struct USER_INFO_1012 {
+	const char * usri1012_usr_comment;
+};
+
+struct USER_INFO_1013 {
+	const char * usri1013_parms;
+};
+
+struct USER_INFO_1014 {
+	const char * usri1014_workstations;
+};
+
+struct USER_INFO_1017 {
+	uint32_t usri1017_acct_expires;
+};
+
+struct USER_INFO_1018 {
+	uint32_t usri1018_max_storage;
+};
+
+struct USER_INFO_1020 {
+	uint32_t usri1020_units_per_week;
+	uint8_t *usri1020_logon_hours;/* [unique] */
+};
+
+struct USER_INFO_1023 {
+	const char * usri1023_logon_server;
+};
+
+struct USER_INFO_1024 {
+	uint32_t usri1024_country_code;
+};
+
+struct USER_INFO_1025 {
+	uint32_t usri1025_code_page;
+};
+
+struct USER_INFO_1051 {
+	uint32_t usri1051_primary_group_id;
+};
+
+struct USER_INFO_1052 {
+	const char * usri1052_profile;
+};
+
+struct USER_INFO_1053 {
+	const char * usri1053_home_dir_drive;
 };
 
 struct USER_MODALS_INFO_0 {
@@ -416,6 +549,17 @@ struct TIME_OF_DAY_INFO {
 	uint32_t tod_month;
 	uint32_t tod_year;
 	uint32_t tod_weekday;
+};
+
+struct SHARE_INFO_2 {
+	const char * shi2_netname;
+	uint32_t shi2_type;
+	const char * shi2_remark;
+	uint32_t shi2_permissions;
+	uint32_t shi2_max_uses;
+	uint32_t shi2_current_uses;
+	const char * shi2_path;
+	const char * shi2_passwd;
 };
 
 #endif /* _HEADER_libnetapi */
@@ -890,6 +1034,33 @@ NET_API_STATUS NetUserModalsSet(const char * server_name /* [in] */,
 
 /************************************************************//**
  *
+ * NetUserGetGroups
+ *
+ * @brief Enumerate grouplist of a user on a server
+ *
+ * @param[in] server_name The server name to connect to
+ * @param[in] user_name The user name to query
+ * @param[in] level The enumeration level used for the query (Currently only
+ * level 0 is supported)
+ * @param[out] buffer The returned enumeration buffer
+ * @param[in] prefmaxlen The requested maximal buffer size
+ * @param[out] entries_read The number of returned entries
+ * @param[out] total_entries The number of total entries
+ * @return NET_API_STATUS
+ *
+ * example user/user_getgroups.c
+ ***************************************************************/
+
+NET_API_STATUS NetUserGetGroups(const char * server_name /* [in] */,
+				const char * user_name /* [in] */,
+				uint32_t level /* [in] */,
+				uint8_t **buffer /* [out] [ref] */,
+				uint32_t prefmaxlen /* [in] */,
+				uint32_t *entries_read /* [out] [ref] */,
+				uint32_t *total_entries /* [out] [ref] */);
+
+/************************************************************//**
+ *
  * NetQueryDisplayInformation
  *
  * @brief Enumerate accounts on a server
@@ -1309,6 +1480,27 @@ NET_API_STATUS NetLocalGroupSetMembers(const char * server_name /* [in] */,
 
 NET_API_STATUS NetRemoteTOD(const char * server_name /* [in] */,
 			    uint8_t **buf /* [out] [ref] */);
+
+/************************************************************//**
+ *
+ * NetShareAdd
+ *
+ * @brief Add Share
+ *
+ * @param[in] server_name The server name to connect to
+ * @param[in] level The level defining the requested SHARE_INFO_X structure
+ * @param[in] buf The buffer containing a SHARE_INFO_X structure
+ * @param[out] parm_err The returned parameter error number if any
+ * @return NET_API_STATUS
+ *
+ * example share/share_add.c
+ ***************************************************************/
+
+NET_API_STATUS NetShareAdd(const char * server_name /* [in] */,
+			   uint32_t level /* [in] */,
+			   uint8_t *buffer /* [in] [ref] */,
+			   uint32_t *parm_err /* [out] [ref] */);
+
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */

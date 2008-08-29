@@ -1,7 +1,7 @@
 /*
  *  Unix SMB/CIFS implementation.
- *  Join Support (cmdline + netapi)
- *  Copyright (C) Guenther Deschner 2007-2008
+ *  NetShareAdd query
+ *  Copyright (C) Guenther Deschner 2008
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -27,45 +27,35 @@
 
 #include "common.h"
 
-enum {
-	OPT_OU = 1000
-};
-
 int main(int argc, const char **argv)
 {
 	NET_API_STATUS status;
-	const char *host_name = NULL;
-	const char *domain_name = NULL;
-	const char *account_ou = NULL;
-	const char *account = NULL;
-	const char *password = NULL;
-	uint32_t join_flags = NETSETUP_JOIN_DOMAIN |
-			      NETSETUP_ACCT_CREATE |
-			      NETSETUP_DOMAIN_JOIN_IF_JOINED;
 	struct libnetapi_ctx *ctx = NULL;
+	const char *hostname = NULL;
+	const char *sharename = NULL;
+	const char *path = NULL;
+	uint32_t level = 0;
+	uint32_t parm_err = 0;
+
+	struct SHARE_INFO_2 i2;
 
 	poptContext pc;
 	int opt;
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
-		{ "ou", 0, POPT_ARG_STRING, &account_ou, 'U', "Account ou", "ACCOUNT_OU" },
-		{ "domain", 0, POPT_ARG_STRING, &domain_name, 'U', "Domain name (required)", "DOMAIN" },
-		{ "userd", 0, POPT_ARG_STRING, &account, 'U', "Domain admin account", "USERNAME" },
-		{ "passwordd", 0, POPT_ARG_STRING, &password, 'U', "Domain admin password", "PASSWORD" },
 		POPT_COMMON_LIBNETAPI_EXAMPLES
 		POPT_TABLEEND
 	};
-
 
 	status = libnetapi_init(&ctx);
 	if (status != 0) {
 		return status;
 	}
 
-	pc = poptGetContext("netdomjoin", argc, argv, long_options, 0);
+	pc = poptGetContext("share_add", argc, argv, long_options, 0);
 
-	poptSetOtherOptionHelp(pc, "hostname");
+	poptSetOtherOptionHelp(pc, "hostname sharename path");
 	while((opt = poptGetNextOpt(pc)) != -1) {
 	}
 
@@ -73,27 +63,43 @@ int main(int argc, const char **argv)
 		poptPrintHelp(pc, stderr, 0);
 		goto out;
 	}
-	host_name = poptGetArg(pc);
+	hostname = poptGetArg(pc);
 
-	if (!domain_name) {
+	if (!poptPeekArg(pc)) {
 		poptPrintHelp(pc, stderr, 0);
 		goto out;
 	}
+	sharename = poptGetArg(pc);
 
-	/* NetJoinDomain */
+	if (!poptPeekArg(pc)) {
+		poptPrintHelp(pc, stderr, 0);
+		goto out;
+	}
+	path = poptGetArg(pc);
 
-	status = NetJoinDomain(host_name,
-			       domain_name,
-			       account_ou,
-			       account,
-			       password,
-			       join_flags);
+	if (poptPeekArg(pc)) {
+		level = atoi(poptGetArg(pc));
+	}
+
+	/* NetShareAdd */
+
+	i2.shi2_netname		= sharename;
+	i2.shi2_type		= 0;
+	i2.shi2_remark		= "Test share created via NetApi";
+	i2.shi2_permissions	= 0;
+	i2.shi2_max_uses	= (uint32_t)-1;
+	i2.shi2_current_uses	= 0;
+	i2.shi2_path		= path;
+	i2.shi2_passwd		= NULL;
+
+	status = NetShareAdd(hostname,
+			     2,
+			     (uint8_t *)&i2,
+			     &parm_err);
 	if (status != 0) {
-		const char *errstr = NULL;
-		errstr = libnetapi_get_error_string(ctx, status);
-		printf("Join failed with: %s\n", errstr);
-	} else {
-		printf("Successfully joined\n");
+		printf("NetShareAdd failed with: %s\n",
+			libnetapi_get_error_string(ctx, status));
+		goto out;
 	}
 
  out:
