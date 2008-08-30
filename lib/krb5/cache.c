@@ -1164,6 +1164,8 @@ build_conf_principals(krb5_context context, krb5_ccache id,
  * NULL, global for the whole cache.
  * @param name name under which the configuraion is stored.
  * @param data data to store
+ *
+ * @ingroup krb5_ccache
  */
 
 krb5_error_code KRB5_LIB_FUNCTION
@@ -1207,6 +1209,8 @@ out:
  * NULL, global for the whole cache.
  * @param name name under which the configuraion is stored.
  * @param data data to fetched, free with krb5_data_free()
+ *
+ * @ingroup krb5_ccache
  */
 
 
