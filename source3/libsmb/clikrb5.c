@@ -749,16 +749,10 @@ static krb5_error_code ads_krb5_mk_req(krb5_context context,
 						ccache,
 						&in_data );
 		if (retval) {
-			DEBUG( 1, ("ads_krb5_get_fwd_ticket failed (%s)\n", error_message( retval ) ) );
+			DEBUG( 1, ("ads_krb5_get_fwd_ticket failed (%s)\n",
+				   error_message( retval ) ) );
 			goto cleanup_creds;
 		}
-
-		if (retval) {
-			DEBUG( 1, ("krb5_auth_con_set_req_cksumtype failed (%s)\n",
-				error_message( retval ) ) );
-			goto cleanup_creds;
-		}
-
 	}
 #endif
 
