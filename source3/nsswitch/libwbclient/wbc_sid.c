@@ -294,9 +294,18 @@ wbcErr wbcLookupSid(const struct wbcDomainSid *sid,
 		}
 	}
 	else {
+#if 0
+		/*
+		 * Found by Coverity: In this particular routine we can't end
+		 * up here with a non-NULL name. Further up there are just two
+		 * exit paths that lead here, neither of which leave an
+		 * allocated name. If you add more paths up there, re-activate
+		 * this.
+		 */
 		if (name != NULL) {
 			talloc_free(name);
 		}
+#endif
 		if (domain != NULL) {
 			talloc_free(domain);
 		}
