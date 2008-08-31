@@ -1107,6 +1107,10 @@ static bool fork_domain_child(struct winbindd_child *child)
 		}
 	}
 
+	if (primary_domain == NULL) {
+		smb_panic("no primary domain found");
+	}
+
 	/* Ensure we're not handling an event inherited from
 	   our parent. */
 
