@@ -195,6 +195,7 @@ static void callback_apply_description_change(GtkWidget *widget,
 						"Failed to change computer description: %s.",
 						libnetapi_get_error_string(state->ctx, status));
 		gtk_window_set_modal(GTK_WINDOW(dialog), TRUE);
+		gtk_window_set_transient_for(GTK_WINDOW(dialog), GTK_WINDOW(state->window_main));
 
 		g_signal_connect_swapped(dialog, "response",
 					 G_CALLBACK(gtk_widget_destroy),
@@ -266,6 +267,7 @@ static void callback_do_reboot(GtkWidget *widget,
 					GTK_BUTTONS_OK,
 					"You must restart this computer for the changes to take effect.");
 	gtk_window_set_modal(GTK_WINDOW(dialog), TRUE);
+	gtk_window_set_transient_for(GTK_WINDOW(dialog), GTK_WINDOW(state->window_do_change));
 #if 0
 	g_signal_connect_swapped(dialog, "response",
 				 G_CALLBACK(gtk_widget_destroy),
@@ -467,6 +469,7 @@ static void callback_do_hostname_change(GtkWidget *widget,
 					str);
 
 	gtk_window_set_modal(GTK_WINDOW(dialog), TRUE);
+	gtk_window_set_transient_for(GTK_WINDOW(dialog), GTK_WINDOW(state->window_main));
 	g_signal_connect_swapped(dialog, "response",
 				 G_CALLBACK(gtk_widget_destroy),
 				 dialog);
@@ -496,6 +499,7 @@ static void callback_creds_prompt(GtkWidget *widget,
 	gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
 	gtk_widget_set_size_request(GTK_WIDGET(window), 380, 280);
 	gtk_window_set_icon_from_file(GTK_WINDOW(window), SAMBA_ICON_PATH, NULL);
+	gtk_window_set_transient_for(GTK_WINDOW(window), GTK_WINDOW(state->window_do_change));
 
 	g_signal_connect(G_OBJECT(window), "delete_event",
 			 G_CALLBACK(callback_do_close), window);
@@ -718,6 +722,7 @@ static void callback_do_join(GtkWidget *widget,
 							err_str);
 
 			gtk_window_set_modal(GTK_WINDOW(dialog), TRUE);
+			gtk_window_set_transient_for(GTK_WINDOW(dialog), GTK_WINDOW(state->window_do_change));
 			g_signal_connect_swapped(dialog, "response",
 						 G_CALLBACK(gtk_widget_destroy),
 						 dialog);
@@ -775,6 +780,7 @@ static void callback_do_join(GtkWidget *widget,
 						err_str);
 
 		gtk_window_set_modal(GTK_WINDOW(dialog), TRUE);
+		gtk_window_set_transient_for(GTK_WINDOW(dialog), GTK_WINDOW(state->window_do_change));
 		g_signal_connect_swapped(dialog, "response",
 					 G_CALLBACK(gtk_widget_destroy),
 					 dialog);
@@ -797,6 +803,7 @@ static void callback_do_join(GtkWidget *widget,
 					new_workgroup_type);
 
 	gtk_window_set_modal(GTK_WINDOW(dialog), TRUE);
+	gtk_window_set_transient_for(GTK_WINDOW(dialog), GTK_WINDOW(state->window_do_change));
 	gtk_dialog_run(GTK_DIALOG(dialog));
 	gtk_widget_destroy(dialog);
 
@@ -988,6 +995,7 @@ static void callback_do_getous(GtkWidget *widget,
 						err_str);
 
 		gtk_window_set_modal(GTK_WINDOW(dialog), TRUE);
+		gtk_window_set_transient_for(GTK_WINDOW(dialog), GTK_WINDOW(state->window_do_change));
 		g_signal_connect_swapped(dialog, "response",
 					 G_CALLBACK(gtk_widget_destroy),
 					 dialog);
@@ -1025,6 +1033,7 @@ static void callback_do_getous(GtkWidget *widget,
 						"Failed to query joinable OUs: %s",
 						libnetapi_get_error_string(state->ctx, status));
 		gtk_window_set_modal(GTK_WINDOW(dialog), TRUE);
+		gtk_window_set_transient_for(GTK_WINDOW(dialog), GTK_WINDOW(state->window_do_change));
 		gtk_dialog_run(GTK_DIALOG(dialog));
 		gtk_widget_destroy(dialog);
 		return;
@@ -1090,6 +1099,7 @@ static void callback_do_change(GtkWidget *widget,
 	gtk_window_set_resizable(GTK_WINDOW(window), FALSE);
 	gtk_widget_set_size_request(GTK_WIDGET(window), 480, 650);
 	gtk_window_set_icon_from_file(GTK_WINDOW(window), SAMBA_ICON_PATH, NULL);
+	gtk_window_set_transient_for(GTK_WINDOW(window), GTK_WINDOW(state->window_main));
 
 	g_signal_connect(G_OBJECT(window), "delete_event",
 			 G_CALLBACK(callback_do_close), window);
@@ -1290,6 +1300,8 @@ static void callback_do_about(GtkWidget *widget,
 	GError    *error = NULL;
 	GtkWidget *about;
 
+	struct join_state *state = (struct join_state *)data;
+
 	debug("callback_do_about called\n");
 
 	logo = gdk_pixbuf_new_from_file(SAMBA_IMAGE_PATH,
@@ -1313,6 +1325,7 @@ static void callback_do_about(GtkWidget *widget,
 	}
 	gtk_about_dialog_set_comments(GTK_ABOUT_DIALOG(about), "Samba gtk domain join utility");
 	gtk_window_set_modal(GTK_WINDOW(about), TRUE);
+	gtk_window_set_transient_for(GTK_WINDOW(about), GTK_WINDOW(state->window_main));
 	g_signal_connect_swapped(about, "response",
 				 G_CALLBACK(gtk_widget_destroy),
 				 about);
@@ -1553,7 +1566,7 @@ static int draw_main_window(struct join_state *state)
 		gtk_container_add(GTK_CONTAINER(bbox2), button2);
 		g_signal_connect(G_OBJECT(button2), "clicked",
 				 G_CALLBACK(callback_do_about),
-				 window);
+				 state);
 #if 0
 		button2 = gtk_button_new_from_stock(GTK_STOCK_HELP);
 		gtk_container_add(GTK_CONTAINER(bbox2), button2);
