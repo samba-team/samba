@@ -171,6 +171,7 @@ HEIMDAL_KRB5_1.0 {
 		krb5_copy_principal;
 		krb5_copy_ticket;
 		krb5_create_checksum;
+		krb5_create_checksum_iov;
 		krb5_crypto_destroy;
 		krb5_crypto_get_checksum_type;
 		krb5_crypto_getblocksize;
