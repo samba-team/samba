@@ -164,7 +164,7 @@ static NTSTATUS receive_smb_raw_talloc_partial_read(TALLOC_CTX *mem_ctx,
 	ssize_t toread;
 	NTSTATUS status;
 
-	memcpy(writeX_header, lenbuf, sizeof(lenbuf));
+	memcpy(writeX_header, lenbuf, 4);
 
 	status = read_socket_with_timeout(
 		fd, writeX_header + 4,
