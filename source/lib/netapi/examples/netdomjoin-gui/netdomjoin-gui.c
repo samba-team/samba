@@ -827,9 +827,11 @@ static void callback_enter_hostname_and_unlock(GtkWidget *widget,
 	if (strcasecmp(state->my_hostname, entry_text) == 0) {
 		state->hostname_changed = FALSE;
 		gtk_widget_set_sensitive(GTK_WIDGET(state->button_ok), FALSE);
-		return;
+		/* return; */
+	} else {
+		state->hostname_changed = TRUE;
 	}
-	state->hostname_changed = TRUE;
+
 	if (state->name_type_initial == NetSetupDomainName) {
 		if (asprintf(&str, "%s.%s", entry_text, state->my_dnsdomain) == -1) {
 			return;
@@ -852,7 +854,7 @@ static void callback_enter_computer_description_and_unlock(GtkWidget *widget,
 {
 	const gchar *entry_text = NULL;
 	struct join_state *state = (struct join_state *)data;
-	int string_unchanged = 0;
+	int string_unchanged = FALSE;
 
 	entry_text = gtk_entry_get_text(GTK_ENTRY(widget));
 	debug("callback_enter_computer_description_and_unlock: %s\n",
@@ -865,8 +867,8 @@ static void callback_enter_computer_description_and_unlock(GtkWidget *widget,
 		return;
 	}
 #endif
-	if (entry_text && strcasecmp(state->comment, entry_text) == 0) {
-		string_unchanged = 1;
+	if (entry_text && state->comment && strcasecmp(state->comment, entry_text) == 0) {
+		string_unchanged = TRUE;
 		gtk_widget_set_sensitive(GTK_WIDGET(state->button_apply),
 					 FALSE);
 		return;
