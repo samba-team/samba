@@ -672,6 +672,12 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomain(struct dcesrv_call_state *dce_cal
 	}
 
 	samdb_msg_add_string(trusted_domain_state->policy->sam_ldb, mem_ctx, msg, "objectClass", "trustedDomain");
+
+	samdb_msg_add_int(trusted_domain_state->policy->sam_ldb, mem_ctx, msg, "trustType", LSA_TRUST_TYPE_DOWNLEVEL);
+
+	samdb_msg_add_int(trusted_domain_state->policy->sam_ldb, mem_ctx, msg, "trustAttributes", 0);
+
+	samdb_msg_add_int(trusted_domain_state->policy->sam_ldb, mem_ctx, msg, "trustDirection", LSA_TRUST_DIRECTION_OUTBOUND);
 	
 	trusted_domain_state->trusted_domain_dn = talloc_reference(trusted_domain_state, msg->dn);
 

@@ -2016,7 +2016,7 @@ static bool test_CreateTrustedDomain(struct dcerpc_pipe *p,
 		} else {
 		
 			q.in.trustdom_handle = &trustdom_handle[i];
-			q.in.level = LSA_TRUSTED_DOMAIN_INFO_NAME;
+			q.in.level = LSA_TRUSTED_DOMAIN_INFO_INFO_EX;
 			status = dcerpc_lsa_QueryTrustedDomainInfo(p, mem_ctx, &q);
 			if (!NT_STATUS_IS_OK(status)) {
 				printf("QueryTrustedDomainInfo level 1 failed - %s\n", nt_errstr(status));
@@ -2024,9 +2024,24 @@ static bool test_CreateTrustedDomain(struct dcerpc_pipe *p,
 			} else if (!q.out.info) {
 				ret = false;
 			} else {
-				if (strcmp(q.out.info->name.netbios_name.string, trustinfo.name.string) != 0) {
+				if (strcmp(q.out.info->info_ex.netbios_name.string, trustinfo.name.string) != 0) {
 					printf("QueryTrustedDomainInfo returned inconsistant short name: %s != %s\n",
-					       q.out.info->name.netbios_name.string, trustinfo.name.string);
+					       q.out.info->info_ex.netbios_name.string, trustinfo.name.string);
+					ret = false;
+				}
+				if (q.out.info->info_ex.trust_type != LSA_TRUST_TYPE_DOWNLEVEL) {
+					printf("QueryTrustedDomainInfo of %s returned incorrect trust type %d != %d\n", 
+					       trust_name, q.out.info->info_ex.trust_type, LSA_TRUST_TYPE_DOWNLEVEL);
+					ret = false;
+				}
+				if (q.out.info->info_ex.trust_attributes != 0) {
+					printf("QueryTrustedDomainInfo of %s returned incorrect trust attributes %d != %d\n", 
+					       trust_name, q.out.info->info_ex.trust_attributes, 0);
+					ret = false;
+				}
+				if (q.out.info->info_ex.trust_direction != LSA_TRUST_DIRECTION_OUTBOUND) {
+					printf("QueryTrustedDomainInfo of %s returned incorrect trust direction %d != %d\n", 
+					       trust_name, q.out.info->info_ex.trust_direction, LSA_TRUST_DIRECTION_OUTBOUND);
 					ret = false;
 				}
 			}
