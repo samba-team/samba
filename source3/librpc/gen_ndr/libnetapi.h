@@ -58,6 +58,36 @@ struct domsid {
 #define NETSETUP_INSTALL_INVOCATION ( 0x00040000 )
 #define NETSETUP_IGNORE_UNSUPPORTED_FLAGS ( 0x10000000 )
 
+struct SERVER_INFO_100 {
+	uint32_t sv100_platform_id;
+	const char * sv100_name;
+};
+
+struct SERVER_INFO_101 {
+	uint32_t sv101_platform_id;
+	const char * sv101_name;
+	uint32_t sv101_version_major;
+	uint32_t sv101_version_minor;
+	uint32_t sv101_type;
+	const char * sv101_comment;
+};
+
+struct SERVER_INFO_102 {
+	uint32_t sv102_platform_id;
+	const char * sv102_name;
+	uint32_t sv102_version_major;
+	uint32_t sv102_version_minor;
+	uint32_t sv102_type;
+	const char * sv102_comment;
+	uint32_t sv102_users;
+	uint32_t sv102_disc;
+	uint8_t sv102_hidden;
+	uint32_t sv102_announce;
+	uint32_t sv102_anndelta;
+	uint32_t sv102_licenses;
+	const char * sv102_userpath;
+};
+
 struct SERVER_INFO_1005 {
 	const char * sv1005_comment;
 };
