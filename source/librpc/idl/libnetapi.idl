@@ -92,6 +92,36 @@ interface libnetapi
 	/*******************************************/
 
 	[public] typedef struct {
+		uint32 sv100_platform_id;
+		string sv100_name;
+	} SERVER_INFO_100;
+
+	[public] typedef struct {
+		uint32 sv101_platform_id;
+		string sv101_name;
+		uint32 sv101_version_major;
+		uint32 sv101_version_minor;
+		uint32 sv101_type;
+		string sv101_comment;
+	} SERVER_INFO_101;
+
+	[public] typedef struct {
+		uint32 sv102_platform_id;
+		string sv102_name;
+		uint32 sv102_version_major;
+		uint32 sv102_version_minor;
+		uint32 sv102_type;
+		string sv102_comment;
+		uint32 sv102_users;
+		uint32 sv102_disc;
+		boolean8 sv102_hidden;
+		uint32 sv102_announce;
+		uint32 sv102_anndelta;
+		uint32 sv102_licenses;
+		string sv102_userpath;
+	} SERVER_INFO_102;
+
+	[public] typedef struct {
 		string sv1005_comment;
 	} SERVER_INFO_1005;
 
