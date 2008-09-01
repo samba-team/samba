@@ -3562,7 +3562,7 @@ krb5_create_checksum_iov(krb5_context context,
 	q += data[i].data.length;
     }
 
-    ret = krb5_create_checksum(context, crypto, usage,
+    ret = krb5_create_checksum(context, crypto, usage, 0,
                                p, len, result);
     free(p);
     return ret;
