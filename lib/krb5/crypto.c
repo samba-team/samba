@@ -3140,6 +3140,16 @@ decrypt_internal_special(krb5_context context,
     return 0;
 }
 
+static krb5_crypto_iov *
+find_iv(krb5_crypto_iov *data, int num_data, int type)
+{
+    int i;
+    for (i = 0; i < num_data; i++)
+	if (data[i].flags == type)
+	    return &data[i];
+    return NULL;
+}
+
 /**
  * Inline encrypt a kerberos message
  *
@@ -3160,18 +3170,9 @@ decrypt_internal_special(krb5_context context,
  *  any order, however the receiver have to aware of the
  *  order. KRB5_CRYPTO_TYPE_SIGN_ONLY is commonly used headers and
  *  trailers.
- * 3. KRB5_CRYPTO_TYPE_TRAILER
+ * 3. KRB5_CRYPTO_TYPE_PADDING, at least on padsize long if padsize > 1
+ * 4. KRB5_CRYPTO_TYPE_TRAILER
  */
-
-static krb5_crypto_iov *
-find_iv(krb5_crypto_iov *data, int num_data, int type)
-{
-    int i;
-    for (i = 0; i < num_data; i++)
-	if (data[i].flags == type)
-	    return &data[i];
-    return NULL;
-}
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_encrypt_iov_ivec(krb5_context context,
@@ -3352,6 +3353,27 @@ krb5_encrypt_iov_ivec(krb5_context context,
     return ret;
 }
 
+/**
+ * Inline decrypt a Kerberos message.
+ *
+ * @param context Kerberos context
+ * @param crypto Kerberos crypto context
+ * @param usage Key usage for this buffer
+ * @param data array of buffers to process
+ * @param num_data length of array
+ * @param ivec initial cbc/cts vector
+ *
+ * @return Return an error code or 0.
+ * @ingroup krb5_crypto
+ *
+ * 1. KRB5_CRYPTO_TYPE_HEADER
+ * 2. array KRB5_CRYPTO_TYPE_DATA and KRB5_CRYPTO_TYPE_SIGN_ONLY in
+ *  any order, however the receiver have to aware of the
+ *  order. KRB5_CRYPTO_TYPE_SIGN_ONLY is commonly used unencrypoted
+ *  protocol headers and trailers. The output data will be of same
+ *  size as the input data or shorter.
+ */
+
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_decrypt_iov_ivec(krb5_context context,
 		      krb5_crypto crypto,
@@ -3498,11 +3520,24 @@ krb5_decrypt_iov_ivec(krb5_context context,
     return 0;
 }
 
+/**
+ * Create a Kerberos message checksum.
+ *
+ * @param context Kerberos context
+ * @param crypto Kerberos crypto context
+ * @param usage Key usage for this buffer
+ * @param data array of buffers to process
+ * @param num_data length of array
+ * @param result output data
+ *
+ * @return Return an error code or 0.
+ * @ingroup krb5_crypto
+ */
+
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_create_checksum_iov(krb5_context context,
 			 krb5_crypto crypto,
 			 unsigned usage,
-			 int type,
 			 krb5_crypto_iov *data,
 			 size_t num_data,
 			 Checksum *result)
@@ -3531,7 +3566,7 @@ krb5_create_checksum_iov(krb5_context context,
     }
 
     ret = krb5_create_checksum(context, crypto, usage,
-			       type, p, len, result);
+                               p, len, result);
     free(p);
     return ret;
 }
