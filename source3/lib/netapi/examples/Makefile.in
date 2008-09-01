@@ -50,6 +50,7 @@ PROGS = bin/getdc@EXEEXT@ \
 	bin/localgroup_setmembers@EXEEXT@ \
 	bin/localgroup_getmembers@EXEEXT@ \
 	bin/remote_tod@EXEEXT@ \
+	bin/server_getinfo@EXEEXT@ \
 	bin/share_add@EXEEXT@ \
 	bin/share_del@EXEEXT@ \
 	bin/share_enum@EXEEXT@
@@ -114,6 +115,7 @@ LOCALGROUPDELMEMBERS_OBJ = localgroup/localgroup_delmembers.o $(CMDLINE_OBJ)
 LOCALGROUPSETMEMBERS_OBJ = localgroup/localgroup_setmembers.o $(CMDLINE_OBJ)
 LOCALGROUPGETMEMBERS_OBJ = localgroup/localgroup_getmembers.o $(CMDLINE_OBJ)
 REMOTETOD_OBJ = server/remote_tod.o $(CMDLINE_OBJ)
+SERVERGETINFO_OBJ = server/server_getinfo.o $(CMDLINE_OBJ)
 SHAREADD_OBJ = share/share_add.o $(CMDLINE_OBJ)
 SHAREDEL_OBJ = share/share_del.o $(CMDLINE_OBJ)
 SHAREENUM_OBJ = share/share_enum.o $(CMDLINE_OBJ)
@@ -249,6 +251,10 @@ bin/localgroup_getmembers@EXEEXT@: $(BINARY_PREREQS) $(LOCALGROUPGETMEMBERS_OBJ)
 bin/remote_tod@EXEEXT@: $(BINARY_PREREQS) $(REMOTETOD_OBJ)
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(REMOTETOD_OBJ) $(LDFLAGS) $(DYNEXP) $(CMDLINE_LIBS)
+
+bin/server_getinfo@EXEEXT@: $(BINARY_PREREQS) $(SERVERGETINFO_OBJ)
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(SERVERGETINFO_OBJ) $(LDFLAGS) $(DYNEXP) $(CMDLINE_LIBS)
 
 bin/share_add@EXEEXT@: $(BINARY_PREREQS) $(SHAREADD_OBJ)
 	@echo Linking $@
