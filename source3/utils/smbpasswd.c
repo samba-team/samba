@@ -210,7 +210,7 @@ static char *prompt_for_new_password(bool stdin_get)
 	fstring new_pw;
 
 	ZERO_ARRAY(new_pw);
- 
+
 	p = get_pass("New SMB password:", stdin_get);
 
 	fstrcpy(new_pw, p);
@@ -254,7 +254,7 @@ static NTSTATUS password_change(const char *remote_mach, char *username,
 		SAFE_FREE(err_str);
 		return ret;
 	}
-	
+
 	ret = local_password_change(username, local_flags, new_pw, 
 				     &err_str, &msg_str);
 
@@ -278,7 +278,7 @@ static bool store_ldap_admin_pw (char* pw)
 
 	if (!secrets_init())
 		return False;
-	
+
 	return secrets_store_ldap_pw(lp_ldap_admin_dn(), pw);
 }
 
@@ -316,7 +316,7 @@ static int process_root(int local_flags)
 		DEBUG(0, ("Failed to open passdb!\n"));
 		exit(1);
 	}
-		
+
 	/* Ensure we have a SAM sid. */
 	get_global_sam_sid();
 
@@ -330,7 +330,7 @@ static int process_root(int local_flags)
 		(remote_machine != NULL))) {
 		usage();
 	}
-	
+
 	/* Only load interfaces if we are doing network operations. */
 
 	if (remote_machine) {
@@ -386,19 +386,19 @@ static int process_root(int local_flags)
 				exit(1);
 			}
 		}
-		
+
 		/* prepare uppercased and '$' terminated username */
 		slprintf(buf, sizeof(buf) - 1, "%s$", user_name);
 		fstrcpy(user_name, buf);
-		
+
 	} else {
-		
+
 		if (remote_machine != NULL) {
 			old_passwd = get_pass("Old SMB password:",stdin_passwd_get);
 		}
-		
+
 		if (!(local_flags & LOCAL_SET_PASSWORD)) {
-			
+
 			/*
 			 * If we are trying to enable a user, first we need to find out
 			 * if they are using a modern version of the smbpasswd file that
@@ -407,10 +407,10 @@ static int process_root(int local_flags)
 			 * password. If not (ie. they have a no stored password in the
 			 * smbpasswd file) then we need to prompt for a new password.
 			 */
-			
+
 			if(local_flags & LOCAL_ENABLE_USER) {
 				struct samu *sampass = NULL;
-				
+
 				sampass = samu_new( NULL );
 				if (!sampass) {
 					fprintf(stderr, "talloc fail for struct samu.\n");
@@ -428,10 +428,10 @@ static int process_root(int local_flags)
 				TALLOC_FREE(sampass);
 			}
 		}
-		
+
 		if((local_flags & LOCAL_SET_PASSWORD) && (new_passwd == NULL)) {
 			new_passwd = prompt_for_new_password(stdin_passwd_get);
-			
+
 			if(!new_passwd) {
 				fprintf(stderr, "Unable to get new password.\n");
 				exit(1);
@@ -451,7 +451,7 @@ static int process_root(int local_flags)
 		printf("Password changed for user %s on %s.\n", user_name, remote_machine );
 	} else if(!(local_flags & (LOCAL_ADD_USER|LOCAL_DISABLE_USER|LOCAL_ENABLE_USER|LOCAL_DELETE_USER|LOCAL_SET_NO_PASSWORD|LOCAL_SET_PASSWORD))) {
 		struct samu *sampass = NULL;
-		
+
 		sampass = samu_new( NULL );
 		if (!sampass) {
 			fprintf(stderr, "talloc fail for struct samu.\n");
@@ -507,7 +507,7 @@ static int process_nonroot(int local_flags)
 			exit(1);
 		}
 	}
-	
+
 	/*
 	 * A non-root user is always setting a password
 	 * via a remote machine (even if that machine is
@@ -523,13 +523,13 @@ static int process_nonroot(int local_flags)
 	if (remote_machine != NULL) {
 		old_pw = get_pass("Old SMB password:",stdin_passwd_get);
 	}
-	
+
 	if (!new_passwd) {
 		new_pw = prompt_for_new_password(stdin_passwd_get);
 	}
 	else
 		new_pw = smb_xstrdup(new_passwd);
-	
+
 	if (!new_pw) {
 		fprintf(stderr, "Unable to get new password.\n");
 		exit(1);
@@ -561,7 +561,7 @@ int main(int argc, char **argv)
 	TALLOC_CTX *frame = talloc_stackframe();
 	int local_flags = 0;
 	int ret;
-	
+
 	AllowDebugChange = False;
 
 #if defined(HAVE_SET_AUTH_PARAMETERS)
@@ -577,12 +577,12 @@ int main(int argc, char **argv)
 	local_flags = process_options(argc, argv, local_flags);
 
 	setup_logging("smbpasswd", True);
-	
+
 	/*
 	 * Set the machine NETBIOS name if not already
 	 * set from the config file. 
 	 */ 
-    
+
 	if (!init_names())
 		return 1;
 

@@ -42,7 +42,7 @@ NTSTATUS remote_password_change(const char *remote_machine, const char *user_nam
 			 "%s.\n", remote_machine);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
- 
+
 	cli = cli_initialise();
 	if (!cli) {
 		return NT_STATUS_NO_MEMORY;
@@ -56,10 +56,10 @@ NTSTATUS remote_password_change(const char *remote_machine, const char *user_nam
 		cli_shutdown(cli);
 		return result;
 	}
-  
+
 	make_nmb_name(&calling, global_myname() , 0x0);
 	make_nmb_name(&called , remote_machine, 0x20);
-	
+
 	if (!cli_session_request(cli, &calling, &called)) {
 		asprintf(err_str, "machine %s rejected the session setup. "
 			 "Error was : %s.\n",
@@ -68,7 +68,7 @@ NTSTATUS remote_password_change(const char *remote_machine, const char *user_nam
 		cli_shutdown(cli);
 		return result;
 	}
-  
+
 	cli->protocol = PROTOCOL_NT1;
 
 	if (!cli_negprot(cli)) {
@@ -79,7 +79,7 @@ NTSTATUS remote_password_change(const char *remote_machine, const char *user_nam
 		cli_shutdown(cli);
 		return result;
 	}
-  
+
 	/* Given things like SMB signing, restrict anonymous and the like, 
 	   try an authenticated connection first */
 	result = cli_session_setup(cli, user_name,
@@ -188,7 +188,7 @@ NTSTATUS remote_password_change(const char *remote_machine, const char *user_nam
 	} else if (!(NT_STATUS_EQUAL(result, NT_STATUS_ACCESS_DENIED) 
 		     || NT_STATUS_EQUAL(result, NT_STATUS_UNSUCCESSFUL))) {
 		/* it failed, but for reasons such as wrong password, too short etc ... */
-		
+
 		asprintf(err_str, "machine %s rejected the password change: "
 			 "Error was : %s.\n",
 			 remote_machine, get_friendly_nt_error_msg(result));
@@ -198,12 +198,12 @@ NTSTATUS remote_password_change(const char *remote_machine, const char *user_nam
 
 	/* OK, that failed, so try again... */
 	TALLOC_FREE(pipe_hnd);
-	
+
 	/* Try anonymous NTLMSSP... */
 	cli_init_creds(cli, "", "", NULL);
-	
+
 	result = NT_STATUS_UNSUCCESSFUL;
-	
+
 	/* OK, this is ugly, but... try an anonymous pipe. */
 	result = cli_rpc_pipe_open_noauth(cli, &ndr_table_samr.syntax_id,
 					  &pipe_hnd);
@@ -227,10 +227,10 @@ NTSTATUS remote_password_change(const char *remote_machine, const char *user_nam
 			cli_shutdown(cli);
 			return result;
 		}
-		
+
 		/* We have failed to change the user's password, and we think the server
 		   just might not support SAMR password changes, so fall back */
-		
+
 		if (lp_client_lanman_auth()) {
 			/* Use the old RAP method. */
 			if (cli_oem_change_password(cli, user_name, new_passwd, old_passwd)) {
