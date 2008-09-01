@@ -3264,25 +3264,22 @@ normal_read:
 		}
 		TALLOC_FREE(req->outbuf);
 		return;
-	} else {
-		reply_outbuf(req, 12, smb_maxcnt);
+	}
 
-		nread = read_file(fsp, smb_buf(req->outbuf), startpos,
-				  smb_maxcnt);
-		if (nread < 0) {
-			reply_unixerror(req, ERRDOS, ERRnoaccess);
-			return;
-		}
+	reply_outbuf(req, 12, smb_maxcnt);
 
-		setup_readX_header((char *)req->outbuf, nread);
-
-		DEBUG( 3, ( "send_file_readX fnum=%d max=%d nread=%d\n",
-			fsp->fnum, (int)smb_maxcnt, (int)nread ) );
-
-		chain_reply(req);
-
+	nread = read_file(fsp, smb_buf(req->outbuf), startpos, smb_maxcnt);
+	if (nread < 0) {
+		reply_unixerror(req, ERRDOS, ERRnoaccess);
 		return;
 	}
+
+	setup_readX_header((char *)req->outbuf, nread);
+
+	DEBUG( 3, ( "send_file_readX fnum=%d max=%d nread=%d\n",
+		    fsp->fnum, (int)smb_maxcnt, (int)nread ) );
+
+	chain_reply(req);
 }
 
 /****************************************************************************
