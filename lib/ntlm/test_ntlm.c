@@ -40,7 +40,7 @@
 
 RCSID("$Id$");
 
-#include <krb5.h>
+#include <krb5-types.h> /* or <inttypes.h> */
 #include <heimntlm.h>
 
 static int
@@ -54,8 +54,7 @@ test_parse(void)
     struct ntlm_type2 type2;
     struct ntlm_type3 type3;
     struct ntlm_buf data;
-    krb5_error_code ret;
-    int flags;
+    int ret, flags;
     
     memset(&type1, 0, sizeof(type1));
 
