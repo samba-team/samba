@@ -120,6 +120,150 @@ _PUBLIC_ void ndr_print_NetJoinFlags(struct ndr_print *ndr, const char *name, ui
 	ndr->depth--;
 }
 
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_100(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_100 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv100_platform_id));
+		NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->sv100_name));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_100(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_100 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv100_platform_id));
+		NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->sv100_name));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_100(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_100 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_100");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv100_platform_id", r->sv100_platform_id);
+	ndr_print_string(ndr, "sv100_name", r->sv100_name);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_101(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_101 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv101_platform_id));
+		NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->sv101_name));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv101_version_major));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv101_version_minor));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv101_type));
+		NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->sv101_comment));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_101(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_101 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv101_platform_id));
+		NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->sv101_name));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv101_version_major));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv101_version_minor));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv101_type));
+		NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->sv101_comment));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_101(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_101 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_101");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv101_platform_id", r->sv101_platform_id);
+	ndr_print_string(ndr, "sv101_name", r->sv101_name);
+	ndr_print_uint32(ndr, "sv101_version_major", r->sv101_version_major);
+	ndr_print_uint32(ndr, "sv101_version_minor", r->sv101_version_minor);
+	ndr_print_uint32(ndr, "sv101_type", r->sv101_type);
+	ndr_print_string(ndr, "sv101_comment", r->sv101_comment);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_102(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_102 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv102_platform_id));
+		NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->sv102_name));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv102_version_major));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv102_version_minor));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv102_type));
+		NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->sv102_comment));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv102_users));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv102_disc));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->sv102_hidden));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv102_announce));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv102_anndelta));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv102_licenses));
+		NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->sv102_userpath));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_102(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_102 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv102_platform_id));
+		NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->sv102_name));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv102_version_major));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv102_version_minor));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv102_type));
+		NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->sv102_comment));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv102_users));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv102_disc));
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->sv102_hidden));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv102_announce));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv102_anndelta));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv102_licenses));
+		NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->sv102_userpath));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_102(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_102 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_102");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv102_platform_id", r->sv102_platform_id);
+	ndr_print_string(ndr, "sv102_name", r->sv102_name);
+	ndr_print_uint32(ndr, "sv102_version_major", r->sv102_version_major);
+	ndr_print_uint32(ndr, "sv102_version_minor", r->sv102_version_minor);
+	ndr_print_uint32(ndr, "sv102_type", r->sv102_type);
+	ndr_print_string(ndr, "sv102_comment", r->sv102_comment);
+	ndr_print_uint32(ndr, "sv102_users", r->sv102_users);
+	ndr_print_uint32(ndr, "sv102_disc", r->sv102_disc);
+	ndr_print_uint8(ndr, "sv102_hidden", r->sv102_hidden);
+	ndr_print_uint32(ndr, "sv102_announce", r->sv102_announce);
+	ndr_print_uint32(ndr, "sv102_anndelta", r->sv102_anndelta);
+	ndr_print_uint32(ndr, "sv102_licenses", r->sv102_licenses);
+	ndr_print_string(ndr, "sv102_userpath", r->sv102_userpath);
+	ndr->depth--;
+}
+
 _PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1005(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1005 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {

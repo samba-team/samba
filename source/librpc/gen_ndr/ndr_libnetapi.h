@@ -96,6 +96,15 @@ void ndr_print_domsid(struct ndr_print *ndr, const char *name, const struct doms
 enum ndr_err_code ndr_push_NetJoinFlags(struct ndr_push *ndr, int ndr_flags, uint32_t r);
 enum ndr_err_code ndr_pull_NetJoinFlags(struct ndr_pull *ndr, int ndr_flags, uint32_t *r);
 void ndr_print_NetJoinFlags(struct ndr_print *ndr, const char *name, uint32_t r);
+enum ndr_err_code ndr_push_SERVER_INFO_100(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_100 *r);
+enum ndr_err_code ndr_pull_SERVER_INFO_100(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_100 *r);
+void ndr_print_SERVER_INFO_100(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_100 *r);
+enum ndr_err_code ndr_push_SERVER_INFO_101(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_101 *r);
+enum ndr_err_code ndr_pull_SERVER_INFO_101(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_101 *r);
+void ndr_print_SERVER_INFO_101(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_101 *r);
+enum ndr_err_code ndr_push_SERVER_INFO_102(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_102 *r);
+enum ndr_err_code ndr_pull_SERVER_INFO_102(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_102 *r);
+void ndr_print_SERVER_INFO_102(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_102 *r);
 enum ndr_err_code ndr_push_SERVER_INFO_1005(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1005 *r);
 enum ndr_err_code ndr_pull_SERVER_INFO_1005(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1005 *r);
 void ndr_print_SERVER_INFO_1005(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1005 *r);
