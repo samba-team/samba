@@ -1892,7 +1892,7 @@ bool cli_set_ea_fnum(struct cli_state *cli, int fnum, const char *ea_name, const
 }
 
 /*********************************************************
- Get an extended attribute list tility fn.
+ Get an extended attribute list utility fn.
 *********************************************************/
 
 static bool cli_get_ea_list(struct cli_state *cli,
