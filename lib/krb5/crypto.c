@@ -3498,6 +3498,45 @@ krb5_decrypt_iov_ivec(krb5_context context,
     return 0;
 }
 
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_create_checksum_iov(krb5_context context,
+			 krb5_crypto crypto,
+			 unsigned usage,
+			 int type,
+			 krb5_crypto_iov *data,
+			 size_t num_data,
+			 Checksum *result)
+{
+    krb5_error_code ret;
+    unsigned int i;
+    size_t len;
+    char *p, *q;
+
+    len = 0;
+    for (i = 0; i < num_data; i++) {
+	if (data[i].flags != KRB5_CRYPTO_TYPE_DATA &&
+	    data[i].flags != KRB5_CRYPTO_TYPE_SIGN_ONLY)
+	    continue;
+	len += data[i].data.length;
+    }
+
+    p = q = malloc(len);
+
+    for (i = 0; i < num_data; i++) {
+	if (data[i].flags != KRB5_CRYPTO_TYPE_DATA &&
+	    data[i].flags != KRB5_CRYPTO_TYPE_SIGN_ONLY)
+	    continue;
+	memcpy(q, data[i].data.data, data[i].data.length);
+	q += data[i].data.length;
+    }
+
+    ret = krb5_create_checksum(context, crypto, usage,
+			       type, p, len, result);
+    free(p);
+    return ret;
+}
+
+
 size_t KRB5_LIB_FUNCTION
 krb5_crypto_length(krb5_context context,
 		   krb5_crypto crypto,
