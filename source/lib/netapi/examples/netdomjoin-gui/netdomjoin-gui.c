@@ -500,6 +500,7 @@ static void callback_creds_prompt(GtkWidget *widget,
 	gtk_widget_set_size_request(GTK_WIDGET(window), 380, 280);
 	gtk_window_set_icon_from_file(GTK_WINDOW(window), SAMBA_ICON_PATH, NULL);
 	gtk_window_set_transient_for(GTK_WINDOW(window), GTK_WINDOW(state->window_do_change));
+	gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER_ALWAYS);
 
 	g_signal_connect(G_OBJECT(window), "delete_event",
 			 G_CALLBACK(callback_do_close), window);
@@ -1102,6 +1103,7 @@ static void callback_do_change(GtkWidget *widget,
 	gtk_widget_set_size_request(GTK_WIDGET(window), 480, 650);
 	gtk_window_set_icon_from_file(GTK_WINDOW(window), SAMBA_ICON_PATH, NULL);
 	gtk_window_set_transient_for(GTK_WINDOW(window), GTK_WINDOW(state->window_main));
+	gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER_ALWAYS);
 
 	g_signal_connect(G_OBJECT(window), "delete_event",
 			 G_CALLBACK(callback_do_close), window);
@@ -1374,6 +1376,7 @@ static int draw_main_window(struct join_state *state)
 	gtk_widget_set_size_request(GTK_WIDGET(window), 600, 600);
 	gtk_window_set_resizable(GTK_WINDOW(window), FALSE);
 	gtk_window_set_icon_from_file(GTK_WINDOW(window), SAMBA_ICON_PATH, NULL);
+	gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER_ALWAYS);
 
 	g_signal_connect(G_OBJECT(window), "delete_event",
 			 G_CALLBACK(callback_delete_event), NULL);
