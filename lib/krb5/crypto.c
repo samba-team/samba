@@ -3514,10 +3514,7 @@ krb5_decrypt_iov_ivec(krb5_context context,
 			  len,
 			  &cksum);
     free(p);
-    if(ret)
-	return ret;
-
-    return 0;
+    return ret;
 }
 
 /**
