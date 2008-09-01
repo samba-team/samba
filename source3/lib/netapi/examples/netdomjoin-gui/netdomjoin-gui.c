@@ -80,6 +80,7 @@ typedef struct join_state {
 	gboolean settings_changed;
 	gboolean hostname_changed;
 	uint32_t stored_num_ous;
+	char *target_hostname;
 } join_state;
 
 static void debug(const char *format, ...)
@@ -180,7 +181,10 @@ static void callback_apply_description_change(GtkWidget *widget,
 
 	info1005.sv1005_comment = state->comment_new;
 
-	status = NetServerSetInfo(NULL, 1005, (uint8_t *)&info1005, &parm_err); 
+	status = NetServerSetInfo(state->target_hostname,
+				  1005,
+				  (uint8_t *)&info1005,
+				  &parm_err);
 	if (status) {
 		debug("NetServerSetInfo failed with: %s\n",
 			libnetapi_errstr(status));
@@ -285,7 +289,9 @@ static void callback_do_reboot(GtkWidget *widget,
 		const char *buffer;
 		uint16_t type;
 
-		status = NetGetJoinInformation(NULL, &buffer, &type);
+		status = NetGetJoinInformation(state->target_hostname,
+					       &buffer,
+					       &type);
 		if (status != 0) {
 			g_print("failed to query status\n");
 			return;
@@ -658,7 +664,7 @@ static void callback_do_join(GtkWidget *widget,
 			}
 		}
 
-		status = NetUnjoinDomain(NULL,
+		status = NetUnjoinDomain(state->target_hostname,
 					 state->account,
 					 state->password,
 					 unjoin_flags);
@@ -748,7 +754,7 @@ static void callback_do_join(GtkWidget *widget,
 	}
 	debug("\n");
 
-	status = NetJoinDomain(NULL,
+	status = NetJoinDomain(state->target_hostname,
 			       state->name_buffer_new,
 			       account_ou,
 			       state->account,
@@ -1003,7 +1009,8 @@ static void callback_do_getous(GtkWidget *widget,
 		return;
 	}
 
-	status = NetGetJoinableOUs(NULL, domain,
+	status = NetGetJoinableOUs(state->target_hostname,
+				   domain,
 				   state->account,
 				   state->password,
 				   &num_ous, &ous);
@@ -1579,7 +1586,9 @@ static int init_join_state(struct join_state **state)
 }
 
 static int initialize_join_state(struct join_state *state,
-				 const char *debug_level)
+				 const char *debug_level,
+				 const char *target_hostname,
+				 const char *target_username)
 {
 	struct libnetapi_ctx *ctx = NULL;
 	NET_API_STATUS status = 0;
@@ -1591,6 +1600,30 @@ static int initialize_join_state(struct join_state *state,
 
 	if (debug_level) {
 		libnetapi_set_debuglevel(ctx, debug_level);
+	}
+
+	if (target_hostname) {
+		state->target_hostname = strdup(target_hostname);
+		if (!state->target_hostname) {
+			return -1;
+		}
+	}
+
+	if (target_username) {
+		char *puser = strdup(target_username);
+		char *p = NULL;
+
+		if ((p = strchr(puser,'%'))) {
+			size_t len;
+			*p = 0;
+			libnetapi_set_username(ctx, puser);
+			libnetapi_set_password(ctx, p+1);
+			len = strlen(p+1);
+			memset(strchr(target_username,'%')+1,'X',len);
+		} else {
+			libnetapi_set_username(ctx, puser);
+		}
+		free(puser);
 	}
 
 	{
@@ -1639,7 +1672,9 @@ static int initialize_join_state(struct join_state *state,
 	{
 		const char *buffer = NULL;
 		uint16_t type = 0;
-		status = NetGetJoinInformation(NULL, &buffer, &type);
+		status = NetGetJoinInformation(state->target_hostname,
+					       &buffer,
+					       &type);
 		if (status != 0) {
 			printf("NetGetJoinInformation failed with: %s\n",
 				libnetapi_get_error_string(state->ctx, status));
@@ -1655,42 +1690,23 @@ static int initialize_join_state(struct join_state *state,
 	}
 
 	{
-		struct SERVER_INFO_1005 *info1005 = NULL;
-		uint8_t *buffer = NULL;
+		struct SERVER_INFO_101 *info101 = NULL;
 
-		status = NetServerGetInfo(NULL, 1005, &buffer);
+		status = NetServerGetInfo(state->target_hostname,
+					  101,
+					  (uint8_t **)&info101);
 		if (status != 0) {
 			printf("NetServerGetInfo failed with: %s\n",
 				libnetapi_get_error_string(state->ctx, status));
-			return status;
+			/* return status; */
+		} else {
+			state->comment = strdup(info101->sv101_comment);
+			if (!state->comment) {
+				return -1;
+			}
 		}
-
-		info1005 = (struct SERVER_INFO_1005 *)buffer;
-
-		state->comment = strdup(info1005->sv1005_comment);
-		if (!state->comment) {
-			return -1;
-		}
-		NetApiBufferFree(buffer);
+		NetApiBufferFree(info101);
 	}
-#if 0
-	{
-		struct srvsvc_NetSrvInfo100 *info100 = NULL;
-		uint8_t *buffer = NULL;
-
-		status = NetServerGetInfo(NULL, 100, &buffer);
-		if (status) {
-			return status;
-		}
-
-		info100 = (struct srvsvc_NetSrvInfo100 *)buffer;
-
-		state->comment = strdup(info100->comment);
-		if (!state->comment) {
-			return -1;
-		}
-	}
-#endif
 
 	state->ctx = ctx;
 
@@ -1701,6 +1717,8 @@ int main(int argc, char **argv)
 {
 	GOptionContext *context = NULL;
 	static const char *debug_level = NULL;
+	static const char *target_hostname = NULL;
+	static const char *target_username = NULL;
 	struct join_state *state = NULL;
 	GError *error = NULL;
 	int ret = 0;
@@ -1708,6 +1726,8 @@ int main(int argc, char **argv)
 	static GOptionEntry entries[] = {
 		{ "debug", 'd', 0, G_OPTION_ARG_STRING, &debug_level, "Debug level (for samba)", "N" },
 		{ "verbose", 'v', 0, G_OPTION_ARG_NONE, &verbose, "Verbose output", 0 },
+		{ "target", 'S', 0, G_OPTION_ARG_STRING, &target_hostname, "Target hostname", 0 },
+		{ "username", 'U', 0, G_OPTION_ARG_STRING, &target_username, "Target hostname", 0 },
 		{ NULL }
 	};
 
@@ -1725,7 +1745,9 @@ int main(int argc, char **argv)
 		return ret;
 	}
 
-	ret = initialize_join_state(state, debug_level);
+	ret = initialize_join_state(state, debug_level,
+				    target_hostname,
+				    target_username);
 	if (ret) {
 		return ret;
 	}
