@@ -76,6 +76,15 @@ RCSID("$Id$");
  * http://davenport.sourceforge.net/ntlm.html .
  * 
  * The Heimdal projects web page: http://www.h5l.org/
+ *
+ * @section ntlm_example NTLM Example
+ *
+ * Example to to use @ref test_ntlm.c .
+ *
+ * @example test_ntlm.c
+ *
+ * Example how to use the NTLM primitives.
+ *
  */
 
 /** @defgroup ntlm_core Heimdal NTLM library 
