@@ -125,6 +125,7 @@ HEIMDAL_KRB5_1.0 {
 		krb5_checksum_is_collision_proof;
 		krb5_checksum_is_keyed;
 		krb5_checksumsize;
+		krb5_cksumtype_to_enctype;
 		krb5_cksumtype_valid;
 		krb5_clear_error_string;
 		krb5_closelog;
