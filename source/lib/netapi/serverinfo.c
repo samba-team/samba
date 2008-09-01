@@ -28,6 +28,29 @@
 /****************************************************************
 ****************************************************************/
 
+static WERROR NetServerGetInfo_l_101(struct libnetapi_ctx *ctx,
+				     uint8_t **buffer)
+{
+	struct SERVER_INFO_101 i;
+
+	i.sv101_platform_id	= PLATFORM_ID_NT;
+	i.sv101_name		= global_myname();
+	i.sv101_version_major	= lp_major_announce_version();
+	i.sv101_version_minor	= lp_minor_announce_version();
+	i.sv101_type		= lp_default_server_announce();
+	i.sv101_comment		= lp_serverstring();
+
+	*buffer = (uint8_t *)talloc_memdup(ctx, &i, sizeof(i));
+	if (!*buffer) {
+		return WERR_NOMEM;
+	}
+
+	return WERR_OK;
+}
+
+/****************************************************************
+****************************************************************/
+
 static WERROR NetServerGetInfo_l_1005(struct libnetapi_ctx *ctx,
 				      uint8_t **buffer)
 {
@@ -49,6 +72,8 @@ WERROR NetServerGetInfo_l(struct libnetapi_ctx *ctx,
 			  struct NetServerGetInfo *r)
 {
 	switch (r->in.level) {
+		case 101:
+			return NetServerGetInfo_l_101(ctx, r->out.buffer);
 		case 1005:
 			return NetServerGetInfo_l_1005(ctx, r->out.buffer);
 		default:
