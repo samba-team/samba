@@ -22,6 +22,7 @@ PROGS = bin/getdc@EXEEXT@ \
 	bin/netdomjoin@EXEEXT@ \
 	bin/netdomjoin-gui@EXEEXT@ \
 	bin/getjoinableous@EXEEXT@ \
+	bin/rename_machine@EXEEXT@ \
 	bin/user_add@EXEEXT@ \
 	bin/user_del@EXEEXT@ \
 	bin/user_enum@EXEEXT@ \
@@ -87,6 +88,7 @@ DSGETDC_OBJ = dsgetdc/dsgetdc.o $(CMDLINE_OBJ)
 NETDOMJOIN_OBJ = netdomjoin/netdomjoin.o $(CMDLINE_OBJ)
 NETDOMJOIN_GUI_OBJ = netdomjoin-gui/netdomjoin-gui.o
 GETJOINABLEOUS_OBJ = getjoinableous/getjoinableous.o $(CMDLINE_OBJ)
+RENAMEMACHINE_OBJ = join/rename_machine.o $(CMDLINE_OBJ)
 USERADD_OBJ = user/user_add.o $(CMDLINE_OBJ)
 USERDEL_OBJ = user/user_del.o $(CMDLINE_OBJ)
 USERENUM_OBJ = user/user_enum.o $(CMDLINE_OBJ)
@@ -131,6 +133,10 @@ bin/dsgetdc@EXEEXT@: $(BINARY_PREREQS) $(DSGETDC_OBJ)
 bin/getjoinableous@EXEEXT@: $(BINARY_PREREQS) $(GETJOINABLEOUS_OBJ)
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(GETJOINABLEOUS_OBJ) $(LDFLAGS) $(DYNEXP) $(CMDLINE_LIBS)
+
+bin/rename_machine@EXEEXT@: $(BINARY_PREREQS) $(RENAMEMACHINE_OBJ)
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(RENAMEMACHINE_OBJ) $(LDFLAGS) $(DYNEXP) $(CMDLINE_LIBS)
 
 bin/netdomjoin@EXEEXT@: $(BINARY_PREREQS) $(NETDOMJOIN_OBJ)
 	@echo Linking $@
