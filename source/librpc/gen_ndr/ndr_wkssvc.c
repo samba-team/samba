@@ -5474,10 +5474,10 @@ _PUBLIC_ void ndr_print_wkssvc_NetJoinStatus(struct ndr_print *ndr, const char *
 	const char *val = NULL;
 
 	switch (r) {
-		case NetSetupUnknownStatus: val = "NetSetupUnknownStatus"; break;
-		case NetSetupUnjoined: val = "NetSetupUnjoined"; break;
-		case NetSetupWorkgroupName: val = "NetSetupWorkgroupName"; break;
-		case NetSetupDomainName: val = "NetSetupDomainName"; break;
+		case NET_SETUP_UNKNOWN_STATUS: val = "NET_SETUP_UNKNOWN_STATUS"; break;
+		case NET_SETUP_UNJOINED: val = "NET_SETUP_UNJOINED"; break;
+		case NET_SETUP_WORKGROUP_NAME: val = "NET_SETUP_WORKGROUP_NAME"; break;
+		case NET_SETUP_DOMAIN_NAME: val = "NET_SETUP_DOMAIN_NAME"; break;
 	}
 	ndr_print_enum(ndr, name, "ENUM", val, r);
 }
