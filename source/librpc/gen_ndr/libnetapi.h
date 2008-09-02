@@ -695,6 +695,22 @@ struct NetGetJoinableOUs {
 };
 
 
+struct NetRenameMachineInDomain {
+	struct {
+		const char * server_name;
+		const char * new_machine_name;
+		const char * account;
+		const char * password;
+		uint32_t rename_options;
+	} in;
+
+	struct {
+		enum NET_API_STATUS result;
+	} out;
+
+};
+
+
 struct NetServerGetInfo {
 	struct {
 		const char * server_name;/* [unique] */

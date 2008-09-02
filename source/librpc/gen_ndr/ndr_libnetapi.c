@@ -2377,6 +2377,32 @@ _PUBLIC_ void ndr_print_NetGetJoinableOUs(struct ndr_print *ndr, const char *nam
 	ndr->depth--;
 }
 
+_PUBLIC_ void ndr_print_NetRenameMachineInDomain(struct ndr_print *ndr, const char *name, int flags, const struct NetRenameMachineInDomain *r)
+{
+	ndr_print_struct(ndr, name, "NetRenameMachineInDomain");
+	ndr->depth++;
+	if (flags & NDR_SET_VALUES) {
+		ndr->flags |= LIBNDR_PRINT_SET_VALUES;
+	}
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "NetRenameMachineInDomain");
+		ndr->depth++;
+		ndr_print_string(ndr, "server_name", r->in.server_name);
+		ndr_print_string(ndr, "new_machine_name", r->in.new_machine_name);
+		ndr_print_string(ndr, "account", r->in.account);
+		ndr_print_string(ndr, "password", r->in.password);
+		ndr_print_uint32(ndr, "rename_options", r->in.rename_options);
+		ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "NetRenameMachineInDomain");
+		ndr->depth++;
+		ndr_print_NET_API_STATUS(ndr, "result", r->out.result);
+		ndr->depth--;
+	}
+	ndr->depth--;
+}
+
 _PUBLIC_ void ndr_print_NetServerGetInfo(struct ndr_print *ndr, const char *name, int flags, const struct NetServerGetInfo *r)
 {
 	ndr_print_struct(ndr, name, "NetServerGetInfo");
