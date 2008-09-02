@@ -445,9 +445,5 @@ WERROR NetGetJoinableOUs_r(struct libnetapi_ctx *ctx,
 	}
 
  done:
-	if (cli) {
-		cli_shutdown(cli);
-	}
-
 	return werr;
 }
