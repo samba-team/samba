@@ -454,7 +454,41 @@ WERROR NetGetJoinableOUs_r(struct libnetapi_ctx *ctx,
 WERROR NetRenameMachineInDomain_r(struct libnetapi_ctx *ctx,
 				  struct NetRenameMachineInDomain *r)
 {
-	return WERR_NOT_SUPPORTED;
+	struct cli_state *cli = NULL;
+	struct rpc_pipe_client *pipe_cli = NULL;
+	struct wkssvc_PasswordBuffer *encrypted_password = NULL;
+	NTSTATUS status;
+	WERROR werr;
+
+	werr = libnetapi_open_pipe(ctx, r->in.server_name,
+				   &ndr_table_wkssvc.syntax_id,
+				   &cli,
+				   &pipe_cli);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	if (r->in.password) {
+		encode_wkssvc_join_password_buffer(ctx,
+						   r->in.password,
+						   &cli->user_session_key,
+						   &encrypted_password);
+	}
+
+	status = rpccli_wkssvc_NetrRenameMachineInDomain2(pipe_cli, ctx,
+							  r->in.server_name,
+							  r->in.new_machine_name,
+							  r->in.account,
+							  encrypted_password,
+							  r->in.rename_options,
+							  &werr);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+ done:
+	return werr;
 }
 
 /****************************************************************
