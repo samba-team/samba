@@ -1585,6 +1585,51 @@ static int init_join_state(struct join_state **state)
 	return 0;
 }
 
+static NET_API_STATUS get_server_comment(struct join_state *state)
+{
+	struct SERVER_INFO_101 *info101 = NULL;
+	struct SERVER_INFO_1005 *info1005 = NULL;
+	NET_API_STATUS status;
+
+	status = NetServerGetInfo(state->target_hostname,
+				  101,
+				  (uint8_t **)&info101);
+	if (status == 0) {
+		state->comment = strdup(info101->sv101_comment);
+		if (!state->comment) {
+			return -1;
+		}
+		NetApiBufferFree(info101);
+		return NET_API_STATUS_SUCCESS;
+	}
+
+	switch (status) {
+		case 124: /* WERR_UNKNOWN_LEVEL */
+		case 50: /* WERR_NOT_SUPPORTED */
+			break;
+		default:
+			goto failed;
+	}
+
+	status = NetServerGetInfo(state->target_hostname,
+				  1005,
+				  (uint8_t **)&info1005);
+	if (status == 0) {
+		state->comment = strdup(info1005->sv1005_comment);
+		if (!state->comment) {
+			return -1;
+		}
+		NetApiBufferFree(info1005);
+		return NET_API_STATUS_SUCCESS;
+	}
+
+ failed:
+	printf("NetServerGetInfo failed with: %s\n",
+		libnetapi_get_error_string(state->ctx, status));
+
+	return status;
+}
+
 static int initialize_join_state(struct join_state *state,
 				 const char *debug_level,
 				 const char *target_hostname,
@@ -1689,23 +1734,9 @@ static int initialize_join_state(struct join_state *state,
 		NetApiBufferFree((void *)buffer);
 	}
 
-	{
-		struct SERVER_INFO_101 *info101 = NULL;
-
-		status = NetServerGetInfo(state->target_hostname,
-					  101,
-					  (uint8_t **)&info101);
-		if (status != 0) {
-			printf("NetServerGetInfo failed with: %s\n",
-				libnetapi_get_error_string(state->ctx, status));
-			/* return status; */
-		} else {
-			state->comment = strdup(info101->sv101_comment);
-			if (!state->comment) {
-				return -1;
-			}
-		}
-		NetApiBufferFree(info101);
+	status = get_server_comment(state);
+	if (status != 0) {
+		return -1;
 	}
 
 	state->ctx = ctx;
