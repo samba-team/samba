@@ -104,14 +104,23 @@ static gboolean callback_delete_event(GtkWidget *widget,
 	return FALSE;
 }
 
-static void callback_do_close(GtkWidget *widget,
-			      gpointer data)
+static void callback_do_close_data(GtkWidget *widget,
+				   gpointer data)
 {
-	debug("callback_do_close called\n");
+	debug("callback_do_close_data called\n");
 
 	if (data) {
 		gtk_widget_destroy(GTK_WIDGET(data));
-		data = NULL;
+	}
+}
+
+static void callback_do_close_widget(GtkWidget *widget,
+				     gpointer data)
+{
+	debug("callback_do_close_widget called\n");
+
+	if (widget) {
+		gtk_widget_destroy(widget);
 	}
 }
 
@@ -503,7 +512,7 @@ static void callback_creds_prompt(GtkWidget *widget,
 	gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER_ALWAYS);
 
 	g_signal_connect(G_OBJECT(window), "delete_event",
-			 G_CALLBACK(callback_do_close), window);
+			 G_CALLBACK(callback_do_close_widget), NULL);
 
 	state->window_creds_prompt = window;
 	gtk_container_set_border_width(GTK_CONTAINER(window), 10);
@@ -1106,7 +1115,7 @@ static void callback_do_change(GtkWidget *widget,
 	gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER_ALWAYS);
 
 	g_signal_connect(G_OBJECT(window), "delete_event",
-			 G_CALLBACK(callback_do_close), window);
+			 G_CALLBACK(callback_do_close_widget), NULL);
 
 	gtk_container_set_border_width(GTK_CONTAINER(window), 10);
 
