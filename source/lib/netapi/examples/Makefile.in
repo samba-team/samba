@@ -85,9 +85,9 @@ bin/.dummy:
 CMDLINE_OBJ = common.o
 GETDC_OBJ = getdc/getdc.o $(CMDLINE_OBJ)
 DSGETDC_OBJ = dsgetdc/dsgetdc.o $(CMDLINE_OBJ)
-NETDOMJOIN_OBJ = netdomjoin/netdomjoin.o $(CMDLINE_OBJ)
+NETDOMJOIN_OBJ = join/netdomjoin.o $(CMDLINE_OBJ)
 NETDOMJOIN_GUI_OBJ = netdomjoin-gui/netdomjoin-gui.o
-GETJOINABLEOUS_OBJ = getjoinableous/getjoinableous.o $(CMDLINE_OBJ)
+GETJOINABLEOUS_OBJ = join/getjoinableous.o $(CMDLINE_OBJ)
 RENAMEMACHINE_OBJ = join/rename_machine.o $(CMDLINE_OBJ)
 USERADD_OBJ = user/user_add.o $(CMDLINE_OBJ)
 USERDEL_OBJ = user/user_del.o $(CMDLINE_OBJ)
