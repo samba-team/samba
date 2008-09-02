@@ -38,9 +38,6 @@
 #define SAMBA_IMAGE_PATH "/usr/share/pixmaps/samba/logo.png"
 #define SAMBA_IMAGE_PATH_SMALL "/usr/share/pixmaps/samba/logo-small.png"
 
-#define NetSetupWorkgroupName ( 2 )
-#define NetSetupDomainName ( 3 )
-
 #define SAFE_FREE(x) do { if ((x) != NULL) {free(x); x=NULL;} } while(0)
 
 static gboolean verbose = FALSE;
