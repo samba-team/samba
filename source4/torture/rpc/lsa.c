@@ -2062,6 +2062,109 @@ static bool test_CreateTrustedDomain(struct dcerpc_pipe *p,
 	return ret;
 }
 
+static bool test_CreateTrustedDomainEx2(struct dcerpc_pipe *p, 
+					TALLOC_CTX *mem_ctx, 
+					struct policy_handle *handle)
+{
+	NTSTATUS status;
+	bool ret = true;
+	struct lsa_CreateTrustedDomainEx2 r;
+	struct lsa_TrustDomainInfoInfoEx trustinfo;
+	struct dom_sid *domsid[12];
+	struct policy_handle trustdom_handle[12];
+	struct lsa_QueryTrustedDomainInfo q;
+	int i;
+
+	printf("Testing CreateTrustedDomainEx2 for 12 domains\n");
+
+	for (i=0; i< 12; i++) {
+		char *trust_name = talloc_asprintf(mem_ctx, "torturedom%02d", i);
+		char *trust_name_dns = talloc_asprintf(mem_ctx, "torturedom%02d.samba.example.com", i);
+		char *trust_sid = talloc_asprintf(mem_ctx, "S-1-5-21-97398-379795-100%02d", i);
+		
+		domsid[i] = dom_sid_parse_talloc(mem_ctx, trust_sid);
+
+		trustinfo.sid = domsid[i];
+		trustinfo.netbios_name.string = trust_name;
+		trustinfo.domain_name.string = trust_name_dns;
+
+		/* Create inbound, some outbound, and some
+		 * bi-directional trusts in a repeating pattern based
+		 * on i */
+
+		/* 1 == inbound, 2 == outbound, 3 == both */
+		trustinfo.trust_direction = (i % 3) + 1;
+
+		/* Try different trust types too */
+
+		/* 1 == downleven (NT4), 2 == uplevel (ADS), 3 == MIT (kerberos but not AD) */
+		trustinfo.trust_type = (((i / 3) + 1) % 3) + 1;
+
+		trustinfo.trust_attributes = LSA_TRUST_ATTRIBUTE_USES_RC4_ENCRYPTION;
+
+		r.in.policy_handle = handle;
+		r.in.info = &trustinfo;
+		r.in.auth_info = NULL;
+		r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+		r.out.trustdom_handle = &trustdom_handle[i];
+		
+		status = dcerpc_lsa_CreateTrustedDomainEx2(p, mem_ctx, &r);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_COLLISION)) {
+			test_DeleteTrustedDomain(p, mem_ctx, handle, trustinfo.netbios_name);
+			status = dcerpc_lsa_CreateTrustedDomainEx2(p, mem_ctx, &r);
+		}
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("CreateTrustedDomainEx failed - %s\n", nt_errstr(status));
+			ret = false;
+		} else {
+		
+			q.in.trustdom_handle = &trustdom_handle[i];
+			q.in.level = LSA_TRUSTED_DOMAIN_INFO_INFO_EX;
+			status = dcerpc_lsa_QueryTrustedDomainInfo(p, mem_ctx, &q);
+			if (!NT_STATUS_IS_OK(status)) {
+				printf("QueryTrustedDomainInfo level 1 failed - %s\n", nt_errstr(status));
+				ret = false;
+			} else if (!q.out.info) {
+				ret = false;
+			} else {
+				if (strcmp(q.out.info->info_ex.netbios_name.string, trustinfo.netbios_name.string) != 0) {
+					printf("QueryTrustedDomainInfo returned inconsistant short name: %s != %s\n",
+					       q.out.info->info_ex.netbios_name.string, trustinfo.netbios_name.string);
+					ret = false;
+				}
+				if (q.out.info->info_ex.trust_type != trustinfo.trust_type) {
+					printf("QueryTrustedDomainInfo of %s returned incorrect trust type %d != %d\n", 
+					       trust_name, q.out.info->info_ex.trust_type, trustinfo.trust_type);
+					ret = false;
+				}
+				if (q.out.info->info_ex.trust_attributes != LSA_TRUST_ATTRIBUTE_USES_RC4_ENCRYPTION) {
+					printf("QueryTrustedDomainInfo of %s returned incorrect trust attributes %d != %d\n", 
+					       trust_name, q.out.info->info_ex.trust_attributes, LSA_TRUST_ATTRIBUTE_USES_RC4_ENCRYPTION);
+					ret = false;
+				}
+				if (q.out.info->info_ex.trust_direction != trustinfo.trust_direction) {
+					printf("QueryTrustedDomainInfo of %s returned incorrect trust direction %d != %d\n", 
+					       trust_name, q.out.info->info_ex.trust_direction, trustinfo.trust_direction);
+					ret = false;
+				}
+			}
+		}
+	}
+
+	/* now that we have some domains to look over, we can test the enum calls */
+	if (!test_EnumTrustDom(p, mem_ctx, handle)) {
+		ret = false;
+	}
+	
+	for (i=0; i<12; i++) {
+		if (!test_DeleteTrustedDomainBySid(p, mem_ctx, handle, domsid[i])) {
+			ret = false;
+		}
+	}
+
+	return ret;
+}
+
 static bool test_QueryDomainInfoPolicy(struct dcerpc_pipe *p, 
 				 struct torture_context *tctx, 
 				 struct policy_handle *handle)
@@ -2348,7 +2451,11 @@ bool torture_rpc_lsa(struct torture_context *tctx)
 		if (!test_CreateTrustedDomain(p, tctx, handle)) {
 			ret = false;
 		}
-		
+
+		if (!test_CreateTrustedDomainEx2(p, tctx, handle)) {
+			ret = false;
+		}
+
 		if (!test_EnumAccounts(p, tctx, handle)) {
 			ret = false;
 		}
