@@ -578,9 +578,16 @@ import "misc.idl", "security.idl";
 		lsa_TrustAttributes trust_attributes;
 	} lsa_TrustDomainInfoInfoEx;
 
+	typedef [public,v1_enum] enum {
+		TRUST_AUTH_TYPE_NONE = 0,
+		TRUST_AUTH_TYPE_NT4OWF = 1,
+		TRUST_AUTH_TYPE_CLEAR = 2,
+		TRUST_AUTH_TYPE_VERSION = 3
+	} lsa_TrustAuthType;
+
 	typedef struct {
 		NTTIME_hyper   last_update_time;
-		uint32         secret_type;
+		lsa_TrustAuthType AuthType;
 		lsa_DATA_BUF2  data;
 	} lsa_TrustDomainInfoBuffer;
 
@@ -652,7 +659,11 @@ import "misc.idl", "security.idl";
 		);
 
 	/* Function:     0x1b */
-	[todo] NTSTATUS lsa_SetInformationTrustedDomain();
+	NTSTATUS lsa_SetInformationTrustedDomain(
+		[in]                  policy_handle         *trustdom_handle,
+		[in]                  lsa_TrustDomInfoEnum   level, 
+		[in,switch_is(level)] lsa_TrustedDomainInfo *info
+		);
 
 	/* Function:          0x1c */
 	[public] NTSTATUS lsa_OpenSecret(
@@ -770,7 +781,12 @@ import "misc.idl", "security.idl";
         );
 
 	/* Function:     0x28 */
-	[todo] NTSTATUS lsa_SetTrustedDomainInfo();
+	NTSTATUS lsa_SetTrustedDomainInfo(
+		[in]               policy_handle         *handle,
+		[in]               dom_sid2              *dom_sid,
+		[in]                   lsa_TrustDomInfoEnum  level, 
+		[in,switch_is(level)] lsa_TrustedDomainInfo *info
+        );
 	/* Function:      0x29 */
 	NTSTATUS lsa_DeleteTrustedDomain(
 		[in]               policy_handle         *handle,
@@ -855,9 +871,15 @@ import "misc.idl", "security.idl";
 		[in]               uint32 max_size
 		);
 
-
 	/* Function 0x33 */
-	[todo] NTSTATUS lsa_CreateTrustedDomainEx();
+	NTSTATUS lsa_CreateTrustedDomainEx(
+		[in]  policy_handle               *policy_handle,
+		[in]  lsa_TrustDomainInfoInfoEx   *info,
+		[in]  lsa_TrustDomainInfoAuthInfo *auth_info,
+		[in]  uint32 access_mask,
+		[out] policy_handle               *trustdom_handle
+		);
+
 
 	/* Function 0x34 */
 	NTSTATUS lsa_CloseTrustedDomainEx(
@@ -971,7 +993,13 @@ import "misc.idl", "security.idl";
 		);
 
 	/* Function 0x3b */
-	[todo] NTSTATUS lsa_CreateTrustedDomainEx2();
+	NTSTATUS lsa_CreateTrustedDomainEx2(
+		[in]  policy_handle               *policy_handle,
+		[in]  lsa_TrustDomainInfoInfoEx   *info,
+		[in]  lsa_TrustDomainInfoAuthInfo *auth_info,
+		[in]  uint32                       access_mask,
+		[out] policy_handle               *trustdom_handle
+		);
 
 	/* Function 0x3c */
 	[todo] NTSTATUS lsa_CREDRWRITE();

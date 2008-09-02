@@ -1,6 +1,6 @@
 #include "idl_types.h"
 
-import "drsuapi.idl", "misc.idl", "samr.idl";
+import "drsuapi.idl", "misc.idl", "samr.idl", "lsa.idl";
 
 [
   uuid("12345778-1234-abcd-0001-00000001"),
@@ -12,7 +12,7 @@ interface drsblobs {
 	typedef bitmap drsuapi_DsReplicaSyncOptions drsuapi_DsReplicaSyncOptions;
 	typedef bitmap drsuapi_DsReplicaNeighbourFlags drsuapi_DsReplicaNeighbourFlags;
 	typedef [v1_enum] enum drsuapi_DsAttributeId drsuapi_DsAttributeId;
-
+	typedef [v1_enum] enum lsa_TrustAuthType lsa_TrustAuthType;
 	/*
 	 * replPropertyMetaData
 	 * w2k  uses version 1
@@ -357,25 +357,6 @@ interface drsblobs {
 		);
 
 	typedef struct {
-		NTTIME time1;
-		uint32 unknown1;
-		DATA_BLOB value;
-		[flag(NDR_ALIGN4)] DATA_BLOB _pad;
-	} trustAuthInOutSecret1;
-
-	typedef struct {
-		[relative] trustAuthInOutSecret1 *value1;
-		[relative] trustAuthInOutSecret1 *value2;
-	} trustAuthInOutCtr1;
-	
-	typedef [v1_enum] enum {
-		TRUST_AUTH_TYPE_NONE = 0,
-		TRUST_AUTH_TYPE_NT4OWF = 1,
-		TRUST_AUTH_TYPE_CLEAR = 2,
-		TRUST_AUTH_TYPE_VERSION = 3
-	} trustAuthType;
-
-	typedef struct {
 		[value(0)] uint32 size;
 	} AuthInfoNone;
 
@@ -383,6 +364,20 @@ interface drsblobs {
 		[value(16)] uint32 size;
 		samr_Password password;
 	} AuthInfoNT4Owf;
+
+	/* 
+	 * the secret value is encoded as UTF16 if it's a string
+	 * but depending the AuthType, it might also be krb5 trusts have random bytes here, so converting to UTF16
+	 * mayfail...
+	 *
+	 * TODO: We should try handle the case of a random buffer in all places
+	 *       we deal with cleartext passwords from windows
+	 *
+	 * so we don't use this:
+	 *
+	 * uint32 value_len;
+	 * [charset(UTF16)] uint8 value[value_len];
+	 */
 
 	typedef struct {
 		uint32 size;
@@ -403,21 +398,8 @@ interface drsblobs {
 
 	typedef [public] struct {
 		NTTIME LastUpdateTime;
-		trustAuthType AuthType;
+		lsa_TrustAuthType AuthType;
 		
-		/* 
-		 * the secret value is encoded as UTF16 if it's a string
-		 * but depending the AuthType, it might also be krb5 trusts have random bytes here, so converting to UTF16
-		 * mayfail...
-		 *
-		 * TODO: We should try handle the case of a random buffer in all places
-		 *       we deal with cleartext passwords from windows
-		 *
-		 * so we don't use this:
-		 *
-		 * uint32 value_len;
-		 * [charset(UTF16)] uint8 value[value_len];
-		 */
 		[switch_is(AuthType)] AuthInfo AuthInfo;
 		[flag(NDR_ALIGN4)] DATA_BLOB _pad;
 	} AuthenticationInformation;
