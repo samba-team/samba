@@ -35,6 +35,15 @@ WERROR NetGetJoinableOUs_r(struct libnetapi_ctx *ctx,
 			   struct NetGetJoinableOUs *r);
 WERROR NetGetJoinableOUs_l(struct libnetapi_ctx *ctx,
 			   struct NetGetJoinableOUs *r);
+NET_API_STATUS NetRenameMachineInDomain(const char * server_name /* [in] */,
+					const char * new_machine_name /* [in] */,
+					const char * account /* [in] */,
+					const char * password /* [in] */,
+					uint32_t rename_options /* [in] */);
+WERROR NetRenameMachineInDomain_r(struct libnetapi_ctx *ctx,
+				  struct NetRenameMachineInDomain *r);
+WERROR NetRenameMachineInDomain_l(struct libnetapi_ctx *ctx,
+				  struct NetRenameMachineInDomain *r);
 NET_API_STATUS NetServerGetInfo(const char * server_name /* [in] [unique] */,
 				uint32_t level /* [in] */,
 				uint8_t **buffer /* [out] [ref] */);

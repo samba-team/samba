@@ -215,6 +215,54 @@ NET_API_STATUS NetGetJoinableOUs(const char * server_name /* [in] [unique] */,
 }
 
 /****************************************************************
+ NetRenameMachineInDomain
+****************************************************************/
+
+NET_API_STATUS NetRenameMachineInDomain(const char * server_name /* [in] */,
+					const char * new_machine_name /* [in] */,
+					const char * account /* [in] */,
+					const char * password /* [in] */,
+					uint32_t rename_options /* [in] */)
+{
+	struct NetRenameMachineInDomain r;
+	struct libnetapi_ctx *ctx = NULL;
+	NET_API_STATUS status;
+	WERROR werr;
+
+	status = libnetapi_getctx(&ctx);
+	if (status != 0) {
+		return status;
+	}
+
+	/* In parameters */
+	r.in.server_name = server_name;
+	r.in.new_machine_name = new_machine_name;
+	r.in.account = account;
+	r.in.password = password;
+	r.in.rename_options = rename_options;
+
+	/* Out parameters */
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(NetRenameMachineInDomain, &r);
+	}
+
+	if (LIBNETAPI_LOCAL_SERVER(server_name)) {
+		werr = NetRenameMachineInDomain_l(ctx, &r);
+	} else {
+		werr = NetRenameMachineInDomain_r(ctx, &r);
+	}
+
+	r.out.result = W_ERROR_V(werr);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(NetRenameMachineInDomain, &r);
+	}
+
+	return r.out.result;
+}
+
+/****************************************************************
  NetServerGetInfo
 ****************************************************************/
 

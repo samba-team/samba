@@ -447,3 +447,21 @@ WERROR NetGetJoinableOUs_r(struct libnetapi_ctx *ctx,
  done:
 	return werr;
 }
+
+/****************************************************************
+****************************************************************/
+
+WERROR NetRenameMachineInDomain_r(struct libnetapi_ctx *ctx,
+				  struct NetRenameMachineInDomain *r)
+{
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR NetRenameMachineInDomain_l(struct libnetapi_ctx *ctx,
+				  struct NetRenameMachineInDomain *r)
+{
+	LIBNETAPI_REDIRECT_TO_LOCALHOST(ctx, r, NetRenameMachineInDomain);
+}
