@@ -58,6 +58,23 @@ struct domsid {
 #define NETSETUP_INSTALL_INVOCATION ( 0x00040000 )
 #define NETSETUP_IGNORE_UNSUPPORTED_FLAGS ( 0x10000000 )
 
+enum NETSETUP_JOIN_STATUS
+#ifndef USE_UINT_ENUMS
+ {
+	NetSetupUnknownStatus=0,
+	NetSetupUnjoined=1,
+	NetSetupWorkgroupName=2,
+	NetSetupDomainName=3
+}
+#else
+ { __donnot_use_enum_NETSETUP_JOIN_STATUS=0x7FFFFFFF}
+#define NetSetupUnknownStatus ( 0 )
+#define NetSetupUnjoined ( 1 )
+#define NetSetupWorkgroupName ( 2 )
+#define NetSetupDomainName ( 3 )
+#endif
+;
+
 struct SERVER_INFO_100 {
 	uint32_t sv100_platform_id;
 	const char * sv100_name;
