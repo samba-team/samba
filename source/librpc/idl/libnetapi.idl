@@ -88,6 +88,18 @@ interface libnetapi
 		);
 
 	/*******************************************/
+	/* NetRenameMachineInDomain                */
+	/*******************************************/
+
+	[nopush,nopull] NET_API_STATUS NetRenameMachineInDomain(
+		[in] string server_name,
+		[in] string new_machine_name,
+		[in] string account,
+		[in] string password,
+		[in] uint32 rename_options
+		);
+
+	/*******************************************/
 	/* NetServerGetInfo                        */
 	/*******************************************/
 
