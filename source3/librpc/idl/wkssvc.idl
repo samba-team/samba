@@ -627,10 +627,10 @@ import "srvsvc.idl", "lsa.idl";
 	/*****************************/
 	/* Function        0x14      */
 	typedef enum {
-		NetSetupUnknownStatus = 0,
-		NetSetupUnjoined = 1,
-		NetSetupWorkgroupName = 2,
-		NetSetupDomainName = 3
+		NET_SETUP_UNKNOWN_STATUS = 0,
+		NET_SETUP_UNJOINED = 1,
+		NET_SETUP_WORKGROUP_NAME = 2,
+		NET_SETUP_DOMAIN_NAME = 3
 	} wkssvc_NetJoinStatus;
 
 	WERROR wkssvc_NetrGetJoinInformation(
