@@ -68,6 +68,13 @@ interface libnetapi
 	/* NetGetJoinInformation                   */
 	/*******************************************/
 
+	typedef enum {
+		NetSetupUnknownStatus = 0,
+		NetSetupUnjoined = 1,
+		NetSetupWorkgroupName = 2,
+		NetSetupDomainName = 3
+	} NETSETUP_JOIN_STATUS;
+
 	[nopush,nopull] NET_API_STATUS NetGetJoinInformation(
 		[in,unique] string *server_name,
 		[out] string **name_buffer,
