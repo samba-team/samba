@@ -439,17 +439,17 @@ enum wkssvc_NetValidateNameType
 enum wkssvc_NetJoinStatus
 #ifndef USE_UINT_ENUMS
  {
-	NetSetupUnknownStatus=0,
-	NetSetupUnjoined=1,
-	NetSetupWorkgroupName=2,
-	NetSetupDomainName=3
+	NET_SETUP_UNKNOWN_STATUS=0,
+	NET_SETUP_UNJOINED=1,
+	NET_SETUP_WORKGROUP_NAME=2,
+	NET_SETUP_DOMAIN_NAME=3
 }
 #else
  { __donnot_use_enum_wkssvc_NetJoinStatus=0x7FFFFFFF}
-#define NetSetupUnknownStatus ( 0 )
-#define NetSetupUnjoined ( 1 )
-#define NetSetupWorkgroupName ( 2 )
-#define NetSetupDomainName ( 3 )
+#define NET_SETUP_UNKNOWN_STATUS ( 0 )
+#define NET_SETUP_UNJOINED ( 1 )
+#define NET_SETUP_WORKGROUP_NAME ( 2 )
+#define NET_SETUP_DOMAIN_NAME ( 3 )
 #endif
 ;
 
