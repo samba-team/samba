@@ -14,79 +14,81 @@
 
 #define NDR_NETGETJOINABLEOUS (0x03)
 
-#define NDR_NETSERVERGETINFO (0x04)
+#define NDR_NETRENAMEMACHINEINDOMAIN (0x04)
 
-#define NDR_NETSERVERSETINFO (0x05)
+#define NDR_NETSERVERGETINFO (0x05)
 
-#define NDR_NETGETDCNAME (0x06)
+#define NDR_NETSERVERSETINFO (0x06)
 
-#define NDR_NETGETANYDCNAME (0x07)
+#define NDR_NETGETDCNAME (0x07)
 
-#define NDR_DSGETDCNAME (0x08)
+#define NDR_NETGETANYDCNAME (0x08)
 
-#define NDR_NETUSERADD (0x09)
+#define NDR_DSGETDCNAME (0x09)
 
-#define NDR_NETUSERDEL (0x0a)
+#define NDR_NETUSERADD (0x0a)
 
-#define NDR_NETUSERENUM (0x0b)
+#define NDR_NETUSERDEL (0x0b)
 
-#define NDR_NETUSERCHANGEPASSWORD (0x0c)
+#define NDR_NETUSERENUM (0x0c)
 
-#define NDR_NETUSERGETINFO (0x0d)
+#define NDR_NETUSERCHANGEPASSWORD (0x0d)
 
-#define NDR_NETUSERSETINFO (0x0e)
+#define NDR_NETUSERGETINFO (0x0e)
 
-#define NDR_NETUSERGETGROUPS (0x0f)
+#define NDR_NETUSERSETINFO (0x0f)
 
-#define NDR_NETUSERMODALSGET (0x10)
+#define NDR_NETUSERGETGROUPS (0x10)
 
-#define NDR_NETUSERMODALSSET (0x11)
+#define NDR_NETUSERMODALSGET (0x11)
 
-#define NDR_NETQUERYDISPLAYINFORMATION (0x12)
+#define NDR_NETUSERMODALSSET (0x12)
 
-#define NDR_NETGROUPADD (0x13)
+#define NDR_NETQUERYDISPLAYINFORMATION (0x13)
 
-#define NDR_NETGROUPDEL (0x14)
+#define NDR_NETGROUPADD (0x14)
 
-#define NDR_NETGROUPENUM (0x15)
+#define NDR_NETGROUPDEL (0x15)
 
-#define NDR_NETGROUPSETINFO (0x16)
+#define NDR_NETGROUPENUM (0x16)
 
-#define NDR_NETGROUPGETINFO (0x17)
+#define NDR_NETGROUPSETINFO (0x17)
 
-#define NDR_NETGROUPADDUSER (0x18)
+#define NDR_NETGROUPGETINFO (0x18)
 
-#define NDR_NETGROUPDELUSER (0x19)
+#define NDR_NETGROUPADDUSER (0x19)
 
-#define NDR_NETGROUPGETUSERS (0x1a)
+#define NDR_NETGROUPDELUSER (0x1a)
 
-#define NDR_NETLOCALGROUPADD (0x1b)
+#define NDR_NETGROUPGETUSERS (0x1b)
 
-#define NDR_NETLOCALGROUPDEL (0x1c)
+#define NDR_NETLOCALGROUPADD (0x1c)
 
-#define NDR_NETLOCALGROUPGETINFO (0x1d)
+#define NDR_NETLOCALGROUPDEL (0x1d)
 
-#define NDR_NETLOCALGROUPSETINFO (0x1e)
+#define NDR_NETLOCALGROUPGETINFO (0x1e)
 
-#define NDR_NETLOCALGROUPENUM (0x1f)
+#define NDR_NETLOCALGROUPSETINFO (0x1f)
 
-#define NDR_NETLOCALGROUPADDMEMBERS (0x20)
+#define NDR_NETLOCALGROUPENUM (0x20)
 
-#define NDR_NETLOCALGROUPDELMEMBERS (0x21)
+#define NDR_NETLOCALGROUPADDMEMBERS (0x21)
 
-#define NDR_NETLOCALGROUPGETMEMBERS (0x22)
+#define NDR_NETLOCALGROUPDELMEMBERS (0x22)
 
-#define NDR_NETLOCALGROUPSETMEMBERS (0x23)
+#define NDR_NETLOCALGROUPGETMEMBERS (0x23)
 
-#define NDR_NETREMOTETOD (0x24)
+#define NDR_NETLOCALGROUPSETMEMBERS (0x24)
 
-#define NDR_NETSHAREADD (0x25)
+#define NDR_NETREMOTETOD (0x25)
 
-#define NDR_NETSHAREDEL (0x26)
+#define NDR_NETSHAREADD (0x26)
 
-#define NDR_NETSHAREENUM (0x27)
+#define NDR_NETSHAREDEL (0x27)
 
-#define NDR_LIBNETAPI_CALL_COUNT (40)
+#define NDR_NETSHAREENUM (0x28)
+
+#define NDR_LIBNETAPI_CALL_COUNT (41)
 enum ndr_err_code ndr_push_NET_API_STATUS(struct ndr_push *ndr, int ndr_flags, enum NET_API_STATUS r);
 enum ndr_err_code ndr_pull_NET_API_STATUS(struct ndr_pull *ndr, int ndr_flags, enum NET_API_STATUS *r);
 void ndr_print_NET_API_STATUS(struct ndr_print *ndr, const char *name, enum NET_API_STATUS r);
@@ -234,6 +236,9 @@ void ndr_print_NetGetJoinInformation(struct ndr_print *ndr, const char *name, in
 enum ndr_err_code ndr_push_NetGetJoinableOUs(struct ndr_push *ndr, int flags, const struct NetGetJoinableOUs *r);
 enum ndr_err_code ndr_pull_NetGetJoinableOUs(struct ndr_pull *ndr, int flags, struct NetGetJoinableOUs *r);
 void ndr_print_NetGetJoinableOUs(struct ndr_print *ndr, const char *name, int flags, const struct NetGetJoinableOUs *r);
+enum ndr_err_code ndr_push_NetRenameMachineInDomain(struct ndr_push *ndr, int flags, const struct NetRenameMachineInDomain *r);
+enum ndr_err_code ndr_pull_NetRenameMachineInDomain(struct ndr_pull *ndr, int flags, struct NetRenameMachineInDomain *r);
+void ndr_print_NetRenameMachineInDomain(struct ndr_print *ndr, const char *name, int flags, const struct NetRenameMachineInDomain *r);
 enum ndr_err_code ndr_push_NetServerGetInfo(struct ndr_push *ndr, int flags, const struct NetServerGetInfo *r);
 enum ndr_err_code ndr_pull_NetServerGetInfo(struct ndr_pull *ndr, int flags, struct NetServerGetInfo *r);
 void ndr_print_NetServerGetInfo(struct ndr_print *ndr, const char *name, int flags, const struct NetServerGetInfo *r);
