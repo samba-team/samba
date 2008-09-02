@@ -97,6 +97,13 @@ struct DOMAIN_CONTROLLER_INFO {
 
 #define TIMEQ_FOREVER  ( (uint32_t)-1L )
 
+enum NETSETUP_JOIN_STATUS {
+	NetSetupUnknownStatus=0,
+	NetSetupUnjoined=1,
+	NetSetupWorkgroupName=2,
+	NetSetupDomainName=3
+};
+
 struct SERVER_INFO_100 {
 	uint32_t sv100_platform_id;
 	const char * sv100_name;
