@@ -829,6 +829,29 @@ NET_API_STATUS NetGetJoinableOUs(const char * server_name /* [in] */,
 
 /************************************************************//**
  *
+ * NetRenameMachineInDomain
+ *
+ * @brief Rename a machine in a domain
+ *
+ * @param[in] server_name The server name to connect to
+ * @param[in] new_machine_name The new machine name
+ * @param[in] account The domain account used for the query
+ * @param[in] password The domain account's password used for the query
+ * @param[in] rename_options Options used for the rename operation
+ * @return NET_API_STATUS
+ *
+ * example join/rename_machine.c
+ *
+ ***************************************************************/
+
+NET_API_STATUS NetRenameMachineInDomain(const char * server_name /* [in] */,
+					const char * new_machine_name /* [in] */,
+					const char * account /* [in] */,
+					const char * password /* [in] */,
+					uint32_t rename_options /* [in] */);
+
+/************************************************************//**
+ *
  * NetServerGetInfo
  *
  * @brief Get Information on a server
