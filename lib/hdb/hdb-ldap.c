@@ -223,7 +223,7 @@ LDAP_addmod_len(LDAPMod *** modlist, int modop, const char *attribute,
 
 	(*modlist)[cMods]->mod_bvalues = bv;
 
-	bv[i] = ber_memalloc(sizeof(*bv));;
+	bv[i] = ber_memalloc(sizeof(**bv));;
 	if (bv[i] == NULL)
 	    return ENOMEM;
 
