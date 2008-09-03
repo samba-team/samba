@@ -1637,6 +1637,7 @@ NTSTATUS rpc_api_pipe_req(struct rpc_pipe_client *cli,
 		uint16 frag_len = 0;
 		uint8 flags = 0;
 		uint32 ss_padding = 0;
+		ssize_t num_written;
 
 		data_sent_thistime = calculate_data_len_tosend(cli, data_left,
 						&frag_len, &auth_len, &ss_padding);
@@ -1724,43 +1725,39 @@ NTSTATUS rpc_api_pipe_req(struct rpc_pipe_client *cli,
 			}
 
 			return ret;
-		} else {
-			/* More packets to come - write and continue. */
-			ssize_t num_written;
+		}
 
-			switch (cli->transport_type) {
-			case NCACN_NP:
-				num_written = cli_write(cli->trans.np.cli,
-							cli->trans.np.fnum,
-							8, /* 8 means message mode. */
-							prs_data_p(&outgoing_pdu),
-							(off_t)0,
-							(size_t)hdr.frag_len);
+		switch (cli->transport_type) {
+		case NCACN_NP:
+			num_written = cli_write(cli->trans.np.cli,
+						cli->trans.np.fnum,
+						8, /* 8 means message mode. */
+						prs_data_p(&outgoing_pdu),
+						(off_t)0,
+						(size_t)hdr.frag_len);
 
-				if (num_written != hdr.frag_len) {
-					prs_mem_free(&outgoing_pdu);
-					return cli_get_nt_error(
-						cli->trans.np.cli);
-				}
-				break;
-			case NCACN_IP_TCP:
-			case NCACN_UNIX_STREAM:
-				num_written = write_data(
-					cli->trans.sock.fd,
-					prs_data_p(&outgoing_pdu),
-					(size_t)hdr.frag_len);
-				if (num_written != hdr.frag_len) {
-					NTSTATUS status;
-					status = map_nt_error_from_unix(errno);
-					prs_mem_free(&outgoing_pdu);
-					return status;
-				}
-				break;
-			default:
-				DEBUG(0, ("unknown transport type %d\n",
-					  cli->transport_type));
-				return NT_STATUS_INTERNAL_ERROR;
+			if (num_written != hdr.frag_len) {
+				prs_mem_free(&outgoing_pdu);
+				return cli_get_nt_error(cli->trans.np.cli);
 			}
+			break;
+		case NCACN_IP_TCP:
+		case NCACN_UNIX_STREAM:
+			num_written = write_data(
+				cli->trans.sock.fd,
+				prs_data_p(&outgoing_pdu),
+				(size_t)hdr.frag_len);
+			if (num_written != hdr.frag_len) {
+				NTSTATUS status;
+				status = map_nt_error_from_unix(errno);
+				prs_mem_free(&outgoing_pdu);
+				return status;
+			}
+			break;
+		default:
+			DEBUG(0, ("unknown transport type %d\n",
+				  cli->transport_type));
+			return NT_STATUS_INTERNAL_ERROR;
 		}
 
 		current_data_offset += data_sent_thistime;
