@@ -1086,6 +1086,7 @@ NTSTATUS make_server_info_pw(auth_serversupplied_info **server_info,
 	NTSTATUS status;
 	struct samu *sampass = NULL;
 	gid_t *gids;
+	char *qualified_name = NULL;
 	TALLOC_CTX *mem_ctx = NULL;
 	DOM_SID u_sid;
 	enum lsa_SidType type;
@@ -1151,10 +1152,18 @@ NTSTATUS make_server_info_pw(auth_serversupplied_info **server_info,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (!lookup_domain_name(mem_ctx,
-				unix_users_domain_name(), unix_username,
-				LOOKUP_NAME_ALL,
-				NULL, NULL, &u_sid, &type)) {
+	qualified_name = talloc_asprintf(mem_ctx, "%s\\%s",
+					unix_users_domain_name(),
+					unix_username );
+	if (!qualified_name) {
+		TALLOC_FREE(result);
+		TALLOC_FREE(mem_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (!lookup_name(mem_ctx, qualified_name, LOOKUP_NAME_ALL,
+						NULL, NULL,
+						&u_sid, &type)) {
 		TALLOC_FREE(result);
 		TALLOC_FREE(mem_ctx);
 		return NT_STATUS_NO_SUCH_USER;

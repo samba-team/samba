@@ -94,8 +94,8 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 			    DOM_SID *sid,
 			    enum lsa_SidType *type)
 {
+	const char *fullname;
 	uint32 flags = LOOKUP_NAME_ALL;
-	bool res;
 
 	switch ( original_cmd ) {
 	case WINBINDD_LOOKUPNAME:
@@ -107,26 +107,28 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 		DEBUG(10,("winbindd_passdb: limiting name_to_sid() to explicit mappings\n"));
 		break;
 	}
-
-	DEBUG(10, ("looking up name [%s\\%s] (domain\\name) \n",
-		   domain_name?domain_name:"(NULL)", name));
-
-	if (strchr_m(name, '\\')) {
-		res = lookup_name(mem_ctx, name, flags, NULL, NULL, sid, type);
+	
+	if (domain_name && domain_name[0] && strchr_m(name, '\\') == NULL) {
+		fullname = talloc_asprintf(mem_ctx, "%s\\%s",
+				domain_name, name);
+		if (fullname == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
 	} else {
-		res = lookup_domain_name(mem_ctx, domain_name, name, flags,
-					 NULL, NULL, sid, type);
+		fullname = name;
 	}
 
-	if (!res) {
+	DEBUG(10, ("Finding fullname %s\n", fullname));
+
+	if ( !lookup_name( mem_ctx, fullname, flags, NULL, NULL, sid, type ) ) {
 		return NT_STATUS_NONE_MAPPED;
 	}
 
-	DEBUG(10, ("name_to_sid for [%s\\%s] returned %s (%s)\n",
-		domain_name?domain_name:"(NULL)", name,
+	DEBUG(10, ("name_to_sid for %s returned %s (%s)\n",
+		fullname,
 		sid_string_dbg(sid),
 		sid_type_lookup((uint32)*type)));
-
+		
 	return NT_STATUS_OK;
 }
 
