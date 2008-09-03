@@ -2678,37 +2678,6 @@ krb5_enctype_to_keytype(krb5_context context,
 }
 
 krb5_error_code KRB5_LIB_FUNCTION
-krb5_keytype_to_enctypes (krb5_context context,
-			  krb5_keytype keytype,
-			  unsigned *len,
-			  krb5_enctype **val)
-{
-    int i;
-    unsigned n = 0;
-    krb5_enctype *ret;
-
-    for (i = num_etypes - 1; i >= 0; --i) {
-	if (etypes[i]->keytype->type == keytype
-	    && !(etypes[i]->flags & F_PSEUDO))
-	    ++n;
-    }
-    ret = malloc(n * sizeof(*ret));
-    if (ret == NULL && n != 0) {
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
-	return ENOMEM;
-    }
-    n = 0;
-    for (i = num_etypes - 1; i >= 0; --i) {
-	if (etypes[i]->keytype->type == keytype
-	    && !(etypes[i]->flags & F_PSEUDO))
-	    ret[n++] = etypes[i]->type;
-    }
-    *len = n;
-    *val = ret;
-    return 0;
-}
-
-krb5_error_code KRB5_LIB_FUNCTION
 krb5_enctype_valid(krb5_context context, 
 		 krb5_enctype etype)
 {
@@ -2727,6 +2696,44 @@ krb5_enctype_valid(krb5_context context,
     }
     return 0;
 }
+
+/**
+ * Return the coresponding encryption type for a checksum type.
+ *
+ * @param context Kerberos context
+ * @param ctype The checksum type to get the result enctype for
+ * @param etype The returned encryption, when the matching etype is
+ * not found, etype is set to ETYPE_NULL.
+ *
+ * @return Return an error code for an failure or 0 on success.
+ * @ingroup krb5_crypto
+ */
+
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_cksumtype_to_enctype(krb5_context context,
+			  krb5_cksumtype ctype,
+			  krb5_enctype *etype)
+{
+    int i;
+
+    *etype = ETYPE_NULL;
+
+    for(i = 0; i < num_etypes; i++) {
+	if(etypes[i]->keyed_checksum && 
+	   etypes[i]->keyed_checksum->type == ctype)
+        {
+	    *etype = etypes[i]->type;
+	    return 0;
+	}
+    }
+
+    krb5_set_error_message (context, KRB5_PROG_SUMTYPE_NOSUPP,
+			    "ckecksum type %d not supported",
+			    (int)ctype);
+    return KRB5_PROG_SUMTYPE_NOSUPP;
+}
+
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_cksumtype_valid(krb5_context context, 
@@ -3490,7 +3497,6 @@ krb5_decrypt_iov_ivec(krb5_context context,
 
     return 0;
 }
-
 
 size_t KRB5_LIB_FUNCTION
 krb5_crypto_length(krb5_context context,
@@ -4562,4 +4568,36 @@ krb5_string_to_keytype(krb5_context context,
 			   "key type %s not supported", string);
     return KRB5_PROG_KEYTYPE_NOSUPP;
 }
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_keytype_to_enctypes (krb5_context context,
+			  krb5_keytype keytype,
+			  unsigned *len,
+			  krb5_enctype **val)
+{
+    int i;
+    unsigned n = 0;
+    krb5_enctype *ret;
+
+    for (i = num_etypes - 1; i >= 0; --i) {
+	if (etypes[i]->keytype->type == keytype
+	    && !(etypes[i]->flags & F_PSEUDO))
+	    ++n;
+    }
+    ret = malloc(n * sizeof(*ret));
+    if (ret == NULL && n != 0) {
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	return ENOMEM;
+    }
+    n = 0;
+    for (i = num_etypes - 1; i >= 0; --i) {
+	if (etypes[i]->keytype->type == keytype
+	    && !(etypes[i]->flags & F_PSEUDO))
+	    ret[n++] = etypes[i]->type;
+    }
+    *len = n;
+    *val = ret;
+    return 0;
+}
+
 #endif
