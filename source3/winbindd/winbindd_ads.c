@@ -1239,8 +1239,11 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 				continue;				
 			}
 			
-			(*names)[ret_count] = CONST_DISCARD(char *, trusts.array[i].netbios_name);
-			(*alt_names)[ret_count] = CONST_DISCARD(char *, trusts.array[i].dns_name);
+			(*names)[ret_count] = talloc_strdup(mem_ctx, trusts.array[i].netbios_name);
+			(*alt_names)[ret_count] = talloc_strdup(mem_ctx, trusts.array[i].dns_name);
+			if ((*names)[ret_count] == NULL) {
+				return NT_STATUS_NO_MEMORY;
+			}
 			if (trusts.array[i].sid) {
 				sid_copy(&(*dom_sids)[ret_count], trusts.array[i].sid);
 			} else {
@@ -1254,7 +1257,7 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 			if (trusts.array[i].sid) {
 				sid_copy( &d.sid, trusts.array[i].sid);
 			} else {
-				sid_copy(&(*dom_sids)[ret_count], &global_sid_NULL);
+				sid_copy(&d.sid, &global_sid_NULL);
 			}
 
 			if ( domain->primary ) {

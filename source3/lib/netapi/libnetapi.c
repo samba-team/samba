@@ -726,6 +726,58 @@ NET_API_STATUS NetUserSetInfo(const char * server_name /* [in] */,
 }
 
 /****************************************************************
+ NetUserGetGroups
+****************************************************************/
+
+NET_API_STATUS NetUserGetGroups(const char * server_name /* [in] */,
+				const char * user_name /* [in] */,
+				uint32_t level /* [in] */,
+				uint8_t **buffer /* [out] [ref] */,
+				uint32_t prefmaxlen /* [in] */,
+				uint32_t *entries_read /* [out] [ref] */,
+				uint32_t *total_entries /* [out] [ref] */)
+{
+	struct NetUserGetGroups r;
+	struct libnetapi_ctx *ctx = NULL;
+	NET_API_STATUS status;
+	WERROR werr;
+
+	status = libnetapi_getctx(&ctx);
+	if (status != 0) {
+		return status;
+	}
+
+	/* In parameters */
+	r.in.server_name = server_name;
+	r.in.user_name = user_name;
+	r.in.level = level;
+	r.in.prefmaxlen = prefmaxlen;
+
+	/* Out parameters */
+	r.out.buffer = buffer;
+	r.out.entries_read = entries_read;
+	r.out.total_entries = total_entries;
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(NetUserGetGroups, &r);
+	}
+
+	if (LIBNETAPI_LOCAL_SERVER(server_name)) {
+		werr = NetUserGetGroups_l(ctx, &r);
+	} else {
+		werr = NetUserGetGroups_r(ctx, &r);
+	}
+
+	r.out.result = W_ERROR_V(werr);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(NetUserGetGroups, &r);
+	}
+
+	return r.out.result;
+}
+
+/****************************************************************
  NetUserModalsGet
 ****************************************************************/
 
@@ -1716,6 +1768,52 @@ NET_API_STATUS NetRemoteTOD(const char * server_name /* [in] */,
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(NetRemoteTOD, &r);
+	}
+
+	return r.out.result;
+}
+
+/****************************************************************
+ NetShareAdd
+****************************************************************/
+
+NET_API_STATUS NetShareAdd(const char * server_name /* [in] */,
+			   uint32_t level /* [in] */,
+			   uint8_t *buffer /* [in] [ref] */,
+			   uint32_t *parm_err /* [out] [ref] */)
+{
+	struct NetShareAdd r;
+	struct libnetapi_ctx *ctx = NULL;
+	NET_API_STATUS status;
+	WERROR werr;
+
+	status = libnetapi_getctx(&ctx);
+	if (status != 0) {
+		return status;
+	}
+
+	/* In parameters */
+	r.in.server_name = server_name;
+	r.in.level = level;
+	r.in.buffer = buffer;
+
+	/* Out parameters */
+	r.out.parm_err = parm_err;
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(NetShareAdd, &r);
+	}
+
+	if (LIBNETAPI_LOCAL_SERVER(server_name)) {
+		werr = NetShareAdd_l(ctx, &r);
+	} else {
+		werr = NetShareAdd_r(ctx, &r);
+	}
+
+	r.out.result = W_ERROR_V(werr);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(NetShareAdd, &r);
 	}
 
 	return r.out.result;

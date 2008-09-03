@@ -42,54 +42,6 @@
 
 /* macro to expand cookie-cutter code in cli_xxx() using rpc_api_pipe_req() */
 
-#define CLI_DO_RPC_INTERNAL( pcli, ctx, interface, opnum, q_in, r_out, \
-                             q_ps, r_ps, q_io_fn, r_io_fn, default_error, copy_sess_key ) \
-{\
-	SMB_ASSERT(ndr_syntax_id_equal(&pcli->abstract_syntax, interface)); \
-	if (!prs_init( &q_ps, RPC_MAX_PDU_FRAG_LEN, ctx, MARSHALL )) { \
-		return NT_STATUS_NO_MEMORY;\
-	}\
-	prs_init_empty( &r_ps, ctx, UNMARSHALL );\
-	if ( copy_sess_key) prs_set_session_key(&q_ps, (const char *)pcli->dc->sess_key);\
-	if ( q_io_fn("", &q_in, &q_ps, 0) ) {\
-		NTSTATUS _smb_pipe_stat_ = rpc_api_pipe_req(pcli, opnum, &q_ps, &r_ps); \
-		if (!NT_STATUS_IS_OK(_smb_pipe_stat_)) {\
-			prs_mem_free( &q_ps );\
-			prs_mem_free( &r_ps );\
-			return _smb_pipe_stat_;\
-		}\
-		if ( copy_sess_key ) prs_set_session_key(&r_ps, (const char *)pcli->dc->sess_key);\
-		if (!r_io_fn("", &r_out, &r_ps, 0)) {\
-			prs_mem_free( &q_ps );\
-			prs_mem_free( &r_ps );\
-			return default_error;\
-		}\
-	} else {\
-		prs_mem_free( &q_ps );\
-		prs_mem_free( &r_ps );\
-		return default_error;\
-	}\
-	prs_mem_free( &q_ps );\
-	prs_mem_free( &r_ps );\
-}
-
-#define CLI_DO_RPC_COPY_SESS_KEY( pcli, ctx, p_idx, opnum, q_in, r_out, \
-				  q_ps, r_ps, q_io_fn, r_io_fn, default_error ) \
-{\
-	CLI_DO_RPC_INTERNAL( pcli, ctx, p_idx, opnum, q_in, r_out, \
-			     q_ps, r_ps, q_io_fn, r_io_fn, default_error, True ); \
-}
-
-#define CLI_DO_RPC( pcli, ctx, p_idx, opnum, q_in, r_out, \
-                    q_ps, r_ps, q_io_fn, r_io_fn, default_error ) \
-{\
-	CLI_DO_RPC_INTERNAL( pcli, ctx, p_idx, opnum, q_in, r_out, \
-			     q_ps, r_ps, q_io_fn, r_io_fn, default_error, False ); \
-}
-
-
-/* Arrrgg. Same but with WERRORS. Needed for registry code. */
-
 #define CLI_DO_RPC_WERR( pcli, ctx, interface, opnum, q_in, r_out, \
                              q_ps, r_ps, q_io_fn, r_io_fn, default_error ) \
 {\

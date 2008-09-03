@@ -1185,7 +1185,6 @@ void srv_put_dos_date2(char *buf,int offset, time_t unixdate);
 void srv_put_dos_date3(char *buf,int offset,time_t unixdate);
 void put_long_date_timespec(char *p, struct timespec ts);
 void put_long_date(char *p, time_t t);
-time_t get_create_time(const SMB_STRUCT_STAT *st,bool fake_dirs);
 struct timespec get_create_timespec(const SMB_STRUCT_STAT *st,bool fake_dirs);
 struct timespec get_atimespec(const SMB_STRUCT_STAT *pst);
 void set_atimespec(SMB_STRUCT_STAT *pst, struct timespec ts);
@@ -4202,21 +4201,6 @@ bool asn1_write_enumerated(ASN1_DATA *data, uint8 v);
 bool ber_write_OID_String(DATA_BLOB *blob, const char *OID);
 bool ber_read_OID_String(TALLOC_CTX *mem_ctx, DATA_BLOB blob, const char **OID);
 
-/* The following definitions come from libsmb/async_smb.c  */
-
-NTSTATUS cli_pull_error(char *buf);
-void cli_set_error(struct cli_state *cli, NTSTATUS status);
-struct async_req *cli_request_new(TALLOC_CTX *mem_ctx,
-				  struct event_context *ev,
-				  struct cli_state *cli,
-				  uint8_t num_words, size_t num_bytes,
-				  struct cli_request **preq);
-struct cli_request *cli_request_get(struct async_req *req);
-struct cli_tmp_event *cli_tmp_event_ctx(TALLOC_CTX *mem_ctx,
-					struct cli_state *cli);
-NTSTATUS cli_add_event_ctx(struct cli_state *cli,
-			   struct event_context *event_ctx);
-
 /* The following definitions come from libsmb/cliconnect.c  */
 
 ADS_STATUS cli_session_setup_spnego(struct cli_state *cli, const char *user, 
@@ -4354,8 +4338,11 @@ void cli_sockopt(struct cli_state *cli, const char *options);
 uint16 cli_setpid(struct cli_state *cli, uint16 pid);
 bool cli_set_case_sensitive(struct cli_state *cli, bool case_sensitive);
 bool cli_send_keepalive(struct cli_state *cli);
-bool cli_echo(struct cli_state *cli, uint16 num_echos,
-	      unsigned char *data, size_t length);
+struct async_req *cli_echo_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
+				struct cli_state *cli, uint16_t num_echos,
+				DATA_BLOB data);
+NTSTATUS cli_echo_recv(struct async_req *req);
+NTSTATUS cli_echo(struct cli_state *cli, uint16_t num_echos, DATA_BLOB data);
 
 /* The following definitions come from libsmb/clierror.c  */
 
@@ -4394,7 +4381,14 @@ int cli_nt_create_full(struct cli_state *cli, const char *fname,
 		 uint32 CreateDisposition, uint32 CreateOptions,
 		 uint8 SecuityFlags);
 int cli_nt_create(struct cli_state *cli, const char *fname, uint32 DesiredAccess);
+struct async_req *cli_open_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
+				struct cli_state *cli,
+				const char *fname, int flags, int share_mode);
+NTSTATUS cli_open_recv(struct async_req *req, int *fnum);
 int cli_open(struct cli_state *cli, const char *fname, int flags, int share_mode);
+struct async_req *cli_close_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
+				 struct cli_state *cli, int fnum);
+NTSTATUS cli_close_recv(struct async_req *req);
 bool cli_close(struct cli_state *cli, int fnum);
 bool cli_ftruncate(struct cli_state *cli, int fnum, uint64_t size);
 NTSTATUS cli_locktype(struct cli_state *cli, int fnum,
@@ -4628,11 +4622,14 @@ int cli_NetConnectionEnum(struct cli_state *cli, const char *qualifier,
 /* The following definitions come from libsmb/clireadwrite.c  */
 
 struct async_req *cli_read_andx_send(TALLOC_CTX *mem_ctx,
+				     struct event_context *ev,
 				     struct cli_state *cli, int fnum,
 				     off_t offset, size_t size);
 NTSTATUS cli_read_andx_recv(struct async_req *req, ssize_t *received,
 			    uint8_t **rcvbuf);
-struct async_req *cli_pull_send(TALLOC_CTX *mem_ctx, struct cli_state *cli,
+struct async_req *cli_pull_send(TALLOC_CTX *mem_ctx,
+				struct event_context *ev,
+				struct cli_state *cli,
 				uint16_t fnum, off_t start_offset,
 				SMB_OFF_T size, size_t window_size,
 				NTSTATUS (*sink)(char *buf, size_t n,
@@ -5003,7 +5000,7 @@ void pwd_get_cleartext(struct pwd_info *pwd, fstring clr);
 
 bool netsamlogon_cache_init(void);
 bool netsamlogon_cache_shutdown(void);
-void netsamlogon_clear_cached_user(TDB_CONTEXT *tdb, struct netr_SamInfo3 *info3);
+void netsamlogon_clear_cached_user(struct netr_SamInfo3 *info3);
 bool netsamlogon_cache_store(const char *username, struct netr_SamInfo3 *info3);
 struct netr_SamInfo3 *netsamlogon_cache_get(TALLOC_CTX *mem_ctx, const DOM_SID *user_sid);
 bool netsamlogon_cache_have(const DOM_SID *user_sid);
@@ -7829,6 +7826,8 @@ uint32 prs_data_size(prs_struct *ps);
 uint32 prs_offset(prs_struct *ps);
 bool prs_set_offset(prs_struct *ps, uint32 offset);
 bool prs_append_prs_data(prs_struct *dst, prs_struct *src);
+bool prs_append_some_data(prs_struct *dst, void *src_base, uint32_t start,
+			  uint32_t len);
 bool prs_append_some_prs_data(prs_struct *dst, prs_struct *src, int32 start, uint32 len);
 bool prs_copy_data_in(prs_struct *dst, const char *src, uint32 len);
 bool prs_copy_data_out(char *dst, prs_struct *src, uint32 len);

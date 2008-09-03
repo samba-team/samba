@@ -37,8 +37,8 @@ static int net_dom_unjoin(struct net_context *c, int argc, const char **argv)
 	const char *server_name = NULL;
 	const char *account = NULL;
 	const char *password = NULL;
-	uint32_t unjoin_flags = WKSSVC_JOIN_FLAGS_ACCOUNT_DELETE |
-				WKSSVC_JOIN_FLAGS_JOIN_TYPE;
+	uint32_t unjoin_flags = NETSETUP_ACCT_DELETE |
+				NETSETUP_JOIN_DOMAIN;
 	struct cli_state *cli = NULL;
 	bool do_reboot = false;
 	NTSTATUS ntstatus;
@@ -125,8 +125,8 @@ static int net_dom_join(struct net_context *c, int argc, const char **argv)
 	const char *account_ou = NULL;
 	const char *Account = NULL;
 	const char *password = NULL;
-	uint32_t join_flags = WKSSVC_JOIN_FLAGS_ACCOUNT_CREATE |
-			      WKSSVC_JOIN_FLAGS_JOIN_TYPE;
+	uint32_t join_flags = NETSETUP_ACCT_CREATE |
+			      NETSETUP_JOIN_DOMAIN;
 	struct cli_state *cli = NULL;
 	bool do_reboot = false;
 	NTSTATUS ntstatus;

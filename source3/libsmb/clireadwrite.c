@@ -41,13 +41,16 @@ static size_t cli_read_max_bufsize(struct cli_state *cli)
  */
 
 struct async_req *cli_read_andx_send(TALLOC_CTX *mem_ctx,
+				     struct event_context *ev,
 				     struct cli_state *cli, int fnum,
 				     off_t offset, size_t size)
 {
 	struct async_req *result;
 	struct cli_request *req;
 	bool bigoffset = False;
-	char *enc_buf;
+
+	uint16_t vwv[12];
+	uint8_t wct = 10;
 
 	if (size > cli_read_max_bufsize(cli)) {
 		DEBUG(0, ("cli_read_andx_send got size=%d, can only handle "
@@ -56,59 +59,36 @@ struct async_req *cli_read_andx_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	result = cli_request_new(mem_ctx, cli->event_ctx, cli, 12, 0, &req);
+	SCVAL(vwv + 0, 0, 0xFF);
+	SCVAL(vwv + 0, 1, 0);
+	SSVAL(vwv + 1, 0, 0);
+	SSVAL(vwv + 2, 0, fnum);
+	SIVAL(vwv + 3, 0, offset);
+	SSVAL(vwv + 5, 0, size);
+	SSVAL(vwv + 6, 0, size);
+	SSVAL(vwv + 7, 0, (size >> 16));
+	SSVAL(vwv + 8, 0, 0);
+	SSVAL(vwv + 9, 0, 0);
+
+	if ((SMB_BIG_UINT)offset >> 32) {
+		bigoffset = True;
+		SIVAL(vwv + 10, 0,
+		      (((SMB_BIG_UINT)offset)>>32) & 0xffffffff);
+		wct += 2;
+	}
+
+	result = cli_request_send(mem_ctx, ev, cli, SMBreadX, 0, wct, vwv,
+				  0, NULL);
 	if (result == NULL) {
-		DEBUG(0, ("cli_request_new failed\n"));
 		return NULL;
 	}
+
+	req = talloc_get_type_abort(result->private_data, struct cli_request);
 
 	req->data.read.ofs = offset;
 	req->data.read.size = size;
 	req->data.read.received = 0;
 	req->data.read.rcvbuf = NULL;
-
-	if ((SMB_BIG_UINT)offset >> 32)
-		bigoffset = True;
-
-	cli_set_message(req->outbuf, bigoffset ? 12 : 10, 0, False);
-
-	SCVAL(req->outbuf,smb_com,SMBreadX);
-	SSVAL(req->outbuf,smb_tid,cli->cnum);
-	cli_setup_packet_buf(cli, req->outbuf);
-
-	SCVAL(req->outbuf,smb_vwv0,0xFF);
-	SCVAL(req->outbuf,smb_vwv0+1,0);
-	SSVAL(req->outbuf,smb_vwv1,0);
-	SSVAL(req->outbuf,smb_vwv2,fnum);
-	SIVAL(req->outbuf,smb_vwv3,offset);
-	SSVAL(req->outbuf,smb_vwv5,size);
-	SSVAL(req->outbuf,smb_vwv6,size);
-	SSVAL(req->outbuf,smb_vwv7,(size >> 16));
-	SSVAL(req->outbuf,smb_vwv8,0);
-	SSVAL(req->outbuf,smb_vwv9,0);
-	SSVAL(req->outbuf,smb_mid,req->mid);
-
-	if (bigoffset) {
-		SIVAL(req->outbuf, smb_vwv10,
-		      (((SMB_BIG_UINT)offset)>>32) & 0xffffffff);
-	}
-
-	cli_calculate_sign_mac(cli, req->outbuf);
-
-	event_fd_set_writeable(cli->fd_event);
-
-	if (cli_encryption_on(cli)) {
-		NTSTATUS status;
-		status = cli_encrypt_message(cli, req->outbuf, &enc_buf);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0, ("Error in encrypting client message. "
-				  "Error %s\n",	nt_errstr(status)));
-			TALLOC_FREE(req);
-			return NULL;
-		}
-		req->outbuf = enc_buf;
-		req->enc_state = cli->trans_enc_state;
-	}
 
 	return result;
 }
@@ -123,7 +103,12 @@ struct async_req *cli_read_andx_send(TALLOC_CTX *mem_ctx,
 NTSTATUS cli_read_andx_recv(struct async_req *req, ssize_t *received,
 			    uint8_t **rcvbuf)
 {
-	struct cli_request *cli_req = cli_request_get(req);
+	struct cli_request *cli_req = talloc_get_type_abort(
+		req->private_data, struct cli_request);
+	uint8_t wct;
+	uint16_t *vwv;
+	uint16_t num_bytes;
+	uint8_t *bytes;
 	NTSTATUS status;
 	size_t size;
 
@@ -132,24 +117,27 @@ NTSTATUS cli_read_andx_recv(struct async_req *req, ssize_t *received,
 		return req->status;
 	}
 
-	status = cli_pull_error(cli_req->inbuf);
+	status = cli_pull_reply(req, &wct, &vwv, &num_bytes, &bytes);
 
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
 
+	if (wct < 12) {
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+
 	/* size is the number of bytes the server returned.
 	 * Might be zero. */
-	size = SVAL(cli_req->inbuf, smb_vwv5);
-	size |= (((unsigned int)(SVAL(cli_req->inbuf, smb_vwv7))) << 16);
+	size = SVAL(vwv + 5, 0);
+	size |= (((unsigned int)SVAL(vwv + 7, 0)) << 16);
 
 	if (size > cli_req->data.read.size) {
 		DEBUG(5,("server returned more than we wanted!\n"));
 		return NT_STATUS_UNEXPECTED_IO_ERROR;
 	}
 
-	*rcvbuf = (uint8_t *)
-		(smb_base(cli_req->inbuf) + SVAL(cli_req->inbuf, smb_vwv6));
+	*rcvbuf = (uint8_t *)(smb_base(cli_req->inbuf) + SVAL(vwv + 6, 0));
 	*received = size;
 	return NT_STATUS_OK;
 }
@@ -165,6 +153,7 @@ NTSTATUS cli_read_andx_recv(struct async_req *req, ssize_t *received,
 struct cli_pull_state {
 	struct async_req *req;
 
+	struct event_context *ev;
 	struct cli_state *cli;
 	uint16_t fnum;
 	off_t start_offset;
@@ -223,7 +212,9 @@ static void cli_pull_read_done(struct async_req *read_req);
  * Prepare an async pull request
  */
 
-struct async_req *cli_pull_send(TALLOC_CTX *mem_ctx, struct cli_state *cli,
+struct async_req *cli_pull_send(TALLOC_CTX *mem_ctx,
+				struct event_context *ev,
+				struct cli_state *cli,
 				uint16_t fnum, off_t start_offset,
 				SMB_OFF_T size, size_t window_size,
 				NTSTATUS (*sink)(char *buf, size_t n,
@@ -234,7 +225,7 @@ struct async_req *cli_pull_send(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 	struct cli_pull_state *state;
 	int i;
 
-	result = async_req_new(mem_ctx, cli->event_ctx);
+	result = async_req_new(mem_ctx, ev);
 	if (result == NULL) {
 		goto failed;
 	}
@@ -247,6 +238,7 @@ struct async_req *cli_pull_send(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 	state->req = result;
 
 	state->cli = cli;
+	state->ev = ev;
 	state->fnum = fnum;
 	state->start_offset = start_offset;
 	state->size = size;
@@ -289,7 +281,7 @@ struct async_req *cli_pull_send(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 		request_thistime = MIN(size_left, state->chunk_size);
 
 		state->reqs[i] = cli_read_andx_send(
-			state->reqs, cli, fnum,
+			state->reqs, ev, cli, fnum,
 			state->start_offset + state->requested,
 			request_thistime);
 
@@ -320,7 +312,8 @@ static void cli_pull_read_done(struct async_req *read_req)
 		read_req->async.priv, struct async_req);
 	struct cli_pull_state *state = talloc_get_type_abort(
 		pull_req->private_data, struct cli_pull_state);
-	struct cli_request *read_state = cli_request_get(read_req);
+	struct cli_request *read_state = talloc_get_type_abort(
+		read_req->private_data, struct cli_request);
 	NTSTATUS status;
 
 	status = cli_read_andx_recv(read_req, &read_state->data.read.received,
@@ -351,7 +344,9 @@ static void cli_pull_read_done(struct async_req *read_req)
 			return;
 		}
 
-		top_read = cli_request_get(state->reqs[state->top_req]);
+		top_read = talloc_get_type_abort(
+			state->reqs[state->top_req]->private_data,
+			struct cli_request);
 
 		DEBUG(10, ("cli_pull_read_done: Pushing %d bytes, %d already "
 			   "pushed\n", (int)top_read->data.read.received,
@@ -384,7 +379,8 @@ static void cli_pull_read_done(struct async_req *read_req)
 				   state->top_req));
 
 			new_req = cli_read_andx_send(
-				state->reqs, state->cli, state->fnum,
+				state->reqs, state->ev, state->cli,
+				state->fnum,
 				state->start_offset + state->requested,
 				request_thistime);
 
@@ -424,21 +420,30 @@ NTSTATUS cli_pull(struct cli_state *cli, uint16_t fnum,
 		  void *priv, SMB_OFF_T *received)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
+	struct event_context *ev;
 	struct async_req *req;
 	NTSTATUS result = NT_STATUS_NO_MEMORY;
 
-	if (cli_tmp_event_ctx(frame, cli) == NULL) {
+	if (cli->fd_event != NULL) {
+		/*
+		 * Can't use sync call while an async call is in flight
+		 */
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	ev = event_context_init(frame);
+	if (ev == NULL) {
 		goto nomem;
 	}
 
-	req = cli_pull_send(frame, cli, fnum, start_offset, size, window_size,
-			    sink, priv);
+	req = cli_pull_send(frame, ev, cli, fnum, start_offset, size,
+			    window_size, sink, priv);
 	if (req == NULL) {
 		goto nomem;
 	}
 
 	while (req->state < ASYNC_REQ_DONE) {
-		event_loop_once(cli->event_ctx);
+		event_loop_once(ev);
 	}
 
 	result = cli_pull_recv(req, received);

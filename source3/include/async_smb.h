@@ -17,23 +17,117 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifndef __ASYNC_SMB_H__
+#define __ASYNC_SMB_H__
+
 #include "includes.h"
 
-/*
- * Create a fresh async smb request
+/**
+ * struct cli_request is the state holder for an async client request we sent
+ * to the server. It can consist of more than one struct async_req that we
+ * have to server if the application did a cli_chain_cork() and
+ * cli_chain_uncork()
  */
 
-struct async_req *cli_request_new(TALLOC_CTX *mem_ctx,
-				  struct event_context *ev,
-				  struct cli_state *cli,
-				  uint8_t num_words, size_t num_bytes,
-				  struct cli_request **preq);
+struct cli_request {
+	/**
+	 * "prev" and "next" form the doubly linked list in
+	 * cli_state->outstanding_requests
+	 */
+	struct cli_request *prev, *next;
+
+	/**
+	 * num_async: How many chained requests do we serve?
+	 */
+	int num_async;
+
+	/**
+	 * async: This is the list of chained requests that were queued up by
+	 * cli_request_chain before we sent out this request
+	 */
+	struct async_req **async;
+
+	/**
+	 * The client connection for this request
+	 */
+	struct cli_state *cli;
+
+	/**
+	 * The enc_state to decrypt the reply
+	 */
+	struct smb_trans_enc_state *enc_state;
+
+	/**
+	 * The mid we used for this request. Mainly used to demultiplex on
+	 * receiving replies.
+	 */
+	uint16_t mid;
+
+	/**
+	 * The bytes we have to ship to the server
+	 */
+	char *outbuf;
+
+	/**
+	 * How much from "outbuf" did we already send
+	 */
+	size_t sent;
+
+	/**
+	 * The reply comes in here. Its intended size is implicit by
+	 * smb_len(), its current size can be read via talloc_get_size()
+	 */
+	char *inbuf;
+
+	/**
+	 * Specific requests might add stuff here. Maybe convert this to a
+	 * private_pointer at some point.
+	 */
+	union {
+		struct {
+			off_t ofs;
+			size_t size;
+			ssize_t received;
+			uint8_t *rcvbuf;
+		} read;
+		struct {
+			DATA_BLOB data;
+			uint16_t num_echos;
+		} echo;
+	} data;
+
+	/**
+	 * For requests that don't follow the strict request/reply pattern
+	 * such as the transaction request family and echo requests it is
+	 * necessary to break the standard procedure in
+	 * handle_incoming_pdu(). For a simple example look at
+	 * cli_echo_recv_helper().
+	 */
+	struct {
+		void (*fn)(struct async_req *req);
+		void *priv;
+	} recv_helper;
+};
 
 /*
- * Convenience function to get the SMB part out of an async_req
+ * Ship a new smb request to the server
  */
 
-struct cli_request *cli_request_get(struct async_req *req);
+struct async_req *cli_request_send(TALLOC_CTX *mem_ctx,
+				   struct event_context *ev,
+				   struct cli_state *cli,
+				   uint8_t smb_command,
+				   uint8_t additional_flags,
+				   uint8_t wct, const uint16_t *vwv,
+				   uint16_t num_bytes, const uint8_t *bytes);
+
+bool cli_chain_cork(struct cli_state *cli, struct event_context *ev,
+		    size_t size_hint);
+void cli_chain_uncork(struct cli_state *cli);
+
+NTSTATUS cli_pull_reply(struct async_req *req,
+			uint8_t *pwct, uint16_t **pvwv,
+			uint16_t *pnum_bytes, uint8_t **pbytes);
 
 /*
  * Fetch an error out of a NBT packet
@@ -47,16 +141,4 @@ NTSTATUS cli_pull_error(char *buf);
 
 void cli_set_error(struct cli_state *cli, NTSTATUS status);
 
-/*
- * Create a temporary event context for use in the sync helper functions
- */
-
-struct cli_tmp_event *cli_tmp_event_ctx(TALLOC_CTX *mem_ctx,
-					struct cli_state *cli);
-
-/*
- * Attach an event context permanently to a cli_struct
- */
-
-NTSTATUS cli_add_event_ctx(struct cli_state *cli,
-			   struct event_context *event_ctx);
+#endif

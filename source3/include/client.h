@@ -204,35 +204,28 @@ struct cli_state {
 	bool force_dos_errors;
 	bool case_sensitive; /* False by default. */
 
-	struct event_context *event_ctx;
+	/**
+	 * fd_event is around while we have async requests outstanding or are
+	 * building a chained request.
+	 *
+	 * (fd_event!=NULL) &&
+	 *  ((outstanding_request!=NULL)||(chain_accumulator!=NULL))
+	 *
+	 * should always be true, as well as the reverse: If both cli_request
+	 * pointers are NULL, no fd_event is around.
+	 */
 	struct fd_event *fd_event;
 	char *evt_inbuf;
 
+	/**
+	 * A linked list of requests that are waiting for a reply
+	 */
 	struct cli_request *outstanding_requests;
-};
 
-struct cli_request {
-	struct cli_request *prev, *next;
-	struct async_req *async;
-
-	struct cli_state *cli;
-
-	struct smb_trans_enc_state *enc_state;
-
-	uint16_t mid;
-
-	char *outbuf;
-	size_t sent;
-	char *inbuf;
-
-	union {
-		struct {
-			off_t ofs;
-			size_t size;
-			ssize_t received;
-			uint8_t *rcvbuf;
-		} read;
-	} data;
+	/**
+	 * The place to build up the list of chained requests.
+	 */
+	struct cli_request *chain_accumulator;
 };
 
 typedef struct file_info {
