@@ -190,7 +190,13 @@ int tdb_munmap(struct tdb_context *tdb)
 
 #ifdef HAVE_MMAP
 	if (tdb->map_ptr) {
-		int ret = munmap(tdb->map_ptr, tdb->map_size);
+		int ret;
+
+		ret = msync(tdb->map_ptr, tdb->map_size, MS_SYNC);
+		if (ret != 0)
+			return ret;
+
+		ret = munmap(tdb->map_ptr, tdb->map_size);
 		if (ret != 0)
 			return ret;
 	}
