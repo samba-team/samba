@@ -77,10 +77,9 @@ bool samdb_set_domain_sid(struct ldb_context *ldb,
 
 WERROR dsdb_attach_schema_from_ldif_file(struct ldb_context *ldb, const char *pf, const char *df);
 
-%feature("docstring") samba_version_string "version()\n"
-                                          "Obtain the Samba version.";
-%rename(version) samba_version_string;
-const char *samba_version_string(void);
+%feature("docstring") version "version()\n"
+                              "Obtain the Samba version.";
+const char *version(void) { return SAMBA_VERSION_STRING; }
 int dsdb_set_global_schema(struct ldb_context *ldb);
 %feature("docstring") ldb_register_samba_handlers "register_samba_handlers()\n"
                                           "Register Samba-specific LDB modules and schemas.";
