@@ -7822,6 +7822,8 @@ uint32 prs_data_size(prs_struct *ps);
 uint32 prs_offset(prs_struct *ps);
 bool prs_set_offset(prs_struct *ps, uint32 offset);
 bool prs_append_prs_data(prs_struct *dst, prs_struct *src);
+bool prs_append_some_data(prs_struct *dst, void *src_base, uint32_t start,
+			  uint32_t len);
 bool prs_append_some_prs_data(prs_struct *dst, prs_struct *src, int32 start, uint32 len);
 bool prs_copy_data_in(prs_struct *dst, const char *src, uint32 len);
 bool prs_copy_data_out(char *dst, prs_struct *src, uint32 len);
