@@ -26,6 +26,7 @@
 #include "dsdb/samdb/samdb.h"
 #include "lib/ldb-samba/ldif_handlers.h"
 #include "librpc/ndr/libndr.h"
+#include "version.h"
 %}
 
 %import "stdint.i"
@@ -79,7 +80,13 @@ WERROR dsdb_attach_schema_from_ldif_file(struct ldb_context *ldb, const char *pf
 
 %feature("docstring") version "version()\n"
                               "Obtain the Samba version.";
-const char *version(void) { return SAMBA_VERSION_STRING; }
+
+%inline {
+const char *version(void) 
+{ 
+    return SAMBA_VERSION_STRING; 
+}
+}
 int dsdb_set_global_schema(struct ldb_context *ldb);
 %feature("docstring") ldb_register_samba_handlers "register_samba_handlers()\n"
                                           "Register Samba-specific LDB modules and schemas.";
