@@ -1379,11 +1379,22 @@ int open_socket_out(int type,
 	return res;
 }
 
-/****************************************************************************
- Create an outgoing TCP socket to any of the addrs. This is for
- simultaneous connects to port 445 and 139 of a host or even a variety
- of DC's all of which are equivalent for our purposes.
-**************************************************************************/
+/*******************************************************************
+ Create an outgoing TCP socket to the first addr that connects.
+
+ This is for simultaneous connection attempts to port 445 and 139 of a host
+ or for simultatneous connection attempts to multiple DCs at once.  We return
+ a socket fd of the first successful connection.
+
+ @param[in] addrs list of Internet addresses and ports to connect to
+ @param[in] num_addrs number of address/port pairs in the addrs list
+ @param[in] timeout time after which we stop waiting for a socket connection
+            to succeed, given in milliseconds
+ @param[out] fd_index the entry in addrs which we successfully connected to
+ @param[out] fd fd of the open and connected socket
+ @return true on a successful connection, false if all connection attempts
+         failed or we timed out
+*******************************************************************/
 
 bool open_any_socket_out(struct sockaddr_storage *addrs, int num_addrs,
 			 int timeout, int *fd_index, int *fd)
