@@ -34,6 +34,8 @@
 #include "auth/gensec/schannel_state.h"
 #include "libcli/security/security.h"
 #include "param/param.h"
+#include "lib/messaging/irpc.h"
+#include "librpc/gen_ndr/ndr_irpc.h"
 
 struct server_pipe_state {
 	struct netr_Credential client_challenge;
@@ -496,41 +498,37 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 
-		if (strcmp(r->in.logon.generic->package_name.string, "Kerberos")) {
-			struct PAC_Validate pac_validate;
-			DATA_BLOB srv_sig;
-			struct PAC_SIGNATURE_DATA kdc_sig;
-			DATA_BLOB pac_validate_blob = data_blob_const(r->in.logon.generic->data, 
-								      r->in.logon.generic->length);
-			ndr_err = ndr_pull_struct_blob(&pac_validate_blob, mem_ctx, 
-						       lp_iconv_convenience(dce_call->conn->dce_ctx->lp_ctx), 
-						       &pac_validate,
-						       (ndr_pull_flags_fn_t)ndr_pull_PAC_Validate);
-			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-				return NT_STATUS_INVALID_PARAMETER;
-			}
+		if (strcmp(r->in.logon.generic->package_name.string, "Kerberos") == 0) {
+			NTSTATUS status;
+			struct server_id *kdc;
+			struct kdc_check_generic_kerberos check;
+			struct netr_GenericInfo2 *generic = talloc_zero(mem_ctx, struct netr_GenericInfo2);
+			NT_STATUS_HAVE_NO_MEMORY(generic);
+			r->out.authoritative = 1;
+			
+			/* TODO: Describe and deal with these flags */
+			r->out.flags = 0;
 
-			if (pac_validate->MessageType != 3) {
-				/* We don't implement any other message types - such as certificate validation - yet */
-				return NT_STATUS_INVALID_PARAMETER;
+			r->out.validation.generic = generic;
+	
+			kdc = irpc_servers_byname(dce_call->msg_ctx, mem_ctx, "kdc_server");
+			if ((kdc == NULL) || (kdc[0].id == 0)) {
+				return NT_STATUS_NO_LOGON_SERVERS;
 			}
 			
-			if (pac_validate->ChecksumAndSignature.length != (pac_validate->ChecksumLength + pac_validate->SignatureLength)
-			    || pac_validate->ChecksumAndSignature.length < pac_validate->ChecksumLength
-			    || pac_validate->ChecksumAndSignature.length < pac_validate->SignatureLength ) {
-				return NT_STATUS_INVALID_PARAMETER;
+			check.in.generic_request = 
+				data_blob_const(r->in.logon.generic->data,
+						r->in.logon.generic->length);	
+			
+			status = irpc_call(dce_call->msg_ctx, kdc[0],
+					   &ndr_table_irpc, NDR_KDC_CHECK_GENERIC_KERBEROS,
+					   &check, mem_ctx);
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
 			}
-
-			srv_sig = data_blob_const(pac_validate->ChecksumAndSignature.data, 
-						  pac_validate->ChecksumLength);
-
-			kdc_sig.type = pac_validate->SignatureType;
-			kdc_sig.signature = data_blob_const(&pac_validate->ChecksumAndSignature.data[pac_validate->ChecksumLength],
-							    pac_validate->SignatureLength);
-			check_pac_checksum(mem_ctx, srv_sig, &kdc_sig, 
-					   context, keyblock);
-					   
-
+			generic->length = check.out.generic_reply.length;
+			generic->data = check.out.generic_reply.data;
+			return NT_STATUS_OK;
 		}
 
 		/* Until we get an implemetnation of these other packages */

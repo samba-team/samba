@@ -32,11 +32,11 @@
 #include "auth/auth_sam_reply.h"
 #include "param/param.h"
 
-static krb5_error_code check_pac_checksum(TALLOC_CTX *mem_ctx, 
-					  DATA_BLOB pac_data,
-					  struct PAC_SIGNATURE_DATA *sig,
-					  krb5_context context,
-					  const krb5_keyblock *keyblock)
+krb5_error_code check_pac_checksum(TALLOC_CTX *mem_ctx, 
+				   DATA_BLOB pac_data,
+				   struct PAC_SIGNATURE_DATA *sig,
+				   krb5_context context,
+				   const krb5_keyblock *keyblock)
 {
 	krb5_error_code ret;
 	krb5_crypto crypto;
