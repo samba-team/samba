@@ -33,9 +33,12 @@
 #include "lib/messaging/irpc.h"
 #include "lib/stream/packet.h"
 #include "librpc/gen_ndr/samr.h"
+#include "librpc/gen_ndr/ndr_irpc.h"
+#include "librpc/gen_ndr/ndr_krb5pac.h"
 #include "lib/socket/netif.h"
 #include "param/param.h"
 #include "kdc/kdc.h"
+#include "librpc/gen_ndr/ndr_misc.h"
 
 
 /* Disgusting hack to get a mem_ctx and lp_ctx into the hdb plugin, when 
@@ -555,6 +558,108 @@ static struct krb5plugin_windc_ftable windc_plugin_table = {
 };
 
 
+static NTSTATUS kdc_check_generic_kerberos(struct irpc_message *msg, 
+				 struct kdc_check_generic_kerberos *r)
+{
+	struct PAC_Validate pac_validate;
+	DATA_BLOB srv_sig;
+	struct PAC_SIGNATURE_DATA kdc_sig;
+	struct kdc_server *kdc = talloc_get_type(msg->private, struct kdc_server);
+	enum ndr_err_code ndr_err;
+	krb5_enctype etype;
+	int ret;
+	hdb_entry_ex ent;
+	krb5_principal principal;
+	krb5_keyblock keyblock;
+	Key *key;
+
+	/* There is no reply to this request */
+	r->out.generic_reply = data_blob(NULL, 0);
+
+	ndr_err = ndr_pull_struct_blob(&r->in.generic_request, msg, 
+				       lp_iconv_convenience(kdc->task->lp_ctx), 
+				       &pac_validate,
+				       (ndr_pull_flags_fn_t)ndr_pull_PAC_Validate);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	
+#if 0
+	/* Windows does not check this */
+	if (pac_validate.MessageType != 3) {
+		/* We don't implement any other message types - such as certificate validation - yet */
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+#endif	
+	if (pac_validate.ChecksumAndSignature.length != (pac_validate.ChecksumLength + pac_validate.SignatureLength)
+	    || pac_validate.ChecksumAndSignature.length < pac_validate.ChecksumLength
+	    || pac_validate.ChecksumAndSignature.length < pac_validate.SignatureLength ) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	
+	srv_sig = data_blob_const(pac_validate.ChecksumAndSignature.data, 
+				  pac_validate.ChecksumLength);
+	
+	if (pac_validate.SignatureType == CKSUMTYPE_HMAC_MD5) {
+		etype = ETYPE_ARCFOUR_HMAC_MD5;
+	} else {
+		ret = krb5_cksumtype_to_enctype(kdc->smb_krb5_context->krb5_context, pac_validate.SignatureType,
+						&etype);
+		if (ret != 0) {
+			return NT_STATUS_LOGON_FAILURE;
+		}
+	}
+
+	ret = krb5_make_principal(kdc->smb_krb5_context->krb5_context, &principal, 
+				  lp_realm(kdc->task->lp_ctx), 
+				  "krbtgt", lp_realm(kdc->task->lp_ctx), 
+				  NULL);
+
+	if (ret != 0) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ret = kdc->config->db[0]->hdb_fetch(kdc->smb_krb5_context->krb5_context, 
+					    kdc->config->db[0],
+					    principal,
+					    HDB_F_GET_KRBTGT | HDB_F_DECRYPT,
+					    &ent);
+
+	if (ret != 0) {
+		hdb_free_entry(kdc->smb_krb5_context->krb5_context, &ent);
+		krb5_free_principal(kdc->smb_krb5_context->krb5_context, principal);
+	
+		return NT_STATUS_LOGON_FAILURE;
+	}
+	
+	ret = hdb_enctype2key(kdc->smb_krb5_context->krb5_context, &ent.entry, etype, &key);
+
+	if (ret != 0) {
+		hdb_free_entry(kdc->smb_krb5_context->krb5_context, &ent);
+		krb5_free_principal(kdc->smb_krb5_context->krb5_context, principal);
+		return NT_STATUS_LOGON_FAILURE;
+	}
+
+	keyblock = key->key;
+	
+	kdc_sig.type = pac_validate.SignatureType;
+	kdc_sig.signature = data_blob_const(&pac_validate.ChecksumAndSignature.data[pac_validate.ChecksumLength],
+					    pac_validate.SignatureLength);
+	ret = check_pac_checksum(msg, srv_sig, &kdc_sig, 
+			   kdc->smb_krb5_context->krb5_context, &keyblock);
+
+	hdb_free_entry(kdc->smb_krb5_context->krb5_context, &ent);
+	krb5_free_principal(kdc->smb_krb5_context->krb5_context, principal);
+
+	if (ret != 0) {
+		return NT_STATUS_LOGON_FAILURE;
+	}
+	
+	return NT_STATUS_OK;
+}
+
+
+
 /*
   startup the kdc task
 */
@@ -653,6 +758,13 @@ static void kdc_task_init(struct task_server *task)
 	status = kdc_startup_interfaces(kdc, task->lp_ctx, ifaces);
 	if (!NT_STATUS_IS_OK(status)) {
 		task_server_terminate(task, "kdc failed to setup interfaces");
+		return;
+	}
+
+	status = IRPC_REGISTER(task->msg_ctx, irpc, KDC_CHECK_GENERIC_KERBEROS, 
+			       kdc_check_generic_kerberos, kdc);
+	if (!NT_STATUS_IS_OK(status)) {
+		task_server_terminate(task, "nbtd failed to setup monitoring");
 		return;
 	}
 
