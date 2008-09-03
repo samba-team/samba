@@ -49,6 +49,7 @@ endif
 
 include $(srcdir)/build/make/rules.mk
 include $(srcdir)/build/make/python.mk
+zlibsrcdir := lib/zlib
 dynconfigsrcdir := dynconfig
 heimdalsrcdir := heimdal
 dsdbsrcdir := dsdb
