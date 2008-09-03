@@ -177,7 +177,7 @@ void delete_negative_conn_cache(const char *domain, const char *server)
 
 
 /**
- * Add an entry to the failed conneciton cache
+ * Add an entry to the failed connection cache
  *
  * @param[in] domain
  * @param[in] server may be a FQDN or an IP addr in printable form
