@@ -943,6 +943,7 @@ static int cmd_echo(void)
 	TALLOC_CTX *ctx = talloc_tos();
 	char *num;
 	char *data;
+	NTSTATUS status;
 
 	if (!next_token_talloc(ctx, &cmd_ptr, &num, NULL)
 	    || !next_token_talloc(ctx, &cmd_ptr, &data, NULL)) {
@@ -950,9 +951,10 @@ static int cmd_echo(void)
 		return 1;
 	}
 
-	if (!cli_echo(cli, atoi(num), (uint8 *)data, strlen(data))) {
-		d_printf("echo failed: %s\n",
-			 nt_errstr(cli_get_nt_error(cli)));
+	status = cli_echo(cli, atoi(num), data_blob_const(data, strlen(data)));
+
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("echo failed: %s\n", nt_errstr(status));
 		return 1;
 	}
 
@@ -1078,7 +1080,7 @@ static int do_get(const char *rname, const char *lname_in, bool reget)
 		get_total_time_ms += this_time;
 		get_total_size += nread;
 
-		DEBUG(1,("(%3.1f kb/s) (average %3.1f kb/s)\n",
+		DEBUG(1,("(%3.1f KiloBytes/sec) (average %3.1f KiloBytes/sec)\n",
 			 nread / (1.024*this_time + 1.0e-4),
 			 get_total_size / (1.024*get_total_time_ms)));
 	}
@@ -4417,7 +4419,7 @@ static void readline_callback(void)
 	{
 		unsigned char garbage[16];
 		memset(garbage, 0xf0, sizeof(garbage));
-		cli_echo(cli, 1, garbage, sizeof(garbage));
+		cli_echo(cli, 1, data_blob_const(garbage, sizeof(garbage)));
 	}
 }
 

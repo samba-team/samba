@@ -395,18 +395,26 @@ bool prs_append_prs_data(prs_struct *dst, prs_struct *src)
  Append some data from one parse_struct into another.
  ********************************************************************/
 
-bool prs_append_some_prs_data(prs_struct *dst, prs_struct *src, int32 start, uint32 len)
-{	
-	if (len == 0)
-		return True;
+bool prs_append_some_data(prs_struct *dst, void *src_base, uint32_t start,
+			  uint32_t len)
+{
+	if (len == 0) {
+		return true;
+	}
 
-	if(!prs_grow(dst, len))
-		return False;
-	
-	memcpy(&dst->data_p[dst->data_offset], src->data_p + start, (size_t)len);
+	if(!prs_grow(dst, len)) {
+		return false;
+	}
+
+	memcpy(&dst->data_p[dst->data_offset], src_base + start, (size_t)len);
 	dst->data_offset += len;
+	return true;
+}
 
-	return True;
+bool prs_append_some_prs_data(prs_struct *dst, prs_struct *src, int32 start,
+			      uint32 len)
+{
+	return prs_append_some_data(dst, src->data_p, start, len);
 }
 
 /*******************************************************************

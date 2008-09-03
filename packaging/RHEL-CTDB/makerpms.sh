@@ -21,9 +21,10 @@ SRCDIR=`rpm --eval %_sourcedir`
 
 # At this point the SPECDIR and SRCDIR variables must have a value!
 
-VERSION='3.3.0'
-REVISION='ctdb'
+DIRNAME=$(dirname $0)
+
 SPECFILE="samba.spec"
+VERSION=$(grep ^Version ${DIRNAME}/${SPECFILE} | sed -e 's/^Version:\ \+//')
 DOCS="docs.tar.bz2"
 RPMVER=`rpm --version | awk '{print $3}'`
 RPM="rpmbuild"
@@ -40,8 +41,6 @@ case $RPMVER in
        exit 1
        ;;
 esac
-
-DIRNAME=$(dirname $0)
 
 pushd ${DIRNAME}/../..
 echo -n "Creating samba-${VERSION}.tar.bz2 ... "

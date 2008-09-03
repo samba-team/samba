@@ -24,16 +24,6 @@
 
 #ifdef HAVE_KRB5
 
-#ifdef HAVE_KRB5_KEYBLOCK_KEYVALUE /* Heimdal */
-#define KRB5_KEY_TYPE(k)	((k)->keytype)
-#define KRB5_KEY_LENGTH(k)	((k)->keyvalue.length)
-#define KRB5_KEY_DATA(k)	((k)->keyvalue.data)
-#else /* MIT */
-#define	KRB5_KEY_TYPE(k)	((k)->enctype)
-#define KRB5_KEY_LENGTH(k)	((k)->length)
-#define KRB5_KEY_DATA(k)	((k)->contents)
-#endif /* HAVE_KRB5_KEYBLOCK_KEYVALUE */
-
 /****************************************************************
 ****************************************************************/
 
@@ -148,15 +138,7 @@ static krb5_error_code libnet_keytab_remove_entries(krb5_context context,
 			goto cont;
 		}
 
-#if !defined(HAVE_KRB5_KEYTAB_ENTRY_KEY) && !defined(HAVE_KRB5_KEYTAB_ENTRY_KEYBLOCK)
-#error krb5_keytab_entry has no key or keyblock member
-#endif
-#ifdef HAVE_KRB5_KEYTAB_ENTRY_KEY               /* MIT */
-	keyp = &kt_entry.key;
-#endif
-#ifdef HAVE_KRB5_KEYTAB_ENTRY_KEYBLOCK          /* Heimdal */
-	keyp = &kt_entry.keyblock;
-#endif
+		keyp = KRB5_KT_KEY(&kt_entry);
 
 		if (KRB5_KEY_TYPE(keyp) != enctype) {
 			goto cont;
@@ -250,15 +232,7 @@ static krb5_error_code libnet_keytab_add_entry(krb5_context context,
 		return ret;
 	}
 
-#if !defined(HAVE_KRB5_KEYTAB_ENTRY_KEY) && !defined(HAVE_KRB5_KEYTAB_ENTRY_KEYBLOCK)
-#error krb5_keytab_entry has no key or keyblock member
-#endif
-#ifdef HAVE_KRB5_KEYTAB_ENTRY_KEY               /* MIT */
-	keyp = &kt_entry.key;
-#endif
-#ifdef HAVE_KRB5_KEYTAB_ENTRY_KEYBLOCK          /* Heimdal */
-	keyp = &kt_entry.keyblock;
-#endif
+	keyp = KRB5_KT_KEY(&kt_entry);
 
 	if (create_kerberos_key_from_string(context, kt_entry.principal,
 					    &password, keyp, enctype, true))
@@ -364,15 +338,7 @@ struct libnet_keytab_entry *libnet_keytab_search(struct libnet_keytab_context *c
 			goto cont;
 		}
 
-#if !defined(HAVE_KRB5_KEYTAB_ENTRY_KEY) && !defined(HAVE_KRB5_KEYTAB_ENTRY_KEYBLOCK)
-#error krb5_keytab_entry has no key or keyblock member
-#endif
-#ifdef HAVE_KRB5_KEYTAB_ENTRY_KEY               /* MIT */
-	keyp = &kt_entry.key;
-#endif
-#ifdef HAVE_KRB5_KEYTAB_ENTRY_KEYBLOCK          /* Heimdal */
-	keyp = &kt_entry.keyblock;
-#endif
+		keyp = KRB5_KT_KEY(&kt_entry);
 
 		if (KRB5_KEY_TYPE(keyp) != enctype) {
 			goto cont;

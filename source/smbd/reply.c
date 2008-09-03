@@ -3264,25 +3264,22 @@ normal_read:
 		}
 		TALLOC_FREE(req->outbuf);
 		return;
-	} else {
-		reply_outbuf(req, 12, smb_maxcnt);
+	}
 
-		nread = read_file(fsp, smb_buf(req->outbuf), startpos,
-				  smb_maxcnt);
-		if (nread < 0) {
-			reply_unixerror(req, ERRDOS, ERRnoaccess);
-			return;
-		}
+	reply_outbuf(req, 12, smb_maxcnt);
 
-		setup_readX_header((char *)req->outbuf, nread);
-
-		DEBUG( 3, ( "send_file_readX fnum=%d max=%d nread=%d\n",
-			fsp->fnum, (int)smb_maxcnt, (int)nread ) );
-
-		chain_reply(req);
-
+	nread = read_file(fsp, smb_buf(req->outbuf), startpos, smb_maxcnt);
+	if (nread < 0) {
+		reply_unixerror(req, ERRDOS, ERRnoaccess);
 		return;
 	}
+
+	setup_readX_header((char *)req->outbuf, nread);
+
+	DEBUG( 3, ( "send_file_readX fnum=%d max=%d nread=%d\n",
+		    fsp->fnum, (int)smb_maxcnt, (int)nread ) );
+
+	chain_reply(req);
 }
 
 /****************************************************************************
@@ -7126,6 +7123,7 @@ void reply_getattrE(struct smb_request *req)
 	SMB_STRUCT_STAT sbuf;
 	int mode;
 	files_struct *fsp;
+	struct timespec create_ts;
 
 	START_PROFILE(SMBgetattrE);
 
@@ -7160,9 +7158,9 @@ void reply_getattrE(struct smb_request *req)
 
 	reply_outbuf(req, 11, 0);
 
-	srv_put_dos_date2((char *)req->outbuf, smb_vwv0,
-			  get_create_time(&sbuf,
-					  lp_fake_dir_create_times(SNUM(conn))));
+	create_ts = get_create_timespec(&sbuf,
+				  lp_fake_dir_create_times(SNUM(conn)));
+	srv_put_dos_date2((char *)req->outbuf, smb_vwv0, create_ts.tv_sec);
 	srv_put_dos_date2((char *)req->outbuf, smb_vwv2, sbuf.st_atime);
 	/* Should we check pending modtime here ? JRA */
 	srv_put_dos_date2((char *)req->outbuf, smb_vwv4, sbuf.st_mtime);

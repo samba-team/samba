@@ -125,6 +125,17 @@ WERROR NetUserSetInfo_r(struct libnetapi_ctx *ctx,
 			struct NetUserSetInfo *r);
 WERROR NetUserSetInfo_l(struct libnetapi_ctx *ctx,
 			struct NetUserSetInfo *r);
+NET_API_STATUS NetUserGetGroups(const char * server_name /* [in] */,
+				const char * user_name /* [in] */,
+				uint32_t level /* [in] */,
+				uint8_t **buffer /* [out] [ref] */,
+				uint32_t prefmaxlen /* [in] */,
+				uint32_t *entries_read /* [out] [ref] */,
+				uint32_t *total_entries /* [out] [ref] */);
+WERROR NetUserGetGroups_r(struct libnetapi_ctx *ctx,
+			  struct NetUserGetGroups *r);
+WERROR NetUserGetGroups_l(struct libnetapi_ctx *ctx,
+			  struct NetUserGetGroups *r);
 NET_API_STATUS NetUserModalsGet(const char * server_name /* [in] */,
 				uint32_t level /* [in] */,
 				uint8_t **buffer /* [out] [ref] */);
@@ -306,4 +317,12 @@ WERROR NetRemoteTOD_r(struct libnetapi_ctx *ctx,
 		      struct NetRemoteTOD *r);
 WERROR NetRemoteTOD_l(struct libnetapi_ctx *ctx,
 		      struct NetRemoteTOD *r);
+NET_API_STATUS NetShareAdd(const char * server_name /* [in] */,
+			   uint32_t level /* [in] */,
+			   uint8_t *buffer /* [in] [ref] */,
+			   uint32_t *parm_err /* [out] [ref] */);
+WERROR NetShareAdd_r(struct libnetapi_ctx *ctx,
+		     struct NetShareAdd *r);
+WERROR NetShareAdd_l(struct libnetapi_ctx *ctx,
+		     struct NetShareAdd *r);
 #endif /* __LIBNETAPI_LIBNETAPI__ */

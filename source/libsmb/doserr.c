@@ -91,6 +91,7 @@ werror_code_struct dos_errs[] =
 	{ "WERR_DEFAULT_JOIN_REQUIRED", WERR_DEFAULT_JOIN_REQUIRED },
 	{ "WERR_DEVICE_NOT_AVAILABLE", WERR_DEVICE_NOT_AVAILABLE },
 	{ "WERR_LOGON_FAILURE", WERR_LOGON_FAILURE },
+	{ "WERR_WRONG_PASSWORD", WERR_WRONG_PASSWORD },
 	{ "WERR_PASSWORD_RESTRICTION", WERR_PASSWORD_RESTRICTION },
 	{ "WERR_NO_SUCH_DOMAIN", WERR_NO_SUCH_DOMAIN },
 	{ "WERR_NONE_MAPPED", WERR_NONE_MAPPED },
@@ -150,6 +151,7 @@ werror_str_struct dos_err_strs[] = {
 	{ WERR_GROUP_EXISTS, "Group already exists" },
 	{ WERR_DS_DRA_BAD_DN, "An invalid distinguished name was specified for this replication" },
 	{ WERR_DS_DRA_BAD_NC, "An invalid naming context was specified for this replication operation" },
+	{ WERR_WRONG_PASSWORD, "The current password is incorrect" }
 };
 
 /*****************************************************************************

@@ -147,7 +147,8 @@ CFLAGS="$RPM_OPT_FLAGS $EXTRA -D_GNU_SOURCE" ./configure \
 	--prefix=%{_prefix} \
 	--localstatedir=/var \
         --with-configdir=%{_sysconfdir}/samba \
-        --with-libdir=%{_libarchdir}/samba \
+        --libdir=%{_libarchdir} \
+	--with-modulesdir=%{_libarchdir}/samba \
         --with-lockdir=/var/lib/samba \
         --with-logfilebase=/var/log/samba \
         --with-mandir=%{_mandir} \
@@ -229,66 +230,20 @@ make DESTDIR=$RPM_BUILD_ROOT \
         install
 cd ..
 
-# pam_smbpass
-cp source/bin/pam_smbpass.so $RPM_BUILD_ROOT/%{_libarch}/security/pam_smbpass.so
-
 # NSS & PAM winbind support
 install -m 755 source/bin/pam_winbind.so $RPM_BUILD_ROOT/%{_libarch}/security/pam_winbind.so
-install -m 755 source/nsswitch/libnss_winbind.so $RPM_BUILD_ROOT/%{_libarch}/libnss_winbind.so
-#install -m 755 source/nsswitch/libnss_wins.so $RPM_BUILD_ROOT/%{_libarch}/libnss_wins.so
+install -m 755 source/nsswitch/libnss_winbind.so $RPM_BUILD_ROOT/%{_libarch}/libnss_winbind.so.2
 ( cd $RPM_BUILD_ROOT/%{_libarch};
-  ln -sf libnss_winbind.so  libnss_winbind.so.2 )
+  ln -sf libnss_winbind.so.2  libnss_winbind.so )
+#
+# do not install libnss_wins.so in order to reduce dependencies
+# (we do not need it for the samba-ctdb scenario)
+#
+#install -m 755 source/nsswitch/libnss_wins.so $RPM_BUILD_ROOT/%{_libarch}/libnss_wins.so
 # ( cd $RPM_BUILD_ROOT/%{_libarch}; ln -sf libnss_wins.so  libnss_wins.so.2 )
-
-# make install puts libsmbclient.so in the wrong place on x86_64
-rm -f $RPM_BUILD_ROOT/usr/lib*/samba/libsmbclient.so* $RPM_BUILD_ROOT/usr/lib*/samba/libsmbclient.a || true
-install -m 755 source/bin/libsmbclient.so.0 $RPM_BUILD_ROOT%{_libarchdir}/libsmbclient.so.0
-install -m 755 source/bin/libsmbclient.a $RPM_BUILD_ROOT%{_libarchdir}/libsmbclient.a
-install -m 644 source/include/libsmbclient.h $RPM_BUILD_ROOT%{_includedir}
-ln -s libsmbclient.so.0 $RPM_BUILD_ROOT%{_libarchdir}/libsmbclient.so
-
-# make install puts libmsrpc.so in the wrong place on x86_64
-#rm -f $RPM_BUILD_ROOT/usr/lib*/samba/libmsrpc.so $RPM_BUILD_ROOT/usr/lib*/samba/libmsrpc.a || true
-#install -m 755 source/bin/libmsrpc.so $RPM_BUILD_ROOT%{_libarchdir}/libmsrpc.so
-#install -m 755 source/bin/libmsrpc.a $RPM_BUILD_ROOT%{_libarchdir}/libmsrpc.a
-#install -m 644 source/include/libmsrpc.h $RPM_BUILD_ROOT%{_includedir}
-#rm -f $RPM_BUILD_ROOT%{_libarchdir}/samba/libmsrpc.*
-#ln -s /%{_libarchdir}/libmsrpc.so $RPM_BUILD_ROOT%{_libarchdir}/libmsrpc.so.0
-
-# make install puts libsmbsharemodes.so in the wrong place on x86_64
-rm -f $RPM_BUILD_ROOT/usr/lib*/samba/libsmbsharemodes.so* $RPM_BUILD_ROOT/usr/lib*/samba/libsmbsharemodes.a || true
-install -m 755 source/bin/libsmbsharemodes.so.0 $RPM_BUILD_ROOT%{_libarchdir}/libsmbsharemodes.so.0
-install -m 755 source/bin/libsmbsharemodes.a $RPM_BUILD_ROOT%{_libarchdir}/libsmbsharemodes.a
-install -m 644 source/include/smb_share_modes.h $RPM_BUILD_ROOT%{_includedir}
-rm -f $RPM_BUILD_ROOT%{_libarchdir}/samba/libsmbsharemodes.*
-ln -s libsmbsharemodes.so.0 $RPM_BUILD_ROOT%{_libarchdir}/libsmbsharemodes.so
 
 # Install pam_smbpass.so
 install -m755 source/bin/pam_smbpass.so $RPM_BUILD_ROOT/%{_libarch}/security/pam_smbpass.so
-
-# Put the shared libraries to their SONAME under /usr/lib{,64}
-# and create the proper .so symlinks
-#
-# libwbclient
-rm -f $RPM_BUILD_ROOT%{_libarchdir}/samba/libwbclient.so*
-install -m 755 source/bin/libwbclient.so.0 \
-	$RPM_BUILD_ROOT%{_libarchdir}/libwbclient.so.0
-ln -s libwbclient.so.0 $RPM_BUILD_ROOT%{_libarchdir}/libwbclient.so
-# libtalloc
-rm -f $RPM_BUILD_ROOT%{_libarchdir}/samba/libtalloc.so*
-install -m 755 source/bin/libtalloc.so.1 \
-	$RPM_BUILD_ROOT%{_libarchdir}/libtalloc.so.1
-ln -s libtalloc.so.1 $RPM_BUILD_ROOT%{_libarchdir}/libtalloc.so
-# libtdb
-rm -f $RPM_BUILD_ROOT%{_libarchdir}/samba/libtdb.so*
-install -m 755 source/bin/libtdb.so.1 \
-	$RPM_BUILD_ROOT%{_libarchdir}/libtdb.so.1
-ln -s libtdb.so.1 $RPM_BUILD_ROOT%{_libarchdir}/libtdb.so
-# libnetapi
-rm -f $RPM_BUILD_ROOT%{_libarchdir}/samba/libnetapi.so*
-install -m 755 source/bin/libnetapi.so.0 \
-	$RPM_BUILD_ROOT%{_libarchdir}/libnetapi.so.0
-ln -s libnetapi.so.0 $RPM_BUILD_ROOT%{_libarchdir}/libnetapi.so
 
 ## cleanup
 /bin/rm -rf $RPM_BUILD_ROOT/usr/lib*/samba/security
@@ -552,6 +507,12 @@ exit 0
 %{_mandir}/man8/net.8*
 %{_mandir}/man7/pam_winbind.7*
 %{_mandir}/man7/libsmbclient.7*
+%{_mandir}/man1/ldbadd.1*
+%{_mandir}/man1/ldbdel.1*
+%{_mandir}/man1/ldbedit.1*
+%{_mandir}/man1/ldbmodify.1*
+%{_mandir}/man1/ldbsearch.1*
+%{_mandir}/man8/cifs.upcall.8*
 
 %ifarch i386 i486 i586 i686 ppc s390
 %files winbind-32bit
