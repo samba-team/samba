@@ -551,6 +551,16 @@ struct TIME_OF_DAY_INFO {
 	uint32_t tod_weekday;
 };
 
+struct SHARE_INFO_0 {
+	const char * shi0_netname;
+};
+
+struct SHARE_INFO_1 {
+	const char * shi1_netname;
+	uint32_t shi1_type;
+	const char * shi1_remark;
+};
+
 struct SHARE_INFO_2 {
 	const char * shi2_netname;
 	uint32_t shi2_type;
@@ -560,6 +570,25 @@ struct SHARE_INFO_2 {
 	uint32_t shi2_current_uses;
 	const char * shi2_path;
 	const char * shi2_passwd;
+};
+
+struct SHARE_INFO_501 {
+	const char * shi501_netname;
+	uint32_t shi501_type;
+	const char * shi501_remark;
+	uint32_t shi501_flags;
+};
+
+struct SHARE_INFO_1004 {
+	const char * shi1004_remark;
+};
+
+struct SHARE_INFO_1005 {
+	uint32_t shi1005_flags;
+};
+
+struct SHARE_INFO_1006 {
+	uint32_t shi1006_max_uses;
 };
 
 #endif /* _HEADER_libnetapi */
