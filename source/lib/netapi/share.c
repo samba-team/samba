@@ -201,3 +201,21 @@ WERROR NetShareEnum_l(struct libnetapi_ctx *ctx,
 {
 	LIBNETAPI_REDIRECT_TO_LOCALHOST(ctx, r, NetShareEnum);
 }
+
+/****************************************************************
+****************************************************************/
+
+WERROR NetShareGetInfo_r(struct libnetapi_ctx *ctx,
+			 struct NetShareGetInfo *r)
+{
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR NetShareGetInfo_l(struct libnetapi_ctx *ctx,
+			 struct NetShareGetInfo *r)
+{
+	LIBNETAPI_REDIRECT_TO_LOCALHOST(ctx, r, NetShareGetInfo);
+}
