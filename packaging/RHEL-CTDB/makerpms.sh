@@ -17,9 +17,9 @@
 EXTRA_OPTIONS="$1"
 
 SPECDIR=`rpm --eval %_specdir`
-SRCDIR=`rpm --eval %_sourcedir`
+RPMSRCDIR=`rpm --eval %_sourcedir`
 
-# At this point the SPECDIR and SRCDIR variables must have a value!
+# At this point the SPECDIR and RPMSRCDIR variables must have a value!
 
 DIRNAME=$(dirname $0)
 
@@ -44,7 +44,7 @@ esac
 
 pushd ${DIRNAME}/../..
 echo -n "Creating samba-${VERSION}.tar.bz2 ... "
-git archive --prefix=samba-${VERSION}/ HEAD | bzip2 > ${SRCDIR}/samba-${VERSION}.tar.bz2
+git archive --prefix=samba-${VERSION}/ HEAD | bzip2 > ${RPMSRCDIR}/samba-${VERSION}.tar.bz2
 RC=$?
 popd
 echo "Done."
@@ -58,13 +58,13 @@ fi
 ## copy additional source files
 ##
 if [ "x${DOCS_TARBALL}" != "x" ] && [ -f ${DOCS_TARBALL} ]; then
-    cp ${DOCS_TARBALL} ${SRCDIR}/${DOCS}
+    cp ${DOCS_TARBALL} ${RPMSRCDIR}/${DOCS}
 fi
 
 pushd ${DIRNAME}
 
 chmod 755 setup/filter-requires-samba.sh
-tar --exclude=.svn -jcvf - setup > ${SRCDIR}/setup.tar.bz2
+tar --exclude=.svn -jcvf - setup > ${RPMSRCDIR}/setup.tar.bz2
 
 cp -p ${SPECFILE} ${SPECDIR}
 
