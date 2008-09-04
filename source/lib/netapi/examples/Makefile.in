@@ -54,7 +54,8 @@ PROGS = bin/getdc@EXEEXT@ \
 	bin/server_getinfo@EXEEXT@ \
 	bin/share_add@EXEEXT@ \
 	bin/share_del@EXEEXT@ \
-	bin/share_enum@EXEEXT@
+	bin/share_enum@EXEEXT@ \
+	bin/share_getinfo@EXEEXT@
 
 all: $(PROGS)
 
@@ -121,6 +122,7 @@ SERVERGETINFO_OBJ = server/server_getinfo.o $(CMDLINE_OBJ)
 SHAREADD_OBJ = share/share_add.o $(CMDLINE_OBJ)
 SHAREDEL_OBJ = share/share_del.o $(CMDLINE_OBJ)
 SHAREENUM_OBJ = share/share_enum.o $(CMDLINE_OBJ)
+SHAREGETINFO_OBJ = share/share_getinfo.o $(CMDLINE_OBJ)
 
 bin/getdc@EXEEXT@: $(BINARY_PREREQS) $(GETDC_OBJ)
 	@echo Linking $@
@@ -273,6 +275,10 @@ bin/share_del@EXEEXT@: $(BINARY_PREREQS) $(SHAREDEL_OBJ)
 bin/share_enum@EXEEXT@: $(BINARY_PREREQS) $(SHAREENUM_OBJ)
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SHAREENUM_OBJ) $(LDFLAGS) $(DYNEXP) $(CMDLINE_LIBS)
+
+bin/share_getinfo@EXEEXT@: $(BINARY_PREREQS) $(SHAREGETINFO_OBJ)
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(SHAREGETINFO_OBJ) $(LDFLAGS) $(DYNEXP) $(CMDLINE_LIBS)
 
 clean:
 	-rm -f $(PROGS)
