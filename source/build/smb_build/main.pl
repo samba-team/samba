@@ -31,7 +31,9 @@ my $mkfile = smb_build::config_mk::run_config_mk($INPUT, $config::config{srcdir}
 my $subsys_output_type = ["MERGED_OBJ"];
 
 my $library_output_type;
-if ($config::config{USESHARED} eq "true") {
+my $useshared = (defined($ENV{USESHARED})?$ENV{USESHARED}:$config::config{USESHARED});
+
+if ($useshared eq "true") {
 	$library_output_type = ["SHARED_LIBRARY", "MERGED_OBJ"];
 } else {
 	$library_output_type = ["MERGED_OBJ"];
@@ -40,7 +42,7 @@ if ($config::config{USESHARED} eq "true") {
 }
 
 my $module_output_type;
-if ($config::config{USESHARED} eq "true") {
+if ($useshared eq "true") {
 	$module_output_type = ["SHARED_LIBRARY"];
 } else {
 	$module_output_type = ["MERGED_OBJ"];

@@ -52,6 +52,9 @@ import "misc.idl", "security.idl", "nbt.idl";
 		[out,switch_is(level)] nbtd_info info
 		);
 
+	/* Send a GetDCName from the privilaged port (owned by nbtd),
+	 * and await a reply */
+
 	void nbtd_getdcname(
 		[in] astring domainname,
 		[in] astring ip_address,
@@ -76,6 +79,20 @@ import "misc.idl", "security.idl", "nbt.idl";
 		[in] nbt_name name,
 		[in] uint32 num_addrs,
 		[in] nbtd_proxy_wins_addr addrs[num_addrs]
+		);
+
+	/*
+	  Generic Kerberos package call (on the NETLOGON pipe, as a SamLogon)
+
+	  The normal use for this call is to check the PAC signature in the KDC
+	  
+	  The KDC has the routines to check this, so it is easier to
+	  proxy the request over by IRPC than set up the environment
+	 */
+
+	void kdc_check_generic_kerberos(
+		[in] DATA_BLOB generic_request,
+		[out] DATA_BLOB generic_reply
 		);
 
 	/******************************************************

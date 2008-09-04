@@ -105,7 +105,7 @@ interface krb5pac
 	typedef [public] struct {
 		[value(NETLOGON_GENERIC_KRB5_PAC_VALIDATE)] uint32 MessageType;
 		uint32 ChecksumLength;
-		uint32 SignatureType;
+		int32 SignatureType;
 		uint32 SignatureLength;
 		[flag(NDR_REMAINING)] DATA_BLOB ChecksumAndSignature;
 	} PAC_Validate;
