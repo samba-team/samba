@@ -4677,21 +4677,12 @@ static NTSTATUS rpc_sh_share_delete(struct net_context *c,
 				    struct rpc_pipe_client *pipe_hnd,
 				    int argc, const char **argv)
 {
-	WERROR result;
-	NTSTATUS status;
-
 	if (argc != 1) {
 		d_fprintf(stderr, "usage: %s <share>\n", ctx->whoami);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	status = rpccli_srvsvc_NetShareDel(pipe_hnd, mem_ctx,
-					   pipe_hnd->desthost,
-					   argv[0],
-					   0,
-					   &result);
-
-	return status;
+	return werror_to_ntstatus(W_ERROR(NetShareDel(pipe_hnd->desthost, argv[0], 0)));
 }
 
 static NTSTATUS rpc_sh_share_info(struct net_context *c,
