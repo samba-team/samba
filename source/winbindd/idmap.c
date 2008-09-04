@@ -88,13 +88,11 @@ static struct idmap_methods *get_methods(const char *name)
 	return NULL;
 }
 
-static struct idmap_alloc_methods *get_alloc_methods(
-						struct idmap_alloc_backend *be,
-						const char *name)
+static struct idmap_alloc_methods *get_alloc_methods(const char *name)
 {
 	struct idmap_alloc_backend *b;
 
-	for (b = be; b; b = b->next) {
+	for (b = alloc_backends; b; b = b->next) {
 		if (strequal(b->name, name)) {
 			return b->methods;
 		}
@@ -192,7 +190,7 @@ NTSTATUS smb_register_idmap_alloc(int version, const char *name,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	test = get_alloc_methods(alloc_backends, name);
+	test = get_alloc_methods(name);
 	if (test) {
 		DEBUG(0,("idmap_alloc module %s already registered!\n", name));
 		return NT_STATUS_OBJECT_NAME_COLLISION;
@@ -751,14 +749,12 @@ NTSTATUS idmap_init(void)
 						struct idmap_alloc_context);
 		IDMAP_CHECK_ALLOC(idmap_alloc_ctx);
 
-		idmap_alloc_ctx->methods = get_alloc_methods(alloc_backends,
-							     alloc_backend);
+		idmap_alloc_ctx->methods = get_alloc_methods(alloc_backend);
 		if ( ! idmap_alloc_ctx->methods) {
 			ret = smb_probe_module("idmap", alloc_backend);
 			if (NT_STATUS_IS_OK(ret)) {
 				idmap_alloc_ctx->methods =
-					get_alloc_methods(alloc_backends,
-							  alloc_backend);
+					get_alloc_methods(alloc_backend);
 			}
 		}
 		if (idmap_alloc_ctx->methods) {
