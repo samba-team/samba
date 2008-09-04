@@ -285,7 +285,96 @@ WERROR NetShareDel_l(struct libnetapi_ctx *ctx,
 WERROR NetShareEnum_r(struct libnetapi_ctx *ctx,
 		      struct NetShareEnum *r)
 {
-	return WERR_NOT_SUPPORTED;
+	WERROR werr;
+	NTSTATUS status;
+	struct cli_state *cli = NULL;
+	struct rpc_pipe_client *pipe_cli = NULL;
+	struct srvsvc_NetShareInfoCtr info_ctr;
+	struct srvsvc_NetShareCtr0 ctr0;
+	struct srvsvc_NetShareCtr1 ctr1;
+	struct srvsvc_NetShareCtr2 ctr2;
+	uint32_t i;
+
+	if (!r->out.buffer) {
+		return WERR_INVALID_PARAM;
+	}
+
+	switch (r->in.level) {
+		case 0:
+		case 1:
+		case 2:
+			break;
+		case 502:
+		case 503:
+			return WERR_NOT_SUPPORTED;
+		default:
+			return WERR_UNKNOWN_LEVEL;
+	}
+
+	ZERO_STRUCT(info_ctr);
+
+	werr = libnetapi_open_pipe(ctx, r->in.server_name,
+				   &ndr_table_srvsvc.syntax_id,
+				   &cli,
+				   &pipe_cli);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	info_ctr.level = r->in.level;
+	switch (r->in.level) {
+		case 0:
+			info_ctr.ctr.ctr0 = &ctr0;
+			 break;
+		case 1:
+			info_ctr.ctr.ctr1 = &ctr1;
+			break;
+		case 2:
+			info_ctr.ctr.ctr2 = &ctr2;
+			break;
+	}
+
+	status = rpccli_srvsvc_NetShareEnum(pipe_cli, ctx,
+					    r->in.server_name,
+					    &info_ctr,
+					    r->in.prefmaxlen,
+					    r->out.total_entries,
+					    r->out.resume_handle,
+					    &werr);
+	if (NT_STATUS_IS_ERR(status)) {
+		goto done;
+	}
+
+	for (i=0; i < info_ctr.ctr.ctr1->count; i++) {
+		union srvsvc_NetShareInfo _i;
+		switch (r->in.level) {
+			case 0:
+				_i.info0 = &info_ctr.ctr.ctr0->array[i];
+				break;
+			case 1:
+				_i.info1 = &info_ctr.ctr.ctr1->array[i];
+				break;
+			case 2:
+				_i.info2 = &info_ctr.ctr.ctr2->array[i];
+				break;
+		}
+
+		status = map_srvsvc_share_info_to_SHARE_INFO_buffer(ctx,
+								    r->in.level,
+								    &_i,
+								    r->out.buffer,
+								    r->out.entries_read);
+		if (!NT_STATUS_IS_OK(status)) {
+			werr = ntstatus_to_werror(status);
+		}
+	}
+
+ done:
+	if (!cli) {
+		return werr;
+	}
+
+	return werr;
 }
 
 /****************************************************************
