@@ -84,6 +84,9 @@ WERROR NetShareAdd_r(struct libnetapi_ctx *ctx,
 	switch (r->in.level) {
 		case 2:
 			break;
+		case 502:
+		case 503:
+			return WERR_NOT_SUPPORTED;
 		default:
 			return WERR_UNKNOWN_LEVEL;
 	}
