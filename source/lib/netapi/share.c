@@ -128,7 +128,9 @@ static NTSTATUS map_SHARE_INFO_buffer_to_srvsvc_share_info(TALLOC_CTX *mem_ctx,
 							   union srvsvc_NetShareInfo *info)
 {
 	struct SHARE_INFO_2 *i2 = NULL;
+	struct SHARE_INFO_1004 *i1004 = NULL;
 	struct srvsvc_NetShareInfo2 *s2 = NULL;
+	struct srvsvc_NetShareInfo1004 *s1004 = NULL;
 
 	if (!buffer) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -151,6 +153,17 @@ static NTSTATUS map_SHARE_INFO_buffer_to_srvsvc_share_info(TALLOC_CTX *mem_ctx,
 			s2->password		= i2->shi2_passwd;
 
 			info->info2 = s2;
+
+			break;
+		case 1004:
+			i1004 = (struct SHARE_INFO_1004 *)buffer;
+
+			s1004 = TALLOC_P(mem_ctx, struct srvsvc_NetShareInfo1004);
+			NT_STATUS_HAVE_NO_MEMORY(s1004);
+
+			s1004->comment		= i1004->shi1004_remark;
+
+			info->info1004 = s1004;
 
 			break;
 		default:
