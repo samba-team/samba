@@ -41,7 +41,6 @@ ntvfs.cifs.raw.context
 ntvfs.cifs.raw.qfileinfo.ipc
 rpc.dssync
 rpc.samsync
-rpc.pac							# Not finished yet
 ldap.uptodatevector					# Segfaults
 rpc.remact							# Not provided by Samba 4
 rpc.oxidresolve						# Not provided by Samba 4

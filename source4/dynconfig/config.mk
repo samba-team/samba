@@ -1,7 +1,6 @@
 [SUBSYSTEM::DYNCONFIG]
 
-DYNCONFIG_OBJ_FILES = $(dynconfigsrcdir)/dynconfig.o \
-					  $(dynconfigsrcdir)/version.o
+DYNCONFIG_OBJ_FILES = $(dynconfigsrcdir)/dynconfig.o
 
 # set these to where to find various files
 # These can be overridden by command line switches (see smbd(8))

@@ -34,6 +34,8 @@
 #include "auth/gensec/schannel_state.h"
 #include "libcli/security/security.h"
 #include "param/param.h"
+#include "lib/messaging/irpc.h"
+#include "librpc/gen_ndr/ndr_irpc.h"
 
 struct server_pipe_state {
 	struct netr_Credential client_challenge;
@@ -488,7 +490,48 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 		
 	case NetlogonGenericInformation:
 	{
-		/* Until we get enough information for an implemetnation */
+		if (creds->negotiate_flags & NETLOGON_NEG_ARCFOUR) {
+			creds_arcfour_crypt(creds, 
+					    r->in.logon.generic->data, r->in.logon.generic->length);
+		} else {
+			/* Using DES to verify kerberos tickets makes no sense */
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		if (strcmp(r->in.logon.generic->package_name.string, "Kerberos") == 0) {
+			NTSTATUS status;
+			struct server_id *kdc;
+			struct kdc_check_generic_kerberos check;
+			struct netr_GenericInfo2 *generic = talloc_zero(mem_ctx, struct netr_GenericInfo2);
+			NT_STATUS_HAVE_NO_MEMORY(generic);
+			r->out.authoritative = 1;
+			
+			/* TODO: Describe and deal with these flags */
+			r->out.flags = 0;
+
+			r->out.validation.generic = generic;
+	
+			kdc = irpc_servers_byname(dce_call->msg_ctx, mem_ctx, "kdc_server");
+			if ((kdc == NULL) || (kdc[0].id == 0)) {
+				return NT_STATUS_NO_LOGON_SERVERS;
+			}
+			
+			check.in.generic_request = 
+				data_blob_const(r->in.logon.generic->data,
+						r->in.logon.generic->length);	
+			
+			status = irpc_call(dce_call->msg_ctx, kdc[0],
+					   &ndr_table_irpc, NDR_KDC_CHECK_GENERIC_KERBEROS,
+					   &check, mem_ctx);
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
+			}
+			generic->length = check.out.generic_reply.length;
+			generic->data = check.out.generic_reply.data;
+			return NT_STATUS_OK;
+		}
+
+		/* Until we get an implemetnation of these other packages */
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	default:

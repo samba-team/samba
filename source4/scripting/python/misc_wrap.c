@@ -2558,6 +2558,7 @@ static swig_module_info swig_module = {swig_types, 27, 0, 0, 0, 0};
 #include "dsdb/samdb/samdb.h"
 #include "lib/ldb-samba/ldif_handlers.h"
 #include "librpc/ndr/libndr.h"
+#include "version.h"
 
 
 #include "libcli/util/pyerrors.h"
@@ -2811,6 +2812,12 @@ SWIG_AsCharPtrAndSize(PyObject *obj, char** cptr, size_t* psize, int *alloc)
 
 
 
+
+
+const char *version(void) 
+{ 
+    return SAMBA_VERSION_STRING; 
+}
 
 
   #define SWIG_From_long   PyInt_FromLong 
@@ -3109,7 +3116,7 @@ SWIGINTERN PyObject *_wrap_version(PyObject *SWIGUNUSEDPARM(self), PyObject *arg
   char *result = 0 ;
   
   if (!SWIG_Python_UnpackTuple(args,"version",0,0,0)) SWIG_fail;
-  result = (char *)samba_version_string();
+  result = (char *)version();
   resultobj = SWIG_FromCharPtr((const char *)result);
   return resultobj;
 fail:
