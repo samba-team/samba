@@ -25,11 +25,11 @@ AC_LIBREPLACE_CC_CHECKS
 
 m4_include(lib/talloc/libtalloc.m4)
 
-TALLOC_OBJS=""
+LIBTALLOC_OBJ0=""
 for obj in ${TALLOC_OBJ}; do
-	TALLOC_OBJS="${TALLOC_OBJS} ${tallocdir}/${obj}"
+	LIBTALLOC_OBJ0="${LIBTALLOC_OBJ0} ${tallocdir}/${obj}"
 done
-AC_SUBST(TALLOC_OBJS)
+AC_SUBST(LIBTALLOC_OBJ0)
 
 # TODO: These should come from m4_include(lib/tdb/libtdb.m4)
 # but currently this fails: things have to get merged from s4.
@@ -41,12 +41,10 @@ TDB_OBJ="common/tdb.o common/dump.o common/transaction.o common/error.o common/t
 TDB_OBJ="$TDB_OBJ common/freelist.o common/freelistcheck.o common/io.o common/lock.o common/open.o"
 AC_SUBST(TDB_OBJ)
 
-TDB_OBJS=""
-for obj in ${TDB_OBJ}; do
-	TDB_OBJS="${TDB_OBJS} ${tdbdir}/${obj}"
-done
-AC_SUBST(TDB_OBJS)
+LIBTDB_OBJ0=""
+for o in $TDB_OBJ; do LIBTDB_OBJ0="$LIBTDB_OBJ0 lib/tdb/$o"; done
 
+AC_SUBST(LIBTDB_OBJ0)
 SAMBA_CPPFLAGS="-Iinclude -I${srcdir-.}/include  -I. -I${srcdir-.}"
 SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} -I${srcdir-.}/lib/replace"
 SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} ${TALLOC_CFLAGS}"
