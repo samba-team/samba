@@ -985,6 +985,16 @@ interface libnetapi
 	/*******************************************/
 
 	typedef struct {
+		string shi0_netname;
+	} SHARE_INFO_0;
+
+	typedef struct {
+		string shi1_netname;
+		uint32 shi1_type;
+		string shi1_remark;
+	} SHARE_INFO_1;
+
+	typedef struct {
 		string shi2_netname;
 		uint32 shi2_type;
 		string shi2_remark;
@@ -994,6 +1004,25 @@ interface libnetapi
 		string shi2_path;
 		string shi2_passwd;
 	} SHARE_INFO_2;
+
+	typedef struct {
+		string shi501_netname;
+		uint32 shi501_type;
+		string shi501_remark;
+		uint32 shi501_flags;
+	} SHARE_INFO_501;
+
+	typedef struct {
+		string shi1004_remark;
+	} SHARE_INFO_1004;
+
+	typedef struct {
+		uint32 shi1005_flags;
+	} SHARE_INFO_1005;
+
+	typedef struct {
+		uint32 shi1006_max_uses;
+	} SHARE_INFO_1006;
 
 	[nopush,nopull] NET_API_STATUS NetShareAdd(
 		[in] string server_name,
