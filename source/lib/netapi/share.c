@@ -461,3 +461,21 @@ WERROR NetShareGetInfo_l(struct libnetapi_ctx *ctx,
 {
 	LIBNETAPI_REDIRECT_TO_LOCALHOST(ctx, r, NetShareGetInfo);
 }
+
+/****************************************************************
+****************************************************************/
+
+WERROR NetShareSetInfo_r(struct libnetapi_ctx *ctx,
+			 struct NetShareSetInfo *r)
+{
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR NetShareSetInfo_l(struct libnetapi_ctx *ctx,
+			 struct NetShareSetInfo *r)
+{
+	LIBNETAPI_REDIRECT_TO_LOCALHOST(ctx, r, NetShareSetInfo);
+}
