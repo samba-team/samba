@@ -1560,9 +1560,8 @@ MKSYMS_SH = $(srcdir)/script/mksyms.sh
 #
 #-------------------------------------------------------------------
 
-TALLOC_OBJ = @TALLOC_OBJS@
 
-LIBTALLOC_OBJ0 = $(TALLOC_OBJ)
+LIBTALLOC_OBJ0 = @LIBTALLOC_OBJ0@
 LIBTALLOC_OBJ = $(LIBTALLOC_OBJ0) $(LIBREPLACE_OBJ)
 
 LIBTALLOC_SHARED_TARGET=@LIBTALLOC_SHARED_TARGET@
@@ -1627,7 +1626,7 @@ shlibs test_shlibs: @LIBTALLOC_SHARED@
 #
 #-------------------------------------------------------------------
 
-LIBTDB_OBJ0 = @TDB_OBJS@
+LIBTDB_OBJ0 = @LIBTDB_OBJ0@
 LIBTDB_OBJ = $(LIBTDB_OBJ0) $(LIBREPLACE_OBJ)
 
 LIBTDB_SHARED_TARGET=@LIBTDB_SHARED_TARGET@
