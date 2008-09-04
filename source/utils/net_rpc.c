@@ -2848,39 +2848,6 @@ static int rpc_share_add(struct net_context *c, int argc, const char **argv)
 /**
  * Delete a share on a remote RPC server.
  *
- * All parameters are provided by the run_rpc_command function, except for
- * argc, argv which are passed through.
- *
- * @param domain_sid The domain sid acquired from the remote server.
- * @param cli A cli_state connected to the server.
- * @param mem_ctx Talloc context, destroyed on completion of the function.
- * @param argc  Standard main() style argc.
- * @param argv  Standard main() style argv. Initial components are already
- *              stripped.
- *
- * @return Normal NTSTATUS return.
- **/
-static NTSTATUS rpc_share_del_internals(struct net_context *c,
-					const DOM_SID *domain_sid,
-					const char *domain_name,
-					struct cli_state *cli,
-					struct rpc_pipe_client *pipe_hnd,
-					TALLOC_CTX *mem_ctx,
-					int argc,
-					const char **argv)
-{
-	WERROR result;
-
-	return rpccli_srvsvc_NetShareDel(pipe_hnd, mem_ctx,
-					 pipe_hnd->desthost,
-					 argv[0],
-					 0,
-					 &result);
-}
-
-/**
- * Delete a share on a remote RPC server.
- *
  * @param domain_sid The domain sid acquired from the remote server.
  * @param argc  Standard main() style argc.
  * @param argv  Standard main() style argv. Initial components are already
@@ -2893,9 +2860,8 @@ static int rpc_share_delete(struct net_context *c, int argc, const char **argv)
 	if (argc < 1 || c->display_usage) {
 		return rpc_share_usage(c, argc, argv);
 	}
-	return run_rpc_command(c, NULL, &ndr_table_srvsvc.syntax_id, 0,
-			       rpc_share_del_internals,
-			       argc, argv);
+
+	return NetShareDel(c->opt_host, argv[0], 0);
 }
 
 /**
