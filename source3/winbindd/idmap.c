@@ -81,12 +81,11 @@ static struct idmap_domain *passdb_idmap_domain;
 static struct idmap_domain **idmap_domains = NULL;
 static int num_domains = 0;
 
-static struct idmap_methods *get_methods(struct idmap_backend *be,
-					 const char *name)
+static struct idmap_methods *get_methods(const char *name)
 {
 	struct idmap_backend *b;
 
-	for (b = be; b; b = b->next) {
+	for (b = backends; b; b = b->next) {
 		if (strequal(b->name, name)) {
 			return b->methods;
 		}
@@ -95,13 +94,11 @@ static struct idmap_methods *get_methods(struct idmap_backend *be,
 	return NULL;
 }
 
-static struct idmap_alloc_methods *get_alloc_methods(
-						struct idmap_alloc_backend *be,
-						const char *name)
+static struct idmap_alloc_methods *get_alloc_methods(const char *name)
 {
 	struct idmap_alloc_backend *b;
 
-	for (b = be; b; b = b->next) {
+	for (b = alloc_backends; b; b = b->next) {
 		if (strequal(b->name, name)) {
 			return b->methods;
 		}
@@ -199,7 +196,7 @@ NTSTATUS smb_register_idmap_alloc(int version, const char *name,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	test = get_alloc_methods(alloc_backends, name);
+	test = get_alloc_methods(name);
 	if (test) {
 		DEBUG(0,("idmap_alloc module %s already registered!\n", name));
 		return NT_STATUS_OBJECT_NAME_COLLISION;
@@ -300,7 +297,7 @@ static struct idmap_domain *idmap_init_domain(TALLOC_CTX *mem_ctx,
 		goto fail;
 	}
 
-	result->methods = get_methods(backends, modulename);
+	result->methods = get_methods(modulename);
 	if (result->methods == NULL) {
 		DEBUG(3, ("idmap backend %s not found\n", modulename));
 
@@ -311,7 +308,7 @@ static struct idmap_domain *idmap_init_domain(TALLOC_CTX *mem_ctx,
 			goto fail;
 		}
 
-		result->methods = get_methods(backends, modulename);
+		result->methods = get_methods(modulename);
 	}
 	if (result->methods == NULL) {
 		DEBUG(1, ("idmap backend %s not found\n", modulename));
@@ -564,15 +561,13 @@ static NTSTATUS idmap_alloc_init(struct idmap_alloc_context **ctx)
 		goto fail;
 	}
 
-	idmap_alloc_ctx->methods = get_alloc_methods(alloc_backends,
-						     modulename);
+	idmap_alloc_ctx->methods = get_alloc_methods(modulename);
 
 	if (idmap_alloc_ctx->methods == NULL) {
 		ret = smb_probe_module("idmap", modulename);
 		if (NT_STATUS_IS_OK(ret)) {
 			idmap_alloc_ctx->methods =
-				get_alloc_methods(alloc_backends,
-						  modulename);
+				get_alloc_methods(modulename);
 		}
 	}
 
