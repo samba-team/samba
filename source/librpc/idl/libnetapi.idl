@@ -1114,4 +1114,16 @@ interface libnetapi
 		[in] uint32 level,
 		[out] uint8 **buffer
 		);
+
+	/*******************************************/
+	/* NetShareSetInfo                         */
+	/*******************************************/
+
+	[nopush,nopull] NET_API_STATUS NetShareSetInfo(
+		[in] string server_name,
+		[in] string net_name,
+		[in] uint32 level,
+		[in] uint8 *buffer,
+		[out] uint32 *parm_err
+		);
 }
