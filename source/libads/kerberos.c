@@ -881,9 +881,9 @@ bool create_local_private_krb5_conf_for_domain(const char *realm,
 
 	file_contents = talloc_asprintf(fname,
 					"[libdefaults]\n\tdefault_realm = %s\n"
-					"default_tgs_enctypes = RC4-HMAC DES-CBC-CRC DES-CBC-MD5\n"
-					"default_tkt_enctypes = RC4-HMAC DES-CBC-CRC DES-CBC-MD5\n"
-					"preferred_enctypes = RC4-HMAC DES-CBC-CRC DES-CBC-MD5\n\n"
+					"\tdefault_tgs_enctypes = RC4-HMAC DES-CBC-CRC DES-CBC-MD5\n"
+					"\tdefault_tkt_enctypes = RC4-HMAC DES-CBC-CRC DES-CBC-MD5\n"
+					"\tpreferred_enctypes = RC4-HMAC DES-CBC-CRC DES-CBC-MD5\n\n"
 					"[realms]\n\t%s = {\n"
 					"\t%s\t}\n",
 					realm_upper, realm_upper, kdc_ip_string);
