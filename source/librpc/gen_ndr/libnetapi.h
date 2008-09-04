@@ -1293,4 +1293,19 @@ struct NetShareEnum {
 
 };
 
+
+struct NetShareGetInfo {
+	struct {
+		const char * server_name;
+		const char * net_name;
+		uint32_t level;
+	} in;
+
+	struct {
+		uint8_t **buffer;/* [ref] */
+		enum NET_API_STATUS result;
+	} out;
+
+};
+
 #endif /* _HEADER_libnetapi */
