@@ -27,6 +27,101 @@
 /****************************************************************
 ****************************************************************/
 
+static NTSTATUS map_srvsvc_share_info_to_SHARE_INFO_buffer(TALLOC_CTX *mem_ctx,
+							   uint32_t level,
+							   union srvsvc_NetShareInfo *info,
+							   uint8_t **buffer,
+							   uint32_t *num_shares)
+{
+	struct SHARE_INFO_0 i0;
+	struct SHARE_INFO_1 i1;
+	struct SHARE_INFO_2 i2;
+	struct SHARE_INFO_501 i501;
+	struct SHARE_INFO_1005 i1005;
+
+	struct srvsvc_NetShareInfo0 *s0;
+	struct srvsvc_NetShareInfo1 *s1;
+	struct srvsvc_NetShareInfo2 *s2;
+	struct srvsvc_NetShareInfo501 *s501;
+	struct srvsvc_NetShareInfo1005 *s1005;
+
+	if (!buffer) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	switch (level) {
+		case 0:
+			s0 = info->info0;
+
+			i0.shi0_netname		= talloc_strdup(mem_ctx, s0->name);
+
+			ADD_TO_ARRAY(mem_ctx, struct SHARE_INFO_0, i0,
+				     (struct SHARE_INFO_0 **)buffer,
+				     num_shares);
+			break;
+
+		case 1:
+			s1 = info->info1;
+
+			i1.shi1_netname		= talloc_strdup(mem_ctx, s1->name);
+			i1.shi1_type		= s1->type;
+			i1.shi1_remark		= talloc_strdup(mem_ctx, s1->comment);
+
+			ADD_TO_ARRAY(mem_ctx, struct SHARE_INFO_1, i1,
+				     (struct SHARE_INFO_1 **)buffer,
+				     num_shares);
+			break;
+
+		case 2:
+			s2 = info->info2;
+
+			i2.shi2_netname		= talloc_strdup(mem_ctx, s2->name);
+			i2.shi2_type		= s2->type;
+			i2.shi2_remark		= talloc_strdup(mem_ctx, s2->comment);
+			i2.shi2_permissions	= s2->permissions;
+			i2.shi2_max_uses	= s2->max_users;
+			i2.shi2_current_uses	= s2->current_users;
+			i2.shi2_path		= talloc_strdup(mem_ctx, s2->path);
+			i2.shi2_passwd		= talloc_strdup(mem_ctx, s2->password);
+
+			ADD_TO_ARRAY(mem_ctx, struct SHARE_INFO_2, i2,
+				     (struct SHARE_INFO_2 **)buffer,
+				     num_shares);
+			break;
+
+		case 501:
+			s501 = info->info501;
+
+			i501.shi501_netname		= talloc_strdup(mem_ctx, s501->name);
+			i501.shi501_type		= s501->type;
+			i501.shi501_remark		= talloc_strdup(mem_ctx, s501->comment);
+			i501.shi501_flags		= s501->csc_policy;
+
+			ADD_TO_ARRAY(mem_ctx, struct SHARE_INFO_501, i501,
+				     (struct SHARE_INFO_501 **)buffer,
+				     num_shares);
+			break;
+
+		case 1005:
+			s1005 = info->info1005;
+
+			i1005.shi1005_flags		= s1005->dfs_flags;
+
+			ADD_TO_ARRAY(mem_ctx, struct SHARE_INFO_1005, i1005,
+				     (struct SHARE_INFO_1005 **)buffer,
+				     num_shares);
+			break;
+
+		default:
+			return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	return NT_STATUS_OK;
+}
+
+/****************************************************************
+****************************************************************/
+
 static NTSTATUS map_SHARE_INFO_buffer_to_srvsvc_share_info(TALLOC_CTX *mem_ctx,
 							   uint8_t *buffer,
 							   uint32_t level,
@@ -208,7 +303,65 @@ WERROR NetShareEnum_l(struct libnetapi_ctx *ctx,
 WERROR NetShareGetInfo_r(struct libnetapi_ctx *ctx,
 			 struct NetShareGetInfo *r)
 {
-	return WERR_NOT_SUPPORTED;
+	WERROR werr;
+	NTSTATUS status;
+	struct cli_state *cli = NULL;
+	struct rpc_pipe_client *pipe_cli = NULL;
+	union srvsvc_NetShareInfo info;
+	uint32_t num_entries = 0;
+
+	if (!r->in.net_name) {
+		return WERR_INVALID_PARAM;
+	}
+
+	switch (r->in.level) {
+		case 0:
+		case 1:
+		case 2:
+		case 501:
+		case 1005:
+			break;
+		case 502:
+		case 503:
+			return WERR_NOT_SUPPORTED;
+		default:
+			return WERR_UNKNOWN_LEVEL;
+	}
+
+	werr = libnetapi_open_pipe(ctx, r->in.server_name,
+				   &ndr_table_srvsvc.syntax_id,
+				   &cli,
+				   &pipe_cli);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	status = rpccli_srvsvc_NetShareGetInfo(pipe_cli, ctx,
+					       r->in.server_name,
+					       r->in.net_name,
+					       r->in.level,
+					       &info,
+					       &werr);
+
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	status = map_srvsvc_share_info_to_SHARE_INFO_buffer(ctx,
+							    r->in.level,
+							    &info,
+							    r->out.buffer,
+							    &num_entries);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+	}
+
+ done:
+	if (!cli) {
+		return werr;
+	}
+
+	return werr;
 }
 
 /****************************************************************
