@@ -1636,6 +1636,26 @@ NET_API_STATUS NetShareEnum(const char * server_name /* [in] */,
 			    uint32_t *total_entries /* [out] [ref] */,
 			    uint32_t *resume_handle /* [in,out] [ref] */);
 
+/************************************************************//**
+ *
+ * NetShareGetInfo
+ *
+ * @brief Get Share Info
+ *
+ * @param[in] server_name The server name to connect to
+ * @param[in] net_name The name of the share to query
+ * @param[in] level The level defining the SHARE_INFO_X structure
+ * @param[out] buffer The buffer containing a SHARE_INFO_X structure
+ * @return NET_API_STATUS
+ *
+ * example share/share_getinfo.c
+ ***************************************************************/
+
+NET_API_STATUS NetShareGetInfo(const char * server_name /* [in] */,
+			       const char * net_name /* [in] */,
+			       uint32_t level /* [in] */,
+			       uint8_t **buffer /* [out] [ref] */);
+
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */
