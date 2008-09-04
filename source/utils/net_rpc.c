@@ -4678,11 +4678,9 @@ static NTSTATUS rpc_sh_share_add(struct net_context *c,
 				 struct rpc_pipe_client *pipe_hnd,
 				 int argc, const char **argv)
 {
-	WERROR result;
-	NTSTATUS status;
+	NET_API_STATUS status;
 	uint32_t parm_err = 0;
-	union srvsvc_NetShareInfo info;
-	struct srvsvc_NetShareInfo2 info2;
+	struct SHARE_INFO_2 i2;
 
 	if ((argc < 2) || (argc > 3)) {
 		d_fprintf(stderr, "usage: %s <share> <path> [comment]\n",
@@ -4690,25 +4688,21 @@ static NTSTATUS rpc_sh_share_add(struct net_context *c,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	info2.name		= argv[0];
-	info2.type		= STYPE_DISKTREE;
-	info2.comment		= (argc == 3) ? argv[2] : "";
-	info2.permissions	= 0;
-	info2.max_users		= 0;
-	info2.current_users	= 0;
-	info2.path		= argv[1];
-	info2.password		= NULL;
+	i2.shi2_netname		= argv[0];
+	i2.shi2_type		= STYPE_DISKTREE;
+	i2.shi2_remark		= (argc == 3) ? argv[2] : "";
+	i2.shi2_permissions	= 0;
+	i2.shi2_max_uses	= 0;
+	i2.shi2_current_uses	= 0;
+	i2.shi2_path		= argv[1];
+	i2.shi2_passwd		= NULL;
 
-	info.info2 = &info2;
+	status = NetShareAdd(pipe_hnd->desthost,
+			     2,
+			     (uint8_t *)&i2,
+			     &parm_err);
 
-	status = rpccli_srvsvc_NetShareAdd(pipe_hnd, mem_ctx,
-					   pipe_hnd->desthost,
-					   2,
-					   &info,
-					   &parm_err,
-					   &result);
-
-	return status;
+	return werror_to_ntstatus(W_ERROR(status));
 }
 
 static NTSTATUS rpc_sh_share_delete(struct net_context *c,
