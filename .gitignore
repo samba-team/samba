@@ -78,3 +78,13 @@ source/librpc/gen_ndr/srv_misc.*
 source/librpc/gen_ndr/srv_notify.*
 source/librpc/gen_ndr/srv_security.*
 source/librpc/gen_ndr/srv_xattr.*
+source/librpc/gen_ndr/cli_libnetapi.c
+source/librpc/gen_ndr/cli_libnetapi.h
+source/librpc/gen_ndr/cli_nbt.c
+source/librpc/gen_ndr/cli_nbt.h
+source/librpc/gen_ndr/srv_drsuapi.c
+source/librpc/gen_ndr/srv_drsuapi.h
+source/librpc/gen_ndr/srv_libnetapi.c
+source/librpc/gen_ndr/srv_libnetapi.h
+source/librpc/gen_ndr/srv_nbt.c
+source/librpc/gen_ndr/srv_nbt.h
