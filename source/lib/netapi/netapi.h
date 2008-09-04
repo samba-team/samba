@@ -1656,6 +1656,28 @@ NET_API_STATUS NetShareGetInfo(const char * server_name /* [in] */,
 			       uint32_t level /* [in] */,
 			       uint8_t **buffer /* [out] [ref] */);
 
+/************************************************************//**
+ *
+ * NetShareSetInfo
+ *
+ * @brief Set Share Info
+ *
+ * @param[in] server_name The server name to connect to
+ * @param[in] net_name The name of the share to query
+ * @param[in] level The level defining the SHARE_INFO_X structure
+ * @param[in] buffer The buffer containing a SHARE_INFO_X structure
+ * @param[out] parm_err The returned parameter error number if any
+ * @return NET_API_STATUS
+ *
+ * example share/share_setinfo.c
+ ***************************************************************/
+
+NET_API_STATUS NetShareSetInfo(const char * server_name /* [in] */,
+			       const char * net_name /* [in] */,
+			       uint32_t level /* [in] */,
+			       uint8_t *buffer /* [in] [ref] */,
+			       uint32_t *parm_err /* [out] [ref] */);
+
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */
