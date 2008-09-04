@@ -22,6 +22,7 @@ RPMSRCDIR=`rpm --eval %_sourcedir`
 # At this point the RPMSPECDIR and RPMSRCDIR variables must have a value!
 
 DIRNAME=$(dirname $0)
+TOPDIR=${DIRNAME}/../..
 
 SPECFILE="samba.spec"
 VERSION=$(grep ^Version ${DIRNAME}/${SPECFILE} | sed -e 's/^Version:\ \+//')
@@ -42,7 +43,7 @@ case $RPMVER in
        ;;
 esac
 
-pushd ${DIRNAME}/../..
+pushd ${TOPDIR}
 echo -n "Creating samba-${VERSION}.tar.bz2 ... "
 git archive --prefix=samba-${VERSION}/ HEAD | bzip2 > ${RPMSRCDIR}/samba-${VERSION}.tar.bz2
 RC=$?
