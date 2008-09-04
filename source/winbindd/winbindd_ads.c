@@ -1225,6 +1225,8 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 		for (i = 0; i < trusts.count; i++) {
 			struct winbindd_domain d;
 			
+			ZERO_STRUCT(d);
+
 			/* drop external trusts if this is not our primary 
 			   domain.  This means that the returned number of 
 			   domains may be less that the ones actually trusted
