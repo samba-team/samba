@@ -360,4 +360,13 @@ WERROR NetShareGetInfo_r(struct libnetapi_ctx *ctx,
 			 struct NetShareGetInfo *r);
 WERROR NetShareGetInfo_l(struct libnetapi_ctx *ctx,
 			 struct NetShareGetInfo *r);
+NET_API_STATUS NetShareSetInfo(const char * server_name /* [in] */,
+			       const char * net_name /* [in] */,
+			       uint32_t level /* [in] */,
+			       uint8_t *buffer /* [in] [ref] */,
+			       uint32_t *parm_err /* [out] [ref] */);
+WERROR NetShareSetInfo_r(struct libnetapi_ctx *ctx,
+			 struct NetShareSetInfo *r);
+WERROR NetShareSetInfo_l(struct libnetapi_ctx *ctx,
+			 struct NetShareSetInfo *r);
 #endif /* __LIBNETAPI_LIBNETAPI__ */
