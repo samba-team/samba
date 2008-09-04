@@ -90,7 +90,9 @@
 
 #define NDR_NETSHAREGETINFO (0x29)
 
-#define NDR_LIBNETAPI_CALL_COUNT (42)
+#define NDR_NETSHARESETINFO (0x2a)
+
+#define NDR_LIBNETAPI_CALL_COUNT (43)
 enum ndr_err_code ndr_push_NET_API_STATUS(struct ndr_push *ndr, int ndr_flags, enum NET_API_STATUS r);
 enum ndr_err_code ndr_pull_NET_API_STATUS(struct ndr_pull *ndr, int ndr_flags, enum NET_API_STATUS *r);
 void ndr_print_NET_API_STATUS(struct ndr_print *ndr, const char *name, enum NET_API_STATUS r);
@@ -352,4 +354,7 @@ void ndr_print_NetShareEnum(struct ndr_print *ndr, const char *name, int flags, 
 enum ndr_err_code ndr_push_NetShareGetInfo(struct ndr_push *ndr, int flags, const struct NetShareGetInfo *r);
 enum ndr_err_code ndr_pull_NetShareGetInfo(struct ndr_pull *ndr, int flags, struct NetShareGetInfo *r);
 void ndr_print_NetShareGetInfo(struct ndr_print *ndr, const char *name, int flags, const struct NetShareGetInfo *r);
+enum ndr_err_code ndr_push_NetShareSetInfo(struct ndr_push *ndr, int flags, const struct NetShareSetInfo *r);
+enum ndr_err_code ndr_pull_NetShareSetInfo(struct ndr_pull *ndr, int flags, struct NetShareSetInfo *r);
+void ndr_print_NetShareSetInfo(struct ndr_print *ndr, const char *name, int flags, const struct NetShareSetInfo *r);
 #endif /* _HEADER_NDR_libnetapi */

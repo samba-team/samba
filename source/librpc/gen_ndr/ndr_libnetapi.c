@@ -3704,3 +3704,35 @@ _PUBLIC_ void ndr_print_NetShareGetInfo(struct ndr_print *ndr, const char *name,
 	ndr->depth--;
 }
 
+_PUBLIC_ void ndr_print_NetShareSetInfo(struct ndr_print *ndr, const char *name, int flags, const struct NetShareSetInfo *r)
+{
+	ndr_print_struct(ndr, name, "NetShareSetInfo");
+	ndr->depth++;
+	if (flags & NDR_SET_VALUES) {
+		ndr->flags |= LIBNDR_PRINT_SET_VALUES;
+	}
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "NetShareSetInfo");
+		ndr->depth++;
+		ndr_print_string(ndr, "server_name", r->in.server_name);
+		ndr_print_string(ndr, "net_name", r->in.net_name);
+		ndr_print_uint32(ndr, "level", r->in.level);
+		ndr_print_ptr(ndr, "buffer", r->in.buffer);
+		ndr->depth++;
+		ndr_print_uint8(ndr, "buffer", *r->in.buffer);
+		ndr->depth--;
+		ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "NetShareSetInfo");
+		ndr->depth++;
+		ndr_print_ptr(ndr, "parm_err", r->out.parm_err);
+		ndr->depth++;
+		ndr_print_uint32(ndr, "parm_err", *r->out.parm_err);
+		ndr->depth--;
+		ndr_print_NET_API_STATUS(ndr, "result", r->out.result);
+		ndr->depth--;
+	}
+	ndr->depth--;
+}
+

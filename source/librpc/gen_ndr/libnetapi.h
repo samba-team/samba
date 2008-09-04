@@ -1308,4 +1308,20 @@ struct NetShareGetInfo {
 
 };
 
+
+struct NetShareSetInfo {
+	struct {
+		const char * server_name;
+		const char * net_name;
+		uint32_t level;
+		uint8_t *buffer;/* [ref] */
+	} in;
+
+	struct {
+		uint32_t *parm_err;/* [ref] */
+		enum NET_API_STATUS result;
+	} out;
+
+};
+
 #endif /* _HEADER_libnetapi */
