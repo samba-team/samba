@@ -1103,4 +1103,15 @@ interface libnetapi
 		[out] uint32 *total_entries,
 		[in,out] uint32 *resume_handle
 		);
+
+	/*******************************************/
+	/* NetShareGetInfo                         */
+	/*******************************************/
+
+	[nopush,nopull] NET_API_STATUS NetShareGetInfo(
+		[in] string server_name,
+		[in] string net_name,
+		[in] uint32 level,
+		[out] uint8 **buffer
+		);
 }
