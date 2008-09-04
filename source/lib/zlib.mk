@@ -1,17 +1,16 @@
 [SUBSYSTEM::ZLIB]
-CFLAGS = -Ilib/zlib
+CFLAGS = -I$(zlibsrcdir)
 
-libzlibsrcdir := lib/zlib
 ZLIB_OBJ_FILES = \
-		$(libzlibsrcdir)/adler32.o \
-		$(libzlibsrcdir)/compress.o \
-		$(libzlibsrcdir)/crc32.o \
-		$(libzlibsrcdir)/gzio.o \
-		$(libzlibsrcdir)/uncompr.o \
-		$(libzlibsrcdir)/deflate.o \
-		$(libzlibsrcdir)/trees.o \
-		$(libzlibsrcdir)/zutil.o \
-		$(libzlibsrcdir)/inflate.o \
-		$(libzlibsrcdir)/infback.o \
-		$(libzlibsrcdir)/inftrees.o \
-		$(libzlibsrcdir)/inffast.o
+		$(zlibsrcdir)/adler32.o \
+		$(zlibsrcdir)/compress.o \
+		$(zlibsrcdir)/crc32.o \
+		$(zlibsrcdir)/gzio.o \
+		$(zlibsrcdir)/uncompr.o \
+		$(zlibsrcdir)/deflate.o \
+		$(zlibsrcdir)/trees.o \
+		$(zlibsrcdir)/zutil.o \
+		$(zlibsrcdir)/inflate.o \
+		$(zlibsrcdir)/infback.o \
+		$(zlibsrcdir)/inftrees.o \
+		$(zlibsrcdir)/inffast.o
