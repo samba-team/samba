@@ -607,13 +607,23 @@ import "misc.idl", "security.idl";
 	} lsa_TrustDomainInfoFullInfo;
 
 	typedef struct {
-		lsa_TrustDomainInfoInfoEx      info_ex;
-		lsa_DATA_BUF2                  data1;
-	} lsa_TrustDomainInfoInfoEx2Internal;
+		lsa_DATA_BUF2                          auth_blob;
+	} lsa_TrustDomainInfoAuthInfoInternal;
+
+	typedef struct {
+		lsa_TrustDomainInfoInfoEx              info_ex;
+		lsa_TrustDomainInfoPosixOffset         posix_offset;
+		lsa_TrustDomainInfoAuthInfoInternal    auth_info;
+	} lsa_TrustDomainInfoFullInfoInternal;
 
 	typedef struct {
 		lsa_TrustDomainInfoInfoEx      info_ex;
-		lsa_DATA_BUF2                  data1;
+		uint32 forest_trust_length;
+		[size_is(forest_trust_length)] uint8 *forest_trust_data;
+	} lsa_TrustDomainInfoInfoEx2Internal;
+
+	typedef struct {
+		lsa_TrustDomainInfoInfoEx2Internal     info;
 		lsa_TrustDomainInfoPosixOffset posix_offset;
 		lsa_TrustDomainInfoAuthInfo    auth_info;
 	} lsa_TrustDomainInfoInfo2Internal;
@@ -640,9 +650,9 @@ import "misc.idl", "security.idl";
 		[case(LSA_TRUSTED_DOMAIN_INFO_FULL_INFO)]
 		        lsa_TrustDomainInfoFullInfo          full_info;
 		[case(LSA_TRUSTED_DOMAIN_INFO_AUTH_INFO_INTERNAL)]
-		        lsa_TrustDomainInfoAuthInfo          auth_info_internal;
+		        lsa_TrustDomainInfoAuthInfoInternal  auth_info_internal;
 		[case(LSA_TRUSTED_DOMAIN_INFO_FULL_INFO_INTERNAL)]
-		        lsa_TrustDomainInfoFullInfo          full_info_internal;
+		        lsa_TrustDomainInfoFullInfoInternal  full_info_internal;
 		[case(LSA_TRUSTED_DOMAIN_INFO_INFO_EX2_INTERNAL)]
 		        lsa_TrustDomainInfoInfoEx2Internal   info_ex2_internal;
 		[case(LSA_TRUSTED_DOMAIN_INFO_FULL_INFO_2_INTERNAL)]
@@ -875,7 +885,7 @@ import "misc.idl", "security.idl";
 	NTSTATUS lsa_CreateTrustedDomainEx(
 		[in]  policy_handle               *policy_handle,
 		[in]  lsa_TrustDomainInfoInfoEx   *info,
-		[in]  lsa_TrustDomainInfoAuthInfo *auth_info,
+		[in]  lsa_TrustDomainInfoAuthInfoInternal *auth_info,
 		[in]  uint32 access_mask,
 		[out] policy_handle               *trustdom_handle
 		);
@@ -996,7 +1006,7 @@ import "misc.idl", "security.idl";
 	NTSTATUS lsa_CreateTrustedDomainEx2(
 		[in]  policy_handle               *policy_handle,
 		[in]  lsa_TrustDomainInfoInfoEx   *info,
-		[in]  lsa_TrustDomainInfoAuthInfo *auth_info,
+		[in]  lsa_TrustDomainInfoAuthInfoInternal *auth_info,
 		[in]  uint32                       access_mask,
 		[out] policy_handle               *trustdom_handle
 		);

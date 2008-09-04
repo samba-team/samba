@@ -409,12 +409,20 @@ interface drsblobs {
 		[size_is(1)] AuthenticationInformation array[];
 	} AuthenticationInformationArray;
 
-	typedef [public,nopull,nopush,noprint] struct {
+	typedef [public,nopull,nopush,noprint,gensize] struct {
 		uint32 count;
 		[relative] AuthenticationInformationArray *current;
 		[relative] AuthenticationInformationArray *previous;
 	} trustAuthInOutBlob;
 
+	typedef [public] struct {
+		uint8 confounder[512];
+		trustAuthInOutBlob outgoing;
+		trustAuthInOutBlob incoming;
+		[value(ndr_size_trustAuthInOutBlob(&outgoing, ndr->flags))] uint32 outgoing_size;
+		[value(ndr_size_trustAuthInOutBlob(&incoming, ndr->flags))] uint32 incoming_size;
+	} trustAuthInAndOutBlob;
+	
 	void decode_trustAuthInOut(
 		[in] trustAuthInOutBlob blob
 		);

@@ -23,11 +23,13 @@
 #include "torture/torture.h"
 #include "librpc/gen_ndr/ndr_lsa_c.h"
 #include "librpc/gen_ndr/netlogon.h"
+#include "librpc/gen_ndr/ndr_drsblobs.h"
 #include "lib/events/events.h"
 #include "libcli/security/security.h"
 #include "libcli/auth/libcli_auth.h"
 #include "torture/rpc/rpc.h"
 #include "param/param.h"
+#include "lib/crypto/crypto.h"
 #define TEST_MACHINENAME "lsatestmach"
 
 static void init_lsa_String(struct lsa_String *name, const char *s)
@@ -1882,6 +1884,9 @@ static bool test_EnumTrustDom(struct dcerpc_pipe *p,
 		return false;
 	}
 		
+	/* Start from the bottom again */
+	resume_handle = 0;
+
 	do {
 		r.in.handle = handle;
 		r.in.resume_handle = &resume_handle;
@@ -2063,6 +2068,7 @@ static bool test_CreateTrustedDomain(struct dcerpc_pipe *p,
 }
 
 static bool test_CreateTrustedDomainEx2(struct dcerpc_pipe *p, 
+					struct torture_context *tctx, 
 					TALLOC_CTX *mem_ctx, 
 					struct policy_handle *handle)
 {
@@ -2070,13 +2076,24 @@ static bool test_CreateTrustedDomainEx2(struct dcerpc_pipe *p,
 	bool ret = true;
 	struct lsa_CreateTrustedDomainEx2 r;
 	struct lsa_TrustDomainInfoInfoEx trustinfo;
+	struct lsa_TrustDomainInfoAuthInfoInternal authinfo;
+	struct trustAuthInAndOutBlob auth_struct;
+	DATA_BLOB auth_blob;
 	struct dom_sid *domsid[12];
 	struct policy_handle trustdom_handle[12];
 	struct lsa_QueryTrustedDomainInfo q;
+	DATA_BLOB session_key;
+	enum ndr_err_code ndr_err;
 	int i;
 
 	printf("Testing CreateTrustedDomainEx2 for 12 domains\n");
 
+	status = dcerpc_fetch_session_key(p, &session_key);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("dcerpc_fetch_session_key failed - %s\n", nt_errstr(status));
+		return false;
+	}
+		
 	for (i=0; i< 12; i++) {
 		char *trust_name = talloc_asprintf(mem_ctx, "torturedom%02d", i);
 		char *trust_name_dns = talloc_asprintf(mem_ctx, "torturedom%02d.samba.example.com", i);
@@ -2102,9 +2119,26 @@ static bool test_CreateTrustedDomainEx2(struct dcerpc_pipe *p,
 
 		trustinfo.trust_attributes = LSA_TRUST_ATTRIBUTE_USES_RC4_ENCRYPTION;
 
+		generate_random_buffer(auth_struct.confounder, sizeof(auth_struct.confounder));
+
+		auth_struct.outgoing.count = 0;
+		auth_struct.incoming.count = 0;
+
+		ndr_err = ndr_push_struct_blob(&auth_blob, mem_ctx, lp_iconv_convenience(tctx->lp_ctx), &auth_struct,
+					       (ndr_push_flags_fn_t)ndr_push_trustAuthInAndOutBlob);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			printf("ndr_push_struct_blob of trustAuthInAndOutBlob structure failed");
+			ret = false;
+		}
+
+		arcfour_crypt_blob(auth_blob.data, auth_blob.length, &session_key);
+
+		authinfo.auth_blob.size = auth_blob.length;
+		authinfo.auth_blob.data = auth_blob.data;
+
 		r.in.policy_handle = handle;
 		r.in.info = &trustinfo;
-		r.in.auth_info = NULL;
+		r.in.auth_info = &authinfo;
 		r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 		r.out.trustdom_handle = &trustdom_handle[i];
 		
@@ -2114,7 +2148,7 @@ static bool test_CreateTrustedDomainEx2(struct dcerpc_pipe *p,
 			status = dcerpc_lsa_CreateTrustedDomainEx2(p, mem_ctx, &r);
 		}
 		if (!NT_STATUS_IS_OK(status)) {
-			printf("CreateTrustedDomainEx failed - %s\n", nt_errstr(status));
+			printf("CreateTrustedDomainEx failed2 - %s\n", nt_errstr(status));
 			ret = false;
 		} else {
 		
@@ -2452,7 +2486,7 @@ bool torture_rpc_lsa(struct torture_context *tctx)
 			ret = false;
 		}
 
-		if (!test_CreateTrustedDomainEx2(p, tctx, handle)) {
+		if (!test_CreateTrustedDomainEx2(p, tctx, tctx, handle)) {
 			ret = false;
 		}
 
