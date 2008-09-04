@@ -981,14 +981,36 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 	return result;
 }
 
+/*******************************************************************
+ Add a dcname and sockaddr_storage pair to the end of a dc_name_ip
+ array.
+
+ Keeps the list unique by not adding duplicate entries.
+
+ @param[in] mem_ctx talloc memory context to allocate from
+ @param[in] domain_name domain of the DC
+ @param[in] dcname name of the DC to add to the list
+ @param[in] pss Internet address and port pair to add to the list
+ @param[in,out] dcs array of dc_name_ip structures to add to
+ @param[in,out] num_dcs number of dcs returned in the dcs array
+ @return true if the list was added to, false otherwise
+*******************************************************************/
+
 static bool add_one_dc_unique(TALLOC_CTX *mem_ctx, const char *domain_name,
 			      const char *dcname, struct sockaddr_storage *pss,
 			      struct dc_name_ip **dcs, int *num)
 {
+	int i = 0;
+
 	if (!NT_STATUS_IS_OK(check_negative_conn_cache(domain_name, dcname))) {
 		DEBUG(10, ("DC %s was in the negative conn cache\n", dcname));
 		return False;
 	}
+
+	/* Make sure there's no duplicates in the list */
+	for (i=0; i<*num; i++)
+		if (addr_equal(&(*dcs)[i].ss, pss))
+			return False;
 
 	*dcs = TALLOC_REALLOC_ARRAY(mem_ctx, *dcs, struct dc_name_ip, (*num)+1);
 
@@ -1120,8 +1142,15 @@ static bool dcip_to_name(TALLOC_CTX *mem_ctx,
 }
 
 /*******************************************************************
- Retreive a list of IP address for domain controllers.  Fill in 
- the dcs[]  with results.
+ Retrieve a list of IP addresses for domain controllers.
+
+ The array is sorted in the preferred connection order.
+
+ @param[in] mem_ctx talloc memory context to allocate from
+ @param[in] domain domain to retrieve DCs for
+ @param[out] dcs array of dcs that will be returned
+ @param[out] num_dcs number of dcs returned in the dcs array
+ @return always true
 *******************************************************************/
 
 static bool get_dcs(TALLOC_CTX *mem_ctx, struct winbindd_domain *domain,
@@ -1137,9 +1166,11 @@ static bool get_dcs(TALLOC_CTX *mem_ctx, struct winbindd_domain *domain,
 
 	is_our_domain = strequal(domain->name, lp_workgroup());
 
+	/* If not our domain, get the preferred DC, by asking our primary DC */
 	if ( !is_our_domain
 		&& get_dc_name_via_netlogon(domain, dcname, &ss)
-		&& add_one_dc_unique(mem_ctx, domain->name, dcname, &ss, dcs, num_dcs) )
+		&& add_one_dc_unique(mem_ctx, domain->name, dcname, &ss, dcs,
+		       num_dcs) )
 	{
 		char addr[INET6_ADDRSTRLEN];
 		print_sockaddr(addr, sizeof(addr), &ss);
@@ -1166,8 +1197,13 @@ static bool get_dcs(TALLOC_CTX *mem_ctx, struct winbindd_domain *domain,
 		if (sitename) {
 
 			/* Do the site-specific AD dns lookup first. */
-			get_sorted_dc_list(domain->alt_name, sitename, &ip_list, &iplist_size, True);
+			get_sorted_dc_list(domain->alt_name, sitename, &ip_list,
+			       &iplist_size, True);
 
+			/* Add ips to the DC array.  We don't look up the name
+			   of the DC in this function, but we fill in the char*
+			   of the ip now to make the failed connection cache
+			   work */
 			for ( i=0; i<iplist_size; i++ ) {
 				char addr[INET6_ADDRSTRLEN];
 				print_sockaddr(addr, sizeof(addr),
@@ -1185,8 +1221,9 @@ static bool get_dcs(TALLOC_CTX *mem_ctx, struct winbindd_domain *domain,
 			iplist_size = 0;
 		}
 
-		/* Now we add DCs from the main AD dns lookup. */
-		get_sorted_dc_list(domain->alt_name, NULL, &ip_list, &iplist_size, True);
+		/* Now we add DCs from the main AD DNS lookup. */
+		get_sorted_dc_list(domain->alt_name, NULL, &ip_list,
+			&iplist_size, True);
 
 		for ( i=0; i<iplist_size; i++ ) {
 			char addr[INET6_ADDRSTRLEN];
@@ -1199,32 +1236,45 @@ static bool get_dcs(TALLOC_CTX *mem_ctx, struct winbindd_domain *domain,
 					dcs,
 					num_dcs);
 		}
+
+		SAFE_FREE(ip_list);
+		iplist_size = 0;
         }
 
-	/* try standard netbios queries if no ADS */
+	/* Try standard netbios queries if no ADS */
+	if (*num_dcs == 0) {
+		get_sorted_dc_list(domain->name, NULL, &ip_list, &iplist_size,
+		       False);
 
-	if (iplist_size==0) {
-		get_sorted_dc_list(domain->name, NULL, &ip_list, &iplist_size, False);
+		for ( i=0; i<iplist_size; i++ ) {
+			char addr[INET6_ADDRSTRLEN];
+			print_sockaddr(addr, sizeof(addr),
+					&ip_list[i].ss);
+			add_one_dc_unique(mem_ctx,
+					domain->name,
+					addr,
+					&ip_list[i].ss,
+					dcs,
+					num_dcs);
+		}
+
+		SAFE_FREE(ip_list);
+		iplist_size = 0;
 	}
-
-	/* FIXME!! this is where we should re-insert the GETDC requests --jerry */
-
-	/* now add to the dc array.  We'll wait until the last minute 
-	   to look up the name of the DC.  But we fill in the char* for 
-	   the ip now in to make the failed connection cache work */
-
-	for ( i=0; i<iplist_size; i++ ) {
-		char addr[INET6_ADDRSTRLEN];
-		print_sockaddr(addr, sizeof(addr),
-				&ip_list[i].ss);
-		add_one_dc_unique(mem_ctx, domain->name, addr,
-			&ip_list[i].ss, dcs, num_dcs);
-	}
-
-	SAFE_FREE( ip_list );
 
 	return True;
 }
+
+/*******************************************************************
+ Find and make a connection to a DC in the given domain.
+
+ @param[in] mem_ctx talloc memory context to allocate from
+ @param[in] domain domain to find a dc in
+ @param[out] dcname NetBIOS or FQDN of DC that's connected to
+ @param[out] pss DC Internet address and port
+ @param[out] fd fd of the open socket connected to the newly found dc
+ @return true when a DC connection is made, false otherwise
+*******************************************************************/
 
 static bool find_new_dc(TALLOC_CTX *mem_ctx,
 			struct winbindd_domain *domain,
