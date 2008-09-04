@@ -16,10 +16,10 @@
 # extra options passed to rpmbuild
 EXTRA_OPTIONS="$1"
 
-SPECDIR=`rpm --eval %_specdir`
+RPMSPECDIR=`rpm --eval %_specdir`
 RPMSRCDIR=`rpm --eval %_sourcedir`
 
-# At this point the SPECDIR and RPMSRCDIR variables must have a value!
+# At this point the RPMSPECDIR and RPMSRCDIR variables must have a value!
 
 DIRNAME=$(dirname $0)
 
@@ -66,7 +66,7 @@ pushd ${DIRNAME}
 chmod 755 setup/filter-requires-samba.sh
 tar --exclude=.svn -jcvf - setup > ${RPMSRCDIR}/setup.tar.bz2
 
-cp -p ${SPECFILE} ${SPECDIR}
+cp -p ${SPECFILE} ${RPMSPECDIR}
 
 popd
 
@@ -74,7 +74,7 @@ popd
 ## Build
 ##
 echo "$(basename $0): Getting Ready to build release package"
-pushd ${SPECDIR}
+pushd ${RPMSPECDIR}
 ${RPM} -ba $EXTRA_OPTIONS $SPECFILE
 if [ "x$?" = "x0" ] && [ `arch` = "x86_64" ]; then
     echo "Building 32 bit winbind libs"
