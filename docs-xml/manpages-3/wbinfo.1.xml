@@ -77,9 +77,10 @@
 
 	<variablelist>
 		<varlistentry>
-		<term>-a|--authenticate username%password</term>
-		<listitem><para>Attempt to authenticate a user via winbindd.
-                This checks both authenticaion methods and reports its results.
+		<term>-a|--authenticate <replaceable>username%password</replaceable></term>
+		<listitem><para>Attempt to authenticate a user via <citerefentry>
+		<refentrytitle>winbindd</refentrytitle><manvolnum>8</manvolnum></citerefentry>.
+                This checks both authentication methods and reports its results.
 		</para><note><para>Do not be tempted to use this
 		functionality for authentication in third-party
 		applications.  Instead use <citerefentry><refentrytitle>ntlm_auth</refentrytitle>
@@ -106,18 +107,20 @@
 		</varlistentry>
 
 		<varlistentry>
-		<term>--domain name</term>
+		<term>--domain <replaceable>name</replaceable></term>
 		<listitem><para>This parameter sets the domain on which any specified
 		operations will performed.  If special domain name '.' is used to represent
-		the current domain to which winbindd belongs.  Currently only the
+		the current domain to which <citerefentry><refentrytitle>winbindd</refentrytitle>
+		<manvolnum>8</manvolnum></citerefentry> belongs.  Currently only the
 		<option>--sequence</option>,
 		<option>-u</option>, and <option>-g</option> options honor this parameter.
 		</para></listitem>
 		</varlistentry>
 
 		<varlistentry>
-		<term>-D|--domain-info domain</term>
-		<listitem><para>Show most of the info we have about the domain.
+		<term>-D|--domain-info <replaceable>domain</replaceable></term>
+		<listitem><para>Show most of the info we have about the
+		specified domain.
 		</para></listitem>
 		</varlistentry>
 
@@ -134,33 +137,34 @@
 
 		<varlistentry>
 		<term>--get-auth-user</term>
-		<listitem><para>Print username and password used by winbindd
+		<listitem><para>Print username and password used by <citerefentry>
+                <refentrytitle>winbindd</refentrytitle><manvolnum>8</manvolnum></citerefentry>
 		during session setup to a domain controller. Username
 		and password can be set using <option>--set-auth-user</option>.
 		Only available for root.</para></listitem>
 		</varlistentry>
 
 		<varlistentry>
-		<term>--getdcname domain</term>
+		<term>--getdcname <replaceable>domain</replaceable></term>
 		<listitem><para>Get the DC name for the specified domain.
 		</para></listitem>
 		</varlistentry>
 
 		<varlistentry>
-		<term>-G|--gid-to-sid gid</term>
+		<term>-G|--gid-to-sid <replaceable>gid</replaceable></term>
 		<listitem><para>Try to convert a UNIX group id to a Windows
 		NT SID.  If the gid specified does not refer to one within
 		the idmap gid range then the operation will fail. </para></listitem>
 		</varlistentry>
 
 		<varlistentry>
-		<term>-i|--user-info user</term>
+		<term>-i|--user-info <replaceable>user</replaceable></term>
 		<listitem><para>Get user info.
 		</para></listitem>
 		</varlistentry>
 
 		<varlistentry>
-		<term>-I|--WINS-by-ip ip</term>
+		<term>-I|--WINS-by-ip <replaceable>ip</replaceable></term>
 		<listitem><para>The <parameter>-I</parameter> option
 		queries <citerefentry><refentrytitle>winbindd</refentrytitle>
 		<manvolnum>8</manvolnum></citerefentry> to send a node status
@@ -170,7 +174,7 @@
 		</varlistentry>
 
 		<varlistentry>
-		<term>-K|--krb5auth username%password</term>
+		<term>-K|--krb5auth <replaceable>username%password</replaceable></term>
 		<listitem><para>Attempt to authenticate a user via Kerberos.
 		</para></listitem>
 		</varlistentry>
@@ -186,7 +190,7 @@
 		</varlistentry>
 
 		<varlistentry>
-		<term>-n|--name-to-sid name</term>
+		<term>-n|--name-to-sid <replaceable>name</replaceable></term>
 		<listitem><para>The <parameter>-n</parameter> option
 		queries <citerefentry><refentrytitle>winbindd</refentrytitle>
 		<manvolnum>8</manvolnum></citerefentry> for the SID
@@ -200,7 +204,7 @@
 		</varlistentry>
 
 		<varlistentry>
-		<term>-N|--WINS-by-name name</term>
+		<term>-N|--WINS-by-name <replaceable>name</replaceable></term>
 		<listitem><para>The <parameter>-N</parameter> option
 		queries <citerefentry><refentrytitle>winbindd</refentrytitle>
 		<manvolnum>8</manvolnum></citerefentry> to query the WINS
@@ -217,13 +221,14 @@
 
 		<varlistentry>
 		<term>-p|--ping</term>
-		<listitem><para>Check whether winbindd is still alive.
+		<listitem><para>Check whether <citerefentry><refentrytitle>winbindd</refentrytitle>
+		<manvolnum>8</manvolnum></citerefentry> is still alive.
 		Prints out either 'succeeded' or 'failed'.
 		</para></listitem>
 		</varlistentry>
 
 		<varlistentry>
-		<term>-r|--user-groups username</term>
+		<term>-r|--user-groups <replaceable>username</replaceable></term>
 		<listitem><para>Try to obtain the list of UNIX group ids
 		to which the user belongs.  This only works for users
 		defined on a Domain Controller.
@@ -231,7 +236,7 @@
 		</varlistentry>
 
 		<varlistentry>
-		<term>-s|--sid-to-name sid</term>
+		<term>-s|--sid-to-name <replaceable>sid</replaceable></term>
 		<listitem><para>Use <parameter>-s</parameter> to resolve
 		a SID to a name.  This is the inverse of the <parameter>-n
 		</parameter> option above.  SIDs must be specified as ASCII strings
@@ -247,14 +252,15 @@
 		</varlistentry>
 		<varlistentry>
 		<term>--sequence</term>
-		<listitem><para>Show sequence numbers of
-		all known domains</para></listitem>
+		<listitem><para>Show sequence numbers of all known domains.
+		</para></listitem>
 		</varlistentry>
 
 		<varlistentry>
-		<term>--set-auth-user username%password</term>
-		<listitem><para>Store username and password used by winbindd
-		during session setup to a domain controller.  This enables
+		<term>--set-auth-user <replaceable>username%password</replaceable></term>
+		<listitem><para>Store username and password used by <citerefentry>
+                <refentrytitle>winbindd</refentrytitle><manvolnum>8</manvolnum>
+                </citerefentry>	during session setup to a domain controller.  This enables
 		winbindd to operate in a Windows 2000 domain with Restrict
 		Anonymous turned on (a.k.a. Permissions compatible with
 		Windows 2000 servers only).
@@ -262,7 +268,7 @@
 		</varlistentry>
 
 		<varlistentry>
-		<term>-S|--sid-to-uid sid</term>
+		<term>-S|--sid-to-uid <replaceable>sid</replaceable></term>
 		<listitem><para>Convert a SID to a UNIX user id.  If the SID
 		does not correspond to a UNIX user mapped by <citerefentry>
 		<refentrytitle>winbindd</refentrytitle><manvolnum>8</manvolnum>
@@ -288,40 +294,39 @@
 		</varlistentry>
 
 		<varlistentry>
-		<term>--uid-info UID</term>
-		<listitem><para>Get user info for the user conencted to
+		<term>--uid-info <replaceable>uid</replaceable></term>
+		<listitem><para>Get user info for the user connected to
 		user id UID.</para></listitem>
 		</varlistentry>
 
 		<varlistentry>
-		<term>--user-domgroups SID</term>
+		<term>--user-domgroups <replaceable>sid</replaceable></term>
 		<listitem><para>Get user domain groups.
 		</para></listitem>
 		</varlistentry>
 
 		<varlistentry>
-		<term>--user-sids SID</term>
+		<term>--user-sids <replaceable>sid</replaceable></term>
 		<listitem><para>Get user group SIDs for user.
 		</para></listitem>
 		</varlistentry>
 
 		<varlistentry>
-		<term>-U|--uid-to-sid uid</term>
+		<term>-U|--uid-to-sid <replaceable>uid</replaceable></term>
 		<listitem><para>Try to convert a UNIX user id to a Windows NT
 		SID.  If the uid specified does not refer to one within
 		the idmap uid range then the operation will fail. </para></listitem>
 		</varlistentry>
 
 		<varlistentry>
-		  <term>--verbose</term>
-		  <listitem><para>
-		      Print additional information about the query
-		      results.
-		  </para></listitem>
+		<term>--verbose</term>
+		<listitem><para>
+		Print additional information about the query results.
+		</para></listitem>
 		</varlistentry>
 
 		<varlistentry>
-		<term>-Y|--sid-to-gid sid</term>
+		<term>-Y|--sid-to-gid <replaceable>sid</replaceable></term>
 		<listitem><para>Convert a SID to a UNIX group id.  If the SID
 		does not correspond to a UNIX group mapped by <citerefentry>
 		<refentrytitle>winbindd</refentrytitle><manvolnum>8</manvolnum></citerefentry> then
