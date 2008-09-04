@@ -2791,75 +2791,58 @@ static int rpc_share_usage(struct net_context *c, int argc, const char **argv)
 /**
  * Add a share on a remote RPC server.
  *
- * All parameters are provided by the run_rpc_command function, except for
- * argc, argv which are passed through.
- *
- * @param domain_sid The domain sid acquired from the remote server.
- * @param cli A cli_state connected to the server.
- * @param mem_ctx Talloc context, destroyed on completion of the function.
  * @param argc  Standard main() style argc.
  * @param argv  Standard main() style argv. Initial components are already
  *              stripped.
  *
- * @return Normal NTSTATUS return.
+ * @return A shell status integer (0 for success).
  **/
-static NTSTATUS rpc_share_add_internals(struct net_context *c,
-					const DOM_SID *domain_sid,
-					const char *domain_name,
-					struct cli_state *cli,
-					struct rpc_pipe_client *pipe_hnd,
-					TALLOC_CTX *mem_ctx,int argc,
-					const char **argv)
+
+static int rpc_share_add(struct net_context *c, int argc, const char **argv)
 {
-	WERROR result;
-	NTSTATUS status;
+	NET_API_STATUS status;
 	char *sharename;
 	char *path;
 	uint32 type = STYPE_DISKTREE; /* only allow disk shares to be added */
 	uint32 num_users=0, perms=0;
 	char *password=NULL; /* don't allow a share password */
-	uint32 level = 2;
-	union srvsvc_NetShareInfo info;
-	struct srvsvc_NetShareInfo2 info2;
+	struct SHARE_INFO_2 i2;
 	uint32_t parm_error = 0;
 
-	if ((sharename = talloc_strdup(mem_ctx, argv[0])) == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	path = strchr(sharename, '=');
-	if (!path)
-		return NT_STATUS_UNSUCCESSFUL;
-	*path++ = '\0';
-
-	info2.name		= sharename;
-	info2.type		= type;
-	info2.comment		= c->opt_comment;
-	info2.permissions	= perms;
-	info2.max_users		= c->opt_maxusers;
-	info2.current_users	= num_users;
-	info2.path		= path;
-	info2.password		= password;
-
-	info.info2 = &info2;
-
-	status = rpccli_srvsvc_NetShareAdd(pipe_hnd, mem_ctx,
-					   pipe_hnd->desthost,
-					   level,
-					   &info,
-					   &parm_error,
-					   &result);
-	return status;
-}
-
-static int rpc_share_add(struct net_context *c, int argc, const char **argv)
-{
 	if ((argc < 1) || !strchr(argv[0], '=') || c->display_usage) {
 		return rpc_share_usage(c, argc, argv);
 	}
-	return run_rpc_command(c, NULL, &ndr_table_srvsvc.syntax_id, 0,
-			       rpc_share_add_internals,
-			       argc, argv);
+
+	if ((sharename = talloc_strdup(c, argv[0])) == NULL) {
+		return -1;
+	}
+
+	path = strchr(sharename, '=');
+	if (!path) {
+		return -1;
+	}
+
+	*path++ = '\0';
+
+	i2.shi2_netname		= sharename;
+	i2.shi2_type		= type;
+	i2.shi2_remark		= c->opt_comment;
+	i2.shi2_permissions	= perms;
+	i2.shi2_max_uses	= c->opt_maxusers;
+	i2.shi2_current_uses	= num_users;
+	i2.shi2_path		= path;
+	i2.shi2_passwd		= password;
+
+	status = NetShareAdd(c->opt_host,
+			     2,
+			     (uint8_t *)&i2,
+			     &parm_error);
+	if (status != 0) {
+		printf("NetShareAdd failed with: %s\n",
+			libnetapi_get_error_string(c->netapi_ctx, status));
+	}
+
+	return status;
 }
 
 /**
@@ -4604,6 +4587,8 @@ int net_usersidlist_usage(struct net_context *c, int argc, const char **argv)
 
 int net_rpc_share(struct net_context *c, int argc, const char **argv)
 {
+	NET_API_STATUS status;
+
 	struct functable func[] = {
 		{
 			"add",
@@ -4648,6 +4633,15 @@ int net_rpc_share(struct net_context *c, int argc, const char **argv)
 		{NULL, NULL, 0, NULL, NULL}
 	};
 
+	status = libnetapi_init(&c->netapi_ctx);
+	if (status != 0) {
+		return -1;
+	}
+	libnetapi_set_username(c->netapi_ctx, c->opt_user_name);
+	libnetapi_set_password(c->netapi_ctx, c->opt_password);
+	if (c->opt_kerberos) {
+		libnetapi_set_use_kerberos(c->netapi_ctx);
+	}
 
 	if (argc == 0) {
 		if (c->display_usage) {
