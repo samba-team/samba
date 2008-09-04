@@ -352,4 +352,12 @@ WERROR NetShareEnum_r(struct libnetapi_ctx *ctx,
 		      struct NetShareEnum *r);
 WERROR NetShareEnum_l(struct libnetapi_ctx *ctx,
 		      struct NetShareEnum *r);
+NET_API_STATUS NetShareGetInfo(const char * server_name /* [in] */,
+			       const char * net_name /* [in] */,
+			       uint32_t level /* [in] */,
+			       uint8_t **buffer /* [out] [ref] */);
+WERROR NetShareGetInfo_r(struct libnetapi_ctx *ctx,
+			 struct NetShareGetInfo *r);
+WERROR NetShareGetInfo_l(struct libnetapi_ctx *ctx,
+			 struct NetShareGetInfo *r);
 #endif /* __LIBNETAPI_LIBNETAPI__ */
