@@ -3,7 +3,7 @@
 
    KDC Server startup
 
-   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2005
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2005-2008
    Copyright (C) Andrew Tridgell	2005
    Copyright (C) Stefan Metzmacher	2005
 
