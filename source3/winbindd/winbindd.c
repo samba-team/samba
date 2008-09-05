@@ -549,7 +549,6 @@ static void response_extra_sent(void *private_data, bool success)
 		return;
 	}
 
-	SAFE_FREE(state->request.extra_data.data);
 	SAFE_FREE(state->response.extra_data.data);
 
 	setup_async_read(&state->fd_event, &state->request, sizeof(uint32),
@@ -581,6 +580,8 @@ static void response_main_sent(void *private_data, bool success)
 
 static void request_finished(struct winbindd_cli_state *state)
 {
+	/* Make sure request.extra_data is freed when finish processing a request */
+	SAFE_FREE(state->request.extra_data.data);
 	setup_async_write(&state->fd_event, &state->response,
 			  sizeof(state->response), response_main_sent, state);
 }
