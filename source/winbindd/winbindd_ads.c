@@ -1241,11 +1241,8 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 				continue;				
 			}
 			
-			(*names)[ret_count] = talloc_strdup(mem_ctx, trusts.array[i].netbios_name);
-			(*alt_names)[ret_count] = talloc_strdup(mem_ctx, trusts.array[i].dns_name);
-			if ((*names)[ret_count] == NULL) {
-				return NT_STATUS_NO_MEMORY;
-			}
+			(*names)[ret_count] = CONST_DISCARD(char *, trusts.array[i].netbios_name);
+			(*alt_names)[ret_count] = CONST_DISCARD(char *, trusts.array[i].dns_name);
 			if (trusts.array[i].sid) {
 				sid_copy(&(*dom_sids)[ret_count], trusts.array[i].sid);
 			} else {
