@@ -2898,6 +2898,35 @@ _PUBLIC_ void ndr_print_NetUserGetGroups(struct ndr_print *ndr, const char *name
 	ndr->depth--;
 }
 
+_PUBLIC_ void ndr_print_NetUserSetGroups(struct ndr_print *ndr, const char *name, int flags, const struct NetUserSetGroups *r)
+{
+	ndr_print_struct(ndr, name, "NetUserSetGroups");
+	ndr->depth++;
+	if (flags & NDR_SET_VALUES) {
+		ndr->flags |= LIBNDR_PRINT_SET_VALUES;
+	}
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "NetUserSetGroups");
+		ndr->depth++;
+		ndr_print_string(ndr, "server_name", r->in.server_name);
+		ndr_print_string(ndr, "user_name", r->in.user_name);
+		ndr_print_uint32(ndr, "level", r->in.level);
+		ndr_print_ptr(ndr, "buffer", r->in.buffer);
+		ndr->depth++;
+		ndr_print_uint8(ndr, "buffer", *r->in.buffer);
+		ndr->depth--;
+		ndr_print_uint32(ndr, "num_entries", r->in.num_entries);
+		ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "NetUserSetGroups");
+		ndr->depth++;
+		ndr_print_NET_API_STATUS(ndr, "result", r->out.result);
+		ndr->depth--;
+	}
+	ndr->depth--;
+}
+
 _PUBLIC_ void ndr_print_NetUserModalsGet(struct ndr_print *ndr, const char *name, int flags, const struct NetUserModalsGet *r)
 {
 	ndr_print_struct(ndr, name, "NetUserModalsGet");
