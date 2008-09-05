@@ -41,7 +41,12 @@ static NET_API_STATUS test_netuserenum(const char *hostname,
 	int i;
 
 	struct USER_INFO_0 *info0;
+	struct USER_INFO_1 *info1;
+	struct USER_INFO_2 *info2;
+	struct USER_INFO_3 *info3;
+	struct USER_INFO_4 *info4;
 	struct USER_INFO_10 *info10;
+	struct USER_INFO_11 *info11;
 	struct USER_INFO_20 *info20;
 	struct USER_INFO_23 *info23;
 
@@ -61,8 +66,23 @@ static NET_API_STATUS test_netuserenum(const char *hostname,
 				case 0:
 					info0 = (struct USER_INFO_0 *)buffer;
 					break;
+				case 1:
+					info1 = (struct USER_INFO_1 *)buffer;
+					break;
+				case 2:
+					info2 = (struct USER_INFO_2 *)buffer;
+					break;
+				case 3:
+					info3 = (struct USER_INFO_3 *)buffer;
+					break;
+				case 4:
+					info4 = (struct USER_INFO_4 *)buffer;
+					break;
 				case 10:
 					info10 = (struct USER_INFO_10 *)buffer;
+					break;
+				case 11:
+					info11 = (struct USER_INFO_11 *)buffer;
 					break;
 				case 20:
 					info20 = (struct USER_INFO_20 *)buffer;
@@ -80,8 +100,23 @@ static NET_API_STATUS test_netuserenum(const char *hostname,
 					case 0:
 						current_name = info0->usri0_name;
 						break;
+					case 1:
+						current_name = info1->usri1_name;
+						break;
+					case 2:
+						current_name = info2->usri2_name;
+						break;
+					case 3:
+						current_name = info3->usri3_name;
+						break;
+					case 4:
+						current_name = info4->usri4_name;
+						break;
 					case 10:
 						current_name = info10->usri10_name;
+						break;
+					case 11:
+						current_name = info11->usri11_name;
 						break;
 					case 20:
 						current_name = info20->usri20_name;
@@ -101,8 +136,23 @@ static NET_API_STATUS test_netuserenum(const char *hostname,
 					case 0:
 						info0++;
 						break;
+					case 1:
+						info1++;
+						break;
+					case 2:
+						info2++;
+						break;
+					case 3:
+						info3++;
+						break;
+					case 4:
+						info4++;
+						break;
 					case 10:
 						info10++;
+						break;
+					case 11:
+						info11++;
 						break;
 					case 20:
 						info20++;
@@ -202,14 +252,97 @@ static NET_API_STATUS test_netusermodals(struct libnetapi_ctx *ctx,
 	return 0;
 }
 
+static NET_API_STATUS test_netusergetgroups(const char *hostname,
+					    uint32_t level,
+					    const char *username,
+					    const char *groupname)
+{
+	NET_API_STATUS status;
+	uint32_t entries_read = 0;
+	uint32_t total_entries = 0;
+	const char *current_name;
+	int found_group = 0;
+	uint8_t *buffer = NULL;
+	int i;
+
+	struct GROUP_USERS_INFO_0 *i0;
+	struct GROUP_USERS_INFO_1 *i1;
+
+	printf("testing NetUserGetGroups level %d\n", level);
+
+	do {
+		status = NetUserGetGroups(hostname,
+					  username,
+					  level,
+					  &buffer,
+					  120, //(uint32_t)-1,
+					  &entries_read,
+					  &total_entries);
+		if (status == 0 || status == ERROR_MORE_DATA) {
+			switch (level) {
+				case 0:
+					i0 = (struct GROUP_USERS_INFO_0 *)buffer;
+					break;
+				case 1:
+					i1 = (struct GROUP_USERS_INFO_1 *)buffer;
+					break;
+				default:
+					return -1;
+			}
+
+			for (i=0; i<entries_read; i++) {
+
+				switch (level) {
+					case 0:
+						current_name = i0->grui0_name;
+						break;
+					case 1:
+						current_name = i1->grui1_name;
+						break;
+					default:
+						return -1;
+				}
+
+				if (groupname && strcasecmp(current_name, groupname) == 0) {
+					found_group = 1;
+				}
+
+				switch (level) {
+					case 0:
+						i0++;
+						break;
+					case 1:
+						i1++;
+						break;
+					default:
+						break;
+				}
+			}
+			NetApiBufferFree(buffer);
+		}
+	} while (status == ERROR_MORE_DATA);
+
+	if (status) {
+		return status;
+	}
+
+	if (groupname && !found_group) {
+		printf("failed to get membership\n");
+		return -1;
+	}
+
+	return 0;
+}
+
 NET_API_STATUS netapitest_user(struct libnetapi_ctx *ctx,
 			       const char *hostname)
 {
 	NET_API_STATUS status = 0;
 	const char *username, *username2;
 	uint8_t *buffer = NULL;
-	uint32_t levels[] = { 0, 10, 20, 23 };
-	uint32_t enum_levels[] = { 0, 10, 20, 23 };
+	uint32_t levels[] = { 0, 1, 2, 3, 4, 10, 11, 20, 23 };
+	uint32_t enum_levels[] = { 0, 1, 2, 3, 4, 10, 11, 20, 23 };
+	uint32_t getgr_levels[] = { 0, 1 };
 	int i;
 
 	struct USER_INFO_1007 u1007;
@@ -252,6 +385,17 @@ NET_API_STATUS netapitest_user(struct libnetapi_ctx *ctx,
 		status = NetUserGetInfo(hostname, username, levels[i], &buffer);
 		if (status && status != 124) {
 			NETAPI_STATUS(ctx, status, "NetUserGetInfo");
+			goto out;
+		}
+	}
+
+	/* testing getgroups */
+
+	for (i=0; i<ARRAY_SIZE(getgr_levels); i++) {
+
+		status = test_netusergetgroups(hostname, getgr_levels[i], username, NULL);
+		if (status) {
+			NETAPI_STATUS(ctx, status, "NetUserGetGroups");
 			goto out;
 		}
 	}
