@@ -3,7 +3,7 @@
 
    endpoint server for the netlogon pipe
 
-   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2004
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2004-2008
    Copyright (C) Stefan Metzmacher <metze@samba.org>  2005
    
    This program is free software; you can redistribute it and/or modify
