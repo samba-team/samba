@@ -128,7 +128,350 @@ static bool test_delayed_write_update(struct torture_context *tctx, struct smbcl
 	return ret;
 }
 
-/* 
+/* Updating with a SMBwrite of zero length
+ * changes the write time immediately - even on expand. */
+
+static bool test_delayed_write_update1a(struct torture_context *tctx, struct smbcli_state *cli)
+{
+	union smb_fileinfo finfo1, finfo2;
+	const char *fname = BASEDIR "\\torture_file1a.txt";
+	NTSTATUS status;
+	int fnum1 = -1;
+	bool ret = true;
+	ssize_t written;
+	struct timeval start;
+	struct timeval end;
+	int used_delay = torture_setting_int(tctx, "writetimeupdatedelay", 2000000);
+	int normal_delay = 2000000;
+	double sec = ((double)used_delay) / ((double)normal_delay);
+	int msec = 1000 * sec;
+	char buf[2048];
+
+	if (!torture_setup_dir(cli, BASEDIR)) {
+		return false;
+	}
+
+	fnum1 = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
+	if (fnum1 == -1) {
+		torture_comment(tctx, "Failed to open %s\n", fname);
+		return false;
+	}
+
+	memset(buf, 'x', 2048);
+	written =  smbcli_write(cli->tree, fnum1, 0, buf, 0, 2048);
+
+	/* 3 second delay to ensure we get past any 2 second time
+	   granularity (older systems may have that) */
+	msleep(3 * msec);
+
+	finfo1.all_info.level = RAW_FILEINFO_ALL_INFO;
+	finfo1.all_info.in.file.fnum = fnum1;
+	finfo2 = finfo1;
+
+	status = smb_raw_fileinfo(cli->tree, tctx, &finfo1);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("fileinfo failed: %s\n", nt_errstr(status)));
+		return false;
+	}
+
+	torture_comment(tctx, "Initial write time %s\n", 
+	       nt_time_string(tctx, finfo1.all_info.out.write_time));
+
+	/* Do a zero length SMBwrite call to truncate. */
+	written = smbcli_smbwrite(cli->tree, fnum1, "x", 10240, 0);
+
+	if (written != 0) {
+		torture_comment(tctx, "write failed - wrote %d bytes (%s)\n",
+		       (int)written, __location__);
+		return false;
+	}
+
+	start = timeval_current();
+	end = timeval_add(&start, (120*sec), 0);
+	while (!timeval_expired(&end)) {
+		status = smb_raw_fileinfo(cli->tree, tctx, &finfo2);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("fileinfo failed: %s\n", nt_errstr(status)));
+			ret = false;
+			break;
+		}
+
+		if (finfo2.all_info.out.size != 10240) {
+			DEBUG(0, ("file not truncated\n"));
+			ret = false;
+			break;
+		}
+
+		torture_comment(tctx, "write time %s\n",
+		       nt_time_string(tctx, finfo2.all_info.out.write_time));
+		if (finfo1.all_info.out.write_time != finfo2.all_info.out.write_time) {
+			double diff = timeval_elapsed(&start);
+			if (diff > (0.25 * sec * 0.75)) { /* 0.75 to cope with vmware timing */
+				torture_comment(tctx, "After SMBwrite truncate "
+					"server updated write_time after %.2f seconds"
+					"(1 sec == %.2f)(wrong!)\n",
+					diff, sec);
+				ret = false;
+				break;
+			}
+
+			torture_comment(tctx, "After SMBwrite truncate "
+					"server updated write_time after %.2f seconds"
+					"(1 sec == %.2f)(correct)\n",
+					diff, sec);
+			break;
+		}
+		fflush(stdout);
+		msleep(1 * msec);
+	}
+
+	if (finfo1.all_info.out.write_time == finfo2.all_info.out.write_time) {
+		torture_comment(tctx, "Server did not update write time (wrong!)\n");
+		ret = false;
+	}
+
+
+	if (fnum1 != -1)
+		smbcli_close(cli->tree, fnum1);
+	smbcli_unlink(cli->tree, fname);
+	smbcli_deltree(cli->tree, BASEDIR);
+
+	return ret;
+}
+
+/* Updating with a SET_FILE_END_OF_FILE_INFO
+ * changes the write time immediately - even on expand. */
+
+static bool test_delayed_write_update1b(struct torture_context *tctx, struct smbcli_state *cli)
+{
+	union smb_fileinfo finfo1, finfo2;
+	const char *fname = BASEDIR "\\torture_file1b.txt";
+	NTSTATUS status;
+	int fnum1 = -1;
+	bool ret = true;
+	ssize_t written;
+	struct timeval start;
+	struct timeval end;
+	int used_delay = torture_setting_int(tctx, "writetimeupdatedelay", 2000000);
+	int normal_delay = 2000000;
+	double sec = ((double)used_delay) / ((double)normal_delay);
+	int msec = 1000 * sec;
+	char buf[2048];
+
+	if (!torture_setup_dir(cli, BASEDIR)) {
+		return false;
+	}
+
+	fnum1 = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
+	if (fnum1 == -1) {
+		torture_comment(tctx, "Failed to open %s\n", fname);
+		return false;
+	}
+
+	memset(buf, 'x', 2048);
+	written =  smbcli_write(cli->tree, fnum1, 0, buf, 0, 2048);
+
+	/* 3 second delay to ensure we get past any 2 second time
+	   granularity (older systems may have that) */
+	msleep(3 * msec);
+
+	finfo1.all_info.level = RAW_FILEINFO_ALL_INFO;
+	finfo1.all_info.in.file.fnum = fnum1;
+	finfo2 = finfo1;
+
+	status = smb_raw_fileinfo(cli->tree, tctx, &finfo1);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("fileinfo failed: %s\n", nt_errstr(status)));
+		return false;
+	}
+
+	torture_comment(tctx, "Initial write time %s\n",
+	       nt_time_string(tctx, finfo1.all_info.out.write_time));
+
+	/* Do a SET_END_OF_FILE_INFO call to truncate. */
+	status = smbcli_ftruncate(cli->tree, fnum1, (uint64_t)10240);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		torture_comment(tctx, "SET_END_OF_FILE failed (%s)\n",
+		       nt_errstr(status));
+		return false;
+	}
+
+	start = timeval_current();
+	end = timeval_add(&start, (120*sec), 0);
+	while (!timeval_expired(&end)) {
+		status = smb_raw_fileinfo(cli->tree, tctx, &finfo2);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("fileinfo failed: %s\n", nt_errstr(status)));
+			ret = false;
+			break;
+		}
+
+		if (finfo2.all_info.out.size != 10240) {
+			DEBUG(0, ("file not truncated\n"));
+			ret = false;
+			break;
+		}
+
+		torture_comment(tctx, "write time %s\n",
+		       nt_time_string(tctx, finfo2.all_info.out.write_time));
+		if (finfo1.all_info.out.write_time != finfo2.all_info.out.write_time) {
+			double diff = timeval_elapsed(&start);
+			if (diff > (0.25 * sec * 0.75)) { /* 0.75 to cope with vmware timing */
+				torture_comment(tctx, "After SET_END_OF_FILE truncate "
+					"server updated write_time after %.2f seconds"
+					"(1 sec == %.2f)(wrong!)\n",
+					diff, sec);
+				ret = false;
+				break;
+			}
+
+			torture_comment(tctx, "After SET_END_OF_FILE truncate "
+					"server updated write_time after %.2f seconds"
+					"(1 sec == %.2f)(correct)\n",
+					diff, sec);
+			break;
+		}
+		fflush(stdout);
+		msleep(1 * msec);
+	}
+
+	if (finfo1.all_info.out.write_time == finfo2.all_info.out.write_time) {
+		torture_comment(tctx, "Server did not update write time (wrong!)\n");
+		ret = false;
+	}
+
+
+	if (fnum1 != -1)
+		smbcli_close(cli->tree, fnum1);
+	smbcli_unlink(cli->tree, fname);
+	smbcli_deltree(cli->tree, BASEDIR);
+
+	return ret;
+}
+
+/* Updating with a SET_ALLOCATION_INFO (truncate) does so immediately. */
+
+static bool test_delayed_write_update1c(struct torture_context *tctx, struct smbcli_state *cli)
+{
+        union smb_setfileinfo parms;
+	union smb_fileinfo finfo1, finfo2;
+	const char *fname = BASEDIR "\\torture_file1c.txt";
+	NTSTATUS status;
+	int fnum1 = -1;
+	bool ret = true;
+	ssize_t written;
+	struct timeval start;
+	struct timeval end;
+	int used_delay = torture_setting_int(tctx, "writetimeupdatedelay", 2000000);
+	int normal_delay = 2000000;
+	double sec = ((double)used_delay) / ((double)normal_delay);
+	int msec = 1000 * sec;
+	char buf[2048];
+
+	if (!torture_setup_dir(cli, BASEDIR)) {
+		return false;
+	}
+
+	fnum1 = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
+	if (fnum1 == -1) {
+		torture_comment(tctx, "Failed to open %s\n", fname);
+		return false;
+	}
+
+	memset(buf, 'x', 2048);
+	written =  smbcli_write(cli->tree, fnum1, 0, buf, 0, 2048);
+
+	/* 3 second delay to ensure we get past any 2 second time
+	   granularity (older systems may have that) */
+	msleep(3 * msec);
+
+	finfo1.all_info.level = RAW_FILEINFO_ALL_INFO;
+	finfo1.all_info.in.file.fnum = fnum1;
+	finfo2 = finfo1;
+
+	status = smb_raw_fileinfo(cli->tree, tctx, &finfo1);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("fileinfo failed: %s\n", nt_errstr(status)));
+		return false;
+	}
+
+	torture_comment(tctx, "Initial write time %s\n",
+	       nt_time_string(tctx, finfo1.all_info.out.write_time));
+
+	/* Do a SET_ALLOCATION_SIZE call to truncate. */
+	parms.allocation_info.level = RAW_SFILEINFO_ALLOCATION_INFO;
+	parms.allocation_info.in.file.fnum = fnum1;
+	parms.allocation_info.in.alloc_size = 0;
+
+        status = smb_raw_setfileinfo(cli->tree, &parms);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		torture_comment(tctx, "RAW_SFILEINFO_ALLOCATION_INFO failed (%s)\n",
+		       nt_errstr(status));
+		return false;
+	}
+
+	start = timeval_current();
+	end = timeval_add(&start, (120*sec), 0);
+	while (!timeval_expired(&end)) {
+		status = smb_raw_fileinfo(cli->tree, tctx, &finfo2);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("fileinfo failed: %s\n", nt_errstr(status)));
+			ret = false;
+			break;
+		}
+
+		if (finfo2.all_info.out.size != 0) {
+			DEBUG(0, ("file not truncated\n"));
+			ret = false;
+			break;
+		}
+
+		torture_comment(tctx, "write time %s\n",
+		       nt_time_string(tctx, finfo2.all_info.out.write_time));
+		if (finfo1.all_info.out.write_time != finfo2.all_info.out.write_time) {
+			double diff = timeval_elapsed(&start);
+			if (diff > (0.25 * sec * 0.75)) { /* 0.75 to cope with vmware timing */
+				torture_comment(tctx, "After SET_ALLOCATION_INFO truncate "
+					"server updated write_time after %.2f seconds"
+					"(1 sec == %.2f)(wrong!)\n",
+					diff, sec);
+				ret = false;
+				break;
+			}
+
+			torture_comment(tctx, "After SET_ALLOCATION_INFO truncate "
+					"server updated write_time after %.2f seconds"
+					"(1 sec == %.2f)(correct)\n",
+					diff, sec);
+			break;
+		}
+		fflush(stdout);
+		msleep(1 * msec);
+	}
+
+	if (finfo1.all_info.out.write_time == finfo2.all_info.out.write_time) {
+		torture_comment(tctx, "Server did not update write time (wrong!)\n");
+		ret = false;
+	}
+
+
+	if (fnum1 != -1)
+		smbcli_close(cli->tree, fnum1);
+	smbcli_unlink(cli->tree, fname);
+	smbcli_deltree(cli->tree, BASEDIR);
+
+	return ret;
+}
+
+/*
  * Do as above, but using 2 connections.
  */
 
@@ -1394,6 +1737,9 @@ struct torture_suite *torture_delay_write(void)
 
 	torture_suite_add_2smb_test(suite, "finfo update on close", test_finfo_after_write);
 	torture_suite_add_1smb_test(suite, "delayed update of write time", test_delayed_write_update);
+	torture_suite_add_1smb_test(suite, "update of write time and SMBread truncate", test_delayed_write_update1a);
+	torture_suite_add_1smb_test(suite, "update of write time using SET_END_OF_FILE", test_delayed_write_update1b);
+	torture_suite_add_1smb_test(suite, "update of write time using SET_ALLOCATION_SIZE", test_delayed_write_update1c);
 	torture_suite_add_2smb_test(suite, "delayed update of write time using 2 connections", test_delayed_write_update2);
 	torture_suite_add_2smb_test(suite, "delayed update of write time 3", test_delayed_write_update3);
 	torture_suite_add_2smb_test(suite, "delayed update of write time 4", test_delayed_write_update4);
