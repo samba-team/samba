@@ -2923,3 +2923,22 @@ WERROR NetUserGetGroups_l(struct libnetapi_ctx *ctx,
 {
 	LIBNETAPI_REDIRECT_TO_LOCALHOST(ctx, r, NetUserGetGroups);
 }
+
+/****************************************************************
+****************************************************************/
+
+
+WERROR NetUserSetGroups_r(struct libnetapi_ctx *ctx,
+			  struct NetUserSetGroups *r)
+{
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR NetUserSetGroups_l(struct libnetapi_ctx *ctx,
+			  struct NetUserSetGroups *r)
+{
+	LIBNETAPI_REDIRECT_TO_LOCALHOST(ctx, r, NetUserSetGroups);
+}

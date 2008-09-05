@@ -826,6 +826,54 @@ NET_API_STATUS NetUserGetGroups(const char * server_name /* [in] */,
 }
 
 /****************************************************************
+ NetUserSetGroups
+****************************************************************/
+
+NET_API_STATUS NetUserSetGroups(const char * server_name /* [in] */,
+				const char * user_name /* [in] */,
+				uint32_t level /* [in] */,
+				uint8_t *buffer /* [in] [ref] */,
+				uint32_t num_entries /* [in] */)
+{
+	struct NetUserSetGroups r;
+	struct libnetapi_ctx *ctx = NULL;
+	NET_API_STATUS status;
+	WERROR werr;
+
+	status = libnetapi_getctx(&ctx);
+	if (status != 0) {
+		return status;
+	}
+
+	/* In parameters */
+	r.in.server_name = server_name;
+	r.in.user_name = user_name;
+	r.in.level = level;
+	r.in.buffer = buffer;
+	r.in.num_entries = num_entries;
+
+	/* Out parameters */
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(NetUserSetGroups, &r);
+	}
+
+	if (LIBNETAPI_LOCAL_SERVER(server_name)) {
+		werr = NetUserSetGroups_l(ctx, &r);
+	} else {
+		werr = NetUserSetGroups_r(ctx, &r);
+	}
+
+	r.out.result = W_ERROR_V(werr);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(NetUserSetGroups, &r);
+	}
+
+	return r.out.result;
+}
+
+/****************************************************************
  NetUserModalsGet
 ****************************************************************/
 
