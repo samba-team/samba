@@ -143,7 +143,7 @@ static int net_dom_join(struct net_context *c, int argc, const char **argv)
 	}
 
 	if (c->opt_force) {
-		join_flags |= WKSSVC_JOIN_FLAGS_DOMAIN_JOIN_IF_JOINED;
+		join_flags |= NETSETUP_DOMAIN_JOIN_IF_JOINED;
 	}
 
 	for (i=0; i<argc; i++) {
