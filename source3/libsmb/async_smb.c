@@ -382,6 +382,11 @@ bool cli_chain_cork(struct cli_state *cli, struct event_context *ev,
 
 	SMB_ASSERT(cli->chain_accumulator == NULL);
 
+	if (cli->fd == -1) {
+		DEBUG(10, ("cli->fd closed\n"));
+		return false;
+	}
+
 	if (cli->fd_event == NULL) {
 		SMB_ASSERT(cli->outstanding_requests == NULL);
 		cli->fd_event = event_add_fd(ev, cli, cli->fd,
