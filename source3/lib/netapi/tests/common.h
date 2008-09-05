@@ -39,6 +39,8 @@ NET_API_STATUS netapitest_group(struct libnetapi_ctx *ctx,
 				const char *hostname);
 NET_API_STATUS netapitest_display(struct libnetapi_ctx *ctx,
 				  const char *hostname);
+NET_API_STATUS netapitest_share(struct libnetapi_ctx *ctx,
+				const char *hostname);
 
 #ifndef ARRAY_SIZE
 #define ARRAY_SIZE(a) (sizeof(a)/sizeof(a[0]))
