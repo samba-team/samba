@@ -1065,8 +1065,23 @@ interface libnetapi
 		string shi1004_remark;
 	} SHARE_INFO_1004;
 
+	const int CSC_MASK = 0x30;
+
+	typedef [public,bitmap32bit] bitmap {
+		SHI1005_FLAGS_DFS				= 0x01,
+		SHI1005_FLAGS_DFS_ROOT				= 0x02,
+		CSC_CACHE_MANUAL_REINT				= 0x00,
+		CSC_CACHE_AUTO_REINT				= 0x10,
+		CSC_CACHE_VDO					= 0x20,
+		CSC_CACHE_NONE					= 0x30,
+		SHI1005_FLAGS_RESTRICT_EXCLUSIVE_OPENS		= 0x0100,
+		SHI1005_FLAGS_FORCE_SHARED_DELETE		= 0x0200,
+		SHI1005_FLAGS_ALLOW_NAMESPACE_CACHING		= 0x0400,
+		SHI1005_FLAGS_ACCESS_BASED_DIRECTORY_ENUM	= 0x0800
+	} SHARE_INFO_1005_FLAGS;
+
 	typedef struct {
-		uint32 shi1005_flags;
+		SHARE_INFO_1005_FLAGS shi1005_flags;
 	} SHARE_INFO_1005;
 
 	typedef struct {
