@@ -1116,6 +1116,22 @@ struct NetGroupGetUsers {
 };
 
 
+struct NetGroupSetUsers {
+	struct {
+		const char * server_name;
+		const char * group_name;
+		uint32_t level;
+		uint8_t *buffer;/* [ref] */
+		uint32_t num_entries;
+	} in;
+
+	struct {
+		enum NET_API_STATUS result;
+	} out;
+
+};
+
+
 struct NetLocalGroupAdd {
 	struct {
 		const char * server_name;
