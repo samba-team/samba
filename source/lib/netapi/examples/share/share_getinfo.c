@@ -137,7 +137,7 @@ int main(int argc, const char **argv)
 			printf("flags: %d\n", i501->shi501_flags);
 			break;
 		case 1005:
-			printf("flags: %s\n", i1005->shi1005_flags);
+			printf("flags: %d\n", i1005->shi1005_flags);
 			break;
 		default:
 			break;
