@@ -406,7 +406,7 @@ bool prs_append_some_data(prs_struct *dst, void *src_base, uint32_t start,
 		return false;
 	}
 
-	memcpy(&dst->data_p[dst->data_offset], src_base + start, (size_t)len);
+	memcpy(&dst->data_p[dst->data_offset], ((char *)src_base) + start, (size_t)len);
 	dst->data_offset += len;
 	return true;
 }
