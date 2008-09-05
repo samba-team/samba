@@ -144,7 +144,7 @@ PATH_FLAGS = $(PATH_FLAGS6) $(PASSWD_FLAGS)
 
 # Note that all executable programs now provide for an optional executable suffix.
 
-SBIN_PROGS = bin/smbd@EXEEXT@ bin/nmbd@EXEEXT@ bin/swat@EXEEXT@ @EXTRA_SBIN_PROGS@ @CIFSUPCALL_PROGS@
+SBIN_PROGS = bin/smbd@EXEEXT@ bin/nmbd@EXEEXT@ bin/swat@EXEEXT@ @EXTRA_SBIN_PROGS@
 
 ROOT_SBIN_PROGS = @CIFSMOUNT_PROGS@
 
