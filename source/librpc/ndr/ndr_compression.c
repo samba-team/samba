@@ -104,13 +104,6 @@ static enum ndr_err_code ndr_pull_compression_mszip_chunk(struct ndr_pull *ndrpu
 					      zError(z_ret), z_ret);
 
 		}
-	} else {
-		z_ret = inflateReset2(z, Z_RESET_KEEP_WINDOW);
-		if (z_ret != Z_OK) {
-			return ndr_pull_error(ndrpull, NDR_ERR_COMPRESSION,
-					      "Bad inflateReset2 error %s(%d) (PULL)",
-					      zError(z_ret), z_ret);
-		}
 	}
 
 	/* call inflate untill we get Z_STREAM_END or an error */
@@ -140,6 +133,20 @@ static enum ndr_err_code ndr_pull_compression_mszip_chunk(struct ndr_pull *ndrpu
 	if ((plain_chunk_size < 0x00008000) || (ndrpull->offset+4 >= ndrpull->data_size)) {
 		/* this is the last chunk */
 		*last = true;
+	}
+
+	z_ret = inflateReset(z);
+	if (z_ret != Z_OK) {
+		return ndr_pull_error(ndrpull, NDR_ERR_COMPRESSION,
+				      "Bad inflateReset error %s(%d) (PULL)",
+				      zError(z_ret), z_ret);
+	}
+
+	z_ret = inflateSetDictionary(z, plain_chunk.data, plain_chunk.length);
+	if (z_ret != Z_OK) {
+		return ndr_pull_error(ndrpull, NDR_ERR_COMPRESSION,
+				      "Bad inflateSetDictionary error %s(%d) (PULL)",
+				      zError(z_ret), z_ret);
 	}
 
 	return NDR_ERR_SUCCESS;
