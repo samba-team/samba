@@ -228,6 +228,9 @@ void ndr_print_NET_DISPLAY_MACHINE(struct ndr_print *ndr, const char *name, cons
 enum ndr_err_code ndr_push_NET_DISPLAY_GROUP(struct ndr_push *ndr, int ndr_flags, const struct NET_DISPLAY_GROUP *r);
 enum ndr_err_code ndr_pull_NET_DISPLAY_GROUP(struct ndr_pull *ndr, int ndr_flags, struct NET_DISPLAY_GROUP *r);
 void ndr_print_NET_DISPLAY_GROUP(struct ndr_print *ndr, const char *name, const struct NET_DISPLAY_GROUP *r);
+enum ndr_err_code ndr_push_SHARE_INFO_1005_FLAGS(struct ndr_push *ndr, int ndr_flags, uint32_t r);
+enum ndr_err_code ndr_pull_SHARE_INFO_1005_FLAGS(struct ndr_pull *ndr, int ndr_flags, uint32_t *r);
+void ndr_print_SHARE_INFO_1005_FLAGS(struct ndr_print *ndr, const char *name, uint32_t r);
 enum ndr_err_code ndr_push_NetJoinDomain(struct ndr_push *ndr, int flags, const struct NetJoinDomain *r);
 enum ndr_err_code ndr_pull_NetJoinDomain(struct ndr_pull *ndr, int flags, struct NetJoinDomain *r);
 void ndr_print_NetJoinDomain(struct ndr_print *ndr, const char *name, int flags, const struct NetJoinDomain *r);
