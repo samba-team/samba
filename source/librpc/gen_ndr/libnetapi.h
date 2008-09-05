@@ -927,6 +927,22 @@ struct NetUserGetGroups {
 };
 
 
+struct NetUserSetGroups {
+	struct {
+		const char * server_name;
+		const char * user_name;
+		uint32_t level;
+		uint8_t *buffer;/* [ref] */
+		uint32_t num_entries;
+	} in;
+
+	struct {
+		enum NET_API_STATUS result;
+	} out;
+
+};
+
+
 struct NetUserModalsGet {
 	struct {
 		const char * server_name;
