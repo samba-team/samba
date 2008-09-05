@@ -845,6 +845,7 @@ static void cli_state_handler(struct event_context *event_ctx,
 {
 	struct cli_state *cli = (struct cli_state *)p;
 	struct cli_request *req;
+	NTSTATUS status;
 
 	DEBUG(11, ("cli_state_handler called with flags %d\n", flags));
 
@@ -857,11 +858,13 @@ static void cli_state_handler(struct event_context *event_ctx,
 		if (res == -1) {
 			DEBUG(10, ("ioctl(FIONREAD) failed: %s\n",
 				   strerror(errno)));
+			status = map_nt_error_from_unix(errno);
 			goto sock_error;
 		}
 
 		if (available == 0) {
 			/* EOF */
+			status = NT_STATUS_END_OF_FILE;
 			goto sock_error;
 		}
 
@@ -870,6 +873,7 @@ static void cli_state_handler(struct event_context *event_ctx,
 
 		if (new_size < old_size) {
 			/* wrap */
+			status = NT_STATUS_UNEXPECTED_IO_ERROR;
 			goto sock_error;
 		}
 
@@ -877,6 +881,7 @@ static void cli_state_handler(struct event_context *event_ctx,
 					   new_size);
 		if (tmp == NULL) {
 			/* nomem */
+			status = NT_STATUS_NO_MEMORY;
 			goto sock_error;
 		}
 		cli->evt_inbuf = tmp;
@@ -884,6 +889,7 @@ static void cli_state_handler(struct event_context *event_ctx,
 		res = recv(cli->fd, cli->evt_inbuf + old_size, available, 0);
 		if (res == -1) {
 			DEBUG(10, ("recv failed: %s\n", strerror(errno)));
+			status = map_nt_error_from_unix(errno);
 			goto sock_error;
 		}
 
@@ -930,6 +936,7 @@ static void cli_state_handler(struct event_context *event_ctx,
 			    to_send - req->sent, 0);
 
 		if (sent < 0) {
+			status = map_nt_error_from_unix(errno);
 			goto sock_error;
 		}
 
@@ -945,8 +952,7 @@ static void cli_state_handler(struct event_context *event_ctx,
 	for (req = cli->outstanding_requests; req; req = req->next) {
 		int i;
 		for (i=0; i<req->num_async; i++) {
-			req->async[i]->state = ASYNC_REQ_ERROR;
-			req->async[i]->status = map_nt_error_from_unix(errno);
+			async_req_error(req->async[i], status);
 		}
 	}
 	TALLOC_FREE(cli->fd_event);
