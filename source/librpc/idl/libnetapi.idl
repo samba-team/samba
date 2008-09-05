@@ -864,6 +864,18 @@ interface libnetapi
 		);
 
 	/*******************************************/
+	/* NetGroupSetUsers                        */
+	/*******************************************/
+
+	[nopush,nopull] NET_API_STATUS NetGroupSetUsers(
+		[in] string server_name,
+		[in] string group_name,
+		[in] uint32 level,
+		[in] uint8 *buffer,
+		[in] uint32 num_entries
+		);
+
+	/*******************************************/
 	/* NetLocalGroupAdd                        */
 	/*******************************************/
 
