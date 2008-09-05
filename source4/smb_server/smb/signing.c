@@ -77,7 +77,8 @@ bool smbsrv_setup_signing(struct smbsrv_connection *smb_conn,
 
 void smbsrv_signing_restart(struct smbsrv_connection *smb_conn,
 			    DATA_BLOB *session_key,
-			    DATA_BLOB *response) 
+			    DATA_BLOB *response,
+			    bool authenticated_session) 
 {
 	if (!smb_conn->signing.seen_valid) {
 		DEBUG(5, ("Client did not send a valid signature on "
@@ -85,7 +86,9 @@ void smbsrv_signing_restart(struct smbsrv_connection *smb_conn,
 		/* force things back on (most clients do not sign this packet)... */
 		smbsrv_setup_signing(smb_conn, session_key, response);
 		smb_conn->signing.next_seq_num = 2;
-		if (smb_conn->signing.mandatory_signing) {
+
+		/* If mandetory_signing is set, and this was an authenticated logon, then force on */
+		if (smb_conn->signing.mandatory_signing && authenticated_session) {
 			DEBUG(5, ("Configured for mandatory signing, 'good packet seen' forced on\n"));
 			/* if this is mandatory, then
 			 * pretend we have seen a
@@ -117,6 +120,7 @@ bool smbsrv_init_signing(struct smbsrv_connection *smb_conn)
 	case SMB_SIGNING_AUTO:
 		if (lp_server_role(smb_conn->lp_ctx) == ROLE_DOMAIN_CONTROLLER) {
 			smb_conn->signing.allow_smb_signing = true;
+			smb_conn->signing.mandatory_signing = true;
 		} else {
 			smb_conn->signing.allow_smb_signing = false;
 		}
