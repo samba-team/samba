@@ -2186,6 +2186,37 @@ _PUBLIC_ void ndr_print_NET_DISPLAY_GROUP(struct ndr_print *ndr, const char *nam
 	ndr->depth--;
 }
 
+_PUBLIC_ enum ndr_err_code ndr_push_SHARE_INFO_1005_FLAGS(struct ndr_push *ndr, int ndr_flags, uint32_t r)
+{
+	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SHARE_INFO_1005_FLAGS(struct ndr_pull *ndr, int ndr_flags, uint32_t *r)
+{
+	uint32_t v;
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SHARE_INFO_1005_FLAGS(struct ndr_print *ndr, const char *name, uint32_t r)
+{
+	ndr_print_uint32(ndr, name, r);
+	ndr->depth++;
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SHI1005_FLAGS_DFS", SHI1005_FLAGS_DFS, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SHI1005_FLAGS_DFS_ROOT", SHI1005_FLAGS_DFS_ROOT, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "CSC_CACHE_MANUAL_REINT", CSC_CACHE_MANUAL_REINT, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "CSC_CACHE_AUTO_REINT", CSC_CACHE_AUTO_REINT, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "CSC_CACHE_VDO", CSC_CACHE_VDO, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "CSC_CACHE_NONE", CSC_CACHE_NONE, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SHI1005_FLAGS_RESTRICT_EXCLUSIVE_OPENS", SHI1005_FLAGS_RESTRICT_EXCLUSIVE_OPENS, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SHI1005_FLAGS_FORCE_SHARED_DELETE", SHI1005_FLAGS_FORCE_SHARED_DELETE, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SHI1005_FLAGS_ALLOW_NAMESPACE_CACHING", SHI1005_FLAGS_ALLOW_NAMESPACE_CACHING, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SHI1005_FLAGS_ACCESS_BASED_DIRECTORY_ENUM", SHI1005_FLAGS_ACCESS_BASED_DIRECTORY_ENUM, r);
+	ndr->depth--;
+}
+
 _PUBLIC_ void ndr_print_NetJoinDomain(struct ndr_print *ndr, const char *name, int flags, const struct NetJoinDomain *r)
 {
 	ndr_print_struct(ndr, name, "NetJoinDomain");
