@@ -40,6 +40,7 @@ int main(int argc, const char **argv)
 	uint32_t level = 3;
 	const char **names = NULL;
 	int i = 0;
+	size_t buf_size = 0;
 
 	poptContext pc;
 	int opt;
@@ -85,8 +86,9 @@ int main(int argc, const char **argv)
 
 	switch (level) {
 		case 0:
-			status = NetApiBufferAllocate(sizeof(struct LOCALGROUP_MEMBERS_INFO_0) * total_entries,
-						      (void **)&g0);
+			buf_size = sizeof(struct LOCALGROUP_MEMBERS_INFO_0) * total_entries;
+
+			status = NetApiBufferAllocate(buf_size, (void **)&g0);
 			if (status) {
 				printf("NetApiBufferAllocate failed with: %s\n",
 					libnetapi_get_error_string(ctx, status));
@@ -103,8 +105,9 @@ int main(int argc, const char **argv)
 			buffer = (uint8_t *)g0;
 			break;
 		case 3:
-			status = NetApiBufferAllocate(sizeof(struct LOCALGROUP_MEMBERS_INFO_3) * total_entries,
-						      (void **)&g3);
+			buf_size = sizeof(struct LOCALGROUP_MEMBERS_INFO_3) * total_entries;
+
+			status = NetApiBufferAllocate(buf_size, (void **)&g3);
 			if (status) {
 				printf("NetApiBufferAllocate failed with: %s\n",
 					libnetapi_get_error_string(ctx, status));
@@ -132,6 +135,8 @@ int main(int argc, const char **argv)
 		printf("NetLocalGroupSetMembers failed with: %s\n",
 			libnetapi_get_error_string(ctx, status));
 	}
+
+	NetApiBufferFree(buffer);
 
  out:
 	libnetapi_free(ctx);
