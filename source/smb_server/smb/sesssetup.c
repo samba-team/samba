@@ -188,11 +188,6 @@ static void sesssetup_nt1_send(struct auth_check_password_request *areq,
 	req->session = smb_sess;
 	sess->nt1.out.vuid = smb_sess->vuid;
 
-	if (!session_info->server_info->authenticated) {
-		/* don't try signing as anonymous */
-		goto done;
-	}
-
  	if (!smbsrv_setup_signing(req->smb_conn, &session_info->session_key, &sess->nt1.in.password2)) {
 		/* Already signing, or disabled */
 		goto done;
@@ -326,7 +321,6 @@ static void sesssetup_spnego_send(struct gensec_update_request *greq, void *priv
 
 	skey_status = gensec_session_key(smb_sess->gensec_ctx, &session_key);
 	if (NT_STATUS_IS_OK(skey_status) &&
-	    session_info->server_info->authenticated &&
 	    smbsrv_setup_signing(req->smb_conn, &session_key, NULL)) {
 		/* Force check of the request packet, now we know the session key */
 		smbsrv_signing_check_incoming(req);
