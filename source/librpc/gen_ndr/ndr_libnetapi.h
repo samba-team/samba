@@ -64,37 +64,39 @@
 
 #define NDR_NETGROUPGETUSERS (0x1c)
 
-#define NDR_NETLOCALGROUPADD (0x1d)
+#define NDR_NETGROUPSETUSERS (0x1d)
 
-#define NDR_NETLOCALGROUPDEL (0x1e)
+#define NDR_NETLOCALGROUPADD (0x1e)
 
-#define NDR_NETLOCALGROUPGETINFO (0x1f)
+#define NDR_NETLOCALGROUPDEL (0x1f)
 
-#define NDR_NETLOCALGROUPSETINFO (0x20)
+#define NDR_NETLOCALGROUPGETINFO (0x20)
 
-#define NDR_NETLOCALGROUPENUM (0x21)
+#define NDR_NETLOCALGROUPSETINFO (0x21)
 
-#define NDR_NETLOCALGROUPADDMEMBERS (0x22)
+#define NDR_NETLOCALGROUPENUM (0x22)
 
-#define NDR_NETLOCALGROUPDELMEMBERS (0x23)
+#define NDR_NETLOCALGROUPADDMEMBERS (0x23)
 
-#define NDR_NETLOCALGROUPGETMEMBERS (0x24)
+#define NDR_NETLOCALGROUPDELMEMBERS (0x24)
 
-#define NDR_NETLOCALGROUPSETMEMBERS (0x25)
+#define NDR_NETLOCALGROUPGETMEMBERS (0x25)
 
-#define NDR_NETREMOTETOD (0x26)
+#define NDR_NETLOCALGROUPSETMEMBERS (0x26)
 
-#define NDR_NETSHAREADD (0x27)
+#define NDR_NETREMOTETOD (0x27)
 
-#define NDR_NETSHAREDEL (0x28)
+#define NDR_NETSHAREADD (0x28)
 
-#define NDR_NETSHAREENUM (0x29)
+#define NDR_NETSHAREDEL (0x29)
 
-#define NDR_NETSHAREGETINFO (0x2a)
+#define NDR_NETSHAREENUM (0x2a)
 
-#define NDR_NETSHARESETINFO (0x2b)
+#define NDR_NETSHAREGETINFO (0x2b)
 
-#define NDR_LIBNETAPI_CALL_COUNT (44)
+#define NDR_NETSHARESETINFO (0x2c)
+
+#define NDR_LIBNETAPI_CALL_COUNT (45)
 enum ndr_err_code ndr_push_NET_API_STATUS(struct ndr_push *ndr, int ndr_flags, enum NET_API_STATUS r);
 enum ndr_err_code ndr_pull_NET_API_STATUS(struct ndr_pull *ndr, int ndr_flags, enum NET_API_STATUS *r);
 void ndr_print_NET_API_STATUS(struct ndr_print *ndr, const char *name, enum NET_API_STATUS r);
@@ -320,6 +322,9 @@ void ndr_print_NetGroupDelUser(struct ndr_print *ndr, const char *name, int flag
 enum ndr_err_code ndr_push_NetGroupGetUsers(struct ndr_push *ndr, int flags, const struct NetGroupGetUsers *r);
 enum ndr_err_code ndr_pull_NetGroupGetUsers(struct ndr_pull *ndr, int flags, struct NetGroupGetUsers *r);
 void ndr_print_NetGroupGetUsers(struct ndr_print *ndr, const char *name, int flags, const struct NetGroupGetUsers *r);
+enum ndr_err_code ndr_push_NetGroupSetUsers(struct ndr_push *ndr, int flags, const struct NetGroupSetUsers *r);
+enum ndr_err_code ndr_pull_NetGroupSetUsers(struct ndr_pull *ndr, int flags, struct NetGroupSetUsers *r);
+void ndr_print_NetGroupSetUsers(struct ndr_print *ndr, const char *name, int flags, const struct NetGroupSetUsers *r);
 enum ndr_err_code ndr_push_NetLocalGroupAdd(struct ndr_push *ndr, int flags, const struct NetLocalGroupAdd *r);
 enum ndr_err_code ndr_pull_NetLocalGroupAdd(struct ndr_pull *ndr, int flags, struct NetLocalGroupAdd *r);
 void ndr_print_NetLocalGroupAdd(struct ndr_print *ndr, const char *name, int flags, const struct NetLocalGroupAdd *r);
