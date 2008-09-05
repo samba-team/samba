@@ -263,7 +263,6 @@ bool smbcli_set_signing_off(struct smb_signing_context *sign_info)
 {
 	DEBUG(5, ("Shutdown SMB signing\n"));
 	sign_info->doing_signing = false;
-	sign_info->next_seq_num = 0;
 	data_blob_free(&sign_info->mac_key);
 	sign_info->signing_state = SMB_SIGNING_ENGINE_OFF;
 	return true;
@@ -350,9 +349,6 @@ bool smbcli_simple_set_signing(TALLOC_CTX *mem_ctx,
 
 	dump_data_pw("Started Signing with key:\n", sign_info->mac_key.data, sign_info->mac_key.length);
 
-	/* Initialise the sequence number */
-	sign_info->next_seq_num = 0;
-
 	sign_info->signing_state = SMB_SIGNING_ENGINE_ON;
 
 	return true;
@@ -379,6 +375,7 @@ bool smbcli_transport_simple_set_signing(struct smbcli_transport *transport,
 
 bool smbcli_init_signing(struct smbcli_transport *transport) 
 {
+	transport->negotiate.sign_info.next_seq_num = 0;
 	transport->negotiate.sign_info.mac_key = data_blob(NULL, 0);
 	if (!smbcli_set_signing_off(&transport->negotiate.sign_info)) {
 		return false;
