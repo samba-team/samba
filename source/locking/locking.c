@@ -1436,7 +1436,7 @@ bool set_write_time(struct file_id fileid, struct timespec write_time)
 {
 	struct share_mode_lock *lck;
 
-	DEBUG(5,("set_sticky_write_time: %s id=%s\n",
+	DEBUG(5,("set_write_time: %s id=%s\n",
 		 timestring(debug_ctx(),
 			    convert_timespec_to_time_t(write_time)),
 		 file_id_string_tos(&fileid)));
