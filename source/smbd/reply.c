@@ -3783,9 +3783,11 @@ void reply_write(struct smb_request *req)
 			END_PROFILE(SMBwrite);
 			return;
 		}
-	} else
+		trigger_write_time_update_immediate(fsp);
+	} else {
 		nwritten = write_file(req,fsp,data,startpos,numtowrite);
-  
+	}
+
 	status = sync_file(conn, fsp, False);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(5,("reply_write: sync_file for %s returned %s\n",

@@ -616,39 +616,51 @@ int file_ntimes(connection_struct *conn, const char *fname, const struct timespe
 	return ret;
 }
 
-/*******************************************************************
- Change a filetime - possibly allowing DOS semantics.
-*******************************************************************/
+/******************************************************************
+ Force a "sticky" write time on a pathname. This will always be
+ returned on all future write time queries and set on close.
+******************************************************************/
 
-bool set_write_time_path(connection_struct *conn, const char *fname,
-			 struct file_id fileid, const struct timespec mtime,
-			 bool overwrite)
+bool set_sticky_write_time_path(connection_struct *conn, const char *fname,
+			 struct file_id fileid, const struct timespec mtime)
 {
 	if (null_timespec(mtime)) {
 		return true;
 	}
 
-	if (!set_write_time(fileid, mtime, overwrite)) {
+	if (!set_sticky_write_time(fileid, mtime)) {
 		return false;
-	}
-
-	/* in the overwrite case the caller should trigger the notify */
-	if (!overwrite) {
-		notify_fname(conn, NOTIFY_ACTION_MODIFIED,
-			     FILE_NOTIFY_CHANGE_LAST_WRITE, fname);
 	}
 
 	return true;
 }
 
-bool set_write_time_fsp(struct files_struct *fsp, const struct timespec mtime,
-			bool overwrite)
+/******************************************************************
+ Force a "sticky" write time on an fsp. This will always be
+ returned on all future write time queries and set on close.
+******************************************************************/
+
+bool set_sticky_write_time_fsp(struct files_struct *fsp, const struct timespec mtime)
 {
-	if (overwrite) {
-		fsp->write_time_forced = true;
-		TALLOC_FREE(fsp->update_write_time_event);
+	fsp->write_time_forced = true;
+	TALLOC_FREE(fsp->update_write_time_event);
+
+	return set_sticky_write_time_path(fsp->conn, fsp->fsp_name,
+			fsp->file_id, mtime);
+}
+
+/******************************************************************
+ Update a write time immediately, without the 2 second delay.
+******************************************************************/
+
+bool update_write_time(struct files_struct *fsp)
+{
+	if (!set_write_time(fsp->file_id, timespec_current())) {
+		return false;
 	}
 
-	return set_write_time_path(fsp->conn, fsp->fsp_name, fsp->file_id,
-				   mtime, overwrite);
+	notify_fname(fsp->conn, NOTIFY_ACTION_MODIFIED,
+			FILE_NOTIFY_CHANGE_LAST_WRITE, fsp->fsp_name);
+
+	return true;
 }
