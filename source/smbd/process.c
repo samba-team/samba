@@ -152,7 +152,7 @@ static NTSTATUS read_packet_remainder(int fd, char *buffer,
 				1 /* pad byte */)
 
 static NTSTATUS receive_smb_raw_talloc_partial_read(TALLOC_CTX *mem_ctx,
-						    const char lenbuf[4],
+						    const char *lenbuf,
 						    int fd, char **buffer,
 						    unsigned int timeout,
 						    size_t *p_unread,
