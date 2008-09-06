@@ -219,14 +219,6 @@ static enum ndr_err_code ndr_push_compression_mszip_chunk(struct ndr_push *ndrpu
 					      zError(z_ret), z_ret);
 
 		}
-	} else {
-		/* TODO: keep the window */
-		z_ret = deflateReset(z);
-		if (z_ret != Z_OK) {
-			return ndr_push_error(ndrpush, NDR_ERR_COMPRESSION,
-					      "Bad delateReset2 error %s(%d) (PUSH)",
-					      zError(z_ret), z_ret);
-		}
 	}
 
 	/* call deflate untill we get Z_STREAM_END or an error */
@@ -248,10 +240,27 @@ static enum ndr_err_code ndr_push_compression_mszip_chunk(struct ndr_push *ndrpu
 
 	comp_chunk_size = 2 + z->total_out;
 
+	z_ret = deflateReset(z);
+	if (z_ret != Z_OK) {
+		return ndr_pull_error(ndrpull, NDR_ERR_COMPRESSION,
+				      "Bad deflateReset error %s(%d) (PULL)",
+				      zError(z_ret), z_ret);
+	}
+
+	z_ret = deflateSetDictionary(z, plain_chunk.data, plain_chunk.length);
+	if (z_ret != Z_OK) {
+		return ndr_pull_error(ndrpull, NDR_ERR_COMPRESSION,
+				      "Bad deflateSetDictionary error %s(%d) (PULL)",
+				      zError(z_ret), z_ret);
+	}
+
 	tmp_offset = ndrpush->offset;
 	ndrpush->offset = comp_chunk_size_offset;
 	NDR_CHECK(ndr_push_uint32(ndrpush, NDR_SCALARS, comp_chunk_size));
 	ndrpush->offset = tmp_offset;
+
+	DEBUG(10,("MSZIP comp plain_chunk_size: %08X (%u) comp_chunk_size: %08X (%u)\n",
+		  plain_chunk.length, plain_chunk.length, comp_chunk_size, comp_chunk_size));
 
 	ndrpush->offset += comp_chunk_size;
 	return NDR_ERR_SUCCESS;
