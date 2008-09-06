@@ -1409,22 +1409,21 @@ bool set_allow_initial_delete_on_close(struct share_mode_lock *lck, files_struct
 	return True;
 }
 
-bool set_write_time(struct file_id fileid, struct timespec write_time,
-		    bool overwrite)
+bool set_sticky_write_time(struct file_id fileid, struct timespec write_time)
 {
 	struct share_mode_lock *lck;
 
-	DEBUG(5,("set_write_time: %s overwrite=%d id=%s\n",
+	DEBUG(5,("set_sticky_write_time: %s id=%s\n",
 		 timestring(debug_ctx(),
 			    convert_timespec_to_time_t(write_time)),
-		 overwrite, file_id_string_tos(&fileid)));
+		 file_id_string_tos(&fileid)));
 
 	lck = get_share_mode_lock(NULL, fileid, NULL, NULL, NULL);
 	if (lck == NULL) {
 		return False;
 	}
 
-	if (overwrite || null_timespec(lck->changed_write_time)) {
+	if (timespec_compare(&lck->changed_write_time, &write_time) != 0) {
 		lck->modified = True;
 		lck->changed_write_time = write_time;
 	}
@@ -1432,6 +1431,30 @@ bool set_write_time(struct file_id fileid, struct timespec write_time,
 	TALLOC_FREE(lck);
 	return True;
 }
+
+bool set_write_time(struct file_id fileid, struct timespec write_time)
+{
+	struct share_mode_lock *lck;
+
+	DEBUG(5,("set_sticky_write_time: %s id=%s\n",
+		 timestring(debug_ctx(),
+			    convert_timespec_to_time_t(write_time)),
+		 file_id_string_tos(&fileid)));
+
+	lck = get_share_mode_lock(NULL, fileid, NULL, NULL, NULL);
+	if (lck == NULL) {
+		return False;
+	}
+
+	if (timespec_compare(&lck->old_write_time, &write_time) != 0) {
+		lck->modified = True;
+		lck->old_write_time = write_time;
+	}
+
+	TALLOC_FREE(lck);
+	return True;
+}
+
 
 struct forall_state {
 	void (*fn)(const struct share_mode_entry *entry,

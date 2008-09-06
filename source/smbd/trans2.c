@@ -4884,11 +4884,11 @@ NTSTATUS smb_set_file_time(connection_struct *conn,
 			  time_to_asc(convert_timespec_to_time_t(ts[1])) ));
 
 		if (fsp != NULL) {
-			set_write_time_fsp(fsp, ts[1], true);
+			set_sticky_write_time_fsp(fsp, ts[1]);
 		} else {
-			set_write_time_path(conn, fname,
+			set_sticky_write_time_path(conn, fname,
 					    vfs_file_id_from_sbuf(conn, psbuf),
-					    ts[1], true);
+					    ts[1]);
 		}
 	}
 
@@ -4972,6 +4972,7 @@ static NTSTATUS smb_set_file_size(connection_struct *conn,
 		if (vfs_set_filelen(fsp, size) == -1) {
 			return map_nt_error_from_unix(errno);
 		}
+		trigger_write_time_update_immediate(fsp);
 		return NT_STATUS_OK;
 	}
 
@@ -4995,6 +4996,7 @@ static NTSTATUS smb_set_file_size(connection_struct *conn,
 		return status;
 	}
 
+	trigger_write_time_update_immediate(new_fsp);
 	close_file(new_fsp,NORMAL_CLOSE);
 	return NT_STATUS_OK;
 }
@@ -5720,7 +5722,7 @@ static NTSTATUS smb_set_file_allocation_info(connection_struct *conn,
 		 * This is equivalent to a write. Ensure it's seen immediately
 		 * if there are no pending writes.
 		 */
-		trigger_write_time_update(fsp);
+		trigger_write_time_update_immediate(fsp);
 		return NT_STATUS_OK;
 	}
 
@@ -5754,7 +5756,7 @@ static NTSTATUS smb_set_file_allocation_info(connection_struct *conn,
 	 * This is equivalent to a write. Ensure it's seen immediately
 	 * if there are no pending writes.
 	 */
-	trigger_write_time_update(new_fsp);
+	trigger_write_time_update_immediate(new_fsp);
 
 	close_file(new_fsp,NORMAL_CLOSE);
 	return NT_STATUS_OK;
