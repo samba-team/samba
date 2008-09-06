@@ -1469,7 +1469,7 @@ static bool test_delayed_write_update5(struct torture_context *tctx,
 
 	GET_INFO_BOTH(finfo3,pinfo3);
 	COMPARE_WRITE_TIME_EQUAL(finfo3, finfo2);
-	if (finfo3.basic_info.out.write_time == finfo3.basic_info.out.write_time) {
+	if (finfo3.basic_info.out.write_time == finfo2.basic_info.out.write_time) {
 		torture_comment(tctx, "Server did not update write_time (correct)\n");
 	}
 
@@ -1638,7 +1638,7 @@ again:
 
 	GET_INFO_BOTH(finfo3,pinfo3);
 	COMPARE_WRITE_TIME_EQUAL(finfo3, finfo2);
-	if (finfo3.basic_info.out.write_time == finfo3.basic_info.out.write_time) {
+	if (finfo3.basic_info.out.write_time == finfo2.basic_info.out.write_time) {
 		torture_comment(tctx, "Server did not update write_time (correct)\n");
 	}
 
