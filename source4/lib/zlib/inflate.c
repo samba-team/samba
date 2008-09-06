@@ -100,9 +100,8 @@ local int updatewindow OF((z_streamp strm, unsigned out));
 local unsigned syncsearch OF((unsigned FAR *have, unsigned const char FAR *buf,
                               unsigned len));
 
-int ZEXPORT inflateReset2(strm, flags)
+int ZEXPORT inflateReset(strm)
 z_streamp strm;
-unsigned flags;
 {
     struct inflate_state FAR *state;
 
@@ -116,22 +115,14 @@ unsigned flags;
     state->havedict = 0;
     state->dmax = 32768U;
     state->head = Z_NULL;
-    if (!(flags & Z_RESET_KEEP_WINDOW)) {
-        state->wsize = 0;
-        state->whave = 0;
-    }
+    state->wsize = 0;
+    state->whave = 0;
     state->write = 0;
     state->hold = 0;
     state->bits = 0;
     state->lencode = state->distcode = state->next = state->codes;
     Tracev((stderr, "inflate: reset\n"));
     return Z_OK;
-}
-
-int ZEXPORT inflateReset(strm)
-z_streamp strm;
-{
-    return inflateReset2(strm, 0);
 }
 
 int ZEXPORT inflatePrime(strm, bits, value)
