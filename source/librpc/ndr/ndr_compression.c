@@ -57,8 +57,8 @@ static enum ndr_err_code ndr_pull_compression_mszip_chunk(struct ndr_pull *ndrpu
 
 	NDR_CHECK(ndr_pull_uint32(ndrpull, NDR_SCALARS, &comp_chunk_size));
 
-	DEBUG(10,("MSZIP plain_chunk_size: %08X (%u) comp_chunk_size: %08X (%u)\n",
-		  plain_chunk_size, plain_chunk_size, comp_chunk_size, comp_chunk_size));
+	DEBUG(9,("MSZIP plain_chunk_size: %08X (%u) comp_chunk_size: %08X (%u)\n",
+		 plain_chunk_size, plain_chunk_size, comp_chunk_size, comp_chunk_size));
 
 	comp_chunk_offset = ndrpull->offset;
 	NDR_CHECK(ndr_pull_advance(ndrpull, comp_chunk_size));
@@ -259,8 +259,8 @@ static enum ndr_err_code ndr_push_compression_mszip_chunk(struct ndr_push *ndrpu
 	NDR_CHECK(ndr_push_uint32(ndrpush, NDR_SCALARS, comp_chunk_size));
 	ndrpush->offset = tmp_offset;
 
-	DEBUG(10,("MSZIP comp plain_chunk_size: %08X (%u) comp_chunk_size: %08X (%u)\n",
-		  plain_chunk.length, plain_chunk.length, comp_chunk_size, comp_chunk_size));
+	DEBUG(9,("MSZIP comp plain_chunk_size: %08X (%u) comp_chunk_size: %08X (%u)\n",
+		 plain_chunk.length, plain_chunk.length, comp_chunk_size, comp_chunk_size));
 
 	ndrpush->offset += comp_chunk_size;
 	return NDR_ERR_SUCCESS;
@@ -295,8 +295,8 @@ static enum ndr_err_code ndr_pull_compression_xpress_chunk(struct ndr_pull *ndrp
 	plain_chunk.length = plain_chunk_size;
 	plain_chunk.data = ndrpush->data + plain_chunk_offset;
 
-	DEBUG(10,("XPRESS plain_chunk_size: %08X (%u) comp_chunk_size: %08X (%u)\n",
-		  plain_chunk_size, plain_chunk_size, comp_chunk_size, comp_chunk_size));
+	DEBUG(9,("XPRESS plain_chunk_size: %08X (%u) comp_chunk_size: %08X (%u)\n",
+		 plain_chunk_size, plain_chunk_size, comp_chunk_size, comp_chunk_size));
 
 	/* Uncompressing the buffer using LZ Xpress algorithm */
 	lzxpress_decompress(&comp_chunk, &plain_chunk);
