@@ -5306,8 +5306,8 @@ void set_delete_on_close_token(struct share_mode_lock *lck, UNIX_USER_TOKEN *tok
 void set_delete_on_close_lck(struct share_mode_lock *lck, bool delete_on_close, UNIX_USER_TOKEN *tok);
 bool set_delete_on_close(files_struct *fsp, bool delete_on_close, UNIX_USER_TOKEN *tok);
 bool set_allow_initial_delete_on_close(struct share_mode_lock *lck, files_struct *fsp, bool delete_on_close);
-bool set_write_time(struct file_id fileid, struct timespec write_time,
-		    bool overwrite);
+bool set_sticky_write_time(struct file_id fileid, struct timespec write_time);
+bool set_write_time(struct file_id fileid, struct timespec write_time);
 int share_mode_forall(void (*fn)(const struct share_mode_entry *, const char *,
 				 const char *, void *),
 		      void *private_data);
@@ -9616,11 +9616,10 @@ int file_set_dosmode(connection_struct *conn, const char *fname,
 		     const char *parent_dir,
 		     bool newfile);
 int file_ntimes(connection_struct *conn, const char *fname, const struct timespec ts[2]);
-bool set_write_time_path(connection_struct *conn, const char *fname,
-			 struct file_id fileid, const struct timespec mtime,
-			 bool overwrite);
-bool set_write_time_fsp(struct files_struct *fsp, const struct timespec mtime,
-			bool overwrite);
+bool set_sticky_write_time_path(connection_struct *conn, const char *fname,
+			 struct file_id fileid, const struct timespec mtime);
+bool set_sticky_write_time_fsp(struct files_struct *fsp, const struct timespec mtime);
+bool update_write_time(struct files_struct *fsp);
 
 /* The following definitions come from smbd/error.c  */
 
@@ -9665,6 +9664,7 @@ bool directory_has_default_acl(connection_struct *conn, const char *fname);
 
 ssize_t read_file(files_struct *fsp,char *data,SMB_OFF_T pos,size_t n);
 void trigger_write_time_update(struct files_struct *fsp);
+void trigger_write_time_update_immediate(struct files_struct *fsp);
 ssize_t write_file(struct smb_request *req,
 			files_struct *fsp,
 			const char *data,

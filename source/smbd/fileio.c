@@ -176,28 +176,38 @@ static void update_write_time_handler(struct event_context *ctx,
 				      const struct timeval *now,
 				      void *private_data)
 {
-       files_struct *fsp = (files_struct *)private_data;
+	files_struct *fsp = (files_struct *)private_data;
 
-       /* Remove the timed event handler. */
-       TALLOC_FREE(fsp->update_write_time_event);
-       DEBUG(5, ("Update write time on %s\n", fsp->fsp_name));
+	/* Remove the timed event handler. */
+	TALLOC_FREE(fsp->update_write_time_event);
+	DEBUG(5, ("Update write time on %s\n", fsp->fsp_name));
 
-       /* change the write time if not already changed by someoneelse */
-       set_write_time_fsp(fsp, timespec_current(), false);
+	/* change the write time if not already changed by someone else */
+	update_write_time(fsp);
 }
+
+/*********************************************************
+ Schedule a write time update for WRITE_TIME_UPDATE_USEC_DELAY
+ in the future.
+*********************************************************/
 
 void trigger_write_time_update(struct files_struct *fsp)
 {
 	int delay;
 
 	if (fsp->write_time_forced) {
+		/* No point - "sticky" write times
+		 * in effect.
+		 */
 		return;
 	}
 
-	if (fsp->update_write_time_triggered) {
+	if (fsp->update_write_time_event) {
+		/*
+		 * No point - an event is already scheduled.
+		 */
 		return;
 	}
-	fsp->update_write_time_triggered = true;
 
 	delay = lp_parm_int(SNUM(fsp->conn),
 			    "smbd", "writetimeupdatedelay",
@@ -210,6 +220,27 @@ void trigger_write_time_update(struct files_struct *fsp)
 				timeval_current_ofs(0, delay),
 				"update_write_time_handler",
 				update_write_time_handler, fsp);
+}
+
+void trigger_write_time_update_immediate(struct files_struct *fsp)
+{
+        if (fsp->write_time_forced) {
+		/*
+		 * No point - "sticky" write times
+		 * in effect.
+		 */
+                return;
+        }
+
+        if (fsp->update_write_time_event) {
+		/*
+		 * No point - an event is already scheduled.
+		 */
+                return;
+        }
+
+        fsp->update_write_time_on_close = true;
+	update_write_time(fsp);
 }
 
 /****************************************************************************
