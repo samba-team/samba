@@ -97,6 +97,7 @@ void ldb_set_default_dns(struct ldb_context *ldb)
 
 	if (res->count != 1) {
 		talloc_free(res);
+		talloc_free(tmp_ctx);
 		return;
 	}
 
