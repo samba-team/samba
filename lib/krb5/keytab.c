@@ -449,8 +449,8 @@ krb5_kt_start_seq_get(krb5_context context,
     if(id->start_seq_get == NULL) {
 	krb5_set_error_message(context, HEIM_ERR_OPNOTSUPP,
 			       N_("start_seq_get is not supported "
-				  "in the %s ", ""),
-			       " keytab", id->prefix);
+				  "in the %s keytab type", ""),
+			       id->prefix);
 	return HEIM_ERR_OPNOTSUPP;
     }
     return (*id->start_seq_get)(context, id, cursor);
