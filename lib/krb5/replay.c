@@ -47,7 +47,8 @@ krb5_rc_resolve(krb5_context context,
 {
     id->name = strdup(name);
     if(id->name == NULL) {
-	krb5_set_error_message(context, KRB5_RC_MALLOC, "malloc: out of memory");
+	krb5_set_error_message(context, KRB5_RC_MALLOC,
+			       N_("malloc: out of memory", ""));
 	return KRB5_RC_MALLOC;
     }
     return 0;
@@ -61,13 +62,14 @@ krb5_rc_resolve_type(krb5_context context,
     *id = NULL;
     if(strcmp(type, "FILE")) {
 	krb5_set_error_message (context, KRB5_RC_TYPE_NOTFOUND,
-				"replay cache type %s not supported",
+				N_("replay cache type %s not supported", ""),
 				type);
 	return KRB5_RC_TYPE_NOTFOUND;
     }
     *id = calloc(1, sizeof(**id));
     if(*id == NULL) {
-	krb5_set_error_message(context, KRB5_RC_MALLOC, "malloc: out of memory");
+	krb5_set_error_message(context, KRB5_RC_MALLOC,
+			       N_("malloc: out of memory", ""));
 	return KRB5_RC_MALLOC;
     }
     return 0;
@@ -84,7 +86,7 @@ krb5_rc_resolve_full(krb5_context context,
 
     if(strncmp(string_name, "FILE:", 5)) {
 	krb5_set_error_message(context, KRB5_RC_TYPE_NOTFOUND,
-			       "replay cache type %s not supported",
+			       N_("replay cache type %s not supported", ""),
 			       string_name);
 	return KRB5_RC_TYPE_NOTFOUND;
     }
@@ -293,7 +295,8 @@ krb5_get_server_rcache(krb5_context context,
     char *name;
 
     if(tmp == NULL) {
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM,
+			       N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     strvisx(tmp, piece->data, piece->length, VIS_WHITE | VIS_OCTAL);
@@ -304,7 +307,8 @@ krb5_get_server_rcache(krb5_context context,
 #endif
     free(tmp);
     if(name == NULL) {
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, 
+			       N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
 
