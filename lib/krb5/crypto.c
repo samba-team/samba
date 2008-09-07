@@ -1866,7 +1866,7 @@ verify_checksum(krb5_context context,
     if(keyed_checksum && crypto == NULL) {
 	krb5_set_error_message (context, KRB5_PROG_SUMTYPE_NOSUPP,
 				N_("Checksum type %s is keyed but no "
-				   "crypto context (key) was passed in", "")
+				   "crypto context (key) was passed in", ""),
 				ct->name);
 	return KRB5_PROG_SUMTYPE_NOSUPP; /* XXX */
     }
