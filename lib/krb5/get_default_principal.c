@@ -86,7 +86,8 @@ _krb5_get_default_principal_local (krb5_context context,
 	}
 	if(user == NULL) {
 	    krb5_set_error_message(context, ENOTTY,
-				   "unable to figure out current principal");
+				   N_("unable to figure out current "
+				      "principal", ""));
 	    return ENOTTY; /* XXX */
 	}
 	ret = krb5_make_principal(context, princ, NULL, user, NULL);
