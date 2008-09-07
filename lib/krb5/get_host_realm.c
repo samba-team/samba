@@ -207,7 +207,8 @@ _krb5_get_host_realm_int (krb5_context context,
 	return 0;
     }
     krb5_set_error_message(context, KRB5_ERR_HOST_REALM_UNKNOWN,
-			   "unable to find realm of host %s", host);
+			   N_("unable to find realm of host %s", ""),
+			   host);
     return KRB5_ERR_HOST_REALM_UNKNOWN;
 }
 
@@ -250,7 +251,7 @@ krb5_get_host_realm(krb5_context context,
 	ret = krb5_get_default_realms(context, realms);
 	if (ret) {
 	    krb5_set_error_message(context, KRB5_ERR_HOST_REALM_UNKNOWN,
-				   "Unable to find realm of host %s",
+				   N_("Unable to find realm of host %s", ""),
 				   host);
 	    return KRB5_ERR_HOST_REALM_UNKNOWN;
 	}
