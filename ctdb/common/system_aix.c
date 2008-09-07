@@ -199,7 +199,7 @@ bool ctdb_sys_have_ip(ctdb_sock_addr *addr)
 	int s;
 	int ret;
 	
-	addr->sa.sa_port = 0;
+	addr->ip.sin_port = 0;
 	s = socket(addr->sa.sa_family, SOCK_STREAM, IPPROTO_TCP);
 	if (s == -1) {
 		return false;
@@ -312,6 +312,7 @@ int ctdb_sys_read_tcp_packet(int s, void *private_data,
 	int ret;
 	struct ether_header *eth;
 	struct ip *ip;
+	struct ip6_hdr *ip6;
 	struct tcphdr *tcp;
 	struct ctdb_killtcp_connection *conn;
 	struct pcap_pkthdr pkthdr;
@@ -353,22 +354,44 @@ int ctdb_sys_read_tcp_packet(int s, void *private_data,
 		tcp = (struct tcphdr *)((ip->ip_hl*4) + (char *)ip);
 	
 		/* tell the caller which one we've found */
-		src->ip.sin_family   = AF_INET;
-		src->sin_addr.s_addr = ip->ip_src.s_addr;
-		src->sin_port        = tcp->th_sport;
-		dst->ip.sin_family   = AF_INET;
-		dst->sin_addr.s_addr = ip->ip_dst.s_addr;
-		dst->sin_port        = tcp->th_dport;
-		*ack_seq             = tcp->th_ack;
-		*seq                 = tcp->th_seq;
+		src->ip.sin_family      = AF_INET;
+		src->ip.sin_addr.s_addr = ip->ip_src.s_addr;
+		src->ip.sin_port        = tcp->th_sport;
+		dst->ip.sin_family      = AF_INET;
+		dst->ip.sin_addr.s_addr = ip->ip_dst.s_addr;
+		dst->ip.sin_port        = tcp->th_dport;
+		*ack_seq                = tcp->th_ack;
+		*seq                    = tcp->th_seq;
 
 
 		return 0;
 #ifndef ETHERTYPE_IP6
 #define ETHERTYPE_IP6 0x86dd
 #endif
-	} else if (eth->ether_type == htons(ETHERTYPE_IP)) {
-see system_linux.c for what should go in here
+	} else if (eth->ether_type == htons(ETHERTYPE_IP6)) {
+	  		/* IP6 */
+		ip6 = (struct ip6_hdr *)(eth+1);
+
+		/* we only want TCP */
+		if (ip6->ip6_nxt != IPPROTO_TCP) {
+			return -1;
+		}
+
+		/* TCP */
+		tcp = (struct tcphdr *)(ip6+1);
+
+		/* tell the caller which one we've found */
+		src->ip6.sin6_family = AF_INET6;
+		src->ip6.sin6_port   = tcp->th_sport;
+		src->ip6.sin6_addr   = ip6->ip6_src;
+
+		dst->ip6.sin6_family = AF_INET6;
+		dst->ip6.sin6_port   = tcp->th_dport;
+		dst->ip6.sin6_addr   = ip6->ip6_dst;
+
+		*ack_seq             = tcp->th_ack;
+		*seq                 = tcp->th_seq;
+
 		return 0;
 	}
 
