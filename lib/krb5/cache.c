@@ -59,9 +59,9 @@ krb5_cc_register(krb5_context context,
     for(i = 0; i < context->num_cc_ops && context->cc_ops[i].prefix; i++) {
 	if(strcmp(context->cc_ops[i].prefix, ops->prefix) == 0) {
 	    if(!override) {
-		krb5_set_error_message(context, 
+		krb5_set_error_message(context,
 				       KRB5_CC_TYPE_EXISTS,
-				       "ccache type %s already exists",
+				       N_("cache type %s already exists", "type"),
 				       ops->prefix);
 		return KRB5_CC_TYPE_EXISTS;
 	    }
@@ -73,8 +73,8 @@ krb5_cc_register(krb5_context context,
 				 (context->num_cc_ops + 1) *
 				 sizeof(*context->cc_ops));
 	if(o == NULL) {
-	    krb5_set_error_message(context, KRB5_CC_NOMEM, 
-				   "malloc: out of memory");
+	    krb5_set_error_message(context, KRB5_CC_NOMEM,
+				   N_("malloc: out of memory", ""));
 	    return KRB5_CC_NOMEM;
 	}
 	context->num_cc_ops++;
@@ -100,7 +100,8 @@ _krb5_cc_allocate(krb5_context context,
 
     p = malloc (sizeof(*p));
     if(p == NULL) {
-	krb5_set_error_message(context, KRB5_CC_NOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, KRB5_CC_NOMEM,
+			       N_("malloc: out of memory", ""));
 	return KRB5_CC_NOMEM;
     }
     p->ops = ops;
@@ -169,7 +170,7 @@ krb5_cc_resolve(krb5_context context,
 	return allocate_ccache (context, &krb5_fcc_ops, name, id);
     else {
 	krb5_set_error_message(context, KRB5_CC_UNKNOWN_TYPE,
-			       "unknown ccache type %s", name);
+			       N_("unknown ccache type %s", "name"), name);
 	return KRB5_CC_UNKNOWN_TYPE;
     }
 }
@@ -284,7 +285,7 @@ krb5_cc_get_full_name(krb5_context context,
     }
     
     if (asprintf(str, "%s:%s", type, name) == -1) {
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	*str = NULL;
 	return ENOMEM;
     }
@@ -356,7 +357,8 @@ _krb5_expand_default_cc_name(krb5_context context, const char *str, char **res)
 	if (append == NULL) {
 	    free(*res);
 	    *res = NULL;
-	    krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	    krb5_set_error_message(context, ENOMEM,
+				   N_("malloc: out of memory", ""));
 	    return ENOMEM;
 	}
 	
@@ -367,7 +369,7 @@ _krb5_expand_default_cc_name(krb5_context context, const char *str, char **res)
 	    free(*res);
 	    *res = NULL;
 	    krb5_set_error_message(context, ENOMEM, 
-				   "malloc: out of memory");
+				   N_("malloc: out of memory", ""));
 	    return ENOMEM;
 	}
 	*res = tmp;
@@ -488,7 +490,7 @@ krb5_cc_set_default_name(krb5_context context, const char *name)
     }
 
     if (p == NULL) {
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
 
@@ -535,7 +537,7 @@ krb5_cc_default(krb5_context context,
     const char *p = krb5_cc_default_name(context);
 
     if (p == NULL) {
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     return krb5_cc_resolve(context, p, id);
@@ -907,7 +909,7 @@ krb5_cc_get_prefix_ops(krb5_context context, const char *prefix)
 
     p = strdup(prefix);
     if (p == NULL) {
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	return NULL;
     }
     p1 = strchr(p, ':');
@@ -960,14 +962,15 @@ krb5_cc_cache_get_first (krb5_context context,
 
     if (ops->get_cache_first == NULL) {
 	krb5_set_error_message(context, KRB5_CC_NOSUPP,
-			       "Credential cache type %s doesn't support "
-			       "iterations over caches", ops->prefix);
+			       N_("Credential cache type %s doesn't support "
+				 "iterations over caches", "type"),
+			       ops->prefix);
 	return KRB5_CC_NOSUPP;
     }
 
     *cursor = calloc(1, sizeof(**cursor));
     if (*cursor == NULL) {
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
 
@@ -1072,8 +1075,8 @@ krb5_cc_cache_match (krb5_context context,
 	krb5_unparse_name(context, client, &str);
 
 	krb5_set_error_message(context, KRB5_CC_NOTFOUND,
-			       "Principal %s not found in a "
-			       "credential cache", 
+			       N_("Principal %s not found in a "
+				  "credential cache", ""), 
 			       str ? str : "<out of memory>");
 	if (str)
 	    free(str);
@@ -1105,8 +1108,8 @@ krb5_cc_move(krb5_context context, krb5_ccache from, krb5_ccache to)
 
     if (strcmp(from->ops->prefix, to->ops->prefix) != 0) {
 	krb5_set_error_message(context, KRB5_CC_NOSUPP,
-			       "Moving credentials between diffrent "
-			       "types not yet supported");
+			       N_("Moving credentials between diffrent "
+				 "types not yet supported", ""));
 	return KRB5_CC_NOSUPP;
     }
 

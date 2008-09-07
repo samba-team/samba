@@ -116,6 +116,13 @@ struct sockaddr_dl;
 #include <sys/file.h>
 #endif
 
+#if 1
+#define N_(x,y) (x)
+#else
+#define N_(x,y) dgettext("heimdal_krb5", x)
+#endif
+
+
 #ifdef HAVE_CRYPT_H
 #undef des_encrypt
 #define des_encrypt wingless_pigs_mostly_fail_to_fly

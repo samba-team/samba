@@ -83,7 +83,8 @@ acl_parse_format(krb5_context context,
     for(p = format; *p != '\0'; p++) {
 	tmp = malloc(sizeof(*tmp));
 	if(tmp == NULL) {
-	    krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	    krb5_set_error_message(context, ENOMEM,
+				   N_("malloc: out of memory", ""));
 	    acl_free_list(acl, 0);
 	    return ENOMEM;
 	}
@@ -98,8 +99,9 @@ acl_parse_format(krb5_context context,
 	    tmp->u.retv = va_arg(ap, char **);
 	    *tmp->u.retv = NULL;
 	} else {
-	    krb5_set_error_message(context, EINVAL, "acl_parse_format: "
-				   "unknown format specifier %c", *p);
+	    krb5_set_error_message(context, EINVAL, 
+				   N_("Unknown format specifier %c while "
+				     "parsing ACL", "specifier"), *p);
 	    acl_free_list(acl, 0);
 	    free(tmp);
 	    return EINVAL;
@@ -220,7 +222,7 @@ krb5_acl_match_string(krb5_context context,
     if (found) {
 	return 0;
     } else {
-	krb5_set_error_message(context, EACCES, "ACL did not match");
+	krb5_set_error_message(context, EACCES, N_("ACL did not match", ""));
 	return EACCES;
     }
 }
@@ -259,7 +261,7 @@ krb5_acl_match_file(krb5_context context,
 	int save_errno = errno;
 
 	krb5_set_error_message(context, save_errno,
-			       "open(%s): %s", file,
+			       N_("open(%s): %s", "file, errno"), file,
 			       strerror(save_errno));
 	return save_errno;
     }
@@ -289,7 +291,7 @@ krb5_acl_match_file(krb5_context context,
     if (found) {
 	return 0;
     } else {
-	krb5_set_error_message(context, EACCES, "ACL did not match");
+	krb5_set_error_message(context, EACCES, N_("ACL did not match", ""));
 	return EACCES;
     }
 }

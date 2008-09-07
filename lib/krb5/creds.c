@@ -156,7 +156,8 @@ krb5_copy_creds (krb5_context context,
 
     c = malloc (sizeof (*c));
     if (c == NULL) {
-	krb5_set_error_message (context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message (context, ENOMEM,
+				N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     memset (c, 0, sizeof(*c));

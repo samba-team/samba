@@ -61,7 +61,8 @@ krb5_copy_host_realm(krb5_context context,
 
     *to = calloc (n, sizeof(**to));
     if (*to == NULL) {
-	krb5_set_error_message (context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message (context, ENOMEM, 
+				N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
 
@@ -69,7 +70,8 @@ krb5_copy_host_realm(krb5_context context,
 	(*to)[i] = strdup(*p);
 	if ((*to)[i] == NULL) {
 	    krb5_free_host_realm (context, *to);
-	    krb5_set_error_message (context, ENOMEM, "malloc: out of memory");
+	    krb5_set_error_message (context, ENOMEM,
+				    N_("malloc: out of memory", ""));
 	    return ENOMEM;
 	}
     }

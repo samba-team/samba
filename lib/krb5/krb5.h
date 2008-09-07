@@ -778,6 +778,8 @@ typedef struct krb5_crypto_iov {
 #define KRB5_CRYPTO_TYPE_PADDING	4
    /* OUT krb5_crypto_length(KRB5_CRYPTO_TYPE_TRAILER) */
 #define KRB5_CRYPTO_TYPE_TRAILER	5
+   /* OUT krb5_crypto_length(KRB5_CRYPTO_TYPE_CHECKSUM) */
+#define KRB5_CRYPTO_TYPE_CHECKSUM	6
     krb5_data data;
 } krb5_crypto_iov;
 

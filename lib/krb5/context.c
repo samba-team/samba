@@ -68,7 +68,7 @@ set_etypes (krb5_context context,
 	etypes = malloc((i+1) * sizeof(*etypes));
 	if (etypes == NULL) {
 	    krb5_config_free_strings (etypes_str);
-	    krb5_set_error_message (context, ENOMEM, "malloc: out of memory");
+	    krb5_set_error_message (context, ENOMEM, N_("malloc: out of memory", ""));
 	    return ENOMEM;
 	}
 	for(j = 0, k = 0; j < i; j++) {
@@ -564,7 +564,7 @@ default_etypes(krb5_context context, krb5_enctype **etype)
 	ep = realloc(e, (n + 2) * sizeof(*e));
 	if (ep == NULL) {
 	    free(e);
-	    krb5_set_error_message (context, ENOMEM, "malloc: out of memory");
+	    krb5_set_error_message (context, ENOMEM, N_("malloc: out of memory", ""));
 	    return ENOMEM;
 	}
 	e = ep;
@@ -606,7 +606,7 @@ krb5_set_default_in_tkt_etypes(krb5_context context,
 	++i;
 	ALLOC(p, i);
 	if(!p) {
-	    krb5_set_error_message (context, ENOMEM, "malloc: out of memory");
+	    krb5_set_error_message (context, ENOMEM, N_("malloc: out of memory", ""));
 	    return ENOMEM;
 	}
 	memmove(p, etypes, i * sizeof(krb5_enctype));
@@ -644,7 +644,7 @@ krb5_get_default_in_tkt_etypes(krb5_context context,
 	++i;
 	ALLOC(p, i);
 	if(!p) {
-	    krb5_set_error_message (context, ENOMEM, "malloc: out of memory");
+	    krb5_set_error_message (context, ENOMEM, N_("malloc: out of memory", ""));
 	    return ENOMEM;
 	}
 	memmove(p, context->etypes, i * sizeof(krb5_enctype));
@@ -788,7 +788,7 @@ krb5_set_extra_addresses(krb5_context context, const krb5_addresses *addresses)
     if(context->extra_addresses == NULL) {
 	context->extra_addresses = malloc(sizeof(*context->extra_addresses));
 	if(context->extra_addresses == NULL) {
-	    krb5_set_error_message (context, ENOMEM, "malloc: out of memory");
+	    krb5_set_error_message (context, ENOMEM, N_("malloc: out of memory", ""));
 	    return ENOMEM;
 	}
     }
@@ -870,7 +870,7 @@ krb5_set_ignore_addresses(krb5_context context, const krb5_addresses *addresses)
     if(context->ignore_addresses == NULL) {
 	context->ignore_addresses = malloc(sizeof(*context->ignore_addresses));
 	if(context->ignore_addresses == NULL) {
-	    krb5_set_error_message (context, ENOMEM, "malloc: out of memory");
+	    krb5_set_error_message (context, ENOMEM, N_("malloc: out of memory", ""));
 	    return ENOMEM;
 	}
     }

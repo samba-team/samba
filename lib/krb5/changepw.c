@@ -312,7 +312,7 @@ process_reply (krb5_context context,
 	}
 	if (len == sizeof(reply)) {
 	    krb5_set_error_message(context, ENOMEM,
-				   "message too large from %s",
+				   N_("Message too large from %s", "host"),
 				   host);
 	    return ENOMEM;
 	}
@@ -662,8 +662,8 @@ change_password_loop (krb5_context	context,
     if (ret == KRB5_KDC_UNREACH) {
 	krb5_set_error_message(context,
 			       ret,
-			       "unable to reach any changepw server "
-			       " in realm %s", realm);
+			       N_("Unable to reach any changepw server "
+				 " in realm %s", "realm"), realm);
 	*result_code = KRB5_KPASSWD_HARDERROR;
     }
     return ret;
