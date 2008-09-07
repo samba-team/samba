@@ -48,14 +48,14 @@ krb5_kt_register(krb5_context context,
 
     if (strlen(ops->prefix) > KRB5_KT_PREFIX_MAX_LEN - 1) {
 	krb5_set_error_message(context, KRB5_KT_BADNAME, 
-			       "krb5_kt_register; prefix too long");
+			       N_("can't register cache type, prefix too long", ""));
 	return KRB5_KT_BADNAME;
     }
 
     tmp = realloc(context->kt_types,
 		  (context->num_kt_types + 1) * sizeof(*context->kt_types));
     if(tmp == NULL) {
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     memcpy(&tmp[context->num_kt_types], ops,
@@ -99,14 +99,14 @@ krb5_kt_resolve(krb5_context context,
     }
     if(i == context->num_kt_types) {
 	krb5_set_error_message(context, KRB5_KT_UNKNOWN_TYPE,
-			       "unknown keytab type %.*s", 
+			       N_("unknown keytab type %.*s", "type"),
 			       (int)type_len, type);
 	return KRB5_KT_UNKNOWN_TYPE;
     }
     
     k = malloc (sizeof(*k));
     if (k == NULL) {
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     memcpy(k, &context->kt_types[i], sizeof(*k));
@@ -267,7 +267,7 @@ krb5_kt_get_full_name(krb5_context context,
 	return ret;
 
     if (asprintf(str, "%s:%s", type, name) == -1) {
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	*str = NULL;
 	return ENOMEM;
     }
@@ -381,7 +381,8 @@ krb5_kt_get_entry(krb5_context context,
 	    kvno_str[0] = '\0';
 
 	krb5_set_error_message (context, KRB5_KT_NOTFOUND,
-				"Failed to find %s%s in keytab %s (%s)",
+				N_("Failed to find %s%s in keytab %s (%s)",
+				   "principal, kvno, keytab file, enctype"),
 				princ,
 				kvno_str,
 				kt_name ? kt_name : "unknown keytab",
@@ -447,7 +448,8 @@ krb5_kt_start_seq_get(krb5_context context,
 {
     if(id->start_seq_get == NULL) {
 	krb5_set_error_message(context, HEIM_ERR_OPNOTSUPP,
-			       "start_seq_get is not supported in the %s "
+			       N_("start_seq_get is not supported "
+				  "in the %s ", ""),
 			       " keytab", id->prefix);
 	return HEIM_ERR_OPNOTSUPP;
     }
@@ -468,8 +470,9 @@ krb5_kt_next_entry(krb5_context context,
 {
     if(id->next_entry == NULL) {
 	krb5_set_error_message(context, HEIM_ERR_OPNOTSUPP,
-			       "next_entry is not supported in the %s "
-			       " keytab", id->prefix);
+			       N_("next_entry is not supported in the %s "
+				  " keytab", ""),
+			       id->prefix);
 	return HEIM_ERR_OPNOTSUPP;
     }
     return (*id->next_entry)(context, id, entry, cursor);
@@ -505,7 +508,7 @@ krb5_kt_add_entry(krb5_context context,
 {
     if(id->add == NULL) {
 	krb5_set_error_message(context, KRB5_KT_NOWRITE,
-			       "Add is not supported in the %s keytab",
+			       N_("Add is not supported in the %s keytab", ""),
 			       id->prefix);
 	return KRB5_KT_NOWRITE;
     }
@@ -525,7 +528,7 @@ krb5_kt_remove_entry(krb5_context context,
 {
     if(id->remove == NULL) {
 	krb5_set_error_message(context, KRB5_KT_NOWRITE,
-			       "Remove is not supported in the %s keytab",
+			       N_("Remove is not supported in the %s keytab", ""),
 			       id->prefix);
 	return KRB5_KT_NOWRITE;
     }
