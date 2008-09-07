@@ -2,7 +2,7 @@
 
 include $(top_srcdir)/Makefile.am.common
 
-AM_CPPFLAGS += $(INCLUDE_krb4) $(INCLUDE_hcrypto) -I../com_err -I$(srcdir)/../com_err $(INCLUDE_sqlite3)
+AM_CPPFLAGS += $(INCLUDE_krb4) $(INCLUDE_hcrypto) -I../com_err -I$(srcdir)/../com_err $(INCLUDE_sqlite3) $(INCLUDE_libintl)
 
 bin_PROGRAMS = verify_krb5_conf
 
@@ -58,6 +58,7 @@ libkrb5_la_LIBADD = \
 	$(LIB_hcrypto) \
 	$(top_builddir)/lib/asn1/libasn1.la \
 	../wind/libwind.la \
+	$(LIB_libintl) \
 	$(LIBADD_roken) \
 	$(LIB_door_create) \
 	$(LIB_dlopen)
@@ -66,7 +67,10 @@ lib_LTLIBRARIES = libkrb5.la
 
 ERR_FILES = krb5_err.c krb_err.c heim_err.c k524_err.c
 
-libkrb5_la_CPPFLAGS = -DBUILD_KRB5_LIB $(AM_CPPFLAGS)
+libkrb5_la_CPPFLAGS = \
+	-DBUILD_KRB5_LIB \
+	$(AM_CPPFLAGS) \
+	-DHEIMDAL_LOCALEDIR="$localedir"
 
 dist_libkrb5_la_SOURCES =			\
 	acache.c				\
