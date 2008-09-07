@@ -100,7 +100,8 @@ krb5_rd_safe(krb5_context context,
     {
 	if (outdata == NULL) {
 	    krb5_set_error_message(context, KRB5_RC_REQUIRED,
-				   "rd_safe: need outdata to return data");
+				   N_("rd_safe: need outdata "
+				      "to return data", ""));
 	    return KRB5_RC_REQUIRED; /* XXX better error, MIT returns this */
 	}
 	/* if these fields are not present in the safe-part, silently
@@ -193,7 +194,7 @@ krb5_rd_safe(krb5_context context,
     outbuf->data   = malloc(outbuf->length);
     if (outbuf->data == NULL && outbuf->length != 0) {
 	ret = ENOMEM;
-	krb5_set_error_message(context, ret, "malloc: out of memory");
+	krb5_set_error_message(context, ret, N_("malloc: out of memory", ""));
 	krb5_data_zero(outbuf);
 	goto failure;
     }
