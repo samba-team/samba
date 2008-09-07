@@ -192,7 +192,7 @@ kcm_storage_request(krb5_context context,
  fail:
     if (ret) {
 	krb5_set_error_message(context, ret, 
-			       N_("Failed to encode KCM request", "");
+			       N_("Failed to encode KCM request", ""));
 	krb5_storage_free(sp);
     }
    
