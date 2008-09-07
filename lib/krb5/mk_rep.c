@@ -62,8 +62,6 @@ krb5_mk_rep(krb5_context context,
 						    auth_context->keyblock);
 	    if(ret) {
 		free_EncAPRepPart(&body);
-		krb5_set_error_message(context, ret,
-				       "krb5_mk_rep: generating subkey");
 		return ret;
 	    }
 	}
@@ -72,7 +70,7 @@ krb5_mk_rep(krb5_context context,
 	if (ret) {
 	    free_EncAPRepPart(&body);
 	    krb5_set_error_message(context, ENOMEM,
-				   "krb5_copy_keyblock: out of memory");
+				   N_("malloc: out of memory", ""));
 	    return ENOMEM;
 	}
     } else
