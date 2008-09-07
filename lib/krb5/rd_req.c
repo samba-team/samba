@@ -532,7 +532,8 @@ krb5_rd_req_in_ctx_alloc(krb5_context context, krb5_rd_req_in_ctx *ctx)
 {
     *ctx = calloc(1, sizeof(**ctx));
     if (*ctx == NULL) {
-	krb5_set_error_message(context, ENOMEM, "out of memory");
+	krb5_set_error_message(context, ENOMEM,
+			       N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     (*ctx)->check_pac = (context->flags & KRB5_CTX_F_CHECK_PAC) ? 1 : 0;
@@ -615,7 +616,8 @@ _krb5_rd_req_out_ctx_alloc(krb5_context context, krb5_rd_req_out_ctx *ctx)
 {
     *ctx = calloc(1, sizeof(**ctx));
     if (*ctx == NULL) {
-	krb5_set_error_message(context, ENOMEM, "out of memory");
+	krb5_set_error_message(context, ENOMEM,
+			       N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     return 0;
@@ -805,8 +807,9 @@ krb5_rd_req_ctx(krb5_context context,
     if (ap_req.ap_options.use_session_key &&
 	(*auth_context)->keyblock == NULL) {
 	ret = KRB5KRB_AP_ERR_NOKEY;
-	krb5_set_error_message(context, ret, "krb5_rd_req: user to user auth "
-			       "without session key given");
+	krb5_set_error_message(context, ret, 
+			       N_("krb5_rd_req: user to user auth "
+				  "without session key given", ""));
 	goto out;
     }
 
