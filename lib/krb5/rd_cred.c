@@ -174,7 +174,8 @@ krb5_rd_cred(krb5_context context,
 
 
 	ret = compare_addrs(context, a, enc_krb_cred_part.s_address, 
-			    "sender address is wrong in received creds");
+			    N_("sender address is wrong "
+			       "in received creds", ""));
 	krb5_free_address(context, a);
 	free(a);
 	if(ret)
@@ -195,7 +196,8 @@ krb5_rd_cred(krb5_context context,
 		goto out;
 	    
 	    ret = compare_addrs(context, a, enc_krb_cred_part.r_address, 
-				"receiver address is wrong in received creds");
+				N_("receiver address is wrong "
+				   "in received creds", ""));
 	    krb5_free_address(context, a);
 	    free(a);
 	    if(ret)
@@ -203,7 +205,8 @@ krb5_rd_cred(krb5_context context,
 	} else {
 	    ret = compare_addrs(context, auth_context->local_address,
 				enc_krb_cred_part.r_address,
-				"receiver address is wrong in received creds");
+				N_("receiver address is wrong "
+				   "in received creds", ""));
 	    if(ret)
 		goto out;
 	}
@@ -245,7 +248,8 @@ krb5_rd_cred(krb5_context context,
 
     if (*ret_creds == NULL) {
 	ret = ENOMEM;
-	krb5_set_error_message(context, ret, "malloc: out of memory");
+	krb5_set_error_message(context, ret,
+			       N_("malloc: out of memory", ""));
 	goto out;
     }
 
@@ -256,7 +260,8 @@ krb5_rd_cred(krb5_context context,
 	creds = calloc(1, sizeof(*creds));
 	if(creds == NULL) {
 	    ret = ENOMEM;
-	    krb5_set_error_message(context, ret, "malloc: out of memory");
+	    krb5_set_error_message(context, ret,
+				   N_("malloc: out of memory", ""));
 	    goto out;
 	}
 
