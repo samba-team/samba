@@ -54,7 +54,7 @@ com_right(struct et_list *list, long code)
 	if (code >= p->table->base && code < p->table->base + p->table->n_msgs) {
 	    const char *str = p->table->msgs[code - p->table->base];
 #ifdef HAVE_LIBINTL
-	    char domain[6 + 1 + 20];
+	    char domain[12 + 20];
 	    snprintf(domain, sizeof(domain), "heim_com_err%d", p->table->base);
 #endif
 	    return dgettext(domain, str);
