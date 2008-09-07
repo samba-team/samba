@@ -55,7 +55,7 @@ com_right(struct et_list *list, long code)
 	    const char *str = p->table->msgs[code - p->table->base];
 #ifdef HAVE_LIBINTL
 	    char domain[6 + 1 + 20];
-	    snprintf(domain, sizeof(domain), "com_err%d", p->table->base);
+	    snprintf(domain, sizeof(domain), "heim_com_err%d", p->table->base);
 #endif
 	    return dgettext(domain, str);
 	}
