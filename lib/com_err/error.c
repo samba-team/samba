@@ -45,8 +45,17 @@ com_right(struct et_list *list, long code)
 {
     struct et_list *p;
     for (p = list; p; p = p->next) {
-	if (code >= p->table->base && code < p->table->base + p->table->n_msgs)
-	    return p->table->msgs[code - p->table->base];
+	if (code >= p->table->base && code < p->table->base + p->table->n_msgs) {
+	    char *p = p->table->msgs[code - p->table->base];
+#ifdef HAVE_LIBINTL
+	    char domain[6 + 1 + 20];
+	    snprintf(domain, sizeof(domain), "com_err%d", p->table->base);
+	    return dgettext(domain, p);
+#else
+	    return p;
+#endif
+	}
+       
     }
     return NULL;
 }
