@@ -70,7 +70,7 @@ ERR_FILES = krb5_err.c krb_err.c heim_err.c k524_err.c
 libkrb5_la_CPPFLAGS = \
 	-DBUILD_KRB5_LIB \
 	$(AM_CPPFLAGS) \
-	-DHEIMDAL_LOCALEDIR="$localedir"
+	-DHEIMDAL_LOCALEDIR='"$(localedir)"'
 
 dist_libkrb5_la_SOURCES =			\
 	acache.c				\
