@@ -79,7 +79,7 @@ krb5_rd_rep(krb5_context context,
     *repl = malloc(sizeof(**repl));
     if (*repl == NULL) {
 	ret = ENOMEM;
-	krb5_set_error_message(context, ret, "malloc: out of memory");
+	krb5_set_error_message(context, ret, N_("malloc: out of memory", ""));
 	goto out;
     }
     ret = krb5_decode_EncAPRepPart(context,
