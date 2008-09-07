@@ -119,7 +119,8 @@ mcc_resolve(krb5_context context, krb5_ccache *id, const char *res)
 
     m = mcc_alloc(res);
     if (m == NULL) {
-	krb5_set_error_message(context, KRB5_CC_NOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, KRB5_CC_NOMEM,
+			       N_("malloc: out of memory", ""));
 	return KRB5_CC_NOMEM;
     }
     
@@ -138,7 +139,8 @@ mcc_gen_new(krb5_context context, krb5_ccache *id)
     m = mcc_alloc(NULL);
 
     if (m == NULL) {
-	krb5_set_error_message(context, KRB5_CC_NOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, KRB5_CC_NOMEM,
+			       N_("malloc: out of memory", ""));
 	return KRB5_CC_NOMEM;
     }
 
@@ -237,7 +239,8 @@ mcc_store_cred(krb5_context context,
 
     l = malloc (sizeof(*l));
     if (l == NULL) {
-	krb5_set_error_message(context, KRB5_CC_NOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, KRB5_CC_NOMEM,
+			       N_("malloc: out of memory", ""));
 	return KRB5_CC_NOMEM;
     }
     l->next = m->creds;
@@ -348,7 +351,8 @@ mcc_get_cache_first(krb5_context context, krb5_cc_cursor *cursor)
 
     iter = calloc(1, sizeof(*iter));
     if (iter == NULL) {
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM,
+			       N_("malloc: out of memory", ""));
 	return ENOMEM;
     }    
 
@@ -439,7 +443,8 @@ mcc_default_name(krb5_context context, char **str)
 {
     *str = strdup("MEMORY:");
     if (*str == NULL) {
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM,
+			       N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     return 0;
