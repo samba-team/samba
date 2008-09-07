@@ -38,6 +38,8 @@
 
 RCSID("$Id$");
 
+static int verbose_flag = 0;
+
 struct testcase {
     const heim_oid *(*oid)(void);
     krb5_data Z;
@@ -153,7 +155,7 @@ test_dh2key(krb5_context context, int i, struct testcase *c)
     if (ret)
 	krb5_err(context, 1, ret, "parse_name: %s", c->server);
 
-    {
+    if (verbose_flag) {
 	char *str;
 	hex_encode(c->Z.data, c->Z.length, &str);
 	printf("Z: %s\n", str);
@@ -188,7 +190,7 @@ test_dh2key(krb5_context context, int i, struct testcase *c)
     if (ret)
 	krb5_err(context, 1, ret, "_krb5_pk_kdf: %d", i);
 
-    {
+    if (verbose_flag) {
 	char *str;
 	hex_encode(key.keyvalue.data, key.keyvalue.length, &str);
 	printf("key: %s\n", str);
@@ -209,6 +211,8 @@ static int version_flag = 0;
 static int help_flag	= 0;
 
 static struct getargs args[] = {
+    {"verbose",	0,	arg_flag,	&verbose_flag,
+     "verbose output", NULL },
     {"version",	0,	arg_flag,	&version_flag,
      "print version", NULL },
     {"help",	0,	arg_flag,	&help_flag,
