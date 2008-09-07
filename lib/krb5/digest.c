@@ -53,7 +53,7 @@ krb5_digest_alloc(krb5_context context, krb5_digest *digest)
     d = calloc(1, sizeof(*d));
     if (d == NULL) {
 	*digest = NULL;
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     *digest = d;
@@ -83,7 +83,7 @@ krb5_digest_set_server_cb(krb5_context context,
 {
     if (digest->init.channel) {
 	krb5_set_error_message(context, EINVAL,
-			       "server channel binding already set");
+			       N_("server channel binding already set", ""));
 	return EINVAL;
     }
     digest->init.channel = calloc(1, sizeof(*digest->init.channel));
@@ -105,7 +105,7 @@ krb5_digest_set_server_cb(krb5_context context,
 	free(digest->init.channel);
 	digest->init.channel = NULL;
     }
-    krb5_set_error_message(context, ENOMEM, "out of memory");
+    krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
     return ENOMEM;
 }
 
@@ -120,7 +120,7 @@ krb5_digest_set_type(krb5_context context,
     }
     digest->init.type = strdup(type);
     if (digest->init.type == NULL) {
-	krb5_set_error_message(context, ENOMEM, "out of memory");
+	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     return 0;
@@ -137,12 +137,12 @@ krb5_digest_set_hostname(krb5_context context,
     }
     digest->init.hostname = malloc(sizeof(*digest->init.hostname));
     if (digest->init.hostname == NULL) {
-	krb5_set_error_message(context, ENOMEM, "out of memory");
+	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     *digest->init.hostname = strdup(hostname);
     if (*digest->init.hostname == NULL) {
-	krb5_set_error_message(context, ENOMEM, "out of memory");
+	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	free(digest->init.hostname);
 	digest->init.hostname = NULL;
 	return ENOMEM;
@@ -163,12 +163,12 @@ krb5_digest_set_server_nonce(krb5_context context,
 			     const char *nonce)
 {
     if (digest->request.serverNonce) {
-	krb5_set_error_message(context, EINVAL, "nonce already set");
+	krb5_set_error_message(context, EINVAL, N_("nonce already set", ""));
 	return EINVAL;
     }
     digest->request.serverNonce = strdup(nonce);
     if (digest->request.serverNonce == NULL) {
-	krb5_set_error_message(context, ENOMEM, "out of memory");
+	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     return 0;
@@ -192,7 +192,7 @@ krb5_digest_set_opaque(krb5_context context,
     }
     digest->request.opaque = strdup(opaque);
     if (digest->request.opaque == NULL) {
-	krb5_set_error_message(context, ENOMEM, "out of memory");
+	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     return 0;
@@ -213,17 +213,17 @@ krb5_digest_set_identifier(krb5_context context,
 			   const char *id)
 {
     if (digest->request.identifier) {
-	krb5_set_error_message(context, EINVAL, "identifier already set");
+	krb5_set_error_message(context, EINVAL, N_("identifier already set", ""));
 	return EINVAL;
     }
     digest->request.identifier = calloc(1, sizeof(*digest->request.identifier));
     if (digest->request.identifier == NULL) {
-	krb5_set_error_message(context, ENOMEM, "out of memory");
+	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     *digest->request.identifier = strdup(id);
     if (*digest->request.identifier == NULL) {
-	krb5_set_error_message(context, ENOMEM, "out of memory");
+	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	free(digest->request.identifier);
 	digest->request.identifier = NULL;
 	return ENOMEM;
@@ -282,7 +282,7 @@ digest_request(krb5_context context,
 		       ireq, &size, ret);
     if (ret) {
 	krb5_set_error_message(context, ret,
-			       "Failed to encode digest inner request");
+			       N_("Failed to encode digest inner request", ""));
 	goto out;
     }
     if (size != data.length)
@@ -303,7 +303,7 @@ digest_request(krb5_context context,
 	if (key == NULL) {
 	    ret = EINVAL;
 	    krb5_set_error_message(context, ret,
-				   "Digest failed to get local subkey");
+				   N_("Digest failed to get local subkey", ""));
 	    goto out;
 	}
 
@@ -324,7 +324,8 @@ digest_request(krb5_context context,
     ASN1_MALLOC_ENCODE(DigestREQ, data.data, data.length,
 		       &req, &size, ret);
     if (ret) {
-	krb5_set_error_message(context, ret, "Failed to encode DigestREQest");
+	krb5_set_error_message(context, ret,
+			       N_("Failed to encode DigestREQest", ""));
 	goto out;
     }
     if (size != data.length)
@@ -336,7 +337,8 @@ digest_request(krb5_context context,
 
     ret = decode_DigestREP(data2.data, data2.length, &rep, NULL);
     if (ret) {
-	krb5_set_error_message(context, ret, "Failed to parse digest response");
+	krb5_set_error_message(context, ret,
+			       N_("Failed to parse digest response", ""));
 	goto out;
     }
 
@@ -358,7 +360,7 @@ digest_request(krb5_context context,
 	if (key == NULL) {
 	    ret = EINVAL;
 	    krb5_set_error_message(context, ret,
-				   "Digest reply have no remote subkey");
+				   N_("Digest reply have no remote subkey", ""));
 	    goto out;
 	}
 
@@ -378,7 +380,7 @@ digest_request(krb5_context context,
     ret = decode_DigestRepInner(data.data, data.length, irep, NULL);
     if (ret) {
 	krb5_set_error_message(context, ret,
-			       "Failed to decode digest inner reply");
+			       N_("Failed to decode digest inner reply", ""));
 	goto out;
     }
 
@@ -418,7 +420,7 @@ krb5_digest_init_request(krb5_context context,
 
     if (digest->init.type == NULL) {
 	krb5_set_error_message(context, EINVAL,
-			       "Type missing from init req");
+			       N_("Type missing from init req", ""));
 	return EINVAL;
     }
 
@@ -432,21 +434,22 @@ krb5_digest_init_request(krb5_context context,
 
     if (irep.element == choice_DigestRepInner_error) {
 	ret = irep.u.error.code;
-	krb5_set_error_message(context, ret, "Digest init error: %s",
+	krb5_set_error_message(context, ret, N_("Digest init error: %s", ""),
 			       irep.u.error.reason);
 	goto out;
     }
 
     if (irep.element != choice_DigestRepInner_initReply) {
 	ret = EINVAL;
-	krb5_set_error_message(context, ret, "digest reply not an initReply");
+	krb5_set_error_message(context, ret,
+			       N_("digest reply not an initReply", ""));
 	goto out;
     }
 
     ret = copy_DigestInitReply(&irep.u.initReply, &digest->initReply);
     if (ret) {
 	krb5_set_error_message(context, ret,
-			       "Failed to copy initReply");
+			       N_("Failed to copy initReply", ""));
 	goto out;
     }
 
@@ -464,18 +467,18 @@ krb5_digest_set_client_nonce(krb5_context context,
 {
     if (digest->request.clientNonce) {
 	krb5_set_error_message(context, EINVAL,
-			       "clientNonce already set");
+			       N_("clientNonce already set", ""));
 	return EINVAL;
     }
     digest->request.clientNonce = 
 	calloc(1, sizeof(*digest->request.clientNonce));
     if (digest->request.clientNonce == NULL) {
-	krb5_set_error_message(context, ENOMEM, "out of memory");
+	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     *digest->request.clientNonce = strdup(nonce);
     if (*digest->request.clientNonce == NULL) {
-	krb5_set_error_message(context, ENOMEM, "out of memory");
+	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	free(digest->request.clientNonce);
 	digest->request.clientNonce = NULL;
 	return ENOMEM;
@@ -490,12 +493,12 @@ krb5_digest_set_digest(krb5_context context,
 {
     if (digest->request.digest) {
 	krb5_set_error_message(context, EINVAL,
-			       "digest already set");
+			       N_("digest already set", ""));
 	return EINVAL;
     }
     digest->request.digest = strdup(dgst);
     if (digest->request.digest == NULL) {
-	krb5_set_error_message(context, ENOMEM, "out of memory");
+	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     return 0;
@@ -512,7 +515,7 @@ krb5_digest_set_username(krb5_context context,
     }
     digest->request.username = strdup(username);
     if (digest->request.username == NULL) {
-	krb5_set_error_message(context, ENOMEM, "out of memory");
+	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     return 0;
@@ -529,12 +532,12 @@ krb5_digest_set_authid(krb5_context context,
     }
     digest->request.authid = malloc(sizeof(*digest->request.authid));
     if (digest->request.authid == NULL) {
-	krb5_set_error_message(context, ENOMEM, "out of memory");
+	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     *digest->request.authid = strdup(authid);
     if (*digest->request.authid == NULL) {
-	krb5_set_error_message(context, ENOMEM, "out of memory");
+	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	free(digest->request.authid);
 	digest->request.authid = NULL;
 	return ENOMEM;
@@ -550,14 +553,15 @@ krb5_digest_set_authentication_user(krb5_context context,
     krb5_error_code ret;
 
     if (digest->request.authentication_user) {
-	krb5_set_error_message(context, EINVAL, "authentication_user already set");
+	krb5_set_error_message(context, EINVAL,
+			       N_("authentication_user already set", ""));
 	return EINVAL;
     }
     ret = krb5_copy_principal(context,
 			      authentication_user,
 			      &digest->request.authentication_user);
     if (digest->request.authentication_user == NULL) {
-	krb5_set_error_message(context, ENOMEM, "out of memory");
+	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     return 0;
@@ -574,12 +578,12 @@ krb5_digest_set_realm(krb5_context context,
     }
     digest->request.realm = malloc(sizeof(*digest->request.realm));
     if (digest->request.realm == NULL) {
-	krb5_set_error_message(context, ENOMEM, "out of memory");
+	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     *digest->request.realm = strdup(realm);
     if (*digest->request.realm == NULL) {
-	krb5_set_error_message(context, ENOMEM, "out of memory");
+	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	free(digest->request.realm);
 	digest->request.realm = NULL;
 	return ENOMEM;
@@ -593,17 +597,18 @@ krb5_digest_set_method(krb5_context context,
 		       const char *method)
 {
     if (digest->request.method) {
-	krb5_set_error_message(context, EINVAL, "method already set");
+	krb5_set_error_message(context, EINVAL, 
+			       N_("method already set", ""));
 	return EINVAL;
     }
     digest->request.method = malloc(sizeof(*digest->request.method));
     if (digest->request.method == NULL) {
-	krb5_set_error_message(context, ENOMEM, "out of memory");
+	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     *digest->request.method = strdup(method);
     if (*digest->request.method == NULL) {
-	krb5_set_error_message(context, ENOMEM, "out of memory");
+	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	free(digest->request.method);
 	digest->request.method = NULL;
 	return ENOMEM;
@@ -617,17 +622,17 @@ krb5_digest_set_uri(krb5_context context,
 		    const char *uri)
 {
     if (digest->request.uri) {
-	krb5_set_error_message(context, EINVAL, "uri already set");
+	krb5_set_error_message(context, EINVAL, N_("uri already set", ""));
 	return EINVAL;
     }
     digest->request.uri = malloc(sizeof(*digest->request.uri));
     if (digest->request.uri == NULL) {
-	krb5_set_error_message(context, ENOMEM, "out of memory");
+	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     *digest->request.uri = strdup(uri);
     if (*digest->request.uri == NULL) {
-	krb5_set_error_message(context, ENOMEM, "out of memory");
+	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	free(digest->request.uri);
 	digest->request.uri = NULL;
 	return ENOMEM;
@@ -641,18 +646,19 @@ krb5_digest_set_nonceCount(krb5_context context,
 			   const char *nonce_count)
 {
     if (digest->request.nonceCount) {
-	krb5_set_error_message(context, EINVAL, "nonceCount already set");
+	krb5_set_error_message(context, EINVAL,
+			       N_("nonceCount already set", ""));
 	return EINVAL;
     }
     digest->request.nonceCount = 
 	malloc(sizeof(*digest->request.nonceCount));
     if (digest->request.nonceCount == NULL) {
-	krb5_set_error_message(context, ENOMEM, "out of memory");
+	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     *digest->request.nonceCount = strdup(nonce_count);
     if (*digest->request.nonceCount == NULL) {
-	krb5_set_error_message(context, ENOMEM, "out of memory");
+	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	free(digest->request.nonceCount);
 	digest->request.nonceCount = NULL;
 	return ENOMEM;
@@ -671,12 +677,12 @@ krb5_digest_set_qop(krb5_context context,
     }
     digest->request.qop = malloc(sizeof(*digest->request.qop));
     if (digest->request.qop == NULL) {
-	krb5_set_error_message(context, ENOMEM, "out of memory");
+	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     *digest->request.qop = strdup(qop);
     if (*digest->request.qop == NULL) {
-	krb5_set_error_message(context, ENOMEM, "out of memory");
+	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	free(digest->request.qop);
 	digest->request.qop = NULL;
 	return ENOMEM;
@@ -691,7 +697,7 @@ krb5_digest_set_responseData(krb5_context context,
 {
     digest->request.responseData = strdup(response);
     if (digest->request.responseData == NULL) {
-	krb5_set_error_message(context, ENOMEM, "out of memory");
+	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     return 0;
@@ -715,7 +721,8 @@ krb5_digest_request(krb5_context context,
 
     if (digest->request.type == NULL) {
 	if (digest->init.type == NULL) {
-	    krb5_set_error_message(context, EINVAL, "Type missing from req");
+	    krb5_set_error_message(context, EINVAL, 
+				   N_("Type missing from req", ""));
 	    return EINVAL;
 	}
 	ireq.u.digestRequest.type = digest->init.type;
@@ -731,20 +738,23 @@ krb5_digest_request(krb5_context context,
 
     if (irep.element == choice_DigestRepInner_error) {
 	ret = irep.u.error.code;
-	krb5_set_error_message(context, ret, "Digest response error: %s",
+	krb5_set_error_message(context, ret,
+			       N_("Digest response error: %s", ""),
 			       irep.u.error.reason);
 	goto out;
     }
 
     if (irep.element != choice_DigestRepInner_response) {
-	krb5_set_error_message(context, EINVAL, "digest reply not an DigestResponse");
+	krb5_set_error_message(context, EINVAL, 
+			       N_("digest reply not an DigestResponse", ""));
 	ret = EINVAL;
 	goto out;
     }
 
     ret = copy_DigestResponse(&irep.u.response, &digest->response);
     if (ret) {
-	krb5_set_error_message(context, ret, "Failed to copy initReply");
+	krb5_set_error_message(context, ret, 
+			       N_("Failed to copy initReply,", ""));
 	goto out;
     }
 
@@ -792,7 +802,7 @@ krb5_digest_get_client_binding(krb5_context context,
 	if (*type == NULL || *binding == NULL) {
 	    free(*type);
 	    free(*binding);
-	    krb5_set_error_message(context, ENOMEM, "out of memory");
+	    krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	    return ENOMEM;
 	}
     } else {
@@ -832,7 +842,7 @@ krb5_ntlm_alloc(krb5_context context,
 {
     *ntlm = calloc(1, sizeof(**ntlm));
     if (*ntlm == NULL) {
-	krb5_set_error_message(context, ENOMEM, "out of memory");
+	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     return 0;
@@ -887,20 +897,22 @@ krb5_ntlm_init_request(krb5_context context,
 
     if (irep.element == choice_DigestRepInner_error) {
 	ret = irep.u.error.code;
-	krb5_set_error_message(context, ret, "Digest init error: %s",
+	krb5_set_error_message(context, ret, N_("Digest init error: %s", ""),
 			       irep.u.error.reason);
 	goto out;
     }
 
     if (irep.element != choice_DigestRepInner_ntlmInitReply) {
 	ret = EINVAL;
-	krb5_set_error_message(context, ret, "ntlm reply not an initReply");
+	krb5_set_error_message(context, ret,
+			       N_("ntlm reply not an initReply", ""));
 	goto out;
     }
 
     ret = copy_NTLMInitReply(&irep.u.ntlmInitReply, &ntlm->initReply);
     if (ret) {
-	krb5_set_error_message(context, ret, "Failed to copy initReply");
+	krb5_set_error_message(context, ret, 
+			       N_("Failed to copy initReply", ""));
 	goto out;
     }
 
@@ -1006,20 +1018,23 @@ krb5_ntlm_request(krb5_context context,
 
     if (irep.element == choice_DigestRepInner_error) {
 	ret = irep.u.error.code;
-	krb5_set_error_message(context, ret, "NTLM response error: %s",
+	krb5_set_error_message(context, ret, 
+			       N_("NTLM response error: %s", ""),
 			       irep.u.error.reason);
 	goto out;
     }
 
     if (irep.element != choice_DigestRepInner_ntlmResponse) {
 	ret = EINVAL;
-	krb5_set_error_message(context, ret, "NTLM reply not an NTLMResponse");
+	krb5_set_error_message(context, ret, 
+			       N_("NTLM reply not an NTLMResponse", ""));
 	goto out;
     }
 
     ret = copy_NTLMResponse(&irep.u.ntlmResponse, &ntlm->response);
     if (ret) {
-	krb5_set_error_message(context, ret, "Failed to copy NTLMResponse");
+	krb5_set_error_message(context, ret, 
+			       N_("Failed to copy NTLMResponse", ""));
 	goto out;
     }
 
@@ -1045,7 +1060,7 @@ krb5_ntlm_req_set_username(krb5_context context,
 {
     ntlm->request.username = strdup(username);
     if (ntlm->request.username == NULL) {
-	krb5_set_error_message(context, ENOMEM, "out of memory");
+	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     return 0;
@@ -1058,7 +1073,7 @@ krb5_ntlm_req_set_targetname(krb5_context context,
 {
     ntlm->request.targetname = strdup(targetname);
     if (ntlm->request.targetname == NULL) {
-	krb5_set_error_message(context, ENOMEM, "out of memory");
+	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     return 0;
@@ -1071,7 +1086,7 @@ krb5_ntlm_req_set_lm(krb5_context context,
 {
     ntlm->request.lm.data = malloc(len);
     if (ntlm->request.lm.data == NULL) {
-	krb5_set_error_message(context, ENOMEM, "out of memory");
+	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     ntlm->request.lm.length = len;
@@ -1086,7 +1101,7 @@ krb5_ntlm_req_set_ntlm(krb5_context context,
 {
     ntlm->request.ntlm.data = malloc(len);
     if (ntlm->request.ntlm.data == NULL) {
-	krb5_set_error_message(context, ENOMEM, "out of memory");
+	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     ntlm->request.ntlm.length = len;
@@ -1101,7 +1116,7 @@ krb5_ntlm_req_set_opaque(krb5_context context,
 {
     ntlm->request.opaque.data = malloc(opaque->length);
     if (ntlm->request.opaque.data == NULL) {
-	krb5_set_error_message(context, ENOMEM, "out of memory");
+	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     ntlm->request.opaque.length = opaque->length;
@@ -1116,12 +1131,12 @@ krb5_ntlm_req_set_session(krb5_context context,
 {
     ntlm->request.sessionkey = calloc(1, sizeof(*ntlm->request.sessionkey));
     if (ntlm->request.sessionkey == NULL) {
-	krb5_set_error_message(context, ENOMEM, "out of memory");
+	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     ntlm->request.sessionkey->data = malloc(length);
     if (ntlm->request.sessionkey->data == NULL) {
-	krb5_set_error_message(context, ENOMEM, "out of memory");
+	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     memcpy(ntlm->request.sessionkey->data, sessionkey, length);
@@ -1142,7 +1157,8 @@ krb5_ntlm_rep_get_sessionkey(krb5_context context,
 			     krb5_data *data)
 {
     if (ntlm->response.sessionkey == NULL) {
-	krb5_set_error_message(context, EINVAL, "no ntlm session key");
+	krb5_set_error_message(context, EINVAL, 
+			       N_("no ntlm session key", ""));
 	return EINVAL;
     }
     krb5_clear_error_string(context);
