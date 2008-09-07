@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: Heimdal 1.2.99\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2008-09-07 12:55+0100\n"
-"PO-Revision-Date: 2008-09-07 13:12+0100\n"
+"PO-Revision-Date: 2008-09-07 15:53+0100\n"
 "Last-Translator: Love Hornquist Astrand <>\n"
 "Language-Team: Swedish\n"
 "MIME-Version: 1.0\n"
@@ -19,16 +19,16 @@ msgstr ""
 #: lib/krb5/acache.c:119
 #, c-format
 msgid "Failed to load API cache module %s"
-msgstr ""
+msgstr "Kunde inte ladda API cache modulen %s"
 
 #: lib/krb5/acache.c:128
 #, c-format
 msgid "Failed to find cc_initializein %s: %s"
-msgstr ""
+msgstr "Kunde inte hitta cc_initialize i %s: %s"
 
 #: lib/krb5/acache.c:138
 msgid "no support for shared object"
-msgstr ""
+msgstr "Har inte stöd för delad objekt"
 
 #: lib/krb5/acache.c:263 lib/krb5/acache.c:981 lib/krb5/acl.c:87
 #: lib/krb5/addr_families.c:1104 lib/krb5/addr_families.c:1130

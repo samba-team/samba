@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Heimdal 1.2.99\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2008-09-07 15:23+0100\n"
+"POT-Creation-Date: 2008-09-07 16:22+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -70,41 +70,43 @@ msgstr ""
 #: lib/krb5/crypto.c:457
 #: lib/krb5/crypto.c:505
 #: lib/krb5/crypto.c:583
-#: lib/krb5/crypto.c:597
-#: lib/krb5/crypto.c:620
-#: lib/krb5/crypto.c:668
-#: lib/krb5/crypto.c:674
-#: lib/krb5/crypto.c:934
-#: lib/krb5/crypto.c:1190
-#: lib/krb5/crypto.c:1267
-#: lib/krb5/crypto.c:1300
-#: lib/krb5/crypto.c:1551
-#: lib/krb5/crypto.c:1738
-#: lib/krb5/crypto.c:2641
-#: lib/krb5/crypto.c:2810
-#: lib/krb5/crypto.c:2874
-#: lib/krb5/crypto.c:2936
-#: lib/krb5/crypto.c:2988
-#: lib/krb5/crypto.c:3030
-#: lib/krb5/crypto.c:3059
-#: lib/krb5/crypto.c:3092
-#: lib/krb5/crypto.c:3121
-#: lib/krb5/crypto.c:3136
-#: lib/krb5/crypto.c:3818
-#: lib/krb5/crypto.c:3824
-#: lib/krb5/crypto.c:3841
-#: lib/krb5/crypto.c:3849
-#: lib/krb5/crypto.c:3855
-#: lib/krb5/crypto.c:3951
-#: lib/krb5/crypto.c:3971
-#: lib/krb5/crypto.c:4154
-#: lib/krb5/crypto.c:4166
-#: lib/krb5/crypto.c:4172
-#: lib/krb5/crypto.c:4345
-#: lib/krb5/crypto.c:4511
-#: lib/krb5/crypto.c:4616
-#: lib/krb5/crypto.c:4640
-#: lib/krb5/crypto.c:4691
+#: lib/krb5/crypto.c:599
+#: lib/krb5/crypto.c:623
+#: lib/krb5/crypto.c:671
+#: lib/krb5/crypto.c:677
+#: lib/krb5/crypto.c:937
+#: lib/krb5/crypto.c:1193
+#: lib/krb5/crypto.c:1270
+#: lib/krb5/crypto.c:1303
+#: lib/krb5/crypto.c:1554
+#: lib/krb5/crypto.c:1741
+#: lib/krb5/crypto.c:2644
+#: lib/krb5/crypto.c:2813
+#: lib/krb5/crypto.c:2877
+#: lib/krb5/crypto.c:2939
+#: lib/krb5/crypto.c:2991
+#: lib/krb5/crypto.c:3033
+#: lib/krb5/crypto.c:3062
+#: lib/krb5/crypto.c:3095
+#: lib/krb5/crypto.c:3124
+#: lib/krb5/crypto.c:3139
+#: lib/krb5/crypto.c:3821
+#: lib/krb5/crypto.c:3827
+#: lib/krb5/crypto.c:3844
+#: lib/krb5/crypto.c:3852
+#: lib/krb5/crypto.c:3858
+#: lib/krb5/crypto.c:3954
+#: lib/krb5/crypto.c:3974
+#: lib/krb5/crypto.c:4157
+#: lib/krb5/crypto.c:4169
+#: lib/krb5/crypto.c:4175
+#: lib/krb5/crypto.c:4349
+#: lib/krb5/crypto.c:4433
+#: lib/krb5/crypto.c:4460
+#: lib/krb5/crypto.c:4516
+#: lib/krb5/crypto.c:4621
+#: lib/krb5/crypto.c:4645
+#: lib/krb5/crypto.c:4696
 #: lib/krb5/v4_glue.c:427
 #: lib/krb5/v4_glue.c:484
 #: lib/krb5/v4_glue.c:543
@@ -220,8 +222,134 @@ msgstr ""
 msgid "converting credentials: %s"
 msgstr ""
 
-#: lib/krb5/crypto.c:3586
+#: lib/krb5/crypto.c:592
+#: lib/krb5/crypto.c:607
+msgid "Password not an UCS2 string"
+msgstr ""
+
+#: lib/krb5/crypto.c:960
+#: lib/krb5/crypto.c:1074
+#: lib/krb5/crypto.c:1130
+#: lib/krb5/crypto.c:1163
+#: lib/krb5/crypto.c:2637
+#: lib/krb5/crypto.c:2675
+#: lib/krb5/crypto.c:2690
+#: lib/krb5/crypto.c:3920
+#: lib/krb5/crypto.c:3984
+#: lib/krb5/crypto.c:4097
+#: lib/krb5/crypto.c:4124
+#: lib/krb5/crypto.c:4148
+#: lib/krb5/crypto.c:4299
+#: lib/krb5/crypto.c:4341
+#: lib/krb5/crypto.c:4508
+#: lib/krb5/crypto.c:4568
+#, c-format
+msgid "encryption type %d not supported"
+msgstr ""
+
+#: lib/krb5/crypto.c:971
+#, c-format
+msgid "salttype %s not supported"
+msgstr ""
+
+#: lib/krb5/crypto.c:1083
+#, c-format
+msgid "salt type %d not supported"
+msgstr ""
+
+#: lib/krb5/crypto.c:1490
+#: lib/krb5/crypto.c:1825
+#: lib/krb5/crypto.c:1857
+#: lib/krb5/crypto.c:1917
+#: lib/krb5/crypto.c:1965
+#: lib/krb5/crypto.c:1981
+#: lib/krb5/crypto.c:1996
+#: lib/krb5/crypto.c:2011
+#: lib/krb5/crypto.c:2735
+#: lib/krb5/crypto.c:2748
+#, c-format
+msgid "checksum type %d not supported"
+msgstr ""
+
+#: lib/krb5/crypto.c:1777
+#: lib/krb5/crypto.c:1868
+#, c-format
+msgid "Checksum type %s is keyed but no crypto context (key) was passed in"
+msgstr ""
+
+#: lib/krb5/crypto.c:1947
+msgid "checksum type not found"
+msgstr ""
+
+#: lib/krb5/crypto.c:2347
+msgid "malloc: out memory"
+msgstr ""
+
+#: lib/krb5/crypto.c:2662
+#, c-format
+msgid "encryption type %s not supported"
+msgstr ""
+
+#: lib/krb5/crypto.c:2696
+#, c-format
+msgid "encryption type %s is disabled"
+msgstr ""
+
+#: lib/krb5/crypto.c:2754
+#, c-format
+msgid "checksum type %s is disabled"
+msgstr ""
+
+#: lib/krb5/crypto.c:2979
+msgid "Encrypted data shorter then checksum + confunder"
+msgstr ""
+
+#: lib/krb5/crypto.c:3589
 msgid "Checksum larger then input buffer"
+msgstr ""
+
+#: lib/krb5/crypto.c:3876
+#, c-format
+msgid "derive_key() called with unknown keytype (%u)"
+msgstr ""
+
+#: lib/krb5/crypto.c:4305
+#, c-format
+msgid ""
+"encryption key %s needs %d bytes of random to make an encryption key out of "
+"it"
+msgstr ""
+
+#: lib/krb5/crypto.c:4397
+msgid "Failed to encode KRB5PrincipalName"
+msgstr ""
+
+#: lib/krb5/crypto.c:4492
+msgid "KDF not supported"
+msgstr ""
+
+#: lib/krb5/crypto.c:4500
+msgid "kdf params not NULL or the NULL-type"
+msgstr ""
+
+#: lib/krb5/rd_error.c:95
+#, c-format
+msgid "Client %s%s%s expired"
+msgstr ""
+
+#: lib/krb5/rd_error.c:102
+#, c-format
+msgid "Server %s%s%s expired"
+msgstr ""
+
+#: lib/krb5/rd_error.c:109
+#, c-format
+msgid "Client %s%s%s unknown"
+msgstr ""
+
+#: lib/krb5/rd_error.c:116
+#, c-format
+msgid "Server %s%s%s unknown"
 msgstr ""
 
 #: lib/krb5/v4_glue.c:151
