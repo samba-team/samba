@@ -167,7 +167,7 @@ generate_h(void)
     fprintf(h_file, "\n");
     fprintf(h_file, "#define ERROR_TABLE_BASE_%s %ld\n", name, base_id);
     fprintf(h_file, "\n");
-    fprintf(h_file, "#define COM_ERR_BINDDOMAIN_%s \"com_err%ld\"\n", name, base_id);
+    fprintf(h_file, "#define COM_ERR_BINDDOMAIN_%s \"heim_com_err%ld\"\n", name, base_id);
     fprintf(h_file, "\n");
     fprintf(h_file, "#endif /* %s */\n", fn);
 
