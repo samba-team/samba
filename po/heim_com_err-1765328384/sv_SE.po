@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: Heimdal 1.2.99\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2008-09-07 13:06+0100\n"
-"PO-Revision-Date: 2008-09-07 13:32+0100\n"
+"PO-Revision-Date: 2008-09-07 15:49+0100\n"
 "Last-Translator: Love Hornquist Astrand <>\n"
 "Language-Team: Swedish\n"
 "MIME-Version: 1.0\n"
@@ -29,32 +29,32 @@ msgstr "Klientens post i databasen har gått ut"
 #. 002
 #: ../lib/krb5/krb5_err.c:13
 msgid "Server's entry in database has expired"
-msgstr ""
+msgstr "Serverns post i databasen har gått ut"
 
 #. 003
 #: ../lib/krb5/krb5_err.c:14
 msgid "Requested protocol version not supported"
-msgstr ""
+msgstr "Protokollversionen som efterfrågas stöds inte"
 
 #. 004
 #: ../lib/krb5/krb5_err.c:15
 msgid "Client's key is encrypted in an old master key"
-msgstr ""
+msgstr "Klientens nyckel är krypterad i en gammal huvud nyckel"
 
 #. 005
 #: ../lib/krb5/krb5_err.c:16
 msgid "Server's key is encrypted in an old master key"
-msgstr ""
+msgstr "Serverns nyckel är krypterad i en gammal huvud nyckel"
 
 #. 006
 #: ../lib/krb5/krb5_err.c:17
 msgid "Client not found in Kerberos database"
-msgstr ""
+msgstr "Klienten finns inte i databasen"
 
 #. 007
 #: ../lib/krb5/krb5_err.c:18
 msgid "Server not found in Kerberos database"
-msgstr ""
+msgstr "Servern finns inte i databasen"
 
 #. 008
 #: ../lib/krb5/krb5_err.c:19
@@ -64,22 +64,22 @@ msgstr ""
 #. 009
 #: ../lib/krb5/krb5_err.c:20
 msgid "Client or server has a null key"
-msgstr ""
+msgstr "Klient eller server har inga nyckar"
 
 #. 010
 #: ../lib/krb5/krb5_err.c:21
 msgid "Ticket is ineligible for postdating"
-msgstr ""
+msgstr "Kan inte använda biljetten för sendare användning"
 
 #. 011
 #: ../lib/krb5/krb5_err.c:22
 msgid "Requested effective lifetime is negative or too short"
-msgstr ""
+msgstr "Biljettens efterfrågad livstid är negativ eller för kort"
 
 #. 012
 #: ../lib/krb5/krb5_err.c:23
 msgid "KDC policy rejects request"
-msgstr ""
+msgstr "Förfrågan nekad av KDCs policy"
 
 #. 013
 #: ../lib/krb5/krb5_err.c:24
