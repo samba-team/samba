@@ -25,34 +25,31 @@ po: gen-po.sh
 		test -f $(top_srcdir)/po/$(ceprefix)$$base/$(ceprefix)$$base.pot || { echo "$$y missing" ; exit 1; } \
 	done
 
-dist mo:
+mo:
 	cd $(srcdir) ; \
+	rm localefiles ; \
+	touch localefiles ; \
 	find . -name '*.po' | while read s ; do \
 	   t=$$(echo $$s | sed -e 's/\.po$$/.mo/') ; \
 	   msgfmt -o $$t $$s ; \
+	   echo $$t | sed 's@\./@@' >> localefiles ; \
 	done
 
 install-data-hook:
-	@for x in $(localefiles) ; do \
+	@for x in `cat $(srcdir)/localefiles` ; do \
 	    domain=`echo $$x | sed 's@/.*@@'`; \
-	    lang=`echo $$x | sed 's@.*/\(.*\)\\.mo@\1@'`; \
+	    lang=`echo $$x | sed 's@.*/\(.*\)\\.mo$$@\1@'`; \
 	    echo "installing lang $$domain $$lang" ; \
 	    $(top_srcdir)/install-sh -d "$(localedir)/$$lang/LC_MESSAGES" ; \
 	    $(top_srcdir)/install-sh $(srcdir)/$$x \
 	        "$(localedir)/$$lang/LC_MESSAGES/$$domain.mo" ; \
 	done
 
-
-#find . -name '*.mo'
-localefiles = \
-	heimdal_krb5/sv_SE.mo \
-	heim_com_err-1765328384/sv_SE.mo 
-
-
-#find . -name '*.po' -or -name '*.pot
-POFILES = \
+#find . -name '*.po' -or -name '*.pot' -or -name '*.mo' | sed 's/^../    /' | sed 's/$/ \\/'
+FILES = \
     heim_com_err-1750206208/heim_com_err-1750206208.pot \
     heim_com_err-1765328384/heim_com_err-1765328384.pot \
+    heim_com_err-1765328384/sv_SE.mo \
     heim_com_err-1765328384/sv_SE.po \
     heim_com_err-1980176640/heim_com_err-1980176640.pot \
     heim_com_err-969269760/heim_com_err-969269760.pot \
@@ -63,7 +60,8 @@ POFILES = \
     heim_com_err43787520/heim_com_err43787520.pot \
     heim_com_err569856/heim_com_err569856.pot \
     heimdal_krb5/heimdal_krb5.pot \
+    heimdal_krb5/sv_SE.mo \
     heimdal_krb5/sv_SE.po
 
-EXTRA_DIST = gen-po.in $(POFILES) $(localefiles)
+EXTRA_DIST = gen-po.in $(FILES)
 CLEANFILES = gen-po.tmp

@@ -19,13 +19,20 @@ xgettext \
     --default-domain=${domain} \
     --add-comments \
     --keyword=N_ \
-    -o ${outfile} \
+    -o ${outfile}.new \
     "$@"
 
-test -f ${outfile} && \
-    perl -pi -e "s@${top_srcdir}/@@" ${outfile}
+test -f ${outfile}.new && \
+    perl -pi -e "s@${top_srcdir}/@@" ${outfile}.new
 
-diff ${outfile} ${outfile}
+grep -v "POT-Creation-Date:" ${outfile}.new > ${outfile}.new2
+grep -v "POT-Creation-Date:" ${outfile} > ${outfile}.old
+
+if ! diff ${outfile}.old ${outfile}.new2 >/dev/null; then
+    echo "${outfile} changed"
+    cp ${outfile}.new ${outfile}
+fi
+rm ${outfile}.new* ${outfile}.old
 
 exit 0
 
