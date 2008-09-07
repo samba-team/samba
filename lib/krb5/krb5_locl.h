@@ -116,11 +116,14 @@ struct sockaddr_dl;
 #include <sys/file.h>
 #endif
 
+#define HEIMDAL_TEXTDOMAIN "heimdal_krb5"
+
 #ifdef HAVE_LIBINTL
 #include <libintl.h>
-#define N_(x,y) dgettext("heimdal_krb5", x)
+#define N_(x,y) dgettext(HEIMDAL_TEXTDOMAIN, x)
 #else
 #define N_(x,y) (x)
+#define bindtextdomain(package, localedir)
 #endif
 
 
