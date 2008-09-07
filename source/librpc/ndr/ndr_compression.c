@@ -276,6 +276,7 @@ static enum ndr_err_code ndr_pull_compression_xpress_chunk(struct ndr_pull *ndrp
 	uint32_t plain_chunk_offset;
 	uint32_t comp_chunk_size;
 	uint32_t plain_chunk_size;
+	ssize_t ret;
 
 	NDR_CHECK(ndr_pull_uint32(ndrpull, NDR_SCALARS, &plain_chunk_size));
 	if (plain_chunk_size > 0x00010000) {
@@ -299,7 +300,16 @@ static enum ndr_err_code ndr_pull_compression_xpress_chunk(struct ndr_pull *ndrp
 		 plain_chunk_size, plain_chunk_size, comp_chunk_size, comp_chunk_size));
 
 	/* Uncompressing the buffer using LZ Xpress algorithm */
-	lzxpress_decompress(&comp_chunk, &plain_chunk);
+	ret = lzxpress_decompress(comp_chunk.data,
+				  comp_chunk.length,
+				  plain_chunk.data,
+				  plain_chunk.length);
+	if (ret < 0) {
+		return ndr_pull_error(ndrpull, NDR_ERR_COMPRESSION,
+				      "XPRESS lzxpress_decompress() returned %d\n",
+				      ret);
+	}
+	plain_chunk.length = ret;
 
 	if ((plain_chunk_size < 0x00010000) || (ndrpull->offset+4 >= ndrpull->data_size)) {
 		/* this is the last chunk */
