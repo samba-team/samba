@@ -73,6 +73,11 @@ RCSID("$Id$");
 #endif
 
 #ifdef HAVE_ASL_H
+
+#ifndef ASL_KEY_FACILITY
+#define ASL_KEY_FACILITY "Facility"
+#endif
+
 static void
 ftpd_logwtmp_asl(char *line, char *name, char *host)
 {
