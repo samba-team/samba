@@ -42,7 +42,8 @@ copy_hostname(krb5_context context,
 {
     *new_hostname = strdup (orig_hostname);
     if (*new_hostname == NULL) {
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, 
+			       N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     strlwr (*new_hostname);
@@ -77,7 +78,7 @@ krb5_expand_hostname (krb5_context context,
 	    freeaddrinfo (ai);
 	    if (*new_hostname == NULL) {
 		krb5_set_error_message(context, ENOMEM,
-				       "malloc: out of memory");
+				       N_("malloc: out of memory", ""));
 		return ENOMEM;
 	    } else {
 		return 0;
