@@ -73,7 +73,8 @@ srv_find_realm(krb5_context context, krb5_krbhst_info ***res, int *count,
     proto_num = string_to_proto(proto);
     if(proto_num < 0) {
 	krb5_set_error_message(context, EINVAL,
-			       "unknown protocol `%s'", proto);
+			       N_("unknown protocol `%s' to lookup", ""),
+			       proto);
 	return EINVAL;
     }
 
@@ -97,7 +98,8 @@ srv_find_realm(krb5_context context, krb5_krbhst_info ***res, int *count,
     *res = malloc(num_srv * sizeof(**res));
     if(*res == NULL) {
 	dns_free_data(r);
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM,
+			       N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
 
@@ -248,7 +250,8 @@ _krb5_krbhost_info_move(krb5_context context,
     /* trailing NUL is included in structure */
     *to = calloc(1, sizeof(**to) + hostnamelen); 
     if(*to == NULL) {
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM,
+			       N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
 
@@ -543,7 +546,8 @@ plugin_get_hosts(krb5_context context,
 	(*service->fini)(ctx);
 	if (ret && ret != KRB5_PLUGIN_NO_HANDLE) {
 	    krb5_set_error_message(context, ret, 
-				   "Locate plugin failed to lookup: %d", ret);
+				   N_("Locate plugin failed to lookup realm %s: %d", ""),
+				   kd->realm, ret);
 	    break;
 	}
     }
@@ -835,7 +839,8 @@ krb5_krbhst_init_flags(krb5_context context,
 	def_port = ntohs(krb5_getportbyname (context, "krb524", "udp", 4444));
 	break;
     default:
-	krb5_set_error_message(context, ENOTTY, "unknown krbhst type (%u)", type);
+	krb5_set_error_message(context, ENOTTY, 
+			       N_("unknown krbhst type (%u)", ""), type);
 	return ENOTTY;
     }
     if((kd = common_init(context, realm, flags)) == NULL)
@@ -924,7 +929,7 @@ gethostlist(krb5_context context, const char *realm,
 	nhost++;
     if(nhost == 0) {
 	krb5_set_error_message(context, KRB5_KDC_UNREACH, 
-			       "No KDC found for realm %s", realm);
+			       N_("No KDC found for realm %s", ""), realm);
 	return KRB5_KDC_UNREACH;
     }
     *hostlist = calloc(nhost + 1, sizeof(**hostlist));
