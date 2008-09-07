@@ -124,8 +124,7 @@ krb5_keyblock_init(krb5_context context,
     }
     ret = krb5_data_copy(&key->keyvalue, data, len);
     if(ret) {
-	krb5_set_error_message(context, ret, "malloc failed: %lu",
-			       (unsigned long)len);
+	krb5_set_error_message(context, ret, N_("malloc: out of memory", ""));
 	return ret;
     }
     key->keytype = type;
