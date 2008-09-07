@@ -108,7 +108,7 @@ krb5_recvauth_match_version(krb5_context context,
 	}
 	if (n == 0) {
 	    krb5_set_error_message(context, KRB5_SENDAUTH_BADAUTHVERS,
-				   "Failed to receive sendauth data");
+				   N_("Failed to receive sendauth data", ""));
 	    return KRB5_SENDAUTH_BADAUTHVERS;
 	}
 	len = ntohl(len);
@@ -137,7 +137,8 @@ krb5_recvauth_match_version(krb5_context context,
     if (her_appl_version == NULL) {
 	repl = 2;
 	krb5_net_write (context, p_fd, &repl, 1);
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, 
+			       N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     if (krb5_net_read (context, p_fd, her_appl_version, len) != len
@@ -145,7 +146,7 @@ krb5_recvauth_match_version(krb5_context context,
 	repl = 2;
 	krb5_net_write (context, p_fd, &repl, 1);
 	krb5_set_error_message(context, KRB5_SENDAUTH_BADAPPLVERS,
-			       "wrong sendauth version (%s)",
+			       N_("wrong sendauth version (%s)", ""),
 			       her_appl_version);
 	free (her_appl_version);
 	return KRB5_SENDAUTH_BADAPPLVERS;
