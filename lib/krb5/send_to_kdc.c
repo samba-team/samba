@@ -348,8 +348,8 @@ send_via_plugin(krb5_context context,
 	    break;
 	if (ret != KRB5_PLUGIN_NO_HANDLE) {
 	    krb5_set_error_message(context, ret,
-				   "Plugin %s failed to lookup with error: %d", 
-				   KRB5_PLUGIN_SEND_TO_KDC, ret);
+				   N_("Plugin send_to_kdc failed to "
+				      "lookup with error: %d", ""), ret);
 	    break;
 	}
     }
@@ -489,7 +489,8 @@ krb5_set_send_to_kdc_func(krb5_context context,
 
     context->send_to_kdc = malloc(sizeof(*context->send_to_kdc));
     if (context->send_to_kdc == NULL) {
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM,
+			       N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
 
@@ -510,7 +511,8 @@ krb5_sendto_ctx_alloc(krb5_context context, krb5_sendto_ctx *ctx)
 {
     *ctx = calloc(1, sizeof(**ctx));
     if (*ctx == NULL) {
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM,
+			       N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     return 0;
@@ -617,7 +619,8 @@ krb5_sendto_context(krb5_context context,
 	krb5_krbhst_free(context, handle);
     if (ret == KRB5_KDC_UNREACH)
 	krb5_set_error_message(context, ret,
-			       "unable to reach any KDC in realm %s", realm);
+			       N_("unable to reach any KDC in realm %s", ""),
+			       realm);
     if (ret)
 	krb5_data_free(receive);
     if (freectx)
