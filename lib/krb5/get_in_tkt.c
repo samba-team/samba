@@ -60,7 +60,7 @@ krb5_init_etype (krb5_context context,
     *val = malloc(i * sizeof(**val));
     if (i != 0 && *val == NULL) {
 	ret = ENOMEM;
-	krb5_set_error_message(context, ret, "malloc: out of memory");
+	krb5_set_error_message(context, ret, N_("malloc: out of memory", ""));
 	goto cleanup;
     }
     memmove (*val,
@@ -108,7 +108,9 @@ check_server_referral(krb5_context context,
 	return ret;
     if (len != pa->padata_value.length) {
 	free_EncryptedData(&ed);
-	krb5_set_error_message(context, KRB5KRB_AP_ERR_MODIFIED, "Referral EncryptedData wrong");
+	krb5_set_error_message(context, KRB5KRB_AP_ERR_MODIFIED,
+			       N_("Referral EncryptedData wrong for realm %s",
+				  "realm"), requested->realm);
 	return KRB5KRB_AP_ERR_MODIFIED;
     }
     
@@ -136,7 +138,9 @@ check_server_referral(krb5_context context,
     if (strcmp(requested->realm, returned->realm) != 0) {
 	free_PA_ServerReferralData(&ref);
 	krb5_set_error_message(context, KRB5KRB_AP_ERR_MODIFIED,
-			       "server ref realm mismatch");
+			       N_("server ref realm mismatch, "
+				  "requested realm %s got back %s", ""),
+			       requested->realm, returned->realm);
 	return KRB5KRB_AP_ERR_MODIFIED;
     }
 
@@ -150,13 +154,13 @@ check_server_referral(krb5_context context,
 	{
 	    free_PA_ServerReferralData(&ref);
 	    krb5_set_error_message(context, KRB5KRB_AP_ERR_MODIFIED,
-				   "tgt returned with wrong ref");
+				   N_("tgt returned with wrong ref", ""));
 	    return KRB5KRB_AP_ERR_MODIFIED;
 	}
     } else if (krb5_principal_compare(context, returned, requested) == 0) {
 	free_PA_ServerReferralData(&ref);
 	krb5_set_error_message(context, KRB5KRB_AP_ERR_MODIFIED,
-			      "req princ no same as returned");
+			       N_("req princ no same as returned", ""));
 	return KRB5KRB_AP_ERR_MODIFIED;
     }
 
@@ -167,13 +171,14 @@ check_server_referral(krb5_context context,
 	if (!cmp) {
 	    free_PA_ServerReferralData(&ref);
 	    krb5_set_error_message(context, KRB5KRB_AP_ERR_MODIFIED,
-				   "compare requested failed");
+				   N_("referred principal not same "
+				      "as requested", ""));
 	    return KRB5KRB_AP_ERR_MODIFIED;
 	}
     } else if (flags & EXTRACT_TICKET_AS_REQ) {
 	free_PA_ServerReferralData(&ref);
 	krb5_set_error_message(context, KRB5KRB_AP_ERR_MODIFIED,
-			       "Requested principal missing on AS-REQ");
+			       N_("Requested principal missing on AS-REQ", ""));
 	return KRB5KRB_AP_ERR_MODIFIED;
     }
 
@@ -183,8 +188,8 @@ check_server_referral(krb5_context context,
 noreferral:
     if (krb5_principal_compare(context, requested, returned) == FALSE) {
 	krb5_set_error_message(context, KRB5KRB_AP_ERR_MODIFIED,
-			       "Not same server principal returned "
-			      "as requested");
+			       N_("Not same server principal returned "
+				  "as requested", ""));
 	return KRB5KRB_AP_ERR_MODIFIED;
     }
     return 0;
@@ -224,8 +229,9 @@ check_client_referral(krb5_context context,
 					pa->padata_value.length,
 					&canon, &len);
     if (ret) {
-	krb5_set_error_message(context, ret, "Failed to decode "
-			       "PA_ClientCanonicalized");
+	krb5_set_error_message(context, ret,
+			       N_("Failed to decode ClientCanonicalized "
+				  "from realm %s", ""), requested->realm);
 	return ret;
     }
     
@@ -251,8 +257,10 @@ check_client_referral(krb5_context context,
     krb5_crypto_destroy(context, crypto);
     free(data.data);
     if (ret) {
-	krb5_set_error_message(context, ret, "Failed to verify "
-			      "client canonicalized data");
+	krb5_set_error_message(context, ret,
+			       N_("Failed to verify client canonicalized "
+				  "data from realm %s", ""), 
+			       requested->realm);
 	free_PA_ClientCanonicalized(&canon);
 	return ret;
     }
@@ -263,8 +271,8 @@ check_client_referral(krb5_context context,
     {
 	free_PA_ClientCanonicalized(&canon);
 	krb5_set_error_message(context, KRB5_PRINC_NOMATCH,
-			       "Requested name doesn't match"
-			      " in client referral");
+			       N_("Requested name doesn't match"
+				  " in client referral", ""));
 	return KRB5_PRINC_NOMATCH;
     }
     if (!_krb5_principal_compare_PrincipalName(context,
@@ -273,8 +281,8 @@ check_client_referral(krb5_context context,
     {
 	free_PA_ClientCanonicalized(&canon);
 	krb5_set_error_message(context, KRB5_PRINC_NOMATCH,
-			       "Mapped name doesn't match"
-			      " in client referral");
+			       N_("Mapped name doesn't match"
+				  " in client referral", ""));
 	return KRB5_PRINC_NOMATCH;
     }
 
@@ -283,8 +291,8 @@ check_client_referral(krb5_context context,
 noreferral:
     if (krb5_principal_compare(context, requested, mapped) == FALSE) {
 	krb5_set_error_message(context, KRB5KRB_AP_ERR_MODIFIED,
-			       "Not same client principal returned "
-			      "as requested");
+			       N_("Not same client principal returned "
+				  "as requested", ""));
 	return KRB5KRB_AP_ERR_MODIFIED;
     }
     return 0;
@@ -439,7 +447,7 @@ _krb5_extract_ticket(krb5_context context,
 
     if (nonce != rep->enc_part.nonce) {
 	ret = KRB5KRB_AP_ERR_MODIFIED;
-	krb5_set_error_message(context, ret, "malloc: out of memory");
+	krb5_set_error_message(context, ret, N_("malloc: out of memory", ""));
 	goto out;
     }
 
@@ -467,7 +475,7 @@ _krb5_extract_ticket(krb5_context context,
 	&& abs(tmp_time - sec_now) > context->max_skew) {
 	ret = KRB5KRB_AP_ERR_SKEW;
 	krb5_set_error_message (context, ret,
-			       "time skew (%d) larger than max (%d)",
+				N_("time skew (%d) larger than max (%d)", ""),
 			       abs(tmp_time - sec_now),
 			       (int)context->max_skew);
 	goto out;
@@ -619,7 +627,7 @@ add_padata(krb5_context context,
     }
     pa2 = realloc (md->val, (md->len + netypes) * sizeof(*md->val));
     if (pa2 == NULL) {
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     md->val = pa2;
@@ -666,13 +674,13 @@ init_as_req (krb5_context context,
     a->req_body.cname = malloc(sizeof(*a->req_body.cname));
     if (a->req_body.cname == NULL) {
 	ret = ENOMEM;
-	krb5_set_error_message(context, ret, "malloc: out of memory");
+	krb5_set_error_message(context, ret, N_("malloc: out of memory", ""));
 	goto fail;
     }
     a->req_body.sname = malloc(sizeof(*a->req_body.sname));
     if (a->req_body.sname == NULL) {
 	ret = ENOMEM;
-	krb5_set_error_message(context, ret, "malloc: out of memory");
+	krb5_set_error_message(context, ret, N_("malloc: out of memory", ""));
 	goto fail;
     }
     ret = _krb5_principal2principalname (a->req_body.cname, creds->client);
@@ -689,7 +697,7 @@ init_as_req (krb5_context context,
 	a->req_body.from = malloc(sizeof(*a->req_body.from));
 	if (a->req_body.from == NULL) {
 	    ret = ENOMEM;
-	    krb5_set_error_message(context, ret, "malloc: out of memory");
+	    krb5_set_error_message(context, ret, N_("malloc: out of memory", ""));
 	    goto fail;
 	}
 	*a->req_body.from = creds->times.starttime;
@@ -702,7 +710,7 @@ init_as_req (krb5_context context,
 	a->req_body.rtime = malloc(sizeof(*a->req_body.rtime));
 	if (a->req_body.rtime == NULL) {
 	    ret = ENOMEM;
-	    krb5_set_error_message(context, ret, "malloc: out of memory");
+	    krb5_set_error_message(context, ret, N_("malloc: out of memory", ""));
 	    goto fail;
 	}
 	*a->req_body.rtime = creds->times.renew_till;
@@ -725,7 +733,7 @@ init_as_req (krb5_context context,
 	a->req_body.addresses = malloc(sizeof(*a->req_body.addresses));
 	if (a->req_body.addresses == NULL) {
 	    ret = ENOMEM;
-	    krb5_set_error_message(context, ret, "malloc: out of memory");
+	    krb5_set_error_message(context, ret, N_("malloc: out of memory", ""));
 	    goto fail;
 	}
 
@@ -750,7 +758,7 @@ init_as_req (krb5_context context,
 	ALLOC(a->padata, 1);
 	if(a->padata == NULL) {
 	    ret = ENOMEM;
-	    krb5_set_error_message(context, ret, "malloc: out of memory");
+	    krb5_set_error_message(context, ret, N_("malloc: out of memory", ""));
 	    goto fail;
 	}
 	a->padata->val = NULL;
@@ -789,7 +797,7 @@ init_as_req (krb5_context context,
 	ALLOC(a->padata, 1);
 	if (a->padata == NULL) {
 	    ret = ENOMEM;
-	    krb5_set_error_message(context, ret, "malloc: out of memory");
+	    krb5_set_error_message(context, ret, N_("malloc: out of memory", ""));
 	    goto fail;
 	}
 	a->padata->len = 0;
@@ -808,7 +816,8 @@ init_as_req (krb5_context context,
 		   a->req_body.etype.len, &salt);
     } else {
 	ret = KRB5_PREAUTH_BAD_TYPE;
-	krb5_set_error_message (context, ret, "pre-auth type %d not supported",
+	krb5_set_error_message (context, ret,
+				N_("pre-auth type %d not supported", ""),
 			       *ptypes);
 	goto fail;
     }
