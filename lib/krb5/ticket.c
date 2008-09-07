@@ -153,7 +153,7 @@ find_type_in_ad(krb5_context context,
 	    if (ret) {
 		krb5_set_error_message(context, ret,
 				       N_("Failed to decode "
-					  "IF_RELEVANT with %d"),
+					  "IF_RELEVANT with %d", ""),
 				       (int)ret);
 		goto out;
 	    }
