@@ -344,7 +344,7 @@ open_database(krb5_context context, krb5_scache *s, int flags)
 	    s->db = NULL;
 	} else
 	    krb5_set_error_message(context, ENOENT,
-				   N_("malloc: out of memory"), "");
+				   N_("malloc: out of memory", ""));
 	return ENOENT;
     }
     return 0;
@@ -458,7 +458,7 @@ bind_principal(krb5_context context,
     if (ret != SQLITE_OK) {
 	krb5_xfree(str);
 	krb5_set_error_message(context, ENOMEM,
-			       N_("scache bind principal: %s", "")
+			       N_("scache bind principal: %s", ""),
 			       sqlite3_errmsg(db));
 	return ENOMEM;
     }
