@@ -7,6 +7,11 @@ version="@PACKAGE_VERSION@"
 domain=$1
 shift
 
+outdir=${top_srcdir}/po/${domain}
+outfile=${outdir}/${domain}.pot
+
+test -d $outdir || mkdir $outdir
+
 xgettext \
     --package-name="${name}" \
     --package-version="${version}" \
@@ -14,10 +19,13 @@ xgettext \
     --default-domain=${domain} \
     --add-comments \
     --keyword=N_ \
-    -o ${domain}.pot \
+    -o ${outfile} \
     "$@"
 
-test -f ${domain}.pot && perl -pi -e "s@$top_srcdir/@@" ${domain}.pot
+test -f ${outfile} && \
+    perl -pi -e "s@${top_srcdir}/@@" ${outfile}
+
+diff ${outfile} ${outfile}
 
 exit 0
 

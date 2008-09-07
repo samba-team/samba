@@ -40,7 +40,7 @@ RCSID("$Id$");
 #include <string.h>
 #include <com_right.h>
 
-#ifdef HAVE_LIBINTL
+#ifdef LIBINTL
 #include <libintl.h>
 #else
 #define dgettext(d,s) (s)
@@ -53,7 +53,7 @@ com_right(struct et_list *list, long code)
     for (p = list; p; p = p->next) {
 	if (code >= p->table->base && code < p->table->base + p->table->n_msgs) {
 	    const char *str = p->table->msgs[code - p->table->base];
-#ifdef HAVE_LIBINTL
+#ifdef LIBINTL
 	    char domain[12 + 20];
 	    snprintf(domain, sizeof(domain), "heim_com_err%d", p->table->base);
 #endif

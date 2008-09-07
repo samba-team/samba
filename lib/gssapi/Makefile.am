@@ -7,6 +7,7 @@ AUTOMAKE_OPTIONS = subdir-objects
 AM_CPPFLAGS += -I$(srcdir)/../krb5 \
 	-I$(srcdir) \
 	-I$(srcdir)/mech \
+	$(INCLUDE_libintl) \
 	$(INCLUDE_hcrypto) \
 	$(INCLUDE_krb4)
 

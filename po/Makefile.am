@@ -10,6 +10,8 @@ gen-po.sh: gen-po.in
 	chmod +x gen-po.tmp
 	mv gen-po.tmp gen-po.sh
 
+ceprefix=heim_com_err
+
 po: gen-po.sh
 	./gen-po.sh heimdal_krb5 $(top_srcdir)/lib/krb5/*.[chly]
 	find $(top_srcdir) -name *.et | while read x; do \
@@ -19,25 +21,49 @@ po: gen-po.sh
 		t=$$(find $(top_builddir) -name $$z.c) ; \
 		t=$$(echo $$t | sed 's/\.c$$//') ; \
 		base=$$(grep 'ERROR_TABLE_BASE_' $${t}.h | cut -f3 -d' ') ; \
-		./gen-po.sh com_err$$base $${t}.c ; \
-		test -f com_err$$base.pot || { echo "$$t missing" ; exit 1; } \
+		./gen-po.sh $(ceprefix)$$base $${t}.c ; \
+		test -f $(top_srcdir)/po/$(ceprefix)$$base/$(ceprefix)$$base.pot || { echo "$$y missing" ; exit 1; } \
 	done
-	cp *.pot $(top_srcdir)/po
 
-EXTRA_DIST = \
-	gen-po.in \
-	heimdal_krb5.pot \
-	com_err-1750206208.pot \
-	com_err-1765328384.pot \
-	com_err-1980176640.pot \
-	com_err-969269760.pot \
-	com_err1859794432.pot \
-	com_err35224064.pot \
-	com_err36150272.pot \
-	com_err39525376.pot \
-	com_err43787520.pot \
-	com_err569856.pot
+dist mo:
+	cd $(srcdir) ; \
+	find . -name '*.po' | while read s ; do \
+	   t=$$(echo $$s | sed -e 's/\.po$$/.mo/') ; \
+	   msgfmt -o $$t $$s ; \
+	done
 
+install-data-hook:
+	@for x in $(localefiles) ; do \
+	    domain=`echo $$x | sed 's@/.*@@'`; \
+	    lang=`echo $$x | sed 's@.*/\(.*\)\\.mo@\1@'`; \
+	    echo "installing lang $$domain $$lang" ; \
+	    $(top_srcdir)/install-sh -d "$(localedir)/$$lang/LC_MESSAGES" ; \
+	    $(top_srcdir)/install-sh $(srcdir)/$$x \
+	        "$(localedir)/$$lang/LC_MESSAGES/$$domain.mo" ; \
+	done
+
+
+#find . -name '*.mo'
+localefiles = \
+	heimdal_krb5/sv_SE.mo \
+	heim_com_err-1765328384/sv_SE.mo 
+
+
+#find . -name '*.po' -or -name '*.pot
+POFILES = \
+    heim_com_err-1750206208/heim_com_err-1750206208.pot \
+    heim_com_err-1765328384/heim_com_err-1765328384.pot \
+    heim_com_err-1765328384/sv_SE.po \
+    heim_com_err-1980176640/heim_com_err-1980176640.pot \
+    heim_com_err-969269760/heim_com_err-969269760.pot \
+    heim_com_err1859794432/heim_com_err1859794432.pot \
+    heim_com_err35224064/heim_com_err35224064.pot \
+    heim_com_err36150272/heim_com_err36150272.pot \
+    heim_com_err39525376/heim_com_err39525376.pot \
+    heim_com_err43787520/heim_com_err43787520.pot \
+    heim_com_err569856/heim_com_err569856.pot \
+    heimdal_krb5/heimdal_krb5.pot \
+    heimdal_krb5/sv_SE.po
+
+EXTRA_DIST = gen-po.in $(POFILES) $(localefiles)
 CLEANFILES = gen-po.tmp
-
-
