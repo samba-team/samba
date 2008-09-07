@@ -150,8 +150,8 @@ krb5_parse_name_flags(krb5_context context,
 
     if ((flags & RFLAGS) == RFLAGS) {
 	krb5_set_error_message(context, KRB5_ERR_NO_SERVICE,
-			       "Can't require both realm and "
-			       "no realm at the same time");
+			       N_("Can't require both realm and "
+				  "no realm at the same time", ""));
 	return KRB5_ERR_NO_SERVICE;
     }
 #undef RFLAGS
@@ -165,7 +165,7 @@ krb5_parse_name_flags(krb5_context context,
 	    if(*p=='\\'){
 		if(!p[1]) {
 		    krb5_set_error_message(context, KRB5_PARSE_MALFORMED,
-					   "trailing \\ in principal name");
+					   N_("trailing \\ in principal name", ""));
 		    return KRB5_PARSE_MALFORMED;
 		}
 		p++;
@@ -177,7 +177,8 @@ krb5_parse_name_flags(krb5_context context,
     }
     comp = calloc(ncomp, sizeof(*comp));
     if (comp == NULL) {
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM,
+			       N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
   
@@ -185,7 +186,8 @@ krb5_parse_name_flags(krb5_context context,
     p = start = q = s = strdup(name);
     if (start == NULL) {
 	free (comp);
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM,
+			       N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     while(*p){
@@ -203,7 +205,7 @@ krb5_parse_name_flags(krb5_context context,
 	    else if(c == '\0') {
 		ret = KRB5_PARSE_MALFORMED;
 		krb5_set_error_message(context, ret,
-				       "trailing \\ in principal name");
+				       N_("trailing \\ in principal name", ""));
 		goto exit;
 	    }
 	}else if(enterprise && first_at) {
@@ -213,13 +215,14 @@ krb5_parse_name_flags(krb5_context context,
 	    if(got_realm){
 		ret = KRB5_PARSE_MALFORMED;
 		krb5_set_error_message(context, ret,
-				       "part after realm in principal name");
+				       N_("part after realm in principal name", ""));
 		goto exit;
 	    }else{
 		comp[n] = malloc(q - start + 1);
 		if (comp[n] == NULL) {
 		    ret = ENOMEM;
-		    krb5_set_error_message(context, ret, "malloc: out of memory");
+		    krb5_set_error_message(context, ret, 
+					   N_("malloc: out of memory", ""));
 		    goto exit;
 		}
 		memcpy(comp[n], start, q - start);
@@ -234,7 +237,7 @@ krb5_parse_name_flags(krb5_context context,
 	if(got_realm && (c == ':' || c == '/' || c == '\0')) {
 	    ret = KRB5_PARSE_MALFORMED;
 	    krb5_set_error_message(context, ret,
-				   "part after realm in principal name");
+				   N_("part after realm in principal name", ""));
 	    goto exit;
 	}
 	*q++ = c;
@@ -242,14 +245,16 @@ krb5_parse_name_flags(krb5_context context,
     if(got_realm){
 	if (flags & KRB5_PRINCIPAL_PARSE_NO_REALM) {
 	    ret = KRB5_PARSE_MALFORMED;
-	    krb5_set_error_message(context, ret, "realm found in 'short' principal "
-				   "expected to be without one");
+	    krb5_set_error_message(context, ret, 
+				   N_("realm found in 'short' principal "
+				      "expected to be without one", ""));
 	    goto exit;
 	}
 	realm = malloc(q - start + 1);
 	if (realm == NULL) {
 	    ret = ENOMEM;
-	    krb5_set_error_message(context, ret, "malloc: out of memory");
+	    krb5_set_error_message(context, ret,
+				   N_("malloc: out of memory", ""));
 	    goto exit;
 	}
 	memcpy(realm, start, q - start);
@@ -257,8 +262,9 @@ krb5_parse_name_flags(krb5_context context,
     }else{
 	if (flags & KRB5_PRINCIPAL_PARSE_MUST_REALM) {
 	    ret = KRB5_PARSE_MALFORMED;
-	    krb5_set_error_message(context, ret, "realm NOT found in principal "
-				   "expected to be with one");
+	    krb5_set_error_message(context, ret,
+				   N_("realm NOT found in principal "
+				      "expected to be with one", ""));
 	    goto exit;
 	} else if (flags & KRB5_PRINCIPAL_PARSE_NO_REALM) {
 	    realm = NULL;
@@ -271,7 +277,8 @@ krb5_parse_name_flags(krb5_context context,
 	comp[n] = malloc(q - start + 1);
 	if (comp[n] == NULL) {
 	    ret = ENOMEM;
-	    krb5_set_error_message(context, ret, "malloc: out of memory");
+	    krb5_set_error_message(context, ret,
+				   N_("malloc: out of memory", ""));
 	    goto exit;
 	}
 	memcpy(comp[n], start, q - start);
@@ -281,7 +288,8 @@ krb5_parse_name_flags(krb5_context context,
     *principal = malloc(sizeof(**principal));
     if (*principal == NULL) {
 	ret = ENOMEM;
-	krb5_set_error_message(context, ret, "malloc: out of memory");
+	krb5_set_error_message(context, ret,
+			       N_("malloc: out of memory", ""));
 	goto exit;
     }
     if (enterprise)
@@ -352,8 +360,8 @@ unparse_name_fixed(krb5_context context,
 
     if (!no_realm && princ_realm(principal) == NULL) {
 	krb5_set_error_message(context, ERANGE,
-			       "Realm missing from principal, "
-			      "can't unparse");
+			       N_("Realm missing from principal, "
+				  "can't unparse", ""));
 	return ERANGE;
     }
 
@@ -362,7 +370,8 @@ unparse_name_fixed(krb5_context context,
 	    add_char(name, idx, len, '/');
 	idx = quote_string(princ_ncomp(principal, i), name, idx, len, display);
 	if(idx == len) {
-	    krb5_set_error_message(context, ERANGE, "Out of space printing principal");
+	    krb5_set_error_message(context, ERANGE,
+				   N_("Out of space printing principal", ""));
 	    return ERANGE;
 	}
     } 
@@ -382,7 +391,8 @@ unparse_name_fixed(krb5_context context,
 	idx = quote_string(princ_realm(principal), name, idx, len, display);
 	if(idx == len) {
 	    krb5_set_error_message(context, ERANGE,
-				   "Out of space printing realm of principal");
+				   N_("Out of space printing "
+				      "realm of principal", ""));
 	    return ERANGE;
 	}
     }
@@ -448,7 +458,8 @@ unparse_name(krb5_context context,
     len++; /* '\0' */
     *name = malloc(len);
     if(*name == NULL) {
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM,
+			       N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     ret = unparse_name_fixed(context, principal, *name, len, flags);
@@ -523,7 +534,8 @@ krb5_principal_set_realm(krb5_context context,
 
     princ_realm(principal) = strdup(realm);
     if (princ_realm(principal) == NULL) {
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM,
+			       N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     return 0;
@@ -555,13 +567,15 @@ append_component(krb5_context context, krb5_principal p,
 
     tmp = realloc(princ_comp(p), (len + 1) * sizeof(*tmp));
     if(tmp == NULL) {
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM,
+			       N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     princ_comp(p) = tmp;
     princ_ncomp(p, len) = malloc(comp_len + 1);
     if (princ_ncomp(p, len) == NULL) {
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM,
+			       N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     memcpy (princ_ncomp(p, len), comp, comp_len);
@@ -609,7 +623,8 @@ build_principal(krb5_context context,
   
     p = calloc(1, sizeof(*p));
     if (p == NULL) {
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM,
+			       N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     princ_type(p) = KRB5_NT_PRINCIPAL;
@@ -617,7 +632,8 @@ build_principal(krb5_context context,
     princ_realm(p) = strdup(realm);
     if(p->realm == NULL){
 	free(p);
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM,
+			       N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
   
@@ -693,12 +709,14 @@ krb5_copy_principal(krb5_context context,
 {
     krb5_principal p = malloc(sizeof(*p));
     if (p == NULL) {
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM,
+			       N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     if(copy_Principal(inprinc, p)) {
 	free(p);
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, 
+			       N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     *outprinc = p;
@@ -943,7 +961,8 @@ krb5_425_conv_principal_ext2(krb5_context context,
 #endif
 	if (passed) {
 	    if (inst == NULL) {
-		krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+		krb5_set_error_message(context, ENOMEM, 
+				       N_("malloc: out of memory", ""));
 		return ENOMEM;
 	    }
 	    strlwr(inst);
@@ -1195,7 +1214,8 @@ krb5_524_conv_principal(krb5_context context,
 	break;
     default:
 	krb5_set_error_message(context, KRB5_PARSE_MALFORMED,
-			       "cannot convert a %d component principal",
+			       N_("cannot convert a %d "
+				  "component principal", ""),
 			       principal->name.name_string.len);
 	return KRB5_PARSE_MALFORMED;
     }
@@ -1221,17 +1241,17 @@ krb5_524_conv_principal(krb5_context context,
     
     if (strlcpy (name, n, aname_sz) >= aname_sz) {
 	krb5_set_error_message(context, KRB5_PARSE_MALFORMED,
-			       "too long name component to convert");
+			       N_("too long name component to convert", ""));
 	return KRB5_PARSE_MALFORMED;
     }
     if (strlcpy (instance, i, aname_sz) >= aname_sz) {
 	krb5_set_error_message(context, KRB5_PARSE_MALFORMED,
-			       "too long instance component to convert");
+			       N_("too long instance component to convert", ""));
 	return KRB5_PARSE_MALFORMED;
     }
     if (strlcpy (realm, r, aname_sz) >= aname_sz) {
 	krb5_set_error_message(context, KRB5_PARSE_MALFORMED,
-			       "too long realm component to convert");
+			       N_("too long realm component to convert", ""));
 	return KRB5_PARSE_MALFORMED;
     }
     return 0;
@@ -1254,7 +1274,7 @@ krb5_sname_to_principal (krb5_context context,
 	
     if(type != KRB5_NT_SRV_HST && type != KRB5_NT_UNKNOWN) {
 	krb5_set_error_message(context, KRB5_SNAME_UNSUPP_NAMETYPE,
-			       "unsupported name type %d",
+			       N_("unsupported name type %d", ""),
 			       (int)type);
 	return KRB5_SNAME_UNSUPP_NAMETYPE;
     }
@@ -1263,7 +1283,7 @@ krb5_sname_to_principal (krb5_context context,
 	if (ret != 0) {
 	    ret = errno;
 	    krb5_set_error_message(context, ret,
-				   "Failed to get local hostname");
+				   N_("Failed to get local hostname", ""));
 	    return ret;
 	}	    
 	localhost[sizeof(localhost) - 1] = '\0';
@@ -1323,6 +1343,6 @@ krb5_parse_nametype(krb5_context context, const char *str, int32_t *nametype)
 	}
     }
     krb5_set_error_message(context, KRB5_PARSE_MALFORMED,
-			   "Failed to find name type %s", str);
+			   N_("Failed to find name type %s", ""), str);
     return KRB5_PARSE_MALFORMED;
 }
