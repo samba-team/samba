@@ -103,7 +103,8 @@ krb5_verify_opt_alloc(krb5_context context, krb5_verify_opt **opt)
 {
     *opt = calloc(1, sizeof(**opt));
     if ((*opt) == NULL) {
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, 
+			       N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     krb5_verify_opt_init(*opt);
