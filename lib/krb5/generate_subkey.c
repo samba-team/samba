@@ -53,7 +53,7 @@ krb5_generate_subkey_extended(krb5_context context,
 
     ALLOC(*subkey, 1);
     if (*subkey == NULL) {
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM,N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
 
