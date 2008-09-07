@@ -121,13 +121,15 @@ krb5_initlog(krb5_context context,
 {
     krb5_log_facility *f = calloc(1, sizeof(*f));
     if(f == NULL) {
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM,
+			       N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     f->program = strdup(program);
     if(f->program == NULL){
 	free(f);
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM,
+			       N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     *fac = f;
@@ -145,7 +147,8 @@ krb5_addlog_func(krb5_context context,
 {
     struct facility *fp = log_realloc(fac);
     if(fp == NULL) {
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM,
+			       N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     fp->min = min;
@@ -187,7 +190,8 @@ open_syslog(krb5_context context,
     int i;
 
     if(sd == NULL) {
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM,
+			       N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     i = find_value(sev, syslogvals);
@@ -242,7 +246,8 @@ open_file(krb5_context context, krb5_log_facility *fac, int min, int max,
 {
     struct file_data *fd = malloc(sizeof(*fd));
     if(fd == NULL) {
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM,
+			       N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     fd->filename = filename;
@@ -278,7 +283,7 @@ krb5_addlog_dest(krb5_context context, krb5_log_facility *f, const char *orig)
 	p = strchr(p, '/');
 	if(p == NULL) {
 	    krb5_set_error_message(context, HEIM_ERR_LOG_PARSE,
-				   "failed to parse \"%s\"", orig);
+				   N_("failed to parse \"%s\"", ""), orig);
 	    return HEIM_ERR_LOG_PARSE;
 	}
 	p++;
@@ -293,7 +298,8 @@ krb5_addlog_dest(krb5_context context, krb5_log_facility *f, const char *orig)
 	int keep_open = 0;
 	fn = strdup(p + 5);
 	if(fn == NULL) {
-	    krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	    krb5_set_error_message(context, ENOMEM,
+				   N_("malloc: out of memory", ""));
 	    return ENOMEM;
 	}
 	if(p[4] == '='){
@@ -301,7 +307,8 @@ krb5_addlog_dest(krb5_context context, krb5_log_facility *f, const char *orig)
 			 O_TRUNC | O_APPEND, 0666);
 	    if(i < 0) {
 		ret = errno;
-		krb5_set_error_message(context, ret, "open(%s): %s", fn,
+		krb5_set_error_message(context, ret,
+				       N_("open(%s) logile: %s", ""), fn,
 				       strerror(ret));
 		free(fn);
 		return ret;
@@ -311,8 +318,9 @@ krb5_addlog_dest(krb5_context context, krb5_log_facility *f, const char *orig)
 	    if(file == NULL){
 		ret = errno;
 		close(i);
-		krb5_set_error_message(context, ret, "fdopen(%s): %s", fn,
-				       strerror(ret));
+		krb5_set_error_message(context, ret, 
+				       N_("fdopen(%s) logfile: %s", ""),
+				       fn, strerror(ret));
 		free(fn);
 		return ret;
 	    }
@@ -336,7 +344,8 @@ krb5_addlog_dest(krb5_context context, krb5_log_facility *f, const char *orig)
 	ret = open_syslog(context, f, min, max, severity, facility);
     }else{
 	ret = HEIM_ERR_LOG_PARSE; /* XXX */
-	krb5_set_error_message (context, ret, "unknown log type: %s", p);
+	krb5_set_error_message (context, ret,
+				N_("unknown log type: %s", ""), p);
     }
     return ret;
 }
