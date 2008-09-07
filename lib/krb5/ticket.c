@@ -121,8 +121,9 @@ find_type_in_ad(krb5_context context,
     if (level > 9) {
 	ret = ENOENT; /* XXX */
 	krb5_set_error_message(context, ret, 
-			       "Authorization data nested deeper "
-			       "then %d levels, stop searching", level);
+			       N_("Authorization data nested deeper "
+				  "then %d levels, stop searching", ""),
+			       level);
 	goto out;
     }
 
@@ -150,8 +151,10 @@ find_type_in_ad(krb5_context context,
 					   &child,
 					   NULL);
 	    if (ret) {
-		krb5_set_error_message(context, ret, "Failed to decode "
-				       "IF_RELEVANT with %d", (int)ret);
+		krb5_set_error_message(context, ret,
+				       N_("Failed to decode "
+					  "IF_RELEVANT with %d"),
+				       (int)ret);
 		goto out;
 	    }
 	    ret = find_type_in_ad(context, type, data, found, FALSE,
@@ -170,8 +173,10 @@ find_type_in_ad(krb5_context context,
 				      &child,
 				      NULL);
 	    if (ret) {
-		krb5_set_error_message(context, ret, "Failed to decode "
-				       "AD_KDCIssued with %d", ret);
+		krb5_set_error_message(context, ret,
+				       N_("Failed to decode "
+					  "AD_KDCIssued with %d", ""),
+				       ret);
 		goto out;
 	    }
 	    if (failp) {
@@ -215,16 +220,19 @@ find_type_in_ad(krb5_context context,
 	    if (!failp)
 		break;
 	    ret = ENOENT; /* XXX */
-	    krb5_set_error_message(context, ret, "Authorization data contains "
-				   "AND-OR element that is unknown to the "
-				   "application");
+	    krb5_set_error_message(context, ret,
+				   N_("Authorization data contains "
+				      "AND-OR element that is unknown to the "
+				      "application", ""));
 	    goto out;
 	default:
 	    if (!failp)
 		break;
 	    ret = ENOENT; /* XXX */
-	    krb5_set_error_message(context, ret, "Authorization data contains "
-				   "unknown type (%d) ", ad->val[i].ad_type);
+	    krb5_set_error_message(context, ret,
+				   N_("Authorization data contains "
+				      "unknown type (%d) ", ""),
+				   ad->val[i].ad_type);
 	    goto out;
 	}
     }
@@ -259,7 +267,7 @@ krb5_ticket_get_authorization_data_type(krb5_context context,
     ad = ticket->ticket.authorization_data;
     if (ticket->ticket.authorization_data == NULL) {
 	krb5_set_error_message(context, ENOENT,
-			       "Ticket have not authorization data");
+			       N_("Ticket have not authorization data", ""));
 	return ENOENT; /* XXX */
     }
 
@@ -268,8 +276,10 @@ krb5_ticket_get_authorization_data_type(krb5_context context,
     if (ret)
 	return ret;
     if (!found) {
-	krb5_set_error_message(context, ENOENT, "Ticket have not "
-			       "authorization data of type %d", type);
+	krb5_set_error_message(context, ENOENT,
+			       N_("Ticket have not "
+				  "authorization data of type %d", ""),
+			       type);
 	return ENOENT; /* XXX */
     }
     return 0;
