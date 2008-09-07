@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Heimdal 1.2.99\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2008-09-07 16:48+0100\n"
+"POT-Creation-Date: 2008-09-07 17:20+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -107,6 +107,51 @@ msgstr ""
 #: lib/krb5/crypto.c:4621
 #: lib/krb5/crypto.c:4645
 #: lib/krb5/crypto.c:4696
+#: lib/krb5/digest.c:56
+#: lib/krb5/digest.c:108
+#: lib/krb5/digest.c:123
+#: lib/krb5/digest.c:140
+#: lib/krb5/digest.c:145
+#: lib/krb5/digest.c:171
+#: lib/krb5/digest.c:195
+#: lib/krb5/digest.c:221
+#: lib/krb5/digest.c:226
+#: lib/krb5/digest.c:476
+#: lib/krb5/digest.c:481
+#: lib/krb5/digest.c:501
+#: lib/krb5/digest.c:518
+#: lib/krb5/digest.c:535
+#: lib/krb5/digest.c:540
+#: lib/krb5/digest.c:564
+#: lib/krb5/digest.c:581
+#: lib/krb5/digest.c:586
+#: lib/krb5/digest.c:606
+#: lib/krb5/digest.c:611
+#: lib/krb5/digest.c:630
+#: lib/krb5/digest.c:635
+#: lib/krb5/digest.c:656
+#: lib/krb5/digest.c:661
+#: lib/krb5/digest.c:680
+#: lib/krb5/digest.c:685
+#: lib/krb5/digest.c:700
+#: lib/krb5/digest.c:805
+#: lib/krb5/digest.c:845
+#: lib/krb5/digest.c:1063
+#: lib/krb5/digest.c:1076
+#: lib/krb5/digest.c:1089
+#: lib/krb5/digest.c:1104
+#: lib/krb5/digest.c:1119
+#: lib/krb5/digest.c:1134
+#: lib/krb5/digest.c:1139
+#: lib/krb5/expand_hostname.c:46
+#: lib/krb5/expand_hostname.c:81
+#: lib/krb5/fcache.c:150
+#: lib/krb5/fcache.c:186
+#: lib/krb5/fcache.c:193
+#: lib/krb5/fcache.c:309
+#: lib/krb5/fcache.c:316
+#: lib/krb5/fcache.c:682
+#: lib/krb5/fcache.c:802
 #: lib/krb5/get_addrs.c:139
 #: lib/krb5/get_cred.c:102
 #: lib/krb5/get_cred.c:156
@@ -193,6 +238,7 @@ msgid "ACL did not match"
 msgstr ""
 
 #: lib/krb5/acl.c:264
+#: lib/krb5/fcache.c:375
 #, c-format
 msgid "open(%s): %s"
 msgstr ""
@@ -383,6 +429,216 @@ msgstr ""
 
 #: lib/krb5/crypto.c:4500
 msgid "kdf params not NULL or the NULL-type"
+msgstr ""
+
+#: lib/krb5/digest.c:86
+msgid "server channel binding already set"
+msgstr ""
+
+#: lib/krb5/digest.c:166
+msgid "nonce already set"
+msgstr ""
+
+#: lib/krb5/digest.c:216
+msgid "identifier already set"
+msgstr ""
+
+#: lib/krb5/digest.c:285
+msgid "Failed to encode digest inner request"
+msgstr ""
+
+#: lib/krb5/digest.c:306
+msgid "Digest failed to get local subkey"
+msgstr ""
+
+#: lib/krb5/digest.c:328
+msgid "Failed to encode DigestREQest"
+msgstr ""
+
+#: lib/krb5/digest.c:341
+msgid "Failed to parse digest response"
+msgstr ""
+
+#: lib/krb5/digest.c:363
+msgid "Digest reply have no remote subkey"
+msgstr ""
+
+#: lib/krb5/digest.c:383
+msgid "Failed to decode digest inner reply"
+msgstr ""
+
+#: lib/krb5/digest.c:423
+msgid "Type missing from init req"
+msgstr ""
+
+#: lib/krb5/digest.c:437
+#: lib/krb5/digest.c:900
+#, c-format
+msgid "Digest init error: %s"
+msgstr ""
+
+#: lib/krb5/digest.c:445
+msgid "digest reply not an initReply"
+msgstr ""
+
+#: lib/krb5/digest.c:452
+#: lib/krb5/digest.c:915
+msgid "Failed to copy initReply"
+msgstr ""
+
+#: lib/krb5/digest.c:470
+msgid "clientNonce already set"
+msgstr ""
+
+#: lib/krb5/digest.c:496
+msgid "digest already set"
+msgstr ""
+
+#: lib/krb5/digest.c:557
+msgid "authentication_user already set"
+msgstr ""
+
+#: lib/krb5/digest.c:601
+msgid "method already set"
+msgstr ""
+
+#: lib/krb5/digest.c:625
+msgid "uri already set"
+msgstr ""
+
+#: lib/krb5/digest.c:650
+msgid "nonceCount already set"
+msgstr ""
+
+#: lib/krb5/digest.c:725
+msgid "Type missing from req"
+msgstr ""
+
+#: lib/krb5/digest.c:742
+#, c-format
+msgid "Digest response error: %s"
+msgstr ""
+
+#: lib/krb5/digest.c:749
+msgid "digest reply not an DigestResponse"
+msgstr ""
+
+#: lib/krb5/digest.c:757
+msgid "Failed to copy initReply,"
+msgstr ""
+
+#: lib/krb5/digest.c:908
+msgid "ntlm reply not an initReply"
+msgstr ""
+
+#: lib/krb5/digest.c:1022
+#, c-format
+msgid "NTLM response error: %s"
+msgstr ""
+
+#: lib/krb5/digest.c:1030
+msgid "NTLM reply not an NTLMResponse"
+msgstr ""
+
+#: lib/krb5/digest.c:1037
+msgid "Failed to copy NTLMResponse"
+msgstr ""
+
+#: lib/krb5/digest.c:1161
+msgid "no ntlm session key"
+msgstr ""
+
+#: lib/krb5/fcache.c:97
+#, c-format
+msgid "timed out locking cache file %s"
+msgstr ""
+
+#: lib/krb5/fcache.c:102
+#, c-format
+msgid "error locking cache file %s: %s"
+msgstr ""
+
+#: lib/krb5/fcache.c:134
+#, c-format
+msgid "Failed to unlock file: %s"
+msgstr ""
+
+#: lib/krb5/fcache.c:159
+msgid "Failed to write FILE credential data"
+msgstr ""
+
+#: lib/krb5/fcache.c:322
+#, c-format
+msgid "mkstemp %s failed"
+msgstr ""
+
+#: lib/krb5/fcache.c:437
+#: lib/krb5/fcache.c:491
+#, c-format
+msgid "close %s: %s"
+msgstr ""
+
+#: lib/krb5/fcache.c:525
+#, c-format
+msgid "Empty credential cache file: %s"
+msgstr ""
+
+#: lib/krb5/fcache.c:528
+#, c-format
+msgid "Error reading pvno in cache file: %s"
+msgstr ""
+
+#: lib/krb5/fcache.c:535
+#, c-format
+msgid "Bad version number in credential cache file: %s"
+msgstr ""
+
+#: lib/krb5/fcache.c:557
+#, c-format
+msgid "Error reading tag length in cache file: %s"
+msgstr ""
+
+#: lib/krb5/fcache.c:569
+#, c-format
+msgid "Error reading dtag in cache file: %s"
+msgstr ""
+
+#: lib/krb5/fcache.c:578
+#, c-format
+msgid "Error reading dlength in cache file: %s"
+msgstr ""
+
+#: lib/krb5/fcache.c:589
+#, c-format
+msgid "Error reading kdc_sec in cache file: %s"
+msgstr ""
+
+#: lib/krb5/fcache.c:598
+#, c-format
+msgid "Error reading kdc_usec in cache file: %s"
+msgstr ""
+
+#: lib/krb5/fcache.c:610
+#, c-format
+msgid "Error reading unknown tag in cache file: %s"
+msgstr ""
+
+#: lib/krb5/fcache.c:629
+#, c-format
+msgid "Unknown version number (%d) in credential cache file: %s"
+msgstr ""
+
+#: lib/krb5/fcache.c:856
+#, c-format
+msgid "Rename of file from %s to %s failed: %s"
+msgstr ""
+
+#: lib/krb5/fcache.c:883
+msgid "Failed to write data from one file credential cache to the other"
+msgstr ""
+
+#: lib/krb5/fcache.c:891
+msgid "Failed to read data from one file credential cache to the other"
 msgstr ""
 
 #: lib/krb5/get_addrs.c:123
