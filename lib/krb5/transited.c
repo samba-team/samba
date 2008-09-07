@@ -88,7 +88,8 @@ make_path(krb5_context context, struct tr_realm *r,
 		break;
 	    tmp = calloc(1, sizeof(*tmp));
 	    if(tmp == NULL){
-		krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+		krb5_set_error_message(context, ENOMEM,
+				       N_("malloc: out of memory", ""));
 		return ENOMEM;
 	    }
 	    tmp->next = path;
@@ -96,7 +97,8 @@ make_path(krb5_context context, struct tr_realm *r,
 	    path->realm = strdup(p);
 	    if(path->realm == NULL){
 		r->next = path; /* XXX */
-		krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+		krb5_set_error_message(context, ENOMEM,
+				       N_("malloc: out of memory", ""));
 		return ENOMEM;;
 	    }
 	}
@@ -112,7 +114,8 @@ make_path(krb5_context context, struct tr_realm *r,
 		break;
 	    tmp = calloc(1, sizeof(*tmp));
 	    if(tmp == NULL){
-		krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+		krb5_set_error_message(context, ENOMEM,
+				       N_("malloc: out of memory", ""));
 		return ENOMEM;
 	    }
 	    tmp->next = path;
@@ -120,7 +123,8 @@ make_path(krb5_context context, struct tr_realm *r,
 	    path->realm = malloc(p - from + 1);
 	    if(path->realm == NULL){
 		r->next = path; /* XXX */
-		krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+		krb5_set_error_message(context, ENOMEM,
+				       N_("malloc: out of memory", ""));
 		return ENOMEM;
 	    }
 	    memcpy(path->realm, from, p - from);
@@ -186,7 +190,8 @@ expand_realms(krb5_context context,
 	    tmp = realloc(r->realm, len);
 	    if(tmp == NULL){
 		free_realms(realms);
-		krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+		krb5_set_error_message(context, ENOMEM,
+				       N_("malloc: out of memory", ""));
 		return ENOMEM;
 	    }
 	    r->realm = tmp;
@@ -200,7 +205,8 @@ expand_realms(krb5_context context,
 	    tmp = malloc(len);
 	    if(tmp == NULL){
 		free_realms(realms);
-		krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+		krb5_set_error_message(context, ENOMEM,
+				       N_("malloc: out of memory", ""));
 		return ENOMEM;
 	    }
 	    strlcpy(tmp, prev_realm, len);
@@ -286,7 +292,8 @@ decode_realms(krb5_context context,
 	if(tr[i] == ','){
 	    tmp = malloc(tr + i - start + 1);
 	    if(tmp == NULL){
-		krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+		krb5_set_error_message(context, ENOMEM,
+				       N_("malloc: out of memory", ""));
 		return ENOMEM;
 	    }
 	    memcpy(tmp, start, tr + i - start);
@@ -294,7 +301,8 @@ decode_realms(krb5_context context,
 	    r = make_realm(tmp);
 	    if(r == NULL){
 		free_realms(*realms);
-		krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+		krb5_set_error_message(context, ENOMEM,
+				       N_("malloc: out of memory", ""));
 		return ENOMEM;
 	    }
 	    *realms = append_realm(*realms, r);
@@ -304,7 +312,8 @@ decode_realms(krb5_context context,
     tmp = malloc(tr + i - start + 1);
     if(tmp == NULL){
 	free(*realms);
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM,
+			       N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     memcpy(tmp, start, tr + i - start);
@@ -312,7 +321,8 @@ decode_realms(krb5_context context,
     r = make_realm(tmp);
     if(r == NULL){
 	free_realms(*realms);
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM,
+			       N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     *realms = append_realm(*realms, r);
@@ -444,7 +454,8 @@ krb5_check_transited(krb5_context context,
 	if(p == NULL || *p == NULL) {
 	    krb5_config_free_strings(tr_realms);
 	    krb5_set_error_message (context, KRB5KRB_AP_ERR_ILL_CR_TKT,
-				    "no transit through realm %s",
+				    N_("no transit allowed "
+				       "through realm %s", ""),
 				    realms[i]);
 	    if(bad_realm)
 		*bad_realm = i;
@@ -476,7 +487,9 @@ krb5_check_transited_realms(krb5_context context,
 	    if(strcmp(*p, realms[i]) == 0) {
 		ret = KRB5KRB_AP_ERR_ILL_CR_TKT;
 		krb5_set_error_message (context, ret,
-					"no transit through realm %s", *p);
+					N_("no transit allowed "
+					   "through realm %s", ""),
+					*p);
 		if(bad_realm)
 		    *bad_realm = i;
 		break;
