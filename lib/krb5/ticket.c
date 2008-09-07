@@ -57,7 +57,8 @@ krb5_copy_ticket(krb5_context context,
     *to = NULL;
     tmp = malloc(sizeof(*tmp));
     if(tmp == NULL) {
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM,
+			       N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     if((ret = copy_EncTicketPart(&from->ticket, &tmp->ticket))){
@@ -134,7 +135,8 @@ find_type_in_ad(krb5_context context,
 	if (!*found && ad->val[i].ad_type == type) {
 	    ret = der_copy_octet_string(&ad->val[i].ad_data, data);
 	    if (ret) {
-		krb5_set_error_message(context, ret, "malloc: out of memory");
+		krb5_set_error_message(context, ret,
+				       N_("malloc: out of memory", ""));
 		goto out;
 	    }
 	    *found = TRUE;
