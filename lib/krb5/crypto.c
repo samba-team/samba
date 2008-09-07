@@ -358,7 +358,7 @@ krb5_DES_string_to_key(krb5_context context,
     len = password.length + salt.saltvalue.length;
     s = malloc(len);
     if(len > 0 && s == NULL) {
-	krb5_set_error_message (context, ENOMEM, N_("malloc: out of memory", ""));
+	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     memcpy(s, password.data, password.length);
@@ -440,7 +440,7 @@ DES3_string_to_key(krb5_context context,
     len = password.length + salt.saltvalue.length;
     str = malloc(len);
     if(len != 0 && str == NULL) {
-	krb5_set_error_message (context, ENOMEM, N_("malloc: out of memory", ""));
+	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     memcpy(str, password.data, password.length);
@@ -454,7 +454,7 @@ DES3_string_to_key(krb5_context context,
 	if (ret) {
 	    memset(str, 0, len);
 	    free(str);
-	    krb5_set_error_message (context, ret, N_("malloc: out of memory", ""));
+	    krb5_set_error_message(context, ret, N_("malloc: out of memory", ""));
 	    return ret;
 	}
 	
@@ -502,7 +502,7 @@ DES3_string_to_key_derived(krb5_context context,
 
     s = malloc(len);
     if(len != 0 && s == NULL) {
-	krb5_set_error_message (context, ENOMEM, N_("malloc: out of memory", ""));
+	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     memcpy(s, password.data, password.length);
@@ -588,20 +588,23 @@ ARCFOUR_string_to_key(krb5_context context,
 
     ret = wind_utf8ucs2_length(password.data, &len);
     if (ret) {
-	krb5_set_error_message (context, ret, "Password not an UCS2 string");
+	krb5_set_error_message (context, ret,
+				N_("Password not an UCS2 string", ""));
 	goto out;
     }
 	
     s = malloc (len * sizeof(s[0]));
     if (len != 0 && s == NULL) {
-	krb5_set_error_message (context, ENOMEM, N_("malloc: out of memory", ""));
+	krb5_set_error_message (context, ENOMEM,
+				N_("malloc: out of memory", ""));
 	ret = ENOMEM;
 	goto out;
     }
 
     ret = wind_utf8ucs2(password.data, s, &len);
     if (ret) {
-	krb5_set_error_message (context, ret, "Password not an UCS2 string");
+	krb5_set_error_message (context, ret, 
+				N_("Password not an UCS2 string", ""));
 	goto out;
     }
 
@@ -954,7 +957,7 @@ krb5_string_to_salttype (krb5_context context,
     e = _find_enctype (etype);
     if (e == NULL) {
 	krb5_set_error_message(context, KRB5_PROG_ETYPE_NOSUPP,
-			       "encryption type %d not supported",
+			       N_("encryption type %d not supported", ""),
 			       etype);
 	return KRB5_PROG_ETYPE_NOSUPP;
     }
@@ -965,7 +968,7 @@ krb5_string_to_salttype (krb5_context context,
 	}
     }
     krb5_set_error_message(context, HEIM_ERR_SALTTYPE_NOSUPP,
-			   "salttype %s not supported", string);
+			   N_("salttype %s not supported", ""), string);
     return HEIM_ERR_SALTTYPE_NOSUPP;
 }
 
@@ -1068,7 +1071,7 @@ krb5_string_to_key_data_salt_opaque (krb5_context context,
     struct salt_type *st;
     if(et == NULL) {
 	krb5_set_error_message(context, KRB5_PROG_ETYPE_NOSUPP,
-			       "encryption type %d not supported",
+			       N_("encryption type %d not supported", ""),
 			       enctype);
 	return KRB5_PROG_ETYPE_NOSUPP;
     }
@@ -1077,7 +1080,7 @@ krb5_string_to_key_data_salt_opaque (krb5_context context,
 	    return (*st->string_to_key)(context, enctype, password, 
 					salt, opaque, key);
     krb5_set_error_message(context, HEIM_ERR_SALTTYPE_NOSUPP,
-			   "salt type %d not supported",
+			   N_("salt type %d not supported", ""),
 			   salt.salttype);
     return HEIM_ERR_SALTTYPE_NOSUPP;
 }
@@ -1124,7 +1127,7 @@ krb5_enctype_keysize(krb5_context context,
     struct encryption_type *et = _find_enctype(type);
     if(et == NULL) {
 	krb5_set_error_message(context, KRB5_PROG_ETYPE_NOSUPP,
-			       "encryption type %d not supported",
+			       N_("encryption type %d not supported", ""),
 			       type);
 	return KRB5_PROG_ETYPE_NOSUPP;
     }
@@ -1157,7 +1160,7 @@ krb5_generate_random_keyblock(krb5_context context,
     struct encryption_type *et = _find_enctype(type);
     if(et == NULL) {
 	krb5_set_error_message(context, KRB5_PROG_ETYPE_NOSUPP,
-			       "encryption type %d not supported",
+			       N_("encryption type %d not supported", ""),
 			       type);
 	return KRB5_PROG_ETYPE_NOSUPP;
     }
@@ -1484,7 +1487,7 @@ krb5_hmac(krb5_context context,
 
     if (c == NULL) {
 	krb5_set_error_message (context, KRB5_PROG_SUMTYPE_NOSUPP,
-				"checksum type %d not supported",
+				N_("checksum type %d not supported", ""),
 				cktype);
 	return KRB5_PROG_SUMTYPE_NOSUPP;
     }
@@ -1771,8 +1774,8 @@ create_checksum (krb5_context context,
     keyed_checksum = (ct->flags & F_KEYED) != 0;
     if(keyed_checksum && crypto == NULL) {
 	krb5_set_error_message (context, KRB5_PROG_SUMTYPE_NOSUPP,
-				"Checksum type %s is keyed "
-				"but no crypto context (key) was passed in",
+				N_("Checksum type %s is keyed but no "
+				   "crypto context (key) was passed in", ""),
 				ct->name);
 	return KRB5_PROG_SUMTYPE_NOSUPP; /* XXX */
     }
@@ -1819,7 +1822,7 @@ krb5_create_checksum(krb5_context context,
 
     if(ct == NULL) {
 	krb5_set_error_message (context, KRB5_PROG_SUMTYPE_NOSUPP,
-				"checksum type %d not supported",
+				N_("checksum type %d not supported", ""),
 				type);
 	return KRB5_PROG_SUMTYPE_NOSUPP;
     }
@@ -1851,7 +1854,7 @@ verify_checksum(krb5_context context,
     ct = _find_checksum(cksum->cksumtype);
     if (ct == NULL || (ct->flags & F_DISABLED)) {
 	krb5_set_error_message (context, KRB5_PROG_SUMTYPE_NOSUPP,
-				"checksum type %d not supported",
+				N_("checksum type %d not supported", ""),
 				cksum->cksumtype);
 	return KRB5_PROG_SUMTYPE_NOSUPP;
     }
@@ -1862,8 +1865,8 @@ verify_checksum(krb5_context context,
     keyed_checksum = (ct->flags & F_KEYED) != 0;
     if(keyed_checksum && crypto == NULL) {
 	krb5_set_error_message (context, KRB5_PROG_SUMTYPE_NOSUPP,
-				"Checksum type %s is keyed "
-				"but no crypto context (key) was passed in",
+				N_("Checksum type %s is keyed but no "
+				   "crypto context (key) was passed in", "")
 				ct->name);
 	return KRB5_PROG_SUMTYPE_NOSUPP; /* XXX */
     }
@@ -1911,7 +1914,7 @@ krb5_verify_checksum(krb5_context context,
     ct = _find_checksum(cksum->cksumtype);
     if(ct == NULL) {
 	krb5_set_error_message (context, KRB5_PROG_SUMTYPE_NOSUPP,
-				"checksum type %d not supported",
+				N_("checksum type %d not supported", ""),
 				cksum->cksumtype);
 	return KRB5_PROG_SUMTYPE_NOSUPP;
     }
@@ -1941,7 +1944,7 @@ krb5_crypto_get_checksum_type(krb5_context context,
     
     if (ct == NULL) {
 	krb5_set_error_message (context, KRB5_PROG_SUMTYPE_NOSUPP,
-				"checksum type not found");
+				N_("checksum type not found", ""));
         return KRB5_PROG_SUMTYPE_NOSUPP;
     }    
 
@@ -1959,7 +1962,7 @@ krb5_checksumsize(krb5_context context,
     struct checksum_type *ct = _find_checksum(type);
     if(ct == NULL) {
 	krb5_set_error_message (context, KRB5_PROG_SUMTYPE_NOSUPP,
-				"checksum type %d not supported",
+				N_("checksum type %d not supported", ""),
 				type);
 	return KRB5_PROG_SUMTYPE_NOSUPP;
     }
@@ -1975,7 +1978,7 @@ krb5_checksum_is_keyed(krb5_context context,
     if(ct == NULL) {
 	if (context)
 	    krb5_set_error_message (context, KRB5_PROG_SUMTYPE_NOSUPP,
-				    "checksum type %d not supported",
+				    N_("checksum type %d not supported", ""),
 				    type);
 	return KRB5_PROG_SUMTYPE_NOSUPP;
     }
@@ -1990,7 +1993,7 @@ krb5_checksum_is_collision_proof(krb5_context context,
     if(ct == NULL) {
 	if (context)
 	    krb5_set_error_message (context, KRB5_PROG_SUMTYPE_NOSUPP,
-				    "checksum type %d not supported",
+				    N_("checksum type %d not supported", ""),
 				    type);
 	return KRB5_PROG_SUMTYPE_NOSUPP;
     }
@@ -2005,7 +2008,7 @@ krb5_checksum_disable(krb5_context context,
     if(ct == NULL) {
 	if (context)
 	    krb5_set_error_message (context, KRB5_PROG_SUMTYPE_NOSUPP,
-				    "checksum type %d not supported",
+				    N_("checksum type %d not supported", ""),
 				    type);
 	return KRB5_PROG_SUMTYPE_NOSUPP;
     }
@@ -2341,7 +2344,7 @@ AES_PRF(krb5_context context,
     result.cksumtype = ct->type;
     ret = krb5_data_alloc(&result.checksum, ct->checksumsize);
     if (ret) {
-	krb5_set_error_message(context, ret, "out memory");
+	krb5_set_error_message(context, ret, N_("malloc: out memory", ""));
 	return ret;
     }
 
@@ -2631,7 +2634,7 @@ krb5_enctype_to_string(krb5_context context,
     e = _find_enctype(etype);
     if(e == NULL) {
 	krb5_set_error_message (context, KRB5_PROG_ETYPE_NOSUPP,
-				"encryption type %d not supported",
+				N_("encryption type %d not supported", ""),
 				etype);
 	*string = NULL;
 	return KRB5_PROG_ETYPE_NOSUPP;
@@ -2656,7 +2659,7 @@ krb5_string_to_enctype(krb5_context context,
 	    return 0;
 	}
     krb5_set_error_message (context, KRB5_PROG_ETYPE_NOSUPP,
-			    "encryption type %s not supported",
+			    N_("encryption type %s not supported", ""),
 			    string);
     return KRB5_PROG_ETYPE_NOSUPP;
 }
@@ -2669,7 +2672,7 @@ krb5_enctype_to_keytype(krb5_context context,
     struct encryption_type *e = _find_enctype(etype);
     if(e == NULL) {
 	krb5_set_error_message (context, KRB5_PROG_ETYPE_NOSUPP,
-				"encryption type %d not supported",
+				N_("encryption type %d not supported", ""),
 				etype);
 	return KRB5_PROG_ETYPE_NOSUPP;
     }
@@ -2684,13 +2687,13 @@ krb5_enctype_valid(krb5_context context,
     struct encryption_type *e = _find_enctype(etype);
     if(e == NULL) {
 	krb5_set_error_message (context, KRB5_PROG_ETYPE_NOSUPP,
-				"encryption type %d not supported",
+				N_("encryption type %d not supported", ""),
 				etype);
 	return KRB5_PROG_ETYPE_NOSUPP;
     }
     if (e->flags & F_DISABLED) {
 	krb5_set_error_message (context, KRB5_PROG_ETYPE_NOSUPP,
-				"encryption type %s is disabled",
+				N_("encryption type %s is disabled", ""),
 				e->name);
 	return KRB5_PROG_ETYPE_NOSUPP;
     }
@@ -2729,7 +2732,7 @@ krb5_cksumtype_to_enctype(krb5_context context,
     }
 
     krb5_set_error_message (context, KRB5_PROG_SUMTYPE_NOSUPP,
-			    "ckecksum type %d not supported",
+			    N_("checksum type %d not supported", ""),
 			    (int)ctype);
     return KRB5_PROG_SUMTYPE_NOSUPP;
 }
@@ -2742,13 +2745,13 @@ krb5_cksumtype_valid(krb5_context context,
     struct checksum_type *c = _find_checksum(ctype);
     if (c == NULL) {
 	krb5_set_error_message (context, KRB5_PROG_SUMTYPE_NOSUPP,
-				"checksum type %d not supported",
+				N_("checksum type %d not supported", ""),
 				ctype);
 	return KRB5_PROG_SUMTYPE_NOSUPP;
     }
     if (c->flags & F_DISABLED) {
 	krb5_set_error_message (context, KRB5_PROG_SUMTYPE_NOSUPP,
-				"checksum type %s is disabled",
+				N_("checksum type %s is disabled", ""),
 				c->name);
 	return KRB5_PROG_SUMTYPE_NOSUPP;
     }
@@ -2973,8 +2976,8 @@ decrypt_internal_derived(krb5_context context,
     checksum_sz = CHECKSUMSIZE(et->keyed_checksum);
     if (len < checksum_sz + et->confoundersize) {
 	krb5_set_error_message(context, KRB5_BAD_MSIZE,
-			       "Encrypted data shorter then "
-			       "checksum + confunder");
+			       N_("Encrypted data shorter then "
+				  "checksum + confunder", ""));
 	return KRB5_BAD_MSIZE;
     }
 
@@ -3870,7 +3873,7 @@ derive_key(krb5_context context,
     default:
 	ret = KRB5_CRYPTO_INTERNAL;
 	krb5_set_error_message(context, ret,
-			       "derive_key() called with unknown keytype (%u)", 
+			       N_("derive_key() called with unknown keytype (%u)", ""),
 			       kt->type);
 	break;
     }
@@ -3914,7 +3917,7 @@ krb5_derive_key(krb5_context context,
     et = _find_enctype (etype);
     if (et == NULL) {
 	krb5_set_error_message(context, KRB5_PROG_ETYPE_NOSUPP,
-			       "encryption type %d not supported",
+			       N_("encryption type %d not supported", ""),
 			       etype);
 	return KRB5_PROG_ETYPE_NOSUPP;
     }
@@ -3978,7 +3981,7 @@ krb5_crypto_init(krb5_context context,
 	free(*crypto);
 	*crypto = NULL;
 	krb5_set_error_message (context, KRB5_PROG_ETYPE_NOSUPP,
-				"encryption type %d not supported",
+				N_("encryption type %d not supported", ""),
 				etype);
 	return KRB5_PROG_ETYPE_NOSUPP;
     }
@@ -4091,7 +4094,7 @@ krb5_enctype_disable(krb5_context context,
     if(et == NULL) {
 	if (context)
 	    krb5_set_error_message (context, KRB5_PROG_ETYPE_NOSUPP,
-				    "encryption type %d not supported",
+				    N_("encryption type %d not supported", ""),
 				    enctype);
 	return KRB5_PROG_ETYPE_NOSUPP;
     }
@@ -4118,7 +4121,7 @@ krb5_enctype_enable(krb5_context context,
     if(et == NULL) {
 	if (context)
 	    krb5_set_error_message (context, KRB5_PROG_ETYPE_NOSUPP,
-				    "encryption type %d not supported",
+				    N_("encryption type %d not supported", ""),
 				    enctype);
 	return KRB5_PROG_ETYPE_NOSUPP;
     }
@@ -4142,7 +4145,7 @@ krb5_string_to_key_derived(krb5_context context,
 
     if(et == NULL) {
 	krb5_set_error_message (context, KRB5_PROG_ETYPE_NOSUPP,
-				"encryption type %d not supported",
+				N_("encryption type %d not supported", ""),
 				etype);
 	return KRB5_PROG_ETYPE_NOSUPP;
     }
@@ -4293,14 +4296,15 @@ krb5_random_to_key(krb5_context context,
     struct encryption_type *et = _find_enctype(type);
     if(et == NULL) {
 	krb5_set_error_message(context, KRB5_PROG_ETYPE_NOSUPP, 
-			       "encryption type %d not supported",
+			       N_("encryption type %d not supported", ""),
 			       type);
 	return KRB5_PROG_ETYPE_NOSUPP;
     }
     if ((et->keytype->bits + 7) / 8 > size) {
 	krb5_set_error_message(context, KRB5_PROG_ETYPE_NOSUPP,
-			       "encryption key %s needs %d bytes "
-			       "of random to make an encryption key out of it",
+			       N_("encryption key %s needs %d bytes "
+				  "of random to make an encryption key "
+				  "out of it", ""),
 			       et->name, (int)et->keytype->size);
 	return KRB5_PROG_ETYPE_NOSUPP;
     }
@@ -4334,7 +4338,7 @@ _krb5_pk_octetstring2key(krb5_context context,
 
     if(et == NULL) {
 	krb5_set_error_message(context, KRB5_PROG_ETYPE_NOSUPP,
-			       "encryption type %d not supported",
+			       N_("encryption type %d not supported", ""),
 			       type);
 	return KRB5_PROG_ETYPE_NOSUPP;
     }
@@ -4390,7 +4394,7 @@ encode_uvinfo(krb5_context context, krb5_const_principal p, krb5_data *data)
     if (ret) {
 	krb5_data_zero(data);
 	krb5_set_error_message(context, ret,
-			       "Failed to encode KRB5PrincipalName");
+			       N_("Failed to encode KRB5PrincipalName", ""));
 	return ret;
     }
     if (data->length != size)
@@ -4426,7 +4430,7 @@ encode_otherinfo(krb5_context context,
     ASN1_MALLOC_ENCODE(PkinitSuppPubInfo, pub.data, pub.length,
 		       &pubinfo, &size, ret);
     if (ret) {
-	krb5_set_error_message(context, ret, "out of memory");
+	krb5_set_error_message(context, ret, N_("malloc: out of memory", ""));
 	return ret;
     }
     if (pub.length != size)
@@ -4453,7 +4457,7 @@ encode_otherinfo(krb5_context context,
     free(otherinfo.partyVInfo.data);
     free(pub.data);
     if (ret) {
-	krb5_set_error_message(context, ret, "out of memory");
+	krb5_set_error_message(context, ret, N_("malloc: out of memory", ""));
 	return ret;
     }
     if (other->length != size)
@@ -4485,7 +4489,7 @@ _krb5_pk_kdf(krb5_context context,
 
     if (der_heim_oid_cmp(oid_id_pkinit_kdf_ah_sha1(), &ai->algorithm) != 0) {
 	krb5_set_error_message(context, KRB5_PROG_ETYPE_NOSUPP,
-			       "kdf not supported");
+			       N_("KDF not supported", ""));
 	return KRB5_PROG_ETYPE_NOSUPP;
     }
     if (ai->parameters != NULL &&
@@ -4493,14 +4497,15 @@ _krb5_pk_kdf(krb5_context context,
 	 memcmp(ai->parameters->data, "\x05\x00", 2) != 0)) 
 	{
 	    krb5_set_error_message(context, KRB5_PROG_ETYPE_NOSUPP,
-				   "kdf params not NULL or the NULL-type");
+				   N_("kdf params not NULL or the NULL-type",
+				      ""));
 	    return KRB5_PROG_ETYPE_NOSUPP;
 	}
 
     et = _find_enctype(enctype);
     if(et == NULL) {
 	krb5_set_error_message(context, KRB5_PROG_ETYPE_NOSUPP,
-			       "encryption type %d not supported",
+			       N_("encryption type %d not supported", ""),
 			       enctype);
 	return KRB5_PROG_ETYPE_NOSUPP;
     }
@@ -4560,7 +4565,7 @@ krb5_crypto_prf_length(krb5_context context,
 
     if(et == NULL || et->prf_length == 0) {
 	krb5_set_error_message(context, KRB5_PROG_ETYPE_NOSUPP,
-			       "encryption type %d not supported",
+			       N_("encryption type %d not supported", ""),
 			       type);
 	return KRB5_PROG_ETYPE_NOSUPP;
     }
