@@ -51,6 +51,7 @@ krb5_clear_error_string(krb5_context context)
 
 /**
  * Set the context full error string for a specific error code.
+ * The error that is stored should be internationalized.
  *
  * @param context Kerberos 5 context
  * @param ret The error code
