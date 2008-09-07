@@ -82,6 +82,8 @@ generate_c(void)
     fprintf(c_file, "#include <com_err.h>\n");
     fprintf(c_file, "#include \"%s\"\n", hfn);
     fprintf(c_file, "\n");
+    fprintf(c_file, "#define N_(x) (x)\n");
+    fprintf(c_file, "\n");
 
     fprintf(c_file, "static const char *%s_error_strings[] = {\n", name);
 
@@ -92,7 +94,8 @@ generate_c(void)
 	    n++;
 	    
 	}
-	fprintf(c_file, "\t/* %03d */ \"%s\",\n", ec->number, ec->string);
+	fprintf(c_file, "\t/* %03d */ N_(\"%s\"),\n", 
+		ec->number, ec->string);
     }
 
     fprintf(c_file, "\tNULL\n");

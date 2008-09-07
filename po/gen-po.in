@@ -1,0 +1,23 @@
+#!/bin/sh
+
+top_srcdir=@top_srcdir@
+name="@PACKAGE_NAME@"
+version="@PACKAGE_VERSION@"
+
+domain=$1
+shift
+
+xgettext \
+    --package-name="${name}" \
+    --package-version="${version}" \
+    --foreign-user \
+    --default-domain=${domain} \
+    --add-comments \
+    --keyword=N_ \
+    -o ${domain}.pot \
+    "$@"
+
+test -f ${domain}.pot && perl -pi -e "s@$top_srcdir/@@" ${domain}.pot
+
+exit 0
+

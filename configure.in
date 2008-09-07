@@ -492,6 +492,7 @@ AC_CONFIG_FILES(Makefile 		\
 	lib/sqlite/Makefile		\
 	lib/vers/Makefile		\
 	lib/wind/Makefile		\
+	po/Makefile			\
 	kuser/Makefile			\
 	kpasswd/Makefile		\
 	kadmin/Makefile			\
