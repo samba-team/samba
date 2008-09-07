@@ -72,13 +72,17 @@ get_cell_and_realm (krb5_context context, struct akf_data *d)
     f = fopen (AFS_SERVERTHISCELL, "r");
     if (f == NULL) {
 	ret = errno;
-	krb5_set_error_message (context, ret, "open %s: %s", AFS_SERVERTHISCELL,
+	krb5_set_error_message (context, ret,
+				N_("Open ThisCell %s: %s", ""), 
+				AFS_SERVERTHISCELL,
 				strerror(ret));
 	return ret;
     }
     if (fgets (buf, sizeof(buf), f) == NULL) {
 	fclose (f);
-	krb5_set_error_message (context, EINVAL, "no cell in %s", AFS_SERVERTHISCELL);
+	krb5_set_error_message (context, EINVAL,
+				N_("No cell in ThisCell file %s", ""), 
+				AFS_SERVERTHISCELL);
 	return EINVAL;
     }
     buf[strcspn(buf, "\n")] = '\0';
@@ -86,7 +90,8 @@ get_cell_and_realm (krb5_context context, struct akf_data *d)
 
     d->cell = strdup (buf);
     if (d->cell == NULL) {
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM,
+			       N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
 
@@ -96,7 +101,8 @@ get_cell_and_realm (krb5_context context, struct akf_data *d)
 	    free (d->cell);
 	    d->cell = NULL;
 	    fclose (f);
-	    krb5_set_error_message (context, EINVAL, "no realm in %s",
+	    krb5_set_error_message (context, EINVAL,
+				    N_("No realm in ThisCell file %s", ""),
 				    AFS_SERVERMAGICKRBCONF);
 	    return EINVAL;
 	}
@@ -111,7 +117,8 @@ get_cell_and_realm (krb5_context context, struct akf_data *d)
     if (d->realm == NULL) {
 	free (d->cell);
 	d->cell = NULL;
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM,
+			       N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     return 0;
@@ -128,7 +135,8 @@ akf_resolve(krb5_context context, const char *name, krb5_keytab id)
     struct akf_data *d = malloc(sizeof (struct akf_data));
 
     if (d == NULL) {
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM,
+			       N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     
@@ -143,7 +151,8 @@ akf_resolve(krb5_context context, const char *name, krb5_keytab id)
 	free (d->cell);
 	free (d->realm);
 	free (d);
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM,
+			       N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     id->data = d;
@@ -197,7 +206,8 @@ akf_start_seq_get(krb5_context context,
     c->fd = open (d->filename, O_RDONLY | O_BINARY | O_CLOEXEC, 0600);
     if (c->fd < 0) {
 	ret = errno;
-	krb5_set_error_message(context, ret, "keytab afs keyfil open %s failed: %s",
+	krb5_set_error_message(context, ret,
+			       N_("keytab afs keyfile open %s failed: %s", ""),
 			       d->filename, strerror(ret));
 	return ret;
     }
@@ -250,7 +260,8 @@ akf_next_entry(krb5_context context,
     entry->keyblock.keyvalue.data   = malloc (8);
     if (entry->keyblock.keyvalue.data == NULL) {
 	krb5_free_principal (context, entry->principal);
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, 
+			       N_("malloc: out of memory", ""));
 	ret = ENOMEM;
 	goto out;
     }
@@ -307,7 +318,9 @@ akf_add_entry(krb5_context context,
 		   O_RDWR | O_BINARY | O_CREAT | O_EXCL | O_CLOEXEC, 0600);
 	if (fd < 0) {
 	    ret = errno;
-	    krb5_set_error_message(context, ret, "open(%s): %s", d->filename,
+	    krb5_set_error_message(context, ret,
+				   N_("open keyfile(%s): %s", ""),
+				   d->filename,
 				   strerror(ret));
 	    return ret;
 	}
@@ -317,7 +330,8 @@ akf_add_entry(krb5_context context,
     sp = krb5_storage_from_fd(fd);
     if(sp == NULL) {
 	close(fd);
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM,
+			       N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     if (created)
@@ -327,7 +341,9 @@ akf_add_entry(krb5_context context,
 	    ret = errno;
 	    krb5_storage_free(sp);
 	    close(fd);
-	    krb5_set_error_message(context, ret, "seek: %s", strerror(ret));
+	    krb5_set_error_message(context, ret, 
+				   N_("seeking in keyfile: %s", ""),
+				   strerror(ret));
 	    return ret;
 	}
 	    
@@ -350,12 +366,15 @@ akf_add_entry(krb5_context context,
 	for (i = 0; i < len; i++) {
 	    ret = krb5_ret_int32(sp, &kvno);
 	    if (ret) {
-		krb5_set_error_message (context, ret, "Failed to get kvno ");
+		krb5_set_error_message (context, ret,
+					N_("Failed getting kvno from keyfile", ""));
 		goto out;
 	    }
 	    if(krb5_storage_seek(sp, 8, SEEK_CUR) < 0) {
 		ret = errno;
-		krb5_set_error_message (context, ret, "seek: %s", strerror(ret));
+		krb5_set_error_message (context, ret, 
+					N_("Failed seeing in keyfile: %s", ""),
+					strerror(ret));
 		goto out;
 	    }
 	    if (kvno == entry->vno) {
@@ -369,26 +388,31 @@ akf_add_entry(krb5_context context,
 	
     if(krb5_storage_seek(sp, 0, SEEK_SET) < 0) {
 	ret = errno;
-	krb5_set_error_message (context, ret, "seek: %s", strerror(ret));
+	krb5_set_error_message (context, ret,
+				N_("Failed seeing in keyfile: %s", ""),
+				strerror(ret));
 	goto out;
     }
 	
     ret = krb5_store_int32(sp, len);
     if(ret) {
 	ret = errno;
-	krb5_set_error_message (context, ret, "keytab keyfile failed new length");
+	krb5_set_error_message (context, ret, 
+				N_("keytab keyfile failed new length", ""));
 	return ret;
     }
 
     if(krb5_storage_seek(sp, (len - 1) * (8 + 4), SEEK_CUR) < 0) {
 	ret = errno;
-	krb5_set_error_message (context, ret, "seek to end: %s", strerror(ret));
+	krb5_set_error_message (context, ret,
+				N_("seek to end: %s", ""), strerror(ret));
 	goto out;
     }
 	
     ret = krb5_store_int32(sp, entry->vno);
     if(ret) {
-	krb5_set_error_message(context, ret, "keytab keyfile failed store kvno");
+	krb5_set_error_message(context, ret,
+			       N_("keytab keyfile failed store kvno", ""));
 	goto out;
     }
     ret = krb5_storage_write(sp, entry->keyblock.keyvalue.data, 
@@ -398,7 +422,8 @@ akf_add_entry(krb5_context context,
 	    ret = errno;
 	else
 	    ret = ENOTTY;
-	krb5_set_error_message(context, ret, "keytab keyfile failed to add key");
+	krb5_set_error_message(context, ret,
+			       N_("keytab keyfile failed to add key", ""));
 	goto out;
     }
     ret = 0;
