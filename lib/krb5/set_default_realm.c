@@ -46,13 +46,15 @@ string_to_list (krb5_context context, const char *s, krb5_realm **list)
 
     *list = malloc (2 * sizeof(**list));
     if (*list == NULL) {
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM,
+			       N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     (*list)[0] = strdup (s);
     if ((*list)[0] == NULL) {
 	free (*list);
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM,
+			       N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     (*list)[1] = NULL;
