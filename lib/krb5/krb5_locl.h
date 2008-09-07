@@ -117,6 +117,7 @@ struct sockaddr_dl;
 #endif
 
 #ifdef HAVE_LIBINTL
+#include <libintl.h>
 #define N_(x,y) dgettext("heimdal_krb5", x)
 #else
 #define N_(x,y) (x)
