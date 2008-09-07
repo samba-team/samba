@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Heimdal 1.2.99\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2008-09-07 16:22+0100\n"
+"POT-Creation-Date: 2008-09-07 16:48+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -107,6 +107,59 @@ msgstr ""
 #: lib/krb5/crypto.c:4621
 #: lib/krb5/crypto.c:4645
 #: lib/krb5/crypto.c:4696
+#: lib/krb5/get_addrs.c:139
+#: lib/krb5/get_cred.c:102
+#: lib/krb5/get_cred.c:156
+#: lib/krb5/get_cred.c:176
+#: lib/krb5/get_cred.c:192
+#: lib/krb5/get_cred.c:202
+#: lib/krb5/get_cred.c:208
+#: lib/krb5/get_cred.c:218
+#: lib/krb5/get_cred.c:224
+#: lib/krb5/get_cred.c:232
+#: lib/krb5/get_cred.c:641
+#: lib/krb5/get_cred.c:714
+#: lib/krb5/get_cred.c:785
+#: lib/krb5/get_cred.c:847
+#: lib/krb5/get_cred.c:1083
+#: lib/krb5/get_cred.c:1172
+#: lib/krb5/get_cred.c:1236
+#: lib/krb5/get_cred.c:1243
+#: lib/krb5/get_cred.c:1281
+#: lib/krb5/get_default_realm.c:80
+#: lib/krb5/get_for_creds.c:55
+#: lib/krb5/get_for_creds.c:273
+#: lib/krb5/get_for_creds.c:286
+#: lib/krb5/get_for_creds.c:299
+#: lib/krb5/get_for_creds.c:306
+#: lib/krb5/get_for_creds.c:351
+#: lib/krb5/get_in_tkt.c:63
+#: lib/krb5/get_in_tkt.c:450
+#: lib/krb5/get_in_tkt.c:630
+#: lib/krb5/get_in_tkt.c:677
+#: lib/krb5/get_in_tkt.c:683
+#: lib/krb5/get_in_tkt.c:700
+#: lib/krb5/get_in_tkt.c:713
+#: lib/krb5/get_in_tkt.c:736
+#: lib/krb5/get_in_tkt.c:761
+#: lib/krb5/get_in_tkt.c:800
+#: lib/krb5/init_creds.c:55
+#: lib/krb5/init_creds.c:61
+#: lib/krb5/init_creds.c:80
+#: lib/krb5/init_creds.c:88
+#: lib/krb5/init_creds.c:385
+#: lib/krb5/init_creds_pw.c:339
+#: lib/krb5/init_creds_pw.c:351
+#: lib/krb5/init_creds_pw.c:509
+#: lib/krb5/init_creds_pw.c:561
+#: lib/krb5/init_creds_pw.c:567
+#: lib/krb5/init_creds_pw.c:586
+#: lib/krb5/init_creds_pw.c:599
+#: lib/krb5/init_creds_pw.c:622
+#: lib/krb5/init_creds_pw.c:1095
+#: lib/krb5/kcm.c:176
+#: lib/krb5/kcm.c:210
+#: lib/krb5/kcm.c:219
 #: lib/krb5/v4_glue.c:427
 #: lib/krb5/v4_glue.c:484
 #: lib/krb5/v4_glue.c:543
@@ -330,6 +383,117 @@ msgstr ""
 
 #: lib/krb5/crypto.c:4500
 msgid "kdf params not NULL or the NULL-type"
+msgstr ""
+
+#: lib/krb5/get_addrs.c:123
+msgid "no addresses found"
+msgstr ""
+
+#: lib/krb5/get_cred.c:672
+#, c-format
+msgid "Matching credential (%s) not found"
+msgstr ""
+
+#: lib/krb5/get_cred.c:947
+msgid "Got back an non krbtgt ticket referrals"
+msgstr ""
+
+#: lib/krb5/get_cred.c:967
+#, c-format
+msgid "Referral from %s loops back to realm %s"
+msgstr ""
+
+#: lib/krb5/get_for_creds.c:242
+#, c-format
+msgid "resolving host %s failed: %s"
+msgstr ""
+
+#: lib/krb5/get_in_tkt.c:112
+#, c-format
+msgid "Referral EncryptedData wrong for realm %s"
+msgstr ""
+
+#: lib/krb5/get_in_tkt.c:141
+#, c-format
+msgid "server ref realm mismatch, requested realm %s got back %s"
+msgstr ""
+
+#: lib/krb5/get_in_tkt.c:157
+msgid "tgt returned with wrong ref"
+msgstr ""
+
+#: lib/krb5/get_in_tkt.c:163
+msgid "req princ no same as returned"
+msgstr ""
+
+#: lib/krb5/get_in_tkt.c:174
+msgid "referred principal not same as requested"
+msgstr ""
+
+#: lib/krb5/get_in_tkt.c:181
+msgid "Requested principal missing on AS-REQ"
+msgstr ""
+
+#: lib/krb5/get_in_tkt.c:191
+msgid "Not same server principal returned as requested"
+msgstr ""
+
+#: lib/krb5/get_in_tkt.c:233
+#, c-format
+msgid "Failed to decode ClientCanonicalized from realm %s"
+msgstr ""
+
+#: lib/krb5/get_in_tkt.c:261
+#, c-format
+msgid "Failed to verify client canonicalized data from realm %s"
+msgstr ""
+
+#: lib/krb5/get_in_tkt.c:274
+msgid "Requested name doesn't match in client referral"
+msgstr ""
+
+#: lib/krb5/get_in_tkt.c:284
+msgid "Mapped name doesn't match in client referral"
+msgstr ""
+
+#: lib/krb5/get_in_tkt.c:294
+msgid "Not same client principal returned as requested"
+msgstr ""
+
+#: lib/krb5/get_in_tkt.c:478
+#, c-format
+msgid "time skew (%d) larger than max (%d)"
+msgstr ""
+
+#: lib/krb5/get_in_tkt.c:820
+#, c-format
+msgid "pre-auth type %d not supported"
+msgstr ""
+
+#: lib/krb5/init_creds.c:331
+#, c-format
+msgid "%s on non extendable opt"
+msgstr ""
+
+#: lib/krb5/init_creds_pw.c:466
+msgid "failed changing password"
+msgstr ""
+
+#: lib/krb5/init_creds_pw.c:1038
+#: lib/krb5/init_creds_pw.c:1194
+msgid "no support for PKINIT compiled in"
+msgstr ""
+
+#: lib/krb5/init_creds_pw.c:1201
+msgid "No usable pa data type"
+msgstr ""
+
+#: lib/krb5/init_creds_pw.c:1328
+msgid "failed to decode METHOD DATA"
+msgstr ""
+
+#: lib/krb5/kcm.c:195
+msgid "Failed to encode KCM request"
 msgstr ""
 
 #: lib/krb5/rd_error.c:95
