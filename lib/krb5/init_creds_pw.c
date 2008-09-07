@@ -336,7 +336,7 @@ get_init_creds_common(krb5_context context,
 	etypes = malloc((options->etype_list_length + 1)
 			* sizeof(krb5_enctype));
 	if (etypes == NULL) {
-	    krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	    krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	    return ENOMEM;
 	}
 	memcpy (etypes, options->etype_list,
@@ -348,7 +348,7 @@ get_init_creds_common(krb5_context context,
 	pre_auth_types = malloc((options->preauth_list_length + 1)
 				* sizeof(krb5_preauthtype));
 	if (pre_auth_types == NULL) {
-	    krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	    krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	    return ENOMEM;
 	}
 	memcpy (pre_auth_types, options->preauth_list,
@@ -462,7 +462,8 @@ change_password (krb5_context context,
 	ret = 0;
     } else {
 	ret = ENOTTY;
-	krb5_set_error_message(context, ret, "failed changing password");
+	krb5_set_error_message(context, ret, 
+			       N_("failed changing password", ""));
     }
 
 out:
@@ -505,7 +506,7 @@ krb5_get_init_creds_keytab(krb5_context context,
     a = malloc (sizeof(*a));
     if (a == NULL) {
 	ret = ENOMEM;
-	krb5_set_error_message(context, ret, "malloc: out of memory");
+	krb5_set_error_message(context, ret, N_("malloc: out of memory", ""));
 	goto out;
     }
     a->principal = ctx.cred.client;
@@ -557,13 +558,13 @@ init_creds_init_as_req (krb5_context context,
     a->req_body.cname = malloc(sizeof(*a->req_body.cname));
     if (a->req_body.cname == NULL) {
 	ret = ENOMEM;
-	krb5_set_error_message(context, ret, "malloc: out of memory");
+	krb5_set_error_message(context, ret, N_("malloc: out of memory", ""));
 	goto fail;
     }
     a->req_body.sname = malloc(sizeof(*a->req_body.sname));
     if (a->req_body.sname == NULL) {
 	ret = ENOMEM;
-	krb5_set_error_message(context, ret, "malloc: out of memory");
+	krb5_set_error_message(context, ret, N_("malloc: out of memory", ""));
 	goto fail;
     }
 
@@ -582,7 +583,7 @@ init_creds_init_as_req (krb5_context context,
 	a->req_body.from = malloc(sizeof(*a->req_body.from));
 	if (a->req_body.from == NULL) {
 	    ret = ENOMEM;
-	    krb5_set_error_message(context, ret, "malloc: out of memory");
+	    krb5_set_error_message(context, ret, N_("malloc: out of memory", ""));
 	    goto fail;
 	}
 	*a->req_body.from = creds->times.starttime;
@@ -595,7 +596,7 @@ init_creds_init_as_req (krb5_context context,
 	a->req_body.rtime = malloc(sizeof(*a->req_body.rtime));
 	if (a->req_body.rtime == NULL) {
 	    ret = ENOMEM;
-	    krb5_set_error_message(context, ret, "malloc: out of memory");
+	    krb5_set_error_message(context, ret, N_("malloc: out of memory", ""));
 	    goto fail;
 	}
 	*a->req_body.rtime = creds->times.renew_till;
@@ -618,7 +619,7 @@ init_creds_init_as_req (krb5_context context,
 	a->req_body.addresses = malloc(sizeof(*a->req_body.addresses));
 	if (a->req_body.addresses == NULL) {
 	    ret = ENOMEM;
-	    krb5_set_error_message(context, ret, "malloc: out of memory");
+	    krb5_set_error_message(context, ret, N_("malloc: out of memory", ""));
 	    goto fail;
 	}
 
@@ -1033,7 +1034,8 @@ pa_data_to_md_pkinit(krb5_context context,
 			     ctx->pk_nonce,
 			     md);
 #else
-    krb5_set_error_message(context, EINVAL, "no support for PKINIT compiled in");
+    krb5_set_error_message(context, EINVAL,
+			   N_("no support for PKINIT compiled in", ""));
     return EINVAL;
 #endif
 }
@@ -1090,7 +1092,7 @@ process_pa_data_to_md(krb5_context context,
 
     ALLOC(*out_md, 1);
     if (*out_md == NULL) {
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     (*out_md)->len = 0;
@@ -1189,14 +1191,14 @@ process_pa_data_to_key(krb5_context context,
 				   key);
 #else
 	ret = EINVAL;
-	krb5_set_error_message(context, ret, "no support for PKINIT compiled in");
+	krb5_set_error_message(context, ret, N_("no support for PKINIT compiled in", ""));
 #endif
     } else if (ctx->password)
 	ret = pa_data_to_key_plain(context, creds->client, ctx, 
 				   paid.salt, paid.s2kparams, etype, key);
     else {
 	ret = EINVAL;
-	krb5_set_error_message(context, ret, "No usable pa data type");
+	krb5_set_error_message(context, ret, N_("No usable pa data type", ""));
     }
 
     free_paid(context, &paid);
@@ -1323,7 +1325,7 @@ init_cred_loop(krb5_context context,
 					     NULL);
 		    if (ret)
 			krb5_set_error_message(context, ret,
-					       "failed to decode METHOD DATA");
+					       N_("failed to decode METHOD DATA", ""));
 		} else {
 		    /* XXX guess what the server want here add add md */
 		}
