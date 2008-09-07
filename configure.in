@@ -92,6 +92,11 @@ if test "X$with_sqlite3" != Xyes ; then
 fi
 AM_CONDITIONAL(SQLITE3,  test "X$with_sqlite3" = Xyes)
 
+dnl check for libintl
+rk_TEST_PACKAGE(libintl,
+[#include <libintl.h>],
+[-lintl],,,LIBINTL)
+
 dnl path where the hdb directory is stored
 AC_ARG_WITH([hdbdir], 
 	[AS_HELP_STRING([--with-hdbdir],[Default location for KDC database @<:@default=/var/heimdal@:>@])],
