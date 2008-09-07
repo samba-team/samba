@@ -120,7 +120,7 @@ find_all_addresses (krb5_context context, krb5_addresses *res, int flags)
 
     if (num == 0) {
 	freeifaddrs(ifa0);
-	krb5_set_error_message(context, ENXIO, "no addresses found");
+	krb5_set_error_message(context, ENXIO, N_("no addresses found", ""));
 	return (ENXIO);
     }
 
@@ -136,7 +136,7 @@ find_all_addresses (krb5_context context, krb5_addresses *res, int flags)
     if (res->val == NULL) {
 	krb5_free_addresses(context, &ignore_addresses);
 	freeifaddrs(ifa0);
-	krb5_set_error_message (context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
 
