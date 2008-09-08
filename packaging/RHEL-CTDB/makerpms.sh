@@ -3,16 +3,17 @@
 # Copyright (C) Gerald (Jerry) Carter 2003
 # Copyright (C) Michael Adam 2008
 
+# Script to build RPMs for RHEL from inside a git checkout.
+
 # The following allows environment variables to override the target directories
 #   the alternative is to have a file in your home directory calles .rpmmacros
 #   containing the following:
 #   %_topdir  /home/mylogin/redhat
 #
-# Note: Under this directory rpm expects to find the same directories that are under the
-#   /usr/src/redhat directory
-#
+# Note: Under this directory rpm expects to find the same directories
+# that are under the /usr/src/redhat directory.
 
-# set DOCS_TARBALL to the path to a docs release tarball in .tar.bz2 format
+# Set DOCS_TARBALL to the path to a docs release tarball in .tar.bz2 format.
 
 # extra options passed to rpmbuild
 EXTRA_OPTIONS="$1"
