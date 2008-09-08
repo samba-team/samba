@@ -2927,11 +2927,251 @@ WERROR NetUserGetGroups_l(struct libnetapi_ctx *ctx,
 /****************************************************************
 ****************************************************************/
 
-
 WERROR NetUserSetGroups_r(struct libnetapi_ctx *ctx,
 			  struct NetUserSetGroups *r)
 {
-	return WERR_NOT_SUPPORTED;
+	struct cli_state *cli = NULL;
+	struct rpc_pipe_client *pipe_cli = NULL;
+	struct policy_handle connect_handle, domain_handle, user_handle, group_handle;
+	struct lsa_String lsa_account_name;
+	struct dom_sid2 *domain_sid = NULL;
+	struct samr_Ids user_rids, name_types;
+	struct samr_Ids group_rids;
+	struct samr_RidWithAttributeArray *rid_array = NULL;
+
+	uint32_t *add_rids = NULL;
+	uint32_t *del_rids = NULL;
+	size_t num_add_rids = 0;
+	size_t num_del_rids = 0;
+
+	uint32_t *member_rids = NULL;
+	size_t num_member_rids = 0;
+
+	struct GROUP_USERS_INFO_0 *i0 = NULL;
+	struct GROUP_USERS_INFO_1 *i1 = NULL;
+
+	int i, k;
+
+	NTSTATUS status = NT_STATUS_OK;
+	WERROR werr;
+
+	ZERO_STRUCT(connect_handle);
+	ZERO_STRUCT(domain_handle);
+
+	if (!r->in.buffer) {
+		return WERR_INVALID_PARAM;
+	}
+
+	switch (r->in.level) {
+		case 0:
+		case 1:
+			break;
+		default:
+			return WERR_UNKNOWN_LEVEL;
+	}
+
+	werr = libnetapi_open_pipe(ctx, r->in.server_name,
+				   &ndr_table_samr.syntax_id,
+				   &cli,
+				   &pipe_cli);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	werr = libnetapi_samr_open_domain(ctx, pipe_cli,
+					  SAMR_ACCESS_ENUM_DOMAINS |
+					  SAMR_ACCESS_OPEN_DOMAIN,
+					  SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
+					  &connect_handle,
+					  &domain_handle,
+					  &domain_sid);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	init_lsa_String(&lsa_account_name, r->in.user_name);
+
+	status = rpccli_samr_LookupNames(pipe_cli, ctx,
+					 &domain_handle,
+					 1,
+					 &lsa_account_name,
+					 &user_rids,
+					 &name_types);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	status = rpccli_samr_OpenUser(pipe_cli, ctx,
+				      &domain_handle,
+				      SAMR_USER_ACCESS_GET_GROUPS,
+				      user_rids.ids[0],
+				      &user_handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	switch (r->in.level) {
+		case 0:
+			i0 = (struct GROUP_USERS_INFO_0 *)r->in.buffer;
+			break;
+		case 1:
+			i1 = (struct GROUP_USERS_INFO_1 *)r->in.buffer;
+			break;
+	}
+
+	for (i=0; i < r->in.num_entries; i++) {
+
+		switch (r->in.level) {
+			case 0:
+				init_lsa_String(&lsa_account_name, i0->grui0_name);
+				i0++;
+				break;
+			case 1:
+				init_lsa_String(&lsa_account_name, i1->grui1_name);
+				i1++;
+				break;
+		}
+
+		status = rpccli_samr_LookupNames(pipe_cli, ctx,
+						 &domain_handle,
+						 1,
+						 &lsa_account_name,
+						 &group_rids,
+						 &name_types);
+		if (!NT_STATUS_IS_OK(status)) {
+			werr = ntstatus_to_werror(status);
+			goto done;
+		}
+
+		if (!add_rid_to_array_unique(ctx,
+					     group_rids.ids[0],
+					     &member_rids,
+					     &num_member_rids)) {
+			werr = WERR_GENERAL_FAILURE;
+			goto done;
+		}
+	}
+
+	status = rpccli_samr_GetGroupsForUser(pipe_cli, ctx,
+					      &user_handle,
+					      &rid_array);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	/* add list */
+
+	for (i=0; i < r->in.num_entries; i++) {
+		bool already_member = false;
+		for (k=0; k < rid_array->count; k++) {
+			if (member_rids[i] == rid_array->rids[k].rid) {
+				already_member = true;
+				break;
+			}
+		}
+		if (!already_member) {
+			if (!add_rid_to_array_unique(ctx,
+						     member_rids[i],
+						     &add_rids, &num_add_rids)) {
+				werr = WERR_GENERAL_FAILURE;
+				goto done;
+			}
+		}
+	}
+
+	/* del list */
+
+	for (k=0; k < rid_array->count; k++) {
+		bool keep_member = false;
+		for (i=0; i < r->in.num_entries; i++) {
+			if (member_rids[i] == rid_array->rids[k].rid) {
+				keep_member = true;
+				break;
+			}
+		}
+		if (!keep_member) {
+			if (!add_rid_to_array_unique(ctx,
+						     rid_array->rids[k].rid,
+						     &del_rids, &num_del_rids)) {
+				werr = WERR_GENERAL_FAILURE;
+				goto done;
+			}
+		}
+	}
+
+	/* add list */
+
+	for (i=0; i < num_add_rids; i++) {
+		status = rpccli_samr_OpenGroup(pipe_cli, ctx,
+					       &domain_handle,
+					       SAMR_GROUP_ACCESS_ADD_MEMBER,
+					       add_rids[i],
+					       &group_handle);
+		if (!NT_STATUS_IS_OK(status)) {
+			werr = ntstatus_to_werror(status);
+			goto done;
+		}
+
+		status = rpccli_samr_AddGroupMember(pipe_cli, ctx,
+						    &group_handle,
+						    user_rids.ids[0],
+						    7 /* ? */);
+		if (!NT_STATUS_IS_OK(status)) {
+			werr = ntstatus_to_werror(status);
+			goto done;
+		}
+
+		if (is_valid_policy_hnd(&group_handle)) {
+			rpccli_samr_Close(pipe_cli, ctx, &group_handle);
+		}
+	}
+
+	/* del list */
+
+	for (i=0; i < num_del_rids; i++) {
+		status = rpccli_samr_OpenGroup(pipe_cli, ctx,
+					       &domain_handle,
+					       SAMR_GROUP_ACCESS_REMOVE_MEMBER,
+					       del_rids[i],
+					       &group_handle);
+		if (!NT_STATUS_IS_OK(status)) {
+			werr = ntstatus_to_werror(status);
+			goto done;
+		}
+
+		status = rpccli_samr_DeleteGroupMember(pipe_cli, ctx,
+						       &group_handle,
+						       user_rids.ids[0]);
+		if (!NT_STATUS_IS_OK(status)) {
+			werr = ntstatus_to_werror(status);
+			goto done;
+		}
+
+		if (is_valid_policy_hnd(&group_handle)) {
+			rpccli_samr_Close(pipe_cli, ctx, &group_handle);
+		}
+	}
+
+	werr = WERR_OK;
+
+ done:
+	if (!cli) {
+		return werr;
+	}
+
+	if (is_valid_policy_hnd(&group_handle)) {
+		rpccli_samr_Close(pipe_cli, ctx, &group_handle);
+	}
+
+	if (ctx->disable_policy_handle_cache) {
+		libnetapi_samr_close_domain_handle(ctx, &domain_handle);
+		libnetapi_samr_close_connect_handle(ctx, &connect_handle);
+	}
+
+	return werr;
 }
 
 /****************************************************************
