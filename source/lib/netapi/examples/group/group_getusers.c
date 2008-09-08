@@ -105,11 +105,11 @@ int main(int argc, const char **argv)
 			for (i=0; i<entries_read; i++) {
 				switch (level) {
 					case 0:
-						printf("#%d group: %s\n", i, info0->grui0_name);
+						printf("#%d member: %s\n", i, info0->grui0_name);
 						info0++;
 						break;
 					case 1:
-						printf("#%d group: %s\n", i, info1->grui1_name);
+						printf("#%d member: %s\n", i, info1->grui1_name);
 						printf("#%d attributes: %d\n", i, info1->grui1_attributes);
 						info1++;
 						break;
