@@ -1273,7 +1273,10 @@ def provision_backend(setup_dir=None, message=None,
 	mmr_syncrepl_user_config = "" 
 	
 	if ol_mmr_urls is not None:
-		url_list=filter(None,ol_mmr_urls.split(' ')) 
+                # For now, make these equal
+                mmr_pass = adminpass
+
+ 		url_list=filter(None,ol_mmr_urls.split(' ')) 
                 if (len(url_list) == 1):
                     url_list=filter(None,ol_mmr_urls.split(',')) 
                      
@@ -1292,21 +1295,21 @@ def provision_backend(setup_dir=None, message=None,
 								     { 	"RID" : str(rid),
                     							"MMRDN": names.schemadn,
         		                                               	"LDAPSERVER" : url,
-                                                                        "MMR_PASSWORD": adminpass})
+                                                                        "MMR_PASSWORD": mmr_pass})
 
 			rid=rid+1
 			mmr_syncrepl_config_config += read_and_sub_file(setup_path("mmr_syncrepl.conf"),
 								     { 	"RID" : str(rid),
                     							"MMRDN": names.configdn,
         		                                               	"LDAPSERVER" : url,
-                                                                        "MMR_PASSWORD": adminpass})
+                                                                        "MMR_PASSWORD": mmr_pass})
 
 			rid=rid+1
 			mmr_syncrepl_user_config += read_and_sub_file(setup_path("mmr_syncrepl.conf"),
 								     { 	"RID" : str(rid),
                     							"MMRDN": names.domaindn,
         		                                               	"LDAPSERVER" : url,
-                                                                        "MMR_PASSWORD": adminpass })
+                                                                        "MMR_PASSWORD": mmr_pass })
 
 
         setup_file(setup_path("slapd.conf"), paths.slapdconf,
@@ -1322,7 +1325,6 @@ def provision_backend(setup_dir=None, message=None,
                     "MMR_SYNCREPL_SCHEMA_CONFIG": mmr_syncrepl_schema_config,
                     "MMR_SYNCREPL_CONFIG_CONFIG": mmr_syncrepl_config_config,
                     "MMR_SYNCREPL_USER_CONFIG": mmr_syncrepl_user_config,
-                    "MMR_PASSWORD": adminpass,
                     "REFINT_CONFIG": refint_config})
 	setup_file(setup_path("modules.conf"), paths.modulesconf,
                    {"REALM": names.realm})
@@ -1347,7 +1349,7 @@ def provision_backend(setup_dir=None, message=None,
 	if ol_mmr_urls is not None:
  	   setup_file(setup_path("cn=replicator.ldif"),
                               os.path.join(paths.ldapdir, "db", "samba",  "cn=samba", "cn=replicator.ldif"),
-                              {"LDAPADMINPASS_B64": b64encode(adminpass),
+                              {"MMR_PASSWORD_B64": b64encode(mmr_pass),
                                "UUID": str(uuid.uuid4()),
                                "LDAPTIME": timestring(int(time.time()))} )
 
