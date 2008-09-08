@@ -47,6 +47,8 @@ static bool test_delayed_write_update(struct torture_context *tctx, struct smbcl
 	double sec = ((double)used_delay) / ((double)normal_delay);
 	int msec = 1000 * sec;
 
+	torture_comment(tctx, "\nRunning test_delayed_write_update\n");
+
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return false;
 	}
@@ -144,6 +146,8 @@ static bool test_delayed_write_update1(struct torture_context *tctx, struct smbc
 	int msec = 1000 * sec;
 	char buf[2048];
 
+	torture_comment(tctx, "\nRunning test_delayed_write_update1\n");
+
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return false;
 	}
@@ -199,7 +203,8 @@ static bool test_delayed_write_update1(struct torture_context *tctx, struct smbc
 		}
 
 		if (finfo2.all_info.out.size != 1024) {
-			DEBUG(0, ("file not truncated\n"));
+			DEBUG(0, ("file not truncated, size = %u (should be 1024)\n",
+				(unsigned int)finfo2.all_info.out.size));
 			ret = false;
 			break;
 		}
@@ -253,7 +258,8 @@ static bool test_delayed_write_update1(struct torture_context *tctx, struct smbc
 		}
 
 		if (finfo3.all_info.out.size != 1024) {
-			DEBUG(0, ("file not truncated\n"));
+			DEBUG(0, ("file not truncated, size = %u (should be 1024)\n",
+				(unsigned int)finfo3.all_info.out.size));
 			ret = false;
 			break;
 		}
@@ -321,6 +327,8 @@ static bool test_delayed_write_update1a(struct torture_context *tctx, struct smb
 	int msec = 1000 * sec;
 	char buf[2048];
 
+	torture_comment(tctx, "\nRunning test_delayed_write_update1a\n");
+
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return false;
 	}
@@ -376,7 +384,8 @@ static bool test_delayed_write_update1a(struct torture_context *tctx, struct smb
 		}
 
 		if (finfo2.all_info.out.size != 10240) {
-			DEBUG(0, ("file not truncated\n"));
+			DEBUG(0, ("file not truncated, size = %u (should be 10240)\n",
+				(unsigned int)finfo2.all_info.out.size));
 			ret = false;
 			break;
 		}
@@ -430,7 +439,8 @@ static bool test_delayed_write_update1a(struct torture_context *tctx, struct smb
 		}
 
 		if (finfo3.all_info.out.size != 10240) {
-			DEBUG(0, ("file not truncated\n"));
+			DEBUG(0, ("file not truncated, size = %u (should be 10240)\n",
+				(unsigned int)finfo3.all_info.out.size));
 			ret = false;
 			break;
 		}
@@ -498,6 +508,8 @@ static bool test_delayed_write_update1b(struct torture_context *tctx, struct smb
 	int msec = 1000 * sec;
 	char buf[2048];
 
+	torture_comment(tctx, "\nRunning test_delayed_write_update1b\n");
+
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return false;
 	}
@@ -553,7 +565,8 @@ static bool test_delayed_write_update1b(struct torture_context *tctx, struct smb
 		}
 
 		if (finfo2.all_info.out.size != 10240) {
-			DEBUG(0, ("file not truncated\n"));
+			DEBUG(0, ("file not truncated (size = %u, should be 10240)\n",
+				(unsigned int)finfo2.all_info.out.size ));
 			ret = false;
 			break;
 		}
@@ -607,7 +620,8 @@ static bool test_delayed_write_update1b(struct torture_context *tctx, struct smb
 		}
 
 		if (finfo3.all_info.out.size != 10240) {
-			DEBUG(0, ("file not truncated\n"));
+			DEBUG(0, ("file not truncated (size = %u, should be 10240)\n",
+				(unsigned int)finfo3.all_info.out.size ));
 			ret = false;
 			break;
 		}
@@ -675,6 +689,8 @@ static bool test_delayed_write_update1c(struct torture_context *tctx, struct smb
 	int msec = 1000 * sec;
 	char buf[2048];
 
+	torture_comment(tctx, "\nRunning test_delayed_write_update1c\n");
+
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return false;
 	}
@@ -734,7 +750,8 @@ static bool test_delayed_write_update1c(struct torture_context *tctx, struct smb
 		}
 
 		if (finfo2.all_info.out.size != 0) {
-			DEBUG(0, ("file not truncated\n"));
+			DEBUG(0, ("file not truncated (size = %u, should be 10240)\n",
+				(unsigned int)finfo2.all_info.out.size ));
 			ret = false;
 			break;
 		}
@@ -858,6 +875,8 @@ static bool test_delayed_write_update2(struct torture_context *tctx, struct smbc
 	double sec = ((double)used_delay) / ((double)normal_delay);
 	int msec = 1000 * sec;
 	union smb_flush flsh;
+
+	torture_comment(tctx, "\nRunning test_delayed_write_update2\n");
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return false;
@@ -1219,6 +1238,8 @@ static bool test_finfo_after_write(struct torture_context *tctx, struct smbcli_s
 	double sec = ((double)used_delay) / ((double)normal_delay);
 	int msec = 1000 * sec;
 
+	torture_comment(tctx, "\nRunning test_finfo_after_write\n");
+
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return false;
 	}
@@ -1447,7 +1468,7 @@ static bool test_delayed_write_update3(struct torture_context *tctx,
 {
 	union smb_fileinfo finfo0, finfo1, finfo2, finfo3, finfo4;
 	union smb_fileinfo pinfo0, pinfo1, pinfo2, pinfo3, pinfo4, pinfo5;
-	const char *fname = BASEDIR "\\torture_file.txt";
+	const char *fname = BASEDIR "\\torture_file3.txt";
 	int fnum1 = -1;
 	bool ret = true;
 	ssize_t written;
@@ -1457,6 +1478,8 @@ static bool test_delayed_write_update3(struct torture_context *tctx,
 	int normal_delay = 2000000;
 	double sec = ((double)used_delay) / ((double)normal_delay);
 	int msec = 1000 * sec;
+
+	torture_comment(tctx, "\nRunning test_delayed_write_update3\n");
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return false;
@@ -1595,7 +1618,7 @@ static bool test_delayed_write_update3a(struct torture_context *tctx,
 {
 	union smb_fileinfo finfo0, finfo1, finfo2, finfo3, finfo4;
 	union smb_fileinfo pinfo0, pinfo1, pinfo2, pinfo3, pinfo4, pinfo5;
-	const char *fname = BASEDIR "\\torture_file.txt";
+	const char *fname = BASEDIR "\\torture_file3a.txt";
 	int fnum1 = -1;
 	bool ret = true;
 	ssize_t written;
@@ -1606,6 +1629,8 @@ static bool test_delayed_write_update3a(struct torture_context *tctx,
 	int normal_delay = 2000000;
 	double sec = ((double)used_delay) / ((double)normal_delay);
 	int msec = 1000 * sec;
+
+	torture_comment(tctx, "\nRunning test_delayed_write_update3a\n");
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return false;
@@ -1800,7 +1825,7 @@ static bool test_delayed_write_update3b(struct torture_context *tctx,
 {
 	union smb_fileinfo finfo0, finfo1, finfo2, finfo3, finfo4;
 	union smb_fileinfo pinfo0, pinfo1, pinfo2, pinfo3, pinfo4, pinfo5;
-	const char *fname = BASEDIR "\\torture_file.txt";
+	const char *fname = BASEDIR "\\torture_file3b.txt";
 	int fnum1 = -1;
 	bool ret = true;
 	ssize_t written;
@@ -1810,6 +1835,8 @@ static bool test_delayed_write_update3b(struct torture_context *tctx,
 	int normal_delay = 2000000;
 	double sec = ((double)used_delay) / ((double)normal_delay);
 	int msec = 1000 * sec;
+
+	torture_comment(tctx, "\nRunning test_delayed_write_update3b\n");
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return false;
@@ -1958,7 +1985,7 @@ static bool test_delayed_write_update3c(struct torture_context *tctx,
 {
 	union smb_fileinfo finfo0, finfo1, finfo2, finfo3, finfo4;
 	union smb_fileinfo pinfo0, pinfo1, pinfo2, pinfo3, pinfo4, pinfo5;
-	const char *fname = BASEDIR "\\torture_file.txt";
+	const char *fname = BASEDIR "\\torture_file3c.txt";
 	int fnum1 = -1;
 	bool ret = true;
 	ssize_t written;
@@ -1969,6 +1996,8 @@ static bool test_delayed_write_update3c(struct torture_context *tctx,
 	int normal_delay = 2000000;
 	double sec = ((double)used_delay) / ((double)normal_delay);
 	int msec = 1000 * sec;
+
+	torture_comment(tctx, "\nRunning test_delayed_write_update3c\n");
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return false;
@@ -2161,7 +2190,7 @@ static bool test_delayed_write_update4(struct torture_context *tctx,
 {
 	union smb_fileinfo finfo0, finfo1, finfo2, finfo3, finfo4;
 	union smb_fileinfo pinfo0, pinfo1, pinfo2, pinfo3, pinfo4, pinfo5;
-	const char *fname = BASEDIR "\\torture_file.txt";
+	const char *fname = BASEDIR "\\torture_file4.txt";
 	int fnum1 = -1;
 	bool ret = true;
 	ssize_t written;
@@ -2171,6 +2200,8 @@ static bool test_delayed_write_update4(struct torture_context *tctx,
 	int normal_delay = 2000000;
 	double sec = ((double)used_delay) / ((double)normal_delay);
 	int msec = 1000 * sec;
+
+	torture_comment(tctx, "\nRunning test_delayed_write_update4\n");
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return false;
@@ -2316,7 +2347,7 @@ static bool test_delayed_write_update5(struct torture_context *tctx,
 {
 	union smb_fileinfo finfo0, finfo1, finfo2, finfo3, finfo4, finfo5;
 	union smb_fileinfo pinfo0, pinfo1, pinfo2, pinfo3, pinfo4, pinfo5, pinfo6;
-	const char *fname = BASEDIR "\\torture_file.txt";
+	const char *fname = BASEDIR "\\torture_file5.txt";
 	int fnum1 = -1;
 	bool ret = true;
 	ssize_t written;
@@ -2326,6 +2357,8 @@ static bool test_delayed_write_update5(struct torture_context *tctx,
 	int normal_delay = 2000000;
 	double sec = ((double)used_delay) / ((double)normal_delay);
 	int msec = 1000 * sec;
+
+	torture_comment(tctx, "\nRunning test_delayed_write_update5\n");
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return false;
@@ -2472,7 +2505,7 @@ static bool test_delayed_write_update5b(struct torture_context *tctx,
 {
 	union smb_fileinfo finfo0, finfo1, finfo2, finfo3, finfo4, finfo5;
 	union smb_fileinfo pinfo0, pinfo1, pinfo2, pinfo3, pinfo4, pinfo5, pinfo6;
-	const char *fname = BASEDIR "\\torture_file.txt";
+	const char *fname = BASEDIR "\\torture_fileb.txt";
 	int fnum1 = -1;
 	bool ret = true;
 	ssize_t written;
@@ -2482,6 +2515,8 @@ static bool test_delayed_write_update5b(struct torture_context *tctx,
 	int normal_delay = 2000000;
 	double sec = ((double)used_delay) / ((double)normal_delay);
 	int msec = 1000 * sec;
+
+	torture_comment(tctx, "\nRunning test_delayed_write_update5b\n");
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return false;
@@ -2628,7 +2663,7 @@ static bool test_delayed_write_update6(struct torture_context *tctx,
 {
 	union smb_fileinfo finfo0, finfo1, finfo2, finfo3, finfo4, finfo5;
 	union smb_fileinfo pinfo0, pinfo1, pinfo2, pinfo3, pinfo4, pinfo5, pinfo6, pinfo7;
-	const char *fname = BASEDIR "\\torture_file.txt";
+	const char *fname = BASEDIR "\\torture_file6.txt";
 	int fnum1 = -1;
 	int fnum2 = -1;
 	bool ret = true;
@@ -2640,6 +2675,8 @@ static bool test_delayed_write_update6(struct torture_context *tctx,
 	double sec = ((double)used_delay) / ((double)normal_delay);
 	int msec = 1000 * sec;
 	bool first = true;
+
+	torture_comment(tctx, "\nRunning test_delayed_write_update6\n");
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return false;
