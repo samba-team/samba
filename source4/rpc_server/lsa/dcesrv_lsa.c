@@ -2018,7 +2018,9 @@ static NTSTATUS dcesrv_lsa_CreateSecret(struct dcesrv_call_state *dce_call, TALL
 	if (strncmp("G$", r->in.name.string, 2) == 0) {
 		const char *name2;
 		name = &r->in.name.string[2];
-		secret_state->sam_ldb = talloc_reference(secret_state, policy_state->sam_ldb);
+			/* We need to connect to the database as system, as this is one of the rare RPC calls that must read the secrets (and this is denied otherwise) */
+		secret_state->sam_ldb = talloc_reference(secret_state, 
+							 samdb_connect(mem_ctx, dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx, system_session(secret_state, dce_call->conn->dce_ctx->lp_ctx))); 
 		secret_state->global = true;
 
 		if (strlen(name) < 1) {
@@ -2162,7 +2164,9 @@ static NTSTATUS dcesrv_lsa_OpenSecret(struct dcesrv_call_state *dce_call, TALLOC
 
 	if (strncmp("G$", r->in.name.string, 2) == 0) {
 		name = &r->in.name.string[2];
-		secret_state->sam_ldb = talloc_reference(secret_state, policy_state->sam_ldb);
+		/* We need to connect to the database as system, as this is one of the rare RPC calls that must read the secrets (and this is denied otherwise) */
+		secret_state->sam_ldb = talloc_reference(secret_state, 
+							 samdb_connect(mem_ctx, dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx, system_session(secret_state, dce_call->conn->dce_ctx->lp_ctx))); 
 		secret_state->global = true;
 
 		if (strlen(name) < 1) {
@@ -2291,15 +2295,59 @@ static NTSTATUS dcesrv_lsa_SetSecret(struct dcesrv_call_state *dce_call, TALLOC_
 			return NT_STATUS_NO_MEMORY; 
 		}
 
-		if (!r->in.new_val) {
-			/* set old value mtime */
-			if (samdb_msg_add_uint64(secret_state->sam_ldb, 
-						 mem_ctx, msg, "lastSetTime", nt_now) != 0) { 
+	} else {
+		/* If the old value is not set, then migrate the
+		 * current value to the old value */
+		const struct ldb_val *old_val;
+		NTTIME last_set_time;
+		struct ldb_message **res;
+		const char *attrs[] = {
+			"currentValue",
+			"lastSetTime",
+			NULL
+		};
+		
+		/* search for the secret record */
+		ret = gendb_search_dn(secret_state->sam_ldb,mem_ctx,
+				      secret_state->secret_dn, &res, attrs);
+		if (ret == 0) {
+			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		}
+		
+		if (ret != 1) {
+			DEBUG(0,("Found %d records matching dn=%s\n", ret,
+				 ldb_dn_get_linearized(secret_state->secret_dn)));
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+		
+		old_val = ldb_msg_find_ldb_val(res[0], "currentValue");
+		last_set_time = ldb_msg_find_attr_as_uint64(res[0], "lastSetTime", 0);
+		
+		if (old_val) {
+			/* set old value */
+			if (samdb_msg_add_value(secret_state->sam_ldb, 
+						mem_ctx, msg, "priorValue", 
+						old_val) != 0) {
 				return NT_STATUS_NO_MEMORY; 
 			}
+		} else {
 			if (samdb_msg_add_delete(secret_state->sam_ldb, 
-						 mem_ctx, msg, "currentValue")) {
+						 mem_ctx, msg, "priorValue")) {
 				return NT_STATUS_NO_MEMORY;
+			}
+			
+		}
+		
+		/* set old value mtime */
+		if (ldb_msg_find_ldb_val(res[0], "lastSetTime")) {
+			if (samdb_msg_add_uint64(secret_state->sam_ldb, 
+						 mem_ctx, msg, "priorSetTime", last_set_time) != 0) { 
+				return NT_STATUS_NO_MEMORY; 
+			}
+		} else {
+			if (samdb_msg_add_uint64(secret_state->sam_ldb, 
+						 mem_ctx, msg, "priorSetTime", nt_now) != 0) { 
+				return NT_STATUS_NO_MEMORY; 
 			}
 		}
 	}
@@ -2329,50 +2377,15 @@ static NTSTATUS dcesrv_lsa_SetSecret(struct dcesrv_call_state *dce_call, TALLOC_
 			return NT_STATUS_NO_MEMORY; 
 		}
 		
-		/* If the old value is not set, then migrate the
-		 * current value to the old value */
-		if (!r->in.old_val) {
-			const struct ldb_val *new_val;
-			NTTIME last_set_time;
-			struct ldb_message **res;
-			const char *attrs[] = {
-				"currentValue",
-				"lastSetTime",
-				NULL
-			};
-			
-			/* search for the secret record */
-			ret = gendb_search_dn(secret_state->sam_ldb,mem_ctx,
-					      secret_state->secret_dn, &res, attrs);
-			if (ret == 0) {
-				return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-			}
-			
-			if (ret != 1) {
-				DEBUG(0,("Found %d records matching dn=%s\n", ret,
-					 ldb_dn_get_linearized(secret_state->secret_dn)));
-				return NT_STATUS_INTERNAL_DB_CORRUPTION;
-			}
-
-			new_val = ldb_msg_find_ldb_val(res[0], "currentValue");
-			last_set_time = ldb_msg_find_attr_as_uint64(res[0], "lastSetTime", 0);
-			
-			if (new_val) {
-				/* set value */
-				if (samdb_msg_add_value(secret_state->sam_ldb, 
-							mem_ctx, msg, "priorValue", 
-							new_val) != 0) {
-					return NT_STATUS_NO_MEMORY; 
-				}
-			}
-			
-			/* set new value mtime */
-			if (ldb_msg_find_ldb_val(res[0], "lastSetTime")) {
-				if (samdb_msg_add_uint64(secret_state->sam_ldb, 
-							 mem_ctx, msg, "priorSetTime", last_set_time) != 0) { 
-					return NT_STATUS_NO_MEMORY; 
-				}
-			}
+	} else {
+		/* NULL out the NEW value */
+		if (samdb_msg_add_uint64(secret_state->sam_ldb, 
+					 mem_ctx, msg, "lastSetTime", nt_now) != 0) { 
+			return NT_STATUS_NO_MEMORY; 
+		}
+		if (samdb_msg_add_delete(secret_state->sam_ldb, 
+					 mem_ctx, msg, "currentValue")) {
+			return NT_STATUS_NO_MEMORY;
 		}
 	}
 
