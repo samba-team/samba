@@ -2,7 +2,7 @@ dn: cn=replicator
 objectClass: top
 objectClass: person
 cn: replicator
-userPassword:: ${LDAPADMINPASS_B64}
+userPassword:: ${MMR_PASSWORD_B64}
 structuralObjectClass: person
 entryUUID: ${UUID}
 creatorsName:
