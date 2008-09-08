@@ -37,7 +37,14 @@
 
 #define XPRESS_BLOCK_SIZE 0x10000
 
-uint32_t lzxpress_decompress(DATA_BLOB *inbuf,
-			     DATA_BLOB *outbuf);
+ssize_t lzxpress_compress(const uint8_t *uncompressed,
+			  uint32_t uncompressed_size,
+			  uint8_t *compressed,
+			  uint32_t max_compressed_size);
+
+ssize_t lzxpress_decompress(const uint8_t *input,
+			    uint32_t input_size,
+			    uint8_t *output,
+			    uint32_t max_output_size);
 
 #endif /* _LZXPRESS_H */

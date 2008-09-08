@@ -1,0 +1,44 @@
+#!/usr/bin/python
+#
+#	set the password expiry for a user
+#	Copyright Andrew Tridgell 2005
+#	Copyright Jelmer Vernooij 2008
+#	Released under the GNU GPL version 3 or later
+#
+
+import sys
+
+# Find right directory when running from source tree
+sys.path.insert(0, "bin/python")
+
+import samba.getopt as options
+import optparse
+from getpass import getpass
+from samba.auth import system_session
+
+parser = optparse.OptionParser("setexpiry [options] <username>")
+sambaopts = options.SambaOptions(parser)
+parser.add_option_group(sambaopts)
+parser.add_option_group(options.VersionOptions(parser))
+credopts = options.CredentialsOptions(parser)
+parser.add_option_group(credopts)
+parser.add_option("--days", help="Days to expiry", type=int)
+parser.add_option("--noexpiry", help="Never expire", action="store_true")
+
+opts, args = parser.parse_args()
+
+if len(args) == 0:
+	parser.print_usage()
+	sys.exit(1)
+
+username = args[0]
+
+lp = sambaopts.get_loadparm()
+creds = credopts.get_credentials(lp)
+
+samdb = sambaopts.get_hostconfig().get_samdb(session_info=system_session(), 
+		                                     credentials=creds)
+days = opts.days
+if days is None:
+	days = 0
+samdb.setexpiry(username, days*24*3600, opts.noexpiry)
