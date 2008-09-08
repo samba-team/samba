@@ -1372,6 +1372,28 @@ NET_API_STATUS NetGroupGetUsers(const char * server_name /* [in] */,
 
 /************************************************************//**
  *
+ * NetGroupSetUsers
+ *
+ * @brief Set Users for a group on a server
+ *
+ * @param[in] server_name The server name to connect to
+ * @param[in] group_name The group name to enumerate users for
+ * @param[in] level The enumeration level used for the query
+ * @param[in] buffer The buffer containing a X structure
+ * @param[in] num_entries The number of X entries in the buffer
+ * @return NET_API_STATUS
+ *
+ * example group/group_setusers.c
+ ***************************************************************/
+
+NET_API_STATUS NetGroupSetUsers(const char * server_name /* [in] */,
+				const char * group_name /* [in] */,
+				uint32_t level /* [in] */,
+				uint8_t *buffer /* [in] [ref] */,
+				uint32_t num_entries /* [in] */);
+
+/************************************************************//**
+ *
  * NetLocalGroupAdd
  *
  * @brief Create Local Group
