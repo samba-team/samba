@@ -1,6 +1,7 @@
 #!/bin/sh
 # Copyright (C) John H Terpstra 1998-2002
-#               Gerald (Jerry) Carter 2003
+# Copyright (C) Gerald (Jerry) Carter 2003
+# Copyright (C) Michael Adam 2008
 
 # The following allows environment variables to override the target directories
 #   the alternative is to have a file in your home directory calles .rpmmacros
