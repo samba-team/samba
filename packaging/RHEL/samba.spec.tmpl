@@ -137,6 +137,7 @@ CC="$CC" CFLAGS="$RPM_OPT_FLAGS $EXTRA -D_GNU_SOURCE" ./configure \
 	--localstatedir=/var \
         --with-configdir=%{_sysconfdir}/samba \
         --with-libdir=%{_libarchdir}/samba \
+	--with-pammodulesdir=%{_libarch}/security \
         --with-lockdir=/var/lib/samba \
         --with-logfilebase=/var/log/samba \
         --with-mandir=%{_mandir} \
@@ -216,8 +217,7 @@ make DESTDIR=$RPM_BUILD_ROOT \
         install
 cd ..
 
-# NSS & PAM winbind support
-install -m 755 source/bin/pam_winbind.so $RPM_BUILD_ROOT/%{_libarch}/security/pam_winbind.so
+# NSS winbind support
 install -m 755 source/nsswitch/libnss_winbind.so $RPM_BUILD_ROOT/%{_libarch}/libnss_winbind.so
 install -m 755 source/nsswitch/libnss_wins.so $RPM_BUILD_ROOT/%{_libarch}/libnss_wins.so
 ( cd $RPM_BUILD_ROOT/%{_libarch};
