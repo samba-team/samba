@@ -1,30 +1,87 @@
                    ==============================
-                   Release Notes for Samba 3.2.3
-			  August, 27 2008
+                   Release Notes for Samba 3.2.4
+
                    ==============================
 
-This is a security release in order to address CVE-2008-3789 ("Wrong
-permissions of group_mapping.ldb").
+This is a bug fix release of the Samba 3.2 series.
 
-   o CVE-2008-3789
-     The file group_mapping.ldb is created with
-     the permissions 0666. That means everyone
-     is able to edit this file and might map any
-     SID to root.
+Major bug fixes included in Samba 3.2.4 are:
 
-The original security announcement for this and past advisories can
-be found http://www.samba.org/samba/security/
+  o Fix changing of machine account passwords.
+  o Fix non guest connections to shares when "security = share"
+    is used.
 
 
 ######################################################################
 Changes
 #######
 
-Changes since 3.2.2
+Changes since 3.2.3
 -------------------
 
+
+o   Michael Adam <obnox@samba.org>
+    * BUG 5590: Fix binary stripping on older OS.
+    * Fix linking of cifs.upcall when nscd_flush_cache() is found.
+
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 5697: Fix spinning of nmbd in reload_interfaces when only loopback
+      has an IPv4 address.
+    * BUG 5698: Fix non guest connections to shares when "security = share"
+      is used.
+    * BUG 5729: Explicitly allow "-valid".
+    * Fix the wcache_invalidate_samlogon calls.
+    * Add st_birthtime and friends for accurate create times on *BSD and MacOSX.
+    * Clarify usage of "force create mode".
+
+
+o   Gerald (Jerry) Carter <jerry@samba.org>
+    * Fix Winbind crash.
+
+
+o   Steven Danneman <steven.danneman@isilon.com>
+    * Cleanup of DC enumeration in get_dcs().
+
+
+o   Günther Deschner <gd@samba.org>
+    * BUG 5710: Fix changing of machine account passwords.
+    * Fix several build warnings.
+    * Fix invalid sid copy (hit when enumerating sibling domains) in Winbind.
+
+
+o   James Ding <ding_cc@hotmail.com>
+    * BUG 5736: Fix Winbind crash bug with trusted domains.
+
+
+o   Ephi Dror <Ephi.Dror@datadomain.com>
+    * Correct the netsamlogon_clear_cached_user function.
+
+
+o   Jeff Layton <jlayton@redhat.com>
+    * Fix handling of MSKRB5 OID in cifs.upcall.
+    * Fix build warning in cifs.upcall.
+
+
+o   Volker Lendecke <vl@sernet.de>
+    * BUG 5707: Do proper error handling if the socket is closed.
+    * Fix Coverity ID 587.
+
+
+o   David Leonard <David.Leonard@quest.com>
+    * BUG 4516: No IPv6 on Solaris 2.6.
+
+
 o   Andrew Tridgell <tridge@samba.org>
-    * Fix for CVE-2008-3789.
+    * Avoid a race condition in glibc between AIO and setresuid().
+    * Add missing become root for AIO operations.
+    * Fix logic of tsmsm_sendfile().
+    * Fix an errno handling bug that could lead to an infinite loop.
+    * Fix handling of arbitrary new PAC types.
+
+
+o   Qiao Yang <geoyang@ironport.com>
+    * Fix a memleak.
 
 
 ######################################################################
