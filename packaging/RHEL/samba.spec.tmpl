@@ -409,15 +409,11 @@ fi
 
 %files client
 %defattr(-,root,root)
-/sbin/mount.smb
-/sbin/mount.smbfs
 /sbin/mount.cifs
 /sbin/umount.cifs
 
 %{_bindir}/rpcclient
 %{_bindir}/smbcacls
-%{_bindir}/smbmnt
-%{_bindir}/smbumount
 %{_bindir}/findsmb
 %{_bindir}/smbcquotas
 %{_bindir}/nmblookup
