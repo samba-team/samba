@@ -77,4 +77,11 @@ void libnetapi_samr_close_connect_handle(struct libnetapi_ctx *ctx,
 					 struct policy_handle *handle);
 void libnetapi_samr_free(struct libnetapi_ctx *ctx);
 
+NTSTATUS add_GROUP_USERS_INFO_X_buffer(TALLOC_CTX *mem_ctx,
+				       uint32_t level,
+				       const char *group_name,
+				       uint32_t attributes,
+				       uint8_t **buffer,
+				       uint32_t *num_entries);
+
 #endif
