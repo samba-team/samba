@@ -970,10 +970,15 @@ bool cli_qfilename(struct cli_state *cli, int fnum, char *name, size_t namelen)
 	}
 
 	if (!rdata || data_len < 4) {
+		SAFE_FREE(rparam);
+		SAFE_FREE(rdata);
 		return False;
 	}
 
 	clistr_pull(cli, name, rdata+4, namelen, IVAL(rdata, 0), STR_UNICODE);
+
+	SAFE_FREE(rparam);
+	SAFE_FREE(rdata);
 
 	return True;
 }
