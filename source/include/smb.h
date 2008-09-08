@@ -487,6 +487,7 @@ typedef struct files_struct {
 	uint32 access_mask;		/* NTCreateX access bits (FILE_READ_DATA etc.) */
 	uint32 share_access;		/* NTCreateX share constants (FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE). */
 
+	bool update_write_time_triggered;
 	struct timed_event *update_write_time_event;
 	bool update_write_time_on_close;
 	struct timespec close_write_time;
