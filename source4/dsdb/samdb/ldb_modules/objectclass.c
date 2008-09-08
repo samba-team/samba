@@ -534,6 +534,8 @@ static int objectclass_do_add(struct ldb_handle *h)
 			}
 			/* Last one is the critical one */
 			if (!current->next) {
+				struct ldb_message_element *el;
+				int32_t systemFlags = 0;
 				if (!ldb_msg_find_element(msg, "objectCategory")) {
 					ldb_msg_add_string(msg, "objectCategory", 
 							   current->objectclass->defaultObjectCategory);
@@ -547,6 +549,41 @@ static int objectclass_do_add(struct ldb_handle *h)
 					if (sd) {
 						ldb_msg_add_steal_value(msg, "nTSecurityDescriptor", sd);
 					}
+				}
+
+				/* There are very special rules for systemFlags, see MS-ADTS 3.1.1.5.2.4 */
+				el = ldb_msg_find_element(msg, "systemFlags");
+
+				systemFlags = ldb_msg_find_attr_as_int(msg, "systemFlags", 0);
+
+				if (el) {
+					/* Only these flags may be set by a client, but we can't tell between a client and our provision at this point */
+					/* systemFlags &= ( SYSTEM_FLAG_CONFIG_ALLOW_RENAME | SYSTEM_FLAG_CONFIG_ALLOW_MOVE | SYSTEM_FLAG_CONFIG_LIMITED_MOVE); */
+					ldb_msg_remove_element(msg, el);
+				}
+				
+				/* This flag is only allowed on attributeSchema objects */
+				if (ldb_attr_cmp(current->objectclass->lDAPDisplayName, "attributeSchema") == 0) {
+					systemFlags &= ~SYSTEM_FLAG_ATTR_IS_RDN;
+				}
+
+				if (ldb_attr_cmp(current->objectclass->lDAPDisplayName, "server") == 0) {
+					systemFlags |= (int32_t)(SYSTEM_FLAG_DISALLOW_MOVE_ON_DELETE | SYSTEM_FLAG_CONFIG_ALLOW_RENAME | SYSTEM_FLAG_CONFIG_ALLOW_LIMITED_MOVE);
+				} else if (ldb_attr_cmp(current->objectclass->lDAPDisplayName, "site") == 0
+					   || ldb_attr_cmp(current->objectclass->lDAPDisplayName, "serverContainer") == 0
+					   || ldb_attr_cmp(current->objectclass->lDAPDisplayName, "ntDSDSA") == 0) {
+					systemFlags |= (int32_t)(SYSTEM_FLAG_DISALLOW_MOVE_ON_DELETE);
+
+				} else if (ldb_attr_cmp(current->objectclass->lDAPDisplayName, "siteLink") == 0 
+					   || ldb_attr_cmp(current->objectclass->lDAPDisplayName, "siteLinkBridge") == 0
+					   || ldb_attr_cmp(current->objectclass->lDAPDisplayName, "nTDSConnection") == 0) {
+					systemFlags |= (int32_t)(SYSTEM_FLAG_CONFIG_ALLOW_RENAME);
+				}
+
+				/* TODO: If parent object is site or subnet, also add (SYSTEM_FLAG_CONFIG_ALLOW_RENAME) */
+
+				if (el || systemFlags != 0) {
+					samdb_msg_add_int(ac->module->ldb, msg, msg, "systemFlags", systemFlags);
 				}
 			}
 		}
