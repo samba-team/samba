@@ -202,12 +202,13 @@ void trigger_write_time_update(struct files_struct *fsp)
 		return;
 	}
 
-	if (fsp->update_write_time_event) {
+	if (fsp->update_write_time_triggered) {
 		/*
 		 * No point - an event is already scheduled.
 		 */
 		return;
 	}
+	fsp->update_write_time_triggered = true;
 
 	delay = lp_parm_int(SNUM(fsp->conn),
 			    "smbd", "writetimeupdatedelay",
@@ -232,14 +233,12 @@ void trigger_write_time_update_immediate(struct files_struct *fsp)
                 return;
         }
 
-        if (fsp->update_write_time_event) {
-		/*
-		 * No point - an event is already scheduled.
-		 */
-                return;
-        }
+	TALLOC_FREE(fsp->update_write_time_event);
+	DEBUG(5, ("Update write time immediate on %s\n", fsp->fsp_name));
 
-        fsp->update_write_time_on_close = true;
+	fsp->update_write_time_triggered = true;
+
+        fsp->update_write_time_on_close = false;
 	update_write_time(fsp);
 }
 
