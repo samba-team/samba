@@ -737,14 +737,16 @@ void send_trans2_replies(connection_struct *conn,
 				    + alignment_offset
 				    + data_alignment_offset);
 
-	/* useable_space can never be more than max_send minus the alignment offset. */
-
-	useable_space = MIN(useable_space, max_send - (alignment_offset+data_alignment_offset));
+	if (useable_space < 0) {
+		DEBUG(0, ("send_trans2_replies failed sanity useable_space "
+			  "= %d!!!", useable_space));
+		exit_server_cleanly("send_trans2_replies: Not enough space");
+	}
 
 	while (params_to_send || data_to_send) {
 		/* Calculate whether we will totally or partially fill this packet */
 
-		total_sent_thistime = params_to_send + data_to_send + alignment_offset + data_alignment_offset;
+		total_sent_thistime = params_to_send + data_to_send;
 
 		/* We can never send more than useable_space */
 		/*
@@ -754,9 +756,10 @@ void send_trans2_replies(connection_struct *conn,
 		 * are sent here. Fix from Marc_Jacobsen@hp.com.
 		 */
 
-		total_sent_thistime = MIN(total_sent_thistime, useable_space+ alignment_offset + data_alignment_offset);
+		total_sent_thistime = MIN(total_sent_thistime, useable_space);
 
-		reply_outbuf(req, 10, total_sent_thistime);
+		reply_outbuf(req, 10, total_sent_thistime + alignment_offset
+			     + data_alignment_offset);
 
 		/* Set total params and data to be sent */
 		SSVAL(req->outbuf,smb_tprcnt,paramsize);
