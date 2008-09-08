@@ -404,6 +404,7 @@ fi
 %defattr(-,root,root)
 /sbin/mount.cifs
 /sbin/umount.cifs
+%{_sbindir}/cifs.upcall
 
 %{_bindir}/rpcclient
 %{_bindir}/smbcacls
@@ -420,6 +421,7 @@ fi
 
 %{_mandir}/man8/mount.cifs.8.*
 %{_mandir}/man8/umount.cifs.8.*
+%{_mandir}/man8/cifs.upcall.8.*
 %{_mandir}/man8/smbspool.8*
 %{_mandir}/man1/smbget.1*
 %{_mandir}/man5/smbgetrc.5*
