@@ -62,6 +62,7 @@ vendor_version=`grep SAMBA_VERSION_VENDOR_SUFFIX ${VERSION_H} | awk '{print $3}'
 if test "x${vendor_version}"  != "x" ; then
 	VERSION="${VERSION}-${vendor_version}"
 fi
+VERSION=`echo ${VERSION} | sed 's/-/_/g'`
 VERSION=`echo ${VERSION} | sed 's/\"//g'`
 echo "VERSION: ${VERSION}"
 sed -e s/PVERSION/${VERSION}/g \
