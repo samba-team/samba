@@ -25,6 +25,8 @@
 
 #define SMBACL4_PARAM_TYPE_NAME "nfs4"
 
+extern const struct generic_mapping file_generic_mapping;
+
 #define SMB_ACE4_INT_MAGIC 0x76F8A967
 typedef struct _SMB_ACE4_INT_T
 {
@@ -528,6 +530,8 @@ static bool smbacl4_fill_ace4(
 	ace_v4->aceFlags = ace_nt->flags & SEC_ACE_FLAG_VALID_INHERIT;
 	ace_v4->aceMask = ace_nt->access_mask &
 		(STD_RIGHT_ALL_ACCESS | SA_RIGHT_FILE_ALL_ACCESS);
+
+	se_map_generic(&ace_v4->aceMask, &file_generic_mapping);
 
 	if (ace_v4->aceFlags!=ace_nt->flags)
 		DEBUG(9, ("ace_v4->aceFlags(0x%x)!=ace_nt->flags(0x%x)\n",
