@@ -1266,6 +1266,7 @@ def provision_backend(setup_dir=None, message=None,
 
 # generate serverids, ldap-urls and syncrepl-blocks for mmr hosts
 	mmr_on_config = ""
+	mmr_replicator_acl = ""
 	mmr_serverids_config = ""
         mmr_syncrepl_schema_config = "" 
 	mmr_syncrepl_config_config = "" 
@@ -1278,6 +1279,7 @@ def provision_backend(setup_dir=None, message=None,
                      
 
 		mmr_on_config = "MirrorMode On"
+		mmr_replicator_acl = "  by dn=cn=replicator,cn=samba read"
  		serverid=0
 		for url in url_list:
 			serverid=serverid+1
@@ -1315,6 +1317,7 @@ def provision_backend(setup_dir=None, message=None,
                     "SCHEMADN": names.schemadn,
                     "MEMBEROF_CONFIG": memberof_config,
                     "MIRRORMODE": mmr_on_config,
+                    "REPLICATOR_ACL": mmr_replicator_acl,
                     "MMR_SERVERIDS_CONFIG": mmr_serverids_config,
                     "MMR_SYNCREPL_SCHEMA_CONFIG": mmr_syncrepl_schema_config,
                     "MMR_SYNCREPL_CONFIG_CONFIG": mmr_syncrepl_config_config,
@@ -1340,6 +1343,15 @@ def provision_backend(setup_dir=None, message=None,
                               {"LDAPADMINPASS_B64": b64encode(adminpass),
                                "UUID": str(uuid.uuid4()), 
                                "LDAPTIME": timestring(int(time.time()))} )
+	
+	if ol_mmr_urls is not None:
+ 	   setup_file(setup_path("cn=replicator.ldif"),
+                              os.path.join(paths.ldapdir, "db", "samba",  "cn=samba", "cn=replicator.ldif"),
+                              {"LDAPADMINPASS_B64": b64encode(adminpass),
+                               "UUID": str(uuid.uuid4()),
+                               "LDAPTIME": timestring(int(time.time()))} )
+
+
 
         mapping = "schema-map-openldap-2.3"
         backend_schema = "backend-schema.schema"
