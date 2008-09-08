@@ -113,14 +113,11 @@ void send_nt_replies(connection_struct *conn,
 				    + alignment_offset
 				    + data_alignment_offset);
 
-	/*
-	 * useable_space can never be more than max_send minus the
-	 * alignment offset.
-	 */
-
-	useable_space = MIN(useable_space,
-				max_send - (alignment_offset+data_alignment_offset));
-
+	if (useable_space < 0) {
+		DEBUG(0, ("send_nt_replies failed sanity useable_space "
+			  "= %d!!!", useable_space));
+		exit_server_cleanly("send_nt_replies: srv_send_smb failed.");
+	}
 
 	while (params_to_send || data_to_send) {
 
@@ -128,8 +125,7 @@ void send_nt_replies(connection_struct *conn,
 		 * Calculate whether we will totally or partially fill this packet.
 		 */
 
-		total_sent_thistime = params_to_send + data_to_send +
-					alignment_offset + data_alignment_offset;
+		total_sent_thistime = params_to_send + data_to_send;
 
 		/*
 		 * We can never send more than useable_space.
@@ -137,7 +133,9 @@ void send_nt_replies(connection_struct *conn,
 
 		total_sent_thistime = MIN(total_sent_thistime, useable_space);
 
-		reply_outbuf(req, 18, total_sent_thistime);
+		reply_outbuf(req, 18,
+			     total_sent_thistime + alignment_offset
+			     + data_alignment_offset);
 
 		/*
 		 * Set total params and data to be sent.
@@ -264,7 +262,7 @@ void send_nt_replies(connection_struct *conn,
 		if(params_to_send < 0 || data_to_send < 0) {
 			DEBUG(0,("send_nt_replies failed sanity check pts = %d, dts = %d\n!!!",
 				params_to_send, data_to_send));
-			return;
+			exit_server_cleanly("send_nt_replies: internal error");
 		}
 	}
 }
