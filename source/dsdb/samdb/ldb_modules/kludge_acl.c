@@ -238,7 +238,6 @@ static int kludge_acl_callback(struct ldb_context *ldb, void *context, struct ld
 	{
 		switch (ac->user_type) {
 		case SECURITY_SYSTEM:
-		case SECURITY_ADMINISTRATOR:
 			if (ac->allowedAttributesEffective) {
 				ret = kludge_acl_allowedAttributes(ldb, ares->message, "allowedAttributesEffective");
 				if (ret != LDB_SUCCESS) {
@@ -252,6 +251,20 @@ static int kludge_acl_callback(struct ldb_context *ldb, void *context, struct ld
 				}
 			}
 			break;
+		case SECURITY_ADMINISTRATOR:
+			if (ac->allowedAttributesEffective) {
+				ret = kludge_acl_allowedAttributes(ldb, ares->message, "allowedAttributesEffective");
+				if (ret != LDB_SUCCESS) {
+					return ret;
+				}
+			}
+			if (ac->allowedChildClassesEffective) {
+				ret = kludge_acl_childClasses(ldb, ares->message, "allowedChildClassesEffective");
+				if (ret != LDB_SUCCESS) {
+					return ret;
+				}
+			}
+			/* fall though */
 		default:
 			/* remove password attributes */
 			for (i = 0; data->password_attrs[i]; i++) {
