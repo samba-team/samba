@@ -1151,6 +1151,28 @@ NET_API_STATUS NetUserGetGroups(const char * server_name /* [in] */,
 
 /************************************************************//**
  *
+ * NetUserSetGroups
+ *
+ * @brief Set grouplist of a user on a server
+ *
+ * @param[in] server_name The server name to connect to
+ * @param[in] user_name The user name to query
+ * @param[in] level The level defining the GROUP_USERS_INFO_X structures in the buffer
+ * @param[in] buffer The buffer containing GROUP_USERS_INFO_X structures
+ * @param[in] num_entries The number of X structures in the buffer
+ * @return NET_API_STATUS
+ *
+ * example user/user_setgroups.c
+ ***************************************************************/
+
+NET_API_STATUS NetUserSetGroups(const char * server_name /* [in] */,
+				const char * user_name /* [in] */,
+				uint32_t level /* [in] */,
+				uint8_t *buffer /* [in] [ref] */,
+				uint32_t num_entries /* [in] */);
+
+/************************************************************//**
+ *
  * NetQueryDisplayInformation
  *
  * @brief Enumerate accounts on a server
