@@ -29,12 +29,7 @@ static struct db_context *share_db; /* used for share security descriptors */
 
 /* Map generic permissions to file object specific permissions */
 
-static const struct generic_mapping file_generic_mapping = {
-        FILE_GENERIC_READ,
-        FILE_GENERIC_WRITE,
-        FILE_GENERIC_EXECUTE,
-        FILE_GENERIC_ALL
-};
+const struct generic_mapping file_generic_mapping;
 
 static int delete_fn(struct db_record *rec, void *priv)
 {
