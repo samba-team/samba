@@ -1303,3 +1303,21 @@ WERROR NetGroupGetUsers_l(struct libnetapi_ctx *ctx,
 {
 	LIBNETAPI_REDIRECT_TO_LOCALHOST(ctx, r, NetGroupGetUsers);
 }
+
+/****************************************************************
+****************************************************************/
+
+WERROR NetGroupSetUsers_r(struct libnetapi_ctx *ctx,
+			  struct NetGroupSetUsers *r)
+{
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR NetGroupSetUsers_l(struct libnetapi_ctx *ctx,
+			  struct NetGroupSetUsers *r)
+{
+	LIBNETAPI_REDIRECT_TO_LOCALHOST(ctx, r, NetGroupSetUsers);
+}
