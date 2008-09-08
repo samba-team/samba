@@ -248,6 +248,15 @@ WERROR NetGroupGetUsers_r(struct libnetapi_ctx *ctx,
 			  struct NetGroupGetUsers *r);
 WERROR NetGroupGetUsers_l(struct libnetapi_ctx *ctx,
 			  struct NetGroupGetUsers *r);
+NET_API_STATUS NetGroupSetUsers(const char * server_name /* [in] */,
+				const char * group_name /* [in] */,
+				uint32_t level /* [in] */,
+				uint8_t *buffer /* [in] [ref] */,
+				uint32_t num_entries /* [in] */);
+WERROR NetGroupSetUsers_r(struct libnetapi_ctx *ctx,
+			  struct NetGroupSetUsers *r);
+WERROR NetGroupSetUsers_l(struct libnetapi_ctx *ctx,
+			  struct NetGroupSetUsers *r);
 NET_API_STATUS NetLocalGroupAdd(const char * server_name /* [in] */,
 				uint32_t level /* [in] */,
 				uint8_t *buffer /* [in] [ref] */,
