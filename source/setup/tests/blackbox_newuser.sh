@@ -15,6 +15,18 @@ shift 1
 
 testit "simple-dc" $PYTHON ./setup/provision --server-role="dc" --domain=FOO --realm=foo.example.com --domain-sid=S-1-5-21-4177067393-1453636373-93818738 --targetdir=$PREFIX/simple-dc
 
-testit "newuser" $PYTHON ./setup/newuser --configfile=$PREFIX/simple-dc/etc/smb.conf testuser testpass
+CONFIG="--configfile=$PREFIX/simple-dc/etc/smb.conf"
+
+testit "newuser" $PYTHON ./setup/newuser $CONFIG testuser testpass
+
+# check the enable account script
+testit "enableaccount" $PYTHON ./setup/enableaccount $CONFIG testuser
+
+# check the enable account script
+testit "setpassword" $PYTHON ./setup/setpassword $CONFIG testuser --newpassword=testpass2
+
+# check the setexpiry script
+testit "noexpiry" $PYTHON ./setup/setexpiry $CONFIG testuser --noexpiry
+testit "expiry" $PYTHON ./setup/setexpiry $CONFIG testuser --days=7
 
 exit $failed

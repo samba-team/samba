@@ -57,8 +57,8 @@ static enum ndr_err_code ndr_pull_compression_mszip_chunk(struct ndr_pull *ndrpu
 
 	NDR_CHECK(ndr_pull_uint32(ndrpull, NDR_SCALARS, &comp_chunk_size));
 
-	DEBUG(10,("MSZIP plain_chunk_size: %08X (%u) comp_chunk_size: %08X (%u)\n",
-		  plain_chunk_size, plain_chunk_size, comp_chunk_size, comp_chunk_size));
+	DEBUG(9,("MSZIP plain_chunk_size: %08X (%u) comp_chunk_size: %08X (%u)\n",
+		 plain_chunk_size, plain_chunk_size, comp_chunk_size, comp_chunk_size));
 
 	comp_chunk_offset = ndrpull->offset;
 	NDR_CHECK(ndr_pull_advance(ndrpull, comp_chunk_size));
@@ -104,13 +104,6 @@ static enum ndr_err_code ndr_pull_compression_mszip_chunk(struct ndr_pull *ndrpu
 					      zError(z_ret), z_ret);
 
 		}
-	} else {
-		z_ret = inflateReset2(z, Z_RESET_KEEP_WINDOW);
-		if (z_ret != Z_OK) {
-			return ndr_pull_error(ndrpull, NDR_ERR_COMPRESSION,
-					      "Bad inflateReset2 error %s(%d) (PULL)",
-					      zError(z_ret), z_ret);
-		}
 	}
 
 	/* call inflate untill we get Z_STREAM_END or an error */
@@ -140,6 +133,20 @@ static enum ndr_err_code ndr_pull_compression_mszip_chunk(struct ndr_pull *ndrpu
 	if ((plain_chunk_size < 0x00008000) || (ndrpull->offset+4 >= ndrpull->data_size)) {
 		/* this is the last chunk */
 		*last = true;
+	}
+
+	z_ret = inflateReset(z);
+	if (z_ret != Z_OK) {
+		return ndr_pull_error(ndrpull, NDR_ERR_COMPRESSION,
+				      "Bad inflateReset error %s(%d) (PULL)",
+				      zError(z_ret), z_ret);
+	}
+
+	z_ret = inflateSetDictionary(z, plain_chunk.data, plain_chunk.length);
+	if (z_ret != Z_OK) {
+		return ndr_pull_error(ndrpull, NDR_ERR_COMPRESSION,
+				      "Bad inflateSetDictionary error %s(%d) (PULL)",
+				      zError(z_ret), z_ret);
 	}
 
 	return NDR_ERR_SUCCESS;
@@ -212,14 +219,6 @@ static enum ndr_err_code ndr_push_compression_mszip_chunk(struct ndr_push *ndrpu
 					      zError(z_ret), z_ret);
 
 		}
-	} else {
-		/* TODO: keep the window */
-		z_ret = deflateReset(z);
-		if (z_ret != Z_OK) {
-			return ndr_push_error(ndrpush, NDR_ERR_COMPRESSION,
-					      "Bad delateReset2 error %s(%d) (PUSH)",
-					      zError(z_ret), z_ret);
-		}
 	}
 
 	/* call deflate untill we get Z_STREAM_END or an error */
@@ -241,10 +240,27 @@ static enum ndr_err_code ndr_push_compression_mszip_chunk(struct ndr_push *ndrpu
 
 	comp_chunk_size = 2 + z->total_out;
 
+	z_ret = deflateReset(z);
+	if (z_ret != Z_OK) {
+		return ndr_pull_error(ndrpull, NDR_ERR_COMPRESSION,
+				      "Bad deflateReset error %s(%d) (PULL)",
+				      zError(z_ret), z_ret);
+	}
+
+	z_ret = deflateSetDictionary(z, plain_chunk.data, plain_chunk.length);
+	if (z_ret != Z_OK) {
+		return ndr_pull_error(ndrpull, NDR_ERR_COMPRESSION,
+				      "Bad deflateSetDictionary error %s(%d) (PULL)",
+				      zError(z_ret), z_ret);
+	}
+
 	tmp_offset = ndrpush->offset;
 	ndrpush->offset = comp_chunk_size_offset;
 	NDR_CHECK(ndr_push_uint32(ndrpush, NDR_SCALARS, comp_chunk_size));
 	ndrpush->offset = tmp_offset;
+
+	DEBUG(9,("MSZIP comp plain_chunk_size: %08X (%u) comp_chunk_size: %08X (%u)\n",
+		 plain_chunk.length, plain_chunk.length, comp_chunk_size, comp_chunk_size));
 
 	ndrpush->offset += comp_chunk_size;
 	return NDR_ERR_SUCCESS;
@@ -260,6 +276,7 @@ static enum ndr_err_code ndr_pull_compression_xpress_chunk(struct ndr_pull *ndrp
 	uint32_t plain_chunk_offset;
 	uint32_t comp_chunk_size;
 	uint32_t plain_chunk_size;
+	ssize_t ret;
 
 	NDR_CHECK(ndr_pull_uint32(ndrpull, NDR_SCALARS, &plain_chunk_size));
 	if (plain_chunk_size > 0x00010000) {
@@ -279,11 +296,20 @@ static enum ndr_err_code ndr_pull_compression_xpress_chunk(struct ndr_pull *ndrp
 	plain_chunk.length = plain_chunk_size;
 	plain_chunk.data = ndrpush->data + plain_chunk_offset;
 
-	DEBUG(10,("XPRESS plain_chunk_size: %08X (%u) comp_chunk_size: %08X (%u)\n",
-		  plain_chunk_size, plain_chunk_size, comp_chunk_size, comp_chunk_size));
+	DEBUG(9,("XPRESS plain_chunk_size: %08X (%u) comp_chunk_size: %08X (%u)\n",
+		 plain_chunk_size, plain_chunk_size, comp_chunk_size, comp_chunk_size));
 
 	/* Uncompressing the buffer using LZ Xpress algorithm */
-	lzxpress_decompress(&comp_chunk, &plain_chunk);
+	ret = lzxpress_decompress(comp_chunk.data,
+				  comp_chunk.length,
+				  plain_chunk.data,
+				  plain_chunk.length);
+	if (ret < 0) {
+		return ndr_pull_error(ndrpull, NDR_ERR_COMPRESSION,
+				      "XPRESS lzxpress_decompress() returned %d\n",
+				      ret);
+	}
+	plain_chunk.length = ret;
 
 	if ((plain_chunk_size < 0x00010000) || (ndrpull->offset+4 >= ndrpull->data_size)) {
 		/* this is the last chunk */
@@ -297,7 +323,55 @@ static enum ndr_err_code ndr_push_compression_xpress_chunk(struct ndr_push *ndrp
 							   struct ndr_pull *ndrpull,
 							   bool *last)
 {
-	return ndr_push_error(ndrpush, NDR_ERR_COMPRESSION, "XPRESS compression is not supported yet (PUSH)");
+	DATA_BLOB comp_chunk;
+	uint32_t comp_chunk_size_offset;
+	DATA_BLOB plain_chunk;
+	uint32_t plain_chunk_size;
+	uint32_t plain_chunk_offset;
+	uint32_t max_plain_size = 0x00010000;
+	uint32_t max_comp_size = 0x00020000 + 2; /* TODO: use the correct value here */
+	uint32_t tmp_offset;
+	ssize_t ret;
+
+	plain_chunk_size = MIN(max_plain_size, ndrpull->data_size - ndrpull->offset);
+	plain_chunk_offset = ndrpull->offset;
+	NDR_CHECK(ndr_pull_advance(ndrpull, plain_chunk_size));
+
+	plain_chunk.data = ndrpull->data + plain_chunk_offset;
+	plain_chunk.length = plain_chunk_size;
+
+	if (plain_chunk_size < max_plain_size) {
+		*last = true;
+	}
+
+	NDR_CHECK(ndr_push_uint32(ndrpush, NDR_SCALARS, plain_chunk_size));
+	comp_chunk_size_offset = ndrpush->offset;
+	NDR_CHECK(ndr_push_uint32(ndrpush, NDR_SCALARS, 0xFEFEFEFE));
+
+	NDR_CHECK(ndr_push_expand(ndrpush, max_comp_size));
+
+	comp_chunk.data = ndrpush->data + ndrpush->offset;
+	comp_chunk.length = max_comp_size;
+
+	/* Compressing the buffer using LZ Xpress algorithm */
+	ret = lzxpress_compress(plain_chunk.data,
+				plain_chunk.length,
+				comp_chunk.data,
+				comp_chunk.length);
+	if (ret < 0) {
+		return ndr_pull_error(ndrpull, NDR_ERR_COMPRESSION,
+				      "XPRESS lzxpress_compress() returned %d\n",
+				      ret);
+	}
+	comp_chunk.length = ret;
+
+	tmp_offset = ndrpush->offset;
+	ndrpush->offset = comp_chunk_size_offset;
+	NDR_CHECK(ndr_push_uint32(ndrpush, NDR_SCALARS, comp_chunk.length));
+	ndrpush->offset = tmp_offset;
+
+	ndrpush->offset += comp_chunk.length;
+	return NDR_ERR_SUCCESS;
 }
 
 /*

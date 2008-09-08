@@ -2839,6 +2839,40 @@ bool dsdb_set_ntds_invocation_id(struct ldb_context *ldb, const char *guid)
     return samdb_set_ntds_invocation_id(ldb, &invocation_id_in);
 }
 
+
+uint64_t unix2nttime(time_t t)
+{
+	NTTIME nt;
+	unix_to_nt_time(&nt, t);
+	return (uint64_t)nt;
+}
+
+
+#include <limits.h>
+#if !defined(SWIG_NO_LLONG_MAX)
+# if !defined(LLONG_MAX) && defined(__GNUC__) && defined (__LONG_LONG_MAX__)
+#   define LLONG_MAX __LONG_LONG_MAX__
+#   define LLONG_MIN (-LLONG_MAX - 1LL)
+#   define ULLONG_MAX (LLONG_MAX * 2ULL + 1ULL)
+# endif
+#endif
+
+
+SWIGINTERNINLINE PyObject* 
+SWIG_From_long_SS_long  (long long value)
+{
+  return ((value < LONG_MIN) || (value > LONG_MAX)) ?
+    PyLong_FromLongLong(value) : PyInt_FromLong((long)(value)); 
+}
+
+
+SWIGINTERNINLINE PyObject* 
+SWIG_From_unsigned_SS_long_SS_long  (unsigned long long value)
+{
+  return (value > LONG_MAX) ?
+    PyLong_FromUnsignedLongLong(value) : PyInt_FromLong((long)(value)); 
+}
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -3230,6 +3264,31 @@ fail:
 }
 
 
+SWIGINTERN PyObject *_wrap_unix2nttime(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
+  PyObject *resultobj = 0;
+  time_t arg1 ;
+  unsigned long val1 ;
+  int ecode1 = 0 ;
+  PyObject * obj0 = 0 ;
+  char *  kwnames[] = {
+    (char *) "t", NULL 
+  };
+  uint64_t result;
+  
+  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"O:unix2nttime",kwnames,&obj0)) SWIG_fail;
+  ecode1 = SWIG_AsVal_unsigned_SS_long(obj0, &val1);
+  if (!SWIG_IsOK(ecode1)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode1), "in method '" "unix2nttime" "', argument " "1"" of type '" "time_t""'");
+  } 
+  arg1 = (time_t)(val1);
+  result = (uint64_t)unix2nttime(arg1);
+  resultobj = SWIG_From_unsigned_SS_long_SS_long((unsigned long long)(result));
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
 static PyMethodDef SwigMethods[] = {
 	 { (char *)"random_password", (PyCFunction) _wrap_random_password, METH_VARARGS | METH_KEYWORDS, (char *)"\n"
 		"S.random_password(len) -> string\n"
@@ -3263,6 +3322,7 @@ static PyMethodDef SwigMethods[] = {
 		""},
 	 { (char *)"dsdb_set_ntds_invocation_id", (PyCFunction) _wrap_dsdb_set_ntds_invocation_id, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"private_path", (PyCFunction) _wrap_private_path, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"unix2nttime", (PyCFunction) _wrap_unix2nttime, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { NULL, NULL, 0, NULL }
 };
 

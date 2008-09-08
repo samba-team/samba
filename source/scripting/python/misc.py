@@ -118,5 +118,6 @@ def ldb_register_samba_handlers(*args, **kwargs):
   return _misc.ldb_register_samba_handlers(*args, **kwargs)
 dsdb_set_ntds_invocation_id = _misc.dsdb_set_ntds_invocation_id
 private_path = _misc.private_path
+unix2nttime = _misc.unix2nttime
 
 

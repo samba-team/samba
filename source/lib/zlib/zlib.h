@@ -210,9 +210,6 @@ typedef gz_header FAR *gz_headerp;
 
 #define Z_NULL  0  /* for initializing zalloc, zfree, opaque */
 
-#define Z_RESET_KEEP_WINDOW 0x0001
-/* This flag can be passed to inflateReset2 and deflateReset2 */
-
 #define zlib_version zlibVersion()
 /* for compatibility with versions < 1.0.2 */
 
@@ -812,16 +809,6 @@ ZEXTERN int ZEXPORT inflateReset OF((z_streamp strm));
    The stream will keep attributes that may have been set by inflateInit2.
 
       inflateReset returns Z_OK if success, or Z_STREAM_ERROR if the source
-   stream state was inconsistent (such as zalloc or state being NULL).
-*/
-
-ZEXTERN int ZEXPORT inflateReset2 OF((z_streamp strm, unsigned flags));
-/*
-     This function is like inflateReset, but you can pass some flags
-   to have further control over the behavior. If you pass Z_RESET_KEEP_WINDOW
-   the window will be untouched and will be reused in the next runs of inflate()
-
-      inflateReset2 returns Z_OK if success, or Z_STREAM_ERROR if the source
    stream state was inconsistent (such as zalloc or state being NULL).
 */
 
