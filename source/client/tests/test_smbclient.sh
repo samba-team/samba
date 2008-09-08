@@ -43,8 +43,6 @@ testit "share and server list" $VALGRIND $smbclient -L $SERVER $CONFIGURATION  -
 
 testit "share and server list anonymously" $VALGRIND $smbclient -N -L $SERVER $CONFIGURATION $@ || failed=`expr $failed + 1`
 
-testit "domain join" $VALGRIND bin/net join $DOMAIN $CONFIGURATION  -W "$DOMAIN" -U"$USERNAME%$PASSWORD" $@ || failed=`expr $failed + 1`
-
 # Generate random file
 cat >tmpfile<<EOF
 foo
@@ -127,10 +125,6 @@ runcmd "List directory with LANMAN1" 'ls' -m LANMAN1 || failed=`expr $failed + 1
 runcmd "List directory with LANMAN2" 'ls' -m LANMAN2 || failed=`expr $failed + 1`
 
 runcmd "Print current working directory" 'pwd'|| failed=`expr $failed + 1`
-
-testit "Test login with --machine-pass without kerberos" $VALGRIND $smbclient -c 'ls' $CONFIGURATION //$SERVER/tmp --machine-pass -k no || failed=`expr $failed + 1`
-
-testit "Test login with --machine-pass and kerberos" $VALGRIND $smbclient -c 'ls' $CONFIGURATION //$SERVER/tmp --machine-pass -k yes || failed=`expr $failed + 1`
 
 (
     echo "password=$PASSWORD"
