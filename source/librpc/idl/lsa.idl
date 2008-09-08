@@ -311,7 +311,7 @@ import "misc.idl", "security.idl";
 	/* Function: 0x0c                                */
 
 	[public] NTSTATUS lsa_CreateTrustedDomain(
-		[in]         policy_handle *handle,
+		[in]         policy_handle *policy_handle,
 		[in]         lsa_DomainInfo *info,
 		[in]         uint32 access_mask,
 		[out]        policy_handle *trustdom_handle
@@ -626,7 +626,7 @@ import "misc.idl", "security.idl";
 		lsa_TrustDomainInfoInfoEx2Internal     info;
 		lsa_TrustDomainInfoPosixOffset posix_offset;
 		lsa_TrustDomainInfoAuthInfo    auth_info;
-	} lsa_TrustDomainInfoInfo2Internal;
+	} lsa_TrustDomainInfoFullInfo2Internal;
 
 	typedef struct {
 		kerb_EncTypes enc_types;
@@ -656,7 +656,7 @@ import "misc.idl", "security.idl";
 		[case(LSA_TRUSTED_DOMAIN_INFO_INFO_EX2_INTERNAL)]
 		        lsa_TrustDomainInfoInfoEx2Internal   info_ex2_internal;
 		[case(LSA_TRUSTED_DOMAIN_INFO_FULL_INFO_2_INTERNAL)]
-		        lsa_TrustDomainInfoInfo2Internal     info2_internal;
+		        lsa_TrustDomainInfoFullInfo2Internal     full_info2_internal;
 		[case(LSA_TRUSTED_DOMAIN_SUPPORTED_ENCRTYPION_TYPES)]
 		        lsa_TrustDomainInfoSupportedEncTypes enc_types;
 	} lsa_TrustedDomainInfo;

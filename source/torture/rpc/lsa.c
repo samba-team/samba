@@ -2005,7 +2005,7 @@ static bool test_CreateTrustedDomain(struct dcerpc_pipe *p,
 		trustinfo.sid = domsid[i];
 		init_lsa_String((struct lsa_String *)&trustinfo.name, trust_name);
 
-		r.in.handle = handle;
+		r.in.policy_handle = handle;
 		r.in.info = &trustinfo;
 		r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 		r.out.trustdom_handle = &trustdom_handle[i];
