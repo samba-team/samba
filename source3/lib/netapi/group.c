@@ -1292,7 +1292,142 @@ WERROR NetGroupEnum_l(struct libnetapi_ctx *ctx,
 WERROR NetGroupGetUsers_r(struct libnetapi_ctx *ctx,
 			  struct NetGroupGetUsers *r)
 {
-	return WERR_NOT_SUPPORTED;
+	/* FIXME: this call needs to cope with large replies */
+
+	struct cli_state *cli = NULL;
+	struct rpc_pipe_client *pipe_cli = NULL;
+	struct policy_handle connect_handle, domain_handle, group_handle;
+	struct lsa_String lsa_account_name;
+	struct dom_sid2 *domain_sid = NULL;
+	struct samr_Ids group_rids, name_types;
+	struct samr_RidTypeArray *rid_array = NULL;
+	struct lsa_Strings names;
+	struct samr_Ids member_types;
+
+	int i;
+	uint32_t entries_read = 0;
+
+	NTSTATUS status = NT_STATUS_OK;
+	WERROR werr;
+
+	ZERO_STRUCT(connect_handle);
+	ZERO_STRUCT(domain_handle);
+
+	if (!r->out.buffer) {
+		return WERR_INVALID_PARAM;
+	}
+
+	*r->out.buffer = NULL;
+	*r->out.entries_read = 0;
+
+	switch (r->in.level) {
+		case 0:
+		case 1:
+			break;
+		default:
+			return WERR_UNKNOWN_LEVEL;
+	}
+
+
+	werr = libnetapi_open_pipe(ctx, r->in.server_name,
+				   &ndr_table_samr.syntax_id,
+				   &cli,
+				   &pipe_cli);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	werr = libnetapi_samr_open_domain(ctx, pipe_cli,
+					  SAMR_ACCESS_ENUM_DOMAINS |
+					  SAMR_ACCESS_OPEN_DOMAIN,
+					  SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
+					  &connect_handle,
+					  &domain_handle,
+					  &domain_sid);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	init_lsa_String(&lsa_account_name, r->in.group_name);
+
+	status = rpccli_samr_LookupNames(pipe_cli, ctx,
+					 &domain_handle,
+					 1,
+					 &lsa_account_name,
+					 &group_rids,
+					 &name_types);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	status = rpccli_samr_OpenGroup(pipe_cli, ctx,
+				       &domain_handle,
+				       SAMR_GROUP_ACCESS_GET_MEMBERS,
+				       group_rids.ids[0],
+				       &group_handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	status = rpccli_samr_QueryGroupMember(pipe_cli, ctx,
+					      &group_handle,
+					      &rid_array);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	status = rpccli_samr_LookupRids(pipe_cli, ctx,
+					&domain_handle,
+					rid_array->count,
+					rid_array->rids,
+					&names,
+					&member_types);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	for (i=0; i < names.count; i++) {
+		status = add_GROUP_USERS_INFO_X_buffer(ctx,
+						       r->in.level,
+						       names.names[i].string,
+						       member_types.ids[i],
+						       r->out.buffer,
+						       &entries_read);
+		if (!NT_STATUS_IS_OK(status)) {
+			werr = ntstatus_to_werror(status);
+			goto done;
+		}
+	}
+
+	if (r->out.entries_read) {
+		*r->out.entries_read = entries_read;
+	}
+
+	if (r->out.total_entries) {
+		*r->out.total_entries = entries_read;
+	}
+
+	werr = WERR_OK;
+
+ done:
+	if (!cli) {
+		return werr;
+	}
+
+	if (is_valid_policy_hnd(&group_handle)) {
+		rpccli_samr_Close(pipe_cli, ctx, &group_handle);
+	}
+
+	if (ctx->disable_policy_handle_cache) {
+		libnetapi_samr_close_domain_handle(ctx, &domain_handle);
+		libnetapi_samr_close_connect_handle(ctx, &connect_handle);
+	}
+
+	return werr;
 }
 
 /****************************************************************
