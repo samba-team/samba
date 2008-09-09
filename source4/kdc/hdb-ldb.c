@@ -186,7 +186,7 @@ static HDBFlags uf2HDBFlags(krb5_context context, int userAccountControl, enum h
 	return flags;
 }
 
-static int hdb_ldb_destrutor(struct hdb_ldb_private *private)
+static int hdb_ldb_destructor(struct hdb_ldb_private *private)
 {
     hdb_entry_ex *entry_ex = private->entry_ex;
     free_hdb_entry(&entry_ex->entry);
@@ -542,7 +542,7 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 	private->iconv_convenience = lp_iconv_convenience(lp_ctx);
 	private->netbios_name = lp_netbios_name(lp_ctx);
 
-	talloc_set_destructor(private, hdb_ldb_destrutor);
+	talloc_set_destructor(private, hdb_ldb_destructor);
 
 	entry_ex->ctx = private;
 	entry_ex->free_entry = hdb_ldb_free_entry;
@@ -728,7 +728,7 @@ static krb5_error_code LDB_trust_message2entry(krb5_context context, HDB *db,
 	private->iconv_convenience = lp_iconv_convenience(lp_ctx);
 	private->netbios_name = lp_netbios_name(lp_ctx);
 
-	talloc_set_destructor(private, hdb_ldb_destrutor);
+	talloc_set_destructor(private, hdb_ldb_destructor);
 
 	entry_ex->ctx = private;
 	entry_ex->free_entry = hdb_ldb_free_entry;
