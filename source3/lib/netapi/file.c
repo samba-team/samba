@@ -67,3 +67,21 @@ WERROR NetFileClose_l(struct libnetapi_ctx *ctx,
 {
 	LIBNETAPI_REDIRECT_TO_LOCALHOST(ctx, r, NetFileClose);
 }
+
+/****************************************************************
+****************************************************************/
+
+WERROR NetFileGetInfo_r(struct libnetapi_ctx *ctx,
+			struct NetFileGetInfo *r)
+{
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR NetFileGetInfo_l(struct libnetapi_ctx *ctx,
+			struct NetFileGetInfo *r)
+{
+	LIBNETAPI_REDIRECT_TO_LOCALHOST(ctx, r, NetFileGetInfo);
+}
