@@ -30,7 +30,33 @@
 WERROR NetFileClose_r(struct libnetapi_ctx *ctx,
 		      struct NetFileClose *r)
 {
-	return WERR_NOT_SUPPORTED;
+	WERROR werr;
+	NTSTATUS status;
+	struct cli_state *cli = NULL;
+	struct rpc_pipe_client *pipe_cli = NULL;
+
+	werr = libnetapi_open_pipe(ctx, r->in.server_name,
+				   &ndr_table_srvsvc.syntax_id,
+				   &cli,
+				   &pipe_cli);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	status = rpccli_srvsvc_NetFileClose(pipe_cli, ctx,
+					    r->in.server_name,
+					    r->in.fileid,
+					    &werr);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+ done:
+	if (!cli) {
+		return werr;
+	}
+
+	return werr;
 }
 
 /****************************************************************
