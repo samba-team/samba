@@ -243,9 +243,7 @@ static krb5_error_code salt_principal_from_credentials(TALLOC_CTX *parent_ctx,
 
 static krb5_error_code free_keytab(struct keytab_container *ktc)
 {
-	krb5_kt_close(ktc->smb_krb5_context->krb5_context, ktc->keytab);
-
-	return 0;
+	return krb5_kt_close(ktc->smb_krb5_context->krb5_context, ktc->keytab);
 }
 
 krb5_error_code smb_krb5_open_keytab(TALLOC_CTX *mem_ctx,
