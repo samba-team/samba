@@ -1754,6 +1754,22 @@ NET_API_STATUS NetShareSetInfo(const char * server_name /* [in] */,
 			       uint8_t *buffer /* [in] [ref] */,
 			       uint32_t *parm_err /* [out] [ref] */);
 
+/************************************************************//**
+ *
+ * NetFileClose
+ *
+ * @brief Close a file
+ *
+ * @param[in] server_name The server name to connect to
+ * @param[in] fileid The fileid of the file that is going to be closed
+ * @return NET_API_STATUS
+ *
+ * example file/file_close.c
+ ***************************************************************/
+
+NET_API_STATUS NetFileClose(const char * server_name /* [in] */,
+			    uint32_t fileid /* [in] */);
+
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */
