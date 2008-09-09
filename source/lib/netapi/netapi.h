@@ -633,6 +633,18 @@ struct SHARE_INFO_1006 {
 	uint32_t shi1006_max_uses;
 };
 
+struct FILE_INFO_2 {
+	uint32_t fi2_id;
+};
+
+struct FILE_INFO_3 {
+	uint32_t fi3_id;
+	uint32_t fi3_permissions;
+	uint32_t fi3_num_locks;
+	const char * fi3_pathname;
+	const char * fi3_username;
+};
+
 #endif /* _HEADER_libnetapi */
 
 /****************************************************************
@@ -1769,6 +1781,26 @@ NET_API_STATUS NetShareSetInfo(const char * server_name /* [in] */,
 
 NET_API_STATUS NetFileClose(const char * server_name /* [in] */,
 			    uint32_t fileid /* [in] */);
+
+/************************************************************//**
+ *
+ * NetFileGetInfo
+ *
+ * @brief Close a file
+ *
+ * @param[in] server_name The server name to connect to
+ * @param[in] fileid The fileid of the file that is going to be closed
+ * @param[in] level The level of the FILE_INFO_X buffer
+ * @param[out] buffer The buffer containing a FILE_INFO_X structure
+ * @return NET_API_STATUS
+ *
+ * example file/file_getinfo.c
+ ***************************************************************/
+
+NET_API_STATUS NetFileGetInfo(const char * server_name /* [in] */,
+			      uint32_t fileid /* [in] */,
+			      uint32_t level /* [in] */,
+			      uint8_t **buffer /* [out] [ref] */);
 
 #ifdef __cplusplus
 }
