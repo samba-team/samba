@@ -997,7 +997,7 @@ bool cli_qfileinfo(struct cli_state *cli, int fnum,
 {
 	unsigned int data_len = 0;
 	unsigned int param_len = 0;
-	uint16 setup = TRANSACT2_QFILEINFO;
+	uint16 setup;
 	uint8_t param[4];
 	uint8_t *rparam=NULL, *rdata=NULL;
 	NTSTATUS status;
@@ -1010,6 +1010,8 @@ bool cli_qfileinfo(struct cli_state *cli, int fnum,
 
 	SSVAL(param, 0, fnum);
 	SSVAL(param, 2, SMB_QUERY_FILE_ALL_INFO);
+
+	SSVAL(&setup, 0, TRANSACT2_QFILEINFO);
 
 	status = cli_trans(talloc_tos(), cli, SMBtrans2,
 			   NULL, -1, 0, 0, /* name, fid, function, flags */
