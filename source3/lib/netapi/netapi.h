@@ -1802,6 +1802,37 @@ NET_API_STATUS NetFileGetInfo(const char * server_name /* [in] */,
 			      uint32_t level /* [in] */,
 			      uint8_t **buffer /* [out] [ref] */);
 
+/************************************************************//**
+ *
+ * NetFileEnum
+ *
+ * @brief Enumerate Files
+ *
+ * @param[in] server_name The server name to connect to
+ * @param[in] base_path The
+ * @param[in] user_name The
+ * @param[in] level The level defining the FILE_INFO_X structure
+ * @param[out] buffer The buffer containing a FILE_INFO_X structure
+ * @param[in] prefmaxlen The requested maximal buffer size
+ * @param[out] entries_read The number of FILE_INFO_X entries in the buffer
+ * @param[out] total_entries The total number of FILE_INFO_X entries
+ * @param[in,out] resume_handle A handle passed in and returned for resuming
+ * operations
+ * @return NET_API_STATUS
+ *
+ * example file/file_enum.c
+ ***************************************************************/
+
+NET_API_STATUS NetFileEnum(const char * server_name /* [in] */,
+			   const char * base_path /* [in] */,
+			   const char * user_name /* [in] */,
+			   uint32_t level /* [in] */,
+			   uint8_t **buffer /* [out] [ref] */,
+			   uint32_t prefmaxlen /* [in] */,
+			   uint32_t *entries_read /* [out] [ref] */,
+			   uint32_t *total_entries /* [out] [ref] */,
+			   uint32_t *resume_handle /* [in,out] [ref] */);
+
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */
