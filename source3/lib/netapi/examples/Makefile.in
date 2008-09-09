@@ -61,7 +61,8 @@ PROGS = bin/getdc@EXEEXT@ \
 	bin/share_getinfo@EXEEXT@ \
 	bin/share_setinfo@EXEEXT@ \
 	bin/file_close@EXEEXT@ \
-	bin/file_getinfo@EXEEXT@
+	bin/file_getinfo@EXEEXT@ \
+	bin/file_enum@EXEEXT@
 
 all: $(PROGS)
 
@@ -135,6 +136,7 @@ SHAREGETINFO_OBJ = share/share_getinfo.o $(CMDLINE_OBJ)
 SHARESETINFO_OBJ = share/share_setinfo.o $(CMDLINE_OBJ)
 FILECLOSE_OBJ = file/file_close.o $(CMDLINE_OBJ)
 FILEGETINFO_OBJ = file/file_getinfo.o $(CMDLINE_OBJ)
+FILEENUM_OBJ = file/file_enum.o $(CMDLINE_OBJ)
 
 bin/getdc@EXEEXT@: $(BINARY_PREREQS) $(GETDC_OBJ)
 	@echo Linking $@
@@ -315,6 +317,10 @@ bin/file_close@EXEEXT@: $(BINARY_PREREQS) $(FILECLOSE_OBJ)
 bin/file_getinfo@EXEEXT@: $(BINARY_PREREQS) $(FILEGETINFO_OBJ)
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(FILEGETINFO_OBJ) $(LDFLAGS) $(DYNEXP) $(CMDLINE_LIBS)
+
+bin/file_enum@EXEEXT@: $(BINARY_PREREQS) $(FILEENUM_OBJ)
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(FILEENUM_OBJ) $(LDFLAGS) $(DYNEXP) $(CMDLINE_LIBS)
 
 clean:
 	-rm -f $(PROGS)
