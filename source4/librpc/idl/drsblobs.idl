@@ -432,11 +432,79 @@ interface drsblobs {
 		DATA_BLOB data;
 	} DsCompressedChunk;
 
-	typedef [public] struct {
-		DsCompressedChunk chunks[5];
-	} DsCompressedBlob;
+	typedef struct {
+		uint16 __size;
+		[size_is(__size),charset(DOS)] uint8 *string;
+	} ExtendedErrorAString;
 
-	void decode_DsCompressed(
-		[in] DsCompressedBlob blob
+	typedef struct {
+		uint16 __size;
+		[size_is(__size),charset(UTF16)] uint16 *string;
+	} ExtendedErrorUString;
+
+	typedef struct {
+		uint16 length;
+		[size_is(length)] uint8 *data;
+	} ExtendedErrorBlob;
+
+	typedef enum {
+		EXTENDED_ERROR_COMPUTER_NAME_PRESENT	= 1,
+		EXTENDED_ERROR_COMPUTER_NAME_NOT_PRESENT= 2
+	} ExtendedErrorComputerNamePresent;
+
+	typedef [switch_type(ExtendedErrorComputerNamePresent)] union {
+	[case(EXTENDED_ERROR_COMPUTER_NAME_PRESENT)] ExtendedErrorUString name;
+	[case(EXTENDED_ERROR_COMPUTER_NAME_NOT_PRESENT)];
+	} ExtendedErrorComputerNameU;
+
+	typedef struct {
+		ExtendedErrorComputerNamePresent present;
+		[switch_is(present)] ExtendedErrorComputerNameU n;
+	} ExtendedErrorComputerName;
+
+	typedef enum {
+		EXTENDED_ERROR_PARAM_TYPE_ASCII_STRING		= 1,
+		EXTENDED_ERROR_PARAM_TYPE_UNICODE_STRING	= 2,
+		EXTENDED_ERROR_PARAM_TYPE_UINT32		= 3,
+		EXTENDED_ERROR_PARAM_TYPE_UINT16		= 4,
+		EXTENDED_ERROR_PARAM_TYPE_UINT64		= 5,
+		EXTENDED_ERROR_PARAM_TYPE_NONE			= 6,
+		EXTENDED_ERROR_PARAM_TYPE_BLOB			= 7
+	} ExtendedErrorParamType;
+
+	typedef [switch_type(ExtendedErrorParamType)] union {
+	[case(EXTENDED_ERROR_PARAM_TYPE_ASCII_STRING)] ExtendedErrorAString a_string;
+	[case(EXTENDED_ERROR_PARAM_TYPE_UNICODE_STRING)] ExtendedErrorUString u_string;
+	[case(EXTENDED_ERROR_PARAM_TYPE_UINT32)] uint32 uint32;
+	[case(EXTENDED_ERROR_PARAM_TYPE_UINT16)] uint16 uint16;
+	[case(EXTENDED_ERROR_PARAM_TYPE_UINT64)] hyper uint64;
+	[case(EXTENDED_ERROR_PARAM_TYPE_NONE)];
+	[case(EXTENDED_ERROR_PARAM_TYPE_BLOB)] ExtendedErrorBlob blob;
+	} ExtendedErrorParamU;
+
+	typedef struct {
+		ExtendedErrorParamType type;
+		[switch_is(type)] ExtendedErrorParamU p;
+	} ExtendedErrorParam;
+
+	typedef [public] struct {
+		ExtendedErrorInfo *next;
+		ExtendedErrorComputerName computer_name;
+		hyper pid;
+		NTTIME time;
+		uint32 generating_component;
+		WERROR status;
+		uint16 detection_location;
+		uint16 flags;
+		uint16 num_params;
+		[size_is(num_params)] ExtendedErrorParam params[];
+	} ExtendedErrorInfo;
+
+	typedef struct {
+		[unique] ExtendedErrorInfo *info;
+	} ExtendedErrorInfoPtr;
+
+	void decode_ExtendedErrorInfo (
+		[in,subcontext(0xFFFFFC01)] ExtendedErrorInfoPtr ptr
 		);
 }
