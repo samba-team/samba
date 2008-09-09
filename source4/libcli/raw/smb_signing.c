@@ -298,6 +298,13 @@ bool smbcli_request_check_sign_mac(struct smbcli_request *req)
 {
 	bool good;
 
+	if (!req->transport->negotiate.sign_info.doing_signing &&
+	    req->sign_caller_checks) {
+		return true;
+	}
+
+	req->sign_caller_checks = false;
+
 	switch (req->transport->negotiate.sign_info.signing_state) 
 	{
 	case SMB_SIGNING_ENGINE_OFF:
