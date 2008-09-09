@@ -1218,4 +1218,20 @@ interface libnetapi
 		[in] uint32 level,
 		[out] uint8 **buffer
 		);
+
+	/*******************************************/
+	/* NetFileEnum                             */
+	/*******************************************/
+
+	[nopush,nopull] NET_API_STATUS NetFileEnum(
+		[in] string server_name,
+		[in] string base_path,
+		[in] string user_name,
+		[in] uint32 level,
+		[out] uint8 **buffer,
+		[in] uint32 prefmaxlen,
+		[out] uint32 *entries_read,
+		[out] uint32 *total_entries,
+		[in,out] uint32 *resume_handle
+		);
 }
