@@ -2250,3 +2250,49 @@ NET_API_STATUS NetFileClose(const char * server_name /* [in] */,
 	return r.out.result;
 }
 
+/****************************************************************
+ NetFileGetInfo
+****************************************************************/
+
+NET_API_STATUS NetFileGetInfo(const char * server_name /* [in] */,
+			      uint32_t fileid /* [in] */,
+			      uint32_t level /* [in] */,
+			      uint8_t **buffer /* [out] [ref] */)
+{
+	struct NetFileGetInfo r;
+	struct libnetapi_ctx *ctx = NULL;
+	NET_API_STATUS status;
+	WERROR werr;
+
+	status = libnetapi_getctx(&ctx);
+	if (status != 0) {
+		return status;
+	}
+
+	/* In parameters */
+	r.in.server_name = server_name;
+	r.in.fileid = fileid;
+	r.in.level = level;
+
+	/* Out parameters */
+	r.out.buffer = buffer;
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(NetFileGetInfo, &r);
+	}
+
+	if (LIBNETAPI_LOCAL_SERVER(server_name)) {
+		werr = NetFileGetInfo_l(ctx, &r);
+	} else {
+		werr = NetFileGetInfo_r(ctx, &r);
+	}
+
+	r.out.result = W_ERROR_V(werr);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(NetFileGetInfo, &r);
+	}
+
+	return r.out.result;
+}
+

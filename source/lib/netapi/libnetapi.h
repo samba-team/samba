@@ -405,4 +405,12 @@ WERROR NetFileClose_r(struct libnetapi_ctx *ctx,
 		      struct NetFileClose *r);
 WERROR NetFileClose_l(struct libnetapi_ctx *ctx,
 		      struct NetFileClose *r);
+NET_API_STATUS NetFileGetInfo(const char * server_name /* [in] */,
+			      uint32_t fileid /* [in] */,
+			      uint32_t level /* [in] */,
+			      uint8_t **buffer /* [out] [ref] */);
+WERROR NetFileGetInfo_r(struct libnetapi_ctx *ctx,
+			struct NetFileGetInfo *r);
+WERROR NetFileGetInfo_l(struct libnetapi_ctx *ctx,
+			struct NetFileGetInfo *r);
 #endif /* __LIBNETAPI_LIBNETAPI__ */
