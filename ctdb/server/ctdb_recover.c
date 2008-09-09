@@ -971,3 +971,41 @@ int32_t ctdb_control_get_capabilities(struct ctdb_context *ctdb, TDB_DATA *outda
 	return 0;	
 }
 
+static void ctdb_recd_ping_timeout(struct event_context *ev, struct timed_event *te, struct timeval t, void *p)
+{
+	struct ctdb_context *ctdb = talloc_get_type(p, struct ctdb_context);
+
+	DEBUG(DEBUG_ERR, (__location__ " Recovery daemon ping timeout. Shutting down ctdb daemon\n"));
+
+	ctdb_stop_recoverd(ctdb);
+	ctdb_stop_keepalive(ctdb);
+	ctdb_stop_monitoring(ctdb);
+	ctdb_release_all_ips(ctdb);
+	if (ctdb->methods != NULL) {
+		ctdb->methods->shutdown(ctdb);
+	}
+	ctdb_event_script(ctdb, "shutdown");
+	DEBUG(DEBUG_ERR, (__location__ " Recovery daemon ping timeout. Daemon has been shut down.\n"));
+	exit(0);
+}
+
+/* The recovery daemon will ping us at regular intervals.
+   If we havent been pinged for a while we assume the recovery
+   daemon is inoperable and we shut down.
+*/
+int32_t ctdb_control_recd_ping(struct ctdb_context *ctdb)
+{
+	talloc_free(ctdb->recd_ping_ctx);
+
+	ctdb->recd_ping_ctx = talloc_new(ctdb);
+	CTDB_NO_MEMORY(ctdb, ctdb->recd_ping_ctx);
+
+	if (ctdb->tunable.recd_ping_timeout != 0) {
+		event_add_timed(ctdb->ev, ctdb->recd_ping_ctx, 
+			timeval_current_ofs(ctdb->tunable.recd_ping_timeout, 0),
+			ctdb_recd_ping_timeout, ctdb);
+	}
+
+	return 0;
+}
+

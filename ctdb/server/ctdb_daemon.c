@@ -103,6 +103,9 @@ static void ctdb_start_transport(struct ctdb_context *ctdb)
 
 	/* start periodic update of tcp tickle lists */
        	ctdb_start_tcp_tickle_update(ctdb);
+
+	/* start listening for recovery daemon pings */
+	ctdb_control_recd_ping(ctdb);
 }
 
 static void block_signal(int signum)

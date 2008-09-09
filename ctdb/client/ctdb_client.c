@@ -3280,3 +3280,21 @@ again:
 	talloc_free(h);
 	return 0;
 }
+
+/*
+  recovery daemon ping to main daemon
+ */
+int ctdb_ctrl_recd_ping(struct ctdb_context *ctdb)
+{
+	int ret;
+	int32_t res;
+
+	ret = ctdb_control(ctdb, CTDB_CURRENT_NODE, 0, CTDB_CONTROL_RECD_PING, 0, tdb_null, 
+			   ctdb, NULL, &res, NULL, NULL);
+	if (ret != 0 || res != 0) {
+		DEBUG(DEBUG_ERR,("Failed to send recd ping\n"));
+		return -1;
+	}
+
+	return 0;
+}

@@ -114,6 +114,7 @@ struct ctdb_tunable {
 	uint32_t reclock_ping_period;
 	uint32_t no_ip_failback;
 	uint32_t verbose_memory_names;
+	uint32_t recd_ping_timeout;
 };
 
 /*
@@ -417,6 +418,7 @@ struct ctdb_context {
 	int start_as_disabled;
 	uint32_t event_script_timeouts; /* counting how many consecutive times an eventscript has timedout */
 	TALLOC_CTX *eventscripts_ctx; /* a context to hold data for the RUN_EVENTSCRIPTS control */
+	TALLOC_CTX *recd_ping_ctx;
 };
 
 struct ctdb_db_context {
@@ -550,6 +552,7 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_TRANS2_FINISHED         = 84,
 		    CTDB_CONTROL_TRANS2_ERROR            = 85,
 		    CTDB_CONTROL_TRANS2_COMMIT_RETRY     = 86,
+		    CTDB_CONTROL_RECD_PING		 = 87,
 };	
 
 /*
@@ -1378,5 +1381,6 @@ int32_t ctdb_control_trans2_error(struct ctdb_context *ctdb,
 char *ctdb_addr_to_str(ctdb_sock_addr *addr);
 void ctdb_canonicalize_ip(const ctdb_sock_addr *ip, ctdb_sock_addr *cip);
 
+int32_t ctdb_control_recd_ping(struct ctdb_context *ctdb);
 
 #endif

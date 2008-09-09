@@ -2317,6 +2317,9 @@ again:
 		exit(-1);
 	}
 
+	/* ping the local daemon to tell it we are alive */
+	ctdb_ctrl_recd_ping(ctdb);
+
 	if (rec->election_timeout) {
 		/* an election is in progress */
 		goto again;

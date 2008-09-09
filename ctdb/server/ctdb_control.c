@@ -406,6 +406,10 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 	case CTDB_CONTROL_TRANS2_FINISHED:
 		return ctdb_control_trans2_finished(ctdb, c);
 
+	case CTDB_CONTROL_RECD_PING:
+		CHECK_CONTROL_DATA_SIZE(0);
+		return ctdb_control_recd_ping(ctdb);
+
 	default:
 		DEBUG(DEBUG_CRIT,(__location__ " Unknown CTDB control opcode %u\n", opcode));
 		return -1;
