@@ -34,6 +34,7 @@ o   Jeremy Allison <jra@samba.org>
     * Fix the wcache_invalidate_samlogon calls.
     * Add st_birthtime and friends for accurate create times on *BSD and MacOSX.
     * Clarify usage of "force create mode".
+    * Write times code update.
 
 
 o   Gerald (Jerry) Carter <jerry@samba.org>
@@ -65,7 +66,13 @@ o   Jeff Layton <jlayton@redhat.com>
 
 o   Volker Lendecke <vl@sernet.de>
     * BUG 5707: Do proper error handling if the socket is closed.
+    * Fix calculation of useable_space for trans2 and nttrans replies.
     * Fix Coverity ID 587.
+    * Add mapping of generic bits when setting an NFSv4 ACL.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * Some write time fixes.
 
 
 o   David Leonard <David.Leonard@quest.com>
