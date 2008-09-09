@@ -182,7 +182,7 @@ char *schema_class_description(TALLOC_CTX *mem_ctx,
 		IF_NULL_FAIL_RET(schema_entry);
 	}
 
-	if (subClassOf && strcasecmp(subClassOf, name) == 0) {
+	if (subClassOf && strcasecmp(subClassOf, name) != 0) {
 		schema_entry = talloc_asprintf_append(schema_entry, 
 						      "SUP %s%s", subClassOf, seperator);
 		IF_NULL_FAIL_RET(schema_entry);
