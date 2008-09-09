@@ -1354,6 +1354,7 @@ bool mask_match_list(const char *string, char **list, int listLen, bool is_case_
 bool unix_wild_match(const char *pattern, const char *string);
 bool name_to_fqdn(fstring fqdn, const char *name);
 void *talloc_check_name_abort(const void *ptr, const char *name);
+void *talloc_append_blob(TALLOC_CTX *mem_ctx, void *buf, DATA_BLOB blob);
 uint32 map_share_mode_to_deny_mode(uint32 share_access, uint32 private_options);
 pid_t procid_to_pid(const struct server_id *proc);
 void set_my_vnn(uint32 vnn);
