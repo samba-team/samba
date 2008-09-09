@@ -574,6 +574,10 @@ struct LOCALGROUP_MEMBERS_INFO_3 {
 	const char * lgrmi3_domainandname;
 };
 
+struct LOCALGROUP_USERS_INFO_0 {
+	const char * lgrui0_name;
+};
+
 struct TIME_OF_DAY_INFO {
 	uint32_t tod_elapsedt;
 	uint32_t tod_msecs;
@@ -1170,6 +1174,34 @@ NET_API_STATUS NetUserSetGroups(const char * server_name /* [in] */,
 				uint32_t level /* [in] */,
 				uint8_t *buffer /* [in] [ref] */,
 				uint32_t num_entries /* [in] */);
+
+/************************************************************//**
+ *
+ * NetUserGetLocalGroups
+ *
+ * @brief Enumerate local grouplist of a user on a server
+ *
+ * @param[in] server_name The server name to connect to
+ * @param[in] user_name The user name to query
+ * @param[in] level The enumeration level used for the query
+ * @param[in] flags The flags used for the query
+ * @param[out] buffer The returned enumeration buffer
+ * @param[in] prefmaxlen The requested maximal buffer size
+ * @param[out] entries_read The number of returned entries
+ * @param[out] total_entries The number of total entries
+ * @return NET_API_STATUS
+ *
+ * example user/user_getlocalgroups.c
+ ***************************************************************/
+
+NET_API_STATUS NetUserGetLocalGroups(const char * server_name /* [in] */,
+				     const char * user_name /* [in] */,
+				     uint32_t level /* [in] */,
+				     uint32_t flags /* [in] */,
+				     uint8_t **buffer /* [out] [ref] */,
+				     uint32_t prefmaxlen /* [in] */,
+				     uint32_t *entries_read /* [out] [ref] */,
+				     uint32_t *total_entries /* [out] [ref] */);
 
 /************************************************************//**
  *
