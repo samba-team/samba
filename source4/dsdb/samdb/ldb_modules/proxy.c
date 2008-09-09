@@ -73,7 +73,7 @@ static int load_proxy_info(struct ldb_module *module)
 
 	/* see if we have already loaded it */
 	if (proxy->upstream != NULL) {
-		return 0;
+		return LDB_SUCCESS;
 	}
 
 	dn = ldb_dn_new(proxy, module->ldb, "@PROXYINFO");
@@ -152,7 +152,7 @@ static int load_proxy_info(struct ldb_module *module)
 
 	talloc_free(res);
 
-	return 0;
+	return LDB_SUCCESS;
 
 failed:
 	talloc_free(res);
@@ -160,7 +160,7 @@ failed:
 	talloc_free(proxy->newdn);
 	talloc_free(proxy->upstream);
 	proxy->upstream = NULL;
-	return -1;
+	return LDB_ERR_OPERATIONS_ERROR;
 }
 
 
