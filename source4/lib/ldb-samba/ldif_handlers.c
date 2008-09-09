@@ -134,7 +134,7 @@ static int ldb_canonicalise_objectSid(struct ldb_context *ldb, void *mem_ctx,
 			/* Perhaps not a string after all */
 			return ldb_handler_copy(ldb, mem_ctx, in, out);
 		}
-		return 0;
+		return LDB_SUCCESS;
 	}
 	return ldb_handler_copy(ldb, mem_ctx, in, out);
 }

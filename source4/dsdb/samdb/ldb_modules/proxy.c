@@ -66,7 +66,7 @@ static int load_proxy_info(struct ldb_module *module)
 
 	/* see if we have already loaded it */
 	if (proxy->upstream != NULL) {
-		return 0;
+		return LDB_SUCCESS;
 	}
 
 	dn = ldb_dn_new(proxy, module->ldb, "@PROXYINFO");
@@ -145,7 +145,7 @@ static int load_proxy_info(struct ldb_module *module)
 
 	talloc_free(res);
 
-	return 0;
+	return LDB_SUCCESS;
 
 failed:
 	talloc_free(res);
@@ -153,7 +153,7 @@ failed:
 	talloc_free(proxy->newdn);
 	talloc_free(proxy->upstream);
 	proxy->upstream = NULL;
-	return -1;
+	return LDB_ERR_OPERATIONS_ERROR;
 }
 
 
@@ -259,7 +259,7 @@ static int proxy_search_bytree(struct ldb_module *module, struct ldb_request *re
 	}
 
 	if (load_proxy_info(module) != 0) {
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	/* see if the dn is within olddn */
@@ -269,7 +269,7 @@ static int proxy_search_bytree(struct ldb_module *module, struct ldb_request *re
 
 	newreq = talloc(module, struct ldb_request);
 	if (newreq == NULL) {
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	newreq->op.search.tree = proxy_convert_tree(module, req->op.search.tree);
@@ -298,7 +298,7 @@ static int proxy_search_bytree(struct ldb_module *module, struct ldb_request *re
 	if (ret != LDB_SUCCESS) {
 		ldb_set_errstring(module->ldb, ldb_errstring(proxy->upstream));
 		talloc_free(newreq);
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	for (i = 0; i < newreq->op.search.res->count; i++) {
