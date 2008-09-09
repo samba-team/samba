@@ -1,5 +1,5 @@
 
-noinst_PROGRAMS = gen-po.sh
+noinst_SCRIPTS = gen-po.sh
 
 gen-po.sh: gen-po.in
 	sed \
@@ -64,4 +64,4 @@ FILES = \
     heimdal_krb5/sv_SE.po
 
 EXTRA_DIST = gen-po.in $(FILES)
-CLEANFILES = gen-po.tmp
+CLEANFILES = gen-po.tmp $(noinst_SCRIPTS)
