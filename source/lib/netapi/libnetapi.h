@@ -413,4 +413,17 @@ WERROR NetFileGetInfo_r(struct libnetapi_ctx *ctx,
 			struct NetFileGetInfo *r);
 WERROR NetFileGetInfo_l(struct libnetapi_ctx *ctx,
 			struct NetFileGetInfo *r);
+NET_API_STATUS NetFileEnum(const char * server_name /* [in] */,
+			   const char * base_path /* [in] */,
+			   const char * user_name /* [in] */,
+			   uint32_t level /* [in] */,
+			   uint8_t **buffer /* [out] [ref] */,
+			   uint32_t prefmaxlen /* [in] */,
+			   uint32_t *entries_read /* [out] [ref] */,
+			   uint32_t *total_entries /* [out] [ref] */,
+			   uint32_t *resume_handle /* [in,out] [ref] */);
+WERROR NetFileEnum_r(struct libnetapi_ctx *ctx,
+		     struct NetFileEnum *r);
+WERROR NetFileEnum_l(struct libnetapi_ctx *ctx,
+		     struct NetFileEnum *r);
 #endif /* __LIBNETAPI_LIBNETAPI__ */

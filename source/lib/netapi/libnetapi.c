@@ -2296,3 +2296,60 @@ NET_API_STATUS NetFileGetInfo(const char * server_name /* [in] */,
 	return r.out.result;
 }
 
+/****************************************************************
+ NetFileEnum
+****************************************************************/
+
+NET_API_STATUS NetFileEnum(const char * server_name /* [in] */,
+			   const char * base_path /* [in] */,
+			   const char * user_name /* [in] */,
+			   uint32_t level /* [in] */,
+			   uint8_t **buffer /* [out] [ref] */,
+			   uint32_t prefmaxlen /* [in] */,
+			   uint32_t *entries_read /* [out] [ref] */,
+			   uint32_t *total_entries /* [out] [ref] */,
+			   uint32_t *resume_handle /* [in,out] [ref] */)
+{
+	struct NetFileEnum r;
+	struct libnetapi_ctx *ctx = NULL;
+	NET_API_STATUS status;
+	WERROR werr;
+
+	status = libnetapi_getctx(&ctx);
+	if (status != 0) {
+		return status;
+	}
+
+	/* In parameters */
+	r.in.server_name = server_name;
+	r.in.base_path = base_path;
+	r.in.user_name = user_name;
+	r.in.level = level;
+	r.in.prefmaxlen = prefmaxlen;
+	r.in.resume_handle = resume_handle;
+
+	/* Out parameters */
+	r.out.buffer = buffer;
+	r.out.entries_read = entries_read;
+	r.out.total_entries = total_entries;
+	r.out.resume_handle = resume_handle;
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(NetFileEnum, &r);
+	}
+
+	if (LIBNETAPI_LOCAL_SERVER(server_name)) {
+		werr = NetFileEnum_l(ctx, &r);
+	} else {
+		werr = NetFileEnum_r(ctx, &r);
+	}
+
+	r.out.result = W_ERROR_V(werr);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(NetFileEnum, &r);
+	}
+
+	return r.out.result;
+}
+
