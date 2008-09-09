@@ -1837,7 +1837,8 @@ LIBNETAPI_OBJ0 = lib/netapi/netapi.o \
 		 lib/netapi/localgroup.o \
 		 lib/netapi/samr.o \
 		 lib/netapi/sid.o \
-		 lib/netapi/share.o
+		 lib/netapi/share.o \
+		 lib/netapi/file.o
 
 LIBNETAPI_OBJ  = $(LIBNETAPI_OBJ0) $(LIBNET_OBJ) \
 		 $(LIBSMBCONF_OBJ) \

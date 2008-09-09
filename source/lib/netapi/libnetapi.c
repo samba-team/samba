@@ -2208,3 +2208,45 @@ NET_API_STATUS NetShareSetInfo(const char * server_name /* [in] */,
 	return r.out.result;
 }
 
+/****************************************************************
+ NetFileClose
+****************************************************************/
+
+NET_API_STATUS NetFileClose(const char * server_name /* [in] */,
+			    uint32_t fileid /* [in] */)
+{
+	struct NetFileClose r;
+	struct libnetapi_ctx *ctx = NULL;
+	NET_API_STATUS status;
+	WERROR werr;
+
+	status = libnetapi_getctx(&ctx);
+	if (status != 0) {
+		return status;
+	}
+
+	/* In parameters */
+	r.in.server_name = server_name;
+	r.in.fileid = fileid;
+
+	/* Out parameters */
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(NetFileClose, &r);
+	}
+
+	if (LIBNETAPI_LOCAL_SERVER(server_name)) {
+		werr = NetFileClose_l(ctx, &r);
+	} else {
+		werr = NetFileClose_r(ctx, &r);
+	}
+
+	r.out.result = W_ERROR_V(werr);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(NetFileClose, &r);
+	}
+
+	return r.out.result;
+}
+
