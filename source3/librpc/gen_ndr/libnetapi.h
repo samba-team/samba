@@ -1393,4 +1393,17 @@ struct NetShareSetInfo {
 
 };
 
+
+struct NetFileClose {
+	struct {
+		const char * server_name;
+		uint32_t fileid;
+	} in;
+
+	struct {
+		enum NET_API_STATUS result;
+	} out;
+
+};
+
 #endif /* _HEADER_libnetapi */
