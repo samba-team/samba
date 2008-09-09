@@ -874,6 +874,60 @@ NET_API_STATUS NetUserSetGroups(const char * server_name /* [in] */,
 }
 
 /****************************************************************
+ NetUserGetLocalGroups
+****************************************************************/
+
+NET_API_STATUS NetUserGetLocalGroups(const char * server_name /* [in] */,
+				     const char * user_name /* [in] */,
+				     uint32_t level /* [in] */,
+				     uint32_t flags /* [in] */,
+				     uint8_t **buffer /* [out] [ref] */,
+				     uint32_t prefmaxlen /* [in] */,
+				     uint32_t *entries_read /* [out] [ref] */,
+				     uint32_t *total_entries /* [out] [ref] */)
+{
+	struct NetUserGetLocalGroups r;
+	struct libnetapi_ctx *ctx = NULL;
+	NET_API_STATUS status;
+	WERROR werr;
+
+	status = libnetapi_getctx(&ctx);
+	if (status != 0) {
+		return status;
+	}
+
+	/* In parameters */
+	r.in.server_name = server_name;
+	r.in.user_name = user_name;
+	r.in.level = level;
+	r.in.flags = flags;
+	r.in.prefmaxlen = prefmaxlen;
+
+	/* Out parameters */
+	r.out.buffer = buffer;
+	r.out.entries_read = entries_read;
+	r.out.total_entries = total_entries;
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(NetUserGetLocalGroups, &r);
+	}
+
+	if (LIBNETAPI_LOCAL_SERVER(server_name)) {
+		werr = NetUserGetLocalGroups_l(ctx, &r);
+	} else {
+		werr = NetUserGetLocalGroups_r(ctx, &r);
+	}
+
+	r.out.result = W_ERROR_V(werr);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(NetUserGetLocalGroups, &r);
+	}
+
+	return r.out.result;
+}
+
+/****************************************************************
  NetUserModalsGet
 ****************************************************************/
 
