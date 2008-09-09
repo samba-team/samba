@@ -71,10 +71,102 @@ WERROR NetFileClose_l(struct libnetapi_ctx *ctx,
 /****************************************************************
 ****************************************************************/
 
+static NTSTATUS map_srvsvc_FileInfo_to_FILE_INFO_buffer(TALLOC_CTX *mem_ctx,
+							uint32_t level,
+							union srvsvc_NetFileInfo *info,
+							uint8_t **buffer,
+							uint32_t *num_entries)
+{
+	struct FILE_INFO_2 i2;
+	struct FILE_INFO_3 i3;
+
+	switch (level) {
+		case 2:
+			i2.fi2_id		= info->info2->fid;
+
+			ADD_TO_ARRAY(mem_ctx, struct FILE_INFO_2, i2,
+				     (struct FILE_INFO_2 **)buffer,
+				     num_entries);
+			break;
+		case 3:
+			i3.fi3_id		= info->info3->fid;
+			i3.fi3_permissions	= info->info3->permissions;
+			i3.fi3_num_locks	= info->info3->num_locks;
+			i3.fi3_pathname		= talloc_strdup(mem_ctx, info->info3->path);
+			i3.fi3_username		= talloc_strdup(mem_ctx, info->info3->user);
+
+			NT_STATUS_HAVE_NO_MEMORY(i3.fi3_pathname);
+			NT_STATUS_HAVE_NO_MEMORY(i3.fi3_username);
+
+			ADD_TO_ARRAY(mem_ctx, struct FILE_INFO_3, i3,
+				     (struct FILE_INFO_3 **)buffer,
+				     num_entries);
+			break;
+		default:
+			return NT_STATUS_INVALID_INFO_CLASS;
+	}
+
+	return NT_STATUS_OK;
+}
+
+/****************************************************************
+****************************************************************/
+
 WERROR NetFileGetInfo_r(struct libnetapi_ctx *ctx,
 			struct NetFileGetInfo *r)
 {
-	return WERR_NOT_SUPPORTED;
+	WERROR werr;
+	NTSTATUS status;
+	struct cli_state *cli = NULL;
+	struct rpc_pipe_client *pipe_cli = NULL;
+	union srvsvc_NetFileInfo info;
+	uint32_t num_entries = 0;
+
+	if (!r->out.buffer) {
+		return WERR_INVALID_PARAM;
+	}
+
+	switch (r->in.level) {
+		case 2:
+		case 3:
+			break;
+		default:
+			return WERR_UNKNOWN_LEVEL;
+	}
+
+	werr = libnetapi_open_pipe(ctx, r->in.server_name,
+				   &ndr_table_srvsvc.syntax_id,
+				   &cli,
+				   &pipe_cli);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	status = rpccli_srvsvc_NetFileGetInfo(pipe_cli, ctx,
+					      r->in.server_name,
+					      r->in.fileid,
+					      r->in.level,
+					      &info,
+					      &werr);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	status = map_srvsvc_FileInfo_to_FILE_INFO_buffer(ctx,
+							 r->in.level,
+							 &info,
+							 r->out.buffer,
+							 &num_entries);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+ done:
+	if (!cli) {
+		return werr;
+	}
+
+	return werr;
 }
 
 /****************************************************************
