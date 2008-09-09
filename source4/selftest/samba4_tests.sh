@@ -292,6 +292,46 @@ plantest "rpc.samr.users against member server with local creds" member $VALGRIN
 plantest "rpc.samr.passwords against member server with local creds" member $VALGRIND $smb4torture ncacn_np:"\$NETBIOSNAME" -U"\$NETBIOSNAME/\$USERNAME"%"\$PASSWORD" "RPC-SAMR-PASSWORDS" "$*"
 plantest "blackbox.smbclient against member server with local creds" member $samba4srcdir/client/tests/test_smbclient.sh "\$NETBIOSNAME" "\$USERNAME" "\$PASSWORD" "\$NETBIOSNAME" "$PREFIX" 
 
+# Tests SMB signing
+
+for mech in \
+	"-k no" \
+	"-k no --option=usespnego=no" \
+	"-k no --option=gensec:spengo=no" \
+	"-k yes" \
+	"-k yes --option=gensec:fake_gssapi_krb5=yes --option=gensec:gssapi_krb5=no"; do
+   for signing in \
+	"--signing=on" \
+	"--signing=required"; do
+
+	signoptions="$mech $signing"
+	name="smb.signing on with $signoptions"
+	plantest "$name" dc $VALGRIND $smb4torture //"\$NETBIOSNAME"/tmp $signoptions -U"\$USERNAME"%"\$PASSWORD" BASE-XCOPY "$*"
+   done
+done
+
+for mech in \
+	"-k no" \
+	"-k no --option=usespnego=no" \
+	"-k no --option=gensec:spengo=no" \
+	"-k yes" \
+	"-k yes --option=gensec:fake_gssapi_krb5=yes --option=gensec:gssapi_krb5=no"; do
+	signoptions="$mech --signing=off"
+	name="smb.signing on with $signoptions"
+	plantest "$name domain-creds" member $VALGRIND $smb4torture //"\$NETBIOSNAME"/tmp $signoptions -U"\$DC_USERNAME"%"\$DC_PASSWORD" BASE-XCOPY "$*"
+done
+for mech in \
+	"-k no" \
+	"-k no --option=usespnego=no" \
+	"-k no --option=gensec:spengo=no"; do
+	signoptions="$mech --signing=off"
+	name="smb.signing on with $signoptions"
+	plantest "$name local-creds" member $VALGRIND $smb4torture //"\$NETBIOSNAME"/tmp $signoptions -U"\$NETBIOSNAME\\\\\$USERNAME"%"\$PASSWORD" BASE-XCOPY "$*"
+done
+plantest "--signing=yes anon" dc $VALGRIND $smb4torture //"\$NETBIOSNAME"/tmp -k no --signing=yes -U% BASE-XCOPY "$*"
+plantest "--signing=required anon" dc $VALGRIND $smb4torture //"\$NETBIOSNAME"/tmp -k no --signing=required -U% BASE-XCOPY "$*"
+plantest "--signing=no anon" member $VALGRIND $smb4torture //"\$NETBIOSNAME"/tmp -k no --signing=no -U% BASE-XCOPY "$*"
+
 NBT_TESTS=`$smb4torture --list | grep "^NBT-" | xargs`
 
 for t in $NBT_TESTS; do
