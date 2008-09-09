@@ -132,7 +132,7 @@ int main(int argc, char **argv)
 	ev_ctx = s4_event_context_init(NULL);
 
 	if (remote != NULL) {
-		h = reg_common_open_remote(remote, cmdline_lp_ctx, cmdline_credentials);
+		h = reg_common_open_remote(remote, ev_ctx, cmdline_lp_ctx, cmdline_credentials);
 	} else if (file != NULL) {
 		start_key = reg_common_open_file(file, ev_ctx, cmdline_lp_ctx, cmdline_credentials);
 	} else {
