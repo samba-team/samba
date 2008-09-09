@@ -222,16 +222,14 @@ static WERROR dcesrv_winreg_EnumKey(struct dcesrv_call_state *dce_call,
 						    r->in.enum_index,
 						    &name, NULL, &last_mod);
 
-	if (W_ERROR_IS_OK(r->out.result)) {
-		if (2*strlen_m_term(name) > r->in.name->size) {
-			return WERR_MORE_DATA;
-		}
-		r->out.name->length = 2*strlen_m_term(name);
-		r->out.name->name = name;
-		r->out.keyclass = talloc_zero(mem_ctx, struct winreg_StringBuf);
-		if (r->in.last_changed_time) {
-			r->out.last_changed_time = &last_mod;
-		}
+	if (2*strlen_m_term(name) > r->in.name->size) {
+		return WERR_MORE_DATA;
+	}
+	r->out.name->length = 2*strlen_m_term(name);
+	r->out.name->name = name;
+	r->out.keyclass = talloc_zero(mem_ctx, struct winreg_StringBuf);
+	if (r->in.last_changed_time) {
+		r->out.last_changed_time = &last_mod;
 	}
 
 	return r->out.result;
@@ -259,8 +257,13 @@ static WERROR dcesrv_winreg_EnumValue(struct dcesrv_call_state *dce_call,
 	result = reg_key_get_value_by_index(mem_ctx, key, r->in.enum_index,
 					    &data_name,
 					    &data_type, &data);
+
 	if (!W_ERROR_IS_OK(result)) {
-		return result;
+		/* if the lookup wasn't successful, send client query back */
+		data_name = r->in.name->name;
+		data_type = *r->in.type;
+		data.data = r->in.value;
+		data.length = *r->in.length;
 	}
 
 	/* the client can optionally pass a NULL for type, meaning they don't
@@ -282,8 +285,14 @@ static WERROR dcesrv_winreg_EnumValue(struct dcesrv_call_state *dce_call,
 		return WERR_MORE_DATA;
 	}
 
-	r->out.name->name = data_name;
-	r->out.name->length = 2*strlen_m_term(data_name);
+	/* "data_name" is NULL when we query the default attribute */
+	if (data_name) {
+		r->out.name->name = data_name;
+		r->out.name->length = 2*strlen_m_term(data_name);
+	} else {
+		r->out.name->name = r->in.name->name;
+		r->out.name->length = r->in.name->length;
+	}
 	r->out.name->size = r->in.name->size;
 
 	if (r->in.value) {
@@ -296,7 +305,7 @@ static WERROR dcesrv_winreg_EnumValue(struct dcesrv_call_state *dce_call,
 		r->out.length = r->out.size;
 	}
 
-	return WERR_OK;
+	return result;
 }
 
 
@@ -408,7 +417,7 @@ static WERROR dcesrv_winreg_QueryInfoKey(struct dcesrv_call_state *dce_call,
 {
 	struct dcesrv_handle *h;
 	struct registry_key *k;
-	WERROR ret;
+	WERROR result;
 	const char *classname = NULL;
 
 	DCESRV_PULL_HANDLE_FAULT(h, r->in.handle, HTYPE_REGKEY);
@@ -420,7 +429,7 @@ static WERROR dcesrv_winreg_QueryInfoKey(struct dcesrv_call_state *dce_call,
 	case SECURITY_USER:
 		k = h->data;
 		
-		ret = reg_key_get_info(mem_ctx, k, &classname, r->out.num_subkeys,
+		result = reg_key_get_info(mem_ctx, k, &classname, r->out.num_subkeys,
 				       r->out.num_values, r->out.last_changed_time,
 				       r->out.max_subkeylen, r->out.max_valnamelen, 
 				       r->out.max_valbufsize);
@@ -428,7 +437,7 @@ static WERROR dcesrv_winreg_QueryInfoKey(struct dcesrv_call_state *dce_call,
 		if (r->out.classname != NULL)
 			r->out.classname->name = classname;
 		
-		return ret;
+		return result;
 	default:
 		return WERR_ACCESS_DENIED;
 	}
@@ -444,9 +453,9 @@ static WERROR dcesrv_winreg_QueryValue(struct dcesrv_call_state *dce_call,
 {
 	struct dcesrv_handle *h;
 	struct registry_key *key;
+	WERROR result;
 	uint32_t value_type;
 	DATA_BLOB value_data;
-	WERROR result;
 
 	DCESRV_PULL_HANDLE_FAULT(h, r->in.handle, HTYPE_REGKEY);
 
@@ -460,10 +469,14 @@ static WERROR dcesrv_winreg_QueryValue(struct dcesrv_call_state *dce_call,
 		result = reg_key_get_value_by_name(mem_ctx, key, r->in.value_name.name,
 						   &value_type, &value_data);
 		
+
 		if (!W_ERROR_IS_OK(result)) {
-			return result;
+			/* if the lookup wasn't successful, send client query back */
+			value_type = *r->in.type;
+			value_data.data = r->in.data;
+			value_data.length = *r->in.length;
 		}
-		
+
 		/* Just asking for the size of the buffer */
 		r->out.type = talloc(mem_ctx, uint32_t);
 		if (!r->out.type) {
@@ -475,15 +488,15 @@ static WERROR dcesrv_winreg_QueryValue(struct dcesrv_call_state *dce_call,
 			return WERR_NOMEM;
 		}
 		*r->out.length = value_data.length;
-		if (r->in.data == NULL) {
-			r->out.size = talloc(mem_ctx, uint32_t);
-			*r->out.size = value_data.length;
-		} else {
-			r->out.size = r->in.size;
-			r->out.data = value_data.data;
+		r->out.size = talloc(mem_ctx, uint32_t);
+		if (!r->out.size) {
+			return WERR_NOMEM;
 		}
-		
-		return WERR_OK;
+		*r->out.size = value_data.length;
+
+		r->out.data = value_data.data;
+
+		return result;
 	default:
 		return WERR_ACCESS_DENIED;
 	}
