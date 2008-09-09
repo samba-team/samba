@@ -34,6 +34,7 @@ PROGS = bin/getdc@EXEEXT@ \
 	bin/user_modalsset@EXEEXT@ \
 	bin/user_getgroups@EXEEXT@ \
 	bin/user_setgroups@EXEEXT@ \
+	bin/user_getlocalgroups@EXEEXT@ \
 	bin/group_add@EXEEXT@ \
 	bin/group_del@EXEEXT@ \
 	bin/group_enum@EXEEXT@ \
@@ -104,6 +105,7 @@ USERMODALSGET_OBJ = user/user_modalsget.o $(CMDLINE_OBJ)
 USERMODALSSET_OBJ = user/user_modalsset.o $(CMDLINE_OBJ)
 USERGETGROUPS_OBJ = user/user_getgroups.o $(CMDLINE_OBJ)
 USERSETGROUPS_OBJ = user/user_setgroups.o $(CMDLINE_OBJ)
+USERGETLOCALGROUPS_OBJ = user/user_getlocalgroups.o $(CMDLINE_OBJ)
 GROUPADD_OBJ = group/group_add.o $(CMDLINE_OBJ)
 GROUPDEL_OBJ = group/group_del.o $(CMDLINE_OBJ)
 GROUPENUM_OBJ = group/group_enum.o $(CMDLINE_OBJ)
@@ -197,6 +199,10 @@ bin/user_getgroups@EXEEXT@: $(BINARY_PREREQS) $(USERGETGROUPS_OBJ)
 bin/user_setgroups@EXEEXT@: $(BINARY_PREREQS) $(USERSETGROUPS_OBJ)
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(USERSETGROUPS_OBJ) $(LDFLAGS) $(DYNEXP) $(CMDLINE_LIBS)
+
+bin/user_getlocalgroups@EXEEXT@: $(BINARY_PREREQS) $(USERGETLOCALGROUPS_OBJ)
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(USERGETLOCALGROUPS_OBJ) $(LDFLAGS) $(DYNEXP) $(CMDLINE_LIBS)
 
 bin/group_add@EXEEXT@: $(BINARY_PREREQS) $(GROUPADD_OBJ)
 	@echo Linking $@
