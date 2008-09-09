@@ -3186,9 +3186,247 @@ WERROR NetUserSetGroups_l(struct libnetapi_ctx *ctx,
 /****************************************************************
 ****************************************************************/
 
+static NTSTATUS add_LOCALGROUP_USERS_INFO_X_buffer(TALLOC_CTX *mem_ctx,
+						   uint32_t level,
+						   const char *group_name,
+						   uint8_t **buffer,
+						   uint32_t *num_entries)
+{
+	struct LOCALGROUP_USERS_INFO_0 u0;
+
+	switch (level) {
+		case 0:
+			u0.lgrui0_name = talloc_strdup(mem_ctx, group_name);
+			NT_STATUS_HAVE_NO_MEMORY(u0.lgrui0_name);
+
+			ADD_TO_ARRAY(mem_ctx, struct LOCALGROUP_USERS_INFO_0, u0,
+				     (struct LOCALGROUP_USERS_INFO_0 **)buffer, num_entries);
+			break;
+		default:
+			return NT_STATUS_INVALID_INFO_CLASS;
+	}
+
+	return NT_STATUS_OK;
+}
+
+/****************************************************************
+****************************************************************/
+
 WERROR NetUserGetLocalGroups_r(struct libnetapi_ctx *ctx,
 			       struct NetUserGetLocalGroups *r)
 {
+	struct cli_state *cli = NULL;
+	struct rpc_pipe_client *pipe_cli = NULL;
+	struct policy_handle connect_handle, domain_handle, user_handle,
+	builtin_handle;
+	struct lsa_String lsa_account_name;
+	struct dom_sid2 *domain_sid = NULL;
+	struct samr_Ids user_rids, name_types;
+	struct samr_RidWithAttributeArray *rid_array = NULL;
+	struct lsa_Strings names;
+	struct samr_Ids types;
+	uint32_t *rids = NULL;
+	size_t num_rids = 0;
+	struct dom_sid user_sid;
+	struct lsa_SidArray sid_array;
+	struct samr_Ids domain_rids;
+	struct samr_Ids builtin_rids;
+
+	int i;
+	uint32_t entries_read = 0;
+
+	NTSTATUS status = NT_STATUS_OK;
+	WERROR werr;
+
+	ZERO_STRUCT(connect_handle);
+	ZERO_STRUCT(domain_handle);
+
+	if (!r->out.buffer) {
+		return WERR_INVALID_PARAM;
+	}
+
+	*r->out.buffer = NULL;
+	*r->out.entries_read = 0;
+
+	switch (r->in.level) {
+		case 0:
+		case 1:
+			break;
+		default:
+			return WERR_UNKNOWN_LEVEL;
+	}
+
+	werr = libnetapi_open_pipe(ctx, r->in.server_name,
+				   &ndr_table_samr.syntax_id,
+				   &cli,
+				   &pipe_cli);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	werr = libnetapi_samr_open_domain(ctx, pipe_cli,
+					  SAMR_ACCESS_ENUM_DOMAINS |
+					  SAMR_ACCESS_OPEN_DOMAIN,
+					  SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT |
+					  SAMR_DOMAIN_ACCESS_LOOKUP_ALIAS,
+					  &connect_handle,
+					  &domain_handle,
+					  &domain_sid);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	werr = libnetapi_samr_open_builtin_domain(ctx, pipe_cli,
+						  SAMR_ACCESS_ENUM_DOMAINS |
+						  SAMR_ACCESS_OPEN_DOMAIN,
+						  SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT |
+						  SAMR_DOMAIN_ACCESS_LOOKUP_ALIAS,
+						  &connect_handle,
+						  &builtin_handle);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	init_lsa_String(&lsa_account_name, r->in.user_name);
+
+	status = rpccli_samr_LookupNames(pipe_cli, ctx,
+					 &domain_handle,
+					 1,
+					 &lsa_account_name,
+					 &user_rids,
+					 &name_types);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	status = rpccli_samr_OpenUser(pipe_cli, ctx,
+				      &domain_handle,
+				      SAMR_USER_ACCESS_GET_GROUPS,
+				      user_rids.ids[0],
+				      &user_handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	status = rpccli_samr_GetGroupsForUser(pipe_cli, ctx,
+					      &user_handle,
+					      &rid_array);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	if (!sid_compose(&user_sid, domain_sid, user_rids.ids[0])) {
+		werr = WERR_NOMEM;
+		goto done;
+	}
+
+	sid_array.num_sids = rid_array->count + 1;
+	sid_array.sids = TALLOC_ARRAY(ctx, struct lsa_SidPtr, sid_array.num_sids);
+	if (!sid_array.sids) {
+		werr = WERR_NOMEM;
+		goto done;
+	}
+
+	sid_array.sids[0].sid = sid_dup_talloc(ctx, &user_sid);
+	if (!sid_array.sids[0].sid) {
+		werr = WERR_NOMEM;
+		goto done;
+	}
+
+	for (i=0; i < rid_array->count; i++) {
+		struct dom_sid sid;
+
+		if (!sid_compose(&sid, domain_sid, rid_array->rids[i].rid)) {
+			werr = WERR_NOMEM;
+			goto done;
+		}
+
+		sid_array.sids[i+1].sid = sid_dup_talloc(ctx, &sid);
+		if (!sid_array.sids[i+1].sid) {
+			werr = WERR_NOMEM;
+			goto done;
+		}
+	}
+
+	status = rpccli_samr_GetAliasMembership(pipe_cli, ctx,
+						&domain_handle,
+						&sid_array,
+						&domain_rids);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	for (i=0; i < domain_rids.count; i++) {
+		if (!add_rid_to_array_unique(ctx, domain_rids.ids[i],
+					     &rids, &num_rids)) {
+			werr = WERR_NOMEM;
+			goto done;
+		}
+	}
+
+	status = rpccli_samr_GetAliasMembership(pipe_cli, ctx,
+						&builtin_handle,
+						&sid_array,
+						&builtin_rids);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	for (i=0; i < builtin_rids.count; i++) {
+		if (!add_rid_to_array_unique(ctx, builtin_rids.ids[i],
+					     &rids, &num_rids)) {
+			werr = WERR_NOMEM;
+			goto done;
+		}
+	}
+
+	status = rpccli_samr_LookupRids(pipe_cli, ctx,
+					&builtin_handle,
+					num_rids,
+					rids,
+					&names,
+					&types);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	for (i=0; i < names.count; i++) {
+		status = add_LOCALGROUP_USERS_INFO_X_buffer(ctx,
+							    r->in.level,
+							    names.names[i].string,
+							    r->out.buffer,
+							    &entries_read);
+		if (!NT_STATUS_IS_OK(status)) {
+			werr = ntstatus_to_werror(status);
+			goto done;
+		}
+	}
+
+	if (r->out.entries_read) {
+		*r->out.entries_read = entries_read;
+	}
+	if (r->out.total_entries) {
+		*r->out.total_entries = entries_read;
+	}
+
+ done:
+	if (!cli) {
+		return werr;
+	}
+
+	if (ctx->disable_policy_handle_cache) {
+		libnetapi_samr_close_domain_handle(ctx, &domain_handle);
+		libnetapi_samr_close_connect_handle(ctx, &connect_handle);
+	}
+
+	return werr;
+
 	return WERR_NOT_SUPPORTED;
 }
 
