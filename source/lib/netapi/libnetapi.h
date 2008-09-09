@@ -154,6 +154,18 @@ WERROR NetUserSetGroups_r(struct libnetapi_ctx *ctx,
 			  struct NetUserSetGroups *r);
 WERROR NetUserSetGroups_l(struct libnetapi_ctx *ctx,
 			  struct NetUserSetGroups *r);
+NET_API_STATUS NetUserGetLocalGroups(const char * server_name /* [in] */,
+				     const char * user_name /* [in] */,
+				     uint32_t level /* [in] */,
+				     uint32_t flags /* [in] */,
+				     uint8_t **buffer /* [out] [ref] */,
+				     uint32_t prefmaxlen /* [in] */,
+				     uint32_t *entries_read /* [out] [ref] */,
+				     uint32_t *total_entries /* [out] [ref] */);
+WERROR NetUserGetLocalGroups_r(struct libnetapi_ctx *ctx,
+			       struct NetUserGetLocalGroups *r);
+WERROR NetUserGetLocalGroups_l(struct libnetapi_ctx *ctx,
+			       struct NetUserGetLocalGroups *r);
 NET_API_STATUS NetUserModalsGet(const char * server_name /* [in] */,
 				uint32_t level /* [in] */,
 				uint8_t **buffer /* [out] [ref] */);
