@@ -25,8 +25,8 @@
 SEC_DESC *cli_query_secdesc(struct cli_state *cli, int fnum, 
 			    TALLOC_CTX *mem_ctx)
 {
-	char param[8];
-	char *rparam=NULL, *rdata=NULL;
+	uint8_t param[8];
+	uint8_t *rparam=NULL, *rdata=NULL;
 	unsigned int rparam_count=0, rdata_count=0;
 	SEC_DESC *psd = NULL;
 	NTSTATUS status;
@@ -34,26 +34,21 @@ SEC_DESC *cli_query_secdesc(struct cli_state *cli, int fnum,
 	SIVAL(param, 0, fnum);
 	SIVAL(param, 4, 0x7);
 
-	if (!cli_send_nt_trans(cli, 
-			       NT_TRANSACT_QUERY_SECURITY_DESC, 
-			       0, 
-			       NULL, 0, 0,
-			       param, 8, 4,
-			       NULL, 0, 0x10000)) {
-		DEBUG(1,("Failed to send NT_TRANSACT_QUERY_SECURITY_DESC\n"));
+	status = cli_trans(talloc_tos(), cli, SMBnttrans,
+			   NULL, -1, /* name, fid */
+			   NT_TRANSACT_QUERY_SECURITY_DESC, 0, /* function, flags */
+			   NULL, 0, 0, /* setup, length, max */
+			   param, 8, 4, /* param, length, max */
+			   NULL, 0, 0x10000, /* data, length, max */
+			   NULL, NULL, /* rsetup, length */
+			   &rparam, &rparam_count,
+			   &rdata, &rdata_count);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("NT_TRANSACT_QUERY_SECURITY_DESC failed: %s\n",
+			  nt_errstr(status)));
 		goto cleanup;
 	}
-
-
-	if (!cli_receive_nt_trans(cli, 
-				  &rparam, &rparam_count,
-				  &rdata, &rdata_count)) {
-		DEBUG(1,("Failed to recv NT_TRANSACT_QUERY_SECURITY_DESC\n"));
-		goto cleanup;
-	}
-
-	if (cli_is_error(cli))
-		goto cleanup;
 
 	status = unmarshall_sec_desc(mem_ctx, (uint8 *)rdata, rdata_count,
 				     &psd);
@@ -66,8 +61,8 @@ SEC_DESC *cli_query_secdesc(struct cli_state *cli, int fnum,
 
  cleanup:
 
-	SAFE_FREE(rparam);
-	SAFE_FREE(rdata);
+	TALLOC_FREE(rparam);
+	TALLOC_FREE(rdata);
 
 	return psd;
 }
