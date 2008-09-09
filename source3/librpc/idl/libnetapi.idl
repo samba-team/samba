@@ -1195,4 +1195,27 @@ interface libnetapi
 		[in] string server_name,
 		[in] uint32 fileid
 		);
+
+	/*******************************************/
+	/* NetFileGetInfo                          */
+	/*******************************************/
+
+	typedef struct {
+		uint32 fi2_id;
+	} FILE_INFO_2;
+
+	typedef struct {
+		uint32 fi3_id;
+		uint32 fi3_permissions;
+		uint32 fi3_num_locks;
+		string fi3_pathname;
+		string fi3_username;
+	} FILE_INFO_3;
+
+	[nopush,nopull] NET_API_STATUS NetFileGetInfo(
+		[in] string server_name,
+		[in] uint32 fileid,
+		[in] uint32 level,
+		[out] uint8 **buffer
+		);
 }
