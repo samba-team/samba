@@ -147,7 +147,7 @@ void *_ctdb_reqid_find(struct ctdb_context *ctdb, uint32_t reqid, const char *ty
 
 	p = _idr_find_type(ctdb->idr, (reqid>>16)&0xFFFF, type, location);
 	if (p == NULL) {
-		DEBUG(DEBUG_ERR, ("Could not find idr:%u\n",reqid));
+		DEBUG(DEBUG_WARNING, ("Could not find idr:%u\n",reqid));
 	}
 
 	return p;
