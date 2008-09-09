@@ -437,7 +437,6 @@ bool cli_chain_cork(struct cli_state *cli, struct event_context *ev,
 	cli_setup_packet_buf(cli, req->outbuf);
 
 	req->mid = cli_new_mid(cli);
-	SSVAL(req->outbuf, smb_mid, req->mid);
 
 	cli->chain_accumulator = req;
 
@@ -468,6 +467,7 @@ void cli_chain_uncork(struct cli_state *cli)
 
 	cli->chain_accumulator = NULL;
 
+	SSVAL(req->outbuf, smb_mid, req->mid);
 	smb_setlen(req->outbuf, talloc_get_size(req->outbuf) - 4);
 
 	cli_calculate_sign_mac(cli, req->outbuf);
