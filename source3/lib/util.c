@@ -2990,6 +2990,32 @@ void *talloc_check_name_abort(const void *ptr, const char *name)
 	return NULL;
 }
 
+/**********************************************************************
+ Append a DATA_BLOB to a talloc'ed object
+***********************************************************************/
+
+void *talloc_append_blob(TALLOC_CTX *mem_ctx, void *buf, DATA_BLOB blob)
+{
+	size_t old_size = 0;
+	char *result;
+
+	if (blob.length == 0) {
+		return buf;
+	}
+
+	if (buf != NULL) {
+		old_size = talloc_get_size(buf);
+	}
+
+	result = (char *)TALLOC_REALLOC(mem_ctx, buf, old_size + blob.length);
+	if (result == NULL) {
+		return NULL;
+	}
+
+	memcpy(result + old_size, blob.data, blob.length);
+	return result;
+}
+
 uint32 map_share_mode_to_deny_mode(uint32 share_access, uint32 private_options)
 {
 	switch (share_access & ~FILE_SHARE_DELETE) {

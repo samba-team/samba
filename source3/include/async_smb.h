@@ -124,6 +124,7 @@ struct async_req *cli_request_send(TALLOC_CTX *mem_ctx,
 bool cli_chain_cork(struct cli_state *cli, struct event_context *ev,
 		    size_t size_hint);
 void cli_chain_uncork(struct cli_state *cli);
+bool cli_in_chain(struct cli_state *cli);
 
 NTSTATUS cli_pull_reply(struct async_req *req,
 			uint8_t *pwct, uint16_t **pvwv,

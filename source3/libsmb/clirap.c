@@ -998,8 +998,9 @@ bool cli_qfileinfo(struct cli_state *cli, int fnum,
 	unsigned int data_len = 0;
 	unsigned int param_len = 0;
 	uint16 setup = TRANSACT2_QFILEINFO;
-	char param[4];
-	char *rparam=NULL, *rdata=NULL;
+	uint8_t param[4];
+	uint8_t *rparam=NULL, *rdata=NULL;
+	NTSTATUS status;
 
 	/* if its a win95 server then fail this - win95 totally screws it
 	   up */
@@ -1010,20 +1011,17 @@ bool cli_qfileinfo(struct cli_state *cli, int fnum,
 	SSVAL(param, 0, fnum);
 	SSVAL(param, 2, SMB_QUERY_FILE_ALL_INFO);
 
-	if (!cli_send_trans(cli, SMBtrans2,
-                            NULL,                         /* name */
-                            -1, 0,                        /* fid, flags */
-                            &setup, 1, 0,                 /* setup, length, max */
-                            param, param_len, 2,          /* param, length, max */
-                            NULL, data_len, cli->max_xmit /* data, length, max */
-                           )) {
-		return False;
-	}
+	status = cli_trans(talloc_tos(), cli, SMBtrans2,
+			   NULL, -1, 0, 0, /* name, fid, function, flags */
+			   &setup, 1, 0,          /* setup, length, max */
+			   param, param_len, 2,   /* param, length, max */
+			   NULL, 0, MIN(cli->max_xmit, 0xffff), /* data, length, max */
+			   NULL, NULL, /* rsetup, length */
+			   &rparam, &param_len,	/* rparam, length */
+			   &rdata, &data_len);
 
-	if (!cli_receive_trans(cli, SMBtrans2,
-                               &rparam, &param_len,
-                               &rdata, &data_len)) {
-		return False;
+	if (!NT_STATUS_IS_OK(status)) {
+		return false;
 	}
 
 	if (!rdata || data_len < 68) {
@@ -1031,16 +1029,16 @@ bool cli_qfileinfo(struct cli_state *cli, int fnum,
 	}
 
 	if (create_time) {
-		*create_time = interpret_long_date(rdata+0);
+		*create_time = interpret_long_date((char *)rdata+0);
 	}
 	if (access_time) {
-		*access_time = interpret_long_date(rdata+8);
+		*access_time = interpret_long_date((char *)rdata+8);
 	}
 	if (write_time) {
-		*write_time = interpret_long_date(rdata+16);
+		*write_time = interpret_long_date((char *)rdata+16);
 	}
 	if (change_time) {
-		*change_time = interpret_long_date(rdata+24);
+		*change_time = interpret_long_date((char *)rdata+24);
 	}
 	if (mode) {
 		*mode = SVAL(rdata, 32);
@@ -1052,8 +1050,8 @@ bool cli_qfileinfo(struct cli_state *cli, int fnum,
 		*ino = IVAL(rdata, 64);
 	}
 
-	SAFE_FREE(rdata);
-	SAFE_FREE(rparam);
+	TALLOC_FREE(rdata);
+	TALLOC_FREE(rparam);
 	return True;
 }
 

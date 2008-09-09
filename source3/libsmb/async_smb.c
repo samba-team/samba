@@ -137,6 +137,21 @@ static int cli_request_destructor(struct cli_request *req)
 }
 
 /**
+ * Are there already requests waiting in the chain_accumulator?
+ * @param[in] cli	The cli_state we want to check
+ * @retval reply :-)
+ */
+
+bool cli_in_chain(struct cli_state *cli)
+{
+	if (cli->chain_accumulator == NULL) {
+		return false;
+	}
+
+	return (cli->chain_accumulator->num_async != 0);
+}
+
+/**
  * Is the SMB command able to hold an AND_X successor
  * @param[in] cmd	The SMB command in question
  * @retval Can we add a chained request after "cmd"?
@@ -422,7 +437,6 @@ bool cli_chain_cork(struct cli_state *cli, struct event_context *ev,
 	cli_setup_packet_buf(cli, req->outbuf);
 
 	req->mid = cli_new_mid(cli);
-	SSVAL(req->outbuf, smb_mid, req->mid);
 
 	cli->chain_accumulator = req;
 
@@ -453,6 +467,7 @@ void cli_chain_uncork(struct cli_state *cli)
 
 	cli->chain_accumulator = NULL;
 
+	SSVAL(req->outbuf, smb_mid, req->mid);
 	smb_setlen(req->outbuf, talloc_get_size(req->outbuf) - 4);
 
 	cli_calculate_sign_mac(cli, req->outbuf);

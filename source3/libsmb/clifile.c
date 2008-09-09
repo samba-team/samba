@@ -781,7 +781,7 @@ int cli_nt_create(struct cli_state *cli, const char *fname, uint32 DesiredAccess
 				FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_OPEN, 0x0, 0x0);
 }
 
-static uint8_t *smb_bytes_push_str(uint8_t *buf, bool ucs2, const char *str)
+uint8_t *smb_bytes_push_str(uint8_t *buf, bool ucs2, const char *str)
 {
 	size_t buflen = talloc_get_size(buf);
 	char *converted;

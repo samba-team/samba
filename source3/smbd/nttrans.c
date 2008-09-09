@@ -2582,6 +2582,17 @@ void reply_nttrans(struct smb_request *req)
 	state->setup = NULL;
 	state->call = function_code;
 
+	DEBUG(10, ("num_setup=%u, "
+		   "param_total=%u, this_param=%u, max_param=%u, "
+		   "data_total=%u, this_data=%u, max_data=%u, "
+		   "param_offset=%u, data_offset=%u\n",
+		   (unsigned)state->setup_count,
+		   (unsigned)state->total_param, (unsigned)pscnt,
+		   (unsigned)state->max_param_return,
+		   (unsigned)state->total_data, (unsigned)dscnt,
+		   (unsigned)state->max_data_return,
+		   (unsigned)psoff, (unsigned)dsoff));
+
 	/*
 	 * All nttrans messages we handle have smb_wct == 19 +
 	 * state->setup_count.  Ensure this is so as a sanity check.
