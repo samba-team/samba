@@ -177,3 +177,21 @@ WERROR NetFileGetInfo_l(struct libnetapi_ctx *ctx,
 {
 	LIBNETAPI_REDIRECT_TO_LOCALHOST(ctx, r, NetFileGetInfo);
 }
+
+/****************************************************************
+****************************************************************/
+
+WERROR NetFileEnum_r(struct libnetapi_ctx *ctx,
+		     struct NetFileEnum *r)
+{
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR NetFileEnum_l(struct libnetapi_ctx *ctx,
+		     struct NetFileEnum *r)
+{
+	LIBNETAPI_REDIRECT_TO_LOCALHOST(ctx, r, NetFileEnum);
+}
