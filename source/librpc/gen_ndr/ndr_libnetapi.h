@@ -42,61 +42,63 @@
 
 #define NDR_NETUSERSETGROUPS (0x11)
 
-#define NDR_NETUSERMODALSGET (0x12)
+#define NDR_NETUSERGETLOCALGROUPS (0x12)
 
-#define NDR_NETUSERMODALSSET (0x13)
+#define NDR_NETUSERMODALSGET (0x13)
 
-#define NDR_NETQUERYDISPLAYINFORMATION (0x14)
+#define NDR_NETUSERMODALSSET (0x14)
 
-#define NDR_NETGROUPADD (0x15)
+#define NDR_NETQUERYDISPLAYINFORMATION (0x15)
 
-#define NDR_NETGROUPDEL (0x16)
+#define NDR_NETGROUPADD (0x16)
 
-#define NDR_NETGROUPENUM (0x17)
+#define NDR_NETGROUPDEL (0x17)
 
-#define NDR_NETGROUPSETINFO (0x18)
+#define NDR_NETGROUPENUM (0x18)
 
-#define NDR_NETGROUPGETINFO (0x19)
+#define NDR_NETGROUPSETINFO (0x19)
 
-#define NDR_NETGROUPADDUSER (0x1a)
+#define NDR_NETGROUPGETINFO (0x1a)
 
-#define NDR_NETGROUPDELUSER (0x1b)
+#define NDR_NETGROUPADDUSER (0x1b)
 
-#define NDR_NETGROUPGETUSERS (0x1c)
+#define NDR_NETGROUPDELUSER (0x1c)
 
-#define NDR_NETGROUPSETUSERS (0x1d)
+#define NDR_NETGROUPGETUSERS (0x1d)
 
-#define NDR_NETLOCALGROUPADD (0x1e)
+#define NDR_NETGROUPSETUSERS (0x1e)
 
-#define NDR_NETLOCALGROUPDEL (0x1f)
+#define NDR_NETLOCALGROUPADD (0x1f)
 
-#define NDR_NETLOCALGROUPGETINFO (0x20)
+#define NDR_NETLOCALGROUPDEL (0x20)
 
-#define NDR_NETLOCALGROUPSETINFO (0x21)
+#define NDR_NETLOCALGROUPGETINFO (0x21)
 
-#define NDR_NETLOCALGROUPENUM (0x22)
+#define NDR_NETLOCALGROUPSETINFO (0x22)
 
-#define NDR_NETLOCALGROUPADDMEMBERS (0x23)
+#define NDR_NETLOCALGROUPENUM (0x23)
 
-#define NDR_NETLOCALGROUPDELMEMBERS (0x24)
+#define NDR_NETLOCALGROUPADDMEMBERS (0x24)
 
-#define NDR_NETLOCALGROUPGETMEMBERS (0x25)
+#define NDR_NETLOCALGROUPDELMEMBERS (0x25)
 
-#define NDR_NETLOCALGROUPSETMEMBERS (0x26)
+#define NDR_NETLOCALGROUPGETMEMBERS (0x26)
 
-#define NDR_NETREMOTETOD (0x27)
+#define NDR_NETLOCALGROUPSETMEMBERS (0x27)
 
-#define NDR_NETSHAREADD (0x28)
+#define NDR_NETREMOTETOD (0x28)
 
-#define NDR_NETSHAREDEL (0x29)
+#define NDR_NETSHAREADD (0x29)
 
-#define NDR_NETSHAREENUM (0x2a)
+#define NDR_NETSHAREDEL (0x2a)
 
-#define NDR_NETSHAREGETINFO (0x2b)
+#define NDR_NETSHAREENUM (0x2b)
 
-#define NDR_NETSHARESETINFO (0x2c)
+#define NDR_NETSHAREGETINFO (0x2c)
 
-#define NDR_LIBNETAPI_CALL_COUNT (45)
+#define NDR_NETSHARESETINFO (0x2d)
+
+#define NDR_LIBNETAPI_CALL_COUNT (46)
 enum ndr_err_code ndr_push_NET_API_STATUS(struct ndr_push *ndr, int ndr_flags, enum NET_API_STATUS r);
 enum ndr_err_code ndr_pull_NET_API_STATUS(struct ndr_pull *ndr, int ndr_flags, enum NET_API_STATUS *r);
 void ndr_print_NET_API_STATUS(struct ndr_print *ndr, const char *name, enum NET_API_STATUS r);
@@ -289,6 +291,9 @@ void ndr_print_NetUserGetGroups(struct ndr_print *ndr, const char *name, int fla
 enum ndr_err_code ndr_push_NetUserSetGroups(struct ndr_push *ndr, int flags, const struct NetUserSetGroups *r);
 enum ndr_err_code ndr_pull_NetUserSetGroups(struct ndr_pull *ndr, int flags, struct NetUserSetGroups *r);
 void ndr_print_NetUserSetGroups(struct ndr_print *ndr, const char *name, int flags, const struct NetUserSetGroups *r);
+enum ndr_err_code ndr_push_NetUserGetLocalGroups(struct ndr_push *ndr, int flags, const struct NetUserGetLocalGroups *r);
+enum ndr_err_code ndr_pull_NetUserGetLocalGroups(struct ndr_pull *ndr, int flags, struct NetUserGetLocalGroups *r);
+void ndr_print_NetUserGetLocalGroups(struct ndr_print *ndr, const char *name, int flags, const struct NetUserGetLocalGroups *r);
 enum ndr_err_code ndr_push_NetUserModalsGet(struct ndr_push *ndr, int flags, const struct NetUserModalsGet *r);
 enum ndr_err_code ndr_pull_NetUserModalsGet(struct ndr_pull *ndr, int flags, struct NetUserModalsGet *r);
 void ndr_print_NetUserModalsGet(struct ndr_print *ndr, const char *name, int flags, const struct NetUserModalsGet *r);
