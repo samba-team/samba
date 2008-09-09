@@ -2633,7 +2633,7 @@ again:
 			}
 			if ((remote_nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE) != 
 			    (nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE)) {
-				DEBUG(DEBUG_ERR, (__location__ " Remote node:%u has different nodemap flag for %d (0x%x vs 0x%x)\n", 
+				DEBUG(DEBUG_WARNING, (__location__ " Remote node:%u has different nodemap flag for %d (0x%x vs 0x%x)\n", 
 					  nodemap->nodes[j].pnn, i,
 					  remote_nodemap->nodes[i].flags, nodemap->nodes[i].flags));
 				do_recovery(rec, mem_ctx, pnn, nodemap, 
