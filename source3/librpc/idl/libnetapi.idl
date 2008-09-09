@@ -627,6 +627,27 @@ interface libnetapi
 		);
 
 	/*******************************************/
+	/* NetUserGetLocalGroups                   */
+	/*******************************************/
+
+	const int LG_INCLUDE_INDIRECT = 0x0001;
+
+	typedef struct {
+		string lgrui0_name;
+	} LOCALGROUP_USERS_INFO_0;
+
+	[nopush,nopull] NET_API_STATUS NetUserGetLocalGroups(
+		[in] string server_name,
+		[in] string user_name,
+		[in] uint32 level,
+		[in] uint32 flags,
+		[out] uint8 **buffer,
+		[in] uint32 prefmaxlen,
+		[out,ref] uint32 *entries_read,
+		[out,ref] uint32 *total_entries
+		);
+
+	/*******************************************/
 	/* NetUserModalsGet                        */
 	/*******************************************/
 
