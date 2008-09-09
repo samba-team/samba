@@ -191,19 +191,19 @@ int ldb_should_b64_encode(const struct ldb_val *val)
 	uint8_t *p = val->data;
 
 	if (val->length == 0) {
-		return 0;
+		return LDB_SUCCESS;
 	}
 
 	if (p[0] == ' ' || p[0] == ':') {
-		return 1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	for (i=0; i<val->length; i++) {
 		if (!isprint(p[i]) || p[i] == '\n') {
-			return 1;
+			return LDB_ERR_OPERATIONS_ERROR;
 		}
 	}
-	return 0;
+	return LDB_SUCCESS;
 }
 
 /* this macro is used to handle the return checking on fprintf_fn() */
@@ -444,12 +444,12 @@ static int next_attr(void *mem_ctx, char **s, const char **attr, struct ldb_val 
 		value->length = 0;
 		*attr = "-";
 		*s += 2;
-		return 0;
+		return LDB_SUCCESS;
 	}
 
 	p = strchr(*s, ':');
 	if (!p) {
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	*p++ = 0;
@@ -487,7 +487,7 @@ static int next_attr(void *mem_ctx, char **s, const char **attr, struct ldb_val 
 		int len = ldb_base64_decode((char *)value->data);
 		if (len == -1) {
 			/* it wasn't valid base64 data */
-			return -1;
+			return LDB_ERR_OPERATIONS_ERROR;
 		}
 		value->length = len;
 	}
@@ -496,11 +496,11 @@ static int next_attr(void *mem_ctx, char **s, const char **attr, struct ldb_val 
 		int len = ldb_read_data_file(mem_ctx, value);
 		if (len == -1) {
 			/* an error occured hile trying to retrieve the file */
-			return -1;
+			return LDB_ERR_OPERATIONS_ERROR;
 		}
 	}
 
-	return 0;
+	return LDB_SUCCESS;
 }
 
 

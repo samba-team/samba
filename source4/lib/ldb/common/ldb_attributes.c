@@ -61,7 +61,7 @@ int ldb_schema_attribute_add_with_syntax(struct ldb_context *ldb,
 			   struct ldb_schema_attribute, n);
 	if (a == NULL) {
 		ldb_oom(ldb);
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	ldb->schema.attributes = a;
 
@@ -70,7 +70,7 @@ int ldb_schema_attribute_add_with_syntax(struct ldb_context *ldb,
 		if (cmp == 0) {
 			/* silently ignore attempts to overwrite fixed attributes */
 			if (a[i].flags & LDB_ATTR_FLAG_FIXED) {
-				return 0;
+				return LDB_SUCCESS;
 			}
 			if (a[i].flags & LDB_ATTR_FLAG_ALLOCATED) {
 				talloc_free(discard_const_p(char, a[i].name));
@@ -93,11 +93,11 @@ int ldb_schema_attribute_add_with_syntax(struct ldb_context *ldb,
 		a[i].name = talloc_strdup(a, a[i].name);
 		if (a[i].name == NULL) {
 			ldb_oom(ldb);
-			return -1;
+			return LDB_ERR_OPERATIONS_ERROR;
 		}
 	}
 
-	return 0;
+	return LDB_SUCCESS;
 }
 
 static const struct ldb_schema_syntax ldb_syntax_default = {
