@@ -399,4 +399,10 @@ WERROR NetShareSetInfo_r(struct libnetapi_ctx *ctx,
 			 struct NetShareSetInfo *r);
 WERROR NetShareSetInfo_l(struct libnetapi_ctx *ctx,
 			 struct NetShareSetInfo *r);
+NET_API_STATUS NetFileClose(const char * server_name /* [in] */,
+			    uint32_t fileid /* [in] */);
+WERROR NetFileClose_r(struct libnetapi_ctx *ctx,
+		      struct NetFileClose *r);
+WERROR NetFileClose_l(struct libnetapi_ctx *ctx,
+		      struct NetFileClose *r);
 #endif /* __LIBNETAPI_LIBNETAPI__ */
