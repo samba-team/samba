@@ -666,6 +666,18 @@ struct SHARE_INFO_1006 {
 	uint32_t shi1006_max_uses;
 };
 
+struct FILE_INFO_2 {
+	uint32_t fi2_id;
+};
+
+struct FILE_INFO_3 {
+	uint32_t fi3_id;
+	uint32_t fi3_permissions;
+	uint32_t fi3_num_locks;
+	const char * fi3_pathname;
+	const char * fi3_username;
+};
+
 
 struct NetJoinDomain {
 	struct {
@@ -1401,6 +1413,21 @@ struct NetFileClose {
 	} in;
 
 	struct {
+		enum NET_API_STATUS result;
+	} out;
+
+};
+
+
+struct NetFileGetInfo {
+	struct {
+		const char * server_name;
+		uint32_t fileid;
+		uint32_t level;
+	} in;
+
+	struct {
+		uint8_t **buffer;/* [ref] */
 		enum NET_API_STATUS result;
 	} out;
 

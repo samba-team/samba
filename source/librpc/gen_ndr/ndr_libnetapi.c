@@ -3891,3 +3891,36 @@ _PUBLIC_ void ndr_print_NetFileClose(struct ndr_print *ndr, const char *name, in
 	ndr->depth--;
 }
 
+_PUBLIC_ void ndr_print_NetFileGetInfo(struct ndr_print *ndr, const char *name, int flags, const struct NetFileGetInfo *r)
+{
+	ndr_print_struct(ndr, name, "NetFileGetInfo");
+	ndr->depth++;
+	if (flags & NDR_SET_VALUES) {
+		ndr->flags |= LIBNDR_PRINT_SET_VALUES;
+	}
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "NetFileGetInfo");
+		ndr->depth++;
+		ndr_print_string(ndr, "server_name", r->in.server_name);
+		ndr_print_uint32(ndr, "fileid", r->in.fileid);
+		ndr_print_uint32(ndr, "level", r->in.level);
+		ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "NetFileGetInfo");
+		ndr->depth++;
+		ndr_print_ptr(ndr, "buffer", r->out.buffer);
+		ndr->depth++;
+		ndr_print_ptr(ndr, "buffer", *r->out.buffer);
+		ndr->depth++;
+		if (*r->out.buffer) {
+			ndr_print_uint8(ndr, "buffer", **r->out.buffer);
+		}
+		ndr->depth--;
+		ndr->depth--;
+		ndr_print_NET_API_STATUS(ndr, "result", r->out.result);
+		ndr->depth--;
+	}
+	ndr->depth--;
+}
+
