@@ -670,10 +670,10 @@ static int lsqlite3_safe_rollback(sqlite3 *sqlite)
 			printf("lsqlite3_safe_rollback: Error: %s\n", errmsg);
 			free(errmsg);
 		}
-		return -1;
+		return SQLITE_ERROR;
 	}
 
-        return 0;
+        return SQLITE_OK;
 }
 
 /* return an eid as result */
@@ -1440,13 +1440,13 @@ static int lsql_start_trans(struct ldb_module * module)
 				printf("lsqlite3_start_trans: error: %s\n", errmsg);
 				free(errmsg);
 			}
-			return -1;
+			return SQLITE_ERROR;
 		}
 	};
 
 	lsqlite3->trans_count++;
 
-	return 0;
+	return SQLITE_OK;
 }
 
 static int lsql_end_trans(struct ldb_module *module)
@@ -1457,7 +1457,7 @@ static int lsql_end_trans(struct ldb_module *module)
 
 	if (lsqlite3->trans_count > 0) {
 		lsqlite3->trans_count--;
-	} else return -1;
+	} else return SQLITE_ERROR;
 
 	if (lsqlite3->trans_count == 0) {
 		ret = sqlite3_exec(lsqlite3->sqlite, "COMMIT;", NULL, NULL, &errmsg);
@@ -1466,11 +1466,11 @@ static int lsql_end_trans(struct ldb_module *module)
 				printf("lsqlite3_end_trans: error: %s\n", errmsg);
 				free(errmsg);
 			}
-			return -1;
+			return SQLITE_ERROR;
 		}
 	}
 
-        return 0;
+        return SQLITE_OK;
 }
 
 static int lsql_del_trans(struct ldb_module *module)
@@ -1479,13 +1479,13 @@ static int lsql_del_trans(struct ldb_module *module)
 
 	if (lsqlite3->trans_count > 0) {
 		lsqlite3->trans_count--;
-	} else return -1;
+	} else return SQLITE_ERROR;
 
 	if (lsqlite3->trans_count == 0) {
 		return lsqlite3_safe_rollback(lsqlite3->sqlite);
 	}
 
-	return -1;
+	return SQLITE_ERROR;
 }
 
 static int destructor(struct lsqlite3_private *lsqlite3)
@@ -1493,7 +1493,7 @@ static int destructor(struct lsqlite3_private *lsqlite3)
 	if (lsqlite3->sqlite) {
 		sqlite3_close(lsqlite3->sqlite);
 	}
-	return 0;
+	return SQLITE_OK;
 }
 
 static int lsql_request(struct ldb_module *module, struct ldb_request *req)
@@ -1540,7 +1540,7 @@ static int initialize(struct lsqlite3_private *lsqlite3,
 	/* create a local ctx */
 	local_ctx = talloc_named(lsqlite3, 0, "lsqlite3_rename local context");
 	if (local_ctx == NULL) {
-		return -1;
+		return SQLITE_ERROR;
 	}
 
 	schema = lsqlite3_tprintf(local_ctx,
@@ -1792,7 +1792,7 @@ static int initialize(struct lsqlite3_private *lsqlite3,
 failed:
 	if (rollback) lsqlite3_safe_rollback(lsqlite3->sqlite); 
 	sqlite3_close(lsqlite3->sqlite);
-	return -1;
+	return SQLITE_ERROR;
 }
 
 /*
@@ -1860,14 +1860,14 @@ static int lsqlite3_connect(struct ldb_context *ldb,
 		}
 	}
         
-	return 0;
+	return LDB_SUCCESS;
         
 failed:
         if (lsqlite3->sqlite != NULL) {
                 (void) sqlite3_close(lsqlite3->sqlite);
         }
 	talloc_free(lsqlite3);
-	return -1;
+	return LDB_ERR_OPERATIONS_ERROR;
 }
 
 const struct ldb_backend_ops ldb_sqlite3_backend_ops = {

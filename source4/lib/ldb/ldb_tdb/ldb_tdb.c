@@ -174,7 +174,7 @@ int ltdb_check_special_dn(struct ldb_module *module,
 
 	if (! ldb_dn_is_special(msg->dn) ||
 	    ! ldb_dn_check_special(msg->dn, LTDB_ATTRIBUTES)) {
-		return 0;
+		return LDB_SUCCESS;
 	}
 
 	/* we have @ATTRIBUTES, let's check attributes are fine */
@@ -188,7 +188,7 @@ int ltdb_check_special_dn(struct ldb_module *module,
 		}
 	}
 
-	return 0;
+	return LDB_SUCCESS;
 }
 
 
@@ -231,7 +231,7 @@ int ltdb_store(struct ldb_module *module, const struct ldb_message *msg, int flg
 	}
 
 	ret = ltdb_pack_data(module, msg, &tdb_data);
-	if (ret == -1) {
+	if (ret != LDB_SUCCESS) {
 		talloc_free(tdb_key.dptr);
 		return LDB_ERR_OTHER;
 	}
@@ -626,7 +626,7 @@ int ltdb_modify_internal(struct ldb_module *module,
 	}
 
 	ret = ltdb_unpack_data(module, &tdb_data, msg2);
-	if (ret == -1) {
+	if (ret != LDB_SUCCESS) {
 		ret = LDB_ERR_OTHER;
 		goto failed;
 	}
@@ -1069,7 +1069,7 @@ static int ltdb_connect(struct ldb_context *ldb, const char *url,
 		if (strncmp(url, "tdb://", 6) != 0) {
 			ldb_debug(ldb, LDB_DEBUG_ERROR,
 				  "Invalid tdb URL '%s'", url);
-			return -1;
+			return LDB_ERR_OPERATIONS_ERROR;
 		}
 		path = url+6;
 	} else {
@@ -1097,7 +1097,7 @@ static int ltdb_connect(struct ldb_context *ldb, const char *url,
 	ltdb = talloc_zero(ldb, struct ltdb_private);
 	if (!ltdb) {
 		ldb_oom(ldb);
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	/* note that we use quite a large default hash size */
@@ -1108,7 +1108,7 @@ static int ltdb_connect(struct ldb_context *ldb, const char *url,
 		ldb_debug(ldb, LDB_DEBUG_ERROR,
 			  "Unable to open tdb '%s'\n", path);
 		talloc_free(ltdb);
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	ltdb->sequence_number = 0;
@@ -1117,7 +1117,7 @@ static int ltdb_connect(struct ldb_context *ldb, const char *url,
 	if (!module) {
 		ldb_oom(ldb);
 		talloc_free(ltdb);
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	talloc_set_name_const(*module, "ldb_tdb backend");
 	(*module)->ldb = ldb;
@@ -1128,10 +1128,10 @@ static int ltdb_connect(struct ldb_context *ldb, const char *url,
 	if (ltdb_cache_load(*module) != 0) {
 		talloc_free(*module);
 		talloc_free(ltdb);
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	return 0;
+	return LDB_SUCCESS;
 }
 
 const struct ldb_backend_ops ldb_tdb_backend_ops = {

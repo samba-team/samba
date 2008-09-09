@@ -180,14 +180,14 @@ static int lldb_add_msg_attr(struct ldb_context *ldb,
 	count = ldap_count_values_len(bval);
 
 	if (count <= 0) {
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	el = talloc_realloc(msg, msg->elements, struct ldb_message_element, 
 			      msg->num_elements + 1);
 	if (!el) {
 		errno = ENOMEM;
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	msg->elements = el;
@@ -197,7 +197,7 @@ static int lldb_add_msg_attr(struct ldb_context *ldb,
 	el->name = talloc_strdup(msg->elements, attr);
 	if (!el->name) {
 		errno = ENOMEM;
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	el->flags = 0;
 
@@ -205,7 +205,7 @@ static int lldb_add_msg_attr(struct ldb_context *ldb,
 	el->values = talloc_array(msg->elements, struct ldb_val, count);
 	if (!el->values) {
 		errno = ENOMEM;
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	for (i=0;i<count;i++) {
@@ -214,7 +214,7 @@ static int lldb_add_msg_attr(struct ldb_context *ldb,
 		el->values[i].data = talloc_size(el->values, bval[i]->bv_len+1);
 		if (!el->values[i].data) {
 			errno = ENOMEM;
-			return -1;
+			return LDB_ERR_OPERATIONS_ERROR;
 		}
 		memcpy(el->values[i].data, bval[i]->bv_val, bval[i]->bv_len);
 		el->values[i].data[bval[i]->bv_len] = 0;
@@ -224,7 +224,7 @@ static int lldb_add_msg_attr(struct ldb_context *ldb,
 
 	msg->num_elements++;
 
-	return 0;
+	return LDB_SUCCESS;
 }
 
 /*
@@ -785,7 +785,7 @@ static int lldb_connect(struct ldb_context *ldb,
 	if (module == NULL) {
 		ldb_oom(ldb);
 		talloc_free(lldb);
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	talloc_set_name_const(module, "ldb_ldap backend");
 	module->ldb		= ldb;
@@ -819,11 +819,11 @@ static int lldb_connect(struct ldb_context *ldb,
 	}
 
 	*_module = module;
-	return 0;
+	return LDB_SUCCESS;
 
 failed:
 	talloc_free(module);
-	return -1;
+	return LDB_ERR_OPERATIONS_ERROR;
 }
 
 const struct ldb_backend_ops ldb_ldap_backend_ops = {

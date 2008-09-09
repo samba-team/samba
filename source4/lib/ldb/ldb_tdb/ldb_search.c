@@ -262,7 +262,7 @@ int ltdb_search_dn1(struct ldb_module *module, struct ldb_dn *dn, struct ldb_mes
 
 	ret = ltdb_unpack_data(module, &tdb_data, msg);
 	free(tdb_data.dptr);
-	if (ret == -1) {
+	if (ret != LDB_SUCCESS) {
 		return LDB_ERR_OPERATIONS_ERROR;		
 	}
 
@@ -285,7 +285,7 @@ static int ltdb_lock_read(struct ldb_module *module)
 	if (ltdb->in_transaction == 0) {
 		return tdb_lockall_read(ltdb->tdb);
 	}
-	return 0;
+	return LDB_SUCCESS;
 }
 
 /*
@@ -297,7 +297,7 @@ static int ltdb_unlock_read(struct ldb_module *module)
 	if (ltdb->in_transaction == 0) {
 		return tdb_unlockall_read(ltdb->tdb);
 	}
-	return 0;
+	return LDB_SUCCESS;
 }
 
 /*
@@ -317,14 +317,14 @@ int ltdb_add_attr_results(struct ldb_module *module,
 	/* pull the attributes that the user wants */
 	msg2 = ltdb_pull_attrs(module, mem_ctx, msg, attrs);
 	if (!msg2) {
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	/* add to the results list */
 	res2 = talloc_realloc(mem_ctx, *res, struct ldb_message *, (*count)+2);
 	if (!res2) {
 		talloc_free(msg2);
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	(*res) = res2;
@@ -333,7 +333,7 @@ int ltdb_add_attr_results(struct ldb_module *module,
 	(*res)[(*count)+1] = NULL;
 	(*count)++;
 
-	return 0;
+	return LDB_SUCCESS;
 }
 
 
@@ -356,7 +356,7 @@ int ltdb_filter_attrs(struct ldb_message *msg, const char * const *attrs)
 
 			if (ldb_attr_cmp(attrs[i], "distinguishedName") == 0) {
 				if (msg_add_distinguished_name(msg) != 0) {
-					return -1;
+					return LDB_ERR_OPERATIONS_ERROR;
 				}
 			}
 		}
@@ -366,9 +366,9 @@ int ltdb_filter_attrs(struct ldb_message *msg, const char * const *attrs)
 	
 	if (keep_all) {
 		if (msg_add_distinguished_name(msg) != 0) {
-			return -1;
+			return LDB_ERR_OPERATIONS_ERROR;
 		}
-		return 0;
+		return LDB_SUCCESS;
 	}
 
 	for (i = 0; i < msg->num_elements; i++) {
@@ -387,7 +387,7 @@ int ltdb_filter_attrs(struct ldb_message *msg, const char * const *attrs)
 		}
 	}
 
-	return 0;
+	return LDB_SUCCESS;
 }
 
 /*
@@ -402,14 +402,14 @@ static int search_func(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, voi
 
 	if (key.dsize < 4 || 
 	    strncmp((char *)key.dptr, "DN=", 3) != 0) {
-		return 0;
+		return LDB_SUCCESS;
 	}
 
 	ares = talloc_zero(ac, struct ldb_reply);
 	if (!ares) {
 		handle->status = LDB_ERR_OPERATIONS_ERROR;
 		handle->state = LDB_ASYNC_DONE;
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	ares->message = ldb_msg_new(ares);
@@ -417,14 +417,14 @@ static int search_func(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, voi
 		handle->status = LDB_ERR_OPERATIONS_ERROR;
 		handle->state = LDB_ASYNC_DONE;
 		talloc_free(ares);
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	/* unpack the record */
 	ret = ltdb_unpack_data(ac->module, &data, ares->message);
-	if (ret == -1) {
+	if (ret) {
 		talloc_free(ares);
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	if (!ares->message->dn) {
@@ -433,7 +433,7 @@ static int search_func(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, voi
 			handle->status = LDB_ERR_OPERATIONS_ERROR;
 			handle->state = LDB_ASYNC_DONE;
 			talloc_free(ares);
-			return -1;
+			return LDB_ERR_OPERATIONS_ERROR;
 		}
 	}
 
@@ -441,17 +441,17 @@ static int search_func(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, voi
 	if (!ldb_match_msg(ac->module->ldb, ares->message, ac->tree, 
 			       ac->base, ac->scope)) {
 		talloc_free(ares);
-		return 0;
+		return LDB_SUCCESS;
 	}
 
 	/* filter the attributes that the user wants */
 	ret = ltdb_filter_attrs(ares->message, ac->attrs);
 
-	if (ret == -1) {
+	if (ret != LDB_SUCCESS) {
 		handle->status = LDB_ERR_OPERATIONS_ERROR;
 		handle->state = LDB_ASYNC_DONE;
 		talloc_free(ares);
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	ares->type = LDB_REPLY_ENTRY;
@@ -460,10 +460,10 @@ static int search_func(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, voi
 
 	if (handle->status != LDB_SUCCESS) {
 		/* don't try to free ares here, the callback is in charge of that */
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}	
 
-	return 0;
+	return LDB_SUCCESS;
 }
 
 

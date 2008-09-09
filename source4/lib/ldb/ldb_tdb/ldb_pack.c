@@ -89,7 +89,7 @@ int ltdb_pack_data(struct ldb_module *module,
 	dn = ldb_dn_get_linearized(message->dn);
 	if (dn == NULL) {
 		errno = ENOMEM;
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	/* work out how big it needs to be */
@@ -114,7 +114,7 @@ int ltdb_pack_data(struct ldb_module *module,
 	data->dptr = talloc_array(ldb, uint8_t, size);
 	if (!data->dptr) {
 		errno = ENOMEM;
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	data->dsize = size;
 
@@ -147,7 +147,7 @@ int ltdb_pack_data(struct ldb_module *module,
 		}
 	}
 
-	return 0;
+	return LDB_SUCCESS;
 }
 
 /*
@@ -207,7 +207,7 @@ int ltdb_unpack_data(struct ldb_module *module,
 
 	if (message->num_elements == 0) {
 		message->elements = NULL;
-		return 0;
+		return LDB_SUCCESS;
 	}
 	
 	if (message->num_elements > remaining / 6) {
@@ -281,9 +281,9 @@ int ltdb_unpack_data(struct ldb_module *module,
 			  "Error: %d bytes unread in ltdb_unpack_data\n", remaining);
 	}
 
-	return 0;
+	return LDB_SUCCESS;
 
 failed:
 	talloc_free(message->elements);
-	return -1;
+	return LDB_ERR_OPERATIONS_ERROR;
 }
