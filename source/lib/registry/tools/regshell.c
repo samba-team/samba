@@ -162,9 +162,7 @@ static WERROR cmd_ck(struct regshell_context *ctx, int argc, char **argv)
 	struct registry_key *new = NULL;
 	WERROR error;
 
-	if(argc < 2) {
-		new = ctx->current;
-	} else {
+	if(argc == 2) {
 		error = reg_open_key(ctx->registry, ctx->current, argv[1],
 				     &new);
 		if(!W_ERROR_IS_OK(error)) {
@@ -172,11 +170,11 @@ static WERROR cmd_ck(struct regshell_context *ctx, int argc, char **argv)
 				win_errstr(error)));
 			return error;
 		}
-	}
 
-	ctx->path = talloc_asprintf(ctx, "%s\\%s", ctx->path, argv[1]);
-	printf("Current path is: %s\n", ctx->path);
-	ctx->current = new;
+		ctx->path = talloc_asprintf(ctx, "%s\\%s", ctx->path, argv[1]);
+		ctx->current = new;
+	}
+	printf("New path is: %s\n", ctx->path);
 
 	return WERR_OK;
 }
@@ -188,7 +186,7 @@ static WERROR cmd_print(struct regshell_context *ctx, int argc, char **argv)
 	WERROR error;
 
 	if (argc != 2) {
-		fprintf(stderr, "Usage: print <valuename>");
+		fprintf(stderr, "Usage: print <valuename>\n");
 		return WERR_INVALID_PARAM;
 	}
 
