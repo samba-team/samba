@@ -102,7 +102,9 @@
 
 #define NDR_NETFILEGETINFO (0x2f)
 
-#define NDR_LIBNETAPI_CALL_COUNT (48)
+#define NDR_NETFILEENUM (0x30)
+
+#define NDR_LIBNETAPI_CALL_COUNT (49)
 enum ndr_err_code ndr_push_NET_API_STATUS(struct ndr_push *ndr, int ndr_flags, enum NET_API_STATUS r);
 enum ndr_err_code ndr_pull_NET_API_STATUS(struct ndr_pull *ndr, int ndr_flags, enum NET_API_STATUS *r);
 void ndr_print_NET_API_STATUS(struct ndr_print *ndr, const char *name, enum NET_API_STATUS r);
@@ -385,4 +387,7 @@ void ndr_print_NetFileClose(struct ndr_print *ndr, const char *name, int flags, 
 enum ndr_err_code ndr_push_NetFileGetInfo(struct ndr_push *ndr, int flags, const struct NetFileGetInfo *r);
 enum ndr_err_code ndr_pull_NetFileGetInfo(struct ndr_pull *ndr, int flags, struct NetFileGetInfo *r);
 void ndr_print_NetFileGetInfo(struct ndr_print *ndr, const char *name, int flags, const struct NetFileGetInfo *r);
+enum ndr_err_code ndr_push_NetFileEnum(struct ndr_push *ndr, int flags, const struct NetFileEnum *r);
+enum ndr_err_code ndr_pull_NetFileEnum(struct ndr_pull *ndr, int flags, struct NetFileEnum *r);
+void ndr_print_NetFileEnum(struct ndr_print *ndr, const char *name, int flags, const struct NetFileEnum *r);
 #endif /* _HEADER_NDR_libnetapi */

@@ -3924,3 +3924,54 @@ _PUBLIC_ void ndr_print_NetFileGetInfo(struct ndr_print *ndr, const char *name, 
 	ndr->depth--;
 }
 
+_PUBLIC_ void ndr_print_NetFileEnum(struct ndr_print *ndr, const char *name, int flags, const struct NetFileEnum *r)
+{
+	ndr_print_struct(ndr, name, "NetFileEnum");
+	ndr->depth++;
+	if (flags & NDR_SET_VALUES) {
+		ndr->flags |= LIBNDR_PRINT_SET_VALUES;
+	}
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "NetFileEnum");
+		ndr->depth++;
+		ndr_print_string(ndr, "server_name", r->in.server_name);
+		ndr_print_string(ndr, "base_path", r->in.base_path);
+		ndr_print_string(ndr, "user_name", r->in.user_name);
+		ndr_print_uint32(ndr, "level", r->in.level);
+		ndr_print_uint32(ndr, "prefmaxlen", r->in.prefmaxlen);
+		ndr_print_ptr(ndr, "resume_handle", r->in.resume_handle);
+		ndr->depth++;
+		ndr_print_uint32(ndr, "resume_handle", *r->in.resume_handle);
+		ndr->depth--;
+		ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "NetFileEnum");
+		ndr->depth++;
+		ndr_print_ptr(ndr, "buffer", r->out.buffer);
+		ndr->depth++;
+		ndr_print_ptr(ndr, "buffer", *r->out.buffer);
+		ndr->depth++;
+		if (*r->out.buffer) {
+			ndr_print_uint8(ndr, "buffer", **r->out.buffer);
+		}
+		ndr->depth--;
+		ndr->depth--;
+		ndr_print_ptr(ndr, "entries_read", r->out.entries_read);
+		ndr->depth++;
+		ndr_print_uint32(ndr, "entries_read", *r->out.entries_read);
+		ndr->depth--;
+		ndr_print_ptr(ndr, "total_entries", r->out.total_entries);
+		ndr->depth++;
+		ndr_print_uint32(ndr, "total_entries", *r->out.total_entries);
+		ndr->depth--;
+		ndr_print_ptr(ndr, "resume_handle", r->out.resume_handle);
+		ndr->depth++;
+		ndr_print_uint32(ndr, "resume_handle", *r->out.resume_handle);
+		ndr->depth--;
+		ndr_print_NET_API_STATUS(ndr, "result", r->out.result);
+		ndr->depth--;
+	}
+	ndr->depth--;
+}
+
