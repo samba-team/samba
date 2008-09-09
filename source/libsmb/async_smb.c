@@ -137,6 +137,21 @@ static int cli_request_destructor(struct cli_request *req)
 }
 
 /**
+ * Are there already requests waiting in the chain_accumulator?
+ * @param[in] cli	The cli_state we want to check
+ * @retval reply :-)
+ */
+
+bool cli_in_chain(struct cli_state *cli)
+{
+	if (cli->chain_accumulator == NULL) {
+		return false;
+	}
+
+	return (cli->chain_accumulator->num_async != 0);
+}
+
+/**
  * Is the SMB command able to hold an AND_X successor
  * @param[in] cmd	The SMB command in question
  * @retval Can we add a chained request after "cmd"?
