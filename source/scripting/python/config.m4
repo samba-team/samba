@@ -48,8 +48,9 @@ fi
 if test -z "$PYTHON_CONFIG"; then
 	AC_MSG_WARN([No python-config found])
 else
-	TRY_LINK_PYTHON([`$PYTHON_CONFIG --ldflags`], [`$PYTHON_CONFIG --includes`])
-	TRY_LINK_PYTHON([`$PYTHON_CONFIG --ldflags`], [`$PYTHON_CONFIG --cflags`])
+       base=`$PYTHON_CONFIG --prefix`
+       TRY_LINK_PYTHON([`echo -n -L${base}/lib " "; $PYTHON_CONFIG --ldflags`], [`$PYTHON_CONFIG --includes`])
+       TRY_LINK_PYTHON([`echo -n -L${base}/lib " "; $PYTHON_CONFIG --ldflags`], [`$PYTHON_CONFIG --cflags`])
 fi
 
 if test x$PYTHON != x
