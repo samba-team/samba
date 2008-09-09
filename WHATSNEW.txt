@@ -103,6 +103,7 @@ o   Jeremy Allison <jra@samba.org>
     * Add new "winbind reconnect delay" parameter.
     * Make the change to smbcontrol for "all" to mean broadcast,
       and "smbd" to mean the main smb daemon.
+    * Write times code update.
 
 
 o   Guenther Deschner <gd@samba.org>
@@ -112,6 +113,12 @@ o   Guenther Deschner <gd@samba.org>
 
 o   Volker Lendecke <vl@samba.org>
     * Rework of the Winbind idmap backend.
+    * Fix calculation of useable_space for trans2 and nttrans replies.
+    * Add mapping of generic bits when setting an NFSv4 ACL.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * Some write time fixes.
 
 
 ######################################################################
