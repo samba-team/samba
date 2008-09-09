@@ -1354,6 +1354,7 @@ bool mask_match_list(const char *string, char **list, int listLen, bool is_case_
 bool unix_wild_match(const char *pattern, const char *string);
 bool name_to_fqdn(fstring fqdn, const char *name);
 void *talloc_check_name_abort(const void *ptr, const char *name);
+void *talloc_append_blob(TALLOC_CTX *mem_ctx, void *buf, DATA_BLOB blob);
 uint32 map_share_mode_to_deny_mode(uint32 share_access, uint32 private_options);
 pid_t procid_to_pid(const struct server_id *proc);
 void set_my_vnn(uint32 vnn);
@@ -4381,6 +4382,7 @@ int cli_nt_create_full(struct cli_state *cli, const char *fname,
 		 uint32 CreateDisposition, uint32 CreateOptions,
 		 uint8 SecuityFlags);
 int cli_nt_create(struct cli_state *cli, const char *fname, uint32 DesiredAccess);
+uint8_t *smb_bytes_push_str(uint8_t *buf, bool ucs2, const char *str);
 struct async_req *cli_open_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 				struct cli_state *cli,
 				const char *fname, int flags, int share_mode);
@@ -4730,6 +4732,27 @@ bool cli_send_nt_trans(struct cli_state *cli,
 bool cli_receive_nt_trans(struct cli_state *cli,
 			  char **param, unsigned int *param_len,
 			  char **data, unsigned int *data_len);
+struct async_req *cli_trans_send(
+	TALLOC_CTX *mem_ctx, struct event_context *ev,
+	struct cli_state *cli, uint8_t trans_cmd,
+	const char *pipe_name, uint16_t fid, uint16_t function, int flags,
+	uint16_t *setup, uint8_t num_setup, uint8_t max_setup,
+	uint8_t *param, uint32_t num_param, uint32_t max_param,
+	uint8_t *data, uint32_t num_data, uint32_t max_data);
+NTSTATUS cli_trans_recv(struct async_req *req, TALLOC_CTX *mem_ctx,
+			uint16_t **setup, uint8_t *num_setup,
+			uint8_t **param, uint32_t *num_param,
+			uint8_t **data, uint32_t *num_data);
+NTSTATUS cli_trans(TALLOC_CTX *mem_ctx, struct cli_state *cli,
+		   uint8_t trans_cmd,
+		   const char *pipe_name, uint16_t fid, uint16_t function,
+		   int flags,
+		   uint16_t *setup, uint8_t num_setup, uint8_t max_setup,
+		   uint8_t *param, uint32_t num_param, uint32_t max_param,
+		   uint8_t *data, uint32_t num_data, uint32_t max_data,
+		   uint16_t **rsetup, uint8_t *num_rsetup,
+		   uint8_t **rparam, uint32_t *num_rparam,
+		   uint8_t **rdata, uint32_t *num_rdata);
 
 /* The following definitions come from libsmb/conncache.c  */
 
