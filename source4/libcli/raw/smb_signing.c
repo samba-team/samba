@@ -310,6 +310,8 @@ bool smbcli_request_check_sign_mac(struct smbcli_request *req)
 	case SMB_SIGNING_ENGINE_OFF:
 		return true;
 	case SMB_SIGNING_ENGINE_BSRSPYL:
+		return true;
+
 	case SMB_SIGNING_ENGINE_ON:
 	{			
 		if (req->in.size < (HDR_SS_FIELD + 8)) {
