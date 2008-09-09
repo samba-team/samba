@@ -25,6 +25,7 @@
 #define FILTER_INTERDOMAIN_TRUST_ACCOUNT	( 0x0008 )
 #define FILTER_WORKSTATION_TRUST_ACCOUNT	( 0x0010 )
 #define FILTER_SERVER_TRUST_ACCOUNT	( 0x0020 )
+#define LG_INCLUDE_INDIRECT	( 0x0001 )
 #define TIMEQ_FOREVER	( (uint32_t)-1L )
 #define CSC_MASK	( 0x30 )
 enum NET_API_STATUS
@@ -422,6 +423,10 @@ struct GROUP_USERS_INFO_0 {
 struct GROUP_USERS_INFO_1 {
 	const char * grui1_name;
 	uint32_t grui1_attributes;
+};
+
+struct LOCALGROUP_USERS_INFO_0 {
+	const char * lgrui0_name;
 };
 
 struct USER_MODALS_INFO_0 {
@@ -937,6 +942,25 @@ struct NetUserSetGroups {
 	} in;
 
 	struct {
+		enum NET_API_STATUS result;
+	} out;
+
+};
+
+
+struct NetUserGetLocalGroups {
+	struct {
+		const char * server_name;
+		const char * user_name;
+		uint32_t level;
+		uint32_t flags;
+		uint32_t prefmaxlen;
+	} in;
+
+	struct {
+		uint8_t **buffer;/* [ref] */
+		uint32_t *entries_read;/* [ref] */
+		uint32_t *total_entries;/* [ref] */
 		enum NET_API_STATUS result;
 	} out;
 
