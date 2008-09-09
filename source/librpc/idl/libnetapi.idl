@@ -1186,4 +1186,13 @@ interface libnetapi
 		[in] uint8 *buffer,
 		[out] uint32 *parm_err
 		);
+
+	/*******************************************/
+	/* NetFileClose                            */
+	/*******************************************/
+
+	[nopush,nopull] NET_API_STATUS NetFileClose(
+		[in] string server_name,
+		[in] uint32 fileid
+		);
 }
