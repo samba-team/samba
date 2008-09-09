@@ -518,8 +518,8 @@ int main(int argc, char **argv)
 	ev_ctx = s4_event_context_init(ctx);
 
 	if (remote != NULL) {
-		ctx->registry = reg_common_open_remote(remote, cmdline_lp_ctx, 
-						       cmdline_credentials);
+		ctx->registry = reg_common_open_remote(remote, ev_ctx,
+					 cmdline_lp_ctx, cmdline_credentials);
 	} else if (file != NULL) {
 		ctx->current = reg_common_open_file(file, ev_ctx, cmdline_lp_ctx, cmdline_credentials);
 		if (ctx->current == NULL)
