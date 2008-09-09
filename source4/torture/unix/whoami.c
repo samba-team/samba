@@ -18,11 +18,11 @@
 */
 
 #include "includes.h"
-#include "torture/torture.h"
-#include "torture/basic/proto.h"
 #include "libcli/libcli.h"
 #include "libcli/raw/interfaces.h"
 #include "libcli/raw/raw_proto.h"
+#include "torture/torture.h"
+#include "torture/basic/proto.h"
 #include "lib/cmdline/popt_common.h"
 #include "auth/credentials/credentials.h"
 #include "param/param.h"
