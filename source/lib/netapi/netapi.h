@@ -1579,7 +1579,7 @@ NET_API_STATUS NetRemoteTOD(const char * server_name /* [in] */,
  *
  * @param[in] server_name The server name to connect to
  * @param[in] level The level defining the requested SHARE_INFO_X structure
- * @param[in] buf The buffer containing a SHARE_INFO_X structure
+ * @param[in] buffer The buffer containing a SHARE_INFO_X structure
  * @param[out] parm_err The returned parameter error number if any
  * @return NET_API_STATUS
  *
