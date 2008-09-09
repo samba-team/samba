@@ -230,7 +230,7 @@ MODULES = $(VFS_MODULES) $(PDB_MODULES) $(RPC_MODULES) $(IDMAP_MODULES) \
 # object file lists
 ######################################################################
 
-TDB_OBJ = lib/util_tdb.o \
+TDB_LIB_OBJ = lib/util_tdb.o \
 	  lib/dbwrap.o lib/dbwrap_tdb.o \
 	  lib/dbwrap_ctdb.o \
 	  lib/dbwrap_rbt.o @LIBTDB_STATIC@
@@ -318,7 +318,7 @@ LIB_OBJ = $(LIBSAMBAUTIL_OBJ) \
 	  lib/interfaces.o lib/rbtree.o lib/memcache.o \
 	  lib/util_transfer_file.o lib/async_req.o \
 	  lib/async_sock.o \
-	  $(TDB_OBJ) \
+	  $(TDB_LIB_OBJ) \
 	  $(VERSION_OBJ) lib/charcnv.o lib/debug.o lib/fault.o \
 	  lib/interface.o lib/md4.o \
 	  lib/pidfile.o \
