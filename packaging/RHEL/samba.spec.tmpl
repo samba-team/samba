@@ -224,20 +224,17 @@ install -m 755 source/nsswitch/libnss_wins.so $RPM_BUILD_ROOT/%{_libarch}/libnss
   ln -sf libnss_winbind.so  libnss_winbind.so.2;
   ln -sf libnss_wins.so  libnss_wins.so.2 )
 
-# make install puts libsmbclient.so in the wrong place on x86_64
-rm -f $RPM_BUILD_ROOT/usr/lib*/samba/libsmbclient.so $RPM_BUILD_ROOT/usr/lib*/samba/libsmbclient.a || true
-install -m 755 source/bin/libsmbclient.so $RPM_BUILD_ROOT%{_libarchdir}/libsmbclient.so
-install -m 755 source/bin/libsmbclient.a $RPM_BUILD_ROOT%{_libarchdir}/libsmbclient.a
-install -m 644 source/include/libsmbclient.h $RPM_BUILD_ROOT%{_includedir}
-ln -s %{_libarchdir}/libsmbclient.so $RPM_BUILD_ROOT%{_libarchdir}/libsmbclient.so.0
+# Put the shared (and possibly static) libraries into /usr/lib{,64}/ .
+# Samba 3.2.2 installs them into /usr/lib{,64}/samba/ .
+# This step will become unnecessary in 3.3.0.
+#
+for library in libsmbclient libsmbsharemodes libwbclient libtalloc libtdb
+libnetapi
+do
+	mv -f ${RPM_BUILD_ROOT}%{_libarchdir}/samba/${library}.* \
+		${RPM_BUILD_ROOT}%{_libarchdir}/
+done
 
-# make install puts libsmbsharemodes.so in the wrong place on x86_64
-rm -f $RPM_BUILD_ROOT/usr/lib*/samba/libsmbsharemodes.so $RPM_BUILD_ROOT/usr/lib*/samba/libsmbsharemodes.a || true
-install -m 755 source/bin/libsmbsharemodes.so $RPM_BUILD_ROOT%{_libarchdir}/libsmbsharemodes.so
-install -m 755 source/bin/libsmbsharemodes.a $RPM_BUILD_ROOT%{_libarchdir}/libsmbsharemodes.a
-install -m 644 source/include/smb_share_modes.h $RPM_BUILD_ROOT%{_includedir}
-rm -f $RPM_BUILD_ROOT%{_libarchdir}/samba/libsmbsharemodes.*
-ln -s /%{_libdir}/libsmbsharemodes.so $RPM_BUILD_ROOT%{_libarchdir}/libsmbsharemodes.so.0
 
 ## cleanup
 /bin/rm -rf $RPM_BUILD_ROOT/usr/lib*/samba/security
