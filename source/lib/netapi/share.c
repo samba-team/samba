@@ -412,7 +412,7 @@ WERROR NetShareGetInfo_r(struct libnetapi_ctx *ctx,
 	union srvsvc_NetShareInfo info;
 	uint32_t num_entries = 0;
 
-	if (!r->in.net_name) {
+	if (!r->in.net_name || !r->out.buffer) {
 		return WERR_INVALID_PARAM;
 	}
 
