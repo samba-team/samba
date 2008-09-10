@@ -2602,7 +2602,7 @@ static bool test_delayed_write_update5b(struct torture_context *tctx,
 	while (!timeval_expired(&end)) {
 		/* do a write */
 		torture_comment(tctx, "Do a truncate write on the file handle\n");
-		written = smbcli_write(cli->tree, fnum1, 0, "x", 0, 0);
+		written = smbcli_smbwrite(cli->tree, fnum1, "x", 1024, 0);
 		if (written != 0) {
 			torture_result(tctx, TORTURE_FAIL, __location__": written gave %d - should have been 1", (int)written);
 			ret = false;
