@@ -184,7 +184,99 @@ WERROR NetFileGetInfo_l(struct libnetapi_ctx *ctx,
 WERROR NetFileEnum_r(struct libnetapi_ctx *ctx,
 		     struct NetFileEnum *r)
 {
-	return WERR_NOT_SUPPORTED;
+	WERROR werr;
+	NTSTATUS status;
+	struct cli_state *cli = NULL;
+	struct rpc_pipe_client *pipe_cli = NULL;
+	struct srvsvc_NetFileInfoCtr info_ctr;
+	struct srvsvc_NetFileCtr2 ctr2;
+	struct srvsvc_NetFileCtr3 ctr3;
+	uint32_t num_entries = 0;
+	uint32_t i;
+
+	if (!r->out.buffer) {
+		return WERR_INVALID_PARAM;
+	}
+
+	switch (r->in.level) {
+		case 2:
+		case 3:
+			break;
+		default:
+			return WERR_UNKNOWN_LEVEL;
+	}
+
+	werr = libnetapi_open_pipe(ctx, r->in.server_name,
+				   &ndr_table_srvsvc.syntax_id,
+				   &cli,
+				   &pipe_cli);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	ZERO_STRUCT(info_ctr);
+
+	info_ctr.level = r->in.level;
+	switch (r->in.level) {
+		case 2:
+			ZERO_STRUCT(ctr2);
+			info_ctr.ctr.ctr2 = &ctr2;
+			break;
+		case 3:
+			ZERO_STRUCT(ctr3);
+			info_ctr.ctr.ctr3 = &ctr3;
+			break;
+	}
+
+	status = rpccli_srvsvc_NetFileEnum(pipe_cli, ctx,
+					   r->in.server_name,
+					   r->in.base_path,
+					   r->in.user_name,
+					   &info_ctr,
+					   r->in.prefmaxlen,
+					   r->out.total_entries,
+					   r->out.resume_handle,
+					   &werr);
+	if (NT_STATUS_IS_ERR(status)) {
+		goto done;
+	}
+
+	for (i=0; i < info_ctr.ctr.ctr2->count; i++) {
+		union srvsvc_NetFileInfo _i;
+		switch (r->in.level) {
+			case 2:
+				_i.info2 = &info_ctr.ctr.ctr2->array[i];
+				break;
+			case 3:
+				_i.info3 = &info_ctr.ctr.ctr3->array[i];
+				break;
+		}
+
+		status = map_srvsvc_FileInfo_to_FILE_INFO_buffer(ctx,
+								 r->in.level,
+								 &_i,
+								 r->out.buffer,
+								 &num_entries);
+		if (!NT_STATUS_IS_OK(status)) {
+			werr = ntstatus_to_werror(status);
+			goto done;
+		}
+	}
+
+	if (r->out.entries_read) {
+		*r->out.entries_read = num_entries;
+	}
+
+	if (r->out.total_entries) {
+		*r->out.total_entries = num_entries;
+	}
+
+ done:
+	if (!cli) {
+		return werr;
+	}
+
+	return werr;
 }
 
 /****************************************************************
