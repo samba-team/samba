@@ -4722,36 +4722,6 @@ static int rpc_file_usage(struct net_context *c, int argc, const char **argv)
 /**
  * Close a file on a remote RPC server.
  *
- * All parameters are provided by the run_rpc_command function, except for
- * argc, argv which are passed through.
- *
- * @param c	A net_context structure.
- * @param domain_sid The domain sid acquired from the remote server.
- * @param cli A cli_state connected to the server.
- * @param mem_ctx Talloc context, destroyed on completion of the function.
- * @param argc  Standard main() style argc.
- * @param argv  Standard main() style argv. Initial components are already
- *              stripped.
- *
- * @return Normal NTSTATUS return.
- **/
-static NTSTATUS rpc_file_close_internals(struct net_context *c,
-					const DOM_SID *domain_sid,
-					const char *domain_name,
-					struct cli_state *cli,
-					struct rpc_pipe_client *pipe_hnd,
-					TALLOC_CTX *mem_ctx,
-					int argc,
-					const char **argv)
-{
-	return rpccli_srvsvc_NetFileClose(pipe_hnd, mem_ctx,
-					    pipe_hnd->desthost,
-					    atoi(argv[0]), NULL);
-}
-
-/**
- * Close a file on a remote RPC server.
- *
  * @param argc  Standard main() style argc.
  * @param argv  Standard main() style argv. Initial components are already
  *              stripped.
@@ -4764,9 +4734,7 @@ static int rpc_file_close(struct net_context *c, int argc, const char **argv)
 		return rpc_file_usage(c, argc, argv);
 	}
 
-	return run_rpc_command(c, NULL, &ndr_table_srvsvc.syntax_id, 0,
-			       rpc_file_close_internals,
-			       argc, argv);
+	return NetFileClose(c->opt_host, atoi(argv[0]));
 }
 
 /**
@@ -4881,6 +4849,8 @@ static int rpc_file_user(struct net_context *c, int argc, const char **argv)
 
 int net_rpc_file(struct net_context *c, int argc, const char **argv)
 {
+	NET_API_STATUS status;
+
 	struct functable func[] = {
 		{
 			"close",
@@ -4910,6 +4880,16 @@ int net_rpc_file(struct net_context *c, int argc, const char **argv)
 #endif
 		{NULL, NULL, 0, NULL, NULL}
 	};
+
+	status = libnetapi_init(&c->netapi_ctx);
+	if (status != 0) {
+		return -1;
+	}
+	libnetapi_set_username(c->netapi_ctx, c->opt_user_name);
+	libnetapi_set_password(c->netapi_ctx, c->opt_password);
+	if (c->opt_kerberos) {
+		libnetapi_set_use_kerberos(c->netapi_ctx);
+	}
 
 	if (argc == 0) {
 		if (c->display_usage) {
