@@ -2867,19 +2867,19 @@ static int rpc_share_delete(struct net_context *c, int argc, const char **argv)
 /**
  * Formatted print of share info
  *
- * @param info1  pointer to SRV_SHARE_INFO_1 to format
+ * @param r  pointer to SHARE_INFO_1 to format
  **/
 
 static void display_share_info_1(struct net_context *c,
-				 struct srvsvc_NetShareInfo1 *r)
+				 struct SHARE_INFO_1 *r)
 {
 	if (c->opt_long_list_entries) {
 		d_printf("%-12s %-8.8s %-50s\n",
-			 r->name,
-			 share_type[r->type & ~(STYPE_TEMPORARY|STYPE_HIDDEN)],
-			 r->comment);
+			 r->shi1_netname,
+			 share_type[r->shi1_type & ~(STYPE_TEMPORARY|STYPE_HIDDEN)],
+			 r->shi1_remark);
 	} else {
-		d_printf("%s\n", r->name);
+		d_printf("%s\n", r->shi1_netname);
 	}
 }
 
@@ -2973,46 +2973,38 @@ done:
 	return result;
 }
 
-/**
- * List shares on a remote RPC server.
- *
- * All parameters are provided by the run_rpc_command function, except for
- * argc, argv which are passed through.
- *
- * @param domain_sid The domain sid acquired from the remote server.
- * @param cli A cli_state connected to the server.
- * @param mem_ctx Talloc context, destroyed on completion of the function.
+/***
+ * 'net rpc share list' entrypoint.
  * @param argc  Standard main() style argc.
  * @param argv  Standard main() style argv. Initial components are already
  *              stripped.
- *
- * @return Normal NTSTATUS return.
  **/
-
-static NTSTATUS rpc_share_list_internals(struct net_context *c,
-					const DOM_SID *domain_sid,
-					const char *domain_name,
-					struct cli_state *cli,
-					struct rpc_pipe_client *pipe_hnd,
-					TALLOC_CTX *mem_ctx,
-					int argc,
-					const char **argv)
+static int rpc_share_list(struct net_context *c, int argc, const char **argv)
 {
-	struct srvsvc_NetShareInfoCtr info_ctr;
-	struct srvsvc_NetShareCtr1 ctr1;
-	WERROR result;
-	uint32 i, level = 1;
+	NET_API_STATUS status;
+	struct SHARE_INFO_1 *i1 = NULL;
+	uint32_t entries_read = 0;
+	uint32_t total_entries = 0;
+	uint32_t resume_handle = 0;
+	uint32_t i, level = 1;
 
-	ZERO_STRUCT(info_ctr);
-	ZERO_STRUCT(ctr1);
+	if (c->display_usage) {
+		d_printf("Usage\n"
+			 "net rpc share list\n"
+			 "    List shares on remote server\n");
+		return 0;
+	}
 
-	info_ctr.level = 1;
-	info_ctr.ctr.ctr1 = &ctr1;
-
-	result = get_share_info(c, pipe_hnd, mem_ctx, level, argc, argv,
-				&info_ctr);
-	if (!W_ERROR_IS_OK(result))
+	status = NetShareEnum(c->opt_host,
+			      level,
+			      (uint8_t **)&i1,
+			      (uint32_t)-1,
+			      &entries_read,
+			      &total_entries,
+			      &resume_handle);
+	if (status != 0) {
 		goto done;
+	}
 
 	/* Display results */
 
@@ -3022,29 +3014,10 @@ static NTSTATUS rpc_share_list_internals(struct net_context *c,
 	"\nShare name   Type     Description\n"
 	"----------   ----     -----------\n");
 	}
-	for (i = 0; i < info_ctr.ctr.ctr1->count; i++)
-		display_share_info_1(c, &info_ctr.ctr.ctr1->array[i]);
+	for (i = 0; i < entries_read; i++)
+		display_share_info_1(c, &i1[i]);
  done:
-	return W_ERROR_IS_OK(result) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
-}
-
-/***
- * 'net rpc share list' entrypoint.
- * @param argc  Standard main() style argc.
- * @param argv  Standard main() style argv. Initial components are already
- *              stripped.
- **/
-static int rpc_share_list(struct net_context *c, int argc, const char **argv)
-{
-	if (c->display_usage) {
-		d_printf("Usage\n"
-			 "net rpc share list\n"
-			 "    List shares on remote server\n");
-		return 0;
-	}
-
-	return run_rpc_command(c, NULL, &ndr_table_srvsvc.syntax_id, 0,
-			       rpc_share_list_internals, argc, argv);
+	return status;
 }
 
 static bool check_share_availability(struct cli_state *cli, const char *netname)
@@ -4619,9 +4592,7 @@ int net_rpc_share(struct net_context *c, int argc, const char **argv)
 			return 0;
 		}
 
-		return run_rpc_command(c, NULL, &ndr_table_srvsvc.syntax_id, 0,
-				       rpc_share_list_internals,
-				       argc, argv);
+		return rpc_share_list(c, argc, argv);
 	}
 
 	return net_run_function(c, argc, argv, "net rpc share", func);
@@ -4633,9 +4604,8 @@ static NTSTATUS rpc_sh_share_list(struct net_context *c,
 				  struct rpc_pipe_client *pipe_hnd,
 				  int argc, const char **argv)
 {
-	return rpc_share_list_internals(c, ctx->domain_sid, ctx->domain_name,
-					ctx->cli, pipe_hnd, mem_ctx,
-					argc, argv);
+
+	return werror_to_ntstatus(W_ERROR(rpc_share_list(c, argc, argv)));
 }
 
 static NTSTATUS rpc_sh_share_add(struct net_context *c,
