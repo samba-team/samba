@@ -182,7 +182,9 @@ static void winbind_task_init(struct task_server *task)
 	/* setup the privileged samba3 socket */
 	listen_socket = talloc(service, struct wbsrv_listen_socket);
 	if (!listen_socket) goto nomem;
-	listen_socket->socket_path	= talloc_asprintf(listen_socket, "%s/%s", 
+	listen_socket->socket_path 
+		= service->priv_socket_path 
+		= talloc_asprintf(listen_socket, "%s/%s", 
 							  lp_winbindd_privileged_socket_directory(task->lp_ctx), 
 							  WINBINDD_SAMBA3_SOCKET);
 	if (!listen_socket->socket_path) goto nomem;
