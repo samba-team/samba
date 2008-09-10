@@ -113,8 +113,7 @@ NTSTATUS wbsrv_samba3_netbios_name(struct wbsrv_samba3_call *s3call)
 
 NTSTATUS wbsrv_samba3_priv_pipe_dir(struct wbsrv_samba3_call *s3call)
 {
-	char *path = smbd_tmp_path(s3call, s3call->wbconn->lp_ctx, WINBINDD_SAMBA3_PRIVILEGED_SOCKET);
-	NT_STATUS_HAVE_NO_MEMORY(path);
+	char *path = s3call->wbconn->listen_socket->service->priv_socket_path;
 	s3call->response.result		 = WINBINDD_OK;
 	s3call->response.extra_data.data = path;
 		
