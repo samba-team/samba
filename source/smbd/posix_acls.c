@@ -3300,10 +3300,17 @@ static NTSTATUS append_parent_acl(files_struct *fsp,
 
 	}
 
-	parent_sd->dacl->aces = new_ace;
-	parent_sd->dacl->num_aces = i;
+	/* This sucks. psd should be const and we should
+	 * be doing a deep-copy here. We're getting away
+	 * with is as we know parent_sd is talloced off
+	 * talloc_tos() as well as psd. JRA. */
 
-	*pp_new_sd = parent_sd;
+	psd->dacl->aces = new_ace;
+	psd->dacl->num_aces = i;
+	psd->type &= ~(SE_DESC_DACL_AUTO_INHERITED|
+                         SE_DESC_DACL_AUTO_INHERIT_REQ);
+
+	*pp_new_sd = psd;
 	return status;
 }
 
