@@ -743,16 +743,21 @@ static krb5_error_code ads_krb5_mk_req(krb5_context context,
 						ccache,
 						&in_data );
 		if (retval) {
-			DEBUG( 1, ("ads_krb5_get_fwd_ticket failed (%s)\n", error_message( retval ) ) );
-			goto cleanup_creds;
-		}
+			DEBUG( 3, ("ads_krb5_get_fwd_ticket failed (%s)\n", error_message( retval ) ) );
 
-		if (retval) {
-			DEBUG( 1, ("krb5_auth_con_set_req_cksumtype failed (%s)\n",
-				error_message( retval ) ) );
-			goto cleanup_creds;
-		}
+			/*
+			 * This is not fatal. Delete the *auth_context and continue
+			 * with krb5_mk_req_extended to get a non-forwardable ticket.
+			 */
 
+			if (in_data.data) {
+				free( in_data.data );
+				in_data.data = NULL;
+				in_data.length = 0;
+			}
+			krb5_auth_con_free(context, *auth_context);
+			*auth_context = NULL;
+		}
 	}
 #endif
 
