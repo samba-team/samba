@@ -4740,83 +4740,14 @@ static int rpc_file_close(struct net_context *c, int argc, const char **argv)
 /**
  * Formatted print of open file info
  *
- * @param r  struct srvsvc_NetFileInfo3 contents
+ * @param r  struct FILE_INFO_3 contents
  **/
 
-static void display_file_info_3(struct srvsvc_NetFileInfo3 *r)
+static void display_file_info_3(struct FILE_INFO_3 *r)
 {
 	d_printf("%-7.1d %-20.20s 0x%-4.2x %-6.1d %s\n",
-		 r->fid, r->user, r->permissions, r->num_locks, r->path);
-}
-
-/**
- * List open files on a remote RPC server.
- *
- * All parameters are provided by the run_rpc_command function, except for
- * argc, argv which are passed through.
- *
- * @param c	A net_context structure.
- * @param domain_sid The domain sid acquired from the remote server.
- * @param cli A cli_state connected to the server.
- * @param mem_ctx Talloc context, destroyed on completion of the function.
- * @param argc  Standard main() style argc.
- * @param argv  Standard main() style argv. Initial components are already
- *              stripped.
- *
- * @return Normal NTSTATUS return.
- **/
-
-static NTSTATUS rpc_file_list_internals(struct net_context *c,
-					const DOM_SID *domain_sid,
-					const char *domain_name,
-					struct cli_state *cli,
-					struct rpc_pipe_client *pipe_hnd,
-					TALLOC_CTX *mem_ctx,
-					int argc,
-					const char **argv)
-{
-	struct srvsvc_NetFileInfoCtr info_ctr;
-	struct srvsvc_NetFileCtr3 ctr3;
-	WERROR result;
-	NTSTATUS status;
-	uint32 preferred_len = 0xffffffff, i;
-	const char *username=NULL;
-	uint32_t total_entries = 0;
-	uint32_t resume_handle = 0;
-
-	/* if argc > 0, must be user command */
-	if (argc > 0)
-		username = smb_xstrdup(argv[0]);
-
-	ZERO_STRUCT(info_ctr);
-	ZERO_STRUCT(ctr3);
-
-	info_ctr.level = 3;
-	info_ctr.ctr.ctr3 = &ctr3;
-
-	status = rpccli_srvsvc_NetFileEnum(pipe_hnd, mem_ctx,
-					   pipe_hnd->desthost,
-					   NULL,
-					   username,
-					   &info_ctr,
-					   preferred_len,
-					   &total_entries,
-					   &resume_handle,
-					   &result);
-
-	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result))
-		goto done;
-
-	/* Display results */
-
-	d_printf(
-		 "\nEnumerating open files on remote server:\n\n"
-		 "\nFileId  Opened by            Perms  Locks  Path"
-		 "\n------  ---------            -----  -----  ---- \n");
-	for (i = 0; i < total_entries; i++)
-		display_file_info_3(&info_ctr.ctr.ctr3->array[i]);
- done:
-	return W_ERROR_IS_OK(result) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
+		 r->fi3_id, r->fi3_username, r->fi3_permissions,
+		 r->fi3_num_locks, r->fi3_pathname);
 }
 
 /**
@@ -4831,13 +4762,48 @@ static NTSTATUS rpc_file_list_internals(struct net_context *c,
 
 static int rpc_file_user(struct net_context *c, int argc, const char **argv)
 {
-	if (argc < 1 || c->display_usage) {
+	NET_API_STATUS status;
+	uint32 preferred_len = 0xffffffff, i;
+	const char *username=NULL;
+	uint32_t total_entries = 0;
+	uint32_t entries_read = 0;
+	uint32_t resume_handle = 0;
+	struct FILE_INFO_3 *i3 = NULL;
+
+	if (c->display_usage) {
 		return rpc_file_usage(c, argc, argv);
 	}
 
-	return run_rpc_command(c, NULL, &ndr_table_srvsvc.syntax_id, 0,
-			       rpc_file_list_internals,
-			       argc, argv);
+	/* if argc > 0, must be user command */
+	if (argc > 0) {
+		username = smb_xstrdup(argv[0]);
+	}
+
+	status = NetFileEnum(c->opt_host,
+			     NULL,
+			     username,
+			     3,
+			     (uint8_t **)&i3,
+			     preferred_len,
+			     &entries_read,
+			     &total_entries,
+			     &resume_handle);
+
+	if (status != 0) {
+		goto done;
+	}
+
+	/* Display results */
+
+	d_printf(
+		 "\nEnumerating open files on remote server:\n\n"
+		 "\nFileId  Opened by            Perms  Locks  Path"
+		 "\n------  ---------            -----  -----  ---- \n");
+	for (i = 0; i < entries_read; i++) {
+		display_file_info_3(&i3[i]);
+	}
+ done:
+	return status;
 }
 
 /**
@@ -4900,9 +4866,7 @@ int net_rpc_file(struct net_context *c, int argc, const char **argv)
 			return 0;
 		}
 
-		return run_rpc_command(c, NULL, &ndr_table_srvsvc.syntax_id, 0,
-				       rpc_file_list_internals,
-				       argc, argv);
+		return rpc_file_user(c, argc, argv);
 	}
 
 	return net_run_function(c, argc, argv, "net rpc file", func);
