@@ -50,6 +50,12 @@ if test -z "$PYTHON_CONFIG"; then
 else
 	TRY_LINK_PYTHON([`$PYTHON_CONFIG --ldflags`], [`$PYTHON_CONFIG --includes`])
 	TRY_LINK_PYTHON([`$PYTHON_CONFIG --ldflags`], [`$PYTHON_CONFIG --cflags`])
+	if x$working_python = xno; then
+		# It seems the library path isn't included on some systems
+		base=`$PYTHON_CONFIG --prefix`
+       	TRY_LINK_PYTHON([`echo -n -L${base}/lib " "; $PYTHON_CONFIG --ldflags`], [`$PYTHON_CONFIG --includes`])
+       	TRY_LINK_PYTHON([`echo -n -L${base}/lib " "; $PYTHON_CONFIG --ldflags`], [`$PYTHON_CONFIG --cflags`])
+	fi
 fi
 
 if test x$PYTHON != x

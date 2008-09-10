@@ -24,13 +24,14 @@
 #include "lib/registry/tools/common.h"
 
 struct registry_context *reg_common_open_remote(const char *remote,
+						struct event_context *ev_ctx,
 						struct loadparm_context *lp_ctx,
 						struct cli_credentials *creds)
 {
 	struct registry_context *h = NULL;
 	WERROR error;
 
-	error = reg_open_remote(&h, NULL, creds, lp_ctx, remote, NULL);
+	error = reg_open_remote(&h, NULL, creds, lp_ctx, remote, ev_ctx);
 
 	if (!W_ERROR_IS_OK(error)) {
 		fprintf(stderr, "Unable to open remote registry at %s:%s \n",
