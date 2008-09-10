@@ -68,7 +68,6 @@ struct net_context {
 
 	bool display_usage;
 	void *private_data;
-	const char *share_type[];
 };
 
 #define NET_TRANSPORT_LOCAL 0x01
