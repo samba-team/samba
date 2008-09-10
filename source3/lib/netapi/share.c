@@ -347,13 +347,13 @@ WERROR NetShareEnum_r(struct libnetapi_ctx *ctx,
 			break;
 	}
 
-	status = rpccli_srvsvc_NetShareEnum(pipe_cli, ctx,
-					    r->in.server_name,
-					    &info_ctr,
-					    r->in.prefmaxlen,
-					    r->out.total_entries,
-					    r->out.resume_handle,
-					    &werr);
+	status = rpccli_srvsvc_NetShareEnumAll(pipe_cli, ctx,
+					       r->in.server_name,
+					       &info_ctr,
+					       r->in.prefmaxlen,
+					       r->out.total_entries,
+					       r->out.resume_handle,
+					       &werr);
 	if (NT_STATUS_IS_ERR(status)) {
 		goto done;
 	}
