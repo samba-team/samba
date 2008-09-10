@@ -337,12 +337,15 @@ WERROR NetShareEnum_r(struct libnetapi_ctx *ctx,
 	info_ctr.level = r->in.level;
 	switch (r->in.level) {
 		case 0:
+			ZERO_STRUCT(ctr0);
 			info_ctr.ctr.ctr0 = &ctr0;
-			 break;
+			break;
 		case 1:
+			ZERO_STRUCT(ctr1);
 			info_ctr.ctr.ctr1 = &ctr1;
 			break;
 		case 2:
+			ZERO_STRUCT(ctr2);
 			info_ctr.ctr.ctr2 = &ctr2;
 			break;
 	}
