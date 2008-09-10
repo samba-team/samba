@@ -1938,6 +1938,8 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 			break;
 		case SMB_FIND_FILE_UNIX:
 		case SMB_FIND_FILE_UNIX_INFO2:
+			/* Always use filesystem for UNIX mtime query. */
+			ask_sharemode = false;
 			if (!lp_unix_extensions()) {
 				reply_nterror(req, NT_STATUS_INVALID_LEVEL);
 				return;
@@ -2295,6 +2297,8 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
 			break;
 		case SMB_FIND_FILE_UNIX:
 		case SMB_FIND_FILE_UNIX_INFO2:
+			/* Always use filesystem for UNIX mtime query. */
+			ask_sharemode = false;
 			if (!lp_unix_extensions()) {
 				reply_nterror(req, NT_STATUS_INVALID_LEVEL);
 				return;
@@ -4132,7 +4136,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 		}
 	}
 
-	if (!null_timespec(write_time_ts)) {
+	if (!null_timespec(write_time_ts) && !INFO_LEVEL_IS_UNIX(info_level)) {
 		mtime_ts = write_time_ts;
 	}
 
