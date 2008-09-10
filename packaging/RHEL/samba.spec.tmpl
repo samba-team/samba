@@ -239,9 +239,6 @@ install -m 644 source/include/smb_share_modes.h $RPM_BUILD_ROOT%{_includedir}
 rm -f $RPM_BUILD_ROOT%{_libarchdir}/samba/libsmbsharemodes.*
 ln -s /%{_libdir}/libsmbsharemodes.so $RPM_BUILD_ROOT%{_libarchdir}/libsmbsharemodes.so.0
 
-# Install pam_smbpass.so
-install -m755 source/bin/pam_smbpass.so $RPM_BUILD_ROOT/%{_libarch}/security/pam_smbpass.so
-
 ## cleanup
 /bin/rm -rf $RPM_BUILD_ROOT/usr/lib*/samba/security
 
