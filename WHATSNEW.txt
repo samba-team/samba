@@ -141,6 +141,7 @@ Commit Highlights:
 
 o   Michael Adam <obnox@samba.org>
     * BUG 5492: Fix RHEL SPEC file by removing libmsrpc stuff.
+    * BUG 5507: Fix several issues in the RHEL SPEC file.
     * BUG 5609: Remove configure option "--with-libdir" and add
       "--with-modulesdir".
     * Extend "net rpc vampire keytab" to support differential replication
