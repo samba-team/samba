@@ -35,6 +35,8 @@ struct wbsrv_service {
 	const struct dom_sid *primary_sid;
 	struct wbsrv_domain *domains;
 	struct idmap_context *idmap_ctx;
+
+	const char *priv_socket_path;
 };
 
 struct wbsrv_samconn {
