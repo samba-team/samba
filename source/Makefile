@@ -210,11 +210,7 @@ installdirs::
 		$(DESTDIR)$(PKGCONFIGDIR) \
 		$(DESTDIR)$(sysconfdir)
 
-installbin:: $(SBIN_PROGS) $(BIN_PROGS) $(TORTURE_PROGS) installdirs
-	@$(SHELL) $(srcdir)/script/installtorture.sh \
-		$(INSTALLPERMS) \
-		$(DESTDIR)$(TORTUREDIR) \
-		$(TORTURE_PROGS)
+installbin:: installdirs
 
 installplugins::
 
@@ -262,9 +258,6 @@ $(DESTDIR)$(sbindir)/%: bin/% installdirs
 	@chmod $(INSTALLPERMS) $@
 
 uninstallbin::
-	@$(SHELL) $(srcdir)/script/uninstallbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(sbindir) $(DESTDIR)$(libdir) $(DESTDIR)$(localstatedir) $(DESTDIR)$(SBIN_PROGS)
-	@$(SHELL) $(srcdir)/script/uninstallbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(bindir) $(DESTDIR)$(libdir) $(DESTDIR)$(localstatedir) $(DESTDIR)$(BIN_PROGS)
-	@$(SHELL) $(srcdir)/script/uninstalltorture.sh $(DESTDIR)$(TORTUREDIR) $(TORTURE_PROGS)
 
 uninstalllib::
 	@$(SHELL) $(srcdir)/script/uninstalllib.sh $(DESTDIR)$(libdir) $(SHARED_LIBS)
