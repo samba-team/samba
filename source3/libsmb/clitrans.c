@@ -1119,11 +1119,16 @@ static void cli_trans_recv_helper(struct async_req *req)
 		req->private_data, struct cli_request);
 	struct cli_trans_state *state = talloc_get_type_abort(
 		cli_req->recv_helper.priv, struct cli_trans_state);
-	uint8_t num_setup;
-	uint16_t *setup;
-	uint32_t total_param, num_param, param_disp;
-	uint32_t total_data, num_data, data_disp;
-	uint8_t *param, *data;
+	uint8_t num_setup	= 0;
+	uint16_t *setup		= NULL;
+	uint32_t total_param	= 0;
+	uint32_t num_param	= 0;
+	uint32_t param_disp	= 0;
+	uint32_t total_data	= 0;
+	uint32_t num_data	= 0;
+	uint32_t data_disp	= 0;
+	uint8_t *param		= NULL;
+	uint8_t *data		= NULL;
 	bool sent_all;
 	NTSTATUS status;
 
