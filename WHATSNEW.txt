@@ -23,6 +23,7 @@ Changes since 3.2.3
 o   Michael Adam <obnox@samba.org>
     * BUG 5590: Fix binary stripping on older OS.
     * BUG 5492: Fix RHEL SPEC file by removing libmsrpc stuff.
+    * BUG 5507: Fix several issues in the RHEL SPEC file.
     * Fix linking of cifs.upcall when nscd_flush_cache() is found.
 
 
