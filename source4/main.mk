@@ -26,6 +26,9 @@ mkinclude lib/dbwrap/config.mk
 mkinclude lib/crypto/config.mk
 mkinclude lib/torture/config.mk
 mkinclude lib/basic.mk
+mkinclude lib/com/config.mk
+# WMI fails at the moment
+#mkinclude lib/wmi/config.mk
 mkinclude param/config.mk
 mkinclude smb_server/config.mk
 mkinclude rpc_server/config.mk
