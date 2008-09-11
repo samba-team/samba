@@ -90,6 +90,11 @@ Changes since 3.3.0pre1:
 ------------------------
 
 
+o   Michael Adam <obnox@samba.org>
+
+    * BUG 5492: Fix RHEL SPEC file by removing libmsrpc stuff.
+    * BUG 5507: Fix several issues in the RHEL SPEC file.
+
 o   Jeremy Allison <jra@samba.org>
     * BUG 5729: Explicitly allow "-valid".
     * Add st_birthtime and friends for accurate create times on *BSD
@@ -98,6 +103,8 @@ o   Jeremy Allison <jra@samba.org>
     * Clarify usage of "force create mode".
     * Get smbd to look (read-only) into the winbindd cache for uid/gid <--> sid
       mappings.
+    * Write times code update.
+
 
 
 o   Steven Danneman <steven.danneman@isilon.com>
@@ -121,6 +128,12 @@ o   Volker Lendecke <vl@sernet.de>
     * Fix Coverity IDs 587 and 589.
     * Increase the default positive idmap cache time to a week.
     * BUG 5707: Do proper error handling if the socket is closed.
+    * Fix calculation of useable_space for trans2 and nttrans replies.
+    * Add mapping of generic bits when setting an NFSv4 ACL.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * Some write time fixes.
 
 
 o   Andrew Tridgell <tridge@samba.org>
@@ -140,8 +153,6 @@ Commit Highlights:
 ------------------
 
 o   Michael Adam <obnox@samba.org>
-    * BUG 5492: Fix RHEL SPEC file by removing libmsrpc stuff.
-    * BUG 5507: Fix several issues in the RHEL SPEC file.
     * BUG 5609: Remove configure option "--with-libdir" and add
       "--with-modulesdir".
     * Extend "net rpc vampire keytab" to support differential replication
@@ -154,7 +165,6 @@ o   Jeremy Allison <jra@samba.org>
     * Add new "winbind reconnect delay" parameter.
     * Make the change to smbcontrol for "all" to mean broadcast,
       and "smbd" to mean the main smb daemon.
-    * Write times code update.
 
 
 o   Guenther Deschner <gd@samba.org>
@@ -166,10 +176,6 @@ o   Volker Lendecke <vl@samba.org>
     * Rework of the Winbind idmap backend.
     * Fix calculation of useable_space for trans2 and nttrans replies.
     * Add mapping of generic bits when setting an NFSv4 ACL.
-
-
-o   Stefan Metzmacher <metze@samba.org>
-    * Some write time fixes.
 
 
 ######################################################################
