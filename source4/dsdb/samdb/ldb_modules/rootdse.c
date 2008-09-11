@@ -4,7 +4,7 @@
    rootDSE ldb module
 
    Copyright (C) Andrew Tridgell 2005
-   Copyright (C) Simo Sorce 2005
+   Copyright (C) Simo Sorce 2005-2008
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -221,40 +221,77 @@ failed:
 
 struct rootdse_context {
 	struct ldb_module *module;
-	void *up_context;
-	int (*up_callback)(struct ldb_context *, void *, struct ldb_reply *);
-
-	const char * const * attrs;
+	struct ldb_request *req;
 };
 
-static int rootdse_callback(struct ldb_context *ldb, void *context, struct ldb_reply *ares)
+static struct rootdse_context *rootdse_init_context(struct ldb_module *module,
+						    struct ldb_request *req)
 {
 	struct rootdse_context *ac;
 
-	ac = talloc_get_type(context, struct rootdse_context);
+	ac = talloc_zero(req, struct rootdse_context);
+	if (ac == NULL) {
+		ldb_set_errstring(module->ldb, "Out of Memory");
+		return NULL;
+	}
 
-	if (ares->type == LDB_REPLY_ENTRY) {
+	ac->module = module;
+	ac->req = req;
+
+	return ac;
+}
+
+static int rootdse_callback(struct ldb_request *req, struct ldb_reply *ares)
+{
+	struct rootdse_context *ac;
+	int ret;
+
+	ac = talloc_get_type(req->context, struct rootdse_context);
+
+	if (!ares) {
+		return ldb_module_done(ac->req, NULL, NULL,
+					LDB_ERR_OPERATIONS_ERROR);
+	}
+	if (ares->error != LDB_SUCCESS) {
+		return ldb_module_done(ac->req, ares->controls,
+					ares->response, ares->error);
+	}
+
+	switch (ares->type) {
+	case LDB_REPLY_ENTRY:
 		/*
 		 * if the client explicit asks for the 'netlogon' attribute
 		 * the reply_entry needs to be skipped
 		 */
-		if (ac->attrs && ldb_attr_in_list(ac->attrs, "netlogon")) {
+		if (ac->req->op.search.attrs &&
+		    ldb_attr_in_list(ac->req->op.search.attrs, "netlogon")) {
 			talloc_free(ares);
 			return LDB_SUCCESS;
 		}
 
 		/* for each record returned post-process to add any dynamic
 		   attributes that have been asked for */
-		if (rootdse_add_dynamic(ac->module, ares->message, ac->attrs) != LDB_SUCCESS) {
-			goto error;
+		ret = rootdse_add_dynamic(ac->module, ares->message,
+					  ac->req->op.search.attrs);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(ares);
+			return ldb_module_done(ac->req, NULL, NULL, ret);
 		}
+
+		return ldb_module_send_entry(ac->req, ares->message);
+
+	case LDB_REPLY_REFERRAL:
+		/* should we allow the backend to return referrals in this case
+		 * ?? */
+		break;
+
+	case LDB_REPLY_DONE:
+		return ldb_module_done(ac->req, ares->controls,
+					ares->response, ares->error);
 	}
 
-	return ac->up_callback(ldb, ac->up_context, ares);
-
-error:
 	talloc_free(ares);
-	return LDB_ERR_OPERATIONS_ERROR;
+	return LDB_SUCCESS;
 }
 
 static int rootdse_search(struct ldb_module *module, struct ldb_request *req)
@@ -270,48 +307,25 @@ static int rootdse_search(struct ldb_module *module, struct ldb_request *req)
 		return ldb_next_request(module, req);
 	}
 
-	ac = talloc(req, struct rootdse_context);
+	ac = rootdse_init_context(module, req);
 	if (ac == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ac->module = module;
-	ac->up_context = req->context;
-	ac->up_callback = req->callback;
-	ac->attrs = req->op.search.attrs;
-
-	down_req = talloc_zero(req, struct ldb_request);
-	if (down_req == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	down_req->operation = req->operation;
 	/* in our db we store the rootDSE with a DN of @ROOTDSE */
-	down_req->op.search.base = ldb_dn_new(down_req, module->ldb, "@ROOTDSE");
-	down_req->op.search.scope = LDB_SCOPE_BASE;
-	down_req->op.search.tree = ldb_parse_tree(down_req, NULL);
-	if (down_req->op.search.base == NULL || down_req->op.search.tree == NULL) {
-		ldb_oom(module->ldb);
-		talloc_free(down_req);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	down_req->op.search.attrs = req->op.search.attrs;
-	down_req->controls = req->controls;
-
-	down_req->context = ac;
-	down_req->callback = rootdse_callback;
-	ldb_set_timeout_from_prev_req(module->ldb, req, down_req);
-
-	/* perform the search */
-	ret = ldb_next_request(module, down_req);
-
-	/* do not free down_req as the call results may be linked to it,
-	 * it will be freed when the upper level request get freed */
-	if (ret == LDB_SUCCESS) {
-		req->handle = down_req->handle;
+	ret = ldb_build_search_req(&down_req, module->ldb, ac,
+					ldb_dn_new(ac, module->ldb, "@ROOTDSE"),
+					LDB_SCOPE_BASE,
+					NULL,
+					req->op.search.attrs,
+					req->controls,
+					ac, rootdse_callback,
+					req);
+	if (ret != LDB_SUCCESS) {
+		return ret;
 	}
 
-	return ret;
+	return ldb_next_request(module, down_req);
 }
 
 static int rootdse_register_control(struct ldb_module *module, struct ldb_request *req)
@@ -332,9 +346,9 @@ static int rootdse_register_control(struct ldb_module *module, struct ldb_reques
 	priv->num_controls += 1;
 	priv->controls = list;
 
-	return LDB_SUCCESS;
+	return ldb_module_done(req, NULL, NULL, LDB_SUCCESS);
 }
- 
+
 static int rootdse_register_partition(struct ldb_module *module, struct ldb_request *req)
 {
 	struct private_data *priv = talloc_get_type(module->private_data, struct private_data);
@@ -353,9 +367,9 @@ static int rootdse_register_partition(struct ldb_module *module, struct ldb_requ
 	priv->num_partitions += 1;
 	priv->partitions = list;
 
-	return LDB_SUCCESS;
+	return ldb_module_done(req, NULL, NULL, LDB_SUCCESS);
 }
- 
+
 
 static int rootdse_request(struct ldb_module *module, struct ldb_request *req)
 {

@@ -43,6 +43,39 @@ struct update_kt_private {
 	struct dn_list *changed_dns;
 };
 
+struct update_kt_ctx {
+	struct ldb_module *module;
+	struct ldb_request *req;
+
+	struct ldb_dn *dn;
+	bool delete;
+
+	struct ldb_reply *op_reply;
+	bool found;
+};
+
+struct update_kt_ctx *update_kt_ctx_init(struct ldb_module *module,
+					 struct ldb_request *req)
+{
+	struct update_kt_ctx *ac;
+
+	ac = talloc_zero(req, struct update_kt_ctx);
+	if (ac == NULL) {
+		ldb_oom(module->ldb);
+		return NULL;
+	}
+
+	ac->module = module;
+	ac->req = req;
+
+	return ac;
+}
+
+/* FIXME: too many semi-async searches here for my taste, direct and indirect as
+ * cli_credentials_set_secrets() performs a sync ldb search.
+ * Just hope we are lucky and nothing breaks (using the tdb backend masks a lot
+ * of async issues). -SSS
+ */
 static int add_modified(struct ldb_module *module, struct ldb_dn *dn, bool delete) {
 	struct update_kt_private *data = talloc_get_type(module->private_data, struct update_kt_private);
 	struct dn_list *item;
@@ -80,7 +113,7 @@ static int add_modified(struct ldb_module *module, struct ldb_dn *dn, bool delet
 		ldb_oom(module->ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	
+
 	item->creds = cli_credentials_init(item);
 	if (!item->creds) {
 		DEBUG(1, ("cli_credentials_init failed!"));
@@ -90,7 +123,7 @@ static int add_modified(struct ldb_module *module, struct ldb_dn *dn, bool delet
 	}
 
 	cli_credentials_set_conf(item->creds, ldb_get_opaque(module->ldb, "loadparm"));
-	status = cli_credentials_set_secrets(item->creds, ldb_get_opaque(module->ldb, "EventContext"), ldb_get_opaque(module->ldb, "loadparm"), module->ldb, NULL, filter);
+	status = cli_credentials_set_secrets(item->creds, ldb_get_event_context(module->ldb), ldb_get_opaque(module->ldb, "loadparm"), module->ldb, NULL, filter);
 	talloc_free(filter);
 	if (NT_STATUS_IS_OK(status)) {
 		if (delete) {
@@ -105,60 +138,237 @@ static int add_modified(struct ldb_module *module, struct ldb_dn *dn, bool delet
 	return LDB_SUCCESS;
 }
 
-/* add */
-static int update_kt_add(struct ldb_module *module, struct ldb_request *req)
+static int ukt_search_modified(struct update_kt_ctx *ac);
+
+static int update_kt_op_callback(struct ldb_request *req,
+				 struct ldb_reply *ares)
 {
+	struct update_kt_ctx *ac;
 	int ret;
-	ret = ldb_next_request(module, req);
+
+	ac = talloc_get_type(req->context, struct update_kt_ctx);
+
+	if (!ares) {
+		return ldb_module_done(ac->req, NULL, NULL,
+					LDB_ERR_OPERATIONS_ERROR);
+	}
+	if (ares->error != LDB_SUCCESS) {
+		return ldb_module_done(ac->req, ares->controls,
+					ares->response, ares->error);
+	}
+
+	if (ares->type != LDB_REPLY_DONE) {
+		ldb_set_errstring(ac->module->ldb, "Invalid request type!\n");
+		return ldb_module_done(ac->req, NULL, NULL,
+					LDB_ERR_OPERATIONS_ERROR);
+	}
+
+	if (ac->delete) {
+		return ldb_module_done(ac->req, ares->controls,
+					ares->response, LDB_SUCCESS);
+	}
+
+	ac->op_reply = talloc_steal(ac, ares);
+
+	ret = ukt_search_modified(ac);
+	if (ret != LDB_SUCCESS) {
+		return ldb_module_done(ac->req, NULL, NULL, ret);
+	}
+
+	return LDB_SUCCESS;
+}
+
+static int ukt_del_op(struct update_kt_ctx *ac)
+{
+	struct ldb_request *down_req;
+	int ret;
+
+	ret = ldb_build_del_req(&down_req, ac->module->ldb, ac,
+				ac->dn,
+				ac->req->controls,
+				ac, update_kt_op_callback,
+				ac->req);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
-	return add_modified(module, req->op.add.message->dn, false);
+	return ldb_next_request(ac->module, down_req);
+}
+
+static int ukt_search_modified_callback(struct ldb_request *req,
+					struct ldb_reply *ares)
+{
+	struct update_kt_ctx *ac;
+	int ret;
+
+	ac = talloc_get_type(req->context, struct update_kt_ctx);
+
+	if (!ares) {
+		return ldb_module_done(ac->req, NULL, NULL,
+					LDB_ERR_OPERATIONS_ERROR);
+	}
+	if (ares->error != LDB_SUCCESS) {
+		return ldb_module_done(ac->req, ares->controls,
+					ares->response, ares->error);
+	}
+
+	switch (ares->type) {
+	case LDB_REPLY_ENTRY:
+
+		ac->found = true;
+		break;
+
+	case LDB_REPLY_REFERRAL:
+		/* ignore */
+		break;
+
+	case LDB_REPLY_DONE:
+
+		if (ac->found) {
+			/* do the dirty sync job here :/ */
+			ret = add_modified(ac->module, ac->dn, ac->delete);
+		}
+
+		if (ac->delete) {
+			ret = ukt_del_op(ac);
+			if (ret != LDB_SUCCESS) {
+				return ldb_module_done(ac->req,
+							NULL, NULL, ret);
+			}
+			break;
+		}
+
+		return ldb_module_done(ac->req, ac->op_reply->controls,
+					ac->op_reply->response, LDB_SUCCESS);
+	}
+
+	talloc_free(ares);
+	return LDB_SUCCESS;
+}
+
+static int ukt_search_modified(struct update_kt_ctx *ac)
+{
+	static const char * const attrs[] = { "distinguishedName", NULL };
+	struct ldb_request *search_req;
+	int ret;
+
+	ret = ldb_build_search_req(&search_req, ac->module->ldb, ac,
+				   ac->dn, LDB_SCOPE_BASE,
+				   "(&(objectClass=kerberosSecret)"
+				     "(privateKeytab=*))", attrs,
+				   NULL,
+				   ac, ukt_search_modified_callback,
+				   ac->req);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	return ldb_next_request(ac->module, search_req);
+}
+
+
+/* add */
+static int update_kt_add(struct ldb_module *module, struct ldb_request *req)
+{
+	struct update_kt_ctx *ac;
+	struct ldb_request *down_req;
+	int ret;
+
+	ac = update_kt_ctx_init(module, req);
+	if (ac == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	ac->dn = req->op.add.message->dn;
+
+	ret = ldb_build_add_req(&down_req, module->ldb, ac,
+				req->op.add.message,
+				req->controls,
+				ac, update_kt_op_callback,
+				req);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	return ldb_next_request(module, down_req);
 }
 
 /* modify */
 static int update_kt_modify(struct ldb_module *module, struct ldb_request *req)
 {
+	struct update_kt_ctx *ac;
+	struct ldb_request *down_req;
 	int ret;
-	ret = ldb_next_request(module, req);
+
+	ac = update_kt_ctx_init(module, req);
+	if (ac == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	ac->dn = req->op.mod.message->dn;
+
+	ret = ldb_build_mod_req(&down_req, module->ldb, ac,
+				req->op.mod.message,
+				req->controls,
+				ac, update_kt_op_callback,
+				req);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
-	return add_modified(module, req->op.mod.message->dn, false);
+
+	return ldb_next_request(module, down_req);
 }
 
 /* delete */
 static int update_kt_delete(struct ldb_module *module, struct ldb_request *req)
 {
-	int ret;
-	/* Before we delete it, record the details */
-	ret = add_modified(module, req->op.del.dn, true);
-	if (ret != LDB_SUCCESS) {
-		return ret;
+	struct update_kt_ctx *ac;
+
+	ac = update_kt_ctx_init(module, req);
+	if (ac == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	return ldb_next_request(module, req);
+
+	ac->dn = req->op.del.dn;
+	ac->delete = true;
+
+	return ukt_search_modified(ac);
 }
 
 /* rename */
 static int update_kt_rename(struct ldb_module *module, struct ldb_request *req)
 {
+	struct update_kt_ctx *ac;
+	struct ldb_request *down_req;
 	int ret;
-	ret = ldb_next_request(module, req);
+
+	ac = update_kt_ctx_init(module, req);
+	if (ac == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	ac->dn = req->op.rename.newdn;
+
+	ret = ldb_build_rename_req(&down_req, module->ldb, ac,
+				req->op.rename.olddn,
+				req->op.rename.newdn,
+				req->controls,
+				ac, update_kt_op_callback,
+				req);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
-	return add_modified(module, req->op.rename.newdn, false);
+
+	return ldb_next_request(module, down_req);
 }
 
 /* end a transaction */
 static int update_kt_end_trans(struct ldb_module *module)
 {
 	struct update_kt_private *data = talloc_get_type(module->private_data, struct update_kt_private);
-	
 	struct dn_list *p;
+
 	for (p=data->changed_dns; p; p = p->next) {
 		int kret;
-		kret = cli_credentials_update_keytab(p->creds, ldb_get_opaque(module->ldb, "EventContext"), ldb_get_opaque(module->ldb, "loadparm"));
+		kret = cli_credentials_update_keytab(p->creds, ldb_get_event_context(module->ldb), ldb_get_opaque(module->ldb, "loadparm"));
 		if (kret != 0) {
 			talloc_free(data->changed_dns);
 			data->changed_dns = NULL;
@@ -169,6 +379,7 @@ static int update_kt_end_trans(struct ldb_module *module)
 
 	talloc_free(data->changed_dns);
 	data->changed_dns = NULL;
+
 	return ldb_next_end_trans(module);
 }
 
@@ -176,7 +387,7 @@ static int update_kt_end_trans(struct ldb_module *module)
 static int update_kt_del_trans(struct ldb_module *module)
 {
 	struct update_kt_private *data = talloc_get_type(module->private_data, struct update_kt_private);
-	
+
 	talloc_free(data->changed_dns);
 	data->changed_dns = NULL;
 
