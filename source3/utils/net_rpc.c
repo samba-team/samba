@@ -6326,7 +6326,8 @@ bool net_rpc_check(struct net_context *c, unsigned flags)
 	if (!attempt_netbios_session_request(&cli, global_myname(),
 					     server_name, &server_ss))
 		goto done;
-	if (!cli_negprot(cli))
+	status = cli_negprot(cli);
+	if (!NT_STATUS_IS_OK(status))
 		goto done;
 	if (cli->protocol < PROTOCOL_NT1)
 		goto done;

@@ -212,8 +212,10 @@ static struct cli_state *connect_one(char *share, int snum)
 
 	DEBUG(4,(" session request ok\n"));
 
-	if (!cli_negprot(c)) {
-		DEBUG(0,("protocol negotiation failed\n"));
+	status = cli_negprot(c);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("protocol negotiation failed: %s\n",
+			  nt_errstr(status)));
 		cli_shutdown(c);
 		return NULL;
 	}

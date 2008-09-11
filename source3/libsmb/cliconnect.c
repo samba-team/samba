@@ -1241,7 +1241,7 @@ void cli_negprot_sendsync(struct cli_state *cli)
  Send a negprot command.
 ****************************************************************************/
 
-bool cli_negprot(struct cli_state *cli)
+NTSTATUS cli_negprot(struct cli_state *cli)
 {
 	char *p;
 	int numprots;
@@ -1279,21 +1279,25 @@ bool cli_negprot(struct cli_state *cli)
 	SCVAL(smb_buf(cli->outbuf),0,2);
 
 	cli_send_smb(cli);
-	if (!cli_receive_smb(cli))
-		return False;
+	if (!cli_receive_smb(cli)) {
+		return NT_STATUS_UNEXPECTED_IO_ERROR;
+	}
 
 	show_msg(cli->inbuf);
 
-	if (cli_is_error(cli) ||
-	    ((int)SVAL(cli->inbuf,smb_vwv0) >= numprots)) {
-		return(False);
+	if (cli_is_error(cli)) {
+		return cli_nt_error(cli);
+	}
+
+	if ((int)SVAL(cli->inbuf,smb_vwv0) >= numprots) {
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
 
 	cli->protocol = prots[SVAL(cli->inbuf,smb_vwv0)].prot;	
 
 	if ((cli->protocol < PROTOCOL_NT1) && cli->sign_info.mandatory_signing) {
 		DEBUG(0,("cli_negprot: SMB signing is mandatory and the selected protocol level doesn't support it.\n"));
-		return False;
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	if (cli->protocol >= PROTOCOL_NT1) {    
@@ -1331,7 +1335,7 @@ bool cli_negprot(struct cli_state *cli)
 			/* Fail if server says signing is mandatory and we don't want to support it. */
 			if (!cli->sign_info.allow_smb_signing) {
 				DEBUG(0,("cli_negprot: SMB signing is mandatory and we have disabled it.\n"));
-				return False;
+				return NT_STATUS_ACCESS_DENIED;
 			}
 			cli->sign_info.negotiated_smb_signing = True;
 			cli->sign_info.mandatory_signing = True;
@@ -1339,7 +1343,7 @@ bool cli_negprot(struct cli_state *cli)
 			/* Fail if client says signing is mandatory and the server doesn't support it. */
 			if (!(cli->sec_mode & NEGOTIATE_SECURITY_SIGNATURES_ENABLED)) {
 				DEBUG(1,("cli_negprot: SMB signing is mandatory and the server doesn't support it.\n"));
-				return False;
+				return NT_STATUS_ACCESS_DENIED;
 			}
 			cli->sign_info.negotiated_smb_signing = True;
 			cli->sign_info.mandatory_signing = True;
@@ -1381,7 +1385,7 @@ bool cli_negprot(struct cli_state *cli)
 	if (getenv("CLI_FORCE_ASCII"))
 		cli->capabilities &= ~CAP_UNICODE;
 
-	return True;
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
@@ -1667,12 +1671,9 @@ again:
 		cli->fallback_after_kerberos = true;
 	}
 
-	if (!cli_negprot(cli)) {
-		DEBUG(1,("failed negprot\n"));
-		nt_status = cli_nt_error(cli);
-		if (NT_STATUS_IS_OK(nt_status)) {
-			nt_status = NT_STATUS_UNSUCCESSFUL;
-		}
+	nt_status = cli_negprot(cli);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DEBUG(1, ("failed negprot: %s\n", nt_errstr(nt_status)));
 		cli_shutdown(cli);
 		return nt_status;
 	}

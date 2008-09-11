@@ -433,7 +433,9 @@ again:
 
 	DEBUG(4,(" session request ok\n"));
 
-	if (!cli_negprot(c)) {
+	status = cli_negprot(c);
+
+	if (!NT_STATUS_IS_OK(status)) {
 		cli_shutdown(c);
 		errno = ETIMEDOUT;
 		return NULL;

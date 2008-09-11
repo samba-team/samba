@@ -100,7 +100,8 @@ static void sync_child(char *name, int nm_type,
 		return;
 	}
 
-	if (!cli_negprot(cli)) {
+	status = cli_negprot(cli);
+	if (!NT_STATUS_IS_OK(status)) {
 		cli_shutdown(cli);
 		return;
 	}
