@@ -94,6 +94,8 @@ static void sessionsetup_start_signing_engine(const auth_serversupplied_info *se
 
 /****************************************************************************
  Send a security blob via a session setup reply.
+ We must already have called set_message(outbuf,4,0,True)
+ before calling this function.
 ****************************************************************************/
 
 static BOOL reply_sesssetup_blob(connection_struct *conn, char *outbuf,
@@ -104,8 +106,6 @@ static BOOL reply_sesssetup_blob(connection_struct *conn, char *outbuf,
 	if (!NT_STATUS_IS_OK(nt_status) && !NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		ERROR_NT(nt_status_squash(nt_status));
 	} else {
-		set_message(outbuf,4,0,True);
-
 		nt_status = nt_status_squash(nt_status);
 		SIVAL(outbuf, smb_rcls, NT_STATUS_V(nt_status));
 		SSVAL(outbuf, smb_vwv0, 0xFF); /* no chaining possible */
@@ -514,13 +514,14 @@ static int reply_spnego_kerberos(connection_struct *conn,
 
 	SAFE_FREE(client);
 
+	set_message(outbuf,4,0,True);
+
 	if (sess_vuid == UID_FIELD_INVALID ) {
 		ret = NT_STATUS_LOGON_FAILURE;
 	} else {
 		/* current_user_info is changed on new vuid */
 		reload_services( True );
 
-		set_message(outbuf,4,0,True);
 		SSVAL(outbuf, smb_vwv3, 0);
 			
 		if (server_info->guest) {
@@ -577,6 +578,8 @@ static BOOL reply_spnego_ntlmssp(connection_struct *conn, char *inbuf, char *out
 					    (*auth_ntlmssp_state)->ntlmssp_state->domain);
 	}
 
+	set_message(outbuf,4,0,True);
+
 	if (NT_STATUS_IS_OK(nt_status)) {
 		int sess_vuid;
 		DATA_BLOB nullblob = data_blob(NULL, 0);
@@ -593,7 +596,6 @@ static BOOL reply_spnego_ntlmssp(connection_struct *conn, char *inbuf, char *out
 			/* current_user_info is changed on new vuid */
 			reload_services( True );
 
-			set_message(outbuf,4,0,True);
 			SSVAL(outbuf, smb_vwv3, 0);
 			
 			if (server_info->guest) {
