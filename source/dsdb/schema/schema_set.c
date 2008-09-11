@@ -115,24 +115,17 @@ static int dsdb_schema_set_attributes(struct ldb_context *ldb, struct dsdb_schem
 	}
 
 
-	ret = ldb_transaction_start(ldb);
-	if (ret != LDB_SUCCESS) {
-		return ret;
-	}
-
 	/* Try to avoid churning the attributes too much - we only want to do this if they have changed */
 	ret = ldb_search_exp_fmt(ldb, mem_ctx, &res, msg->dn, LDB_SCOPE_BASE, NULL, "dn=%s", ldb_dn_get_linearized(msg->dn));
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 		ret = ldb_add(ldb, msg);
 	} else if (ret != LDB_SUCCESS) {
 		talloc_free(mem_ctx);
-		ldb_transaction_cancel(ldb);
 		return ret;
 	} else {
 
 		if (res->count != 1) {
 			talloc_free(mem_ctx);
-			ldb_transaction_cancel(ldb);
 			return LDB_ERR_NO_SUCH_OBJECT;
 		}
 		
@@ -149,10 +142,8 @@ static int dsdb_schema_set_attributes(struct ldb_context *ldb, struct dsdb_schem
 	if (ret == LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS) {
 		/* We might be on a read-only DB */
 		talloc_free(mem_ctx);
-		ret = ldb_transaction_cancel(ldb);
 		return ret;
 	} else if (ret != LDB_SUCCESS) {
-		ldb_transaction_cancel(ldb);
 		return ret;
 	}
 
@@ -163,12 +154,10 @@ static int dsdb_schema_set_attributes(struct ldb_context *ldb, struct dsdb_schem
 		ret = ldb_add(ldb, msg_idx);
 	} else if (ret != LDB_SUCCESS) {
 		talloc_free(mem_ctx);
-		ldb_transaction_cancel(ldb);
 		return ret;
 	} else {
 		if (res_idx->count != 1) {
 			talloc_free(mem_ctx);
-			ldb_transaction_cancel(ldb);
 			return LDB_ERR_NO_SUCH_OBJECT;
 		}
 		
@@ -183,11 +172,7 @@ static int dsdb_schema_set_attributes(struct ldb_context *ldb, struct dsdb_schem
 	if (ret == LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS) {
 		/* We might be on a read-only DB */
 		talloc_free(mem_ctx);
-		return ldb_transaction_cancel(ldb);
-	} else if (ret == LDB_SUCCESS) {
-		ret = ldb_transaction_commit(ldb);
-	} else {
-		ldb_transaction_cancel(ldb);
+		ret = LDB_SUCCESS;
 	}
 	talloc_free(mem_ctx);
 	return ret;
