@@ -746,7 +746,7 @@ cacl_get(SMBCCTX *context,
 	SMB_OFF_T size = 0;
 	uint16 mode = 0;
 	SMB_INO_T ino = 0;
-        struct cli_state *cli = srv->cli;
+	struct cli_state *cli = srv->cli;
         struct {
                 const char * create_time_attr;
                 const char * access_time_attr;
@@ -883,30 +883,41 @@ cacl_get(SMBCCTX *context,
          * attributes have been requested...
          */
         if (ipc_cli && (all || some_nt || all_nt_acls)) {
+		char *targetpath = NULL;
+	        struct cli_state *targetcli = NULL;
+
                 /* Point to the portion after "system.nt_sec_desc." */
                 name += 19;     /* if (all) this will be invalid but unused */
-                
-                /* ... then obtain any NT attributes which were requested */
-                fnum = cli_nt_create(cli, filename, CREATE_ACCESS_READ);
-                
-                if (fnum == -1) {
-                        DEBUG(5, ("cacl_get failed to open %s: %s\n",
-                                  filename, cli_errstr(cli)));
-                        errno = 0;
+
+		if (!cli_resolve_path(ctx, "", cli, filename,
+				&targetcli, &targetpath)) {
+			DEBUG(5, ("cacl_get Could not resolve %s\n",
+				filename));
+                        errno = ENOENT;
                         return -1;
-                }
-                
-                sd = cli_query_secdesc(cli, fnum, ctx);
-                
+		}
+
+                /* ... then obtain any NT attributes which were requested */
+                fnum = cli_nt_create(targetcli, targetpath, CREATE_ACCESS_READ);
+
+                if (fnum == -1) {
+			DEBUG(5, ("cacl_get failed to open %s: %s\n",
+				targetpath, cli_errstr(targetcli)));
+			errno = 0;
+			return -1;
+		}
+
+		sd = cli_query_secdesc(targetcli, fnum, ctx);
+
                 if (!sd) {
                         DEBUG(5,
                               ("cacl_get Failed to query old descriptor\n"));
                         errno = 0;
                         return -1;
                 }
-                
-                cli_close(cli, fnum);
-                
+
+                cli_close(targetcli, fnum);
+
                 if (! exclude_nt_revision) {
                         if (all || all_nt) {
                                 if (determine_size) {
@@ -1503,7 +1514,9 @@ cacl_set(TALLOC_CTX *ctx,
 	int ret = 0;
         char *p;
         bool numeric = True;
-        
+	char *targetpath = NULL;
+	struct cli_state *targetcli = NULL;
+
         /* the_acl will be null for REMOVE_ALL operations */
         if (the_acl) {
                 numeric = ((p = strchr(the_acl, ':')) != NULL &&
@@ -1532,39 +1545,46 @@ cacl_set(TALLOC_CTX *ctx,
 		errno = EINVAL;
 		return -1;
 	}
-        
+
+	if (!cli_resolve_path(ctx, "", cli, filename,
+				&targetcli, &targetpath)) {
+		DEBUG(5,("cacl_set: Could not resolve %s\n", filename));
+		errno = ENOENT;
+		return -1;
+	}
+
 	/* The desired access below is the only one I could find that works
 	   with NT4, W2KP and Samba */
-        
-	fnum = cli_nt_create(cli, filename, CREATE_ACCESS_READ);
-        
+
+	fnum = cli_nt_create(targetcli, targetpath, CREATE_ACCESS_READ);
+
 	if (fnum == -1) {
                 DEBUG(5, ("cacl_set failed to open %s: %s\n",
-                          filename, cli_errstr(cli)));
+                          targetpath, cli_errstr(targetcli)));
                 errno = 0;
 		return -1;
 	}
-        
-	old = cli_query_secdesc(cli, fnum, ctx);
-        
+
+	old = cli_query_secdesc(targetcli, fnum, ctx);
+
 	if (!old) {
                 DEBUG(5, ("cacl_set Failed to query old descriptor\n"));
                 errno = 0;
 		return -1;
 	}
-        
-	cli_close(cli, fnum);
-        
+
+	cli_close(targetcli, fnum);
+
 	switch (mode) {
 	case SMBC_XATTR_MODE_REMOVE_ALL:
                 old->dacl->num_aces = 0;
                 dacl = old->dacl;
                 break;
-                
+
         case SMBC_XATTR_MODE_REMOVE:
 		for (i=0;sd->dacl && i<sd->dacl->num_aces;i++) {
 			bool found = False;
-                        
+
 			for (j=0;old->dacl && j<old->dacl->num_aces;j++) {
                                 if (sec_ace_equal(&sd->dacl->aces[i],
                                                   &old->dacl->aces[j])) {
@@ -1642,25 +1662,26 @@ cacl_set(TALLOC_CTX *ctx,
 	sd = make_sec_desc(ctx, old->revision, SEC_DESC_SELF_RELATIVE,
 			   owner_sid, group_sid, NULL, dacl, &sd_size);
         
-	fnum = cli_nt_create(cli, filename,
+	fnum = cli_nt_create(targetcli, targetpath,
                              WRITE_DAC_ACCESS | WRITE_OWNER_ACCESS);
         
 	if (fnum == -1) {
 		DEBUG(5, ("cacl_set failed to open %s: %s\n",
-                          filename, cli_errstr(cli)));
+                          targetpath, cli_errstr(targetcli)));
                 errno = 0;
 		return -1;
 	}
         
-	if (!cli_set_secdesc(cli, fnum, sd)) {
-		DEBUG(5, ("ERROR: secdesc set failed: %s\n", cli_errstr(cli)));
+	if (!cli_set_secdesc(targetcli, fnum, sd)) {
+		DEBUG(5, ("ERROR: secdesc set failed: %s\n",
+			cli_errstr(targetcli)));
 		ret = -1;
 	}
         
 	/* Clean up */
         
 failed:
-	cli_close(cli, fnum);
+	cli_close(targetcli, fnum);
         
         if (err != 0) {
                 errno = err;
