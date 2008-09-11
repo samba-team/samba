@@ -523,7 +523,6 @@ sub provision($$$$$$)
 	my $winbindd_socket_dir = "$prefix_abs/winbindd_socket";
 	my $winbindd_privileged_socket_dir = "$prefix_abs/winbindd_privileged_socket";
 	my $ntp_signd_socket_dir = "$prefix_abs/ntp_signd_socket";
-	my $winbindd_priv_pipe_dir = "$privatedir/smbd.tmp/winbind_pipe";
 	my $nsswrap_passwd = "$etcdir/passwd";
 	my $nsswrap_group = "$etcdir/group";
 
@@ -739,7 +738,6 @@ nogroup:x:65534:nobody
 		PASSWORD => $password,
 		LDAPDIR => $ldapdir,
 		WINBINDD_SOCKET_DIR => $winbindd_socket_dir,
-		WINBINDD_PRIV_PIPE_DIR => $winbindd_priv_pipe_dir,
 		NCALRPCDIR => $ncalrpcdir,
 		LOCKDIR => $lockdir,
 		CONFIGURATION => $configuration,

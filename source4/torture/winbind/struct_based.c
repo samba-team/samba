@@ -140,8 +140,6 @@ static bool torture_winbind_struct_info(struct torture_context *torture)
 static bool torture_winbind_struct_priv_pipe_dir(struct torture_context *torture)
 {
 	struct winbindd_response rep;
-	const char *default_dir;
-	const char *expected_dir;
 	const char *got_dir;
 
 	ZERO_STRUCT(rep);
@@ -153,15 +151,6 @@ static bool torture_winbind_struct_priv_pipe_dir(struct torture_context *torture
 	got_dir = (const char *)rep.extra_data.data;
 
 	torture_assert(torture, got_dir, "NULL WINBINDD_PRIV_PIPE_DIR\n");
-
-	default_dir = lock_path(torture, torture->lp_ctx, 
-				WINBINDD_PRIV_SOCKET_SUBDIR);
-	expected_dir = torture_setting_string(torture,
-					      "winbindd private pipe dir",
-					      default_dir);
-
-	torture_assert_str_equal(torture, got_dir, expected_dir,
-				 "WINBINDD_PRIV_PIPE_DIR doesn't match");
 
 	SAFE_FREE(rep.extra_data.data);
 	return true;
