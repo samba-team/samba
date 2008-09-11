@@ -83,6 +83,10 @@ o   David Leonard <David.Leonard@quest.com>
     * BUG 4516: No IPv6 on Solaris 2.6.
 
 
+o   Simo Sorce <idra@samba.org>
+    * BUG 5571: Fix group memeberships in Winbind.
+
+
 o   Andrew Tridgell <tridge@samba.org>
     * Avoid a race condition in glibc between AIO and setresuid().
     * Add missing become root for AIO operations.
