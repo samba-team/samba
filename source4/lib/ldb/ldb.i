@@ -737,15 +737,14 @@ typedef struct ldb_context {
                            attrs,
                            controls,
                            res,
-                           ldb_search_default_callback);
+                           ldb_search_default_callback,
+                           NULL);
 
             if (ret != LDB_SUCCESS) {
                 talloc_free(res);
                 return ret;
             }
 
-            ldb_set_timeout($self, req, 0); /* use default timeout */
-                
             ret = ldb_request($self, req);
                 
             if (ret == LDB_SUCCESS) {

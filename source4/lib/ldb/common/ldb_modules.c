@@ -1,7 +1,7 @@
 /* 
    ldb database library
 
-   Copyright (C) Simo Sorce  2004
+   Copyright (C) Simo Sorce  2004-2008
 
      ** NOTE! The following LGPL license applies to the ldb
      ** library. This does NOT imply that all of Samba is released
@@ -486,6 +486,12 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 int ldb_next_request(struct ldb_module *module, struct ldb_request *request)
 {
 	int ret;
+
+	if (request->callback == NULL) {
+		ldb_set_errstring(module->ldb, "Requests MUST define callbacks");
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+
 	switch (request->operation) {
 	case LDB_SEARCH:
 		FIND_OP(module, search);
@@ -553,6 +559,139 @@ int ldb_next_del_trans(struct ldb_module *module)
 {
 	FIND_OP(module, del_transaction);
 	return module->ops->del_transaction(module);
+}
+
+struct ldb_handle *ldb_handle_new(TALLOC_CTX *mem_ctx, struct ldb_context *ldb)
+{
+	struct ldb_handle *h;
+
+	h = talloc_zero(mem_ctx, struct ldb_handle);
+	if (h == NULL) {
+		ldb_set_errstring(ldb, "Out of Memory");
+		return NULL;
+	}
+
+	h->status = LDB_SUCCESS;
+	h->state = LDB_ASYNC_INIT;
+	h->ldb = ldb;
+
+	return h;
+}
+
+/* calls the request callback to send an entry
+ *
+ * params:
+ *      req: the original request passed to your module
+ *      msg: reply message (must be a talloc pointer, and it will be stolen
+ *           on the ldb_reply that is sent to the callback)
+ */
+
+int ldb_module_send_entry(struct ldb_request *req,
+			  struct ldb_message *msg)
+{
+	struct ldb_reply *ares;
+
+	ares = talloc_zero(req, struct ldb_reply);
+	if (!ares) {
+		ldb_oom(req->handle->ldb);
+		req->callback(req, NULL);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	ares->type = LDB_REPLY_ENTRY;
+	ares->message = talloc_steal(ares, msg);
+	ares->error = LDB_SUCCESS;
+
+	return req->callback(req, ares);
+}
+
+/* calls the request callback to send an referrals
+ *
+ * params:
+ *      req: the original request passed to your module
+ *      ref: referral string (must be a talloc pointeri, steal)
+ */
+
+int ldb_module_send_referral(struct ldb_request *req,
+					   char *ref)
+{
+	struct ldb_reply *ares;
+
+	ares = talloc_zero(req, struct ldb_reply);
+	if (!ares) {
+		ldb_oom(req->handle->ldb);
+		req->callback(req, NULL);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	ares->type = LDB_REPLY_REFERRAL;
+	ares->referral = talloc_steal(ares, ref);
+	ares->error = LDB_SUCCESS;
+
+	return req->callback(req, ares);
+}
+
+/* calls the original request callback
+ *
+ * params:
+ * 	req:   the original request passed to your module
+ * 	ctrls: controls to send in the reply (must be a talloc pointer, steal)
+ * 	response: results for extended request (steal)
+ * 	error: LDB_SUCCESS for a succesful return
+ * 	       any other ldb error otherwise
+ */
+int ldb_module_done(struct ldb_request *req,
+		    struct ldb_control **ctrls,
+		    struct ldb_extended *response,
+		    int error)
+{
+	struct ldb_reply *ares;
+
+	ares = talloc_zero(req, struct ldb_reply);
+	if (!ares) {
+		ldb_oom(req->handle->ldb);
+		req->callback(req, NULL);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	ares->type = LDB_REPLY_DONE;
+	ares->controls = talloc_steal(ares, ctrls);
+	ares->response = talloc_steal(ares, response);
+	ares->error = error;
+
+	req->callback(req, ares);
+	return error;
+}
+
+/* to be used *only* in modules init functions.
+ * this function i synchronous and will register
+ * the requested OID in the rootdse module if present
+ * otherwise it will return an error */
+int ldb_mod_register_control(struct ldb_module *module, const char *oid)
+{
+	struct ldb_request *req;
+	int ret;
+
+	req = talloc_zero(module, struct ldb_request);
+	if (req == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	req->operation = LDB_REQ_REGISTER_CONTROL;
+	req->op.reg_control.oid = oid;
+	req->callback = ldb_op_default_callback;
+
+	ldb_set_timeout(module->ldb, req, 0);
+
+	req->handle = ldb_handle_new(req, module->ldb);
+	if (req->handle == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	ret = ldb_request(module->ldb, req);
+	if (ret == LDB_SUCCESS) {
+		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
+	}
+	talloc_free(req);
+
+	return ret;
 }
 
 #ifndef STATIC_LIBLDB_MODULES
