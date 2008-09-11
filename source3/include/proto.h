@@ -2364,7 +2364,7 @@ bool cli_ulogoff(struct cli_state *cli);
 bool cli_send_tconX(struct cli_state *cli, 
 		    const char *share, const char *dev, const char *pass, int passlen);
 bool cli_tdis(struct cli_state *cli);
-void cli_negprot_send(struct cli_state *cli);
+void cli_negprot_sendsync(struct cli_state *cli);
 bool cli_negprot(struct cli_state *cli);
 bool cli_session_request(struct cli_state *cli,
 			 struct nmb_name *calling, struct nmb_name *called);

@@ -1206,7 +1206,7 @@ bool cli_tdis(struct cli_state *cli)
  Send a negprot command.
 ****************************************************************************/
 
-void cli_negprot_send(struct cli_state *cli)
+void cli_negprot_sendsync(struct cli_state *cli)
 {
 	char *p;
 	int numprots;

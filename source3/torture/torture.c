@@ -2346,7 +2346,7 @@ static bool run_negprot_nowait(int dummy)
 	}
 
 	for (i=0;i<50000;i++) {
-		cli_negprot_send(cli);
+		cli_negprot_sendsync(cli);
 	}
 
 	if (!torture_close_connection(cli)) {
