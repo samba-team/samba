@@ -797,7 +797,8 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 						   result_attrs,
 						   NULL,
 						   res,
-						   ldb_search_default_callback);
+						   ldb_search_default_callback,
+						   NULL);
 			if (ret == LDB_SUCCESS) {
 				struct ldb_search_options_control *search_options;
 				search_options = talloc(req, struct ldb_search_options_control);
@@ -811,8 +812,6 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 				info1->status = DRSUAPI_DS_NAME_STATUS_RESOLVE_ERROR;
 				return WERR_OK;
 			}
-			
-			ldb_set_timeout(sam_ctx, req, 0); /* use default timeout */
 			
 			ret = ldb_request(sam_ctx, req);
 			
