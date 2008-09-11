@@ -521,7 +521,7 @@ static void display_finfo(file_info *finfo, const char *dir)
 		/* create absolute filename for cli_nt_create() FIXME */
 		afname = talloc_asprintf(ctx,
 					"%s%s%s",
-					client_get_cwd(),
+					dir,
 					CLI_DIRSEP_STR,
 					finfo->name);
 		if (!afname) {
