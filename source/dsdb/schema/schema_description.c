@@ -221,7 +221,7 @@ char *schema_class_description(TALLOC_CTX *mem_ctx,
 	
 	if (must) {
 		schema_entry = talloc_asprintf_append(schema_entry, 
-						      "MUST ( ");
+						      "MUST (%s", target == TARGET_AD_SCHEMA_SUBENTRY ? "" : " ");
 		IF_NULL_FAIL_RET(schema_entry);
 		
 		APPEND_ATTRS(must);
@@ -233,7 +233,7 @@ char *schema_class_description(TALLOC_CTX *mem_ctx,
 	
 	if (may) {
 		schema_entry = talloc_asprintf_append(schema_entry, 
-						      "MAY ( ");
+						      "MAY (%s", target == TARGET_AD_SCHEMA_SUBENTRY ? "" : " ");
 		IF_NULL_FAIL_RET(schema_entry);
 		
 		APPEND_ATTRS(may);
