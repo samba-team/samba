@@ -596,8 +596,9 @@ static bool fill_grent_mem(struct winbindd_domain *domain,
 			(*num_gr_mem)++;
 			DEBUG(10, ("buf_len + %d = %d\n", len + 1, buf_len));
 		} else {
-			DEBUG(10, ("appending %s at ndx %d\n", names[i], buf_ndx));
-			safe_strcpy(&buf[buf_ndx], names[i], len);
+			DEBUG(10, ("appending %s at ndx %d\n",
+				   names[i], buf_ndx));
+			parse_add_domuser(&buf[buf_ndx], names[i], &len);
 			buf_ndx += len;
 			buf[buf_ndx] = ',';
 			buf_ndx++;
