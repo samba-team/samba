@@ -3,6 +3,7 @@
 
    Copyright (C) Jelmer Vernooij 2005
    Copyright (C) Martin Kuehl <mkhl@samba.org> 2006
+   Copyright (C) Simo Sorce 2008
 
      ** NOTE! The following LGPL license applies to the ldb
      ** library. This does NOT imply that all of Samba is released
@@ -106,68 +107,22 @@ const struct ldb_map_context *map_get_context(struct ldb_module *module)
 }
 
 /* Create a generic request context. */
-static struct map_context *map_init_context(struct ldb_handle *h, struct ldb_request *req)
+struct map_context *map_init_context(struct ldb_module *module,
+					struct ldb_request *req)
 {
 	struct map_context *ac;
 
-	ac = talloc_zero(h, struct map_context);
+	ac = talloc_zero(req, struct map_context);
 	if (ac == NULL) {
-		map_oom(h->module);
+		ldb_set_errstring(module->ldb, "Out of Memory");
 		return NULL;
 	}
 
-	ac->module = h->module;
-	ac->orig_req = req;
+	ac->module = module;
+	ac->req = req;
 
 	return ac;
 }
-
-/* Create a search request context. */
-struct map_search_context *map_init_search_context(struct map_context *ac, struct ldb_reply *ares)
-{
-	struct map_search_context *sc;
-
-	sc = talloc_zero(ac, struct map_search_context);
-	if (sc == NULL) {
-		map_oom(ac->module);
-		return NULL;
-	}
-
-	sc->ac = ac;
-	sc->local_res = NULL;
-	sc->remote_res = ares;
-
-	return sc;
-}
-
-/* Create a request context and handle. */
-struct ldb_handle *map_init_handle(struct ldb_request *req, struct ldb_module *module)
-{
-	struct map_context *ac;
-	struct ldb_handle *h;
-
-	h = talloc_zero(req, struct ldb_handle);
-	if (h == NULL) {
-		map_oom(module);
-		return NULL;
-	}
-
-	h->module = module;
-
-	ac = map_init_context(h, req);
-	if (ac == NULL) {
-		talloc_free(h);
-		return NULL;
-	}
-
-	h->private_data = (void *)ac;
-
-	h->state = LDB_ASYNC_INIT;
-	h->status = LDB_SUCCESS;
-
-	return h;
-}
-
 
 /* Dealing with DNs for different partitions
  * ========================================= */
@@ -888,113 +843,52 @@ static int map_objectclass_convert_operator(struct ldb_module *module, void *mem
 /* Auxiliary request construction
  * ============================== */
 
-/* Store the DN of a single search result in context. */
-static int map_search_self_callback(struct ldb_context *ldb, void *context, struct ldb_reply *ares)
-{
-	struct map_context *ac;
-
-	if (context == NULL || ares == NULL) {
-		ldb_set_errstring(ldb, talloc_asprintf(ldb, "NULL Context or Result in callback"));
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	ac = talloc_get_type(context, struct map_context);
-
-	/* We are interested only in the single reply */
-	if (ares->type != LDB_REPLY_ENTRY) {
-		talloc_free(ares);
-		return LDB_SUCCESS;
-	}
-
-	/* We have already found a remote DN */
-	if (ac->local_dn) {
-		ldb_set_errstring(ldb, talloc_asprintf(ldb, "Too many results to base search"));
-		talloc_free(ares);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	/* Store local DN */
-	ac->local_dn = ares->message->dn;
-
-	return LDB_SUCCESS;
-}
-
 /* Build a request to search a record by its DN. */
-struct ldb_request *map_search_base_req(struct map_context *ac, struct ldb_dn *dn, const char * const *attrs, const struct ldb_parse_tree *tree, void *context, ldb_search_callback callback)
+struct ldb_request *map_search_base_req(struct map_context *ac, struct ldb_dn *dn, const char * const *attrs, const struct ldb_parse_tree *tree, void *context, ldb_map_callback_t callback)
 {
+	const struct ldb_parse_tree *search_tree;
 	struct ldb_request *req;
-
-	req = talloc_zero(ac, struct ldb_request);
-	if (req == NULL) {
-		map_oom(ac->module);
-		return NULL;
-	}
-
-	req->operation = LDB_SEARCH;
-	req->op.search.base = dn;
-	req->op.search.scope = LDB_SCOPE_BASE;
-	req->op.search.attrs = attrs;
+	int ret;
 
 	if (tree) {
-		req->op.search.tree = tree;
+		search_tree = tree;
 	} else {
-		req->op.search.tree = ldb_parse_tree(req, NULL);
-		if (req->op.search.tree == NULL) {
-			talloc_free(req);
+		search_tree = ldb_parse_tree(ac, NULL);
+		if (search_tree == NULL) {
 			return NULL;
 		}
 	}
 
-	req->controls = NULL;
-	req->context = context;
-	req->callback = callback;
-	ldb_set_timeout_from_prev_req(ac->module->ldb, ac->orig_req, req);
+	ret = ldb_build_search_req_ex(&req, ac->module->ldb, ac,
+					dn, LDB_SCOPE_BASE,
+					search_tree, attrs,
+					NULL,
+					context, callback,
+					ac->req);
+	if (ret != LDB_SUCCESS) {
+		return NULL;
+	}
 
 	return req;
 }
 
-/* Build a request to search the local record by its DN. */
-struct ldb_request *map_search_self_req(struct map_context *ac, struct ldb_dn *dn)
-{
-	/* attrs[] is returned from this function in
-	 * ac->search_req->op.search.attrs, so it must be static, as
-	 * otherwise the compiler can put it on the stack */
-	static const char * const attrs[] = { IS_MAPPED, NULL };
-	struct ldb_parse_tree *tree;
-
-	/* Limit search to records with 'IS_MAPPED' present */
-	/* TODO: `tree = ldb_parse_tree(ac, IS_MAPPED);' won't do. */
-	tree = talloc_zero(ac, struct ldb_parse_tree);
-	if (tree == NULL) {
-		map_oom(ac->module);
-		return NULL;
-	}
-
-	tree->operation = LDB_OP_PRESENT;
-	tree->u.present.attr = talloc_strdup(tree, IS_MAPPED);
-
-	return map_search_base_req(ac, dn, attrs, tree, ac, map_search_self_callback);
-}
-
 /* Build a request to update the 'IS_MAPPED' attribute */
-struct ldb_request *map_build_fixup_req(struct map_context *ac, struct ldb_dn *olddn, struct ldb_dn *newdn)
+struct ldb_request *map_build_fixup_req(struct map_context *ac,
+					struct ldb_dn *olddn,
+					struct ldb_dn *newdn,
+					void *context,
+					ldb_map_callback_t callback)
 {
 	struct ldb_request *req;
 	struct ldb_message *msg;
 	const char *dn;
-
-	/* Prepare request */
-	req = talloc_zero(ac, struct ldb_request);
-	if (req == NULL) {
-		map_oom(ac->module);
-		return NULL;
-	}
+	int ret;
 
 	/* Prepare message */
-	msg = ldb_msg_new(req);
+	msg = ldb_msg_new(ac);
 	if (msg == NULL) {
 		map_oom(ac->module);
-		goto failed;
+		return NULL;
 	}
 
 	/* Update local 'IS_MAPPED' to the new remote DN */
@@ -1010,192 +904,21 @@ struct ldb_request *map_build_fixup_req(struct map_context *ac, struct ldb_dn *o
 		goto failed;
 	}
 
-	req->operation = LDB_MODIFY;
-	req->op.mod.message = msg;
-	req->controls = NULL;
-	req->handle = NULL;
-	req->context = NULL;
-	req->callback = NULL;
+	/* Prepare request */
+	ret = ldb_build_mod_req(&req, ac->module->ldb,
+				ac, msg, NULL,
+				context, callback,
+				ac->req);
+	if (ret != LDB_SUCCESS) {
+		goto failed;
+	}
+	talloc_steal(req, msg);
 
 	return req;
-
 failed:
-	talloc_free(req);
+	talloc_free(msg);
 	return NULL;
 }
-
-
-/* Asynchronous call structure
- * =========================== */
-
-/* Figure out which request is currently pending. */
-static struct ldb_request *map_get_req(struct map_context *ac)
-{
-	switch (ac->step) {
-	case MAP_SEARCH_SELF_MODIFY:
-	case MAP_SEARCH_SELF_DELETE:
-	case MAP_SEARCH_SELF_RENAME:
-		return ac->search_req;
-
-	case MAP_ADD_REMOTE:
-	case MAP_MODIFY_REMOTE:
-	case MAP_DELETE_REMOTE:
-	case MAP_RENAME_REMOTE:
-		return ac->remote_req;
-
-	case MAP_RENAME_FIXUP:
-		return ac->down_req;
-
-	case MAP_ADD_LOCAL:
-	case MAP_MODIFY_LOCAL:
-	case MAP_DELETE_LOCAL:
-	case MAP_RENAME_LOCAL:
-		return ac->local_req;
-
-	case MAP_SEARCH_REMOTE:
-		/* Can't happen */
-		break;
-	}
-
-	return NULL;		/* unreachable; silences a warning */
-}
-
-typedef int (*map_next_function)(struct ldb_handle *handle);
-
-/* Figure out the next request to run. */
-static map_next_function map_get_next(struct map_context *ac)
-{
-	switch (ac->step) {
-	case MAP_SEARCH_REMOTE:
-		return NULL;
-
-	case MAP_ADD_LOCAL:
-		return map_add_do_remote;
-	case MAP_ADD_REMOTE:
-		return NULL;
-
-	case MAP_SEARCH_SELF_MODIFY:
-		return map_modify_do_local;
-	case MAP_MODIFY_LOCAL:
-		return map_modify_do_remote;
-	case MAP_MODIFY_REMOTE:
-		return NULL;
-
-	case MAP_SEARCH_SELF_DELETE:
-		return map_delete_do_local;
-	case MAP_DELETE_LOCAL:
-		return map_delete_do_remote;
-	case MAP_DELETE_REMOTE:
-		return NULL;
-
-	case MAP_SEARCH_SELF_RENAME:
-		return map_rename_do_local;
-	case MAP_RENAME_LOCAL:
-		return map_rename_do_fixup;
-	case MAP_RENAME_FIXUP:
-		return map_rename_do_remote;
-	case MAP_RENAME_REMOTE:
-		return NULL;
-	}
-
-	return NULL;		/* unreachable; silences a warning */
-}
-
-/* Wait for the current pending request to finish and continue with the next. */
-static int map_wait_next(struct ldb_handle *handle)
-{
-	struct map_context *ac;
-	struct ldb_request *req;
-	map_next_function next;
-	int ret;
-
-	if (handle == NULL || handle->private_data == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	if (handle->state == LDB_ASYNC_DONE) {
-		return handle->status;
-	}
-
-	handle->state = LDB_ASYNC_PENDING;
-	handle->status = LDB_SUCCESS;
-
-	ac = talloc_get_type(handle->private_data, struct map_context);
-
-	if (ac->step == MAP_SEARCH_REMOTE) {
-		int i;
-		for (i = 0; i < ac->num_searches; i++) {
-			req = ac->search_reqs[i];
-			ret = ldb_wait(req->handle, LDB_WAIT_NONE);
-
-			if (ret != LDB_SUCCESS) {
-				handle->status = ret;
-				goto done;
-			}
-			if (req->handle->status != LDB_SUCCESS) {
-				handle->status = req->handle->status;
-				goto done;
-			}
-			if (req->handle->state != LDB_ASYNC_DONE) {
-				return LDB_SUCCESS;
-			}
-		}
-	} else {
-
-		req = map_get_req(ac);
-
-		ret = ldb_wait(req->handle, LDB_WAIT_NONE);
-
-		if (ret != LDB_SUCCESS) {
-			handle->status = ret;
-			goto done;
-		}
-		if (req->handle->status != LDB_SUCCESS) {
-			handle->status = req->handle->status;
-			goto done;
-		}
-		if (req->handle->state != LDB_ASYNC_DONE) {
-			return LDB_SUCCESS;
-		}
-
-		next = map_get_next(ac);
-		if (next) {
-			return next(handle);
-		}
-	}
-
-	ret = LDB_SUCCESS;
-
-done:
-	handle->state = LDB_ASYNC_DONE;
-	return ret;
-}
-
-/* Wait for all current pending requests to finish. */
-static int map_wait_all(struct ldb_handle *handle)
-{
-	int ret;
-
-	while (handle->state != LDB_ASYNC_DONE) {
-		ret = map_wait_next(handle);
-		if (ret != LDB_SUCCESS) {
-			return ret;
-		}
-	}
-
-	return handle->status;
-}
-
-/* Wait for pending requests to finish. */
-int map_wait(struct ldb_handle *handle, enum ldb_wait_type type)
-{
-	if (type == LDB_WAIT_ALL) {
-		return map_wait_all(handle);
-	} else {
-		return map_wait_next(handle);
-	}
-}
-
 
 /* Module initialization
  * ===================== */

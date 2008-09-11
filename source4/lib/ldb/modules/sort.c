@@ -1,7 +1,7 @@
 /* 
    ldb database library
 
-   Copyright (C) Simo Sorce  2005
+   Copyright (C) Simo Sorce  2005-2008
 
      ** NOTE! The following LGPL license applies to the ldb
      ** library. This does NOT imply that all of Samba is released
@@ -43,8 +43,6 @@ struct opaque {
 
 struct sort_context {
 	struct ldb_module *module;
-	void *up_context;
-	int (*up_callback)(struct ldb_context *, void *, struct ldb_reply *);
 
 	char *attributeName;
 	char *orderingRule;
@@ -53,47 +51,12 @@ struct sort_context {
 	struct ldb_request *req;
 	struct ldb_message **msgs;
 	char **referrals;
-	struct ldb_control **controls;
 	int num_msgs;
 	int num_refs;
 
 	const struct ldb_schema_attribute *a;
 	int sort_result;
 };
-
-static struct ldb_handle *init_handle(void *mem_ctx, struct ldb_module *module,
-					    void *context,
-					    int (*callback)(struct ldb_context *, void *, struct ldb_reply *))
-{
-	struct sort_context *ac;
-	struct ldb_handle *h;
-
-	h = talloc_zero(mem_ctx, struct ldb_handle);
-	if (h == NULL) {
-		ldb_set_errstring(module->ldb, "Out of Memory");
-		return NULL;
-	}
-
-	h->module = module;
-
-	ac = talloc_zero(h, struct sort_context);
-	if (ac == NULL) {
-		ldb_set_errstring(module->ldb, "Out of Memory");
-		talloc_free(h);
-		return NULL;
-	}
-
-	h->private_data = (void *)ac;
-
-	h->state = LDB_ASYNC_INIT;
-	h->status = LDB_SUCCESS;
-
-	ac->module = module;
-	ac->up_context = context;
-	ac->up_callback = callback;
-
-	return h;
-}
 
 static int build_response(void *mem_ctx, struct ldb_control ***ctrls, int result, const char *desc)
 {
@@ -142,7 +105,7 @@ static int sort_compare(struct ldb_message **msg1, struct ldb_message **msg2, vo
 	struct sort_context *ac = talloc_get_type(opaque, struct sort_context);
 	struct ldb_message_element *el1, *el2;
 
-	if (ac->sort_result != 0) {
+	if (!ac || ac->sort_result != 0) {
 		/* an error occurred previously,
 		 * let's exit the sorting by returning always 0 */
 		return 0;
@@ -154,7 +117,7 @@ static int sort_compare(struct ldb_message **msg1, struct ldb_message **msg2, vo
 	if (!el1 || !el2) {
 		/* the attribute was not found return and
 		 * set an error */
-		ac->sort_result = 53;
+		ac->sort_result = LDB_ERR_UNWILLING_TO_PERFORM;
 		return 0;
 	}
 
@@ -164,51 +127,111 @@ static int sort_compare(struct ldb_message **msg1, struct ldb_message **msg2, vo
 	return ac->a->syntax->comparison_fn(ac->module->ldb, ac, &el1->values[0], &el2->values[0]);
 }
 
-static int server_sort_search_callback(struct ldb_context *ldb, void *context, struct ldb_reply *ares)
+static int server_sort_results(struct sort_context *ac)
 {
-	struct sort_context *ac = NULL;
-	
- 	if (!context || !ares) {
-		ldb_set_errstring(ldb, "NULL Context or Result in callback");
-		goto error;
-	}	
+	struct ldb_reply *ares;
+	int i, ret;
 
-       	ac = talloc_get_type(context, struct sort_context);
+	ac->a = ldb_schema_attribute_by_name(ac->module->ldb, ac->attributeName);
+	ac->sort_result = 0;
 
-	if (ares->type == LDB_REPLY_ENTRY) {
+	ldb_qsort(ac->msgs, ac->num_msgs,
+		  sizeof(struct ldb_message *),
+		  ac, (ldb_qsort_cmp_fn_t)sort_compare);
+
+	if (ac->sort_result != LDB_SUCCESS) {
+		return ac->sort_result;
+	}
+
+	for (i = 0; i < ac->num_msgs; i++) {
+		ares = talloc_zero(ac, struct ldb_reply);
+		if (!ares) {
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+
+		ares->type = LDB_REPLY_ENTRY;
+		ares->message = talloc_move(ares, &ac->msgs[i]);
+
+		ret = ldb_module_send_entry(ac->req, ares->message);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	}
+
+	for (i = 0; i < ac->num_refs; i++) {
+		ares = talloc_zero(ac, struct ldb_reply);
+		if (!ares) {
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+
+		ares->type = LDB_REPLY_REFERRAL;
+		ares->referral = talloc_move(ares, &ac->referrals[i]);
+
+		ret = ldb_module_send_referral(ac->req, ares->referral);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	}
+
+	return LDB_SUCCESS;
+}
+
+static int server_sort_search_callback(struct ldb_request *req, struct ldb_reply *ares)
+{
+	struct sort_context *ac;
+	int ret;
+
+	ac = talloc_get_type(req->context, struct sort_context);
+
+	if (!ares) {
+		return ldb_module_done(ac->req, NULL, NULL,
+					LDB_ERR_OPERATIONS_ERROR);
+	}
+	if (ares->error != LDB_SUCCESS) {
+		return ldb_module_done(ac->req, ares->controls,
+					ares->response, ares->error);
+	}
+
+	switch (ares->type) {
+	case LDB_REPLY_ENTRY:
 		ac->msgs = talloc_realloc(ac, ac->msgs, struct ldb_message *, ac->num_msgs + 2);
 		if (! ac->msgs) {
-			goto error;
+			talloc_free(ares);
+			ldb_oom(ac->module->ldb);
+			return ldb_module_done(ac->req, NULL, NULL,
+						LDB_ERR_OPERATIONS_ERROR);
 		}
 
-		ac->msgs[ac->num_msgs + 1] = NULL;
-
-		ac->msgs[ac->num_msgs] = talloc_move(ac->msgs, &ares->message);
+		ac->msgs[ac->num_msgs] = talloc_steal(ac->msgs, ares->message);
 		ac->num_msgs++;
-	}
+		ac->msgs[ac->num_msgs] = NULL;
 
-	if (ares->type == LDB_REPLY_REFERRAL) {
+		break;
+
+	case LDB_REPLY_REFERRAL:
 		ac->referrals = talloc_realloc(ac, ac->referrals, char *, ac->num_refs + 2);
 		if (! ac->referrals) {
-			goto error;
+			talloc_free(ares);
+			ldb_oom(ac->module->ldb);
+			return ldb_module_done(ac->req, NULL, NULL,
+						LDB_ERR_OPERATIONS_ERROR);
 		}
 
-		ac->referrals[ac->num_refs + 1] = NULL;
-		ac->referrals[ac->num_refs] = talloc_move(ac->referrals, &ares->referral);
-
+		ac->referrals[ac->num_refs] = talloc_steal(ac->referrals, ares->referral);
 		ac->num_refs++;
-	}
+		ac->referrals[ac->num_refs] = NULL;
 
-	if (ares->type == LDB_REPLY_DONE) {
-		ac->controls = talloc_move(ac, &ares->controls);
+		break;
+
+	case LDB_REPLY_DONE:
+
+		ret = server_sort_results(ac);
+		return ldb_module_done(ac->req, ares->controls,
+					ares->response, ret);
 	}
 
 	talloc_free(ares);
 	return LDB_SUCCESS;
-
-error:
-	talloc_free(ares);
-	return LDB_ERR_OPERATIONS_ERROR;
 }
 
 static int server_sort_search(struct ldb_module *module, struct ldb_request *req)
@@ -216,8 +239,9 @@ static int server_sort_search(struct ldb_module *module, struct ldb_request *req
 	struct ldb_control *control;
 	struct ldb_server_sort_control **sort_ctrls;
 	struct ldb_control **saved_controls;
+	struct ldb_control **controls;
+	struct ldb_request *down_req;
 	struct sort_context *ac;
-	struct ldb_handle *h;
 	int ret;
 
 	/* check if there's a paged request control */
@@ -227,19 +251,14 @@ static int server_sort_search(struct ldb_module *module, struct ldb_request *req
 		return ldb_next_request(module, req);
 	}
 
-	req->handle = NULL;
+	ac = talloc_zero(req, struct sort_context);
+	if (ac == NULL) {
+		ldb_oom(module->ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
 
-	if (!req->callback || !req->context) {
-		ldb_set_errstring(module->ldb,
-				  "Async interface called with NULL callback function or NULL context");
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	
-	h = init_handle(req, module, req->context, req->callback);
-	if (!h) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	ac = talloc_get_type(h->private_data, struct sort_context);
+	ac->module = module;
+	ac->req = req;
 
 	sort_ctrls = talloc_get_type(control->data, struct ldb_server_sort_control *);
 	if (!sort_ctrls) {
@@ -251,26 +270,20 @@ static int server_sort_search(struct ldb_module *module, struct ldb_request *req
 		
 	if (sort_ctrls[1] != NULL) {
 		if (control->critical) {
-			struct ldb_reply *ares;
 
-			ares = talloc_zero(req, struct ldb_reply);
-			if (!ares)
-				return LDB_ERR_OPERATIONS_ERROR;
-
-			/* 53 = unwilling to perform */
-			ares->type = LDB_REPLY_DONE;
-			if ((ret = build_response(ares, &ares->controls, 53, "sort control is not complete yet")) != LDB_SUCCESS) {
-				return ret;
+			/* callback immediately */
+			ret = build_response(req, &controls,
+					     LDB_ERR_UNWILLING_TO_PERFORM,
+					     "sort control is not complete yet");
+			if (ret != LDB_SUCCESS) {
+				return ldb_module_done(req, NULL, NULL,
+						    LDB_ERR_OPERATIONS_ERROR);
 			}
 
-			h->status = LDB_ERR_UNSUPPORTED_CRITICAL_EXTENSION;
-			h->state = LDB_ASYNC_DONE;
-			ret = ac->up_callback(module->ldb, ac->up_context, ares);
-
-			return ret;
+			return ldb_module_done(req, controls, NULL, ret);
 		} else {
 			/* just pass the call down and don't do any sorting */
-			ldb_next_request(module, req);
+			return ldb_next_request(module, req);
 		}
 	}
 
@@ -278,181 +291,45 @@ static int server_sort_search(struct ldb_module *module, struct ldb_request *req
 	ac->orderingRule = sort_ctrls[0]->orderingRule;
 	ac->reverse = sort_ctrls[0]->reverse;
 
-	ac->req = talloc(req, struct ldb_request);
-	if (!ac->req)
+	ret = ldb_build_search_req_ex(&down_req, module->ldb, ac,
+					req->op.search.base,
+					req->op.search.scope,
+					req->op.search.tree,
+					req->op.search.attrs,
+					req->controls,
+					ac,
+					server_sort_search_callback,
+					req);
+	if (ret != LDB_SUCCESS) {
 		return LDB_ERR_OPERATIONS_ERROR;
-
-	ac->req->operation = req->operation;
-	ac->req->op.search.base = req->op.search.base;
-	ac->req->op.search.scope = req->op.search.scope;
-	ac->req->op.search.tree = req->op.search.tree;
-	ac->req->op.search.attrs = req->op.search.attrs;
-	ac->req->controls = req->controls;
+	}
 
 	/* save it locally and remove it from the list */
 	/* we do not need to replace them later as we
 	 * are keeping the original req intact */
-	if (!save_controls(control, ac->req, &saved_controls)) {
+	if (!save_controls(control, down_req, &saved_controls)) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ac->req->context = ac;
-	ac->req->callback = server_sort_search_callback;
-	ldb_set_timeout_from_prev_req(module->ldb, req, ac->req);
-
-	req->handle = h;
-
-	return ldb_next_request(module, ac->req);
-}
-
-static int server_sort_results(struct ldb_handle *handle)
-{
-	struct sort_context *ac;
-	struct ldb_reply *ares;
-	int i, ret;
-
-	ac = talloc_get_type(handle->private_data, struct sort_context);
-
-	ac->a = ldb_schema_attribute_by_name(ac->module->ldb, ac->attributeName);
-	ac->sort_result = 0;
-
-	ldb_qsort(ac->msgs, ac->num_msgs,
-		  sizeof(struct ldb_message *),
-		  ac, (ldb_qsort_cmp_fn_t)sort_compare);
-
-	for (i = 0; i < ac->num_msgs; i++) {
-		ares = talloc_zero(ac, struct ldb_reply);
-		if (!ares) {
-			handle->status = LDB_ERR_OPERATIONS_ERROR;
-			return handle->status;
-		}
-
-		ares->type = LDB_REPLY_ENTRY;
-		ares->message = talloc_move(ares, &ac->msgs[i]);
-		
-		handle->status = ac->up_callback(ac->module->ldb, ac->up_context, ares);
-		if (handle->status != LDB_SUCCESS) {
-			return handle->status;
-		}
-	}
-
-	for (i = 0; i < ac->num_refs; i++) {
-		ares = talloc_zero(ac, struct ldb_reply);
-		if (!ares) {
-			handle->status = LDB_ERR_OPERATIONS_ERROR;
-			return handle->status;
-		}
-
-		ares->type = LDB_REPLY_REFERRAL;
-		ares->referral = talloc_move(ares, &ac->referrals[i]);
-		
-		handle->status = ac->up_callback(ac->module->ldb, ac->up_context, ares);
-		if (handle->status != LDB_SUCCESS) {
-			return handle->status;
-		}
-	}
-
-	ares = talloc_zero(ac, struct ldb_reply);
-	if (!ares) {
-		handle->status = LDB_ERR_OPERATIONS_ERROR;
-		return handle->status;
-	}
-
-	ares->type = LDB_REPLY_DONE;
-	ares->controls = talloc_move(ares, &ac->controls);
-		
-	handle->status = ac->up_callback(ac->module->ldb, ac->up_context, ares);
-	if (handle->status != LDB_SUCCESS) {
-		return handle->status;
-	}
-
-	if ((ret = build_response(ac, &ac->controls, ac->sort_result, "sort control is not complete yet")) != LDB_SUCCESS) {
-		return ret;
-	}
-
-	return LDB_SUCCESS;
-}
-
-static int server_sort_wait_once(struct ldb_handle *handle)
-{
-	struct sort_context *ac;
-	int ret;
-    
-	if (!handle || !handle->private_data) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	ac = talloc_get_type(handle->private_data, struct sort_context);
-
-	ret = ldb_wait(ac->req->handle, LDB_WAIT_NONE);
-
-	if (ret != LDB_SUCCESS) {
-		handle->status = ret;
-		return ret;
-	}
-		
-	handle->state = ac->req->handle->state;
-	handle->status = ac->req->handle->status;
-
-	if (handle->status != LDB_SUCCESS) {
-		return handle->status;
-	}
-
-	if (handle->state == LDB_ASYNC_DONE) {
-		ret = server_sort_results(handle);
-	}
-
-	return ret;
-}
-
-static int server_sort_wait(struct ldb_handle *handle, enum ldb_wait_type type)
-{
-	int ret;
- 
-	if (!handle || !handle->private_data) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	if (type == LDB_WAIT_ALL) {
-		while (handle->state != LDB_ASYNC_DONE) {
-			ret = server_sort_wait_once(handle);
-			if (ret != LDB_SUCCESS) {
-				return ret;
-			}
-		}
-
-		return handle->status;
-	}
-
-	return server_sort_wait_once(handle);
+	return ldb_next_request(module, down_req);
 }
 
 static int server_sort_init(struct ldb_module *module)
 {
-	struct ldb_request *req;
 	int ret;
 
-	req = talloc(module, struct ldb_request);
-	if (req == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	req->operation = LDB_REQ_REGISTER_CONTROL;
-	req->op.reg_control.oid = LDB_CONTROL_SERVER_SORT_OID;
-	req->controls = NULL;
-
-	ret = ldb_request(module->ldb, req);
+	ret = ldb_mod_register_control(module, LDB_CONTROL_SERVER_SORT_OID);
 	if (ret != LDB_SUCCESS) {
-		ldb_debug(module->ldb, LDB_DEBUG_WARNING, "server_sort: Unable to register control with rootdse!\n");
+		ldb_debug(module->ldb, LDB_DEBUG_WARNING,
+			"server_sort:"
+			"Unable to register control with rootdse!\n");
 	}
 
-	talloc_free(req);
 	return ldb_next_init(module);
 }
 
 const struct ldb_module_ops ldb_server_sort_module_ops = {
 	.name		   = "server_sort",
 	.search            = server_sort_search,
-	.wait              = server_sort_wait,
 	.init_context	   = server_sort_init
 };

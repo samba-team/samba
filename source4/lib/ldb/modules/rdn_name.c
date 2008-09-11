@@ -2,7 +2,7 @@
    ldb database library
 
    Copyright (C) Andrew Bartlet 2005
-   Copyright (C) Simo Sorce     2006
+   Copyright (C) Simo Sorce     2006-2008
 
      ** NOTE! The following LGPL license applies to the ldb
      ** library. This does NOT imply that all of Samba is released
@@ -38,6 +38,14 @@
 
 #include "ldb_includes.h"
 
+struct rename_context {
+
+	struct ldb_module *module;
+	struct ldb_request *req;
+
+	struct ldb_reply *ares;
+};
+
 static struct ldb_message_element *rdn_name_find_attribute(const struct ldb_message *msg, const char *name)
 {
 	int i;
@@ -51,11 +59,38 @@ static struct ldb_message_element *rdn_name_find_attribute(const struct ldb_mess
 	return NULL;
 }
 
+static int rdn_name_add_callback(struct ldb_request *req,
+				 struct ldb_reply *ares)
+{
+	struct rename_context *ac;
+
+	ac = talloc_get_type(req->context, struct rename_context);
+
+	if (!ares) {
+		return ldb_module_done(ac->req, NULL, NULL,
+					LDB_ERR_OPERATIONS_ERROR);
+	}
+	if (ares->error != LDB_SUCCESS) {
+		return ldb_module_done(ac->req, ares->controls,
+					ares->response, ares->error);
+	}
+
+	if (ares->type != LDB_REPLY_DONE) {
+		return ldb_module_done(ac->req, NULL, NULL,
+					LDB_ERR_OPERATIONS_ERROR);
+	}
+
+	return ldb_module_done(ac->req, ares->controls,
+					ares->response, LDB_SUCCESS);
+}
+
 static int rdn_name_add(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_request *down_req;
+	struct rename_context *ac;
 	struct ldb_message *msg;
 	struct ldb_message_element *attribute;
+	const struct ldb_schema_attribute *a;
 	const char *rdn_name;
 	struct ldb_val rdn_val;
 	int i, ret;
@@ -67,21 +102,22 @@ static int rdn_name_add(struct ldb_module *module, struct ldb_request *req)
 		return ldb_next_request(module, req);
 	}
 
-	down_req = talloc(req, struct ldb_request);
-	if (down_req == NULL) {
+	ac = talloc_zero(req, struct rename_context);
+	if (ac == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	*down_req = *req;
+	ac->module = module;
+	ac->req = req;
 
-	down_req->op.add.message = msg = ldb_msg_copy_shallow(down_req, req->op.add.message);
+	msg = ldb_msg_copy_shallow(req, req->op.add.message);
 	if (msg == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	rdn_name = ldb_dn_get_rdn_name(msg->dn);
 	if (rdn_name == NULL) {
-		talloc_free(down_req);
+		talloc_free(ac);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	
@@ -93,7 +129,7 @@ static int rdn_name_add(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	if (ldb_msg_add_value(msg, "name", &rdn_val, NULL) != 0) {
-		talloc_free(down_req);
+		talloc_free(ac);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -101,14 +137,16 @@ static int rdn_name_add(struct ldb_module *module, struct ldb_request *req)
 
 	if (!attribute) {
 		if (ldb_msg_add_value(msg, rdn_name, &rdn_val, NULL) != 0) {
-			talloc_free(down_req);
+			talloc_free(ac);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 	} else {
-		const struct ldb_schema_attribute *a = ldb_schema_attribute_by_name(module->ldb, rdn_name);
+		a = ldb_schema_attribute_by_name(module->ldb, rdn_name);
 
 		for (i = 0; i < attribute->num_values; i++) {
-			if (a->syntax->comparison_fn(module->ldb, msg, &rdn_val, &attribute->values[i]) == 0) {
+			ret = a->syntax->comparison_fn(module->ldb, msg,
+					&rdn_val, &attribute->values[i]);
+			if (ret == 0) {
 				/* overwrite so it matches in case */
 				attribute->values[i] = rdn_val;
 				break;
@@ -118,36 +156,130 @@ static int rdn_name_add(struct ldb_module *module, struct ldb_request *req)
 			ldb_debug_set(module->ldb, LDB_DEBUG_FATAL, 
 				      "RDN mismatch on %s: %s (%s)", 
 				      ldb_dn_get_linearized(msg->dn), rdn_name, rdn_val.data);
-			talloc_free(down_req);
+			talloc_free(ac);
 			/* Match AD's error here */
 			return LDB_ERR_INVALID_DN_SYNTAX;
 		}
 	}
 
-	/* go on with the call chain */
-	ret = ldb_next_request(module, down_req);
-
-	/* do not free down_req as the call results may be linked to it,
-	 * it will be freed when the upper level request get freed */
-	if (ret == LDB_SUCCESS) {
-		req->handle = down_req->handle;
+	ret = ldb_build_add_req(&down_req, module->ldb, req,
+				msg,
+				req->controls,
+				ac, rdn_name_add_callback,
+				req);
+	if (ret != LDB_SUCCESS) {
+		return ret;
 	}
 
-	return ret;
+	talloc_steal(down_req, msg);
+
+	/* go on with the call chain */
+	return ldb_next_request(module, down_req);
 }
 
-struct rename_context {
+static int rdn_modify_callback(struct ldb_request *req, struct ldb_reply *ares)
+{
+	struct rename_context *ac;
 
-	enum {RENAME_RENAME, RENAME_MODIFY} step;
-	struct ldb_request *orig_req;
-	struct ldb_request *down_req;
+	ac = talloc_get_type(req->context, struct rename_context);
+
+	if (!ares) {
+		return ldb_module_done(ac->req, NULL, NULL,
+					LDB_ERR_OPERATIONS_ERROR);
+	}
+	if (ares->error != LDB_SUCCESS) {
+		return ldb_module_done(ac->req, ares->controls,
+					ares->response, ares->error);
+	}
+
+	/* the only supported reply right now is a LDB_REPLY_DONE */
+	if (ares->type != LDB_REPLY_DONE) {
+		return ldb_module_done(ac->req, NULL, NULL,
+					LDB_ERR_OPERATIONS_ERROR);
+	}
+
+	/* send saved controls eventually */
+	return ldb_module_done(ac->req, ac->ares->controls,
+				ac->ares->response, LDB_SUCCESS);
+}
+
+static int rdn_rename_callback(struct ldb_request *req, struct ldb_reply *ares)
+{
+	struct rename_context *ac;
 	struct ldb_request *mod_req;
-};
+	const char *rdn_name;
+	struct ldb_val rdn_val;
+	struct ldb_message *msg;
+	int ret;
+
+	ac = talloc_get_type(req->context, struct rename_context);
+
+	if (!ares) {
+		goto error;
+	}
+	if (ares->error != LDB_SUCCESS) {
+		return ldb_module_done(ac->req, ares->controls,
+					ares->response, ares->error);
+	}
+
+	/* the only supported reply right now is a LDB_REPLY_DONE */
+	if (ares->type != LDB_REPLY_DONE) {
+		goto error;
+	}
+
+	/* save reply for caller */
+	ac->ares = talloc_steal(ac, ares);
+
+	msg = ldb_msg_new(ac);
+	if (msg == NULL) {
+		goto error;
+	}
+	msg->dn = ldb_dn_copy(msg, ac->req->op.rename.newdn);
+	if (msg->dn == NULL) {
+		goto error;
+	}
+	rdn_name = ldb_dn_get_rdn_name(ac->req->op.rename.newdn);
+	if (rdn_name == NULL) {
+		goto error;
+	}
+	
+	rdn_val = ldb_val_dup(msg, ldb_dn_get_rdn_val(ac->req->op.rename.newdn));
+	
+	if (ldb_msg_add_empty(msg, rdn_name, LDB_FLAG_MOD_REPLACE, NULL) != 0) {
+		goto error;
+	}
+	if (ldb_msg_add_value(msg, rdn_name, &rdn_val, NULL) != 0) {
+		goto error;
+	}
+	if (ldb_msg_add_empty(msg, "name", LDB_FLAG_MOD_REPLACE, NULL) != 0) {
+		goto error;
+	}
+	if (ldb_msg_add_value(msg, "name", &rdn_val, NULL) != 0) {
+		goto error;
+	}
+
+	ret = ldb_build_mod_req(&mod_req, ac->module->ldb,
+				ac, msg, NULL,
+				ac, rdn_modify_callback,
+				req);
+	if (ret != LDB_SUCCESS) {
+		return ldb_module_done(ac->req, NULL, NULL, ret);
+	}
+	talloc_steal(mod_req, msg);
+
+	/* do the mod call */
+	return ldb_request(ac->module->ldb, mod_req);
+
+error:
+	return ldb_module_done(ac->req, NULL, NULL,
+						LDB_ERR_OPERATIONS_ERROR);
+}
 
 static int rdn_name_rename(struct ldb_module *module, struct ldb_request *req)
 {
-	struct ldb_handle *h;
 	struct rename_context *ac;
+	struct ldb_request *down_req;
+	int ret;
 
 	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "rdn_name_rename\n");
 
@@ -156,180 +288,34 @@ static int rdn_name_rename(struct ldb_module *module, struct ldb_request *req)
 		return ldb_next_request(module, req);
 	}
 
-	h = talloc_zero(req, struct ldb_handle);
-	if (h == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	h->module = module;
-
-	ac = talloc_zero(h, struct rename_context);
+	ac = talloc_zero(req, struct rename_context);
 	if (ac == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	h->private_data = (void *)ac;
+	ac->module = module;
+	ac->req = req;
 
-	h->state = LDB_ASYNC_INIT;
-	h->status = LDB_SUCCESS;
+	ret = ldb_build_rename_req(&down_req,
+				   module->ldb,
+				   ac,
+				   req->op.rename.olddn,
+				   req->op.rename.newdn,
+				   req->controls,
+				   ac,
+				   rdn_rename_callback,
+				   req);
 
-	ac->orig_req = req;
-	ac->down_req = talloc(req, struct ldb_request);
-	if (ac->down_req == NULL) {
+	if (ret != LDB_SUCCESS) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-
-	*(ac->down_req) = *req;
-
-	ac->step = RENAME_RENAME;
-
-	req->handle = h;
 
 	/* rename first, modify "name" if rename is ok */
-	return ldb_next_request(module, ac->down_req);
-}
-
-static int rdn_name_rename_do_mod(struct ldb_handle *h) {
-
-	struct rename_context *ac;
-	const char *rdn_name;
-	struct ldb_val rdn_val;
-	struct ldb_message *msg;
-
-	ac = talloc_get_type(h->private_data, struct rename_context);
-
-	ac->mod_req = talloc_zero(ac, struct ldb_request);
-
-	ac->mod_req->operation = LDB_MODIFY;
-	ac->mod_req->op.mod.message = msg = ldb_msg_new(ac->mod_req);
-	if (msg == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	msg->dn = ldb_dn_copy(msg, ac->orig_req->op.rename.newdn);
-	if (msg->dn == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	rdn_name = ldb_dn_get_rdn_name(ac->orig_req->op.rename.newdn);
-	if (rdn_name == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	
-	rdn_val = ldb_val_dup(msg, ldb_dn_get_rdn_val(ac->orig_req->op.rename.newdn));
-	
-	if (ldb_msg_add_empty(msg, rdn_name, LDB_FLAG_MOD_REPLACE, NULL) != 0) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	if (ldb_msg_add_value(msg, rdn_name, &rdn_val, NULL) != 0) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	if (ldb_msg_add_empty(msg, "name", LDB_FLAG_MOD_REPLACE, NULL) != 0) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	if (ldb_msg_add_value(msg, "name", &rdn_val, NULL) != 0) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	ldb_set_timeout_from_prev_req(h->module->ldb, ac->orig_req, ac->mod_req);
-
-	ac->step = RENAME_MODIFY;
-
-	/* do the mod call */
-	return ldb_request(h->module->ldb, ac->mod_req);
-}
-
-static int rdn_name_wait_once(struct ldb_handle *handle)
-{
-	struct rename_context *ac;
-	int ret;
-    
-	if (!handle || !handle->private_data) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	if (handle->state == LDB_ASYNC_DONE) {
-		return handle->status;
-	}
-
-	handle->state = LDB_ASYNC_PENDING;
-	handle->status = LDB_SUCCESS;
-
-	ac = talloc_get_type(handle->private_data, struct rename_context);
-
-	switch(ac->step) {
-	case RENAME_RENAME:
-		ret = ldb_wait(ac->down_req->handle, LDB_WAIT_NONE);
-		if (ret != LDB_SUCCESS) {
-			handle->status = ret;
-			goto done;
-		}
-		if (ac->down_req->handle->status != LDB_SUCCESS) {
-			handle->status = ac->down_req->handle->status;
-			goto done;
-		}
-
-		if (ac->down_req->handle->state != LDB_ASYNC_DONE) {
-			return LDB_SUCCESS;
-		}
-
-		/* rename operation done */
-		return rdn_name_rename_do_mod(handle);
-
-	case RENAME_MODIFY:
-		ret = ldb_wait(ac->mod_req->handle, LDB_WAIT_NONE);
-		if (ret != LDB_SUCCESS) {
-			handle->status = ret;
-			goto done;
-		}
-		if (ac->mod_req->handle->status != LDB_SUCCESS) {
-			handle->status = ac->mod_req->handle->status;
-			goto done;
-		}
-
-		if (ac->mod_req->handle->state != LDB_ASYNC_DONE) {
-			return LDB_SUCCESS;
-		}
-
-		break;
-
-	default:
-		ret = LDB_ERR_OPERATIONS_ERROR;
-		goto done;
-	}
-
-	ret = LDB_SUCCESS;
-
-done:
-	handle->state = LDB_ASYNC_DONE;
-	return ret;
-}
-
-static int rdn_name_wait(struct ldb_handle *handle, enum ldb_wait_type type)
-{
-	int ret;
- 
-	if (!handle || !handle->private_data) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	if (type == LDB_WAIT_ALL) {
-		while (handle->state != LDB_ASYNC_DONE) {
-			ret = rdn_name_wait_once(handle);
-			if (ret != LDB_SUCCESS) {
-				return ret;
-			}
-		}
-
-		return handle->status;
-	}
-
-	return rdn_name_wait_once(handle);
+	return ldb_next_request(module, down_req);
 }
 
 const struct ldb_module_ops ldb_rdn_name_module_ops = {
 	.name              = "rdn_name",
 	.add               = rdn_name_add,
 	.rename            = rdn_name_rename,
-	.wait              = rdn_name_wait
 };
