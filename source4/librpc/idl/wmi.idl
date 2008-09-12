@@ -1,16 +1,25 @@
 #include "idl_types.h"
 
+import "orpc.idl";
+
 [
 	uuid("8BC3F05E-D86B-11d0-A075-00C04FB68820")
 ] coclass WbemLevel1Login
 {
     interface IWbemLevel1Login;
+
 };
 
 [local, object, uuid("dc12a681-737f-11cf-884d-00aa004b2e24")]
 
 interface IWbemClassObject : IUnknown
 {
+
+	typedef struct {
+		[value(0x72657355)] uint32 flags;
+		[string, charset(UTF16)] uint16 data[];
+	} BSTR;
+
     WERROR Delete(
         [in, string, charset(UTF16)] uint16 *wszName
         );
