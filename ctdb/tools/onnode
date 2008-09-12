@@ -34,7 +34,8 @@ Usage: onnode [OPTION] ... <NODES> <COMMAND> ...
     -p         Run command in parallel on specified nodes.
     -q         Do not print node addresses (overrides -v).
     -v         Print node address even for a single node.
-  <NODES>      "all" or a node number (0 base); or
+  <NODES>      "all", "healthy", "connected";
+               or a node number (0 base); or
                list (comma separated) of <NODES>; or
                range (hyphen separated) of node numbers.
 EOF
@@ -59,7 +60,7 @@ parse_options ()
     # $POSIXLY_CORRECT means that the command passed to onnode can
     # take options and getopt won't reorder things to make them
     # options ot onnode.
-    temp=$(POSIXLY_CORRECT=1 getopt -n "$prog" -o "chpqv" -l help -- "$@")
+    local temp=$(POSIXLY_CORRECT=1 getopt -n "$prog" -o "chpqv" -l help -- "$@")
 
     [ $? != 0 ] && usage
 
@@ -85,9 +86,10 @@ parse_options ()
 # Can probably be avoided if we use bash?
 get_nth ()
 {
-    n="$1" ; shift
+    local n="$1" ; shift
 
-    c=0
+    local c=0
+    local j
     for j ; do
 	if [ $n -eq $c ] ; then
 	    echo $j
@@ -105,7 +107,7 @@ parse_nodespec ()
 	for i in $1 ; do
 	    case "$i" in
 		*-*) seq "${i%-*}" "${i#*-}" 2>/dev/null || invalid_nodespec ;;
-		all) echo all ;;
+		all|healthy|connected) echo "$i" ;;
 		*)
 		    [ $i -gt -1 ] 2>/dev/null || invalid_nodespec
 		    echo $i
@@ -114,17 +116,65 @@ parse_nodespec ()
     )
 }
 
+# Cache
+ctdb_status_output=""
+get_nodes_with_status ()
+{
+    local all_nodes="$1"
+    local status="$2"
+
+    local bits
+    case "$status" in
+	healthy)
+	    bits="0:0:0:0"
+	    ;;
+	connected)
+	    bits="0:[0-1]:[0-1]:[0-1]"
+	    ;;
+	*)
+	    invalid_nodespec
+    esac
+
+    if [ -z "$ctdb_status_output" ] ; then
+	ctdb_status_output=$(ctdb -Y status)
+	ctdb_status_output="${ctdb_status_output#* }"
+    fi
+
+    local nodes=""
+    local i
+    for i in $ctdb_status_output ; do
+	# Try removing bits from end.
+	local t="${i%:${bits}:}"
+	if [ "$t" != "$i" ] ; then
+	    # Succeeded.  Get address.  NOTE: this is an optimisation.
+	    # It might be better to get the node number and then use
+	    # get_nth() to get the address.  This would make things
+	    # more consistent if /etc/ctdb/nodes actually contained
+	    # hostnames.
+	    nodes="${nodes} ${t##*:}"
+	fi
+    done
+
+    echo $nodes
+}
+
 get_nodes ()
 {
     [ -f "$CTDB_NODES_FILE" ] || CTDB_NODES_FILE=/etc/ctdb/nodes
-    all_nodes=$(egrep '^[[:alnum:]]' $CTDB_NODES_FILE)
+    local all_nodes=$(egrep '^[[:alnum:]]' $CTDB_NODES_FILE)
 
-    nodes=""
+    local nodes=""
+    local n
     for n in $(parse_nodespec "$1") ; do
 	[ $? != 0 ] && exit 1  # Required to catch exit in above subshell.
 	case "$n" in
-	    all) echo $all_nodes ;;
-	    *)	node=$(get_nth $n $all_nodes)
+	    all)
+		echo $all_nodes ;;
+	    healthy|connected) 
+		get_nodes_with_status "$all_nodes" "$n"
+		;;
+	    *)
+		local node=$(get_nth $n $all_nodes)
 		if [ -n "$node" ] ; then
 		    echo $node
 		else
@@ -200,4 +250,3 @@ $parallel && {
 }
 
 exit $retcode
-
