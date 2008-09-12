@@ -5,11 +5,11 @@
 * Used by /sbin/request-key for handling
 * cifs upcall for kerberos authorization of access to share and
 * cifs upcall for DFS srver name resolving (IPv4/IPv6 aware).
-* You should have keyutils installed and add following line to
-* /etc/request-key.conf file
+* You should have keyutils installed and add something like the
+* following lines to /etc/request-key.conf file:
 
-create cifs.spnego * * /usr/local/sbin/cifs.upcall [-v][-c] %k
-create cifs.resolver * * /usr/local/sbin/cifs.upcall [-v] %k
+create cifs.spnego * * /usr/local/sbin/cifs.upcall %k
+create dns_resolver * * /usr/local/sbin/cifs.upcall %k
 
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
