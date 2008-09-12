@@ -201,7 +201,7 @@ int cifs_resolver(const key_serial_t key, const char *key_descr)
 }
 
 void
-usage()
+usage(void)
 {
 	syslog(LOG_WARNING, "Usage: %s [-c] [-v] key_serial", prog);
 	fprintf(stderr, "Usage: %s [-c] [-v] key_serial\n", prog);
