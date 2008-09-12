@@ -545,11 +545,11 @@ static WERROR ldb_del_value (struct hive_key *key, const char *child)
 			DEBUG(1, ("ldb_del_value: %s\n", ldb_errstring(kd->ldb)));
 			return WERR_FOOBAR;
 		}
-
-		/* reset cache */
-		talloc_free(kd->values);
-		kd->values = NULL;
 	}
+
+	/* reset cache */
+	talloc_free(kd->values);
+	kd->values = NULL;
 
 	return WERR_OK;
 }
