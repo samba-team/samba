@@ -59,7 +59,7 @@ static void reg_ldb_unpack_value(TALLOC_CTX *mem_ctx,
 	{
 	case REG_SZ:
 	case REG_EXPAND_SZ:
-		data->length = convert_string_talloc(mem_ctx, iconv_convenience, CH_UTF8, CH_UTF16,
+		data->length = convert_string_talloc(mem_ctx, iconv_convenience, CH_UNIX, CH_UTF16,
 						     val->data, val->length,
 						     (void **)&data->data);
 		break;
