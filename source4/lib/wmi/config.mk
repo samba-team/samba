@@ -8,8 +8,6 @@ PUBLIC_DEPENDENCIES = RPC_NDR_OXIDRESOLVER \
 
 WMI_OBJ_FILES = $(addprefix $(wmisrcdir)/, wmicore.o wbemdata.o ../../librpc/gen_ndr/dcom_p.o)
 
-$(eval $(call proto_header_template,$(wmisrcdir)/proto.h,$(WMI_OBJ_FILES:.o=.c)))
-
 #################################
 # Start BINARY wmic
 [BINARY::wmic]
