@@ -314,6 +314,9 @@ AC_SUBST(SMBMOUNT_PROGS)
 AC_SUBST(CIFSMOUNT_PROGS)
 AC_SUBST(INSTALL_CIFSMOUNT)
 AC_SUBST(UNINSTALL_CIFSMOUNT)
+AC_SUBST(CIFSSPNEGO_PROGS)
+AC_SUBST(INSTALL_CIFSSPNEGO)
+AC_SUBST(UNINSTALL_CIFSSPNEGO)
 AC_SUBST(EXTRA_SBIN_PROGS)
 AC_SUBST(EXTRA_ALL_TARGETS)
 AC_SUBST(CONFIG_LIBS)
@@ -4225,6 +4228,45 @@ AC_ARG_WITH(cifsmount,
 	AC_MSG_RESULT(no)
 	;;
   esac ]
+)
+
+#################################################
+# check for cifs.spnego support
+AC_CHECK_HEADERS([keyutils.h], [HAVE_KEYUTILS_H=1], [HAVE_KEYUTILS_H=0])
+CIFSSPNEGO_PROGS=""
+INSTALL_CIFSSPNEGO=""
+UNINSTALL_CIFSSPNEGO=""
+AC_MSG_CHECKING(whether to build cifs.spnego)
+AC_ARG_WITH(cifsspnego,
+[  --with-cifsspnego       Include cifs.spnego (Linux only) support (default=no)],
+[ case "$withval" in
+  no)
+	AC_MSG_RESULT(no)
+	;;
+  *)
+	case "$host_os" in
+	*linux*)
+		if test x"$use_ads" != x"yes"; then
+			AC_MSG_ERROR(ADS support should be enabled for building cifs.spnego)
+		elif test x"$HAVE_KEYUTILS_H" != "x1"; then
+			AC_MSG_ERROR(keyutils package is required for cifs.spnego)
+		else
+			AC_MSG_RESULT(yes)
+			AC_DEFINE(WITH_CIFSSPNEGO,1,[whether to build cifs.spnego])
+			CIFSSPNEGO_PROGS="bin/cifs.spnego"
+			INSTALL_CIFSSPNEGO="installcifsspnego"
+			UNINSTALL_CIFSSPNEGO="uninstallcifsspnego"
+		fi
+		;;
+	*)
+		AC_MSG_ERROR(not on a linux system!)
+		;;
+	esac
+    ;;
+  esac ],
+[
+  AC_MSG_RESULT(no)
+  ]
 )
 
 

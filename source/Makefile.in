@@ -146,7 +146,7 @@ PATH_FLAGS = $(PATH_FLAGS6) $(PASSWD_FLAGS)
 
 SBIN_PROGS = bin/smbd@EXEEXT@ bin/nmbd@EXEEXT@ bin/swat@EXEEXT@ @EXTRA_SBIN_PROGS@
 
-ROOT_SBIN_PROGS = @CIFSMOUNT_PROGS@
+ROOT_SBIN_PROGS = @CIFSMOUNT_PROGS@ @CIFSSPNEGO_PROGS@
 
 BIN_PROGS1 = bin/smbclient@EXEEXT@ bin/net@EXEEXT@ bin/smbspool@EXEEXT@ \
 	bin/testparm@EXEEXT@ bin/smbstatus@EXEEXT@ bin/smbget@EXEEXT@
@@ -646,6 +646,8 @@ CIFS_MOUNT_OBJ = client/mount.cifs.o
 
 CIFS_UMOUNT_OBJ = client/umount.cifs.o
 
+CIFS_SPNEGO_OBJ = client/cifs.spnego.o
+
 NMBLOOKUP_OBJ = utils/nmblookup.o $(PARAM_OBJ) $(LIBNMB_OBJ) $(RPC_PARSE_OBJ1) $(DOSERR_OBJ) \
                $(LIB_NONSMBD_OBJ) $(POPT_LIB_OBJ) $(SECRETS_OBJ) $(LIBSAMBA_OBJ)
 
@@ -1021,6 +1023,11 @@ bin/mount.cifs@EXEEXT@: $(CIFS_MOUNT_OBJ) bin/.dummy
 bin/umount.cifs@EXEEXT@: $(CIFS_UMOUNT_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(CIFS_UMOUNT_OBJ) $(DYNEXP) $(LDFLAGS)
+
+bin/cifs.spnego@EXEEXT@: $(BINARY_PREREQS) $(CIFS_SPNEGO_OBJ) $(LIBSMBCLIENT_OBJ) bin/.dummy
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(CIFS_SPNEGO_OBJ) $(DYNEXP) $(LDFLAGS) -lkeyutils $(LIBS) \
+		$(LIBSMBCLIENT_OBJ) $(KRB5LIBS) $(LDAP_LIBS)
 
 bin/testparm@EXEEXT@: proto_exists $(TESTPARM_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
@@ -1566,8 +1573,7 @@ bin/timelimit@EXEEXT@: script/tests/timelimit.o
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(DYNEXP) script/tests/timelimit.o
 
-install: installservers installbin @INSTALL_CIFSMOUNT@ installman installscripts installdat installswat installmodules @INSTALL_LIBSMBCLIENT@ @INSTALL_LIBMSRPC@ @INSTALL_PAM_MODULES@ @INSTALL_LIBSMBSHAREMODES@
-
+install: installservers installbin @INSTALL_CIFSMOUNT@ @INSTALL_CIFSSPNEGO@ installman installscripts installdat installswat installmodules @INSTALL_LIBSMBCLIENT@ @INSTALL_LIBMSRPC@ @INSTALL_PAM_MODULES@ @INSTALL_LIBSMBSHAREMODES@
 
 install-everything: install installmodules
 
@@ -1591,6 +1597,10 @@ installbin: all installdirs
 installcifsmount: @CIFSMOUNT_PROGS@
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS) $(DESTDIR) $(ROOTSBINDIR)
 	@$(SHELL) script/installbin.sh $(INSTALLPERMS) $(DESTDIR) $(prefix) $(ROOTSBINDIR) @CIFSMOUNT_PROGS@
+
+installcifsspnego: @CIFSSPNEGO_PROGS@
+	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(ROOTSBINDIR)
+	@$(SHELL) script/installbin.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(ROOTSBINDIR) @CIFSSPNEGO_PROGS@
 
 # Some symlinks are required for the 'probing' of modules.
 # This mechanism should go at some point..
@@ -1709,7 +1719,7 @@ showlayout:
 	@echo "  swatdir:     $(SWATDIR)"
 
 
-uninstall: uninstallman uninstallservers uninstallbin @UNINSTALL_CIFSMOUNT@ uninstallscripts uninstalldat uninstallswat uninstallmodules @UNINSTALL_LIBSMBCLIENT@ @UNINSTALL_LIBMSRPC@ @UNINSTALL_PAM_MODULES@ @UNINSTALL_LIBSMBSHAREMODES@
+uninstall: uninstallman uninstallservers uninstallbin @UNINSTALL_CIFSMOUNT@ @UNINSTALL_CIFSSPNEGO@ uninstallscripts uninstalldat uninstallswat uninstallmodules @UNINSTALL_LIBSMBCLIENT@ @UNINSTALL_LIBMSRPC@ @UNINSTALL_PAM_MODULES@ @UNINSTALL_LIBSMBSHAREMODES@
 
 uninstallman:
 	@$(SHELL) $(srcdir)/script/uninstallman.sh $(DESTDIR)$(MANDIR) $(srcdir) C
@@ -1722,6 +1732,9 @@ uninstallbin:
 
 uninstallcifsmount:
 	@$(SHELL) script/uninstallbin.sh $(INSTALLPERMS) $(DESTDIR) $(prefix) $(ROOTSBINDIR) @CIFSMOUNT_PROGS@
+
+uninstallcifsspnego:
+	@$(SHELL) script/uninstallbin.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(ROOTSBINDIR) @CIFSSPNEGO_PROGS@
 
 uninstallmodules:
 	@$(SHELL) $(srcdir)/script/uninstallmodules.sh $(INSTALLPERMS) $(DESTDIR) $(prefix) $(VFSLIBDIR) $(VFS_MODULES)
