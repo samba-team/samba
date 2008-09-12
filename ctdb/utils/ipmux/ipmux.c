@@ -34,7 +34,7 @@
 
 struct ipmux_node {
 	uint32_t pnn;
-	struct sockaddr_in sin;
+	ctdb_sock_addr addr;
 };
 struct ipmux_node *ipmux_nodes;
 
@@ -188,8 +188,8 @@ int main(int argc, const char *argv[])
 		if (nodemap->nodes[i].flags & NODE_FLAGS_DISCONNECTED) {
 			continue;
 		}
-		ipmux_nodes[num_nodes].pnn = i;
-		ipmux_nodes[num_nodes].sin = nodemap->nodes[i].sin;
+		ipmux_nodes[num_nodes].pnn  = i;
+		ipmux_nodes[num_nodes].addr = nodemap->nodes[i].addr;
 		num_nodes++;
 	}
 
@@ -251,7 +251,7 @@ int main(int argc, const char *argv[])
 		   send the packet off and tell the kernel to not worry
 		   about this packet any more
 		*/
-		ret = sendto(s, &ipqp->payload[0], ipqp->data_len, 0, &ipmux_nodes[hash].sin, sizeof(struct sockaddr_in));
+		ret = sendto(s, &ipqp->payload[0], ipqp->data_len, 0, (struct sockaddr_in *)&ipmux_nodes[hash].addr, sizeof(ctdb_sock_addr));
 		ipq_set_verdict(ipqh, ipqp->packet_id, NF_DROP, 0, pktbuf);
 
 	}

@@ -325,7 +325,7 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		return ctdb_control_kill_tcp(ctdb, indata);
 
 	case CTDB_CONTROL_GET_TCP_TICKLE_LIST:
-		CHECK_CONTROL_DATA_SIZE(sizeof(struct sockaddr_in));
+		CHECK_CONTROL_DATA_SIZE(sizeof(ctdb_sock_addr));
 		return ctdb_control_get_tcp_tickle_list(ctdb, indata, outdata);
 
 	case CTDB_CONTROL_SET_TCP_TICKLE_LIST:
@@ -378,10 +378,6 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 	case CTDB_CONTROL_END_RECOVERY:
 		return ctdb_control_end_recovery(ctdb, c, async_reply);
 
-	case CTDB_CONTROL_GET_RECLOCK_FILE:
-		CHECK_CONTROL_DATA_SIZE(0);
-		return ctdb_control_get_reclock_file(ctdb, outdata);
-
 	case CTDB_CONTROL_TRY_DELETE_RECORDS:
 		return ctdb_control_try_delete_records(ctdb, indata, outdata);
 
@@ -393,6 +389,26 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 
 	case CTDB_CONTROL_GET_CAPABILITIES:
 		return ctdb_control_get_capabilities(ctdb, outdata);
+
+	case CTDB_CONTROL_START_PERSISTENT_UPDATE:
+		return ctdb_control_start_persistent_update(ctdb, c, indata);
+
+	case CTDB_CONTROL_CANCEL_PERSISTENT_UPDATE:
+		return ctdb_control_cancel_persistent_update(ctdb, c, indata);
+
+	case CTDB_CONTROL_TRANS2_COMMIT:
+	case CTDB_CONTROL_TRANS2_COMMIT_RETRY:
+		return ctdb_control_trans2_commit(ctdb, c, indata, async_reply);
+
+	case CTDB_CONTROL_TRANS2_ERROR:
+		return ctdb_control_trans2_error(ctdb, c);
+
+	case CTDB_CONTROL_TRANS2_FINISHED:
+		return ctdb_control_trans2_finished(ctdb, c);
+
+	case CTDB_CONTROL_RECD_PING:
+		CHECK_CONTROL_DATA_SIZE(0);
+		return ctdb_control_recd_ping(ctdb);
 
 	default:
 		DEBUG(DEBUG_CRIT,(__location__ " Unknown CTDB control opcode %u\n", opcode));

@@ -163,7 +163,10 @@ ctdb_control_getnodemap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA ind
 	node_map = (struct ctdb_node_map *)outdata->dptr;
 	node_map->num = num_nodes;
 	for (i=0; i<num_nodes; i++) {
-		inet_aton(ctdb->nodes[i]->address.address, &node_map->nodes[i].sin.sin_addr);
+		if (parse_ip(ctdb->nodes[i]->address.address, &node_map->nodes[i].addr) == 0) {
+			DEBUG(DEBUG_ERR, (__location__ " Failed to parse %s into a sockaddr\n", ctdb->nodes[i]->address.address));
+		}
+
 		node_map->nodes[i].pnn   = ctdb->nodes[i]->pnn;
 		node_map->nodes[i].flags = ctdb->nodes[i]->flags;
 	}
@@ -219,7 +222,7 @@ ctdb_control_reload_nodes_file(struct ctdb_context *ctdb, uint32_t opcode)
  */
 struct pulldb_data {
 	struct ctdb_context *ctdb;
-	struct ctdb_control_pulldb_reply *pulldata;
+	struct ctdb_marshall_buffer *pulldata;
 	uint32_t len;
 	bool failed;
 };
@@ -258,7 +261,7 @@ int32_t ctdb_control_pull_db(struct ctdb_context *ctdb, TDB_DATA indata, TDB_DAT
 	struct ctdb_control_pulldb *pull;
 	struct ctdb_db_context *ctdb_db;
 	struct pulldb_data params;
-	struct ctdb_control_pulldb_reply *reply;
+	struct ctdb_marshall_buffer *reply;
 
 	if (ctdb->freeze_mode != CTDB_FREEZE_FROZEN) {
 		DEBUG(DEBUG_DEBUG,("rejecting ctdb_control_pull_db when not frozen\n"));
@@ -273,14 +276,14 @@ int32_t ctdb_control_pull_db(struct ctdb_context *ctdb, TDB_DATA indata, TDB_DAT
 		return -1;
 	}
 
-	reply = talloc_zero(outdata, struct ctdb_control_pulldb_reply);
+	reply = talloc_zero(outdata, struct ctdb_marshall_buffer);
 	CTDB_NO_MEMORY(ctdb, reply);
 
 	reply->db_id = pull->db_id;
 
 	params.ctdb = ctdb;
 	params.pulldata = reply;
-	params.len = offsetof(struct ctdb_control_pulldb_reply, data);
+	params.len = offsetof(struct ctdb_marshall_buffer, data);
 	params.failed = false;
 
 	if (ctdb_lock_all_databases_mark(ctdb) != 0) {
@@ -308,7 +311,7 @@ int32_t ctdb_control_pull_db(struct ctdb_context *ctdb, TDB_DATA indata, TDB_DAT
  */
 int32_t ctdb_control_push_db(struct ctdb_context *ctdb, TDB_DATA indata)
 {
-	struct ctdb_control_pulldb_reply *reply = (struct ctdb_control_pulldb_reply *)indata.dptr;
+	struct ctdb_marshall_buffer *reply = (struct ctdb_marshall_buffer *)indata.dptr;
 	struct ctdb_db_context *ctdb_db;
 	int i, ret;
 	struct ctdb_rec_data *rec;
@@ -318,7 +321,7 @@ int32_t ctdb_control_push_db(struct ctdb_context *ctdb, TDB_DATA indata)
 		return -1;
 	}
 
-	if (indata.dsize < offsetof(struct ctdb_control_pulldb_reply, data)) {
+	if (indata.dsize < offsetof(struct ctdb_marshall_buffer, data)) {
 		DEBUG(DEBUG_ERR,(__location__ " invalid data in pulldb reply\n"));
 		return -1;
 	}
@@ -866,34 +869,18 @@ int32_t ctdb_control_start_recovery(struct ctdb_context *ctdb,
 }
 
 /*
-  report the location for the reclock file
- */
-int32_t ctdb_control_get_reclock_file(struct ctdb_context *ctdb, TDB_DATA *outdata)
-{
-	char *reclock = NULL;
-
-	reclock = talloc_strdup(outdata, ctdb->recovery_lock_file);
-	CTDB_NO_MEMORY(ctdb, reclock);
-
-	outdata->dsize = strlen(reclock)+1;
-	outdata->dptr = (uint8_t *)reclock;
-
-	return 0;	
-}
-
-/*
  try to delete all these records as part of the vacuuming process
  and return the records we failed to delete
 */
 int32_t ctdb_control_try_delete_records(struct ctdb_context *ctdb, TDB_DATA indata, TDB_DATA *outdata)
 {
-	struct ctdb_control_pulldb_reply *reply = (struct ctdb_control_pulldb_reply *)indata.dptr;
+	struct ctdb_marshall_buffer *reply = (struct ctdb_marshall_buffer *)indata.dptr;
 	struct ctdb_db_context *ctdb_db;
 	int i;
 	struct ctdb_rec_data *rec;
-	struct ctdb_control_pulldb_reply *records;
+	struct ctdb_marshall_buffer *records;
 
-	if (indata.dsize < offsetof(struct ctdb_control_pulldb_reply, data)) {
+	if (indata.dsize < offsetof(struct ctdb_marshall_buffer, data)) {
 		DEBUG(DEBUG_ERR,(__location__ " invalid data in try_delete_records\n"));
 		return -1;
 	}
@@ -910,9 +897,9 @@ int32_t ctdb_control_try_delete_records(struct ctdb_context *ctdb, TDB_DATA inda
 
 
 	/* create a blob to send back the records we couldnt delete */	
-	records = (struct ctdb_control_pulldb_reply *)
+	records = (struct ctdb_marshall_buffer *)
 			talloc_zero_size(outdata, 
-				    offsetof(struct ctdb_control_pulldb_reply, data));
+				    offsetof(struct ctdb_marshall_buffer, data));
 	if (records == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " Out of memory\n"));
 		return -1;
@@ -982,5 +969,43 @@ int32_t ctdb_control_get_capabilities(struct ctdb_context *ctdb, TDB_DATA *outda
 	outdata->dptr = (uint8_t *)capabilities;
 
 	return 0;	
+}
+
+static void ctdb_recd_ping_timeout(struct event_context *ev, struct timed_event *te, struct timeval t, void *p)
+{
+	struct ctdb_context *ctdb = talloc_get_type(p, struct ctdb_context);
+
+	DEBUG(DEBUG_ERR, (__location__ " Recovery daemon ping timeout. Shutting down ctdb daemon\n"));
+
+	ctdb_stop_recoverd(ctdb);
+	ctdb_stop_keepalive(ctdb);
+	ctdb_stop_monitoring(ctdb);
+	ctdb_release_all_ips(ctdb);
+	if (ctdb->methods != NULL) {
+		ctdb->methods->shutdown(ctdb);
+	}
+	ctdb_event_script(ctdb, "shutdown");
+	DEBUG(DEBUG_ERR, (__location__ " Recovery daemon ping timeout. Daemon has been shut down.\n"));
+	exit(0);
+}
+
+/* The recovery daemon will ping us at regular intervals.
+   If we havent been pinged for a while we assume the recovery
+   daemon is inoperable and we shut down.
+*/
+int32_t ctdb_control_recd_ping(struct ctdb_context *ctdb)
+{
+	talloc_free(ctdb->recd_ping_ctx);
+
+	ctdb->recd_ping_ctx = talloc_new(ctdb);
+	CTDB_NO_MEMORY(ctdb, ctdb->recd_ping_ctx);
+
+	if (ctdb->tunable.recd_ping_timeout != 0) {
+		event_add_timed(ctdb->ev, ctdb->recd_ping_ctx, 
+			timeval_current_ofs(ctdb->tunable.recd_ping_timeout, 0),
+			ctdb_recd_ping_timeout, ctdb);
+	}
+
+	return 0;
 }
 

@@ -39,7 +39,7 @@ struct vacuum_data {
 	struct ctdb_db_context *ctdb_db;
 	trbt_tree_t *delete_tree;
 	uint32_t delete_count;
-	struct ctdb_control_pulldb_reply **list;
+	struct ctdb_marshall_buffer **list;
 	bool traverse_error;
 	uint32_t total;
 };
@@ -153,7 +153,7 @@ static int vacuum_traverse(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data,
 }
 
 struct delete_records_list {
-	struct ctdb_control_pulldb_reply *records;
+	struct ctdb_marshall_buffer *records;
 };
 
 /*
@@ -269,16 +269,16 @@ static int ctdb_vacuum_db(struct ctdb_context *ctdb, uint32_t db_id, struct ctdb
 	vdata->ctdb_db = ctdb_db;
 
 	/* the list needs to be of length num_nodes */
-	vdata->list = talloc_array(vdata, struct ctdb_control_pulldb_reply *, ctdb->vnn_map->size);
+	vdata->list = talloc_array(vdata, struct ctdb_marshall_buffer *, ctdb->vnn_map->size);
 	if (vdata->list == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " Out of memory\n"));
 		talloc_free(vdata);
 		return -1;
 	}
 	for (i=0;i<ctdb->vnn_map->size;i++) {
-		vdata->list[i] = (struct ctdb_control_pulldb_reply *)
+		vdata->list[i] = (struct ctdb_marshall_buffer *)
 			talloc_zero_size(vdata->list, 
-				    offsetof(struct ctdb_control_pulldb_reply, data));
+				    offsetof(struct ctdb_marshall_buffer, data));
 		if (vdata->list[i] == NULL) {
 			DEBUG(DEBUG_ERR,(__location__ " Out of memory\n"));
 			talloc_free(vdata);
@@ -332,9 +332,9 @@ static int ctdb_vacuum_db(struct ctdb_context *ctdb, uint32_t db_id, struct ctdb
 			DEBUG(DEBUG_ERR,(__location__ " Out of memory\n"));
 			return -1;
 		}
-		recs->records = (struct ctdb_control_pulldb_reply *)
+		recs->records = (struct ctdb_marshall_buffer *)
 			talloc_zero_size(vdata, 
-				    offsetof(struct ctdb_control_pulldb_reply, data));
+				    offsetof(struct ctdb_marshall_buffer, data));
 		if (recs->records == NULL) {
 			DEBUG(DEBUG_ERR,(__location__ " Out of memory\n"));
 			return -1;
@@ -353,7 +353,7 @@ static int ctdb_vacuum_db(struct ctdb_context *ctdb, uint32_t db_id, struct ctdb
 		   (if possible)
 		 */
 		for (i=0;i<ctdb->vnn_map->size;i++) {
-			struct ctdb_control_pulldb_reply *records;
+			struct ctdb_marshall_buffer *records;
 			struct ctdb_rec_data *rec;
 
 			if (ctdb->vnn_map->map[i] == ctdb->pnn) {
@@ -375,7 +375,7 @@ static int ctdb_vacuum_db(struct ctdb_context *ctdb, uint32_t db_id, struct ctdb
 			/* outdata countains the list of records coming back
 			   from the node which the node could not delete
 			*/
-			records = (struct ctdb_control_pulldb_reply *)outdata.dptr;
+			records = (struct ctdb_marshall_buffer *)outdata.dptr;
 			rec = (struct ctdb_rec_data *)&records->data[0];
 			while (records->count-- > 1) {
 				TDB_DATA reckey, recdata;

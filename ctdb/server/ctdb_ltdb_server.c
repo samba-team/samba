@@ -330,7 +330,7 @@ int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 	if (db) {
 		outdata->dptr  = (uint8_t *)&db->db_id;
 		outdata->dsize = sizeof(db->db_id);
-		db->client_tdb_flags |= tdb_flags;
+		tdb_add_flags(db->ltdb->tdb, tdb_flags);
 		return 0;
 	}
 
@@ -345,7 +345,7 @@ int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 	}
 
 	/* remember the flags the client has specified */
-	db->client_tdb_flags = tdb_flags;
+	tdb_add_flags(db->ltdb->tdb, tdb_flags);
 
 	outdata->dptr  = (uint8_t *)&db->db_id;
 	outdata->dsize = sizeof(db->db_id);

@@ -27,7 +27,7 @@
 #include <sys/time.h>
 #include <time.h>
 
-static char *dbname = "test.tdb";
+static const char *dbname = "test.tdb";
 
 static int traverse_callback(struct ctdb_context *ctdb, TDB_DATA key, TDB_DATA data, void *private_data)
 {

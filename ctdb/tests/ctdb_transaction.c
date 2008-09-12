@@ -98,26 +98,31 @@ static void test_store_records(struct ctdb_context *ctdb, struct event_context *
 {
 	TDB_DATA key;
 	struct ctdb_db_context *ctdb_db;
-
-	ctdb_db = ctdb_db_handle(ctdb, "persistent.tdb");
+	int ret;
+	uint32_t *counters;
+	ctdb_db = ctdb_db_handle(ctdb, "transaction.tdb");
 
 	key.dptr = discard_const("testkey");
 	key.dsize = strlen((const char *)key.dptr)+1;
 
 	start_timer();
 	while (end_timer() < timelimit) {
-		TDB_DATA data;
 		TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
-		struct ctdb_record_handle *h;
-		int ret;
-		uint32_t *counters;
+		TDB_DATA data;
 
-		h = ctdb_fetch_lock(ctdb_db, tmp_ctx, key, &data);
+		struct ctdb_transaction_handle *h;
+		h = ctdb_transaction_start(ctdb_db, tmp_ctx);
 		if (h == NULL) {
-			printf("Failed to fetch record '%s' on node %d\n", 
-			       (const char *)key.dptr, ctdb_get_pnn(ctdb));
+			printf("Failed to start transaction on node %d\n", 
+			       ctdb_get_pnn(ctdb));
 			talloc_free(tmp_ctx);
 			return;
+		}
+
+		ret = ctdb_transaction_fetch(h, tmp_ctx, key, &data);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR,("Failed to fetch record\n"));
+			exit(1);			
 		}
 
 		if (data.dsize < sizeof(uint32_t) * (pnn+1)) {
@@ -141,9 +146,15 @@ static void test_store_records(struct ctdb_context *ctdb, struct event_context *
 		/* bump our counter */
 		counters[pnn]++;
 
-		ret = ctdb_record_store(h, data);
+		ret = ctdb_transaction_store(h, key, data);
 		if (ret != 0) {
 			DEBUG(DEBUG_ERR,("Failed to store record\n"));
+			exit(1);
+		}
+
+		ret = ctdb_transaction_commit(h);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR,("Failed to commit transaction\n"));
 			exit(1);
 		}
 
@@ -152,7 +163,6 @@ static void test_store_records(struct ctdb_context *ctdb, struct event_context *
 			check_counters(ctdb, data);
 		}
 
-		talloc_free(h);
 		talloc_free(tmp_ctx);
 	}
 
@@ -209,9 +219,9 @@ int main(int argc, const char *argv[])
 
 	/* attach to a specific database */
 	if (unsafe_writes == 1) {
-		ctdb_db = ctdb_attach(ctdb, "persistent.tdb", true, TDB_NOSYNC);
+		ctdb_db = ctdb_attach(ctdb, "transaction.tdb", true, TDB_NOSYNC);
 	} else {
-		ctdb_db = ctdb_attach(ctdb, "persistent.tdb", true, 0);
+		ctdb_db = ctdb_attach(ctdb, "transaction.tdb", true, 0);
 	}
 
 	if (!ctdb_db) {

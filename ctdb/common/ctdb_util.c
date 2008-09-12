@@ -147,7 +147,7 @@ void *_ctdb_reqid_find(struct ctdb_context *ctdb, uint32_t reqid, const char *ty
 
 	p = _idr_find_type(ctdb->idr, (reqid>>16)&0xFFFF, type, location);
 	if (p == NULL) {
-		DEBUG(DEBUG_ERR, ("Could not find idr:%u\n",reqid));
+		DEBUG(DEBUG_WARNING, ("Could not find idr:%u\n",reqid));
 	}
 
 	return p;
@@ -199,6 +199,106 @@ struct ctdb_rec_data *ctdb_marshall_record(TALLOC_CTX *mem_ctx, uint32_t reqid,
 	}
 	return d;
 }
+
+
+/* helper function for marshalling multiple records */
+struct ctdb_marshall_buffer *ctdb_marshall_add(TALLOC_CTX *mem_ctx, 
+					       struct ctdb_marshall_buffer *m,
+					       uint64_t db_id,
+					       uint32_t reqid,
+					       TDB_DATA key,
+					       struct ctdb_ltdb_header *header,
+					       TDB_DATA data)
+{
+	struct ctdb_rec_data *r;
+	size_t m_size, r_size;
+	struct ctdb_marshall_buffer *m2;
+
+	r = ctdb_marshall_record(mem_ctx, reqid, key, header, data);
+	if (r == NULL) {
+		talloc_free(m);
+		return NULL;
+	}
+
+	if (m == NULL) {
+		m = talloc_zero_size(mem_ctx, offsetof(struct ctdb_marshall_buffer, data));
+		if (m == NULL) {
+			return NULL;
+		}
+		m->db_id = db_id;
+	}
+
+	m_size = talloc_get_size(m);
+	r_size = talloc_get_size(r);
+
+	m2 = talloc_realloc_size(mem_ctx, m,  m_size + r_size);
+	if (m2 == NULL) {
+		talloc_free(m);
+		return NULL;
+	}
+
+	memcpy(m_size + (uint8_t *)m2, r, r_size);
+
+	talloc_free(r);
+
+	m2->count++;
+
+	return m2;
+}
+
+/* we've finished marshalling, return a data blob with the marshalled records */
+TDB_DATA ctdb_marshall_finish(struct ctdb_marshall_buffer *m)
+{
+	TDB_DATA data;
+	data.dptr = (uint8_t *)m;
+	data.dsize = talloc_get_size(m);
+	return data;
+}
+
+/* 
+   loop over a marshalling buffer 
+   
+     - pass r==NULL to start
+     - loop the number of times indicated by m->count
+*/
+struct ctdb_rec_data *ctdb_marshall_loop_next(struct ctdb_marshall_buffer *m, struct ctdb_rec_data *r,
+					      uint32_t *reqid,
+					      struct ctdb_ltdb_header *header,
+					      TDB_DATA *key, TDB_DATA *data)
+{
+	if (r == NULL) {
+		r = (struct ctdb_rec_data *)&m->data[0];
+	} else {
+		r = (struct ctdb_rec_data *)(r->length + (uint8_t *)r);
+	}
+
+	if (reqid != NULL) {
+		*reqid = r->reqid;
+	}
+	
+	if (key != NULL) {
+		key->dptr   = &r->data[0];
+		key->dsize  = r->keylen;
+	}
+	if (data != NULL) {
+		data->dptr  = &r->data[r->keylen];
+		data->dsize = r->datalen;
+		if (header != NULL) {
+			data->dptr += sizeof(*header);
+			data->dsize -= sizeof(*header);
+		}
+	}
+
+	if (header != NULL) {
+		if (r->datalen < sizeof(*header)) {
+			return NULL;
+		}
+		*header = *(struct ctdb_ltdb_header *)&r->data[r->keylen];
+	}
+
+	return r;
+}
+
 
 #if HAVE_SCHED_H
 #include <sched.h>
@@ -259,40 +359,6 @@ void set_close_on_exec(int fd)
 	unsigned v;
 	v = fcntl(fd, F_GETFD, 0);
         fcntl(fd, F_SETFD, v | FD_CLOEXEC);
-}
-
-
-/*
-  parse a ip:num pair with the given separator
- */
-static bool parse_ip_num(const char *s, struct in_addr *addr, unsigned *num, const char sep)
-{
-	const char *p;
-	char *endp = NULL;
-	char buf[16];
-
-	p = strchr(s, sep);
-	if (p == NULL) {
-		return false;
-	}
-
-	if (p - s > 15) {
-		return false;
-	}
-
-	*num = strtoul(p+1, &endp, 10);
-	if (endp == NULL || *endp != 0) {
-		/* trailing garbage */
-		return false;
-	}
-
-	strlcpy(buf, s, 1+p-s);
-
-	if (inet_aton(buf, addr) == 0) {
-		return false;
-	}
-
-	return true;
 }
 
 
@@ -392,45 +458,91 @@ bool parse_ip(const char *addr, ctdb_sock_addr *saddr)
 /*
   parse a ip/mask pair
  */
-bool parse_ip_mask(const char *s, struct sockaddr_in *ip, unsigned *mask)
+bool parse_ip_mask(const char *str, ctdb_sock_addr *addr, unsigned *mask)
 {
-	ZERO_STRUCT(*ip);
+	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
+	char *s, *p;
+	char *endp = NULL;
+	bool ret;
 
-	if (!parse_ip_num(s, &ip->sin_addr, mask, '/')) {
+	ZERO_STRUCT(*addr);
+	s = talloc_strdup(tmp_ctx, str);
+	if (s == NULL) {
+		DEBUG(DEBUG_ERR, (__location__ " Failed strdup()\n"));
+		talloc_free(tmp_ctx);
 		return false;
 	}
-	if (*mask > 32) {
+
+	p = rindex(s, '/');
+	if (p == NULL) {
+		DEBUG(DEBUG_ERR, (__location__ " This addr: %s does not contain a mask\n", s));
+		talloc_free(tmp_ctx);
 		return false;
 	}
-	ip->sin_family = AF_INET;
-	ip->sin_port   = 0;
-	return true;
+
+	*mask = strtoul(p+1, &endp, 10);
+	if (endp == NULL || *endp != 0) {
+		/* trailing garbage */
+		DEBUG(DEBUG_ERR, (__location__ " Trailing garbage after the mask in %s\n", s));
+		talloc_free(tmp_ctx);
+		return false;
+	}
+	*p = 0;
+
+
+	/* now is this a ipv4 or ipv6 address ?*/
+	p = index(s, ':');
+	if (p == NULL) {
+		ret = parse_ipv4(s, 0, addr);
+	} else {
+		ret = parse_ipv6(s, 0, addr);
+	}
+
+	talloc_free(tmp_ctx);
+	return ret;
 }
 
 /*
-  compare two sockaddr_in structures - matching only on IP
- */
-bool ctdb_same_ipv4(const struct sockaddr_in *ip1, const struct sockaddr_in *ip2)
+   This is used to canonicalize a ctdb_sock_addr structure.
+*/
+void ctdb_canonicalize_ip(const ctdb_sock_addr *ip, ctdb_sock_addr *cip)
 {
-	return ip1->sin_family == ip2->sin_family &&
-		ip1->sin_addr.s_addr == ip2->sin_addr.s_addr;
+	char prefix[12] = { 0,0,0,0,0,0,0,0,0,0,0xff,0xff };
+
+	memcpy(cip, ip, sizeof (*cip));
+
+	if ( (ip->sa.sa_family == AF_INET6)
+	&& !memcmp(&ip->ip6.sin6_addr, prefix, 12)) {
+		memset(cip, 0, sizeof(*cip));
+#ifdef HAVE_SOCK_SIN_LEN
+		cip->ip.sin_len = sizeof(*cip);
+#endif
+		cip->ip.sin_family = AF_INET;
+		cip->ip.sin_port   = ip->ip6.sin6_port;
+		memcpy(&cip->ip.sin_addr, &ip->ip6.sin6_addr.s6_addr32[3], 4);
+	}
 }
 
-bool ctdb_same_ip(ctdb_sock_addr *ip1, ctdb_sock_addr *ip2)
+bool ctdb_same_ip(const ctdb_sock_addr *tip1, const ctdb_sock_addr *tip2)
 {
-	if (ip1->sa.sa_family != ip2->sa.sa_family) {
+	ctdb_sock_addr ip1, ip2;
+
+	ctdb_canonicalize_ip(tip1, &ip1);
+	ctdb_canonicalize_ip(tip2, &ip2);
+	
+	if (ip1.sa.sa_family != ip2.sa.sa_family) {
 		return false;
 	}
 
-	switch (ip1->sa.sa_family) {
+	switch (ip1.sa.sa_family) {
 	case AF_INET:
-		return ip1->ip.sin_addr.s_addr == ip2->ip.sin_addr.s_addr;
+		return ip1.ip.sin_addr.s_addr == ip2.ip.sin_addr.s_addr;
 	case AF_INET6:
-		return !memcmp(&ip1->ip6.sin6_addr.s6_addr[0],
-				&ip2->ip6.sin6_addr.s6_addr[0],
+		return !memcmp(&ip1.ip6.sin6_addr.s6_addr[0],
+				&ip2.ip6.sin6_addr.s6_addr[0],
 				16);
 	default:
-		DEBUG(DEBUG_ERR, (__location__ " CRITICAL Can not compare sockaddr structures of type %u\n", ip1->sa.sa_family));
+		DEBUG(DEBUG_ERR, (__location__ " CRITICAL Can not compare sockaddr structures of type %u\n", ip1.sa.sa_family));
 		return false;
 	}
 
@@ -438,13 +550,30 @@ bool ctdb_same_ip(ctdb_sock_addr *ip1, ctdb_sock_addr *ip2)
 }
 
 /*
-  compare two sockaddr_in structures
+  compare two ctdb_sock_addr structures
  */
-bool ctdb_same_sockaddr(const struct sockaddr_in *ip1, const struct sockaddr_in *ip2)
+bool ctdb_same_sockaddr(const ctdb_sock_addr *ip1, const ctdb_sock_addr *ip2)
 {
-	return ctdb_same_ipv4(ip1, ip2) && ip1->sin_port == ip2->sin_port;
+	return ctdb_same_ip(ip1, ip2) && ip1->ip.sin_port == ip2->ip.sin_port;
 }
 
+char *ctdb_addr_to_str(ctdb_sock_addr *addr)
+{
+	static char cip[128] = "";
+
+	switch (addr->sa.sa_family) {
+	case AF_INET:
+		inet_ntop(addr->ip.sin_family, &addr->ip.sin_addr, cip, sizeof(cip));
+		break;
+	case AF_INET6:
+		inet_ntop(addr->ip6.sin6_family, &addr->ip6.sin6_addr, cip, sizeof(cip));
+		break;
+	default:
+		DEBUG(DEBUG_ERR, (__location__ " ERROR, unknown family %u\n", addr->sa.sa_family));
+	}
+
+	return cip;
+}
 
 
 void ctdb_block_signal(int signum)

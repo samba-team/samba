@@ -100,23 +100,15 @@ static void ctdb_node_connect_write(struct event_context *ev, struct fd_event *f
 
 	/* the queue subsystem now owns this fd */
 	tnode->fd = -1;
-       
-	/* tell the ctdb layer we are connected */
-	node->ctdb->upcalls->node_connected(node);
 }
 
 
 static int ctdb_tcp_get_address(struct ctdb_context *ctdb,
-				const char *address, struct in_addr *addr)
+				const char *address, ctdb_sock_addr *addr)
 {
-	if (inet_pton(AF_INET, address, addr) <= 0) {
-		struct hostent *he = gethostbyname(address);
-		if (he == NULL || he->h_length > sizeof(*addr)) {
-			ctdb_set_error(ctdb, "invalid nework address '%s'\n", 
-				       address);
-			return -1;
-		}
-		memcpy(addr, he->h_addr, he->h_length);
+	if (parse_ip(address, addr) == 0) {
+		DEBUG(DEBUG_CRIT, (__location__ " Unparsable address : %s.\n", address));
+		return -1;
 	}
 	return 0;
 }
@@ -132,26 +124,34 @@ void ctdb_tcp_node_connect(struct event_context *ev, struct timed_event *te,
 	struct ctdb_tcp_node *tnode = talloc_get_type(node->private_data, 
 						      struct ctdb_tcp_node);
 	struct ctdb_context *ctdb = node->ctdb;
-        struct sockaddr_in sock_in;
-        struct sockaddr_in sock_out;
+        ctdb_sock_addr sock_in;
+        ctdb_sock_addr sock_out;
 
 	ctdb_tcp_stop_connection(node);
 
-	tnode->fd = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
-
-	set_nonblocking(tnode->fd);
-	set_close_on_exec(tnode->fd);
-
 	ZERO_STRUCT(sock_out);
 #ifdef HAVE_SOCK_SIN_LEN
-	sock_out.sin_len = sizeof(sock_out);
+	sock_out.ip.sin_len = sizeof(sock_out);
 #endif
-	if (ctdb_tcp_get_address(ctdb, node->address.address, &sock_out.sin_addr) != 0) {
+	if (ctdb_tcp_get_address(ctdb, node->address.address, &sock_out) != 0) {
 		return;
 	}
-	sock_out.sin_port = htons(node->address.port);
-	sock_out.sin_family = PF_INET;
+	switch (sock_out.sa.sa_family) {
+	case AF_INET:
+		sock_out.ip.sin_port = htons(node->address.port);
+		break;
+	case AF_INET6:
+		sock_out.ip6.sin6_port = htons(node->address.port);
+		break;
+	default:
+		DEBUG(DEBUG_ERR, (__location__ " unknown family %u\n",
+			sock_out.sa.sa_family));
+		return;
+	}
 
+	tnode->fd = socket(sock_out.sa.sa_family, SOCK_STREAM, IPPROTO_TCP);
+	set_nonblocking(tnode->fd);
+	set_close_on_exec(tnode->fd);
 
 	/* Bind our side of the socketpair to the same address we use to listen
 	 * on incoming CTDB traffic.
@@ -161,13 +161,11 @@ void ctdb_tcp_node_connect(struct event_context *ev, struct timed_event *te,
 	 */
 	ZERO_STRUCT(sock_in);
 #ifdef HAVE_SOCK_SIN_LEN
-	sock_in.sin_len = sizeof(sock_in);
+	sock_in.ip.sin_len = sizeof(sock_in);
 #endif
-	if (ctdb_tcp_get_address(ctdb, ctdb->address.address, &sock_in.sin_addr) != 0) {
+	if (ctdb_tcp_get_address(ctdb, ctdb->address.address, &sock_in) != 0) {
 		return;
 	}
-	sock_in.sin_port = htons(0); /* INPORT_ANY is not always available */
-	sock_in.sin_family = PF_INET;
 	bind(tnode->fd, (struct sockaddr *)&sock_in, sizeof(sock_in));
 
 	if (connect(tnode->fd, (struct sockaddr *)&sock_out, sizeof(sock_out)) != 0 &&
@@ -201,7 +199,7 @@ static void ctdb_listen_event(struct event_context *ev, struct fd_event *fde,
 {
 	struct ctdb_context *ctdb = talloc_get_type(private_data, struct ctdb_context);
 	struct ctdb_tcp *ctcp = talloc_get_type(ctdb->private_data, struct ctdb_tcp);
-	struct sockaddr_in addr;
+	ctdb_sock_addr addr;
 	socklen_t len;
 	int fd, nodeid;
 	struct ctdb_incoming *in;
@@ -213,7 +211,7 @@ static void ctdb_listen_event(struct event_context *ev, struct fd_event *fde,
 	fd = accept(ctcp->listen_fd, (struct sockaddr *)&addr, &len);
 	if (fd == -1) return;
 
-	incoming_node = inet_ntoa(addr.sin_addr);
+	incoming_node = ctdb_addr_to_str(&addr);
 	nodeid = ctdb_ip_to_nodeid(ctdb, incoming_node);
 
 	if (nodeid == -1) {
@@ -243,10 +241,11 @@ static int ctdb_tcp_listen_automatic(struct ctdb_context *ctdb)
 {
 	struct ctdb_tcp *ctcp = talloc_get_type(ctdb->private_data,
 						struct ctdb_tcp);
-        struct sockaddr_in sock;
+        ctdb_sock_addr sock;
 	int lock_fd, i;
 	const char *lock_path = "/tmp/.ctdb_socket_lock";
 	struct flock lock;
+	int one = 1;
 
 	/* in order to ensure that we don't get two nodes with the
 	   same adddress, we must make the bind() and listen() calls
@@ -282,16 +281,37 @@ static int ctdb_tcp_listen_automatic(struct ctdb_context *ctdb)
 
 		ZERO_STRUCT(sock);
 #ifdef HAVE_SOCK_SIN_LEN
-		sock.sin_len = sizeof(sock);
+		sock.ip.sin_len = sizeof(sock);
 #endif
-		sock.sin_port = htons(ctdb->nodes[i]->address.port);
-		sock.sin_family = PF_INET;
 		if (ctdb_tcp_get_address(ctdb,
 				ctdb->nodes[i]->address.address, 
-				&sock.sin_addr) != 0) {
+				&sock) != 0) {
 			continue;
 		}
 	
+		switch (sock.sa.sa_family) {
+		case AF_INET:
+			sock.ip.sin_port = htons(ctdb->nodes[i]->address.port);
+			break;
+		case AF_INET6:
+			sock.ip6.sin6_port = htons(ctdb->nodes[i]->address.port);
+			break;
+		default:
+			DEBUG(DEBUG_ERR, (__location__ " unknown family %u\n",
+				sock.sa.sa_family));
+			continue;
+		}
+
+		ctcp->listen_fd = socket(sock.sa.sa_family, SOCK_STREAM, IPPROTO_TCP);
+		if (ctcp->listen_fd == -1) {
+			ctdb_set_error(ctdb, "socket failed\n");
+			continue;
+		}
+
+		set_close_on_exec(ctcp->listen_fd);
+
+	        setsockopt(ctcp->listen_fd,SOL_SOCKET,SO_REUSEADDR,(char *)&one,sizeof(one));
+
 		if (bind(ctcp->listen_fd, (struct sockaddr * )&sock, 
 			 sizeof(sock)) == 0) {
 			break;
@@ -344,18 +364,8 @@ int ctdb_tcp_listen(struct ctdb_context *ctdb)
 {
 	struct ctdb_tcp *ctcp = talloc_get_type(ctdb->private_data,
 						struct ctdb_tcp);
-        struct sockaddr_in sock;
+        ctdb_sock_addr sock;
 	int one = 1;
-
-	ctcp->listen_fd = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
-	if (ctcp->listen_fd == -1) {
-		ctdb_set_error(ctdb, "socket failed\n");
-		return -1;
-	}
-
-	set_close_on_exec(ctcp->listen_fd);
-
-        setsockopt(ctcp->listen_fd,SOL_SOCKET,SO_REUSEADDR,(char *)&one,sizeof(one));
 
 	/* we can either auto-bind to the first available address, or we can
 	   use a specified address */
@@ -365,16 +375,36 @@ int ctdb_tcp_listen(struct ctdb_context *ctdb)
 
 	ZERO_STRUCT(sock);
 #ifdef HAVE_SOCK_SIN_LEN
-	sock.sin_len = sizeof(sock);
+	sock.ip.sin_len = sizeof(sock);
 #endif
-	sock.sin_port = htons(ctdb->address.port);
-	sock.sin_family = PF_INET;
-
 	if (ctdb_tcp_get_address(ctdb, ctdb->address.address, 
-				 &sock.sin_addr) != 0) {
+				 &sock) != 0) {
 		goto failed;
 	}
 	
+	switch (sock.sa.sa_family) {
+	case AF_INET:
+		sock.ip.sin_port = htons(ctdb->address.port);
+		break;
+	case AF_INET6:
+		sock.ip6.sin6_port = htons(ctdb->address.port);
+		break;
+	default:
+		DEBUG(DEBUG_ERR, (__location__ " unknown family %u\n",
+			sock.sa.sa_family));
+		goto failed;
+	}
+
+	ctcp->listen_fd = socket(sock.sa.sa_family, SOCK_STREAM, IPPROTO_TCP);
+	if (ctcp->listen_fd == -1) {
+		ctdb_set_error(ctdb, "socket failed\n");
+		return -1;
+	}
+
+	set_close_on_exec(ctcp->listen_fd);
+
+        setsockopt(ctcp->listen_fd,SOL_SOCKET,SO_REUSEADDR,(char *)&one,sizeof(one));
+
 	if (bind(ctcp->listen_fd, (struct sockaddr * )&sock, sizeof(sock)) != 0) {
 		goto failed;
 	}
@@ -389,7 +419,9 @@ int ctdb_tcp_listen(struct ctdb_context *ctdb)
 	return 0;
 
 failed:
-	close(ctcp->listen_fd);
+	if (ctcp->listen_fd != -1) {
+		close(ctcp->listen_fd);
+	}
 	ctcp->listen_fd = -1;
 	return -1;
 }

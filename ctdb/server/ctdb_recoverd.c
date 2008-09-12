@@ -41,7 +41,6 @@ struct ban_state {
  */
 struct ctdb_recoverd {
 	struct ctdb_context *ctdb;
-	int rec_file_fd;
 	uint32_t recmaster;
 	uint32_t num_active;
 	uint32_t num_connected;
@@ -533,7 +532,7 @@ static int pull_one_remote_database(struct ctdb_context *ctdb, uint32_t srcnode,
 {
 	int ret;
 	TDB_DATA outdata;
-	struct ctdb_control_pulldb_reply *reply;
+	struct ctdb_marshall_buffer *reply;
 	struct ctdb_rec_data *rec;
 	int i;
 	TALLOC_CTX *tmp_ctx = talloc_new(recdb);
@@ -546,9 +545,9 @@ static int pull_one_remote_database(struct ctdb_context *ctdb, uint32_t srcnode,
 		return -1;
 	}
 
-	reply = (struct ctdb_control_pulldb_reply *)outdata.dptr;
+	reply = (struct ctdb_marshall_buffer *)outdata.dptr;
 
-	if (outdata.dsize < offsetof(struct ctdb_control_pulldb_reply, data)) {
+	if (outdata.dsize < offsetof(struct ctdb_marshall_buffer, data)) {
 		DEBUG(DEBUG_ERR,(__location__ " invalid data in pulldb reply\n"));
 		talloc_free(tmp_ctx);
 		return -1;
@@ -764,7 +763,7 @@ struct vacuum_info {
 	struct ctdb_recoverd *rec;
 	uint32_t srcnode;
 	struct ctdb_db_context *ctdb_db;
-	struct ctdb_control_pulldb_reply *recs;
+	struct ctdb_marshall_buffer *recs;
 	struct ctdb_rec_data *r;
 };
 
@@ -775,7 +774,7 @@ static void vacuum_fetch_next(struct vacuum_info *v);
  */
 static void vacuum_fetch_callback(struct ctdb_client_call_state *state)
 {
-	struct vacuum_info *v = talloc_get_type(state->async.private, struct vacuum_info);
+	struct vacuum_info *v = talloc_get_type(state->async.private_data, struct vacuum_info);
 	talloc_free(state);
 	vacuum_fetch_next(v);
 }
@@ -841,7 +840,7 @@ static void vacuum_fetch_next(struct vacuum_info *v)
 			return;
 		}
 		state->async.fn = vacuum_fetch_callback;
-		state->async.private = v;
+		state->async.private_data = v;
 		return;
 	}
 
@@ -866,7 +865,7 @@ static void vacuum_fetch_handler(struct ctdb_context *ctdb, uint64_t srvid,
 				 TDB_DATA data, void *private_data)
 {
 	struct ctdb_recoverd *rec = talloc_get_type(private_data, struct ctdb_recoverd);
-	struct ctdb_control_pulldb_reply *recs;
+	struct ctdb_marshall_buffer *recs;
 	int ret, i;
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 	const char *name;
@@ -877,7 +876,7 @@ static void vacuum_fetch_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	uint32_t srcnode;
 	struct vacuum_info *v;
 
-	recs = (struct ctdb_control_pulldb_reply *)data.dptr;
+	recs = (struct ctdb_marshall_buffer *)data.dptr;
 	r = (struct ctdb_rec_data *)&recs->data[0];
 
 	if (recs->count == 0) {
@@ -1136,7 +1135,7 @@ static struct tdb_wrap *create_recdb(struct ctdb_context *ctdb, TALLOC_CTX *mem_
  */
 struct recdb_data {
 	struct ctdb_context *ctdb;
-	struct ctdb_control_pulldb_reply *recdata;
+	struct ctdb_marshall_buffer *recdata;
 	uint32_t len;
 	bool failed;
 };
@@ -1184,7 +1183,7 @@ static int push_recdb_database(struct ctdb_context *ctdb, uint32_t dbid,
 			       struct tdb_wrap *recdb, struct ctdb_node_map *nodemap)
 {
 	struct recdb_data params;
-	struct ctdb_control_pulldb_reply *recdata;
+	struct ctdb_marshall_buffer *recdata;
 	TDB_DATA outdata;
 	TALLOC_CTX *tmp_ctx;
 	uint32_t *nodes;
@@ -1192,14 +1191,14 @@ static int push_recdb_database(struct ctdb_context *ctdb, uint32_t dbid,
 	tmp_ctx = talloc_new(ctdb);
 	CTDB_NO_MEMORY(ctdb, tmp_ctx);
 
-	recdata = talloc_zero(recdb, struct ctdb_control_pulldb_reply);
+	recdata = talloc_zero(recdb, struct ctdb_marshall_buffer);
 	CTDB_NO_MEMORY(ctdb, recdata);
 
 	recdata->db_id = dbid;
 
 	params.ctdb = ctdb;
 	params.recdata = recdata;
-	params.len = offsetof(struct ctdb_control_pulldb_reply, data);
+	params.len = offsetof(struct ctdb_marshall_buffer, data);
 	params.failed = false;
 
 	if (tdb_traverse_read(recdb->tdb, traverse_recdb, &params) == -1) {
@@ -1654,7 +1653,7 @@ static bool ctdb_election_win(struct ctdb_recoverd *rec, struct election_message
 /*
   send out an election request
  */
-static int send_election_request(struct ctdb_recoverd *rec, uint32_t pnn)
+static int send_election_request(struct ctdb_recoverd *rec, uint32_t pnn, bool update_recmaster)
 {
 	int ret;
 	TDB_DATA election_data;
@@ -1670,18 +1669,25 @@ static int send_election_request(struct ctdb_recoverd *rec, uint32_t pnn)
 	election_data.dptr  = (unsigned char *)&emsg;
 
 
-	/* first we assume we will win the election and set 
-	   recoverymaster to be ourself on the current node
-	 */
-	ret = ctdb_ctrl_setrecmaster(ctdb, CONTROL_TIMEOUT(), pnn, pnn);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, (__location__ " failed to send recmaster election request\n"));
-		return -1;
-	}
-
-
 	/* send an election message to all active nodes */
 	ctdb_send_message(ctdb, CTDB_BROADCAST_ALL, srvid, election_data);
+
+
+	/* A new node that is already frozen has entered the cluster.
+	   The existing nodes are not frozen and dont need to be frozen
+	   until the election has ended and we start the actual recovery
+	*/
+	if (update_recmaster == true) {
+		/* first we assume we will win the election and set 
+		   recoverymaster to be ourself on the current node
+		 */
+		ret = ctdb_ctrl_setrecmaster(ctdb, CONTROL_TIMEOUT(), pnn, pnn);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR, (__location__ " failed to send recmaster election request\n"));
+			return -1;
+		}
+	}
+
 
 	return 0;
 }
@@ -1720,7 +1726,7 @@ static void election_send_request(struct event_context *ev, struct timed_event *
 	struct ctdb_recoverd *rec = talloc_get_type(p, struct ctdb_recoverd);
 	int ret;
 
-	ret = send_election_request(rec, ctdb_get_pnn(rec->ctdb));
+	ret = send_election_request(rec, ctdb_get_pnn(rec->ctdb), false);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR,("Failed to send election request!\n"));
 	}
@@ -1856,7 +1862,7 @@ static void force_election(struct ctdb_recoverd *rec, uint32_t pnn,
 						timeval_current_ofs(ctdb->tunable.election_timeout, 0), 
 						ctdb_election_timeout, rec);
 
-	ret = send_election_request(rec, pnn);
+	ret = send_election_request(rec, pnn, true);
 	if (ret!=0) {
 		DEBUG(DEBUG_ERR, (__location__ " failed to initiate recmaster election"));
 		return;
@@ -2136,148 +2142,6 @@ static enum monitor_result verify_recmaster(struct ctdb_recoverd *rec, struct ct
 	return status;
 }
 
-/*
-  this function writes the number of connected nodes we have for this pnn
-  to the pnn slot in the reclock file
-*/
-static void
-ctdb_recoverd_write_pnn_connect_count(struct ctdb_recoverd *rec)
-{
-	const char count = rec->num_connected;
-	struct ctdb_context *ctdb = talloc_get_type(rec->ctdb, struct ctdb_context);
-
-	if (rec->rec_file_fd == -1) {
-		DEBUG(DEBUG_CRIT,(__location__ " Unable to write pnn count. pnnfile is not open.\n"));
-		return;
-	} 
-
-	if (pwrite(rec->rec_file_fd, &count, 1, ctdb->pnn) == -1) {
-		DEBUG(DEBUG_CRIT, (__location__ " Failed to write pnn count\n"));
-		close(rec->rec_file_fd);
-		rec->rec_file_fd = -1;
-	}
-}
-
-/* 
-  this function opens the reclock file and sets a byterage lock for the single
-  byte at position pnn+1.
-  the existence/non-existence of such a lock provides an alternative mechanism
-  to know whether a remote node(recovery daemon) is running or not.
-*/
-static void
-ctdb_recoverd_get_pnn_lock(struct ctdb_recoverd *rec)
-{
-	struct ctdb_context *ctdb = talloc_get_type(rec->ctdb, struct ctdb_context);
-	struct flock lock;
-	char *pnnfile = NULL;
-
-	DEBUG(DEBUG_INFO, ("Setting PNN lock for pnn:%d\n", ctdb->pnn));
-
-	if (rec->rec_file_fd != -1) {
-		close(rec->rec_file_fd);
-		rec->rec_file_fd = -1;
-	}
-
-	pnnfile = talloc_asprintf(rec, "%s.pnn", ctdb->recovery_lock_file);
-	CTDB_NO_MEMORY_FATAL(ctdb, pnnfile);
-
-	rec->rec_file_fd = open(pnnfile, O_RDWR|O_CREAT, 0600);
-	if (rec->rec_file_fd == -1) {
-		DEBUG(DEBUG_CRIT,(__location__ " Unable to open %s - (%s)\n", 
-			 pnnfile, strerror(errno)));
-		talloc_free(pnnfile);
-		return;
-	}
-
-	set_close_on_exec(rec->rec_file_fd);
-	lock.l_type = F_WRLCK;
-	lock.l_whence = SEEK_SET;
-	lock.l_start = ctdb->pnn;
-	lock.l_len = 1;
-	lock.l_pid = 0;
-
-	if (fcntl(rec->rec_file_fd, F_SETLK, &lock) != 0) {
-		close(rec->rec_file_fd);
-		rec->rec_file_fd = -1;
-		DEBUG(DEBUG_CRIT,(__location__ " Failed to get pnn lock on '%s'\n", pnnfile));
-		talloc_free(pnnfile);
-		return;
-	}
-
-
-	DEBUG(DEBUG_NOTICE,(__location__ " Got pnn lock on '%s'\n", pnnfile));
-	talloc_free(pnnfile);
-
-	/* we start out with 0 connected nodes */
-	ctdb_recoverd_write_pnn_connect_count(rec);
-}
-
-/*
-  called when we need to do the periodical reclock pnn count update
- */
-static void ctdb_update_pnn_count(struct event_context *ev, struct timed_event *te, 
-				  struct timeval t, void *p)
-{
-	int i, count;
-	struct ctdb_recoverd *rec     = talloc_get_type(p, struct ctdb_recoverd);
-	struct ctdb_context *ctdb     = rec->ctdb;
-	struct ctdb_node_map *nodemap = rec->nodemap;
-
-	/* close and reopen the pnn lock file */
-	ctdb_recoverd_get_pnn_lock(rec);
-
-	ctdb_recoverd_write_pnn_connect_count(rec);
-
-	event_add_timed(rec->ctdb->ev, rec->ctdb,
-		timeval_current_ofs(ctdb->tunable.reclock_ping_period, 0), 
-		ctdb_update_pnn_count, rec);
-
-	/* check if there is a split cluster and yeld the recmaster role
-	   it the other half of the cluster is larger 
-	*/
-	DEBUG(DEBUG_DEBUG, ("CHECK FOR SPLIT CLUSTER\n"));
-	if (rec->nodemap == NULL) {
-		return;
-	}
-	if (rec->rec_file_fd == -1) {
-		return;
-	}
-	/* only test this if we think we are the recmaster */
-	if (ctdb->pnn != rec->recmaster) {
-		DEBUG(DEBUG_DEBUG, ("We are not recmaster, skip test\n"));
-		return;
-	}
-	if (ctdb->recovery_lock_fd == -1) {
-		DEBUG(DEBUG_ERR, (__location__ " Lost reclock pnn file. Yielding recmaster role\n"));
-		close(ctdb->recovery_lock_fd);
-		ctdb->recovery_lock_fd = -1;
-		force_election(rec, ctdb->pnn, rec->nodemap);
-		return;
-	}
-	for (i=0; i<nodemap->num; i++) {
-		/* we dont need to check ourself */
-		if (nodemap->nodes[i].pnn == ctdb->pnn) {
-			continue;
-		}
-		/* dont check nodes that are connected to us */
-		if (!(nodemap->nodes[i].flags & NODE_FLAGS_DISCONNECTED)) {
-			continue;
-		}
-		/* check if the node is "connected" and how connected it it */
-		count = ctdb_read_pnn_lock(rec->rec_file_fd, nodemap->nodes[i].pnn);
-		if (count < 0) {
-			continue;
-		}
-		/* check if that node is more connected that us */
-		if (count > rec->num_connected) {
-			DEBUG(DEBUG_ERR, ("DISCONNECTED Node %u is more connected than we are, yielding recmaster role\n", nodemap->nodes[i].pnn));
-			close(ctdb->recovery_lock_fd);
-			ctdb->recovery_lock_fd = -1;
-			force_election(rec, ctdb->pnn, rec->nodemap);
-			return;
-		}
-	}
-}
 
 /* called to check that the allocation of public ip addresses is ok.
 */
@@ -2289,7 +2153,7 @@ static int verify_ip_allocation(struct ctdb_context *ctdb, uint32_t pnn)
 	struct ctdb_uptime *uptime2 = NULL;
 	int ret, j;
 
-	ret = ctdb_ctrl_uptime(ctdb, ctdb, CONTROL_TIMEOUT(),
+	ret = ctdb_ctrl_uptime(ctdb, mem_ctx, CONTROL_TIMEOUT(),
 				CTDB_CURRENT_NODE, &uptime1);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, ("Unable to get uptime from local node %u\n", pnn));
@@ -2305,7 +2169,7 @@ static int verify_ip_allocation(struct ctdb_context *ctdb, uint32_t pnn)
 		return -1;
 	}
 
-	ret = ctdb_ctrl_uptime(ctdb, ctdb, CONTROL_TIMEOUT(),
+	ret = ctdb_ctrl_uptime(ctdb, mem_ctx, CONTROL_TIMEOUT(),
 				CTDB_CURRENT_NODE, &uptime2);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, ("Unable to get uptime from local node %u\n", pnn));
@@ -2343,8 +2207,9 @@ static int verify_ip_allocation(struct ctdb_context *ctdb, uint32_t pnn)
 	*/
 	for (j=0; j<ips->num; j++) {
 		if (ips->ips[j].pnn == pnn) {
-			if (!ctdb_sys_have_ip(ips->ips[j].sin)) {
-				DEBUG(DEBUG_CRIT,("Public address '%s' is missing and we should serve this ip\n", inet_ntoa(ips->ips[j].sin.sin_addr)));
+			if (!ctdb_sys_have_ip(&ips->ips[j].addr)) {
+				DEBUG(DEBUG_CRIT,("Public address '%s' is missing and we should serve this ip\n",
+					ctdb_addr_to_str(&ips->ips[j].addr)));
 				ret = ctdb_ctrl_freeze(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE);
 				if (ret != 0) {
 					DEBUG(DEBUG_ERR,(__location__ " Failed to freeze node due to public ip address mismatches\n"));
@@ -2361,8 +2226,10 @@ static int verify_ip_allocation(struct ctdb_context *ctdb, uint32_t pnn)
 				}
 			}
 		} else {
-			if (ctdb_sys_have_ip(ips->ips[j].sin)) {
-				DEBUG(DEBUG_CRIT,("We are still serving a public address '%s' that we should not be serving.\n", inet_ntoa(ips->ips[j].sin.sin_addr)));
+			if (ctdb_sys_have_ip(&ips->ips[j].addr)) {
+				DEBUG(DEBUG_CRIT,("We are still serving a public address '%s' that we should not be serving.\n", 
+					ctdb_addr_to_str(&ips->ips[j].addr)));
+
 				ret = ctdb_ctrl_freeze(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE);
 				if (ret != 0) {
 					DEBUG(DEBUG_ERR,(__location__ " Failed to freeze node due to public ip address mismatches\n"));
@@ -2412,10 +2279,6 @@ static void monitor_cluster(struct ctdb_context *ctdb)
 
 	rec->priority_time = timeval_current();
 
-	/* open the rec file fd and lock our slot */
-	rec->rec_file_fd = -1;
-	ctdb_recoverd_get_pnn_lock(rec);
-
 	/* register a message port for sending memory dumps */
 	ctdb_set_message_handler(ctdb, CTDB_SRVID_MEM_DUMP, mem_dump_handler, rec);
 
@@ -2433,11 +2296,6 @@ static void monitor_cluster(struct ctdb_context *ctdb)
 
 	/* register a message port for vacuum fetch */
 	ctdb_set_message_handler(ctdb, CTDB_SRVID_VACUUM_FETCH, vacuum_fetch_handler, rec);
-
-	/* update the reclock pnn file connected count on a regular basis */
-	event_add_timed(ctdb->ev, ctdb,
-		timeval_current_ofs(ctdb->tunable.reclock_ping_period, 0), 
-		ctdb_update_pnn_count, rec);
 
 again:
 	if (mem_ctx) {
@@ -2458,6 +2316,9 @@ again:
 		DEBUG(DEBUG_CRIT,("CTDB daemon is no longer available. Shutting down recovery daemon\n"));
 		exit(-1);
 	}
+
+	/* ping the local daemon to tell it we are alive */
+	ctdb_ctrl_recd_ping(ctdb);
 
 	if (rec->election_timeout) {
 		/* an election is in progress */
@@ -2772,7 +2633,7 @@ again:
 			}
 			if ((remote_nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE) != 
 			    (nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE)) {
-				DEBUG(DEBUG_ERR, (__location__ " Remote node:%u has different nodemap flag for %d (0x%x vs 0x%x)\n", 
+				DEBUG(DEBUG_WARNING, (__location__ " Remote node:%u has different nodemap flag for %d (0x%x vs 0x%x)\n", 
 					  nodemap->nodes[j].pnn, i,
 					  remote_nodemap->nodes[i].flags, nodemap->nodes[i].flags));
 				do_recovery(rec, mem_ctx, pnn, nodemap, 
@@ -2901,7 +2762,7 @@ again:
 	}
 
 
-	DEBUG(DEBUG_INFO, (__location__ " Update flags on all nodes\n"));
+	DEBUG(DEBUG_DEBUG, (__location__ " Update flags on all nodes\n"));
 	/*
 	  update all nodes to have the same flags that we have
 	 */
