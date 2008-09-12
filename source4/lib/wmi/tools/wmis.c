@@ -1,6 +1,7 @@
 /*
    WMI Sample client
    Copyright (C) 2006 Andrzej Hajda <andrzej.hajda@wp.pl>
+   Copyright (C) 2008 Jelmer Vernooij <jelmer@samba.org>
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -147,7 +148,8 @@ WERROR WBEM_RemoteExecute(struct IWbemServices *pWS, const char *cmdline, uint32
 
 	ctx = talloc_new(0);
 
-	result = IWbemServices_GetObject(pWS, ctx, "Win32_Process", WBEM_FLAG_RETURN_WBEM_COMPLETE, NULL, &wco, NULL);
+	result = IWbemServices_GetObject(pWS, ctx, "Win32_Process", 
+					 WBEM_FLAG_RETURN_WBEM_COMPLETE, NULL, &wco, NULL);
 	WERR_CHECK("GetObject.");
 
 	result = IWbemClassObject_GetMethod(wco, ctx, "Create", 0, &inc, &outc);
@@ -160,7 +162,8 @@ WERROR WBEM_RemoteExecute(struct IWbemServices *pWS, const char *cmdline, uint32
 	result = IWbemClassObject_Put(in, ctx, "CommandLine", 0, &v, 0);
 	WERR_CHECK("IWbemClassObject_Put(CommandLine).");
 
-	result = IWbemServices_ExecMethod(pWS, ctx, "Win32_Process", "Create", 0, NULL, in, &out, NULL);
+	result = IWbemServices_ExecMethod(pWS, ctx, "Win32_Process", "Create", 0, NULL, in, &out, 
+					  NULL);
 	WERR_CHECK("IWbemServices_ExecMethod.");
 
 	if (ret_code) {
@@ -203,12 +206,12 @@ int main(int argc, char **argv)
 	result = WBEM_ConnectServer(ctx, args.hostname, "root\\cimv2", 0, 0, 0, 0, 0, 0, &pWS);
 	WERR_CHECK("WBEM_ConnectServer.");
 
-	DEBUG(0, ("1: Creating directory C:\\wmi_test_dir_tmp using method Win32_Process.Create\n"));
+	printf("1: Creating directory C:\\wmi_test_dir_tmp using method Win32_Process.Create\n");
 	WBEM_RemoteExecute(pWS, "cmd.exe /C mkdir C:\\wmi_test_dir_tmp", &cnt);
 	WERR_CHECK("WBEM_RemoteExecute.");
-	DEBUG(0, ("2: ReturnCode: %d\n", cnt));
+	printf("2: ReturnCode: %d\n", cnt);
 
-	DEBUG(0, ("3: Monitoring directory C:\\wmi_test_dir_tmp. Please create/delete files in that directory to see notifications, after 4 events program quits.\n"));
+	printf("3: Monitoring directory C:\\wmi_test_dir_tmp. Please create/delete files in that directory to see notifications, after 4 events program quits.\n");
         result = IWbemServices_ExecNotificationQuery(pWS, ctx, "WQL", "SELECT * FROM __InstanceOperationEvent WITHIN 1 WHERE Targetinstance ISA 'CIM_DirectoryContainsFile' and TargetInstance.GroupComponent= 'Win32_Directory.Name=\"C:\\\\\\\\wmi_test_dir_tmp\"'", WBEM_FLAG_RETURN_IMMEDIATELY | WBEM_FLAG_FORWARD_ONLY, NULL, &pEnum);
         WERR_CHECK("WMI query execute.");
 	for (cnt = 0; cnt < 4; ++cnt) {
