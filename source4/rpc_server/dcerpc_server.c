@@ -951,13 +951,16 @@ _PUBLIC_ NTSTATUS dcesrv_reply(struct dcesrv_call_state *call)
 	   request header size */
 	chunk_size = call->conn->cli_max_recv_frag;
 	chunk_size -= DCERPC_REQUEST_LENGTH;
-	if (call->conn->auth_state.gensec_security) {
-		chunk_size -= DCERPC_AUTH_TRAILER_LENGTH;
+	if (call->conn->auth_state.auth_info &&
+	    call->conn->auth_state.gensec_security) {
 		sig_size = gensec_sig_size(call->conn->auth_state.gensec_security,
 					   call->conn->cli_max_recv_frag);
-		chunk_size -= sig_size;
-		chunk_size -= (chunk_size % 16);
+		if (sig_size) {
+			chunk_size -= DCERPC_AUTH_TRAILER_LENGTH;
+			chunk_size -= sig_size;
+		}
 	}
+	chunk_size -= (chunk_size % 16);
 
 	do {
 		uint32_t length;

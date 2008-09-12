@@ -276,33 +276,6 @@ NTSTATUS dcesrv_auth_alter_ack(struct dcesrv_call_state *call, struct ncacn_pack
 }
 
 /*
-  generate a CONNECT level verifier
-*/
-static NTSTATUS dcesrv_connect_verifier(TALLOC_CTX *mem_ctx, DATA_BLOB *blob)
-{
-	*blob = data_blob_talloc(mem_ctx, NULL, 16);
-	if (blob->data == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	SIVAL(blob->data, 0, 1);
-	memset(blob->data+4, 0, 12);
-	return NT_STATUS_OK;
-}
-
-/*
-  generate a CONNECT level verifier
-*/
-static NTSTATUS dcesrv_check_connect_verifier(DATA_BLOB *blob)
-{
-	if (blob->length != 16 ||
-	    IVAL(blob->data, 0) != 1) {
-		return NT_STATUS_ACCESS_DENIED;
-	}
-	return NT_STATUS_OK;
-}
-
-
-/*
   check credentials on a request
 */
 bool dcesrv_auth_request(struct dcesrv_call_state *call, DATA_BLOB *full_packet)
@@ -318,6 +291,26 @@ bool dcesrv_auth_request(struct dcesrv_call_state *call, DATA_BLOB *full_packet)
 	if (!dce_conn->auth_state.auth_info ||
 	    !dce_conn->auth_state.gensec_security) {
 		return true;
+	}
+
+	switch (dce_conn->auth_state.auth_info->auth_level) {
+	case DCERPC_AUTH_LEVEL_PRIVACY:
+	case DCERPC_AUTH_LEVEL_INTEGRITY:
+		break;
+
+	case DCERPC_AUTH_LEVEL_CONNECT:
+		if (pkt->auth_length != 0) {
+			break;
+		}
+		return true;
+	case DCERPC_AUTH_LEVEL_NONE:
+		if (pkt->auth_length != 0) {
+			return false;
+		}
+		return true;
+
+	default:
+		return false;
 	}
 
 	auth_blob.length = 8 + pkt->auth_length;
@@ -374,7 +367,8 @@ bool dcesrv_auth_request(struct dcesrv_call_state *call, DATA_BLOB *full_packet)
 		break;
 
 	case DCERPC_AUTH_LEVEL_CONNECT:
-		status = dcesrv_check_connect_verifier(&auth.credentials);
+		/* for now we ignore possible signatures here */
+		status = NT_STATUS_OK;
 		break;
 
 	default:
@@ -409,9 +403,30 @@ bool dcesrv_auth_response(struct dcesrv_call_state *call,
 	DATA_BLOB creds2;
 
 	/* non-signed packets are simple */
-	if (!dce_conn->auth_state.auth_info || !dce_conn->auth_state.gensec_security) {
+	if (sig_size == 0) {
 		status = ncacn_push_auth(blob, call, lp_iconv_convenience(dce_conn->dce_ctx->lp_ctx), pkt, NULL);
 		return NT_STATUS_IS_OK(status);
+	}
+
+	switch (dce_conn->auth_state.auth_info->auth_level) {
+	case DCERPC_AUTH_LEVEL_PRIVACY:
+	case DCERPC_AUTH_LEVEL_INTEGRITY:
+		break;
+
+	case DCERPC_AUTH_LEVEL_CONNECT:
+		/*
+		 * TODO: let the gensec mech decide if it wants to generate a signature
+		 *       that might be needed for schannel...
+		 */
+		status = ncacn_push_auth(blob, call, lp_iconv_convenience(dce_conn->dce_ctx->lp_ctx), pkt, NULL);
+		return NT_STATUS_IS_OK(status);
+
+	case DCERPC_AUTH_LEVEL_NONE:
+		status = ncacn_push_auth(blob, call, lp_iconv_convenience(dce_conn->dce_ctx->lp_ctx), pkt, NULL);
+		return NT_STATUS_IS_OK(status);
+
+	default:
+		return false;
 	}
 
 	ndr = ndr_push_init_ctx(call, lp_iconv_convenience(dce_conn->dce_ctx->lp_ctx));
@@ -439,21 +454,8 @@ bool dcesrv_auth_response(struct dcesrv_call_state *call,
 	payload_length = pkt->u.response.stub_and_verifier.length +
 		dce_conn->auth_state.auth_info->auth_pad_length;
 
-	if (dce_conn->auth_state.auth_info->auth_level == DCERPC_AUTH_LEVEL_CONNECT) {
-		status = dcesrv_connect_verifier(call,
-						 &dce_conn->auth_state.auth_info->credentials);
-		if (!NT_STATUS_IS_OK(status)) {
-			return false;
-		}
-	} else {
-
-		/* We hope this length is accruate.  If must be if the
-		 * GENSEC mech does AEAD signing of the packet
-		 * headers */
-		dce_conn->auth_state.auth_info->credentials
-			= data_blob_talloc(call, NULL, sig_size);
-		data_blob_clear(&dce_conn->auth_state.auth_info->credentials);
-	}
+	/* we start without signature, it will appended later */
+	dce_conn->auth_state.auth_info->credentials = data_blob(NULL, 0);
 
 	/* add the auth verifier */
 	ndr_err = ndr_push_dcerpc_auth(ndr, NDR_SCALARS|NDR_BUFFERS,
@@ -465,14 +467,14 @@ bool dcesrv_auth_response(struct dcesrv_call_state *call,
 	/* extract the whole packet as a blob */
 	*blob = ndr_push_blob(ndr);
 
-	/* fill in the fragment length and auth_length, we can't fill
-	   in these earlier as we don't know the signature length (it
-	   could be variable length) */
-	dcerpc_set_frag_length(blob, blob->length);
-
-	/* We hope this value is accruate.  If must be if the GENSEC
-	 * mech does AEAD signing of the packet headers */
-	dcerpc_set_auth_length(blob, dce_conn->auth_state.auth_info->credentials.length);
+	/*
+	 * Setup the frag and auth length in the packet buffer.
+	 * This is needed if the GENSEC mech does AEAD signing
+	 * of the packet headers. The signature itself will be
+	 * appended later.
+	 */
+	dcerpc_set_frag_length(blob, blob->length + sig_size);
+	dcerpc_set_auth_length(blob, sig_size);
 
 	/* sign or seal the packet */
 	switch (dce_conn->auth_state.auth_info->auth_level) {
@@ -482,22 +484,8 @@ bool dcesrv_auth_response(struct dcesrv_call_state *call,
 					    ndr->data + DCERPC_REQUEST_LENGTH, 
 					    payload_length,
 					    blob->data,
-					    blob->length - dce_conn->auth_state.auth_info->credentials.length,
+					    blob->length,
 					    &creds2);
-
-		if (NT_STATUS_IS_OK(status)) {
-			blob->length -= dce_conn->auth_state.auth_info->credentials.length;
-			if (!data_blob_append(call, blob, creds2.data, creds2.length))
-				status = NT_STATUS_NO_MEMORY;
-			else
-				status = NT_STATUS_OK;
-		}
-
-		/* If we did AEAD signing of the packet headers, then we hope
-		 * this value didn't change... */
-		dcerpc_set_auth_length(blob, creds2.length);
-		dcerpc_set_frag_length(blob, dcerpc_get_frag_length(blob)+creds2.length);
-		data_blob_free(&creds2);
 		break;
 
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
@@ -506,24 +494,8 @@ bool dcesrv_auth_response(struct dcesrv_call_state *call,
 					    ndr->data + DCERPC_REQUEST_LENGTH, 
 					    payload_length,
 					    blob->data,
-					    blob->length - dce_conn->auth_state.auth_info->credentials.length,
+					    blob->length,
 					    &creds2);
-		if (NT_STATUS_IS_OK(status)) {
-			blob->length -= dce_conn->auth_state.auth_info->credentials.length;
-			if (!data_blob_append(call, blob, creds2.data, creds2.length))
-				status = NT_STATUS_NO_MEMORY;
-			else
-				status = NT_STATUS_OK;
-		}
-
-		/* If we did AEAD signing of the packet headers, then we hope
-		 * this value didn't change... */
-		dcerpc_set_auth_length(blob, creds2.length);
-		dcerpc_set_frag_length(blob, dcerpc_get_frag_length(blob)+creds2.length);
-		data_blob_free(&creds2);
-		break;
-
-	case DCERPC_AUTH_LEVEL_CONNECT:
 		break;
 
 	default:
@@ -531,7 +503,23 @@ bool dcesrv_auth_response(struct dcesrv_call_state *call,
 		break;
 	}
 
-	data_blob_free(&dce_conn->auth_state.auth_info->credentials);
+	if (NT_STATUS_IS_OK(status)) {
+		if (creds2.length != sig_size) {
+			DEBUG(0,("dcesrv_auth_response: creds2.length[%u] != sig_size[%u] pad[%u] stub[%u]\n",
+				creds2.length, (uint32_t)sig_size,
+				dce_conn->auth_state.auth_info->auth_pad_length,
+				pkt->u.response.stub_and_verifier.length));
+			data_blob_free(&creds2);
+			status = NT_STATUS_INTERNAL_ERROR;
+		}
+	}
+
+	if (NT_STATUS_IS_OK(status)) {
+		if (!data_blob_append(call, blob, creds2.data, creds2.length)) {
+			status = NT_STATUS_NO_MEMORY;
+		}
+		data_blob_free(&creds2);
+	}
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return false;
