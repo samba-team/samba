@@ -204,7 +204,9 @@ void trigger_write_time_update(struct files_struct *fsp)
 
 	if (fsp->update_write_time_triggered) {
 		/*
-		 * No point - an event is already scheduled.
+		 * We only update the write time
+		 * on the first write. After that
+		 * no other writes affect this.
 		 */
 		return;
 	}
