@@ -143,7 +143,7 @@
 
       <refsect3><title>node status</title>
         <para>
-          Node status reflects the current status of the node. There are four possible states:
+          Node status reflects the current status of the node. There are five possible states:
         </para>
         <para>
           OK - This node is fully functional.

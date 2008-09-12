@@ -61,7 +61,7 @@
       ctdbd provides monitoring of all nodes in the cluster and automatically reconfigures the cluster and recovers upon node failures.
     </para>
     <para>
-      ctdbd is the main component in clustered Samba that provides a high-awailability load-sharing CIFS server cluster.
+      ctdbd is the main component in clustered Samba that provides a high-availability load-sharing CIFS server cluster.
     </para>
   </refsect1>
 
@@ -237,7 +237,7 @@
 	    </para>
 	    <para>
 	    This is only required when using public ip addresses and only when
-	    you dont specify the interface explicitely on in /etc/ctdb/public_addresses or when you are using --single-public-ip.
+	    you dont specify the interface explicitly in /etc/ctdb/public_addresses or when you are using --single-public-ip.
           </para>
           <para>
 	  If you omit this argument when using public addresses or single public ip, ctdb will not be able to send out Gratious ARPs correctly or be able to kill tcp connections correctly which will lead to application failures. 
@@ -503,7 +503,7 @@
       'ctdb status' command.
     </para>
     <para>
-      There are five possible for a node.
+      There are five possible states for a node.
     </para>
 
     <para>
@@ -614,10 +614,10 @@
     <refsect2><title>DeterministicIPs</title>
     <para>Default: 1</para>
     <para>
-    When enabled, this tunable makes ctdb try to keep public ip addresses locked to specific nodes as far as possible. This makes it easier for debugging since you can know that as long as all nodes are healthy public ip X will always be hosted by node Y. 
+    When enabled, this tunable makes ctdb try to keep public IP addresses locked to specific nodes as far as possible. This makes it easier for debugging since you can know that as long as all nodes are healthy public IP X will always be hosted by node Y. 
     </para>
     <para>
-    The cost of using deterministic ip address assignment is that it disables part of the logic where ctdb tries to reduce the number of public ip assignment changes in the cluster. This tunable may increase the number of ip failover/failbacks that are performed on the cluster by a small margin.
+    The cost of using deterministic IP address assignment is that it disables part of the logic where ctdb tries to reduce the number of public IP assignment changes in the cluster. This tunable may increase the number of IP failover/failbacks that are performed on the cluster by a small margin.
     </para>
     </refsect2>
     <refsect2><title>DisableWhenUnhealthy</title>
@@ -632,22 +632,22 @@
     <refsect2><title>NoIPFailback</title>
     <para>Default: 0</para>
     <para>
-    When set to 1, ctdb will not perform failback of ip addresses when a node becomes healthy. Ctdb WILL perform failover of public ip addresses when a node becomes UNHEALTHY, but when the node becomes HEALTHY again, ctdb will not fail the addresses back.
+    When set to 1, ctdb will not perform failback of IP addresses when a node becomes healthy. Ctdb WILL perform failover of public IP addresses when a node becomes UNHEALTHY, but when the node becomes HEALTHY again, ctdb will not fail the addresses back.
     </para>
     <para>
     Use with caution! Normally when a node becomes available to the cluster
-ctdb will try to reassign public ip addresses onto the new node as a way to distribute the workload evenly across the clusternode. Ctdb tries to make sure that all running nodes have approximately the same number of public addresses it hosts.
+ctdb will try to reassign public IP addresses onto the new node as a way to distribute the workload evenly across the clusternode. Ctdb tries to make sure that all running nodes have approximately the same number of public addresses it hosts.
     </para>
     <para>
-    When you enable this tunable, CTDB will no longer attempt to rebalance the cluster by failing ip addresses back to the new nodes. An unbalanced cluster will therefore remain unbalanced until there is manual intervention from the administrator. When this parameter is set, you can manually fail public ip addresses over to the new node(s) using the 'ctdb moveip' command.
+    When you enable this tunable, CTDB will no longer attempt to rebalance the cluster by failing IP addresses back to the new nodes. An unbalanced cluster will therefore remain unbalanced until there is manual intervention from the administrator. When this parameter is set, you can manually fail public IP addresses over to the new node(s) using the 'ctdb moveip' command.
     </para>
     </refsect2>
   </refsect1>
 
   <refsect1><title>LVS</title>
     <para>
-    LVS is a mode where CTDB presents one single ip address for the entire
-    cluster. This is an alternative to using public ip addresses and round-robin
+    LVS is a mode where CTDB presents one single IP address for the entire
+    cluster. This is an alternative to using public IP addresses and round-robin
     DNS to loadbalance clients across the cluster.
     </para>
 
@@ -726,7 +726,7 @@ You must also specify the "--lvs" command line argument to ctdbd to activete LVS
     and the cluster nodes must be configured so that all traffic back to client
     hosts are routed through this interface. This is also required in order
     to allow samba/winbind on the node to talk to the domain controller.
-    (we can not use the lvs ip address to initiate outgoing traffic)
+    (we can not use the lvs IP address to initiate outgoing traffic)
     </para>
     <para>
     I.e. make sure that you can "ping" both the domain controller and also
