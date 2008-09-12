@@ -72,7 +72,7 @@ to be run that way.</para>
 		</varlistentry>
 
 		<varlistentry>
-		<term>cifs.resolve</term>
+		<term>dns_resolver</term>
 		<listitem><para>This key type is for resolving hostnames into IP addresses
 		</para></listitem>
 		</varlistentry>
@@ -83,7 +83,7 @@ to be run that way.</para>
 #OPERATION  TYPE           D C PROGRAM ARG1 ARG2...
 #=========  =============  = = ==========================================
 create	    cifs.spnego    * * /usr/local/sbin/cifs.upcall -c %k
-create      cifs.resolver  * * /usr/local/sbin/cifs.upcall %k
+create      dns_resolver   * * /usr/local/sbin/cifs.upcall %k
 </programlisting>
 <para>
 See <citerefentry><refentrytitle>request-key.conf<manvolnum>5</manvolnum></refentrytitle></citerefentry> for more info on each field.
