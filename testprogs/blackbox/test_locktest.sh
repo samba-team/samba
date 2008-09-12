@@ -18,7 +18,7 @@ PREFIX=$5
 shift 5
 failed=0
 
-samba4bindir=`dirname $0`/../../source/bin
+samba4bindir=`dirname $0`/../../source4/bin
 locktest=$samba4bindir/locktest
 
 . `dirname $0`/subunit.sh

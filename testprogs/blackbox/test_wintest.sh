@@ -33,7 +33,7 @@ failed=0
 
 $basedir=`pwd`
 
-samba4bindir=`dirname $0`/../../source/bin
+samba4bindir=`dirname $0`/../../source4/bin
 smbtorture=$samba4bindir/smbtorture
 
 . `dirname $0`/subunit.sh

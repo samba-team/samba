@@ -19,11 +19,11 @@ PREFIX=$6
 shift 6
 failed=0
 
-samba4bindir=`dirname $0`/../../source/bin
+samba4bindir=`dirname $0`/../../source4/bin
 smbclient=$samba4bindir/smbclient
 samba4kinit=$samba4bindir/samba4kinit
 net=$samba4bindir/net
-enableaccount="$PYTHON `dirname $0`/../../source/setup/enableaccount"
+enableaccount="$PYTHON `dirname $0`/../../source4/setup/enableaccount"
 
 . `dirname $0`/subunit.sh
 

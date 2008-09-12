@@ -8,7 +8,7 @@
 
 failed=0
 
-samba4bindir=`dirname $0`/../../source/bin
+samba4bindir=`dirname $0`/../../source4/bin
 ndrdump=$samba4bindir/ndrdump
 files=`dirname $0`/ndrdump
 

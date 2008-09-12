@@ -17,7 +17,7 @@ DOMAIN=$4
 shift 4
 failed=0
 
-samba4bindir=`dirname $0`/../../source/bin
+samba4bindir=`dirname $0`/../../source4/bin
 gentest=$samba4bindir/gentest
 
 . `dirname $0`/subunit.sh
