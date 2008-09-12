@@ -222,7 +222,8 @@ int main(const int argc, char *const argv[])
 	uid_t uid;
 	int kernel_upcall_version;
 	int c, use_cifs_service_prefix = 0;
-	char *buf, *oid, *hostname = NULL;
+	char *buf, *hostname = NULL;
+	const char *oid;
 
 	openlog(prog, 0, LOG_DAEMON);
 
