@@ -17,7 +17,7 @@ fi
 # PREV=`echo ${REVISION} | sed 's/[^0-9]//g'`
 # PREV="."`echo ${REVISION} | sed 's/[0-9]//g'`".${PREV}"
 
-for f in `du -a | awk '{print $2}' | grep \.tmpl$`; do
+for f in `find . -type f -name "*.tmpl"`; do
         f2=`echo $f | sed s/.tmpl//g`
         echo $f2
         sed -e s/PVERSION/$VERSION/g \
