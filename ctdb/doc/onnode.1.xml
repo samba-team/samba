@@ -25,18 +25,59 @@
       cluster, or on all nodes.
     </para>
     <para>
-      The NODES option specifies which node to run a command on. You
-      can specify a numeric node number (from 0 to N-1) or the special
-      node 'all'.  You can also specify lists of nodes, separated by
-      commas, and ranges of numeric node numbers, separated by dashes.
-      If nodes are specified multiple times then the command will be
-      executed multiple times on those nodes.  The order of nodes is
-      significant.
+      The NODES option specifies which node to run a command on.  You
+      can specify a numeric node number (from 0 to N-1) or a
+      descriptive node specification (see DESCRIPTIVE NODE
+      SPECIFICATIONS below).  You can also specify lists of nodes,
+      separated by commas, and ranges of numeric node numbers,
+      separated by dashes.  If nodes are specified multiple times then
+      the command will be executed multiple times on those nodes.  The
+      order of nodes is significant.
     </para>
     <para>
       The COMMAND can be any shell command. The onnode utility uses
       ssh or rsh to connect to the remote nodes and run the command.
-      </para>
+    </para>
+  </refsect1>
+
+  <refsect1><title>DESCRIPTIVE NODE SPECIFICATIONS</title>
+
+    <para>
+      The following descriptive node specification can be used in
+      place of numeric node numbers:
+    </para>
+
+    <variablelist>
+      <varlistentry><term>all</term>
+        <listitem>
+          <para>
+            All nodes.
+	  </para>
+        </listitem>
+      </varlistentry>
+      <varlistentry><term>ok | healthy</term>
+        <listitem>
+          <para>
+            All nodes that are not disconnected, banned, disabled or
+            unhealthy.
+	  </para>
+        </listitem>
+      </varlistentry>
+      <varlistentry><term>con | connected</term>
+        <listitem>
+          <para>
+            All nodes that are not disconnected.
+	  </para>
+        </listitem>
+      </varlistentry>
+      <varlistentry><term>rm | recmaster</term>
+        <listitem>
+          <para>
+            The current recovery master.
+	  </para>
+        </listitem>
+      </varlistentry>
+    </variablelist>
   </refsect1>
 
   <refsect1><title>OPTIONS</title>
