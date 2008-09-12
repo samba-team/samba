@@ -204,17 +204,6 @@ INIT_FUNCTION = LDB_MODULE(partition)
 ldb_partition_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/partition.o
 
 ################################################
-# Start MODULE ldb_schema
-[MODULE::ldb_schema]
-SUBSYSTEM = LIBLDB
-PRIVATE_DEPENDENCIES = LIBTALLOC LIBEVENTS LIBLDB
-INIT_FUNCTION = LDB_MODULE(schema)
-# End MODULE ldb_schema
-################################################
-
-ldb_schema_OBJ_FILES = $(addprefix $(dsdbsrcdir)/samdb/ldb_modules/, schema.o schema_syntax.o)
-
-################################################
 # Start MODULE ldb_update_kt
 [MODULE::ldb_update_keytab]
 SUBSYSTEM = LIBLDB
