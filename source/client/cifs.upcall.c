@@ -29,7 +29,7 @@ create dns_resolver * * /usr/local/sbin/cifs.upcall %k
 
 #include "cifs_spnego.h"
 
-const char *CIFSSPNEGO_VERSION = "1.1";
+const char *CIFSSPNEGO_VERSION = "1.2";
 static const char *prog = "cifs.upcall";
 typedef enum _secType {
 	KRB5,
@@ -73,7 +73,7 @@ int handle_krb5_mech(const char *oid, const char *principal,
 	tkt_wrapped = spnego_gen_krb5_wrap(tkt, TOK_ID_KRB_AP_REQ);
 
 	/* and wrap that in a shiny SPNEGO wrapper */
-	*secblob = gen_negTokenInit(OID_KERBEROS5, tkt_wrapped);
+	*secblob = gen_negTokenInit(oid, tkt_wrapped);
 
 	data_blob_free(&tkt_wrapped);
 	data_blob_free(&tkt);
@@ -118,6 +118,9 @@ int decode_key_description(const char *desc, int *ver, secType_t * sec,
 			if (strncmp(tkn + 4, "krb5", 4) == 0) {
 				retval |= DKD_HAVE_SEC;
 				*sec = KRB5;
+			} else if (strncmp(tkn + 4, "mskrb5", 6) == 0) {
+				retval |= DKD_HAVE_SEC;
+				*sec = MS_KRB5;
 			}
 		} else if (strncmp(tkn, "uid=", 4) == 0) {
 			errno = 0;
@@ -219,7 +222,7 @@ int main(const int argc, char *const argv[])
 	uid_t uid;
 	int kernel_upcall_version;
 	int c, use_cifs_service_prefix = 0;
-	char *buf, *hostname = NULL;
+	char *buf, *oid, *hostname = NULL;
 
 	openlog(prog, 0, LOG_DAEMON);
 
@@ -301,6 +304,7 @@ int main(const int argc, char *const argv[])
 
 	// do mech specific authorization
 	switch (sectype) {
+	case MS_KRB5:
 	case KRB5:{
 			char *princ;
 			size_t len;
@@ -319,8 +323,12 @@ int main(const int argc, char *const argv[])
 			}
 			strlcpy(princ + 5, hostname, len - 5);
 
-			rc = handle_krb5_mech(OID_KERBEROS5, princ,
-					      &secblob, &sess_key);
+			if (sectype == MS_KRB5)
+				oid = OID_KERBEROS5_OLD;
+			else
+				oid = OID_KERBEROS5;
+
+			rc = handle_krb5_mech(oid, princ, &secblob, &sess_key);
 			SAFE_FREE(princ);
 			break;
 		}
