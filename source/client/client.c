@@ -528,7 +528,7 @@ static void display_finfo(file_info *finfo, const char *dir)
 			return;
 		}
 		/* print file meta date header */
-		d_printf( "FILENAME:%s\n", afname);
+		d_printf( "FILENAME:%s\n", finfo->name);
 		d_printf( "MODE:%s\n", attrib_string(finfo->mode));
 		d_printf( "SIZE:%.0f\n", (double)finfo->size);
 		d_printf( "MTIME:%s", time_to_asc(t));
