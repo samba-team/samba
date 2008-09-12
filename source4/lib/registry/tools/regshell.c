@@ -207,8 +207,8 @@ static WERROR cmd_ls(struct regshell_context *ctx, int argc, char **argv)
 {
 	int i;
 	WERROR error;
-	uint32_t data_type;
-	DATA_BLOB data;
+	uint32_t valuetype;
+	DATA_BLOB valuedata;
 	const char *name = NULL;
 
 	for (i = 0; W_ERROR_IS_OK(error = reg_key_get_subkey_by_index(ctx,
@@ -221,19 +221,21 @@ static WERROR cmd_ls(struct regshell_context *ctx, int argc, char **argv)
 	}
 
 	if (!W_ERROR_EQUAL(error, WERR_NO_MORE_ITEMS)) {
-		DEBUG(0, ("Error occured while browsing thru keys: %s\n",
-			win_errstr(error)));
+		fprintf(stderr, "Error occured while browsing thru keys: %s\n",
+			win_errstr(error));
+		return error;
 	}
 
-	for (i = 0; W_ERROR_IS_OK(error = reg_key_get_value_by_index(ctx,
-								     ctx->current,
-								     i,
-								     &name,
-								     &data_type,
-								     &data)); i++) {
-		printf("V \"%s\" %s %s\n", name, str_regtype(data_type),
-			   reg_val_data_string(ctx, lp_iconv_convenience(cmdline_lp_ctx), data_type, data));
-	}
+	/* default value */
+	if (W_ERROR_IS_OK(reg_key_get_value_by_index(ctx, ctx->current, 0,
+		&name, &valuetype, &valuedata)))
+		printf("V \"(Default)\" %s %s\n", str_regtype(valuetype),
+			   reg_val_data_string(ctx, lp_iconv_convenience(cmdline_lp_ctx), valuetype, valuedata));
+	/* other values */
+	for (i = 1; W_ERROR_IS_OK(error = reg_key_get_value_by_index(ctx,
+		ctx->current, i, &name, &valuetype, &valuedata)); i++)
+		printf("V \"%s\" %s %s\n", name, str_regtype(valuetype),
+			   reg_val_data_string(ctx, lp_iconv_convenience(cmdline_lp_ctx), valuetype, valuedata));
 
 	return WERR_OK;
 }
