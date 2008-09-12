@@ -201,7 +201,7 @@ int cifs_resolver(const key_serial_t key, const char *key_descr)
 }
 
 void
-usage(const char *prog)
+usage()
 {
 	syslog(LOG_WARNING, "Usage: %s [-c] [-v] key_serial", prog);
 	fprintf(stderr, "Usage: %s [-c] [-v] key_serial\n", prog);
@@ -234,7 +234,7 @@ int main(const int argc, char *const argv[])
 			goto out;
 			}
 		default:{
-			syslog(LOG_WARNING, "unknow option: %c", c);
+			syslog(LOG_WARNING, "unknown option: %c", c);
 			goto out;
 			}
 		}
@@ -242,7 +242,7 @@ int main(const int argc, char *const argv[])
 
 	/* is there a key? */
 	if (argc <= optind) {
-		usage(prog);
+		usage();
 		goto out;
 	}
 
