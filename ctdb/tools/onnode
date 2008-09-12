@@ -34,7 +34,8 @@ Usage: onnode [OPTION] ... <NODES> <COMMAND> ...
     -p         Run command in parallel on specified nodes.
     -q         Do not print node addresses (overrides -v).
     -v         Print node address even for a single node.
-  <NODES>      "all", "healthy", "connected";
+  <NODES>      "all", "ok" (or "healthy"), "con" (or "connected"),
+               "rm" (or "recmaster");
                or a node number (0 base); or
                list (comma separated) of <NODES>; or
                range (hyphen separated) of node numbers.
@@ -99,6 +100,17 @@ get_nth ()
     done
 }
 
+echo_nth ()
+{
+    local node=$(get_nth "$@")
+    if [ -n "$node" ] ; then
+	echo $node
+    else
+	echo "${prog}: \"node ${n}\" does not exist" >&2
+	exit 1
+    fi
+}
+
 parse_nodespec ()
 {
     # Subshell avoids hacks to restore $IFS.
@@ -107,7 +119,7 @@ parse_nodespec ()
 	for i in $1 ; do
 	    case "$i" in
 		*-*) seq "${i%-*}" "${i#*-}" 2>/dev/null || invalid_nodespec ;;
-		all|healthy|connected) echo "$i" ;;
+		all|ok|healthy|con|connected|rm|recmaster) echo "$i" ;;
 		*)
 		    [ $i -gt -1 ] 2>/dev/null || invalid_nodespec
 		    echo $i
@@ -125,10 +137,10 @@ get_nodes_with_status ()
 
     local bits
     case "$status" in
-	healthy)
+	ok|healthy)
 	    bits="0:0:0:0"
 	    ;;
-	connected)
+	con|connected)
 	    bits="0:[0-1]:[0-1]:[0-1]"
 	    ;;
 	*)
@@ -136,7 +148,11 @@ get_nodes_with_status ()
     esac
 
     if [ -z "$ctdb_status_output" ] ; then
-	ctdb_status_output=$(ctdb -Y status)
+	ctdb_status_output=$(ctdb -Y status 2>/dev/null)
+	if [ $? -ne 0 ] ; then
+	    echo "${prog}: unable to get status of CTDB nodes" >&2
+	    exit 1
+	fi
 	ctdb_status_output="${ctdb_status_output#* }"
     fi
 
@@ -158,6 +174,7 @@ get_nodes_with_status ()
     echo $nodes
 }
 
+ctdb_recmaster=""
 get_nodes ()
 {
     [ -f "$CTDB_NODES_FILE" ] || CTDB_NODES_FILE=/etc/ctdb/nodes
@@ -170,17 +187,24 @@ get_nodes ()
 	case "$n" in
 	    all)
 		echo $all_nodes ;;
-	    healthy|connected) 
-		get_nodes_with_status "$all_nodes" "$n"
+	    ok|healthy|con|connected) 
+		get_nodes_with_status "$all_nodes" "$n" || exit 1
 		;;
-	    *)
-		local node=$(get_nth $n $all_nodes)
-		if [ -n "$node" ] ; then
-		    echo $node
+	    rm|recmaster)
+		if [ -z "$ctdb_recmaster" ] ; then
+		    ctdb_recmaster=$(ctdb recmaster 2>/dev/null)
+		    [ $? -eq 0 ] || ctdb_recmaster=""
+		fi
+		if [ -n "$ctdb_recmaster" ] ; then
+		    echo_nth "$ctdb_recmaster" $all_nodes
 		else
-		    echo "${prog}: \"node ${n}\" does not exist" >&2
+		    echo "${prog}: No recmaster available" >&2
 		    exit 1
 		fi
+		
+		;;
+	    *)
+		echo_nth $n $all_nodes
 	esac
 	
     done
