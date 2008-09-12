@@ -5,26 +5,13 @@
 package Parse::Pidl::ODL;
 
 use Parse::Pidl qw(error);
-use Parse::Pidl::Util qw(has_property);
+use Parse::Pidl::IDL;
+use Parse::Pidl::Util qw(has_property unmake_str);
 use Parse::Pidl::Typelist qw(hasType getType);
 use strict;
 
 use vars qw($VERSION);
 $VERSION = '0.01';
-
-#####################################################################
-# find an interface in an array of interfaces
-sub get_interface($$)
-{
-	my($if,$n) = @_;
-
-	foreach(@$if) {
-		next if ($_->{TYPE} ne "INTERFACE");
-		return $_ if($_->{NAME} eq $n);
-	}
-	
-	return undef;
-}
 
 sub FunctionAddObjArgs($)
 {
@@ -60,34 +47,58 @@ sub ReplaceInterfacePointers($)
 }
 
 # Add ORPC specific bits to an interface.
-sub ODL2IDL($)
+sub ODL2IDL
 {
-	my $odl = shift;
+	my ($odl, $basedir, $opt_incdirs) = (@_);
 	my $addedorpc = 0;
+	my $interfaces = {};
 
 	foreach my $x (@$odl) {
-		next if ($x->{TYPE} ne "INTERFACE");
-		# Add [in] ORPCTHIS *this, [out] ORPCTHAT *that
-		# and replace interfacepointers with MInterfacePointer
-		# for 'object' interfaces
-		if (has_property($x, "object")) {
-			foreach my $e (@{$x->{DATA}}) {
-				($e->{TYPE} eq "FUNCTION") && FunctionAddObjArgs($e);
-				ReplaceInterfacePointers($e);
+		if ($x->{TYPE} eq "IMPORT") {
+			foreach my $idl_file (@{$x->{PATHS}}) {
+				$idl_file = unmake_str($idl_file);
+				my $podl = Parse::Pidl::IDL::parse_file("$basedir/$idl_file", $opt_incdirs);
+				if (defined(@$podl)) {
+					require Parse::Pidl::Typelist;
+
+					Parse::Pidl::Typelist::LoadIdl($podl);
+					my $pidl = ODL2IDL($podl);
+
+					foreach my $y (@$pidl) {
+						if ($y->{TYPE} eq "INTERFACE") {
+							$interfaces->{$y->{NAME}} = $y;
+						}
+					}
+				} else {
+					error($x, "Failed to parse $idl_file");
+				}
 			}
-			$addedorpc = 1;
 		}
 
-		if ($x->{BASE}) {
-			my $base = get_interface($odl, $x->{BASE});
+		if ($x->{TYPE} eq "INTERFACE") {
+			$interfaces->{$x->{NAME}} = $x;
+			# Add [in] ORPCTHIS *this, [out] ORPCTHAT *that
+			# and replace interfacepointers with MInterfacePointer
+			# for 'object' interfaces
+			if (has_property($x, "object")) {
+				foreach my $e (@{$x->{DATA}}) {
+					($e->{TYPE} eq "FUNCTION") && FunctionAddObjArgs($e);
+					ReplaceInterfacePointers($e);
+				}
+				$addedorpc = 1;
+			}
 
-			unless (defined($base)) {
-				error($x, "Undefined base interface `$x->{BASE}'");
-			} else {
-				foreach my $fn (reverse @{$base->{DATA}}) {
-					next unless ($fn->{TYPE} eq "FUNCTION");
-					unshift (@{$x->{DATA}}, $fn);
-					push (@{$x->{INHERITED_FUNCTIONS}}, $fn->{NAME});
+			if ($x->{BASE}) {
+				my $base = $interfaces->{$x->{BASE}};
+
+				unless (defined($base)) {
+					error($x, "Undefined base interface `$x->{BASE}'");
+				} else {
+					foreach my $fn (reverse @{$base->{DATA}}) {
+						next unless ($fn->{TYPE} eq "FUNCTION");
+						unshift (@{$x->{DATA}}, $fn);
+						push (@{$x->{INHERITED_FUNCTIONS}}, $fn->{NAME});
+					}
 				}
 			}
 		}

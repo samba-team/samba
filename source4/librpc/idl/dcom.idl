@@ -3,8 +3,6 @@
   http://www.ietf.org/internet-drafts/draft-brown-dcom-v1-spec-04.txt
  */
 
-import "orpc.idl";
-
 [
 	uuid("18f70770-8e64-11cf-9af1-0020af6e72f4"),
 	pointer_default(unique),

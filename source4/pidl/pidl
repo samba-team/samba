@@ -656,7 +656,7 @@ sub process_file($)
 		Parse::Pidl::Compat::Check($pidl);
 	}
 
-	$pidl = Parse::Pidl::ODL::ODL2IDL($pidl);
+	$pidl = Parse::Pidl::ODL::ODL2IDL($pidl, dirname($idl_file), \@opt_incdirs);
 
 	if (defined($opt_ws_parser) or 
 	    defined($opt_client) or

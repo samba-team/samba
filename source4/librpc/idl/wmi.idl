@@ -1,6 +1,6 @@
 #include "idl_types.h"
 
-import "orpc.idl";
+import "dcom.idl";
 
 [
 	uuid("8BC3F05E-D86B-11d0-A075-00C04FB68820")
