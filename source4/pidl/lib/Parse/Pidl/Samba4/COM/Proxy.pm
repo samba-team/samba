@@ -7,6 +7,7 @@
 package Parse::Pidl::Samba4::COM::Proxy;
 
 use Parse::Pidl::Samba4::COM::Header;
+use Parse::Pidl::Typelist qw(mapTypeName);
 use Parse::Pidl::Util qw(has_property);
 
 use vars qw($VERSION);
@@ -18,8 +19,7 @@ my($res);
 
 sub ParseVTable($$)
 {
-	my $interface = shift;
-	my $name = shift;
+	my ($interface, $name) = @_;
 
 	# Generate the vtable
 	$res .="\tstruct $interface->{NAME}_vtable $name = {";
@@ -46,12 +46,12 @@ sub ParseRegFunc($)
 
 	$res .= "static NTSTATUS dcom_proxy_$interface->{NAME}_init(void)
 {
-	struct GUID base_iid;
 	struct $interface->{NAME}_vtable *proxy_vtable = talloc(talloc_autofree_context(), struct $interface->{NAME}_vtable);
 ";
 
 	if (defined($interface->{BASE})) {
 		$res.= "
+	struct GUID base_iid;
 	const void *base_vtable;
 
 	base_iid = ndr_table_$interface->{BASE}.syntax_id.uuid;
@@ -83,13 +83,14 @@ sub ParseRegFunc($)
 # parse a function
 sub ParseFunction($$)
 {
-	my $interface = shift;
-	my $fn = shift;
+	my ($interface, $fn) = @_;
 	my $name = $fn->{NAME};
 	my $uname = uc $name;
 
+	my $tn = mapTypeName($fn->{RETURN_TYPE});
+
 	$res.="
-static $fn->{RETURN_TYPE} dcom_proxy_$interface->{NAME}_$name(struct $interface->{NAME} *d, TALLOC_CTX *mem_ctx" . Parse::Pidl::Samba4::COM::Header::GetArgumentProtoList($fn) . ")
+static $tn dcom_proxy_$interface->{NAME}_$name(struct $interface->{NAME} *d, TALLOC_CTX *mem_ctx" . Parse::Pidl::Samba4::COM::Header::GetArgumentProtoList($fn) . ")
 {
 	struct dcerpc_pipe *p;
 	NTSTATUS status = dcom_get_pipe(d, &p);
@@ -120,7 +121,7 @@ static $fn->{RETURN_TYPE} dcom_proxy_$interface->{NAME}_$name(struct $interface-
 		NDR_PRINT_IN_DEBUG($name, &r);		
 	}
 
-	status = dcerpc_ndr_request(p, &d->ipid, &ndr_table_$interface->{NAME}, DCERPC_$uname, mem_ctx, &r);
+	status = dcerpc_ndr_request(p, &d->ipid, &ndr_table_$interface->{NAME}, NDR_$uname, mem_ctx, &r);
 
 	if (NT_STATUS_IS_OK(status) && (p->conn->flags & DCERPC_DEBUG_PRINT_OUT)) {
 		NDR_PRINT_OUT_DEBUG($name, r);		
