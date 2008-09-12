@@ -78,6 +78,9 @@ sub ParseInterface($)
 	my $if = shift;
 	my $res;
 
+	$res .= "\n#ifndef _$if->{NAME}_\n";
+	$res .= "#define _$if->{NAME}_\n";
+
 	$res .="\n\n/* $if->{NAME} */\n";
 
 	$res .="#define COM_" . uc($if->{NAME}) . "_UUID $if->{PROPERTIES}->{uuid}\n\n";
@@ -102,12 +105,14 @@ sub ParseInterface($)
 		$res .="\n";
 	}
 
+	$res .= "#endif\n";
+
 	return $res;
 }
 
 sub ParseCoClass($)
 {
-	my $c = shift;
+	my ($c) = @_;
 	my $res = "";
 	$res .= "#define CLSID_" . uc($c->{NAME}) . " $c->{PROPERTIES}->{uuid}\n";
 	if (has_property($c, "progid")) {

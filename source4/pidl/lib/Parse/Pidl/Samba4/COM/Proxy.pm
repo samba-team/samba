@@ -54,7 +54,7 @@ sub ParseRegFunc($)
 		$res.= "
 	const void *base_vtable;
 
-	base_iid = dcerpc_table_$interface->{BASE}.uuid;
+	base_iid = ndr_table_$interface->{BASE}.syntax_id.uuid;
 
 	base_vtable = dcom_proxy_vtable_by_iid(&base_iid);
 	if (base_vtable == NULL) {
@@ -69,13 +69,13 @@ sub ParseRegFunc($)
 	foreach my $x (@{$interface->{DATA}}) {
 		next unless ($x->{TYPE} eq "FUNCTION");
 
-		$res .= "\tproxy_vtable.$x->{NAME} = dcom_proxy_$interface->{NAME}_$x->{NAME};\n";
+		$res .= "\tproxy_vtable->$x->{NAME} = dcom_proxy_$interface->{NAME}_$x->{NAME};\n";
 	}
 
 	$res.= "
-	proxy_vtable.iid = dcerpc_table_$interface->{NAME}.uuid;
+	proxy_vtable->iid = ndr_table_$interface->{NAME}.syntax_id.uuid;
 
-	return dcom_register_proxy(&proxy_vtable);
+	return dcom_register_proxy((struct IUnknown_vtable *)proxy_vtable);
 }\n\n";
 }
 
@@ -120,7 +120,7 @@ static $fn->{RETURN_TYPE} dcom_proxy_$interface->{NAME}_$name(struct $interface-
 		NDR_PRINT_IN_DEBUG($name, &r);		
 	}
 
-	status = dcerpc_ndr_request(p, &d->ipid, &dcerpc_table_$interface->{NAME}, DCERPC_$uname, mem_ctx, &r);
+	status = dcerpc_ndr_request(p, &d->ipid, &ndr_table_$interface->{NAME}, DCERPC_$uname, mem_ctx, &r);
 
 	if (NT_STATUS_IS_OK(status) && (p->conn->flags & DCERPC_DEBUG_PRINT_OUT)) {
 		NDR_PRINT_OUT_DEBUG($name, r);		
@@ -203,7 +203,8 @@ sub Parse($$)
 
 	$res .=	"#include \"includes.h\"\n" .
 			"#include \"lib/com/dcom/dcom.h\"\n" .
-			"#include \"$comh_filename\"\n";
+			"#include \"$comh_filename\"\n" .
+			"#include \"librpc/rpc/dcerpc.h\"\n";
 
 	foreach (@{$pidl}) {
 		next if ($_->{TYPE} ne "INTERFACE");
