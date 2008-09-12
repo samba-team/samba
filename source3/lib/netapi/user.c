@@ -3428,8 +3428,6 @@ WERROR NetUserGetLocalGroups_r(struct libnetapi_ctx *ctx,
 	}
 
 	return werr;
-
-	return WERR_NOT_SUPPORTED;
 }
 
 /****************************************************************
