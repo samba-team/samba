@@ -1612,6 +1612,11 @@ static bool test_delayed_write_update3(struct torture_context *tctx,
 	return ret;
 }
 
+/*
+ * Show that a truncate write always updates the write time even
+ * if an initial write has already updated the write time.
+ */
+
 static bool test_delayed_write_update3a(struct torture_context *tctx,
 				        struct smbcli_state *cli,
 				        struct smbcli_state *cli2)
@@ -1819,6 +1824,11 @@ static bool test_delayed_write_update3a(struct torture_context *tctx,
 	return ret;
 }
 
+/*
+ * Show a close after write updates the write timestamp to
+ * the close time, not the last write time.
+ */
+
 static bool test_delayed_write_update3b(struct torture_context *tctx,
 				        struct smbcli_state *cli,
 				        struct smbcli_state *cli2)
@@ -1978,6 +1988,13 @@ static bool test_delayed_write_update3b(struct torture_context *tctx,
 
 	return ret;
 }
+
+/*
+ * Check that a write after a truncate write doesn't update
+ * the timestamp, but a truncate write after a write does.
+ * Also prove that a close after a truncate write updates the
+ * timestamp to current, not the time of last write.
+ */
 
 static bool test_delayed_write_update3c(struct torture_context *tctx,
 				        struct smbcli_state *cli,
@@ -2184,6 +2201,12 @@ static bool test_delayed_write_update3c(struct torture_context *tctx,
 	return ret;
 }
 
+/*
+ * Show only the first write updates the timestamp, and a close
+ * after writes updates to current (I think this is the same
+ * as test 3b. JRA).
+ */
+
 static bool test_delayed_write_update4(struct torture_context *tctx,
 				       struct smbcli_state *cli,
 				       struct smbcli_state *cli2)
@@ -2340,6 +2363,10 @@ static bool test_delayed_write_update4(struct torture_context *tctx,
 
 	return ret;
 }
+
+/*
+ * Show writes and closes have no effect on updating times once a SETWRITETIME is done.
+ */
 
 static bool test_delayed_write_update5(struct torture_context *tctx,
 				       struct smbcli_state *cli,
@@ -2499,6 +2526,10 @@ static bool test_delayed_write_update5(struct torture_context *tctx,
 	return ret;
 }
 
+/*
+ * Show truncate writes and closes have no effect on updating times once a SETWRITETIME is done.
+ */
+
 static bool test_delayed_write_update5b(struct torture_context *tctx,
 				        struct smbcli_state *cli,
 				        struct smbcli_state *cli2)
@@ -2596,7 +2627,7 @@ static bool test_delayed_write_update5b(struct torture_context *tctx,
 		torture_comment(tctx, "Server did not update write_time (correct)\n");
 	}
 
-	/* sure any further write (truncates) update the write time */
+	/* Do any further write (truncates) update the write time ? */
 	start = timeval_current();
 	end = timeval_add(&start, 15 * sec, 0);
 	while (!timeval_expired(&end)) {
@@ -2656,6 +2687,14 @@ static bool test_delayed_write_update5b(struct torture_context *tctx,
 
 	return ret;
 }
+
+/*
+ * Open 2 handles on a file. Write one one and then set the
+ * WRITE TIME explicitly on the other. Ensure the write time
+ * update is cancelled. Ensure the write time is updated to
+ * the close time when the non-explicit set handle is closed.
+ *
+ */
 
 static bool test_delayed_write_update6(struct torture_context *tctx,
 				       struct smbcli_state *cli,
@@ -2852,8 +2891,7 @@ again:
 	return ret;
 }
 
-
-/* 
+/*
    testing of delayed update of write_time
 */
 struct torture_suite *torture_delay_write(void)
