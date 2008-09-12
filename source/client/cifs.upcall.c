@@ -213,7 +213,7 @@ int main(const int argc, char *const argv[])
 	DATA_BLOB secblob = data_blob_null;
 	DATA_BLOB sess_key = data_blob_null;
 	secType_t sectype;
-	key_serial_t key;
+	key_serial_t key = 0;
 	size_t datalen;
 	long rc = 1;
 	uid_t uid;
@@ -250,6 +250,7 @@ int main(const int argc, char *const argv[])
 	errno = 0;
 	key = strtol(argv[optind], NULL, 10);
 	if (errno != 0) {
+		key = 0;
 		syslog(LOG_WARNING, "Invalid key format: %s", strerror(errno));
 		goto out;
 	}
@@ -361,7 +362,14 @@ int main(const int argc, char *const argv[])
 	/* BB: maybe we need use timeout for key: for example no more then
 	 * ticket lifietime? */
 	/* keyctl_set_timeout( key, 60); */
-      out:
+out:
+	/*
+	 * on error, negatively instantiate the key ourselves so that we can
+	 * make sure the kernel doesn't hang it off of a searchable keyring
+	 * and interfere with the next attempt to instantiate the key.
+	 */
+	if (rc != 0  && key == 0)
+		keyctl_negate(key, 1, KEY_REQKEY_DEFL_DEFAULT);
 	data_blob_free(&secblob);
 	data_blob_free(&sess_key);
 	SAFE_FREE(hostname);
