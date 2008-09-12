@@ -477,7 +477,8 @@ static int parse_options(char ** optionsp, int * filesys_flags)
 			}
 		} else if (strncmp(data, "sec", 3) == 0) {
 			if (value) {
-				if (!strcmp(value, "none"))
+				if (!strncmp(value, "none", 4) ||
+				    !strncmp(value, "krb5", 4))
 					got_password = 1;
 			}
 		} else if (strncmp(data, "ip", 2) == 0) {
