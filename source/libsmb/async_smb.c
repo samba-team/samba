@@ -756,7 +756,6 @@ static void handle_incoming_pdu(struct cli_state *cli)
 				goto invalidate_requests;
 			}
 		}
-
 	}
 
 	if ((IVAL(pdu, 4) != 0x424d53ff) /* 0xFF"SMB" */
