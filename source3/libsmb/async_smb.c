@@ -690,6 +690,57 @@ NTSTATUS cli_pull_reply(struct async_req *req,
 }
 
 /**
+ * Decrypt a PDU, check the signature
+ * @param[in] cli	The cli_state that received something
+ * @param[in] pdu	The incoming bytes
+ * @retval error code
+ */
+
+
+static NTSTATUS validate_smb_crypto(struct cli_state *cli, char *pdu)
+{
+	NTSTATUS status;
+
+	if ((IVAL(pdu, 4) != 0x424d53ff) /* 0xFF"SMB" */
+	    && (SVAL(pdu, 4) != 0x45ff)) /* 0xFF"E" */ {
+		DEBUG(10, ("Got non-SMB PDU\n"));
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+
+	if (cli_encryption_on(cli) && CVAL(pdu, 0) == 0) {
+		uint16_t enc_ctx_num;
+
+		status = get_enc_ctx_num((uint8_t *)pdu, &enc_ctx_num);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(10, ("get_enc_ctx_num returned %s\n",
+				   nt_errstr(status)));
+			return status;
+		}
+
+		if (enc_ctx_num != cli->trans_enc_state->enc_ctx_num) {
+			DEBUG(10, ("wrong enc_ctx %d, expected %d\n",
+				   enc_ctx_num,
+				   cli->trans_enc_state->enc_ctx_num));
+			return NT_STATUS_INVALID_HANDLE;
+		}
+
+		status = common_decrypt_buffer(cli->trans_enc_state, pdu);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(10, ("common_decrypt_buffer returned %s\n",
+				   nt_errstr(status)));
+			return status;
+		}
+	}
+
+	if (!cli_check_sign_mac(cli, pdu)) {
+		DEBUG(10, ("cli_check_sign_mac failed\n"));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	return NT_STATUS_OK;
+}
+
+/**
  * A PDU has arrived on cli->evt_inbuf
  * @param[in] cli	The cli_state that received something
  */
@@ -758,47 +809,8 @@ static void handle_incoming_pdu(struct cli_state *cli)
 		}
 	}
 
-	if ((IVAL(pdu, 4) != 0x424d53ff) /* 0xFF"SMB" */
-            && (SVAL(pdu, 4) != 0x45ff)) /* 0xFF"E" */ {
-		DEBUG(10, ("Got non-SMB PDU\n"));
-		status = NT_STATUS_INVALID_NETWORK_RESPONSE;
-		goto invalidate_requests;
-	}
-
-	/*
-	 * TODO: Handle oplock break requests
-	 */
-
-	if (cli_encryption_on(cli) && CVAL(pdu, 0) == 0) {
-		uint16_t enc_ctx_num;
-
-		status = get_enc_ctx_num((uint8_t *)pdu, &enc_ctx_num);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(10, ("get_enc_ctx_num returned %s\n",
-				   nt_errstr(status)));
-			goto invalidate_requests;
-		}
-
-		if (enc_ctx_num != cli->trans_enc_state->enc_ctx_num) {
-			DEBUG(10, ("wrong enc_ctx %d, expected %d\n",
-				   enc_ctx_num,
-				   cli->trans_enc_state->enc_ctx_num));
-			status = NT_STATUS_INVALID_HANDLE;
-			goto invalidate_requests;
-		}
-
-		status = common_decrypt_buffer(cli->trans_enc_state,
-					       pdu);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(10, ("common_decrypt_buffer returned %s\n",
-				   nt_errstr(status)));
-			goto invalidate_requests;
-		}
-	}
-
-	if (!cli_check_sign_mac(cli, pdu)) {
-		DEBUG(10, ("cli_check_sign_mac failed\n"));
-		status = NT_STATUS_ACCESS_DENIED;
+	status = validate_smb_crypto(cli, pdu);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto invalidate_requests;
 	}
 
