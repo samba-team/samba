@@ -409,6 +409,25 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 }
 
 /*
+  display the pnn of the recovery master
+ */
+static int control_recmaster(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	int ret;
+	uint32_t recmode, recmaster;
+	int mypnn;
+
+	ret = ctdb_ctrl_getrecmaster(ctdb, ctdb, TIMELIMIT(), options.pnn, &recmaster);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to get recmaster from node %u\n", options.pnn));
+		return ret;
+	}
+	printf("%d\n",recmaster);
+
+	return 0;
+}
+
+/*
   get a list of all tickles for this pnn
  */
 static int control_get_tickles(struct ctdb_context *ctdb, int argc, const char **argv)
@@ -2333,6 +2352,7 @@ static const struct {
 	{ "eventscript",     control_eventscript,	true, "run the eventscript with the given parameters on a node", "<arguments>"},
 	{ "backupdb",        control_backupdb,          false, "backup the database into a file.", "<database> <file>"},
 	{ "restoredb",        control_restoredb,          false, "restore the database from a file.", "<file>"},
+	{ "recmaster",        control_recmaster,          false, "show the pnn for the recovery master."},
 };
 
 /*
