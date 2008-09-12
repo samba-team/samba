@@ -409,6 +409,7 @@ use Getopt::Long;
 use File::Basename;
 use Parse::Pidl qw ( $VERSION );
 use Parse::Pidl::Util;
+use Parse::Pidl::ODL;
 
 #####################################################################
 # save a data structure into a file
@@ -650,11 +651,12 @@ sub process_file($)
 		}
 	}
 
-
 	if ($opt_warn_compat) {
 		require Parse::Pidl::Compat;
 		Parse::Pidl::Compat::Check($pidl);
 	}
+
+	$pidl = Parse::Pidl::ODL::ODL2IDL($pidl);
 
 	if (defined($opt_ws_parser) or 
 	    defined($opt_client) or
