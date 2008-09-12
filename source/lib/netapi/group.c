@@ -1391,10 +1391,15 @@ WERROR NetGroupGetUsers_r(struct libnetapi_ctx *ctx,
 	}
 
 	for (i=0; i < names.count; i++) {
+
+		if (member_types.ids[i] != SID_NAME_USER) {
+			continue;
+		}
+
 		status = add_GROUP_USERS_INFO_X_buffer(ctx,
 						       r->in.level,
 						       names.names[i].string,
-						       member_types.ids[i],
+						       7,
 						       r->out.buffer,
 						       &entries_read);
 		if (!NT_STATUS_IS_OK(status)) {
