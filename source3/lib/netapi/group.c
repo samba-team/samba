@@ -1454,6 +1454,7 @@ WERROR NetGroupSetUsers_r(struct libnetapi_ctx *ctx,
 	struct samr_Ids user_rids, name_types;
 	struct samr_Ids group_rids, group_types;
 	struct samr_RidTypeArray *rid_array = NULL;
+	struct lsa_String *lsa_names = NULL;
 
 	uint32_t *add_rids = NULL;
 	uint32_t *del_rids = NULL;
@@ -1549,38 +1550,39 @@ WERROR NetGroupSetUsers_r(struct libnetapi_ctx *ctx,
 			break;
 	}
 
+	lsa_names = talloc_array(ctx, struct lsa_String, r->in.num_entries);
+	if (!lsa_names) {
+		werr = WERR_NOMEM;
+		goto done;
+	}
+
 	for (i=0; i < r->in.num_entries; i++) {
 
 		switch (r->in.level) {
 			case 0:
-				init_lsa_String(&lsa_account_name, i0->grui0_name);
+				init_lsa_String(&lsa_names[i], i0->grui0_name);
 				i0++;
 				break;
 			case 1:
-				init_lsa_String(&lsa_account_name, i1->grui1_name);
+				init_lsa_String(&lsa_names[i], i1->grui1_name);
 				i1++;
 				break;
 		}
-
-		status = rpccli_samr_LookupNames(pipe_cli, ctx,
-						 &domain_handle,
-						 1,
-						 &lsa_account_name,
-						 &user_rids,
-						 &name_types);
-		if (!NT_STATUS_IS_OK(status)) {
-			werr = ntstatus_to_werror(status);
-			goto done;
-		}
-
-		if (!add_rid_to_array_unique(ctx,
-					     user_rids.ids[0],
-					     &member_rids,
-					     &num_member_rids)) {
-			werr = WERR_GENERAL_FAILURE;
-			goto done;
-		}
 	}
+
+	status = rpccli_samr_LookupNames(pipe_cli, ctx,
+					 &domain_handle,
+					 r->in.num_entries,
+					 lsa_names,
+					 &user_rids,
+					 &name_types);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	member_rids = user_rids.ids;
+	num_member_rids = user_rids.count;
 
 	status = rpccli_samr_QueryGroupMember(pipe_cli, ctx,
 					      &group_handle,
