@@ -210,32 +210,6 @@ static NTSTATUS ncacn_pull(struct dcerpc_connection *c, DATA_BLOB *blob, TALLOC_
 	return NT_STATUS_OK;
 }
 
-/*
-  generate a CONNECT level verifier
-*/
-static NTSTATUS dcerpc_connect_verifier(TALLOC_CTX *mem_ctx, DATA_BLOB *blob)
-{
-	*blob = data_blob_talloc(mem_ctx, NULL, 16);
-	if (blob->data == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	SIVAL(blob->data, 0, 1);
-	memset(blob->data+4, 0, 12);
-	return NT_STATUS_OK;
-}
-
-/*
-  check a CONNECT level verifier
-*/
-static NTSTATUS dcerpc_check_connect_verifier(DATA_BLOB *blob)
-{
-	if (blob->length != 16 ||
-	    IVAL(blob->data, 0) != 1) {
-		return NT_STATUS_ACCESS_DENIED;
-	}
-	return NT_STATUS_OK;
-}
-
 /* 
    parse the authentication information on a dcerpc response packet
 */
@@ -249,9 +223,29 @@ static NTSTATUS ncacn_pull_request_auth(struct dcerpc_connection *c, TALLOC_CTX 
 	DATA_BLOB auth_blob;
 	enum ndr_err_code ndr_err;
 
-	if (pkt->auth_length == 0 &&
-	    c->security_state.auth_info->auth_level == DCERPC_AUTH_LEVEL_CONNECT) {
+	if (!c->security_state.auth_info ||
+	    !c->security_state.generic_state) {
 		return NT_STATUS_OK;
+	}
+
+	switch (c->security_state.auth_info->auth_level) {
+	case DCERPC_AUTH_LEVEL_PRIVACY:
+	case DCERPC_AUTH_LEVEL_INTEGRITY:
+		break;
+
+	case DCERPC_AUTH_LEVEL_CONNECT:
+		if (pkt->auth_length != 0) {
+			break;
+		}
+		return NT_STATUS_OK;
+	case DCERPC_AUTH_LEVEL_NONE:
+		if (pkt->auth_length != 0) {
+			return NT_STATUS_INVALID_NETWORK_RESPONSE;
+		}
+		return NT_STATUS_OK;
+
+	default:
+		return NT_STATUS_INVALID_LEVEL;
 	}
 
 	auth_blob.length = 8 + pkt->auth_length;
@@ -308,10 +302,8 @@ static NTSTATUS ncacn_pull_request_auth(struct dcerpc_connection *c, TALLOC_CTX 
 		break;
 
 	case DCERPC_AUTH_LEVEL_CONNECT:
-		status = dcerpc_check_connect_verifier(&auth.credentials);
-		break;
-
-	case DCERPC_AUTH_LEVEL_NONE:
+		/* for now we ignore possible signatures here */
+		status = NT_STATUS_OK;
 		break;
 
 	default:
@@ -344,9 +336,24 @@ static NTSTATUS ncacn_push_request_sign(struct dcerpc_connection *c,
 	enum ndr_err_code ndr_err;
 
 	/* non-signed packets are simpler */
-	if (!c->security_state.auth_info || 
-	    !c->security_state.generic_state) {
-		return ncacn_push_auth(blob, mem_ctx, c->iconv_convenience, pkt, c->security_state.auth_info);
+	if (sig_size == 0) {
+		return ncacn_push_auth(blob, mem_ctx, c->iconv_convenience, pkt, NULL);
+	}
+
+	switch (c->security_state.auth_info->auth_level) {
+	case DCERPC_AUTH_LEVEL_PRIVACY:
+	case DCERPC_AUTH_LEVEL_INTEGRITY:
+		break;
+
+	case DCERPC_AUTH_LEVEL_CONNECT:
+		/* TODO: let the gensec mech decide if it wants to generate a signature */
+		return ncacn_push_auth(blob, mem_ctx, c->iconv_convenience, pkt, NULL);
+
+	case DCERPC_AUTH_LEVEL_NONE:
+		return ncacn_push_auth(blob, mem_ctx, c->iconv_convenience, pkt, NULL);
+
+	default:
+		return NT_STATUS_INVALID_LEVEL;
 	}
 
 	ndr = ndr_push_init_ctx(mem_ctx, c->iconv_convenience);
@@ -372,39 +379,17 @@ static NTSTATUS ncacn_push_request_sign(struct dcerpc_connection *c,
 	   packet. This matches what w2k3 does */
 	c->security_state.auth_info->auth_pad_length = 
 		(16 - (pkt->u.request.stub_and_verifier.length & 15)) & 15;
-	ndr_push_zero(ndr, c->security_state.auth_info->auth_pad_length);
+	ndr_err = ndr_push_zero(ndr, c->security_state.auth_info->auth_pad_length);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return ndr_map_error2ntstatus(ndr_err);
+	}
+	status = NT_STATUS_OK;
 
 	payload_length = pkt->u.request.stub_and_verifier.length + 
 		c->security_state.auth_info->auth_pad_length;
 
-	/* sign or seal the packet */
-	switch (c->security_state.auth_info->auth_level) {
-	case DCERPC_AUTH_LEVEL_PRIVACY:
-	case DCERPC_AUTH_LEVEL_INTEGRITY:
-		/* We hope this length is accruate.  If must be if the
-		 * GENSEC mech does AEAD signing of the packet
-		 * headers */
-		c->security_state.auth_info->credentials
-			= data_blob_talloc(mem_ctx, NULL, sig_size);
-		data_blob_clear(&c->security_state.auth_info->credentials);
-		break;
-
-	case DCERPC_AUTH_LEVEL_CONNECT:
-		status = dcerpc_connect_verifier(mem_ctx, &c->security_state.auth_info->credentials);
-		break;
-		
-	case DCERPC_AUTH_LEVEL_NONE:
-		c->security_state.auth_info->credentials = data_blob(NULL, 0);
-		break;
-		
-	default:
-		status = NT_STATUS_INVALID_LEVEL;
-		break;
-	}
-	
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}	
+	/* we start without signature, it will appended later */
+	c->security_state.auth_info->credentials = data_blob(NULL,0);
 
 	/* add the auth verifier */
 	ndr_err = ndr_push_dcerpc_auth(ndr, NDR_SCALARS|NDR_BUFFERS, c->security_state.auth_info);
@@ -416,13 +401,14 @@ static NTSTATUS ncacn_push_request_sign(struct dcerpc_connection *c,
 	/* extract the whole packet as a blob */
 	*blob = ndr_push_blob(ndr);
 
-	/* fill in the fragment length and auth_length, we can't fill
-	   in these earlier as we don't know the signature length (it
-	   could be variable length) */
-	dcerpc_set_frag_length(blob, blob->length);
-	/* We hope this value is accruate.  If must be if the GENSEC
-	 * mech does AEAD signing of the packet headers */
-	dcerpc_set_auth_length(blob, c->security_state.auth_info->credentials.length);
+	/*
+	 * Setup the frag and auth length in the packet buffer.
+	 * This is needed if the GENSEC mech does AEAD signing
+	 * of the packet headers. The signature itself will be
+	 * appended later.
+	 */
+	dcerpc_set_frag_length(blob, blob->length + sig_size);
+	dcerpc_set_auth_length(blob, sig_size);
 
 	/* sign or seal the packet */
 	switch (c->security_state.auth_info->auth_level) {
@@ -432,24 +418,10 @@ static NTSTATUS ncacn_push_request_sign(struct dcerpc_connection *c,
 					    blob->data + DCERPC_REQUEST_LENGTH, 
 					    payload_length,
 					    blob->data,
-					    blob->length - 
-					    c->security_state.auth_info->credentials.length,
+					    blob->length,
 					    &creds2);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
-		}
-		blob->length -= c->security_state.auth_info->credentials.length;
-		if (!data_blob_append(mem_ctx, blob,
-					  creds2.data, creds2.length)) {
-			return NT_STATUS_NO_MEMORY;
-		}
-		dcerpc_set_auth_length(blob, creds2.length);
-		if (c->security_state.auth_info->credentials.length == 0) {
-			/* this is needed for krb5 only, to correct the total packet
-			   length */
-			dcerpc_set_frag_length(blob, 
-					       dcerpc_get_frag_length(blob)
-					       +creds2.length);
 		}
 		break;
 
@@ -459,32 +431,11 @@ static NTSTATUS ncacn_push_request_sign(struct dcerpc_connection *c,
 					    blob->data + DCERPC_REQUEST_LENGTH, 
 					    payload_length, 
 					    blob->data,
-					    blob->length - 
-					    c->security_state.auth_info->credentials.length,
+					    blob->length,
 					    &creds2);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
-		blob->length -= c->security_state.auth_info->credentials.length;
-		if (!data_blob_append(mem_ctx, blob,
-					  creds2.data, creds2.length)) {
-			return NT_STATUS_NO_MEMORY;
-		}
-		dcerpc_set_auth_length(blob, creds2.length);
-		if (c->security_state.auth_info->credentials.length == 0) {
-			/* this is needed for krb5 only, to correct the total packet
-			   length */
-			dcerpc_set_frag_length(blob, 
-					       dcerpc_get_frag_length(blob)
-					       +creds2.length);
-		}
-		break;
-
-	case DCERPC_AUTH_LEVEL_CONNECT:
-		break;
-
-	case DCERPC_AUTH_LEVEL_NONE:
-		c->security_state.auth_info->credentials = data_blob(NULL, 0);
 		break;
 
 	default:
@@ -492,7 +443,17 @@ static NTSTATUS ncacn_push_request_sign(struct dcerpc_connection *c,
 		break;
 	}
 
-	data_blob_free(&c->security_state.auth_info->credentials);
+	if (creds2.length != sig_size) {
+		DEBUG(0,("dcesrv_auth_response: creds2.length[%u] != sig_size[%u] pad[%u] stub[%u]\n",
+			creds2.length, (uint32_t)sig_size,
+			c->security_state.auth_info->auth_pad_length,
+			pkt->u.request.stub_and_verifier.length));
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	if (!data_blob_append(mem_ctx, blob, creds2.data, creds2.length)) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	return NT_STATUS_OK;
 }
@@ -1068,13 +1029,16 @@ static void dcerpc_ship_next_request(struct dcerpc_connection *c)
 	   request header size */
 	chunk_size = p->conn->srv_max_recv_frag;
 	chunk_size -= DCERPC_REQUEST_LENGTH;
-	if (c->security_state.generic_state) {
-		chunk_size -= DCERPC_AUTH_TRAILER_LENGTH;
+	if (c->security_state.auth_info &&
+	    c->security_state.generic_state) {
 		sig_size = gensec_sig_size(c->security_state.generic_state,
 					   p->conn->srv_max_recv_frag);
-		chunk_size -= sig_size;
-		chunk_size -= (chunk_size % 16);
+		if (sig_size) {
+			chunk_size -= DCERPC_AUTH_TRAILER_LENGTH;
+			chunk_size -= sig_size;
+		}
 	}
+	chunk_size -= (chunk_size % 16);
 
 	pkt.ptype = DCERPC_PKT_REQUEST;
 	pkt.call_id = req->call_id;
