@@ -35,6 +35,7 @@ typedef enum _secType {
 	KRB5,
 	MS_KRB5
 } secType_t;
+const DATA_BLOB data_blob_null = { NULL, 0, NULL };
 
 /*
  * Prepares AP-REQ data for mechToken and gets session key
