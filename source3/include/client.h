@@ -223,7 +223,9 @@ struct cli_state {
 	struct cli_request *outstanding_requests;
 
 	/**
-	 * The place to build up the list of chained requests.
+	 * The place to build up the list of chained requests. In CIFS, a
+	 * single cli_request corresponds to a MID and can serve more than one
+	 * chained async_req.
 	 */
 	struct cli_request *chain_accumulator;
 };
