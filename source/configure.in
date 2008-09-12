@@ -4238,7 +4238,7 @@ INSTALL_CIFSUPCALL=""
 UNINSTALL_CIFSUPCALL=""
 AC_MSG_CHECKING(whether to build cifs.upcall)
 AC_ARG_WITH(cifsupcall,
-[  --with-cifsupcall       Include cifs.upcall (Linux only) support (default=no)],
+[  --with-cifsupcall       Include cifs.upcall (Linux only) support (default=yes)],
 [ case "$withval" in
   no)
 	AC_MSG_RESULT(no)
@@ -4264,9 +4264,24 @@ AC_ARG_WITH(cifsupcall,
 	esac
     ;;
   esac ],
-[
-  AC_MSG_RESULT(no)
-  ]
+[ case "$host_os" in
+  *linux*)
+	if test x"$use_ads" != x"yes"; then
+		AC_MSG_WARN(ADS support should be enabled for building cifs.upcall)
+	elif test x"$HAVE_KEYUTILS_H" != "x1"; then
+		AC_MSG_WARN(keyutils package is required for cifs.upcall)
+	else
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(WITH_CIFSUPCALL,1,[whether to build cifs.upcall])
+		CIFSUPCALL_PROGS="bin/cifs.upcall"
+		INSTALL_CIFSUPCALL="installcifsupcall"
+		UNINSTALL_CIFSUPCALL="uninstallcifsupcall"
+	fi
+	;;
+  *)
+	AC_MSG_RESULT(no)
+	;;
+  esac ]
 )
 
 
