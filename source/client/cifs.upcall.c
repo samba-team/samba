@@ -262,7 +262,8 @@ int main(const int argc, char *const argv[])
 		goto out;
 	}
 
-	if (strncmp(buf, "cifs.resolver", sizeof("cifs.resolver")-1) == 0) {
+	if ((strncmp(buf, "cifs.resolver", sizeof("cifs.resolver")-1) == 0) ||
+	    (strncmp(buf, "dns_resolver", sizeof("dns_resolver")-1) == 0)) {
 		rc = cifs_resolver(key, buf);
 		goto out;
 	}
