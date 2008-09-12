@@ -314,9 +314,9 @@ AC_SUBST(SMBMOUNT_PROGS)
 AC_SUBST(CIFSMOUNT_PROGS)
 AC_SUBST(INSTALL_CIFSMOUNT)
 AC_SUBST(UNINSTALL_CIFSMOUNT)
-AC_SUBST(CIFSSPNEGO_PROGS)
-AC_SUBST(INSTALL_CIFSSPNEGO)
-AC_SUBST(UNINSTALL_CIFSSPNEGO)
+AC_SUBST(CIFSUPCALL_PROGS)
+AC_SUBST(INSTALL_CIFSUPCALL)
+AC_SUBST(UNINSTALL_CIFSUPCALL)
 AC_SUBST(EXTRA_SBIN_PROGS)
 AC_SUBST(EXTRA_ALL_TARGETS)
 AC_SUBST(CONFIG_LIBS)
@@ -4231,14 +4231,14 @@ AC_ARG_WITH(cifsmount,
 )
 
 #################################################
-# check for cifs.spnego support
+# check for cifs.upcall support
 AC_CHECK_HEADERS([keyutils.h], [HAVE_KEYUTILS_H=1], [HAVE_KEYUTILS_H=0])
-CIFSSPNEGO_PROGS=""
-INSTALL_CIFSSPNEGO=""
-UNINSTALL_CIFSSPNEGO=""
-AC_MSG_CHECKING(whether to build cifs.spnego)
-AC_ARG_WITH(cifsspnego,
-[  --with-cifsspnego       Include cifs.spnego (Linux only) support (default=no)],
+CIFSUPCALL_PROGS=""
+INSTALL_CIFSUPCALL=""
+UNINSTALL_CIFSUPCALL=""
+AC_MSG_CHECKING(whether to build cifs.upcall)
+AC_ARG_WITH(cifsupcall,
+[  --with-cifsupcall       Include cifs.upcall (Linux only) support (default=no)],
 [ case "$withval" in
   no)
 	AC_MSG_RESULT(no)
@@ -4247,15 +4247,15 @@ AC_ARG_WITH(cifsspnego,
 	case "$host_os" in
 	*linux*)
 		if test x"$use_ads" != x"yes"; then
-			AC_MSG_ERROR(ADS support should be enabled for building cifs.spnego)
+			AC_MSG_ERROR(ADS support should be enabled for building cifs.upcall)
 		elif test x"$HAVE_KEYUTILS_H" != "x1"; then
-			AC_MSG_ERROR(keyutils package is required for cifs.spnego)
+			AC_MSG_ERROR(keyutils package is required for cifs.upcall)
 		else
 			AC_MSG_RESULT(yes)
-			AC_DEFINE(WITH_CIFSSPNEGO,1,[whether to build cifs.spnego])
-			CIFSSPNEGO_PROGS="bin/cifs.spnego"
-			INSTALL_CIFSSPNEGO="installcifsspnego"
-			UNINSTALL_CIFSSPNEGO="uninstallcifsspnego"
+			AC_DEFINE(WITH_CIFSUPCALL,1,[whether to build cifs.upcall])
+			CIFSUPCALL_PROGS="bin/cifs.upcall"
+			INSTALL_CIFSUPCALL="installcifsupcall"
+			UNINSTALL_CIFSUPCALL="uninstallcifsupcall"
 		fi
 		;;
 	*)
