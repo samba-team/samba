@@ -1027,7 +1027,7 @@ bin/umount.cifs@EXEEXT@: $(CIFS_UMOUNT_OBJ) bin/.dummy
 bin/cifs.upcall@EXEEXT@: $(BINARY_PREREQS) $(CIFS_UPCALL_OBJ) $(LIBSMBCLIENT_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(CIFS_UPCALL_OBJ) $(DYNEXP) $(LDFLAGS) -lkeyutils $(LIBS) \
-		$(LIBSMBCLIENT_OBJ) $(KRB5LIBS) $(LDAP_LIBS)
+		$(LIBSMBCLIENT_OBJ) $(KRB5LIBS) $(LDAP_LIBS) $(NSCD_LIBS)
 
 bin/testparm@EXEEXT@: proto_exists $(TESTPARM_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
