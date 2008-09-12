@@ -93,11 +93,6 @@ static void print_tree(int level, struct registry_key *p,
 				valuetype, valuedata));
 		}
 		talloc_free(mem_ctx);
-
-		if(!W_ERROR_EQUAL(error, WERR_NO_MORE_ITEMS)) {
-			DEBUG(0, ("Error occured while fetching values for '%s': %s\n",
-				name, win_errstr(error)));
-		}
 	}
 
 	mem_ctx = talloc_init("sec_desc");
