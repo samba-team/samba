@@ -759,6 +759,13 @@ static void handle_incoming_pdu(struct cli_state *cli)
 
 	}
 
+	if ((IVAL(pdu, 4) != 0x424d53ff) /* 0xFF"SMB" */
+	    && (IVAL(pdu, 4) != 0x424d45ff)) /* 0xFF"EMB" */ {
+		DEBUG(10, ("Got non-SMB PDU\n"));
+		status = NT_STATUS_INVALID_NETWORK_RESPONSE;
+		goto invalidate_requests;
+	}
+
 	/*
 	 * TODO: Handle oplock break requests
 	 */
