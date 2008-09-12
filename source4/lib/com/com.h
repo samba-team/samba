@@ -20,6 +20,11 @@
 #ifndef __SAMBA_COM_H__
 #define __SAMBA_COM_H__
 
+#include "librpc/gen_ndr/misc.h"
+
+struct com_context;
+struct event_context;
+
 struct IUnknown *com_class_by_clsid(struct com_context *ctx, const struct GUID *clsid);
 NTSTATUS com_register_running_class(struct GUID *clsid, const char *progid, struct IUnknown *p);
 

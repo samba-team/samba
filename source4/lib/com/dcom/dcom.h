@@ -47,6 +47,8 @@ NTSTATUS dcom_OBJREF_from_IUnknown(struct OBJREF *o, struct IUnknown *p);
 NTSTATUS dcom_IUnknown_from_OBJREF(struct com_context *ctx, struct IUnknown **_p, struct OBJREF *o);
 uint64_t dcom_get_current_oxid(void);
 
+#include "librpc/gen_ndr/com_dcom.h"
+
 NTSTATUS dcom_register_proxy(struct IUnknown_vtable *proxy_vtable);
 struct IUnknown_vtable *dcom_proxy_vtable_by_iid(struct GUID *iid);
 
