@@ -133,6 +133,13 @@ sub Parse($$)
 	foreach (@{$idl})
 	{
 		if ($_->{TYPE} eq "INTERFACE" && has_property($_, "object")) {
+			$res .="struct $_->{NAME};\n";
+		}
+	}
+
+	foreach (@{$idl})
+	{
+		if ($_->{TYPE} eq "INTERFACE" && has_property($_, "object")) {
 			$res.=ParseInterface($_);
 		} 
 

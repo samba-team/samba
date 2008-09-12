@@ -36,7 +36,7 @@
 struct WBEMCLASS;
 struct WBEMOBJECT;
 
-#include "wmi/proto.h"
+#include "wmi/wmi.h"
 
 struct program_args {
     char *hostname;

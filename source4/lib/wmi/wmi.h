@@ -20,6 +20,8 @@
 #ifndef _WMI_H_
 #define _WMI_H_
 
+#include "librpc/gen_ndr/com_wmi.h"
+
 /* The following definitions come from lib/wmi/wmicore.c  */
 
 

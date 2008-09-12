@@ -22,6 +22,8 @@
 
 %include "typemaps.i"
 %import "stdint.i"
+%import "libcli/util/errors.i"
+%import "lib/talloc/talloc.i"
 
 %runtime %{
 void push_object(PyObject **stack, PyObject *o)
@@ -59,7 +61,6 @@ WERROR WBEM_ConnectServer(struct com_context *ctx, const char *server, const cha
 WERROR IEnumWbemClassObject_SmartNext(struct IEnumWbemClassObject *d, TALLOC_CTX *mem_ctx, int32_t lTimeout,uint32_t uCount, 
 	struct WbemClassObject **apObjects, uint32_t *puReturned);
 
-static PyObject *PyErr_SetFromWERROR(WERROR w);
 static PyObject *PyObject_FromCVAR(uint32_t cimtype, union CIMVAR *cvar);
 static PyObject *PySWbemObject_FromWbemClassObject(struct WbemClassObject *wco);
 
@@ -240,21 +241,8 @@ static PyObject *PySWbemObject_FromWbemClassObject(struct WbemClassObject *wco)
 
 %}
 
-%typemap(out) WERROR {
-	if (!W_ERROR_IS_OK($1)) {
-		PyErr_SetFromWERROR($1);
-		return NULL;
-	}
-        $result = Py_None;
-        Py_INCREF(Py_None);
-}
-
 %typemap(in, numinputs=0) struct com_context *ctx {
 	$1 = com_ctx;
-}
-
-%typemap(in, numinputs=0) TALLOC_CTX *mem_ctx {
-	$1 = NULL;
 }
 
 %typemap(in, numinputs=0) struct IWbemServices **services (struct IWbemServices *temp) {
@@ -329,14 +317,6 @@ WERROR IEnumWbemClassObject_Reset(struct IEnumWbemClassObject *d, TALLOC_CTX *me
 	if (error) return NULL;
 }
 
-%typemap(out) WERROR {
-	if (!W_ERROR_IS_OK($1)) {
-		PyErr_SetFromWERROR($1);
-		talloc_free(arg5); // FIXME:avg make it properly(how???)
-		return NULL;
-	}
-}
-
 WERROR IEnumWbemClassObject_SmartNext(struct IEnumWbemClassObject *d, TALLOC_CTX *mem_ctx, int32_t lTimeout, uint32_t uCount, 
 	struct WbemClassObject **apObjects, uint32_t *puReturned);
 
@@ -345,8 +325,6 @@ WERROR IEnumWbemClassObject_SmartNext(struct IEnumWbemClassObject *d, TALLOC_CTX
 	mod_win32_client = PyImport_ImportModule("win32com.client");
 	mod_pywintypes = PyImport_ImportModule("pywintypes");
 	ComError = PyObject_GetAttrString(mod_pywintypes, "com_error");
-
-//	talloc_enable_leak_report_full();
 
 	lp_load();
         dcerpc_init();
