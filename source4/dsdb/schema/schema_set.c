@@ -79,13 +79,13 @@ static int dsdb_schema_set_attributes(struct ldb_context *ldb, struct dsdb_schem
 			ret = ldb_msg_add_string(msg, attr->lDAPDisplayName, "CASE_INSENSITIVE");
 		} 
 		if (ret != LDB_SUCCESS) {
-			return ret;
+			break;
 		}
 
 		if (attr->searchFlags & SEARCH_FLAG_ATTINDEX) {
 			ret = ldb_msg_add_string(msg_idx, "@IDXATTR", attr->lDAPDisplayName);
 			if (ret != LDB_SUCCESS) {
-				return ret;
+				break;
 			}
 		}
 
@@ -105,11 +105,11 @@ static int dsdb_schema_set_attributes(struct ldb_context *ldb, struct dsdb_schem
 		}
 		
 		if (ret != LDB_SUCCESS) {
-			return ret;
+			break;
 		}
 	}
 
-	if (!write_attributes) {
+	if (!write_attributes || ret != LDB_SUCCESS) {
 		talloc_free(mem_ctx);
 		return ret;
 	}
@@ -120,19 +120,13 @@ static int dsdb_schema_set_attributes(struct ldb_context *ldb, struct dsdb_schem
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 		ret = ldb_add(ldb, msg);
 	} else if (ret != LDB_SUCCESS) {
-		talloc_free(mem_ctx);
-		return ret;
+	} else if (res->count != 1) {
+		ret = ldb_add(ldb, msg);
 	} else {
-
-		if (res->count != 1) {
-			talloc_free(mem_ctx);
-			return LDB_ERR_NO_SUCH_OBJECT;
-		}
-		
 		ret = LDB_SUCCESS;
 		/* Annoyingly added to our search results */
 		ldb_msg_remove_attr(res->msgs[0], "distinguishedName");
-
+		
 		mod_msg = ldb_msg_diff(ldb, res->msgs[0], msg);
 		if (mod_msg->num_elements > 0) {
 			ret = ldb_modify(ldb, mod_msg);
@@ -141,9 +135,10 @@ static int dsdb_schema_set_attributes(struct ldb_context *ldb, struct dsdb_schem
 
 	if (ret == LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS) {
 		/* We might be on a read-only DB */
+		ret = LDB_SUCCESS;
+	}
+	if (ret != LDB_SUCCESS) {
 		talloc_free(mem_ctx);
-		return ret;
-	} else if (ret != LDB_SUCCESS) {
 		return ret;
 	}
 
@@ -153,14 +148,10 @@ static int dsdb_schema_set_attributes(struct ldb_context *ldb, struct dsdb_schem
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 		ret = ldb_add(ldb, msg_idx);
 	} else if (ret != LDB_SUCCESS) {
-		talloc_free(mem_ctx);
-		return ret;
+	} else if (res->count != 1) {
+		ret = ldb_add(ldb, msg_idx);
 	} else {
-		if (res_idx->count != 1) {
-			talloc_free(mem_ctx);
-			return LDB_ERR_NO_SUCH_OBJECT;
-		}
-		
+		ret = LDB_SUCCESS;
 		/* Annoyingly added to our search results */
 		ldb_msg_remove_attr(res_idx->msgs[0], "distinguishedName");
 
@@ -171,7 +162,6 @@ static int dsdb_schema_set_attributes(struct ldb_context *ldb, struct dsdb_schem
 	}
 	if (ret == LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS) {
 		/* We might be on a read-only DB */
-		talloc_free(mem_ctx);
 		ret = LDB_SUCCESS;
 	}
 	talloc_free(mem_ctx);
