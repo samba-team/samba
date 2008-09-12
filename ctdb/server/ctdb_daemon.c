@@ -53,7 +53,7 @@ static void flag_change_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	ctdb->nodes[c->pnn]->flags = 
 		(ctdb->nodes[c->pnn]->flags&NODE_FLAGS_DISCONNECTED) 
 		| (c->new_flags & ~NODE_FLAGS_DISCONNECTED);	
-	DEBUG(DEBUG_INFO,("Node flags for node %u are now 0x%x\n", c->pnn, ctdb->nodes[c->pnn]->flags));
+	DEBUG(DEBUG_DEBUG,("Node flags for node %u are now 0x%x\n", c->pnn, ctdb->nodes[c->pnn]->flags));
 
 	/* make sure we don't hold any IPs when we shouldn't */
 	if (c->pnn == ctdb->pnn &&
@@ -103,6 +103,9 @@ static void ctdb_start_transport(struct ctdb_context *ctdb)
 
 	/* start periodic update of tcp tickle lists */
        	ctdb_start_tcp_tickle_update(ctdb);
+
+	/* start listening for recovery daemon pings */
+	ctdb_control_recd_ping(ctdb);
 }
 
 static void block_signal(int signum)
@@ -210,6 +213,12 @@ static int ctdb_client_destructor(struct ctdb_client *client)
 	ctdb_takeover_client_destructor_hook(client);
 	ctdb_reqid_remove(client->ctdb, client->client_id);
 	client->ctdb->statistics.num_clients--;
+
+	if (client->num_persistent_updates != 0) {
+		DEBUG(DEBUG_ERR,(__location__ " Client disconnecting with %u persistent updates in flight. Starting recovery\n", client->num_persistent_updates));
+		client->ctdb->recovery_mode = CTDB_RECOVERY_ACTIVE;
+	}
+
 	return 0;
 }
 
@@ -529,7 +538,7 @@ static void ctdb_daemon_read_cb(uint8_t *data, size_t cnt, void *args)
 static void ctdb_accept_client(struct event_context *ev, struct fd_event *fde, 
 			 uint16_t flags, void *private_data)
 {
-	struct sockaddr_in addr;
+	struct sockaddr_un addr;
 	socklen_t len;
 	int fd;
 	struct ctdb_context *ctdb = talloc_get_type(private_data, struct ctdb_context);

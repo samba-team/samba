@@ -17,10 +17,81 @@ shift
     SAMBA_CLEANUP_PERIOD=10
 }
 
+# we keep a cached copy of smb.conf here
+smbconf_cache="$CTDB_BASE/state/samba/smb.conf.cache"
+
+
+#############################################
+# update the smb.conf cache in the foreground
+testparm_foreground_update() {
+    mkdir -p "$CTDB_BASE/state/samba" || exit 1
+    testparm -s 2> /dev/null | egrep -v 'registry.shares.=|include.=' > "$smbconf_cache"
+}
+
+#############################################
+# update the smb.conf cache in the background
+testparm_background_update() {
+    # if the cache doesn't exist, then update in the foreground
+    [ -f $smbconf_cache ] || {
+	testparm_foreground_update
+    }
+    # otherwise do a background update
+    (
+	tmpfile="${smbconf_cache}.$$"
+	testparm -s > $tmpfile 2> /dev/null &
+	# remember the pid of the teamparm process
+	pid="$!"
+	# give it 10 seconds to run
+	timeleft=10
+	while [ $timeleft -gt 0 ]; do
+	    timeleft=$(($timeleft - 1))
+	    # see if the process still exists
+	    kill -0 $pid > /dev/null 2>&1 || {
+		# it doesn't exist, grab its exit status
+		wait $pid
+		[ $? = 0 ] || {
+		    echo "50.samba: smb.conf background update exited with status $?"
+		    rm -f "${tmpfile}"
+		    exit 1
+		}		
+		# put the new smb.conf contents in the cache (atomic rename)
+		# make sure we remove references to the registry while doing 
+		# this to ensure that running testparm on the cache does
+		# not use the registry
+		egrep -v 'registry.shares.=|include.=' < "$tmpfile" > "${tmpfile}.2"
+		rm -f "$tmpfile"
+		mv -f "${tmpfile}.2" "$smbconf_cache" || {
+		    echo "50.samba: failed to update background cache"
+		    rm -f "${tmpfile}.2"
+		    exit 1
+		}
+		exit 0
+	    }
+	    # keep waiting for testparm to finish
+	    sleep 1
+	done
+	# it took more than 10 seconds - kill it off
+	rm -f "${tmpfile}"
+	kill -9 "$pid" > /dev/null 2>&1
+	echo "50.samba: timed out updating smbconf cache in background"
+	exit 1
+    ) &
+}
+
+##################################################
+# show the testparm output using a cached smb.conf 
+# to avoid registry access
+testparm_cat() {
+    [ -f $smbconf_cache ] || {
+	testparm_foreground_update
+    }
+    testparm -s "$smbconf_cache" "$@" 2>/dev/null
+}
+
 # function to see if ctdb manages winbind
 check_ctdb_manages_winbind() {
   [ -z "$CTDB_MANAGES_WINBIND" ] && {
-    secmode=`testparm -s --parameter-name=security 2> /dev/null`
+    secmode=`testparm_cat --parameter-name=security`
     case $secmode in
 	ADS|DOMAIN)
 	    CTDB_MANAGES_WINBIND="yes";
@@ -108,18 +179,27 @@ case $cmd in
 		touch $CTDB_BASE/state/samba/periodic_cleanup
 	}
 
-	testparm -s 2>&1 | egrep '^WARNING|^ERROR|^Unknown' && {
-	    echo "ERROR: testparm shows smb.conf is not clean"
-	    exit 1
+	testparm_background_update
+
+	testparm_cat | egrep '^WARNING|^ERROR|^Unknown' && {
+	    testparm_foreground_update
+	    testparm_cat | egrep '^WARNING|^ERROR|^Unknown' && {
+		echo "ERROR: testparm shows smb.conf is not clean"
+		exit 1
+	    }
 	}
 
-	[ "$CTDB_SAMBA_SKIP_SHARE_CHECK" != "yes" ] && {
-echo do da test
-		smb_dirs=`testparm -s 2> /dev/null | egrep '^[[:space:]]*path = '  | cut -d= -f2`
-		ctdb_check_directories "Samba" $smb_dirs	
+	smb_dirs=`testparm_cat | egrep '^[[:space:]]*path = ' | cut -d= -f2`
+	ctdb_check_directories_probe "Samba" $smb_dirs || {
+	    testparm_foreground_update
+	    smb_dirs=`testparm_cat | egrep '^[[:space:]]*path = ' | cut -d= -f2`
+	    ctdb_check_directories "Samba" $smb_dirs
 	}
 
-	smb_ports=`testparm -s --parameter-name="smb ports" 2> /dev/null`
+	smb_ports="$CTDB_SAMBA_CHECK_PORTS"
+	[ -z "$smb_ports" ] && {
+		smb_ports=`testparm_cat --parameter-name="smb ports"`
+	}
 	ctdb_check_tcp_ports "Samba" $smb_ports
 
 	# check winbind is OK

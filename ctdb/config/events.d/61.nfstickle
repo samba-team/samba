@@ -26,6 +26,9 @@ case $cmd in
 	iface=$1
 	ip=$2
 	shopt -s nullglob
+	# first send a grat arp, to ensure the client knows the updated
+	# mac address for this IP
+	ctdb gratiousarp $ip $iface
 	# send tickle acks for all the connections the old server had
 	for f in $NFS_TICKLE_SHARED_DIRECTORY/*/$ip; do
 		cat $f | while read dest; do

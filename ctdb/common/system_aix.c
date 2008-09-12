@@ -194,17 +194,17 @@ int ctdb_sys_send_tcp(const ctdb_sock_addr *dest,
   we try to bind to it, and if that fails then we don't have that IP
   on an interface
  */
-bool ctdb_sys_have_ip(struct sockaddr_in ip)
+bool ctdb_sys_have_ip(ctdb_sock_addr *addr)
 {
 	int s;
 	int ret;
 	
-	ip.sin_port = 0;
-	s = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
+	addr->ip.sin_port = 0;
+	s = socket(addr->sa.sa_family, SOCK_STREAM, IPPROTO_TCP);
 	if (s == -1) {
 		return false;
 	}
-	ret = bind(s, (struct sockaddr *)&ip, sizeof(ip));
+	ret = bind(s, (struct sockaddr *)addr, sizeof(ctdb_sock_addr));
 	close(s);
 	return ret == 0;
 }
@@ -306,12 +306,13 @@ static int aix_get_mac_addr(const char *device_name, uint8_t mac[6])
 }
 
 int ctdb_sys_read_tcp_packet(int s, void *private_data, 
-			struct sockaddr_in *src, struct sockaddr_in *dst,
+			ctdb_sock_addr *src, ctdb_sock_addr *dst,
 			uint32_t *ack_seq, uint32_t *seq)
 {
 	int ret;
 	struct ether_header *eth;
 	struct ip *ip;
+	struct ip6_hdr *ip6;
 	struct tcphdr *tcp;
 	struct ctdb_killtcp_connection *conn;
 	struct pcap_pkthdr pkthdr;
@@ -326,44 +327,75 @@ int ctdb_sys_read_tcp_packet(int s, void *private_data,
 	/* Ethernet */
 	eth = (struct ether_header *)buffer;
 
-	/* We are only interested in IP packets */
-	if (eth->ether_type != htons(ETHERTYPE_IP)) {
-		return -1;
-	}
+	/* we want either IPv4 or IPv6 */
+	if (eth->ether_type == htons(ETHERTYPE_IP)) {
+		/* IP */
+		ip = (struct ip *)(eth+1);
 
-	/* IP */
-	ip = (struct ip *)(eth+1);
+		/* We only want IPv4 packets */
+		if (ip->ip_v != 4) {
+			return -1;
+		}
+		/* Dont look at fragments */
+		if ((ntohs(ip->ip_off)&0x1fff) != 0) {
+			return -1;
+		}
+		/* we only want TCP */
+		if (ip->ip_p != IPPROTO_TCP) {
+			return -1;
+		}
 
-	/* We only want IPv4 packets */
-	if (ip->ip_v != 4) {
-		return -1;
-	}
-	/* Dont look at fragments */
-	if ((ntohs(ip->ip_off)&0x1fff) != 0) {
-		return -1;
-	}
-	/* we only want TCP */
-	if (ip->ip_p != IPPROTO_TCP) {
-		return -1;
-	}
-
-	/* make sure its not a short packet */
-	if (offsetof(struct tcphdr, th_ack) + 4 + 
-	    (ip->ip_hl*4) > ret) {
-		return -1;
-	}
-	/* TCP */
-	tcp = (struct tcphdr *)((ip->ip_hl*4) + (char *)ip);
+		/* make sure its not a short packet */
+		if (offsetof(struct tcphdr, th_ack) + 4 + 
+		    (ip->ip_hl*4) > ret) {
+			return -1;
+		}
+		/* TCP */
+		tcp = (struct tcphdr *)((ip->ip_hl*4) + (char *)ip);
 	
-	/* tell the caller which one we've found */
-	src->sin_addr.s_addr = ip->ip_src.s_addr;
-	src->sin_port        = tcp->th_sport;
-	dst->sin_addr.s_addr = ip->ip_dst.s_addr;
-	dst->sin_port        = tcp->th_dport;
-	*ack_seq             = tcp->th_ack;
-	*seq                 = tcp->th_seq;
+		/* tell the caller which one we've found */
+		src->ip.sin_family      = AF_INET;
+		src->ip.sin_addr.s_addr = ip->ip_src.s_addr;
+		src->ip.sin_port        = tcp->th_sport;
+		dst->ip.sin_family      = AF_INET;
+		dst->ip.sin_addr.s_addr = ip->ip_dst.s_addr;
+		dst->ip.sin_port        = tcp->th_dport;
+		*ack_seq                = tcp->th_ack;
+		*seq                    = tcp->th_seq;
 
-	return 0;
+
+		return 0;
+#ifndef ETHERTYPE_IP6
+#define ETHERTYPE_IP6 0x86dd
+#endif
+	} else if (eth->ether_type == htons(ETHERTYPE_IP6)) {
+	  		/* IP6 */
+		ip6 = (struct ip6_hdr *)(eth+1);
+
+		/* we only want TCP */
+		if (ip6->ip6_nxt != IPPROTO_TCP) {
+			return -1;
+		}
+
+		/* TCP */
+		tcp = (struct tcphdr *)(ip6+1);
+
+		/* tell the caller which one we've found */
+		src->ip6.sin6_family = AF_INET6;
+		src->ip6.sin6_port   = tcp->th_sport;
+		src->ip6.sin6_addr   = ip6->ip6_src;
+
+		dst->ip6.sin6_family = AF_INET6;
+		dst->ip6.sin6_port   = tcp->th_dport;
+		dst->ip6.sin6_addr   = ip6->ip6_dst;
+
+		*ack_seq             = tcp->th_ack;
+		*seq                 = tcp->th_seq;
+
+		return 0;
+	}
+
+	return -1;
 }
 
 

@@ -5,7 +5,7 @@ Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
 Version: 1.0
-Release: 46
+Release: 58
 Epoch: 0
 License: GNU GPL version 3
 Group: System Environment/Daemons
@@ -78,7 +78,7 @@ exit 0
 
 %postun
 if [ "$1" -ge "1" ]; then
-	%{initdir}/ctdb restart >/dev/null 2>&1
+	%{initdir}/ctdb restart >/dev/null 2>&1 || true
 fi	
 
 
@@ -118,7 +118,69 @@ fi
 %{_includedir}/ctdb_private.h
 
 %changelog
-* Fri Jul 11 2008 : Version pre_1.0.47
+* Wed Aug 27 2008 : Version 1.0.58
+ - revert the name change tcp_tcp_client back to tcp_control_tcp so
+   samba can build.
+ - Updates to the init script from Abhijith Das <adas@redhat.com>
+* Mon Aug 25 2008 : Version 1.0.57
+ - initial support for IPv6
+* Mon Aug 11 2008 : Version 1.0.56
+ - fix a memory leak in the recovery daemon.
+* Mon Aug 11 2008 : Version 1.0.55
+ - Fix the releaseip message we seond to samba.
+* Fri Aug 8 2008 : Version 1.0.54
+ - fix a looping error in the transaction code
+ - provide a more detailed error code for persistent store errors
+   so clients can make more intelligent choices on how to try to recover
+* Thu Aug 7 2008 : Version 1.0.53
+ - Remove the reclock.pnn file   it can cause gpfs to fail to umount
+ - New transaction code
+* Mon Aug 4 2008 : Version 1.0.52
+ - Send an explicit gratious arp when starting sending the tcp tickles.
+ - When doing failover, issue a killtcp to non-NFS/non-CIFS clients
+   so that they fail quickly. NFS and CIFS already fail and recover 
+   quickly.
+ - Update the test scripts to handle CTRL-C to kill off the test.
+* Mon Jul 28 2008 : Version 1.0.51
+ - Strip off the vlan tag from bond devices before we check in /proc
+   if the interface is up or not.
+ - Use testparm in the background in the scripts to allow probing
+   that the shares do exist.
+ - Fix a bug in the logging code to handle multiline entries better
+ - Rename private elements from private to private_data
+* Fri Jul 18 2008 : Version 1.0.50
+ - Dont assume that just because we can establish a TCP connection
+   that we are actually talking to a functioning ctdb daemon.
+   So dont mark the node as CONNECTED just because the tcp handshake
+   was successful.
+ - Dont try to set the recmaster to ourself during elections for those
+   cases we know this will fail. To remove some annoying benign but scary
+   looking entries from the log.
+ - Bugfix for eventsystem for signal handling that could cause a node to
+   hang.
+* Thu Jul 17 2008 : Version 1.0.49
+ - Update the safe persistent update fix to work with unpatched samba
+   servers.
+* Thu Jul 17 2008 : Version 1.0.48
+ - Update the spec file.
+ - Do not start new user-triggered eventscripts if we are already
+   inside recovery mode.
+ - Add two new controls to start/cancel a persistent update.
+   A client such as samba can use these to tell ctdbd that it will soon
+   be writing directly to the persistent database tdb file. So if
+   samba is -9ed before it has eitehr done the persistent_store or
+   canceled the operation, ctdb knows that the persistent databases
+   'may' be out of sync and therefore a full blown recovery is called for.
+ - Add two new options :
+   CTDB_SAMBA_SKIP_CONF_CHECK and CTDB_SAMBA_CHECK_PORTS that can be used
+   to override what checks to do when monitoring samba health.
+   We can no longer use the smbstatus, net or testparm commands to check
+   if samba or its config is healthy since these commands may block
+   indefinitely and thus can not be used in scripts.
+* Fri Jul 11 2008 : Version 1.0.47
+ - Fix a double free bug where if a user striggered (ctdb eventscript)
+   hung and while the timeout handler was being processed a new user
+   triggered eventscript was started we would free state twice.
  - Rewrite of onnode and associated documentation.
 * Thu Jul 10 2008 : Version 1.0.46
  - Document both the LVS:cingle-ip-address and the REMOTE-NODE:wan-accelerator

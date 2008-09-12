@@ -106,6 +106,8 @@ struct ctdb_call_info {
 /* send a broadcast to all connected nodes */
 #define CTDB_BROADCAST_CONNECTED 0xF0000004
 
+/* the key used for transaction locking on persistent databases */
+#define CTDB_TRANSACTION_LOCK_KEY "__transaction_lock__"
 
 enum control_state {CTDB_CONTROL_WAIT, CTDB_CONTROL_DONE, CTDB_CONTROL_ERROR, CTDB_CONTROL_TIMEOUT};
 
@@ -545,5 +547,25 @@ int ctdb_ctrl_getcapabilities(struct ctdb_context *ctdb, struct timeval timeout,
 struct ctdb_client_control_state *ctdb_ctrl_getcapabilities_send(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, struct timeval timeout, uint32_t destnode);
 
 int ctdb_ctrl_getcapabilities_recv(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, struct ctdb_client_control_state *state, uint32_t *capabilities);
+
+struct ctdb_marshall_buffer *ctdb_marshall_add(TALLOC_CTX *mem_ctx, 
+					       struct ctdb_marshall_buffer *m,
+					       uint64_t db_id,
+					       uint32_t reqid,
+					       TDB_DATA key,
+					       struct ctdb_ltdb_header *header,
+					       TDB_DATA data);
+TDB_DATA ctdb_marshall_finish(struct ctdb_marshall_buffer *m);
+
+struct ctdb_transaction_handle *ctdb_transaction_start(struct ctdb_db_context *ctdb_db,
+						       TALLOC_CTX *mem_ctx);
+int ctdb_transaction_fetch(struct ctdb_transaction_handle *h, 
+			   TALLOC_CTX *mem_ctx, 
+			   TDB_DATA key, TDB_DATA *data);
+int ctdb_transaction_store(struct ctdb_transaction_handle *h, 
+			   TDB_DATA key, TDB_DATA data);
+int ctdb_transaction_commit(struct ctdb_transaction_handle *h);
+
+int ctdb_ctrl_recd_ping(struct ctdb_context *ctdb);
 
 #endif

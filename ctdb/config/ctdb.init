@@ -1,21 +1,21 @@
 #!/bin/sh
 #
 ##############################
-# init info for redhat distros
-# chkconfig: - 90 36
-# description: Starts and stops the clustered tdb daemon
-# pidfile: /var/run/ctdbd/ctdbd.pid
-##############################
+# ctdb:                        Starts the clustered tdb daemon
+#
+# chkconfig:           - 90 36
+#
+# description:                 Starts and stops the clustered tdb daemon
+# pidfile:             /var/run/ctdbd/ctdbd.pid
+#
 
-##############################
-# SLES/OpenSuSE init info
 ### BEGIN INIT INFO
-# Provides:       ctdb
-# Required-Start: $network
+# Provides:            ctdb
+# Required-Start:      $network
 # Required-Stop:
-# Default-Start:  3 5
 # Default-Stop:
-# Description:    initscript for the ctdb service
+# Short-Description:   start and stop ctdb service
+# Description:         initscript for the ctdb service
 ### END INIT INFO
 
 # Source function library.
@@ -188,7 +188,7 @@ case "$1" in
   stop)
   	stop
 	;;
-  restart)
+  restart|reload)
   	restart
 	;;
   status)
