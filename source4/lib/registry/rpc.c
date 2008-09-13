@@ -2,6 +2,7 @@
    Samba Unix/Linux SMB implementation
    RPC backend for the registry library
    Copyright (C) 2003-2007 Jelmer Vernooij, jelmer@samba.org
+   Copyright (C) 2008 Matthias Dieter Wallnöfer, mwallnoefer@yahoo.de
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -19,18 +20,21 @@
 #include "includes.h"
 #include "registry.h"
 #include "librpc/gen_ndr/ndr_winreg_c.h"
-#include "param/param.h"
 
 struct rpc_key {
 	struct registry_key key;
 	struct policy_handle pol;
 	struct dcerpc_pipe *pipe;
 
-	uint32_t num_values;
+	const char* classname;	
 	uint32_t num_subkeys;
+	uint32_t max_subkeylen;
+	uint32_t max_subkeysize;
+	uint32_t num_values;
 	uint32_t max_valnamelen;
-	uint32_t max_valdatalen;
-	uint32_t max_subkeynamelen;
+	uint32_t max_valbufsize;
+	uint32_t secdescsize;
+	NTTIME last_changed_time;
 };
 
 struct rpc_registry_context {
@@ -45,63 +49,55 @@ static struct registry_operations reg_backend_rpc;
  */
 
 /*
- * Converts a SAMBA (UNIX) string into a WINREG (UTF16) string
+ * Converts a SAMBA string into a WINREG string
  */
 static void chars_to_winreg_String(TALLOC_CTX *mem_ctx, struct winreg_String
 	*winregStr, const char *str)
 {
 	winregStr->name = NULL;
 	winregStr->name_len = 0;
-	if (str != NULL)
-		winregStr->name_len = convert_string_talloc(mem_ctx,
-			lp_iconv_convenience(global_loadparm), CH_UNIX,
-			CH_UTF16, (void *) str, strlen(str),
-			(void **) &winregStr->name);
+	if (str != NULL) {
+		winregStr->name = talloc_strdup(mem_ctx, str);
+		winregStr->name_len = strlen(str);
+	}
 	winregStr->name_size = winregStr->name_len;
 }
 
 /*
- * Converts a WINREG (UTF16) string into a SAMBA (UNIX) string
+ * Converts a WINREG string into a SAMBA string
  */
 static void winreg_String_to_chars(TALLOC_CTX *mem_ctx, const char **str,
 	struct winreg_String *winregStr)
 {
 	*str = NULL;
 	if (winregStr->name != NULL)
-		convert_string_talloc(mem_ctx,
-			lp_iconv_convenience(global_loadparm), CH_UTF16,
-			CH_UNIX, (void *) winregStr->name, winregStr->name_len,
-			(void **) str);
+		*str = talloc_strdup(mem_ctx, winregStr->name);
 }
 
 /*
- * Converts a SAMBA (UNIX) string into a WINREG (UTF16) string buffer
+ * Converts a SAMBA string into a WINREG string buffer
  */
 static void chars_to_winreg_StringBuf(TALLOC_CTX *mem_ctx, struct winreg_StringBuf
 	*winregStrBuf, const char *str, uint16_t size)
 {
 	winregStrBuf->name = NULL;
 	winregStrBuf->length = 0;
-	if (str != NULL)
-		winregStrBuf->length = convert_string_talloc(mem_ctx,
-			lp_iconv_convenience(global_loadparm), CH_UNIX,
-			CH_UTF16, (void *) str, strlen(str),
-			(void **) &winregStrBuf->name);
+	if (str != NULL) {
+		winregStrBuf->name = talloc_strdup(mem_ctx, str);
+		winregStrBuf->length = strlen(str);
+	}
 	winregStrBuf->size = size;
 }
 
 /*
- * Converts a WINREG (UTF16) string buffer into a SAMBA (UNIX) string
+ * Converts a WINREG string buffer into a SAMBA string
  */
 static void winreg_StringBuf_to_chars(TALLOC_CTX *mem_ctx, const char **str,
 	struct winreg_StringBuf *winregStrBuf)
 {
 	*str = NULL;
 	if (winregStrBuf->name != NULL)
-		convert_string_talloc(mem_ctx,
-			lp_iconv_convenience(global_loadparm), CH_UTF16,
-			CH_UNIX, (void *) winregStrBuf->name,
-			winregStrBuf->length, (void **) str);
+		*str = talloc_strdup(mem_ctx, winregStrBuf->name);
 }
 
 #define openhive(u) static WERROR open_ ## u(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct policy_handle *hnd) \
@@ -147,7 +143,7 @@ static struct {
 	{ 0, NULL }
 };
 
-static WERROR rpc_query_key(const struct registry_key *k);
+static WERROR rpc_query_key(TALLOC_CTX *mem_ctx, const struct registry_key *k);
 
 static WERROR rpc_get_predefined_key(struct registry_context *ctx,
 				     uint32_t hkey_type,
@@ -254,11 +250,11 @@ static WERROR rpc_get_value_by_index(TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 
 	if (mykeydata->num_values == -1) {
-		error = rpc_query_key(parent);
+		error = rpc_query_key(mem_ctx, parent);
 		if(!W_ERROR_IS_OK(error)) return error;
 	}
 
-	chars_to_winreg_StringBuf(mem_ctx, &name, "", 1024);
+	chars_to_winreg_StringBuf(mem_ctx, &name, "", mykeydata->max_valbufsize);
 
 	ZERO_STRUCT(r);
 	r.in.handle = &mykeydata->pol;
@@ -266,7 +262,7 @@ static WERROR rpc_get_value_by_index(TALLOC_CTX *mem_ctx,
 	r.in.name = &name;
 	r.in.type = type;
 	r.in.value = &value;
-	r.in.size = &mykeydata->max_valdatalen;
+	r.in.size = &mykeydata->max_valbufsize;
 	r.in.length = &zero;
 	r.out.name = &name;
 	r.out.type = type;
@@ -301,7 +297,7 @@ static WERROR rpc_get_subkey_by_index(TALLOC_CTX *mem_ctx,
 	NTTIME change_time = 0;
 	NTSTATUS status;
 
-	chars_to_winreg_StringBuf(mem_ctx, &namebuf, "", 1024);
+	chars_to_winreg_StringBuf(mem_ctx, &namebuf, " ", 1024);
 	chars_to_winreg_StringBuf(mem_ctx, &classbuf, NULL, 0);
 
 	ZERO_STRUCT(r);
@@ -321,8 +317,12 @@ static WERROR rpc_get_subkey_by_index(TALLOC_CTX *mem_ctx,
 		return ntstatus_to_werror(status);
 	}
 
-	winreg_StringBuf_to_chars(mem_ctx, name, r.out.name);
-	winreg_StringBuf_to_chars(mem_ctx, keyclass, r.out.keyclass);
+	if (name != NULL)
+		winreg_StringBuf_to_chars(mem_ctx, name, r.out.name);
+	if (keyclass != NULL)
+		winreg_StringBuf_to_chars(mem_ctx, keyclass, r.out.keyclass);
+	if (last_changed_time != NULL)
+		*last_changed_time = *(r.out.last_changed_time);
 
 	return r.out.result;
 }
@@ -364,38 +364,36 @@ static WERROR rpc_add_key(TALLOC_CTX *mem_ctx,
 	return r.out.result;
 }
 
-static WERROR rpc_query_key(const struct registry_key *k)
+static WERROR rpc_query_key(TALLOC_CTX *mem_ctx, const struct registry_key *k)
 {
 	struct winreg_QueryInfoKey r;
 	struct rpc_key *mykeydata = talloc_get_type(k, struct rpc_key);
-	TALLOC_CTX *mem_ctx = talloc_init("query_key");
-	uint32_t max_subkeysize;
-	uint32_t secdescsize;
-	NTTIME last_changed_time;
+	struct winreg_String classname;
 	NTSTATUS status;
+
+	chars_to_winreg_String(mem_ctx, &classname, NULL);
 
 	ZERO_STRUCT(r);
 	r.in.handle = &mykeydata->pol;
-	chars_to_winreg_String(mem_ctx, r.in.classname, NULL);
+	r.in.classname = &classname;
+	r.out.classname = &classname;
 	r.out.num_subkeys = &mykeydata->num_subkeys;
-	r.out.max_subkeylen = &mykeydata->max_subkeynamelen;
-	r.out.max_valnamelen = &mykeydata->max_valnamelen;
-	r.out.max_valbufsize = &mykeydata->max_valdatalen;
-	r.out.max_subkeysize = &max_subkeysize;
+	r.out.max_subkeylen = &mykeydata->max_subkeylen;
+	r.out.max_subkeysize = &mykeydata->max_subkeysize;
 	r.out.num_values = &mykeydata->num_values;
-	r.out.secdescsize = &secdescsize;
-	r.out.last_changed_time = &last_changed_time;
-
-	r.out.classname = r.in.classname = talloc_zero(mem_ctx, struct winreg_String);
+	r.out.max_valnamelen = &mykeydata->max_valnamelen;
+	r.out.max_valbufsize = &mykeydata->max_valbufsize;
+	r.out.secdescsize = &mykeydata->secdescsize;
+	r.out.last_changed_time = &mykeydata->last_changed_time;
 
 	status = dcerpc_winreg_QueryInfoKey(mykeydata->pipe, mem_ctx, &r);
-
-	talloc_free(mem_ctx);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("QueryInfoKey failed - %s\n", nt_errstr(status)));
 		return ntstatus_to_werror(status);
 	}
+
+	winreg_String_to_chars(mem_ctx, &mykeydata->classname, r.out.classname);
 
 	return r.out.result;
 }
@@ -425,10 +423,10 @@ static WERROR rpc_del_key(struct registry_key *parent, const char *name)
 
 static WERROR rpc_get_info(TALLOC_CTX *mem_ctx, const struct registry_key *key,
 						   const char **classname,
-						   uint32_t *numsubkeys,
-						   uint32_t *numvalue,
+						   uint32_t *num_subkeys,
+						   uint32_t *num_values,
 						   NTTIME *last_changed_time,
-						   uint32_t *max_subkeynamelen,
+						   uint32_t *max_subkeylen,
 						   uint32_t *max_valnamelen,
 						   uint32_t *max_valbufsize)
 {
@@ -436,27 +434,30 @@ static WERROR rpc_get_info(TALLOC_CTX *mem_ctx, const struct registry_key *key,
 	WERROR error;
 
 	if (mykeydata->num_values == -1) {
-		error = rpc_query_key(key);
+		error = rpc_query_key(mem_ctx, key);
 		if(!W_ERROR_IS_OK(error)) return error;
 	}
 
-	/* FIXME: *classname = talloc_strdup(mem_ctx, mykeydata->classname); */
-	/* FIXME: *last_changed_time = mykeydata->last_changed_time */
+	if (classname != NULL)
+		*classname = mykeydata->classname;
 
-	if (numvalue != NULL)
-		*numvalue = mykeydata->num_values;
+	if (num_subkeys != NULL)
+		*num_subkeys = mykeydata->num_subkeys;
 
-	if (numsubkeys != NULL)
-		*numsubkeys = mykeydata->num_subkeys;
+	if (num_values != NULL)
+		*num_values = mykeydata->num_values;
+
+	if (last_changed_time != NULL)
+		*last_changed_time = mykeydata->last_changed_time;
+
+	if (max_subkeylen != NULL)
+		*max_subkeylen = mykeydata->max_subkeylen;
 
 	if (max_valnamelen != NULL)
 		*max_valnamelen = mykeydata->max_valnamelen;
 
 	if (max_valbufsize != NULL)
-		*max_valbufsize = mykeydata->max_valdatalen;
-
-	if (max_subkeynamelen != NULL)
-		*max_subkeynamelen = mykeydata->max_subkeynamelen;
+		*max_valbufsize = mykeydata->max_valbufsize;
 
 	return WERR_OK;
 }
