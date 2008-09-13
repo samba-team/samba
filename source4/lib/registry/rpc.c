@@ -21,6 +21,9 @@
 #include "registry.h"
 #include "librpc/gen_ndr/ndr_winreg_c.h"
 
+#define MAX_NAMESIZE 512
+#define MAX_VALSIZE 32768
+
 struct rpc_key {
 	struct registry_key key;
 	struct policy_handle pol;
@@ -245,7 +248,8 @@ static WERROR rpc_get_value_by_index(TALLOC_CTX *mem_ctx,
 	struct winreg_EnumValue r;
 	struct winreg_StringBuf name;
 	uint8_t value;
-	uint32_t zero = 0, zero2 = 0;
+	uint32_t val_size = MAX_VALSIZE;
+	uint32_t zero = 0;
 	WERROR error;
 	NTSTATUS status;
 
@@ -254,7 +258,7 @@ static WERROR rpc_get_value_by_index(TALLOC_CTX *mem_ctx,
 		if(!W_ERROR_IS_OK(error)) return error;
 	}
 
-	chars_to_winreg_StringBuf(mem_ctx, &name, "", mykeydata->max_valbufsize);
+	chars_to_winreg_StringBuf(mem_ctx, &name, "", MAX_NAMESIZE);
 
 	ZERO_STRUCT(r);
 	r.in.handle = &mykeydata->pol;
@@ -262,12 +266,12 @@ static WERROR rpc_get_value_by_index(TALLOC_CTX *mem_ctx,
 	r.in.name = &name;
 	r.in.type = type;
 	r.in.value = &value;
-	r.in.size = &mykeydata->max_valbufsize;
+	r.in.size = &val_size;
 	r.in.length = &zero;
 	r.out.name = &name;
 	r.out.type = type;
 	r.out.value = &value;
-	r.out.size = &zero2;
+	r.out.size = &val_size;
 	r.out.length = &zero;
 
 	status = dcerpc_winreg_EnumValue(mykeydata->pipe, mem_ctx, &r);
@@ -297,7 +301,7 @@ static WERROR rpc_get_subkey_by_index(TALLOC_CTX *mem_ctx,
 	NTTIME change_time = 0;
 	NTSTATUS status;
 
-	chars_to_winreg_StringBuf(mem_ctx, &namebuf, " ", 1024);
+	chars_to_winreg_StringBuf(mem_ctx, &namebuf, " ", MAX_NAMESIZE);
 	chars_to_winreg_StringBuf(mem_ctx, &classbuf, NULL, 0);
 
 	ZERO_STRUCT(r);
