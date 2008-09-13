@@ -258,6 +258,15 @@ static WERROR ldb_get_subkey_by_id(TALLOC_CTX *mem_ctx,
 {
 	struct ldb_message_element *el;
 	struct ldb_key_data *kd = talloc_get_type(k, struct ldb_key_data);
+	
+	/* Initialization */
+	if (name != NULL)
+		*name = NULL;
+	if (classname != NULL)
+		*classname = NULL; /* TODO: Store properly */
+	if (last_mod_time != NULL)
+		*last_mod_time = 0; /* TODO: we need to add this to the
+						ldb backend properly */
 
 	/* Do a search if necessary */
 	if (kd->subkeys == NULL) {
@@ -273,13 +282,6 @@ static WERROR ldb_get_subkey_by_id(TALLOC_CTX *mem_ctx,
 
 	if (name != NULL)
 		*name = talloc_strdup(mem_ctx, (char *)el->values[0].data);
-
-	if (classname != NULL)
-		*classname = NULL; /* TODO: Store properly */
-
-	if (last_mod_time != NULL)
-		*last_mod_time = 0; /* TODO: we need to add this to the
-						ldb backend properly */
 
 	return WERR_OK;
 }
@@ -729,6 +731,22 @@ static WERROR ldb_get_key_info(TALLOC_CTX *mem_ctx,
 {
 	struct ldb_key_data *kd = talloc_get_type(key, struct ldb_key_data);
 
+	/* Initialization */
+	if (classname != NULL)
+		*classname = NULL;
+	if (num_subkeys != NULL)
+		*num_subkeys = 0;
+	if (num_values != NULL)
+		*num_values = 0;
+	if (last_change_time != NULL)
+		*last_change_time = 0;
+	if (max_subkeynamelen != NULL)
+		*max_subkeynamelen = 0;
+	if (max_valnamelen != NULL)
+		*max_valnamelen = 0;
+	if (max_valbufsize != NULL)
+		*max_valbufsize = 0;
+
 	if (kd->subkeys == NULL) {
 		W_ERROR_NOT_OK_RETURN(cache_subkeys(kd));
 	}
@@ -737,20 +755,13 @@ static WERROR ldb_get_key_info(TALLOC_CTX *mem_ctx,
 		W_ERROR_NOT_OK_RETURN(cache_values(kd));
 	}
 
-	/* FIXME */
-	if (classname != NULL)
-		*classname = NULL;
-
 	if (num_subkeys != NULL) {
 		*num_subkeys = kd->subkey_count;
 	}
-
 	if (num_values != NULL) {
 		*num_values = kd->value_count;
 	}
 
-	if (last_change_time != NULL)
-		*last_change_time = 0;
 
 	if (max_subkeynamelen != NULL) {
 		int i;

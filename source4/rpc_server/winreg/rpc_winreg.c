@@ -3,7 +3,8 @@
 
    endpoint server for the winreg pipe
 
-   Copyright (C) Jelmer Vernooij 2004
+   Copyright (C) 2004 Jelmer Vernooij, jelmer@samba.org
+   Copyright (C) 2008 Matthias Dieter Wallnöfer, mwallnoefer@yahoo.de
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -212,25 +213,40 @@ static WERROR dcesrv_winreg_EnumKey(struct dcesrv_call_state *dce_call,
 				    struct winreg_EnumKey *r)
 {
 	struct dcesrv_handle *h;
-	const char *name;
+	const char *name, *classname;
 	NTTIME last_mod;
 
 	DCESRV_PULL_HANDLE_FAULT(h, r->in.handle, HTYPE_REGKEY);
 
 	r->out.result = reg_key_get_subkey_by_index(mem_ctx,
-						    (struct registry_key *)h->data,
-						    r->in.enum_index,
-						    &name, NULL, &last_mod);
+		(struct registry_key *)h->data, r->in.enum_index,
+		&name, &classname, &last_mod);
 
 	if (2*strlen_m_term(name) > r->in.name->size) {
 		return WERR_MORE_DATA;
 	}
-	r->out.name->length = 2*strlen_m_term(name);
-	r->out.name->name = name;
-	r->out.keyclass = talloc_zero(mem_ctx, struct winreg_StringBuf);
-	if (r->in.last_changed_time) {
-		r->out.last_changed_time = &last_mod;
+
+	if (name != NULL) {
+		r->out.name->name = name;
+		r->out.name->length = 2*strlen_m_term(name);
+	} else {
+		r->out.name->name = r->in.name->name;
+		r->out.name->length = r->in.name->length;
 	}
+	r->out.name->size = r->in.name->size;
+
+	r->out.keyclass = r->in.keyclass;
+	if (classname != NULL) {
+		r->out.keyclass->name = classname;
+		r->out.keyclass->length = 2*strlen_m_term(classname);
+	} else {
+		r->out.keyclass->name = r->in.keyclass->name;
+		r->out.keyclass->length = r->in.keyclass->length;
+	}
+	r->out.keyclass->size = r->in.keyclass->size;
+
+	if (r->in.last_changed_time != NULL)
+		r->out.last_changed_time = &last_mod;
 
 	return r->out.result;
 }
@@ -286,7 +302,7 @@ static WERROR dcesrv_winreg_EnumValue(struct dcesrv_call_state *dce_call,
 	}
 
 	/* "data_name" is NULL when we query the default attribute */
-	if (data_name) {
+	if (data_name != NULL) {
 		r->out.name->name = data_name;
 		r->out.name->length = 2*strlen_m_term(data_name);
 	} else {
@@ -295,11 +311,11 @@ static WERROR dcesrv_winreg_EnumValue(struct dcesrv_call_state *dce_call,
 	}
 	r->out.name->size = r->in.name->size;
 
-	if (r->in.value) {
+	if (r->in.value != NULL) {
 		r->out.value = data.data;
 	}
 
-	if (r->in.size) {
+	if (r->in.size != NULL) {
 		r->out.size = talloc(mem_ctx, uint32_t);
 		*r->out.size = data.length;
 		r->out.length = r->out.size;
@@ -433,10 +449,16 @@ static WERROR dcesrv_winreg_QueryInfoKey(struct dcesrv_call_state *dce_call,
 				       r->out.num_values, r->out.last_changed_time,
 				       r->out.max_subkeylen, r->out.max_valnamelen, 
 				       r->out.max_valbufsize);
-		
-		if (r->out.classname != NULL)
+
+		if (classname != NULL) {
 			r->out.classname->name = classname;
-		
+			r->out.classname->name_len = 2*strlen_m_term(classname);
+		} else {
+			r->out.classname->name = r->in.classname->name;
+			r->out.classname->name_len = r->in.classname->name_len;
+		}
+		r->out.classname->name_size = r->in.classname->name_size;
+
 		return result;
 	default:
 		return WERR_ACCESS_DENIED;
