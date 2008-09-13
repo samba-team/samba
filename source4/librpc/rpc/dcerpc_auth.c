@@ -129,6 +129,7 @@ static void bind_auth_next_step(struct composite_context *c)
 	c->status = gensec_update(sec->generic_state, state,
 				  sec->auth_info->credentials,
 				  &state->credentials);
+	data_blob_free(&sec->auth_info->credentials);
 
 	if (NT_STATUS_EQUAL(c->status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		more_processing = true;
@@ -151,6 +152,8 @@ static void bind_auth_next_step(struct composite_context *c)
 	if (!more_processing) {
 		/* NO reply expected, so just send it */
 		c->status = dcerpc_auth3(state->pipe, state);
+		data_blob_free(&state->credentials);
+		sec->auth_info->credentials = data_blob(NULL, 0);
 		if (!composite_is_ok(c)) return;
 
 		composite_done(c);
@@ -162,6 +165,8 @@ static void bind_auth_next_step(struct composite_context *c)
 	creq = dcerpc_alter_context_send(state->pipe, state,
 					 &state->pipe->syntax,
 					 &state->pipe->transfer_syntax);
+	data_blob_free(&state->credentials);
+	sec->auth_info->credentials = data_blob(NULL, 0);
 	if (composite_nomem(creq, c)) return;
 
 	composite_continue(c, creq, bind_auth_recv_alter, c);
@@ -334,6 +339,8 @@ struct composite_context *dcerpc_bind_auth_send(TALLOC_CTX *mem_ctx,
 	/* The first request always is a dcerpc_bind. The subsequent ones
 	 * depend on gensec results */
 	creq = dcerpc_bind_send(p, state, &syntax, &transfer_syntax);
+	data_blob_free(&state->credentials);
+	sec->auth_info->credentials = data_blob(NULL, 0);
 	if (composite_nomem(creq, c)) return c;
 
 	composite_continue(c, creq, bind_auth_recv_bindreply, c);
