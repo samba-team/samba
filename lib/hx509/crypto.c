@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2004 - 2007 Kungliga Tekniska Högskolan
+ * Copyright (c) 2004 - 2007 Kungliga Tekniska HÃ¶gskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -2556,7 +2556,7 @@ hx509_crypto_select(const hx509_context context,
 	def = _hx509_crypto_default_digest_alg;
     } else if (type == HX509_SELECT_PUBLIC_SIG) {
 	bits = SIG_PUBLIC_SIG;
-	/* XXX depend on `source´ and `peer´ */
+	/* XXX depend on `sourceÂ´ and `peerÂ´ */
 	def = _hx509_crypto_default_sig_alg;
     } else if (type == HX509_SELECT_SECRET_ENC) {
 	bits = SIG_SECRET;

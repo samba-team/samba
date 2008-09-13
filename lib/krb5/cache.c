@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2008 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2008 Kungliga Tekniska HÃ¶gskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -253,7 +253,7 @@ krb5_cc_get_type(krb5_context context,
 }
 
 /**
- * Return the complete resolvable name the ccache `id' in `str´.
+ * Return the complete resolvable name the ccache `id' in `strÂ´.
  * `str` should be freed with free(3).
  * Returns 0 or an error (and then *str is set to NULL).
  *

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2004 - 2007 Kungliga Tekniska Högskolan
+ * Copyright (c) 2004 - 2007 Kungliga Tekniska HÃ¶gskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -205,7 +205,7 @@ _hx509_cert_get_version(const Certificate *t)
 
 /**
  * Allocate and init an hx509 certificate object from the decoded
- * certificate `c´.
+ * certificate `cÂ´.
  *
  * @param context A hx509 context.
  * @param c
@@ -1208,7 +1208,7 @@ _hx509_path_free(hx509_path *path)
  * The path includes a path from the top certificate to the anchor
  * certificate.
  *
- * The caller needs to free `path´ both on successful built path and
+ * The caller needs to free `pathÂ´ both on successful built path and
  * failure.
  */
 

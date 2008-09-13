@@ -26,7 +26,7 @@
  *	$FreeBSD: src/lib/libgssapi/gss_display_status.c,v 1.1 2005/12/29 14:40:20 dfr Exp $
  */
 /*
- * Copyright (c) 1998 - 2005 Kungliga Tekniska Högskolan
+ * Copyright (c) 1998 - 2005 Kungliga Tekniska HÃ¶gskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *

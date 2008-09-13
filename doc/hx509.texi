@@ -33,7 +33,7 @@
 @subtitle X.509 distribution from KTH
 @subtitle Edition @value{EDITION}, for version @value{VERSION}
 @subtitle 2008
-@author Love Hörnquist Åstrand
+@author Love HÃ¶rnquist Ã…strand
 @author last updated @value{UPDATED}
 
 @def@copynext{@vskip 20pt plus 1fil@penalty-1000}
@@ -41,7 +41,7 @@
 @def@copyrightend{}
 @page
 @copyrightstart
-Copyright (c) 1994-2008 Kungliga Tekniska Högskolan
+Copyright (c) 1994-2008 Kungliga Tekniska HÃ¶gskolan
 (Royal Institute of Technology, Stockholm, Sweden).
 All rights reserved.
 

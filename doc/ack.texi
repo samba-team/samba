@@ -36,10 +36,10 @@ The @code{pkcs11.h} headerfile was written by the Scute project.
 
 Bugfixes, documentation, encouragement, and code has been contributed by:
 @table @asis
-@item Alexander Boström
+@item Alexander BostrÃ¶m
 @item Andrew Bartlett
-@item Björn Sandell
-@item Björn Schlögl
+@item BjÃ¶rn Sandell
+@item BjÃ¶rn SchlÃ¶gl
 @item Brandon S. Allbery KF8NH
 @item Brian A May
 @item Chaskiel M Grundman
@@ -50,7 +50,7 @@ Bugfixes, documentation, encouragement, and code has been contributed by:
 @item Douglas E Engert
 @item Frank van der Linden
 @item Jason McIntyre
-@item Johan Ihrén
+@item Johan IhrÃ©n
 @item Jun-ichiro itojun Hagino
 @item KAMADA Ken'ichi
 @item Ken Hornstein
@@ -72,7 +72,7 @@ Bugfixes, documentation, encouragement, and code has been contributed by:
 @item Richard Nyberg
 @item Stefan Metzmacher
 @item Zeqing Xia
-@item Åke Sandgren 
+@item Ã…ke Sandgren 
 @item and we hope that those not mentioned here will forgive us.
 @end table
 

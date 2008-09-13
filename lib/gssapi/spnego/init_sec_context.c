@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2004 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2004 Kungliga Tekniska HÃ¶gskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * Portions Copyright (c) 2004 PADL Software Pty Ltd.
  *
@@ -36,7 +36,7 @@
 RCSID("$Id$");
 
 /*
- * Is target_name an sane target for `mech´.
+ * Is target_name an sane target for `mechÂ´.
  */
 
 static OM_uint32

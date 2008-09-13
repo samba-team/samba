@@ -1,17 +1,17 @@
-2007-04-19  Love Hörnquist Åstrand  <lha@it.su.se>
+2007-04-19  Love HÃ¶rnquist Ã…strand  <lha@it.su.se>
 
 	* make encoding function independent of krb4 and krb5, enable
 	removal of krb4
 
-2006-10-07  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-10-07  Love HÃ¶rnquist Ã…strand  <lha@it.su.se>
 
 	* Makefile.am: Add man_MANS to EXTRA_DIST
 	
-2006-05-05  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-05-05  Love HÃ¶rnquist Ã…strand  <lha@it.su.se>
 	
 	* Rename u_intXX_t to uintXX_t
 	
-2005-07-09  Love Hörquist Åstrand  <lha@it.su.se>
+2005-07-09  Love HÃ¶rquist Ã…strand  <lha@it.su.se>
 	
 	* kxd.c (doit): only cleaup for active sockets, passive does it
 	own cleaning up
@@ -23,34 +23,34 @@
 	* krb4.c: Do not assume that des_key_schedule is an
 	array.
 
-2005-06-07  Love Hörquist Åstrand  <lha@it.su.se>
+2005-06-07  Love HÃ¶rquist Ã…strand  <lha@it.su.se>
 
 	* (recv_conn): init variables to using them uninitialized
 
-2005-04-30  Love Hörquist Åstrand  <lha@it.su.se>
+2005-04-30  Love HÃ¶rquist Ã…strand  <lha@it.su.se>
 
 	* kx.c (connect_host): make sure s is initialized
 	
-2005-04-20  Love Hörquist Åstrand  <lha@it.su.se>
+2005-04-20  Love HÃ¶rquist Ã…strand  <lha@it.su.se>
 
 	* krb5.c: cast size_t to unsigned long
 	
-2004-03-15  Love Hörquist Åstrand  <lha@it.su.se>
+2004-03-15  Love HÃ¶rquist Ã…strand  <lha@it.su.se>
 
 	* krb5.c (krb5_destroy): free allocated memory, not something else
 	
-2004-03-07  Love Hörquist Åstrand  <lha@it.su.se>
+2004-03-07  Love HÃ¶rquist Ã…strand  <lha@it.su.se>
 
 	* rxtelnet.1: document new behavior
 	
 	* rxtelnet.in: even if kx failes, start anyway From: Harald Barth
 	<haba@pdc.kth.se>
 	
-2004-02-18  Love Hörquist Åstrand  <lha@it.su.se>
+2004-02-18  Love HÃ¶rquist Ã…strand  <lha@it.su.se>
 
 	* krb4.c: remove dup on
 	
-2004-01-08  Love Hörquist Åstrand  <lha@it.su.se>
+2004-01-08  Love HÃ¶rquist Ã…strand  <lha@it.su.se>
 
 	* krb5.c: clean up krb5 support, log to syslog instead of stdout
 	(very confusing for the other end tcp connection), patch
@@ -60,7 +60,7 @@
 
 	* rxtelnet.in: add telnet -F option
 
-2003-05-15  Love Hörquist Åstrand  <lha@it.su.se>
+2003-05-15  Love HÃ¶rquist Ã…strand  <lha@it.su.se>
 
 	* kxd.c (recv_conn): pass pointer to sockaddr, not pointer to
 	pointer
@@ -78,14 +78,14 @@
 	* kx.h: don't directly use sockaddr_storage, since we can't always
 	know what it looks like
 
-2003-04-11  Love Hörquist Åstrand  <lha@it.su.se>
+2003-04-11  Love HÃ¶rquist Ã…strand  <lha@it.su.se>
 
 	* rxterm.1: spelling, from jmc <jmc@prioris.mini.pw.edu.pl>
 	* rxtelnet.1: spelling, from jmc <jmc@prioris.mini.pw.edu.pl>
 	* kxd.8: spelling, from jmc <jmc@prioris.mini.pw.edu.pl>
 	* kx.1: spelling, from jmc <jmc@prioris.mini.pw.edu.pl>
 	
-2003-02-25  Love Hörquist Åstrand  <lha@it.su.se>
+2003-02-25  Love HÃ¶rquist Ã…strand  <lha@it.su.se>
 
 	* krb4.c: remove \n from warnx, from NetBSD
 	
@@ -404,7 +404,7 @@ Wed Nov 18 20:25:37 1998  Assar Westerlund  <assar@sics.se>
 Fri Oct  2 06:34:51 1998  Assar Westerlund  <assar@sics.se>
 
 	* kx.c (doit_active): check DISPLAY to figure out what local
- 	socket to connect to.  From Åke Sandgren <ake@cs.umu.se>
+ 	socket to connect to.  From Ã…ke Sandgren <ake@cs.umu.se>
 
 Thu Oct  1 23:02:29 1998  Johan Danielsson  <joda@hella.pdc.kth.se>
 

@@ -1,23 +1,23 @@
-2006-11-20  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-11-20  Love HÃ¶rnquist Ã…strand  <lha@it.su.se>
 
 	* pop_pass.c: Make krb5_get_init_creds_opt_free take a context
 	argument.
 	
-2006-10-07  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-10-07  Love HÃ¶rnquist Ã…strand  <lha@it.su.se>
 
 	* Makefile.am: Add man_MANS to EXTRA_DIST
 	
-2006-05-05  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-05-05  Love HÃ¶rnquist Ã…strand  <lha@it.su.se>
 
 	* Rename u_intXX_t to uintXX_t
 
-2005-10-22  Love Hörnquist Åstrand  <lha@it.su.se>
+2005-10-22  Love HÃ¶rnquist Ã…strand  <lha@it.su.se>
 	
 	* pop_dropinfo.c: Check return value from asprintf instead of
-	string != NULL since it undefined behavior on Linux. From Björn
+	string != NULL since it undefined behavior on Linux. From BjÃ¶rn
 	Sandell
 	
-2005-05-29  Love Hörnquist Åstrand  <lha@it.su.se>
+2005-05-29  Love HÃ¶rnquist Ã…strand  <lha@it.su.se>
 	
 	* pop_user.c: avoid 'unused variable' warnings
 
@@ -44,7 +44,7 @@
 	
 	* popper.h: add AUTH_SASL flag
 	
-2003-12-20  Love Hörnquist Åstrand  <lha@it.su.se>
+2003-12-20  Love HÃ¶rnquist Ã…strand  <lha@it.su.se>
 
 	* popper.c (main): avoid warning by sending empty string as
 	formatstring instead of NULL (even though pop_msg handles that
@@ -54,19 +54,19 @@
 
 	* pop_init.c (pop_init): change call to authentication function,
 	from a ?: construct (which toubles some versions of gcc) to if;
-	from Björn Grönvall
+	from BjÃ¶rn GrÃ¶nvall
 
-2003-09-03  Love Hörnquist Åstrand  <lha@it.su.se>
+2003-09-03  Love HÃ¶rnquist Ã…strand  <lha@it.su.se>
 
 	* pop_pass.c: use
 	krb5_get_init_creds_opt_alloc/krb5_get_init_creds_opt_free
 
-2003-09-02  Love Hörnquist Åstrand  <lha@it.su.se>
+2003-09-02  Love HÃ¶rnquist Ã…strand  <lha@it.su.se>
 
 	* popper.c (tgets): avoid be clobbered by `longjmp' or `vfork'
 	warning
 
-2003-04-16  Love Hörnquist Åstrand  <lha@it.su.se>
+2003-04-16  Love HÃ¶rnquist Ã…strand  <lha@it.su.se>
 
 	* popper.8: spelling, from jmc <jmc@prioris.mini.pw.edu.pl>
 	

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006 - 2007 Kungliga Tekniska Högskolan
+ * Copyright (c) 2006 - 2007 Kungliga Tekniska HÃ¶gskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -133,7 +133,7 @@ calculate_reply_hash(krb5_context context,
 }
 
 /*
- * Build a certifate for `principal´ that will expire at `endtime´.
+ * Build a certifate for `principalÂ´ that will expire at `endtimeÂ´.
  */
 
 static krb5_error_code

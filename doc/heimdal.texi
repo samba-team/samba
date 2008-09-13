@@ -34,7 +34,7 @@
 @subtitle Edition @value{EDITION}, for version @value{VERSION}
 @subtitle 2008
 @author Johan Danielsson
-@author Love Hörnquist Åstrand
+@author Love HÃ¶rnquist Ã…strand
 @author Assar Westerlund
 @author last updated @value{UPDATED}
 

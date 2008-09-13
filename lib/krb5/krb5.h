@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2007 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2007 Kungliga Tekniska HÃ¶gskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -561,8 +561,8 @@ typedef struct krb5_auth_context_data {
   
     krb5_rcache rcache;
 
-    krb5_keytype keytype;	/* ¿requested key type ? */
-    krb5_cksumtype cksumtype;	/* ¡requested checksum type! */
+    krb5_keytype keytype;	/* Â¿requested key type ? */
+    krb5_cksumtype cksumtype;	/* Â¡requested checksum type! */
   
 }krb5_auth_context_data, *krb5_auth_context;
 

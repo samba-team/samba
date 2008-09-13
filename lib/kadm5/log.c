@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2007 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2007 Kungliga Tekniska HÃ¶gskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -837,8 +837,8 @@ kadm5_log_goto_end (int fd)
 /*
  * Return previous log entry.
  * 
- * The pointer in `sp´ is assumed to be at the top of the entry before
- * previous entry. On success, the `sp´ pointer is set to data portion
+ * The pointer in `spÂ´ is assumed to be at the top of the entry before
+ * previous entry. On success, the `spÂ´ pointer is set to data portion
  * of previous entry. In case of error, it's not changed at all.
  */
 

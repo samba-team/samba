@@ -1,7 +1,7 @@
 #! /usr/pkg/bin/perl
 # -*- mode: perl; perl-indent-level: 8 -*-
 # 
-# Copyright (c) 2003 Kungliga Tekniska Högskolan
+# Copyright (c) 2003 Kungliga Tekniska HÃ¶gskolan
 # (Royal Institute of Technology, Stockholm, Sweden). 
 # All rights reserved. 
 # 

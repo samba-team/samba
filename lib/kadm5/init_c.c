@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2006 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2006 Kungliga Tekniska HÃ¶gskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -225,7 +225,7 @@ get_new_cache(krb5_context context,
 }
 
 /*
- * Check the credential cache `id´ to figure out what principal to use
+ * Check the credential cache `idÂ´ to figure out what principal to use
  * when talking to the kadmind. If there is a initial kadmin/admin@
  * credential in the cache, use that client principal. Otherwise, use
  * the client principals first component and add /admin to the

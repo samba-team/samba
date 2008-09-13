@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995-2002 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995-2002 Kungliga Tekniska HÃ¶gskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  *

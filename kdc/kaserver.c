@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2005 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2005 Kungliga Tekniska HÃ¶gskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -192,8 +192,8 @@ init_reply_header (struct rx_header *hdr,
 }
 
 /*
- * Create an error `reply´ using for the packet `hdr' with the error
- * `error´ code.
+ * Create an error `replyÂ´ using for the packet `hdr' with the error
+ * `errorÂ´ code.
  */
 static void
 make_error_reply (struct rx_header *hdr,

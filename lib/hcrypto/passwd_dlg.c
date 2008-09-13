@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995, 1996, 1997, 1998 Kungliga Tekniska HÃ¶gskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -32,7 +32,7 @@
  */
 
 /* passwd_dlg.c - Dialog boxes for Windows95/NT
- * Author:	Jörgen Karlsson - d93-jka@nada.kth.se
+ * Author:	JÃ¶rgen Karlsson - d93-jka@nada.kth.se
  * Date:	June 1996
  */
 

@@ -1,15 +1,15 @@
-2006-10-19  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-10-19  Love HÃ¶rnquist Ã…strand  <lha@it.su.se>
 
 	* Makefile.am (libel_compat_la_SOURCES): add edit_compat.h
 
 	* Makefile.am (libeditline_la_SOURCES): add edit_locl.h
 	
-2005-07-07  Love Hörnquist Åstrand  <lha@it.su.se>
+2005-07-07  Love HÃ¶rnquist Ã…strand  <lha@it.su.se>
 	
 	* editline.c (TTYinfo): only call tgetent if we found it using
 	autoconf
 
-2005-06-16  Love Hörnquist Åstrand  <lha@it.su.se>
+2005-06-16  Love HÃ¶rnquist Ã…strand  <lha@it.su.se>
 
 	* complete.c: move const to make it pass -Wcast-qual
 	
@@ -17,24 +17,24 @@
 
 	* editline.c: ansi'ify the code
 
-2005-04-24  Love Hörnquist Åstrand  <lha@it.su.se>
+2005-04-24  Love HÃ¶rnquist Ã…strand  <lha@it.su.se>
 
 	* *.[ch]: unexpose undefined part of the API, included strlcat
 
-2005-04-18  Love Hörnquist Åstrand  <lha@it.su.se>
+2005-04-18  Love HÃ¶rnquist Ã…strand  <lha@it.su.se>
 
 	* editline.c (TTYget): use unsigned char to make sure a positive
 	number is returned when successful
 
-2005-04-02  Love Hörnquist Åstrand  <lha@it.su.se>
+2005-04-02  Love HÃ¶rnquist Ã…strand  <lha@it.su.se>
 
 	* Makefile.am: "must set with '=' before using '+='"
 
-2005-03-31  Love Hörnquist Åstrand  <lha@it.su.se>
+2005-03-31  Love HÃ¶rnquist Ã…strand  <lha@it.su.se>
 
 	* editline.c: avoid const string and strict aliasing warnings
 
-2005-03-21  Love Hörnquist Åstrand  <lha@it.su.se>
+2005-03-21  Love HÃ¶rnquist Ã…strand  <lha@it.su.se>
 
 	* Makefile.am: Make editline a non-static library and let libtool
 	decide (same with libel_compat). This way libedit will build

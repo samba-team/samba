@@ -14,12 +14,12 @@
 @comment  node-name,  next,  previous,  up
 @appendix Copyrights and Licenses
 
-@heading Kungliga Tekniska Högskolan
+@heading Kungliga Tekniska HÃ¶gskolan
 
 @copyrightstart
 @verbatim
 
-Copyright (c) 1997-2008 Kungliga Tekniska Högskolan 
+Copyright (c) 1997-2008 Kungliga Tekniska HÃ¶gskolan 
 (Royal Institute of Technology, Stockholm, Sweden).
 All rights reserved.
 

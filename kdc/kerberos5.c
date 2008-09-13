@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2007 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2007 Kungliga Tekniska HÃ¶gskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -1810,8 +1810,8 @@ out:
 }
 
 /*
- * Add the AuthorizationData `data´ of `type´ to the last element in
- * the sequence of authorization_data in `tkt´ wrapped in an IF_RELEVANT
+ * Add the AuthorizationData `dataÂ´ of `typeÂ´ to the last element in
+ * the sequence of authorization_data in `tktÂ´ wrapped in an IF_RELEVANT
  */
 
 krb5_error_code

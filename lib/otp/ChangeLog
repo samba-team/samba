@@ -1,8 +1,8 @@
-2007-07-17  Love Hörnquist Åstrand  <lha@it.su.se>
+2007-07-17  Love HÃ¶rnquist Ã…strand  <lha@it.su.se>
 
 	* Makefile.am: split source files in dist and nodist.
 
-2007-07-10  Love Hörnquist Åstrand  <lha@it.su.se>
+2007-07-10  Love HÃ¶rnquist Ã…strand  <lha@it.su.se>
 
 	* Makefile.am: New library version
 
@@ -10,25 +10,25 @@
 
 	* otp_parse.c: NIIL should be NIL
 
-2006-05-08  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-05-08  Love HÃ¶rnquist Ã…strand  <lha@it.su.se>
 
 	* otp_parse.c: Less "pointer targets in passing argument differ in
 	signedness" warnings.
 	
-2005-07-09  Love Hörnquist Åstrand  <lha@it.su.se>
+2005-07-09  Love HÃ¶rnquist Ã…strand  <lha@it.su.se>
 
 	* otp.h: remove parameter names to avoid shadow warnings
 
-2005-07-07  Love Hörnquist Åstrand  <lha@it.su.se>
+2005-07-07  Love HÃ¶rnquist Ã…strand  <lha@it.su.se>
 
 	* otp_parse.c (parse_words): avoid const warnings by making a
 	(shorter) copy of the string instead of truncating it
 
-2005-01-09  Love Hörnquist Åstrand  <lha@it.su.se>
+2005-01-09  Love HÃ¶rnquist Ã…strand  <lha@it.su.se>
 
 	* otp_parse.c: cast argument to tolower to unsigned char
 	
-2003-04-16  Love Hörnquist Åstrand  <lha@it.su.se>
+2003-04-16  Love HÃ¶rnquist Ã…strand  <lha@it.su.se>
 
 	* roken_rename.h: rename strlcat, strlcpy
 	* Makefile.am: (ES): add strlcpy.c and strlcat.c

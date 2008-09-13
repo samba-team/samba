@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006 - 2008 Kungliga Tekniska Högskolan
+ * Copyright (c) 2006 - 2008 Kungliga Tekniska HÃ¶gskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -318,7 +318,7 @@ _gss_ntlm_init_sec_context
 
 	ctx->flags = type2.flags;
 
-	/* XXX check that type2.targetinfo matches `target_name´ */
+	/* XXX check that type2.targetinfo matches `target_nameÂ´ */
 	/* XXX check verify targetinfo buffer */
 
 	memset(&type3, 0, sizeof(type3));
