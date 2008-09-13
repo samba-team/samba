@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Heimdal 1.2.99\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2008-09-07 21:17+0100\n"
+"POT-Creation-Date: 2008-09-12 20:06+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1102,7 +1102,7 @@ msgstr ""
 msgid "unknown protocol `%s' to lookup"
 msgstr ""
 
-#: lib/krb5/krbhst.c:549
+#: lib/krb5/krbhst.c:547
 #, c-format
 msgid "Locate plugin failed to lookup realm %s: %d"
 msgstr ""
