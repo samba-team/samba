@@ -226,13 +226,7 @@ static WERROR cmd_ls(struct regshell_context *ctx, int argc, char **argv)
 		return error;
 	}
 
-	/* default value */
-	if (W_ERROR_IS_OK(reg_key_get_value_by_index(ctx, ctx->current, 0,
-		&name, &valuetype, &valuedata)))
-		printf("V \"(Default)\" %s %s\n", str_regtype(valuetype),
-			   reg_val_data_string(ctx, lp_iconv_convenience(cmdline_lp_ctx), valuetype, valuedata));
-	/* other values */
-	for (i = 1; W_ERROR_IS_OK(error = reg_key_get_value_by_index(ctx,
+	for (i = 0; W_ERROR_IS_OK(error = reg_key_get_value_by_index(ctx,
 		ctx->current, i, &name, &valuetype, &valuedata)); i++)
 		printf("V \"%s\" %s %s\n", name, str_regtype(valuetype),
 			   reg_val_data_string(ctx, lp_iconv_convenience(cmdline_lp_ctx), valuetype, valuedata));
@@ -440,7 +434,7 @@ static char **reg_complete_key(const char *text, int start, int end)
 	len = strlen(text);
 	for(i = 0; j < MAX_COMPLETIONS-1; i++) {
 		status = reg_key_get_subkey_by_index(mem_ctx, base, i,
-						     &subkeyname, NULL, NULL);
+					     &subkeyname, NULL, NULL);
 		if(W_ERROR_IS_OK(status)) {
 			if(!strncmp(text, subkeyname, len)) {
 				matches[j] = strdup(subkeyname);
@@ -538,7 +532,8 @@ int main(int argc, char **argv)
 	if (ctx->current == NULL) {
 		int i;
 
-		for (i = 0; reg_predefined_keys[i].handle; i++) {
+		for (i = 0; (reg_predefined_keys[i].handle != 0) &&
+			(ctx->current == NULL); i++) {
 			WERROR err;
 			err = reg_get_predefined_key(ctx->registry,
 						     reg_predefined_keys[i].handle,

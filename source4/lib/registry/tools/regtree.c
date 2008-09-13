@@ -38,8 +38,7 @@ static void print_tree(int level, struct registry_key *p,
 		       bool fullpath, bool novals)
 {
 	struct registry_key *subkey;
-	const char *valuename;
-	const char *keyname;
+	const char *valuename, *keyname;
 	uint32_t valuetype;
 	DATA_BLOB valuedata;
 	struct security_descriptor *sec_desc;
@@ -73,17 +72,7 @@ static void print_tree(int level, struct registry_key *p,
 
 	if (!novals) {
 		mem_ctx = talloc_init("print_tree");
-		/* default value */
-		if (W_ERROR_IS_OK(reg_key_get_value_by_index(mem_ctx, p, 0,
-			&valuename, &valuetype, &valuedata))) {
-			int j;
-			for(j = 0; j < level+1; j++) putchar(' ');
-			printf("%s\n",  reg_val_description(mem_ctx,
-				lp_iconv_convenience(cmdline_lp_ctx),
-				"(Default)", valuetype, valuedata));
-		}
-		/* other values */
-		for(i = 1; W_ERROR_IS_OK(error = reg_key_get_value_by_index(
+		for(i = 0; W_ERROR_IS_OK(error = reg_key_get_value_by_index(
 			mem_ctx, p, i, &valuename, &valuetype, &valuedata));
 			i++) {
 			int j;
