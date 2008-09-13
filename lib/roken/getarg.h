@@ -97,6 +97,13 @@ arg_printusage (struct getargs *args,
 		const char *extra_string);
 
 void ROKEN_LIB_FUNCTION
+arg_printusage_i18n (struct getargs *args,
+		     size_t num_args,
+		     const char *progname,
+		     const char *extra_string,
+		     char *(i18n)(const char *));
+
+void ROKEN_LIB_FUNCTION
 free_getarg_strings (getarg_strings *);
 
 #endif /* __GETARG_H__ */

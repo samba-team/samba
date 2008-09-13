@@ -45,7 +45,12 @@ RCSID("$Id$");
 #define ISFLAG(X) ((X).type == arg_flag || (X).type == arg_negative_flag)
 
 static size_t
-print_arg (char *string, size_t len, int mdoc, int longp, struct getargs *arg)
+print_arg (char *string,
+	   size_t len,
+	   int mdoc,
+	   int longp,
+	   struct getargs *arg,
+	   char *(i18n)(const char *))
 {
     const char *s;
 
@@ -66,7 +71,7 @@ print_arg (char *string, size_t len, int mdoc, int longp, struct getargs *arg)
     }
 
     if (arg->arg_help)
-	s = arg->arg_help;
+	s = (*i18n)(arg->arg_help);
     else if (arg->type == arg_integer || arg->type == arg_counter)
 	s = "integer";
     else if (arg->type == arg_string)
@@ -86,7 +91,8 @@ static void
 mandoc_template(struct getargs *args,
 		size_t num_args,
 		const char *progname,
-		const char *extra_string)
+		const char *extra_string,
+		char *(i18n)(const char *))
 {
     int i;
     char timestr[64], cmd[64];
@@ -123,22 +129,22 @@ mandoc_template(struct getargs *args,
 	    printf(".Op ");
 
 	    if(args[i].short_name) {
-		print_arg(buf, sizeof(buf), 1, 0, args + i);
+		print_arg(buf, sizeof(buf), 1, 0, args + i, i18n);
 		printf("Fl %c%s", args[i].short_name, buf);
 		if(args[i].long_name)
 		    printf(" | ");
 	    }
 	    if(args[i].long_name) {
-		print_arg(buf, sizeof(buf), 1, 1, args + i);
+		print_arg(buf, sizeof(buf), 1, 1, args + i, i18n);
 		printf("Fl -%s%s%s",
 		       args[i].type == arg_negative_flag ? "no-" : "",
 		       args[i].long_name, buf);
 	    }
 	    printf("\n");
 	} else {
-	    print_arg(buf, sizeof(buf), 1, 0, args + i);
+	    print_arg(buf, sizeof(buf), 1, 0, args + i, i18n);
 	    printf(".Oo Fl %c%s \\*(Ba Xo\n", args[i].short_name, buf);
-	    print_arg(buf, sizeof(buf), 1, 1, args + i);
+	    print_arg(buf, sizeof(buf), 1, 1, args + i, i18n);
 	    printf(".Fl -%s%s\n.Xc\n.Oc\n", args[i].long_name, buf);
 	}
     /*
@@ -155,7 +161,7 @@ mandoc_template(struct getargs *args,
 	printf(".It Xo\n");
 	if(args[i].short_name){
 	    printf(".Fl %c", args[i].short_name);
-	    print_arg(buf, sizeof(buf), 1, 0, args + i);
+	    print_arg(buf, sizeof(buf), 1, 0, args + i, i18n);
 	    printf("%s", buf);
 	    if(args[i].long_name)
 		printf(" ,");
@@ -165,7 +171,7 @@ mandoc_template(struct getargs *args,
 	    printf(".Fl -%s%s",
 		   args[i].type == arg_negative_flag ? "no-" : "",
 		   args[i].long_name);
-	    print_arg(buf, sizeof(buf), 1, 1, args + i);
+	    print_arg(buf, sizeof(buf), 1, 1, args + i, i18n);
 	    printf("%s\n", buf);
 	}
 	printf(".Xc\n");
@@ -198,11 +204,29 @@ check_column(FILE *f, int col, int len, int columns)
     return col;
 }
 
+static char *
+builtin_i18n(const char *str)
+{
+    return rk_UNCONST(str);
+}
+
 void ROKEN_LIB_FUNCTION
 arg_printusage (struct getargs *args,
 		size_t num_args,
 		const char *progname,
 		const char *extra_string)
+{
+    return arg_printusage_i18n(args, num_args, "Usage",
+			       progname, extra_string, builtin_i18n);
+}
+
+void ROKEN_LIB_FUNCTION
+arg_printusage_i18n (struct getargs *args,
+		     size_t num_args,
+		     const char *usage,
+		     const char *progname,
+		     const char *extra_string,
+		     char *(i18n)(const char *))
 {
     int i;
     size_t max_len = 0;
@@ -214,7 +238,7 @@ arg_printusage (struct getargs *args,
 	progname = getprogname();
 
     if(getenv("GETARGMANDOC")){
-	mandoc_template(args, num_args, progname, extra_string);
+	mandoc_template(args, num_args, progname, extra_string, i18n);
 	return;
     }
     if(get_window_size(2, &ws) == 0)
@@ -222,7 +246,7 @@ arg_printusage (struct getargs *args,
     else
 	columns = 80;
     col = 0;
-    col += fprintf (stderr, "Usage: %s", progname);
+    col += fprintf (stderr, "%s: %s", usage, progname);
     buf[0] = '\0';
     for (i = 0; i < num_args; ++i) {
 	if(args[i].short_name && ISFLAG(args[i])) {
@@ -254,7 +278,7 @@ arg_printusage (struct getargs *args,
 	    strlcat(buf, args[i].long_name, sizeof(buf));
 	    len += strlen(args[i].long_name);
 	    len += print_arg(buf + strlen(buf), sizeof(buf) - strlen(buf),
-			     0, 1, &args[i]);
+			     0, 1, &args[i], i18n);
 	    strlcat(buf, "]", sizeof(buf));
 	    if(args[i].type == arg_strings)
 		strlcat(buf, "...", sizeof(buf));
@@ -265,7 +289,7 @@ arg_printusage (struct getargs *args,
 	    snprintf(buf, sizeof(buf), "[-%c", args[i].short_name);
 	    len += 2;
 	    len += print_arg(buf + strlen(buf), sizeof(buf) - strlen(buf),
-			     0, 0, &args[i]);
+			     0, 0, &args[i], i18n);
 	    strlcat(buf, "]", sizeof(buf));
 	    if(args[i].type == arg_strings)
 		strlcat(buf, "...", sizeof(buf));
@@ -287,7 +311,7 @@ arg_printusage (struct getargs *args,
 
 	    if (args[i].short_name) {
 		count += fprintf (stderr, "-%c", args[i].short_name);
-		print_arg (buf, sizeof(buf), 0, 0, &args[i]);
+		print_arg (buf, sizeof(buf), 0, 0, &args[i], i18n);
 		count += fprintf(stderr, "%s", buf);
 	    }
 	    if (args[i].short_name && args[i].long_name)
@@ -297,12 +321,12 @@ arg_printusage (struct getargs *args,
 		if (args[i].type == arg_negative_flag)
 		    count += fprintf (stderr, "no-");
 		count += fprintf (stderr, "%s", args[i].long_name);
-		print_arg (buf, sizeof(buf), 0, 1, &args[i]);
+		print_arg (buf, sizeof(buf), 0, 1, &args[i], i18n);
 		count += fprintf(stderr, "%s", buf);
 	    }
 	    while(count++ <= max_len)
 		putc (' ', stderr);
-	    fprintf (stderr, "%s\n", args[i].help);
+	    fprintf (stderr, "%s\n", (*i18n)(args[i].help));
 	}
     }
 }
