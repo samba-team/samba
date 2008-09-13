@@ -82,6 +82,19 @@
 #include <sys/ioccom.h>
 #endif
 #include <kafs.h>
-#include "crypto-headers.h" /* for des_read_pw_string */
+#include "crypto-headers.h" /* for UI_UTIL_read_pw_string */
+
+#ifdef LIBINTL
+#include <libintl.h>
+#define N_(x,y) gettext(x)
+#define NP_(x,y) (x)
+#define getarg_i18n gettext
+#else
+#define N_(x,y) (x)
+#define NP_(x,y) (x)
+#define getarg_i18n NULL
+#define bindtextdomain(package, localedir)
+#endif
+
 
 #endif /* __KUSER_LOCL_H__ */

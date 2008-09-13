@@ -2,7 +2,9 @@
 
 include $(top_srcdir)/Makefile.am.common
 
-AM_CPPFLAGS += $(INCLUDE_hcrypto) -I$(srcdir)/../lib/krb5
+AM_CPPFLAGS += $(INCLUDE_hcrypto) -I$(srcdir)/../lib/krb5 \
+	$(INCLUDE_libintl) \
+	-DHEIMDAL_LOCALEDIR='"$(localedir)"'
 
 man_MANS = \
 	kinit.1 \
@@ -24,6 +26,7 @@ kinit_LDADD = \
 	$(top_builddir)/lib/ntlm/libheimntlm.la \
 	$(LIB_hcrypto) \
 	$(top_builddir)/lib/asn1/libasn1.la \
+	$(LIB_libintl) \
 	$(LIB_roken)
 
 kdestroy_LDADD	= $(kinit_LDADD)
