@@ -60,6 +60,7 @@ FILES = \
     heim_com_err39525376/heim_com_err39525376.pot \
     heim_com_err43787520/heim_com_err43787520.pot \
     heim_com_err569856/heim_com_err569856.pot \
+    heimdal_kuser/heimdal_kuser.pot \
     heimdal_krb5/heimdal_krb5.pot \
     heimdal_krb5/sv_SE.mo \
     heimdal_krb5/sv_SE.po
