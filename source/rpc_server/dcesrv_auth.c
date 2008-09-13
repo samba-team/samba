@@ -429,10 +429,15 @@ bool dcesrv_auth_response(struct dcesrv_call_state *call,
 	}
 
 	/* pad to 16 byte multiple, match win2k3 */
-	dce_conn->auth_state.auth_info->auth_pad_length = NDR_ALIGN(ndr, 16);
-	ndr_push_zero(ndr, dce_conn->auth_state.auth_info->auth_pad_length);
+	dce_conn->auth_state.auth_info->auth_pad_length =
+		(16 - (pkt->u.response.stub_and_verifier.length & 15)) & 15;
+	ndr_err = ndr_push_zero(ndr, dce_conn->auth_state.auth_info->auth_pad_length);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return false;
+	}
 
-	payload_length = ndr->offset - DCERPC_REQUEST_LENGTH;
+	payload_length = pkt->u.response.stub_and_verifier.length +
+		dce_conn->auth_state.auth_info->auth_pad_length;
 
 	if (dce_conn->auth_state.auth_info->auth_level == DCERPC_AUTH_LEVEL_CONNECT) {
 		status = dcesrv_connect_verifier(call,
