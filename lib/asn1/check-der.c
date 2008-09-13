@@ -1,34 +1,34 @@
 /*
  * Copyright (c) 1999 - 2007 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * 3. Neither the name of the Institute nor the names of its contributors 
- *    may be used to endorse or promote products derived from this software 
- *    without specific prior written permission. 
+ * 3. Neither the name of the Institute nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
- * SUCH DAMAGE. 
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 #include "der_locl.h"
@@ -190,7 +190,7 @@ test_unsigned (void)
 	{NULL, 4, "\x7f\xff\xff\xff"}
     };
 
-    unsigned int values[] = {0, 127, 128, 256, 512, 32768, 
+    unsigned int values[] = {0, 127, 128, 256, 512, 32768,
 			     0x80000000, 0x7fffffff};
     int i, ret;
     int ntests = sizeof(tests) / sizeof(*tests);
@@ -208,7 +208,7 @@ test_unsigned (void)
 			(generic_decode)der_get_unsigned,
 			(generic_free)NULL,
 			cmp_unsigned);
-    for (i = 0; i < ntests; ++i) 
+    for (i = 0; i < ntests; ++i)
 	free (tests[i].name);
     return ret;
 }
@@ -542,7 +542,7 @@ test_heim_integer (void)
 			(generic_decode)der_get_heim_integer,
 			(generic_free)der_free_heim_integer,
 			test_cmp_heim_integer);
-    for (i = 0; i < ntests; ++i) 
+    for (i = 0; i < ntests; ++i)
 	free (tests[i].name);
     if (ret)
 	return ret;
@@ -591,7 +591,7 @@ test_boolean (void)
 			(generic_decode)der_get_boolean,
 			(generic_free)NULL,
 			test_cmp_boolean);
-    for (i = 0; i < ntests; ++i) 
+    for (i = 0; i < ntests; ++i)
 	free (tests[i].name);
     if (ret)
 	return ret;
@@ -733,7 +733,7 @@ check_fail_oid(void)
     struct test_case tests[] = {
 	{NULL, 0, "", "empty input data"},
 	{NULL, 2, "\x00\x80", "last byte continuation" },
-	{NULL, 11, "\x00\x81\x80\x80\x80\x80\x80\x80\x80\x80\x00", 
+	{NULL, 11, "\x00\x81\x80\x80\x80\x80\x80\x80\x80\x80\x00",
 	"oid element overflow" }
     };
     int ntests = sizeof(tests) / sizeof(*tests);
@@ -808,7 +808,7 @@ test_heim_int_format(void)
 	"EE386BFB" "5A899FA5" "AE9F2411" "7C4B1FE6" "49286651" "ECE65381"
 	"FFFFFFFF" "FFFFFFFF";
     heim_integer bni = {
-	128, 
+	128,
 	"\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xC9\x0F\xDA\xA2"
 	"\x21\x68\xC2\x34\xC4\xC6\x62\x8B\x80\xDC\x1C\xD1"
 	"\x29\x02\x4E\x08\x8A\x67\xCC\x74\x02\x0B\xBE\xA6"
@@ -916,7 +916,7 @@ check_trailing_nul(void)
 	{ 0, (const unsigned char *)"foo\0", 4, "foo", 4 },
 	{ 0, (const unsigned char *)"foo", 3, "foo", 3 }
     };
-    
+
     for (i = 0; i < sizeof(foo)/sizeof(foo[0]); i++) {
 	char *s;
 	size_t size;
@@ -1024,7 +1024,7 @@ corner_tag(void)
 	int ok;
 	const char *ptr;
 	size_t len;
-    } tests[] = { 
+    } tests[] = {
 	{ 1, "\x00", 1 },
 	{ 0, "\xff", 1 },
 	{ 0, "\xff\xff\xff\xff\xff\xff\xff\xff", 8 }
@@ -1036,7 +1036,7 @@ corner_tag(void)
     size_t size;
 
     for (i = 0; i < sizeof(tests)/sizeof(tests[0]); i++) {
-	ret = der_get_tag((const unsigned char*)tests[i].ptr, 
+	ret = der_get_tag((const unsigned char*)tests[i].ptr,
 			  tests[i].len, &cl, &ty, &tag, &size);
 	if (ret) {
 	    if (tests[i].ok)

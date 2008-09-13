@@ -2,22 +2,22 @@
  * Copyright (c) 1995, 1996, 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the Institute nor the names of its contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -72,13 +72,13 @@ krb4_decode(void *app_data, void *buf, int len, int level)
     MSG_DAT m;
     int e;
     struct krb4_data *d = app_data;
-    
+
     if(level == prot_safe)
 	e = krb_rd_safe(buf, len, &d->key,
 			(struct sockaddr_in *)REMOTE_ADDR,
 			(struct sockaddr_in *)LOCAL_ADDR, &m);
     else
-	e = krb_rd_priv(buf, len, d->schedule, &d->key, 
+	e = krb_rd_priv(buf, len, d->schedule, &d->key,
 			(struct sockaddr_in *)REMOTE_ADDR,
 			(struct sockaddr_in *)LOCAL_ADDR, &m);
     if(e){
@@ -101,11 +101,11 @@ krb4_encode(void *app_data, void *from, int length, int level, void **to)
     struct krb4_data *d = app_data;
     *to = malloc(length + 31);
     if(level == prot_safe)
-	return krb_mk_safe(from, *to, length, &d->key, 
+	return krb_mk_safe(from, *to, length, &d->key,
 			   (struct sockaddr_in *)LOCAL_ADDR,
 			   (struct sockaddr_in *)REMOTE_ADDR);
     else if(level == prot_private)
-	return krb_mk_priv(from, *to, length, d->schedule, &d->key, 
+	return krb_mk_priv(from, *to, length, d->schedule, &d->key,
 			   (struct sockaddr_in *)LOCAL_ADDR,
 			   (struct sockaddr_in *)REMOTE_ADDR);
     else
@@ -132,11 +132,11 @@ krb4_adat(void *app_data, void *buf, size_t len)
     tkt.length = len;
 
     k_getsockinst(0, inst, sizeof(inst));
-    kerror = krb_rd_req(&tkt, "ftp", inst, 
+    kerror = krb_rd_req(&tkt, "ftp", inst,
 			his_addr_sin->sin_addr.s_addr, &auth_dat, "");
     if(kerror == RD_AP_UNDEC){
 	k_getsockinst(0, inst, sizeof(inst));
-	kerror = krb_rd_req(&tkt, "rcmd", inst, 
+	kerror = krb_rd_req(&tkt, "rcmd", inst,
 			    his_addr_sin->sin_addr.s_addr, &auth_dat, "");
     }
 
@@ -144,7 +144,7 @@ krb4_adat(void *app_data, void *buf, size_t len)
 	reply(535, "Error reading request: %s.", krb_get_err_text(kerror));
 	return -1;
     }
-    
+
     memcpy(d->key, auth_dat.session, sizeof(d->key));
     des_set_key(&d->key, d->schedule);
 
@@ -208,7 +208,7 @@ krb4_init(void *app_data)
 }
 
 static int
-mk_auth(struct krb4_data *d, KTEXT adat, 
+mk_auth(struct krb4_data *d, KTEXT adat,
 	char *service, char *host, int checksum)
 {
     int ret;
@@ -268,7 +268,7 @@ krb4_auth(void *app_data, char *host)
 	  printf("Using NAT IP address (%s) for kerberos 4\n",
 		 inet_ntoa(natAddr));
 	  localaddr->sin_addr = natAddr;
-	  
+	
 	  /*
 	   * This not the best place to do this, but it
 	   * is here we know that (probably) NAT is in
@@ -309,11 +309,11 @@ krb4_auth(void *app_data, char *host)
 	return AUTH_ERROR;
     }
     adat.length = len;
-    ret = krb_rd_safe(adat.dat, adat.length, &d->key, 
-		      (struct sockaddr_in *)hisctladdr, 
+    ret = krb_rd_safe(adat.dat, adat.length, &d->key,
+		      (struct sockaddr_in *)hisctladdr,
 		      (struct sockaddr_in *)myctladdr, &msg_data);
     if(ret){
-	printf("Error reading reply from server: %s.\n", 
+	printf("Error reading reply from server: %s.\n",
 	       krb_get_err_text(ret));
 	return AUTH_ERROR;
     }

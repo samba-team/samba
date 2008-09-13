@@ -2,22 +2,22 @@
  * Copyright (c) 1995 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the Institute nor the names of its contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -113,7 +113,7 @@ parse_ctrl(int argc, const char **argv)
       for (j = 0; j < KRB4_CTRLS; j++)
 	if (strcmp(argv[i], krb4_args[j].token) == 0)
 	  break;
-    
+
       if (j >= KRB4_CTRLS)
 	psyslog(LOG_ALERT, "unrecognized option [%s]", *argv);
       else
@@ -192,7 +192,7 @@ verify_pass(pam_handle_t *pamh,
 	      old_ruid, old_euid, __LINE__);
       exit(1);
     }
-    
+
   switch(ret) {
   case KSUCCESS:
     return PAM_SUCCESS;
@@ -260,7 +260,7 @@ krb4_auth(pam_handle_t *pamh,
       /* free(resp->resp); XXX */
       /* free(resp); XXX */
     }
-  
+
   return ret;
 }
 
@@ -299,7 +299,7 @@ pam_sm_authenticate(pam_handle_t *pamh,
       uid = pw->pw_uid;
       set_tkt_string(uid);
     }
-    
+
   if (strcmp(user, "root") == 0 && getuid() != 0)
     {
       pw = getpwuid(getuid());
@@ -376,11 +376,11 @@ pam_sm_authenticate(pam_handle_t *pamh,
   if (ctrl_on(KRB4_REAFSLOG))
     if (ret == PAM_SUCCESS)
       pam_sm_setcred(pamh, PAM_REFRESH_CRED, argc, argv);
-  
+
   return ret;
 }
 
-int 
+int
 pam_sm_setcred(pam_handle_t *pamh, int flags, int argc, const char **argv)
 {
   parse_ctrl(argc, argv);
@@ -416,7 +416,7 @@ pam_sm_setcred(pam_handle_t *pamh, int flags, int argc, const char **argv)
     psyslog(LOG_ALERT , "pam_sm_setcred: unknown flags 0x%x", flags);
     break;
   }
-  
+
   return PAM_SUCCESS;
 }
 

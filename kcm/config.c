@@ -65,37 +65,37 @@ static int help_flag;
 static int version_flag;
 
 static struct getargs args[] = {
-    { 
-	"cache-name",	0,	arg_string,	&system_cache_name, 
-	"system cache name", "cachename" 
+    {
+	"cache-name",	0,	arg_string,	&system_cache_name,
+	"system cache name", "cachename"
     },
-    { 
-	"config-file",	'c',	arg_string,	&config_file, 
-	"location of config file",	"file" 
+    {
+	"config-file",	'c',	arg_string,	&config_file,
+	"location of config file",	"file"
     },
-    { 
-	"group",	'g',	arg_string,	&system_group, 
-	"system cache group",	"group" 
+    {
+	"group",	'g',	arg_string,	&system_group,
+	"system cache group",	"group"
     },
-    { 
-	"max-request",	0,	arg_string, &max_request, 
+    {
+	"max-request",	0,	arg_string, &max_request,
 	"max size for a kcm-request", "size"
     },
 #if DETACH_IS_DEFAULT
     {
-	"detach",       'D',      arg_negative_flag, &detach_from_console, 
+	"detach",       'D',      arg_negative_flag, &detach_from_console,
 	"don't detach from console"
     },
 #else
     {
-	"detach",       0 ,      arg_flag, &detach_from_console, 
+	"detach",       0 ,      arg_flag, &detach_from_console,
 	"detach from console"
     },
 #endif
     {	"help",		'h',	arg_flag,   &help_flag },
-    { 
-	"system-principal",	'k',	arg_string,	&system_principal, 
-	"system principal name",	"principal" 
+    {
+	"system-principal",	'k',	arg_string,	&system_principal,
+	"system principal name",	"principal"
     },
     {
 	"lifetime",	'l', arg_string, &ticket_life,
@@ -131,13 +131,13 @@ static struct getargs args[] = {
 	"server",		'S', arg_string, &system_server,
     	"server to get system ticket for", "principal"
     },
-    { 
-	"keytab",	't',	arg_string,	&system_keytab, 
-	"system keytab name",	"keytab" 
+    {
+	"keytab",	't',	arg_string,	&system_keytab,
+	"system keytab name",	"keytab"
     },
-    { 
-	"user",		'u',	arg_string,	&system_user, 
-	"system cache owner",	"user" 
+    {
+	"user",		'u',	arg_string,	&system_user,
+	"system cache owner",	"user"
     },
     {	"version",	'v',	arg_flag,   &version_flag }
 };
@@ -321,7 +321,7 @@ kcm_configure(int argc, char **argv)
     krb5_error_code ret;
     int optind = 0;
     const char *p;
-    
+
     while(getarg(args, num_args, argc, argv, &optind))
 	warnx("error at argument `%s'", argv[optind]);
 
@@ -338,7 +338,7 @@ kcm_configure(int argc, char **argv)
 
     if (argc != 0)
 	usage(1);
-    
+
     {
 	char **files;
 
@@ -348,10 +348,10 @@ kcm_configure(int argc, char **argv)
 	ret = krb5_prepend_config_files_default(config_file, &files);
 	if (ret)
 	    krb5_err(kcm_context, 1, ret, "getting configuration files");
-	    
+	
 	ret = krb5_set_config_files(kcm_context, files);
 	krb5_free_config_files(files);
-	if(ret) 
+	if(ret)
 	    krb5_err(kcm_context, 1, ret, "reading configuration files");
     }
 
@@ -378,7 +378,7 @@ kcm_configure(int argc, char **argv)
 	    krb5_err(kcm_context, 1, ret, "initializing system ccache");
     }
 
-    if(detach_from_console == -1) 
+    if(detach_from_console == -1)
 	detach_from_console = krb5_config_get_bool_default(kcm_context, NULL,
 							   DETACH_IS_DEFAULT,
 							   "kcm",

@@ -1,18 +1,18 @@
 /*
  * Copyright (c) 1999 - 2008 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
  * 3. Neither the name of KTH nor the names of its contributors may be
  *    used to endorse or promote products derived from this software without
@@ -161,21 +161,21 @@ krb5_verify(const struct passwd *login_info,
     }
 	
     ret = krb5_get_default_realms(context, &realms);
-    if (ret) 
+    if (ret)
 	return 1;
 
     /* Check all local realms */
     for (r = realms; *r != NULL && !user_ok; r++) {
-       
-	if (login_name == NULL || strcmp (login_name, "root") == 0) 
+
+	if (login_name == NULL || strcmp (login_name, "root") == 0)
 	    login_name = login_info->pw_name;
 	if (strcmp (su_info->pw_name, "root") == 0)
-	    ret = krb5_make_principal(context, &p, *r, 
+	    ret = krb5_make_principal(context, &p, *r,
 				      login_name,
 				      kerberos_instance,
 				      NULL);
 	else
-	    ret = krb5_make_principal(context, &p, *r, 
+	    ret = krb5_make_principal(context, &p, *r,
 				      su_info->pw_name,
 				      NULL);
 	if (ret) {
@@ -186,7 +186,7 @@ krb5_verify(const struct passwd *login_info,
 	/* if we are su-ing too root, check with krb5_kuserok */
 	if (su_info->pw_uid == 0 && !krb5_kuserok(context, p, su_info->pw_name))
 	    continue;
-       
+
 	ret = krb5_cc_gen_new(context, &krb5_mcc_ops, &ccache);
 	if(ret) {
 	    krb5_free_host_realm(context, realms);
@@ -245,7 +245,7 @@ krb5_start_session(void)
 	if (k_setpag() == 0)
 	    krb5_afslog(context, ccache2, NULL, NULL);
     }
-            
+
     krb5_cc_close(context, ccache2);
     krb5_cc_destroy(context, ccache);
     return 0;
@@ -362,7 +362,7 @@ main(int argc, char **argv)
     su_info = dup_info(pwd);
     if (su_info == NULL)
 	errx (1, "malloc: out of memory");
-    
+
 	pwd = getpwuid(getuid());
     if(pwd == NULL)
 	errx(1, "who are you?");
@@ -375,7 +375,7 @@ main(int argc, char **argv)
 	shell = su_info->pw_shell;
     if(shell == NULL || *shell == '\0')
 	shell = _PATH_BSHELL;
-    
+
 
 #ifdef KRB5
     if(kerberos_flag && ok == 0 &&
@@ -391,24 +391,24 @@ main(int argc, char **argv)
 #ifdef HAVE_GETSPNAM
    {  struct spwd *sp;
       long    today;
-    
+
     sp = getspnam(su_info->pw_name);
     if (sp != NULL) {
 	today = time(0)/(24L * 60 * 60);
 	if (sp->sp_expire > 0) {
 	    if (today >= sp->sp_expire) {
-		if (login_info->pw_uid) 
+		if (login_info->pw_uid)
 		    errx(1,"Your account has expired.");
 		else
 		    printf("Your account has expired.");
             }
-            else if (sp->sp_expire - today < 14) 
+            else if (sp->sp_expire - today < 14)
                 printf("Your account will expire in %d days.\n",
 		       (int)(sp->sp_expire - today));
-	} 
+	}
 	if (sp->sp_max > 0) {
 	    if (today >= sp->sp_lstchg + sp->sp_max) {
-		if (login_info->pw_uid)    
+		if (login_info->pw_uid)
 		    errx(1,"Your password has expired. Choose a new one.");
 		else
 		    printf("Your password has expired. Choose a new one.");
@@ -485,8 +485,8 @@ main(int argc, char **argv)
 	if (cmd) {
 	   args[i++] = "-c";
 	   args[i++] = cmd;
-	}  
-	   
+	}
+	
 	if (csh_f_flag)
 	    args[i++] = "-f";
 
@@ -508,6 +508,6 @@ main(int argc, char **argv)
 #endif
 	execv(shell, args);
     }
-    
+
     exit(1);
 }

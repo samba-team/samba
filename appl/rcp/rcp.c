@@ -101,7 +101,7 @@ main(int argc, char **argv)
 	    print_version (NULL);
 	    return 0;
 	}
-	    
+	
 	iamremote = (fflag || tflag);
 
 	argc -= optind;
@@ -132,7 +132,7 @@ main(int argc, char **argv)
 	remin = remout = -1;
 	/* Command to be executed on remote system using "rsh". */
 	snprintf(cmd, sizeof(cmd),
-		 "rcp%s%s%s", iamrecursive ? " -r" : "", 
+		 "rcp%s%s%s", iamrecursive ? " -r" : "",
 		 pflag ? " -p" : "", targetshouldbedirectory ? " -d" : "");
 
 	signal(SIGPIPE, lostconn);
@@ -189,7 +189,7 @@ toremote(char *targ, int argc, char **argv)
 					continue;
 				ret = asprintf(&bp,
 				    "%s%s %s -l %s -n %s %s '%s%s%s:%s'",
-					 _PATH_RSH, eflag ? " -e" : "", 
+					 _PATH_RSH, eflag ? " -e" : "",
 					 host, suser, cmd, src,
 				    tuser ? tuser : "", tuser ? "@" : "",
 				    thost, targ);
@@ -197,7 +197,7 @@ toremote(char *targ, int argc, char **argv)
 				host = unbracket(argv[i]);
 				ret = asprintf(&bp,
 					 "exec %s%s %s -n %s %s '%s%s%s:%s'",
-					 _PATH_RSH, eflag ? " -e" : "", 
+					 _PATH_RSH, eflag ? " -e" : "",
 					 host, cmd, src,
 					 tuser ? tuser : "", tuser ? "@" : "",
 					 thost, targ);
@@ -715,7 +715,7 @@ run_err(const char *fmt, ...)
  * If it cannot create necessary pipes it exits with error message.
  */
 
-int 
+int
 do_cmd(char *host, char *remuser, char *cmd, int *fdin, int *fdout)
 {
 	int pin[2], pout[2], reserved[2];

@@ -10,7 +10,7 @@
 
 /* $Id$ */
 
-/* 
+/*
  *  Header file for the POP programs
  */
 
@@ -178,20 +178,20 @@ extern int              hangup;
 #define AUTH_SASL 2
 
 #define pop_command         pop_parm[0]     /*  POP command is first token */
-#define pop_subcommand      pop_parm[1]     /*  POP XTND subcommand is the 
+#define pop_subcommand      pop_parm[1]     /*  POP XTND subcommand is the
                                                 second token */
 
 typedef enum {                              /*  POP processing states */
-    auth1,                                  /*  Authorization: waiting for 
+    auth1,                                  /*  Authorization: waiting for
                                                 USER command */
-    auth2,                                  /*  Authorization: waiting for 
+    auth2,                                  /*  Authorization: waiting for
                                                 PASS command */
     trans,                                  /*  Transaction */
-    update,                                 /*  Update:  session ended, 
+    update,                                 /*  Update:  session ended,
                                                 process maildrop changes */
-    halt,                                   /*  (Halt):  stop processing 
+    halt,                                   /*  (Halt):  stop processing
                                                 and exit */
-    error                                   /*  (Error): something really 
+    error                                   /*  (Error): something really
                                                 bad happened */
 } state;
 
@@ -201,12 +201,12 @@ typedef enum {                              /*  POP processing states */
 #define NEW_FLAG	4
 
 typedef struct {                                /*  Message information */
-    int         number;                         /*  Message number relative to 
+    int         number;                         /*  Message number relative to
                                                     the beginning of list */
-    long        length;                         /*  Length of message in 
+    long        length;                         /*  Length of message in
                                                     bytes */
     int         lines;                          /*  Number of (null-terminated)                                                     lines in the message */
-    long        offset;                         /*  Offset from beginning of 
+    long        offset;                         /*  Offset from beginning of
                                                     file */
     unsigned	flags;
 
@@ -225,40 +225,40 @@ typedef struct {                                /*  Message information */
 
 typedef struct  {                               /*  POP parameter block */
     int                 debug;                  /*  Debugging requested */
-    char            *   myname;                 /*  The name of this POP 
+    char            *   myname;                 /*  The name of this POP
                                                     daemon program */
-    char                myhost[MaxHostNameLen]; /*  The name of our host 
+    char                myhost[MaxHostNameLen]; /*  The name of our host
                                                     computer */
-    char		client[MaxHostNameLen];	/*  Canonical name of client 
+    char		client[MaxHostNameLen];	/*  Canonical name of client
                                                     computer */
-    char                ipaddr[MaxHostNameLen];	/*  Dotted-notation format of 
+    char                ipaddr[MaxHostNameLen];	/*  Dotted-notation format of
                                                     client IP address */
-    unsigned short      ipport;                 /*  Client port for privileged 
+    unsigned short      ipport;                 /*  Client port for privileged
                                                     operations */
     char                user[MAXUSERNAMELEN];   /*  Name of the POP user */
     state               CurrentState;           /*  The current POP operational                                                     state */
     MsgInfoList     *   mlp;                    /*  Message information list */
-    int                 msg_count;              /*  Number of messages in 
+    int                 msg_count;              /*  Number of messages in
                                                     the maildrop */
-    int                 msgs_deleted;           /*  Number of messages flagged 
+    int                 msgs_deleted;           /*  Number of messages flagged
                                                     for deletion */
-    int                 last_msg;               /*  Last message touched by 
+    int                 last_msg;               /*  Last message touched by
                                                     the user */
-    long                bytes_deleted;          /*  Number of maildrop bytes 
+    long                bytes_deleted;          /*  Number of maildrop bytes
                                                     flagged for deletion */
-    char                drop_name[MAXPATHLEN];  /*  The name of the user's 
+    char                drop_name[MAXPATHLEN];  /*  The name of the user's
                                                     maildrop */
-    char                temp_drop[MAXPATHLEN];  /*  The name of the user's 
+    char                temp_drop[MAXPATHLEN];  /*  The name of the user's
                                                     temporary maildrop */
     long                drop_size;              /*  Size of the maildrop in
                                                     bytes */
     FILE            *   drop;                   /*  (Temporary) mail drop */
-    FILE            *   input;                  /*  Input TCP/IP communication 
+    FILE            *   input;                  /*  Input TCP/IP communication
                                                     stream */
     FILE            *   output;                 /*  Output TCP/IP communication                                                     stream */
     FILE            *   trace;                  /*  Debugging trace file */
     char            *   pop_parm[MAXPARMCOUNT]; /*  Parse POP parameter list */
-    int                 parm_count;             /*  Number of parameters in 
+    int                 parm_count;             /*  Number of parameters in
                                                     parsed list */
     int			kerberosp;		/*  Using KPOP? */
 #ifdef KRB4
@@ -278,20 +278,20 @@ typedef struct  {                               /*  POP parameter block */
 #define POP_FLAG_CAPA	1
 } POP;
 
-typedef struct {                                /*  State information for 
+typedef struct {                                /*  State information for
                                                     each POP command */
-    state       ValidCurrentState;              /*  The operating state of 
+    state       ValidCurrentState;              /*  The operating state of
                                                     the command */
     char   *    command;                        /*  The POP command */
-    int         min_parms;                      /*  Minimum number of parms 
+    int         min_parms;                      /*  Minimum number of parms
                                                     for the command */
-    int         max_parms;                      /*  Maximum number of parms 
+    int         max_parms;                      /*  Maximum number of parms
                                                     for the command */
-    int         (*function) ();                 /*  The function that process 
+    int         (*function) ();                 /*  The function that process
                                                     the command */
-    state       result[2];                      /*  The resulting state after 
+    state       result[2];                      /*  The resulting state after
                                                     command processing */
-#define success_state   result[0]               /*  State when a command 
+#define success_state   result[0]               /*  State when a command
                                                     succeeds */
 } state_table;
 
@@ -301,7 +301,7 @@ typedef struct {                                /*  Table of extensions */
                                                     the subcommand */
     int         max_parms;                      /*  Maximum number of parms for
                                                     the subcommand */
-    int         (*function) ();                 /*  The function that processes 
+    int         (*function) ();                 /*  The function that processes
                                                     the subcommand */
 } xtnd_table;
 

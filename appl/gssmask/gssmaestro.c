@@ -1,18 +1,18 @@
 /*
  * Copyright (c) 2006 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
  * 3. Neither the name of KTH nor the names of its contributors may be
  *    used to endorse or promote products derived from this software without
@@ -61,9 +61,9 @@ static struct client **clients;
 static int num_clients;
 
 static int
-init_sec_context(struct client *client, 
+init_sec_context(struct client *client,
 		 int32_t *hContext, int32_t *hCred,
-		 int32_t flags, 
+		 int32_t flags,
 		 const char *targetname,
 		 const krb5_data *itoken, krb5_data *otoken)
 {
@@ -82,7 +82,7 @@ init_sec_context(struct client *client,
 }
 
 static int
-accept_sec_context(struct client *client, 
+accept_sec_context(struct client *client,
 		   int32_t *hContext,
 		   int32_t flags,
 		   const krb5_data *itoken,
@@ -103,7 +103,7 @@ accept_sec_context(struct client *client,
 }
 
 static int
-acquire_cred(struct client *client, 
+acquire_cred(struct client *client,
 	     const char *username,
 	     const char *password,
 	     int32_t flags,
@@ -120,7 +120,7 @@ acquire_cred(struct client *client,
 }
 
 static int
-toast_resource(struct client *client, 
+toast_resource(struct client *client,
 	       int32_t hCred)
 {
     int32_t val;
@@ -138,7 +138,7 @@ goodbye(struct client *client)
 }
 
 static int
-get_targetname(struct client *client, 
+get_targetname(struct client *client,
 	       char **target)
 {
     put32(client, eGetTargetName);
@@ -162,7 +162,7 @@ encrypt_token(struct client *client, int32_t hContext, int32_t flags,
 }
 
 static int32_t
-decrypt_token(struct client *client, int32_t hContext, int flags, 
+decrypt_token(struct client *client, int32_t hContext, int flags,
 	     krb5_data *in, krb5_data *out)
 {
     int32_t val;
@@ -192,7 +192,7 @@ get_mic(struct client *client, int32_t hContext,
 }
 
 static int32_t
-verify_mic(struct client *client, int32_t hContext, 
+verify_mic(struct client *client, int32_t hContext,
 	   krb5_data *in, krb5_data *mic)
 {
     int32_t val;
@@ -208,7 +208,7 @@ verify_mic(struct client *client, int32_t hContext,
 
 
 static int32_t
-get_version_capa(struct client *client, 
+get_version_capa(struct client *client,
 		 int32_t *version, int32_t *capa,
 		 char **version_str)
 {
@@ -220,7 +220,7 @@ get_version_capa(struct client *client,
 }
 
 static int32_t
-get_moniker(struct client *client, 
+get_moniker(struct client *client,
 	    char **moniker)
 {
     put32(client, eGetMoniker);
@@ -310,7 +310,7 @@ build_context(struct client *ipeer, struct client *apeer,
 	case GSMERR_CONTINUE_NEEDED:
 	    break;
 	default:
-	    warnx("iPeer %s failed with %d (step %d)", 
+	    warnx("iPeer %s failed with %d (step %d)",
 		  ipeer->name, (int)val, step);
 	    goto out;
 	}
@@ -369,13 +369,13 @@ build_context(struct client *ipeer, struct client *apeer,
 out:
     return val;
 }
-			 
+			
 static void
 test_mic(struct client *c1, int32_t hc1, struct client *c2, int32_t hc2)
 {
     krb5_data msg, mic;
     int32_t val;
-    
+
     msg.data = "foo";
     msg.length = 3;
 
@@ -392,12 +392,12 @@ test_mic(struct client *c1, int32_t hc1, struct client *c2, int32_t hc2)
 }
 
 static int32_t
-test_wrap(struct client *c1, int32_t hc1, struct client *c2, int32_t hc2, 
+test_wrap(struct client *c1, int32_t hc1, struct client *c2, int32_t hc2,
 	  int conf)
 {
     krb5_data msg, wrapped, out;
     int32_t val;
-    
+
     msg.data = "foo";
     msg.length = 3;
 
@@ -476,9 +476,9 @@ log_function(void *ptr)
 		goto out;
 	    if (krb5_ret_string(c->logsock, &string))
 		goto out;
-	    printf("%s:%lu: %s\n", 
+	    printf("%s:%lu: %s\n",
 		   file, (unsigned long)line, string);
-	    fprintf(logfile, "%s:%lu: %s\n", 
+	    fprintf(logfile, "%s:%lu: %s\n",
 		    file, (unsigned long)line, string);
 	    fflush(logfile);
 	    free(file);
@@ -510,7 +510,7 @@ connect_client(const char *slave)
     *port++ = 0;
 
     c->name = estrdup(slave);
-    
+
     memset(&hints, 0, sizeof(hints));
     hints.ai_family = PF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
@@ -584,7 +584,7 @@ connect_client(const char *slave)
 
 
     clients = erealloc(clients, (num_clients + 1) * sizeof(*clients));
-    
+
     clients[num_clients] = c;
     num_clients++;
 
@@ -703,7 +703,7 @@ main(int argc, char **argv)
 
 	val = acquire_cred(clients[i], user, password, 1, &hCred);
 	if (val != GSMERR_OK) {
-	    warnx("Failed to acquire_cred on host %s: %d", 
+	    warnx("Failed to acquire_cred on host %s: %d",
 		 clients[i]->moniker, (int)val);
 	    failed = 1;
 	} else
@@ -713,7 +713,7 @@ main(int argc, char **argv)
     if (failed)
 	goto out;
 
-    /* 
+    /*
      * First test if all slaves can build context to them-self.
      */
 
@@ -732,8 +732,8 @@ main(int argc, char **argv)
 	val = acquire_cred(c, user, password, 1, &hCred);
 	if (val != GSMERR_OK)
 	    errx(1, "failed to acquire_cred: %d", (int)val);
-    
-	val = build_context(c, c, 
+
+	val = build_context(c, c,
 			    GSS_C_REPLAY_FLAG|GSS_C_SEQUENCE_FLAG|
 			    GSS_C_INTEG_FLAG|GSS_C_CONF_FLAG|
 			    GSS_C_DELEG_FLAG|GSS_C_MUTUAL_FLAG,
@@ -792,7 +792,7 @@ main(int argc, char **argv)
 
 	for (j = 1; j < num_clients + 1; j++) {
 	    server = get_client(p[j % num_clients]);
-	    
+	
 	    if (server->target_name == NULL)
 		break;
 
@@ -809,11 +809,11 @@ main(int argc, char **argv)
 		warnx("build_context failed: %d", (int)val);
 		break;
 	    }
-	    
+	
 	    val = test_token(client, clientC, server, serverC);
 	    if (val)
 		break;
-	    
+	
 	    toast_resource(client, clientC);
 	    toast_resource(server, serverC);
 	    if (!delegCred) {
@@ -827,11 +827,11 @@ main(int argc, char **argv)
 	if (hCred)
 	    toast_resource(client, hCred);
     }
-    
+
     /*
      * Close all connections to clients
      */
-    
+
 out:
     printf("sending goodbye and waiting for log sockets\n");
     for (i = 0; i < num_clients; i++) {

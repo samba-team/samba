@@ -1,34 +1,34 @@
 /*
  * Copyright (c) 1997 - 2006 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * 3. Neither the name of the Institute nor the names of its contributors 
- *    may be used to endorse or promote products derived from this software 
- *    without specific prior written permission. 
+ * 3. Neither the name of the Institute nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
- * SUCH DAMAGE. 
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 #include "login_locl.h"
@@ -100,7 +100,7 @@ start_logout_process(void)
 		execle(prog, argv0, NULL, env);
 		err(1, "exec %s", prog);
 	    }
-	} else if(ret < 0) 
+	} else if(ret < 0)
 	    err(1, "waitpid");
     }
 }
@@ -110,7 +110,7 @@ exec_shell(const char *shell, int fallback)
 {
     char *sh;
     const char *p;
-    
+
     extend_env(NULL);
     if(start_login_process() < 0)
 	warn("login process");
@@ -125,7 +125,7 @@ exec_shell(const char *shell, int fallback)
 	errx(1, "Out of memory");
     execle(shell, sh, NULL, env);
     if(fallback){
-	warnx("Can't exec %s, trying %s", 
+	warnx("Can't exec %s, trying %s",
 	      shell, _PATH_BSHELL);
 	execle(_PATH_BSHELL, "-sh", NULL, env);
 	err(1, "%s", _PATH_BSHELL);
@@ -171,9 +171,9 @@ krb5_verify(struct passwd *pwd, const char *password)
 	return 1;
     }
     ret = krb5_verify_user_lrealm(context,
-				  princ, 
+				  princ,
 				  id,
-				  password, 
+				  password,
 				  1,
 				  NULL);
     krb5_free_principal(context, princ);
@@ -189,15 +189,15 @@ krb5_to4 (krb5_ccache id)
 
     ret = krb5_cc_get_principal(context, id, &princ);
     if(ret == 0) {
-	krb5_appdefault_boolean(context, "login", 
-				krb5_principal_get_realm(context, princ), 
+	krb5_appdefault_boolean(context, "login",
+				krb5_principal_get_realm(context, princ),
 				"krb4_get_tickets", FALSE, &get_v4_tgt);
 	krb5_free_principal(context, princ);
     } else {
 	krb5_realm realm = NULL;
 	krb5_get_default_realm(context, &realm);
-	krb5_appdefault_boolean(context, "login", 
-				realm, 
+	krb5_appdefault_boolean(context, "login",
+				realm,
 				"krb4_get_tickets", FALSE, &get_v4_tgt);
 	free(realm);
     }
@@ -254,7 +254,7 @@ krb5_start_session (const struct passwd *pwd)
     char residual[64];
 
     /* copy credentials to file cache */
-    snprintf(residual, sizeof(residual), "FILE:/tmp/krb5cc_%u", 
+    snprintf(residual, sizeof(residual), "FILE:/tmp/krb5cc_%u",
 	     (unsigned)pwd->pw_uid);
     krb5_cc_resolve(context, residual, &id2);
     ret = krb5_cc_copy_cache(context, id, id2);
@@ -289,7 +289,7 @@ krb5_get_afs_tokens (const struct passwd *pwd)
 	return;
 
     ret = krb5_cc_default(context, &id2);
- 
+
     if (ret == 0) {
 	pw_dir = pwd->pw_dir;
 
@@ -436,7 +436,7 @@ show_file(const char *file)
     fclose(f);
 }
 
-/* 
+/*
  * Actually log in the user.  `pwd' contains all the relevant
  * information about the user.  `ttyn' is the complete name of the tty
  * and `tty' the short name.
@@ -456,7 +456,7 @@ do_login(const struct passwd *pwd, char *tty, char *ttyn)
 
     if(!rootlogin)
 	checknologin();
-    
+
 #ifdef HAVE_GETSPNAM
     sp = getspnam(pwd->pw_name);
 #endif
@@ -496,7 +496,7 @@ do_login(const struct passwd *pwd, char *tty, char *ttyn)
 
 	read_limits_conf(file, pwd);
     }
-	    
+	
 #ifdef HAVE_SETPCRED
     if (setpcred (pwd->pw_name, NULL) == -1)
 	warn("setpcred(%s)", pwd->pw_name);
@@ -523,7 +523,7 @@ do_login(const struct passwd *pwd, char *tty, char *ttyn)
 
     /* make sure signals are set to default actions, apparently some
        OS:es like to ignore SIGINT, which is not very convenient */
-    
+
     for (i = 1; i < NSIG; ++i)
 	signal(i, SIG_DFL);
 
@@ -726,7 +726,7 @@ main(int argc, char **argv)
 
     int ask = 1;
     struct sigaction sa;
-    
+
     setprogname(argv[0]);
 
 #ifdef KRB5
@@ -862,7 +862,7 @@ main(int argc, char **argv)
 	    tty = ttyn + strlen(_PATH_DEV);
 	else
 	    tty = ttyn;
-    
+
 	if (login_access (pwd, remote_host ? remote_host : tty) == 0) {
 	    fprintf(stderr, "Permission denied\n");
 	    if (remote_host)

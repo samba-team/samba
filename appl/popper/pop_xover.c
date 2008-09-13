@@ -12,15 +12,15 @@ pop_xover (POP *p)
 	    "%d messages (%ld octets)",
             p->msg_count-p->msgs_deleted,
 	    p->drop_size-p->bytes_deleted);
-    
+
     /*  Loop through the message information list.  Skip deleted messages */
     for (i = p->msg_count, mp = p->mlp; i > 0; i--, mp++) {
-        if (!(mp->flags & DEL_FLAG)) 
+        if (!(mp->flags & DEL_FLAG))
             fprintf(p->output,"%u\t%s\t%s\t%s\t%s\t%lu\t%u\r\n",
 		    mp->number,
 		    mp->subject,
 		    mp->from,
-		    mp->date, 
+		    mp->date,
 		    mp->msg_id,
 		    mp->length,
 		    mp->lines);

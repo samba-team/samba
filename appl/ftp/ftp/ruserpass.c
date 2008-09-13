@@ -59,7 +59,7 @@ static struct toktab {
 	{ "account",	ACCOUNT },
 	{ "machine",	MACH },
 	{ "macdef",	MACDEF },
-	{ "prot", 	PROT }, 
+	{ "prot", 	PROT },
 	{ NULL,		0 }
 };
 
@@ -137,7 +137,7 @@ next:
 		continue;
 	    /*
 	     * Allow match either for user's input host name
-	     * or official hostname.  Also allow match of 
+	     * or official hostname.  Also allow match of
 	     * incompletely-specified host in local domain.
 	     */
 	    if (strcasecmp(host, tokval) == 0)
@@ -163,7 +163,7 @@ next:
 
 	case LOGIN:
 	    if (token()) {
-		if (*aname == 0) { 
+		if (*aname == 0) {
 		    *aname = strdup(tokval);
 		} else {
 		    if (strcmp(*aname, tokval))
@@ -199,7 +199,7 @@ next:
 		fclose(cfile);
 		return (0);
 	    }
-	    while ((c=getc(cfile)) != EOF && 
+	    while ((c=getc(cfile)) != EOF &&
 		   (c == ' ' || c == '\t'));
 	    if (c == EOF || c == '\n') {
 		printf("Missing macdef name argument.\n");

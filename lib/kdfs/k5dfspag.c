@@ -1,23 +1,23 @@
-/* 
+/*
  * lib/krb5/os/k5dfspag.c
  *
- * New Kerberos module to issue the DFS PAG syscalls. 
+ * New Kerberos module to issue the DFS PAG syscalls.
  * It also contains the routine to fork and exec the
- * k5dcecon routine to do most of the work. 
- * 
- * This file is designed to be as independent of DCE 
- * and DFS as possible. The only dependencies are on 
+ * k5dcecon routine to do most of the work.
+ *
+ * This file is designed to be as independent of DCE
+ * and DFS as possible. The only dependencies are on
  * the syscall numbers.  If DFS not running or not installed,
- * the sig handlers will catch and the signal and 
- * will  continue. 
+ * the sig handlers will catch and the signal and
+ * will  continue.
  *
  * krb5_dfs_newpag and krb5_dfs_getpag should not be real
  * Kerberos routines, since they should be setpag and getpag
- * in the DCE library, but without the DCE baggage. 
- * Thus they don't have context, and don't return a krb5 error. 
+ * in the DCE library, but without the DCE baggage.
+ * Thus they don't have context, and don't return a krb5 error.
  *
- * 
- * 
+ *
+ *
  * krb5_dfs_pag()
  */
 
@@ -42,7 +42,7 @@ RCSID("$Id$");
  * Solaris 2.5.x, HPUX 10.x  Even SunOS 4.1.4, AIX 3.2.5
  * and SGI 5.3 are OK.  This simplifies
  * the build/configure which I don't want to change now.
- * All of them also have waitpid as well. 
+ * All of them also have waitpid as well.
  */
 
 #define POSIX_SETJMP
@@ -79,14 +79,14 @@ typedef sigtype (*handler)();
 typedef krb5_sigtype sigtype;
 
 
-/* 
- * Need some syscall numbers based on different systems. 
- * These are based on: 
- * HPUX 10.10 /opt/dce/include/dcedfs/syscall.h 
+/*
+ * Need some syscall numbers based on different systems.
+ * These are based on:
+ * HPUX 10.10 /opt/dce/include/dcedfs/syscall.h
  * Solaris 2.5 /opt/dcelocal/share/include/dcedfs/syscall.h
  * AIX 4.2  - needs some funny games with load and kafs_syscall
- * to get the kernel extentions. There should be a better way! 
- * 
+ * to get the kernel extentions. There should be a better way!
+ *
  * DEE 5/27/97
  *
  */
@@ -127,7 +127,7 @@ static int (*dpagaix)(int, int, int, int, int, int) = 0;
 #define K5DCECON LIBEXECDIR "/k5dcecon"
 #endif
 
-/* 
+/*
  * mysig()
  *
  * signal handler if DFS not running
@@ -148,7 +148,7 @@ static sigtype mysig()
  *
  */
 
-static int  krb5_dfs_pag_syscall(opt1,opt2) 
+static int  krb5_dfs_pag_syscall(opt1,opt2)
   int opt1;
   int opt2;
 {
@@ -160,16 +160,16 @@ static int  krb5_dfs_pag_syscall(opt1,opt2)
   handler_init (sa2, mysig);
   handler_swap (SIGSYS, sa1, osa1);
   handler_swap (SIGSEGV, sa2, osa2);
-  
+
   if (sigsetjmp(setpag_buf, 1) == 0) {
 
 #if defined(_AIX)
     if (!dpagaix)
       dpagaix = load(DPAGAIX, 0, 0);
-    if (dpagaix) 
+    if (dpagaix)
       pag = (*dpagaix)(opt1, opt2, 0, 0, 0, 0);
 #else
-    pag = syscall(AFS_SYSCALL, opt1, opt2, 0, 0, 0, 0); 
+    pag = syscall(AFS_SYSCALL, opt1, opt2, 0, 0, 0, 0);
 #endif
 
     handler_set (SIGSYS, osa1);
@@ -188,24 +188,24 @@ static int  krb5_dfs_pag_syscall(opt1,opt2)
  *
  * issue a DCE/DFS setpag system call to set the newpag
  * for this process. This takes advantage of a currently
- * undocumented feature of the Transarc port of DFS. 
+ * undocumented feature of the Transarc port of DFS.
  * Even in DCE 1.2.2 for which the source is available,
  * (but no vendors have released), this feature is not
- * there, but it should be, or could be added. 
+ * there, but it should be, or could be added.
  * If new_pag is zero, then the syscall will get a new pag
- * and return its value. 
- */ 
+ * and return its value.
+ */
 
-int krb5_dfs_newpag(new_pag) 
+int krb5_dfs_newpag(new_pag)
   int new_pag;
 {
   return(krb5_dfs_pag_syscall(AFSCALL_SETPAG, new_pag));
 }
 
-/* 
+/*
  * krb5_dfs_getpag()
  *
- * get the current PAG. Used mostly as a test. 
+ * get the current PAG. Used mostly as a test.
  */
 
 int krb5_dfs_getpag()
@@ -217,33 +217,33 @@ int krb5_dfs_getpag()
  * krb5_dfs_pag()
  *
  * Given a principal and local username,
- * fork and exec the k5dcecon module to create 
+ * fork and exec the k5dcecon module to create
  * refresh or join a new DCE/DFS
  * Process Authentication Group (PAG)
- * 
- * This routine should be called after krb5_kuserok has 
- * determined that this combination of local user and 
- * principal are acceptable for the local host. 
- * 
- * It should also be called after a forwarded ticket has 
+ *
+ * This routine should be called after krb5_kuserok has
+ * determined that this combination of local user and
+ * principal are acceptable for the local host.
+ *
+ * It should also be called after a forwarded ticket has
  * been received, and the KRB5CCNAME environment variable
  * has been set to point at it. k5dcecon will convert this
  * to a new DCE context and a new pag and replace KRB5CCNAME
- * in the environment. 
+ * in the environment.
  *
  * If there is no forwarded ticket, k5dcecon will attempt
  * to join an existing PAG for the same principal and local
- * user. 
+ * user.
  *
  * And it should be called before access to the home directory
  * as this may be in DFS, not accessable by root, and require
- * the PAG to have been setup. 
- * 
- * The krb5_afs_pag can be called after this routine to 
- * use the the cache obtained by k5dcecon to get an AFS token. 
+ * the PAG to have been setup.
+ *
+ * The krb5_afs_pag can be called after this routine to
+ * use the the cache obtained by k5dcecon to get an AFS token.
  * DEE - 7/97
- */ 
- 
+ */
+
 int krb5_dfs_pag(context, flag, principal, luser)
 	krb5_context context;
     int flag; /* 1 if a forwarded TGT is to be used */
@@ -251,16 +251,16 @@ int krb5_dfs_pag(context, flag, principal, luser)
 	const char *luser;
 
 {
-  
+
   struct stat stx;
   int fd[2];
   int i,j;
   int pid;
   int new_pag;
   int pag;
-  char newccname[MAXPATHLEN] = ""; 
+  char newccname[MAXPATHLEN] = "";
   char *princ;
-  int err; 
+  int err;
   struct sigaction newsig, oldsig;
 
 #ifdef  WAIT_USES_INT
@@ -275,8 +275,8 @@ int krb5_dfs_pag(context, flag, principal, luser)
    /* test if DFS is running or installed */
    if (krb5_dfs_getpag() == -2)
      return(0); /* DFS not running, dont try */
-  
-  if (pipe(fd) == -1) 
+
+  if (pipe(fd) == -1)
      return(0);
 
   /* Make sure that telnetd.c's SIGCHLD action don't happen right now... */
@@ -285,7 +285,7 @@ int krb5_dfs_pag(context, flag, principal, luser)
   sigaction(SIGCHLD, &newsig, &oldsig);
 
   pid = fork();
-  if (pid <0) 
+  if (pid <0)
    return(0);
 
   if (pid == 0) {  /* child process */
@@ -301,7 +301,7 @@ int krb5_dfs_pag(context, flag, principal, luser)
 		 "-p", princ, (char *)0);
 
     exit(127);      /* incase execl fails */
-  } 
+  }
 
   /* parent, wait for child to finish */
 
@@ -335,7 +335,7 @@ int krb5_dfs_pag(context, flag, principal, luser)
       }
       close(fd[0]);
       if (j > 0) {
-        newccname[j] = '\0'; 
+        newccname[j] = '\0';
         esetenv("KRB5CCNAME",newccname,1);
         sscanf(&newccname[j-8],"%8x",&new_pag);
         if (new_pag && strncmp("FILE:/opt/dcelocal/var/security/creds/dcecred_", newccname, 46) == 0) {
@@ -351,9 +351,9 @@ int krb5_dfs_pag(context, flag, principal, luser)
 
 #else /* DCE */
 
-/* 
- * krb5_dfs_pag - dummy version for the lib for systems 
- * which don't have DFS, or the needed setpag kernel code.  
+/*
+ * krb5_dfs_pag - dummy version for the lib for systems
+ * which don't have DFS, or the needed setpag kernel code.
  */
 
 krb5_boolean

@@ -67,7 +67,7 @@ try_door(krb5_context context,
     int ret;
 
     memset(&arg, 0, sizeof(arg));
-	   
+	
     fd = open(k->door_path, O_RDWR);
     if (fd < 0)
 	return KRB5_CC_IO;
@@ -114,13 +114,13 @@ try_unix_socket(krb5_context context,
 	close(fd);
 	return KRB5_CC_IO;
     }
-    
+
     ret = _krb5_send_and_recv_tcp(fd, context->kdc_timeout,
 				  request_data, response_data);
     close(fd);
     return ret;
 }
-    
+
 static krb5_error_code
 kcm_send_request(krb5_context context,
 		 krb5_kcmcache *k,
@@ -191,12 +191,12 @@ kcm_storage_request(krb5_context context,
     *storage_p = sp;
  fail:
     if (ret) {
-	krb5_set_error_message(context, ret, 
+	krb5_set_error_message(context, ret,
 			       N_("Failed to encode KCM request", ""));
 	krb5_storage_free(sp);
     }
-   
-    return ret; 
+
+    return ret;
 }
 
 static krb5_error_code
@@ -215,7 +215,7 @@ kcm_alloc(krb5_context context, const char *name, krb5_ccache *id)
 	k->name = strdup(name);
 	if (k->name == NULL) {
 	    free(k);
-	    krb5_set_error_message(context, KRB5_CC_NOMEM, 
+	    krb5_set_error_message(context, KRB5_CC_NOMEM,
 				   N_("malloc: out of memory", ""));
 	    return KRB5_CC_NOMEM;
 	}
@@ -224,16 +224,16 @@ kcm_alloc(krb5_context context, const char *name, krb5_ccache *id)
 
     path = krb5_config_get_string_default(context, NULL,
 					  _PATH_KCM_SOCKET,
-					  "libdefaults", 
+					  "libdefaults",
 					  "kcm_socket",
 					  NULL);
-    
+
     k->path.sun_family = AF_UNIX;
     strlcpy(k->path.sun_path, path, sizeof(k->path.sun_path));
 
     path = krb5_config_get_string_default(context, NULL,
 					  _PATH_KCM_DOOR,
-					  "libdefaults", 
+					  "libdefaults",
 					  "kcm_door",
 					  NULL);
     k->door_path = strdup(path);
@@ -740,7 +740,7 @@ kcm_end_get (krb5_context context,
 	krb5_storage_free(request);
 	return ret;
     }
-  
+
     krb5_storage_free(request);
 
     KCMCURSOR(*cursor) = 0;
@@ -867,7 +867,7 @@ kcm_move(krb5_context context, krb5_ccache from, krb5_ccache to)
 static krb5_error_code
 kcm_default_name(krb5_context context, char **str)
 {
-    return _krb5_expand_default_cc_name(context, 
+    return _krb5_expand_default_cc_name(context,
 					KRB5_DEFAULT_CCNAME_KCM,
 					str);
 }

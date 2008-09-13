@@ -2,22 +2,22 @@
  * Copyright (c) 1995 - 2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the Institute nor the names of its contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -141,11 +141,11 @@ main(int argc, char **argv)
 	    if (name == NULL)
 		krb5_errx(context, 1, "Failed getting default "
 			  "credential cache type");
-	    
+	
 	    typename_arg = strdup(name);
 	    if (typename_arg == NULL)
 		errx(1, "strdup");
-	    
+	
 	    s = strchr(typename_arg, ':');
 	    if (s)
 		*s = '\0';
@@ -155,7 +155,7 @@ main(int argc, char **argv)
 	if (type == NULL)
 	    krb5_err(context, 1, ret, "Failed getting ops for %s "
 		     "credential cache", typename_arg);
-     
+
 	ret = krb5_cc_gen_new(context, type, &id);
 	if (ret)
 	    krb5_err(context, 1, ret, "Failed generating credential cache");
@@ -190,7 +190,7 @@ main(int argc, char **argv)
     if (args == NULL)
 	errx (1, "Out of memory allocating %lu bytes",
 	      (unsigned long)((argc + 10)*sizeof(char *)));
-  
+
     if(*argv == NULL) {
 	path = getenv("SHELL");
 	if(path == NULL){
@@ -202,7 +202,7 @@ main(int argc, char **argv)
     }
     if (path == NULL)
 	errx (1, "Out of memory copying path");
-  
+
     p=strrchr(path, '/');
     if(p)
 	args[i] = strdup(p+1);
@@ -211,7 +211,7 @@ main(int argc, char **argv)
 
     if (args[i++] == NULL)
 	errx (1, "Out of memory copying arguments");
-  
+
     while(*argv)
 	args[i++] = *argv++;
 

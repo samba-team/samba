@@ -641,7 +641,7 @@ static RETSIGTYPE deadpeer(int),
 #ifdef SIGINFO
 static RETSIGTYPE ayt(int);
 #endif
-  
+
 
     /* ARGSUSED */
 static RETSIGTYPE

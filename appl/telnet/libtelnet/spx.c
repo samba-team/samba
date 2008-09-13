@@ -526,7 +526,7 @@ spx_status(ap, name, name_sz, level)
 #define	ADDC(buf, len, c)	if ((len) > 0) {*(buf)++ = (c); --(len);}
 
 	void
-spx_printsub(unsigned char *data, size_t cnt, 
+spx_printsub(unsigned char *data, size_t cnt,
 	     unsigned char *buf, size_t buflen)
 {
 	size_t i;

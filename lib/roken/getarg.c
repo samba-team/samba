@@ -1,34 +1,34 @@
 /*
  * Copyright (c) 1997 - 2002 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * 3. Neither the name of the Institute nor the names of its contributors 
- *    may be used to endorse or promote products derived from this software 
- *    without specific prior written permission. 
+ * 3. Neither the name of the Institute nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
- * SUCH DAMAGE. 
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 #ifdef HAVE_CONFIG_H
@@ -106,7 +106,7 @@ mandoc_template(struct getargs *args,
     if(p) p++; else p = progname;
     strlcpy(cmd, p, sizeof(cmd));
     strupr(cmd);
-       
+
     printf(".Dt %s SECTION\n", cmd);
     printf(".Os OPERATING_SYSTEM\n");
     printf(".Sh NAME\n");
@@ -118,7 +118,7 @@ mandoc_template(struct getargs *args,
     for(i = 0; i < num_args; i++){
 	/* we seem to hit a limit on number of arguments if doing
            short and long flags with arguments -- split on two lines */
-	if(ISFLAG(args[i]) || 
+	if(ISFLAG(args[i]) ||
 	   args[i].short_name == 0 || args[i].long_name == NULL) {
 	    printf(".Op ");
 
@@ -253,7 +253,7 @@ arg_printusage (struct getargs *args,
 	    }
 	    strlcat(buf, args[i].long_name, sizeof(buf));
 	    len += strlen(args[i].long_name);
-	    len += print_arg(buf + strlen(buf), sizeof(buf) - strlen(buf), 
+	    len += print_arg(buf + strlen(buf), sizeof(buf) - strlen(buf),
 			     0, 1, &args[i]);
 	    strlcat(buf, "]", sizeof(buf));
 	    if(args[i].type == arg_strings)
@@ -264,7 +264,7 @@ arg_printusage (struct getargs *args,
 	if (args[i].short_name && !ISFLAG(args[i])) {
 	    snprintf(buf, sizeof(buf), "[-%c", args[i].short_name);
 	    len += 2;
-	    len += print_arg(buf + strlen(buf), sizeof(buf) - strlen(buf), 
+	    len += print_arg(buf + strlen(buf), sizeof(buf) - strlen(buf),
 			     0, 0, &args[i]);
 	    strlcat(buf, "]", sizeof(buf));
 	    if(args[i].type == arg_strings)
@@ -378,7 +378,7 @@ arg_match_long(struct getargs *args, size_t num_args,
 	else
 	    return ARG_ERR_NO_MATCH;
     }
-    
+
     if(*goptarg == '\0'
        && !ISFLAG(*current)
        && current->type != arg_collect
@@ -407,7 +407,7 @@ arg_match_long(struct getargs *args, size_t num_args,
     {
 	int *flag = current->value;
 	if(*goptarg == '\0' ||
-	   strcmp(goptarg + 1, "yes") == 0 || 
+	   strcmp(goptarg + 1, "yes") == 0 ||
 	   strcmp(goptarg + 1, "true") == 0){
 	    *flag = !negate;
 	    return 0;
@@ -473,7 +473,7 @@ arg_match_short (struct getargs *args, size_t num_args,
 		if(args[k].type == arg_negative_flag) {
 		    *(int*)args[k].value = 0;
 		    break;
-		} 
+		}
 		if(args[k].type == arg_counter) {
 		    ++*(int *)args[k].value;
 		    break;
@@ -524,7 +524,7 @@ arg_match_short (struct getargs *args, size_t num_args,
 }
 
 int ROKEN_LIB_FUNCTION
-getarg(struct getargs *args, size_t num_args, 
+getarg(struct getargs *args, size_t num_args,
        int argc, char **argv, int *goptind)
 {
     int i;
@@ -546,7 +546,7 @@ getarg(struct getargs *args, size_t num_args,
 		i++;
 		break;
 	    }
-	    ret = arg_match_long (args, num_args, argv[i] + 2, 
+	    ret = arg_match_long (args, num_args, argv[i] + 2,
 				  argc, argv, &i);
 	} else {
 	    ret = arg_match_short (args, num_args, argv[i],
@@ -585,9 +585,9 @@ int main(int argc, char **argv)
     int goptind = 0;
     while(getarg(args, 5, argc, argv, &goptind))
 	printf("Bad arg: %s\n", argv[goptind]);
-    printf("flag1 = %d\n", flag1);  
-    printf("flag2 = %d\n", flag2);  
-    printf("foo_flag = %d\n", foo_flag);  
+    printf("flag1 = %d\n", flag1);
+    printf("flag2 = %d\n", flag2);
+    printf("foo_flag = %d\n", foo_flag);
     printf("bar_int = %d\n", bar_int);
     printf("baz_flag = %s\n", baz_string);
     arg_printusage (args, 5, argv[0], "nothing here");

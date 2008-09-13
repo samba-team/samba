@@ -7,7 +7,7 @@
 #include <popper.h>
 RCSID("$Id$");
 
-/* 
+/*
  *  dele:   Delete a message from the POP maildrop
  */
 int
@@ -45,7 +45,7 @@ pop_dele (POP *p)
     p->msgs_deleted++;
     p->bytes_deleted += mp->length;
 
-    /*  Update the last-message-accessed number if it is lower than 
+    /*  Update the last-message-accessed number if it is lower than
         the deleted message */
     if (p->last_msg < msg_num) p->last_msg = msg_num;
 
@@ -96,12 +96,12 @@ pop_xdele(POP *p)
 	p->bytes_deleted += mp->length;
     }
 
-    /*  Update the last-message-accessed number if it is lower than 
+    /*  Update the last-message-accessed number if it is lower than
 	the deleted message */
     if (p->last_msg < msg_max) p->last_msg = msg_max;
-    
+
     return (pop_msg (p,POP_SUCCESS,"Messages %d-%d has been deleted.",
 		     msg_min, msg_max));
-    
+
 }
 #endif /* XDELE */

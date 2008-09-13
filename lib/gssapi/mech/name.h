@@ -42,7 +42,7 @@ struct _gss_name {
 };
 
 OM_uint32
-	_gss_find_mn(OM_uint32 *, struct _gss_name *, gss_OID, 
+	_gss_find_mn(OM_uint32 *, struct _gss_name *, gss_OID,
 	      struct _gss_mechanism_name **);
 struct _gss_name *
 	_gss_make_name(gssapi_mech_interface m, gss_name_t new_mn);

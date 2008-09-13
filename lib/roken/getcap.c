@@ -233,7 +233,7 @@ cgetent(char **buf, char **db_array, const char *name)
  *	  MAX_RECURSION.
  */
 static int
-getent(char **cap, size_t *len, char **db_array, int fd, 
+getent(char **cap, size_t *len, char **db_array, int fd,
        const char *name, int depth, char *nfield)
 {
     char *r_end, *rp = NULL, **db_p;	/* pacify gcc */
@@ -412,7 +412,7 @@ getent(char **cap, size_t *len, char **db_array, int fd,
 		    *rp++ = c;
 
 				/*
-				 * Enforce loop invariant: if no room 
+				 * Enforce loop invariant: if no room
 				 * left in record buffer, try to get
 				 * some more.
 				 */
@@ -510,7 +510,7 @@ getent(char **cap, size_t *len, char **db_array, int fd,
 	    tclen = s - tcstart;
 	    tcend = s;
 
-	    iret = getent(&icap, &ilen, db_p, fd, tc, depth+1, 
+	    iret = getent(&icap, &ilen, db_p, fd, tc, depth+1,
 			  NULL);
 	    newicap = icap;		/* Put into a register. */
 	    newilen = ilen;
@@ -603,7 +603,7 @@ getent(char **cap, size_t *len, char **db_array, int fd,
 	(void)close(fd);
     *len = rp - record - 1;	/* don't count NUL */
     if (r_end > rp)
-	if ((record = 
+	if ((record =
 	     realloc(record, (size_t)(rp - record))) == NULL) {
 	    errno = ENOMEM;
 	    return (-2);
@@ -717,7 +717,7 @@ cgetclose(void)
 
 #if 0
 /*
- * Cgetnext() gets either the first or next entry in the logical database 
+ * Cgetnext() gets either the first or next entry in the logical database
  * specified by db_array.  It returns 0 upon completion of the database, 1
  * upon returning an entry with more remaining, and -1 if an error occurs.
  */
@@ -780,7 +780,7 @@ cgetnext(char **bp, char **db_array)
 	}			
 
 
-	/* 
+	/*
 	 * Line points to a name line.
 	 */
 	done = 0;
@@ -822,12 +822,12 @@ cgetnext(char **bp, char **db_array)
 		*rp++ = *cp;
 
 	*rp = '\0';
-	/* 
-	 * XXX 
+	/*
+	 * XXX
 	 * Last argument of getent here should be nbuf if we want true
-	 * sequential access in the case of duplicates.  
+	 * sequential access in the case of duplicates.
 	 * With NULL, getent will return the first entry found
-	 * rather than the duplicate entry record.  This is a 
+	 * rather than the duplicate entry record.  This is a
 	 * matter of semantics that should be resolved.
 	 */
 	status = getent(bp, &dummy, db_array, -1, buf, 0, NULL);
@@ -967,10 +967,10 @@ cgetstr(char *buf, const char *cap, char **str)
  * Cgetustr retrieves the value of the string capability cap from the
  * capability record pointed to by buf.  The difference between cgetustr()
  * and cgetstr() is that cgetustr does not decode escapes but rather treats
- * all characters literally.  A pointer to a  NUL terminated malloc'd 
- * copy of the string is returned in the char pointed to by str.  The 
+ * all characters literally.  A pointer to a  NUL terminated malloc'd
+ * copy of the string is returned in the char pointed to by str.  The
  * length of the string not including the trailing NUL is returned on success,
- * -1 if the requested string capability couldn't be found, -2 if a system 
+ * -1 if the requested string capability couldn't be found, -2 if a system
  * error was encountered (storage allocation failure).
  */
 int ROKEN_LIB_FUNCTION

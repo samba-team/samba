@@ -1,34 +1,34 @@
 /*
  * Copyright (c) 1997 - 2007 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * 3. Neither the name of the Institute nor the names of its contributors 
- *    may be used to endorse or promote products derived from this software 
- *    without specific prior written permission. 
+ * 3. Neither the name of the Institute nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
- * SUCH DAMAGE. 
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 #include <krb5_locl.h>
@@ -58,7 +58,7 @@ decrypt_tkt_enc_part (krb5_context context,
     if (ret)
 	return ret;
 
-    ret = krb5_decode_EncTicketPart(context, plain.data, plain.length, 
+    ret = krb5_decode_EncTicketPart(context, plain.data, plain.length,
 				    decr_part, &len);
     krb5_data_free (&plain);
     return ret;
@@ -95,7 +95,7 @@ decrypt_authenticator (krb5_context context,
     if (ret)
 	return ret;
 
-    ret = krb5_decode_Authenticator(context, plain.data, plain.length, 
+    ret = krb5_decode_Authenticator(context, plain.data, plain.length,
 				    authenticator, &len);
     krb5_data_free (&plain);
     return ret;
@@ -135,8 +135,8 @@ check_transited(krb5_context context, Ticket *ticket, EncTicketPart *enc)
     char **realms;
     unsigned int num_realms;
     krb5_error_code ret;
-	    
-    /* 
+	
+    /*
      * Windows 2000 and 2003 uses this inside their TGT so it's normaly
      * not seen by others, however, samba4 joined with a Windows AD as
      * a Domain Controller gets exposed to this.
@@ -150,14 +150,14 @@ check_transited(krb5_context context, Ticket *ticket, EncTicketPart *enc)
     if(enc->transited.contents.length == 0)
 	return 0;
 
-    ret = krb5_domain_x500_decode(context, enc->transited.contents, 
-				  &realms, &num_realms, 
+    ret = krb5_domain_x500_decode(context, enc->transited.contents,
+				  &realms, &num_realms,
 				  enc->crealm,
 				  ticket->realm);
     if(ret)
 	return ret;
-    ret = krb5_check_transited(context, enc->crealm, 
-			       ticket->realm, 
+    ret = krb5_check_transited(context, enc->crealm,
+			       ticket->realm,
 			       realms, num_realms, NULL);
     free(realms);
     return ret;
@@ -228,7 +228,7 @@ krb5_decrypt_ticket(krb5_context context,
     ret = decrypt_tkt_enc_part (context, key, &ticket->enc_part, &t);
     if (ret)
 	return ret;
-    
+
     {
 	krb5_timestamp now;
 	time_t start = t.authtime;
@@ -257,7 +257,7 @@ krb5_decrypt_ticket(krb5_context context,
 	    }
 	}
     }
-    
+
     if(out)
 	*out = t;
     else
@@ -275,7 +275,7 @@ krb5_verify_authenticator_checksum(krb5_context context,
     krb5_keyblock *key;
     krb5_authenticator authenticator;
     krb5_crypto crypto;
-    
+
     ret = krb5_auth_con_getauthenticator (context,
 				      ac,
 				      &authenticator);
@@ -343,7 +343,7 @@ krb5_verify_ap_req2(krb5_context context,
     krb5_auth_context ac;
     krb5_error_code ret;
     EtypeList etypes;
-    
+
     if (ticket)
 	*ticket = NULL;
 
@@ -363,29 +363,29 @@ krb5_verify_ap_req2(krb5_context context,
     }
 
     if (ap_req->ap_options.use_session_key && ac->keyblock){
-	ret = krb5_decrypt_ticket(context, &ap_req->ticket, 
-				  ac->keyblock, 
+	ret = krb5_decrypt_ticket(context, &ap_req->ticket,
+				  ac->keyblock,
 				  &t->ticket,
 				  flags);
 	krb5_free_keyblock(context, ac->keyblock);
 	ac->keyblock = NULL;
     }else
-	ret = krb5_decrypt_ticket(context, &ap_req->ticket, 
-				  keyblock, 
+	ret = krb5_decrypt_ticket(context, &ap_req->ticket,
+				  keyblock,
 				  &t->ticket,
 				  flags);
-    
+
     if(ret)
 	goto out;
 
     ret = _krb5_principalname2krb5_principal(context,
 					     &t->server,
-					     ap_req->ticket.sname, 
+					     ap_req->ticket.sname,
 					     ap_req->ticket.realm);
     if (ret) goto out;
     ret = _krb5_principalname2krb5_principal(context,
 					     &t->client,
-					     t->ticket.cname, 
+					     t->ticket.cname,
 					     t->ticket.crealm);
     if (ret) goto out;
 
@@ -406,7 +406,7 @@ krb5_verify_ap_req2(krb5_context context,
 					   ac->authenticator->cname,
 					   ac->authenticator->crealm);
 	_krb5_principalname2krb5_principal(context,
-					   &p2, 
+					   &p2,
 					   t->ticket.cname,
 					   t->ticket.crealm);
 	res = krb5_principal_compare (context, p1, p2);
@@ -506,7 +506,7 @@ krb5_verify_ap_req2(krb5_context context,
 	krb5_auth_con_free (context, ac);
     return ret;
 }
-		   
+		
 /*
  *
  */
@@ -541,7 +541,7 @@ krb5_rd_req_in_ctx_alloc(krb5_context context, krb5_rd_req_in_ctx *ctx)
 }
 
 krb5_error_code KRB5_LIB_FUNCTION
-krb5_rd_req_in_set_keytab(krb5_context context, 
+krb5_rd_req_in_set_keytab(krb5_context context,
 			  krb5_rd_req_in_ctx in,
 			  krb5_keytab keytab)
 {
@@ -551,7 +551,7 @@ krb5_rd_req_in_set_keytab(krb5_context context,
 
 /**
  * Set if krb5_rq_red() is going to check the Windows PAC or not
- * 
+ *
  * @param context Keberos 5 context.
  * @param in krb5_rd_req_in_ctx to check the option on.
  * @param flag flag to select if to check the pac (TRUE) or not (FALSE).
@@ -562,7 +562,7 @@ krb5_rd_req_in_set_keytab(krb5_context context,
  */
 
 krb5_error_code KRB5_LIB_FUNCTION
-krb5_rd_req_in_set_pac_check(krb5_context context, 
+krb5_rd_req_in_set_pac_check(krb5_context context,
 			     krb5_rd_req_in_ctx in,
 			     krb5_boolean flag)
 {
@@ -572,7 +572,7 @@ krb5_rd_req_in_set_pac_check(krb5_context context,
 
 
 krb5_error_code KRB5_LIB_FUNCTION
-krb5_rd_req_in_set_keyblock(krb5_context context, 
+krb5_rd_req_in_set_keyblock(krb5_context context,
 			    krb5_rd_req_in_ctx in,
 			    krb5_keyblock *keyblock)
 {
@@ -581,7 +581,7 @@ krb5_rd_req_in_set_keyblock(krb5_context context,
 }
 
 krb5_error_code KRB5_LIB_FUNCTION
-krb5_rd_req_out_get_ap_req_options(krb5_context context, 
+krb5_rd_req_out_get_ap_req_options(krb5_context context,
 				   krb5_rd_req_out_ctx out,
 				   krb5_flags *ap_req_options)
 {
@@ -590,7 +590,7 @@ krb5_rd_req_out_get_ap_req_options(krb5_context context,
 }
 
 krb5_error_code KRB5_LIB_FUNCTION
-krb5_rd_req_out_get_ticket(krb5_context context, 
+krb5_rd_req_out_get_ticket(krb5_context context,
 			    krb5_rd_req_out_ctx out,
 			    krb5_ticket **ticket)
 {
@@ -598,7 +598,7 @@ krb5_rd_req_out_get_ticket(krb5_context context,
 }
 
 krb5_error_code KRB5_LIB_FUNCTION
-krb5_rd_req_out_get_keyblock(krb5_context context, 
+krb5_rd_req_out_get_keyblock(krb5_context context,
 			    krb5_rd_req_out_ctx out,
 			    krb5_keyblock **keyblock)
 {
@@ -650,7 +650,7 @@ krb5_rd_req(krb5_context context,
     ret = krb5_rd_req_in_ctx_alloc(context, &in);
     if (ret)
 	return ret;
-    
+
     ret = krb5_rd_req_in_set_keytab(context, in, keytab);
     if (ret) {
 	krb5_rd_req_in_ctx_free(context, in);
@@ -695,7 +695,7 @@ krb5_rd_req_with_keyblock(krb5_context context,
     ret = krb5_rd_req_in_ctx_alloc(context, &in);
     if (ret)
 	return ret;
-    
+
     ret = krb5_rd_req_in_set_keyblock(context, in, keyblock);
     if (ret) {
 	krb5_rd_req_in_ctx_free(context, in);
@@ -741,7 +741,7 @@ get_key_from_keytab(krb5_context context,
 	krb5_kt_default(context, &real_keytab);
     else
 	real_keytab = keytab;
-    
+
     if (ap_req->ticket.enc_part.kvno)
 	kvno = *ap_req->ticket.enc_part.kvno;
     else
@@ -757,10 +757,10 @@ get_key_from_keytab(krb5_context context,
 	goto out;
     ret = krb5_copy_keyblock(context, &entry.keyblock, out_key);
     krb5_kt_free_entry (context, &entry);
-out:    
+out:
     if(keytab == NULL)
 	krb5_kt_close(context, real_keytab);
-    
+
     return ret;
 }
 
@@ -807,7 +807,7 @@ krb5_rd_req_ctx(krb5_context context,
     if (ap_req.ap_options.use_session_key &&
 	(*auth_context)->keyblock == NULL) {
 	ret = KRB5KRB_AP_ERR_NOKEY;
-	krb5_set_error_message(context, ret, 
+	krb5_set_error_message(context, ret,
 			       N_("krb5_rd_req: user to user auth "
 				  "without session key given", ""));
 	goto out;
@@ -831,8 +831,8 @@ krb5_rd_req_ctx(krb5_context context,
 	if (inctx && inctx->keytab)
 	    keytab = inctx->keytab;
 
-	ret = get_key_from_keytab(context, 
-				  auth_context, 
+	ret = get_key_from_keytab(context,
+				  auth_context,
 				  &ap_req,
 				  server,
 				  keytab,
@@ -870,10 +870,10 @@ krb5_rd_req_ctx(krb5_context context,
 		goto out;
 	
 	    ret = krb5_pac_verify(context,
-				  pac, 
+				  pac,
 				  o->ticket->ticket.authtime,
-				  o->ticket->client, 
-				  o->keyblock, 
+				  o->ticket->client,
+				  o->keyblock,
 				  NULL);
 	    krb5_pac_free(context, pac);
 	    if (ret)
@@ -884,7 +884,7 @@ krb5_rd_req_ctx(krb5_context context,
 out:
     if (ret || outctx == NULL) {
 	krb5_rd_req_out_ctx_free(context, o);
-    } else 
+    } else
 	*outctx = o;
 
     free_AP_REQ(&ap_req);

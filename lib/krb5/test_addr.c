@@ -1,18 +1,18 @@
 /*
  * Copyright (c) 2005 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
  * 3. Neither the name of KTH nor the names of its contributors may be
  *    used to endorse or promote products derived from this software without
@@ -51,17 +51,17 @@ print_addr(krb5_context context, const char *addr)
 
     if (addresses.len < 1)
 	krb5_err(context, 1, ret, "too few addresses");
-    
+
     for (i = 0; i < addresses.len; i++) {
 	krb5_print_address(&addresses.val[i], buf, sizeof(buf), &len);
 #if 0
-	printf("addr %d: %s (%d/%d)\n", i, buf, (int)len, (int)strlen(buf)); 
+	printf("addr %d: %s (%d/%d)\n", i, buf, (int)len, (int)strlen(buf));
 #endif
 	if (strlen(buf) > sizeof(buf))
 	    abort();
 	krb5_print_address(&addresses.val[i], buf2, sizeof(buf2), &len);
 #if 0
-	printf("addr %d: %s (%d/%d)\n", i, buf2, (int)len, (int)strlen(buf2)); 
+	printf("addr %d: %s (%d/%d)\n", i, buf2, (int)len, (int)strlen(buf2));
 #endif
 	if (strlen(buf2) > sizeof(buf2))
 	    abort();
@@ -72,7 +72,7 @@ print_addr(krb5_context context, const char *addr)
 }
 
 static void
-truncated_addr(krb5_context context, const char *addr, 
+truncated_addr(krb5_context context, const char *addr,
 	       size_t truncate_len, size_t outlen)
 {
     krb5_addresses addresses;
@@ -88,22 +88,22 @@ truncated_addr(krb5_context context, const char *addr,
 
     if (addresses.len != 1)
 	krb5_err(context, 1, ret, "addresses should be one");
-    
+
     krb5_print_address(&addresses.val[0], buf, truncate_len, &len);
-    
+
 #if 0
-    printf("addr %s (%d/%d)\n", buf, (int)len, (int)strlen(buf)); 
+    printf("addr %s (%d/%d)\n", buf, (int)len, (int)strlen(buf));
 #endif
-    
+
     if (truncate_len > strlen(buf) + 1)
 	abort();
     if (outlen != len)
 	abort();
-    
+
     krb5_print_address(&addresses.val[0], buf, outlen + 1, &len);
 
 #if 0
-    printf("addr %s (%d/%d)\n", buf, (int)len, (int)strlen(buf)); 
+    printf("addr %s (%d/%d)\n", buf, (int)len, (int)strlen(buf));
 #endif
 
     if (len != outlen)
@@ -125,7 +125,7 @@ check_truncation(krb5_context context, const char *addr)
 }
 
 static void
-match_addr(krb5_context context, const char *range_addr, 
+match_addr(krb5_context context, const char *range_addr,
 	   const char *one_addr, int match)
 {
     krb5_addresses range, one;
@@ -137,7 +137,7 @@ match_addr(krb5_context context, const char *range_addr,
 
     if (range.len != 1)
 	krb5_err(context, 1, ret, "wrong num of addresses");
-    
+
     ret = krb5_parse_address(context, one_addr, &one);
     if (ret)
 	krb5_err(context, 1, ret, "krb5_parse_address");

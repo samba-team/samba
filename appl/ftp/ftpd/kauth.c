@@ -2,22 +2,22 @@
  * Copyright (c) 1995 - 1999, 2003 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the Institute nor the names of its contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -54,7 +54,7 @@ static int
 save_tkt(const char *user,
 	 const char *instance,
 	 const char *realm,
-	 const void *arg, 
+	 const void *arg,
 	 key_proc_t key_proc,
 	 KTEXT *cipp)
 {
@@ -74,7 +74,7 @@ store_ticket(KTEXT cip)
     int left = cip->length;
     int len;
     int kerror;
-    
+
     ptr = (char *) cip->dat;
 
     /* extract session key */
@@ -85,7 +85,7 @@ store_ticket(KTEXT cip)
     len = strnlen(ptr, left);
     if (len == left)
 	return(INTK_BADPW);
-    
+
     /* extract server's name */
     strlcpy(sp.name, ptr, sizeof(sp.name));
     ptr += len + 1;
@@ -94,7 +94,7 @@ store_ticket(KTEXT cip)
     len = strnlen(ptr, left);
     if (len == left)
 	return(INTK_BADPW);
-    
+
     /* extract server's instance */
     strlcpy(sp.instance, ptr, sizeof(sp.instance));
     ptr += len + 1;
@@ -103,7 +103,7 @@ store_ticket(KTEXT cip)
     len = strnlen(ptr, left);
     if (len == left)
 	return(INTK_BADPW);
-    
+
     /* extract server's realm */
     strlcpy(sp.realm, ptr, sizeof(sp.realm));
     ptr += len + 1;
@@ -118,7 +118,7 @@ store_ticket(KTEXT cip)
     tkt.length = (unsigned char) ptr[2];
     ptr += 3;
     left -= 3;
-    
+
     if (tkt.length > left)
 	return(INTK_BADPW);
 
@@ -135,7 +135,7 @@ store_ticket(KTEXT cip)
      * happen is that we might receive a replayed ticket, which could
      * at most be useless.
      */
-    
+
 #if 0
     /* check KDC time stamp */
     {
@@ -145,7 +145,7 @@ store_ticket(KTEXT cip)
 	if (swap_bytes) swap_u_long(kdc_time);
 
 	ptr += 4;
-    
+
 	if (abs((int)(local_time - kdc_time)) > CLOCK_SKEW) {
 	    return(RD_AP_TIME);		/* XXX should probably be better
 					   code */
@@ -164,8 +164,8 @@ store_ticket(KTEXT cip)
 	return(INTK_ERR);
     }
 
-    
-    kerror = tf_save_cred(sp.name, sp.instance, sp.realm, session, 
+
+    kerror = tf_save_cred(sp.name, sp.instance, sp.realm, session,
 			  lifetime, kvno, &tkt, local_time);
     tf_close();
 
@@ -177,7 +177,7 @@ kauth(char *principal, char *ticket)
 {
     char *p;
     int ret;
-  
+
     if(get_command_prot() != prot_private) {
 	reply(500, "Request denied (bad protection level)");
 	return;
@@ -209,7 +209,7 @@ kauth(char *principal, char *ticket)
 	reply(200, "Tickets will be destroyed on exit.");
 	return;
     }
-    
+
     ret = krb_get_in_tkt (pr.name,
 			  pr.instance,
 			  pr.realm,
@@ -261,7 +261,7 @@ dest_cc(void)
     krb5_context context;
     krb5_error_code ret;
     krb5_ccache id;
-    
+
     ret = krb5_init_context(&context);
     if (ret == 0) {
 	if (k5ccname)

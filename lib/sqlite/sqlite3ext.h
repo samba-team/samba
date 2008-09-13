@@ -12,7 +12,7 @@
 ** This header file defines the SQLite interface for use by
 ** shared libraries that want to be imported as extensions into
 ** an SQLite instance.  Shared libraries that intend to be loaded
-** as extensions by SQLite should #include this file instead of 
+** as extensions by SQLite should #include this file instead of
 ** sqlite3.h.
 **
 ** @(#) $Id: sqlite3ext.h,v 1.18 2008/03/02 03:32:05 mlcreech Exp $

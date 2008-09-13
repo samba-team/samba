@@ -1,35 +1,35 @@
 %{
 /*
  * Copyright (c) 2004-2006 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * 3. Neither the name of the Institute nor the names of its contributors 
- *    may be used to endorse or promote products derived from this software 
- *    without specific prior written permission. 
+ * 3. Neither the name of the Institute nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
- * SUCH DAMAGE. 
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 #ifdef HAVE_CONFIG_H
@@ -356,7 +356,7 @@ make_name(struct assignment *as)
 	lopt = find(as, "name");
     if(lopt == NULL)
 	return NULL;
-    
+
     type = find(as, "type");
     if(strcmp(type->u.value, "-flag") == 0)
 	asprintf(&s, "%s_flag", lopt->u.value);
@@ -381,7 +381,7 @@ static void defval_neg_flag(const char *name, struct assignment *defval)
     else
 	cprint(1, "opt.%s = 1;\n", name);
 }
-static void defval_string(const char *name, struct assignment *defval) 
+static void defval_string(const char *name, struct assignment *defval)
 {
     if(defval != NULL)
 	cprint(1, "opt.%s = \"%s\";\n", name, defval->u.value);
@@ -456,8 +456,8 @@ gen_options(struct assignment *opt1, const char *name)
 
     hprint(0, "struct %s_options {\n", name);
 
-    for(tmp = opt1; 
-	tmp != NULL; 
+    for(tmp = opt1;
+	tmp != NULL;
 	tmp = find_next(tmp, "option")) {
 	struct assignment *type;
 	struct type_handler *th;
@@ -493,8 +493,8 @@ gen_wrapper(struct assignment *as)
 	f = function->u.value;
     else
 	f = n;
-    
-       
+
+
     if(opt1 != NULL) {
 	gen_options(opt1, n);
 	hprint(0, "int %s(struct %s_options*, int, char **);\n", f, n);
@@ -510,8 +510,8 @@ gen_wrapper(struct assignment *as)
     cprint(1, "int ret;\n");
     cprint(1, "int optidx = 0;\n");
     cprint(1, "struct getargs args[] = {\n");
-    for(tmp = find(as, "option"); 
-	tmp != NULL; 
+    for(tmp = find(as, "option");
+	tmp != NULL;
 	tmp = find_next(tmp, "option")) {
 	struct assignment *type = find(tmp->u.assignment, "type");
 	struct assignment *lopt = find(tmp->u.assignment, "long");
@@ -547,8 +547,8 @@ gen_wrapper(struct assignment *as)
     cprint(1, "};\n");
     cprint(1, "int help_flag = 0;\n");
 
-    for(tmp = find(as, "option"); 
-	tmp != NULL; 
+    for(tmp = find(as, "option");
+	tmp != NULL;
 	tmp = find_next(tmp, "option")) {
 	char *s;
 	struct assignment *type = find(tmp->u.assignment, "type");
@@ -563,8 +563,8 @@ gen_wrapper(struct assignment *as)
 	free(s);
     }
 
-    for(tmp = find(as, "option"); 
-	tmp != NULL; 
+    for(tmp = find(as, "option");
+	tmp != NULL;
 	tmp = find_next(tmp, "option")) {
 	char *s;
 	s = make_name(tmp->u.assignment);
@@ -607,7 +607,7 @@ gen_wrapper(struct assignment *as)
 	}
 	if(min_args != -1 || max_args != -1) {
 	    if(min_args == max_args) {
-		cprint(1, "if(argc - optidx != %d) {\n", 
+		cprint(1, "if(argc - optidx != %d) {\n",
 		       min_args);
 		cprint(2, "fprintf(stderr, \"Need exactly %u parameters (%%u given).\\n\\n\", argc - optidx);\n", min_args);
 		cprint(2, "goto usage;\n");
@@ -628,16 +628,16 @@ gen_wrapper(struct assignment *as)
 	    }
 	}
     }
-    
+
     cprint(1, "if(help_flag)\n");
     cprint(2, "goto usage;\n");
 
-    cprint(1, "ret = %s(%s, argc - optidx, argv + optidx);\n", 
+    cprint(1, "ret = %s(%s, argc - optidx, argv + optidx);\n",
 	   f, opt1 ? "&opt": "NULL");
-    
+
     /* free allocated data */
-    for(tmp = find(as, "option"); 
-	tmp != NULL; 
+    for(tmp = find(as, "option");
+	tmp != NULL;
 	tmp = find_next(tmp, "option")) {
 	char *s;
 	struct assignment *type = find(tmp->u.assignment, "type");
@@ -652,11 +652,11 @@ gen_wrapper(struct assignment *as)
     cprint(1, "return ret;\n");
 
     cprint(0, "usage:\n");
-    cprint(1, "arg_printusage (args, %d, \"%s\", \"%s\");\n", nargs, 
+    cprint(1, "arg_printusage (args, %d, \"%s\", \"%s\");\n", nargs,
 	   name->u.value, arg ? arg->u.value : "");
     /* free allocated data */
-    for(tmp = find(as, "option"); 
-	tmp != NULL; 
+    for(tmp = find(as, "option");
+	tmp != NULL;
 	tmp = find_next(tmp, "option")) {
 	char *s;
 	struct assignment *type = find(tmp->u.assignment, "type");
@@ -733,7 +733,7 @@ main(int argc, char **argv)
 	print_version(NULL);
 	exit(0);
     }
-    
+
     if(argc == optidx)
 	usage(1);
 

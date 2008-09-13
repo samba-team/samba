@@ -2,22 +2,22 @@
  * Copyright (c) 1995-2003 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the Institute nor the names of its contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -41,7 +41,7 @@ struct krb5_kafs_data {
     krb5_const_realm realm;
 };
 
-enum { 
+enum {
     KAFS_RXKAD_2B_KVNO = 213,
     KAFS_RXKAD_K5_KVNO = 256
 };
@@ -113,7 +113,7 @@ v5_to_kt(krb5_creds *cred, uid_t uid, struct kafs_token *kt, int local524)
 
 static krb5_error_code
 v5_convert(krb5_context context, krb5_ccache id,
-	   krb5_creds *cred, uid_t uid, 
+	   krb5_creds *cred, uid_t uid,
 	   const char *cell,
 	   struct kafs_token *kt)
 {
@@ -129,7 +129,7 @@ v5_convert(krb5_context context, krb5_ccache id,
 			    "afs-use-524", "2b", &val);
     free(c);
 
-    if (strcasecmp(val, "local") == 0 || 
+    if (strcasecmp(val, "local") == 0 ||
 	strcasecmp(val, "2b") == 0)
 	ret = v5_to_kt(cred, uid, kt, 1);
     else if(strcasecmp(val, "yes") == 0 ||
@@ -145,7 +145,7 @@ v5_convert(krb5_context context, krb5_ccache id,
 	    goto out;
 
 	ret = _kafs_v4_to_kt(&cred4, uid, kt);
-    } else 
+    } else
 	ret = v5_to_kt(cred, uid, kt, 0);
 
  out:
@@ -159,7 +159,7 @@ v5_convert(krb5_context context, krb5_ccache id,
  */
 
 static int
-get_cred(struct kafs_data *data, const char *name, const char *inst, 
+get_cred(struct kafs_data *data, const char *name, const char *inst,
 	 const char *realm, uid_t uid, struct kafs_token *kt)
 {
     krb5_error_code ret;
@@ -167,7 +167,7 @@ get_cred(struct kafs_data *data, const char *name, const char *inst,
     struct krb5_kafs_data *d = data->data;
 
     memset(&in_creds, 0, sizeof(in_creds));
-    ret = krb5_425_conv_principal(d->context, name, inst, realm, 
+    ret = krb5_425_conv_principal(d->context, name, inst, realm,
 				  &in_creds.server);
     if(ret)
 	return ret;
@@ -183,7 +183,7 @@ get_cred(struct kafs_data *data, const char *name, const char *inst,
     if(ret)
 	return ret;
 
-    ret = v5_convert(d->context, d->id, out_creds, uid, 
+    ret = v5_convert(d->context, d->id, out_creds, uid,
 		     (inst != NULL && inst[0] != '\0') ? inst : realm, kt);
     krb5_free_creds(d->context, out_creds);
 
@@ -199,7 +199,7 @@ afslog_uid_int(struct kafs_data *data, const char *cell, const char *rh,
     krb5_principal princ;
     const char *trealm; /* ticket realm */
     struct krb5_kafs_data *d = data->data;
-    
+
     if (cell == 0 || cell[0] == 0)
 	return _kafs_afslog_all_local_cells (data, uid, homedir);
 
@@ -212,7 +212,7 @@ afslog_uid_int(struct kafs_data *data, const char *cell, const char *rh,
     kt.ticket = NULL;
     ret = _kafs_get_cred(data, cell, d->realm, trealm, uid, &kt);
     krb5_free_principal (d->context, princ);
-    
+
     if(ret == 0) {
 	ret = kafs_settoken_rxkad(cell, &kt.ct, kt.ticket, kt.ticket_len);
 	free(kt.ticket);
@@ -284,7 +284,7 @@ krb5_afslog_uid(krb5_context context,
 
 krb5_error_code
 krb5_afslog(krb5_context context,
-	    krb5_ccache id, 
+	    krb5_ccache id,
 	    const char *cell,
 	    krb5_const_realm realm)
 {
@@ -293,7 +293,7 @@ krb5_afslog(krb5_context context,
 
 krb5_error_code
 krb5_afslog_home(krb5_context context,
-		 krb5_ccache id, 
+		 krb5_ccache id,
 		 const char *cell,
 		 krb5_const_realm realm,
 		 const char *homedir)

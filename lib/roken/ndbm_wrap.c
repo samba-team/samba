@@ -2,22 +2,22 @@
  * Copyright (c) 2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the Institute nor the names of its contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -92,9 +92,9 @@ dbm_fetch (DBM *db, datum dkey)
     datum dvalue;
     DBT key, value;
     DATUM2DBT(&dkey, &key);
-    if(D(db)->get(D(db), 
+    if(D(db)->get(D(db),
 #ifdef HAVE_DB3
-	       NULL, 
+	       NULL,
 #endif
 	       &key, &value, 0) != 0) {
 	dvalue.dptr = NULL;
@@ -112,12 +112,12 @@ dbm_get (DB *db, int flags)
     DBT key, value;
     datum datum;
 #ifdef HAVE_DB3
-    if(cursor == NULL) 
+    if(cursor == NULL)
 	db->cursor(db, NULL, &cursor, 0);
     if(cursor->c_get(cursor, &key, &value, flags) != 0) {
 	datum.dptr = NULL;
 	datum.dsize = 0;
-    } else 
+    } else
 	DBT2DATUM(&value, &datum);
 #else
     db->seq(db, &key, &value, flags);
@@ -196,10 +196,10 @@ dbm_store (DBM *db, datum dkey, datum dvalue, int flags)
     if((flags & DBM_REPLACE) == 0)
 	myflags |= DB_NOOVERWRITE;
     DATUM2DBT(&dkey, &key);
-    DATUM2DBT(&dvalue, &value);    
-    ret = D(db)->put(D(db), 
+    DATUM2DBT(&dvalue, &value);
+    ret = D(db)->put(D(db),
 #ifdef HAVE_DB3
-		     NULL, 
+		     NULL,
 #endif
 &key, &value, myflags);
     if(ret == DB_KEYEXIST)

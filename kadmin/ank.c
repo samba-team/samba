@@ -1,34 +1,34 @@
 /*
  * Copyright (c) 1997-2006 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * 3. Neither the name of the Institute nor the names of its contributors 
- *    may be used to endorse or promote products derived from this software 
- *    without specific prior written permission. 
+ * 3. Neither the name of the Institute nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
- * SUCH DAMAGE. 
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 #include "kadmin_locl.h"
@@ -68,7 +68,7 @@ static krb5_error_code
 add_one_principal (const char *name,
 		   int rand_key,
 		   int rand_password,
-		   int use_defaults, 
+		   int use_defaults,
 		   char *password,
 		   krb5_key_data *key_data,
 		   const char *max_ticket_life,
@@ -95,7 +95,7 @@ add_one_principal (const char *name,
     mask |= KADM5_PRINCIPAL;
 
     ret = set_entry(context, &princ, &mask,
-		    max_ticket_life, max_renewable_life, 
+		    max_ticket_life, max_renewable_life,
 		    expiration, pw_expiration, attributes);
     if (ret)
 	goto out;
@@ -110,7 +110,7 @@ add_one_principal (const char *name,
 	    KADM5_PRINC_EXPIRE_TIME | KADM5_PW_EXPIRATION;
     }
 
-    if(use_defaults) 
+    if(use_defaults)
 	set_defaults(&princ, &mask, default_ent, default_mask);
     else
 	if(edit_entry(&princ, &mask, default_ent, default_mask))
@@ -139,7 +139,7 @@ add_one_principal (const char *name,
 	}
 	password = pwbuf;
     }
-    
+
     ret = kadm5_create_principal(kadm_handle, &princ, mask, password);
     if(ret) {
 	krb5_warn(context, ret, "kadm5_create_principal");
@@ -148,7 +148,7 @@ add_one_principal (const char *name,
     if(rand_key) {
 	krb5_keyblock *new_keys;
 	int n_keys, i;
-	ret = kadm5_randkey_principal(kadm_handle, princ_ent, 
+	ret = kadm5_randkey_principal(kadm_handle, princ_ent,
 				      &new_keys, &n_keys);
 	if(ret){
 	    krb5_warn(context, ret, "kadm5_randkey_principal");
@@ -158,11 +158,11 @@ add_one_principal (const char *name,
 	    krb5_free_keyblock_contents(context, &new_keys[i]);
 	if (n_keys > 0)
 	    free(new_keys);
-	kadm5_get_principal(kadm_handle, princ_ent, &princ, 
+	kadm5_get_principal(kadm_handle, princ_ent, &princ,
 			    KADM5_PRINCIPAL | KADM5_KVNO | KADM5_ATTRIBUTES);
 	princ.attributes &= (~KRB5_KDB_DISALLOW_ALL_TIX);
 	princ.kvno = 1;
-	kadm5_modify_principal(kadm_handle, &princ, 
+	kadm5_modify_principal(kadm_handle, &princ,
 			       KADM5_ATTRIBUTES | KADM5_KVNO);
 	kadm5_free_principal_ent(kadm_handle, &princ);
     } else if (key_data) {
@@ -171,7 +171,7 @@ add_one_principal (const char *name,
 	if (ret) {
 	    krb5_warn(context, ret, "kadm5_chpass_principal_with_key");
 	}
-	kadm5_get_principal(kadm_handle, princ_ent, &princ, 
+	kadm5_get_principal(kadm_handle, princ_ent, &princ,
 			    KADM5_PRINCIPAL | KADM5_ATTRIBUTES);
 	princ.attributes &= (~KRB5_KDB_DISALLOW_ALL_TIX);
 	kadm5_modify_principal(kadm_handle, &princ, KADM5_ATTRIBUTES);
@@ -234,7 +234,7 @@ add_new_key(struct add_options *opt, int argc, char **argv)
 	const char *error;
 
 	if (parse_des_key (opt->key_string, key_data, &error)) {
-	    fprintf (stderr, "failed parsing key \"%s\": %s\n", 
+	    fprintf (stderr, "failed parsing key \"%s\": %s\n",
 		     opt->key_string, error);
 	    return 1;
 	}
@@ -242,10 +242,10 @@ add_new_key(struct add_options *opt, int argc, char **argv)
     }
 
     for(i = 0; i < argc; i++) {
-	ret = add_one_principal (argv[i], 
-				 opt->random_key_flag, 
+	ret = add_one_principal (argv[i],
+				 opt->random_key_flag,
 				 opt->random_password_flag,
-				 opt->use_defaults_flag, 
+				 opt->use_defaults_flag,
 				 opt->password_string,
 				 kdp,
 				 opt->max_ticket_life_string,

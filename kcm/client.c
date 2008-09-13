@@ -160,7 +160,7 @@ kcm_ccache_new_client(krb5_context context,
 	return ret;
     }
 
-    /* 
+    /*
      * Finally, if the user is root and the cache was created under
      * another user's name, chown the cache to that user and their
      * default gid.
@@ -178,7 +178,7 @@ kcm_ccache_new_client(krb5_context context,
 	    }
 	}
     }
-    
+
     *ccache_p = ccache;
     return 0;
 }

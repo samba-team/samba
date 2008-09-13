@@ -1,7 +1,7 @@
-/*  Copyright 1992 Simmule Turner and Rich Salz.  All rights reserved. 
+/*  Copyright 1992 Simmule Turner and Rich Salz.  All rights reserved.
  *
- *  This software is not subject to any license of the American Telephone 
- *  and Telegraph Company or of the Regents of the University of California. 
+ *  This software is not subject to any license of the American Telephone
+ *  and Telegraph Company or of the Regents of the University of California.
  *
  *  Permission is granted to anyone to use this software for any purpose on
  *  any computer system, and to alter it and redistribute it freely, subject
@@ -33,7 +33,7 @@ compare(const void *p1, const void *p2)
 {
     char	* const *v1;
     char	* const *v2;
-    
+
     v1 = (char * const *)p1;
     v2 = (char * const *)p2;
     return strcmp(*v1, *v2);
@@ -140,7 +140,7 @@ rl_complete_filename(char *pathname, int *unique)
     size_t	j;
     size_t	len;
     char *s;
-    
+
     ac = rl_list_possib(pathname, &av);
     if(ac == 0)
 	return NULL;

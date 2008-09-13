@@ -1,34 +1,34 @@
 /*
  * Copyright (c) 1997-2004 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * 3. Neither the name of the Institute nor the names of its contributors 
- *    may be used to endorse or promote products derived from this software 
- *    without specific prior written permission. 
+ * 3. Neither the name of the Institute nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
- * SUCH DAMAGE. 
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 #include "kadmin_locl.h"
@@ -78,11 +78,11 @@ create_random_entry(krb5_principal princ,
     /* Create the entry with a random password */
     ret = kadm5_create_principal(kadm_handle, &ent, mask, password);
     if(ret) {
-	krb5_warn(context, ret, "create_random_entry(%s): randkey failed", 
+	krb5_warn(context, ret, "create_random_entry(%s): randkey failed",
 		  name);
 	goto out;
     }
-    
+
     /* Replace the string2key based keys with real random bytes */
     ret = kadm5_randkey_principal(kadm_handle, princ, &keys, &n_keys);
     if(ret) {
@@ -93,7 +93,7 @@ create_random_entry(krb5_principal princ,
     for(i = 0; i < n_keys; i++)
 	krb5_free_keyblock_contents(context, &keys[i]);
     free(keys);
-    ret = kadm5_get_principal(kadm_handle, princ, &ent, 
+    ret = kadm5_get_principal(kadm_handle, princ, &ent,
 			      KADM5_PRINCIPAL | KADM5_ATTRIBUTES);
     if(ret) {
 	krb5_warn(context, ret, "create_random_entry(%s): "
@@ -102,7 +102,7 @@ create_random_entry(krb5_principal princ,
     }
     ent.attributes &= (~KRB5_KDB_DISALLOW_ALL_TIX);
     ent.kvno = 1;
-    ret = kadm5_modify_principal(kadm_handle, &ent, 
+    ret = kadm5_modify_principal(kadm_handle, &ent,
 				 KADM5_ATTRIBUTES|KADM5_KVNO);
     kadm5_free_principal_ent (kadm_handle, &ent);
     if(ret) {
@@ -132,14 +132,14 @@ init(struct init_options *opt, int argc, char **argv)
 
     if (opt->realm_max_ticket_life_string) {
 	if (str2deltat (opt->realm_max_ticket_life_string, &max_life) != 0) {
-	    krb5_warnx (context, "unable to parse \"%s\"", 
+	    krb5_warnx (context, "unable to parse \"%s\"",
 			opt->realm_max_ticket_life_string);
 	    return 0;
 	}
     }
     if (opt->realm_max_renewable_life_string) {
 	if (str2deltat (opt->realm_max_renewable_life_string, &max_rlife) != 0) {
-	    krb5_warnx (context, "unable to parse \"%s\"", 
+	    krb5_warnx (context, "unable to parse \"%s\"",
 			opt->realm_max_renewable_life_string);
 	    return 0;
 	}
@@ -181,7 +181,7 @@ init(struct init_options *opt, int argc, char **argv)
 	krb5_free_principal(context, princ);
 
 	/* Create `kadmin/changepw' */
-	krb5_make_principal(context, &princ, realm, 
+	krb5_make_principal(context, &princ, realm,
 			    "kadmin", "changepw", NULL);
 	/*
 	 * The Windows XP (at least) password changing protocol
@@ -189,7 +189,7 @@ init(struct init_options *opt, int argc, char **argv)
 	 * renewable, forwardable' and so fails if we disallow
 	 * forwardable here.
 	 */
-	create_random_entry(princ, 5*60, 5*60, 
+	create_random_entry(princ, 5*60, 5*60,
 			    KRB5_KDB_DISALLOW_TGT_BASED|
 			    KRB5_KDB_PWCHANGE_SERVICE|
 			    KRB5_KDB_DISALLOW_POSTDATED|
@@ -199,7 +199,7 @@ init(struct init_options *opt, int argc, char **argv)
 	krb5_free_principal(context, princ);
 
 	/* Create `kadmin/admin' */
-	krb5_make_principal(context, &princ, realm, 
+	krb5_make_principal(context, &princ, realm,
 			    "kadmin", "admin", NULL);
 	create_random_entry(princ, 60*60, 60*60, KRB5_KDB_REQUIRES_PRE_AUTH);
 	krb5_free_principal(context, princ);

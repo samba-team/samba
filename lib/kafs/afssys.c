@@ -2,22 +2,22 @@
  * Copyright (c) 1995 - 2000, 2002, 2004, 2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the Institute nor the names of its contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -117,7 +117,7 @@ try_aix(void)
 	return 1;
     }
     Setpag = (int (*)(void))dlsym(ptr, "aix_setpag");
-    Pioctl = (int (*)(char*, int, 
+    Pioctl = (int (*)(char*, int,
 		      struct ViceIoctl*, int))dlsym(ptr, "aix_pioctl");
 #endif
     afs_entry_point = AIX_ENTRY_POINTS;
@@ -125,9 +125,9 @@ try_aix(void)
 }
 #endif /* _AIX */
 
-/* 
+/*
  * This probably only works under Solaris and could get confused if
- * there's a /etc/name_to_sysnum file.  
+ * there's a /etc/name_to_sysnum file.
  */
 
 #if defined(AFS_SYSCALL) || defined(AFS_SYSCALL2) || defined(AFS_SYSCALL3)
@@ -165,7 +165,7 @@ map_syscall_name_to_number (const char *str, int *res)
 }
 #endif
 
-static int 
+static int
 try_ioctlpath(const char *path, unsigned long ioctlnum, int entrypoint)
 {
     int fd, ret, saved_errno;
@@ -191,13 +191,13 @@ try_ioctlpath(const char *path, unsigned long ioctlnum, int entrypoint)
     }
     saved_errno = errno;
     close(fd);
-    /* 
+    /*
      * Be quite liberal in what error are ok, the first is the one
      * that should trigger given that params is NULL.
      */
-    if (ret && 
+    if (ret &&
 	(saved_errno != EFAULT &&
-	 saved_errno != EDOM && 
+	 saved_errno != EDOM &&
 	 saved_errno != ENOTCONN))
 	return 1;
     afs_ioctlnum = ioctlnum;
@@ -271,7 +271,7 @@ k_pioctl(char *a_path,
     case AIX_ENTRY_POINTS:
 	return Pioctl(a_path, o_opcode, a_paramsP, a_followSymlinks);
 #endif
-    }    
+    }
     errno = ENOSYS;
 #ifdef SIGSYS
     kill(getpid(), SIGSYS);	/* You lose! */
@@ -330,7 +330,7 @@ k_setpag(void)
 	return Setpag();
 #endif
     }
-    
+
     errno = ENOSYS;
 #ifdef SIGSYS
     kill(getpid(), SIGSYS);	/* You lose! */
@@ -415,7 +415,7 @@ k_hasafs(void)
 
     if (!issuid())
 	env = getenv ("AFS_SYSCALL");
-  
+
     /*
      * Already checked presence of AFS syscalls?
      */
@@ -428,7 +428,7 @@ k_hasafs(void)
      * If the syscall is absent we recive a SIGSYS.
      */
     afs_entry_point = NO_ENTRY_POINT;
-  
+
     saved_errno = errno;
 #ifndef NO_AFS
 #ifdef SIGSYS
@@ -456,13 +456,13 @@ k_hasafs(void)
 			VIOC_SYSCALL_PROC, LINUX_PROC_POINT);
     if (ret == 0)
 	goto done;
-    ret = try_ioctlpath("/proc/fs/nnpfs/afs_ioctl", 
+    ret = try_ioctlpath("/proc/fs/nnpfs/afs_ioctl",
 			VIOC_SYSCALL_PROC, LINUX_PROC_POINT);
     if (ret == 0)
 	goto done;
 
 #ifdef VIOC_SYSCALL_DEV_OPENAFS
-    ret = try_ioctlpath("/dev/openafs_ioctl", 
+    ret = try_ioctlpath("/dev/openafs_ioctl",
 			VIOC_SYSCALL_DEV_OPENAFS, MACOS_DEV_POINT);
     if (ret == 0)
 	goto done;

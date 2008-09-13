@@ -29,7 +29,7 @@ ring(int sig)
 {
   longjmp(env,1);
 }
-  
+
 /*
  * fgets, but with a timeout
  */
@@ -37,7 +37,7 @@ static char *
 tgets(char *str, int size, FILE *fp, int timeout)
 {
     char *ret;
-    
+
     signal(SIGALRM, ring);
     alarm(timeout);
     if (setjmp(env)) {
@@ -51,7 +51,7 @@ tgets(char *str, int size, FILE *fp, int timeout)
     return ret;
 }
 
-/* 
+/*
  *  popper: Handle a Post Office Protocol version 3 session
  */
 int
@@ -70,10 +70,10 @@ main (int argc, char **argv)
     /*  Tell the user that we are listenting */
     pop_msg(&p,POP_SUCCESS, "POP3 server ready");
 
-    /*  State loop.  The POP server is always in a particular state in 
-        which a specific suite of commands can be executed.  The following 
-        loop reads a line from the client, gets the command, and processes 
-        it in the current context (if allowed) or rejects it.  This continues 
+    /*  State loop.  The POP server is always in a particular state in
+        which a specific suite of commands can be executed.  The following
+        loop reads a line from the client, gets the command, and processes
+        it in the current context (if allowed) or rejects it.  This continues
         until the client quits or an error occurs. */
 
     for (p.CurrentState=auth1;p.CurrentState!=halt&&p.CurrentState!=error;) {
@@ -94,7 +94,7 @@ main (int argc, char **argv)
             /*  Search for the command in the command/state table */
             if ((s = pop_get_command(&p,message)) == NULL) continue;
 
-            /*  Call the function associated with this command in 
+            /*  Call the function associated with this command in
                 the current state */
             if (s->function) p.CurrentState = s->result[(*s->function)(&p)];
 
@@ -103,7 +103,7 @@ main (int argc, char **argv)
                 p.CurrentState = s->success_state;
                 pop_msg(&p,POP_SUCCESS,"time passes");
             }
-        }       
+        }
     }
 
     /*  Say goodbye to the client */

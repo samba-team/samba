@@ -7,7 +7,7 @@
 #include <popper.h>
 RCSID("$Id$");
 
-/* 
+/*
  *  stat:   Display the status of a POP maildrop to its client
  */
 

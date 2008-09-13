@@ -1,34 +1,34 @@
 /*
  * Copyright (c) 1997 - 2005 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * 3. Neither the name of the Institute nor the names of its contributors 
- *    may be used to endorse or promote products derived from this software 
- *    without specific prior written permission. 
+ * 3. Neither the name of the Institute nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
- * SUCH DAMAGE. 
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 #include "krb5_locl.h"
@@ -45,7 +45,7 @@ krb5_error_code KRB5_LIB_FUNCTION __attribute__((deprecated))
 krb5_free_creds_contents (krb5_context context, krb5_creds *c)
 {
     return krb5_free_cred_contents (context, c);
-}    
+}
 
 #endif /* HEIMDAL_SMALLER */
 
@@ -214,25 +214,25 @@ krb5_compare_creds(krb5_context context, krb5_flags whichfields,
 		   const krb5_creds * mcreds, const krb5_creds * creds)
 {
     krb5_boolean match = TRUE;
-    
+
     if (match && mcreds->server) {
-	if (whichfields & (KRB5_TC_DONT_MATCH_REALM | KRB5_TC_MATCH_SRV_NAMEONLY)) 
-	    match = krb5_principal_compare_any_realm (context, mcreds->server, 
+	if (whichfields & (KRB5_TC_DONT_MATCH_REALM | KRB5_TC_MATCH_SRV_NAMEONLY))
+	    match = krb5_principal_compare_any_realm (context, mcreds->server,
 						      creds->server);
 	else
-	    match = krb5_principal_compare (context, mcreds->server, 
+	    match = krb5_principal_compare (context, mcreds->server,
 					    creds->server);
     }
 
     if (match && mcreds->client) {
 	if(whichfields & KRB5_TC_DONT_MATCH_REALM)
-	    match = krb5_principal_compare_any_realm (context, mcreds->client, 
+	    match = krb5_principal_compare_any_realm (context, mcreds->client,
 						      creds->client);
 	else
-	    match = krb5_principal_compare (context, mcreds->client, 
+	    match = krb5_principal_compare (context, mcreds->client,
 					    creds->client);
     }
-	    
+	
     if (match && (whichfields & KRB5_TC_MATCH_KEYTYPE))
 	match = krb5_enctypes_compatible_keys(context,
 					      mcreds->session.keytype,
@@ -246,7 +246,7 @@ krb5_compare_creds(krb5_context context, krb5_flags whichfields,
 
     if (match && (whichfields & KRB5_TC_MATCH_TIMES_EXACT))
 	match = krb5_times_equal(&mcreds->times, &creds->times);
-    
+
     if (match && (whichfields & KRB5_TC_MATCH_TIMES))
 	/* compare only expiration times */
 	match = (mcreds->times.renew_till <= creds->times.renew_till) &&
@@ -258,7 +258,7 @@ krb5_compare_creds(krb5_context context, krb5_flags whichfields,
 	    match = FALSE;
 	else
 	    for(i = 0; match && i < mcreds->authdata.len; i++)
-		match = (mcreds->authdata.val[i].ad_type == 
+		match = (mcreds->authdata.val[i].ad_type ==
 			 creds->authdata.val[i].ad_type) &&
 		    (krb5_data_cmp(&mcreds->authdata.val[i].ad_data,
 				   &creds->authdata.val[i].ad_data) == 0);
@@ -267,7 +267,7 @@ krb5_compare_creds(krb5_context context, krb5_flags whichfields,
 	match = (krb5_data_cmp(&mcreds->second_ticket, &creds->second_ticket) == 0);
 
     if (match && (whichfields & KRB5_TC_MATCH_IS_SKEY))
-	match = ((mcreds->second_ticket.length == 0) == 
+	match = ((mcreds->second_ticket.length == 0) ==
 		 (creds->second_ticket.length == 0));
 
     return match;

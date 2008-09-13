@@ -1,34 +1,34 @@
 /*
  * Copyright (c) 2004 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * 3. Neither the name of the Institute nor the names of its contributors 
- *    may be used to endorse or promote products derived from this software 
- *    without specific prior written permission. 
+ * 3. Neither the name of the Institute nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
- * SUCH DAMAGE. 
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 #define HAVE_TSASL 1
@@ -141,7 +141,7 @@ ldap_tsasl_bind_s(LDAP *ld,
     rc = ldap_search_s(ld, "", LDAP_SCOPE_BASE, NULL, attrs, 0, &m0);
     if (rc != LDAP_SUCCESS)
 	goto out;
-    
+
     m = ldap_first_entry(ld, m0);
     if (m == NULL) {
 	ldap_msgfree(m0);
@@ -175,7 +175,7 @@ ldap_tsasl_bind_s(LDAP *ld,
 	ret = tsasl_request(peer, &in, &out);
 	if (in.tb_size != 0) {
 	    free(in.tb_data);
-	    in.tb_data = NULL; 
+	    in.tb_data = NULL;
 	    in.tb_size = 0;
 	}
 	if (ret != TSASL_DONE && ret != TSASL_CONTINUE) {
@@ -331,9 +331,9 @@ _kadm5_ad_connect(void *server_handle)
 	
 #ifdef HAVE_TSASL
 	lret = ldap_tsasl_bind_s(lp, NULL, NULL, NULL, servers[i].server);
-				 
+				
 #else
-	lret = ldap_sasl_interactive_bind_s(lp, NULL, NULL, NULL, NULL, 
+	lret = ldap_sasl_interactive_bind_s(lp, NULL, NULL, NULL, NULL,
 					    LDAP_SASL_QUIET,
 					    sasl_interact, NULL);
 #endif
@@ -361,7 +361,7 @@ _kadm5_ad_connect(void *server_handle)
 	
 	laddattr(&attr, &attrlen, "defaultNamingContext");
 
-	ret = ldap_search_s(CTX2LP(context), "", LDAP_SCOPE_BASE, 
+	ret = ldap_search_s(CTX2LP(context), "", LDAP_SCOPE_BASE,
 			    "objectclass=*", attr, 0, &m);
 	free(attr);
 	if (check_ldap(context, ret))
@@ -375,7 +375,7 @@ _kadm5_ad_connect(void *server_handle)
 		ldap_msgfree(m);
 		goto fail;
 	    }
-	    vals = ldap_get_values(CTX2LP(context), 
+	    vals = ldap_get_values(CTX2LP(context),
 				   m0, "defaultNamingContext");
 	    if (vals == NULL) {
 		krb5_set_error_message(context->context, KADM5_RPC_ERROR,
@@ -444,7 +444,7 @@ ad_find_entry(kadm5_ad_context *context,
 	*name = NULL;
 
     if (fqdn)
-	asprintf(&filter, 
+	asprintf(&filter,
 		 "(&(objectClass=computer)(|(dNSHostName=%s)(servicePrincipalName=%s)))",
 		 fqdn, pn);
     else if(pn)
@@ -453,7 +453,7 @@ ad_find_entry(kadm5_ad_context *context,
 	return KADM5_RPC_ERROR;
 
     ret = ldap_search_s(CTX2LP(context), CTX2BASE(context),
-			LDAP_SCOPE_SUBTREE, 
+			LDAP_SCOPE_SUBTREE,
 			filter, attr, 0, &m);
     free(filter);
     if (check_ldap(context, ret))
@@ -496,7 +496,7 @@ ad_get_cred(kadm5_ad_context *context, const char *password)
     ret = _kadm5_c_get_cred_cache(context->context,
 				  context->client_name,
 				  service,
-				  password, krb5_prompter_posix, 
+				  password, krb5_prompter_posix,
 				  NULL, NULL, &cc);
     free(service);
     if(ret)
@@ -522,14 +522,14 @@ kadm5_ad_chpass_principal(void *server_handle,
     krb5_data_zero (&result_code_string);
     krb5_data_zero (&result_string);
 
-    ret = krb5_set_password_using_ccache (context->context, 
+    ret = krb5_set_password_using_ccache (context->context,
 					  context->ccache,
 					  password,
 					  principal,
 					  &result_code,
 					  &result_code_string,
 					  &result_string);
-    
+
     krb5_data_free (&result_code_string);
     krb5_data_free (&result_string);
 
@@ -548,7 +548,7 @@ get_fqdn(krb5_context context, const krb5_principal p)
     s = krb5_principal_get_comp_string(context, p, 0);
     if (p == NULL)
 	return NULL;
-    
+
     for (i = 0; i < sizeof(hosttypes)/sizeof(hosttypes[0]); i++) {
 	if (strcasecmp(s, hosttypes[i]) == 0)
 	    return krb5_principal_get_comp_string(context, p, 1);
@@ -574,42 +574,42 @@ kadm5_ad_create_principal(void *server_handle,
 
 #ifdef OPENLDAP
     LDAPMod *attrs[8], rattrs[7], *a;
-    char *useraccvals[2] = { NULL, NULL }, 
+    char *useraccvals[2] = { NULL, NULL },
 	*samvals[2], *dnsvals[2], *spnvals[5], *upnvals[2], *tv[2];
-    char *ocvals_spn[] = { "top", "person", "organizationalPerson", 
-			   "user", "computer", NULL}; 
+    char *ocvals_spn[] = { "top", "person", "organizationalPerson",
+			   "user", "computer", NULL};
     char *p, *realmless_p, *p_msrealm = NULL, *dn = NULL;
     const char *fqdn;
     char *s, *samname = NULL, *short_spn = NULL;
     int ret, i;
     int32_t uf_flags = 0;
-    
+
     if ((mask & KADM5_PRINCIPAL) == 0)
 	return KADM5_BAD_MASK;
 
     for (i = 0; i < sizeof(rattrs)/sizeof(rattrs[0]); i++)
 	attrs[i] = &rattrs[i];
     attrs[i] = NULL;
-    
+
     ret = ad_get_cred(context, NULL);
     if (ret)
 	return ret;
-    
+
     ret = _kadm5_ad_connect(server_handle);
     if (ret)
 	return ret;
-    
+
     fqdn = get_fqdn(context->context, entry->principal);
-    
+
     ret = krb5_unparse_name(context->context, entry->principal, &p);
     if (ret)
 	return ret;
-    
+
     if (ad_find_entry(context, fqdn, p, NULL) == 0) {
 	free(p);
 	return KADM5_DUP;
     }
-    
+
     if (mask & KADM5_ATTRIBUTES) {
 	if (entry->attributes & KRB5_KDB_DISALLOW_ALL_TIX)
 	    uf_flags |= UF_ACCOUNTDISABLE|UF_LOCKOUT;
@@ -618,7 +618,7 @@ kadm5_ad_create_principal(void *server_handle,
 	if (entry->attributes & KRB5_KDB_REQUIRES_HW_AUTH)
 	    uf_flags |= UF_SMARTCARD_REQUIRED;
     }
-    
+
     realmless_p = strdup(p);
     if (realmless_p == NULL) {
 	ret = ENOMEM;
@@ -627,7 +627,7 @@ kadm5_ad_create_principal(void *server_handle,
     s = strrchr(realmless_p, '@');
     if (s)
 	*s = '\0';
-    
+
     if (fqdn) {
 	/* create computer account */
 	asprintf(&samname, "%s$", fqdn);
@@ -738,7 +738,7 @@ kadm5_ad_create_principal(void *server_handle,
 	a->mod_op = LDAP_MOD_ADD;
 	a->mod_type = "userAccountControl";
 	a->mod_values = useraccvals;
-	asprintf(&useraccvals[0], "%d", 
+	asprintf(&useraccvals[0], "%d",
 		 uf_flags |
 		 UF_PASSWD_NOT_EXPIRE);
 	useraccvals[1] = NULL;
@@ -870,8 +870,8 @@ kadm5_ad_flush(void *server_handle)
 
 static kadm5_ret_t
 kadm5_ad_get_principal(void *server_handle,
-		       krb5_principal principal, 
-		       kadm5_principal_ent_t entry, 
+		       krb5_principal principal,
+		       kadm5_principal_ent_t entry,
 		       uint32_t mask)
 {
     kadm5_ad_context *context = server_handle;
@@ -916,14 +916,14 @@ kadm5_ad_get_principal(void *server_handle,
     if (q && (p != q && *(q - 1) != '\\'))
 	*q = '/';
 
-    asprintf(&filter, 
+    asprintf(&filter,
 	     "(|(userPrincipalName=%s)(servicePrincipalName=%s)(servicePrincipalName=%s))",
 	     u, p, u);
     free(p);
     free(u);
 
     ret = ldap_search_s(CTX2LP(context), CTX2BASE(context),
-			LDAP_SCOPE_SUBTREE, 
+			LDAP_SCOPE_SUBTREE,
 			filter, attr, 0, &m);
     free(attr);
     if (check_ldap(context, ret))
@@ -990,7 +990,7 @@ kadm5_ad_get_principal(void *server_handle,
 	    }
 	}
 	if (mask & KADM5_KVNO) {
-	    vals = ldap_get_values(CTX2LP(context), m0, 
+	    vals = ldap_get_values(CTX2LP(context), m0,
 				   "msDS-KeyVersionNumber");
 	    if (vals)
 		entry->kvno = atoi(vals[0]);
@@ -1060,7 +1060,7 @@ kadm5_ad_modify_principal(void *server_handle,
 {
     kadm5_ad_context *context = server_handle;
 
-    /* 
+    /*
      * KADM5_ATTRIBUTES
      * KRB5_KDB_DISALLOW_ALL_TIX (| KADM5_KVNO)
      */
@@ -1104,14 +1104,14 @@ kadm5_ad_modify_principal(void *server_handle,
     if (q && (p != q && *(q - 1) != '\\'))
 	*q = '\0';
 
-    asprintf(&filter, 
+    asprintf(&filter,
 	     "(|(userPrincipalName=%s)(servicePrincipalName=%s))",
 	     s, s);
     free(p);
     free(s);
 
     ret = ldap_search_s(CTX2LP(context), CTX2BASE(context),
-			LDAP_SCOPE_SUBTREE, 
+			LDAP_SCOPE_SUBTREE,
 			filter, attr, 0, &m);
     free(attr);
     free(filter);
@@ -1194,7 +1194,7 @@ kadm5_ad_modify_principal(void *server_handle,
 	a->mod_values = tv;
 	a++;
     }
-    
+
     vals = ldap_get_values(CTX2LP(context), m0, "distinguishedName");
     if (vals == NULL) {
 	ret = KADM5_RPC_ERROR;
@@ -1262,7 +1262,7 @@ kadm5_ad_randkey_principal(void *server_handle,
     krb5_data_zero (&result_code_string);
     krb5_data_zero (&result_string);
 
-    ret = krb5_set_password_using_ccache (context->context, 
+    ret = krb5_set_password_using_ccache (context->context,
 					  context->ccache,
 					  password,
 					  principal,
@@ -1319,7 +1319,7 @@ kadm5_ad_rename_principal(void *server_handle,
 }
 
 static kadm5_ret_t
-kadm5_ad_chpass_principal_with_key(void *server_handle, 
+kadm5_ad_chpass_principal_with_key(void *server_handle,
 				   krb5_principal princ,
 				   int n_key_data,
 				   krb5_key_data *key_data)
@@ -1347,7 +1347,7 @@ set_funcs(kadm5_ad_context *c)
     SET(c, rename_principal);
 }
 
-kadm5_ret_t 
+kadm5_ret_t
 kadm5_ad_init_with_password_ctx(krb5_context context,
 				const char *client_name,
 				const char *password,
@@ -1410,7 +1410,7 @@ kadm5_ad_init_with_password_ctx(krb5_context context,
     return 0;
 }
 
-kadm5_ret_t 
+kadm5_ret_t
 kadm5_ad_init_with_password(const char *client_name,
 			    const char *password,
 			    const char *service_name,
@@ -1426,7 +1426,7 @@ kadm5_ad_init_with_password(const char *client_name,
     ret = krb5_init_context(&context);
     if (ret)
 	return ret;
-    ret = kadm5_ad_init_with_password_ctx(context, 
+    ret = kadm5_ad_init_with_password_ctx(context,
 					  client_name,
 					  password,
 					  service_name,

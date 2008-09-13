@@ -68,7 +68,7 @@ telnet_spin(void)
     if (Scheduler(0) == -1)
 	ret = 1;
     scheduler_lockout_tty = 0;
-    
+
     return ret;
 
 }

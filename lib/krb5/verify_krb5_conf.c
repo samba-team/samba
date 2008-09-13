@@ -1,34 +1,34 @@
 /*
  * Copyright (c) 1999 - 2005 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * 3. Neither the name of the Institute nor the names of its contributors 
- *    may be used to endorse or promote products derived from this software 
- *    without specific prior written permission. 
+ * 3. Neither the name of the Institute nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
- * SUCH DAMAGE. 
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 #include "krb5_locl.h"
@@ -45,9 +45,9 @@ static int help_flag	= 0;
 static int warn_mit_syntax_flag = 0;
 
 static struct getargs args[] = {
-    {"dumpconfig", 0,      arg_flag,       &dumpconfig_flag, 
+    {"dumpconfig", 0,      arg_flag,       &dumpconfig_flag,
      "show the parsed config files", NULL },
-    {"warn-mit-syntax", 0, arg_flag,       &warn_mit_syntax_flag, 
+    {"warn-mit-syntax", 0, arg_flag,       &warn_mit_syntax_flag,
      "show the parsed config files", NULL },
     {"version",	0,	arg_flag,	&version_flag,
      "print version", NULL },
@@ -92,7 +92,7 @@ check_numeric(krb5_context context, const char *path, char *data)
     char *end;
     v = strtol(data, &end, 0);
     if(*end != '\0') {
-	krb5_warnx(context, "%s: failed to parse \"%s\" as a number", 
+	krb5_warnx(context, "%s: failed to parse \"%s\" as a number",
 		   path, data);
 	return 1;
     }
@@ -111,12 +111,12 @@ check_boolean(krb5_context context, const char *path, char *data)
 	return 0;
     v = strtol(data, &end, 0);
     if(*end != '\0') {
-	krb5_warnx(context, "%s: failed to parse \"%s\" as a boolean", 
+	krb5_warnx(context, "%s: failed to parse \"%s\" as a boolean",
 		   path, data);
 	return 1;
     }
     if(v != 0 && v != 1)
-	krb5_warnx(context, "%s: numeric value \"%s\" is treated as \"true\"", 
+	krb5_warnx(context, "%s: numeric value \"%s\" is treated as \"true\"",
 		   path, data);
     return 0;
 }
@@ -130,7 +130,7 @@ check_524(krb5_context context, const char *path, char *data)
        strcasecmp(data, "local") == 0)
 	return 0;
 
-    krb5_warnx(context, "%s: didn't contain a valid option `%s'", 
+    krb5_warnx(context, "%s: didn't contain a valid option `%s'",
 	       path, data);
     return 1;
 }
@@ -155,7 +155,7 @@ check_host(krb5_context context, const char *path, char *data)
     hints.ai_canonname = NULL;
     hints.ai_addr = NULL;
     hints.ai_next = NULL;
-    
+
     /* XXX data could be a list of hosts that this code can't handle */
     /* XXX copied from krbhst.c */
     if(strncmp(p, "http://", 7) == 0){
@@ -191,7 +191,7 @@ check_host(krb5_context context, const char *path, char *data)
 	char *end;
 	int tmp = strtol(p, &end, 0);
 	if(end == p) {
-	    krb5_warnx(context, "%s: failed to parse port number in %s", 
+	    krb5_warnx(context, "%s: failed to parse port number in %s",
 		       path, data);
 	    return 1;
 	}
@@ -304,7 +304,7 @@ check_log(krb5_context context, const char *path, char *data)
 	}
 	p++;
     }
-    if(strcmp(p, "STDERR") == 0 || 
+    if(strcmp(p, "STDERR") == 0 ||
        strcmp(p, "CONSOLE") == 0 ||
        (strncmp(p, "FILE", 4) == 0 && (p[4] == ':' || p[4] == '=')) ||
        (strncmp(p, "DEVICE", 6) == 0 && p[6] == '='))
@@ -323,12 +323,12 @@ check_log(krb5_context context, const char *path, char *data)
  	if(*facility == '\0')
 	    strlcpy(facility, "AUTH", sizeof(facility));
 	if(find_value(severity, syslogvals) == -1) {
-	    krb5_warnx(context, "%s: unknown syslog facility \"%s\"", 
+	    krb5_warnx(context, "%s: unknown syslog facility \"%s\"",
 		       path, facility);
 	    ret++;
 	}
 	if(find_value(severity, syslogvals) == -1) {
-	    krb5_warnx(context, "%s: unknown syslog severity \"%s\"", 
+	    krb5_warnx(context, "%s: unknown syslog severity \"%s\"",
 		       path, severity);
 	    ret++;
 	}
@@ -396,7 +396,7 @@ struct entry libdefaults_entries[] = {
     { "maxretries", krb5_config_string, check_numeric },
     { "scan_interfaces", krb5_config_string, check_boolean },
     { "srv_lookup", krb5_config_string, check_boolean },
-    { "srv_try_txt", krb5_config_string, check_boolean }, 
+    { "srv_try_txt", krb5_config_string, check_boolean },
     { "ticket_lifetime", krb5_config_string, check_time },
     { "time_format", krb5_config_string, NULL },
     { "transited_realms_reject", krb5_config_string, NULL },
@@ -572,15 +572,15 @@ struct entry toplevel_sections[] = {
 
 
 static int
-check_section(krb5_context context, const char *path, krb5_config_section *cf, 
+check_section(krb5_context context, const char *path, krb5_config_section *cf,
 	      struct entry *entries)
 {
     int error = 0;
     krb5_config_section *p;
     struct entry *e;
-    
+
     char *local;
-    
+
     for(p = cf; p != NULL; p = p->next) {
 	asprintf(&local, "%s/%s", path, p->name);
 	for(e = entries; e->name != NULL; e++) {
@@ -651,7 +651,7 @@ main(int argc, char **argv)
 
     if(getarg(args, sizeof(args) / sizeof(args[0]), argc, argv, &optidx))
 	usage(1);
-    
+
     if (help_flag)
 	usage (0);
 
@@ -676,6 +676,6 @@ main(int argc, char **argv)
 
     if(dumpconfig_flag)
 	dumpconfig(0, tmp_cf);
-    
+
     return check_section(context, "", tmp_cf, toplevel_sections);
 }

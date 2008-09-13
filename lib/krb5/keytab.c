@@ -1,34 +1,34 @@
 /*
  * Copyright (c) 1997 - 2005 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * 3. Neither the name of the Institute nor the names of its contributors 
- *    may be used to endorse or promote products derived from this software 
- *    without specific prior written permission. 
+ * 3. Neither the name of the Institute nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
- * SUCH DAMAGE. 
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 #include "krb5_locl.h"
@@ -47,7 +47,7 @@ krb5_kt_register(krb5_context context,
     struct krb5_keytab_data *tmp;
 
     if (strlen(ops->prefix) > KRB5_KT_PREFIX_MAX_LEN - 1) {
-	krb5_set_error_message(context, KRB5_KT_BADNAME, 
+	krb5_set_error_message(context, KRB5_KT_BADNAME,
 			       N_("can't register cache type, prefix too long", ""));
 	return KRB5_KT_BADNAME;
     }
@@ -92,7 +92,7 @@ krb5_kt_resolve(krb5_context context,
 	type_len = residual - name;
 	residual++;
     }
-    
+
     for(i = 0; i < context->num_kt_types; i++) {
 	if(strncasecmp(type, context->kt_types[i].prefix, type_len) == 0)
 	    break;
@@ -103,7 +103,7 @@ krb5_kt_resolve(krb5_context context,
 			       (int)type_len, type);
 	return KRB5_KT_UNKNOWN_TYPE;
     }
-    
+
     k = malloc (sizeof(*k));
     if (k == NULL) {
 	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
@@ -156,7 +156,7 @@ krb5_kt_default_modify_name(krb5_context context, char *name, size_t namesize)
 	    strlcpy(name, context->default_keytab + 4, namesize);
 	    name[len] = '\0';
 	    return 0;
-	}    
+	}
     } else
 	kt = context->default_keytab_modify;
     if (strlcpy (name, kt, namesize) >= namesize) {
@@ -233,7 +233,7 @@ krb5_kt_get_type(krb5_context context,
  */
 
 krb5_error_code KRB5_LIB_FUNCTION
-krb5_kt_get_name(krb5_context context, 
+krb5_kt_get_name(krb5_context context,
 		 krb5_keytab keytab,
 		 char *name,
 		 size_t namesize)
@@ -248,14 +248,14 @@ krb5_kt_get_name(krb5_context context,
  */
 
 krb5_error_code KRB5_LIB_FUNCTION
-krb5_kt_get_full_name(krb5_context context, 
+krb5_kt_get_full_name(krb5_context context,
 		      krb5_keytab keytab,
 		      char **str)
 {
     char type[KRB5_KT_PREFIX_MAX_LEN];
     char name[MAXPATHLEN];
     krb5_error_code ret;
-	      
+	
     *str = NULL;
 
     ret = krb5_kt_get_type(context, keytab, type, sizeof(type));
@@ -281,7 +281,7 @@ krb5_kt_get_full_name(krb5_context context,
  */
 
 krb5_error_code KRB5_LIB_FUNCTION
-krb5_kt_close(krb5_context context, 
+krb5_kt_close(krb5_context context,
 	      krb5_keytab id)
 {
     krb5_error_code ret;
@@ -300,12 +300,12 @@ krb5_kt_close(krb5_context context,
 
 krb5_boolean KRB5_LIB_FUNCTION
 krb5_kt_compare(krb5_context context,
-		krb5_keytab_entry *entry, 
+		krb5_keytab_entry *entry,
 		krb5_const_principal principal,
 		krb5_kvno vno,
 		krb5_enctype enctype)
 {
-    if(principal != NULL && 
+    if(principal != NULL &&
        !krb5_principal_compare(context, entry->principal, principal))
 	return FALSE;
     if(vno && vno != entry->vno)

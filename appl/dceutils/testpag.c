@@ -1,11 +1,11 @@
-/* Test the k5dcepag routine by setting a pag, and 
- * and execing a shell under this pag. 
- * 
- * This allows you to join a PAG which was created  
- * earlier by some other means. 
+/* Test the k5dcepag routine by setting a pag, and
+ * and execing a shell under this pag.
+ *
+ * This allows you to join a PAG which was created
+ * earlier by some other means.
  * for example k5dcecon
- * 
- * Must be run as root for testing only. 
+ *
+ * Must be run as root for testing only.
  *
  */
 
@@ -84,12 +84,12 @@ int  krb5_dfs_newpag(new_pag)
   handler_init (sa2, mysig);
   handler_swap (SIGSYS, sa1, osa1);
   handler_swap (SIGSEGV, sa2, osa2);
- 
+
   if (sigsetjmp(setpag_buf, 1) == 0) {
 #if defined(_AIX)
     int (*dpagaix)(int, int, int, int, int, int);
 
-    if (dpagaix = load(DPAGAIX, 0, 0)) 
+    if (dpagaix = load(DPAGAIX, 0, 0))
       pag = (*dpagaix)(AFSCALL_SETPAG, new_pag, 0, 0, 0, 0);
 #else
     pag = syscall(AFS_SYSCALL,AFSCALL_SETPAG, new_pag, 0, 0, 0, 0);
@@ -118,7 +118,7 @@ main(argc, argv)
   unsigned int newpag = 0;
   char ccname[256];
   int nflag = 0;
-  
+
   while((rv = getopt(argc,argv,"n:")) != -1) {
     switch(rv) {
      case 'n':
@@ -138,7 +138,7 @@ main(argc, argv)
     fprintf (stderr,"PAG returned = %8.8x\n",pag);
     if ((pag != 0) && (pag != -1)) {
       sprintf (ccname,
-        "FILE:/opt/dcelocal/var/security/creds/dcecred_%8.8x", 
+        "FILE:/opt/dcelocal/var/security/creds/dcecred_%8.8x",
         pag);
       esetenv("KRB5CCNAME",ccname,1);
       execl("/bin/csh", "csh", NULL);

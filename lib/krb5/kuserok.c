@@ -1,34 +1,34 @@
 /*
  * Copyright (c) 1997 - 2005 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * 3. Neither the name of the Institute nor the names of its contributors 
- *    may be used to endorse or promote products derived from this software 
- *    without specific prior written permission. 
+ * 3. Neither the name of the Institute nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
- * SUCH DAMAGE. 
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 #include "krb5_locl.h"
@@ -40,24 +40,24 @@ RCSID("$Id$");
    TRUE (in result) if so, FALSE otherwise */
 
 static krb5_error_code
-check_one_file(krb5_context context, 
-	       const char *filename, 
+check_one_file(krb5_context context,
+	       const char *filename,
 	       struct passwd *pwd,
-	       krb5_principal principal, 
+	       krb5_principal principal,
 	       krb5_boolean *result)
 {
     FILE *f;
     char buf[BUFSIZ];
     krb5_error_code ret;
     struct stat st;
-    
+
     *result = FALSE;
 
     f = fopen (filename, "r");
     if (f == NULL)
 	return errno;
     rk_cloexec_file(f);
-    
+
     /* check type and mode of file */
     if (fstat(fileno(f), &st) != 0) {
 	fclose (f);
@@ -106,10 +106,10 @@ check_one_file(krb5_context context,
 }
 
 static krb5_error_code
-check_directory(krb5_context context, 
-		const char *dirname, 
+check_directory(krb5_context context,
+		const char *dirname,
 		struct passwd *pwd,
-		krb5_principal principal, 
+		krb5_principal principal,
 		krb5_boolean *result)
 {
     DIR *d;
@@ -125,13 +125,13 @@ check_directory(krb5_context context,
 
     if (!S_ISDIR(st.st_mode))
 	return ENOTDIR;
-    
+
     if (st.st_uid != pwd->pw_uid && st.st_uid != 0)
 	return EACCES;
     if ((st.st_mode & (S_IWGRP | S_IWOTH)) != 0)
 	return EACCES;
 
-    if((d = opendir(dirname)) == NULL) 
+    if((d = opendir(dirname)) == NULL)
 	return errno;
 
 #ifdef HAVE_DIRFD
@@ -175,7 +175,7 @@ match_local_principals(krb5_context context,
     krb5_error_code ret;
     krb5_realm *realms, *r;
     krb5_boolean result = FALSE;
-    
+
     /* multi-component principals can never match */
     if(krb5_principal_get_comp_string(context, principal, 1) != NULL)
 	return FALSE;
@@ -242,7 +242,7 @@ krb5_kuserok (krb5_context context,
 	return TRUE;
     }
 
-    if(ret != ENOENT) 
+    if(ret != ENOENT)
 	found_file = TRUE;
 
     strlcat(buf, ".d", buflen);
@@ -251,7 +251,7 @@ krb5_kuserok (krb5_context context,
     if(ret == 0 && result == TRUE)
 	return TRUE;
 
-    if(ret != ENOENT && ret != ENOTDIR) 
+    if(ret != ENOENT && ret != ENOTDIR)
 	found_file = TRUE;
 
     /* finally if no files exist, allow all principals matching

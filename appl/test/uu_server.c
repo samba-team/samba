@@ -1,34 +1,34 @@
 /*
  * Copyright (c) 1997 - 2000, 2007 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * 3. Neither the name of the Institute nor the names of its contributors 
- *    may be used to endorse or promote products derived from this software 
- *    without specific prior written permission. 
+ * 3. Neither the name of the Institute nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
- * SUCH DAMAGE. 
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 #include "test_locl.h"
@@ -84,7 +84,7 @@ proto (int sock, const char *service)
     status = krb5_read_message(context, &sock, &client_name);
     if(status)
 	krb5_err(context, 1, status, "krb5_read_message");
-    
+
     memset(&in_creds, 0, sizeof(in_creds));
     status = krb5_cc_default(context, &ccache);
     if(status)
@@ -100,8 +100,8 @@ proto (int sock, const char *service)
     status = krb5_parse_name(context, client_name.data, &in_creds.server);
     if(status)
 	krb5_err(context, 1, status, "krb5_parse_name");
-    
-    status = krb5_get_credentials(context, KRB5_GC_USER_USER, ccache, 
+
+    status = krb5_get_credentials(context, KRB5_GC_USER_USER, ccache,
 				  &in_creds, &out_creds);
     if(status)
 	krb5_err(context, 1, status, "krb5_get_credentials");
@@ -110,10 +110,10 @@ proto (int sock, const char *service)
     if(status)
 	krb5_err(context, 1, status, "krb5_cc_default");
 
-    status = krb5_sendauth(context, 
+    status = krb5_sendauth(context,
 			   &auth_context,
-			   &sock, 
-			   VERSION, 
+			   &sock,
+			   VERSION,
 			   in_creds.client,
 			   in_creds.server,
 			   AP_OPTS_USE_SESSION_KEY,
@@ -123,10 +123,10 @@ proto (int sock, const char *service)
 			   NULL,
 			   NULL,
 			   NULL);
-			   
+			
     if (status)
 	krb5_err(context, 1, status, "krb5_sendauth");
-    
+
     {
 	char *str;
 	krb5_unparse_name(context, in_creds.server, &str);
@@ -143,7 +143,7 @@ proto (int sock, const char *service)
     status = krb5_read_message(context, &sock, &packet);
     if(status)
 	krb5_err(context, 1, status, "krb5_read_message");
-    
+
     status = krb5_rd_safe (context,
 			   auth_context,
 			   &packet,
@@ -159,7 +159,7 @@ proto (int sock, const char *service)
     status = krb5_read_message(context, &sock, &packet);
     if(status)
 	krb5_err(context, 1, status, "krb5_read_message");
-    
+
     status = krb5_rd_priv (context,
 			   auth_context,
 			   &packet,
@@ -191,7 +191,7 @@ doit (int port, const char *service)
     my_addr.sin_port        = port;
     my_addr.sin_addr.s_addr = INADDR_ANY;
 
-    if (setsockopt (sock, SOL_SOCKET, SO_REUSEADDR, 
+    if (setsockopt (sock, SOL_SOCKET, SO_REUSEADDR,
 		    (void *)&one, sizeof(one)) < 0)
 	warn ("setsockopt SO_REUSEADDR");
 

@@ -2,22 +2,22 @@
  * Copyright (c) 2000 - 2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the Institute nor the names of its contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -57,7 +57,7 @@ static int   use_krb5 = 1;
  */
 
 static void
-encode_ticket (krb5_context context, 
+encode_ticket (krb5_context context,
 	       EncryptionKey *skey,
 	       krb5_enctype etype,
 	       int skvno,
@@ -68,12 +68,12 @@ encode_ticket (krb5_context context,
     krb5_error_code ret;
     krb5_crypto crypto;
     EncryptedData enc_part;
-    EncTicketPart et;    
+    EncTicketPart et;
     Ticket ticket;
 
     memset (&enc_part, 0, sizeof(enc_part));
     memset (&ticket, 0, sizeof(ticket));
-    
+
     /*
      * Set up `enc_part'
      */
@@ -85,7 +85,7 @@ encode_ticket (krb5_context context,
     {
 	krb5_data empty_string;
 	
-	krb5_data_zero(&empty_string); 
+	krb5_data_zero(&empty_string);
 	et.transited.tr_type = DOMAIN_X500_COMPRESS;
 	et.transited.contents = empty_string;
     }
@@ -105,7 +105,7 @@ encode_ticket (krb5_context context,
 	krb5_err(context, 1, ret, "EncTicketPart");
 
     krb5_crypto_init(context, skey, etype, &crypto);
-    krb5_encrypt_EncryptedData (context, 
+    krb5_encrypt_EncryptedData (context,
 				crypto,
 				KRB5_KU_TICKET,
 				buf,
@@ -122,7 +122,7 @@ encode_ticket (krb5_context context,
     ticket.tkt_vno = 5;
     ticket.realm = *krb5_princ_realm (context, cred->server);
     copy_PrincipalName(&cred->server->name, &ticket.sname);
-    
+
     ASN1_MALLOC_ENCODE(Ticket, buf, len, &ticket, &size, ret);
     if(ret)
 	krb5_err (context, 1, ret, "encode_Ticket");
@@ -142,13 +142,13 @@ create_krb5_tickets (krb5_context context, krb5_keytab kt)
     krb5_creds cred;
     krb5_enctype etype;
     krb5_ccache ccache;
-    
+
     memset (&cred, 0, sizeof(cred));
-    
+
     ret = krb5_string_to_enctype (context, enc_type, &etype);
     if (ret)
 	krb5_err (context, 1, ret, "krb5_string_to_enctype");
-    ret = krb5_kt_get_entry (context, kt, server_principal, 
+    ret = krb5_kt_get_entry (context, kt, server_principal,
 			     0, etype, &entry);
     if (ret)
 	krb5_err (context, 1, ret, "krb5_kt_get_entry");
@@ -162,27 +162,27 @@ create_krb5_tickets (krb5_context context, krb5_keytab kt)
     if (ret)
 	krb5_err (context, 1, ret, "krb5_copy_principal");
     ret = krb5_copy_principal (context, server_principal, &cred.server);
-    if (ret) 
+    if (ret)
 	krb5_err (context, 1, ret, "krb5_copy_principal");
-    krb5_generate_random_keyblock(context, etype, &cred.session);    
+    krb5_generate_random_keyblock(context, etype, &cred.session);
 
     cred.times.authtime = time(NULL);
     cred.times.starttime = time(NULL);
     cred.times.endtime = time(NULL) + expiration_time;
     cred.times.renew_till = 0;
-    krb5_data_zero(&cred.second_ticket); 
+    krb5_data_zero(&cred.second_ticket);
 
     ret = krb5_get_all_client_addrs (context, &cred.addresses);
     if (ret)
 	krb5_err (context, 1, ret, "krb5_get_all_client_addrs");
     cred.flags.b = ticket_flags;
-    
-    
+
+
     /*
      * Encode encrypted part of ticket
      */
 
-    encode_ticket (context, &entry.keyblock, etype, entry.vno, &cred);    
+    encode_ticket (context, &entry.keyblock, etype, entry.vno, &cred);
 
     /*
      * Write to cc
@@ -201,14 +201,14 @@ create_krb5_tickets (krb5_context context, krb5_keytab kt)
     ret = krb5_cc_initialize (context, ccache, cred.client);
     if (ret)
 	krb5_err (context, 1, ret, "krb5_cc_initialize");
-    
+
     ret = krb5_cc_store_cred (context, ccache, &cred);
     if (ret)
 	krb5_err (context, 1, ret, "krb5_cc_store_cred");
 
     krb5_free_cred_contents (context, &cred);
     krb5_cc_close (context, ccache);
-    
+
     return 0;
 }
 
@@ -243,7 +243,7 @@ setup_env (krb5_context context, krb5_keytab *kt)
     if (ticket_flags_str) {
 	int ticket_flags_int;
 
-	ticket_flags_int = parse_flags(ticket_flags_str, 
+	ticket_flags_int = parse_flags(ticket_flags_str,
 				       asn1_TicketFlags_units(), 0);
 	if (ticket_flags_int <= 0) {
 	    krb5_warnx (context, "bad ticket flags: `%s'", ticket_flags_str);
@@ -262,9 +262,9 @@ setup_env (krb5_context context, krb5_keytab *kt)
 struct getargs args[] = {
     { "ccache", 0, arg_string, &ccache_str,
       "name of kerberos 5 credential cache", "cache-name"},
-    { "server", 's', arg_string, &server_principal_str, 
+    { "server", 's', arg_string, &server_principal_str,
       "name of server principal" },
-    { "client", 'c', arg_string, &client_principal_str, 
+    { "client", 'c', arg_string, &client_principal_str,
       "name of client principal" },
     { "keytab", 'k', arg_string, &keytab_file,
       "name of keytab file" },

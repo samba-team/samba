@@ -1,34 +1,34 @@
 /*
  * Copyright (c) 1997-2006 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * 3. Neither the name of the Institute nor the names of its contributors 
- *    may be used to endorse or promote products derived from this software 
- *    without specific prior written permission. 
+ * 3. Neither the name of the Institute nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
- * SUCH DAMAGE. 
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 #include "kadmin_locl.h"
@@ -100,7 +100,7 @@ add_column(struct get_entry_data *data, struct field_name *ff, const char *heade
     data->mask |= ff->fieldvalue;
     data->extra_mask |= ff->extra_mask;
     if(data->table != NULL)
-	rtbl_add_column_by_id(data->table, ff->fieldvalue, 
+	rtbl_add_column_by_id(data->table, ff->fieldvalue,
 			      header ? header : ff->default_header, ff->flags);
     return 0;
 }
@@ -159,7 +159,7 @@ format_keytype(krb5_key_data *k, krb5_salt *def_salt, char *buf, size_t buf_len)
 }
 
 static void
-format_field(kadm5_principal_ent_t princ, unsigned int field, 
+format_field(kadm5_principal_ent_t princ, unsigned int field,
 	     unsigned int subfield, char *buf, size_t buf_len, int condensed)
 {
     switch(field) {
@@ -169,27 +169,27 @@ format_field(kadm5_principal_ent_t princ, unsigned int field,
 	else
 	    krb5_unparse_name_fixed(context, princ->principal, buf, buf_len);
 	break;
-    
+
     case KADM5_PRINC_EXPIRE_TIME:
 	time_t2str(princ->princ_expire_time, buf, buf_len, !condensed);
 	break;
-	    
+	
     case KADM5_PW_EXPIRATION:
 	time_t2str(princ->pw_expiration, buf, buf_len, !condensed);
 	break;
-	    
+	
     case KADM5_LAST_PWD_CHANGE:
 	time_t2str(princ->last_pwd_change, buf, buf_len, !condensed);
 	break;
-	    
+	
     case KADM5_MAX_LIFE:
 	deltat2str(princ->max_life, buf, buf_len);
 	break;
-	    
+	
     case KADM5_MAX_RLIFE:
 	deltat2str(princ->max_renewable_life, buf, buf_len);
 	break;
-	    
+	
     case KADM5_MOD_TIME:
 	time_t2str(princ->mod_date, buf, buf_len, !condensed);
 	break;
@@ -335,7 +335,7 @@ print_entry_short(struct get_entry_data *data, kadm5_principal_ent_t princ)
 {
     char buf[1024];
     struct field_info *f;
-    
+
     for(f = data->chead; f != NULL; f = f->next) {
 	format_field(princ, f->ff->fieldvalue, f->ff->subvalue, buf, sizeof(buf), 1);
 	rtbl_add_column_entry_by_id(data->table, f->ff->fieldvalue, buf);
@@ -348,7 +348,7 @@ print_entry_long(struct get_entry_data *data, kadm5_principal_ent_t princ)
     char buf[1024];
     struct field_info *f;
     int width = 0;
-    
+
     for(f = data->chead; f != NULL; f = f->next) {
 	int w = strlen(f->header ? f->header : f->ff->def_longheader);
 	if(w > width)
@@ -367,9 +367,9 @@ do_get_entry(krb5_principal principal, void *data)
     kadm5_principal_ent_rec princ;
     krb5_error_code ret;
     struct get_entry_data *e = data;
-    
+
     memset(&princ, 0, sizeof(princ));
-    ret = kadm5_get_principal(kadm_handle, principal, 
+    ret = kadm5_get_principal(kadm_handle, principal,
 			      &princ,
 			      e->mask | e->extra_mask);
     if(ret)
@@ -430,7 +430,7 @@ getit(struct get_options *opt, const char *name, int argc, char **argv)
     int i;
     krb5_error_code ret;
     struct get_entry_data data;
-    
+
     if(opt->long_flag == -1 && (opt->short_flag == 1 || opt->terse_flag == 1))
 	opt->long_flag = 0;
     if(opt->short_flag == -1 && (opt->long_flag == 1 || opt->terse_flag == 1))
@@ -469,10 +469,10 @@ getit(struct get_options *opt, const char *name, int argc, char **argv)
 	    rtbl_destroy(data.table);
 	return 0;
     }
-    
+
     for(i = 0; i < argc; i++)
 	ret = foreach_principal(argv[i], do_get_entry, "get", &data);
-    
+
     if(data.table != NULL) {
 	rtbl_format(data.table, stdout);
 	rtbl_destroy(data.table);

@@ -10,24 +10,24 @@ RCSID("$Id$");
 static char standard_error[] =
     "Error error updating primary drop. Mailbox unchanged";
 
-/* 
+/*
  *  updt:   Apply changes to a user's POP maildrop
  */
 
 int
 pop_updt (POP *p)
 {
-    FILE                *   md;                     /*  Stream pointer for 
+    FILE                *   md;                     /*  Stream pointer for
                                                         the user's maildrop */
     int                     mfd;                    /*  File descriptor for
                                                         above */
     char                    buffer[BUFSIZ];         /*  Read buffer */
 
-    MsgInfoList         *   mp;                     /*  Pointer to message 
+    MsgInfoList         *   mp;                     /*  Pointer to message
                                                         info list */
-    int		            msg_num;                /*  Current message 
+    int		            msg_num;                /*  Current message
                                                         counter */
-    int			    status_written;         /*  Status header field 
+    int			    status_written;         /*  Status header field
                                                         written */
     int                     nchar;                  /* Bytes read/written */
 
@@ -54,7 +54,7 @@ pop_updt (POP *p)
     }
 
 #ifdef DEBUG
-    if (p->debug) 
+    if (p->debug)
         pop_log(p,POP_DEBUG,"Opening mail drop \"%s\"",p->drop_name);
 #endif /* DEBUG */
 
@@ -72,9 +72,9 @@ pop_updt (POP *p)
     }
 
     /* Go to the right places */
-    offset = lseek((int)fileno(p->drop),0,SEEK_END) ; 
+    offset = lseek((int)fileno(p->drop),0,SEEK_END) ;
 
-    /*  Append any messages that may have arrived during the session 
+    /*  Append any messages that may have arrived during the session
         to the temporary maildrop */
     while ((nchar=read(mfd,buffer,BUFSIZ)) > 0)
         if ( nchar != write((int)fileno(p->drop),buffer,nchar) ) {
@@ -96,10 +96,10 @@ pop_updt (POP *p)
     rewind(p->drop);
     lseek((int)fileno(p->drop),0,SEEK_SET);
 
-    /*  Transfer messages not flagged for deletion from the temporary 
+    /*  Transfer messages not flagged for deletion from the temporary
         maildrop to the new maildrop */
 #ifdef DEBUG
-    if (p->debug) 
+    if (p->debug)
         pop_log(p,POP_DEBUG,"Creating new maildrop \"%s\" from \"%s\"",
                 p->drop_name,p->temp_drop);
 #endif /* DEBUG */
@@ -155,8 +155,8 @@ pop_updt (POP *p)
                 }
                 /*  Save another header line */
                 fputs (buffer, md);
-            } 
-            else { /* Body */ 
+            }
+            else { /* Body */
                 if (blank_line && strncmp(buffer,"From ",5) == 0) break;
                 fputs (buffer, md);
 		blank_line = (*buffer == '\n');

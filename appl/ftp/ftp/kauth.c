@@ -2,22 +2,22 @@
  * Copyright (c) 1995-1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the Institute nor the names of its contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -92,7 +92,7 @@ kauth(int argc, char **argv)
     }
     tkt.length = tmp;
     tktcopy.length = tkt.length;
-    
+
     p = strstr(reply_string, "P=");
     if(!p){
 	printf("Bad reply from server.\n");
@@ -104,14 +104,14 @@ kauth(int argc, char **argv)
     name = p + 2;
     for(; *p && *p != ' ' && *p != '\r' && *p != '\n'; p++);
     *p = 0;
-    
+
     snprintf(buf, sizeof(buf), "Password for %s:", name);
     if (des_read_pw_string (passwd, sizeof(passwd)-1, buf, 0))
         *passwd = '\0';
     des_string_to_key (passwd, &key);
 
     des_key_sched(&key, schedule);
-    
+
     des_pcbc_encrypt((des_cblock*)tkt.dat, (des_cblock*)tktcopy.dat,
 		     tkt.length,
 		     schedule, &key, DES_DECRYPT);

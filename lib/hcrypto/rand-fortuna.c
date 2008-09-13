@@ -474,7 +474,7 @@ fortuna_reseed(void)
 	entropy_p = 1;
     }
 #endif
-    /* 
+    /*
      * Only to get egd entropy if /dev/random or arc4rand failed since
      * it can be horribly slow to generate new bits.
      */
@@ -556,7 +556,7 @@ fortuna_seed(const void *indata, int size)
 	have_entropy = 1;
 }
 
-static int 
+static int
 fortuna_bytes(unsigned char *outdata, int size)
 {
     if (!fortuna_init())

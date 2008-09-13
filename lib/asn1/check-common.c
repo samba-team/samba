@@ -1,34 +1,34 @@
 /*
  * Copyright (c) 1999 - 2006 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * 3. Neither the name of the Institute nor the names of its contributors 
- *    may be used to endorse or promote products derived from this software 
- *    without specific prior written permission. 
+ * 3. Neither the name of the Institute nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
- * SUCH DAMAGE. 
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 #ifdef HAVE_CONFIG_H
@@ -57,14 +57,14 @@ struct map_page {
 /* #undef HAVE_MMAP */
 
 void *
-map_alloc(enum map_type type, const void *buf, 
+map_alloc(enum map_type type, const void *buf,
 	  size_t size, struct map_page **map)
 {
 #ifndef HAVE_MMAP
     unsigned char *p;
     size_t len = size + sizeof(long) * 2;
     int i;
-    
+
     *map = ecalloc(1, sizeof(**map));
 
     p = emalloc(len);
@@ -136,18 +136,18 @@ map_free(struct map_page *map, const char *test_name, const char *map_name)
 #ifndef HAVE_MMAP
     unsigned char *p = map->start;
     int i;
-    
+
     for (i = sizeof(long); i > 0; i--)
 	if (p[sizeof(long) - i] != 0xff - i)
 	    errx(1, "%s: %s underrun %d\n", test_name, map_name, i);
     for (i = sizeof(long); i > 0; i--)
 	if (p[map->size - i] != 0xff - i)
-	    errx(1, "%s: %s overrun %lu\n", test_name, map_name, 
+	    errx(1, "%s: %s overrun %lu\n", test_name, map_name,
 		 (unsigned long)map->size - i);
     free(map->start);
 #else
     int ret;
-    
+
     ret = munmap (map->start, map->size);
     if (ret < 0)
 	err (1, "munmap");
@@ -176,7 +176,7 @@ segv_handler(int sig)
 {
     int fd;
     char msg[] = "SIGSEGV i current test: ";
-    
+
     fd = open("/dev/stdout", O_WRONLY, 0600);
     if (fd >= 0) {
 	write(fd, msg, sizeof(msg));
@@ -238,7 +238,7 @@ generic_test (const struct test_case *tests,
 	}
 	if (sz != tests[i].byte_len) {
 	    printf ("encoding of %s has wrong len (%lu != %lu)\n",
-		    tests[i].name, 
+		    tests[i].name,
 		    (unsigned long)sz, (unsigned long)tests[i].byte_len);
 	    ++failures;
 	    continue;
@@ -276,7 +276,7 @@ generic_test (const struct test_case *tests,
 	}
 	if (sz != consumed_sz) {
 	    printf ("different length decoding %s (%ld != %ld)\n",
-		    tests[i].name, 
+		    tests[i].name,
 		    (unsigned long)sz, (unsigned long)consumed_sz);
 	    ++failures;
 	    continue;
@@ -304,7 +304,7 @@ generic_test (const struct test_case *tests,
 
 /*
  * check for failures
- * 
+ *
  * a test size (byte_len) of -1 means that the test tries to trigger a
  * integer overflow (and later a malloc of to little memory), just
  * allocate some memory and hope that is enough for that test.

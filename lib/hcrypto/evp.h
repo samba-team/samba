@@ -2,22 +2,22 @@
  * Copyright (c) 2005 - 2006 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the Institute nor the names of its contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -250,7 +250,7 @@ int	HC_DEPRECATED EVP_MD_CTX_cleanup(EVP_MD_CTX *);
 int	EVP_DigestInit_ex(EVP_MD_CTX *, const EVP_MD *, ENGINE *);
 int	EVP_DigestUpdate(EVP_MD_CTX *,const void *, size_t);
 int	EVP_DigestFinal_ex(EVP_MD_CTX *, void *, unsigned int *);
-int	EVP_Digest(const void *, size_t, void *, unsigned int *, 
+int	EVP_Digest(const void *, size_t, void *, unsigned int *,
 		   const EVP_MD *, ENGINE *);
 /*
  *
@@ -289,7 +289,7 @@ int	EVP_Cipher(EVP_CIPHER_CTX *,void *,const void *,size_t);
 int	PKCS5_PBKDF2_HMAC_SHA1(const void *, size_t, const void *, size_t,
 			       unsigned long, size_t, void *);
 
-int	EVP_BytesToKey(const EVP_CIPHER *, const EVP_MD *, 
+int	EVP_BytesToKey(const EVP_CIPHER *, const EVP_MD *,
 		       const void *, const void *, size_t,
 		       unsigned int, void *, void *);
 

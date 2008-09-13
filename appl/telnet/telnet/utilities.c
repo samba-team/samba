@@ -295,8 +295,8 @@ printsub(int direction, unsigned char *pointer, size_t length)
 	    fprintf(NetTrace, "TERMINAL-TYPE ");
 	    switch (pointer[1]) {
 	    case TELQUAL_IS:
-		fprintf(NetTrace, "IS \"%.*s\"", 
-			(int)(length-2), 
+		fprintf(NetTrace, "IS \"%.*s\"",
+			(int)(length-2),
 			(char *)pointer+2);
 		break;
 	    case TELQUAL_SEND:

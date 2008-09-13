@@ -2,22 +2,22 @@
  * Copyright (c) 2004 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the Institute nor the names of its contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -55,7 +55,7 @@ static unsigned char cipher2[5] =
     { 0xf1, 0x38, 0x29, 0xc9, 0xde };
 
 static unsigned char plain3[] =
-    { 
+    {
 	0x52, 0x75, 0x69, 0x73, 0x6c, 0x69, 0x6e, 0x6e,
 	0x75, 0x6e, 0x20, 0x6c, 0x61, 0x75, 0x6c, 0x75,
 	0x20, 0x6b, 0x6f, 0x72, 0x76, 0x69, 0x73, 0x73,
@@ -95,12 +95,12 @@ static unsigned char plain3[] =
 	0x75, 0x6e, 0x20, 0x74, 0x65, 0x65, 0x6e, 0x2e,
 	0x20, 0x2d, 0x20, 0x45, 0x69, 0x6e, 0x6f, 0x20,
 	0x4c, 0x65, 0x69, 0x6e, 0x6f };
-      
-static unsigned char key3[16] = 
+
+static unsigned char key3[16] =
     { 0x29, 0x04, 0x19, 0x72, 0xfb, 0x42, 0xba, 0x5f,
       0xc7, 0x12, 0x77, 0x12, 0xf1, 0x38, 0x29, 0xc9 };
 
-const unsigned char cipher3[] = 
+const unsigned char cipher3[] =
     { 0x35, 0x81, 0x86, 0x99, 0x90, 0x01, 0xe6, 0xb5,
       0xda, 0xf0, 0x5e, 0xce, 0xeb, 0x7e, 0xee, 0x21,
       0xe0, 0x68, 0x9c, 0x1f, 0x00, 0xee, 0xa8, 0x1f,
@@ -140,7 +140,7 @@ const unsigned char cipher3[] =
       0xe0, 0x98, 0x22, 0x65, 0xee, 0xf7, 0x01, 0x79,
       0xbc, 0x55, 0x3f, 0x33, 0x9e, 0xb1, 0xa4, 0xc1,
       0xaf, 0x5f, 0x6a, 0x54, 0x7f };
-      
+
 int
 main (void)
 {

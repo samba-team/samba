@@ -2,22 +2,22 @@
  * Copyright (c) 1995 - 2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the Institute nor the names of its contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -70,7 +70,7 @@ get_socket (const char *hostname, int port)
     struct addrinfo *ai, *a;
     struct addrinfo hints;
     char portstr[NI_MAXSERV];
-    
+
     memset (&hints, 0, sizeof(hints));
     hints.ai_socktype = SOCK_STREAM;
     snprintf (portstr, sizeof(portstr), "%d", ntohs(port));
@@ -107,7 +107,7 @@ doit_v4 (char *host, int port)
 
     ret = krb_sendauth(0,
 		       s,
-		       &ticket, 
+		       &ticket,
 		       "pop",
 		       host,
 		       krb_realmofhost(host),
@@ -140,7 +140,7 @@ doit_v5 (char *host, int port)
     ret = krb5_init_context (&context);
     if (ret)
 	errx (1, "krb5_init_context failed: %d", ret);
-    
+
     ret = krb5_sname_to_principal (context,
 				   host,
 				   "pop",
@@ -268,7 +268,7 @@ main(int argc, char **argv)
 	use_v4 = 0;
     if(use_v5 == -1 && use_v4 == 1)
 	use_v5 = 0;
-#endif    
+#endif
 
 #ifdef KRB5
     if (ret && use_v5) {

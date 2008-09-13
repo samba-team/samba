@@ -1,34 +1,34 @@
 /*
  * Copyright (c) 1997 - 2006 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * 3. Neither the name of the Institute nor the names of its contributors 
- *    may be used to endorse or promote products derived from this software 
- *    without specific prior written permission. 
+ * 3. Neither the name of the Institute nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
- * SUCH DAMAGE. 
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 #include "kadm5_locl.h"
@@ -36,7 +36,7 @@
 RCSID("$Id$");
 
 static kadm5_ret_t
-add_tl_data(kadm5_principal_ent_t ent, int16_t type, 
+add_tl_data(kadm5_principal_ent_t ent, int16_t type,
 	    const void *data, size_t size)
 {
     krb5_tl_data *tl;
@@ -65,15 +65,15 @@ krb5_ssize_t KRB5_LIB_FUNCTION
 _krb5_put_int(void *buffer, unsigned long value, size_t size); /* XXX */
 
 kadm5_ret_t
-kadm5_s_get_principal(void *server_handle, 
-		      krb5_principal princ, 
-		      kadm5_principal_ent_t out, 
+kadm5_s_get_principal(void *server_handle,
+		      krb5_principal princ,
+		      kadm5_principal_ent_t out,
 		      uint32_t mask)
 {
     kadm5_server_context *context = server_handle;
     kadm5_ret_t ret;
     hdb_entry_ex ent;
-    
+
     memset(&ent, 0, sizeof(ent));
     ret = context->db->hdb_open(context->context, context->db, O_RDONLY, 0);
     if(ret)
@@ -86,7 +86,7 @@ kadm5_s_get_principal(void *server_handle,
 
     memset(out, 0, sizeof(*out));
     if(mask & KADM5_PRINCIPAL)
-	ret  = krb5_copy_principal(context->context, ent.entry.principal, 
+	ret  = krb5_copy_principal(context->context, ent.entry.principal,
 				   &out->principal);
     if(ret)
 	goto out;
@@ -126,11 +126,11 @@ kadm5_s_get_principal(void *server_handle,
     if(mask & KADM5_MOD_NAME) {
 	if(ent.entry.modified_by) {
 	    if (ent.entry.modified_by->principal != NULL)
-		ret = krb5_copy_principal(context->context, 
+		ret = krb5_copy_principal(context->context,
 					  ent.entry.modified_by->principal,
 					  &out->mod_name);
 	} else if(ent.entry.created_by.principal != NULL)
-	    ret = krb5_copy_principal(context->context, 
+	    ret = krb5_copy_principal(context->context,
 				      ent.entry.created_by.principal,
 				      &out->mod_name);
 	else
@@ -195,7 +195,7 @@ kadm5_s_get_principal(void *server_handle,
 		ret = ENOMEM;
 		break;
 	    }
-	    memcpy(kd->key_data_contents[0], key->key.keyvalue.data, 
+	    memcpy(kd->key_data_contents[0], key->key.keyvalue.data,
 		   kd->key_data_length[0]);
 	    /* setup salt */
 	    if(key->salt)
@@ -233,14 +233,14 @@ kadm5_s_get_principal(void *server_handle,
 	    kadm5_free_principal_ent(context, out);
 	    goto out;
 	}
-	/* 
+	/*
 	 * If the client was allowed to get key data, let it have the
 	 * password too.
 	 */
 	if(mask & KADM5_KEY_DATA) {
 	    heim_utf8_string pw;
 
-	    ret = hdb_entry_get_password(context->context, 
+	    ret = hdb_entry_get_password(context->context,
 					 context->db, &ent.entry, &pw);
 	    if (ret == 0) {
 		ret = add_tl_data(out, KRB5_TL_PASSWORD, pw, strlen(pw) + 1);

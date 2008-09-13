@@ -192,7 +192,7 @@ _gsskrb5_set_sec_context_option
 	    }
 	    memcpy(&c, value->value, sizeof(c));
 	    krb5_set_send_to_kdc_func(context,
-				      (krb5_send_to_kdc_func)c.func, 
+				      (krb5_send_to_kdc_func)c.func,
 				      c.ptr);
 	}
 

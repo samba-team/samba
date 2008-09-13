@@ -206,7 +206,7 @@ kcm_ccache_make_default_event(krb5_context context,
     krb5_error_code ret = 0;
     kcm_ccache ccache = event->ccache;
 
-    event->fire_time = 0; 
+    event->fire_time = 0;
     event->expire_time = 0;
     event->backoff_time = KCM_EVENT_DEFAULT_BACKOFF_TIME;
 
@@ -353,7 +353,7 @@ kcm_fire_event(krb5_context context,
     event->fire_count++;
 
     if (ret) {
-	/* Reschedule failed event for another time */ 
+	/* Reschedule failed event for another time */
 	event->fire_time += event->backoff_time;
 	if (event->backoff_time < KCM_EVENT_MAX_BACKOFF_TIME)
 	    event->backoff_time *= 2;

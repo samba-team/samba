@@ -188,7 +188,7 @@ kerberos4_send(char *name, Authenticator *ap)
 	printf("Kerberos V4: no realm for %s\r\n", RemoteHostName);
 	return(0);
     }
-    printf("[ Trying %s (%s.%s@%s) ... ]\r\n", name, 
+    printf("[ Trying %s (%s.%s@%s) ... ]\r\n", name,
 	   KRB_SERVICE_NAME, instance, realm);
     r = krb_mk_req(&auth, KRB_SERVICE_NAME, instance, realm, 0L);
     if (r) {
@@ -200,7 +200,7 @@ kerberos4_send(char *name, Authenticator *ap)
 	printf("get_cred failed: %s\r\n", krb_get_err_text(r));
 	return(0);
     }
-    if (!auth_sendname((unsigned char*)UserNameRequested, 
+    if (!auth_sendname((unsigned char*)UserNameRequested,
 		       strlen(UserNameRequested))) {
 	if (auth_debug_mode)
 	    printf("Not enough room for user name\r\n");
@@ -230,17 +230,17 @@ kerberos4_send(char *name, Authenticator *ap)
 	/*
 	  old code
 	  Some CERT Advisory thinks this is a bad thing...
-	    
+	
 	  des_init_random_number_generator(&cred.session);
 	  des_new_random_key(&challenge);
 	  des_ecb_encrypt(&challenge, &session_key, sched, 1);
 	  */
-	  
+	
 	/*
 	 * Increment the challenge by 1, and encrypt it for
 	 * later comparison.
 	 */
-	for (i = 7; i >= 0; --i) 
+	for (i = 7; i >= 0; --i)
 	    if(++challenge[i] != 0) /* No carry! */
 		break;
 	des_ecb_encrypt(&challenge, &challenge, sched, 1);
@@ -350,10 +350,10 @@ kerberos4_is(Authenticator *ap, unsigned char *data, int cnt)
 	    int ret;
 
 	    ret = asprintf (&msg, "user `%s' is not authorized to "
-			    "login as `%s'", 
-			    krb_unparse_name_long(adat.pname, 
-						  adat.pinst, 
-						  adat.prealm), 
+			    "login as `%s'",
+			    krb_unparse_name_long(adat.pname,
+						  adat.pinst,
+						  adat.prealm),
 			    UserNameRequested ? UserNameRequested : "<nobody>");
 	    if (ret == -1)
 		Data(ap, KRB_REJECT, NULL, 0);
@@ -412,7 +412,7 @@ kerberos4_is(Authenticator *ap, unsigned char *data, int cnt)
 
 	    memcpy (session_key, adat.session, sizeof(session_key));
 	    des_set_key(&session_key, ks);
-	    des_pcbc_encrypt((void*)data, (void*)netcred, cnt, 
+	    des_pcbc_encrypt((void*)data, (void*)netcred, cnt,
 			     ks, &session_key, DES_DECRYPT);
 	    unpack_cred(netcred, cnt, &cred);
 	    {
@@ -420,7 +420,7 @@ kerberos4_is(Authenticator *ap, unsigned char *data, int cnt)
 		   strncmp(cred.instance, cred.realm, sizeof(cred.instance)) ||
 		   cred.lifetime < 0 || cred.lifetime > 255 ||
 		   cred.kvno < 0 || cred.kvno > 255 ||
-		   cred.issue_date < 0 || 
+		   cred.issue_date < 0 ||
 		   cred.issue_date > time(0) + CLOCK_SKEW ||
 		   strncmp(cred.pname, adat.pname, sizeof(cred.pname)) ||
 		   strncmp(cred.pinst, adat.pinst, sizeof(cred.pinst))){
@@ -435,7 +435,7 @@ kerberos4_is(Authenticator *ap, unsigned char *data, int cnt)
 			  chown(tkt_string(), pw->pw_uid, pw->pw_gid);
 			Data(ap, KRB_FORWARD_ACCEPT, 0, 0);
 		    } else{
-			Data(ap, KRB_FORWARD_REJECT, 
+			Data(ap, KRB_FORWARD_REJECT,
 			     krb_get_err_text(ret), -1);
 		    }
 		}
@@ -468,7 +468,7 @@ kerberos4_reply(Authenticator *ap, unsigned char *data, int cnt)
 	    printf("[ Kerberos V4 received unknown opcode ]\r\n");
 	}else{
 	    printf("[ Kerberos V4 refuses authentication ");
-	    if (cnt > 0) 
+	    if (cnt > 0)
 		printf("because %.*s ", cnt, data);
 	    printf("]\r\n");
 	    auth_send_retry();
@@ -481,7 +481,7 @@ kerberos4_reply(Authenticator *ap, unsigned char *data, int cnt)
 	    /*
 	     * Send over the encrypted challenge.
 	     */
-	    Data(ap, KRB_CHALLENGE, session_key, 
+	    Data(ap, KRB_CHALLENGE, session_key,
 		 sizeof(session_key));
 	    des_ecb_encrypt(&session_key, &session_key, sched, 1);
 	    skey.type = SK_DES;
@@ -537,7 +537,7 @@ kerberos4_status(Authenticator *ap, char *name, size_t name_sz, int level)
 #define	ADDC(buf, len, c)	if ((len) > 0) {*(buf)++ = (c); --(len);}
 
 void
-kerberos4_printsub(unsigned char *data, size_t cnt, 
+kerberos4_printsub(unsigned char *data, size_t cnt,
 		   unsigned char *buf, size_t buflen)
 {
     int i;
@@ -626,7 +626,7 @@ static int
 pack_cred(CREDENTIALS *cred, unsigned char *buf)
 {
     unsigned char *p = buf;
-    
+
     memcpy (p, cred->service, ANAME_SZ);
     p += ANAME_SZ;
     memcpy (p, cred->instance, INST_SZ);
@@ -706,7 +706,7 @@ kerberos4_forward(Authenticator *ap, void *v)
     memset(&cred, 0, sizeof(cred));
     ret = krb_get_cred(KRB_TICKET_GRANTING_TICKET,
 		       realm,
-		       realm, 
+		       realm,
 		       &cred);
     if(ret)
 	return ret;

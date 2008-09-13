@@ -1,34 +1,34 @@
 /*
  * Copyright (c) 2006 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * 3. Neither the name of the Institute nor the names of its contributors 
- *    may be used to endorse or promote products derived from this software 
- *    without specific prior written permission. 
+ * 3. Neither the name of the Institute nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
- * SUCH DAMAGE. 
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 #include "ntlm/ntlm.h"
@@ -121,20 +121,20 @@ v1_sign_message(gss_buffer_t in,
 {
     unsigned char sigature[12];
     uint32_t crc;
-    
+
     _krb5_crc_init_table();
     crc = _krb5_crc_update(in->value, in->length, 0);
-    
+
     encode_le_uint32(0, &sigature[0]);
     encode_le_uint32(crc, &sigature[4]);
     encode_le_uint32(seq, &sigature[8]);
-    
+
     encode_le_uint32(1, out); /* version */
     RC4(signkey, sizeof(sigature), sigature, out + 4);
-    
+
     if (RAND_bytes(out + 4, 4) != 1)
 	return GSS_S_UNAVAILABLE;
-    
+
     return 0;
 }
 
@@ -152,7 +152,7 @@ v2_sign_message(gss_buffer_t in,
 
     HMAC_CTX_init(&c);
     HMAC_Init_ex(&c, signkey, 16, EVP_md5(), NULL);
-    
+
     encode_le_uint32(seq, hmac);
     HMAC_Update(&c, hmac, 4);
     HMAC_Update(&c, in->value, in->length);
@@ -188,7 +188,7 @@ v2_verify_message(gss_buffer_t in,
 	return GSS_S_BAD_MIC;
 
     return GSS_S_COMPLETE;
-}    
+}
 
 static OM_uint32
 v2_seal_message(const gss_buffer_t in,
@@ -259,7 +259,7 @@ v2_unseal_message(gss_buffer_t in,
 /*
  *
  */
- 
+
 OM_uint32 _gss_ntlm_get_mic
            (OM_uint32 * minor_status,
             const gss_ctx_id_t context_handle,
@@ -383,7 +383,7 @@ _gss_ntlm_verify_mic
 	    ((unsigned char *)token_buffer->value) + 4, sigature);
 
 	_krb5_crc_init_table();
-	crc = _krb5_crc_update(message_buffer->value, 
+	crc = _krb5_crc_update(message_buffer->value,
 			       message_buffer->length, 0);
 	/* skip first 4 bytes in the encrypted checksum */
 	decode_le_uint32(&sigature[4], &num);
@@ -470,7 +470,7 @@ OM_uint32 _gss_ntlm_wrap
     if (output_message_buffer == GSS_C_NO_BUFFER)
 	return GSS_S_FAILURE;
 
-    
+
     if (CTX_FLAGS_ISSET(ctx, NTLM_NEG_SEAL|NTLM_NEG_NTLM2_SESSION)) {
 
 	return v2_seal_message(input_message_buffer,
@@ -506,7 +506,7 @@ OM_uint32 _gss_ntlm_wrap
 	    gss_release_buffer(&junk, &trailer);
 	    return GSS_S_FAILURE;
 	}
-	memcpy(((unsigned char *)output_message_buffer->value) + 
+	memcpy(((unsigned char *)output_message_buffer->value) +
 	       input_message_buffer->length,
 	       trailer.value, trailer.length);
 	gss_release_buffer(&junk, &trailer);

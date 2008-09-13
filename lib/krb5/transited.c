@@ -1,34 +1,34 @@
 /*
  * Copyright (c) 1997 - 2001, 2003 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * 3. Neither the name of the Institute nor the names of its contributors 
- *    may be used to endorse or promote products derived from this software 
- *    without specific prior written permission. 
+ * 3. Neither the name of the Institute nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
- * SUCH DAMAGE. 
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 #include "krb5_locl.h"
@@ -136,13 +136,13 @@ make_path(krb5_context context, struct tr_realm *r,
 	return KRB5KDC_ERR_POLICY;
     }
     r->next = path;
-    
+
     return 0;
 }
 
 static int
 make_paths(krb5_context context,
-	   struct tr_realm *realms, const char *client_realm, 
+	   struct tr_realm *realms, const char *client_realm,
 	   const char *server_realm)
 {
     struct tr_realm *r;
@@ -326,20 +326,20 @@ decode_realms(krb5_context context,
 	return ENOMEM;
     }
     *realms = append_realm(*realms, r);
-    
+
     return 0;
 }
 
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_domain_x500_decode(krb5_context context,
-			krb5_data tr, char ***realms, unsigned int *num_realms, 
+			krb5_data tr, char ***realms, unsigned int *num_realms,
 			const char *client_realm, const char *server_realm)
 {
     struct tr_realm *r = NULL;
     struct tr_realm *p, **q;
     int ret;
-    
+
     if(tr.length == 0) {
 	*realms = NULL;
 	*num_realms = 0;
@@ -350,16 +350,16 @@ krb5_domain_x500_decode(krb5_context context,
     ret = decode_realms(context, tr.data, tr.length, &r);
     if(ret)
 	return ret;
-    
+
     /* apply prefix rule */
     ret = expand_realms(context, r, client_realm);
     if(ret)
 	return ret;
-    
+
     ret = make_paths(context, r, client_realm, server_realm);
     if(ret)
 	return ret;
-    
+
     /* remove empty components and count realms */
     q = &r;
     *num_realms = 0;
@@ -395,7 +395,7 @@ krb5_domain_x500_decode(krb5_context context,
 }
 
 krb5_error_code KRB5_LIB_FUNCTION
-krb5_domain_x500_encode(char **realms, unsigned int num_realms, 
+krb5_domain_x500_encode(char **realms, unsigned int num_realms,
 			krb5_data *encoding)
 {
     char *s = NULL;
@@ -440,11 +440,11 @@ krb5_check_transited(krb5_context context,
 
     if(num_realms == 0)
 	return 0;
-    
-    tr_realms = krb5_config_get_strings(context, NULL, 
-					"capaths", 
-					client_realm, 
-					server_realm, 
+
+    tr_realms = krb5_config_get_strings(context, NULL,
+					"capaths",
+					client_realm,
+					server_realm,
 					NULL);
     for(i = 0; i < num_realms; i++) {
 	for(p = tr_realms; p && *p; p++) {
@@ -468,15 +468,15 @@ krb5_check_transited(krb5_context context,
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_check_transited_realms(krb5_context context,
-			    const char *const *realms, 
-			    unsigned int num_realms, 
+			    const char *const *realms,
+			    unsigned int num_realms,
 			    int *bad_realm)
 {
     int i;
     int ret = 0;
-    char **bad_realms = krb5_config_get_strings(context, NULL, 
-						"libdefaults", 
-						"transited_realms_reject", 
+    char **bad_realms = krb5_config_get_strings(context, NULL,
+						"libdefaults",
+						"transited_realms_reject",
 						NULL);
     if(bad_realms == NULL)
 	return 0;

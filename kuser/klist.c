@@ -1,34 +1,34 @@
 /*
  * Copyright (c) 1997-2004 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * 3. Neither the name of the Institute nor the names of its contributors 
- *    may be used to endorse or promote products derived from this software 
- *    without specific prior written permission. 
+ * 3. Neither the name of the Institute nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
- * SUCH DAMAGE. 
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 #include "kuser_locl.h"
@@ -77,7 +77,7 @@ print_cred(krb5_context context, krb5_creds *cred, rtbl_t ct, int do_flags)
     else
 	rtbl_add_column_entry(ct, COL_ISSUED,
 			      printable_time(cred->times.authtime));
-    
+
     if(cred->times.endtime > sec)
 	rtbl_add_column_entry(ct, COL_EXPIRES,
 			      printable_time(cred->times.endtime));
@@ -177,7 +177,7 @@ print_cred_verbose(krb5_context context, krb5_creds *cred)
 	printf(" (expired)");
     printf("\n");
     if(cred->flags.b.renewable)
-	printf("Renew till: %s\n", 
+	printf("Renew till: %s\n",
 	       printable_time_long(cred->times.renew_till));
     printf("Ticket flags: ");
 #define PRINT_FLAG2(f, s) if(cred->flags.b.f) { if(!first_flag) printf(", "); printf("%s", #s); first_flag = 0; }
@@ -204,9 +204,9 @@ print_cred_verbose(krb5_context context, krb5_creds *cred)
 	    char buf[128];
 	    size_t len;
 	    if(j) printf(", ");
-	    ret = krb5_print_address(&cred->addresses.val[j], 
+	    ret = krb5_print_address(&cred->addresses.val[j],
 				     buf, sizeof(buf), &len);
-	    
+	
 	    if(ret == 0)
 		printf("%s", buf);
 	}
@@ -240,17 +240,17 @@ print_tickets (krb5_context context,
     if (ret)
 	krb5_err (context, 1, ret, "krb5_unparse_name");
 
-    printf ("%17s: %s:%s\n", 
+    printf ("%17s: %s:%s\n",
 	    "Credentials cache",
 	    krb5_cc_get_type(context, ccache),
 	    krb5_cc_get_name(context, ccache));
     printf ("%17s: %s\n", "Principal", str);
     free (str);
-    
+
     if(do_verbose)
 	printf ("%17s: %d\n", "Cache version",
 		krb5_cc_get_version(context, ccache));
-    
+
     krb5_get_kdc_sec_offset(context, &sec, &usec);
 
     if (do_verbose && sec != 0) {
@@ -433,7 +433,7 @@ display_tokens(int do_verbose)
  */
 
 static int
-display_v5_ccache (const char *cred_cache, int do_test, int do_verbose, 
+display_v5_ccache (const char *cred_cache, int do_test, int do_verbose,
 		   int do_flags, int do_hidden)
 {
     krb5_error_code ret;
@@ -493,7 +493,7 @@ list_caches(void)
     krb5_error_code ret;
     krb5_ccache id;
     rtbl_t ct;
-    
+
     ret = krb5_init_context (&context);
     if (ret)
 	errx (1, "krb5_init_context failed: %d", ret);
@@ -526,7 +526,7 @@ list_caches(void)
 		rtbl_add_column_entry(ct, COL_CACHENAME,
 				      krb5_cc_get_name(context, id));
 		rtbl_add_column_entry(ct, COL_EXPIRES,
-				      expired ? ">>> Expired <<<" : 
+				      expired ? ">>> Expired <<<" :
 				      printable_time(t));
 		free(name);
 		krb5_free_principal(context, principal);
@@ -539,7 +539,7 @@ list_caches(void)
 
     rtbl_format(ct, stdout);
     rtbl_destroy(ct);
-    
+
     return 0;
 }
 
@@ -577,9 +577,9 @@ static struct getargs args[] = {
       "display hidden credentials", NULL },
     { NULL,			'a', arg_flag, &do_verbose },
     { NULL,			'n', arg_flag, &do_verbose },
-    { "version", 		0,   arg_flag, &version_flag, 
+    { "version", 		0,   arg_flag, &version_flag,
       "print version", NULL },
-    { "help",			0,   arg_flag, &help_flag, 
+    { "help",			0,   arg_flag, &help_flag,
       NULL, NULL}
 };
 
@@ -603,7 +603,7 @@ main (int argc, char **argv)
 
     if(getarg(args, sizeof(args) / sizeof(args[0]), argc, argv, &optidx))
 	usage(1);
-    
+
     if (help_flag)
 	usage (0);
 
@@ -624,7 +624,7 @@ main (int argc, char **argv)
     }
 
     if (do_v5)
-	exit_status = display_v5_ccache (cred_cache, do_test, 
+	exit_status = display_v5_ccache (cred_cache, do_test,
 					 do_verbose, do_flags, do_hidden);
 
     if (!do_test) {

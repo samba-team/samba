@@ -1,7 +1,7 @@
-/*  Copyright 1992 Simmule Turner and Rich Salz.  All rights reserved. 
+/*  Copyright 1992 Simmule Turner and Rich Salz.  All rights reserved.
  *
- *  This software is not subject to any license of the American Telephone 
- *  and Telegraph Company or of the Regents of the University of California. 
+ *  This software is not subject to any license of the American Telephone
+ *  and Telegraph Company or of the Regents of the University of California.
  *
  *  Permission is granted to anyone to use this software for any purpose on
  *  any computer system, and to alter it and redistribute it freely, subject
@@ -38,7 +38,7 @@ rl_ttyset(int Reset)
 {
     static struct termios	old;
     struct termios		new;
-    
+
     if (Reset == 0) {
 	tcgetattr(0, &old);
 	rl_erase = old.c_cc[VERASE];
@@ -86,7 +86,7 @@ void
 rl_add_slash(char *path, char *p, size_t len)
 {
     struct stat	Sb;
-    
+
     if (stat(path, &Sb) >= 0)
 	strlcat(p, S_ISDIR(Sb.st_mode) ? "/" : " ", len);
 }

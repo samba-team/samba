@@ -74,7 +74,7 @@ struct hdbldapdb {
  *
  */
 
-static char * krb5kdcentry_attrs[] = { 
+static char * krb5kdcentry_attrs[] = {
     "cn",
     "createTimestamp",
     "creatorsName",
@@ -409,7 +409,7 @@ LDAP_entry2mods(krb5_context context, HDB * db, hdb_entry_ex * ent,
 	    goto out;
 
 	is_new_entry = FALSE;
-	    
+	
 	vals = ldap_get_values_len(HDB2LDAP(db), msg, "objectClass");
 	if (vals) {
 	    int num_objectclasses = ldap_count_values_len(vals);
@@ -430,7 +430,7 @@ LDAP_entry2mods(krb5_context context, HDB * db, hdb_entry_ex * ent,
 	 * If this is just a "account" entry and no other objectclass
 	 * is hanging on this entry, it's really a new entry.
 	 */
-	if (is_samba_account == FALSE && is_heimdal_principal == FALSE && 
+	if (is_samba_account == FALSE && is_heimdal_principal == FALSE &&
 	    is_heimdal_entry == FALSE) {
 	    if (is_account == TRUE) {
 		is_new_entry = TRUE;
@@ -454,7 +454,7 @@ LDAP_entry2mods(krb5_context context, HDB * db, hdb_entry_ex * ent,
 	
 	/* account is the structural object class */
 	if (is_account == FALSE) {
-	    ret = LDAP_addmod(&mods, LDAP_MOD_ADD, "objectClass", 
+	    ret = LDAP_addmod(&mods, LDAP_MOD_ADD, "objectClass",
 			      structural_object);
 	    is_account = TRUE;
 	    if (ret)
@@ -472,7 +472,7 @@ LDAP_entry2mods(krb5_context context, HDB * db, hdb_entry_ex * ent,
 	    goto out;
     }
 
-    if (is_new_entry || 
+    if (is_new_entry ||
 	krb5_principal_compare(context, ent->entry.principal, orig.entry.principal)
 	== FALSE)
     {
@@ -506,7 +506,7 @@ LDAP_entry2mods(krb5_context context, HDB * db, hdb_entry_ex * ent,
 
     if (is_heimdal_entry && (ent->entry.kvno != orig.entry.kvno || is_new_entry)) {
 	ret = LDAP_addmod_integer(context, &mods, LDAP_MOD_REPLACE,
-			    "krb5KeyVersionNumber", 
+			    "krb5KeyVersionNumber",
 			    ent->entry.kvno);
 	if (ret)
 	    goto out;
@@ -525,7 +525,7 @@ LDAP_entry2mods(krb5_context context, HDB * db, hdb_entry_ex * ent,
 
     if (ent->entry.valid_end) {
  	if (orig.entry.valid_end == NULL || (*(ent->entry.valid_end) != *(orig.entry.valid_end))) {
-	    if (is_heimdal_entry) { 
+	    if (is_heimdal_entry) {
 		ret = LDAP_addmod_generalized_time(&mods, LDAP_MOD_REPLACE,
 						   "krb5ValidEnd",
 						   ent->entry.valid_end);
@@ -534,7 +534,7 @@ LDAP_entry2mods(krb5_context context, HDB * db, hdb_entry_ex * ent,
             }
 	    if (is_samba_account) {
 		ret = LDAP_addmod_integer(context, &mods,  LDAP_MOD_REPLACE,
-					  "sambaKickoffTime", 
+					  "sambaKickoffTime",
 					  *(ent->entry.valid_end));
 		if (ret)
 		    goto out;
@@ -554,7 +554,7 @@ LDAP_entry2mods(krb5_context context, HDB * db, hdb_entry_ex * ent,
 
 	    if (is_samba_account) {
 		ret = LDAP_addmod_integer(context, &mods, LDAP_MOD_REPLACE,
-					  "sambaPwdMustChange", 
+					  "sambaPwdMustChange",
 					  *(ent->entry.pw_end));
 		if (ret)
 		    goto out;
@@ -567,7 +567,7 @@ LDAP_entry2mods(krb5_context context, HDB * db, hdb_entry_ex * ent,
     if (is_samba_account && ent->entry.last_pw_change) {
 	if (orig.entry.last_pw_change == NULL || (*(ent->entry.last_pw_change) != *(orig.entry.last_pw_change))) {
 	    ret = LDAP_addmod_integer(context, &mods, LDAP_MOD_REPLACE,
-				      "sambaPwdLastSet", 
+				      "sambaPwdLastSet",
 				      *(ent->entry.last_pw_change));
 	    if (ret)
 		goto out;
@@ -580,7 +580,7 @@ LDAP_entry2mods(krb5_context context, HDB * db, hdb_entry_ex * ent,
 	    || (*(ent->entry.max_life) != *(orig.entry.max_life))) {
 
 	    ret = LDAP_addmod_integer(context, &mods, LDAP_MOD_REPLACE,
-				      "krb5MaxLife", 
+				      "krb5MaxLife",
 				      *(ent->entry.max_life));
 	    if (ret)
 		goto out;
@@ -629,13 +629,13 @@ LDAP_entry2mods(krb5_context context, HDB * db, hdb_entry_ex * ent,
 	    && ent->entry.keys.val[i].key.keytype == ETYPE_ARCFOUR_HMAC_MD5) {
 	    char *ntHexPassword;
 	    char *nt;
-		    
+		
 	    /* the key might have been 'sealed', but samba passwords
 	       are clear in the directory */
 	    ret = hdb_unseal_key(context, db, &ent->entry.keys.val[i]);
 	    if (ret)
 		goto out;
-		    
+		
 	    nt = ent->entry.keys.val[i].key.keyvalue.data;
 	    /* store in ntPassword, not krb5key */
 	    ret = hex_encode(nt, 16, &ntHexPassword);
@@ -645,12 +645,12 @@ LDAP_entry2mods(krb5_context context, HDB * db, hdb_entry_ex * ent,
 				      "hex encode key");
 		goto out;
 	    }
-	    ret = LDAP_addmod(&mods, LDAP_MOD_REPLACE, "sambaNTPassword", 
+	    ret = LDAP_addmod(&mods, LDAP_MOD_REPLACE, "sambaNTPassword",
 			      ntHexPassword);
 	    free(ntHexPassword);
 	    if (ret)
 		goto out;
-		    
+		
 	    /* have to kill the LM passwod if it exists */
 	    vals = ldap_get_values_len(HDB2LDAP(db), msg, "sambaLMPassword");
 	    if (vals) {
@@ -660,7 +660,7 @@ LDAP_entry2mods(krb5_context context, HDB * db, hdb_entry_ex * ent,
 		if (ret)
 		    goto out;
 	    }
-		    
+		
 	} else if (is_heimdal_entry) {
 	    unsigned char *buf;
 	    size_t len, buf_size;
@@ -681,7 +681,7 @@ LDAP_entry2mods(krb5_context context, HDB * db, hdb_entry_ex * ent,
     if (ent->entry.etypes) {
 	int add_krb5EncryptionType = 0;
 
-	/* 
+	/*
 	 * Only add/modify krb5EncryptionType if it's a new heimdal
 	 * entry or krb5EncryptionType already exists on the entry.
 	 */
@@ -701,7 +701,7 @@ LDAP_entry2mods(krb5_context context, HDB * db, hdb_entry_ex * ent,
 
 	if (add_krb5EncryptionType) {
 	    for (i = 0; i < ent->entry.etypes->len; i++) {
-		if (is_samba_account && 
+		if (is_samba_account &&
 		    ent->entry.keys.val[i].key.keytype == ETYPE_ARCFOUR_HMAC_MD5)
 		{
 		    ;
@@ -810,8 +810,8 @@ LDAP__lookup_princ(krb5_context context,
     if (ret)
 	goto out;
 
-    rc = ldap_search_ext_s(HDB2LDAP(db), HDB2BASE(db), 
-			   LDAP_SCOPE_SUBTREE, filter, 
+    rc = ldap_search_ext_s(HDB2LDAP(db), HDB2BASE(db),
+			   LDAP_SCOPE_SUBTREE, filter,
 			   krb5kdcentry_attrs, 0,
 			   NULL, NULL, NULL,
 			   0, msg);
@@ -837,12 +837,12 @@ LDAP__lookup_princ(krb5_context context,
 	    krb5_set_error_message(context, ret, "asprintf: out of memory");
 	    goto out;
 	}
-	    
+	
 	ret = LDAP_no_size_limit(context, HDB2LDAP(db));
 	if (ret)
 	    goto out;
 
-	rc = ldap_search_ext_s(HDB2LDAP(db), HDB2BASE(db), LDAP_SCOPE_SUBTREE, 
+	rc = ldap_search_ext_s(HDB2LDAP(db), HDB2BASE(db), LDAP_SCOPE_SUBTREE,
 			       filter, krb5kdcentry_attrs, 0,
 			       NULL, NULL, NULL,
 			       0, msg);
@@ -932,7 +932,7 @@ LDAP_message2entry(krb5_context context, HDB * db, LDAPMessage * msg,
 	    if (ret)
 		goto out;
 	} else {
-	    krb5_set_error_message(context, HDB_ERR_NOENTRY, 
+	    krb5_set_error_message(context, HDB_ERR_NOENTRY,
 				   "hdb-ldap: ldap entry missing"
 				  "principal name");
 	    return HDB_ERR_NOENTRY;
@@ -1068,16 +1068,16 @@ LDAP_message2entry(krb5_context context, HDB * db, LDAPMessage * msg,
 		break;
 	/* If there is no ARCFOUR enctype, add one */
 	if (i == ent->entry.etypes->len) {
-	    etypes = realloc(ent->entry.etypes->val, 
-			     (ent->entry.etypes->len + 1) * 
+	    etypes = realloc(ent->entry.etypes->val,
+			     (ent->entry.etypes->len + 1) *
 			     sizeof(ent->entry.etypes->val[0]));
 	    if (etypes == NULL) {
 		ret = ENOMEM;
 		krb5_set_error_message(context, ret, "malloc: out of memory");
-		goto out;			    
+		goto out;			
 	    }
 	    ent->entry.etypes->val = etypes;
-	    ent->entry.etypes->val[ent->entry.etypes->len] = 
+	    ent->entry.etypes->val[ent->entry.etypes->len] =
 		ETYPE_ARCFOUR_HMAC_MD5;
 	    ent->entry.etypes->len++;
 	}
@@ -1130,7 +1130,7 @@ LDAP_message2entry(krb5_context context, HDB * db, LDAPMessage * msg,
 	free(ent->entry.valid_start);
 	ent->entry.valid_start = NULL;
     }
-    
+
     ent->entry.valid_end = malloc(sizeof(*ent->entry.valid_end));
     if (ent->entry.valid_end == NULL) {
 	ret = ENOMEM;
@@ -1234,29 +1234,29 @@ LDAP_message2entry(krb5_context context, HDB * db, LDAPMessage * msg,
     ret = LDAP_get_string_value(db, msg, "sambaAcctFlags", &samba_acct_flags);
     if (ret == 0) {
 	/* parse the [UXW...] string:
-	       
-	   'N'    No password	 
-	   'D'    Disabled	 
-	   'H'    Homedir required	 
-	   'T'    Temp account.	 
-	   'U'    User account (normal) 	 
-	   'M'    MNS logon user account - what is this ? 	 
-	   'W'    Workstation account	 
-	   'S'    Server account 	 
-	   'L'    Locked account	 
-	   'X'    No Xpiry on password 	 
-	   'I'    Interdomain trust account	 
-	    
-	*/	 
-	    
+	
+	   'N'    No password	
+	   'D'    Disabled	
+	   'H'    Homedir required	
+	   'T'    Temp account.	
+	   'U'    User account (normal) 	
+	   'M'    MNS logon user account - what is this ? 	
+	   'W'    Workstation account	
+	   'S'    Server account 	
+	   'L'    Locked account	
+	   'X'    No Xpiry on password 	
+	   'I'    Interdomain trust account	
+	
+	*/	
+	
 	int i;
 	int flags_len = strlen(samba_acct_flags);
 
 	if (flags_len < 2)
 	    goto out2;
 
-	if (samba_acct_flags[0] != '[' 
-	    || samba_acct_flags[flags_len - 1] != ']') 
+	if (samba_acct_flags[0] != '['
+	    || samba_acct_flags[flags_len - 1] != ']')
 	    goto out2;
 
 	/* Allow forwarding */
@@ -1329,7 +1329,7 @@ LDAP_close(krb5_context context, HDB * db)
 	ldap_unbind_ext(HDB2LDAP(db), NULL, NULL);
 	((struct hdbldapdb *)db->hdb_db)->h_lp = NULL;
     }
-    
+
     return 0;
 }
 
@@ -1613,7 +1613,7 @@ LDAP_store(krb5_context context, HDB * db, unsigned flags,
 	ldap_get_option(HDB2LDAP(db), LDAP_OPT_ERROR_STRING,
 			&ld_error);
 	ret = HDB_ERR_CANT_LOCK_DB;
-	krb5_set_error_message(context, ret, "%s: %s (DN=%s) %s: %s", 
+	krb5_set_error_message(context, ret, "%s: %s (DN=%s) %s: %s",
 			      errfn, name, dn, ldap_err2string(rc), ld_error);
     } else
 	ret = 0;
@@ -1667,7 +1667,7 @@ LDAP_remove(krb5_context context, HDB *db, krb5_const_principal principal)
     rc = ldap_delete_ext_s(HDB2LDAP(db), dn, NULL, NULL );
     if (check_ldap(context, db, rc)) {
 	ret = HDB_ERR_CANT_LOCK_DB;
-	krb5_set_error_message(context, ret, "ldap_delete_ext_s: %s", 
+	krb5_set_error_message(context, ret, "ldap_delete_ext_s: %s",
 			       ldap_err2string(rc));
     } else
 	ret = 0;
@@ -1720,7 +1720,7 @@ hdb_ldap_common(krb5_context context,
     if (structural_object == NULL) {
 	const char *p;
 
-	p = krb5_config_get_string(context, NULL, "kdc", 
+	p = krb5_config_get_string(context, NULL, "kdc",
 				   "hdb-ldap-structural-object", NULL);
 	if (p == NULL)
 	    p = default_structural_object;
@@ -1731,7 +1731,7 @@ hdb_ldap_common(krb5_context context,
 	}
     }
 
-    samba_forwardable = 
+    samba_forwardable =
 	krb5_config_get_bool_default(context, NULL, TRUE,
 				     "kdc", "hdb-samba-forwardable", NULL);
 
@@ -1768,7 +1768,7 @@ hdb_ldap_common(krb5_context context,
 	return ENOMEM;
     }
 
-    create_base = krb5_config_get_string(context, NULL, "kdc", 
+    create_base = krb5_config_get_string(context, NULL, "kdc",
 					 "hdb-ldap-create-base", NULL);
     if (create_base == NULL)
 	create_base = h->h_base;

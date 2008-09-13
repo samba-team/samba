@@ -1,18 +1,18 @@
 /*
  * Copyright (c) 2006 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
  * 3. Neither the name of KTH nor the names of its contributors may be
  *    used to endorse or promote products derived from this software without
@@ -49,7 +49,7 @@ struct range tests[] = {
 };
 
 static void
-test_range(const struct range *r, int integ, 
+test_range(const struct range *r, int integ,
 	   krb5_context context, krb5_crypto crypto)
 {
     krb5_error_code ret;
@@ -79,7 +79,7 @@ test_range(const struct range *r, int integ,
 	    krb5_errx(context, 1, "_gsskrb5cfx_wrap_length_cfx: %d", ret);
 
 	if (size < rsize)
-	    krb5_errx(context, 1, 
+	    krb5_errx(context, 1,
 		      "size (%d) < rsize (%d) for max_wrap_size %d",
 		      (int)size, (int)rsize, (int)max_wrap_size);
     }
@@ -102,7 +102,7 @@ test_special(krb5_context context, krb5_crypto crypto,
 					  &max_wrap_size);
     if (ret)
 	krb5_errx(context, 1, "_gsskrb5cfx_max_wrap_length_cfx: %d", ret);
-    
+
     ret = _gsskrb5cfx_wrap_length_cfx(context,
 				      crypto,
 				      integ,
@@ -110,9 +110,9 @@ test_special(krb5_context context, krb5_crypto crypto,
 				      &rsize, &cksumsize, &padsize);
     if (ret)
 	krb5_errx(context, 1, "_gsskrb5cfx_wrap_length_cfx: %d", ret);
-    
+
     if (testsize < rsize)
-	krb5_errx(context, 1, 
+	krb5_errx(context, 1,
 		  "testsize (%d) < rsize (%d) for max_wrap_size %d",
 		  (int)testsize, (int)rsize, (int)max_wrap_size);
 }
@@ -132,8 +132,8 @@ main(int argc, char **argv)
     ret = krb5_init_context(&context);
     if (ret)
 	errx(1, "krb5_context_init: %d", ret);
-    
-    ret = krb5_generate_random_keyblock(context, 
+
+    ret = krb5_generate_random_keyblock(context,
 					ENCTYPE_AES256_CTS_HMAC_SHA1_96,
 					&keyblock);
     if (ret)

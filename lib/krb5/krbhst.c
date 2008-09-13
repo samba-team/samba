@@ -1,34 +1,34 @@
 /*
  * Copyright (c) 2001 - 2003 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * 3. Neither the name of the Institute nor the names of its contributors 
- *    may be used to endorse or promote products derived from this software 
- *    without specific prior written permission. 
+ * 3. Neither the name of the Institute nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
- * SUCH DAMAGE. 
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 #include "krb5_locl.h"
@@ -42,9 +42,9 @@ string_to_proto(const char *string)
 {
     if(strcasecmp(string, "udp") == 0)
 	return KRB5_KRBHST_UDP;
-    else if(strcasecmp(string, "tcp") == 0) 
+    else if(strcasecmp(string, "tcp") == 0)
 	return KRB5_KRBHST_TCP;
-    else if(strcasecmp(string, "http") == 0) 
+    else if(strcasecmp(string, "http") == 0)
 	return KRB5_KRBHST_HTTP;
     return -1;
 }
@@ -56,7 +56,7 @@ string_to_proto(const char *string)
  */
 
 static krb5_error_code
-srv_find_realm(krb5_context context, krb5_krbhst_info ***res, int *count, 
+srv_find_realm(krb5_context context, krb5_krbhst_info ***res, int *count,
 	       const char *realm, const char *dns_type,
 	       const char *proto, const char *service, int port)
 {
@@ -91,7 +91,7 @@ srv_find_realm(krb5_context context, krb5_krbhst_info ***res, int *count,
     if(r == NULL)
 	return KRB5_KDC_UNREACH;
 
-    for(num_srv = 0, rr = r->head; rr; rr = rr->next) 
+    for(num_srv = 0, rr = r->head; rr; rr = rr->next)
 	if(rr->type == T_SRV)
 	    num_srv++;
 
@@ -105,7 +105,7 @@ srv_find_realm(krb5_context context, krb5_krbhst_info ***res, int *count,
 
     dns_srv_order(r);
 
-    for(num_srv = 0, rr = r->head; rr; rr = rr->next) 
+    for(num_srv = 0, rr = r->head; rr; rr = rr->next)
 	if(rr->type == T_SRV) {
 	    krb5_krbhst_info *hi;
 	    size_t len = strlen(rr->u.srv->target);
@@ -122,7 +122,7 @@ srv_find_realm(krb5_context context, krb5_krbhst_info ***res, int *count,
 	    (*res)[num_srv++] = hi;
 
 	    hi->proto = proto_num;
-	    
+	
 	    hi->def_port = def_port;
 	    if (port != 0)
 		hi->port = port;
@@ -133,7 +133,7 @@ srv_find_realm(krb5_context context, krb5_krbhst_info ***res, int *count,
 	}
 
     *count = num_srv;
-	    
+	
     dns_free_data(r);
     return 0;
 }
@@ -152,7 +152,7 @@ struct krb5_krbhst_data {
 #define KD_CONFIG_EXISTS	32
 #define KD_LARGE_MSG		64
 #define KD_PLUGIN	       128
-    krb5_error_code (*get_next)(krb5_context, struct krb5_krbhst_data *, 
+    krb5_error_code (*get_next)(krb5_context, struct krb5_krbhst_data *,
 				krb5_krbhst_info**);
 
     unsigned int fallback_count;
@@ -190,11 +190,11 @@ parse_hostspec(krb5_context context, struct krb5_krbhst_data *kd,
 {
     const char *p = spec;
     struct krb5_krbhst_info *hi;
-    
+
     hi = calloc(1, sizeof(*hi) + strlen(spec));
     if(hi == NULL)
 	return NULL;
-       
+
     hi->proto = krbhst_get_default_proto(kd);
 
     if(strncmp(p, "http://", 7) == 0){
@@ -248,7 +248,7 @@ _krb5_krbhost_info_move(krb5_context context,
 {
     size_t hostnamelen = strlen(from->hostname);
     /* trailing NUL is included in structure */
-    *to = calloc(1, sizeof(**to) + hostnamelen); 
+    *to = calloc(1, sizeof(**to) + hostnamelen);
     if(*to == NULL) {
 	krb5_set_error_message(context, ENOMEM,
 			       N_("malloc: out of memory", ""));
@@ -272,8 +272,8 @@ append_host_hostinfo(struct krb5_krbhst_data *kd, struct krb5_krbhst_info *host)
     struct krb5_krbhst_info *h;
 
     for(h = kd->hosts; h; h = h->next)
-	if(h->proto == host->proto && 
-	   h->port == host->port && 
+	if(h->proto == host->proto &&
+	   h->port == host->port &&
 	   strcmp(h->hostname, host->hostname) == 0) {
 	    _krb5_free_krbhst_info(host);
 	    return;
@@ -291,7 +291,7 @@ append_host_string(krb5_context context, struct krb5_krbhst_data *kd,
     hi = parse_hostspec(context, kd, host, def_port, port);
     if(hi == NULL)
 	return ENOMEM;
-    
+
     append_host_hostinfo(kd, hi);
     return 0;
 }
@@ -301,7 +301,7 @@ append_host_string(krb5_context context, struct krb5_krbhst_data *kd,
  */
 
 krb5_error_code KRB5_LIB_FUNCTION
-krb5_krbhst_format_string(krb5_context context, const krb5_krbhst_info *host, 
+krb5_krbhst_format_string(krb5_context context, const krb5_krbhst_info *host,
 			  char *hostname, size_t hostlen)
 {
     const char *proto = "";
@@ -373,7 +373,7 @@ get_next(struct krb5_krbhst_data *kd, krb5_krbhst_info **host)
 }
 
 static void
-srv_get_hosts(krb5_context context, struct krb5_krbhst_data *kd, 
+srv_get_hosts(krb5_context context, struct krb5_krbhst_data *kd,
 	      const char *proto, const char *service)
 {
     krb5_krbhst_info **res;
@@ -393,13 +393,13 @@ srv_get_hosts(krb5_context context, struct krb5_krbhst_data *kd,
  */
 
 static void
-config_get_hosts(krb5_context context, struct krb5_krbhst_data *kd, 
+config_get_hosts(krb5_context context, struct krb5_krbhst_data *kd,
 		 const char *conf_string)
 {
     int i;
 	
     char **hostlist;
-    hostlist = krb5_config_get_strings(context, NULL, 
+    hostlist = krb5_config_get_strings(context, NULL,
 				       "realms", kd->realm, conf_string, NULL);
 
     if(hostlist == NULL)
@@ -414,12 +414,12 @@ config_get_hosts(krb5_context context, struct krb5_krbhst_data *kd,
 /*
  * as a fallback, look for `serv_string.kd->realm' (typically
  * kerberos.REALM, kerberos-1.REALM, ...
- * `port' is the default port for the service, and `proto' the 
+ * `port' is the default port for the service, and `proto' the
  * protocol
  */
 
 static krb5_error_code
-fallback_get_hosts(krb5_context context, struct krb5_krbhst_data *kd, 
+fallback_get_hosts(krb5_context context, struct krb5_krbhst_data *kd,
 		   const char *serv_string, int port, int proto)
 {
     char *host;
@@ -428,7 +428,7 @@ fallback_get_hosts(krb5_context context, struct krb5_krbhst_data *kd,
     struct addrinfo hints;
     char portstr[NI_MAXSERV];
 
-    /* 
+    /*
      * Don't try forever in case the DNS server keep returning us
      * entries (like wildcard entries or the .nu TLD)
      */
@@ -440,12 +440,12 @@ fallback_get_hosts(krb5_context context, struct krb5_krbhst_data *kd,
     if(kd->fallback_count == 0)
 	asprintf(&host, "%s.%s.", serv_string, kd->realm);
     else
-	asprintf(&host, "%s-%d.%s.", 
-		 serv_string, kd->fallback_count, kd->realm);	    
+	asprintf(&host, "%s-%d.%s.",
+		 serv_string, kd->fallback_count, kd->realm);	
 
     if (host == NULL)
 	return ENOMEM;
-    
+
     make_hints(&hints, proto);
     snprintf(portstr, sizeof(portstr), "%d", port);
     ret = getaddrinfo(host, portstr, &hints, &ai);
@@ -479,7 +479,7 @@ fallback_get_hosts(krb5_context context, struct krb5_krbhst_data *kd,
  * Fetch hosts from plugin
  */
 
-static krb5_error_code 
+static krb5_error_code
 add_locate(void *ctx, int type, struct sockaddr *addr)
 {
     struct krb5_krbhst_info *hi;
@@ -507,7 +507,7 @@ add_locate(void *ctx, int type, struct sockaddr *addr)
     hi = calloc(1, sizeof(*hi) + hostlen);
     if(hi == NULL)
 	return ENOMEM;
-    
+
     hi->proto = krbhst_get_default_proto(kd);
     hi->port  = hi->def_port = socket_get_port(addr);
     hi->ai    = ai;
@@ -545,7 +545,7 @@ plugin_get_hosts(krb5_context context,
 	ret = (*service->lookup)(ctx, type, kd->realm, 0, 0, add_locate, kd);
 	(*service->fini)(ctx);
 	if (ret && ret != KRB5_PLUGIN_NO_HANDLE) {
-	    krb5_set_error_message(context, ret, 
+	    krb5_set_error_message(context, ret,
 				   N_("Locate plugin failed to lookup realm %s: %d", ""),
 				   kd->realm, ret);
 	    break;
@@ -606,7 +606,7 @@ kdc_get_next(krb5_context context,
 
     while((kd->flags & KD_FALLBACK) == 0) {
 	ret = fallback_get_hosts(context, kd, "kerberos",
-				 kd->def_port, 
+				 kd->def_port,
 				 krbhst_get_default_proto(kd));
 	if(ret)
 	    return ret;
@@ -815,7 +815,7 @@ krb5_krbhst_init_flags(krb5_context context,
 		       krb5_krbhst_handle *handle)
 {
     struct krb5_krbhst_data *kd;
-    krb5_error_code (*next)(krb5_context, struct krb5_krbhst_data *, 
+    krb5_error_code (*next)(krb5_context, struct krb5_krbhst_data *,
 			    krb5_krbhst_info **);
     int def_port;
 
@@ -839,7 +839,7 @@ krb5_krbhst_init_flags(krb5_context context,
 	def_port = ntohs(krb5_getportbyname (context, "krb524", "udp", 4444));
 	break;
     default:
-	krb5_set_error_message(context, ENOTTY, 
+	krb5_set_error_message(context, ENOTTY,
 			       N_("unknown krbhst type (%u)", ""), type);
 	return ENOTTY;
     }
@@ -912,7 +912,7 @@ krb5_krbhst_free(krb5_context context, krb5_krbhst_handle handle)
 /* backwards compatibility ahead */
 
 static krb5_error_code
-gethostlist(krb5_context context, const char *realm, 
+gethostlist(krb5_context context, const char *realm,
 	    unsigned int type, char ***hostlist)
 {
     krb5_error_code ret;
@@ -928,7 +928,7 @@ gethostlist(krb5_context context, const char *realm,
     while(krb5_krbhst_next(context, handle, &hostinfo) == 0)
 	nhost++;
     if(nhost == 0) {
-	krb5_set_error_message(context, KRB5_KDC_UNREACH, 
+	krb5_set_error_message(context, KRB5_KDC_UNREACH,
 			       N_("No KDC found for realm %s", ""), realm);
 	return KRB5_KDC_UNREACH;
     }
@@ -940,7 +940,7 @@ gethostlist(krb5_context context, const char *realm,
 
     krb5_krbhst_reset(context, handle);
     nhost = 0;
-    while(krb5_krbhst_next_as_string(context, handle, 
+    while(krb5_krbhst_next_as_string(context, handle,
 				     host, sizeof(host)) == 0) {
 	if(((*hostlist)[nhost++] = strdup(host)) == NULL) {
 	    krb5_free_krbhst(context, *hostlist);

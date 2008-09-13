@@ -1,18 +1,18 @@
 /*
  * Copyright (c) 2003 - 2007 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
  * 3. Neither the name of KTH nor the names of its contributors may be
  *    used to endorse or promote products derived from this software without
@@ -67,12 +67,12 @@ test_default_name(krb5_context context)
     ret = krb5_cc_set_default_name(context, test_cc_name);
     if (p == NULL)
 	krb5_errx (context, 1, "krb5_cc_set_default_name 1 failed");
-    
+
     p = krb5_cc_default_name(context);
     if (p == NULL)
 	krb5_errx (context, 1, "krb5_cc_default_name 2 failed");
     p3 = estrdup(p);
-    
+
     if (strcmp(p3, test_cc_name) != 0)
 	krb5_errx (context, 1, "krb5_cc_set_default_name 1 failed");
 
@@ -116,9 +116,9 @@ test_mcache(krb5_context context)
 	krb5_errx(context, 1, "krb5_cc_get_name");
 
     asprintf(&c, "%s:%s", tc, nc);
-    
+
     krb5_cc_close(context, id);
-    
+
     ret = krb5_cc_resolve(context, c, &id2);
     if (ret)
 	krb5_err(context, 1, ret, "krb5_cc_resolve");
@@ -299,14 +299,14 @@ test_def_cc_name(krb5_context context)
 	ret = _krb5_expand_default_cc_name(context, cc_names[i].str, &str);
 	if (ret) {
 	    if (cc_names[i].fail == 0)
-		krb5_errx(context, 1, "test %d \"%s\" failed", 
+		krb5_errx(context, 1, "test %d \"%s\" failed",
 			  i, cc_names[i].str);
 	} else {
 	    if (cc_names[i].fail)
-		krb5_errx(context, 1, "test %d \"%s\" was successful", 
+		krb5_errx(context, 1, "test %d \"%s\" was successful",
 			  i, cc_names[i].str);
 	    if (cc_names[i].res && strcmp(cc_names[i].res, str) != 0)
-		krb5_errx(context, 1, "test %d %s != %s", 
+		krb5_errx(context, 1, "test %d %s != %s",
 			  i, cc_names[i].res, str);
 	    if (debug_flag)
 		printf("%s => %s\n", cc_names[i].str, str);
@@ -326,7 +326,7 @@ test_cache_find(krb5_context context, const char *type, const char *principal,
     ret = krb5_parse_name(context, principal, &client);
     if (ret)
 	krb5_err(context, 1, ret, "parse_name for %s failed", principal);
-    
+
     ret = krb5_cc_cache_match(context, client, type, &id);
     if (ret && find)
 	krb5_err(context, 1, ret, "cc_cache_match for %s failed", principal);
@@ -345,7 +345,7 @@ test_cache_iter(krb5_context context, const char *type, int destroy)
     krb5_cc_cache_cursor cursor;
     krb5_error_code ret;
     krb5_ccache id;
-    
+
     ret = krb5_cc_cache_get_first (context, type, &cursor);
     if (ret == KRB5_CC_NOSUPP)
 	return;
@@ -518,7 +518,7 @@ main(int argc, char **argv)
 
     if(getarg(args, sizeof(args) / sizeof(args[0]), argc, argv, &optidx))
 	usage(1);
-    
+
     if (help_flag)
 	usage (0);
 

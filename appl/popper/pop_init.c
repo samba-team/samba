@@ -34,12 +34,12 @@ pop_write_addr(POP *p, struct sockaddr *addr)
 	return;
     t = time(NULL);
     strftime(ts, sizeof(ts), "%Y%m%d%H%M%S", localtime(&t));
-    if(inet_ntop (addr->sa_family, socket_get_address(addr), 
+    if(inet_ntop (addr->sa_family, socket_get_address(addr),
 		  as, sizeof(as)) == NULL) {
         pop_log(p, POP_PRIORITY, "failed to print address");
 	return;
     }
-    
+
     f = fopen(addr_log, "a");
     if(f == NULL) {
         pop_log(p, POP_PRIORITY, "failed to open address log (%s)", addr_log);
@@ -55,10 +55,10 @@ krb4_authenticate (POP *p, int s, u_char *buf, struct sockaddr *addr)
 {
     Key_schedule schedule;
     KTEXT_ST ticket;
-    char instance[INST_SZ];  
+    char instance[INST_SZ];
     char version[9];
     int auth;
-  
+
     if (memcmp (buf, KRB_SENDAUTH_VERS, 4) != 0)
 	return -1;
     if (pop_net_read (p, s, buf + 4,
@@ -79,18 +79,18 @@ krb4_authenticate (POP *p, int s, u_char *buf, struct sockaddr *addr)
 			"",
 			schedule,
 			version);
-    
+
     if (auth != KSUCCESS) {
-        pop_msg(p, POP_FAILURE, "Kerberos authentication failure: %s", 
+        pop_msg(p, POP_FAILURE, "Kerberos authentication failure: %s",
                 krb_get_err_text(auth));
-        pop_log(p, POP_PRIORITY, "%s: (%s.%s@%s) %s", p->client, 
+        pop_log(p, POP_PRIORITY, "%s: (%s.%s@%s) %s", p->client,
                 p->kdata.pname, p->kdata.pinst, p->kdata.prealm,
 		krb_get_err_text(auth));
 	return -1;
     }
 
 #ifdef DEBUG
-    pop_log(p, POP_DEBUG, "%s.%s@%s (%s): ok", p->kdata.pname, 
+    pop_log(p, POP_DEBUG, "%s.%s@%s (%s): ok", p->kdata.pname,
             p->kdata.pinst, p->kdata.prealm, p->ipaddr);
 #endif /* DEBUG */
     return 0;
@@ -134,7 +134,7 @@ krb5_authenticate (POP *p, int s, u_char *buf, struct sockaddr *addr)
 
     ret = krb5_unparse_name(p->context, ticket->server, &server);
     if(ret) {
-	pop_log(p, POP_PRIORITY, "krb5_unparse_name: %s", 
+	pop_log(p, POP_PRIORITY, "krb5_unparse_name: %s",
 		krb5_get_err_text(p->context, ret));
 	ret = -1;
 	goto out;
@@ -146,7 +146,7 @@ krb5_authenticate (POP *p, int s, u_char *buf, struct sockaddr *addr)
 	ret = -1;
 	goto out;
     } else if(p->debug)
-	pop_log(p, POP_DEBUG, 
+	pop_log(p, POP_DEBUG,
 		"Accepted ticket for service `%s'", server);
     free(server);
  out:
@@ -210,7 +210,7 @@ static struct getargs args[] = {
 #if defined(KRB4) || defined(KRB5)
     { "kerberos", 'k', arg_flag, &kerberos_flag, "use kerberos" },
 #endif
-    { "auth-mode", 'a', arg_string, &auth_str, "required authentication", 
+    { "auth-mode", 'a', arg_string, &auth_str, "required authentication",
       "plaintext"
 #ifdef OTP
       "|otp"
@@ -231,12 +231,12 @@ static struct getargs args[] = {
 
 static int num_args = sizeof(args) / sizeof(args[0]);
 
-/* 
+/*
  *  init:   Start a Post Office Protocol session
  */
 
 static int
-pop_getportbyname(POP *p, const char *service, 
+pop_getportbyname(POP *p, const char *service,
 		  const char *proto, short def)
 {
 #ifdef KRB5
@@ -310,7 +310,7 @@ pop_init(POP *p,int argcount,char **argmessage)
     }
 
     if(auth_str){
-	if (strcasecmp (auth_str, "plaintext") == 0 || 
+	if (strcasecmp (auth_str, "plaintext") == 0 ||
 	    strcasecmp (auth_str, "none") == 0)
 	    p->auth_level = AUTH_NONE;
 	else if(strcasecmp(auth_str, "otp") == 0) {
@@ -354,7 +354,7 @@ pop_init(POP *p,int argcount,char **argmessage)
 
     if(timeout)
 	pop_timeout = timeout;
-    
+
     /* Fake inetd */
     if (interactive_flag) {
 	if (portnum == 0)
@@ -372,7 +372,7 @@ pop_init(POP *p,int argcount,char **argmessage)
         exit (1);
     }
 
-    /*  Save the dotted decimal form of the client's IP address 
+    /*  Save the dotted decimal form of the client's IP address
         in the POP parameter block */
     inet_ntop (cs->sa_family, socket_get_address (cs),
 	       p->ipaddr, sizeof(p->ipaddr));

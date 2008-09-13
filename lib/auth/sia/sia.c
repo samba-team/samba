@@ -2,22 +2,22 @@
  * Copyright (c) 1995-2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the Institute nor the names of its contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -35,20 +35,20 @@
 
 RCSID("$Id$");
 
-int 
+int
 siad_init(void)
 {
     return SIADSUCCESS;
 }
 
-int 
+int
 siad_chk_invoker(void)
 {
     SIA_DEBUG(("DEBUG", "siad_chk_invoker"));
     return SIADFAIL;
 }
 
-int 
+int
 siad_ses_init(SIAENTITY *entity, int pkgind)
 {
     struct state *s = malloc(sizeof(*s));
@@ -166,21 +166,21 @@ doauth(SIAENTITY *entity, int pkgind, char *name)
 	    SIA_DEBUG(("DEBUG", "failed to getpwuid(%u)", ouid));
 	    return SIADFAIL;
 	}
-	snprintf(s->ticket, sizeof(s->ticket), "%s_%s_to_%s_%d", 
+	snprintf(s->ticket, sizeof(s->ticket), "%s_%s_to_%s_%d",
 		 TKT_ROOT, fpwd->pw_name, pwd->pw_name, getpid());
 	if(strcmp(pwd->pw_name, "root") == 0){
 	    toname = fpwd->pw_name;
 	    toinst = pwd->pw_name;
 	}
     }
-    if(entity->authtype == SIA_A_REAUTH) 
+    if(entity->authtype == SIA_A_REAUTH)
 	snprintf(s->ticket, sizeof(s->ticket), "%s", tkt_string());
-    
+
     krb_set_tkt_string(s->ticket);
 	
     setuid(0); /* XXX fix for fix in tf_util.c */
     if(krb_kuserok(toname, toinst, realm, name)){
-	SIA_DEBUG(("DEBUG", "%s.%s@%s is not allowed to login as %s", 
+	SIA_DEBUG(("DEBUG", "%s.%s@%s is not allowed to login as %s",
 		   toname, toinst, realm, name));
 	return SIADFAIL;
     }
@@ -192,9 +192,9 @@ doauth(SIAENTITY *entity, int pkgind, char *name)
 	/* if this is most likely a local user (such as
 	   root), just silently return failure when the
 	   principal doesn't exist */
-	if(ret != KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN && 
+	if(ret != KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN &&
 	   ret != KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN)
-	    SIALOG("WARNING", "krb5_verify_user(%s): %s", 
+	    SIALOG("WARNING", "krb5_verify_user(%s): %s",
 		   entity->name, error_message(ret));
 	return SIADFAIL;
     }
@@ -213,7 +213,7 @@ doauth(SIAENTITY *entity, int pkgind, char *name)
 	    /* since this is most likely a local user (such as
 	       root), just silently return failure when the
 	       principal doesn't exist */
-	    SIALOG("WARNING", "krb_verify_user(%s.%s): %s", 
+	    SIALOG("WARNING", "krb_verify_user(%s.%s): %s",
 		   toname, toinst, krb_get_err_text(ret));
 	return SIADFAIL;
     }
@@ -225,9 +225,9 @@ doauth(SIAENTITY *entity, int pkgind, char *name)
 }
 
 
-static int 
-common_auth(sia_collect_func_t *collect, 
-	    SIAENTITY *entity, 
+static int
+common_auth(sia_collect_func_t *collect,
+	    SIAENTITY *entity,
 	    int siastat,
 	    int pkgind)
 {
@@ -244,7 +244,7 @@ common_auth(sia_collect_func_t *collect,
     name = entity->name;
     if(entity->acctname)
 	name = entity->acctname;
-    
+
     if((collect != NULL) && entity->colinput) {
 	int num;
 	pr = prompts;
@@ -260,13 +260,13 @@ common_auth(sia_collect_func_t *collect,
 	}
 	num = pr - prompts;
 	if(num == 1){
-	    if((*collect)(240, SIAONELINER, (unsigned char*)"", num, 
+	    if((*collect)(240, SIAONELINER, (unsigned char*)"", num,
 			  prompts) != SIACOLSUCCESS){
 		SIA_DEBUG(("DEBUG", "collect failed"));
 		return SIADFAIL | SIADSTOP;
 	    }
 	} else if(num > 0){
-	    if((*collect)(0, SIAFORM, (unsigned char*)"", num, 
+	    if((*collect)(0, SIAFORM, (unsigned char*)"", num,
 			  prompts) != SIACOLSUCCESS){
 		SIA_DEBUG(("DEBUG", "collect failed"));
 		return SIADFAIL | SIADSTOP;
@@ -284,14 +284,14 @@ common_auth(sia_collect_func_t *collect,
 	SIA_DEBUG(("DEBUG", "entity->password is null"));
 	return SIADFAIL;
     }
-    
+
     return doauth(entity, pkgind, name);
 }
 
 
-int 
-siad_ses_authent(sia_collect_func_t *collect, 
-		 SIAENTITY *entity, 
+int
+siad_ses_authent(sia_collect_func_t *collect,
+		 SIAENTITY *entity,
 		 int siastat,
 		 int pkgind)
 {
@@ -299,15 +299,15 @@ siad_ses_authent(sia_collect_func_t *collect,
     return common_auth(collect, entity, siastat, pkgind);
 }
 
-int 
-siad_ses_estab(sia_collect_func_t *collect, 
+int
+siad_ses_estab(sia_collect_func_t *collect,
 	       SIAENTITY *entity, int pkgind)
 {
     SIA_DEBUG(("DEBUG", "siad_ses_estab"));
     return SIADFAIL;
 }
 
-int 
+int
 siad_ses_launch(sia_collect_func_t *collect,
 		SIAENTITY *entity,
 		int pkgind)
@@ -317,8 +317,8 @@ siad_ses_launch(sia_collect_func_t *collect,
     SIA_DEBUG(("DEBUG", "siad_ses_launch"));
     if(s->valid){
 #ifdef SIA_KRB5
-	chown(s->ticket + sizeof("FILE:") - 1, 
-	      entity->pwd->pw_uid, 
+	chown(s->ticket + sizeof("FILE:") - 1,
+	      entity->pwd->pw_uid,
 	      entity->pwd->pw_gid);
 	snprintf(env, sizeof(env), "KRB5CCNAME=%s", s->ticket);
 #endif
@@ -352,7 +352,7 @@ siad_ses_launch(sia_collect_func_t *collect,
     return SIADSUCCESS;
 }
 
-int 
+int
 siad_ses_release(SIAENTITY *entity, int pkgind)
 {
     SIA_DEBUG(("DEBUG", "siad_ses_release"));
@@ -366,7 +366,7 @@ siad_ses_release(SIAENTITY *entity, int pkgind)
     return SIADSUCCESS;
 }
 
-int 
+int
 siad_ses_suauthent(sia_collect_func_t *collect,
 		   SIAENTITY *entity,
 		   int siastat,
@@ -408,7 +408,7 @@ siad_ses_reauthent (sia_collect_func_t *collect,
 	    krb5_ccache ccache;
 	    if(krb5_cc_resolve(s->context, s->ticket, &ccache) == 0) {
 		k_setpag();
-		if(k_afs_cell_of_file(entity->pwd->pw_dir, 
+		if(k_afs_cell_of_file(entity->pwd->pw_dir,
 				      cell, sizeof(cell)) == 0)
 		    krb5_afslog(s->context, ccache, cell, 0);
 		krb5_afslog_home(s->context, ccache, 0, 0, entity->pwd->pw_dir);
@@ -418,7 +418,7 @@ siad_ses_reauthent (sia_collect_func_t *collect,
 #ifdef SIA_KRB4
 	if(k_hasafs()) {
 	    char cell[64];
-	    if(k_afs_cell_of_file(entity->pwd->pw_dir, 
+	    if(k_afs_cell_of_file(entity->pwd->pw_dir,
 				  cell, sizeof(cell)) == 0)
 		krb_afslog(cell, 0);
 	    krb_afslog_home(0, 0, entity->pwd->pw_dir);
@@ -430,8 +430,8 @@ siad_ses_reauthent (sia_collect_func_t *collect,
 
 int
 siad_chg_finger (sia_collect_func_t *collect,
-		     const char *username, 
-		     int argc, 
+		     const char *username,
+		     int argc,
 		     char *argv[])
 {
     SIA_DEBUG(("DEBUG", "siad_chg_finger"));
@@ -441,8 +441,8 @@ siad_chg_finger (sia_collect_func_t *collect,
 #ifdef SIA_KRB5
 int
 siad_chg_password (sia_collect_func_t *collect,
-		     const char *username, 
-		     int argc, 
+		     const char *username,
+		     int argc,
 		     char *argv[])
 {
     return SIADFAIL;
@@ -451,7 +451,7 @@ siad_chg_password (sia_collect_func_t *collect,
 
 #ifdef SIA_KRB4
 static void
-sia_message(sia_collect_func_t *collect, int rendition, 
+sia_message(sia_collect_func_t *collect, int rendition,
 	    const char *title, const char *message)
 {
     prompt_t prompt;
@@ -467,7 +467,7 @@ init_change(sia_collect_func_t *collect, krb_principal *princ)
     char *msg;
     char tktstring[128];
     int ret;
-    
+
     SIA_DEBUG(("DEBUG", "init_change"));
     prompt.prompt = (unsigned char*)"Old password: ";
     prompt.result = (unsigned char*)old_pw;
@@ -484,11 +484,11 @@ init_change(sia_collect_func_t *collect, krb_principal *princ)
     SIA_DEBUG(("DEBUG", "ret = %d", ret));
     if(ret != SIACOLSUCCESS)
 	return SIADFAIL;
-    snprintf(tktstring, sizeof(tktstring), 
+    snprintf(tktstring, sizeof(tktstring),
 	     "%s_cpw_%u", TKT_ROOT, (unsigned)getpid());
     krb_set_tkt_string(tktstring);
-    
-    ret = krb_get_pw_in_tkt(princ->name, princ->instance, princ->realm, 
+
+    ret = krb_get_pw_in_tkt(princ->name, princ->instance, princ->realm,
 			    PWSERV_NAME, KADM_SINST, 1, old_pw);
     if (ret != KSUCCESS) {
 	SIA_DEBUG(("DEBUG", "krb_get_pw_in_tkt: %s", krb_get_err_text(ret)));
@@ -509,8 +509,8 @@ init_change(sia_collect_func_t *collect, krb_principal *princ)
 
 int
 siad_chg_password (sia_collect_func_t *collect,
-		   const char *username, 
-		   int argc, 
+		   const char *username,
+		   int argc,
 		   char *argv[])
 {
     prompt_t prompts[2];
@@ -555,7 +555,7 @@ again:
     prompts[1].min_result_length = MIN_KPW_LEN;
     prompts[1].max_result_length = sizeof(new_pw2) - 1;
     prompts[1].control_flags = SIARESINVIS;
-    if((*collect)(120, SIAFORM, (unsigned char*)"", 2, prompts) != 
+    if((*collect)(120, SIAFORM, (unsigned char*)"", 2, prompts) !=
        SIACOLSUCCESS) {
 	dest_tkt();
 	return SIADFAIL;
@@ -569,11 +569,11 @@ again:
 	sia_message(collect, SIAWARNING, "", com_right(et_list, ret));
 	goto again;
     }
-    
+
     memset(new_pw2, 0, sizeof(new_pw2));
     ret = kadm_init_link (PWSERV_NAME, KRB_MASTER, princ.realm);
     if (ret != KADM_SUCCESS)
-	sia_message(collect, SIAWARNING, "Error initing kadmin connection", 
+	sia_message(collect, SIAWARNING, "Error initing kadmin connection",
 		    com_right(et_list, ret));
     else {
 	des_cblock newkey;
@@ -582,11 +582,11 @@ again:
 	des_string_to_key(new_pw1, &newkey);
 	ret = kadm_change_pw_plain((unsigned char*)&newkey, new_pw1, &pw_msg);
 	memset(newkey, 0, sizeof(newkey));
-      
+
 	if (ret == KADM_INSECURE_PW)
 	    sia_message(collect, SIAWARNING, "Insecure password", pw_msg);
 	else if (ret != KADM_SUCCESS)
-	    sia_message(collect, SIAWARNING, "Error changing password", 
+	    sia_message(collect, SIAWARNING, "Error changing password",
 			com_right(et_list, ret));
     }
     memset(new_pw1, 0, sizeof(new_pw1));
@@ -595,7 +595,7 @@ again:
 	sia_message(collect, SIAWARNING, "", "Password NOT changed.");
     else
 	sia_message(collect, SIAINFO, "", "Password changed.");
-    
+
     dest_tkt();
     if(ret)
 	return SIADFAIL;
@@ -605,37 +605,37 @@ again:
 
 int
 siad_chg_shell (sia_collect_func_t *collect,
-		     const char *username, 
-		     int argc, 
+		     const char *username,
+		     int argc,
 		     char *argv[])
 {
     return SIADFAIL;
 }
 
 int
-siad_getpwent(struct passwd *result, 
-	      char *buf, 
-	      int bufsize, 
+siad_getpwent(struct passwd *result,
+	      char *buf,
+	      int bufsize,
 	      struct sia_context *context)
 {
     return SIADFAIL;
 }
 
 int
-siad_getpwuid (uid_t uid, 
-	       struct passwd *result, 
-	       char *buf, 
-	       int bufsize, 
+siad_getpwuid (uid_t uid,
+	       struct passwd *result,
+	       char *buf,
+	       int bufsize,
 	       struct sia_context *context)
 {
     return SIADFAIL;
 }
 
 int
-siad_getpwnam (const char *name, 
-	       struct passwd *result, 
-	       char *buf, 
-	       int bufsize, 
+siad_getpwnam (const char *name,
+	       struct passwd *result,
+	       char *buf,
+	       int bufsize,
 	       struct sia_context *context)
 {
     return SIADFAIL;
@@ -654,29 +654,29 @@ siad_endpwent (struct sia_context *context)
 }
 
 int
-siad_getgrent(struct group *result, 
-	      char *buf, 
-	      int bufsize, 
+siad_getgrent(struct group *result,
+	      char *buf,
+	      int bufsize,
 	      struct sia_context *context)
 {
     return SIADFAIL;
 }
 
 int
-siad_getgrgid (gid_t gid, 
-	       struct group *result, 
-	       char *buf, 
-	       int bufsize, 
+siad_getgrgid (gid_t gid,
+	       struct group *result,
+	       char *buf,
+	       int bufsize,
 	       struct sia_context *context)
 {
     return SIADFAIL;
 }
 
 int
-siad_getgrnam (const char *name, 
-	       struct group *result, 
-	       char *buf, 
-	       int bufsize, 
+siad_getgrnam (const char *name,
+	       struct group *result,
+	       char *buf,
+	       int bufsize,
 	       struct sia_context *context)
 {
     return SIADFAIL;

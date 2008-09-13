@@ -1,34 +1,34 @@
 /*
  * Copyright (c) 1997 - 2005 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * 3. Neither the name of the Institute nor the names of its contributors 
- *    may be used to endorse or promote products derived from this software 
- *    without specific prior written permission. 
+ * 3. Neither the name of the Institute nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
- * SUCH DAMAGE. 
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 #include "krb5_locl.h"
@@ -60,7 +60,7 @@ set_etypes (krb5_context context,
     char **etypes_str;
     krb5_enctype *etypes = NULL;
 
-    etypes_str = krb5_config_get_strings(context, NULL, "libdefaults", 
+    etypes_str = krb5_config_get_strings(context, NULL, "libdefaults",
 					 name, NULL);
     if(etypes_str){
 	int i, j, k;
@@ -81,7 +81,7 @@ set_etypes (krb5_context context,
 	}
 	etypes[k] = ETYPE_NULL;
 	krb5_config_free_strings(etypes_str);
-    } 
+    }
     *ret_enctypes = etypes;
     return 0;
 }
@@ -102,13 +102,13 @@ init_context_from_config_file(krb5_context context)
     INIT_FIELD(context, int, max_retries, 3, "max_retries");
 
     INIT_FIELD(context, string, http_proxy, NULL, "http_proxy");
-    
+
     ret = set_etypes (context, "default_etypes", &tmptypes);
     if(ret)
 	return ret;
     free(context->etypes);
     context->etypes = tmptypes;
-    
+
     ret = set_etypes (context, "default_etypes_des", &tmptypes);
     if(ret)
 	return ret;
@@ -122,27 +122,27 @@ init_context_from_config_file(krb5_context context)
     if(tmp != NULL)
 	context->default_keytab = tmp;
     else
-	INIT_FIELD(context, string, default_keytab, 
+	INIT_FIELD(context, string, default_keytab,
 		   KEYTAB_DEFAULT, "default_keytab_name");
 
-    INIT_FIELD(context, string, default_keytab_modify, 
+    INIT_FIELD(context, string, default_keytab_modify,
 	       NULL, "default_keytab_modify_name");
 
-    INIT_FIELD(context, string, time_fmt, 
+    INIT_FIELD(context, string, time_fmt,
 	       "%Y-%m-%dT%H:%M:%S", "time_format");
 
-    INIT_FIELD(context, string, date_fmt, 
+    INIT_FIELD(context, string, date_fmt,
 	       "%Y-%m-%d", "date_format");
 
-    INIT_FIELD(context, bool, log_utc, 
+    INIT_FIELD(context, bool, log_utc,
 	       FALSE, "log_utc");
 
 
-    
+
     /* init dns-proxy slime */
-    tmp = krb5_config_get_string(context, NULL, "libdefaults", 
+    tmp = krb5_config_get_string(context, NULL, "libdefaults",
 				 "dns_proxy", NULL);
-    if(tmp) 
+    if(tmp)
 	roken_gethostby_setup(context->http_proxy, tmp);
     krb5_free_host_realm (context, context->default_realms);
     context->default_realms = NULL;
@@ -152,9 +152,9 @@ init_context_from_config_file(krb5_context context)
 	char **adr, **a;
 
 	krb5_set_extra_addresses(context, NULL);
-	adr = krb5_config_get_strings(context, NULL, 
-				      "libdefaults", 
-				      "extra_addresses", 
+	adr = krb5_config_get_strings(context, NULL,
+				      "libdefaults",
+				      "extra_addresses",
 				      NULL);
 	memset(&addresses, 0, sizeof(addresses));
 	for(a = adr; a && *a; a++) {
@@ -167,9 +167,9 @@ init_context_from_config_file(krb5_context context)
 	krb5_config_free_strings(adr);
 
 	krb5_set_ignore_addresses(context, NULL);
-	adr = krb5_config_get_strings(context, NULL, 
-				      "libdefaults", 
-				      "ignore_addresses", 
+	adr = krb5_config_get_strings(context, NULL,
+				      "libdefaults",
+				      "ignore_addresses",
 				      NULL);
 	memset(&addresses, 0, sizeof(addresses));
 	for(a = adr; a && *a; a++) {
@@ -181,7 +181,7 @@ init_context_from_config_file(krb5_context context)
 	}
 	krb5_config_free_strings(adr);
     }
-    
+
     INIT_FIELD(context, bool, scan_interfaces, TRUE, "scan_interfaces");
     INIT_FIELD(context, int, fcache_vno, 0, "fcache_version");
     /* prefer dns_lookup_kdc over srv_lookup. */
@@ -193,7 +193,7 @@ init_context_from_config_file(krb5_context context)
     context->default_cc_name = NULL;
     context->default_cc_name_set = 0;
 
-    ret = krb5_config_get_bool_default(context, NULL, FALSE, 
+    ret = krb5_config_get_bool_default(context, NULL, FALSE,
 				       "libdefaults",
 				       "allow_weak_crypto", NULL);
     if (ret) {
@@ -247,11 +247,11 @@ krb5_init_context(krb5_context *context)
     HEIMDAL_MUTEX_init(p->mutex);
 
     ret = krb5_get_default_config_files(&files);
-    if(ret) 
+    if(ret)
 	goto out;
     ret = krb5_set_config_files(p, files);
     krb5_free_config_files(files);
-    if(ret) 
+    if(ret)
 	goto out;
 
     /* init error tables */
@@ -458,7 +458,7 @@ krb5_prepend_config_files_default(const char *filelist, char ***pfilenames)
 {
     krb5_error_code ret;
     char **defpp, **pp = NULL;
-    
+
     ret = krb5_get_default_config_files(&defpp);
     if (ret)
 	return ret;
@@ -483,7 +483,7 @@ krb5_prepend_config_files_default(const char *filelist, char ***pfilenames)
  * @ingroup krb5
  */
 
-krb5_error_code KRB5_LIB_FUNCTION 
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_get_default_config_files(char ***pfilenames)
 {
     const char *files = NULL;
@@ -593,7 +593,7 @@ default_etypes(krb5_context context, krb5_enctype **etype)
  */
 
 krb5_error_code KRB5_LIB_FUNCTION
-krb5_set_default_in_tkt_etypes(krb5_context context, 
+krb5_set_default_in_tkt_etypes(krb5_context context,
 			       const krb5_enctype *etypes)
 {
     krb5_enctype *p = NULL;
@@ -641,7 +641,7 @@ krb5_get_default_in_tkt_etypes(krb5_context context,
     krb5_enctype *p;
     int i;
     krb5_error_code ret;
-    
+
     if(context->etypes) {
 	for(i = 0; context->etypes[i]; i++);
 	++i;
@@ -686,7 +686,7 @@ krb5_get_err_text(krb5_context context, krb5_error_code code)
 }
 
 /**
- * Init the built-in ets in the Kerberos library. 
+ * Init the built-in ets in the Kerberos library.
  *
  * @param context kerberos context to add the ets too
  *
@@ -765,7 +765,7 @@ krb5_add_extra_addresses(krb5_context context, krb5_addresses *addresses)
 {
 
     if(context->extra_addresses)
-	return krb5_append_addresses(context, 
+	return krb5_append_addresses(context,
 				     context->extra_addresses, addresses);
     else
 	return krb5_set_extra_addresses(context, addresses);
@@ -848,7 +848,7 @@ krb5_add_ignore_addresses(krb5_context context, krb5_addresses *addresses)
 {
 
     if(context->ignore_addresses)
-	return krb5_append_addresses(context, 
+	return krb5_append_addresses(context,
 				     context->ignore_addresses, addresses);
     else
 	return krb5_set_ignore_addresses(context, addresses);

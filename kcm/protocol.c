@@ -926,7 +926,7 @@ kcm_op_get_ticket(krb5_context context,
 	free(name);
 	return ret;
     }
- 
+
     HEIMDAL_MUTEX_lock(&ccache->mutex);
 
     /* Fake up an internal ccache */
@@ -987,7 +987,7 @@ kcm_op_move_cache(krb5_context context,
 	free(newname);
 	return ret;
     }
- 
+
     /* Check if new credential cache exists, if not create one. */
     ret = kcm_ccache_resolve_client(context, client, opcode, newname, &newid);
     if (ret == KRB5_FCC_NOFILE)

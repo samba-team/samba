@@ -1,34 +1,34 @@
 /*
  * Copyright (c) 1997 - 2007 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * 3. Neither the name of the Institute nor the names of its contributors 
- *    may be used to endorse or promote products derived from this software 
- *    without specific prior written permission. 
+ * 3. Neither the name of the Institute nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
- * SUCH DAMAGE. 
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 #include "iprop.h"
@@ -84,7 +84,7 @@ make_listen_socket (krb5_context context, const char *port_str)
 
     if (port_str) {
 	addr.sin_port = krb5_getportbyname (context,
-					      port_str, "tcp", 
+					      port_str, "tcp",
 					      0);
 	if (addr.sin_port == 0) {
 	    char *ptr;
@@ -96,7 +96,7 @@ make_listen_socket (krb5_context context, const char *port_str)
 	    addr.sin_port = htons(port);
 	}
     } else {
-	addr.sin_port = krb5_getportbyname (context, IPROP_SERVICE, 
+	addr.sin_port = krb5_getportbyname (context, IPROP_SERVICE,
 					    "tcp", IPROP_PORT);
     }
     if(bind(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0)
@@ -469,7 +469,7 @@ send_diffs (krb5_context context, slave *s, int log_fd,
     for (;;) {
 	ret = kadm5_log_previous (context, sp, &ver, &timestamp, &op, &len);
 	if (ret)
-	    krb5_err(context, 1, ret, 
+	    krb5_err(context, 1, ret,
 		     "send_diffs: failed to find previous entry");
 	left = krb5_storage_seek(sp, -16, SEEK_CUR);
 	if (ver == s->version)
@@ -629,7 +629,7 @@ write_master_down(krb5_context context)
     fp = open_stats(context);
     if (fp == NULL)
 	return;
-    krb5_format_time(context, t, str, sizeof(str), TRUE); 
+    krb5_format_time(context, t, str, sizeof(str), TRUE);
     fprintf(fp, "master down at %s\n", str);
 
     fclose(fp);
@@ -647,7 +647,7 @@ write_stats(krb5_context context, slave *slaves, uint32_t current_version)
     if (fp == NULL)
 	return;
 
-    krb5_format_time(context, t, str, sizeof(str), TRUE); 
+    krb5_format_time(context, t, str, sizeof(str), TRUE);
     fprintf(fp, "Status for slaves, last updated: %s\n\n", str);
 
     fprintf(fp, "Master version: %lu\n\n", (unsigned long)current_version);
@@ -671,7 +671,7 @@ write_stats(krb5_context context, slave *slaves, uint32_t current_version)
 	krb5_address addr;
 	krb5_error_code ret;
 	rtbl_add_column_entry(tbl, SLAVE_NAME, slaves->name);
-	ret = krb5_sockaddr2address (context, 
+	ret = krb5_sockaddr2address (context,
 				     (struct sockaddr*)&slaves->addr, &addr);
 	if(ret == 0) {
 	    krb5_print_address(&addr, str, sizeof(str), NULL);
@@ -688,7 +688,7 @@ write_stats(krb5_context context, slave *slaves, uint32_t current_version)
 	else
 	    rtbl_add_column_entry(tbl, SLAVE_STATUS, "Up");
 
-	ret = krb5_format_time(context, slaves->seen, str, sizeof(str), TRUE); 
+	ret = krb5_format_time(context, slaves->seen, str, sizeof(str), TRUE);
 	rtbl_add_column_entry(tbl, SLAVE_SEEN, str);
 
 	slaves = slaves->next;
@@ -716,17 +716,17 @@ static struct getargs args[] = {
     { "keytab", 'k', arg_string, &keytab_str,
       "keytab to get authentication from", "kspec" },
     { "database", 'd', arg_string, &database, "database", "file"},
-    { "slave-stats-file", 0, arg_string, &slave_stats_file, 
+    { "slave-stats-file", 0, arg_string, &slave_stats_file,
       "file for slave status information", "file"},
-    { "time-missing", 0, arg_string, &slave_time_missing, 
+    { "time-missing", 0, arg_string, &slave_time_missing,
       "time before slave is polled for presence", "time"},
     { "time-gone", 0, arg_string, &slave_time_gone,
       "time of inactivity after which a slave is considered gone", "time"},
     { "port", 0, arg_string, &port_str,
       "port ipropd will listen to", "port"},
-    { "detach", 0, arg_flag, &detach_from_console, 
+    { "detach", 0, arg_flag, &detach_from_console,
       "detach from console" },
-    { "hostname", 0, arg_string, &master_hostname, 
+    { "hostname", 0, arg_string, &master_hostname,
       "hostname of master (if not same as hostname)", "hostname" },
     { "version", 0, arg_flag, &version_flag },
     { "help", 0, arg_flag, &help_flag }
@@ -748,9 +748,9 @@ main(int argc, char **argv)
     krb5_keytab keytab;
     int optidx;
     char **files;
-    
+
     optidx = krb5_program_setup(&context, argc, argv, args, num_args, NULL);
-    
+
     if(help_flag)
 	krb5_std_usage(0, args, num_args);
     if(version_flag) {
@@ -795,7 +795,7 @@ main(int argc, char **argv)
     ret = krb5_kt_resolve(context, keytab_str, &keytab);
     if(ret)
 	krb5_err(context, 1, ret, "krb5_kt_resolve: %s", keytab_str);
-    
+
     memset(&conf, 0, sizeof(conf));
     if(realm) {
 	conf.mask |= KADM5_CONFIG_REALM;
@@ -805,7 +805,7 @@ main(int argc, char **argv)
 				    KADM5_ADMIN_SERVICE,
 				    NULL,
 				    KADM5_ADMIN_SERVICE,
-				    &conf, 0, 0, 
+				    &conf, 0, 0,
 				    &kadm_handle);
     if (ret)
 	krb5_err (context, 1, ret, "kadm5_init_with_password_ctx");
@@ -822,7 +822,7 @@ main(int argc, char **argv)
 
     kadm5_log_get_version_fd (log_fd, &current_version);
 
-    krb5_warnx(context, "ipropd-master started at version: %lu", 
+    krb5_warnx(context, "ipropd-master started at version: %lu",
 	       (unsigned long)current_version);
 
     while(exit_flag == 0){
@@ -862,7 +862,7 @@ main(int argc, char **argv)
 	    kadm5_log_get_version_fd (log_fd, &current_version);
 
 	    if (current_version > old_version) {
-		krb5_warnx(context, 
+		krb5_warnx(context,
 			   "Missed a signal, updating slaves %lu to %lu",
 			   (unsigned long)old_version,
 			   (unsigned long)current_version);
@@ -888,14 +888,14 @@ main(int argc, char **argv)
 	    old_version = current_version;
 	    kadm5_log_get_version_fd (log_fd, &current_version);
 	    if (current_version > old_version) {
-		krb5_warnx(context, 
+		krb5_warnx(context,
 			   "Got a signal, updating slaves %lu to %lu",
 			   (unsigned long)old_version,
 			   (unsigned long)current_version);
 		for (p = slaves; p != NULL; p = p->next)
 		    send_diffs (context, p, log_fd, database, current_version);
 	    } else {
-		krb5_warnx(context, 
+		krb5_warnx(context,
 			   "Got a signal, but no update in log version %lu",
 			   (unsigned long)current_version);
 	    }
@@ -928,7 +928,7 @@ main(int argc, char **argv)
     else if(exit_flag == SIGINT || exit_flag == SIGTERM)
 	krb5_warnx(context, "%s terminated", getprogname());
     else
-	krb5_warnx(context, "%s unexpected exit reason: %ld", 
+	krb5_warnx(context, "%s unexpected exit reason: %ld",
 		   getprogname(), (long)exit_flag);
 
     write_master_down(context);

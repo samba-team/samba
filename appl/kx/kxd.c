@@ -2,22 +2,22 @@
  * Copyright (c) 1995 - 2003 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the Institute nor the names of its contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -48,7 +48,7 @@ childhandler (int sig)
      pid_t pid;
      int status;
 
-     do { 
+     do {
        pid = waitpid (-1, &status, WNOHANG|WUNTRACED);
        if (pid > 0 && pid == wait_on_pid)
 	   done = 1;
@@ -141,7 +141,7 @@ recv_conn (int sock, kx_context *kc,
      }
      kc->thataddr_len = addrlen;
 
-     getnameinfo_verified (kc->thataddr, 
+     getnameinfo_verified (kc->thataddr,
 			   kc->thataddr_len,
 			   remotehost, sizeof(remotehost),
 			   NULL, 0, 0);
@@ -232,7 +232,7 @@ recv_conn (int sock, kx_context *kc,
      }
 
      ret = getnameinfo(kc->thataddr, kc->thataddr_len,
-		       remoteaddr, sizeof(remoteaddr), 
+		       remoteaddr, sizeof(remoteaddr),
 		       NULL, 0, NI_NUMERICHOST);
      if (ret != 0)
 	 fatal (kc, sock, "getnameinfo failed: %s", gai_strerror(ret));
@@ -399,7 +399,7 @@ close_connection(int fd, const char *message)
     mlen = strlen(message);
     if(mlen > 255)
 	mlen = 255;
-    
+
     /* read first part of connection packet, to get byte order */
     if(read(fd, buf, 6) != 6) {
 	close(fd);
@@ -418,7 +418,7 @@ close_connection(int fd, const char *message)
 	*p++ = 0;
 	
     /* now fill in length of additional data */
-    if(lsb) { 
+    if(lsb) {
 	buf[6] = (p - buf - 8) / 4;
 	buf[7] = 0;
     }else{
@@ -454,7 +454,7 @@ doit_passive (kx_context *kc,
 	snprintf (display, display_size, "localhost:%u", display_num);
     else
 	snprintf (display, display_size, ":%u", display_num);
-    error = create_and_write_cookie (xauthfile, xauthfile_size, 
+    error = create_and_write_cookie (xauthfile, xauthfile_size,
 				     cookie, cookie_len);
     if (error) {
 	cleanup(nsockets, sockets);
@@ -494,7 +494,7 @@ doit_passive (kx_context *kc,
     memcpy (p, xauthfile, len);
     p += len;
     rem -= len;
-	  
+	
     if(kx_write (kc, sock, msg, p - msg) < 0) {
 	syslog (LOG_ERR, "write: %m");
 	cleanup(nsockets, sockets);
@@ -507,7 +507,7 @@ doit_passive (kx_context *kc,
 	int i;
 	int ret;
 	int cookiesp = TRUE;
-	       
+	
 	FD_ZERO(&fds);
 	if (sock >= FD_SETSIZE) {
 	    syslog (LOG_ERR, "fd too large");
@@ -632,7 +632,7 @@ doit_active (kx_context *kc,
 
     p = msg;
     *p++ = ACK;
-	  
+	
     if(kx_write (kc, sock, msg, p - msg) < 0) {
 	syslog (LOG_ERR, "write: %m");
 	return 1;
@@ -640,7 +640,7 @@ doit_active (kx_context *kc,
     for (;;) {
 	pid_t child;
 	int len;
-	      
+	
 	len = kx_read (kc, sock, msg, sizeof(msg));
 	if (len < 0) {
 	    syslog (LOG_ERR, "read: %m");

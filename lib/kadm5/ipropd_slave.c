@@ -1,34 +1,34 @@
 /*
  * Copyright (c) 1997 - 2007 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * 3. Neither the name of the Institute nor the names of its contributors 
- *    may be used to endorse or promote products derived from this software 
- *    without specific prior written permission. 
+ * 3. Neither the name of the Institute nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
- * SUCH DAMAGE. 
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 #include "iprop.h"
@@ -55,19 +55,19 @@ connect_to_master (krb5_context context, const char *master,
     addr.sin_family = AF_INET;
     if (port_str) {
 	addr.sin_port = krb5_getportbyname (context,
-					    port_str, "tcp", 
+					    port_str, "tcp",
 					    0);
 	if (addr.sin_port == 0) {
 	    char *ptr;
 	    long port;
-	    
+	
 	    port = strtol (port_str, &ptr, 10);
 	    if (port == 0 && ptr == port_str)
 		krb5_errx (context, 1, "bad port `%s'", port_str);
 	    addr.sin_port = htons(port);
 	}
     } else {
-	addr.sin_port = krb5_getportbyname (context, IPROP_SERVICE, 
+	addr.sin_port = krb5_getportbyname (context, IPROP_SERVICE,
 					    "tcp", IPROP_PORT);
     }
     he = roken_gethostbyname (master);
@@ -90,7 +90,7 @@ get_creds(krb5_context context, const char *keytab_str,
     krb5_creds creds;
     char *server;
     char keytab_buf[256];
-    
+
     if (keytab_str == NULL) {
 	ret = krb5_kt_default_name (context, keytab_buf, sizeof(keytab_buf));
 	if (ret)
@@ -101,7 +101,7 @@ get_creds(krb5_context context, const char *keytab_str,
     ret = krb5_kt_resolve(context, keytab_str, &keytab);
     if(ret)
 	krb5_err(context, 1, ret, "%s", keytab_str);
-    
+
 
     ret = krb5_sname_to_principal (context, slave_str, IPROP_NAME,
 				   KRB5_NT_SRV_HST, &client);
@@ -119,10 +119,10 @@ get_creds(krb5_context context, const char *keytab_str,
     free (server);
     krb5_get_init_creds_opt_free(context, init_opts);
     if(ret) krb5_err(context, 1, ret, "krb5_get_init_creds");
-    
+
     ret = krb5_kt_close(context, keytab);
     if(ret) krb5_err(context, 1, ret, "krb5_kt_close");
-    
+
     ret = krb5_cc_gen_new(context, &krb5_mcc_ops, cache);
     if(ret) krb5_err(context, 1, ret, "krb5_cc_gen_new");
 
@@ -148,7 +148,7 @@ ihave (krb5_context context, krb5_auth_context auth_context,
     krb5_storage_free (sp);
     data.length = 8;
     data.data   = buf;
-    
+
     ret = krb5_write_priv_message(context, auth_context, &fd, &data);
     if (ret)
 	krb5_err (context, 1, ret, "krb5_write_priv_message");
@@ -244,13 +244,13 @@ receive_loop (krb5_context context,
 	}
 
 	{
-	    /* 
+	    /*
 	     * Make sure the krb5_log_replay does the right thing wrt
 	     * reading out data from the sp.
 	     */
 	    cur2 = krb5_storage_seek(sp, 0, SEEK_CUR);
 	    if (cur + len != cur2)
-		krb5_errx(context, 1, 
+		krb5_errx(context, 1,
 			  "kadm5_log_reply version: %ld didn't read the whole entry",
 			  (long)vers);
 	}
@@ -331,7 +331,7 @@ receive_everything (krb5_context context, int fd,
 
     char *dbname;
     HDB *mydb;
-  
+
     krb5_warnx(context, "receive complete database");
 
     asprintf(&dbname, "%s-NEW", server_context->db->hdb_name);
@@ -339,12 +339,12 @@ receive_everything (krb5_context context, int fd,
     if(ret)
 	krb5_err(context,1, ret, "hdb_create");
     free(dbname);
- 
+
     ret = hdb_set_master_keyfile (context,
 				  mydb, server_context->config.stash_file);
     if(ret)
 	krb5_err(context,1, ret, "hdb_set_master_keyfile");
- 
+
     /* I really want to use O_EXCL here, but given that I can't easily clean
        up on error, I won't */
     ret = mydb->hdb_open(context, mydb, O_RDWR | O_CREAT | O_TRUNC, 0600);
@@ -442,9 +442,9 @@ static struct getargs args[] = {
       "time before server is considered lost", "time" },
     { "port", 0, arg_string, &port_str,
       "port ipropd-slave will connect to", "port"},
-    { "detach", 0, arg_flag, &detach_from_console, 
+    { "detach", 0, arg_flag, &detach_from_console,
       "detach from console" },
-    { "hostname", 0, arg_string, &slave_str, 
+    { "hostname", 0, arg_string, &slave_str,
       "hostname of slave (if not same as hostname)", "hostname" },
     { "version", 0, arg_flag, &version_flag },
     { "help", 0, arg_flag, &help_flag }
@@ -468,9 +468,9 @@ main(int argc, char **argv)
     int optidx;
 
     const char *master;
-    
+
     optidx = krb5_program_setup(&context, argc, argv, args, num_args, NULL);
-    
+
     if(help_flag)
 	krb5_std_usage(0, args, num_args);
     if(version_flag) {
@@ -526,7 +526,7 @@ main(int argc, char **argv)
 					KADM5_ADMIN_SERVICE,
 					NULL,
 					KADM5_ADMIN_SERVICE,
-					&conf, 0, 0, 
+					&conf, 0, 0,
 					&kadm_handle);
     if (ret)
 	krb5_err (context, 1, ret, "kadm5_init_with_password_ctx");
@@ -621,13 +621,13 @@ main(int argc, char **argv)
 	krb5_storage_free (sp);
 	krb5_data_free (&out);
     }
-    
+
     if(exit_flag == SIGXCPU)
 	krb5_warnx(context, "%s CPU time limit exceeded", getprogname());
     else if(exit_flag == SIGINT || exit_flag == SIGTERM)
 	krb5_warnx(context, "%s terminated", getprogname());
     else
-	krb5_warnx(context, "%s unexpected exit reason: %ld", 
+	krb5_warnx(context, "%s unexpected exit reason: %ld",
 		   getprogname(), (long)exit_flag);
 
     return 0;

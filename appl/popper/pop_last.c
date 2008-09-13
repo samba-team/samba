@@ -7,7 +7,7 @@
 #include <popper.h>
 RCSID("$Id$");
 
-/* 
+/*
  *  last:   Display the last message touched in a POP session
  */
 

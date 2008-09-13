@@ -7,7 +7,7 @@
 #include <popper.h>
 RCSID("$Id$");
 
-/* 
+/*
  *  quit:   Terminate a POP session
  */
 

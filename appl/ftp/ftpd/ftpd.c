@@ -190,7 +190,7 @@ parse_auth_level(char *str)
 	else
 	    warnx("bad value for -a: `%s'", p);
     }
-    return ret;	    
+    return ret;	
 }
 
 /*
@@ -225,7 +225,7 @@ struct getargs args[] = {
     { "builtin-ls", 'B', arg_flag, &use_builtin_ls, "use built-in ls to list files" },
     { "good-chars", 0, arg_string, &good_chars, "allowed anonymous upload filename chars" },
     { "insecure-oob", 'I', arg_negative_flag, &allow_insecure_oob, "don't allow insecure OOB ABOR/STAT" },
-#ifdef KRB5    
+#ifdef KRB5
     { "gss-bindings", 0,  arg_flag, &ftp_do_gss_bindings, "Require GSS-API bindings", NULL},
 #endif
     { "version", 0, arg_flag, &version_flag },
@@ -297,7 +297,7 @@ main(int argc, char **argv)
     {
 	char *p;
 	long val = 0;
-	    
+	
 	if(guest_umask_string) {
 	    val = strtol(guest_umask_string, &p, 8);
 	    if (*p != '\0' || val < 0)
@@ -328,7 +328,7 @@ main(int argc, char **argv)
 	    else
 		warnx("bad value for -p");
     }
-		    
+		
     if (maxtimeout < ftpd_timeout)
 	maxtimeout = ftpd_timeout;
 
@@ -528,7 +528,7 @@ user(char *name)
 	guest = 0;
 	if (strcmp(name, "ftp") == 0 || strcmp(name, "anonymous") == 0) {
 	    if ((auth_level & AUTH_FTP) == 0 ||
-		checkaccess("ftp") || 
+		checkaccess("ftp") ||
 		checkaccess("anonymous"))
 		reply(530, "User %s access denied.", name);
 	    else if ((pw = sgetpwnam("ftp")) != NULL) {
@@ -661,7 +661,7 @@ checkuser(char *fname, char *name)
 
 
 /*
- * Determine whether a user has access, based on information in 
+ * Determine whether a user has access, based on information in
  * _PATH_FTPUSERS. The users are listed one per line, with `allow'
  * or `deny' after the username. If anything other than `allow', or
  * just nothing, is given after the username, `deny' is assumed.
@@ -689,9 +689,9 @@ checkaccess(char *name)
     int allowed = ALLOWED;
     char *user, *perm, line[BUFSIZ];
     char *foo;
-    
+
     fd = fopen(_PATH_FTPUSERS, "r");
-    
+
     if(fd == NULL)
 	return allowed;
 
@@ -799,7 +799,7 @@ int do_login(int code, char *passwd)
 				 sizeof(data_addr));
 
 	    syslog(LOG_INFO, "ANONYMOUS FTP LOGIN FROM %s(%s), %s",
-		   remotehost, 
+		   remotehost,
 		   data_addr,
 		   passwd);
 	}
@@ -850,11 +850,11 @@ end_login(void)
 static int
 krb5_verify(struct passwd *pwd, char *passwd)
 {
-   krb5_context context;  
+   krb5_context context;
    krb5_ccache  id;
    krb5_principal princ;
    krb5_error_code ret;
-  
+
    ret = krb5_init_context(&context);
    if(ret)
         return ret;
@@ -882,7 +882,7 @@ krb5_verify(struct passwd *pwd, char *passwd)
   }
   krb5_cc_destroy(context, id);
   krb5_free_context (context);
-  if(ret) 
+  if(ret)
       return ret;
   return 0;
 }
@@ -922,8 +922,8 @@ pass(char *passwd)
 			char realm[REALM_SZ];
 			if((rval = krb_get_lrealm(realm, 1)) == KSUCCESS)
 			    rval = krb_verify_user(pw->pw_name,
-						   "", realm, 
-						   passwd, 
+						   "", realm,
+						   passwd,
 						   KRB_VERIFY_SECURE, NULL);
 			if (rval == KSUCCESS ) {
 			    chown (tkt_string(), pw->pw_uid, pw->pw_gid);
@@ -1106,7 +1106,7 @@ done:
 
 /* filename sanity check */
 
-int 
+int
 filename_check(char *filename)
 {
     char *p;
@@ -1127,7 +1127,7 @@ filename_check(char *filename)
     lreply(553, "\"%s\" is not an acceptable filename.", filename);
     lreply(553, "The filename must start with an alphanumeric "
 	   "character and must only");
-    reply(553, "consist of alphanumeric characters or any of the following: %s", 
+    reply(553, "consist of alphanumeric characters or any of the following: %s",
 	  good_chars);
     return 1;
 }
@@ -1252,7 +1252,7 @@ bad:
 }
 
 static int
-accept_with_timeout(int socket, 
+accept_with_timeout(int socket,
 		    struct sockaddr *address,
 		    socklen_t *address_len,
 		    struct timeval *timeout)
@@ -1305,7 +1305,7 @@ dataconn(const char *name, off_t size, const char *mode)
 #if defined(IP_TOS) && defined(HAVE_SETSOCKOPT)
 		{
 		    int tos = IPTOS_THROUGHPUT;
-		    
+		
 		    setsockopt(s, IPPROTO_IP, IP_TOS, (void *)&tos,
 			       sizeof(tos));
 		}
@@ -1323,7 +1323,7 @@ dataconn(const char *name, off_t size, const char *mode)
 	if (usedefault)
 		data_dest = his_addr;
 	usedefault = 1;
-	/* 
+	/*
 	 * Default to using the same socket type as the ctrl address,
 	 * unless we know the type of the data address.
 	 */
@@ -1411,7 +1411,7 @@ send_data(FILE *instr, FILE *outstr)
 		struct stat st;
 		char *chunk;
 		int in = fileno(instr);
-		if(fstat(in, &st) == 0 && S_ISREG(st.st_mode) 
+		if(fstat(in, &st) == 0 && S_ISREG(st.st_mode)
 		   && st.st_size > 0) {
 		    /*
 		     * mmap zero bytes has potential of loosing, don't do it.
@@ -1505,7 +1505,7 @@ receive_data(FILE *instr, FILE *outstr)
 	perror_reply(451, "Local resource failure: malloc");
 	return -1;
     }
-    
+
     switch (type) {
 
     case TYPE_I:
@@ -1534,7 +1534,7 @@ receive_data(FILE *instr, FILE *outstr)
 	char *p, *q;
 	int cr_flag = 0;
 	while ((cnt = sec_read(fileno(instr),
-				buf + cr_flag, 
+				buf + cr_flag,
 				bufsize - cr_flag)) > 0){
 	    if (urgflag && handleoobcmd())
 		return (-1);
@@ -1831,7 +1831,7 @@ pwd(void)
     char *ret;
 
     /* SunOS has a broken getcwd that does popen(pwd) (!!!), this
-     * failes miserably when running chroot 
+     * failes miserably when running chroot
      */
     ret = getcwd(path, sizeof(path));
     if (ret == NULL)
@@ -2017,8 +2017,8 @@ pasv(void)
 	socket_set_address_and_port (pasv_addr,
 				     socket_get_address (ctrl_addr),
 				     0);
-	socket_set_portrange(pdata, restricted_data_ports, 
-	    pasv_addr->sa_family); 
+	socket_set_portrange(pdata, restricted_data_ports,
+	    pasv_addr->sa_family);
 	if (seteuid(0) < 0)
 		fatal("Failed to seteuid");
 	if (bind(pdata, pasv_addr, socket_sockaddr_size (pasv_addr)) < 0) {
@@ -2064,8 +2064,8 @@ epsv(char *proto)
 	socket_set_address_and_port (pasv_addr,
 				     socket_get_address (ctrl_addr),
 				     0);
-	socket_set_portrange(pdata, restricted_data_ports, 
-	    pasv_addr->sa_family); 
+	socket_set_portrange(pdata, restricted_data_ports,
+	    pasv_addr->sa_family);
 	if (seteuid(0) < 0)
 		fatal("Failed to seteuid");
 	if (bind(pdata, pasv_addr, socket_sockaddr_size (pasv_addr)) < 0) {
@@ -2353,7 +2353,7 @@ out:
     transflag = 0;
     if (dout != NULL){
 	sec_write(fileno(dout), buf, 0); /* XXX flush */
-	    
+	
 	fclose(dout);
     }
     data = -1;

@@ -2,22 +2,22 @@
  * Copyright (c) 1995 - 2001, 2003 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the Institute nor the names of its contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -42,13 +42,13 @@ struct krb_kafs_data {
 };
 
 static int
-get_cred(struct kafs_data *data, const char *name, const char *inst, 
+get_cred(struct kafs_data *data, const char *name, const char *inst,
 	 const char *realm, uid_t uid, struct kafs_token *kt)
 {
     CREDENTIALS c;
     KTEXT_ST tkt;
     int ret = krb_get_cred((char*)name, (char*)inst, (char*)realm, &c);
-    
+
     if (ret) {
 	ret = krb_mk_req(&tkt, (char*)name, (char*)inst, (char*)realm, 0);
 	if (ret == KSUCCESS)
@@ -71,7 +71,7 @@ afslog_uid_int(struct kafs_data *data,
     char name[ANAME_SZ];
     char inst[INST_SZ];
     char realm[REALM_SZ];
-    
+
     kt.ticket = NULL;
 
     if (cell == 0 || cell[0] == 0)
@@ -84,7 +84,7 @@ afslog_uid_int(struct kafs_data *data,
 
     kt.ticket = NULL;
     ret = _kafs_get_cred(data, cell, realm_hint, realm, uid, &kt);
-    
+
     if (ret == 0) {
 	ret = kafs_settoken_rxkad(cell, &kt.ct, kt.ticket, kt.ticket_len);
 	free(kt.ticket);

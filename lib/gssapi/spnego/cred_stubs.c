@@ -39,7 +39,7 @@ _gss_spnego_release_cred(OM_uint32 *minor_status, gss_cred_id_t *cred_handle)
 {
     gssspnego_cred cred;
     OM_uint32 ret;
-    
+
     *minor_status = 0;
 
     if (*cred_handle == GSS_C_NO_CREDENTIAL) {
@@ -78,7 +78,7 @@ _gss_spnego_alloc_cred(OM_uint32 *minor_status,
 
     *cred_handle = (gss_cred_id_t)cred;
 
-    return GSS_S_COMPLETE; 
+    return GSS_S_COMPLETE;
 }
 
 /*
@@ -114,7 +114,7 @@ OM_uint32 _gss_spnego_acquire_cred
 	    return ret;
 	}
     }
-    
+
     ret = gss_indicate_mechs(minor_status, &mechs);
     if (ret != GSS_S_COMPLETE) {
 	gss_release_name(minor_status, &name);

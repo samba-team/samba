@@ -1,35 +1,35 @@
 /*
  * Copyright (c) 1997-2007 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
+ * (Royal Institute of Technology, Stockholm, Sweden).
  *
- * All rights reserved. 
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * 3. Neither the name of the Institute nor the names of its contributors 
- *    may be used to endorse or promote products derived from this software 
- *    without specific prior written permission. 
+ * 3. Neither the name of the Institute nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
- * SUCH DAMAGE. 
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 #include "kdc_locl.h"
@@ -65,48 +65,48 @@ static struct getarg_strings addresses_str;	/* addresses to listen on */
 static char *v4_realm;
 
 static struct getargs args[] = {
-    { 
-	"config-file",	'c',	arg_string,	&config_file, 
-	"location of config file",	"file" 
+    {
+	"config-file",	'c',	arg_string,	&config_file,
+	"location of config file",	"file"
     },
-    { 
-	"require-preauth",	'p',	arg_negative_flag, &require_preauth, 
+    {
+	"require-preauth",	'p',	arg_negative_flag, &require_preauth,
 	"don't require pa-data in as-reqs"
     },
-    { 
-	"max-request",	0,	arg_string, &max_request, 
+    {
+	"max-request",	0,	arg_string, &max_request,
 	"max size for a kdc-request", "size"
     },
     { "enable-http", 'H', arg_flag, &enable_http, "turn on HTTP support" },
     {	"524",		0, 	arg_negative_flag, &enable_524,
-	"don't respond to 524 requests" 
+	"don't respond to 524 requests"
     },
     {
 	"kaserver", 'K', arg_flag,   &enable_kaserver,
 	"enable kaserver support"
     },
     {	"kerberos4",	0, 	arg_flag, &enable_v4,
-	"respond to kerberos 4 requests" 
+	"respond to kerberos 4 requests"
     },
-    { 
-	"v4-realm",	'r',	arg_string, &v4_realm, 
+    {
+	"v4-realm",	'r',	arg_string, &v4_realm,
 	"realm to serve v4-requests for"
     },
     {	"kerberos4-cross-realm",	0, 	arg_flag,
 	&enable_v4_cross_realm,
-	"respond to kerberos 4 requests from foreign realms" 
+	"respond to kerberos 4 requests from foreign realms"
     },
     {	"ports",	'P', 	arg_string, &port_str,
 	"ports to listen to", "portspec"
     },
 #if DETACH_IS_DEFAULT
     {
-	"detach",       'D',      arg_negative_flag, &detach_from_console, 
+	"detach",       'D',      arg_negative_flag, &detach_from_console,
 	"don't detach from console"
     },
 #else
     {
-	"detach",       0 ,      arg_flag, &detach_from_console, 
+	"detach",       0 ,      arg_flag, &detach_from_console,
 	"detach from console"
     },
 #endif
@@ -152,7 +152,7 @@ configure(krb5_context context, int argc, char **argv)
     krb5_error_code ret;
     int optidx = 0;
     const char *p;
-    
+
     while(getarg(args, num_args, argc, argv, &optidx))
 	warnx("error at argument `%s'", argv[optidx]);
 
@@ -179,7 +179,7 @@ configure(krb5_context context, int argc, char **argv)
 
     if (argc != 0)
 	usage(1);
-    
+
     {
 	char **files;
 
@@ -192,10 +192,10 @@ configure(krb5_context context, int argc, char **argv)
 	ret = krb5_prepend_config_files_default(config_file, &files);
 	if (ret)
 	    krb5_err(context, 1, ret, "getting configuration files");
-	    
+	
 	ret = krb5_set_config_files(context, files);
 	krb5_free_config_files(files);
-	if(ret) 
+	if(ret)
 	    krb5_err(context, 1, ret, "reading configuration files");
     }
 
@@ -221,7 +221,7 @@ configure(krb5_context context, int argc, char **argv)
 	if(p)
 	    max_request = parse_bytes(p, NULL);
     }
-    
+
     if(require_preauth != -1)
 	config->require_preauth = require_preauth;
 
@@ -260,16 +260,16 @@ configure(krb5_context context, int argc, char **argv)
 	config->enable_524 = enable_524;
 
     if(enable_http == -1)
-	enable_http = krb5_config_get_bool(context, NULL, "kdc", 
+	enable_http = krb5_config_get_bool(context, NULL, "kdc",
 					   "enable-http", NULL);
 
     if(request_log == NULL)
-	request_log = krb5_config_get_string(context, NULL, 
-					     "kdc", 
-					     "kdc-request-log", 
+	request_log = krb5_config_get_string(context, NULL,
+					     "kdc",
+					     "kdc-request-log",
 					     NULL);
 
-    if (krb5_config_get_string(context, NULL, "kdc", 
+    if (krb5_config_get_string(context, NULL, "kdc",
 			       "enforce-transited-policy", NULL))
 	krb5_errx(context, 1, "enforce-transited-policy deprecated, "
 		  "use [kdc]transited-policy instead");
@@ -277,8 +277,8 @@ configure(krb5_context context, int argc, char **argv)
     if (enable_kaserver != -1)
 	config->enable_kaserver = enable_kaserver;
 
-    if(detach_from_console == -1) 
-	detach_from_console = krb5_config_get_bool_default(context, NULL, 
+    if(detach_from_console == -1)
+	detach_from_console = krb5_config_get_bool_default(context, NULL,
 							   DETACH_IS_DEFAULT,
 							   "kdc",
 							   "detach", NULL);
@@ -296,7 +296,7 @@ configure(krb5_context context, int argc, char **argv)
 	krb5_errx(context, 1, "Kerberos 4 enabled but no realm configured");
 
     if(disable_des == -1)
-	disable_des = krb5_config_get_bool_default(context, NULL, 
+	disable_des = krb5_config_get_bool_default(context, NULL,
 						   FALSE,
 						   "kdc",
 						   "disable-des", NULL);
@@ -308,7 +308,7 @@ configure(krb5_context context, int argc, char **argv)
 	krb5_enctype_disable(context, ETYPE_DES_CFB64_NONE);
 	krb5_enctype_disable(context, ETYPE_DES_PCBC_NONE);
 
-	kdc_log(context, config, 
+	kdc_log(context, config,
 		0, "DES was disabled, turned off Kerberos V4, 524 "
 		"and kaserver");
 	config->enable_v4 = 0;

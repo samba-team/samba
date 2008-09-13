@@ -1,5 +1,5 @@
-/* dummy K5 routines which are needed to get this to 
- * compile without having access ti the DCE versions 
+/* dummy K5 routines which are needed to get this to
+ * compile without having access ti the DCE versions
  * of the header files.
  * Thiis is very crude, and OSF needs to expose the K5
  * API.
@@ -9,7 +9,7 @@
 /* Transarc obfascates these routines */
 #ifdef DCE_1_1
 
-#define krb5_init_ets                   _dce_PkjKqOaklP 
+#define krb5_init_ets                   _dce_PkjKqOaklP
 #define krb5_copy_creds                 _dce_LuFxPiITzD
 #define krb5_unparse_name               _dce_LWHtAuNgRV
 #define krb5_get_default_realm          _dce_vDruhprWGh
@@ -37,17 +37,17 @@
 #endif
 
 /* Define the bare minimum k5 structures which are needed
- * by this program. Since the krb5 includes are not supplied 
+ * by this program. Since the krb5 includes are not supplied
  * with DCE, these were based on the MIT Kerberos 5 beta 3
  * which should match the DCE as of 1.0.3 at least.
  * The tricky one is the krb5_creds, since one is allocated
  * by this program, and it needs access to the client principal
  * in it.
- * Note that there are no function prototypes, so there is no 
+ * Note that there are no function prototypes, so there is no
  * compile time checking.
  * DEE 07/11/95
  */
-#define     NPROTOTYPE(x) () 
+#define     NPROTOTYPE(x) ()
 typedef int krb5_int32;  /* assuming all DCE systems are 32 bit */
 typedef short krb5short; /* assuming short is 16 bit */
 typedef krb5_int32      krb5_error_code;
@@ -126,8 +126,8 @@ typedef struct _krb5_creds {
     krb5_pointer **authdata;
 } krb5_creds;
 
-typedef krb5_pointer krb5_principal; 
- 
+typedef krb5_pointer krb5_principal;
+
 #define KRB5_CC_END                              336760974
 #define KRB5_TC_OPENCLOSE              0x00000001
 

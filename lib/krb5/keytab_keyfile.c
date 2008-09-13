@@ -1,34 +1,34 @@
 /*
  * Copyright (c) 1997 - 2007 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * 3. Neither the name of the Institute nor the names of its contributors 
- *    may be used to endorse or promote products derived from this software 
- *    without specific prior written permission. 
+ * 3. Neither the name of the Institute nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
- * SUCH DAMAGE. 
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 #include "krb5_locl.h"
@@ -39,7 +39,7 @@ RCSID("$Id$");
 
 /*
  * Minimum tools to handle the AFS KeyFile.
- * 
+ *
  * Format of the KeyFile is:
  * <int32_t numkeys> {[<int32_t kvno> <char[8] deskey>] * numkeys}
  *
@@ -73,7 +73,7 @@ get_cell_and_realm (krb5_context context, struct akf_data *d)
     if (f == NULL) {
 	ret = errno;
 	krb5_set_error_message (context, ret,
-				N_("Open ThisCell %s: %s", ""), 
+				N_("Open ThisCell %s: %s", ""),
 				AFS_SERVERTHISCELL,
 				strerror(ret));
 	return ret;
@@ -81,7 +81,7 @@ get_cell_and_realm (krb5_context context, struct akf_data *d)
     if (fgets (buf, sizeof(buf), f) == NULL) {
 	fclose (f);
 	krb5_set_error_message (context, EINVAL,
-				N_("No cell in ThisCell file %s", ""), 
+				N_("No cell in ThisCell file %s", ""),
 				AFS_SERVERTHISCELL);
 	return EINVAL;
     }
@@ -112,7 +112,7 @@ get_cell_and_realm (krb5_context context, struct akf_data *d)
     /* uppercase */
     for (cp = buf; *cp != '\0'; cp++)
 	*cp = toupper((unsigned char)*cp);
-    
+
     d->realm = strdup (buf);
     if (d->realm == NULL) {
 	free (d->cell);
@@ -139,7 +139,7 @@ akf_resolve(krb5_context context, const char *name, krb5_keytab id)
 			       N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
-    
+
     d->num_entries = 0;
     ret = get_cell_and_realm (context, d);
     if (ret) {
@@ -156,7 +156,7 @@ akf_resolve(krb5_context context, const char *name, krb5_keytab id)
 	return ENOMEM;
     }
     id->data = d;
-    
+
     return 0;
 }
 
@@ -179,10 +179,10 @@ akf_close(krb5_context context, krb5_keytab id)
  * Return filename
  */
 
-static krb5_error_code 
-akf_get_name(krb5_context context, 
-	     krb5_keytab id, 
-	     char *name, 
+static krb5_error_code
+akf_get_name(krb5_context context,
+	     krb5_keytab id,
+	     char *name,
 	     size_t name_sz)
 {
     struct akf_data *d = id->data;
@@ -192,12 +192,12 @@ akf_get_name(krb5_context context,
 }
 
 /*
- * Init 
+ * Init
  */
 
 static krb5_error_code
-akf_start_seq_get(krb5_context context, 
-		  krb5_keytab id, 
+akf_start_seq_get(krb5_context context,
+		  krb5_keytab id,
 		  krb5_kt_cursor *c)
 {
     int32_t ret;
@@ -227,9 +227,9 @@ akf_start_seq_get(krb5_context context,
 }
 
 static krb5_error_code
-akf_next_entry(krb5_context context, 
-	       krb5_keytab id, 
-	       krb5_keytab_entry *entry, 
+akf_next_entry(krb5_context context,
+	       krb5_keytab id,
+	       krb5_keytab_entry *entry,
 	       krb5_kt_cursor *cursor)
 {
     struct akf_data *d = id->data;
@@ -260,7 +260,7 @@ akf_next_entry(krb5_context context,
     entry->keyblock.keyvalue.data   = malloc (8);
     if (entry->keyblock.keyvalue.data == NULL) {
 	krb5_free_principal (context, entry->principal);
-	krb5_set_error_message(context, ENOMEM, 
+	krb5_set_error_message(context, ENOMEM,
 			       N_("malloc: out of memory", ""));
 	ret = ENOMEM;
 	goto out;
@@ -280,7 +280,7 @@ akf_next_entry(krb5_context context,
 }
 
 static krb5_error_code
-akf_end_seq_get(krb5_context context, 
+akf_end_seq_get(krb5_context context,
 		krb5_keytab id,
 		krb5_kt_cursor *cursor)
 {
@@ -341,12 +341,12 @@ akf_add_entry(krb5_context context,
 	    ret = errno;
 	    krb5_storage_free(sp);
 	    close(fd);
-	    krb5_set_error_message(context, ret, 
+	    krb5_set_error_message(context, ret,
 				   N_("seeking in keyfile: %s", ""),
 				   strerror(ret));
 	    return ret;
 	}
-	    
+	
 	ret = krb5_ret_int32(sp, &len);
 	if(ret) {
 	    krb5_storage_free(sp);
@@ -372,7 +372,7 @@ akf_add_entry(krb5_context context,
 	    }
 	    if(krb5_storage_seek(sp, 8, SEEK_CUR) < 0) {
 		ret = errno;
-		krb5_set_error_message (context, ret, 
+		krb5_set_error_message (context, ret,
 					N_("Failed seeing in keyfile: %s", ""),
 					strerror(ret));
 		goto out;
@@ -397,7 +397,7 @@ akf_add_entry(krb5_context context,
     ret = krb5_store_int32(sp, len);
     if(ret) {
 	ret = errno;
-	krb5_set_error_message (context, ret, 
+	krb5_set_error_message (context, ret,
 				N_("keytab keyfile failed new length", ""));
 	return ret;
     }
@@ -415,7 +415,7 @@ akf_add_entry(krb5_context context,
 			       N_("keytab keyfile failed store kvno", ""));
 	goto out;
     }
-    ret = krb5_storage_write(sp, entry->keyblock.keyvalue.data, 
+    ret = krb5_storage_write(sp, entry->keyblock.keyvalue.data,
 			     entry->keyblock.keyvalue.length);
     if(ret != entry->keyblock.keyvalue.length) {
 	if (ret < 0)

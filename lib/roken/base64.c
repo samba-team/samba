@@ -39,10 +39,10 @@ RCSID("$Id$");
 #include <string.h>
 #include "base64.h"
 
-static const char base64_chars[] = 
+static const char base64_chars[] =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
-static int 
+static int
 pos(char c)
 {
     const char *p;

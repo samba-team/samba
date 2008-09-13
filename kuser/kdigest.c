@@ -1,34 +1,34 @@
 /*
  * Copyright (c) 2006 - 2007 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * 3. Neither the name of the Institute nor the names of its contributors 
- *    may be used to endorse or promote products derived from this software 
- *    without specific prior written permission. 
+ * 3. Neither the name of the Institute nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
- * SUCH DAMAGE. 
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 #include "kuser_locl.h"
@@ -98,7 +98,7 @@ digest_server_init(struct digest_server_init_options *opt,
 	krb5_err(context, 1, ret, "krb5_digest_set_type");
 
     if (opt->cb_type_string && opt->cb_value_string) {
-	ret = krb5_digest_set_server_cb(context, digest, 
+	ret = krb5_digest_set_server_cb(context, digest,
 					opt->cb_type_string,
 					opt->cb_value_string);
 	if (ret)
@@ -112,7 +112,7 @@ digest_server_init(struct digest_server_init_options *opt,
 	krb5_err(context, 1, ret, "krb5_digest_init_request");
 
     printf("type=%s\n", opt->type_string);
-    printf("server-nonce=%s\n", 
+    printf("server-nonce=%s\n",
 	   krb5_digest_get_server_nonce(context, digest));
     {
 	const char *s = krb5_digest_get_identifier(context, digest);
@@ -125,7 +125,7 @@ digest_server_init(struct digest_server_init_options *opt,
 }
 
 int
-digest_server_request(struct digest_server_request_options *opt, 
+digest_server_request(struct digest_server_request_options *opt,
 		      int argc, char **argv)
 {
     krb5_error_code ret;
@@ -150,7 +150,7 @@ digest_server_request(struct digest_server_request_options *opt,
 	if (opt->server_identifier_string == NULL)
 	    errx(1, "server identifier missing");
 
-	ret = krb5_digest_set_identifier(context, digest, 
+	ret = krb5_digest_set_identifier(context, digest,
 					 opt->server_identifier_string);
 	if (ret)
 	    krb5_err(context, 1, ret, "krb5_digest_set_type");
@@ -164,13 +164,13 @@ digest_server_request(struct digest_server_request_options *opt,
     if (ret)
 	krb5_err(context, 1, ret, "krb5_digest_set_username");
 
-    ret = krb5_digest_set_server_nonce(context, digest, 
+    ret = krb5_digest_set_server_nonce(context, digest,
 				       opt->server_nonce_string);
     if (ret)
 	krb5_err(context, 1, ret, "krb5_digest_set_server_nonce");
 
     if(opt->client_nonce_string) {
-	ret = krb5_digest_set_client_nonce(context, digest, 
+	ret = krb5_digest_set_client_nonce(context, digest,
 					   opt->client_nonce_string);
 	if (ret)
 	    krb5_err(context, 1, ret, "krb5_digest_set_client_nonce");
@@ -181,7 +181,7 @@ digest_server_request(struct digest_server_request_options *opt,
     if (ret)
 	krb5_err(context, 1, ret, "krb5_digest_set_opaque");
 
-    ret = krb5_digest_set_responseData(context, digest, 
+    ret = krb5_digest_set_responseData(context, digest,
 				       opt->client_response_string);
     if (ret)
 	krb5_err(context, 1, ret, "krb5_digest_set_responseData");
@@ -304,7 +304,7 @@ client_mschapv2(const void *server_nonce, size_t snoncelen,
     SHA1_Update(&ctx, answer.data, answer.length);
     SHA1_Update(&ctx, ms_chap_v2_magic1, sizeof(ms_chap_v2_magic1));
     SHA1_Final(md, &ctx);
-    
+
     /* ChallengeHash */
     SHA1_Init(&ctx);
     SHA1_Update(&ctx, client_nonce, cnoncelen);
@@ -338,7 +338,7 @@ client_mschapv2(const void *server_nonce, size_t snoncelen,
 
 
 int
-digest_client_request(struct digest_client_request_options *opt, 
+digest_client_request(struct digest_client_request_options *opt,
 		      int argc, char **argv)
 {
     char *server_nonce, *client_nonce = NULL, server_identifier;
@@ -358,7 +358,7 @@ digest_client_request(struct digest_client_request_options *opt,
 	errx(1, "server_nonce");
 
     snoncelen = hex_decode(opt->server_nonce_string, server_nonce, snoncelen);
-    if (snoncelen <= 0) 
+    if (snoncelen <= 0)
 	errx(1, "server nonce wrong");
 
     if (opt->client_nonce_string) {
@@ -367,9 +367,9 @@ digest_client_request(struct digest_client_request_options *opt,
 	if (client_nonce == NULL)
 	    errx(1, "client_nonce");
 	
-	cnoncelen = hex_decode(opt->client_nonce_string, 
+	cnoncelen = hex_decode(opt->client_nonce_string,
 			       client_nonce, cnoncelen);
-	if (cnoncelen <= 0) 
+	if (cnoncelen <= 0)
 	    errx(1, "client nonce wrong");
     }
 
@@ -385,7 +385,7 @@ digest_client_request(struct digest_client_request_options *opt,
 	if (opt->server_identifier_string == NULL)
 	    errx(1, "server identifier missing");
 
-	client_chap(server_nonce, snoncelen, server_identifier, 
+	client_chap(server_nonce, snoncelen, server_identifier,
 		    opt->password_string);
 
     } else if (strcasecmp(opt->type_string, "MS-CHAP-V2") == 0) {
@@ -395,7 +395,7 @@ digest_client_request(struct digest_client_request_options *opt,
 	    errx(1, "client nonce missing");
 
 	client_mschapv2(server_nonce, snoncelen,
-			client_nonce, cnoncelen, 
+			client_nonce, cnoncelen,
 			opt->username_string,
 			opt->password_string);
     }
@@ -423,7 +423,7 @@ ntlm_server_init(struct ntlm_server_init_options *opt,
     if (ret)
 	krb5_err(context, 1, ret, "krb5_ntlm_alloc");
 
-    ret = krb5_ntlm_init_request(context, 
+    ret = krb5_ntlm_init_request(context,
 				 ntlm,
 				 opt->kerberos_realm_string,
 				 id,
@@ -519,7 +519,7 @@ main(int argc, char **argv)
 
     if(getarg(args, sizeof(args) / sizeof(args[0]), argc, argv, &optidx))
 	usage(1);
-    
+
     if (help_flag)
 	usage (0);
 

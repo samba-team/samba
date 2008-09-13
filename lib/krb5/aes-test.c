@@ -1,18 +1,18 @@
 /*
  * Copyright (c) 2003 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
  * 3. Neither the name of KTH nor the names of its contributors may be
  *    used to endorse or promote products derived from this software without
@@ -62,16 +62,16 @@ struct {
     char *pbkdf2;
     char *key;
 } keys[] = {
-    { 
+    {
 	"password", "ATHENA.MIT.EDUraeburn", -1,
-	1, 
+	1,
 	ETYPE_AES128_CTS_HMAC_SHA1_96, 16,
 	"\xcd\xed\xb5\x28\x1b\xb2\xf8\x01\x56\x5a\x11\x22\xb2\x56\x35\x15",
 	"\x42\x26\x3c\x6e\x89\xf4\xfc\x28\xb8\xdf\x68\xee\x09\x79\x9f\x15"
     },
     {
 	"password", "ATHENA.MIT.EDUraeburn", -1,
-	1, 
+	1,
 	ETYPE_AES256_CTS_HMAC_SHA1_96, 32,
 	"\xcd\xed\xb5\x28\x1b\xb2\xf8\x01\x56\x5a\x11\x22\xb2\x56\x35\x15"
 	"\x0a\xd1\xf7\xa0\x4b\xb9\xf3\xa3\x33\xec\xc0\xe2\xe1\xf7\x08\x37",
@@ -87,7 +87,7 @@ struct {
     },
     {
 	"password", "ATHENA.MIT.EDUraeburn", -1,
-	2, 
+	2,
 	ETYPE_AES256_CTS_HMAC_SHA1_96, 32,
 	"\x01\xdb\xee\x7f\x4a\x9e\x24\x3e\x98\x8b\x62\xc7\x3c\xda\x93\x5d"
 	"\xa0\x53\x78\xb9\x32\x44\xec\x8f\x48\xa9\x9e\x61\xad\x79\x9d\x86",
@@ -96,14 +96,14 @@ struct {
     },
     {
 	"password", "ATHENA.MIT.EDUraeburn", -1,
-	1200, 
+	1200,
 	ETYPE_AES128_CTS_HMAC_SHA1_96, 16,
 	"\x5c\x08\xeb\x61\xfd\xf7\x1e\x4e\x4e\xc3\xcf\x6b\xa1\xf5\x51\x2b",
 	"\x4c\x01\xcd\x46\xd6\x32\xd0\x1e\x6d\xbe\x23\x0a\x01\xed\x64\x2a"
     },
     {
 	"password", "ATHENA.MIT.EDUraeburn", -1,
-	1200, 
+	1200,
 	ETYPE_AES256_CTS_HMAC_SHA1_96, 32,
 	"\x5c\x08\xeb\x61\xfd\xf7\x1e\x4e\x4e\xc3\xcf\x6b\xa1\xf5\x51\x2b"
 	"\xa7\xe5\x2d\xdb\xc5\xe5\x14\x2f\x70\x8a\x31\xe2\xe6\x2b\x1e\x13",
@@ -180,14 +180,14 @@ struct {
 	"\x57\x18\x48\xb7\x84\xa3\xd6\xbd\xc3\x46\x58\x9a\x3e\x39\x3f\x9e"
     },
     {
-	"foo", "", -1, 
+	"foo", "", -1,
 	0,
 	ETYPE_ARCFOUR_HMAC_MD5, 16,
 	NULL,
 	"\xac\x8e\x65\x7f\x83\xdf\x82\xbe\xea\x5d\x43\xbd\xaf\x78\x00\xcc"
     },
     {
-	"test", "", -1, 
+	"test", "", -1,
 	0,
 	ETYPE_ARCFOUR_HMAC_MD5, 16,
 	NULL,
@@ -215,7 +215,7 @@ string_to_key_test(krb5_context context)
 	    salt.saltvalue.length = strlen(salt.saltvalue.data);
 	else
 	    salt.saltvalue.length = keys[i].saltlen;
-    
+
 	opaque.data = iter;
 	opaque.length = sizeof(iter);
 	_krb5_put_int(iter, keys[i].iterations, 4);
@@ -228,15 +228,15 @@ string_to_key_test(krb5_context context)
 
 	    PKCS5_PBKDF2_HMAC_SHA1(password.data, password.length,
 				   salt.saltvalue.data, salt.saltvalue.length,
-				   keys[i].iterations, 
+				   keys[i].iterations,
 				   keys[i].keylen, keyout);
-	    
+	
 	    if (memcmp(keyout, keys[i].pbkdf2, keys[i].keylen) != 0) {
 		krb5_warnx(context, "%d: pbkdf2", i);
 		val = 1;
 		continue;
 	    }
-	    
+	
 	    if (verbose) {
 		printf("PBKDF2:\n");
 		hex_dump_data(keyout, keys[i].keylen);
@@ -248,31 +248,31 @@ string_to_key_test(krb5_context context)
 
 	    ret = krb5_string_to_key_data_salt_opaque (context,
 						       keys[i].enctype,
-						       password, 
-						       salt, 
-						       opaque, 
+						       password,
+						       salt,
+						       opaque,
 						       &key);
 	    if (ret) {
-		krb5_warn(context, ret, "%d: string_to_key_data_salt_opaque", 
+		krb5_warn(context, ret, "%d: string_to_key_data_salt_opaque",
 			  i);
 		val = 1;
 		continue;
 	    }
-	    
+	
 	    if (key.keyvalue.length != keys[i].keylen) {
 		krb5_warnx(context, "%d: key wrong length (%lu/%lu)",
-			   i, (unsigned long)key.keyvalue.length, 
+			   i, (unsigned long)key.keyvalue.length,
 			   (unsigned long)keys[i].keylen);
 		val = 1;
 		continue;
 	    }
-	    
+	
 	    if (memcmp(key.keyvalue.data, keys[i].key, keys[i].keylen) != 0) {
 		krb5_warnx(context, "%d: key wrong", i);
 		val = 1;
 		continue;
 	    }
-	    
+	
 	    if (verbose) {
 		printf("key:\n");
 		hex_dump_data(key.keyvalue.data, key.keyvalue.length);
@@ -285,9 +285,9 @@ string_to_key_test(krb5_context context)
 
 static int
 krb_enc(krb5_context context,
-	krb5_crypto crypto, 
+	krb5_crypto crypto,
 	unsigned usage,
-	krb5_data *cipher, 
+	krb5_data *cipher,
 	krb5_data *clear)
 {
     krb5_data decrypt;
@@ -320,9 +320,9 @@ krb_enc(krb5_context context,
 
 static int
 krb_enc_iov2(krb5_context context,
-	     krb5_crypto crypto, 
+	     krb5_crypto crypto,
 	     unsigned usage,
-	     size_t cipher_len, 
+	     size_t cipher_len,
 	     krb5_data *clear)
 {
     krb5_crypto_iov iov[5];
@@ -336,7 +336,7 @@ krb_enc_iov2(krb5_context context,
     iov[0].flags = KRB5_CRYPTO_TYPE_HEADER;
     iov[0].data.length = krb5_crypto_length(context, crypto, iov[0].flags);
     iov[0].data.data = emalloc(iov[0].data.length);
-    
+
     iov[1].flags = KRB5_CRYPTO_TYPE_TRAILER;
     iov[1].data.length = krb5_crypto_length(context, crypto, iov[1].flags);
     iov[1].data.data = emalloc(iov[1].data.length);
@@ -347,14 +347,14 @@ krb_enc_iov2(krb5_context context,
     memcpy(iov[2].data.data, p, iov[2].data.length);
     p += iov[2].data.length;
     len -= iov[2].data.length;
-    
+
     iov[3].flags = KRB5_CRYPTO_TYPE_DATA;
     iov[3].data.length = len;
     iov[3].data.data = emalloc(iov[3].data.length);
     memcpy(iov[3].data.data, p, iov[3].data.length);
     p += iov[3].data.length;
     len -= iov[3].data.length;
-    
+
     /* padding buffer */
     iov[4].flags = KRB5_CRYPTO_TYPE_PADDING;
     iov[4].data.length = krb5_crypto_length(context, crypto, iov[4].flags);
@@ -362,8 +362,8 @@ krb_enc_iov2(krb5_context context,
 
     if (len != 0)
 	abort();
-    
-    ret = krb5_encrypt_iov_ivec(context, crypto, usage, 
+
+    ret = krb5_encrypt_iov_ivec(context, crypto, usage,
 				iov, sizeof(iov)/sizeof(iov[0]), NULL);
     if (ret)
 	errx(1, "iov failed: %d", ret);
@@ -378,16 +378,16 @@ krb_enc_iov2(krb5_context context,
 
     /* padding turn into data */
     iov[4].flags = KRB5_CRYPTO_TYPE_DATA;
-    
-    ret = krb5_decrypt_iov_ivec(context, crypto, usage, 
+
+    ret = krb5_decrypt_iov_ivec(context, crypto, usage,
 				iov, sizeof(iov)/sizeof(iov[0]), NULL);
     if (ret)
 	errx(1, "iov failed: %d", ret);
-    
-    if (clear->length != 
+
+    if (clear->length !=
 	iov[2].data.length + iov[3].data.length + iov[4].data.length)
 	errx(1, "length incorrect");
-    
+
     p = clear->data;
     if (memcmp(iov[2].data.data, p, iov[2].data.length) != 0)
 	errx(1, "iov[2] incorrect");
@@ -404,9 +404,9 @@ krb_enc_iov2(krb5_context context,
 
 static int
 krb_enc_iov(krb5_context context,
-	    krb5_crypto crypto, 
+	    krb5_crypto crypto,
 	    unsigned usage,
-	    krb5_data *cipher, 
+	    krb5_data *cipher,
 	    krb5_data *clear)
 {
     krb5_crypto_iov iov[4];
@@ -416,46 +416,46 @@ krb_enc_iov(krb5_context context,
 
     p = cipher->data;
     len = cipher->length;
-    
+
     iov[0].flags = KRB5_CRYPTO_TYPE_HEADER;
     iov[0].data.length = krb5_crypto_length(context, crypto, iov[0].flags);
     iov[0].data.data = emalloc(iov[0].data.length);
     memcpy(iov[0].data.data, p, iov[0].data.length);
     p += iov[0].data.length;
     len -= iov[0].data.length;
-    
+
     iov[1].flags = KRB5_CRYPTO_TYPE_TRAILER;
     iov[1].data.length = krb5_crypto_length(context, crypto, iov[1].flags);
     iov[1].data.data = emalloc(iov[1].data.length);
     memcpy(iov[1].data.data, p + len - iov[1].data.length, iov[1].data.length);
     len -= iov[1].data.length;
 
-    
+
     iov[2].flags = KRB5_CRYPTO_TYPE_DATA;
     iov[2].data.length = 16;
     iov[2].data.data = emalloc(iov[2].data.length);
     memcpy(iov[2].data.data, p, iov[2].data.length);
     p += iov[2].data.length;
     len -= iov[2].data.length;
-    
+
     iov[3].flags = KRB5_CRYPTO_TYPE_DATA;
     iov[3].data.length = len;
     iov[3].data.data = emalloc(iov[3].data.length);
     memcpy(iov[1].data.data, p, iov[3].data.length);
     p += iov[3].data.length;
     len -= iov[3].data.length;
-    
+
     if (len != 0)
 	abort();
-    
-    ret = krb5_decrypt_iov_ivec(context, crypto, usage, 
+
+    ret = krb5_decrypt_iov_ivec(context, crypto, usage,
 				iov, sizeof(iov)/sizeof(iov[0]), NULL);
     if (ret)
 	errx(1, "iov failed: %d", ret);
-    
+
     if (clear->length != iov[2].data.length + iov[3].data.length)
 	errx(1, "length incorrect");
-    
+
     p = clear->data;
     if (memcmp(iov[2].data.data, p, iov[2].data.length) != 0)
 	errx(1, "iov[2] incorrect");
@@ -473,7 +473,7 @@ krb_enc_mit(krb5_context context,
 	    krb5_enctype enctype,
 	    krb5_keyblock *key,
 	    unsigned usage,
-	    krb5_data *cipher, 
+	    krb5_data *cipher,
 	    krb5_data *clear)
 {
     krb5_error_code ret;
@@ -521,10 +521,10 @@ struct {
     size_t plen;
     void *pdata;
 } krbencs[] =  {
-    { 
+    {
 	ETYPE_AES256_CTS_HMAC_SHA1_96,
 	7,
-	32,   
+	32,
 	"\x47\x75\x69\x64\x65\x6c\x69\x6e\x65\x73\x20\x74\x6f\x20\x41\x75"
 	"\x74\x68\x6f\x72\x73\x20\x6f\x66\x20\x49\x6e\x74\x65\x72\x6e\x65",
 	44,
@@ -560,22 +560,22 @@ krb_enc_test(krb5_context context)
 	plain.data = krbencs[i].pdata;
 	
 	ret = krb_enc(context, crypto, krbencs[i].usage, &cipher, &plain);
-		       
-	if (ret) 
+		
+	if (ret)
 	    errx(1, "krb_enc failed with %d for test %d", ret, i);
 
 	ret = krb_enc_iov(context, crypto, krbencs[i].usage, &cipher, &plain);
 	if (ret)
 	    errx(1, "krb_enc_iov failed with %d for test %d", ret, i);
 
-	ret = krb_enc_iov2(context, crypto, krbencs[i].usage, 
+	ret = krb_enc_iov2(context, crypto, krbencs[i].usage,
 			   cipher.length, &plain);
 	if (ret)
 	    errx(1, "krb_enc_iov2 failed with %d for test %d", ret, i);
 
 	krb5_crypto_destroy(context, crypto);
 
-	ret = krb_enc_mit(context, krbencs[i].enctype, &kb, 
+	ret = krb_enc_mit(context, krbencs[i].enctype, &kb,
 			  krbencs[i].usage, &cipher, &plain);
 	if (ret)
 	    errx(1, "krb_enc_mit failed with %d for test %d", ret, i);
@@ -624,7 +624,7 @@ main(int argc, char **argv)
     krb5_error_code ret;
     krb5_context context;
     int val = 0;
-    
+
     ret = krb5_init_context (&context);
     if (ret)
 	errx (1, "krb5_init_context failed: %d", ret);

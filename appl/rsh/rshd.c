@@ -1,34 +1,34 @@
 /*
  * Copyright (c) 1997-2007 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * 3. Neither the name of the Institute nor the names of its contributors 
- *    may be used to endorse or promote products derived from this software 
- *    without specific prior written permission. 
+ * 3. Neither the name of the Institute nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
- * SUCH DAMAGE. 
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 #include "rsh_locl.h"
@@ -146,7 +146,7 @@ recv_bsd_auth (int s, u_char *buf,
 	       char **cmd)
 {
     struct passwd *pwd;
-    
+
     *client_username = read_str (s, USERNAME_SZ, "local username");
     *server_username = read_str (s, USERNAME_SZ, "remote username");
     *cmd = read_str (s, ARG_MAX + 1, "command");
@@ -224,7 +224,7 @@ recv_krb4_auth (int s, u_char *buf,
 #endif /* KRB4 */
 
 #ifdef KRB5
-static int 
+static int
 save_krb5_creds (int s,
                  krb5_auth_context auth_context,
                  krb5_principal client)
@@ -232,7 +232,7 @@ save_krb5_creds (int s,
 {
     int ret;
     krb5_data remote_cred;
- 
+
     krb5_data_zero (&remote_cred);
     ret= krb5_read_message (context, (void *)&s, &remote_cred);
     if (ret) {
@@ -241,13 +241,13 @@ save_krb5_creds (int s,
     }
     if (remote_cred.length == 0)
 	return 0;
- 
+
     ret = krb5_cc_gen_new(context, &krb5_mcc_ops, &ccache);
     if (ret) {
 	krb5_data_free(&remote_cred);
 	return 0;
     }
-  
+
     krb5_cc_initialize(context,ccache,client);
     ret = krb5_rd_cred2(context, auth_context, ccache, &remote_cred);
     if(ret != 0)
@@ -268,8 +268,8 @@ krb5_start_session (void)
     ret = krb5_cc_resolve (context, tkfile, &ccache2);
     if (ret) {
 	estr = krb5_get_error_string(context);
-	syslog(LOG_WARNING, "resolve cred cache %s: %s", 
-	       tkfile, 
+	syslog(LOG_WARNING, "resolve cred cache %s: %s",
+	       tkfile,
 	       estr ? estr : krb5_get_err_text(context, ret));
 	free(estr);
 	krb5_cc_destroy(context, ccache);
@@ -279,7 +279,7 @@ krb5_start_session (void)
     ret = krb5_cc_copy_cache (context, ccache, ccache2);
     if (ret) {
 	estr = krb5_get_error_string(context);
-	syslog(LOG_WARNING, "storing credentials: %s", 
+	syslog(LOG_WARNING, "storing credentials: %s",
 	       estr ? estr : krb5_get_err_text(context, ret));
 	free(estr);
 	krb5_cc_destroy(context, ccache);
@@ -334,7 +334,7 @@ recv_krb5_auth (int s, u_char *buf,
     if (len != sizeof(KRB5_SENDAUTH_VERSION)
 	|| memcmp (buf, KRB5_SENDAUTH_VERSION, len) != 0)
 	syslog_and_die ("bad sendauth version: %.8s", buf);
-    
+
     status = krb5_sock_to_principal (context,
 				     s,
 				     "host",
@@ -363,7 +363,7 @@ recv_krb5_auth (int s, u_char *buf,
     *client_username = read_str (s, ARG_MAX + 1, "local username");
 
     if(protocol_version == 2) {
-	status = krb5_auth_con_getremotesubkey(context, auth_context, 
+	status = krb5_auth_con_getremotesubkey(context, auth_context,
 					       &keyblock);
 	if(status != 0 || keyblock == NULL)
 	    syslog_and_die("failed to get remote subkey");
@@ -378,10 +378,10 @@ recv_krb5_auth (int s, u_char *buf,
 
     status = krb5_crypto_init(context, keyblock, 0, &crypto);
     if(status)
-	syslog_and_die("krb5_crypto_init: %s", 
+	syslog_and_die("krb5_crypto_init: %s",
 		       krb5_get_err_text(context, status));
 
-    
+
     cksum_data.length = asprintf (&str,
 				  "%u:%s%s",
 				  ntohs(socket_get_port (thisaddr)),
@@ -391,9 +391,9 @@ recv_krb5_auth (int s, u_char *buf,
 	syslog_and_die ("asprintf: out of memory");
     cksum_data.data = str;
 
-    status = krb5_verify_authenticator_checksum(context, 
+    status = krb5_verify_authenticator_checksum(context,
 						auth_context,
-						cksum_data.data, 
+						cksum_data.data,
 						cksum_data.length);
 
     if (status)
@@ -464,7 +464,7 @@ recv_krb5_auth (int s, u_char *buf,
 		   *cmd);
 	    free (name);
 	}
-    }	   
+    }	
 
     return 0;
 }
@@ -712,7 +712,7 @@ doit (void)
     if (port) {
 	int priv_port = IPPORT_RESERVED - 1;
 
-	/* 
+	/*
 	 * There's no reason to require a ``privileged'' port number
 	 * here, but for some reason the brain dead rsh clients
 	 * do... :-(
@@ -740,13 +740,13 @@ doit (void)
 	    close (errsock);
 	}
     }
-    
+
     if(do_kerberos) {
 	if (net_read (s, buf, 4) != 4)
 	    syslog_and_die ("reading auth info: %m");
-    
+
 #ifdef KRB4
-	if ((do_kerberos & DO_KRB4) && 
+	if ((do_kerberos & DO_KRB4) &&
 	    recv_krb4_auth (s, buf, thisaddr, thataddr,
 			    &client_user,
 			    &server_user,
@@ -811,17 +811,17 @@ doit (void)
     {
 	struct spwd *sp;
 	long    today;
-    
+
 	sp = getspnam(server_user);
 	if (sp != NULL) {
 	    today = time(0)/(24L * 60 * 60);
-	    if (sp->sp_expire > 0) 
-		if (today > sp->sp_expire) 
+	    if (sp->sp_expire > 0)
+		if (today > sp->sp_expire)
 		    fatal(s, NULL, "Account has expired.");
 	}
     }
 #endif
-    
+
 
 #ifdef HAVE_SETLOGIN
     if (setlogin(pwd->pw_name) < 0)
@@ -863,7 +863,7 @@ doit (void)
 #ifdef KRB5
     {
 	int fd;
- 
+
 	if (!do_unique_tkfile)
 	    snprintf(tkfile,sizeof(tkfile),"FILE:/tmp/krb5cc_%lu",
 		     (unsigned long)pwd->pw_uid);
@@ -873,7 +873,7 @@ doit (void)
 	    close(fd);
 	    unlink(tkfile+5);
 	}
- 
+
 	if (kerberos_status)
 	    krb5_start_session();
     }
@@ -1022,7 +1022,7 @@ main(int argc, char **argv)
 			snprintf(portstr, sizeof(portstr), "%d", 545);
 			error = getaddrinfo(NULL, portstr, &hints, &ai);
 		    }
-		    if(error) 
+		    if(error)
 			errx (1, "getaddrinfo: %s", gai_strerror (error));
 		} else {
 		    error = getaddrinfo(NULL, "kshell", &hints, &ai);
@@ -1030,7 +1030,7 @@ main(int argc, char **argv)
 			snprintf(portstr, sizeof(portstr), "%d", 544);
 			error = getaddrinfo(NULL, portstr, &hints, &ai);
 		    }
-		    if(error) 
+		    if(error)
 			errx (1, "getaddrinfo: %s", gai_strerror (error));
 		}
 	    } else
@@ -1041,7 +1041,7 @@ main(int argc, char **argv)
 			snprintf(portstr, sizeof(portstr), "%d", 514);
 			error = getaddrinfo(NULL, portstr, &hints, &ai);
 		    }
-		    if(error) 
+		    if(error)
 			errx (1, "getaddrinfo: %s", gai_strerror (error));
 		}
 	}

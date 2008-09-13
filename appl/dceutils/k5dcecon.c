@@ -1,45 +1,45 @@
 /*
  * (c) Copyright 1995 HEWLETT-PACKARD COMPANY
- * 
- * To anyone who acknowledges that this file is provided 
+ *
+ * To anyone who acknowledges that this file is provided
  * "AS IS" without any express or implied warranty:
- * permission to use, copy, modify, and distribute this 
- * file for any purpose is hereby granted without fee, 
- * provided that the above copyright notice and this 
- * notice appears in all copies, and that the name of 
- * Hewlett-Packard Company not be used in advertising or 
- * publicity pertaining to distribution of the software 
+ * permission to use, copy, modify, and distribute this
+ * file for any purpose is hereby granted without fee,
+ * provided that the above copyright notice and this
+ * notice appears in all copies, and that the name of
+ * Hewlett-Packard Company not be used in advertising or
+ * publicity pertaining to distribution of the software
  * without specific, written prior permission.  Hewlett-
- * Packard Company makes no representations about the 
+ * Packard Company makes no representations about the
  * suitability of this software for any purpose.
  *
  */
 /*
  * k5dcecon - Program to convert a K5 TGT to a DCE context,
  * for use with DFS and its PAG.
- * 
- * The program is designed to be called as a sub process, 
- * and return via stdout the name of the cache which implies 
- * the PAG which should be used. This program itself does not 
- * use the cache or PAG itself, so the PAG in the kernel for 
- * this program may not be set. 
- * 
+ *
+ * The program is designed to be called as a sub process,
+ * and return via stdout the name of the cache which implies
+ * the PAG which should be used. This program itself does not
+ * use the cache or PAG itself, so the PAG in the kernel for
+ * this program may not be set.
+ *
  * The calling program can then use the name of the cache
- * to set the KRB5CCNAME and PAG for itself and its children. 
+ * to set the KRB5CCNAME and PAG for itself and its children.
  *
  * If no ticket was passed, an attemplt to join an existing
- * PAG will be made. 
- * 
- * If a forwarded K5 TGT is passed in, either a new DCE 
+ * PAG will be made.
+ *
+ * If a forwarded K5 TGT is passed in, either a new DCE
  * context will be created, or an existing one will be updated.
  * If the same ticket was already used to create an existing
- * context, it will be joined instead. 
- * 
+ * context, it will be joined instead.
+ *
  * Parts of this program are based on k5dceauth,c which was
- * given to me by HP and by the k5dcelogin.c which I developed. 
+ * given to me by HP and by the k5dcelogin.c which I developed.
  * A slightly different version of k5dcelogin.c, was added to
  * DCE 1.2.2
- * 
+ *
  * D. E. Engert 6/17/97 ANL
  */
 
@@ -89,9 +89,9 @@ static time_t now;
 #ifdef _AIX
 /*---------------------------------------------*/
  /* AIX with DCE 1.1 does not have the com_err in the libdce.a
-  * do a half hearted job of substituting for it. 
-  */ 
-void com_err(char *p1, int code, ...) 
+  * do a half hearted job of substituting for it.
+  */
+void com_err(char *p1, int code, ...)
 {
     int lst;
     dce_error_string_t  err_string;
@@ -112,17 +112,17 @@ void krb5_init_ets()
 /* find a cache to use  for our new pag           */
 /* Since there is no simple way to determine which
  * caches are associated with a pag, we will have
- * do look around and see what makes most sense on 
- * different systems. 
- * on a Solaris system, and in the DCE source, 
- * the pags always start with a 41. 
+ * do look around and see what makes most sense on
+ * different systems.
+ * on a Solaris system, and in the DCE source,
+ * the pags always start with a 41.
  * this is not true on the IBM, where there does not
- * appear to be any pattern. 
- * 
+ * appear to be any pattern.
+ *
  * But since we are always certifing our creds when
  * they are received, we can us that fact, and look
  * at the first word of the associated data file
- * to see that it has a "5". If not don't use. 
+ * to see that it has a "5". If not don't use.
  */
 
 int k5dcesession(luid, pname, tgt, ppag, tflags)
@@ -139,13 +139,13 @@ int k5dcesession(luid, pname, tgt, ppag, tflags)
   int better = 0;
   krb5_creds *xtgt;
 
-  char prev_name[17] = "";  
+  char prev_name[17] = "";
   krb5_timestamp prev_endtime;
   off_t prev_size;
   u_long prev_pag = 0;
 
   char ccname[64] = "FILE:/opt/dcelocal/var/security/creds/";
- 
+
   error_status_t st;
   sec_login_handle_t lcontext = 0;
   dce_error_string_t  err_string;
@@ -160,7 +160,7 @@ int k5dcesession(luid, pname, tgt, ppag, tflags)
 
   while ( (direntp = readdir( dirp )) != NULL ) {
 
-/*  
+/*
  * (but root has the ffffffff which we are not interested in)
  */
     if (!strncmp(direntp->d_name,"dcecred_",8)
@@ -171,25 +171,25 @@ int k5dcesession(luid, pname, tgt, ppag, tflags)
       strcpy(ccname+38,direntp->d_name);
       if (!k5dcematch(luid, pname, ccname, &size, &xtgt))  {
 
-        /* it's one of our caches, see if it is better  
+        /* it's one of our caches, see if it is better
          * i.e. the endtime is farther, and if the endtimes
-         * are the same, take the larger, as he who has the 
+         * are the same, take the larger, as he who has the
          * most tickets wins.
          * it must also had the same set of flags at least
-         * i.e. if the forwarded TGT is forwardable, this one must 
-         * be as well.   
+         * i.e. if the forwarded TGT is forwardable, this one must
+         * be as well.
          */
 
         DEEDEBUG2("Cache:%s",direntp->d_name);
         DEEDEBUG2(" size:%d",size);
 		DEEDEBUG2(" flags:%8.8x",xtgt->ticket_flags);
 		DEEDEBUG2(" %s",ctime((time_t *)&xtgt->times.endtime));
- 
+
         if ((xtgt->ticket_flags & tflags) == tflags ) {
           if (prev_name[0]) {
             if (xtgt->times.endtime > prev_endtime) {
               better = 1;
-            } else if ((xtgt->times.endtime = prev_endtime) 
+            } else if ((xtgt->times.endtime = prev_endtime)
                   && (size > prev_size)){
               better = 1;
 	        }
@@ -207,12 +207,12 @@ int k5dcesession(luid, pname, tgt, ppag, tflags)
             better = 0;
           }
         }
-      } 
+      }
     }
   }
   (void)closedir( dirp );
 
-  if (!prev_name[0])  
+  if (!prev_name[0])
 	 return 1; /* failed to find one */
 
    DEEDEBUG2("Best: %s\n",prev_name);
@@ -222,7 +222,7 @@ int k5dcesession(luid, pname, tgt, ppag, tflags)
 
    strcpy(ccname+38,prev_name);
    setenv("KRB5CCNAME",ccname,1);
- 
+
    return(0);
 }
 
@@ -230,7 +230,7 @@ int k5dcesession(luid, pname, tgt, ppag, tflags)
 /*----------------------------------------------*/
 /* see if this cache is for this this principal */
 
-int k5dcematch(luid, pname, ccname, sizep, tgt) 
+int k5dcematch(luid, pname, ccname, sizep, tgt)
   uid_t luid;
   char *pname;
   char *ccname;
@@ -255,18 +255,18 @@ int k5dcematch(luid, pname, ccname, sizep, tgt)
 
     if (stat(ccdata, &stbuf))
       return(1);
- 
+
     if (stbuf.st_uid != luid)
       return(1);
 
     if ((fd = open(ccdata,O_RDONLY)) == -1)
       return(1);
-    
+
     if ((read(fd,&status,4)) != 4) {
       close(fd);
       return(1);
     }
-    
+
     /* DEEDEBUG2(".data file status = %d\n", status); */
 
     if (status != 5)
@@ -306,13 +306,13 @@ int k5dcegettgt(pcache, ccname, pname, tgt)
   char *sname, *realm, *tgtname = NULL;
 
   /* Since DCE does not expose much of the Kerberos interface,
-   * we will have to use what we can. This means setting the 
+   * we will have to use what we can. This means setting the
    * KRB5CCNAME for each file we want to test
    * We will also not worry about freeing extra cache structures
-   * as this this routine is also not exposed, and this should not 
-   * effect this module. 
+   * as this this routine is also not exposed, and this should not
+   * effect this module.
    * We should also free the creds contents, but that is not exposed
-   * either. 
+   * either.
    */
 
   setenv("KRB5CCNAME",ccname,1);
@@ -327,7 +327,7 @@ int k5dcegettgt(pcache, ccname, pname, tgt)
   DEEDEBUG("Got cache\n");
   flags = 0;
   if (code = krb5_cc_set_flags(*pcache, flags)) {
-    com_err(progname, code,"While setting flags"); 
+    com_err(progname, code,"While setting flags");
     goto return2;
   }
   DEEDEBUG("Set flags\n");
@@ -361,7 +361,7 @@ int k5dcegettgt(pcache, ccname, pname, tgt)
   strcat(tgtname,realm);
   strcat(tgtname,"@");
   strcat(tgtname,realm);
- 
+
   DEEDEBUG2("Getting tgt %s\n", tgtname);
   if (code = krb5_cc_start_seq_get(*pcache, &cur)) {
     com_err(progname, code, "while starting to retrieve tickets");
@@ -384,19 +384,19 @@ int k5dcegettgt(pcache, ccname, pname, tgt)
       }
       found = 0;
       break;
-    } 
+    }
     /* we should do a krb5_free_cred_contents(creds); */
   }
 
   if (code = krb5_cc_end_seq_get(*pcache, &cur)) {
-    com_err(progname, code, "while finishing retrieval"); 
+    com_err(progname, code, "while finishing retrieval");
     goto return2;
   }
 
 return1:
-  flags = KRB5_TC_OPENCLOSE; 
+  flags = KRB5_TC_OPENCLOSE;
   krb5_cc_set_flags(*pcache, flags); /* force a close */
-   
+
 return2:
   if (tgtname)
     free(tgtname);
@@ -442,7 +442,7 @@ int k5dcecon(luid, luser, pname)
     return(1);
   }
 
- 
+
   DEEDEBUG2("flags=%x\n",ftgt->ticket_flags);
   if (!(ftgt->ticket_flags & TKT_FLG_FORWARDABLE)){
     fprintf(stderr,"Ticket not forwardable\n");
@@ -450,21 +450,21 @@ int k5dcecon(luid, luser, pname)
   }
 
   setenv("KRB5CCNAME","",1);
-    
+
 #define TKT_ACCEPTABLE (TKT_FLG_FORWARDABLE | TKT_FLG_PROXIABLE \
          | TKT_FLG_MAY_POSTDATE | TKT_FLG_RENEWABLE | TKT_FLG_HW_AUTH \
          | TKT_FLG_PRE_AUTH)
 
-  if (!k5dcesession(luid, pname, &tgt, &pag, 
+  if (!k5dcesession(luid, pname, &tgt, &pag,
         (ftgt->ticket_flags & TKT_ACCEPTABLE))) {
     if (ftgt->times.endtime > tgt->times.endtime) {
-      DEEDEBUG("Updating existing cache\n"); 
+      DEEDEBUG("Updating existing cache\n");
       return(k5dceupdate(&ftgt, pag));
     } else {
       DEEDEBUG("Using existing cache\n");
       return(0); /* use the original one */
     }
-  } 
+  }
     /* see if the tgts match up */
 
   if ((code = k5dcecreate(luid, luser, pname, &ftgt))) {
@@ -473,7 +473,7 @@ int k5dcecon(luid, luser, pname)
 
   /*
    * Destroy the Kerberos5 cred cache file.
-   * but dont care aout the return code. 
+   * but dont care aout the return code.
    */
 
   DEEDEBUG("Destroying the old cache\n");
@@ -488,11 +488,11 @@ int k5dcecon(luid, luser, pname)
 /* k5dceupdate - update the cache with a new TGT    */
 /* Assumed that the KRB5CCNAME has been set         */
 
-int k5dceupdate(krbtgt, pag) 
+int k5dceupdate(krbtgt, pag)
    krb5_creds **krbtgt;
    int pag;
 {
- 
+
   krb5_ccache ccache;
   int code;
 
@@ -504,7 +504,7 @@ int k5dceupdate(krbtgt, pag)
   if (code = ccache->ops->init(ccache,(*krbtgt)->client)) {
     com_err(progname, code, "while reinitilizing cache");
     return(3);
-  } 
+  }
 
     /* krb5_cc_store_cred */
   if (code = ccache->ops->store(ccache, *krbtgt)) {
@@ -524,7 +524,7 @@ int k5dcecreate(luid, luser, pname, krbtgt)
    char *pname;
    krb5_creds **krbtgt;
 {
-   
+
     char *cp;
     char *urealm;
     char *username;
@@ -542,7 +542,7 @@ int k5dcecreate(luid, luser, pname, krbtgt)
 
 	uid = getuid();
 	DEEDEBUG2("uid=%d\n",uid);
-    
+
 	/* if run as root, change to user, so as to have the
 	 * cache created for the local user even if cross-cell
 	 * If run as a user, let standard file protection work.
@@ -551,7 +551,7 @@ int k5dcecreate(luid, luser, pname, krbtgt)
 	if (uid == 0) {
 		if (seteuid(luid) < 0)
 			goto abort;
-	}  
+	}
 
 	cp = strchr(pname,'@');
 	*cp = '\0';
@@ -587,7 +587,7 @@ int k5dcecreate(luid, luser, pname, krbtgt)
      * Setup a DCE login context
      */
 
-    if (sec_login_setup_identity((unsigned_char_p_t)username, 
+    if (sec_login_setup_identity((unsigned_char_p_t)username,
 				 (sec_login_external_tgt|sec_login_proxy_cred),
 				 &lcontext, &st)) {
 	/*
@@ -598,7 +598,7 @@ int k5dcecreate(luid, luser, pname, krbtgt)
 	  if (st) {
 	    dce_error_inq_text(st, err_string, &lst);
 	    fprintf(stderr,
-				"Error while adding credentials for %s because %s\n", 
+				"Error while adding credentials for %s because %s\n",
 				username, err_string);
 	    goto abort;
 	  }	
@@ -630,12 +630,12 @@ int k5dcecreate(luid, luser, pname, krbtgt)
 	    }
 	    if (auth_src == sec_login_auth_src_local) {
 		fprintf(stderr,
-			 "Credentials obtained from local registry for %s\n", 
+			 "Credentials obtained from local registry for %s\n",
 			 username);
 	    }
 	    if (auth_src == sec_login_auth_src_overridden) {
 		  fprintf(stderr, "Validated %s from local override entry, no network credentials obtained\n", username);
-		  goto abort; 
+		  goto abort;
 
 	    }
 	    /*
@@ -645,14 +645,14 @@ int k5dcecreate(luid, luser, pname, krbtgt)
 	    sec_login_set_context(lcontext, &st);
 	    if (st) {
 		  dce_error_inq_text(st, err_string, &lst);
-		  fprintf(stderr, 
+		  fprintf(stderr,
                 "Unable to set context for %s because %s\n",
 		    username, err_string);
 		  goto abort;
 	    }
 
         /*
-         * Now free up the local context and leave the 
+         * Now free up the local context and leave the
          * network context with its pag
          */
 #if 0
@@ -670,14 +670,14 @@ int k5dcecreate(luid, luser, pname, krbtgt)
 	  DEEDEBUG2("validate failed %d\n",st);
 	  dce_error_inq_text(st, err_string, &lst);
 	  fprintf(stderr,
-             "Unable to validate %s because %s\n", username, 
+             "Unable to validate %s because %s\n", username,
 			err_string);
 	  goto abort;
 	}
   }
   else {
 	dce_error_inq_text(st, err_string, &lst);
-	fprintf(stderr, 
+	fprintf(stderr,
           "Unable to setup login entry for %s because %s\n",
        username, err_string);
 	  goto abort;
@@ -691,7 +691,7 @@ int k5dcecreate(luid, luser, pname, krbtgt)
 
     if (uid == 0) {
       seteuid(0);
-    }  
+    }
 
 	DEEDEBUG("completed\n");
 	return(0);
@@ -699,7 +699,7 @@ int k5dcecreate(luid, luser, pname, krbtgt)
  abort:
     if (uid == 0) {
       seteuid(0);
-    }  
+    }
 
     DEEDEBUG("Aborting\n");
     return(2);
@@ -744,14 +744,14 @@ main(argc, argv)
 	DEEDEBUG2("Optarg = %s\n", optarg);
 	break;
       case 'p':         /* principal name */
-        pname = optarg; 
+        pname = optarg;
 	DEEDEBUG2("Optarg = %s\n", optarg);
         break;
       case 'f':         /* convert a forwarded TGT to a context */
         fflag++;
         break;
       case 's':      /* old test parameter, ignore it */
-        break; 
+        break;
     }
   }
 
@@ -759,7 +759,7 @@ main(argc, argv)
   krb5_init_ets();
   time(&now); /* set time to check expired tickets */
 
-  /* if lusername == NULL, Then user is passed as the USER= variable */ 
+  /* if lusername == NULL, Then user is passed as the USER= variable */
 
   if (!lusername) {
     lusername = getenv("USER");
@@ -776,12 +776,12 @@ main(argc, argv)
 
   luid = pw->pw_uid;
 
-  if (fflag) {  
-    status = k5dcecon(luid, lusername, pname); 
+  if (fflag) {
+    status = k5dcecon(luid, lusername, pname);
   } else {
     status = k5dcesession(luid, pname, &tgt, NULL, 0);
   }
- 
+
   if (!status) {
     printf("%s",getenv("KRB5CCNAME")); /* return via stdout to caller */
     DEEDEBUG2("KRB5CCNAME=%s\n",getenv("KRB5CCNAME"));

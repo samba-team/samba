@@ -2,22 +2,22 @@
  * Copyright (c) 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the Institute nor the names of its contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -42,13 +42,13 @@ princ\t%d\t (%d is KRB5_KDB_V1_BASE_LENGTH, always 38)
 %d\t (strlen of principal e.g. shadow/foo@ANDREW.CMU.EDU)
 %d\t (number of tl_data)
 %d\t (number of key data, e.g. how many keys for this user)
-%d\t (extra data length) 
+%d\t (extra data length)
 %s\t (principal name)
 %d\t (attributes)
 %d\t (max lifetime, seconds)
 %d\t (max renewable life, seconds)
 %d\t (expiration, seconds since epoch or 2145830400 for never)
-%d\t (password expiration, seconds, 0 for never) 
+%d\t (password expiration, seconds, 0 for never)
 %d\t (last successful auth, seconds since epoch)
 %d\t (last failed auth, per above)
 %d\t (failed auth count)
@@ -67,7 +67,7 @@ foreach key 0 to number of keys - 1 as above
       %02x (key data contents[element n])
     except if key_data length is 0
       %d (always -1)
-    \t    
+    \t
 foreach extra data length 0 to length - 1
   %02x (extra data part)
 unless no extra data
@@ -169,7 +169,7 @@ fix_salt(krb5_context context, hdb_entry *ent, int key_num)
 	size_t len;
 	int i;
 	char *p;
-	    
+	
 	len = 0;
 	for (i = 0; i < ent->principal->name.name_string.len; ++i)
 	    len += strlen(ent->principal->name.name_string.val[i]);
@@ -189,8 +189,8 @@ fix_salt(krb5_context context, hdb_entry *ent, int key_num)
     }
     case KRB5_KDB_SALTTYPE_ONLYREALM:
 	krb5_data_free(&salt->salt);
-	ret = krb5_data_copy(&salt->salt, 
-			     ent->principal->realm, 
+	ret = krb5_data_copy(&salt->salt,
+			     ent->principal->realm,
 			     strlen(ent->principal->realm));
 	if(ret)
 	    return ret;
@@ -201,8 +201,8 @@ fix_salt(krb5_context context, hdb_entry *ent, int key_num)
 	break;
     case KRB5_KDB_SALTTYPE_AFS3:
 	krb5_data_free(&salt->salt);
-	ret = krb5_data_copy(&salt->salt, 
-		       ent->principal->realm, 
+	ret = krb5_data_copy(&salt->salt,
+		       ent->principal->realm,
 		       strlen(ent->principal->realm));
 	if(ret)
 	    return ret;
@@ -228,7 +228,7 @@ mit_prop_dump(void *arg, const char *file)
     f = fopen(file, "r");
     if(f == NULL)
 	return errno;
-    
+
     while(fgets(line, sizeof(line), f)) {
 	char *p = line, *q;
 
@@ -334,10 +334,10 @@ mit_prop_dump(void *arg, const char *file)
 	    int key_versions;
 	    key_versions = getint(&p); /* key data version */
 	    ent.entry.kvno = getint(&p); /* XXX kvno */
-	    
+	
 	    ALLOC(ent.entry.keys.val[i].mkvno);
 	    *ent.entry.keys.val[i].mkvno = 0;
-	    
+	
 	    /* key version 0 -- actual key */
 	    ent.entry.keys.val[i].key.keytype = getint(&p); /* key type */
 	    tmp = getint(&p); /* key length */

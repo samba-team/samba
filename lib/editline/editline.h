@@ -1,7 +1,7 @@
-/*  Copyright 1992 Simmule Turner and Rich Salz.  All rights reserved. 
+/*  Copyright 1992 Simmule Turner and Rich Salz.  All rights reserved.
  *
- *  This software is not subject to any license of the American Telephone 
- *  and Telegraph Company or of the Regents of the University of California. 
+ *  This software is not subject to any license of the American Telephone
+ *  and Telegraph Company or of the Regents of the University of California.
  *
  *  Permission is granted to anyone to use this software for any purpose on
  *  any computer system, and to alter it and redistribute it freely, subject

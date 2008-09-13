@@ -2,22 +2,22 @@
  * Copyright (c) 1995, 1996, 1997 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the Institute nor the names of its contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -48,7 +48,7 @@ otp_checksum (OtpKey key)
 
   for (i = 0; i < OTPKEYSIZE; ++i)
     sum += ((key[i] >> 0) & 0x03)
-      + ((key[i] >> 2) & 0x03) 
+      + ((key[i] >> 2) & 0x03)
       + ((key[i] >> 4) & 0x03)
       + ((key[i] >> 6) & 0x03);
   sum &= 0x03;
@@ -76,7 +76,7 @@ otp_print_hex (OtpKey key, char *str, size_t sz)
 {
   snprintf (str, sz,
 	    "%02x%02x%02x%02x%02x%02x%02x%02x",
-	    key[0], key[1], key[2], key[3], 
+	    key[0], key[1], key[2], key[3],
 	    key[4], key[5], key[6], key[7]);
 }
 

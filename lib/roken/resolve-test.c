@@ -2,22 +2,22 @@
  * Copyright (c) 1995 - 2004 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the Institute nor the names of its contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -77,7 +77,7 @@ main(int argc, char **argv)
 
     if(getarg(args, sizeof(args) / sizeof(args[0]), argc, argv, &optidx))
 	usage(1);
-    
+
     if (help_flag)
 	usage (0);
 
@@ -118,7 +118,7 @@ main(int argc, char **argv)
 	}
 	case rk_ns_t_srv:{
 	    struct srv_record *srv = rr->u.srv;
-	    printf("%d %d %d %s\n", srv->priority, srv->weight, 
+	    printf("%d %d %d %s\n", srv->priority, srv->weight,
 		   srv->port, srv->target);
 	    break;
 	}
@@ -148,7 +148,7 @@ main(int argc, char **argv)
 	    struct sshfp_record *sshfp = rr->u.sshfp;
 	    int i;
 
-	    printf ("alg %u type %u length %lu data ", sshfp->algorithm, 
+	    printf ("alg %u type %u length %lu data ", sshfp->algorithm,
 		    sshfp->type,  (unsigned long)sshfp->sshfp_len);
 	    for (i = 0; i < sshfp->sshfp_len; i++)
 		printf("%02X", sshfp->sshfp_data[i]);
@@ -161,7 +161,7 @@ main(int argc, char **argv)
 	    int i;
 
 	    printf ("key tag %u alg %u type %u length %u data ",
-		    ds->key_tag, ds->algorithm, ds->digest_type, 
+		    ds->key_tag, ds->algorithm, ds->digest_type,
 		    ds->digest_len);
 	    for (i = 0; i < ds->digest_len; i++)
 		printf("%02X", ds->digest_data[i]);
@@ -174,6 +174,6 @@ main(int argc, char **argv)
 	    break;
 	}
     }
-    
+
     return 0;
 }

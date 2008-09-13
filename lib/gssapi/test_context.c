@@ -1,18 +1,18 @@
 /*
  * Copyright (c) 2006 - 2008 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
  * 3. Neither the name of KTH nor the names of its contributors may be
  *    used to endorse or promote products derived from this software without
@@ -93,7 +93,7 @@ loop(gss_OID mechoid,
      gss_OID nameoid, const char *target,
      gss_cred_id_t init_cred,
      gss_ctx_id_t *sctx, gss_ctx_id_t *cctx,
-     gss_OID *actual_mech, 
+     gss_OID *actual_mech,
      gss_cred_id_t *deleg_cred)
 {
     int server_done = 0, client_done = 0;
@@ -102,8 +102,8 @@ loop(gss_OID mechoid,
     gss_name_t gss_target_name;
     gss_buffer_desc input_token, output_token;
     OM_uint32 flags = 0, ret_cflags, ret_sflags;
-    gss_OID actual_mech_client; 
-    gss_OID actual_mech_server; 
+    gss_OID actual_mech_client;
+    gss_OID actual_mech_server;
 
     *actual_mech = GSS_C_NO_OID;
 
@@ -141,9 +141,9 @@ loop(gss_OID mechoid,
 					init_cred,
 					cctx,
 					gss_target_name,
-					mechoid, 
+					mechoid,
 					flags,
-					0, 
+					0,
 					NULL,
 					&input_token,
 					&actual_mech_client,
@@ -281,12 +281,12 @@ static struct getargs args[] = {
     {"mech-type",0,	arg_string, &mech_string,  "type of mech", NULL },
     {"ret-mech-type",0,	arg_string, &ret_mech_string,
      "type of return mech", NULL },
-    {"dns-canonicalize",0,arg_negative_flag, &dns_canon_flag, 
+    {"dns-canonicalize",0,arg_negative_flag, &dns_canon_flag,
      "use dns to canonicalize", NULL },
     {"mutual-auth",0,	arg_flag,	&mutual_auth_flag,"mutual auth", NULL },
     {"dce-style",0,	arg_flag,	&dce_style_flag, "dce-style", NULL },
     {"wrapunwrap",0,	arg_flag,	&wrapunwrap_flag, "wrap/unwrap", NULL },
-    {"getverifymic",0,	arg_flag,	&getverifymic_flag, 
+    {"getverifymic",0,	arg_flag,	&getverifymic_flag,
      "get and verify mic", NULL },
     {"delegate",0,	arg_flag,	&deleg_flag, "delegate credential", NULL },
     {"policy-delegate",0,	arg_flag,	&policy_deleg_flag, "policy delegate credential", NULL },
@@ -326,7 +326,7 @@ main(int argc, char **argv)
 
     if(getarg(args, sizeof(args) / sizeof(args[0]), argc, argv, &optind))
 	usage(1);
-    
+
     if (help_flag)
 	usage (0);
 
@@ -355,7 +355,7 @@ main(int argc, char **argv)
 
     if (mech_string == NULL)
 	mechoid = GSS_KRB5_MECHANISM;
-    else 
+    else
 	mechoid = string_to_oid(mech_string);
 
     if (gsskrb5_acceptor_identity)
@@ -363,7 +363,7 @@ main(int argc, char **argv)
 
     loop(mechoid, nameoid, argv[0], GSS_C_NO_CREDENTIAL,
 	 &sctx, &cctx, &actual_mech, &deleg_cred);
-    
+
     if (verbose_flag)
 	printf("resulting mech: %s\n", oid_to_string(actual_mech));
 
@@ -373,12 +373,12 @@ main(int argc, char **argv)
 	retoid = string_to_oid(ret_mech_string);
 
 	if (gss_oid_equal(retoid, actual_mech) == 0)
-	    errx(1, "actual_mech mech is not the expected type %s", 
+	    errx(1, "actual_mech mech is not the expected type %s",
 		 ret_mech_string);
     }
 
     /* XXX should be actual_mech */
-    if (gss_oid_equal(mechoid, GSS_KRB5_MECHANISM)) { 
+    if (gss_oid_equal(mechoid, GSS_KRB5_MECHANISM)) {
 	krb5_context context;
 	time_t time, skew;
 	gss_buffer_desc authz_data;
@@ -392,7 +392,7 @@ main(int argc, char **argv)
 	    errx(1, "krb5_init_context");
 
 	ret = krb5_timeofday(context, &now);
-	if (ret) 
+	if (ret)
 		errx(1, "krb5_timeofday failed");
 	
 	/* client */
@@ -433,8 +433,8 @@ main(int argc, char **argv)
 	skew = abs(time - now);
 	if (skew > krb5_get_max_time_skew(context)) {
 	    errx(1, "gsskrb5_extract_authtime_from_sec_context failed: "
-		 "time skew too great %llu > %llu", 
-		 (unsigned long long)skew, 
+		 "time skew too great %llu > %llu",
+		 (unsigned long long)skew,
 		 (unsigned long long)krb5_get_max_time_skew(context));
 	}
 
@@ -450,7 +450,7 @@ main(int argc, char **argv)
  	maj_stat = gsskrb5_get_subkey(&min_stat,
 				      sctx,
 				      &keyblock);
-	if (maj_stat != GSS_S_COMPLETE 
+	if (maj_stat != GSS_S_COMPLETE
 	    && (!(maj_stat == GSS_S_FAILURE && min_stat == GSS_KRB5_S_KG_NO_SUBKEY)))
 	    errx(1, "gsskrb5_get_subkey server failed: %s",
 		     gssapi_err(maj_stat, min_stat, actual_mech));
@@ -461,7 +461,7 @@ main(int argc, char **argv)
  	maj_stat = gsskrb5_get_subkey(&min_stat,
 				      cctx,
 				      &keyblock2);
-	if (maj_stat != GSS_S_COMPLETE 
+	if (maj_stat != GSS_S_COMPLETE
 	    && (!(maj_stat == GSS_S_FAILURE && min_stat == GSS_KRB5_S_KG_NO_SUBKEY)))
 	    errx(1, "gsskrb5_get_subkey client failed: %s",
 		     gssapi_err(maj_stat, min_stat, actual_mech));
@@ -479,7 +479,7 @@ main(int argc, char **argv)
 		errx(1, "enctype mismatch");
 	    if (keyblock->keyvalue.length != keyblock2->keyvalue.length)
 		errx(1, "key length mismatch");
-	    if (memcmp(keyblock->keyvalue.data, keyblock2->keyvalue.data, 
+	    if (memcmp(keyblock->keyvalue.data, keyblock2->keyvalue.data,
 		       keyblock2->keyvalue.length) != 0)
 		errx(1, "key data mismatch");
 	}
@@ -490,7 +490,7 @@ main(int argc, char **argv)
 	    ret = krb5_string_to_enctype(context,
 					 session_enctype_string,
 					 &enctype);
-	    
+	
 	    if (ret)
 		krb5_err(context, 1, ret, "krb5_string_to_enctype");
 
@@ -507,7 +507,7 @@ main(int argc, char **argv)
  	maj_stat = gsskrb5_get_initiator_subkey(&min_stat,
 						sctx,
 						&keyblock);
-	if (maj_stat != GSS_S_COMPLETE 
+	if (maj_stat != GSS_S_COMPLETE
 	    && (!(maj_stat == GSS_S_FAILURE && min_stat == GSS_KRB5_S_KG_NO_SUBKEY)))
 	    errx(1, "gsskrb5_get_initiator_subkey failed: %s",
 		     gssapi_err(maj_stat, min_stat, actual_mech));
@@ -531,9 +531,9 @@ main(int argc, char **argv)
 	in.value = "foo";
 	in.length = 3;
 
-	gss_pseudo_random(&min_stat, sctx, GSS_C_PRF_KEY_FULL, &in, 
+	gss_pseudo_random(&min_stat, sctx, GSS_C_PRF_KEY_FULL, &in,
 			  100, &out1);
-	gss_pseudo_random(&min_stat, cctx, GSS_C_PRF_KEY_FULL, &in, 
+	gss_pseudo_random(&min_stat, cctx, GSS_C_PRF_KEY_FULL, &in,
 			  100, &out2);
 
 	if (out1.length != out2.length)
@@ -543,7 +543,7 @@ main(int argc, char **argv)
 	
 	gss_release_buffer(&min_stat, &out1);
 
-	gss_pseudo_random(&min_stat, sctx, GSS_C_PRF_KEY_FULL, &in, 
+	gss_pseudo_random(&min_stat, sctx, GSS_C_PRF_KEY_FULL, &in,
 			  100, &out1);
 
 	if (out1.length != out2.length)
@@ -557,9 +557,9 @@ main(int argc, char **argv)
 	in.value = "bar";
 	in.length = 3;
 
-	gss_pseudo_random(&min_stat, sctx, GSS_C_PRF_KEY_PARTIAL, &in, 
+	gss_pseudo_random(&min_stat, sctx, GSS_C_PRF_KEY_PARTIAL, &in,
 			  100, &out1);
-	gss_pseudo_random(&min_stat, cctx, GSS_C_PRF_KEY_PARTIAL, &in, 
+	gss_pseudo_random(&min_stat, cctx, GSS_C_PRF_KEY_PARTIAL, &in,
 			  100, &out2);
 
 	if (out1.length != out2.length)

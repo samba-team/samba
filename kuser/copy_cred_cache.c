@@ -61,7 +61,7 @@ static struct getargs args[] = {
       "limit to this enctype", "enctype" },
     { "flags", 0, arg_string, &flags_string,
       "limit to these flags", "ticketflags" },
-    { "valid-for", 0, arg_string, &valid_string, 
+    { "valid-for", 0, arg_string, &valid_string,
       "limit to creds valid for at least this long", "time" },
     { "fcache-version", 0, arg_integer, &fcache_version,
       "file cache version to create" },

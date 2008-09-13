@@ -65,7 +65,7 @@ RCSID("$Id$");
 #include "extern.h"
 
 
-/* 
+/*
  * Special version of popen which avoids call to shell.  This ensures
  * no one may create a pipe to a hidden program as a side effect of a
  * list or dir command.
@@ -148,8 +148,8 @@ ftpd_popen(char *program, char *type, int do_stderr, int no_glob)
 		    ;
 
 		memset(&gl, 0, sizeof(gl));
-		if (no_glob || 
-		    glob(argv[argc], flags, NULL, &gl) || 
+		if (no_glob ||
+		    glob(argv[argc], flags, NULL, &gl) ||
 		    gl.gl_pathc == 0)
 			gargv[gargc++] = strdup(argv[argc]);
 		else

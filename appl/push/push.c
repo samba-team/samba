@@ -1,34 +1,34 @@
 /*
  * Copyright (c) 1997-2004 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * 3. Neither the name of the Institute nor the names of its contributors 
- *    may be used to endorse or promote products derived from this software 
- *    without specific prior written permission. 
+ * 3. Neither the name of the Institute nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
- * SUCH DAMAGE. 
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 #include "push_locl.h"
@@ -57,7 +57,7 @@ struct getargs args[] = {
 #ifdef KRB4
     { "krb4",	'4', arg_flag,		&use_v4,	"Use Kerberos V4",
       NULL },
-#endif    
+#endif
 #ifdef KRB5
     { "krb5",	'5', arg_flag,		&use_v5,	"Use Kerberos V5",
       NULL },
@@ -134,12 +134,12 @@ do_connect (const char *hostname, int port, int nodelay)
     return s;
 }
 
-typedef enum { INIT = 0, GREET, USER, PASS, STAT, RETR, TOP, 
+typedef enum { INIT = 0, GREET, USER, PASS, STAT, RETR, TOP,
 	       DELE, XDELE, QUIT} pop_state;
 
 static char *pop_state_string[] = {
     "INIT", "GREET", "USER", "PASS", "STAT", "RETR", "TOP",
-    "DELE", "XDELE", "QUIT" 
+    "DELE", "XDELE", "QUIT"
 };
 
 #define PUSH_BUFSIZ 65536
@@ -296,7 +296,7 @@ doit(int s,
 	if (verbose > 1)
 	    fprintf (stderr, "state: %s count: %d asked_for: %d "
 		     "retrieved: %d asked_deleted: %d\n",
-		     pop_state_string[state], 
+		     pop_state_string[state],
 		     count, asked_for, retrieved, asked_deleted);
 
 	if (((state == STAT || state == RETR || state == TOP)
@@ -316,7 +316,7 @@ doit(int s,
 	    char *beg, *p;
 	    size_t rem;
 	    int blank_line = 0;
-	    
+	
 	    if(in_len >= in_buf_size) {
 		char *tmp = erealloc(in_buf, in_buf_size + PUSH_BUFSIZ + 1);
 		in_ptr = tmp + (in_ptr - in_buf);
@@ -329,11 +329,11 @@ doit(int s,
 		err (1, "read");
 	    else if (ret == 0)
 		errx (1, "EOF during read");
-	    
+	
 	    in_len += ret;
 	    in_ptr += ret;
 	    *in_ptr = '\0';
-	    
+	
 	    beg = in_buf;
 	    rem = in_len;
 	    while(rem > 1
@@ -406,7 +406,7 @@ doit(int s,
 			    ++copy;
 		    }
 		    *p = '\n';
-		    if(blank_line && 
+		    if(blank_line &&
 		       strncmp(copy, "From ", min(p - copy + 1, 5)) == 0)
 			write_state_add(&write_state, ">", 1);
 		    write_state_add(&write_state, copy, p - copy + 1);
@@ -419,7 +419,7 @@ doit(int s,
 			    write_state_add(&write_state,
 					    from_line, from_line_length);
 			blank_line = 0;
-			if (do_from) 
+			if (do_from)
 			    state = TOP;
 			else
 			    state = RETR;
@@ -588,7 +588,7 @@ do_v4 (const char *host,
 	return 1;
     ret = krb_sendauth(0,
 		       s,
-		       &ticket, 
+		       &ticket,
 		       "pop",
 		       (char *)host,
 		       krb_realmofhost(host),
@@ -768,7 +768,7 @@ main(int argc, char **argv)
 	use_v4 = 0;
     if(use_v5 == -1 && use_v4 == 1)
 	use_v5 = 0;
-#endif    
+#endif
 
     if (do_help)
 	usage (0);

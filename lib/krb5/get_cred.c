@@ -847,7 +847,7 @@ get_cred_kdc_capath(krb5_context context,
 	krb5_set_error_message(context, ret, N_("malloc: out of memory", ""));
     } else {
 	ret = get_cred_kdc_address (context, ccache, flags, NULL,
-				    in_creds, tgt, impersonate_principal, 
+				    in_creds, tgt, impersonate_principal,
 				    second_ticket, *out_creds);
 	if (ret) {
 	    free (*out_creds);
@@ -980,7 +980,7 @@ get_cred_kdc_referral(krb5_context context,
 	}
 
 	/* try realm in the referral */
-	ret = krb5_principal_set_realm(context, 
+	ret = krb5_principal_set_realm(context,
 				       referral.server,
 				       referral_realm);
 	krb5_free_cred_contents(context, &tgt);
@@ -1020,7 +1020,7 @@ get_cred_kdc_any(krb5_context context,
 				flags,
 				ccache,
 				in_creds,
-				impersonate_principal, 
+				impersonate_principal,
 				second_ticket,
 				out_creds,
 				ret_tgts);
@@ -1030,7 +1030,7 @@ get_cred_kdc_any(krb5_context context,
 				flags,
 				ccache,
 				in_creds,
-				impersonate_principal, 
+				impersonate_principal,
 				second_ticket,
 				out_creds,
 				ret_tgts);

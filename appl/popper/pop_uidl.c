@@ -2,22 +2,22 @@
  * Copyright (c) 1995, 1996, 1997 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the Institute nor the names of its contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -35,7 +35,7 @@
 RCSID("$Id$");
 
 #ifdef UIDL
-/* 
+/*
  *  uidl:   Uidl the contents of a POP maildrop
  */
 
@@ -66,7 +66,7 @@ pop_uidl (POP *p)
         /*  Display message information */
         return (pop_msg(p,POP_SUCCESS,"%u %s",msg_num,mp->msg_id));
     }
-    
+
     /*  Display the entire list of messages */
     pop_msg(p,POP_SUCCESS,
 	    "%d messages (%ld octets)",
@@ -75,7 +75,7 @@ pop_uidl (POP *p)
 
     /*  Loop through the message information list.  Skip deleted messages */
     for (i = p->msg_count, mp = p->mlp; i > 0; i--, mp++) {
-        if (!(mp->flags & DEL_FLAG)) 
+        if (!(mp->flags & DEL_FLAG))
             fprintf(p->output,"%u %s\r\n",mp->number,mp->msg_id);
     }
 

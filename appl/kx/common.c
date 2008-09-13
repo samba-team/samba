@@ -2,22 +2,22 @@
  * Copyright (c) 1995 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the Institute nor the names of its contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -111,7 +111,7 @@ try_pipe (struct x_socket *s, int dpy, const char *pattern)
     int ret;
     int fd;
     int pipefd[2];
-    
+
     snprintf (path, sizeof(path), pattern, dpy);
     fd = open (path, O_WRONLY | O_CREAT | O_EXCL, 0600);
     if (fd < 0) {
@@ -408,7 +408,7 @@ create_and_write_cookie (char *file,
      int saved_errno;
 
      gethostname (hostname, sizeof(hostname));
-     
+
      auth.family = FamilyLocal;
      auth.address = hostname;
      auth.address_length = strlen(auth.address);
@@ -504,7 +504,7 @@ verify_and_remove_cookies (int fd, int sock, int cookiesp)
      unsigned n, d, npad, dpad;
      char *protocol_name, *protocol_data;
      u_char zeros[6] = {0, 0, 0, 0, 0, 0};
-     u_char refused[20] = {0, 10, 
+     u_char refused[20] = {0, 10,
 			   0, 0, /* protocol major version  */
 			   0, 0, /* protocol minor version */
 			   0, 0, /* length of additional data / 4 */
@@ -566,7 +566,7 @@ fail:
      return 1;
 }
 
-/* 
+/*
  * Return 0 iff `cookie' is compatible with the cookie for the
  * localhost with name given in `ai' (or `hostname') and display
  * number in `disp_nr'.
@@ -579,7 +579,7 @@ match_local_auth (Xauth* auth,
     int auth_disp;
     char *tmp_disp;
     struct addrinfo *a;
-    
+
     tmp_disp = malloc(auth->number_length + 1);
     if (tmp_disp == NULL)
 	return -1;
@@ -693,7 +693,7 @@ replace_cookie(int xserver, int fd, char *filename, int cookiesp) /* XXX */
      if (f != NULL) {
 	 Xauth *auth = find_auth_cookie (f);
 	 u_char len[6] = {0, 0, 0, 0, 0, 0};
-	 
+	
 	 fclose (f);
 
 	 if (auth != NULL) {
@@ -754,7 +754,7 @@ suspicious_address (int sock, struct sockaddr *addr)
 
     switch (addr->sa_family) {
     case AF_INET:
-	return ((struct sockaddr_in *)addr)->sin_addr.s_addr != 
+	return ((struct sockaddr_in *)addr)->sin_addr.s_addr !=
 	    htonl(INADDR_LOOPBACK)
 #if defined(IP_OPTIONS) && defined(HAVE_GETSOCKOPT)
 	    || getsockopt (sock, IPPROTO_IP, IP_OPTIONS, data, &len) < 0

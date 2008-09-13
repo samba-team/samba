@@ -1,18 +1,18 @@
 /*
  * Copyright (c) 1999 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
  * 3. Neither the name of KTH nor the names of its contributors may be
  *    used to endorse or promote products derived from this software without
@@ -35,13 +35,13 @@
 RCSID("$Id$");
 
 #ifndef POSIX_GETPWNAM_R
-/* 
+/*
  * These functions translate from the old Digital UNIX 3.x interface
  * to POSIX.1c.
  */
 
 int
-posix_getpwnam_r(const char *name, struct passwd *pwd, 
+posix_getpwnam_r(const char *name, struct passwd *pwd,
 		 char *buffer, int len, struct passwd **result)
 {
     int ret = getpwnam_r(name, pwd, buffer, len);
@@ -59,7 +59,7 @@ posix_getpwnam_r(const char *name, struct passwd *pwd,
 }
 
 int
-posix_getpwuid_r(uid_t uid, struct passwd *pwd, 
+posix_getpwuid_r(uid_t uid, struct passwd *pwd,
 		 char *buffer, int len, struct passwd **result)
 {
     int ret = getpwuid_r(uid, pwd, buffer, len);

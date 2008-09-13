@@ -7,7 +7,7 @@
 #include <popper.h>
 RCSID("$Id$");
 
-/* 
+/*
  *  user:   Prompt for the user name at the start of a POP session
  */
 

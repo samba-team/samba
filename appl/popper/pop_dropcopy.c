@@ -39,17 +39,17 @@ changeuser(POP *p, struct passwd *pwd)
     return POP_SUCCESS;
 }
 
-/* 
- *  dropcopy:   Make a temporary copy of the user's mail drop and 
+/*
+ *  dropcopy:   Make a temporary copy of the user's mail drop and
  *  save a stream pointer for it.
  */
 
 int
 pop_dropcopy(POP *p, struct passwd *pwp)
 {
-    int                     mfd;                    /*  File descriptor for 
+    int                     mfd;                    /*  File descriptor for
                                                         the user's maildrop */
-    int                     dfd;                    /*  File descriptor for 
+    int                     dfd;                    /*  File descriptor for
                                                         the SERVER maildrop */
     FILE		    *tf;		    /*  The temp file */
     char		    template[POP_TMPSIZE];  /*  Temp name holder */
@@ -110,11 +110,11 @@ pop_dropcopy(POP *p, struct passwd *pwp)
     }
 
     /*  Lock the temporary maildrop */
-    if ( flock (dfd, (LOCK_EX | LOCK_NB)) == -1 ) 
+    if ( flock (dfd, (LOCK_EX | LOCK_NB)) == -1 )
     switch(errno) {
         case EWOULDBLOCK:
             return pop_msg(p,POP_FAILURE,
-                 "%sMaildrop lock busy!  Is another session active?", 
+                 "%sMaildrop lock busy!  Is another session active?",
 			   (p->flags & POP_FLAG_CAPA) ? "[IN-USE] " : "");
             /* NOTREACHED */
         default:
@@ -122,7 +122,7 @@ pop_dropcopy(POP *p, struct passwd *pwp)
 		strerror(errno));
             /* NOTREACHED */
         }
-    
+
     /* May have grown or shrunk between open and lock! */
     offset = lseek(dfd,0, SEEK_END);
 
@@ -145,7 +145,7 @@ pop_dropcopy(POP *p, struct passwd *pwp)
 
         if ( nchar != 0 ) {
             /* Error adding new mail.  Truncate to original size,
-               and leave the maildrop as is.  The user will not 
+               and leave the maildrop as is.  The user will not
                see the new mail until the error goes away.
                Should let them process the current backlog,  in case
                the error is a quota problem requiring deletions! */

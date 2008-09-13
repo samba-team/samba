@@ -98,7 +98,7 @@ hookup (const char *host, int port)
 			     addrstr, sizeof(addrstr),
 			     NULL, 0, NI_NUMERICHOST) != 0)
 		strlcpy (addrstr, "unknown address", sizeof(addrstr));
-			     
+			
 	    warn ("connect %s", addrstr);
 	    close (s);
 	    s = -1;
@@ -202,16 +202,16 @@ login (char *host)
     }
     strlcpy(username, userstr, sizeof(username));
     n = command("USER %s", userstr);
-    if (n == COMPLETE) 
+    if (n == COMPLETE)
        n = command("PASS dummy"); /* DK: Compatibility with gssftp daemon */
     else if(n == CONTINUE) {
 	if (pass == NULL) {
 	    char prompt[128];
-	    if(myname && 
+	    if(myname &&
 	       (!strcmp(userstr, "ftp") || !strcmp(userstr, "anonymous"))) {
-		snprintf(defaultpass, sizeof(defaultpass), 
+		snprintf(defaultpass, sizeof(defaultpass),
 			 "%s@%s", myname, mydomain);
-		snprintf(prompt, sizeof(prompt), 
+		snprintf(prompt, sizeof(prompt),
 			 "Password (%s): ", defaultpass);
 	    } else if (sec_complete) {
 		pass = myname;
@@ -417,7 +417,7 @@ getreply (int expecteof)
 	    continue;
 	default:
 	    if(p < buf + sizeof(buf) - 1)
-		*p++ = c; 
+		*p++ = c;
 	    else if(long_warn == 0) {
 		fprintf(stderr, "WARNING: incredibly long line received\n");
 		long_warn = 1;
@@ -1338,7 +1338,7 @@ noport:
 	    verbose  = -1;
 
 	result = command ("EPRT |%d|%s|%d|",
-			  inet_af, addr_str, 
+			  inet_af, addr_str,
 			  ntohs(socket_get_port (data_addr)));
 	verbose = overbose;
 
@@ -1353,7 +1353,7 @@ noport:
 		goto bad;
 	    }
 
-	    result = command("PORT %d,%d,%d,%d,%d,%d", 
+	    result = command("PORT %d,%d,%d,%d,%d,%d",
 			     (a >> 24) & 0xff,
 			     (a >> 16) & 0xff,
 			     (a >> 8) & 0xff,
@@ -1392,7 +1392,7 @@ bad:
 int
 initconn (void)
 {
-    if (passivemode) 
+    if (passivemode)
 	return passive_mode ();
     else
 	return active_mode ();

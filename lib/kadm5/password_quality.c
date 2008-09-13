@@ -1,34 +1,34 @@
 /*
  * Copyright (c) 1997-2000, 2003-2005 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * 3. Neither the name of the Institute nor the names of its contributors 
- *    may be used to endorse or promote products derived from this software 
- *    without specific prior written permission. 
+ * 3. Neither the name of the Institute nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
- * SUCH DAMAGE. 
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 #include "kadm5_locl.h"
@@ -182,7 +182,7 @@ external_passwd_quality (krb5_context context,
 	    "new-password: %.*s\n"
 	    "end\n",
 	    p, (int)pwd->length, (char *)pwd->data);
-    
+
     fclose(in);
 
     if (fgets(reply, sizeof(reply), out) == NULL) {
@@ -230,7 +230,7 @@ external_passwd_quality (krb5_context context,
 }
 
 
-static kadm5_passwd_quality_check_func_v0 passwd_quality_check = 
+static kadm5_passwd_quality_check_func_v0 passwd_quality_check =
 	min_length_passwd_quality_v0;
 
 struct kadm5_pw_policy_check_func builtin_funcs[] = {
@@ -240,8 +240,8 @@ struct kadm5_pw_policy_check_func builtin_funcs[] = {
     { NULL }
 };
 struct kadm5_pw_policy_verifier builtin_verifier = {
-    "builtin", 
-    KADM5_PASSWD_VERSION_V1, 
+    "builtin",
+    KADM5_PASSWD_VERSION_V1,
     "Heimdal builtin",
     builtin_funcs
 };
@@ -269,17 +269,17 @@ kadm5_setup_passwd_quality_check(krb5_context context,
     const char *tmp;
 
     if(check_library == NULL) {
-	tmp = krb5_config_get_string(context, NULL, 
-				     "password_quality", 
-				     "check_library", 
+	tmp = krb5_config_get_string(context, NULL,
+				     "password_quality",
+				     "check_library",
 				     NULL);
 	if(tmp != NULL)
 	    check_library = tmp;
     }
     if(check_function == NULL) {
-	tmp = krb5_config_get_string(context, NULL, 
-				     "password_quality", 
-				     "check_function", 
+	tmp = krb5_config_get_string(context, NULL,
+				     "password_quality",
+				     "check_function",
 				     NULL);
 	if(tmp != NULL)
 	    check_function = tmp;
@@ -310,8 +310,8 @@ kadm5_setup_passwd_quality_check(krb5_context context,
     }
     sym = dlsym(handle, check_function);
     if(sym == NULL) {
-	krb5_warnx(context, 
-		   "didn't find `%s' symbol in `%s'", 
+	krb5_warnx(context,
+		   "didn't find `%s' symbol in `%s'",
 		   check_function, check_library);
 	dlclose(handle);
 	return;
@@ -385,9 +385,9 @@ kadm5_add_passwd_quality_verifier(krb5_context context,
 	krb5_error_code ret;
 	char **tmp;
 
-	tmp = krb5_config_get_strings(context, NULL, 
-				      "password_quality", 
-				      "policy_libraries", 
+	tmp = krb5_config_get_strings(context, NULL,
+				      "password_quality",
+				      "policy_libraries",
 				      NULL);
 	if(tmp == NULL)
 	    return 0;
@@ -466,9 +466,9 @@ kadm5_check_password_quality (krb5_context context,
      * Check if we should use the old version of policy function.
      */
 
-    v = krb5_config_get_strings(context, NULL, 
-				"password_quality", 
-				"policies", 
+    v = krb5_config_get_strings(context, NULL,
+				"password_quality",
+				"policies",
 				NULL);
     if (v == NULL) {
 	msg = (*passwd_quality_check) (context, principal, pwd_data);
@@ -491,7 +491,7 @@ kadm5_check_password_quality (krb5_context context,
 			   error_msg, sizeof(error_msg));
 	if (ret) {
 	    krb5_set_error_message(context, 0, "Password policy "
-				   "%s failed with %s", 
+				   "%s failed with %s",
 				   proc->name, error_msg);
 	    msg = error_msg;
 	    break;
@@ -506,7 +506,7 @@ kadm5_check_password_quality (krb5_context context,
 	if (msg)
 	    krb5_set_error_message(context, 0, "(old) password policy "
 				   "failed with %s", msg);
-	    
+	
     }
     return msg;
 }

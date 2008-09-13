@@ -16,7 +16,7 @@ pop_sendline(POP *p, char *buffer)
     char        *   bp;
 
     /*  Byte stuff lines that begin with the termination octet */
-    if (*buffer == POP_TERMINATE) 
+    if (*buffer == POP_TERMINATE)
       fputc(POP_TERMINATE,p->output);
 
     /*  Look for a <NL> in the buffer */
@@ -37,8 +37,8 @@ pop_sendline(POP *p, char *buffer)
     return bp != NULL;
 }
 
-/* 
- *  send:   Send the header and a specified number of lines 
+/*
+ *  send:   Send the header and a specified number of lines
  *          from a mail message to a POP client.
  */
 
@@ -83,7 +83,7 @@ pop_send(POP *p)
         /*  Flag the message as retreived */
         mp->flags |= RETR_FLAG;
     }
-    
+
     /*  Display the number of bytes in the message */
     pop_msg(p, POP_SUCCESS, "%ld octets", mp->length);
 
@@ -138,8 +138,8 @@ pop_send(POP *p)
 	if (!return_path_sent || strncasecmp(buffer, "Return-Path:", 12) != 0)
 #endif
 	    sent_nl = pop_sendline (p,buffer);
-        /*  A single newline (blank line) signals the 
-            end of the header.  sendline() converts this to a NULL, 
+        /*  A single newline (blank line) signals the
+            end of the header.  sendline() converts this to a NULL,
             so that's what we look for. */
         if (*buffer == 0) break;
         if (hangup)

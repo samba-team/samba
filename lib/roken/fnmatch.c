@@ -153,7 +153,7 @@ rangematch(const char *pattern, int test, int flags)
 			c = *pattern++;
 		if (c == EOS)
 			return (NULL);
-		if (*pattern == '-' 
+		if (*pattern == '-'
 		    && (c2 = *(pattern+1)) != EOS && c2 != ']') {
 			pattern += 2;
 			if (c2 == '\\' && !(flags & FNM_NOESCAPE))

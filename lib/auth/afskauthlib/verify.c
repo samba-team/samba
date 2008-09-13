@@ -2,22 +2,22 @@
  * Copyright (c) 1995-2004 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the Institute nor the names of its contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -54,10 +54,10 @@ static char krb5ccname[128];
 static char krbtkfile[128];
 #endif
 
-/* 
+/*
    In some cases is afs_gettktstring called twice (once before
    afs_verify and once after afs_verify).
-   In some cases (rlogin with access allowed via .rhosts) 
+   In some cases (rlogin with access allowed via .rhosts)
    afs_verify is not called!
    So we can't rely on correct value in krbtkfile in some
    cases!
@@ -100,7 +100,7 @@ set_spec_krbtkfile(void)
     snprintf (krbtkfile, sizeof(krbtkfile), "%s_XXXXXX", TKT_ROOT);
     fd = mkstemp(krbtkfile);
     close(fd);
-    unlink(krbtkfile); 
+    unlink(krbtkfile);
     krb_set_tkt_string (krbtkfile);
 #endif
 #ifdef KRB5
@@ -122,7 +122,7 @@ verify_krb5(struct passwd *pwd,
     krb5_error_code ret;
     krb5_ccache ccache;
     krb5_principal principal;
-    
+
     ret = krb5_init_context(&context);
     if (ret) {
 	syslog(LOG_AUTH|LOG_DEBUG, "krb5_init_context failed: %d", ret);
@@ -131,7 +131,7 @@ verify_krb5(struct passwd *pwd,
 
     ret = krb5_parse_name (context, pwd->pw_name, &principal);
     if (ret) {
-	syslog(LOG_AUTH|LOG_DEBUG, "krb5_parse_name: %s", 
+	syslog(LOG_AUTH|LOG_DEBUG, "krb5_parse_name: %s",
 	       krb5_get_err_text(context, ret));
 	goto out;
     }
@@ -139,7 +139,7 @@ verify_krb5(struct passwd *pwd,
     set_krb5ccname(pwd->pw_uid);
     ret = krb5_cc_resolve(context, krb5ccname, &ccache);
     if(ret) {
-	syslog(LOG_AUTH|LOG_DEBUG, "krb5_cc_resolve: %s", 
+	syslog(LOG_AUTH|LOG_DEBUG, "krb5_cc_resolve: %s",
 	       krb5_get_err_text(context, ret));
 	goto out;
     }
@@ -151,13 +151,13 @@ verify_krb5(struct passwd *pwd,
 				  TRUE,
 				  NULL);
     if(ret) {
-	syslog(LOG_AUTH|LOG_DEBUG, "krb5_verify_user: %s", 
+	syslog(LOG_AUTH|LOG_DEBUG, "krb5_verify_user: %s",
 	       krb5_get_err_text(context, ret));
 	goto out;
     }
 
     if(chown(krb5_cc_get_name(context, ccache), pwd->pw_uid, pwd->pw_gid)) {
-	syslog(LOG_AUTH|LOG_DEBUG, "chown: %s", 
+	syslog(LOG_AUTH|LOG_DEBUG, "chown: %s",
 	       krb5_get_err_text(context, errno));
 	goto out;
     }
@@ -168,7 +168,7 @@ verify_krb5(struct passwd *pwd,
 	krb5_boolean get_v4_tgt;
 
 	krb5_get_default_realm(context, &realm);
-	krb5_appdefault_boolean(context, "afskauthlib", 
+	krb5_appdefault_boolean(context, "afskauthlib",
 				realm,
 				"krb4_get_tickets", FALSE, &get_v4_tgt);
 	if (get_v4_tgt) {
@@ -188,14 +188,14 @@ verify_krb5(struct passwd *pwd,
 		    krb5_warn(context, ret, "converting creds");
 		else {
 		    set_krbtkfile(pwd->pw_uid);
-		    tf_setup(&c, c.pname, c.pinst); 
+		    tf_setup(&c, c.pname, c.pinst);
 		}
 		memset(&c, 0, sizeof(c));
 		krb5_free_cred_contents(context, &cred);
 	    } else
-		syslog(LOG_AUTH|LOG_DEBUG, "krb5_cc_retrieve_cred: %s", 
+		syslog(LOG_AUTH|LOG_DEBUG, "krb5_cc_retrieve_cred: %s",
 		       krb5_get_err_text(context, ret));
-	    
+	
 	    krb5_free_principal(context, mcred.server);
 	}
 	free (realm);
@@ -205,7 +205,7 @@ verify_krb5(struct passwd *pwd,
 	}
 
 	if (pag_set)
-	    krb5_afslog_uid_home(context, ccache, NULL, NULL, 
+	    krb5_afslog_uid_home(context, ccache, NULL, NULL,
 				 pwd->pw_uid, pwd->pw_dir);
     }
 #endif
@@ -225,7 +225,7 @@ verify_krb4(struct passwd *pwd,
 {
     int ret = 1;
     char lrealm[REALM_SZ];
-    
+
     if (krb_get_lrealm (lrealm, 1) != KFAILURE) {
 	set_krbtkfile(pwd->pw_uid);
 	ret = krb_verify_user (pwd->pw_name, "", lrealm, password,
@@ -281,7 +281,7 @@ afs_gettktstring (void)
     struct passwd *pwd;
 
     if (!correct_tkfilename) {
-	ptr = getenv("LOGNAME"); 
+	ptr = getenv("LOGNAME");
 	if (ptr != NULL && ((pwd = getpwnam(ptr)) != NULL)) {
 	    set_krb5ccname(pwd->pw_uid);
 #ifdef KRB4

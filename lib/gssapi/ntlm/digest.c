@@ -1,34 +1,34 @@
 /*
  * Copyright (c) 2006 - 2007 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * 3. Neither the name of the Institute nor the names of its contributors 
- *    may be used to endorse or promote products derived from this software 
- *    without specific prior written permission. 
+ * 3. Neither the name of the Institute nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
- * SUCH DAMAGE. 
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 #include "ntlm/ntlm.h"
@@ -66,7 +66,7 @@ get_ccache(krb5_context context, int *destroy, krb5_ccache *id)
     krb5_keytab kt = NULL;
 
     *id = NULL;
-    
+
     if (!issuid()) {
 	const char *cache;
 
@@ -79,15 +79,15 @@ get_ccache(krb5_context context, int *destroy, krb5_ccache *id)
 	}
     }
 
-    ret = krb5_sname_to_principal(context, NULL, "host", 
+    ret = krb5_sname_to_principal(context, NULL, "host",
 				  KRB5_NT_SRV_HST, &principal);
     if (ret)
 	goto out;
-    
+
     ret = krb5_cc_cache_match(context, principal, NULL, id);
     if (ret == 0)
 	return 0;
-    
+
     /* did not find in default credcache, lets try default keytab */
     ret = krb5_kt_default(context, &kt);
     if (ret)
@@ -129,7 +129,7 @@ get_ccache(krb5_context context, int *destroy, krb5_ccache *id)
     }
 
     krb5_kt_close(context, kt);
-    
+
     return 0;
 
 out:
@@ -201,7 +201,7 @@ kdc_probe(OM_uint32 *minor, void *ctx, const char *realm)
     ret = krb5_digest_probe(c->context, rk_UNCONST(realm), c->id, &flags);
     if (ret)
 	return ret;
-    
+
     if ((flags & (1|2|4)) == 0)
 	return EINVAL;
 
@@ -253,13 +253,13 @@ kdc_type2(OM_uint32 *minor_status,
     krb5_data challange;
     struct ntlm_buf data;
     krb5_data ti;
-    
+
     memset(&type2, 0, sizeof(type2));
-    
+
     /*
      * Request data for type 2 packet from the KDC.
      */
-    ret = krb5_ntlm_init_request(c->context, 
+    ret = krb5_ntlm_init_request(c->context,
 				 c->ntlm,
 				 NULL,
 				 c->id,
@@ -356,13 +356,13 @@ kdc_type3(OM_uint32 *minor_status,
     if (ret) goto out;
     ret = krb5_ntlm_req_set_username(c->context, c->ntlm, type3->username);
     if (ret) goto out;
-    ret = krb5_ntlm_req_set_targetname(c->context, c->ntlm, 
+    ret = krb5_ntlm_req_set_targetname(c->context, c->ntlm,
 				       type3->targetname);
     if (ret) goto out;
-    ret = krb5_ntlm_req_set_lm(c->context, c->ntlm, 
+    ret = krb5_ntlm_req_set_lm(c->context, c->ntlm,
 			       type3->lm.data, type3->lm.length);
     if (ret) goto out;
-    ret = krb5_ntlm_req_set_ntlm(c->context, c->ntlm, 
+    ret = krb5_ntlm_req_set_ntlm(c->context, c->ntlm,
 				 type3->ntlm.data, type3->ntlm.length);
     if (ret) goto out;
     ret = krb5_ntlm_req_set_opaque(c->context, c->ntlm, &c->opaque);
@@ -378,7 +378,7 @@ kdc_type3(OM_uint32 *minor_status,
     /*
      * Verify with the KDC the type3 packet is ok
      */
-    ret = krb5_ntlm_request(c->context, 
+    ret = krb5_ntlm_request(c->context,
 			    c->ntlm,
 			    NULL,
 			    c->id);
@@ -391,7 +391,7 @@ kdc_type3(OM_uint32 *minor_status,
     }
 
     if (type3->sessionkey.length) {
-	ret = krb5_ntlm_rep_get_sessionkey(c->context, 
+	ret = krb5_ntlm_rep_get_sessionkey(c->context,
 					   c->ntlm,
 					   &c->sessionkey);
 	if (ret)

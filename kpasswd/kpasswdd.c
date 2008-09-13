@@ -1,34 +1,34 @@
 /*
  * Copyright (c) 1997-2005 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * 3. Neither the name of the Institute nor the names of its contributors 
- *    may be used to endorse or promote products derived from this software 
- *    without specific prior written permission. 
+ * 3. Neither the name of the Institute nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
- * SUCH DAMAGE. 
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 #include "kpasswd_locl.h"
@@ -251,7 +251,7 @@ change (krb5_auth_context auth_context,
 
     memset (&conf, 0, sizeof(conf));
     memset(&chpw, 0, sizeof(chpw));
-    
+
     if (version == KRB5_KPASSWD_VERS_CHANGEPW) {
 	ret = krb5_copy_data(context, in_data, &pwd_data);
 	if (ret) {
@@ -284,7 +284,7 @@ change (krb5_auth_context auth_context,
 
 	if (chpw.targname == NULL && chpw.targrealm != NULL) {
 	    krb5_warn (context, ret, "kadm5_init_with_password_ctx");
-	    reply_priv (auth_context, s, sa, sa_size, 
+	    reply_priv (auth_context, s, sa, sa_size,
 			KRB5_KPASSWD_MALFORMED,
 			"targrealm but not targname");
 	    goto out;
@@ -299,10 +299,10 @@ change (krb5_auth_context auth_context,
 		ret = krb5_get_default_realm(context, &princ.realm);
 
 		if (ret) {
-		    krb5_warnx (context, 
+		    krb5_warnx (context,
 				"kadm5_init_with_password_ctx: "
 				"failed to allocate realm");
-		    reply_priv (auth_context, s, sa, sa_size, 
+		    reply_priv (auth_context, s, sa, sa_size,
 				KRB5_KPASSWD_SOFTERROR,
 				"failed to allocate realm");
 		    goto out;
@@ -313,7 +313,7 @@ change (krb5_auth_context auth_context,
 		free(princ.realm);
 	    if (ret) {
 		krb5_warn(context, ret, "krb5_copy_principal");
-		reply_priv(auth_context, s, sa, sa_size, 
+		reply_priv(auth_context, s, sa, sa_size,
 			   KRB5_KPASSWD_HARDERROR,
 			   "failed to allocate principal");
 		goto out;
@@ -322,7 +322,7 @@ change (krb5_auth_context auth_context,
 	    principal = admin_principal;
     } else {
 	krb5_warnx (context, "kadm5_init_with_password_ctx: unknown proto");
-	reply_priv (auth_context, s, sa, sa_size, 
+	reply_priv (auth_context, s, sa, sa_size,
 		    KRB5_KPASSWD_HARDERROR,
 		    "Unknown protocol used");
 	return;
@@ -331,7 +331,7 @@ change (krb5_auth_context auth_context,
     ret = krb5_unparse_name (context, admin_principal, &admin);
     if (ret) {
 	krb5_warn (context, ret, "unparse_name failed");
-	reply_priv (auth_context, s, sa, sa_size, 
+	reply_priv (auth_context, s, sa, sa_size,
 		    KRB5_KPASSWD_HARDERROR, "out of memory error");
 	goto out;
     }
@@ -339,11 +339,11 @@ change (krb5_auth_context auth_context,
     conf.realm = principal->realm;
     conf.mask |= KADM5_CONFIG_REALM;
 
-    ret = kadm5_init_with_password_ctx(context, 
+    ret = kadm5_init_with_password_ctx(context,
 				       admin,
 				       NULL,
 				       KADM5_ADMIN_SERVICE,
-				       &conf, 0, 0, 
+				       &conf, 0, 0,
 				       &kadm5_handle);
     if (ret) {
 	krb5_warn (context, ret, "kadm5_init_with_password_ctx");
@@ -355,7 +355,7 @@ change (krb5_auth_context auth_context,
     ret = krb5_unparse_name(context, principal, &client);
     if (ret) {
 	krb5_warn (context, ret, "unparse_name failed");
-	reply_priv (auth_context, s, sa, sa_size, 
+	reply_priv (auth_context, s, sa, sa_size,
 		    KRB5_KPASSWD_HARDERROR, "out of memory error");
 	goto out;
     }
@@ -366,25 +366,25 @@ change (krb5_auth_context auth_context,
 
     if (krb5_principal_compare(context, admin_principal, principal) == TRUE) {
 
-	pwd_reason = kadm5_check_password_quality (context, principal, 
+	pwd_reason = kadm5_check_password_quality (context, principal,
 						   pwd_data);
 	if (pwd_reason != NULL ) {
-	    krb5_warnx (context, 
+	    krb5_warnx (context,
 			"%s didn't pass password quality check with error: %s",
 			client, pwd_reason);
-	    reply_priv (auth_context, s, sa, sa_size, 
+	    reply_priv (auth_context, s, sa, sa_size,
 			KRB5_KPASSWD_SOFTERROR, pwd_reason);
 	    goto out;
 	}
 	krb5_warnx (context, "Changing password for %s", client);
     } else {
-	ret = _kadm5_acl_check_permission(kadm5_handle, KADM5_PRIV_CPW, 
+	ret = _kadm5_acl_check_permission(kadm5_handle, KADM5_PRIV_CPW,
 					  principal);
 	if (ret) {
-	    krb5_warn (context, ret, 
+	    krb5_warn (context, ret,
 		       "Check ACL failed for %s for changing %s password",
 		       admin, client);
-	    reply_priv (auth_context, s, sa, sa_size, 
+	    reply_priv (auth_context, s, sa, sa_size,
 			KRB5_KPASSWD_HARDERROR, "permission denied");
 	    goto out;
 	}
@@ -449,7 +449,7 @@ verify (krb5_auth_context *auth_context,
     pkt_ver = (msg[2] << 8) | (msg[3]);
     ap_req_len = (msg[4] << 8) | (msg[5]);
     if (pkt_len != len) {
-	krb5_warnx (context, "Strange len: %ld != %ld", 
+	krb5_warnx (context, "Strange len: %ld != %ld",
 		    (long)pkt_len, (long)len);
 	reply_error (NULL, s, sa, sa_size, 0, 1, "Bad request");
 	return 1;
@@ -483,7 +483,7 @@ verify (krb5_auth_context *auth_context,
 	krb5_principal principal;
 	krb5_boolean same;
 
-	ret = krb5_make_principal (context, 
+	ret = krb5_make_principal (context,
 				   &principal,
 				   *r,
 				   "kadmin",
@@ -529,10 +529,10 @@ verify (krb5_auth_context *auth_context,
 			&krb_priv_data,
 			out_data,
 			NULL);
-    
+
     if (ret) {
 	krb5_warn (context, ret, "krb5_rd_priv");
-	reply_error ((*ticket)->server->realm, s, sa, sa_size, ret, 3, 
+	reply_error ((*ticket)->server->realm, s, sa, sa_size, ret, 3,
 		     "Bad request");
 	goto out;
     }
@@ -723,7 +723,7 @@ static char *config_file;
 
 struct getargs args[] = {
 #ifdef HAVE_DLOPEN
-    { "check-library", 0, arg_string, &check_library, 
+    { "check-library", 0, arg_string, &check_library,
       "library to load password check function from", "library" },
     { "check-function", 0, arg_string, &check_function,
       "password check function to load", "function" },
@@ -732,7 +732,7 @@ struct getargs args[] = {
 #endif
     { "addresses",	0,	arg_strings, &addresses_str,
       "addresses to listen on", "list of addresses" },
-    { "keytab", 'k', arg_string, &keytab_str, 
+    { "keytab", 'k', arg_string, &keytab_str,
       "keytab to get authentication key from", "kspec" },
     { "config-file", 'c', arg_string, &config_file },
     { "realm", 'r', arg_string, &realm_str, "default realm", "realm" },
@@ -750,9 +750,9 @@ main (int argc, char **argv)
     krb5_error_code ret;
     char **files;
     int port, i;
-    
+
     optind = krb5_program_setup(&context, argc, argv, args, num_args, NULL);
-    
+
     if(help_flag)
 	krb5_std_usage(0, args, num_args);
     if(version_flag) {
@@ -777,7 +777,7 @@ main (int argc, char **argv)
 
     if(realm_str)
 	krb5_set_default_realm(context, realm_str);
-    
+
     krb5_openlog (context, "kpasswdd", &log_facility);
     krb5_set_warn_dest(context, log_facility);
 
@@ -804,11 +804,11 @@ main (int argc, char **argv)
     ret = krb5_kt_resolve(context, keytab_str, &keytab);
     if(ret)
 	krb5_err(context, 1, ret, "%s", keytab_str);
-    
+
     kadm5_setup_passwd_quality_check (context, check_library, check_function);
 
     for (i = 0; i < policy_libraries.num_strings; i++) {
-	ret = kadm5_add_passwd_quality_verifier(context, 
+	ret = kadm5_add_passwd_quality_verifier(context,
 						policy_libraries.strings[i]);
 	if (ret)
 	    krb5_err(context, 1, ret, "kadm5_add_passwd_quality_verifier");

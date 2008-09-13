@@ -1,34 +1,34 @@
 /*
  * Copyright (c) 2004 - 2007 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * 3. Neither the name of the Institute nor the names of its contributors 
- *    may be used to endorse or promote products derived from this software 
- *    without specific prior written permission. 
+ * 3. Neither the name of the Institute nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
- * SUCH DAMAGE. 
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 #include "hx_locl.h"
@@ -71,7 +71,7 @@ lock_strings(hx509_lock lock, getarg_strings *pass)
     for (i = 0; i < pass->num_strings; i++) {
 	int ret = hx509_lock_command_string(lock, pass->strings[i]);
 	if (ret)
-	    errx(1, "hx509_lock_command_string: %s: %d", 
+	    errx(1, "hx509_lock_command_string: %s: %d",
 		 pass->strings[i], ret);
     }
 }
@@ -116,23 +116,23 @@ parse_oid(const char *str, const heim_oid *def, heim_oid *oid)
 
 static void
 peer_strings(hx509_context context,
-	     hx509_peer_info *peer, 
+	     hx509_peer_info *peer,
 	     const getarg_strings *s)
 {
     AlgorithmIdentifier *val;
     int ret, i;
-    
+
     ret = hx509_peer_info_alloc(context, peer);
     if (ret)
 	hx509_err(context, 1, ret, "hx509_peer_info_alloc");
-    
+
     val = calloc(s->num_strings, sizeof(*val));
     if (val == NULL)
 	err(1, "malloc");
 
     for (i = 0; i < s->num_strings; i++)
 	parse_oid(s->strings[i], NULL, &val[i].algorithm);
-	    
+	
     ret = hx509_peer_info_set_cms_algs(context, *peer, val, s->num_strings);
     if (ret)
 	hx509_err(context, 1, ret, "hx509_peer_info_set_cms_algs");
@@ -147,7 +147,7 @@ peer_strings(hx509_context context,
  */
 
 static int
-pem_reader(hx509_context context, const char *type, 
+pem_reader(hx509_context context, const char *type,
 	   const hx509_pem_header *headers,
 	   const void *data , size_t length, void *ctx)
 {
@@ -315,7 +315,7 @@ cms_create_sd(struct cms_create_sd_options *opt, int argc, char **argv)
     certs_strings(context, "pool", pool, lock, &opt->pool_strings);
 
     if (opt->anchors_strings.num_strings) {
-	ret = hx509_certs_init(context, "MEMORY:cert-anchors", 
+	ret = hx509_certs_init(context, "MEMORY:cert-anchors",
 			       0, NULL, &anchors);
 	if (ret) hx509_err(context, 1, ret, "hx509_certs_init: MEMORY");
 	certs_strings(context, "anchors", anchors, lock, &opt->anchors_strings);
@@ -333,7 +333,7 @@ cms_create_sd(struct cms_create_sd_options *opt, int argc, char **argv)
 
     hx509_query_match_option(q, HX509_QUERY_OPTION_PRIVATE_KEY);
     hx509_query_match_option(q, HX509_QUERY_OPTION_KU_DIGITALSIGNATURE);
-			     
+			
     if (opt->signer_string)
 	hx509_query_match_friendly_name(q, opt->signer_string);
 
@@ -355,7 +355,7 @@ cms_create_sd(struct cms_create_sd_options *opt, int argc, char **argv)
 				    flags,
 				    &contentType,
 				    p,
-				    sz, 
+				    sz,
 				    NULL,
 				    cert,
 				    peer,
@@ -403,7 +403,7 @@ cms_create_sd(struct cms_create_sd_options *opt, int argc, char **argv)
 	hx509_pem_header *header = NULL;
 	FILE *f;
 
-	hx509_pem_add_header(&header, "Content-disposition", 
+	hx509_pem_add_header(&header, "Content-disposition",
 			     opt->detached_signature_flag ?
 			     "detached" : "inline");
 	hx509_pem_add_header(&header, "Signer", signer_name);
@@ -412,7 +412,7 @@ cms_create_sd(struct cms_create_sd_options *opt, int argc, char **argv)
 	if (f == NULL)
 	    err(1, "open %s", argv[1]);
 	
-	ret = hx509_pem_write(context, "CMS SIGNEDDATA", header, f, 
+	ret = hx509_pem_write(context, "CMS SIGNEDDATA", header, f,
 			      o.data, o.length);
 	fclose(f);
 	hx509_pem_free_header(header);
@@ -525,7 +525,7 @@ cms_create_enveloped(struct cms_envelope_options *opt, int argc, char **argv)
     if (opt->encryption_type_string) {
 	enctype = hx509_crypto_enctype_by_name(opt->encryption_type_string);
 	if (enctype == NULL)
-	    errx(1, "encryption type: %s no found", 
+	    errx(1, "encryption type: %s no found",
 		 opt->encryption_type_string);
     }
 
@@ -542,7 +542,7 @@ cms_create_enveloped(struct cms_envelope_options *opt, int argc, char **argv)
 
     parse_oid(opt->content_type_string, oid_id_pkcs7_data(), &contentType);
 
-    ret = hx509_cms_envelope_1(context, 0, cert, p, sz, enctype, 
+    ret = hx509_cms_envelope_1(context, 0, cert, p, sz, enctype,
 			       &contentType, &o);
     if (ret)
 	errx(1, "hx509_cms_envelope_1: %d", ret);
@@ -581,11 +581,11 @@ print_certificate(hx509_context hxcontext, hx509_cert cert, int verbose)
     const char *fn;
     char *str;
     int ret;
-    
+
     fn = hx509_cert_get_friendly_name(cert);
     if (fn)
 	printf("    friendly name: %s\n", fn);
-    printf("    private key: %s\n", 
+    printf("    private key: %s\n",
 	   _hx509_cert_private_key(cert) ? "yes" : "no");
 
     ret = hx509_cert_get_issuer(cert, &name);
@@ -642,7 +642,7 @@ static int
 print_f(hx509_context hxcontext, void *ctx, hx509_cert cert)
 {
     struct print_s *s = ctx;
-    
+
     printf("cert: %d\n", s->counter++);
     print_certificate(context, cert, s->verbose);
 
@@ -727,7 +727,7 @@ certificate_copy(struct certificate_copy_options *opt, int argc, char **argv)
     hx509_lock_init(context, &lock);
     lock_strings(lock, &opt->in_pass_strings);
 
-    ret = hx509_certs_init(context, argv[argc - 1], 
+    ret = hx509_certs_init(context, argv[argc - 1],
 			   HX509_CERTS_CREATE, lock, &certs);
     if (ret)
 	hx509_err(context, 1, ret, "hx509_certs_init");
@@ -862,7 +862,7 @@ pcert_verify(struct verify_options *opt, int argc, char **argv)
 
 	    ret = hx509_certs_append(context, certs, NULL, s);
 	    if (ret)
-		hx509_err(context, 1, ret, "hx509_certs_append: certs: %s: %d", 
+		hx509_err(context, 1, ret, "hx509_certs_append: certs: %s: %d",
 			  s, ret);
 
 	} else if (strncmp(s, "crl:", 4) == 0) {
@@ -1030,7 +1030,7 @@ ocsp_fetch(struct ocsp_fetch_options *opt, int argc, char **argv)
 	if (f == NULL)
 	    abort();
 
-	fprintf(f, 
+	fprintf(f,
 		"POST %s HTTP/1.0\r\n"
 		"Content-Type: application/ocsp-request\r\n"
 		"Content-Length: %ld\r\n"
@@ -1068,7 +1068,7 @@ verify_o(hx509_context hxcontext, void *ctx, hx509_cert c)
     time_t expiration;
     int ret;
 
-    ret = hx509_ocsp_verify(context, 0, c, 0, 
+    ret = hx509_ocsp_verify(context, 0, c, 0,
 			    os->data, os->length, &expiration);
     if (ret) {
 	char *s = hx509_get_error_string(hxcontext, ret);
@@ -1088,7 +1088,7 @@ ocsp_verify(struct ocsp_verify_options *opt, int argc, char **argv)
     hx509_certs certs;
     int ret, i;
     heim_octet_string os;
-    
+
     hx509_lock_init(context, &lock);
 
     if (opt->ocsp_file_string == NULL)
@@ -1097,7 +1097,7 @@ ocsp_verify(struct ocsp_verify_options *opt, int argc, char **argv)
     ret = _hx509_map_file_os(opt->ocsp_file_string, &os);
     if (ret)
 	err(1, "map_file: %s: %d", argv[0], ret);
-    
+
     ret = hx509_certs_init(context, "MEMORY:test-certs", 0, NULL, &certs);
     if (ret) hx509_err(context, 1, ret, "hx509_certs_init: MEMORY");
 
@@ -1122,7 +1122,7 @@ read_private_key(const char *fn, hx509_private_key *key)
     hx509_private_key *keys;
     hx509_certs certs;
     int ret;
-    
+
     *key = NULL;
 
     ret = hx509_certs_init(context, fn, 0, NULL, &certs);
@@ -1160,7 +1160,7 @@ get_key(const char *fn, const char *type, int optbits,
 	
 	if (strcasecmp(type, "rsa") != 0)
 	    errx(1, "can only handle rsa keys for now");
-	    
+	
 	e = BN_new();
 	BN_set_word(e, 0x10001);
 
@@ -1211,11 +1211,11 @@ request_create(struct request_create_options *opt, int argc, char **argv)
 
     memset(&key, 0, sizeof(key));
 
-    get_key(opt->key_string, 
+    get_key(opt->key_string,
 	    opt->generate_key_string,
 	    opt->key_bits_integer,
 	    &signer);
-    
+
     _hx509_request_init(context, &req);
 
     if (opt->subject_string) {
@@ -1235,12 +1235,12 @@ request_create(struct request_create_options *opt, int argc, char **argv)
     }
 
     for (i = 0; i < opt->email_strings.num_strings; i++) {
-	ret = _hx509_request_add_email(context, req, 
+	ret = _hx509_request_add_email(context, req,
 				       opt->email_strings.strings[i]);
     }
 
     for (i = 0; i < opt->dnsname_strings.num_strings; i++) {
-	ret = _hx509_request_add_dns_name(context, req, 
+	ret = _hx509_request_add_dns_name(context, req,
 					  opt->dnsname_strings.strings[i]);
     }
 
@@ -1499,11 +1499,11 @@ pkinit_client(hx509_context context, hx509_ca_tbs tbs, struct cert_type_opt *opt
     ret = hx509_ca_tbs_add_eku(context, tbs, oid_id_pkekuoid());
     if (ret)
 	return ret;
-    
+
     ret = hx509_ca_tbs_add_eku(context, tbs, oid_id_ms_client_authentication());
     if (ret)
 	return ret;
-    
+
     return hx509_ca_tbs_add_eku(context, tbs, oid_id_pkinit_ms_eku());
 }
 
@@ -1520,17 +1520,17 @@ struct {
 } certtypes[] = {
     {
 	"https-server",
-	"Used for HTTPS server and many other TLS server certificate types", 
+	"Used for HTTPS server and many other TLS server certificate types",
 	https_server
     },
     {
 	"https-client",
-	"Used for HTTPS client certificates", 
+	"Used for HTTPS client certificates",
 	https_client
     },
     {
 	"email-client",
-	"Certificate will be use for email", 
+	"Certificate will be use for email",
 	email_client
     },
     {
@@ -1555,22 +1555,22 @@ print_eval_types(FILE *out)
 {
     rtbl_t table;
     unsigned i;
-    
+
     table = rtbl_create();
     rtbl_add_column_by_id (table, 0, "Name", 0);
     rtbl_add_column_by_id (table, 1, "Description", 0);
-    
+
     for (i = 0; i < sizeof(certtypes)/sizeof(certtypes[0]); i++) {
 	rtbl_add_column_entry_by_id(table, 0, certtypes[i].type);
 	rtbl_add_column_entry_by_id(table, 1, certtypes[i].desc);
     }
-    
+
     rtbl_format (table, out);
     rtbl_destroy (table);
 }
 
 static int
-eval_types(hx509_context context, 
+eval_types(hx509_context context,
 	   hx509_ca_tbs tbs,
 	   const struct certificate_sign_options *opt)
 {
@@ -1619,7 +1619,7 @@ eval_types(hx509_context context,
 	    hx509_err(context, 1, ret, "hx509_ca_tbs_add_san_ms_upn");
     }
 
-    
+
     for (i = 0; i < opt->hostname_strings.num_strings; i++) {
 	const char *hostname = opt->hostname_strings.strings[i];
 
@@ -1635,7 +1635,7 @@ eval_types(hx509_context context,
 	if (ret)
 	    hx509_err(context, 1, ret, "hx509_ca_tbs_add_san_hostname");
 	
-	ret = hx509_ca_tbs_add_eku(context, tbs, 
+	ret = hx509_ca_tbs_add_eku(context, tbs,
 				   oid_id_pkix_kp_emailProtection());
 	if (ret)
 	    hx509_err(context, 1, ret, "hx509_ca_tbs_add_eku");
@@ -1747,7 +1747,7 @@ hxtool_ca(struct certificate_sign_options *opt, int argc, char **argv)
     if (opt->generate_key_string) {
 	struct hx509_generate_private_context *keyctx;
 
-	ret = _hx509_generate_private_key_init(context, 
+	ret = _hx509_generate_private_key_init(context,
 					       oid_id_pkcs1_rsaEncryption(),
 					       &keyctx);
 	if (ret)
@@ -1813,7 +1813,7 @@ hxtool_ca(struct certificate_sign_options *opt, int argc, char **argv)
 	if (ret)
 	    hx509_err(context, 1, ret, "no template certificate found");
 
-	flags = parse_units(opt->template_fields_string, 
+	flags = parse_units(opt->template_fields_string,
 			    hx509_ca_tbs_template_units(), "");
 
 	ret = hx509_ca_tbs_set_template(context, tbs, flags, template);
@@ -1849,7 +1849,7 @@ hxtool_ca(struct certificate_sign_options *opt, int argc, char **argv)
     }
 
     if (opt->crl_uri_string) {
-	ret = hx509_ca_tbs_add_crl_dp_uri(context, tbs, 
+	ret = hx509_ca_tbs_add_crl_dp_uri(context, tbs,
 					  opt->crl_uri_string, NULL);
 	if (ret)
 	    hx509_err(context, 1, ret, "hx509_ca_tbs_add_crl_dp_uri");
@@ -1893,12 +1893,12 @@ hxtool_ca(struct certificate_sign_options *opt, int argc, char **argv)
 	ret = _hx509_cert_assign_key(cert, cert_key);
 	if (ret)
 	    hx509_err(context, 1, ret, "_hx509_cert_assign_key");
-    }	    
+    }	
 
     {
 	hx509_certs certs;
 
-	ret = hx509_certs_init(context, opt->certificate_string, 
+	ret = hx509_certs_init(context, opt->certificate_string,
 			       HX509_CERTS_CREATE, NULL, &certs);
 	if (ret)
 	    hx509_err(context, 1, ret, "hx509_certs_init");
@@ -2038,7 +2038,7 @@ crl_sign(struct crl_sign_options *opt, int argc, char **argv)
 	ret = hx509_certs_init(context, opt->signer_string, 0,
 			       NULL, &certs);
 	if (ret)
-	    hx509_err(context, 1, ret, 
+	    hx509_err(context, 1, ret,
 		      "hx509_certs_init: %s", opt->signer_string);
 
 	ret = hx509_query_alloc(context, &q);
@@ -2071,7 +2071,7 @@ crl_sign(struct crl_sign_options *opt, int argc, char **argv)
 	ret = hx509_certs_init(context, "MEMORY:revoked-certs", 0,
 			       NULL, &revoked);
 	if (ret)
-	    hx509_err(context, 1, ret, 
+	    hx509_err(context, 1, ret,
 		      "hx509_certs_init: MEMORY cert");
 
 	for (i = 0; i < argc; i++) {

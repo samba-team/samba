@@ -30,8 +30,8 @@
  * SUCH DAMAGE.
  */
 
-/* 
- * $Id$ 
+/*
+ * $Id$
  */
 
 #ifndef __KCM_LOCL_H__
@@ -68,7 +68,7 @@ struct kcm_creds;
 typedef struct kcm_cursor {
     pid_t pid;
     uint32_t key;
-    struct kcm_creds *credp;		/* pointer to next credential */ 
+    struct kcm_creds *credp;		/* pointer to next credential */
     struct kcm_cursor *next;
 } kcm_cursor;
 

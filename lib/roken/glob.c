@@ -50,7 +50,7 @@
  * GLOB_TILDE:
  *	expand ~user/foo to the /home/dir/of/user/foo
  * GLOB_BRACE:
- *	expand {1,2}{a,b} to 1a 1b 2a 2b 
+ *	expand {1,2}{a,b} to 1a 1b 2a 2b
  * gl_matchc:
  *	Number of matches in the current invocation of glob.
  */
@@ -167,9 +167,9 @@ static void	 qprintf (const char *, Char *);
 #endif
 
 int ROKEN_LIB_FUNCTION
-glob(const char *pattern, 
-     int flags, 
-     int (*errfunc)(const char *, int), 
+glob(const char *pattern,
+     int flags,
+     int (*errfunc)(const char *, int),
      glob_t *pglob)
 {
 	const u_char *patnext;
@@ -191,7 +191,7 @@ glob(const char *pattern,
 	bufend = bufnext + MaxPathLen;
 	if (flags & GLOB_QUOTE) {
 		/* Protect the quoted characters. */
-		while (bufnext < bufend && (c = *patnext++) != CHAR_EOS) 
+		while (bufnext < bufend && (c = *patnext++) != CHAR_EOS)
 			if (c == CHAR_QUOTE) {
 				if ((c = *patnext++) == CHAR_EOS) {
 					c = CHAR_QUOTE;
@@ -202,8 +202,8 @@ glob(const char *pattern,
 			else
 				*bufnext++ = c;
 	}
-	else 
-	    while (bufnext < bufend && (c = *patnext++) != CHAR_EOS) 
+	else
+	    while (bufnext < bufend && (c = *patnext++) != CHAR_EOS)
 		    *bufnext++ = c;
 	*bufnext = CHAR_EOS;
 
@@ -240,7 +240,7 @@ static int globexp1(const Char *pattern, glob_t *pglob)
  * If it succeeds then it invokes globexp1 with the new pattern.
  * If it fails then it tries to glob the rest of the pattern and returns.
  */
-static int globexp2(const Char *ptr, const Char *pattern, 
+static int globexp2(const Char *ptr, const Char *pattern,
 		    glob_t *pglob, int *rv)
 {
 	int     i;
@@ -260,7 +260,7 @@ static int globexp2(const Char *ptr, const Char *pattern,
 			for (pm = pe++; *pe != CHAR_RBRACKET && *pe != CHAR_EOS; pe++)
 				continue;
 			if (*pe == CHAR_EOS) {
-				/* 
+				/*
 				 * We could not find a matching CHAR_RBRACKET.
 				 * Ignore and just look for CHAR_RBRACE
 				 */
@@ -288,7 +288,7 @@ static int globexp2(const Char *ptr, const Char *pattern,
 			for (pl = pm++; *pm != CHAR_RBRACKET && *pm != CHAR_EOS; pm++)
 				continue;
 			if (*pm == CHAR_EOS) {
-				/* 
+				/*
 				 * We could not find a matching CHAR_RBRACKET.
 				 * Ignore and just look for CHAR_RBRACE
 				 */
@@ -313,7 +313,7 @@ static int globexp2(const Char *ptr, const Char *pattern,
 				/* Append the current string */
 				for (lm = ls; (pl < pm); *lm++ = *pl++)
 					continue;
-				/* 
+				/*
 				 * Append the rest of the pattern after the
 				 * closing brace
 				 */
@@ -355,15 +355,15 @@ globtilde(const Char *pattern, Char *patbuf, glob_t *pglob)
 		return pattern;
 
 	/* Copy up to the end of the string or / */
-	for (p = pattern + 1, h = (char *) patbuf; *p && *p != CHAR_SLASH; 
+	for (p = pattern + 1, h = (char *) patbuf; *p && *p != CHAR_SLASH;
 	     *h++ = *p++)
 		continue;
 
 	*h = CHAR_EOS;
 
 	if (((char *) patbuf)[0] == CHAR_EOS) {
-		/* 
-		 * handle a plain ~ or ~/ by expanding $HOME 
+		/*
+		 * handle a plain ~ or ~/ by expanding $HOME
 		 * first and then trying the password file
 		 */
 		if ((h = getenv("HOME")) == NULL) {
@@ -450,7 +450,7 @@ glob0(const Char *pattern, glob_t *pglob)
 			break;
 		case CHAR_STAR:
 			pglob->gl_flags |= GLOB_MAGCHAR;
-			/* collapse adjacent stars to one, 
+			/* collapse adjacent stars to one,
 			 * to avoid exponential behavior
 			 */
 			if (bufnext == patbuf || bufnext[-1] != M_ALL)
@@ -470,17 +470,17 @@ glob0(const Char *pattern, glob_t *pglob)
 		return(err);
 
 	/*
-	 * If there was no match we are going to append the pattern 
+	 * If there was no match we are going to append the pattern
 	 * if GLOB_NOCHECK was specified or if GLOB_NOMAGIC was specified
 	 * and the pattern did not contain any magic characters
 	 * GLOB_NOMAGIC is there just for compatibility with csh.
 	 */
-	if (pglob->gl_pathc == oldpathc && 
-	    ((pglob->gl_flags & GLOB_NOCHECK) || 
+	if (pglob->gl_pathc == oldpathc &&
+	    ((pglob->gl_flags & GLOB_NOCHECK) ||
 	      ((pglob->gl_flags & GLOB_NOMAGIC) &&
 	       !(pglob->gl_flags & GLOB_MAGCHAR))))
 		return(globextend(pattern, pglob, &limit));
-	else if (!(pglob->gl_flags & GLOB_NOSORT)) 
+	else if (!(pglob->gl_flags & GLOB_NOSORT))
 		qsort(pglob->gl_pathv + pglob->gl_offs + oldpathc,
 		    pglob->gl_pathc - oldpathc, sizeof(char *), compare);
 	return(0);
@@ -569,7 +569,7 @@ glob2(Char *pathbuf, Char *pathend, Char *pattern, glob_t *pglob,
 }
 
 static int
-glob3(Char *pathbuf, Char *pathend, Char *pattern, Char *restpattern, 
+glob3(Char *pathbuf, Char *pathend, Char *pattern, Char *restpattern,
       glob_t *pglob, size_t *limit)
 {
 	struct dirent *dp;
@@ -587,7 +587,7 @@ glob3(Char *pathbuf, Char *pathend, Char *pattern, Char *restpattern,
 
 	*pathend = CHAR_EOS;
 	errno = 0;
-	    
+	
 	if ((dirp = g_opendir(pathbuf, pglob)) == NULL) {
 		/* TODO: don't call for ENOENT or ENOTDIR? */
 		if (pglob->gl_errfunc) {
@@ -613,7 +613,7 @@ glob3(Char *pathbuf, Char *pathend, Char *pattern, Char *restpattern,
 		/* Initial CHAR_DOT must be matched literally. */
 		if (dp->d_name[0] == CHAR_DOT && *pattern != CHAR_DOT)
 			continue;
-		for (sc = (u_char *) dp->d_name, dc = pathend; 
+		for (sc = (u_char *) dp->d_name, dc = pathend;
 		     (*dc++ = *sc++) != CHAR_EOS;)
 			continue;
 		if (!match(pathend, pattern, restpattern)) {
@@ -657,7 +657,7 @@ globextend(const Char *path, glob_t *pglob, size_t *limit)
 	const Char *p;
 
 	newsize = sizeof(*pathv) * (2 + pglob->gl_pathc + pglob->gl_offs);
-	pathv = pglob->gl_pathv ? 
+	pathv = pglob->gl_pathv ?
 		    realloc(pglob->gl_pathv, newsize) :
 		    malloc(newsize);
 	if (pathv == NULL)
@@ -706,7 +706,7 @@ match(Char *name, Char *pat, Char *patend)
 		case M_ALL:
 			if (pat == patend)
 				return(1);
-			do 
+			do
 			    if (match(name, pat, patend))
 				    return(1);
 			while (*name++ != CHAR_EOS);
@@ -831,7 +831,7 @@ g_Ctoc(const Char *str, char *buf)
 }
 
 #ifdef DEBUG
-static void 
+static void
 qprintf(const Char *str, Char *s)
 {
 	Char *p;

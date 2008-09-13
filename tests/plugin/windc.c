@@ -15,7 +15,7 @@ windc_fini(void *ctx)
 {
 }
 
-static krb5_error_code 
+static krb5_error_code
 pac_generate(void *ctx, krb5_context context,
 	     struct hdb_entry_ex *client, krb5_pac *pac)
 {
@@ -38,10 +38,10 @@ pac_generate(void *ctx, krb5_context context,
     return 0;
 }
 
-static krb5_error_code 
+static krb5_error_code
 pac_verify(void *ctx, krb5_context context,
 	   const krb5_principal client_principal,
-	   struct hdb_entry_ex *client, 
+	   struct hdb_entry_ex *client,
 	   struct hdb_entry_ex *server,
 	   krb5_pac *pac)
 {
@@ -59,10 +59,10 @@ pac_verify(void *ctx, krb5_context context,
     return 0;
 }
 
-static krb5_error_code 
+static krb5_error_code
 client_access(void *ctx,
-	      krb5_context context, 
-	      struct hdb_entry_ex *client, 
+	      krb5_context context,
+	      struct hdb_entry_ex *client,
 	      KDC_REQ *req,
 	      krb5_data *data)
 {

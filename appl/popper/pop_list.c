@@ -7,7 +7,7 @@
 #include <popper.h>
 RCSID("$Id$");
 
-/* 
+/*
  *  list:   List the contents of a POP maildrop
  */
 
@@ -38,7 +38,7 @@ pop_list (POP *p)
         /*  Display message information */
         return (pop_msg(p,POP_SUCCESS,"%d %ld",msg_num,mp->length));
     }
-    
+
     /*  Display the entire list of messages */
     pop_msg(p,POP_SUCCESS,
 	    "%d messages (%ld octets)",
@@ -47,7 +47,7 @@ pop_list (POP *p)
 
     /*  Loop through the message information list.  Skip deleted messages */
     for (i = p->msg_count, mp = p->mlp; i > 0; i--, mp++) {
-        if (!(mp->flags & DEL_FLAG)) 
+        if (!(mp->flags & DEL_FLAG))
             fprintf(p->output,"%u %lu\r\n",mp->number,mp->length);
     }
 

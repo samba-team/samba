@@ -116,7 +116,7 @@ ptyflush(void)
     int n;
 
     if ((n = pfrontp - pbackp) > 0) {
-	DIAG((TD_REPORT | TD_PTYDATA), { 
+	DIAG((TD_REPORT | TD_PTYDATA), {
 	    output_data("td: ptyflush %d chars\r\n", n);
 	});
 	DIAG(TD_PTYDATA, printdata("pd", pbackp, n));
@@ -367,7 +367,7 @@ void
 fatalperror_errno(int f, const char *msg, int error)
 {
     char buf[BUFSIZ];
-    
+
     snprintf(buf, sizeof(buf), "%s: %s", msg, strerror(error));
     fatal(f, buf);
 }
@@ -445,10 +445,10 @@ void putf(char *cp, char *where)
     char db[100];
 
     /* if we don't have uname, set these to sensible values */
-    char *sysname = "Unix", 
-	*machine = "", 
+    char *sysname = "Unix",
+	*machine = "",
 	*release = "",
-	*version = ""; 
+	*version = "";
 
 #ifdef HAVE_UNAME
     uname(&name);

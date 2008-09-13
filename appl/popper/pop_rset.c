@@ -7,7 +7,7 @@
 #include <popper.h>
 RCSID("$Id$");
 
-/* 
+/*
  *  rset:   Unflag all messages flagged for deletion in a POP maildrop
  */
 
@@ -20,11 +20,11 @@ pop_rset (POP *p)
     /*  Unmark all the messages */
     for (i = p->msg_count, mp = p->mlp; i > 0; i--, mp++)
         mp->flags &= ~DEL_FLAG;
-    
+
     /*  Reset the messages-deleted and bytes-deleted counters */
     p->msgs_deleted = 0;
     p->bytes_deleted = 0;
-    
+
     /*  Reset the last-message-access flag */
     p->last_msg = 0;
 

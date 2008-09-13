@@ -1,34 +1,34 @@
 /*
  * Copyright (c) 1997-2006 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * 3. Neither the name of the Institute nor the names of its contributors 
- *    may be used to endorse or promote products derived from this software 
- *    without specific prior written permission. 
+ * 3. Neither the name of the Institute nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
- * SUCH DAMAGE. 
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 #include "hprop.h"
@@ -91,20 +91,20 @@ main(int argc, char **argv)
     if(ret)
 	;
     krb5_set_warn_dest(context, fac);
-  
+
     if(getarg(args, num_args, argc, argv, &optidx))
 	usage(1);
 
     if(local_realm != NULL)
 	krb5_set_default_realm(context, local_realm);
-    
+
     if(help_flag)
 	usage(0);
     if(version_flag) {
 	print_version(NULL);
 	exit(0);
     }
-    
+
     argc -= optidx;
     argv += optidx;
 
@@ -147,7 +147,7 @@ main(int argc, char **argv)
 		     sizeof(addr_name));
 
 	krb5_log(context, fac, 0, "Connection from %s", addr_name);
-    
+
 	ret = krb5_kt_register(context, &hdb_kt_ops);
 	if(ret)
 	    krb5_err(context, 1, ret, "krb5_kt_register");
@@ -183,7 +183,7 @@ main(int argc, char **argv)
 	ret = krb5_make_principal(context, &c1, NULL, "kadmin", "hprop", NULL);
 	if(ret)
 	    krb5_err(context, 1, ret, "krb5_make_principal");
-	_krb5_principalname2krb5_principal(context, &c2, 
+	_krb5_principalname2krb5_principal(context, &c2,
 					   authent->cname, authent->crealm);
 	if(!krb5_principal_compare(context, c1, c2)) {
 	    char *s;
@@ -199,7 +199,7 @@ main(int argc, char **argv)
 	if(ret)
 	    krb5_err(context, 1, ret, "krb5_kt_close");
     }
-    
+
     if(!print_dump) {
 	asprintf(&tmp_db, "%s~", database);
 
@@ -258,7 +258,7 @@ main(int argc, char **argv)
 		    s = strdup("unparseable name");
 		krb5_warnx(context, "Entry exists: %s", s);
 		free(s);
-	    } else if(ret) 
+	    } else if(ret)
 		krb5_err(context, 1, ret, "db_store");
 	    else
 		nprincs++;

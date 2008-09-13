@@ -714,7 +714,7 @@ encrypt_request_end(void)
  * Called when ENCRYPT REQUEST-START is received.  If we receive
  * this before a type is picked, then that indicates that the
  * other side wants us to start encrypting data as soon as we
- * can. 
+ * can.
  */
 void
 encrypt_request_start(unsigned char *data, int cnt)
@@ -841,7 +841,7 @@ encrypt_start_output(int type)
 	i = (*ep->start)(DIR_ENCRYPT, Server);
 	if (encrypt_debug_mode) {
 	    printf(">>>%s: Encrypt start: %s (%d) %s\r\n",
-		   Name, 
+		   Name,
 		   (i < 0) ? "failed" :
 		   "initial negotiation in progress",
 		   i, ENCTYPE_NAME(type));
@@ -965,7 +965,7 @@ encrypt_debug(int mode)
     encrypt_debug_mode = mode;
 }
 
-void encrypt_gen_printsub(unsigned char *data, size_t cnt, 
+void encrypt_gen_printsub(unsigned char *data, size_t cnt,
 			  unsigned char *buf, size_t buflen)
 {
     char tbuf[16], *cp;
@@ -986,7 +986,7 @@ void encrypt_gen_printsub(unsigned char *data, size_t cnt,
 }
 
 void
-encrypt_printsub(unsigned char *data, size_t cnt, 
+encrypt_printsub(unsigned char *data, size_t cnt,
 		 unsigned char *buf, size_t buflen)
 {
     Encryptions *ep;

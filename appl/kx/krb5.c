@@ -2,22 +2,22 @@
  * Copyright (c) 1995 - 2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the Institute nor the names of its contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -43,7 +43,7 @@ struct krb5_kx_context {
     krb5_crypto crypto;
     krb5_principal client;
     krb5_log_facility *log;
-    
+
 };
 
 typedef struct krb5_kx_context krb5_kx_context;
@@ -109,15 +109,15 @@ krb5_authenticate (kx_context *kc, int s)
 	return 1;
     }
 
-    ret = krb5_auth_con_getkey (CONTEXT(kc), auth_context, 
+    ret = krb5_auth_con_getkey (CONTEXT(kc), auth_context,
 				&K5DATA(kc)->keyblock);
     if (ret) {
 	krb5_warn (CONTEXT(kc), ret, "krb5_auth_con_getkey: %s", host);
 	krb5_auth_con_free (CONTEXT(kc), auth_context);
 	return 1;
     }
-    
-    ret = krb5_crypto_init (CONTEXT(kc), K5DATA(kc)->keyblock, 
+
+    ret = krb5_crypto_init (CONTEXT(kc), K5DATA(kc)->keyblock,
 			    0, &K5DATA(kc)->crypto);
     if (ret) {
 	krb5_warn (CONTEXT(kc), ret, "krb5_crypto_init");
@@ -149,14 +149,14 @@ krb5_read (kx_context *kc,
     if (l != 4)
 	return -1;
     data_len  = (tmp[0] << 24) | (tmp[1] << 16) | (tmp[2] << 8) | tmp[3];
-    outer_len = krb5_get_wrapped_length (CONTEXT(kc), 
+    outer_len = krb5_get_wrapped_length (CONTEXT(kc),
 					 K5DATA(kc)->crypto, data_len);
     if (outer_len > len)
 	return -1;
     if (krb5_net_read (CONTEXT(kc), &fd, buf, outer_len) != outer_len)
 	return -1;
 
-    ret = krb5_decrypt (CONTEXT(kc), K5DATA(kc)->crypto, 
+    ret = krb5_decrypt (CONTEXT(kc), K5DATA(kc)->crypto,
 			KRB5_KU_OTHER_ENCRYPTED,
 			buf, outer_len, &data);
     if (ret) {
@@ -186,7 +186,7 @@ krb5_write(kx_context *kc,
     unsigned char tmp[4];
     size_t outlen;
 
-    ret = krb5_encrypt (CONTEXT(kc), K5DATA(kc)->crypto, 
+    ret = krb5_encrypt (CONTEXT(kc), K5DATA(kc)->crypto,
 			KRB5_KU_OTHER_ENCRYPTED,
 			buf, len, &data);
     if (ret){
@@ -331,7 +331,7 @@ krb5_make_context (kx_context *kc)
     kc->data		= malloc(sizeof(krb5_kx_context));
 
     if (kc->data == NULL) {
-	syslog (LOG_ERR, "failed to malloc %lu bytes", 
+	syslog (LOG_ERR, "failed to malloc %lu bytes",
 		(unsigned long)sizeof(krb5_kx_context));
 	exit(1);
     }

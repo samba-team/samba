@@ -2,22 +2,22 @@
  * Copyright (c) 2004 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the Institute nor the names of its contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -64,7 +64,7 @@ struct {
 	"\x00\x00\x00\x00\x00\x00\x00\x00",
 	"\x21\x82\x9C\x78\xA9\xF9\xC0\x74"
     },
-    { 
+    {
 	"\x00\x00\x00\x00\x00\x00\x00\x00"
 	"\x00\x00\x00\x00\x00\x00\x00\x00",
 	16,
@@ -103,12 +103,12 @@ struct {
     }
 };
 
-const unsigned char cbc_key[16] = 
+const unsigned char cbc_key[16] =
 "\x00\x00\x00\x00\x00\x00\x00\x00"
 "\x00\x00\x00\x00\x00\x00\x00\x00";
 const char cbc_iv[8] =
 "\x01\x01\x01\x01\x01\x01\x01\x01";
-const unsigned char cbc_in_data[32] = 
+const unsigned char cbc_in_data[32] =
 "\x20\x20\x20\x20\x20\x20\x20\x20"
 "\x20\x20\x20\x20\x20\x20\x20\x20"
 "\x20\x20\x20\x20\x20\x20\x20\x20"
@@ -116,7 +116,7 @@ const unsigned char cbc_in_data[32] =
 
 const char out_iv[8] = "\x00\x78\x1b\x6\xff\xb9\xfa\xe";
 
-const char cbc_out_data[32] = 
+const char cbc_out_data[32] =
 "\xb4\x3f\x89\x15\x69\x68\xda\x79"
 "\x29\xab\x5f\x78\xc5\xba\x15\x82"
 "\x80\x89\x57\x1b\xbe\x57\x2f\xdc"

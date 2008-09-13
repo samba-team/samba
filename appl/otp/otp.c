@@ -2,22 +2,22 @@
  * Copyright (c) 1995-1997, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the Institute nor the names of its contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -50,9 +50,9 @@ struct getargs args[] = {
     { "delete", 'd', arg_flag, &deletep, "delete OTP" },
     { "open", 'o', arg_flag, &openp, "open a locked OTP" },
     { "renew", 'r', arg_flag, &renewp, "securely renew OTP" },
-    { "hash", 'f', arg_string, &alg_string, 
+    { "hash", 'f', arg_string, &alg_string,
       "hash algorithm (md4, md5, or sha)", "algorithm"},
-    { "user", 'u', arg_string, &user, 
+    { "user", 'u', arg_string, &user,
       "user other than current user (root only)", "user" },
     { "version", 0, arg_flag, &version_flag },
     { "help", 'h', arg_flag, &help_flag }
@@ -67,8 +67,8 @@ usage(int code)
     exit(code);
 }
 
-/* 
- * Renew the OTP for a user. 
+/*
+ * Renew the OTP for a user.
  * The pass-phrase is not required (RFC 1938/8.0)
  */
 
@@ -89,7 +89,7 @@ renew (int argc, char **argv, OtpAlgorithm *alg, char *user)
     snprintf (prompt, sizeof(prompt),
 	      "[ otp-%s %u %s ]",
 	      newctx.alg->name,
-	      newctx.n, 
+	      newctx.n,
 	      newctx.seed);
     if (UI_UTIL_read_pw_string (pw, sizeof(pw), prompt, 0) == 0 &&
 	otp_parse (newctx.key, pw, alg) == 0) {
@@ -113,7 +113,7 @@ renew (int argc, char **argv, OtpAlgorithm *alg, char *user)
  * I would rather have returned !=0 but it's shell-like here around.
  */
 
-static int 
+static int
 verify_user_otp(char *username)
 {
     OtpContext ctx;
@@ -122,7 +122,7 @@ verify_user_otp(char *username)
 
     if (otp_challenge (&ctx, username, ss, sizeof(ss)) != 0) {
 	warnx("no otp challenge found for %s", username);
-	return 1; 
+	return 1;
     }
 
     snprintf (prompt, sizeof(prompt), "%s's %s Password: ", username, ss);
@@ -131,7 +131,7 @@ verify_user_otp(char *username)
     return otp_verify_user (&ctx, passwd);
 }
 
-/* 
+/*
  * Set the OTP for a user
  */
 
@@ -194,7 +194,7 @@ delete_otp (int argc, char **argv, char *user)
     return ret;
 }
 
-/* 
+/*
  * Tell whether the user has an otp
  */
 
@@ -210,9 +210,9 @@ has_an_otp(char *user)
 	warnx ("otp_db_open failed");
 	return 0; /* if no db no otp! */
     }
-  
+
     ctx.user = user;
-    ret = otp_simple_get(db, &ctx); 
+    ret = otp_simple_get(db, &ctx);
 
     otp_db_close (db);
     return !ret;
@@ -251,7 +251,7 @@ open_otp (int argc, char **argv, char *user)
     db = otp_db_open ();
     if (db == NULL)
 	errx (1, "otp_db_open failed");
-  
+
     ctx.user = user;
     ret = otp_simple_get (db, &ctx);
     if (ret == 0)
@@ -292,7 +292,7 @@ main (int argc, char **argv)
     int uid = getuid();
     OtpAlgorithm *alg = otp_find_alg (OTP_ALG_DEFAULT);
     int optind = 0;
-  
+
     setprogname (argv[0]);
     if(getarg(args, num_args, argc, argv, &optind))
 	usage(1);
@@ -318,7 +318,7 @@ main (int argc, char **argv)
     if (!(listp || deletep || renewp || openp))
 	defaultp = 1;
 
-    if ( listp + deletep + renewp + defaultp + openp != 1) 
+    if ( listp + deletep + renewp + defaultp + openp != 1)
 	usage(1); /* one of -d or -l or -r or none */
 
     if(deletep || openp || listp) {
@@ -339,7 +339,7 @@ main (int argc, char **argv)
 	    err (1, "You don't exist");
 	user = pwd->pw_name;
     }
-  
+
     /*
      * users other that root must provide the next OTP to update the sequence.
      * it avoids someone to use a pending session to change an OTP sequence.

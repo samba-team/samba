@@ -56,6 +56,6 @@ int	rl_list_possib (char*, char***);
 void	rl_ttyset (int);
 rl_complete_func_t	rl_set_complete_func (rl_complete_func_t);
 rl_list_possib_func_t	rl_set_list_possib_func (rl_list_possib_func_t);
- 
+
 #include "editline.h"
 

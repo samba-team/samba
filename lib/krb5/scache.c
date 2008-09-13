@@ -1,34 +1,34 @@
 /*
  * Copyright (c) 2008 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * 3. Neither the name of the Institute nor the names of its contributors 
- *    may be used to endorse or promote products derived from this software 
- *    without specific prior written permission. 
+ * 3. Neither the name of the Institute nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
- * SUCH DAMAGE. 
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 #include "krb5_locl.h"
@@ -188,7 +188,7 @@ trace(void* ptr, const char * str)
 #endif
 
 static krb5_error_code
-prepare_stmt(krb5_context context, sqlite3 *db, 
+prepare_stmt(krb5_context context, sqlite3 *db,
 	     sqlite3_stmt **stmt, const char *str)
 {
     int ret;
@@ -196,7 +196,7 @@ prepare_stmt(krb5_context context, sqlite3 *db,
     ret = sqlite3_prepare_v2(db, str, -1, stmt, NULL);
     if (ret != SQLITE_OK) {
 	krb5_set_error_message(context, ENOENT,
-			       N_("Failed to prepare stmt %s: %s", ""), 
+			       N_("Failed to prepare stmt %s: %s", ""),
 			       str, sqlite3_errmsg(db));
 	return ENOENT;
     }
@@ -208,10 +208,10 @@ exec_stmt(krb5_context context, sqlite3 *db, const char *str,
 	  krb5_error_code code)
 {
     int ret;
-    
+
     ret = sqlite3_exec(db, str, NULL, NULL, NULL);
     if (ret != SQLITE_OK && code) {
-	krb5_set_error_message(context, code, 
+	krb5_set_error_message(context, code,
 			       N_("scache execute %s: %s", ""), str,
 			       sqlite3_errmsg(db));
 	return code;
@@ -337,8 +337,8 @@ open_database(krb5_context context, krb5_scache *s, int flags)
     ret = sqlite3_open_v2(s->file, &s->db, SQLITE_OPEN_READWRITE|flags, NULL);
     if (ret) {
 	if (s->db) {
-	    krb5_set_error_message(context, ENOENT, 
-				   N_("Error opening scache file %s: %s", ""), 
+	    krb5_set_error_message(context, ENOENT,
+				   N_("Error opening scache file %s: %s", ""),
 				   s->file, sqlite3_errmsg(s->db));
 	    sqlite3_close(s->db);
 	    s->db = NULL;
@@ -360,12 +360,12 @@ create_cache(krb5_context context, krb5_scache *s)
 	ret = sqlite3_step(s->icache);
     } while (ret == SQLITE_ROW);
     if (ret != SQLITE_DONE) {
-	krb5_set_error_message(context, KRB5_CC_IO, 
+	krb5_set_error_message(context, KRB5_CC_IO,
 			       N_("Failed to add scache: %d", ""), ret);
 	return KRB5_CC_IO;
     }
     sqlite3_reset(s->icache);
-    
+
     s->cid = sqlite3_last_insert_rowid(s->db);
 
     return 0;
@@ -441,7 +441,7 @@ out:
 }
 
 static krb5_error_code
-bind_principal(krb5_context context, 
+bind_principal(krb5_context context,
 	       sqlite3 *db,
 	       sqlite3_stmt *stmt,
 	       int col,
@@ -484,7 +484,7 @@ scc_resolve(krb5_context context, krb5_ccache *id, const char *res)
 
     s = scc_alloc(context, res);
     if (s == NULL) {
-	krb5_set_error_message(context, KRB5_CC_NOMEM, 
+	krb5_set_error_message(context, KRB5_CC_NOMEM,
 			       N_("malloc: out of memory", ""));
 	return KRB5_CC_NOMEM;
     }
@@ -497,7 +497,7 @@ scc_resolve(krb5_context context, krb5_ccache *id, const char *res)
 
     ret = sqlite3_bind_text(s->scache_name, 1, s->name, -1, NULL);
     if (ret != SQLITE_OK) {
-	krb5_set_error_message(context, ENOMEM, 
+	krb5_set_error_message(context, ENOMEM,
 			       "bind name: %s", sqlite3_errmsg(s->db));
 	scc_free(s);
 	return ENOMEM;
@@ -519,7 +519,7 @@ scc_resolve(krb5_context context, krb5_ccache *id, const char *res)
 	s->cid = SCACHE_INVALID_CID;
     }
     sqlite3_reset(s->scache_name);
-    
+
     (*id)->data.data = s;
     (*id)->data.length = sizeof(*s);
 
@@ -679,7 +679,7 @@ decode_creds(krb5_context context, const void *data, size_t length,
 
     sp = krb5_storage_from_readonly_mem(data, length);
     if (sp == NULL) {
-	krb5_set_error_message(context, ENOMEM, 
+	krb5_set_error_message(context, ENOMEM,
 			       N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
@@ -720,7 +720,7 @@ scc_store_cred(krb5_context context,
 	Ticket t;
 	size_t len;
 
-	ret = decode_Ticket(creds->ticket.data, 
+	ret = decode_Ticket(creds->ticket.data,
 			    creds->ticket.length, &t, &len);
 	if (ret == 0) {
 	    if(t.enc_part.kvno)
@@ -749,13 +749,13 @@ scc_store_cred(krb5_context context,
     if (ret != SQLITE_DONE) {
 	ret = KRB5_CC_IO;
 	krb5_set_error_message(context, ret,
-			       N_("Failed to add credential: %s", ""), 
+			       N_("Failed to add credential: %s", ""),
 			       sqlite3_errmsg(s->db));
 	goto rollback;
     }
 
     credid = sqlite3_last_insert_rowid(s->db);
-    
+
     {
 	bind_principal(context, s->db, s->iprincipal, 1, creds->server);
 	sqlite3_bind_int(s->iprincipal, 2, 1);
@@ -768,7 +768,7 @@ scc_store_cred(krb5_context context,
 	if (ret != SQLITE_DONE) {
 	    ret = KRB5_CC_IO;
 	    krb5_set_error_message(context, ret,
-				   N_("Failed to add principal: %s", ""), 
+				   N_("Failed to add principal: %s", ""),
 				   sqlite3_errmsg(s->db));
 	    goto rollback;
 	}
@@ -830,7 +830,7 @@ scc_get_principal(krb5_context context,
 	
     if (sqlite3_column_type(s->scache, 0) != SQLITE_TEXT) {
 	sqlite3_reset(s->scache);
-	krb5_set_error_message(context, KRB5_CC_END, 
+	krb5_set_error_message(context, KRB5_CC_END,
 			       N_("Principal data of wrong type "
 				  "for SCACHE:%s:%s", ""),
 			       s->name, s->file);
@@ -911,7 +911,7 @@ scc_get_first (krb5_context context,
     }
 
     asprintf(&str, "CREATE TEMPORARY TABLE %s "
-	     "AS SELECT oid,created_at FROM credentials WHERE cid = %lu", 
+	     "AS SELECT oid,created_at FROM credentials WHERE cid = %lu",
 	     name, (unsigned long)s->cid);
 
     ret = exec_stmt(context, s->db, str, KRB5_CC_IO);
@@ -942,7 +942,7 @@ scc_get_first (krb5_context context,
 	return ret;
     }
 
-    ret = prepare_stmt(context, s->db, &ctx->credstmt, 
+    ret = prepare_stmt(context, s->db, &ctx->credstmt,
 		       "SELECT cred FROM credentials WHERE oid = ?");
     if (ret) {
 	sqlite3_finalize(ctx->stmt);
@@ -1047,7 +1047,7 @@ scc_remove_cred(krb5_context context,
     if (ret)
 	return ret;
 
-    ret = prepare_stmt(context, s->db, &stmt, 
+    ret = prepare_stmt(context, s->db, &stmt,
 		       "SELECT cred,oid FROM credentials "
 		       "WHERE cid = ?");
     if (ret)
@@ -1099,7 +1099,7 @@ scc_remove_cred(krb5_context context,
     sqlite3_finalize(stmt);
 
     if (id) {
-	ret = prepare_stmt(context, s->db, &stmt, 
+	ret = prepare_stmt(context, s->db, &stmt,
 			   "DELETE FROM credentials WHERE oid=?");
 	if (ret)
 	    return ret;
@@ -1127,7 +1127,7 @@ scc_set_flags(krb5_context context,
 {
     return 0; /* XXX */
 }
-		    
+		
 struct cache_iter {
     char *drop;
     sqlite3 *db;
@@ -1176,7 +1176,7 @@ scc_get_cache_first(krb5_context context, krb5_cc_cursor *cursor)
 	return ENOMEM;
     }
 
-    asprintf(&str, "CREATE TEMPORARY TABLE %s AS SELECT name FROM caches", 
+    asprintf(&str, "CREATE TEMPORARY TABLE %s AS SELECT name FROM caches",
 	     name);
     if (str == NULL) {
 	krb5_set_error_message(context, ENOMEM,
@@ -1208,7 +1208,7 @@ scc_get_cache_first(krb5_context context, krb5_cc_cursor *cursor)
 	free(ctx);
 	return ENOMEM;
     }
-    
+
     ret = prepare_stmt(context, ctx->db, &ctx->stmt, str);
     if (ret) {
 	exec_stmt(context, ctx->db, ctx->drop, 0);
@@ -1353,7 +1353,7 @@ scc_get_default_name(krb5_context context, char **str)
     asprintf(str, "SDB:%s", name);
     free(name);
     if (*str == NULL) {
-	krb5_set_error_message(context, ENOMEM, 
+	krb5_set_error_message(context, ENOMEM,
 			       N_("malloc: out of memory", ""));
 	return ENOMEM;
     }

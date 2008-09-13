@@ -2,22 +2,22 @@
  * Copyright (c) 1995 - 2003 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the Institute nor the names of its contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -148,7 +148,7 @@ otp_md4_init (OtpKey key, const char *pwd, const char *seed)
 
   return otp_md_init (key, pwd, seed,
 		      (void (*)(void *))MD4_Init,
-		      (void (*)(void *, const void *, size_t))MD4_Update, 
+		      (void (*)(void *, const void *, size_t))MD4_Update,
 		      (void (*)(void *, void *))MD4_Final,
 		      &md4, res, sizeof(res));
 }
@@ -162,7 +162,7 @@ otp_md4_hash (const char *data,
 
   return otp_md_hash (data, len,
 		      (void (*)(void *))MD4_Init,
-		      (void (*)(void *, const void *, size_t))MD4_Update, 
+		      (void (*)(void *, const void *, size_t))MD4_Update,
 		      (void (*)(void *, void *))MD4_Final,
 		      &md4, res, 16);
 }
@@ -173,9 +173,9 @@ otp_md4_next (OtpKey key)
   unsigned char res[16];
   MD4_CTX md4;
 
-  return otp_md_next (key, 
-		      (void (*)(void *))MD4_Init, 
-		      (void (*)(void *, const void *, size_t))MD4_Update, 
+  return otp_md_next (key,
+		      (void (*)(void *))MD4_Init,
+		      (void (*)(void *, const void *, size_t))MD4_Update,
 		      (void (*)(void *, void *))MD4_Final,
 		      &md4, res, sizeof(res));
 }
@@ -187,9 +187,9 @@ otp_md5_init (OtpKey key, const char *pwd, const char *seed)
   unsigned char res[16];
   MD5_CTX md5;
 
-  return otp_md_init (key, pwd, seed, 
-		      (void (*)(void *))MD5_Init, 
-		      (void (*)(void *, const void *, size_t))MD5_Update, 
+  return otp_md_init (key, pwd, seed,
+		      (void (*)(void *))MD5_Init,
+		      (void (*)(void *, const void *, size_t))MD5_Update,
 		      (void (*)(void *, void *))MD5_Final,
 		      &md5, res, sizeof(res));
 }
@@ -203,7 +203,7 @@ otp_md5_hash (const char *data,
 
   return otp_md_hash (data, len,
 		      (void (*)(void *))MD5_Init,
-		      (void (*)(void *, const void *, size_t))MD5_Update, 
+		      (void (*)(void *, const void *, size_t))MD5_Update,
 		      (void (*)(void *, void *))MD5_Final,
 		      &md5, res, 16);
 }
@@ -214,14 +214,14 @@ otp_md5_next (OtpKey key)
   unsigned char res[16];
   MD5_CTX md5;
 
-  return otp_md_next (key, 
-		      (void (*)(void *))MD5_Init, 
-		      (void (*)(void *, const void *, size_t))MD5_Update, 
+  return otp_md_next (key,
+		      (void (*)(void *))MD5_Init,
+		      (void (*)(void *, const void *, size_t))MD5_Update,
 		      (void (*)(void *, void *))MD5_Final,
 		      &md5, res, sizeof(res));
 }
 
-/* 
+/*
  * For histerical reasons, in the OTP definition it's said that the
  * result from SHA must be stored in little-endian order.  See
  * draft-ietf-otp-01.txt.
@@ -249,9 +249,9 @@ otp_sha_init (OtpKey key, const char *pwd, const char *seed)
   unsigned char res[20];
   SHA_CTX sha1;
 
-  return otp_md_init (key, pwd, seed, 
-		      (void (*)(void *))SHA1_Init, 
-		      (void (*)(void *, const void *, size_t))SHA1_Update, 
+  return otp_md_init (key, pwd, seed,
+		      (void (*)(void *))SHA1_Init,
+		      (void (*)(void *, const void *, size_t))SHA1_Update,
 		      (void (*)(void *, void *))SHA1_Final_little_endian,
 		      &sha1, res, sizeof(res));
 }
@@ -265,7 +265,7 @@ otp_sha_hash (const char *data,
 
   return otp_md_hash (data, len,
 		      (void (*)(void *))SHA1_Init,
-		      (void (*)(void *, const void *, size_t))SHA1_Update, 
+		      (void (*)(void *, const void *, size_t))SHA1_Update,
 		      (void (*)(void *, void *))SHA1_Final_little_endian,
 		      &sha1, res, 20);
 }
@@ -276,7 +276,7 @@ otp_sha_next (OtpKey key)
   unsigned char res[20];
   SHA_CTX sha1;
 
-  return otp_md_next (key, 
+  return otp_md_next (key,
 		      (void (*)(void *))SHA1_Init,
 		      (void (*)(void *, const void *, size_t))SHA1_Update,
 		      (void (*)(void *, void *))SHA1_Final_little_endian,

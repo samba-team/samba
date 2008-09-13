@@ -2,22 +2,22 @@
  * Copyright (c) 1999 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the Institute nor the names of its contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -88,12 +88,12 @@ doit (const char *nodename, const char *servname)
     for (r = res; r != NULL; r = r->ai_next) {
 	char addrstr[256];
 
-	if (inet_ntop (r->ai_family, 
+	if (inet_ntop (r->ai_family,
 		       socket_get_address (r->ai_addr),
 		       addrstr, sizeof(addrstr)) == NULL) {
 	    printf ("\tbad address?\n");
 	    continue;
-	} 
+	}
 	printf ("\tfamily = %d, socktype = %d, protocol = %d, "
 		"address = \"%s\", port = %d",
 		r->ai_family, r->ai_socktype, r->ai_protocol,

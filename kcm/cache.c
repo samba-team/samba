@@ -36,7 +36,7 @@ RCSID("$Id$");
 
 static HEIMDAL_MUTEX ccache_mutex = HEIMDAL_MUTEX_INITIALIZER;
 static kcm_ccache_data *ccache_head = NULL;
-static unsigned int ccache_nextid = 0; 
+static unsigned int ccache_nextid = 0;
 
 char *kcm_ccache_nextid(pid_t pid, uid_t uid, gid_t gid)
 {
@@ -471,7 +471,7 @@ kcm_ccache_destroy_if_empty(krb5_context context,
     krb5_error_code ret;
 
     KCM_ASSERT_VALID(ccache);
-    
+
     if (ccache->creds == NULL) {
 	ret = kcm_ccache_destroy_internal(context, ccache->name);
     } else
@@ -490,7 +490,7 @@ kcm_ccache_store_cred(krb5_context context,
     krb5_creds *tmp;
 
     KCM_ASSERT_VALID(ccache);
-    
+
     HEIMDAL_MUTEX_lock(&ccache->mutex);
     ret = kcm_ccache_store_cred_internal(context, ccache, creds, copy, &tmp);
     HEIMDAL_MUTEX_unlock(&ccache->mutex);
@@ -626,7 +626,7 @@ kcm_ccache_retrieve_cred(krb5_context context,
     krb5_error_code ret;
 
     KCM_ASSERT_VALID(ccache);
-    
+
     HEIMDAL_MUTEX_lock(&ccache->mutex);
     ret = kcm_ccache_retrieve_cred_internal(context, ccache,
 					    whichfields, mcreds, credp);

@@ -119,14 +119,14 @@ struct appres_t {
 } appres;
 
 static XtResource resources[] = {
-    { XtNbackground, XtCBackground, XtRPixel, sizeof(Pixel), 
+    { XtNbackground, XtCBackground, XtRPixel, sizeof(Pixel),
       XtOffsetOf(struct appres_t, bg), XtRString, "black" },
 
-    { XtNforeground, XtCForeground, XtRPixel, sizeof(Pixel), 
+    { XtNforeground, XtCForeground, XtRPixel, sizeof(Pixel),
       XtOffsetOf(struct appres_t, fg), XtRString, "white" },
 
     { XtNfont, XtCFont, XtRFontStruct, sizeof (XFontStruct *),
-      XtOffsetOf(struct appres_t, font), 
+      XtOffsetOf(struct appres_t, font),
       XtRString, "-*-new century schoolbook-*-*-*-18-*" },
 
     { "ignorePasswd", "IgnorePasswd", XtRBoolean, sizeof(Boolean),
@@ -137,7 +137,7 @@ static XtResource resources[] = {
 
     { "text", "Text", XtRString, sizeof(String),
       XtOffsetOf(struct appres_t, text), XtRString, "I'm out running around." },
-    
+
     { "program", "Program", XtRString, sizeof(String),
       XtOffsetOf(struct appres_t, text_prog), XtRImmediate, NULL },
 
@@ -146,7 +146,7 @@ static XtResource resources[] = {
 
     { "logoutPasswd", "logoutPasswd", XtRString, sizeof(String),
       XtOffsetOf(struct appres_t, logoutPasswd), XtRString, LOGOUT_PASSWD },
-    
+
     { "noScreenSaver", "NoScreenSaver", XtRBoolean, sizeof(Boolean),
       XtOffsetOf(struct appres_t,no_screensaver), XtRImmediate, (XtPointer)True },
 
@@ -155,10 +155,10 @@ static XtResource resources[] = {
 };
 
 static XrmOptionDescRec options[] = {
-    { "-fg", ".foreground", XrmoptionSepArg, NULL }, 
-    { "-foreground", ".foreground", XrmoptionSepArg, NULL }, 
-    { "-fn", ".font", XrmoptionSepArg, NULL }, 
-    { "-font", ".font", XrmoptionSepArg, NULL }, 
+    { "-fg", ".foreground", XrmoptionSepArg, NULL },
+    { "-foreground", ".foreground", XrmoptionSepArg, NULL },
+    { "-fn", ".font", XrmoptionSepArg, NULL },
+    { "-font", ".font", XrmoptionSepArg, NULL },
     { "-ip", ".ignorePasswd", XrmoptionNoArg, "True" },
     { "-noip", ".ignorePasswd", XrmoptionNoArg, "False" },
     { "-ar",  ".acceptRootPasswd", XrmoptionNoArg, "True" },
@@ -276,7 +276,7 @@ ScreenSaver(int save)
     static int timeout, interval, prefer_blank, allow_exp;
     if(!appres.no_screensaver){
 	if (save) {
-	    XGetScreenSaver(dpy, &timeout, &interval, 
+	    XGetScreenSaver(dpy, &timeout, &interval,
 			    &prefer_blank, &allow_exp);
 	    XSetScreenSaver(dpy, 0, interval, prefer_blank, allow_exp);
 	} else
@@ -500,7 +500,7 @@ post_prompt_box(Window window)
     XDrawRectangle(dpy, window, gc, box_x+12, box_y+12, width-23, height-23);
 
     XDrawString(dpy, window, gc,
-		prompt_x, prompt_y-font_height(font), 
+		prompt_x, prompt_y-font_height(font),
 		userprompt, strlen(userprompt));
     XDrawString(dpy, window, gc, prompt_x, prompt_y, PROMPT, strlen(PROMPT));
     /* set background for copyplane and DrawImageString; need reverse video */
@@ -528,7 +528,7 @@ ClearWindow(Widget w, XEvent *_event, String *_s, Cardinal *_n)
     XExposeEvent *event = (XExposeEvent *)_event;
     if (!XtIsRealized(w))
 	return;
-    XClearArea(dpy, XtWindow(w), event->x, event->y, 
+    XClearArea(dpy, XtWindow(w), event->x, event->y,
 	       event->width, event->height, False);
     if (state == GET_PASSWD)
 	post_prompt_box(XtWindow(w));
@@ -568,7 +568,7 @@ countdown(XtPointer _t, XtIntervalId *_d)
       snprintf(buf, sizeof(buf),
 	       "Locked for %2d:%02d    ",
 	       (int)seconds/60, (int)seconds%60);
-      
+
     XDrawImageString(dpy, XtWindow(widget), gc,
 	time_x, time_y, buf, strlen(buf));
     XtAppAddTimeOut(app, 1000L, countdown, timeout);
@@ -584,17 +584,17 @@ verify_krb5(const char *password)
 #ifdef KRB4
     krb5_boolean get_v4_tgt;
 #endif
-    
+
     krb5_cc_default(context, &id);
     ret = krb5_verify_user(context,
-			   client, 
+			   client,
 			   id,
-			   password, 
+			   password,
 			   0,
 			   NULL);
     if (ret == 0){
 #ifdef KRB4
-	krb5_appdefault_boolean(context, "xnlock", 
+	krb5_appdefault_boolean(context, "xnlock",
 				krb5_principal_get_realm(context, client),
 				"krb4_get_tickets", FALSE, &get_v4_tgt);
 	if(get_v4_tgt) {
@@ -613,7 +613,7 @@ verify_krb5(const char *password)
 	    ret = krb5_cc_retrieve_cred(context, id, 0, &mcred, &cred);
 	    if(ret == 0) {
 		ret = krb524_convert_creds_kdc_ccache(context, id, &cred, &c);
-		if(ret == 0) 
+		if(ret == 0)
 		    tf_setup(&c, c.pname, c.pinst);
 		memset(&c, 0, sizeof(c));
 		krb5_free_cred_contents(context, &cred);
@@ -627,7 +627,7 @@ verify_krb5(const char *password)
     }
     if (ret != KRB5KRB_AP_ERR_MODIFIED)
 	krb5_warn(context, ret, "verify_krb5");
-    
+
     return -1;
 }
 #endif
@@ -696,7 +696,7 @@ verify(char *password)
 		   (ret < 0) ? strerror(ret) : krb_get_err_text(ret));
     }
 #endif
-    
+
     return -1;
 }
 
@@ -738,7 +738,7 @@ GetPasswd(Widget w, XEvent *_event, String *_s, Cardinal *_n)
 	return;
 
     time_left = 30;
-    
+
     keysym = XLookupKeysym(event, 0);
     if (keysym == XK_Control_L || keysym == XK_Control_R) {
       is_ctrl = XNLOCK_CTRL;
@@ -805,7 +805,7 @@ init_images(void)
 {
     static Pixmap *images[] = {
 	&left0, &left1, &right0, &right1,
-	&left_front, &right_front, &front, &down 
+	&left_front, &right_front, &front, &down
     };
     static unsigned char *bits[] = {
 	nose_0_left_bits, nose_1_left_bits, nose_0_right_bits,
@@ -875,7 +875,7 @@ talk(int force_erase)
 	if (Y < 5)
 	    Y = y + 64 + 5 + font_height(font);
 	XDrawString(dpy, XtWindow(widget), gc, X, Y, words, strlen(words));
-	timeout_id = XtAppAddTimeOut(app, 5000L, (XtTimerCallbackProc)talk, 
+	timeout_id = XtAppAddTimeOut(app, 5000L, (XtTimerCallbackProc)talk,
 				     NULL);
 	talking++;
 	return;
@@ -926,7 +926,7 @@ talk(int force_erase)
 		   s_rect.x, s_rect.y, s_rect.width-1, s_rect.height-1);
     XSetLineAttributes(dpy, gc, 0, 0, 0, 0);
     XDrawRectangle(dpy, XtWindow(widget), gc,
-		   s_rect.x + 7, s_rect.y + 7, s_rect.width - 15, 
+		   s_rect.x + 7, s_rect.y + 7, s_rect.width - 15,
 		   s_rect.height - 15);
 
     X = 15;
@@ -938,7 +938,7 @@ talk(int force_erase)
 	    args[Z], strlen(args[Z]));
 	Y += font_height(font);
     }
-    timeout_id = XtAppAddTimeOut(app, (total/15) * 1000, 
+    timeout_id = XtAppAddTimeOut(app, (total/15) * 1000,
 				 (XtTimerCallbackProc)talk, NULL);
 }
 
@@ -1013,7 +1013,7 @@ main (int argc, char **argv)
     snprintf(userprompt, sizeof(userprompt), "User: %s", login);
 #ifdef KRB4
     krb_get_default_principal(name, inst, realm);
-    snprintf(userprompt, sizeof(userprompt), "User: %s", 
+    snprintf(userprompt, sizeof(userprompt), "User: %s",
 	     krb_unparse_name_long(name, inst, realm));
 #endif
 #ifdef KRB5
@@ -1032,10 +1032,10 @@ main (int argc, char **argv)
 #endif
 
     override = XtVaAppInitialize(&app, "XNlock", options, XtNumber(options),
-				 &argc, argv, NULL, 
-				 XtNoverrideRedirect, True, 
+				 &argc, argv, NULL,
+				 XtNoverrideRedirect, True,
 				 NULL);
-    
+
     XtVaGetApplicationResources(override,(XtPointer)&appres,
 				resources,XtNumber(resources),
 				NULL);
@@ -1056,13 +1056,13 @@ main (int argc, char **argv)
     }
 
     dpy = XtDisplay(override);
-    
+
     if (dpy == 0)
       errx (1, "Error: Can't open display");
 
     Width = DisplayWidth(dpy, DefaultScreen(dpy)) + 2;
     Height = DisplayHeight(dpy, DefaultScreen(dpy)) + 2;
-    
+
     for(i = 0; i < ScreenCount(dpy); i++){
 	Widget shell, core;
 
@@ -1077,22 +1077,22 @@ main (int argc, char **argv)
 
 	if(i == DefaultScreen(dpy))
 	    continue;
-      
-	shell = XtVaAppCreateShell(NULL,NULL, applicationShellWidgetClass, dpy, 
-				   XtNscreen, ScreenOfDisplay(dpy, i), 
-				   XtNoverrideRedirect, True, 
-				   XtNx, -1, 
+
+	shell = XtVaAppCreateShell(NULL,NULL, applicationShellWidgetClass, dpy,
+				   XtNscreen, ScreenOfDisplay(dpy, i),
+				   XtNoverrideRedirect, True,
+				   XtNx, -1,
 				   XtNy, -1,
 				   NULL);
-      
-	XtVaGetApplicationResources(shell, (XtPointer)&res, 
+
+	XtVaGetApplicationResources(shell, (XtPointer)&res,
 				    Res, XtNumber(Res),
 				    NULL);
 
 	core = XtVaCreateManagedWidget("_foo", widgetClass, shell,
 				       XtNwidth, DisplayWidth(dpy, i),
 				       XtNheight, DisplayHeight(dpy, i),
-				       XtNbackground, res.bg, 
+				       XtNbackground, res.bg,
 				       NULL);
 	XtRealizeWidget(shell);
     }
@@ -1100,7 +1100,7 @@ main (int argc, char **argv)
     widget = XtVaCreateManagedWidget("_foo", widgetClass, override,
 				     XtNwidth,	Width,
 				     XtNheight,	Height,
-				     XtNbackground, Black, 
+				     XtNbackground, Black,
 				     NULL);
 
     init_words(--argc, ++argv);
@@ -1140,8 +1140,8 @@ main (int argc, char **argv)
 
     XtRealizeWidget(override);
     if((i = XGrabPointer(dpy, XtWindow(widget), True, 0, GrabModeAsync,
-			 GrabModeAsync, XtWindow(widget), 
-			 None, CurrentTime)) != 0) 
+			 GrabModeAsync, XtWindow(widget),
+			 None, CurrentTime)) != 0)
 	errx(1, "Failed to grab pointer (%d)", i);
 	
     if((i = XGrabKeyboard(dpy, XtWindow(widget), True, GrabModeAsync,

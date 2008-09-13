@@ -1,34 +1,34 @@
 /*
  * Copyright (c) 1997-2005 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * 3. Neither the name of the Institute nor the names of its contributors 
- *    may be used to endorse or promote products derived from this software 
- *    without specific prior written permission. 
+ * 3. Neither the name of the Institute nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
- * SUCH DAMAGE. 
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 #include "kdc_locl.h"
@@ -68,7 +68,7 @@ static int num_ports;
  */
 
 static void
-add_port(krb5_context context, 
+add_port(krb5_context context,
 	 int family, int port, const char *protocol)
 {
     int type;
@@ -101,7 +101,7 @@ add_port(krb5_context context,
  */
 
 static void
-add_port_service(krb5_context context, 
+add_port_service(krb5_context context,
 		 int family, const char *service, int port,
 		 const char *protocol)
 {
@@ -115,7 +115,7 @@ add_port_service(krb5_context context,
  */
 
 static void
-add_port_string (krb5_context context, 
+add_port_string (krb5_context context,
 		 int family, const char *str, const char *protocol)
 {
     struct servent *sp;
@@ -139,7 +139,7 @@ add_port_string (krb5_context context,
  */
 
 static void
-add_standard_ports (krb5_context context, 		 
+add_standard_ports (krb5_context context, 		
 		    krb5_kdc_configuration *config,
 		    int family)
 {
@@ -173,7 +173,7 @@ add_standard_ports (krb5_context context,
  */
 
 static void
-parse_ports(krb5_context context, 		 
+parse_ports(krb5_context context, 		
 	    krb5_kdc_configuration *config,
 	    const char *str)
 {
@@ -205,7 +205,7 @@ parse_ports(krb5_context context,
 		add_port_string(context, AF_INET, p, "tcp");
 	    }
 	}
-	    
+	
 	p = strtok_r(NULL, " \t", &pos);
     }
     free (str_copy);
@@ -254,8 +254,8 @@ reinit_descrs (struct descr *d, int n)
  * Create the socket (family, type, port) in `d'
  */
 
-static void 
-init_socket(krb5_context context, 
+static void
+init_socket(krb5_context context,
 	    krb5_kdc_configuration *config,
 	    struct descr *d, krb5_address *a, int family, int type, int port)
 {
@@ -320,7 +320,7 @@ init_socket(krb5_context context,
  */
 
 static int
-init_sockets(krb5_context context, 
+init_sockets(krb5_context context,
 	     krb5_kdc_configuration *config,
 	     struct descr **desc)
 {
@@ -356,7 +356,7 @@ init_sockets(krb5_context context,
 
 		kdc_log(context, config, 5, "listening on %s port %u/%s",
 			a_str,
-			ntohs(ports[i].port), 
+			ntohs(ports[i].port),
 			(ports[i].type == SOCK_STREAM) ? "tcp" : "udp");
 		/* XXX */
 		num++;
@@ -388,7 +388,7 @@ descr_type(struct descr *d)
 }
 
 static void
-addr_to_string(krb5_context context, 		 
+addr_to_string(krb5_context context, 		
 	       struct sockaddr *addr, size_t addr_len, char *str, size_t len)
 {
     krb5_address a;
@@ -407,7 +407,7 @@ addr_to_string(krb5_context context,
  */
 
 static void
-send_reply(krb5_context context, 
+send_reply(krb5_context context,
 	   krb5_kdc_configuration *config,
 	   krb5_boolean prependlength,
 	   struct descr *d,
@@ -423,13 +423,13 @@ send_reply(krb5_context context,
 	l[2] = (reply->length >> 8) & 0xff;
 	l[3] = reply->length & 0xff;
 	if(sendto(d->s, l, sizeof(l), 0, d->sa, d->sock_len) < 0) {
-	    kdc_log (context, config, 
+	    kdc_log (context, config,
 		     0, "sendto(%s): %s", d->addr_string, strerror(errno));
 	    return;
 	}
     }
     if(sendto(d->s, reply->data, reply->length, 0, d->sa, d->sock_len) < 0) {
-	kdc_log (context, config, 
+	kdc_log (context, config,
 		 0, "sendto(%s): %s", d->addr_string, strerror(errno));
 	return;
     }
@@ -440,7 +440,7 @@ send_reply(krb5_context context,
  */
 
 static void
-do_request(krb5_context context, 
+do_request(krb5_context context,
 	   krb5_kdc_configuration *config,
 	   void *buf, size_t len, krb5_boolean prependlength,
 	   struct descr *d)
@@ -452,7 +452,7 @@ do_request(krb5_context context,
     krb5_kdc_update_time(NULL);
 
     krb5_data_zero(&reply);
-    ret = krb5_kdc_process_request(context, config, 
+    ret = krb5_kdc_process_request(context, config,
 				   buf, len, &reply, &prependlength,
 				   d->addr_string, d->sa,
 				   datagram_reply);
@@ -463,8 +463,8 @@ do_request(krb5_context context,
 	krb5_data_free(&reply);
     }
     if(ret)
-	kdc_log(context, config, 0, 
-		"Failed processing %lu byte request from %s", 
+	kdc_log(context, config, 0,
+		"Failed processing %lu byte request from %s",
 		(unsigned long)len, d->addr_string);
 }
 
@@ -473,7 +473,7 @@ do_request(krb5_context context,
  */
 
 static void
-handle_udp(krb5_context context, 
+handle_udp(krb5_context context,
 	   krb5_kdc_configuration *config,
 	   struct descr *d)
 {
@@ -536,7 +536,7 @@ de_http(char *buf)
  */
 
 static void
-add_new_tcp (krb5_context context, 
+add_new_tcp (krb5_context context,
 	     krb5_kdc_configuration *config,
 	     struct descr *d, int parent, int child)
 {
@@ -551,7 +551,7 @@ add_new_tcp (krb5_context context,
 	krb5_warn(context, errno, "accept");
 	return;
     }
-	    
+	
     if (s >= FD_SETSIZE) {
 	krb5_warnx(context, "socket FD too large");
 	close (s);
@@ -561,7 +561,7 @@ add_new_tcp (krb5_context context,
     d[child].s = s;
     d[child].timeout = time(NULL) + TCP_TIMEOUT;
     d[child].type = SOCK_STREAM;
-    addr_to_string (context, 
+    addr_to_string (context,
 		    d[child].sa, d[child].sock_len,
 		    d[child].addr_string, sizeof(d[child].addr_string));
 }
@@ -572,13 +572,13 @@ add_new_tcp (krb5_context context,
  */
 
 static int
-grow_descr (krb5_context context, 
+grow_descr (krb5_context context,
 	    krb5_kdc_configuration *config,
 	    struct descr *d, size_t n)
 {
     if (d->size - d->len < n) {
 	unsigned char *tmp;
-	size_t grow; 
+	size_t grow;
 
 	grow = max(1024, d->len + n);
 	if (d->size + grow > max_request) {
@@ -606,7 +606,7 @@ grow_descr (krb5_context context,
  */
 
 static int
-handle_vanilla_tcp (krb5_context context, 
+handle_vanilla_tcp (krb5_context context,
 		    krb5_kdc_configuration *config,
 		    struct descr *d)
 {
@@ -634,7 +634,7 @@ handle_vanilla_tcp (krb5_context context,
  */
 
 static int
-handle_http_tcp (krb5_context context, 
+handle_http_tcp (krb5_context context,
 		 krb5_kdc_configuration *config,
 		 struct descr *d)
 {
@@ -685,7 +685,7 @@ handle_http_tcp (krb5_context context,
     }
     len = base64_decode(t, data);
     if(len <= 0){
-	const char *msg = 
+	const char *msg =
 	    " 404 Not found\r\n"
 	    "Server: Heimdal/" VERSION "\r\n"
 	    "Cache-Control: no-cache\r\n"
@@ -700,19 +700,19 @@ handle_http_tcp (krb5_context context,
 	kdc_log(context, config, 5, "HTTP request: %s", t);
 	free(data);
 	if (write(d->s, proto, strlen(proto)) < 0) {
-	    kdc_log(context, config, 0, "HTTP write failed: %s: %s", 
+	    kdc_log(context, config, 0, "HTTP write failed: %s: %s",
 		    d->addr_string, strerror(errno));
 	    return -1;
 	}
 	if (write(d->s, msg, strlen(msg)) < 0) {
-	    kdc_log(context, config, 0, "HTTP write failed: %s: %s", 
+	    kdc_log(context, config, 0, "HTTP write failed: %s: %s",
 		    d->addr_string, strerror(errno));
 	    return -1;
 	}
 	return -1;
     }
     {
-	const char *msg = 
+	const char *msg =
 	    " 200 OK\r\n"
 	    "Server: Heimdal/" VERSION "\r\n"
 	    "Cache-Control: no-cache\r\n"
@@ -720,12 +720,12 @@ handle_http_tcp (krb5_context context,
 	    "Content-type: application/octet-stream\r\n"
 	    "Content-transfer-encoding: binary\r\n\r\n";
 	if (write(d->s, proto, strlen(proto)) < 0) {
-	    kdc_log(context, config, 0, "HTTP write failed: %s: %s", 
+	    kdc_log(context, config, 0, "HTTP write failed: %s: %s",
 		    d->addr_string, strerror(errno));
 	    return -1;
 	}
 	if (write(d->s, msg, strlen(msg)) < 0) {
-	    kdc_log(context, config, 0, "HTTP write failed: %s: %s", 
+	    kdc_log(context, config, 0, "HTTP write failed: %s: %s",
 		    d->addr_string, strerror(errno));
 	    return -1;
 	}
@@ -741,7 +741,7 @@ handle_http_tcp (krb5_context context,
  */
 
 static void
-handle_tcp(krb5_context context, 
+handle_tcp(krb5_context context,
 	   krb5_kdc_configuration *config,
 	   struct descr *d, int idx, int min_free)
 {
@@ -757,13 +757,13 @@ handle_tcp(krb5_context context,
     n = recvfrom(d[idx].s, buf, sizeof(buf), 0, NULL, NULL);
     if(n < 0){
 	krb5_warn(context, errno, "recvfrom failed from %s to %s/%d",
-		  d[idx].addr_string, descr_type(d + idx), 
+		  d[idx].addr_string, descr_type(d + idx),
 		  ntohs(d[idx].port));
 	return;
     } else if (n == 0) {
 	krb5_warnx(context, "connection closed before end of data after %lu "
-		   "bytes from %s to %s/%d", (unsigned long)d[idx].len, 
-		   d[idx].addr_string, descr_type(d + idx), 
+		   "bytes from %s to %s/%d", (unsigned long)d[idx].len,
+		   d[idx].addr_string, descr_type(d + idx),
 		   ntohs(d[idx].port));
 	clear_descr (d + idx);
 	return;
@@ -776,16 +776,16 @@ handle_tcp(krb5_context context,
 	ret = handle_vanilla_tcp (context, config, &d[idx]);
     } else if(enable_http &&
 	      d[idx].len >= 4 &&
-	      strncmp((char *)d[idx].buf, "GET ", 4) == 0 && 
+	      strncmp((char *)d[idx].buf, "GET ", 4) == 0 &&
 	      strncmp((char *)d[idx].buf + d[idx].len - 4,
 		      "\r\n\r\n", 4) == 0) {
 	ret = handle_http_tcp (context, config, &d[idx]);
 	if (ret < 0)
 	    clear_descr (d + idx);
     } else if (d[idx].len > 4) {
-	kdc_log (context, config, 
+	kdc_log (context, config,
 		 0, "TCP data of strange type from %s to %s/%d",
-		 d[idx].addr_string, descr_type(d + idx), 
+		 d[idx].addr_string, descr_type(d + idx),
 		 ntohs(d[idx].port));
 	if (d[idx].buf[0] & 0x80) {
 	    krb5_data reply;
@@ -812,14 +812,14 @@ handle_tcp(krb5_context context,
     if (ret < 0)
 	return;
     else if (ret == 1) {
-	do_request(context, config, 
+	do_request(context, config,
 		   d[idx].buf, d[idx].len, TRUE, &d[idx]);
 	clear_descr(d + idx);
     }
 }
 
 void
-loop(krb5_context context, 
+loop(krb5_context context,
      krb5_kdc_configuration *config)
 {
     struct descr *d;
@@ -839,9 +839,9 @@ loop(krb5_context context,
 	FD_ZERO(&fds);
 	for(i = 0; i < ndescr; i++) {
 	    if(d[i].s >= 0){
-		if(d[i].type == SOCK_STREAM && 
+		if(d[i].type == SOCK_STREAM &&
 		   d[i].timeout && d[i].timeout < time(NULL)) {
-		    kdc_log(context, config, 1, 
+		    kdc_log(context, config, 1,
 			    "TCP-connection from %s expired after %lu bytes",
 			    d[i].addr_string, (unsigned long)d[i].len);
 		    clear_descr(&d[i]);
@@ -870,7 +870,7 @@ loop(krb5_context context,
 		ndescr += 4;
 	    }
 	}
-    
+
 	tmout.tv_sec = TCP_TIMEOUT;
 	tmout.tv_usec = 0;
 	switch(select(max_fd + 1, &fds, 0, 0, &tmout)){

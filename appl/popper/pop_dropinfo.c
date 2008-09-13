@@ -55,10 +55,10 @@ parse_header(MsgInfoList *mp, char *buffer)
     if (strncasecmp("Message-Id:",buffer, 11) == 0) {
 	if (mp->msg_id == NULL)
 	    mp->msg_id = find_value_after_colon(buffer);
-    } 
+    }
 #ifdef UIDL
     else if (strncasecmp(buffer, "X-UIDL:", 7) == 0) {
-	/* Courtesy to Qualcomm, there really is no such 
+	/* Courtesy to Qualcomm, there really is no such
 	   thing as X-UIDL */
 	mp->msg_id = find_value_after_colon(buffer);
     }
@@ -105,7 +105,7 @@ add_missing_headers(POP *p, MsgInfoList *mp)
                             p->user);
 	}
     }
-#endif	    
+#endif	
 #ifdef XOVER
     if (mp->subject == NULL)
 	mp->subject = "<none>";
@@ -117,8 +117,8 @@ add_missing_headers(POP *p, MsgInfoList *mp)
     return POP_SUCCESS;
 }
 
-/* 
- *  dropinfo:   Extract information about the POP maildrop and store 
+/*
+ *  dropinfo:   Extract information about the POP maildrop and store
  *  it for use by the other POP routines.
  */
 
@@ -126,14 +126,14 @@ int
 pop_dropinfo(POP *p)
 {
     char                    buffer[BUFSIZ];         /*  Read buffer */
-    MsgInfoList         *   mp;                     /*  Pointer to message 
+    MsgInfoList         *   mp;                     /*  Pointer to message
                                                         info list */
-    int			    msg_num;                /*  Current message 
+    int			    msg_num;                /*  Current message
                                                         counter */
     int                     nchar;                  /*  Bytes written/read */
     int blank_line = 1; /* previous line was blank */
     int in_header = 0; /* if we are in a header block */
-    
+
     /*  Initialize maildrop status variables in the POP parameter block */
     p->msg_count = 0;
     p->msgs_deleted = 0;
@@ -153,7 +153,7 @@ pop_dropinfo(POP *p)
 
     rewind (p->drop);
 
-    /*  Scan the file, loading the message information list with 
+    /*  Scan the file, loading the message information list with
         information about each message */
 
     for (msg_num = p->drop_size = 0, mp = p->mlp - 1;

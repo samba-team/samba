@@ -195,7 +195,7 @@ change_pw(krb5_context context,
 				     &options);
     if (ret) {
 	kcm_log(0, "Failed to acquire password change credentials "
-		"for principal %s: %s", 
+		"for principal %s: %s",
 		cpn, krb5_get_err_text(context, ret));
 	goto out;
     }
@@ -364,7 +364,7 @@ update_keytab_entry(krb5_context context,
     if (ret) {
 	kcm_log(0, "String to key conversion failed for principal %s "
 		"and etype %d: %s",
-		cpn, etype, krb5_get_err_text(context, ret)); 
+		cpn, etype, krb5_get_err_text(context, ret));
 	return ret;
     }
 
@@ -397,7 +397,7 @@ update_keytab_entry(krb5_context context,
 
     krb5_kt_free_entry(context, &entry);
 
-    return ret; 
+    return ret;
 }
 
 static krb5_error_code

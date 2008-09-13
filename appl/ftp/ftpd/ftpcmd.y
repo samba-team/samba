@@ -754,7 +754,7 @@ host_port
 
 			sin4->sin_family = AF_INET;
 			sin4->sin_port = htons($9 * 256 + $11);
-			sin4->sin_addr.s_addr = 
+			sin4->sin_addr.s_addr =
 			    htonl(($1 << 24) | ($3 << 16) | ($5 << 8) | $7);
 		}
 	;

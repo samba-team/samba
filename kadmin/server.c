@@ -1,34 +1,34 @@
 /*
  * Copyright (c) 1997 - 2005 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * 3. Neither the name of the Institute nor the names of its contributors 
- *    may be used to endorse or promote products derived from this software 
- *    without specific prior written permission. 
+ * 3. Neither the name of the Institute nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
- * SUCH DAMAGE. 
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 #include "kadmin_locl.h"
@@ -53,10 +53,10 @@ kadmind_dispatch(void *kadm_handle, krb5_boolean initial,
     char **princs;
     int n_princs;
     krb5_storage *sp;
-    
-    krb5_unparse_name_fixed(context->context, context->caller, 
+
+    krb5_unparse_name_fixed(context->context, context->caller,
 			    client, sizeof(client));
-    
+
     sp = krb5_storage_from_data(in);
 
     krb5_ret_int32(sp, &cmd);
@@ -123,7 +123,7 @@ kadmind_dispatch(void *kadm_handle, krb5_boolean initial,
 	    kadm5_free_principal_ent(context->context, &ent);
 	    goto fail;
 	}
-	krb5_unparse_name_fixed(context->context, ent.principal, 
+	krb5_unparse_name_fixed(context->context, ent.principal,
 				name, sizeof(name));
 	krb5_warnx(context->context, "%s: %s %s", client, op, name);
 	ret = _kadm5_acl_check_permission(context, KADM5_PRIV_ADD,
@@ -134,7 +134,7 @@ kadmind_dispatch(void *kadm_handle, krb5_boolean initial,
 	    free(password);
 	    goto fail;
 	}
-	ret = kadm5_create_principal(kadm_handle, &ent, 
+	ret = kadm5_create_principal(kadm_handle, &ent,
 				     mask, password);
 	kadm5_free_principal_ent(kadm_handle, &ent);
 	memset(password, 0, strlen(password));
@@ -154,7 +154,7 @@ kadmind_dispatch(void *kadm_handle, krb5_boolean initial,
 	    kadm5_free_principal_ent(context, &ent);
 	    goto fail;
 	}
-	krb5_unparse_name_fixed(context->context, ent.principal, 
+	krb5_unparse_name_fixed(context->context, ent.principal,
 				name, sizeof(name));
 	krb5_warnx(context->context, "%s: %s %s", client, op, name);
 	ret = _kadm5_acl_check_permission(context, KADM5_PRIV_MODIFY,
@@ -182,12 +182,12 @@ kadmind_dispatch(void *kadm_handle, krb5_boolean initial,
 	}
 	krb5_unparse_name_fixed(context->context, princ, name, sizeof(name));
 	krb5_unparse_name_fixed(context->context, princ2, name2, sizeof(name2));
-	krb5_warnx(context->context, "%s: %s %s -> %s", 
+	krb5_warnx(context->context, "%s: %s %s -> %s",
 		   client, op, name, name2);
-	ret = _kadm5_acl_check_permission(context, 
+	ret = _kadm5_acl_check_permission(context,
 					  KADM5_PRIV_ADD,
 					  princ2)
-	    || _kadm5_acl_check_permission(context, 
+	    || _kadm5_acl_check_permission(context,
 					   KADM5_PRIV_DELETE,
 					   princ);
 	if(ret){
@@ -354,7 +354,7 @@ kadmind_dispatch(void *kadm_handle, krb5_boolean initial,
 	    krb5_free_principal(context->context, princ);
 	    goto fail;
 	}
-	ret = kadm5_randkey_principal(kadm_handle, princ, 
+	ret = kadm5_randkey_principal(kadm_handle, princ,
 				      &new_keys, &n_keys);
 	krb5_free_principal(context->context, princ);
 	krb5_storage_free(sp);
@@ -498,9 +498,9 @@ handle_v5(krb5_context context,
     if(memcmp(version, KRB5_SENDAUTH_VERSION, len) != 0)
 	krb5_errx(context, 1, "bad sendauth version %.8s", version);
 	
-    ret = krb5_recvauth_match_version(context, &ac, &fd, 
+    ret = krb5_recvauth_match_version(context, &ac, &fd,
 				      match_appl_version, &kadm_version,
-				      NULL, KRB5_RECVAUTH_IGNORE_VERSION, 
+				      NULL, KRB5_RECVAUTH_IGNORE_VERSION,
 				      keytab, &ticket);
     if(ret == KRB5_KT_NOTFOUND)
 	krb5_errx(context, 1, "krb5_recvauth: key not found");
@@ -533,12 +533,12 @@ handle_v5(krb5_context context,
     if (ret)
 	krb5_err (context, 1, ret, "krb5_unparse_name");
     krb5_free_ticket (context, ticket);
-    ret = kadm5_init_with_password_ctx(context, 
-				       client, 
+    ret = kadm5_init_with_password_ctx(context,
+				       client,
 				       NULL,
 				       KADM5_ADMIN_SERVICE,
-				       &realm_params, 
-				       0, 0, 
+				       &realm_params,
+				       0, 0,
 				       &kadm_handle);
     if(ret)
 	krb5_err (context, 1, ret, "kadm5_init_with_password_ctx");
@@ -548,7 +548,7 @@ handle_v5(krb5_context context,
 krb5_error_code
 kadmind_loop(krb5_context context,
 	     krb5_auth_context ac,
-	     krb5_keytab keytab, 
+	     krb5_keytab keytab,
 	     int fd)
 {
     unsigned char tmp[4];
@@ -563,9 +563,9 @@ kadmind_loop(krb5_context context,
     _krb5_get_int(tmp, &len, 4);
     /* this v4 test could probably also go away */
     if(len > 0xffff && (len & 0xffff) == ('K' << 8) + 'A') {
-	unsigned char v4reply[] = { 
-	    0x00, 0x0c, 
-	    'K', 'Y', 'O', 'U', 'L', 'O', 'S', 'E', 
+	unsigned char v4reply[] = {
+	    0x00, 0x0c,
+	    'K', 'Y', 'O', 'U', 'L', 'O', 'S', 'E',
 	    0x95, 0xb7, 0xa7, 0x08 /* KADM_BAD_VER */
 	};
 	krb5_net_write(context, &fd, v4reply, sizeof(v4reply));

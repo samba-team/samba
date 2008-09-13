@@ -2,22 +2,22 @@
  * Copyright (c) 2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the Institute nor the names of its contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -73,7 +73,7 @@ ecb_test(char key[8], char in[8], char out[8])
 static void
 ebc3_test(char key1[8], char key2[8], char key3[8], char in[8], char out[8])
 {
-    unsigned char k1[8], k2[8], k3[8], 
+    unsigned char k1[8], k2[8], k3[8],
 	indata[8], outdata[8], outdata2[8], ansdata[8];
     DES_key_schedule s1, s2, s3;
 
@@ -99,7 +99,7 @@ ebc3_test(char key1[8], char key2[8], char key3[8], char in[8], char out[8])
 static void
 cbc_test(char key1[8], char iv[8], char in[24], char out[24])
 {
-    unsigned char k1[8], 
+    unsigned char k1[8],
 	indata[24], outdata[24], outdata2[24], ansdata[24];
     DES_key_schedule s1;
     DES_cblock ivdata;
@@ -121,7 +121,7 @@ cbc_test(char key1[8], char iv[8], char in[24], char out[24])
 static void
 cfb64_test(char key1[8], char iv[8], char in[23], char out[23])
 {
-    unsigned char k1[8], 
+    unsigned char k1[8],
 	indata[23], outdata[23], outdata2[23], ansdata[23];
     DES_key_schedule s1;
     DES_cblock ivdata;
@@ -145,7 +145,7 @@ cfb64_test(char key1[8], char iv[8], char in[23], char out[23])
 }
 
 static void
-cbc3_test(char key1[8], char key2[8], char key3[8], 
+cbc3_test(char key1[8], char key2[8], char key3[8],
 	  char iv[8], char in[24], char out[24])
 {
     unsigned char k1[8], k2[8], k3[8],
@@ -181,7 +181,7 @@ cbc3_test(char key1[8], char key2[8], char key3[8],
 static void
 pcbc_test(char key1[8], char iv[8], char in[24], char out[24])
 {
-    unsigned char k1[8], 
+    unsigned char k1[8],
 	indata[24], outdata[24], outdata2[24], ansdata[24];
     DES_key_schedule s1;
     DES_cblock ivdata;
@@ -201,7 +201,7 @@ pcbc_test(char key1[8], char iv[8], char in[24], char out[24])
 }
 
 static void
-cbc_cksum(char key1[8], char iv[8], char *in, size_t len, 
+cbc_cksum(char key1[8], char iv[8], char *in, size_t len,
 	  uint32_t ret, char out[8])
 {
     unsigned char k1[8], indata[24], ansdata[8];

@@ -1,34 +1,34 @@
 /*
  * Copyright (c) 1997 - 2007 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * 3. Neither the name of the Institute nor the names of its contributors 
- *    may be used to endorse or promote products derived from this software 
- *    without specific prior written permission. 
+ * 3. Neither the name of the Institute nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
- * SUCH DAMAGE. 
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 #include "hdb_locl.h"
@@ -75,10 +75,10 @@ hdb_next_enctype2key(krb5_context context,
 		     Key **key)
 {
     Key *k;
-    
+
     for (k = *key ? (*key) + 1 : e->keys.val;
-	 k < e->keys.val + e->keys.len; 
-	 k++) 
+	 k < e->keys.val + e->keys.len;
+	 k++)
     {
 	if(k->key.keytype == enctype){
 	    *key = k;
@@ -86,15 +86,15 @@ hdb_next_enctype2key(krb5_context context,
 	}
     }
     krb5_set_error_message(context, KRB5_PROG_ETYPE_NOSUPP,
-			   "No next enctype %d for hdb-entry", 
+			   "No next enctype %d for hdb-entry",
 			  (int)enctype);
     return KRB5_PROG_ETYPE_NOSUPP; /* XXX */
 }
 
 krb5_error_code
-hdb_enctype2key(krb5_context context, 
-		hdb_entry *e, 
-		krb5_enctype enctype, 
+hdb_enctype2key(krb5_context context,
+		hdb_entry *e,
+		krb5_enctype enctype,
 		Key **key)
 {
     *key = NULL;
@@ -104,7 +104,7 @@ hdb_enctype2key(krb5_context context,
 void
 hdb_free_key(Key *key)
 {
-    memset(key->key.keyvalue.data, 
+    memset(key->key.keyvalue.data,
 	   0,
 	   key->key.keyvalue.length);
     free_Key(key);
@@ -216,11 +216,11 @@ hdb_init_db(krb5_context context, HDB *db)
     krb5_data tag;
     krb5_data version;
     char ver[32];
-    
+
     ret = hdb_check_db_format(context, db);
     if(ret != HDB_ERR_NOENTRY)
 	return ret;
-    
+
     ret = db->hdb_lock(context, db, HDB_WLOCK);
     if (ret)
 	return ret;
@@ -249,7 +249,7 @@ hdb_init_db(krb5_context context, HDB *db)
 
 static const struct hdb_method *
 find_dynamic_method (krb5_context context,
-		     const char *filename, 
+		     const char *filename,
 		     const char **rest)
 {
     static struct hdb_method method;
@@ -258,7 +258,7 @@ find_dynamic_method (krb5_context context,
     const char *p;
     void *dl;
     size_t len;
-    
+
     p = strchr(filename, ':');
 
     /* if no prefix, don't know what module to load, just ignore it */
@@ -267,11 +267,11 @@ find_dynamic_method (krb5_context context,
 
     len = p - filename;
     *rest = filename + len + 1;
-    
+
     prefix = strndup(filename, len);
     if (prefix == NULL)
 	krb5_errx(context, 1, "out of memory");
-    
+
     if (asprintf(&path, LIBDIR "/hdb_%s.so", prefix) == -1)
 	krb5_errx(context, 1, "out of memory");
 
@@ -290,13 +290,13 @@ find_dynamic_method (krb5_context context,
 	free(path);
 	return NULL;
     }
-    
+
     if (asprintf(&symbol, "hdb_%s_interface", prefix) == -1)
 	krb5_errx(context, 1, "out of memory");
 	
     mso = dlsym(dl, symbol);
     if (mso == NULL) {
-	krb5_warnx(context, "error finding symbol %s in %s: %s\n", 
+	krb5_warnx(context, "error finding symbol %s in %s: %s\n",
 		   symbol, path, dlerror());
 	dlclose(dl);
 	free(symbol);
@@ -308,9 +308,9 @@ find_dynamic_method (krb5_context context,
     free(symbol);
 
     if (mso->version != HDB_INTERFACE_VERSION) {
-	krb5_warnx(context, 
+	krb5_warnx(context,
 		   "error wrong version in shared module %s "
-		   "version: %d should have been %d\n", 
+		   "version: %d should have been %d\n",
 		   prefix, mso->version, HDB_INTERFACE_VERSION);
 	dlclose(dl);
 	free(prefix);

@@ -1,18 +1,18 @@
 /*
  * Copyright (c) 2006 - 2007 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
  * 3. Neither the name of KTH nor the names of its contributors may be
  *    used to endorse or promote products derived from this software without
@@ -46,7 +46,7 @@ RCSID("$Id$");
 static int
 test_parse(void)
 {
-    const char *user = "foo", 
+    const char *user = "foo",
 	*domain = "mydomain",
 	*password = "digestpassword",
 	*target = "DOMAIN";
@@ -55,7 +55,7 @@ test_parse(void)
     struct ntlm_type3 type3;
     struct ntlm_buf data;
     int ret, flags;
-    
+
     memset(&type1, 0, sizeof(type1));
 
     type1.flags = NTLM_NEG_UNICODE|NTLM_NEG_TARGET|NTLM_NEG_NTLM;
@@ -187,12 +187,12 @@ test_keys(void)
 	*username = "test",
 	*password = "test1234",
 	*target = "TESTNT";
-    const unsigned char 
+    const unsigned char
 	serverchallange[8] = "\x67\x7f\x1c\x55\x7a\x5e\xe9\x6c";
     struct ntlm_buf infotarget, infotarget2, answer, key;
     unsigned char ntlmv2[16], ntlmv2_1[16];
     int ret;
-    
+
     infotarget.length = 70;
     infotarget.data =
 	"\x02\x00\x0c\x00\x54\x00\x45\x00\x53\x00\x54\x00\x4e\x00\x54\x00"
@@ -252,15 +252,15 @@ test_ntlm2_session_resp(void)
     int ret;
     struct ntlm_buf lm, ntlm;
 
-    const unsigned char lm_resp[24] = 
+    const unsigned char lm_resp[24] =
 	"\xff\xff\xff\x00\x11\x22\x33\x44"
 	"\x00\x00\x00\x00\x00\x00\x00\x00"
 	"\x00\x00\x00\x00\x00\x00\x00\x00";
-    const unsigned char ntlm2_sess_resp[24] = 
+    const unsigned char ntlm2_sess_resp[24] =
 	"\x10\xd5\x50\x83\x2d\x12\xb2\xcc"
 	"\xb7\x9d\x5a\xd1\xf4\xee\xd3\xdf"
 	"\x82\xac\xa4\xc3\x68\x1d\xd4\x55";
-    
+
     const unsigned char client_nonce[8] =
 	"\xff\xff\xff\x00\x11\x22\x33\x44";
     const unsigned char server_challange[8] =
@@ -282,7 +282,7 @@ test_ntlm2_session_resp(void)
 	errx(1, "lm_resp wrong");
     if (ntlm.length != 24 || memcmp(ntlm.data, ntlm2_sess_resp, 24) != 0)
 	errx(1, "ntlm2_sess_resp wrong");
-    
+
     free(lm.data);
     free(ntlm.data);
 
@@ -315,7 +315,7 @@ main(int argc, char **argv)
 
     if(getarg(args, sizeof(args) / sizeof(args[0]), argc, argv, &optind))
 	usage(1);
-    
+
     if (help_flag)
 	usage (0);
 

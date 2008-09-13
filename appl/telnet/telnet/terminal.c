@@ -195,7 +195,7 @@ setconnmode(force)
     newmode = getconnmode()|(force?MODE_FORCE:0);
 
     TerminalNewMode(newmode);
-    
+
 #ifdef  ENCRYPTION
     if ((newmode & (MODE_ECHO|MODE_EDIT)) == MODE_EDIT) {
 	if (my_want_state_is_will(TELOPT_ENCRYPT)

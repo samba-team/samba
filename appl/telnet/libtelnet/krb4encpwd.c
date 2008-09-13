@@ -348,7 +348,7 @@ krb4encpwd_status(ap, name, name_sz, level)
 #define	ADDC(buf, len, c)	if ((len) > 0) {*(buf)++ = (c); --(len);}
 
 	void
-krb4encpwd_printsub(unsigned char *data, size_t cnt, 
+krb4encpwd_printsub(unsigned char *data, size_t cnt,
 		    unsigned char *buf, size_t buflen)
 {
 	int i;

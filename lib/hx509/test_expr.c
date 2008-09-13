@@ -70,11 +70,11 @@ main(int argc, char **argv)
 	val = _hx509_expr_eval(context, env, expr);
 	if (foo[i].val) {
 	    if (val == 0)
-		errx(1, "_hx509_expr_eval not true when it should: %d: %s", 
+		errx(1, "_hx509_expr_eval not true when it should: %d: %s",
 		     i, foo[i].str);
 	} else {
 	    if (val)
-		errx(1, "_hx509_expr_eval true when it should not: %d: %s", 
+		errx(1, "_hx509_expr_eval true when it should not: %d: %s",
 		     i, foo[i].str);
 	}
 

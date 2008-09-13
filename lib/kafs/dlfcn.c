@@ -213,7 +213,7 @@ void *dlopen(const char *path, int mode)
 	 */
 	} else if (mp->gcc_ctor = (GccCDtorPtr)dlsym(mp, "_GLOBAL__DI")) {
 		(*mp->gcc_ctor)();
-		mp->gcc_dtor = (GccCDtorPtr)dlsym(mp, "_GLOBAL__DD"); 
+		mp->gcc_dtor = (GccCDtorPtr)dlsym(mp, "_GLOBAL__DD");
 	} else
 		errvalid = 0;
 	return mp;
@@ -273,7 +273,7 @@ void *dlsym(void *handle, const char *symbol)
 			return ep->addr;
 	errvalid++;
 	snprintf (errbuf, sizeof(errbuf),
-		  "dlsym: undefined symbol %s", symbol);		  
+		  "dlsym: undefined symbol %s", symbol);		
 	return NULL;
 }
 
