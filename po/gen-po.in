@@ -19,6 +19,7 @@ xgettext \
     --default-domain=${domain} \
     --add-comments \
     --keyword=N_ \
+    --keyword=NP_ \
     -o ${outfile}.new \
     "$@"
 
