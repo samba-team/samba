@@ -99,6 +99,7 @@ arg_printusage (struct getargs *args,
 void ROKEN_LIB_FUNCTION
 arg_printusage_i18n (struct getargs *args,
 		     size_t num_args,
+		     const char *usage,
 		     const char *progname,
 		     const char *extra_string,
 		     char *(i18n)(const char *));
