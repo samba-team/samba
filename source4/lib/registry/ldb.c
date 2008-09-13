@@ -1,7 +1,8 @@
 /*
    Unix SMB/CIFS implementation.
    Registry interface
-   Copyright (C) Jelmer Vernooij  2004-2007.
+   Copyright (C) 2004-2007, Jelmer Vernooij, jelmer@samba.org
+   Copyright (C) 2008 Matthias Dieter Wallnöfer, mwallnoefer@yahoo.de
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -318,23 +319,23 @@ static WERROR ldb_get_value_by_id(TALLOC_CTX *mem_ctx, struct hive_key *k,
 {
 	struct ldb_key_data *kd = talloc_get_type(k, struct ldb_key_data);
 
-	if (idx == 0) {
-		/* default value */
-		return ldb_get_default_value(mem_ctx, k, name, data_type, data);
-	} else {
-		/* normal value */
+	/* if default value exists, give it back */
+	if (W_ERROR_IS_OK(ldb_get_default_value(mem_ctx, k, name, data_type, data)))
+		if (idx == 0)
+			return WERR_OK;
+		else
+			--idx;
 
-		/* Do the search if necessary */
-		if (kd->values == NULL) {
-			W_ERROR_NOT_OK_RETURN(cache_values(kd));
-		}
-
-		if (idx >= kd->value_count)
-			return WERR_NO_MORE_ITEMS;
-
-		reg_ldb_unpack_value(mem_ctx, lp_iconv_convenience(global_loadparm),
-			 kd->values[idx], name, data_type, data);
+	/* Do the search if necessary */
+	if (kd->values == NULL) {
+		W_ERROR_NOT_OK_RETURN(cache_values(kd));
 	}
+
+	if (idx >= kd->value_count)
+		return WERR_NO_MORE_ITEMS;
+
+	reg_ldb_unpack_value(mem_ctx, lp_iconv_convenience(global_loadparm),
+			 kd->values[idx], name, data_type, data);
 
 	return WERR_OK;
 }
