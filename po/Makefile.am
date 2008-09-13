@@ -14,6 +14,7 @@ ceprefix=heim_com_err
 
 po: gen-po.sh
 	./gen-po.sh heimdal_krb5 $(top_srcdir)/lib/krb5/*.[chly]
+	./gen-po.sh heimdal_kuser $(top_srcdir)/kuser/*.[ch]
 	find $(top_srcdir) -name *.et | while read x; do \
 		y=$$(basename $$x); \
 		echo $$y ; \
