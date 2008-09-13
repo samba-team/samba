@@ -531,8 +531,6 @@ plugin_get_hosts(krb5_context context,
     if(ret != 0 || list == NULL)
 	return;
 
-    kd->flags |= KD_CONFIG_EXISTS;
-
     for (e = list; e != NULL; e = _krb5_plugin_get_next(e)) {
 	krb5plugin_service_locate_ftable *service;
 	void *ctx;
@@ -549,7 +547,9 @@ plugin_get_hosts(krb5_context context,
 				   N_("Locate plugin failed to lookup realm %s: %d", ""),
 				   kd->realm, ret);
 	    break;
-	}
+	} else if (ret == 0)
+	    kd->flags |= KD_CONFIG_EXISTS;
+
     }
     _krb5_plugin_free(list);
 }
