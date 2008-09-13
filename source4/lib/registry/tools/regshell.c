@@ -246,7 +246,8 @@ static WERROR cmd_mkkey(struct regshell_context *ctx, int argc, char **argv)
 	error = reg_key_add_name(ctx, ctx->current, argv[1], 0, NULL, &tmp);
 
 	if (!W_ERROR_IS_OK(error)) {
-		fprintf(stderr, "Error adding new subkey '%s'\n", argv[1]);
+		fprintf(stderr, "Error adding new subkey '%s': %s\n", argv[1],
+			win_errstr(error));
 		return error;
 	}
 

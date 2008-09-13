@@ -348,7 +348,7 @@ static WERROR rpc_add_key(TALLOC_CTX *mem_ctx,
 	chars_to_winreg_String(mem_ctx, &r.in.name, name);
 	chars_to_winreg_String(mem_ctx, &r.in.keyclass, NULL);
 	r.in.options = 0;
-	r.in.access_mask = SEC_STD_ALL;
+	r.in.access_mask = 0x02000000;
 	r.in.secdesc = NULL;
 	r.in.action_taken = NULL;
 	r.out.new_handle = &rpck->pol;
