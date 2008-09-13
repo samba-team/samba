@@ -237,6 +237,9 @@ arg_printusage_i18n (struct getargs *args,
     if (progname == NULL)
 	progname = getprogname();
 
+    if (i18n == NULL)
+	i18n = builtin_i18n;
+
     if(getenv("GETARGMANDOC")){
 	mandoc_template(args, num_args, progname, extra_string, i18n);
 	return;
