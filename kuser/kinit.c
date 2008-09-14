@@ -714,6 +714,10 @@ main (int argc, char **argv)
 
     setprogname (argv[0]);
 
+    setlocale (LC_ALL, "");
+    bindtextdomain ("heimdal_kuser", HEIMDAL_LOCALEDIR);
+    textdomain("heimdal_kuser");
+
     ret = krb5_init_context (&context);
     if (ret == KRB5_CONFIG_BADFORMAT)
 	errx (1, "krb5_init_context failed to parse configuration file");
