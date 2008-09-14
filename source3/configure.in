@@ -4860,6 +4860,7 @@ SMB_LIBRARY(tdb, 1)
 SMB_LIBRARY(netapi, 0)
 SMB_LIBRARY(smbclient, 0)
 SMB_LIBRARY(smbsharemodes, 0)
+SMB_LIBRARY(lua, 0)
 SMB_LIBRARY(addns, 0, no, [undefined API])
 
 

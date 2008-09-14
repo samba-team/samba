@@ -2111,6 +2111,82 @@ bin/libbigballofmud.@SHLIBEXT@: $(BINARY_PREREQS) $(LIBBIGBALLOFMUD_OBJ) @LIBTAL
 # it can be fixed or if they just can't be called from a static
 # library.
 
+#-------------------------------------------------------------------
+#
+# libsmblua
+#
+#-------------------------------------------------------------------
+
+LIBLUA_OBJ0 = lua-5.1.4/src/lapi.o lua-5.1.4/src/lauxlib.o \
+	lua-5.1.4/src/lbaselib.o lua-5.1.4/src/lcode.o \
+	lua-5.1.4/src/ldblib.o lua-5.1.4/src/ldebug.o lua-5.1.4/src/ldo.o \
+	lua-5.1.4/src/ldump.o lua-5.1.4/src/lfunc.o lua-5.1.4/src/lgc.o \
+	lua-5.1.4/src/linit.o lua-5.1.4/src/liolib.o lua-5.1.4/src/llex.o \
+	lua-5.1.4/src/lmathlib.o lua-5.1.4/src/lmem.o \
+	lua-5.1.4/src/loadlib.o lua-5.1.4/src/lobject.o \
+	lua-5.1.4/src/lopcodes.o lua-5.1.4/src/loslib.o \
+	lua-5.1.4/src/lparser.o lua-5.1.4/src/lstate.o \
+	lua-5.1.4/src/lstring.o lua-5.1.4/src/lstrlib.o \
+	lua-5.1.4/src/ltable.o lua-5.1.4/src/ltablib.o lua-5.1.4/src/ltm.o \
+	lua-5.1.4/src/lundump.o lua-5.1.4/src/lvm.o \
+	lua-5.1.4/src/lzio.o lua-5.1.4/src/print.o
+
+LIBLUA_OBJ = $(LIBLUA_OBJ0) @LIBTDB_STATIC@
+
+LIBLUA_SHARED_TARGET=@LIBLUA_SHARED_TARGET@
+LIBLUA_SOVER=@LIBLUA_SOVER@
+LIBLUA_SHARED_TARGET_SONAME=$(LIBLUA_SHARED_TARGET).$(LIBLUA_SOVER)
+LIBLUA_STATIC_TARGET=@LIBLUA_STATIC_TARGET@
+LIBLUA=$(LIBLUA_STATIC_TARGET) @LIBLUA_SHARED@
+LIBLUA_SYMS=$(srcdir)/exports/liblua.@SYMSEXT@
+LIBLUA_HEADERS=$(srcdir)/lua-5.1.4/src/lua.h
+
+$(LIBLUA_SHARED_TARGET_SONAME): $(BINARY_PREREQS) $(LIBLUA_OBJ) $(LIBLUA_SYMS) @LIBTALLOC_SHARED@ @LIBTDB_SHARED@
+	@echo Linking shared library $@
+	@$(SHLD_DSO) $(LIBLUA_OBJ) \
+		$(LIBS) $(LIBTALLOC_LIBS) $(LIBTDB_LIBS) \
+		$(KRB5LIBS) $(LDAP_LIBS) \
+		@SONAMEFLAG@`basename $@`
+
+$(LIBLUA_SHARED_TARGET): $(LIBLUA_SHARED_TARGET_SONAME)
+	@rm -f $@
+	@ln -s -f `basename $(LIBLUA_SHARED_TARGET_SONAME)` $@
+
+$(LIBLUA_STATIC_TARGET): $(BINARY_PREREQS) $(LIBLUA_OBJ0)
+	@echo Linking non-shared library $@
+	@-$(AR) -rc $@ $(LIBLUA_OBJ0)
+
+liblua: $(LIBLUA)
+
+cleanliblua::
+	-rm -f \
+		$(LIBLUA_SHARED_TARGET) \
+		$(LIBLUA_SHARED_TARGET_SONAME) \
+		$(LIBLUA_STATIC_TARGET)
+
+installliblua:: installdirs liblua
+	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(LIBDIR)
+	-$(INSTALLLIBCMD_SH) $(LIBLUA_SHARED_TARGET_SONAME) $(DESTDIR)$(LIBDIR)
+	@rm -f $(DESTDIR)$(LIBDIR)/`basename $(LIBLUA_SHARED_TARGET)`
+	-if test -e $(LIBLUA_SHARED_TARGET_SONAME) ; then \
+		ln -s -f `basename $(LIBLUA_SHARED_TARGET_SONAME)` \
+			$(DESTDIR)$(LIBDIR)/`basename $(LIBLUA_SHARED_TARGET)` ; \
+	fi
+	-$(INSTALLLIBCMD_A) $(LIBLUA_STATIC_TARGET) $(DESTDIR)$(LIBDIR)
+	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) ${prefix}/include
+	-$(INSTALLCMD) -m $(INSTALLPERMS_DATA) $(LIBLUA_HEADERS) $(DESTDIR)${prefix}/include
+
+uninstallliblua::
+	-rm -f $(DESTDIR)$(LIBDIR)/`basename $(LIBLUA_SHARED_TARGET)`
+	-$(UNINSTALLLIBCMD_SH) $(DESTDIR)$(LIBDIR)/`basename $(LIBLUA_SHARED_TARGET_SONAME)`
+	-$(UNINSTALLLIBCMD_A) $(DESTDIR)$(LIBDIR)/`basename $(LIBLUA_STATIC_TARGET)`
+	-rm -f $(DESTDIR)${prefix}/include/smb_share_modes.h
+
+libs:: liblua
+installlibs:: @INSTALL_LIBLUA@
+uninstalllibs:: @UNINSTALL_LIBLUA@
+cleanlibs:: cleanliblua
+shlibs test_shlibs: @LIBLUA_SHARED@
 
 
 #####################################################################
