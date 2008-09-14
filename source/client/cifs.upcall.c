@@ -32,6 +32,7 @@ create dns_resolver * * /usr/local/sbin/cifs.upcall %k
 const char *CIFSSPNEGO_VERSION = "1.2";
 static const char *prog = "cifs.upcall";
 typedef enum _secType {
+	NONE = 0,
 	KRB5,
 	MS_KRB5
 } secType_t;
@@ -57,7 +58,8 @@ const DATA_BLOB data_blob_null = { NULL, 0, NULL };
  *
  * ret: 0 - success, others - failure
 */
-int handle_krb5_mech(const char *oid, const char *principal,
+static int
+handle_krb5_mech(const char *oid, const char *principal,
 		     DATA_BLOB * secblob, DATA_BLOB * sess_key)
 {
 	int retval;
@@ -89,7 +91,8 @@ int handle_krb5_mech(const char *oid, const char *principal,
 #define DKD_HAVE_UID		32
 #define DKD_MUSTHAVE_SET (DKD_HAVE_HOSTNAME|DKD_HAVE_VERSION|DKD_HAVE_SEC)
 
-int decode_key_description(const char *desc, int *ver, secType_t * sec,
+static int
+decode_key_description(const char *desc, int *ver, secType_t * sec,
 			   char **hostname, uid_t * uid)
 {
 	int retval = 0;
@@ -152,7 +155,8 @@ int decode_key_description(const char *desc, int *ver, secType_t * sec,
 	return retval;
 }
 
-int cifs_resolver(const key_serial_t key, const char *key_descr)
+static int
+cifs_resolver(const key_serial_t key, const char *key_descr)
 {
 	int c;
 	struct addrinfo *addr;
@@ -204,7 +208,7 @@ int cifs_resolver(const key_serial_t key, const char *key_descr)
 	return 0;
 }
 
-void
+static void
 usage(void)
 {
 	syslog(LOG_WARNING, "Usage: %s [-c] [-v] key_serial", prog);
@@ -216,12 +220,12 @@ int main(const int argc, char *const argv[])
 	struct cifs_spnego_msg *keydata = NULL;
 	DATA_BLOB secblob = data_blob_null;
 	DATA_BLOB sess_key = data_blob_null;
-	secType_t sectype;
+	secType_t sectype = NONE;
 	key_serial_t key = 0;
 	size_t datalen;
 	long rc = 1;
-	uid_t uid;
-	int kernel_upcall_version;
+	uid_t uid = 0;
+	int kernel_upcall_version = 0;
 	int c, use_cifs_service_prefix = 0;
 	char *buf, *hostname = NULL;
 	const char *oid;
