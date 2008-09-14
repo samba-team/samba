@@ -1,3 +1,7 @@
+/* 
+ * WMI IDL.  
+ * See http://en.wikipedia.org/wiki/Windows_Management_Instrumentation for more information.
+ */
 #include "idl_types.h"
 
 import "dcom.idl";
