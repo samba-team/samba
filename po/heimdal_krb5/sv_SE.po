@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: Heimdal 1.2.99\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2008-09-07 12:55+0100\n"
-"PO-Revision-Date: 2008-09-07 15:53+0100\n"
+"PO-Revision-Date: 2008-09-14 11:44+0100\n"
 "Last-Translator: Love Hornquist Astrand <>\n"
 "Language-Team: Swedish\n"
 "MIME-Version: 1.0\n"
@@ -71,7 +71,7 @@ msgstr ""
 #: lib/krb5/acache.c:811
 #, c-format
 msgid "Can't find credential %s in cache"
-msgstr ""
+msgstr "Kan inte hitta biljetten %s i cachen"
 
 #: lib/krb5/acl.c:103
 #, c-format
@@ -90,28 +90,28 @@ msgstr ""
 #: lib/krb5/addr_families.c:206
 #, c-format
 msgid "IPv4 prefix too large (%ld)"
-msgstr ""
+msgstr "IPv4 prefix är för lång (%ld)"
 
 #: lib/krb5/addr_families.c:400
 #, c-format
 msgid "IPv6 prefix too large (%ld)"
-msgstr ""
+msgstr "IPv6 prefix är för lång (%ld)"
 
 #: lib/krb5/addr_families.c:406
 msgid "IPv6 addr bad length"
-msgstr ""
+msgstr "IPv6 addressen har fel längd"
 
 #: lib/krb5/addr_families.c:793 lib/krb5/addr_families.c:821
 #: lib/krb5/addr_families.c:976 lib/krb5/addr_families.c:1010
 #: lib/krb5/addr_families.c:1174 lib/krb5/addr_families.c:1183
 #, c-format
 msgid "Address family %d not supported"
-msgstr ""
+msgstr "Address familjen %d stöds inte"
 
 #: lib/krb5/addr_families.c:860
 #, c-format
 msgid "Address type %d not supported"
-msgstr ""
+msgstr "Address typen %d stöds inte"
 
 #: lib/krb5/addr_families.c:868
 #, c-format
