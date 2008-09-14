@@ -1,8 +1,7 @@
 [LIBRARY::LIBTALLOC]
-VERSION = 1.2.0
-SO_VERSION = 1
-OBJ_FILES = talloc.o
-PC_FILE = talloc.pc
-MANPAGE = talloc.3
+OUTPUT_TYPE = MERGED_OBJ
 CFLAGS = -Ilib/talloc
-PUBLIC_HEADERS = talloc.h
+
+LIBTALLOC_OBJ_FILES = lib/talloc/talloc.o
+
+MANPAGES += $(tallocdir)/talloc.3
