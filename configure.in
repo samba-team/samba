@@ -258,6 +258,7 @@ AC_CHECK_HEADERS([\
 	sys/times.h				\
 	sys/types.h				\
 	sys/un.h				\
+	locale.h				\
 	termcap.h				\
 	termio.h				\
 	termios.h				\
