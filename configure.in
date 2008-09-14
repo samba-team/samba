@@ -537,7 +537,6 @@ AC_CONFIG_FILES(Makefile 		\
 	tests/plugin/Makefile		\
 	packages/Makefile		\
 	packages/mac/Makefile		\
-	packages/debian/Makefile	\
 	doc/Makefile			\
 	tools/Makefile			\
 )
