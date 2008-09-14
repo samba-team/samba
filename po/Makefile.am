@@ -71,5 +71,5 @@ CLEANFILES = gen-po.tmp $(noinst_SCRIPTS) heimdal-pot.tar.gz
 launchpad:
 	tar czCf \
 		$(top_srcdir) \
-		$(top_builddir)/po/heimdal-pot.tar.gz
+		$(top_builddir)/po/heimdal-pot.tar.gz \
 		$$(cd $(top_srcdir) && find . -name '*.pot')
