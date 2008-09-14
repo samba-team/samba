@@ -1,9 +1,9 @@
 TALLOC_OBJ = $(tallocdir)/talloc.o 
 
-SOLIB = libtalloc.$(SHLIBEXT).$(PACKAGE_VERSION)
-SONAME = libtalloc.$(SHLIBEXT).1
+TALLOC_SOLIB = libtalloc.$(SHLIBEXT).$(PACKAGE_VERSION)
+TALLOC_SONAME = libtalloc.$(SHLIBEXT).1
 
-all:: libtalloc.a $(SOLIB) testsuite
+all:: libtalloc.a $(TALLOC_SOLIB) testsuite
 
 testsuite:: $(LIBOBJ) testsuite.o
 	$(CC) $(CFLAGS) -o testsuite testsuite.o $(LIBOBJ) $(LIBS)
@@ -16,7 +16,7 @@ install:: all
 	${INSTALLCMD} -d $(DESTDIR)$(libdir)
 	${INSTALLCMD} -d $(DESTDIR)$(libdir)/pkgconfig
 	${INSTALLCMD} -m 755 libtalloc.a $(DESTDIR)$(libdir)
-	${INSTALLCMD} -m 755 $(SOLIB) $(DESTDIR)$(libdir)
+	${INSTALLCMD} -m 755 $(TALLOC_SOLIB) $(DESTDIR)$(libdir)
 	${INSTALLCMD} -d $(DESTDIR)${includedir}
 	${INSTALLCMD} -m 644 $(srcdir)/talloc.h $(DESTDIR)$(includedir)
 	${INSTALLCMD} -m 644 talloc.pc $(DESTDIR)$(libdir)/pkgconfig
@@ -28,7 +28,7 @@ install:: all
 doc:: talloc.3 talloc.3.html
 
 clean::
-	rm -f *~ $(LIBOBJ) $(SOLIB) libtalloc.a testsuite testsuite.o *.gc?? talloc.3 talloc.3.html
+	rm -f *~ $(LIBOBJ) $(TALLOC_SOLIB) libtalloc.a testsuite testsuite.o *.gc?? talloc.3 talloc.3.html
 
 test:: testsuite
 	./testsuite
