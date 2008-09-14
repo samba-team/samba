@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: Heimdal 1.2.99\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2008-09-14 11:28+0100\n"
-"PO-Revision-Date: 2008-09-14 11:48+0100\n"
+"PO-Revision-Date: 2008-09-14 12:22+0100\n"
 "Last-Translator: Love Hörnquist Åstrand <lha@kth.se>\n"
 "Language-Team: Swedish\n"
 "MIME-Version: 1.0\n"
@@ -111,7 +111,7 @@ msgstr ""
 
 #: kuser/kinit.c:132
 msgid "encryption types to use"
-msgstr ""
+msgstr "Nyckel typ att använda"
 
 #: kuser/kinit.c:135
 msgid "file cache version to create"
@@ -119,19 +119,19 @@ msgstr ""
 
 #: kuser/kinit.c:138
 msgid "request a ticket with no addresses"
-msgstr ""
+msgstr "Efterfråga en biljett utan adresser"
 
 #: kuser/kinit.c:141
 msgid "include these extra addresses"
-msgstr ""
+msgstr "Inkludera extra addresser"
 
 #: kuser/kinit.c:144
 msgid "request an anonymous ticket"
-msgstr ""
+msgstr "Efterfråga en anonym biljett"
 
 #: kuser/kinit.c:147
 msgid "request a Windows PAC"
-msgstr ""
+msgstr "Efterfråga en Windows PAC"
 
 #: kuser/kinit.c:150
 msgid "read the password from a file"
@@ -147,7 +147,7 @@ msgstr ""
 
 #: kuser/kinit.c:159
 msgid "directory with CA certificates"
-msgstr ""
+msgstr "Katalog med CA certififikat"
 
 #: kuser/kinit.c:162
 msgid "Use RSA encrypted reply (instead of DH)"
@@ -159,11 +159,11 @@ msgstr ""
 
 #: kuser/kinit.c:168
 msgid "honor ok-as-delegate on tickets"
-msgstr ""
+msgstr "Används ok-as-delegate på biljetter"
 
 #: kuser/kinit.c:171
 msgid "only use referrals, no dns canalisation"
-msgstr ""
+msgstr "Använd bara referenser, inte DNS"
 
 #: kuser/kinit.c:174
 msgid "get windows behavior"
@@ -171,30 +171,30 @@ msgstr ""
 
 #: kuser/kinit.c:185 kuser/klist.c:583
 msgid "Usage: "
-msgstr ""
+msgstr "Användning: "
 
 #: kuser/kinit.c:401
 #, c-format
 msgid "Failed to read password from file %s"
-msgstr ""
+msgstr "Kan inte läsa lösenordet från file %s"
 
 #: kuser/kinit.c:466 kuser/kinit.c:806
 #, c-format
 msgid "unparsable time: %s"
-msgstr ""
+msgstr "kan inte tolka tiden: %s"
 
 #: kuser/kinit.c:524
 #, c-format
 msgid "%s's Password: "
-msgstr ""
+msgstr "%ss lösenord"
 
 #: kuser/kinit.c:558
 msgid "Password incorrect"
-msgstr ""
+msgstr "Felaktigt lösenord"
 
 #: kuser/kinit.c:561
 msgid "Looks like a Kerberos 4 reply"
-msgstr ""
+msgstr "Fick tillbaks ett Kerberos 4 svar"
 
 #: kuser/kinit.c:572
 #, c-format
@@ -226,15 +226,15 @@ msgstr ""
 
 #: kuser/klist.c:58
 msgid "  Issued"
-msgstr ""
+msgstr "  Utfärdad"
 
 #: kuser/klist.c:59
 msgid "  Expires"
-msgstr ""
+msgstr "  Går ut"
 
 #: kuser/klist.c:60
 msgid "Flags"
-msgstr ""
+msgstr "Flaggor"
 
 #: kuser/klist.c:61
 msgid "  Principal"
@@ -246,11 +246,11 @@ msgstr ""
 
 #: kuser/klist.c:63
 msgid "  Cache name"
-msgstr ""
+msgstr "   Cachenamn"
 
 #: kuser/klist.c:86
 msgid ">>>Expired<<<"
-msgstr ""
+msgstr ">>>Utgången<<<"
 
 #: kuser/klist.c:134
 #, c-format
@@ -264,12 +264,12 @@ msgstr ""
 
 #: kuser/klist.c:150
 msgid "Ticket etype: "
-msgstr ""
+msgstr "Biljettens nyckeltyp: "
 
 #: kuser/klist.c:155
 #, c-format
 msgid "unknown-enctype(%d)"
-msgstr ""
+msgstr "okänd nyckeltyp(%d)"
 
 #: kuser/klist.c:158
 #, c-format
@@ -299,11 +299,11 @@ msgstr ""
 #: kuser/klist.c:178
 #, c-format
 msgid "End time:   %s"
-msgstr ""
+msgstr "Sluttid:   %s"
 
 #: kuser/klist.c:181
 msgid " (expired)"
-msgstr ""
+msgstr " (utgången)"
 
 #: kuser/klist.c:184
 #, c-format
@@ -321,7 +321,7 @@ msgstr ""
 
 #: kuser/klist.c:206
 msgid "addressless"
-msgstr ""
+msgstr "utan address"
 
 #: kuser/klist.c:236
 msgid "Credentials cache"
@@ -341,7 +341,7 @@ msgstr ""
 
 #: kuser/klist.c:409 kuser/klist.c:521
 msgid ">>> Expired <<<"
-msgstr ""
+msgstr ">>> Utgången <<<"
 
 #: kuser/klist.c:414
 #, c-format
@@ -356,7 +356,7 @@ msgstr ""
 #: kuser/klist.c:455
 #, c-format
 msgid "No ticket file: %s"
-msgstr ""
+msgstr "Inte någon biljett fil: %s"
 
 #: kuser/klist.c:556
 msgid "credentials cache to list"
@@ -368,11 +368,11 @@ msgstr ""
 
 #: kuser/klist.c:561
 msgid "display AFS tokens"
-msgstr ""
+msgstr "Visa AFS biljetter"
 
 #: kuser/klist.c:563
 msgid "display v5 cred cache"
-msgstr ""
+msgstr "Visa version 5 biljetter"
 
 #: kuser/klist.c:565 kuser/klist.c:567
 msgid "verbose output"
