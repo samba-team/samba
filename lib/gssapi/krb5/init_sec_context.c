@@ -173,7 +173,8 @@ gsskrb5_get_creds(
 	krb5_context context,
 	krb5_ccache ccache,
 	gsskrb5_ctx ctx,
-	krb5_const_principal target_name,
+	const gss_name_t target_name,
+	int use_dns,
 	OM_uint32 time_req,
 	OM_uint32 * time_rec,
 	krb5_creds ** cred)
@@ -184,6 +185,16 @@ gsskrb5_get_creds(
     OM_uint32 lifetime_rec;
 
     *cred = NULL;
+
+    if (ctx->target) {
+	krb5_free_principal(context, ctx->target);
+	ctx->target = NULL;
+    }
+
+    ret = _gsskrb5_canon_name(minor_status, context, use_dns,
+			      target_name, &ctx->target);
+    if (ret)
+	return ret;
 
     memset(&this_cred, 0, sizeof(this_cred));
     this_cred.client = ctx->source;
@@ -351,7 +362,7 @@ init_auth
     krb5_data outbuf;
     krb5_data fwd_data;
     OM_uint32 lifetime_rec;
-    int use_dns = 1;
+    int allow_dns = 1;
 
     krb5_data_zero(&outbuf);
     krb5_data_zero(&fwd_data);
@@ -379,21 +390,6 @@ init_auth
 	goto failure;
     }
 
-    /* canon name if needed for client + target realm */
-    kret = krb5_cc_get_config(context, ctx->ccache, NULL,
-			      "realm-config", &outbuf);
-    if (kret == 0) {
-	/* XXX 2 is no server canon */
-	if (outbuf.length < 1 || ((((unsigned char *)outbuf.data)[0]) & 2))
-	    use_dns = 0;
-	krb5_data_free(&outbuf);
-    }
-
-    ret = _gsskrb5_canon_name(minor_status, context, use_dns,
-			      name, &ctx->target);
-    if (ret)
-	goto failure;
-
     ret = _gss_DES3_get_mic_compat(minor_status, ctx, context);
     if (ret)
 	goto failure;
@@ -413,14 +409,29 @@ init_auth
 	krb5_set_default_in_tkt_etypes(context, enctypes);
     }
 
-    ret = gsskrb5_get_creds(minor_status,
-			    context,
-			    ctx->ccache,
-			    ctx,
-			    ctx->target,
-			    time_req,
-			    time_rec,
-			    &ctx->kcred);
+    /* canon name if needed for client + target realm */
+    kret = krb5_cc_get_config(context, ctx->ccache, NULL,
+			      "realm-config", &outbuf);
+    if (kret == 0) {
+	/* XXX 2 is no server canon */
+	if (outbuf.length < 1 || ((((unsigned char *)outbuf.data)[0]) & 2))
+	    allow_dns = 0;
+	krb5_data_free(&outbuf);
+    }
+
+    /*
+     * First we try w/o dns, hope that the KDC have register alias
+     * (and referrals if cross realm) for this principal. If that
+     * fails and if we are allowed to using this realm try again with
+     * DNS canonicalizion.
+     */
+    ret = gsskrb5_get_creds(minor_status, context, ctx->ccache,
+			    ctx, name, 0, time_req, 
+			    time_rec, &ctx->kcred);
+    if (ret && allow_dns)
+	ret = gsskrb5_get_creds(minor_status, context, ctx->ccache,
+				ctx, name, 1, time_req, 
+				time_rec, &ctx->kcred);
     if (ret)
 	goto failure;
 
@@ -430,9 +441,8 @@ init_auth
 				 context,
 				 ctx->lifetime,
 				 &lifetime_rec);
-    if (ret) {
+    if (ret)
 	goto failure;
-    }
 
     if (lifetime_rec == 0) {
 	*minor_status = 0;
