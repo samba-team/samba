@@ -62,7 +62,7 @@ sub ODL2IDL
 					require Parse::Pidl::Typelist;
 
 					Parse::Pidl::Typelist::LoadIdl($podl);
-					my $pidl = ODL2IDL($podl);
+					my $pidl = ODL2IDL($podl, $basedir, $opt_incdirs);
 
 					foreach my $y (@$pidl) {
 						if ($y->{TYPE} eq "INTERFACE") {

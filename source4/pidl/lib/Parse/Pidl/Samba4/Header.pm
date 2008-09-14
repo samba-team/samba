@@ -334,10 +334,10 @@ sub HeaderFunction($)
 sub HeaderImport
 {
 	my @imports = @_;
-	foreach (@imports) {
-		s/\.idl\"$//;
-		s/^\"//;
-		pidl choose_header("librpc/gen_ndr/$_\.h", "gen_ndr/$_.h") . "\n";
+	foreach my $import (@imports) {
+		$import = unmake_str($import);
+		$import =~ s/\.idl$//;
+		pidl choose_header("librpc/gen_ndr/$import\.h", "gen_ndr/$import.h") . "\n";
 	}
 }
 

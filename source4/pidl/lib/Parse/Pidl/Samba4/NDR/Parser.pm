@@ -13,7 +13,7 @@ require Exporter;
 
 use strict;
 use Parse::Pidl::Typelist qw(hasType getType mapTypeName typeHasBody);
-use Parse::Pidl::Util qw(has_property ParseExpr ParseExprExt print_uuid);
+use Parse::Pidl::Util qw(has_property ParseExpr ParseExprExt print_uuid unmake_str);
 use Parse::Pidl::CUtil qw(get_pointer_to get_value_of get_array_element);
 use Parse::Pidl::NDR qw(GetPrevLevel GetNextLevel ContainsDeferred is_charset_array);
 use Parse::Pidl::Samba4 qw(is_intree choose_header);
@@ -2298,8 +2298,8 @@ sub HeaderImport
 	my $self = shift;
 	my @imports = @_;
 	foreach (@imports) {
-		s/\.idl\"$//;
-		s/^\"//;
+		$_ = unmake_str($_);
+		s/\.idl$//;
 		$self->pidl(choose_header("librpc/gen_ndr/ndr_$_\.h", "gen_ndr/ndr_$_.h"));
 	}
 }

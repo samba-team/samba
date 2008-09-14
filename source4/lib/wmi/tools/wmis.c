@@ -35,11 +35,7 @@
 #include "librpc/gen_ndr/com_wmi.h"
 #include "librpc/ndr/ndr_table.h"
 
-struct WBEMCLASS;
-struct WBEMOBJECT;
-enum CIMTYPE_ENUMERATION;
-
-#include "wmi/proto.h"
+#include "lib/wmi/wmi.h"
 
 struct program_args {
     char *hostname;
@@ -212,7 +208,8 @@ int main(int argc, char **argv)
 	printf("2: ReturnCode: %d\n", cnt);
 
 	printf("3: Monitoring directory C:\\wmi_test_dir_tmp. Please create/delete files in that directory to see notifications, after 4 events program quits.\n");
-        result = IWbemServices_ExecNotificationQuery(pWS, ctx, "WQL", "SELECT * FROM __InstanceOperationEvent WITHIN 1 WHERE Targetinstance ISA 'CIM_DirectoryContainsFile' and TargetInstance.GroupComponent= 'Win32_Directory.Name=\"C:\\\\\\\\wmi_test_dir_tmp\"'", WBEM_FLAG_RETURN_IMMEDIATELY | WBEM_FLAG_FORWARD_ONLY, NULL, &pEnum);
+        result = IWbemServices_ExecNotificationQuery(pWS, ctx, "WQL", 
+		"SELECT * FROM __InstanceOperationEvent WITHIN 1 WHERE Targetinstance ISA 'CIM_DirectoryContainsFile' and TargetInstance.GroupComponent= 'Win32_Directory.Name=\"C:\\\\\\\\wmi_test_dir_tmp\"'", WBEM_FLAG_RETURN_IMMEDIATELY | WBEM_FLAG_FORWARD_ONLY, NULL, &pEnum);
         WERR_CHECK("WMI query execute.");
 	for (cnt = 0; cnt < 4; ++cnt) {
 		struct WbemClassObject *co;
