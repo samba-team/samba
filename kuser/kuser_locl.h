@@ -84,6 +84,10 @@
 #include <kafs.h>
 #include "crypto-headers.h" /* for UI_UTIL_read_pw_string */
 
+#ifdef HAVE_LOCALE_H
+#include <locale.h>
+#endif
+
 #ifdef LIBINTL
 #include <libintl.h>
 #define N_(x,y) gettext(x)
