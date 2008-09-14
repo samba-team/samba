@@ -18,11 +18,11 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-%module pywmi
+%module wmi
 
 %include "typemaps.i"
+%include "libcli/util/errors.i"
 %import "stdint.i"
-%import "libcli/util/errors.i"
 %import "lib/talloc/talloc.i"
 
 %runtime %{
@@ -53,7 +53,7 @@ void push_object(PyObject **stack, PyObject *o)
 #include "librpc/rpc/dcerpc.h"
 #include "lib/com/dcom/dcom.h"
 #include "librpc/gen_ndr/com_dcom.h"
-#include "wmi/proto.h"
+#include "lib/wmi/wmi.h"
 
 
 WERROR WBEM_ConnectServer(struct com_context *ctx, const char *server, const char *nspace, const char *user, const char *password, 
@@ -326,22 +326,7 @@ WERROR IEnumWbemClassObject_SmartNext(struct IEnumWbemClassObject *d, TALLOC_CTX
 	mod_pywintypes = PyImport_ImportModule("pywintypes");
 	ComError = PyObject_GetAttrString(mod_pywintypes, "com_error");
 
-	lp_load();
-        dcerpc_init();
-        dcerpc_table_init();
-
-        dcom_proxy_IUnknown_init();
-        dcom_proxy_IWbemLevel1Login_init();
-        dcom_proxy_IWbemServices_init();
-        dcom_proxy_IEnumWbemClassObject_init();
-        dcom_proxy_IRemUnknown_init();
-        dcom_proxy_IWbemFetchSmartEnum_init();
-        dcom_proxy_IWbemWCOSmartEnum_init();
-        dcom_proxy_IWbemClassObject_init();
-
-        com_init_ctx(&com_ctx, NULL);
-        dcom_client_init(com_ctx, NULL);
-
+    wmi_init(&com_ctx, NULL);
     {
 	PyObject *pModule;
 
