@@ -9,6 +9,8 @@ autoheader $IPATHS || exit 1
 
 rm -rf autom4te.cache
 
+swig -O -Wall -python -keyword tdb.i # Ignore errors for now
+
 echo "Now run ./configure and then make."
 exit 0
 
