@@ -47,13 +47,13 @@ static char *type;
 
 static struct getargs args[] = {
     { "type",			't', arg_string, &type,
-      "type of credential cache", "type" },
+      NP_("type of credential cache", ""), "type" },
     { "cache",			'c', arg_string, &cache,
-      "name of credential cache", "cache" },
+      NP_("name of credential cache", ""), "cache" },
     { "principal",		'p', arg_string, &principal,
-      "name of principal", "principal" },
+      NP_("name of principal", ""), "principal" },
     { "version", 		0,   arg_flag, &version_flag,
-      "print version", NULL },
+      NP_("print version", ""), NULL },
     { "help",			0,   arg_flag, &help_flag, NULL, NULL}
 };
 
@@ -98,7 +98,8 @@ main (int argc, char **argv)
 	usage (1);
 
     if (cache && principal)
-	krb5_errx(context, 1, "Both --cache and --principal given, choose one");
+	krb5_errx(context, 1,
+		  N_("Both --cache and --principal given, choose one", ""));
 
     if (principal) {
 	krb5_principal p;
@@ -110,7 +111,7 @@ main (int argc, char **argv)
 	ret = krb5_cc_cache_match(context, p, type, &id);
 	if (ret)
 	    krb5_err (context, 1, ret,
-		      "Did not find principal: %s", principal);
+		      N_("Did not find principal: %s", ""), principal);
 
 	krb5_free_principal(context, p);
 
@@ -124,7 +125,7 @@ main (int argc, char **argv)
 	
 	asprintf(&str, "%s:%s", ops->prefix, cache);
 	if (str == NULL)
-	    krb5_errx(context, 1, "out of memory");
+	    krb5_errx(context, 1, N_("out of memory", ""));
 	
 	ret = krb5_cc_resolve(context, str, &id);
 	if (ret)
