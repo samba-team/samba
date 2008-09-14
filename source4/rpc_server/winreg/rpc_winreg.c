@@ -59,19 +59,19 @@ static WERROR dcesrv_winreg_openhive(struct dcesrv_call_state *dce_call,
 {
 	struct registry_context *ctx = dce_call->context->private;
 	struct dcesrv_handle *h;
-	WERROR error;
+	WERROR result;
 
 	h = dcesrv_handle_new(dce_call->context, HTYPE_REGKEY);
 
-	error = reg_get_predefined_key(ctx, hkey,
+	result = reg_get_predefined_key(ctx, hkey,
 				       (struct registry_key **)&h->data);
-	if (!W_ERROR_IS_OK(error)) {
-		return error;
+	if (!W_ERROR_IS_OK(result)) {
+		return result;
 	}
 
 	*outh = &h->wire_handle;
 
-	return error;
+	return result;
 }
 
 #define func_winreg_OpenHive(k,n) static WERROR dcesrv_winreg_Open ## k (struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct winreg_Open ## k *r) \
@@ -115,8 +115,8 @@ static WERROR dcesrv_winreg_CreateKey(struct dcesrv_call_state *dce_call,
 				      struct winreg_CreateKey *r)
 {
 	struct dcesrv_handle *h, *newh;
-	WERROR error;
 	struct security_descriptor sd;
+	WERROR result;
 
 	DCESRV_PULL_HANDLE_FAULT(h, r->in.handle, HTYPE_REGKEY);
 
@@ -142,16 +142,16 @@ static WERROR dcesrv_winreg_CreateKey(struct dcesrv_call_state *dce_call,
 			}
 		}
 		
-		error = reg_key_add_name(newh, (struct registry_key *)h->data,
+		result = reg_key_add_name(newh, (struct registry_key *)h->data,
 					 r->in.name.name, NULL, r->in.secdesc?&sd:NULL,
 					 (struct registry_key **)&newh->data);
-		if (W_ERROR_IS_OK(error)) {
+		if (W_ERROR_IS_OK(result)) {
 			r->out.new_handle = &newh->wire_handle;
 		} else {
 			talloc_free(newh);
 		}
 		
-		return error;
+		return result;
 	default:
 		return WERR_ACCESS_DENIED;
 	}
@@ -215,10 +215,11 @@ static WERROR dcesrv_winreg_EnumKey(struct dcesrv_call_state *dce_call,
 	struct dcesrv_handle *h;
 	const char *name, *classname;
 	NTTIME last_mod;
+	WERROR result;
 
 	DCESRV_PULL_HANDLE_FAULT(h, r->in.handle, HTYPE_REGKEY);
 
-	r->out.result = reg_key_get_subkey_by_index(mem_ctx,
+	result = reg_key_get_subkey_by_index(mem_ctx, 
 		(struct registry_key *)h->data, r->in.enum_index,
 		&name, &classname, &last_mod);
 
@@ -248,7 +249,7 @@ static WERROR dcesrv_winreg_EnumKey(struct dcesrv_call_state *dce_call,
 	if (r->in.last_changed_time != NULL)
 		r->out.last_changed_time = &last_mod;
 
-	return r->out.result;
+	return result;
 }
 
 
@@ -261,10 +262,10 @@ static WERROR dcesrv_winreg_EnumValue(struct dcesrv_call_state *dce_call,
 {
 	struct dcesrv_handle *h;
 	struct registry_key *key;
-	WERROR result;
 	const char *data_name;
 	uint32_t data_type;
 	DATA_BLOB data;
+	WERROR result;
 
 	DCESRV_PULL_HANDLE_FAULT(h, r->in.handle, HTYPE_REGKEY);
 
@@ -433,8 +434,8 @@ static WERROR dcesrv_winreg_QueryInfoKey(struct dcesrv_call_state *dce_call,
 {
 	struct dcesrv_handle *h;
 	struct registry_key *k;
-	WERROR result;
 	const char *classname = NULL;
+	WERROR result;
 
 	DCESRV_PULL_HANDLE_FAULT(h, r->in.handle, HTYPE_REGKEY);
 
@@ -475,9 +476,9 @@ static WERROR dcesrv_winreg_QueryValue(struct dcesrv_call_state *dce_call,
 {
 	struct dcesrv_handle *h;
 	struct registry_key *key;
-	WERROR result;
 	uint32_t value_type;
 	DATA_BLOB value_data;
+	WERROR result;
 
 	DCESRV_PULL_HANDLE_FAULT(h, r->in.handle, HTYPE_REGKEY);
 
@@ -578,8 +579,8 @@ static WERROR dcesrv_winreg_SetValue(struct dcesrv_call_state *dce_call,
 {
 	struct dcesrv_handle *h;
 	struct registry_key *key;
-	WERROR result;
 	DATA_BLOB data;
+	WERROR result;
 
 	DCESRV_PULL_HANDLE_FAULT(h, r->in.handle, HTYPE_REGKEY);
 

@@ -243,9 +243,11 @@ static WERROR cache_values(struct ldb_key_data *kd)
 			ldb_dn_get_linearized(kd->dn), ldb_errstring(c)));
 		return WERR_FOOBAR;
 	}
+
 	kd->value_count = res->count;
 	kd->values = talloc_steal(kd, res->msgs);
 	talloc_free(res);
+
 	return WERR_OK;
 }
 
@@ -322,11 +324,13 @@ static WERROR ldb_get_value_by_id(TALLOC_CTX *mem_ctx, struct hive_key *k,
 	struct ldb_key_data *kd = talloc_get_type(k, struct ldb_key_data);
 
 	/* if default value exists, give it back */
-	if (W_ERROR_IS_OK(ldb_get_default_value(mem_ctx, k, name, data_type, data)))
+	if (W_ERROR_IS_OK(ldb_get_default_value(mem_ctx, k, name, data_type,
+		data))) {
 		if (idx == 0)
 			return WERR_OK;
 		else
 			--idx;
+	}
 
 	/* Do the search if necessary */
 	if (kd->values == NULL) {
