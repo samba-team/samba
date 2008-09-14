@@ -1,0 +1,1237 @@
+/*
+  libnetapi interface definition
+*/
+
+cpp_quote("#define LIBNETAPI_LOCAL_SERVER(x) (!x || is_myname_or_ipaddr(x))")
+cpp_quote("#ifndef MAXSUBAUTHS")
+cpp_quote("#define MAXSUBAUTHS 15 /* max sub authorities in a SID */")
+cpp_quote("#endif")
+
+[
+	pointer_default(unique)
+]
+interface libnetapi
+{
+	const int ERROR_MORE_DATA = 234L;
+
+	[public] typedef [v1_enum] enum {
+		NERR_Success=0
+	} NET_API_STATUS;
+
+	[public] typedef struct {
+		uint8 sid_rev_num;
+		uint8 num_auths;
+		uint8 id_auth[6];
+		uint32 sub_auths[MAXSUBAUTHS];
+	} domsid;
+
+	/*******************************************/
+	/* NetJoinDomain                           */
+	/*******************************************/
+
+	typedef [public,bitmap32bit] bitmap {
+		NETSETUP_JOIN_DOMAIN			= 0x00000001,
+		NETSETUP_ACCT_CREATE			= 0x00000002,
+		NETSETUP_ACCT_DELETE			= 0x00000004,
+		NETSETUP_WIN9X_UPGRADE			= 0x00000010,
+		NETSETUP_DOMAIN_JOIN_IF_JOINED		= 0x00000020,
+		NETSETUP_JOIN_UNSECURE			= 0x00000040,
+		NETSETUP_MACHINE_PWD_PASSED		= 0x00000080,
+		NETSETUP_DEFER_SPN_SET			= 0x00000100,
+		NETSETUP_JOIN_DC_ACCOUNT		= 0x00000200,
+		NETSETUP_JOIN_WITH_NEW_NAME		= 0x00000400,
+		NETSETUP_INSTALL_INVOCATION		= 0x00040000,
+		NETSETUP_IGNORE_UNSUPPORTED_FLAGS	= 0x10000000
+	} NetJoinFlags;
+
+	[nopush,nopull] NET_API_STATUS NetJoinDomain(
+		[in,unique] string *server,
+		[in,ref] string *domain,
+		[in,unique] string *account_ou,
+		[in,unique] string *account,
+		[in,unique] string *password,
+		[in] NetJoinFlags join_flags
+		);
+
+	/*******************************************/
+	/* NetUnjoinDomain                         */
+	/*******************************************/
+
+	[nopush,nopull] NET_API_STATUS NetUnjoinDomain(
+		[in,unique] string *server_name,
+		[in,unique] string *account,
+		[in,unique] string *password,
+		[in] NetJoinFlags unjoin_flags
+		);
+
+	/*******************************************/
+	/* NetGetJoinInformation                   */
+	/*******************************************/
+
+	typedef enum {
+		NetSetupUnknownStatus = 0,
+		NetSetupUnjoined = 1,
+		NetSetupWorkgroupName = 2,
+		NetSetupDomainName = 3
+	} NETSETUP_JOIN_STATUS;
+
+	[nopush,nopull] NET_API_STATUS NetGetJoinInformation(
+		[in,unique] string *server_name,
+		[out] string **name_buffer,
+		[out] uint16 *name_type
+		);
+
+	/*******************************************/
+	/* NetGetJoinableOUs                       */
+	/*******************************************/
+
+	[nopush,nopull] NET_API_STATUS NetGetJoinableOUs(
+		[in,unique] string *server_name,
+		[in,ref] string *domain,
+		[in,unique] string *account,
+		[in,unique] string *password,
+		[out] uint32 *ou_count,
+		[out] string ***ous
+		);
+
+	/*******************************************/
+	/* NetRenameMachineInDomain                */
+	/*******************************************/
+
+	[nopush,nopull] NET_API_STATUS NetRenameMachineInDomain(
+		[in] string server_name,
+		[in] string new_machine_name,
+		[in] string account,
+		[in] string password,
+		[in] uint32 rename_options
+		);
+
+	/*******************************************/
+	/* NetServerGetInfo                        */
+	/*******************************************/
+
+	[public] typedef struct {
+		uint32 sv100_platform_id;
+		string sv100_name;
+	} SERVER_INFO_100;
+
+	[public] typedef struct {
+		uint32 sv101_platform_id;
+		string sv101_name;
+		uint32 sv101_version_major;
+		uint32 sv101_version_minor;
+		uint32 sv101_type;
+		string sv101_comment;
+	} SERVER_INFO_101;
+
+	[public] typedef struct {
+		uint32 sv102_platform_id;
+		string sv102_name;
+		uint32 sv102_version_major;
+		uint32 sv102_version_minor;
+		uint32 sv102_type;
+		string sv102_comment;
+		uint32 sv102_users;
+		uint32 sv102_disc;
+		boolean8 sv102_hidden;
+		uint32 sv102_announce;
+		uint32 sv102_anndelta;
+		uint32 sv102_licenses;
+		string sv102_userpath;
+	} SERVER_INFO_102;
+
+	[public] typedef struct {
+		string sv1005_comment;
+	} SERVER_INFO_1005;
+
+	[nopush,nopull] NET_API_STATUS NetServerGetInfo(
+		[in,unique] string *server_name,
+		[in] uint32 level,
+		[out] uint8 **buffer
+		);
+
+	/*******************************************/
+	/* NetServerSetInfo                        */
+	/*******************************************/
+
+	[nopush,nopull] NET_API_STATUS NetServerSetInfo(
+		[in,unique] string *server_name,
+		[in] uint32 level,
+		[in] uint8 *buffer,
+		[out] uint32 *parm_error
+		);
+
+	/*******************************************/
+	/* NetGetDCName                            */
+	/*******************************************/
+
+	[nopush,nopull] NET_API_STATUS NetGetDCName(
+		[in,unique] string *server_name,
+		[in,unique] string *domain_name,
+		[out] uint8 **buffer
+		);
+
+	/*******************************************/
+	/* NetGetAnyDCName                         */
+	/*******************************************/
+
+	[nopush,nopull] NET_API_STATUS NetGetAnyDCName(
+		[in,unique] string *server_name,
+		[in,unique] string *domain_name,
+		[out] uint8 **buffer
+		);
+
+	/*******************************************/
+	/* DsGetDcName                             */
+	/*******************************************/
+
+	[public] typedef struct {
+		string domain_controller_name;
+		string domain_controller_address;
+		uint32 domain_controller_address_type;
+		GUID domain_guid;
+		string domain_name;
+		string dns_forest_name;
+		uint32 flags;
+		string dc_site_name;
+		string client_site_name;
+	} DOMAIN_CONTROLLER_INFO;
+
+	[nopush,nopull] NET_API_STATUS DsGetDcName(
+		[in,unique] string *server_name,
+		[in,ref] string *domain_name,
+		[in,unique] GUID *domain_guid,
+		[in,unique] string *site_name,
+		[in] uint32 flags,
+		[out,ref] DOMAIN_CONTROLLER_INFO **dc_info
+		);
+
+	/*******************************************/
+	/* NetUserAdd                              */
+	/*******************************************/
+
+	[public] typedef struct {
+		string usri0_name;
+	} USER_INFO_0;
+
+	/* priv */
+	const int USER_PRIV_GUEST	= 0;
+	const int USER_PRIV_USER	= 1;
+	const int USER_PRIV_ADMIN	= 2;
+
+	[public] typedef struct {
+		string usri1_name;
+		string usri1_password;
+		uint32 usri1_password_age;
+		uint32 usri1_priv;
+		string usri1_home_dir;
+		string usri1_comment;
+		uint32 usri1_flags;
+		string usri1_script_path;
+	} USER_INFO_1;
+
+	/* auth_flags in USER_INFO_2 */
+
+	const int AF_OP_PRINT		= 0x1;
+	const int AF_OP_COMM		= 0x2;
+	const int AF_OP_SERVER		= 0x4;
+	const int AF_OP_ACCOUNTS	= 0x8;
+	const int AF_SETTABLE_BITS	= (AF_OP_PRINT | AF_OP_COMM | AF_OP_SERVER | AF_OP_ACCOUNTS);
+
+	const int USER_MAXSTORAGE_UNLIMITED = (uint32_t)-1L;
+
+	[public] typedef struct {
+		string usri2_name;
+		string usri2_password;
+		uint32 usri2_password_age;
+		uint32 usri2_priv;
+		string usri2_home_dir;
+		string usri2_comment;
+		uint32 usri2_flags;
+		string usri2_script_path;
+		uint32 usri2_auth_flags;
+		string usri2_full_name;
+		string usri2_usr_comment;
+		string usri2_parms;
+		string usri2_workstations;
+		uint32 usri2_last_logon;
+		uint32 usri2_last_logoff;
+		uint32 usri2_acct_expires;
+		uint32 usri2_max_storage;
+		uint32 usri2_units_per_week;
+		uint8 *usri2_logon_hours;
+		uint32 usri2_bad_pw_count;
+		uint32 usri2_num_logons;
+		string usri2_logon_server;
+		uint32 usri2_country_code;
+		uint32 usri2_code_page;
+	} USER_INFO_2;
+
+	[public] typedef struct {
+		string usri3_name;
+		uint32 usri3_password_age;
+		uint32 usri3_priv;
+		string usri3_home_dir;
+		string usri3_comment;
+		uint32 usri3_flags;
+		string usri3_script_path;
+		uint32 usri3_auth_flags;
+		string usri3_full_name;
+		string usri3_usr_comment;
+		string usri3_parms;
+		string usri3_workstations;
+		uint32 usri3_last_logon;
+		uint32 usri3_last_logoff;
+		uint32 usri3_acct_expires;
+		uint32 usri3_max_storage;
+		uint32 usri3_units_per_week;
+		uint8 *usri3_logon_hours;
+		uint32 usri3_bad_pw_count;
+		uint32 usri3_num_logons;
+		string usri3_logon_server;
+		uint32 usri3_country_code;
+		uint32 usri3_code_page;
+		uint32 usri3_user_id;
+		uint32 usri3_primary_group_id;
+		string usri3_profile;
+		string usri3_home_dir_drive;
+		uint32 usri3_password_expired;
+	} USER_INFO_3;
+
+	[public] typedef struct {
+		string usri4_name;
+		string usri4_password;
+		uint32 usri4_password_age;
+		uint32 usri4_priv;
+		string usri4_home_dir;
+		string usri4_comment;
+		uint32 usri4_flags;
+		string usri4_script_path;
+		uint32 usri4_auth_flags;
+		string usri4_full_name;
+		string usri4_usr_comment;
+		string usri4_parms;
+		string usri4_workstations;
+		uint32 usri4_last_logon;
+		uint32 usri4_last_logoff;
+		uint32 usri4_acct_expires;
+		uint32 usri4_max_storage;
+		uint32 usri4_units_per_week;
+		uint8 *usri4_logon_hours;
+		uint32 usri4_bad_pw_count;
+		uint32 usri4_num_logons;
+		string usri4_logon_server;
+		uint32 usri4_country_code;
+		uint32 usri4_code_page;
+		domsid *usri4_user_sid;
+		uint32 usri4_primary_group_id;
+		string usri4_profile;
+		string usri4_home_dir_drive;
+		uint32 usri4_password_expired;
+	} USER_INFO_4;
+
+	[public] typedef struct {
+		string usri10_name;
+		string usri10_comment;
+		string usri10_usr_comment;
+		string usri10_full_name;
+	} USER_INFO_10;
+
+	[public] typedef struct {
+		string usri11_name;
+		string usri11_comment;
+		string usri11_usr_comment;
+		string usri11_full_name;
+		uint32 usri11_priv;
+		uint32 usri11_auth_flags;
+		uint32 usri11_password_age;
+		string usri11_home_dir;
+		string usri11_parms;
+		uint32 usri11_last_logon;
+		uint32 usri11_last_logoff;
+		uint32 usri11_bad_pw_count;
+		uint32 usri11_num_logons;
+		string usri11_logon_server;
+		uint32 usri11_country_code;
+		string usri11_workstations;
+		uint32 usri11_max_storage;
+		uint32 usri11_units_per_week;
+		uint8 *usri11_logon_hours;
+		uint32 usri11_code_page;
+	} USER_INFO_11;
+
+	[public] typedef struct {
+		string usri20_name;
+		string usri20_full_name;
+		string usri20_comment;
+		uint32 usri20_flags;
+		uint32 usri20_user_id;
+	} USER_INFO_20;
+
+	const int ENCRYPTED_PWLEN = 16;
+
+	[public] typedef struct {
+		uint8 usri21_password[ENCRYPTED_PWLEN];
+	} USER_INFO_21;
+
+	[public] typedef struct {
+		string usri22_name;
+		uint8 usri22_password[ENCRYPTED_PWLEN];
+		uint32 usri22_password_age;
+		uint32 usri22_priv;
+		string usri22_home_dir;
+		string usri22_comment;
+		uint32 usri22_flags;
+		uint32 usri22_script_path;
+		uint32 usri22_auth_flags;
+		string usri22_full_name;
+		string usri22_usr_comment;
+		string usri22_parms;
+		string usri22_workstations;
+		uint32 usri22_last_logon;
+		uint32 usri22_last_logoff;
+		uint32 usri22_acct_expires;
+		uint32 usri22_max_storage;
+		uint32 usri22_units_per_week;
+		uint8 *usri22_logon_hours;
+		uint32 usri22_bad_pw_count;
+		uint32 usri22_num_logons;
+		string usri22_logon_server;
+		uint32 usri22_country_code;
+		uint32 usri22_code_page;
+	} USER_INFO_22;
+
+	[public] typedef struct {
+		string usri23_name;
+		string usri23_full_name;
+		string usri23_comment;
+		uint32 usri23_flags;
+		domsid *usri23_user_sid;
+	} USER_INFO_23;
+
+	[public] typedef struct {
+		string usri1003_password;
+	} USER_INFO_1003;
+
+	[public] typedef struct {
+		uint32 usri1005_priv;
+	} USER_INFO_1005;
+
+	[public] typedef struct {
+		string usri1006_home_dir;
+	} USER_INFO_1006;
+
+	[public] typedef struct {
+		string usri1007_comment;
+	} USER_INFO_1007;
+
+	[public] typedef struct {
+		uint32 usri1008_flags;
+	} USER_INFO_1008;
+
+	[public] typedef struct {
+		string usri1009_script_path;
+	} USER_INFO_1009;
+
+	[public] typedef struct {
+		uint32 usri1010_auth_flags;
+	} USER_INFO_1010;
+
+	[public] typedef struct {
+		string usri1011_full_name;
+	} USER_INFO_1011;
+
+	[public] typedef struct {
+		string usri1012_usr_comment;
+	} USER_INFO_1012;
+
+	[public] typedef struct {
+		string usri1013_parms;
+	} USER_INFO_1013;
+
+	[public] typedef struct {
+		string usri1014_workstations;
+	} USER_INFO_1014;
+
+	[public] typedef struct {
+		uint32 usri1017_acct_expires;
+	} USER_INFO_1017;
+
+	[public] typedef struct {
+		uint32 usri1018_max_storage;
+	} USER_INFO_1018;
+
+	[public] typedef struct {
+		uint32 usri1020_units_per_week;
+		uint8 *usri1020_logon_hours;
+	} USER_INFO_1020;
+
+	[public] typedef struct {
+		string usri1023_logon_server;
+	} USER_INFO_1023;
+
+	[public] typedef struct {
+		uint32 usri1024_country_code;
+	} USER_INFO_1024;
+
+	[public] typedef struct {
+		uint32 usri1025_code_page;
+	} USER_INFO_1025;
+
+	[public] typedef struct {
+		uint32 usri1051_primary_group_id;
+	} USER_INFO_1051;
+
+	[public] typedef struct {
+		string usri1052_profile;
+	} USER_INFO_1052;
+
+	[public] typedef struct {
+		string usri1053_home_dir_drive;
+	} USER_INFO_1053;
+
+	[public] typedef struct {
+		string usriX_name;
+		string usriX_password;
+		uint32 usriX_password_age;
+		uint32 usriX_priv;
+		string usriX_home_dir;
+		string usriX_comment;
+		uint32 usriX_flags;
+		string usriX_script_path;
+		uint32 usriX_auth_flags;
+		string usriX_full_name;
+		string usriX_usr_comment;
+		string usriX_parms;
+		string usriX_workstations;
+		uint32 usriX_last_logon;
+		uint32 usriX_last_logoff;
+		uint32 usriX_acct_expires;
+		uint32 usriX_max_storage;
+		uint32 usriX_units_per_week;
+		uint8 *usriX_logon_hours;
+		uint32 usriX_bad_pw_count;
+		uint32 usriX_num_logons;
+		string usriX_logon_server;
+		uint32 usriX_country_code;
+		uint32 usriX_code_page;
+		string usriX_profile;
+		string usriX_home_dir_drive;
+		uint32 usriX_primary_group_id;
+	} USER_INFO_X;
+
+	[nopush,nopull] NET_API_STATUS NetUserAdd(
+		[in,unique] string *server_name,
+		[in] uint32 level,
+		[in,ref] uint8 *buffer,
+		[out,ref] uint32 *parm_error
+		);
+
+	/*******************************************/
+	/* NetUserDel                              */
+	/*******************************************/
+
+	[nopush,nopull] NET_API_STATUS NetUserDel(
+		[in,unique] string *server_name,
+		[in,ref] string *user_name
+		);
+
+	/*******************************************/
+	/* NetUserEnum                             */
+	/*******************************************/
+
+	const int FILTER_TEMP_DUPLICATE_ACCOUNT = 0x0001;
+	const int FILTER_NORMAL_ACCOUNT = 0x0002;
+	const int FILTER_INTERDOMAIN_TRUST_ACCOUNT = 0x0008;
+	const int FILTER_WORKSTATION_TRUST_ACCOUNT = 0x0010;
+	const int FILTER_SERVER_TRUST_ACCOUNT = 0x0020;
+
+	[nopush,nopull] NET_API_STATUS NetUserEnum(
+		[in,unique] string *server_name,
+		[in] uint32 level,
+		[in] uint32 filter,
+		[out,ref] uint8 **buffer,
+		[in] uint32 prefmaxlen,
+		[out,ref] uint32 *entries_read,
+		[out,ref] uint32 *total_entries,
+		[in,out,ref] uint32 *resume_handle
+		);
+
+	/*******************************************/
+	/* NetUserChangePassword                   */
+	/*******************************************/
+
+	[nopush,nopull] NET_API_STATUS NetUserChangePassword(
+		[in] string domain_name,
+		[in] string user_name,
+		[in] string old_password,
+		[in] string new_password
+		);
+
+	/*******************************************/
+	/* NetUserGetInfo                          */
+	/*******************************************/
+
+	[nopush,nopull] NET_API_STATUS NetUserGetInfo(
+		[in] string server_name,
+		[in] string user_name,
+		[in] uint32 level,
+		[out] uint8 **buffer
+		);
+
+	/*******************************************/
+	/* NetUserSetInfo                          */
+	/*******************************************/
+
+	[nopush,nopull] NET_API_STATUS NetUserSetInfo(
+		[in] string server_name,
+		[in] string user_name,
+		[in] uint32 level,
+		[in] uint8 *buffer,
+		[out] uint32 *parm_err
+		);
+
+	/*******************************************/
+	/* NetUserGetGroups                        */
+	/*******************************************/
+
+	[public] typedef struct {
+		string grui0_name;
+	} GROUP_USERS_INFO_0;
+
+	[public] typedef struct {
+		string grui1_name;
+		uint32 grui1_attributes;
+	} GROUP_USERS_INFO_1;
+
+	[nopush,nopull] NET_API_STATUS NetUserGetGroups(
+		[in] string server_name,
+		[in] string user_name,
+		[in] uint32 level,
+		[out] uint8 **buffer,
+		[in] uint32 prefmaxlen,
+		[out,ref] uint32 *entries_read,
+		[out,ref] uint32 *total_entries
+		);
+
+	/*******************************************/
+	/* NetUserSetGroups                        */
+	/*******************************************/
+
+	[nopush,nopull] NET_API_STATUS NetUserSetGroups(
+		[in] string server_name,
+		[in] string user_name,
+		[in] uint32 level,
+		[in] uint8 *buffer,
+		[in] uint32 num_entries
+		);
+
+	/*******************************************/
+	/* NetUserGetLocalGroups                   */
+	/*******************************************/
+
+	const int LG_INCLUDE_INDIRECT = 0x0001;
+
+	typedef struct {
+		string lgrui0_name;
+	} LOCALGROUP_USERS_INFO_0;
+
+	[nopush,nopull] NET_API_STATUS NetUserGetLocalGroups(
+		[in] string server_name,
+		[in] string user_name,
+		[in] uint32 level,
+		[in] uint32 flags,
+		[out] uint8 **buffer,
+		[in] uint32 prefmaxlen,
+		[out,ref] uint32 *entries_read,
+		[out,ref] uint32 *total_entries
+		);
+
+	/*******************************************/
+	/* NetUserModalsGet                        */
+	/*******************************************/
+
+	const int TIMEQ_FOREVER = (uint32_t)-1L;
+
+	typedef struct {
+		uint32 usrmod0_min_passwd_len;
+		uint32 usrmod0_max_passwd_age;
+		uint32 usrmod0_min_passwd_age;
+		uint32 usrmod0_force_logoff;
+		uint32 usrmod0_password_hist_len;
+	} USER_MODALS_INFO_0;
+
+	typedef struct {
+		uint32 usrmod1_role;
+		string usrmod1_primary;
+	} USER_MODALS_INFO_1;
+
+	typedef struct {
+		string usrmod2_domain_name;
+		domsid *usrmod2_domain_id;
+	} USER_MODALS_INFO_2;
+
+	typedef struct {
+		uint32 usrmod3_lockout_duration;
+		uint32 usrmod3_lockout_observation_window;
+		uint32 usrmod3_lockout_threshold;
+	} USER_MODALS_INFO_3;
+
+	typedef struct {
+		uint32 usrmod1001_min_passwd_len;
+	} USER_MODALS_INFO_1001;
+
+	typedef struct {
+		uint32 usrmod1002_max_passwd_age;
+	} USER_MODALS_INFO_1002;
+
+	typedef struct {
+		uint32 usrmod1003_min_passwd_age;
+	} USER_MODALS_INFO_1003;
+
+	typedef struct {
+		uint32 usrmod1004_force_logoff;
+	} USER_MODALS_INFO_1004;
+
+	typedef struct {
+		uint32 usrmod1005_password_hist_len;
+	} USER_MODALS_INFO_1005;
+
+	typedef struct {
+		uint32 usrmod1006_role;
+	} USER_MODALS_INFO_1006;
+
+	typedef struct {
+		string usrmod1007_primary;
+	} USER_MODALS_INFO_1007;
+
+	[nopush,nopull] NET_API_STATUS NetUserModalsGet(
+		[in] string server_name,
+		[in] uint32 level,
+		[out,ref] uint8 **buffer
+		);
+
+	/*******************************************/
+	/* NetUserModalsSet                        */
+	/*******************************************/
+
+	[nopush,nopull] NET_API_STATUS NetUserModalsSet(
+		[in] string server_name,
+		[in] uint32 level,
+		[in] uint8 *buffer,
+		[out,ref] uint32 *parm_err
+		);
+
+	/*******************************************/
+	/* NetQueryDisplayInformation              */
+	/*******************************************/
+
+	[public] typedef struct {
+		string usri1_name;
+		string usri1_comment;
+		uint32 usri1_flags;
+		string usri1_full_name;
+		uint32 usri1_user_id;
+		uint32 usri1_next_index;
+	} NET_DISPLAY_USER;
+
+	[public] typedef struct {
+		string usri2_name;
+		string usri2_comment;
+		uint32 usri2_flags;
+		uint32 usri2_user_id;
+		uint32 usri2_next_index;
+	} NET_DISPLAY_MACHINE;
+
+	[public] typedef struct {
+		string grpi3_name;
+		string grpi3_comment;
+		uint32 grpi3_group_id;
+		uint32 grpi3_attributes;
+		uint32 grpi3_next_index;
+	} NET_DISPLAY_GROUP;
+
+	[nopush,nopull] NET_API_STATUS NetQueryDisplayInformation(
+		[in,unique] string *server_name,
+		[in] uint32 level,
+		[in] uint32 idx,
+		[in] uint32 entries_requested,
+		[in] uint32 prefmaxlen,
+		[out,ref] uint32 *entries_read,
+		[out,ref,noprint] void **buffer
+		);
+
+	/*******************************************/
+	/* NetGroupAdd                             */
+	/*******************************************/
+
+	typedef struct {
+		string grpi0_name;
+	} GROUP_INFO_0;
+
+	typedef struct {
+		string grpi1_name;
+		string grpi1_comment;
+	} GROUP_INFO_1;
+
+	typedef struct {
+		string grpi2_name;
+		string grpi2_comment;
+		uint32 grpi2_group_id;
+		uint32 grpi2_attributes;
+	} GROUP_INFO_2;
+
+	typedef struct {
+		string grpi3_name;
+		string grpi3_comment;
+		domsid *grpi3_group_sid;
+		uint32 grpi3_attributes;
+	} GROUP_INFO_3;
+
+	typedef struct {
+		string grpi1002_comment;
+	} GROUP_INFO_1002;
+
+	typedef struct {
+		uint32 grpi1005_attributes;
+	} GROUP_INFO_1005;
+
+	[nopush,nopull] NET_API_STATUS NetGroupAdd(
+		[in] string server_name,
+		[in] uint32 level,
+		[in] uint8 *buffer,
+		[out] uint32 *parm_err
+		);
+
+	/*******************************************/
+	/* NetGroupDel                             */
+	/*******************************************/
+
+	[nopush,nopull] NET_API_STATUS NetGroupDel(
+		[in] string server_name,
+		[in] string group_name
+		);
+
+	/*******************************************/
+	/* NetGroupEnum                            */
+	/*******************************************/
+
+	[nopush,nopull] NET_API_STATUS NetGroupEnum(
+		[in] string server_name,
+		[in] uint32 level,
+		[out,ref] uint8 **buffer,
+		[in] uint32 prefmaxlen,
+		[out,ref] uint32 *entries_read,
+		[out,ref] uint32 *total_entries,
+		[in,out,ref] uint32 *resume_handle
+		);
+
+	/*******************************************/
+	/* NetGroupSetInfo                         */
+	/*******************************************/
+
+	[nopush,nopull] NET_API_STATUS NetGroupSetInfo(
+		[in] string server_name,
+		[in] string group_name,
+		[in] uint32 level,
+		[in] uint8 *buffer,
+		[out] uint32 *parm_err
+		);
+
+	/*******************************************/
+	/* NetGroupGetInfo                         */
+	/*******************************************/
+
+	[nopush,nopull] NET_API_STATUS NetGroupGetInfo(
+		[in] string server_name,
+		[in] string group_name,
+		[in] uint32 level,
+		[out] uint8 **buffer
+		);
+
+	/*******************************************/
+	/* NetGroupAddUser                         */
+	/*******************************************/
+
+	[nopush,nopull] NET_API_STATUS NetGroupAddUser(
+		[in] string server_name,
+		[in] string group_name,
+		[in] string user_name
+		);
+
+	/*******************************************/
+	/* NetGroupDelUser                         */
+	/*******************************************/
+
+	[nopush,nopull] NET_API_STATUS NetGroupDelUser(
+		[in] string server_name,
+		[in] string group_name,
+		[in] string user_name
+		);
+
+	/*******************************************/
+	/* NetGroupGetUsers                        */
+	/*******************************************/
+
+	[nopush,nopull] NET_API_STATUS NetGroupGetUsers(
+		[in] string server_name,
+		[in] string group_name,
+		[in] uint32 level,
+		[out] uint8 **buffer,
+		[in] uint32 prefmaxlen,
+		[out,ref] uint32 *entries_read,
+		[out,ref] uint32 *total_entries,
+		[in,out,ref] uint32 *resume_handle
+		);
+
+	/*******************************************/
+	/* NetGroupSetUsers                        */
+	/*******************************************/
+
+	[nopush,nopull] NET_API_STATUS NetGroupSetUsers(
+		[in] string server_name,
+		[in] string group_name,
+		[in] uint32 level,
+		[in] uint8 *buffer,
+		[in] uint32 num_entries
+		);
+
+	/*******************************************/
+	/* NetLocalGroupAdd                        */
+	/*******************************************/
+
+	typedef struct {
+		string lgrpi0_name;
+	} LOCALGROUP_INFO_0;
+
+	typedef struct {
+		string lgrpi1_name;
+		string lgrpi1_comment;
+	} LOCALGROUP_INFO_1;
+
+	typedef struct {
+		string lgrpi1002_comment;
+	} LOCALGROUP_INFO_1002;
+
+	[nopush,nopull] NET_API_STATUS NetLocalGroupAdd(
+		[in] string server_name,
+		[in] uint32 level,
+		[in] uint8 *buffer,
+		[out,ref] uint32 *parm_err
+		);
+
+	/*******************************************/
+	/* NetLocalGroupDel                        */
+	/*******************************************/
+
+	[nopush,nopull] NET_API_STATUS NetLocalGroupDel(
+		[in] string server_name,
+		[in] string group_name
+		);
+
+	/*******************************************/
+	/* NetLocalGroupGetInfo                    */
+	/*******************************************/
+
+	[nopush,nopull] NET_API_STATUS NetLocalGroupGetInfo(
+		[in] string server_name,
+		[in] string group_name,
+		[in] uint32 level,
+		[out,ref] uint8 **buffer
+		);
+
+	/*******************************************/
+	/* NetLocalGroupSetInfo                    */
+	/*******************************************/
+
+	[nopush,nopull] NET_API_STATUS NetLocalGroupSetInfo(
+		[in] string server_name,
+		[in] string group_name,
+		[in] uint32 level,
+		[in,ref] uint8 *buffer,
+		[out,ref] uint32 *parm_err
+		);
+
+	/*******************************************/
+	/* NetLocalGroupEnum                       */
+	/*******************************************/
+
+	[nopush,nopull] NET_API_STATUS NetLocalGroupEnum(
+		[in] string server_name,
+		[in] uint32 level,
+		[out,ref] uint8 **buffer,
+		[in] uint32 prefmaxlen,
+		[out,ref] uint32 *entries_read,
+		[out,ref] uint32 *total_entries,
+		[in,out,ref] uint32 *resume_handle
+		);
+
+	/*******************************************/
+	/* NetLocalGroupAddMembers                 */
+	/*******************************************/
+
+	typedef enum {
+		SidTypeUser		= 1,
+		SidTypeGroup		= 2,
+		SidTypeDomain		= 3,
+		SidTypeAlias		= 4,
+		SidTypeWellKnownGroup	= 5,
+		SidTypeDeletedAccount	= 6,
+		SidTypeInvalid		= 7,
+		SidTypeUnknown		= 8,
+		SidTypeComputer		= 9,
+		SidTypeLabel		= 10
+	} SID_NAME_USE;
+
+	typedef struct {
+		domsid *lgrmi0_sid;
+	} LOCALGROUP_MEMBERS_INFO_0;
+
+	typedef struct {
+		domsid *lgrmi1_sid;
+		SID_NAME_USE lgrmi1_sidusage;
+		string lgrmi1_name;
+	} LOCALGROUP_MEMBERS_INFO_1;
+
+	typedef struct {
+		domsid *lgrmi2_sid;
+		SID_NAME_USE lgrmi2_sidusage;
+		string lgrmi2_domainandname;
+	} LOCALGROUP_MEMBERS_INFO_2;
+
+	typedef struct {
+		string lgrmi3_domainandname;
+	} LOCALGROUP_MEMBERS_INFO_3;
+
+	[nopush,nopull] NET_API_STATUS NetLocalGroupAddMembers(
+		[in] string server_name,
+		[in] string group_name,
+		[in] uint32 level,
+		[in] uint8 *buffer,
+		[in] uint32 total_entries
+		);
+
+	/*******************************************/
+	/* NetLocalGroupDelMembers                 */
+	/*******************************************/
+
+	[nopush,nopull] NET_API_STATUS NetLocalGroupDelMembers(
+		[in] string server_name,
+		[in] string group_name,
+		[in] uint32 level,
+		[in] uint8 *buffer,
+		[in] uint32 total_entries
+		);
+
+	/*******************************************/
+	/* NetLocalGroupGetMembers                 */
+	/*******************************************/
+
+	[nopush,nopull] NET_API_STATUS NetLocalGroupGetMembers(
+		[in] string server_name,
+		[in] string local_group_name,
+		[in] uint32 level,
+		[out] uint8 **buffer,
+		[in] uint32 prefmaxlen,
+		[out] uint32 *entries_read,
+		[out] uint32 *total_entries,
+		[in,out] uint32 *resume_handle
+		);
+
+	/*******************************************/
+	/* NetLocalGroupSetMembers                 */
+	/*******************************************/
+
+	[nopush,nopull] NET_API_STATUS NetLocalGroupSetMembers(
+		[in] string server_name,
+		[in] string group_name,
+		[in] uint32 level,
+		[in] uint8 *buffer,
+		[in] uint32 total_entries
+		);
+
+	/*******************************************/
+	/* NetRemoteTOD                            */
+	/*******************************************/
+
+	typedef struct {
+		uint32 tod_elapsedt;
+		uint32 tod_msecs;
+		uint32 tod_hours;
+		uint32 tod_mins;
+		uint32 tod_secs;
+		uint32 tod_hunds;
+		int32 tod_timezone;
+		uint32 tod_tinterval;
+		uint32 tod_day;
+		uint32 tod_month;
+		uint32 tod_year;
+		uint32 tod_weekday;
+	} TIME_OF_DAY_INFO;
+
+	[nopush,nopull] NET_API_STATUS NetRemoteTOD(
+		[in] string server_name,
+		[out,ref] uint8 **buffer
+		);
+
+	/*******************************************/
+	/* NetShareAdd                             */
+	/*******************************************/
+
+	typedef struct {
+		string shi0_netname;
+	} SHARE_INFO_0;
+
+	typedef struct {
+		string shi1_netname;
+		uint32 shi1_type;
+		string shi1_remark;
+	} SHARE_INFO_1;
+
+	typedef struct {
+		string shi2_netname;
+		uint32 shi2_type;
+		string shi2_remark;
+		uint32 shi2_permissions;
+		uint32 shi2_max_uses;
+		uint32 shi2_current_uses;
+		string shi2_path;
+		string shi2_passwd;
+	} SHARE_INFO_2;
+
+	typedef struct {
+		string shi501_netname;
+		uint32 shi501_type;
+		string shi501_remark;
+		uint32 shi501_flags;
+	} SHARE_INFO_501;
+
+	typedef struct {
+		string shi1004_remark;
+	} SHARE_INFO_1004;
+
+	const int CSC_MASK = 0x30;
+
+	typedef [public,bitmap32bit] bitmap {
+		SHI1005_FLAGS_DFS				= 0x01,
+		SHI1005_FLAGS_DFS_ROOT				= 0x02,
+		CSC_CACHE_MANUAL_REINT				= 0x00,
+		CSC_CACHE_AUTO_REINT				= 0x10,
+		CSC_CACHE_VDO					= 0x20,
+		CSC_CACHE_NONE					= 0x30,
+		SHI1005_FLAGS_RESTRICT_EXCLUSIVE_OPENS		= 0x0100,
+		SHI1005_FLAGS_FORCE_SHARED_DELETE		= 0x0200,
+		SHI1005_FLAGS_ALLOW_NAMESPACE_CACHING		= 0x0400,
+		SHI1005_FLAGS_ACCESS_BASED_DIRECTORY_ENUM	= 0x0800
+	} SHARE_INFO_1005_FLAGS;
+
+	typedef struct {
+		SHARE_INFO_1005_FLAGS shi1005_flags;
+	} SHARE_INFO_1005;
+
+	typedef struct {
+		uint32 shi1006_max_uses;
+	} SHARE_INFO_1006;
+
+	[nopush,nopull] NET_API_STATUS NetShareAdd(
+		[in] string server_name,
+		[in] uint32 level,
+		[in] uint8 *buffer,
+		[out] uint32 *parm_err
+		);
+
+	/*******************************************/
+	/* NetShareDel                             */
+	/*******************************************/
+
+	[nopush,nopull] NET_API_STATUS NetShareDel(
+		[in] string server_name,
+		[in] string net_name,
+		[in] uint32 reserved
+		);
+
+	/*******************************************/
+	/* NetShareEnum                            */
+	/*******************************************/
+
+	[nopush,nopull] NET_API_STATUS NetShareEnum(
+		[in] string server_name,
+		[in] uint32 level,
+		[out] uint8 **buffer,
+		[in] uint32 prefmaxlen,
+		[out] uint32 *entries_read,
+		[out] uint32 *total_entries,
+		[in,out] uint32 *resume_handle
+		);
+
+	/*******************************************/
+	/* NetShareGetInfo                         */
+	/*******************************************/
+
+	[nopush,nopull] NET_API_STATUS NetShareGetInfo(
+		[in] string server_name,
+		[in] string net_name,
+		[in] uint32 level,
+		[out] uint8 **buffer
+		);
+
+	/*******************************************/
+	/* NetShareSetInfo                         */
+	/*******************************************/
+
+	[nopush,nopull] NET_API_STATUS NetShareSetInfo(
+		[in] string server_name,
+		[in] string net_name,
+		[in] uint32 level,
+		[in] uint8 *buffer,
+		[out] uint32 *parm_err
+		);
+
+	/*******************************************/
+	/* NetFileClose                            */
+	/*******************************************/
+
+	[nopush,nopull] NET_API_STATUS NetFileClose(
+		[in] string server_name,
+		[in] uint32 fileid
+		);
+
+	/*******************************************/
+	/* NetFileGetInfo                          */
+	/*******************************************/
+
+	typedef struct {
+		uint32 fi2_id;
+	} FILE_INFO_2;
+
+	typedef struct {
+		uint32 fi3_id;
+		uint32 fi3_permissions;
+		uint32 fi3_num_locks;
+		string fi3_pathname;
+		string fi3_username;
+	} FILE_INFO_3;
+
+	[nopush,nopull] NET_API_STATUS NetFileGetInfo(
+		[in] string server_name,
+		[in] uint32 fileid,
+		[in] uint32 level,
+		[out] uint8 **buffer
+		);
+
+	/*******************************************/
+	/* NetFileEnum                             */
+	/*******************************************/
+
+	[nopush,nopull] NET_API_STATUS NetFileEnum(
+		[in] string server_name,
+		[in] string base_path,
+		[in] string user_name,
+		[in] uint32 level,
+		[out] uint8 **buffer,
+		[in] uint32 prefmaxlen,
+		[out] uint32 *entries_read,
+		[out] uint32 *total_entries,
+		[in,out] uint32 *resume_handle
+		);
+}

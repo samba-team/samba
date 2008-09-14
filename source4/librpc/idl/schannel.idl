@@ -1,0 +1,44 @@
+#include "idl_types.h"
+
+/*
+  schannel structures
+*/
+
+import "netlogon.idl", "nbt.idl";
+
+interface schannel
+{
+	/*
+	  a schannel bind blob - used in dcerpc auth_info
+	  on a schannel
+	*/
+	typedef struct {
+		astring domain;
+		astring workstation;
+	} schannel_bind_3;
+
+	typedef struct {
+		astring domain;
+		astring workstation;
+		nbt_string dnsdomain;
+		nbt_string dnsworkstation;
+	} schannel_bind_23;
+
+	typedef [nodiscriminant] union {
+		[case (3)]  schannel_bind_3  info3;
+		[case (23)] schannel_bind_23 info23;
+	} schannel_bind_info;
+
+	typedef [public] struct {
+		uint32 unknown1; /* seems to need to be 0 */
+		uint32 bind_type;
+		[switch_is(bind_type)] schannel_bind_info u;
+	} schannel_bind;
+
+	/* a bind_ack blob */
+	typedef [public] struct {
+		uint32 unknown1; /* 1 */
+		uint32 unknown2; /* 0 */
+		uint32 unknown3; /* 0x006c0000 */
+	} schannel_bind_ack;
+}

@@ -1,0 +1,63 @@
+#ifndef _INCLUDES_H
+#define _INCLUDES_H
+/* 
+   Unix SMB/CIFS implementation.
+   Machine customisation and include handling
+   Copyright (C) Andrew Tridgell 1994-1998
+   Copyright (C) 2002 by Martin Pool <mbp@samba.org>
+   
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 3 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+#include "lib/replace/replace.h"
+
+/* make sure we have included the correct config.h */
+#ifndef NO_CONFIG_H /* for some tests */
+#ifndef CONFIG_H_IS_FROM_SAMBA
+#error "make sure you have removed all config.h files from standalone builds!"
+#error "the included config.h isn't from samba!"
+#endif
+#endif /* NO_CONFIG_H */
+
+#include "local.h"
+
+#include "system/time.h"
+#include "system/wait.h"
+
+/* Lists, trees, caching, database... */
+#include <stdlib.h>
+#include <stdbool.h>
+#include <talloc.h>
+#ifndef _PRINTF_ATTRIBUTE
+#define _PRINTF_ATTRIBUTE(a1, a2) PRINTF_ATTRIBUTE(a1, a2)
+#endif
+#include "util/util.h"
+
+#include "libcli/util/error.h"
+
+/* String routines */
+#include "util/safe_string.h"
+
+#if 0
+/* darn, we can't do this now that we don't link the ldb tools to all the smb libs */
+#define TALLOC_ABORT(reason) smb_panic(reason)
+#endif
+
+/* this needs to be a string which is not in the C library. We
+   previously used "init_module", but that meant that modules which
+   did not define this function ended up calling the C library
+   function init_module() which makes a system call */
+#define SAMBA_INIT_MODULE "samba_init_module"
+
+#endif /* _INCLUDES_H */

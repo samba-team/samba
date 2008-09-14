@@ -1,0 +1,77 @@
+#!/usr/bin/python
+#
+#	add a new user to a Samba4 server
+#	Copyright Andrew Tridgell 2005
+#	Copyright Jelmer Vernooij 2008
+#	Released under the GNU GPL version 3 or later
+#
+import os, sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(sys.argv[0]), "../bin/python"))
+
+import samba.getopt as options
+import optparse
+import pwd
+import ldb
+
+from samba.auth import system_session
+from samba.samdb import SamDB
+
+parser = optparse.OptionParser("enableaccount [username] [options]")
+sambaopts = options.SambaOptions(parser)
+parser.add_option_group(sambaopts)
+parser.add_option_group(options.VersionOptions(parser))
+credopts = options.CredentialsOptions(parser)
+parser.add_option_group(credopts)
+parser.add_option("-H", help="LDB URL for database or target server", type=str)
+parser.add_option("--base", help="Base DN to search for user under", type=str)
+
+opts, args = parser.parse_args()
+
+#
+#  print a message if quiet is not set
+#
+def message(text):
+	if not opts.quiet:
+		print text
+
+if len(args) == 0:
+	parser.print_usage()
+	sys.exit(1)
+
+username = args[0]
+
+if username is None:
+	print "username must be specified"
+
+lp = sambaopts.get_loadparm()
+
+creds = credopts.get_credentials(lp)
+
+if opts.H is not None:
+	url = opts.H
+else:
+	url = lp.get("sam database")
+
+samdb = SamDB(url=url, session_info=system_session(), 
+              credentials=creds, lp=lp)
+
+domain_dn = opts.base
+if opts.base is None:
+	res = samdb.search("", scope=ldb.SCOPE_BASE, 
+			  expression="(defaultNamingContext=*)", 
+			  attrs=["defaultNamingContext"])
+	assert(len(res) == 1 and res[0]["defaultNamingContext"] is not None)
+	domain_dn = res[0]["defaultNamingContext"][0]
+else:
+	domain_dn = opts.base
+
+filter = "(&(objectClass=user)(samAccountName=%s))" % username
+
+res = samdb.search(domain_dn, scope=ldb.SCOPE_SUBTREE, 
+		  expression=filter,
+		  attrs=[])
+assert(len(res) == 1)
+user_dn = res[0].dn
+
+samdb.enable_account(user_dn)

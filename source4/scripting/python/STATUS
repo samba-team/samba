@@ -1,0 +1,14 @@
+dsdb/samdb/ldb_modules/tests/samba3sam.py: Fix remaining failing tests
+lib/ldb/tests/python/ldap.py: Fix remaining 3 FIXME's
+command-line vampire
+provisioning: combine some of the python dictionaries
+finish scripting/bin/smbstatus.py
+
+not important before making Python the default:
+- hierarchy (rename samr -> dcerpc.samr, misc -> samba.misc, etc)
+- scripting/python/samba/upgrade.py
+- install python modules into system
+- SWAT
+- __ndr_pack__/__ndr_unpack__ members for the NDR struct bindings
+- generate docstrings in DCE/RPC bindings
+- eliminate some variables from the python interface because they can be induced

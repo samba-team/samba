@@ -1,0 +1,84 @@
+dn: OU=Domain Controllers,${DOMAINDN}
+objectClass: top
+objectClass: organizationalUnit
+cn: Domain Controllers
+description: Default container for domain controllers
+systemFlags: 2348810240
+isCriticalSystemObject: TRUE
+showInAdvancedViewOnly: FALSE
+
+dn: CN=ForeignSecurityPrincipals,${DOMAINDN}
+objectClass: top
+objectClass: container
+cn: ForeignSecurityPrincipals
+description: Default container for security identifiers (SIDs) associated with objects from external, trusted domains
+systemFlags: 2348810240
+isCriticalSystemObject: TRUE
+showInAdvancedViewOnly: FALSE
+
+dn: CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+cn: System
+description: Builtin system settings
+systemFlags: 2348810240
+isCriticalSystemObject: TRUE
+
+dn: CN=RID Manager$,CN=System,${DOMAINDN}
+objectclass: top
+objectclass: rIDManager
+cn: RID Manager$
+systemFlags: 2348810240
+isCriticalSystemObject: TRUE
+fSMORoleOwner: CN=NTDS Settings,${SERVERDN}
+rIDAvailablePool: 4611686014132423217
+
+dn: CN=DomainUpdates,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+cn: DomainUpdates
+
+dn: CN=Windows2003Update,CN=DomainUpdates,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+cn: Windows2003Update
+revision: 8
+
+dn: CN=Infrastructure,${DOMAINDN}
+objectclass: top
+objectclass: infrastructureUpdate
+cn: Infrastructure
+systemFlags: 2348810240
+isCriticalSystemObject: TRUE
+fSMORoleOwner: CN=NTDS Settings,${SERVERDN}
+
+dn: CN=Builtin,${DOMAINDN}
+objectClass: top
+objectClass: builtinDomain
+cn: Builtin
+forceLogoff: 9223372036854775808
+lockoutDuration: -18000000000
+lockOutObservationWindow: -18000000000
+lockoutThreshold: 0
+maxPwdAge: -37108517437440
+minPwdAge: 0
+minPwdLength: 0
+modifiedCountAtLastProm: 0
+nextRid: 1000
+pwdProperties: 0
+pwdHistoryLength: 0
+objectSid: S-1-5-32
+serverState: 1
+uASCompat: 1
+modifiedCount: 1
+isCriticalSystemObject: TRUE
+showInAdvancedViewOnly: FALSE
+
+dn: CN=Policies,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=IP Security,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+

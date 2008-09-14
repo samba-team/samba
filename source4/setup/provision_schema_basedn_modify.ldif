@@ -1,0 +1,14 @@
+###############################
+# Schema Naming Context
+###############################
+dn: ${SCHEMADN}
+changetype: modify
+replace: fSMORoleOwner
+fSMORoleOwner: CN=NTDS Settings,${SERVERDN}
+-
+replace: objectVersion
+objectVersion: 30
+-
+replace: prefixMap
+prefixMap:: ${PREFIXMAP_B64}
+

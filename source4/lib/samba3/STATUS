@@ -1,0 +1,68 @@
+--- Samba3 -> Samba4 Upgrade ---
+(C) 2005 Jelmer Vernooij <jelmer@samba.org>
+Published under the GNU GPL
+
+Sponsored by the Google Summer of Code program (http://code.google.com/summerofcode.html)
+Mentored by Andrew Bartlett <abartlet@samba.org>
+Thanks!
+
+Done:
+ - Reading wins.dat
+ - Reading registry.tdb
+ - Reading passdb.tdb
+ - Reading account_policy.tdb
+ - Reading group_mappings.tdb
+ - Reading winbindd_idmap.tdb
+ - Reading share_info.tdb
+ - Reading secrets.tdb
+ - Reading smbpasswd
+ - Reading + writing (generic) smb.conf files
+ - Testsuite for read support mentioned above
+ - Console utility for dumping Samba information
+ - Import user accounts in Samba4
+ - Import groups in Samba4
+ - Import secrets in Samba4
+ - Import WINS data in Samba4
+ - Dump idmap data to LDB
+ - Import registry keys/values in Samba4
+ - Import account policies in Samba4
+ - Testsuite for upgrade
+ - Console utility from upgrading from Samba3 -> Samba4
+ - SWAT (Web interface) support for upgrading from Samba3 -> Samba4
+ - LDB generic mapping module
+ - (Experimental) Samba4 LDB <-> Samba3 LDAP mapping module based on LDB generic mapping module
+ - Testsuite for Samba4 LDB <-> Samba3 LDAP mapping module
+
+Source files:
+source/lib/ldb/modules/ldb_map.c
+source/lib/ldb/modules/ldb_map.h
+source/lib/samba3/group.c
+source/lib/samba3/idmap.c
+source/lib/samba3/policy.c
+source/lib/samba3/registry.c
+source/lib/samba3/samba3.c
+source/lib/samba3/secrets.c
+source/lib/samba3/share_info.c
+source/lib/samba3/smbpasswd.c
+source/lib/samba3/tdbsam.c
+source/lib/samba3/winsdb.c
+source/lib/samba3/samba3.h
+source/scripting/libjs/upgrade.js
+source/scripting/ejs/smbcalls_param.c
+source/scripting/ejs/smbcalls_samba3.c
+source/param/generic.c
+source/param/generic.h
+testdata/samba3/verify
+testprogs/ejs/samba3sam
+source/setup/upgrade
+source/scripting/bin/samba3dump
+source/dsdb/samdb/ldb_modules/samba3sam.c
+source/script/tests/test_s3upgrade.sh
+swat/install/samba3.esp
+
+Known remaining issues:
+ - [upgrade] Conversion from the smbpasswd/TDB passwords to ntPwdHash / lmPwdHash is broken. Couldn't find out why.
+ - [ldb_map] Conversion of attribute names in DN's is still a bit dodgy
+ - [ldb_map] mapped objectClass names may be mentioned multiple times in returned records
+ - [ldb_map] add/modify support not tested very well with LDAP yet (only LDB+TDB)
+ - [ldb_map] group membership is not yet mapped (only primaryGroupID / sambaPrimaryGroupSID)

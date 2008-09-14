@@ -1,0 +1,62 @@
+#Join the DC to itself by default
+
+dn: CN=${NETBIOSNAME},OU=Domain Controllers,${DOMAINDN}
+objectClass: computer
+cn: ${NETBIOSNAME}
+userAccountControl: 532480
+localPolicyFlags: 0
+primaryGroupID: 516
+accountExpires: 9223372036854775807
+sAMAccountName: ${NETBIOSNAME}$
+operatingSystem: Samba
+operatingSystemVersion: 4.0
+dNSHostName: ${DNSNAME}
+isCriticalSystemObject: TRUE
+userPassword:: ${MACHINEPASS_B64}
+servicePrincipalName: HOST/${DNSNAME}
+servicePrincipalName: HOST/${NETBIOSNAME}
+servicePrincipalName: HOST/${DNSNAME}/${REALM}
+servicePrincipalName: HOST/${NETBIOSNAME}/${REALM}
+servicePrincipalName: HOST/${DNSNAME}/${DOMAIN}
+servicePrincipalName: HOST/${NETBIOSNAME}/${DOMAIN}
+
+#Provide a account for DNS keytab export
+dn: CN=dns,CN=Users,${DOMAINDN}
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: user
+cn: dns
+description: DNS Service Account
+userAccountControl: 514
+accountExpires: 9223372036854775807
+sAMAccountName: dns
+servicePrincipalName: DNS/${DNSDOMAIN}
+isCriticalSystemObject: TRUE
+userPassword:: ${DNSPASS_B64}
+showInAdvancedViewOnly: TRUE
+
+dn: ${SERVERDN}
+objectClass: top
+objectClass: server
+cn: ${NETBIOSNAME}
+systemFlags: 1375731712
+dNSHostName: ${DNSNAME}
+serverReference: CN=${NETBIOSNAME},OU=Domain Controllers,${DOMAINDN}
+
+dn: CN=NTDS Settings,${SERVERDN}
+objectClass: top
+objectClass: applicationSettings
+objectClass: nTDSDSA
+cn: NTDS Settings
+options: 1
+systemFlags: 33554432
+dMDLocation: ${SCHEMADN}
+invocationId: ${INVOCATIONID}
+msDS-Behavior-Version: 2
+msDS-hasMasterNCs: ${CONFIGDN}
+msDS-hasMasterNCs: ${SCHEMADN}
+msDS-hasMasterNCs: ${DOMAINDN}
+hasMasterNCs: ${CONFIGDN}
+hasMasterNCs: ${SCHEMADN}
+hasMasterNCs: ${DOMAINDN}

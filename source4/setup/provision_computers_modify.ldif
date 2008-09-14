@@ -1,0 +1,13 @@
+dn: CN=Computers,${DOMAINDN}
+changetype: modify
+replace: description
+description: Default container for upgraded computer accounts
+-
+replace: showInAdvancedViewOnly
+showInAdvancedViewOnly: FALSE
+-
+replace: systemFlags
+systemFlags: 2348810240
+-
+replace: isCriticalSystemObject
+isCriticalSystemObject: TRUE

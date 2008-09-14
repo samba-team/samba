@@ -1,0 +1,43 @@
+###
+# Templates to be put in templates.ldb.  Not part of main samdb any more.
+###
+
+dn: CN=Templates
+objectClass: top
+objectClass: container
+description: Container for SAM account templates
+
+dn: CN=TemplateUser,CN=Templates
+userAccountControl: 546
+badPwdCount: 0
+codePage: 0
+countryCode: 0
+badPasswordTime: 0
+lastLogoff: 0
+lastLogon: 0
+pwdLastSet: 0
+primaryGroupID: 513
+accountExpires: 9223372036854775807
+logonCount: 0
+
+dn: CN=TemplateTrustingDomain,CN=Templates
+userAccountControl: 2080
+badPwdCount: 0
+codePage: 0
+countryCode: 0
+badPasswordTime: 0
+lastLogoff: 0
+lastLogon: 0
+primaryGroupID: 513
+accountExpires: 9223372036854775807
+logonCount: 0
+
+dn: CN=TemplateGroup,CN=Templates
+groupType: -2147483646
+
+dn: CN=TemplateForeignSecurityPrincipal,CN=Templates
+
+dn: CN=TemplateSecret,CN=Templates
+
+dn: CN=TemplateTrustedDomain,CN=Templates
+

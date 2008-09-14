@@ -1,0 +1,168 @@
+#include "idl_types.h"
+
+import "misc.idl";
+
+[
+  uuid("f5cc59b4-4264-101a-8c59-08002b2f8426"),
+  version(1.1),
+  endpoint("ncacn_ip_tcp:", "ncalrpc:"),
+  helpstring("File Replication Service"),
+  pointer_default(unique)
+] 
+interface frsrpc
+{
+	/*****************/
+	/* Function 0x00 */
+
+	/* TAG:3 this TLV contains a GUID and the name of the server sending
+	 * the call
+	 */
+	typedef struct {
+		[subcontext(4)] GUID unknown1;
+		[subcontext(4)] nstring source_server;
+	} frsrpc_FrsSendCommPktChunkDataSSRV;
+
+	/* TAG:4 this TLV contains a GUID and the name of the destination
+	 * server the PDU is sent to
+	 */
+	typedef struct {
+		[subcontext(4)] GUID unknown1;
+		[subcontext(4)] nstring dest_server;
+	} frsrpc_FrsSendCommPktChunkDataDSRV;
+
+	/* TAG:18 this TLV contains a  timestamp 
+	*/
+	typedef struct {
+		[subcontext(4)] NTTIME time;
+	} frsrpc_FrsSendCommPktChunkDataTS;
+
+
+	typedef struct {
+		uint32 unknown1;
+	} frsrpc_FrsSendCommPktChunkDataA;
+
+	typedef struct {
+		uint32 unknown1;
+		GUID unknown2;
+		[subcontext(4)] nstring unknown3;
+	} frsrpc_FrsSendCommPktChunkDataB;
+
+	typedef struct {
+		uint32 unknown1;
+		GUID unknown2;
+	} frsrpc_FrsSendCommPktChunkDataC;
+
+	typedef [nodiscriminant] union {
+		[default,flag(NDR_REMAINING)] DATA_BLOB blob;
+		[case(1)] frsrpc_FrsSendCommPktChunkDataA A;
+		[case(2)] frsrpc_FrsSendCommPktChunkDataA A;
+		[case(3)] frsrpc_FrsSendCommPktChunkDataSSRV SSRV;
+		[case(4)] frsrpc_FrsSendCommPktChunkDataDSRV DSRV;
+		[case(5)] frsrpc_FrsSendCommPktChunkDataB B;
+		[case(8)] frsrpc_FrsSendCommPktChunkDataB B;
+		[case(6)] frsrpc_FrsSendCommPktChunkDataC C;
+		[case(18)] frsrpc_FrsSendCommPktChunkDataTS TS;
+		[case(19)] frsrpc_FrsSendCommPktChunkDataA A;
+	} frsrpc_FrsSendCommPktChunkData;
+
+	typedef struct {
+		uint16 type;
+		[subcontext(4),switch_is(type)] frsrpc_FrsSendCommPktChunkData data;
+	} frsrpc_FrsSendCommPktChunk;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		frsrpc_FrsSendCommPktChunk chunk1;
+		frsrpc_FrsSendCommPktChunk chunk2;
+		frsrpc_FrsSendCommPktChunk chunk3;
+		frsrpc_FrsSendCommPktChunk chunk4;
+		frsrpc_FrsSendCommPktChunk chunk5;
+		frsrpc_FrsSendCommPktChunk chunk6;
+		frsrpc_FrsSendCommPktChunk chunk7;
+		frsrpc_FrsSendCommPktChunk chunk8;
+		frsrpc_FrsSendCommPktChunk chunk9;
+	} frsrpc_FrsSendCommPktChunkCtr;
+
+	typedef struct {
+		uint32 unknown1;
+		uint32 unknown2;
+		uint32 unknown3;
+		uint32 unknown4;
+    		uint32 tlv_size;
+		uint32 unknown6;
+		uint32 unknown7; /* This may be a UNIQUE pointer? */
+		uint32 unknown8;
+		uint32 unknown9;
+		/*
+		 * The format of this blob is this a concatenation
+		 * of TLVs which are not really NDR encoded.
+		 *
+		 * The individual TLVs are encoded as :
+		 * struct {
+		 * 	uint16 type;
+		 *	[subcontext(4),switch_is(type)] chunk_data data;
+		 * } chunk;
+		 * 
+		 * some of the chunk are like this:
+		 *
+		 * struct {
+		 *	uint32 unknown; // 0x00000010
+		 *	struct GUID guid;
+		 *	lstring string;
+		 * } ...;
+		 *
+		 *
+		 * The tags are (might be) :
+		 *  3: Source server sending the PDU
+		 *  4: Destination server the PDU is sent to
+		 * 18: Timestamp
+		 *
+		 */
+		[subcontext(4)/*,size_is(tlv_size)*/] frsrpc_FrsSendCommPktChunkCtr *chunks;
+		uint32 unknown10;
+		uint32 unknown11;
+	} frsrpc_FrsSendCommPktReq;
+
+	WERROR frsrpc_FrsSendCommPkt(
+		[in]	frsrpc_FrsSendCommPktReq req
+	);
+
+	/*****************/
+	/* Function 0x01 */
+	[todo] void FRSRPC_VERIFY_PROMOTION_PARENT();
+
+	/*****************/
+	/* Function 0x02 */
+	[todo] void FRSRPC_START_PROMOTION_PARENT();
+
+	/*****************/
+	/* Function 0x03 */
+	[todo] void FRSRPC_NOP();
+
+	/*****************/
+	/* Function 0x04 */
+	[todo] void FRSRPC_BACKUP_COMPLETE();
+
+	/*****************/
+	/* Function 0x05 */
+	[todo] void FRSRPC_BACKUP_COMPLETE_5();
+
+	/*****************/
+	/* Function 0x06 */
+	[todo] void FRSRPC_BACKUP_COMPLETE_6();
+
+	/*****************/
+	/* Function 0x07 */
+	[todo] void FRSRPC_BACKUP_COMPLETE_7();
+
+	/*****************/
+	/* Function 0x08 */
+	[todo] void FRSRPC_BACKUP_COMPLETE_8();
+
+	/*****************/
+	/* Function 0x09 */
+	[todo] void FRSRPC_BACKUP_COMPLETE_9();
+
+	/*****************/
+	/* Function 0x0a */
+	[todo] void FRSRPC_VERIFY_PROMOTION_PARENT_EX();
+}

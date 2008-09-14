@@ -1,0 +1,781 @@
+#include "idl_types.h"
+
+/*
+   IDL structures for NBT operations
+
+   NBT is not traditionally encoded using IDL/NDR. This is a bit of an
+   experiment, and I may well switch us back to a more traditional
+   encoding if it doesn't work out
+*/
+
+import "misc.idl", "security.idl", "svcctl.idl", "samr.idl";
+[
+helper("libcli/nbt/libnbt.h")
+]
+interface nbt
+{
+	const int NBT_NAME_SERVICE_PORT  = 137;
+	const int NBT_DGRAM_SERVICE_PORT = 138;
+
+	typedef [bitmap16bit] bitmap {
+		NBT_RCODE                   = 0x000F,
+		NBT_FLAG_BROADCAST          = 0x0010,
+		NBT_FLAG_RECURSION_AVAIL    = 0x0080,
+		NBT_FLAG_RECURSION_DESIRED  = 0x0100,
+		NBT_FLAG_TRUNCATION         = 0x0200,
+		NBT_FLAG_AUTHORITIVE        = 0x0400,
+		NBT_OPCODE                  = 0x7800,
+		NBT_FLAG_REPLY              = 0x8000
+	} nbt_operation;
+
+	/* the opcodes are in the operation field, masked with
+	   NBT_OPCODE */
+	typedef enum {
+		NBT_OPCODE_QUERY          =  (0x0<<11),
+		NBT_OPCODE_REGISTER       =  (0x5<<11),
+		NBT_OPCODE_RELEASE        =  (0x6<<11),
+		NBT_OPCODE_WACK           =  (0x7<<11),
+		NBT_OPCODE_REFRESH        =  (0x8<<11),
+		NBT_OPCODE_REFRESH2       =  (0x9<<11),
+		NBT_OPCODE_MULTI_HOME_REG =  (0xf<<11)
+	} nbt_opcode;
+
+	/* rcode values */
+	typedef enum {
+		NBT_RCODE_OK  = 0x0,
+		NBT_RCODE_FMT = 0x1,
+		NBT_RCODE_SVR = 0x2,
+		NBT_RCODE_NAM = 0x3,
+		NBT_RCODE_IMP = 0x4,
+		NBT_RCODE_RFS = 0x5,
+		NBT_RCODE_ACT = 0x6,
+		NBT_RCODE_CFT = 0x7
+	} nbt_rcode;
+
+	/* we support any 8bit name type, but by defining the common
+	   ones here we get better debug displays */
+	typedef [enum8bit] enum {
+		NBT_NAME_CLIENT   = 0x00,
+		NBT_NAME_MS       = 0x01,
+		NBT_NAME_USER     = 0x03,
+		NBT_NAME_SERVER   = 0x20,
+		NBT_NAME_PDC      = 0x1B,
+		NBT_NAME_LOGON    = 0x1C,
+		NBT_NAME_MASTER   = 0x1D,
+		NBT_NAME_BROWSER  = 0x1E
+	} nbt_name_type;
+
+	/* the ndr parser for nbt_name is separately defined in
+	   nbtname.c (along with the parsers for nbt_string) */
+	typedef [public,nopull,nopush] struct {
+		string        name;
+		string        scope;
+		nbt_name_type type;
+	} nbt_name;
+
+	typedef [enum16bit] enum {
+		NBT_QCLASS_IP = 0x01
+	} nbt_qclass;
+
+	typedef [enum16bit] enum {
+		NBT_QTYPE_ADDRESS     = 0x0001,
+		NBT_QTYPE_NAMESERVICE = 0x0002,
+		NBT_QTYPE_NULL        = 0x000A,
+		NBT_QTYPE_NETBIOS     = 0x0020,
+		NBT_QTYPE_STATUS      = 0x0021
+	} nbt_qtype;
+
+	typedef struct {
+		nbt_name   name;
+		nbt_qtype  question_type;
+		nbt_qclass question_class;
+	} nbt_name_question;
+
+	/* these are the possible values of the NBT_NM_OWNER_TYPE
+	   field */
+	typedef enum {
+		NBT_NODE_B = 0x0000,
+		NBT_NODE_P = 0x2000,
+		NBT_NODE_M = 0x4000,
+		NBT_NODE_H = 0x6000
+	} nbt_node_type;
+
+	typedef [bitmap16bit] bitmap {
+		NBT_NM_PERMANENT        = 0x0200,
+		NBT_NM_ACTIVE           = 0x0400,
+		NBT_NM_CONFLICT         = 0x0800,
+		NBT_NM_DEREGISTER       = 0x1000,
+		NBT_NM_OWNER_TYPE       = 0x6000,
+		NBT_NM_GROUP            = 0x8000
+	} nb_flags;
+
+	typedef struct {
+		nb_flags nb_flags;
+		ipv4address ipaddr;
+	} nbt_rdata_address;
+
+	typedef struct {
+		uint16 length;
+		nbt_rdata_address addresses[length/6];
+	} nbt_rdata_netbios;
+
+	typedef struct {
+		uint8 unit_id[6];
+		uint8 jumpers;
+		uint8 test_result;
+		uint16 version_number;
+		uint16 period_of_statistics;
+		uint16 number_of_crcs;
+		uint16 number_alignment_errors;
+		uint16 number_of_collisions;
+		uint16 number_send_aborts;
+		uint32 number_good_sends;
+		uint32 number_good_receives;
+		uint16 number_retransmits;
+		uint16 number_no_resource_conditions;
+		uint16 number_free_command_blocks;
+		uint16 total_number_command_blocks;
+		uint16 max_total_number_command_blocks;
+		uint16 number_pending_sessions;
+		uint16 max_number_pending_sessions;
+		uint16 max_total_sessions_possible;
+		uint16 session_data_packet_size;
+	} nbt_statistics;
+
+	typedef struct {
+		[charset(DOS)] uint8 name[15];
+		nbt_name_type type;
+		nb_flags  nb_flags;
+	} nbt_status_name;
+
+	typedef struct {
+		[value(num_names * 18 + 47)] uint16 length;
+		uint8 num_names;
+		nbt_status_name names[num_names];
+		nbt_statistics  statistics;
+	} nbt_rdata_status;
+
+	typedef struct {
+		uint16 length;
+		uint8  data[length];
+	} nbt_rdata_data;
+
+	typedef [nodiscriminant] union {
+		[case(NBT_QTYPE_NETBIOS)] nbt_rdata_netbios netbios;
+		[case(NBT_QTYPE_STATUS)]  nbt_rdata_status status;
+		[default]                 nbt_rdata_data   data;
+	} nbt_rdata;
+
+/*
+ * this macro works arround the problem
+ * that we need to use nbt_rdata_data
+ * together with NBT_QTYPE_NETBIOS
+ * for WACK replies
+ */
+#define NBT_RES_REC_LEVEL(rr_type, rdata) (\
+	(((rr_type) == NBT_QTYPE_NETBIOS) && \
+	talloc_check_name(ndr, "struct ndr_push") && \
+	((rdata).data.length == 2)) \
+	? 0 : rr_type)
+
+	typedef [flag(LIBNDR_PRINT_ARRAY_HEX)] struct {
+		nbt_name   name;
+		nbt_qtype  rr_type;
+		nbt_qclass rr_class;
+		uint32     ttl;
+		[switch_is(NBT_RES_REC_LEVEL(rr_type, rdata))] nbt_rdata rdata;
+	} nbt_res_rec;
+
+	typedef [flag(NDR_NOALIGN|NDR_BIG_ENDIAN|NDR_PAHEX),public] struct {
+		uint16            name_trn_id;
+		nbt_operation     operation;
+		uint16            qdcount;
+		uint16            ancount;
+		uint16            nscount;
+		uint16            arcount;
+		nbt_name_question questions[qdcount];
+		nbt_res_rec       answers[ancount];
+		nbt_res_rec       nsrecs[nscount];
+		nbt_res_rec       additional[arcount];
+		[flag(NDR_REMAINING)] DATA_BLOB padding;
+	} nbt_name_packet;
+
+
+	/*
+	  NBT DGRAM packets (UDP/138)
+	*/
+
+	typedef [enum8bit] enum {
+		DGRAM_DIRECT_UNIQUE  = 0x10,
+		DGRAM_DIRECT_GROUP   = 0x11,
+		DGRAM_BCAST          = 0x12,
+		DGRAM_ERROR          = 0x13,
+		DGRAM_QUERY          = 0x14,
+		DGRAM_QUERY_POSITIVE = 0x15,
+		DGRAM_QUERY_NEGATIVE = 0x16
+	} dgram_msg_type;
+
+	typedef [bitmap8bit] bitmap {
+		DGRAM_FLAG_MORE         = 0x01,
+		DGRAM_FLAG_FIRST        = 0x02,
+		DGRAM_FLAG_NODE_TYPE    = 0x0C
+	} dgram_flags;
+
+	typedef [enum8bit] enum {
+		DGRAM_NODE_B    = 0x00,
+		DGRAM_NODE_P    = 0x04,
+		DGRAM_NODE_M    = 0x08,
+		DGRAM_NODE_NBDD = 0x0C
+	} dgram_node_type;
+
+	/* a dgram_message is the main dgram body in general use */
+
+	/* the most common datagram type is a SMB_TRANSACTION
+	   operation, where a SMB packet is used in the data section
+	   of a dgram_message to hold a trans request, which in turn
+	   holds a small command structure. It's a very strange beast
+	   indeed. To make the code cleaner we define a basic SMB
+	   packet in IDL here. This is not a general purpose SMB
+	   packet, and won't be used in the core SMB client/server
+	   code, but it does make working with these types of dgrams
+	   easier */
+
+	const string NBT_MAILSLOT_NETLOGON = "\\MAILSLOT\\NET\\NETLOGON";
+	const string NBT_MAILSLOT_NTLOGON  = "\\MAILSLOT\\NET\\NTLOGON";
+	const string NBT_MAILSLOT_GETDC    = "\\MAILSLOT\\NET\\GETDC";
+	const string NBT_MAILSLOT_BROWSE   = "\\MAILSLOT\\BROWSE";
+
+	typedef [enum8bit] enum {
+		SMB_TRANSACTION = 0x25
+	} smb_command;
+
+	typedef struct {
+		[range(17,17),value(17)] uint8 wct;
+		uint16                      total_param_count;
+		uint16                      total_data_count;
+		uint16                      max_param_count;
+		uint16                      max_data_count;
+		uint8                       max_setup_count;
+		uint8                       pad;
+		uint16                      trans_flags;
+		uint32                      timeout;
+		uint16                      reserved;
+		uint16                      param_count;
+		uint16                      param_offset;
+		uint16                      data_count;
+		uint16                      data_offset;
+		[range(3,3),value(3)] uint8 setup_count;
+		uint8                       pad2;
+		uint16                      opcode;
+		uint16                      priority;
+		uint16                      _class;
+		[value(strlen(mailslot_name)+1+data.length)]
+		      uint16                byte_count;
+		astring                     mailslot_name;
+		[flag(NDR_REMAINING)]       DATA_BLOB data;
+	} smb_trans_body;
+
+	typedef [nodiscriminant] union {
+		[case(SMB_TRANSACTION)] smb_trans_body trans;
+	} smb_body;
+
+
+	typedef [flag(NDR_NOALIGN|NDR_LITTLE_ENDIAN|NDR_PAHEX),public] struct {
+		smb_command                smb_command;
+		uint8                      err_class;
+		uint8                      pad;
+		uint16                     err_code;
+		uint8                      flags;
+		uint16                     flags2;
+		uint16                     pid_high;
+		uint8                      signature[8];
+		uint16                     reserved;
+		uint16                     tid;
+		uint16                     pid;
+		uint16                     vuid;
+		uint16                     mid;
+		[switch_is(smb_command)]   smb_body body;
+	} dgram_smb_packet;
+
+	const uint32 DGRAM_SMB = 0xff534d42; /* 0xffSMB */
+
+	typedef [nodiscriminant] union {
+		[case(DGRAM_SMB)] dgram_smb_packet smb;
+	} dgram_message_body;
+
+	typedef struct {
+		uint16          length;
+		uint16          offset;
+		nbt_name        source_name;
+		nbt_name        dest_name;
+		uint32		dgram_body_type;
+		[switch_is(dgram_body_type)] dgram_message_body body;
+	} dgram_message;
+
+	typedef [enum8bit] enum {
+		DGRAM_ERROR_NAME_NOT_PRESENT = 0x82,
+		DGRAM_ERROR_INVALID_SOURCE   = 0x83,
+		DGRAM_ERROR_INVALID_DEST     = 0x84
+	} dgram_err_code;
+
+	typedef [nodiscriminant] union {
+		[case(DGRAM_DIRECT_UNIQUE)]   dgram_message  msg;
+		[case(DGRAM_DIRECT_GROUP)]    dgram_message  msg;
+		[case(DGRAM_BCAST)]           dgram_message  msg;
+		[case(DGRAM_ERROR)]           dgram_err_code error;
+		[case(DGRAM_QUERY)]           nbt_name       dest_name;
+		[case(DGRAM_QUERY_POSITIVE)]  nbt_name       dest_name;
+		[case(DGRAM_QUERY_NEGATIVE)]  nbt_name       dest_name;
+	} dgram_data;
+
+	typedef [flag(NDR_NOALIGN|NDR_BIG_ENDIAN|NDR_PAHEX),public] struct {
+		dgram_msg_type msg_type;
+		dgram_flags    flags;
+		uint16         dgram_id;
+		ipv4address    src_addr;
+		uint16         src_port;
+		[switch_is(msg_type)] dgram_data data;
+	} nbt_dgram_packet;
+
+
+	/*******************************************/
+	/* \MAILSLOT\NET\NETLOGON mailslot requests */
+	typedef enum {
+		NETLOGON_QUERY_FOR_PDC           = 0x7,
+		NETLOGON_ANNOUNCE_UAS            = 0xa,
+		NETLOGON_RESPONSE_FROM_PDC       = 0xc,
+		NETLOGON_QUERY_FOR_PDC2          = 0x12,
+		NETLOGON_RESPONSE_FROM_PDC2      = 0x17,
+		NETLOGON_RESPONSE_FROM_PDC_USER  = 0x19
+	} nbt_netlogon_command;
+
+	typedef [flag(NDR_LITTLE_ENDIAN),bitmap32bit] bitmap {
+		NETLOGON_VERSION_1			= 0x00000001,
+		NETLOGON_VERSION_5			= 0x00000002,
+		NETLOGON_VERSION_5EX			= 0x00000004,
+		NETLOGON_VERSION_5EX_WITH_IP		= 0x00000008,
+		NETLOGON_VERSION_WITH_CLOSEST_SITE	= 0x00000010,
+		NETLOGON_VERSION_AVOID_NT4_EMUL		= 0x01000000,
+		NETLOGON_VERSION_PDC			= 0x10000000,
+		NETLOGON_VERSION_IP			= 0x20000000,
+		NETLOGON_VERSION_LOCAL			= 0x40000000,
+		NETLOGON_VERSION_GC			= 0x80000000
+	} nbt_netlogon_version;
+
+	/* query for pdc request */
+	typedef struct {
+		astring              computer_name;
+		astring              mailslot_name;
+		[flag(NDR_ALIGN2)]   DATA_BLOB _pad;
+		nstring              unicode_name;
+		nbt_netlogon_version nt_version;
+		uint16               lmnt_token;
+		uint16               lm20_token;
+	} nbt_netlogon_query_for_pdc;
+
+	/* query for pdc request - new style */
+	typedef struct {
+		uint16               request_count;
+		nstring              computer_name;
+		nstring              user_name;
+		astring              mailslot_name;
+		uint32               unknown[2];
+		nbt_netlogon_version nt_version;
+		uint16               lmnt_token;
+		uint16               lm20_token;
+	} nbt_netlogon_query_for_pdc2;
+
+	/* response from pdc */
+	typedef struct {
+		astring pdc_name;
+		[flag(NDR_ALIGN2)]   DATA_BLOB _pad;
+		nstring              unicode_pdc_name;
+		nstring              domain_name;
+		nbt_netlogon_version nt_version;
+		uint16               lmnt_token;
+		uint16               lm20_token;
+	} nbt_netlogon_response_from_pdc;
+
+	typedef [bitmap32bit] bitmap {
+		NBT_SERVER_PDC				= 0x00000001,
+		NBT_SERVER_GC				= 0x00000004,
+		NBT_SERVER_LDAP				= 0x00000008,
+		NBT_SERVER_DS				= 0x00000010,
+		NBT_SERVER_KDC				= 0x00000020,
+		NBT_SERVER_TIMESERV			= 0x00000040,
+		NBT_SERVER_CLOSEST			= 0x00000080,
+		NBT_SERVER_WRITABLE			= 0x00000100,
+		NBT_SERVER_GOOD_TIMESERV		= 0x00000200,
+		NBT_SERVER_NDNC				= 0x00000400,
+		NBT_SERVER_SELECT_SECRET_DOMAIN_6	= 0x00000800,
+		NBT_SERVER_FULL_SECRET_DOMAIN_6		= 0x00001000
+	} nbt_server_type;
+
+	typedef struct {
+		uint32			family;
+		[flag(NDR_BIG_ENDIAN)]	ipv4address pdc_ip;
+		[flag(NDR_REMAINING)]	DATA_BLOB remaining;
+	} nbt_dc_sock_addr;
+
+	/* response from pdc - type2 */
+	typedef struct {
+		[flag(NDR_ALIGN4)]   DATA_BLOB _pad;
+		nbt_server_type      server_type;
+		GUID                 domain_uuid;
+		nbt_string           forest;
+		nbt_string           dns_domain;
+		nbt_string           pdc_dns_name;
+		nbt_string           domain;
+		nbt_string           pdc_name;
+		nbt_string           user_name;
+		nbt_string           server_site;
+		nbt_string           client_site;
+		uint8                dc_sock_addr_size;
+		[subcontext(0),subcontext_size(dc_sock_addr_size)] nbt_dc_sock_addr dc_sock_addr;
+		nbt_netlogon_version nt_version;
+		uint16               lmnt_token;
+		uint16               lm20_token;
+	} nbt_netlogon_response_from_pdc2;
+
+	typedef enum netr_SamDatabaseID netr_SamDatabaseID;
+
+	/* announce change to UAS or SAM */
+	typedef struct {
+		netr_SamDatabaseID   db_index;
+		hyper                serial;
+		NTTIME               timestamp;
+	} nbt_db_change;
+
+	/* used to announce SAM changes */
+	typedef struct {
+		uint32           serial_lo;
+		time_t           timestamp;
+		uint32           pulse;
+		uint32           random;
+		astring          pdc_name;
+		astring          domain;
+		[flag(NDR_ALIGN2)] DATA_BLOB _pad;
+		nstring          unicode_pdc_name;
+		nstring          unicode_domain;
+		uint32           db_count;
+		nbt_db_change    dbchange[db_count];
+		[value(ndr_size_dom_sid0(&sid, ndr->flags))] uint32 sid_size;
+		[subcontext(0),subcontext_size(sid_size)] dom_sid0 sid;
+		nbt_netlogon_version nt_version;
+		uint16           lmnt_token;
+		uint16           lm20_token;
+	} nbt_netlogon_announce_uas;
+
+	typedef [nodiscriminant] union {
+		[case(NETLOGON_QUERY_FOR_PDC)] nbt_netlogon_query_for_pdc pdc;
+		[case(NETLOGON_QUERY_FOR_PDC2)] nbt_netlogon_query_for_pdc2 pdc2;
+		[case(NETLOGON_ANNOUNCE_UAS)] nbt_netlogon_announce_uas uas;
+		[case(NETLOGON_RESPONSE_FROM_PDC)] nbt_netlogon_response_from_pdc response;
+		[case(NETLOGON_RESPONSE_FROM_PDC2)] nbt_netlogon_response_from_pdc2 response2;
+		[case(NETLOGON_RESPONSE_FROM_PDC_USER)] nbt_netlogon_response_from_pdc2 response2;
+	} nbt_netlogon_request;
+
+	typedef [flag(NDR_NOALIGN),public] struct {
+		nbt_netlogon_command command;
+		[switch_is(command)] nbt_netlogon_request req;
+	} nbt_netlogon_packet;
+
+	/*******************************************/
+	/* CLDAP netlogon response                 */
+
+	/* note that these structures are very similar to, but not
+	   quite identical to, the netlogon structures above */
+
+	typedef struct {
+		nbt_netlogon_command type;
+		nstring              pdc_name;
+		nstring              user_name;
+		nstring              domain_name;
+		[value(1)] nbt_netlogon_version nt_version;
+		uint16               lmnt_token;
+		uint16               lm20_token;
+	} nbt_cldap_netlogon_1;
+
+	typedef struct {
+		nbt_netlogon_command type;
+		nstring              pdc_name;
+		nstring              user_name;
+		nstring              domain_name;
+		GUID                 domain_uuid;
+		GUID                 unknown_uuid;
+		nbt_string           forest;
+		nbt_string           dns_domain;
+		nbt_string           pdc_dns_name;
+		ipv4address          pdc_ip;
+		nbt_server_type      server_type;
+		[value(3)] nbt_netlogon_version nt_version;
+		uint16               lmnt_token;
+		uint16               lm20_token;
+	} nbt_cldap_netlogon_3;
+
+	typedef [public] struct {
+		nbt_netlogon_command type;
+		uint16               sbz;
+		nbt_server_type      server_type;
+		GUID                 domain_uuid;
+		nbt_string           forest;
+		nbt_string           dns_domain;
+		nbt_string           pdc_dns_name;
+		nbt_string           domain;
+		nbt_string           pdc_name;
+		nbt_string           user_name;
+		nbt_string           server_site;
+		nbt_string           client_site;
+		[value(5)] nbt_netlogon_version nt_version;
+		uint16               lmnt_token;
+		uint16               lm20_token;
+	} nbt_cldap_netlogon_5;
+
+	typedef struct {
+		nbt_netlogon_command type;
+		uint16               sbz;
+		nbt_server_type      server_type;
+		GUID                 domain_uuid;
+		nbt_string           forest;
+		nbt_string           dns_domain;
+		nbt_string           pdc_dns_name;
+		nbt_string           domain;
+		nbt_string           pdc_name;
+		nbt_string           user_name;
+		nbt_string           server_site;
+		nbt_string           client_site;
+		uint8                dc_sock_addr_size;
+		[subcontext(0),subcontext_size(dc_sock_addr_size)] nbt_dc_sock_addr dc_sock_addr;
+		[value(13)] nbt_netlogon_version nt_version;
+		uint16               lmnt_token;
+		uint16               lm20_token;
+	} nbt_cldap_netlogon_13;
+
+	typedef [public] struct {
+		nbt_netlogon_command type;
+		uint16               sbz;
+		nbt_server_type      server_type;
+		GUID                 domain_uuid;
+		nbt_string           forest;
+		nbt_string           dns_domain;
+		nbt_string           pdc_dns_name;
+		nbt_string           domain;
+		nbt_string           pdc_name;
+		nbt_string           user_name;
+		nbt_string           server_site;
+		nbt_string           client_site;
+		nbt_string           next_closest_site;
+		[value(15)] nbt_netlogon_version nt_version;
+		uint16               lmnt_token;
+		uint16               lm20_token;
+	} nbt_cldap_netlogon_15;
+
+	typedef [public] struct {
+		nbt_netlogon_command type;
+		uint16               sbz;
+		nbt_server_type      server_type;
+		GUID                 domain_uuid;
+		nbt_string           forest;
+		nbt_string           dns_domain;
+		nbt_string           pdc_dns_name;
+		nbt_string           domain;
+		nbt_string           pdc_name;
+		nbt_string           user_name;
+		nbt_string           server_site;
+		nbt_string           client_site;
+		uint8                dc_sock_addr_size;
+		[subcontext(0),subcontext_size(dc_sock_addr_size)] nbt_dc_sock_addr dc_sock_addr;
+		nbt_string           next_closest_site;
+		[value(29)] nbt_netlogon_version nt_version;
+		uint16               lmnt_token;
+		uint16               lm20_token;
+	} nbt_cldap_netlogon_29;
+
+	typedef [flag(NDR_NOALIGN),public,nodiscriminant] union {
+		[case(0)]  nbt_cldap_netlogon_1 logon1;
+		[case(1)]  nbt_cldap_netlogon_1 logon1;
+		[case(2)]  nbt_cldap_netlogon_3 logon3;
+		[case(3)]  nbt_cldap_netlogon_3 logon3;
+		[case(4)]  nbt_cldap_netlogon_5 logon5;
+		[case(5)]  nbt_cldap_netlogon_5 logon5;
+		[case(6)]  nbt_cldap_netlogon_5 logon5;
+		[case(7)]  nbt_cldap_netlogon_5 logon5;
+		[case(8)]  nbt_cldap_netlogon_13 logon13;
+		[case(9)]  nbt_cldap_netlogon_13 logon13;
+		[case(10)] nbt_cldap_netlogon_13 logon13;
+		[case(11)] nbt_cldap_netlogon_13 logon13;
+		[case(12)] nbt_cldap_netlogon_13 logon13;
+		[case(13)] nbt_cldap_netlogon_13 logon13;
+		[case(14)] nbt_cldap_netlogon_13 logon13;
+		[case(15)] nbt_cldap_netlogon_13 logon13;
+		[case(16)] nbt_cldap_netlogon_1 logon1;
+		[case(17)] nbt_cldap_netlogon_1 logon1;
+		[case(18)] nbt_cldap_netlogon_3 logon3;
+		[case(19)] nbt_cldap_netlogon_3 logon3;
+		[case(20)] nbt_cldap_netlogon_15 logon15;
+		[case(21)] nbt_cldap_netlogon_15 logon15;
+		[case(22)] nbt_cldap_netlogon_15 logon15;
+		[case(23)] nbt_cldap_netlogon_15 logon15;
+		[case(24)] nbt_cldap_netlogon_15 logon15;
+		[case(25)] nbt_cldap_netlogon_15 logon15;
+		[case(26)] nbt_cldap_netlogon_15 logon15;
+		[case(27)] nbt_cldap_netlogon_15 logon15;
+		[case(28)] nbt_cldap_netlogon_15 logon15;
+		[case(29)] nbt_cldap_netlogon_29 logon29;
+		[case(30)] nbt_cldap_netlogon_29 logon29;
+		[case(31)] nbt_cldap_netlogon_29 logon29;
+	} nbt_cldap_netlogon;
+
+	/*******************************************/
+	/* \MAILSLOT\NET\NTLOGON mailslot requests */
+	typedef enum {
+		NTLOGON_SAM_LOGON         = 0x12,
+		NTLOGON_SAM_LOGON_REPLY   = 0x13,
+		NTLOGON_SAM_LOGON_REPLY15 = 0x15,
+		NTLOGON_RESPONSE_FROM_PDC2 = 0x17
+	} nbt_ntlogon_command;
+
+	typedef struct {
+		uint16               request_count;
+		nstring              computer_name;
+		nstring              user_name;
+		astring              mailslot_name;
+		samr_AcctFlags       acct_control;
+		[value(ndr_size_dom_sid0(&sid, ndr->flags))] uint32 sid_size;
+		[subcontext(0),subcontext_size(sid_size)] dom_sid0 sid;
+		nbt_netlogon_version nt_version;
+		uint16               lmnt_token;
+		uint16               lm20_token;
+	} nbt_ntlogon_sam_logon;
+
+	typedef struct {
+		nstring              server;
+		nstring              user_name;
+		nstring              domain;
+		nbt_netlogon_version nt_version;
+		uint16               lmnt_token;
+		uint16               lm20_token;
+	} nbt_ntlogon_sam_logon_reply;
+
+	typedef [nodiscriminant] union {
+		[case(NTLOGON_SAM_LOGON)]       nbt_ntlogon_sam_logon logon;
+		[case(NTLOGON_SAM_LOGON_REPLY)] nbt_ntlogon_sam_logon_reply reply;
+		[case(NTLOGON_SAM_LOGON_REPLY15)] nbt_ntlogon_sam_logon_reply reply;
+		[case(NTLOGON_RESPONSE_FROM_PDC2)] nbt_netlogon_response_from_pdc2 reply2;
+	} nbt_ntlogon_request;
+
+	typedef [flag(NDR_NOALIGN),public] struct {
+		nbt_ntlogon_command command;
+		[switch_is(command)] nbt_ntlogon_request req;
+	} nbt_ntlogon_packet;
+
+	/********************************************************/
+	/* \MAILSLOT\BROWSE mailslot requests			*/
+	/* for details see http://ubiqx.org/cifs/Browsing.html  */
+	/********************************************************/
+	typedef bitmap svcctl_ServerType svcctl_ServerType;
+
+	typedef [enum8bit] enum {
+		HostAnnouncement 	= 1,
+		AnnouncementRequest	= 2,
+		Election		= 8,
+		GetBackupListReq	= 9,
+		GetBackupListResp	= 10,
+		BecomeBackup		= 11,
+		DomainAnnouncement	= 12,
+		MasterAnnouncement	= 13,
+		ResetBrowserState	= 14,
+		LocalMasterAnnouncement	= 15
+	} nbt_browse_opcode;
+
+	typedef struct {
+		uint8 UpdateCount;
+		uint32 Periodicity;
+		[charset(DOS)] uint8 ServerName[16];
+		uint8 OSMajor;
+		uint8 OSMinor;
+		svcctl_ServerType ServerType;
+		uint8 BroMajorVer;
+		uint8 BroMinorVer;
+		uint16 Signature;
+		astring Comment;
+	} nbt_browse_host_announcement;
+
+	typedef struct {
+		uint8 Unused;
+		astring ResponseName;
+	} nbt_browse_announcement_request;
+
+	typedef struct {
+		uint8 Version;
+		uint32 Criteria;
+		uint32 UpTime; /* In milliseconds */
+		uint32 Reserved; /* Must be zero */
+		astring ServerName;
+	} nbt_browse_election_request;
+
+	typedef struct {
+		uint8 ReqCount;
+		uint32 Token;
+	} nbt_browse_backup_list_request;
+
+	typedef struct {
+		uint8 BackupCount;
+		uint32 Token;
+		nbt_name BackupServerList[BackupCount];/* TODO: this is wrong */
+	} nbt_browse_backup_list_response;
+
+	typedef struct {
+		astring BrowserName;
+	} nbt_browse_become_backup;
+
+	typedef struct {
+		uint8 UpdateCount;
+		uint32 Periodicity;
+		[charset(DOS)] uint8 ServerName[16];
+		uint8 OSMajor;
+		uint8 OSMinor;
+		svcctl_ServerType ServerType;
+		uint32 MysteriousField;
+		astring Comment;
+	} nbt_browse_domain_announcement;
+
+	typedef struct {
+		astring ServerName;
+	} nbt_browse_master_announcement;
+
+	typedef struct {
+		uint8 Command;
+	} nbt_browse_reset_state;
+
+	typedef struct {
+		uint8 UpdateCount;
+		uint32 Periodicity;
+		[charset(DOS)] uint8 ServerName[16];
+		uint8 OSMajor;
+		uint8 OSMinor;
+		svcctl_ServerType ServerType;
+		uint8 BroMajorVer;
+		uint8 BroMinorVer;
+		uint16 Signature;
+		astring Comment;
+	} nbt_browse_local_master_announcement;
+
+	typedef [nodiscriminant] union {
+		[case(HostAnnouncement)] nbt_browse_host_announcement host_annoucement;
+		[case(AnnouncementRequest)] nbt_browse_announcement_request announcement_request;
+		[case(Election)] nbt_browse_election_request election_request;
+		[case(GetBackupListReq)] nbt_browse_backup_list_request backup_list_request;
+		[case(GetBackupListResp)] nbt_browse_backup_list_response backup_list_response;
+		[case(BecomeBackup)] nbt_browse_become_backup become_backup;
+		[case(DomainAnnouncement)] nbt_browse_domain_announcement domain_announcement;
+		[case(MasterAnnouncement)] nbt_browse_master_announcement master_announcement;
+		[case(ResetBrowserState)] nbt_browse_reset_state reset_browser_state;
+		[case(LocalMasterAnnouncement)] nbt_browse_local_master_announcement local_master_announcement;
+	} nbt_browse_payload;
+
+	typedef [public,flag(NDR_NOALIGN)] struct {
+		nbt_browse_opcode opcode;
+		[switch_is(opcode)] nbt_browse_payload payload;
+	} nbt_browse_packet;
+}

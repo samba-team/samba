@@ -1,0 +1,94 @@
+###############################
+# Configuration Naming Context
+###############################
+dn: CN=Partitions,${CONFIGDN}
+objectClass: top
+objectClass: crossRefContainer
+cn: Partitions
+systemFlags: 2147483648
+msDS-Behavior-Version: 0
+fSMORoleOwner: CN=NTDS Settings,${SERVERDN}
+
+dn: CN=Enterprise Configuration,CN=Partitions,${CONFIGDN}
+objectClass: top
+objectClass: crossRef
+cn: Enterprise Configuration
+systemFlags: 1
+nCName: ${CONFIGDN}
+dnsRoot: ${DNSDOMAIN}
+
+dn: CN=Enterprise Schema,CN=Partitions,${CONFIGDN}
+objectClass: top
+objectClass: crossRef
+cn: Enterprise Schema
+systemFlags: 1
+nCName: ${SCHEMADN}
+dnsRoot: ${DNSDOMAIN}
+
+dn: CN=${DOMAIN},CN=Partitions,${CONFIGDN}
+objectClass: top
+objectClass: crossRef
+cn: ${DOMAIN}
+systemFlags: 3
+nCName: ${DOMAINDN}
+nETBIOSName: ${DOMAIN}
+dnsRoot: ${DNSDOMAIN}
+
+dn: CN=Sites,${CONFIGDN}
+objectClass: top
+objectClass: sitesContainer
+cn: Sites
+systemFlags: 2181038080
+
+dn: CN=${DEFAULTSITE},CN=Sites,${CONFIGDN}
+objectClass: top
+objectClass: site
+cn: ${DEFAULTSITE}
+systemFlags: 2181038080
+
+dn: CN=Servers,CN=${DEFAULTSITE},CN=Sites,${CONFIGDN}
+objectClass: top
+objectClass: serversContainer
+cn: Servers
+systemFlags: 2181038080
+
+dn: CN=Services,${CONFIGDN}
+objectClass: top
+objectClass: container
+cn: Services
+systemFlags: 2147483648
+
+dn: CN=Windows NT,CN=Services,${CONFIGDN}
+objectClass: top
+objectClass: container
+cn: Windows NT
+
+dn: CN=Directory Service,CN=Windows NT,CN=Services,${CONFIGDN}
+objectClass: top
+objectClass: nTDSService
+cn: Directory Service
+sPNMappings: host=ldap,dns,cifs,http
+
+dn: CN=Query-Policies,CN=Directory Service,CN=Windows NT,CN=Services,${CONFIGDN}
+objectClass: top
+objectClass: container
+cn: Query-Policies
+
+dn: CN=Default Query Policy,CN=Query-Policies,CN=Directory Service,CN=Windows NT,CN=Services,${CONFIGDN}
+objectClass: top
+objectClass: queryPolicy
+cn: Default Query Policy
+lDAPAdminLimits: MaxValRange=1500
+lDAPAdminLimits: MaxReceiveBuffer=10485760
+lDAPAdminLimits: MaxDatagramRecv=4096
+lDAPAdminLimits: MaxPoolThreads=4
+lDAPAdminLimits: MaxResultSetSize=262144
+lDAPAdminLimits: MaxTempTableSize=10000
+lDAPAdminLimits: MaxQueryDuration=120
+lDAPAdminLimits: MaxPageSize=1000
+lDAPAdminLimits: MaxNotificationPerConn=5
+lDAPAdminLimits: MaxActiveQueries=20
+lDAPAdminLimits: MaxConnIdleTime=900
+lDAPAdminLimits: InitRecvTimeout=120
+lDAPAdminLimits: MaxConnections=5000
+

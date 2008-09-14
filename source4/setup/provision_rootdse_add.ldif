@@ -1,0 +1,17 @@
+# the rootDSE module looks in this record for its base data
+dn: @ROOTDSE
+subschemaSubentry: CN=Aggregate,${SCHEMADN}
+dsServiceName: CN=NTDS Settings,${SERVERDN}
+defaultNamingContext: ${DOMAINDN}
+rootDomainNamingContext: ${ROOTDN}
+configurationNamingContext: ${CONFIGDN}
+schemaNamingContext: ${SCHEMADN}
+supportedLDAPVersion: 3
+dnsHostName: ${DNSNAME}
+ldapServiceName: ${DNSDOMAIN}:${NETBIOSNAME}$@${REALM}
+serverName: ${SERVERDN}
+domainFunctionality: 0
+forestFunctionality: 0
+domainControllerFunctionality: 2
+isSynchronized: FALSE
+vendorName: Samba Team (http://samba.org)

@@ -1,0 +1,14 @@
+${BLD_OBJ_DIR}/mpr${BLD_OBJ}
+${BLD_OBJ_DIR}/mprAlloc${BLD_OBJ}
+${BLD_OBJ_DIR}/mprArray${BLD_OBJ}
+${BLD_OBJ_DIR}/mprBuf${BLD_OBJ}
+${BLD_OBJ_DIR}/mprFile${BLD_OBJ}
+${BLD_OBJ_DIR}/mprGenFile${BLD_OBJ}
+${BLD_OBJ_DIR}/mprGenTime${BLD_OBJ}
+${BLD_OBJ_DIR}/mprLock${BLD_OBJ}
+${BLD_OBJ_DIR}/mprLog${BLD_OBJ}
+${BLD_OBJ_DIR}/mprPlatform${BLD_OBJ}
+${BLD_OBJ_DIR}/mprPrintf${BLD_OBJ}
+${BLD_OBJ_DIR}/mprString${BLD_OBJ}
+${BLD_OBJ_DIR}/mprSymbol${BLD_OBJ}
+${BLD_OBJ_DIR}/mprTime${BLD_OBJ}
