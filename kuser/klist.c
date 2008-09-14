@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2004 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2008 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  *
@@ -54,12 +54,12 @@ printable_time_long(time_t t)
     return s;
 }
 
-#define COL_ISSUED		"  Issued"
-#define COL_EXPIRES		"  Expires"
-#define COL_FLAGS		"Flags"
-#define COL_PRINCIPAL		"  Principal"
-#define COL_PRINCIPAL_KVNO	"  Principal (kvno)"
-#define COL_CACHENAME		"  Cache name"
+#define COL_ISSUED		NP_("  Issued","")
+#define COL_EXPIRES		NP_("  Expires", "")
+#define COL_FLAGS		NP_("Flags", "")
+#define COL_PRINCIPAL		NP_("  Principal", "")
+#define COL_PRINCIPAL_KVNO	NP_("  Principal (kvno)", "")
+#define COL_CACHENAME		NP_("  Cache name", "")
 
 static void
 print_cred(krb5_context context, krb5_creds *cred, rtbl_t ct, int do_flags)
@@ -82,7 +82,7 @@ print_cred(krb5_context context, krb5_creds *cred, rtbl_t ct, int do_flags)
 	rtbl_add_column_entry(ct, COL_EXPIRES,
 			      printable_time(cred->times.endtime));
     else
-	rtbl_add_column_entry(ct, COL_EXPIRES, ">>>Expired<<<");
+	rtbl_add_column_entry(ct, COL_EXPIRES, N_(">>>Expired<<<", ""));
     ret = krb5_unparse_name (context, cred->server, &str);
     if (ret)
 	krb5_err(context, 1, ret, "krb5_unparse_name");
@@ -131,13 +131,13 @@ print_cred_verbose(krb5_context context, krb5_creds *cred)
     ret = krb5_unparse_name(context, cred->server, &str);
     if(ret)
 	exit(1);
-    printf("Server: %s\n", str);
+    printf(N_("Server: %s\n", ""), str);
     free (str);
 
     ret = krb5_unparse_name(context, cred->client, &str);
     if(ret)
 	exit(1);
-    printf("Client: %s\n", str);
+    printf(N_("Client: %s\n", ""), str);
     free (str);
 
     {
@@ -147,39 +147,43 @@ print_cred_verbose(krb5_context context, krb5_creds *cred)
 
 	decode_Ticket(cred->ticket.data, cred->ticket.length, &t, &len);
 	ret = krb5_enctype_to_string(context, t.enc_part.etype, &s);
-	printf("Ticket etype: ");
+	printf(N_("Ticket etype: ", ""));
 	if (ret == 0) {
 	    printf("%s", s);
 	    free(s);
 	} else {
-	    printf("unknown(%d)", t.enc_part.etype);
+	    printf(N_("unknown-enctype(%d)", ""), t.enc_part.etype);
 	}
 	if(t.enc_part.kvno)
-	    printf(", kvno %d", *t.enc_part.kvno);
+	    printf(N_(", kvno %d", ""), *t.enc_part.kvno);
 	printf("\n");
 	if(cred->session.keytype != t.enc_part.etype) {
 	    ret = krb5_enctype_to_string(context, cred->session.keytype, &str);
 	    if(ret)
 		krb5_warn(context, ret, "session keytype");
 	    else {
-		printf("Session key: %s\n", str);
+		printf(N_("Session key: %s\n", "enctype"), str);
 		free(str);
 	    }
 	}
 	free_Ticket(&t);
-	printf("Ticket length: %lu\n", (unsigned long)cred->ticket.length);
+	printf(N_("Ticket length: %lu\n", ""),
+	       (unsigned long)cred->ticket.length);
     }
-    printf("Auth time:  %s\n", printable_time_long(cred->times.authtime));
+    printf(N_("Auth time:  %s\n", ""),
+	   printable_time_long(cred->times.authtime));
     if(cred->times.authtime != cred->times.starttime)
-	printf("Start time: %s\n", printable_time_long(cred->times.starttime));
-    printf("End time:   %s", printable_time_long(cred->times.endtime));
+	printf(N_("Start time: %s\n", ""),
+	       printable_time_long(cred->times.starttime));
+    printf(N_("End time:   %s", "")
+	      printable_time_long(cred->times.endtime));
     if(sec > cred->times.endtime)
-	printf(" (expired)");
+	printf(N_(" (expired)", ""));
     printf("\n");
     if(cred->flags.b.renewable)
-	printf("Renew till: %s\n",
+	printf(N_("Renew till: %s\n", ""),
 	       printable_time_long(cred->times.renew_till));
-    printf("Ticket flags: ");
+    printf(N_("Ticket flags: ", ""));
 #define PRINT_FLAG2(f, s) if(cred->flags.b.f) { if(!first_flag) printf(", "); printf("%s", #s); first_flag = 0; }
 #define PRINT_FLAG(f) PRINT_FLAG2(f, f)
     first_flag = 1;
@@ -198,7 +202,7 @@ print_cred_verbose(krb5_context context, krb5_creds *cred)
     PRINT_FLAG2(ok_as_delegate, ok-as-delegate);
     PRINT_FLAG(anonymous);
     printf("\n");
-    printf("Addresses: ");
+    printf(N_("Addresses: ", ""));
     if (cred->addresses.len != 0) {
 	for(j = 0; j < cred->addresses.len; j++){
 	    char buf[128];
@@ -211,7 +215,7 @@ print_cred_verbose(krb5_context context, krb5_creds *cred)
 		printf("%s", buf);
 	}
     } else {
-	printf("addressless");
+	printf(N_("addressless", ""));
     }
     printf("\n\n");
 }
@@ -241,14 +245,14 @@ print_tickets (krb5_context context,
 	krb5_err (context, 1, ret, "krb5_unparse_name");
 
     printf ("%17s: %s:%s\n",
-	    "Credentials cache",
+	    N_("Credentials cache", ""),
 	    krb5_cc_get_type(context, ccache),
 	    krb5_cc_get_name(context, ccache));
-    printf ("%17s: %s\n", "Principal", str);
+    printf ("%17s: %s\n", N_("Principal", ""), str);
     free (str);
 
     if(do_verbose)
-	printf ("%17s: %d\n", "Cache version",
+	printf ("%17s: %d\n", N_("Cache version", ""),
 		krb5_cc_get_version(context, ccache));
 
     krb5_get_kdc_sec_offset(context, &sec, &usec);
@@ -267,7 +271,7 @@ print_tickets (krb5_context context,
 	
 	unparse_time (val, buf, sizeof(buf));
 
-	printf ("%17s: %s%s\n", "KDC time offset",
+	printf ("%17s: %s%s\n", N_("KDC time offset", ""),
 		sig == -1 ? "-" : "", buf);
     }
 
@@ -414,14 +418,14 @@ display_tokens(int do_verbose)
 	    strlcpy (buf2, printable_time(ct.EndTimestamp),
 		     sizeof(buf2));
 	else
-	    strlcpy (buf2, ">>> Expired <<<", sizeof(buf2));
+	    strlcpy (buf2, N_(">>> Expired <<<", ""), sizeof(buf2));
 
 	printf("%s  %s  ", buf1, buf2);
 
 	if ((ct.EndTimestamp - ct.BeginTimestamp) & 1)
-	    printf("User's (AFS ID %d) tokens for %s", ct.ViceId, cell);
+	    printf(N_("User's (AFS ID %d) tokens for %s", ""), ct.ViceId, cell);
 	else
-	    printf("Tokens for %s", cell);
+	    printf(N_("Tokens for %s", ""), cell);
 	if (do_verbose)
 	    printf(" (%d)", ct.AuthHandle);
 	putchar('\n');
@@ -460,7 +464,7 @@ display_v5_ccache (const char *cred_cache, int do_test, int do_verbose,
     if (ret) {
 	if(ret == ENOENT) {
 	    if (!do_test)
-		krb5_warnx(context, "No ticket file: %s",
+		krb5_warnx(context, N_("No ticket file: %s", ""),
 			   krb5_cc_get_name(context, ccache));
 	    return 1;
 	} else
@@ -526,7 +530,7 @@ list_caches(void)
 		rtbl_add_column_entry(ct, COL_CACHENAME,
 				      krb5_cc_get_name(context, id));
 		rtbl_add_column_entry(ct, COL_EXPIRES,
-				      expired ? ">>> Expired <<<" :
+				      expired ? N_(">>> Expired <<<", "") :
 				      printable_time(t));
 		free(name);
 		krb5_free_principal(context, principal);
@@ -561,24 +565,24 @@ static int do_hidden	 	= 0;
 static struct getargs args[] = {
     { NULL, 'f', arg_flag, &do_flags },
     { "cache",			'c', arg_string, &cred_cache,
-      "credentials cache to list", "cache" },
+      NP_("credentials cache to list", ""), "cache" },
     { "test",			't', arg_flag, &do_test,
-      "test for having tickets", NULL },
+      NP_("test for having tickets", ""), NULL },
     { NULL,			's', arg_flag, &do_test },
     { "tokens",			'T',   arg_flag, &do_tokens,
-      "display AFS tokens", NULL },
+      NP_("display AFS tokens", ""), NULL },
     { "v5",			'5',	arg_flag, &do_v5,
-      "display v5 cred cache", NULL},
+      NP_("display v5 cred cache", ""), NULL},
     { "list-caches",		'l', arg_flag, &do_list_caches,
-      "verbose output", NULL },
+      NP_("verbose output", ""), NULL },
     { "verbose",		'v', arg_flag, &do_verbose,
-      "verbose output", NULL },
+      NP_("verbose output", ""), NULL },
     { "hidden",			0,   arg_flag, &do_hidden,
-      "display hidden credentials", NULL },
+      NP_("display hidden credentials", ""), NULL },
     { NULL,			'a', arg_flag, &do_verbose },
     { NULL,			'n', arg_flag, &do_verbose },
     { "version", 		0,   arg_flag, &version_flag,
-      "print version", NULL },
+      NP_("print version", ""), NULL },
     { "help",			0,   arg_flag, &help_flag,
       NULL, NULL}
 };
@@ -586,10 +590,12 @@ static struct getargs args[] = {
 static void
 usage (int ret)
 {
-    arg_printusage (args,
-		    sizeof(args)/sizeof(*args),
-		    NULL,
-		    "");
+    arg_printusage_i18n (args,
+			 sizeof(args)/sizeof(*args),
+			 N_("Usage: ", ""),
+			 NULL,
+			 "",
+			 getarg_i18n);
     exit (ret);
 }
 
