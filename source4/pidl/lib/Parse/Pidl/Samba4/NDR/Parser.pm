@@ -2225,6 +2225,20 @@ sub AuthServiceStruct($$$)
 	$self->pidl("");
 }
 
+sub FunctionCallEntry($$)
+{
+	my ($self, $d) = @_;
+	next if not defined($d->{OPNUM});
+	$self->pidl("\t{");
+	$self->pidl("\t\t\"$d->{NAME}\",");
+	$self->pidl("\t\tsizeof(struct $d->{NAME}),");
+	$self->pidl("\t\t(ndr_push_flags_fn_t) ndr_push_$d->{NAME},");
+	$self->pidl("\t\t(ndr_pull_flags_fn_t) ndr_pull_$d->{NAME},");
+	$self->pidl("\t\t(ndr_print_function_t) ndr_print_$d->{NAME},");
+	$self->pidl("\t\t".($d->{ASYNC}?"true":"false").",");
+	$self->pidl("\t},");
+}
+
 #####################################################################
 # produce a function call table
 sub FunctionTable($$)
@@ -2237,16 +2251,9 @@ sub FunctionTable($$)
 	return unless defined ($interface->{PROPERTIES}->{uuid});
 
 	$self->pidl("static const struct ndr_interface_call $interface->{NAME}\_calls[] = {");
-	foreach my $d (@{$interface->{FUNCTIONS}}) {
-		next if not defined($d->{OPNUM});
-		$self->pidl("\t{");
-		$self->pidl("\t\t\"$d->{NAME}\",");
-		$self->pidl("\t\tsizeof(struct $d->{NAME}),");
-		$self->pidl("\t\t(ndr_push_flags_fn_t) ndr_push_$d->{NAME},");
-		$self->pidl("\t\t(ndr_pull_flags_fn_t) ndr_pull_$d->{NAME},");
-		$self->pidl("\t\t(ndr_print_function_t) ndr_print_$d->{NAME},");
-		$self->pidl("\t\t".($d->{ASYNC}?"true":"false").",");
-		$self->pidl("\t},");
+
+	foreach my $d (@{$interface->{INHERITED_FUNCTIONS}},@{$interface->{FUNCTIONS}}) {
+		$self->FunctionCallEntry($d);
 		$count++;
 	}
 	$self->pidl("\t{ NULL, 0, NULL, NULL, NULL, false }");
@@ -2355,7 +2362,7 @@ sub HeaderInterface($$$)
 
 	foreach (@{$interface->{FUNCTIONS}}) {
 		next if has_property($_, "noopnum");
-		next if grep(/$_->{NAME}/,@{$interface->{INHERITED_FUNCTIONS}});
+		next if grep(/^$_->{NAME}$/,@{$interface->{INHERITED_FUNCTIONS}});
 		my $u_name = uc $_->{NAME};
 	
 		my $val = sprintf("0x%02x", $count);
