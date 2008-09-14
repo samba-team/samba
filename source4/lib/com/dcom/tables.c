@@ -2,6 +2,7 @@
    Unix SMB/CIFS implementation.
    DCOM proxy tables functionality
    Copyright (C) 2005 Jelmer Vernooij <jelmer@samba.org>
+   Copyright (C) 2006 Andrzej Hajda <andrzej.hajda@wp.pl>
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -19,8 +20,9 @@
 */
 
 #include "includes.h"
-#include "dlinklist.h"
+#include "lib/util/dlinklist.h"
 #include "librpc/gen_ndr/com_dcom.h"
+#include "lib/com/dcom/dcom.h"
 
 static struct dcom_proxy {
 	struct IUnknown_vtable *vtable;
@@ -47,3 +49,44 @@ struct IUnknown_vtable *dcom_proxy_vtable_by_iid(struct GUID *iid)
 	}
 	return NULL;
 }
+
+static struct dcom_marshal {
+	struct GUID clsid;
+	marshal_fn marshal;
+	unmarshal_fn unmarshal;
+	struct dcom_marshal *prev, *next;
+}  *marshals = NULL;
+
+NTSTATUS dcom_register_marshal(struct GUID *clsid, marshal_fn marshal, unmarshal_fn unmarshal)
+{
+	struct dcom_marshal *p = talloc(talloc_autofree_context(), struct dcom_marshal);
+
+	p->clsid = *clsid;
+	p->marshal = marshal;
+	p->unmarshal = unmarshal;
+	DLIST_ADD(marshals, p);
+	return NT_STATUS_OK;
+}
+
+_PUBLIC_ marshal_fn dcom_marshal_by_clsid(struct GUID *clsid)
+{
+	struct dcom_marshal *p;
+	for (p = marshals; p; p = p->next) {
+		if (GUID_equal(&p->clsid, clsid)) {
+			return p->marshal;
+		}
+	}
+	return NULL;
+}
+
+_PUBLIC_ unmarshal_fn dcom_unmarshal_by_clsid(struct GUID *clsid)
+{
+	struct dcom_marshal *p;
+	for (p = marshals; p; p = p->next) {
+		if (GUID_equal(&p->clsid, clsid)) {
+			return p->unmarshal;
+		}
+	}
+	return NULL;
+}
+
