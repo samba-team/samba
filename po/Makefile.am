@@ -66,4 +66,7 @@ FILES = \
     heimdal_krb5/sv_SE.po
 
 EXTRA_DIST = gen-po.in $(FILES)
-CLEANFILES = gen-po.tmp $(noinst_SCRIPTS)
+CLEANFILES = gen-po.tmp $(noinst_SCRIPTS) heimdal-pot.tar.gz
+
+launchpad:
+	tar Czcf $(top_srcdir) $(top_builddir)/po/heimdal-pot.tar.gz $$(cd $(top_srcdir) && find . -name '*.pot')
