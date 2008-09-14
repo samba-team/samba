@@ -16,97 +16,44 @@ CPPFLAGS = @CPPFLAGS@ -I$(srcdir)/include -Iinclude
 CFLAGS = $(CPPFLAGS) @CFLAGS@
 LDFLAGS = @LDFLAGS@
 EXEEXT = @EXEEXT@
+SHLD = @SHLD@
 SHLD_FLAGS = @SHLD_FLAGS@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PICFLAG = @PICFLAG@
-SONAMEFLAG = @SONAMEFLAG@
 SHLIBEXT = @SHLIBEXT@
-
-.PHONY: test
-
-PROGS = bin/tdbtool$(EXEEXT) bin/tdbdump$(EXEEXT) bin/tdbbackup$(EXEEXT)
-PROGS_NOINSTALL = bin/tdbtest$(EXEEXT) bin/tdbtorture$(EXEEXT)
-ALL_PROGS = $(PROGS) $(PROGS_NOINSTALL)
+SWIG = swig
+PYTHON = @PYTHON@
+PYTHON_CONFIG = @PYTHON_CONFIG@
+PYTHON_BUILD_TARGET = @PYTHON_BUILD_TARGET@
+PYTHON_INSTALL_TARGET = @PYTHON_INSTALL_TARGET@
+PYTHON_CHECK_TARGET = @PYTHON_CHECK_TARGET@
+LIB_PATH_VAR = @LIB_PATH_VAR@
+tdbdir = @tdbdir@
 
 TDB_OBJ = @TDB_OBJ@ @LIBREPLACEOBJ@
 
-DIRS = bin common tools
+default: all
 
-SONAME = libtdb.$(SHLIBEXT).1
-SOLIB = libtdb.$(SHLIBEXT).$(PACKAGE_VERSION)
+include $(tdbdir)/tdb.mk
+include $(tdbdir)/rules.mk
 
-all: showflags dirs $(PROGS) $(SOLIB) libtdb.a
+all:: showflags dirs $(PROGS) $(TDB_SOLIB) libtdb.a $(PYTHON_BUILD_TARGET)
 
-showflags:
-	@echo 'tdb will be compiled with flags:'
-	@echo '  CFLAGS = $(CFLAGS)'
-	@echo '  CPPFLAGS = $(CPPFLAGS)'
-	@echo '  LDFLAGS = $(LDFLAGS)'
-	@echo '  LIBS = $(LIBS)'
+install:: all
+$(TDB_SOLIB): $(TDB_OBJ)
+	$(SHLD) $(SHLD_FLAGS) -o $@ $(TDB_OBJ) @SONAMEFLAG@$(TDB_SONAME)
 
-.SUFFIXES: .c .o
+check: test
 
-.c.o:
-	@echo Compiling $*.c
-	@mkdir -p `dirname $@`
-	@$(CC) $(PICFLAG) $(CFLAGS) -c $< -o $@
+test:: $(PYTHON_CHECK_TARGET)
+installcheck:: test install
 
-dirs:
-	@mkdir -p $(DIRS)
+clean::
+	rm -f *.o *.a */*.o
 
-install: all
-	mkdir -p $(DESTDIR)$(bindir)
-	mkdir -p $(DESTDIR)$(includedir)
-	mkdir -p $(DESTDIR)$(libdir) 
-	mkdir -p $(DESTDIR)$(libdir)/pkgconfig
-	cp $(PROGS) $(DESTDIR)$(bindir)
-	cp $(srcdir)/include/tdb.h $(DESTDIR)$(includedir)
-	cp tdb.pc $(DESTDIR)$(libdir)/pkgconfig
-	cp libtdb.a $(SOLIB) $(DESTDIR)$(libdir)
-
-libtdb.a: $(TDB_OBJ)
-	ar -rv libtdb.a $(TDB_OBJ)
-
-libtdb.(SHLIBEXT): $(SOLIB)
-	ln -s $< $@
-
-$(SONAME): $(SOLIB)
-	ln -s $< $@
-
-$(SOLIB): $(TDB_OBJ)
-	$(CC) $(SHLD_FLAGS) -o $@ $(TDB_OBJ) $(SONAMEFLAG)$(SONAME) 
-
-TDB_LIB = libtdb.a
-
-bin/tdbtest$(EXEEXT): tools/tdbtest.o $(TDB_LIB)
-	$(CC) $(CFLAGS) $(LDFLAGS) -o bin/tdbtest tools/tdbtest.o -L. -ltdb -lgdbm
-
-bin/tdbtool$(EXEEXT): tools/tdbtool.o $(TDB_LIB)
-	$(CC) $(CFLAGS) $(LDFLAGS) -o bin/tdbtool tools/tdbtool.o -L. -ltdb
-
-bin/tdbtorture$(EXEEXT): tools/tdbtorture.o $(TDB_LIB)
-	$(CC) $(CFLAGS) $(LDFLAGS) -o bin/tdbtorture tools/tdbtorture.o -L. -ltdb
-
-bin/tdbdump$(EXEEXT): tools/tdbdump.o $(TDB_LIB)
-	$(CC) $(CFLAGS) $(LDFLAGS) -o bin/tdbdump tools/tdbdump.o -L. -ltdb
-
-bin/tdbbackup$(EXEEXT): tools/tdbbackup.o $(TDB_LIB)
-	$(CC) $(CFLAGS) $(LDFLAGS) -o bin/tdbbackup tools/tdbbackup.o -L. -ltdb
-
-test: bin/tdbtorture$(EXEEXT)
-	bin/tdbtorture$(EXEEXT)
-
-installcheck: test install
-
-clean:
-	rm -f $(ALL_PROGS) *.o *.a common/*.o tools/*.o tdb.pc
-	rm -f test.db test.tdb torture.tdb test.gdbm
-	rm -f $(SONAME) $(SOLIB) libtdb.a
-
-distclean: clean
-	rm -f *~ */*~
+distclean:: clean
 	rm -f config.log config.status include/config.h config.cache
 	rm -f Makefile
 
-realdistclean: distclean
+realdistclean:: distclean
 	rm -f configure include/config.h.in

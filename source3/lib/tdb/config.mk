@@ -1,68 +1,57 @@
 ################################################
 # Start SUBSYSTEM LIBTDB
 [LIBRARY::LIBTDB]
-VERSION = 0.0.1
-SO_VERSION = 0
-PC_FILE = tdb.pc
-OBJ_FILES = \
-	common/tdb.o common/dump.o common/io.o common/lock.o \
-	common/open.o common/traverse.o common/freelist.o \
-	common/error.o common/transaction.o
+OUTPUT_TYPE = STATIC_LIBRARY
 CFLAGS = -Ilib/tdb/include
-PUBLIC_HEADERS = include/tdb.h
 #
 # End SUBSYSTEM ldb
 ################################################
+
+LIBTDB_OBJ_FILES = $(addprefix lib/tdb/common/, \
+	tdb.o dump.o io.o lock.o \
+	open.o traverse.o freelist.o \
+	error.o transaction.o)
 
 ################################################
 # Start BINARY tdbtool
 [BINARY::tdbtool]
 INSTALLDIR = BINDIR
-OBJ_FILES= \
-		tools/tdbtool.o
 PRIVATE_DEPENDENCIES = \
 		LIBTDB
 # End BINARY tdbtool
 ################################################
 
+tdbtool_OBJ_FILES = lib/tdb/tools/tdbtool.o
+
 ################################################
 # Start BINARY tdbtorture
 [BINARY::tdbtorture]
 INSTALLDIR = BINDIR
-OBJ_FILES= \
-		tools/tdbtorture.o
 PRIVATE_DEPENDENCIES = \
 		LIBTDB
 # End BINARY tdbtorture
 ################################################
 
+tdbtorture_OBJ_FILES = lib/tdb/tools/tdbtorture.o
+
 ################################################
 # Start BINARY tdbdump
 [BINARY::tdbdump]
 INSTALLDIR = BINDIR
-OBJ_FILES= \
-		tools/tdbdump.o
 PRIVATE_DEPENDENCIES = \
 		LIBTDB
 # End BINARY tdbdump
 ################################################
 
+tdbdump_OBJ_FILES = lib/tdb/tools/tdbdump.o
+
 ################################################
 # Start BINARY tdbbackup
 [BINARY::tdbbackup]
 INSTALLDIR = BINDIR
-OBJ_FILES= \
-		tools/tdbbackup.o
 PRIVATE_DEPENDENCIES = \
 		LIBTDB
 # End BINARY tdbbackup
 ################################################
 
-#######################
-# Start LIBRARY swig_tdb
-[LIBRARY::swig_tdb]
-LIBRARY_REALNAME = swig/_tdb.$(SHLIBEXT)
-OBJ_FILES = swig/tdb_wrap.o
-PUBLIC_DEPENDENCIES = LIBTDB DYNCONFIG
-# End LIBRARY swig_tdb
-#######################
+tdbbackup_OBJ_FILES = lib/tdb/tools/tdbbackup.o
