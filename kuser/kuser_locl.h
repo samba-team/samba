@@ -94,6 +94,7 @@
 #define NP_(x,y) (x)
 #define getarg_i18n NULL
 #define bindtextdomain(package, localedir)
+#define textdomain(package)
 #endif
 
 
