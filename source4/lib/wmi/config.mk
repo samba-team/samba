@@ -45,7 +45,10 @@ librpc/gen_ndr/dcom_p.c: idl
 [PYTHON::pywmi]
 PUBLIC_DEPENDENCIES = LIBCLI_SMB NDR_MISC LIBSAMBA-UTIL LIBSAMBA-CONFIG WMI
 
+$(eval $(call python_py_module_template,wmi.py,$(wmisrcdir)/wmi.py))
+
 pywmi_OBJ_FILES = $(wmisrcdir)/wmi_wrap.o
+$(pywmi_OBJ_FILES): CFLAGS+=$(CFLAG_NO_UNUSED_MACROS) $(CFLAG_NO_CAST_QUAL)
 
 # End LIBRARY swig_dcerpc
 #######################
