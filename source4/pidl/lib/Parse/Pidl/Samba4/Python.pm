@@ -11,7 +11,7 @@ use Exporter;
 use strict;
 use Parse::Pidl qw(warning fatal);
 use Parse::Pidl::Typelist qw(hasType resolveType getType mapTypeName expandAlias);
-use Parse::Pidl::Util qw(has_property ParseExpr);
+use Parse::Pidl::Util qw(has_property ParseExpr unmake_str);
 use Parse::Pidl::NDR qw(GetPrevLevel GetNextLevel ContainsDeferred is_charset_array);
 use Parse::Pidl::CUtil qw(get_value_of get_pointer_to);
 use Parse::Pidl::Samba4::Header qw(GenerateFunctionInEnv GenerateFunctionOutEnv EnvSubstituteValue GenerateStructEnv);
@@ -60,8 +60,8 @@ sub Import
 	my $self = shift;
 	my @imports = @_;
 	foreach (@imports) {
-		s/\.idl\"$//;
-		s/^\"//;
+		$_ = unmake_str($_);
+		s/\.idl$//;
 		$self->pidl_hdr("#include \"librpc/gen_ndr/py_$_\.h\"\n");
 	}
 }
