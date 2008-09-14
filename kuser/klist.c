@@ -33,6 +33,7 @@
 
 #include "kuser_locl.h"
 #include "rtbl.h"
+#include "parse_units.h"
 
 RCSID("$Id$");
 
@@ -123,7 +124,6 @@ print_cred_verbose(krb5_context context, krb5_creds *cred)
     int j;
     char *str;
     krb5_error_code ret;
-    int first_flag;
     krb5_timestamp sec;
 
     krb5_timeofday (context, &sec);
@@ -133,18 +133,18 @@ print_cred_verbose(krb5_context context, krb5_creds *cred)
 	exit(1);
     printf(N_("Server: %s\n", ""), str);
     free (str);
-
+    
     ret = krb5_unparse_name(context, cred->client, &str);
     if(ret)
 	exit(1);
     printf(N_("Client: %s\n", ""), str);
     free (str);
-
+    
     {
 	Ticket t;
 	size_t len;
 	char *s;
-
+	
 	decode_Ticket(cred->ticket.data, cred->ticket.length, &t, &len);
 	ret = krb5_enctype_to_string(context, t.enc_part.etype, &s);
 	printf(N_("Ticket etype: ", ""));
@@ -175,33 +175,21 @@ print_cred_verbose(krb5_context context, krb5_creds *cred)
     if(cred->times.authtime != cred->times.starttime)
 	printf(N_("Start time: %s\n", ""),
 	       printable_time_long(cred->times.starttime));
-    printf(N_("End time:   %s", "")
-	      printable_time_long(cred->times.endtime));
+    printf(N_("End time:   %s", ""),
+	   printable_time_long(cred->times.endtime));
     if(sec > cred->times.endtime)
 	printf(N_(" (expired)", ""));
     printf("\n");
     if(cred->flags.b.renewable)
 	printf(N_("Renew till: %s\n", ""),
 	       printable_time_long(cred->times.renew_till));
-    printf(N_("Ticket flags: ", ""));
-#define PRINT_FLAG2(f, s) if(cred->flags.b.f) { if(!first_flag) printf(", "); printf("%s", #s); first_flag = 0; }
-#define PRINT_FLAG(f) PRINT_FLAG2(f, f)
-    first_flag = 1;
-    PRINT_FLAG(forwardable);
-    PRINT_FLAG(forwarded);
-    PRINT_FLAG(proxiable);
-    PRINT_FLAG(proxy);
-    PRINT_FLAG2(may_postdate, may-postdate);
-    PRINT_FLAG(postdated);
-    PRINT_FLAG(invalid);
-    PRINT_FLAG(renewable);
-    PRINT_FLAG(initial);
-    PRINT_FLAG2(pre_authent, pre-authenticated);
-    PRINT_FLAG2(hw_authent, hw-authenticated);
-    PRINT_FLAG2(transited_policy_checked, transited-policy-checked);
-    PRINT_FLAG2(ok_as_delegate, ok-as-delegate);
-    PRINT_FLAG(anonymous);
-    printf("\n");
+    {
+	char flags[1024];
+	unparse_flags(TicketFlags2int(cred->flags.b), 
+		      asn1_TicketFlags_units(),
+		      flags, sizeof(flags));
+	printf(N_("Ticket flags: %s\n", ""), flags);
+    }
     printf(N_("Addresses: ", ""));
     if (cred->addresses.len != 0) {
 	for(j = 0; j < cred->addresses.len; j++){
