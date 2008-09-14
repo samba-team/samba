@@ -87,7 +87,7 @@ char * prefixpath = NULL;
 
 /* like strncpy but does not 0 fill the buffer and always null
  *    terminates. bufsize is the size of the destination buffer */
-size_t strlcpy(char *d, const char *s, size_t bufsize)
+static size_t strlcpy(char *d, const char *s, size_t bufsize)
 {
 	size_t len = strlen(s);
 	size_t ret = len;
@@ -101,7 +101,7 @@ size_t strlcpy(char *d, const char *s, size_t bufsize)
 /* like strncat but does not 0 fill the buffer and always null
  *    terminates. bufsize is the length of the buffer, which should
  *       be one more than the maximum resulting string length */
-size_t strlcat(char *d, const char *s, size_t bufsize)
+static size_t strlcat(char *d, const char *s, size_t bufsize)
 {
 	size_t len1 = strlen(d);
 	size_t len2 = strlen(s);
