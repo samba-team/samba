@@ -81,7 +81,7 @@ static void parse_args(int argc, char *argv[], struct program_args *pmyargs)
     }
 
     if (argc_new < 2 || argv_new[1][0] != '/'
-        || argv_new[1][1] != '/') {
+	|| argv_new[1][1] != '/') {
 	poptPrintUsage(pc, stdout, 0);
 	poptFreeContext(pc);
 	exit(1);
@@ -119,7 +119,7 @@ WERROR WBEM_ConnectServer(struct com_context *ctx, const char *server, const cha
 	}
 
 	GUID_from_string(CLSID_WBEMLEVEL1LOGIN, &clsid);
-        GUID_from_string(COM_IWBEMLEVEL1LOGIN_UUID, &iid);
+	GUID_from_string(COM_IWBEMLEVEL1LOGIN_UUID, &iid);
 	result = dcom_create_object(ctx, &clsid, server, 1, &iid, &mqi, &coresult);
 	WERR_CHECK("dcom_create_object.");
 	result = coresult;
@@ -183,12 +183,12 @@ int main(int argc, char **argv)
 	WERROR result;
 	NTSTATUS status;
 	struct IWbemServices *pWS = NULL;
-        struct IEnumWbemClassObject *pEnum = NULL;
+	struct IEnumWbemClassObject *pEnum = NULL;
 	uint32_t cnt;
 	struct BSTR queryLanguage;
 	struct BSTR query;
 
-        parse_args(argc, argv, &args);
+	parse_args(argc, argv, &args);
 
 	wmi_init(&ctx, cmdline_credentials);
 	result = WBEM_ConnectServer(ctx, args.hostname, "root\\cimv2", 0, 0, 0, 0, 0, 0, &pWS);
@@ -202,9 +202,9 @@ int main(int argc, char **argv)
 	printf("3: Monitoring directory C:\\wmi_test_dir_tmp. Please create/delete files in that directory to see notifications, after 4 events program quits.\n");
 	query.data = "SELECT * FROM __InstanceOperationEvent WITHIN 1 WHERE Targetinstance ISA 'CIM_DirectoryContainsFile' and TargetInstance.GroupComponent= 'Win32_Directory.Name=\"C:\\\\\\\\wmi_test_dir_tmp\"'";
 	queryLanguage.data = "WQL";
-        result = IWbemServices_ExecNotificationQuery(pWS, ctx, queryLanguage, 
+	result = IWbemServices_ExecNotificationQuery(pWS, ctx, queryLanguage, 
 		query, WBEM_FLAG_RETURN_IMMEDIATELY | WBEM_FLAG_FORWARD_ONLY, NULL, &pEnum);
-        WERR_CHECK("WMI query execute.");
+	WERR_CHECK("WMI query execute.");
 	for (cnt = 0; cnt < 4; ++cnt) {
 		struct WbemClassObject *co;
 		uint32_t ret;

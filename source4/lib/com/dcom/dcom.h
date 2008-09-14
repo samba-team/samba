@@ -37,6 +37,10 @@ struct dcom_client_context {
 	} *object_exporters;
 };
 
+typedef enum ndr_err_code (*marshal_fn)(TALLOC_CTX *mem_ctx, struct IUnknown *pv, struct OBJREF *o);
+typedef enum ndr_err_code (*unmarshal_fn)(TALLOC_CTX *mem_ctx, struct OBJREF *o, struct IUnknown **pv);
+
+
 struct dcom_client_context *dcom_client_init(struct com_context *ctx, struct cli_credentials *credentials);
 struct dcom_object_exporter *object_exporter_by_oxid(struct com_context *ctx, uint64_t oxid);
 struct dcom_object_exporter *object_exporter_by_ip(struct com_context *ctx, struct IUnknown *ip);
@@ -46,10 +50,16 @@ NTSTATUS dcom_get_pipe(struct IUnknown *iface, struct dcerpc_pipe **pp);
 NTSTATUS dcom_OBJREF_from_IUnknown(struct OBJREF *o, struct IUnknown *p);
 NTSTATUS dcom_IUnknown_from_OBJREF(struct com_context *ctx, struct IUnknown **_p, struct OBJREF *o);
 uint64_t dcom_get_current_oxid(void);
+void dcom_set_server_credentials(struct com_context *ctx, const char *server, struct cli_credentials *credentials);
+WERROR dcom_query_interface(struct IUnknown *d, uint32_t cRefs, uint16_t cIids, struct GUID *iids, struct IUnknown **ip, WERROR *results);
 
 #include "librpc/gen_ndr/com_dcom.h"
 
 NTSTATUS dcom_register_proxy(struct IUnknown_vtable *proxy_vtable);
 struct IUnknown_vtable *dcom_proxy_vtable_by_iid(struct GUID *iid);
+NTSTATUS dcom_register_marshal(struct GUID *clsid, marshal_fn marshal, unmarshal_fn unmarshal);
+
+#include "libcli/composite/composite.h"
+void dcom_release_continue(struct composite_context *cr);
 
 #endif /* _DCOM_H */

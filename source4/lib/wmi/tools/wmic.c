@@ -54,8 +54,8 @@ static void parse_args(int argc, char *argv[], struct program_args *pmyargs)
 	POPT_COMMON_CONNECTION
 	POPT_COMMON_CREDENTIALS
 	POPT_COMMON_VERSION
-        {"namespace", 0, POPT_ARG_STRING, &pmyargs->ns, 0,
-         "WMI namespace, default to root\\cimv2", 0},
+	{"namespace", 0, POPT_ARG_STRING, &pmyargs->ns, 0,
+	 "WMI namespace, default to root\\cimv2", 0},
 	POPT_TABLEEND
     };
 
@@ -81,7 +81,7 @@ static void parse_args(int argc, char *argv[], struct program_args *pmyargs)
     }
 
     if (argc_new != 3 || argv_new[1][0] != '/'
-        || argv_new[1][1] != '/') {
+	|| argv_new[1][1] != '/') {
 	poptPrintUsage(pc, stdout, 0);
 	poptFreeContext(pc);
 	exit(1);
@@ -100,52 +100,52 @@ static void parse_args(int argc, char *argv[], struct program_args *pmyargs)
 			}
 
 #define RETURN_CVAR_ARRAY_STR(fmt, arr) {\
-        uint32_t i;\
+	uint32_t i;\
 	char *r;\
 \
-        if (!arr) {\
-                return talloc_strdup(mem_ctx, "NULL");\
-        }\
+	if (!arr) {\
+	        return talloc_strdup(mem_ctx, "NULL");\
+	}\
 	r = talloc_strdup(mem_ctx, "(");\
-        for (i = 0; i < arr->count; ++i) {\
+	for (i = 0; i < arr->count; ++i) {\
 		r = talloc_asprintf_append(r, fmt "%s", arr->item[i], (i+1 == arr->count)?"":",");\
-        }\
-        return talloc_asprintf_append(r, ")");\
+	}\
+	return talloc_asprintf_append(r, ")");\
 }
 
 char *string_CIMVAR(TALLOC_CTX *mem_ctx, union CIMVAR *v, enum CIMTYPE_ENUMERATION cimtype)
 {
 	switch (cimtype) {
-        case CIM_SINT8: return talloc_asprintf(mem_ctx, "%d", v->v_sint8);
-        case CIM_UINT8: return talloc_asprintf(mem_ctx, "%u", v->v_uint8);
-        case CIM_SINT16: return talloc_asprintf(mem_ctx, "%d", v->v_sint16);
-        case CIM_UINT16: return talloc_asprintf(mem_ctx, "%u", v->v_uint16);
-        case CIM_SINT32: return talloc_asprintf(mem_ctx, "%d", v->v_sint32);
-        case CIM_UINT32: return talloc_asprintf(mem_ctx, "%u", v->v_uint32);
-        case CIM_SINT64: return talloc_asprintf(mem_ctx, "%lld", v->v_sint64);
-        case CIM_UINT64: return talloc_asprintf(mem_ctx, "%llu", v->v_sint64);
-        case CIM_REAL32: return talloc_asprintf(mem_ctx, "%f", (double)v->v_uint32);
-        case CIM_REAL64: return talloc_asprintf(mem_ctx, "%f", (double)v->v_uint64);
-        case CIM_BOOLEAN: return talloc_asprintf(mem_ctx, "%s", v->v_boolean?"True":"False");
-        case CIM_STRING:
-        case CIM_DATETIME:
-        case CIM_REFERENCE: return talloc_asprintf(mem_ctx, "%s", v->v_string);
-        case CIM_CHAR16: return talloc_asprintf(mem_ctx, "Unsupported");
-        case CIM_OBJECT: return talloc_asprintf(mem_ctx, "Unsupported");
-        case CIM_ARR_SINT8: RETURN_CVAR_ARRAY_STR("%d", v->a_sint8);
-        case CIM_ARR_UINT8: RETURN_CVAR_ARRAY_STR("%u", v->a_uint8);
-        case CIM_ARR_SINT16: RETURN_CVAR_ARRAY_STR("%d", v->a_sint16);
-        case CIM_ARR_UINT16: RETURN_CVAR_ARRAY_STR("%u", v->a_uint16);
-        case CIM_ARR_SINT32: RETURN_CVAR_ARRAY_STR("%d", v->a_sint32);
-        case CIM_ARR_UINT32: RETURN_CVAR_ARRAY_STR("%u", v->a_uint32);
-        case CIM_ARR_SINT64: RETURN_CVAR_ARRAY_STR("%lld", v->a_sint64);
-        case CIM_ARR_UINT64: RETURN_CVAR_ARRAY_STR("%llu", v->a_uint64);
-        case CIM_ARR_REAL32: RETURN_CVAR_ARRAY_STR("%f", v->a_real32);
-        case CIM_ARR_REAL64: RETURN_CVAR_ARRAY_STR("%f", v->a_real64);
-        case CIM_ARR_BOOLEAN: RETURN_CVAR_ARRAY_STR("%d", v->a_boolean);
-        case CIM_ARR_STRING: RETURN_CVAR_ARRAY_STR("%s", v->a_string);
-        case CIM_ARR_DATETIME: RETURN_CVAR_ARRAY_STR("%s", v->a_datetime);
-        case CIM_ARR_REFERENCE: RETURN_CVAR_ARRAY_STR("%s", v->a_reference);
+	case CIM_SINT8: return talloc_asprintf(mem_ctx, "%d", v->v_sint8);
+	case CIM_UINT8: return talloc_asprintf(mem_ctx, "%u", v->v_uint8);
+	case CIM_SINT16: return talloc_asprintf(mem_ctx, "%d", v->v_sint16);
+	case CIM_UINT16: return talloc_asprintf(mem_ctx, "%u", v->v_uint16);
+	case CIM_SINT32: return talloc_asprintf(mem_ctx, "%d", v->v_sint32);
+	case CIM_UINT32: return talloc_asprintf(mem_ctx, "%u", v->v_uint32);
+	case CIM_SINT64: return talloc_asprintf(mem_ctx, "%lld", v->v_sint64);
+	case CIM_UINT64: return talloc_asprintf(mem_ctx, "%llu", v->v_sint64);
+	case CIM_REAL32: return talloc_asprintf(mem_ctx, "%f", (double)v->v_uint32);
+	case CIM_REAL64: return talloc_asprintf(mem_ctx, "%f", (double)v->v_uint64);
+	case CIM_BOOLEAN: return talloc_asprintf(mem_ctx, "%s", v->v_boolean?"True":"False");
+	case CIM_STRING:
+	case CIM_DATETIME:
+	case CIM_REFERENCE: return talloc_asprintf(mem_ctx, "%s", v->v_string);
+	case CIM_CHAR16: return talloc_asprintf(mem_ctx, "Unsupported");
+	case CIM_OBJECT: return talloc_asprintf(mem_ctx, "Unsupported");
+	case CIM_ARR_SINT8: RETURN_CVAR_ARRAY_STR("%d", v->a_sint8);
+	case CIM_ARR_UINT8: RETURN_CVAR_ARRAY_STR("%u", v->a_uint8);
+	case CIM_ARR_SINT16: RETURN_CVAR_ARRAY_STR("%d", v->a_sint16);
+	case CIM_ARR_UINT16: RETURN_CVAR_ARRAY_STR("%u", v->a_uint16);
+	case CIM_ARR_SINT32: RETURN_CVAR_ARRAY_STR("%d", v->a_sint32);
+	case CIM_ARR_UINT32: RETURN_CVAR_ARRAY_STR("%u", v->a_uint32);
+	case CIM_ARR_SINT64: RETURN_CVAR_ARRAY_STR("%lld", v->a_sint64);
+	case CIM_ARR_UINT64: RETURN_CVAR_ARRAY_STR("%llu", v->a_uint64);
+	case CIM_ARR_REAL32: RETURN_CVAR_ARRAY_STR("%f", v->a_real32);
+	case CIM_ARR_REAL64: RETURN_CVAR_ARRAY_STR("%f", v->a_real64);
+	case CIM_ARR_BOOLEAN: RETURN_CVAR_ARRAY_STR("%d", v->a_boolean);
+	case CIM_ARR_STRING: RETURN_CVAR_ARRAY_STR("%s", v->a_string);
+	case CIM_ARR_DATETIME: RETURN_CVAR_ARRAY_STR("%s", v->a_datetime);
+	case CIM_ARR_REFERENCE: RETURN_CVAR_ARRAY_STR("%s", v->a_reference);
 	default: return talloc_asprintf(mem_ctx, "Unsupported");
 	}
 }
@@ -164,7 +164,7 @@ int main(int argc, char **argv)
 	struct IEnumWbemClassObject *pEnum = NULL;
 	struct com_context *ctx = NULL;
 
-        parse_args(argc, argv, &args);
+	parse_args(argc, argv, &args);
 
 	wmi_init(&ctx, cmdline_credentials);
 

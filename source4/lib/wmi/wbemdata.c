@@ -1,6 +1,7 @@
 /*
    WMI Implementation
    Copyright (C) 2006 Andrzej Hajda <andrzej.hajda@wp.pl>
+   Copyright (C) 2008 Jelmer Vernooij <jelmer@samba.org>
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -33,26 +34,19 @@
 #include "libcli/composite/composite.h"
 #include "lib/wmi/wmi.h"
 
-NTSTATUS ndr_pull_WbemClassObject_Object(struct ndr_pull *ndr, int ndr_flags, struct WbemClassObject *r);
-void duplicate_CIMVAR(TALLOC_CTX *mem_ctx, const union CIMVAR *src, union CIMVAR *dst, enum CIMTYPE_ENUMERATION cimtype);
-void duplicate_WbemClassObject(TALLOC_CTX *mem_ctx, const struct WbemClassObject *src, struct WbemClassObject *dst);
-
 #define NDR_CHECK_LEN(n) do { if (p + (n) > pend) { \
-            			DEBUG(0, ("%s(%d): WBEMDATA_ERR(0x%08X): Buffer too small(0x%04X)\n", __FILE__, __LINE__, ndr->offset, p + (n) - pend)); \
+	    			DEBUG(0, ("%s(%d): WBEMDATA_ERR(0x%08X): Buffer too small(0x%04X)\n", __FILE__, __LINE__, ndr->offset, p + (n) - pend)); \
 				status = NT_STATUS_UNSUCCESSFUL; \
-            			goto end; \
+	    			goto end; \
 			    } \
 			} while(0)
 
 #define NDR_CHECK_EXPR(expr) do { if (!(expr)) {\
 					DEBUG(0, ("%s(%d): WBEMDATA_ERR(0x%08X): Error parsing(%s)\n", __FILE__, __LINE__, ndr->offset, #expr)); \
 					status = NT_STATUS_UNSUCCESSFUL; \
-            				goto end; \
+	    				goto end; \
 					} \
 				    } while(0)
-
-#define NDR_CHECK_CONST(val, exp) NDR_CHECK_EXPR((val) == (exp))
-#define NDR_CHECK_RSTRING(rstring) NDR_CHECK_EXPR((rstring) >= 0)
 
 enum {
 	DATATYPE_CLASSOBJECT = 2,
@@ -89,7 +83,7 @@ static enum ndr_err_code marshal(TALLOC_CTX *mem_ctx, struct IUnknown *pv, struc
 	o->u_objref.u_custom.pData = talloc_realloc(mp, ndr->data, uint8_t, ndr->offset);
 	o->u_objref.u_custom.size = ndr->offset;
 	mp->size = sizeof(struct OBJREF) - sizeof(union OBJREF_Types) + sizeof(struct u_custom) + o->u_objref.u_custom.size - 4;
-        if (DEBUGLVL(9)) {
+	if (DEBUGLVL(9)) {
 		NDR_PRINT_DEBUG(WbemClassObject, wco);
 	}
 	return NDR_ERR_SUCCESS;
@@ -123,9 +117,9 @@ static enum ndr_err_code unmarshal(TALLOC_CTX *mem_ctx, struct OBJREF *o, struct
 	ndr->current_mem_ctx = wco;
 	ndr_err = ndr_pull_WbemClassObject(ndr, NDR_SCALARS | NDR_BUFFERS, wco);
 
-        if (NDR_ERR_CODE_IS_SUCCESS(ndr_err) && (DEBUGLVL(9))) {
+	if (NDR_ERR_CODE_IS_SUCCESS(ndr_err) && (DEBUGLVL(9))) {
 		NDR_PRINT_DEBUG(WbemClassObject, wco);
-        }
+	}
 
 	if (NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		(*pv)->object_data = wco;
@@ -347,54 +341,54 @@ void duplicate_CIMVAR(TALLOC_CTX *mem_ctx, const union CIMVAR *src, union CIMVAR
 	uint32_t i;
 
 	switch (cimtype & CIM_TYPEMASK) {
-        case CIM_SINT8:
-        case CIM_UINT8:
-        case CIM_SINT16:
-        case CIM_UINT16:
-        case CIM_SINT32:
-        case CIM_UINT32:
-        case CIM_SINT64:
-        case CIM_UINT64:
-        case CIM_REAL32:
-        case CIM_REAL64:
-        case CIM_BOOLEAN:
+	case CIM_SINT8:
+	case CIM_UINT8:
+	case CIM_SINT16:
+	case CIM_UINT16:
+	case CIM_SINT32:
+	case CIM_UINT32:
+	case CIM_SINT64:
+	case CIM_UINT64:
+	case CIM_REAL32:
+	case CIM_REAL64:
+	case CIM_BOOLEAN:
 		*dst = *src;
 		break;
-        case CIM_STRING:
-        case CIM_DATETIME:
-        case CIM_REFERENCE:
+	case CIM_STRING:
+	case CIM_DATETIME:
+	case CIM_REFERENCE:
 		dst->v_string = talloc_strdup(mem_ctx, src->v_string);
 		break;
 	case CIM_OBJECT:
 		dst->v_object = talloc_zero(mem_ctx, struct WbemClassObject);
 		duplicate_WbemClassObject(dst->v_object, src->v_object, dst->v_object);
 		break;
-        case CIM_ARR_SINT8:
+	case CIM_ARR_SINT8:
 	case CIM_ARR_UINT8:
 		dst->a_uint8 = talloc_memdup(mem_ctx, src->a_uint8, sizeof(struct arr_uint8));
 		dst->a_uint8->item = talloc_memdup(dst->a_uint8, src->a_uint8->item, src->a_uint8->count);
 		break;
-        case CIM_ARR_SINT16:
-        case CIM_ARR_UINT16:
-        case CIM_ARR_BOOLEAN:
+	case CIM_ARR_SINT16:
+	case CIM_ARR_UINT16:
+	case CIM_ARR_BOOLEAN:
 		dst->a_uint8 = talloc_memdup(mem_ctx, src->a_uint8, sizeof(struct arr_uint8));
 		dst->a_uint8->item = talloc_memdup(dst->a_uint8, src->a_uint8->item, 2*src->a_uint8->count);
 		break;
-        case CIM_ARR_SINT32:
-        case CIM_ARR_UINT32:
-        case CIM_ARR_REAL32:
+	case CIM_ARR_SINT32:
+	case CIM_ARR_UINT32:
+	case CIM_ARR_REAL32:
 		dst->a_uint8 = talloc_memdup(mem_ctx, src->a_uint8, sizeof(struct arr_uint8));
 		dst->a_uint8->item = talloc_memdup(dst->a_uint8, src->a_uint8->item, 4*src->a_uint8->count);
 		break;
-        case CIM_ARR_SINT64:
-        case CIM_ARR_UINT64:
+	case CIM_ARR_SINT64:
+	case CIM_ARR_UINT64:
 	case CIM_ARR_REAL64:
 		dst->a_uint8 = talloc_memdup(mem_ctx, src->a_uint8, sizeof(struct arr_uint8));
 		dst->a_uint8->item = talloc_memdup(dst->a_uint8, src->a_uint8->item, 8*src->a_uint8->count);
 		break;
-        case CIM_ARR_STRING:
-        case CIM_ARR_DATETIME:
-        case CIM_ARR_REFERENCE:
+	case CIM_ARR_STRING:
+	case CIM_ARR_DATETIME:
+	case CIM_ARR_REFERENCE:
 		dst->a_uint8 = talloc_memdup(mem_ctx, src->a_uint8, sizeof(struct arr_uint8));
 		dst->a_uint8->item = talloc_memdup(dst->a_uint8, src->a_uint8->item, 4*src->a_uint8->count);
 		for (i = 0; i < src->a_uint8->count; ++i)
@@ -438,11 +432,11 @@ WERROR IWbemClassObject_Put(struct IWbemClassObject *d, TALLOC_CTX *mem_ctx, con
 }
 
 #define WERR_CHECK(msg) if (!W_ERROR_IS_OK(result)) { \
-                            DEBUG(1, ("ERROR: %s - %s\n", msg, wmi_errstr(result))); \
-                            goto end; \
-                        } else { \
-                            DEBUG(1, ("OK   : %s\n", msg)); \
-                        }
+	                    DEBUG(1, ("ERROR: %s - %s\n", msg, wmi_errstr(result))); \
+	                    goto end; \
+	                } else { \
+	                    DEBUG(1, ("OK   : %s\n", msg)); \
+	                }
 
 struct pair_guid_ptr {
 	struct GUID guid;
@@ -453,7 +447,7 @@ struct pair_guid_ptr {
 static void *get_ptr_by_guid(struct pair_guid_ptr *list, struct GUID *uuid)
 {
 	for (; list; list = list->next) {
-            	if (GUID_equal(&list->guid, uuid))
+	    	if (GUID_equal(&list->guid, uuid))
 			return list->ptr;
 	}
 	return NULL;
@@ -472,10 +466,13 @@ static void add_pair_guid_ptr(TALLOC_CTX *mem_ctx, struct pair_guid_ptr **list, 
 
 struct IEnumWbemClassObject_data {
 	struct GUID guid;
-        struct IWbemFetchSmartEnum *pFSE;
+	struct IWbemFetchSmartEnum *pFSE;
 	struct IWbemWCOSmartEnum *pSE;
 	struct pair_guid_ptr *cache;
 };
+#define NDR_CHECK_CONST(val, exp) NDR_CHECK_EXPR((val) == (exp))
+#define NDR_CHECK_RSTRING(rstring) NDR_CHECK_EXPR((rstring) >= 0)
+
 
 static enum ndr_err_code WBEMDATA_Parse(TALLOC_CTX *mem_ctx, uint8_t *data, uint32_t size, struct IEnumWbemClassObject *d, uint32_t uCount, struct WbemClassObject **apObjects)
 {
@@ -613,20 +610,20 @@ end:
 
 struct composite_context *dcom_proxy_IEnumWbemClassObject_Release_send(struct IUnknown *d, TALLOC_CTX *mem_ctx)
 {
-        struct composite_context *c, *cr;
-        struct REMINTERFACEREF iref[3];
-        struct dcom_object_exporter *ox;
+	struct composite_context *c, *cr;
+	struct REMINTERFACEREF iref[3];
+	struct dcom_object_exporter *ox;
 	struct IEnumWbemClassObject_data *ecod;
 	int n;
 
-        c = composite_create(d->ctx, d->ctx->event_ctx);
-        if (c == NULL) return NULL;
-        c->private_data = d;
+	c = composite_create(d->ctx, d->ctx->event_ctx);
+	if (c == NULL) return NULL;
+	c->private_data = d;
 
-        ox = object_exporter_by_ip(d->ctx, d);
-        iref[0].ipid = IUnknown_ipid(d);
-        iref[0].cPublicRefs = 5;
-        iref[0].cPrivateRefs = 0;
+	ox = object_exporter_by_ip(d->ctx, d);
+	iref[0].ipid = IUnknown_ipid(d);
+	iref[0].cPublicRefs = 5;
+	iref[0].cPrivateRefs = 0;
 	n = 1;
 
 	ecod = d->object_data;
@@ -642,14 +639,14 @@ struct composite_context *dcom_proxy_IEnumWbemClassObject_Release_send(struct IU
 			talloc_steal(d, ecod->pSE);
 		        iref[n].ipid = IUnknown_ipid(ecod->pSE);
 	    		iref[n].cPublicRefs = 5;
-        		iref[n].cPrivateRefs = 0;
+			iref[n].cPrivateRefs = 0;
 			++n;
 		}
 	}
 	cr = IRemUnknown_RemRelease_send(ox->rem_unknown, mem_ctx, n, iref);
 
-        composite_continue(c, cr, dcom_release_continue, c);
-        return c;
+	composite_continue(c, cr, dcom_release_continue, c);
+	return c;
 }
 
 NTSTATUS dcom_proxy_IWbemClassObject_init(void)
@@ -667,5 +664,5 @@ NTSTATUS dcom_proxy_IWbemClassObject_init(void)
 		DEBUG(0, ("WARNING: IEnumWbemClassObject should be initialized before IWbemClassObject."));
 #endif
 
-        return NT_STATUS_OK;
+	return NT_STATUS_OK;
 }
