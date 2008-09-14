@@ -595,6 +595,10 @@ main (int argc, char **argv)
 
     setprogname (argv[0]);
 
+    setlocale (LC_ALL, "");
+    bindtextdomain ("heimdal_kuser", HEIMDAL_LOCALEDIR);
+    textdomain("heimdal_kuser");
+
     if(getarg(args, sizeof(args) / sizeof(args[0]), argc, argv, &optidx))
 	usage(1);
 
