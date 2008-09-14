@@ -30,8 +30,7 @@
 #include "librpc/gen_ndr/com_dcom.h"
 
 #include "lib/com/dcom/dcom.h"
-#include "lib/com/proto.h"
-#include "lib/com/dcom/proto.h"
+#include "lib/com/com.h"
 
 #include "lib/wmi/wmi.h"
 
@@ -162,6 +161,8 @@ int main(int argc, char **argv)
 	NTSTATUS status;
 	struct IWbemServices *pWS = NULL;
 	struct BSTR queryLanguage, query;
+	struct IEnumWbemClassObject *pEnum = NULL;
+	struct com_context *ctx = NULL;
 
         parse_args(argc, argv, &args);
 
@@ -172,7 +173,6 @@ int main(int argc, char **argv)
 	result = WBEM_ConnectServer(ctx, args.hostname, args.ns, 0, 0, 0, 0, 0, 0, &pWS);
 	WERR_CHECK("Login to remote object.");
 
-	struct IEnumWbemClassObject *pEnum = NULL;
 	queryLanguage.data = "WQL";
 	query.data = args.query;
 	result = IWbemServices_ExecQuery(pWS, ctx, queryLanguage, query, WBEM_FLAG_RETURN_IMMEDIATELY | WBEM_FLAG_ENSURE_LOCATABLE, NULL, &pEnum);
