@@ -49,20 +49,20 @@ static int help_flag;
 
 struct getargs args[] = {
     { "cache",		'c', arg_string, &cache_str,
-      "credential cache to use", "cache"},
+      NP_("credential cache to use", ""), "cache"},
     { "out-cache",	0,   arg_string, &out_cache_str,
-      "credential cache to store credential in", "cache"},
+      NP_("credential cache to store credential in", ""), "cache"},
     { "delegation-credential-cache",0,arg_string, &delegation_cred_str,
-      "where to find the ticket use for delegation", "cache"},
+      NP_("where to find the ticket use for delegation", ""), "cache"},
     { "canonicalize",	0, arg_flag, &canonicalize_flag,
-      "canonicalize the principal"},
+      NP_("canonicalize the principal", "") },
     { "forwardable",	0, arg_flag, &forwardable_flag,
-      "forwardable ticket requested"},
+      NP_("forwardable ticket requested", "")},
     { "transit-check",	0,   arg_negative_flag, &transit_flag },
     { "enctype",	'e', arg_string, &etype_str,
-      "encryption type to use", "enctype"},
+      NP_("encryption type to use", ""), "enctype"},
     { "impersonate",	0,   arg_string, &impersonate_str,
-      "client to impersonate", "principal"},
+      NP_("client to impersonate", ""), "principal"},
     { "name-type",		0,   arg_string, &nametype_str },
     { "version", 	0,   arg_flag, &version_flag },
     { "help",		0,   arg_flag, &help_flag }
@@ -132,7 +132,8 @@ main(int argc, char **argv)
 
 	ret = krb5_string_to_enctype(context, etype_str, &enctype);
 	if (ret)
-	    krb5_errx (context, 1, "unrecognized enctype: %s", etype_str);
+	    krb5_errx (context, 1, N_("unrecognized enctype: %s", ""), 
+		       etype_str);
 	krb5_get_creds_opt_set_enctype(context, opt, enctype);
     }
 
