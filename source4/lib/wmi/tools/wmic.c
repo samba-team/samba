@@ -1,6 +1,7 @@
 /*
    WMI Sample client
    Copyright (C) 2006 Andrzej Hajda <andrzej.hajda@wp.pl>
+   Copyright (C) 2008 Jelmer Vernooij <jelmer@samba.org>
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -27,16 +28,12 @@
 #include "librpc/gen_ndr/ndr_remact_c.h"
 #include "librpc/gen_ndr/ndr_epmapper_c.h"
 #include "librpc/gen_ndr/com_dcom.h"
-#include "librpc/rpc/dcerpc_table.h"
 
 #include "lib/com/dcom/dcom.h"
 #include "lib/com/proto.h"
 #include "lib/com/dcom/proto.h"
 
-struct WBEMCLASS;
-struct WBEMOBJECT;
-
-#include "wmi/wmi.h"
+#include "lib/wmi/wmi.h"
 
 struct program_args {
     char *hostname;
@@ -164,23 +161,11 @@ int main(int argc, char **argv)
 	WERROR result;
 	NTSTATUS status;
 	struct IWbemServices *pWS = NULL;
+	struct BSTR queryLanguage, query;
 
         parse_args(argc, argv, &args);
 
-	dcerpc_init();
-	dcerpc_table_init();
-
-	dcom_proxy_IUnknown_init();
-	dcom_proxy_IWbemLevel1Login_init();
-	dcom_proxy_IWbemServices_init();
-	dcom_proxy_IEnumWbemClassObject_init();
-	dcom_proxy_IRemUnknown_init();
-	dcom_proxy_IWbemFetchSmartEnum_init();
-	dcom_proxy_IWbemWCOSmartEnum_init();
-
-	struct com_context *ctx = NULL;
-	com_init_ctx(&ctx, NULL);
-	dcom_client_init(ctx, cmdline_credentials);
+	wmi_init(&ctx, cmdline_credentials);
 
 	if (!args.ns)
 		args.ns = "root\\cimv2";
@@ -188,7 +173,9 @@ int main(int argc, char **argv)
 	WERR_CHECK("Login to remote object.");
 
 	struct IEnumWbemClassObject *pEnum = NULL;
-	result = IWbemServices_ExecQuery(pWS, ctx, "WQL", args.query, WBEM_FLAG_RETURN_IMMEDIATELY | WBEM_FLAG_ENSURE_LOCATABLE, NULL, &pEnum);
+	queryLanguage.data = "WQL";
+	query.data = args.query;
+	result = IWbemServices_ExecQuery(pWS, ctx, queryLanguage, query, WBEM_FLAG_RETURN_IMMEDIATELY | WBEM_FLAG_ENSURE_LOCATABLE, NULL, &pEnum);
 	WERR_CHECK("WMI query execute.");
 
 	IEnumWbemClassObject_Reset(pEnum, ctx);

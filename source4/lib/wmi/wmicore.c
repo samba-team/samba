@@ -24,6 +24,9 @@
 #include "lib/com/dcom/dcom.h"
 #include "librpc/gen_ndr/wmi.h"
 #include "librpc/gen_ndr/com_wmi.h"
+#include "librpc/rpc/dcerpc.h"
+#include "librpc/ndr/ndr_table.h"
+#include "param/param.h"
 
 struct IWbemServices;
 struct IWbemContext;
@@ -34,8 +37,20 @@ struct IWbemContext;
                         } else { \
                             DEBUG(1, ("OK   : %s\n", msg)); \
                         }
+
+void wmi_init(struct com_context **ctx, struct cli_credentials *credentials)
+{
+	dcerpc_init();
+	ndr_table_init();
+
+	/* FIXME: Register DCOM proxies? */
+
+	com_init_ctx(ctx, NULL);
+	dcom_client_init(*ctx, credentials);
+}
+
 /** FIXME: Use credentials struct rather than user/password here */
-WERROR WBEM_ConnectServer(struct com_context *ctx, const char *server, const char *nspace, 
+WERROR WBEM_ConnectServer(struct com_context *ctx, const char *server, const uint16_t *nspace, 
 			  const char *user, const char *password, 
 			  const char *locale, uint32_t flags, const char *authority, 
 			  struct IWbemContext* wbem_ctx, struct IWbemServices** services)
@@ -52,7 +67,7 @@ WERROR WBEM_ConnectServer(struct com_context *ctx, const char *server, const cha
 
                 cred = talloc_asprintf(NULL, "%s%%%s", user, password);
                 cc = cli_credentials_init(cred);
-                cli_credentials_set_conf(cc);
+                cli_credentials_set_conf(cc, global_loadparm);
                 cli_credentials_parse_string(cc, cred, CRED_SPECIFIED);
                 dcom_set_server_credentials(ctx, server, cc);
                 talloc_free(cred);

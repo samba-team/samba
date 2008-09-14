@@ -31,7 +31,7 @@
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "lib/talloc/talloc.h"
 #include "libcli/composite/composite.h"
-#include "wmi/proto.h"
+#include "lib/wmi/wmi.h"
 
 NTSTATUS ndr_pull_WbemClassObject_Object(struct ndr_pull *ndr, int ndr_flags, struct WbemClassObject *r);
 void duplicate_CIMVAR(TALLOC_CTX *mem_ctx, const union CIMVAR *src, union CIMVAR *dst, enum CIMTYPE_ENUMERATION cimtype);
@@ -54,8 +54,6 @@ void duplicate_WbemClassObject(TALLOC_CTX *mem_ctx, const struct WbemClassObject
 #define NDR_CHECK_CONST(val, exp) NDR_CHECK_EXPR((val) == (exp))
 #define NDR_CHECK_RSTRING(rstring) NDR_CHECK_EXPR((rstring) >= 0)
 
-#define NTERR_CHECK(call) status = call; if (!NT_STATUS_IS_OK(status)) goto end;
-
 enum {
 	DATATYPE_CLASSOBJECT = 2,
 	DATATYPE_OBJECT = 3,
@@ -63,17 +61,14 @@ enum {
 	COFLAG_IS_CLASS = 4,
 };
 
-static NTSTATUS marshal(struct IUnknown *pv, struct OBJREF *o)
+static enum ndr_err_code marshal(TALLOC_CTX *mem_ctx, struct IUnknown *pv, struct OBJREF *o)
 {
 	struct ndr_push *ndr;
-	NTSTATUS status;
 	struct WbemClassObject *wco;
-	TALLOC_CTX *mem_ctx;
 	struct MInterfacePointer *mp;
 
 	mp = (struct MInterfacePointer *)((char *)o - offsetof(struct MInterfacePointer, obj)); // FIXME:high remove this Mumbo Jumbo
 	wco = pv->object_data;
-	mem_ctx = talloc_new(0);
 	ndr = talloc_zero(mem_ctx, struct ndr_push);
 	ndr->flags = 0;
 	ndr->alloc_size = 1024;
@@ -81,15 +76,15 @@ static NTSTATUS marshal(struct IUnknown *pv, struct OBJREF *o)
 
 	if (wco) {
 		uint32_t ofs;
-		NTERR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0x12345678));
-		NTERR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
-		NTERR_CHECK(ndr_push_WbemClassObject(ndr, NDR_SCALARS | NDR_BUFFERS, wco));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0x12345678));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
+		NDR_CHECK(ndr_push_WbemClassObject(ndr, NDR_SCALARS | NDR_BUFFERS, wco));
 		ofs = ndr->offset;
 		ndr->offset = 4;
-		NTERR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ofs - 8));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ofs - 8));
 		ndr->offset = ofs;
 	} else {
-		NTERR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
 	}
 	o->u_objref.u_custom.pData = talloc_realloc(mp, ndr->data, uint8_t, ndr->offset);
 	o->u_objref.u_custom.size = ndr->offset;
@@ -97,17 +92,14 @@ static NTSTATUS marshal(struct IUnknown *pv, struct OBJREF *o)
         if (DEBUGLVL(9)) {
 		NDR_PRINT_DEBUG(WbemClassObject, wco);
 	}
-end:
-	talloc_free(mem_ctx);
-	return status;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS unmarshal(struct OBJREF *o, struct IUnknown **pv)
+static enum ndr_err_code unmarshal(TALLOC_CTX *mem_ctx, struct OBJREF *o, struct IUnknown **pv)
 {
 	struct ndr_pull *ndr;
-	TALLOC_CTX *mem_ctx;
 	struct WbemClassObject *wco;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	uint32_t u;
 
 	mem_ctx = talloc_new(0);
@@ -116,41 +108,36 @@ static NTSTATUS unmarshal(struct OBJREF *o, struct IUnknown **pv)
 	ndr->data = o->u_objref.u_custom.pData;
 	ndr->data_size = o->u_objref.u_custom.size;
 
-	NTERR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &u));
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &u));
 	if (!u) {
 		talloc_free(*pv);
 		*pv = NULL;
-		status = NT_STATUS_OK;
-		goto end;
+		return NDR_ERR_SUCCESS;
 	}
-	NTERR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &u));
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &u));
 	if (u + 8 > ndr->data_size) {
 		DEBUG(1, ("unmarshall_IWbemClassObject: Incorrect data_size"));
-		status = NT_STATUS_BUFFER_TOO_SMALL;
-		goto end;
+		return NDR_ERR_BUFSIZE;
 	}
 	wco = talloc_zero(*pv, struct WbemClassObject);
 	ndr->current_mem_ctx = wco;
-	status = ndr_pull_WbemClassObject(ndr, NDR_SCALARS | NDR_BUFFERS, wco);
+	ndr_err = ndr_pull_WbemClassObject(ndr, NDR_SCALARS | NDR_BUFFERS, wco);
 
-        if (NT_STATUS_IS_OK(status) && (DEBUGLVL(9))) {
+        if (NDR_ERR_CODE_IS_SUCCESS(ndr_err) && (DEBUGLVL(9))) {
 		NDR_PRINT_DEBUG(WbemClassObject, wco);
         }
 
-	if (NT_STATUS_IS_OK(status)) {
+	if (NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		(*pv)->object_data = wco;
 	} else {
 		talloc_free(wco);
 	}
-end:
-	talloc_free(mem_ctx);
-	return status;
+	return NDR_ERR_SUCCESS;
 }
 
 WERROR dcom_IWbemClassObject_from_WbemClassObject(struct com_context *ctx, struct IWbemClassObject **_p, struct WbemClassObject *wco)
 {
 	struct IWbemClassObject *p;
-
 
 	p = talloc_zero(ctx, struct IWbemClassObject);
 	p->ctx = ctx;
@@ -490,20 +477,18 @@ struct IEnumWbemClassObject_data {
 	struct pair_guid_ptr *cache;
 };
 
-static NTSTATUS WBEMDATA_Parse(uint8_t *data, uint32_t size, struct IEnumWbemClassObject *d, uint32_t uCount, struct WbemClassObject **apObjects)
+static enum ndr_err_code WBEMDATA_Parse(TALLOC_CTX *mem_ctx, uint8_t *data, uint32_t size, struct IEnumWbemClassObject *d, uint32_t uCount, struct WbemClassObject **apObjects)
 {
 	struct ndr_pull *ndr;
-	TALLOC_CTX *mem_ctx;
 	uint32_t u, i, ofs_next;
 	uint8_t u8, datatype;
 	NTSTATUS status;
 	struct GUID guid;
 	struct IEnumWbemClassObject_data *ecod;
 
-	if (!uCount) return NT_STATUS_NOT_IMPLEMENTED;
+	if (!uCount) return NDR_ERR_BAD_SWITCH;
 
 	ecod = d->object_data;
-	mem_ctx = talloc_new(0);
 
 	ndr = talloc_zero(mem_ctx, struct ndr_pull);
 	ndr->current_mem_ctx = d->ctx;
@@ -568,18 +553,14 @@ static NTSTATUS WBEMDATA_Parse(uint8_t *data, uint32_t size, struct IEnumWbemCla
 			break;
 		default:
 			DEBUG(0, ("WBEMDATA_Parse: Data type %d not supported\n", datatype));
-			status = NT_STATUS_NOT_SUPPORTED;
-			goto end;
+			return NDR_ERR_BAD_SWITCH;
 		}
 		ndr->offset = ofs_next;
     		if (DEBUGLVL(9)) {
 			NDR_PRINT_DEBUG(WbemClassObject, apObjects[i]);
 		}
 	}
-	status = NT_STATUS_OK;
-end:
-	talloc_free(mem_ctx);
-	return status;
+	return NDR_ERR_SUCCESS;
 }
 
 struct composite_context *dcom_proxy_IEnumWbemClassObject_Release_send(struct IUnknown *d, TALLOC_CTX *mem_ctx);
@@ -619,9 +600,7 @@ WERROR IEnumWbemClassObject_SmartNext(struct IEnumWbemClassObject *d, TALLOC_CTX
 	}
 
 	if (data) {
-		status = WBEMDATA_Parse(data, size, d, *puReturned, apObjects);
-		result = ntstatus_to_werror(status);
-    		WERR_CHECK("WBEMDATA_Parse.");
+		NDR_CHECK(WBEMDATA_Parse(mem_ctx, data, size, d, *puReturned, apObjects));
 	}
 end:
 	if (!W_ERROR_IS_OK(result)) {

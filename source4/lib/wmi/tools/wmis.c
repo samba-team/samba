@@ -141,10 +141,13 @@ WERROR WBEM_RemoteExecute(struct IWbemServices *pWS, const char *cmdline, uint32
 	WERROR result;
 	union CIMVAR v;
 	TALLOC_CTX *ctx;
+	struct BSTR objectPath, methodName;
 
 	ctx = talloc_new(0);
 
-	result = IWbemServices_GetObject(pWS, ctx, "Win32_Process", 
+	objectPath.data = "Win32_Process";
+
+	result = IWbemServices_GetObject(pWS, ctx, objectPath,
 					 WBEM_FLAG_RETURN_WBEM_COMPLETE, NULL, &wco, NULL);
 	WERR_CHECK("GetObject.");
 
@@ -158,7 +161,8 @@ WERROR WBEM_RemoteExecute(struct IWbemServices *pWS, const char *cmdline, uint32
 	result = IWbemClassObject_Put(in, ctx, "CommandLine", 0, &v, 0);
 	WERR_CHECK("IWbemClassObject_Put(CommandLine).");
 
-	result = IWbemServices_ExecMethod(pWS, ctx, "Win32_Process", "Create", 0, NULL, in, &out, 
+	methodName.data = "Create";
+	result = IWbemServices_ExecMethod(pWS, ctx, objectPath, methodName, 0, NULL, in, &out, 
 					  NULL);
 	WERR_CHECK("IWbemServices_ExecMethod.");
 
@@ -181,24 +185,12 @@ int main(int argc, char **argv)
 	struct IWbemServices *pWS = NULL;
         struct IEnumWbemClassObject *pEnum = NULL;
 	uint32_t cnt;
+	struct BSTR queryLanguage;
+	struct BSTR query;
 
         parse_args(argc, argv, &args);
 
-	dcerpc_init();
-	ndr_table_init();
-
-	dcom_proxy_IUnknown_init();
-	dcom_proxy_IWbemLevel1Login_init();
-	dcom_proxy_IWbemServices_init();
-	dcom_proxy_IEnumWbemClassObject_init();
-	dcom_proxy_IRemUnknown_init();
-	dcom_proxy_IWbemFetchSmartEnum_init();
-	dcom_proxy_IWbemWCOSmartEnum_init();
-	dcom_proxy_IWbemClassObject_init();
-
-	com_init_ctx(&ctx, NULL);
-	dcom_client_init(ctx, cmdline_credentials);
-
+	wmi_init(&ctx, cmdline_credentials);
 	result = WBEM_ConnectServer(ctx, args.hostname, "root\\cimv2", 0, 0, 0, 0, 0, 0, &pWS);
 	WERR_CHECK("WBEM_ConnectServer.");
 
@@ -208,8 +200,10 @@ int main(int argc, char **argv)
 	printf("2: ReturnCode: %d\n", cnt);
 
 	printf("3: Monitoring directory C:\\wmi_test_dir_tmp. Please create/delete files in that directory to see notifications, after 4 events program quits.\n");
-        result = IWbemServices_ExecNotificationQuery(pWS, ctx, "WQL", 
-		"SELECT * FROM __InstanceOperationEvent WITHIN 1 WHERE Targetinstance ISA 'CIM_DirectoryContainsFile' and TargetInstance.GroupComponent= 'Win32_Directory.Name=\"C:\\\\\\\\wmi_test_dir_tmp\"'", WBEM_FLAG_RETURN_IMMEDIATELY | WBEM_FLAG_FORWARD_ONLY, NULL, &pEnum);
+	query.data = "SELECT * FROM __InstanceOperationEvent WITHIN 1 WHERE Targetinstance ISA 'CIM_DirectoryContainsFile' and TargetInstance.GroupComponent= 'Win32_Directory.Name=\"C:\\\\\\\\wmi_test_dir_tmp\"'";
+	queryLanguage.data = "WQL";
+        result = IWbemServices_ExecNotificationQuery(pWS, ctx, queryLanguage, 
+		query, WBEM_FLAG_RETURN_IMMEDIATELY | WBEM_FLAG_FORWARD_ONLY, NULL, &pEnum);
         WERR_CHECK("WMI query execute.");
 	for (cnt = 0; cnt < 4; ++cnt) {
 		struct WbemClassObject *co;
