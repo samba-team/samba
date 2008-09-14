@@ -75,6 +75,7 @@ POPT_LIBS=@POPTLIBS@
 LIBTALLOC_LIBS=@LIBTALLOC_LIBS@
 LIBTDB_LIBS=@LIBTDB_LIBS@
 LIBNETAPI_LIBS=@LIBNETAPI_LIBS@
+LIBLUA_LIBS=@LIBLUA_LIBS@
 
 INSTALLCMD=@INSTALL@
 INSTALLLIBCMD_SH=@INSTALLLIBCMD_SH@
@@ -891,7 +892,7 @@ NET_OBJ1 = utils/net.o utils/net_ads.o utils/net_help.o \
 	   $(PASSWD_UTIL_OBJ) utils/net_dns.o utils/net_ads_gpo.o \
 	   utils/net_conf.o utils/net_join.o utils/net_user.o \
 	   utils/net_group.o utils/net_file.o utils/net_registry.o \
-	   auth/token_util.o utils/net_dom.o utils/net_share.o
+	   auth/token_util.o utils/net_dom.o utils/net_share.o utils/net_lua.o
 
 # these are not processed by make proto
 NET_OBJ2 = utils/net_registry_util.o utils/net_help_common.o
@@ -1371,12 +1372,12 @@ bin/smbclient@EXEEXT@: $(BINARY_PREREQS) $(CLIENT_OBJ) @BUILD_POPT@ @LIBTALLOC_S
 		$(KRB5LIBS) $(LDAP_LIBS) $(NSCD_LIBS) $(DNSSD_LIBS) \
 		$(LIBTALLOC_LIBS) $(LIBTDB_LIBS) $(WINBIND_LIBS) $(ZLIB_LIBS)
 
-bin/net@EXEEXT@: $(BINARY_PREREQS) $(NET_OBJ) @BUILD_POPT@ @LIBTALLOC_SHARED@ @LIBTDB_SHARED@ @LIBWBCLIENT_SHARED@ @LIBNETAPI_SHARED@
+bin/net@EXEEXT@: $(BINARY_PREREQS) $(NET_OBJ) @BUILD_POPT@ @LIBTALLOC_SHARED@ @LIBTDB_SHARED@ @LIBWBCLIENT_SHARED@ @LIBNETAPI_SHARED@ @LIBLUA_SHARED@
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(NET_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) \
 		$(POPT_LIBS) $(KRB5LIBS) $(UUID_LIBS) $(LDAP_LIBS) \
 		$(PASSDB_LIBS) $(TERMLDFLAGS) $(TERMLIBS) $(NSCD_LIBS) \
-		@INIPARSERLIBS@ $(LIBTALLOC_LIBS) $(LIBTDB_LIBS) $(WINBIND_LIBS) $(LIBNETAPI_LIBS) \
+		@INIPARSERLIBS@ $(LIBTALLOC_LIBS) $(LIBTDB_LIBS) $(WINBIND_LIBS) $(LIBNETAPI_LIBS)  $(LIBLUA_LIBS) -lm \
 		$(ZLIB_LIBS)
 
 bin/profiles@EXEEXT@: $(BINARY_PREREQS) $(PROFILES_OBJ) @BUILD_POPT@ @LIBTALLOC_SHARED@ @LIBTDB_SHARED@
@@ -2131,7 +2132,7 @@ LIBLUA_OBJ0 = lua-5.1.4/src/lapi.o lua-5.1.4/src/lauxlib.o \
 	lua-5.1.4/src/lundump.o lua-5.1.4/src/lvm.o \
 	lua-5.1.4/src/lzio.o lua-5.1.4/src/print.o
 
-LIBLUA_OBJ = $(LIBLUA_OBJ0) @LIBTDB_STATIC@
+LIBLUA_OBJ = $(LIBLUA_OBJ0)
 
 LIBLUA_SHARED_TARGET=@LIBLUA_SHARED_TARGET@
 LIBLUA_SOVER=@LIBLUA_SOVER@
