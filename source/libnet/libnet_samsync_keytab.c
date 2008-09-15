@@ -93,6 +93,7 @@ static NTSTATUS fetch_sam_entry_keytab(TALLOC_CTX *mem_ctx,
 					  ctx->dns_domain_name);
 	entry.password = data_blob_talloc(mem_ctx, nt_passwd, 16);
 	entry.kvno = ads_get_kvno(ctx->ads, entry.name);
+	entry.enctype = ENCTYPE_NULL;
 
 	NT_STATUS_HAVE_NO_MEMORY(entry.name);
 	NT_STATUS_HAVE_NO_MEMORY(entry.principal);
