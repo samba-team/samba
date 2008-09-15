@@ -45,6 +45,8 @@ static NTSTATUS nss_template_get_info( struct nss_domain_entry *e,
 	if ( !homedir || !shell || !gecos )
 		return NT_STATUS_INVALID_PARAMETER;
 	
+	/* protect against home directories using whitespace in the
+	  username */
 	*homedir = talloc_strdup( ctx, lp_template_homedir() );
 	*shell   = talloc_strdup( ctx, lp_template_shell() );
 	*gecos   = NULL;
@@ -54,6 +56,28 @@ static NTSTATUS nss_template_get_info( struct nss_domain_entry *e,
 	}
 	
 	return NT_STATUS_OK;
+}
+
+/**********************************************************************
+ *********************************************************************/
+
+static NTSTATUS nss_template_map_to_alias( TALLOC_CTX *mem_ctx,
+					   const char *domain,
+					   const char *name,
+					   char **alias )
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/**********************************************************************
+ *********************************************************************/
+
+static NTSTATUS nss_template_map_from_alias( TALLOC_CTX *mem_ctx,
+					     const char *domain,
+					     const char *alias,
+					     char **name )
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
 /************************************************************************
@@ -69,9 +93,11 @@ static NTSTATUS nss_template_close( void )
  ***********************************************************************/
 
 static struct nss_info_methods nss_template_methods = {
-	.init         = nss_template_init,
-	.get_nss_info = nss_template_get_info,
-	.close_fn     = nss_template_close
+	.init           = nss_template_init,
+	.get_nss_info   = nss_template_get_info,
+	.map_to_alias   = nss_template_map_to_alias,
+	.map_from_alias = nss_template_map_from_alias,
+	.close_fn       = nss_template_close
 };
 		
 NTSTATUS nss_info_template_init( void )
