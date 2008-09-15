@@ -54,39 +54,35 @@ static void reg_ldb_unpack_value(TALLOC_CTX *mem_ctx,
 	value_type = ldb_msg_find_attr_as_uint(msg, "type", 0);
 	if (type != NULL)
 		*type = value_type; 
+	val = ldb_msg_find_ldb_val(msg, "data");
 
-	if (data != NULL) {
-		val = ldb_msg_find_ldb_val(msg, "data");
-
-		switch (value_type)
-		{
-		case REG_SZ:
-		case REG_EXPAND_SZ:
-			data->length = convert_string_talloc(mem_ctx,
-				iconv_convenience, CH_UNIX, CH_UTF16,
+	switch (value_type)
+	{
+	case REG_SZ:
+	case REG_EXPAND_SZ:
+		data->length = convert_string_talloc(mem_ctx, iconv_convenience, CH_UNIX, CH_UTF16,
 						     val->data, val->length,
 						     (void **)&data->data);
-			break;
+		break;
 
-		case REG_BINARY:
-			if (val != NULL)
-				*data = strhex_to_data_blob((char *)val->data);
-			else {
-				data->data = NULL;
-				data->length = 0;
-			}
-			break;
-
-		case REG_DWORD: {
-			uint32_t tmp = strtoul((char *)val->data, NULL, 0);
-			*data = data_blob_talloc(mem_ctx, &tmp, 4);
-			}
-			break;
-
-		default:
-			*data = data_blob_talloc(mem_ctx, val->data, val->length);
-			break;
+	case REG_BINARY:
+		if (val)
+			*data = strhex_to_data_blob((char *)val->data);
+		else {
+			data->data = NULL;
+			data->length = 0;
 		}
+		break;
+
+	case REG_DWORD: {
+		uint32_t tmp = strtoul((char *)val->data, NULL, 0);
+		*data = data_blob_talloc(mem_ctx, &tmp, 4);
+		}
+		break;
+
+	default:
+		*data = data_blob_talloc(mem_ctx, val->data, val->length);
+		break;
 	}
 }
 
