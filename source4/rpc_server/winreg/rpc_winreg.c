@@ -68,7 +68,6 @@ static WERROR dcesrv_winreg_openhive(struct dcesrv_call_state *dce_call,
 	if (!W_ERROR_IS_OK(result)) {
 		return result;
 	}
-
 	*outh = &h->wire_handle;
 
 	return result;
@@ -279,20 +278,6 @@ static WERROR dcesrv_winreg_EnumValue(struct dcesrv_call_state *dce_call,
 		data.length = *r->in.length;
 	}
 
-	/* the client can optionally pass a NULL for type, meaning they don't
-	   want that back */
-	if (r->in.type != NULL) {
-		r->out.type = talloc(mem_ctx, enum winreg_Type);
-		*r->out.type = data_type;
-	}
-
-	/* check the client has enough room for the value */
-	if (r->in.value != NULL &&
-	    r->in.size != NULL &&
-	    data.length > *r->in.size) {
-		return WERR_MORE_DATA;
-	}
-
 	/* and enough room for the name */
 	if (r->in.name->size < 2*strlen_m_term(data_name)) {
 		return WERR_MORE_DATA;
@@ -307,6 +292,15 @@ static WERROR dcesrv_winreg_EnumValue(struct dcesrv_call_state *dce_call,
 		r->out.name->length = r->in.name->length;
 	}
 	r->out.name->size = r->in.name->size;
+
+	*r->out.value = data_type;
+
+	/* check the client has enough room for the value */
+	if (r->in.value != NULL &&
+	    r->in.size != NULL &&
+	    data.length > *r->in.size) {
+		return WERR_MORE_DATA;
+	}
 
 	if (r->in.value != NULL) {
 		r->out.value = data.data;

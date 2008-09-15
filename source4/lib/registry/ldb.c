@@ -52,8 +52,8 @@ static void reg_ldb_unpack_value(TALLOC_CTX *mem_ctx,
 				      NULL));
 
 	value_type = ldb_msg_find_attr_as_uint(msg, "type", 0);
-	if (type != NULL)
-		*type = value_type; 
+	*type = value_type; 
+
 	val = ldb_msg_find_ldb_val(msg, "data");
 
 	switch (value_type)
