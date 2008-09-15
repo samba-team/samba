@@ -125,7 +125,9 @@ void dcom_add_server_credentials(struct com_context *ctx, const char *server,
 	DLIST_ADD(ctx->dcom->credentials, c);
 }
 
-void dcom_update_credentials_for_aliases(struct com_context *ctx, const char *server, struct DUALSTRINGARRAY *pds)
+void dcom_update_credentials_for_aliases(struct com_context *ctx, 
+										 const char *server, 
+										 struct DUALSTRINGARRAY *pds)
 {
 	struct cli_credentials *cc;
 	struct dcerpc_binding *b;
@@ -134,10 +136,12 @@ void dcom_update_credentials_for_aliases(struct com_context *ctx, const char *se
 
 	cc = dcom_get_server_credentials(ctx, server);
         for (i = 0; pds->stringbindings[i]; ++i) {
-                if (pds->stringbindings[i]->wTowerId != EPM_PROTOCOL_TCP) continue;
+                if (pds->stringbindings[i]->wTowerId != EPM_PROTOCOL_TCP) 
+					continue;
                 status = dcerpc_binding_from_STRINGBINDING(ctx, &b, pds->stringbindings[i]);
-		if (!NT_STATUS_IS_OK(status)) continue;
-		dcom_set_server_credentials(ctx, b->host, cc);
+		if (!NT_STATUS_IS_OK(status)) 
+			continue;
+		dcom_add_server_credentials(ctx, b->host, cc);
 		talloc_free(b);
 	}
 }
@@ -154,7 +158,8 @@ struct dcom_client_context *dcom_client_init(struct com_context *ctx, struct cli
 	return ctx->dcom;
 }
 
-static NTSTATUS dcom_connect_host(struct com_context *ctx, struct dcerpc_pipe **p, const char *server)
+static NTSTATUS dcom_connect_host(struct com_context *ctx, 
+								  struct dcerpc_pipe **p, const char *server)
 {
 	struct dcerpc_binding *bd;
 	const char * available_transports[] = { "ncacn_ip_tcp", "ncacn_np" };
@@ -170,7 +175,8 @@ static NTSTATUS dcom_connect_host(struct com_context *ctx, struct dcerpc_pipe **
 	loc_ctx = talloc_new(ctx);
 
 	/* Allow server name to contain a binding string */
-	if (strchr(server, ':') && NT_STATUS_IS_OK(dcerpc_parse_binding(loc_ctx, server, &bd))) {
+	if (strchr(server, ':') && 
+		NT_STATUS_IS_OK(dcerpc_parse_binding(loc_ctx, server, &bd))) {
 		if (DEBUGLVL(11))
 			bd->flags |= DCERPC_DEBUG_PRINT_BOTH;
 		status = dcerpc_pipe_connect_b(ctx->event_ctx, p, bd, 
@@ -203,7 +209,8 @@ end:
 	return status;
 }
 
-struct dcom_object_exporter *object_exporter_by_oxid(struct com_context *ctx, uint64_t oxid)
+struct dcom_object_exporter *object_exporter_by_oxid(struct com_context *ctx, 
+													 uint64_t oxid)
 {
 	struct dcom_object_exporter *ox;
 	for (ox = ctx->dcom->object_exporters; ox; ox = ox->next) {
