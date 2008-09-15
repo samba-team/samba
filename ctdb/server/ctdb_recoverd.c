@@ -2181,6 +2181,7 @@ static int verify_ip_allocation(struct ctdb_context *ctdb, uint32_t pnn)
 	if (timeval_compare(&uptime1->last_recovery_started,
 			    &uptime2->last_recovery_started) != 0) {
 		DEBUG(DEBUG_NOTICE, (__location__ " last recovery time changed while we read the public ip list. skipping public ip address check\n"));
+		talloc_free(mem_ctx);
 		return 0;
 	}
 
@@ -2188,6 +2189,7 @@ static int verify_ip_allocation(struct ctdb_context *ctdb, uint32_t pnn)
 	if (timeval_compare(&uptime1->last_recovery_finished,
 			    &uptime2->last_recovery_finished) != 0) {
 		DEBUG(DEBUG_NOTICE, (__location__ " last recovery time changed while we read the public ip list. skipping public ip address check\n"));
+		talloc_free(mem_ctx);
 		return 0;
 	}
 
@@ -2195,6 +2197,7 @@ static int verify_ip_allocation(struct ctdb_context *ctdb, uint32_t pnn)
 	if (timeval_compare(&uptime1->last_recovery_finished,
 			    &uptime1->last_recovery_started) != 1) {
 		DEBUG(DEBUG_NOTICE, (__location__ " in the middle of recovery. skipping public ip address check\n"));
+		talloc_free(mem_ctx);
 
 		return 0;
 	}
