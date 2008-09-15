@@ -131,8 +131,6 @@ else
 	CFLAGS="-O"
 fi
 
-CFLAGS="${CFLAGS} -D_SAMBA_BUILD_=3"
-
 m4_include(lib/socket_wrapper/config.m4)
 m4_include(lib/nss_wrapper/config.m4)
 
@@ -6200,6 +6198,14 @@ MSG
 
 fi
 
+AC_ARG_ENABLE(merged-build, 
+[AS_HELP_STRING([--enable-merged-build], [Build Samba 4 as well])])
+
+if test x$enable_merged_build = xyes; then
+	MERGED_BUILD=1
+	m4_include(samba4.m4)
+fi
+
 dnl Remove -L/usr/lib/? from LDFLAGS and LIBS
 LIB_REMOVE_USR_LIB(LDFLAGS)
 LIB_REMOVE_USR_LIB(LIBS)
@@ -6247,6 +6253,10 @@ fi
 # path (if we have them).
 SMBD_LIBS="$samba_dmapi_libs"
 AC_SUBST(SMBD_LIBS)
+
+if test x$MERGED_BUILD != x1; then
+	CFLAGS="${CFLAGS} \$(FLAGS) -D_SAMBA_BUILD_=3"
+fi
 
 AC_OUTPUT(Makefile
 	  script/findsmb smbadduser script/gen-8bit-gap.sh script/installbin.sh script/uninstallbin.sh

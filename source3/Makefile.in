@@ -150,12 +150,7 @@ CODEPAGEDIR = @codepagedir@
 # the directory where pid files go
 PIDDIR = @piddir@
 
-FLAGS1 = $(CFLAGS) @FLAGS1@ @SAMBA_CPPFLAGS@ $(CPPFLAGS)
-FLAGS2 =
-FLAGS3 =
-FLAGS4 = -I$(CTDBDIR)/include
-FLAGS5 = $(FLAGS1) $(FLAGS2) $(FLAGS3) $(FLAGS4)
-FLAGS  = $(ISA) $(FLAGS5) -I$(srcdir)/lib -D_SAMBA_BUILD_=3
+FLAGS = -I. -I$(srcdir) @FLAGS1@ @SAMBA_CPPFLAGS@ $(CPPFLAGS) -I$(CTDBDIR)/include $(ISA) -I$(srcdir)/lib -D_SAMBA_BUILD_=3
 
 PATH_FLAGS = -DSMB_PASSWD_FILE=\"$(SMB_PASSWD_FILE)\" \
 	-DPRIVATE_DIR=\"$(PRIVATE_DIR)\" \
@@ -1169,14 +1164,13 @@ modules:: SHOWFLAGS $(MODULES)
 
 #####################################################################
 ## Perl IDL Compiler
-IDL_FILES = lsa.idl dfs.idl echo.idl winreg.idl initshutdown.idl \
-	srvsvc.idl svcctl.idl eventlog.idl wkssvc.idl netlogon.idl notify.idl \
-	epmapper.idl messaging.idl xattr.idl misc.idl samr.idl security.idl \
-	dssetup.idl krb5pac.idl ntsvcs.idl libnetapi.idl drsuapi.idl drsblobs.idl \
-	nbt.idl
-
-idl::
-	@IDL_FILES="$(IDL_FILES)" CPP="$(CPP)" PERL="$(PERL)" \
+samba3-idl::
+	@IDL_FILES="lsa.idl dfs.idl echo.idl winreg.idl initshutdown.idl \
+		srvsvc.idl svcctl.idl eventlog.idl wkssvc.idl netlogon.idl notify.idl \
+		epmapper.idl messaging.idl xattr.idl misc.idl samr.idl security.idl \
+		dssetup.idl krb5pac.idl ntsvcs.idl libnetapi.idl drsuapi.idl drsblobs.idl \
+		nbt.idl" \
+		CPP="$(CPP)" PERL="$(PERL)" \
 	 srcdir="$(srcdir)" $(srcdir)/script/build_idl.sh $(PIDL_ARGS)
 
 
@@ -1190,7 +1184,7 @@ everything:: all libtalloc libsmbclient libnetapi debug2html smbfilter talloctor
 .SUFFIXES: .c .o .lo
 
 SHOWFLAGS::
-	@echo "Using FLAGS      = $(FLAGS)"
+	@echo "Using CFLAGS     = $(CFLAGS)"
 	@echo "      PICFLAG    = $(PICFLAG)"
 	@echo "      LIBS       = $(LIBS)"
 	@echo "      LDFLAGS    = $(LDFLAGS)"
@@ -1208,11 +1202,11 @@ MAKEDIR = || exec false; \
 	  exec false; fi || exec false
 
 # Run a static checker.
-CHECK_CC = $(CC_CHECKER) -I. -I$(srcdir) $(FLAGS) $(PICFLAG) -c $< -o $@
+CHECK_CC = $(CC_CHECKER) $(CFLAGS) $(PICFLAG) -c $< -o $@
 # Compile a source file.
-COMPILE_CC = $(CC) -I. -I$(srcdir) $(FLAGS) $(PICFLAG) -c $< -o $@
+COMPILE_CC = $(CC) $(CFLAGS) $(PICFLAG) -c $< -o $@
 # Compile a source file with the installation paths defined.
-COMPILE_CC_PATH = $(CC) -I. -I$(srcdir) $(PATH_FLAGS) $(FLAGS) $(PICFLAG) -c $< -o $@
+COMPILE_CC_PATH = $(CC) $(PATH_FLAGS) $(CFLAGS) $(PICFLAG) -c $< -o $@
 
 COMPILE = $(COMPILE_CC)
 
@@ -1226,7 +1220,7 @@ COMPILE = $(COMPILE_CC)
 	@echo Compiling $*.c
 	@$(COMPILE) && exit 0;\
 		echo "The following command failed:" 1>&2;\
-		echo "$(COMPILE_CC)" 1>&2;\
+		echo "$(subst ",\",$(COMPILE_CC))" 1>&2;\
 		$(COMPILE_CC) >/dev/null 2>&1
 @BROKEN_CC@	-mv `echo $@ | sed 's%^.*/%%g'` $@
 
@@ -2627,17 +2621,11 @@ include/build_env.h: script/build_env.sh
 	  > $(builddir)/include/build_env.h
 
 proto::
-	@echo
-	@echo "NOTE: 'proto' is no longer a valid make target as proto.h"
-	@echo "and other prototype headers are not generated anymore."
-	@echo
 
-.PHONY: proto
-
-etags:
+etags::
 	etags `find $(srcdir) -name "*.[ch]"`
 
-ctags:
+ctags::
 	ctags `find $(srcdir) -name "*.[ch]"`
 
 realclean:: clean
