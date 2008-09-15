@@ -298,6 +298,10 @@ source4/winbind/idmap_proto.h
 source4/winbind/wb_helper.h
 source4/winbind/wb_proto.h
 source4/wrepl_server/wrepl_server_proto.h
+source4/heimdal/lib/roken/roken.h
+source4/lib/ldb-samba/ldif_handlers_proto.h
+source4/libcli/drsblobs_proto.h
+source4/ntvfs/posix/vfs_acl_proto.h
 *.swp
 tags
 *.x
