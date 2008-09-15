@@ -183,7 +183,7 @@ static WERROR rpc_key_put_rpc_data(TALLOC_CTX *mem_ctx, struct registry_key *k)
 	struct winreg_OpenKey r;
 	struct rpc_key_data *mykeydata;
 
-	k->backend_data = mykeydata = talloc(mem_ctx, struct rpc_key_data);
+	k->backend_data = mykeydata = talloc_zero(mem_ctx, struct rpc_key_data);
 	mykeydata->num_values = -1;
 	mykeydata->num_subkeys = -1;
 
@@ -211,8 +211,7 @@ static WERROR rpc_open_key(TALLOC_CTX *mem_ctx, struct registry_key *h,
 	struct winreg_OpenKey r;
 	NTSTATUS status;
 
-	mykeydata = talloc(mem_ctx, struct rpc_key);
-
+	mykeydata = talloc_zero(mem_ctx, struct rpc_key);
 	mykeydata->key.context = parentkeydata->key.context;
 	mykeydata->pipe = talloc_reference(mykeydata, parentkeydata->pipe);
 	mykeydata->num_values = -1;
