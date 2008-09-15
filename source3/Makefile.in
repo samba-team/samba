@@ -2622,10 +2622,10 @@ include/build_env.h: script/build_env.sh
 
 proto::
 
-etags:
+etags::
 	etags `find $(srcdir) -name "*.[ch]"`
 
-ctags:
+ctags::
 	ctags `find $(srcdir) -name "*.[ch]"`
 
 realclean:: clean

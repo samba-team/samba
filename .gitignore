@@ -107,6 +107,8 @@ source3/smbd/build_options.c
 source3/st
 source3/tags
 source3/TAGS
+source3/samba4-data.mk
+source3/samba4-config.mk
 source3/torture.tdb
 source4/apidocs
 source4/auth/auth_proto.h

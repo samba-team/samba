@@ -120,8 +120,8 @@ AC_OUTPUT_COMMANDS([
 cd ${srcdir}/../source4
 USESHARED=false $PERL -I${builddir} -I${builddir}/build \
     -I. -Ibuild \
-    build/smb_build/main.pl --output=../../source/samba4-data.mk main.mk || exit $?
-cd ../../source
+    build/smb_build/main.pl --output=../source3/samba4-data.mk main.mk || exit $?
+cd ../source3
 ],[
 srcdir="$srcdir"
 builddir="$builddir"
