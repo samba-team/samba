@@ -58,7 +58,7 @@ clean:: ;
 
 $(1): $(2) ;
 	@echo "Creating $$@"
-	@$$(PERL) $$(srcdir)/../samba4/source/script/mkproto.pl --srcdir=$$(srcdir)/../samba4/source --builddir=$$(builddir)/../samba4/source --public=/dev/null --private=$$@ $$^
+	@$$(PERL) $$(srcdir)/../source4/script/mkproto.pl --srcdir=$$(srcdir)/../source4 --builddir=$$(builddir)/../source4 --public=/dev/null --private=$$@ $$^
 endef
 
 # Shared module

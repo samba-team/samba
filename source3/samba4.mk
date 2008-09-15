@@ -7,7 +7,7 @@ PARTLINK = $(PROG_LD) -r
 MDLD = $(SHLD)
 MDLD_FLAGS = $(LDSHFLAGS) 
 
-samba4srcdir = $(call abspath,$(srcdir)/../samba4/source)
+samba4srcdir = $(call abspath,$(srcdir)/../source4)
 
 # Flags used for the samba 4 files
 # $(srcdir)/include is required for config.h
