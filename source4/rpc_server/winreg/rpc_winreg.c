@@ -278,7 +278,7 @@ static WERROR dcesrv_winreg_EnumValue(struct dcesrv_call_state *dce_call,
 		data.length = *r->in.length;
 	}
 
-	/* and enough room for the name */
+	/* check if there is enough room for the name */
 	if (r->in.name->size < 2*strlen_m_term(data_name)) {
 		return WERR_MORE_DATA;
 	}
@@ -293,7 +293,11 @@ static WERROR dcesrv_winreg_EnumValue(struct dcesrv_call_state *dce_call,
 	}
 	r->out.name->size = r->in.name->size;
 
-	*r->out.value = data_type;
+	r->out.type = talloc(mem_ctx, uint32_t);
+	if (!r->out.type) {
+		return WERR_NOMEM;
+	}
+	*r->out.type = data_type;
 
 	/* check the client has enough room for the value */
 	if (r->in.value != NULL &&
@@ -484,7 +488,6 @@ static WERROR dcesrv_winreg_QueryValue(struct dcesrv_call_state *dce_call,
 			value_data.length = *r->in.length;
 		}
 
-		/* Just asking for the size of the buffer */
 		r->out.type = talloc(mem_ctx, uint32_t);
 		if (!r->out.type) {
 			return WERR_NOMEM;

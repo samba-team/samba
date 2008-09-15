@@ -289,7 +289,7 @@ static WERROR ldb_get_subkey_by_id(TALLOC_CTX *mem_ctx,
 }
 
 static WERROR ldb_get_default_value(TALLOC_CTX *mem_ctx, struct hive_key *k,
-				  const char** name, uint32_t *data_type,
+				  const char **name, uint32_t *data_type,
 				   DATA_BLOB *data)
 {
 	struct ldb_key_data *kd = talloc_get_type(k, struct ldb_key_data);
@@ -797,11 +797,12 @@ static WERROR ldb_get_key_info(TALLOC_CTX *mem_ctx,
 			}
 
 			if (max_valbufsize != NULL) {
+				uint32_t data_type;
 				DATA_BLOB data;
 				reg_ldb_unpack_value(mem_ctx, 
 						     lp_iconv_convenience(global_loadparm),
 						     kd->values[i], NULL, 
-						     NULL, &data);
+						     &data_type, &data);
 				*max_valbufsize = MAX(*max_valbufsize, data.length);
 				talloc_free(data.data);
 			}
