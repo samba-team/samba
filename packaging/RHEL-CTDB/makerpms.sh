@@ -53,8 +53,8 @@ if [ $RC -ne 0 ]; then
 	exit ${RC}
 fi
 
-RELEASE=$(grep ^Release ${DIRNAME}${SPECFILE} | sed -e 's/^Release:\ \+//')
-VERSION=$(grep ^Version ${DIRNAME}${SPECFILE} | sed -e 's/^Version:\ \+//')
+RELEASE=$(grep ^Release ${DIRNAME}/${SPECFILE} | sed -e 's/^Release:\ \+//')
+VERSION=$(grep ^Version ${DIRNAME}/${SPECFILE} | sed -e 's/^Version:\ \+//')
 
 ##
 ## create the tarball
