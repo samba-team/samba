@@ -97,6 +97,7 @@ o   Michael Adam <obnox@samba.org>
 
 o   Jeremy Allison <jra@samba.org>
     * BUG 5729: Explicitly allow "-valid".
+    * BUG 5751: Fix showing of ACLs on DFS in (lib)smbclient.
     * Add st_birthtime and friends for accurate create times on *BSD
       and MacOSX).
     * Fix the wcache_invalidate_samlogon calls.
@@ -104,7 +105,6 @@ o   Jeremy Allison <jra@samba.org>
     * Get smbd to look (read-only) into the winbindd cache for uid/gid <--> sid
       mappings.
     * Write times code update.
-
 
 
 o   Steven Danneman <steven.danneman@isilon.com>
@@ -122,6 +122,10 @@ o   James Ding <ding_cc@hotmail.com>
 
 o   Ephi Dror <Ephi.Dror@datadomain.com>
     * Correct the netsamlogon_clear_cached_user function.
+
+
+o   Jeff Layton <jlayton@redhat.com>
+    * Fix build warnings in cifs.upcall.
 
 
 o   Volker Lendecke <vl@sernet.de>
