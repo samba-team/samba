@@ -1081,8 +1081,9 @@ sub ValidUnion($)
 
 	ValidProperties($union,"UNION");
 
-	if (has_property($union->{PARENT}, "nodiscriminant") and has_property($union->{PARENT}, "switch_type")) {
-		fatal($union->{PARENT}, $union->{PARENT}->{NAME} . ": switch_type() on union without discriminant");
+	if (has_property($union->{PARENT}, "nodiscriminant") and 
+		has_property($union->{PARENT}, "switch_type")) {
+		fatal($union->{PARENT}, $union->{PARENT}->{NAME} . ": switch_type(" . $union->{PARENT}->{PROPERTIES}->{switch_type} . ") on union without discriminant");
 	}
 
 	return unless defined($union->{ELEMENTS});
@@ -1101,7 +1102,7 @@ sub ValidUnion($)
 		}
 
 		if (has_property($e, "ref")) {
-			fatal($e, el_name($e) . " : embedded ref pointers are not supported yet\n");
+			fatal($e, el_name($e) . ": embedded ref pointers are not supported yet\n");
 		}
 
 

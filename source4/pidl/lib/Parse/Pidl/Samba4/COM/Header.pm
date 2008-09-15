@@ -88,6 +88,7 @@ sub ParseInterface($)
 	$res .="struct $if->{NAME}_vtable;\n\n";
 
 	$res .="struct $if->{NAME} {
+	struct OBJREF obj;
 	struct com_context *ctx;
 	struct $if->{NAME}_vtable *vtable;
 	void *object_data;
