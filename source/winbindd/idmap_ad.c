@@ -748,6 +748,16 @@ static NTSTATUS nss_ad_get_info( struct nss_domain_entry *e,
 				  uint32 *gid )
 {
 	ADS_STRUCT *ads_internal = NULL;
+	const char *attrs[] = {NULL, /* attr_homedir */
+			       NULL, /* attr_shell */
+			       NULL, /* attr_gecos */
+			       NULL, /* attr_gidnumber */
+			       NULL };
+	char *filter = NULL;
+	LDAPMessage *msg_internal = NULL;
+	ADS_STATUS ads_status = ADS_ERROR_NT(NT_STATUS_UNSUCCESSFUL);
+	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
+	char *sidstr = NULL;
 
 	/* Only do query if we are online */
 	if (idmap_is_offline())	{
@@ -759,22 +769,69 @@ static NTSTATUS nss_ad_get_info( struct nss_domain_entry *e,
 
 	ads_internal = ad_idmap_cached_connection();
 
-	if ( !ads_internal || !ad_schema )
+	if ( !ads_internal || !ad_schema ) {
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	
-	if ( !homedir || !shell || !gecos )
-		return NT_STATUS_INVALID_PARAMETER;
-
-	*homedir = ads_pull_string( ads, ctx, msg, ad_schema->posix_homedir_attr );
-	*shell   = ads_pull_string( ads, ctx, msg, ad_schema->posix_shell_attr );
-	*gecos   = ads_pull_string( ads, ctx, msg, ad_schema->posix_gecos_attr );
-       
-	if ( gid ) {		
-		if ( !ads_pull_uint32(ads, msg, ad_schema->posix_gidnumber_attr, gid ) )
-			*gid = (uint32)-1;		
 	}
-		
-	return NT_STATUS_OK;
+
+	if (!sid || !homedir || !shell || !gecos) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	/* See if we can use the ADS connection struct swe were given */
+
+	if (ads) {
+		*homedir = ads_pull_string( ads, ctx, msg, ad_schema->posix_homedir_attr );
+		*shell   = ads_pull_string( ads, ctx, msg, ad_schema->posix_shell_attr );
+		*gecos   = ads_pull_string( ads, ctx, msg, ad_schema->posix_gecos_attr );
+
+		if (gid) {
+			if ( !ads_pull_uint32(ads, msg, ad_schema->posix_gidnumber_attr, gid ) )
+				*gid = (uint32)-1;
+		}
+
+		nt_status = NT_STATUS_OK;
+		goto done;
+	}
+
+	/* Have to do our own query */
+
+	attrs[0] = ad_schema->posix_homedir_attr;
+	attrs[1] = ad_schema->posix_shell_attr;
+	attrs[2] = ad_schema->posix_gecos_attr;
+	attrs[3] = ad_schema->posix_gidnumber_attr;
+
+	sidstr = sid_binstring(sid);
+	filter = talloc_asprintf(ctx, "(objectSid=%s)", sidstr);
+	SAFE_FREE(sidstr);
+
+	if (!filter) {
+		nt_status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	ads_status = ads_search_retry(ads_internal, &msg_internal, filter, attrs);
+	if (!ADS_ERR_OK(ads_status)) {
+		nt_status = ads_ntstatus(ads_status);
+		goto done;
+	}
+
+	*homedir = ads_pull_string(ads_internal, ctx, msg_internal, ad_schema->posix_homedir_attr);
+	*shell   = ads_pull_string(ads_internal, ctx, msg_internal, ad_schema->posix_shell_attr);
+	*gecos   = ads_pull_string(ads_internal, ctx, msg_internal, ad_schema->posix_gecos_attr);
+
+	if (gid) {
+		if (!ads_pull_uint32(ads_internal, msg_internal, ad_schema->posix_gidnumber_attr, gid))
+			*gid = (uint32)-1;
+	}
+
+	nt_status = NT_STATUS_OK;
+
+done:
+	if (msg_internal) {
+		ads_msgfree(ads_internal, msg_internal);
+	}
+
+	return nt_status;
 }
 
 /************************************************************************
