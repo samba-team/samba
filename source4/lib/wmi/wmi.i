@@ -68,6 +68,11 @@ static struct com_context *com_ctx;
 static PyObject *ComError;
 static PyObject *mod_win32_client;
 static PyObject *mod_pywintypes;
+
+typedef struct IUnknown IUnknown;
+typedef struct IWbemServices IWbemServices;
+typedef struct IWbemClassObject IWbemClassObject;
+typedef struct IEnumWbemClassObject IEnumWbemClassObject;
 %}
 
 %wrapper %{
@@ -178,7 +183,7 @@ PyObject *PySWbemObject_InitProperites(PyObject *o, struct WbemClassObject *wco)
 	for (i = 0; i < wco->obj_class->__PROPERTY_COUNT; ++i) {
 		PyObject *args, *property;
 
-		args = Py_BuildValue("(si)", wco->obj_class->properties[i].name, wco->obj_class->properties[i].desc->cimtype & CIM_TYPEMASK);
+		args = Py_BuildValue("(si)", wco->obj_class->properties[i].property.name, wco->obj_class->properties[i].property.desc->cimtype & CIM_TYPEMASK);
 		if (!args) goto finish;
 		property = PyObject_CallObject(addProp, args);
 		Py_DECREF(args);
@@ -190,7 +195,7 @@ PyObject *PySWbemObject_InitProperites(PyObject *o, struct WbemClassObject *wco)
 				value = Py_None;
 				Py_INCREF(Py_None);
 			} else
-				value = PyObject_FromCVAR(wco->obj_class->properties[i].desc->cimtype & CIM_TYPEMASK, &wco->instance->data[i]);
+				value = PyObject_FromCVAR(wco->obj_class->properties[i].property.desc->cimtype & CIM_TYPEMASK, &wco->instance->data[i]);
 			if (!value) {
 				Py_DECREF(property);
 				goto finish;
@@ -268,19 +273,31 @@ WERROR WBEM_ConnectServer(struct com_context *ctx, const char *server, const cha
 	push_object(&$result, o);
 }
 
+typedef struct IUnknown {
+    %extend {
+    uint32_t Release(TALLOC_CTX *mem_ctx);
+    }
+} IUnknown;
 
-uint32_t IUnknown_Release(void *d, TALLOC_CTX *mem_ctx);
+%typemap(in) struct BSTR {
+    $1.data = PyString_AsString($input);
+}
 
-WERROR IWbemServices_ExecQuery(struct IWbemServices *d, TALLOC_CTX *mem_ctx, const char *strQueryLanguage, const char *strQuery, 
+
+typedef struct IWbemServices {
+    %extend {
+    WERROR ExecQuery(TALLOC_CTX *mem_ctx, struct BSTR strQueryLanguage, struct BSTR strQuery, int32_t lFlags, struct IWbemContext *pCtx, struct IEnumWbemClassObject **ppEnum);
+    WERROR ExecNotificationQuery(TALLOC_CTX *mem_ctx, struct BSTR strQueryLanguage, struct BSTR strQuery, int32_t lFlags, struct IWbemContext *pCtx, struct IEnumWbemClassObject **ppEnum);
+    WERROR CreateInstanceEnum(TALLOC_CTX *mem_ctx, struct BSTR strClass, 
 	int32_t lFlags, struct IWbemContext *pCtx, struct IEnumWbemClassObject **ppEnum);
+    }
+} IWbemServices;
 
-WERROR IWbemServices_ExecNotificationQuery(struct IWbemServices *d, TALLOC_CTX *mem_ctx, const char *strQueryLanguage, const char *strQuery, 
-	int32_t lFlags, struct IWbemContext *pCtx, struct IEnumWbemClassObject **ppEnum);
-
-WERROR IWbemServices_CreateInstanceEnum(struct IWbemServices *d, TALLOC_CTX *mem_ctx, const char *strClass, 
-	int32_t lFlags, struct IWbemContext *pCtx, struct IEnumWbemClassObject **ppEnum);
-
-WERROR IEnumWbemClassObject_Reset(struct IEnumWbemClassObject *d, TALLOC_CTX *mem_ctx);
+typedef struct IEnumWbemClassObject {
+    %extend {
+    WERROR Reset(TALLOC_CTX *mem_ctx);
+    }
+} IEnumWbemClassObject;
 
 %typemap(in, numinputs=1) (uint32_t uCount, struct WbemClassObject **apObjects, uint32_t *puReturned) (uint32_t uReturned) {
         if (PyLong_Check($input))

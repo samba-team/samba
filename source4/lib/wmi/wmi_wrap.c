@@ -2501,25 +2501,27 @@ void push_object(PyObject **stack, PyObject *o)
 
 /* -------- TYPES TABLE (BEGIN) -------- */
 
-#define SWIGTYPE_p_IEnumWbemClassObject swig_types[0]
-#define SWIGTYPE_p_IWbemContext swig_types[1]
-#define SWIGTYPE_p_IWbemServices swig_types[2]
-#define SWIGTYPE_p_TALLOC_CTX swig_types[3]
-#define SWIGTYPE_p_char swig_types[4]
-#define SWIGTYPE_p_com_context swig_types[5]
-#define SWIGTYPE_p_int swig_types[6]
-#define SWIGTYPE_p_long_long swig_types[7]
-#define SWIGTYPE_p_p_IEnumWbemClassObject swig_types[8]
-#define SWIGTYPE_p_p_IWbemServices swig_types[9]
-#define SWIGTYPE_p_p_WbemClassObject swig_types[10]
-#define SWIGTYPE_p_short swig_types[11]
-#define SWIGTYPE_p_signed_char swig_types[12]
-#define SWIGTYPE_p_unsigned_char swig_types[13]
-#define SWIGTYPE_p_unsigned_int swig_types[14]
-#define SWIGTYPE_p_unsigned_long_long swig_types[15]
-#define SWIGTYPE_p_unsigned_short swig_types[16]
-static swig_type_info *swig_types[18];
-static swig_module_info swig_module = {swig_types, 17, 0, 0, 0, 0};
+#define SWIGTYPE_p_BSTR swig_types[0]
+#define SWIGTYPE_p_IEnumWbemClassObject swig_types[1]
+#define SWIGTYPE_p_IUnknown swig_types[2]
+#define SWIGTYPE_p_IWbemContext swig_types[3]
+#define SWIGTYPE_p_IWbemServices swig_types[4]
+#define SWIGTYPE_p_TALLOC_CTX swig_types[5]
+#define SWIGTYPE_p_char swig_types[6]
+#define SWIGTYPE_p_com_context swig_types[7]
+#define SWIGTYPE_p_int swig_types[8]
+#define SWIGTYPE_p_long_long swig_types[9]
+#define SWIGTYPE_p_p_IEnumWbemClassObject swig_types[10]
+#define SWIGTYPE_p_p_IWbemServices swig_types[11]
+#define SWIGTYPE_p_p_WbemClassObject swig_types[12]
+#define SWIGTYPE_p_short swig_types[13]
+#define SWIGTYPE_p_signed_char swig_types[14]
+#define SWIGTYPE_p_unsigned_char swig_types[15]
+#define SWIGTYPE_p_unsigned_int swig_types[16]
+#define SWIGTYPE_p_unsigned_long_long swig_types[17]
+#define SWIGTYPE_p_unsigned_short swig_types[18]
+static swig_type_info *swig_types[20];
+static swig_module_info swig_module = {swig_types, 19, 0, 0, 0, 0};
 #define SWIG_TypeQuery(name) SWIG_TypeQueryModule(&swig_module, &swig_module, name)
 #define SWIG_MangledTypeQuery(name) SWIG_MangledTypeQueryModule(&swig_module, &swig_module, name)
 
@@ -2582,6 +2584,11 @@ static struct com_context *com_ctx;
 static PyObject *ComError;
 static PyObject *mod_win32_client;
 static PyObject *mod_pywintypes;
+
+typedef struct IUnknown IUnknown;
+typedef struct IWbemServices IWbemServices;
+typedef struct IWbemClassObject IWbemClassObject;
+typedef struct IEnumWbemClassObject IEnumWbemClassObject;
 
 
 SWIGINTERN swig_type_info*
@@ -2985,7 +2992,7 @@ PyObject *PySWbemObject_InitProperites(PyObject *o, struct WbemClassObject *wco)
 	for (i = 0; i < wco->obj_class->__PROPERTY_COUNT; ++i) {
 		PyObject *args, *property;
 
-		args = Py_BuildValue("(si)", wco->obj_class->properties[i].name, wco->obj_class->properties[i].desc->cimtype & CIM_TYPEMASK);
+		args = Py_BuildValue("(si)", wco->obj_class->properties[i].property.name, wco->obj_class->properties[i].property.desc->cimtype & CIM_TYPEMASK);
 		if (!args) goto finish;
 		property = PyObject_CallObject(addProp, args);
 		Py_DECREF(args);
@@ -2997,7 +3004,7 @@ PyObject *PySWbemObject_InitProperites(PyObject *o, struct WbemClassObject *wco)
 				value = Py_None;
 				Py_INCREF(Py_None);
 			} else
-				value = PyObject_FromCVAR(wco->obj_class->properties[i].desc->cimtype & CIM_TYPEMASK, &wco->instance->data[i]);
+				value = PyObject_FromCVAR(wco->obj_class->properties[i].property.desc->cimtype & CIM_TYPEMASK, &wco->instance->data[i]);
 			if (!value) {
 				Py_DECREF(property);
 				goto finish;
@@ -3172,23 +3179,23 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_IUnknown_Release(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
+SWIGINTERN PyObject *_wrap_IUnknown_Release(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
-  void *arg1 = (void *) 0 ;
+  IUnknown *arg1 = (IUnknown *) 0 ;
   TALLOC_CTX *arg2 = (TALLOC_CTX *) 0 ;
-  int res1 ;
-  PyObject * obj0 = 0 ;
-  char *  kwnames[] = {
-    (char *) "d", NULL 
-  };
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  PyObject *swig_obj[1] ;
   uint32_t result;
   
   arg2 = NULL;
-  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"O:IUnknown_Release",kwnames,&obj0)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0,SWIG_as_voidptrptr(&arg1), 0, 0);
+  if (!args) SWIG_fail;
+  swig_obj[0] = args;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_IUnknown, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "IUnknown_Release" "', argument " "1"" of type '" "void *""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "IUnknown_Release" "', argument " "1"" of type '" "IUnknown *""'"); 
   }
+  arg1 = (IUnknown *)(argp1);
   result = (uint32_t)IUnknown_Release(arg1,arg2);
   resultobj = SWIG_From_unsigned_SS_int((unsigned int)(result));
   return resultobj;
@@ -3197,23 +3204,63 @@ fail:
 }
 
 
+SWIGINTERN PyObject *_wrap_new_IUnknown(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  IUnknown *result = 0 ;
+  
+  if (!SWIG_Python_UnpackTuple(args,"new_IUnknown",0,0,0)) SWIG_fail;
+  result = (IUnknown *)calloc(1, sizeof(IUnknown));
+  resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_IUnknown, SWIG_POINTER_NEW |  0 );
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_delete_IUnknown(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  IUnknown *arg1 = (IUnknown *) 0 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  PyObject *swig_obj[1] ;
+  
+  if (!args) SWIG_fail;
+  swig_obj[0] = args;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_IUnknown, SWIG_POINTER_DISOWN |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "delete_IUnknown" "', argument " "1"" of type '" "IUnknown *""'"); 
+  }
+  arg1 = (IUnknown *)(argp1);
+  free((char *) arg1);
+  resultobj = SWIG_Py_Void();
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *IUnknown_swigregister(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *obj;
+  if (!SWIG_Python_UnpackTuple(args,(char*)"swigregister", 1, 1,&obj)) return NULL;
+  SWIG_TypeNewClientData(SWIGTYPE_p_IUnknown, SWIG_NewClientData(obj));
+  return SWIG_Py_Void();
+}
+
+SWIGINTERN PyObject *IUnknown_swiginit(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  return SWIG_Python_InitShadowInstance(args);
+}
+
 SWIGINTERN PyObject *_wrap_IWbemServices_ExecQuery(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
   PyObject *resultobj = 0;
-  struct IWbemServices *arg1 = (struct IWbemServices *) 0 ;
+  IWbemServices *arg1 = (IWbemServices *) 0 ;
   TALLOC_CTX *arg2 = (TALLOC_CTX *) 0 ;
-  char *arg3 = (char *) 0 ;
-  char *arg4 = (char *) 0 ;
+  struct BSTR arg3 ;
+  struct BSTR arg4 ;
   int32_t arg5 ;
   struct IWbemContext *arg6 = (struct IWbemContext *) 0 ;
   struct IEnumWbemClassObject **arg7 = (struct IEnumWbemClassObject **) 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
-  int res3 ;
-  char *buf3 = 0 ;
-  int alloc3 = 0 ;
-  int res4 ;
-  char *buf4 = 0 ;
-  int alloc4 = 0 ;
   int val5 ;
   int ecode5 = 0 ;
   void *argp6 = 0 ;
@@ -3225,7 +3272,7 @@ SWIGINTERN PyObject *_wrap_IWbemServices_ExecQuery(PyObject *SWIGUNUSEDPARM(self
   PyObject * obj3 = 0 ;
   PyObject * obj4 = 0 ;
   char *  kwnames[] = {
-    (char *) "d",(char *) "strQueryLanguage",(char *) "strQuery",(char *) "lFlags",(char *) "pCtx", NULL 
+    (char *) "self",(char *) "strQueryLanguage",(char *) "strQuery",(char *) "lFlags",(char *) "pCtx", NULL 
   };
   WERROR result;
   
@@ -3236,19 +3283,15 @@ SWIGINTERN PyObject *_wrap_IWbemServices_ExecQuery(PyObject *SWIGUNUSEDPARM(self
   if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OOOOO:IWbemServices_ExecQuery",kwnames,&obj0,&obj1,&obj2,&obj3,&obj4)) SWIG_fail;
   res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_IWbemServices, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "IWbemServices_ExecQuery" "', argument " "1"" of type '" "struct IWbemServices *""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "IWbemServices_ExecQuery" "', argument " "1"" of type '" "IWbemServices *""'"); 
   }
-  arg1 = (struct IWbemServices *)(argp1);
-  res3 = SWIG_AsCharPtrAndSize(obj1, &buf3, NULL, &alloc3);
-  if (!SWIG_IsOK(res3)) {
-    SWIG_exception_fail(SWIG_ArgError(res3), "in method '" "IWbemServices_ExecQuery" "', argument " "3"" of type '" "char const *""'");
+  arg1 = (IWbemServices *)(argp1);
+  {
+    (&arg3)->data = PyString_AsString(obj1);
   }
-  arg3 = (char *)(buf3);
-  res4 = SWIG_AsCharPtrAndSize(obj2, &buf4, NULL, &alloc4);
-  if (!SWIG_IsOK(res4)) {
-    SWIG_exception_fail(SWIG_ArgError(res4), "in method '" "IWbemServices_ExecQuery" "', argument " "4"" of type '" "char const *""'");
+  {
+    (&arg4)->data = PyString_AsString(obj2);
   }
-  arg4 = (char *)(buf4);
   ecode5 = SWIG_AsVal_int(obj3, &val5);
   if (!SWIG_IsOK(ecode5)) {
     SWIG_exception_fail(SWIG_ArgError(ecode5), "in method '" "IWbemServices_ExecQuery" "', argument " "5"" of type '" "int32_t""'");
@@ -3259,7 +3302,7 @@ SWIGINTERN PyObject *_wrap_IWbemServices_ExecQuery(PyObject *SWIGUNUSEDPARM(self
     SWIG_exception_fail(SWIG_ArgError(res6), "in method '" "IWbemServices_ExecQuery" "', argument " "6"" of type '" "struct IWbemContext *""'"); 
   }
   arg6 = (struct IWbemContext *)(argp6);
-  result = IWbemServices_ExecQuery(arg1,arg2,(char const *)arg3,(char const *)arg4,arg5,arg6,arg7);
+  result = IWbemServices_ExecQuery(arg1,arg2,arg3,arg4,arg5,arg6,arg7);
   if (!W_ERROR_IS_OK(result)) {
     PyErr_SetWERROR(result);
     SWIG_fail;
@@ -3271,33 +3314,23 @@ SWIGINTERN PyObject *_wrap_IWbemServices_ExecQuery(PyObject *SWIGUNUSEDPARM(self
     o = SWIG_NewPointerObj(*arg7, SWIGTYPE_p_IEnumWbemClassObject, 0);
     push_object(&resultobj, o);
   }
-  if (alloc3 == SWIG_NEWOBJ) free((char*)buf3);
-  if (alloc4 == SWIG_NEWOBJ) free((char*)buf4);
   return resultobj;
 fail:
-  if (alloc3 == SWIG_NEWOBJ) free((char*)buf3);
-  if (alloc4 == SWIG_NEWOBJ) free((char*)buf4);
   return NULL;
 }
 
 
 SWIGINTERN PyObject *_wrap_IWbemServices_ExecNotificationQuery(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
   PyObject *resultobj = 0;
-  struct IWbemServices *arg1 = (struct IWbemServices *) 0 ;
+  IWbemServices *arg1 = (IWbemServices *) 0 ;
   TALLOC_CTX *arg2 = (TALLOC_CTX *) 0 ;
-  char *arg3 = (char *) 0 ;
-  char *arg4 = (char *) 0 ;
+  struct BSTR arg3 ;
+  struct BSTR arg4 ;
   int32_t arg5 ;
   struct IWbemContext *arg6 = (struct IWbemContext *) 0 ;
   struct IEnumWbemClassObject **arg7 = (struct IEnumWbemClassObject **) 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
-  int res3 ;
-  char *buf3 = 0 ;
-  int alloc3 = 0 ;
-  int res4 ;
-  char *buf4 = 0 ;
-  int alloc4 = 0 ;
   int val5 ;
   int ecode5 = 0 ;
   void *argp6 = 0 ;
@@ -3309,7 +3342,7 @@ SWIGINTERN PyObject *_wrap_IWbemServices_ExecNotificationQuery(PyObject *SWIGUNU
   PyObject * obj3 = 0 ;
   PyObject * obj4 = 0 ;
   char *  kwnames[] = {
-    (char *) "d",(char *) "strQueryLanguage",(char *) "strQuery",(char *) "lFlags",(char *) "pCtx", NULL 
+    (char *) "self",(char *) "strQueryLanguage",(char *) "strQuery",(char *) "lFlags",(char *) "pCtx", NULL 
   };
   WERROR result;
   
@@ -3320,19 +3353,15 @@ SWIGINTERN PyObject *_wrap_IWbemServices_ExecNotificationQuery(PyObject *SWIGUNU
   if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OOOOO:IWbemServices_ExecNotificationQuery",kwnames,&obj0,&obj1,&obj2,&obj3,&obj4)) SWIG_fail;
   res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_IWbemServices, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "IWbemServices_ExecNotificationQuery" "', argument " "1"" of type '" "struct IWbemServices *""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "IWbemServices_ExecNotificationQuery" "', argument " "1"" of type '" "IWbemServices *""'"); 
   }
-  arg1 = (struct IWbemServices *)(argp1);
-  res3 = SWIG_AsCharPtrAndSize(obj1, &buf3, NULL, &alloc3);
-  if (!SWIG_IsOK(res3)) {
-    SWIG_exception_fail(SWIG_ArgError(res3), "in method '" "IWbemServices_ExecNotificationQuery" "', argument " "3"" of type '" "char const *""'");
+  arg1 = (IWbemServices *)(argp1);
+  {
+    (&arg3)->data = PyString_AsString(obj1);
   }
-  arg3 = (char *)(buf3);
-  res4 = SWIG_AsCharPtrAndSize(obj2, &buf4, NULL, &alloc4);
-  if (!SWIG_IsOK(res4)) {
-    SWIG_exception_fail(SWIG_ArgError(res4), "in method '" "IWbemServices_ExecNotificationQuery" "', argument " "4"" of type '" "char const *""'");
+  {
+    (&arg4)->data = PyString_AsString(obj2);
   }
-  arg4 = (char *)(buf4);
   ecode5 = SWIG_AsVal_int(obj3, &val5);
   if (!SWIG_IsOK(ecode5)) {
     SWIG_exception_fail(SWIG_ArgError(ecode5), "in method '" "IWbemServices_ExecNotificationQuery" "', argument " "5"" of type '" "int32_t""'");
@@ -3343,7 +3372,7 @@ SWIGINTERN PyObject *_wrap_IWbemServices_ExecNotificationQuery(PyObject *SWIGUNU
     SWIG_exception_fail(SWIG_ArgError(res6), "in method '" "IWbemServices_ExecNotificationQuery" "', argument " "6"" of type '" "struct IWbemContext *""'"); 
   }
   arg6 = (struct IWbemContext *)(argp6);
-  result = IWbemServices_ExecNotificationQuery(arg1,arg2,(char const *)arg3,(char const *)arg4,arg5,arg6,arg7);
+  result = IWbemServices_ExecNotificationQuery(arg1,arg2,arg3,arg4,arg5,arg6,arg7);
   if (!W_ERROR_IS_OK(result)) {
     PyErr_SetWERROR(result);
     SWIG_fail;
@@ -3355,29 +3384,22 @@ SWIGINTERN PyObject *_wrap_IWbemServices_ExecNotificationQuery(PyObject *SWIGUNU
     o = SWIG_NewPointerObj(*arg7, SWIGTYPE_p_IEnumWbemClassObject, 0);
     push_object(&resultobj, o);
   }
-  if (alloc3 == SWIG_NEWOBJ) free((char*)buf3);
-  if (alloc4 == SWIG_NEWOBJ) free((char*)buf4);
   return resultobj;
 fail:
-  if (alloc3 == SWIG_NEWOBJ) free((char*)buf3);
-  if (alloc4 == SWIG_NEWOBJ) free((char*)buf4);
   return NULL;
 }
 
 
 SWIGINTERN PyObject *_wrap_IWbemServices_CreateInstanceEnum(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
   PyObject *resultobj = 0;
-  struct IWbemServices *arg1 = (struct IWbemServices *) 0 ;
+  IWbemServices *arg1 = (IWbemServices *) 0 ;
   TALLOC_CTX *arg2 = (TALLOC_CTX *) 0 ;
-  char *arg3 = (char *) 0 ;
+  struct BSTR arg3 ;
   int32_t arg4 ;
   struct IWbemContext *arg5 = (struct IWbemContext *) 0 ;
   struct IEnumWbemClassObject **arg6 = (struct IEnumWbemClassObject **) 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
-  int res3 ;
-  char *buf3 = 0 ;
-  int alloc3 = 0 ;
   int val4 ;
   int ecode4 = 0 ;
   void *argp5 = 0 ;
@@ -3388,7 +3410,7 @@ SWIGINTERN PyObject *_wrap_IWbemServices_CreateInstanceEnum(PyObject *SWIGUNUSED
   PyObject * obj2 = 0 ;
   PyObject * obj3 = 0 ;
   char *  kwnames[] = {
-    (char *) "d",(char *) "strClass",(char *) "lFlags",(char *) "pCtx", NULL 
+    (char *) "self",(char *) "strClass",(char *) "lFlags",(char *) "pCtx", NULL 
   };
   WERROR result;
   
@@ -3399,14 +3421,12 @@ SWIGINTERN PyObject *_wrap_IWbemServices_CreateInstanceEnum(PyObject *SWIGUNUSED
   if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OOOO:IWbemServices_CreateInstanceEnum",kwnames,&obj0,&obj1,&obj2,&obj3)) SWIG_fail;
   res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_IWbemServices, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "IWbemServices_CreateInstanceEnum" "', argument " "1"" of type '" "struct IWbemServices *""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "IWbemServices_CreateInstanceEnum" "', argument " "1"" of type '" "IWbemServices *""'"); 
   }
-  arg1 = (struct IWbemServices *)(argp1);
-  res3 = SWIG_AsCharPtrAndSize(obj1, &buf3, NULL, &alloc3);
-  if (!SWIG_IsOK(res3)) {
-    SWIG_exception_fail(SWIG_ArgError(res3), "in method '" "IWbemServices_CreateInstanceEnum" "', argument " "3"" of type '" "char const *""'");
+  arg1 = (IWbemServices *)(argp1);
+  {
+    (&arg3)->data = PyString_AsString(obj1);
   }
-  arg3 = (char *)(buf3);
   ecode4 = SWIG_AsVal_int(obj2, &val4);
   if (!SWIG_IsOK(ecode4)) {
     SWIG_exception_fail(SWIG_ArgError(ecode4), "in method '" "IWbemServices_CreateInstanceEnum" "', argument " "4"" of type '" "int32_t""'");
@@ -3417,7 +3437,7 @@ SWIGINTERN PyObject *_wrap_IWbemServices_CreateInstanceEnum(PyObject *SWIGUNUSED
     SWIG_exception_fail(SWIG_ArgError(res5), "in method '" "IWbemServices_CreateInstanceEnum" "', argument " "5"" of type '" "struct IWbemContext *""'"); 
   }
   arg5 = (struct IWbemContext *)(argp5);
-  result = IWbemServices_CreateInstanceEnum(arg1,arg2,(char const *)arg3,arg4,arg5,arg6);
+  result = IWbemServices_CreateInstanceEnum(arg1,arg2,arg3,arg4,arg5,arg6);
   if (!W_ERROR_IS_OK(result)) {
     PyErr_SetWERROR(result);
     SWIG_fail;
@@ -3429,33 +3449,75 @@ SWIGINTERN PyObject *_wrap_IWbemServices_CreateInstanceEnum(PyObject *SWIGUNUSED
     o = SWIG_NewPointerObj(*arg6, SWIGTYPE_p_IEnumWbemClassObject, 0);
     push_object(&resultobj, o);
   }
-  if (alloc3 == SWIG_NEWOBJ) free((char*)buf3);
   return resultobj;
 fail:
-  if (alloc3 == SWIG_NEWOBJ) free((char*)buf3);
   return NULL;
 }
 
 
-SWIGINTERN PyObject *_wrap_IEnumWbemClassObject_Reset(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
+SWIGINTERN PyObject *_wrap_new_IWbemServices(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
-  struct IEnumWbemClassObject *arg1 = (struct IEnumWbemClassObject *) 0 ;
+  IWbemServices *result = 0 ;
+  
+  if (!SWIG_Python_UnpackTuple(args,"new_IWbemServices",0,0,0)) SWIG_fail;
+  result = (IWbemServices *)calloc(1, sizeof(IWbemServices));
+  resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_IWbemServices, SWIG_POINTER_NEW |  0 );
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_delete_IWbemServices(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  IWbemServices *arg1 = (IWbemServices *) 0 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  PyObject *swig_obj[1] ;
+  
+  if (!args) SWIG_fail;
+  swig_obj[0] = args;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_IWbemServices, SWIG_POINTER_DISOWN |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "delete_IWbemServices" "', argument " "1"" of type '" "IWbemServices *""'"); 
+  }
+  arg1 = (IWbemServices *)(argp1);
+  free((char *) arg1);
+  resultobj = SWIG_Py_Void();
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *IWbemServices_swigregister(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *obj;
+  if (!SWIG_Python_UnpackTuple(args,(char*)"swigregister", 1, 1,&obj)) return NULL;
+  SWIG_TypeNewClientData(SWIGTYPE_p_IWbemServices, SWIG_NewClientData(obj));
+  return SWIG_Py_Void();
+}
+
+SWIGINTERN PyObject *IWbemServices_swiginit(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  return SWIG_Python_InitShadowInstance(args);
+}
+
+SWIGINTERN PyObject *_wrap_IEnumWbemClassObject_Reset(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  IEnumWbemClassObject *arg1 = (IEnumWbemClassObject *) 0 ;
   TALLOC_CTX *arg2 = (TALLOC_CTX *) 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
-  PyObject * obj0 = 0 ;
-  char *  kwnames[] = {
-    (char *) "d", NULL 
-  };
+  PyObject *swig_obj[1] ;
   WERROR result;
   
   arg2 = NULL;
-  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"O:IEnumWbemClassObject_Reset",kwnames,&obj0)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_IEnumWbemClassObject, 0 |  0 );
+  if (!args) SWIG_fail;
+  swig_obj[0] = args;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_IEnumWbemClassObject, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "IEnumWbemClassObject_Reset" "', argument " "1"" of type '" "struct IEnumWbemClassObject *""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "IEnumWbemClassObject_Reset" "', argument " "1"" of type '" "IEnumWbemClassObject *""'"); 
   }
-  arg1 = (struct IEnumWbemClassObject *)(argp1);
+  arg1 = (IEnumWbemClassObject *)(argp1);
   result = IEnumWbemClassObject_Reset(arg1,arg2);
   if (!W_ERROR_IS_OK(result)) {
     PyErr_SetWERROR(result);
@@ -3468,6 +3530,52 @@ fail:
   return NULL;
 }
 
+
+SWIGINTERN PyObject *_wrap_new_IEnumWbemClassObject(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  IEnumWbemClassObject *result = 0 ;
+  
+  if (!SWIG_Python_UnpackTuple(args,"new_IEnumWbemClassObject",0,0,0)) SWIG_fail;
+  result = (IEnumWbemClassObject *)calloc(1, sizeof(IEnumWbemClassObject));
+  resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_IEnumWbemClassObject, SWIG_POINTER_NEW |  0 );
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_delete_IEnumWbemClassObject(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  IEnumWbemClassObject *arg1 = (IEnumWbemClassObject *) 0 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  PyObject *swig_obj[1] ;
+  
+  if (!args) SWIG_fail;
+  swig_obj[0] = args;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_IEnumWbemClassObject, SWIG_POINTER_DISOWN |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "delete_IEnumWbemClassObject" "', argument " "1"" of type '" "IEnumWbemClassObject *""'"); 
+  }
+  arg1 = (IEnumWbemClassObject *)(argp1);
+  free((char *) arg1);
+  resultobj = SWIG_Py_Void();
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *IEnumWbemClassObject_swigregister(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *obj;
+  if (!SWIG_Python_UnpackTuple(args,(char*)"swigregister", 1, 1,&obj)) return NULL;
+  SWIG_TypeNewClientData(SWIGTYPE_p_IEnumWbemClassObject, SWIG_NewClientData(obj));
+  return SWIG_Py_Void();
+}
+
+SWIGINTERN PyObject *IEnumWbemClassObject_swiginit(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  return SWIG_Python_InitShadowInstance(args);
+}
 
 SWIGINTERN PyObject *_wrap_IEnumWbemClassObject_SmartNext(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
   PyObject *resultobj = 0;
@@ -3550,11 +3658,23 @@ fail:
 
 static PyMethodDef SwigMethods[] = {
 	 { (char *)"WBEM_ConnectServer", (PyCFunction) _wrap_WBEM_ConnectServer, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"IUnknown_Release", (PyCFunction) _wrap_IUnknown_Release, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"IUnknown_Release", (PyCFunction)_wrap_IUnknown_Release, METH_O, NULL},
+	 { (char *)"new_IUnknown", (PyCFunction)_wrap_new_IUnknown, METH_NOARGS, NULL},
+	 { (char *)"delete_IUnknown", (PyCFunction)_wrap_delete_IUnknown, METH_O, NULL},
+	 { (char *)"IUnknown_swigregister", IUnknown_swigregister, METH_VARARGS, NULL},
+	 { (char *)"IUnknown_swiginit", IUnknown_swiginit, METH_VARARGS, NULL},
 	 { (char *)"IWbemServices_ExecQuery", (PyCFunction) _wrap_IWbemServices_ExecQuery, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"IWbemServices_ExecNotificationQuery", (PyCFunction) _wrap_IWbemServices_ExecNotificationQuery, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"IWbemServices_CreateInstanceEnum", (PyCFunction) _wrap_IWbemServices_CreateInstanceEnum, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"IEnumWbemClassObject_Reset", (PyCFunction) _wrap_IEnumWbemClassObject_Reset, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"new_IWbemServices", (PyCFunction)_wrap_new_IWbemServices, METH_NOARGS, NULL},
+	 { (char *)"delete_IWbemServices", (PyCFunction)_wrap_delete_IWbemServices, METH_O, NULL},
+	 { (char *)"IWbemServices_swigregister", IWbemServices_swigregister, METH_VARARGS, NULL},
+	 { (char *)"IWbemServices_swiginit", IWbemServices_swiginit, METH_VARARGS, NULL},
+	 { (char *)"IEnumWbemClassObject_Reset", (PyCFunction)_wrap_IEnumWbemClassObject_Reset, METH_O, NULL},
+	 { (char *)"new_IEnumWbemClassObject", (PyCFunction)_wrap_new_IEnumWbemClassObject, METH_NOARGS, NULL},
+	 { (char *)"delete_IEnumWbemClassObject", (PyCFunction)_wrap_delete_IEnumWbemClassObject, METH_O, NULL},
+	 { (char *)"IEnumWbemClassObject_swigregister", IEnumWbemClassObject_swigregister, METH_VARARGS, NULL},
+	 { (char *)"IEnumWbemClassObject_swiginit", IEnumWbemClassObject_swiginit, METH_VARARGS, NULL},
 	 { (char *)"IEnumWbemClassObject_SmartNext", (PyCFunction) _wrap_IEnumWbemClassObject_SmartNext, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { NULL, NULL, 0, NULL }
 };
@@ -3562,9 +3682,11 @@ static PyMethodDef SwigMethods[] = {
 
 /* -------- TYPE CONVERSION AND EQUIVALENCE RULES (BEGIN) -------- */
 
-static swig_type_info _swigt__p_IEnumWbemClassObject = {"_p_IEnumWbemClassObject", "struct IEnumWbemClassObject *", 0, 0, (void*)0, 0};
+static swig_type_info _swigt__p_BSTR = {"_p_BSTR", "struct BSTR *", 0, 0, (void*)0, 0};
+static swig_type_info _swigt__p_IEnumWbemClassObject = {"_p_IEnumWbemClassObject", "struct IEnumWbemClassObject *|IEnumWbemClassObject *", 0, 0, (void*)0, 0};
+static swig_type_info _swigt__p_IUnknown = {"_p_IUnknown", "struct IUnknown *|IUnknown *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_IWbemContext = {"_p_IWbemContext", "struct IWbemContext *", 0, 0, (void*)0, 0};
-static swig_type_info _swigt__p_IWbemServices = {"_p_IWbemServices", "struct IWbemServices *", 0, 0, (void*)0, 0};
+static swig_type_info _swigt__p_IWbemServices = {"_p_IWbemServices", "struct IWbemServices *|IWbemServices *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_TALLOC_CTX = {"_p_TALLOC_CTX", "TALLOC_CTX *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_char = {"_p_char", "char *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_com_context = {"_p_com_context", "struct com_context *", 0, 0, (void*)0, 0};
@@ -3581,7 +3703,9 @@ static swig_type_info _swigt__p_unsigned_long_long = {"_p_unsigned_long_long", "
 static swig_type_info _swigt__p_unsigned_short = {"_p_unsigned_short", "unsigned short *|uint_least16_t *|uint16_t *", 0, 0, (void*)0, 0};
 
 static swig_type_info *swig_type_initial[] = {
+  &_swigt__p_BSTR,
   &_swigt__p_IEnumWbemClassObject,
+  &_swigt__p_IUnknown,
   &_swigt__p_IWbemContext,
   &_swigt__p_IWbemServices,
   &_swigt__p_TALLOC_CTX,
@@ -3600,7 +3724,9 @@ static swig_type_info *swig_type_initial[] = {
   &_swigt__p_unsigned_short,
 };
 
+static swig_cast_info _swigc__p_BSTR[] = {  {&_swigt__p_BSTR, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_IEnumWbemClassObject[] = {  {&_swigt__p_IEnumWbemClassObject, 0, 0, 0},{0, 0, 0, 0}};
+static swig_cast_info _swigc__p_IUnknown[] = {  {&_swigt__p_IUnknown, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_IWbemContext[] = {  {&_swigt__p_IWbemContext, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_IWbemServices[] = {  {&_swigt__p_IWbemServices, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_TALLOC_CTX[] = {  {&_swigt__p_TALLOC_CTX, 0, 0, 0},{0, 0, 0, 0}};
@@ -3619,7 +3745,9 @@ static swig_cast_info _swigc__p_unsigned_long_long[] = {  {&_swigt__p_unsigned_l
 static swig_cast_info _swigc__p_unsigned_short[] = {  {&_swigt__p_unsigned_short, 0, 0, 0},{0, 0, 0, 0}};
 
 static swig_cast_info *swig_cast_initial[] = {
+  _swigc__p_BSTR,
   _swigc__p_IEnumWbemClassObject,
+  _swigc__p_IUnknown,
   _swigc__p_IWbemContext,
   _swigc__p_IWbemServices,
   _swigc__p_TALLOC_CTX,

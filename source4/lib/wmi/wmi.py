@@ -58,11 +58,38 @@ def _swig_setattr_nondynamic_method(set):
 
 
 WBEM_ConnectServer = _wmi.WBEM_ConnectServer
-IUnknown_Release = _wmi.IUnknown_Release
-IWbemServices_ExecQuery = _wmi.IWbemServices_ExecQuery
-IWbemServices_ExecNotificationQuery = _wmi.IWbemServices_ExecNotificationQuery
-IWbemServices_CreateInstanceEnum = _wmi.IWbemServices_CreateInstanceEnum
-IEnumWbemClassObject_Reset = _wmi.IEnumWbemClassObject_Reset
+class IUnknown(object):
+    thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
+    __repr__ = _swig_repr
+    def __init__(self, *args, **kwargs): 
+        _wmi.IUnknown_swiginit(self,_wmi.new_IUnknown(*args, **kwargs))
+    __swig_destroy__ = _wmi.delete_IUnknown
+IUnknown.Release = new_instancemethod(_wmi.IUnknown_Release,None,IUnknown)
+IUnknown_swigregister = _wmi.IUnknown_swigregister
+IUnknown_swigregister(IUnknown)
+
+class IWbemServices(object):
+    thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
+    __repr__ = _swig_repr
+    def __init__(self, *args, **kwargs): 
+        _wmi.IWbemServices_swiginit(self,_wmi.new_IWbemServices(*args, **kwargs))
+    __swig_destroy__ = _wmi.delete_IWbemServices
+IWbemServices.ExecQuery = new_instancemethod(_wmi.IWbemServices_ExecQuery,None,IWbemServices)
+IWbemServices.ExecNotificationQuery = new_instancemethod(_wmi.IWbemServices_ExecNotificationQuery,None,IWbemServices)
+IWbemServices.CreateInstanceEnum = new_instancemethod(_wmi.IWbemServices_CreateInstanceEnum,None,IWbemServices)
+IWbemServices_swigregister = _wmi.IWbemServices_swigregister
+IWbemServices_swigregister(IWbemServices)
+
+class IEnumWbemClassObject(object):
+    thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
+    __repr__ = _swig_repr
+    def __init__(self, *args, **kwargs): 
+        _wmi.IEnumWbemClassObject_swiginit(self,_wmi.new_IEnumWbemClassObject(*args, **kwargs))
+    __swig_destroy__ = _wmi.delete_IEnumWbemClassObject
+IEnumWbemClassObject.Reset = new_instancemethod(_wmi.IEnumWbemClassObject_Reset,None,IEnumWbemClassObject)
+IEnumWbemClassObject_swigregister = _wmi.IEnumWbemClassObject_swigregister
+IEnumWbemClassObject_swigregister(IEnumWbemClassObject)
+
 IEnumWbemClassObject_SmartNext = _wmi.IEnumWbemClassObject_SmartNext
 
 
