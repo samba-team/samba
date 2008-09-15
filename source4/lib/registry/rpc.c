@@ -287,6 +287,53 @@ static WERROR rpc_get_value_by_index(TALLOC_CTX *mem_ctx,
 	return r.out.result;
 }
 
+static WERROR rpc_get_value_by_name(TALLOC_CTX *mem_ctx,
+				     const struct registry_key *parent,
+				     const char *value_name,
+				     uint32_t *type,
+				     DATA_BLOB *data)
+{
+	struct rpc_key *mykeydata = talloc_get_type(parent, struct rpc_key);
+	struct winreg_QueryValue r;
+	struct winreg_String name;
+	uint8_t value;
+	uint32_t val_size = MAX_VALSIZE;
+	uint32_t zero = 0;
+	WERROR error;
+	NTSTATUS status;
+
+	if (mykeydata->num_values == -1) {
+		error = rpc_query_key(mem_ctx, parent);
+		if(!W_ERROR_IS_OK(error)) return error;
+	}
+
+	chars_to_winreg_String(mem_ctx, &name, value_name);
+
+	ZERO_STRUCT(r);
+	r.in.handle = &mykeydata->pol;
+	r.in.value_name = name;
+	r.in.type = type;
+	r.in.data = &value;
+	r.in.size = &val_size;
+	r.in.length = &zero;
+	r.out.type = type;
+	r.out.data = &value;
+	r.out.size = &val_size;
+	r.out.length = &zero;
+
+	status = dcerpc_winreg_QueryValue(mykeydata->pipe, mem_ctx, &r);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("QueryValue failed - %s\n", nt_errstr(status)));
+		return ntstatus_to_werror(status);
+	}
+
+	*type = *(r.out.type);
+	*data = data_blob_talloc(mem_ctx, r.out.data, *r.out.length);
+
+	return r.out.result;
+}
+
 static WERROR rpc_get_subkey_by_index(TALLOC_CTX *mem_ctx,
 				      const struct registry_key *parent,
 				      uint32_t n,
@@ -471,6 +518,7 @@ static struct registry_operations reg_backend_rpc = {
 	.get_predefined_key = rpc_get_predefined_key,
 	.enum_key = rpc_get_subkey_by_index,
 	.enum_value = rpc_get_value_by_index,
+	.get_value = rpc_get_value_by_name,
 	.create_key = rpc_add_key,
 	.delete_key = rpc_del_key,
 	.get_key_info = rpc_get_info,
