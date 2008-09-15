@@ -259,7 +259,6 @@ static WERROR dcesrv_winreg_EnumValue(struct dcesrv_call_state *dce_call,
 	struct dcesrv_handle *h;
 	struct registry_key *key;
 	const char *data_name;
-	uint32_t data_type;
 	DATA_BLOB data;
 	WERROR result;
 
@@ -268,12 +267,11 @@ static WERROR dcesrv_winreg_EnumValue(struct dcesrv_call_state *dce_call,
 	key = h->data;
 
 	result = reg_key_get_value_by_index(mem_ctx, (struct registry_key *)h->data,
-		r->in.enum_index, &data_name, &data_type, &data);
+		r->in.enum_index, &data_name, r->out.type, &data);
 
 	if (!W_ERROR_IS_OK(result)) {
 		/* if the lookup wasn't successful, send client query back */
 		data_name = r->in.name->name;
-		data_type = *r->in.type;
 		data.data = r->in.value;
 		data.length = *r->in.length;
 	}
@@ -292,8 +290,6 @@ static WERROR dcesrv_winreg_EnumValue(struct dcesrv_call_state *dce_call,
 		r->out.name->length = r->in.name->length;
 	}
 	r->out.name->size = r->in.name->size;
-
-	*r->out.value = data_type;
 
 	/* check the client has enough room for the value */
 	if (r->in.value != NULL &&
@@ -462,7 +458,6 @@ static WERROR dcesrv_winreg_QueryValue(struct dcesrv_call_state *dce_call,
 				       struct winreg_QueryValue *r)
 {
 	struct dcesrv_handle *h;
-	uint32_t value_type;
 	DATA_BLOB value_data;
 	WERROR result;
 
@@ -475,21 +470,15 @@ static WERROR dcesrv_winreg_QueryValue(struct dcesrv_call_state *dce_call,
 	case SECURITY_USER:
 		result = reg_key_get_value_by_name(mem_ctx,
 			(struct registry_key *)h->data, r->in.value_name.name,
-						   &value_type, &value_data);
+						   r->out.type, &value_data);
 		
 		if (!W_ERROR_IS_OK(result)) {
 			/* if the lookup wasn't successful, send client query back */
-			value_type = *r->in.type;
 			value_data.data = r->in.data;
 			value_data.length = *r->in.length;
 		}
 
 		/* Just asking for the size of the buffer */
-		r->out.type = talloc(mem_ctx, uint32_t);
-		if (!r->out.type) {
-			return WERR_NOMEM;
-		}
-		*r->out.type = value_type;
 		r->out.length = talloc(mem_ctx, uint32_t);
 		if (!r->out.length) {
 			return WERR_NOMEM;
