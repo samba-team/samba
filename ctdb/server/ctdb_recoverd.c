@@ -880,6 +880,7 @@ static void vacuum_fetch_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	r = (struct ctdb_rec_data *)&recs->data[0];
 
 	if (recs->count == 0) {
+		talloc_free(tmp_ctx);
 		return;
 	}
 
@@ -888,6 +889,7 @@ static void vacuum_fetch_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	for (v=rec->vacuum_info;v;v=v->next) {
 		if (srcnode == v->srcnode && recs->db_id == v->ctdb_db->db_id) {
 			/* we're already working on records from this node */
+			talloc_free(tmp_ctx);
 			return;
 		}
 	}
@@ -930,6 +932,7 @@ static void vacuum_fetch_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	v = talloc_zero(rec, struct vacuum_info);
 	if (v == NULL) {
 		DEBUG(DEBUG_CRIT,(__location__ " Out of memory\n"));
+		talloc_free(tmp_ctx);
 		return;
 	}
 
@@ -940,6 +943,7 @@ static void vacuum_fetch_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	if (v->recs == NULL) {
 		DEBUG(DEBUG_CRIT,(__location__ " Out of memory\n"));
 		talloc_free(v);
+		talloc_free(tmp_ctx);
 		return;		
 	}
 	v->r = 	(struct ctdb_rec_data *)&v->recs->data[0];
@@ -949,6 +953,7 @@ static void vacuum_fetch_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	talloc_set_destructor(v, vacuum_info_destructor);
 
 	vacuum_fetch_next(v);
+	talloc_free(tmp_ctx);
 }
 
 
