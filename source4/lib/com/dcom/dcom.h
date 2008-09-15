@@ -28,10 +28,16 @@ struct dcerpc_pipe;
 #include "librpc/gen_ndr/orpc.h"
 
 struct dcom_client_context {
-	struct cli_credentials *credentials;
+	struct dcom_server_credentials {
+		const char *server;
+		struct cli_credentials *credentials;
+		struct dcom_server_credentials *prev, *next;
+	} *credentials;
 	struct dcom_object_exporter {
-		uint64_t oxid;	
-		struct DUALSTRINGARRAY bindings;
+		uint64_t oxid;
+		char *host;
+		struct IRemUnknown *rem_unknown;
+		struct DUALSTRINGARRAY *bindings;
 		struct dcerpc_pipe *pipe;
 		struct dcom_object_exporter *prev, *next;
 	} *object_exporters;
@@ -50,7 +56,7 @@ NTSTATUS dcom_get_pipe(struct IUnknown *iface, struct dcerpc_pipe **pp);
 NTSTATUS dcom_OBJREF_from_IUnknown(struct OBJREF *o, struct IUnknown *p);
 NTSTATUS dcom_IUnknown_from_OBJREF(struct com_context *ctx, struct IUnknown **_p, struct OBJREF *o);
 uint64_t dcom_get_current_oxid(void);
-void dcom_set_server_credentials(struct com_context *ctx, const char *server, struct cli_credentials *credentials);
+void dcom_add_server_credentials(struct com_context *ctx, const char *server, struct cli_credentials *credentials);
 WERROR dcom_query_interface(struct IUnknown *d, uint32_t cRefs, uint16_t cIids, struct GUID *iids, struct IUnknown **ip, WERROR *results);
 
 #include "librpc/gen_ndr/com_dcom.h"
@@ -61,5 +67,6 @@ NTSTATUS dcom_register_marshal(struct GUID *clsid, marshal_fn marshal, unmarshal
 
 #include "libcli/composite/composite.h"
 void dcom_release_continue(struct composite_context *cr);
+#define IUnknown_ipid(d) ((d)->obj.u_objref.u_standard.std.ipid)
 
 #endif /* _DCOM_H */

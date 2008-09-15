@@ -84,12 +84,23 @@ struct cli_credentials *dcom_get_server_credentials(struct com_context *ctx, con
 	return d;
 }
 
-void dcom_set_server_credentials(struct com_context *ctx, const char *server, struct cli_credentials *credentials)
+/**
+ * Register credentials for a specific server.
+ *
+ * @param ctx COM context
+ * @param server Name of server, can be NULL
+ * @param credentials Credentials object
+ */
+void dcom_add_server_credentials(struct com_context *ctx, const char *server, 
+								 struct cli_credentials *credentials)
 {
 	struct dcom_server_credentials *c;
 
+	/* FIXME: Don't use talloc_find_parent_bytype */
 	for (c = ctx->dcom->credentials; c; c = c->next) {
-		if ((server == NULL && c->server == NULL) ||(server && c->server && !strcmp(c->server, server))) {
+		if ((server == NULL && c->server == NULL) ||
+			(server != NULL && c->server != NULL && 
+			 !strcmp(c->server, server))) {
 			if (c->credentials && c->credentials != credentials) {
 				talloc_unlink(c, c->credentials);
 				c->credentials = credentials;
@@ -98,9 +109,11 @@ void dcom_set_server_credentials(struct com_context *ctx, const char *server, st
 				else
 					talloc_steal(c, c->credentials);
 			}
+
 			return;
 		}
 	}
+
 	c = talloc(ctx->event_ctx, struct dcom_server_credentials);
 	c->server = talloc_strdup(c, server);
 	c->credentials = credentials;
@@ -108,6 +121,7 @@ void dcom_set_server_credentials(struct com_context *ctx, const char *server, st
 		(void)talloc_reference(c, c->credentials);
 	else
 		talloc_steal(c, c->credentials);
+
 	DLIST_ADD(ctx->dcom->credentials, c);
 }
 
