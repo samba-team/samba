@@ -1854,7 +1854,8 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 	/* Handle strange delete on close create semantics. */
 	if ((create_options & FILE_DELETE_ON_CLOSE)
-	    && (is_ntfs_stream_name(fname)
+	    && (((conn->fs_capabilities & FILE_NAMED_STREAMS)
+			&& is_ntfs_stream_name(fname))
 		|| can_set_initial_delete_on_close(lck))) {
 		status = can_set_delete_on_close(fsp, True, new_dos_attributes);
 
@@ -2118,7 +2119,9 @@ NTSTATUS open_directory(connection_struct *conn,
 		 (unsigned int)create_disposition,
 		 (unsigned int)file_attributes));
 
-	if (!(file_attributes & FILE_FLAG_POSIX_SEMANTICS) && is_ntfs_stream_name(fname)) {
+	if (!(file_attributes & FILE_FLAG_POSIX_SEMANTICS) &&
+			(conn->fs_capabilities & FILE_NAMED_STREAMS) &&
+			is_ntfs_stream_name(fname)) {
 		DEBUG(2, ("open_directory: %s is a stream name!\n", fname));
 		return NT_STATUS_NOT_A_DIRECTORY;
 	}
@@ -2961,7 +2964,8 @@ NTSTATUS create_file(connection_struct *conn,
 			 * Check to see if this is a mac fork of some kind.
 			 */
 
-			if (is_ntfs_stream_name(fname)) {
+			if ((conn->fs_capabilities & FILE_NAMED_STREAMS) &&
+					is_ntfs_stream_name(fname)) {
 				status = NT_STATUS_OBJECT_PATH_NOT_FOUND;
 				goto fail;
 			}
