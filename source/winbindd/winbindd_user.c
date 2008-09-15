@@ -67,12 +67,15 @@ static bool fillup_pw_field(const char *lp_template,
 }
 /* Fill a pwent structure with information we have obtained */
 
-static bool winbindd_fill_pwent(char *dom_name, char *user_name,
+static bool winbindd_fill_pwent(TALLOC_CTX *ctx, char *dom_name, char *user_name,
 				DOM_SID *user_sid, DOM_SID *group_sid,
 				char *full_name, char *homedir, char *shell,
 				struct winbindd_pw *pw)
 {
 	fstring output_username;
+	char *mapped_name = NULL;
+	struct winbindd_domain *domain = NULL;
+	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 
 	if (!pw || !dom_name || !user_name)
 		return False;
@@ -99,7 +102,28 @@ static bool winbindd_fill_pwent(char *dom_name, char *user_name,
 
 	/* Username */
 
-	fill_domain_username(output_username, dom_name, user_name, True);
+	domain = find_domain_from_name_noinit(dom_name);
+	if (domain) {
+		nt_status = normalize_name_map(ctx, domain, user_name,
+					       &mapped_name);
+	} else {
+		DEBUG(5,("winbindd_fill_pwent: Failed to find domain for %s.  "
+			 "Disabling name alias support\n", dom_name));
+		nt_status = NT_STATUS_NO_SUCH_DOMAIN;
+	}
+
+	/* Basic removal of whitespace */
+	if (NT_STATUS_IS_OK(nt_status)) {
+		fill_domain_username(output_username, dom_name, mapped_name, True);
+	}
+	/* Complete name replacement */
+	else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_FILE_RENAMED)) {
+		fstrcpy(output_username, mapped_name);
+	}
+	/* No change at all */
+	else {
+		fill_domain_username(output_username, dom_name, user_name, True);
+	}
 
 	safe_strcpy(pw->pw_name, output_username, sizeof(pw->pw_name) - 1);
 
@@ -179,6 +203,7 @@ struct getpwsid_state {
 	uid_t uid;
 	DOM_SID group_sid;
 	gid_t gid;
+	bool username_mapped;
 };
 
 static void getpwsid_queryuser_recv(void *private_data, bool success,
@@ -231,6 +256,8 @@ static void getpwsid_queryuser_recv(void *private_data, bool success,
 	fstring username;
 	struct getpwsid_state *s =
 		talloc_get_type_abort(private_data, struct getpwsid_state);
+	char *mapped_name;
+	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 
 	if (!success) {
 		DEBUG(5, ("Could not query domain %s SID %s\n",
@@ -272,7 +299,23 @@ static void getpwsid_queryuser_recv(void *private_data, bool success,
 	strlower_m( username );
 	s->username = talloc_strdup(s->state->mem_ctx, username);
 
-	ws_name_replace( s->username, WB_REPLACE_CHAR );
+	nt_status = normalize_name_map(s->state->mem_ctx, s->domain,
+				       s->username, &mapped_name);
+
+	/* Basic removal of whitespace */
+	if (NT_STATUS_IS_OK(nt_status)) {
+		s->username = mapped_name;
+		s->username_mapped = false;
+	}
+	/* Complete name replacement */
+	else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_FILE_RENAMED)) {
+		s->username = mapped_name;
+		s->username_mapped = true;
+	}
+	/* No change at all */
+	else {
+		s->username_mapped = false;
+	}
 
 	s->fullname = talloc_strdup(s->state->mem_ctx, full_name);
 	s->homedir = talloc_strdup(s->state->mem_ctx, homedir);
@@ -330,8 +373,16 @@ static void getpwsid_sid2gid_recv(void *private_data, bool success, gid_t gid)
 	pw = &s->state->response.data.pw;
 	pw->pw_uid = s->uid;
 	pw->pw_gid = s->gid;
+
+	/* allow username to be overridden by the alias mapping */
+
+	if ( s->username_mapped ) {
+		fstrcpy( output_username, s->username );
+	} else {
 	fill_domain_username(output_username, s->domain->name,
 			     s->username, True);
+	}
+
 	safe_strcpy(pw->pw_name, output_username, sizeof(pw->pw_name) - 1);
 	safe_strcpy(pw->pw_gecos, s->fullname, sizeof(pw->pw_gecos) - 1);
 
@@ -370,8 +421,10 @@ void winbindd_getpwnam(struct winbindd_cli_state *state)
 {
 	struct winbindd_domain *domain;
 	fstring domname, username;
+	char *mapped_user = NULL;
 	char *domuser;
 	size_t dusize;
+	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 
 	domuser = state->request.data.username;
 	dusize = sizeof(state->request.data.username);
@@ -383,9 +436,19 @@ void winbindd_getpwnam(struct winbindd_cli_state *state)
 		  (unsigned long)state->pid,
 		  domuser));
 
-	ws_name_return(domuser, WB_REPLACE_CHAR);
+	nt_status = normalize_name_unmap(state->mem_ctx, domuser,
+					 &mapped_user);
 
-	if (!parse_domain_user(domuser, domname, username)) {
+	/* If we could not convert from an aliased name or a
+	   normalized name, then just use the original name */
+
+	if (!NT_STATUS_IS_OK(nt_status) &&
+	    !NT_STATUS_EQUAL(nt_status, NT_STATUS_FILE_RENAMED))
+	{
+		mapped_user = domuser;
+	}
+
+	if (!parse_domain_user(mapped_user, domname, username)) {
 		DEBUG(5, ("Could not parse domain user: %s\n", domuser));
 		request_error(state);
 		return;
@@ -743,6 +806,7 @@ void winbindd_getpwent(struct winbindd_cli_state *state)
 		/* Lookup user info */
 
 		result = winbindd_fill_pwent(
+			state->mem_ctx,
 			ent->domain_name,
 			name_list[ent->sam_entry_index].name,
 			&name_list[ent->sam_entry_index].user_sid,
