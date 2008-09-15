@@ -6254,6 +6254,10 @@ fi
 SMBD_LIBS="$samba_dmapi_libs"
 AC_SUBST(SMBD_LIBS)
 
+if test x$MERGED_BUILD != x1; then
+	CFLAGS="${CFLAGS} \$(FLAGS) -D_SAMBA_BUILD_=3"
+fi
+
 AC_OUTPUT(Makefile
 	  script/findsmb smbadduser script/gen-8bit-gap.sh script/installbin.sh script/uninstallbin.sh
 	  lib/netapi/examples/Makefile
