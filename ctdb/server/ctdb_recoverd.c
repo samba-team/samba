@@ -1753,6 +1753,7 @@ static void mem_dump_handler(struct ctdb_context *ctdb, uint64_t srvid,
 
 	if (data.dsize != sizeof(struct rd_memdump_reply)) {
 		DEBUG(DEBUG_ERR, (__location__ " Wrong size of return address.\n"));
+		talloc_free(tmp_ctx);
 		return;
 	}
 	rd = (struct rd_memdump_reply *)data.dptr;
@@ -1775,6 +1776,7 @@ DEBUG(DEBUG_ERR, ("recovery master memory dump\n"));
 	ret = ctdb_send_message(ctdb, rd->pnn, rd->srvid, *dump);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR,("Failed to send rd memdump reply message\n"));
+		talloc_free(tmp_ctx);
 		return;
 	}
 
