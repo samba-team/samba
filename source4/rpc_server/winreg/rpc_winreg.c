@@ -188,7 +188,6 @@ static WERROR dcesrv_winreg_DeleteValue(struct dcesrv_call_state *dce_call,
 					struct winreg_DeleteValue *r)
 {
 	struct dcesrv_handle *h;
-	struct registry_key *key;
 
 	DCESRV_PULL_HANDLE_FAULT(h, r->in.handle, HTYPE_REGKEY);
 
@@ -196,9 +195,7 @@ static WERROR dcesrv_winreg_DeleteValue(struct dcesrv_call_state *dce_call,
 	{
 	case SECURITY_SYSTEM:
 	case SECURITY_ADMINISTRATOR:
-		key = h->data;
-		
-		return reg_del_value(key, r->in.value.name);
+		return reg_del_value((struct registry_key *)h->data, r->in.value.name);
 	default:
 		return WERR_ACCESS_DENIED;
 	}
@@ -271,9 +268,8 @@ static WERROR dcesrv_winreg_EnumValue(struct dcesrv_call_state *dce_call,
 
 	key = h->data;
 
-	result = reg_key_get_value_by_index(mem_ctx, key, r->in.enum_index,
-					    &data_name,
-					    &data_type, &data);
+	result = reg_key_get_value_by_index(mem_ctx, (struct registry_key *)h->data,
+		r->in.enum_index, &data_name, &data_type, &data);
 
 	if (!W_ERROR_IS_OK(result)) {
 		/* if the lookup wasn't successful, send client query back */
@@ -433,7 +429,6 @@ static WERROR dcesrv_winreg_QueryInfoKey(struct dcesrv_call_state *dce_call,
 					 struct winreg_QueryInfoKey *r)
 {
 	struct dcesrv_handle *h;
-	struct registry_key *k;
 	const char *classname = NULL;
 	WERROR result;
 
@@ -444,12 +439,10 @@ static WERROR dcesrv_winreg_QueryInfoKey(struct dcesrv_call_state *dce_call,
 	case SECURITY_SYSTEM:
 	case SECURITY_ADMINISTRATOR:
 	case SECURITY_USER:
-		k = h->data;
-		
-		result = reg_key_get_info(mem_ctx, k, &classname, r->out.num_subkeys,
-				       r->out.num_values, r->out.last_changed_time,
-				       r->out.max_subkeylen, r->out.max_valnamelen, 
-				       r->out.max_valbufsize);
+		result = reg_key_get_info(mem_ctx, (struct registry_key *)h->data,
+			 &classname, r->out.num_subkeys, r->out.num_values,
+			 r->out.last_changed_time, r->out.max_subkeylen,
+			 r->out.max_valnamelen, r->out.max_valbufsize);
 
 		if (classname != NULL) {
 			r->out.classname->name = classname;
@@ -475,7 +468,6 @@ static WERROR dcesrv_winreg_QueryValue(struct dcesrv_call_state *dce_call,
 				       struct winreg_QueryValue *r)
 {
 	struct dcesrv_handle *h;
-	struct registry_key *key;
 	uint32_t value_type;
 	DATA_BLOB value_data;
 	WERROR result;
@@ -487,12 +479,10 @@ static WERROR dcesrv_winreg_QueryValue(struct dcesrv_call_state *dce_call,
 	case SECURITY_SYSTEM:
 	case SECURITY_ADMINISTRATOR:
 	case SECURITY_USER:
-		key = h->data;
-		
-		result = reg_key_get_value_by_name(mem_ctx, key, r->in.value_name.name,
+		result = reg_key_get_value_by_name(mem_ctx,
+			(struct registry_key *)h->data, r->in.value_name.name,
 						   &value_type, &value_data);
 		
-
 		if (!W_ERROR_IS_OK(result)) {
 			/* if the lookup wasn't successful, send client query back */
 			value_type = *r->in.type;
@@ -578,13 +568,10 @@ static WERROR dcesrv_winreg_SetValue(struct dcesrv_call_state *dce_call,
 				     struct winreg_SetValue *r)
 {
 	struct dcesrv_handle *h;
-	struct registry_key *key;
 	DATA_BLOB data;
 	WERROR result;
 
 	DCESRV_PULL_HANDLE_FAULT(h, r->in.handle, HTYPE_REGKEY);
-
-	key = h->data;
 
 	switch (security_session_user_level(dce_call->conn->auth_state.session_info))
 	{
@@ -592,7 +579,8 @@ static WERROR dcesrv_winreg_SetValue(struct dcesrv_call_state *dce_call,
 	case SECURITY_ADMINISTRATOR:
 		data.data = r->in.data;
 		data.length = r->in.size;
-		result = reg_val_set(key, r->in.name.name, r->in.type, data);
+		result = reg_val_set((struct registry_key *)h->data,
+			r->in.name.name, r->in.type, data);
 		return result;
 	default:
 		return WERR_ACCESS_DENIED;
