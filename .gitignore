@@ -305,3 +305,6 @@ source4/ntvfs/posix/vfs_acl_proto.h
 *.swp
 tags
 *.x
+packaging/RHEL-CTDB/samba.spec
+packaging/RHEL/samba.spec
+packaging/RHEL/makerpms.sh
