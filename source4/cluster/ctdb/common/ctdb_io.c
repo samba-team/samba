@@ -21,7 +21,7 @@
 */
 
 #include "includes.h"
-#include "lib/tdb/include/tdb.h"
+#include "../tdb/include/tdb.h"
 #include "lib/events/events.h"
 #include "lib/util/dlinklist.h"
 #include "system/network.h"

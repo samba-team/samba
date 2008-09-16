@@ -2,12 +2,12 @@
 # Start SUBSYSTEM LIBTDB
 [LIBRARY::LIBTDB]
 OUTPUT_TYPE = STATIC_LIBRARY
-CFLAGS = -Ilib/tdb/include
+CFLAGS = -I$(tdbsrcdir)/include
 #
 # End SUBSYSTEM ldb
 ################################################
 
-LIBTDB_OBJ_FILES = $(addprefix lib/tdb/common/, \
+LIBTDB_OBJ_FILES = $(addprefix $(tdbsrcdir)/common/, \
 	tdb.o dump.o io.o lock.o \
 	open.o traverse.o freelist.o \
 	error.o transaction.o)
@@ -21,7 +21,7 @@ PRIVATE_DEPENDENCIES = \
 # End BINARY tdbtool
 ################################################
 
-tdbtool_OBJ_FILES = lib/tdb/tools/tdbtool.o
+tdbtool_OBJ_FILES = $(tdbsrcdir)/tools/tdbtool.o
 
 ################################################
 # Start BINARY tdbtorture
@@ -32,7 +32,7 @@ PRIVATE_DEPENDENCIES = \
 # End BINARY tdbtorture
 ################################################
 
-tdbtorture_OBJ_FILES = lib/tdb/tools/tdbtorture.o
+tdbtorture_OBJ_FILES = $(tdbsrcdir)/tools/tdbtorture.o
 
 ################################################
 # Start BINARY tdbdump
@@ -43,7 +43,7 @@ PRIVATE_DEPENDENCIES = \
 # End BINARY tdbdump
 ################################################
 
-tdbdump_OBJ_FILES = lib/tdb/tools/tdbdump.o
+tdbdump_OBJ_FILES = $(tdbsrcdir)/tools/tdbdump.o
 
 ################################################
 # Start BINARY tdbbackup
@@ -54,4 +54,4 @@ PRIVATE_DEPENDENCIES = \
 # End BINARY tdbbackup
 ################################################
 
-tdbbackup_OBJ_FILES = lib/tdb/tools/tdbbackup.o
+tdbbackup_OBJ_FILES = $(tdbsrcdir)/tools/tdbbackup.o

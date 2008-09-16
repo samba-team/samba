@@ -21,7 +21,7 @@
 #include "lib/events/events.h"
 #include "system/filesys.h"
 #include "system/wait.h"
-#include "lib/tdb/include/tdb.h"
+#include "../tdb/include/tdb.h"
 #include "../include/ctdb_private.h"
 
 

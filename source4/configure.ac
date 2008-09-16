@@ -49,12 +49,12 @@ SMB_EXT_LIB_FROM_PKGCONFIG(LIBTALLOC, talloc >= 1.2.0,
 SMB_EXT_LIB_FROM_PKGCONFIG(LIBTDB, tdb >= 1.1.0,
 	[],
 	[
-		m4_include(lib/tdb/libtdb.m4)
-		SMB_INCLUDE_MK(lib/tdb/config.mk)
+		m4_include(../tdb/libtdb.m4)
+		SMB_INCLUDE_MK(../tdb/config.mk)
 	]
 )
 
-SMB_INCLUDE_MK(lib/tdb/python.mk) 
+SMB_INCLUDE_MK(../tdb/python.mk) 
 
 SMB_EXT_LIB_FROM_PKGCONFIG(LIBLDB, ldb >= 0.9.1,
 	[
