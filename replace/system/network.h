@@ -326,7 +326,7 @@ struct addrinfo {
 #ifndef SOCKET_WRAPPER_NOT_REPLACE
 #define SOCKET_WRAPPER_REPLACE
 #endif
-#include "lib/socket_wrapper/socket_wrapper.h"
+#include "../socket_wrapper/socket_wrapper.h"
 #endif
 
 #endif
