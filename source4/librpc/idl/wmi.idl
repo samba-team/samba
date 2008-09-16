@@ -24,7 +24,7 @@ import "misc.idl";
 interface IWbemClassObject : IUnknown
 {
 
-	typedef struct {
+	typedef [noprint] struct {
 		[value(0x72657355)] uint32 flags;
 		[string, charset(UTF16)] uint16 data[];
 	} BSTR;
@@ -205,27 +205,24 @@ coclass WbemClassObject
 
     typedef [public,noprint] enum
     {
-        WBEM_FLAG_RETURN_IMMEDIATELY = 0x10,
-        WBEM_FLAG_RETURN_WBEM_COMPLETE = 0,
-        WBEM_FLAG_BIDIRECTIONAL = 0,
-        WBEM_FLAG_FORWARD_ONLY = 0x20,
-        WBEM_FLAG_NO_ERROR_OBJECT = 0x40,
-        WBEM_FLAG_RETURN_ERROR_OBJECT = 0,
-        WBEM_FLAG_SEND_STATUS = 0x80,
-        WBEM_FLAG_DONT_SEND_STATUS = 0,
-        WBEM_FLAG_ENSURE_LOCATABLE = 0x100,
-        WBEM_FLAG_DIRECT_READ = 0x200,
-        WBEM_FLAG_SEND_ONLY_SELECTED = 0,
+        WBEM_FLAG_RETURN_WBEM_COMPLETE 		= 0,
+        WBEM_FLAG_BIDIRECTIONAL 			= 0,
+        WBEM_FLAG_RETURN_IMMEDIATELY 		= 0x000010,
+        WBEM_FLAG_FORWARD_ONLY 				= 0x000020,
+        WBEM_FLAG_NO_ERROR_OBJECT 			= 0x000040,
+        WBEM_FLAG_SEND_STATUS 				= 0x000080,
+        WBEM_FLAG_ENSURE_LOCATABLE 			= 0x000100,
+        WBEM_FLAG_DIRECT_READ 				= 0x000200,
+        WBEM_FLAG_USE_AMENDED_QUALIFIERS 	= 0x020000,
+        WBEM_FLAG_STRONG_VALIDATION 		= 0x100000,
+        WBEM_FLAG_RETURN_ERROR_OBJECT 		= 0,
+        WBEM_FLAG_DONT_SEND_STATUS 			= 0,
+        WBEM_FLAG_SEND_ONLY_SELECTED 		= 0,
 
-        WBEM_RETURN_WHEN_COMPLETE = 0,
-        WBEM_RETURN_IMMEDIATELY = 0x10,
+        WBEM_RETURN_WHEN_COMPLETE 			= 0,
+        WBEM_RETURN_IMMEDIATELY 			= WBEM_FLAG_RETURN_IMMEDIATELY,
 
-        WBEM_MASK_RESERVED_FLAGS = 0x1F000,
-
-        WBEM_FLAG_USE_AMENDED_QUALIFIERS = 0x20000,
-
-        WBEM_FLAG_STRONG_VALIDATION = 0x100000
-
+        WBEM_MASK_RESERVED_FLAGS 			= 0x001F000
     } WBEM_GENERIC_FLAG_TYPE;
 
     typedef [public,noprint,v1_enum] enum tag_WBEM_TIMEOUT_TYPE
@@ -236,26 +233,28 @@ coclass WbemClassObject
 
     typedef [public,v1_enum] enum
     {
-        CIM_EMPTY = 0,
+        CIM_EMPTY  		= 0,
+        CIM_SINT16 		= 2,
+        CIM_SINT32 		= 3,
+        CIM_REAL32 		= 4,
+        CIM_REAL64 		= 5,
+        CIM_STRING 		= 8,
 
-        CIM_SINT8 = 16,
-        CIM_UINT8 = 17,
-        CIM_SINT16 = 2,
-        CIM_UINT16 = 18,
-        CIM_SINT32 = 3,
-        CIM_UINT32 = 19,
-        CIM_SINT64 = 20,
-        CIM_UINT64 = 21,
-        CIM_REAL32 = 4,
-        CIM_REAL64 = 5,
-        CIM_BOOLEAN = 11,
-        CIM_STRING = 8,
-        CIM_DATETIME = 101,
-        CIM_REFERENCE = 102,
-        CIM_CHAR16 = 103,
-        CIM_OBJECT = 13,
+        CIM_BOOLEAN 	= 11,
+        CIM_OBJECT  	= 13,
+        CIM_SINT8   	= 16,
+        CIM_UINT8   	= 17,
+        CIM_UINT16  	= 18,
+        CIM_UINT32  	= 19,
+        CIM_SINT64  	= 20,
+        CIM_UINT64  	= 21,
+        CIM_DATETIME 	= 101,
+        CIM_REFERENCE 	= 102,
+        CIM_CHAR16 		= 103,
 
-        CIM_FLAG_ARRAY = 0x2000,
+        CIM_FLAG_ARRAY 	= 0x2000,
+        CIM_ILLEGAL 	= 0x0fff,
+        CIM_TYPEMASK 	= 0x2fff,
 
         CIM_ARR_SINT8 = CIM_FLAG_ARRAY | CIM_SINT8,
         CIM_ARR_UINT8 = CIM_FLAG_ARRAY | CIM_UINT8,
@@ -272,97 +271,9 @@ coclass WbemClassObject
         CIM_ARR_DATETIME = CIM_FLAG_ARRAY | CIM_DATETIME,
         CIM_ARR_REFERENCE = CIM_FLAG_ARRAY | CIM_REFERENCE,
         CIM_ARR_CHAR16 = CIM_FLAG_ARRAY | CIM_CHAR16,
-        CIM_ARR_OBJECT = CIM_FLAG_ARRAY | CIM_OBJECT,
+        CIM_ARR_OBJECT = CIM_FLAG_ARRAY | CIM_OBJECT
 
-        CIM_ILLEGAL = 0xfff,
-        CIM_TYPEMASK = 0x2FFF
     } CIMTYPE_ENUMERATION;
-
-    typedef [public] struct {
-	uint32 count;
-	int8 item[count];
-    } arr_int8;
-
-    typedef [public] struct {
-	uint32 count;
-	uint8 item[count];
-    } arr_uint8;
-
-    typedef [public] struct {
-        uint32 count;
-        int16 item[count];
-    } arr_int16;
-
-    typedef [public] struct {
-        uint32 count;
-        uint16 item[count];
-    } arr_uint16;
-
-    typedef [public] struct {
-        uint32 count;
-        int32 item[count];
-    } arr_int32;
-
-    typedef [public] struct {
-        uint32 count;
-        uint32 item[count];
-    } arr_uint32;
-
-    typedef [public] struct {
-        uint32 count;
-        dlong item[count];
-    } arr_dlong;
-
-    typedef [public] struct {
-        uint32 count;
-        udlong item[count];
-    } arr_udlong;
-
-    typedef [public] struct {
-	uint32 count;
-	[relative,charset(UTF16)] uint16 *item[count];
-    } arr_CIMSTRING;
-
-    typedef [public] struct {
-	uint32 count;
-	[relative,subcontext(4)] WbemClassObject *item[count];
-    } arr_WbemClassObject;
-
-// FIXME:avg implement rest of types
-    typedef [public,nodiscriminant] union
-    {
-	[case(CIM_SINT8)] int8 v_sint8;
-	[case(CIM_UINT8)] uint8 v_uint8;
-	[case(CIM_SINT16)] int16 v_sint16;
-	[case(CIM_UINT16)] uint16 v_uint16;
-	[case(CIM_SINT32)] int32 v_sint32;
-	[case(CIM_UINT32)] uint32 v_uint32;
-	[case(CIM_SINT64)] dlong v_sint64;
-	[case(CIM_UINT64)] udlong v_uint64;
-	[case(CIM_REAL32)] uint32 v_real32;
-	[case(CIM_REAL64)] udlong v_real64;
-	[case(CIM_BOOLEAN)] uint16 v_boolean;
-	[case(CIM_STRING),relative,charset(UTF16)] uint16 *v_string;
-	[case(CIM_DATETIME),relative,charset(UTF16)] uint16 *v_datetime;
-	[case(CIM_REFERENCE),relative,charset(UTF16)] uint16 *v_reference;
-	[case(CIM_OBJECT),subcontext(4),relative] WbemClassObject *v_object;
-
-	[case(CIM_ARR_SINT8),relative] arr_int8 *a_sint8;
-	[case(CIM_ARR_UINT8),relative] arr_uint8 *a_uint8;
-	[case(CIM_ARR_SINT16),relative] arr_int16 *a_sint16;
-	[case(CIM_ARR_UINT16),relative] arr_uint16 *a_uint16;
-	[case(CIM_ARR_SINT32),relative] arr_int32 *a_sint32;
-	[case(CIM_ARR_UINT32),relative] arr_uint32 *a_uint32;
-	[case(CIM_ARR_SINT64),relative] arr_dlong *a_sint64;
-	[case(CIM_ARR_UINT64),relative] arr_udlong *a_uint64;
-	[case(CIM_ARR_REAL32),relative] arr_uint32 *a_real32;
-	[case(CIM_ARR_REAL64),relative] arr_udlong *a_real64;
-	[case(CIM_ARR_BOOLEAN),relative] arr_uint16 *a_boolean;
-	[case(CIM_ARR_STRING),relative] arr_CIMSTRING *a_string;
-	[case(CIM_ARR_DATETIME),relative] arr_CIMSTRING *a_datetime;
-	[case(CIM_ARR_REFERENCE),relative] arr_CIMSTRING *a_reference;
-	[case(CIM_ARR_OBJECT),relative] arr_WbemClassObject *a_object;
-    } CIMVAR;
 
     typedef [public,bitmap8bit] bitmap
     {
@@ -384,17 +295,17 @@ coclass WbemClassObject
 
     typedef [public,bitmap8bit] bitmap
     {
-	WCF_DECORATIONS = 1,
-	WCF_INSTANCE = 2,
-	WCF_CLASS = 4,
-	WCF_CLASS_PART_INTERNAL = 8
-//	WCF_CLASS_PART_SHARED = 0x104
+		WCF_DECORATIONS = 1,
+		WCF_INSTANCE = 2,
+		WCF_CLASS = 4,
+		WCF_CLASS_PART_INTERNAL = 8
+	//	WCF_CLASS_PART_SHARED = 0x104
     } WCO_FLAGS;
 
     typedef [public,nopull,nopush] struct
     {
-	uint32 count;
-	[ref,charset(UTF16)] uint16 *item[count];
+		uint32 count;
+		[ref,charset(UTF16)] uint16 *item[count];
     } CIMSTRINGS;
 
     typedef [public,bitmap8bit] bitmap {
@@ -403,26 +314,29 @@ coclass WbemClassObject
     } DEFAULT_FLAGS;
 
 	WERROR OpenNamespace(
-						 [in] BSTR strNamespace,
-						 [in] long lFlags,
-						 [in] IWbemContext* pCtx,
-						 [out, in, unique] IWbemServices** ppWorkingNamespace,
-						 [out, in, unique] IWbemCallResult** ppResult
-						);
+		[in] BSTR strNamespace,
+		[in] long lFlags,
+		[in] IWbemContext* pCtx,
+		[out, in, unique] IWbemServices** ppWorkingNamespace,
+		[out, in, unique] IWbemCallResult** ppResult
+		);
+
 	WERROR CancelAsyncCall(
-						   [in] IWbemObjectSink* pSink
-						  );
+		[in] IWbemObjectSink* pSink
+		);
+
 	WERROR QueryObjectSink(
-						   [in] long lFlags,
-						   [out] IWbemObjectSink** ppResponseHandler
-						  );
+		[in] long lFlags,
+		[out] IWbemObjectSink** ppResponseHandler
+		);
+
 	WERROR GetObject(
-					 [in] BSTR strObjectPath,
-					 [in] long lFlags,
-					 [in] IWbemContext* pCtx,
-					 [out, in, unique] IWbemClassObject** ppObject,
-					 [out, in, unique] IWbemCallResult** ppCallResult
-					);
+		[in] BSTR strObjectPath,
+		[in] long lFlags,
+		[in] IWbemContext* pCtx,
+		[out, in, unique] IWbemClassObject** ppObject,
+		[out, in, unique] IWbemCallResult** ppCallResult
+		);
 
 
 	WERROR GetObjectAsync(
@@ -431,6 +345,7 @@ coclass WbemClassObject
 		[in] IWbemContext* pCtx,
 		[in] IWbemObjectSink* pResponseHandler
 		);
+
 	WERROR PutClass(
 		[in] IWbemClassObject* pObject,
 		[in] long lFlags,
@@ -581,9 +496,8 @@ coclass WbemClassObject
     [call_as(Next)] WERROR IEnumWbemClassObject_Next(
         [in]  int32 lTimeout,
         [in]  uint32 uCount,
-	[out, size_is(uCount), length_is(*puReturned)]
-		IWbemClassObject** apObjects,
-	[out] uint32* puReturned
+		[out, size_is(uCount), length_is(*puReturned)] IWbemClassObject** apObjects,
+		[out] uint32* puReturned
         );
 
     WERROR NextAsync(
@@ -653,32 +567,31 @@ coclass WbemClassObject
 ] interface IWbemLevel1Login :  IUnknown
 {
 	WERROR EstablishPosition(
-							  [in, unique, string, charset(UTF16)] uint16* wszLocaleList,
-							  [in] DWORD dwNumLocales,
-							  [out] DWORD* reserved
-							 );
+		[in, unique, string, charset(UTF16)] uint16* wszLocaleList,
+		[in] DWORD dwNumLocales,
+		[out] DWORD* reserved
+		);
 	WERROR RequestChallenge(
-							 [in, unique, string, charset(UTF16)] uint16* wszNetworkResource,
-							 [in, unique, string, charset(UTF16)] uint16* wszUser,
-							 [out, size_is(16), length_is(16)] unsigned char* Nonce
-							);
+		[in, unique, string, charset(UTF16)] uint16* wszNetworkResource,
+		[in, unique, string, charset(UTF16)] uint16* wszUser,
+		[out, size_is(16), length_is(16)] uint8 * Nonce
+		);
 	WERROR WBEMLogin(
-					  [in, unique, string, charset(UTF16)] uint16* wszPreferredLocale,
-					  [in, size_is(16), length_is(16), unique]
-					  unsigned char* AccessToken,
-					  [in] long lFlags,
-					  [in] IWbemContext* pCtx,
-					  [out] IWbemServices** ppNamespace
-					 );
+		[in, unique, string, charset(UTF16)] uint16* wszPreferredLocale,
+		[in, size_is(16), length_is(16), unique] uint8 * AccessToken,
+		[in] long lFlags,
+		[in] IWbemContext* pCtx,
+		[out] IWbemServices** ppNamespace
+		);
 
 
 	WERROR NTLMLogin(
-					 [in,unique,string,charset(UTF16)] uint16 *wszNetworkResource,
-					 [in,unique,string,charset(UTF16)] uint16 *wszPreferredLocale,
-					 [in]   long lFlags,
-					 [in,unique]   IWbemContext* pCtx,
-					 [out,ref]  IWbemServices** ppNamespace
-					);
+		[in,unique,string,charset(UTF16)] uint16 *wszNetworkResource,
+		[in,unique,string,charset(UTF16)] uint16 *wszPreferredLocale,
+		[in]   long lFlags,
+		[in,unique]   IWbemContext* pCtx,
+		[out,ref]  IWbemServices** ppNamespace
+		);
 
 }
 
@@ -733,16 +646,16 @@ coclass WbemClassObject
 	} WBEMDATA0;
 
 	WERROR IWbemWCOSmartEnum_Next(
-								  [in,ref] GUID *gEWCO,
-								  [in] uint32 lTimeOut,
-								  [in] uint32 uCount,
-								  //	  [in] uint32 unknown,
-								  //	  [in,ref] GUID *gWCO,
-								  [out,ref] uint32 *puReturned,
-								  [out,ref] uint32 *pSize,
-								  //	  [out,ref] WBEMDATA0 **pData
-								  [out,ref,noprint,size_is(,*pSize)] uint8 **pData
-								 );
+		[in,ref] GUID *gEWCO,
+		[in] uint32 lTimeOut,
+		[in] uint32 uCount,
+		//	  [in] uint32 unknown,
+		//	  [in,ref] GUID *gWCO,
+		[out,ref] uint32 *puReturned,
+		[out,ref] uint32 *pSize,
+		//	  [out,ref] WBEMDATA0 **pData
+		[out,ref,noprint,size_is(,*pSize)] uint8 **pData
+		);
 }
 
 [
@@ -752,7 +665,7 @@ coclass WbemClassObject
 ] interface IWbemFetchSmartEnum : IUnknown
 {
 	WERROR Fetch([out]	IWbemWCOSmartEnum** ppEnum);
-	WERROR Test([out]	WbemClassObject** ppEnum);
+	WERROR Test([out]	IWbemClassObject** ppEnum);
 }
 
 [
@@ -763,7 +676,6 @@ coclass WbemClassObject
 {
 	WERROR GetResultObject(
 						   [in]  long lTimeout,
-						   [out] IUnknown** ppResultObject,
 						   [out] IWbemClassObject** ppResultObject
 						  );
 

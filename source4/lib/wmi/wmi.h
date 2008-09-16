@@ -34,23 +34,13 @@ const char *wmi_errstr(WERROR werror);
 
 /* The following definitions come from lib/wmi/wbemdata.c  */
 
-WERROR dcom_IWbemClassObject_from_WbemClassObject(struct com_context *ctx, struct IWbemClassObject **_p, struct WbemClassObject *wco);
 WERROR IWbemClassObject_GetMethod(struct IWbemClassObject *d, TALLOC_CTX *mem_ctx, const char *name, uint32_t flags, struct IWbemClassObject **in, struct IWbemClassObject **out);
-void WbemClassObject_CreateInstance(struct WbemClassObject *wco);
+void WbemClassObject_CreateInstance(struct IWbemClassObject *wco);
 WERROR IWbemClassObject_Clone(struct IWbemClassObject *d, TALLOC_CTX *mem_ctx, struct IWbemClassObject **copy);
 WERROR IWbemClassObject_SpawnInstance(struct IWbemClassObject *d, TALLOC_CTX *mem_ctx, uint32_t flags, struct IWbemClassObject **instance);
-void duplicate_WbemQualifier(TALLOC_CTX *mem_ctx, const struct WbemQualifier *src, struct WbemQualifier *dst);
-void duplicate_CIMSTRINGS(TALLOC_CTX *mem_ctx, const struct CIMSTRINGS *src, struct CIMSTRINGS *dst);
-void duplicate_WbemQualifiers(TALLOC_CTX *mem_ctx, const struct WbemQualifiers *src, struct WbemQualifiers *dst);
-void duplicate_WbemClass(TALLOC_CTX *mem_ctx, const struct WbemClass *src, struct WbemClass *dst);
-void duplicate_WbemMethod(TALLOC_CTX *mem_ctx, const struct WbemMethod *src, struct WbemMethod *dst);
-void duplicate_WbemMethods(TALLOC_CTX *mem_ctx, const struct WbemMethods *src, struct WbemMethods *dst);
-void duplicate_WbemInstance(TALLOC_CTX *mem_ctx, const struct WbemInstance *src, struct WbemInstance *dst, const struct WbemClass *cls);
-void duplicate_WbemClassObject(TALLOC_CTX *mem_ctx, const struct WbemClassObject *src, struct WbemClassObject *dst);
-void duplicate_CIMVAR(TALLOC_CTX *mem_ctx, const union CIMVAR *src, union CIMVAR *dst, enum CIMTYPE_ENUMERATION cimtype);
-WERROR WbemClassObject_Get(struct WbemClassObject *d, TALLOC_CTX *mem_ctx, const char *name, uint32_t flags, union CIMVAR *val, enum CIMTYPE_ENUMERATION *cimtype, uint32_t *flavor);
+WERROR IWbemClassObject_Get(struct IWbemClassObject *d, TALLOC_CTX *mem_ctx, const char *name, uint32_t flags, union CIMVAR *val, enum CIMTYPE_ENUMERATION *cimtype, uint32_t *flavor);
 WERROR IWbemClassObject_Put(struct IWbemClassObject *d, TALLOC_CTX *mem_ctx, const char *name, uint32_t flags, union CIMVAR *val, enum CIMTYPE_ENUMERATION cimtype);
-WERROR IEnumWbemClassObject_SmartNext(struct IEnumWbemClassObject *d, TALLOC_CTX *mem_ctx, int32_t lTimeout, uint32_t uCount, struct WbemClassObject **apObjects, uint32_t *puReturned);
+WERROR IEnumWbemClassObject_SmartNext(struct IEnumWbemClassObject *d, TALLOC_CTX *mem_ctx, int32_t lTimeout, uint32_t uCount, struct IWbemClassObject **apObjects, uint32_t *puReturned);
 struct composite_context *dcom_proxy_IEnumWbemClassObject_Release_send(struct IUnknown *d, TALLOC_CTX *mem_ctx);
 
 void wmi_init(struct com_context **ctx, struct cli_credentials *credentials);

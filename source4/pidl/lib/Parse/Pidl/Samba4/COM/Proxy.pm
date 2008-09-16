@@ -110,7 +110,7 @@ static $tn dcom_proxy_$interface->{NAME}_$name(struct $interface->{NAME} *d, TAL
 	foreach my $a (@{$fn->{ELEMENTS}}) {
 		next unless (has_property($a, "in"));
 		if (Parse::Pidl::Typelist::typeIs($a->{TYPE}, "INTERFACE")) {
-			$res .="\tNDR_CHECK(dcom_OBJREF_from_IUnknown(&r.in.$a->{NAME}.obj, $a->{NAME}));\n";
+			$res .="\tNDR_CHECK(dcom_OBJREF_from_IUnknown(mem_ctx, &r.in.$a->{NAME}.obj, $a->{NAME}));\n";
 		} else {
 			$res .= "\tr.in.$a->{NAME} = $a->{NAME};\n";
 		}

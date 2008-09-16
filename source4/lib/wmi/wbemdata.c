@@ -33,7 +33,7 @@
 #include "lib/talloc/talloc.h"
 #include "libcli/composite/composite.h"
 #include "lib/wmi/wmi.h"
-#include "librpc/ndr/ndr_wmi.h"
+#include "librpc/gen_ndr/ndr_wmi.h"
 
 enum {
 	DATATYPE_CLASSOBJECT = 2,
@@ -44,7 +44,7 @@ enum {
 static enum ndr_err_code marshal(TALLOC_CTX *mem_ctx, struct IUnknown *pv, struct OBJREF *o)
 {
 	struct ndr_push *ndr;
-	struct WbemClassObject *wco;
+	struct IWbemClassObject *wco;
 	struct MInterfacePointer *mp;
 
 	mp = (struct MInterfacePointer *)((char *)o - offsetof(struct MInterfacePointer, obj)); /* FIXME:high remove this Mumbo Jumbo */
@@ -58,7 +58,7 @@ static enum ndr_err_code marshal(TALLOC_CTX *mem_ctx, struct IUnknown *pv, struc
 		uint32_t ofs;
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0x12345678));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
-		NDR_CHECK(ndr_push_WbemClassObject(ndr, NDR_SCALARS | NDR_BUFFERS, wco));
+		NDR_CHECK(ndr_push_IWbemClassObject(ndr, NDR_SCALARS | NDR_BUFFERS, wco));
 		ofs = ndr->offset;
 		ndr->offset = 4;
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ofs - 8));
@@ -70,7 +70,7 @@ static enum ndr_err_code marshal(TALLOC_CTX *mem_ctx, struct IUnknown *pv, struc
 	o->u_objref.u_custom.size = ndr->offset;
 	mp->size = sizeof(struct OBJREF) - sizeof(union OBJREF_Types) + sizeof(struct u_custom) + o->u_objref.u_custom.size - 4;
 	if (DEBUGLVL(9)) {
-		NDR_PRINT_DEBUG(WbemClassObject, wco);
+		NDR_PRINT_DEBUG(IWbemClassObject, wco);
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -78,7 +78,7 @@ static enum ndr_err_code marshal(TALLOC_CTX *mem_ctx, struct IUnknown *pv, struc
 static enum ndr_err_code unmarshal(TALLOC_CTX *mem_ctx, struct OBJREF *o, struct IUnknown **pv)
 {
 	struct ndr_pull *ndr;
-	struct WbemClassObject *wco;
+	struct IWbemClassObject *wco;
 	enum ndr_err_code ndr_err;
 	uint32_t u;
 
@@ -99,12 +99,12 @@ static enum ndr_err_code unmarshal(TALLOC_CTX *mem_ctx, struct OBJREF *o, struct
 		DEBUG(1, ("unmarshall_IWbemClassObject: Incorrect data_size"));
 		return NDR_ERR_BUFSIZE;
 	}
-	wco = talloc_zero(*pv, struct WbemClassObject);
+	wco = talloc_zero(*pv, struct IWbemClassObject);
 	ndr->current_mem_ctx = wco;
-	ndr_err = ndr_pull_WbemClassObject(ndr, NDR_SCALARS | NDR_BUFFERS, wco);
+	ndr_err = ndr_pull_IWbemClassObject(ndr, NDR_SCALARS | NDR_BUFFERS, wco);
 
 	if (NDR_ERR_CODE_IS_SUCCESS(ndr_err) && (DEBUGLVL(9))) {
-		NDR_PRINT_DEBUG(WbemClassObject, wco);
+		NDR_PRINT_DEBUG(IWbemClassObject, wco);
 	}
 
 	if (NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -115,7 +115,7 @@ static enum ndr_err_code unmarshal(TALLOC_CTX *mem_ctx, struct OBJREF *o, struct
 	return NDR_ERR_SUCCESS;
 }
 
-WERROR dcom_IWbemClassObject_from_WbemClassObject(struct com_context *ctx, struct IWbemClassObject **_p, struct WbemClassObject *wco)
+WERROR dcom_IWbemClassObject_from_WbemClassObject(struct com_context *ctx, struct IWbemClassObject **_p, struct IWbemClassObject *wco)
 {
 	struct IWbemClassObject *p;
 
@@ -134,9 +134,9 @@ WERROR dcom_IWbemClassObject_from_WbemClassObject(struct com_context *ctx, struc
 WERROR IWbemClassObject_GetMethod(struct IWbemClassObject *d, TALLOC_CTX *mem_ctx, const char *name, uint32_t flags, struct IWbemClassObject **in, struct IWbemClassObject **out)
 {
 	uint32_t i;
-	struct WbemClassObject *wco;
+	struct IWbemClassObject *wco;
 
-	wco = (struct WbemClassObject *)d->object_data;
+	wco = (struct IWbemClassObject *)d->object_data;
 	for (i = 0; i < wco->obj_methods->count; ++i)
 		if (!strcmp(wco->obj_methods->method[i].name, name)) {
 			if (in) dcom_IWbemClassObject_from_WbemClassObject(d->ctx, in, wco->obj_methods->method[i].in);
@@ -146,7 +146,7 @@ WERROR IWbemClassObject_GetMethod(struct IWbemClassObject *d, TALLOC_CTX *mem_ct
 	return WERR_NOT_FOUND;
 }
 
-void WbemClassObject_CreateInstance(struct WbemClassObject *wco)
+void IWbemClassObject_CreateInstance(struct IWbemClassObject *wco)
 {
 	uint32_t i;
 
@@ -169,222 +169,18 @@ WERROR IWbemClassObject_Clone(struct IWbemClassObject *d, TALLOC_CTX *mem_ctx, s
 
 WERROR IWbemClassObject_SpawnInstance(struct IWbemClassObject *d, TALLOC_CTX *mem_ctx, uint32_t flags, struct IWbemClassObject **instance)
 {
-	struct WbemClassObject *wco, *nwco;
+	struct IWbemClassObject *wco, *nwco;
 
-	wco = (struct WbemClassObject *)d->object_data;
-	nwco = talloc_zero(mem_ctx, struct WbemClassObject);
+	wco = (struct IWbemClassObject *)d->object_data;
+	nwco = talloc_zero(mem_ctx, struct IWbemClassObject);
 	nwco->flags = WCF_INSTANCE;
 	nwco->obj_class = wco->obj_class;
-	WbemClassObject_CreateInstance(nwco);
+	IWbemClassObject_CreateInstance(nwco);
 	dcom_IWbemClassObject_from_WbemClassObject(d->ctx, instance, nwco);
 	return WERR_OK;
 }
 
-void duplicate_WbemQualifier(TALLOC_CTX *mem_ctx, const struct WbemQualifier *src, struct WbemQualifier *dst)
-{
-	dst->name = src->name;
-	if (src->name) dst->name = talloc_strdup(mem_ctx, src->name);
-
-	dst->flavors = src->flavors;
-
-	dst->cimtype = src->cimtype;
-
-	duplicate_CIMVAR(mem_ctx, &src->value, &dst->value, src->cimtype);
-}
-
-void duplicate_CIMSTRINGS(TALLOC_CTX *mem_ctx, const struct CIMSTRINGS *src, struct CIMSTRINGS *dst)
-{
-	uint32_t i;
-
-	dst->count = src->count;
-	for (i = 0; i < src->count; ++i)
-		dst->item[i] = talloc_strdup(mem_ctx, src->item[i]);
-}
-
-void duplicate_WbemQualifiers(TALLOC_CTX *mem_ctx, const struct WbemQualifiers *src, struct WbemQualifiers *dst)
-{
-	uint32_t i;
-
-	dst->count = src->count;
-	for (i = 0; i < src->count; ++i) {
-		dst->item[i] = talloc_zero(mem_ctx, struct WbemQualifier);
-		duplicate_WbemQualifier(dst->item[i], src->item[i], dst->item[i]);
-	}
-}
-
-void duplicate_WbemClass(TALLOC_CTX *mem_ctx, const struct WbemClass *src, struct WbemClass *dst)
-{
-	uint32_t i;
-
-	dst->u_0 = src->u_0;
-
-	dst->__CLASS = src->__CLASS;
-	if (src->__CLASS) dst->__CLASS = talloc_strdup(mem_ctx, src->__CLASS);
-
-	duplicate_CIMSTRINGS(mem_ctx, &src->__DERIVATION, &dst->__DERIVATION);
-	duplicate_WbemQualifiers(mem_ctx, &src->qualifiers, &dst->qualifiers);
-
-	dst->__PROPERTY_COUNT = src->__PROPERTY_COUNT;
-
-	dst->properties = talloc_array(mem_ctx, struct WbemClassProperty, src->__PROPERTY_COUNT);
-	for (i = 0; i < src->__PROPERTY_COUNT; ++i) {
-		dst->properties[i].property.name = talloc_strdup(dst->properties, src->properties[i].property.name);
-		dst->properties[i].property.desc = talloc_memdup(dst->properties, src->properties[i].property.desc, sizeof(*src->properties[i].property.desc));
-		duplicate_WbemQualifiers(dst->properties[i].property.desc, &src->properties[i].property.desc->qualifiers, &dst->properties[i].property.desc->qualifiers);
-	}
-
-	for (i = 0; i < src->__PROPERTY_COUNT; ++i) {
-		dst->properties[i].default_flags = src->properties[i].default_flags;
-		duplicate_CIMVAR(dst->properties, &src->properties[i].default_values, &dst->properties[i].default_values, src->properties[i].property.desc->cimtype);
-	}
-}
-
-void duplicate_WbemMethod(TALLOC_CTX *mem_ctx, const struct WbemMethod *src, struct WbemMethod *dst)
-{
-	dst->name = src->name;
-	if (src->name) dst->name = talloc_strdup(mem_ctx, src->name);
-	
-	dst->u0 = src->u0;
-	dst->u1 = src->u1;
-	
-	dst->qualifiers = talloc_zero(mem_ctx, struct WbemQualifiers);
-	duplicate_WbemQualifiers(dst->qualifiers, src->qualifiers, dst->qualifiers);
-
-	dst->in = src->in;
-	if (src->in) {
-		dst->in = talloc_zero(mem_ctx, struct WbemClassObject);
-		duplicate_WbemClassObject(dst->in, src->in, dst->in);
-	}
-
-	dst->out = src->out;
-	if (src->out) {
-		dst->out = talloc_zero(mem_ctx, struct WbemClassObject);
-		duplicate_WbemClassObject(dst->out, src->out, dst->out);
-	}
-}
-
-void duplicate_WbemMethods(TALLOC_CTX *mem_ctx, const struct WbemMethods *src, struct WbemMethods *dst)
-{
-	uint32_t i;
-
-	dst->count = src->count;
-	dst->u0 = src->u0;
-	for (i = 0; i < src->count; ++i)
-		duplicate_WbemMethod(mem_ctx, &src->method[i], &dst->method[i]);
-}
-
-void duplicate_WbemInstance(TALLOC_CTX *mem_ctx, const struct WbemInstance *src, struct WbemInstance *dst, const struct WbemClass *cls)
-{
-	uint32_t i;
-
-	dst->u1_0 = src->u1_0;
-	
-	dst->__CLASS = src->__CLASS;
-	if (src->__CLASS) dst->__CLASS = talloc_strdup(mem_ctx, src->__CLASS);
-
-	dst->default_flags = talloc_array(mem_ctx, uint8_t, cls->__PROPERTY_COUNT);
-	dst->data = talloc_array(mem_ctx, union CIMVAR, cls->__PROPERTY_COUNT);
-	for (i = 0; i < cls->__PROPERTY_COUNT; ++i) {
-		dst->default_flags[i] = src->default_flags[i];
-		duplicate_CIMVAR(dst->data, &src->data[i], &dst->data[i], cls->properties[i].property.desc->cimtype);
-	}
-
-	dst->u2_4 = src->u2_4;
-	dst->u3_1 = src->u3_1;
-}
-
-void duplicate_WbemClassObject(TALLOC_CTX *mem_ctx, const struct WbemClassObject *src, struct WbemClassObject *dst)
-{
-	dst->flags = src->flags;
-	if (src->flags & WCF_CLASS) {
-		dst->__SERVER = talloc_strdup(mem_ctx, src->__SERVER);
-		dst->__NAMESPACE = talloc_strdup(mem_ctx, src->__NAMESPACE);
-	}
-	if (src->flags & WCF_DECORATIONS) {
-		dst->sup_class = talloc_zero(mem_ctx, struct WbemClass);
-		duplicate_WbemClass(dst->sup_class, src->sup_class, dst->sup_class);
-
-		dst->sup_methods = talloc_zero(mem_ctx, struct WbemMethods);
-		duplicate_WbemMethods(dst->sup_methods, src->sup_methods, dst->sup_methods);
-
-		dst->obj_methods = talloc_zero(mem_ctx, struct WbemMethods);
-		duplicate_WbemMethods(dst->obj_methods, src->obj_methods, dst->obj_methods);
-	}
-	if (src->flags & (WCF_CLASS | WCF_INSTANCE)) {
-		dst->obj_class = talloc_zero(mem_ctx, struct WbemClass);
-		duplicate_WbemClass(dst->obj_class, src->obj_class, dst->obj_class);
-	}
-	if (src->flags & WCF_INSTANCE) {
-		dst->instance = talloc_zero(mem_ctx, struct WbemInstance);
-		duplicate_WbemInstance(dst->instance, src->instance, dst->instance, src->obj_class);
-	}
-}
-
-void duplicate_CIMVAR(TALLOC_CTX *mem_ctx, const union CIMVAR *src, union CIMVAR *dst, enum CIMTYPE_ENUMERATION cimtype)
-{
-	uint32_t i;
-
-	switch (cimtype & CIM_TYPEMASK) {
-	case CIM_SINT8:
-	case CIM_UINT8:
-	case CIM_SINT16:
-	case CIM_UINT16:
-	case CIM_SINT32:
-	case CIM_UINT32:
-	case CIM_SINT64:
-	case CIM_UINT64:
-	case CIM_REAL32:
-	case CIM_REAL64:
-	case CIM_BOOLEAN:
-		*dst = *src;
-		break;
-	case CIM_STRING:
-	case CIM_DATETIME:
-	case CIM_REFERENCE:
-		dst->v_string = talloc_strdup(mem_ctx, src->v_string);
-		break;
-	case CIM_OBJECT:
-		dst->v_object = talloc_zero(mem_ctx, struct WbemClassObject);
-		duplicate_WbemClassObject(dst->v_object, src->v_object, dst->v_object);
-		break;
-	case CIM_ARR_SINT8:
-	case CIM_ARR_UINT8:
-		dst->a_uint8 = talloc_memdup(mem_ctx, src->a_uint8, sizeof(struct arr_uint8));
-		dst->a_uint8->item = talloc_memdup(dst->a_uint8, src->a_uint8->item, src->a_uint8->count);
-		break;
-	case CIM_ARR_SINT16:
-	case CIM_ARR_UINT16:
-	case CIM_ARR_BOOLEAN:
-		dst->a_uint8 = talloc_memdup(mem_ctx, src->a_uint8, sizeof(struct arr_uint8));
-		dst->a_uint8->item = talloc_memdup(dst->a_uint8, src->a_uint8->item, 2*src->a_uint8->count);
-		break;
-	case CIM_ARR_SINT32:
-	case CIM_ARR_UINT32:
-	case CIM_ARR_REAL32:
-		dst->a_uint8 = talloc_memdup(mem_ctx, src->a_uint8, sizeof(struct arr_uint8));
-		dst->a_uint8->item = talloc_memdup(dst->a_uint8, src->a_uint8->item, 4*src->a_uint8->count);
-		break;
-	case CIM_ARR_SINT64:
-	case CIM_ARR_UINT64:
-	case CIM_ARR_REAL64:
-		dst->a_uint8 = talloc_memdup(mem_ctx, src->a_uint8, sizeof(struct arr_uint8));
-		dst->a_uint8->item = talloc_memdup(dst->a_uint8, src->a_uint8->item, 8*src->a_uint8->count);
-		break;
-	case CIM_ARR_STRING:
-	case CIM_ARR_DATETIME:
-	case CIM_ARR_REFERENCE:
-		dst->a_uint8 = talloc_memdup(mem_ctx, src->a_uint8, sizeof(struct arr_uint8));
-		dst->a_uint8->item = talloc_memdup(dst->a_uint8, src->a_uint8->item, 4*src->a_uint8->count);
-		for (i = 0; i < src->a_uint8->count; ++i)
-			dst->a_string->item[i] = talloc_strdup(dst->a_uint8->item, src->a_string->item[i]);
-		break;
-	default:
-    		DEBUG(0, ("duplicate_CIMVAR: cimtype 0x%04X not supported\n", cimtype & CIM_TYPEMASK));
-		break;
-	}
-}
-
-WERROR WbemClassObject_Get(struct WbemClassObject *d, TALLOC_CTX *mem_ctx, const char *name, uint32_t flags, union CIMVAR *val, enum CIMTYPE_ENUMERATION *cimtype, uint32_t *flavor)
+WERROR IWbemClassObject_Get(struct IWbemClassObject *d, TALLOC_CTX *mem_ctx, const char *name, uint32_t flags, union CIMVAR *val, enum CIMTYPE_ENUMERATION *cimtype, uint32_t *flavor)
 {
 	uint32_t i;
 	for (i = 0; i < d->obj_class->__PROPERTY_COUNT; ++i) {
@@ -402,10 +198,10 @@ WERROR WbemClassObject_Get(struct WbemClassObject *d, TALLOC_CTX *mem_ctx, const
 
 WERROR IWbemClassObject_Put(struct IWbemClassObject *d, TALLOC_CTX *mem_ctx, const char *name, uint32_t flags, union CIMVAR *val, enum CIMTYPE_ENUMERATION cimtype)
 {
-	struct WbemClassObject *wco;
+	struct IWbemClassObject *wco;
 	uint32_t i;
 
-	wco = (struct WbemClassObject *)d->object_data;
+	wco = (struct IWbemClassObject *)d->object_data;
 	for (i = 0; i < wco->obj_class->__PROPERTY_COUNT; ++i) {
 		if (!strcmp(wco->obj_class->properties[i].property.name, name)) {
 			if (cimtype && cimtype != wco->obj_class->properties[i].property.desc->cimtype) return WERR_INVALID_PARAM;
@@ -465,7 +261,7 @@ struct IEnumWbemClassObject_data {
 #define NDR_CHECK_CONST(val, exp) NDR_CHECK_EXPR((val) == (exp))
 
 
-static enum ndr_err_code WBEMDATA_Parse(TALLOC_CTX *mem_ctx, uint8_t *data, uint32_t size, struct IEnumWbemClassObject *d, uint32_t uCount, struct WbemClassObject **apObjects)
+static enum ndr_err_code WBEMDATA_Parse(TALLOC_CTX *mem_ctx, uint8_t *data, uint32_t size, struct IEnumWbemClassObject *d, uint32_t uCount, struct IWbemClassObject **apObjects)
 {
 	struct ndr_pull *ndr;
 	uint32_t u, i, ofs_next;
@@ -524,14 +320,14 @@ static enum ndr_err_code WBEMDATA_Parse(TALLOC_CTX *mem_ctx, uint8_t *data, uint
 		NDR_CHECK(ndr_pull_GUID(ndr, NDR_SCALARS, &guid));
 		switch (datatype) {
 		case DATATYPE_CLASSOBJECT:
-			apObjects[i] = talloc_zero(d->ctx, struct WbemClassObject);
+			apObjects[i] = talloc_zero(d->ctx, struct IWbemClassObject);
 			ndr->current_mem_ctx = apObjects[i];
 			NDR_CHECK(ndr_pull_WbemClassObject(ndr, NDR_SCALARS|NDR_BUFFERS, apObjects[i]));
 			ndr->current_mem_ctx = d->ctx;
 			add_pair_guid_ptr(ecod, &ecod->cache, &guid, apObjects[i]->obj_class);
 			break;
 		case DATATYPE_OBJECT:
-			apObjects[i] = talloc_zero(d->ctx, struct WbemClassObject);
+			apObjects[i] = talloc_zero(d->ctx, struct IWbemClassObject);
 			apObjects[i]->obj_class = get_ptr_by_guid(ecod->cache, &guid);
 			(void)talloc_reference(apObjects[i], apObjects[i]->obj_class);
 			ndr->current_mem_ctx = apObjects[i];
@@ -544,13 +340,13 @@ static enum ndr_err_code WBEMDATA_Parse(TALLOC_CTX *mem_ctx, uint8_t *data, uint
 		}
 		ndr->offset = ofs_next;
     		if (DEBUGLVL(9)) {
-			NDR_PRINT_DEBUG(WbemClassObject, apObjects[i]);
+			NDR_PRINT_DEBUG(IWbemClassObject, apObjects[i]);
 		}
 	}
 	return NDR_ERR_SUCCESS;
 }
 
-WERROR IEnumWbemClassObject_SmartNext(struct IEnumWbemClassObject *d, TALLOC_CTX *mem_ctx, int32_t lTimeout, uint32_t uCount, struct WbemClassObject **apObjects, uint32_t *puReturned)
+WERROR IEnumWbemClassObject_SmartNext(struct IEnumWbemClassObject *d, TALLOC_CTX *mem_ctx, int32_t lTimeout, uint32_t uCount, struct IWbemClassObject **apObjects, uint32_t *puReturned)
 {
 	WERROR result;
 	NTSTATUS status;

@@ -54,7 +54,7 @@ WERROR dcom_create_object(struct com_context *ctx, struct GUID *clsid, const cha
 WERROR dcom_get_class_object(struct com_context *ctx, struct GUID *clsid, const char *server, struct GUID *iid, struct IUnknown **ip);
 NTSTATUS dcom_get_pipe(struct IUnknown *iface, struct dcerpc_pipe **pp);
 NTSTATUS dcom_OBJREF_from_IUnknown(struct OBJREF *o, struct IUnknown *p);
-NTSTATUS dcom_IUnknown_from_OBJREF(struct com_context *ctx, struct IUnknown **_p, struct OBJREF *o);
+NTSTATUS dcom_IUnknown_from_OBJREF(TALLOC_CTX *mem_ctx, struct com_context *ctx, struct IUnknown **_p, struct OBJREF *o);
 uint64_t dcom_get_current_oxid(void);
 void dcom_add_server_credentials(struct com_context *ctx, const char *server, struct cli_credentials *credentials);
 WERROR dcom_query_interface(struct IUnknown *d, uint32_t cRefs, uint16_t cIids, struct GUID *iids, struct IUnknown **ip, WERROR *results);
@@ -70,5 +70,6 @@ void dcom_release_continue(struct composite_context *cr);
 #define IUnknown_ipid(d) ((d)->obj.u_objref.u_standard.std.ipid)
 struct composite_context *dcom_release_send(struct IUnknown *d, TALLOC_CTX *mem_ctx);
 marshal_fn dcom_marshal_by_clsid(struct GUID *clsid);
+unmarshal_fn dcom_unmarshal_by_clsid(struct GUID *clsid);
 
 #endif /* _DCOM_H */
