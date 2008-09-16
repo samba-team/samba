@@ -375,4 +375,6 @@ NTSTATUS dcerpc_request(struct dcerpc_pipe *p,
 
 typedef NTSTATUS (*dcerpc_call_fn) (struct dcerpc_pipe *, TALLOC_CTX *, void *);
 
+enum dcerpc_transport_t dcerpc_transport_by_endpoint_protocol(int prot);
+
 #endif /* __DCERPC_H__ */
