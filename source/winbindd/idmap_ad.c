@@ -818,6 +818,159 @@ done:
 	return nt_status;
 }
 
+/**********************************************************************
+ *********************************************************************/
+
+static NTSTATUS nss_ad_map_to_alias(TALLOC_CTX *mem_ctx,
+				    const char *domain,
+				    const char *name,
+				    char **alias)
+{
+	ADS_STRUCT *ads_internal = NULL;
+	const char *attrs[] = {NULL, /* attr_uid */
+			       NULL };
+	char *filter = NULL;
+	LDAPMessage *msg = NULL;
+	ADS_STATUS ads_status = ADS_ERROR_NT(NT_STATUS_UNSUCCESSFUL);
+	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
+
+	/* Check incoming parameters */
+
+	if ( !domain || !name || !*alias) {
+		nt_status = NT_STATUS_INVALID_PARAMETER;
+		goto done;
+	}
+
+	/* Only do query if we are online */
+
+	if (idmap_is_offline())	{
+		nt_status = NT_STATUS_FILE_IS_OFFLINE;
+		goto done;
+	}
+
+	ads_internal = ad_idmap_cached_connection();
+
+	if (!ads_internal || !ad_schema) {
+		nt_status = NT_STATUS_OBJECT_PATH_NOT_FOUND;
+		goto done;
+	}
+
+	attrs[0] = ad_schema->posix_uid_attr;
+
+	filter = talloc_asprintf(mem_ctx,
+				 "(sAMAccountName=%s)",
+				 name);
+	if (!filter) {
+		nt_status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	ads_status = ads_search_retry(ads_internal, &msg, filter, attrs);
+	if (!ADS_ERR_OK(ads_status)) {
+		nt_status = ads_ntstatus(ads_status);
+		goto done;
+	}
+
+	*alias = ads_pull_string(ads_internal, mem_ctx, msg, ad_schema->posix_uid_attr );
+
+	if (!*alias) {
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+
+	nt_status = NT_STATUS_OK;
+
+done:
+	if (filter) {
+		talloc_destroy(filter);
+	}
+	if (msg) {
+		ads_msgfree(ads_internal, msg);
+	}
+
+	return nt_status;
+}
+
+/**********************************************************************
+ *********************************************************************/
+
+static NTSTATUS nss_ad_map_from_alias( TALLOC_CTX *mem_ctx,
+					     const char *domain,
+					     const char *alias,
+					     char **name )
+{
+	ADS_STRUCT *ads_internal = NULL;
+	const char *attrs[] = {"sAMAccountName",
+			       NULL };
+	char *filter = NULL;
+	LDAPMessage *msg = NULL;
+	ADS_STATUS ads_status = ADS_ERROR_NT(NT_STATUS_UNSUCCESSFUL);
+	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
+	char *username;
+
+	/* Check incoming parameters */
+
+	if ( !alias || !name) {
+		nt_status = NT_STATUS_INVALID_PARAMETER;
+		goto done;
+	}
+
+	/* Only do query if we are online */
+
+	if (idmap_is_offline())	{
+		nt_status = NT_STATUS_FILE_IS_OFFLINE;
+		goto done;
+	}
+
+	ads_internal = ad_idmap_cached_connection();
+
+	if (!ads_internal || !ad_schema) {
+		nt_status = NT_STATUS_OBJECT_PATH_NOT_FOUND;
+		goto done;
+	}
+
+	filter = talloc_asprintf(mem_ctx,
+				 "(%s=%s)",
+				 ad_schema->posix_uid_attr,
+				 alias);
+	if (!filter) {
+		nt_status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	ads_status = ads_search_retry(ads_internal, &msg, filter, attrs);
+	if (!ADS_ERR_OK(ads_status)) {
+		nt_status = ads_ntstatus(ads_status);
+		goto done;
+	}
+
+      	username = ads_pull_string(ads_internal, mem_ctx, msg,
+				   "sAMAccountName");
+	if (!username) {
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+
+	*name = talloc_asprintf(mem_ctx, "%s\\%s",
+				lp_workgroup(),
+				username);
+	if (!*name) {
+		nt_status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	nt_status = NT_STATUS_OK;
+
+done:
+	if (filter) {
+		talloc_destroy(filter);
+	}
+	if (msg) {
+		ads_msgfree(ads_internal, msg);
+	}
+
+	return nt_status;
+}
+
+
 /************************************************************************
  ***********************************************************************/
 
@@ -843,21 +996,27 @@ static struct idmap_methods ad_methods = {
    function which sets the intended schema model to use */
   
 static struct nss_info_methods nss_rfc2307_methods = {
-	.init         = nss_rfc2307_init,
-	.get_nss_info =	nss_ad_get_info,
-	.close_fn     = nss_ad_close
+	.init           = nss_rfc2307_init,
+	.get_nss_info   = nss_ad_get_info,
+	.map_to_alias   = nss_ad_map_to_alias,
+	.map_from_alias = nss_ad_map_from_alias,
+	.close_fn       = nss_ad_close
 };
 
 static struct nss_info_methods nss_sfu_methods = {
-	.init         = nss_sfu_init,
-	.get_nss_info =	nss_ad_get_info,
-	.close_fn     = nss_ad_close
+	.init           = nss_sfu_init,
+	.get_nss_info   = nss_ad_get_info,
+	.map_to_alias   = nss_ad_map_to_alias,
+	.map_from_alias = nss_ad_map_from_alias,
+	.close_fn       = nss_ad_close
 };
 
 static struct nss_info_methods nss_sfu20_methods = {
-	.init         = nss_sfu20_init,
-	.get_nss_info =	nss_ad_get_info,
-	.close_fn     = nss_ad_close
+	.init           = nss_sfu20_init,
+	.get_nss_info   = nss_ad_get_info,
+	.map_to_alias   = nss_ad_map_to_alias,
+	.map_from_alias = nss_ad_map_from_alias,
+	.close_fn       = nss_ad_close
 };
 
 
