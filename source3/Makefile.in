@@ -1170,7 +1170,7 @@ samba3-idl::
 		epmapper.idl messaging.idl xattr.idl misc.idl samr.idl security.idl \
 		dssetup.idl krb5pac.idl ntsvcs.idl libnetapi.idl drsuapi.idl drsblobs.idl \
 		nbt.idl" \
-		CPP="$(CPP)" PERL="$(PERL)" \
+		CPP="$(CPP)" PIDL="../source4/pidl/pidl" \
 	 srcdir="$(srcdir)" $(srcdir)/script/build_idl.sh $(PIDL_ARGS)
 
 
