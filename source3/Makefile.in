@@ -1056,8 +1056,8 @@ LDBMODIFY_OBJ = $(LDB_CMDLINE_OBJ) lib/ldb/tools/ldbmodify.o
 WINBIND_KRB5_LOCATOR_OBJ1 = nsswitch/winbind_krb5_locator.o
 WINBIND_KRB5_LOCATOR_OBJ = $(WINBIND_KRB5_LOCATOR_OBJ1) $(WBCOMMON_OBJ) $(LIBREPLACE_OBJ)
 
-POPT_OBJ=popt/findme.o popt/popt.o popt/poptconfig.o \
-          popt/popthelp.o popt/poptparse.o
+POPT_OBJ=../popt/findme.o ../popt/popt.o ../popt/poptconfig.o \
+          ../popt/popthelp.o ../popt/poptparse.o
 
 INIPARSER_OBJ = iniparser_build/iniparser.o iniparser_build/dictionary.o \
 		iniparser_build/strlib.o
