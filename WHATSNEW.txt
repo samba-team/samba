@@ -1,6 +1,6 @@
                    =================================
                    Release Notes for Samba 3.3.0pre2
-                            
+                          September 30, 2008
                    =================================
 
 This is the second preview release of Samba 3.3.0.  This is *not*
@@ -98,6 +98,8 @@ o   Michael Adam <obnox@samba.org>
 o   Jeremy Allison <jra@samba.org>
     * BUG 5729: Explicitly allow "-valid".
     * BUG 5751: Fix showing of ACLs on DFS in (lib)smbclient.
+    * BUG 5762: Fix opening of mangled directory name (resulted
+      'is a stream name').
     * Add st_birthtime and friends for accurate create times on *BSD
       and MacOSX).
     * Fix the wcache_invalidate_samlogon calls.
@@ -108,6 +110,7 @@ o   Jeremy Allison <jra@samba.org>
 
 
 o   Steven Danneman <steven.danneman@isilon.com>
+    * Fix build warnings.
     * Cleanup of DC enumeration in get_dcs().
 
 
@@ -138,6 +141,17 @@ o   Volker Lendecke <vl@sernet.de>
 
 o   Stefan Metzmacher <metze@samba.org>
     * Some write time fixes.
+
+
+o   Simo Sorce <idra@samba.org>
+    * Fix enumeration of nested group memberships in Winbind.
+      This affected only setups using "security = ads".
+
+
+o   Timur <timur@FreeBSD.org>
+    * Fix cut and paste error in quota code.
+    * Fix display of POSIX ACLs.
+    * Fix aio on FreeBSD.
 
 
 o   Andrew Tridgell <tridge@samba.org>
