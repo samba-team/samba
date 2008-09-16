@@ -13,7 +13,8 @@ PRIVATE_DEPENDENCIES = \
 		RPC_NDR_LSA \
 		dcerpc_samr \
 		PAM_ERRORS \
-		LIBCLI_LDAP
+		LIBCLI_LDAP \
+		LIBSAMBA-NET
 # End SUBSYSTEM WINBIND
 #######################
 
