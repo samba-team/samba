@@ -103,6 +103,7 @@ pyscriptsrcdir := $(srcdir)/scripting/python
 kdcsrcdir := kdc
 ntp_signdsrcdir := ntp_signd
 wmisrcdir := lib/wmi
+tallocsrcdir := ../talloc
 
 include data.mk
 

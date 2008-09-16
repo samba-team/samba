@@ -652,7 +652,7 @@ typedef char fstring[FSTRING_LEN];
 #include "tdb.h"
 #include "util_tdb.h"
 
-#include "lib/talloc/talloc.h"
+#include "../talloc/talloc.h"
 /* And a little extension. Abort on type mismatch */
 #define talloc_get_type_abort(ptr, type) \
 	(type *)talloc_check_name_abort(ptr, #type)

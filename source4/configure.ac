@@ -41,8 +41,8 @@ AC_CONFIG_FILES(librpc/dcerpc_atsvc.pc)
 SMB_EXT_LIB_FROM_PKGCONFIG(LIBTALLOC, talloc >= 1.2.0,
 	[],
 	[
-		m4_include(lib/talloc/libtalloc.m4)
-		SMB_INCLUDE_MK(lib/talloc/config.mk)
+		m4_include(../talloc/libtalloc.m4)
+		SMB_INCLUDE_MK(../talloc/config.mk)
 	]
 )
 
@@ -159,7 +159,7 @@ then
 	builddir_headers="-I\$(builddir)/include -I\$(builddir) -I\$(builddir)/lib ";
 fi
 
-CPPFLAGS="$builddir_headers-I\$(srcdir)/include -I\$(srcdir) -I\$(srcdir)/lib -I\$(srcdir)/lib/replace -I\$(srcdir)/lib/talloc -D_SAMBA_BUILD_=4 -DHAVE_CONFIG_H $CPPFLAGS"
+CPPFLAGS="$builddir_headers-I\$(srcdir)/include -I\$(srcdir) -I\$(srcdir)/lib -I\$(srcdir)/lib/replace -I\$(srcdir)/../talloc -D_SAMBA_BUILD_=4 -DHAVE_CONFIG_H $CPPFLAGS"
 
 SMB_WRITE_PERLVARS(build/smb_build/config.pm)
 

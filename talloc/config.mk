@@ -1,7 +1,7 @@
 [LIBRARY::LIBTALLOC]
 OUTPUT_TYPE = MERGED_OBJ
-CFLAGS = -Ilib/talloc
+CFLAGS = -I$(tallocsrcdir)
 
-LIBTALLOC_OBJ_FILES = lib/talloc/talloc.o
+LIBTALLOC_OBJ_FILES = $(tallocsrcdir)/talloc.o
 
 MANPAGES += $(tallocdir)/talloc.3

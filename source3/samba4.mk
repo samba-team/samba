@@ -115,6 +115,7 @@ smbreadlinesrcdir := $(samba4srcdir)/lib/smbreadline
 ntp_signdsrcdir := $(samba4srcdir)/ntp_signd
 tdbsrcdir := $(samba4srcdir)/lib/tdb
 ldbsrcdir := $(samba4srcdir)/lib/ldb
+tallocsrcdir := $(samba4srcdir)/lib/talloc
 override ASN1C = bin/asn1_compile4
 override ET_COMPILER = bin/compile_et4
 include samba4-data.mk

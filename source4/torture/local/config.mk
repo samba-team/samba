@@ -20,7 +20,7 @@ PRIVATE_DEPENDENCIES = \
 
 TORTURE_LOCAL_OBJ_FILES = \
 		$(torturesrcdir)/../lib/charset/tests/iconv.o \
-		$(torturesrcdir)/../lib/talloc/testsuite.o \
+		$(torturesrcdir)/../../talloc/testsuite.o \
 		$(torturesrcdir)/../lib/replace/test/getifaddrs.o \
 		$(torturesrcdir)/../lib/replace/test/os2_delete.o \
 		$(torturesrcdir)/../lib/replace/test/strptime.o \
