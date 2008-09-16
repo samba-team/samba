@@ -18,10 +18,10 @@ PREFIX=$5
 shift 5
 failed=0
 
-samba4bindir=`dirname $0`/../../source4/bin
+samba4bindir=`dirname $0`/../../bin
 locktest=$samba4bindir/locktest
 
-. `dirname $0`/subunit.sh
+. `dirname $0`/../../../testprogs/blackbox/subunit.sh
 
 testit "locktest" $VALGRIND $locktest //$SERVER/test1 //$SERVER/test2 --num-ops=100  -W "$DOMAIN" -U"$USERNAME%$PASSWORD" $@ || failed=`expr $failed + 1`
 
