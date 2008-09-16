@@ -33,6 +33,7 @@
 #include "lib/talloc/talloc.h"
 #include "libcli/composite/composite.h"
 #include "lib/wmi/wmi.h"
+#include "librpc/ndr/ndr_wmi.h"
 
 enum {
 	DATATYPE_CLASSOBJECT = 2,

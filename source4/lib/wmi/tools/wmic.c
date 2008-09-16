@@ -200,12 +200,12 @@ int main(int argc, char **argv)
 				class_name = talloc_strdup(ctx, co[i]->obj_class->__CLASS);
 				printf("CLASS: %s\n", class_name);
 				for (j = 0; j < co[i]->obj_class->__PROPERTY_COUNT; ++j)
-					printf("%s%s", j?"|":"", co[i]->obj_class->properties[j].name);
+					printf("%s%s", j?"|":"", co[i]->obj_class->properties[j].property.name);
 				printf("\n");
 			}
 			for (j = 0; j < co[i]->obj_class->__PROPERTY_COUNT; ++j) {
 				char *s;
-				s = string_CIMVAR(ctx, &co[i]->instance->data[j], co[i]->obj_class->properties[j].desc->cimtype & CIM_TYPEMASK);
+				s = string_CIMVAR(ctx, &co[i]->instance->data[j], co[i]->obj_class->properties[j].property.desc->cimtype & CIM_TYPEMASK);
 				printf("%s%s", j?"|":"", s);
 			}
 			printf("\n");

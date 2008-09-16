@@ -68,5 +68,7 @@ NTSTATUS dcom_register_marshal(struct GUID *clsid, marshal_fn marshal, unmarshal
 #include "libcli/composite/composite.h"
 void dcom_release_continue(struct composite_context *cr);
 #define IUnknown_ipid(d) ((d)->obj.u_objref.u_standard.std.ipid)
+struct composite_context *dcom_release_send(struct IUnknown *d, TALLOC_CTX *mem_ctx);
+marshal_fn dcom_marshal_by_clsid(struct GUID *clsid);
 
 #endif /* _DCOM_H */

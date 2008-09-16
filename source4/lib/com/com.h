@@ -25,6 +25,18 @@
 struct com_context;
 struct event_context;
 
+struct com_context 
+{
+	struct dcom_client_context *dcom;
+	struct event_context *event_ctx;
+        struct com_extension {
+                uint32_t id;
+                void *data;
+                struct com_extension *prev, *next;
+        } *extensions;
+	struct loadparm_context *lp_ctx;
+};
+
 struct IUnknown *com_class_by_clsid(struct com_context *ctx, const struct GUID *clsid);
 NTSTATUS com_register_running_class(struct GUID *clsid, const char *progid, struct IUnknown *p);
 

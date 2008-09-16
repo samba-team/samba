@@ -69,7 +69,7 @@ WERROR WBEM_ConnectServer(struct com_context *ctx, const char *server, const uin
                 cc = cli_credentials_init(cred);
                 cli_credentials_set_conf(cc, global_loadparm);
                 cli_credentials_parse_string(cc, cred, CRED_SPECIFIED);
-                dcom_set_server_credentials(ctx, server, cc);
+                dcom_add_server_credentials(ctx, server, cc);
                 talloc_free(cred);
         }
 

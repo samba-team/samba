@@ -5,8 +5,10 @@
 #include "idl_types.h"
 
 import "dcom.idl";
+import "misc.idl";
 
 [
+	helper("librpc/ndr/ndr_wmi.h"),
 	uuid("8BC3F05E-D86B-11d0-A075-00C04FB68820")
 ] coclass WbemLevel1Login
 {
@@ -424,7 +426,7 @@ interface IWbemClassObject : IUnknown
 	} WbemClassProperty;
 
 
-    typedef [public,nopush,nopull,noprint,flag(NDR_NOALIGN)] struct
+    typedef [public,nopush,nopull,flag(NDR_NOALIGN)] struct
     {
 	uint8 u_0;
 	[relative, null_is_ffffffff,charset(UTF16)] uint16 *__CLASS;

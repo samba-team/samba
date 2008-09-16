@@ -25,6 +25,7 @@
 #include "librpc/gen_ndr/ndr_remact_c.h"
 #include "librpc/gen_ndr/com_dcom.h"
 #include "librpc/gen_ndr/dcom.h"
+#include "librpc/rpc/dcerpc.h"
 #include "lib/com/dcom/dcom.h"
 #include "librpc/ndr/ndr_table.h"
 #include "lib/util/dlinklist.h"
@@ -154,7 +155,7 @@ struct dcom_client_context *dcom_client_init(struct com_context *ctx, struct cli
                 cli_credentials_set_conf(credentials, ctx->lp_ctx);
                 cli_credentials_parse_string(credentials, "%", CRED_SPECIFIED);
 	}
-	dcom_set_server_credentials(ctx, NULL, credentials);
+	dcom_add_server_credentials(ctx, NULL, credentials);
 	return ctx->dcom;
 }
 
@@ -191,9 +192,11 @@ static NTSTATUS dcom_connect_host(struct com_context *ctx,
 		if (!binding) {
 			status = NT_STATUS_NO_MEMORY;
 			goto end;
-		};
-		status = dcerpc_pipe_connect(ctx->event_ctx, p, binding, &ndr_table_IRemoteActivation,
-					     dcom_get_server_credentials(ctx, server), ctx->event_ctx, ctx->lp_ctx);
+		}
+		status = dcerpc_pipe_connect(ctx->event_ctx, p, binding, 
+									 &ndr_table_IRemoteActivation, 
+									 dcom_get_server_credentials(ctx, server), 
+									 ctx->event_ctx, ctx->lp_ctx);
 
 		if (NT_STATUS_IS_OK(status)) {
 			if (DEBUGLVL(11))
@@ -507,7 +510,7 @@ NTSTATUS dcom_get_pipe(struct IUnknown *iface, struct dcerpc_pipe **pp)
 	return NT_STATUS_OK;
 }
 
-NTSTATUS dcom_OBJREF_from_IUnknown(struct OBJREF *o, struct IUnknown *p)
+NTSTATUS dcom_OBJREF_from_IUnknown(TALLLOC_CTX *mem_ctx, struct OBJREF *o, struct IUnknown *p)
 {
 	/* FIXME: Cache generated objref objects? */
 	ZERO_STRUCTP(o);
@@ -523,7 +526,7 @@ NTSTATUS dcom_OBJREF_from_IUnknown(struct OBJREF *o, struct IUnknown *p)
 
 			marshal = dcom_marshal_by_clsid(&o->u_objref.u_custom.clsid);
 			if (marshal) {
-				return marshal(p, o);
+				return marshal(mem_ctx, p, o);
 			} else {
 				return NT_STATUS_NOT_SUPPORTED;
 			}
@@ -534,15 +537,16 @@ NTSTATUS dcom_OBJREF_from_IUnknown(struct OBJREF *o, struct IUnknown *p)
 	return NT_STATUS_OK;
 }
 
-NTSTATUS dcom_IUnknown_from_OBJREF(struct com_context *ctx, struct IUnknown **_p, struct OBJREF *o)
+enum ndr_err_code dcom_IUnknown_from_OBJREF(struct com_context *ctx, struct IUnknown **_p, struct OBJREF *o)
 {
 	struct IUnknown *p;
 	struct dcom_object_exporter *ox;
+	unmarshal_fn unmarshal;
 
 	switch(o->flags) {
 	case OBJREF_NULL: 
 		*_p = NULL;
-		return NT_STATUS_OK;
+		return NDR_ERR_SUCCESS;
 
 	case OBJREF_STANDARD:
 		p = talloc_zero(ctx, struct IUnknown);
@@ -552,7 +556,7 @@ NTSTATUS dcom_IUnknown_from_OBJREF(struct com_context *ctx, struct IUnknown **_p
 
 		if (!p->vtable) {
 			DEBUG(0, ("Unable to find proxy class for interface with IID %s\n", GUID_string(ctx, &o->iid)));
-			return NT_STATUS_NOT_SUPPORTED;
+			return NDR_ERR_INVALID_POINTER;
 		}
 
 		p->vtable->Release_send = dcom_release_send;
@@ -560,7 +564,7 @@ NTSTATUS dcom_IUnknown_from_OBJREF(struct com_context *ctx, struct IUnknown **_p
 		ox = object_exporter_by_oxid(ctx, o->u_objref.u_standard.std.oxid);
 		/* FIXME: Add object to list of objects to ping */
 		*_p = p;
-		return NT_STATUS_OK;
+		return NDR_ERR_SUCCESS;
 		
 	case OBJREF_HANDLER:
 		p = talloc_zero(ctx, struct IUnknown);
@@ -579,17 +583,16 @@ NTSTATUS dcom_IUnknown_from_OBJREF(struct com_context *ctx, struct IUnknown **_p
 		p->ctx = ctx;	
 		p->vtable = NULL;
 		p->obj = *o;
-		unmarshal_fn unmarshal;
 		unmarshal = dcom_unmarshal_by_clsid(&o->u_objref.u_custom.clsid);
 		*_p = p;
 		if (unmarshal) {
 		    return unmarshal(ctx, o, _p);
 		} else {
-		    return NT_STATUS_NOT_SUPPORTED;
+		    return NDR_ERR_BAD_SWITCH;
 		}
 	}
 
-	return NT_STATUS_NOT_SUPPORTED;
+	return NDR_ERR_BAD_SWITCH;
 }
 
 uint64_t dcom_get_current_oxid(void)
