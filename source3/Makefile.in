@@ -249,7 +249,7 @@ LIBNDR_DRSUAPI_OBJ = librpc/ndr/ndr_drsuapi.o \
 		     librpc/gen_ndr/ndr_drsuapi.o \
 		     librpc/gen_ndr/ndr_drsblobs.o
 
-COMPRESSION_OBJ = lib/compression/mszip.o
+COMPRESSION_OBJ = ../compression/mszip.o
 
 DRSUAPI_OBJ = $(LIBNDR_DRSUAPI_OBJ) \
 	      $(COMPRESSION_OBJ)
