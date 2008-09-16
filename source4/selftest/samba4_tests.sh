@@ -155,6 +155,7 @@ for t in $net; do
 done
 
 # Tests for session keys
+# FIXME: Integrate these into a single smbtorture test
 
 bindoptions=""
 transport="ncacn_np"
@@ -263,7 +264,8 @@ fi
 
 # Blackbox Tests:
 # tests that interact directly with the command-line tools rather than using 
-# the API
+# the API. These mainly test that the various command-line options of commands 
+# work correctly.
 
 bbdir=$incdir/../../testprogs/blackbox
 
@@ -278,7 +280,6 @@ plantest "blackbox.masktest" dc $samba4srcdir/torture/tests/test_masktest.sh "\$
 plantest "blackbox.gentest" dc $samba4srcdir/torture/tests/test_gentest.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$DOMAIN" "$PREFIX"
 plantest "blackbox.wbinfo" dc $samba4srcdir/nsswitch/tests/test_wbinfo.sh "\$DOMAIN" "\$USERNAME" "\$PASSWORD" "dc"
 plantest "blackbox.wbinfo" member $samba4srcdir/nsswitch/tests/test_wbinfo.sh "\$DOMAIN" "\$DC_USERNAME" "\$DC_PASSWORD" "member"
-plantest "blackbox.wintest" none $bbdir/test_wintest.sh "$TORTURE_OPTIONS"
 
 # Tests using the "Simple" NTVFS backend
 
