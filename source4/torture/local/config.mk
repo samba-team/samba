@@ -30,7 +30,7 @@ TORTURE_LOCAL_OBJ_FILES = \
 		$(torturesrcdir)/../librpc/tests/binding_string.o \
 		$(torturesrcdir)/../lib/util/tests/idtree.o \
 		$(torturesrcdir)/../lib/socket/testsuite.o \
-		$(torturesrcdir)/../lib/socket_wrapper/testsuite.o \
+		$(torturesrcdir)/../../socket_wrapper/testsuite.o \
 		$(torturesrcdir)/../libcli/resolve/testsuite.o \
 		$(torturesrcdir)/../lib/util/tests/strlist.o \
 		$(torturesrcdir)/../lib/util/tests/str.o \
