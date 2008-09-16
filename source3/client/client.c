@@ -3038,7 +3038,7 @@ static int cmd_getfacl(void)
 				break;
 			case SMB_POSIX_ACL_GROUP:
 				uorg = IVAL(retbuf,SMB_POSIX_ACL_HEADER_SIZE+(i*SMB_POSIX_ACL_ENTRY_SIZE)+2);
-				d_printf("group:%u", uorg);
+				d_printf("group:%u:", uorg);
 				break;
 			case SMB_POSIX_ACL_MASK:
 				d_printf("mask::");
@@ -3075,7 +3075,7 @@ static int cmd_getfacl(void)
 				break;
 			case SMB_POSIX_ACL_GROUP:
 				uorg = IVAL(retbuf,SMB_POSIX_ACL_HEADER_SIZE+((i+num_file_acls)*SMB_POSIX_ACL_ENTRY_SIZE)+2);
-				d_printf("default:group:%u", uorg);
+				d_printf("default:group:%u:", uorg);
 				break;
 			case SMB_POSIX_ACL_MASK:
 				d_printf("default:mask::");

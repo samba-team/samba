@@ -272,7 +272,7 @@ static NTSTATUS cmd_open(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 		flagstr++;
 	}
 	if ((flags & O_CREAT) && argc == 4) {
-		if (sscanf(argv[3], "%o", &mode) == 0) {
+		if (sscanf(argv[3], "%ho", (unsigned short *)&mode) == 0) {
 			printf("open: error=-1 (invalid mode!)\n");
 			return NT_STATUS_UNSUCCESSFUL;
 		}
@@ -989,7 +989,7 @@ static NTSTATUS cmd_mknod(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 		return NT_STATUS_OK;
 	}
 
-	if (sscanf(argv[2], "%o", &mode) == 0) {
+	if (sscanf(argv[2], "%ho", (unsigned short *)&mode) == 0) {
 		printf("open: error=-1 (invalid mode!)\n");
 		return NT_STATUS_UNSUCCESSFUL;
 	}
