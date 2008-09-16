@@ -16,8 +16,11 @@ import "misc.idl";
 
 };
 
-[local, object, uuid("dc12a681-737f-11cf-884d-00aa004b2e24")]
-
+[
+	local, 
+	object, 
+	uuid("dc12a681-737f-11cf-884d-00aa004b2e24")
+]
 interface IWbemClassObject : IUnknown
 {
 
@@ -584,7 +587,7 @@ coclass WbemClassObject
         );
 
     WERROR NextAsync(
-        [in]  uint32 uCount
+        [in]  uint32 uCount,
         [in]  IWbemObjectSink* pSink
         );
 
@@ -760,12 +763,12 @@ coclass WbemClassObject
 {
 	WERROR GetResultObject(
 						   [in]  long lTimeout,
-						   [out] IUnknown** ppResultObject
+						   [out] IUnknown** ppResultObject,
 						   [out] IWbemClassObject** ppResultObject
 						  );
 
 	WERROR GetResultString(
-						   [in]  long lTimeout
+						   [in]  long lTimeout,
 						   [out] BSTR* pstrResultString
 						  );
 

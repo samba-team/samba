@@ -612,10 +612,11 @@ sub process_file($)
 
 		$pidl = Parse::Pidl::IDL::parse_file($idl_file, \@opt_incdirs);
 		defined @$pidl || die "Failed to parse $idl_file";
-		require Parse::Pidl::Typelist;
-		Parse::Pidl::Typelist::LoadIdl($pidl);
 	}
-	
+
+	require Parse::Pidl::Typelist;
+	Parse::Pidl::Typelist::LoadIdl($pidl);
+
 	if (defined($opt_dump_idl_tree)) {
 		my($pidl_file) = ($opt_dump_idl_tree or "$outputdir/$basename.pidl");
 		SaveStructure($pidl_file, $pidl) or die "Failed to save $pidl_file\n";

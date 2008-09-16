@@ -856,6 +856,7 @@ my %property_list = (
 	"pointer_default"	=> ["INTERFACE"],
 	"helper"		=> ["INTERFACE"],
 	"authservice"		=> ["INTERFACE"],
+	"restricted"	=> ["INTERFACE"],
 
 	# dcom
 	"object"		=> ["INTERFACE"],
