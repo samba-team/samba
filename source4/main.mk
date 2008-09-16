@@ -18,7 +18,6 @@ mkinclude lib/events/config.mk
 mkinclude lib/cmdline/config.mk
 mkinclude lib/socket_wrapper/config.mk
 mkinclude lib/nss_wrapper/config.mk
-mkinclude lib/appweb/config.mk
 mkinclude lib/stream/config.mk
 mkinclude lib/util/config.mk
 mkinclude lib/tdr/config.mk
@@ -47,6 +46,5 @@ mkinclude torture/config.mk
 mkinclude librpc/config.mk
 mkinclude client/config.mk
 mkinclude libcli/config.mk
-mkinclude scripting/ejs/config.mk
 mkinclude scripting/python/config.mk
 mkinclude kdc/config.mk

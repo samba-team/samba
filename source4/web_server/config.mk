@@ -4,6 +4,7 @@
 # Start SUBSYSTEM WEB
 [MODULE::WEB]
 INIT_FUNCTION = server_service_web_init
+ENABLE = NO
 SUBSYSTEM = smbd
 PRIVATE_DEPENDENCIES = ESP LIBTLS smbcalls process_model 
 # End SUBSYSTEM WEB
