@@ -21,7 +21,7 @@
 
 #include "includes.h"
 #include "system/network.h"
-#include "lib/socket_wrapper/socket_wrapper.h"
+#include "../socket_wrapper/socket_wrapper.h"
 #include "torture/torture.h"
 
 static char *old_dir = NULL;
