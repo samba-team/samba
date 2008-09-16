@@ -20,7 +20,7 @@
 */
 
 #include "includes.h"
-#include "lib/compression/mszip.h"
+#include "../compression/mszip.h"
 #include "librpc/ndr/libndr.h"
 #include "librpc/ndr/ndr_compression.h"
 

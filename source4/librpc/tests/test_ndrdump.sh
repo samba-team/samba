@@ -4,7 +4,7 @@
 # Copyright (C) 2008 Andrew Bartlett
 # based on test_smbclient.sh
 
-. `dirname $0`/subunit.sh
+. `dirname $0`/../../../testprogs/blackbox/subunit.sh
 
 failed=0
 

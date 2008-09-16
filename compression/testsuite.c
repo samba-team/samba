@@ -20,7 +20,7 @@
 
 #include "includes.h"
 #include "torture/torture.h"
-#include "lib/compression/mszip.h"
+#include "../compression/mszip.h"
 
 struct torture_suite *torture_local_compression(TALLOC_CTX *mem_ctx)
 {

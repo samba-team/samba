@@ -8,10 +8,6 @@ cd ${srcdir}
 
 [ -d librpc/gen_ndr ] || mkdir -p librpc/gen_ndr || exit 1
 
-if [ -z "$PIDL" ] ; then
-    PIDL=pidl
-fi
-
 PIDL="$PIDL ${PIDL_ARGS} ${PIDL_EXTRA_ARGS}"
 
 ##

@@ -17,10 +17,10 @@ DOMAIN=$4
 shift 4
 failed=0
 
-samba4bindir=`dirname $0`/../../source4/bin
+samba4bindir=`dirname $0`/../../bin
 gentest=$samba4bindir/gentest
 
-. `dirname $0`/subunit.sh
+. `dirname $0`/../../../testprogs/blackbox/subunit.sh
 
 cat <<EOF > st/gentest.ignore
 all_info.out.fname
@@ -29,6 +29,6 @@ EOF
 
 testit "gentest" $VALGRIND $gentest //$SERVER/test1 //$SERVER/test2 --num-ops=100 --ignore=st/gentest.ignore -W "$DOMAIN" -U"$USERNAME%$PASSWORD" -U"$USERNAME%$PASSWORD" $@ || failed=`expr $failed + 1`
 
-/bin/rm -f st/gentest.ignore
+rm -f st/gentest.ignore
 
 exit $failed

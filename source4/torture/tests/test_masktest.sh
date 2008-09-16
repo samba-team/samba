@@ -18,10 +18,10 @@ PREFIX=$5
 shift 5
 failed=0
 
-samba4bindir=`dirname $0`/../../source4/bin
+samba4bindir=`dirname $0`/../../bin
 masktest=$samba4bindir/masktest
 
-. `dirname $0`/subunit.sh
+. `dirname $0`/../../../testprogs/blackbox/subunit.sh
 
 testit "masktest" $VALGRIND $masktest //$SERVER/tmp --num-ops=200 --dieonerror -W "$DOMAIN" -U"$USERNAME%$PASSWORD" $@ || failed=`expr $failed + 1`
 

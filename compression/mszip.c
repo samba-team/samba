@@ -21,7 +21,7 @@
  */
 
 #include "includes.h"
-#include "lib/compression/mszip.h"
+#include "../compression/mszip.h"
 
 /*--------------------------------------------------------------------------*/
 /* our archiver information / state */
@@ -123,7 +123,7 @@ static void Ziphuft_free(struct Ziphuft *t)
     q = (--p)->v.t;
     free(p);
     p = q;
-  } 
+  }
 }
 
 static int32_t Ziphuft_build(struct decomp_state *decomp_state,
@@ -244,7 +244,7 @@ static int32_t Ziphuft_build(struct decomp_state *decomp_state,
         l[h] = j;               /* set table size in stack */
 
         /* allocate and link in new table */
-        if (!(q = (struct Ziphuft *) malloc((z + 1)*sizeof(struct Ziphuft))))
+        if (!(q = (struct Ziphuft *)SMB_MALLOC((z + 1)*sizeof(struct Ziphuft))))
         {
           if(h)
             Ziphuft_free(ZIP(u)[0]);
