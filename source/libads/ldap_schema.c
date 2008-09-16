@@ -246,19 +246,22 @@ ADS_STATUS ads_check_posix_schema_mapping(TALLOC_CTX *mem_ctx,
 					ADS_ATTR_SFU_GIDNUMBER_OID,
 					ADS_ATTR_SFU_HOMEDIR_OID,
 					ADS_ATTR_SFU_SHELL_OID,
-					ADS_ATTR_SFU_GECOS_OID};
+					ADS_ATTR_SFU_GECOS_OID,
+					ADS_ATTR_SFU_UID_OID };
 
 	const char *oids_sfu20[] = { 	ADS_ATTR_SFU20_UIDNUMBER_OID,
 					ADS_ATTR_SFU20_GIDNUMBER_OID,
 					ADS_ATTR_SFU20_HOMEDIR_OID,
 					ADS_ATTR_SFU20_SHELL_OID,
-					ADS_ATTR_SFU20_GECOS_OID};
+					ADS_ATTR_SFU20_GECOS_OID,
+					ADS_ATTR_SFU20_UID_OID };
 
 	const char *oids_rfc2307[] = {	ADS_ATTR_RFC2307_UIDNUMBER_OID,
 					ADS_ATTR_RFC2307_GIDNUMBER_OID,
 					ADS_ATTR_RFC2307_HOMEDIR_OID,
 					ADS_ATTR_RFC2307_SHELL_OID,
-					ADS_ATTR_RFC2307_GECOS_OID };
+					ADS_ATTR_RFC2307_GECOS_OID,
+					ADS_ATTR_RFC2307_UID_OID };
 
 	DEBUG(10,("ads_check_posix_schema_mapping for schema mode: %d\n", map_type));
 
@@ -358,6 +361,12 @@ ADS_STATUS ads_check_posix_schema_mapping(TALLOC_CTX *mem_ctx,
 		    strequal(ADS_ATTR_SFU_GECOS_OID, oids_out[i]) ||
 		    strequal(ADS_ATTR_SFU20_GECOS_OID, oids_out[i])) {
 			schema->posix_gecos_attr = talloc_strdup(schema, names_out[i]);
+		}
+
+		if (strequal(ADS_ATTR_RFC2307_UID_OID, oids_out[i]) ||
+		    strequal(ADS_ATTR_SFU_UID_OID, oids_out[i]) ||
+		    strequal(ADS_ATTR_SFU20_UID_OID, oids_out[i])) {
+			schema->posix_uid_attr = talloc_strdup(schema, names_out[i]);
 		}
 	}
 
