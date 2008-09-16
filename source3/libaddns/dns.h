@@ -25,7 +25,7 @@
 #ifndef _DNS_H
 #define _DNS_H
 
-#include "lib/replace/replace.h"
+#include "../replace/replace.h"
 #include "system/network.h"
 
 /* make sure we have included the correct config.h */

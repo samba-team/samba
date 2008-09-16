@@ -3,5 +3,5 @@
  the iniparser source code
  --metze
 */
-#include "lib/replace/replace.h"
+#include "../replace/replace.h"
 #include "iniparser/src/strlib.c"

@@ -21,10 +21,10 @@ PRIVATE_DEPENDENCIES = \
 TORTURE_LOCAL_OBJ_FILES = \
 		$(torturesrcdir)/../lib/charset/tests/iconv.o \
 		$(torturesrcdir)/../../talloc/testsuite.o \
-		$(torturesrcdir)/../lib/replace/test/getifaddrs.o \
-		$(torturesrcdir)/../lib/replace/test/os2_delete.o \
-		$(torturesrcdir)/../lib/replace/test/strptime.o \
-		$(torturesrcdir)/../lib/replace/test/testsuite.o \
+		$(torturesrcdir)/../../replace/test/getifaddrs.o \
+		$(torturesrcdir)/../../replace/test/os2_delete.o \
+		$(torturesrcdir)/../../replace/test/strptime.o \
+		$(torturesrcdir)/../../replace/test/testsuite.o \
 		$(torturesrcdir)/../lib/messaging/tests/messaging.o \
 		$(torturesrcdir)/../lib/messaging/tests/irpc.o \
 		$(torturesrcdir)/../librpc/tests/binding_string.o \
