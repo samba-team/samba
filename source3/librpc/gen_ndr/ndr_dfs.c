@@ -544,7 +544,6 @@ static enum ndr_err_code ndr_push_dfs_Info4(struct ndr_push *ndr, int ndr_flags,
 			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->comment, CH_UTF16)));
 			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->comment, ndr_charset_length(r->comment, CH_UTF16), sizeof(uint16_t), CH_UTF16));
 		}
-		NDR_CHECK(ndr_push_GUID(ndr, NDR_BUFFERS, &r->guid));
 		if (r->stores) {
 			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->num_stores));
 			for (cntr_stores_1 = 0; cntr_stores_1 < r->num_stores; cntr_stores_1++) {
@@ -618,7 +617,6 @@ static enum ndr_err_code ndr_pull_dfs_Info4(struct ndr_pull *ndr, int ndr_flags,
 			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->comment, ndr_get_array_length(ndr, &r->comment), sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_comment_0, 0);
 		}
-		NDR_CHECK(ndr_pull_GUID(ndr, NDR_BUFFERS, &r->guid));
 		if (r->stores) {
 			_mem_save_stores_0 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->stores, 0);
@@ -733,7 +731,6 @@ static enum ndr_err_code ndr_push_dfs_Info5(struct ndr_push *ndr, int ndr_flags,
 			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->comment, CH_UTF16)));
 			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->comment, ndr_charset_length(r->comment, CH_UTF16), sizeof(uint16_t), CH_UTF16));
 		}
-		NDR_CHECK(ndr_push_GUID(ndr, NDR_BUFFERS, &r->guid));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -790,7 +787,6 @@ static enum ndr_err_code ndr_pull_dfs_Info5(struct ndr_pull *ndr, int ndr_flags,
 			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->comment, ndr_get_array_length(ndr, &r->comment), sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_comment_0, 0);
 		}
-		NDR_CHECK(ndr_pull_GUID(ndr, NDR_BUFFERS, &r->guid));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -948,7 +944,6 @@ static enum ndr_err_code ndr_push_dfs_Info6(struct ndr_push *ndr, int ndr_flags,
 			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->comment, CH_UTF16)));
 			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->comment, ndr_charset_length(r->comment, CH_UTF16), sizeof(uint16_t), CH_UTF16));
 		}
-		NDR_CHECK(ndr_push_GUID(ndr, NDR_BUFFERS, &r->guid));
 		if (r->stores) {
 			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->num_stores));
 			for (cntr_stores_1 = 0; cntr_stores_1 < r->num_stores; cntr_stores_1++) {
@@ -1024,7 +1019,6 @@ static enum ndr_err_code ndr_pull_dfs_Info6(struct ndr_pull *ndr, int ndr_flags,
 			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->comment, ndr_get_array_length(ndr, &r->comment), sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_comment_0, 0);
 		}
-		NDR_CHECK(ndr_pull_GUID(ndr, NDR_BUFFERS, &r->guid));
 		if (r->stores) {
 			_mem_save_stores_0 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->stores, 0);
@@ -1096,7 +1090,6 @@ static enum ndr_err_code ndr_push_dfs_Info7(struct ndr_push *ndr, int ndr_flags,
 		NDR_CHECK(ndr_push_GUID(ndr, NDR_SCALARS, &r->generation_guid));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
-		NDR_CHECK(ndr_push_GUID(ndr, NDR_BUFFERS, &r->generation_guid));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -1108,7 +1101,6 @@ static enum ndr_err_code ndr_pull_dfs_Info7(struct ndr_pull *ndr, int ndr_flags,
 		NDR_CHECK(ndr_pull_GUID(ndr, NDR_SCALARS, &r->generation_guid));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
-		NDR_CHECK(ndr_pull_GUID(ndr, NDR_BUFFERS, &r->generation_guid));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -1671,7 +1663,7 @@ static enum ndr_err_code ndr_push_dfs_Info(struct ndr_push *ndr, int ndr_flags, 
 
 			case 7:
 				if (r->info7) {
-					NDR_CHECK(ndr_push_dfs_Info7(ndr, NDR_SCALARS|NDR_BUFFERS, r->info7));
+					NDR_CHECK(ndr_push_dfs_Info7(ndr, NDR_SCALARS, r->info7));
 				}
 			break;
 
@@ -1973,7 +1965,7 @@ static enum ndr_err_code ndr_pull_dfs_Info(struct ndr_pull *ndr, int ndr_flags, 
 				if (r->info7) {
 					_mem_save_info7_0 = NDR_PULL_GET_MEM_CTX(ndr);
 					NDR_PULL_SET_MEM_CTX(ndr, r->info7, 0);
-					NDR_CHECK(ndr_pull_dfs_Info7(ndr, NDR_SCALARS|NDR_BUFFERS, r->info7));
+					NDR_CHECK(ndr_pull_dfs_Info7(ndr, NDR_SCALARS, r->info7));
 					NDR_PULL_SET_MEM_CTX(ndr, _mem_save_info7_0, 0);
 				}
 			break;

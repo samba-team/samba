@@ -358,13 +358,13 @@ static enum ndr_err_code ndr_push_svcctl_CloseServiceHandle(struct ndr_push *ndr
 		if (r->in.handle == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
+		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 	}
 	if (flags & NDR_OUT) {
 		if (r->out.handle == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.handle));
+		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->out.handle));
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
@@ -381,7 +381,7 @@ static enum ndr_err_code ndr_pull_svcctl_CloseServiceHandle(struct ndr_pull *ndr
 		}
 		_mem_save_handle_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.handle, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
+		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_PULL_ALLOC(ndr, r->out.handle);
 		*r->out.handle = *r->in.handle;
@@ -392,7 +392,7 @@ static enum ndr_err_code ndr_pull_svcctl_CloseServiceHandle(struct ndr_pull *ndr
 		}
 		_mem_save_handle_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.handle, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.handle));
+		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->out.handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
@@ -434,7 +434,7 @@ static enum ndr_err_code ndr_push_svcctl_ControlService(struct ndr_push *ndr, in
 		if (r->in.handle == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
+		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.control));
 	}
 	if (flags & NDR_OUT) {
@@ -459,7 +459,7 @@ static enum ndr_err_code ndr_pull_svcctl_ControlService(struct ndr_pull *ndr, in
 		}
 		_mem_save_handle_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.handle, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
+		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.control));
 		NDR_PULL_ALLOC(ndr, r->out.service_status);
@@ -514,7 +514,7 @@ static enum ndr_err_code ndr_push_svcctl_DeleteService(struct ndr_push *ndr, int
 		if (r->in.handle == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
+		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
@@ -531,7 +531,7 @@ static enum ndr_err_code ndr_pull_svcctl_DeleteService(struct ndr_pull *ndr, int
 		}
 		_mem_save_handle_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.handle, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
+		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
 	}
 	if (flags & NDR_OUT) {
@@ -571,13 +571,13 @@ static enum ndr_err_code ndr_push_svcctl_LockServiceDatabase(struct ndr_push *nd
 		if (r->in.handle == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
+		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 	}
 	if (flags & NDR_OUT) {
 		if (r->out.lock == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.lock));
+		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->out.lock));
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
@@ -595,7 +595,7 @@ static enum ndr_err_code ndr_pull_svcctl_LockServiceDatabase(struct ndr_pull *nd
 		}
 		_mem_save_handle_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.handle, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
+		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_PULL_ALLOC(ndr, r->out.lock);
 		ZERO_STRUCTP(r->out.lock);
@@ -606,7 +606,7 @@ static enum ndr_err_code ndr_pull_svcctl_LockServiceDatabase(struct ndr_pull *nd
 		}
 		_mem_save_lock_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.lock, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.lock));
+		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->out.lock));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_lock_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
@@ -648,7 +648,7 @@ static enum ndr_err_code ndr_push_svcctl_QueryServiceObjectSecurity(struct ndr_p
 		if (r->in.handle == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
+		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.security_flags));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.buffer_size));
 	}
@@ -679,7 +679,7 @@ static enum ndr_err_code ndr_pull_svcctl_QueryServiceObjectSecurity(struct ndr_p
 		}
 		_mem_save_handle_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.handle, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
+		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.security_flags));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.buffer_size));
@@ -756,7 +756,7 @@ static enum ndr_err_code ndr_push_svcctl_SetServiceObjectSecurity(struct ndr_pus
 		if (r->in.handle == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
+		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.security_flags));
 		if (r->in.buffer == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
@@ -780,7 +780,7 @@ static enum ndr_err_code ndr_pull_svcctl_SetServiceObjectSecurity(struct ndr_pul
 		}
 		_mem_save_handle_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.handle, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
+		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.security_flags));
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.buffer));
@@ -836,7 +836,7 @@ static enum ndr_err_code ndr_push_svcctl_QueryServiceStatus(struct ndr_push *ndr
 		if (r->in.handle == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
+		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 	}
 	if (flags & NDR_OUT) {
 		if (r->out.service_status == NULL) {
@@ -860,7 +860,7 @@ static enum ndr_err_code ndr_pull_svcctl_QueryServiceStatus(struct ndr_pull *ndr
 		}
 		_mem_save_handle_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.handle, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
+		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_PULL_ALLOC(ndr, r->out.service_status);
 		ZERO_STRUCTP(r->out.service_status);
@@ -954,13 +954,13 @@ static enum ndr_err_code ndr_push_svcctl_UnlockServiceDatabase(struct ndr_push *
 		if (r->in.lock == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.lock));
+		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.lock));
 	}
 	if (flags & NDR_OUT) {
 		if (r->out.lock == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.lock));
+		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->out.lock));
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
@@ -977,7 +977,7 @@ static enum ndr_err_code ndr_pull_svcctl_UnlockServiceDatabase(struct ndr_pull *
 		}
 		_mem_save_lock_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.lock, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.lock));
+		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.lock));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_lock_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_PULL_ALLOC(ndr, r->out.lock);
 		*r->out.lock = *r->in.lock;
@@ -988,7 +988,7 @@ static enum ndr_err_code ndr_pull_svcctl_UnlockServiceDatabase(struct ndr_pull *
 		}
 		_mem_save_lock_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.lock, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.lock));
+		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->out.lock));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_lock_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
@@ -1071,7 +1071,7 @@ static enum ndr_err_code ndr_push_svcctl_SCSetServiceBitsW(struct ndr_push *ndr,
 		if (r->in.handle == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
+		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.bits));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.bitson));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.immediate));
@@ -1091,7 +1091,7 @@ static enum ndr_err_code ndr_pull_svcctl_SCSetServiceBitsW(struct ndr_pull *ndr,
 		}
 		_mem_save_handle_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.handle, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
+		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.bits));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.bitson));
@@ -1137,7 +1137,7 @@ static enum ndr_err_code ndr_push_svcctl_ChangeServiceConfigW(struct ndr_push *n
 		if (r->in.handle == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
+		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.type));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.start));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.error));
@@ -1218,7 +1218,7 @@ static enum ndr_err_code ndr_pull_svcctl_ChangeServiceConfigW(struct ndr_pull *n
 		}
 		_mem_save_handle_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.handle, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
+		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.type));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.start));
@@ -1421,7 +1421,7 @@ static enum ndr_err_code ndr_push_svcctl_CreateServiceW(struct ndr_push *ndr, in
 		if (r->in.scmanager_handle == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.scmanager_handle));
+		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.scmanager_handle));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.ServiceName, CH_UTF16)));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.ServiceName, CH_UTF16)));
@@ -1480,7 +1480,7 @@ static enum ndr_err_code ndr_push_svcctl_CreateServiceW(struct ndr_push *ndr, in
 		if (r->out.handle == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.handle));
+		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->out.handle));
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
@@ -1510,7 +1510,7 @@ static enum ndr_err_code ndr_pull_svcctl_CreateServiceW(struct ndr_pull *ndr, in
 		}
 		_mem_save_scmanager_handle_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.scmanager_handle, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.scmanager_handle));
+		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.scmanager_handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_scmanager_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.ServiceName));
 		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.ServiceName));
@@ -1653,7 +1653,7 @@ static enum ndr_err_code ndr_pull_svcctl_CreateServiceW(struct ndr_pull *ndr, in
 		}
 		_mem_save_handle_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.handle, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.handle));
+		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->out.handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
@@ -1745,7 +1745,7 @@ static enum ndr_err_code ndr_push_svcctl_EnumDependentServicesW(struct ndr_push 
 		if (r->in.service == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.service));
+		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.service));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.state));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.buf_size));
 	}
@@ -1781,7 +1781,7 @@ static enum ndr_err_code ndr_pull_svcctl_EnumDependentServicesW(struct ndr_pull 
 		}
 		_mem_save_service_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.service, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.service));
+		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.service));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_service_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.state));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.buf_size));
@@ -1874,7 +1874,7 @@ static enum ndr_err_code ndr_push_svcctl_EnumServicesStatusW(struct ndr_push *nd
 		if (r->in.handle == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
+		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.type));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.state));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.buf_size));
@@ -1918,7 +1918,7 @@ static enum ndr_err_code ndr_pull_svcctl_EnumServicesStatusW(struct ndr_pull *nd
 		}
 		_mem_save_handle_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.handle, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
+		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.type));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.state));
@@ -2050,7 +2050,7 @@ static enum ndr_err_code ndr_push_svcctl_OpenSCManagerW(struct ndr_push *ndr, in
 		if (r->out.handle == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.handle));
+		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->out.handle));
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
@@ -2112,7 +2112,7 @@ static enum ndr_err_code ndr_pull_svcctl_OpenSCManagerW(struct ndr_pull *ndr, in
 		}
 		_mem_save_handle_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.handle, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.handle));
+		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->out.handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
@@ -2163,7 +2163,7 @@ static enum ndr_err_code ndr_push_svcctl_OpenServiceW(struct ndr_push *ndr, int 
 		if (r->in.scmanager_handle == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.scmanager_handle));
+		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.scmanager_handle));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.ServiceName, CH_UTF16)));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.ServiceName, CH_UTF16)));
@@ -2174,7 +2174,7 @@ static enum ndr_err_code ndr_push_svcctl_OpenServiceW(struct ndr_push *ndr, int 
 		if (r->out.handle == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.handle));
+		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->out.handle));
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
@@ -2192,7 +2192,7 @@ static enum ndr_err_code ndr_pull_svcctl_OpenServiceW(struct ndr_pull *ndr, int 
 		}
 		_mem_save_scmanager_handle_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.scmanager_handle, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.scmanager_handle));
+		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.scmanager_handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_scmanager_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.ServiceName));
 		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.ServiceName));
@@ -2211,7 +2211,7 @@ static enum ndr_err_code ndr_pull_svcctl_OpenServiceW(struct ndr_pull *ndr, int 
 		}
 		_mem_save_handle_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.handle, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.handle));
+		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->out.handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
@@ -2255,7 +2255,7 @@ static enum ndr_err_code ndr_push_svcctl_QueryServiceConfigW(struct ndr_push *nd
 		if (r->in.handle == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
+		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.buf_size));
 	}
 	if (flags & NDR_OUT) {
@@ -2281,7 +2281,7 @@ static enum ndr_err_code ndr_pull_svcctl_QueryServiceConfigW(struct ndr_pull *nd
 		}
 		_mem_save_handle_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.handle, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
+		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.buf_size));
 		NDR_PULL_ALLOC(ndr, r->out.bytes_needed);
@@ -2339,7 +2339,7 @@ static enum ndr_err_code ndr_push_svcctl_QueryServiceLockStatusW(struct ndr_push
 		if (r->in.handle == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
+		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.buf_size));
 	}
 	if (flags & NDR_OUT) {
@@ -2369,7 +2369,7 @@ static enum ndr_err_code ndr_pull_svcctl_QueryServiceLockStatusW(struct ndr_pull
 		}
 		_mem_save_handle_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.handle, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
+		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.buf_size));
 		NDR_PULL_ALLOC(ndr, r->out.lock_status);
@@ -2437,7 +2437,7 @@ static enum ndr_err_code ndr_push_svcctl_StartServiceW(struct ndr_push *ndr, int
 		if (r->in.handle == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
+		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.NumArgs));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.Arguments));
 		if (r->in.Arguments) {
@@ -2464,7 +2464,7 @@ static enum ndr_err_code ndr_pull_svcctl_StartServiceW(struct ndr_pull *ndr, int
 		}
 		_mem_save_handle_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.handle, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
+		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.NumArgs));
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_Arguments));
@@ -2530,7 +2530,7 @@ static enum ndr_err_code ndr_push_svcctl_GetServiceDisplayNameW(struct ndr_push 
 		if (r->in.handle == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
+		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.service_name));
 		if (r->in.service_name) {
 			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.service_name, CH_UTF16)));
@@ -2581,7 +2581,7 @@ static enum ndr_err_code ndr_pull_svcctl_GetServiceDisplayNameW(struct ndr_pull 
 		}
 		_mem_save_handle_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.handle, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
+		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_service_name));
 		if (_ptr_service_name) {
@@ -2716,7 +2716,7 @@ static enum ndr_err_code ndr_push_svcctl_GetServiceKeyNameW(struct ndr_push *ndr
 		if (r->in.handle == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
+		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.service_name));
 		if (r->in.service_name) {
 			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.service_name, CH_UTF16)));
@@ -2767,7 +2767,7 @@ static enum ndr_err_code ndr_pull_svcctl_GetServiceKeyNameW(struct ndr_pull *ndr
 		}
 		_mem_save_handle_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.handle, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
+		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_service_name));
 		if (_ptr_service_name) {
@@ -2902,7 +2902,7 @@ static enum ndr_err_code ndr_push_svcctl_SCSetServiceBitsA(struct ndr_push *ndr,
 		if (r->in.handle == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
+		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.bits));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.bitson));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.immediate));
@@ -2922,7 +2922,7 @@ static enum ndr_err_code ndr_pull_svcctl_SCSetServiceBitsA(struct ndr_pull *ndr,
 		}
 		_mem_save_handle_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.handle, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
+		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.bits));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.bitson));
@@ -2968,7 +2968,7 @@ static enum ndr_err_code ndr_push_svcctl_ChangeServiceConfigA(struct ndr_push *n
 		if (r->in.handle == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
+		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.type));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.start));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.error));
@@ -3049,7 +3049,7 @@ static enum ndr_err_code ndr_pull_svcctl_ChangeServiceConfigA(struct ndr_pull *n
 		}
 		_mem_save_handle_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.handle, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
+		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.type));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.start));
@@ -3252,7 +3252,7 @@ static enum ndr_err_code ndr_push_svcctl_CreateServiceA(struct ndr_push *ndr, in
 		if (r->in.handle == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
+		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.ServiceName));
 		if (r->in.ServiceName) {
 			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.ServiceName, CH_UTF16)));
@@ -3344,7 +3344,7 @@ static enum ndr_err_code ndr_pull_svcctl_CreateServiceA(struct ndr_pull *ndr, in
 		}
 		_mem_save_handle_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.handle, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
+		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_ServiceName));
 		if (_ptr_ServiceName) {
@@ -3578,7 +3578,7 @@ static enum ndr_err_code ndr_push_svcctl_EnumDependentServicesA(struct ndr_push 
 		if (r->in.service == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.service));
+		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.service));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.state));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.buf_size));
 	}
@@ -3615,7 +3615,7 @@ static enum ndr_err_code ndr_pull_svcctl_EnumDependentServicesA(struct ndr_pull 
 		}
 		_mem_save_service_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.service, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.service));
+		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.service));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_service_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.state));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.buf_size));
@@ -3703,7 +3703,7 @@ static enum ndr_err_code ndr_push_svcctl_EnumServicesStatusA(struct ndr_push *nd
 		if (r->in.handle == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
+		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.type));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.state));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.buf_size));
@@ -3747,7 +3747,7 @@ static enum ndr_err_code ndr_pull_svcctl_EnumServicesStatusA(struct ndr_pull *nd
 		}
 		_mem_save_handle_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.handle, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
+		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.type));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.state));
@@ -3879,7 +3879,7 @@ static enum ndr_err_code ndr_push_svcctl_OpenSCManagerA(struct ndr_push *ndr, in
 		if (r->out.handle == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.handle));
+		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->out.handle));
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
@@ -3941,7 +3941,7 @@ static enum ndr_err_code ndr_pull_svcctl_OpenSCManagerA(struct ndr_pull *ndr, in
 		}
 		_mem_save_handle_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.handle, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.handle));
+		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->out.handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
@@ -3992,7 +3992,7 @@ static enum ndr_err_code ndr_push_svcctl_OpenServiceA(struct ndr_push *ndr, int 
 		if (r->in.scmanager_handle == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.scmanager_handle));
+		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.scmanager_handle));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.ServiceName));
 		if (r->in.ServiceName) {
 			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.ServiceName, CH_UTF16)));
@@ -4019,7 +4019,7 @@ static enum ndr_err_code ndr_pull_svcctl_OpenServiceA(struct ndr_pull *ndr, int 
 		}
 		_mem_save_scmanager_handle_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.scmanager_handle, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.scmanager_handle));
+		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.scmanager_handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_scmanager_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_ServiceName));
 		if (_ptr_ServiceName) {
@@ -4085,7 +4085,7 @@ static enum ndr_err_code ndr_push_svcctl_QueryServiceConfigA(struct ndr_push *nd
 		if (r->in.handle == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
+		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.buf_size));
 	}
 	if (flags & NDR_OUT) {
@@ -4111,7 +4111,7 @@ static enum ndr_err_code ndr_pull_svcctl_QueryServiceConfigA(struct ndr_pull *nd
 		}
 		_mem_save_handle_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.handle, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
+		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.buf_size));
 		NDR_PULL_ALLOC(ndr, r->out.bytes_needed);
@@ -4169,7 +4169,7 @@ static enum ndr_err_code ndr_push_svcctl_QueryServiceLockStatusA(struct ndr_push
 		if (r->in.handle == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
+		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.buf_size));
 	}
 	if (flags & NDR_OUT) {
@@ -4199,7 +4199,7 @@ static enum ndr_err_code ndr_pull_svcctl_QueryServiceLockStatusA(struct ndr_pull
 		}
 		_mem_save_handle_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.handle, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
+		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.buf_size));
 		NDR_PULL_ALLOC(ndr, r->out.lock_status);
@@ -4267,7 +4267,7 @@ static enum ndr_err_code ndr_push_svcctl_StartServiceA(struct ndr_push *ndr, int
 		if (r->in.handle == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
+		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.NumArgs));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.Arguments));
 		if (r->in.Arguments) {
@@ -4294,7 +4294,7 @@ static enum ndr_err_code ndr_pull_svcctl_StartServiceA(struct ndr_pull *ndr, int
 		}
 		_mem_save_handle_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.handle, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
+		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.NumArgs));
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_Arguments));
@@ -4360,7 +4360,7 @@ static enum ndr_err_code ndr_push_svcctl_GetServiceDisplayNameA(struct ndr_push 
 		if (r->in.handle == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
+		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.service_name));
 		if (r->in.service_name) {
 			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.service_name, CH_UTF16)));
@@ -4411,7 +4411,7 @@ static enum ndr_err_code ndr_pull_svcctl_GetServiceDisplayNameA(struct ndr_pull 
 		}
 		_mem_save_handle_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.handle, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
+		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_service_name));
 		if (_ptr_service_name) {
@@ -4546,7 +4546,7 @@ static enum ndr_err_code ndr_push_svcctl_GetServiceKeyNameA(struct ndr_push *ndr
 		if (r->in.handle == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
+		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.service_name));
 		if (r->in.service_name) {
 			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.service_name, CH_UTF16)));
@@ -4597,7 +4597,7 @@ static enum ndr_err_code ndr_pull_svcctl_GetServiceKeyNameA(struct ndr_pull *ndr
 		}
 		_mem_save_handle_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.handle, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
+		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_service_name));
 		if (_ptr_service_name) {
@@ -4814,7 +4814,7 @@ static enum ndr_err_code ndr_push_svcctl_ChangeServiceConfig2A(struct ndr_push *
 		if (r->in.handle == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
+		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.info_level));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.info));
 		if (r->in.info) {
@@ -4838,7 +4838,7 @@ static enum ndr_err_code ndr_pull_svcctl_ChangeServiceConfig2A(struct ndr_pull *
 		}
 		_mem_save_handle_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.handle, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
+		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.info_level));
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_info));
@@ -4898,7 +4898,7 @@ static enum ndr_err_code ndr_push_svcctl_ChangeServiceConfig2W(struct ndr_push *
 		if (r->in.handle == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
+		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.info_level));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.info));
 		if (r->in.info) {
@@ -4922,7 +4922,7 @@ static enum ndr_err_code ndr_pull_svcctl_ChangeServiceConfig2W(struct ndr_pull *
 		}
 		_mem_save_handle_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.handle, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
+		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.info_level));
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_info));
@@ -4982,7 +4982,7 @@ static enum ndr_err_code ndr_push_svcctl_QueryServiceConfig2A(struct ndr_push *n
 		if (r->in.handle == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
+		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.info_level));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.buf_size));
 	}
@@ -5009,7 +5009,7 @@ static enum ndr_err_code ndr_pull_svcctl_QueryServiceConfig2A(struct ndr_pull *n
 		}
 		_mem_save_handle_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.handle, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
+		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.info_level));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.buf_size));
@@ -5069,7 +5069,7 @@ static enum ndr_err_code ndr_push_svcctl_QueryServiceConfig2W(struct ndr_push *n
 		if (r->in.handle == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
+		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.info_level));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.buf_size));
 	}
@@ -5096,7 +5096,7 @@ static enum ndr_err_code ndr_pull_svcctl_QueryServiceConfig2W(struct ndr_pull *n
 		}
 		_mem_save_handle_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.handle, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
+		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.info_level));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.buf_size));
@@ -5156,7 +5156,7 @@ static enum ndr_err_code ndr_push_svcctl_QueryServiceStatusEx(struct ndr_push *n
 		if (r->in.handle == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
+		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.info_level));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.buf_size));
 	}
@@ -5183,7 +5183,7 @@ static enum ndr_err_code ndr_pull_svcctl_QueryServiceStatusEx(struct ndr_pull *n
 		}
 		_mem_save_handle_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.handle, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
+		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.info_level));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.buf_size));
@@ -5243,7 +5243,7 @@ static enum ndr_err_code ndr_push_EnumServicesStatusExA(struct ndr_push *ndr, in
 		if (r->in.scmanager == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.scmanager));
+		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.scmanager));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.info_level));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.type));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.state));
@@ -5300,7 +5300,7 @@ static enum ndr_err_code ndr_pull_EnumServicesStatusExA(struct ndr_pull *ndr, in
 		}
 		_mem_save_scmanager_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.scmanager, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.scmanager));
+		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.scmanager));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_scmanager_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.info_level));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.type));
@@ -5448,7 +5448,7 @@ static enum ndr_err_code ndr_push_EnumServicesStatusExW(struct ndr_push *ndr, in
 		if (r->in.scmanager == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.scmanager));
+		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.scmanager));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.info_level));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.type));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.state));
@@ -5505,7 +5505,7 @@ static enum ndr_err_code ndr_pull_EnumServicesStatusExW(struct ndr_pull *ndr, in
 		}
 		_mem_save_scmanager_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.scmanager, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.scmanager));
+		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.scmanager));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_scmanager_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.info_level));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.type));
