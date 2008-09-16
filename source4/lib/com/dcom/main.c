@@ -576,7 +576,7 @@ enum ndr_err_code dcom_IUnknown_from_OBJREF(struct com_context *ctx, struct IUnk
 		/* FIXME: Do the custom unmarshaling call */
 	
 		*_p = p;
-		return NT_STATUS_NOT_SUPPORTED;
+		return NDR_ERR_BAD_SWITCH;
 		
 	case OBJREF_CUSTOM:
 		p = talloc_zero(ctx, struct IUnknown);

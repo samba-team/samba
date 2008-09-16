@@ -37,7 +37,7 @@ sub FunctionAddObjArgs($)
 
 sub ReplaceInterfacePointers($)
 {
-	my $e = shift;
+	my ($e) = @_;
 	foreach my $x (@{$e->{ELEMENTS}}) {
 		next unless (hasType($x->{TYPE}));
 		next unless getType($x->{TYPE})->{DATA}->{TYPE} eq "INTERFACE";

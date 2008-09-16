@@ -72,4 +72,14 @@ struct composite_context *dcom_release_send(struct IUnknown *d, TALLOC_CTX *mem_
 marshal_fn dcom_marshal_by_clsid(struct GUID *clsid);
 unmarshal_fn dcom_unmarshal_by_clsid(struct GUID *clsid);
 
+struct dcom_proxy_async_call_state {
+	struct IUnknown *d;
+	const struct ndr_interface_table *table;
+	uint32_t opnum;
+	void (*continuation)(struct rpc_request *);
+	TALLOC_CTX *mem_ctx;
+	void *r;
+};
+
+
 #endif /* _DCOM_H */

@@ -649,11 +649,10 @@ coclass WbemClassObject
 		[in,ref] GUID *gEWCO,
 		[in] uint32 lTimeOut,
 		[in] uint32 uCount,
-		//	  [in] uint32 unknown,
-		//	  [in,ref] GUID *gWCO,
+		[in] uint32 unknown,
+		[in,ref] GUID *gWCO,
 		[out,ref] uint32 *puReturned,
 		[out,ref] uint32 *pSize,
-		//	  [out,ref] WBEMDATA0 **pData
 		[out,ref,noprint,size_is(,*pSize)] uint8 **pData
 		);
 }
