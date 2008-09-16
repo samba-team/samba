@@ -24,7 +24,7 @@
 #include "cluster/cluster.h"
 #include "system/filesys.h"
 #include "cluster/cluster_private.h"
-#include "lib/tdb/include/tdb.h"
+#include "../tdb/include/tdb.h"
 #include "include/ctdb.h"
 #include "tdb_wrap.h"
 #include "lib/util/dlinklist.h"

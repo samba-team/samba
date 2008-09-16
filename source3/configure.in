@@ -33,7 +33,7 @@ AC_SUBST(LIBTALLOC_OBJ0)
 
 # TODO: These should come from m4_include(lib/tdb/libtdb.m4)
 # but currently this fails: things have to get merged from s4.
-tdbdir="lib/tdb"
+tdbdir="../tdb"
 AC_SUBST(tdbdir)
 TDB_CFLAGS="-I${srcdir-.}/$tdbdir/include"
 AC_SUBST(TDB_CFLAGS)
@@ -43,7 +43,7 @@ for o in common/tdb.o common/dump.o common/transaction.o common/error.o \
 	     common/traverse.o common/freelist.o common/freelistcheck.o \
 		 common/io.o common/lock.o common/open.o; 
 do 
-	LIBTDB_OBJ0="$LIBTDB_OBJ0 lib/tdb/$o"
+	LIBTDB_OBJ0="$LIBTDB_OBJ0 $tdbdir/$o"
 done
 
 AC_SUBST(LIBTDB_OBJ0)

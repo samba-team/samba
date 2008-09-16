@@ -20,7 +20,7 @@
 */
 
 #include "includes.h"
-#include "lib/tdb/include/tdb.h"
+#include "../tdb/include/tdb.h"
 #include "pstring.h"
 #include "lib/util/util_tdb.h"
 
