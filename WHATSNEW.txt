@@ -36,6 +36,8 @@ o   Jeremy Allison <jra@samba.org>
     * BUG 5729: Explicitly allow "-valid".
     * BUG 5745: Fix Kerberos authentication with (lib)smbclient.
     * BUG 5751: Fix showing of ACLs on DFS in (lib)smbclient.
+    * BUG 5761: Fix opening of mangled directory name (resulted
+      'is a stream name').
     * Fix the wcache_invalidate_samlogon calls.
     * Add st_birthtime and friends for accurate create times on *BSD and MacOSX.
     * Clarify usage of "force create mode".
@@ -47,6 +49,7 @@ o   Gerald (Jerry) Carter <jerry@samba.org>
 
 
 o   Steven Danneman <steven.danneman@isilon.com>
+    * Fix build warnings.
     * Cleanup of DC enumeration in get_dcs().
 
 
@@ -88,6 +91,12 @@ o   David Leonard <David.Leonard@quest.com>
 
 o   Simo Sorce <idra@samba.org>
     * BUG 5571: Fix group memeberships in Winbind.
+
+
+o   Timur <timur@FreeBSD.org>
+    * Fix cut and paste error in quota code.
+    * Fix display of POSIX ACLs.
+    * Fix aio on FreeBSD.
 
 
 o   Andrew Tridgell <tridge@samba.org>
