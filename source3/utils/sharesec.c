@@ -401,7 +401,7 @@ static void sort_acl(SEC_ACL *the_acl)
 
 static int change_share_sec(TALLOC_CTX *mem_ctx, const char *sharename, char *the_acl, enum acl_mode mode)
 {
-	SEC_DESC *sd;
+	SEC_DESC *sd = NULL;
 	SEC_DESC *old = NULL;
 	size_t sd_size = 0;
 	uint32 i, j;
