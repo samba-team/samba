@@ -31,7 +31,7 @@ AC_CONFIG_FILES(../source4/librpc/dcerpc_atsvc.pc)
 SMB_EXT_LIB_FROM_PKGCONFIG(LIBTALLOC, talloc >= 1.2.0,
 	[],
 	[
-		SMB_INCLUDE_MK(lib/talloc/config.mk)
+		SMB_INCLUDE_MK(../talloc/config.mk)
 	]
 )
 
