@@ -886,4 +886,4 @@ int main(void)
 	])
 ])
 
-m4_include(lib/replace/libreplace.m4)
+m4_include(../replace/libreplace.m4)

@@ -34,7 +34,7 @@
 #ifdef _SAMBA_BUILD_
 
 #define NSS_WRAPPER_NOT_REPLACE
-#include "lib/replace/replace.h"
+#include "../replace/replace.h"
 #include "system/passwd.h"
 #include "system/filesys.h"
 

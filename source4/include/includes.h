@@ -20,7 +20,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "lib/replace/replace.h"
+#include "../replace/replace.h"
 
 /* make sure we have included the correct config.h */
 #ifndef NO_CONFIG_H /* for some tests */

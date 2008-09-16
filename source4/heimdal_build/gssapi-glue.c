@@ -19,7 +19,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "lib/replace/replace.h"
+#include "../replace/replace.h"
 
 void *__gss_ntlm_initialize(void)
 {

@@ -48,7 +48,7 @@ done
 
 AC_SUBST(LIBTDB_OBJ0)
 SAMBA_CPPFLAGS="-Iinclude -I${srcdir-.}/include  -I. -I${srcdir-.}"
-SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} -I${srcdir-.}/lib/replace"
+SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} -I${srcdir-.}/../replace"
 SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} ${TALLOC_CFLAGS}"
 SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} ${TDB_CFLAGS}"
 SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} -I${srcdir-.}/libaddns"
