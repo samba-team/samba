@@ -878,6 +878,21 @@ if test x"$samba_cv_sig_atomic_t" = x"yes"; then
    AC_DEFINE(HAVE_SIG_ATOMIC_T_TYPE,1,[Whether we have the atomic_t variable type])
 fi
 
+AC_CACHE_CHECK([for struct sigevent type],samba_cv_struct_sigevent, [
+    AC_TRY_COMPILE([
+#include <sys/types.h>
+#if STDC_HEADERS
+#include <stdlib.h>
+#include <stddef.h>
+#endif
+#include <signal.h>],[struct sigevent s;],
+	samba_cv_struct_sigevent=yes,samba_cv_struct_sigevent=no)])
+if test x"$samba_cv_struct_sigevent" = x"yes"; then
+   AC_DEFINE(HAVE_STRUCT_SIGEVENT,1,[Whether we have the struct sigevent])
+   AC_CHECK_MEMBERS([struct sigevent.sigev_value.sival_ptr,struct sigevent.sigev_value.sigval_ptr], , ,
+	[#include <signal.h>])
+fi
+
 AC_CACHE_CHECK([for struct timespec type],samba_cv_struct_timespec, [
     AC_TRY_COMPILE([
 #include <sys/types.h>
