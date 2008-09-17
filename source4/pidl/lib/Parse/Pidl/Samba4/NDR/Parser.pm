@@ -2228,7 +2228,7 @@ sub AuthServiceStruct($$$)
 sub FunctionCallEntry($$)
 {
 	my ($self, $d) = @_;
-	next if not defined($d->{OPNUM});
+	return if not defined($d->{OPNUM});
 	$self->pidl("\t{");
 	$self->pidl("\t\t\"$d->{NAME}\",");
 	$self->pidl("\t\tsizeof(struct $d->{NAME}),");
