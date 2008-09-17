@@ -3,6 +3,7 @@
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_initshutdown.h"
 
+#include "librpc/gen_ndr/ndr_lsa.h"
 static enum ndr_err_code ndr_push_initshutdown_String_sub(struct ndr_push *ndr, int ndr_flags, const struct initshutdown_String_sub *r)
 {
 	if (ndr_flags & NDR_SCALARS) {

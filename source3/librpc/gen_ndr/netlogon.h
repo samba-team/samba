@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 
+#include "librpc/gen_ndr/misc.h"
 #include "librpc/gen_ndr/lsa.h"
 #include "librpc/gen_ndr/samr.h"
 #include "librpc/gen_ndr/security.h"

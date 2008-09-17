@@ -167,7 +167,7 @@ interface nbt
 	} nbt_rdata;
 
 /*
- * this macro works arround the problem
+ * this macro works around the problem
  * that we need to use nbt_rdata_data
  * together with NBT_QTYPE_NETBIOS
  * for WACK replies

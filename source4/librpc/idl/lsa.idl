@@ -95,8 +95,11 @@ import "misc.idl", "security.idl";
 
 	/******************/
 	/* Function: 0x04 */
-	[todo] NTSTATUS lsa_SetSecObj ();
-
+	NTSTATUS lsa_SetSecObj(
+		[in]		policy_handle *handle,
+		[in]		security_secinfo sec_info,
+		[in,ref]	sec_desc_buf *sdbuf
+		);
 
 	/******************/
 	/* Function: 0x05 */
@@ -484,9 +487,16 @@ import "misc.idl", "security.idl";
 	[todo] NTSTATUS lsa_SetQuotasForAccount();
 	
 	/* Function:    0x17 */
-	[todo] NTSTATUS lsa_GetSystemAccessAccount();
+	NTSTATUS lsa_GetSystemAccessAccount(
+		[in]	policy_handle *handle,
+		[out,ref] uint32 *access_mask
+		);
+
 	/* Function:    0x18 */
-	[todo] NTSTATUS lsa_SetSystemAccessAccount();
+	NTSTATUS lsa_SetSystemAccessAccount(
+		[in]	policy_handle *handle,
+		[in]	uint32 access_mask
+		);
 
 	/* Function:        0x19 */
 	NTSTATUS lsa_OpenTrustedDomain(

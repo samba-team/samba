@@ -297,7 +297,7 @@ import "lsa.idl", "initshutdown.idl", "security.idl";
 
 	/******************/
 	/* Function: 0x17 */
-	WERROR winreg_UnLoadKey(
+	[todo] WERROR winreg_UnLoadKey(
 	);
 
 	/******************/
@@ -369,7 +369,7 @@ import "lsa.idl", "initshutdown.idl", "security.idl";
 
 	/******************/
 	/* Function: 0x1f */
-	WERROR winreg_SaveKeyEx(
+	[todo] WERROR winreg_SaveKeyEx(
 	);
 
 	/******************/
@@ -390,6 +390,6 @@ import "lsa.idl", "initshutdown.idl", "security.idl";
 
 	/******************/
 	/* Function: 0x22 */
-	WERROR winreg_QueryMultipleValues2(
+	[todo] WERROR winreg_QueryMultipleValues2(
 	);
 }

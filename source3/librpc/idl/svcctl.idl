@@ -438,12 +438,12 @@ import "misc.idl";
 
 	/*****************/
 	/* Function 0x22 */
-	WERROR svcctl_GetCurrentGroupeStateW(
+	[todo] WERROR svcctl_GetCurrentGroupeStateW(
 	);
 
 	/*****************/
 	/* Function 0x23 */
-	WERROR svcctl_EnumServiceGroupW(
+	[todo] WERROR svcctl_EnumServiceGroupW(
 	);
 
 	/*****************/

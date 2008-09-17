@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 
+#include "librpc/gen_ndr/misc.h"
 #include "librpc/gen_ndr/security.h"
 #ifndef _HEADER_lsarpc
 #define _HEADER_lsarpc

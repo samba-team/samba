@@ -815,7 +815,7 @@ interface drsuapi
 
 	/*****************/
         /* Function 0x0a */
-	WERROR DRSUAPI_INTER_DOMAIN_MOVE();
+	[todo] WERROR DRSUAPI_INTER_DOMAIN_MOVE();
 
 	/*****************/
         /* Function 0x0b */
@@ -998,7 +998,7 @@ interface drsuapi
 
 	/*****************/
         /* Function 0x0f */
-	WERROR DRSUAPI_REMOVE_DS_DOMAIN();
+	[todo] WERROR DRSUAPI_REMOVE_DS_DOMAIN();
 
 	/*****************/
         /* Function 0x10 */
@@ -1242,7 +1242,7 @@ interface drsuapi
 
 	/*****************/
         /* Function 0x12 */
-	WERROR DRSUAPI_EXECUTE_KCC();
+	[todo] WERROR DRSUAPI_EXECUTE_KCC();
 
 	/*****************/
 	/* Function 0x13 */
@@ -1523,7 +1523,7 @@ interface drsuapi
 
 	/*****************/
         /* Function 0x14 */
-	WERROR DRSUAPI_ADD_SID_HISTORY();
+	[todo] WERROR DRSUAPI_ADD_SID_HISTORY();
 
 	/*****************/
         /* Function 0x15 */
@@ -1557,11 +1557,11 @@ interface drsuapi
 
 	/*****************/
         /* Function 0x16 */
-	WERROR DRSUAPI_REPLICA_VERIFY_OBJECTS();
+	[todo] WERROR DRSUAPI_REPLICA_VERIFY_OBJECTS();
 
 	/*****************/
         /* Function 0x17 */
-	WERROR DRSUAPI_GET_OBJECT_EXISTENCE();
+	[todo] WERROR DRSUAPI_GET_OBJECT_EXISTENCE();
 
 	/*****************/
         /* Function 0x18 */
