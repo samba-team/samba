@@ -255,7 +255,7 @@ fi
 if test x"${PIDL_TESTS_SKIP}" = x"yes"; then
    echo "Skipping pidl tests - PIDL_TESTS_SKIP=yes"
 elif $PERL -e 'eval require Test::More;' > /dev/null 2>&1; then
-  for f in $samba4srcdir/pidl/tests/*.pl; do
+  for f in $samba4srcdir/../pidl/tests/*.pl; do
      plantest "pidl.`basename $f .pl`" none $PERL $f "|" $samba4srcdir/script/harness2subunit.pl
   done
 else 

@@ -8,7 +8,7 @@ default: all
 
 include mkconfig.mk
 
-pidldir := $(srcdir)/pidl
+pidldir := $(srcdir)/../pidl
 
 BASEDIR = $(prefix)
 TORTUREDIR = $(libdir)/torture
