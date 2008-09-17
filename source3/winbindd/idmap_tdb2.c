@@ -94,12 +94,11 @@ static NTSTATUS idmap_tdb2_open_db(void)
 */
 static NTSTATUS idmap_tdb2_alloc_load(void)
 {
-	const char *range;
 	uid_t low_uid = 0;
 	uid_t high_uid = 0;
 	gid_t low_gid = 0;
 	gid_t high_gid = 0;
-	uint32 low_id, high_id;
+	uint32 low_id;
 
 	/* see if a idmap script is configured */
 	idmap_tdb2_state.idmap_script = lp_parm_const_string(-1, "idmap",
