@@ -978,7 +978,7 @@ static void ctdb_recd_ping_timeout(struct event_context *ev, struct timed_event 
 
 	DEBUG(DEBUG_ERR, (__location__ " Recovery daemon ping timeout. Count : %u\n", *count));
 
-	if (*count < ctdb->tunable.recd_ping_timeout) {
+	if (*count < ctdb->tunable.recd_ping_failcount) {
 		(*count)++;
 		event_add_timed(ctdb->ev, ctdb->recd_ping_count, 
 			timeval_current_ofs(ctdb->tunable.recd_ping_timeout, 0),
