@@ -57,7 +57,7 @@ endif
 
 INTERN_LDFLAGS = -L${builddir}/bin/static -L${builddir}/bin/shared
 
-pidldir = $(samba4srcdir)/pidl
+pidldir = $(samba4srcdir)/../pidl
 include $(pidldir)/config.mk
 include samba4-config.mk
 include samba4-templates.mk

@@ -949,10 +949,10 @@ SHARESEC_OBJ  = $(SHARESEC_OBJ0) $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
 TALLOCTORT_OBJ = @tallocdir@/testsuite.o $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
                  $(LIBSAMBA_OBJ)
 
-REPLACETORT_OBJ = lib/replace/test/testsuite.o \
-		lib/replace/test/getifaddrs.o \
-		lib/replace/test/os2_delete.o \
-		lib/replace/test/strptime.o \
+REPLACETORT_OBJ = ../lib/replace/test/testsuite.o \
+		../lib/replace/test/getifaddrs.o \
+		../lib/replace/test/os2_delete.o \
+		../lib/replace/test/strptime.o \
 		$(LIBREPLACE_OBJ)
 
 NDRDUMP_OBJ = librpc/tools/ndrdump.o \
