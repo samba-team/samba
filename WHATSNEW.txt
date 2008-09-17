@@ -3,13 +3,16 @@
 			September 18, 2008
                    ==============================
 
+
 This is a bug fix release of the Samba 3.2 series.
 
 Major bug fixes included in Samba 3.2.4 are:
 
+  o Fix Winbind crashes.
   o Fix changing of machine account passwords.
   o Fix non guest connections to shares when "security = share"
     is used.
+  o Fix file write times.
 
 
 ######################################################################
@@ -46,6 +49,8 @@ o   Jeremy Allison <jra@samba.org>
 
 o   Gerald (Jerry) Carter <jerry@samba.org>
     * Fix Winbind crash.
+    * idmap_ad: Fix a segfault when calling nss_get_info() with a NULL ads
+      structure.
 
 
 o   Steven Danneman <steven.danneman@isilon.com>
