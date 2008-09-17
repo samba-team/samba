@@ -281,6 +281,47 @@ static struct nss_domain_entry *find_nss_domain( const char *domain )
 /********************************************************************
  *******************************************************************/
 
+ NTSTATUS nss_map_to_alias( TALLOC_CTX *mem_ctx, const char *domain,
+			    const char *name, char **alias )
+{
+	struct nss_domain_entry *p;
+	struct nss_info_methods *m;
+
+	if ( (p = find_nss_domain( domain )) == NULL ) {
+		DEBUG(4,("nss_map_to_alias: Failed to find nss domain pointer for %s\n",
+			 domain ));
+		return NT_STATUS_NOT_FOUND;
+	}
+
+	m = p->backend->methods;
+
+	return m->map_to_alias( mem_ctx, domain, name, alias );
+}
+
+
+/********************************************************************
+ *******************************************************************/
+
+ NTSTATUS nss_map_from_alias( TALLOC_CTX *mem_ctx, const char *domain,
+			      const char *alias, char **name )
+{
+	struct nss_domain_entry *p;
+	struct nss_info_methods *m;
+
+	if ( (p = find_nss_domain( domain )) == NULL ) {
+		DEBUG(4,("nss_map_from_alias: Failed to find nss domain pointer for %s\n",
+			 domain ));
+		return NT_STATUS_NOT_FOUND;
+	}
+
+	m = p->backend->methods;
+
+	return m->map_from_alias( mem_ctx, domain, alias, name );
+}
+
+/********************************************************************
+ *******************************************************************/
+
  NTSTATUS nss_close( const char *parameters )
 {
 	struct nss_domain_entry *p = nss_domain_list;

@@ -179,12 +179,32 @@ static bool fill_passdb_alias_grmem(struct winbindd_domain *domain,
 
 /* Fill a grent structure from various other information */
 
-static bool fill_grent(struct winbindd_gr *gr, const char *dom_name,
-		       const char *gr_name, gid_t unix_gid)
+static bool fill_grent(TALLOC_CTX *mem_ctx, struct winbindd_gr *gr,
+		       const char *dom_name,
+		       char *gr_name, gid_t unix_gid)
 {
 	fstring full_group_name;
+	char *mapped_name = NULL;
+	struct winbindd_domain *domain = find_domain_from_name_noinit(dom_name);
+	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 
-	fill_domain_username( full_group_name, dom_name, gr_name, True );
+	nt_status = normalize_name_map(mem_ctx, domain, gr_name,
+				       &mapped_name);
+
+	/* Basic whitespace replacement */
+	if (NT_STATUS_IS_OK(nt_status)) {
+		fill_domain_username(full_group_name, dom_name,
+				     mapped_name, true);
+	}
+	/* Mapped to an aliase */
+	else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_FILE_RENAMED)) {
+		fstrcpy(full_group_name, mapped_name);
+	}
+	/* no change */
+	else {
+		fill_domain_username( full_group_name, dom_name,
+				      gr_name, True );
+	}
 
 	gr->gr_gid = unix_gid;
 
@@ -280,7 +300,10 @@ static bool fill_grent_mem_domusers( TALLOC_CTX *mem_ctx,
 		char *domainname = NULL;
 		char *username = NULL;
 		fstring name;
+		char *mapped_name = NULL;
 		enum lsa_SidType type;
+		struct winbindd_domain *target_domain = NULL;
+		NTSTATUS name_map_status = NT_STATUS_UNSUCCESSFUL;
 
 		DEBUG(10,("fill_grent_mem_domain_users: "
 			  "sid %s in 'Domain Users' in domain %s\n",
@@ -300,7 +323,24 @@ static bool fill_grent_mem_domusers( TALLOC_CTX *mem_ctx,
 				  nt_errstr(status)));
 			return False;
 		}
-		fill_domain_username(name, domain->name, username, True);
+
+		target_domain = find_domain_from_name_noinit(domainname);
+		name_map_status = normalize_name_map(mem_ctx, target_domain,
+						     username, &mapped_name);
+
+		/* Basic whitespace replacement */
+		if (NT_STATUS_IS_OK(name_map_status)) {
+			fill_domain_username(name, domainname, mapped_name, true);
+		}
+		/* Mapped to an alias */
+		else if (NT_STATUS_EQUAL(name_map_status, NT_STATUS_FILE_RENAMED)) {
+			fstrcpy(name, mapped_name);
+		}
+		/* no mapping done...use original name */
+		else {
+			fill_domain_username(name, domainname, username, true);
+		}
+
 		len = strlen(name);
 		buf_len = len + 1;
 		if (!(buf = (char *)SMB_MALLOC(buf_len))) {
@@ -552,6 +592,7 @@ static bool fill_grent_mem(struct winbindd_domain *domain,
 		uint32 n_members = 0;
 		char **members = NULL;
 		NTSTATUS nt_status;
+		int j;
 
 		nt_status = expand_groups( mem_ctx, domain,
 					   glist, n_glist,
@@ -562,13 +603,45 @@ static bool fill_grent_mem(struct winbindd_domain *domain,
 			goto done;
 		}
 
-		/* Add new group members to list */
+		/* Add new group members to list.  Pass through the
+		   alias mapping function */
 
-		nt_status = add_names_to_list( mem_ctx, &names, &num_names,
-					       members, n_members );
-		if ( !NT_STATUS_IS_OK(nt_status) ) {
-			result = False;
-			goto done;
+		for (j=0; j<n_members; j++) {
+			fstring name_domain, name_acct;
+			fstring qualified_name;
+			char *mapped_name = NULL;
+			NTSTATUS name_map_status = NT_STATUS_UNSUCCESSFUL;
+			struct winbindd_domain *target_domain = NULL;
+
+			if (parse_domain_user(members[j], name_domain, name_acct)) {
+				target_domain = find_domain_from_name_noinit(name_domain);
+				/* NOW WHAT ? */
+			}
+			if (!target_domain) {
+				target_domain = domain;
+			}
+
+			name_map_status = normalize_name_map(members, target_domain,
+							     name_acct, &mapped_name);
+
+			/* Basic whitespace replacement */
+			if (NT_STATUS_IS_OK(name_map_status)) {
+				fill_domain_username(qualified_name, name_domain,
+						     mapped_name, true);
+				mapped_name = qualified_name;
+			}
+			/* no mapping at all */
+			else if (!NT_STATUS_EQUAL(name_map_status, NT_STATUS_FILE_RENAMED)) {
+				mapped_name = members[j];
+			}
+
+			nt_status = add_names_to_list( mem_ctx, &names,
+						       &num_names,
+						       &mapped_name, 1);
+			if ( !NT_STATUS_IS_OK(nt_status) ) {
+				result = False;
+				goto done;
+			}
 		}
 
 		TALLOC_FREE( members );
@@ -679,6 +752,7 @@ void winbindd_getgrnam(struct winbindd_cli_state *state)
 	struct winbindd_domain *domain;
 	fstring name_domain, name_group;
 	char *tmp;
+	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 
 	/* Ensure null termination */
 	state->request.data.groupname[sizeof(state->request.data.groupname)-1]='\0';
@@ -686,11 +760,20 @@ void winbindd_getgrnam(struct winbindd_cli_state *state)
 	DEBUG(3, ("[%5lu]: getgrnam %s\n", (unsigned long)state->pid,
 		  state->request.data.groupname));
 
+	nt_status = normalize_name_unmap(state->mem_ctx,
+					 state->request.data.groupname,
+					 &tmp);
+	/* If we didn't map anything in the above call, just reset the
+	   tmp pointer to the original string */
+	if (!NT_STATUS_IS_OK(nt_status) &&
+	    !NT_STATUS_EQUAL(nt_status, NT_STATUS_FILE_RENAMED))
+	{
+		tmp = state->request.data.groupname;
+	}
+
 	/* Parse domain and groupname */
 
-	memset(name_group, 0, sizeof(fstring));
-
-	tmp = state->request.data.groupname;
+	memset(name_group, 0, sizeof(name_group));
 
 	name_domain[0] = '\0';
 	name_group[0] = '\0';
@@ -723,7 +806,7 @@ void winbindd_getgrnam(struct winbindd_cli_state *state)
 
 	/* Get rid and name type from name */
 
-	ws_name_replace( name_group, WB_REPLACE_CHAR );
+	fstrcpy( name_group, tmp );
 
 	winbindd_lookupname_async( state->mem_ctx, domain->name, name_group,
 				   getgrnam_recv, WINBINDD_GETGRNAM, state );
@@ -771,7 +854,8 @@ static void getgrsid_sid2gid_recv(void *private_data, bool success, gid_t gid)
 		return;
 	}
 
-	if (!fill_grent(&s->state->response.data.gr, dom_name, group_name, gid) ||
+	if (!fill_grent(s->state->mem_ctx, &s->state->response.data.gr,
+			dom_name, group_name, gid) ||
 	    !fill_grent_mem(domain, s->state, &s->group_sid, s->group_type,
 			    &num_gr_mem, &gr_mem, &gr_mem_len))
 	{
@@ -796,6 +880,9 @@ static void getgrsid_lookupsid_recv( void *private_data, bool success,
 				     enum lsa_SidType name_type )
 {
 	struct getgrsid_state *s = (struct getgrsid_state *)private_data;
+	char *mapped_name = NULL;
+	fstring raw_name;
+	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 
 	if (!success) {
 		DEBUG(5,("getgrsid_lookupsid_recv: lookupsid failed!\n"));
@@ -814,15 +901,39 @@ static void getgrsid_lookupsid_recv( void *private_data, bool success,
 			  dom_name, name, name_type));
 		request_error(s->state);
 		return;
-}
+	}
 
-	if ( (s->group_name = talloc_asprintf( s->state->mem_ctx,
-                                               "%s%c%s",
-                                               dom_name,
-					       *lp_winbind_separator(),
-                                               name)) == NULL )
-{
-		DEBUG(1, ("getgrsid_lookupsid_recv: talloc_asprintf() Failed!\n"));
+	/* normalize the name and ensure that we have the DOM\name
+	  coming out of here */
+
+	fstrcpy(raw_name, name);
+
+	nt_status = normalize_name_unmap(s->state->mem_ctx, raw_name,
+					 &mapped_name);
+
+	/* basiuc whitespace reversal */
+	if (NT_STATUS_IS_OK(nt_status)) {
+		s->group_name = talloc_asprintf(s->state->mem_ctx,
+						"%s%c%s",
+						dom_name,
+						*lp_winbind_separator(),
+						mapped_name);
+	}
+	/* mapped from alias */
+	else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_FILE_RENAMED)) {
+		s->group_name = mapped_name;
+	}
+	/* no mapping at all.  use original string */
+	else {
+		s->group_name = talloc_asprintf(s->state->mem_ctx,
+						"%s%c%s",
+						dom_name,
+						*lp_winbind_separator(),
+						raw_name);
+	}
+
+	if (s->group_name == NULL) {
+		DEBUG(1, ("getgrsid_lookupsid_recv: group_name is NULL!\n"));
 		request_error(s->state);
 		return;
 	}
@@ -831,10 +942,10 @@ static void getgrsid_lookupsid_recv( void *private_data, bool success,
 
 	winbindd_sid2gid_async(s->state->mem_ctx, &s->group_sid,
 			       getgrsid_sid2gid_recv, s);
-	}
+}
 
 static void winbindd_getgrsid( struct winbindd_cli_state *state, const DOM_SID group_sid )
-	{
+{
 	struct getgrsid_state *s;
 
 	if ( (s = TALLOC_ZERO_P(state->mem_ctx, struct getgrsid_state)) == NULL ) {
@@ -1261,7 +1372,7 @@ void winbindd_getgrent(struct winbindd_cli_state *state)
 		fill_domain_username(domain_group_name, ent->domain_name,
 			 name_list[ent->sam_entry_index].acct_name, True);
 
-		result = fill_grent(&group_list[group_list_ndx],
+		result = fill_grent(state->mem_ctx, &group_list[group_list_ndx],
 				    ent->domain_name,
 				    name_list[ent->sam_entry_index].acct_name,
 				    group_gid);
@@ -1413,6 +1524,8 @@ static void getgroups_sid2gid_recv(void *private_data, bool success, gid_t gid);
 void winbindd_getgroups(struct winbindd_cli_state *state)
 {
 	struct getgroups_state *s;
+	char *real_name = NULL;
+	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 
 	/* Ensure null termination */
 	state->request.data.username
@@ -1432,13 +1545,22 @@ void winbindd_getgroups(struct winbindd_cli_state *state)
 
 	s->state = state;
 
-	ws_name_return( state->request.data.username, WB_REPLACE_CHAR );
+	nt_status = normalize_name_unmap(state->mem_ctx,
+					 state->request.data.username,
+					 &real_name);
 
-	if (!parse_domain_user_talloc(state->mem_ctx,
-				      state->request.data.username,
+	/* Reset the real_name pointer if we didn't do anything
+	   productive in the above call */
+	if (!NT_STATUS_IS_OK(nt_status) &&
+	    !NT_STATUS_EQUAL(nt_status, NT_STATUS_FILE_RENAMED))
+	{
+		real_name = state->request.data.username;
+	}
+
+	if (!parse_domain_user_talloc(state->mem_ctx, real_name,
 				      &s->domname, &s->username)) {
 		DEBUG(5, ("Could not parse domain user: %s\n",
-			  state->request.data.username));
+			  real_name));
 
 		/* error out if we do not have nested group support */
 

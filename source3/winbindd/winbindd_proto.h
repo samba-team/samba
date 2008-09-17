@@ -583,8 +583,22 @@ NTSTATUS lookup_usergroups_cached(struct winbindd_domain *domain,
 				  TALLOC_CTX *mem_ctx,
 				  const DOM_SID *user_sid,
 				  uint32 *p_num_groups, DOM_SID **user_sids);
-void ws_name_replace( char *name, char replace );
-void ws_name_return( char *name, char replace );
+
+NTSTATUS normalize_name_map(TALLOC_CTX *mem_ctx,
+			    struct winbindd_domain *domain,
+			    char *name,
+			    char **normalized);
+NTSTATUS normalize_name_unmap(TALLOC_CTX *mem_ctx,
+			      char *name,
+			      char **normalized);
+
+NTSTATUS resolve_username_to_alias(TALLOC_CTX *mem_ctx,
+				   struct winbindd_domain *domain,
+				   const char *name, char **alias);
+NTSTATUS resolve_alias_to_username(TALLOC_CTX *mem_ctx,
+				   struct winbindd_domain *domain,
+				   const char *alias, char **name);
+
 bool winbindd_can_contact_domain(struct winbindd_domain *domain);
 bool winbindd_internal_child(struct winbindd_child *child);
 void winbindd_set_locator_kdc_envs(const struct winbindd_domain *domain);
