@@ -180,9 +180,6 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 			input = *req->creds.SASL.secblob;
 		}
 
-		resp->SASL.secblob = talloc(reply, DATA_BLOB);
-		NT_STATUS_HAVE_NO_MEMORY(resp->SASL.secblob);
-
 		status = gensec_update(conn->gensec, reply,
 				       input, &output);
 
