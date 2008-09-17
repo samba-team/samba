@@ -3,9 +3,9 @@ DEFS = -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
 
 CFLAGS = -I$(SAMBA_INCL) $(EXTLIB_INCL)
 
-LDFLAGS = -L/usr/local/samba/lib -L../../../source/bin
+LDFLAGS = -L/usr/local/samba/lib -L../../../source3/bin
 
-SMBINCLUDE = -I../../../source/include
+SMBINCLUDE = -I../../../source3/include
 CFLAGS= -fpic -g -O0 $(DEFS) $(SMBINCLUDE)
 
 BIN	= .

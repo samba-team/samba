@@ -6,7 +6,7 @@
 
 CC = @CC@
 
-SAMBA_DIR = ../../source
+SAMBA_DIR = ../../source3
 SAMBA_INCLUDES = -I$(SAMBA_DIR)/include
 SAMBA_LIBPATH = -L$(SAMBA_DIR)/bin
 
