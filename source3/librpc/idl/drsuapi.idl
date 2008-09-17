@@ -739,7 +739,7 @@ interface drsuapi
 		/* TODO ... */
 	} drsuapi_DsReplicaAddOptions;
 
-	WERROR DRSUAPI_REPLICA_ADD();
+	[todo] WERROR DRSUAPI_REPLICA_ADD();
 
 	/*****************/
         /* Function 0x06 */
@@ -749,7 +749,7 @@ interface drsuapi
 		/* TODO ... */
 	} drsuapi_DsReplicaDeleteOptions;
 
-	WERROR DRSUAPI_REPLICA_DEL();
+	[todo] WERROR DRSUAPI_REPLICA_DEL();
 
 	/*****************/
         /* Function 0x07 */
@@ -758,11 +758,11 @@ interface drsuapi
 		DRSUAPI_DS_REPLICA_MODIFY_WRITEABLE			= 0x00000002
 	} drsuapi_DsReplicaModifyOptions;
 
-	WERROR DRSUAPI_REPLICA_MODIFY();
+	[todo] WERROR DRSUAPI_REPLICA_MODIFY();
 
 	/*****************/
         /* Function 0x08 */
-	WERROR DRSUAPI_VERIFY_NAMES();
+	[todo] WERROR DRSUAPI_VERIFY_NAMES();
 
 	/*****************/
         /* Function 0x09 */

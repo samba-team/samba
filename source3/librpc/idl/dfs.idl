@@ -2,6 +2,8 @@
   dfs interface definition
 */
 
+import "misc.idl";
+
 [ uuid("4fc742e0-4a10-11cf-8273-00aa004ae673"),
   version(3.0),
   pointer_default(unique),
@@ -307,16 +309,16 @@
 		);
 
 	/* Function 0x06 */
-	WERROR dfs_Rename();
+	[todo] WERROR dfs_Rename();
 
 	/* Function 0x07 */
-	WERROR dfs_Move();
+	[todo] WERROR dfs_Move();
 
 	/* Function 0x08 */
-	WERROR dfs_ManagerGetConfigInfo();
+	[todo] WERROR dfs_ManagerGetConfigInfo();
 
 	/* Function 0x09 */
-	WERROR dfs_ManagerSendSiteInfo();
+	[todo] WERROR dfs_ManagerSendSiteInfo();
 
 	/* Function 0x0a */
 	typedef struct {
@@ -398,10 +400,10 @@
 		);
 
 	/* Function 0x13 */
-	WERROR dfs_Add2();
+	[todo] WERROR dfs_Add2();
 
 	/* Function 0x14 */
-	WERROR dfs_Remove2();
+	[todo] WERROR dfs_Remove2();
 
 	/* Function 0x15 */
 	[public] WERROR dfs_EnumEx(
@@ -413,5 +415,5 @@
 	);
 
 	/* Function 0x16 */
-	WERROR dfs_SetInfo2();
+	[todo] WERROR dfs_SetInfo2();
 }

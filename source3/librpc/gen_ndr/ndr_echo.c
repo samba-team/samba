@@ -3,7 +3,7 @@
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_echo.h"
 
-static enum ndr_err_code ndr_push_echo_info1(struct ndr_push *ndr, int ndr_flags, const struct echo_info1 *r)
+_PUBLIC_ enum ndr_err_code ndr_push_echo_info1(struct ndr_push *ndr, int ndr_flags, const struct echo_info1 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 1));
@@ -14,7 +14,7 @@ static enum ndr_err_code ndr_push_echo_info1(struct ndr_push *ndr, int ndr_flags
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_echo_info1(struct ndr_pull *ndr, int ndr_flags, struct echo_info1 *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_echo_info1(struct ndr_pull *ndr, int ndr_flags, struct echo_info1 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 1));

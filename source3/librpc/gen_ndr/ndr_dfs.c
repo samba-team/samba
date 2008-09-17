@@ -3,6 +3,7 @@
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_dfs.h"
 
+#include "librpc/gen_ndr/ndr_misc.h"
 static enum ndr_err_code ndr_push_dfs_ManagerVersion(struct ndr_push *ndr, int ndr_flags, enum dfs_ManagerVersion r)
 {
 	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));

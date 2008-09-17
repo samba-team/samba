@@ -4,6 +4,7 @@
   svcctl interface definitions
 */
 
+import "misc.idl";
 [ uuid("367abb81-9844-35f1-ad32-98f038001003"),
   version(2.0),
   pointer_default(unique),
@@ -140,7 +141,7 @@
 
 	/*****************/
 	/* Function 0x07 */
-	WERROR svcctl_SetServiceStatus(
+	[todo] WERROR svcctl_SetServiceStatus(
 	);
 
 	/*****************/
@@ -151,7 +152,7 @@
 
 	/*****************/
 	/* Function 0x09 */
-	WERROR svcctl_NotifyBootConfigStatus(
+	[todo] WERROR svcctl_NotifyBootConfigStatus(
 	);
 
 	/*****************/
@@ -523,6 +524,6 @@
 
 	/*****************/
 	/* Function 0x2b */
-	WERROR svcctl_SCSendTSMessage(
+	[todo] WERROR svcctl_SCSendTSMessage(
 	);
 }

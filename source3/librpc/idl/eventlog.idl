@@ -74,7 +74,7 @@ import "lsa.idl", "security.idl";
 
 	/******************/
 	/* Function: 0x03 */
-	NTSTATUS eventlog_DeregisterEventSource();
+	[todo] NTSTATUS eventlog_DeregisterEventSource();
 
 	/******************/
 	/* Function: 0x04 */

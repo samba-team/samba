@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 
+#include "librpc/gen_ndr/misc.h"
 #ifndef _HEADER_svcctl
 #define _HEADER_svcctl
 
