@@ -2384,7 +2384,7 @@ bin/aio_fork.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_AIO_FORK_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD_MODULE) $(VFS_AIO_FORK_OBJ)
 
-bin/vfs_acl_xattr.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_ACL_XATTR_OBJ)
+bin/acl_xattr.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_ACL_XATTR_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD_MODULE) $(VFS_ACL_XATTR_OBJ)
 
