@@ -103,7 +103,7 @@ static NTSTATUS get_acl_blob(TALLOC_CTX *ctx,
 	val = tmp;
 
 	become_root();
-	if (fsp) {
+	if (fsp && fsp->fh->fd != -1) {
 		sizeret = SMB_VFS_FGETXATTR(fsp, XATTR_NTACL_NAME, val, size);
 	} else {
 		sizeret = SMB_VFS_GETXATTR(handle->conn, name,
@@ -263,16 +263,25 @@ static NTSTATUS store_acl_blob(files_struct *fsp,
 	int ret;
 	int saved_errno;
 
+	DEBUG(10,("store_acl_blob: storing blob length %u on file %s\n",
+			(unsigned int)pblob->length, fsp->fsp_name));
+
 	become_root();
-	ret = SMB_VFS_FSETXATTR(fsp, XATTR_NTACL_NAME,
+	if (fsp->fh->fd != -1) {
+		ret = SMB_VFS_FSETXATTR(fsp, XATTR_NTACL_NAME,
 			pblob->data, pblob->length, 0);
+	} else {
+		ret = SMB_VFS_SETXATTR(fsp->conn, fsp->fsp_name,
+				XATTR_NTACL_NAME,
+				pblob->data, pblob->length, 0);
+	}
 	if (ret) {
 		saved_errno = errno;
 	}
 	unbecome_root();
 	if (ret) {
 		errno = saved_errno;
-		DEBUG(5, ("store_acl_blob: fsetxattr failed for file %s "
+		DEBUG(5, ("store_acl_blob: setting attr failed for file %s"
 			"with error %s\n",
 			fsp->fsp_name,
 			strerror(errno) ));
