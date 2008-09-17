@@ -1061,8 +1061,8 @@ LDBMODIFY_OBJ = $(LDB_CMDLINE_OBJ) lib/ldb/tools/ldbmodify.o
 WINBIND_KRB5_LOCATOR_OBJ1 = nsswitch/winbind_krb5_locator.o
 WINBIND_KRB5_LOCATOR_OBJ = $(WINBIND_KRB5_LOCATOR_OBJ1) $(WBCOMMON_OBJ) $(LIBREPLACE_OBJ)
 
-POPT_OBJ=../popt/findme.o ../popt/popt.o ../popt/poptconfig.o \
-          ../popt/popthelp.o ../popt/poptparse.o
+POPT_OBJ=../lib/popt/findme.o ../lib/popt/popt.o ../lib/popt/poptconfig.o \
+          ../lib/popt/popthelp.o ../lib/popt/poptparse.o
 
 INIPARSER_OBJ = iniparser_build/iniparser.o iniparser_build/dictionary.o \
 		iniparser_build/strlib.o
@@ -1175,7 +1175,7 @@ samba3-idl::
 		epmapper.idl messaging.idl xattr.idl misc.idl samr.idl security.idl \
 		dssetup.idl krb5pac.idl ntsvcs.idl libnetapi.idl drsuapi.idl drsblobs.idl \
 		nbt.idl" \
-		CPP="$(CPP)" PIDL="../source4/pidl/pidl" \
+		CPP="$(CPP)" PIDL="../pidl/pidl" \
 	 srcdir="$(srcdir)" $(srcdir)/script/build_idl.sh $(PIDL_ARGS)
 
 
