@@ -91,8 +91,8 @@ static SEC_DESC* construct_service_sd( TALLOC_CTX *ctx )
 	SEC_ACE ace[4];
 	SEC_ACCESS mask;
 	size_t i = 0;
-	SEC_DESC *sd;
-	SEC_ACL *acl;
+	SEC_DESC *sd = NULL;
+	SEC_ACL *acl = NULL;
 	size_t sd_size;
 
 	/* basic access for Everyone */
@@ -188,11 +188,11 @@ static char *cleanup_string( const char *string )
 
 static bool read_init_file( const char *servicename, struct rcinit_file_information **service_info )
 {
-	struct rcinit_file_information *info;
+	struct rcinit_file_information *info = NULL;
 	char *filepath = NULL;
 	char str[1024];
-	XFILE *f;
-	char *p;
+	XFILE *f = NULL;
+	char *p = NULL;
 
 	if ( !(info = TALLOC_ZERO_P( NULL, struct rcinit_file_information ) ) )
 		return False;
@@ -335,12 +335,12 @@ static void fill_service_values( const char *name, REGVAL_CTR *values )
 static void add_new_svc_name( REGISTRY_KEY *key_parent, REGSUBKEY_CTR *subkeys,
                               const char *name )
 {
-	REGISTRY_KEY *key_service, *key_secdesc;
+	REGISTRY_KEY *key_service = NULL, *key_secdesc = NULL;
 	WERROR wresult;
 	char *path = NULL;
-	REGVAL_CTR *values;
-	REGSUBKEY_CTR *svc_subkeys;
-	SEC_DESC *sd;
+	REGVAL_CTR *values = NULL;
+	REGSUBKEY_CTR *svc_subkeys = NULL;
+	SEC_DESC *sd = NULL;
 	DATA_BLOB sd_blob;
 	NTSTATUS status;
 
@@ -444,7 +444,7 @@ void svcctl_init_keys( void )
 {
 	const char **service_list = lp_svcctl_list();
 	int i;
-	REGSUBKEY_CTR *subkeys;
+	REGSUBKEY_CTR *subkeys = NULL;
 	REGISTRY_KEY *key = NULL;
 	WERROR wresult;
 
@@ -502,9 +502,9 @@ void svcctl_init_keys( void )
 
 SEC_DESC *svcctl_get_secdesc( TALLOC_CTX *ctx, const char *name, NT_USER_TOKEN *token )
 {
-	REGISTRY_KEY *key;
-	REGVAL_CTR *values;
-	REGISTRY_VALUE *val;
+	REGISTRY_KEY *key = NULL;
+	REGVAL_CTR *values = NULL;
+	REGISTRY_VALUE *val = NULL;
 	SEC_DESC *ret_sd = NULL;
 	char *path= NULL;
 	WERROR wresult;
@@ -563,10 +563,10 @@ done:
 
 bool svcctl_set_secdesc( TALLOC_CTX *ctx, const char *name, SEC_DESC *sec_desc, NT_USER_TOKEN *token )
 {
-	REGISTRY_KEY *key;
+	REGISTRY_KEY *key = NULL;
 	WERROR wresult;
 	char *path = NULL;
-	REGVAL_CTR *values;
+	REGVAL_CTR *values = NULL;
 	prs_struct ps;
 	bool ret = False;
 
@@ -620,8 +620,8 @@ const char *svcctl_lookup_dispname(TALLOC_CTX *ctx, const char *name, NT_USER_TO
 {
 	char *display_name = NULL;
 	REGISTRY_KEY *key = NULL;
-	REGVAL_CTR *values;
-	REGISTRY_VALUE *val;
+	REGVAL_CTR *values = NULL;
+	REGISTRY_VALUE *val = NULL;
 	char *path = NULL;
 	WERROR wresult;
 
@@ -670,8 +670,8 @@ const char *svcctl_lookup_description(TALLOC_CTX *ctx, const char *name, NT_USER
 {
 	char *description = NULL;
 	REGISTRY_KEY *key = NULL;
-	REGVAL_CTR *values;
-	REGISTRY_VALUE *val;
+	REGVAL_CTR *values = NULL;
+	REGISTRY_VALUE *val = NULL;
 	char *path = NULL;
 	WERROR wresult;
 
@@ -715,7 +715,7 @@ const char *svcctl_lookup_description(TALLOC_CTX *ctx, const char *name, NT_USER
 REGVAL_CTR *svcctl_fetch_regvalues( const char *name, NT_USER_TOKEN *token )
 {
 	REGISTRY_KEY *key = NULL;
-	REGVAL_CTR *values;
+	REGVAL_CTR *values = NULL;
 	char *path = NULL;
 	WERROR wresult;
 
