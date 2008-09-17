@@ -101,12 +101,18 @@ Showing ctdb status and recent log entries
 EOF
 show_all "ctdb status; ctdb ip"
 show_all "ctdb statistics"
+show_all "ctdb uptime"
 
 echo "Showing log.ctdb"
 show_all "tail -100 /var/log/log.ctdb"
 
 echo "Showing log.ctdb"
 show_all "tail -100 /var/log/log.ctdb"
+
+show_all "tail -200 /var/log/messages"
+show_all "tail -200 /etc/ctdb/state/vacuum.log"
+show_all "ls -lRs /var/ctdb"
+show_all "ls -lRs /etc/ctdb"
 
 
 cat <<EOF
@@ -117,12 +123,14 @@ show_all "df"
 show_all "df -i"
 show_all "mount"
 show_all "w"
-show_all "ps axfw"
+show_all "ps axfwu"
 show_all "dmesg"
 show_all "/sbin/lspci"
+show_all "dmidecode"
 show_all "cat /proc/partitions"
 show_all "cat /proc/cpuinfo"
 show_all "cat /proc/scsi/scsi"
+show_all "/sbin/ifconfig -a"
 show_all "/sbin/ifconfig -a"
 show_all "/sbin/ip addr list"
 show_all "/sbin/route -n"
@@ -182,6 +190,7 @@ EOF
 show_all "smbstatus -n -B"
 show_all "net ads testjoin"
 show_all "lsof -n | grep smbd"
+show_all "lsof -n | grep ctdbd"
 show_all "netstat -tan"
 show_all "net ads info"
 show_all "date"

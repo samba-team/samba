@@ -880,6 +880,7 @@ static void vacuum_fetch_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	r = (struct ctdb_rec_data *)&recs->data[0];
 
 	if (recs->count == 0) {
+		talloc_free(tmp_ctx);
 		return;
 	}
 
@@ -888,6 +889,7 @@ static void vacuum_fetch_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	for (v=rec->vacuum_info;v;v=v->next) {
 		if (srcnode == v->srcnode && recs->db_id == v->ctdb_db->db_id) {
 			/* we're already working on records from this node */
+			talloc_free(tmp_ctx);
 			return;
 		}
 	}
@@ -930,6 +932,7 @@ static void vacuum_fetch_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	v = talloc_zero(rec, struct vacuum_info);
 	if (v == NULL) {
 		DEBUG(DEBUG_CRIT,(__location__ " Out of memory\n"));
+		talloc_free(tmp_ctx);
 		return;
 	}
 
@@ -940,6 +943,7 @@ static void vacuum_fetch_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	if (v->recs == NULL) {
 		DEBUG(DEBUG_CRIT,(__location__ " Out of memory\n"));
 		talloc_free(v);
+		talloc_free(tmp_ctx);
 		return;		
 	}
 	v->r = 	(struct ctdb_rec_data *)&v->recs->data[0];
@@ -949,6 +953,7 @@ static void vacuum_fetch_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	talloc_set_destructor(v, vacuum_info_destructor);
 
 	vacuum_fetch_next(v);
+	talloc_free(tmp_ctx);
 }
 
 
@@ -1748,6 +1753,7 @@ static void mem_dump_handler(struct ctdb_context *ctdb, uint64_t srvid,
 
 	if (data.dsize != sizeof(struct rd_memdump_reply)) {
 		DEBUG(DEBUG_ERR, (__location__ " Wrong size of return address.\n"));
+		talloc_free(tmp_ctx);
 		return;
 	}
 	rd = (struct rd_memdump_reply *)data.dptr;
@@ -1770,6 +1776,7 @@ DEBUG(DEBUG_ERR, ("recovery master memory dump\n"));
 	ret = ctdb_send_message(ctdb, rd->pnn, rd->srvid, *dump);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR,("Failed to send rd memdump reply message\n"));
+		talloc_free(tmp_ctx);
 		return;
 	}
 
@@ -2181,6 +2188,7 @@ static int verify_ip_allocation(struct ctdb_context *ctdb, uint32_t pnn)
 	if (timeval_compare(&uptime1->last_recovery_started,
 			    &uptime2->last_recovery_started) != 0) {
 		DEBUG(DEBUG_NOTICE, (__location__ " last recovery time changed while we read the public ip list. skipping public ip address check\n"));
+		talloc_free(mem_ctx);
 		return 0;
 	}
 
@@ -2188,6 +2196,7 @@ static int verify_ip_allocation(struct ctdb_context *ctdb, uint32_t pnn)
 	if (timeval_compare(&uptime1->last_recovery_finished,
 			    &uptime2->last_recovery_finished) != 0) {
 		DEBUG(DEBUG_NOTICE, (__location__ " last recovery time changed while we read the public ip list. skipping public ip address check\n"));
+		talloc_free(mem_ctx);
 		return 0;
 	}
 
@@ -2195,6 +2204,7 @@ static int verify_ip_allocation(struct ctdb_context *ctdb, uint32_t pnn)
 	if (timeval_compare(&uptime1->last_recovery_finished,
 			    &uptime1->last_recovery_started) != 1) {
 		DEBUG(DEBUG_NOTICE, (__location__ " in the middle of recovery. skipping public ip address check\n"));
+		talloc_free(mem_ctx);
 
 		return 0;
 	}

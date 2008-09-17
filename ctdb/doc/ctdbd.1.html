@@ -1,4 +1,4 @@
-<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>ctdbd</title><meta name="generator" content="DocBook XSL Stylesheets V1.71.0"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="refentry" lang="en"><a name="ctdbd.1"></a><div class="titlepage"></div><div class="refnamediv"><h2>Name</h2><p>ctdbd &#8212; The CTDB cluster daemon</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><div class="cmdsynopsis"><p><code class="command">ctdbd</code> </p></div><div class="cmdsynopsis"><p><code class="command">ctdbd</code>  [-? --help] [-d --debug=&lt;INTEGER&gt;] {--dbdir=&lt;directory&gt;} {--dbdir-persistent=&lt;directory&gt;} [--event-script-dir=&lt;directory&gt;] [-i --interactive] [--listen=&lt;address&gt;] [--logfile=&lt;filename&gt;] [--lvs] {--nlist=&lt;filename&gt;} [--no-lmaster] [--no-recmaster] [--nosetsched] [--public-addresses=&lt;filename&gt;] [--public-interface=&lt;interface&gt;] {--reclock=&lt;filename&gt;} [--single-public-ip=&lt;address&gt;] [--socket=&lt;filename&gt;] [--start-as-disabled] [--syslog] [--torture] [--transport=&lt;STRING&gt;] [--usage]</p></div></div><div class="refsect1" lang="en"><a name="id2481166"></a><h2>DESCRIPTION</h2><p>
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>ctdbd</title><meta name="generator" content="DocBook XSL Stylesheets V1.73.2"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="refentry" lang="en"><a name="ctdbd.1"></a><div class="titlepage"></div><div class="refnamediv"><h2>Name</h2><p>ctdbd &#8212; The CTDB cluster daemon</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><div class="cmdsynopsis"><p><code class="command">ctdbd</code> </p></div><div class="cmdsynopsis"><p><code class="command">ctdbd</code>  [-? --help] [-d --debug=&lt;INTEGER&gt;] {--dbdir=&lt;directory&gt;} {--dbdir-persistent=&lt;directory&gt;} [--event-script-dir=&lt;directory&gt;] [-i --interactive] [--listen=&lt;address&gt;] [--logfile=&lt;filename&gt;] [--lvs] {--nlist=&lt;filename&gt;} [--no-lmaster] [--no-recmaster] [--nosetsched] [--public-addresses=&lt;filename&gt;] [--public-interface=&lt;interface&gt;] {--reclock=&lt;filename&gt;} [--single-public-ip=&lt;address&gt;] [--socket=&lt;filename&gt;] [--start-as-disabled] [--syslog] [--torture] [--transport=&lt;STRING&gt;] [--usage]</p></div></div><div class="refsect1" lang="en"><a name="id2479648"></a><h2>DESCRIPTION</h2><p>
       ctdbd is the main ctdb daemon.
     </p><p>
       ctdbd provides a clustered version of the TDB database with automatic rebuild/recovery of the databases upon nodefailures.
@@ -7,8 +7,8 @@
     </p><p>
       ctdbd provides monitoring of all nodes in the cluster and automatically reconfigures the cluster and recovers upon node failures.
     </p><p>
-      ctdbd is the main component in clustered Samba that provides a high-awailability load-sharing CIFS server cluster.
-    </p></div><div class="refsect1" lang="en"><a name="id2481198"></a><h2>OPTIONS</h2><div class="variablelist"><dl><dt><span class="term">-? --help</span></dt><dd><p>
+      ctdbd is the main component in clustered Samba that provides a high-availability load-sharing CIFS server cluster.
+    </p></div><div class="refsect1" lang="en"><a name="id2479679"></a><h2>OPTIONS</h2><div class="variablelist"><dl><dt><span class="term">-? --help</span></dt><dd><p>
             Print some help text to the screen.
           </p></dd><dt><span class="term">-d --debug=&lt;DEBUGLEVEL&gt;</span></dt><dd><p>
             This option sets the debuglevel on the ctdbd daemon which controls what will be written to the logfile. The default is 0 which will only log important events and errors. A larger number will provide additional logging.
@@ -78,7 +78,7 @@
 	    to and also where to attach the single-public-ip when used.
 	    </p><p>
 	    This is only required when using public ip addresses and only when
-	    you dont specify the interface explicitely on in /etc/ctdb/public_addresses or when you are using --single-public-ip.
+	    you dont specify the interface explicitly in /etc/ctdb/public_addresses or when you are using --single-public-ip.
           </p><p>
 	  If you omit this argument when using public addresses or single public ip, ctdb will not be able to send out Gratious ARPs correctly or be able to kill tcp connections correctly which will lead to application failures. 
           </p></dd><dt><span class="term">--reclock=&lt;filename&gt;</span></dt><dd><p>
@@ -154,10 +154,10 @@
 	    implemented in the future.
           </p></dd><dt><span class="term">--usage</span></dt><dd><p>
             Print useage information to the screen.
-          </p></dd></dl></div></div><div class="refsect1" lang="en"><a name="id2528782"></a><h2>Private vs Public addresses</h2><p>
+          </p></dd></dl></div></div><div class="refsect1" lang="en"><a name="id2528846"></a><h2>Private vs Public addresses</h2><p>
       When used for ip takeover in a HA environment, each node in a ctdb 
       cluster has multiple ip addresses assigned to it. One private and one or more public.
-    </p><div class="refsect2" lang="en"><a name="id2528792"></a><h3>Private address</h3><p>
+    </p><div class="refsect2" lang="en"><a name="id2528856"></a><h3>Private address</h3><p>
         This is the physical ip address of the node which is configured in 
         linux and attached to a physical interface. This address uniquely
         identifies a physical node in the cluster and is the ip addresses
@@ -187,7 +187,7 @@
         10.1.1.2
         10.1.1.3
         10.1.1.4
-      </pre></div><div class="refsect2" lang="en"><a name="id2528840"></a><h3>Public address</h3><p>
+      </pre></div><div class="refsect2" lang="en"><a name="id2528904"></a><h3>Public address</h3><p>
         A public address on the other hand is not attached to an interface.
         This address is managed by ctdbd itself and is attached/detached to
         a physical node at runtime.
@@ -248,11 +248,11 @@
 	unavailable. 10.1.1.1 can not be failed over to node 2 or node 3 since
 	these nodes do not have this ip address listed in their public
 	addresses file.
-	</p></div></div><div class="refsect1" lang="en"><a name="id2528922"></a><h2>Node status</h2><p>
+	</p></div></div><div class="refsect1" lang="en"><a name="id2528986"></a><h2>Node status</h2><p>
       The current status of each node in the cluster can be viewed by the 
       'ctdb status' command.
     </p><p>
-      There are five possible for a node.
+      There are five possible states for a node.
     </p><p>
       OK - This node is fully functional.
     </p><p>
@@ -279,52 +279,52 @@
       investigated and require an administrative action to rectify. This node 
       does not perticipate in the CTDB cluster but can still be communicated 
       with. I.e. ctdb commands can be sent to it.
-    </p></div><div class="refsect1" lang="en"><a name="id2528984"></a><h2>PUBLIC TUNABLES</h2><p>
+    </p></div><div class="refsect1" lang="en"><a name="id2529049"></a><h2>PUBLIC TUNABLES</h2><p>
     These are the public tuneables that can be used to control how ctdb behaves.
-    </p><div class="refsect2" lang="en"><a name="id2528995"></a><h3>KeepaliveInterval</h3><p>Default: 1</p><p>
+    </p><div class="refsect2" lang="en"><a name="id2529059"></a><h3>KeepaliveInterval</h3><p>Default: 1</p><p>
     How often should the nodes send keepalives to eachother.
-    </p></div><div class="refsect2" lang="en"><a name="id2529009"></a><h3>KeepaliveLimit</h3><p>Default: 5</p><p>
+    </p></div><div class="refsect2" lang="en"><a name="id2529073"></a><h3>KeepaliveLimit</h3><p>Default: 5</p><p>
     After how many keepalive intervals without any traffic should a node
     wait until marking the peer as DISCONNECTED.
-    </p></div><div class="refsect2" lang="en"><a name="id2529023"></a><h3>MonitorInterval</h3><p>Default: 15</p><p>
+    </p></div><div class="refsect2" lang="en"><a name="id2529088"></a><h3>MonitorInterval</h3><p>Default: 15</p><p>
     How often should ctdb run the event scripts to check for a nodes health.
-    </p></div><div class="refsect2" lang="en"><a name="id2529037"></a><h3>TickleUpdateInterval</h3><p>Default: 20</p><p>
+    </p></div><div class="refsect2" lang="en"><a name="id2529101"></a><h3>TickleUpdateInterval</h3><p>Default: 20</p><p>
     How often will ctdb record and store the "tickle" information used to
     kickstart stalled tcp connections after a recovery.
-    </p></div><div class="refsect2" lang="en"><a name="id2529052"></a><h3>EventScriptTimeout</h3><p>Default: 20</p><p>
+    </p></div><div class="refsect2" lang="en"><a name="id2529116"></a><h3>EventScriptTimeout</h3><p>Default: 20</p><p>
     How long should ctdb let an event script run before aborting it and
     marking the node unhealthy.
-    </p></div><div class="refsect2" lang="en"><a name="id2529066"></a><h3>RecoveryBanPeriod</h3><p>Default: 300</p><p>
+    </p></div><div class="refsect2" lang="en"><a name="id2529130"></a><h3>RecoveryBanPeriod</h3><p>Default: 300</p><p>
     If a node becomes banned causing repetitive recovery failures. The node will
     eventually become banned from the cluster.
     This controls how long the culprit node will be banned from the cluster
     before it is allowed to try to join the cluster again.
     Dont set to small. A node gets banned for a reason and it is usually due
     to real problems with the node.
-    </p></div><div class="refsect2" lang="en"><a name="id2529085"></a><h3>DatabaseHashSize</h3><p>Default: 100000</p><p>
+    </p></div><div class="refsect2" lang="en"><a name="id2529149"></a><h3>DatabaseHashSize</h3><p>Default: 100000</p><p>
     Size of the hash chains for the local store of the tdbs that ctdb manages.
-    </p></div><div class="refsect2" lang="en"><a name="id2529099"></a><h3>RerecoveryTimeout</h3><p>Default: 10</p><p>
+    </p></div><div class="refsect2" lang="en"><a name="id2529163"></a><h3>RerecoveryTimeout</h3><p>Default: 10</p><p>
     Once a recovery has completed, no additional recoveries are permitted until this timeout has expired.
-    </p></div><div class="refsect2" lang="en"><a name="id2529114"></a><h3>EnableBans</h3><p>Default: 1</p><p>
+    </p></div><div class="refsect2" lang="en"><a name="id2529178"></a><h3>EnableBans</h3><p>Default: 1</p><p>
     When set to 0, this disables BANNING completely in the cluster and thus nodes can not get banned, even it they break. Dont set to 0.
-    </p></div><div class="refsect2" lang="en"><a name="id2529128"></a><h3>DeterministicIPs</h3><p>Default: 1</p><p>
-    When enabled, this tunable makes ctdb try to keep public ip addresses locked to specific nodes as far as possible. This makes it easier for debugging since you can know that as long as all nodes are healthy public ip X will always be hosted by node Y. 
+    </p></div><div class="refsect2" lang="en"><a name="id2529193"></a><h3>DeterministicIPs</h3><p>Default: 1</p><p>
+    When enabled, this tunable makes ctdb try to keep public IP addresses locked to specific nodes as far as possible. This makes it easier for debugging since you can know that as long as all nodes are healthy public IP X will always be hosted by node Y. 
     </p><p>
-    The cost of using deterministic ip address assignment is that it disables part of the logic where ctdb tries to reduce the number of public ip assignment changes in the cluster. This tunable may increase the number of ip failover/failbacks that are performed on the cluster by a small margin.
-    </p></div><div class="refsect2" lang="en"><a name="id2529158"></a><h3>DisableWhenUnhealthy</h3><p>Default: 0</p><p>
+    The cost of using deterministic IP address assignment is that it disables part of the logic where ctdb tries to reduce the number of public IP assignment changes in the cluster. This tunable may increase the number of IP failover/failbacks that are performed on the cluster by a small margin.
+    </p></div><div class="refsect2" lang="en"><a name="id2529222"></a><h3>DisableWhenUnhealthy</h3><p>Default: 0</p><p>
     When set, As soon as a node becomes unhealthy, that node will also automatically become permanently DISABLED. Once a node is DISABLED, the only way to make it participate in the cluster again and host services is by manually enabling the node again using 'ctdb enable'. 
     </p><p>
     This disables parts of the resilience and robustness of the cluster and should ONLY be used when the system administrator is actively monitoring the cluster, so that nodes can be enabled again.
-    </p></div><div class="refsect2" lang="en"><a name="id2529182"></a><h3>NoIPFailback</h3><p>Default: 0</p><p>
-    When set to 1, ctdb will not perform failback of ip addresses when a node becomes healthy. Ctdb WILL perform failover of public ip addresses when a node becomes UNHEALTHY, but when the node becomes HEALTHY again, ctdb will not fail the addresses back.
+    </p></div><div class="refsect2" lang="en"><a name="id2529246"></a><h3>NoIPFailback</h3><p>Default: 0</p><p>
+    When set to 1, ctdb will not perform failback of IP addresses when a node becomes healthy. Ctdb WILL perform failover of public IP addresses when a node becomes UNHEALTHY, but when the node becomes HEALTHY again, ctdb will not fail the addresses back.
     </p><p>
     Use with caution! Normally when a node becomes available to the cluster
-ctdb will try to reassign public ip addresses onto the new node as a way to distribute the workload evenly across the clusternode. Ctdb tries to make sure that all running nodes have approximately the same number of public addresses it hosts.
+ctdb will try to reassign public IP addresses onto the new node as a way to distribute the workload evenly across the clusternode. Ctdb tries to make sure that all running nodes have approximately the same number of public addresses it hosts.
     </p><p>
-    When you enable this tunable, CTDB will no longer attempt to rebalance the cluster by failing ip addresses back to the new nodes. An unbalanced cluster will therefore remain unbalanced until there is manual intervention from the administrator. When this parameter is set, you can manually fail public ip addresses over to the new node(s) using the 'ctdb moveip' command.
-    </p></div></div><div class="refsect1" lang="en"><a name="id2529218"></a><h2>LVS</h2><p>
-    LVS is a mode where CTDB presents one single ip address for the entire
-    cluster. This is an alternative to using public ip addresses and round-robin
+    When you enable this tunable, CTDB will no longer attempt to rebalance the cluster by failing IP addresses back to the new nodes. An unbalanced cluster will therefore remain unbalanced until there is manual intervention from the administrator. When this parameter is set, you can manually fail public IP addresses over to the new node(s) using the 'ctdb moveip' command.
+    </p></div></div><div class="refsect1" lang="en"><a name="id2529282"></a><h2>LVS</h2><p>
+    LVS is a mode where CTDB presents one single IP address for the entire
+    cluster. This is an alternative to using public IP addresses and round-robin
     DNS to loadbalance clients across the cluster.
     </p><p>
     This is similar to using a layer-4 loadbalancing switch but with some restrictions.
@@ -363,7 +363,7 @@ ctdb will try to reassign public ip addresses onto the new node as a way to dist
     the processing node back to the clients. For read-intensive i/o patterns you can acheive very high throughput rates in this mode.
     </p><p>
     Note: you can use LVS and public addresses at the same time.
-    </p><div class="refsect2" lang="en"><a name="id2529290"></a><h3>Configuration</h3><p>
+    </p><div class="refsect2" lang="en"><a name="id2529354"></a><h3>Configuration</h3><p>
     To activate LVS on a CTDB node you must specify CTDB_PUBLIC_INTERFACE and 
     CTDB_LVS_PUBLIC_ADDRESS in /etc/sysconfig/ctdb.
 	</p><p>
@@ -380,13 +380,13 @@ You must also specify the "--lvs" command line argument to ctdbd to activete LVS
     and the cluster nodes must be configured so that all traffic back to client
     hosts are routed through this interface. This is also required in order
     to allow samba/winbind on the node to talk to the domain controller.
-    (we can not use the lvs ip address to initiate outgoing traffic)
+    (we can not use the lvs IP address to initiate outgoing traffic)
     </p><p>
     I.e. make sure that you can "ping" both the domain controller and also
     all of the clients from the node BEFORE you enable LVS. Also make sure
     that when you ping these hosts that the traffic is routed out through the
     eth0 interface.
-    </p></div><div class="refsect1" lang="en"><a name="id2529338"></a><h2>REMOTE CLUSTER NODES</h2><p>
+    </p></div><div class="refsect1" lang="en"><a name="id2529402"></a><h2>REMOTE CLUSTER NODES</h2><p>
 It is possible to have a CTDB cluster that spans across a WAN link. 
 For example where you have a CTDB cluster in your datacentre but you also
 want to have one additional CTDB node located at a remote branch site.
@@ -415,10 +415,10 @@ CTDB_CAPABILITY_RECMASTER=no
     </p><p>
 	Verify with the command "ctdb getcapabilities" that that node no longer
 	has the recmaster or the lmaster capabilities.
-    </p></div><div class="refsect1" lang="en"><a name="id2529389"></a><h2>SEE ALSO</h2><p>
+    </p></div><div class="refsect1" lang="en"><a name="id2529453"></a><h2>SEE ALSO</h2><p>
       ctdb(1), onnode(1)
-      <a href="http://ctdb.samba.org/" target="_top">http://ctdb.samba.org/</a>
-    </p></div><div class="refsect1" lang="en"><a name="id2529402"></a><h2>COPYRIGHT/LICENSE</h2><div class="literallayout"><p><br>
+      <a class="ulink" href="http://ctdb.samba.org/" target="_top">http://ctdb.samba.org/</a>
+    </p></div><div class="refsect1" lang="en"><a name="id2529466"></a><h2>COPYRIGHT/LICENSE</h2><div class="literallayout"><p><br>
 Copyright (C) Andrew Tridgell 2007<br>
 Copyright (C) Ronnie sahlberg 2007<br>
 <br>

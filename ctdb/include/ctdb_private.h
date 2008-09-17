@@ -115,6 +115,7 @@ struct ctdb_tunable {
 	uint32_t no_ip_failback;
 	uint32_t verbose_memory_names;
 	uint32_t recd_ping_timeout;
+	uint32_t recd_ping_failcount;
 };
 
 /*
@@ -418,7 +419,7 @@ struct ctdb_context {
 	int start_as_disabled;
 	uint32_t event_script_timeouts; /* counting how many consecutive times an eventscript has timedout */
 	TALLOC_CTX *eventscripts_ctx; /* a context to hold data for the RUN_EVENTSCRIPTS control */
-	TALLOC_CTX *recd_ping_ctx;
+	uint32_t *recd_ping_count;
 };
 
 struct ctdb_db_context {

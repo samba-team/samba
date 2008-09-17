@@ -974,8 +974,19 @@ int32_t ctdb_control_get_capabilities(struct ctdb_context *ctdb, TDB_DATA *outda
 static void ctdb_recd_ping_timeout(struct event_context *ev, struct timed_event *te, struct timeval t, void *p)
 {
 	struct ctdb_context *ctdb = talloc_get_type(p, struct ctdb_context);
+	uint32_t *count = talloc_get_type(ctdb->recd_ping_count, uint32_t);
 
-	DEBUG(DEBUG_ERR, (__location__ " Recovery daemon ping timeout. Shutting down ctdb daemon\n"));
+	DEBUG(DEBUG_ERR, (__location__ " Recovery daemon ping timeout. Count : %u\n", *count));
+
+	if (*count < ctdb->tunable.recd_ping_failcount) {
+		(*count)++;
+		event_add_timed(ctdb->ev, ctdb->recd_ping_count, 
+			timeval_current_ofs(ctdb->tunable.recd_ping_timeout, 0),
+			ctdb_recd_ping_timeout, ctdb);
+		return;
+	}
+
+	DEBUG(DEBUG_ERR, (__location__ " Final timeout for recovery daemon ping. Shutting down ctdb daemon\n"));
 
 	ctdb_stop_recoverd(ctdb);
 	ctdb_stop_keepalive(ctdb);
@@ -995,13 +1006,13 @@ static void ctdb_recd_ping_timeout(struct event_context *ev, struct timed_event 
 */
 int32_t ctdb_control_recd_ping(struct ctdb_context *ctdb)
 {
-	talloc_free(ctdb->recd_ping_ctx);
+	talloc_free(ctdb->recd_ping_count);
 
-	ctdb->recd_ping_ctx = talloc_new(ctdb);
-	CTDB_NO_MEMORY(ctdb, ctdb->recd_ping_ctx);
+	ctdb->recd_ping_count = talloc_zero(ctdb, uint32_t);
+	CTDB_NO_MEMORY(ctdb, ctdb->recd_ping_count);
 
 	if (ctdb->tunable.recd_ping_timeout != 0) {
-		event_add_timed(ctdb->ev, ctdb->recd_ping_ctx, 
+		event_add_timed(ctdb->ev, ctdb->recd_ping_count, 
 			timeval_current_ofs(ctdb->tunable.recd_ping_timeout, 0),
 			ctdb_recd_ping_timeout, ctdb);
 	}
