@@ -16,8 +16,8 @@ mkinclude lib/registry/config.mk
 mkinclude lib/messaging/config.mk
 mkinclude lib/events/config.mk
 mkinclude lib/cmdline/config.mk
-mkinclude ../socket_wrapper/config.mk
-mkinclude ../nss_wrapper/config.mk
+mkinclude ../lib/socket_wrapper/config.mk
+mkinclude ../lib/nss_wrapper/config.mk
 mkinclude lib/appweb/config.mk
 mkinclude lib/stream/config.mk
 mkinclude lib/util/config.mk

@@ -23,7 +23,7 @@ m4_include(m4/check_path.m4)
 
 AC_LIBREPLACE_CC_CHECKS
 
-m4_include(../talloc/libtalloc.m4)
+m4_include(../lib/talloc/libtalloc.m4)
 
 LIBTALLOC_OBJ0=""
 for obj in ${TALLOC_OBJ}; do
@@ -33,7 +33,7 @@ AC_SUBST(LIBTALLOC_OBJ0)
 
 # TODO: These should come from m4_include(lib/tdb/libtdb.m4)
 # but currently this fails: things have to get merged from s4.
-tdbdir="../tdb"
+tdbdir="../lib/tdb"
 AC_SUBST(tdbdir)
 TDB_CFLAGS="-I${srcdir-.}/$tdbdir/include"
 AC_SUBST(TDB_CFLAGS)
@@ -48,13 +48,13 @@ done
 
 AC_SUBST(LIBTDB_OBJ0)
 SAMBA_CPPFLAGS="-Iinclude -I${srcdir-.}/include  -I. -I${srcdir-.}"
-SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} -I${srcdir-.}/../replace"
+SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} -I${srcdir-.}/../lib/replace"
 SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} ${TALLOC_CFLAGS}"
 SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} ${TDB_CFLAGS}"
 SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} -I${srcdir-.}/libaddns"
 SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} -I${srcdir-.}/librpc"
 
-SAMBA_CONFIGURE_CPPFLAGS="${SAMBA_CPPFLAGS} -I${srcdir-.}/../popt"
+SAMBA_CONFIGURE_CPPFLAGS="${SAMBA_CPPFLAGS} -I${srcdir-.}/../lib/popt"
 
 ## cleanup the $(srcdir) in the Makefile if we are outside of the tree
 if test "x${srcdir-.}" != "x."; then
@@ -131,8 +131,8 @@ else
 	CFLAGS="-O"
 fi
 
-m4_include(../socket_wrapper/config.m4)
-m4_include(../nss_wrapper/config.m4)
+m4_include(../lib/socket_wrapper/config.m4)
+m4_include(../lib/nss_wrapper/config.m4)
 
 m4_include(m4/swat.m4)
 
@@ -5872,7 +5872,7 @@ if test x"$INCLUDED_POPT" = x"yes"; then
     AC_MSG_RESULT(yes)
     BUILD_POPT='$(POPT_OBJ)'
     POPTLIBS='$(POPT_OBJ)'
-    FLAGS1="-I\$(srcdir)/../popt"
+    FLAGS1="-I\$(srcdir)/../lib/popt"
 else
     AC_MSG_RESULT(no)
 	BUILD_POPT=""

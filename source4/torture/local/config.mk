@@ -20,23 +20,23 @@ PRIVATE_DEPENDENCIES = \
 
 TORTURE_LOCAL_OBJ_FILES = \
 		$(torturesrcdir)/../lib/charset/tests/iconv.o \
-		$(torturesrcdir)/../../talloc/testsuite.o \
-		$(torturesrcdir)/../../replace/test/getifaddrs.o \
-		$(torturesrcdir)/../../replace/test/os2_delete.o \
-		$(torturesrcdir)/../../replace/test/strptime.o \
-		$(torturesrcdir)/../../replace/test/testsuite.o \
+		$(torturesrcdir)/../../lib/talloc/testsuite.o \
+		$(torturesrcdir)/../../lib/replace/test/getifaddrs.o \
+		$(torturesrcdir)/../../lib/replace/test/os2_delete.o \
+		$(torturesrcdir)/../../lib/replace/test/strptime.o \
+		$(torturesrcdir)/../../lib/replace/test/testsuite.o \
 		$(torturesrcdir)/../lib/messaging/tests/messaging.o \
 		$(torturesrcdir)/../lib/messaging/tests/irpc.o \
 		$(torturesrcdir)/../librpc/tests/binding_string.o \
 		$(torturesrcdir)/../lib/util/tests/idtree.o \
 		$(torturesrcdir)/../lib/socket/testsuite.o \
-		$(torturesrcdir)/../../socket_wrapper/testsuite.o \
+		$(torturesrcdir)/../../lib/socket_wrapper/testsuite.o \
 		$(torturesrcdir)/../libcli/resolve/testsuite.o \
 		$(torturesrcdir)/../lib/util/tests/strlist.o \
 		$(torturesrcdir)/../lib/util/tests/str.o \
 		$(torturesrcdir)/../lib/util/tests/file.o \
 		$(torturesrcdir)/../lib/util/tests/genrand.o \
-		$(torturesrcdir)/../../compression/testsuite.o \
+		$(torturesrcdir)/../../lib/compression/testsuite.o \
 		$(torturesrcdir)/../lib/charset/tests/charset.o \
 		$(torturesrcdir)/../libcli/security/tests/sddl.o \
 		$(torturesrcdir)/../lib/tdr/testsuite.o \

@@ -12,7 +12,7 @@ if eval "test x$enable_nss_wrapper = xyes"; then
 	HAVE_NSS_WRAPPER=yes
 
 	# this is only used for samba3
-	NSS_WRAPPER_OBJS="../nss_wrapper/nss_wrapper.o"
+	NSS_WRAPPER_OBJS="../lib/nss_wrapper/nss_wrapper.o"
 fi
 
 AC_SUBST(HAVE_NSS_WRAPPER)

@@ -1,7 +1,7 @@
 dnl find the talloc sources. This is meant to work both for 
 dnl talloc standalone builds, and builds of packages using talloc
 tallocdir=""
-tallocpaths=". lib/talloc talloc ../talloc"
+tallocpaths=". lib/talloc talloc ../talloc ../lib/talloc"
 for d in $tallocpaths; do
 	if test -f "$srcdir/$d/talloc.c"; then
 		tallocdir="$d"
