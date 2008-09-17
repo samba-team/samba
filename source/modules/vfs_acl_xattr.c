@@ -18,6 +18,8 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
+/* NOTE: This is an experimental module, not yet finished. JRA. */
+
 #include "includes.h"
 #include "librpc/gen_ndr/xattr.h"
 #include "librpc/gen_ndr/ndr_xattr.h"
@@ -77,8 +79,8 @@ static NTSTATUS parse_acl_blob(const DATA_BLOB *pblob,
 	return (*ppdesc != NULL) ? NT_STATUS_OK : NT_STATUS_NO_MEMORY;
 }
 
-static NTSTATUS get_acl_blob(vfs_handle_struct *handle,
-			TALLOC_CTX *ctx,
+static NTSTATUS get_acl_blob(TALLOC_CTX *ctx,
+			vfs_handle_struct *handle,
 			files_struct *fsp,
 			const char *name,
 			DATA_BLOB *pblob)
@@ -223,9 +225,13 @@ static NTSTATUS get_nt_acl_xattr(vfs_handle_struct *handle,
 static NTSTATUS create_acl_blob(SEC_DESC *psd, DATA_BLOB *pblob)
 {
 	struct xattr_NTACL xacl;
+	struct security_descriptor_timestamp sd_ts;
 	enum ndr_err_code ndr_err;
 	TALLOC_CTX *ctx = talloc_tos();
 	struct timespec curr = timespec_current();
+
+	ZERO_STRUCT(xacl);
+	ZERO_STRUCT(sd_ts);
 
 	/* Horrid hack as setting an xattr changes the ctime
  	 * on Linux. This gives a race of 1 second during
@@ -234,6 +240,7 @@ static NTSTATUS create_acl_blob(SEC_DESC *psd, DATA_BLOB *pblob)
 	curr.tv_sec += 1;
 
 	xacl.version = 2;
+	xacl.info.sd_ts = &sd_ts;
 	xacl.info.sd_ts->sd = psd;
 	unix_timespec_to_nt_time(&xacl.info.sd_ts->last_changed, curr);
 
