@@ -75,7 +75,9 @@ in lib/replace we use rep_xxx()
 #undef getnameinfo
 #endif
 #define getnameinfo rep_getnameinfo
+#ifndef HAVE_GETNAMEINFO
 #define HAVE_GETNAMEINFO
+#endif
 
 extern int rep_getaddrinfo(const char *node, const char *service,
 			const struct addrinfo * hints, struct addrinfo ** res);
