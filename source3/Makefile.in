@@ -2728,7 +2728,7 @@ valgrindtest:: all torture timelimit
 ## Examples:
 ##
 
-libsmbclient_examples:
+libsmbclient_examples: libsmbclient
 	$(MAKE) -C ../examples/libsmbclient -f Makefile.internal
 
 clean_libsmbclient_examples:
