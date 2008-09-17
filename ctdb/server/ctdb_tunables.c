@@ -50,7 +50,8 @@ static const struct {
 	{ "ReclockPingPeriod",   60,  offsetof(struct ctdb_tunable,  reclock_ping_period) },
 	{ "NoIPFailback",         0,  offsetof(struct ctdb_tunable, no_ip_failback) },
 	{ "VerboseMemoryNames",   0,  offsetof(struct ctdb_tunable, verbose_memory_names) },
-	{ "RecdPingTimeout",	 60,  offsetof(struct ctdb_tunable, recd_ping_timeout) },
+	{ "RecdPingTimeout",	 20,  offsetof(struct ctdb_tunable, recd_ping_timeout) },
+	{ "RecdFailCount",	  3,  offsetof(struct ctdb_tunable, recd_ping_failcount) },
 };
 
 /*
