@@ -6,7 +6,7 @@
 
 CC = @CC@
 
-SAMBA_DIR = ../../source
+SAMBA_DIR = ../../source3
 SAMBA_INCLUDES = -I$(SAMBA_DIR)/include
 SAMBA_LIBPATH = -L$(SAMBA_DIR)/bin
 
@@ -16,7 +16,7 @@ GTK_LIBS  = `gtk-config --libs`
 #GTK_CFLAGS = `pkg-config gtk+-2.0 --cflags`
 #GTK_LIBS = `pkg-config gtk+-2.0 --libs`
 
-FLAGS = @CPPFLAGS@ @CFLAGS@ $(GTK_CFLAGS) $(SAMBA_INCLUDES)
+CCFLAGS = @CPPFLAGS@ @CFLAGS@ $(GTK_CFLAGS) $(SAMBA_INCLUDES)
 
 PICFLAG=@PICFLAG@
 LDFLAGS= $(SAMBA_LIBPATH) @PIE_LDFLAGS@ @LDFLAGS@
@@ -27,7 +27,7 @@ CMDLINE_LIBS = @POPTLIBS@
 LIBS = $(EXTERNAL_LIBS) $(LIBSMBCLIENT_LIBS)
 
 # Compile a source file. (.c --> .o)
-COMPILE_CC = $(CC) -I. $(FLAGS) $(PICFLAG) -c $< -o $@
+COMPILE_CC = $(CC) -I. $(CCFLAGS) $(PICFLAG) -c $< -o $@
 COMPILE = $(COMPILE_CC)
 
 MAKEDIR = || exec false; \
@@ -68,67 +68,67 @@ all:	$(TESTS) smbsh
 
 testsmbc: testsmbc.o
 	@echo Linking testsmbc
-	@$(CC) $(FLAGS) $(LDFLAGS) -o $@ $< $(LIBS)
+	@$(CC) $(CCFLAGS) $(LDFLAGS) -o $@ $< $(LIBS)
 
 tree: tree.o
 	@echo Linking tree
-	@$(CC) $(GTK_CFLAGS) $(FLAGS) $(LDFLAGS) -o $@ $< $(GTK_LIBS) $(LIBS)
+	@$(CC) $(GTK_CFLAGS) $(CCFLAGS) $(LDFLAGS) -o $@ $< $(GTK_LIBS) $(LIBS)
 
 testacl: testacl.o
 	@echo Linking testacl
-	@$(CC) $(FLAGS) $(LDFLAGS) -o $@ $< $(LIBS) $(CMDLINE_LIBS)
+	@$(CC) $(CCFLAGS) $(LDFLAGS) -o $@ $< $(LIBS) $(CMDLINE_LIBS)
 
 testacl2: testacl2.o
 	@echo Linking testacl2
-	@$(CC) $(FLAGS) $(LDFLAGS) -o $@ $< $(LIBS) $(CMDLINE_LIBS)
+	@$(CC) $(CCFLAGS) $(LDFLAGS) -o $@ $< $(LIBS) $(CMDLINE_LIBS)
 
 testacl3: testacl3.o
 	@echo Linking testacl3
-	@$(CC) $(FLAGS) $(LDFLAGS) -o $@ $< $(LIBS) $(CMDLINE_LIBS)
+	@$(CC) $(CCFLAGS) $(LDFLAGS) -o $@ $< $(LIBS) $(CMDLINE_LIBS)
 
 testbrowse: testbrowse.o
 	@echo Linking testbrowse
-	@$(CC) $(FLAGS) $(LDFLAGS) -o $@ $< $(LIBS) $(CMDLINE_LIBS)
+	@$(CC) $(CCFLAGS) $(LDFLAGS) -o $@ $< $(LIBS) $(CMDLINE_LIBS)
 
 testbrowse2: testbrowse2.o
 	@echo Linking testbrowse2
-	@$(CC) $(FLAGS) $(LDFLAGS) -o $@ $< $(LIBS) $(CMDLINE_LIBS)
+	@$(CC) $(CCFLAGS) $(LDFLAGS) -o $@ $< $(LIBS) $(CMDLINE_LIBS)
 
 teststat: teststat.o
 	@echo Linking teststat
-	@$(CC) $(FLAGS) $(LDFLAGS) -o $@ $< $(LIBS) $(CMDLINE_LIBS)
+	@$(CC) $(CCFLAGS) $(LDFLAGS) -o $@ $< $(LIBS) $(CMDLINE_LIBS)
 
 teststat2: teststat2.o
 	@echo Linking teststat2
-	@$(CC) $(FLAGS) $(LDFLAGS) -o $@ $< $(LIBS) $(CMDLINE_LIBS)
+	@$(CC) $(CCFLAGS) $(LDFLAGS) -o $@ $< $(LIBS) $(CMDLINE_LIBS)
 
 teststat3: teststat3.o
 	@echo Linking teststat3
-	@$(CC) $(FLAGS) $(LDFLAGS) -o $@ $< $(LIBS) $(CMDLINE_LIBS)
+	@$(CC) $(CCFLAGS) $(LDFLAGS) -o $@ $< $(LIBS) $(CMDLINE_LIBS)
 
 testtruncate: testtruncate.o
 	@echo Linking testtruncate
-	@$(CC) $(FLAGS) $(LDFLAGS) -o $@ $< $(LIBS) $(CMDLINE_LIBS)
+	@$(CC) $(CCFLAGS) $(LDFLAGS) -o $@ $< $(LIBS) $(CMDLINE_LIBS)
 
 testchmod: testchmod.o
 	@echo Linking testchmod
-	@$(CC) $(FLAGS) $(LDFLAGS) -o $@ $< $(LIBS) $(CMDLINE_LIBS)
+	@$(CC) $(CCFLAGS) $(LDFLAGS) -o $@ $< $(LIBS) $(CMDLINE_LIBS)
 
 testutime: testutime.o
 	@echo Linking testutime
-	@$(CC) $(FLAGS) $(LDFLAGS) -o $@ $< $(LIBS) $(CMDLINE_LIBS)
+	@$(CC) $(CCFLAGS) $(LDFLAGS) -o $@ $< $(LIBS) $(CMDLINE_LIBS)
 
 testread: testread.o
 	@echo Linking testread
-	@$(CC) $(FLAGS) $(LDFLAGS) -o $@ $< $(LIBS) $(CMDLINE_LIBS)
+	@$(CC) $(CCFLAGS) $(LDFLAGS) -o $@ $< $(LIBS) $(CMDLINE_LIBS)
 
 testwrite: testwrite.o
 	@echo Linking testwrite
-	@$(CC) $(FLAGS) $(LDFLAGS) -o $@ $< $(LIBS) $(CMDLINE_LIBS)
+	@$(CC) $(CCFLAGS) $(LDFLAGS) -o $@ $< $(LIBS) $(CMDLINE_LIBS)
 
 testctx: testctx.o
 	@echo Linking testctx
-	@$(CC) $(FLAGS) $(LDFLAGS) -o $@ $< $(LIBS) $(CMDLINE_LIBS)
+	@$(CC) $(CCFLAGS) $(LDFLAGS) -o $@ $< $(LIBS) $(CMDLINE_LIBS)
 
 smbsh:
 	make -C smbwrapper
