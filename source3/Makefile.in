@@ -2733,3 +2733,9 @@ libsmbclient_examples:
 
 clean_libsmbclient_examples:
 	$(MAKE) -C ../examples/libsmbclient -f Makefile.internal clean
+
+libnetapi_examples: libnetapi
+	$(MAKE) -C lib/netapi/examples
+
+clean_libnetapi_examples:
+	$(MAKE) -C lib/netapi/examples clean
