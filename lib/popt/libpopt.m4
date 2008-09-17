@@ -25,7 +25,7 @@ if test x"$INCLUDED_POPT" != x"no"; then
 	dnl find the popt sources. This is meant to work both for 
 	dnl popt standalone builds, and builds of packages using popt
 	poptdir=""
-	poptpaths="$srcdir $srcdir/lib/popt $srcdir/popt $srcdir/../popt"
+	poptpaths="$srcdir $srcdir/lib/popt $srcdir/popt $srcdir/../popt $srcdir/../lib/popt"
 	for d in $poptpaths; do
 		if test -f "$d/popt.c"; then
 			poptdir="$d"		
