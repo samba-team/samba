@@ -32,6 +32,9 @@ from samba.tests import LdbTestCase, TestCaseInTempDir
 
 datadir = os.path.join(os.path.dirname(__file__), "../../../../../testdata/samba3")
 
+def ldb_debug(l, text):
+    print text
+
 class MapBaseTestCase(TestCaseInTempDir):
     def setup_data(self, obj, ldif):
         self.assertTrue(ldif is not None)
@@ -189,13 +192,14 @@ class Samba3SamTestCase(MapBaseTestCase):
         print "Checking for existence of record (local || remote)"
         msg = self.ldb.search(expression="(|(unixName=bin)(sambaUnicodePwd=geheim))", 
                          attrs=['unixName','cn','dn', 'sambaUnicodePwd'])
-        print "got " + len(msg) + " replies"
+        print "got %d replies" % len(msg)
         self.assertEquals(len(msg), 1)        # TODO: should check with more records
         self.assertEquals(msg[0]["cn"], "Niemand")
-        self.assertEquals(msg[0]["unixName"] == "bin" or msg[0]["sambaUnicodePwd"], "geheim")
+        self.assertEquals(msg[0]["unixName"], "bin")
+        self.assertEquals(msg[0]["sambaUnicodePwd"], "geheim")
 
         print "Checking for data in destination database"
-        msg = s3.db.search("(cn=Niemand)")
+        msg = self.samba3.db.search(expression="(cn=Niemand)")
         self.assertTrue(len(msg) >= 1)
         self.assertEquals(msg[0]["sambaSID"], "S-1-5-21-4231626423-2410014848-2360679739-2001")
         self.assertEquals(msg[0]["displayName"], "Niemand")
@@ -237,7 +241,7 @@ delete: description
         print "Checking whether changes are no longer there..."
         msg = self.ldb.search(expression="(cn=Niemand)")
         self.assertTrue(len(msg) >= 1)
-        self.assertTrue(not "description" in res[0])
+        self.assertTrue(not "description" in msg[0])
 
         print "Renaming record..."
         self.ldb.rename("cn=Niemand,cn=Users,dc=vernstok,dc=nl", "cn=Niemand2,cn=Users,dc=vernstok,dc=nl")
@@ -290,7 +294,12 @@ lastLogon: x
 description: x
 objectSid: S-1-5-21-4231626423-2410014848-2360679739-552
 primaryGroupID: 1-5-21-4231626423-2410014848-2360679739-512
+"""
 
+        print ldif
+        self.ldb.add_ldif(substitute_var(ldif, self.samba4.substvars))
+
+        ldif = """
 dn: """ + self.samba4.dn("cn=Y") + """
 objectClass: top
 cn: Y
@@ -300,7 +309,10 @@ dnsHostName: y
 nextRid: y
 lastLogon: y
 description: x
+"""
+        self.ldb.add_ldif(substitute_var(ldif, self.samba4.substvars))
 
+        ldif = """
 dn: """ + self.samba4.dn("cn=Z") + """
 objectClass: top
 cn: Z
