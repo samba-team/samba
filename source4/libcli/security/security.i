@@ -27,8 +27,8 @@ typedef struct security_token security_token;
 typedef struct security_descriptor security_descriptor;
 %}
 
-%import "../../lib/talloc/talloc.i"
-%import "../util/errors.i"
+%import "../lib/talloc/talloc.i"
+%include "../util/errors.i"
 %import "stdint.i"
 
 enum sec_privilege {
@@ -117,6 +117,10 @@ typedef struct dom_sid {
 #endif
         bool equal(const struct dom_sid *other);
     }
+%pythoncode {
+    def __repr__(self):
+        return "Sid(%r)" % str(self)
+}
 } dom_sid;
 
 %feature("docstring") random_sid "random_sid() -> sid\n" \
