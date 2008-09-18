@@ -8,7 +8,7 @@ default: all
 
 include mkconfig.mk
 
-pidldir := $(srcdir)/pidl
+pidldir := $(srcdir)/../pidl
 
 BASEDIR = $(prefix)
 TORTUREDIR = $(libdir)/torture
@@ -61,7 +61,7 @@ libsrcdir := lib
 libsocketsrcdir := lib/socket
 libcharsetsrcdir := lib/charset
 ldb_sambasrcdir := lib/ldb-samba
-tdbsrcdir := lib/tdb
+tdbsrcdir := ../lib/tdb
 ldbsrcdir := lib/ldb
 libtlssrcdir := lib/tls
 libregistrysrcdir := lib/registry
@@ -69,9 +69,9 @@ smbreadlinesrcdir := lib/smbreadline
 libmessagingsrcdir := lib/messaging
 libeventssrcdir := lib/events
 libcmdlinesrcdir := lib/cmdline
-poptsrcdir := lib/popt
-socketwrappersrcdir := lib/socket_wrapper
-nsswrappersrcdir := lib/nss_wrapper
+poptsrcdir := ../lib/popt
+socketwrappersrcdir := ../lib/socket_wrapper
+nsswrappersrcdir := ../lib/nss_wrapper
 appwebsrcdir := lib/appweb
 libstreamsrcdir := lib/stream
 libutilsrcdir := lib/util
@@ -80,7 +80,7 @@ libdbwrapsrcdir := lib/dbwrap
 libcryptosrcdir := lib/crypto
 libtorturesrcdir := lib/torture
 smb_serversrcdir := smb_server
-libcompressionsrcdir := lib/compression
+libcompressionsrcdir := ../lib/compression
 libgencachesrcdir := lib
 paramsrcdir := param
 rpc_serversrcdir := rpc_server
@@ -101,6 +101,7 @@ pyscriptsrcdir := $(srcdir)/scripting/python
 kdcsrcdir := kdc
 ntp_signdsrcdir := ntp_signd
 wmisrcdir := lib/wmi
+tallocsrcdir := ../lib/talloc
 
 include data.mk
 

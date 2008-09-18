@@ -20,7 +20,7 @@
 */
 
 #include "includes.h"
-#include "lib/tdb/include/tdb.h"
+#include "../tdb/include/tdb.h"
 #include "lib/util/dlinklist.h"
 #include "tdb_wrap.h"
 #include "tdb.h"

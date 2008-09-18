@@ -12,11 +12,11 @@ m4_include(lib/util/fsusage.m4)
 m4_include(lib/util/xattr.m4)
 m4_include(lib/util/capability.m4)
 m4_include(lib/util/time.m4)
-m4_include(lib/popt/samba.m4)
+m4_include(../lib/popt/samba.m4)
 m4_include(lib/charset/config.m4)
 m4_include(lib/socket/config.m4)
 m4_include(nsswitch/nsstest.m4)
-m4_include(pidl/config.m4)
+m4_include(../pidl/config.m4)
 m4_include(lib/zlib.m4)
 
 AC_CONFIG_FILES(../source4/lib/registry/registry.pc)
@@ -31,19 +31,19 @@ AC_CONFIG_FILES(../source4/librpc/dcerpc_atsvc.pc)
 SMB_EXT_LIB_FROM_PKGCONFIG(LIBTALLOC, talloc >= 1.2.0,
 	[],
 	[
-		SMB_INCLUDE_MK(lib/talloc/config.mk)
+		SMB_INCLUDE_MK(../lib/talloc/config.mk)
 	]
 )
 
 SMB_EXT_LIB_FROM_PKGCONFIG(LIBTDB, tdb >= 1.1.0,
 	[],
 	[
-		m4_include(lib/tdb/libtdb.m4)
-		SMB_INCLUDE_MK(lib/tdb/config.mk)
+		m4_include(../lib/tdb/libtdb.m4)
+		SMB_INCLUDE_MK(../lib/tdb/config.mk)
 	]
 )
 
-SMB_INCLUDE_MK(lib/tdb/python.mk) 
+SMB_INCLUDE_MK(../lib/tdb/python.mk) 
 
 SMB_EXT_LIB_FROM_PKGCONFIG(LIBLDB, ldb >= 0.9.1,
 	[

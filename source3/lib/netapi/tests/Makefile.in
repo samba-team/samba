@@ -2,7 +2,7 @@ KRB5LIBS=@KRB5_LIBS@
 LDAP_LIBS=@LDAP_LIBS@
 LIBS=@LIBS@ -lnetapi -ltdb -ltalloc
 DEVELOPER_CFLAGS=@DEVELOPER_CFLAGS@
-FLAGS=-I../ -L../../../bin @CFLAGS@ $(GTK_FLAGS)
+CCFLAGS=-I../ -L../../../bin @CFLAGS@ $(GTK_FLAGS)
 CC=@CC@
 PICFLAG=@PICFLAG@
 LDFLAGS=@PIE_LDFLAGS@ @LDFLAGS@
@@ -11,7 +11,7 @@ NETAPI_LIBS=$(LIBS) $(KRB5LIBS) $(LDAP_LIBS)
 CMDLINE_LIBS=$(NETAPI_LIBS) @POPTLIBS@
 
 # Compile a source file.
-COMPILE_CC = $(CC) -I. $(FLAGS) $(PICFLAG) -c $< -o $@
+COMPILE_CC = $(CC) -I. $(CCFLAGS) $(PICFLAG) -c $< -o $@
 COMPILE = $(COMPILE_CC)
 
 PROGS = bin/netapitest@EXEEXT@
@@ -48,7 +48,7 @@ NETAPITEST_OBJ = netapitest.o netlocalgroup.o netuser.o netgroup.o netdisplay.o 
 
 bin/netapitest@EXEEXT@: $(BINARY_PREREQS) $(NETAPITEST_OBJ)
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(NETAPITEST_OBJ) $(LDFLAGS) $(DYNEXP) $(CMDLINE_LIBS)
+	@$(CC) $(CCFLAGS) -o $@ $(NETAPITEST_OBJ) $(LDFLAGS) $(DYNEXP) $(CMDLINE_LIBS)
 
 clean:
 	-rm -f $(PROGS)

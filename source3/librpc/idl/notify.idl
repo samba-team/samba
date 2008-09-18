@@ -7,6 +7,8 @@
    the change notify buffers
 */
 
+import "misc.idl";
+
 [
   pointer_default(unique)
 ]

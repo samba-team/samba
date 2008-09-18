@@ -194,7 +194,7 @@ in the data and bss columns in "size" anyway (it will be included in
 How to use talloc
 -----------------
 
-Please see the separate document, source/lib/talloc/talloc_guide.txt
+Please see the separate document, lib/talloc/talloc_guide.txt
 You _must_ read this if you want to program in Samba4.
 
 
@@ -646,7 +646,7 @@ file cannot be deleted until you reboot
 trans2 qpathinfo doesn't see the delete_pending flag correctly, but
 qfileinfo does!
 
-get rid of pstring, fstring, strtok
+get rid of strtok
 
 add programming documentation note about lp_set_cmdline()
 

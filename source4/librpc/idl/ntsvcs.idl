@@ -20,9 +20,31 @@ interface ntsvcs
 	[todo] void PNP_GetRelatedDeviceInstance();
 	[todo] void PNP_EnumerateSubKeys();
 	[todo] void PNP_GetDeviceList();
-	[todo] void PNP_GetDeviceListSize();
+	/******************/
+	/* Function: 0x0b */
+
+	WERROR PNP_GetDeviceListSize(
+		[in,unique] [string,charset(UTF16)] uint16 *devicename,
+		[out,ref] uint32 *size,
+		[in] uint32 flags
+		);
+
 	[todo] void PNP_GetDepth();
-	[todo] void PNP_GetDeviceRegProp();
+	/******************/
+	/* Function: 0x0d */
+
+	const int DEV_REGPROP_DESC = 1;
+
+	WERROR PNP_GetDeviceRegProp(
+		[in,ref] [string,charset(UTF16)] uint16 *devicepath,
+		[in] uint32 property,
+		[in,out,ref] uint32 *unknown1,
+		[out,ref] [size_is(*buffer_size)] [length_is(*buffer_size)] uint8 *buffer,
+		[in,out,ref] uint32 *buffer_size,
+		[in,out,ref] uint32 *needed,
+		[in] uint32 unknown3
+		);
+
 	[todo] void PNP_SetDeviceRegProp();
 	[todo] void PNP_GetClassInstance();
 	[todo] void PNP_CreateKey();
@@ -49,8 +71,37 @@ interface ntsvcs
 	[todo] void PNP_RequestDeviceEject();
 	[todo] void PNP_IsDockStationPresent();
 	[todo] void PNP_RequestEjectPC();
-	[todo] void PNP_HwProfFlags();
-	[todo] void PNP_GetHwProfInfo();
+	/******************/
+	/* Function: 0x28 */
+
+	WERROR PNP_HwProfFlags(
+		[in] uint32 unknown1,
+		[in,ref] [string,charset(UTF16)] uint16 *devicepath,
+		[in] uint32 unknown2,
+		[in,out,ref] uint32 *unknown3,
+		[in,out,unique] uint16 *unknown4,
+		[in,unique] [string,charset(UTF16)] uint16 *unknown5,
+		[out,unique] [string,charset(UTF16)] uint16 **unknown5a,
+		[in] uint32 unknown6,
+		[in] uint32 unknown7
+		);
+
+	/******************/
+	/* Function: 0x29 */
+
+	typedef struct {
+		uint32 unknown1;
+		uint16 unknown2[160];
+		uint32 unknown3;
+	} PNP_HwProfInfo;
+
+	WERROR PNP_GetHwProfInfo(
+		[in] uint32 idx,
+		[in,out,ref] PNP_HwProfInfo *info,
+		[in] uint32 unknown1,
+		[in] uint32 unknown2
+		);
+
 	[todo] void PNP_AddEmptyLogConf();
 	[todo] void PNP_FreeLogConf();
 	[todo] void PNP_GetFirstLogConf();

@@ -21,7 +21,7 @@
 */
 
 #include "includes.h"
-#include "lib/compression/lzxpress.h"
+#include "../lib/compression/lzxpress.h"
 #include "librpc/ndr/libndr.h"
 #include "librpc/ndr/ndr_compression.h"
 #include <zlib.h>

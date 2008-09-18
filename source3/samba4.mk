@@ -12,7 +12,7 @@ samba4srcdir = $(call abspath,$(srcdir)/../source4)
 # Flags used for the samba 4 files
 # $(srcdir)/include is required for config.h
 SAMBA4_CFLAGS = -I$(samba4srcdir) -I$(samba4srcdir)/include \
-		 -I$(samba4srcdir)/lib/replace -I$(samba4srcdir)/lib \
+		 -I$(samba4srcdir)/../lib/replace -I$(samba4srcdir)/lib \
 		 -I$(heimdalsrcdir)/lib/hcrypto -I$(tallocdir) \
 		 -I$(srcdir)/include -D_SAMBA_BUILD_=4 -DHAVE_CONFIG_H
 
@@ -57,7 +57,7 @@ endif
 
 INTERN_LDFLAGS = -L${builddir}/bin/static -L${builddir}/bin/shared
 
-pidldir = $(samba4srcdir)/pidl
+pidldir = $(samba4srcdir)/../pidl
 include $(pidldir)/config.mk
 include samba4-config.mk
 include samba4-templates.mk
@@ -80,9 +80,9 @@ libregistrysrcdir := $(samba4srcdir)/lib/registry
 libmessagingsrcdir := $(samba4srcdir)/lib/messaging
 libeventssrcdir := $(samba4srcdir)/lib/events
 libcmdlinesrcdir := $(samba4srcdir)/lib/cmdline
-poptsrcdir := $(samba4srcdir)/lib/popt
-socketwrappersrcdir := $(samba4srcdir)/lib/socket_wrapper
-nsswrappersrcdir := $(samba4srcdir)/lib/nss_wrapper
+poptsrcdir := $(samba4srcdir)/../lib/popt
+socketwrappersrcdir := $(samba4srcdir)/../lib/socket_wrapper
+nsswrappersrcdir := $(samba4srcdir)/../lib/nss_wrapper
 appwebsrcdir := $(samba4srcdir)/lib/appweb
 libstreamsrcdir := $(samba4srcdir)/lib/stream
 libutilsrcdir := $(samba4srcdir)/lib/util
@@ -90,7 +90,7 @@ libtdrsrcdir := $(samba4srcdir)/lib/tdr
 libdbwrapsrcdir := $(samba4srcdir)/lib/dbwrap
 libcryptosrcdir := $(samba4srcdir)/lib/crypto
 libtorturesrcdir := $(samba4srcdir)/lib/torture
-libcompressionsrcdir := $(samba4srcdir)/lib/compression
+libcompressionsrcdir := $(samba4srcdir)/../lib/compression
 libgencachesrcdir := $(samba4srcdir)/lib
 paramsrcdir := $(samba4srcdir)/param
 smb_serversrcdir := $(samba4srcdir)/smb_server
@@ -113,8 +113,9 @@ pyscriptsrcdir := $(samba4srcdir)/scripting/python
 kdcsrcdir := $(samba4srcdir)/kdc
 smbreadlinesrcdir := $(samba4srcdir)/lib/smbreadline
 ntp_signdsrcdir := $(samba4srcdir)/ntp_signd
-tdbsrcdir := $(samba4srcdir)/lib/tdb
+tdbsrcdir := $(samba4srcdir)/../lib/tdb
 ldbsrcdir := $(samba4srcdir)/lib/ldb
+tallocsrcdir := $(samba4srcdir)/../lib/talloc
 override ASN1C = bin/asn1_compile4
 override ET_COMPILER = bin/compile_et4
 include samba4-data.mk

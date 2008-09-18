@@ -697,7 +697,7 @@ NTSTATUS cli_pull_reply(struct async_req *req,
  */
 
 
-static NTSTATUS validate_smb_crypto(struct cli_state *cli, char *pdu)
+static NTSTATUS validate_smb_crypto(struct cli_state *cli, uint8_t *pdu)
 {
 	NTSTATUS status;
 
@@ -710,7 +710,7 @@ static NTSTATUS validate_smb_crypto(struct cli_state *cli, char *pdu)
 	if (cli_encryption_on(cli) && CVAL(pdu, 0) == 0) {
 		uint16_t enc_ctx_num;
 
-		status = get_enc_ctx_num((uint8_t *)pdu, &enc_ctx_num);
+		status = get_enc_ctx_num(pdu, &enc_ctx_num);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(10, ("get_enc_ctx_num returned %s\n",
 				   nt_errstr(status)));

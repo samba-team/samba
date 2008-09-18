@@ -4,7 +4,7 @@
    Shirish Kalele 2000
 */
 
-#include "lib/replace/replace.h"
+#include "../lib/replace/replace.h"
 #include "system/syslog.h"
 #include "system/time.h"
 

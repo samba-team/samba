@@ -26,8 +26,8 @@ libmsrpc		Chris Nichols <skel@samba.org>
 
 libsmbclient		Derrell Lipman <derrell@samba.org>
 
-pdb_*sql		Wilco Baan Hofman <synnack@users.sf.net>
-			Florian Effenberger <floeff@users.sf.net>
+pdb_*sql		Collen Blijenberg <collen@hermanjordan.nl>
+				Herwin Weststrate <herwin@snt.utwente.nl>
 
 			http://pdbsql.sourceforge.net/
 

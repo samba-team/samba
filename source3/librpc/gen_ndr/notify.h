@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 
+#include "librpc/gen_ndr/misc.h"
 #ifndef _HEADER_notify
 #define _HEADER_notify
 

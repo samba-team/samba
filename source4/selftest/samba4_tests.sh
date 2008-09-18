@@ -151,6 +151,7 @@ for t in $net; do
 done
 
 # Tests for session keys
+# FIXME: Integrate these into a single smbtorture test
 
 bindoptions=""
 transport="ncacn_np"
@@ -250,7 +251,7 @@ fi
 if test x"${PIDL_TESTS_SKIP}" = x"yes"; then
    echo "Skipping pidl tests - PIDL_TESTS_SKIP=yes"
 elif $PERL -e 'eval require Test::More;' > /dev/null 2>&1; then
-  for f in $samba4srcdir/pidl/tests/*.pl; do
+  for f in $samba4srcdir/../pidl/tests/*.pl; do
      plantest "pidl.`basename $f .pl`" none $PERL $f "|" $samba4srcdir/script/harness2subunit.pl
   done
 else 
@@ -259,22 +260,22 @@ fi
 
 # Blackbox Tests:
 # tests that interact directly with the command-line tools rather than using 
-# the API
+# the API. These mainly test that the various command-line options of commands 
+# work correctly.
 
 bbdir=$incdir/../../testprogs/blackbox
 
-plantest "blackbox.ndrdump" dc $bbdir/test_ndrdump.sh
+plantest "blackbox.ndrdump" dc $samba4srcdir/librpc/tests/test_ndrdump.sh
 plantest "blackbox.net" dc $samba4srcdir/utils/tests/test_net.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$DOMAIN"
 plantest "blackbox.kinit" dc $bbdir/test_kinit.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$REALM" "\$DOMAIN" "$PREFIX" $CONFIGURATION 
 plantest "blackbox.cifsdd" dc $samba4srcdir/client/tests/test_cifsdd.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$DOMAIN" 
 plantest "blackbox.nmblookup" dc $samba4srcdir/utils/tests/test_nmblookup.sh "\$NETBIOSNAME" "\$NETBIOSALIAS" "\$SERVER" "\$SERVER_IP" 
 plantest "blackbox.nmblookup" member $samba4srcdir/utils/tests/test_nmblookup.sh "\$NETBIOSNAME" "\$NETBIOSALIAS" "\$SERVER" "\$SERVER_IP"
-plantest "blackbox.locktest" dc $bbdir/test_locktest.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$DOMAIN" "$PREFIX"
-plantest "blackbox.masktest" dc $bbdir/test_masktest.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$DOMAIN" "$PREFIX"
-plantest "blackbox.gentest" dc $bbdir/test_gentest.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$DOMAIN" "$PREFIX"
+plantest "blackbox.locktest" dc $samba4srcdir/torture/tests/test_locktest.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$DOMAIN" "$PREFIX"
+plantest "blackbox.masktest" dc $samba4srcdir/torture/tests/test_masktest.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$DOMAIN" "$PREFIX"
+plantest "blackbox.gentest" dc $samba4srcdir/torture/tests/test_gentest.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$DOMAIN" "$PREFIX"
 plantest "blackbox.wbinfo" dc $samba4srcdir/nsswitch/tests/test_wbinfo.sh "\$DOMAIN" "\$USERNAME" "\$PASSWORD" "dc"
 plantest "blackbox.wbinfo" member $samba4srcdir/nsswitch/tests/test_wbinfo.sh "\$DOMAIN" "\$DC_USERNAME" "\$DC_PASSWORD" "member"
-plantest "blackbox.wintest" none $bbdir/test_wintest.sh "$TORTURE_OPTIONS"
 
 # Tests using the "Simple" NTVFS backend
 
@@ -325,7 +326,7 @@ SUBUNITRUN="$PYTHON ./scripting/bin/subunitrun"
 plantest "ldb.python" none PYTHONPATH="$PYTHONPATH:lib/ldb/tests/python/" $SUBUNITRUN api
 plantest "credentials.python" none PYTHONPATH="$PYTHONPATH:auth/credentials/tests" $SUBUNITRUN bindings
 plantest "registry.python" none PYTHONPATH="$PYTHONPATH:lib/registry/tests/" $SUBUNITRUN bindings
-plantest "tdb.python" none PYTHONPATH="$PYTHONPATH:lib/tdb/python/tests" $SUBUNITRUN simple
+plantest "tdb.python" none PYTHONPATH="$PYTHONPATH:../lib/tdb/python/tests" $SUBUNITRUN simple
 plantest "auth.python" none PYTHONPATH="$PYTHONPATH:auth/tests/" $SUBUNITRUN bindings
 plantest "security.python" none PYTHONPATH="$PYTHONPATH:libcli/security/tests" $SUBUNITRUN bindings
 plantest "param.python" none PYTHONPATH="$PYTHONPATH:param/tests" $SUBUNITRUN bindings

@@ -23,7 +23,7 @@ m4_include(m4/check_path.m4)
 
 AC_LIBREPLACE_CC_CHECKS
 
-m4_include(lib/talloc/libtalloc.m4)
+m4_include(../lib/talloc/libtalloc.m4)
 
 LIBTALLOC_OBJ0=""
 for obj in ${TALLOC_OBJ}; do
@@ -33,7 +33,7 @@ AC_SUBST(LIBTALLOC_OBJ0)
 
 # TODO: These should come from m4_include(lib/tdb/libtdb.m4)
 # but currently this fails: things have to get merged from s4.
-tdbdir="lib/tdb"
+tdbdir="../lib/tdb"
 AC_SUBST(tdbdir)
 TDB_CFLAGS="-I${srcdir-.}/$tdbdir/include"
 AC_SUBST(TDB_CFLAGS)
@@ -43,18 +43,18 @@ for o in common/tdb.o common/dump.o common/transaction.o common/error.o \
 	     common/traverse.o common/freelist.o common/freelistcheck.o \
 		 common/io.o common/lock.o common/open.o; 
 do 
-	LIBTDB_OBJ0="$LIBTDB_OBJ0 lib/tdb/$o"
+	LIBTDB_OBJ0="$LIBTDB_OBJ0 $tdbdir/$o"
 done
 
 AC_SUBST(LIBTDB_OBJ0)
 SAMBA_CPPFLAGS="-Iinclude -I${srcdir-.}/include  -I. -I${srcdir-.}"
-SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} -I${srcdir-.}/lib/replace"
+SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} -I${srcdir-.}/../lib/replace"
 SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} ${TALLOC_CFLAGS}"
 SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} ${TDB_CFLAGS}"
 SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} -I${srcdir-.}/libaddns"
 SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} -I${srcdir-.}/librpc"
 
-SAMBA_CONFIGURE_CPPFLAGS="${SAMBA_CPPFLAGS} -I${srcdir-.}/popt"
+SAMBA_CONFIGURE_CPPFLAGS="${SAMBA_CPPFLAGS} -I${srcdir-.}/../lib/popt"
 
 ## cleanup the $(srcdir) in the Makefile if we are outside of the tree
 if test "x${srcdir-.}" != "x."; then
@@ -131,8 +131,8 @@ else
 	CFLAGS="-O"
 fi
 
-m4_include(lib/socket_wrapper/config.m4)
-m4_include(lib/nss_wrapper/config.m4)
+m4_include(../lib/socket_wrapper/config.m4)
+m4_include(../lib/nss_wrapper/config.m4)
 
 m4_include(m4/swat.m4)
 
@@ -407,7 +407,7 @@ dnl These have to be built static:
 default_static_modules="pdb_smbpasswd pdb_tdbsam rpc_lsarpc rpc_samr rpc_winreg rpc_initshutdown rpc_dssetup rpc_wkssvc rpc_svcctl2 rpc_ntsvcs2 rpc_netlogon rpc_netdfs rpc_srvsvc rpc_spoolss rpc_eventlog2 auth_sam auth_unix auth_winbind auth_server auth_domain auth_builtin vfs_default nss_info_template"
 
 dnl These are preferably build shared, and static if dlopen() is not available
-default_shared_modules="vfs_recycle vfs_audit vfs_extd_audit vfs_full_audit vfs_netatalk vfs_fake_perms vfs_default_quota vfs_readonly vfs_cap vfs_expand_msdfs vfs_shadow_copy vfs_shadow_copy2 charset_CP850 charset_CP437 auth_script vfs_readahead vfs_xattr_tdb vfs_streams_xattr"
+default_shared_modules="vfs_recycle vfs_audit vfs_extd_audit vfs_full_audit vfs_netatalk vfs_fake_perms vfs_default_quota vfs_readonly vfs_cap vfs_expand_msdfs vfs_shadow_copy vfs_shadow_copy2 charset_CP850 charset_CP437 auth_script vfs_readahead vfs_xattr_tdb vfs_streams_xattr vfs_acl_xattr"
 
 if test "x$developer" = xyes; then
    default_static_modules="$default_static_modules rpc_rpcecho"
@@ -5872,7 +5872,7 @@ if test x"$INCLUDED_POPT" = x"yes"; then
     AC_MSG_RESULT(yes)
     BUILD_POPT='$(POPT_OBJ)'
     POPTLIBS='$(POPT_OBJ)'
-    FLAGS1="-I\$(srcdir)/popt"
+    FLAGS1="-I\$(srcdir)/../lib/popt"
 else
     AC_MSG_RESULT(no)
 	BUILD_POPT=""
@@ -6057,6 +6057,7 @@ SMB_MODULE(idmap_passdb, winbindd/idmap_passdb.o, "bin/passdb.$SHLIBEXT", IDMAP)
 SMB_MODULE(idmap_nss, winbindd/idmap_nss.o, "bin/nss.$SHLIBEXT", IDMAP)
 SMB_MODULE(idmap_rid, winbindd/idmap_rid.o, "bin/rid.$SHLIBEXT", IDMAP)
 SMB_MODULE(idmap_ad, winbindd/idmap_ad.o, "bin/ad.$SHLIBEXT", IDMAP)
+SMB_MODULE(idmap_hash, \$(IDMAP_HASH_OBJ), "bin/hash.$SHLIBEXT", IDMAP)
 SMB_SUBSYSTEM(IDMAP, winbindd/idmap.o)
 
 SMB_MODULE(nss_info_template, winbindd/nss_info_template.o, "bin/template.$SHLIBEXT", NSS_INFO)
@@ -6113,6 +6114,7 @@ SMB_MODULE(vfs_aio_fork, \$(VFS_AIO_FORK_OBJ), "bin/aio_fork.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_syncops, \$(VFS_SYNCOPS_OBJ), "bin/syncops.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_zfsacl, \$(VFS_ZFSACL_OBJ), "bin/zfsacl.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_notify_fam, \$(VFS_NOTIFY_FAM_OBJ), "bin/notify_fam.$SHLIBEXT", VFS)
+SMB_MODULE(vfs_acl_xattr, \$(VFS_ACL_XATTR_OBJ), "bin/acl_xattr.$SHLIBEXT", VFS)
 
 
 SMB_SUBSYSTEM(VFS,smbd/vfs.o)

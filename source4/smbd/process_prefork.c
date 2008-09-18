@@ -25,7 +25,7 @@
 
 #include "includes.h"
 #include "lib/events/events.h"
-#include "lib/tdb/include/tdb.h"
+#include "../tdb/include/tdb.h"
 #include "lib/socket/socket.h"
 #include "smbd/process_model.h"
 #include "param/secrets.h"

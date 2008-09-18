@@ -25,7 +25,7 @@
 #undef SIZEOF_LONG
 #endif
 
-#include "lib/replace/replace.h"
+#include "../replace/replace.h"
 
 /* make sure we have included the correct config.h */
 #ifndef NO_CONFIG_H /* for some tests */
@@ -652,7 +652,7 @@ typedef char fstring[FSTRING_LEN];
 #include "tdb.h"
 #include "util_tdb.h"
 
-#include "lib/talloc/talloc.h"
+#include "../talloc/talloc.h"
 /* And a little extension. Abort on type mismatch */
 #define talloc_get_type_abort(ptr, type) \
 	(type *)talloc_check_name_abort(ptr, #type)

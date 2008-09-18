@@ -249,7 +249,7 @@ LIBNDR_DRSUAPI_OBJ = librpc/ndr/ndr_drsuapi.o \
 		     librpc/gen_ndr/ndr_drsuapi.o \
 		     librpc/gen_ndr/ndr_drsblobs.o
 
-COMPRESSION_OBJ = lib/compression/mszip.o
+COMPRESSION_OBJ = ../lib/compression/mszip.o
 
 DRSUAPI_OBJ = $(LIBNDR_DRSUAPI_OBJ) \
 	      $(COMPRESSION_OBJ)
@@ -618,6 +618,7 @@ VFS_TSMSM_OBJ = modules/vfs_tsmsm.o
 VFS_FILEID_OBJ = modules/vfs_fileid.o
 VFS_AIO_FORK_OBJ = modules/vfs_aio_fork.o
 VFS_SYNCOPS_OBJ = modules/vfs_syncops.o
+VFS_ACL_XATTR_OBJ = modules/vfs_acl_xattr.o
 
 PLAINTEXT_AUTH_OBJ = auth/pampass.o auth/pass_check.o
 
@@ -948,10 +949,10 @@ SHARESEC_OBJ  = $(SHARESEC_OBJ0) $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
 TALLOCTORT_OBJ = @tallocdir@/testsuite.o $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
                  $(LIBSAMBA_OBJ)
 
-REPLACETORT_OBJ = lib/replace/test/testsuite.o \
-		lib/replace/test/getifaddrs.o \
-		lib/replace/test/os2_delete.o \
-		lib/replace/test/strptime.o \
+REPLACETORT_OBJ = @libreplacedir@/test/testsuite.o \
+		@libreplacedir@/test/getifaddrs.o \
+		@libreplacedir@/test/os2_delete.o \
+		@libreplacedir@/test/strptime.o \
 		$(LIBREPLACE_OBJ)
 
 NDRDUMP_OBJ = librpc/tools/ndrdump.o \
@@ -978,6 +979,10 @@ PAM_SMBPASS_OBJ = $(PAM_SMBPASS_OBJ_0) $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) $(PASSDB_
 IDMAP_OBJ     = winbindd/idmap.o winbindd/idmap_util.o @IDMAP_STATIC@
 
 NSS_INFO_OBJ = winbindd/nss_info.o @NSS_INFO_STATIC@
+
+IDMAP_HASH_OBJ = \
+		winbindd/idmap_hash/idmap_hash.o \
+		winbindd/idmap_hash/mapfile.o
 
 WINBINDD_OBJ1 = \
 		winbindd/winbindd.o       \
@@ -1056,8 +1061,8 @@ LDBMODIFY_OBJ = $(LDB_CMDLINE_OBJ) lib/ldb/tools/ldbmodify.o
 WINBIND_KRB5_LOCATOR_OBJ1 = nsswitch/winbind_krb5_locator.o
 WINBIND_KRB5_LOCATOR_OBJ = $(WINBIND_KRB5_LOCATOR_OBJ1) $(WBCOMMON_OBJ) $(LIBREPLACE_OBJ)
 
-POPT_OBJ=popt/findme.o popt/popt.o popt/poptconfig.o \
-          popt/popthelp.o popt/poptparse.o
+POPT_OBJ=../lib/popt/findme.o ../lib/popt/popt.o ../lib/popt/poptconfig.o \
+          ../lib/popt/popthelp.o ../lib/popt/poptparse.o
 
 INIPARSER_OBJ = iniparser_build/iniparser.o iniparser_build/dictionary.o \
 		iniparser_build/strlib.o
@@ -1170,7 +1175,7 @@ samba3-idl::
 		epmapper.idl messaging.idl xattr.idl misc.idl samr.idl security.idl \
 		dssetup.idl krb5pac.idl ntsvcs.idl libnetapi.idl drsuapi.idl drsblobs.idl \
 		nbt.idl" \
-		CPP="$(CPP)" PERL="$(PERL)" \
+		CPP="$(CPP)" PIDL="../pidl/pidl" \
 	 srcdir="$(srcdir)" $(srcdir)/script/build_idl.sh $(PIDL_ARGS)
 
 
@@ -2208,6 +2213,10 @@ bin/ad.@SHLIBEXT@: $(BINARY_PREREQS) winbindd/idmap_ad.o
 	@echo "Building plugin $@"
 	@$(SHLD_MODULE) winbindd/idmap_ad.o
 
+bin/hash.@SHLIBEXT@: $(BINARY_PREREQS) $(IDMAP_HASH_OBJ)
+	@echo "Building plugin $@"
+	@$(SHLD_MODULE) $(IDMAP_HASH_OBJ)
+
 bin/tdb2.@SHLIBEXT@: $(BINARY_PREREQS) winbindd/idmap_tdb2.o
 	@echo "Building plugin $@"
 	@$(SHLD_MODULE) winbindd/idmap_tdb2.o
@@ -2374,6 +2383,10 @@ bin/fileid.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_FILEID_OBJ)
 bin/aio_fork.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_AIO_FORK_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD_MODULE) $(VFS_AIO_FORK_OBJ)
+
+bin/acl_xattr.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_ACL_XATTR_OBJ)
+	@echo "Building plugin $@"
+	@$(SHLD_MODULE) $(VFS_ACL_XATTR_OBJ)
 
 bin/registry.@SHLIBEXT@: $(BINARY_PREREQS) libgpo/gpext/registry.o
 	@echo "Building plugin $@"
@@ -2715,8 +2728,14 @@ valgrindtest:: all torture timelimit
 ## Examples:
 ##
 
-libsmbclient_examples:
+libsmbclient_examples: libsmbclient
 	$(MAKE) -C ../examples/libsmbclient -f Makefile.internal
 
 clean_libsmbclient_examples:
 	$(MAKE) -C ../examples/libsmbclient -f Makefile.internal clean
+
+libnetapi_examples: libnetapi
+	$(MAKE) -C lib/netapi/examples
+
+clean_libnetapi_examples:
+	$(MAKE) -C lib/netapi/examples clean

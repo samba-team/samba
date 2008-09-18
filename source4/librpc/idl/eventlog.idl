@@ -86,7 +86,10 @@ import "lsa.idl", "security.idl";
 
 	/******************/
 	/* Function: 0x05 */
-	[todo] NTSTATUS eventlog_GetOldestRecord();
+	NTSTATUS eventlog_GetOldestRecord(
+		[in] policy_handle *handle,
+		[out,ref] uint32 *oldest_entry
+	);
 
 	/******************/
 	/* Function: 0x06 */
