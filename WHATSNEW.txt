@@ -95,7 +95,8 @@ o   David Leonard <David.Leonard@quest.com>
 
 
 o   Simo Sorce <idra@samba.org>
-    * BUG 5571: Fix group memeberships in Winbind.
+    * BUG 5571: Fix enumeration of nested group memberships in Winbind.
+      This affected only setups using "security = ads".
 
 
 o   Timur <timur@FreeBSD.org>
