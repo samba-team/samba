@@ -576,7 +576,6 @@ sub write_clientconf($$)
 	}
 	print CF "
 	private dir = $prefix_abs/client/private
-	js include = $srcdir_abs/scripting/libjs
 	name resolve order = bcast
 	panic action = $srcdir_abs/script/gdb_backtrace \%PID\% \%PROG\%
 	max xmit = 32K

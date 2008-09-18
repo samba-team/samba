@@ -555,7 +555,6 @@ sub provision($$$$$$)
 	lock dir = $lockdir
 	setup directory = $self->{setupdir}
 	modules dir = $self->{bindir}/modules
-	js include = $srcdir/scripting/libjs
 	winbindd socket directory = $winbindd_socket_dir
 	winbindd privileged socket directory = $winbindd_privileged_socket_dir
 	ntp signd socket directory = $ntp_signd_socket_dir
