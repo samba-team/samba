@@ -1,120 +1,23 @@
                    ==============================
-                   Release Notes for Samba 3.2.4
-			September 18, 2008
+                   Release Notes for Samba 3.2.5
+
                    ==============================
 
 
 This is a bug fix release of the Samba 3.2 series.
 
-Major bug fixes included in Samba 3.2.4 are:
+Major bug fixes included in Samba 3.2.5 are:
 
-  o Fix Winbind crashes.
-  o Fix changing of machine account passwords.
-  o Fix non guest connections to shares when "security = share"
-    is used.
-  o Fix file write times.
-
+  o 
 
 ######################################################################
 Changes
 #######
 
-Changes since 3.2.3
+Changes since 3.2.4
 -------------------
 
 
-o   Michael Adam <obnox@samba.org>
-    * BUG 5590: Fix binary stripping on older OS.
-    * BUG 5492: Fix RHEL SPEC file by removing libmsrpc stuff.
-    * BUG 5507: Fix several issues in the RHEL SPEC file.
-    * Fix linking of cifs.upcall when nscd_flush_cache() is found.
-
-
-o   Jeremy Allison <jra@samba.org>
-    * BUG 5052: Allow inheritable permissions.
-    * BUG 5697: Fix spinning of nmbd in reload_interfaces when only loopback
-      has an IPv4 address.
-    * BUG 5698: Fix non guest connections to shares when "security = share"
-      is used.
-    * BUG 5729: Explicitly allow "-valid".
-    * BUG 5745: Fix Kerberos authentication with (lib)smbclient.
-    * BUG 5751: Fix showing of ACLs on DFS in (lib)smbclient.
-    * BUG 5761: Fix opening of mangled directory name (resulted
-      'is a stream name').
-    * Fix the wcache_invalidate_samlogon calls.
-    * Add st_birthtime and friends for accurate create times on *BSD and MacOSX.
-    * Clarify usage of "force create mode".
-    * Write times code update.
-
-
-o   Gerald (Jerry) Carter <jerry@samba.org>
-    * Fix Winbind crash.
-    * idmap_ad: Fix a segfault when calling nss_get_info() with a NULL ads
-      structure.
-
-
-o   Steven Danneman <steven.danneman@isilon.com>
-    * Fix build warnings.
-    * Cleanup of DC enumeration in get_dcs().
-
-
-o   Günther Deschner <gd@samba.org>
-    * BUG 5710: Fix changing of machine account passwords.
-    * Fix several build warnings.
-    * Fix invalid sid copy (hit when enumerating sibling domains) in Winbind.
-
-
-o   James Ding <ding_cc@hotmail.com>
-    * BUG 5736: Fix Winbind crash bug with trusted domains.
-
-
-o   Ephi Dror <Ephi.Dror@datadomain.com>
-    * Correct the netsamlogon_clear_cached_user function.
-
-
-o   Jeff Layton <jlayton@redhat.com>
-    * Fix handling of MSKRB5 OID in cifs.upcall.
-    * Fix build warnings in cifs.upcall.
-    * Change default install location of cifs.upcall to EPREFIX/sbin.
-    * Enable building of cifs.upcall by default on Linux.
-
-
-o   Volker Lendecke <vl@sernet.de>
-    * BUG 5707: Do proper error handling if the socket is closed.
-    * Fix calculation of useable_space for trans2 and nttrans replies.
-    * Fix Coverity ID 587.
-    * Add mapping of generic bits when setting an NFSv4 ACL.
-
-
-o   Stefan Metzmacher <metze@samba.org>
-    * Some write time fixes.
-
-
-o   David Leonard <David.Leonard@quest.com>
-    * BUG 4516: No IPv6 on Solaris 2.6.
-
-
-o   Simo Sorce <idra@samba.org>
-    * BUG 5571: Fix enumeration of nested group memberships in Winbind.
-      This affected only setups using "security = ads".
-
-
-o   Timur <timur@FreeBSD.org>
-    * Fix cut and paste error in quota code.
-    * Fix display of POSIX ACLs.
-    * Fix aio on FreeBSD.
-
-
-o   Andrew Tridgell <tridge@samba.org>
-    * Avoid a race condition in glibc between AIO and setresuid().
-    * Add missing become root for AIO operations.
-    * Fix logic of tsmsm_sendfile().
-    * Fix an errno handling bug that could lead to an infinite loop.
-    * Fix handling of arbitrary new PAC types.
-
-
-o   Qiao Yang <geoyang@ironport.com>
-    * Fix a memleak.
 
 
 ######################################################################
