@@ -65,7 +65,6 @@ class MapBaseTestCase(TestCaseInTempDir):
         self.ldburl = "tdb://" + self.ldbfile
 
         tempdir = self.tempdir
-        print tempdir
 
         class Target:
             """Simple helper class that contains data for a specific SAM connection."""
@@ -110,40 +109,41 @@ class Samba3SamTestCase(MapBaseTestCase):
         self.setup_modules(ldb, self.samba3, self.samba4)
         self.ldb = Ldb(self.ldburl)
 
-    def test_s3sam_search(self):
-        print "Looking up by non-mapped attribute"
+    def test_search_non_mapped(self):
+        """Looking up by non-mapped attribute"""
         msg = self.ldb.search(expression="(cn=Administrator)")
         self.assertEquals(len(msg), 1)
         self.assertEquals(msg[0]["cn"], "Administrator")
 
-        print "Looking up by mapped attribute"
+    def test_search_non_mapped(self):
+        """Looking up by mapped attribute"""
         msg = self.ldb.search(expression="(name=Backup Operators)")
         self.assertEquals(len(msg), 1)
         self.assertEquals(msg[0]["name"], "Backup Operators")
 
-        print "Looking up by old name of renamed attribute"
+    def test_old_name_of_renamed(self):
+        """Looking up by old name of renamed attribute"""
         msg = self.ldb.search(expression="(displayName=Backup Operators)")
         self.assertEquals(len(msg), 0)
 
-        print "Looking up mapped entry containing SID"
+    def test_mapped_containing_sid(self):
+        """Looking up mapped entry containing SID"""
         msg = self.ldb.search(expression="(cn=Replicator)")
         self.assertEquals(len(msg), 1)
-        print msg[0].dn
         self.assertEquals(str(msg[0].dn), "cn=Replicator,ou=Groups,dc=vernstok,dc=nl")
         self.assertEquals(msg[0]["objectSid"], "S-1-5-21-4231626423-2410014848-2360679739-552")
-
-        print "Checking mapping of objectClass"
+        # Check mapping of objectClass
         oc = set(msg[0]["objectClass"])
         self.assertTrue(oc is not None)
         for i in oc:
             self.assertEquals(oc[i] == "posixGroup" or oc[i], "group")
 
-        print "Looking up by objectClass"
+    def test_search_by_objclass(self):
+        """Looking up by objectClass"""
         msg = self.ldb.search(expression="(|(objectClass=user)(cn=Administrator))")
         self.assertEquals(len(msg), 2)
         for i in range(len(msg)):
-            self.assertEquals((str(msg[i].dn), "unixName=Administrator,ou=Users,dc=vernstok,dc=nl") or
-                   (str(msg[i].dn) == "unixName=nobody,ou=Users,dc=vernstok,dc=nl"))
+            self.assertTrue((str(msg[i].dn) == "unixName=Administrator,ou=Users,dc=vernstok,dc=nl") or (str(msg[i].dn) == "unixName=nobody,ou=Users,dc=vernstok,dc=nl"))
 
 
     def test_s3sam_modify(self):
@@ -167,21 +167,21 @@ class Samba3SamTestCase(MapBaseTestCase):
         self.assertEquals(msg[0]["foo"], "bar")
         self.assertEquals(msg[0]["blah"], "Blie")
 
-        print "Adding record that will be mapped"
+        # Adding record that will be mapped
         self.ldb.add({"dn": "cn=Niemand,cn=Users,dc=vernstok,dc=nl",
                  "objectClass": "user",
                  "unixName": "bin",
                  "sambaUnicodePwd": "geheim",
                  "cn": "Niemand"})
 
-        print "Checking for existence of record (remote)"
+        # Checking for existence of record (remote)
         msg = self.ldb.search(expression="(unixName=bin)", 
                               attrs=['unixName','cn','dn', 'sambaUnicodePwd'])
         self.assertEquals(len(msg), 1)
         self.assertEquals(msg[0]["cn"], "Niemand")
         self.assertEquals(msg[0]["sambaUnicodePwd"], "geheim")
 
-        print "Checking for existence of record (local && remote)"
+        # Checking for existence of record (local && remote)
         msg = self.ldb.search(expression="(&(unixName=bin)(sambaUnicodePwd=geheim))", 
                          attrs=['unixName','cn','dn', 'sambaUnicodePwd'])
         self.assertEquals(len(msg), 1)           # TODO: should check with more records
@@ -189,22 +189,22 @@ class Samba3SamTestCase(MapBaseTestCase):
         self.assertEquals(msg[0]["unixName"], "bin")
         self.assertEquals(msg[0]["sambaUnicodePwd"], "geheim")
 
-        print "Checking for existence of record (local || remote)"
+        # Checking for existence of record (local || remote)
         msg = self.ldb.search(expression="(|(unixName=bin)(sambaUnicodePwd=geheim))", 
                          attrs=['unixName','cn','dn', 'sambaUnicodePwd'])
-        print "got %d replies" % len(msg)
+        #print "got %d replies" % len(msg)
         self.assertEquals(len(msg), 1)        # TODO: should check with more records
         self.assertEquals(msg[0]["cn"], "Niemand")
         self.assertEquals(msg[0]["unixName"], "bin")
         self.assertEquals(msg[0]["sambaUnicodePwd"], "geheim")
 
-        print "Checking for data in destination database"
+        # Checking for data in destination database
         msg = self.samba3.db.search(expression="(cn=Niemand)")
         self.assertTrue(len(msg) >= 1)
         self.assertEquals(msg[0]["sambaSID"], "S-1-5-21-4231626423-2410014848-2360679739-2001")
         self.assertEquals(msg[0]["displayName"], "Niemand")
 
-        print "Adding attribute..."
+        # Adding attribute...
         self.ldb.modify_ldif("""
 dn: cn=Niemand,cn=Users,dc=vernstok,dc=nl
 changetype: modify
@@ -212,13 +212,13 @@ add: description
 description: Blah
 """)
 
-        print "Checking whether changes are still there..."
+        # Checking whether changes are still there...
         msg = self.ldb.search(expression="(cn=Niemand)")
         self.assertTrue(len(msg) >= 1)
         self.assertEquals(msg[0]["cn"], "Niemand")
         self.assertEquals(msg[0]["description"], "Blah")
 
-        print "Modifying attribute..."
+        # Modifying attribute...
         self.ldb.modify_ldif("""
 dn: cn=Niemand,cn=Users,dc=vernstok,dc=nl
 changetype: modify
@@ -226,35 +226,35 @@ replace: description
 description: Blie
 """)
 
-        print "Checking whether changes are still there..."
+        # Checking whether changes are still there...
         msg = self.ldb.search(expression="(cn=Niemand)")
         self.assertTrue(len(msg) >= 1)
         self.assertEquals(msg[0]["description"], "Blie")
 
-        print "Deleting attribute..."
+        # Deleting attribute...
         self.ldb.modify_ldif("""
 dn: cn=Niemand,cn=Users,dc=vernstok,dc=nl
 changetype: modify
 delete: description
 """)
 
-        print "Checking whether changes are no longer there..."
+        # Checking whether changes are no longer there...
         msg = self.ldb.search(expression="(cn=Niemand)")
         self.assertTrue(len(msg) >= 1)
         self.assertTrue(not "description" in msg[0])
 
-        print "Renaming record..."
+        # Renaming record...
         self.ldb.rename("cn=Niemand,cn=Users,dc=vernstok,dc=nl", "cn=Niemand2,cn=Users,dc=vernstok,dc=nl")
 
-        print "Checking whether DN has changed..."
+        # Checking whether DN has changed...
         msg = self.ldb.search(expression="(cn=Niemand2)")
         self.assertEquals(len(msg), 1)
         self.assertEquals(str(msg[0].dn), "cn=Niemand2,cn=Users,dc=vernstok,dc=nl")
 
-        print "Deleting record..."
+        # Deleting record...
         self.ldb.delete("cn=Niemand2,cn=Users,dc=vernstok,dc=nl")
 
-        print "Checking whether record is gone..."
+        # Checking whether record is gone...
         msg = self.ldb.search(expression="(cn=Niemand2)")
         self.assertEquals(len(msg), 0)
 
@@ -271,7 +271,7 @@ class MapTestCase(MapBaseTestCase):
         self.ldb = Ldb(self.ldburl)
 
     def test_map_search(self):
-        print "Running search tests on mapped data"
+        """Running search tests on mapped data."""
         ldif = """
 dn: """ + "sambaDomainName=TESTS,""" + self.samba3.basedn + """
 objectclass: sambaDomain
@@ -281,7 +281,7 @@ sambaNextRid: 2000
 sambaDomainName: TESTS"""
         self.samba3.db.add_ldif(substitute_var(ldif, self.samba3.substvars))
 
-        print "Add a set of split records"
+        # Add a set of split records
         ldif = """
 dn: """ + self.samba4.dn("cn=X") + """
 objectClass: user
@@ -296,7 +296,6 @@ objectSid: S-1-5-21-4231626423-2410014848-2360679739-552
 primaryGroupID: 1-5-21-4231626423-2410014848-2360679739-512
 """
 
-        print ldif
         self.ldb.add_ldif(substitute_var(ldif, self.samba4.substvars))
 
         ldif = """
@@ -326,7 +325,7 @@ description: y
 
         self.ldb.add_ldif(substitute_var(ldif, self.samba4.substvars))
 
-        print "Add a set of remote records"
+        # Add a set of remote records
 
         ldif = """
 dn: """ + self.samba3.dn("cn=A") + """
@@ -357,7 +356,7 @@ description: y
 """
         self.samba3.add_ldif(substitute_var(ldif, self.samba3.substvars))
 
-        print "Testing search by DN"
+        # Testing search by DN
 
         # Search remote record by local DN
         dn = self.samba4.dn("cn=A")
@@ -397,7 +396,7 @@ description: y
         self.assertTrue(not "lastLogon" in res[0])
         self.assertEquals(res[0]["sambaLogonTime"], "x")
 
-        print "Testing search by attribute"
+        # Testing search by attribute
 
         # Search by ignored attribute
         attrs = ["dnsHostName", "lastLogon"]
@@ -886,7 +885,7 @@ badPwdCount: 4
 
         # Delete remote record
         self.ldb.delete(dn)
-        # Check in mapped db
+        # Check in mapped db that it's removed
         res = self.ldb.search(dn, scope=SCOPE_BASE)
         self.assertEquals(len(res), 0)
         # Check in remote db
@@ -911,6 +910,7 @@ add: revision
 revision: 1
 replace: description
 description: test
+
 """
         self.ldb.modify_ldif(ldif)
         # Check in mapped db
