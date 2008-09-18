@@ -173,7 +173,7 @@ Goto
 ----
 
 While many people have been academically taught that goto's are fundamentally
-evil, then can greatly enhance readability and reduce memory leaks when used
+evil, they can greatly enhance readability and reduce memory leaks when used
 as the single exit point from a function.  But in no Samba world what so ever 
 is a goto outside of a function or block of code a good idea.
 
