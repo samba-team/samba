@@ -600,14 +600,6 @@ static size_t utf8_push(void *cd, const char **inbuf, size_t *inbytesleft,
 	uint8_t *c = (uint8_t *)*outbuf;
 	const uint8_t *uc = (const uint8_t *)*inbuf;
 
-	/* Special case: Windows (e.g. "regedit") also expects an empty buffer
- 	   with length 1 as a valid empty UTF8 string */
-	if (in_left == 1 && uc[0] == 0 && out_left >= 1) {
-		c[0] = uc[0];
-		in_left  -= 1;
-		out_left -= 1;
-	}
-
 	while (in_left >= 2 && out_left >= 1) {
 		unsigned int codepoint;
 
