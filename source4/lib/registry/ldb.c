@@ -60,13 +60,18 @@ static void reg_ldb_unpack_value(TALLOC_CTX *mem_ctx,
 	{
 	case REG_SZ:
 	case REG_EXPAND_SZ:
-		data->length = convert_string_talloc(mem_ctx, iconv_convenience, CH_UNIX, CH_UTF16,
+		if (val != NULL)
+			data->length = convert_string_talloc(mem_ctx, iconv_convenience, CH_UNIX, CH_UTF16,
 						     val->data, val->length,
 						     (void **)&data->data);
+		else {
+			data->data = NULL;
+			data->length = 0;
+		}
 		break;
 
 	case REG_BINARY:
-		if (val)
+		if (val != NULL)
 			*data = strhex_to_data_blob((char *)val->data);
 		else {
 			data->data = NULL;
@@ -100,11 +105,15 @@ static struct ldb_message *reg_ldb_pack_value(struct ldb_context *ctx,
 	switch (type) {
 	case REG_SZ:
 	case REG_EXPAND_SZ:
-		val.length = convert_string_talloc(mem_ctx, lp_iconv_convenience(global_loadparm), CH_UTF16, CH_UNIX,
+		if (data.data[0] != '\0') {
+			val.length = convert_string_talloc(mem_ctx, lp_iconv_convenience(global_loadparm), CH_UTF16, CH_UNIX,
 						   (void *)data.data,
 						   data.length,
 						   (void **)&val.data);
-		ldb_msg_add_value(msg, "data", &val, NULL);
+			ldb_msg_add_value(msg, "data", &val, NULL);
+		} else {
+			ldb_msg_add_empty(msg, "data", LDB_FLAG_MOD_DELETE, NULL);
+		}
 		break;
 
 	case REG_BINARY:
@@ -704,7 +713,8 @@ static WERROR ldb_set_value(struct hive_key *parent,
 	if (ret == LDB_ERR_ENTRY_ALREADY_EXISTS) {
 		int i;
 		for (i = 0; i < msg->num_elements; i++) {
-			msg->elements[i].flags = LDB_FLAG_MOD_REPLACE;
+			if (msg->elements[i].flags != LDB_FLAG_MOD_DELETE)
+				msg->elements[i].flags = LDB_FLAG_MOD_REPLACE;
 		}
 		ret = ldb_modify(kd->ldb, msg);
 	}
