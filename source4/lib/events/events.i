@@ -18,7 +18,7 @@
 
 %module(docstring="Event management.",package="samba.events") events;
 
-%import "../talloc/talloc.i";
+%import "../../../lib/talloc/talloc.i";
 
 %{
 #include "events.h"

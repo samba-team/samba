@@ -1,6 +1,6 @@
 %module libcli_smb
 
-%import "../../lib/talloc/talloc.i"
+%import "../../../lib/talloc/talloc.i"
 %import "../../lib/events/events.i"
 
 %{

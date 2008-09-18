@@ -43,7 +43,7 @@ typedef struct hive_key hive_key;
 }
 
 %import "stdint.i"
-%import "../../lib/talloc/talloc.i"
+%import "../../../lib/talloc/talloc.i"
 %import "../../auth/credentials/credentials.i"
 %import "../../param/param.i"
 %import "../events/events.i"

@@ -64,6 +64,10 @@ static void ltdb_log_fn(struct tdb_context *tdb, enum tdb_debug_level level, con
 	struct ldb_context *ldb = talloc_get_type(tdb_get_logging_private(tdb), struct ldb_context);
 	enum ldb_debug_level ldb_level;
 	char *message; 
+
+	if (ldb == NULL)
+		return;
+
 	va_start(ap, fmt);
 	message = talloc_vasprintf(ldb, fmt, ap);
 	va_end(ap);
