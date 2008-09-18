@@ -1,4 +1,8 @@
 #!/usr/bin/perl
+# Simple script that converts Perl test harness output to 
+# Subunit
+# Copyright (C) 2008 Jelmer Vernooij <jelmer@samba.org>
+# Published under the GNU GPL, v3 or later
 
 my $firstline = 1;
 my $error = 0;
