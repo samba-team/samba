@@ -32,7 +32,7 @@
 
 /* Updated to 4, completely new interface, SSS */
 
-#define SMB_IDMAP_INTERFACE_VERSION 4
+#define SMB_IDMAP_INTERFACE_VERSION 5
 
 struct idmap_domain {
 	const char *name;
