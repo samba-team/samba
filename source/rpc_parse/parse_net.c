@@ -1044,7 +1044,7 @@ BOOL net_io_q_srv_pwset2(const char *desc, NET_Q_SRV_PWSET2 *q_s, prs_struct *ps
 
 	if(!smb_io_clnt_info("", &q_s->clnt_id, ps, depth)) /* client identification/authentication info */
 		return False;
-	if(!prs_uint8s(False, "pwd.data", ps, depth, q_s->pwd.data, 516)) /* new password - undocumented */
+	if(!prs_uint8s(False, "pwd.data", ps, depth, q_s->pwd.data, 512)) /* new password - undocumented */
 		return False;
 	if(!prs_uint32("pwd.length", ps, depth, &q_s->pwd.length)) /* new password - undocumented */
 		return False;
