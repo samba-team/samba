@@ -23,6 +23,11 @@ winbindd_socket_dir="${localstatedir}/run/winbindd"
 winbindd_privileged_socket_dir="${localstatedir}/lib/winbindd_privileged"
 ntp_signd_socket_dir="${localstatedir}/run/ntp_signd"
 
+# Check to prevent installing directly under /usr without the FHS
+AS_IF([test ${prefix} == /usr],[
+    AC_MSG_ERROR([Don't install directly under "/usr" without using the FHS option (--with-fhs). This could lead to file loss!])
+])
+
 AC_ARG_WITH(fhs, 
 [AS_HELP_STRING([--with-fhs],[Use FHS-compliant paths (default=no)])],
     lockdir="${localstatedir}/lib/samba"
