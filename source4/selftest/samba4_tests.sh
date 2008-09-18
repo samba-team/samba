@@ -60,11 +60,7 @@ $incdir/../bin/smbtorture -V
 
 samba4srcdir=$incdir/..
 samba4bindir=$samba4srcdir/bin
-SCRIPTDIR=$samba4srcdir/../testprogs/ejs
 smb4torture="$samba4bindir/smbtorture $TORTURE_OPTIONS"
-
-plantest "js.base" dc "$SCRIPTDIR/base.js" $CONFIGURATION
-plantest "js.ldb" none "$SCRIPTDIR/ldb.js" `pwd` $CONFIGURATION -d 10
 
 # Simple tests for LDAP and CLDAP
 
@@ -285,10 +281,6 @@ plantest "blackbox.wintest" none $bbdir/test_wintest.sh "$TORTURE_OPTIONS"
 for t in "BASE-RW1"; do
     plantest "ntvfs.simple.`normalize_testname $t`" dc $VALGRIND $smb4torture $ADDARGS //\$SERVER/simple -U"\$USERNAME"%"\$PASSWORD" $t
 done
-
-DATADIR=$samba4srcdir/../testdata
-
-plantest "js.samba3sam" none $samba4bindir/smbscript $SCRIPTDIR/samba3sam.js $CONFIGURATION `pwd` $DATADIR/samba3/
 
 # Domain Member Tests
 
