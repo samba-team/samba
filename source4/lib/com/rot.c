@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "lib/com/com.h"
 
 struct dcom_interface_p *dcom_get_local_iface_p(struct GUID *ipid)
 {
