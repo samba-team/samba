@@ -682,7 +682,7 @@ python_atsvc_OBJ_FILES = $(gen_ndrsrcdir)/py_atsvc.o
 
 [PYTHON::python_dcerpc_nbt]
 LIBRARY_REALNAME = samba/nbt.$(SHLIBEXT)
-PRIVATE_DEPENDENCIES = NDR_NBT PYTALLOC param swig_credentials python_dcerpc
+PRIVATE_DEPENDENCIES = NDR_NBT PYTALLOC param swig_credentials python_dcerpc python_dcerpc_misc python_dcerpc_security
 
 python_dcerpc_nbt_OBJ_FILES = $(gen_ndrsrcdir)/py_nbt.o
 

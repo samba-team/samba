@@ -47,4 +47,6 @@ WERROR com_create_object(struct com_context *ctx, struct GUID *clsid, int num_if
 WERROR com_get_class_object(struct com_context *ctx, struct GUID *clsid, struct GUID *iid, struct IUnknown **ip);
 NTSTATUS com_init(void);
 
+typedef struct IUnknown *(*get_class_object_function) (const struct GUID *clsid);
+
 #endif /* __SAMBA_COM_H__ */

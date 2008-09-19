@@ -265,7 +265,7 @@ fi
 
 bbdir=$incdir/../../testprogs/blackbox
 
-plantest "blackbox.ndrdump" dc $samba4srcdir/librpc/tests/test_ndrdump.sh
+plantest "blackbox.ndrdump" none $samba4srcdir/librpc/tests/test_ndrdump.sh
 plantest "blackbox.net" dc $samba4srcdir/utils/tests/test_net.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$DOMAIN"
 plantest "blackbox.kinit" dc $bbdir/test_kinit.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$REALM" "\$DOMAIN" "$PREFIX" $CONFIGURATION 
 plantest "blackbox.cifsdd" dc $samba4srcdir/client/tests/test_cifsdd.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$DOMAIN" 

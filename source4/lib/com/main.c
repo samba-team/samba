@@ -42,7 +42,7 @@ WERROR com_create_object(struct com_context *ctx, struct GUID *clsid, int num_if
 	int i;
 	struct GUID classfact_iid;
 
-	GUID_from_string(DCERPC_ICLASSFACTORY_UUID, &classfact_iid);
+	GUID_from_string(NDR_ICLASSFACTORY_UUID, &classfact_iid);
 
 	/* Obtain class object */
 	error = com_get_class_object(ctx, clsid, &classfact_iid, (struct IUnknown **)&factory);
@@ -87,24 +87,4 @@ WERROR com_get_class_object(struct com_context *ctx, struct GUID *clsid, struct 
 	}
 	
 	return IUnknown_QueryInterface(iu, ctx, iid, ip);
-}
-
-NTSTATUS com_init(void)
-{
-	static BOOL initialized = False;
-	
-	init_module_fn static_init[] = STATIC_com_MODULES; 
-	init_module_fn *shared_init;
-
-	if (initialized) return NT_STATUS_OK;
-	initialized = True;
-
-	shared_init = load_samba_modules(NULL, "com");
-
-	run_init_functions(static_init);
-	run_init_functions(shared_init);
-
-	talloc_free(shared_init);
-	
-	return NT_STATUS_OK;	
 }
