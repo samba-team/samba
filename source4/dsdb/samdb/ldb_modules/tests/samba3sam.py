@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 # Unix SMB/CIFS implementation.
-# Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2005-2007
+# Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2005-2008
 # Copyright (C) Martin Kuehl <mkhl@samba.org> 2006
 #
 # This is a Python port of the original in testprogs/ejs/samba3sam.js
@@ -35,12 +35,9 @@ datadir = os.path.join(os.path.dirname(__file__), "../../../../../testdata/samba
 def ldb_debug(l, text):
     print text
 
+
 class MapBaseTestCase(TestCaseInTempDir):
     """Base test case for mapping tests."""
-
-    def setup_data(self, obj, ldif):
-        self.assertTrue(ldif is not None)
-        obj.db.add_ldif(substitute_var(ldif, obj.substvars))
 
     def setup_modules(self, ldb, s3, s4):
         ldb.add({"dn": "@MAP=samba3sam",
@@ -53,6 +50,7 @@ class MapBaseTestCase(TestCaseInTempDir):
         ldb.add({"dn": "@PARTITION",
             "partition": [s4.basedn + ":" + s4.url, s3.basedn + ":" + s3.url],
             "replicateEntries": ["@ATTRIBUTES", "@INDEXLIST"]})
+
 
     def setUp(self):
         super(MapBaseTestCase, self).setUp()
@@ -84,6 +82,19 @@ class MapBaseTestCase(TestCaseInTempDir):
             def connect(self):
                 return self.db.connect(self.url)
 
+            def setup_data(self, path):
+                ldif = open(os.path.join(datadir, path), 'r').read()
+                self.add_ldif(ldif)
+
+            def subst(self, text):
+                return substitute_var(text, self.substvars)
+
+            def add_ldif(self, ldif):
+                self.db.add_ldif(self.subst(ldif))
+
+            def modify_ldif(self, ldif):
+                self.db.modify_ldif(self.subst(ldif))
+
         self.samba4 = Target("samba4.ldb", "dc=vernstok,dc=nl", make_s4dn)
         self.samba3 = Target("samba3.ldb", "cn=Samba3Sam", make_dn)
         self.templates = Target("templates.ldb", "cn=templates", None)
@@ -104,10 +115,10 @@ class Samba3SamTestCase(MapBaseTestCase):
     def setUp(self):
         super(Samba3SamTestCase, self).setUp()
         ldb = Ldb(self.ldburl)
-        self.setup_data(self.samba3, open(os.path.join(datadir, "samba3.ldif"), 'r').read())
-        self.setup_data(self.templates, open(os.path.join(datadir, "provision_samba3sam_templates.ldif"), 'r').read())
+        self.samba3.setup_data("samba3.ldif")
+        self.templates.setup_data("provision_samba3sam_templates.ldif")
         ldif = open(os.path.join(datadir, "provision_samba3sam.ldif"), 'r').read()
-        ldb.add_ldif(substitute_var(ldif, self.samba4.substvars))
+        ldb.add_ldif(self.samba4.subst(ldif))
         self.setup_modules(ldb, self.samba3, self.samba4)
         self.ldb = Ldb(self.ldburl)
 
@@ -134,7 +145,9 @@ class Samba3SamTestCase(MapBaseTestCase):
         self.assertEquals(len(msg), 1)
         self.assertEquals(str(msg[0].dn), "cn=Replicator,ou=Groups,dc=vernstok,dc=nl")
         self.assertTrue("objectSid" in msg[0]) 
-        # self.assertEquals(msg[0]["objectSid"], "S-1-5-21-4231626423-2410014848-2360679739-552")
+        # FIXME: NDR unpack msg[0]["objectSid"] before comparing:
+        # self.assertEquals(msg[0]["objectSid"], 
+        #                   "S-1-5-21-4231626423-2410014848-2360679739-552")
         # Check mapping of objectClass
         oc = set(msg[0]["objectClass"])
         self.assertTrue(oc is not None)
@@ -143,13 +156,11 @@ class Samba3SamTestCase(MapBaseTestCase):
     def test_search_by_objclass(self):
         """Looking up by objectClass"""
         msg = self.ldb.search(expression="(|(objectClass=user)(cn=Administrator))")
-        self.assertEquals(len(msg), 2)
-        for i in range(len(msg)):
-            self.assertTrue((str(msg[i].dn) == "unixName=Administrator,ou=Users,dc=vernstok,dc=nl") or (str(msg[i].dn) == "unixName=nobody,ou=Users,dc=vernstok,dc=nl"))
-
+        self.assertEquals(set([str(m.dn) for m in msg]), 
+                set(["unixName=Administrator,ou=Users,dc=vernstok,dc=nl", "unixName=nobody,ou=Users,dc=vernstok,dc=nl"]))
 
     def test_s3sam_modify(self):
-        print "Adding a record that will be fallbacked"
+        # Adding a record that will be fallbacked
         self.ldb.add({"dn": "cn=Foo", 
             "foo": "bar", 
             "blah": "Blie", 
@@ -157,7 +168,7 @@ class Samba3SamTestCase(MapBaseTestCase):
             "showInAdvancedViewOnly": "TRUE"}
             )
 
-        print "Checking for existence of record (local)"
+        # Checking for existence of record (local)
         # TODO: This record must be searched in the local database, which is currently only supported for base searches
         # msg = ldb.search(expression="(cn=Foo)", ['foo','blah','cn','showInAdvancedViewOnly')]
         # TODO: Actually, this version should work as well but doesn't...
@@ -270,22 +281,23 @@ class MapTestCase(MapBaseTestCase):
     def setUp(self):
         super(MapTestCase, self).setUp()
         ldb = Ldb(self.ldburl)
-        self.setup_data(self.templates, open(os.path.join(datadir, "provision_samba3sam_templates.ldif"), 'r').read())
+        self.samba3.setup_data("samba3.ldif")
+        self.templates.setup_data("provision_samba3sam_templates.ldif")
         ldif = open(os.path.join(datadir, "provision_samba3sam.ldif"), 'r').read()
-        ldb.add_ldif(substitute_var(ldif, self.samba4.substvars))
+        ldb.add_ldif(self.samba4.subst(ldif))
         self.setup_modules(ldb, self.samba3, self.samba4)
         self.ldb = Ldb(self.ldburl)
 
     def test_map_search(self):
         """Running search tests on mapped data."""
         ldif = """
-dn: """ + "sambaDomainName=TESTS,""" + self.samba3.basedn + """
+dn: sambaDomainName=TESTS,""" + self.samba3.basedn + """
 objectclass: sambaDomain
 objectclass: top
 sambaSID: S-1-5-21-4231626423-2410014848-2360679739
 sambaNextRid: 2000
 sambaDomainName: TESTS"""
-        self.samba3.db.add_ldif(substitute_var(ldif, self.samba3.substvars))
+        self.samba3.add_ldif(ldif)
 
         # Add a set of split records
         ldif = """
@@ -302,7 +314,7 @@ objectSid: S-1-5-21-4231626423-2410014848-2360679739-552
 primaryGroupID: 1-5-21-4231626423-2410014848-2360679739-512
 """
 
-        self.ldb.add_ldif(substitute_var(ldif, self.samba4.substvars))
+        self.ldb.add_ldif(self.samba4.subst(ldif))
 
         ldif = """
 dn: """ + self.samba4.dn("cn=Y") + """
@@ -315,7 +327,7 @@ nextRid: y
 lastLogon: y
 description: x
 """
-        self.ldb.add_ldif(substitute_var(ldif, self.samba4.substvars))
+        self.ldb.add_ldif(self.samba4.subst(ldif))
 
         ldif = """
 dn: """ + self.samba4.dn("cn=Z") + """
@@ -329,7 +341,7 @@ lastLogon: z
 description: y
 """
 
-        self.ldb.add_ldif(substitute_var(ldif, self.samba4.substvars))
+        self.ldb.add_ldif(self.samba4.subst(ldif))
 
         # Add a set of remote records
 
@@ -360,7 +372,7 @@ sambaBadPasswordCount: y
 sambaLogonTime: z
 description: y
 """
-        self.samba3.add_ldif(substitute_var(ldif, self.samba3.substvars))
+        self.samba3.add_ldif(ldif)
 
         # Testing search by DN
 
@@ -502,8 +514,7 @@ description: y
         self.assertTrue(not "dnsHostName" in res[0])
         self.assertEquals(res[0]["lastLogon"], "y")
         self.assertTrue(res[0]["objectClass"] is not None)
-        for oc in set(res[0]["objectClass"]):
-            self.assertEquals(oc, "user")
+        self.assertEquals(set(res[0]["objectClass"]), set(["user"]))
         self.assertEquals(str(res[1].dn), self.samba4.dn("cn=X"))
         self.assertEquals(res[1]["dnsHostName"], "x")
         self.assertEquals(res[1]["lastLogon"], "x")
@@ -515,7 +526,7 @@ description: y
         self.assertTrue(res[2]["objectClass"] is not None)
         self.assertEquals(res[2]["objectClass"][0], "user")
 
-        print "Testing search by parse tree"
+        # Testing search by parse tree
 
         # Search by conjunction of local attributes
         res = self.ldb.search(expression="(&(codePage=x)(revision=x))", attrs=["dnsHostName", "lastLogon"])
@@ -710,7 +721,7 @@ description: y
         self.assertTrue(not "dnsHostName" in res[2])
         self.assertEquals(res[2]["lastLogon"], "z")
 
-        print "Search by complex parse tree"
+        # Search by complex parse tree
         res = self.ldb.search(expression="(|(&(revision=x)(dnsHostName=x))(!(&(description=x)(nextRid=y)))(badPwdCount=y))", attrs=["dnsHostName", "lastLogon"])
         self.assertEquals(len(res), 6)
         self.assertEquals(str(res[0].dn), self.samba4.dn("cn=B"))
@@ -752,10 +763,12 @@ description: y
         self.assertEquals(res[0]["revision"], "1")
         self.assertEquals(res[0]["description"], "test")
         # Check it's not in the local db
-        res = self.samba4.db.search(expression="(cn=test)", scope=SCOPE_DEFAULT, attrs=attrs)
+        res = self.samba4.db.search(expression="(cn=test)", 
+                                    scope=SCOPE_DEFAULT, attrs=attrs)
         self.assertEquals(len(res), 0)
         # Check it's not in the remote db
-        res = self.samba3.db.search(expression="(cn=test)", scope=SCOPE_DEFAULT, attrs=attrs)
+        res = self.samba3.db.search(expression="(cn=test)", 
+                                    scope=SCOPE_DEFAULT, attrs=attrs)
         self.assertEquals(len(res), 0)
 
         # Modify local record
