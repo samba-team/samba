@@ -2897,7 +2897,6 @@ static NTSTATUS enumvalues(struct dcerpc_pipe *p, struct policy_handle *handle,
 		r.in.handle = handle;
 		r.in.enum_index = enum_index;
 		name.name = "";
-		name.length = 0;
 		name.size = 1024;
 		r.in.name = r.out.name = &name;
 		size = 1024;
@@ -2928,7 +2927,6 @@ static NTSTATUS enumkeys(struct dcerpc_pipe *p, struct policy_handle *handle,
 	}
 
 	class.name   = "";
-	class.length = 0;
 	class.size   = 1024;
 
 	r.in.handle = handle;
@@ -2949,7 +2947,6 @@ static NTSTATUS enumkeys(struct dcerpc_pipe *p, struct policy_handle *handle,
 		}
 
 		name.name = NULL;
-		name.length = 0;
 		name.size = 1024;
 
 		status = dcerpc_winreg_EnumKey(p, tmp_ctx, &r);
@@ -2966,8 +2963,6 @@ static NTSTATUS enumkeys(struct dcerpc_pipe *p, struct policy_handle *handle,
 
 		o.in.parent_handle = handle;
 		o.in.keyname.name = r.out.name->name;
-		o.in.keyname.name_len = strlen(o.in.keyname.name);
-		o.in.keyname.name_size = 1024;
 		o.in.unknown = 0;
 		o.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 		o.out.handle = &key_handle;
@@ -3220,8 +3215,6 @@ static NTSTATUS torture_samba3_createshare(struct smbcli_state *cli,
 		goto fail;
 	}
 	c.in.keyclass.name = "";
-	c.in.keyclass.name_len = 0;
-	c.in.keyclass.name_size = 1024;
 	c.in.options = 0;
 	c.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	c.in.secdesc = NULL;
@@ -3279,8 +3272,6 @@ static NTSTATUS torture_samba3_deleteshare(struct torture_context *torture,
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
 	}
-	d.in.key.name_len = strlen(d.in.key.name);
-	d.in.key.name_size = 1024;
 	status = dcerpc_winreg_DeleteKey(p, p, &d);
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(d.out.result)) {
 		d_printf("(%s) OpenKey failed: %s, %s\n", __location__,
@@ -3321,8 +3312,6 @@ static NTSTATUS torture_samba3_setconfig(struct smbcli_state *cli,
 		status = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
-	o.in.keyname.name_len = strlen(o.in.keyname.name);
-	o.in.keyname.name_size = 1024;
 	o.in.unknown = 0;
 	o.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	o.out.handle = &key_handle;
@@ -3342,8 +3331,6 @@ static NTSTATUS torture_samba3_setconfig(struct smbcli_state *cli,
 
 	s.in.handle = &key_handle;
 	s.in.name.name = parameter;
-	s.in.name.name_len = strlen(s.in.name.name);
-	s.in.name.name_size = 1024;
 	s.in.type = type;
 	s.in.data = val.data;
 	s.in.size = val.length;

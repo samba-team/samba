@@ -1440,7 +1440,6 @@ static bool test_EnumKey(struct dcerpc_pipe *p, struct torture_context *tctx,
 	NTTIME t = 0;
 
 	class.name   = "";
-	class.length = 0;
 	class.size   = 1024;
 
 	ZERO_STRUCT(r);
@@ -1453,7 +1452,6 @@ static bool test_EnumKey(struct dcerpc_pipe *p, struct torture_context *tctx,
 
 	do {
 		name.name   = NULL;
-		name.length = 0;
 		name.size   = 1024;
 
 		status = dcerpc_winreg_EnumKey(p, tctx, &r);
@@ -1568,7 +1566,6 @@ static bool test_EnumValue(struct dcerpc_pipe *p, struct torture_context *tctx,
 	struct winreg_StringBuf name;
 
 	name.name   = "";
-	name.length = 0;
 	name.size   = 1024;
 
 	ZERO_STRUCT(r);
