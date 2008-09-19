@@ -115,9 +115,11 @@ static WERROR dcesrv_winreg_CreateKey(struct dcesrv_call_state *dce_call,
 {
 	struct dcesrv_handle *h, *newh;
 	struct security_descriptor sd;
+	struct registry_key *key;
 	WERROR result;
 
 	DCESRV_PULL_HANDLE_FAULT(h, r->in.handle, HTYPE_REGKEY);
+	key = h->data;
 
 	newh = dcesrv_handle_new(dce_call->context, HTYPE_REGKEY);
 
@@ -141,9 +143,8 @@ static WERROR dcesrv_winreg_CreateKey(struct dcesrv_call_state *dce_call,
 			}
 		}
 		
-		result = reg_key_add_name(newh, (struct registry_key *)h->data,
-					 r->in.name.name, NULL, r->in.secdesc?&sd:NULL,
-					 (struct registry_key **)&newh->data);
+		result = reg_key_add_name(newh, key, r->in.name.name, NULL,
+			r->in.secdesc?&sd:NULL, (struct registry_key **)&newh->data);
 		if (W_ERROR_IS_OK(result)) {
 			r->out.new_handle = &newh->wire_handle;
 		} else {
@@ -165,14 +166,16 @@ static WERROR dcesrv_winreg_DeleteKey(struct dcesrv_call_state *dce_call,
 				      struct winreg_DeleteKey *r)
 {
 	struct dcesrv_handle *h;
+	struct registry_key *key;
 
 	DCESRV_PULL_HANDLE_FAULT(h, r->in.handle, HTYPE_REGKEY);
+	key = h->data;
 
 	switch (security_session_user_level(dce_call->conn->auth_state.session_info))
 	{
 	case SECURITY_SYSTEM:
 	case SECURITY_ADMINISTRATOR:
-		return reg_key_del((struct registry_key *)h->data, r->in.key.name);
+		return reg_key_del(key, r->in.key.name);
 	default:
 		return WERR_ACCESS_DENIED;
 	}
@@ -187,14 +190,16 @@ static WERROR dcesrv_winreg_DeleteValue(struct dcesrv_call_state *dce_call,
 					struct winreg_DeleteValue *r)
 {
 	struct dcesrv_handle *h;
+	struct registry_key *key;
 
 	DCESRV_PULL_HANDLE_FAULT(h, r->in.handle, HTYPE_REGKEY);
+	key = h->data;
 
 	switch (security_session_user_level(dce_call->conn->auth_state.session_info))
 	{
 	case SECURITY_SYSTEM:
 	case SECURITY_ADMINISTRATOR:
-		return reg_del_value((struct registry_key *)h->data, r->in.value.name);
+		return reg_del_value(key, r->in.value.name);
 	default:
 		return WERR_ACCESS_DENIED;
 	}
@@ -209,15 +214,16 @@ static WERROR dcesrv_winreg_EnumKey(struct dcesrv_call_state *dce_call,
 				    struct winreg_EnumKey *r)
 {
 	struct dcesrv_handle *h;
+	struct registry_key *key;
 	const char *name, *classname;
 	NTTIME last_mod;
 	WERROR result;
 
 	DCESRV_PULL_HANDLE_FAULT(h, r->in.handle, HTYPE_REGKEY);
+	key = h->data;
 
 	result = reg_key_get_subkey_by_index(mem_ctx, 
-		(struct registry_key *)h->data, r->in.enum_index,
-		&name, &classname, &last_mod);
+		key, r->in.enum_index, &name, &classname, &last_mod);
 
 	if (2*strlen_m_term(name) > r->in.name->size) {
 		return WERR_MORE_DATA;
@@ -264,10 +270,9 @@ static WERROR dcesrv_winreg_EnumValue(struct dcesrv_call_state *dce_call,
 	WERROR result;
 
 	DCESRV_PULL_HANDLE_FAULT(h, r->in.handle, HTYPE_REGKEY);
-
 	key = h->data;
 
-	result = reg_key_get_value_by_index(mem_ctx, (struct registry_key *)h->data,
+	result = reg_key_get_value_by_index(mem_ctx, key,
 		r->in.enum_index, &data_name, &data_type, &data);
 
 	if (!W_ERROR_IS_OK(result)) {
@@ -328,14 +333,16 @@ static WERROR dcesrv_winreg_FlushKey(struct dcesrv_call_state *dce_call,
 				     struct winreg_FlushKey *r)
 {
 	struct dcesrv_handle *h;
+	struct registry_key *key;
 
 	DCESRV_PULL_HANDLE_FAULT(h, r->in.handle, HTYPE_REGKEY);
+	key = h->data;
 
 	switch (security_session_user_level(dce_call->conn->auth_state.session_info))
 	{
 	case SECURITY_SYSTEM:
 	case SECURITY_ADMINISTRATOR:
-		return reg_key_flush(h->data);
+		return reg_key_flush(key);
 	default:
 		return WERR_ACCESS_DENIED;
 	}
@@ -387,9 +394,11 @@ static WERROR dcesrv_winreg_OpenKey(struct dcesrv_call_state *dce_call,
 				    struct winreg_OpenKey *r)
 {
 	struct dcesrv_handle *h, *newh;
+	struct registry_key *key;
 	WERROR result;
 
 	DCESRV_PULL_HANDLE_FAULT(h, r->in.parent_handle, HTYPE_REGKEY);
+	key = h->data;
 
 	switch (security_session_user_level(dce_call->conn->auth_state.session_info))
 	{
@@ -401,9 +410,8 @@ static WERROR dcesrv_winreg_OpenKey(struct dcesrv_call_state *dce_call,
 			result = WERR_OK;
 		} else {
 			newh = dcesrv_handle_new(dce_call->context, HTYPE_REGKEY);
-			result = reg_open_key(newh, (struct registry_key *)h->data,
-					      r->in.keyname.name,
-					      (struct registry_key **)&newh->data);
+			result = reg_open_key(newh, key, r->in.keyname.name,
+				(struct registry_key **)&newh->data);
 		}
 		
 		if (W_ERROR_IS_OK(result)) {
@@ -427,20 +435,22 @@ static WERROR dcesrv_winreg_QueryInfoKey(struct dcesrv_call_state *dce_call,
 					 struct winreg_QueryInfoKey *r)
 {
 	struct dcesrv_handle *h;
+	struct registry_key *key;
 	const char *classname = NULL;
 	WERROR result;
 
 	DCESRV_PULL_HANDLE_FAULT(h, r->in.handle, HTYPE_REGKEY);
+	key = h->data;
 
 	switch (security_session_user_level(dce_call->conn->auth_state.session_info))
 	{
 	case SECURITY_SYSTEM:
 	case SECURITY_ADMINISTRATOR:
 	case SECURITY_USER:
-		result = reg_key_get_info(mem_ctx, (struct registry_key *)h->data,
-			 &classname, r->out.num_subkeys, r->out.num_values,
-			 r->out.last_changed_time, r->out.max_subkeylen,
-			 r->out.max_valnamelen, r->out.max_valbufsize);
+		result = reg_key_get_info(mem_ctx, key, &classname,
+			r->out.num_subkeys, r->out.num_values,
+			r->out.last_changed_time, r->out.max_subkeylen,
+			r->out.max_valnamelen, r->out.max_valbufsize);
 
 		if (classname != NULL) {
 			r->out.classname->name = classname;
@@ -466,20 +476,21 @@ static WERROR dcesrv_winreg_QueryValue(struct dcesrv_call_state *dce_call,
 				       struct winreg_QueryValue *r)
 {
 	struct dcesrv_handle *h;
+	struct registry_key *key;
 	uint32_t value_type;
 	DATA_BLOB value_data;
 	WERROR result;
 
 	DCESRV_PULL_HANDLE_FAULT(h, r->in.handle, HTYPE_REGKEY);
+	key = h->data;
 
 	switch (security_session_user_level(dce_call->conn->auth_state.session_info))
 	{
 	case SECURITY_SYSTEM:
 	case SECURITY_ADMINISTRATOR:
 	case SECURITY_USER:
-		result = reg_key_get_value_by_name(mem_ctx,
-			(struct registry_key *)h->data, r->in.value_name.name,
-						   &value_type, &value_data);
+		result = reg_key_get_value_by_name(mem_ctx, key,
+			 r->in.value_name.name, &value_type, &value_data);
 		
 		if (!W_ERROR_IS_OK(result)) {
 			/* if the lookup wasn't successful, send client query back */
@@ -565,10 +576,12 @@ static WERROR dcesrv_winreg_SetValue(struct dcesrv_call_state *dce_call,
 				     struct winreg_SetValue *r)
 {
 	struct dcesrv_handle *h;
+	struct registry_key *key;
 	DATA_BLOB data;
 	WERROR result;
 
 	DCESRV_PULL_HANDLE_FAULT(h, r->in.handle, HTYPE_REGKEY);
+	key = h->data;
 
 	switch (security_session_user_level(dce_call->conn->auth_state.session_info))
 	{
@@ -576,8 +589,7 @@ static WERROR dcesrv_winreg_SetValue(struct dcesrv_call_state *dce_call,
 	case SECURITY_ADMINISTRATOR:
 		data.data = r->in.data;
 		data.length = r->in.size;
-		result = reg_val_set((struct registry_key *)h->data,
-			r->in.name.name, r->in.type, data);
+		result = reg_val_set(key, r->in.name.name, r->in.type, data);
 		return result;
 	default:
 		return WERR_ACCESS_DENIED;
