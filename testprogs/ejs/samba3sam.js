@@ -914,6 +914,10 @@ replace: badPwdCount
 badPwdCount: 4
 ";
 	ok = ldb.modify(ldif);
+	if (ok.error != 0) {
+		println(ok.errstr);
+		assert(ok.error == 0);
+	}
 	/* Check in mapped db */
 	attrs = new Array("description", "badPwdCount", "nextRid");
 	res = ldb.search("", dn, ldb.SCOPE_BASE, attrs);
@@ -992,6 +996,10 @@ replace: description
 description: test
 ";
 	ok = ldb.modify(ldif);
+	if (ok.error != 0) {
+		println(ok.errstr);
+		assert(ok.error == 0);
+	}
 	/* Check in mapped db */
 	attrs = new Array("revision", "description");
 	res = ldb.search("", dn, ldb.SCOPE_BASE, attrs);
