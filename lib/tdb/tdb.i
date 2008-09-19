@@ -321,3 +321,8 @@ typedef struct tdb_context {
     # TODO: any other missing methods for container types
     }
 } tdb;
+
+%pythoncode {
+__docformat__ = 'restructuredText'
+open = Tdb
+}

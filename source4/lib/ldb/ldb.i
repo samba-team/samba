@@ -928,4 +928,5 @@ ldb_int_error ldb_register_module(const struct ldb_module_ops *);
 
 %pythoncode {
 __docformat__ = "restructuredText"
+open = Ldb
 }
