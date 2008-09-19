@@ -51,36 +51,6 @@ static struct registry_operations reg_backend_rpc;
  * This is the RPC backend for the registry library.
  */
 
-/*
- * Converts a SAMBA string into a WINREG string
- */
-static void chars_to_winreg_String(TALLOC_CTX *mem_ctx, struct winreg_String
-	*winregStr, const char *str)
-{
-	winregStr->name = NULL;
-	winregStr->name_len = 0;
-	if (str != NULL) {
-		winregStr->name = talloc_strdup(mem_ctx, str);
-		winregStr->name_len = strlen(str);
-	}
-	winregStr->name_size = winregStr->name_len;
-}
-
-/*
- * Converts a SAMBA string into a WINREG string buffer
- */
-static void chars_to_winreg_StringBuf(TALLOC_CTX *mem_ctx, struct winreg_StringBuf
-	*winregStrBuf, const char *str, uint16_t size)
-{
-	winregStrBuf->name = NULL;
-	winregStrBuf->length = 0;
-	if (str != NULL) {
-		winregStrBuf->name = talloc_strdup(mem_ctx, str);
-		winregStrBuf->length = strlen(str);
-	}
-	winregStrBuf->size = size;
-}
-
 #define openhive(u) static WERROR open_ ## u(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct policy_handle *hnd) \
 { \
 	struct winreg_Open ## u r; \
@@ -169,7 +139,7 @@ static WERROR rpc_key_put_rpc_data(TALLOC_CTX *mem_ctx, struct registry_key *k)
 
 	ZERO_STRUCT(r);
 	r.in.handle = &(((struct rpc_key_data *)k->hive->root->backend_data)->pol);
-	chars_to_winreg_String(mem_ctx, &r.in.keyname, k->path);
+	r.in.keyname.name = k->path;
 	r.in.unknown = 0x00000000;
 	r.in.access_mask = 0x02000000;
 	r.out.handle = &mykeydata->pol;
@@ -199,7 +169,7 @@ static WERROR rpc_open_key(TALLOC_CTX *mem_ctx, struct registry_key *h,
 	/* Then, open the handle using the hive */
 	ZERO_STRUCT(r);
 	r.in.parent_handle = &parentkeydata->pol;
-	chars_to_winreg_String(mem_ctx, &r.in.keyname, name);
+	r.in.keyname.name = name;
 	r.in.unknown = 0x00000000;
 	r.in.access_mask = 0x02000000;
 	r.out.handle = &mykeydata->pol;
@@ -235,7 +205,8 @@ static WERROR rpc_get_value_by_index(TALLOC_CTX *mem_ctx,
 		if(!W_ERROR_IS_OK(error)) return error;
 	}
 
-	chars_to_winreg_StringBuf(mem_ctx, &name, "", MAX_NAMESIZE);
+	name.name = "";
+	name.size = MAX_NAMESIZE;
 
 	ZERO_STRUCT(r);
 	r.in.handle = &mykeydata->pol;
@@ -258,7 +229,7 @@ static WERROR rpc_get_value_by_index(TALLOC_CTX *mem_ctx,
 		return ntstatus_to_werror(status);
 	}
 
-	*value_name = talloc_strdup(mem_ctx, r.out.name->name);
+	*value_name = talloc_reference(mem_ctx, r.out.name->name);
 	*type = *(r.out.type);
 	*data = data_blob_talloc(mem_ctx, r.out.value, *r.out.length);
 
@@ -285,7 +256,7 @@ static WERROR rpc_get_value_by_name(TALLOC_CTX *mem_ctx,
 		if(!W_ERROR_IS_OK(error)) return error;
 	}
 
-	chars_to_winreg_String(mem_ctx, &name, value_name);
+	name.name = value_name;
 
 	ZERO_STRUCT(r);
 	r.in.handle = &mykeydata->pol;
@@ -325,8 +296,10 @@ static WERROR rpc_get_subkey_by_index(TALLOC_CTX *mem_ctx,
 	NTTIME change_time = 0;
 	NTSTATUS status;
 
-	chars_to_winreg_StringBuf(mem_ctx, &namebuf, " ", MAX_NAMESIZE);
-	chars_to_winreg_StringBuf(mem_ctx, &classbuf, NULL, 0);
+	namebuf.name = "";
+	namebuf.size = MAX_NAMESIZE;
+	classbuf.name = NULL;
+	classbuf.size = 0;
 
 	ZERO_STRUCT(r);
 	r.in.handle = &mykeydata->pol;
@@ -346,9 +319,9 @@ static WERROR rpc_get_subkey_by_index(TALLOC_CTX *mem_ctx,
 	}
 
 	if (name != NULL)
-		*name = talloc_strdup(mem_ctx, r.out.name->name);
+		*name = talloc_reference(mem_ctx, r.out.name->name);
 	if (keyclass != NULL)
-		*keyclass = talloc_strdup(mem_ctx, r.out.keyclass->name);
+		*keyclass = talloc_reference(mem_ctx, r.out.keyclass->name);
 	if (last_changed_time != NULL)
 		*last_changed_time = *(r.out.last_changed_time);
 
@@ -369,8 +342,8 @@ static WERROR rpc_add_key(TALLOC_CTX *mem_ctx,
 
 	ZERO_STRUCT(r);
 	r.in.handle = &parentkd->pol;
-	chars_to_winreg_String(mem_ctx, &r.in.name, name);
-	chars_to_winreg_String(mem_ctx, &r.in.keyclass, NULL);
+	r.in.name.name = name;
+	r.in.keyclass.name = NULL;
 	r.in.options = 0;
 	r.in.access_mask = 0x02000000;
 	r.in.secdesc = NULL;
@@ -399,7 +372,7 @@ static WERROR rpc_query_key(TALLOC_CTX *mem_ctx, const struct registry_key *k)
 	struct winreg_String classname;
 	NTSTATUS status;
 
-	chars_to_winreg_String(mem_ctx, &classname, NULL);
+	classname.name = NULL;
 
 	ZERO_STRUCT(r);
 	r.in.handle = &mykeydata->pol;
@@ -421,7 +394,7 @@ static WERROR rpc_query_key(TALLOC_CTX *mem_ctx, const struct registry_key *k)
 		return ntstatus_to_werror(status);
 	}
 
-	mykeydata->classname = talloc_strdup(mem_ctx, r.out.classname->name);
+	mykeydata->classname = talloc_reference(mem_ctx, r.out.classname->name);
 
 	return r.out.result;
 }
@@ -435,7 +408,7 @@ static WERROR rpc_del_key(struct registry_key *parent, const char *name)
 
 	ZERO_STRUCT(r);
 	r.in.handle = &mykeydata->pol;
-	chars_to_winreg_String(mem_ctx, &r.in.key, name);
+	r.in.key.name = name;
 
 	status = dcerpc_winreg_DeleteKey(mykeydata->pipe, mem_ctx, &r);
 
