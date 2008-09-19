@@ -9,6 +9,7 @@ mandir = @mandir@
 VPATH = @srcdir@:@libreplacedir@
 srcdir = @srcdir@
 builddir = @builddir@
+sharedbuilddir = @sharedbuilddir@
 XSLTPROC = @XSLTPROC@
 INSTALLCMD = @INSTALL@
 CC = @CC@
@@ -30,6 +31,15 @@ include $(tallocdir)/talloc.mk
 
 $(TALLOC_SOLIB): $(LIBOBJ)
 	$(SHLD) $(SHLD_FLAGS) -o $@ $(LIBOBJ) @SONAMEFLAG@$(TALLOC_SONAME)
+
+shared-build: all
+	${INSTALLCMD} -d $(sharedbuilddir)/lib
+	${INSTALLCMD} -m 644 libtalloc.a $(sharedbuilddir)/lib
+	${INSTALLCMD} -m 755 $(TALLOC_SOLIB) $(sharedbuilddir)/lib
+	ln -sf $(TALLOC_SOLIB) $(sharedbuilddir)/lib/$(TALLOC_SONAME)
+	ln -sf $(TALLOC_SOLIB) $(sharedbuilddir)/lib/libtalloc.so
+	${INSTALLCMD} -d $(sharedbuilddir)/include
+	${INSTALLCMD} -m 644 $(srcdir)/talloc.h $(sharedbuilddir)/include
 
 check: test
 
