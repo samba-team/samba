@@ -72,7 +72,7 @@ static void reg_ldb_unpack_value(TALLOC_CTX *mem_ctx,
 
 	case REG_BINARY:
 		if (val != NULL)
-			*data = data_blob_talloc(mem_ctx, val->data, val->length);
+			*data = *val;
 		else {
 			data->data = NULL;
 			data->length = 0;
@@ -86,7 +86,7 @@ static void reg_ldb_unpack_value(TALLOC_CTX *mem_ctx,
 		break;
 
 	default:
-		*data = data_blob_talloc(mem_ctx, val->data, val->length);
+		*data = *val;
 		break;
 	}
 }
