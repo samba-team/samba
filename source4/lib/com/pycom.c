@@ -20,12 +20,18 @@
 #include "includes.h"
 #include <Python.h>
 #include "lib/com/com.h"
+#include "librpc/ndr/libndr.h"
+#include "libcli/util/pyerrors.h"
+
+static struct com_context *py_com_ctx = NULL; /* FIXME: evil global */
 
 static PyObject *py_get_class_object(PyObject *self, PyObject *args)
 {
 	char *s_clsid, *s_iid;
 	struct GUID clsid, iid;
 	struct IUnknown *object;
+	NTSTATUS status;
+	WERROR error;
 
 	if (!PyArg_ParseTuple(args, "ss", &s_clsid, &s_iid))
 		return NULL;
@@ -42,7 +48,7 @@ static PyObject *py_get_class_object(PyObject *self, PyObject *args)
 		return NULL;
 	}
 
-	error = com_get_class_object(ctx, &clsid, &iid, &object);
+	error = com_get_class_object(py_com_ctx, &clsid, &iid, &object);
 	if (!W_ERROR_IS_OK(error)) {
 		PyErr_FromWERROR(error);
 		return NULL;
@@ -61,8 +67,13 @@ static struct PyMethodDef com_methods[] = {
 void initcom(void)
 {
 	PyObject *m;
+	WERROR error;
 
-	/* FIXME: Initialize COM context and attach it to m. */
+	error = com_init_ctx(&py_com_ctx, NULL);
+	if (!W_ERROR_IS_OK(error)) {
+		PyErr_FromWERROR(error);
+		return;
+	}
 
 	m = Py_InitModule3("com", com_methods, "Simple COM implementation");
 	if (m == NULL)
