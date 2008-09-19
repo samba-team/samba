@@ -27,4 +27,8 @@ if test -z "$PYTHON_CONFIG"; then
 	PYTHON_INSTALL_TARGET=""
 	PYTHON_CHECK_TARGET=""
 fi
+
+m4_include(build_macros.m4)
+BUILD_WITH_SHARED_BUILD_DIR
+
 AC_OUTPUT(Makefile tdb.pc)
