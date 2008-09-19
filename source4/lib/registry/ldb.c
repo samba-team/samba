@@ -72,7 +72,7 @@ static void reg_ldb_unpack_value(TALLOC_CTX *mem_ctx,
 
 	case REG_BINARY:
 		if (val != NULL)
-			*data = strhex_to_data_blob((char *)val->data);
+			*data = data_blob_talloc(mem_ctx, val->data, val->length);
 		else {
 			data->data = NULL;
 			data->length = 0;
@@ -117,8 +117,10 @@ static struct ldb_message *reg_ldb_pack_value(struct ldb_context *ctx,
 		break;
 
 	case REG_BINARY:
-		ldb_msg_add_string(msg, "data",
-				   data_blob_hex_string(mem_ctx, &data));
+		if (data.length > 0)
+			ldb_msg_add_value(msg, "data", &data, NULL);
+		else
+			ldb_msg_add_empty(msg, "data", LDB_FLAG_MOD_DELETE, NULL);
 		break;
 
 	case REG_DWORD:
