@@ -67,17 +67,6 @@ static void chars_to_winreg_String(TALLOC_CTX *mem_ctx, struct winreg_String
 }
 
 /*
- * Converts a WINREG string into a SAMBA string
- */
-static void winreg_String_to_chars(TALLOC_CTX *mem_ctx, const char **str,
-	struct winreg_String *winregStr)
-{
-	*str = NULL;
-	if (winregStr->name != NULL)
-		*str = talloc_strdup(mem_ctx, winregStr->name);
-}
-
-/*
  * Converts a SAMBA string into a WINREG string buffer
  */
 static void chars_to_winreg_StringBuf(TALLOC_CTX *mem_ctx, struct winreg_StringBuf
@@ -90,17 +79,6 @@ static void chars_to_winreg_StringBuf(TALLOC_CTX *mem_ctx, struct winreg_StringB
 		winregStrBuf->length = strlen(str);
 	}
 	winregStrBuf->size = size;
-}
-
-/*
- * Converts a WINREG string buffer into a SAMBA string
- */
-static void winreg_StringBuf_to_chars(TALLOC_CTX *mem_ctx, const char **str,
-	struct winreg_StringBuf *winregStrBuf)
-{
-	*str = NULL;
-	if (winregStrBuf->name != NULL)
-		*str = talloc_strdup(mem_ctx, winregStrBuf->name);
 }
 
 #define openhive(u) static WERROR open_ ## u(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct policy_handle *hnd) \
@@ -280,7 +258,7 @@ static WERROR rpc_get_value_by_index(TALLOC_CTX *mem_ctx,
 		return ntstatus_to_werror(status);
 	}
 
-	winreg_StringBuf_to_chars(mem_ctx, value_name, r.out.name);
+	*value_name = talloc_strdup(mem_ctx, r.out.name->name);
 	*type = *(r.out.type);
 	*data = data_blob_talloc(mem_ctx, r.out.value, *r.out.length);
 
@@ -368,9 +346,9 @@ static WERROR rpc_get_subkey_by_index(TALLOC_CTX *mem_ctx,
 	}
 
 	if (name != NULL)
-		winreg_StringBuf_to_chars(mem_ctx, name, r.out.name);
+		*name = talloc_strdup(mem_ctx, r.out.name->name);
 	if (keyclass != NULL)
-		winreg_StringBuf_to_chars(mem_ctx, keyclass, r.out.keyclass);
+		*keyclass = talloc_strdup(mem_ctx, r.out.keyclass->name);
 	if (last_changed_time != NULL)
 		*last_changed_time = *(r.out.last_changed_time);
 
@@ -443,7 +421,7 @@ static WERROR rpc_query_key(TALLOC_CTX *mem_ctx, const struct registry_key *k)
 		return ntstatus_to_werror(status);
 	}
 
-	winreg_String_to_chars(mem_ctx, &mykeydata->classname, r.out.classname);
+	mykeydata->classname = talloc_strdup(mem_ctx, r.out.classname->name);
 
 	return r.out.result;
 }
