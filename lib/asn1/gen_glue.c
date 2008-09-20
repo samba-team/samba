@@ -103,7 +103,7 @@ generate_units (const Type *t, const char *gen_name)
     if(t->members) {
 	ASN1_TAILQ_FOREACH_REVERSE(m, t->members, memhead, members) {
 	    fprintf (codefile,
-		     "\t{\"%s\",\t1U << %d},\n", m->gen_name, m->val);
+		     "\t{\"%s\",\t1U << %d},\n", m->name, m->val);
 	}
     }
 
