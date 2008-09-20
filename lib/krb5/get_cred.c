@@ -748,6 +748,7 @@ get_cred_kdc_capath(krb5_context context,
     krb5_error_code ret;
     krb5_creds *tgt, tmp_creds;
     krb5_const_realm client_realm, server_realm, try_realm;
+    int ok_as_delegate = 1;
 
     *out_creds = NULL;
 
@@ -779,10 +780,14 @@ get_cred_kdc_capath(krb5_context context,
 	ret = find_cred(context, ccache, tmp_creds.server,
 			*ret_tgts, &tgts);
 	if(ret == 0){
+	    if (try_realm != client_realm)
+		ok_as_delegate = tgts.flags.b.ok_as_delegate;
+
 	    *out_creds = calloc(1, sizeof(**out_creds));
 	    if(*out_creds == NULL) {
 		ret = ENOMEM;
-		krb5_set_error_message(context, ret, N_("malloc: out of memory", ""));
+		krb5_set_error_message(context, ret,
+				       N_("malloc: out of memory", ""));
 	    } else {
 		ret = get_cred_kdc_address(context, ccache, flags, NULL,
 					   in_creds, &tgts,
@@ -792,7 +797,8 @@ get_cred_kdc_capath(krb5_context context,
 		if (ret) {
 		    free (*out_creds);
 		    *out_creds = NULL;
-		}
+		} else if (ok_as_delegate == 0)
+		    (*out_creds)->flags.b.ok_as_delegate = 0;
 	    }
 	    krb5_free_cred_contents(context, &tgts);
 	    krb5_free_principal(context, tmp_creds.server);
@@ -814,6 +820,15 @@ get_cred_kdc_capath(krb5_context context,
 	    krb5_free_principal(context, tmp_creds.client);
 	    return ret;
 	}
+	/* 
+	 * if either of the chain or the ok_as_delegate was stripped
+	 * by the kdc, make sure we strip it too.
+	 */
+	if (ok_as_delegate == 0 || tgt->flags.b.ok_as_delegate == 0) {
+	    ok_as_delegate = 0;
+	    tgt->flags.b.ok_as_delegate = 0;
+	}
+
 	ret = add_cred(context, tgt, ret_tgts);
 	if(ret) {
 	    krb5_free_principal(context, tmp_creds.server);
@@ -872,6 +887,7 @@ get_cred_kdc_referral(krb5_context context,
     krb5_error_code ret;
     krb5_creds tgt, referral, ticket;
     int loop = 0;
+    int ok_as_delegate = 1;
 
     memset(&tgt, 0, sizeof(tgt));
     memset(&ticket, 0, sizeof(ticket));
@@ -964,7 +980,8 @@ get_cred_kdc_referral(krb5_context context,
 				  *tickets))
 	    {
 		krb5_set_error_message(context, KRB5_GET_IN_TKT_LOOP,
-				       N_("Referral from %s loops back to realm %s", ""),
+				       N_("Referral from %s "
+					  "loops back to realm %s", ""),
 				       tgt.server->realm,
 				       referral_realm);
 		krb5_free_cred_contents(context, &ticket);
@@ -972,6 +989,16 @@ get_cred_kdc_referral(krb5_context context,
 	    }
 	    tickets++;
 	}	
+
+	/* 
+	 * if either of the chain or the ok_as_delegate was stripped
+	 * by the kdc, make sure we strip it too.
+	 */
+
+	if (ok_as_delegate == 0 || ticket.flags.b.ok_as_delegate == 0) {
+	    ok_as_delegate = 0;
+	    ticket.flags.b.ok_as_delegate = 0;
+	}
 
 	ret = add_cred(context, &ticket, ret_tgts);
 	if (ret) {
