@@ -854,7 +854,10 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 		}
 
 		for (r=0; r<tmp_names.count; r++) {
-			(*names)[i+r] = CONST_DISCARD(char *, tmp_names.names[r].string);
+			(*names)[i+r] = fill_domain_username_talloc(mem_ctx,
+						domain->name,
+						tmp_names.names[r].string,
+						true);
 			(*name_types)[i+r] = tmp_types.ids[r];
 		}
 
