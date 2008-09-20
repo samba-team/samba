@@ -14,6 +14,7 @@ check_SCRIPTS = $(SCRIPT_TESTS)
 
 SCRIPT_TESTS = \
 	check-cc \
+	check-delegation \
 	check-des \
 	check-digest \
 	check-kadmin \
@@ -46,6 +47,21 @@ do_subst = sed $(do_dlopen) \
 	-e 's,[@]EGREP[@],$(EGREP),g' 
 
 LDADD = ../../lib/krb5/libkrb5.la $(LIB_roken)
+
+check-cc: check-cc.in Makefile
+	$(do_subst) < $(srcdir)/check-cc.in > check-cc.tmp
+	chmod +x check-cc.tmp
+	mv check-cc.tmp check-cc
+
+check-delegation: check-delegation.in Makefile
+	$(do_subst) < $(srcdir)/check-delegation.in > check-delegation.tmp
+	chmod +x check-delegation.tmp
+	mv check-delegation.tmp check-delegation
+
+check-des: check-des.in Makefile krb5-no-weak.conf
+	$(do_subst) < $(srcdir)/check-des.in > check-des.tmp
+	chmod +x check-des.tmp
+	mv check-des.tmp check-des
 
 check-kdc: check-kdc.in Makefile
 	$(do_subst) < $(srcdir)/check-kdc.in > check-kdc.tmp
@@ -91,16 +107,6 @@ check-kpasswdd: check-kpasswdd.in Makefile
 	$(do_subst) < $(srcdir)/check-kpasswdd.in > check-kpasswdd.tmp
 	chmod +x check-kpasswdd.tmp
 	mv check-kpasswdd.tmp check-kpasswdd
-
-check-cc: check-cc.in Makefile
-	$(do_subst) < $(srcdir)/check-cc.in > check-cc.tmp
-	chmod +x check-cc.tmp
-	mv check-cc.tmp check-cc
-
-check-des: check-des.in Makefile krb5-no-weak.conf
-	$(do_subst) < $(srcdir)/check-des.in > check-des.tmp
-	chmod +x check-des.tmp
-	mv check-des.tmp check-des
 
 krb5.conf: krb5.conf.in Makefile
 	$(do_subst) \
@@ -171,6 +177,7 @@ CLEANFILES= \
 
 EXTRA_DIST = \
 	check-cc.in \
+	check-delegation.in \
 	check-des.in \
 	check-digest.in \
 	check-iprop.in \
