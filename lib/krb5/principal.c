@@ -1257,9 +1257,21 @@ krb5_524_conv_principal(krb5_context context,
     return 0;
 }
 
-/*
- * Create a principal in `ret_princ' for the service `sname' running
- * on host `hostname'.  */
+/**
+ * Create a principal for the service running on hostname. If
+ * KRB5_NT_SRV_HST is used, the hostname is canonization using DNS (or
+ * some other service), this is potentially insecure.
+ *
+ * @param context A Kerberos context.
+ * @param hostname hostname to use
+ * @param sname Service name to use
+ * @param type name type of pricipal, use KRB5_NT_SRV_HST or KRB5_NT_UNKNOWN.
+ * @param ret_princ return principal, free with krb5_free_principal().
+ *
+ * @return An krb5 error code, see krb5_get_error_message().
+ *
+ * @ingroup krb5_principal
+ */
 			
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_sname_to_principal (krb5_context context,
