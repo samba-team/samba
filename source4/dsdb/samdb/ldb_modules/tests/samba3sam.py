@@ -23,14 +23,16 @@
 """Tests for the samba3sam LDB module, which maps Samba3 LDAP to AD LDAP."""
 
 import os
-import sys
-import samba
 import ldb
 from ldb import SCOPE_DEFAULT, SCOPE_BASE, SCOPE_SUBTREE
 from samba import Ldb, substitute_var
 from samba.tests import LdbTestCase, TestCaseInTempDir
 
-datadir = os.path.join(os.path.dirname(__file__), "../../../../../testdata/samba3")
+datadir = os.path.join(os.path.dirname(__file__), 
+                       "../../../../../testdata/samba3")
+
+def read_datafile(filename):
+    return open(os.path.join(datadir, filename), 'r').read()
 
 def ldb_debug(l, text):
     print text
@@ -48,7 +50,8 @@ class MapBaseTestCase(TestCaseInTempDir):
                  "@LIST": "rootdse,paged_results,server_sort,extended_dn,asq,samldb,password_hash,operational,objectguid,rdn_name,samba3sam,partition"})
 
         ldb.add({"dn": "@PARTITION",
-            "partition": [s4.basedn + ":" + s4.url, s3.basedn + ":" + s3.url],
+            "partition": ["%s:%s" % (s4.basedn, s4.url), 
+                          "%s:%s" % (s3.basedn, s3.url)],
             "replicateEntries": ["@ATTRIBUTES", "@INDEXLIST"]})
 
     def setUp(self):
@@ -83,8 +86,7 @@ class MapBaseTestCase(TestCaseInTempDir):
                 return self.db.connect(self.url)
 
             def setup_data(self, path):
-                ldif = open(os.path.join(datadir, path), 'r').read()
-                self.add_ldif(ldif)
+                self.add_ldif(read_datafile(path))
 
             def subst(self, text):
                 return substitute_var(text, self.substvars)
@@ -112,14 +114,16 @@ class MapBaseTestCase(TestCaseInTempDir):
 
 
 class Samba3SamTestCase(MapBaseTestCase):
+
     def setUp(self):
         super(Samba3SamTestCase, self).setUp()
         ldb = Ldb(self.ldburl)
         self.samba3.setup_data("samba3.ldif")
         self.templates.setup_data("provision_samba3sam_templates.ldif")
-        ldif = open(os.path.join(datadir, "provision_samba3sam.ldif"), 'r').read()
+        ldif = read_datafile("provision_samba3sam.ldif")
         ldb.add_ldif(self.samba4.subst(ldif))
         self.setup_modules(ldb, self.samba3, self.samba4)
+        del ldb
         self.ldb = Ldb(self.ldburl)
 
     def test_search_non_mapped(self):
@@ -151,7 +155,6 @@ class Samba3SamTestCase(MapBaseTestCase):
         #                   "S-1-5-21-4231626423-2410014848-2360679739-552")
         # Check mapping of objectClass
         oc = set(msg[0]["objectClass"])
-        self.assertTrue(oc is not None)
         self.assertEquals(oc, set(["group"]))
 
     def test_search_by_objclass(self):
@@ -281,13 +284,15 @@ delete: description
 
 
 class MapTestCase(MapBaseTestCase):
+
     def setUp(self):
         super(MapTestCase, self).setUp()
         ldb = Ldb(self.ldburl)
         self.templates.setup_data("provision_samba3sam_templates.ldif")
-        ldif = open(os.path.join(datadir, "provision_samba3sam.ldif"), 'r').read()
+        ldif = read_datafile("provision_samba3sam.ldif")
         ldb.add_ldif(self.samba4.subst(ldif))
         self.setup_modules(ldb, self.samba3, self.samba4)
+        del ldb
         self.ldb = Ldb(self.ldburl)
 
     def test_map_search(self):
@@ -383,7 +388,7 @@ description: y
         res = self.ldb.search(dn, scope=SCOPE_BASE, 
                 attrs=["dnsHostName", "lastLogon"])
         self.assertEquals(len(res), 1)
-        self.assertEquals(str(str(res[0].dn)), dn)
+        self.assertEquals(str(res[0].dn), dn)
         self.assertTrue(not "dnsHostName" in res[0])
         self.assertEquals(res[0]["lastLogon"], "x")
 
@@ -392,7 +397,7 @@ description: y
         res = self.samba3.db.search(dn, scope=SCOPE_BASE, 
                 attrs=["dnsHostName", "lastLogon", "sambaLogonTime"])
         self.assertEquals(len(res), 1)
-        self.assertEquals(str(str(res[0].dn)), dn)
+        self.assertEquals(str(res[0].dn), dn)
         self.assertTrue(not "dnsHostName" in res[0])
         self.assertTrue(not "lastLogon" in res[0])
         self.assertEquals(res[0]["sambaLogonTime"], "x")
@@ -402,7 +407,7 @@ description: y
         res = self.ldb.search(dn, scope=SCOPE_BASE, 
                 attrs=["dnsHostName", "lastLogon"])
         self.assertEquals(len(res), 1)
-        self.assertEquals(str(str(res[0].dn)), dn)
+        self.assertEquals(str(res[0].dn), dn)
         self.assertEquals(res[0]["dnsHostName"], "x")
         self.assertEquals(res[0]["lastLogon"], "x")
 
@@ -411,7 +416,7 @@ description: y
         res = self.samba3.db.search(dn, scope=SCOPE_BASE, 
                 attrs=["dnsHostName", "lastLogon", "sambaLogonTime"])
         self.assertEquals(len(res), 1)
-        self.assertEquals(str(str(res[0].dn)), dn)
+        self.assertEquals(str(res[0].dn), dn)
         self.assertTrue(not "dnsHostName" in res[0])
         self.assertTrue(not "lastLogon" in res[0])
         self.assertEquals(res[0]["sambaLogonTime"], "x")
@@ -422,10 +427,10 @@ description: y
         res = self.ldb.search(expression="(revision=x)", scope=SCOPE_DEFAULT, 
                 attrs=["dnsHostName", "lastLogon"])
         self.assertEquals(len(res), 2)
-        self.assertEquals(str(str(res[0].dn)), self.samba4.dn("cn=Y"))
+        self.assertEquals(str(res[0].dn), self.samba4.dn("cn=Y"))
         self.assertEquals(res[0]["dnsHostName"], "y")
         self.assertEquals(res[0]["lastLogon"], "y")
-        self.assertEquals(str(str(res[1].dn)), self.samba4.dn("cn=X"))
+        self.assertEquals(str(res[1].dn), self.samba4.dn("cn=X"))
         self.assertEquals(res[1]["dnsHostName"], "x")
         self.assertEquals(res[1]["lastLogon"], "x")
 
@@ -433,10 +438,10 @@ description: y
         res = self.ldb.search(expression="(description=y)", 
                 scope=SCOPE_DEFAULT, attrs=["dnsHostName", "lastLogon"])
         self.assertEquals(len(res), 2)
-        self.assertEquals(str(str(res[0].dn)), self.samba4.dn("cn=Z"))
+        self.assertEquals(str(res[0].dn), self.samba4.dn("cn=Z"))
         self.assertEquals(res[0]["dnsHostName"], "z")
         self.assertEquals(res[0]["lastLogon"], "z")
-        self.assertEquals(str(str(res[1].dn)), self.samba4.dn("cn=C"))
+        self.assertEquals(str(res[1].dn), self.samba4.dn("cn=C"))
         self.assertTrue(not "dnsHostName" in res[1])
         self.assertEquals(res[1]["lastLogon"], "z")
 
@@ -507,12 +512,10 @@ description: y
         self.assertEquals(str(res[0].dn), self.samba4.dn("cn=X"))
         self.assertEquals(res[0]["dnsHostName"], "x")
         self.assertEquals(res[0]["lastLogon"], "x")
-        self.assertTrue(res[0]["objectClass"] is not None)
         self.assertEquals(res[0]["objectClass"][0], "user")
         self.assertEquals(str(res[1].dn), self.samba4.dn("cn=A"))
         self.assertTrue(not "dnsHostName" in res[1])
         self.assertEquals(res[1]["lastLogon"], "x")
-        self.assertTrue(res[1]["objectClass"] is not None)
         self.assertEquals(res[1]["objectClass"][0], "user")
 
         # Prove that the objectClass is actually used for the search
@@ -522,17 +525,14 @@ description: y
         self.assertEquals(str(res[0].dn), self.samba4.dn("cn=B"))
         self.assertTrue(not "dnsHostName" in res[0])
         self.assertEquals(res[0]["lastLogon"], "y")
-        self.assertTrue(res[0]["objectClass"] is not None)
         self.assertEquals(set(res[0]["objectClass"]), set(["user"]))
         self.assertEquals(str(res[1].dn), self.samba4.dn("cn=X"))
         self.assertEquals(res[1]["dnsHostName"], "x")
         self.assertEquals(res[1]["lastLogon"], "x")
-        self.assertTrue(res[1]["objectClass"] is not None)
         self.assertEquals(res[1]["objectClass"][0], "user")
         self.assertEquals(str(res[2].dn), self.samba4.dn("cn=A"))
         self.assertTrue(not "dnsHostName" in res[2])
         self.assertEquals(res[2]["lastLogon"], "x")
-        self.assertTrue(res[2]["objectClass"] is not None)
         self.assertEquals(res[2]["objectClass"][0], "user")
 
         # Testing search by parse tree
@@ -848,9 +848,10 @@ description: foo
         self.assertEquals(res[0]["description"], "foo")
         self.assertEquals(res[0]["sambaBadPasswordCount"], "3")
         self.assertEquals(res[0]["sambaNextRid"], "1001")
+        import pdb; pdb.set_trace()
         # Check in mapped db
         attrs = ["description", "badPwdCount", "nextRid"]
-        res = self.ldb.search(dn, scope=SCOPE_BASE, attrs=attrs)
+        res = self.ldb.search(dn, scope=SCOPE_BASE, attrs=attrs, expression="")
         self.assertEquals(len(res), 1)
         self.assertEquals(str(res[0].dn), dn)
         self.assertEquals(res[0]["description"], "foo")
@@ -1065,7 +1066,7 @@ revision: 2
         dn2 = self.samba3.dn("cn=toast")
         res = self.samba3.db.search(dn2, scope=SCOPE_BASE, 
           attrs=["description", "sambaBadPasswordCount", "sambaNextRid", 
-                 "revision"]
+                 "revision"])
         self.assertEquals(len(res), 1)
         self.assertEquals(str(res[0].dn), dn2)
         self.assertEquals(res[0]["description"], "test")
