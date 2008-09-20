@@ -72,7 +72,6 @@ rm -f mkey.file*
 > messages.log
 
 echo Creating database
-set -x
 initflags="init --realm-max-ticket-life=1day --realm-max-renewable-life=1month"
 
 ${kadmin} ${initflags} ${R} || exit 1
@@ -130,9 +129,9 @@ ${kgetcred} host/server.test3.h5l.se@${R3} || { ec=1 ; eval "${testfailed}"; }
 ${kgetcred} host/server.test4.h5l.se@${R4} || { ec=1 ; eval "${testfailed}"; }
 
 echo "check result"
-${klist} -v | grep -A8 -e 'Server:.*host/server.test3' | grep 'Ticket flags:.*ok-as-delegate' || { ec=1 ; eval "${testfailed}"; }
-${klist} -v | grep -A8 -e 'Server:.*host/noserver.test3' | grep 'Ticket flags:.*ok-as-delegate' && { ec=1 ; eval "${testfailed}"; }
-${klist} -v | grep -A8 -e 'Server:.*server.test4' | grep 'Ticket flags:.*ok-as-delegate' && { ec=1 ; eval "${testfailed}"; }
+${klist} -v | grep -A8 -e 'Server:.*host/server.test3' | grep 'Ticket flags:.*ok-as-delegate' > /dev/null || { ec=1 ; eval "${testfailed}"; }
+${klist} -v | grep -A8 -e 'Server:.*host/noserver.test3' | grep 'Ticket flags:.*ok-as-delegate' 2> /dev/null && { ec=1 ; eval "${testfailed}"; }
+${klist} -v | grep -A8 -e 'Server:.*server.test4' | grep 'Ticket flags:.*ok-as-delegate' 2> /dev/null && { ec=1 ; eval "${testfailed}"; }
 
 ${kdestroy}
 
