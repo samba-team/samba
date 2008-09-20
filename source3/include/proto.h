@@ -7427,6 +7427,9 @@ void init_netr_PasswordInfo(struct netr_PasswordInfo *r,
 			    const char *workstation,
 			    struct samr_Password lmpassword,
 			    struct samr_Password ntpassword);
+void init_netr_CryptPassword(const char *pwd,
+			     unsigned char session_key[16],
+			     struct netr_CryptPassword *pwd_buf);
 
 /* The following definitions come from rpc_client/init_samr.c  */
 
