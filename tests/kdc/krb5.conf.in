@@ -20,6 +20,12 @@
 	TEST2.H5L.SE = {
 		kdc = localhost:@port@
 	}
+	TEST3.H5L.SE = {
+		kdc = localhost:@port@
+	}
+	TEST4.H5L.SE = {
+		kdc = localhost:@port@
+	}
 
 [domain_realm]
 	.test.h5l.se = TEST.H5L.SE
@@ -58,3 +64,11 @@
 
 [kadmin]
 	save-password = true
+
+[capaths]
+	TEST.H5L.SE = {
+		TEST3.H5L.SE = TEST2.H5L.SE
+	}
+	TEST.H5L.SE = {
+		TEST4.H5L.SE = TEST3.H5L.SE TEST2.H5L.SE
+	}
