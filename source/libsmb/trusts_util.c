@@ -57,24 +57,21 @@ static NTSTATUS just_change_the_password(struct rpc_pipe_client *cli, TALLOC_CTX
 
 		struct netr_Authenticator clnt_creds, srv_cred;
 		struct netr_CryptPassword new_password;
-		struct samr_CryptPassword password_buf;
 
 		netlogon_creds_client_step(cli->dc, &clnt_creds);
 
-		encode_pw_buffer(password_buf.data, new_trust_pwd_cleartext, STR_UNICODE);
-
-		SamOEMhash(password_buf.data, cli->dc->sess_key, 516);
-		memcpy(new_password.data, password_buf.data, 512);
-		new_password.length = IVAL(password_buf.data, 512);
+		init_netr_CryptPassword(new_trust_pwd_cleartext,
+					cli->dc->sess_key,
+					&new_password);
 
 		result = rpccli_netr_ServerPasswordSet2(cli, mem_ctx,
-						       cli->dc->remote_machine,
-						       cli->dc->mach_acct,
-						       sec_channel_type,
-						       global_myname(),
-						       &clnt_creds,
-						       &srv_cred,
-						       &new_password);
+							cli->dc->remote_machine,
+							cli->dc->mach_acct,
+							sec_channel_type,
+							global_myname(),
+							&clnt_creds,
+							&srv_cred,
+							&new_password);
 
 		/* Always check returned credentials. */
 		if (!netlogon_creds_client_check(cli->dc, &srv_cred.cred)) {
