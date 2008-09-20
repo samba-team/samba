@@ -153,17 +153,21 @@ PyObject *ldb_val_to_py_object(struct ldb_context *ldb_ctx,
  * Wrap struct ldb_result
  */
 
-%typemap(in,noblock=1,numinputs=0) struct ldb_result **OUT (struct ldb_result *temp_ldb_result) {
+%typemap(in,noblock=1,numinputs=0) struct ldb_result ** (struct ldb_result *temp_ldb_result) {
 	$1 = &temp_ldb_result;
 }
 
 #ifdef SWIGPYTHON
 %typemap(argout,noblock=1) struct ldb_result ** (int i) {
-	$result = PyList_New((*$1)->count);
-    for (i = 0; i < (*$1)->count; i++) {
-        PyList_SetItem($result, i, 
-            SWIG_NewPointerObj((*$1)->msgs[i], SWIGTYPE_p_ldb_message, 0)
-        );
+    if ($1 == NULL) {
+        $result = Py_None;
+    } else {
+        $result = PyList_New((*$1)->count);
+        for (i = 0; i < (*$1)->count; i++) {
+            PyList_SetItem($result, i, 
+                SWIG_NewPointerObj((*$1)->msgs[i], SWIGTYPE_p_ldb_message, 0)
+            );
+        }
     }
 }
 
@@ -944,20 +948,55 @@ typedef struct ldb_module {
             return ret;
         }
 #endif
-        int search(struct ldb_request *req) {
-            return $self->ops->search($self, req);
+        int search(struct ldb_dn *base, enum ldb_scope scope, struct ldb_parse_tree *tree, const char * const * attrs, struct ldb_result **res) {
+            int ret;
+            struct ldb_request *req = talloc_zero(NULL, struct ldb_request);
+
+            req->operation = LDB_SEARCH;
+            req->op.search.base = base;
+            req->op.search.scope = scope;
+            req->op.search.tree = tree;
+            req->op.search.attrs = attrs;
+
+            req->op.search.res = talloc_zero(NULL, struct ldb_result);
+
+            ret = $self->ops->search($self, req);
+
+            *res = req->op.search.res;
+
+            talloc_free(req);
+
+            return ret;
         }
-        ldb_error add(struct ldb_request *req) {
-            return $self->ops->add($self, req);
+        ldb_error add(struct ldb_message *message) {
+            struct ldb_request *req = talloc_zero(NULL, struct ldb_request);
+            req->operation = LDB_ADD;
+            req->op.add.message = message;
+            
+            return $self->ops->add($self, &req);
         }
-        ldb_error modify(struct ldb_request *req) {
-            return $self->ops->modify($self, req);
+        ldb_error modify(struct ldb_message *message) {
+            struct ldb_request *req = talloc_zero(NULL, struct ldb_request);
+            req->operation = LDB_MODIFY;
+            req->op.mod.message = message;
+            
+            return $self->ops->modify($self, &req);
         }
-        ldb_error delete(struct ldb_request *req) {
-            return $self->ops->del($self, req);
+        ldb_error delete(struct ldb_dn *dn) {
+            struct ldb_request *req = talloc_zero(NULL, struct ldb_request);
+            req->operation = LDB_DELETE;
+            req->op.del.dn = dn;
+            
+            return $self->ops->del($self, &req);
+
         }
-        ldb_error rename(struct ldb_request *req) {
-            return $self->ops->rename($self, req);
+        ldb_error rename(struct ldb_dn *olddn, struct ldb_dn *newdn) {
+            struct ldb_request *req = talloc_zero(NULL, struct ldb_request);
+            req->operation = LDB_RENAME;
+            req->op.rename.olddn = olddn;
+            req->op.rename.olddn = newdn;
+            
+            return $self->ops->rename($self, &req);
         }
         ldb_error start_transaction() {
             return $self->ops->start_transaction($self);
