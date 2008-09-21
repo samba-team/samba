@@ -8,8 +8,6 @@ AC_CONFIG_SRCDIR([events.c])
 AC_CONFIG_HEADER(config.h)
 AC_LIBREPLACE_ALL_CHECKS
 
-m4_include(libtalloc.m4)
-
 AC_LD_EXPORT_DYNAMIC
 AC_LD_SONAMEFLAG
 AC_LD_PICFLAG
@@ -17,6 +15,13 @@ AC_LD_SHLIBEXT
 AC_LIBREPLACE_SHLD
 AC_LIBREPLACE_SHLD_FLAGS
 AC_LIBREPLACE_RUNTIME_LIB_PATH_VAR
+
+m4_include(build_macros.m4)
+BUILD_WITH_SHARED_BUILD_DIR
+
+m4_include(pkg.m4)
+m4_include(libtalloc.m4)
+
 m4_include(libevents.m4)
 AC_PATH_PROGS([PYTHON_CONFIG], [python2.6-config python2.5-config python2.4-config python-config])
 AC_PATH_PROGS([PYTHON], [python2.6 python2.5 python2.4 python])

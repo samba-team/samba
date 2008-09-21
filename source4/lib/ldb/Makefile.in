@@ -11,9 +11,11 @@ includedir = @includedir@
 libdir = @libdir@
 bindir = @bindir@
 mandir = @mandir@
-VPATH = @srcdir@:@tdbdir@:@tallocdir@:@libreplacedir@:@poptdir@:@eventsdir@
+VPATH = @srcdir@:@libreplacedir@
 srcdir = @srcdir@
 builddir = @builddir@
+sharedbuilddir = @sharedbuilddir@
+INSTALLCMD = @INSTALL@
 SLAPD = @SLAPD@
 SWIG = swig
 EXTRA_OBJ=@EXTRA_OBJ@
@@ -21,9 +23,7 @@ TESTS=test-tdb.sh @TESTS@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PYTHON = @PYTHON@
 PYTHON_CONFIG = @PYTHON_CONFIG@
-tdbdir = @tdbdir@
 ldbdir = $(srcdir)
-tallocdir = @tallocdir@
 
 TALLOC_LIBS = @TALLOC_LIBS@
 TALLOC_CFLAGS = @TALLOC_CFLAGS@
@@ -33,6 +33,7 @@ TDB_LIBS = @TDB_LIBS@
 TDB_CFLAGS = @TDB_CFLAGS@
 TDB_OBJ = @TDB_OBJ@
 
+EVENTS_LIBS = @EVENTS_LIBS@
 EVENTS_CFLAGS = @EVENTS_CFLAGS@
 EVENTS_OBJ = @EVENTS_OBJ@
 
@@ -65,7 +66,7 @@ OBJS = $(MODULES_OBJ) $(COMMON_OBJ) $(LDB_TDB_OBJ) $(TDB_OBJ) $(EVENTS_OBJ) $(TA
 
 headers = $(srcdir)/include/ldb.h $(srcdir)/include/ldb_errors.h $(srcdir)/include/ldb_handlers.h
 
-BINS = bin/ldbadd bin/ldbsearch bin/ldbdel bin/ldbmodify bin/ldbedit bin/ldbrename bin/ldbtest bin/oLschema2ldif
+BINS = bin/ldbadd bin/ldbsearch bin/ldbdel bin/ldbmodify bin/ldbedit bin/ldbrename bin/ldbtest
 
 EXAMPLES = examples/ldbreader examples/ldifreader
 
@@ -81,23 +82,36 @@ nssdir:
 	@mkdir -p $(NSSDIR)
 
 SONAME = libldb.$(SHLIBEXT).0
-SOLIB = lib/libldb.$(SHLIBEXT).$(PACKAGE_VERSION)
+SOLIB = libldb.$(SHLIBEXT).$(PACKAGE_VERSION)
+LIBSOLIB = lib/$(SOLIB)
 STATICLIB = lib/libldb.a
 
-lib/$(SONAME): $(SOLIB)
+lib/$(SONAME): $(LIBSOLIB)
 	ln -fs libldb.$(SHLIBEXT).$(PACKAGE_VERSION) $@
 
-lib/libldb.$(SHLIBEXT): $(SOLIB)
+lib/libldb.$(SHLIBEXT): $(LIBSOLIB)
 	ln -fs libldb.$(SHLIBEXT).$(PACKAGE_VERSION) $@
 
-lib/libnss_ldb.$(SHLIBEXT).2: $(NSS_OBJ) $(SOLIB)
-	$(SHLD) $(SHLD_FLAGS) -o $@ $(NSS_OBJ) $(LDFLAGS) $(SOLIB) @SONAMEFLAG@libnss_ldb.$(SHLIBEXT).2
+lib/libnss_ldb.$(SHLIBEXT).2: $(NSS_OBJ) $(LIBSOLIB)
+	$(SHLD) $(SHLD_FLAGS) -o $@ $(NSS_OBJ) $(LDFLAGS) $(LIBSOLIB) @SONAMEFLAG@libnss_ldb.$(SHLIBEXT).2
 
-$(SOLIB): $(OBJS)
-	$(SHLD) $(SHLD_FLAGS) -o $@ $(OBJS) $(LDFLAGS) $(LIBS) $(TALLOC_LIBS) $(TDB_LIBS) $(LIBDL) $(LDAP_LIBS) @SONAMEFLAG@$(SONAME)
+$(LIBSOLIB): $(OBJS)
+	$(SHLD) $(SHLD_FLAGS) -o $@ $(OBJS) $(LDFLAGS) $(LIBS) $(TALLOC_LIBS) $(TDB_LIBS) $(EVENTS_LIBS) $(LIBDL) $(LDAP_LIBS) @SONAMEFLAG@$(SONAME)
+	ln -sf libldb.$(SHLIBEXT).$(PACKAGE_VERSION) lib/libldb.$(SHLIBEXT)
 
-all: showflags dirs $(OBJS) $(STATICLIB) $(SOLIB) $(BINS) $(EXAMPLES) manpages \
+all: showflags dirs $(OBJS) $(STATICLIB) $(LIBSOLIB) $(BINS) $(EXAMPLES) manpages \
 	@PYTHON_BUILD_TARGET@
+
+shared-build: all
+	${INSTALLCMD} -d $(sharedbuilddir)/lib
+	${INSTALLCMD} -m 644 $(STATICLIB) $(sharedbuilddir)/lib
+	${INSTALLCMD} -m 755 $(LIBSOLIB) $(sharedbuilddir)/lib
+	ln -sf $(SOLIB) $(sharedbuilddir)/lib/$(SONAME)
+	ln -sf $(SOLIB) $(sharedbuilddir)/lib/libldb.so
+	${INSTALLCMD} -d $(sharedbuilddir)/include
+	${INSTALLCMD} -m 644 $(srcdir)/include/ldb.h $(sharedbuilddir)/include
+	${INSTALLCMD} -m 644 $(srcdir)/include/ldb_errors.h $(sharedbuilddir)/include
+	${INSTALLCMD} -m 644 $(srcdir)/include/ldb_handlers.h $(sharedbuilddir)/include
 
 dirs:
 	@mkdir -p $(DIRS)
@@ -110,7 +124,7 @@ doxygen::
 
 clean::
 	rm -f *.o */*.o *.gcov */*.gc?? tdbtest.ldb*
-	rm -f $(BINS) $(TDB_OBJ) $(TALLOC_OBJ) $(STATICLIB) $(NSS_LIB) $(SOLIB)
+	rm -f $(BINS) $(TDB_OBJ) $(TALLOC_OBJ) $(STATICLIB) $(NSS_LIB) $(LIBSOLIB)
 	rm -f $(POPT_OBJ)
 	rm -f man/*.1 man/*.3 man/*.html
 	rm -f $(EXAMPLES)
@@ -149,7 +163,7 @@ installheaders:: installdirs
 	cp $(headers) $(DESTDIR)$(includedir)
 
 installlibs:: installdirs
-	cp $(STATICLIB) $(SOLIB) $(DESTDIR)$(libdir)
+	cp $(STATICLIB) $(LIBSOLIB) $(DESTDIR)$(libdir)
 	cp ldb.pc $(DESTDIR)$(libdir)/pkgconfig
 
 installbin:: installdirs

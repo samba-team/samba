@@ -5,7 +5,7 @@ echo "LIBREPLACE_LOCATION_CHECKS: START"
 dnl find the libreplace sources. This is meant to work both for 
 dnl libreplace standalone builds, and builds of packages using libreplace
 libreplacedir=""
-libreplacepaths="$srcdir $srcdir/lib/replace $srcdir/libreplace $srcdir/../libreplace $srcdir/../replace $srcdir/../lib/replace"
+libreplacepaths="$srcdir $srcdir/lib/replace $srcdir/libreplace $srcdir/../libreplace $srcdir/../replace $srcdir/../lib/replace $srcdir/../../../lib/replace"
 for d in $libreplacepaths; do
 	if test -f "$d/replace.c"; then
 		libreplacedir="$d"		
@@ -34,7 +34,7 @@ echo "LIBREPLACE_BROKEN_CHECKS: START"
 dnl find the libreplace sources. This is meant to work both for 
 dnl libreplace standalone builds, and builds of packages using libreplace
 libreplacedir=""
-libreplacepaths="$srcdir $srcdir/lib/replace $srcdir/libreplace $srcdir/../libreplace $srcdir/../replace $srcdir/../lib/replace"
+libreplacepaths="$srcdir $srcdir/lib/replace $srcdir/libreplace $srcdir/../libreplace $srcdir/../replace $srcdir/../lib/replace $srcdir/../../../lib/replace"
 for d in $libreplacepaths; do
 	if test -f "$d/replace.c"; then
 		libreplacedir="$d"		

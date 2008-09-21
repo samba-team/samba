@@ -1,4 +1,7 @@
-m4_include(pkg.m4)
-EVENTS_OBJ=""
 AC_SUBST(EVENTS_OBJ)
-PKG_CHECK_MODULES(EVENTS, events)
+AC_SUBST(EVENTS_CFLAGS)
+AC_SUBST(EVENTS_LIBS)
+
+AC_CHECK_HEADER(events.h,
+   [AC_CHECK_LIB(events, event_context_init, [EVENTS_LIBS="-levents"]) ],
+   [PKG_CHECK_MODULES(EVENTS, events)])

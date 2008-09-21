@@ -5,7 +5,7 @@ EVENTS_SOLIB = libevents.$(SHLIBEXT).$(PACKAGE_VERSION)
 libevents.a: $(EVENTS_OBJ)
 	ar -rv libevents.a $(EVENTS_OBJ)
 
-libevents.$(SHLIBEXT): $(LIBEVENTS_SOLIB)
+libevents.$(SHLIBEXT): $(EVENTS_SOLIB)
 	ln -fs $< $@
 
 $(EVENTS_SONAME): $(EVENTS_SOLIB)
@@ -24,7 +24,7 @@ installheaders:: installdirs
 
 installlibs:: installdirs
 	cp events.pc $(DESTDIR)$(libdir)/pkgconfig
-	cp libevents.a $(LIBEVENTS_SOLIB) $(DESTDIR)$(libdir)
+	cp libevents.a $(EVENTS_SOLIB) $(DESTDIR)$(libdir)
 
 install:: all installdirs installheaders installlibs $(PYTHON_INSTALL_TARGET)
 
