@@ -953,6 +953,7 @@ REPLACETORT_OBJ = @libreplacedir@/test/testsuite.o \
 		@libreplacedir@/test/getifaddrs.o \
 		@libreplacedir@/test/os2_delete.o \
 		@libreplacedir@/test/strptime.o \
+		@libreplacedir@/test/main.o \
 		$(LIBREPLACE_OBJ)
 
 NDRDUMP_OBJ = librpc/tools/ndrdump.o \
