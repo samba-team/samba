@@ -50,7 +50,6 @@ struct websrv_context {
 		unsigned content_length;
 		bool post_request;
 		struct http_header *headers;
-		const char *content_type;
 	} input;
 	struct websrv_request_output {
 		bool output_pending;

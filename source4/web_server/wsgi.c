@@ -24,6 +24,7 @@
 #include "web_server/web_server.h"
 #include "lib/util/dlinklist.h"
 #include "lib/util/data_blob.h"
+#include "lib/tls/tls.h"
 #include <Python.h>
 
 typedef struct {
@@ -165,37 +166,71 @@ PyTypeObject error_Stream_Type = {
 
 typedef struct {
 	PyObject_HEAD
+	struct websrv_context *web;
+	size_t offset;
 } input_Stream_Object;
 
-static PyObject *py_input_read(PyObject *self, PyObject *args, PyObject *kwargs)
+static PyObject *py_input_read(PyObject *_self, PyObject *args, PyObject *kwargs)
 {
+	const char *kwnames[] = { "size", NULL };
+	PyObject *ret;
+	input_Stream_Object *self = (input_Stream_Object *)_self;
+	int size = -1;
+
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|i", discard_const_p(char *, kwnames), &size))
+		return NULL;
+	
+	/* Don't read beyond buffer boundaries */
+	if (size == -1)
+		size = self->web->input.partial.length-self->offset;
+	else
+		size = MIN(size, self->web->input.partial.length-self->offset);
+
+	ret = PyString_FromStringAndSize((char *)self->web->input.partial.data+self->offset, size);
+	self->offset += size;
+	
+	return ret;
+}
+
+static PyObject *py_input_readline(PyObject *_self)
+{
+	input_Stream_Object *self = (input_Stream_Object *)_self;
 	/* FIXME */
+	PyErr_SetString(PyExc_NotImplementedError, 
+			"readline() not yet implemented");
 	return NULL;
 }
 
-static PyObject *py_input_readline(PyObject *self, PyObject *args, PyObject *kwargs)
+static PyObject *py_input_readlines(PyObject *_self, PyObject *args, PyObject *kwargs)
 {
+	const char *kwnames[] = { "hint", NULL };
+	PyObject *ret;
+	int hint;
+	input_Stream_Object *self = (input_Stream_Object *)_self;
+
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|i", discard_const_p(char *, kwnames), &hint))
+		return NULL;
+	
 	/* FIXME */
+	PyErr_SetString(PyExc_NotImplementedError, 
+			"readlines() not yet implemented");
 	return NULL;
 }
 
-static PyObject *py_input_readlines(PyObject *self, PyObject *args, PyObject *kwargs)
+static PyObject *py_input___iter__(PyObject *_self)
 {
+	input_Stream_Object *self = (input_Stream_Object *)_self;
 	/* FIXME */
-	return NULL;
-}
-
-static PyObject *py_input___iter__(PyObject *self, PyObject *args, PyObject *kwargs)
-{
-	/* FIXME */
+	PyErr_SetString(PyExc_NotImplementedError, 
+			"__iter__() not yet implemented");
 	return NULL;
 }
 
 static PyMethodDef input_Stream_methods[] = {
 	{ "read", (PyCFunction)py_input_read, METH_VARARGS|METH_KEYWORDS, NULL },
-	{ "readline", (PyCFunction)py_input_readline, METH_VARARGS|METH_KEYWORDS, NULL },
+	{ "readline", (PyCFunction)py_input_readline, METH_NOARGS, NULL },
 	{ "readlines", (PyCFunction)py_input_readlines, METH_VARARGS|METH_KEYWORDS, NULL },
-	{ "__iter__", (PyCFunction)py_input___iter__, METH_VARARGS|METH_KEYWORDS, NULL },
+	{ "__iter__", (PyCFunction)py_input___iter__, METH_NOARGS, NULL },
 	{ NULL, NULL, 0, NULL }
 };
 
@@ -207,9 +242,11 @@ PyTypeObject input_Stream_Type = {
 	.tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
 
-static PyObject *Py_InputHttpStream(void *foo)
+static PyObject *Py_InputHttpStream(struct websrv_context *web)
 {
 	input_Stream_Object *ret = PyObject_New(input_Stream_Object, &input_Stream_Type);
+	ret->web = web;
+	ret->offset = 0;
 	return (PyObject *)ret;
 }
 
@@ -219,21 +256,16 @@ static PyObject *Py_ErrorHttpStream(void)
 	return (PyObject *)ret;
 }
 
-static PyObject *create_environ(bool tls, int content_length, const char *content_type, struct http_header *headers, const char *request_method)
+static PyObject *create_environ(bool tls, int content_length, struct http_header *headers, const char *request_method, const char *servername, int serverport, PyObject *inputstream, const char *request_string)
 {
 	PyObject *env;
-	PyObject *inputstream, *errorstream;
+	PyObject *errorstream;
 	PyObject *py_scheme;
 	struct http_header *hdr;
+	char *questionmark;
 	
 	env = PyDict_New();
 	if (env == NULL) {
-		return NULL;
-	}
-
-	inputstream = Py_InputHttpStream(NULL);
-	if (inputstream == NULL) {
-		Py_DECREF(env);
 		return NULL;
 	}
 
@@ -251,24 +283,30 @@ static PyObject *create_environ(bool tls, int content_length, const char *conten
 	PyDict_SetItemString(env, "wsgi.multiprocess", Py_True);
 	PyDict_SetItemString(env, "wsgi.run_once", Py_False);
 	PyDict_SetItemString(env, "SERVER_PROTOCOL", PyString_FromString("HTTP/1.0"));
-	if (content_type != NULL) {
-		PyDict_SetItemString(env, "CONTENT_TYPE", PyString_FromString(content_type));
-	}
 	if (content_length > 0) {
 		PyDict_SetItemString(env, "CONTENT_LENGTH", PyLong_FromLong(content_length));
 	}
 	PyDict_SetItemString(env, "REQUEST_METHOD", PyString_FromString(request_method));
 
-	/* FIXME: SCRIPT_NAME */
-	/* FIXME: PATH_INFO */
-	/* FIXME: QUERY_STRING */
-	/* FIXME: SERVER_NAME, SERVER_PORT */
-
+	questionmark = strchr(request_string, '?');
+	if (questionmark == NULL) {
+		PyDict_SetItemString(env, "SCRIPT_NAME", PyString_FromString(request_string));
+	} else {
+		PyDict_SetItemString(env, "QUERY_STRING", PyString_FromString(questionmark+1));
+		PyDict_SetItemString(env, "SCRIPT_NAME", PyString_FromStringAndSize(request_string, questionmark-request_string));
+	}
+	
+	PyDict_SetItemString(env, "SERVER_NAME", PyString_FromString(servername));
+	PyDict_SetItemString(env, "SERVER_PORT", PyInt_FromLong(serverport));
 	for (hdr = headers; hdr; hdr = hdr->next) {
 		char *name;
-		asprintf(&name, "HTTP_%s", hdr->name);
-		PyDict_SetItemString(env, name, PyString_FromString(hdr->value));
-		free(name);
+		if (!strcasecmp(hdr->name, "Content-Type")) {
+			PyDict_SetItemString(env, "CONTENT_TYPE", PyString_FromString(hdr->value));
+		} else { 
+			asprintf(&name, "HTTP_%s", hdr->name);
+			PyDict_SetItemString(env, name, PyString_FromString(hdr->value));
+			free(name);
+		}
 	}
 
 	if (tls) {
@@ -286,15 +324,21 @@ static void wsgi_process_http_input(struct web_server_data *wdata,
 {
 	PyObject *py_environ, *result, *item, *iter;
 	PyObject *request_handler = wdata->private;
+	struct socket_address *socket_address;
 
 	web_request_Object *py_web = PyObject_New(web_request_Object, &web_request_Type);
 	py_web->web = web;
 
-	py_environ = create_environ(false /* FIXME: Figure out whether we're using tls */, 
+	socket_address = socket_get_my_addr(web->conn->socket, web);
+	py_environ = create_environ(tls_enabled(web->conn->socket),
 				    web->input.content_length, 
-				    web->input.content_type, 
 				    web->input.headers, 
-				    web->input.post_request?"POST":"GET");
+				    web->input.post_request?"POST":"GET",
+				    socket_address->addr,
+				    socket_address->port, 
+				    Py_InputHttpStream(web),
+				    web->input.url
+				    );
 	if (py_environ == NULL) {
 		DEBUG(0, ("Unable to create WSGI environment object\n"));
 		return;
