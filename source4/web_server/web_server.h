@@ -24,6 +24,12 @@ struct web_server_data {
 	void *private;	
 };
 
+struct http_header {
+	char *name;
+	char *value;
+	struct http_header *prev, *next;
+};
+
 /*
   context of one open web connection
 */
@@ -40,16 +46,8 @@ struct websrv_context {
 		char *url;
 		unsigned content_length;
 		bool post_request;
+		struct http_header *headers;
 		const char *content_type;
-		const char *query_string;
-		const char *user_agent;
-		const char *referer;
-		const char *host;
-		const char *accept_encoding;
-		const char *accept_language;
-		const char *accept_charset;
-		const char *cookie;
-		const char *session_key;
 	} input;
 	struct {
 		bool output_pending;
@@ -57,7 +55,7 @@ struct websrv_context {
 		int fd;
 		unsigned nsent;
 		int response_code;
-		const char **headers;
+		struct http_header *headers;
 	} output;
 	struct session_data *session;
 };

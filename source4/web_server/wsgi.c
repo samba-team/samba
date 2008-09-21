@@ -32,7 +32,7 @@ static PyObject *start_response(PyObject *self, PyObject *args, PyObject *kwargs
 		"status", "response_header", "exc_info", NULL
 	};
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *)"sOO:start_response", (char **)kwnames, &status, &response_header, &exc_info)) {
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "sOO:start_response", discard_const_p(char *, kwnames), &status, &response_header, &exc_info)) {
 		return NULL;
 	}
 
@@ -57,7 +57,7 @@ static PyObject *py_error_write(PyObject *self, PyObject *args, PyObject *kwargs
 	const char *kwnames[] = { "str", NULL };
 	char *str = NULL;
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *)"s:write", (char **)kwnames, &str)) {
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s:write", discard_const_p(char *, kwnames), &str)) {
 		return NULL;
 	}
 
@@ -71,7 +71,7 @@ static PyObject *py_error_writelines(PyObject *self, PyObject *args, PyObject *k
 	const char *kwnames[] = { "seq", NULL };
 	PyObject *seq = NULL, *item;
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *)"O:writelines", (char **)kwnames, &seq)) {
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O:writelines", discard_const_p(char *, kwnames), &seq)) {
 		return NULL;
 	}
 	
@@ -141,14 +141,14 @@ PyTypeObject input_Stream_Type = {
 
 static PyObject *Py_InputHttpStream(void *foo)
 {
-	PyObject *ret = PyObject_New(input_Stream_Object, &input_Stream_Type);
-	return ret;
+	input_Stream_Object *ret = PyObject_New(input_Stream_Object, &input_Stream_Type);
+	return (PyObject *)ret;
 }
 
 static PyObject *Py_ErrorHttpStream(void)
 {
-	PyObject *ret = PyObject_New(error_Stream_Object, &error_Stream_Type);
-	return ret;
+	error_Stream_Object *ret = PyObject_New(error_Stream_Object, &error_Stream_Type);
+	return (PyObject *)ret;
 }
 
 static PyObject *create_environ(void)

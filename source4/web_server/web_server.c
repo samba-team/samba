@@ -4,6 +4,7 @@
    web server startup
 
    Copyright (C) Andrew Tridgell 2005
+   Copyright (C) Jelmer Vernooij 2008
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -29,6 +30,7 @@
 #include "system/network.h"
 #include "lib/socket/netif.h"
 #include "lib/tls/tls.h"
+#include "lib/util/dlinklist.h"
 #include "param/param.h"
 
 /* don't allow connections to hang around forever */
@@ -59,6 +61,62 @@ static void websrv_timeout(struct event_context *event_context,
 	/* TODO: send a message to any running esp context on this connection
 	   to stop running */
 	stream_terminate_connection(conn, "websrv_timeout: timed out");	
+}
+
+/*
+  setup for a raw http level error
+*/
+void http_error(struct websrv_context *web, int code, const char *info)
+{
+	char *s;
+	s = talloc_asprintf(web,"<HTML><HEAD><TITLE>Error %u</TITLE></HEAD><BODY><H1>Error %u</H1><pre>%s</pre><p></BODY></HTML>\r\n\r\n", 
+			    code, code, info);
+	if (s == NULL) {
+		stream_terminate_connection(web->conn, "http_error: out of memory");
+		return;
+	}
+	/* FIXME: 
+	http_writeBlock(web, s, strlen(s));
+	http_setResponseCode(web, code);
+	http_output_headers(web); */
+	EVENT_FD_NOT_READABLE(web->conn->event.fde);
+	EVENT_FD_WRITEABLE(web->conn->event.fde);
+	web->output.output_pending = true;
+}
+
+
+/*
+  parse one line of header input
+*/
+NTSTATUS http_parse_header(struct websrv_context *web, const char *line)
+{
+	if (line[0] == 0) {
+		web->input.end_of_headers = true;
+	} else if (strncasecmp(line,"GET ", 4)==0) {
+		web->input.url = talloc_strndup(web, &line[4], strcspn(&line[4], " \t"));
+	} else if (strncasecmp(line,"POST ", 5)==0) {
+		web->input.post_request = true;
+		web->input.url = talloc_strndup(web, &line[5], strcspn(&line[5], " \t"));
+	} else if (strchr(line, ':') == NULL) {
+		http_error(web, 400, "This server only accepts GET and POST requests");
+		return NT_STATUS_INVALID_PARAMETER;
+	} else if (strncasecmp(line, "Content-Length: ", 16)==0) {
+		web->input.content_length = strtoul(&line[16], NULL, 10);
+	} else {
+		struct http_header *hdr = talloc_zero(web, struct http_header);
+		char *colon = strchr(line, ':');
+		if (colon == NULL) {
+			http_error(web, 500, "invalidly formatted header");
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		hdr->name = talloc_strndup(hdr, line, colon-line);
+		hdr->value = talloc_strdup(hdr, colon+1);
+		DLIST_ADD(web->input.headers, hdr);
+	}
+
+	/* ignore all other headers for now */
+	return NT_STATUS_OK;
 }
 
 /*
@@ -199,7 +257,7 @@ static void websrv_accept(struct stream_connection *conn)
 	web = talloc_zero(conn, struct websrv_context);
 	if (web == NULL) goto failed;
 
-	web->http_process_input = esp_process_http_input;
+	web->http_process_input = wsgi_process_http_input;
 	web->task = task;
 	web->conn = conn;
 	conn->private = web;
@@ -289,9 +347,6 @@ static void websrv_task_init(struct task_server *task)
 	
 	wdata->tls_params = tls_initialise(wdata, task->lp_ctx);
 	if (wdata->tls_params == NULL) goto failed;
-
-	wdata->private = http_setup_esp(task, task->lp_ctx);
-	if (wdata->private == NULL) goto failed;
 
 	return;
 
