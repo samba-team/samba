@@ -63,27 +63,45 @@ static void websrv_timeout(struct event_context *event_context,
 /*
   setup for a raw http level error
 */
-void http_error(struct websrv_context *web, int code, const char *info)
+void http_error(struct websrv_context *web, const char *status, const char *info)
 {
 	char *s;
-	s = talloc_asprintf(web,"<HTML><HEAD><TITLE>Error %u</TITLE></HEAD><BODY><H1>Error %u</H1><pre>%s</pre><p></BODY></HTML>\r\n\r\n", 
-			    code, code, info);
+	s = talloc_asprintf(web,"<HTML><HEAD><TITLE>Error %s</TITLE></HEAD><BODY><H1>Error %s</H1><pre>%s</pre><p></BODY></HTML>\r\n\r\n", 
+			    status, status, info);
 	if (s == NULL) {
 		stream_terminate_connection(web->conn, "http_error: out of memory");
 		return;
 	}
-	/* FIXME: 
-	http_writeBlock(web, s, strlen(s));
-	http_setResponseCode(web, code);
-	http_output_headers(web); */
-	EVENT_FD_NOT_READABLE(web->conn->event.fde);
-	EVENT_FD_WRITEABLE(web->conn->event.fde);
-	web->output.output_pending = true;
+	websrv_output_headers(web, status, NULL);
+	websrv_output(web, s, strlen(s));
 }
 
 void websrv_output_headers(struct websrv_context *web, const char *status, struct http_header *headers)
 {
-	/* FIXME */
+	char *s;
+	DATA_BLOB b;
+	struct http_header *hdr;
+
+	s = talloc_asprintf(web, "HTTP/1.0 %s\r\n", status);
+	if (s == NULL) return;
+	for (hdr = headers; hdr; hdr = hdr->next) {
+		s = talloc_asprintf_append_buffer(s, "%s: %s\r\n", hdr->name, hdr->value);
+	}
+
+	s = talloc_asprintf_append_buffer(s, "\r\n");
+
+	b = web->output.content;
+	web->output.content = data_blob_string_const(s);
+	websrv_output(web, b.data, b.length);
+	data_blob_free(&b);
+}
+
+void websrv_output(struct websrv_context *web, void *data, size_t length)
+{
+	data_blob_append(web, &web->output.content, data, length);
+	EVENT_FD_NOT_READABLE(web->conn->event.fde);
+	EVENT_FD_WRITEABLE(web->conn->event.fde);
+	web->output.output_pending = true;
 }
 
 
@@ -100,7 +118,7 @@ NTSTATUS http_parse_header(struct websrv_context *web, const char *line)
 		web->input.post_request = true;
 		web->input.url = talloc_strndup(web, &line[5], strcspn(&line[5], " \t"));
 	} else if (strchr(line, ':') == NULL) {
-		http_error(web, 400, "This server only accepts GET and POST requests");
+		http_error(web, "400 Bad request", "This server only accepts GET and POST requests");
 		return NT_STATUS_INVALID_PARAMETER;
 	} else if (strncasecmp(line, "Content-Length: ", 16)==0) {
 		web->input.content_length = strtoul(&line[16], NULL, 10);
@@ -108,7 +126,7 @@ NTSTATUS http_parse_header(struct websrv_context *web, const char *line)
 		struct http_header *hdr = talloc_zero(web, struct http_header);
 		char *colon = strchr(line, ':');
 		if (colon == NULL) {
-			http_error(web, 500, "invalidly formatted header");
+			http_error(web, "500 Internal Server Error", "invalidly formatted header");
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 

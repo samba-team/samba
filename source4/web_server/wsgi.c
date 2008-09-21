@@ -314,8 +314,7 @@ static void wsgi_process_http_input(struct web_server_data *wdata,
 	/* Now, iter over all the data returned */
 
 	while ((item = PyIter_Next(iter))) {
-		data_blob_append(web, &web->output.content, 
-				 PyString_AsString(item), PyString_Size(item));
+		websrv_output(web, PyString_AsString(item), PyString_Size(item));
 		Py_DECREF(item);
 	}
 
