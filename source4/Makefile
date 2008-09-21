@@ -102,6 +102,7 @@ kdcsrcdir := kdc
 ntp_signdsrcdir := ntp_signd
 wmisrcdir := lib/wmi
 tallocsrcdir := ../lib/talloc
+comsrcdir := $(srcdir)/lib/com
 
 include data.mk
 
