@@ -946,8 +946,8 @@ SHARESEC_OBJ  = $(SHARESEC_OBJ0) $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
 		$(LIBSAMBA_OBJ) \
                 $(POPT_LIB_OBJ)
 
-TALLOCTORT_OBJ = @tallocdir@/testsuite.o $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
-                 $(LIBSAMBA_OBJ)
+TALLOCTORT_OBJ = @tallocdir@/testsuite.o @tallocdir@/testsuite_main.o \
+		$(PARAM_OBJ) $(LIB_NONSMBD_OBJ) $(LIBSAMBA_OBJ)
 
 REPLACETORT_OBJ = @libreplacedir@/test/testsuite.o \
 		@libreplacedir@/test/getifaddrs.o \
