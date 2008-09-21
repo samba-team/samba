@@ -7049,6 +7049,12 @@ NTSTATUS rpccli_netlogon_sam_network_logon_ex(struct rpc_pipe_client *cli,
 					      DATA_BLOB lm_response,
 					      DATA_BLOB nt_response,
 					      struct netr_SamInfo3 **info3);
+NTSTATUS rpccli_netlogon_set_trust_password(struct rpc_pipe_client *cli,
+					    TALLOC_CTX *mem_ctx,
+					    const unsigned char orig_trust_passwd_hash[16],
+					    const char *new_trust_pwd_cleartext,
+					    const unsigned char new_trust_passwd_hash[16],
+					    uint32_t sec_channel_type);
 
 /* The following definitions come from rpc_client/cli_pipe.c  */
 
@@ -7427,6 +7433,9 @@ void init_netr_PasswordInfo(struct netr_PasswordInfo *r,
 			    const char *workstation,
 			    struct samr_Password lmpassword,
 			    struct samr_Password ntpassword);
+void init_netr_CryptPassword(const char *pwd,
+			     unsigned char session_key[16],
+			     struct netr_CryptPassword *pwd_buf);
 
 /* The following definitions come from rpc_client/init_samr.c  */
 
