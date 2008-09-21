@@ -4,7 +4,7 @@
 # Start SUBSYSTEM WEB
 [MODULE::WEB]
 INIT_FUNCTION = server_service_web_init
-SUBSYSTEM = smbd
+SUBSYSTEM = samba
 PRIVATE_DEPENDENCIES = LIBTLS smbcalls process_model LIBPYTHON
 # End SUBSYSTEM WEB
 #######################

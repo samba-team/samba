@@ -1,21 +1,21 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
 <!DOCTYPE refentry PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
-<refentry id="smbd.8">
+<refentry id="samba.8">
 
 <refmeta>
-	<refentrytitle>smbd</refentrytitle>
+	<refentrytitle>samba</refentrytitle>
 	<manvolnum>8</manvolnum>
 </refmeta>
 
 
 <refnamediv>
-	<refname>smbd</refname>
+	<refname>samba</refname>
 	<refpurpose>server to provide filesharing- and directory services to clients</refpurpose>
 </refnamediv>
 
 <refsynopsisdiv>
 	<cmdsynopsis>
-		<command>smbd</command>
+		<command>samba</command>
 		<arg choice="opt">-i</arg>
 		<arg choice="opt">-M model</arg>
 	</cmdsynopsis>
@@ -26,7 +26,7 @@
 	<para>This program is part of the <citerefentry><refentrytitle>samba</refentrytitle>
 	<manvolnum>7</manvolnum></citerefentry> suite.</para>
 
-	<para><command>smbd</command> is the server daemon that 
+	<para><command>samba</command> is the server daemon that 
 	provides filesharing and directory services to Windows clients. 
 	The server provides filespace and directory services to
 	clients using the SMB (or CIFS) protocol and other 
@@ -51,8 +51,9 @@
 	<manvolnum>5</manvolnum></citerefentry> manual page should be regarded as mandatory reading before 
 	proceeding with installation.</para>
 
-	<para>As of Samba 4, smbd also incorporates all the functionality of 
-	nmbd.</para>
+	<para>As of Samba 4, there is a single daemon that incorporates the 
+		functionality of both smbd and nmbd that are present in older versions 
+		of Samba.</para>
 
 </refsect1>
 
@@ -66,7 +67,7 @@
 		server to run "interactively", not as a daemon, even if the
 		server is executed on the command line of a shell. Setting this
 		parameter negates the implicit deamon mode when run from the
-		command line. <command>smbd</command> also logs to standard
+		command line. <command>samba</command> also logs to standard
 		output, as if the <command>-S</command> parameter had been
 		given.
 		</para></listitem>
@@ -75,7 +76,7 @@
 		<varlistentry>
 		<term>-M model</term>
 		<listitem><para>This parameter can be used to specify the 
-		&quot;process model&quot; smbd should use. This determines 
+		&quot;process model&quot; samba should use. This determines 
 		how concurrent clients are handled. Available process 
 		models include <emphasis>single</emphasis> (everything in 
 		a single process), <emphasis>standard</emphasis> (similar 

@@ -2,7 +2,7 @@
 #
 [MODULE::SERVICE_SMB]
 INIT_FUNCTION = server_service_smb_init
-SUBSYSTEM = smbd
+SUBSYSTEM = samba
 PRIVATE_DEPENDENCIES = SMB_SERVER
 
 SERVICE_SMB_OBJ_FILES = $(smb_serversrcdir)/smb_server.o

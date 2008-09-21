@@ -303,7 +303,7 @@ Target Specific:
  --expected-failures=FILE   specify list of tests that is guaranteed to fail
 
 Samba4 Specific:
- --ldap=openldap|fedora-ds     back smbd onto specified ldap server
+ --ldap=openldap|fedora-ds     back samba onto specified ldap server
 
 Samba3 Specific:
  --bindir=PATH              path to binaries
@@ -809,7 +809,7 @@ if ($opt_testenv) {
 Welcome to the Samba4 Test environment '$testenv_name'
 
 This matches the client environment used in make test
-smbd is pid `cat \$PIDDIR/smbd.pid`
+server is pid `cat \$PIDDIR/samba.pid`
 
 Some useful environment variables:
 TORTURE_OPTIONS=\$TORTURE_OPTIONS

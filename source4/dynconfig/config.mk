@@ -3,7 +3,7 @@
 DYNCONFIG_OBJ_FILES = $(dynconfigsrcdir)/dynconfig.o
 
 # set these to where to find various files
-# These can be overridden by command line switches (see smbd(8))
+# These can be overridden by command line switches (see samba(8))
 # or in smb.conf (see smb.conf(5))
 CONFIGFILE = $(sysconfdir)/smb.conf
 PKGCONFIGDIR = $(libdir)/pkgconfig
