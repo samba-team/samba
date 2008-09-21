@@ -19,8 +19,12 @@
 
 #include "smbd/process_model.h"
 
+struct websrv_context;
+
 struct web_server_data {
 	struct tls_params *tls_params;
+	void (*http_process_input)(struct web_server_data *wdata, 
+				   struct websrv_context *web);
 	void *private;	
 };
 
@@ -36,8 +40,7 @@ struct http_header {
 struct websrv_context {
 	struct task_server *task;
 	struct stream_connection *conn;
-	void (*http_process_input)(struct websrv_context *web);
-	struct {
+	struct websrv_request_input {
 		bool tls_detect;
 		bool tls_first_char;
 		uint8_t first_byte;
@@ -49,13 +52,11 @@ struct websrv_context {
 		struct http_header *headers;
 		const char *content_type;
 	} input;
-	struct {
+	struct websrv_request_output {
 		bool output_pending;
 		DATA_BLOB content;
-		int fd;
+		bool headers_sent;
 		unsigned nsent;
-		int response_code;
-		struct http_header *headers;
 	} output;
 	struct session_data *session;
 };

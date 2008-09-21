@@ -41,9 +41,6 @@
 */
 static int websrv_destructor(struct websrv_context *web)
 {
-	if (web->output.fd != -1) {
-		close(web->output.fd);
-	}
 	return 0;
 }
 
@@ -82,6 +79,11 @@ void http_error(struct websrv_context *web, int code, const char *info)
 	EVENT_FD_NOT_READABLE(web->conn->event.fde);
 	EVENT_FD_WRITEABLE(web->conn->event.fde);
 	web->output.output_pending = true;
+}
+
+void websrv_output_headers(struct websrv_context *web, const char *status, struct http_header *headers)
+{
+	/* FIXME */
 }
 
 
@@ -124,6 +126,7 @@ NTSTATUS http_parse_header(struct websrv_context *web, const char *line)
 */
 static void websrv_recv(struct stream_connection *conn, uint16_t flags)
 {
+	struct web_server_data *wdata;
 	struct websrv_context *web = talloc_get_type(conn->private, 
 						     struct websrv_context);
 	NTSTATUS status;
@@ -181,7 +184,9 @@ static void websrv_recv(struct stream_connection *conn, uint16_t flags)
 		 destroy the stack variables being used by that
 		 rendering process when we handle the timeout. */
 		if (!talloc_reference(web->task, web)) goto failed;
-		web->http_process_input(web);
+		wdata = talloc_get_type(web->task->private, struct web_server_data);
+		if (wdata == NULL) goto failed;
+		wdata->http_process_input(wdata, web);
 		talloc_unlink(web->task, web);
 	}
 	return;
@@ -189,6 +194,7 @@ static void websrv_recv(struct stream_connection *conn, uint16_t flags)
 failed:
 	stream_terminate_connection(conn, "websrv_recv: failed");
 }
+
 
 
 /*
@@ -217,29 +223,7 @@ static void websrv_send(struct stream_connection *conn, uint16_t flags)
 
 	web->output.nsent += nsent;
 
-	/* possibly read some more raw data from a file */
-	if (web->output.content.length == web->output.nsent && 
-	    web->output.fd != -1) {
-		uint8_t buf[2048];
-		ssize_t nread;
-
-		data_blob_free(&web->output.content);
-		web->output.nsent = 0;
-
-		nread = read(web->output.fd, buf, sizeof(buf));
-		if (nread == -1 && errno == EINTR) {
-			return;
-		}
-		if (nread <= 0) {
-			close(web->output.fd);
-			web->output.fd = -1;
-			nread = 0;
-		}
-		web->output.content = data_blob_talloc(web, buf, nread);
-	}
-
-	if (web->output.content.length == web->output.nsent && 
-	    web->output.fd == -1) {
+	if (web->output.content.length == web->output.nsent) {
 		stream_terminate_connection(web->conn, "websrv_send: finished sending");
 	}
 }
@@ -257,11 +241,9 @@ static void websrv_accept(struct stream_connection *conn)
 	web = talloc_zero(conn, struct websrv_context);
 	if (web == NULL) goto failed;
 
-	web->http_process_input = wsgi_process_http_input;
 	web->task = task;
 	web->conn = conn;
 	conn->private = web;
-	web->output.fd = -1;
 	talloc_set_destructor(web, websrv_destructor);
 
 	event_add_timed(conn->event.ctx, web, 
@@ -347,6 +329,8 @@ static void websrv_task_init(struct task_server *task)
 	
 	wdata->tls_params = tls_initialise(wdata, task->lp_ctx);
 	if (wdata->tls_params == NULL) goto failed;
+
+	if (!wsgi_initialize(wdata)) goto failed;
 
 	return;
 

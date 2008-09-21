@@ -22,25 +22,89 @@
 
 #include "includes.h"
 #include "web_server/web_server.h"
+#include "lib/util/dlinklist.h"
+#include "lib/util/data_blob.h"
 #include <Python.h>
+
+typedef struct {
+	PyObject_HEAD
+	struct websrv_context *web;
+} web_request_Object;
 
 static PyObject *start_response(PyObject *self, PyObject *args, PyObject *kwargs)
 {
-	PyObject *response_header, *exc_info;
+	PyObject *response_header, *exc_info = NULL;
 	char *status;
+	int i;
 	const char *kwnames[] = {
 		"status", "response_header", "exc_info", NULL
 	};
+	web_request_Object *py_web = (web_request_Object *)self;
+	struct websrv_context *web = py_web->web;
+	struct http_header *headers = NULL;
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "sOO:start_response", discard_const_p(char *, kwnames), &status, &response_header, &exc_info)) {
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "sO|O:start_response", discard_const_p(char *, kwnames), &status, &response_header, &exc_info)) {
 		return NULL;
 	}
 
-	/* FIXME: response_header, exc_info */
+	/* FIXME: exc_info */
 
-	/* FIXME: Wrap stdout */
-	return NULL;
+	if (!PyList_Check(response_header)) {
+		PyErr_SetString(PyExc_TypeError, "response_header should be list");
+		return NULL;
+	}
+
+	for (i = 0; i < PyList_Size(response_header); i++) {
+		struct http_header *hdr = talloc_zero(web, struct http_header);
+		PyObject *item = PyList_GetItem(response_header, i);
+		PyObject *py_name, *py_value;
+
+		if (!PyTuple_Check(item)) {
+			PyErr_SetString(PyExc_TypeError, "Expected tuple");
+			return NULL;
+		}
+
+		if (PyTuple_Size(item) != 2) {
+			PyErr_SetString(PyExc_TypeError, "header tuple has invalid size, expected 2");
+			return NULL;
+		}
+
+		py_name = PyTuple_GetItem(item, 0);
+
+		if (!PyString_Check(py_name)) {
+			PyErr_SetString(PyExc_TypeError, "header name should be string");
+			return NULL;
+		}
+
+		py_value = PyTuple_GetItem(item, 1);
+		if (!PyString_Check(py_value)) {
+			PyErr_SetString(PyExc_TypeError, "header value should be string");
+			return NULL;
+		}
+
+		hdr->name = talloc_strdup(hdr, PyString_AsString(py_name));
+		hdr->value = talloc_strdup(hdr, PyString_AsString(py_value));
+		DLIST_ADD(headers, hdr);
+	}
+
+	websrv_output_headers(web, status, headers);
+
+	return Py_None;
 }
+
+static PyMethodDef web_request_methods[] = {
+	{ "start_response", (PyCFunction)start_response, METH_VARARGS|METH_KEYWORDS, NULL },
+	{ NULL }
+};
+
+
+PyTypeObject web_request_Type = {
+	PyObject_HEAD_INIT(NULL) 0,
+	.tp_name = "wsgi.Request",
+	.tp_methods = web_request_methods,
+	.tp_basicsize = sizeof(web_request_Object),
+	.tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+};
 
 typedef struct {
 	PyObject_HEAD
@@ -85,9 +149,9 @@ static PyObject *py_error_writelines(PyObject *self, PyObject *args, PyObject *k
 }
 
 static PyMethodDef error_Stream_methods[] = {
-	{ "flush", (PyCFunction)py_error_flush, METH_O|METH_VARARGS|METH_KEYWORDS, NULL },
-	{ "write", (PyCFunction)py_error_write, METH_O|METH_VARARGS|METH_KEYWORDS, NULL },
-	{ "writelines", (PyCFunction)py_error_writelines, METH_O|METH_VARARGS|METH_KEYWORDS, NULL },
+	{ "flush", (PyCFunction)py_error_flush, METH_VARARGS|METH_KEYWORDS, NULL },
+	{ "write", (PyCFunction)py_error_write, METH_VARARGS|METH_KEYWORDS, NULL },
+	{ "writelines", (PyCFunction)py_error_writelines, METH_VARARGS|METH_KEYWORDS, NULL },
 	{ NULL, NULL, 0, NULL }
 };
 
@@ -105,29 +169,33 @@ typedef struct {
 
 static PyObject *py_input_read(PyObject *self, PyObject *args, PyObject *kwargs)
 {
+	/* FIXME */
 	return NULL;
 }
 
 static PyObject *py_input_readline(PyObject *self, PyObject *args, PyObject *kwargs)
 {
+	/* FIXME */
 	return NULL;
 }
 
 static PyObject *py_input_readlines(PyObject *self, PyObject *args, PyObject *kwargs)
 {
+	/* FIXME */
 	return NULL;
 }
 
 static PyObject *py_input___iter__(PyObject *self, PyObject *args, PyObject *kwargs)
 {
+	/* FIXME */
 	return NULL;
 }
 
 static PyMethodDef input_Stream_methods[] = {
-	{ "read", (PyCFunction)py_input_read, METH_O|METH_VARARGS|METH_KEYWORDS, NULL },
-	{ "readline", (PyCFunction)py_input_readline, METH_O|METH_VARARGS|METH_KEYWORDS, NULL },
-	{ "readlines", (PyCFunction)py_input_readlines, METH_O|METH_VARARGS|METH_KEYWORDS, NULL },
-	{ "__iter__", (PyCFunction)py_input___iter__, METH_O|METH_VARARGS|METH_KEYWORDS, NULL },
+	{ "read", (PyCFunction)py_input_read, METH_VARARGS|METH_KEYWORDS, NULL },
+	{ "readline", (PyCFunction)py_input_readline, METH_VARARGS|METH_KEYWORDS, NULL },
+	{ "readlines", (PyCFunction)py_input_readlines, METH_VARARGS|METH_KEYWORDS, NULL },
+	{ "__iter__", (PyCFunction)py_input___iter__, METH_VARARGS|METH_KEYWORDS, NULL },
 	{ NULL, NULL, 0, NULL }
 };
 
@@ -151,20 +219,17 @@ static PyObject *Py_ErrorHttpStream(void)
 	return (PyObject *)ret;
 }
 
-static PyObject *create_environ(void)
+static PyObject *create_environ(bool tls, int content_length, const char *content_type, struct http_header *headers, const char *request_method)
 {
-	PyObject *env, *osmodule, *osenviron;
+	PyObject *env;
 	PyObject *inputstream, *errorstream;
-
-	osmodule = PyImport_ImportModule("os");	
-	if (osmodule == NULL)
+	PyObject *py_scheme;
+	struct http_header *hdr;
+	
+	env = PyDict_New();
+	if (env == NULL) {
 		return NULL;
-
-	osenviron = PyObject_CallMethod(osmodule, "environ", NULL);
-
-	env = PyDict_Copy(osenviron);
-
-	Py_DECREF(env);
+	}
 
 	inputstream = Py_InputHttpStream(NULL);
 	if (inputstream == NULL) {
@@ -185,16 +250,99 @@ static PyObject *create_environ(void)
 	PyDict_SetItemString(env, "wsgi.multithread", Py_False);
 	PyDict_SetItemString(env, "wsgi.multiprocess", Py_True);
 	PyDict_SetItemString(env, "wsgi.run_once", Py_False);
+	PyDict_SetItemString(env, "SERVER_PROTOCOL", PyString_FromString("HTTP/1.0"));
+	if (content_type != NULL) {
+		PyDict_SetItemString(env, "CONTENT_TYPE", PyString_FromString(content_type));
+	}
+	if (content_length > 0) {
+		PyDict_SetItemString(env, "CONTENT_LENGTH", PyLong_FromLong(content_length));
+	}
+	PyDict_SetItemString(env, "REQUEST_METHOD", PyString_FromString(request_method));
 
-	/* FIXME: 
-	PyDict_SetItemString(env, "wsgi.url_scheme", "http");
-	PyDict_SetItemString(env, "wsgi.url_scheme", "https");
-	*/
+	/* FIXME: SCRIPT_NAME */
+	/* FIXME: PATH_INFO */
+	/* FIXME: QUERY_STRING */
+	/* FIXME: SERVER_NAME, SERVER_PORT */
+
+	for (hdr = headers; hdr; hdr = hdr->next) {
+		char *name;
+		asprintf(&name, "HTTP_%s", hdr->name);
+		PyDict_SetItemString(env, name, PyString_FromString(hdr->value));
+		free(name);
+	}
+
+	if (tls) {
+		py_scheme = PyString_FromString("https");
+	} else {
+		py_scheme = PyString_FromString("http");
+	}
+	PyDict_SetItemString(env, "wsgi.url_scheme", py_scheme);
 
 	return env;
 }
 
-void wsgi_process_http_input(struct websrv_context *web)
+static void wsgi_process_http_input(struct web_server_data *wdata,
+				    struct websrv_context *web)
 {
+	PyObject *py_environ, *result, *item, *iter;
+	PyObject *request_handler = wdata->private;
 
+	web_request_Object *py_web = PyObject_New(web_request_Object, &web_request_Type);
+	py_web->web = web;
+
+	py_environ = create_environ(false /* FIXME: Figure out whether we're using tls */, 
+				    web->input.content_length, 
+				    web->input.content_type, 
+				    web->input.headers, 
+				    web->input.post_request?"POST":"GET");
+	if (py_environ == NULL) {
+		DEBUG(0, ("Unable to create WSGI environment object\n"));
+		return;
+	}
+
+	result = PyObject_CallMethod(request_handler, discard_const_p(char, "__call__"), discard_const_p(char, "OO"),
+				       py_environ, PyObject_GetAttrString((PyObject *)py_web, "start_response"));
+
+	if (result == NULL) {
+		DEBUG(0, ("error while running WSGI code\n"));
+		return;
+	}
+
+	iter = PyObject_GetIter(result);
+	Py_DECREF(result);
+
+	/* Now, iter over all the data returned */
+
+	while ((item = PyIter_Next(iter))) {
+		data_blob_append(web, &web->output.content, 
+				 PyString_AsString(item), PyString_Size(item));
+		Py_DECREF(item);
+	}
+
+	Py_DECREF(iter);
+}
+
+bool wsgi_initialize(struct web_server_data *wdata)
+{
+	PyObject *py_swat;
+
+	Py_Initialize();
+
+	if (PyType_Ready(&web_request_Type) < 0)
+		return false;
+
+	if (PyType_Ready(&input_Stream_Type) < 0)
+		return false;
+
+	if (PyType_Ready(&error_Stream_Type) < 0)
+		return false;
+
+	wdata->http_process_input = wsgi_process_http_input;
+	py_swat = PyImport_Import(PyString_FromString("swat"));
+	if (py_swat == NULL) {
+		DEBUG(0, ("Unable to find SWAT\n"));
+		return false;
+	}
+	wdata->private = py_swat;
+	return true;
 }

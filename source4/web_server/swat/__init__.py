@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 
 # Unix SMB/CIFS implementation.
 # Copyright © Jelmer Vernooij <jelmer@samba.org> 2008
@@ -19,7 +20,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-def SWAT(environ, start_response):
+def __call__(environ, start_response):
     status = '200 OK'
     response_headers = [('Content-type','text/plain')]
     start_response(status, response_headers)
