@@ -124,10 +124,12 @@ sub end_test($$$$$)
 
 	unless ($unexpected) {
 		$self->{test_output}->{$self->{NAME}} = "";
-		if ($result eq "failure") { print "f"; }
-		elsif ($result eq "skip") { print "s"; }
-		elsif ($result eq "success") { print "."; }
-		else { print "?($result)"; }
+		if (not $self->{immediate}) {
+			if ($result eq "failure") { print "f"; }
+			elsif ($result eq "skip") { print "s"; }
+			elsif ($result eq "success") { print "."; }
+			else { print "?($result)"; }
+		}
 		return;
 	}
 
