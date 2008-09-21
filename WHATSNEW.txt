@@ -20,6 +20,7 @@ Major enhancements in Samba 3.3.0 include:
  Winbind:
  o Simplyfied idmap configuration.
  o Added new parameter "winbind reconnect delay".
+ o Added support for user and group aliasing.
 
  Administrative tools:
  o The destination "all" of smbcontrol does now affect all running
@@ -100,6 +101,8 @@ o   Jeremy Allison <jra@samba.org>
     * BUG 5751: Fix showing of ACLs on DFS in (lib)smbclient.
     * BUG 5762: Fix opening of mangled directory name (resulted
       'is a stream name').
+    * Fix crashes when looking up a non-existant uid.
+    * Fix getting/setting of NT ACLs on a file.
     * Add st_birthtime and friends for accurate create times on *BSD
       and MacOSX).
     * Fix the wcache_invalidate_samlogon calls.
@@ -107,6 +110,15 @@ o   Jeremy Allison <jra@samba.org>
     * Get smbd to look (read-only) into the winbindd cache for uid/gid <--> sid
       mappings.
     * Write times code update.
+    * Add experimental version of VFS module acl_xattr.
+
+
+o   Gerald W. Carter <jerry@samba.org>
+    * Fix segfault when calling nss_get_info() with a NULL ads structure.
+    * Add support for name aliasing in Winbind.
+    * Add the idmap/nss-info provider from Likewise Open.
+    * Allow an admin to define the "uid" attribute for a RFC2307
+      user object in AD to be the username alias.
 
 
 o   Steven Danneman <steven.danneman@isilon.com>
@@ -117,6 +129,7 @@ o   Steven Danneman <steven.danneman@isilon.com>
 o   Günther Deschner <gd@samba.org>
     * BUG 5710: Fix changing of machine account passwords.
     * Fix invalid sid copy (hit when enumerating sibling domains) in Winbind.
+    * Fix double installation of cifs.upcall.
 
 
 o   James Ding <ding_cc@hotmail.com>
