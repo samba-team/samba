@@ -22,7 +22,13 @@
 
 def __call__(environ, start_response):
     status = '200 OK'
-    response_headers = [('Content-type','text/plain')]
+    response_headers = [('Content-type','text/html')]
     start_response(status, response_headers)
-    return ['Hello world!\n']
+    yield '<table>\n'
+
+    for key, value in environ.items():
+        if isinstance(value, str):
+            yield '\t<tr><td><b>%s</b></td><td>%s</td></tr>\n' % (key, value)
+
+    yield '</table>\n'
 
