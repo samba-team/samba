@@ -140,7 +140,7 @@ static void add_expanded_sid(const DOM_SID *sid,
 			continue;
 		}
 
-		add_member(domain->name, names[i], pp_members, p_num_members);
+		add_member(NULL, names[i], pp_members, p_num_members);
 	}
 
  done:
