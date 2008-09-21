@@ -32,3 +32,8 @@ def __call__(environ, start_response):
 
     yield '</table>\n'
 
+if __name__ == '__main__':
+    from wsgiref import simple_server
+    httpd = simple_server.make_server('localhost', 8090, __call__)
+    print "Serving HTTP on port 8090..."
+    httpd.serve_forever()
