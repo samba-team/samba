@@ -56,6 +56,10 @@
  #endif /* _SAMBA_BUILD_ */
 #endif /* MOUNT_CIFS_VENDOR_SUFFIX */
 
+#ifdef _SAMBA_BUILD_
+#include "include/config.h"
+#endif
+
 #ifndef MS_MOVE 
 #define MS_MOVE 8192 
 #endif 
@@ -94,6 +98,8 @@ char * prefixpath = NULL;
 
 /* like strncpy but does not 0 fill the buffer and always null
  *    terminates. bufsize is the size of the destination buffer */
+
+#ifndef HAVE_STRLCPY
 static size_t strlcpy(char *d, const char *s, size_t bufsize)
 {
 	size_t len = strlen(s);
@@ -104,10 +110,13 @@ static size_t strlcpy(char *d, const char *s, size_t bufsize)
 	d[len] = 0;
 	return ret;
 }
+#endif
 
 /* like strncat but does not 0 fill the buffer and always null
  *    terminates. bufsize is the length of the buffer, which should
  *       be one more than the maximum resulting string length */
+
+#ifndef HAVE_STRLCAT
 static size_t strlcat(char *d, const char *s, size_t bufsize)
 {
 	size_t len1 = strlen(d);
@@ -126,6 +135,7 @@ static size_t strlcat(char *d, const char *s, size_t bufsize)
 	}
 	return ret;
 }
+#endif
 
 /* BB finish BB
 
