@@ -417,8 +417,6 @@ sub prefix_pathvar($$)
 	}
 }
 prefix_pathvar("PKG_CONFIG_PATH", "$old_pwd/bin/pkgconfig");
-# Required for smbscript:
-prefix_pathvar("PATH", "$old_pwd/bin");
 prefix_pathvar("PYTHONPATH", "$old_pwd/bin/python");
 
 if ($opt_socket_wrapper_keep_pcap) {
