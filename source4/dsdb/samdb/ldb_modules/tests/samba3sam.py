@@ -58,10 +58,10 @@ class MapBaseTestCase(TestCaseInTempDir):
         super(MapBaseTestCase, self).setUp()
 
         def make_dn(basedn, rdn):
-            return rdn + ",sambaDomainName=TESTS," + basedn
+            return "%s,sambaDomainName=TESTS,%s" % (rdn, basedn)
 
         def make_s4dn(basedn, rdn):
-            return rdn + "," + basedn
+            return "%s,%s" % (rdn, basedn)
 
         self.ldbfile = os.path.join(self.tempdir, "test.ldb")
         self.ldburl = "tdb://" + self.ldbfile
@@ -80,7 +80,7 @@ class MapBaseTestCase(TestCaseInTempDir):
                 self._dn = dn
 
             def dn(self, rdn):
-                return self._dn(rdn, self.basedn)
+                return self._dn(self.basedn, rdn)
 
             def connect(self):
                 return self.db.connect(self.url)
@@ -298,88 +298,81 @@ class MapTestCase(MapBaseTestCase):
     def test_map_search(self):
         """Running search tests on mapped data."""
         ldif = """
-dn: sambaDomainName=TESTS,""" + self.samba3.basedn + """
-objectclass: sambaDomain
-objectclass: top
-sambaSID: S-1-5-21-4231626423-2410014848-2360679739
-sambaNextRid: 2000
-sambaDomainName: TESTS"""
-        self.samba3.add_ldif(ldif)
+"""
+        self.samba3.db.add({
+            "dn": "sambaDomainName=TESTS," + self.samba3.basedn,
+            "objectclass": ["sambaDomain", "top"],
+            "sambaSID": "S-1-5-21-4231626423-2410014848-2360679739",
+            "sambaNextRid": "2000",
+            "sambaDomainName": "TESTS"
+            })
 
         # Add a set of split records
-        ldif = """
-dn: """ + self.samba4.dn("cn=X") + """
-objectClass: user
-cn: X
-codePage: x
-revision: x
-dnsHostName: x
-nextRid: y
-lastLogon: x
-description: x
-objectSid: S-1-5-21-4231626423-2410014848-2360679739-552
-primaryGroupID: 1-5-21-4231626423-2410014848-2360679739-512
-"""
+        self.ldb.add({
+            "dn": self.samba4.dn("cn=X"),
+            "objectClass": "user",
+            "cn": "X",
+            "codePage": "x",
+            "revision": "x",
+            "dnsHostName": "x",
+            "nextRid": "y",
+            "lastLogon": "x",
+            "description": "x",
+            "objectSid": "S-1-5-21-4231626423-2410014848-2360679739-552",
+            "primaryGroupID": "1-5-21-4231626423-2410014848-2360679739-512"})
 
-        self.ldb.add_ldif(self.samba4.subst(ldif))
+        self.ldb.add({
+            "dn": self.samba4.dn("cn=Y"),
+            "objectClass": "top",
+            "cn": "Y",
+            "codePage": "x",
+            "revision": "x",
+            "dnsHostName": "y",
+            "nextRid": "y",
+            "lastLogon": "y",
+            "description": "x"})
 
-        ldif = """
-dn: """ + self.samba4.dn("cn=Y") + """
-objectClass: top
-cn: Y
-codePage: x
-revision: x
-dnsHostName: y
-nextRid: y
-lastLogon: y
-description: x
-"""
-        self.ldb.add_ldif(self.samba4.subst(ldif))
-
-        ldif = """
-dn: """ + self.samba4.dn("cn=Z") + """
-objectClass: top
-cn: Z
-codePage: x
-revision: y
-dnsHostName: z
-nextRid: y
-lastLogon: z
-description: y
-"""
-
-        self.ldb.add_ldif(self.samba4.subst(ldif))
+        self.ldb.add({
+            "dn": self.samba4.dn("cn=Z"),
+            "objectClass": "top",
+            "cn": "Z",
+            "codePage": "x",
+            "revision": "y",
+            "dnsHostName": "z",
+            "nextRid": "y",
+            "lastLogon": "z",
+            "description": "y"})
 
         # Add a set of remote records
 
-        ldif = """
-dn: """ + self.samba3.dn("cn=A") + """
-objectClass: posixAccount
-cn: A
-sambaNextRid: x
-sambaBadPasswordCount: x
-sambaLogonTime: x
-description: x
-sambaSID: S-1-5-21-4231626423-2410014848-2360679739-552
-sambaPrimaryGroupSID: S-1-5-21-4231626423-2410014848-2360679739-512
+        self.samba3.db.add({
+            "dn": self.samba3.dn("cn=A"),
+            "objectClass": "posixAccount",
+            "cn": "A",
+            "sambaNextRid": "x",
+            "sambaBadPasswordCount": "x", 
+            "sambaLogonTime": "x",
+            "description": "x",
+            "sambaSID": "S-1-5-21-4231626423-2410014848-2360679739-552",
+            "sambaPrimaryGroupSID": "S-1-5-21-4231626423-2410014848-2360679739-512"})
 
-dn: """ + self.samba3.dn("cn=B") + """
-objectClass: top
-cn:B
-sambaNextRid: x
-sambaBadPasswordCount: x
-sambaLogonTime: y
-description: x
+        self.samba3.db.add({
+            "dn": self.samba3.dn("cn=B"),
+            "objectClass": "top",
+            "cn": "B",
+            "sambaNextRid": "x",
+            "sambaBadPasswordCount": "x",
+            "sambaLogonTime": "y",
+            "description": "x"})
 
-dn: """ + self.samba3.dn("cn=C") + """
-objectClass: top
-cn: C
-sambaNextRid: x
-sambaBadPasswordCount: y
-sambaLogonTime: z
-description: y
-"""
-        self.samba3.add_ldif(ldif)
+        self.samba3.db.add({
+            "dn": self.samba3.dn("cn=C"),
+            "objectClass": "top",
+            "cn": "C",
+            "sambaNextRid": "x",
+            "sambaBadPasswordCount": "y",
+            "sambaLogonTime": "z",
+            "description": "y"})
 
         # Testing search by DN
 
@@ -461,7 +454,7 @@ description: y
         #   Using the SID directly in the parse tree leads to conversion
         #   errors, letting the search fail with no results.
         #res = self.ldb.search("(objectSid=S-1-5-21-4231626423-2410014848-2360679739-552)", scope=SCOPE_DEFAULT, attrs)
-        res = self.ldb.search(expression="(objectSid=*)", 
+        res = self.ldb.search(expression="(objectSid=*)", base=None,
                               attrs=["dnsHostName", "lastLogon", "objectSid"])
         self.assertEquals(len(res), 3)
         self.assertEquals(str(res[0].dn), self.samba4.dn("cn=X"))
@@ -848,7 +841,6 @@ description: foo
         self.assertEquals(res[0]["description"], "foo")
         self.assertEquals(res[0]["sambaBadPasswordCount"], "3")
         self.assertEquals(res[0]["sambaNextRid"], "1001")
-        import pdb; pdb.set_trace()
         # Check in mapped db
         attrs = ["description", "badPwdCount", "nextRid"]
         res = self.ldb.search(dn, scope=SCOPE_BASE, attrs=attrs, expression="")
