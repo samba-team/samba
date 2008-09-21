@@ -70,7 +70,7 @@ $(eval $(call proto_header_template,$(nbt_serversrcdir)/nbt_server_proto.h,$(NBT
 
 [MODULE::service_nbtd]
 INIT_FUNCTION = server_service_nbtd_init
-SUBSYSTEM = samba
+SUBSYSTEM = smbd
 PRIVATE_DEPENDENCIES = NBT_SERVER process_model
 
 service_nbtd_OBJ_FILES = \

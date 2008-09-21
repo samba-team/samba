@@ -32,7 +32,7 @@ name="NET against Windows 2003"
 testit "$name" smb $WINTEST_DIR/wintest_net.sh $SMBTORTURE_REMOTE_HOST \
 	$SMBTORTURE_USERNAME $SMBTORTURE_PASSWORD $SMBTORTURE_WORKGROUP
 
-name="Windows 2003 against samba"
+name="Windows 2003 against smbd"
 testit "$name" smb $WINTEST_DIR/wintest_client.sh $SMBTORTURE_REMOTE_HOST
 
 dc_tests="RPC-DRSUAPI ncacn_np ncacn_ip_tcp"

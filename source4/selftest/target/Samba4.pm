@@ -116,20 +116,20 @@ sub check_or_start($$$)
 		if (defined($ENV{SMBD_OPTIONS})) {
 			$optarg.= " $ENV{SMBD_OPTIONS}";
 		}
-		my $ret = system("$valgrind $self->{bindir}/samba $optarg $env_vars->{CONFIGURATION} -M single -i --leak-report-full");
+		my $ret = system("$valgrind $self->{bindir}/smbd $optarg $env_vars->{CONFIGURATION} -M single -i --leak-report-full");
 		if ($? == -1) {
-			print "Unable to start samba: $ret: $!\n";
+			print "Unable to start smbd: $ret: $!\n";
 			exit 1;
 		}
 		unlink($env_vars->{SMBD_TEST_FIFO});
 		my $exit = $? >> 8;
 		if ( $ret == 0 ) {
-			print "samba exits with status $exit\n";
+			print "smbd exits with status $exit\n";
 		} elsif ( $ret & 127 ) {
-			print "samba got signal ".($ret & 127)." and exits with $exit!\n";
+			print "smbd got signal ".($ret & 127)." and exits with $exit!\n";
 		} else {
 			$ret = $? >> 8;
-			print "samba failed with status $exit!\n";
+			print "smbd failed with status $exit!\n";
 		}
 		exit $exit;
 	}
@@ -498,7 +498,7 @@ sub provision($$$$$$)
 {
 	my ($self, $prefix, $server_role, $netbiosname, $netbiosalias, $swiface, $password) = @_;
 
-	my $server_loglevel = 1;
+	my $smbd_loglevel = 1;
 	my $username = "administrator";
 	my $domain = "SAMBADOMAIN";
 	my $realm = "SAMBA.EXAMPLE.COM";
@@ -571,7 +571,7 @@ sub provision($$$$$$)
 	ldb:nosync = true
 #We don't want to pass our self-tests if the PAC code is wrong
 	gensec:require_pac = true
-	log level = $server_loglevel
+	log level = $smbd_loglevel
 
 [tmp]
 	path = $tmpdir
@@ -606,7 +606,7 @@ sub provision($$$$$$)
 	cifs:server = $netbiosname
 	cifs:share = tmp
 #There is no username specified here, instead the client is expected
-#to log in with kerberos, and the serverwill use delegated credentials.
+#to log in with kerberos, and smbd will used delegated credentials.
 
 [simple]
 	path = $tmpdir
@@ -828,8 +828,8 @@ sub provision_dc($$)
 	$self->add_wins_config("$prefix/private") or 
 		die("Unable to add wins configuration");
 
-	$ret->{SMBD_TEST_FIFO} = "$prefix/server_test.fifo";
-	$ret->{SMBD_TEST_LOG} = "$prefix/server_test.log";
+	$ret->{SMBD_TEST_FIFO} = "$prefix/smbd_test.fifo";
+	$ret->{SMBD_TEST_LOG} = "$prefix/smbd_test.log";
 	$ret->{SMBD_TEST_LOG_POS} = 0;
 	return $ret;
 }
@@ -841,8 +841,8 @@ sub teardown_env($$)
 
 	close(DATA);
 
-	if (-f "$envvars->{PIDDIR}/samba.pid" ) {
-		open(IN, "<$envvars->{PIDDIR}/samba.pid") or die("unable to open server pid file");
+	if (-f "$envvars->{PIDDIR}/smbd.pid" ) {
+		open(IN, "<$envvars->{PIDDIR}/smbd.pid") or die("unable to open smbd pid file");
 		$pid = <IN>;
 		close(IN);
 
@@ -858,7 +858,7 @@ sub teardown_env($$)
 		
 		# If it is still around, kill it
 		if ($count > 20) {
-		    print "server process $pid took more than $count seconds to exit, killing\n";
+		    print "smbd process $pid took more than $count seconds to exit, killing\n";
 		    kill 9, $pid;
 		}
 	}

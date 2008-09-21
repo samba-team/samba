@@ -4,7 +4,7 @@
 # Start SUBSYSTEM WINBIND
 [MODULE::WINBIND]
 INIT_FUNCTION = server_service_winbind_init
-SUBSYSTEM = samba
+SUBSYSTEM = smbd
 PRIVATE_DEPENDENCIES = \
 		WB_HELPER \
 		IDMAP \
