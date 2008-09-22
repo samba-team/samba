@@ -469,7 +469,7 @@ main(int argc, char **argv)
 
     const char *master;
 
-    optidx = krb5_program_setup(&context, argc, argv, args, num_args, NULL);
+    optidx = krb5_program_setup(&context, argc, argv, args, num_args, "master");
 
     if(help_flag)
 	krb5_std_usage(0, args, num_args);
