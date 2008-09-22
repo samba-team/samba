@@ -419,8 +419,6 @@ p11_get_session(hx509_context context,
 	char pin[20];
 	char *str;
 
-	slot->flags |= P11_LOGIN_DONE;
-
 	if (slot->pin == NULL) {
 
 	    memset(&prompt, 0, sizeof(prompt));
@@ -455,7 +453,9 @@ p11_get_session(hx509_context context,
 				       "with error: 0x%08x",
 				       (int)slot->id, ret);
 	    return HX509_PKCS11_LOGIN;
-	}
+	} else
+	    slot->flags |= P11_LOGIN_DONE;
+
 	if (slot->pin == NULL) {
 	    slot->pin = strdup(pin);
 	    if (slot->pin == NULL) {
