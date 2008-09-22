@@ -250,6 +250,10 @@ static bool test_SetupCredentials3(struct dcerpc_pipe *p, struct torture_context
 	torture_assert(tctx, creds_client_check(creds, &credentials3), "Credential chaining failed");
 
 	torture_comment(tctx, "negotiate_flags=0x%08x\n", negotiate_flags);
+	
+	/* Prove that requesting a challenge again won't break it */
+	status = dcerpc_netr_ServerReqChallenge(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "ServerReqChallenge");
 
 	*creds_out = creds;
 	return true;
