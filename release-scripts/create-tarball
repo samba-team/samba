@@ -7,7 +7,7 @@ OPT_TAG=""
 OPT_KEYID=""
 
 TOPDIR="`dirname $0`/.."
-VER_H="${TOPDIR}/source/include/version.h"
+VER_H="${TOPDIR}/source3/include/version.h"
 
 function exitOnError
 {
@@ -173,7 +173,7 @@ function main
     git-checkout ${OPT_BRANCH}
     exitOnError $? "Invalid branch name \"${OPT_BRANCH}\""
 
-    (cd source && ./script/mkversion.sh)
+    (cd source3 && ./script/mkversion.sh)
     if [ ! -f $VER_H ]; then
 	exitOnError 1 "Failed to find ${VER_H}!"
     fi
@@ -198,7 +198,7 @@ function main
     buildDocs
     exitOnError $? "Failed to build documentation"
 
-    ( cd source && ./autogen.sh )
+    ( cd source3 && ./autogen.sh )
 
     cd ..
     tar cf samba-${version}.tar --exclude=.git* --exclude=CVS --exclude=.svn samba-${version}
