@@ -122,7 +122,7 @@ static void winbind_task_init(struct task_server *task)
 	/* within the winbind task we want to be a single process, so
 	   ask for the single process model ops and pass these to the
 	   stream_setup_socket() call. */
-	model_ops = process_model_byname("single");
+	model_ops = process_model_startup(task->event_ctx, "single");
 	if (!model_ops) {
 		task_server_terminate(task,
 				      "Can't find 'single' process model_ops");

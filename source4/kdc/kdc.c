@@ -484,7 +484,7 @@ static NTSTATUS kdc_add_socket(struct kdc_server *kdc, const char *address,
 	/* within the kdc task we want to be a single process, so
 	   ask for the single process model ops and pass these to the
 	   stream_setup_socket() call. */
-	model_ops = process_model_byname("single");
+	model_ops = process_model_startup(kdc->task->event_ctx, "single");
 	if (!model_ops) {
 		DEBUG(0,("Can't find 'single' process model_ops\n"));
 		talloc_free(kdc_socket);
