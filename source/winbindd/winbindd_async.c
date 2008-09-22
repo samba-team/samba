@@ -366,7 +366,7 @@ static void lookupname_recv(TALLOC_CTX *mem_ctx, bool success,
 
 /********************************************************************
  The lookup name call first contacts a DC in its own domain
- and fallbacks to contact a DC in the forest in our domain doesn't
+ and fallbacks to contact a DC if the forest in our domain doesn't
  know the name.
 ********************************************************************/
 
