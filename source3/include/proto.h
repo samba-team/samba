@@ -46,6 +46,8 @@ bool password_ok(const char *smb_name, DATA_BLOB password_blob);
 void attempt_machine_password_change(void);
 NTSTATUS auth_domain_init(void);
 
+NTSTATUS auth_netlogond_init(void);
+
 /* The following definitions come from auth/auth_ntlmssp.c  */
 
 NTSTATUS auth_ntlmssp_start(AUTH_NTLMSSP_STATE **auth_ntlmssp_state);
