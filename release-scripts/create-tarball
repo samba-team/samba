@@ -178,8 +178,8 @@ function main
 	exitOnError 1 "Failed to find ${VER_H}!"
     fi
 
-    version=`grep SAMBA_VERSION_OFFICIAL_STRING $VER_H | awk '{print $3}'`
-    vendor_version=`grep SAMBA_VERSION_VENDOR_SUFFIX $VER_H | awk '{print $3}'`
+    version=`grep "define SAMBA_VERSION_OFFICIAL_STRING" $VER_H | awk '{print $3}'`
+    vendor_version=`grep "define SAMBA_VERSION_VENDOR_SUFFIX" $VER_H | awk '{print $3}'`
     if [ -n "$vendor_version" ]; then
 	version="$version-$vendor_version"
     fi
