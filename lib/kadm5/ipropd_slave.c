@@ -452,6 +452,13 @@ static struct getargs args[] = {
 
 static int num_args = sizeof(args) / sizeof(args[0]);
 
+static void
+usage(int status)
+{
+    arg_printusage(args, num_args, NULL, "master");
+    exit(status);
+}
+
 int
 main(int argc, char **argv)
 {
@@ -469,14 +476,21 @@ main(int argc, char **argv)
 
     const char *master;
 
-    optidx = krb5_program_setup(&context, argc, argv, args, num_args, "master");
+    setprogname(argv[0]);
+
+    if(getarg(args, num_args, argc, argv, &optidx))
+	usage(1);
 
     if(help_flag)
-	krb5_std_usage(0, args, num_args);
+	usage(0);
     if(version_flag) {
 	print_version(NULL);
 	exit(0);
     }
+
+    ret = krb5_init_context(&context);
+    if (ret)
+	errx (1, "krb5_init_context failed: %d", ret);
 
     setup_signal();
 
@@ -499,7 +513,7 @@ main(int argc, char **argv)
     argv += optidx;
 
     if (argc != 1)
-	krb5_std_usage(1, args, num_args);
+	usage(1);
 
     master = argv[0];
 
