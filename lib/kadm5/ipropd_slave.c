@@ -36,7 +36,7 @@
 RCSID("$Id$");
 
 static krb5_log_facility *log_facility;
-static char *server_time_lost = "5 min";
+static char *master_time_lost = "5 min";
 static int time_before_lost;
 const char *slave_str = NULL;
 
@@ -438,8 +438,8 @@ static struct getargs args[] = {
     { "realm", 'r', arg_string, &realm },
     { "keytab", 'k', arg_string, &keytab_str,
       "keytab to get authentication from", "kspec" },
-    { "time-lost", 0, arg_string, &server_time_lost,
-      "time before server is considered lost", "time" },
+    { "time-lost", 0, arg_string, &master_time_lost,
+      "time before master is considered lost", "time" },
     { "port", 0, arg_string, &port_str,
       "port ipropd-slave will connect to", "port"},
     { "detach", 0, arg_flag, &detach_from_console,
@@ -513,9 +513,9 @@ main(int argc, char **argv)
     if(ret)
 	krb5_err(context, 1, ret, "krb5_kt_register");
 
-    time_before_lost = parse_time (server_time_lost,  "s");
+    time_before_lost = parse_time (master_time_lost,  "s");
     if (time_before_lost < 0)
-	krb5_errx (context, 1, "couldn't parse time: %s", server_time_lost);
+	krb5_errx (context, 1, "couldn't parse time: %s", master_time_lost);
 
     memset(&conf, 0, sizeof(conf));
     if(realm) {
