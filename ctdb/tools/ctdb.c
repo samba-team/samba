@@ -52,6 +52,33 @@ static int control_version(struct ctdb_context *ctdb, int argc, const char **arg
 }
 #endif
 
+
+/*
+ check if a database exists
+*/
+static int db_exists(struct ctdb_context *ctdb, const char *db_name)
+{
+	int i, ret;
+	struct ctdb_dbid_map *dbmap=NULL;
+
+	ret = ctdb_ctrl_getdbmap(ctdb, TIMELIMIT(), options.pnn, ctdb, &dbmap);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to get dbids from node %u\n", options.pnn));
+		return -1;
+	}
+
+	for(i=0;i<dbmap->num;i++){
+		const char *name;
+
+		ctdb_ctrl_getdbname(ctdb, TIMELIMIT(), options.pnn, dbmap->dbs[i].dbid, ctdb, &name);
+		if (!strcmp(name, db_name)) {
+			return 0;
+		}
+	}
+
+	return -1;
+}
+
 /*
   see if a process exists
  */
@@ -1485,6 +1512,13 @@ static int control_catdb(struct ctdb_context *ctdb, int argc, const char **argv)
 	}
 
 	db_name = argv[0];
+
+
+	if (db_exists(ctdb, db_name)) {
+		DEBUG(DEBUG_ERR,("Database '%s' does not exist\n", db_name));
+		return -1;
+	}
+
 	ctdb_db = ctdb_attach(ctdb, db_name, false, 0);
 
 	if (ctdb_db == NULL) {
