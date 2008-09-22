@@ -95,6 +95,7 @@ int main(int argc, const char **argv)
 		case 1:
 		case 2:
 		case 3:
+			break;
 		case 1001:
 			u1001.usrmod1001_min_passwd_len = 0;
 			buffer = (uint8_t *)&u1001;
