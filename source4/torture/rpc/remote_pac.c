@@ -137,7 +137,6 @@ static bool test_PACVerify(struct torture_context *tctx,
 	status = gensec_session_info(gensec_server_context, &session_info);
 	torture_assert_ntstatus_ok(tctx, status, "gensec_session_info failed");
 	
-	pac_wrapped_struct.MessageType = 0x3;
 	pac_wrapped_struct.ChecksumLength = session_info->server_info->pac_srv_sig.signature.length;
 	pac_wrapped_struct.SignatureType = session_info->server_info->pac_kdc_sig.type;
 	pac_wrapped_struct.SignatureLength = session_info->server_info->pac_kdc_sig.signature.length;
@@ -207,51 +206,6 @@ static bool test_PACVerify(struct torture_context *tctx,
 	torture_assert(tctx, creds_client_check(creds, &r.out.return_authenticator->cred), 
 		       "Credential chaining failed");
 
-	/* This will break message type, check that however we still get NT_STATUS_OK */
-	for (i=0; i < 256; i++) {
-		pac_wrapped_struct.MessageType = i;
-		pac_wrapped_struct.ChecksumLength = session_info->server_info->pac_srv_sig.signature.length;
-		pac_wrapped_struct.SignatureType = session_info->server_info->pac_kdc_sig.type;
-		pac_wrapped_struct.SignatureLength = session_info->server_info->pac_kdc_sig.signature.length;
-		pac_wrapped_struct.ChecksumAndSignature = payload
-			= data_blob_talloc(tmp_ctx, NULL, 
-					   pac_wrapped_struct.ChecksumLength
-					   + pac_wrapped_struct.SignatureLength);
-		memcpy(&payload.data[0], 
-		       session_info->server_info->pac_srv_sig.signature.data, 
-		       pac_wrapped_struct.ChecksumLength);
-		memcpy(&payload.data[pac_wrapped_struct.ChecksumLength], 
-		       session_info->server_info->pac_kdc_sig.signature.data, 
-		       pac_wrapped_struct.SignatureLength);
-		
-		ndr_err = ndr_push_struct_blob(&pac_wrapped, tmp_ctx, lp_iconv_convenience(tctx->lp_ctx), &pac_wrapped_struct,
-					       (ndr_push_flags_fn_t)ndr_push_PAC_Validate);
-		torture_assert(tctx, NDR_ERR_CODE_IS_SUCCESS(ndr_err), "ndr_push_struct_blob of PACValidate structure failed");
-		
-		torture_assert(tctx, (creds->negotiate_flags & NETLOGON_NEG_ARCFOUR), "not willing to even try a PACValidate without RC4 encryption");
-		creds_arcfour_crypt(creds, pac_wrapped.data, pac_wrapped.length);
-		
-		generic.length = pac_wrapped.length;
-		generic.data = pac_wrapped.data;
-		
-		ZERO_STRUCT(auth2);
-		creds_client_authenticator(creds, &auth);
-		r.in.credential = &auth;
-		r.in.return_authenticator = &auth2;
-		r.in.logon_level = NetlogonGenericInformation;
-		r.in.logon.generic = &generic;
-		r.in.server_name = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
-		r.in.computer_name = cli_credentials_get_workstation(credentials);
-		r.in.validation_level = NetlogonValidationGenericInfo2;
-		
-		status = dcerpc_netr_LogonSamLogon(p, tctx, &r);
-		
-		torture_assert_ntstatus_ok(tctx, status, "LogonSamLogon failed");
-
-		torture_assert(tctx, creds_client_check(creds, &r.out.return_authenticator->cred), 
-			       "Credential chaining failed");
-	}
-
 	/* This will break the parsing nicely (even in the crypto wrapping), check we get INVALID_PARAMETER */
 	generic.length--;
 
@@ -272,7 +226,6 @@ static bool test_PACVerify(struct torture_context *tctx,
 	torture_assert(tctx, creds_client_check(creds, &r.out.return_authenticator->cred), 
 		       "Credential chaining failed");
 
-	pac_wrapped_struct.MessageType = 0x3;
 	pac_wrapped_struct.ChecksumLength = session_info->server_info->pac_srv_sig.signature.length;
 	pac_wrapped_struct.SignatureType = session_info->server_info->pac_kdc_sig.type;
 	
@@ -318,8 +271,6 @@ static bool test_PACVerify(struct torture_context *tctx,
 	torture_assert(tctx, creds_client_check(creds, &r.out.return_authenticator->cred), 
 		       "Credential chaining failed");
 
-
-	pac_wrapped_struct.MessageType = 0x3;
 	pac_wrapped_struct.ChecksumLength = session_info->server_info->pac_srv_sig.signature.length;
 	pac_wrapped_struct.SignatureType = session_info->server_info->pac_kdc_sig.type;
 	pac_wrapped_struct.SignatureLength = session_info->server_info->pac_kdc_sig.signature.length;

@@ -584,13 +584,11 @@ static NTSTATUS kdc_check_generic_kerberos(struct irpc_message *msg,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	
-#if 0
-	/* Windows does not check this */
 	if (pac_validate.MessageType != 3) {
 		/* We don't implement any other message types - such as certificate validation - yet */
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-#endif	
+
 	if (pac_validate.ChecksumAndSignature.length != (pac_validate.ChecksumLength + pac_validate.SignatureLength)
 	    || pac_validate.ChecksumAndSignature.length < pac_validate.ChecksumLength
 	    || pac_validate.ChecksumAndSignature.length < pac_validate.SignatureLength ) {
