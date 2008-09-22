@@ -38,7 +38,7 @@ function printUsage
 }
 
 ##
-## Parse the command line options 
+## Parse the command line options
 ##
 
 function parseOptions
@@ -115,7 +115,7 @@ function buildDocs
 
 	rsync -av "${OPT_DOCSDIR}"/ docs/
 	exitOnError $? "Failed top copy docs from ${OPT_DOCSDIR}"
-	
+
 	return 0
     fi
 
@@ -163,11 +163,11 @@ function createReleaseTag
 ##
 ## Main driver
 ##
-function main 
+function main
 {
     parseOptions "$@"
     exitOnError $? "Failed to parse options"
-    
+
     cd $TOPDIR
 
     git-checkout ${OPT_BRANCH}
