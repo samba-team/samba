@@ -127,6 +127,7 @@ LOGFILEBASE = @logfilebase@
 CONFIGFILE = $(CONFIGDIR)/smb.conf
 LMHOSTSFILE = $(CONFIGDIR)/lmhosts
 CTDBDIR = @ctdbdir@
+NCALRPCDIR = @ncalrpcdir@
 
 # This is where smbpasswd et al go
 PRIVATEDIR = @privatedir@
@@ -166,6 +167,7 @@ PATH_FLAGS = -DSMB_PASSWD_FILE=\"$(SMB_PASSWD_FILE)\" \
 	-DLOGFILEBASE=\"$(LOGFILEBASE)\" \
 	-DSHLIBEXT=\"@SHLIBEXT@\" \
 	-DCTDBDIR=\"$(CTDBDIR)\" \
+	-DNCALRPCDIR=\"$(NCALRPCDIR)\" \
 	-DCONFIGDIR=\"$(CONFIGDIR)\" \
 	-DCODEPAGEDIR=\"$(CODEPAGEDIR)\" \
 	-DCACHEDIR=\"$(CACHEDIR)\" \

@@ -71,6 +71,10 @@ const char *get_dyn_PIDDIR(void);
 const char *set_dyn_PIDDIR(const char *newpath);
 bool is_default_dyn_PIDDIR(void);
 
+const char *get_dyn_NCALRPCDIR(void);
+const char *set_dyn_NCALRPCDIR(const char *newpath);
+bool is_default_dyn_NCALRPCDIR(void);
+
 const char *get_dyn_SMB_PASSWD_FILE(void);
 const char *set_dyn_SMB_PASSWD_FILE(const char *newpath);
 bool is_default_dyn_SMB_PASSWD_FILE(void);
