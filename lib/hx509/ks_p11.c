@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2004 - 2006 Kungliga Tekniska Högskolan
+ * Copyright (c) 2004 - 2008 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  *
@@ -454,7 +454,6 @@ p11_get_session(hx509_context context,
 				       "Failed to login on slot id %d "
 				       "with error: 0x%08x",
 				       (int)slot->id, ret);
-	    p11_put_session(p, slot, slot->session);
 	    return HX509_PKCS11_LOGIN;
 	}
 	if (slot->pin == NULL) {
@@ -463,7 +462,6 @@ p11_get_session(hx509_context context,
 		if (context)
 		    hx509_set_error_string(context, 0, ENOMEM,
 					   "out of memory");
-		p11_put_session(p, slot, slot->session);
 		return ENOMEM;
 	    }
 	}
