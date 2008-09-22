@@ -596,6 +596,11 @@ for every slave.
 master# /usr/heimdal/sbin/ktutil get iprop/`hostname`
 @end example
 
+@example
+slave# /usr/heimdal/sbin/ktutil get iprop/`hostname`
+@end example
+
+
 The next step is to start the @command{ipropd-master} process on the master
 server.  The @command{ipropd-master} listens on the UNIX domain socket
 @file{/var/heimdal/signal} to know when changes have been made to the
