@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003 - 2006 Kungliga Tekniska Högskolan
+ * Copyright (c) 2003 - 2008 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  *
@@ -676,7 +676,7 @@ pk_mk_pa_reply_enckey(krb5_context context,
 		      krb5_keyblock *reply_key,
 		      ContentInfo *content_info)
 {
-    const heim_oid *envelopedAlg = NULL, *sdAlg = NULL;
+    const heim_oid *envelopedAlg = NULL, *sdAlg = NULL, *evAlg = NULL;
     krb5_error_code ret;
     krb5_data buf, signed_data;
     size_t size;
@@ -699,9 +699,14 @@ pk_mk_pa_reply_enckey(krb5_context context,
 	{
 	    do_win2k = 1;
 	}
+	sdAlg = oid_id_pkcs7_data();
+	evAlg = oid_id_pkcs7_data();
+	envelopedAlg = oid_id_rsadsi_des_ede3_cbc();
 	break;
     }
     case PKINIT_27:
+	sdAlg = oid_id_pkrkeydata();
+	evAlg = oid_id_pkcs7_signedData();
 	break;
     default:
 	krb5_abortx(context, "internal pkinit error");
@@ -710,9 +715,6 @@ pk_mk_pa_reply_enckey(krb5_context context,
     if (do_win2k) {
 	ReplyKeyPack_Win2k kp;
 	memset(&kp, 0, sizeof(kp));
-
-	envelopedAlg = oid_id_rsadsi_des_ede3_cbc();
-	sdAlg = oid_id_pkcs7_data();
 
 	ret = copy_EncryptionKey(reply_key, &kp.replyKey);
 	if (ret) {
@@ -729,8 +731,6 @@ pk_mk_pa_reply_enckey(krb5_context context,
 	krb5_crypto ascrypto;
 	ReplyKeyPack kp;
 	memset(&kp, 0, sizeof(kp));
-
-	sdAlg = oid_id_pkrkeydata();
 
 	ret = copy_EncryptionKey(reply_key, &kp.replyKey);
 	if (ret) {
@@ -820,7 +820,7 @@ pk_mk_pa_reply_enckey(krb5_context context,
 			       client_params->cert,
 			       signed_data.data, signed_data.length,
 			       envelopedAlg,
-			       oid_id_pkcs7_signedData(), &buf);
+			       evAlg, &buf);
     if (ret)
 	goto out;
 
