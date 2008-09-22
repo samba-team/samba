@@ -1160,7 +1160,7 @@ void parse_add_domuser(void *buf, char *domuser, int *len)
 		}
 	}
 
-	safe_strcpy(buf, user, *len);
+	safe_strcpy((char *)buf, user, *len);
 }
 
 /* Ensure an incoming username from NSS is fully qualified. Replace the
