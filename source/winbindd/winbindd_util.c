@@ -1195,6 +1195,33 @@ void fill_domain_username(fstring name, const char *domain, const char *user, bo
 	}
 }
 
+/**
+ * talloc version of fill_domain_username()
+ * return NULL on talloc failure.
+ */
+char *fill_domain_username_talloc(TALLOC_CTX *mem_ctx,
+				  const char *domain,
+				  const char *user,
+				  bool can_assume)
+{
+	char *tmp_user, *name;
+
+	tmp_user = talloc_strdup(mem_ctx, user);
+	strlower_m(tmp_user);
+
+	if (can_assume && assume_domain(domain)) {
+		name = tmp_user;
+	} else {
+		name = talloc_asprintf(mem_ctx, "%s%c%s",
+				       domain,
+				       *lp_winbind_separator(),
+				       tmp_user);
+		TALLOC_FREE(tmp_user);
+	}
+
+	return name;
+}
+
 /*
  * Winbindd socket accessor functions
  */
