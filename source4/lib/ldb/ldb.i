@@ -845,8 +845,7 @@ typedef struct ldb_context {
         %typemap(freearg,noblock=1) struct ldb_result **result_as_bool { talloc_free(*$1); }
         ldb_error __contains__(ldb_dn *dn, struct ldb_result **result_as_bool)
         {
-            return ldb_search($self, dn, LDB_SCOPE_BASE, NULL, NULL, 
-                             result_as_bool);
+            return ldb_search($self, $self, result_as_bool, dn, LDB_SCOPE_BASE, NULL, NULL);
         }
 
         %feature("docstring") parse_ldif "S.parse_ldif(ldif) -> iter(messages)\n" \

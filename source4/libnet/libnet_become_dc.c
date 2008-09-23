@@ -820,8 +820,8 @@ static NTSTATUS becomeDC_ldap1_rootdse(struct libnet_BecomeDC_state *s)
 	basedn = ldb_dn_new(s, s->ldap1.ldb, NULL);
 	NT_STATUS_HAVE_NO_MEMORY(basedn);
 
-	ret = ldb_search(s->ldap1.ldb, basedn, LDB_SCOPE_BASE, 
-			 "(objectClass=*)", attrs, &r);
+	ret = ldb_search(s->ldap1.ldb, s, &r, basedn, LDB_SCOPE_BASE, attrs,
+			 "(objectClass=*)");
 	talloc_free(basedn);
 	if (ret != LDB_SUCCESS) {
 		return NT_STATUS_LDAP(ret);
@@ -829,7 +829,6 @@ static NTSTATUS becomeDC_ldap1_rootdse(struct libnet_BecomeDC_state *s)
 		talloc_free(r);
 		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
-	talloc_steal(s, r);
 
 	s->ldap1.rootdse = r->msgs[0];
 
@@ -864,8 +863,8 @@ static NTSTATUS becomeDC_ldap1_crossref_behavior_version(struct libnet_BecomeDC_
 	basedn = ldb_dn_new(s, s->ldap1.ldb, s->forest.config_dn_str);
 	NT_STATUS_HAVE_NO_MEMORY(basedn);
 
-	ret = ldb_search(s->ldap1.ldb, basedn, LDB_SCOPE_ONELEVEL,
-			 "(cn=Partitions)", attrs, &r);
+	ret = ldb_search(s->ldap1.ldb, s, &r, basedn, LDB_SCOPE_ONELEVEL, attrs,
+			 "(cn=Partitions)");
 	talloc_free(basedn);
 	if (ret != LDB_SUCCESS) {
 		return NT_STATUS_LDAP(ret);
@@ -893,8 +892,8 @@ static NTSTATUS becomeDC_ldap1_domain_behavior_version(struct libnet_BecomeDC_st
 	basedn = ldb_dn_new(s, s->ldap1.ldb, s->domain.dn_str);
 	NT_STATUS_HAVE_NO_MEMORY(basedn);
 
-	ret = ldb_search(s->ldap1.ldb, basedn, LDB_SCOPE_BASE,
-			 "(objectClass=*)", attrs, &r);
+	ret = ldb_search(s->ldap1.ldb, s, &r, basedn, LDB_SCOPE_BASE, attrs,
+			 "(objectClass=*)");
 	talloc_free(basedn);
 	if (ret != LDB_SUCCESS) {
 		return NT_STATUS_LDAP(ret);
@@ -922,8 +921,8 @@ static NTSTATUS becomeDC_ldap1_schema_object_version(struct libnet_BecomeDC_stat
 	basedn = ldb_dn_new(s, s->ldap1.ldb, s->forest.schema_dn_str);
 	NT_STATUS_HAVE_NO_MEMORY(basedn);
 
-	ret = ldb_search(s->ldap1.ldb, basedn, LDB_SCOPE_BASE,
-			 "(objectClass=*)", attrs, &r);
+	ret = ldb_search(s->ldap1.ldb, s, &r, basedn, LDB_SCOPE_BASE, attrs,
+			 "(objectClass=*)");
 	talloc_free(basedn);
 	if (ret != LDB_SUCCESS) {
 		return NT_STATUS_LDAP(ret);
@@ -952,8 +951,8 @@ static NTSTATUS becomeDC_ldap1_w2k3_update_revision(struct libnet_BecomeDC_state
 				s->domain.dn_str);
 	NT_STATUS_HAVE_NO_MEMORY(basedn);
 
-	ret = ldb_search(s->ldap1.ldb, basedn, LDB_SCOPE_BASE,
-			 "(objectClass=*)", attrs, &r);
+	ret = ldb_search(s->ldap1.ldb, s, &r, basedn, LDB_SCOPE_BASE, attrs,
+			 "(objectClass=*)");
 	talloc_free(basedn);
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 		/* w2k doesn't have this object */
@@ -1000,8 +999,8 @@ static NTSTATUS becomeDC_ldap1_infrastructure_fsmo(struct libnet_BecomeDC_state 
 				s->domain.dn_str);
 	NT_STATUS_HAVE_NO_MEMORY(basedn);
 
-	ret = ldb_search(s->ldap1.ldb, basedn, LDB_SCOPE_BASE,
-			 "(objectClass=*)", _1_1_attrs, &r);
+	ret = ldb_search(s->ldap1.ldb, s, &r, basedn, LDB_SCOPE_BASE,
+			 _1_1_attrs, "(objectClass=*)");
 	talloc_free(basedn);
 	if (ret != LDB_SUCCESS) {
 		return NT_STATUS_LDAP(ret);
@@ -1013,8 +1012,8 @@ static NTSTATUS becomeDC_ldap1_infrastructure_fsmo(struct libnet_BecomeDC_state 
 	basedn = talloc_steal(s, r->msgs[0]->dn);
 	talloc_free(r);
 
-	ret = ldb_search(s->ldap1.ldb, basedn, LDB_SCOPE_BASE,
-			 "(objectClass=*)", fsmo_attrs, &r);
+	ret = ldb_search(s->ldap1.ldb, s, &r, basedn, LDB_SCOPE_BASE,
+			 fsmo_attrs, "(objectClass=*)");
 	talloc_free(basedn);
 	if (ret != LDB_SUCCESS) {
 		return NT_STATUS_LDAP(ret);
@@ -1038,8 +1037,8 @@ static NTSTATUS becomeDC_ldap1_infrastructure_fsmo(struct libnet_BecomeDC_state 
 	s->infrastructure_fsmo.server_dn_str = ldb_dn_alloc_linearized(s, server_dn);
 	NT_STATUS_HAVE_NO_MEMORY(s->infrastructure_fsmo.server_dn_str);
 
-	ret = ldb_search(s->ldap1.ldb, server_dn, LDB_SCOPE_BASE,
-			 "(objectClass=*)", dns_attrs, &r);
+	ret = ldb_search(s->ldap1.ldb, s, &r, server_dn, LDB_SCOPE_BASE,
+			 dns_attrs, "(objectClass=*)");
 	if (ret != LDB_SUCCESS) {
 		return NT_STATUS_LDAP(ret);
 	} else if (r->count != 1) {
@@ -1053,8 +1052,8 @@ static NTSTATUS becomeDC_ldap1_infrastructure_fsmo(struct libnet_BecomeDC_state 
 
 	talloc_free(r);
 
-	ret = ldb_search(s->ldap1.ldb, ntds_dn, LDB_SCOPE_BASE,
-			 "(objectClass=*)", guid_attrs, &r);
+	ret = ldb_search(s->ldap1.ldb, s, &r, ntds_dn, LDB_SCOPE_BASE,
+			 guid_attrs, "(objectClass=*)");
 	if (ret != LDB_SUCCESS) {
 		return NT_STATUS_LDAP(ret);
 	} else if (r->count != 1) {
@@ -1097,8 +1096,8 @@ static NTSTATUS becomeDC_ldap1_rid_manager_fsmo(struct libnet_BecomeDC_state *s)
 	basedn = ldb_dn_new(s, s->ldap1.ldb, s->domain.dn_str);
 	NT_STATUS_HAVE_NO_MEMORY(basedn);
 
-	ret = ldb_search(s->ldap1.ldb, basedn, LDB_SCOPE_BASE,
-			 "(objectClass=*)", rid_attrs, &r);
+	ret = ldb_search(s->ldap1.ldb, s, &r, basedn, LDB_SCOPE_BASE,
+			 rid_attrs, "(objectClass=*)");
 	talloc_free(basedn);
 	if (ret != LDB_SUCCESS) {
 		return NT_STATUS_LDAP(ret);
@@ -1115,8 +1114,8 @@ static NTSTATUS becomeDC_ldap1_rid_manager_fsmo(struct libnet_BecomeDC_state *s)
 
 	talloc_free(r);
 
-	ret = ldb_search(s->ldap1.ldb, basedn, LDB_SCOPE_BASE,
-			 "(objectClass=*)", fsmo_attrs, &r);
+	ret = ldb_search(s->ldap1.ldb, s, &r, basedn, LDB_SCOPE_BASE,
+			 fsmo_attrs, "(objectClass=*)");
 	talloc_free(basedn);
 	if (ret != LDB_SUCCESS) {
 		return NT_STATUS_LDAP(ret);
@@ -1140,8 +1139,8 @@ static NTSTATUS becomeDC_ldap1_rid_manager_fsmo(struct libnet_BecomeDC_state *s)
 	s->rid_manager_fsmo.server_dn_str = ldb_dn_alloc_linearized(s, server_dn);
 	NT_STATUS_HAVE_NO_MEMORY(s->rid_manager_fsmo.server_dn_str);
 
-	ret = ldb_search(s->ldap1.ldb, server_dn, LDB_SCOPE_BASE,
-			 "(objectClass=*)", dns_attrs, &r);
+	ret = ldb_search(s->ldap1.ldb, s, &r, server_dn, LDB_SCOPE_BASE,
+			 dns_attrs, "(objectClass=*)");
 	if (ret != LDB_SUCCESS) {
 		return NT_STATUS_LDAP(ret);
 	} else if (r->count != 1) {
@@ -1155,8 +1154,8 @@ static NTSTATUS becomeDC_ldap1_rid_manager_fsmo(struct libnet_BecomeDC_state *s)
 
 	talloc_free(r);
 
-	ret = ldb_search(s->ldap1.ldb, ntds_dn, LDB_SCOPE_BASE,
-			 "(objectClass=*)", guid_attrs, &r);
+	ret = ldb_search(s->ldap1.ldb, s, &r, ntds_dn, LDB_SCOPE_BASE,
+			 guid_attrs, "(objectClass=*)");
 	if (ret != LDB_SUCCESS) {
 		return NT_STATUS_LDAP(ret);
 	} else if (r->count != 1) {
@@ -1182,8 +1181,8 @@ static NTSTATUS becomeDC_ldap1_site_object(struct libnet_BecomeDC_state *s)
 				s->forest.config_dn_str);
 	NT_STATUS_HAVE_NO_MEMORY(basedn);
 
-	ret = ldb_search(s->ldap1.ldb, basedn, LDB_SCOPE_BASE, 
-			 "(objectClass=*)", NULL, &r);
+	ret = ldb_search(s->ldap1.ldb, s, &r, basedn, LDB_SCOPE_BASE,
+			 NULL, "(objectClass=*)");
 	talloc_free(basedn);
 	if (ret != LDB_SUCCESS) {
 		return NT_STATUS_LDAP(ret);
@@ -1214,7 +1213,6 @@ static NTSTATUS becomeDC_ldap1_computer_object(struct libnet_BecomeDC_state *s)
 	int ret;
 	struct ldb_result *r;
 	struct ldb_dn *basedn;
-	char *filter;
 	static const char *attrs[] = {
 		"distinguishedName",
 		"userAccountControl",
@@ -1224,12 +1222,9 @@ static NTSTATUS becomeDC_ldap1_computer_object(struct libnet_BecomeDC_state *s)
 	basedn = ldb_dn_new(s, s->ldap1.ldb, s->domain.dn_str);
 	NT_STATUS_HAVE_NO_MEMORY(basedn);
 
-	filter = talloc_asprintf(basedn, "(&(|(objectClass=user)(objectClass=computer))(sAMAccountName=%s$))",
-				 s->dest_dsa.netbios_name);
-	NT_STATUS_HAVE_NO_MEMORY(filter);
-
-	ret = ldb_search(s->ldap1.ldb, basedn, LDB_SCOPE_SUBTREE, 
-			 filter, attrs, &r);
+	ret = ldb_search(s->ldap1.ldb, s, &r, basedn, LDB_SCOPE_SUBTREE, attrs,
+			 "(&(|(objectClass=user)(objectClass=computer))(sAMAccountName=%s$))",
+			 s->dest_dsa.netbios_name);
 	talloc_free(basedn);
 	if (ret != LDB_SUCCESS) {
 		return NT_STATUS_LDAP(ret);
@@ -1263,8 +1258,8 @@ static NTSTATUS becomeDC_ldap1_server_object_1(struct libnet_BecomeDC_state *s)
 				s->forest.config_dn_str);
 	NT_STATUS_HAVE_NO_MEMORY(basedn);
 
-	ret = ldb_search(s->ldap1.ldb, basedn, LDB_SCOPE_BASE, 
-			 "(objectClass=*)", NULL, &r);
+	ret = ldb_search(s->ldap1.ldb, s, &r, basedn, LDB_SCOPE_BASE,
+			 NULL, "(objectClass=*)");
 	talloc_free(basedn);
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 		/* if the object doesn't exist, we'll create it later */
@@ -1320,8 +1315,8 @@ static NTSTATUS becomeDC_ldap1_server_object_2(struct libnet_BecomeDC_state *s)
 	basedn = ldb_dn_new(s, s->ldap1.ldb, s->dest_dsa.computer_dn_str);
 	NT_STATUS_HAVE_NO_MEMORY(basedn);
 
-	ret = ldb_search(s->ldap1.ldb, basedn, LDB_SCOPE_BASE, 
-			 "(objectClass=*)", attrs, &r);
+	ret = ldb_search(s->ldap1.ldb, s, &r, basedn, LDB_SCOPE_BASE,
+			 attrs, "(objectClass=*)");
 	talloc_free(basedn);
 	if (ret != LDB_SUCCESS) {
 		return NT_STATUS_LDAP(ret);
@@ -2908,8 +2903,8 @@ static NTSTATUS becomeDC_ldap2_move_computer(struct libnet_BecomeDC_state *s)
 				s->domain.dn_str);
 	NT_STATUS_HAVE_NO_MEMORY(basedn);
 
-	ret = ldb_search(s->ldap2.ldb, basedn, LDB_SCOPE_BASE,
-			 "(objectClass=*)", _1_1_attrs, &r);
+	ret = ldb_search(s->ldap2.ldb, s, &r, basedn, LDB_SCOPE_BASE,
+			 _1_1_attrs, "(objectClass=*)");
 	talloc_free(basedn);
 	if (ret != LDB_SUCCESS) {
 		return NT_STATUS_LDAP(ret);

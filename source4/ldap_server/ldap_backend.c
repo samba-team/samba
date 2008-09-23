@@ -688,8 +688,8 @@ reply:
 	NT_STATUS_HAVE_NO_MEMORY(compare_r);
 
 	if (result == LDAP_SUCCESS) {
-		ldb_ret = ldb_search(samdb, dn, LDB_SCOPE_BASE, filter, attrs, &res);
-		talloc_steal(local_ctx, res);
+		ldb_ret = ldb_search(samdb, local_ctx, &res,
+				     dn, LDB_SCOPE_BASE, attrs, "%s", filter);
 		if (ldb_ret != LDB_SUCCESS) {
 			result = map_ldb_error(samdb, ldb_ret, &errstr);
 			DEBUG(10,("CompareRequest: error: %s\n", errstr));

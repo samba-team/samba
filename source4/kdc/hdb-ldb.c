@@ -929,8 +929,8 @@ static krb5_error_code LDB_lookup_principal(krb5_context context, struct ldb_con
 		return ENOMEM;
 	}
 
-	lret = ldb_search(ldb_ctx, realm_dn, LDB_SCOPE_SUBTREE, filter, princ_attrs, &res);
-
+	lret = ldb_search(ldb_ctx, mem_ctx, &res, realm_dn,
+			  LDB_SCOPE_SUBTREE, princ_attrs, "%s", filter);
 	if (lret != LDB_SUCCESS) {
 		DEBUG(3, ("Failed to search for %s: %s\n", filter, ldb_errstring(ldb_ctx)));
 		return HDB_ERR_NOENTRY;
@@ -963,8 +963,9 @@ static krb5_error_code LDB_lookup_trust(krb5_context context, struct ldb_context
 		return ENOMEM;
 	}
 
-	lret = ldb_search(ldb_ctx, ldb_get_default_basedn(ldb_ctx), LDB_SCOPE_SUBTREE, filter, attrs, &res);
-
+	lret = ldb_search(ldb_ctx, mem_ctx, &res,
+			  ldb_get_default_basedn(ldb_ctx),
+			  LDB_SCOPE_SUBTREE, attrs, "%s", filter);
 	if (lret != LDB_SUCCESS) {
 		DEBUG(3, ("Failed to search for %s: %s\n", filter, ldb_errstring(ldb_ctx)));
 		return HDB_ERR_NOENTRY;
@@ -988,7 +989,7 @@ static krb5_error_code LDB_lookup_realm(krb5_context context, struct ldb_context
 	struct ldb_result *cross_ref_res;
 	struct ldb_dn *partitions_basedn = samdb_partitions_dn(ldb_ctx, mem_ctx);
 
-	ret = ldb_search_exp_fmt(ldb_ctx, mem_ctx, &cross_ref_res,
+	ret = ldb_search(ldb_ctx, mem_ctx, &cross_ref_res,
 			partitions_basedn, LDB_SCOPE_SUBTREE, realm_ref_attrs,
 			"(&(&(|(&(dnsRoot=%s)(nETBIOSName=*))(nETBIOSName=%s))(objectclass=crossRef))(ncName=*))",
 			realm, realm);
@@ -1432,9 +1433,9 @@ static krb5_error_code LDB_firstkey(krb5_context context, HDB *db, unsigned flag
 
 	priv->realm_ref_msgs = talloc_steal(priv, realm_ref_msgs);
 
-	lret = ldb_search(ldb_ctx, realm_dn,
-				 LDB_SCOPE_SUBTREE, "(objectClass=user)",
-				 user_attrs, &res);
+	lret = ldb_search(ldb_ctx, priv, &res,
+			  realm_dn, LDB_SCOPE_SUBTREE, user_attrs,
+			  "(objectClass=user)");
 
 	if (lret != LDB_SUCCESS) {
 		talloc_free(priv);

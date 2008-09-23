@@ -84,11 +84,11 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 		struct ldb_dn *dom_dn;
 		/* try and find the domain */
 
-		ret = ldb_search_exp_fmt(sam_ctx, mem_ctx, &ref_res, 
-					 partitions_basedn, LDB_SCOPE_ONELEVEL, 
-					 ref_attrs, 
-					 "(&(&(objectClass=crossRef)(dnsRoot=%s))(nETBIOSName=*))",
-					 ldb_binary_encode_string(mem_ctx, domain));
+		ret = ldb_search(sam_ctx, mem_ctx, &ref_res,
+				 partitions_basedn, LDB_SCOPE_ONELEVEL,
+				 ref_attrs,
+				 "(&(&(objectClass=crossRef)(dnsRoot=%s))(nETBIOSName=*))",
+				 ldb_binary_encode_string(mem_ctx, domain));
 	
 		if (ret != LDB_SUCCESS) {
 			DEBUG(2,("Unable to find referece to '%s' in sam: %s\n",
@@ -96,19 +96,17 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 				 ldb_errstring(sam_ctx)));
 			return NT_STATUS_NO_SUCH_DOMAIN;
 		} else if (ref_res->count == 1) {
-			talloc_steal(mem_ctx, dom_res);
 			dom_dn = ldb_msg_find_attr_as_dn(sam_ctx, mem_ctx, ref_res->msgs[0], "ncName");
 			if (!dom_dn) {
 				return NT_STATUS_NO_SUCH_DOMAIN;
 			}
-			ret = ldb_search(sam_ctx, dom_dn,
-					 LDB_SCOPE_BASE, "objectClass=domain", 
-					 dom_attrs, &dom_res);
+			ret = ldb_search(sam_ctx, mem_ctx, &dom_res,
+					 dom_dn, LDB_SCOPE_BASE, dom_attrs,
+					 "objectClass=domain");
 			if (ret != LDB_SUCCESS) {
 				DEBUG(2,("Error finding domain '%s'/'%s' in sam: %s\n", domain, ldb_dn_get_linearized(dom_dn), ldb_errstring(sam_ctx)));
 				return NT_STATUS_NO_SUCH_DOMAIN;
 			}
-			talloc_steal(mem_ctx, dom_res);
 			if (dom_res->count != 1) {
 				DEBUG(2,("Error finding domain '%s'/'%s' in sam\n", domain, ldb_dn_get_linearized(dom_dn)));
 				return NT_STATUS_NO_SUCH_DOMAIN;
@@ -123,11 +121,11 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 		struct ldb_dn *dom_dn;
 		/* try and find the domain */
 
-		ret = ldb_search_exp_fmt(sam_ctx, mem_ctx, &ref_res, 
-					 partitions_basedn, LDB_SCOPE_ONELEVEL, 
-					 ref_attrs, 
-					 "(&(objectClass=crossRef)(ncName=*)(nETBIOSName=%s))",
-					 ldb_binary_encode_string(mem_ctx, netbios_domain));
+		ret = ldb_search(sam_ctx, mem_ctx, &ref_res,
+				 partitions_basedn, LDB_SCOPE_ONELEVEL,
+				 ref_attrs,
+				 "(&(objectClass=crossRef)(ncName=*)(nETBIOSName=%s))",
+				 ldb_binary_encode_string(mem_ctx, netbios_domain));
 	
 		if (ret != LDB_SUCCESS) {
 			DEBUG(2,("Unable to find referece to '%s' in sam: %s\n",
@@ -135,19 +133,17 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 				 ldb_errstring(sam_ctx)));
 			return NT_STATUS_NO_SUCH_DOMAIN;
 		} else if (ref_res->count == 1) {
-			talloc_steal(mem_ctx, dom_res);
 			dom_dn = ldb_msg_find_attr_as_dn(sam_ctx, mem_ctx, ref_res->msgs[0], "ncName");
 			if (!dom_dn) {
 				return NT_STATUS_NO_SUCH_DOMAIN;
 			}
-			ret = ldb_search(sam_ctx, dom_dn,
-					 LDB_SCOPE_BASE, "objectClass=domain", 
-					 dom_attrs, &dom_res);
+			ret = ldb_search(sam_ctx, mem_ctx, &dom_res,
+					 dom_dn, LDB_SCOPE_BASE, dom_attrs,
+					 "objectClass=domain");
 			if (ret != LDB_SUCCESS) {
 				DEBUG(2,("Error finding domain '%s'/'%s' in sam: %s\n", domain, ldb_dn_get_linearized(dom_dn), ldb_errstring(sam_ctx)));
 				return NT_STATUS_NO_SUCH_DOMAIN;
 			}
-			talloc_steal(mem_ctx, dom_res);
 			if (dom_res->count != 1) {
 				DEBUG(2,("Error finding domain '%s'/'%s' in sam\n", domain, ldb_dn_get_linearized(dom_dn)));
 				return NT_STATUS_NO_SUCH_DOMAIN;
@@ -179,7 +175,7 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 				return NT_STATUS_INVALID_PARAMETER;
 			}
-			ret = ldb_search_exp_fmt(sam_ctx, mem_ctx, &dom_res,
+			ret = ldb_search(sam_ctx, mem_ctx, &dom_res,
 						 NULL, LDB_SCOPE_SUBTREE, 
 						 dom_attrs, 
 						 "(&(objectCategory=DomainDNS)(objectGUID=%s))", 
@@ -196,7 +192,7 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 				return NT_STATUS_INVALID_PARAMETER;
 			}
 
-			ret = ldb_search_exp_fmt(sam_ctx, mem_ctx, &dom_res,
+			ret = ldb_search(sam_ctx, mem_ctx, &dom_res,
 						 NULL, LDB_SCOPE_SUBTREE, 
 						 dom_attrs, 
 						 "(&(objectCategory=DomainDNS)(objectSID=%s))", 
@@ -210,7 +206,7 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 			return NT_STATUS_NO_SUCH_DOMAIN;
 		} else if (dom_res->count == 1) {
 			/* try and find the domain */
-			ret = ldb_search_exp_fmt(sam_ctx, mem_ctx, &ref_res,
+			ret = ldb_search(sam_ctx, mem_ctx, &ref_res,
 						 partitions_basedn, LDB_SCOPE_ONELEVEL, 
 						 ref_attrs, 
 						 "(&(objectClass=crossRef)(ncName=%s))", 
@@ -260,7 +256,7 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 		acct_control = acct_control & (ACB_TEMPDUP | ACB_NORMAL | ACB_DOMTRUST | ACB_WSTRUST | ACB_SVRTRUST);
 
 		/* We must exclude disabled accounts, but otherwise do the bitwise match the client asked for */
-		ret = ldb_search_exp_fmt(sam_ctx, mem_ctx, &user_res,
+		ret = ldb_search(sam_ctx, mem_ctx, &user_res,
 					 dom_res->msgs[0]->dn, LDB_SCOPE_SUBTREE, 
 					 none_attrs, 
 					 "(&(objectClass=user)(samAccountName=%s)"

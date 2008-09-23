@@ -54,10 +54,8 @@ static int idmap_get_bounds(struct idmap_context *idmap_ctx, uint32_t *low,
 	dn = ldb_dn_new(tmp_ctx, ldb, "CN=CONFIG");
 	if (dn == NULL) goto failed;
 
-	ret = ldb_search(ldb, dn, LDB_SCOPE_BASE, NULL, NULL, &res);
+	ret = ldb_search(ldb, tmp_ctx, &res, dn, LDB_SCOPE_BASE, NULL, NULL);
 	if (ret != LDB_SUCCESS) goto failed;
-
-	talloc_steal(tmp_ctx, res);
 
 	if (res->count != 1) {
 		ret = -1;
@@ -228,7 +226,7 @@ NTSTATUS idmap_xid_to_sid(struct idmap_context *idmap_ctx, TALLOC_CTX *mem_ctx,
 			goto failed;
 	}
 
-	ret = ldb_search_exp_fmt(ldb, tmp_ctx, &res, NULL, LDB_SCOPE_SUBTREE,
+	ret = ldb_search(ldb, tmp_ctx, &res, NULL, LDB_SCOPE_SUBTREE,
 				 NULL, "(&(|(type=ID_TYPE_BOTH)(type=%s))"
 				 "(xidNumber=%u))", id_type, unixid->id);
 	if (ret != LDB_SUCCESS) {
@@ -345,7 +343,7 @@ NTSTATUS idmap_sid_to_xid(struct idmap_context *idmap_ctx, TALLOC_CTX *mem_ctx,
 		return NT_STATUS_OK;
 	 }
 
-	ret = ldb_search_exp_fmt(ldb, tmp_ctx, &res, NULL, LDB_SCOPE_SUBTREE,
+	ret = ldb_search(ldb, tmp_ctx, &res, NULL, LDB_SCOPE_SUBTREE,
 				 NULL, "(&(objectClass=sidMap)(objectSid=%s))",
 				 ldap_encode_ndr_dom_sid(tmp_ctx, sid));
 	if (ret != LDB_SUCCESS) {
@@ -401,7 +399,7 @@ NTSTATUS idmap_sid_to_xid(struct idmap_context *idmap_ctx, TALLOC_CTX *mem_ctx,
 
 	/* Redo the search to make sure noone changed the mapping while we
 	 * weren't looking */
-	ret = ldb_search_exp_fmt(ldb, tmp_ctx, &res, NULL, LDB_SCOPE_SUBTREE,
+	ret = ldb_search(ldb, tmp_ctx, &res, NULL, LDB_SCOPE_SUBTREE,
 				 NULL, "(&(objectClass=sidMap)(objectSid=%s))",
 				 ldap_encode_ndr_dom_sid(tmp_ctx, sid));
 	if (ret != LDB_SUCCESS) {
@@ -431,14 +429,12 @@ NTSTATUS idmap_sid_to_xid(struct idmap_context *idmap_ctx, TALLOC_CTX *mem_ctx,
 		goto failed;
 	}
 
-	ret = ldb_search(ldb, dn, LDB_SCOPE_BASE, NULL, NULL, &res);
+	ret = ldb_search(ldb, tmp_ctx, &res, dn, LDB_SCOPE_BASE, NULL, NULL);
 	if (ret != LDB_SUCCESS) {
 		DEBUG(1, ("Search failed: %s\n", ldb_errstring(ldb)));
 		status = NT_STATUS_NONE_MAPPED;
 		goto failed;
 	}
-
-	talloc_steal(tmp_ctx, res);
 
 	if (res->count != 1) {
 		DEBUG(1, ("No CN=CONFIG record, idmap database is broken.\n"));

@@ -807,15 +807,13 @@ static int partition_init(struct ldb_module *module)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ret = ldb_search(module->ldb, ldb_dn_new(mem_ctx, module->ldb, "@PARTITION"),
-			 LDB_SCOPE_BASE,
-			 NULL, attrs,
-			 &res);
+	ret = ldb_search(module->ldb, mem_ctx, &res,
+			 ldb_dn_new(mem_ctx, module->ldb, "@PARTITION"),
+			 LDB_SCOPE_BASE, attrs, NULL);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(mem_ctx);
 		return ret;
 	}
-	talloc_steal(mem_ctx, res);
 	if (res->count == 0) {
 		talloc_free(mem_ctx);
 		return ldb_next_init(module);

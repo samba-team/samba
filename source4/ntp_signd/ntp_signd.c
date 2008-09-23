@@ -166,7 +166,7 @@ static NTSTATUS ntp_signd_recv(void *private, DATA_BLOB wrapped_input)
 		return signing_failure(ntp_signdconn, sign_request.packet_id);
 	}
 
-	ret = ldb_search_exp_fmt(ntp_signdconn->ntp_signd->samdb, tmp_ctx,
+	ret = ldb_search(ntp_signdconn->ntp_signd->samdb, tmp_ctx,
 				 &res, samdb_base_dn(ntp_signdconn->ntp_signd->samdb),
 				 LDB_SCOPE_SUBTREE, attrs, "(&(objectSid=%s)(objectClass=user))",
 				 dom_sid_string(tmp_ctx, sid));

@@ -419,7 +419,7 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 			return -1;
 		}
 
-		ret = ldb_search_exp_fmt(ldb, mods_dn, &res, mods_dn, LDB_SCOPE_BASE, attrs, "@LIST=*");
+		ret = ldb_search(ldb, mods_dn, &res, mods_dn, LDB_SCOPE_BASE, attrs, "@LIST=*");
 		
 		if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 			ldb_debug(ldb, LDB_DEBUG_TRACE, "no modules required by the db");

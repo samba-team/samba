@@ -75,17 +75,15 @@ static struct ldb_dn *find_schema_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ct
 	}
 	
 	/* Search for rootdse */
-	ldb_ret = ldb_search(ldb, basedn, LDB_SCOPE_BASE, NULL, rootdse_attrs, &rootdse_res);
+	ldb_ret = ldb_search(ldb, mem_ctx, &rootdse_res,
+			     basedn, LDB_SCOPE_BASE, rootdse_attrs, NULL);
 	if (ldb_ret != LDB_SUCCESS) {
-		ldb_ret = ldb_search(ldb, basedn, LDB_SCOPE_SUBTREE, 
-				 "(&(objectClass=dMD)(cn=Schema))", 
-				 NULL, &schema_res);
+		ldb_ret = ldb_search(ldb, mem_ctx, &schema_res, basedn, LDB_SCOPE_SUBTREE,
+				     NULL, "(&(objectClass=dMD)(cn=Schema))");
 		if (ldb_ret) {
 			printf("cn=Schema Search failed: %s\n", ldb_errstring(ldb));
 			return NULL;
 		}
-
-		talloc_steal(mem_ctx, schema_res);
 
 		if (schema_res->count != 1) {
 			talloc_free(schema_res);

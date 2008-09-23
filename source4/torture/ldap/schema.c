@@ -57,8 +57,8 @@ static bool test_search_rootDSE(struct ldb_context *ldb, struct test_rootDSE *ro
 
 	d_printf("Testing RootDSE Search\n");
 
-	ret = ldb_search(ldb, ldb_dn_new(ldb, ldb, NULL), LDB_SCOPE_BASE, 
-			 NULL, NULL, &r);
+	ret = ldb_search(ldb, ldb, &r, ldb_dn_new(ldb, ldb, NULL),
+			 LDB_SCOPE_BASE, NULL, NULL);
 	if (ret != LDB_SUCCESS) {
 		return false;
 	} else if (r->count != 1) {

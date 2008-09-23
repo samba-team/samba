@@ -195,7 +195,7 @@ NTSTATUS schannel_fetch_session_key_ldb(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	ret = ldb_search_exp_fmt(ldb, mem_ctx, &res,
+	ret = ldb_search(ldb, mem_ctx, &res,
 				 NULL, LDB_SCOPE_SUBTREE, NULL,
 				"(&(computerName=%s)(flatname=%s))", computer_name, domain);
 	if (ret != LDB_SUCCESS) {

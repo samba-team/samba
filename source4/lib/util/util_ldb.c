@@ -52,7 +52,8 @@ int gendb_search_v(struct ldb_context *ldb,
 
 	res = NULL;
 
-	ret = ldb_search(ldb, basedn, scope, expr, attrs, &res);
+	ret = ldb_search(ldb, mem_ctx, &res, basedn, scope, attrs,
+			 expr?"%s":NULL, expr);
 
 	if (ret == LDB_SUCCESS) {
 		talloc_steal(mem_ctx, res->msgs);

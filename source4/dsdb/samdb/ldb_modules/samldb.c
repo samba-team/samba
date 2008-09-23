@@ -131,7 +131,7 @@ static int samldb_find_next_rid(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 	int ret;
 	const char *str;
 
-	ret = ldb_search(module->ldb, dn, LDB_SCOPE_BASE, "nextRid=*", attrs, &res);
+	ret = ldb_search(module->ldb, mem_ctx, &res, dn, LDB_SCOPE_BASE, attrs, "nextRid=*");
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -207,7 +207,7 @@ static int samldb_get_new_sid(struct ldb_module *module,
 
 	/* find the domain sid */
 
-	ret = ldb_search(module->ldb, dom_dn, LDB_SCOPE_BASE, "objectSid=*", attrs, &res);
+	ret = ldb_search(module->ldb, mem_ctx, &res, dom_dn, LDB_SCOPE_BASE, attrs, "objectSid=*");
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(module->ldb,
 					"samldb_get_new_sid: error retrieving domain sid from %s: %s!\n",
@@ -261,7 +261,7 @@ int samldb_notice_sid(struct ldb_module *module,
 	uint32_t old_rid;
 
 	/* find if this SID already exists */
-	ret = ldb_search_exp_fmt(module->ldb, mem_ctx, &res,
+	ret = ldb_search(module->ldb, mem_ctx, &res,
 				 NULL, LDB_SCOPE_SUBTREE, attrs,
 				 "(objectSid=%s)", ldap_encode_ndr_dom_sid(mem_ctx, sid));
 	if (ret == LDB_SUCCESS) {
@@ -291,7 +291,7 @@ int samldb_notice_sid(struct ldb_module *module,
 	dom_sid->num_auths--;
 
 	/* find the domain DN */
-	ret = ldb_search_exp_fmt(module->ldb, mem_ctx, &dom_res,
+	ret = ldb_search(module->ldb, mem_ctx, &dom_res,
 				 NULL, LDB_SCOPE_SUBTREE, attrs,
 				 "(&(objectSid=%s)(|(|(objectClass=domain)(objectClass=builtinDomain))(objectClass=samba4LocalDomain)))", 
 				 ldap_encode_ndr_dom_sid(mem_ctx, dom_sid));
@@ -371,7 +371,7 @@ static int samldb_generate_samAccountName(struct ldb_module *module, TALLOC_CTX 
 	do {
 		*name = talloc_asprintf(mem_ctx, "$%.6X-%.6X%.6X", (unsigned int)generate_random(), (unsigned int)generate_random(), (unsigned int)generate_random());
 		/* TODO: Figure out exactly what this is meant to conflict with */
-		ret = ldb_search_exp_fmt(module->ldb,
+		ret = ldb_search(module->ldb,
 					 mem_ctx, &res, dom_dn, LDB_SCOPE_SUBTREE, attrs,
 					 "samAccountName=%s",
 					 ldb_binary_encode_string(mem_ctx, *name));

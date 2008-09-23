@@ -48,8 +48,8 @@ WERROR dreplsrv_load_partitions(struct dreplsrv_service *s)
 	basedn = ldb_dn_new(s, s->samdb, NULL);
 	W_ERROR_HAVE_NO_MEMORY(basedn);
 
-	ret = ldb_search(s->samdb, basedn, LDB_SCOPE_BASE, 
-			 "(objectClass=*)", attrs, &r);
+	ret = ldb_search(s->samdb, s, &r, basedn, LDB_SCOPE_BASE, attrs,
+			 "(objectClass=*)");
 	talloc_free(basedn);
 	if (ret != LDB_SUCCESS) {
 		return WERR_FOOBAR;
@@ -57,7 +57,6 @@ WERROR dreplsrv_load_partitions(struct dreplsrv_service *s)
 		talloc_free(r);
 		return WERR_FOOBAR;
 	}
-	talloc_steal(s, r);
 
 	el = ldb_msg_find_element(r->msgs[0], "namingContexts");
 	if (!el) {
@@ -201,15 +200,14 @@ static WERROR dreplsrv_refresh_partition(struct dreplsrv_service *s,
 	DEBUG(2, ("dreplsrv_refresh_partition(%s)\n",
 		ldb_dn_get_linearized(p->dn)));
 
-	ret = ldb_search(s->samdb, p->dn, LDB_SCOPE_BASE,
-			 "(objectClass=*)", attrs, &r);
+	ret = ldb_search(s->samdb, mem_ctx, &r, p->dn, LDB_SCOPE_BASE, attrs,
+			 "(objectClass=*)");
 	if (ret != LDB_SUCCESS) {
 		return WERR_FOOBAR;
 	} else if (r->count != 1) {
 		talloc_free(r);
 		return WERR_FOOBAR;
 	}
-	talloc_steal(mem_ctx, r);
 
 	ZERO_STRUCT(p->nc);
 	p->nc.dn	= ldb_dn_alloc_linearized(p, p->dn);

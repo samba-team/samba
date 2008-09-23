@@ -1024,7 +1024,7 @@ const struct dom_sid *samdb_domain_sid(struct ldb_context *ldb)
 		goto failed;
 	}
 
-	ret = ldb_search_exp_fmt(ldb, tmp_ctx, &res, ldb_get_default_basedn(ldb), LDB_SCOPE_BASE, attrs, "objectSid=*");
+	ret = ldb_search(ldb, tmp_ctx, &res, ldb_get_default_basedn(ldb), LDB_SCOPE_BASE, attrs, "objectSid=*");
 
 	if (ret != LDB_SUCCESS) {
 		goto failed;
@@ -1137,13 +1137,12 @@ struct ldb_dn *samdb_ntds_settings_dn(struct ldb_context *ldb)
 	}
 	
 
-	ret = ldb_search(ldb, ldb_dn_new(tmp_ctx, ldb, ""), LDB_SCOPE_BASE, NULL, root_attrs, &root_res);
+	ret = ldb_search(ldb, tmp_ctx, &root_res, ldb_dn_new(tmp_ctx, ldb, ""), LDB_SCOPE_BASE, root_attrs, NULL);
 	if (ret) {
 		DEBUG(1,("Searching for dsServiceName in rootDSE failed: %s\n", 
 			 ldb_errstring(ldb)));
 		goto failed;
 	}
-	talloc_steal(tmp_ctx, root_res);
 
 	if (root_res->count != 1) {
 		goto failed;
@@ -1189,11 +1188,10 @@ const struct GUID *samdb_ntds_invocation_id(struct ldb_context *ldb)
 		goto failed;
 	}
 
-	ret = ldb_search(ldb, samdb_ntds_settings_dn(ldb), LDB_SCOPE_BASE, NULL, attrs, &res);
+	ret = ldb_search(ldb, tmp_ctx, &res, samdb_ntds_settings_dn(ldb), LDB_SCOPE_BASE, attrs, NULL);
 	if (ret) {
 		goto failed;
 	}
-	talloc_steal(tmp_ctx, res);
 
 	if (res->count != 1) {
 		goto failed;
@@ -1283,11 +1281,10 @@ const struct GUID *samdb_ntds_objectGUID(struct ldb_context *ldb)
 		goto failed;
 	}
 
-	ret = ldb_search(ldb, samdb_ntds_settings_dn(ldb), LDB_SCOPE_BASE, NULL, attrs, &res);
+	ret = ldb_search(ldb, tmp_ctx, &res, samdb_ntds_settings_dn(ldb), LDB_SCOPE_BASE, attrs, NULL);
 	if (ret) {
 		goto failed;
 	}
-	talloc_steal(tmp_ctx, res);
 
 	if (res->count != 1) {
 		goto failed;
@@ -1397,14 +1394,13 @@ bool samdb_is_pdc(struct ldb_context *ldb)
 		return false;
 	}
 
-	ret = ldb_search(ldb, ldb_get_default_basedn(ldb), LDB_SCOPE_BASE, NULL, dom_attrs, &dom_res);
+	ret = ldb_search(ldb, tmp_ctx, &dom_res, ldb_get_default_basedn(ldb), LDB_SCOPE_BASE, dom_attrs, NULL);
 	if (ret) {
 		DEBUG(1,("Searching for fSMORoleOwner in %s failed: %s\n", 
 			 ldb_dn_get_linearized(ldb_get_default_basedn(ldb)), 
 			 ldb_errstring(ldb)));
 		goto failed;
 	}
-	talloc_steal(tmp_ctx, dom_res);
 	if (dom_res->count != 1) {
 		goto failed;
 	}
@@ -1444,17 +1440,17 @@ bool samdb_is_gc(struct ldb_context *ldb)
 	}
 
 	/* Query cn=ntds settings,.... */
-	ret = ldb_search(ldb, samdb_ntds_settings_dn(ldb), LDB_SCOPE_BASE, NULL, attrs, &res);
+	ret = ldb_search(ldb, tmp_ctx, &res, samdb_ntds_settings_dn(ldb), LDB_SCOPE_BASE, attrs, NULL);
 	if (ret) {
+		talloc_free(tmp_ctx);
 		return false;
 	}
 	if (res->count != 1) {
-		talloc_free(res);
+		talloc_free(tmp_ctx);
 		return false;
 	}
 
 	options = ldb_msg_find_attr_as_int(res->msgs[0], "options", 0);
-	talloc_free(res);
 	talloc_free(tmp_ctx);
 
 	/* if options attribute has the 0x00000001 flag set, then enable the global catlog */
@@ -1478,10 +1474,9 @@ int samdb_search_for_parent_domain(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 	if (local_ctx == NULL) return LDB_ERR_OPERATIONS_ERROR;
 	
 	while ((sdn = ldb_dn_get_parent(local_ctx, sdn))) {
-		ret = ldb_search(ldb, sdn, LDB_SCOPE_BASE, 
-				 "(|(|(objectClass=domain)(objectClass=builtinDomain))(objectClass=samba4LocalDomain))", attrs, &res);
+		ret = ldb_search(ldb, local_ctx, &res, sdn, LDB_SCOPE_BASE, attrs,
+				 "(|(|(objectClass=domain)(objectClass=builtinDomain))(objectClass=samba4LocalDomain))");
 		if (ret == LDB_SUCCESS) {
-			talloc_steal(local_ctx, res);
 			if (res->count == 1) {
 				break;
 			}
@@ -1955,7 +1950,7 @@ struct ldb_dn *samdb_domain_to_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 	struct ldb_result *res_domain_ref;
 	char *escaped_domain = ldb_binary_encode_string(mem_ctx, domain_name);
 	/* find the domain's DN */
-	int ret_domain = ldb_search_exp_fmt(ldb, mem_ctx, 
+	int ret_domain = ldb_search(ldb, mem_ctx,
 					    &res_domain_ref, 
 					    samdb_partitions_dn(ldb, mem_ctx), 
 					    LDB_SCOPE_ONELEVEL, 
@@ -1967,7 +1962,7 @@ struct ldb_dn *samdb_domain_to_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 	}
 	
 	if (res_domain_ref->count == 0) {
-		ret_domain = ldb_search_exp_fmt(ldb, mem_ctx, 
+		ret_domain = ldb_search(ldb, mem_ctx,
 						&res_domain_ref, 
 						samdb_dns_domain_to_dn(ldb, mem_ctx, domain_name),
 						LDB_SCOPE_BASE,

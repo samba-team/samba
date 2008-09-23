@@ -73,7 +73,7 @@ static int load_proxy_info(struct ldb_module *module)
 	if (dn == NULL) {
 		goto failed;
 	}
-	ret = ldb_search(module->ldb, dn, LDB_SCOPE_BASE, NULL, NULL, &res);
+	ret = ldb_search(module->ldb, proxy, &res, dn, LDB_SCOPE_BASE, NULL, NULL);
 	talloc_free(dn);
 	if (ret != LDB_SUCCESS || res->count != 1) {
 		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "Can't find @PROXYINFO\n");

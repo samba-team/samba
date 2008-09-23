@@ -253,12 +253,10 @@ static int ldapsrv_load_limits(struct ldapsrv_connection *conn)
 		goto failed;
 	}
 
-	ret = ldb_search(conn->ldb, basedn, LDB_SCOPE_BASE, NULL, attrs, &res);
+	ret = ldb_search(conn->ldb, tmp_ctx, &res, basedn, LDB_SCOPE_BASE, attrs, NULL);
 	if (ret != LDB_SUCCESS) {
 		goto failed;
 	}
-
-	talloc_steal(tmp_ctx, res);
 
 	if (res->count != 1) {
 		goto failed;
@@ -275,12 +273,10 @@ static int ldapsrv_load_limits(struct ldapsrv_connection *conn)
 		goto failed;
 	}
 
-	ret = ldb_search(conn->ldb, policy_dn, LDB_SCOPE_BASE, NULL, attrs2, &res);
+	ret = ldb_search(conn->ldb, tmp_ctx, &res, policy_dn, LDB_SCOPE_BASE, attrs2, NULL);
 	if (ret != LDB_SUCCESS) {
 		goto failed;
 	}
-
-	talloc_steal(tmp_ctx, res);
 
 	if (res->count != 1) {
 		goto failed;

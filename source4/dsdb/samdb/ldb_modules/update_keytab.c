@@ -59,8 +59,8 @@ static int add_modified(struct ldb_module *module, struct ldb_dn *dn, bool delet
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ret = ldb_search(module->ldb, dn, LDB_SCOPE_BASE,
-			 filter, attrs, &res);
+	ret = ldb_search(module->ldb, data, &res,
+			 dn, LDB_SCOPE_BASE, attrs, "%s", filter);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(filter);
 		return ret;

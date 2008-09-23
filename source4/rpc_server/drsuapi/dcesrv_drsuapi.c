@@ -69,7 +69,7 @@ static WERROR dcesrv_drsuapi_DsBind(struct dcesrv_call_state *dce_call, TALLOC_C
 	server_site_dn = samdb_server_site_dn(b_state->sam_ctx, mem_ctx);
 	W_ERROR_HAVE_NO_MEMORY(server_site_dn);
 
-	ret = ldb_search_exp_fmt(b_state->sam_ctx, mem_ctx, &site_res,
+	ret = ldb_search(b_state->sam_ctx, mem_ctx, &site_res,
 				 server_site_dn, LDB_SCOPE_BASE, site_attrs,
 				 "(objectClass=*)");
 	if (ret != LDB_SUCCESS) {
@@ -86,7 +86,7 @@ static WERROR dcesrv_drsuapi_DsBind(struct dcesrv_call_state *dce_call, TALLOC_C
 	ntds_dn = samdb_ntds_settings_dn(b_state->sam_ctx);
 	W_ERROR_HAVE_NO_MEMORY(ntds_dn);
 
-	ret = ldb_search_exp_fmt(b_state->sam_ctx, mem_ctx, &ntds_res,
+	ret = ldb_search(b_state->sam_ctx, mem_ctx, &ntds_res,
 				 ntds_dn, LDB_SCOPE_BASE, ntds_attrs,
 				 "(objectClass=*)");
 	if (ret != LDB_SUCCESS) {
@@ -540,7 +540,7 @@ static WERROR dcesrv_drsuapi_DsGetDomainControllerInfo_1(struct drsuapi_bind_sta
 		return WERR_UNKNOWN_LEVEL;
 	}
 
-	ret = ldb_search_exp_fmt(b_state->sam_ctx, mem_ctx, &res, sites_dn, LDB_SCOPE_SUBTREE, attrs, 
+	ret = ldb_search(b_state->sam_ctx, mem_ctx, &res, sites_dn, LDB_SCOPE_SUBTREE, attrs,
 				 "objectClass=server");
 	
 	if (ret) {
@@ -571,7 +571,7 @@ static WERROR dcesrv_drsuapi_DsGetDomainControllerInfo_1(struct drsuapi_bind_sta
 				return WERR_NOMEM;
 			}
 
-			ret = ldb_search_exp_fmt(b_state->sam_ctx, mem_ctx, &res_account, ref_dn, 
+			ret = ldb_search(b_state->sam_ctx, mem_ctx, &res_account, ref_dn,
 						 LDB_SCOPE_BASE, attrs_account_1, "objectClass=computer");
 			if (ret == LDB_SUCCESS && res_account->count == 1) {
 				const char *errstr;
@@ -588,7 +588,7 @@ static WERROR dcesrv_drsuapi_DsGetDomainControllerInfo_1(struct drsuapi_bind_sta
 								     &domain_dn, &errstr);
 				
 				if (ret == LDB_SUCCESS) {
-					ret = ldb_search_exp_fmt(b_state->sam_ctx, mem_ctx, &res_domain, domain_dn, 
+					ret = ldb_search(b_state->sam_ctx, mem_ctx, &res_domain, domain_dn,
 								 LDB_SCOPE_BASE, attrs_none, "fSMORoleOwner=%s",
 								 ldb_dn_get_linearized(ntds_dn));
 					if (ret) {
@@ -641,7 +641,7 @@ static WERROR dcesrv_drsuapi_DsGetDomainControllerInfo_1(struct drsuapi_bind_sta
 				return WERR_NOMEM;
 			}
 
-			ret = ldb_search_exp_fmt(b_state->sam_ctx, mem_ctx, &res_ntds, ntds_dn, 
+			ret = ldb_search(b_state->sam_ctx, mem_ctx, &res_ntds, ntds_dn,
 						 LDB_SCOPE_BASE, attrs_ntds, "objectClass=nTDSDSA");
 			if (ret == LDB_SUCCESS && res_ntds->count == 1) {
 				ctr2->array[i].is_gc
@@ -655,7 +655,7 @@ static WERROR dcesrv_drsuapi_DsGetDomainControllerInfo_1(struct drsuapi_bind_sta
 					  ldb_dn_get_linearized(ntds_dn), ldb_errstring(b_state->sam_ctx)));
 			}
 
-			ret = ldb_search_exp_fmt(b_state->sam_ctx, mem_ctx, &res_site, site_dn, 
+			ret = ldb_search(b_state->sam_ctx, mem_ctx, &res_site, site_dn,
 						 LDB_SCOPE_BASE, attrs_site, "objectClass=site");
 			if (ret == LDB_SUCCESS && res_site->count == 1) {
 				ctr2->array[i].site_guid 
@@ -667,7 +667,7 @@ static WERROR dcesrv_drsuapi_DsGetDomainControllerInfo_1(struct drsuapi_bind_sta
 					  ldb_dn_get_linearized(site_dn), ldb_errstring(b_state->sam_ctx)));
 			}
 
-			ret = ldb_search_exp_fmt(b_state->sam_ctx, mem_ctx, &res_account, ref_dn, 
+			ret = ldb_search(b_state->sam_ctx, mem_ctx, &res_account, ref_dn,
 						 LDB_SCOPE_BASE, attrs_account_2, "objectClass=computer");
 			if (ret == LDB_SUCCESS && res_account->count == 1) {
 				const char *errstr;
@@ -685,7 +685,7 @@ static WERROR dcesrv_drsuapi_DsGetDomainControllerInfo_1(struct drsuapi_bind_sta
 								     &domain_dn, &errstr);
 				
 				if (ret == LDB_SUCCESS) {
-					ret = ldb_search_exp_fmt(b_state->sam_ctx, mem_ctx, &res_domain, domain_dn, 
+					ret = ldb_search(b_state->sam_ctx, mem_ctx, &res_domain, domain_dn,
 								 LDB_SCOPE_BASE, attrs_none, "fSMORoleOwner=%s",
 								 ldb_dn_get_linearized(ntds_dn));
 					if (ret == LDB_SUCCESS && res_domain->count == 1) {

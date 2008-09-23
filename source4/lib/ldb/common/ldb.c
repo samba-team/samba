@@ -88,15 +88,14 @@ void ldb_set_default_dns(struct ldb_context *ldb)
 	};
 
 	tmp_ctx = talloc_new(ldb);
-	ret = ldb_search(ldb, ldb_dn_new(tmp_ctx, ldb, NULL), LDB_SCOPE_BASE,
-			 "(objectClass=*)", attrs, &res);
+	ret = ldb_search(ldb, tmp_ctx, &res, ldb_dn_new(tmp_ctx, ldb, NULL),
+			 LDB_SCOPE_BASE, attrs, "(objectClass=*)");
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return;
 	}
 
 	if (res->count != 1) {
-		talloc_free(res);
 		talloc_free(tmp_ctx);
 		return;
 	}
@@ -125,7 +124,6 @@ void ldb_set_default_dns(struct ldb_context *ldb)
 		ldb_set_opaque(ldb, "defaultNamingContext", tmp_dn);
 	}
 
-	talloc_free(res);
 	talloc_free(tmp_ctx);
 }
 
@@ -873,25 +871,38 @@ done:
   note that ldb_search() will automatically replace a NULL 'base' value
   with the defaultNamingContext from the rootDSE if available.
 */
-int ldb_search(struct ldb_context *ldb,
-	       struct ldb_dn *base,
-	       enum ldb_scope scope,
-	       const char *expression,
-	       const char * const *attrs,
-	       struct ldb_result **_res)
+int ldb_search(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
+		struct ldb_result **result, struct ldb_dn *base,
+		enum ldb_scope scope, const char * const *attrs,
+		const char *exp_fmt, ...)
 {
 	struct ldb_request *req;
-	int ret;
 	struct ldb_result *res;
+	char *expression;
+	va_list ap;
+	int ret;
 
-	*_res = NULL;
+	expression = NULL;
+	*result = NULL;
+	req = NULL;
 
-	res = talloc_zero(ldb, struct ldb_result);
+	res = talloc_zero(mem_ctx, struct ldb_result);
 	if (!res) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ret = ldb_build_search_req(&req, ldb, ldb,
+	if (exp_fmt) {
+		va_start(ap, exp_fmt);
+		expression = talloc_vasprintf(mem_ctx, exp_fmt, ap);
+		va_end(ap);
+
+		if (!expression) {
+			talloc_free(res);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+	}
+
+	ret = ldb_build_search_req(&req, ldb, mem_ctx,
 					base?base:ldb_get_default_basedn(ldb),
 	       				scope,
 					expression,
@@ -910,52 +921,16 @@ int ldb_search(struct ldb_context *ldb,
 		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
 	}
 
-	talloc_free(req);
-
 done:
 	if (ret != LDB_SUCCESS) {
 		talloc_free(res);
-	}
-
-	*_res = res;
-	return ret;
-}
-
-/*
- a useful search function where you can easily define the expression and that
- takes a memory context where results are allocated
-*/
-
-int ldb_search_exp_fmt(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
-			struct ldb_result **result, struct ldb_dn *base,
-			enum ldb_scope scope, const char * const *attrs,
-                        const char *exp_fmt, ...)
-{
-	struct ldb_result *res;
-	char *expression;
-	va_list ap;
-	int ret;
-
-	res = NULL;
-	*result = NULL;
-
-	va_start(ap, exp_fmt);
-	expression = talloc_vasprintf(mem_ctx, exp_fmt, ap);
-	va_end(ap);
-
-	if ( ! expression) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	ret = ldb_search(ldb, base, scope, expression, attrs, &res);
-
-	if (ret == LDB_SUCCESS) {
-		talloc_steal(mem_ctx, res);
-		*result = res;
+		res = NULL;
 	}
 
 	talloc_free(expression);
+	talloc_free(req);
 
+	*result = res;
 	return ret;
 }
 

@@ -116,7 +116,7 @@ static int dsdb_schema_set_attributes(struct ldb_context *ldb, struct dsdb_schem
 
 
 	/* Try to avoid churning the attributes too much - we only want to do this if they have changed */
-	ret = ldb_search_exp_fmt(ldb, mem_ctx, &res, msg->dn, LDB_SCOPE_BASE, NULL, "dn=%s", ldb_dn_get_linearized(msg->dn));
+	ret = ldb_search(ldb, mem_ctx, &res, msg->dn, LDB_SCOPE_BASE, NULL, "dn=%s", ldb_dn_get_linearized(msg->dn));
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 		ret = ldb_add(ldb, msg);
 	} else if (ret != LDB_SUCCESS) {
@@ -144,7 +144,7 @@ static int dsdb_schema_set_attributes(struct ldb_context *ldb, struct dsdb_schem
 
 	/* Now write out the indexs, as found in the schema (if they have changed) */
 
-	ret = ldb_search_exp_fmt(ldb, mem_ctx, &res_idx, msg_idx->dn, LDB_SCOPE_BASE, NULL, "dn=%s", ldb_dn_get_linearized(msg_idx->dn));
+	ret = ldb_search(ldb, mem_ctx, &res_idx, msg_idx->dn, LDB_SCOPE_BASE, NULL, "dn=%s", ldb_dn_get_linearized(msg_idx->dn));
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 		ret = ldb_add(ldb, msg_idx);
 	} else if (ret != LDB_SUCCESS) {

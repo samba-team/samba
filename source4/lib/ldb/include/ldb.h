@@ -1023,31 +1023,21 @@ struct ldb_control *ldb_request_get_control(struct ldb_request *req, const char 
   records that match an LDAP-like search expression
 
   \param ldb the context associated with the database (from ldb_init())
+  \param mem_ctx the memory context to use for the request and the results
+  \param result the return result
   \param base the Base Distinguished Name for the query (use ldb_dn_new() for an empty one)
   \param scope the search scope for the query
-  \param expression the search expression to use for this query
   \param attrs the search attributes for the query (pass NULL if none required)
-  \param res the return result
+  \param exp_fmt the search expression to use for this query (printf like)
 
   \return result code (LDB_SUCCESS on success, or a failure code)
 
   \note use talloc_free() to free the ldb_result returned
 */
-int ldb_search(struct ldb_context *ldb, 
-	       struct ldb_dn *base,
-	       enum ldb_scope scope,
-	       const char *expression,
-	       const char * const *attrs, struct ldb_result **res);
-
-/*
- * a useful search function where you can easily define the expression and
- * that takes a memory context where results are allocated
-*/
-
-int ldb_search_exp_fmt(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
-		       struct ldb_result **result, struct ldb_dn *base,
-		       enum ldb_scope scope, const char * const *attrs,
-		       const char *exp_fmt, ...) PRINTF_ATTRIBUTE(7,8);
+int ldb_search(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
+	       struct ldb_result **result, struct ldb_dn *base,
+	       enum ldb_scope scope, const char * const *attrs,
+	       const char *exp_fmt, ...) PRINTF_ATTRIBUTE(7,8);
 
 /**
   Add a record to the database.

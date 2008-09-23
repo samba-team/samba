@@ -337,8 +337,8 @@ static NTSTATUS unbecomeDC_ldap_rootdse(struct libnet_UnbecomeDC_state *s)
 	basedn = ldb_dn_new(s, s->ldap.ldb, NULL);
 	NT_STATUS_HAVE_NO_MEMORY(basedn);
 
-	ret = ldb_search(s->ldap.ldb, basedn, LDB_SCOPE_BASE, 
-			 "(objectClass=*)", attrs, &r);
+	ret = ldb_search(s->ldap.ldb, s, &r, basedn, LDB_SCOPE_BASE, attrs,
+			 "(objectClass=*)");
 	talloc_free(basedn);
 	if (ret != LDB_SUCCESS) {
 		return NT_STATUS_LDAP(ret);
@@ -346,7 +346,6 @@ static NTSTATUS unbecomeDC_ldap_rootdse(struct libnet_UnbecomeDC_state *s)
 		talloc_free(r);
 		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
-	talloc_steal(s, r);
 
 	s->domain.dn_str	= ldb_msg_find_attr_as_string(r->msgs[0], "defaultNamingContext", NULL);
 	if (!s->domain.dn_str) return NT_STATUS_INVALID_NETWORK_RESPONSE;
@@ -371,7 +370,6 @@ static NTSTATUS unbecomeDC_ldap_computer_object(struct libnet_UnbecomeDC_state *
 	int ret;
 	struct ldb_result *r;
 	struct ldb_dn *basedn;
-	char *filter;
 	static const char *attrs[] = {
 		"distinguishedName",
 		"userAccountControl",
@@ -381,12 +379,9 @@ static NTSTATUS unbecomeDC_ldap_computer_object(struct libnet_UnbecomeDC_state *
 	basedn = ldb_dn_new(s, s->ldap.ldb, s->domain.dn_str);
 	NT_STATUS_HAVE_NO_MEMORY(basedn);
 
-	filter = talloc_asprintf(basedn, "(&(|(objectClass=user)(objectClass=computer))(sAMAccountName=%s$))",
-				 s->dest_dsa.netbios_name);
-	NT_STATUS_HAVE_NO_MEMORY(filter);
-
-	ret = ldb_search(s->ldap.ldb, basedn, LDB_SCOPE_SUBTREE, 
-			 filter, attrs, &r);
+	ret = ldb_search(s->ldap.ldb, s, &r, basedn, LDB_SCOPE_SUBTREE, attrs,
+			 "(&(|(objectClass=user)(objectClass=computer))(sAMAccountName=%s$))",
+			 s->dest_dsa.netbios_name);
 	talloc_free(basedn);
 	if (ret != LDB_SUCCESS) {
 		return NT_STATUS_LDAP(ret);
@@ -462,8 +457,8 @@ static NTSTATUS unbecomeDC_ldap_move_computer(struct libnet_UnbecomeDC_state *s)
 				s->domain.dn_str);
 	NT_STATUS_HAVE_NO_MEMORY(basedn);
 
-	ret = ldb_search(s->ldap.ldb, basedn, LDB_SCOPE_BASE,
-			 "(objectClass=*)", _1_1_attrs, &r);
+	ret = ldb_search(s->ldap.ldb, s, &r, basedn, LDB_SCOPE_BASE,
+			 _1_1_attrs, "(objectClass=*)");
 	talloc_free(basedn);
 	if (ret != LDB_SUCCESS) {
 		return NT_STATUS_LDAP(ret);
