@@ -294,7 +294,7 @@ static const struct ndr_interface_table *load_iface_from_plugin(const char *plug
 		blob.data = data;
 		blob.length = size;
 
-		ndr_pull = ndr_pull_init_blob(&blob, mem_ctx);
+		ndr_pull = ndr_pull_init_blob(&blob, mem_ctx, NULL);
 		ndr_pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 
 		ndr_err = f->ndr_pull(ndr_pull, NDR_IN, st);
@@ -331,7 +331,7 @@ static const struct ndr_interface_table *load_iface_from_plugin(const char *plug
 	blob.data = data;
 	blob.length = size;
 
-	ndr_pull = ndr_pull_init_blob(&blob, mem_ctx);
+	ndr_pull = ndr_pull_init_blob(&blob, mem_ctx, NULL);
 	ndr_pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 
 	ndr_err = f->ndr_pull(ndr_pull, flags, st);
@@ -385,7 +385,7 @@ static const struct ndr_interface_table *load_iface_from_plugin(const char *plug
 			dump_data(0, v_blob.data, v_blob.length);
 		}
 
-		ndr_v_pull = ndr_pull_init_blob(&v_blob, mem_ctx);
+		ndr_v_pull = ndr_pull_init_blob(&v_blob, mem_ctx, NULL);
 		ndr_v_pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 
 		ndr_err = f->ndr_pull(ndr_v_pull, flags, v_st);
