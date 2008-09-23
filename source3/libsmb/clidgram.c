@@ -181,7 +181,7 @@ bool send_getdc_request(TALLOC_CTX *mem_ctx,
 		NDR_PRINT_DEBUG(nbt_ntlogon_packet, &packet);
 	}
 
-	ndr_err = ndr_push_struct_blob(&blob, mem_ctx, &packet,
+	ndr_err = ndr_push_struct_blob(&blob, mem_ctx, NULL, &packet,
 		       (ndr_push_flags_fn_t)ndr_push_nbt_ntlogon_packet);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return false;
