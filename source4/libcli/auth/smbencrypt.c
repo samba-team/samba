@@ -497,10 +497,10 @@ bool encode_pw_buffer(uint8_t buffer[516], const char *password, int string_flag
  returned password including termination.
 ************************************************************/
 bool decode_pw_buffer(uint8_t in_buffer[516], char *new_pwrd,
-		      int new_pwrd_size, uint32_t *new_pw_len,
-		      int string_flags)
+		      int new_pwrd_size, int string_flags)
 {
 	int byte_len=0;
+	ssize_t converted_pw_len;
 
 	/* the incoming buffer can be any alignment. */
 	string_flags |= STR_NOALIGN;
@@ -526,13 +526,17 @@ bool decode_pw_buffer(uint8_t in_buffer[516], char *new_pwrd,
 	}
 
 	/* decode into the return buffer.  Buffer length supplied */
- 	*new_pw_len = pull_string(lp_iconv_convenience(global_loadparm), new_pwrd, &in_buffer[512 - byte_len], new_pwrd_size, 
+ 	converted_pw_len = pull_string(lp_iconv_convenience(global_loadparm), new_pwrd, &in_buffer[512 - byte_len], new_pwrd_size, 
 				  byte_len, string_flags);
+
+	if (converted_pw_len == -1) {
+		return false;
+	}
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("decode_pw_buffer: new_pwrd: "));
-	dump_data(100, (const uint8_t *)new_pwrd, *new_pw_len);
-	DEBUG(100,("multibyte len:%d\n", *new_pw_len));
+	dump_data(100, (const uint8_t *)new_pwrd, converted_pw_len);
+	DEBUG(100,("multibyte len:%d\n", converted_pw_len));
 	DEBUG(100,("original char len:%d\n", byte_len/2));
 #endif
 	

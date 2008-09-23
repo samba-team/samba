@@ -243,7 +243,7 @@ NTSTATUS dcesrv_samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call, 
 	data_blob_free(&lm_pwd_blob);
 	
 	if (!decode_pw_buffer(pwbuf->data, new_pass, sizeof(new_pass),
-			      &new_pass_len, STR_ASCII)) {
+			      STR_ASCII)) {
 		ldb_transaction_cancel(sam_ctx);
 		DEBUG(3,("samr: failed to decode password buffer\n"));
 		return NT_STATUS_WRONG_PASSWORD;
@@ -321,7 +321,6 @@ NTSTATUS dcesrv_samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 {	
 	NTSTATUS status;
 	char new_pass[512];
-	uint32_t new_pass_len;
 	struct ldb_context *sam_ctx = NULL;
 	struct ldb_dn *user_dn;
 	int ret;
@@ -386,7 +385,7 @@ NTSTATUS dcesrv_samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 	data_blob_free(&nt_pwd_blob);
 
 	if (!decode_pw_buffer(r->in.nt_password->data, new_pass, sizeof(new_pass),
-			      &new_pass_len, STR_UNICODE)) {
+			      STR_UNICODE)) {
 		DEBUG(3,("samr: failed to decode password buffer\n"));
 		status = NT_STATUS_WRONG_PASSWORD;
 		goto failed;
@@ -519,7 +518,6 @@ NTSTATUS samr_set_password(struct dcesrv_call_state *dce_call,
 {
 	NTSTATUS nt_status;
 	char new_pass[512];
-	uint32_t new_pass_len;
 	DATA_BLOB session_key = data_blob(NULL, 0);
 
 	nt_status = dcesrv_fetch_session_key(dce_call->conn, &session_key);
@@ -530,7 +528,7 @@ NTSTATUS samr_set_password(struct dcesrv_call_state *dce_call,
 	arcfour_crypt_blob(pwbuf->data, 516, &session_key);
 
 	if (!decode_pw_buffer(pwbuf->data, new_pass, sizeof(new_pass),
-			      &new_pass_len, STR_UNICODE)) {
+			      STR_UNICODE)) {
 		DEBUG(3,("samr: failed to decode password buffer\n"));
 		return NT_STATUS_WRONG_PASSWORD;
 	}
@@ -583,7 +581,7 @@ NTSTATUS samr_set_password_ex(struct dcesrv_call_state *dce_call,
 	arcfour_crypt_blob(pwbuf->data, 516, &co_session_key);
 
 	if (!decode_pw_buffer(pwbuf->data, new_pass, sizeof(new_pass),
-			      &new_pass_len, STR_UNICODE)) {
+			      STR_UNICODE)) {
 		DEBUG(3,("samr: failed to decode password buffer\n"));
 		return NT_STATUS_WRONG_PASSWORD;
 	}
