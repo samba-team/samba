@@ -10,7 +10,7 @@
 
 import "misc.idl", "security.idl", "svcctl.idl", "samr.idl";
 [
-helper("libcli/nbt/libnbt.h")
+	helper("libcli/netlogon.h", "libcli/nbt/libnbt.h")
 ]
 interface nbt
 {
@@ -73,11 +73,11 @@ interface nbt
 		nbt_name_type type;
 	} nbt_name;
 
-	typedef [enum16bit] enum {
+	typedef [public,enum16bit] enum {
 		NBT_QCLASS_IP = 0x01
 	} nbt_qclass;
 
-	typedef [enum16bit] enum {
+	typedef [public,enum16bit] enum {
 		NBT_QTYPE_ADDRESS     = 0x0001,
 		NBT_QTYPE_NAMESERVICE = 0x0002,
 		NBT_QTYPE_NULL        = 0x000A,
@@ -160,7 +160,7 @@ interface nbt
 		uint8  data[length];
 	} nbt_rdata_data;
 
-	typedef [nodiscriminant] union {
+	typedef [nodiscriminant,public] union {
 		[case(NBT_QTYPE_NETBIOS)] nbt_rdata_netbios netbios;
 		[case(NBT_QTYPE_STATUS)]  nbt_rdata_status status;
 		[default]                 nbt_rdata_data   data;
@@ -172,18 +172,12 @@ interface nbt
  * together with NBT_QTYPE_NETBIOS
  * for WACK replies
  */
-#define NBT_RES_REC_LEVEL(rr_type, rdata) (\
-	(((rr_type) == NBT_QTYPE_NETBIOS) && \
-	talloc_check_name(ndr, "struct ndr_push") && \
-	((rdata).data.length == 2)) \
-	? 0 : rr_type)
-
-	typedef [flag(LIBNDR_PRINT_ARRAY_HEX)] struct {
+	typedef [flag(LIBNDR_PRINT_ARRAY_HEX),nopush] struct {
 		nbt_name   name;
 		nbt_qtype  rr_type;
 		nbt_qclass rr_class;
 		uint32     ttl;
-		[switch_is(NBT_RES_REC_LEVEL(rr_type, rdata))] nbt_rdata rdata;
+		[switch_is(rr_type)] nbt_rdata rdata;
 	} nbt_res_rec;
 
 	typedef [flag(NDR_NOALIGN|NDR_BIG_ENDIAN|NDR_PAHEX),public] struct {
@@ -338,65 +332,19 @@ interface nbt
 	} nbt_dgram_packet;
 
 
-	/*******************************************/
-	/* \MAILSLOT\NET\NETLOGON mailslot requests */
-	typedef enum {
-		NETLOGON_QUERY_FOR_PDC           = 0x7,
-		NETLOGON_ANNOUNCE_UAS            = 0xa,
-		NETLOGON_RESPONSE_FROM_PDC       = 0xc,
-		NETLOGON_QUERY_FOR_PDC2          = 0x12,
-		NETLOGON_RESPONSE_FROM_PDC2      = 0x17,
-		NETLOGON_RESPONSE_FROM_PDC_USER  = 0x19
-	} nbt_netlogon_command;
+	/******************************************
+	 * \MAILSLOT\NET\NETLOGON mailslot requests
+	 * and
+	 * \MAILSLOT\NET\NTLOGON mailslot requests
+	 */
 
-	typedef [flag(NDR_LITTLE_ENDIAN),bitmap32bit] bitmap {
-		NETLOGON_VERSION_1			= 0x00000001,
-		NETLOGON_VERSION_5			= 0x00000002,
-		NETLOGON_VERSION_5EX			= 0x00000004,
-		NETLOGON_VERSION_5EX_WITH_IP		= 0x00000008,
-		NETLOGON_VERSION_WITH_CLOSEST_SITE	= 0x00000010,
-		NETLOGON_VERSION_AVOID_NT4_EMUL		= 0x01000000,
-		NETLOGON_VERSION_PDC			= 0x10000000,
-		NETLOGON_VERSION_IP			= 0x20000000,
-		NETLOGON_VERSION_LOCAL			= 0x40000000,
-		NETLOGON_VERSION_GC			= 0x80000000
-	} nbt_netlogon_version;
+	typedef [public,gensize] struct {
+		uint32			sa_family;
+		[flag(NDR_BIG_ENDIAN)]	ipv4address pdc_ip;
+		[flag(NDR_REMAINING)]	DATA_BLOB remaining;
+	} nbt_sockaddr;
 
-	/* query for pdc request */
-	typedef struct {
-		astring              computer_name;
-		astring              mailslot_name;
-		[flag(NDR_ALIGN2)]   DATA_BLOB _pad;
-		nstring              unicode_name;
-		nbt_netlogon_version nt_version;
-		uint16               lmnt_token;
-		uint16               lm20_token;
-	} nbt_netlogon_query_for_pdc;
-
-	/* query for pdc request - new style */
-	typedef struct {
-		uint16               request_count;
-		nstring              computer_name;
-		nstring              user_name;
-		astring              mailslot_name;
-		uint32               unknown[2];
-		nbt_netlogon_version nt_version;
-		uint16               lmnt_token;
-		uint16               lm20_token;
-	} nbt_netlogon_query_for_pdc2;
-
-	/* response from pdc */
-	typedef struct {
-		astring pdc_name;
-		[flag(NDR_ALIGN2)]   DATA_BLOB _pad;
-		nstring              unicode_pdc_name;
-		nstring              domain_name;
-		nbt_netlogon_version nt_version;
-		uint16               lmnt_token;
-		uint16               lm20_token;
-	} nbt_netlogon_response_from_pdc;
-
-	typedef [bitmap32bit] bitmap {
+	typedef [bitmap32bit,public] bitmap {
 		NBT_SERVER_PDC				= 0x00000001,
 		NBT_SERVER_GC				= 0x00000004,
 		NBT_SERVER_LDAP				= 0x00000008,
@@ -411,15 +359,89 @@ interface nbt
 		NBT_SERVER_FULL_SECRET_DOMAIN_6		= 0x00001000
 	} nbt_server_type;
 
-	typedef struct {
-		uint32			family;
-		[flag(NDR_BIG_ENDIAN)]	ipv4address pdc_ip;
-		[flag(NDR_REMAINING)]	DATA_BLOB remaining;
-	} nbt_dc_sock_addr;
+	typedef [bitmap32bit,public] bitmap {
+		NETLOGON_NT_VERSION_1			= 0x00000001,
+		NETLOGON_NT_VERSION_5			= 0x00000002,
+		NETLOGON_NT_VERSION_5EX			= 0x00000004,
+		NETLOGON_NT_VERSION_5EX_WITH_IP		= 0x00000008,
+		NETLOGON_NT_VERSION_WITH_CLOSEST_SITE	= 0x00000010,
+		NETLOGON_NT_VERSION_AVIOD_NT4EMUL	= 0x01000000,
+		NETLOGON_NT_VERSION_PDC			= 0x10000000,
+		NETLOGON_NT_VERSION_IP			= 0x20000000,
+		NETLOGON_NT_VERSION_LOCAL		= 0x40000000,
+		NETLOGON_NT_VERSION_GC			= 0x80000000
+	} netlogon_nt_version_flags;
 
-	/* response from pdc - type2 */
-	typedef struct {
+	typedef [enum16bit,public] enum {
+		LOGON_PRIMARY_QUERY               = 7,	/* Was also NETLOGON_QUERY_FOR_PDC */
+		NETLOGON_ANNOUNCE_UAS             = 10,
+		NETLOGON_RESPONSE_FROM_PDC        = 12,
+		LOGON_SAM_LOGON_REQUEST           = 18, /* Was also NETLOGON_QUERY_FOR_PDC2, NTLOGON_SAM_LOGON */
+		LOGON_SAM_LOGON_RESPONSE          = 19, /* Was also NTLOGON_SAM_LOGON_REPLY */
+		LOGON_SAM_LOGON_PAUSE_RESPONSE    = 20,
+		LOGON_SAM_LOGON_USER_UNKNOWN      = 21, /* Was also NTLOGON_SAM_LOGON_REPLY15 */
+		LOGON_SAM_LOGON_RESPONSE_EX       = 23,  /* was NETLOGON_RESPONSE_FROM_PDC2     */
+		LOGON_SAM_LOGON_PAUSE_RESPONSE_EX = 24,
+		LOGON_SAM_LOGON_USER_UNKNOWN_EX   = 25 /* was NETLOGON_RESPONSE_FROM_PDC_USER */
+	} netlogon_command;
+
+	typedef bitmap samr_AcctFlags samr_AcctFlags;
+
+	/* query to dc hand marshaled, as it has 'optional'
+	 * parts */
+	typedef [nopull,nopush] struct {
+		uint16               request_count;
+		nstring              computer_name;
+		nstring              user_name;
+		astring              mailslot_name;
+		samr_AcctFlags       acct_control;
+		[value(ndr_size_dom_sid0(&sid, ndr->flags))] uint32 sid_size;
+		/* The manual alignment is required because this
+		 * structure is marked flag(NDR_NOALIGN) via the
+		 * nbt_netlogon_packet below.
+		 *
+		 * However, both MUST only be present if sid_size > 0
+		 */
 		[flag(NDR_ALIGN4)]   DATA_BLOB _pad;
+		[subcontext(0),subcontext_size(sid_size)] dom_sid0 sid;
+		netlogon_nt_version_flags               nt_version;
+		uint16               lmnt_token;
+		uint16               lm20_token;
+	} NETLOGON_SAM_LOGON_REQUEST;
+
+	typedef [flag(NDR_NOALIGN),public] struct {
+		netlogon_command command;
+		nstring              server;
+		nstring              user_name;
+		nstring              domain;
+		netlogon_nt_version_flags               nt_version;
+		uint16               lmnt_token;
+		uint16               lm20_token;
+	} NETLOGON_SAM_LOGON_RESPONSE_NT40;
+
+	typedef [flag(NDR_NOALIGN),public] struct {
+		netlogon_command command;
+		nstring              pdc_name;
+		nstring              user_name;
+		nstring              domain_name;
+		GUID                 domain_uuid;
+		GUID                 zero_uuid;
+		nbt_string           forest;
+		nbt_string           dns_domain;
+		nbt_string           pdc_dns_name;
+		ipv4address          pdc_ip;
+		nbt_server_type      server_type;
+		netlogon_nt_version_flags    nt_version;
+		uint16               lmnt_token;
+		uint16               lm20_token;
+	} NETLOGON_SAM_LOGON_RESPONSE;
+
+	/* response from pdc hand marshaled (we have an additional
+	 * function that uses this structure), as it has 'optional'
+	 * parts */
+	typedef [flag(NDR_NOALIGN),public] struct {
+		netlogon_command command;
+		uint16               sbz; /* From the docs */
 		nbt_server_type      server_type;
 		GUID                 domain_uuid;
 		nbt_string           forest;
@@ -430,23 +452,51 @@ interface nbt
 		nbt_string           user_name;
 		nbt_string           server_site;
 		nbt_string           client_site;
-		uint8                dc_sock_addr_size;
-		[subcontext(0),subcontext_size(dc_sock_addr_size)] nbt_dc_sock_addr dc_sock_addr;
-		nbt_netlogon_version nt_version;
+
+		/* Optional on NETLOGON_NT_VERSION_5EX_WITH_IP */
+		[value(ndr_size_nbt_sockaddr(&sockaddr, ndr->flags))] uint8 sockaddr_size;
+		[subcontext(0),subcontext_size(sockaddr_size)] nbt_sockaddr sockaddr;
+
+		/* Optional on NETLOGON_NT_VERSION_WITH_CLOSEST_SITE */
+		nbt_string           next_closest_site;
+
+		netlogon_nt_version_flags               nt_version;
 		uint16               lmnt_token;
 		uint16               lm20_token;
-	} nbt_netlogon_response_from_pdc2;
+	} NETLOGON_SAM_LOGON_RESPONSE_EX;
+
+	/* query for pdc request */
+	typedef struct {
+		astring              computer_name;
+		astring              mailslot_name;
+		[flag(NDR_ALIGN2)]   DATA_BLOB _pad;
+		nstring              unicode_name;
+		netlogon_nt_version_flags               nt_version;
+		uint16               lmnt_token;
+		uint16               lm20_token;
+	} nbt_netlogon_query_for_pdc;
+
+	/* response from pdc */
+	typedef [flag(NDR_NOALIGN),public] struct {
+		netlogon_command command;
+		astring pdc_name;
+		[flag(NDR_ALIGN2)]   DATA_BLOB _pad;
+		nstring              unicode_pdc_name;
+		nstring              domain_name;
+		netlogon_nt_version_flags               nt_version;
+		uint16               lmnt_token;
+		uint16               lm20_token;
+	} nbt_netlogon_response_from_pdc;
 
 	typedef enum netr_SamDatabaseID netr_SamDatabaseID;
 
-	/* announce change to UAS or SAM */
+	/* used to announce SAM changes - MS-NRPC 2.2.1.5.1 */
 	typedef struct {
 		netr_SamDatabaseID   db_index;
 		hyper                serial;
 		NTTIME               timestamp;
-	} nbt_db_change;
+	} nbt_db_change_info;
 
-	/* used to announce SAM changes */
 	typedef struct {
 		uint32           serial_lo;
 		time_t           timestamp;
@@ -458,216 +508,35 @@ interface nbt
 		nstring          unicode_pdc_name;
 		nstring          unicode_domain;
 		uint32           db_count;
-		nbt_db_change    dbchange[db_count];
+		nbt_db_change_info    dbchange[db_count];
 		[value(ndr_size_dom_sid0(&sid, ndr->flags))] uint32 sid_size;
 		[subcontext(0),subcontext_size(sid_size)] dom_sid0 sid;
-		nbt_netlogon_version nt_version;
-		uint16           lmnt_token;
-		uint16           lm20_token;
-	} nbt_netlogon_announce_uas;
+		uint32           message_format_version;
+		uint32           message_token;
+	} NETLOGON_DB_CHANGE;
 
 	typedef [nodiscriminant] union {
-		[case(NETLOGON_QUERY_FOR_PDC)] nbt_netlogon_query_for_pdc pdc;
-		[case(NETLOGON_QUERY_FOR_PDC2)] nbt_netlogon_query_for_pdc2 pdc2;
-		[case(NETLOGON_ANNOUNCE_UAS)] nbt_netlogon_announce_uas uas;
-		[case(NETLOGON_RESPONSE_FROM_PDC)] nbt_netlogon_response_from_pdc response;
-		[case(NETLOGON_RESPONSE_FROM_PDC2)] nbt_netlogon_response_from_pdc2 response2;
-		[case(NETLOGON_RESPONSE_FROM_PDC_USER)] nbt_netlogon_response_from_pdc2 response2;
+		[case(LOGON_SAM_LOGON_REQUEST)]       NETLOGON_SAM_LOGON_REQUEST logon;
+		[case(LOGON_PRIMARY_QUERY)] nbt_netlogon_query_for_pdc pdc;
+		[case(NETLOGON_ANNOUNCE_UAS)] NETLOGON_DB_CHANGE uas;
 	} nbt_netlogon_request;
 
+#if 0
+		[case(NETLOGON_RESPONSE_FROM_PDC)] nbt_netlogon_response_from_pdc response;
+		[case(NETLOGON_RESPONSE_FROM_PDC_USER)] nbt_netlogon_response_from_pdc2 response2;
+
+		[case(LOGON_SAM_LOGON_PAUSE_RESPONSE)] NETLOGON_SAM_LOGON_RESPONSE reply;
+		[case(LOGON_SAM_LOGON_RESPONSE)] NETLOGON_SAM_LOGON_RESPONSE reply;
+		[case(LOGON_SAM_LOGON_USER_UNKNOWN)] NETLOGON_SAM_LOGON_RESPONSE reply;
+		[case(LOGON_SAM_LOGON_RESPONSE_EX)] NETLOGON_SAM_LOGON_RESPONSE_EX reply_ex;
+		[case(LOGON_SAM_LOGON_PAUSE_RESPONSE_EX)] NETLOGON_SAM_LOGON_RESPONSE_EX reply_ex;
+		[case(LOGON_SAM_LOGON_USER_UNKNOWN_EX)] NETLOGON_SAM_LOGON_RESPONSE_EX reply_ex;
+#endif
+
 	typedef [flag(NDR_NOALIGN),public] struct {
-		nbt_netlogon_command command;
+		netlogon_command command;
 		[switch_is(command)] nbt_netlogon_request req;
 	} nbt_netlogon_packet;
-
-	/*******************************************/
-	/* CLDAP netlogon response                 */
-
-	/* note that these structures are very similar to, but not
-	   quite identical to, the netlogon structures above */
-
-	typedef struct {
-		nbt_netlogon_command type;
-		nstring              pdc_name;
-		nstring              user_name;
-		nstring              domain_name;
-		[value(1)] nbt_netlogon_version nt_version;
-		uint16               lmnt_token;
-		uint16               lm20_token;
-	} nbt_cldap_netlogon_1;
-
-	typedef struct {
-		nbt_netlogon_command type;
-		nstring              pdc_name;
-		nstring              user_name;
-		nstring              domain_name;
-		GUID                 domain_uuid;
-		GUID                 unknown_uuid;
-		nbt_string           forest;
-		nbt_string           dns_domain;
-		nbt_string           pdc_dns_name;
-		ipv4address          pdc_ip;
-		nbt_server_type      server_type;
-		[value(3)] nbt_netlogon_version nt_version;
-		uint16               lmnt_token;
-		uint16               lm20_token;
-	} nbt_cldap_netlogon_3;
-
-	typedef [public] struct {
-		nbt_netlogon_command type;
-		uint16               sbz;
-		nbt_server_type      server_type;
-		GUID                 domain_uuid;
-		nbt_string           forest;
-		nbt_string           dns_domain;
-		nbt_string           pdc_dns_name;
-		nbt_string           domain;
-		nbt_string           pdc_name;
-		nbt_string           user_name;
-		nbt_string           server_site;
-		nbt_string           client_site;
-		[value(5)] nbt_netlogon_version nt_version;
-		uint16               lmnt_token;
-		uint16               lm20_token;
-	} nbt_cldap_netlogon_5;
-
-	typedef struct {
-		nbt_netlogon_command type;
-		uint16               sbz;
-		nbt_server_type      server_type;
-		GUID                 domain_uuid;
-		nbt_string           forest;
-		nbt_string           dns_domain;
-		nbt_string           pdc_dns_name;
-		nbt_string           domain;
-		nbt_string           pdc_name;
-		nbt_string           user_name;
-		nbt_string           server_site;
-		nbt_string           client_site;
-		uint8                dc_sock_addr_size;
-		[subcontext(0),subcontext_size(dc_sock_addr_size)] nbt_dc_sock_addr dc_sock_addr;
-		[value(13)] nbt_netlogon_version nt_version;
-		uint16               lmnt_token;
-		uint16               lm20_token;
-	} nbt_cldap_netlogon_13;
-
-	typedef [public] struct {
-		nbt_netlogon_command type;
-		uint16               sbz;
-		nbt_server_type      server_type;
-		GUID                 domain_uuid;
-		nbt_string           forest;
-		nbt_string           dns_domain;
-		nbt_string           pdc_dns_name;
-		nbt_string           domain;
-		nbt_string           pdc_name;
-		nbt_string           user_name;
-		nbt_string           server_site;
-		nbt_string           client_site;
-		nbt_string           next_closest_site;
-		[value(15)] nbt_netlogon_version nt_version;
-		uint16               lmnt_token;
-		uint16               lm20_token;
-	} nbt_cldap_netlogon_15;
-
-	typedef [public] struct {
-		nbt_netlogon_command type;
-		uint16               sbz;
-		nbt_server_type      server_type;
-		GUID                 domain_uuid;
-		nbt_string           forest;
-		nbt_string           dns_domain;
-		nbt_string           pdc_dns_name;
-		nbt_string           domain;
-		nbt_string           pdc_name;
-		nbt_string           user_name;
-		nbt_string           server_site;
-		nbt_string           client_site;
-		uint8                dc_sock_addr_size;
-		[subcontext(0),subcontext_size(dc_sock_addr_size)] nbt_dc_sock_addr dc_sock_addr;
-		nbt_string           next_closest_site;
-		[value(29)] nbt_netlogon_version nt_version;
-		uint16               lmnt_token;
-		uint16               lm20_token;
-	} nbt_cldap_netlogon_29;
-
-	typedef [flag(NDR_NOALIGN),public,nodiscriminant] union {
-		[case(0)]  nbt_cldap_netlogon_1 logon1;
-		[case(1)]  nbt_cldap_netlogon_1 logon1;
-		[case(2)]  nbt_cldap_netlogon_3 logon3;
-		[case(3)]  nbt_cldap_netlogon_3 logon3;
-		[case(4)]  nbt_cldap_netlogon_5 logon5;
-		[case(5)]  nbt_cldap_netlogon_5 logon5;
-		[case(6)]  nbt_cldap_netlogon_5 logon5;
-		[case(7)]  nbt_cldap_netlogon_5 logon5;
-		[case(8)]  nbt_cldap_netlogon_13 logon13;
-		[case(9)]  nbt_cldap_netlogon_13 logon13;
-		[case(10)] nbt_cldap_netlogon_13 logon13;
-		[case(11)] nbt_cldap_netlogon_13 logon13;
-		[case(12)] nbt_cldap_netlogon_13 logon13;
-		[case(13)] nbt_cldap_netlogon_13 logon13;
-		[case(14)] nbt_cldap_netlogon_13 logon13;
-		[case(15)] nbt_cldap_netlogon_13 logon13;
-		[case(16)] nbt_cldap_netlogon_1 logon1;
-		[case(17)] nbt_cldap_netlogon_1 logon1;
-		[case(18)] nbt_cldap_netlogon_3 logon3;
-		[case(19)] nbt_cldap_netlogon_3 logon3;
-		[case(20)] nbt_cldap_netlogon_15 logon15;
-		[case(21)] nbt_cldap_netlogon_15 logon15;
-		[case(22)] nbt_cldap_netlogon_15 logon15;
-		[case(23)] nbt_cldap_netlogon_15 logon15;
-		[case(24)] nbt_cldap_netlogon_15 logon15;
-		[case(25)] nbt_cldap_netlogon_15 logon15;
-		[case(26)] nbt_cldap_netlogon_15 logon15;
-		[case(27)] nbt_cldap_netlogon_15 logon15;
-		[case(28)] nbt_cldap_netlogon_15 logon15;
-		[case(29)] nbt_cldap_netlogon_29 logon29;
-		[case(30)] nbt_cldap_netlogon_29 logon29;
-		[case(31)] nbt_cldap_netlogon_29 logon29;
-	} nbt_cldap_netlogon;
-
-	/*******************************************/
-	/* \MAILSLOT\NET\NTLOGON mailslot requests */
-	typedef enum {
-		NTLOGON_SAM_LOGON         = 0x12,
-		NTLOGON_SAM_LOGON_REPLY   = 0x13,
-		NTLOGON_SAM_LOGON_REPLY15 = 0x15,
-		NTLOGON_RESPONSE_FROM_PDC2 = 0x17
-	} nbt_ntlogon_command;
-
-	typedef struct {
-		uint16               request_count;
-		nstring              computer_name;
-		nstring              user_name;
-		astring              mailslot_name;
-		samr_AcctFlags       acct_control;
-		[value(ndr_size_dom_sid0(&sid, ndr->flags))] uint32 sid_size;
-		[subcontext(0),subcontext_size(sid_size)] dom_sid0 sid;
-		nbt_netlogon_version nt_version;
-		uint16               lmnt_token;
-		uint16               lm20_token;
-	} nbt_ntlogon_sam_logon;
-
-	typedef struct {
-		nstring              server;
-		nstring              user_name;
-		nstring              domain;
-		nbt_netlogon_version nt_version;
-		uint16               lmnt_token;
-		uint16               lm20_token;
-	} nbt_ntlogon_sam_logon_reply;
-
-	typedef [nodiscriminant] union {
-		[case(NTLOGON_SAM_LOGON)]       nbt_ntlogon_sam_logon logon;
-		[case(NTLOGON_SAM_LOGON_REPLY)] nbt_ntlogon_sam_logon_reply reply;
-		[case(NTLOGON_SAM_LOGON_REPLY15)] nbt_ntlogon_sam_logon_reply reply;
-		[case(NTLOGON_RESPONSE_FROM_PDC2)] nbt_netlogon_response_from_pdc2 reply2;
-	} nbt_ntlogon_request;
-
-	typedef [flag(NDR_NOALIGN),public] struct {
-		nbt_ntlogon_command command;
-		[switch_is(command)] nbt_ntlogon_request req;
-	} nbt_ntlogon_packet;
 
 	/********************************************************/
 	/* \MAILSLOT\BROWSE mailslot requests			*/
