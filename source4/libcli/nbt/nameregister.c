@@ -161,7 +161,7 @@ struct register_bcast_state {
 */
 static void name_register_bcast_handler(struct nbt_name_request *req)
 {
-	struct composite_context *c = talloc_get_type(req->async.private, struct composite_context);
+	struct composite_context *c = talloc_get_type(req->async.private_data, struct composite_context);
 	struct register_bcast_state *state = talloc_get_type(c->private_data, struct register_bcast_state);
 	NTSTATUS status;
 
@@ -183,7 +183,7 @@ static void name_register_bcast_handler(struct nbt_name_request *req)
 			c->status = NT_STATUS_NO_MEMORY;
 		} else {
 			state->req->async.fn      = name_register_bcast_handler;
-			state->req->async.private = c;
+			state->req->async.private_data = c;
 		}
 	} else if (!NT_STATUS_IS_OK(status)) {
 		c->state = COMPOSITE_STATE_ERROR;
@@ -241,7 +241,7 @@ _PUBLIC_ struct composite_context *nbt_name_register_bcast_send(struct nbt_name_
 	if (state->req == NULL) goto failed;
 
 	state->req->async.fn      = name_register_bcast_handler;
-	state->req->async.private = c;
+	state->req->async.private_data = c;
 
 	c->private_data	= state;
 	c->state	= COMPOSITE_STATE_IN_PROGRESS;
@@ -297,7 +297,7 @@ struct register_wins_state {
 */
 static void name_register_wins_handler(struct nbt_name_request *req)
 {
-	struct composite_context *c = talloc_get_type(req->async.private, 
+	struct composite_context *c = talloc_get_type(req->async.private_data,
 						      struct composite_context);
 	struct register_wins_state *state = talloc_get_type(c->private_data, 
 							    struct register_wins_state);
@@ -322,7 +322,7 @@ static void name_register_wins_handler(struct nbt_name_request *req)
 			c->status = NT_STATUS_NO_MEMORY;
 		} else {
 			state->req->async.fn      = name_register_wins_handler;
-			state->req->async.private = c;
+			state->req->async.private_data = c;
 		}
 	} else if (!NT_STATUS_IS_OK(status)) {
 		c->state = COMPOSITE_STATE_ERROR;
@@ -338,7 +338,7 @@ static void name_register_wins_handler(struct nbt_name_request *req)
 				c->status = NT_STATUS_NO_MEMORY;
 			} else {
 				state->req->async.fn      = name_register_wins_handler;
-				state->req->async.private = c;
+				state->req->async.private_data = c;
 			}
 		} else {
 			c->state = COMPOSITE_STATE_DONE;
@@ -399,7 +399,7 @@ _PUBLIC_ struct composite_context *nbt_name_register_wins_send(struct nbt_name_s
 	if (state->req == NULL) goto failed;
 
 	state->req->async.fn      = name_register_wins_handler;
-	state->req->async.private = c;
+	state->req->async.private_data = c;
 
 	c->private_data	= state;
 	c->state	= COMPOSITE_STATE_IN_PROGRESS;

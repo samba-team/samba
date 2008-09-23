@@ -9457,7 +9457,7 @@ static void test_conflict_owned_active_vs_replica_handler_query(struct nbt_name_
 	struct nbt_name *name;
 	struct nbt_name_packet *rep_packet;
 	struct test_conflict_owned_active_vs_replica_struct *rec = 
-		(struct test_conflict_owned_active_vs_replica_struct *)nbtsock->incoming.private;
+		(struct test_conflict_owned_active_vs_replica_struct *)nbtsock->incoming.private_data;
 
 	_NBT_ASSERT(req_packet->qdcount, 1);
 	_NBT_ASSERT(req_packet->questions[0].question_type, NBT_QTYPE_NETBIOS);
@@ -9556,7 +9556,7 @@ static void test_conflict_owned_active_vs_replica_handler_release(
 	struct nbt_name *name;
 	struct nbt_name_packet *rep_packet;
 	struct test_conflict_owned_active_vs_replica_struct *rec = 
-		(struct test_conflict_owned_active_vs_replica_struct *)nbtsock->incoming.private;
+		(struct test_conflict_owned_active_vs_replica_struct *)nbtsock->incoming.private_data;
 
 	_NBT_ASSERT(req_packet->qdcount, 1);
 	_NBT_ASSERT(req_packet->questions[0].question_type, NBT_QTYPE_NETBIOS);
@@ -9610,7 +9610,7 @@ static void test_conflict_owned_active_vs_replica_handler(struct nbt_name_socket
 							  struct socket_address *src)
 {
 	struct test_conflict_owned_active_vs_replica_struct *rec = 
-		(struct test_conflict_owned_active_vs_replica_struct *)nbtsock->incoming.private;
+		(struct test_conflict_owned_active_vs_replica_struct *)nbtsock->incoming.private_data;
 
 	rec->defend.ret = false;
 

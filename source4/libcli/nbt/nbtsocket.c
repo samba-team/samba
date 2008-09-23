@@ -488,7 +488,7 @@ _PUBLIC_ NTSTATUS nbt_set_incoming_handler(struct nbt_name_socket *nbtsock,
 				  void *private)
 {
 	nbtsock->incoming.handler = handler;
-	nbtsock->incoming.private = private;
+	nbtsock->incoming.private_data = private;
 	EVENT_FD_READABLE(nbtsock->fde);
 	return NT_STATUS_OK;
 }

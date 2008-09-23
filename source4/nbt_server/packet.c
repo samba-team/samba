@@ -47,7 +47,7 @@ bool nbtd_self_packet_and_bcast(struct nbt_name_socket *nbtsock,
 				struct nbt_name_packet *packet, 
 				const struct socket_address *src)
 {
-	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private, 
+	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private_data,
 						       struct nbtd_interface);
 
 	/* if its not a broadcast then its not considered a self packet */
@@ -74,7 +74,7 @@ bool nbtd_self_packet(struct nbt_name_socket *nbtsock,
 		      struct nbt_name_packet *packet, 
 		      const struct socket_address *src)
 {
-	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private, 
+	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private_data,
 						       struct nbtd_interface);
 	struct nbtd_server *nbtsrv = iface->nbtsrv;
 	
@@ -106,7 +106,7 @@ void nbtd_name_query_reply(struct nbt_name_socket *nbtsock,
 {
 	struct nbt_name_packet *packet;
 	size_t num_addresses = str_list_length(addresses);
-	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private, 
+	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private_data,
 						       struct nbtd_interface);
 	struct nbtd_server *nbtsrv = iface->nbtsrv;
 	int i;
@@ -168,7 +168,7 @@ void nbtd_negative_name_query_reply(struct nbt_name_socket *nbtsock,
 {
 	struct nbt_name_packet *packet;
 	struct nbt_name *name = &request_packet->questions[0].name;
-	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private, 
+	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private_data,
 						       struct nbtd_interface);
 	struct nbtd_server *nbtsrv = iface->nbtsrv;
 
@@ -212,7 +212,7 @@ void nbtd_name_registration_reply(struct nbt_name_socket *nbtsock,
 {
 	struct nbt_name_packet *packet;
 	struct nbt_name *name = &request_packet->questions[0].name;
-	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private, 
+	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private_data,
 						       struct nbtd_interface);
 	struct nbtd_server *nbtsrv = iface->nbtsrv;
 
@@ -260,7 +260,7 @@ void nbtd_name_release_reply(struct nbt_name_socket *nbtsock,
 {
 	struct nbt_name_packet *packet;
 	struct nbt_name *name = &request_packet->questions[0].name;
-	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private, 
+	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private_data,
 						       struct nbtd_interface);
 	struct nbtd_server *nbtsrv = iface->nbtsrv;
 
@@ -306,7 +306,7 @@ void nbtd_wack_reply(struct nbt_name_socket *nbtsock,
 {
 	struct nbt_name_packet *packet;
 	struct nbt_name *name = &request_packet->questions[0].name;
-	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private, 
+	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private_data,
 						       struct nbtd_interface);
 	struct nbtd_server *nbtsrv = iface->nbtsrv;
 

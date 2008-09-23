@@ -83,7 +83,7 @@ struct nbt_name_request {
 	/* information on what to do on completion */
 	struct {
 		void (*fn)(struct nbt_name_request *);
-		void *private;
+		void *private_data;
 	} async;
 };
 
@@ -113,14 +113,14 @@ struct nbt_name_socket {
 	struct {
 		void (*handler)(struct nbt_name_socket *, struct nbt_name_packet *, 
 				struct socket_address *);
-		void *private;
+		void *private_data;
 	} incoming;
 
 	/* what to do with unexpected replies */
 	struct {
 		void (*handler)(struct nbt_name_socket *, struct nbt_name_packet *, 
 				struct socket_address *);
-		void *private;
+		void *private_data;
 	} unexpected;
 };
 
@@ -323,7 +323,7 @@ NTSTATUS nbt_name_refresh_recv(struct nbt_name_request *req,
 NTSTATUS nbt_set_incoming_handler(struct nbt_name_socket *nbtsock,
 				  void (*handler)(struct nbt_name_socket *, struct nbt_name_packet *, 
 						  struct socket_address *),
-				  void *private);
+				  void *private_data);
 NTSTATUS nbt_name_reply_send(struct nbt_name_socket *nbtsock, 
 			     struct socket_address *dest,
 			     struct nbt_name_packet *request);

@@ -37,7 +37,7 @@ struct wins_challenge_state {
 
 static void wins_challenge_handler(struct nbt_name_request *req)
 {
-	struct composite_context *ctx = talloc_get_type(req->async.private, struct composite_context);
+	struct composite_context *ctx = talloc_get_type(req->async.private_data, struct composite_context);
 	struct wins_challenge_state *state = talloc_get_type(ctx->private_data, struct wins_challenge_state);
 
 	ctx->status = nbt_name_query_recv(req, state, &state->query);
@@ -123,7 +123,7 @@ struct composite_context *wins_challenge_send(TALLOC_CTX *mem_ctx, struct wins_c
 	if (req == NULL) goto failed;
 
 	req->async.fn = wins_challenge_handler;
-	req->async.private = result;
+	req->async.private_data = result;
 
 	return result;
 failed:
@@ -151,7 +151,7 @@ struct wins_release_demand_state {
 
 static void wins_release_demand_handler(struct nbt_name_request *req)
 {
-	struct composite_context *ctx = talloc_get_type(req->async.private, struct composite_context);
+	struct composite_context *ctx = talloc_get_type(req->async.private_data, struct composite_context);
 	struct wins_release_demand_state *state = talloc_get_type(ctx->private_data, struct wins_release_demand_state);
 
 	ctx->status = nbt_name_release_recv(req, state, &state->release);
@@ -240,7 +240,7 @@ static struct composite_context *wins_release_demand_send(TALLOC_CTX *mem_ctx, s
 	if (req == NULL) goto failed;
 
 	req->async.fn = wins_release_demand_handler;
-	req->async.private = result;
+	req->async.private_data = result;
 
 	return result;
 failed:

@@ -46,7 +46,7 @@ struct nbtlist_state {
 */
 static void nbtlist_handler(struct nbt_name_request *req)
 {
-	struct composite_context *c = talloc_get_type(req->async.private, 
+	struct composite_context *c = talloc_get_type(req->async.private_data,
 						      struct composite_context);
 	struct nbtlist_state *state = talloc_get_type(c->private_data, struct nbtlist_state);
 	struct nbt_name_query *q;
@@ -169,7 +169,7 @@ struct composite_context *resolve_name_nbtlist_send(TALLOC_CTX *mem_ctx,
 		if (composite_nomem(state->queries[i], c)) return c;
 
 		state->queries[i]->async.fn      = nbtlist_handler;
-		state->queries[i]->async.private = c;
+		state->queries[i]->async.private_data = c;
 	}
 
 	return c;
