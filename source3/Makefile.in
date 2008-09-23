@@ -985,6 +985,14 @@ IDMAP_HASH_OBJ = \
 		winbindd/idmap_hash/idmap_hash.o \
 		winbindd/idmap_hash/mapfile.o
 
+IDMAP_ADEX_OBJ = \
+		winbindd/idmap_adex/idmap_adex.o \
+		winbindd/idmap_adex/cell_util.o \
+		winbindd/idmap_adex/likewise_cell.o \
+		winbindd/idmap_adex/provider_unified.o \
+		winbindd/idmap_adex/gc_util.o \
+		winbindd/idmap_adex/domain_util.o
+
 WINBINDD_OBJ1 = \
 		winbindd/winbindd.o       \
 		winbindd/winbindd_user.o  \
@@ -2217,6 +2225,10 @@ bin/ad.@SHLIBEXT@: $(BINARY_PREREQS) winbindd/idmap_ad.o
 bin/hash.@SHLIBEXT@: $(BINARY_PREREQS) $(IDMAP_HASH_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD_MODULE) $(IDMAP_HASH_OBJ)
+
+bin/adex.@SHLIBEXT@: $(BINARY_PREREQS) $(IDMAP_ADEX_OBJ)
+	@echo "Building plugin $@"
+	@$(SHLD_MODULE) $(IDMAP_ADEX_OBJ)
 
 bin/tdb2.@SHLIBEXT@: $(BINARY_PREREQS) winbindd/idmap_tdb2.o
 	@echo "Building plugin $@"
