@@ -97,6 +97,7 @@ size_t count_chars_w(const char *s, char c);
 void strupper_m(char *s);
 void strlower_m(char *s);
 char *strupper_talloc(TALLOC_CTX *ctx, const char *src);
+char *talloc_strdup_upper(TALLOC_CTX *ctx, const char *src);
 char *strupper_talloc_n(TALLOC_CTX *ctx, const char *src, size_t n);
 char *strlower_talloc(TALLOC_CTX *ctx, const char *src);
 bool strhasupper(const char *string);
