@@ -2649,10 +2649,10 @@ include/build_env.h: script/build_env.sh
 proto::
 
 etags::
-	etags `find $(srcdir) -name "*.[ch]"`
+	etags `find $(srcdir)/.. -name "*.[ch]"`
 
 ctags::
-	ctags `find $(srcdir) -name "*.[ch]"`
+	ctags `find $(srcdir)/.. -name "*.[ch]"`
 
 realclean:: clean
 	-rm -f config.log bin/.dummy script/findsmb script/gen-8bit-gap.sh
