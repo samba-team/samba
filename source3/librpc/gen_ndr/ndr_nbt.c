@@ -1608,16 +1608,16 @@ _PUBLIC_ void ndr_print_nbt_netlogon_version(struct ndr_print *ndr, const char *
 		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_LITTLE_ENDIAN);
 		ndr_print_uint32(ndr, name, r);
 		ndr->depth++;
-		ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETLOGON_VERSION_1", NETLOGON_VERSION_1, r);
-		ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETLOGON_VERSION_5", NETLOGON_VERSION_5, r);
-		ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETLOGON_VERSION_5EX", NETLOGON_VERSION_5EX, r);
-		ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETLOGON_VERSION_5EX_WITH_IP", NETLOGON_VERSION_5EX_WITH_IP, r);
-		ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETLOGON_VERSION_WITH_CLOSEST_SITE", NETLOGON_VERSION_WITH_CLOSEST_SITE, r);
-		ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETLOGON_VERSION_AVOID_NT4_EMUL", NETLOGON_VERSION_AVOID_NT4_EMUL, r);
-		ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETLOGON_VERSION_PDC", NETLOGON_VERSION_PDC, r);
-		ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETLOGON_VERSION_IP", NETLOGON_VERSION_IP, r);
-		ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETLOGON_VERSION_LOCAL", NETLOGON_VERSION_LOCAL, r);
-		ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETLOGON_VERSION_GC", NETLOGON_VERSION_GC, r);
+		ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETLOGON_NT_VERSION_1", NETLOGON_NT_VERSION_1, r);
+		ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETLOGON_NT_VERSION_5", NETLOGON_NT_VERSION_5, r);
+		ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETLOGON_NT_VERSION_5EX", NETLOGON_NT_VERSION_5EX, r);
+		ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETLOGON_NT_VERSION_5EX_WITH_IP", NETLOGON_NT_VERSION_5EX_WITH_IP, r);
+		ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETLOGON_NT_VERSION_WITH_CLOSEST_SITE", NETLOGON_NT_VERSION_WITH_CLOSEST_SITE, r);
+		ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETLOGON_NT_VERSION_AVIOD_NT4EMUL", NETLOGON_NT_VERSION_AVIOD_NT4EMUL, r);
+		ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETLOGON_NT_VERSION_PDC", NETLOGON_NT_VERSION_PDC, r);
+		ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETLOGON_NT_VERSION_IP", NETLOGON_NT_VERSION_IP, r);
+		ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETLOGON_NT_VERSION_LOCAL", NETLOGON_NT_VERSION_LOCAL, r);
+		ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETLOGON_NT_VERSION_GC", NETLOGON_NT_VERSION_GC, r);
 		ndr->depth--;
 		ndr->flags = _flags_save_BITMAP;
 	}
