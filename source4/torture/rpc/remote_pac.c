@@ -116,16 +116,12 @@ static bool test_PACVerify(struct torture_context *tctx,
 			torture_assert_ntstatus_ok(tctx, status, "gensec_update (client) failed");
 		}
 
-		if (client_to_server.length == 0) {
-			break;
-		}
-
 		status = gensec_update(gensec_server_context, tmp_ctx, client_to_server, &server_to_client);
 		if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {;
 			torture_assert_ntstatus_ok(tctx, status, "gensec_update (server) failed");
 		}
 
-		if (server_to_client.length == 0) {
+		if (NT_STATUS_IS_OK(status)) {
 			break;
 		}
 	} while (1);
