@@ -167,7 +167,7 @@ struct likewise_cell *cell_list_head(void);
 bool cell_list_add(struct likewise_cell *cell);
 bool cell_list_remove(struct likewise_cell * cell);
 
-void cell_list_destroy();
+void cell_list_destroy(void);
 void cell_destroy(struct likewise_cell *c);
 void cell_set_forest_searches(struct likewise_cell *c,
 				bool search);

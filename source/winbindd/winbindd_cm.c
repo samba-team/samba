@@ -1080,7 +1080,7 @@ static bool dcip_to_name(TALLOC_CTX *mem_ctx,
 		fstring name )
 {
 	struct ip_service ip_list;
-	uint32_t nt_version = NETLOGON_VERSION_1;
+	uint32_t nt_version = NETLOGON_NT_VERSION_1;
 
 	ip_list.ss = *pss;
 	ip_list.port = 0;

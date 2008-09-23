@@ -43,7 +43,7 @@ static const char *assume_own_realm(struct net_context *c)
 static int net_ads_cldap_netlogon(struct net_context *c, ADS_STRUCT *ads)
 {
 	char addr[INET6_ADDRSTRLEN];
-	struct nbt_cldap_netlogon_5 reply;
+	struct NETLOGON_SAM_LOGON_RESPONSE_EX reply;
 
 	print_sockaddr(addr, sizeof(addr), &ads->ldap.ss);
 	if ( !ads_cldap_netlogon_5(talloc_tos(), addr, ads->server.realm, &reply ) ) {
@@ -55,7 +55,7 @@ static int net_ads_cldap_netlogon(struct net_context *c, ADS_STRUCT *ads)
 		addr);
 
 	d_printf("Response Type: ");
-	switch (reply.type) {
+	switch (reply.command) {
 	case SAMLOGON_AD_UNK_R:
 		d_printf("SAMLOGON\n");
 		break;
@@ -63,7 +63,7 @@ static int net_ads_cldap_netlogon(struct net_context *c, ADS_STRUCT *ads)
 		d_printf("SAMLOGON_USER\n");
 		break;
 	default:
-		d_printf("0x%x\n", reply.type);
+		d_printf("0x%x\n", reply.command);
 		break;
 	}
 
@@ -359,7 +359,7 @@ static int net_ads_workgroup(struct net_context *c, int argc, const char **argv)
 {
 	ADS_STRUCT *ads;
 	char addr[INET6_ADDRSTRLEN];
-	struct nbt_cldap_netlogon_5 reply;
+	struct NETLOGON_SAM_LOGON_RESPONSE_EX reply;
 
 	if (c->display_usage) {
 		d_printf("Usage:\n"
