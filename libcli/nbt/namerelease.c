@@ -1,27 +1,27 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    send out a name release request
 
    Copyright (C) Andrew Tridgell 2005
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "includes.h"
-#include "libcli/nbt/libnbt.h"
-#include "libcli/nbt/nbt_proto.h"
+#include "../libcli/nbt/libnbt.h"
+#include "../libcli/nbt/nbt_proto.h"
 #include "lib/socket/socket.h"
 #include "param/param.h"
 
@@ -64,10 +64,10 @@ _PUBLIC_ struct nbt_name_request *nbt_name_release_send(struct nbt_name_socket *
 								     struct nbt_rdata_address, 1);
 	if (packet->additional[0].rdata.netbios.addresses == NULL) goto failed;
 	packet->additional[0].rdata.netbios.addresses[0].nb_flags = io->in.nb_flags;
-	packet->additional[0].rdata.netbios.addresses[0].ipaddr = 
+	packet->additional[0].rdata.netbios.addresses[0].ipaddr =
 		talloc_strdup(packet->additional, io->in.address);
 
-	dest = socket_address_from_strings(packet, nbtsock->sock->backend_name, 
+	dest = socket_address_from_strings(packet, nbtsock->sock->backend_name,
 					   io->in.dest_addr, io->in.dest_port);
 	if (dest == NULL) goto failed;
 	req = nbt_name_request_send(nbtsock, dest, packet,
@@ -79,13 +79,13 @@ _PUBLIC_ struct nbt_name_request *nbt_name_release_send(struct nbt_name_socket *
 
 failed:
 	talloc_free(packet);
-	return NULL;	
+	return NULL;
 }
 
 /*
   wait for a release reply
 */
-_PUBLIC_ NTSTATUS nbt_name_release_recv(struct nbt_name_request *req, 
+_PUBLIC_ NTSTATUS nbt_name_release_recv(struct nbt_name_request *req,
 			       TALLOC_CTX *mem_ctx, struct nbt_name_release *io)
 {
 	NTSTATUS status;
@@ -97,7 +97,7 @@ _PUBLIC_ NTSTATUS nbt_name_release_recv(struct nbt_name_request *req,
 		talloc_free(req);
 		return status;
 	}
-	
+
 	packet = req->replies[0].packet;
 	io->out.reply_from = talloc_steal(mem_ctx, req->replies[0].dest->addr);
 
@@ -114,7 +114,7 @@ _PUBLIC_ NTSTATUS nbt_name_release_recv(struct nbt_name_request *req,
 		talloc_free(req);
 		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
-	io->out.reply_addr = talloc_steal(mem_ctx, 
+	io->out.reply_addr = talloc_steal(mem_ctx,
 					  packet->answers[0].rdata.netbios.addresses[0].ipaddr);
 	talloc_steal(mem_ctx, io->out.name.name);
 	talloc_steal(mem_ctx, io->out.name.scope);
@@ -127,7 +127,7 @@ _PUBLIC_ NTSTATUS nbt_name_release_recv(struct nbt_name_request *req,
 /*
   synchronous name release request
 */
-_PUBLIC_ NTSTATUS nbt_name_release(struct nbt_name_socket *nbtsock, 
+_PUBLIC_ NTSTATUS nbt_name_release(struct nbt_name_socket *nbtsock,
 			   TALLOC_CTX *mem_ctx, struct nbt_name_release *io)
 {
 	struct nbt_name_request *req = nbt_name_release_send(nbtsock, io);

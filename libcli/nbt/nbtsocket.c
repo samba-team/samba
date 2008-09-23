@@ -1,20 +1,20 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    low level socket handling for nbt requests
 
    Copyright (C) Andrew Tridgell 2005
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -22,7 +22,7 @@
 #include "includes.h"
 #include "lib/events/events.h"
 #include "lib/util/dlinklist.h"
-#include "libcli/nbt/libnbt.h"
+#include "../libcli/nbt/libnbt.h"
 #include "lib/socket/socket.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
 #include "param/param.h"
@@ -33,7 +33,7 @@
   destroy a pending request
 */
 static int nbt_name_request_destructor(struct nbt_name_request *req)
-{	
+{
 	if (req->state == NBT_REQUEST_SEND) {
 		DLIST_REMOVE(req->nbtsock->send_queue, req);
 	}
@@ -51,7 +51,7 @@ static int nbt_name_request_destructor(struct nbt_name_request *req)
 	if (req->nbtsock->send_queue == NULL) {
 		EVENT_FD_NOT_WRITEABLE(req->nbtsock->fde);
 	}
-	if (req->nbtsock->num_pending == 0 && 
+	if (req->nbtsock->num_pending == 0 &&
 	    req->nbtsock->incoming.handler == NULL) {
 		EVENT_FD_NOT_READABLE(req->nbtsock->fde);
 	}
@@ -70,11 +70,11 @@ static void nbt_name_socket_send(struct nbt_name_socket *nbtsock)
 
 	while ((req = nbtsock->send_queue)) {
 		size_t len;
-		
+
 		len = req->encoded.length;
-		status = socket_sendto(nbtsock->sock, &req->encoded, &len, 
+		status = socket_sendto(nbtsock->sock, &req->encoded, &len,
 				       req->dest);
-		if (NT_STATUS_IS_ERR(status)) goto failed;		
+		if (NT_STATUS_IS_ERR(status)) goto failed;
 
 		if (!NT_STATUS_IS_OK(status)) {
 			talloc_free(tmp_ctx);
@@ -116,17 +116,17 @@ failed:
 static void nbt_name_socket_timeout(struct event_context *ev, struct timed_event *te,
 				    struct timeval t, void *private)
 {
-	struct nbt_name_request *req = talloc_get_type(private, 
+	struct nbt_name_request *req = talloc_get_type(private,
 						       struct nbt_name_request);
 
 	if (req->num_retries != 0) {
 		req->num_retries--;
-		req->te = event_add_timed(req->nbtsock->event_ctx, req, 
+		req->te = event_add_timed(req->nbtsock->event_ctx, req,
 					  timeval_add(&t, req->timeout, 0),
 					  nbt_name_socket_timeout, req);
 		if (req->state != NBT_REQUEST_SEND) {
 			req->state = NBT_REQUEST_SEND;
-			DLIST_ADD_END(req->nbtsock->send_queue, req, 
+			DLIST_ADD_END(req->nbtsock->send_queue, req,
 				      struct nbt_name_request *);
 		}
 		EVENT_FD_WRITEABLE(req->nbtsock->fde);
@@ -201,7 +201,7 @@ static void nbt_name_socket_recv(struct nbt_name_socket *nbtsock)
 	}
 
 	if (DEBUGLVL(10)) {
-		DEBUG(10,("Received nbt packet of length %d from %s:%d\n", 
+		DEBUG(10,("Received nbt packet of length %d from %s:%d\n",
 			  (int)blob.length, src->addr, src->port));
 		NDR_PRINT_DEBUG(nbt_name_packet, packet);
 	}
@@ -217,7 +217,7 @@ static void nbt_name_socket_recv(struct nbt_name_socket *nbtsock)
 	}
 
 	/* find the matching request */
-	req = (struct nbt_name_request *)idr_find(nbtsock->idr, 
+	req = (struct nbt_name_request *)idr_find(nbtsock->idr,
 						  packet->name_trn_id);
 	if (req == NULL) {
 		if (nbtsock->unexpected.handler) {
@@ -245,15 +245,15 @@ static void nbt_name_socket_recv(struct nbt_name_socket *nbtsock)
 		req->num_retries   = 0;
 		req->received_wack = true;
 		/* although there can be a timeout in the packet, w2k3 screws it up,
-		   so better to set it ourselves */		   
+		   so better to set it ourselves */
 		req->timeout = lp_parm_int(global_loadparm, NULL, "nbt", "wack_timeout", 30);
-		req->te = event_add_timed(req->nbtsock->event_ctx, req, 
+		req->te = event_add_timed(req->nbtsock->event_ctx, req,
 					  timeval_current_ofs(req->timeout, 0),
 					  nbt_name_socket_timeout, req);
 		talloc_free(tmp_ctx);
 		return;
 	}
-	
+
 
 	req->replies = talloc_realloc(req, req->replies, struct nbt_name_reply, req->num_replies+1);
 	if (req->replies == NULL) {
@@ -293,11 +293,11 @@ done:
 static void nbt_name_socket_handler(struct event_context *ev, struct fd_event *fde,
 				    uint16_t flags, void *private)
 {
-	struct nbt_name_socket *nbtsock = talloc_get_type(private, 
+	struct nbt_name_socket *nbtsock = talloc_get_type(private,
 							  struct nbt_name_socket);
 	if (flags & EVENT_FD_WRITE) {
 		nbt_name_socket_send(nbtsock);
-	} 
+	}
 	if (flags & EVENT_FD_READ) {
 		nbt_name_socket_recv(nbtsock);
 	}
@@ -308,7 +308,7 @@ static void nbt_name_socket_handler(struct event_context *ev, struct fd_event *f
   initialise a nbt_name_socket. The event_ctx is optional, if provided
   then operations will use that event context
 */
-_PUBLIC_ struct nbt_name_socket *nbt_name_socket_init(TALLOC_CTX *mem_ctx, 
+_PUBLIC_ struct nbt_name_socket *nbt_name_socket_init(TALLOC_CTX *mem_ctx,
 					     struct event_context *event_ctx,
 					     struct smb_iconv_convenience *iconv_convenience)
 {
@@ -337,10 +337,10 @@ _PUBLIC_ struct nbt_name_socket *nbt_name_socket_init(TALLOC_CTX *mem_ctx,
 	nbtsock->unexpected.handler = NULL;
 	nbtsock->iconv_convenience = iconv_convenience;
 
-	nbtsock->fde = event_add_fd(nbtsock->event_ctx, nbtsock, 
+	nbtsock->fde = event_add_fd(nbtsock->event_ctx, nbtsock,
 				    socket_get_fd(nbtsock->sock), 0,
 				    nbt_name_socket_handler, nbtsock);
-	
+
 	return nbtsock;
 
 failed:
@@ -351,7 +351,7 @@ failed:
 /*
   send off a nbt name request
 */
-struct nbt_name_request *nbt_name_request_send(struct nbt_name_socket *nbtsock, 
+struct nbt_name_request *nbt_name_request_send(struct nbt_name_socket *nbtsock,
 					       struct socket_address *dest,
 					       struct nbt_name_packet *request,
 					       int timeout, int retries,
@@ -378,7 +378,7 @@ struct nbt_name_request *nbt_name_request_send(struct nbt_name_socket *nbtsock,
 		id = idr_get_new_random(req->nbtsock->idr, req, UINT16_MAX);
 	} else {
 		if (idr_find(req->nbtsock->idr, request->name_trn_id)) goto failed;
-		id = idr_get_new_above(req->nbtsock->idr, req, request->name_trn_id, 
+		id = idr_get_new_above(req->nbtsock->idr, req, request->name_trn_id,
 				       UINT16_MAX);
 	}
 	if (id == -1) goto failed;
@@ -386,13 +386,13 @@ struct nbt_name_request *nbt_name_request_send(struct nbt_name_socket *nbtsock,
 	request->name_trn_id = id;
 	req->name_trn_id     = id;
 
-	req->te = event_add_timed(nbtsock->event_ctx, req, 
+	req->te = event_add_timed(nbtsock->event_ctx, req,
 				  timeval_current_ofs(req->timeout, 0),
 				  nbt_name_socket_timeout, req);
-	
-	talloc_set_destructor(req, nbt_name_request_destructor);	
 
-	ndr_err = ndr_push_struct_blob(&req->encoded, req, 
+	talloc_set_destructor(req, nbt_name_request_destructor);
+
+	ndr_err = ndr_push_struct_blob(&req->encoded, req,
 				       req->nbtsock->iconv_convenience,
 				       request,
 				       (ndr_push_flags_fn_t)ndr_push_nbt_name_packet);
@@ -401,7 +401,7 @@ struct nbt_name_request *nbt_name_request_send(struct nbt_name_socket *nbtsock,
 	DLIST_ADD_END(nbtsock->send_queue, req, struct nbt_name_request *);
 
 	if (DEBUGLVL(10)) {
-		DEBUG(10,("Queueing nbt packet to %s:%d\n", 
+		DEBUG(10,("Queueing nbt packet to %s:%d\n",
 			  req->dest->addr, req->dest->port));
 		NDR_PRINT_DEBUG(nbt_name_packet, request);
 	}
@@ -419,7 +419,7 @@ failed:
 /*
   send off a nbt name reply
 */
-_PUBLIC_ NTSTATUS nbt_name_reply_send(struct nbt_name_socket *nbtsock, 
+_PUBLIC_ NTSTATUS nbt_name_reply_send(struct nbt_name_socket *nbtsock,
 			     struct socket_address *dest,
 			     struct nbt_name_packet *request)
 {
@@ -435,13 +435,13 @@ _PUBLIC_ NTSTATUS nbt_name_reply_send(struct nbt_name_socket *nbtsock,
 	req->state     = NBT_REQUEST_SEND;
 	req->is_reply = true;
 
-	talloc_set_destructor(req, nbt_name_request_destructor);	
+	talloc_set_destructor(req, nbt_name_request_destructor);
 
 	if (DEBUGLVL(10)) {
-		NDR_PRINT_DEBUG(nbt_name_packet, request);		
+		NDR_PRINT_DEBUG(nbt_name_packet, request);
 	}
 
-	ndr_err = ndr_push_struct_blob(&req->encoded, req, 
+	ndr_err = ndr_push_struct_blob(&req->encoded, req,
 				       req->nbtsock->iconv_convenience,
 				       request,
 				       (ndr_push_flags_fn_t)ndr_push_nbt_name_packet);
@@ -483,7 +483,7 @@ NTSTATUS nbt_name_request_recv(struct nbt_name_request *req)
   setup a handler for incoming requests
 */
 _PUBLIC_ NTSTATUS nbt_set_incoming_handler(struct nbt_name_socket *nbtsock,
-				  void (*handler)(struct nbt_name_socket *, struct nbt_name_packet *, 
+				  void (*handler)(struct nbt_name_socket *, struct nbt_name_packet *,
 						  struct socket_address *),
 				  void *private)
 {

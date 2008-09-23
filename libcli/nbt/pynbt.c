@@ -1,18 +1,18 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Samba utility functions
    Copyright © Jelmer Vernooij <jelmer@samba.org> 2008
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -20,7 +20,7 @@
 #include "includes.h"
 #include <Python.h>
 #include "libcli/util/pyerrors.h"
-#include "libcli/nbt/libnbt.h"
+#include "../libcli/nbt/libnbt.h"
 #include "lib/events/events.h"
 #include "param/param.h"
 
@@ -48,7 +48,7 @@ static PyObject *py_nbt_node_init(PyTypeObject *self, PyObject *args, PyObject *
 		return NULL;
 
 	ev = s4_event_context_init(ret->mem_ctx);
-	ret->socket = nbt_name_socket_init(ret->mem_ctx, ev, lp_iconv_convenience(global_loadparm)); 
+	ret->socket = nbt_name_socket_init(ret->mem_ctx, ev, lp_iconv_convenience(global_loadparm));
 	return (PyObject *)ret;
 }
 
@@ -58,14 +58,14 @@ static bool PyObject_AsDestinationTuple(PyObject *obj, const char **dest_addr, u
 		*dest_addr = PyString_AsString(obj);
 		*dest_port = NBT_NAME_SERVICE_PORT;
 		return true;
-	} 
+	}
 
 	if (PyTuple_Check(obj)) {
 		if (PyTuple_Size(obj) < 1) {
 			PyErr_SetString(PyExc_TypeError, "Destination tuple size invalid");
 			return false;
 		}
-		
+
 		if (!PyString_Check(PyTuple_GetItem(obj, 0))) {
 			PyErr_SetString(PyExc_TypeError, "Destination tuple first element not string");
 			return false;
@@ -120,7 +120,7 @@ static bool PyObject_AsNBTName(PyObject *obj, struct nbt_name_socket *socket, st
 	return false;
 }
 
-static PyObject *PyObject_FromNBTName(struct nbt_name_socket *socket, struct smb_iconv_convenience *ic, 
+static PyObject *PyObject_FromNBTName(struct nbt_name_socket *socket, struct smb_iconv_convenience *ic,
 				      struct nbt_name *name)
 {
 	if (name->scope) {
@@ -145,10 +145,10 @@ static PyObject *py_nbt_name_query(PyObject *self, PyObject *args, PyObject *kwa
 	io.in.timeout = 0;
 	io.in.retries = 3;
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "OO|bbii:query_name", 
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "OO|bbii:query_name",
 					 discard_const_p(char *, kwnames),
-					 &py_name, &py_dest, 
-					 &io.in.broadcast, &io.in.wins_lookup, 
+					 &py_name, &py_dest,
+					 &io.in.broadcast, &io.in.wins_lookup,
 					 &io.in.timeout, &io.in.retries)) {
 		return NULL;
 	}
@@ -182,7 +182,7 @@ static PyObject *py_nbt_name_query(PyObject *self, PyObject *args, PyObject *kwa
 		Py_DECREF(ret);
 		return NULL;
 	}
-	
+
 	for (i = 0; i < io.out.num_addrs; i++) {
 		PyList_SetItem(reply_addrs, i, PyString_FromString(io.out.reply_addrs[i]));
 	}
@@ -204,9 +204,9 @@ static PyObject *py_nbt_name_status(PyObject *self, PyObject *args, PyObject *kw
 	io.in.timeout = 0;
 	io.in.retries = 0;
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "OO|ii:name_status", 
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "OO|ii:name_status",
 					 discard_const_p(char *, kwnames),
-					 &py_name, &py_dest, 
+					 &py_name, &py_dest,
 					 &io.in.timeout, &io.in.retries)) {
 		return NULL;
 	}
@@ -238,9 +238,9 @@ static PyObject *py_nbt_name_status(PyObject *self, PyObject *args, PyObject *kw
 	py_names = PyList_New(io.out.status.num_names);
 
 	for (i = 0; i < io.out.status.num_names; i++) {
-		PyList_SetItem(py_names, i, Py_BuildValue("(sii)", 
+		PyList_SetItem(py_names, i, Py_BuildValue("(sii)",
 				io.out.status.names[i].name,
-				io.out.status.names[i].nb_flags, 
+				io.out.status.names[i].nb_flags,
 				io.out.status.names[i].type));
 	}
 
@@ -256,7 +256,7 @@ static PyObject *py_nbt_name_register(PyObject *self, PyObject *args, PyObject *
 	struct nbt_name_register io;
 	NTSTATUS status;
 
-	const char *kwnames[] = { "name", "address", "dest", "register_demand", "broadcast", 
+	const char *kwnames[] = { "name", "address", "dest", "register_demand", "broadcast",
 		                  "multi_homed", "ttl", "timeout", "retries", NULL };
 
 	io.in.broadcast = true;
@@ -265,11 +265,11 @@ static PyObject *py_nbt_name_register(PyObject *self, PyObject *args, PyObject *
 	io.in.timeout = 0;
 	io.in.retries = 0;
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "OsO|bbbiii:query_name", 
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "OsO|bbbiii:query_name",
 					 discard_const_p(char *, kwnames),
-					 &py_name, &io.in.address, &py_dest, 
-					 &io.in.register_demand, 
-					 &io.in.broadcast, &io.in.multi_homed, 
+					 &py_name, &io.in.address, &py_dest,
+					 &io.in.register_demand,
+					 &io.in.broadcast, &io.in.multi_homed,
 					 &io.in.ttl, &io.in.timeout, &io.in.retries)) {
 		return NULL;
 	}
@@ -312,7 +312,7 @@ static PyObject *py_nbt_name_refresh(PyObject *self, PyObject *args, PyObject *k
 	struct nbt_name_refresh io;
 	NTSTATUS status;
 
-	const char *kwnames[] = { "name", "address", "dest", "nb_flags", "broadcast", 
+	const char *kwnames[] = { "name", "address", "dest", "nb_flags", "broadcast",
 		                  "ttl", "timeout", "retries", NULL };
 
 	io.in.broadcast = true;
@@ -320,11 +320,11 @@ static PyObject *py_nbt_name_refresh(PyObject *self, PyObject *args, PyObject *k
 	io.in.timeout = 0;
 	io.in.retries = 0;
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "OsO|ibiii:query_name", 
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "OsO|ibiii:query_name",
 					 discard_const_p(char *, kwnames),
-					 &py_name, &io.in.address, &py_dest, 
-					 &io.in.nb_flags, 
-					 &io.in.broadcast, 
+					 &py_name, &io.in.address, &py_dest,
+					 &io.in.nb_flags,
+					 &io.in.broadcast,
 					 &io.in.ttl, &io.in.timeout, &io.in.retries)) {
 		return NULL;
 	}
@@ -366,7 +366,7 @@ static PyObject *py_nbt_name_release(PyObject *self, PyObject *args, PyObject *k
 }
 
 static PyMethodDef py_nbt_methods[] = {
-	{ "query_name", (PyCFunction)py_nbt_name_query, METH_VARARGS|METH_KEYWORDS, 
+	{ "query_name", (PyCFunction)py_nbt_name_query, METH_VARARGS|METH_KEYWORDS,
 		"S.query_name(name, dest, broadcast=True, wins=False, timeout=0, retries=3) -> (reply_from, name, reply_addr)\n"
 		"Query for a NetBIOS name" },
 	{ "register_name", (PyCFunction)py_nbt_name_register, METH_VARARGS|METH_KEYWORDS,

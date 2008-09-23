@@ -28,8 +28,8 @@
 /*
   possible states for pending requests
 */
-enum nbt_request_state {NBT_REQUEST_SEND, 
-			NBT_REQUEST_WAIT, 
+enum nbt_request_state {NBT_REQUEST_SEND,
+			NBT_REQUEST_WAIT,
 			NBT_REQUEST_DONE,
 			NBT_REQUEST_TIMEOUT,
 			NBT_REQUEST_ERROR};
@@ -67,7 +67,7 @@ struct nbt_name_request {
 
 	/* is it a reply? */
 	bool is_reply;
-	
+
 	/* the encoded request */
 	DATA_BLOB encoded;
 
@@ -111,14 +111,14 @@ struct nbt_name_socket {
 
 	/* what to do with incoming request packets */
 	struct {
-		void (*handler)(struct nbt_name_socket *, struct nbt_name_packet *, 
+		void (*handler)(struct nbt_name_socket *, struct nbt_name_packet *,
 				struct socket_address *);
 		void *private_data;
 	} incoming;
 
 	/* what to do with unexpected replies */
 	struct {
-		void (*handler)(struct nbt_name_socket *, struct nbt_name_packet *, 
+		void (*handler)(struct nbt_name_socket *, struct nbt_name_packet *,
 				struct socket_address *);
 		void *private_data;
 	} unexpected;
@@ -274,20 +274,20 @@ struct nbt_name_release {
 	} out;
 };
 
-struct nbt_name_socket *nbt_name_socket_init(TALLOC_CTX *mem_ctx, 
+struct nbt_name_socket *nbt_name_socket_init(TALLOC_CTX *mem_ctx,
 					     struct event_context *event_ctx,
 					     struct smb_iconv_convenience *iconv_convenience);
 struct nbt_name_request *nbt_name_query_send(struct nbt_name_socket *nbtsock,
 					     struct nbt_name_query *io);
-NTSTATUS nbt_name_query_recv(struct nbt_name_request *req, 
+NTSTATUS nbt_name_query_recv(struct nbt_name_request *req,
 			     TALLOC_CTX *mem_ctx, struct nbt_name_query *io);
-NTSTATUS nbt_name_query(struct nbt_name_socket *nbtsock, 
+NTSTATUS nbt_name_query(struct nbt_name_socket *nbtsock,
 			TALLOC_CTX *mem_ctx, struct nbt_name_query *io);
 struct nbt_name_request *nbt_name_status_send(struct nbt_name_socket *nbtsock,
 					      struct nbt_name_status *io);
-NTSTATUS nbt_name_status_recv(struct nbt_name_request *req, 
+NTSTATUS nbt_name_status_recv(struct nbt_name_request *req,
 			     TALLOC_CTX *mem_ctx, struct nbt_name_status *io);
-NTSTATUS nbt_name_status(struct nbt_name_socket *nbtsock, 
+NTSTATUS nbt_name_status(struct nbt_name_socket *nbtsock,
 			TALLOC_CTX *mem_ctx, struct nbt_name_status *io);
 
 NTSTATUS nbt_name_dup(TALLOC_CTX *mem_ctx, struct nbt_name *name, struct nbt_name *newname);
@@ -295,11 +295,11 @@ NTSTATUS nbt_name_to_blob(TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *ico
 NTSTATUS nbt_name_from_blob(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob, struct nbt_name *name);
 void nbt_choose_called_name(TALLOC_CTX *mem_ctx, struct nbt_name *n, const char *name, int type);
 char *nbt_name_string(TALLOC_CTX *mem_ctx, const struct nbt_name *name);
-NTSTATUS nbt_name_register(struct nbt_name_socket *nbtsock, 
+NTSTATUS nbt_name_register(struct nbt_name_socket *nbtsock,
 			   TALLOC_CTX *mem_ctx, struct nbt_name_register *io);
-NTSTATUS nbt_name_refresh(struct nbt_name_socket *nbtsock, 
+NTSTATUS nbt_name_refresh(struct nbt_name_socket *nbtsock,
 			   TALLOC_CTX *mem_ctx, struct nbt_name_refresh *io);
-NTSTATUS nbt_name_release(struct nbt_name_socket *nbtsock, 
+NTSTATUS nbt_name_release(struct nbt_name_socket *nbtsock,
 			   TALLOC_CTX *mem_ctx, struct nbt_name_release *io);
 NTSTATUS nbt_name_register_wins(struct nbt_name_socket *nbtsock,
 				TALLOC_CTX *mem_ctx,
@@ -307,24 +307,24 @@ NTSTATUS nbt_name_register_wins(struct nbt_name_socket *nbtsock,
 NTSTATUS nbt_name_refresh_wins(struct nbt_name_socket *nbtsock,
 				TALLOC_CTX *mem_ctx,
 				struct nbt_name_refresh_wins *io);
-NTSTATUS nbt_name_register_recv(struct nbt_name_request *req, 
+NTSTATUS nbt_name_register_recv(struct nbt_name_request *req,
 				TALLOC_CTX *mem_ctx, struct nbt_name_register *io);
 struct nbt_name_request *nbt_name_register_send(struct nbt_name_socket *nbtsock,
 						struct nbt_name_register *io);
-NTSTATUS nbt_name_release_recv(struct nbt_name_request *req, 
+NTSTATUS nbt_name_release_recv(struct nbt_name_request *req,
 			       TALLOC_CTX *mem_ctx, struct nbt_name_release *io);
 
 struct nbt_name_request *nbt_name_release_send(struct nbt_name_socket *nbtsock,
 					       struct nbt_name_release *io);
 
-NTSTATUS nbt_name_refresh_recv(struct nbt_name_request *req, 
+NTSTATUS nbt_name_refresh_recv(struct nbt_name_request *req,
 			       TALLOC_CTX *mem_ctx, struct nbt_name_refresh *io);
 
 NTSTATUS nbt_set_incoming_handler(struct nbt_name_socket *nbtsock,
-				  void (*handler)(struct nbt_name_socket *, struct nbt_name_packet *, 
+				  void (*handler)(struct nbt_name_socket *, struct nbt_name_packet *,
 						  struct socket_address *),
 				  void *private_data);
-NTSTATUS nbt_name_reply_send(struct nbt_name_socket *nbtsock, 
+NTSTATUS nbt_name_reply_send(struct nbt_name_socket *nbtsock,
 			     struct socket_address *dest,
 			     struct nbt_name_packet *request);
 

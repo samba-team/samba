@@ -1,27 +1,27 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    make nbt name query requests
 
    Copyright (C) Andrew Tridgell 2005
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "includes.h"
-#include "libcli/nbt/libnbt.h"
-#include "libcli/nbt/nbt_proto.h"
+#include "../libcli/nbt/libnbt.h"
+#include "../libcli/nbt/nbt_proto.h"
 #include "lib/socket/socket.h"
 #include "param/param.h"
 
@@ -66,13 +66,13 @@ _PUBLIC_ struct nbt_name_request *nbt_name_query_send(struct nbt_name_socket *nb
 
 failed:
 	talloc_free(packet);
-	return NULL;	
+	return NULL;
 }
 
 /**
   wait for a name query reply
 */
-_PUBLIC_ NTSTATUS nbt_name_query_recv(struct nbt_name_request *req, 
+_PUBLIC_ NTSTATUS nbt_name_query_recv(struct nbt_name_request *req,
 			     TALLOC_CTX *mem_ctx, struct nbt_name_query *io)
 {
 	NTSTATUS status;
@@ -85,7 +85,7 @@ _PUBLIC_ NTSTATUS nbt_name_query_recv(struct nbt_name_request *req,
 		talloc_free(req);
 		return status;
 	}
-	
+
 	packet = req->replies[0].packet;
 	io->out.reply_from = talloc_steal(mem_ctx, req->replies[0].dest->addr);
 
@@ -109,16 +109,16 @@ _PUBLIC_ NTSTATUS nbt_name_query_recv(struct nbt_name_request *req,
 		talloc_free(req);
 		return NT_STATUS_NO_MEMORY;
 	}
-	
+
 	for (i=0;i<io->out.num_addrs;i++) {
-		io->out.reply_addrs[i] = talloc_steal(io->out.reply_addrs, 
+		io->out.reply_addrs[i] = talloc_steal(io->out.reply_addrs,
 						      packet->answers[0].rdata.netbios.addresses[i].ipaddr);
 	}
 	io->out.reply_addrs[i] = NULL;
 
 	talloc_steal(mem_ctx, io->out.name.name);
 	talloc_steal(mem_ctx, io->out.name.scope);
-	    
+
 	talloc_free(req);
 
 	return NT_STATUS_OK;
@@ -127,7 +127,7 @@ _PUBLIC_ NTSTATUS nbt_name_query_recv(struct nbt_name_request *req,
 /**
   wait for a name query reply
 */
-_PUBLIC_ NTSTATUS nbt_name_query(struct nbt_name_socket *nbtsock, 
+_PUBLIC_ NTSTATUS nbt_name_query(struct nbt_name_socket *nbtsock,
 			TALLOC_CTX *mem_ctx, struct nbt_name_query *io)
 {
 	struct nbt_name_request *req = nbt_name_query_send(nbtsock, io);
@@ -170,13 +170,13 @@ _PUBLIC_ struct nbt_name_request *nbt_name_status_send(struct nbt_name_socket *n
 
 failed:
 	talloc_free(packet);
-	return NULL;	
+	return NULL;
 }
 
 /**
   wait for a name status reply
 */
-_PUBLIC_ NTSTATUS nbt_name_status_recv(struct nbt_name_request *req, 
+_PUBLIC_ NTSTATUS nbt_name_status_recv(struct nbt_name_request *req,
 			     TALLOC_CTX *mem_ctx, struct nbt_name_status *io)
 {
 	NTSTATUS status;
@@ -189,7 +189,7 @@ _PUBLIC_ NTSTATUS nbt_name_status_recv(struct nbt_name_request *req,
 		talloc_free(req);
 		return status;
 	}
-	
+
 	packet = req->replies[0].packet;
 	io->out.reply_from = talloc_steal(mem_ctx, req->replies[0].dest->addr);
 
@@ -216,7 +216,7 @@ _PUBLIC_ NTSTATUS nbt_name_status_recv(struct nbt_name_request *req,
 		talloc_steal(io->out.status.names, io->out.status.names[i].name);
 	}
 
-	    
+
 	talloc_free(req);
 
 	return NT_STATUS_OK;
@@ -225,7 +225,7 @@ _PUBLIC_ NTSTATUS nbt_name_status_recv(struct nbt_name_request *req,
 /**
   wait for a name status reply
 */
-_PUBLIC_ NTSTATUS nbt_name_status(struct nbt_name_socket *nbtsock, 
+_PUBLIC_ NTSTATUS nbt_name_status(struct nbt_name_socket *nbtsock,
 			TALLOC_CTX *mem_ctx, struct nbt_name_status *io)
 {
 	struct nbt_name_request *req = nbt_name_status_send(nbtsock, io);

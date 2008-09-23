@@ -1,27 +1,27 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    send out a name registration request
 
    Copyright (C) Andrew Tridgell 2005
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "includes.h"
-#include "libcli/nbt/libnbt.h"
-#include "libcli/nbt/nbt_proto.h"
+#include "../libcli/nbt/libnbt.h"
+#include "../libcli/nbt/nbt_proto.h"
 #include "libcli/composite/composite.h"
 #include "lib/socket/socket.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
@@ -73,11 +73,11 @@ struct nbt_name_request *nbt_name_register_send(struct nbt_name_socket *nbtsock,
 								     struct nbt_rdata_address, 1);
 	if (packet->additional[0].rdata.netbios.addresses == NULL) goto failed;
 	packet->additional[0].rdata.netbios.addresses[0].nb_flags = io->in.nb_flags;
-	packet->additional[0].rdata.netbios.addresses[0].ipaddr = 
+	packet->additional[0].rdata.netbios.addresses[0].ipaddr =
 		talloc_strdup(packet->additional, io->in.address);
 	if (packet->additional[0].rdata.netbios.addresses[0].ipaddr == NULL) goto failed;
 
-	dest = socket_address_from_strings(packet, nbtsock->sock->backend_name, 
+	dest = socket_address_from_strings(packet, nbtsock->sock->backend_name,
 					   io->in.dest_addr, io->in.dest_port);
 	if (dest == NULL) goto failed;
 	req = nbt_name_request_send(nbtsock, dest, packet,
@@ -89,13 +89,13 @@ struct nbt_name_request *nbt_name_register_send(struct nbt_name_socket *nbtsock,
 
 failed:
 	talloc_free(packet);
-	return NULL;	
+	return NULL;
 }
 
 /*
   wait for a registration reply
 */
-_PUBLIC_ NTSTATUS nbt_name_register_recv(struct nbt_name_request *req, 
+_PUBLIC_ NTSTATUS nbt_name_register_recv(struct nbt_name_request *req,
 				TALLOC_CTX *mem_ctx, struct nbt_name_register *io)
 {
 	NTSTATUS status;
@@ -107,7 +107,7 @@ _PUBLIC_ NTSTATUS nbt_name_register_recv(struct nbt_name_request *req,
 		talloc_free(req);
 		return status;
 	}
-	
+
 	packet = req->replies[0].packet;
 	io->out.reply_from = talloc_steal(mem_ctx, req->replies[0].dest->addr);
 
@@ -124,11 +124,11 @@ _PUBLIC_ NTSTATUS nbt_name_register_recv(struct nbt_name_request *req,
 		talloc_free(req);
 		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
-	io->out.reply_addr = talloc_steal(mem_ctx, 
+	io->out.reply_addr = talloc_steal(mem_ctx,
 					  packet->answers[0].rdata.netbios.addresses[0].ipaddr);
 	talloc_steal(mem_ctx, io->out.name.name);
 	talloc_steal(mem_ctx, io->out.name.scope);
-	    
+
 	talloc_free(req);
 
 	return NT_STATUS_OK;
@@ -137,7 +137,7 @@ _PUBLIC_ NTSTATUS nbt_name_register_recv(struct nbt_name_request *req,
 /*
   synchronous name registration request
 */
-_PUBLIC_ NTSTATUS nbt_name_register(struct nbt_name_socket *nbtsock, 
+_PUBLIC_ NTSTATUS nbt_name_register(struct nbt_name_socket *nbtsock,
 			   TALLOC_CTX *mem_ctx, struct nbt_name_register *io)
 {
 	struct nbt_name_request *req = nbt_name_register_send(nbtsock, io);
@@ -192,7 +192,7 @@ static void name_register_bcast_handler(struct nbt_name_request *req)
 		c->state = COMPOSITE_STATE_ERROR;
 		c->status = NT_STATUS_CONFLICTING_ADDRESSES;
 		DEBUG(3,("Name registration conflict from %s for %s with ip %s - rcode %d\n",
-			 state->io->out.reply_from, 
+			 state->io->out.reply_from,
 			 nbt_name_string(state, &state->io->out.name),
 			 state->io->out.reply_addr,
 			 state->io->out.rcode));
@@ -299,7 +299,7 @@ static void name_register_wins_handler(struct nbt_name_request *req)
 {
 	struct composite_context *c = talloc_get_type(req->async.private_data,
 						      struct composite_context);
-	struct register_wins_state *state = talloc_get_type(c->private_data, 
+	struct register_wins_state *state = talloc_get_type(c->private_data,
 							    struct register_wins_state);
 	NTSTATUS status;
 
@@ -373,11 +373,11 @@ _PUBLIC_ struct composite_context *nbt_name_register_wins_send(struct nbt_name_s
 
 	state->wins_port = io->in.wins_port;
 	state->wins_servers = str_list_copy(state, io->in.wins_servers);
-	if (state->wins_servers == NULL || 
+	if (state->wins_servers == NULL ||
 	    state->wins_servers[0] == NULL) goto failed;
 
 	state->addresses = str_list_copy(state, io->in.addresses);
-	if (state->addresses == NULL || 
+	if (state->addresses == NULL ||
 	    state->addresses[0] == NULL) goto failed;
 
 	state->io->in.name            = io->in.name;
@@ -421,7 +421,7 @@ _PUBLIC_ NTSTATUS nbt_name_register_wins_recv(struct composite_context *c, TALLO
 	NTSTATUS status;
 	status = composite_wait(c);
 	if (NT_STATUS_IS_OK(status)) {
-		struct register_wins_state *state = 
+		struct register_wins_state *state =
 			talloc_get_type(c->private_data, struct register_wins_state);
 		io->out.wins_server = talloc_steal(mem_ctx, state->wins_servers[0]);
 		io->out.rcode = state->io->out.rcode;
