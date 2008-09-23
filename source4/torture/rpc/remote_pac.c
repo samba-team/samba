@@ -68,8 +68,6 @@ static bool test_PACVerify(struct torture_context *tctx,
 
 	TALLOC_CTX *tmp_ctx = talloc_new(tctx);
 	
-	int i;
-
 	torture_assert(tctx, tmp_ctx != NULL, "talloc_new() failed");
 
 	if (!test_SetupCredentials2(p, tctx, NETLOGON_NEG_AUTH2_ADS_FLAGS, 
