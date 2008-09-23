@@ -2907,11 +2907,10 @@ static int run_test(struct event_context *ev, struct loadparm_context *lp_ctx)
 		current_op.opnum = op;
 		current_op.name = gen_ops[which_op].name;
 		current_op.status = NT_STATUS_OK;
+		talloc_free(current_op.mem_ctx);
 		current_op.mem_ctx = talloc_named(NULL, 0, "%s", current_op.name);
 
 		ret = gen_ops[which_op].handler(instance);
-
-		talloc_free(current_op.mem_ctx);
 
 		gen_ops[which_op].count++;
 		if (NT_STATUS_IS_OK(current_op.status)) {
