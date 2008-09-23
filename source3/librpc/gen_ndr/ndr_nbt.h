@@ -6,7 +6,7 @@
 #ifndef _HEADER_NDR_nbt
 #define _HEADER_NDR_nbt
 
-#include "libcli/nbt/libnbt.h"
+#include "../libcli/nbt/libnbt.h"
 #define NDR_NBT_CALL_COUNT (0)
 void ndr_print_nbt_operation(struct ndr_print *ndr, const char *name, uint16_t r);
 void ndr_print_nbt_name_type(struct ndr_print *ndr, const char *name, enum nbt_name_type r);
