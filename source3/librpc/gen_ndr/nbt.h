@@ -221,7 +221,7 @@ union nbt_rdata {
 	struct nbt_rdata_netbios netbios;/* [case(NBT_QTYPE_NETBIOS)] */
 	struct nbt_rdata_status status;/* [case(NBT_QTYPE_STATUS)] */
 	struct nbt_rdata_data data;/* [default] */
-}/* [nodiscriminant] */;
+}/* [nodiscriminant,public] */;
 
 struct nbt_res_rec {
 	struct nbt_name name;

@@ -13,7 +13,11 @@ void ndr_print_nbt_name_type(struct ndr_print *ndr, const char *name, enum nbt_n
 enum ndr_err_code ndr_push_nbt_name(struct ndr_push *ndr, int ndr_flags, const struct nbt_name *r);
 enum ndr_err_code ndr_pull_nbt_name(struct ndr_pull *ndr, int ndr_flags, struct nbt_name *r);
 void ndr_print_nbt_name(struct ndr_print *ndr, const char *name, const struct nbt_name *r);
+enum ndr_err_code ndr_push_nbt_qclass(struct ndr_push *ndr, int ndr_flags, enum nbt_qclass r);
+enum ndr_err_code ndr_pull_nbt_qclass(struct ndr_pull *ndr, int ndr_flags, enum nbt_qclass *r);
 void ndr_print_nbt_qclass(struct ndr_print *ndr, const char *name, enum nbt_qclass r);
+enum ndr_err_code ndr_push_nbt_qtype(struct ndr_push *ndr, int ndr_flags, enum nbt_qtype r);
+enum ndr_err_code ndr_pull_nbt_qtype(struct ndr_pull *ndr, int ndr_flags, enum nbt_qtype *r);
 void ndr_print_nbt_qtype(struct ndr_print *ndr, const char *name, enum nbt_qtype r);
 void ndr_print_nbt_name_question(struct ndr_print *ndr, const char *name, const struct nbt_name_question *r);
 void ndr_print_nb_flags(struct ndr_print *ndr, const char *name, uint16_t r);
@@ -23,6 +27,8 @@ void ndr_print_nbt_statistics(struct ndr_print *ndr, const char *name, const str
 void ndr_print_nbt_status_name(struct ndr_print *ndr, const char *name, const struct nbt_status_name *r);
 void ndr_print_nbt_rdata_status(struct ndr_print *ndr, const char *name, const struct nbt_rdata_status *r);
 void ndr_print_nbt_rdata_data(struct ndr_print *ndr, const char *name, const struct nbt_rdata_data *r);
+enum ndr_err_code ndr_push_nbt_rdata(struct ndr_push *ndr, int ndr_flags, const union nbt_rdata *r);
+enum ndr_err_code ndr_pull_nbt_rdata(struct ndr_pull *ndr, int ndr_flags, union nbt_rdata *r);
 void ndr_print_nbt_rdata(struct ndr_print *ndr, const char *name, const union nbt_rdata *r);
 void ndr_print_nbt_res_rec(struct ndr_print *ndr, const char *name, const struct nbt_res_rec *r);
 enum ndr_err_code ndr_push_nbt_name_packet(struct ndr_push *ndr, int ndr_flags, const struct nbt_name_packet *r);

@@ -77,13 +77,13 @@ _PUBLIC_ void ndr_print_nbt_name(struct ndr_print *ndr, const char *name, const 
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_nbt_qclass(struct ndr_push *ndr, int ndr_flags, enum nbt_qclass r)
+_PUBLIC_ enum ndr_err_code ndr_push_nbt_qclass(struct ndr_push *ndr, int ndr_flags, enum nbt_qclass r)
 {
 	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_nbt_qclass(struct ndr_pull *ndr, int ndr_flags, enum nbt_qclass *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_nbt_qclass(struct ndr_pull *ndr, int ndr_flags, enum nbt_qclass *r)
 {
 	uint16_t v;
 	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &v));
@@ -101,13 +101,13 @@ _PUBLIC_ void ndr_print_nbt_qclass(struct ndr_print *ndr, const char *name, enum
 	ndr_print_enum(ndr, name, "ENUM", val, r);
 }
 
-static enum ndr_err_code ndr_push_nbt_qtype(struct ndr_push *ndr, int ndr_flags, enum nbt_qtype r)
+_PUBLIC_ enum ndr_err_code ndr_push_nbt_qtype(struct ndr_push *ndr, int ndr_flags, enum nbt_qtype r)
 {
 	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_nbt_qtype(struct ndr_pull *ndr, int ndr_flags, enum nbt_qtype *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_nbt_qtype(struct ndr_pull *ndr, int ndr_flags, enum nbt_qtype *r)
 {
 	uint16_t v;
 	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &v));
@@ -496,7 +496,7 @@ _PUBLIC_ void ndr_print_nbt_rdata_data(struct ndr_print *ndr, const char *name, 
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_nbt_rdata(struct ndr_push *ndr, int ndr_flags, const union nbt_rdata *r)
+_PUBLIC_ enum ndr_err_code ndr_push_nbt_rdata(struct ndr_push *ndr, int ndr_flags, const union nbt_rdata *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
@@ -532,7 +532,7 @@ static enum ndr_err_code ndr_push_nbt_rdata(struct ndr_push *ndr, int ndr_flags,
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_nbt_rdata(struct ndr_pull *ndr, int ndr_flags, union nbt_rdata *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_nbt_rdata(struct ndr_pull *ndr, int ndr_flags, union nbt_rdata *r)
 {
 	int level;
 	level = ndr_pull_get_switch_value(ndr, r);
