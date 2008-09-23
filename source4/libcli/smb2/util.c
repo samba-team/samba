@@ -197,6 +197,12 @@ int smb2_deltree(struct smb2_tree *tree, const char *dname)
 	smb2_util_close(tree, create_parm.out.file.handle);
 
 	status = smb2_util_rmdir(tree, dname);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_CANNOT_DELETE)) {
+		/* it could be read-only */
+		status = smb2_util_setatr(tree, dname, FILE_ATTRIBUTE_NORMAL);
+		status = smb2_util_rmdir(tree, dname);
+	}
+
 	if (NT_STATUS_IS_ERR(status)) {
 		DEBUG(2,("Failed to delete %s - %s\n", 
 			 dname, nt_errstr(status)));
