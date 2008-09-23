@@ -176,7 +176,7 @@ bool ads_closest_dc(ADS_STRUCT *ads)
 static bool ads_try_connect(ADS_STRUCT *ads, const char *server, bool gc)
 {
 	char *srv;
-	struct nbt_cldap_netlogon_5 cldap_reply;
+	struct NETLOGON_SAM_LOGON_RESPONSE_EX cldap_reply;
 	TALLOC_CTX *mem_ctx = NULL;
 	bool ret = false;
 

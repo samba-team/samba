@@ -119,8 +119,8 @@ static void gotalarm_sig(void)
 */
 static int recv_cldap_netlogon(TALLOC_CTX *mem_ctx,
 			       int sock,
-			       uint32_t *nt_version,
-			       union nbt_cldap_netlogon **reply)
+			       uint32_t nt_version,
+			       struct netlogon_samlogon_response **reply)
 {
 	int ret;
 	ASN1_DATA data;
@@ -131,7 +131,8 @@ static int recv_cldap_netlogon(TALLOC_CTX *mem_ctx,
 	int i1;
 	/* half the time of a regular ldap timeout, not less than 3 seconds. */
 	unsigned int al_secs = MAX(3,lp_ldap_timeout()/2);
-	union nbt_cldap_netlogon *r = NULL;
+	struct netlogon_samlogon_response *r = NULL;
+	NTSTATUS status;
 
 	blob = data_blob(NULL, 8192);
 	if (blob.data == NULL) {
@@ -185,7 +186,7 @@ static int recv_cldap_netlogon(TALLOC_CTX *mem_ctx,
 		return -1;
 	}
 
-	r = TALLOC_ZERO_P(mem_ctx, union nbt_cldap_netlogon);
+	r = TALLOC_ZERO_P(mem_ctx, struct netlogon_samlogon_response);
 	if (!r) {
 		errno = ENOMEM;
 		data_blob_free(&os1);
@@ -195,7 +196,8 @@ static int recv_cldap_netlogon(TALLOC_CTX *mem_ctx,
 		return -1;
 	}
 
-	if (!pull_mailslot_cldap_reply(mem_ctx, &os3, r, nt_version)) {
+	status = pull_netlogon_samlogon_response(&os3, mem_ctx, r);
+	if (!NT_STATUS_IS_OK(status)) {
 		data_blob_free(&os1);
 		data_blob_free(&os2);
 		data_blob_free(&os3);
@@ -203,6 +205,8 @@ static int recv_cldap_netlogon(TALLOC_CTX *mem_ctx,
 		TALLOC_FREE(r);
 		return -1;
 	}
+
+	map_netlogon_samlogon_response(r);
 
 	data_blob_free(&os1);
 	data_blob_free(&os2);
@@ -227,8 +231,8 @@ static int recv_cldap_netlogon(TALLOC_CTX *mem_ctx,
 bool ads_cldap_netlogon(TALLOC_CTX *mem_ctx,
 			const char *server,
 			const char *realm,
-			uint32_t *nt_version,
-			union nbt_cldap_netlogon **reply)
+			uint32_t nt_version,
+			struct netlogon_samlogon_response **reply)
 {
 	int sock;
 	int ret;
@@ -240,7 +244,7 @@ bool ads_cldap_netlogon(TALLOC_CTX *mem_ctx,
 		return False;
 	}
 
-	ret = send_cldap_netlogon(sock, realm, global_myname(), *nt_version);
+	ret = send_cldap_netlogon(sock, realm, global_myname(), nt_version);
 	if (ret != 0) {
 		close(sock);
 		return False;
@@ -262,107 +266,24 @@ bool ads_cldap_netlogon(TALLOC_CTX *mem_ctx,
 bool ads_cldap_netlogon_5(TALLOC_CTX *mem_ctx,
 			  const char *server,
 			  const char *realm,
-			  struct nbt_cldap_netlogon_5 *reply5)
+			  struct NETLOGON_SAM_LOGON_RESPONSE_EX *reply5)
 {
-	uint32_t nt_version = NETLOGON_VERSION_5 | NETLOGON_VERSION_5EX;
-	union nbt_cldap_netlogon *reply = NULL;
+	uint32_t nt_version = NETLOGON_NT_VERSION_5 | NETLOGON_NT_VERSION_5EX;
+	struct netlogon_samlogon_response *reply = NULL;
 	bool ret;
 
-	ret = ads_cldap_netlogon(mem_ctx, server, realm, &nt_version, &reply);
+	ret = ads_cldap_netlogon(mem_ctx, server, realm, nt_version, &reply);
 	if (!ret) {
 		return false;
 	}
 
-	if (nt_version != (NETLOGON_VERSION_5 | NETLOGON_VERSION_5EX)) {
+	if (reply->ntver != NETLOGON_NT_VERSION_5EX) {
+		DEBUG(0,("ads_cldap_netlogon_5: nt_version mismatch: 0x%08x\n",
+			reply->ntver));
 		return false;
 	}
 
-	*reply5 = reply->logon5;
-
-	return true;
-}
-
-/****************************************************************
-****************************************************************/
-
-bool pull_mailslot_cldap_reply(TALLOC_CTX *mem_ctx,
-			       const DATA_BLOB *blob,
-			       union nbt_cldap_netlogon *r,
-			       uint32_t *nt_version)
-{
-	enum ndr_err_code ndr_err;
-	uint32_t nt_version_query = ((*nt_version) & 0x0000001f);
-	uint16_t command = 0;
-
-	ndr_err = ndr_pull_struct_blob(blob, mem_ctx, &command,
-			(ndr_pull_flags_fn_t)ndr_pull_uint16);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		return false;
-	}
-
-	switch (command) {
-		case 0x13: /* 19 */
-		case 0x15: /* 21 */
-		case 0x17: /* 23 */
-		case 0x19: /* 25 */
-			 break;
-		default:
-			DEBUG(1,("got unexpected command: %d (0x%08x)\n",
-				command, command));
-			return false;
-	}
-
-	ndr_err = ndr_pull_union_blob_all(blob, mem_ctx, r, nt_version_query,
-		       (ndr_pull_flags_fn_t)ndr_pull_nbt_cldap_netlogon);
-	if (NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		goto done;
-	}
-
-	/* when the caller requested just those nt_version bits that the server
-	 * was able to reply to, we are fine and all done. otherwise we need to
-	 * assume downgraded replies which are painfully parsed here - gd */
-
-	if (nt_version_query & NETLOGON_VERSION_WITH_CLOSEST_SITE) {
-		nt_version_query &= ~NETLOGON_VERSION_WITH_CLOSEST_SITE;
-	}
-	ndr_err = ndr_pull_union_blob_all(blob, mem_ctx, r, nt_version_query,
-		       (ndr_pull_flags_fn_t)ndr_pull_nbt_cldap_netlogon);
-	if (NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		goto done;
-	}
-	if (nt_version_query & NETLOGON_VERSION_5EX_WITH_IP) {
-		nt_version_query &= ~NETLOGON_VERSION_5EX_WITH_IP;
-	}
-	ndr_err = ndr_pull_union_blob_all(blob, mem_ctx, r, nt_version_query,
-		       (ndr_pull_flags_fn_t)ndr_pull_nbt_cldap_netlogon);
-	if (NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		goto done;
-	}
-	if (nt_version_query & NETLOGON_VERSION_5EX) {
-		nt_version_query &= ~NETLOGON_VERSION_5EX;
-	}
-	ndr_err = ndr_pull_union_blob_all(blob, mem_ctx, r, nt_version_query,
-		       (ndr_pull_flags_fn_t)ndr_pull_nbt_cldap_netlogon);
-	if (NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		goto done;
-	}
-	if (nt_version_query & NETLOGON_VERSION_5) {
-		nt_version_query &= ~NETLOGON_VERSION_5;
-	}
-	ndr_err = ndr_pull_union_blob_all(blob, mem_ctx, r, nt_version_query,
-		       (ndr_pull_flags_fn_t)ndr_pull_nbt_cldap_netlogon);
-	if (NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		goto done;
-	}
-
-	return false;
-
- done:
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_UNION_DEBUG(nbt_cldap_netlogon, nt_version_query, r);
-	}
-
-	*nt_version = nt_version_query;
+	*reply5 = reply->nt5_ex;
 
 	return true;
 }

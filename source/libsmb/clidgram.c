@@ -136,8 +136,8 @@ bool send_getdc_request(TALLOC_CTX *mem_ctx,
 	struct in_addr dc_ip;
 	const char *my_acct_name = NULL;
 	const char *my_mailslot = NULL;
-	struct nbt_ntlogon_packet packet;
-	struct nbt_ntlogon_sam_logon *s;
+	struct nbt_netlogon_packet packet;
+	struct NETLOGON_SAM_LOGON_REQUEST *s;
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct dom_sid my_sid;
@@ -164,7 +164,7 @@ bool send_getdc_request(TALLOC_CTX *mem_ctx,
 		return false;
 	}
 
-	packet.command	= NTLOGON_SAM_LOGON;
+	packet.command	= LOGON_SAM_LOGON_REQUEST;
 	s		= &packet.req.logon;
 
 	s->request_count	= 0;
@@ -178,11 +178,11 @@ bool send_getdc_request(TALLOC_CTX *mem_ctx,
 	s->lm20_token		= 0xffff;
 
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_DEBUG(nbt_ntlogon_packet, &packet);
+		NDR_PRINT_DEBUG(nbt_netlogon_packet, &packet);
 	}
 
 	ndr_err = ndr_push_struct_blob(&blob, mem_ctx, &packet,
-		       (ndr_push_flags_fn_t)ndr_push_nbt_ntlogon_packet);
+		       (ndr_push_flags_fn_t)ndr_push_nbt_netlogon_packet);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return false;
 	}
@@ -199,15 +199,16 @@ bool receive_getdc_response(TALLOC_CTX *mem_ctx,
 			    const char *domain_name,
 			    uint32_t *nt_version,
 			    const char **dc_name,
-			    union nbt_cldap_netlogon **reply)
+			    struct netlogon_samlogon_response **_r)
 {
 	struct packet_struct *packet;
 	const char *my_mailslot = NULL;
 	struct in_addr dc_ip;
 	DATA_BLOB blob;
-	union nbt_cldap_netlogon r;
+	struct netlogon_samlogon_response r;
 	union dgram_message_body p;
 	enum ndr_err_code ndr_err;
+	NTSTATUS status;
 
 	const char *returned_dc = NULL;
 	const char *returned_domain = NULL;
@@ -266,66 +267,20 @@ bool receive_getdc_response(TALLOC_CTX *mem_ctx,
 
 	blob = p.smb.body.trans.data;
 
-	if (!pull_mailslot_cldap_reply(mem_ctx, &blob,
-				       &r, nt_version))
-	{
+	ZERO_STRUCT(r);
+
+	status = pull_netlogon_samlogon_response(&blob, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}
 
-	switch (*nt_version) {
-		case 1:
-		case 16:
-		case 17:
+	map_netlogon_samlogon_response(&r);
 
-			returned_domain = r.logon1.domain_name;
-			returned_dc = r.logon1.pdc_name;
-			break;
-		case 2:
-		case 3:
-		case 18:
-		case 19:
-			returned_domain = r.logon3.domain_name;
-			returned_dc = r.logon3.pdc_name;
-			break;
-		case 4:
-		case 5:
-		case 6:
-		case 7:
-			returned_domain = r.logon5.domain;
-			returned_dc = r.logon5.pdc_name;
-			break;
-		case 8:
-		case 9:
-		case 10:
-		case 11:
-		case 12:
-		case 13:
-		case 14:
-		case 15:
-			returned_domain = r.logon13.domain;
-			returned_dc = r.logon13.pdc_name;
-			break;
-		case 20:
-		case 21:
-		case 22:
-		case 23:
-		case 24:
-		case 25:
-		case 26:
-		case 27:
-		case 28:
-			returned_domain = r.logon15.domain;
-			returned_dc = r.logon15.pdc_name;
-			break;
-		case 29:
-		case 30:
-		case 31:
-			returned_domain = r.logon29.domain;
-			returned_dc = r.logon29.pdc_name;
-			break;
-		default:
-			return false;
-	}
+	/* do we still need this ? */
+	*nt_version = r.ntver;
+
+	returned_domain = r.nt5_ex.domain;
+	returned_dc = r.nt5_ex.pdc_name;
 
 	if (!strequal(returned_domain, domain_name)) {
 		DEBUG(3, ("GetDC: Expected domain %s, got %s\n",
@@ -341,10 +296,10 @@ bool receive_getdc_response(TALLOC_CTX *mem_ctx,
 	if (**dc_name == '\\')	*dc_name += 1;
 	if (**dc_name == '\\')	*dc_name += 1;
 
-	if (reply) {
-		*reply = (union nbt_cldap_netlogon *)talloc_memdup(
-			mem_ctx, &r, sizeof(union nbt_cldap_netlogon));
-		if (!*reply) {
+	if (_r) {
+		*_r = (struct netlogon_samlogon_response *)talloc_memdup(
+			mem_ctx, &r, sizeof(struct netlogon_samlogon_response));
+		if (!*_r) {
 			return false;
 		}
 	}
