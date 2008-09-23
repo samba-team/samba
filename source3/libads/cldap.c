@@ -264,7 +264,7 @@ bool ads_cldap_netlogon_5(TALLOC_CTX *mem_ctx,
 			  const char *realm,
 			  struct nbt_cldap_netlogon_5 *reply5)
 {
-	uint32_t nt_version = NETLOGON_VERSION_5 | NETLOGON_VERSION_5EX;
+	uint32_t nt_version = NETLOGON_NT_VERSION_5 | NETLOGON_NT_VERSION_5EX;
 	union nbt_cldap_netlogon *reply = NULL;
 	bool ret;
 
@@ -273,7 +273,7 @@ bool ads_cldap_netlogon_5(TALLOC_CTX *mem_ctx,
 		return false;
 	}
 
-	if (nt_version != (NETLOGON_VERSION_5 | NETLOGON_VERSION_5EX)) {
+	if (nt_version != (NETLOGON_NT_VERSION_5 | NETLOGON_NT_VERSION_5EX)) {
 		return false;
 	}
 
@@ -322,32 +322,32 @@ bool pull_mailslot_cldap_reply(TALLOC_CTX *mem_ctx,
 	 * was able to reply to, we are fine and all done. otherwise we need to
 	 * assume downgraded replies which are painfully parsed here - gd */
 
-	if (nt_version_query & NETLOGON_VERSION_WITH_CLOSEST_SITE) {
-		nt_version_query &= ~NETLOGON_VERSION_WITH_CLOSEST_SITE;
+	if (nt_version_query & NETLOGON_NT_VERSION_WITH_CLOSEST_SITE) {
+		nt_version_query &= ~NETLOGON_NT_VERSION_WITH_CLOSEST_SITE;
 	}
 	ndr_err = ndr_pull_union_blob_all(blob, mem_ctx, r, nt_version_query,
 		       (ndr_pull_flags_fn_t)ndr_pull_nbt_cldap_netlogon);
 	if (NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		goto done;
 	}
-	if (nt_version_query & NETLOGON_VERSION_5EX_WITH_IP) {
-		nt_version_query &= ~NETLOGON_VERSION_5EX_WITH_IP;
+	if (nt_version_query & NETLOGON_NT_VERSION_5EX_WITH_IP) {
+		nt_version_query &= ~NETLOGON_NT_VERSION_5EX_WITH_IP;
 	}
 	ndr_err = ndr_pull_union_blob_all(blob, mem_ctx, r, nt_version_query,
 		       (ndr_pull_flags_fn_t)ndr_pull_nbt_cldap_netlogon);
 	if (NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		goto done;
 	}
-	if (nt_version_query & NETLOGON_VERSION_5EX) {
-		nt_version_query &= ~NETLOGON_VERSION_5EX;
+	if (nt_version_query & NETLOGON_NT_VERSION_5EX) {
+		nt_version_query &= ~NETLOGON_NT_VERSION_5EX;
 	}
 	ndr_err = ndr_pull_union_blob_all(blob, mem_ctx, r, nt_version_query,
 		       (ndr_pull_flags_fn_t)ndr_pull_nbt_cldap_netlogon);
 	if (NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		goto done;
 	}
-	if (nt_version_query & NETLOGON_VERSION_5) {
-		nt_version_query &= ~NETLOGON_VERSION_5;
+	if (nt_version_query & NETLOGON_NT_VERSION_5) {
+		nt_version_query &= ~NETLOGON_NT_VERSION_5;
 	}
 	ndr_err = ndr_pull_union_blob_all(blob, mem_ctx, r, nt_version_query,
 		       (ndr_pull_flags_fn_t)ndr_pull_nbt_cldap_netlogon);

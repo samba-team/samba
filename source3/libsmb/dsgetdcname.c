@@ -1117,19 +1117,19 @@ static uint32_t map_ds_flags_to_nt_version(uint32_t flags)
 	uint32_t nt_version = 0;
 
 	if (flags & DS_PDC_REQUIRED) {
-		nt_version |= NETLOGON_VERSION_PDC;
+		nt_version |= NETLOGON_NT_VERSION_PDC;
 	}
 
 	if (flags & DS_GC_SERVER_REQUIRED) {
-		nt_version |= NETLOGON_VERSION_GC;
+		nt_version |= NETLOGON_NT_VERSION_GC;
 	}
 
 	if (flags & DS_TRY_NEXTCLOSEST_SITE) {
-		nt_version |= NETLOGON_VERSION_WITH_CLOSEST_SITE;
+		nt_version |= NETLOGON_NT_VERSION_WITH_CLOSEST_SITE;
 	}
 
 	if (flags & DS_IP_REQUIRED) {
-		nt_version |= NETLOGON_VERSION_IP;
+		nt_version |= NETLOGON_NT_VERSION_IP;
 	}
 
 	return nt_version;
@@ -1148,8 +1148,8 @@ static NTSTATUS process_dc_dns(TALLOC_CTX *mem_ctx,
 	int i = 0;
 	bool valid_dc = false;
 	union nbt_cldap_netlogon *r = NULL;
-	uint32_t nt_version = NETLOGON_VERSION_5 |
-			      NETLOGON_VERSION_5EX;
+	uint32_t nt_version = NETLOGON_NT_VERSION_5 |
+			      NETLOGON_NT_VERSION_5EX;
 	uint32_t ret_flags = 0;
 	NTSTATUS status;
 
@@ -1236,9 +1236,9 @@ static NTSTATUS process_dc_netbios(TALLOC_CTX *mem_ctx,
 	fstring tmp_dc_name;
 	union nbt_cldap_netlogon *r = NULL;
 	bool store_cache = false;
-	uint32_t nt_version = NETLOGON_VERSION_1 |
-			      NETLOGON_VERSION_5 |
-			      NETLOGON_VERSION_5EX_WITH_IP;
+	uint32_t nt_version = NETLOGON_NT_VERSION_1 |
+			      NETLOGON_NT_VERSION_5 |
+			      NETLOGON_NT_VERSION_5EX_WITH_IP;
 
 	if (!msg_ctx) {
 		msg_ctx = msg_context(mem_ctx);
@@ -1295,7 +1295,7 @@ static NTSTATUS process_dc_netbios(TALLOC_CTX *mem_ctx,
 
 			ZERO_STRUCT(logon1);
 
-			nt_version = NETLOGON_VERSION_1;
+			nt_version = NETLOGON_NT_VERSION_1;
 
 			logon1.nt_version = nt_version;
 			logon1.pdc_name = tmp_dc_name;
