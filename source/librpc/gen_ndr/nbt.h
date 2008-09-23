@@ -221,15 +221,15 @@ union nbt_rdata {
 	struct nbt_rdata_netbios netbios;/* [case(NBT_QTYPE_NETBIOS)] */
 	struct nbt_rdata_status status;/* [case(NBT_QTYPE_STATUS)] */
 	struct nbt_rdata_data data;/* [default] */
-}/* [nodiscriminant] */;
+}/* [nodiscriminant,public] */;
 
 struct nbt_res_rec {
 	struct nbt_name name;
 	enum nbt_qtype rr_type;
 	enum nbt_qclass rr_class;
 	uint32_t ttl;
-	union nbt_rdata rdata;/* [switch_is(((((rr_type)==NBT_QTYPE_NETBIOS)&&talloc_check_name(ndr,"struct ndr_push")&&((rdata).data.length==2))?0:rr_type))] */
-}/* [flag(LIBNDR_PRINT_ARRAY_HEX)] */;
+	union nbt_rdata rdata;/* [switch_is(rr_type)] */
+}/* [nopush,flag(LIBNDR_PRINT_ARRAY_HEX)] */;
 
 struct nbt_name_packet {
 	uint16_t name_trn_id;
@@ -390,69 +390,11 @@ struct nbt_dgram_packet {
 	union dgram_data data;/* [switch_is(msg_type)] */
 }/* [public,flag(LIBNDR_FLAG_NOALIGN|LIBNDR_FLAG_BIGENDIAN|LIBNDR_PRINT_ARRAY_HEX)] */;
 
-enum nbt_netlogon_command
-#ifndef USE_UINT_ENUMS
- {
-	NETLOGON_QUERY_FOR_PDC=0x7,
-	NETLOGON_ANNOUNCE_UAS=0xa,
-	NETLOGON_RESPONSE_FROM_PDC=0xc,
-	NETLOGON_QUERY_FOR_PDC2=0x12,
-	NETLOGON_RESPONSE_FROM_PDC2=0x17,
-	NETLOGON_RESPONSE_FROM_PDC_USER=0x19
-}
-#else
- { __donnot_use_enum_nbt_netlogon_command=0x7FFFFFFF}
-#define NETLOGON_QUERY_FOR_PDC ( 0x7 )
-#define NETLOGON_ANNOUNCE_UAS ( 0xa )
-#define NETLOGON_RESPONSE_FROM_PDC ( 0xc )
-#define NETLOGON_QUERY_FOR_PDC2 ( 0x12 )
-#define NETLOGON_RESPONSE_FROM_PDC2 ( 0x17 )
-#define NETLOGON_RESPONSE_FROM_PDC_USER ( 0x19 )
-#endif
-;
-
-/* bitmap nbt_netlogon_version */
-#define NETLOGON_VERSION_1 ( 0x00000001 )
-#define NETLOGON_VERSION_5 ( 0x00000002 )
-#define NETLOGON_VERSION_5EX ( 0x00000004 )
-#define NETLOGON_VERSION_5EX_WITH_IP ( 0x00000008 )
-#define NETLOGON_VERSION_WITH_CLOSEST_SITE ( 0x00000010 )
-#define NETLOGON_VERSION_AVOID_NT4_EMUL ( 0x01000000 )
-#define NETLOGON_VERSION_PDC ( 0x10000000 )
-#define NETLOGON_VERSION_IP ( 0x20000000 )
-#define NETLOGON_VERSION_LOCAL ( 0x40000000 )
-#define NETLOGON_VERSION_GC ( 0x80000000 )
-
-struct nbt_netlogon_query_for_pdc {
-	const char * computer_name;/* [flag(LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM)] */
-	const char * mailslot_name;/* [flag(LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM)] */
-	DATA_BLOB _pad;/* [flag(LIBNDR_FLAG_ALIGN2)] */
-	const char * unicode_name;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
-	uint32_t nt_version;
-	uint16_t lmnt_token;
-	uint16_t lm20_token;
-};
-
-struct nbt_netlogon_query_for_pdc2 {
-	uint16_t request_count;
-	const char * computer_name;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
-	const char * user_name;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
-	const char * mailslot_name;/* [flag(LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM)] */
-	uint32_t unknown[2];
-	uint32_t nt_version;
-	uint16_t lmnt_token;
-	uint16_t lm20_token;
-};
-
-struct nbt_netlogon_response_from_pdc {
-	const char * pdc_name;/* [flag(LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM)] */
-	DATA_BLOB _pad;/* [flag(LIBNDR_FLAG_ALIGN2)] */
-	const char * unicode_pdc_name;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
-	const char * domain_name;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
-	uint32_t nt_version;
-	uint16_t lmnt_token;
-	uint16_t lm20_token;
-};
+struct nbt_sockaddr {
+	uint32_t sa_family;
+	const char * pdc_ip;/* [flag(LIBNDR_FLAG_BIGENDIAN)] */
+	DATA_BLOB remaining;/* [flag(LIBNDR_FLAG_REMAINING)] */
+}/* [gensize,public] */;
 
 /* bitmap nbt_server_type */
 #define NBT_SERVER_PDC ( 0x00000001 )
@@ -468,14 +410,91 @@ struct nbt_netlogon_response_from_pdc {
 #define NBT_SERVER_SELECT_SECRET_DOMAIN_6 ( 0x00000800 )
 #define NBT_SERVER_FULL_SECRET_DOMAIN_6 ( 0x00001000 )
 
-struct nbt_dc_sock_addr {
-	uint32_t family;
-	const char * pdc_ip;/* [flag(LIBNDR_FLAG_BIGENDIAN)] */
-	DATA_BLOB remaining;/* [flag(LIBNDR_FLAG_REMAINING)] */
-};
+/* bitmap netlogon_nt_version_flags */
+#define NETLOGON_NT_VERSION_1 ( 0x00000001 )
+#define NETLOGON_NT_VERSION_5 ( 0x00000002 )
+#define NETLOGON_NT_VERSION_5EX ( 0x00000004 )
+#define NETLOGON_NT_VERSION_5EX_WITH_IP ( 0x00000008 )
+#define NETLOGON_NT_VERSION_WITH_CLOSEST_SITE ( 0x00000010 )
+#define NETLOGON_NT_VERSION_AVIOD_NT4EMUL ( 0x01000000 )
+#define NETLOGON_NT_VERSION_PDC ( 0x10000000 )
+#define NETLOGON_NT_VERSION_IP ( 0x20000000 )
+#define NETLOGON_NT_VERSION_LOCAL ( 0x40000000 )
+#define NETLOGON_NT_VERSION_GC ( 0x80000000 )
 
-struct nbt_netlogon_response_from_pdc2 {
+enum netlogon_command
+#ifndef USE_UINT_ENUMS
+ {
+	LOGON_PRIMARY_QUERY=7,
+	NETLOGON_ANNOUNCE_UAS=10,
+	NETLOGON_RESPONSE_FROM_PDC=12,
+	LOGON_SAM_LOGON_REQUEST=18,
+	LOGON_SAM_LOGON_RESPONSE=19,
+	LOGON_SAM_LOGON_PAUSE_RESPONSE=20,
+	LOGON_SAM_LOGON_USER_UNKNOWN=21,
+	LOGON_SAM_LOGON_RESPONSE_EX=23,
+	LOGON_SAM_LOGON_PAUSE_RESPONSE_EX=24,
+	LOGON_SAM_LOGON_USER_UNKNOWN_EX=25
+}
+#else
+ { __donnot_use_enum_netlogon_command=0x7FFFFFFF}
+#define LOGON_PRIMARY_QUERY ( 7 )
+#define NETLOGON_ANNOUNCE_UAS ( 10 )
+#define NETLOGON_RESPONSE_FROM_PDC ( 12 )
+#define LOGON_SAM_LOGON_REQUEST ( 18 )
+#define LOGON_SAM_LOGON_RESPONSE ( 19 )
+#define LOGON_SAM_LOGON_PAUSE_RESPONSE ( 20 )
+#define LOGON_SAM_LOGON_USER_UNKNOWN ( 21 )
+#define LOGON_SAM_LOGON_RESPONSE_EX ( 23 )
+#define LOGON_SAM_LOGON_PAUSE_RESPONSE_EX ( 24 )
+#define LOGON_SAM_LOGON_USER_UNKNOWN_EX ( 25 )
+#endif
+;
+
+struct NETLOGON_SAM_LOGON_REQUEST {
+	uint16_t request_count;
+	const char * computer_name;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	const char * user_name;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	const char * mailslot_name;/* [flag(LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM)] */
+	uint32_t acct_control;
+	uint32_t sid_size;/* [value(ndr_size_dom_sid0(&sid,ndr->flags))] */
 	DATA_BLOB _pad;/* [flag(LIBNDR_FLAG_ALIGN4)] */
+	struct dom_sid0 sid;/* [subcontext_size(sid_size),subcontext(0)] */
+	uint32_t nt_version;
+	uint16_t lmnt_token;
+	uint16_t lm20_token;
+}/* [nopull,nopush] */;
+
+struct NETLOGON_SAM_LOGON_RESPONSE_NT40 {
+	enum netlogon_command command;
+	const char * server;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	const char * user_name;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	const char * domain;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	uint32_t nt_version;
+	uint16_t lmnt_token;
+	uint16_t lm20_token;
+}/* [public,flag(LIBNDR_FLAG_NOALIGN)] */;
+
+struct NETLOGON_SAM_LOGON_RESPONSE {
+	enum netlogon_command command;
+	const char * pdc_name;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	const char * user_name;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	const char * domain_name;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	struct GUID domain_uuid;
+	struct GUID zero_uuid;
+	const char * forest;
+	const char * dns_domain;
+	const char * pdc_dns_name;
+	const char * pdc_ip;
+	uint32_t server_type;
+	uint32_t nt_version;
+	uint16_t lmnt_token;
+	uint16_t lm20_token;
+}/* [public,flag(LIBNDR_FLAG_NOALIGN)] */;
+
+struct NETLOGON_SAM_LOGON_RESPONSE_EX {
+	enum netlogon_command command;
+	uint16_t sbz;
 	uint32_t server_type;
 	struct GUID domain_uuid;
 	const char * forest;
@@ -486,22 +505,44 @@ struct nbt_netlogon_response_from_pdc2 {
 	const char * user_name;
 	const char * server_site;
 	const char * client_site;
-	uint8_t dc_sock_addr_size;
-	struct nbt_dc_sock_addr dc_sock_addr;/* [subcontext_size(dc_sock_addr_size),subcontext(0)] */
+	uint8_t sockaddr_size;/* [value(ndr_size_nbt_sockaddr(&sockaddr,ndr->flags))] */
+	struct nbt_sockaddr sockaddr;/* [subcontext_size(sockaddr_size),subcontext(0)] */
+	const char * next_closest_site;
+	uint32_t nt_version;
+	uint16_t lmnt_token;
+	uint16_t lm20_token;
+}/* [public,flag(LIBNDR_FLAG_NOALIGN)] */;
+
+struct nbt_netlogon_query_for_pdc {
+	const char * computer_name;/* [flag(LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM)] */
+	const char * mailslot_name;/* [flag(LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM)] */
+	DATA_BLOB _pad;/* [flag(LIBNDR_FLAG_ALIGN2)] */
+	const char * unicode_name;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	uint32_t nt_version;
 	uint16_t lmnt_token;
 	uint16_t lm20_token;
 };
 
+struct nbt_netlogon_response_from_pdc {
+	enum netlogon_command command;
+	const char * pdc_name;/* [flag(LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM)] */
+	DATA_BLOB _pad;/* [flag(LIBNDR_FLAG_ALIGN2)] */
+	const char * unicode_pdc_name;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	const char * domain_name;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	uint32_t nt_version;
+	uint16_t lmnt_token;
+	uint16_t lm20_token;
+}/* [public,flag(LIBNDR_FLAG_NOALIGN)] */;
+
 enum netr_SamDatabaseID;
 
-struct nbt_db_change {
+struct nbt_db_change_info {
 	enum netr_SamDatabaseID db_index;
 	uint64_t serial;
 	NTTIME timestamp;
 };
 
-struct nbt_netlogon_announce_uas {
+struct NETLOGON_DB_CHANGE {
 	uint32_t serial_lo;
 	time_t timestamp;
 	uint32_t pulse;
@@ -512,189 +553,22 @@ struct nbt_netlogon_announce_uas {
 	const char * unicode_pdc_name;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	const char * unicode_domain;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	uint32_t db_count;
-	struct nbt_db_change *dbchange;
+	struct nbt_db_change_info *dbchange;
 	uint32_t sid_size;/* [value(ndr_size_dom_sid0(&sid,ndr->flags))] */
 	struct dom_sid0 sid;/* [subcontext_size(sid_size),subcontext(0)] */
-	uint32_t nt_version;
-	uint16_t lmnt_token;
-	uint16_t lm20_token;
+	uint32_t message_format_version;
+	uint32_t message_token;
 };
 
 union nbt_netlogon_request {
-	struct nbt_netlogon_query_for_pdc pdc;/* [case(NETLOGON_QUERY_FOR_PDC)] */
-	struct nbt_netlogon_query_for_pdc2 pdc2;/* [case(NETLOGON_QUERY_FOR_PDC2)] */
-	struct nbt_netlogon_announce_uas uas;/* [case(NETLOGON_ANNOUNCE_UAS)] */
-	struct nbt_netlogon_response_from_pdc response;/* [case(NETLOGON_RESPONSE_FROM_PDC)] */
-	struct nbt_netlogon_response_from_pdc2 response2;/* [case(NETLOGON_RESPONSE_FROM_PDC2)] */
+	struct NETLOGON_SAM_LOGON_REQUEST logon;/* [case(LOGON_SAM_LOGON_REQUEST)] */
+	struct nbt_netlogon_query_for_pdc pdc;/* [case(LOGON_PRIMARY_QUERY)] */
+	struct NETLOGON_DB_CHANGE uas;/* [case(NETLOGON_ANNOUNCE_UAS)] */
 }/* [nodiscriminant] */;
 
 struct nbt_netlogon_packet {
-	enum nbt_netlogon_command command;
+	enum netlogon_command command;
 	union nbt_netlogon_request req;/* [switch_is(command)] */
-}/* [public,flag(LIBNDR_FLAG_NOALIGN)] */;
-
-struct nbt_cldap_netlogon_1 {
-	enum nbt_netlogon_command type;
-	const char * pdc_name;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
-	const char * user_name;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
-	const char * domain_name;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
-	uint32_t nt_version;/* [value] */
-	uint16_t lmnt_token;
-	uint16_t lm20_token;
-};
-
-struct nbt_cldap_netlogon_3 {
-	enum nbt_netlogon_command type;
-	const char * pdc_name;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
-	const char * user_name;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
-	const char * domain_name;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
-	struct GUID domain_uuid;
-	struct GUID unknown_uuid;
-	const char * forest;
-	const char * dns_domain;
-	const char * pdc_dns_name;
-	const char * pdc_ip;
-	uint32_t server_type;
-	uint32_t nt_version;/* [value(3)] */
-	uint16_t lmnt_token;
-	uint16_t lm20_token;
-};
-
-struct nbt_cldap_netlogon_5 {
-	enum nbt_netlogon_command type;
-	uint16_t sbz;
-	uint32_t server_type;
-	struct GUID domain_uuid;
-	const char * forest;
-	const char * dns_domain;
-	const char * pdc_dns_name;
-	const char * domain;
-	const char * pdc_name;
-	const char * user_name;
-	const char * server_site;
-	const char * client_site;
-	uint32_t nt_version;/* [value(5)] */
-	uint16_t lmnt_token;
-	uint16_t lm20_token;
-}/* [public] */;
-
-struct nbt_cldap_netlogon_13 {
-	enum nbt_netlogon_command type;
-	uint16_t sbz;
-	uint32_t server_type;
-	struct GUID domain_uuid;
-	const char * forest;
-	const char * dns_domain;
-	const char * pdc_dns_name;
-	const char * domain;
-	const char * pdc_name;
-	const char * user_name;
-	const char * server_site;
-	const char * client_site;
-	uint8_t dc_sock_addr_size;
-	struct nbt_dc_sock_addr dc_sock_addr;/* [subcontext_size(dc_sock_addr_size),subcontext(0)] */
-	uint32_t nt_version;/* [value(13)] */
-	uint16_t lmnt_token;
-	uint16_t lm20_token;
-};
-
-struct nbt_cldap_netlogon_15 {
-	enum nbt_netlogon_command type;
-	uint16_t sbz;
-	uint32_t server_type;
-	struct GUID domain_uuid;
-	const char * forest;
-	const char * dns_domain;
-	const char * pdc_dns_name;
-	const char * domain;
-	const char * pdc_name;
-	const char * user_name;
-	const char * server_site;
-	const char * client_site;
-	const char * next_closest_site;
-	uint32_t nt_version;/* [value(15)] */
-	uint16_t lmnt_token;
-	uint16_t lm20_token;
-}/* [public] */;
-
-struct nbt_cldap_netlogon_29 {
-	enum nbt_netlogon_command type;
-	uint16_t sbz;
-	uint32_t server_type;
-	struct GUID domain_uuid;
-	const char * forest;
-	const char * dns_domain;
-	const char * pdc_dns_name;
-	const char * domain;
-	const char * pdc_name;
-	const char * user_name;
-	const char * server_site;
-	const char * client_site;
-	uint8_t dc_sock_addr_size;
-	struct nbt_dc_sock_addr dc_sock_addr;/* [subcontext_size(dc_sock_addr_size),subcontext(0)] */
-	const char * next_closest_site;
-	uint32_t nt_version;/* [value(29)] */
-	uint16_t lmnt_token;
-	uint16_t lm20_token;
-}/* [public] */;
-
-union nbt_cldap_netlogon {
-	struct nbt_cldap_netlogon_1 logon1;/* [case(0)] */
-	struct nbt_cldap_netlogon_3 logon3;/* [case(2)] */
-	struct nbt_cldap_netlogon_5 logon5;/* [case(4)] */
-	struct nbt_cldap_netlogon_13 logon13;/* [case(8)] */
-	struct nbt_cldap_netlogon_15 logon15;/* [case(20)] */
-	struct nbt_cldap_netlogon_29 logon29;/* [case(29)] */
-}/* [public,nodiscriminant,flag(LIBNDR_FLAG_NOALIGN)] */;
-
-enum nbt_ntlogon_command
-#ifndef USE_UINT_ENUMS
- {
-	NTLOGON_SAM_LOGON=0x12,
-	NTLOGON_SAM_LOGON_REPLY=0x13,
-	NTLOGON_SAM_LOGON_REPLY15=0x15,
-	NTLOGON_RESPONSE_FROM_PDC2=0x17
-}
-#else
- { __donnot_use_enum_nbt_ntlogon_command=0x7FFFFFFF}
-#define NTLOGON_SAM_LOGON ( 0x12 )
-#define NTLOGON_SAM_LOGON_REPLY ( 0x13 )
-#define NTLOGON_SAM_LOGON_REPLY15 ( 0x15 )
-#define NTLOGON_RESPONSE_FROM_PDC2 ( 0x17 )
-#endif
-;
-
-struct nbt_ntlogon_sam_logon {
-	uint16_t request_count;
-	const char * computer_name;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
-	const char * user_name;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
-	const char * mailslot_name;/* [flag(LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM)] */
-	uint32_t acct_control;
-	uint32_t sid_size;/* [value(ndr_size_dom_sid0(&sid,ndr->flags))] */
-	struct dom_sid0 sid;/* [subcontext_size(sid_size),subcontext(0)] */
-	uint32_t nt_version;
-	uint16_t lmnt_token;
-	uint16_t lm20_token;
-};
-
-struct nbt_ntlogon_sam_logon_reply {
-	const char * server;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
-	const char * user_name;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
-	const char * domain;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
-	uint32_t nt_version;
-	uint16_t lmnt_token;
-	uint16_t lm20_token;
-};
-
-union nbt_ntlogon_request {
-	struct nbt_ntlogon_sam_logon logon;/* [case(NTLOGON_SAM_LOGON)] */
-	struct nbt_ntlogon_sam_logon_reply reply;/* [case(NTLOGON_SAM_LOGON_REPLY)] */
-	struct nbt_netlogon_response_from_pdc2 reply2;/* [case(NTLOGON_RESPONSE_FROM_PDC2)] */
-}/* [nodiscriminant] */;
-
-struct nbt_ntlogon_packet {
-	enum nbt_ntlogon_command command;
-	union nbt_ntlogon_request req;/* [switch_is(command)] */
 }/* [public,flag(LIBNDR_FLAG_NOALIGN)] */;
 
 enum nbt_browse_opcode
