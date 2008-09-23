@@ -359,6 +359,7 @@ bool smbcli_simple_set_signing(TALLOC_CTX *mem_ctx,
 	dump_data_pw("Started Signing with key:\n", sign_info->mac_key.data, sign_info->mac_key.length);
 
 	sign_info->signing_state = SMB_SIGNING_ENGINE_ON;
+	sign_info->next_seq_num = 2;
 
 	return true;
 }
