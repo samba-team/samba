@@ -82,6 +82,10 @@ NTSTATUS pull_netlogon_samlogon_response(DATA_BLOB *data, TALLOC_CTX *mem_ctx,
 						   &response->nt4,
 						   (ndr_pull_flags_fn_t)ndr_pull_NETLOGON_SAM_LOGON_RESPONSE_NT40);
 		response->ntver = NETLOGON_NT_VERSION_1;
+		if (NDR_ERR_CODE_IS_SUCCESS(ndr_err) && DEBUGLEVEL >= 10) {
+			NDR_PRINT_DEBUG(NETLOGON_SAM_LOGON_RESPONSE_NT40, &response->nt4);
+		}
+
 	} else if (ntver & NETLOGON_NT_VERSION_5EX) {
 		struct ndr_pull *ndr;
 		ndr = ndr_pull_init_blob(data, mem_ctx, iconv_convenience);
@@ -95,6 +99,9 @@ NTSTATUS pull_netlogon_samlogon_response(DATA_BLOB *data, TALLOC_CTX *mem_ctx,
 						 ndr->offset, ndr->data_size);
 		}
 		response->ntver = NETLOGON_NT_VERSION_5EX;
+		if (NDR_ERR_CODE_IS_SUCCESS(ndr_err) && DEBUGLEVEL >= 10) {
+			NDR_PRINT_DEBUG(NETLOGON_SAM_LOGON_RESPONSE_EX, &response->nt5_ex);
+		}
 
 	} else if (ntver & NETLOGON_NT_VERSION_5) {
 		ndr_err = ndr_pull_struct_blob_all(data, mem_ctx,
@@ -102,6 +109,9 @@ NTSTATUS pull_netlogon_samlogon_response(DATA_BLOB *data, TALLOC_CTX *mem_ctx,
 						   &response->nt5,
 						   (ndr_pull_flags_fn_t)ndr_pull_NETLOGON_SAM_LOGON_RESPONSE);
 		response->ntver = NETLOGON_NT_VERSION_5;
+		if (NDR_ERR_CODE_IS_SUCCESS(ndr_err) && DEBUGLEVEL >= 10) {
+			NDR_PRINT_DEBUG(NETLOGON_SAM_LOGON_RESPONSE, &response->nt5);
+		}
 	} else {
 		DEBUG(2,("failed to parse netlogon response of type 0x%02x - unknown response type\n",
 			 ntver));
@@ -115,6 +125,7 @@ NTSTATUS pull_netlogon_samlogon_response(DATA_BLOB *data, TALLOC_CTX *mem_ctx,
 		dump_data(10, data->data, data->length);
 		return ndr_map_error2ntstatus(ndr_err);
 	}
+
 	return NT_STATUS_OK;
 }
 
