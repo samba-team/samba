@@ -29,7 +29,7 @@
 #include "system/locale.h"
 #include "lib/socket/netif.h"
 #include "librpc/gen_ndr/nbt.h"
-#include "libcli/nbt/libnbt.h"
+#include "../libcli/nbt/libnbt.h"
 #include "param/param.h"
 
 /* command line options */

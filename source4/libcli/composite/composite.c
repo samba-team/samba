@@ -28,7 +28,7 @@
 #include "libcli/composite/composite.h"
 #include "lib/messaging/irpc.h"
 #include "librpc/rpc/dcerpc.h"
-#include "libcli/nbt/libnbt.h"
+#include "../libcli/nbt/libnbt.h"
 
 /*
  create a new composite_context structure

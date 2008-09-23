@@ -20,7 +20,7 @@
 */
 
 #include "includes.h"
-#include "libcli/nbt/libnbt.h"
+#include "../libcli/nbt/libnbt.h"
 #include "libcli/resolve/resolve.h"
 #include "param/param.h"
 #include "lib/socket/netif.h"

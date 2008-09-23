@@ -28,7 +28,7 @@
 #include "system/network.h"
 #include "lib/socket/netif.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
-#include "libcli/nbt/libnbt.h"
+#include "../libcli/nbt/libnbt.h"
 #include "param/param.h"
 
 struct nbtlist_state {
