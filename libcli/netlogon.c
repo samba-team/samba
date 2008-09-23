@@ -1,44 +1,44 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    CLDAP server structures
 
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2008
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "includes.h"
-#include "libcli/netlogon.h"
+#include "../libcli/netlogon.h"
 
-NTSTATUS push_netlogon_samlogon_response(DATA_BLOB *data, TALLOC_CTX *mem_ctx, 
+NTSTATUS push_netlogon_samlogon_response(DATA_BLOB *data, TALLOC_CTX *mem_ctx,
 					 struct smb_iconv_convenience *iconv_convenience,
-					 struct netlogon_samlogon_response *response) 
+					 struct netlogon_samlogon_response *response)
 {
 	enum ndr_err_code ndr_err;
 	if (response->ntver == NETLOGON_NT_VERSION_1) {
-		ndr_err = ndr_push_struct_blob(data, mem_ctx, 
+		ndr_err = ndr_push_struct_blob(data, mem_ctx,
 					       iconv_convenience,
 					       &response->nt4,
 					       (ndr_push_flags_fn_t)ndr_push_NETLOGON_SAM_LOGON_RESPONSE_NT40);
 	} else if (response->ntver & NETLOGON_NT_VERSION_5EX) {
-		ndr_err = ndr_push_struct_blob(data, mem_ctx, 
+		ndr_err = ndr_push_struct_blob(data, mem_ctx,
 					       iconv_convenience,
 					       &response->nt5_ex,
 					       (ndr_push_flags_fn_t)ndr_push_NETLOGON_SAM_LOGON_RESPONSE_EX_with_flags);
 	} else if (response->ntver & NETLOGON_NT_VERSION_5) {
-		ndr_err = ndr_push_struct_blob(data, mem_ctx, 
+		ndr_err = ndr_push_struct_blob(data, mem_ctx,
 					       iconv_convenience,
 					       &response->nt5,
 					       (ndr_push_flags_fn_t)ndr_push_NETLOGON_SAM_LOGON_RESPONSE);
@@ -54,7 +54,7 @@ NTSTATUS push_netlogon_samlogon_response(DATA_BLOB *data, TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS pull_netlogon_samlogon_response(DATA_BLOB *data, TALLOC_CTX *mem_ctx, 
+NTSTATUS pull_netlogon_samlogon_response(DATA_BLOB *data, TALLOC_CTX *mem_ctx,
 					 struct smb_iconv_convenience *iconv_convenience,
 					 struct netlogon_samlogon_response *response)
 {
@@ -75,9 +75,9 @@ NTSTATUS pull_netlogon_samlogon_response(DATA_BLOB *data, TALLOC_CTX *mem_ctx,
 	}
 
 	ntver = IVAL(data->data, data->length - 8);
-	
+
 	if (ntver == NETLOGON_NT_VERSION_1) {
-		ndr_err = ndr_pull_struct_blob_all(data, mem_ctx, 
+		ndr_err = ndr_pull_struct_blob_all(data, mem_ctx,
 						   iconv_convenience,
 						   &response->nt4,
 						   (ndr_pull_flags_fn_t)ndr_pull_NETLOGON_SAM_LOGON_RESPONSE_NT40);
@@ -97,7 +97,7 @@ NTSTATUS pull_netlogon_samlogon_response(DATA_BLOB *data, TALLOC_CTX *mem_ctx,
 		response->ntver = NETLOGON_NT_VERSION_5EX;
 
 	} else if (ntver & NETLOGON_NT_VERSION_5) {
-		ndr_err = ndr_pull_struct_blob_all(data, mem_ctx, 
+		ndr_err = ndr_pull_struct_blob_all(data, mem_ctx,
 						   iconv_convenience,
 						   &response->nt5,
 						   (ndr_pull_flags_fn_t)ndr_pull_NETLOGON_SAM_LOGON_RESPONSE);
@@ -142,7 +142,7 @@ void map_netlogon_samlogon_response(struct netlogon_samlogon_response *response)
 		response->ntver = NETLOGON_NT_VERSION_5EX;
 		response->nt5_ex = response_5_ex;
 		break;
-		
+
 	case NETLOGON_NT_VERSION_1:
 		ZERO_STRUCT(response_5_ex);
 		response_5_ex.command = response->nt4.command;
@@ -159,9 +159,9 @@ void map_netlogon_samlogon_response(struct netlogon_samlogon_response *response)
 	return;
 }
 
-NTSTATUS push_nbt_netlogon_response(DATA_BLOB *data, TALLOC_CTX *mem_ctx, 
+NTSTATUS push_nbt_netlogon_response(DATA_BLOB *data, TALLOC_CTX *mem_ctx,
 				    struct smb_iconv_convenience *iconv_convenience,
-				    struct nbt_netlogon_response *response) 
+				    struct nbt_netlogon_response *response)
 {
 	NTSTATUS status = NT_STATUS_INVALID_NETWORK_RESPONSE;
 	enum ndr_err_code ndr_err;
@@ -188,9 +188,9 @@ NTSTATUS push_nbt_netlogon_response(DATA_BLOB *data, TALLOC_CTX *mem_ctx,
 }
 
 
-NTSTATUS pull_nbt_netlogon_response(DATA_BLOB *data, TALLOC_CTX *mem_ctx, 
+NTSTATUS pull_nbt_netlogon_response(DATA_BLOB *data, TALLOC_CTX *mem_ctx,
 					 struct smb_iconv_convenience *iconv_convenience,
-					 struct nbt_netlogon_response *response) 
+					 struct nbt_netlogon_response *response)
 {
 	NTSTATUS status = NT_STATUS_INVALID_NETWORK_RESPONSE;
 	enum netlogon_command command;
@@ -226,7 +226,7 @@ NTSTATUS pull_nbt_netlogon_response(DATA_BLOB *data, TALLOC_CTX *mem_ctx,
 		status = pull_netlogon_samlogon_response(data, mem_ctx, iconv_convenience, &response->samlogon);
 		response->response_type = NETLOGON_SAMLOGON;
 		break;
-		
+
 	/* These levels are queries, not responses */
 	case LOGON_PRIMARY_QUERY:
 	case NETLOGON_ANNOUNCE_UAS:
