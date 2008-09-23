@@ -1112,6 +1112,15 @@ union smb_setfileinfo {
 			struct security_descriptor *sd;
 		} in;
 	} set_secdesc;
+
+	/* RAW_SFILEINFO_FULL_EA_INFORMATION */
+	struct {
+		enum smb_setfileinfo_level level;
+		struct {
+			union smb_handle_or_path file;
+			struct smb_ea_list eas;
+		} in;
+	} full_ea_information;
 };
 
 

@@ -37,7 +37,7 @@ bool smb_raw_setfileinfo_passthru(TALLOC_CTX *mem_ctx,
 
 #define NEED_BLOB(n) do { \
 	  *blob = data_blob_talloc(mem_ctx, NULL, n); \
-	  if (blob->data == NULL) return false; \
+	  if (blob->data == NULL && n != 0) return false; \
         } while (0)
 
 	switch (level) {
@@ -108,6 +108,16 @@ bool smb_raw_setfileinfo_passthru(TALLOC_CTX *mem_ctx,
 
 		return true;
 	}
+
+	case RAW_SFILEINFO_FULL_EA_INFORMATION:
+		printf("num_eas=%d\n", parms->full_ea_information.in.eas.num_eas);
+		NEED_BLOB(ea_list_size_chained(
+				  parms->full_ea_information.in.eas.num_eas,
+				  parms->full_ea_information.in.eas.eas, 4));
+		ea_put_list_chained(blob->data, 
+				    parms->full_ea_information.in.eas.num_eas,
+				    parms->full_ea_information.in.eas.eas, 4);
+		return true;
 
 		/* Unhandled levels */
 	case RAW_SFILEINFO_PIPE_INFORMATION:
