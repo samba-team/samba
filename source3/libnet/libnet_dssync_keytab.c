@@ -179,7 +179,7 @@ static  NTSTATUS parse_supplemental_credentials(TALLOC_CTX *mem_ctx,
 	bool newer_keys = false;
 	uint32_t j;
 
-	ndr_err = ndr_pull_struct_blob_all(blob, mem_ctx, &scb,
+	ndr_err = ndr_pull_struct_blob_all(blob, mem_ctx, NULL, &scb,
 			(ndr_pull_flags_fn_t)ndr_pull_supplementalCredentialsBlob);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		status = ndr_map_error2ntstatus(ndr_err);

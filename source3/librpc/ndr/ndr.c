@@ -53,7 +53,7 @@ _PUBLIC_ size_t ndr_align_size(uint32_t offset, size_t n)
 /*
   initialise a ndr parse structure from a data blob
 */
-_PUBLIC_ struct ndr_pull *ndr_pull_init_blob(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx)
+_PUBLIC_ struct ndr_pull *ndr_pull_init_blob(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *iconv_convenience)
 {
 	struct ndr_pull *ndr;
 
@@ -810,7 +810,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_struct_blob(const DATA_BLOB *blob,
 						ndr_pull_flags_fn_t fn)
 {
 	struct ndr_pull *ndr;
-	ndr = ndr_pull_init_blob(blob, mem_ctx);
+	ndr = ndr_pull_init_blob(blob, mem_ctx, iconv_convenience);
 	NDR_ERR_HAVE_NO_MEMORY(ndr);
 	NDR_CHECK(fn(ndr, NDR_SCALARS|NDR_BUFFERS, p));
 	return NDR_ERR_SUCCESS;
@@ -819,11 +819,12 @@ _PUBLIC_ enum ndr_err_code ndr_pull_struct_blob(const DATA_BLOB *blob,
 /*
   pull a struct from a blob using NDR - failing if all bytes are not consumed
 */
-_PUBLIC_ enum ndr_err_code ndr_pull_struct_blob_all(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx, void *p,
-				  ndr_pull_flags_fn_t fn)
+_PUBLIC_ enum ndr_err_code ndr_pull_struct_blob_all(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx,
+						    struct smb_iconv_convenience *iconv_convenience,
+						    void *p, ndr_pull_flags_fn_t fn)
 {
 	struct ndr_pull *ndr;
-	ndr = ndr_pull_init_blob(blob, mem_ctx);
+	ndr = ndr_pull_init_blob(blob, mem_ctx, iconv_convenience);
 	NDR_ERR_HAVE_NO_MEMORY(ndr);
 	NDR_CHECK(fn(ndr, NDR_SCALARS|NDR_BUFFERS, p));
 	if (ndr->offset < ndr->data_size) {
@@ -841,7 +842,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_union_blob(const DATA_BLOB *blob, TALLOC_CTX
 			     uint32_t level, ndr_pull_flags_fn_t fn)
 {
 	struct ndr_pull *ndr;
-	ndr = ndr_pull_init_blob(blob, mem_ctx);
+	ndr = ndr_pull_init_blob(blob, mem_ctx, NULL);
 	NDR_ERR_HAVE_NO_MEMORY(ndr);
 	NDR_CHECK(ndr_pull_set_switch_value(ndr, p, level));
 	NDR_CHECK(fn(ndr, NDR_SCALARS|NDR_BUFFERS, p));
@@ -856,7 +857,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_union_blob_all(const DATA_BLOB *blob, TALLOC
 			     uint32_t level, ndr_pull_flags_fn_t fn)
 {
 	struct ndr_pull *ndr;
-	ndr = ndr_pull_init_blob(blob, mem_ctx);
+	ndr = ndr_pull_init_blob(blob, mem_ctx, NULL);
 	NDR_ERR_HAVE_NO_MEMORY(ndr);
 	NDR_CHECK(ndr_pull_set_switch_value(ndr, p, level));
 	NDR_CHECK(fn(ndr, NDR_SCALARS|NDR_BUFFERS, p));

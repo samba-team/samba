@@ -3881,7 +3881,7 @@ NTSTATUS rpc_wkssvc_init(void);
 /* The following definitions come from librpc/ndr/ndr.c  */
 
 _PUBLIC_ size_t ndr_align_size(uint32_t offset, size_t n);
-_PUBLIC_ struct ndr_pull *ndr_pull_init_blob(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx);
+_PUBLIC_ struct ndr_pull *ndr_pull_init_blob(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *iconv_convenience);
 _PUBLIC_ enum ndr_err_code ndr_pull_advance(struct ndr_pull *ndr, uint32_t size);
 _PUBLIC_ void ndr_pull_save(struct ndr_pull *ndr, struct ndr_pull_save *save);
 _PUBLIC_ void ndr_pull_restore(struct ndr_pull *ndr, struct ndr_pull_save *save);
@@ -3944,8 +3944,9 @@ _PUBLIC_ uint32_t ndr_push_get_switch_value(struct ndr_push *ndr, const void *p)
 _PUBLIC_ uint32_t ndr_pull_get_switch_value(struct ndr_pull *ndr, const void *p);
 _PUBLIC_ uint32_t ndr_print_get_switch_value(struct ndr_print *ndr, const void *p);
 _PUBLIC_ enum ndr_err_code ndr_pull_struct_blob(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *iconv_convenience, void *p, ndr_pull_flags_fn_t fn);
-_PUBLIC_ enum ndr_err_code ndr_pull_struct_blob_all(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx, void *p,
-				  ndr_pull_flags_fn_t fn);
+_PUBLIC_ enum ndr_err_code ndr_pull_struct_blob_all(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx,
+						    struct smb_iconv_convenience *iconv_convenience,
+						    void *p, ndr_pull_flags_fn_t fn);
 _PUBLIC_ enum ndr_err_code ndr_pull_union_blob(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx, void *p,
 			     uint32_t level, ndr_pull_flags_fn_t fn);
 _PUBLIC_ enum ndr_err_code ndr_pull_union_blob_all(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx, void *p,
