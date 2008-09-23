@@ -61,17 +61,17 @@ $(eval $(call proto_header_template,../$(libclisrcdir)/nbt/nbt_proto.h,$(LIBCLI_
 PUBLIC_DEPENDENCIES = LIBNDR  \
 	NDR_SECURITY 	
 
-LIBCLI_NDR_NETLOGON_OBJ_FILES = $(addprefix $(libclisrcdir)/, ndr_netlogon.o)
+LIBCLI_NDR_NETLOGON_OBJ_FILES = $(addprefix ../$(libclisrcdir)/, ndr_netlogon.o)
 
-$(eval $(call proto_header_template,$(libclisrcdir)/ndr_netlogon_proto.h,$(LIBCLI_NDR_NETLOGON_OBJ_FILES:.o=.c)))
+$(eval $(call proto_header_template,../$(libclisrcdir)/ndr_netlogon_proto.h,$(LIBCLI_NDR_NETLOGON_OBJ_FILES:.o=.c)))
 
 [SUBSYSTEM::LIBCLI_NETLOGON]
 PUBLIC_DEPENDENCIES = LIBSAMBA-UTIL LIBCLI_NDR_NETLOGON
 
-LIBCLI_NETLOGON_OBJ_FILES = $(addprefix $(libclisrcdir)/, \
+LIBCLI_NETLOGON_OBJ_FILES = $(addprefix ../$(libclisrcdir)/, \
 	netlogon.o)
 
-$(eval $(call proto_header_template,$(libclisrcdir)/netlogon_proto.h,$(LIBCLI_NETLOGON_OBJ_FILES:.o=.c)))
+$(eval $(call proto_header_template,../$(libclisrcdir)/netlogon_proto.h,$(LIBCLI_NETLOGON_OBJ_FILES:.o=.c)))
 
 [SUBSYSTEM::LIBCLI_DRSBLOBS]
 PUBLIC_DEPENDENCIES = LIBNDR 
