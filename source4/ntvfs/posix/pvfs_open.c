@@ -1216,6 +1216,8 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	create_options &= ~create_options_must_ignore_mask;
 
 	if (create_options & NTCREATEX_OPTIONS_NOT_SUPPORTED_MASK) {
+		DEBUG(2,(__location__ " create_options 0x%x not supported\n", 
+			 create_options));
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 
