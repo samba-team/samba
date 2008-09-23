@@ -2,15 +2,10 @@
 # install miscellaneous files
 
 SRCDIR="$1"
-JSDIR="$2"
-SETUPDIR="$3"
-BINDIR="$4"
+SETUPDIR="$2"
+BINDIR="$3"
 
 cd $SRCDIR || exit 1
-
-echo "Installing js libs"
-mkdir -p $JSDIR || exit 1
-cp scripting/libjs/*.js $JSDIR || exit 1
 
 echo "Installing setup templates"
 mkdir -p $SETUPDIR || exit 1

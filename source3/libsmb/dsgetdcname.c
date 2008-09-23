@@ -331,7 +331,7 @@ static NTSTATUS store_cldap_reply(TALLOC_CTX *mem_ctx,
 		return status;
 	}
 
-	ndr_err = ndr_push_struct_blob(&blob, mem_ctx, &logon29,
+	ndr_err = ndr_push_struct_blob(&blob, mem_ctx, NULL, &logon29,
 		       (ndr_push_flags_fn_t)ndr_push_nbt_cldap_netlogon_29);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return ndr_map_error2ntstatus(ndr_err);
@@ -508,7 +508,7 @@ static NTSTATUS dsgetdcname_cache_fetch(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	ndr_err = ndr_pull_struct_blob(&blob, mem_ctx, &r,
+	ndr_err = ndr_pull_struct_blob(&blob, mem_ctx, NULL, &r,
 		      (ndr_pull_flags_fn_t)ndr_pull_nbt_cldap_netlogon_29);
 
 	data_blob_free(&blob);

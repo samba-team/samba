@@ -2,7 +2,7 @@
 # Simple tests for the ldb python bindings.
 # Copyright (C) 2007 Jelmer Vernooij <jelmer@samba.org>
 
-import sys
+import os, sys
 import unittest
 
 # Required for the standalone LDB build
@@ -472,11 +472,16 @@ class ModuleTests(unittest.TestCase):
 
             def __init__(self, ldb, next):
                 ops.append("init")
+                self.next = next
+
+            def search(self, *args, **kwargs):
+                return self.next.search(*args, **kwargs)
 
         ldb.register_module(ExampleModule)
+        if os.path.exists("usemodule.ldb"):
+            os.unlink("usemodule.ldb")
         l = ldb.Ldb("usemodule.ldb")
-        l.add({"dn": "@MODULES",
-                 "@LIST": "bla"})
+        l.add({"dn": "@MODULES", "@LIST": "bla"})
         self.assertEquals([], ops)
         l = ldb.Ldb("usemodule.ldb")
         self.assertEquals(["init"], ops)

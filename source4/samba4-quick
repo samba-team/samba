@@ -35,3 +35,4 @@ rpc.altercontext
 rpc.join
 rpc.handles
 rpc.echo
+smb.signing

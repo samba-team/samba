@@ -68,7 +68,7 @@ void nbtd_wins_dns_proxy_query(struct nbt_name_socket *nbtsock,
 			       struct socket_address *src)
 {
 	struct nbt_name *name = &packet->questions[0].name;
-	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private,
+	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private_data,
 						       struct nbtd_interface);
 	struct wins_dns_proxy_state *s;
 	struct composite_context *creq;

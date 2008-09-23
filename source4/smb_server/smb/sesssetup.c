@@ -193,16 +193,6 @@ static void sesssetup_nt1_send(struct auth_check_password_request *areq,
 		goto done;
 	}
 
-	/* Force check of the request packet, now we know the session key */
-	smbsrv_signing_check_incoming(req);
-/* TODO: why don't we check the result here? */
-
-	/* Unfortunetly win2k3 as a client doesn't sign the request
-	 * packet here, so we have to force signing to start again */
-
-	smbsrv_signing_restart(req->smb_conn, &session_info->session_key, &sess->nt1.in.password2, 
-			       session_info->server_info->authenticated);
-
 done:
 	status = NT_STATUS_OK;
 failed:
@@ -321,13 +311,8 @@ static void sesssetup_spnego_send(struct gensec_update_request *greq, void *priv
 	if (!NT_STATUS_IS_OK(status)) goto failed;
 
 	skey_status = gensec_session_key(smb_sess->gensec_ctx, &session_key);
-	if (NT_STATUS_IS_OK(skey_status) &&
-	    smbsrv_setup_signing(req->smb_conn, &session_key, NULL)) {
-		/* Force check of the request packet, now we know the session key */
-		smbsrv_signing_check_incoming(req);
-
-		smbsrv_signing_restart(req->smb_conn, &session_key, NULL, 
-				       session_info->server_info->authenticated);
+	if (NT_STATUS_IS_OK(skey_status)) {
+		smbsrv_setup_signing(req->smb_conn, &session_key, NULL);
 	}
 
 	/* Ensure this is marked as a 'real' vuid, not one

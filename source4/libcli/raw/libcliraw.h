@@ -261,6 +261,12 @@ struct smbcli_request {
 	   counter by one */
 	uint_t sign_single_increment:1;
 
+	/* the caller wants to do the signing check */
+	bool sign_caller_checks;
+
+	/* give the caller a chance to prevent the talloc_free() in the _recv() function */
+	bool do_not_free;
+
 	/* the mid of this packet - used to match replies */
 	uint16_t mid;
 

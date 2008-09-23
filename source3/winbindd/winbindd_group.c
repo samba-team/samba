@@ -35,7 +35,11 @@ static void add_member(const char *domain, const char *user,
 {
 	fstring name;
 
-	fill_domain_username(name, domain, user, True);
+	if (domain != NULL) {
+		fill_domain_username(name, domain, user, True);
+	} else {
+		fstrcpy(name, user);
+	}
 	safe_strcat(name, ",", sizeof(name)-1);
 	string_append(pp_members, name);
 	*p_num_members += 1;
@@ -136,7 +140,7 @@ static void add_expanded_sid(const DOM_SID *sid,
 			continue;
 		}
 
-		add_member(domain->name, names[i], pp_members, p_num_members);
+		add_member(NULL, names[i], pp_members, p_num_members);
 	}
 
  done:

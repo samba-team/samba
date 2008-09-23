@@ -515,6 +515,10 @@ static NTSTATUS gensec_krb5_session_key(struct gensec_security *gensec_security,
 	krb5_keyblock *skey;
 	krb5_error_code err = -1;
 
+	if (gensec_krb5_state->state_position != GENSEC_KRB5_DONE) {
+		return NT_STATUS_NO_USER_SESSION_KEY;
+	}
+
 	if (gensec_krb5_state->session_key.data) {
 		*session_key = gensec_krb5_state->session_key;
 		return NT_STATUS_OK;

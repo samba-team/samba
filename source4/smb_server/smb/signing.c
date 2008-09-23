@@ -75,30 +75,6 @@ bool smbsrv_setup_signing(struct smbsrv_connection *smb_conn,
 					 &smb_conn->signing, session_key, response);
 }
 
-void smbsrv_signing_restart(struct smbsrv_connection *smb_conn,
-			    DATA_BLOB *session_key,
-			    DATA_BLOB *response,
-			    bool authenticated_session) 
-{
-	if (!smb_conn->signing.seen_valid) {
-		DEBUG(5, ("Client did not send a valid signature on "
-			  "SPNEGO session setup - ignored, expect good next time\n"));
-		/* force things back on (most clients do not sign this packet)... */
-		smbsrv_setup_signing(smb_conn, session_key, response);
-		smb_conn->signing.next_seq_num = 2;
-
-		/* If mandetory_signing is set, and this was an authenticated logon, then force on */
-		if (smb_conn->signing.mandatory_signing && authenticated_session) {
-			DEBUG(5, ("Configured for mandatory signing, 'good packet seen' forced on\n"));
-			/* if this is mandatory, then
-			 * pretend we have seen a
-			 * valid packet, so we don't
-			 * turn it off */
-			smb_conn->signing.seen_valid = true;
-		}
-	}
-}
-
 bool smbsrv_init_signing(struct smbsrv_connection *smb_conn)
 {
 	smb_conn->signing.mac_key = data_blob(NULL, 0);
@@ -118,10 +94,19 @@ bool smbsrv_init_signing(struct smbsrv_connection *smb_conn)
 		smb_conn->signing.mandatory_signing = true;
 		break;
 	case SMB_SIGNING_AUTO:
+		/* If we are a domain controller, SMB signing is
+		 * really important, as it can prevent a number of
+		 * attacks on communications between us and the
+		 * clients */
+
 		if (lp_server_role(smb_conn->lp_ctx) == ROLE_DOMAIN_CONTROLLER) {
 			smb_conn->signing.allow_smb_signing = true;
 			smb_conn->signing.mandatory_signing = true;
 		} else {
+			/* However, it really sucks (no sendfile, CPU
+			 * overhead) performance-wise when used on a
+			 * file server, so disable it by default (auto
+			 * is the default) on non-DCs */
 			smb_conn->signing.allow_smb_signing = false;
 		}
 		break;

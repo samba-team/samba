@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 
 # Unix SMB/CIFS implementation.
 # Copyright © Jelmer Vernooij <jelmer@samba.org> 2008
@@ -19,9 +20,20 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-def SWAT(environ, start_response):
+def __call__(environ, start_response):
     status = '200 OK'
-    response_headers = [('Content-type','text/plain')]
+    response_headers = [('Content-type','text/html')]
     start_response(status, response_headers)
-    return ['Hello world!\n']
+    yield '<table>\n'
 
+    for key, value in environ.items():
+        if isinstance(value, str):
+            yield '\t<tr><td><b>%s</b></td><td>%s</td></tr>\n' % (key, value)
+
+    yield '</table>\n'
+
+if __name__ == '__main__':
+    from wsgiref import simple_server
+    httpd = simple_server.make_server('localhost', 8090, __call__)
+    print "Serving HTTP on port 8090..."
+    httpd.serve_forever()

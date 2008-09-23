@@ -13,7 +13,6 @@ pidldir := $(srcdir)/../pidl
 BASEDIR = $(prefix)
 TORTUREDIR = $(libdir)/torture
 SWATDIR = $(datadir)/swat
-JSDIR = $(datadir)/js
 SETUPDIR = $(datadir)/setup
 NCALRPCDIR = $(localstatedir)/ncalrpc
 
@@ -98,12 +97,12 @@ ntvfssrcdir := ntvfs
 ntptrsrcdir := ntptr
 librpcsrcdir := librpc
 libclisrcdir := libcli
-ejsscriptsrcdir := scripting/ejs
 pyscriptsrcdir := $(srcdir)/scripting/python
 kdcsrcdir := kdc
 ntp_signdsrcdir := ntp_signd
 wmisrcdir := lib/wmi
 tallocsrcdir := ../lib/talloc
+comsrcdir := $(srcdir)/lib/com
 
 include data.mk
 
@@ -164,7 +163,6 @@ showlayout::
 	@echo '  lockdir:     $(lockdir)'
 	@echo '  logfilebase: $(logfilebase)'
 	@echo '  setupdir:    $(SETUPDIR)'
-	@echo '  jsdir:       $(JSDIR)'
 	@echo '  swatdir:     $(SWATDIR)'
 	@echo '  mandir:      $(mandir)'
 	@echo '  torturedir:  $(TORTUREDIR)'
@@ -234,7 +232,7 @@ installman:: manpages installdirs
 	@$(SHELL) $(srcdir)/script/installman.sh $(DESTDIR)$(mandir) $(MANPAGES)
 
 installmisc:: installdirs
-	@$(SHELL) $(srcdir)/script/installmisc.sh $(srcdir) $(DESTDIR)$(JSDIR) $(DESTDIR)$(SETUPDIR) $(DESTDIR)$(bindir)
+	@$(SHELL) $(srcdir)/script/installmisc.sh $(srcdir) $(DESTDIR)$(SETUPDIR) $(DESTDIR)$(bindir)
 
 installpc:: installdirs
 	@$(SHELL) $(srcdir)/script/installpc.sh $(builddir) $(DESTDIR)$(PKGCONFIGDIR) $(PC_FILES)

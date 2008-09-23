@@ -569,6 +569,10 @@ bool parse_domain_user_talloc(TALLOC_CTX *mem_ctx, const char *domuser,
 void parse_add_domuser(void *buf, char *domuser, int *len);
 bool canonicalize_username(fstring username_inout, fstring domain, fstring user);
 void fill_domain_username(fstring name, const char *domain, const char *user, bool can_assume);
+char *fill_domain_username_talloc(TALLOC_CTX *ctx,
+				  const char *domain,
+				  const char *user,
+				  bool can_assume);
 const char *get_winbind_pipe_dir(void) ;
 char *get_winbind_priv_pipe_dir(void) ;
 int open_winbindd_socket(void);

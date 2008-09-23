@@ -337,7 +337,6 @@ static NTSTATUS dcesrv_netr_ServerPasswordSet2(struct dcesrv_call_state *dce_cal
 	struct ldb_context *sam_ctx;
 	NTSTATUS nt_status;
 	char new_pass[512];
-	uint32_t new_pass_len;
 	bool ret;
 
 	struct samr_CryptPassword password_buf;
@@ -358,7 +357,7 @@ static NTSTATUS dcesrv_netr_ServerPasswordSet2(struct dcesrv_call_state *dce_cal
 	creds_arcfour_crypt(creds, password_buf.data, 516);
 
 	ret = decode_pw_buffer(password_buf.data, new_pass, sizeof(new_pass),
-			       &new_pass_len, STR_UNICODE);
+			       STR_UNICODE);
 	if (!ret) {
 		DEBUG(3,("netr_ServerPasswordSet2: failed to decode password buffer\n"));
 		return NT_STATUS_ACCESS_DENIED;

@@ -38,7 +38,7 @@ static void nbtd_start_refresh_timer(struct nbtd_iface_name *iname);
 */
 static void refresh_completion_handler(struct nbt_name_request *req)
 {
-	struct nbtd_iface_name *iname = talloc_get_type(req->async.private, 
+	struct nbtd_iface_name *iname = talloc_get_type(req->async.private_data,
 							struct nbtd_iface_name);
 	NTSTATUS status;
 	struct nbt_name_refresh io;
@@ -108,7 +108,7 @@ static void name_refresh_handler(struct event_context *ev, struct timed_event *t
 	if (req == NULL) return;
 
 	req->async.fn = refresh_completion_handler;
-	req->async.private = iname;
+	req->async.private_data = iname;
 }
 
 

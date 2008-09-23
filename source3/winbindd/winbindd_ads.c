@@ -1023,10 +1023,11 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 			DEBUG(10,("ads: lookup_groupmem: got sid %s from "
 				  "cache\n", sid_string_dbg(&sid)));
 			sid_copy(&(*sid_mem)[*num_names], &sid);
-			(*names)[*num_names] = talloc_asprintf(*names, "%s%c%s",
-							       domain_name,
-							       *lp_winbind_separator(),
-							       name );
+			(*names)[*num_names] = fill_domain_username_talloc(
+							*names,
+							domain_name,
+							name,
+							true);
 
 			(*name_types)[*num_names] = name_type;
 			(*num_names)++;
@@ -1071,11 +1072,12 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 				{
 					sid_copy(&(*sid_mem)[*num_names],
 						 &sid_mem_nocache[i]);
-					(*names)[*num_names] = talloc_asprintf( *names, 
-										"%s%c%s",
-										domains_nocache[i],
-										*lp_winbind_separator(),
-										names_nocache[i] );
+					(*names)[*num_names] =
+						fill_domain_username_talloc(
+							*names,
+							domains_nocache[i],
+							names_nocache[i],
+							true);
 					(*name_types)[*num_names] = name_types_nocache[i];
 					(*num_names)++;
 				}

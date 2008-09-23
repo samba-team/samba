@@ -60,11 +60,7 @@ $incdir/../bin/smbtorture -V
 
 samba4srcdir=$incdir/..
 samba4bindir=$samba4srcdir/bin
-SCRIPTDIR=$samba4srcdir/../testprogs/ejs
 smb4torture="$samba4bindir/smbtorture $TORTURE_OPTIONS"
-
-plantest "js.base" dc "$SCRIPTDIR/base.js" $CONFIGURATION
-plantest "js.ldb" none "$SCRIPTDIR/ldb.js" `pwd` $CONFIGURATION -d 10
 
 # Simple tests for LDAP and CLDAP
 
@@ -287,10 +283,6 @@ for t in "BASE-RW1"; do
     plantest "ntvfs.simple.`normalize_testname $t`" dc $VALGRIND $smb4torture $ADDARGS //\$SERVER/simple -U"\$USERNAME"%"\$PASSWORD" $t
 done
 
-DATADIR=$samba4srcdir/../testdata
-
-plantest "js.samba3sam" none $samba4bindir/smbscript $SCRIPTDIR/samba3sam.js $CONFIGURATION `pwd` $DATADIR/samba3/
-
 # Domain Member Tests
 
 plantest "rpc.echo against member server with local creds" member $VALGRIND $smb4torture ncacn_np:"\$NETBIOSNAME" -U"\$NETBIOSNAME/\$USERNAME"%"\$PASSWORD" RPC-ECHO "$*"
@@ -299,6 +291,46 @@ plantest "rpc.samr against member server with local creds" member $VALGRIND $smb
 plantest "rpc.samr.users against member server with local creds" member $VALGRIND $smb4torture ncacn_np:"\$NETBIOSNAME" -U"\$NETBIOSNAME/\$USERNAME"%"\$PASSWORD" "RPC-SAMR-USERS" "$*"
 plantest "rpc.samr.passwords against member server with local creds" member $VALGRIND $smb4torture ncacn_np:"\$NETBIOSNAME" -U"\$NETBIOSNAME/\$USERNAME"%"\$PASSWORD" "RPC-SAMR-PASSWORDS" "$*"
 plantest "blackbox.smbclient against member server with local creds" member $samba4srcdir/client/tests/test_smbclient.sh "\$NETBIOSNAME" "\$USERNAME" "\$PASSWORD" "\$NETBIOSNAME" "$PREFIX" 
+
+# Tests SMB signing
+
+for mech in \
+	"-k no" \
+	"-k no --option=usespnego=no" \
+	"-k no --option=gensec:spengo=no" \
+	"-k yes" \
+	"-k yes --option=gensec:fake_gssapi_krb5=yes --option=gensec:gssapi_krb5=no"; do
+   for signing in \
+	"--signing=on" \
+	"--signing=required"; do
+
+	signoptions="$mech $signing"
+	name="smb.signing on with $signoptions"
+	plantest "$name" dc $VALGRIND $smb4torture //"\$NETBIOSNAME"/tmp $signoptions -U"\$USERNAME"%"\$PASSWORD" BASE-XCOPY "$*"
+   done
+done
+
+for mech in \
+	"-k no" \
+	"-k no --option=usespnego=no" \
+	"-k no --option=gensec:spengo=no" \
+	"-k yes" \
+	"-k yes --option=gensec:fake_gssapi_krb5=yes --option=gensec:gssapi_krb5=no"; do
+	signoptions="$mech --signing=off"
+	name="smb.signing on with $signoptions"
+	plantest "$name domain-creds" member $VALGRIND $smb4torture //"\$NETBIOSNAME"/tmp $signoptions -U"\$DC_USERNAME"%"\$DC_PASSWORD" BASE-XCOPY "$*"
+done
+for mech in \
+	"-k no" \
+	"-k no --option=usespnego=no" \
+	"-k no --option=gensec:spengo=no"; do
+	signoptions="$mech --signing=off"
+	name="smb.signing on with $signoptions"
+	plantest "$name local-creds" member $VALGRIND $smb4torture //"\$NETBIOSNAME"/tmp $signoptions -U"\$NETBIOSNAME\\\\\$USERNAME"%"\$PASSWORD" BASE-XCOPY "$*"
+done
+plantest "--signing=yes anon" dc $VALGRIND $smb4torture //"\$NETBIOSNAME"/tmp -k no --signing=yes -U% BASE-XCOPY "$*"
+plantest "--signing=required anon" dc $VALGRIND $smb4torture //"\$NETBIOSNAME"/tmp -k no --signing=required -U% BASE-XCOPY "$*"
+plantest "--signing=no anon" member $VALGRIND $smb4torture //"\$NETBIOSNAME"/tmp -k no --signing=no -U% BASE-XCOPY "$*"
 
 NBT_TESTS=`$smb4torture --list | grep "^NBT-" | xargs`
 

@@ -5,8 +5,8 @@ TALLOC_SONAME = libtalloc.$(SHLIBEXT).1
 
 all:: libtalloc.a $(TALLOC_SOLIB) testsuite
 
-testsuite:: $(LIBOBJ) testsuite.o
-	$(CC) $(CFLAGS) -o testsuite testsuite.o $(LIBOBJ) $(LIBS)
+testsuite:: $(LIBOBJ) testsuite.o testsuite_main.o
+	$(CC) $(CFLAGS) -o testsuite testsuite.o testsuite_main.o $(LIBOBJ) $(LIBS)
 
 libtalloc.a: $(LIBOBJ)
 	ar -rv $@ $(LIBOBJ)
@@ -28,7 +28,7 @@ install:: all
 doc:: talloc.3 talloc.3.html
 
 clean::
-	rm -f *~ $(LIBOBJ) $(TALLOC_SOLIB) libtalloc.a testsuite testsuite.o *.gc?? talloc.3 talloc.3.html
+	rm -f *~ $(LIBOBJ) $(TALLOC_SOLIB) libtalloc.a testsuite testsuite.o testsuite_main.o *.gc?? talloc.3 talloc.3.html
 
 test:: testsuite
 	./testsuite

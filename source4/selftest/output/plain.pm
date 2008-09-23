@@ -48,10 +48,7 @@ sub start_testsuite($$)
 	if ($self->{immediate}) {
 		print "$out\n";
 	} else {
-		require Term::ReadKey;
-		my ($wchar, $hchar, $wpixels, $hpixels) = Term::ReadKey::GetTerminalSize();
-		foreach (1..$wchar) { $out.= " "; }
-		print "\r".substr($out, 0, $wchar);
+		print "$out: ";
 	}
 }
 
@@ -94,6 +91,13 @@ sub end_testsuite($$$$$)
 		$out .= $self->{test_output}->{$name};
 	}
 
+	if (not $self->{immediate}) {
+		if (not $unexpected) {
+			$out .= " ok\n";
+		} else {
+			$out .= " " . uc($result) . "\n";
+		}
+	}
 
 	print $out;
 }
@@ -120,6 +124,12 @@ sub end_test($$$$$)
 
 	unless ($unexpected) {
 		$self->{test_output}->{$self->{NAME}} = "";
+		if (not $self->{immediate}) {
+			if ($result eq "failure") { print "f"; }
+			elsif ($result eq "skip") { print "s"; }
+			elsif ($result eq "success") { print "."; }
+			else { print "?($result)"; }
+		}
 		return;
 	}
 
@@ -132,6 +142,13 @@ sub end_test($$$$$)
 	if ($self->{immediate} and not $self->{verbose}) {
 		print $self->{test_output}->{$self->{NAME}};
 		$self->{test_output}->{$self->{NAME}} = "";
+	}
+
+	if (not $self->{immediate}) {
+		if ($result eq "error") { print "E"; } 
+		elsif ($result eq "failure") { print "F"; }
+		elsif ($result eq "success") { print "S"; }
+		else { print "?"; }
 	}
 }
 

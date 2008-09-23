@@ -10,7 +10,7 @@
 
 import "misc.idl", "security.idl", "svcctl.idl", "samr.idl";
 [
-helper("libcli/nbt/libnbt.h")
+helper("../libcli/nbt/libnbt.h")
 ]
 interface nbt
 {
@@ -73,11 +73,11 @@ interface nbt
 		nbt_name_type type;
 	} nbt_name;
 
-	typedef [enum16bit] enum {
+	typedef [public,enum16bit] enum {
 		NBT_QCLASS_IP = 0x01
 	} nbt_qclass;
 
-	typedef [enum16bit] enum {
+	typedef [public,enum16bit] enum {
 		NBT_QTYPE_ADDRESS     = 0x0001,
 		NBT_QTYPE_NAMESERVICE = 0x0002,
 		NBT_QTYPE_NULL        = 0x000A,
@@ -160,7 +160,7 @@ interface nbt
 		uint8  data[length];
 	} nbt_rdata_data;
 
-	typedef [nodiscriminant] union {
+	typedef [nodiscriminant,public] union {
 		[case(NBT_QTYPE_NETBIOS)] nbt_rdata_netbios netbios;
 		[case(NBT_QTYPE_STATUS)]  nbt_rdata_status status;
 		[default]                 nbt_rdata_data   data;

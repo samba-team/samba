@@ -104,7 +104,6 @@ m4_include(../lib/nss_wrapper/config.m4)
 m4_include(auth/config.m4)
 m4_include(kdc/config.m4)
 m4_include(ntvfs/sysdep/config.m4)
-m4_include(lib/appweb/config.m4)
 m4_include(nsswitch/config.m4)
 
 #################################################

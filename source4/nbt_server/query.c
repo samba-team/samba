@@ -38,7 +38,7 @@ void nbtd_request_query(struct nbt_name_socket *nbtsock,
 {
 	struct nbtd_iface_name *iname;
 	struct nbt_name *name;
-	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private, 
+	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private_data,
 						       struct nbtd_interface);
 
 	/* see if its a node status query */

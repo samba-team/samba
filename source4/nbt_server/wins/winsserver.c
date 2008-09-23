@@ -68,7 +68,7 @@ static uint8_t wins_register_new(struct nbt_name_socket *nbtsock,
 				 const struct socket_address *src,
 				 enum wrepl_name_type type)
 {
-	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private, 
+	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private_data,
 						       struct nbtd_interface);
 	struct wins_server *winssrv = iface->nbtsrv->winssrv;
 	struct nbt_name *name = &packet->questions[0].name;
@@ -119,7 +119,7 @@ static uint8_t wins_update_ttl(struct nbt_name_socket *nbtsock,
 			       struct winsdb_addr *winsdb_addr,
 			       const struct socket_address *src)
 {
-	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private, 
+	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private_data,
 						       struct nbtd_interface);
 	struct wins_server *winssrv = iface->nbtsrv->winssrv;
 	uint32_t ttl = wins_server_ttl(winssrv, packet->additional[0].ttl);
@@ -158,7 +158,7 @@ static uint8_t wins_sgroup_merge(struct nbt_name_socket *nbtsock,
 			         const char *address,
 			         const struct socket_address *src)
 {
-	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private, 
+	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private_data,
 						       struct nbtd_interface);
 	struct wins_server *winssrv = iface->nbtsrv->winssrv;
 	uint32_t ttl = wins_server_ttl(winssrv, packet->additional[0].ttl);
@@ -357,7 +357,7 @@ static void wins_register_wack(struct nbt_name_socket *nbtsock,
 			       struct socket_address *src,
 			       enum wrepl_name_type new_type)
 {
-	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private, 
+	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private_data,
 						       struct nbtd_interface);
 	struct wins_server *winssrv = iface->nbtsrv->winssrv;
 	struct wack_state *s;
@@ -415,7 +415,7 @@ static void nbtd_winsserver_register(struct nbt_name_socket *nbtsock,
 				     struct socket_address *src)
 {
 	NTSTATUS status;
-	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private, 
+	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private_data,
 						       struct nbtd_interface);
 	struct wins_server *winssrv = iface->nbtsrv->winssrv;
 	struct nbt_name *name = &packet->questions[0].name;
@@ -671,7 +671,7 @@ static void nbtd_winsserver_query(struct loadparm_context *lp_ctx,
 				  struct socket_address *src)
 {
 	NTSTATUS status;
-	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private, 
+	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private_data,
 						       struct nbtd_interface);
 	struct wins_server *winssrv = iface->nbtsrv->winssrv;
 	struct nbt_name *name = &packet->questions[0].name;
@@ -813,7 +813,7 @@ static void nbtd_winsserver_release(struct nbt_name_socket *nbtsock,
 				    struct socket_address *src)
 {
 	NTSTATUS status;
-	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private, 
+	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private_data,
 						       struct nbtd_interface);
 	struct wins_server *winssrv = iface->nbtsrv->winssrv;
 	struct nbt_name *name = &packet->questions[0].name;
@@ -928,7 +928,7 @@ void nbtd_winsserver_request(struct nbt_name_socket *nbtsock,
 			     struct nbt_name_packet *packet, 
 			     struct socket_address *src)
 {
-	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private, 
+	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private_data,
 						       struct nbtd_interface);
 	struct wins_server *winssrv = iface->nbtsrv->winssrv;
 	if ((packet->operation & NBT_FLAG_BROADCAST) || winssrv == NULL) {

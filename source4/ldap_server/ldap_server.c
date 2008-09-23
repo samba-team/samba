@@ -529,7 +529,7 @@ static void ldapsrv_task_init(struct task_server *task)
 	task_server_set_title(task, "task[ldapsrv]");
 
 	/* run the ldap server as a single process */
-	model_ops = process_model_byname("single");
+	model_ops = process_model_startup(task->event_ctx, "single");
 	if (!model_ops) goto failed;
 
 	ldap_service = talloc_zero(task, struct ldapsrv_service);

@@ -141,7 +141,7 @@ bool netsamlogon_cache_store(const char *username, struct netr_SamInfo3 *info3)
 		NDR_PRINT_DEBUG(netsamlogoncache_entry, &r);
 	}
 
-	ndr_err = ndr_push_struct_blob(&blob, mem_ctx, &r,
+	ndr_err = ndr_push_struct_blob(&blob, mem_ctx, NULL, &r,
 				       (ndr_push_flags_fn_t)ndr_push_netsamlogoncache_entry);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		DEBUG(0,("netsamlogon_cache_store: failed to push entry to cache\n"));
@@ -197,7 +197,7 @@ struct netr_SamInfo3 *netsamlogon_cache_get(TALLOC_CTX *mem_ctx, const DOM_SID *
 
 	blob = data_blob_const(data.dptr, data.dsize);
 
-	ndr_err = ndr_pull_struct_blob(&blob, mem_ctx, &r,
+	ndr_err = ndr_pull_struct_blob(&blob, mem_ctx, NULL, &r,
 				      (ndr_pull_flags_fn_t)ndr_pull_netsamlogoncache_entry);
 
 	if (DEBUGLEVEL >= 10) {

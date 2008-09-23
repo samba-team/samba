@@ -127,7 +127,7 @@ static NTSTATUS append_info3_as_ndr(TALLOC_CTX *mem_ctx,
 	DATA_BLOB blob;
 	enum ndr_err_code ndr_err;
 
-	ndr_err = ndr_push_struct_blob(&blob, mem_ctx, info3,
+	ndr_err = ndr_push_struct_blob(&blob, mem_ctx, NULL, info3,
 				       (ndr_push_flags_fn_t)ndr_push_netr_SamInfo3);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		DEBUG(0,("append_info3_as_ndr: failed to append\n"));

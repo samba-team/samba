@@ -413,7 +413,9 @@ struct USER_INFO_X {
 	uint32_t usriX_code_page;
 	const char * usriX_profile;
 	const char * usriX_home_dir_drive;
+	uint32_t usriX_user_id;
 	uint32_t usriX_primary_group_id;
+	uint32_t usriX_password_expired;
 };
 
 struct GROUP_USERS_INFO_0 {

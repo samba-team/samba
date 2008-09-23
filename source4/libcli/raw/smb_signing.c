@@ -298,11 +298,20 @@ bool smbcli_request_check_sign_mac(struct smbcli_request *req)
 {
 	bool good;
 
+	if (!req->transport->negotiate.sign_info.doing_signing &&
+	    req->sign_caller_checks) {
+		return true;
+	}
+
+	req->sign_caller_checks = false;
+
 	switch (req->transport->negotiate.sign_info.signing_state) 
 	{
 	case SMB_SIGNING_ENGINE_OFF:
 		return true;
 	case SMB_SIGNING_ENGINE_BSRSPYL:
+		return true;
+
 	case SMB_SIGNING_ENGINE_ON:
 	{			
 		if (req->in.size < (HDR_SS_FIELD + 8)) {
@@ -350,6 +359,7 @@ bool smbcli_simple_set_signing(TALLOC_CTX *mem_ctx,
 	dump_data_pw("Started Signing with key:\n", sign_info->mac_key.data, sign_info->mac_key.length);
 
 	sign_info->signing_state = SMB_SIGNING_ENGINE_ON;
+	sign_info->next_seq_num = 2;
 
 	return true;
 }

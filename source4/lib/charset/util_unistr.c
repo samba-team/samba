@@ -570,7 +570,13 @@ _PUBLIC_ char *strupper_talloc(TALLOC_CTX *ctx, const char *src)
 	return strupper_talloc_n(ctx, src, src?strlen(src):0);
 }
 
-
+/**
+ talloc_strdup() a unix string to upper case.
+**/
+_PUBLIC_ char *talloc_strdup_upper(TALLOC_CTX *ctx, const char *src)
+{
+	return strupper_talloc(ctx, src);
+}
 
 /**
  Convert a string to lower case.

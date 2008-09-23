@@ -2495,23 +2495,22 @@ SWIG_Python_MustGetPtr(PyObject *obj, swig_type_info *ty, int argnum, int flags)
 #define SWIGTYPE_p_ldb_module swig_types[9]
 #define SWIGTYPE_p_ldb_module_ops swig_types[10]
 #define SWIGTYPE_p_ldb_parse_tree swig_types[11]
-#define SWIGTYPE_p_ldb_request swig_types[12]
-#define SWIGTYPE_p_ldb_result swig_types[13]
-#define SWIGTYPE_p_ldb_val swig_types[14]
-#define SWIGTYPE_p_long_long swig_types[15]
-#define SWIGTYPE_p_p_char swig_types[16]
-#define SWIGTYPE_p_p_ldb_control swig_types[17]
-#define SWIGTYPE_p_p_ldb_result swig_types[18]
-#define SWIGTYPE_p_short swig_types[19]
-#define SWIGTYPE_p_signed_char swig_types[20]
-#define SWIGTYPE_p_unsigned_char swig_types[21]
-#define SWIGTYPE_p_unsigned_int swig_types[22]
-#define SWIGTYPE_p_unsigned_long swig_types[23]
-#define SWIGTYPE_p_unsigned_long_long swig_types[24]
-#define SWIGTYPE_p_unsigned_short swig_types[25]
-#define SWIGTYPE_p_void swig_types[26]
-static swig_type_info *swig_types[28];
-static swig_module_info swig_module = {swig_types, 27, 0, 0, 0, 0};
+#define SWIGTYPE_p_ldb_result swig_types[12]
+#define SWIGTYPE_p_ldb_val swig_types[13]
+#define SWIGTYPE_p_long_long swig_types[14]
+#define SWIGTYPE_p_p_char swig_types[15]
+#define SWIGTYPE_p_p_ldb_control swig_types[16]
+#define SWIGTYPE_p_p_ldb_result swig_types[17]
+#define SWIGTYPE_p_short swig_types[18]
+#define SWIGTYPE_p_signed_char swig_types[19]
+#define SWIGTYPE_p_unsigned_char swig_types[20]
+#define SWIGTYPE_p_unsigned_int swig_types[21]
+#define SWIGTYPE_p_unsigned_long swig_types[22]
+#define SWIGTYPE_p_unsigned_long_long swig_types[23]
+#define SWIGTYPE_p_unsigned_short swig_types[24]
+#define SWIGTYPE_p_void swig_types[25]
+static swig_type_info *swig_types[27];
+static swig_module_info swig_module = {swig_types, 26, 0, 0, 0, 0};
 #define SWIG_TypeQuery(name) SWIG_TypeQueryModule(&swig_module, &swig_module, name)
 #define SWIG_MangledTypeQuery(name) SWIG_MangledTypeQueryModule(&swig_module, &swig_module, name)
 
@@ -3238,20 +3237,55 @@ SWIGINTERN char *ldb_module___repr__(ldb_module *self){
             asprintf(&ret, "<ldb module '%s'>", self->ops->name);
             return ret;
         }
-SWIGINTERN int ldb_module_search(ldb_module *self,struct ldb_request *req){
-            return self->ops->search(self, req);
+SWIGINTERN int ldb_module_search(ldb_module *self,struct ldb_dn *base,enum ldb_scope scope,struct ldb_parse_tree *tree,char const *const *attrs,struct ldb_result **res){
+            int ret;
+            struct ldb_request *req = talloc_zero(NULL, struct ldb_request);
+
+            req->operation = LDB_SEARCH;
+            req->op.search.base = base;
+            req->op.search.scope = scope;
+            req->op.search.tree = tree;
+            req->op.search.attrs = attrs;
+
+            req->op.search.res = talloc_zero(NULL, struct ldb_result);
+
+            ret = self->ops->search(self, req);
+
+            *res = req->op.search.res;
+
+            talloc_free(req);
+
+            return ret;
         }
-SWIGINTERN ldb_error ldb_module_add(ldb_module *self,struct ldb_request *req){
-            return self->ops->add(self, req);
+SWIGINTERN ldb_error ldb_module_add(ldb_module *self,struct ldb_message *message){
+            struct ldb_request *req = talloc_zero(NULL, struct ldb_request);
+            req->operation = LDB_ADD;
+            req->op.add.message = message;
+            
+            return self->ops->add(self, &req);
         }
-SWIGINTERN ldb_error ldb_module_modify(ldb_module *self,struct ldb_request *req){
-            return self->ops->modify(self, req);
+SWIGINTERN ldb_error ldb_module_modify(ldb_module *self,struct ldb_message *message){
+            struct ldb_request *req = talloc_zero(NULL, struct ldb_request);
+            req->operation = LDB_MODIFY;
+            req->op.mod.message = message;
+            
+            return self->ops->modify(self, &req);
         }
-SWIGINTERN ldb_error ldb_module_delete(ldb_module *self,struct ldb_request *req){
-            return self->ops->del(self, req);
+SWIGINTERN ldb_error ldb_module_delete(ldb_module *self,struct ldb_dn *dn){
+            struct ldb_request *req = talloc_zero(NULL, struct ldb_request);
+            req->operation = LDB_DELETE;
+            req->op.del.dn = dn;
+            
+            return self->ops->del(self, &req);
+
         }
-SWIGINTERN ldb_error ldb_module_rename(ldb_module *self,struct ldb_request *req){
-            return self->ops->rename(self, req);
+SWIGINTERN ldb_error ldb_module_rename(ldb_module *self,struct ldb_dn *olddn,struct ldb_dn *newdn){
+            struct ldb_request *req = talloc_zero(NULL, struct ldb_request);
+            req->operation = LDB_RENAME;
+            req->op.rename.olddn = olddn;
+            req->op.rename.olddn = newdn;
+            
+            return self->ops->rename(self, &req);
         }
 SWIGINTERN ldb_error ldb_module_start_transaction(ldb_module *self){
             return self->ops->start_transaction(self);
@@ -5000,11 +5034,15 @@ SWIGINTERN PyObject *_wrap_Ldb_search_ex(PyObject *SWIGUNUSEDPARM(self), PyObjec
     SWIG_fail;
   }
   resultobj = Py_None;
-  resultobj = PyList_New((*arg8)->count);
-  for (i8 = 0; i8 < (*arg8)->count; i8++) {
-    PyList_SetItem(resultobj, i8, 
-      SWIG_NewPointerObj((*arg8)->msgs[i8], SWIGTYPE_p_ldb_message, 0)
-      );
+  if (arg8 == NULL) {
+    resultobj = Py_None;
+  } else {
+    resultobj = PyList_New((*arg8)->count);
+    for (i8 = 0; i8 < (*arg8)->count; i8++) {
+      PyList_SetItem(resultobj, i8, 
+        SWIG_NewPointerObj((*arg8)->msgs[i8], SWIGTYPE_p_ldb_message, 0)
+        );
+    }
   }
   talloc_free(arg3);
   if (alloc5 == SWIG_NEWOBJ) free((char*)buf5);
@@ -6235,33 +6273,80 @@ fail:
 SWIGINTERN PyObject *_wrap_ldb_module_search(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
   PyObject *resultobj = 0;
   ldb_module *arg1 = (ldb_module *) 0 ;
-  struct ldb_request *arg2 = (struct ldb_request *) 0 ;
+  struct ldb_dn *arg2 = (struct ldb_dn *) 0 ;
+  enum ldb_scope arg3 ;
+  struct ldb_parse_tree *arg4 = (struct ldb_parse_tree *) 0 ;
+  char **arg5 = (char **) 0 ;
+  struct ldb_result **arg6 = (struct ldb_result **) 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
   void *argp2 = 0 ;
   int res2 = 0 ;
+  int val3 ;
+  int ecode3 = 0 ;
+  void *argp4 = 0 ;
+  int res4 = 0 ;
+  struct ldb_result *temp_ldb_result6 ;
+  int i6 ;
   PyObject * obj0 = 0 ;
   PyObject * obj1 = 0 ;
+  PyObject * obj2 = 0 ;
+  PyObject * obj3 = 0 ;
+  PyObject * obj4 = 0 ;
   char *  kwnames[] = {
-    (char *) "self",(char *) "req", NULL 
+    (char *) "self",(char *) "base",(char *) "scope",(char *) "tree",(char *) "attrs", NULL 
   };
   int result;
   
-  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OO:ldb_module_search",kwnames,&obj0,&obj1)) SWIG_fail;
+  arg6 = &temp_ldb_result6;
+  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OOOOO:ldb_module_search",kwnames,&obj0,&obj1,&obj2,&obj3,&obj4)) SWIG_fail;
   res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_ldb_module, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ldb_module_search" "', argument " "1"" of type '" "ldb_module *""'"); 
   }
   arg1 = (ldb_module *)(argp1);
-  res2 = SWIG_ConvertPtr(obj1, &argp2,SWIGTYPE_p_ldb_request, 0 |  0 );
+  res2 = SWIG_ConvertPtr(obj1, &argp2,SWIGTYPE_p_ldb_dn, 0 |  0 );
   if (!SWIG_IsOK(res2)) {
-    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "ldb_module_search" "', argument " "2"" of type '" "struct ldb_request *""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "ldb_module_search" "', argument " "2"" of type '" "struct ldb_dn *""'"); 
   }
-  arg2 = (struct ldb_request *)(argp2);
-  result = (int)ldb_module_search(arg1,arg2);
+  arg2 = (struct ldb_dn *)(argp2);
+  ecode3 = SWIG_AsVal_int(obj2, &val3);
+  if (!SWIG_IsOK(ecode3)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode3), "in method '" "ldb_module_search" "', argument " "3"" of type '" "enum ldb_scope""'");
+  } 
+  arg3 = (enum ldb_scope)(val3);
+  res4 = SWIG_ConvertPtr(obj3, &argp4,SWIGTYPE_p_ldb_parse_tree, 0 |  0 );
+  if (!SWIG_IsOK(res4)) {
+    SWIG_exception_fail(SWIG_ArgError(res4), "in method '" "ldb_module_search" "', argument " "4"" of type '" "struct ldb_parse_tree *""'"); 
+  }
+  arg4 = (struct ldb_parse_tree *)(argp4);
+  if (obj4 == Py_None) {
+    arg5 = NULL;
+  } else if (PySequence_Check(obj4)) {
+    int i;
+    arg5 = talloc_array(NULL, char *, PySequence_Size(obj4)+1);
+    for(i = 0; i < PySequence_Size(obj4); i++)
+    arg5[i] = PyString_AsString(PySequence_GetItem(obj4, i));
+    arg5[i] = NULL;
+  } else {
+    SWIG_exception(SWIG_TypeError, "expected sequence");
+  }
+  result = (int)ldb_module_search(arg1,arg2,arg3,arg4,(char const *const *)arg5,arg6);
   resultobj = SWIG_From_int((int)(result));
+  if (arg6 == NULL) {
+    resultobj = Py_None;
+  } else {
+    resultobj = PyList_New((*arg6)->count);
+    for (i6 = 0; i6 < (*arg6)->count; i6++) {
+      PyList_SetItem(resultobj, i6, 
+        SWIG_NewPointerObj((*arg6)->msgs[i6], SWIGTYPE_p_ldb_message, 0)
+        );
+    }
+  }
+  talloc_free(arg5);
   return resultobj;
 fail:
+  talloc_free(arg5);
   return NULL;
 }
 
@@ -6269,7 +6354,7 @@ fail:
 SWIGINTERN PyObject *_wrap_ldb_module_add(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
   PyObject *resultobj = 0;
   ldb_module *arg1 = (ldb_module *) 0 ;
-  struct ldb_request *arg2 = (struct ldb_request *) 0 ;
+  struct ldb_message *arg2 = (struct ldb_message *) 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
   void *argp2 = 0 ;
@@ -6277,7 +6362,7 @@ SWIGINTERN PyObject *_wrap_ldb_module_add(PyObject *SWIGUNUSEDPARM(self), PyObje
   PyObject * obj0 = 0 ;
   PyObject * obj1 = 0 ;
   char *  kwnames[] = {
-    (char *) "self",(char *) "req", NULL 
+    (char *) "self",(char *) "message", NULL 
   };
   ldb_error result;
   
@@ -6287,11 +6372,11 @@ SWIGINTERN PyObject *_wrap_ldb_module_add(PyObject *SWIGUNUSEDPARM(self), PyObje
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ldb_module_add" "', argument " "1"" of type '" "ldb_module *""'"); 
   }
   arg1 = (ldb_module *)(argp1);
-  res2 = SWIG_ConvertPtr(obj1, &argp2,SWIGTYPE_p_ldb_request, 0 |  0 );
+  res2 = SWIG_ConvertPtr(obj1, &argp2,SWIGTYPE_p_ldb_message, 0 |  0 );
   if (!SWIG_IsOK(res2)) {
-    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "ldb_module_add" "', argument " "2"" of type '" "struct ldb_request *""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "ldb_module_add" "', argument " "2"" of type '" "struct ldb_message *""'"); 
   }
-  arg2 = (struct ldb_request *)(argp2);
+  arg2 = (struct ldb_message *)(argp2);
   result = ldb_module_add(arg1,arg2);
   if (result != 0) {
     PyErr_SetObject(PyExc_LdbError, Py_BuildValue((char *)"(i,s)", result, ldb_errstring(arg1)));
@@ -6307,7 +6392,7 @@ fail:
 SWIGINTERN PyObject *_wrap_ldb_module_modify(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
   PyObject *resultobj = 0;
   ldb_module *arg1 = (ldb_module *) 0 ;
-  struct ldb_request *arg2 = (struct ldb_request *) 0 ;
+  struct ldb_message *arg2 = (struct ldb_message *) 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
   void *argp2 = 0 ;
@@ -6315,7 +6400,7 @@ SWIGINTERN PyObject *_wrap_ldb_module_modify(PyObject *SWIGUNUSEDPARM(self), PyO
   PyObject * obj0 = 0 ;
   PyObject * obj1 = 0 ;
   char *  kwnames[] = {
-    (char *) "self",(char *) "req", NULL 
+    (char *) "self",(char *) "message", NULL 
   };
   ldb_error result;
   
@@ -6325,11 +6410,11 @@ SWIGINTERN PyObject *_wrap_ldb_module_modify(PyObject *SWIGUNUSEDPARM(self), PyO
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ldb_module_modify" "', argument " "1"" of type '" "ldb_module *""'"); 
   }
   arg1 = (ldb_module *)(argp1);
-  res2 = SWIG_ConvertPtr(obj1, &argp2,SWIGTYPE_p_ldb_request, 0 |  0 );
+  res2 = SWIG_ConvertPtr(obj1, &argp2,SWIGTYPE_p_ldb_message, 0 |  0 );
   if (!SWIG_IsOK(res2)) {
-    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "ldb_module_modify" "', argument " "2"" of type '" "struct ldb_request *""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "ldb_module_modify" "', argument " "2"" of type '" "struct ldb_message *""'"); 
   }
-  arg2 = (struct ldb_request *)(argp2);
+  arg2 = (struct ldb_message *)(argp2);
   result = ldb_module_modify(arg1,arg2);
   if (result != 0) {
     PyErr_SetObject(PyExc_LdbError, Py_BuildValue((char *)"(i,s)", result, ldb_errstring(arg1)));
@@ -6345,7 +6430,7 @@ fail:
 SWIGINTERN PyObject *_wrap_ldb_module_delete(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
   PyObject *resultobj = 0;
   ldb_module *arg1 = (ldb_module *) 0 ;
-  struct ldb_request *arg2 = (struct ldb_request *) 0 ;
+  struct ldb_dn *arg2 = (struct ldb_dn *) 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
   void *argp2 = 0 ;
@@ -6353,7 +6438,7 @@ SWIGINTERN PyObject *_wrap_ldb_module_delete(PyObject *SWIGUNUSEDPARM(self), PyO
   PyObject * obj0 = 0 ;
   PyObject * obj1 = 0 ;
   char *  kwnames[] = {
-    (char *) "self",(char *) "req", NULL 
+    (char *) "self",(char *) "dn", NULL 
   };
   ldb_error result;
   
@@ -6363,11 +6448,11 @@ SWIGINTERN PyObject *_wrap_ldb_module_delete(PyObject *SWIGUNUSEDPARM(self), PyO
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ldb_module_delete" "', argument " "1"" of type '" "ldb_module *""'"); 
   }
   arg1 = (ldb_module *)(argp1);
-  res2 = SWIG_ConvertPtr(obj1, &argp2,SWIGTYPE_p_ldb_request, 0 |  0 );
+  res2 = SWIG_ConvertPtr(obj1, &argp2,SWIGTYPE_p_ldb_dn, 0 |  0 );
   if (!SWIG_IsOK(res2)) {
-    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "ldb_module_delete" "', argument " "2"" of type '" "struct ldb_request *""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "ldb_module_delete" "', argument " "2"" of type '" "struct ldb_dn *""'"); 
   }
-  arg2 = (struct ldb_request *)(argp2);
+  arg2 = (struct ldb_dn *)(argp2);
   result = ldb_module_delete(arg1,arg2);
   if (result != 0) {
     PyErr_SetObject(PyExc_LdbError, Py_BuildValue((char *)"(i,s)", result, ldb_errstring(arg1)));
@@ -6383,30 +6468,39 @@ fail:
 SWIGINTERN PyObject *_wrap_ldb_module_rename(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
   PyObject *resultobj = 0;
   ldb_module *arg1 = (ldb_module *) 0 ;
-  struct ldb_request *arg2 = (struct ldb_request *) 0 ;
+  struct ldb_dn *arg2 = (struct ldb_dn *) 0 ;
+  struct ldb_dn *arg3 = (struct ldb_dn *) 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
   void *argp2 = 0 ;
   int res2 = 0 ;
+  void *argp3 = 0 ;
+  int res3 = 0 ;
   PyObject * obj0 = 0 ;
   PyObject * obj1 = 0 ;
+  PyObject * obj2 = 0 ;
   char *  kwnames[] = {
-    (char *) "self",(char *) "req", NULL 
+    (char *) "self",(char *) "olddn",(char *) "newdn", NULL 
   };
   ldb_error result;
   
-  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OO:ldb_module_rename",kwnames,&obj0,&obj1)) SWIG_fail;
+  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OOO:ldb_module_rename",kwnames,&obj0,&obj1,&obj2)) SWIG_fail;
   res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_ldb_module, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ldb_module_rename" "', argument " "1"" of type '" "ldb_module *""'"); 
   }
   arg1 = (ldb_module *)(argp1);
-  res2 = SWIG_ConvertPtr(obj1, &argp2,SWIGTYPE_p_ldb_request, 0 |  0 );
+  res2 = SWIG_ConvertPtr(obj1, &argp2,SWIGTYPE_p_ldb_dn, 0 |  0 );
   if (!SWIG_IsOK(res2)) {
-    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "ldb_module_rename" "', argument " "2"" of type '" "struct ldb_request *""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "ldb_module_rename" "', argument " "2"" of type '" "struct ldb_dn *""'"); 
   }
-  arg2 = (struct ldb_request *)(argp2);
-  result = ldb_module_rename(arg1,arg2);
+  arg2 = (struct ldb_dn *)(argp2);
+  res3 = SWIG_ConvertPtr(obj2, &argp3,SWIGTYPE_p_ldb_dn, 0 |  0 );
+  if (!SWIG_IsOK(res3)) {
+    SWIG_exception_fail(SWIG_ArgError(res3), "in method '" "ldb_module_rename" "', argument " "3"" of type '" "struct ldb_dn *""'"); 
+  }
+  arg3 = (struct ldb_dn *)(argp3);
+  result = ldb_module_rename(arg1,arg2,arg3);
   if (result != 0) {
     PyErr_SetObject(PyExc_LdbError, Py_BuildValue((char *)"(i,s)", result, ldb_errstring(arg1)));
     SWIG_fail;
@@ -6788,7 +6882,6 @@ static swig_type_info _swigt__p_ldb_message_element = {"_p_ldb_message_element",
 static swig_type_info _swigt__p_ldb_module = {"_p_ldb_module", "struct ldb_module *|ldb_module *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_ldb_module_ops = {"_p_ldb_module_ops", "struct ldb_module_ops *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_ldb_parse_tree = {"_p_ldb_parse_tree", "struct ldb_parse_tree *", 0, 0, (void*)0, 0};
-static swig_type_info _swigt__p_ldb_request = {"_p_ldb_request", "struct ldb_request *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_ldb_result = {"_p_ldb_result", "struct ldb_result *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_ldb_val = {"_p_ldb_val", "struct ldb_val *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_long_long = {"_p_long_long", "int_least64_t *|int_fast64_t *|int64_t *|long long *|intmax_t *", 0, 0, (void*)0, 0};
@@ -6817,7 +6910,6 @@ static swig_type_info *swig_type_initial[] = {
   &_swigt__p_ldb_module,
   &_swigt__p_ldb_module_ops,
   &_swigt__p_ldb_parse_tree,
-  &_swigt__p_ldb_request,
   &_swigt__p_ldb_result,
   &_swigt__p_ldb_val,
   &_swigt__p_long_long,
@@ -6846,7 +6938,6 @@ static swig_cast_info _swigc__p_ldb_message_element[] = {  {&_swigt__p_ldb_messa
 static swig_cast_info _swigc__p_ldb_module[] = {  {&_swigt__p_ldb_module, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_ldb_module_ops[] = {  {&_swigt__p_ldb_module_ops, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_ldb_parse_tree[] = {  {&_swigt__p_ldb_parse_tree, 0, 0, 0},{0, 0, 0, 0}};
-static swig_cast_info _swigc__p_ldb_request[] = {  {&_swigt__p_ldb_request, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_ldb_result[] = {  {&_swigt__p_ldb_result, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_ldb_val[] = {  {&_swigt__p_ldb_val, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_long_long[] = {  {&_swigt__p_long_long, 0, 0, 0},{0, 0, 0, 0}};
@@ -6875,7 +6966,6 @@ static swig_cast_info *swig_cast_initial[] = {
   _swigc__p_ldb_module,
   _swigc__p_ldb_module_ops,
   _swigc__p_ldb_parse_tree,
-  _swigc__p_ldb_request,
   _swigc__p_ldb_result,
   _swigc__p_ldb_val,
   _swigc__p_long_long,

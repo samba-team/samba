@@ -4,6 +4,7 @@
 
    Copyright (C) Jelmer Vernooij 2004-2007
    Copyright (C) Wilco Baan Hofman 2006
+   Copyright (C) Matthias Dieter Wallnöfer 2008
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -58,8 +59,9 @@ WERROR reg_generate_diff_key(struct registry_key *oldkey,
 					 &old_num_subkeys, &old_num_values,
 					 NULL, NULL, NULL, NULL);
 		if (!W_ERROR_IS_OK(error)) {
-			DEBUG(0, ("Error occured while getting key info: %s\n",
+			DEBUG(0, ("Error occurred while getting key info: %s\n",
 				win_errstr(error)));
+			talloc_free(mem_ctx);
 			return error;
 		}
 	} else {
@@ -70,11 +72,10 @@ WERROR reg_generate_diff_key(struct registry_key *oldkey,
 	/* Subkeys that were deleted */
 	for (i = 0; i < old_num_subkeys; i++) {
 		error1 = reg_key_get_subkey_by_index(mem_ctx, oldkey, i,
-						     &keyname1,
-						     NULL, NULL);
+						     &keyname1, NULL, NULL);
 		if (!W_ERROR_IS_OK(error1)) {
-			DEBUG(0, ("Error occured while getting subkey by index: %s\n",
-				win_errstr(error2)));
+			DEBUG(0, ("Error occurred while getting subkey by index: %s\n",
+				win_errstr(error1)));
 			continue;
 		}
 
@@ -98,6 +99,17 @@ WERROR reg_generate_diff_key(struct registry_key *oldkey,
 		/* newkey didn't have such a subkey, add del diff */
 		tmppath = talloc_asprintf(mem_ctx, "%s\\%s", path, keyname1);
 		callbacks->del_key(callback_data, tmppath);
+
+		/* perform here also the recursive invocation */
+		error1 = reg_open_key(mem_ctx, oldkey, keyname1, &t1);
+		if (!W_ERROR_IS_OK(error1)) {
+			DEBUG(0, ("Error occured while getting subkey by name: %s\n",
+			win_errstr(error1)));
+			talloc_free(mem_ctx);
+			return error1;
+		}
+		reg_generate_diff_key(t1, t2, tmppath, callbacks, callback_data);
+
 		talloc_free(tmppath);
 	}
 
@@ -106,8 +118,9 @@ WERROR reg_generate_diff_key(struct registry_key *oldkey,
 					 &new_num_subkeys, &new_num_values,
 					 NULL, NULL, NULL, NULL);
 		if (!W_ERROR_IS_OK(error)) {
-			DEBUG(0, ("Error occured while getting key info: %s\n",
+			DEBUG(0, ("Error occurred while getting key info: %s\n",
 				win_errstr(error)));
+			talloc_free(mem_ctx);
 			return error;
 		}
 	} else {
@@ -117,11 +130,10 @@ WERROR reg_generate_diff_key(struct registry_key *oldkey,
 
 	/* Subkeys that were added */
 	for(i = 0; i < new_num_subkeys; i++) {
-		error1 = reg_key_get_subkey_by_index(mem_ctx, newkey,
-						     i, &keyname1,
-						     NULL, NULL);
+		error1 = reg_key_get_subkey_by_index(mem_ctx, newkey, i,
+						     &keyname1, NULL, NULL);
 		if (!W_ERROR_IS_OK(error1)) {
-			DEBUG(0, ("Error occured while getting subkey by index: %s\n",
+			DEBUG(0, ("Error occurred while getting subkey by index: %s\n",
 				win_errstr(error1)));
 			talloc_free(mem_ctx);
 			return error1;
@@ -133,12 +145,12 @@ WERROR reg_generate_diff_key(struct registry_key *oldkey,
 			if (W_ERROR_IS_OK(error2))
 				continue;
 		} else {
+			error2 = WERR_BADFILE;	
 			t1 = NULL;
-			error2 = WERR_BADFILE;
 		}
 
 		if (!W_ERROR_EQUAL(error2, WERR_BADFILE)) {
-			DEBUG(0, ("Error occured while getting subkey by name: %s\n",
+			DEBUG(0, ("Error occurred while getting subkey by name: %s\n",
 				win_errstr(error2)));
 			talloc_free(mem_ctx);
 			return error2;
@@ -148,15 +160,20 @@ WERROR reg_generate_diff_key(struct registry_key *oldkey,
 		tmppath = talloc_asprintf(mem_ctx, "%s\\%s", path, keyname1);
 		callbacks->add_key(callback_data, tmppath);
 
-		W_ERROR_NOT_OK_RETURN(
-				reg_open_key(mem_ctx, newkey, keyname1, &t2));
+		/* perform here also the recursive invocation */
+		error1 = reg_open_key(mem_ctx, newkey, keyname1, &t2);
+		if (!W_ERROR_IS_OK(error1)) {
+			DEBUG(0, ("Error occured while getting subkey by name: %s\n",
+			win_errstr(error1)));
+			talloc_free(mem_ctx);
+			return error1;
+		}
+		reg_generate_diff_key(t1, t2, tmppath, callbacks, callback_data);
 
-		reg_generate_diff_key(t1, t2, tmppath,
-				      callbacks, callback_data);
 		talloc_free(tmppath);
 	}
 
-	/* Values that were changed */
+	/* Values that were added or changed */
 	for(i = 0; i < new_num_values; i++) {
 		const char *name;
 		uint32_t type1, type2;
@@ -165,7 +182,7 @@ WERROR reg_generate_diff_key(struct registry_key *oldkey,
 		error1 = reg_key_get_value_by_index(mem_ctx, newkey, i,
 						    &name, &type1, &contents1);
 		if (!W_ERROR_IS_OK(error1)) {
-			DEBUG(0, ("Unable to get key by index: %s\n",
+			DEBUG(0, ("Unable to get value by index: %s\n",
 				win_errstr(error1)));
 			talloc_free(mem_ctx);
 			return error1;
@@ -178,16 +195,17 @@ WERROR reg_generate_diff_key(struct registry_key *oldkey,
 		} else
 			error2 = WERR_BADFILE;
 
-		if(!W_ERROR_IS_OK(error2) &&
-		   !W_ERROR_EQUAL(error2, WERR_BADFILE)) {
-			DEBUG(0, ("Error occured while getting value by name: %s\n",
+		if (!W_ERROR_IS_OK(error2)
+			&& !W_ERROR_EQUAL(error2, WERR_BADFILE)) {
+			DEBUG(0, ("Error occurred while getting value by name: %s\n",
 				win_errstr(error2)));
 			talloc_free(mem_ctx);
 			return error2;
 		}
 
-		if (W_ERROR_IS_OK(error2) &&
-		    data_blob_cmp(&contents1, &contents2) == 0)
+		if (W_ERROR_IS_OK(error2)
+			&& (data_blob_cmp(&contents1, &contents2) == 0)
+			&& (type1 == type2))
 			continue;
 
 		callbacks->set_value(callback_data, path, name,
@@ -197,24 +215,31 @@ WERROR reg_generate_diff_key(struct registry_key *oldkey,
 	/* Values that were deleted */
 	for (i = 0; i < old_num_values; i++) {
 		const char *name;
+		uint32_t type;
+		DATA_BLOB contents;
+
 		error1 = reg_key_get_value_by_index(mem_ctx, oldkey, i, &name,
-						    NULL, NULL);
+						    &type, &contents);
 		if (!W_ERROR_IS_OK(error1)) {
-			DEBUG(0, ("Error ocurred getting value by index: %s\n",
+			DEBUG(0, ("Unable to get value by index: %s\n",
 				win_errstr(error1)));
 			talloc_free(mem_ctx);
 			return error1;
 		}
 
-		error2 = reg_key_get_value_by_name(mem_ctx, newkey, name, NULL,
-						   NULL);
+		if (newkey != NULL)
+			error2 = reg_key_get_value_by_name(mem_ctx, newkey,
+				 name, &type, &contents);
+		else
+			error2 = WERR_BADFILE;
 
 		if (W_ERROR_IS_OK(error2))
 			continue;
 
 		if (!W_ERROR_EQUAL(error2, WERR_BADFILE)) {
-			DEBUG(0, ("Error occured while getting value by name: %s\n",
+			DEBUG(0, ("Error occurred while getting value by name: %s\n",
 				win_errstr(error2)));
+			talloc_free(mem_ctx);
 			return error2;
 		}
 
@@ -236,27 +261,30 @@ _PUBLIC_ WERROR reg_generate_diff(struct registry_context *ctx1,
 	int i;
 	WERROR error;
 
-	for(i = HKEY_FIRST; i <= HKEY_LAST; i++) {
+	for (i = 0; reg_predefined_keys[i].name; i++) {
 		struct registry_key *r1 = NULL, *r2 = NULL;
-		error = reg_get_predefined_key(ctx1, i, &r1);
+
+		error = reg_get_predefined_key(ctx1,
+			reg_predefined_keys[i].handle, &r1);
 		if (!W_ERROR_IS_OK(error) &&
 		    !W_ERROR_EQUAL(error, WERR_BADFILE)) {
 			DEBUG(0, ("Unable to open hive %s for backend 1\n",
-				reg_get_predef_name(i)));
+				reg_predefined_keys[i].name));
+			continue;
 		}
 
-		error = reg_get_predefined_key(ctx2, i, &r2);
+		error = reg_get_predefined_key(ctx2,
+			reg_predefined_keys[i].handle, &r2);
 		if (!W_ERROR_IS_OK(error) &&
 		    !W_ERROR_EQUAL(error, WERR_BADFILE)) {
 			DEBUG(0, ("Unable to open hive %s for backend 2\n",
-				reg_get_predef_name(i)));
+				reg_predefined_keys[i].name));
+			continue;
 		}
 
-		if (r1 == NULL && r2 == NULL)
-			continue;
-
-		error = reg_generate_diff_key(r1, r2, reg_get_predef_name(i),
-					      callbacks, callback_data);
+		error = reg_generate_diff_key(r1, r2,
+			reg_predefined_keys[i].name, callbacks,
+			callback_data);
 		if (!W_ERROR_IS_OK(error)) {
 			DEBUG(0, ("Unable to determine diff: %s\n",
 				win_errstr(error)));

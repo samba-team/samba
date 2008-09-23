@@ -484,7 +484,7 @@ static NTSTATUS kdc_add_socket(struct kdc_server *kdc, const char *address,
 	/* within the kdc task we want to be a single process, so
 	   ask for the single process model ops and pass these to the
 	   stream_setup_socket() call. */
-	model_ops = process_model_byname("single");
+	model_ops = process_model_startup(kdc->task->event_ctx, "single");
 	if (!model_ops) {
 		DEBUG(0,("Can't find 'single' process model_ops\n"));
 		talloc_free(kdc_socket);
@@ -584,13 +584,11 @@ static NTSTATUS kdc_check_generic_kerberos(struct irpc_message *msg,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	
-#if 0
-	/* Windows does not check this */
 	if (pac_validate.MessageType != 3) {
 		/* We don't implement any other message types - such as certificate validation - yet */
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-#endif	
+
 	if (pac_validate.ChecksumAndSignature.length != (pac_validate.ChecksumLength + pac_validate.SignatureLength)
 	    || pac_validate.ChecksumAndSignature.length < pac_validate.ChecksumLength
 	    || pac_validate.ChecksumAndSignature.length < pac_validate.SignatureLength ) {

@@ -803,8 +803,11 @@ _PUBLIC_ uint32_t ndr_print_get_switch_value(struct ndr_print *ndr, const void *
 /*
   pull a struct from a blob using NDR
 */
-_PUBLIC_ enum ndr_err_code ndr_pull_struct_blob(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx, void *p,
-			      ndr_pull_flags_fn_t fn)
+_PUBLIC_ enum ndr_err_code ndr_pull_struct_blob(const DATA_BLOB *blob,
+						TALLOC_CTX *mem_ctx,
+						struct smb_iconv_convenience *iconv_convenience,
+						void *p,
+						ndr_pull_flags_fn_t fn)
 {
 	struct ndr_pull *ndr;
 	ndr = ndr_pull_init_blob(blob, mem_ctx);
@@ -868,8 +871,11 @@ _PUBLIC_ enum ndr_err_code ndr_pull_union_blob_all(const DATA_BLOB *blob, TALLOC
 /*
   push a struct to a blob using NDR
 */
-_PUBLIC_ enum ndr_err_code ndr_push_struct_blob(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, const void *p,
-			      ndr_push_flags_fn_t fn)
+_PUBLIC_ enum ndr_err_code ndr_push_struct_blob(DATA_BLOB *blob,
+						TALLOC_CTX *mem_ctx,
+						struct smb_iconv_convenience *iconv_convenience,
+						const void *p,
+						ndr_push_flags_fn_t fn)
 {
 	struct ndr_push *ndr;
 	ndr = ndr_push_init_ctx(mem_ctx);

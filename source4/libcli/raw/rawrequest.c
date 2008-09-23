@@ -72,7 +72,11 @@ _PUBLIC_ NTSTATUS smbcli_request_destroy(struct smbcli_request *req)
 	}
 
 	status = req->status;
-	talloc_free(req);
+
+	if (!req->do_not_free) {
+		talloc_free(req);
+	}
+
 	return status;
 }
 

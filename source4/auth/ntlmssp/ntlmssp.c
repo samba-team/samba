@@ -235,6 +235,10 @@ NTSTATUS gensec_ntlmssp_session_key(struct gensec_security *gensec_security,
 {
 	struct gensec_ntlmssp_state *gensec_ntlmssp_state = (struct gensec_ntlmssp_state *)gensec_security->private_data;
 
+	if (gensec_ntlmssp_state->expected_state != NTLMSSP_DONE) {
+		return NT_STATUS_NO_USER_SESSION_KEY;
+	}
+
 	if (!gensec_ntlmssp_state->session_key.data) {
 		return NT_STATUS_NO_USER_SESSION_KEY;
 	}

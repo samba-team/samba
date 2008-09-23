@@ -294,7 +294,7 @@ bool pull_mailslot_cldap_reply(TALLOC_CTX *mem_ctx,
 	uint32_t nt_version_query = ((*nt_version) & 0x0000001f);
 	uint16_t command = 0;
 
-	ndr_err = ndr_pull_struct_blob(blob, mem_ctx, &command,
+	ndr_err = ndr_pull_struct_blob(blob, mem_ctx, NULL, &command,
 			(ndr_pull_flags_fn_t)ndr_pull_uint16);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return false;
