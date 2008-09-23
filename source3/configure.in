@@ -6276,6 +6276,10 @@ CFLAGS="${CFLAGS} \$(FLAGS)"
 
 if test x$MERGED_BUILD != x1; then
 	CFLAGS="${CFLAGS} -D_SAMBA_BUILD_=3"
+else
+	if test x"$BLDSHARED" = x"true" ; then
+		LDFLAGS="$LDFLAGS -L./bin"
+	fi
 fi
 
 AC_OUTPUT(Makefile
