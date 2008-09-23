@@ -24,6 +24,17 @@
 #include <cups/cups.h>
 #include <cups/language.h>
 
+static SIG_ATOMIC_T gotalarm;
+
+/***************************************************************
+ Signal function to tell us we timed out.
+****************************************************************/
+
+static void gotalarm_sig(void)
+{
+        gotalarm = 1;
+}
+
 extern userdom_struct current_user_info;
 
 /*
@@ -45,7 +56,15 @@ static http_t *cups_connect(void)
 	http_t *http;
 	char *server, *p;
 	int port;
-	
+	int timeout = lp_cups_timeout();
+
+	gotalarm = 0;
+
+	if (timeout) {
+                CatchSignal(SIGALRM, SIGNAL_CAST gotalarm_sig);
+                alarm(timeout);
+        }
+
 	if (lp_cups_server() != NULL && strlen(lp_cups_server()) > 0) {
 		server = smb_xstrdup(lp_cups_server());
 	} else {
@@ -59,15 +78,18 @@ static http_t *cups_connect(void)
 	} else {
 		port = ippPort();
 	}
-	
+
 	DEBUG(10, ("connecting to cups server %s:%d\n",
 		   server, port));
 
-	if ((http = httpConnect(server, port)) == NULL) {
-		DEBUG(0,("Unable to connect to CUPS server %s:%d - %s\n", 
+	http = httpConnect(server, port);
+
+	CatchSignal(SIGALRM, SIGNAL_CAST SIG_IGN);
+        alarm(0);
+
+	if (http == NULL) {
+		DEBUG(0,("Unable to connect to CUPS server %s:%d - %s\n",
 			 server, port, strerror(errno)));
-		SAFE_FREE(server);
-		return NULL;
 	}
 
 	SAFE_FREE(server);
