@@ -2166,6 +2166,9 @@ static void gen_setfileinfo(int instance, union smb_setfileinfo *info)
 	case RAW_SFILEINFO_MODE_INFORMATION:
 		info->mode_information.in.mode = gen_bits_mask(0xFFFFFFFF);
 		break;
+	case RAW_SFILEINFO_FULL_EA_INFORMATION:
+		info->full_ea_information.in.eas = gen_ea_list();
+		break;
 	case RAW_SFILEINFO_GENERIC:
 	case RAW_SFILEINFO_SEC_DESC:
 	case RAW_SFILEINFO_UNIX_BASIC:
@@ -2222,7 +2225,8 @@ static void gen_setfileinfo(int instance, union smb_setfileinfo *info)
 	do {
 		i = gen_int_range(0, num_levels-1);
 	} while (ignore_pattern(levels[i].name));
-	
+
+	ZERO_STRUCTP(info);
 	info->generic.level = levels[i].level;
 
 	switch (info->generic.level) {
@@ -2278,6 +2282,9 @@ static void gen_setfileinfo(int instance, union smb_setfileinfo *info)
 		break;
 	case RAW_SFILEINFO_MODE_INFORMATION:
 		info->mode_information.in.mode = gen_bits_mask(0xFFFFFFFF);
+		break;
+	case RAW_SFILEINFO_FULL_EA_INFORMATION:
+		info->full_ea_information.in.eas = gen_ea_list();
 		break;
 
 	case RAW_SFILEINFO_GENERIC:
