@@ -71,14 +71,22 @@ static const char *_pam_error_code_str(int err)
 			return "PAM_ABORT";
 		case PAM_AUTHTOK_EXPIRED:
 			return "PAM_AUTHTOK_EXPIRED";
+#ifdef PAM_MODULE_UNKNOWN
 		case PAM_MODULE_UNKNOWN:
 			return "PAM_MODULE_UNKNOWN";
+#endif
+#ifdef PAM_BAD_ITEM
 		case PAM_BAD_ITEM:
 			return "PAM_BAD_ITEM";
+#endif
+#ifdef PAM_CONV_AGAIN
 		case PAM_CONV_AGAIN:
 			return "PAM_CONV_AGAIN";
+#endif
+#ifdef PAM_INCOMPLETE
 		case PAM_INCOMPLETE:
 			return "PAM_INCOMPLETE";
+#endif
 		default:
 			return NULL;
 	}
