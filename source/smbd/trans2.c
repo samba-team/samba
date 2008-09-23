@@ -1892,7 +1892,7 @@ static void call_trans2findfirst(connection_struct *conn,
 	bool requires_resume_key;
 	int info_level;
 	char *directory = NULL;
-	const char *mask = NULL;
+	char *mask = NULL;
 	char *p;
 	int last_entry_off=0;
 	int dptr_num = -1;
@@ -1980,7 +1980,7 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 		return;
 	}
 
-	ntstatus = unix_convert(ctx, conn, directory, True, &directory, NULL, &sbuf);
+	ntstatus = unix_convert(ctx, conn, directory, True, &directory, &mask, &sbuf);
 	if (!NT_STATUS_IS_OK(ntstatus)) {
 		reply_nterror(req, ntstatus);
 		return;
@@ -1996,10 +1996,12 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 	if(p == NULL) {
 		/* Windows and OS/2 systems treat search on the root '\' as if it were '\*' */
 		if((directory[0] == '.') && (directory[1] == '\0')) {
-			mask = "*";
+			mask = talloc_strdup(ctx,"*");
+			if (!mask) {
+				reply_nterror(req, NT_STATUS_NO_MEMORY);
+				return;
+			}
 			mask_contains_wcard = True;
-		} else {
-			mask = directory;
 		}
 		directory = talloc_strdup(talloc_tos(), "./");
 		if (!directory) {
@@ -2007,7 +2009,6 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 			return;
 		}
 	} else {
-		mask = p+1;
 		*p = 0;
 	}
 
