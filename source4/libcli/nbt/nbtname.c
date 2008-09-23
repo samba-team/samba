@@ -1,20 +1,20 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    manipulate nbt name structures
 
    Copyright (C) Andrew Tridgell 2005
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -111,7 +111,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_nbt_string(struct ndr_pull *ndr, int ndr_fla
 
 	/* break up name into a list of components */
 	for (num_components=0;num_components<MAX_COMPONENTS;num_components++) {
-		uint8_t *component;
+		uint8_t *component = NULL;
 		NDR_CHECK(ndr_pull_component(ndr, &component, &offset, &max_offset));
 		if (component == NULL) break;
 		if (name) {
@@ -157,7 +157,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_nbt_string(struct ndr_push *ndr, int ndr_fla
 		ndr_err = ndr_token_retrieve_cmp_fn(&ndr->nbt_string_list, s, &offset, (comparison_fn_t)strcmp, false);
 		if (NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			uint8_t b[2];
-			
+
 			if (offset > 0x3FFF) {
 				return ndr_push_error(ndr, NDR_ERR_STRING,
 						      "offset for nbt string label pointer %u[%08X] > 0x00003FFF",
@@ -218,7 +218,7 @@ static bool decompress_name(char *name, enum nbt_name_type *type)
 		    c2 < 'A' || c2 > 'P') {
 			return false;
 		}
-		name[i] = ((c1-'A')<<4) | (c2-'A');		    
+		name[i] = ((c1-'A')<<4) | (c2-'A');
 	}
 	name[i] = 0;
 	if (i == 16) {
@@ -233,7 +233,7 @@ static bool decompress_name(char *name, enum nbt_name_type *type)
 	for (;i>0 && name[i-1]==' ';i--) {
 		name[i-1] = 0;
 	}
-	
+
 	return true;
 }
 
@@ -241,7 +241,7 @@ static bool decompress_name(char *name, enum nbt_name_type *type)
 /*
   compress a name component
  */
-static uint8_t *compress_name(TALLOC_CTX *mem_ctx, 
+static uint8_t *compress_name(TALLOC_CTX *mem_ctx,
 			      const uint8_t *name, enum nbt_name_type type)
 {
 	uint8_t *cname;
@@ -355,7 +355,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_nbt_name(struct ndr_push *ndr, int ndr_flags
 	} else {
 		fullname = cname;
 	}
-	
+
 	ndr_err = ndr_push_nbt_string(ndr, ndr_flags, (const char *)fullname);
 
 	return ndr_err;
@@ -421,7 +421,7 @@ _PUBLIC_ void nbt_choose_called_name(TALLOC_CTX *mem_ctx,
 	n->scope = NULL;
 	n->type = type;
 
-	if (is_ipaddress(name) || name == NULL) {
+	if ((name == NULL) || is_ipaddress(name)) {
 		n->name = "*SMBSERVER";
 		return;
 	}
@@ -433,11 +433,11 @@ _PUBLIC_ void nbt_choose_called_name(TALLOC_CTX *mem_ctx,
 			return;
 		}
 		s = talloc_strndup(mem_ctx, name, PTR_DIFF(p, name));
-		n->name = strupper_talloc(mem_ctx, s);
+		n->name = talloc_strdup_upper(mem_ctx, s);
 		return;
 	}
 
-	n->name = strupper_talloc(mem_ctx, name);
+	n->name = talloc_strdup_upper(mem_ctx, name);
 }
 
 
@@ -482,14 +482,14 @@ _PUBLIC_ char *nbt_name_string(TALLOC_CTX *mem_ctx, const struct nbt_name *name)
 {
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	char *ret;
-	if (name->scope) {		
+	if (name->scope) {
 		ret = talloc_asprintf(mem_ctx, "%s<%02x>-%s",
 				      nbt_hex_encode(tmp_ctx, name->name),
-				      name->type, 
+				      name->type,
 				      nbt_hex_encode(tmp_ctx, name->scope));
 	} else {
-		ret = talloc_asprintf(mem_ctx, "%s<%02x>", 
-				      nbt_hex_encode(tmp_ctx, name->name), 
+		ret = talloc_asprintf(mem_ctx, "%s<%02x>",
+				      nbt_hex_encode(tmp_ctx, name->name),
 				      name->type);
 	}
 	talloc_free(tmp_ctx);
@@ -517,7 +517,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_wrepl_nbt_name(struct ndr_pull *ndr, int ndr
 	NDR_PULL_ALLOC_N(ndr, namebuf, namebuf_len);
 	NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, namebuf, namebuf_len));
 
-	NDR_PULL_ALLOC(ndr, r);	
+	NDR_PULL_ALLOC(ndr, r);
 
 	/* oh wow, what a nasty bug in windows ... */
 	if (namebuf[0] == 0x1b && namebuf_len >= 16) {
@@ -564,7 +564,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_wrepl_nbt_name(struct ndr_push *ndr, int ndr
 {
 	uint8_t *namebuf;
 	uint32_t namebuf_len;
-	uint32_t name_len;
+	uint32_t _name_len;
 	uint32_t scope_len = 0;
 
 	if (r == NULL) {
@@ -576,8 +576,8 @@ _PUBLIC_ enum ndr_err_code ndr_push_wrepl_nbt_name(struct ndr_push *ndr, int ndr
 		return NDR_ERR_SUCCESS;
 	}
 
-	name_len = strlen(r->name);
-	if (name_len > 15) {
+	_name_len = strlen(r->name);
+	if (_name_len > 15) {
 		return ndr_push_error(ndr, NDR_ERR_STRING,
 				      "wrepl_nbt_name longer as 15 chars: %s",
 				      r->name);
