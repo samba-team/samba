@@ -178,7 +178,7 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 				break;
 			}
 
-		case QUERYFORPDC:
+		case LOGON_PRIMARY_QUERY:
 			{
 				fstring mach_str, getdc_str;
 				fstring source_name;
@@ -253,7 +253,7 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 
 				/* Construct reply. */
 				q = outbuf;
-				SSVAL(q, 0, QUERYFORPDC_R);
+				SSVAL(q, 0, NETLOGON_RESPONSE_FROM_PDC);
 				q += 2;
 
 				fstrcpy(reply_name,my_name);
@@ -292,7 +292,7 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 				DEBUG(5,("process_logon_packet: GETDC request from %s at IP %s, \
 reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 					mach_str,inet_ntoa(p->ip), reply_name, lp_workgroup(),
-					QUERYFORPDC_R, (uint32)ntversion, (uint32)lmnttoken,
+					NETLOGON_RESPONSE_FROM_PDC, (uint32)ntversion, (uint32)lmnttoken,
 					(uint32)lm20token ));
 
 				dump_data(4, (uint8 *)outbuf, PTR_DIFF(q, outbuf));
@@ -309,7 +309,7 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 				return;
 			}
 
-		case SAMLOGON:
+		case LOGON_SAM_LOGON_REQUEST:
 
 			{
 				fstring getdc_str;
@@ -351,7 +351,7 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 				domainsidsize = IVAL(q, 0);
 				q += 4;
 
-				DEBUG(5,("process_logon_packet: SAMLOGON sidsize %d, len = %d\n", domainsidsize, len));
+				DEBUG(5,("process_logon_packet: LOGON_SAM_LOGON_REQUEST sidsize %d, len = %d\n", domainsidsize, len));
 
 				if (domainsidsize < (len - PTR_DIFF(q, buf)) && (domainsidsize != 0)) {
 					q += domainsidsize;
@@ -383,7 +383,7 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 				lm20token = SVAL(q, 6);
 				q += 8;
 
-				DEBUG(3,("process_logon_packet: SAMLOGON sidsize %d ntv %d\n", domainsidsize, ntversion));
+				DEBUG(3,("process_logon_packet: LOGON_SAM_LOGON_REQUEST sidsize %d ntv %d\n", domainsidsize, ntversion));
 
 				/*
 				 * we respond regadless of whether the machine is in our password 
@@ -392,14 +392,14 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 				 */
 				pull_ucs2_fstring(ascuser, uniuser);
 				pull_ucs2_fstring(asccomp, unicomp);
-				DEBUG(5,("process_logon_packet: SAMLOGON user %s\n", ascuser));
+				DEBUG(5,("process_logon_packet: LOGON_SAM_LOGON_REQUEST user %s\n", ascuser));
 
 				fstrcpy(reply_name, "\\\\"); /* Here it wants \\LOGONSERVER. */
 				fstrcat(reply_name, my_name);
 
-				DEBUG(5,("process_logon_packet: SAMLOGON request from %s(%s) for %s, returning logon svr %s domain %s code %x token=%x\n",
+				DEBUG(5,("process_logon_packet: LOGON_SAM_LOGON_REQUEST request from %s(%s) for %s, returning logon svr %s domain %s code %x token=%x\n",
 					asccomp,inet_ntoa(p->ip), ascuser, reply_name, lp_workgroup(),
-				SAMLOGON_R ,lmnttoken));
+				LOGON_SAM_LOGON_RESPONSE ,lmnttoken));
 
 				/* Construct reply. */
 
@@ -408,9 +408,9 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 				/* never, at least for now */
 				if ((ntversion < 11) || (SEC_ADS != lp_security()) || (ROLE_DOMAIN_PDC != lp_server_role())) {
 					if (SVAL(uniuser, 0) == 0) {
-						SSVAL(q, 0, SAMLOGON_UNK_R);	/* user unknown */
+						SSVAL(q, 0, LOGON_SAM_LOGON_USER_UNKNOWN);	/* user unknown */
 					} else {
-						SSVAL(q, 0, SAMLOGON_R);
+						SSVAL(q, 0, LOGON_SAM_LOGON_RESPONSE);
 					}
 
 					q += 2;
@@ -453,9 +453,9 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 						return;
 					}
 					if (SVAL(uniuser, 0) == 0) {
-						SIVAL(q, 0, SAMLOGON_AD_UNK_R);	/* user unknown */
+						SIVAL(q, 0, LOGON_SAM_LOGON_USER_UNKNOWN_EX);	/* user unknown */
 					} else {
-						SIVAL(q, 0, SAMLOGON_AD_R);
+						SIVAL(q, 0, LOGON_SAM_LOGON_RESPONSE_EX);
 					}
 					q += 4;
 
@@ -684,8 +684,8 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 		/* Announce change to UAS or SAM.  Send by the domain controller when a
 		replication event is required. */
 
-		case SAM_UAS_CHANGE:
-			DEBUG(5, ("Got SAM_UAS_CHANGE\n"));
+		case NETLOGON_ANNOUNCE_UAS:
+			DEBUG(5, ("Got NETLOGON_ANNOUNCE_UAS\n"));
 			break;
 
 		default:

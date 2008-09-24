@@ -539,17 +539,6 @@ struct packet_struct
 	} packet;
 };
 
-/* NETLOGON opcodes */
-
-#define QUERYFORPDC	 7 /* Query for PDC. */
-#define SAM_UAS_CHANGE  10 /* Announce change to UAS or SAM. */
-#define QUERYFORPDC_R	12 /* Response to Query for PDC. */
-#define SAMLOGON	18
-#define SAMLOGON_R	19
-#define SAMLOGON_UNK_R	21
-#define SAMLOGON_AD_UNK_R 23
-#define SAMLOGON_AD_R   25
-
 /* Ids for netbios packet types. */
 
 #define ANN_HostAnnouncement         1
