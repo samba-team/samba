@@ -174,6 +174,7 @@ struct gensec_security;
 struct socket_context;
 
 NTSTATUS gensec_socket_init(struct gensec_security *gensec_security,
+			    TALLOC_CTX *mem_ctx, 
 			    struct socket_context *current_socket,
 			    struct event_context *ev,
 			    void (*recv_handler)(void *, uint16_t),
