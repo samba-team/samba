@@ -1165,6 +1165,8 @@ static void idle_func_smb2(struct smb2_transport *transport, void *private)
 */
 static bool compare_status(NTSTATUS status1, NTSTATUS status2)
 {
+	char *s;
+
 	if (NT_STATUS_EQUAL(status1, status2)) return true;
 
 	/* one code being an error and the other OK is always an error */
@@ -1178,6 +1180,18 @@ static bool compare_status(NTSTATUS status1, NTSTATUS status2)
 	    ignore_pattern(nt_errstr(status2))) {
 		return true;
 	}
+
+	/* also support ignore patterns of the form NT_STATUS_XX:NT_STATUS_YY
+	   meaning that the first server returns NT_STATUS_XX and the 2nd
+	   returns NT_STATUS_YY */
+	s = talloc_asprintf(current_op.mem_ctx, "%s:%s", 
+			    nt_errstr(status1), 
+			    nt_errstr(status2));
+	printf("pattern: %s\n", s);
+	if (ignore_pattern(s)) {
+		return true;
+	}
+
 	current_op.mismatch = nt_errstr(status1);
 	return false;
 }
@@ -1348,7 +1362,7 @@ again:
 	} \
 	current_op.status = status[0]; \
 	for (i=1;i<NSERVERS;i++) { \
-		if (!compare_status(status[i], status[0])) { \
+		if (!compare_status(status[0], status[1])) { \
 			printf("status different in %s - %s %s\n", #call, \
 			       nt_errstr(status[0]), nt_errstr(status[i])); \
 			current_op.mismatch = nt_errstr(status[0]); \
