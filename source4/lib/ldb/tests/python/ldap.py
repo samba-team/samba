@@ -781,7 +781,10 @@ member: cn=ldaptestuser4,cn=ldaptestcontainer,""" + self.base_dn + """
         self.assertTrue("objectGuid" not in res[0])
         self.assertTrue("whenCreated" in res[0])
         self.assertTrue("nTSecurityDescriptor" in res[0])
-        self.assertEquals(res[0]["member"][0].upper(), ("CN=ldaptestuser2,CN=Users," + self.base_dn).upper())
+        memberUP = []
+        for m in res[0]["member"]:
+            memberUP.append(m.upper())
+        self.assertTrue(("CN=ldaptestuser2,CN=Users," + self.base_dn).upper() in memberUP)
 
         ldb.modify_ldif("""
 dn: cn=ldaptestgroup2,cn=users,""" + self.base_dn + """
