@@ -200,7 +200,7 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 	extern NTSTATUS server_service_rpc_init(void);
 	extern NTSTATUS server_service_ntp_signd_init(void);
 	extern NTSTATUS server_service_samba3_smb_init(void);
-	init_module_fn static_init[] = { STATIC_smbd_MODULES };
+	init_module_fn static_init[] = { STATIC_samba_MODULES };
 	init_module_fn *shared_init;
 	struct event_context *event_ctx;
 	uint16_t stdin_event_flags;
