@@ -97,6 +97,15 @@ static void request_handler(struct smbcli_request *req)
 	c->status = state->remote_status;
 	state->req = NULL;
 
+	/*
+	 * we only need to check the signature if the
+	 * NT_STATUS_OK is returned
+	 */
+	if (!NT_STATUS_IS_OK(state->remote_status)) {
+		talloc_free(check_req);
+		check_req = NULL;
+	}
+
 	switch (state->setup.old.level) {
 	case RAW_SESSSETUP_OLD:
 		state->io->out.vuid = state->setup.old.out.vuid;
