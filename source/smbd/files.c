@@ -326,8 +326,7 @@ files_struct *file_find_di_first(struct file_id id)
 	fsp_fi_cache.id = id;
 
 	for (fsp=Files;fsp;fsp=fsp->next) {
-		if ( fsp->fh->fd != -1 &&
-		     file_id_equal(&fsp->file_id, &id)) {
+		if (file_id_equal(&fsp->file_id, &id)) {
 			/* Setup positive cache. */
 			fsp_fi_cache.fsp = fsp;
 			return fsp;
@@ -348,8 +347,7 @@ files_struct *file_find_di_next(files_struct *start_fsp)
 	files_struct *fsp;
 
 	for (fsp = start_fsp->next;fsp;fsp=fsp->next) {
-		if ( fsp->fh->fd != -1 &&
-		     file_id_equal(&fsp->file_id, &start_fsp->file_id)) {
+		if (file_id_equal(&fsp->file_id, &start_fsp->file_id)) {
 			return fsp;
 		}
 	}
