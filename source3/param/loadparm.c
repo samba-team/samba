@@ -6560,7 +6560,7 @@ static struct smbconf_ctx *lp_smbconf_ctx(void)
 	return conf_ctx;
 }
 
-static bool process_registry_service(struct smbconf_service *service)
+static bool process_smbconf_service(struct smbconf_service *service)
 {
 	uint32_t count;
 	bool ret;
@@ -6616,7 +6616,7 @@ static bool process_registry_globals(void)
 		goto done;
 	}
 
-	ret = process_registry_service(service);
+	ret = process_smbconf_service(service);
 	if (!ret) {
 		goto done;
 	}
@@ -6654,7 +6654,7 @@ static bool process_registry_shares(void)
 		if (strequal(service[count]->name, GLOBAL_NAME)) {
 			continue;
 		}
-		ret = process_registry_service(service[count]);
+		ret = process_smbconf_service(service[count]);
 		if (!ret) {
 			goto done;
 		}
