@@ -627,6 +627,14 @@ wbcErr wbcResolveWinsByIP(const char *ip, char **name);
  */
 wbcErr wbcCheckTrustCredentials(const char *domain,
 				struct wbcAuthErrorInfo **error);
-
+/*
+ * Helper functions
+ */
+wbcErr wbcAddNamedBlob(size_t *num_blobs,
+		       struct wbcNamedBlob **blobs,
+		       const char *name,
+		       uint32_t flags,
+		       uint8_t *data,
+		       size_t length);
 
 #endif      /* _WBCLIENT_H */

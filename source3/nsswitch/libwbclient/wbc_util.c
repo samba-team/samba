@@ -689,3 +689,48 @@ wbcErr wbcLookupDomainControllerEx(const char *domain,
 done:
 	return wbc_status;
 }
+
+/** @brief Initialize a named blob and add to list of blobs
+ *
+ * @param[in,out] num_blobs     Pointer to the number of blobs
+ * @param[in,out] blobs         Pointer to an array of blobs
+ * @param[in]     name          Name of the new named blob
+ * @param[in]     flags         Flags of the new named blob
+ * @param[in]     data          Blob data of new blob
+ * @param[in]     length        Blob data length of new blob
+ *
+ * @return #wbcErr
+ *
+ **/
+
+wbcErr wbcAddNamedBlob(size_t *num_blobs,
+		       struct wbcNamedBlob **blobs,
+		       const char *name,
+		       uint32_t flags,
+		       uint8_t *data,
+		       size_t length)
+{
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+	struct wbcNamedBlob blob;
+
+	*blobs = talloc_realloc(NULL, *blobs, struct wbcNamedBlob,
+				*(num_blobs)+1);
+	BAIL_ON_PTR_ERROR(*blobs, wbc_status);
+
+	blob.name		= talloc_strdup(*blobs, name);
+	BAIL_ON_PTR_ERROR(blob.name, wbc_status);
+	blob.flags		= flags;
+	blob.blob.length	= length;
+	blob.blob.data		= (uint8_t *)talloc_memdup(*blobs, data, length);
+	BAIL_ON_PTR_ERROR(blob.blob.data, wbc_status);
+
+	(*(blobs))[*num_blobs] = blob;
+	*(num_blobs) += 1;
+
+	wbc_status = WBC_ERR_SUCCESS;
+done:
+	if (!WBC_ERROR_IS_OK(wbc_status) && blobs) {
+		wbcFreeMemory(*blobs);
+	}
+	return wbc_status;
+}
