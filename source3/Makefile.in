@@ -315,7 +315,7 @@ LIB_OBJ = $(LIBSAMBAUTIL_OBJ) \
 	  lib/async_sock.o \
 	  $(TDB_LIB_OBJ) \
 	  $(VERSION_OBJ) lib/charcnv.o lib/debug.o lib/fault.o \
-	  lib/interface.o lib/md4.o \
+	  lib/interface.o ../lib/crypto/md4.o \
 	  lib/pidfile.o \
 	  lib/signal.o lib/system.o lib/sendfile.o lib/recvfile.o lib/time.o \
 	  lib/ufc.o lib/genrand.o lib/username.o \
