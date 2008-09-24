@@ -6416,13 +6416,51 @@ static int getservicebyname(const char *pszServiceName, struct service *pservice
  If pcopymapDest is NULL then copy all fields
 ***************************************************************************/
 
+/**
+ * Add a parametric option to a param_opt_struct,
+ * replacing old value, if already present.
+ */
+static void set_param_opt(struct param_opt_struct **opt_list,
+			  const char *opt_name,
+			  const char *opt_value)
+{
+	struct param_opt_struct *new_opt, *opt;
+	bool not_added;
+
+	if (opt_list == NULL) {
+		return;
+	}
+
+	opt = *opt_list;
+	not_added = true;
+
+	/* Traverse destination */
+	while (opt) {
+		/* If we already have same option, override it */
+		if (strwicmp(opt->key, opt_name) == 0) {
+			string_free(&opt->value);
+			TALLOC_FREE(opt->list);
+			opt->value = SMB_STRDUP(opt_value);
+			not_added = false;
+			break;
+		}
+		opt = opt->next;
+	}
+	if (not_added) {
+	    new_opt = SMB_XMALLOC_P(struct param_opt_struct);
+	    new_opt->key = SMB_STRDUP(opt_name);
+	    new_opt->value = SMB_STRDUP(opt_value);
+	    new_opt->list = NULL;
+	    DLIST_ADD(*opt_list, new_opt);
+	}
+}
+
 static void copy_service(struct service *pserviceDest, struct service *pserviceSource,
 			 struct bitmap *pcopymapDest)
 {
 	int i;
 	bool bcopyall = (pcopymapDest == NULL);
-	struct param_opt_struct *data, *pdata, *paramo;
-	bool not_added;
+	struct param_opt_struct *data;
 
 	for (i = 0; parm_table[i].label; i++)
 		if (parm_table[i].ptr && parm_table[i].p_class == P_LOCAL &&
@@ -6480,27 +6518,7 @@ static void copy_service(struct service *pserviceDest, struct service *pserviceS
 	
 	data = pserviceSource->param_opt;
 	while (data) {
-		not_added = True;
-		pdata = pserviceDest->param_opt;
-		/* Traverse destination */
-		while (pdata) {
-			/* If we already have same option, override it */
-			if (strwicmp(pdata->key, data->key) == 0) {
-				string_free(&pdata->value);
-				TALLOC_FREE(pdata->list);
-				pdata->value = SMB_STRDUP(data->value);
-				not_added = False;
-				break;
-			}
-			pdata = pdata->next;
-		}
-		if (not_added) {
-		    paramo = SMB_XMALLOC_P(struct param_opt_struct);
-		    paramo->key = SMB_STRDUP(data->key);
-		    paramo->value = SMB_STRDUP(data->value);
-		    paramo->list = NULL;
-		    DLIST_ADD(pserviceDest->param_opt, paramo);
-		}
+		set_param_opt(&pserviceDest->param_opt, data->key, data->value);
 		data = data->next;
 	}
 }
@@ -7165,8 +7183,7 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 	int parmnum, i;
 	void *parm_ptr = NULL;	/* where we are going to store the result */
 	void *def_ptr = NULL;
-	struct param_opt_struct *paramo, *data;
-	bool not_added;
+	struct param_opt_struct **opt_list;
 
 	parmnum = map_parameter(pszParmName);
 
@@ -7185,33 +7202,9 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 
 		frame = talloc_stackframe();
 
-		not_added = True;
-		data = (snum < 0)
-			? Globals.param_opt : ServicePtrs[snum]->param_opt;
-		/* Traverse destination */
-		while (data) {
-			/* If we already have same option, override it */
-			if (strwicmp(data->key, pszParmName) == 0) {
-				string_free(&data->value);
-				TALLOC_FREE(data->list);
-				data->value = SMB_STRDUP(pszParmValue);
-				not_added = False;
-				break;
-			}
-			data = data->next;
-		}
-		if (not_added) {
-			paramo = SMB_XMALLOC_P(struct param_opt_struct);
-			paramo->key = SMB_STRDUP(pszParmName);
-			paramo->value = SMB_STRDUP(pszParmValue);
-			paramo->list = NULL;
-			if (snum < 0) {
-				DLIST_ADD(Globals.param_opt, paramo);
-			} else {
-				DLIST_ADD(ServicePtrs[snum]->param_opt,
-					  paramo);
-			}
-		}
+		opt_list = (snum < 0)
+			? &Globals.param_opt : &ServicePtrs[snum]->param_opt;
+		set_param_opt(opt_list, pszParmName, pszParmValue);
 
 		TALLOC_FREE(frame);
 		return (True);
