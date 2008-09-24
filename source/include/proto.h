@@ -5933,7 +5933,7 @@ const char **lp_svcctl_list(void);
 char *lp_cups_options(int );
 char *lp_cups_server(void);
 char *lp_iprint_server(void);
-int lp_cups_timeout(void);
+int lp_cups_connection_timeout(void);
 const char *lp_ctdbd_socket(void);
 const char **lp_cluster_addresses(void);
 bool lp_clustering(void);

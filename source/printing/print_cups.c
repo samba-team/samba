@@ -56,7 +56,7 @@ static http_t *cups_connect(void)
 	http_t *http;
 	char *server, *p;
 	int port;
-	int timeout = lp_cups_timeout();
+	int timeout = lp_cups_connection_timeout();
 
 	gotalarm = 0;
 
