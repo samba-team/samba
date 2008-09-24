@@ -5390,6 +5390,7 @@ static bool do_section(const char *pszSectionName, void *userdata);
 static void init_copymap(struct service *pservice);
 static bool hash_a_service(const char *name, int number);
 static void free_service_byindex(int iService);
+static void free_param_opts(struct param_opt_struct **popts);
 static char * canonicalize_servicename(const char *name);
 static void show_parameter(int parmIndex);
 static bool is_synonym_of(int parm1, int parm2, bool *inverse);
@@ -5644,6 +5645,35 @@ static void init_service(struct service *pservice)
 	copy_service(pservice, &sDefault, NULL);
 }
 
+/**
+ * free a param_opts structure.
+ * param_opts handling should be moved to talloc;
+ * then this whole functions reduces to a TALLOC_FREE().
+ */
+
+static void free_param_opts(struct param_opt_struct **popts)
+{
+	struct param_opt_struct *opt, *next_opt;
+
+	if (popts == NULL) {
+		return;
+	}
+
+	if (*popts != NULL) {
+		DEBUG(5, ("Freeing parametrics:\n"));
+	}
+	opt = *popts;
+	while (opt != NULL) {
+		string_free(&opt->key);
+		string_free(&opt->value);
+		TALLOC_FREE(opt->list);
+		next_opt = opt->next;
+		SAFE_FREE(opt);
+		opt = next_opt;
+	}
+	*popts = NULL;
+}
+
 /***************************************************************************
  Free the dynamically allocated parts of a service struct.
 ***************************************************************************/
@@ -5651,7 +5681,6 @@ static void init_service(struct service *pservice)
 static void free_service(struct service *pservice)
 {
 	int i;
-	struct param_opt_struct *data, *pdata;
 	if (!pservice)
 		return;
 
@@ -5677,18 +5706,7 @@ static void free_service(struct service *pservice)
 						     &sDefault))));
 	}
 
-	data = pservice->param_opt;
-	if (data)
-		DEBUG(5,("Freeing parametrics:\n"));
-	while (data) {
-		DEBUG(5,("[%s = %s]\n", data->key, data->value));
-		string_free(&data->key);
-		string_free(&data->value);
-		TALLOC_FREE(data->list);
-		pdata = data->next;
-		SAFE_FREE(data);
-		data = pdata;
-	}
+	free_param_opts(&pservice->param_opt);
 
 	ZERO_STRUCTP(pservice);
 }
@@ -5730,7 +5748,6 @@ static int add_a_service(const struct service *pservice, const char *name)
 	int i;
 	struct service tservice;
 	int num_to_alloc = iNumServices + 1;
-	struct param_opt_struct *data, *pdata;
 
 	tservice = *pservice;
 
@@ -5740,16 +5757,7 @@ static int add_a_service(const struct service *pservice, const char *name)
 		if (i >= 0) {
 			/* Clean all parametric options for service */
 			/* They will be added during parsing again */
-			data = ServicePtrs[i]->param_opt;
-			while (data) {
-				string_free(&data->key);
-				string_free(&data->value);
-				TALLOC_FREE(data->list);
-				pdata = data->next;
-				SAFE_FREE(data);
-				data = pdata;
-			}
-			ServicePtrs[i]->param_opt = NULL;
+			free_param_opts(&ServicePtrs[i]->param_opt);
 			return (i);
 		}
 	}
@@ -8765,9 +8773,6 @@ bool lp_is_in_client(void)
     return in_client;
 }
 
-
-
-
 /***************************************************************************
  Load the services array from the services file. Return True on success, 
  False on failure.
@@ -8783,7 +8788,6 @@ bool lp_load_ex(const char *pszFname,
 {
 	char *n2 = NULL;
 	bool bRetval;
-	struct param_opt_struct *data, *pdata;
 
 	bRetval = False;
 
@@ -8801,21 +8805,10 @@ bool lp_load_ex(const char *pszFname,
 		lp_save_defaults();
 	}
 
+	free_param_opts(&Globals.param_opt);
+
 	/* We get sections first, so have to start 'behind' to make up */
 	iServiceIndex = -1;
-
-	if (Globals.param_opt != NULL) {
-		data = Globals.param_opt;
-		while (data) {
-			string_free(&data->key);
-			string_free(&data->value);
-			TALLOC_FREE(data->list);
-			pdata = data->next;
-			SAFE_FREE(data);
-			data = pdata;
-		}
-		Globals.param_opt = NULL;
-	}
 
 	if (lp_config_backend_is_file()) {
 		n2 = alloc_sub_basic(get_current_username(),
