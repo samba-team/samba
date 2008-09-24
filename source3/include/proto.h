@@ -649,12 +649,6 @@ char *escape_rdn_val_string_alloc(const char *s);
 
 void mdfour(unsigned char *out, const unsigned char *in, int n);
 
-/* The following definitions come from lib/md5.c  */
-
-void MD5Init(struct MD5Context *ctx);
-void MD5Update(struct MD5Context *ctx, unsigned char const *buf, unsigned len);
-void MD5Final(unsigned char digest[16], struct MD5Context *ctx);
-
 /* The following definitions come from lib/module.c  */
 
 NTSTATUS smb_load_module(const char *module_name);

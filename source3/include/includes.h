@@ -686,7 +686,7 @@ typedef char fstring[FSTRING_LEN];
 #include "authdata.h"
 #include "msdfs.h"
 #include "rap.h"
-#include "md5.h"
+#include "../lib/crypto/md5.h"
 #include "hmacmd5.h"
 #include "ntlmssp.h"
 #include "auth.h"
