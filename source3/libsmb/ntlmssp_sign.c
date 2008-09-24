@@ -101,10 +101,10 @@ static NTSTATUS ntlmssp_make_packet_signature(NTLMSSP_STATE *ntlmssp_state,
 		if (encrypt_sig && (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_KEY_EXCH)) {
 			switch (direction) {
 			case NTLMSSP_SEND:
-				smb_arc4_crypt(ntlmssp_state->send_seal_arc4_state,  digest, 8);
+				arcfour_crypt_sbox(&ntlmssp_state->send_seal_arc4_state, digest, 8);
 				break;
 			case NTLMSSP_RECEIVE:
-				smb_arc4_crypt(ntlmssp_state->recv_seal_arc4_state,  digest, 8);
+				arcfour_crypt_sbox(&ntlmssp_state->recv_seal_arc4_state, digest, 8);
 				break;
 			}
 		}
@@ -126,7 +126,7 @@ static NTSTATUS ntlmssp_make_packet_signature(NTLMSSP_STATE *ntlmssp_state,
 
 		dump_data_pw("ntlmssp hash:\n", ntlmssp_state->ntlmv1_arc4_state,
 			     sizeof(ntlmssp_state->ntlmv1_arc4_state));
-		smb_arc4_crypt(ntlmssp_state->ntlmv1_arc4_state, sig->data+4, sig->length-4);
+		arcfour_crypt_sbox(&ntlmssp_state->ntlmv1_arc4_state, sig->data+4, sig->length-4);
 	}
 	return NT_STATUS_OK;
 }
@@ -259,9 +259,9 @@ NTSTATUS ntlmssp_seal_packet(NTLMSSP_STATE *ntlmssp_state,
 			return nt_status;
 		}
 
-		smb_arc4_crypt(ntlmssp_state->send_seal_arc4_state, data, length);
+		arcfour_crypt_sbox(&ntlmssp_state->send_seal_arc4_state, data, length);
 		if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_KEY_EXCH) {
-			smb_arc4_crypt(ntlmssp_state->send_seal_arc4_state, sig->data+4, 8);
+			arcfour_crypt_sbox(&ntlmssp_state->send_seal_arc4_state, sig->data+4, 8);
 		}
 	} else {
 		uint32 crc;
@@ -276,12 +276,12 @@ NTSTATUS ntlmssp_seal_packet(NTLMSSP_STATE *ntlmssp_state,
 		
 		dump_data_pw("ntlmv1 arc4 state:\n", ntlmssp_state->ntlmv1_arc4_state,
 			     sizeof(ntlmssp_state->ntlmv1_arc4_state));
-		smb_arc4_crypt(ntlmssp_state->ntlmv1_arc4_state, data, length);
+		arcfour_crypt_sbox(&ntlmssp_state->ntlmv1_arc4_state, data, length);
 
 		dump_data_pw("ntlmv1 arc4 state:\n", ntlmssp_state->ntlmv1_arc4_state,
 			     sizeof(ntlmssp_state->ntlmv1_arc4_state));
 
-		smb_arc4_crypt(ntlmssp_state->ntlmv1_arc4_state, sig->data+4, sig->length-4);
+		arcfour_crypt_sbox(&ntlmssp_state->ntlmv1_arc4_state, sig->data+4, sig->length-4);
 
 		ntlmssp_state->ntlmv1_seq_num++;
 	}
@@ -311,10 +311,10 @@ NTSTATUS ntlmssp_unseal_packet(NTLMSSP_STATE *ntlmssp_state,
 
 	if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
 		/* First unseal the data. */
-		smb_arc4_crypt(ntlmssp_state->recv_seal_arc4_state, data, length);
+		arcfour_crypt_sbox(&ntlmssp_state->recv_seal_arc4_state, data, length);
 		dump_data_pw("ntlmv2 clear data\n", data, length);
 	} else {
-		smb_arc4_crypt(ntlmssp_state->ntlmv1_arc4_state, data, length);
+		arcfour_crypt_sbox(&ntlmssp_state->ntlmv1_arc4_state, data, length);
 		dump_data_pw("ntlmv1 clear data\n", data, length);
 	}
 	return ntlmssp_check_packet(ntlmssp_state, data, length, whole_pdu, pdu_length, sig);
@@ -397,7 +397,7 @@ NTSTATUS ntlmssp_sign_init(NTLMSSP_STATE *ntlmssp_state)
 		dump_data_pw("NTLMSSP send seal key:\n",
 				ntlmssp_state->send_seal_key, 16);
 
-		smb_arc4_init(ntlmssp_state->send_seal_arc4_state,
+		arcfour_init(&ntlmssp_state->send_seal_arc4_state,
 				ntlmssp_state->send_seal_key, 16);
 
 		dump_data_pw("NTLMSSP send seal arc4 state:\n", 
@@ -417,7 +417,7 @@ NTSTATUS ntlmssp_sign_init(NTLMSSP_STATE *ntlmssp_state)
 		dump_data_pw("NTLMSSP recv seal key:\n",
 				ntlmssp_state->recv_seal_key, 16);
 				
-		smb_arc4_init(ntlmssp_state->recv_seal_arc4_state,
+		arcfour_init(&ntlmssp_state->recv_seal_arc4_state,
 				ntlmssp_state->recv_seal_key, 16);
 
 		dump_data_pw("NTLMSSP recv seal arc4 state:\n", 
@@ -454,7 +454,7 @@ NTSTATUS ntlmssp_sign_init(NTLMSSP_STATE *ntlmssp_state)
 
 		DEBUG(5, ("NTLMSSP Sign/Seal - using NTLM1\n"));
 
-		smb_arc4_init(ntlmssp_state->ntlmv1_arc4_state,
+		arcfour_init(&ntlmssp_state->ntlmv1_arc4_state,
                              weak_session_key.data, weak_session_key.length);
 
                 dump_data_pw("NTLMv1 arc4 state:\n", ntlmssp_state->ntlmv1_arc4_state,

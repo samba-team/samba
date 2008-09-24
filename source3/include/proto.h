@@ -312,11 +312,6 @@ int afs_syscall( int subcall,
 bool afs_settoken_str(const char *token_string);
 bool afs_settoken_str(const char *token_string);
 
-/* The following definitions come from lib/arc4.c  */
-
-void smb_arc4_init(unsigned char arc4_state_out[258], const unsigned char *key, size_t keylen);
-void smb_arc4_crypt(unsigned char arc4_state_inout[258], unsigned char *data, size_t len);
-
 /* The following definitions come from lib/audit.c  */
 
 const char *audit_category_str(uint32 category);

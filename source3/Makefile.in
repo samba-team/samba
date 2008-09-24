@@ -328,8 +328,8 @@ LIB_OBJ = $(LIBSAMBAUTIL_OBJ) \
 	  lib/substitute.o lib/fsusage.o lib/dbwrap_util.o \
 	  lib/ms_fnmatch.o lib/select.o lib/errmap_unix.o \
 	  lib/tallocmsg.o lib/dmallocmsg.o libsmb/smb_signing.o \
-	  ../lib/crypto/md5.o ../lib/crypto/hmacmd5.o lib/arc4.o lib/iconv.o \
-	  lib/pam_errors.o intl/lang_tdb.o lib/conn_tdb.o \
+	  ../lib/crypto/md5.o ../lib/crypto/hmacmd5.o ../lib/crypto/arcfour.o \
+	  lib/iconv.o lib/pam_errors.o intl/lang_tdb.o lib/conn_tdb.o \
 	  lib/adt_tree.o lib/gencache.o \
 	  lib/module.o lib/events.o lib/ldap_escape.o @CHARSET_STATIC@ \
 	  lib/secdesc.o lib/util_seaccess.o lib/secace.o lib/secacl.o \

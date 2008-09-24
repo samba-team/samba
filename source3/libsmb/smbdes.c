@@ -388,18 +388,18 @@ void des_crypt112_16(unsigned char out[16], unsigned char in[16], const unsigned
 
 void SamOEMhash( unsigned char *data, const unsigned char key[16], size_t len)
 {
-	unsigned char arc4_state[258];
+	struct arcfour_state arc4_state;
 
-	smb_arc4_init(arc4_state, key, 16);
-	smb_arc4_crypt(arc4_state, data, len);
+	arcfour_init(&arc4_state, key, 16);
+	arcfour_crypt_sbox(&arc4_state, data, len);
 }
 
 void SamOEMhashBlob( unsigned char *data, size_t len, DATA_BLOB *key)
 {
-	unsigned char arc4_state[258];
+	struct arcfour_state arc4_state;
 
-	smb_arc4_init(arc4_state, key->data, key->length);
-	smb_arc4_crypt(arc4_state, data, len);
+	arcfour_init(&arc4_state, key);
+	arcfour_crypt_sbox(&arc4_state, data, len);
 }
 
 /* Decode a sam password hash into a password.  The password hash is the

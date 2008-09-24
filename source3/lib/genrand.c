@@ -21,7 +21,7 @@
 
 #include "includes.h"
 
-static unsigned char smb_arc4_state[258];
+static struct arcfour_state smb_arc4_state;
 static uint32 counter;
 
 static bool done_reseed = False;
@@ -89,6 +89,7 @@ static void do_filehash(const char *fname, unsigned char *the_hash)
 static int do_reseed(bool use_fd, int fd)
 {
 	unsigned char seed_inbuf[40];
+	DATA_BLOB seed_blob = { seed_inbuf, 40 };
 	uint32 v1, v2; struct timeval tval; pid_t mypid;
 	struct passwd *pw;
 	int reseed_data = 0;
@@ -146,7 +147,7 @@ static int do_reseed(bool use_fd, int fd)
 			seed_inbuf[i] ^= ((char *)(&reseed_data))[i % sizeof(reseed_data)];
 	}
 
-	smb_arc4_init(smb_arc4_state, seed_inbuf, sizeof(seed_inbuf));
+	arcfour_init(&smb_arc4_state, &seed_blob);
 
 	return -1;
 }
@@ -190,7 +191,7 @@ void generate_random_buffer( unsigned char *out, int len)
 	while(len > 0) {
 		int copy_len = len > 16 ? 16 : len;
 
-		smb_arc4_crypt(smb_arc4_state, md4_buf, sizeof(md4_buf));
+		arcfour_crypt_sbox(&smb_arc4_state, md4_buf, sizeof(md4_buf));
 		mdfour(tmp_buf, md4_buf, sizeof(md4_buf));
 		memcpy(p, tmp_buf, copy_len);
 		p += copy_len;
