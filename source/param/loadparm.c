@@ -341,7 +341,7 @@ struct global {
 	int iKeepalive;
 	int iminreceivefile;
 	struct param_opt_struct *param_opt;
-	int cups_timeout;
+	int cups_connection_timeout;
 };
 
 static struct global Globals;
@@ -2597,10 +2597,10 @@ static struct parm_struct parm_table[] = {
 		.flags		= FLAG_ADVANCED | FLAG_PRINT | FLAG_GLOBAL,
 	},
 	{
-		.label		= "cups timeout",
+		.label		= "cups connection timeout",
 		.type		= P_INTEGER,
 		.p_class	= P_GLOBAL,
-		.ptr		= &Globals.cups_timeout,
+		.ptr		= &Globals.cups_connection_timeout,
 		.special	= NULL,
 		.enum_list	= NULL,
 		.flags		= FLAG_ADVANCED,
@@ -4805,7 +4805,7 @@ static void init_globals(bool first_time_only)
 	 * to never expire, though, when this runs out the afs client will 
 	 * forget the token. Set to 0 to get NEVERDATE.*/
 	Globals.iAfsTokenLifetime = 604800;
-	Globals.cups_timeout = CUPS_DEFAULT_TIMEOUT;
+	Globals.cups_connection_timeout = CUPS_DEFAULT_CONNECTION_TIMEOUT;
 
 /* these parameters are set to defaults that are more appropriate
    for the increasing samba install base:
@@ -5247,7 +5247,7 @@ FN_GLOBAL_LIST(lp_svcctl_list, &Globals.szServicesList)
 FN_LOCAL_STRING(lp_cups_options, szCupsOptions)
 FN_GLOBAL_STRING(lp_cups_server, &Globals.szCupsServer)
 FN_GLOBAL_STRING(lp_iprint_server, &Globals.szIPrintServer)
-FN_GLOBAL_INTEGER(lp_cups_timeout, &Globals.cups_timeout)
+FN_GLOBAL_INTEGER(lp_cups_connection_timeout, &Globals.cups_connection_timeout)
 FN_GLOBAL_CONST_STRING(lp_ctdbd_socket, &Globals.ctdbdSocket)
 FN_GLOBAL_LIST(lp_cluster_addresses, &Globals.szClusterAddresses)
 FN_GLOBAL_BOOL(lp_clustering, &Globals.clustering)
