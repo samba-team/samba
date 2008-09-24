@@ -7188,8 +7188,6 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 	parmnum = map_parameter(pszParmName);
 
 	if (parmnum < 0) {
-		TALLOC_CTX *frame;
-
 		if (strchr(pszParmName, ':') == NULL) {
 			DEBUG(0, ("Ignoring unknown parameter \"%s\"\n",
 				  pszParmName));
@@ -7200,13 +7198,10 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 		 * We've got a parametric option
 		 */
 
-		frame = talloc_stackframe();
-
 		opt_list = (snum < 0)
 			? &Globals.param_opt : &ServicePtrs[snum]->param_opt;
 		set_param_opt(opt_list, pszParmName, pszParmValue);
 
-		TALLOC_FREE(frame);
 		return (True);
 	}
 
