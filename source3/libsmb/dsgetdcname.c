@@ -35,7 +35,7 @@ struct ip_service_name {
 static NTSTATUS make_dc_info_from_cldap_reply(TALLOC_CTX *mem_ctx,
 					      uint32_t flags,
 					      struct sockaddr_storage *ss,
-					      struct netlogon_samlogon_response *r,
+					      struct NETLOGON_SAM_LOGON_RESPONSE_EX *r,
 					      struct netr_DsRGetDCNameInfo **info);
 
 /****************************************************************
@@ -358,7 +358,6 @@ static NTSTATUS dsgetdcname_cache_fetch(TALLOC_CTX *mem_ctx,
 	DATA_BLOB blob;
 	enum ndr_err_code ndr_err;
 	struct netr_DsRGetDCNameInfo *info;
-	struct netlogon_samlogon_response p;
 	struct NETLOGON_SAM_LOGON_RESPONSE_EX r;
 	NTSTATUS status;
 
@@ -389,10 +388,8 @@ static NTSTATUS dsgetdcname_cache_fetch(TALLOC_CTX *mem_ctx,
 		return ndr_map_error2ntstatus(ndr_err);
 	}
 
-	p.nt5_ex = r;
-
 	status = make_dc_info_from_cldap_reply(mem_ctx, flags, NULL,
-					       &p, &info);
+					       &r, &info);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -787,7 +784,7 @@ static void map_dc_and_domain_names(uint32_t flags,
 static NTSTATUS make_dc_info_from_cldap_reply(TALLOC_CTX *mem_ctx,
 					      uint32_t flags,
 					      struct sockaddr_storage *ss,
-					      struct netlogon_samlogon_response *r,
+					      struct NETLOGON_SAM_LOGON_RESPONSE_EX *r,
 					      struct netr_DsRGetDCNameInfo **info)
 {
 	const char *dc_hostname = NULL;
@@ -808,163 +805,28 @@ static NTSTATUS make_dc_info_from_cldap_reply(TALLOC_CTX *mem_ctx,
 		dc_address_type = DS_ADDRESS_TYPE_INET;
 	}
 
-	switch (r->ntver & 0x0000001f) {
-		case 0:
-		case 1:
-		case 16:
-		case 17:
-			if (!ss) {
-				dc_address	= r->nt4.server;
-				dc_address_type	= DS_ADDRESS_TYPE_NETBIOS;
-			}
-
-			map_dc_and_domain_names(flags,
-						r->nt4.server,
-						r->nt4.domain,
-						NULL,
-						NULL,
-						&dc_flags,
-						&dc_hostname,
-						&dc_domain_name);
-
-			if (flags & DS_PDC_REQUIRED) {
-				dc_flags = NBT_SERVER_WRITABLE | NBT_SERVER_PDC;
-			}
-			break;
-		case 2:
-		case 3:
-		case 18:
-		case 19:
-			if (!ss) {
-				dc_address	= r->nt5.pdc_ip;
-				dc_address_type	= DS_ADDRESS_TYPE_INET;
-			}
-
-			map_dc_and_domain_names(flags,
-						r->nt5.pdc_name,
-						r->nt5.domain_name,
-						r->nt5.pdc_dns_name,
-						r->nt5.dns_domain,
-						&dc_flags,
-						&dc_hostname,
-						&dc_domain_name);
-
-			dc_flags	|= r->nt5.server_type;
-			dc_forest	= r->nt5.forest;
-			dc_domain_guid	= &r->nt5.domain_uuid;
-
-			break;
-		case 4:
-		case 5:
-		case 6:
-		case 7:
-			if (!ss) {
-				dc_address	= r->nt5_ex.pdc_name;
-				dc_address_type	= DS_ADDRESS_TYPE_NETBIOS;
-			}
-
-			map_dc_and_domain_names(flags,
-						r->nt5_ex.pdc_name,
-						r->nt5_ex.domain,
-						r->nt5_ex.pdc_dns_name,
-						r->nt5_ex.dns_domain,
-						&dc_flags,
-						&dc_hostname,
-						&dc_domain_name);
-
-			dc_flags	|= r->nt5_ex.server_type;
-			dc_forest	= r->nt5_ex.forest;
-			dc_domain_guid	= &r->nt5_ex.domain_uuid;
-			dc_server_site	= r->nt5_ex.server_site;
-			dc_client_site	= r->nt5_ex.client_site;
-
-			break;
-		case 8:
-		case 9:
-		case 10:
-		case 11:
-		case 12:
-		case 13:
-		case 14:
-		case 15:
-			if (!ss) {
-				dc_address	= r->nt5_ex.sockaddr.pdc_ip;
-				dc_address_type	= DS_ADDRESS_TYPE_INET;
-			}
-
-			map_dc_and_domain_names(flags,
-						r->nt5_ex.pdc_name,
-						r->nt5_ex.domain,
-						r->nt5_ex.pdc_dns_name,
-						r->nt5_ex.dns_domain,
-						&dc_flags,
-						&dc_hostname,
-						&dc_domain_name);
-
-			dc_flags	|= r->nt5_ex.server_type;
-			dc_forest	= r->nt5_ex.forest;
-			dc_domain_guid	= &r->nt5_ex.domain_uuid;
-			dc_server_site	= r->nt5_ex.server_site;
-			dc_client_site	= r->nt5_ex.client_site;
-
-			break;
-		case 20:
-		case 21:
-		case 22:
-		case 23:
-		case 24:
-		case 25:
-		case 26:
-		case 27:
-		case 28:
-			if (!ss) {
-				dc_address	= r->nt5_ex.pdc_name;
-				dc_address_type	= DS_ADDRESS_TYPE_NETBIOS;
-			}
-
-			map_dc_and_domain_names(flags,
-						r->nt5_ex.pdc_name,
-						r->nt5_ex.domain,
-						r->nt5_ex.pdc_dns_name,
-						r->nt5_ex.dns_domain,
-						&dc_flags,
-						&dc_hostname,
-						&dc_domain_name);
-
-			dc_flags	|= r->nt5_ex.server_type;
-			dc_forest	= r->nt5_ex.forest;
-			dc_domain_guid	= &r->nt5_ex.domain_uuid;
-			dc_server_site	= r->nt5_ex.server_site;
-			dc_client_site	= r->nt5_ex.client_site;
-
-			break;
-		case 29:
-		case 30:
-		case 31:
-			if (!ss) {
-				dc_address	= r->nt5_ex.sockaddr.pdc_ip;
-				dc_address_type	= DS_ADDRESS_TYPE_INET;
-			}
-
-			map_dc_and_domain_names(flags,
-						r->nt5_ex.pdc_name,
-						r->nt5_ex.domain,
-						r->nt5_ex.pdc_dns_name,
-						r->nt5_ex.dns_domain,
-						&dc_flags,
-						&dc_hostname,
-						&dc_domain_name);
-
-			dc_flags	|= r->nt5_ex.server_type;
-			dc_forest	= r->nt5_ex.forest;
-			dc_domain_guid	= &r->nt5_ex.domain_uuid;
-			dc_server_site	= r->nt5_ex.server_site;
-			dc_client_site	= r->nt5_ex.client_site;
-
-			break;
-		default:
-			return NT_STATUS_INVALID_PARAMETER;
+	if (!ss && r->sockaddr.pdc_ip) {
+		dc_address	= r->sockaddr.pdc_ip;
+		dc_address_type	= DS_ADDRESS_TYPE_INET;
+	} else {
+		dc_address      = r->pdc_name;
+		dc_address_type = DS_ADDRESS_TYPE_NETBIOS;
 	}
+
+	map_dc_and_domain_names(flags,
+				r->pdc_name,
+				r->domain,
+				r->pdc_dns_name,
+				r->dns_domain,
+				&dc_flags,
+				&dc_hostname,
+				&dc_domain_name);
+
+	dc_flags	|= r->server_type;
+	dc_forest	= r->forest;
+	dc_domain_guid	= &r->domain_uuid;
+	dc_server_site	= r->server_site;
+	dc_client_site	= r->client_site;
 
 	return make_domain_controller_info(mem_ctx,
 					   dc_hostname,
@@ -1051,7 +913,7 @@ static NTSTATUS process_dc_dns(TALLOC_CTX *mem_ctx,
 	}
 
 	status = make_dc_info_from_cldap_reply(mem_ctx, flags, &dclist[i].ss,
-					       r, info);
+					       &r->nt5_ex, info);
 	if (NT_STATUS_IS_OK(status)) {
 		return store_cldap_reply(mem_ctx, flags, &dclist[i].ss,
 					 nt_version, &r->nt5_ex);
@@ -1187,7 +1049,7 @@ static NTSTATUS process_dc_netbios(TALLOC_CTX *mem_ctx,
  make_reply:
 
 	status = make_dc_info_from_cldap_reply(mem_ctx, flags, &dclist[i].ss,
-					       r, info);
+					       &r->nt5_ex, info);
 	if (NT_STATUS_IS_OK(status) && store_cache) {
 		return store_cldap_reply(mem_ctx, flags, &dclist[i].ss,
 					 nt_version, &r->nt5_ex);
