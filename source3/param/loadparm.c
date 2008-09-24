@@ -6487,7 +6487,7 @@ static void copy_service(struct service *pserviceDest, struct service *pserviceS
 			/* If we already have same option, override it */
 			if (strwicmp(pdata->key, data->key) == 0) {
 				string_free(&pdata->value);
-				TALLOC_FREE(data->list);
+				TALLOC_FREE(pdata->list);
 				pdata->value = SMB_STRDUP(data->value);
 				not_added = False;
 				break;
