@@ -56,11 +56,11 @@ static int net_ads_cldap_netlogon(struct net_context *c, ADS_STRUCT *ads)
 
 	d_printf("Response Type: ");
 	switch (reply.command) {
-	case SAMLOGON_AD_UNK_R:
-		d_printf("SAMLOGON\n");
+	case LOGON_SAM_LOGON_USER_UNKNOWN_EX:
+		d_printf("LOGON_SAM_LOGON_USER_UNKNOWN_EX\n");
 		break;
-	case SAMLOGON_AD_R:
-		d_printf("SAMLOGON_USER\n");
+	case LOGON_SAM_LOGON_RESPONSE_EX:
+		d_printf("LOGON_SAM_LOGON_RESPONSE_EX\n");
 		break;
 	default:
 		d_printf("0x%x\n", reply.command);
