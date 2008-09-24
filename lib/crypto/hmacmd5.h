@@ -19,6 +19,7 @@
 */
 
 #ifndef _HMAC_MD5_H
+#define _HMAC_MD5_H
 
 typedef struct 
 {

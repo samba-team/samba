@@ -23,7 +23,7 @@
  */
 
 #include "includes.h"
-#include "lib/crypto/crypto.h"
+#include "../lib/crypto/hmacmd5.h"
 
 /***********************************************************************
  the rfc 2104 version of hmac_md5 initialisation.

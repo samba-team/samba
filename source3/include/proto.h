@@ -596,16 +596,6 @@ void set_need_random_reseed(void);
 void generate_random_buffer( unsigned char *out, int len);
 char *generate_random_str(size_t len);
 
-/* The following definitions come from lib/hmacmd5.c  */
-
-void hmac_md5_init_rfc2104(const unsigned char *key, int key_len, HMACMD5Context *ctx);
-void hmac_md5_init_limK_to_64(const unsigned char* key, int key_len,
-			HMACMD5Context *ctx);
-void hmac_md5_update(const unsigned char *text, int text_len, HMACMD5Context *ctx);
-void hmac_md5_final(unsigned char *digest, HMACMD5Context *ctx);
-void hmac_md5( unsigned char key[16], const unsigned char *data, int data_len,
-	       unsigned char *digest);
-
 /* The following definitions come from lib/iconv.c  */
 
 NTSTATUS smb_register_charset(struct charset_functions *funcs) ;
