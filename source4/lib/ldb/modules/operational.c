@@ -158,13 +158,13 @@ static int operational_search_post_process(struct ldb_module *module,
 		}
 	}
 
-	return LDB_SUCCESS;
+	return 0;
 
 failed:
 	ldb_debug_set(module->ldb, LDB_DEBUG_WARNING, 
 		      "operational_search_post_process failed for attribute '%s'\n", 
 		      attrs[a]);
-	return LDB_ERR_OPERATIONS_ERROR;
+	return -1;
 }
 
 

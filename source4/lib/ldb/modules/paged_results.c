@@ -86,7 +86,7 @@ int store_destructor(struct results_store *store)
 		store->priv->store = NULL;
 	}
 
-	return LDB_SUCCESS;
+	return 0;
 }
 
 static struct results_store *new_store(struct private_data *priv)

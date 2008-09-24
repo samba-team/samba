@@ -90,7 +90,7 @@ static int skel_destructor(struct ldb_module *ctx)
 	struct private_data *data = talloc_get_type(ctx->private_data, struct private_data);
 	/* put your clean-up functions here */
 	if (data->some_private_data) talloc_free(data->some_private_data);
-	return LDB_SUCCESS;
+	return 0;
 }
 
 static int skel_request(struct ldb_module *module, struct ldb_request *req)

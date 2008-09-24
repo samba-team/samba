@@ -307,7 +307,7 @@ static int generate_dITContentRules(struct ldb_context *ldb, struct ldb_message 
 			}
 		}
 	}
-	return LDB_SUCCESS;
+	return 0;
 }
 
 

@@ -92,11 +92,11 @@ static int ltdb_attributes_flags(struct ldb_message_element *el, unsigned *v)
 			}
 		}
 		if (ltdb_valid_attr_flags[j].name == NULL) {
-			return LDB_ERR_OPERATIONS_ERROR;
+			return -1;
 		}
 	}
 	*v = value;
-	return LDB_SUCCESS;
+	return 0;
 }
 
 /*
@@ -118,7 +118,7 @@ static int ltdb_attributes_load(struct ldb_module *module)
 		goto failed;
 	}
 	if (r == LDB_ERR_NO_SUCH_OBJECT) {
-		return LDB_SUCCESS;
+		return 0;
 	}
 	/* mapping these flags onto ldap 'syntaxes' isn't strictly correct,
 	   but its close enough for now */
@@ -162,9 +162,9 @@ static int ltdb_attributes_load(struct ldb_module *module)
 		}
 	}
 
-	return LDB_SUCCESS;
+	return 0;
 failed:
-	return LDB_ERR_OPERATIONS_ERROR;
+	return -1;
 }
 
 
@@ -258,7 +258,7 @@ int ltdb_cache_load(struct ldb_module *module)
 	/* a very fast check to avoid extra database reads */
 	if (ltdb->cache != NULL && 
 	    tdb_get_seqnum(ltdb->tdb) == ltdb->tdb_seqnum) {
-		return LDB_SUCCESS;
+		return 0;
 	}
 
 	if (ltdb->cache == NULL) {
@@ -344,7 +344,7 @@ int ltdb_cache_load(struct ldb_module *module)
 		goto failed;
 	}
 
-	if (ltdb_attributes_load(module) != LDB_SUCCESS) {
+	if (ltdb_attributes_load(module) == -1) {
 		goto failed;
 	}
 
@@ -353,14 +353,14 @@ done:
 	talloc_free(baseinfo);
 	talloc_free(baseinfo_dn);
 	talloc_free(indexlist_dn);
-	return LDB_SUCCESS;
+	return 0;
 
 failed:
 	talloc_free(options);
 	talloc_free(baseinfo);
 	talloc_free(baseinfo_dn);
 	talloc_free(indexlist_dn);
-	return LDB_ERR_OPERATIONS_ERROR;
+	return -1;
 }
 
 
@@ -449,10 +449,10 @@ int ltdb_check_at_attributes_values(const struct ldb_val *value)
 
 	for (i = 0; ltdb_valid_attr_flags[i].name != NULL; i++) {
 		if ((strcmp(ltdb_valid_attr_flags[i].name, (char *)value->data) == 0)) {
-			return LDB_SUCCESS;
+			return 0;
 		}
 	}
 
-	return LDB_ERR_OPERATIONS_ERROR;
+	return -1;
 }
 

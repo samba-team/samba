@@ -279,16 +279,16 @@ int ldb_register_module(const struct ldb_module_ops *ops)
 	struct ops_list_entry *entry = talloc(talloc_autofree_context(), struct ops_list_entry);
 
 	if (ldb_find_module_ops(ops->name) != NULL)
-		return LDB_ERR_OPERATIONS_ERROR;
+		return -1;
 
 	if (entry == NULL)
-		return LDB_ERR_OPERATIONS_ERROR;
+		return -1;
 
 	entry->ops = ops;
 	entry->next = registered_modules;
 	registered_modules = entry;
 
-	return LDB_SUCCESS;
+	return 0;
 }
 
 void *ldb_dso_load_symbol(struct ldb_context *ldb, const char *name,

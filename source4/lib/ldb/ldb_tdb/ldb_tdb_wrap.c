@@ -53,7 +53,7 @@ static int ltdb_wrap_destructor(struct ltdb_wrap *w)
 	if (w == tdb_list) {
 		tdb_list = w->next;
 	}
-	return LDB_SUCCESS;
+	return 0;
 }				 
 
 static void ltdb_log_fn(struct tdb_context *tdb, enum tdb_debug_level level, const char *fmt, ...) PRINTF_ATTRIBUTE(3, 4);

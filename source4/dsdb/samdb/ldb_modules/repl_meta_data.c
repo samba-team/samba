@@ -124,16 +124,16 @@ static int add_time_element(struct ldb_message *msg, const char *attr, time_t t)
 	char *s;
 
 	if (ldb_msg_find_element(msg, attr) != NULL) {
-		return LDB_SUCCESS;
+		return 0;
 	}
 
 	s = ldb_timestring(msg, t);
 	if (s == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return -1;
 	}
 
 	if (ldb_msg_add_string(msg, attr, s) != 0) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return -1;
 	}
 
 	el = ldb_msg_find_element(msg, attr);
@@ -141,7 +141,7 @@ static int add_time_element(struct ldb_message *msg, const char *attr, time_t t)
 	   is ignored */
 	el->flags = LDB_FLAG_MOD_REPLACE;
 
-	return LDB_SUCCESS;
+	return 0;
 }
 
 /*
@@ -152,11 +152,11 @@ static int add_uint64_element(struct ldb_message *msg, const char *attr, uint64_
 	struct ldb_message_element *el;
 
 	if (ldb_msg_find_element(msg, attr) != NULL) {
-		return LDB_SUCCESS;
+		return 0;
 	}
 
 	if (ldb_msg_add_fmt(msg, attr, "%llu", (unsigned long long)v) != 0) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return -1;
 	}
 
 	el = ldb_msg_find_element(msg, attr);
@@ -164,7 +164,7 @@ static int add_uint64_element(struct ldb_message *msg, const char *attr, uint64_
 	   is ignored */
 	el->flags = LDB_FLAG_MOD_REPLACE;
 
-	return LDB_SUCCESS;
+	return 0;
 }
 
 static int replmd_replPropertyMetaData1_attid_sort(const struct replPropertyMetaData1 *m1,

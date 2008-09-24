@@ -84,7 +84,7 @@ static int ldb_wrap_destructor(struct ldb_context *ldb)
 		smb_panic("probable memory leak in ldb");
 #endif
 	}
-	return LDB_SUCCESS;
+	return 0;
 }				 
 
 /*

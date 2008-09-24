@@ -38,9 +38,9 @@ int ldb_handler_copy(struct ldb_context *ldb, void *mem_ctx,
 	*out = ldb_val_dup(mem_ctx, in);
 	if (in->length > 0 && out->data == NULL) {
 		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return -1;
 	}
-	return LDB_SUCCESS;
+	return 0;
 }
 
 /*
@@ -57,13 +57,13 @@ int ldb_handler_fold(struct ldb_context *ldb, void *mem_ctx,
 	int l;
 
 	if (!in || !out || !(in->data)) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return -1;
 	}
 
 	out->data = (uint8_t *)ldb_casefold(ldb, mem_ctx, (const char *)(in->data), in->length);
 	if (out->data == NULL) {
 		ldb_debug(ldb, LDB_DEBUG_ERROR, "ldb_handler_fold: unable to casefold string [%s]", in->data);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return -1;
 	}
 
 	s = (char *)(out->data);
@@ -96,7 +96,7 @@ int ldb_handler_fold(struct ldb_context *ldb, void *mem_ctx,
 	}
 
 	out->length = strlen((char *)out->data);
-	return LDB_SUCCESS;
+	return 0;
 }
 
 
@@ -111,14 +111,14 @@ int ldb_canonicalise_Integer(struct ldb_context *ldb, void *mem_ctx,
 	char *end;
 	long long i = strtoll((char *)in->data, &end, 0);
 	if (*end != 0) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return -1;
 	}
 	out->data = (uint8_t *)talloc_asprintf(mem_ctx, "%lld", i);
 	if (out->data == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return -1;
 	}
 	out->length = strlen((char *)out->data);
-	return LDB_SUCCESS;
+	return 0;
 }
 
 /*
@@ -251,7 +251,7 @@ int ldb_canonicalise_dn(struct ldb_context *ldb, void *mem_ctx,
 	}
 	out->length = strlen((char *)out->data);
 
-	ret = LDB_SUCCESS;
+	ret = 0;
 
 done:
 	talloc_free(dn);
@@ -305,10 +305,10 @@ int ldb_canonicalise_utctime(struct ldb_context *ldb, void *mem_ctx,
 	time_t t = ldb_string_to_time((char *)in->data);
 	out->data = (uint8_t *)ldb_timestring(mem_ctx, t);
 	if (out->data == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return -1;
 	}
 	out->length = strlen((char *)out->data);
-	return LDB_SUCCESS;
+	return 0;
 }
 
 /*

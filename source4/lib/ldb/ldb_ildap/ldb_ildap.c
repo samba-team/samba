@@ -753,7 +753,7 @@ static int ildb_connect(struct ldb_context *ldb, const char *url,
 	module = talloc(ldb, struct ldb_module);
 	if (!module) {
 		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return -1;
 	}
 	talloc_set_name_const(module, "ldb_ildap backend");
 	module->ldb		= ldb;
@@ -819,11 +819,11 @@ static int ildb_connect(struct ldb_context *ldb, const char *url,
 	}
 
 	*_module = module;
-	return LDB_SUCCESS;
+	return 0;
 
 failed:
 	talloc_free(module);
-	return LDB_ERR_OPERATIONS_ERROR;
+	return -1;
 }
 
 _PUBLIC_ const struct ldb_backend_ops ldb_ldap_backend_ops = {

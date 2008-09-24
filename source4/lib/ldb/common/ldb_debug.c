@@ -43,7 +43,7 @@ int ldb_set_debug(struct ldb_context *ldb,
 {
 	ldb->debug_ops.debug = debug;
 	ldb->debug_ops.context = context;
-	return LDB_SUCCESS;
+	return 0;
 }
 
 /*

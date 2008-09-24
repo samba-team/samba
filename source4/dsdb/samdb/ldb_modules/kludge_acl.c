@@ -142,7 +142,7 @@ static int kludge_acl_allowedAttributes(struct ldb_context *ldb, struct ldb_mess
 		ldb_msg_add_string(msg, attrName, attr_list[i]);
 	}
 	talloc_free(mem_ctx);
-	return LDB_SUCCESS;
+	return 0;
 
 }
 /* read all objectClasses */
@@ -201,7 +201,7 @@ static int kludge_acl_childClasses(struct ldb_context *ldb, struct ldb_message *
 		}
 	}
 
-	return LDB_SUCCESS;
+	return 0;
 
 }
 
