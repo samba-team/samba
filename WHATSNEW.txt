@@ -118,7 +118,7 @@ smb.conf changes
 
     Parameter Name                      Description     Default
     --------------                      -----------     -------
-    cups timeout			New		30
+    cups connection timeout		New		30
     idmap domains			Removed
     init logon delayed hosts		New		""
     init logon delay			New		100
@@ -141,6 +141,8 @@ o   Jeremy Allison <jra@samba.org>
     * BUG 5762: Fix opening of mangled directory name (resulted
       'is a stream name').
     * BUG 5783: Fix FindFirst where search pattern == mangled filename.
+    * BUG 5790: Fix returning of STATUS_OBJECT_NAME_NOT_FOUND on set file
+      disposition.
     * Fix crashes when looking up a non-existant uid.
     * Fix getting/setting of NT ACLs on a file.
     * Add st_birthtime and friends for accurate create times on *BSD
@@ -169,6 +171,7 @@ o   Steven Danneman <steven.danneman@isilon.com>
 
 o   Günther Deschner <gd@samba.org>
     * BUG 5710: Fix changing of machine account passwords.
+    * BUG 5784: Fix pam_winbind build issue on Solaris.
     * Fix invalid sid copy (hit when enumerating sibling domains) in Winbind.
     * Fix double installation of cifs.upcall.
 
@@ -199,7 +202,7 @@ o   Stefan Metzmacher <metze@samba.org>
 
 
 o   Karolin Seeger <kseeger@samba.org>
-    * Add new parameter "cups timeout".
+    * Add new parameter "cups connection timeout".
 
 
 o   Simo Sorce <idra@samba.org>
