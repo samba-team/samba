@@ -26,7 +26,7 @@ import os
 import ldb
 from ldb import SCOPE_DEFAULT, SCOPE_BASE, SCOPE_SUBTREE
 from samba import Ldb, substitute_var
-from samba.tests import LdbTestCase, TestCaseInTempDir
+from samba.tests import LdbTestCase, TestCaseInTempDir, cmdline_loadparm
 
 datadir = os.path.join(os.path.dirname(__file__), 
                        "../../../../../testdata/samba3")
@@ -76,7 +76,7 @@ class MapBaseTestCase(TestCaseInTempDir):
                 self.url = "tdb://" + self.file
                 self.basedn = basedn
                 self.substvars = {"BASEDN": self.basedn}
-                self.db = Ldb()
+                self.db = Ldb(lp=cmdline_loadparm)
                 self._dn = dn
 
             def dn(self, rdn):
@@ -117,14 +117,14 @@ class Samba3SamTestCase(MapBaseTestCase):
 
     def setUp(self):
         super(Samba3SamTestCase, self).setUp()
-        ldb = Ldb(self.ldburl)
+        ldb = Ldb(self.ldburl, lp=cmdline_loadparm)
         self.samba3.setup_data("samba3.ldif")
         self.templates.setup_data("provision_samba3sam_templates.ldif")
         ldif = read_datafile("provision_samba3sam.ldif")
         ldb.add_ldif(self.samba4.subst(ldif))
         self.setup_modules(ldb, self.samba3, self.samba4)
         del ldb
-        self.ldb = Ldb(self.ldburl)
+        self.ldb = Ldb(self.ldburl, lp=cmdline_loadparm)
 
     def test_search_non_mapped(self):
         """Looking up by non-mapped attribute"""
@@ -287,13 +287,13 @@ class MapTestCase(MapBaseTestCase):
 
     def setUp(self):
         super(MapTestCase, self).setUp()
-        ldb = Ldb(self.ldburl)
+        ldb = Ldb(self.ldburl, lp=cmdline_loadparm)
         self.templates.setup_data("provision_samba3sam_templates.ldif")
         ldif = read_datafile("provision_samba3sam.ldif")
         ldb.add_ldif(self.samba4.subst(ldif))
         self.setup_modules(ldb, self.samba3, self.samba4)
         del ldb
-        self.ldb = Ldb(self.ldburl)
+        self.ldb = Ldb(self.ldburl, lp=cmdline_loadparm)
 
     def test_map_search(self):
         """Running search tests on mapped data."""
