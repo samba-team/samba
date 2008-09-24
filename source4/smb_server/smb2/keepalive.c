@@ -55,7 +55,7 @@ void smb2srv_keepalive_recv(struct smb2srv_request *req)
 	uint16_t _pad;
 
 	if (req->in.body_size != 0x04) {
-		smb2srv_send_error(req,  NT_STATUS_FOOBAR);
+		smb2srv_send_error(req,  NT_STATUS_INVALID_PARAMETER);
 		return;
 	}
 
