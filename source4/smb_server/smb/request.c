@@ -140,6 +140,10 @@ void smbsrv_setup_reply(struct smbsrv_request *req, uint_t wct, size_t buflen)
 		flags2 |= FLAGS2_32_BIT_ERROR_CODES;
 	}
 
+	if (req->smb_conn->signing.allow_smb_signing || req->smb_conn->signing.mandatory_signing) {
+		flags2 |= FLAGS2_SMB_SECURITY_SIGNATURES; 
+	}
+	
 	req->out.hdr = req->out.buffer + NBT_HDR_SIZE;
 	req->out.vwv = req->out.hdr + HDR_VWV;
 	req->out.wct = wct;
