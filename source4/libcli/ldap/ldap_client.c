@@ -77,6 +77,12 @@ static void ldap_connection_dead(struct ldap_connection *conn)
 {
 	struct ldap_request *req;
 
+	talloc_free(conn->sock);  /* this will also free event.fde */
+	talloc_free(conn->packet);
+	conn->sock = NULL;
+	conn->event.fde = NULL;
+	conn->packet = NULL;
+
 	/* return an error for any pending request ... */
 	while (conn->pending) {
 		req = conn->pending;
@@ -87,12 +93,6 @@ static void ldap_connection_dead(struct ldap_connection *conn)
 			req->async.fn(req);
 		}
 	}
-
-	talloc_free(conn->sock);  /* this will also free event.fde */
-	talloc_free(conn->packet);
-	conn->sock = NULL;
-	conn->event.fde = NULL;
-	conn->packet = NULL;
 }
 
 static void ldap_reconnect(struct ldap_connection *conn);
@@ -400,6 +400,7 @@ static void ldap_connect_got_sock(struct composite_context *ctx,
 	talloc_steal(conn, conn->sock);
 	if (conn->ldaps) {
 		struct socket_context *tls_socket;
+		struct socket_context *tmp_socket;
 		char *cafile = private_path(conn->sock, conn->lp_ctx, lp_tls_cafile(conn->lp_ctx));
 
 		if (!cafile || !*cafile) {
@@ -414,9 +415,11 @@ static void ldap_connect_got_sock(struct composite_context *ctx,
 			talloc_free(conn->sock);
 			return;
 		}
-		talloc_unlink(conn, conn->sock);
-		conn->sock = tls_socket;
-		talloc_steal(conn, conn->sock);
+
+		/* the original socket, must become a child of the tls socket */
+		tmp_socket = conn->sock;
+		conn->sock = talloc_steal(conn, tls_socket);
+		talloc_steal(conn->sock, tmp_socket);
 	}
 
 	conn->packet = packet_init(conn);

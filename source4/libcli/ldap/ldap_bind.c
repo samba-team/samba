@@ -387,6 +387,7 @@ _PUBLIC_ NTSTATUS ldap_bind_sasl(struct ldap_connection *conn,
 	if (NT_STATUS_IS_OK(status)) {
 		struct socket_context *sasl_socket;
 		status = gensec_socket_init(conn->gensec, 
+					    conn,
 					    conn->sock,
 					    conn->event.event_ctx, 
 					    ldap_read_io_handler,
