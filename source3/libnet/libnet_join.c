@@ -686,6 +686,7 @@ static bool libnet_join_joindomain_store_secrets(TALLOC_CTX *mem_ctx,
 
 static NTSTATUS libnet_join_connect_dc_ipc(const char *dc,
 					   const char *user,
+					   const char *domain,
 					   const char *pass,
 					   bool use_kerberos,
 					   struct cli_state **cli)
@@ -705,7 +706,7 @@ static NTSTATUS libnet_join_connect_dc_ipc(const char *dc,
 				   NULL, 0,
 				   "IPC$", "IPC",
 				   user,
-				   NULL,
+				   domain,
 				   pass,
 				   flags,
 				   SMB_SIGNING_DEFAULT);
@@ -727,6 +728,7 @@ static NTSTATUS libnet_join_lookup_dc_rpc(TALLOC_CTX *mem_ctx,
 
 	status = libnet_join_connect_dc_ipc(r->in.dc_name,
 					    r->in.admin_account,
+					    r->in.admin_domain,
 					    r->in.admin_password,
 					    r->in.use_kerberos,
 					    cli);
@@ -1345,6 +1347,7 @@ static NTSTATUS libnet_join_unjoindomain_rpc(TALLOC_CTX *mem_ctx,
 
 	status = libnet_join_connect_dc_ipc(r->in.dc_name,
 					    r->in.admin_account,
+					    r->in.admin_domain,
 					    r->in.admin_password,
 					    r->in.use_kerberos,
 					    &cli);
@@ -1722,6 +1725,17 @@ static WERROR libnet_join_pre_processing(TALLOC_CTX *mem_ctx,
 
 	if (IS_DC) {
 		return WERR_SETUP_DOMAIN_CONTROLLER;
+	}
+
+	if (!r->in.admin_domain) {
+		char *admin_domain = NULL;
+		char *admin_account = NULL;
+		split_domain_user(mem_ctx,
+				  r->in.admin_account,
+				  &admin_domain,
+				  &admin_account);
+		r->in.admin_domain = admin_domain;
+		r->in.admin_account = admin_account;
 	}
 
 	if (!secrets_init()) {
@@ -2283,6 +2297,17 @@ static WERROR libnet_unjoin_pre_processing(TALLOC_CTX *mem_ctx,
 
 	if (IS_DC) {
 		return WERR_SETUP_DOMAIN_CONTROLLER;
+	}
+
+	if (!r->in.admin_domain) {
+		char *admin_domain = NULL;
+		char *admin_account = NULL;
+		split_domain_user(mem_ctx,
+				  r->in.admin_account,
+				  &admin_domain,
+				  &admin_account);
+		r->in.admin_domain = admin_domain;
+		r->in.admin_account = admin_account;
 	}
 
 	if (!secrets_init()) {
