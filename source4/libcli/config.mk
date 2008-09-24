@@ -40,15 +40,15 @@ $(eval $(call proto_header_template,$(libclisrcdir)/smb_composite/proto.h,$(LIBC
 
 [SUBSYSTEM::NDR_NBT_BUF]
 
-NDR_NBT_BUF_OBJ_FILES = ../$(libclisrcdir)/nbt/nbtname.o
+NDR_NBT_BUF_OBJ_FILES = $(libclinbtsrcdir)/nbt/nbtname.o
 
-$(eval $(call proto_header_template,../$(libclisrcdir)/nbt/nbtname.h,$(NDR_NBT_BUF_OBJ_FILES:.o=.c)))
+$(eval $(call proto_header_template,$(libclinbtsrcdir)/nbt/nbtname.h,$(NDR_NBT_BUF_OBJ_FILES:.o=.c)))
 
 [SUBSYSTEM::LIBCLI_NBT]
 PUBLIC_DEPENDENCIES = LIBNDR NDR_NBT LIBCLI_COMPOSITE LIBEVENTS \
 	NDR_SECURITY samba-socket LIBSAMBA-UTIL
 
-LIBCLI_NBT_OBJ_FILES = $(addprefix ../$(libclisrcdir)/nbt/, \
+LIBCLI_NBT_OBJ_FILES = $(addprefix $(libclinbtsrcdir)/nbt/, \
 	nbtsocket.o \
 	namequery.o \
 	nameregister.o \
@@ -59,12 +59,12 @@ LIBCLI_NBT_OBJ_FILES = $(addprefix ../$(libclisrcdir)/nbt/, \
 PUBLIC_DEPENDENCIES = LIBNDR  \
 	NDR_SECURITY 	
 
-LIBCLI_NDR_NETLOGON_OBJ_FILES = $(addprefix ../$(libclisrcdir)/, ndr_netlogon.o)
+LIBCLI_NDR_NETLOGON_OBJ_FILES = $(addprefix $(libclinbtsrcdir)/, ndr_netlogon.o)
 
 [SUBSYSTEM::LIBCLI_NETLOGON]
 PUBLIC_DEPENDENCIES = LIBSAMBA-UTIL LIBCLI_NDR_NETLOGON
 
-LIBCLI_NETLOGON_OBJ_FILES = $(addprefix ../$(libclisrcdir)/, \
+LIBCLI_NETLOGON_OBJ_FILES = $(addprefix $(libclinbtsrcdir)/, \
 	netlogon.o)
 
 [SUBSYSTEM::LIBCLI_DRSBLOBS]
@@ -79,7 +79,7 @@ $(eval $(call proto_header_template,$(libclisrcdir)/drsblobs_proto.h,$(LIBCLI_DR
 LIBRARY_REALNAME = samba/netbios.$(SHLIBEXT)
 PUBLIC_DEPENDENCIES = LIBCLI_NBT DYNCONFIG LIBSAMBA-HOSTCONFIG
 
-python_netbios_OBJ_FILES = ../$(libclisrcdir)/nbt/pynbt.o
+python_netbios_OBJ_FILES = $(libclinbtsrcdir)/nbt/pynbt.o
 
 $(python_libcli_nbt_OBJ_FILES): CFLAGS+=$(CFLAG_NO_UNUSED_MACROS) $(CFLAG_NO_CAST_QUAL)
 
