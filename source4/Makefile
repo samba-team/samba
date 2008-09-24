@@ -97,6 +97,7 @@ ntvfssrcdir := ntvfs
 ntptrsrcdir := ntptr
 librpcsrcdir := librpc
 libclisrcdir := libcli
+libclinbtsrcdir := ../libcli
 pyscriptsrcdir := $(srcdir)/scripting/python
 kdcsrcdir := kdc
 ntp_signdsrcdir := ntp_signd

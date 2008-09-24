@@ -101,7 +101,7 @@ done:
 	ADS_STRUCT *ads = NULL;
 	ADS_STATUS ads_status;
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
-	struct nbt_cldap_netlogon_5 cldap_reply;
+	struct NETLOGON_SAM_LOGON_RESPONSE_EX cldap_reply;
 	TALLOC_CTX *frame = talloc_stackframe();
 
 	if (!gc || !domain) {
