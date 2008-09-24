@@ -19,6 +19,7 @@ Major enhancements in Samba 3.3.0 include:
 
  Winbind:
  o Simplyfied idmap configuration.
+ o New idmap backend "adex".
  o Added new parameter "winbind reconnect delay".
  o Added support for user and group aliasing.
 
@@ -72,6 +73,42 @@ daemon will wait between attempts to contact a Domain controller for a domain
 that is determined to be down or not contactable.
 
 
+idmap_adex
+==========
+
+The adex idmap/nss_info plugin is an adapation of the Likewise
+Enterprise plugin with support for OU based cells removed
+(since the Windows pieces to manage the cells are not available).
+
+This plugin supports
+
+      * The RFC2307 schema for users and groups.
+      * Connections to trusted domains
+      * Global catalog searches
+      * Cross forest trusts
+      * User and group aliases
+
+Prerequiste: Add the following attributes to the Partial Attribute
+Set in global catalog:
+
+      * uidNumber
+      * uid
+      * gidNumber
+
+A basic config using the current trunk code would look like:
+
+[global]
+	idmap backend = adex
+	idmap uid = 10000 - 29999
+	idmap gid = 10000 - 29999
+	winbind nss info = adex
+
+	winbind normalize names = yes
+	winbind refresh tickets = yes
+	template homedir = /home/%D/%U
+	template shell = /bin/bash
+
+
 ######################################################################
 Changes
 #######
@@ -81,6 +118,7 @@ smb.conf changes
 
     Parameter Name                      Description     Default
     --------------                      -----------     -------
+    cups timeout			New		30
     idmap domains			Removed
     init logon delayed hosts		New		""
     init logon delay			New		100
@@ -98,9 +136,11 @@ o   Michael Adam <obnox@samba.org>
 
 o   Jeremy Allison <jra@samba.org>
     * BUG 5729: Explicitly allow "-valid".
+    * BUG 5737: Fix winbindd crash in an unusual failure mode.
     * BUG 5751: Fix showing of ACLs on DFS in (lib)smbclient.
     * BUG 5762: Fix opening of mangled directory name (resulted
       'is a stream name').
+    * BUG 5783: Fix FindFirst where search pattern == mangled filename.
     * Fix crashes when looking up a non-existant uid.
     * Fix getting/setting of NT ACLs on a file.
     * Add st_birthtime and friends for accurate create times on *BSD
@@ -119,6 +159,7 @@ o   Gerald W. Carter <jerry@samba.org>
     * Add the idmap/nss-info provider from Likewise Open.
     * Allow an admin to define the "uid" attribute for a RFC2307
       user object in AD to be the username alias.
+    * Add new idmap backend "adex" to support RFC2307 enabled AD forests.
 
 
 o   Steven Danneman <steven.danneman@isilon.com>
@@ -145,15 +186,20 @@ o   Jeff Layton <jlayton@redhat.com>
 
 
 o   Volker Lendecke <vl@sernet.de>
+    * BUG 5707: Do proper error handling if the socket is closed.
+    * BUG 5778: Don't define 'strlcat' and 'strlcpy' if it's already defined.
     * Fix Coverity IDs 587 and 589.
     * Increase the default positive idmap cache time to a week.
-    * BUG 5707: Do proper error handling if the socket is closed.
     * Fix calculation of useable_space for trans2 and nttrans replies.
     * Add mapping of generic bits when setting an NFSv4 ACL.
 
 
 o   Stefan Metzmacher <metze@samba.org>
     * Some write time fixes.
+
+
+o   Karolin Seeger <kseeger@samba.org>
+    * Add new parameter "cups timeout".
 
 
 o   Simo Sorce <idra@samba.org>
@@ -196,6 +242,14 @@ o   Jeremy Allison <jra@samba.org>
     * Add new "winbind reconnect delay" parameter.
     * Make the change to smbcontrol for "all" to mean broadcast,
       and "smbd" to mean the main smb daemon.
+
+
+o   Gerald W. Carter <jerry@samba.org>
+    * Add support for name aliasing in Winbind.
+    * Add the idmap/nss-info provider from Likewise Open.
+    * Allow an admin to define the "uid" attribute for a RFC2307
+      user object in AD to be the username alias.
+    * Add new idmap backend "adex" to support RFC2307 enabled AD forests.
 
 
 o   Guenther Deschner <gd@samba.org>
