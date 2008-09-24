@@ -20,7 +20,7 @@
 */
 
 #include "includes.h"
-#include "lib/crypto/crypto.h"
+#include "../lib/crypto/arcfour.h"
 
 /* initialise the arcfour sbox with key */
 _PUBLIC_ void arcfour_init(struct arcfour_state *state, const DATA_BLOB *key) 

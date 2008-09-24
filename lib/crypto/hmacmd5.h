@@ -21,6 +21,8 @@
 #ifndef _HMAC_MD5_H
 #define _HMAC_MD5_H
 
+#include "../lib/crypto/md5.h"
+
 typedef struct 
 {
         struct MD5Context ctx;
