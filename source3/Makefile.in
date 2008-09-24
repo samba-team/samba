@@ -2676,7 +2676,9 @@ clean:: cleanlibs
 		$(MODULES) $(TORTURE_PROGS) \
 		$(EVERYTHING_PROGS) \
 		bin/timelimit \
-		.headers.stamp */src/*.o
+		.headers.stamp */src/*.o \
+		../lib/*/*.o \
+		../libcli/*.o ../libcli/*/*.o
 	-rm -rf t_dir
 
 include/build_env.h: script/build_env.sh
