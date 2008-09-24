@@ -3204,8 +3204,7 @@ SWIGINTERN PyObject *ldb_schema_format_value(ldb *self,char const *element_name,
 		return ret;
         }
 SWIGINTERN ldb_error ldb___contains__(ldb *self,ldb_dn *dn,struct ldb_result **result_as_bool){
-            return ldb_search(self, self, result_as_bool,
-			      dn, LDB_SCOPE_BASE, NULL, NULL);
+            return ldb_search(self, self, result_as_bool, dn, LDB_SCOPE_BASE, NULL, NULL);
         }
 SWIGINTERN PyObject *ldb_parse_ldif(ldb *self,char const *s){
             PyObject *list = PyList_New(0);
