@@ -23,7 +23,7 @@
 #include "smb.h"
 #include "libcli/raw/libcliraw.h"
 #include "libcli/raw/raw_proto.h"
-#include "lib/crypto/crypto.h"
+#include "../lib/crypto/crypto.h"
 #include "param/param.h"
 
 /***********************************************************

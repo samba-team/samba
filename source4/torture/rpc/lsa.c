@@ -29,7 +29,7 @@
 #include "libcli/auth/libcli_auth.h"
 #include "torture/rpc/rpc.h"
 #include "param/param.h"
-#include "lib/crypto/crypto.h"
+#include "../lib/crypto/crypto.h"
 #define TEST_MACHINENAME "lsatestmach"
 
 static void init_lsa_String(struct lsa_String *name, const char *s)

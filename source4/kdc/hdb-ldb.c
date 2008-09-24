@@ -50,7 +50,7 @@
 #include "param/param.h"
 #include "events/events.h"
 #include "kdc/kdc.h"
-#include "lib/crypto/md4.h"
+#include "../lib/crypto/md4.h"
 
 enum hdb_ldb_ent_type 
 { HDB_LDB_ENT_TYPE_CLIENT, HDB_LDB_ENT_TYPE_SERVER, 

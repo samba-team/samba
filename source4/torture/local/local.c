@@ -23,7 +23,7 @@
 #include "torture/ndr/ndr.h"
 #include "torture/ndr/proto.h"
 #include "torture/auth/proto.h"
-#include "lib/crypto/test_proto.h"
+#include "../lib/crypto/test_proto.h"
 #include "lib/registry/tests/proto.h"
 
 /* ignore me */ static struct torture_suite *

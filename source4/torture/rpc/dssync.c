@@ -29,7 +29,7 @@
 #include "torture/torture.h"
 #include "torture/ldap/proto.h"
 #include "libcli/auth/libcli_auth.h"
-#include "lib/crypto/crypto.h"
+#include "../lib/crypto/crypto.h"
 #include "auth/credentials/credentials.h"
 #include "libcli/auth/libcli_auth.h"
 #include "auth/gensec/gensec.h"

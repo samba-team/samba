@@ -27,7 +27,7 @@
 #include "includes.h"
 #include "torture/torture.h"
 #include "system/time.h"
-#include "lib/crypto/crypto.h"
+#include "../lib/crypto/crypto.h"
 #include "libnet/libnet.h"
 #include "lib/cmdline/popt_common.h"
 #include "lib/ldb/include/ldb.h"

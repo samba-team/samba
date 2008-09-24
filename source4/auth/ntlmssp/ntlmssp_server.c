@@ -24,7 +24,7 @@
 #include "includes.h"
 #include "auth/ntlmssp/ntlmssp.h"
 #include "auth/ntlmssp/msrpc_parse.h"
-#include "lib/crypto/crypto.h"
+#include "../lib/crypto/crypto.h"
 #include "libcli/auth/libcli_auth.h"
 #include "auth/credentials/credentials.h"
 #include "auth/gensec/gensec.h"

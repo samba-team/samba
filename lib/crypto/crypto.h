@@ -17,12 +17,12 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "lib/crypto/crc32.h"
-#include "lib/crypto/md4.h"
-#include "lib/crypto/md5.h"
-#include "lib/crypto/hmacmd5.h"
-#include "lib/crypto/sha256.h"
-#include "lib/crypto/hmacsha256.h"
+#include "../lib/crypto/crc32.h"
+#include "../lib/crypto/md4.h"
+#include "../lib/crypto/md5.h"
+#include "../lib/crypto/hmacmd5.h"
+#include "../lib/crypto/sha256.h"
+#include "../lib/crypto/hmacsha256.h"
 
 struct arcfour_state {
 	uint8_t sbox[256];
