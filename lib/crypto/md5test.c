@@ -18,7 +18,7 @@
 */
 
 #include "includes.h"
-#include "lib/crypto/crypto.h"
+#include "../lib/crypto/crypto.h"
 
 struct torture_context;
 

@@ -132,6 +132,9 @@ else
 include $(srcdir)/static_deps.mk
 endif
 
+clean::
+	@find ../lib ../libcli  -name '*.o' -o -name '*.hd' | xargs rm -f
+
 DEFAULT_HEADERS = $(srcdir)/lib/util/dlinklist.h \
 		  $(srcdir)/version.h
 

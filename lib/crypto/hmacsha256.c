@@ -27,7 +27,7 @@
  */
 
 #include "includes.h"
-#include "lib/crypto/crypto.h"
+#include "../lib/crypto/crypto.h"
 
 /***********************************************************************
  the rfc 2104/2202 version of hmac_sha256 initialisation.

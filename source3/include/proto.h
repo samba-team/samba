@@ -432,10 +432,6 @@ int connections_forall(int (*fn)(struct db_record *rec,
 		       void *private_data);
 bool connections_init(bool rw);
 
-/* The following definitions come from lib/crc32.c  */
-
-uint32 crc32_calc_buffer(const char *buf, size_t size);
-
 /* The following definitions come from lib/data_blob.c  */
 
 DATA_BLOB data_blob(const void *p, size_t length);
