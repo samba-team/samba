@@ -1700,7 +1700,9 @@ WERROR _srvsvc_NetShareAdd(pipes_struct *p,
 
 	DEBUG(5,("_srvsvc_NetShareAdd: %d\n", __LINE__));
 
-	*r->out.parm_error = 0;
+	if (r->out.parm_error) {
+		*r->out.parm_error = 0;
+	}
 
 	get_current_user(&user,p);
 
