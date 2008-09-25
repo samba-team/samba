@@ -210,7 +210,7 @@ static void continue_resolve(struct composite_context *creq)
 	const char **ports;
 	const char *default_ports[] = { "445", NULL };
 
-	ports = lp_parm_string_list(state, cmdline_lp_ctx, NULL, "smb2", "ports", NULL);
+	ports = lp_parm_string_list(state, global_loadparm, NULL, "smb2", "ports", NULL);
 	if (ports == NULL) {
 		ports = default_ports;
 	}
