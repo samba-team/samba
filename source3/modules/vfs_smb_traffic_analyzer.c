@@ -19,11 +19,6 @@
  */
 
 #include "includes.h"
-#include "safe_string.h"
-#include <sys/socket.h>
-#include <stdlib.h>
-#include <sys/time.h>
-
 
 /* abstraction for the send_over_network function */
 #define UNIX_DOMAIN_SOCKET 1
@@ -127,84 +122,99 @@ static int smb_traffic_analyzer_connMode( vfs_handle_struct *handle)
 
 }
 
-
-
 /* Send data over a internet socket */
 static void smb_traffic_analyzer_send_data_inet_socket( char *String,
 			vfs_handle_struct *handle, const char *file_name,
 			bool Write)
 {
-	 /* Create a streaming Socket */
-        const char *Hostname;
-        int sockfd, result;
-        int port;
-        struct sockaddr_in their_addr;
-	struct hostent *hp;
-        char Sender[200];
-        char TimeStamp[200];
-        int yes = 1;
-	connection_struct *conn;
+	/* Create a streaming Socket */
+	const char *Hostname;
+	int sockfd = -1;
+        uint16_t port;
+	struct addrinfo hints;
+	struct addrinfo *ailist = NULL;
+	struct addrinfo *res = NULL;
+	char Sender[200];
+	char TimeStamp[200];
+	connection_struct *conn = handle->conn;
+	int ret;
 
-        if ((sockfd=socket(AF_INET, SOCK_STREAM,0)) == -1) {
-                DEBUG(1, ("unable to create socket, error is %s", 
-			  strerror(errno)));
-                return;
-        }
-        if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes, \
-							sizeof(int)) == -1) {
-                DEBUG(1, ("unable to set socket options, error is %s", 
-			  strerror(errno)));
-                return;
-        }
 	/* get port number, target system from the config parameters */
-	conn=handle->conn;
-
 	Hostname=lp_parm_const_string(SNUM(conn), "smb_traffic_analyzer", 
-		"host", "localhost");
+				"host", "localhost");
+
+	ZERO_STRUCT(hints);
+	/* By default make sure it supports TCP. */
+	hints.ai_socktype = SOCK_STREAM;
+	hints.ai_flags = AI_ADDRCONFIG;
+
+	ret = getaddrinfo(Hostname,
+			NULL,
+			&hints,
+			&ailist);
+
+        if (ret) {
+		DEBUG(3,("smb_traffic_analyzer_send_data_inet_socket: "
+			"getaddrinfo failed for name %s [%s]\n",
+                        Hostname,
+                        gai_strerror(ret) ));
+		return;
+        }
 
 	port = atoi( lp_parm_const_string(SNUM(conn), 
 				"smb_traffic_analyzer", "port", "9430"));
 
-	hp = gethostbyname(Hostname);
-	if (hp == NULL) {
-		DEBUG(1, ("smb_traffic_analyzer: Unkown Hostname of"
-			"target system!\n"));
-	}
 	DEBUG(3,("smb_traffic_analyzer: Internet socket mode. Hostname: %s,"
 		"Port: %i\n", Hostname, port));
 
-	their_addr.sin_family = AF_INET;
-        their_addr.sin_port = htons(port);
-        their_addr.sin_addr.s_addr = INADDR_ANY;
-        memset(their_addr.sin_zero, '\0', sizeof(their_addr.sin_zero));
-	memcpy(hp->h_addr, &their_addr.sin_addr, hp->h_length);
-	their_addr.sin_port=htons(port);
-	result=connect( sockfd, &their_addr, sizeof( struct sockaddr_in));
-	if ( result < 0 ) {
-		DEBUG(1, ("smb_traffic_analyzer: Couldn't connect to inet"
-			"socket!\n"));
+	for (res = ailist; res; res = res->ai_next) {
+		struct sockaddr_storage ss;
+
+		if (!res->ai_addr || res->ai_addrlen == 0) {
+			continue;
+		}
+
+		ZERO_STRUCT(ss);
+		memcpy(&ss, res->ai_addr, res->ai_addrlen);
+
+		sockfd = open_socket_out(SOCK_STREAM, &ss, port, 10000);
+		if (sockfd != -1) {
+			break;
+		}
 	}
-        safe_strcpy(Sender, String, sizeof(Sender) - 1);
-        safe_strcat(Sender, ",\"", sizeof(Sender) - 1);
-        safe_strcat(Sender, get_current_username(), sizeof(Sender) - 1);
-        safe_strcat(Sender, "\",\"", sizeof(Sender) - 1);
-        safe_strcat(Sender, current_user_info.domain, sizeof(Sender) - 1);
-        safe_strcat(Sender, "\",\"", sizeof(Sender) - 1);
+
+	if (ailist) {
+		freeaddrinfo(ailist);
+	}
+
+        if (sockfd == -1) {
+		DEBUG(1, ("smb_traffic_analyzer: unable to create socket, error is %s", 
+			strerror(errno)));
+		return;
+	}
+
+	strlcpy(Sender, String, sizeof(Sender));
+	strlcat(Sender, ",\"", sizeof(Sender));
+	strlcat(Sender, get_current_username(), sizeof(Sender));
+	strlcat(Sender, "\",\"", sizeof(Sender));
+	strlcat(Sender, current_user_info.domain, sizeof(Sender));
+	strlcat(Sender, "\",\"", sizeof(Sender));
         if (Write)
-		safe_strcat(Sender, "W", sizeof(Sender) - 1);
+		strlcat(Sender, "W", sizeof(Sender));
 	else
-		safe_strcat(Sender, "R", sizeof(Sender) - 1);
-        safe_strcat(Sender, "\",\"", sizeof(Sender) - 1);
-        safe_strcat(Sender, handle->conn->connectpath, sizeof(Sender) - 1);
-        safe_strcat(Sender, "\",\"", sizeof(Sender) - 1);
-        safe_strcat(Sender, file_name, sizeof(Sender) - 1);
-        safe_strcat(Sender, "\",\"", sizeof(Sender) - 1);
+		strlcat(Sender, "R", sizeof(Sender));
+	strlcat(Sender, "\",\"", sizeof(Sender));
+	strlcat(Sender, handle->conn->connectpath, sizeof(Sender));
+	strlcat(Sender, "\",\"", sizeof(Sender) - 1);
+	strlcat(Sender, file_name, sizeof(Sender) - 1);
+	strlcat(Sender, "\",\"", sizeof(Sender) - 1);
         get_timestamp(TimeStamp);
-        safe_strcat(Sender, TimeStamp, sizeof(Sender) - 1);
-        safe_strcat(Sender, "\");", sizeof(Sender) - 1);
+	strlcat(Sender, TimeStamp, sizeof(Sender) - 1);
+	strlcat(Sender, "\");", sizeof(Sender) - 1);
         DEBUG(10, ("smb_traffic_analyzer: sending %s\n", Sender));
         if ( send(sockfd, Sender, strlen(Sender), 0) == -1 ) {
                 DEBUG(1, ("smb_traffic_analyzer: error sending data to socket!\n"));
+        	close(sockfd);
                 return ;
         }
 
@@ -224,49 +234,53 @@ static void smb_traffic_analyzer_send_data_unix_socket( char *String ,
 	struct sockaddr_un remote;
         char Sender[200];
         char TimeStamp[200];
+
 	DEBUG(7, ("smb_traffic_analyzer: Unix domain socket mode. Using "
 			"/var/tmp/stadsocket\n"));
+
 	if ((sock = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
 		DEBUG(1, ("smb_traffic_analyzer: Couldn create socket,"
 			"make sure stad is running!\n"));
 	}
 	remote.sun_family = AF_UNIX;
-	safe_strcpy(remote.sun_path, "/var/tmp/stadsocket", 
-		    sizeof(remote.sun_path) - 1);
+	strlcpy(remote.sun_path, "/var/tmp/stadsocket", 
+		    sizeof(remote.sun_path));
 	len=strlen(remote.sun_path) + sizeof(remote.sun_family);
 	if (connect(sock, (struct sockaddr *)&remote, len) == -1 ) {
 		DEBUG(1, ("smb_traffic_analyzer: Could not connect to"
 			"socket, make sure\nstad is running!\n"));
+		close(sock);
+		return;
 	}
-	safe_strcpy(Sender, String, sizeof(Sender) - 1);
-	safe_strcat(Sender, ",\"", sizeof(Sender) - 1);
-	safe_strcat(Sender, get_current_username(), sizeof(Sender) - 1);
-	safe_strcat(Sender,"\",\"",sizeof(Sender) - 1);
-	safe_strcat(Sender, current_user_info.domain, sizeof(Sender) - 1);
-	safe_strcat(Sender, "\",\"", sizeof(Sender) - 1);
+	strlcpy(Sender, String, sizeof(Sender));
+	strlcat(Sender, ",\"", sizeof(Sender));
+	strlcat(Sender, get_current_username(), sizeof(Sender));
+	strlcat(Sender,"\",\"",sizeof(Sender));
+	strlcat(Sender, current_user_info.domain, sizeof(Sender));
+	strlcat(Sender, "\",\"", sizeof(Sender));
 	if (Write)
-		safe_strcat(Sender, "W", sizeof(Sender) - 1);
+		strlcat(Sender, "W", sizeof(Sender));
 	else
-		safe_strcat(Sender, "R", sizeof(Sender) - 1);
-	safe_strcat(Sender, "\",\"", sizeof(Sender) - 1);
-	safe_strcat(Sender, handle->conn->connectpath, sizeof(Sender) - 1);
-	safe_strcat(Sender, "\",\"", sizeof(Sender) - 1);
-	safe_strcat(Sender, file_name, sizeof(Sender) - 1);
-	safe_strcat(Sender, "\",\"", sizeof(Sender) - 1);
+		strlcat(Sender, "R", sizeof(Sender));
+	strlcat(Sender, "\",\"", sizeof(Sender));
+	strlcat(Sender, handle->conn->connectpath, sizeof(Sender));
+	strlcat(Sender, "\",\"", sizeof(Sender));
+	strlcat(Sender, file_name, sizeof(Sender));
+	strlcat(Sender, "\",\"", sizeof(Sender));
 	get_timestamp(TimeStamp);
-	safe_strcat(Sender, TimeStamp, sizeof(Sender) - 1);
-	safe_strcat(Sender, "\");", sizeof(Sender) - 1);
+	strlcat(Sender, TimeStamp, sizeof(Sender));
+	strlcat(Sender, "\");", sizeof(Sender));
 
 	DEBUG(10, ("smb_traffic_analyzer: sending %s\n", Sender));
 	if ( send(sock, Sender, strlen(Sender), 0) == -1 ) {
 		DEBUG(1, ("smb_traffic_analyzer: error sending data to"
 			"socket!\n"));
+		close(sock);
 		return;
 	}
 
 	/* one operation, close the socket */
 	close(sock);
-
 	return;
 }
 
@@ -291,7 +305,7 @@ static ssize_t smb_traffic_analyzer_read(vfs_handle_struct *handle, \
 				files_struct *fsp, void *data, size_t n)
 {
 	ssize_t result;
-        char Buffer[100];
+        fstring Buffer;
 
 	result = SMB_VFS_NEXT_READ(handle, fsp, data, n);
 	DEBUG(10, ("smb_traffic_analyzer: READ: %s\n", fsp->fsp_name ));
@@ -307,7 +321,7 @@ static ssize_t smb_traffic_analyzer_pread(vfs_handle_struct *handle, \
 		files_struct *fsp, void *data, size_t n, SMB_OFF_T offset)
 {
 	ssize_t result;
-        char Buffer[100];
+        fstring Buffer;
 
 	result = SMB_VFS_NEXT_PREAD(handle, fsp, data, n, offset);
 
@@ -323,7 +337,7 @@ static ssize_t smb_traffic_analyzer_write(vfs_handle_struct *handle, \
 			files_struct *fsp, const void *data, size_t n)
 {
 	ssize_t result;
-        char Buffer[100];
+        fstring Buffer;
 
 	result = SMB_VFS_NEXT_WRITE(handle, fsp, data, n);
 
@@ -339,7 +353,7 @@ static ssize_t smb_traffic_analyzer_pwrite(vfs_handle_struct *handle, \
 	     files_struct *fsp, const void *data, size_t n, SMB_OFF_T offset)
 {
 	ssize_t result;
-        char Buffer[100];
+        fstring Buffer;
 
 	result = SMB_VFS_NEXT_PWRITE(handle, fsp, data, n, offset);
 
@@ -349,4 +363,3 @@ static ssize_t smb_traffic_analyzer_pwrite(vfs_handle_struct *handle, \
 	smb_traffic_analyzer_send_data(Buffer, handle, fsp->fsp_name, true, fsp);
 	return result;
 }
-
