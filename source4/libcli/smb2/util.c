@@ -138,7 +138,7 @@ int smb2_deltree(struct smb2_tree *tree, const char *dname)
 	}
 
 	ZERO_STRUCT(create_parm);
-	create_parm.in.desired_access = SEC_FLAG_MAXIMUM_ALLOWED;
+	create_parm.in.desired_access = SEC_FILE_READ_DATA;
 	create_parm.in.share_access = 
 		NTCREATEX_SHARE_ACCESS_READ|
 		NTCREATEX_SHARE_ACCESS_WRITE;
