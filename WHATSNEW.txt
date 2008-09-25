@@ -18,8 +18,8 @@ Major enhancements in Samba 3.3.0 include:
  o Extended Cluster support.
 
  Winbind:
- o Simplyfied idmap configuration.
- o New idmap backend "adex".
+ o Simplified idmap configuration.
+ o New idmap backends "adex" and "hash".
  o Added new parameter "winbind reconnect delay".
  o Added support for user and group aliasing.
 
@@ -73,10 +73,50 @@ daemon will wait between attempts to contact a Domain controller for a domain
 that is determined to be down or not contactable.
 
 
+Winbind's Name Aliasing
+=======================
+
+Name aliasing in Winbind is a feature that allows an administrator to
+map a fully qualified user or group name from a Windows domain to a
+convenient short name for Unix access.  This is similar to the username
+map functionality supported by smbd but is primary intended for
+clients and servers making use of Winbind's PAM and NSS libraries.
+
+For example, the user "DOMAIN\fred" has been mapped to the Unix name
+"freddie".
+
+   $ getent passwd "DOMAIN\fred"
+   freddie:x:1000:1001:Fred Jones:/home/freddie:/bin/bash
+
+   $ getent passwd freddie
+   freddie:x:1000:1001:Fred Jones:/home/freddie:/bin/bash
+
+The name aliasing support is provided by individual nss_info plugins.
+For example, the new "adex" plugin reads the uid attribute from Active
+Directory to make a short login name to the fully qualified name.
+While the new "hash" module utilizes a local file to map "short_name
+= QUALIFIED\name".  Both user and group name mapping is supported.
+Please refer to the "winbind nss info" option in smb.conf(5) and
+to individual plugin man pages for further details.
+
+
+idmap_hash
+==========
+
+The idmap_hash plugin provides similar support as the idmap_rid
+module.  However, uids and gids are generated from the full domain
+SID using a hashing algorithm that maps the lower 19 bits from the user
+or group RID to bits 0 - 19 in the Unix id and hashes 96 bits from
+the domain SID to bits 20 - 30 in the Unix id.  The result is a 31 bit
+uid or gid that is consistent across machines and provides support for
+trusted domains.
+
+Please refer to the idmap_hash(8) man page for more details.
+
 idmap_adex
 ==========
 
-The adex idmap/nss_info plugin is an adapation of the Likewise
+The adex idmap/nss_info plugin is an adaptation of the Likewise
 Enterprise plugin with support for OU based cells removed
 (since the Windows pieces to manage the cells are not available).
 
@@ -88,7 +128,7 @@ This plugin supports
       * Cross forest trusts
       * User and group aliases
 
-Prerequiste: Add the following attributes to the Partial Attribute
+Prerequisite: Add the following attributes to the Partial Attribute
 Set in global catalog:
 
       * uidNumber
@@ -107,6 +147,8 @@ A basic config using the current trunk code would look like:
 	winbind refresh tickets = yes
 	template homedir = /home/%D/%U
 	template shell = /bin/bash
+
+Please refer to the idmap_adex(8) man page for more details.
 
 
 ######################################################################
