@@ -511,6 +511,10 @@ NTSTATUS pvfs_access_check(struct pvfs_state *pvfs,
 	NTSTATUS status;
 	struct security_descriptor *sd;
 
+	if (*access_mask == 0) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
 	if (pvfs_read_only(pvfs, *access_mask)) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
