@@ -1187,7 +1187,6 @@ static bool compare_status(NTSTATUS status1, NTSTATUS status2)
 	s = talloc_asprintf(current_op.mem_ctx, "%s:%s", 
 			    nt_errstr(status1), 
 			    nt_errstr(status2));
-	printf("pattern: %s\n", s);
 	if (ignore_pattern(s)) {
 		return true;
 	}
@@ -2393,9 +2392,8 @@ static bool handler_smb_spathinfo(int instance)
 	union smb_setfileinfo parm[NSERVERS];
 	NTSTATUS status[NSERVERS];
 
-	parm[0].generic.in.file.path = gen_fname_open(instance);
-
 	gen_setfileinfo(instance, &parm[0]);
+	parm[0].generic.in.file.path = gen_fname_open(instance);
 
 	GEN_COPY_PARM;
 
@@ -2764,9 +2762,8 @@ static bool handler_smb2_sfileinfo(int instance)
 	union smb_setfileinfo parm[NSERVERS];
 	NTSTATUS status[NSERVERS];
 
-	parm[0].generic.in.file.fnum = gen_fnum(instance);
-
 	gen_setfileinfo(instance, &parm[0]);
+	parm[0].generic.in.file.fnum = gen_fnum(instance);
 
 	GEN_COPY_PARM;
 	GEN_SET_FNUM_SMB2(generic.in.file.handle);
