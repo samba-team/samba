@@ -27,6 +27,7 @@
 #include "libcli/composite/composite.h"
 #include "libcli/resolve/resolve.h"
 #include "param/param.h"
+#include "lib/cmdline/popt_common.h"
 
 struct smb2_connect_state {
 	struct cli_credentials *credentials;
@@ -184,8 +185,8 @@ static void continue_socket(struct composite_context *creq)
 	}
 	state->negprot.in.capabilities  = 0;
 	unix_to_nt_time(&state->negprot.in.start_time, time(NULL));
-	dialects[0] = 0;
-	dialects[1] = SMB2_DIALECT_REVISION;
+	dialects[0] = SMB2_DIALECT_REVISION;
+	dialects[1] = 0;
 	state->negprot.in.dialects = dialects;
 
 	req = smb2_negprot_send(transport, &state->negprot);
@@ -206,7 +207,13 @@ static void continue_resolve(struct composite_context *creq)
 	struct smb2_connect_state *state = talloc_get_type(c->private_data, 
 							   struct smb2_connect_state);
 	const char *addr;
-	const char *ports[2] = { "445", NULL };
+	const char **ports;
+	const char *default_ports[] = { "445", NULL };
+
+	ports = lp_parm_string_list(state, cmdline_lp_ctx, NULL, "smb2", "ports", NULL);
+	if (ports == NULL) {
+		ports = default_ports;
+	}
 
 	c->status = resolve_name_recv(creq, state, &addr);
 	if (!composite_is_ok(c)) return;
