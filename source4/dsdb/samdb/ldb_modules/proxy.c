@@ -317,7 +317,7 @@ static int proxy_search_bytree(struct ldb_module *module, struct ldb_request *re
 		goto passthru;
 	}
 
-	if (load_proxy_info(module) != 0) {
+	if (load_proxy_info(module) != LDB_SUCCESS) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 

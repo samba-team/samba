@@ -98,7 +98,7 @@ static int add_time_element(struct ldb_message *msg, const char *attr, time_t t)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	if (ldb_msg_add_string(msg, attr, s) != 0) {
+	if (ldb_msg_add_string(msg, attr, s) != LDB_SUCCESS) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -121,7 +121,7 @@ static int add_uint64_element(struct ldb_message *msg, const char *attr, uint64_
 		return LDB_SUCCESS;
 	}
 
-	if (ldb_msg_add_fmt(msg, attr, "%llu", (unsigned long long)v) != 0) {
+	if (ldb_msg_add_fmt(msg, attr, "%llu", (unsigned long long)v) != LDB_SUCCESS) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -270,7 +270,7 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 
 	ac->schema = schema;
 
-	if (ldb_msg_find_element(req->op.add.message, "objectGUID")) {
+	if (ldb_msg_find_element(req->op.add.message, "objectGUID") != NULL) {
 		ldb_debug_set(module->ldb, LDB_DEBUG_ERROR,
 			      "replmd_add: it's not allowed to add an object with objectGUID\n");
 		return LDB_ERR_UNWILLING_TO_PERFORM;
@@ -495,7 +495,7 @@ static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
 	 * - calculate the new replPropertyMetaData attribute
 	 */
 
-	if (add_time_element(msg, "whenChanged", t) != 0) {
+	if (add_time_element(msg, "whenChanged", t) != LDB_SUCCESS) {
 		talloc_free(ac);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -503,7 +503,7 @@ static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
 	/* Get a sequence number from the backend */
 	ret = ldb_sequence_number(module->ldb, LDB_SEQ_NEXT, &seq_num);
 	if (ret == LDB_SUCCESS) {
-		if (add_uint64_element(msg, "uSNChanged", seq_num) != 0) {
+		if (add_uint64_element(msg, "uSNChanged", seq_num) != LDB_SUCCESS) {
 			talloc_free(ac);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
