@@ -121,7 +121,7 @@ backend:
 		return NT_STATUS_NONE_MAPPED;
 	}
 
-	idmap_cache_set_sid2uid(sid, gid);
+	idmap_cache_set_sid2gid(sid, gid);
 
 	return NT_STATUS_OK;
 }
