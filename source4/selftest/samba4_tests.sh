@@ -326,7 +326,7 @@ for mech in \
 	"-k no --option=gensec:spengo=no"; do
 	signoptions="$mech --signing=off"
 	name="smb.signing on with $signoptions"
-	plantest "$name local-creds" member $VALGRIND $smb4torture //"\$NETBIOSNAME"/tmp $signoptions -U"\$NETBIOSNAME\\\\\$USERNAME"%"\$PASSWORD" BASE-XCOPY "$*"
+	plantest "$name local-creds" member $VALGRIND $smb4torture //"\$NETBIOSNAME"/tmp $signoptions -U"\$NETBIOSNAME/\$USERNAME"%"\$PASSWORD" BASE-XCOPY "$*"
 done
 plantest "--signing=yes anon" dc $VALGRIND $smb4torture //"\$NETBIOSNAME"/tmp -k no --signing=yes -U% BASE-XCOPY "$*"
 plantest "--signing=required anon" dc $VALGRIND $smb4torture //"\$NETBIOSNAME"/tmp -k no --signing=required -U% BASE-XCOPY "$*"
