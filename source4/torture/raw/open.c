@@ -1545,6 +1545,64 @@ static bool test_raw_open_multi(struct torture_context *tctx)
 	return ret;
 }
 
+/*
+  test opening for delete on a read-only attribute file.
+*/
+static bool test_open_for_delete(struct smbcli_state *cli, struct torture_context *tctx)
+{
+	union smb_open io;
+	union smb_fileinfo finfo;
+	const char *fname = BASEDIR "\\torture_open_for_delete.txt";
+	NTSTATUS status;
+	int fnum = -1;
+	bool ret = true;
+
+	printf("Checking RAW_NTCREATEX for delete on a readonly file.\n");
+
+	/* reasonable default parameters */
+	io.generic.level = RAW_OPEN_NTCREATEX;
+	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED;
+	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.alloc_size = 0;
+	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
+	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_READONLY;
+	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_NONE;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_CREATE;
+	io.ntcreatex.in.create_options = 0;
+	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	io.ntcreatex.in.security_flags = 0;
+	io.ntcreatex.in.fname = fname;
+
+	/* Create the readonly file. */
+
+	status = smb_raw_open(cli->tree, tctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum = io.ntcreatex.out.file.fnum;
+
+	CHECK_VAL(io.ntcreatex.out.oplock_level, 0);
+	io.ntcreatex.in.create_options = 0;
+	CHECK_VAL(io.ntcreatex.out.create_action, NTCREATEX_ACTION_CREATED);
+	CHECK_ALL_INFO(io.ntcreatex.out.attrib, attrib);
+	smbcli_close(cli->tree, fnum);
+
+	/* Now try and open for delete only - should succeed. */
+	io.ntcreatex.in.access_mask = SEC_STD_DELETE;
+	io.ntcreatex.in.file_attr = 0;
+	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_READ | NTCREATEX_SHARE_ACCESS_WRITE | NTCREATEX_SHARE_ACCESS_DELETE;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
+	status = smb_raw_open(cli->tree, tctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	smbcli_unlink(cli->tree, fname);
+
+done:
+	smbcli_close(cli->tree, fnum);
+	smbcli_unlink(cli->tree, fname);
+
+	return ret;
+}
+
+
 /* basic testing of all RAW_OPEN_* calls 
 */
 bool torture_raw_open(struct torture_context *torture, struct smbcli_state *cli)
@@ -1567,6 +1625,7 @@ bool torture_raw_open(struct torture_context *torture, struct smbcli_state *cli)
 	ret &= test_ctemp(cli, torture);
 	ret &= test_chained(cli, torture);
 	ret &= test_no_leading_slash(cli, torture);
+	ret &= test_open_for_delete(cli, torture);
 
 	smb_raw_exit(cli->session);
 	smbcli_deltree(cli->tree, BASEDIR);
