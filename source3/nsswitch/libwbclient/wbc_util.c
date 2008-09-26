@@ -496,7 +496,7 @@ wbcErr wbcListTrusts(struct wbcDomainInfo **domains, size_t *num_domains)
 /** @brief Enumerate the domain trusts known by Winbind
  *
  * @param domain        Name of the domain to query for a DC
- * @flags               Bit flags used to control the domain location query
+ * @param flags         Bit flags used to control the domain location query
  * @param *dc_info      Pointer to the returned domain controller information
  *
  * @return #wbcErr
