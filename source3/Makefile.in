@@ -1139,6 +1139,8 @@ pam_smbpass: SHOWFLAGS bin/pam_smbpass.@SHLIBEXT@
 
 pam_winbind: SHOWFLAGS bin/pam_winbind.@SHLIBEXT@
 
+gpext_modules:: $(GPEXT_MODULES)
+
 torture:: SHOWFLAGS $(TORTURE_PROGS)
 
 smbtorture : SHOWFLAGS bin/smbtorture@EXEEXT@
@@ -2415,6 +2417,10 @@ bin/registry.@SHLIBEXT@: $(BINARY_PREREQS) libgpo/gpext/registry.o
 bin/scripts.@SHLIBEXT@: $(BINARY_PREREQS) libgpo/gpext/scripts.o
 	@echo "Building plugin $@"
 	@$(SHLD_MODULE) libgpo/gpext/scripts.o
+
+bin/security.@SHLIBEXT@: $(BINARY_PREREQS) libgpo/gpext/security.o
+	@echo "Building plugin $@"
+	@$(SHLD_MODULE) libgpo/gpext/security.o
 
 #########################################################
 ## IdMap NSS plugins
