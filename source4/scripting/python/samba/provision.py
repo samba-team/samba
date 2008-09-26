@@ -744,6 +744,8 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
 
     samdb = SamDB(path, session_info=session_info, 
                   credentials=credentials, lp=lp)
+    if fill == FILL_DRS:
+        return samdb
 
     message("Pre-loading the Samba 4 and AD schema")
     samdb.set_domain_sid(domainsid)
