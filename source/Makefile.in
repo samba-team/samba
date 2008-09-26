@@ -1141,6 +1141,8 @@ pam_smbpass: SHOWFLAGS bin/pam_smbpass.@SHLIBEXT@
 
 pam_winbind: SHOWFLAGS bin/pam_winbind.@SHLIBEXT@
 
+gpext_modules:: $(GPEXT_MODULES)
+
 torture:: SHOWFLAGS $(TORTURE_PROGS)
 
 smbtorture : SHOWFLAGS bin/smbtorture@EXEEXT@
@@ -2419,6 +2421,10 @@ bin/scripts.@SHLIBEXT@: $(BINARY_PREREQS) libgpo/gpext/scripts.o
 bin/smb_traffic_analyzer.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_SMB_TRAFFIC_ANALYZER_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD_MODULE) $(VFS_SMB_TRAFFIC_ANALYZER_OBJ)
+
+bin/security.@SHLIBEXT@: $(BINARY_PREREQS) libgpo/gpext/security.o
+	@echo "Building plugin $@"
+	@$(SHLD_MODULE) libgpo/gpext/security.o
 
 #########################################################
 ## IdMap NSS plugins
