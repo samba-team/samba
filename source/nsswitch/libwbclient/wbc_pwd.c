@@ -380,7 +380,7 @@ wbcErr wbcGetgrent(struct group **grp)
  *
  * @param *account       The given user name
  * @param *num_groups    Number of elements returned in the groups array
- * @param **groups       Pointer to resulting gid_t array.
+ * @param **_groups      Pointer to resulting gid_t array.
  *
  * @return #wbcErr
  **/
