@@ -93,7 +93,7 @@ static NTSTATUS generate_gp_registry_entry(TALLOC_CTX *mem_ctx,
 	data->type = data_type;
 	switch (data->type) {
 		case REG_QWORD:
-			data->v.qword = (uint64_t)data_p;
+			data->v.qword = *(uint64_t *)data_p;
 			break;
 		case REG_SZ:
 			data->v.sz.str = talloc_strdup(mem_ctx, (char *)data_p);
