@@ -315,6 +315,12 @@ struct winbindd_request {
 			uint32_t initial_blob_len; /* blobs in extra_data */
 			uint32_t challenge_blob_len;
 		} ccache_ntlm_auth;
+		struct {
+			fstring domain_name;
+			fstring domain_guid;
+			fstring site_name;
+			uint32_t flags;
+		} dsgetdcname;
 
 		/* padding -- needed to fix alignment between 32bit and 64bit libs.
 		   The size is the sizeof the union without the padding aligned on 
@@ -455,6 +461,17 @@ struct winbindd_response {
 		struct {
 			uint32_t auth_blob_len; /* blob in extra_data */
 		} ccache_ntlm_auth;
+		struct {
+			fstring dc_unc;
+			fstring dc_address;
+			uint32_t dc_address_type;
+			fstring domain_guid;
+			fstring domain_name;
+			fstring forest_name;
+			uint32_t dc_flags;
+			fstring dc_site_name;
+			fstring client_site_name;
+		} dsgetdcname;
 	} data;
 
 	/* Variable length return data */
