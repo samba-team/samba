@@ -124,10 +124,12 @@ NTSTATUS file_new(connection_struct *conn, files_struct **result)
 
 	chain_fsp = fsp;
 
-	/* A new fsp invalidates a negative fsp_fi_cache. */
-	if (fsp_fi_cache.fsp == NULL) {
-		ZERO_STRUCT(fsp_fi_cache);
-	}
+	/* A new fsp invalidates the positive and
+	   negative fsp_fi_cache as the new fsp is pushed
+	   at the start of the list and we search from
+	   a cache hit to the *end* of the list. */
+
+	ZERO_STRUCT(fsp_fi_cache);
 
 	*result = fsp;
 	return NT_STATUS_OK;
