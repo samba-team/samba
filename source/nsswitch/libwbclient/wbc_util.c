@@ -550,3 +550,142 @@ done:
 
 	return wbc_status;
 }
+
+static wbcErr wbc_create_domain_controller_info_ex(TALLOC_CTX *mem_ctx,
+						   const struct winbindd_response *resp,
+						   struct wbcDomainControllerInfoEx **_i)
+{
+	wbcErr wbc_status = WBC_ERR_SUCCESS;
+	struct wbcDomainControllerInfoEx *i;
+	struct wbcGuid guid;
+
+	i = talloc(mem_ctx, struct wbcDomainControllerInfoEx);
+	BAIL_ON_PTR_ERROR(i, wbc_status);
+
+	i->dc_unc = talloc_strdup(i, resp->data.dsgetdcname.dc_unc);
+	BAIL_ON_PTR_ERROR(i->dc_unc, wbc_status);
+
+	i->dc_address = talloc_strdup(i, resp->data.dsgetdcname.dc_address);
+	BAIL_ON_PTR_ERROR(i->dc_address, wbc_status);
+
+	i->dc_address_type = resp->data.dsgetdcname.dc_address_type;
+
+	wbc_status = wbcStringToGuid(resp->data.dsgetdcname.domain_guid, &guid);
+	if (WBC_ERROR_IS_OK(wbc_status)) {
+		i->domain_guid = talloc(i, struct wbcGuid);
+		BAIL_ON_PTR_ERROR(i->domain_guid, wbc_status);
+
+		*i->domain_guid = guid;
+	} else {
+		i->domain_guid = NULL;
+	}
+
+	i->domain_name = talloc_strdup(i, resp->data.dsgetdcname.domain_name);
+	BAIL_ON_PTR_ERROR(i->domain_name, wbc_status);
+
+	if (resp->data.dsgetdcname.forest_name[0] != '\0') {
+		i->forest_name = talloc_strdup(i,
+			resp->data.dsgetdcname.forest_name);
+		BAIL_ON_PTR_ERROR(i->forest_name, wbc_status);
+	} else {
+		i->forest_name = NULL;
+	}
+
+	i->dc_flags = resp->data.dsgetdcname.dc_flags;
+
+	if (resp->data.dsgetdcname.dc_site_name[0] != '\0') {
+		i->dc_site_name = talloc_strdup(i,
+			resp->data.dsgetdcname.dc_site_name);
+		BAIL_ON_PTR_ERROR(i->dc_site_name, wbc_status);
+	} else {
+		i->dc_site_name = NULL;
+	}
+
+	if (resp->data.dsgetdcname.client_site_name[0] != '\0') {
+		i->client_site_name = talloc_strdup(i,
+			resp->data.dsgetdcname.client_site_name);
+		BAIL_ON_PTR_ERROR(i->client_site_name, wbc_status);
+	} else {
+		i->client_site_name = NULL;
+	}
+
+	*_i = i;
+	i = NULL;
+
+done:
+	talloc_free(i);
+	return wbc_status;
+}
+
+/** @brief Get extended domain controller information
+ *
+ * @param domain        Name of the domain to query for a DC
+ * @param guid          Guid of the domain to query for a DC
+ * @param site          Site of the domain to query for a DC
+ * @param flags         Bit flags used to control the domain location query
+ * @param *dc_info      Pointer to the returned extended domain controller information
+ *
+ * @return #wbcErr
+ *
+ **/
+
+wbcErr wbcLookupDomainControllerEx(const char *domain,
+				   struct wbcGuid *guid,
+				   const char *site,
+				   uint32_t flags,
+				   struct wbcDomainControllerInfoEx **dc_info)
+{
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+	struct winbindd_request request;
+	struct winbindd_response response;
+
+	/* validate input params */
+
+	if (!domain || !dc_info) {
+		wbc_status = WBC_ERR_INVALID_PARAM;
+		BAIL_ON_WBC_ERROR(wbc_status);
+	}
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	request.data.dsgetdcname.flags = flags;
+
+	strncpy(request.data.dsgetdcname.domain_name, domain,
+		sizeof(request.data.dsgetdcname.domain_name)-1);
+
+	if (site) {
+		strncpy(request.data.dsgetdcname.site_name, site,
+			sizeof(request.data.dsgetdcname.site_name)-1);
+	}
+
+	if (guid) {
+		char *str = NULL;
+
+		wbc_status = wbcGuidToString(guid, &str);
+		BAIL_ON_WBC_ERROR(wbc_status);
+
+		strncpy(request.data.dsgetdcname.domain_guid, str,
+			sizeof(request.data.dsgetdcname.domain_guid)-1);
+
+		wbcFreeMemory(str);
+	}
+
+	/* Send request */
+
+	wbc_status = wbcRequestResponse(WINBINDD_DSGETDCNAME,
+					&request,
+					&response);
+	BAIL_ON_WBC_ERROR(wbc_status);
+
+	if (dc_info) {
+		wbc_status = wbc_create_domain_controller_info_ex(NULL,
+								  &response,
+								  dc_info);
+		BAIL_ON_WBC_ERROR(wbc_status);
+	}
+
+	wbc_status = WBC_ERR_SUCCESS;
+done:
+	return wbc_status;
+}
