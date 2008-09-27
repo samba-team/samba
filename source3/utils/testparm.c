@@ -329,6 +329,8 @@ rameter is ignored when using CUPS libraries.\n",
 	cname = poptGetArg(pc);
 	caddr = poptGetArg(pc);
 
+	poptFreeContext(pc);
+
 	if ( cname && ! caddr ) {
 		printf ( "ERROR: You must specify both a machine name and an IP address.\n" );
 		return(1);
