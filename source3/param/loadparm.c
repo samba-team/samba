@@ -4572,6 +4572,54 @@ static void init_printer_values(struct service *pService)
 	}
 }
 
+/**
+ * Free the allocated data for one parameter for a given share.
+ */
+static void free_parameter(int snum, struct parm_struct parm)
+{
+	void *parm_ptr;
+
+	if (parm.ptr == NULL); {
+		return;
+	}
+
+	if (snum < 0) {
+		parm_ptr = parm.ptr;
+	} else if (parm.p_class != P_LOCAL) {
+		return;
+	} else {
+		parm_ptr = lp_local_ptr(snum, parm.ptr);
+	}
+
+	if ((parm.type == P_STRING) ||
+	    (parm.type == P_USTRING))
+	{
+		string_free((char**)parm_ptr);
+	} else if (parm.type == P_LIST) {
+		TALLOC_FREE(*((char***)parm_ptr));
+	}
+}
+
+/**
+ * Free the allocated parameter data for a share.
+ */
+static void free_parameters(int snum)
+{
+	uint32_t i;
+
+	for (i=0; parm_table[i].label; i++) {
+		free_parameter(snum, parm_table[i]);
+	}
+}
+
+/**
+ * Free the allocated global parameters.
+ */
+static void free_global_parameters(void)
+{
+	free_parameters(GLOBAL_SECTION_SNUM);
+}
+
 /***************************************************************************
  Initialise the global parameter structure.
 ***************************************************************************/
@@ -4596,14 +4644,7 @@ static void init_globals(bool first_time_only)
 		}
 		done_init = True;
 	} else {
-		for (i = 0; parm_table[i].label; i++) {
-			if ((parm_table[i].type == P_STRING ||
-			     parm_table[i].type == P_USTRING) &&
-			    parm_table[i].ptr)
-			{
-				string_free((char **)parm_table[i].ptr);
-			}
-		}
+		free_global_parameters();
 	}
 
 	memset((void *)&Globals, '\0', sizeof(Globals));
@@ -5645,6 +5686,7 @@ static void init_service(struct service *pservice)
 	copy_service(pservice, &sDefault, NULL);
 }
 
+
 /**
  * free a param_opts structure.
  * param_opts handling should be moved to talloc;
@@ -5680,7 +5722,6 @@ static void free_param_opts(struct param_opt_struct **popts)
 
 static void free_service(struct service *pservice)
 {
-	int i;
 	if (!pservice)
 		return;
 
@@ -5688,23 +5729,10 @@ static void free_service(struct service *pservice)
 		DEBUG(5, ("free_service: Freeing service %s\n",
 		       pservice->szService));
 
+	free_parameters(getservicebyname(pservice->szService, NULL));
+
 	string_free(&pservice->szService);
 	bitmap_free(pservice->copymap);
-
-	for (i = 0; parm_table[i].label; i++) {
-		if ((parm_table[i].type == P_STRING ||
-		     parm_table[i].type == P_USTRING) &&
-		    parm_table[i].p_class == P_LOCAL)
-			string_free((char **)
-				    (((char *)pservice) +
-				     PTR_DIFF(parm_table[i].ptr, &sDefault)));
-		else if (parm_table[i].type == P_LIST &&
-			 parm_table[i].p_class == P_LOCAL)
-			     TALLOC_FREE(*((char ***)
-					   (((char *)pservice) +
-					    PTR_DIFF(parm_table[i].ptr,
-						     &sDefault))));
-	}
 
 	free_param_opts(&pservice->param_opt);
 
@@ -8728,17 +8756,7 @@ void gfree_loadparm(void)
 	/* Now release all resources allocated to global
 	   parameters and the default service */
 
-	for (i = 0; parm_table[i].label; i++) 
-	{
-		if ( parm_table[i].type == P_STRING 
-			|| parm_table[i].type == P_USTRING ) 
-		{
-			string_free( (char**)parm_table[i].ptr );
-		}
-		else if (parm_table[i].type == P_LIST) {
-			TALLOC_FREE( *((char***)parm_table[i].ptr) );
-		}
-	}
+	free_global_parameters();
 }
 
 
