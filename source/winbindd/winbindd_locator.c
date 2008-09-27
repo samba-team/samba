@@ -45,11 +45,15 @@ struct winbindd_child *locator_child(void)
 
 void winbindd_dsgetdcname(struct winbindd_cli_state *state)
 {
-	state->request.domain_name
-		[sizeof(state->request.domain_name)-1] = '\0';
+	state->request.data.dsgetdcname.domain_name
+		[sizeof(state->request.data.dsgetdcname.domain_name)-1] = '\0';
+	state->request.data.dsgetdcname.site_name
+		[sizeof(state->request.data.dsgetdcname.site_name)-1] = '\0';
+	state->request.data.dsgetdcname.domain_guid
+		[sizeof(state->request.data.dsgetdcname.domain_guid)-1] = '\0';
 
 	DEBUG(3, ("[%5lu]: dsgetdcname for %s\n", (unsigned long)state->pid,
-		  state->request.domain_name));
+		  state->request.data.dsgetdcname.domain_name));
 
 	sendto_child(state, locator_child());
 }
@@ -94,44 +98,59 @@ static uint32_t get_dsgetdc_flags(uint32_t wbc_flags)
 	return ds_flags;
 }
 
-
 static enum winbindd_result dual_dsgetdcname(struct winbindd_domain *domain,
 					     struct winbindd_cli_state *state)
 {
 	NTSTATUS result;
 	struct netr_DsRGetDCNameInfo *info = NULL;
-	const char *dc = NULL;
 	uint32_t ds_flags = 0;
+	struct GUID guid, *guid_ptr = NULL;
+	const char *guid_str = NULL;
 
-	state->request.domain_name
-		[sizeof(state->request.domain_name)-1] = '\0';
+	state->request.data.dsgetdcname.domain_name
+		[sizeof(state->request.data.dsgetdcname.domain_name)-1] = '\0';
+	state->request.data.dsgetdcname.site_name
+		[sizeof(state->request.data.dsgetdcname.site_name)-1] = '\0';
+	state->request.data.dsgetdcname.domain_guid
+		[sizeof(state->request.data.dsgetdcname.domain_guid)-1] = '\0';
 
 	DEBUG(3, ("[%5lu]: dsgetdcname for %s\n", (unsigned long)state->pid,
-		  state->request.domain_name));
+		  state->request.data.dsgetdcname.domain_name));
 
 	ds_flags = get_dsgetdc_flags(state->request.flags);
 
-	result = dsgetdcname(state->mem_ctx, winbind_messaging_context(),
-			     state->request.domain_name,
-			     NULL, NULL, ds_flags, &info);
+	result = GUID_from_string(state->request.data.dsgetdcname.domain_guid,
+				  &guid);
+	if (NT_STATUS_IS_OK(result) && !GUID_all_zero(&guid)) {
+		guid_ptr = &guid;
+	}
+
+	result = dsgetdcname(state->mem_ctx,
+			     winbind_messaging_context(),
+			     state->request.data.dsgetdcname.domain_name,
+			     guid_ptr,
+			     state->request.data.dsgetdcname.site_name,
+			     ds_flags,
+			     &info);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		return WINBINDD_ERROR;
 	}
 
-	if (info->dc_address) {
-		dc = strip_hostname(info->dc_address);
-	}
-
-	if ((!dc || !is_ipaddress_v4(dc)) && info->dc_unc) {
-		dc = strip_hostname(info->dc_unc);
-	}
-
-	if (!dc || !*dc) {
+	guid_str = GUID_string(state->mem_ctx, &info->domain_guid);
+	if (!guid_str) {
 		return WINBINDD_ERROR;
 	}
 
-	fstrcpy(state->response.data.dc_name, dc);
+	fstrcpy(state->response.data.dsgetdcname.dc_unc, info->dc_unc);
+	fstrcpy(state->response.data.dsgetdcname.dc_address, info->dc_address);
+	state->response.data.dsgetdcname.dc_address_type = info->dc_address_type;
+	fstrcpy(state->response.data.dsgetdcname.domain_guid, guid_str);
+	fstrcpy(state->response.data.dsgetdcname.domain_name, info->domain_name);
+	fstrcpy(state->response.data.dsgetdcname.forest_name, info->forest_name);
+	state->response.data.dsgetdcname.dc_flags = info->dc_flags;
+	fstrcpy(state->response.data.dsgetdcname.dc_site_name, info->dc_site_name);
+	fstrcpy(state->response.data.dsgetdcname.client_site_name, info->client_site_name);
 
 	return WINBINDD_OK;
 }
