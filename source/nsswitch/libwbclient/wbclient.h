@@ -392,7 +392,20 @@ struct wbcDomainControllerInfo {
 	char *dc_name;
 };
 
-
+/*
+ * DomainControllerInfoEx struct
+ */
+struct wbcDomainControllerInfoEx {
+	const char *dc_unc;
+	const char *dc_address;
+	uint16_t dc_address_type;
+	struct wbcGuid *domain_guid;
+	const char *domain_name;
+	const char *forest_name;
+	uint32_t dc_flags;
+	const char *dc_site_name;
+	const char *client_site_name;
+};
 
 /*
  * Memory Management
@@ -558,6 +571,12 @@ wbcErr wbcListTrusts(struct wbcDomainInfo **domains,
 wbcErr wbcLookupDomainController(const char *domain,
 				 uint32_t flags,
 				 struct wbcDomainControllerInfo **dc_info);
+
+wbcErr wbcLookupDomainControllerEx(const char *domain,
+				   struct wbcGuid *guid,
+				   const char *site,
+				   uint32_t flags,
+				   struct wbcDomainControllerInfoEx **dc_info);
 
 /*
  * Athenticate functions
