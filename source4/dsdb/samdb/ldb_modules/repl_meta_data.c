@@ -58,6 +58,9 @@ struct replmd_replicated_request {
 
 	struct dsdb_extended_replicated_objects *objs;
 
+	/* the controls we pass down */
+	struct ldb_control **controls;
+
 	uint32_t index_current;
 
 	struct {
@@ -700,7 +703,7 @@ static int replmd_replicated_apply_add(struct replmd_replicated_request *ar)
 				ar->module->ldb,
 				ar->sub.mem_ctx,
 				msg,
-				NULL,
+				ar->controls,
 				ar,
 				replmd_replicated_apply_add_callback);
 	if (ret != LDB_SUCCESS) return replmd_replicated_request_error(ar, ret);
@@ -951,7 +954,7 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 				ar->module->ldb,
 				ar->sub.mem_ctx,
 				msg,
-				NULL,
+				ar->controls,
 				ar,
 				replmd_replicated_apply_merge_callback);
 	if (ret != LDB_SUCCESS) return replmd_replicated_request_error(ar, ret);
@@ -1379,7 +1382,7 @@ static int replmd_replicated_uptodate_modify(struct replmd_replicated_request *a
 				ar->module->ldb,
 				ar->sub.mem_ctx,
 				msg,
-				NULL,
+				ar->controls,
 				ar,
 				replmd_replicated_uptodate_modify_callback);
 	if (ret != LDB_SUCCESS) return replmd_replicated_request_error(ar, ret);
@@ -1491,6 +1494,8 @@ static int replmd_extended_replicated_objects(struct ldb_module *module, struct 
 {
 	struct dsdb_extended_replicated_objects *objs;
 	struct replmd_replicated_request *ar;
+	struct ldb_control **ctrls;
+	int ret;
 
 	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "replmd_extended_replicated_objects\n");
 
@@ -1510,6 +1515,22 @@ static int replmd_extended_replicated_objects(struct ldb_module *module, struct 
 	if (!ar) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
+
+	ctrls = req->controls;
+
+	if (req->controls) {
+		req->controls = talloc_memdup(ar, req->controls,
+					      talloc_get_size(req->controls));
+		if (!req->controls) return replmd_replicated_request_werror(ar, WERR_NOMEM);
+	}
+
+	ret = ldb_request_add_control(req, DSDB_CONTROL_REPLICATED_UPDATE_OID, false, NULL);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	ar->controls = req->controls;
+	req->controls = ctrls;
 
 #ifdef REPLMD_FULL_ASYNC /* TODO: activate this code when ldb support full async code */ 
 	return replmd_replicated_apply_next(ar);

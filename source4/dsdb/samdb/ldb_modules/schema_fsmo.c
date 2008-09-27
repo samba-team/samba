@@ -152,6 +152,16 @@ static int schema_fsmo_add(struct ldb_module *module, struct ldb_request *req)
 	uint32_t id32;
 	WERROR status;
 
+	/* special objects should always go through */
+	if (ldb_dn_is_special(req->op.add.message->dn)) {
+		return ldb_next_request(module, req);
+	}
+
+	/* replicated update should always go through */
+	if (ldb_request_get_control(req, DSDB_CONTROL_REPLICATED_UPDATE_OID)) {
+		return ldb_next_request(module, req);
+	}
+
 	schema = dsdb_get_schema(module->ldb);
 	if (!schema) {
 		return ldb_next_request(module, req);
