@@ -1,7 +1,7 @@
 /*
    Unix SMB/CIFS implementation.
    kerberos locator plugin
-   Copyright (C) Guenther Deschner 2007
+   Copyright (C) Guenther Deschner 2007-2008
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -247,18 +247,19 @@ static bool ask_winbind(const char *realm, char **dcname)
 	NSS_STATUS status;
 	struct winbindd_request request;
 	struct winbindd_response response;
+	const char *dc = NULL;
 
 	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
 
-	request.flags = 0x40020600;
+	request.data.dsgetdcname.flags = 0x40020600;
 			/* DS_KDC_REQUIRED |
 			DS_IS_DNS_NAME |
 			DS_RETURN_DNS_NAME |
 			DS_IP_REQUIRED */
 
-	strncpy(request.domain_name, realm,
-		sizeof(request.domain_name)-1);
+	strncpy(request.data.dsgetdcname.domain_name, realm,
+		sizeof(request.data.dsgetdcname.domain_name)-1);
 
 	status = winbindd_request_response(WINBINDD_DSGETDCNAME,
 					   &request, &response);
@@ -270,7 +271,23 @@ static bool ask_winbind(const char *realm, char **dcname)
 		return false;
 	}
 
-	*dcname = strdup(response.data.dc_name);
+	if (response.data.dsgetdcname.dc_address[0] != '\0') {
+		dc = response.data.dsgetdcname.dc_address;
+		if (dc[0] == '\\') dc++;
+		if (dc[0] == '\\') dc++;
+	}
+
+	if (!dc && response.data.dsgetdcname.dc_unc[0] != '\0') {
+		dc = response.data.dsgetdcname.dc_unc;
+		if (dc[0] == '\\') dc++;
+		if (dc[0] == '\\') dc++;
+	}
+
+	if (!dc) {
+		return false;
+	}
+
+	*dcname = strdup(dc);
 	if (!*dcname) {
 		return false;
 	}
