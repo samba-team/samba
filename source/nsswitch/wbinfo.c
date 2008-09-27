@@ -538,8 +538,8 @@ static bool wbinfo_dsgetdcname(const char *domain_name, uint32_t flags)
 	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
 
-	fstrcpy(request.domain_name, domain_name);
-	request.flags = flags;
+	fstrcpy(request.data.dsgetdcname.domain_name, domain_name);
+	request.data.dsgetdcname.flags = flags;
 
 	request.flags |= DS_DIRECTORY_SERVICE_REQUIRED;
 
@@ -553,7 +553,15 @@ static bool wbinfo_dsgetdcname(const char *domain_name, uint32_t flags)
 
 	/* Display response */
 
-	d_printf("%s\n", response.data.dc_name);
+	d_printf("%s\n", response.data.dsgetdcname.dc_unc);
+	d_printf("%s\n", response.data.dsgetdcname.dc_address);
+	d_printf("%d\n", response.data.dsgetdcname.dc_address_type);
+	d_printf("%s\n", response.data.dsgetdcname.domain_guid);
+	d_printf("%s\n", response.data.dsgetdcname.domain_name);
+	d_printf("%s\n", response.data.dsgetdcname.forest_name);
+	d_printf("0x%08x\n", response.data.dsgetdcname.dc_flags);
+	d_printf("%s\n", response.data.dsgetdcname.dc_site_name);
+	d_printf("%s\n", response.data.dsgetdcname.client_site_name);
 
 	return true;
 }
