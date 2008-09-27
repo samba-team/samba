@@ -7222,9 +7222,7 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 			       pszParmName));
 			return (True);
 		}
-		parm_ptr =
-			((char *)ServicePtrs[snum]) + PTR_DIFF(def_ptr,
-							    &sDefault);
+		parm_ptr = lp_local_ptr(snum, def_ptr);
 	}
 
 	if (snum >= 0) {
