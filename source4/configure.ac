@@ -46,7 +46,7 @@ SMB_EXT_LIB_FROM_PKGCONFIG(LIBTALLOC, talloc >= 1.2.0,
 	]
 )
 
-SMB_EXT_LIB_FROM_PKGCONFIG(LIBTDB, tdb >= 1.1.0,
+SMB_EXT_LIB_FROM_PKGCONFIG(LIBTDB, tdb >= 1.1.3,
 	[],
 	[
 		m4_include(../lib/tdb/libtdb.m4)
