@@ -739,6 +739,10 @@ TESTPARM_OBJ = utils/testparm.o \
                $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) $(POPT_LIB_OBJ) \
 	       $(LIBSAMBA_OBJ)
 
+TEST_LP_LOAD_OBJ = param/test_lp_load.o \
+		   $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
+		   $(POPT_LIB_OBJ) $(LIBSAMBA_OBJ)
+
 PASSWD_UTIL_OBJ = utils/passwd_util.o
 
 SMBPASSWD_OBJ = utils/smbpasswd.o $(PASSWD_UTIL_OBJ) $(PASSCHANGE_OBJ) \
@@ -2493,6 +2497,13 @@ bin/rpc_open_tcp@EXEEXT@: $(BINARY_PREREQS) $(RPC_OPEN_TCP_OBJ) @LIBTALLOC_SHARE
 	@$(CC) $(FLAGS) -o $@ $(RPC_OPEN_TCP_OBJ) $(LDFLAGS) $(DYNEXP) \
 		$(LIBS) $(LIBTALLOC_LIBS) @LIBTDB_SHARED@ $(WINBIND_LIBS) \
 		$(LDAP_LIBS) $(KRB5LIBS) $(NSCD_LIBS)
+
+bin/test_lp_load@EXEEXT@: $(BINARY_PREREQS) $(TEST_LP_LOAD_OBJ) @BUILD_POPT@ @LIBTALLOC_SHARED@ @LIBTDB_SHARED@
+	@echo "Linking $@"
+	@$(CC) $(FLAGS) -o $@ $(TEST_LP_LOAD_OBJ) \
+		$(LDFLAGS) $(DYNEEXP) $(LIBS) \
+		$(LDAP_LIBS) \
+		$(POPT_LIBS) $(LIBTALLOC_LIBS) $(LIBTDB_LIBS)
 
 install:: installservers installbin @INSTALL_CIFSMOUNT@ @INSTALL_CIFSUPCALL@ installman \
 		installscripts installdat installmodules @SWAT_INSTALL_TARGETS@ \
