@@ -10,6 +10,7 @@ man_MANS = \
 	kinit.1 \
 	klist.1 \
 	kdestroy.1 \
+	kdigest.1 \
 	kgetcred.1 \
 	kimpersonate.1
 
