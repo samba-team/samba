@@ -1121,7 +1121,8 @@ krb5_cc_move(krb5_context context, krb5_ccache from, krb5_ccache to)
     return ret;
 }
 
-#define KRB5_CONF_NAME "@krb5_ccache_conf_data"
+#define KRB5_CONF_NAME "krb5_ccache_conf_data"
+#define KRB5_REALM_NAME "X-CACHECONF:"
 
 static krb5_error_code
 build_conf_principals(krb5_context context, krb5_ccache id,
@@ -1157,6 +1158,31 @@ build_conf_principals(krb5_context context, krb5_ccache id,
     return ret;
 }
 		
+/**
+ * Return TRUE (non zero) if the principal is a configuration
+ * principal (generated part of krb5_cc_set_config()). Returns FALSE
+ * (zero) if not a configuration principal.
+ *
+ * @param context a Keberos context
+ * @param principal principal to check if it a configuration principal
+ *
+ * @ingroup krb5_ccache
+ */
+
+krb5_boolean KRB5_LIB_FUNCTION
+krb5_is_config_principal(krb5_context context,
+			 krb5_const_principal principal)
+{
+    if (strcmp(principal->realm, KRB5_REALM_NAME) != 0)
+	return FALSE;
+
+    if (principal->name.name_string.len == 0 ||
+	strcmp(principal->name.name_string.val[0], KRB5_CONF_NAME) != 0)
+	return FALSE;
+	
+    return TRUE;
+}
+
 /**
  * Store some configuration for the credential cache in the cache.
  * Existing configuration under the same name is over-written.
