@@ -1,0 +1,41 @@
+.\" Things to fix:
+.\"   * correct section, and operating system
+.\"   * remove Op from mandatory flags
+.\"   * use better macros for arguments (like .Pa for files)
+.\"
+.Dd September 25, 2008
+.Dt KDIGEST SECTION
+.Os HEIMDAL
+.Sh NAME
+.Nm kdigest
+.Nd
+userland tool to access digest interface in the KDC
+.Sh SYNOPSIS
+.Nm
+.Op Fl -ccache= Ns Ar string
+.Op Fl -version
+.Op Fl -help
+.Sh DESCRIPTION
+Supported options:
+.Bl -tag -width Ds
+.It Xo
+.Fl -ccache= Ns Ar string
+.Xc
+credential cache
+.It Xo
+.Fl -version
+.Xc
+print version
+.It Xo
+.Fl -help
+.Xc
+.El
+.\".Sh ENVIRONMENT
+.\".Sh FILES
+.\".Sh EXAMPLES
+.\".Sh DIAGNOSTICS
+.\".Sh SEE ALSO
+.\".Sh STANDARDS
+.\".Sh HISTORY
+.\".Sh AUTHORS
+.\".Sh BUGS
