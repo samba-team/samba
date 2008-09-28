@@ -282,9 +282,7 @@ print_tickets (krb5_context context,
 				     ccache,
 				     &cursor,
 				     &creds)) == 0) {
-	const char *str;
-	str = krb5_principal_get_comp_string(context, creds.server, 0);
-	if (!do_hidden && str && str[0] == '@') {
+	if (!do_hidden && krb5_is_config_principal(context, creds.server)) {
 	    ;
 	}else if(do_verbose){
 	    print_cred_verbose(context, &creds);
