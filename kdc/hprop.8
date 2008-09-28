@@ -184,7 +184,8 @@ $ hprop slave-1 slave-2
 .Pp
 Convert a Kerberos 4 dump-file for use with a Heimdal KDC:
 .Bd -literal -offset indent
-$ hprop -n --source=krb4-dump -d /var/kerberos/principal.dump --master-key=/.k | hpropd -n
+$ hprop -n --source=krb4-dump -d /var/kerberos/principal.dump \\
+  --master-key=/.k | hpropd -n
 .Ed
 .Sh SEE ALSO
 .Xr hpropd 8
