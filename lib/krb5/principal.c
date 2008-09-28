@@ -234,7 +234,7 @@ krb5_parse_name_flags(krb5_context context,
 	    start = q;
 	    continue;
 	}
-	if(got_realm && (c == ':' || c == '/' || c == '\0')) {
+	if(got_realm && (c == '/' || c == '\0')) {
 	    ret = KRB5_PARSE_MALFORMED;
 	    krb5_set_error_message(context, ret,
 				   N_("part after realm in principal name", ""));
