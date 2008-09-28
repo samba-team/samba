@@ -376,6 +376,7 @@ HEIMDAL_KRB5_1.0 {
 		krb5_init_etype;
 		krb5_initlog;
 		krb5_is_thread_safe;
+		krb5_is_config_principal;
 		krb5_kerberos_enctypes;
 		krb5_keyblock_get_enctype;
 		krb5_keyblock_init;
