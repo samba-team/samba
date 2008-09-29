@@ -862,6 +862,11 @@ NTSTATUS dcesrv_lsa_LookupNames2(struct dcesrv_call_state *dce_call,
 
 	DCESRV_PULL_HANDLE(h, r->in.handle, LSA_HANDLE_POLICY);
 
+	if (r->in.level < LSA_LOOKUP_NAMES_ALL ||
+	    r->in.level > LSA_LOOKUP_NAMES_RODC_REFERRAL_TO_FULL_DC) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
 	state = h->data;
 
 	r->out.domains = talloc_zero(mem_ctx,  struct lsa_RefDomainList);
