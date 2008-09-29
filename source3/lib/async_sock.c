@@ -658,12 +658,13 @@ struct async_req *async_connect(TALLOC_CTX *mem_ctx, struct event_context *ev,
 
 	state->fde = event_add_fd(ev, state, fd,
 				  EVENT_FD_READ | EVENT_FD_WRITE,
-				  async_connect_callback, state);
+				  async_connect_callback, result);
 	if (state->fde == NULL) {
 		sys_fcntl_long(fd, F_SETFL, p->old_sockflags);
 		TALLOC_FREE(result);
 		return NULL;
 	}
+	result->private_data = state;
 
 	state->param.param_connect.fd = fd;
 	state->param.param_connect.address = address;
