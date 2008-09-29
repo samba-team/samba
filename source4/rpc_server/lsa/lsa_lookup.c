@@ -892,7 +892,10 @@ NTSTATUS dcesrv_lsa_LookupNames2(struct dcesrv_call_state *dce_call,
 		r->out.sids->count++;
 
 		r->out.sids->sids[i].sid_type    = SID_NAME_UNKNOWN;
-		r->out.sids->sids[i].rid         = 0xFFFFFFFF;
+		/* MS-LSAT 3.1.4.7 - rid zero is considered equivalent
+		   to sid NULL - so we should return 0 rid for
+		   unmapped entries */
+		r->out.sids->sids[i].rid         = 0;
 		r->out.sids->sids[i].sid_index   = 0xFFFFFFFF;
 		r->out.sids->sids[i].unknown     = 0;
 
