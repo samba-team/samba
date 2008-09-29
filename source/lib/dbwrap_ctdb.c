@@ -440,6 +440,7 @@ static struct db_record *db_ctdb_fetch_locked_persistent(struct db_ctdb_ctx *ctx
 	recp = talloc(rec, struct db_record *);
 	if (recp == NULL) {
 		ctx->db->transaction_cancel(ctx->db);
+		talloc_free(rec);
 		return NULL;
 	}
 	*recp = rec;
