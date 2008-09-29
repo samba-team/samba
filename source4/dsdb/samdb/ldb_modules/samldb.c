@@ -154,12 +154,8 @@ static int samldb_search_template_callback(struct ldb_request *req,
 		goto done;
 	}
 	if (ares->error != LDB_SUCCESS) {
-#ifdef REAL_EVENT_SYSTEM_HOOKED_UP
 		return ldb_module_done(ac->req, ares->controls,
 					ares->response, ares->error);
-#else
-		return ldb_request_done(req, ares->error);
-#endif
 	}
 
 	switch (ares->type) {
@@ -187,21 +183,13 @@ static int samldb_search_template_callback(struct ldb_request *req,
 	case LDB_REPLY_DONE:
 
 		talloc_free(ares);
-#ifdef REAL_EVENT_SYSTEM_HOOKED_UP
 		ret = samldb_next_step(ac);
-#else
-		return ldb_request_done(req, LDB_SUCCESS);
-#endif
 		break;
 	}
 
 done:
 	if (ret != LDB_SUCCESS) {
-#ifdef REAL_EVENT_SYSTEM_HOOKED_UP
 		return ldb_module_done(ac->req, NULL, NULL, ret);
-#else
-		return ldb_request_done(req, ret);
-#endif
 	}
 
 	return LDB_SUCCESS;
@@ -240,20 +228,7 @@ static int samldb_search_template(struct samldb_ctx *ac)
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 
-		/* NOTE: this is a request on a different database!
-		 *
-		 * 	 Therefore we need to do a bloody sync call
-		 * 	 otherwise the fake event queue will never call it
-		 * 	 as it runs on the main ldb context and knows
-		 * 	 nothing about the templates_ldb one */
-#ifdef REAL_EVENT_SYSTEM_HOOKED_UP
 		ev = ldb_get_event_context(ac->module->ldb);
-#else
-		ev = event_context_init(NULL);
-#endif
-		if (!talloc_reference(templates_ldb, ev)) {
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
 
 		templates_ldb = ldb_wrap_connect(ac->module->ldb, ev,
 						lparm_ctx, templates_ldb_path,
@@ -261,6 +236,10 @@ static int samldb_search_template(struct samldb_ctx *ac)
 		talloc_free(templates_ldb_path);
 
 		if (!templates_ldb) {
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+
+		if (!talloc_reference(templates_ldb, ev)) {
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 
@@ -295,25 +274,7 @@ static int samldb_search_template(struct samldb_ctx *ac)
 	talloc_steal(req, basedn);
 	ac->ares = NULL;
 
-	/* NOTE: this is a request on a different database!
-	 * 	 Therefore we need to do a bloody sync call
-	 * 	 otherwise the fake event queue will never call it
-	 * 	 as it runs on the main ldb context and knows
-	 * 	 nothing about the templates_ldb one */
-#ifdef REAL_EVENT_SYSTEM_HOOKED_UP
 	return ldb_request(templates_ldb, req);
-#else
-	ret = ldb_request(templates_ldb, req);
-	if (ret != LDB_SUCCESS) {
-		return ret;
-	}
-	ret = ldb_wait(req->handle, LDB_WAIT_ALL);
-	if (ret != LDB_SUCCESS) {
-		return ret;
-	}
-
-	return samldb_next_step(ac);
-#endif
 }
 
 static int samldb_apply_template(struct samldb_ctx *ac)
