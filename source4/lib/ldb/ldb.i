@@ -1219,22 +1219,6 @@ int py_module_del_transaction(struct ldb_module *mod)
     return LDB_SUCCESS;
 }
 
-int py_module_wait(struct ldb_handle *mod, enum ldb_wait_type wait_type)
-{
-    PyObject *py_ldb = mod->private_data;
-    PyObject *py_result;
-
-    py_result = PyObject_CallMethod(py_ldb, "wait", "i", wait_type);
-
-    if (py_result == NULL) {
-        return LDB_ERR_OPERATIONS_ERROR;
-    }
-
-    Py_DECREF(py_result);
-
-    return LDB_SUCCESS;
-}
-
 int py_module_sequence_number(struct ldb_module *mod, struct ldb_request *req)
 {
     PyObject *py_ldb = mod->private_data;
@@ -1308,7 +1292,6 @@ int py_module_init (struct ldb_module *mod)
     $1->start_transaction = py_module_start_transaction;
     $1->end_transaction = py_module_end_transaction;
     $1->del_transaction = py_module_del_transaction;
-    $1->wait = py_module_wait;
     $1->sequence_number = py_module_sequence_number;
 }
 
