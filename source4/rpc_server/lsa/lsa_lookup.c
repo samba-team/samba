@@ -44,6 +44,11 @@ static const struct {
 		.rtype = SID_NAME_WKN_GRP,
 	},
 	{
+		.name = "Owner Rights",
+		.sid = SID_OWNER_RIGHTS,
+		.rtype = SID_NAME_WKN_GRP,
+	},
+	{
 		.domain = "NT AUTHORITY",
 		.name = "Dialup",
 		.sid = SID_NT_DIALUP,
@@ -111,7 +116,7 @@ static const struct {
 	},
 	{
 		.domain = "NT AUTHORITY",
-		.name = "Termainal Server User",
+		.name = "Terminal Server User",
 		.sid = SID_NT_TERMINAL_SERVER_USERS,
 		.rtype = SID_NAME_WKN_GRP,
 	},
@@ -143,6 +148,42 @@ static const struct {
 		.domain = "NT AUTHORITY",
 		.name = "Network Service",
 		.sid = SID_NT_NETWORK_SERVICE,
+		.rtype = SID_NAME_WKN_GRP,
+	},
+	{
+		.domain = "NT AUTHORITY",
+		.name = "Digest Authentication",
+		.sid = SID_NT_DIGEST_AUTHENTICATION,
+		.rtype = SID_NAME_WKN_GRP,
+	},
+	{
+		.domain = "NT AUTHORITY",
+		.name = "Enterprise Domain Controllers",
+		.sid = SID_NT_ENTERPRISE_DCS,
+		.rtype = SID_NAME_WKN_GRP,
+	},
+	{
+		.domain = "NT AUTHORITY",
+		.name = "NTLM Authentication",
+		.sid = SID_NT_NTLM_AUTHENTICATION,
+		.rtype = SID_NAME_WKN_GRP,
+	},
+	{
+		.domain = "NT AUTHORITY",
+		.name = "Other Organization",
+		.sid = SID_NT_OTHER_ORGANISATION,
+		.rtype = SID_NAME_WKN_GRP,
+	},
+	{
+		.domain = "NT AUTHORITY",
+		.name = "SChannel Authentication",
+		.sid = SID_NT_SCHANNEL_AUTHENTICATION,
+		.rtype = SID_NAME_WKN_GRP,
+	},
+	{
+		.domain = "NT AUTHORITY",
+		.name = "IUSR",
+		.sid = SID_NT_IUSR,
 		.rtype = SID_NAME_WKN_GRP,
 	},
 	{

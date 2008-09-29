@@ -137,6 +137,66 @@ sAMAccountName: RAS and IAS Servers
 groupType: -2147483644
 isCriticalSystemObject: TRUE
 
+dn: CN=Read-Only Domain Controllers,CN=Users,${DOMAINDN}
+objectClass: top
+objectClass: group
+cn: Read-Only Domain Controllers
+description: read-only domain controllers
+objectSid: ${DOMAINSID}-521
+sAMAccountName: Read-Only Domain Controllers
+groupType: -2147483644
+isCriticalSystemObject: TRUE
+
+dn: CN=Enterprise Read-Only Domain Controllers,CN=Users,${DOMAINDN}
+objectClass: top
+objectClass: group
+cn: Enterprise Read-Only Domain Controllers
+description: enterprise read-only domain controllers
+objectSid: ${DOMAINSID}-498
+sAMAccountName: Enterprise Read-Only Domain Controllers
+groupType: -2147483644
+isCriticalSystemObject: TRUE
+
+dn: CN=Certificate Service DCOM Access,CN=Users,${DOMAINDN}
+objectClass: top
+objectClass: group
+cn: Certificate Service DCOM Access
+description: Certificate Service DCOM Access
+objectSid: ${DOMAINSID}-574
+sAMAccountName: Certificate Service DCOM Access
+groupType: -2147483644
+isCriticalSystemObject: TRUE
+
+dn: CN=Cryptographic Operators,CN=Users,${DOMAINDN}
+objectClass: top
+objectClass: group
+cn: Cryptographic Operators
+description: Cryptographic Operators
+objectSid: ${DOMAINSID}-569
+sAMAccountName: Cryptographic Operators
+groupType: -2147483644
+isCriticalSystemObject: TRUE
+
+dn: CN=Event Log Readers,CN=Users,${DOMAINDN}
+objectClass: top
+objectClass: group
+cn: Event Log Readers
+description: Event Log Readers
+objectSid: ${DOMAINSID}-573
+sAMAccountName: Event Log Readers
+groupType: -2147483644
+isCriticalSystemObject: TRUE
+
+dn: CN=IIS_IUSRS,CN=Users,${DOMAINDN}
+objectClass: top
+objectClass: group
+cn: IIS_IUSRS
+description: IIS_IUSRS
+objectSid: ${DOMAINSID}-568
+sAMAccountName: IIS_IUSRS
+groupType: -2147483644
+isCriticalSystemObject: TRUE
+
 dn: CN=Administrators,CN=Builtin,${DOMAINDN}
 objectClass: top
 objectClass: group
