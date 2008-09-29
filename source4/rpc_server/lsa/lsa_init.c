@@ -199,6 +199,12 @@ NTSTATUS dcesrv_lsa_OpenPolicy2(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 
 	ZERO_STRUCTP(r->out.handle);
 
+	if (r->in.attr == NULL ||
+	    r->in.attr->root_dir != NULL) {
+		/* MS-LSAD 3.1.4.4.1 */
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
 	status = dcesrv_lsa_get_policy_state(dce_call, mem_ctx, &state);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
