@@ -69,13 +69,11 @@ NTSTATUS smbcli_negprot(struct smbcli_state *cli, bool unicode, int maxprotocol)
 /* wrapper around smb_raw_sesssetup() */
 NTSTATUS smbcli_session_setup(struct smbcli_state *cli, 
 			      struct cli_credentials *credentials,
-			      const char *workgroup)
+			      const char *workgroup,
+			      struct smbcli_session_options options)
 {
 	struct smb_composite_sesssetup setup;
 	NTSTATUS status;
-	struct smbcli_session_options options;
-
-	lp_smbcli_session_options(global_loadparm, &options);
 
 	cli->session = smbcli_session_init(cli->transport, cli, true,
 					   options);
