@@ -27,7 +27,6 @@
 #include "libcli/composite/composite.h"
 #include "libcli/resolve/resolve.h"
 #include "param/param.h"
-#include "lib/cmdline/popt_common.h"
 
 struct smb2_connect_state {
 	struct cli_credentials *credentials;
