@@ -109,13 +109,23 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 {
 	struct winbindd_domain *domain;
 	const char *alternative_name = NULL;
-	
+        const char *param;
+        const char **ignored_domains, **dom;
+
+        ignored_domains = lp_parm_string_list(-1, "winbind", "ignore domains", NULL);
+        for (dom=ignored_domains; dom && *dom; dom++) {
+                if (gen_fnmatch(*dom, domain_name) == 0) {
+                        DEBUG(2,("Ignoring domain '%s'\n", domain_name));
+                        return NULL;
+                }
+        }
+
 	/* ignore alt_name if we are not in an AD domain */
-	
+
 	if ( (lp_security() == SEC_ADS) && alt_name && *alt_name) {
 		alternative_name = alt_name;
 	}
-        
+
 	/* We can't call domain_list() as this function is called from
 	   init_domain_list() and we'll get stuck in a loop. */
 	for (domain = _domain_list; domain; domain = domain->next) {
@@ -402,6 +412,10 @@ static void rescan_forest_root_trusts( void )
 						&dom_list[i].sid );
 		}
 
+		if (d == NULL) {
+			continue;
+		}
+
        		DEBUG(10,("rescan_forest_root_trusts: Following trust path "
 			  "for domain tree root %s (%s)\n",
 	       		  d->name, d->alt_name ));
@@ -465,6 +479,10 @@ static void rescan_forest_trusts( void )
 							dom_list[i].dns_name,
 							&cache_methods,
 							&dom_list[i].sid );
+			}
+
+			if (d == NULL) {
+				continue;
 			}
 			
 			DEBUG(10,("Following trust path for domain %s (%s)\n",
