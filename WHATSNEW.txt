@@ -113,6 +113,7 @@ trusted domains.
 
 Please refer to the idmap_hash(8) man page for more details.
 
+
 idmap_adex
 ==========
 
@@ -224,6 +225,11 @@ o   James Ding <ding_cc@hotmail.com>
 
 o   Ephi Dror <Ephi.Dror@datadomain.com>
     * Correct the netsamlogon_clear_cached_user function.
+
+
+o   Holger Hetterich <hhetter@novell.com>
+    * Add new VFS module to analyze SMB traffic to record write and read
+      operations on the Samba server.
 
 
 o   Jeff Layton <jlayton@redhat.com>
