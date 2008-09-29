@@ -1420,6 +1420,7 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 		}
 	}
 	close_file(fsp, NORMAL_CLOSE);
+	fsp = NULL;
 
 	if (use_version && (new_major != old_major || new_minor != old_minor)) {
 		/* Compare versions and choose the larger version number */
