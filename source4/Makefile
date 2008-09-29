@@ -285,6 +285,8 @@ uninstallman::
 	@echo "Removing manpages"
 	@$(SHELL) $(srcdir)/script/uninstallman.sh $(DESTDIR)$(mandir) $(MANPAGES)
 
+uninstallplugins::
+
 uninstallpc::
 	@echo "Removing package configurations"
 	@cd $(DESTDIR)$(pkgconfigdir); rm -f $(notdir $(PC_FILES))
