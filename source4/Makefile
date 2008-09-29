@@ -181,7 +181,7 @@ showflags::
 # The permissions to give the executables
 INSTALLPERMS = 0755
 
-install:: showlayout everything installbin installsbin installdat installswat installmisc \
+install:: showlayout everything installbin installsbin installdat installmisc \
 	      installlib installheader installpc installplugins
 
 # DESTDIR is used here to prevent packagers wasting their time
@@ -228,10 +228,6 @@ installheader:: headers installdirs
 installdat:: installdirs
 	@$(SHELL) $(srcdir)/script/installdat.sh $(DESTDIR)$(datadir) $(srcdir)
 
-installswat:: installdirs
-#SWAT has been disabled until further notice
-#	@$(SHELL) $(srcdir)/script/installswat.sh $(DESTDIR)$(swatdir) $(srcdir)
-
 installman:: manpages installdirs
 	@$(SHELL) $(srcdir)/script/installman.sh $(DESTDIR)$(mandir) $(MANPAGES)
 
@@ -241,11 +237,12 @@ installmisc:: installdirs
 installpc:: installdirs
 	@$(SHELL) $(srcdir)/script/installpc.sh $(builddir) $(DESTDIR)$(pkgconfigdir) $(PC_FILES)
 
-uninstall:: uninstallbin uninstallman uninstallmisc uninstalllib uninstallheader \
-	uninstallplugins
+uninstall:: uninstallbin uninstallsbin uninstalldat uninstallmisc uninstalllib uninstallheader \
+			uninstallman uninstallpc uninstallplugins
 
 uninstallmisc::
-	#FIXME
+	@echo "Removing MISC files"
+	@cd $(DESTDIR)$(bindir); rm -f $(notdir $(miscbinfiles))
 
 $(DESTDIR)$(bindir)/%: bin/% installdirs
 	@mkdir -p $(@D)
@@ -261,19 +258,27 @@ $(DESTDIR)$(sbindir)/%: bin/% installdirs
 	@cp $< $@
 	@chmod $(INSTALLPERMS) $@
 
+uninstalldat::
+	@echo "Removing DAT files"
+	@rm -fr $(DESTDIR)$(datadir)/*
+
 uninstallbin::
 
 uninstalllib::
+	@echo "Removing libraries"
 	@$(SHELL) $(srcdir)/script/uninstalllib.sh $(DESTDIR)$(libdir) $(SHARED_LIBS)
-	#@$(SHELL) $(srcdir)/script/uninstalllib.sh $(DESTDIR)$(libdir) $(STATIC_LIBS) 
 
 uninstallheader::
-	@$(SHELL) $(srcdir)/script/uninstallheader.sh $(DESTDIR)$(includedir) $(PUBLIC_HEADERS)
+	@echo "Removing headers"
+	@rm -fr $(DESTDIR)$(includedir)/*
 
 uninstallman::
+	@echo "Removing manpages"
 	@$(SHELL) $(srcdir)/script/uninstallman.sh $(DESTDIR)$(mandir) $(MANPAGES)
 
-uninstallplugins::
+uninstallpc::
+	@echo "Removing package configurations"
+	@cd $(DESTDIR)$(pkgconfigdir); rm -f $(notdir $(PC_FILES))
 
 config.status:
 	@echo "config.status does not exist. Please run ./configure."
