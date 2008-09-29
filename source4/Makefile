@@ -107,6 +107,15 @@ comsrcdir := $(srcdir)/lib/com
 
 include data.mk
 
+$(foreach SCRIPT,$(wildcard scripting/bin/*),$(eval $(call binary_install_template,$(SCRIPT))))
+
+$(DESTDIR)$(bindir)/%: scripting/bin/% installdirs
+	@mkdir -p $(@D)
+	@echo Installing $(@F) as $@
+	@if test -f $@; then echo -n ""; rm -f $@.old; mv $@ $@.old; fi
+	@cp $< $@
+	@chmod $(INSTALLPERMS) $@
+
 pythonmods:: $(PYTHON_PYS) $(PYTHON_SO)
 
 DEP_FILES = $(patsubst %.ho,%.hd,$(patsubst %.o,%.d,$(ALL_OBJS))) \
@@ -232,7 +241,7 @@ installman:: manpages installdirs
 	@$(SHELL) $(srcdir)/script/installman.sh $(DESTDIR)$(mandir) $(MANPAGES)
 
 installmisc:: installdirs
-	@$(SHELL) $(srcdir)/script/installmisc.sh $(srcdir) $(DESTDIR)$(setupdir) $(DESTDIR)$(bindir)
+	@$(SHELL) $(srcdir)/script/installmisc.sh $(srcdir) $(DESTDIR)$(setupdir)
 
 installpc:: installdirs
 	@$(SHELL) $(srcdir)/script/installpc.sh $(builddir) $(DESTDIR)$(pkgconfigdir) $(PC_FILES)
@@ -242,7 +251,7 @@ uninstall:: uninstallbin uninstallsbin uninstalldat uninstallmisc uninstalllib u
 
 uninstallmisc::
 	@echo "Removing MISC files"
-	@cd $(DESTDIR)$(bindir); rm -f $(notdir $(miscbinfiles))
+	@rm -rf $(DESTDIR)$(setupdir)/*
 
 $(DESTDIR)$(bindir)/%: bin/% installdirs
 	@mkdir -p $(@D)

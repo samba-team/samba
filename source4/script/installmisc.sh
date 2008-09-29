@@ -3,7 +3,6 @@
 
 SRCDIR="$1"
 SETUPDIR="$2"
-BINDIR="$3"
 
 cd $SRCDIR || exit 1
 
@@ -24,10 +23,5 @@ cp setup/*.txt $SETUPDIR || exit 1
 cp setup/provision.smb.conf.dc $SETUPDIR || exit 1
 cp setup/provision.smb.conf.member $SETUPDIR || exit 1
 cp setup/provision.smb.conf.standalone $SETUPDIR || exit 1
-
-echo "Installing script tools"
-mkdir -p "$BINDIR"
-rm -f scripting/bin/*~
-cp scripting/bin/* $BINDIR/ || exit 1
 
 exit 0
