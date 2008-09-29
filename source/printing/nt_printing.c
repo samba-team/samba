@@ -1379,6 +1379,7 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 		}
 	}
 	close_file(fsp, NORMAL_CLOSE);
+	fsp = NULL;
 
 	/* Get file version info (if available) for new file */
 	filepath = driver_unix_convert(conn,new_file,&stat_buf);
