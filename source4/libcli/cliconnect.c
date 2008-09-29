@@ -73,8 +73,12 @@ NTSTATUS smbcli_session_setup(struct smbcli_state *cli,
 {
 	struct smb_composite_sesssetup setup;
 	NTSTATUS status;
+	struct smbcli_session_options options;
 
-	cli->session = smbcli_session_init(cli->transport, cli, true);
+	lp_smbcli_session_options(global_loadparm, &options);
+
+	cli->session = smbcli_session_init(cli->transport, cli, true,
+					   options);
 	if (!cli->session) return NT_STATUS_UNSUCCESSFUL;
 
 	setup.in.sesskey = cli->transport->negotiate.sesskey;

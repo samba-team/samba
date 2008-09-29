@@ -229,12 +229,15 @@ static NTSTATUS connect_negprot(struct composite_context *c,
 {
 	struct connect_state *state = talloc_get_type(c->private_data, struct connect_state);
 	NTSTATUS status;
+	struct smbcli_session_options options;
+
+	lp_smbcli_session_options(global_loadparm, &options);
 
 	status = smb_raw_negotiate_recv(state->req);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	/* next step is a session setup */
-	state->session = smbcli_session_init(state->transport, state, true);
+	state->session = smbcli_session_init(state->transport, state, true, options);
 	NT_STATUS_HAVE_NO_MEMORY(state->session);
 	
 	/* setup for a tconx (or at least have the structure ready to

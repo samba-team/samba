@@ -74,6 +74,7 @@ bool torture_bind_authcontext(struct torture_context *torture)
 	struct cli_credentials *anon_creds;
 	struct smb_composite_sesssetup setup;
 	struct smbcli_options options;
+	struct smbcli_session_options session_options;
 
 	mem_ctx = talloc_init("torture_bind_authcontext");
 
@@ -83,6 +84,7 @@ bool torture_bind_authcontext(struct torture_context *torture)
 	}
 
 	lp_smbcli_options(torture->lp_ctx, &options);
+	lp_smbcli_session_options(torture->lp_ctx, &session_options);
 
 	status = smbcli_full_connection(mem_ctx, &cli,
 					torture_setting_string(torture, "host", NULL),
@@ -142,7 +144,7 @@ bool torture_bind_authcontext(struct torture_context *torture)
 		goto done;
 	}
 
-	session2 = smbcli_session_init(cli->transport, mem_ctx, false);
+	session2 = smbcli_session_init(cli->transport, mem_ctx, false, session_options);
 	if (session2 == NULL) {
 		d_printf("smbcli_session_init failed\n");
 		goto done;
@@ -1670,12 +1672,14 @@ bool torture_samba3_rpc_getusername(struct torture_context *torture)
 	struct cli_credentials *user_creds;
 	char *domain_name;
 	struct smbcli_options options;
+	struct smbcli_session_options session_options;
 
 	if (!(mem_ctx = talloc_new(torture))) {
 		return false;
 	}
 
 	lp_smbcli_options(torture->lp_ctx, &options);
+	lp_smbcli_session_options(torture->lp_ctx, &session_options);
 
 	status = smbcli_full_connection(
 		mem_ctx, &cli, torture_setting_string(torture, "host", NULL),
@@ -1762,7 +1766,7 @@ bool torture_samba3_rpc_getusername(struct torture_context *torture)
 		struct smb_composite_sesssetup setup;
 		struct smbcli_tree *tree;
 
-		session2 = smbcli_session_init(cli->transport, mem_ctx, false);
+		session2 = smbcli_session_init(cli->transport, mem_ctx, false, session_options);
 		if (session2 == NULL) {
 			d_printf("(%s) smbcli_session_init failed\n",
 				 __location__);

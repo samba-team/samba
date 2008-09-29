@@ -2629,3 +2629,11 @@ void lp_smbcli_options(struct loadparm_context *lp_ctx,
 	options->use_oplocks = true;
 	options->use_level2_oplocks = true;
 }
+
+void lp_smbcli_session_options(struct loadparm_context *lp_ctx,
+				 struct smbcli_session_options *options)
+{
+	options->lanman_auth = lp_client_lanman_auth(lp_ctx);
+	options->ntlmv2_auth = lp_client_ntlmv2_auth(lp_ctx);
+	options->plaintext_auth = lp_client_plaintext_auth(lp_ctx);
+}
