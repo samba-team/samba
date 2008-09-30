@@ -2077,7 +2077,7 @@ static bool test_CreateTrustedDomainEx2(struct dcerpc_pipe *p,
 	struct lsa_CreateTrustedDomainEx2 r;
 	struct lsa_TrustDomainInfoInfoEx trustinfo;
 	struct lsa_TrustDomainInfoAuthInfoInternal authinfo;
-	struct trustAuthInAndOutBlob auth_struct;
+	struct trustDomainPasswords auth_struct;
 	DATA_BLOB auth_blob;
 	struct dom_sid *domsid[12];
 	struct policy_handle trustdom_handle[12];
@@ -2125,9 +2125,9 @@ static bool test_CreateTrustedDomainEx2(struct dcerpc_pipe *p,
 		auth_struct.incoming.count = 0;
 
 		ndr_err = ndr_push_struct_blob(&auth_blob, mem_ctx, lp_iconv_convenience(tctx->lp_ctx), &auth_struct,
-					       (ndr_push_flags_fn_t)ndr_push_trustAuthInAndOutBlob);
+					       (ndr_push_flags_fn_t)ndr_push_trustDomainPasswords);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-			printf("ndr_push_struct_blob of trustAuthInAndOutBlob structure failed");
+			printf("ndr_push_struct_blob of trustDomainPasswords structure failed");
 			ret = false;
 		}
 

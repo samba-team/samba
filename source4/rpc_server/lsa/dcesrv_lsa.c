@@ -626,7 +626,7 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomain_base(struct dcesrv_call_state *dc
 	const char *name;
 	DATA_BLOB session_key = data_blob(NULL, 0);
 	DATA_BLOB trustAuthIncoming, trustAuthOutgoing, auth_blob;
-	struct trustAuthInAndOutBlob auth_struct;
+	struct trustDomainPasswords auth_struct;
 	int ret;
 	NTSTATUS nt_status;
 	enum ndr_err_code ndr_err;
@@ -679,7 +679,7 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomain_base(struct dcesrv_call_state *dc
 		ndr_err = ndr_pull_struct_blob(&auth_blob, mem_ctx, 
 					       lp_iconv_convenience(dce_call->conn->dce_ctx->lp_ctx),
 					       &auth_struct,
-					       (ndr_pull_flags_fn_t)ndr_pull_trustAuthInAndOutBlob);
+					       (ndr_pull_flags_fn_t)ndr_pull_trustDomainPasswords);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			return NT_STATUS_INVALID_PARAMETER;
 		}				
@@ -689,7 +689,7 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomain_base(struct dcesrv_call_state *dc
 		ndr_err = ndr_push_struct_blob(&trustAuthIncoming, mem_ctx, 
 					       lp_iconv_convenience(dce_call->conn->dce_ctx->lp_ctx),
 					       &auth_struct.incoming,
-					       (ndr_push_flags_fn_t)ndr_push_trustAuthInOutBlob);
+					       (ndr_push_flags_fn_t)ndr_push_trustDomainPasswords);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			return NT_STATUS_INVALID_PARAMETER;
 		}
@@ -701,7 +701,7 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomain_base(struct dcesrv_call_state *dc
 		ndr_err = ndr_push_struct_blob(&trustAuthOutgoing, mem_ctx, 
 					       lp_iconv_convenience(dce_call->conn->dce_ctx->lp_ctx),
 					       &auth_struct.outgoing,
-					       (ndr_push_flags_fn_t)ndr_push_trustAuthInOutBlob);
+					       (ndr_push_flags_fn_t)ndr_push_trustDomainPasswords);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			return NT_STATUS_INVALID_PARAMETER;
 		}
@@ -859,11 +859,11 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomain_base(struct dcesrv_call_state *dc
 		if (auth_struct.incoming.count) {
 			int i;
 			for (i=0; i < auth_struct.incoming.count; i++ ) {
-				if (auth_struct.incoming.current->array[i].AuthType == TRUST_AUTH_TYPE_NT4OWF) {
+				if (auth_struct.incoming.current[i]->AuthType == TRUST_AUTH_TYPE_NT4OWF) {
 					samdb_msg_add_hash(trusted_domain_state->policy->sam_ldb, 
 							   mem_ctx, msg_user, "unicodePwd", 
-							   &auth_struct.incoming.current->array[i].AuthInfo.nt4owf.password);
-				} else if (auth_struct.incoming.current->array[i].AuthType == TRUST_AUTH_TYPE_CLEAR) {
+							   &auth_struct.incoming.current[i]->AuthInfo.nt4owf.password);
+				} else if (auth_struct.incoming.current[i]->AuthType == TRUST_AUTH_TYPE_CLEAR) {
 					struct samr_Password hash;
 /*
                                       . We cannot do this, as windows chooses to send in random passwords here, that won't convert to UTF8 
@@ -871,8 +871,8 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomain_base(struct dcesrv_call_state *dc
 							     mem_ctx, msg_user, "userPassword", 
 							     auth_struct.incoming.current->array[i].AuthInfo.clear.password);
 */
-					mdfour(hash.hash, auth_struct.incoming.current->array[i].AuthInfo.clear.password,
-					       auth_struct.incoming.current->array[i].AuthInfo.clear.size);
+					mdfour(hash.hash, auth_struct.incoming.current[i]->AuthInfo.clear.password,
+					       auth_struct.incoming.current[i]->AuthInfo.clear.size);
 					samdb_msg_add_hash(trusted_domain_state->policy->sam_ldb, 
 							   mem_ctx, msg_user, "unicodePwd", 
 							   &hash);

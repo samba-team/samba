@@ -31,34 +31,27 @@
  * SUCH DAMAGE. 
  */
 
+#include "krb5.h"
+#include "krb5_locl.h"
 #include "hdb_locl.h"
-
 RCSID("$Id$");
 
 #ifdef HAVE_DLFCN_H
 #include <dlfcn.h>
 #endif
 
-struct hdb_method {
-    const char *prefix;
-    krb5_error_code (*create)(krb5_context, HDB **, const char *filename);
-};
-
 static struct hdb_method methods[] = {
 #if HAVE_DB1 || HAVE_DB3
-    {"db:",	hdb_db_create},
+    {HDB_INTERFACE_VERSION, "db:",	hdb_db_create},
 #endif
 #if HAVE_NDBM
-    {"ndbm:",	hdb_ndbm_create},
+    {HDB_INTERFACE_VERSION, "ndbm:",	hdb_ndbm_create},
 #endif
 #if defined(OPENLDAP) && !defined(OPENLDAP_MODULE)
-    {"ldap:",	hdb_ldap_create},
-    {"ldapi:",	hdb_ldapi_create},
+    {HDB_INTERFACE_VERSION, "ldap:",	hdb_ldap_create},
+    {HDB_INTERFACE_VERSION, "ldapi:",	hdb_ldapi_create},
 #endif
-#ifdef HAVE_LDB /* Used for integrated samba build */
-    {"ldb:",	hdb_ldb_create},
-#endif
-    {NULL,	NULL}
+    {0, NULL,	NULL}
 };
 
 #if HAVE_DB1 || HAVE_DB3
@@ -398,11 +391,32 @@ hdb_create(krb5_context context, HDB **db, const char *filename)
 {
     const struct hdb_method *h;
     const char *residual;
+    krb5_error_code ret;
+    struct krb5_plugin *list = NULL, *e;
 
     if(filename == NULL)
 	filename = HDB_DEFAULT_DB;
     krb5_add_et_list(context, initialize_hdb_error_table_r);
     h = find_method (filename, &residual);
+
+    if (h == NULL) {
+	    ret = _krb5_plugin_find(context, PLUGIN_TYPE_DATA, "hdb", &list);
+	    if(ret == 0 && list != NULL) {
+		    for (e = list; e != NULL; e = _krb5_plugin_get_next(e)) {
+			    h = _krb5_plugin_get_symbol(e);
+			    if (strncmp (filename, h->prefix, strlen(h->prefix)) == 0
+				&& h->interface_version == HDB_INTERFACE_VERSION) {
+				    residual = filename + strlen(h->prefix);
+				    break;
+			    }
+		    }
+		    if (e == NULL) {
+			    h = NULL;
+			    _krb5_plugin_free(list);
+		    }
+	    }
+    }
+
 #ifdef HAVE_DLOPEN
     if (h == NULL)
 	h = find_dynamic_method (context, filename, &residual);
