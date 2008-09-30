@@ -24,28 +24,7 @@
 #define UNIX_DOMAIN_SOCKET 1
 #define INTERNET_SOCKET 0
 
-
-/* Prototypes */
-
 static int vfs_smb_traffic_analyzer_debug_level = DBGC_VFS;
-
-/* create the timestamp in sqlite compatible format */
-static void get_timestamp(fstring str)
-{
-	struct timeval tv;
-	struct timezone tz;
-	struct tm *tm;
-	int seconds;
-
-	gettimeofday(&tv, &tz);
- 	tm=localtime(&tv.tv_sec);
-	seconds=(float) (tv.tv_usec / 1000);
-
-	fstr_sprintf(str,"%04d-%02d-%02d %02d:%02d:%02d.%03d", \
-			tm->tm_year+1900, tm->tm_mon+1, tm->tm_mday, \
-			tm->tm_hour, tm->tm_min, tm->tm_sec, (int)seconds);
-
-}
 
 static int smb_traffic_analyzer_connMode(vfs_handle_struct *handle)
 {
@@ -58,7 +37,6 @@ static int smb_traffic_analyzer_connMode(vfs_handle_struct *handle)
 	} else {
 		return INTERNET_SOCKET;
 	}
-
 }
 
 /* Connect to an internet socket */
@@ -167,13 +145,16 @@ static int smb_traffic_analyzer_connect_unix_socket(vfs_handle_struct *handle)
 /* Send data over a socket */
 
 static void smb_traffic_analyzer_send_data(vfs_handle_struct *handle,
-					char *str,
+					ssize_t result,
 					const char *file_name,
 					bool Write)
 {
 	int *psockfd = NULL;
-	char Sender[200];
-	char TimeStamp[200];
+	struct timeval tv;
+	struct tm *tm = NULL;
+	int seconds;
+	char *str = NULL;
+	size_t len;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, psockfd, int, return);
 
@@ -183,27 +164,39 @@ static void smb_traffic_analyzer_send_data(vfs_handle_struct *handle,
 		return;
 	}
 
-	strlcpy(Sender, str, sizeof(Sender));
-	strlcat(Sender, ",\"", sizeof(Sender));
-	strlcat(Sender, handle->conn->server_info->sanitized_username, sizeof(Sender));
-	strlcat(Sender, "\",\"", sizeof(Sender));
-	strlcat(Sender, pdb_get_domain(handle->conn->server_info->sam_account), sizeof(Sender));
-	strlcat(Sender, "\",\"", sizeof(Sender));
-        if (Write)
-		strlcat(Sender, "W", sizeof(Sender));
-	else
-		strlcat(Sender, "R", sizeof(Sender));
-	strlcat(Sender, "\",\"", sizeof(Sender));
-	strlcat(Sender, handle->conn->connectpath, sizeof(Sender));
-	strlcat(Sender, "\",\"", sizeof(Sender) - 1);
-	strlcat(Sender, file_name, sizeof(Sender) - 1);
-	strlcat(Sender, "\",\"", sizeof(Sender) - 1);
-        get_timestamp(TimeStamp);
-	strlcat(Sender, TimeStamp, sizeof(Sender) - 1);
-	strlcat(Sender, "\");", sizeof(Sender) - 1);
+	GetTimeOfDay(&tv);
+	tm=localtime(&tv.tv_sec);
+	if (!tm) {
+		return;
+	}
+	seconds=(float) (tv.tv_usec / 1000);
+
+	str = talloc_asprintf(talloc_tos(),
+			"%u,\"%s\",\"%s\",\"%c\",\"%s\",\"%s\","
+			"\"%04d-%02d-%02d %02d:%02d:%02d.%03d\");",
+			(unsigned int)result,
+			handle->conn->server_info->sanitized_username,
+			pdb_get_domain(handle->conn->server_info->sam_account),
+			Write ? 'W' : 'R',
+			handle->conn->connectpath,
+			file_name,
+			tm->tm_year+1900,
+			tm->tm_mon+1,
+			tm->tm_mday,
+			tm->tm_hour,
+			tm->tm_min,
+			tm->tm_sec,
+			(int)seconds);
+
+	if (!str) {
+		return;
+	}
+
+	len = strlen(str);
+
 	DEBUG(10, ("smb_traffic_analyzer_send_data_socket: sending %s\n",
-			Sender));
-	if (send(*psockfd, Sender, strlen(Sender), 0) == -1 ) {
+			str));
+	if (write_data(*psockfd, str, len) != len) {
 		DEBUG(1, ("smb_traffic_analyzer_send_data_socket: "
 			"error sending data to socket!\n"));
 		return ;
@@ -254,15 +247,12 @@ static ssize_t smb_traffic_analyzer_read(vfs_handle_struct *handle, \
 				files_struct *fsp, void *data, size_t n)
 {
 	ssize_t result;
-        fstring Buffer;
 
 	result = SMB_VFS_NEXT_READ(handle, fsp, data, n);
 	DEBUG(10, ("smb_traffic_analyzer_read: READ: %s\n", fsp->fsp_name ));
 
-	fstr_sprintf(Buffer, "%u", (uint) result);
-
 	smb_traffic_analyzer_send_data(handle,
-			Buffer,
+			result,
 			fsp->fsp_name,
 			false);
 	return result;
@@ -273,15 +263,13 @@ static ssize_t smb_traffic_analyzer_pread(vfs_handle_struct *handle, \
 		files_struct *fsp, void *data, size_t n, SMB_OFF_T offset)
 {
 	ssize_t result;
-        fstring Buffer;
 
 	result = SMB_VFS_NEXT_PREAD(handle, fsp, data, n, offset);
 
 	DEBUG(10, ("smb_traffic_analyzer_pread: PREAD: %s\n", fsp->fsp_name ));
 
-	fstr_sprintf(Buffer,"%u", (uint) result);
 	smb_traffic_analyzer_send_data(handle,
-			Buffer,
+			result,
 			fsp->fsp_name,
 			false);
 
@@ -292,15 +280,13 @@ static ssize_t smb_traffic_analyzer_write(vfs_handle_struct *handle, \
 			files_struct *fsp, const void *data, size_t n)
 {
 	ssize_t result;
-        fstring Buffer;
 
 	result = SMB_VFS_NEXT_WRITE(handle, fsp, data, n);
 
 	DEBUG(10, ("smb_traffic_analyzer_write: WRITE: %s\n", fsp->fsp_name ));
 
-	fstr_sprintf(Buffer, "%u", (uint) result);
 	smb_traffic_analyzer_send_data(handle,
-			Buffer,
+			result,
 			fsp->fsp_name,
 			true);
 	return result;
@@ -310,15 +296,13 @@ static ssize_t smb_traffic_analyzer_pwrite(vfs_handle_struct *handle, \
 	     files_struct *fsp, const void *data, size_t n, SMB_OFF_T offset)
 {
 	ssize_t result;
-        fstring Buffer;
 
 	result = SMB_VFS_NEXT_PWRITE(handle, fsp, data, n, offset);
 
 	DEBUG(10, ("smb_traffic_analyzer_pwrite: PWRITE: %s\n", fsp->fsp_name ));
 
-	fstr_sprintf(Buffer, "%u", (uint) result);
 	smb_traffic_analyzer_send_data(handle,
-			Buffer,
+			result,
 			fsp->fsp_name,
 			true);
 	return result;
