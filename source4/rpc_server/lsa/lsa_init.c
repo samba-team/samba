@@ -199,7 +199,7 @@ NTSTATUS dcesrv_lsa_OpenPolicy2(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 
 	ZERO_STRUCTP(r->out.handle);
 
-	if (r->in.attr == NULL ||
+	if (r->in.attr != NULL &&
 	    r->in.attr->root_dir != NULL) {
 		/* MS-LSAD 3.1.4.4.1 */
 		return NT_STATUS_INVALID_PARAMETER;
@@ -217,6 +217,8 @@ NTSTATUS dcesrv_lsa_OpenPolicy2(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 
 	handle->data = talloc_steal(handle, state);
 
+	/* need to check the access mask against - need ACLs - fails
+	   WSPP test */
 	state->access_mask = r->in.access_mask;
 	state->handle = handle;
 	*r->out.handle = handle->wire_handle;
