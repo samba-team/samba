@@ -33,9 +33,7 @@
 
 _PUBLIC_ NTSTATUS dcerpc_init(void)
 {
-	gensec_init(global_loadparm);
-
-	return NT_STATUS_OK;
+	return gensec_init(global_loadparm);
 }
 
 static void dcerpc_connection_dead(struct dcerpc_connection *conn, NTSTATUS status);
