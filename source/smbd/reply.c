@@ -4644,11 +4644,11 @@ NTSTATUS rename_internals(connection_struct *conn,
 		if(SMB_VFS_RENAME(conn,directory, newname) == 0) {
 			DEBUG(3,("rename_internals: succeeded doing rename "
 				 "on %s -> %s\n", directory, newname));
+			notify_rename(conn, S_ISDIR(sbuf1.st_mode),
+				      directory, newname);
 			rename_open_files(conn, lck, sbuf1.st_dev,
 					  sbuf1.st_ino, newname);
 			TALLOC_FREE(lck);
-			notify_rename(conn, S_ISDIR(sbuf1.st_mode),
-				      directory, newname);
 			return NT_STATUS_OK;	
 		}
 
