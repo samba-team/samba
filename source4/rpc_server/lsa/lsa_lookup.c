@@ -620,6 +620,8 @@ NTSTATUS dcesrv_lsa_LookupSids3(struct dcesrv_call_state *dce_call,
 	NTSTATUS status;
 	struct dcesrv_handle *h;
 
+	ZERO_STRUCT(r2);
+	
 	/* No policy handle on the wire, so make one up here */
 	r2.in.handle = talloc(mem_ctx, struct policy_handle);
 	if (!r2.in.handle) {
@@ -649,9 +651,6 @@ NTSTATUS dcesrv_lsa_LookupSids3(struct dcesrv_call_state *dce_call,
 	r2.out.names   = r->out.names;
 
 	status = dcesrv_lsa_LookupSids2(dce_call, mem_ctx, &r2);
-	if (NT_STATUS_IS_ERR(status)) {
-		return status;
-	}
 
 	r->out.domains = r2.out.domains;
 	r->out.names   = r2.out.names;
@@ -670,6 +669,8 @@ NTSTATUS dcesrv_lsa_LookupSids(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 	struct lsa_LookupSids2 r2;
 	NTSTATUS status;
 	int i;
+
+	ZERO_STRUCT(r2);
 
 	r2.in.handle   = r->in.handle;
 	r2.in.sids     = r->in.sids;
@@ -761,7 +762,7 @@ NTSTATUS dcesrv_lsa_LookupNames3(struct dcesrv_call_state *dce_call,
 		r->out.sids->sids[i].sid_type    = SID_NAME_UNKNOWN;
 		r->out.sids->sids[i].sid         = NULL;
 		r->out.sids->sids[i].sid_index   = 0xFFFFFFFF;
-		r->out.sids->sids[i].unknown     = 0;
+		r->out.sids->sids[i].flags       = 0;
 
 		status2 = dcesrv_lsa_lookup_name(dce_call->event_ctx, lp_ctx, policy_state, mem_ctx, name, &authority_name, &sid, &rtype);
 		if (!NT_STATUS_IS_OK(status2) || sid->num_auths == 0) {
@@ -771,13 +772,13 @@ NTSTATUS dcesrv_lsa_LookupNames3(struct dcesrv_call_state *dce_call,
 		status2 = dcesrv_lsa_authority_list(policy_state, mem_ctx, rtype, authority_name, 
 						    sid, r->out.domains, &sid_index);
 		if (!NT_STATUS_IS_OK(status2)) {
-			return status2;
+			continue;
 		}
 
 		r->out.sids->sids[i].sid_type    = rtype;
 		r->out.sids->sids[i].sid         = sid;
 		r->out.sids->sids[i].sid_index   = sid_index;
-		r->out.sids->sids[i].unknown     = 0;
+		r->out.sids->sids[i].flags       = 0;
 
 		(*r->out.count)++;
 	}
@@ -805,6 +806,8 @@ NTSTATUS dcesrv_lsa_LookupNames4(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	struct lsa_OpenPolicy2 pol;
 	NTSTATUS status;
 	struct dcesrv_handle *h;
+
+	ZERO_STRUCT(r2);
 
 	/* No policy handle on the wire, so make one up here */
 	r2.in.handle = talloc(mem_ctx, struct policy_handle);
@@ -836,9 +839,6 @@ NTSTATUS dcesrv_lsa_LookupNames4(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	r2.out.count = r->out.count;
 	
 	status = dcesrv_lsa_LookupNames3(dce_call, mem_ctx, &r2);
-	if (NT_STATUS_IS_ERR(status)) {
-		return status;
-	}
 	
 	r->out.domains = r2.out.domains;
 	r->out.sids = r2.out.sids;
@@ -913,7 +913,7 @@ NTSTATUS dcesrv_lsa_LookupNames2(struct dcesrv_call_state *dce_call,
 		status2 = dcesrv_lsa_authority_list(state, mem_ctx, rtype, authority_name, 
 						    sid, r->out.domains, &sid_index);
 		if (!NT_STATUS_IS_OK(status2)) {
-			return status2;
+			continue;
 		}
 
 		r->out.sids->sids[i].sid_type    = rtype;
@@ -944,6 +944,8 @@ NTSTATUS dcesrv_lsa_LookupNames(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	NTSTATUS status;
 	int i;
 
+	ZERO_STRUCT(r2);
+
 	r2.in.handle    = r->in.handle;
 	r2.in.num_names = r->in.num_names;
 	r2.in.names     = r->in.names;
@@ -955,7 +957,7 @@ NTSTATUS dcesrv_lsa_LookupNames(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	r2.out.count    = r->out.count;
 
 	status = dcesrv_lsa_LookupNames2(dce_call, mem_ctx, &r2);
-	if (NT_STATUS_IS_ERR(status)) {
+	if (r2.out.sids == NULL) {
 		return status;
 	}
 

@@ -1052,7 +1052,7 @@ import "misc.idl", "security.idl";
 		lsa_SidType sid_type;
 		dom_sid2 *sid;
 		uint32 sid_index;
-		uint32 unknown;
+		uint32 flags;
 	} lsa_TranslatedSid3;
 
 	typedef struct {
