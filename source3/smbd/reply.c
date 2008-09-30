@@ -5583,9 +5583,9 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 		DEBUG(3,("rename_internals_fsp: succeeded doing rename on %s -> %s\n",
 			fsp->fsp_name,newname));
 
-		rename_open_files(conn, lck, newname);
-
 		notify_rename(conn, fsp->is_directory, fsp->fsp_name, newname);
+
+		rename_open_files(conn, lck, newname);
 
 		/*
 		 * A rename acts as a new file create w.r.t. allowing an initial delete
