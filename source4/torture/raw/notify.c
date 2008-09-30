@@ -584,7 +584,8 @@ static bool test_notify_mask(struct smbcli_state *cli, struct torture_context *t
 	notify.nttrans.in.recursive = true;
 
 #define NOTIFY_MASK_TEST(test_name, setup, op, cleanup, Action, expected, nchanges) \
-	smbcli_unlink(cli->tree, test_name); \
+	do { \
+	smbcli_getatr(cli->tree, test_name, NULL, NULL, NULL); \
 	do { for (mask=i=0;i<32;i++) { \
 		struct smbcli_request *req; \
 		status = smb_raw_open(cli->tree, tctx, &io); \
@@ -641,7 +642,8 @@ static bool test_notify_mask(struct smbcli_state *cli, struct torture_context *t
 			       mask, expected); \
 		} \
 	} \
-	} while (0)
+	} while (0); \
+	} while (0);
 
 	printf("testing mkdir\n");
 	NOTIFY_MASK_TEST("testing mkdir",;,
