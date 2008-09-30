@@ -165,6 +165,10 @@ struct composite_context *resolve_name_send(struct resolve_context *ctx,
 	}
 
 	state->method = ctx->methods;
+	if (state->method == NULL) {
+		composite_error(c, NT_STATUS_HOST_UNREACHABLE);
+		return c;
+	}
 	state->creq = setup_next_method(c);
 	if (composite_nomem(state->creq, c)) return c;
 	
