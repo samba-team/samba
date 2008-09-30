@@ -222,12 +222,13 @@ static bool test_LookupNames_bogus(struct dcerpc_pipe *p,
 	NTSTATUS status;
 	int i;
 
-	struct lsa_TranslatedName name;
+	struct lsa_TranslatedName name[2];
 	struct lsa_TransNameArray tnames;
 
-	tnames.names = &name;
-	tnames.count = 1;
-	name.name.string = "NT AUTHORITY\\BOGUS";
+	tnames.names = name;
+	tnames.count = 2;
+	name[0].name.string = "NT AUTHORITY\\BOGUS";
+	name[1].name.string = NULL;
 
 	printf("\nTesting LookupNames with bogus names\n");
 
