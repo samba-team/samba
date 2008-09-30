@@ -27,8 +27,6 @@
 
 /* Prototypes */
 
-extern userdom_struct current_user_info;
-
 static int vfs_smb_traffic_analyzer_debug_level = DBGC_VFS;
 
 /* create the timestamp in sqlite compatible format */
@@ -187,9 +185,9 @@ static void smb_traffic_analyzer_send_data(vfs_handle_struct *handle,
 
 	strlcpy(Sender, str, sizeof(Sender));
 	strlcat(Sender, ",\"", sizeof(Sender));
-	strlcat(Sender, get_current_username(), sizeof(Sender));
+	strlcat(Sender, handle->conn->server_info->sanitized_username, sizeof(Sender));
 	strlcat(Sender, "\",\"", sizeof(Sender));
-	strlcat(Sender, current_user_info.domain, sizeof(Sender));
+	strlcat(Sender, pdb_get_domain(handle->conn->server_info->sam_account), sizeof(Sender));
 	strlcat(Sender, "\",\"", sizeof(Sender));
         if (Write)
 		strlcat(Sender, "W", sizeof(Sender));
