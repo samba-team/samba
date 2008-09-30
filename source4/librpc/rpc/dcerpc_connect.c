@@ -121,6 +121,7 @@ static struct composite_context *dcerpc_pipe_connect_ncacn_np_smb_send(TALLOC_CT
 	conn->in.workgroup		= lp_workgroup(lp_ctx);
 
 	lp_smbcli_options(lp_ctx, &conn->in.options);
+	lp_smbcli_session_options(lp_ctx, &conn->in.session_options);
 
 	/*
 	 * provide proper credentials - user supplied, but allow a

@@ -164,6 +164,7 @@ static bool test_fetchfile(struct smbcli_state *cli, struct torture_context *tct
 	io2.in.filename = fname;
 	io2.in.resolve_ctx = lp_resolve_context(tctx->lp_ctx);
 	lp_smbcli_options(tctx->lp_ctx, &io2.in.options);
+	lp_smbcli_session_options(tctx->lp_ctx, &io2.in.session_options);
 
 	printf("testing parallel fetchfile with %d ops\n", torture_numops);
 

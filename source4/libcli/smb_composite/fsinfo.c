@@ -155,6 +155,7 @@ struct composite_context *smb_composite_fsinfo_send(struct smbcli_tree *tree,
 	state->connect->in.workgroup    = io->in.workgroup;
 
 	state->connect->in.options = tree->session->transport->options;
+	state->connect->in.session_options = tree->session->options;
 
 	c->state = COMPOSITE_STATE_IN_PROGRESS;
 	state->stage = FSINFO_CONNECT;
