@@ -53,7 +53,9 @@ struct samlogon_state {
 	const char *comment;
 	const char *account_name;
 	const char *account_domain;
+	const char *netbios_name;
 	const char *password;
+	const char *workgroup;
 	struct dcerpc_pipe *p;
 	int function_level;
 	uint32_t parameter_control;
@@ -593,7 +595,7 @@ static bool test_lmv2_ntlmv2_broken(struct samlogon_state *samlogon_state,
 	DATA_BLOB lmv2_response = data_blob(NULL, 0);
 	DATA_BLOB lmv2_session_key = data_blob(NULL, 0);
 	DATA_BLOB ntlmv2_session_key = data_blob(NULL, 0);
-	DATA_BLOB names_blob = NTLMv2_generate_names_blob(samlogon_state->mem_ctx, samlogon_state->iconv_convenience, TEST_MACHINE_NAME, lp_workgroup(global_loadparm));
+	DATA_BLOB names_blob = NTLMv2_generate_names_blob(samlogon_state->mem_ctx, samlogon_state->iconv_convenience, TEST_MACHINE_NAME, samlogon_state->workgroup);
 
 	uint8_t lm_session_key[8];
 	uint8_t user_session_key[16];
@@ -741,7 +743,7 @@ static bool test_lmv2_ntlm_broken(struct samlogon_state *samlogon_state,
 	DATA_BLOB lmv2_response = data_blob(NULL, 0);
 	DATA_BLOB lmv2_session_key = data_blob(NULL, 0);
 	DATA_BLOB ntlmv2_session_key = data_blob(NULL, 0);
-	DATA_BLOB names_blob = NTLMv2_generate_names_blob(samlogon_state->mem_ctx, samlogon_state->iconv_convenience, lp_netbios_name(global_loadparm), lp_workgroup(global_loadparm));
+	DATA_BLOB names_blob = NTLMv2_generate_names_blob(samlogon_state->mem_ctx, samlogon_state->iconv_convenience, samlogon_state->netbios_name, samlogon_state->workgroup);
 
 	DATA_BLOB ntlm_response = data_blob_talloc(samlogon_state->mem_ctx, NULL, 24);
 	DATA_BLOB ntlm_session_key = data_blob_talloc(samlogon_state->mem_ctx, NULL, 16);
@@ -1337,6 +1339,8 @@ static bool test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	samlogon_state.account_name = account_name;
 	samlogon_state.account_domain = account_domain;
 	samlogon_state.password = plain_pass;
+	samlogon_state.workgroup = lp_workgroup(tctx->lp_ctx);
+	samlogon_state.netbios_name = lp_netbios_name(tctx->lp_ctx);
 	samlogon_state.p = p;
 	samlogon_state.creds = creds;
 	samlogon_state.expected_error = expected_error;
