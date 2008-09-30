@@ -334,6 +334,7 @@ static NTSTATUS ncacn_push_request_sign(struct dcerpc_connection *c,
 	DATA_BLOB creds2;
 	size_t payload_length;
 	enum ndr_err_code ndr_err;
+	size_t hdr_size = DCERPC_REQUEST_LENGTH;
 
 	/* non-signed packets are simpler */
 	if (sig_size == 0) {
@@ -367,6 +368,7 @@ static NTSTATUS ncacn_push_request_sign(struct dcerpc_connection *c,
 
 	if (pkt->pfc_flags & DCERPC_PFC_FLAG_OBJECT_UUID) {
 		ndr->flags |= LIBNDR_FLAG_OBJECT_PRESENT;
+		hdr_size += 16;
 	}
 
 	ndr_err = ndr_push_ncacn_packet(ndr, NDR_SCALARS|NDR_BUFFERS, pkt);
@@ -415,7 +417,7 @@ static NTSTATUS ncacn_push_request_sign(struct dcerpc_connection *c,
 	case DCERPC_AUTH_LEVEL_PRIVACY:
 		status = gensec_seal_packet(c->security_state.generic_state, 
 					    mem_ctx, 
-					    blob->data + DCERPC_REQUEST_LENGTH, 
+					    blob->data + hdr_size,
 					    payload_length,
 					    blob->data,
 					    blob->length,
@@ -428,7 +430,7 @@ static NTSTATUS ncacn_push_request_sign(struct dcerpc_connection *c,
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
 		status = gensec_sign_packet(c->security_state.generic_state, 
 					    mem_ctx, 
-					    blob->data + DCERPC_REQUEST_LENGTH, 
+					    blob->data + hdr_size,
 					    payload_length, 
 					    blob->data,
 					    blob->length,
