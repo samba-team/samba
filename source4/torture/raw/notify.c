@@ -583,7 +583,8 @@ static bool test_notify_mask(struct smbcli_state *cli, struct torture_context *t
 	notify.nttrans.in.buffer_size = 1000;
 	notify.nttrans.in.recursive = true;
 
-#define NOTIFY_MASK_TEST(setup, op, cleanup, Action, expected, nchanges) \
+#define NOTIFY_MASK_TEST(test_name, setup, op, cleanup, Action, expected, nchanges) \
+	smbcli_unlink(cli->tree, test_name); \
 	do { for (mask=i=0;i<32;i++) { \
 		struct smbcli_request *req; \
 		status = smb_raw_open(cli->tree, tctx, &io); \
@@ -643,21 +644,21 @@ static bool test_notify_mask(struct smbcli_state *cli, struct torture_context *t
 	} while (0)
 
 	printf("testing mkdir\n");
-	NOTIFY_MASK_TEST(;,
+	NOTIFY_MASK_TEST("testing mkdir",;,
 			 smbcli_mkdir(cli->tree, BASEDIR "\\tname1");,
 			 smbcli_rmdir(cli->tree, BASEDIR "\\tname1");,
 			 NOTIFY_ACTION_ADDED,
 			 FILE_NOTIFY_CHANGE_DIR_NAME, 1);
 
 	printf("testing create file\n");
-	NOTIFY_MASK_TEST(;,
+	NOTIFY_MASK_TEST("testing create file",;,
 			 smbcli_close(cli->tree, smbcli_open(cli->tree, BASEDIR "\\tname1", O_CREAT, 0));,
 			 smbcli_unlink(cli->tree, BASEDIR "\\tname1");,
 			 NOTIFY_ACTION_ADDED,
 			 FILE_NOTIFY_CHANGE_FILE_NAME, 1);
 
 	printf("testing unlink\n");
-	NOTIFY_MASK_TEST(
+	NOTIFY_MASK_TEST("testing unlink",
 			 smbcli_close(cli->tree, smbcli_open(cli->tree, BASEDIR "\\tname1", O_CREAT, 0));,
 			 smbcli_unlink(cli->tree, BASEDIR "\\tname1");,
 			 ;,
@@ -665,7 +666,7 @@ static bool test_notify_mask(struct smbcli_state *cli, struct torture_context *t
 			 FILE_NOTIFY_CHANGE_FILE_NAME, 1);
 
 	printf("testing rmdir\n");
-	NOTIFY_MASK_TEST(
+	NOTIFY_MASK_TEST("testing rmdir",
 			 smbcli_mkdir(cli->tree, BASEDIR "\\tname1");,
 			 smbcli_rmdir(cli->tree, BASEDIR "\\tname1");,
 			 ;,
@@ -673,7 +674,7 @@ static bool test_notify_mask(struct smbcli_state *cli, struct torture_context *t
 			 FILE_NOTIFY_CHANGE_DIR_NAME, 1);
 
 	printf("testing rename file\n");
-	NOTIFY_MASK_TEST(
+	NOTIFY_MASK_TEST("testing rename file",
 			 smbcli_close(cli->tree, smbcli_open(cli->tree, BASEDIR "\\tname1", O_CREAT, 0));,
 			 smbcli_rename(cli->tree, BASEDIR "\\tname1", BASEDIR "\\tname2");,
 			 smbcli_unlink(cli->tree, BASEDIR "\\tname2");,
@@ -681,7 +682,7 @@ static bool test_notify_mask(struct smbcli_state *cli, struct torture_context *t
 			 FILE_NOTIFY_CHANGE_FILE_NAME|FILE_NOTIFY_CHANGE_ATTRIBUTES|FILE_NOTIFY_CHANGE_CREATION, 2);
 
 	printf("testing rename dir\n");
-	NOTIFY_MASK_TEST(
+	NOTIFY_MASK_TEST("testing rename dir",
 		smbcli_mkdir(cli->tree, BASEDIR "\\tname1");,
 		smbcli_rename(cli->tree, BASEDIR "\\tname1", BASEDIR "\\tname2");,
 		smbcli_rmdir(cli->tree, BASEDIR "\\tname2");,
@@ -689,7 +690,7 @@ static bool test_notify_mask(struct smbcli_state *cli, struct torture_context *t
 		FILE_NOTIFY_CHANGE_DIR_NAME, 2);
 
 	printf("testing set path attribute\n");
-	NOTIFY_MASK_TEST(
+	NOTIFY_MASK_TEST("testing set path attribute",
 		smbcli_close(cli->tree, smbcli_open(cli->tree, BASEDIR "\\tname1", O_CREAT, 0));,
 		smbcli_setatr(cli->tree, BASEDIR "\\tname1", FILE_ATTRIBUTE_HIDDEN, 0);,
 		smbcli_unlink(cli->tree, BASEDIR "\\tname1");,
@@ -697,7 +698,7 @@ static bool test_notify_mask(struct smbcli_state *cli, struct torture_context *t
 		FILE_NOTIFY_CHANGE_ATTRIBUTES, 1);
 
 	printf("testing set path write time\n");
-	NOTIFY_MASK_TEST(
+	NOTIFY_MASK_TEST("testing set path write time",
 		smbcli_close(cli->tree, smbcli_open(cli->tree, BASEDIR "\\tname1", O_CREAT, 0));,
 		smbcli_setatr(cli->tree, BASEDIR "\\tname1", FILE_ATTRIBUTE_NORMAL, 1000);,
 		smbcli_unlink(cli->tree, BASEDIR "\\tname1");,
@@ -705,7 +706,7 @@ static bool test_notify_mask(struct smbcli_state *cli, struct torture_context *t
 		FILE_NOTIFY_CHANGE_LAST_WRITE, 1);
 
 	printf("testing set file attribute\n");
-	NOTIFY_MASK_TEST(
+	NOTIFY_MASK_TEST("testing set file attribute",
 		fnum2 = create_complex_file(cli, tctx, BASEDIR "\\tname1");,
 		smbcli_fsetatr(cli->tree, fnum2, FILE_ATTRIBUTE_HIDDEN, 0, 0, 0, 0);,
 		(smbcli_close(cli->tree, fnum2), smbcli_unlink(cli->tree, BASEDIR "\\tname1"));,
@@ -718,7 +719,7 @@ static bool test_notify_mask(struct smbcli_state *cli, struct torture_context *t
 	}
 	else {
 		printf("testing set file create time\n");
-		NOTIFY_MASK_TEST(
+		NOTIFY_MASK_TEST("testing set file create time",
 			fnum2 = create_complex_file(cli, tctx,
 						    BASEDIR "\\tname1");,
 			smbcli_fsetatr(cli->tree, fnum2, 0, t, 0, 0, 0);,
@@ -729,7 +730,7 @@ static bool test_notify_mask(struct smbcli_state *cli, struct torture_context *t
 	}
 
 	printf("testing set file access time\n");
-	NOTIFY_MASK_TEST(
+	NOTIFY_MASK_TEST("testing set file access time",
 		fnum2 = create_complex_file(cli, tctx, BASEDIR "\\tname1");,
 		smbcli_fsetatr(cli->tree, fnum2, 0, 0, t, 0, 0);,
 		(smbcli_close(cli->tree, fnum2), smbcli_unlink(cli->tree, BASEDIR "\\tname1"));,
@@ -737,7 +738,7 @@ static bool test_notify_mask(struct smbcli_state *cli, struct torture_context *t
 		FILE_NOTIFY_CHANGE_LAST_ACCESS, 1);
 
 	printf("testing set file write time\n");
-	NOTIFY_MASK_TEST(
+	NOTIFY_MASK_TEST("testing set file write time",
 		fnum2 = create_complex_file(cli, tctx, BASEDIR "\\tname1");,
 		smbcli_fsetatr(cli->tree, fnum2, 0, 0, 0, t, 0);,
 		(smbcli_close(cli->tree, fnum2), smbcli_unlink(cli->tree, BASEDIR "\\tname1"));,
@@ -745,7 +746,7 @@ static bool test_notify_mask(struct smbcli_state *cli, struct torture_context *t
 		FILE_NOTIFY_CHANGE_LAST_WRITE, 1);
 
 	printf("testing set file change time\n");
-	NOTIFY_MASK_TEST(
+	NOTIFY_MASK_TEST("testing set file change time",
 		fnum2 = create_complex_file(cli, tctx, BASEDIR "\\tname1");,
 		smbcli_fsetatr(cli->tree, fnum2, 0, 0, 0, 0, t);,
 		(smbcli_close(cli->tree, fnum2), smbcli_unlink(cli->tree, BASEDIR "\\tname1"));,
@@ -754,7 +755,7 @@ static bool test_notify_mask(struct smbcli_state *cli, struct torture_context *t
 
 
 	printf("testing write\n");
-	NOTIFY_MASK_TEST(
+	NOTIFY_MASK_TEST("testing write",
 		fnum2 = create_complex_file(cli, tctx, BASEDIR "\\tname1");,
 		smbcli_write(cli->tree, fnum2, 1, &c, 10000, 1);,
 		(smbcli_close(cli->tree, fnum2), smbcli_unlink(cli->tree, BASEDIR "\\tname1"));,
@@ -762,7 +763,7 @@ static bool test_notify_mask(struct smbcli_state *cli, struct torture_context *t
 		0, 1);
 
 	printf("testing truncate\n");
-	NOTIFY_MASK_TEST(
+	NOTIFY_MASK_TEST("testing truncate",
 		fnum2 = create_complex_file(cli, tctx, BASEDIR "\\tname1");,
 		smbcli_ftruncate(cli->tree, fnum2, 10000);,
 		(smbcli_close(cli->tree, fnum2), smbcli_unlink(cli->tree, BASEDIR "\\tname1"));,
