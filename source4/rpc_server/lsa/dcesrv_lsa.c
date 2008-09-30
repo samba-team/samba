@@ -859,11 +859,11 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomain_base(struct dcesrv_call_state *dc
 		if (auth_struct.incoming.count) {
 			int i;
 			for (i=0; i < auth_struct.incoming.count; i++ ) {
-				if (auth_struct.incoming.current->array[i].AuthType == TRUST_AUTH_TYPE_NT4OWF) {
+				if (auth_struct.incoming.current[i]->AuthType == TRUST_AUTH_TYPE_NT4OWF) {
 					samdb_msg_add_hash(trusted_domain_state->policy->sam_ldb, 
 							   mem_ctx, msg_user, "unicodePwd", 
-							   &auth_struct.incoming.current->array[i].AuthInfo.nt4owf.password);
-				} else if (auth_struct.incoming.current->array[i].AuthType == TRUST_AUTH_TYPE_CLEAR) {
+							   &auth_struct.incoming.current[i]->AuthInfo.nt4owf.password);
+				} else if (auth_struct.incoming.current[i]->AuthType == TRUST_AUTH_TYPE_CLEAR) {
 					struct samr_Password hash;
 /*
                                       . We cannot do this, as windows chooses to send in random passwords here, that won't convert to UTF8 
@@ -871,8 +871,8 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomain_base(struct dcesrv_call_state *dc
 							     mem_ctx, msg_user, "userPassword", 
 							     auth_struct.incoming.current->array[i].AuthInfo.clear.password);
 */
-					mdfour(hash.hash, auth_struct.incoming.current->array[i].AuthInfo.clear.password,
-					       auth_struct.incoming.current->array[i].AuthInfo.clear.size);
+					mdfour(hash.hash, auth_struct.incoming.current[i]->AuthInfo.clear.password,
+					       auth_struct.incoming.current[i]->AuthInfo.clear.size);
 					samdb_msg_add_hash(trusted_domain_state->policy->sam_ldb, 
 							   mem_ctx, msg_user, "unicodePwd", 
 							   &hash);
