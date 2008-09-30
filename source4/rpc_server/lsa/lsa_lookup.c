@@ -649,7 +649,7 @@ NTSTATUS dcesrv_lsa_LookupSids3(struct dcesrv_call_state *dce_call,
 	r2.out.names   = r->out.names;
 
 	status = dcesrv_lsa_LookupSids2(dce_call, mem_ctx, &r2);
-	if (dce_call->fault_code != 0) {
+	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
 
@@ -682,7 +682,7 @@ NTSTATUS dcesrv_lsa_LookupSids(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 	r2.out.names   = NULL;
 
 	status = dcesrv_lsa_LookupSids2(dce_call, mem_ctx, &r2);
-	if (dce_call->fault_code != 0) {
+	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
 
@@ -836,7 +836,7 @@ NTSTATUS dcesrv_lsa_LookupNames4(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	r2.out.count = r->out.count;
 	
 	status = dcesrv_lsa_LookupNames3(dce_call, mem_ctx, &r2);
-	if (dce_call->fault_code != 0) {
+	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
 	
@@ -955,7 +955,7 @@ NTSTATUS dcesrv_lsa_LookupNames(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	r2.out.count    = r->out.count;
 
 	status = dcesrv_lsa_LookupNames2(dce_call, mem_ctx, &r2);
-	if (dce_call->fault_code != 0) {
+	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
 
