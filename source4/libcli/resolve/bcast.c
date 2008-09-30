@@ -75,7 +75,13 @@ struct composite_context *resolve_name_bcast_send(TALLOC_CTX *mem_ctx,
 NTSTATUS resolve_name_bcast_recv(struct composite_context *c, 
 				 TALLOC_CTX *mem_ctx, const char **reply_addr)
 {
-	return resolve_name_nbtlist_recv(c, mem_ctx, reply_addr);
+	NTSTATUS status = resolve_name_nbtlist_recv(c, mem_ctx, reply_addr);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
+		/* this makes much more sense for a bcast name resolution
+		   timeout */
+		status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+	return status;
 }
 
 /*
