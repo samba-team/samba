@@ -626,7 +626,7 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomain_base(struct dcesrv_call_state *dc
 	const char *name;
 	DATA_BLOB session_key = data_blob(NULL, 0);
 	DATA_BLOB trustAuthIncoming, trustAuthOutgoing, auth_blob;
-	struct trustAuthInAndOutBlob auth_struct;
+	struct trustDomainPasswords auth_struct;
 	int ret;
 	NTSTATUS nt_status;
 	enum ndr_err_code ndr_err;
@@ -679,7 +679,7 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomain_base(struct dcesrv_call_state *dc
 		ndr_err = ndr_pull_struct_blob(&auth_blob, mem_ctx, 
 					       lp_iconv_convenience(dce_call->conn->dce_ctx->lp_ctx),
 					       &auth_struct,
-					       (ndr_pull_flags_fn_t)ndr_pull_trustAuthInAndOutBlob);
+					       (ndr_pull_flags_fn_t)ndr_pull_trustDomainPasswords);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			return NT_STATUS_INVALID_PARAMETER;
 		}				
@@ -689,7 +689,7 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomain_base(struct dcesrv_call_state *dc
 		ndr_err = ndr_push_struct_blob(&trustAuthIncoming, mem_ctx, 
 					       lp_iconv_convenience(dce_call->conn->dce_ctx->lp_ctx),
 					       &auth_struct.incoming,
-					       (ndr_push_flags_fn_t)ndr_push_trustAuthInOutBlob);
+					       (ndr_push_flags_fn_t)ndr_push_trustDomainPasswords);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			return NT_STATUS_INVALID_PARAMETER;
 		}
@@ -701,7 +701,7 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomain_base(struct dcesrv_call_state *dc
 		ndr_err = ndr_push_struct_blob(&trustAuthOutgoing, mem_ctx, 
 					       lp_iconv_convenience(dce_call->conn->dce_ctx->lp_ctx),
 					       &auth_struct.outgoing,
-					       (ndr_push_flags_fn_t)ndr_push_trustAuthInOutBlob);
+					       (ndr_push_flags_fn_t)ndr_push_trustDomainPasswords);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			return NT_STATUS_INVALID_PARAMETER;
 		}

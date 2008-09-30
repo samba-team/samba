@@ -176,4 +176,38 @@ _PUBLIC_ void ndr_print_trustAuthInOutBlob(struct ndr_print *ndr, const char *na
 	ndr->depth--;
 }
 
+_PUBLIC_ enum ndr_err_code ndr_pull_trustDomainPasswords(struct ndr_pull *ndr, int ndr_flags, struct trustDomainPasswords *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		uint32_t offset;
+		NDR_PULL_ALIGN(ndr, 4);
+		NDR_PULL_NEED_BYTES(ndr, 8);
+		
+		offset = ndr->offset;
+		ndr->offset = ndr->data_size - 8;
+
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->outgoing_size));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->incoming_size));
+
+		ndr->offset = offset;
+		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->confounder, 512));
+		{
+			struct ndr_pull *_ndr_outgoing;
+			NDR_CHECK(ndr_pull_subcontext_start(ndr, &_ndr_outgoing, 0, r->outgoing_size));
+			NDR_CHECK(ndr_pull_trustCurrentPasswords(_ndr_outgoing, NDR_SCALARS|NDR_BUFFERS, &r->outgoing));
+			NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_outgoing, 0, r->outgoing_size));
+		}
+		{
+			struct ndr_pull *_ndr_incoming;
+			NDR_CHECK(ndr_pull_subcontext_start(ndr, &_ndr_incoming, 0, r->incoming_size));
+			NDR_CHECK(ndr_pull_trustCurrentPasswords(_ndr_incoming, NDR_SCALARS|NDR_BUFFERS, &r->incoming));
+			NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_incoming, 0, r->incoming_size));
+		}
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->outgoing_size));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->incoming_size));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
 
