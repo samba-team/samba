@@ -80,6 +80,7 @@ static NTSTATUS server_get_challenge(struct auth_method_context *ctx, TALLOC_CTX
 	io.in.workgroup = ""; /* only used with SPNEGO, disabled above */
 
 	io.in.options = smb_options;
+	lp_smbcli_session_options(ctx->auth_ctx->lp_ctx, &io.in.session_options);
 
 	status = smb_composite_connect(&io, mem_ctx, lp_resolve_context(ctx->auth_ctx->lp_ctx),
 				       ctx->auth_ctx->event_ctx);

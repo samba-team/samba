@@ -287,6 +287,7 @@ bool dcesrv_auth_request(struct dcesrv_call_state *call, DATA_BLOB *full_packet)
 	struct ndr_pull *ndr;
 	NTSTATUS status;
 	enum ndr_err_code ndr_err;
+	size_t hdr_size = DCERPC_REQUEST_LENGTH;
 
 	if (!dce_conn->auth_state.auth_info ||
 	    !dce_conn->auth_state.gensec_security) {
@@ -335,6 +336,11 @@ bool dcesrv_auth_request(struct dcesrv_call_state *call, DATA_BLOB *full_packet)
 		ndr->flags |= LIBNDR_FLAG_BIGENDIAN;
 	}
 
+	if (pkt->pfc_flags & DCERPC_PFC_FLAG_OBJECT_UUID) {
+		ndr->flags |= LIBNDR_FLAG_OBJECT_PRESENT;
+		hdr_size += 16;
+	}
+
 	ndr_err = ndr_pull_dcerpc_auth(ndr, NDR_SCALARS|NDR_BUFFERS, &auth);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(ndr);
@@ -346,13 +352,13 @@ bool dcesrv_auth_request(struct dcesrv_call_state *call, DATA_BLOB *full_packet)
 	case DCERPC_AUTH_LEVEL_PRIVACY:
 		status = gensec_unseal_packet(dce_conn->auth_state.gensec_security,
 					      call,
-					      full_packet->data + DCERPC_REQUEST_LENGTH,
+					      full_packet->data + hdr_size,
 					      pkt->u.request.stub_and_verifier.length, 
 					      full_packet->data,
 					      full_packet->length-auth.credentials.length,
 					      &auth.credentials);
 		memcpy(pkt->u.request.stub_and_verifier.data, 
-		       full_packet->data + DCERPC_REQUEST_LENGTH,
+		       full_packet->data + hdr_size,
 		       pkt->u.request.stub_and_verifier.length);
 		break;
 

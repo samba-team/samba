@@ -53,8 +53,8 @@
 #include "../lib/crypto/md4.h"
 
 enum hdb_ldb_ent_type 
-{ HDB_LDB_ENT_TYPE_CLIENT, HDB_LDB_ENT_TYPE_SERVER, 
-  HDB_LDB_ENT_TYPE_KRBTGT, HDB_LDB_ENT_TYPE_TRUST, HDB_LDB_ENT_TYPE_ANY };
+{ HDB_SAMBA4_ENT_TYPE_CLIENT, HDB_SAMBA4_ENT_TYPE_SERVER, 
+  HDB_SAMBA4_ENT_TYPE_KRBTGT, HDB_SAMBA4_ENT_TYPE_TRUST, HDB_SAMBA4_ENT_TYPE_ANY };
 
 enum trust_direction {
 	UNKNOWN = 0,
@@ -115,26 +115,26 @@ static HDBFlags uf2HDBFlags(krb5_context context, int userAccountControl, enum h
 
 	/* Account types - clear the invalid bit if it turns out to be valid */
 	if (userAccountControl & UF_NORMAL_ACCOUNT) {
-		if (ent_type == HDB_LDB_ENT_TYPE_CLIENT || ent_type == HDB_LDB_ENT_TYPE_ANY) {
+		if (ent_type == HDB_SAMBA4_ENT_TYPE_CLIENT || ent_type == HDB_SAMBA4_ENT_TYPE_ANY) {
 			flags.client = 1;
 		}
 		flags.invalid = 0;
 	}
 	
 	if (userAccountControl & UF_INTERDOMAIN_TRUST_ACCOUNT) {
-		if (ent_type == HDB_LDB_ENT_TYPE_CLIENT || ent_type == HDB_LDB_ENT_TYPE_ANY) {
+		if (ent_type == HDB_SAMBA4_ENT_TYPE_CLIENT || ent_type == HDB_SAMBA4_ENT_TYPE_ANY) {
 			flags.client = 1;
 		}
 		flags.invalid = 0;
 	}
 	if (userAccountControl & UF_WORKSTATION_TRUST_ACCOUNT) {
-		if (ent_type == HDB_LDB_ENT_TYPE_CLIENT || ent_type == HDB_LDB_ENT_TYPE_ANY) {
+		if (ent_type == HDB_SAMBA4_ENT_TYPE_CLIENT || ent_type == HDB_SAMBA4_ENT_TYPE_ANY) {
 			flags.client = 1;
 		}
 		flags.invalid = 0;
 	}
 	if (userAccountControl & UF_SERVER_TRUST_ACCOUNT) {
-		if (ent_type == HDB_LDB_ENT_TYPE_CLIENT || ent_type == HDB_LDB_ENT_TYPE_ANY) {
+		if (ent_type == HDB_SAMBA4_ENT_TYPE_CLIENT || ent_type == HDB_SAMBA4_ENT_TYPE_ANY) {
 			flags.client = 1;
 		}
 		flags.invalid = 0;
@@ -551,7 +551,7 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 
 	
 	entry_ex->entry.principal = malloc(sizeof(*(entry_ex->entry.principal)));
-	if (ent_type == HDB_LDB_ENT_TYPE_ANY && principal == NULL) {
+	if (ent_type == HDB_SAMBA4_ENT_TYPE_ANY && principal == NULL) {
 		const char *samAccountName = ldb_msg_find_attr_as_string(msg, "samAccountName", NULL);
 		if (!samAccountName) {
 			krb5_set_error_string(context, "LDB_message2entry: no samAccountName present");
@@ -587,7 +587,7 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 
 	entry_ex->entry.flags = uf2HDBFlags(context, userAccountControl, ent_type);
 
-	if (ent_type == HDB_LDB_ENT_TYPE_KRBTGT) {
+	if (ent_type == HDB_SAMBA4_ENT_TYPE_KRBTGT) {
 		entry_ex->entry.flags.invalid = 0;
 		entry_ex->entry.flags.server = 1;
 		entry_ex->entry.flags.forwardable = 1;
@@ -631,7 +631,7 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 		*entry_ex->entry.valid_end = nt_time_to_unix(acct_expiry);
 	}
 
-	if (ent_type != HDB_LDB_ENT_TYPE_KRBTGT) {
+	if (ent_type != HDB_SAMBA4_ENT_TYPE_KRBTGT) {
 		NTTIME must_change_time
 			= samdb_result_force_password_change((struct ldb_context *)db->hdb_db, mem_ctx, 
 							     domain_dn, msg);
@@ -909,16 +909,16 @@ static krb5_error_code LDB_lookup_principal(krb5_context context, struct ldb_con
 	}
 
 	switch (ent_type) {
-	case HDB_LDB_ENT_TYPE_CLIENT:
-	case HDB_LDB_ENT_TYPE_TRUST:
-	case HDB_LDB_ENT_TYPE_ANY:
+	case HDB_SAMBA4_ENT_TYPE_CLIENT:
+	case HDB_SAMBA4_ENT_TYPE_TRUST:
+	case HDB_SAMBA4_ENT_TYPE_ANY:
 		/* Can't happen */
 		return EINVAL;
-	case HDB_LDB_ENT_TYPE_KRBTGT:
+	case HDB_SAMBA4_ENT_TYPE_KRBTGT:
 		filter = talloc_asprintf(mem_ctx, "(&(objectClass=user)(samAccountName=%s))", 
 					 KRB5_TGS_NAME);
 		break;
-	case HDB_LDB_ENT_TYPE_SERVER:
+	case HDB_SAMBA4_ENT_TYPE_SERVER:
 		filter = talloc_asprintf(mem_ctx, "(&(objectClass=user)(samAccountName=%s))", 
 					 short_princ_talloc);
 		break;
@@ -1075,7 +1075,7 @@ static krb5_error_code LDB_fetch_client(krb5_context context, HDB *db,
 	}
 	
 	ret = LDB_message2entry(context, db, mem_ctx, 
-				principal, HDB_LDB_ENT_TYPE_CLIENT,
+				principal, HDB_SAMBA4_ENT_TYPE_CLIENT,
 				msg[0], realm_ref_msg[0], entry_ex);
 	return ret;
 }
@@ -1136,7 +1136,7 @@ static krb5_error_code LDB_fetch_krbtgt(krb5_context context, HDB *db,
 		
 		ret = LDB_lookup_principal(context, (struct ldb_context *)db->hdb_db, 
 					   mem_ctx, 
-					   principal, HDB_LDB_ENT_TYPE_KRBTGT, realm_dn, &msg);
+					   principal, HDB_SAMBA4_ENT_TYPE_KRBTGT, realm_dn, &msg);
 		
 		if (ret != 0) {
 			krb5_warnx(context, "LDB_fetch: could not find principal in DB");
@@ -1145,7 +1145,7 @@ static krb5_error_code LDB_fetch_krbtgt(krb5_context context, HDB *db,
 		}
 		
 		ret = LDB_message2entry(context, db, mem_ctx, 
-					principal, HDB_LDB_ENT_TYPE_KRBTGT, 
+					principal, HDB_SAMBA4_ENT_TYPE_KRBTGT, 
 					msg[0], realm_ref_msg_1[0], entry_ex);
 		if (ret != 0) {
 			krb5_warnx(context, "LDB_fetch: message2entry failed");	
@@ -1265,7 +1265,7 @@ static krb5_error_code LDB_fetch_server(krb5_context context, HDB *db,
 		
 		ret = LDB_lookup_principal(context, (struct ldb_context *)db->hdb_db, 
 					   mem_ctx, 
-					   principal, HDB_LDB_ENT_TYPE_SERVER, realm_dn, &msg);
+					   principal, HDB_SAMBA4_ENT_TYPE_SERVER, realm_dn, &msg);
 		
 		if (ret != 0) {
 			return ret;
@@ -1273,7 +1273,7 @@ static krb5_error_code LDB_fetch_server(krb5_context context, HDB *db,
 	}
 
 	ret = LDB_message2entry(context, db, mem_ctx, 
-				principal, HDB_LDB_ENT_TYPE_SERVER,
+				principal, HDB_SAMBA4_ENT_TYPE_SERVER,
 				msg[0], realm_ref_msg[0], entry_ex);
 	if (ret != 0) {
 		krb5_warnx(context, "LDB_fetch: message2entry failed");	
@@ -1358,7 +1358,7 @@ static krb5_error_code LDB_seq(krb5_context context, HDB *db, unsigned flags, hd
 
 	if (priv->index < priv->count) {
 		ret = LDB_message2entry(context, db, mem_ctx, 
-					NULL, HDB_LDB_ENT_TYPE_ANY, 
+					NULL, HDB_SAMBA4_ENT_TYPE_ANY, 
 					priv->msgs[priv->index++], 
 					priv->realm_ref_msgs[0], entry);
 	} else {
@@ -1476,7 +1476,7 @@ static krb5_error_code LDB_destroy(krb5_context context, HDB *db)
  * (hdb_ldb_create) from the kpasswdd -> krb5 -> keytab_hdb -> hdb
  * code */
 
-NTSTATUS kdc_hdb_ldb_create(TALLOC_CTX *mem_ctx, 
+NTSTATUS kdc_hdb_samba4_create(TALLOC_CTX *mem_ctx, 
 			    struct event_context *ev_ctx, 
 			    struct loadparm_context *lp_ctx,
 			    krb5_context context, struct HDB **db, const char *arg)
@@ -1536,12 +1536,12 @@ NTSTATUS kdc_hdb_ldb_create(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-krb5_error_code hdb_ldb_create(krb5_context context, struct HDB **db, const char *arg)
+krb5_error_code hdb_samba4_create(krb5_context context, struct HDB **db, const char *arg)
 {
 	NTSTATUS nt_status;
 	/* The global kdc_mem_ctx and kdc_lp_ctx, Disgusting, ugly hack, but it means one less private hook */
-	nt_status = kdc_hdb_ldb_create(kdc_mem_ctx, event_context_find(kdc_mem_ctx), kdc_lp_ctx, 
-				       context, db, arg);
+	nt_status = kdc_hdb_samba4_create(kdc_mem_ctx, event_context_find(kdc_mem_ctx), kdc_lp_ctx, 
+					  context, db, arg);
 
 	if (NT_STATUS_IS_OK(nt_status)) {
 		return 0;

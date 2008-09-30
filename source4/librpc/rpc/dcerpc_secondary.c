@@ -95,13 +95,14 @@ _PUBLIC_ struct composite_context* dcerpc_secondary_connection_send(struct dcerp
 							 s->binding->host,
 							 s->binding->target_hostname,
 							 atoi(s->binding->endpoint),
-							 lp_resolve_context(global_loadparm));
+							 dcerpc_resolve_ctx(s->pipe->conn));
 		composite_continue(c, pipe_tcp_req, continue_open_tcp, c);
 		return c;
 
 	case NCALRPC:
-		pipe_ncalrpc_req = dcerpc_pipe_open_pipe_send(s->pipe2->conn, lp_ncalrpc_dir(global_loadparm), 
-							      s->binding->endpoint);
+	case NCACN_UNIX_STREAM:
+		pipe_ncalrpc_req = dcerpc_pipe_open_unix_stream_send(s->pipe2->conn, 
+							      dcerpc_unix_socket_path(s->pipe->conn));
 		composite_continue(c, pipe_ncalrpc_req, continue_open_pipe, c);
 		return c;
 

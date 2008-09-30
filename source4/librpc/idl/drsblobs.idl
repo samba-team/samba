@@ -415,16 +415,25 @@ interface drsblobs {
 		[relative] AuthenticationInformationArray *previous;
 	} trustAuthInOutBlob;
 
-	typedef [public] struct {
-		uint8 confounder[512];
-		trustAuthInOutBlob outgoing;
-		trustAuthInOutBlob incoming;
-		[value(ndr_size_trustAuthInOutBlob(&outgoing, ndr->flags))] uint32 outgoing_size;
-		[value(ndr_size_trustAuthInOutBlob(&incoming, ndr->flags))] uint32 incoming_size;
-	} trustAuthInAndOutBlob;
-	
+	typedef [public,gensize] struct {
+		uint32 count;
+		[relative] AuthenticationInformation *current[count];
+	} trustCurrentPasswords;
+
 	void decode_trustAuthInOut(
 		[in] trustAuthInOutBlob blob
+		);
+
+	typedef [public,nopull] struct {
+		uint8 confounder[512];
+		[subcontext(0),subcontext_size(outgoing_size)] trustCurrentPasswords outgoing;
+		[subcontext(0),subcontext_size(incoming_size)] trustCurrentPasswords incoming;
+		[value(ndr_size_trustCurrentPasswords(&outgoing, ndr->flags))] uint32 outgoing_size;
+		[value(ndr_size_trustCurrentPasswords(&incoming, ndr->flags))] uint32 incoming_size;
+	} trustDomainPasswords;
+
+	void decode_trustDomainPasswords(
+		[in] trustDomainPasswords blob
 		);
 
 	typedef [public] struct {

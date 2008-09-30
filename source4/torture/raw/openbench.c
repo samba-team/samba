@@ -137,6 +137,7 @@ static void reopen_connection(struct event_context *ev, struct timed_event *te,
 	io->in.fallback_to_anonymous = false;
 	io->in.workgroup    = lp_workgroup(state->tctx->lp_ctx);
 	lp_smbcli_options(state->tctx->lp_ctx, &io->in.options);
+	lp_smbcli_session_options(state->tctx->lp_ctx, &io->in.session_options);
 
 	/* kill off the remnants of the old connection */
 	talloc_free(state->tree);

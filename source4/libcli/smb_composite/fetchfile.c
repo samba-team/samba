@@ -147,6 +147,7 @@ struct composite_context *smb_composite_fetchfile_send(struct smb_composite_fetc
 	state->connect->in.workgroup    = io->in.workgroup;
 
 	state->connect->in.options	= io->in.options;
+	state->connect->in.session_options = io->in.session_options;
 
 	state->creq = smb_composite_connect_send(state->connect, state, 
 						 io->in.resolve_ctx, event_ctx);

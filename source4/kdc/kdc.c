@@ -667,6 +667,11 @@ static void kdc_task_init(struct task_server *task)
 	NTSTATUS status;
 	krb5_error_code ret;
 	struct interface *ifaces;
+	struct hdb_method hdb_samba4 = {
+		.interface_version = HDB_INTERFACE_VERSION,
+		.prefix = "samba4:",
+		.create = hdb_samba4_create
+	};
 
 	switch (lp_server_role(task->lp_ctx)) {
 	case ROLE_STANDALONE:
@@ -724,12 +729,22 @@ static void kdc_task_init(struct task_server *task)
 	}
 	kdc->config->num_db = 1;
 		
-	status = kdc_hdb_ldb_create(kdc, task->event_ctx, task->lp_ctx, 
+	status = kdc_hdb_samba4_create(kdc, task->event_ctx, task->lp_ctx, 
 				    kdc->smb_krb5_context->krb5_context, 
 				    &kdc->config->db[0], NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		task_server_terminate(task, "kdc: hdb_ldb_create (setup KDC database) failed");
 		return; 
+	}
+
+
+	/* Register hdb-samba4 hooks */
+	ret = krb5_plugin_register(kdc->smb_krb5_context->krb5_context, 
+				   PLUGIN_TYPE_DATA, "hdb",
+				   &hdb_samba4);
+	if(ret) {
+		task_server_terminate(task, "kdc: failed to register hdb keytab");
+		return;
 	}
 
 	ret = krb5_kt_register(kdc->smb_krb5_context->krb5_context, &hdb_kt_ops);

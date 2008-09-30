@@ -234,7 +234,7 @@ static NTSTATUS connect_negprot(struct composite_context *c,
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	/* next step is a session setup */
-	state->session = smbcli_session_init(state->transport, state, true);
+	state->session = smbcli_session_init(state->transport, state, true, io->in.session_options);
 	NT_STATUS_HAVE_NO_MEMORY(state->session);
 	
 	/* setup for a tconx (or at least have the structure ready to

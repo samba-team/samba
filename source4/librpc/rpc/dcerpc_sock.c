@@ -39,6 +39,9 @@ struct sock_private {
 
 	struct packet_context *packet;
 	uint32_t pending_reads;
+
+	struct resolve_context *resolve_ctx;
+	const char *path; /* For ncacn_unix_sock and ncalrpc */
 };
 
 
@@ -307,6 +310,7 @@ static struct composite_context *dcerpc_pipe_open_socket_send(TALLOC_CTX *mem_ct
 						       struct resolve_context *resolve_context,
 						       struct socket_address *server,
 						       const char *target_hostname,
+						       const char *full_path,
 						       enum dcerpc_transport_t transport)
 {
 	struct composite_context *c;
@@ -333,6 +337,9 @@ static struct composite_context *dcerpc_pipe_open_socket_send(TALLOC_CTX *mem_ct
 	if (!composite_is_ok(c)) return c;
 
 	talloc_steal(s->sock, s->socket_ctx);
+
+	s->sock->resolve_ctx = resolve_context;
+	s->sock->path = talloc_reference(s->sock, full_path);
 
 	conn_req = socket_connect_send(s->socket_ctx, NULL, s->server, 0, 
 				       resolve_context, 
@@ -386,6 +393,7 @@ static void continue_ip_resolve_name(struct composite_context *ctx)
 	sock_ipv4_req = dcerpc_pipe_open_socket_send(c, s->conn,
 						     s->resolve_ctx,
 						     s->srvaddr, s->target_hostname,
+						     NULL,
 						     NCACN_IP_TCP);
 	composite_continue(c, sock_ipv4_req, continue_ipv4_open_socket, c);
 }
@@ -561,6 +569,7 @@ struct composite_context *dcerpc_pipe_open_unix_stream_send(struct dcerpc_connec
 	sock_unix_req = dcerpc_pipe_open_socket_send(c, s->conn, 
 						     NULL,
 						     s->srvaddr, NULL,
+						     s->path,
 						     NCALRPC);
 	composite_continue(c, sock_unix_req, continue_unix_open_socket, c);
 	return c;
@@ -577,13 +586,6 @@ NTSTATUS dcerpc_pipe_open_unix_stream_recv(struct composite_context *c)
 	talloc_free(c);
 	return status;
 }
-
-
-struct pipe_np_state {
-	char *full_path;
-	struct socket_address *srvaddr;
-	struct dcerpc_connection *conn;
-};
 
 
 /*
@@ -612,13 +614,13 @@ struct composite_context* dcerpc_pipe_open_pipe_send(struct dcerpc_connection *c
 
 	struct composite_context *c;
 	struct composite_context *sock_np_req;
-	struct pipe_np_state *s;
+	struct pipe_unix_state *s;
 
 	/* composite context allocation and setup */
 	c = composite_create(conn, conn->event_ctx);
 	if (c == NULL) return NULL;
 
-	s = talloc_zero(c, struct pipe_np_state);
+	s = talloc_zero(c, struct pipe_unix_state);
 	if (composite_nomem(s, c)) return c;
 	c->private_data = s;
 
@@ -628,15 +630,15 @@ struct composite_context* dcerpc_pipe_open_pipe_send(struct dcerpc_connection *c
 	s->conn = conn;
 
 	string_replace(canon, '/', '\\');
-	s->full_path = talloc_asprintf(canon, "%s/%s", ncalrpc_dir, canon);
-	if (composite_nomem(s->full_path, c)) return c;
+	s->path = talloc_asprintf(canon, "%s/%s", ncalrpc_dir, canon);
+	if (composite_nomem(s->path, c)) return c;
 
 	/* prepare server address using path and transport name */
-	s->srvaddr = socket_address_from_strings(conn, "unix", s->full_path, 0);
+	s->srvaddr = socket_address_from_strings(conn, "unix", s->path, 0);
 	if (composite_nomem(s->srvaddr, c)) return c;
 
 	/* send socket open request */
-	sock_np_req = dcerpc_pipe_open_socket_send(c, s->conn, NULL, s->srvaddr, NULL, NCALRPC);
+	sock_np_req = dcerpc_pipe_open_socket_send(c, s->conn, NULL, s->srvaddr, NULL, s->path, NCALRPC);
 	composite_continue(c, sock_np_req, continue_np_open_socket, c);
 	return c;
 }
@@ -661,4 +663,16 @@ NTSTATUS dcerpc_pipe_open_pipe(struct dcerpc_connection *conn, const char *ncalr
 {
 	struct composite_context *c = dcerpc_pipe_open_pipe_send(conn, ncalrpc_dir, identifier);
 	return dcerpc_pipe_open_pipe_recv(c);
+}
+
+const char *dcerpc_unix_socket_path(struct dcerpc_connection *p)
+{
+	struct sock_private *sock = (struct sock_private *)p->transport.private_data;
+	return sock->path;
+}
+
+struct resolve_context *dcerpc_resolve_ctx(struct dcerpc_connection *p)
+{
+	struct sock_private *sock = (struct sock_private *)p->transport.private_data;
+	return sock->resolve_ctx;
 }

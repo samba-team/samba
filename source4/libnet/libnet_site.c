@@ -56,7 +56,7 @@ NTSTATUS libnet_FindSite(TALLOC_CTX *ctx, struct libnet_context *lctx, struct li
 	search.in.version = NETLOGON_NT_VERSION_5 | NETLOGON_NT_VERSION_5EX;
 	search.in.map_response = true;
 
-	cldap = cldap_socket_init(tmp_ctx, lctx->event_ctx, lp_iconv_convenience(global_loadparm));
+	cldap = cldap_socket_init(tmp_ctx, lctx->event_ctx, lp_iconv_convenience(lctx->lp_ctx));
 	status = cldap_netlogon(cldap, tmp_ctx, &search);
 	if (!NT_STATUS_IS_OK(status) || !search.out.netlogon.nt5_ex.client_site) {
 		/*

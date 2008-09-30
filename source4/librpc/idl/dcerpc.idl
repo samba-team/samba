@@ -261,6 +261,7 @@ interface dcerpc
 	const uint8 DCERPC_PFC_FLAG_OBJECT_UUID		= 0x80; /* on valid guid is in the optional object field */
 
 	/* these offsets are needed by the signing code */
+	const uint8 DCERPC_PFC_OFFSET      =  3;
 	const uint8 DCERPC_DREP_OFFSET     =  4;
 	const uint8 DCERPC_FRAG_LEN_OFFSET =  8;
 	const uint8 DCERPC_AUTH_LEN_OFFSET = 10;

@@ -105,6 +105,12 @@ typedef struct security_descriptor {
 %talloctype(dom_sid);
 
 typedef struct dom_sid {
+    %immutable;
+    uint8_t sid_rev_num;
+    int8_t num_auths;/* [range(0,15)] */
+    uint8_t id_auth[6];
+    uint32_t *sub_auths;
+    %mutable;
     %extend {
         dom_sid(TALLOC_CTX *mem_ctx, const char *text) {
             return dom_sid_parse_talloc(mem_ctx, text);

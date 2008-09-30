@@ -177,7 +177,8 @@ NTSTATUS smbcli_tree_full_connection(TALLOC_CTX *parent_ctx,
 				     struct cli_credentials *credentials,
 				     struct resolve_context *resolve_ctx,
 				     struct event_context *ev,
-				     struct smbcli_options *options)
+				     struct smbcli_options *options,
+				     struct smbcli_session_options *session_options)
 {
 	struct smb_composite_connect io;
 	NTSTATUS status;
@@ -200,6 +201,7 @@ NTSTATUS smbcli_tree_full_connection(TALLOC_CTX *parent_ctx,
 	 * is complete -- abartlet 2008-04-28 */
 	io.in.workgroup = lp_workgroup(global_loadparm);
 	io.in.options = *options;
+	io.in.session_options = *session_options;
 	
 	status = smb_composite_connect(&io, parent_ctx, resolve_ctx, ev);
 	if (NT_STATUS_IS_OK(status)) {

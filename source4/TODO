@@ -1,7 +1,7 @@
-source/build/smb_build/TODO
-source/lib/registry/TODO
-source/lib/tdr/TODO
-source/pidl/TODO
+build/smb_build/TODO
+lib/registry/TODO
+lib/tdr/TODO
+pidl/TODO
 
 - seperate adminlog mechanism (as opposed to the current DEBUG log,
   which is not really aimed at administrators but more at developers)
