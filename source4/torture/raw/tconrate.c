@@ -69,8 +69,10 @@ static int fork_tcon_client(struct torture_context *tctx,
 	struct timeval end;
 	struct timeval now;
 	struct smbcli_options options;
+	struct smbcli_session_options session_options;
 
 	lp_smbcli_options(tctx->lp_ctx, &options);
+	lp_smbcli_session_options(tctx->lp_ctx, &session_options);
 
 	child = fork();
 	if (child == -1) {
@@ -100,7 +102,7 @@ static int fork_tcon_client(struct torture_context *tctx,
 				host, lp_smb_ports(tctx->lp_ctx), share,
 				NULL, cmdline_credentials,
 				lp_resolve_context(tctx->lp_ctx),
-				tctx->ev, &options);
+				tctx->ev, &options, &session_options);
 
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("failed to connect to //%s/%s: %s\n",

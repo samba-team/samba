@@ -89,6 +89,7 @@ struct dd_iohandle
 #define DD_OPLOCK		0x00000008
 
 struct smbcli_options;
+struct smbcli_session_options;
 struct event_context;
 
 struct dd_iohandle * dd_open_path(struct resolve_context *resolve_ctx, 
@@ -96,7 +97,8 @@ struct dd_iohandle * dd_open_path(struct resolve_context *resolve_ctx,
 				  const char * path,
 				  const char **ports,
 				uint64_t io_size, int options, 
-				struct smbcli_options *smb_options);
+				struct smbcli_options *smb_options,
+				struct smbcli_session_options *smb_session_options);
 bool dd_fill_block(struct dd_iohandle * h, uint8_t * buf,
 		uint64_t * buf_size, uint64_t need_size, uint64_t block_size);
 bool dd_flush_block(struct dd_iohandle * h, uint8_t * buf,

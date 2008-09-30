@@ -146,7 +146,8 @@ NTSTATUS smbcli_full_connection(TALLOC_CTX *parent_ctx,
 				struct cli_credentials *credentials,
 				struct resolve_context *resolve_ctx,
 				struct event_context *ev,
-				struct smbcli_options *options)
+				struct smbcli_options *options,
+				struct smbcli_session_options *session_options)
 {
 	struct smbcli_tree *tree;
 	NTSTATUS status;
@@ -157,7 +158,8 @@ NTSTATUS smbcli_full_connection(TALLOC_CTX *parent_ctx,
 					     &tree, host, ports, 
 					     sharename, devtype,
 					     credentials, resolve_ctx, ev,
-					     options);
+					     options,
+					     session_options);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}

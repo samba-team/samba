@@ -175,10 +175,11 @@ static bool open_connection_no_level2_oplocks(struct torture_context *tctx,
 					      struct smbcli_state **c)
 {
 	NTSTATUS status;
-
 	struct smbcli_options options;
+	struct smbcli_session_options session_options;
 
 	lp_smbcli_options(tctx->lp_ctx, &options);
+	lp_smbcli_session_options(tctx->lp_ctx, &session_options);
 
 	options.use_level2_oplocks = false;
 
@@ -188,7 +189,7 @@ static bool open_connection_no_level2_oplocks(struct torture_context *tctx,
 					torture_setting_string(tctx, "share", NULL),
 					NULL, cmdline_credentials,
 					lp_resolve_context(tctx->lp_ctx),
-					tctx->ev, &options);
+					tctx->ev, &options, &session_options);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to open connection - %s\n", nt_errstr(status));
 		return false;

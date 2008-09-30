@@ -117,8 +117,10 @@ static struct smbcli_state *connect_one(struct event_context *ev,
 	NTSTATUS status;
 	int retries = 10;
 	struct smbcli_options options;
+	struct smbcli_session_options session_options;
 
 	lp_smbcli_options(lp_ctx, &options);
+	lp_smbcli_session_options(lp_ctx, &session_options);
 
 	printf("connect_one(%s, %d, %d)\n", share, snum, conn);
 
@@ -164,7 +166,7 @@ static struct smbcli_state *connect_one(struct event_context *ev,
 						share, NULL,
 						servers[snum], 
 						lp_resolve_context(lp_ctx),
-						ev, &options);
+						ev, &options, &session_options);
 		if (!NT_STATUS_IS_OK(status)) {
 			sleep(2);
 		}

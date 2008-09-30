@@ -214,7 +214,9 @@ static bool connect_servers(struct event_context *ev,
 		for (j=0;j<NINSTANCES;j++) {
 			NTSTATUS status;
 			struct smbcli_options smb_options;
+			struct smbcli_session_options smb_session_options;
 			lp_smbcli_options(lp_ctx, &smb_options);
+			lp_smbcli_session_options(lp_ctx, &smb_session_options);
 
 			printf("Connecting to \\\\%s\\%s as %s - instance %d\n",
 			       servers[i].server_name, servers[i].share_name, 
@@ -238,7 +240,8 @@ static bool connect_servers(struct event_context *ev,
 								     servers[i].share_name, "A:",
 								     servers[i].credentials,
 								     lp_resolve_context(lp_ctx), ev,
-								     &smb_options);
+								     &smb_options,
+								     &smb_session_options);
 			}
 			if (!NT_STATUS_IS_OK(status)) {
 				printf("Failed to connect to \\\\%s\\%s - %s\n",

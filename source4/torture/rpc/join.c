@@ -19,6 +19,7 @@ bool torture_rpc_join(struct torture_context *torture)
 	struct smbcli_state *cli;
 	const char *host = torture_setting_string(torture, "host", NULL);
 	struct smbcli_options options;
+	struct smbcli_session_options session_options;
 
 	/* Join domain as a member server. */
 	tj = torture_join_domain(torture,
@@ -33,13 +34,14 @@ bool torture_rpc_join(struct torture_context *torture)
 	}
 
 	lp_smbcli_options(torture->lp_ctx, &options);
+	lp_smbcli_session_options(torture->lp_ctx, &session_options);
 
 	status = smbcli_full_connection(tj, &cli, host,
 					lp_smb_ports(torture->lp_ctx),
 					"IPC$", NULL,
 					machine_account,
 					lp_resolve_context(torture->lp_ctx),
-					torture->ev, &options);
+					torture->ev, &options, &session_options);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("%s failed to connect to IPC$ with workstation credentials\n",
 			  TORTURE_NETBIOS_NAME));
@@ -65,7 +67,7 @@ bool torture_rpc_join(struct torture_context *torture)
 					"IPC$", NULL,
 					machine_account,
 					lp_resolve_context(torture->lp_ctx),
-					torture->ev, &options);
+					torture->ev, &options, &session_options);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("%s failed to connect to IPC$ with workstation credentials\n",
 			  TORTURE_NETBIOS_NAME));

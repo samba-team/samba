@@ -225,7 +225,8 @@ static struct smbcli_state * init_smb_session(struct resolve_context *resolve_ct
 					      const char * host,
 					      const char **ports,
 					      const char * share,
-					      struct smbcli_options *options)
+					      struct smbcli_options *options,
+					      struct smbcli_session_options *session_options)
 {
 	NTSTATUS		ret;
 	struct smbcli_state *	cli = NULL;
@@ -236,7 +237,8 @@ static struct smbcli_state * init_smb_session(struct resolve_context *resolve_ct
 	ret = smbcli_full_connection(NULL, &cli, host, ports, share,
 				     NULL /* devtype */,
 				     cmdline_credentials, resolve_ctx,
-				     ev, options);
+				     ev, options,
+				     session_options);
 
 	if (!NT_STATUS_IS_OK(ret)) {
 		fprintf(stderr, "%s: connecting to //%s/%s: %s\n",
@@ -302,7 +304,8 @@ static struct dd_iohandle * open_cifs_handle(struct resolve_context *resolve_ctx
 					const char * path,
 					uint64_t io_size,
 					int options,
-					struct smbcli_options *smb_options)
+					struct smbcli_options *smb_options,
+					struct smbcli_session_options *smb_session_options)
 {
 	struct cifs_handle * smbh;
 
@@ -323,7 +326,7 @@ static struct dd_iohandle * open_cifs_handle(struct resolve_context *resolve_ctx
 	smbh->h.io_seek = smb_seek_func;
 
 	if ((smbh->cli = init_smb_session(resolve_ctx, ev, host, ports, share,
-					  smb_options)) == NULL) {
+					  smb_options, smb_session_options)) == NULL) {
 		return(NULL);
 	}
 
@@ -344,7 +347,8 @@ struct dd_iohandle * dd_open_path(struct resolve_context *resolve_ctx,
 				  const char **ports,
 				uint64_t io_size,
 				int options,
-				struct smbcli_options *smb_options)
+				struct smbcli_options *smb_options,
+				struct smbcli_session_options *smb_session_options)
 {
 	if (file_exist(path)) {
 		return(open_fd_handle(path, io_size, options));
@@ -361,7 +365,8 @@ struct dd_iohandle * dd_open_path(struct resolve_context *resolve_ctx,
 
 			return(open_cifs_handle(resolve_ctx, ev, host, ports,
 						share, remain,
-						io_size, options, smb_options));
+						io_size, options, smb_options,
+						smb_session_options));
 		}
 
 		return(open_fd_handle(path, io_size, options));
