@@ -95,7 +95,7 @@ static void single_new_task(struct event_context *ev,
 
 
 /* called when a task goes down */
-static void single_terminate(struct event_context *ev, const char *reason) 
+static void single_terminate(struct event_context *ev, struct loadparm_context *lp_ctx, const char *reason) 
 {
 	DEBUG(2,("single_terminate: reason[%s]\n",reason));
 }

@@ -79,7 +79,7 @@ void stream_terminate_connection(struct stream_connection *srv_conn, const char 
 	talloc_free(srv_conn->event.fde);
 	srv_conn->event.fde = NULL;
 	talloc_free(srv_conn);
-	model_ops->terminate(event_ctx, reason);
+	model_ops->terminate(event_ctx, srv_conn->lp_ctx, reason);
 }
 
 /**
