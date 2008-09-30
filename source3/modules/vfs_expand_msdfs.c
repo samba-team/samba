@@ -147,7 +147,7 @@ static char *expand_msdfs_target(TALLOC_CTX *ctx,
 				conn->connectpath,
 				conn->server_info->utok.gid,
 				conn->server_info->sanitized_username,
-				pdb_get_domain(conn->server_info->sam_account),
+				pdb_get_domain(handle->conn->server_info->sam_account),
 				targethost);
 
 	DEBUG(10, ("Expanded targethost to %s\n", targethost));
