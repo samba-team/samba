@@ -39,6 +39,7 @@ static bool test_DsCrackNamesMatrix(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	bool ret = true;
 	struct drsuapi_DsCrackNames r;
 	enum drsuapi_DsNameFormat formats[] = {
+		DRSUAPI_DS_NAME_FORMAT_UNKNOWN,
 		DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
 		DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT,
 		DRSUAPI_DS_NAME_FORMAT_DISPLAY,
