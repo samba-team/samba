@@ -727,13 +727,46 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomain_base(struct dcesrv_call_state *dc
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			return NT_STATUS_INVALID_PARAMETER;
 		}				
+
+		if (op == NDR_LSA_CREATETRUSTEDDOMAINEX) {
+			if (auth_struct.incoming.count > 1) {
+				return NT_STATUS_INVALID_PARAMETER;
+			}
+		}
 	}
 
 	if (auth_struct.incoming.count) {
+		int i;
+		struct trustAuthInOutBlob incoming;
+		
+		incoming.count = auth_struct.incoming.count;
+		incoming.current = talloc(mem_ctx, struct AuthenticationInformationArray);
+		if (!incoming.current) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		
+		incoming.current->array = *auth_struct.incoming.current;
+		if (!incoming.current->array) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		incoming.previous = talloc(mem_ctx, struct AuthenticationInformationArray);
+		if (!incoming.previous) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		incoming.previous->array = talloc_array(mem_ctx, struct AuthenticationInformation, incoming.count);
+		if (!incoming.previous->array) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		for (i = 0; i < incoming.count; i++) {
+			incoming.previous->array[i].LastUpdateTime = 0;
+			incoming.previous->array[i].AuthType = 0;
+		}
 		ndr_err = ndr_push_struct_blob(&trustAuthIncoming, mem_ctx, 
 					       lp_iconv_convenience(dce_call->conn->dce_ctx->lp_ctx),
-					       &auth_struct.incoming,
-					       (ndr_push_flags_fn_t)ndr_push_trustDomainPasswords);
+					       &incoming,
+					       (ndr_push_flags_fn_t)ndr_push_trustAuthInOutBlob);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			return NT_STATUS_INVALID_PARAMETER;
 		}
@@ -742,10 +775,37 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomain_base(struct dcesrv_call_state *dc
 	}
 	
 	if (auth_struct.outgoing.count) {
+		int i;
+		struct trustAuthInOutBlob outgoing;
+		
+		outgoing.count = auth_struct.outgoing.count;
+		outgoing.current = talloc(mem_ctx, struct AuthenticationInformationArray);
+		if (!outgoing.current) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		
+		outgoing.current->array = *auth_struct.outgoing.current;
+		if (!outgoing.current->array) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		outgoing.previous = talloc(mem_ctx, struct AuthenticationInformationArray);
+		if (!outgoing.previous) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		outgoing.previous->array = talloc_array(mem_ctx, struct AuthenticationInformation, outgoing.count);
+		if (!outgoing.previous->array) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		for (i = 0; i < outgoing.count; i++) {
+			outgoing.previous->array[i].LastUpdateTime = 0;
+			outgoing.previous->array[i].AuthType = 0;
+		}
 		ndr_err = ndr_push_struct_blob(&trustAuthOutgoing, mem_ctx, 
 					       lp_iconv_convenience(dce_call->conn->dce_ctx->lp_ctx),
-					       &auth_struct.outgoing,
-					       (ndr_push_flags_fn_t)ndr_push_trustDomainPasswords);
+					       &outgoing,
+					       (ndr_push_flags_fn_t)ndr_push_trustAuthInOutBlob);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			return NT_STATUS_INVALID_PARAMETER;
 		}
