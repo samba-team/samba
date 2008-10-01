@@ -966,14 +966,49 @@ static WERROR dcesrv_drsuapi_DsGetDomainControllerInfo(struct dcesrv_call_state 
 	return WERR_UNKNOWN_LEVEL;
 }
 
-
 /* 
   drsuapi_DsAddEntry
 */
 static WERROR dcesrv_drsuapi_DsAddEntry(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct drsuapi_DsAddEntry *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	WERROR status;
+	struct drsuapi_bind_state *b_state;
+	struct dcesrv_handle *h;
+	uint32_t num = 0;
+	struct drsuapi_DsReplicaObjectIdentifier2 *ids = NULL;
+
+	/* TODO: check which out level the client supports */
+
+	ZERO_STRUCTP(r->out.ctr);
+	r->out.level_out = 3;
+	r->out.ctr->ctr3.level = 1;
+	r->out.ctr->ctr3.error = talloc_zero(mem_ctx, union drsuapi_DsAddEntryError);
+
+	DCESRV_PULL_HANDLE_WERR(h, r->in.bind_handle, DRSUAPI_BIND_HANDLE);
+	b_state = h->data;
+
+	switch (r->in.level) {
+	case 2:
+		status = dsdb_origin_objects_commit(b_state->sam_ctx,
+						    mem_ctx,
+						    &r->in.req->req2.first_object,
+						    &num,
+						    &ids);
+		if (!W_ERROR_IS_OK(status)) {
+			r->out.ctr->ctr3.error->info1.status = status;
+			W_ERROR_NOT_OK_RETURN(status);
+		}
+
+		r->out.ctr->ctr3.count = num;
+		r->out.ctr->ctr3.objects = ids;
+
+		return WERR_OK;
+	default:
+		break;
+	}
+
+	return WERR_FOOBAR;
 }
 
 

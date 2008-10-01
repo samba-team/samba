@@ -31,13 +31,12 @@
 #include "libcli/auth/libcli_auth.h"
 #include "param/param.h"
 
-static WERROR dsdb_convert_object(struct ldb_context *ldb,
-				  const struct dsdb_schema *schema,
-				  struct dsdb_extended_replicated_objects *ctr,
-				  const struct drsuapi_DsReplicaObjectListItemEx *in,
-				  const DATA_BLOB *gensec_skey,
-				  TALLOC_CTX *mem_ctx,
-				  struct dsdb_extended_replicated_object *out)
+static WERROR dsdb_convert_object_ex(struct ldb_context *ldb,
+				     const struct dsdb_schema *schema,
+				     const struct drsuapi_DsReplicaObjectListItemEx *in,
+				     const DATA_BLOB *gensec_skey,
+				     TALLOC_CTX *mem_ctx,
+				     struct dsdb_extended_replicated_object *out)
 {
 	NTSTATUS nt_status;
 	enum ndr_err_code ndr_err;
@@ -241,7 +240,9 @@ WERROR dsdb_extended_replicated_objects_commit(struct ldb_context *ldb,
 			return WERR_FOOBAR;
 		}
 
-		status = dsdb_convert_object(ldb, schema, out, cur, gensec_skey, out->objects, &out->objects[i]);
+		status = dsdb_convert_object_ex(ldb, schema,
+						cur, gensec_skey,
+						out->objects, &out->objects[i]);
 		W_ERROR_NOT_OK_RETURN(status);
 	}
 	if (i != out->num_objects) {
@@ -284,4 +285,152 @@ WERROR dsdb_extended_replicated_objects_commit(struct ldb_context *ldb,
 	}
 
 	return WERR_OK;
+}
+
+static WERROR dsdb_convert_object(struct ldb_context *ldb,
+				  const struct dsdb_schema *schema,
+				  const struct drsuapi_DsReplicaObjectListItem *in,
+				  TALLOC_CTX *mem_ctx,
+				  struct ldb_message **_msg)
+{
+	WERROR status;
+	uint32_t i;
+	struct ldb_message *msg;
+
+	if (!in->object.identifier) {
+		return WERR_FOOBAR;
+	}
+
+	if (!in->object.identifier->dn || !in->object.identifier->dn[0]) {
+		return WERR_FOOBAR;
+	}
+
+	msg = ldb_msg_new(mem_ctx);
+	W_ERROR_HAVE_NO_MEMORY(msg);
+
+	msg->dn	= ldb_dn_new(msg, ldb, in->object.identifier->dn);
+	W_ERROR_HAVE_NO_MEMORY(msg->dn);
+
+	msg->num_elements	= in->object.attribute_ctr.num_attributes;
+	msg->elements		= talloc_array(msg, struct ldb_message_element,
+					       msg->num_elements);
+	W_ERROR_HAVE_NO_MEMORY(msg->elements);
+
+	/*
+	 * TODO:
+	 *
+	 * The DsAddEntry() call which creates a nTDSDSA object,
+	 * also adds a servicePrincipalName in the following form
+	 * to the computer account of the new domain controller
+	 * referenced by the "serverReferenece" attribute.
+	 *
+	 * E3514235-4B06-11D1-AB04-00C04FC2DCD2/<new-ntdsdsa-object-guid-as-string>/<domain-dns-name>
+	 *
+	 * also note that the "serverReference" isn't added to the new object!
+	 */
+
+	for (i=0; i < msg->num_elements; i++) {
+		struct drsuapi_DsReplicaAttribute *a;
+		struct ldb_message_element *e;
+
+		a = &in->object.attribute_ctr.attributes[i];
+		e = &msg->elements[i];
+
+		status = dsdb_attribute_drsuapi_to_ldb(ldb, schema, a, msg->elements, e);
+		W_ERROR_NOT_OK_RETURN(status);
+	}
+
+	*_msg = msg;
+	return WERR_OK;
+}
+
+WERROR dsdb_origin_objects_commit(struct ldb_context *ldb,
+				  TALLOC_CTX *mem_ctx,
+				  const struct drsuapi_DsReplicaObjectListItem *first_object,
+				  uint32_t *_num,
+				  struct drsuapi_DsReplicaObjectIdentifier2 **_ids)
+{
+	WERROR status;
+	const struct dsdb_schema *schema;
+	const struct drsuapi_DsReplicaObjectListItem *cur;
+	struct ldb_message **objects;
+	struct drsuapi_DsReplicaObjectIdentifier2 *ids;
+	uint32_t i;
+	uint32_t num_objects = 0;
+	const char * const attrs[] = {
+		"objectGUID",
+		"objectSid",
+		NULL
+	};
+	struct ldb_result *res;
+	int ret;
+
+	schema = dsdb_get_schema(ldb);
+	if (!schema) {
+		return WERR_DS_SCHEMA_NOT_LOADED;
+	}
+
+	for (cur = first_object; cur; cur = cur->next_object) {
+		num_objects++;
+	}
+
+	if (num_objects == 0) {
+		return WERR_OK;
+	}
+
+	objects	= talloc_array(mem_ctx, struct ldb_message *,
+			       num_objects);
+	W_ERROR_HAVE_NO_MEMORY(objects);
+
+	for (i=0, cur = first_object; cur; cur = cur->next_object, i++) {
+		status = dsdb_convert_object(ldb, schema,
+					     cur, objects, &objects[i]);
+		W_ERROR_NOT_OK_RETURN(status);
+	}
+
+	ids = talloc_array(mem_ctx,
+			   struct drsuapi_DsReplicaObjectIdentifier2,
+			   num_objects);
+	W_ERROR_HAVE_NO_MEMORY(objects);
+
+	ret = ldb_transaction_start(ldb);
+	if (ret != 0) {
+		goto cancel;
+	}
+
+	for (i=0; i < num_objects; i++) {
+		struct dom_sid *sid = NULL;
+		ret = ldb_add(ldb, objects[i]);
+		if (ret != 0) {
+			goto cancel;
+		}
+		ret = ldb_search(ldb, objects, &res, objects[i]->dn,
+				 LDB_SCOPE_BASE, attrs,
+				 "(objectClass=*)");
+		if (ret != 0) {
+			goto cancel;
+		}
+		ids[i].guid = samdb_result_guid(res->msgs[0], "objectGUID");
+		sid = samdb_result_dom_sid(objects, res->msgs[0], "objectSid");
+		if (sid) {
+			ids[i].sid = *sid;
+		} else {
+			ZERO_STRUCT(ids[i].sid);
+		}
+	}
+
+	ret = ldb_transaction_commit(ldb);
+	if (ret != 0) {
+		goto cancel;
+	}
+
+	talloc_free(objects);
+
+	*_num = num_objects;
+	*_ids = ids;
+	return WERR_OK;
+cancel:
+	talloc_free(objects);
+	ldb_transaction_cancel(ldb);
+	return WERR_FOOBAR;
 }
