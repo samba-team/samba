@@ -87,6 +87,9 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 	const char *attrs[] = {"unicodePwd", "userAccountControl", 
 			       "objectSid", NULL};
 
+	const char *trust_dom_attrs[] = {"flatname", NULL};
+	const char *account_name;
+
 	ZERO_STRUCTP(r->out.credentials);
 	*r->out.rid = 0;
 	*r->out.negotiate_flags = *r->in.negotiate_flags;
@@ -101,10 +104,54 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 	if (sam_ctx == NULL) {
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
+
+	if (r->in.secure_channel_type == SEC_CHAN_DNS_DOMAIN) {
+		char *encoded_account = ldb_binary_encode_string(mem_ctx, r->in.account_name);
+		char *flatname;
+		if (!encoded_account) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		/* Kill the trailing dot */
+		if (encoded_account[strlen(encoded_account)-1] == '.') {
+			encoded_account[strlen(encoded_account)-1] = '\0';
+		}
+
+		/* pull the user attributes */
+		num_records = gendb_search(sam_ctx, mem_ctx, NULL, &msgs, trust_dom_attrs,
+					   "(&(trustPartner=%s)(objectclass=trustedDomain))", 
+					   encoded_account);
+		
+		if (num_records == 0) {
+			DEBUG(3,("Couldn't find trust [%s] in samdb.\n", 
+				 encoded_account));
+			return NT_STATUS_ACCESS_DENIED;
+		}
+		
+		if (num_records > 1) {
+			DEBUG(0,("Found %d records matching user [%s]\n", num_records, r->in.account_name));
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+		
+		flatname = ldb_msg_find_attr_as_string(msgs[0], "flatname", NULL);
+		if (!flatname) {
+			/* No flatname for this trust - we can't proceed */
+			return NT_STATUS_ACCESS_DENIED;
+		}
+		account_name = talloc_asprintf(mem_ctx, "%s$", flatname);
+
+		if (!account_name) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		
+	} else {
+		account_name = r->in.account_name;
+	}
+	
 	/* pull the user attributes */
 	num_records = gendb_search(sam_ctx, mem_ctx, NULL, &msgs, attrs,
 				   "(&(sAMAccountName=%s)(objectclass=user))", 
-				   r->in.account_name);
+				   ldb_binary_encode_string(mem_ctx, account_name));
 
 	if (num_records == 0) {
 		DEBUG(3,("Couldn't find user [%s] in samdb.\n", 
@@ -130,7 +177,8 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 			DEBUG(1, ("Client asked for a workstation secure channel, but is not a workstation (member server) acb flags: 0x%x\n", user_account_control));
 			return NT_STATUS_ACCESS_DENIED;
 		}
-	} else if (r->in.secure_channel_type == SEC_CHAN_DOMAIN) {
+	} else if (r->in.secure_channel_type == SEC_CHAN_DOMAIN || 
+		   r->in.secure_channel_type == SEC_CHAN_DNS_DOMAIN) {
 		if (!(user_account_control & UF_INTERDOMAIN_TRUST_ACCOUNT)) {
 			DEBUG(1, ("Client asked for a trusted domain secure channel, but is not a trusted domain: acb flags: 0x%x\n", user_account_control));
 			
