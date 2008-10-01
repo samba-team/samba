@@ -1899,7 +1899,11 @@ static bool test_EnumTrustDom(struct dcerpc_pipe *p,
 		
 		/* NO_MORE_ENTRIES is allowed */
 		if (NT_STATUS_EQUAL(enum_status, NT_STATUS_NO_MORE_ENTRIES)) {
-			return true;
+			if (domains.count == 0) {
+				return true;
+			}
+			printf("EnumTrustDom failed - should have returned 0 trusted domains with 'NT_STATUS_NO_MORE_ENTRIES'\n");
+			return false;
 		} else if (NT_STATUS_EQUAL(enum_status, STATUS_MORE_ENTRIES)) {
 			/* Windows 2003 gets this off by one on the first run */
 			if (r.out.domains->count < 3 || r.out.domains->count > 4) {
@@ -1950,7 +1954,11 @@ static bool test_EnumTrustDom(struct dcerpc_pipe *p,
 		
 		/* NO_MORE_ENTRIES is allowed */
 		if (NT_STATUS_EQUAL(enum_status, NT_STATUS_NO_MORE_ENTRIES)) {
-			return true;
+			if (domains_ex.count == 0) {
+				return true;
+			}
+			printf("EnumTrustDomainsEx failed - should have returned 0 trusted domains with 'NT_STATUS_NO_MORE_ENTRIES'\n");
+			return false;
 		} else if (NT_STATUS_EQUAL(enum_status, STATUS_MORE_ENTRIES)) {
 			/* Windows 2003 gets this off by one on the first run */
 			if (r_ex.out.domains->count < 3 || r_ex.out.domains->count > 4) {
@@ -2115,7 +2123,7 @@ static bool test_CreateTrustedDomainEx2(struct dcerpc_pipe *p,
 
 		/* Try different trust types too */
 
-		/* 1 == downleven (NT4), 2 == uplevel (ADS), 3 == MIT (kerberos but not AD) */
+		/* 1 == downlevel (NT4), 2 == uplevel (ADS), 3 == MIT (kerberos but not AD) */
 		trustinfo.trust_type = (((i / 3) + 1) % 3) + 1;
 
 		trustinfo.trust_attributes = LSA_TRUST_ATTRIBUTE_USES_RC4_ENCRYPTION;
@@ -2160,6 +2168,7 @@ static bool test_CreateTrustedDomainEx2(struct dcerpc_pipe *p,
 				printf("QueryTrustedDomainInfo level 1 failed - %s\n", nt_errstr(status));
 				ret = false;
 			} else if (!q.out.info) {
+				printf("QueryTrustedDomainInfo level 1 failed to return an info pointer\n");
 				ret = false;
 			} else {
 				if (strcmp(q.out.info->info_ex.netbios_name.string, trustinfo.netbios_name.string) != 0) {
@@ -2188,11 +2197,13 @@ static bool test_CreateTrustedDomainEx2(struct dcerpc_pipe *p,
 
 	/* now that we have some domains to look over, we can test the enum calls */
 	if (!test_EnumTrustDom(p, mem_ctx, handle)) {
+		printf("test_EnumTrustDom failed\n");
 		ret = false;
 	}
 	
 	for (i=0; i<12; i++) {
 		if (!test_DeleteTrustedDomainBySid(p, mem_ctx, handle, domsid[i])) {
+			printf("test_DeleteTrustedDomainBySid failed\n");
 			ret = false;
 		}
 	}
