@@ -5,7 +5,7 @@ FROM A FEW PEOPLE. DON'T TAKE THIS AS THE FINAL VERSION YET.
 
 
 Samba4 Programming Guide
-------------------------
+========================
 
 .. contents::
 
