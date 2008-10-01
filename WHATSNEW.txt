@@ -1,6 +1,6 @@
                    =================================
                    Release Notes for Samba 3.3.0pre2
-                          September 30, 2008
+                           October 2, 2008
                    =================================
 
 This is the second preview release of Samba 3.3.0.  This is *not*
@@ -186,6 +186,7 @@ o   Jeremy Allison <jra@samba.org>
     * BUG 5783: Fix FindFirst where search pattern == mangled filename.
     * BUG 5790: Fix returning of STATUS_OBJECT_NAME_NOT_FOUND on set file
       disposition.
+    * BUG 5797: Fix moving of readonly files.
     * Fix crashes when looking up a non-existant uid.
     * Fix getting/setting of NT ACLs on a file.
     * Add st_birthtime and friends for accurate create times on *BSD
@@ -196,6 +197,8 @@ o   Jeremy Allison <jra@samba.org>
       mappings.
     * Write times code update.
     * Add experimental version of VFS module acl_xattr.
+    * Fix rename_open_files.
+    * Make SMB traffic analyzer VFS module more efficient.
 
 
 o   Gerald W. Carter <jerry@samba.org>
@@ -205,6 +208,7 @@ o   Gerald W. Carter <jerry@samba.org>
     * Allow an admin to define the "uid" attribute for a RFC2307
       user object in AD to be the username alias.
     * Add new idmap backend "adex" to support RFC2307 enabled AD forests.
+    * Add new idmap backend "hash".
 
 
 o   Steven Danneman <steven.danneman@isilon.com>
@@ -217,6 +221,8 @@ o   Günther Deschner <gd@samba.org>
     * BUG 5784: Fix pam_winbind build issue on Solaris.
     * Fix invalid sid copy (hit when enumerating sibling domains) in Winbind.
     * Fix double installation of cifs.upcall.
+    * Add change-user-password command to wbinfo.
+    * Fix segfault in _srvsvc_NetShareAdd.
 
 
 o   James Ding <ding_cc@hotmail.com>
@@ -271,6 +277,14 @@ o   Andrew Tridgell <tridge@samba.org>
     * Fix an errno handling bug that could lead to an infinite loop.
     * Fix logic of tsmsm_sendfile().
     * Fix handling of arbitrary new PAC types.
+    * Fix segfault on startup with trusted domains.
+    * Fix segfault on the CTDB destructor code.
+    * Fix memory leak.
+    * Re-add "winbind:ignore domains".
+
+
+o   Jelmer Vernooij <jelmer@samba.org>
+    * Fix segfault (Debian bug #431696).
 
 
 o   Qiao Yang <geoyang@ironport.com>
