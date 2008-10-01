@@ -771,13 +771,12 @@ void free_getent_state(struct getent_state *state)
 	temp = state;
 
 	while(temp != NULL) {
-		struct getent_state *next;
+		struct getent_state *next = temp->next;
 
 		/* Free sam entries then list entry */
 
 		SAFE_FREE(state->sam_entries);
 		DLIST_REMOVE(state, state);
-		next = temp->next;
 
 		SAFE_FREE(temp);
 		temp = next;

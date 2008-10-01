@@ -261,8 +261,8 @@ void conn_free_internal(connection_struct *conn)
 	/* Free vfs_connection_struct */
 	handle = conn->vfs_handles;
 	while(handle) {
-		DLIST_REMOVE(conn->vfs_handles, handle);
 		thandle = handle->next;
+		DLIST_REMOVE(conn->vfs_handles, handle);
 		if (handle->free_data)
 			handle->free_data(&handle->data);
 		handle = thandle;
