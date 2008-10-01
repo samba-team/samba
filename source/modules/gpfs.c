@@ -43,7 +43,7 @@ bool set_gpfs_sharemode(files_struct *fsp, uint32 access_mask,
 	if (!gpfs_share_modes) {
 		return True;
 	}
-	
+
 	if (gpfs_set_share_fn == NULL) {
 		return False;
 	}
@@ -104,7 +104,7 @@ int set_gpfs_lease(int fd, int leasetype)
 	if (leasetype == F_WRLCK) {
 		gpfs_type = GPFS_LEASE_WRITE;
 	}
-	
+
 	/* we unconditionally set CAP_LEASE, rather than looking for
 	   -1/EACCES as there is a bug in some versions of
 	   libgpfs_gpl.so which results in a leaked fd on /dev/ss0
