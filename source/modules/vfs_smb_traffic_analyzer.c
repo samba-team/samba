@@ -3,6 +3,7 @@
  * on the net.
  *
  * Copyright (C) Holger Hetterich, 2008
+ * Copyright (C) Jeremy Allison, 2008
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,14 +22,15 @@
 #include "includes.h"
 
 /* abstraction for the send_over_network function */
-#define UNIX_DOMAIN_SOCKET 1
-#define INTERNET_SOCKET 0
+enum sock_type {INTERNET_SOCKET = 0, UNIX_DOMAIN_SOCKET};
+
+#define LOCAL_PATHNAME "/var/tmp/stadsocket"
 
 extern userdom_struct current_user_info;
 
 static int vfs_smb_traffic_analyzer_debug_level = DBGC_VFS;
 
-static int smb_traffic_analyzer_connMode(vfs_handle_struct *handle)
+static enum sock_type smb_traffic_analyzer_connMode(vfs_handle_struct *handle)
 {
 	connection_struct *conn = handle->conn;
         const char *Mode;
@@ -43,28 +45,22 @@ static int smb_traffic_analyzer_connMode(vfs_handle_struct *handle)
 
 /* Connect to an internet socket */
 
-static int smb_traffic_analyzer_connect_inet_socket(vfs_handle_struct *handle)
+static int smb_traffic_analyzer_connect_inet_socket(vfs_handle_struct *handle,
+					const char *name, uint16_t port)
 {
 	/* Create a streaming Socket */
-	const char *Hostname;
 	int sockfd = -1;
-        uint16_t port;
 	struct addrinfo hints;
 	struct addrinfo *ailist = NULL;
 	struct addrinfo *res = NULL;
-	connection_struct *conn = handle->conn;
 	int ret;
-
-	/* get port number, target system from the config parameters */
-	Hostname=lp_parm_const_string(SNUM(conn), "smb_traffic_analyzer",
-				"host", "localhost");
 
 	ZERO_STRUCT(hints);
 	/* By default make sure it supports TCP. */
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_flags = AI_ADDRCONFIG;
 
-	ret = getaddrinfo(Hostname,
+	ret = getaddrinfo(name,
 			NULL,
 			&hints,
 			&ailist);
@@ -72,16 +68,13 @@ static int smb_traffic_analyzer_connect_inet_socket(vfs_handle_struct *handle)
         if (ret) {
 		DEBUG(3,("smb_traffic_analyzer_connect_inet_socket: "
 			"getaddrinfo failed for name %s [%s]\n",
-                        Hostname,
+                        name,
                         gai_strerror(ret) ));
 		return -1;
         }
 
-	port = atoi( lp_parm_const_string(SNUM(conn),
-				"smb_traffic_analyzer", "port", "9430"));
-
 	DEBUG(3,("smb_traffic_analyzer: Internet socket mode. Hostname: %s,"
-		"Port: %i\n", Hostname, port));
+		"Port: %i\n", name, port));
 
 	for (res = ailist; res; res = res->ai_next) {
 		struct sockaddr_storage ss;
@@ -115,15 +108,16 @@ static int smb_traffic_analyzer_connect_inet_socket(vfs_handle_struct *handle)
 
 /* Connect to a unix domain socket */
 
-static int smb_traffic_analyzer_connect_unix_socket(vfs_handle_struct *handle)
+static int smb_traffic_analyzer_connect_unix_socket(vfs_handle_struct *handle,
+						const char *name)
 {
 	/* Create the socket to stad */
 	int len, sock;
 	struct sockaddr_un remote;
 
 	DEBUG(7, ("smb_traffic_analyzer_connect_unix_socket: "
-			"Unix domain socket mode. Using "
-			"/var/tmp/stadsocket\n"));
+			"Unix domain socket mode. Using %s\n",
+			name ));
 
 	if ((sock = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
 		DEBUG(1, ("smb_traffic_analyzer_connect_unix_socket: "
@@ -131,7 +125,7 @@ static int smb_traffic_analyzer_connect_unix_socket(vfs_handle_struct *handle)
 			"make sure stad is running!\n"));
 	}
 	remote.sun_family = AF_UNIX;
-	strlcpy(remote.sun_path, "/var/tmp/stadsocket",
+	strlcpy(remote.sun_path, name,
 		    sizeof(remote.sun_path));
 	len=strlen(remote.sun_path) + sizeof(remote.sun_family);
 	if (connect(sock, (struct sockaddr *)&remote, len) == -1 ) {
@@ -144,6 +138,16 @@ static int smb_traffic_analyzer_connect_unix_socket(vfs_handle_struct *handle)
 	return sock;
 }
 
+/* Private data allowing shared connection sockets. */
+
+struct refcounted_sock {
+	struct refcounted_sock *next, *prev;
+	char *name;
+	uint16_t port;
+	int sock;
+	unsigned int ref_count;
+};
+
 /* Send data over a socket */
 
 static void smb_traffic_analyzer_send_data(vfs_handle_struct *handle,
@@ -151,16 +155,16 @@ static void smb_traffic_analyzer_send_data(vfs_handle_struct *handle,
 					const char *file_name,
 					bool Write)
 {
-	int *psockfd = NULL;
+	struct refcounted_sock *rf_sock = NULL;
 	struct timeval tv;
 	struct tm *tm = NULL;
 	int seconds;
 	char *str = NULL;
 	size_t len;
 
-	SMB_VFS_HANDLE_GET_DATA(handle, psockfd, int, return);
+	SMB_VFS_HANDLE_GET_DATA(handle, rf_sock, struct refcounted_sock, return);
 
-	if (psockfd == NULL || *psockfd == -1) {
+	if (rf_sock == NULL || rf_sock->sock == -1) {
 		DEBUG(1, ("smb_traffic_analyzer_send_data: socket is "
 			"closed\n"));
 		return;
@@ -174,8 +178,8 @@ static void smb_traffic_analyzer_send_data(vfs_handle_struct *handle,
 	seconds=(float) (tv.tv_usec / 1000);
 
 	str = talloc_asprintf(talloc_tos(),
-				"%u,\"%s\",\"%s\",\"%c\",\"%s\",\"%s\","
-				"\"%04d-%02d-%02d %02d:%02d:%02d.%03d\");",
+				"V1,%u,\"%s\",\"%s\",\"%c\",\"%s\",\"%s\","
+				"\"%04d-%02d-%02d %02d:%02d:%02d.%03d\"\n",
 				(unsigned int)result,
 				get_current_username(),
 				current_user_info.domain,
@@ -198,48 +202,94 @@ static void smb_traffic_analyzer_send_data(vfs_handle_struct *handle,
 
 	DEBUG(10, ("smb_traffic_analyzer_send_data_socket: sending %s\n",
 			str));
-	if (write_data(*psockfd, str, len) != len) {
+	if (write_data(rf_sock->sock, str, len) != len) {
 		DEBUG(1, ("smb_traffic_analyzer_send_data_socket: "
 			"error sending data to socket!\n"));
 		return ;
 	}
 }
 
+static struct refcounted_sock *sock_list;
+
 static void smb_traffic_analyzer_free_data(void **pptr)
 {
-	int *pfd = *(int **)pptr;
-	if(!pfd) {
+	struct refcounted_sock *rf_sock = *(struct refcounted_sock **)pptr;
+	if (rf_sock == NULL) {
 		return;
 	}
-	if (*pfd != -1) {
-		close(*pfd);
+	rf_sock->ref_count--;
+	if (rf_sock->ref_count != 0) {
+		return;
 	}
-	TALLOC_FREE(pfd);
+	if (rf_sock->sock != -1) {
+		close(rf_sock->sock);
+	}
+	DLIST_REMOVE(sock_list, rf_sock);
+	TALLOC_FREE(rf_sock);
 }
 
 static int smb_traffic_analyzer_connect(struct vfs_handle_struct *handle,
                          const char *service,
                          const char *user)
 {
-	int *pfd = TALLOC_P(handle, int);
+	connection_struct *conn = handle->conn;
+	enum sock_type st = smb_traffic_analyzer_connMode(handle);
+	struct refcounted_sock *rf_sock = NULL;
+	const char *name = (st == UNIX_DOMAIN_SOCKET) ? LOCAL_PATHNAME :
+				lp_parm_const_string(SNUM(conn),
+					"smb_traffic_analyzer",
+				"host", "localhost");
+	uint16_t port = (st == UNIX_DOMAIN_SOCKET) ? 0 :
+				atoi( lp_parm_const_string(SNUM(conn),
+				"smb_traffic_analyzer", "port", "9430"));
 
-	if (!pfd) {
-		errno = ENOMEM;
-		return -1;
+	/* Are we already connected ? */
+	for (rf_sock = sock_list; rf_sock; rf_sock = rf_sock->next) {
+		if (port == rf_sock->port &&
+				(strcmp(name, rf_sock->name) == 0)) {
+			break;
+		}
 	}
 
-	if (smb_traffic_analyzer_connMode(handle) == UNIX_DOMAIN_SOCKET) {
-		*pfd = smb_traffic_analyzer_connect_unix_socket(handle);
+	/* If we're connected already, just increase the
+ 	 * reference count. */
+	if (rf_sock) {
+		rf_sock->ref_count++;
 	} else {
-		*pfd = smb_traffic_analyzer_connect_inet_socket(handle);
-	}
-	if (*pfd == -1) {
-		return -1;
+		/* New connection. */
+		rf_sock = TALLOC_ZERO_P(NULL, struct refcounted_sock);
+		if (rf_sock == NULL) {
+			errno = ENOMEM;
+			return -1;
+		}
+		rf_sock->name = talloc_strdup(rf_sock, name);
+		if (rf_sock->name == NULL) {
+			TALLOC_FREE(rf_sock);
+			errno = ENOMEM;
+			return -1;
+		}
+		rf_sock->port = port;
+		rf_sock->ref_count = 1;
+
+		if (st == UNIX_DOMAIN_SOCKET) {
+			rf_sock->sock = smb_traffic_analyzer_connect_unix_socket(handle,
+							name);
+		} else {
+
+			rf_sock->sock = smb_traffic_analyzer_connect_inet_socket(handle,
+							name,
+							port);
+		}
+		if (rf_sock->sock == -1) {
+			TALLOC_FREE(rf_sock);
+			return -1;
+		}
+		DLIST_ADD(sock_list, rf_sock);
 	}
 
 	/* Store the private data. */
-	SMB_VFS_HANDLE_SET_DATA(handle, pfd, smb_traffic_analyzer_free_data,
-				int, return -1);
+	SMB_VFS_HANDLE_SET_DATA(handle, rf_sock, smb_traffic_analyzer_free_data,
+				struct refcounted_sock, return -1);
 	return SMB_VFS_NEXT_CONNECT(handle, service, user);
 }
 
