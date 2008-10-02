@@ -272,12 +272,12 @@ static uint32_t get_cldap_reply_server_flags(struct netlogon_samlogon_response *
 		case 3:
 		case 18:
 		case 19:
-			return r->nt5.server_type;
+			return r->data.nt5.server_type;
 		case 4:
 		case 5:
 		case 6:
 		case 7:
-			return r->nt5_ex.server_type;
+			return r->data.nt5_ex.server_type;
 		case 8:
 		case 9:
 		case 10:
@@ -286,7 +286,7 @@ static uint32_t get_cldap_reply_server_flags(struct netlogon_samlogon_response *
 		case 13:
 		case 14:
 		case 15:
-			return r->nt5_ex.server_type;
+			return r->data.nt5_ex.server_type;
 		case 20:
 		case 21:
 		case 22:
@@ -296,11 +296,11 @@ static uint32_t get_cldap_reply_server_flags(struct netlogon_samlogon_response *
 		case 26:
 		case 27:
 		case 28:
-			return r->nt5_ex.server_type;
+			return r->data.nt5_ex.server_type;
 		case 29:
 		case 30:
 		case 31:
-			return r->nt5_ex.server_type;
+			return r->data.nt5_ex.server_type;
 		default:
 			return 0;
 	}
@@ -913,10 +913,10 @@ static NTSTATUS process_dc_dns(TALLOC_CTX *mem_ctx,
 	}
 
 	status = make_dc_info_from_cldap_reply(mem_ctx, flags, &dclist[i].ss,
-					       &r->nt5_ex, info);
+					       &r->data.nt5_ex, info);
 	if (NT_STATUS_IS_OK(status)) {
 		return store_cldap_reply(mem_ctx, flags, &dclist[i].ss,
-					 nt_version, &r->nt5_ex);
+					 nt_version, &r->data.nt5_ex);
 	}
 
 	return status;
@@ -1035,7 +1035,7 @@ static NTSTATUS process_dc_netbios(TALLOC_CTX *mem_ctx,
 			logon1.domain = talloc_strdup_upper(mem_ctx, domain_name);
 			NT_STATUS_HAVE_NO_MEMORY(logon1.domain);
 
-			r->nt4 = logon1;
+			r->data.nt4 = logon1;
 			r->ntver = nt_version;
 
 			namecache_store(tmp_dc_name, NBT_NAME_SERVER, 1, &ip_list);
@@ -1049,10 +1049,10 @@ static NTSTATUS process_dc_netbios(TALLOC_CTX *mem_ctx,
  make_reply:
 
 	status = make_dc_info_from_cldap_reply(mem_ctx, flags, &dclist[i].ss,
-					       &r->nt5_ex, info);
+					       &r->data.nt5_ex, info);
 	if (NT_STATUS_IS_OK(status) && store_cache) {
 		return store_cldap_reply(mem_ctx, flags, &dclist[i].ss,
-					 nt_version, &r->nt5_ex);
+					 nt_version, &r->data.nt5_ex);
 	}
 
 	return status;

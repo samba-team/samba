@@ -289,7 +289,7 @@ static void unbecomeDC_recv_cldap(struct cldap_request *req)
 	c->status = cldap_netlogon_recv(req, s, &s->cldap.io);
 	if (!composite_is_ok(c)) return;
 
-	s->cldap.netlogon = s->cldap.io.out.netlogon.nt5_ex;
+	s->cldap.netlogon = s->cldap.io.out.netlogon.data.nt5_ex;
 
 	s->domain.dns_name		= s->cldap.netlogon.dns_domain;
 	s->domain.netbios_name		= s->cldap.netlogon.domain;

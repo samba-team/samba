@@ -58,7 +58,8 @@ NTSTATUS libnet_FindSite(TALLOC_CTX *ctx, struct libnet_context *lctx, struct li
 
 	cldap = cldap_socket_init(tmp_ctx, lctx->event_ctx, lp_iconv_convenience(lctx->lp_ctx));
 	status = cldap_netlogon(cldap, tmp_ctx, &search);
-	if (!NT_STATUS_IS_OK(status) || !search.out.netlogon.nt5_ex.client_site) {
+	if (!NT_STATUS_IS_OK(status)
+	    || !search.out.netlogon.data.nt5_ex.client_site) {
 		/*
 		  If cldap_netlogon() returns in error,
 		  default to using Default-First-Site-Name.
@@ -72,7 +73,7 @@ NTSTATUS libnet_FindSite(TALLOC_CTX *ctx, struct libnet_context *lctx, struct li
 		}
 	} else {
 		site_name_str = talloc_asprintf(tmp_ctx, "%s",
-					search.out.netlogon.nt5_ex.client_site);
+					search.out.netlogon.data.nt5_ex.client_site);
 		if (!site_name_str) {
 			r->out.error_string = NULL;
 			talloc_free(tmp_ctx);
