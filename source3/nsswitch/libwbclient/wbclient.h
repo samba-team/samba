@@ -411,6 +411,16 @@ wbcErr wbcSidToString(const struct wbcDomainSid *sid,
 wbcErr wbcStringToSid(const char *sid_string,
 		      struct wbcDomainSid *sid);
 
+/*
+ * Utility functions for dealing with GUIDs
+ */
+
+wbcErr wbcGuidToString(const struct wbcGuid *guid,
+		       char **guid_string);
+
+wbcErr wbcStringToGuid(const char *guid_string,
+		       struct wbcGuid *guid);
+
 wbcErr wbcPing(void);
 
 wbcErr wbcLibraryDetails(struct wbcLibraryDetails **details);
