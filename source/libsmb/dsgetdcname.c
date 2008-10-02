@@ -200,7 +200,7 @@ static NTSTATUS store_cldap_reply(TALLOC_CTX *mem_ctx,
 
 	/* FIXME */
 	r->sockaddr_size = 0x10; /* the w32 winsock addr size */
-	r->sockaddr.sa_family = 2; /* AF_INET */
+	r->sockaddr.sockaddr_family = 2; /* AF_INET */
 	r->sockaddr.pdc_ip = talloc_strdup(mem_ctx, addr);
 
 	ndr_err = ndr_push_struct_blob(&blob, mem_ctx, r,
