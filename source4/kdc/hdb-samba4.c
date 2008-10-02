@@ -758,7 +758,7 @@ static krb5_error_code LDB_trust_message2entry(krb5_context context, HDB *db,
 		goto out;
 	}
 
-	ndr_err = ndr_pull_struct_blob_all(password_val, mem_ctx, private->iconv_convenience, &password_blob,
+	ndr_err = ndr_pull_struct_blob(password_val, mem_ctx, private->iconv_convenience, &password_blob,
 					   (ndr_pull_flags_fn_t)ndr_pull_trustAuthInOutBlob);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		ret = EINVAL;
@@ -813,6 +813,8 @@ static krb5_error_code LDB_trust_message2entry(krb5_context context, HDB *db,
 		entry_ex->entry.keys.len++;
 	}
 		
+	entry_ex->entry.principal = malloc(sizeof(*(entry_ex->entry.principal)));
+
 	ret = copy_Principal(principal, entry_ex->entry.principal);
 	if (ret) {
 		krb5_clear_error_string(context);
@@ -1155,7 +1157,7 @@ static krb5_error_code LDB_fetch_krbtgt(krb5_context context, HDB *db,
 					principal, HDB_SAMBA4_ENT_TYPE_KRBTGT, 
 					msg[0], realm_ref_msg_1[0], entry_ex);
 		if (ret != 0) {
-			krb5_warnx(context, "LDB_fetch: message2entry failed");	
+			krb5_warnx(context, "LDB_fetch: self krbtgt message2entry failed");	
 		}
 		return ret;
 
@@ -1193,7 +1195,7 @@ static krb5_error_code LDB_fetch_krbtgt(krb5_context context, HDB *db,
 					      principal, direction, 
 					      msg[0], entry_ex);
 		if (ret != 0) {
-			krb5_warnx(context, "LDB_fetch: message2entry failed");	
+			krb5_warnx(context, "LDB_fetch: trust_message2entry failed");	
 		}
 		return ret;
 
