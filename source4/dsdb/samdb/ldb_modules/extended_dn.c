@@ -426,16 +426,14 @@ static int extended_search(struct ldb_module *module, struct ldb_request *req)
 				DATA_BLOB binary;
 				binary = strhex_to_data_blob(str);
 				if (!binary.data) {
-					ldb_oom(ac->module->ldb);
-					return ldb_module_done(ac->req, NULL, NULL,
-							       LDB_ERR_OPERATIONS_ERROR);
+					ldb_oom(module->ldb);
+					return LDB_ERR_OPERATIONS_ERROR;
 				}
 				valstr = ldb_binary_encode(req, binary);
 				data_blob_free(&binary);
 				if (!valstr) {
-					ldb_oom(ac->module->ldb);
-					return ldb_module_done(ac->req, NULL, NULL,
-							       LDB_ERR_OPERATIONS_ERROR);
+					ldb_oom(module->ldb);
+					return LDB_ERR_OPERATIONS_ERROR;
 				}
 			}
 
@@ -443,9 +441,8 @@ static int extended_search(struct ldb_module *module, struct ldb_request *req)
 			base_dn = ldb_get_default_basedn(module->ldb);
 			base_dn_filter = talloc_asprintf(req, "(objectSid=%s)", valstr);
 			if (!base_dn_filter) {
-				ldb_oom(ac->module->ldb);
-				return ldb_module_done(ac->req, NULL, NULL,
-						       LDB_ERR_OPERATIONS_ERROR);
+				ldb_oom(module->ldb);
+				return LDB_ERR_OPERATIONS_ERROR;
 			}
 			base_dn_scope = LDB_SCOPE_SUBTREE;
 			base_dn_attrs = dnattr;
@@ -476,16 +473,14 @@ static int extended_search(struct ldb_module *module, struct ldb_request *req)
 				DATA_BLOB binary;
 				binary = strhex_to_data_blob(str);
 				if (!binary.data) {
-					ldb_oom(ac->module->ldb);
-					return ldb_module_done(ac->req, NULL, NULL,
-							       LDB_ERR_OPERATIONS_ERROR);
+					ldb_oom(module->ldb);
+					return LDB_ERR_OPERATIONS_ERROR;
 				}
 				valstr = ldb_binary_encode(req, binary);
 				data_blob_free(&binary);
 				if (!valstr) {
-					ldb_oom(ac->module->ldb);
-					return ldb_module_done(ac->req, NULL, NULL,
-							       LDB_ERR_OPERATIONS_ERROR);
+					ldb_oom(module->ldb);
+					return LDB_ERR_OPERATIONS_ERROR;
 				}
 			}
 
@@ -493,9 +488,8 @@ static int extended_search(struct ldb_module *module, struct ldb_request *req)
 			base_dn = ldb_get_default_basedn(module->ldb);
 			base_dn_filter = talloc_asprintf(req, "(objectGUID=%s)", valstr);
 			if (!base_dn_filter) {
-				ldb_oom(ac->module->ldb);
-				return ldb_module_done(ac->req, NULL, NULL,
-						       LDB_ERR_OPERATIONS_ERROR);
+				ldb_oom(module->ldb);
+				return LDB_ERR_OPERATIONS_ERROR;
 			}
 			base_dn_scope = LDB_SCOPE_SUBTREE;
 			base_dn_attrs = dnattr;
@@ -513,9 +507,8 @@ static int extended_search(struct ldb_module *module, struct ldb_request *req)
 
 			wellknown_object = talloc_asprintf(req, "B:32:%s:", &dn[8]);
 			if (!wellknown_object) {
-				ldb_oom(ac->module->ldb);
-				return ldb_module_done(ac->req, NULL, NULL,
-						       LDB_ERR_OPERATIONS_ERROR);
+				ldb_oom(module->ldb);
+				return LDB_ERR_OPERATIONS_ERROR;
 			}
 
 			tail_str = p;
@@ -527,15 +520,13 @@ static int extended_search(struct ldb_module *module, struct ldb_request *req)
 
 			base_dn = ldb_dn_new(req, module->ldb, tail_str);
 			if (!base_dn) {
-				ldb_oom(ac->module->ldb);
-				return ldb_module_done(ac->req, NULL, NULL,
-						       LDB_ERR_OPERATIONS_ERROR);
+				ldb_oom(module->ldb);
+				return LDB_ERR_OPERATIONS_ERROR;
 			}
 			base_dn_filter = talloc_strdup(req, "(objectClass=*)");
 			if (!base_dn_filter) {
-				ldb_oom(ac->module->ldb);
-				return ldb_module_done(ac->req, NULL, NULL,
-						       LDB_ERR_OPERATIONS_ERROR);
+				ldb_oom(module->ldb);
+				return LDB_ERR_OPERATIONS_ERROR;
 			}
 			base_dn_scope = LDB_SCOPE_BASE;
 			base_dn_attrs = wkattr;
