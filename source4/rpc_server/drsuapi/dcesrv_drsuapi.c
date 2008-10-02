@@ -688,7 +688,48 @@ static WERROR dcesrv_drsuapi_DsWriteAccountSpn(struct dcesrv_call_state *dce_cal
 static WERROR dcesrv_drsuapi_DsRemoveDSServer(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				       struct drsuapi_DsRemoveDSServer *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct drsuapi_bind_state *b_state;
+	struct dcesrv_handle *h;
+	struct ldb_dn *ntds_dn;
+	int ret;
+	bool ok;
+
+	ZERO_STRUCT(r->out.res);
+	r->out.level_out = 1;
+
+	DCESRV_PULL_HANDLE_WERR(h, r->in.bind_handle, DRSUAPI_BIND_HANDLE);
+	b_state = h->data;
+
+	switch (r->in.level) {
+	case 1:
+		ntds_dn = ldb_dn_new(mem_ctx, b_state->sam_ctx, r->in.req->req1.server_dn);
+		W_ERROR_HAVE_NO_MEMORY(ntds_dn);
+
+		ok = ldb_dn_validate(ntds_dn);
+		if (!ok) {
+			return WERR_FOOBAR;
+		}
+
+		/* TODO: it's likely that we need more checks here */
+
+		ok = ldb_dn_add_child_fmt(ntds_dn, "CN=NTDS Settings");
+		if (!ok) {
+			return WERR_FOOBAR;
+		}
+
+		if (r->in.req->req1.commit) {
+			ret = ldb_delete(b_state->sam_ctx, ntds_dn);
+			if (ret != LDB_SUCCESS) {
+				return WERR_FOOBAR;
+			}
+		}
+
+		return WERR_OK;
+	default:
+		break;
+	}
+
+	return WERR_FOOBAR;
 }
 
 
