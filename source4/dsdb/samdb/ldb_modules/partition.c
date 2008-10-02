@@ -1160,6 +1160,20 @@ static int partition_init(struct ldb_module *module)
 		}
 	}
 
+	ret = ldb_mod_register_control(module, LDB_CONTROL_DOMAIN_SCOPE_OID);
+	if (ret != LDB_SUCCESS) {
+		ldb_debug(module->ldb, LDB_DEBUG_ERROR,
+			"partition: Unable to register control with rootdse!\n");
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	ret = ldb_mod_register_control(module, LDB_CONTROL_SEARCH_OPTIONS_OID);
+	if (ret != LDB_SUCCESS) {
+		ldb_debug(module->ldb, LDB_DEBUG_ERROR,
+			"partition: Unable to register control with rootdse!\n");
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
 	talloc_free(mem_ctx);
 	return ldb_next_init(module);
 }
