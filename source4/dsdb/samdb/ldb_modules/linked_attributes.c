@@ -217,6 +217,17 @@ static int linked_attributes_add(struct ldb_module *module, struct ldb_request *
 		
 		/* Even link IDs are for the originating attribute */
 		target_attr = dsdb_attribute_by_linkID(ac->schema, schema_attr->linkID + 1);
+		if (!target_attr) {
+			/*
+			 * windows 2003 has a broken schema where
+			 * the definition of msDS-IsDomainFor
+			 * is missing (which is supposed to be
+			 * the backlink of the msDS-HasDomainNCs
+			 * attribute
+			 */
+			continue;
+		}
+
 		attr_name = target_attr->lDAPDisplayName;
 		attr_val = ldb_dn_get_linearized(ac->req->op.add.message->dn);
 
@@ -301,6 +312,16 @@ static int la_mod_search_callback(struct ldb_request *req, struct ldb_reply *are
 			}
 
 			target_attr = dsdb_attribute_by_linkID(ac->schema, schema_attr->linkID + 1);
+			if (!target_attr) {
+				/*
+				 * windows 2003 has a broken schema where
+				 * the definition of msDS-IsDomainFor
+				 * is missing (which is supposed to be
+				 * the backlink of the msDS-HasDomainNCs
+				 * attribute
+				 */
+				continue;
+			}
 			attr_name = target_attr->lDAPDisplayName;
 
 			/* make sure we manage each value */
@@ -399,9 +420,14 @@ static int linked_attributes_modify(struct ldb_module *module, struct ldb_reques
 		/* Now find the target attribute */
 		target_attr = dsdb_attribute_by_linkID(ac->schema, schema_attr->linkID + 1);
 		if (!target_attr) {
-			ldb_asprintf_errstring(module->ldb, 
-					       "attribute %s does not have valid link target", el->name);
-			return LDB_ERR_OBJECT_CLASS_VIOLATION;			
+			/*
+			 * windows 2003 has a broken schema where
+			 * the definition of msDS-IsDomainFor
+			 * is missing (which is supposed to be
+			 * the backlink of the msDS-HasDomainNCs
+			 * attribute
+			 */
+			continue;
 		}
 
 		attr_name = target_attr->lDAPDisplayName;
@@ -654,9 +680,15 @@ static int la_op_search_callback(struct ldb_request *req,
 			if ((schema_attr->linkID & 1) == 0) {
 				/* Odd is for the target. */
 				target_attr = dsdb_attribute_by_linkID(ac->schema, schema_attr->linkID + 1);
+				if (!target_attr) {
+					continue;
+				}
 				attr_name = target_attr->lDAPDisplayName;
 			} else {
 				target_attr = dsdb_attribute_by_linkID(ac->schema, schema_attr->linkID - 1);
+				if (!target_attr) {
+					continue;
+				}
 				attr_name = target_attr->lDAPDisplayName;
 			}
 			for (j = 0; j < el->num_values; j++) {
