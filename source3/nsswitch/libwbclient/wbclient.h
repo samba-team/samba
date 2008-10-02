@@ -137,6 +137,19 @@ struct wbcSidWithAttr {
 #define WBC_SID_ATTR_GROUP_LOGON_ID 		0xC0000000
 
 /**
+ *  @brief Windows GUID
+ *
+ **/
+
+struct wbcGuid {
+	uint32_t time_low;
+	uint16_t time_mid;
+	uint16_t time_hi_and_version;
+	uint8_t clock_seq[2];
+	uint8_t node[6];
+};
+
+/**
  * @brief Domain Information
  **/
 
