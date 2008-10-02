@@ -466,6 +466,14 @@ static int partition_search(struct ldb_module *module, struct ldb_request *req)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
+	/*
+	 * for now pass down the LDB_CONTROL_SEARCH_OPTIONS_OID control
+	 * down as uncritical to make windows 2008 dcpromo happy.
+	 */
+	if (search_control) {
+		search_control->critical = 0;
+	}
+
 	/* TODO:
 	   Generate referrals (look for a partition under this DN) if we don't have the above control specified
 	*/
