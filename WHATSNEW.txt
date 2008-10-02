@@ -1,9 +1,9 @@
-                   =================================
-                   Release Notes for Samba 3.3.0pre2
-                           October 2, 2008
-                   =================================
+                   ================================
+                   Release Notes for Samba 3.3.0rc1
+                           
+                   ================================
 
-This is the second preview release of Samba 3.3.0.  This is *not*
+This is the first release candidate of Samba 3.3.0.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -168,127 +168,10 @@ smb.conf changes
     winbind reconnect delay		New		30
 
 
-Changes since 3.3.0pre1:
+Changes since 3.3.0pre2:
 ------------------------
 
 
-o   Michael Adam <obnox@samba.org>
-
-    * BUG 5492: Fix RHEL SPEC file by removing libmsrpc stuff.
-    * BUG 5507: Fix several issues in the RHEL SPEC file.
-
-o   Jeremy Allison <jra@samba.org>
-    * BUG 5729: Explicitly allow "-valid".
-    * BUG 5737: Fix winbindd crash in an unusual failure mode.
-    * BUG 5751: Fix showing of ACLs on DFS in (lib)smbclient.
-    * BUG 5762: Fix opening of mangled directory name (resulted
-      'is a stream name').
-    * BUG 5783: Fix FindFirst where search pattern == mangled filename.
-    * BUG 5790: Fix returning of STATUS_OBJECT_NAME_NOT_FOUND on set file
-      disposition.
-    * BUG 5797: Fix moving of readonly files.
-    * Fix crashes when looking up a non-existant uid.
-    * Fix getting/setting of NT ACLs on a file.
-    * Add st_birthtime and friends for accurate create times on *BSD
-      and MacOSX).
-    * Fix the wcache_invalidate_samlogon calls.
-    * Clarify usage of "force create mode".
-    * Get smbd to look (read-only) into the winbindd cache for uid/gid <--> sid
-      mappings.
-    * Write times code update.
-    * Add experimental version of VFS module acl_xattr.
-    * Fix rename_open_files.
-    * Make SMB traffic analyzer VFS module more efficient.
-
-
-o   Gerald W. Carter <jerry@samba.org>
-    * Fix segfault when calling nss_get_info() with a NULL ads structure.
-    * Add support for name aliasing in Winbind.
-    * Add the idmap/nss-info provider from Likewise Open.
-    * Allow an admin to define the "uid" attribute for a RFC2307
-      user object in AD to be the username alias.
-    * Add new idmap backend "adex" to support RFC2307 enabled AD forests.
-    * Add new idmap backend "hash".
-
-
-o   Steven Danneman <steven.danneman@isilon.com>
-    * Fix build warnings.
-    * Cleanup of DC enumeration in get_dcs().
-
-
-o   Günther Deschner <gd@samba.org>
-    * BUG 5710: Fix changing of machine account passwords.
-    * BUG 5784: Fix pam_winbind build issue on Solaris.
-    * Fix invalid sid copy (hit when enumerating sibling domains) in Winbind.
-    * Fix double installation of cifs.upcall.
-    * Add change-user-password command to wbinfo.
-    * Fix segfault in _srvsvc_NetShareAdd.
-
-
-o   James Ding <ding_cc@hotmail.com>
-    * BUG 5736: Fix Winbind crash bug with trusted domains.
-
-
-o   Ephi Dror <Ephi.Dror@datadomain.com>
-    * Correct the netsamlogon_clear_cached_user function.
-
-
-o   Holger Hetterich <hhetter@novell.com>
-    * Add new VFS module to analyze SMB traffic to record write and read
-      operations on the Samba server.
-
-
-o   Jeff Layton <jlayton@redhat.com>
-    * Fix build warnings in cifs.upcall.
-
-
-o   Volker Lendecke <vl@sernet.de>
-    * BUG 5707: Do proper error handling if the socket is closed.
-    * BUG 5778: Don't define 'strlcat' and 'strlcpy' if it's already defined.
-    * Fix Coverity IDs 587 and 589.
-    * Increase the default positive idmap cache time to a week.
-    * Fix calculation of useable_space for trans2 and nttrans replies.
-    * Add mapping of generic bits when setting an NFSv4 ACL.
-
-
-o   Stefan Metzmacher <metze@samba.org>
-    * Some write time fixes.
-
-
-o   Karolin Seeger <kseeger@samba.org>
-    * Add new parameter "cups connection timeout".
-
-
-o   Simo Sorce <idra@samba.org>
-    * Fix enumeration of nested group memberships in Winbind.
-      This affected only setups using "security = ads".
-
-
-o   Timur <timur@FreeBSD.org>
-    * Fix cut and paste error in quota code.
-    * Fix display of POSIX ACLs.
-    * Fix aio on FreeBSD.
-
-
-o   Andrew Tridgell <tridge@samba.org>
-    * Fix permissions of group_mapping.ldb (CVE-2008-3789).
-    * Avoid a race condition in glibc between AIO and setresuid().
-    * Add missing become root for AIO operations.
-    * Fix an errno handling bug that could lead to an infinite loop.
-    * Fix logic of tsmsm_sendfile().
-    * Fix handling of arbitrary new PAC types.
-    * Fix segfault on startup with trusted domains.
-    * Fix segfault on the CTDB destructor code.
-    * Fix memory leak.
-    * Re-add "winbind:ignore domains".
-
-
-o   Jelmer Vernooij <jelmer@samba.org>
-    * Fix segfault (Debian bug #431696).
-
-
-o   Qiao Yang <geoyang@ironport.com>
-    * Fix a memleak.
 
 
 Commit Highlights:
