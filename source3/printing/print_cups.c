@@ -71,7 +71,7 @@ static http_t *cups_connect(TALLOC_CTX *frame)
 	} else {
 		server = talloc_strdup(frame,cupsServer());
 	}
-	if (server) {
+	if (!server) {
 		return NULL;
 	}
 
