@@ -4,6 +4,7 @@
    Winbind client API
 
    Copyright (C) Gerald (Jerry) Carter 2007
+   Copyright (C) Guenther Deschner 2008
 
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
