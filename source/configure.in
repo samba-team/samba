@@ -128,7 +128,7 @@ fi
 if test "x$debug" = "xyes" ; then
 	CFLAGS="${CFLAGS} -g"
 else
-	CFLAGS="-O"
+	CFLAGS="${CFLAGS} -O"
 fi
 
 CFLAGS="${CFLAGS} -D_SAMBA_BUILD_=3"
