@@ -1531,7 +1531,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_nbt_sockaddr(struct ndr_push *ndr, int ndr_f
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sa_family));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sockaddr_family));
 		{
 			uint32_t _flags_save_ipv4address = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_BIGENDIAN);
@@ -1554,7 +1554,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_nbt_sockaddr(struct ndr_pull *ndr, int ndr_f
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sa_family));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sockaddr_family));
 		{
 			uint32_t _flags_save_ipv4address = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_BIGENDIAN);
@@ -1577,7 +1577,7 @@ _PUBLIC_ void ndr_print_nbt_sockaddr(struct ndr_print *ndr, const char *name, co
 {
 	ndr_print_struct(ndr, name, "nbt_sockaddr");
 	ndr->depth++;
-	ndr_print_uint32(ndr, "sa_family", r->sa_family);
+	ndr_print_uint32(ndr, "sockaddr_family", r->sockaddr_family);
 	ndr_print_ipv4address(ndr, "pdc_ip", r->pdc_ip);
 	ndr_print_DATA_BLOB(ndr, "remaining", r->remaining);
 	ndr->depth--;
