@@ -378,10 +378,10 @@ DNS_ERROR dns_create_update_request(TALLOC_CTX *mem_ctx,
 	if (!ERR_DNS_IS_OK(err)) return err;
 
 	/*
-	 * The zone must be used at all
+	 * Use the same prereq as WinXP -- No CNAME records for this host.
 	 */
 
-	err = dns_create_rrec(req, domainname, QTYPE_ANY, DNS_CLASS_ANY,
+	err = dns_create_rrec(req, hostname, QTYPE_CNAME, DNS_CLASS_NONE,
 			      0, 0, NULL, &rec);
 	if (!ERR_DNS_IS_OK(err)) goto error;
 
