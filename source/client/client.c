@@ -4343,6 +4343,8 @@ cleanup:
 	}
 }
 
+static bool finished;
+
 /****************************************************************************
  Make sure we swallow keepalives during idle time.
 ****************************************************************************/
@@ -4389,6 +4391,8 @@ static void readline_callback(void)
 			DEBUG(0, ("Read from server failed, maybe it closed "
 				  "the connection\n"));
 
+			finished = true;
+			smb_readline_done();
 			if (NT_STATUS_EQUAL(status, NT_STATUS_END_OF_FILE)) {
 				set_smb_read_error(&cli->smb_rw_error,
 						   SMB_READ_EOF);
@@ -4417,7 +4421,12 @@ static void readline_callback(void)
 	{
 		unsigned char garbage[16];
 		memset(garbage, 0xf0, sizeof(garbage));
-		cli_echo(cli, 1, garbage, sizeof(garbage));
+		if (!cli_echo(cli, 1, garbage, sizeof(garbage))) {
+			DEBUG(0, ("SMBecho failed. Maybe server has closed "
+				  "the connection\n"));
+			smb_readline_done();
+			finished = true;
+		}
 	}
 }
 
@@ -4429,7 +4438,7 @@ static int process_stdin(void)
 {
 	int rc = 0;
 
-	while (1) {
+	while (!finished) {
 		TALLOC_CTX *frame = talloc_stackframe();
 		char *tok = NULL;
 		char *the_prompt = NULL;

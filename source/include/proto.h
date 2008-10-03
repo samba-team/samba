@@ -728,6 +728,7 @@ bool privilege_set_to_se_priv( SE_PRIV *mask, struct lsa_PrivilegeSet *privset )
 
 /* The following definitions come from lib/readline.c  */
 
+void smb_readline_done(void);
 char *smb_readline(const char *prompt, void (*callback)(void),
 		   char **(completion_fn)(const char *text, int start, int end));
 const char *smb_readline_get_line_buffer(void);
