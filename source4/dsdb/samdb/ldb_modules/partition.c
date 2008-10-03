@@ -493,7 +493,7 @@ static int partition_search(struct ldb_module *module, struct ldb_request *req)
 		}
 		for (i=0; data && data->partitions && data->partitions[i]; i++) {
 			/* Find all partitions under the search base */
-			if (ldb_dn_compare_base(req->op.search.base, data->partitions[i]->dn) == 0) {
+			if (ldb_dn_compare_base(data->partitions[i]->dn, req->op.search.base) == 0) {
 				ret = partition_prep_request(ac, data->partitions[i]);
 				if (ret != LDB_SUCCESS) {
 					return ret;
@@ -578,7 +578,7 @@ static int partition_rename(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	for (i=0; data && data->partitions && data->partitions[i]; i++) {
-		if (ldb_dn_compare_base(req->op.rename.olddn, data->partitions[i]->dn) == 0) {
+		if (ldb_dn_compare_base(data->partitions[i]->dn, req->op.rename.olddn) == 0) {
 			matched = i;
 		}
 	}

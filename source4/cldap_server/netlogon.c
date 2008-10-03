@@ -301,7 +301,7 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 		server_type |= NBT_SERVER_KDC;
 	}
 
-	if (!ldb_dn_compare_base(ldb_get_root_basedn(sam_ctx), ldb_get_default_basedn(sam_ctx))) {
+	if (ldb_dn_compare(ldb_get_root_basedn(sam_ctx), ldb_get_default_basedn(sam_ctx)) == 0) {
 		server_type |= NBT_SERVER_DS_DNS_FOREST;
 	}
 

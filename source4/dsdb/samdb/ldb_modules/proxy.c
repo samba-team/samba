@@ -233,7 +233,7 @@ static void proxy_convert_record(struct ldb_context *ldb,
 	int attr, v;
 
 	/* fix the message DN */
-	if (ldb_dn_compare_base(ldb, proxy->olddn, msg->dn) == 0) {
+	if (ldb_dn_compare_base(proxy->olddn, msg->dn) == 0) {
 		ldb_dn_remove_base_components(msg->dn, ldb_dn_get_comp_num(proxy->olddn));
 		ldb_dn_add_base(msg->dn, proxy->newdn);
 	}
@@ -322,7 +322,7 @@ static int proxy_search_bytree(struct ldb_module *module, struct ldb_request *re
 	}
 
 	/* see if the dn is within olddn */
-	if (ldb_dn_compare_base(module->ldb, proxy->newdn, req->op.search.base) != 0) {
+	if (ldb_dn_compare_base(proxy->newdn, req->op.search.base) != 0) {
 		goto passthru;
 	}
 
