@@ -29,7 +29,6 @@
 /* look in server.c for some explanation of these variables */
 extern enum protocol_types Protocol;
 extern int max_recv;
-unsigned int smb_echo_count = 0;
 extern uint32 global_client_caps;
 
 extern bool global_encrypted_passwords_negotiated;
@@ -4613,8 +4612,6 @@ void reply_echo(struct smb_request *req)
 	DEBUG(3,("echo %d times\n", smb_reverb));
 
 	TALLOC_FREE(req->outbuf);
-
-	smb_echo_count++;
 
 	END_PROFILE(SMBecho);
 	return;
