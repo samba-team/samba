@@ -717,7 +717,6 @@ static krb5_error_code LDB_trust_message2entry(krb5_context context, HDB *db,
 
 	enum ndr_err_code ndr_err;
 	int i, ret, trust_direction_flags;
-	uint32_t kvno;
 
 	private = talloc(mem_ctx, struct hdb_ldb_private);
 	if (!private) {
@@ -765,6 +764,7 @@ static krb5_error_code LDB_trust_message2entry(krb5_context context, HDB *db,
 		goto out;
 	}
 
+	entry_ex->entry.kvno = -1;
 	for (i=0; i < password_blob.count; i++) {
 		if (password_blob.current->array[i].AuthType == TRUST_AUTH_TYPE_VERSION) {
 			entry_ex->entry.kvno = password_blob.current->array[i].AuthInfo.version.version;
