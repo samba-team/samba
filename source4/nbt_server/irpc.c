@@ -79,16 +79,17 @@ static void getdc_recv_netlogon_reply(struct dgram_mailslot_handler *dgmslot,
 
 	/* We asked for version 1 only */
 	if (netlogon.response_type == NETLOGON_SAMLOGON
-	    && netlogon.samlogon.ntver != NETLOGON_NT_VERSION_1) {
+	    && netlogon.data.samlogon.ntver != NETLOGON_NT_VERSION_1) {
 		status = NT_STATUS_INVALID_NETWORK_RESPONSE;
 		goto done;
 	}
 
-	p = netlogon.samlogon.nt4.server;
+	p = netlogon.data.samlogon.data.nt4.server;
 
 	DEBUG(10, ("NTLOGON_SAM_LOGON_REPLY: server: %s, user: %s, "
-		   "domain: %s\n", p, netlogon.samlogon.nt4.user_name,
-		   netlogon.samlogon.nt4.domain));
+		   "domain: %s\n", p,
+		   netlogon.data.samlogon.data.nt4.user_name,
+		   netlogon.data.samlogon.data.nt4.domain));
 
 	if (*p == '\\') p += 1;
 	if (*p == '\\') p += 1;

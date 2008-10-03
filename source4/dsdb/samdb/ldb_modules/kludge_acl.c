@@ -321,6 +321,8 @@ static int kludge_acl_search(struct ldb_module *module, struct ldb_request *req)
 	struct kludge_private_data *data;
 	const char * const *attrs;
 	int ret, i;
+	struct ldb_control *sd_control;
+	struct ldb_control **sd_saved_controls;
 
 	ac = talloc(req, struct kludge_acl_context);
 	if (ac == NULL) {
@@ -380,6 +382,17 @@ static int kludge_acl_search(struct ldb_module *module, struct ldb_request *req)
 					req);
 	if (ret != LDB_SUCCESS) {
 		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	/* check if there's an SD_FLAGS control */
+	sd_control = ldb_request_get_control(down_req, LDB_CONTROL_SD_FLAGS_OID);
+	if (sd_control) {
+		/* save it locally and remove it from the list */
+		/* we do not need to replace them later as we
+		 * are keeping the original req intact */
+		if (!save_controls(sd_control, down_req, &sd_saved_controls)) {
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
 	}
 
 	/* perform the search */
@@ -461,6 +474,13 @@ static int kludge_acl_init(struct ldb_module *module)
 		talloc_steal(data->password_attrs, password_attributes->values[i].data);
 	}
 	data->password_attrs[i] = NULL;
+
+	ret = ldb_mod_register_control(module, LDB_CONTROL_SD_FLAGS_OID);
+	if (ret != LDB_SUCCESS) {
+		ldb_debug(module->ldb, LDB_DEBUG_ERROR,
+			"partition: Unable to register control with rootdse!\n");
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
 
 done:
 	talloc_free(mem_ctx);

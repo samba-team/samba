@@ -318,7 +318,7 @@ static int rootdse_search(struct ldb_module *module, struct ldb_request *req)
 					LDB_SCOPE_BASE,
 					NULL,
 					req->op.search.attrs,
-					req->controls,
+					NULL,/* for now skip the controls from the client */
 					ac, rootdse_callback,
 					req);
 	if (ret != LDB_SUCCESS) {

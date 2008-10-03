@@ -339,7 +339,7 @@ interface nbt
 	 */
 
 	typedef [public,gensize] struct {
-		uint32			sa_family;
+		uint32			sockaddr_family;
 		[flag(NDR_BIG_ENDIAN)]	ipv4address pdc_ip;
 		[flag(NDR_REMAINING)]	DATA_BLOB remaining;
 	} nbt_sockaddr;

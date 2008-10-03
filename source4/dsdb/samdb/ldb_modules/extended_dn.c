@@ -202,10 +202,14 @@ struct extended_context {
 
 	struct ldb_module *module;
 	struct ldb_request *req;
-
+	struct ldb_control *control;
+	struct ldb_dn *basedn;
+	char *wellknown_object;
+	bool inject;
 	bool remove_guid;
 	bool remove_sid;
 	int extended_type;
+	const char * const *cast_attrs;
 };
 
 static int extended_callback(struct ldb_request *req, struct ldb_reply *ares)
@@ -226,13 +230,15 @@ static int extended_callback(struct ldb_request *req, struct ldb_reply *ares)
 
 	switch (ares->type) {
 	case LDB_REPLY_ENTRY:
-		/* for each record returned post-process to add any derived
-		   attributes that have been asked for */
-		ret = inject_extended_dn(ares->message, ac->module->ldb,
-					 ac->extended_type, ac->remove_guid,
-					 ac->remove_sid);
-		if (ret != LDB_SUCCESS) {
-			return ldb_module_done(ac->req, NULL, NULL, ret);
+		if (ac->inject) {
+			/* for each record returned post-process to add any derived
+			   attributes that have been asked for */
+			ret = inject_extended_dn(ares->message, ac->module->ldb,
+						 ac->extended_type, ac->remove_guid,
+						 ac->remove_sid);
+			if (ret != LDB_SUCCESS) {
+				return ldb_module_done(ac->req, NULL, NULL, ret);
+			}
 		}
 
 		return ldb_module_send_entry(ac->req, ares->message);
@@ -248,6 +254,118 @@ static int extended_callback(struct ldb_request *req, struct ldb_reply *ares)
 	return LDB_SUCCESS;
 }
 
+static int extended_base_callback(struct ldb_request *req, struct ldb_reply *ares)
+{
+	struct extended_context *ac;
+	struct ldb_request *down_req;
+	struct ldb_control **saved_controls;
+	struct ldb_message_element *el;
+	int ret;
+	size_t i;
+	size_t wkn_len = 0;
+	char *valstr = NULL;
+	const char *found = NULL;
+
+	ac = talloc_get_type(req->context, struct extended_context);
+
+	if (!ares) {
+		return ldb_module_done(ac->req, NULL, NULL,
+					LDB_ERR_OPERATIONS_ERROR);
+	}
+	if (ares->error != LDB_SUCCESS) {
+		return ldb_module_done(ac->req, ares->controls,
+					ares->response, ares->error);
+	}
+
+	switch (ares->type) {
+	case LDB_REPLY_ENTRY:
+		if (!ac->wellknown_object) {
+			ac->basedn = ares->message->dn;
+			break;
+		}
+
+		wkn_len = strlen(ac->wellknown_object);
+
+		el = ldb_msg_find_element(ares->message, "wellKnownObjects");
+		if (!el) {
+			ac->basedn = NULL;
+			break;
+		}
+
+		for (i=0; i < el->num_values; i++) {
+			valstr = talloc_strndup(ac,
+						(const char *)el->values[i].data,
+						el->values[i].length);
+			if (!valstr) {
+				ldb_oom(ac->module->ldb);
+				return ldb_module_done(ac->req, NULL, NULL,
+						       LDB_ERR_OPERATIONS_ERROR);
+			}
+
+			if (strncasecmp(valstr, ac->wellknown_object, wkn_len) != 0) {
+				talloc_free(valstr);
+				continue;
+			}
+
+			found = &valstr[wkn_len];
+			break;
+		}
+
+		if (!found) {
+			break;
+		}
+
+		ac->basedn = ldb_dn_new(ac, ac->module->ldb, found);
+		talloc_free(valstr);
+		if (!ac->basedn) {
+			ldb_oom(ac->module->ldb);
+			return ldb_module_done(ac->req, NULL, NULL,
+					       LDB_ERR_OPERATIONS_ERROR);
+		}
+
+		break;
+
+	case LDB_REPLY_REFERRAL:
+		break;
+
+	case LDB_REPLY_DONE:
+
+		if (!ac->basedn) {
+			const char *str = talloc_asprintf(req, "Base-DN '%s' not found",
+							  ldb_dn_get_linearized(ac->req->op.search.base));
+			ldb_set_errstring(ac->module->ldb, str);
+			return ldb_module_done(ac->req, NULL, NULL,
+					       LDB_ERR_NO_SUCH_OBJECT);
+		}
+
+		ret = ldb_build_search_req_ex(&down_req,
+						ac->module->ldb, ac,
+						ac->basedn,
+						ac->req->op.search.scope,
+						ac->req->op.search.tree,
+						ac->cast_attrs,
+						ac->req->controls,
+						ac, extended_callback,
+						ac->req);
+		if (ret != LDB_SUCCESS) {
+			return ldb_module_done(ac->req, NULL, NULL, LDB_ERR_OPERATIONS_ERROR);
+		}
+
+		if (ac->control) {
+			/* save it locally and remove it from the list */
+			/* we do not need to replace them later as we
+			 * are keeping the original req intact */
+			if (!save_controls(ac->control, down_req, &saved_controls)) {
+				return ldb_module_done(ac->req, NULL, NULL,
+							LDB_ERR_OPERATIONS_ERROR);
+			}
+		}
+
+		/* perform the search */
+		return ldb_next_request(ac->module, down_req);
+	}
+	return LDB_SUCCESS;
+}
 
 static int extended_search(struct ldb_module *module, struct ldb_request *req)
 {
@@ -256,25 +374,181 @@ static int extended_search(struct ldb_module *module, struct ldb_request *req)
 	struct ldb_control **saved_controls;
 	struct extended_context *ac;
 	struct ldb_request *down_req;
-	const char * const *cast_attrs = NULL;
 	char **new_attrs;
 	int ret;
+	struct ldb_dn *base_dn = NULL;
+	enum ldb_scope base_dn_scope = LDB_SCOPE_BASE;
+	const char *base_dn_filter = NULL;
+	const char * const *base_dn_attrs = NULL;
+	char *wellknown_object = NULL;
+	static const char *dnattr[] = {
+		"distinguishedName",
+		NULL
+	};
+	static const char *wkattr[] = {
+		"wellKnownObjects",
+		NULL
+	};
+
+	if (ldb_dn_is_special(req->op.search.base)) {
+		char *dn;
+
+		dn = ldb_dn_alloc_linearized(req, req->op.search.base);
+		if (!dn) {
+			ldb_oom(module->ldb);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+
+		if (strncasecmp(dn, "<SID=", 5) == 0) {
+			char *str;
+			char *valstr;
+			char *p;
+
+			p = strchr(dn, '=');
+			if (!p) {
+				return LDB_ERR_INVALID_DN_SYNTAX;
+			}
+
+			p[0] = '\0';
+			p++;
+
+			str = p;
+
+			p = strchr(str, '>');
+			if (!p) {
+				return LDB_ERR_INVALID_DN_SYNTAX;
+			}
+			p[0] = '\0';
+
+			if (strncasecmp(str, "S-", 2) == 0) {
+				valstr = str;
+			} else {
+				DATA_BLOB binary;
+				binary = strhex_to_data_blob(str);
+				if (!binary.data) {
+					ldb_oom(module->ldb);
+					return LDB_ERR_OPERATIONS_ERROR;
+				}
+				valstr = ldb_binary_encode(req, binary);
+				data_blob_free(&binary);
+				if (!valstr) {
+					ldb_oom(module->ldb);
+					return LDB_ERR_OPERATIONS_ERROR;
+				}
+			}
+
+			/* TODO: do a search over all partitions */
+			base_dn = ldb_get_default_basedn(module->ldb);
+			base_dn_filter = talloc_asprintf(req, "(objectSid=%s)", valstr);
+			if (!base_dn_filter) {
+				ldb_oom(module->ldb);
+				return LDB_ERR_OPERATIONS_ERROR;
+			}
+			base_dn_scope = LDB_SCOPE_SUBTREE;
+			base_dn_attrs = dnattr;
+		} else if (strncasecmp(dn, "<GUID=", 6) == 0) {
+			char *str;
+			char *valstr;
+			char *p;
+
+			p = strchr(dn, '=');
+			if (!p) {
+				return LDB_ERR_INVALID_DN_SYNTAX;
+			}
+
+			p[0] = '\0';
+			p++;
+
+			str = p;
+
+			p = strchr(str, '>');
+			if (!p) {
+				return LDB_ERR_INVALID_DN_SYNTAX;
+			}
+			p[0] = '\0';
+
+			if (strchr(str, '-')) {
+				valstr = str;
+			} else {
+				DATA_BLOB binary;
+				binary = strhex_to_data_blob(str);
+				if (!binary.data) {
+					ldb_oom(module->ldb);
+					return LDB_ERR_OPERATIONS_ERROR;
+				}
+				valstr = ldb_binary_encode(req, binary);
+				data_blob_free(&binary);
+				if (!valstr) {
+					ldb_oom(module->ldb);
+					return LDB_ERR_OPERATIONS_ERROR;
+				}
+			}
+
+			/* TODO: do a search over all partitions */
+			base_dn = ldb_get_default_basedn(module->ldb);
+			base_dn_filter = talloc_asprintf(req, "(objectGUID=%s)", valstr);
+			if (!base_dn_filter) {
+				ldb_oom(module->ldb);
+				return LDB_ERR_OPERATIONS_ERROR;
+			}
+			base_dn_scope = LDB_SCOPE_SUBTREE;
+			base_dn_attrs = dnattr;
+		} else if (strncasecmp(dn, "<WKGUID=", 8) == 0) {
+			char *tail_str;
+			char *p;
+
+			p = strchr(dn, ',');
+			if (!p) {
+				return LDB_ERR_INVALID_DN_SYNTAX;
+			}
+
+			p[0] = '\0';
+			p++;
+
+			wellknown_object = talloc_asprintf(req, "B:32:%s:", &dn[8]);
+			if (!wellknown_object) {
+				ldb_oom(module->ldb);
+				return LDB_ERR_OPERATIONS_ERROR;
+			}
+
+			tail_str = p;
+			p = strchr(tail_str, '>');
+			if (!p) {
+				return LDB_ERR_INVALID_DN_SYNTAX;
+			}
+			p[0] = '\0';
+
+			base_dn = ldb_dn_new(req, module->ldb, tail_str);
+			if (!base_dn) {
+				ldb_oom(module->ldb);
+				return LDB_ERR_OPERATIONS_ERROR;
+			}
+			base_dn_filter = talloc_strdup(req, "(objectClass=*)");
+			if (!base_dn_filter) {
+				ldb_oom(module->ldb);
+				return LDB_ERR_OPERATIONS_ERROR;
+			}
+			base_dn_scope = LDB_SCOPE_BASE;
+			base_dn_attrs = wkattr;
+		}
+		talloc_free(dn);
+	}
 
 	/* check if there's an extended dn control */
 	control = ldb_request_get_control(req, LDB_CONTROL_EXTENDED_DN_OID);
-	if (control == NULL) {
+	if (control == NULL && base_dn_filter == NULL) {
 		/* not found go on */
 		return ldb_next_request(module, req);
 	}
 
-	if (control->data) {
+	if (control && control->data) {
 		extended_ctrl = talloc_get_type(control->data, struct ldb_extended_dn_control);
 		if (!extended_ctrl) {
 			return LDB_ERR_PROTOCOL_ERROR;
 		}
 	}
 
-	ac = talloc(req, struct extended_context);
+	ac = talloc_zero(req, struct extended_context);
 	if (ac == NULL) {
 		ldb_oom(module->ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -282,41 +556,67 @@ static int extended_search(struct ldb_module *module, struct ldb_request *req)
 
 	ac->module = module;
 	ac->req = req;
+	ac->control = control;
+	ac->basedn = NULL;
+	ac->wellknown_object = wellknown_object;
+	ac->inject = false;
 	ac->remove_guid = false;
 	ac->remove_sid = false;
-	if (extended_ctrl) {
-		ac->extended_type = extended_ctrl->type;
-	} else {
-		ac->extended_type = 0;
+
+	if (control) {
+		ac->inject = true;
+		if (extended_ctrl) {
+			ac->extended_type = extended_ctrl->type;
+		} else {
+			ac->extended_type = 0;
+		}
+
+		/* check if attrs only is specified, in that case check wether we need to modify them */
+		if (req->op.search.attrs) {
+			if (! is_attr_in_list(req->op.search.attrs, "objectGUID")) {
+				ac->remove_guid = true;
+			}
+			if (! is_attr_in_list(req->op.search.attrs, "objectSID")) {
+				ac->remove_sid = true;
+			}
+			if (ac->remove_guid || ac->remove_sid) {
+				new_attrs = copy_attrs(ac, req->op.search.attrs);
+				if (new_attrs == NULL) {
+					ldb_oom(module->ldb);
+					return LDB_ERR_OPERATIONS_ERROR;
+				}
+
+				if (ac->remove_guid) {
+					if (!add_attrs(ac, &new_attrs, "objectGUID"))
+						return LDB_ERR_OPERATIONS_ERROR;
+				}
+				if (ac->remove_sid) {
+					if (!add_attrs(ac, &new_attrs, "objectSID"))
+						return LDB_ERR_OPERATIONS_ERROR;
+				}
+				ac->cast_attrs = (const char * const *)new_attrs;
+			} else {
+				ac->cast_attrs = req->op.search.attrs;
+			}
+		}
 	}
 
-	/* check if attrs only is specified, in that case check wether we need to modify them */
-	if (req->op.search.attrs) {
-		if (! is_attr_in_list(req->op.search.attrs, "objectGUID")) {
-			ac->remove_guid = true;
+	if (base_dn) {
+		ret = ldb_build_search_req(&down_req,
+					   module->ldb, ac,
+					   base_dn,
+					   base_dn_scope,
+					   base_dn_filter,
+					   base_dn_attrs,
+					   NULL,
+					   ac, extended_base_callback,
+					   req);
+		if (ret != LDB_SUCCESS) {
+			return LDB_ERR_OPERATIONS_ERROR;
 		}
-		if (! is_attr_in_list(req->op.search.attrs, "objectSID")) {
-			ac->remove_sid = true;
-		}
-		if (ac->remove_guid || ac->remove_sid) {
-			new_attrs = copy_attrs(ac, req->op.search.attrs);
-			if (new_attrs == NULL) {
-				ldb_oom(module->ldb);
-				return LDB_ERR_OPERATIONS_ERROR;
-			}
-			
-			if (ac->remove_guid) {
-				if (!add_attrs(ac, &new_attrs, "objectGUID"))
-					return LDB_ERR_OPERATIONS_ERROR;
-			}
-			if (ac->remove_sid) {
-				if (!add_attrs(ac, &new_attrs, "objectSID"))
-					return LDB_ERR_OPERATIONS_ERROR;
-			}
-			cast_attrs = (const char * const *)new_attrs;
-		} else {
-			cast_attrs = req->op.search.attrs;
-		}
+
+		/* perform the search */
+		return ldb_next_request(module, down_req);
 	}
 
 	ret = ldb_build_search_req_ex(&down_req,
@@ -324,7 +624,7 @@ static int extended_search(struct ldb_module *module, struct ldb_request *req)
 					req->op.search.base,
 					req->op.search.scope,
 					req->op.search.tree,
-					cast_attrs,
+					ac->cast_attrs,
 					req->controls,
 					ac, extended_callback,
 					req);
@@ -332,11 +632,13 @@ static int extended_search(struct ldb_module *module, struct ldb_request *req)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	/* save it locally and remove it from the list */
-	/* we do not need to replace them later as we
-	 * are keeping the original req intact */
-	if (!save_controls(control, down_req, &saved_controls)) {
-		return LDB_ERR_OPERATIONS_ERROR;
+	if (ac->control) {
+		/* save it locally and remove it from the list */
+		/* we do not need to replace them later as we
+		 * are keeping the original req intact */
+		if (!save_controls(control, down_req, &saved_controls)) {
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
 	}
 
 	/* perform the search */

@@ -3,6 +3,7 @@
  * on the net.
  *
  * Copyright (C) Holger Hetterich, 2008
+ * Copyright (C) Jeremy Allison, 2008
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,94 +22,14 @@
 #include "includes.h"
 
 /* abstraction for the send_over_network function */
-#define UNIX_DOMAIN_SOCKET 1
-#define INTERNET_SOCKET 0
 
+enum sock_type {INTERNET_SOCKET = 0, UNIX_DOMAIN_SOCKET};
 
-/* Prototypes */
-
-extern userdom_struct current_user_info;
+#define LOCAL_PATHNAME "/var/tmp/stadsocket"
 
 static int vfs_smb_traffic_analyzer_debug_level = DBGC_VFS;
 
-NTSTATUS vfs_smb_traffic_analyzer_init(void);
-
-static ssize_t smb_traffic_analyzer_write(vfs_handle_struct *handle,
-		files_struct *fsp, const void *data, size_t n);
-
-static ssize_t smb_traffic_analyzer_read(vfs_handle_struct *handle,
-		files_struct *fsp, void *data, size_t n);
-
-static ssize_t smb_traffic_analyzer_pwrite(vfs_handle_struct *handle,
-		files_struct *fsp, const void *data, size_t n,
-		SMB_OFF_T offset);
-
-static ssize_t smb_traffic_analyzer_pread(vfs_handle_struct *handle,
-		files_struct *fsp, void *data, size_t n, SMB_OFF_T offset);
-
-
-/* VFS operations we use */
-
-static vfs_op_tuple smb_traffic_analyzer_tuples[] = {
-
-	{SMB_VFS_OP(smb_traffic_analyzer_read),	SMB_VFS_OP_READ,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_traffic_analyzer_pread), SMB_VFS_OP_PREAD,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_traffic_analyzer_write), SMB_VFS_OP_WRITE,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_traffic_analyzer_pwrite), SMB_VFS_OP_PWRITE,
-	 SMB_VFS_LAYER_LOGGER},
-       	{SMB_VFS_OP(NULL),SMB_VFS_OP_NOOP,SMB_VFS_LAYER_NOOP}
-
-	};
-
-
-/* Module initialization */
-
-NTSTATUS vfs_smb_traffic_analyzer_init(void)
-{
-	NTSTATUS ret = smb_register_vfs(SMB_VFS_INTERFACE_VERSION, \
-		"smb_traffic_analyzer",	smb_traffic_analyzer_tuples);
-
-	if (!NT_STATUS_IS_OK(ret))
-		return ret;
-
-	vfs_smb_traffic_analyzer_debug_level =
-		debug_add_class("smb_traffic_analyzer");
-
-	if (vfs_smb_traffic_analyzer_debug_level == -1) {
-		vfs_smb_traffic_analyzer_debug_level = DBGC_VFS;
-		DEBUG(1, ("smb_traffic_analyzer: Couldn't register custom"
-			 "debugging class!\n"));
-	} else {
-		DEBUG(3, ("smb_traffic_analyzer: Debug class number of"
-			"'smb_traffic_analyzer': %d\n", \
-			vfs_smb_traffic_analyzer_debug_level));
-	}
-
-	return ret;
-}
-
-/* create the timestamp in sqlite compatible format */
-static void get_timestamp( char *String )
-{
-	struct timeval tv;
-	struct timezone tz;
-	struct tm *tm;
-	int seconds;
-
-	gettimeofday(&tv, &tz);
- 	tm=localtime(&tv.tv_sec);
-	seconds=(float) (tv.tv_usec / 1000);
-
-	fstr_sprintf(String,"%04d-%02d-%02d %02d:%02d:%02d.%03d", \
-			tm->tm_year+1900, tm->tm_mon+1, tm->tm_mday, \
-			tm->tm_hour, tm->tm_min, tm->tm_sec, (int)seconds);
-
-}
-
-static int smb_traffic_analyzer_connMode( vfs_handle_struct *handle)
+static enum sock_type smb_traffic_analyzer_connMode(vfs_handle_struct *handle)
 {
 	connection_struct *conn = handle->conn;
         const char *Mode;
@@ -119,53 +40,40 @@ static int smb_traffic_analyzer_connMode( vfs_handle_struct *handle)
 	} else {
 		return INTERNET_SOCKET;
 	}
-
 }
 
-/* Send data over a internet socket */
-static void smb_traffic_analyzer_send_data_inet_socket( char *String,
-			vfs_handle_struct *handle, const char *file_name,
-			bool Write)
+/* Connect to an internet socket */
+
+static int smb_traffic_analyzer_connect_inet_socket(vfs_handle_struct *handle,
+					const char *name, uint16_t port)
 {
 	/* Create a streaming Socket */
-	const char *Hostname;
 	int sockfd = -1;
-        uint16_t port;
 	struct addrinfo hints;
 	struct addrinfo *ailist = NULL;
 	struct addrinfo *res = NULL;
-	char Sender[200];
-	char TimeStamp[200];
-	connection_struct *conn = handle->conn;
 	int ret;
-
-	/* get port number, target system from the config parameters */
-	Hostname=lp_parm_const_string(SNUM(conn), "smb_traffic_analyzer", 
-				"host", "localhost");
 
 	ZERO_STRUCT(hints);
 	/* By default make sure it supports TCP. */
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_flags = AI_ADDRCONFIG;
 
-	ret = getaddrinfo(Hostname,
+	ret = getaddrinfo(name,
 			NULL,
 			&hints,
 			&ailist);
 
         if (ret) {
-		DEBUG(3,("smb_traffic_analyzer_send_data_inet_socket: "
+		DEBUG(3,("smb_traffic_analyzer_connect_inet_socket: "
 			"getaddrinfo failed for name %s [%s]\n",
-                        Hostname,
+                        name,
                         gai_strerror(ret) ));
-		return;
+		return -1;
         }
 
-	port = atoi( lp_parm_const_string(SNUM(conn), 
-				"smb_traffic_analyzer", "port", "9430"));
-
 	DEBUG(3,("smb_traffic_analyzer: Internet socket mode. Hostname: %s,"
-		"Port: %i\n", Hostname, port));
+		"Port: %i\n", name, port));
 
 	for (res = ailist; res; res = res->ai_next) {
 		struct sockaddr_storage ss;
@@ -188,116 +96,201 @@ static void smb_traffic_analyzer_send_data_inet_socket( char *String,
 	}
 
         if (sockfd == -1) {
-		DEBUG(1, ("smb_traffic_analyzer: unable to create socket, error is %s", 
+		DEBUG(1, ("smb_traffic_analyzer: unable to create "
+			"socket, error is %s",
 			strerror(errno)));
-		return;
+		return -1;
 	}
 
-	strlcpy(Sender, String, sizeof(Sender));
-	strlcat(Sender, ",\"", sizeof(Sender));
-	strlcat(Sender, get_current_username(), sizeof(Sender));
-	strlcat(Sender, "\",\"", sizeof(Sender));
-	strlcat(Sender, current_user_info.domain, sizeof(Sender));
-	strlcat(Sender, "\",\"", sizeof(Sender));
-        if (Write)
-		strlcat(Sender, "W", sizeof(Sender));
-	else
-		strlcat(Sender, "R", sizeof(Sender));
-	strlcat(Sender, "\",\"", sizeof(Sender));
-	strlcat(Sender, handle->conn->connectpath, sizeof(Sender));
-	strlcat(Sender, "\",\"", sizeof(Sender) - 1);
-	strlcat(Sender, file_name, sizeof(Sender) - 1);
-	strlcat(Sender, "\",\"", sizeof(Sender) - 1);
-        get_timestamp(TimeStamp);
-	strlcat(Sender, TimeStamp, sizeof(Sender) - 1);
-	strlcat(Sender, "\");", sizeof(Sender) - 1);
-        DEBUG(10, ("smb_traffic_analyzer: sending %s\n", Sender));
-        if ( send(sockfd, Sender, strlen(Sender), 0) == -1 ) {
-                DEBUG(1, ("smb_traffic_analyzer: error sending data to socket!\n"));
-        	close(sockfd);
-                return ;
-        }
-
-        /* one operation, close the socket */
-        close(sockfd);
+	return sockfd;
 }
 
+/* Connect to a unix domain socket */
 
-
-/* Send data over a unix domain socket */
-static void smb_traffic_analyzer_send_data_unix_socket( char *String ,
-			vfs_handle_struct *handle, const char *file_name, 
-			bool Write)
+static int smb_traffic_analyzer_connect_unix_socket(vfs_handle_struct *handle,
+						const char *name)
 {
 	/* Create the socket to stad */
 	int len, sock;
 	struct sockaddr_un remote;
-        char Sender[200];
-        char TimeStamp[200];
 
-	DEBUG(7, ("smb_traffic_analyzer: Unix domain socket mode. Using "
-			"/var/tmp/stadsocket\n"));
+	DEBUG(7, ("smb_traffic_analyzer_connect_unix_socket: "
+			"Unix domain socket mode. Using %s\n",
+			name ));
 
 	if ((sock = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
-		DEBUG(1, ("smb_traffic_analyzer: Couldn create socket,"
+		DEBUG(1, ("smb_traffic_analyzer_connect_unix_socket: "
+			"Couldn't create socket, "
 			"make sure stad is running!\n"));
 	}
 	remote.sun_family = AF_UNIX;
-	strlcpy(remote.sun_path, "/var/tmp/stadsocket", 
+	strlcpy(remote.sun_path, name,
 		    sizeof(remote.sun_path));
 	len=strlen(remote.sun_path) + sizeof(remote.sun_family);
 	if (connect(sock, (struct sockaddr *)&remote, len) == -1 ) {
-		DEBUG(1, ("smb_traffic_analyzer: Could not connect to"
+		DEBUG(1, ("smb_traffic_analyzer_connect_unix_socket: "
+			"Could not connect to "
 			"socket, make sure\nstad is running!\n"));
 		close(sock);
-		return;
+		return -1;
 	}
-	strlcpy(Sender, String, sizeof(Sender));
-	strlcat(Sender, ",\"", sizeof(Sender));
-	strlcat(Sender, get_current_username(), sizeof(Sender));
-	strlcat(Sender,"\",\"",sizeof(Sender));
-	strlcat(Sender, current_user_info.domain, sizeof(Sender));
-	strlcat(Sender, "\",\"", sizeof(Sender));
-	if (Write)
-		strlcat(Sender, "W", sizeof(Sender));
-	else
-		strlcat(Sender, "R", sizeof(Sender));
-	strlcat(Sender, "\",\"", sizeof(Sender));
-	strlcat(Sender, handle->conn->connectpath, sizeof(Sender));
-	strlcat(Sender, "\",\"", sizeof(Sender));
-	strlcat(Sender, file_name, sizeof(Sender));
-	strlcat(Sender, "\",\"", sizeof(Sender));
-	get_timestamp(TimeStamp);
-	strlcat(Sender, TimeStamp, sizeof(Sender));
-	strlcat(Sender, "\");", sizeof(Sender));
-
-	DEBUG(10, ("smb_traffic_analyzer: sending %s\n", Sender));
-	if ( send(sock, Sender, strlen(Sender), 0) == -1 ) {
-		DEBUG(1, ("smb_traffic_analyzer: error sending data to"
-			"socket!\n"));
-		close(sock);
-		return;
-	}
-
-	/* one operation, close the socket */
-	close(sock);
-	return;
+	return sock;
 }
 
-static void smb_traffic_analyzer_send_data( char *Buffer , vfs_handle_struct \
-			*handle, char *file_name, bool Write, files_struct *fsp)
+/* Private data allowing shared connection sockets. */
+
+struct refcounted_sock {
+	struct refcounted_sock *next, *prev;
+	char *name;
+	uint16_t port;
+	int sock;
+	unsigned int ref_count;
+};
+
+/* Send data over a socket */
+
+static void smb_traffic_analyzer_send_data(vfs_handle_struct *handle,
+					ssize_t result,
+					const char *file_name,
+					bool Write)
 {
+	struct refcounted_sock *rf_sock = NULL;
+	struct timeval tv;
+	struct tm *tm = NULL;
+	int seconds;
+	char *str = NULL;
+	size_t len;
 
-        if (smb_traffic_analyzer_connMode(handle) == UNIX_DOMAIN_SOCKET) {
-                smb_traffic_analyzer_send_data_unix_socket(Buffer, handle, \
-							fsp->fsp_name, Write);
-        } else {
-                smb_traffic_analyzer_send_data_inet_socket(Buffer, handle, \
-							fsp->fsp_name, Write);
-        }
+	SMB_VFS_HANDLE_GET_DATA(handle, rf_sock, struct refcounted_sock, return);
+
+	if (rf_sock == NULL || rf_sock->sock == -1) {
+		DEBUG(1, ("smb_traffic_analyzer_send_data: socket is "
+			"closed\n"));
+		return;
+	}
+
+	GetTimeOfDay(&tv);
+	tm=localtime(&tv.tv_sec);
+	if (!tm) {
+		return;
+	}
+	seconds=(float) (tv.tv_usec / 1000);
+
+	str = talloc_asprintf(talloc_tos(),
+			"V1,%u,\"%s\",\"%s\",\"%c\",\"%s\",\"%s\","
+			"\"%04d-%02d-%02d %02d:%02d:%02d.%03d\"\n",
+			(unsigned int)result,
+			handle->conn->server_info->sanitized_username,
+			pdb_get_domain(handle->conn->server_info->sam_account),
+			Write ? 'W' : 'R',
+			handle->conn->connectpath,
+			file_name,
+			tm->tm_year+1900,
+			tm->tm_mon+1,
+			tm->tm_mday,
+			tm->tm_hour,
+			tm->tm_min,
+			tm->tm_sec,
+			(int)seconds);
+
+	if (!str) {
+		return;
+	}
+
+	len = strlen(str);
+
+	DEBUG(10, ("smb_traffic_analyzer_send_data_socket: sending %s\n",
+			str));
+	if (write_data(rf_sock->sock, str, len) != len) {
+		DEBUG(1, ("smb_traffic_analyzer_send_data_socket: "
+			"error sending data to socket!\n"));
+		return ;
+	}
 }
 
+static struct refcounted_sock *sock_list;
 
+static void smb_traffic_analyzer_free_data(void **pptr)
+{
+	struct refcounted_sock *rf_sock = *(struct refcounted_sock **)pptr;
+	if (rf_sock == NULL) {
+		return;
+	}
+	rf_sock->ref_count--;
+	if (rf_sock->ref_count != 0) {
+		return;
+	}
+	if (rf_sock->sock != -1) {
+		close(rf_sock->sock);
+	}
+	DLIST_REMOVE(sock_list, rf_sock);
+	TALLOC_FREE(rf_sock);
+}
+
+static int smb_traffic_analyzer_connect(struct vfs_handle_struct *handle,
+                         const char *service,
+                         const char *user)
+{
+	connection_struct *conn = handle->conn;
+	enum sock_type st = smb_traffic_analyzer_connMode(handle);
+	struct refcounted_sock *rf_sock = NULL;
+	const char *name = (st == UNIX_DOMAIN_SOCKET) ? LOCAL_PATHNAME :
+				lp_parm_const_string(SNUM(conn),
+					"smb_traffic_analyzer",
+				"host", "localhost");
+	uint16_t port = (st == UNIX_DOMAIN_SOCKET) ? 0 :
+				atoi( lp_parm_const_string(SNUM(conn),
+				"smb_traffic_analyzer", "port", "9430"));
+
+	/* Are we already connected ? */
+	for (rf_sock = sock_list; rf_sock; rf_sock = rf_sock->next) {
+		if (port == rf_sock->port &&
+				(strcmp(name, rf_sock->name) == 0)) {
+			break;
+		}
+	}
+
+	/* If we're connected already, just increase the
+ 	 * reference count. */
+	if (rf_sock) {
+		rf_sock->ref_count++;
+	} else {
+		/* New connection. */
+		rf_sock = TALLOC_ZERO_P(NULL, struct refcounted_sock);
+		if (rf_sock == NULL) {
+			errno = ENOMEM;
+			return -1;
+		}
+		rf_sock->name = talloc_strdup(rf_sock, name);
+		if (rf_sock->name == NULL) {
+			TALLOC_FREE(rf_sock);
+			errno = ENOMEM;
+			return -1;
+		}
+		rf_sock->port = port;
+		rf_sock->ref_count = 1;
+
+		if (st == UNIX_DOMAIN_SOCKET) {
+			rf_sock->sock = smb_traffic_analyzer_connect_unix_socket(handle,
+							name);
+		} else {
+
+			rf_sock->sock = smb_traffic_analyzer_connect_inet_socket(handle,
+							name,
+							port);
+		}
+		if (rf_sock->sock == -1) {
+			TALLOC_FREE(rf_sock);
+			return -1;
+		}
+		DLIST_ADD(sock_list, rf_sock);
+	}
+
+	/* Store the private data. */
+	SMB_VFS_HANDLE_SET_DATA(handle, rf_sock, smb_traffic_analyzer_free_data,
+				struct refcounted_sock, return -1);
+	return SMB_VFS_NEXT_CONNECT(handle, service, user);
+}
 
 /* VFS Functions: write, read, pread, pwrite for now */
 
@@ -305,14 +298,14 @@ static ssize_t smb_traffic_analyzer_read(vfs_handle_struct *handle, \
 				files_struct *fsp, void *data, size_t n)
 {
 	ssize_t result;
-        fstring Buffer;
 
 	result = SMB_VFS_NEXT_READ(handle, fsp, data, n);
-	DEBUG(10, ("smb_traffic_analyzer: READ: %s\n", fsp->fsp_name ));
+	DEBUG(10, ("smb_traffic_analyzer_read: READ: %s\n", fsp->fsp_name ));
 
-	fstr_sprintf(Buffer, "%u", (uint) result);
-
-	smb_traffic_analyzer_send_data(Buffer, handle, fsp->fsp_name, false, fsp);
+	smb_traffic_analyzer_send_data(handle,
+			result,
+			fsp->fsp_name,
+			false);
 	return result;
 }
 
@@ -321,14 +314,15 @@ static ssize_t smb_traffic_analyzer_pread(vfs_handle_struct *handle, \
 		files_struct *fsp, void *data, size_t n, SMB_OFF_T offset)
 {
 	ssize_t result;
-        fstring Buffer;
 
 	result = SMB_VFS_NEXT_PREAD(handle, fsp, data, n, offset);
 
-	DEBUG(10, ("smb_traffic_analyzer: READ: %s\n", fsp->fsp_name ));
+	DEBUG(10, ("smb_traffic_analyzer_pread: PREAD: %s\n", fsp->fsp_name ));
 
-	fstr_sprintf(Buffer,"%u", (uint) result);
-	smb_traffic_analyzer_send_data(Buffer, handle, fsp->fsp_name, false, fsp);
+	smb_traffic_analyzer_send_data(handle,
+			result,
+			fsp->fsp_name,
+			false);
 
 	return result;
 }
@@ -337,15 +331,15 @@ static ssize_t smb_traffic_analyzer_write(vfs_handle_struct *handle, \
 			files_struct *fsp, const void *data, size_t n)
 {
 	ssize_t result;
-        fstring Buffer;
 
 	result = SMB_VFS_NEXT_WRITE(handle, fsp, data, n);
 
-	DEBUG(10, ("smb_traffic_analyzer: WRITE: %s\n", fsp->fsp_name ));
+	DEBUG(10, ("smb_traffic_analyzer_write: WRITE: %s\n", fsp->fsp_name ));
 
-	fstr_sprintf(Buffer, "%u", (uint) result);
-	smb_traffic_analyzer_send_data(Buffer, handle, fsp->fsp_name, \
-								true, fsp );
+	smb_traffic_analyzer_send_data(handle,
+			result,
+			fsp->fsp_name,
+			true);
 	return result;
 }
 
@@ -353,13 +347,58 @@ static ssize_t smb_traffic_analyzer_pwrite(vfs_handle_struct *handle, \
 	     files_struct *fsp, const void *data, size_t n, SMB_OFF_T offset)
 {
 	ssize_t result;
-        fstring Buffer;
 
 	result = SMB_VFS_NEXT_PWRITE(handle, fsp, data, n, offset);
 
-	DEBUG(10, ("smb_traffic_analyzer: PWRITE: %s\n", fsp->fsp_name ));
+	DEBUG(10, ("smb_traffic_analyzer_pwrite: PWRITE: %s\n", fsp->fsp_name ));
 
-	fstr_sprintf(Buffer, "%u", (uint) result);
-	smb_traffic_analyzer_send_data(Buffer, handle, fsp->fsp_name, true, fsp);
+	smb_traffic_analyzer_send_data(handle,
+			result,
+			fsp->fsp_name,
+			true);
 	return result;
+}
+
+/* VFS operations we use */
+
+static vfs_op_tuple smb_traffic_analyzer_tuples[] = {
+
+        {SMB_VFS_OP(smb_traffic_analyzer_connect), SMB_VFS_OP_CONNECT,
+         SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_traffic_analyzer_read),	SMB_VFS_OP_READ,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_traffic_analyzer_pread), SMB_VFS_OP_PREAD,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_traffic_analyzer_write), SMB_VFS_OP_WRITE,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_traffic_analyzer_pwrite), SMB_VFS_OP_PWRITE,
+	 SMB_VFS_LAYER_LOGGER},
+       	{SMB_VFS_OP(NULL),SMB_VFS_OP_NOOP,SMB_VFS_LAYER_NOOP}
+};
+
+/* Module initialization */
+
+NTSTATUS vfs_smb_traffic_analyzer_init(void)
+{
+	NTSTATUS ret = smb_register_vfs(SMB_VFS_INTERFACE_VERSION, \
+		"smb_traffic_analyzer",	smb_traffic_analyzer_tuples);
+
+	if (!NT_STATUS_IS_OK(ret)) {
+		return ret;
+	}
+
+	vfs_smb_traffic_analyzer_debug_level =
+		debug_add_class("smb_traffic_analyzer");
+
+	if (vfs_smb_traffic_analyzer_debug_level == -1) {
+		vfs_smb_traffic_analyzer_debug_level = DBGC_VFS;
+		DEBUG(1, ("smb_traffic_analyzer_init: Couldn't register custom"
+			 "debugging class!\n"));
+	} else {
+		DEBUG(3, ("smb_traffic_analyzer_init: Debug class number of"
+			"'smb_traffic_analyzer': %d\n", \
+			vfs_smb_traffic_analyzer_debug_level));
+	}
+
+	return ret;
 }

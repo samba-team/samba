@@ -472,6 +472,14 @@ static int partition_search(struct ldb_module *module, struct ldb_request *req)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
+	/*
+	 * for now pass down the LDB_CONTROL_SEARCH_OPTIONS_OID control
+	 * down as uncritical to make windows 2008 dcpromo happy.
+	 */
+	if (search_control) {
+		search_control->critical = 0;
+	}
+
 	/* TODO:
 	   Generate referrals (look for a partition under this DN) if we don't have the above control specified
 	*/
@@ -1184,6 +1192,20 @@ static int partition_init(struct ldb_module *module)
 				return ret;
 			}
 		}
+	}
+
+	ret = ldb_mod_register_control(module, LDB_CONTROL_DOMAIN_SCOPE_OID);
+	if (ret != LDB_SUCCESS) {
+		ldb_debug(module->ldb, LDB_DEBUG_ERROR,
+			"partition: Unable to register control with rootdse!\n");
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	ret = ldb_mod_register_control(module, LDB_CONTROL_SEARCH_OPTIONS_OID);
+	if (ret != LDB_SUCCESS) {
+		ldb_debug(module->ldb, LDB_DEBUG_ERROR,
+			"partition: Unable to register control with rootdse!\n");
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	talloc_free(mem_ctx);

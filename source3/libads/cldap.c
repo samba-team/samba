@@ -283,7 +283,7 @@ bool ads_cldap_netlogon_5(TALLOC_CTX *mem_ctx,
 		return false;
 	}
 
-	*reply5 = reply->nt5_ex;
+	*reply5 = reply->data.nt5_ex;
 
 	return true;
 }
