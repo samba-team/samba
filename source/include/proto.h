@@ -43,7 +43,8 @@ bool password_ok(const char *smb_name, DATA_BLOB password_blob);
 
 /* The following definitions come from auth/auth_domain.c  */
 
-NTSTATUS auth_domain_init(void) ;
+void attempt_machine_password_change(void);
+NTSTATUS auth_domain_init(void);
 
 /* The following definitions come from auth/auth_ntlmssp.c  */
 

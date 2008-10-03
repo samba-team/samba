@@ -706,7 +706,7 @@ The timeout is in milliseconds
 ****************************************************************************/
 
 static NTSTATUS receive_message_or_smb(TALLOC_CTX *mem_ctx, char **buffer,
-				       size_t *buffer_len, int timeout,
+				       size_t *buffer_len,
 				       size_t *p_unread, bool *p_encrypted)
 {
 	fd_set r_fds, w_fds;
@@ -720,13 +720,8 @@ static NTSTATUS receive_message_or_smb(TALLOC_CTX *mem_ctx, char **buffer,
 
  again:
 
-	if (timeout >= 0) {
-		to.tv_sec = timeout / 1000;
-		to.tv_usec = (timeout % 1000) * 1000;
-	} else {
-		to.tv_sec = SMBD_SELECT_TIMEOUT;
-		to.tv_usec = 0;
-	}
+	to.tv_sec = SMBD_SELECT_TIMEOUT;
+	to.tv_usec = 0;
 
 	/*
 	 * Note that this call must be before processing any SMB
@@ -869,7 +864,7 @@ static NTSTATUS receive_message_or_smb(TALLOC_CTX *mem_ctx, char **buffer,
 
 	/* Did we timeout ? */
 	if (selrtn == 0) {
-		return NT_STATUS_IO_TIMEOUT;
+		goto again;
 	}
 
 	/*
@@ -1837,23 +1832,6 @@ void chain_reply(struct smb_request *req)
 }
 
 /****************************************************************************
- Setup the needed select timeout in milliseconds.
-****************************************************************************/
-
-static int setup_select_timeout(void)
-{
-	int select_timeout;
-
-	select_timeout = SMBD_SELECT_TIMEOUT*1000;
-
-	if (print_notify_messages_pending()) {
-		select_timeout = MIN(select_timeout, 1000);
-	}
-
-	return select_timeout;
-}
-
-/****************************************************************************
  Check if services need reloading.
 ****************************************************************************/
 
@@ -1907,113 +1885,18 @@ void check_reload(time_t t)
 }
 
 /****************************************************************************
- Process any timeout housekeeping. Return False if the caller should exit.
-****************************************************************************/
-
-static void timeout_processing(int *select_timeout,
-			       time_t *last_timeout_processing_time)
-{
-	time_t t;
-
-	*last_timeout_processing_time = t = time(NULL);
-
-	/* become root again if waiting */
-	change_to_root_user();
-
-	/* check if we need to reload services */
-	check_reload(t);
-
-	if(global_machine_password_needs_changing && 
-			/* for ADS we need to do a regular ADS password change, not a domain
-					password change */
-			lp_security() == SEC_DOMAIN) {
-
-		unsigned char trust_passwd_hash[16];
-		time_t lct;
-		void *lock;
-
-		/*
-		 * We're in domain level security, and the code that
-		 * read the machine password flagged that the machine
-		 * password needs changing.
-		 */
-
-		/*
-		 * First, open the machine password file with an exclusive lock.
-		 */
-
-		lock = secrets_get_trust_account_lock(NULL, lp_workgroup());
-
-		if (lock == NULL) {
-			DEBUG(0,("process: unable to lock the machine account password for \
-machine %s in domain %s.\n", global_myname(), lp_workgroup() ));
-			return;
-		}
-
-		if(!secrets_fetch_trust_account_password(lp_workgroup(), trust_passwd_hash, &lct, NULL)) {
-			DEBUG(0,("process: unable to read the machine account password for \
-machine %s in domain %s.\n", global_myname(), lp_workgroup()));
-			TALLOC_FREE(lock);
-			return;
-		}
-
-		/*
-		 * Make sure someone else hasn't already done this.
-		 */
-
-		if(t < lct + lp_machine_password_timeout()) {
-			global_machine_password_needs_changing = False;
-			TALLOC_FREE(lock);
-			return;
-		}
-
-		/* always just contact the PDC here */
-    
-		change_trust_account_password( lp_workgroup(), NULL);
-		global_machine_password_needs_changing = False;
-		TALLOC_FREE(lock);
-	}
-
-	/* update printer queue caches if necessary */
-  
-	update_monitored_printq_cache();
-  
-	/*
-	 * Now we are root, check if the log files need pruning.
-	 * Force a log file check.
-	 */
-	force_check_log_size();
-	check_log_size();
-
-	/* Send any queued printer notify message to interested smbd's. */
-
-	print_notify_send_messages(smbd_messaging_context(), 0);
-
-	/*
-	 * Modify the select timeout depending upon
-	 * what we have remaining in our queues.
-	 */
-
-	*select_timeout = setup_select_timeout();
-
-	return;
-}
-
-/****************************************************************************
  Process commands from the client
 ****************************************************************************/
 
 void smbd_process(void)
 {
-	time_t last_timeout_processing_time = time(NULL);
 	unsigned int num_smbs = 0;
 	size_t unread_bytes = 0;
 
 	max_recv = MIN(lp_maxxmit(),BUFFER_SIZE);
 
 	while (True) {
-		int select_timeout = setup_select_timeout();
-		int num_echos;
+		NTSTATUS status;
 		char *inbuf = NULL;
 		size_t inbuf_len = 0;
 		bool encrypted = false;
@@ -2021,81 +1904,23 @@ void smbd_process(void)
 
 		errno = 0;
 
-		/* Did someone ask for immediate checks on things like blocking locks ? */
-		if (select_timeout == 0) {
-			timeout_processing(&select_timeout,
-					   &last_timeout_processing_time);
-			num_smbs = 0; /* Reset smb counter. */
-		}
-
 		run_events(smbd_event_context(), 0, NULL, NULL);
 
-		while (True) {
-			NTSTATUS status;
+		status = receive_message_or_smb(
+			talloc_tos(), &inbuf, &inbuf_len,
+			&unread_bytes, &encrypted);
 
-			status = receive_message_or_smb(
-				talloc_tos(), &inbuf, &inbuf_len,
-				select_timeout,	&unread_bytes, &encrypted);
-
-			if (NT_STATUS_IS_OK(status)) {
-				break;
-			}
-
-			if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
-				timeout_processing(
-					&select_timeout,
-					&last_timeout_processing_time);
-				continue;
-			}
-
+		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(3, ("receive_message_or_smb failed: %s, "
 				  "exiting\n", nt_errstr(status)));
 			return;
-
-			num_smbs = 0; /* Reset smb counter. */
 		}
-
-
-		/*
-		 * Ensure we do timeout processing if the SMB we just got was
-		 * only an echo request. This allows us to set the select
-		 * timeout in 'receive_message_or_smb()' to any value we like
-		 * without worrying that the client will send echo requests
-		 * faster than the select timeout, thus starving out the
-		 * essential processing (change notify, blocking locks) that
-		 * the timeout code does. JRA.
-		 */
-		num_echos = smb_echo_count;
 
 		process_smb(inbuf, inbuf_len, unread_bytes, encrypted);
 
 		TALLOC_FREE(inbuf);
 
-		if (smb_echo_count != num_echos) {
-			timeout_processing(&select_timeout,
-					   &last_timeout_processing_time);
-			num_smbs = 0; /* Reset smb counter. */
-		}
-
 		num_smbs++;
-
-		/*
-		 * If we are getting smb requests in a constant stream
-		 * with no echos, make sure we attempt timeout processing
-		 * every select_timeout milliseconds - but only check for this
-		 * every 200 smb requests.
-		 */
-		
-		if ((num_smbs % 200) == 0) {
-			time_t new_check_time = time(NULL);
-			if(new_check_time - last_timeout_processing_time >= (select_timeout/1000)) {
-				timeout_processing(
-					&select_timeout,
-					&last_timeout_processing_time);
-				num_smbs = 0; /* Reset smb counter. */
-				last_timeout_processing_time = new_check_time; /* Reset time. */
-			}
-		}
 
 		/* The timeout_processing function isn't run nearly
 		   often enough to implement 'max log size' without
