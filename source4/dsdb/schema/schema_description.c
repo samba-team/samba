@@ -309,7 +309,11 @@ char *schema_class_to_dITContentRule(TALLOC_CTX *mem_ctx, const struct dsdb_clas
 					   class->lDAPDisplayName,
 					   (const char **)aux_class_list,
 					   NULL, 
-					   class->subClassOf,
+					   NULL, /* Must not specify a
+						  * SUP (subclass) in
+						  * ditContentRules
+						  * per MS-ADTS
+						  * 3.1.1.3.1.1.1 */
 					   -1, must_attr_list, may_attr_list);
 	talloc_free(tmp_ctx);
 	return schema_description;
