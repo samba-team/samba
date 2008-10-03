@@ -50,6 +50,7 @@ struct part_request {
 struct partition_context {
 	struct ldb_module *module;
 	struct ldb_request *req;
+	bool got_success;
 
 	struct part_request *part_req;
 	int num_requests;
@@ -170,7 +171,8 @@ static int partition_req_callback(struct ldb_request *req,
 		return ldb_module_done(ac->req, NULL, NULL,
 					LDB_ERR_OPERATIONS_ERROR);
 	}
-	if (ares->error != LDB_SUCCESS) {
+
+	if (ares->error != LDB_SUCCESS && !ac->got_success) {
 		return ldb_module_done(ac->req, ares->controls,
 					ares->response, ares->error);
 	}
@@ -191,6 +193,9 @@ static int partition_req_callback(struct ldb_request *req,
 		return ldb_module_send_entry(ac->req, ares->message);
 
 	case LDB_REPLY_DONE:
+		if (ares->error == LDB_SUCCESS) {
+			ac->got_success = true;
+		}
 		if (ac->req->operation == LDB_EXTENDED) {
 			/* FIXME: check for ares->response, replmd does not fill it ! */
 			if (ares->response) {
@@ -210,7 +215,8 @@ static int partition_req_callback(struct ldb_request *req,
 		if (ac->finished_requests == ac->num_requests) {
 			/* this was the last one, call callback */
 			return ldb_module_done(ac->req, ares->controls,
-						ares->response, ares->error);
+					       ares->response, 
+					       ac->got_success?LDB_SUCCESS:ares->error);
 		}
 
 		/* not the last, now call the next one */
@@ -492,13 +498,41 @@ static int partition_search(struct ldb_module *module, struct ldb_request *req)
 			return partition_send_all(module, ac, req);
 		}
 		for (i=0; data && data->partitions && data->partitions[i]; i++) {
-			/* Find all partitions under the search base */
-			if (ldb_dn_compare_base(data->partitions[i]->dn, req->op.search.base) == 0) {
+			bool match = false, stop = false;
+			/* Find all partitions under the search base 
+			   
+			   we match if:
+
+			      1) the DN we are looking for exactly matches the partition
+		             or
+			      2) the DN we are looking for is a parent of the partition and it isn't
+                                 a scope base search
+                             or
+			      3) the DN we are looking for is a child of the partition
+			 */
+			if (ldb_dn_compare(data->partitions[i]->dn, req->op.search.base) == 0) {
+				match = true;
+				if (req->op.search.scope == LDB_SCOPE_BASE) {
+					stop = true;
+				}
+			}
+			if (!match && 
+			    (ldb_dn_compare_base(req->op.search.base, data->partitions[i]->dn) == 0 &&
+			     req->op.search.scope != LDB_SCOPE_BASE)) {
+				match = true;
+			}
+			if (!match &&
+			    ldb_dn_compare_base(data->partitions[i]->dn, req->op.search.base) == 0) {
+				match = true;
+				stop = true; /* note that this relies on partition ordering */
+			}
+			if (match) {
 				ret = partition_prep_request(ac, data->partitions[i]);
 				if (ret != LDB_SUCCESS) {
 					return ret;
 				}
 			}
+			if (stop) break;
 		}
 
 		/* Perhaps we didn't match any partitions.  Try the main partition, only */
