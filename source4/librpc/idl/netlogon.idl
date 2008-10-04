@@ -1100,6 +1100,16 @@ interface netlogon
 
 	/****************/
 	/* Function 0x1d */
+	typedef [bitmap32bit] bitmap {
+		NETR_TRUST_FLAG_IN_FOREST = 0x00000001,
+		NETR_TRUST_FLAG_OUTBOUND  = 0x00000002,
+		NETR_TRUST_FLAG_TREEROOT  = 0x00000004,
+		NETR_TRUST_FLAG_PRIMARY   = 0x00000008,
+		NETR_TRUST_FLAG_NATIVE    = 0x00000010,
+		NETR_TRUST_FLAG_INBOUND   = 0x00000020,
+		NETR_TRUST_FLAG_MIT_KRB5  = 0x00000080,
+		NETR_TRUST_FLAG_AES       = 0x00000100
+	} netr_TrustFlags;
 
 	typedef [flag(NDR_PAHEX)] struct {
 		uint16 length;
@@ -1128,25 +1138,60 @@ interface netlogon
 	} netr_DomainQuery;
 
 	typedef struct {
+		/* these first 3 values come from the fact windows
+		   actually encodes this structure as a UNICODE_STRING
+		   - see MS-NRPC section 2.2.1.3.9 */
+		[value(8)] uint32 length;
+		[value(0)] uint32 dummy;
+		[value(8)] uint32 size;
+		netr_TrustFlags flags;
+		uint32 parent_index;
+		uint32 trust_type;
+		uint32 trust_attributes;
+	} netr_trust_extension;
+
+	typedef struct {
+		uint16 length; /* value is 16 when info != NULL, otherwise 0 */
+		[value(length)] uint16 size;   /* value is 16 when info != NULL, otherwise 0 */
+		netr_trust_extension *info;
+	} netr_trust_extension_container;
+
+	typedef struct {
 		lsa_String domainname;
 		lsa_String fulldomainname;
 		lsa_String forest;
 		GUID        guid;
 		dom_sid2    *sid;
-		netr_BinaryString unknown1[4];
-		uint32      unknown[4];
+		netr_trust_extension_container trust_extension;
+		lsa_String dummystring[3];
+		uint32     dummy[4];
 	} netr_DomainTrustInfo;
+
+	typedef struct {
+		uint32 policy_size;
+		[size_is(policy_size)] uint8 *policy;
+	} netr_LsaPolicyInfo;
+
+	typedef [public,bitmap32bit] bitmap {
+		NETR_WS_FLAG_HANDLES_INBOUND_TRUSTS = 0x00000001,
+		NETR_WS_FLAG_HANDLES_SPN_UPDATE     = 0x00000002
+	} netr_WorkstationFlags;
 
 	typedef struct {
 		netr_DomainTrustInfo domaininfo;
 		uint32 num_trusts;
 		[size_is(num_trusts)] netr_DomainTrustInfo *trusts;
-		uint32 unknown[14]; /* room for expansion? */
+		netr_LsaPolicyInfo lsa_policy;
+		lsa_String dns_hostname;
+		lsa_String dummystring[3];
+		netr_WorkstationFlags workstation_flags;
+		uint32 supported_enc_types;
+		uint32 dummy[2];
 	} netr_DomainInfo1;
 
 	typedef union {
 		[case(1)] netr_DomainInfo1 *info1;
-		[case(2)] netr_DomainInfo1 *info1;
+		[case(2)] netr_DomainInfo1 *info2;
 	} netr_DomainInfo;
 	
 	NTSTATUS netr_LogonGetDomainInfo(
@@ -1230,14 +1275,6 @@ interface netlogon
 
 	/****************/
 	/* Function 0x24 */
-	typedef [bitmap32bit] bitmap {
-		NETR_TRUST_FLAG_IN_FOREST = 0x00000001,
-		NETR_TRUST_FLAG_OUTBOUND  = 0x00000002,
-		NETR_TRUST_FLAG_TREEROOT  = 0x00000004,
-		NETR_TRUST_FLAG_PRIMARY   = 0x00000008,
-		NETR_TRUST_FLAG_NATIVE    = 0x00000010,
-		NETR_TRUST_FLAG_INBOUND   = 0x00000020
-	} netr_TrustFlags;
 
 	typedef [v1_enum] enum {
 		NETR_TRUST_TYPE_DOWNLEVEL	= 1,

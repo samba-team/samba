@@ -525,7 +525,18 @@ NTSTATUS dcesrv_lsa_LookupSids2(struct dcesrv_call_state *dce_call,
 	int i;
 	NTSTATUS status = NT_STATUS_OK;
 
+	if (r->in.level < LSA_LOOKUP_NAMES_ALL ||
+	    r->in.level > LSA_LOOKUP_NAMES_RODC_REFERRAL_TO_FULL_DC) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
 	r->out.domains = NULL;
+
+	/* NOTE: the WSPP test suite tries SIDs with invalid revision numbers,
+	   and expects NT_STATUS_INVALID_PARAMETER back - we just treat it as 
+	   an unknown SID. We could add a SID validator here. (tridge) 
+	   MS-DTYP 2.4.2
+	*/
 
 	status = dcesrv_lsa_get_policy_state(dce_call, mem_ctx, &state);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -583,7 +594,7 @@ NTSTATUS dcesrv_lsa_LookupSids2(struct dcesrv_call_state *dce_call,
 						    authority_name, sid, 
 						    r->out.domains, &sid_index);
 		if (!NT_STATUS_IS_OK(status2)) {
-			return status2;
+			continue;
 		}
 
 		r->out.names->names[i].sid_type    = rtype;
@@ -683,9 +694,8 @@ NTSTATUS dcesrv_lsa_LookupSids(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 	r2.out.names   = NULL;
 
 	status = dcesrv_lsa_LookupSids2(dce_call, mem_ctx, &r2);
-	if (NT_STATUS_IS_ERR(status)) {
-		return status;
-	}
+	/* we deliberately don't check for error from the above,
+	   as even on error we are supposed to return the names  */
 
 	r->out.domains = r2.out.domains;
 	if (!r2.out.names) {
@@ -726,6 +736,11 @@ NTSTATUS dcesrv_lsa_LookupNames3(struct dcesrv_call_state *dce_call,
 	struct loadparm_context *lp_ctx = dce_call->conn->dce_ctx->lp_ctx;
 
 	DCESRV_PULL_HANDLE(policy_handle, r->in.handle, LSA_HANDLE_POLICY);
+
+	if (r->in.level < LSA_LOOKUP_NAMES_ALL ||
+	    r->in.level > LSA_LOOKUP_NAMES_RODC_REFERRAL_TO_FULL_DC) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
 	policy_state = policy_handle->data;
 
@@ -830,10 +845,11 @@ NTSTATUS dcesrv_lsa_LookupNames4(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 
 	r2.in.num_names = r->in.num_names;
 	r2.in.names = r->in.names;
+	r2.in.level = r->in.level;
 	r2.in.sids = r->in.sids;
 	r2.in.count = r->in.count;
-	r2.in.unknown1 = r->in.unknown1;
-	r2.in.unknown2 = r->in.unknown2;
+	r2.in.lookup_options = r->in.lookup_options;
+	r2.in.client_revision = r->in.client_revision;
 	r2.out.domains = r->out.domains;
 	r2.out.sids = r->out.sids;
 	r2.out.count = r->out.count;
@@ -952,8 +968,8 @@ NTSTATUS dcesrv_lsa_LookupNames(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	r2.in.sids      = NULL;
 	r2.in.level     = r->in.level;
 	r2.in.count     = r->in.count;
-	r2.in.unknown1  = 0;
-	r2.in.unknown2  = 0;
+	r2.in.lookup_options = 0;
+	r2.in.client_revision = 0;
 	r2.out.count    = r->out.count;
 
 	status = dcesrv_lsa_LookupNames2(dce_call, mem_ctx, &r2);

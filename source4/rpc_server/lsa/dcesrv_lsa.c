@@ -1,3 +1,5 @@
+/* need access mask/acl implementation */
+
 /* 
    Unix SMB/CIFS implementation.
 
@@ -141,7 +143,8 @@ static NTSTATUS dcesrv_lsa_DeleteObject(struct dcesrv_call_state *dce_call, TALL
 
 		return NT_STATUS_OK;
 	} else if (h->wire_handle.handle_type == LSA_HANDLE_TRUSTED_DOMAIN) {
-		struct lsa_trusted_domain_state *trusted_domain_state = h->data;
+		struct lsa_trusted_domain_state *trusted_domain_state = 
+			talloc_get_type(h->data, struct lsa_trusted_domain_state);
 		ret = ldb_transaction_start(trusted_domain_state->policy->sam_ldb);
 		if (ret != 0) {
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
@@ -187,6 +190,9 @@ static NTSTATUS dcesrv_lsa_DeleteObject(struct dcesrv_call_state *dce_call, TALL
 		r2.in.sid = astate->account_sid;
 		r2.out.rights = rights;
 
+		/* dcesrv_lsa_EnumAccountRights takes a LSA_HANDLE_POLICY,
+		   but we have a LSA_HANDLE_ACCOUNT here, so this call
+		   will always fail */
 		status = dcesrv_lsa_EnumAccountRights(dce_call, mem_ctx, &r2);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
 			return NT_STATUS_OK;
@@ -444,18 +450,46 @@ static NTSTATUS dcesrv_lsa_QueryInfoPolicy2(struct dcesrv_call_state *dce_call, 
 	ZERO_STRUCTP(r->out.info);
 
 	switch (r->in.level) {
+	case LSA_POLICY_INFO_AUDIT_LOG:
+		/* we don't need to fill in any of this */
+		ZERO_STRUCT(r->out.info->audit_log);
+		return NT_STATUS_OK;
+	case LSA_POLICY_INFO_AUDIT_EVENTS:
+		/* we don't need to fill in any of this */
+		ZERO_STRUCT(r->out.info->audit_events);
+		return NT_STATUS_OK;
+	case LSA_POLICY_INFO_PD:
+		/* we don't need to fill in any of this */
+		ZERO_STRUCT(r->out.info->pd);
+		return NT_STATUS_OK;
 	case LSA_POLICY_INFO_DOMAIN:
 	case LSA_POLICY_INFO_ACCOUNT_DOMAIN:
 		return dcesrv_lsa_info_AccountDomain(state, mem_ctx, &r->out.info->account_domain);
+	case LSA_POLICY_INFO_ROLE:
+		r->out.info->role.role = LSA_ROLE_PRIMARY;
+		return NT_STATUS_OK;
 
 	case LSA_POLICY_INFO_DNS:
+	case LSA_POLICY_INFO_DNS_INT:
 		return dcesrv_lsa_info_DNS(state, mem_ctx, &r->out.info->dns);
-	case LSA_POLICY_INFO_DB:
+
+	case LSA_POLICY_INFO_REPLICA:
+		ZERO_STRUCT(r->out.info->replica);
+		return NT_STATUS_OK;
+
+	case LSA_POLICY_INFO_QUOTA:
+		ZERO_STRUCT(r->out.info->quota);
+		return NT_STATUS_OK;
+
 	case LSA_POLICY_INFO_AUDIT_FULL_SET:
+	case LSA_POLICY_INFO_DB:
 	case LSA_POLICY_INFO_AUDIT_FULL_QUERY:
+		/* windows gives INVALID_PARAMETER */
+		r->out.info = NULL;
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
+	r->out.info = NULL;
 	return NT_STATUS_INVALID_INFO_CLASS;
 }
 
@@ -467,6 +501,8 @@ static NTSTATUS dcesrv_lsa_QueryInfoPolicy(struct dcesrv_call_state *dce_call, T
 {
 	struct lsa_QueryInfoPolicy2 r2;
 	NTSTATUS status;
+
+	ZERO_STRUCT(r2);
 
 	r2.in.handle = r->in.handle;
 	r2.in.level = r->in.level;
@@ -484,6 +520,7 @@ static NTSTATUS dcesrv_lsa_QueryInfoPolicy(struct dcesrv_call_state *dce_call, T
 static NTSTATUS dcesrv_lsa_SetInfoPolicy(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				  struct lsa_SetInfoPolicy *r)
 {
+	/* need to support this */
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
@@ -502,6 +539,13 @@ static NTSTATUS dcesrv_lsa_ClearAuditLog(struct dcesrv_call_state *dce_call, TAL
   lsa_CreateAccount 
 
   This call does not seem to have any long-term effects, hence no database operations
+
+  we need to talk to the MS product group to find out what this account database means!
+
+  answer is that the lsa database is totally separate from the SAM and
+  ldap databases. We are going to need a separate ldb to store these
+  accounts. The SIDs on this account bear no relation to the SIDs in
+  AD
 */
 static NTSTATUS dcesrv_lsa_CreateAccount(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				  struct lsa_CreateAccount *r)
@@ -648,7 +692,7 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomain_base(struct dcesrv_call_state *dc
 	
 	dns_name = r->in.info->domain_name.string;
 	
-	trusted_domain_state = talloc(mem_ctx, struct lsa_trusted_domain_state);
+	trusted_domain_state = talloc_zero(mem_ctx, struct lsa_trusted_domain_state);
 	if (!trusted_domain_state) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1004,7 +1048,7 @@ static NTSTATUS dcesrv_lsa_OpenTrustedDomain(struct dcesrv_call_state *dce_call,
 	ZERO_STRUCTP(r->out.trustdom_handle);
 	policy_state = policy_handle->data;
 
-	trusted_domain_state = talloc(mem_ctx, struct lsa_trusted_domain_state);
+	trusted_domain_state = talloc_zero(mem_ctx, struct lsa_trusted_domain_state);
 	if (!trusted_domain_state) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1088,7 +1132,7 @@ static NTSTATUS dcesrv_lsa_OpenTrustedDomainByName(struct dcesrv_call_state *dce
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	
-	trusted_domain_state = talloc(mem_ctx, struct lsa_trusted_domain_state);
+	trusted_domain_state = talloc_zero(mem_ctx, struct lsa_trusted_domain_state);
 	if (!trusted_domain_state) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1228,7 +1272,7 @@ static NTSTATUS dcesrv_lsa_QueryTrustedDomainInfo(struct dcesrv_call_state *dce_
 
 	DCESRV_PULL_HANDLE(h, r->in.trustdom_handle, LSA_HANDLE_TRUSTED_DOMAIN);
 
-	trusted_domain_state = h->data;
+	trusted_domain_state = talloc_get_type(h->data, struct lsa_trusted_domain_state);
 
 	/* pull all the user attributes */
 	ret = gendb_search_dn(trusted_domain_state->policy->sam_ldb, mem_ctx,
@@ -2786,6 +2830,7 @@ static NTSTATUS dcesrv_lsa_SetInfoPolicy2(struct dcesrv_call_state *dce_call,
 				   TALLOC_CTX *mem_ctx,
 				   struct lsa_SetInfoPolicy2 *r)
 {
+	/* need to support these */
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 

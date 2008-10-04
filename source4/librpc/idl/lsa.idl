@@ -140,12 +140,11 @@ import "misc.idl", "security.idl";
 
 	typedef struct {
 		uint32 percent_full;
-		uint32 log_size;
-		NTTIME retention_time;
+		uint32 maximum_log_size;
+		hyper  retention_time;
 		uint8  shutdown_in_progress;
-		NTTIME time_to_shutdown;
+		hyper  time_to_shutdown;
 		uint32 next_audit_record;
-		uint32 unknown;
 	} lsa_AuditLogInfo;
 
 	typedef [v1_enum] enum {
@@ -183,9 +182,13 @@ import "misc.idl", "security.idl";
 		lsa_String name;
 	} lsa_PDAccountInfo;
 
+	typedef [v1_enum] enum {
+		LSA_ROLE_BACKUP=2,
+		LSA_ROLE_PRIMARY=3
+	} lsa_Role;
+
 	typedef struct {
-		uint16 unknown; /* an midl padding bug? */
-		uint16 role;
+		lsa_Role role;
 	} lsa_ServerRole;
 
 	typedef struct {
@@ -204,7 +207,7 @@ import "misc.idl", "security.idl";
 
 	typedef struct {
 		hyper modified_id;
-		NTTIME db_create_time;
+		NTTIME_hyper db_create_time;
 	} lsa_ModificationInfo;
 
 	typedef struct {
@@ -212,7 +215,6 @@ import "misc.idl", "security.idl";
 	} lsa_AuditFullSetInfo;
 
 	typedef struct {
-		uint16 unknown; /* an midl padding bug? */
 		uint8 shutdown_on_full;
 		uint8 log_is_full;
 	} lsa_AuditFullQueryInfo;
@@ -243,7 +245,8 @@ import "misc.idl", "security.idl";
 		LSA_POLICY_INFO_DB=9,
 		LSA_POLICY_INFO_AUDIT_FULL_SET=10,
 		LSA_POLICY_INFO_AUDIT_FULL_QUERY=11,
-		LSA_POLICY_INFO_DNS=12
+		LSA_POLICY_INFO_DNS=12,
+		LSA_POLICY_INFO_DNS_INT=13
 	} lsa_PolicyInfo;
 
 	typedef [switch_type(uint16)] union {
@@ -259,6 +262,7 @@ import "misc.idl", "security.idl";
 		[case(LSA_POLICY_INFO_AUDIT_FULL_SET)]   lsa_AuditFullSetInfo   auditfullset;
 		[case(LSA_POLICY_INFO_AUDIT_FULL_QUERY)] lsa_AuditFullQueryInfo auditfullquery;
 		[case(LSA_POLICY_INFO_DNS)]              lsa_DnsDomainInfo      dns;
+		[case(LSA_POLICY_INFO_DNS_INT)]          lsa_DnsDomainInfo      dns;
 	} lsa_PolicyInformation;
 
 	NTSTATUS lsa_QueryInfoPolicy (
@@ -1009,8 +1013,8 @@ import "misc.idl", "security.idl";
 		[in,out] lsa_TransSidArray2 *sids,
 		[in]         lsa_LookupNamesLevel level,
 		[in,out] uint32 *count,
-		[in]         uint32 unknown1,
-		[in]         uint32 unknown2
+		[in]         uint32 lookup_options,
+		[in]         uint32 client_revision /* LSA_CLIENT_REVISION* */
 		);
 
 	/* Function 0x3b */
@@ -1068,8 +1072,8 @@ import "misc.idl", "security.idl";
 		[in,out] lsa_TransSidArray3 *sids,
 		[in]         lsa_LookupNamesLevel level,
 		[in,out] uint32 *count,
-		[in]         uint32 unknown1,
-		[in]         uint32 unknown2
+		[in]         uint32 lookup_options,
+		[in]         uint32 client_revision /* LSA_CLIENT_REVISION* */
 		);
 
 	/* Function 0x45 */
@@ -1148,6 +1152,11 @@ import "misc.idl", "security.idl";
 		[in]         uint32 unknown2
 		);
 
+	const int LSA_CLIENT_REVISION_NO_DNS     = 0x00000001;
+	const int LSA_CLIENT_REVISION_DNS        = 0x00000002;
+
+	const int LSA_LOOKUP_OPTIONS_NO_ISOLATED = 0x80000000;
+
 	/* Function 0x4d */
 	NTSTATUS lsa_LookupNames4(
 		[in,range(0,1000)] uint32 num_names,
@@ -1156,8 +1165,8 @@ import "misc.idl", "security.idl";
 		[in,out] lsa_TransSidArray3 *sids,
 		[in]         lsa_LookupNamesLevel level,
 		[in,out] uint32 *count,
-		[in]         uint32 unknown1,
-		[in]         uint32 unknown2
+		[in]         uint32 lookup_options,
+		[in]         uint32 client_revision /* LSA_CLIENT_REVISION* */
 		);
 
 	/* Function 0x4e */

@@ -36,6 +36,7 @@
 #include "param/param.h"
 #include "lib/messaging/irpc.h"
 #include "librpc/gen_ndr/ndr_irpc.h"
+#include "librpc/gen_ndr/ndr_netlogon.h"
 
 struct server_pipe_state {
 	struct netr_Credential client_challenge;
@@ -898,20 +899,36 @@ static NTSTATUS fill_domain_trust_info(TALLOC_CTX *mem_ctx,
 				       struct ldb_message *res,
 				       struct ldb_message *ref_res,
 				       struct netr_DomainTrustInfo *info, 
-				       bool is_local)
+				       bool is_local, bool is_trust_list)
 {
 	ZERO_STRUCTP(info);
+
+	info->trust_extension.info = talloc_zero(mem_ctx, struct netr_trust_extension);
+	info->trust_extension.length = 16;
+	info->trust_extension.info->flags = 
+		NETR_TRUST_FLAG_TREEROOT | 
+		NETR_TRUST_FLAG_IN_FOREST | 
+		NETR_TRUST_FLAG_PRIMARY;
+	info->trust_extension.info->parent_index = 0; /* should be index into array
+							 of parent */
+	info->trust_extension.info->trust_type = LSA_TRUST_TYPE_UPLEVEL; /* should be based on ldb search for trusts */
+	info->trust_extension.info->trust_attributes = LSA_TRUST_ATTRIBUTE_NON_TRANSITIVE; /* needs to be based on ldb search */
+
+	if (is_trust_list) {
+		/* MS-NRPC 3.5.4.3.9 - must be set to NULL for trust list */
+		info->forest.string = NULL;
+	} else {
+		info->forest.string = "bludom.tridgell.net"; /* need ldb search */
+	}
 
 	if (is_local) {
 		info->domainname.string = samdb_result_string(ref_res, "nETBIOSName", NULL);
 		info->fulldomainname.string = samdb_result_string(ref_res, "dnsRoot", NULL);
-		info->forest.string = NULL;
 		info->guid = samdb_result_guid(res, "objectGUID");
 		info->sid = samdb_result_dom_sid(mem_ctx, res, "objectSid");
 	} else {
 		info->domainname.string = samdb_result_string(res, "flatName", NULL);
 		info->fulldomainname.string = samdb_result_string(res, "trustPartner", NULL);
-		info->forest.string = NULL;
 		info->guid = samdb_result_guid(res, "objectGUID");
 		info->sid = samdb_result_dom_sid(mem_ctx, res, "securityIdentifier");
 	}
@@ -942,11 +959,16 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 
 	const char *local_domain;
 
+	NDR_PRINT_IN_DEBUG(netr_LogonGetDomainInfo, r);
+
 	status = dcesrv_netr_creds_server_step_check(dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx,
 						     r->in.computer_name, mem_ctx, 
 					      r->in.credential, 
 					      r->out.return_authenticator,
 					      NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,(__location__ " Bad credentials - error\n"));
+	}
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	sam_ctx = samdb_connect(mem_ctx, dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx, dce_call->conn->auth_state.session_info);
@@ -992,18 +1014,28 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 				       info1->num_trusts);
 	NT_STATUS_HAVE_NO_MEMORY(info1->trusts);
 
-	status = fill_domain_trust_info(mem_ctx, res1[0], ref_res[0], &info1->domaininfo, true);
+	status = fill_domain_trust_info(mem_ctx, res1[0], ref_res[0], &info1->domaininfo, 
+					true, false);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	for (i=0;i<ret2;i++) {
-		status = fill_domain_trust_info(mem_ctx, res2[i], NULL, &info1->trusts[i], false);
+		status = fill_domain_trust_info(mem_ctx, res2[i], NULL, &info1->trusts[i], 
+						false, true);
 		NT_STATUS_NOT_OK_RETURN(status);
 	}
 
-	status = fill_domain_trust_info(mem_ctx, res1[0], ref_res[0], &info1->trusts[i], true);
+	status = fill_domain_trust_info(mem_ctx, res1[0], ref_res[0], &info1->trusts[i], 
+					true, true);
 	NT_STATUS_NOT_OK_RETURN(status);
 
+	info1->dns_hostname.string = "blu.bludom.tridgell.net";
+	info1->workstation_flags = 
+		NETR_WS_FLAG_HANDLES_INBOUND_TRUSTS | NETR_WS_FLAG_HANDLES_SPN_UPDATE;
+	info1->supported_enc_types = 0; /* w2008 gives this 0 */
+
 	r->out.info.info1 = info1;
+
+	NDR_PRINT_OUT_DEBUG(netr_LogonGetDomainInfo, r);
 
 	return NT_STATUS_OK;
 }

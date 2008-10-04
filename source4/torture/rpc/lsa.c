@@ -338,8 +338,8 @@ static bool test_LookupNames2(struct dcerpc_pipe *p,
 	r.in.sids = &sids;
 	r.in.level = 1;
 	r.in.count = &count;
-	r.in.unknown1 = 0;
-	r.in.unknown2 = 0;
+	r.in.lookup_options = 0;
+	r.in.client_revision = 0;
 	r.out.count = &count;
 	r.out.sids = &sids;
 
@@ -383,8 +383,8 @@ static bool test_LookupNames3(struct dcerpc_pipe *p,
 	r.in.sids = &sids;
 	r.in.level = 1;
 	r.in.count = &count;
-	r.in.unknown1 = 0;
-	r.in.unknown2 = 0;
+	r.in.lookup_options = 0;
+	r.in.client_revision = 0;
 	r.out.count = &count;
 	r.out.sids = &sids;
 
@@ -425,8 +425,8 @@ static bool test_LookupNames4(struct dcerpc_pipe *p,
 	r.in.sids = &sids;
 	r.in.level = 1;
 	r.in.count = &count;
-	r.in.unknown1 = 0;
-	r.in.unknown2 = 0;
+	r.in.lookup_options = 0;
+	r.in.client_revision = 0;
 	r.out.count = &count;
 	r.out.sids = &sids;
 
@@ -2243,7 +2243,7 @@ static bool test_QueryInfoPolicy(struct dcerpc_pipe *p,
 	bool ret = true;
 	printf("\nTesting QueryInfoPolicy\n");
 
-	for (i=1;i<13;i++) {
+	for (i=1;i<=13;i++) {
 		r.in.handle = handle;
 		r.in.level = i;
 
@@ -2262,7 +2262,14 @@ static bool test_QueryInfoPolicy(struct dcerpc_pipe *p,
 			break;
 		case LSA_POLICY_INFO_DOMAIN:
 		case LSA_POLICY_INFO_ACCOUNT_DOMAIN:
+		case LSA_POLICY_INFO_DNS_INT:
 		case LSA_POLICY_INFO_DNS:
+		case LSA_POLICY_INFO_REPLICA:
+		case LSA_POLICY_INFO_QUOTA:
+		case LSA_POLICY_INFO_ROLE:
+		case LSA_POLICY_INFO_AUDIT_LOG:
+		case LSA_POLICY_INFO_AUDIT_EVENTS:
+		case LSA_POLICY_INFO_PD:
 			if (!NT_STATUS_IS_OK(status)) {
 				printf("QueryInfoPolicy failed - %s\n", nt_errstr(status));
 				ret = false;
@@ -2352,7 +2359,14 @@ static bool test_QueryInfoPolicy2(struct dcerpc_pipe *p,
 			break;
 		case LSA_POLICY_INFO_DOMAIN:
 		case LSA_POLICY_INFO_ACCOUNT_DOMAIN:
+		case LSA_POLICY_INFO_DNS_INT:
 		case LSA_POLICY_INFO_DNS:
+		case LSA_POLICY_INFO_REPLICA:
+		case LSA_POLICY_INFO_QUOTA:
+		case LSA_POLICY_INFO_ROLE:
+		case LSA_POLICY_INFO_AUDIT_LOG:
+		case LSA_POLICY_INFO_AUDIT_EVENTS:
+		case LSA_POLICY_INFO_PD:
 			if (!NT_STATUS_IS_OK(status)) {
 				printf("QueryInfoPolicy2 failed - %s\n", nt_errstr(status));
 				ret = false;
@@ -2458,7 +2472,6 @@ bool torture_rpc_lsa(struct torture_context *tctx)
 		if (!join) {
 			ret = false;
 		}
-
 		if (!test_LookupNames_wellknown(p, tctx, handle)) {
 			ret = false;
 		}		
@@ -2482,7 +2495,6 @@ bool torture_rpc_lsa(struct torture_context *tctx)
 		if (!test_CreateSecret(p, tctx, handle)) {
 			ret = false;
 		}
-		
 		if (!test_CreateTrustedDomain(p, tctx, handle)) {
 			ret = false;
 		}
