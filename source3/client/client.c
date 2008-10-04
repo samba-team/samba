@@ -4421,9 +4421,12 @@ static void readline_callback(void)
 
 	/* Ping the server to keep the connection alive using SMBecho. */
 	{
+		NTSTATUS status;
 		unsigned char garbage[16];
 		memset(garbage, 0xf0, sizeof(garbage));
-		if (!cli_echo(cli, 1, data_blob_const(garbage, sizeof(garbage)))) {
+		status = cli_echo(cli, 1, data_blob_const(garbage, sizeof(garbage)));
+
+		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("SMBecho failed. Maybe server has closed "
 				"the connection\n"));
 			finished = true;
