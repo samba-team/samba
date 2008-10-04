@@ -959,8 +959,6 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 
 	const char *local_domain;
 
-	NDR_PRINT_IN_DEBUG(netr_LogonGetDomainInfo, r);
-
 	status = dcesrv_netr_creds_server_step_check(dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx,
 						     r->in.computer_name, mem_ctx, 
 					      r->in.credential, 
@@ -1034,8 +1032,6 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 	info1->supported_enc_types = 0; /* w2008 gives this 0 */
 
 	r->out.info.info1 = info1;
-
-	NDR_PRINT_OUT_DEBUG(netr_LogonGetDomainInfo, r);
 
 	return NT_STATUS_OK;
 }
