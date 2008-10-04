@@ -117,7 +117,7 @@ echo "Search Options Control Query test returned 0 items"
 failed=`expr $failed + 1`
 fi
 
-function wellkown_object_test() {
+wellknown_object_test() {
 	local guid=$1
 	local object=$2
 	local basedns
@@ -149,32 +149,32 @@ function wellkown_object_test() {
 	return $failed
 }
 
-wellkown_object_test 22B70C67D56E4EFB91E9300FCA3DC1AA ForeignSecurityPrincipals
+wellknown_object_test 22B70C67D56E4EFB91E9300FCA3DC1AA ForeignSecurityPrincipals
 st=$?
 if [ x"$st" != x"0" ]; then
 	failed=`expr $failed + $st`
 fi
-wellkown_object_test 2FBAC1870ADE11D297C400C04FD8D5CD Infrastructure
+wellknown_object_test 2FBAC1870ADE11D297C400C04FD8D5CD Infrastructure
 st=$?
 if [ x"$st" != x"0" ]; then
 	failed=`expr $failed + $st`
 fi
-wellkown_object_test AB1D30F3768811D1ADED00C04FD8D5CD System
+wellknown_object_test AB1D30F3768811D1ADED00C04FD8D5CD System
 st=$?
 if [ x"$st" != x"0" ]; then
 	failed=`expr $failed + $st`
 fi
-wellkown_object_test A361B2FFFFD211D1AA4B00C04FD7D83A Domain Controllers
+wellknown_object_test A361B2FFFFD211D1AA4B00C04FD7D83A Domain Controllers
 st=$?
 if [ x"$st" != x"0" ]; then
 	failed=`expr $failed + $st`
 fi
-wellkown_object_test AA312825768811D1ADED00C04FD8D5CD Computers
+wellknown_object_test AA312825768811D1ADED00C04FD8D5CD Computers
 st=$?
 if [ x"$st" != x"0" ]; then
 	failed=`expr $failed + $st`
 fi
-wellkown_object_test A9D1CA15768811D1ADED00C04FD8D5CD Users
+wellknown_object_test A9D1CA15768811D1ADED00C04FD8D5CD Users
 st=$?
 if [ x"$st" != x"0" ]; then
 	failed=`expr $failed + $st`
