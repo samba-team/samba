@@ -1397,7 +1397,14 @@ static bool test_GetDomainInfo(struct torture_context *tctx,
 	q1.blob2.data = NULL;
 	q1.product.string = "product string";
 
-	torture_comment(tctx, "Testing netr_uogonGetDomainInfo\n");
+	torture_comment(tctx, "Testing netr_LogonGetDomainInfo\n");
+
+	status = dcerpc_netr_LogonGetDomainInfo(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "netr_LogonGetDomainInfo");
+	torture_assert(tctx, creds_client_check(creds, &a.cred), "Credential chaining failed");
+
+	torture_comment(tctx, "Testing netr_LogonGetDomainInfo 2nd call\n");
+	creds_client_authenticator(creds, &a);
 
 	status = dcerpc_netr_LogonGetDomainInfo(p, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "netr_LogonGetDomainInfo");
@@ -1581,6 +1588,7 @@ struct torture_suite *torture_rpc_netlogon(TALLOC_CTX *mem_ctx)
 
 	tcase = torture_suite_add_machine_rpc_iface_tcase(suite, "netlogon", 
 						  &ndr_table_netlogon, TEST_MACHINE_NAME);
+
 	torture_rpc_tcase_add_test(tcase, "LogonUasLogon", test_LogonUasLogon);
 	torture_rpc_tcase_add_test(tcase, "LogonUasLogoff", test_LogonUasLogoff);
 	torture_rpc_tcase_add_test_creds(tcase, "SamLogon", test_SamLogon);
