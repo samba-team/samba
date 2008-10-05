@@ -252,6 +252,7 @@ void dns_unmarshall_domain_name(TALLOC_CTX *mem_ctx,
 
 	if (!(name = talloc(mem_ctx, struct dns_domain_name))) {
 		buf->error = ERROR_DNS_NO_MEMORY;
+		return;
 	}
 
 	dns_unmarshall_label(name, 0, buf, &name->pLabelList);
