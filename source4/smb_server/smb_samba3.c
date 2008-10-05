@@ -52,7 +52,8 @@ static void samba3_smb_accept(struct stream_connection *conn)
 	close(1);
 	dup2(fd, 0);
 	dup2(fd, 1);
-	for (i=2;i<256;i++) {
+	dup2(fd, 2);
+	for (i=3;i<256;i++) {
 		close(i);
 	}
 
