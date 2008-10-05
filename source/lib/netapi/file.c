@@ -47,7 +47,8 @@ WERROR NetFileClose_r(struct libnetapi_ctx *ctx,
 					    r->in.server_name,
 					    r->in.fileid,
 					    &werr);
-	if (!W_ERROR_IS_OK(werr)) {
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
 		goto done;
 	}
 
