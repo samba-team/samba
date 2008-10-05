@@ -918,7 +918,8 @@ static NTSTATUS fill_domain_trust_info(TALLOC_CTX *mem_ctx,
 		/* MS-NRPC 3.5.4.3.9 - must be set to NULL for trust list */
 		info->forest.string = NULL;
 	} else {
-		info->forest.string = "bludom.tridgell.net"; /* need ldb search */
+		/* TODO: we need a common function for pulling the forest */
+		info->forest.string = samdb_result_string(ref_res, "dnsRoot", NULL);
 	}
 
 	if (is_local) {
@@ -1026,7 +1027,7 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 					true, true);
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	info1->dns_hostname.string = "blu.bludom.tridgell.net";
+	info1->dns_hostname.string = samdb_result_string(ref_res[0], "dnsRoot", NULL);
 	info1->workstation_flags = 
 		NETR_WS_FLAG_HANDLES_INBOUND_TRUSTS | NETR_WS_FLAG_HANDLES_SPN_UPDATE;
 	info1->supported_enc_types = 0; /* w2008 gives this 0 */
