@@ -13,7 +13,7 @@ $(eval $(call proto_header_template,$(smb_serversrcdir)/service_smb_proto.h,$(SE
 #
 [MODULE::SERVICE_SAMBA3_SMB]
 INIT_FUNCTION = server_service_samba3_smb_init
-SUBSYSTEM = smbd
+SUBSYSTEM = samba
 
 SERVICE_SAMBA3_SMB_OBJ_FILES = $(smb_serversrcdir)/smb_samba3.o
 
