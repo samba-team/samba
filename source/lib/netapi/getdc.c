@@ -58,6 +58,11 @@ WERROR NetGetDCName_r(struct libnetapi_ctx *ctx,
 				       r->in.domain_name,
 				       (const char **)r->out.buffer,
 				       &werr);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+	}
+
  done:
 
 	return werr;
