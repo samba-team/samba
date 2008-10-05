@@ -2639,6 +2639,7 @@ ADS_STATUS ads_domain_func_level(ADS_STRUCT *ads, uint32 *val)
 		if ( (ads_s = ads_init( ads->server.realm, ads->server.workgroup, 
 			ads->server.ldap_server )) == NULL )
 		{
+			status = ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
 			goto done;
 		}
 		ads_s->auth.flags = ADS_AUTH_ANON_BIND;
