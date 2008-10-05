@@ -47,6 +47,14 @@
 
 static bool smb_rl_done;
 
+#if HAVE_LIBREADLINE
+/*
+ *  * MacOS/X does not have rl_done in readline.h, but
+ *   * readline.so has it
+ *    */
+extern int rl_done;
+#endif
+
 void smb_readline_done(void)
 {
 	smb_rl_done = true;
