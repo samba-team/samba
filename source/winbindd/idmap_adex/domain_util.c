@@ -49,6 +49,12 @@ static NTSTATUS dc_add_domain(const char *domain)
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	struct dc_info *dc = NULL;
 
+	if (!domain) {		
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	
+	DEBUG(10,("dc_add_domain: Attempting to add domain %s\n", domain));
+	
 	/* Check for duplicates */
 
 	dc = dc_list_head();
@@ -72,6 +78,8 @@ static NTSTATUS dc_add_domain(const char *domain)
 	DLIST_ADD_END(_dc_server_list, dc, struct dc_info*);
 
 	nt_status = NT_STATUS_OK;
+
+	DEBUG(5,("dc_add_domain: Successfully added %s\n", domain));
 
 done:
 	if (!NT_STATUS_IS_OK(nt_status)) {
