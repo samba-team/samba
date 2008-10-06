@@ -389,6 +389,24 @@ done:
 		status = ads_do_search(c->conn, search_base,
 				       scope, expr, attrs, msg);
 		if (ADS_ERR_OK(status)) {
+			if (DEBUGLEVEL >= 10) {
+				LDAPMessage *e = NULL;
+				
+				int n = ads_count_replies(c->conn, *msg);
+				
+				DEBUG(10,("cell_do_search: Located %d entries\n", n));
+			      
+				for (e=ads_first_entry(c->conn, *msg); 
+				     e!=NULL;
+				     e = ads_next_entry(c->conn, e))
+				{
+					char *dn = ads_get_dn(c->conn, e);
+
+					DEBUGADD(10,("   dn: %s\n", dn ? dn : "<NULL>"));
+					SAFE_FREE(dn);					
+				}
+			}
+			
 			return status;
 		}
 
