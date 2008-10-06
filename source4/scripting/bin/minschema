@@ -11,7 +11,8 @@ import os, sys
 sys.path.insert(0, "bin/python")
 
 import samba
-from samba import getopt as options
+from samba import getopt as options, Ldb
+from ldb import SCOPE_SUBTREE, SCOPE_BASE, LdbError
 import sys
 
 parser = optparse.OptionParser("minschema <URL> <classfile>")
@@ -50,7 +51,9 @@ if len(args) != 2:
 
 (url, classfile) = args
 
-creds = credopts.get_credentials()
+lp_ctx = sambaopts.get_loadparm()
+
+creds = credopts.get_credentials(lp_ctx)
 ldb = Ldb(url, credentials=creds)
 
 objectclasses = []
@@ -131,17 +134,10 @@ attrib_attrs = ["objectClass",
 #      2: abstract
 #      3: auxiliary
 
-#
-#  print only if verbose is set
-#
-def dprintf(text):
-    if verbose is not None:
-        print text
-
 def get_object_cn(ldb, name):
     attrs = ["cn"]
 
-    res = ldb.search("(ldapDisplayName=%s)" % name, rootDse["schemaNamingContext"], ldb.SCOPE_SUBTREE, attrs)
+    res = ldb.search("(ldapDisplayName=%s)" % name, rootDse["schemaNamingContext"], SCOPE_SUBTREE, attrs)
     assert len(res) == 1
 
     return res[0]["cn"]
@@ -229,7 +225,7 @@ def find_objectclass_properties(ldb, o):
     """the properties of an objectclass"""
     res = ldb.search(
         expression="(ldapDisplayName=%s)" % o.name,
-        basedn=rootDse["schemaNamingContext"], scope=ldb.SCOPE_SUBTREE, attrs=class_attrs)
+        base=rootDse["schemaNamingContext"], scope=SCOPE_SUBTREE, attrs=class_attrs)
     assert(len(res) == 1)
     msg = res[0]
     for a in msg:
@@ -239,7 +235,7 @@ def find_attribute_properties(ldb, o):
     """find the properties of an attribute"""
     res = ldb.search(
         expression="(ldapDisplayName=%s)" % o.name,
-        basedn=rootDse["schemaNamingContext"], scope=ldb.SCOPE_SUBTREE, 
+        base=rootDse["schemaNamingContext"], scope=SCOPE_SUBTREE, 
         attrs=attrib_attrs)
     assert(len(res) == 1)
     msg = res[0]
@@ -269,7 +265,7 @@ def find_objectclass_auto(ldb, o):
         print "%s\n" % ldif
         return
 
-    res = ldb.search("", testdn, ldb.SCOPE_BASE)
+    res = ldb.search(base=testdn, scope=ldb.SCOPE_BASE)
     ldb.delete(testdn)
 
     for a in res.msgs[0]:
@@ -284,7 +280,7 @@ def expand_objectclass(ldb, o):
                   "subClassOf"]
     res = ldb.search(
         expression="(&(objectClass=classSchema)(ldapDisplayName=%s))" % o.name,
-        basedn=rootDse["schemaNamingContext"], scope=ldb.SCOPE_SUBTREE, 
+        base=rootDse["schemaNamingContext"], scope=SCOPE_SUBTREE, 
         attrs=attrs)
     print "Expanding class %s\n" % o.name
     assert(len(res) == 1)
@@ -322,13 +318,13 @@ def walk_dn(ldb, dn):
     # get a list of all possible attributes for this object 
     attrs = ["allowedAttributes"]
     try:
-        res = ldb.search("objectClass=*", dn, ldb.SCOPE_BASE, attrs)
+        res = ldb.search("objectClass=*", dn, SCOPE_BASE, attrs)
     except LdbError, e:
         print "Unable to fetch allowedAttributes for '%s' - %r\n" % (dn, e)
         return
     allattrs = res[0]["allowedAttributes"]
     try:
-        res = ldb.search("objectClass=*", dn, ldb.SCOPE_BASE, allattrs)
+        res = ldb.search("objectClass=*", dn, SCOPE_BASE, allattrs)
     except LdbError, e:
         print "Unable to fetch all attributes for '%s' - %s\n" % (dn, e)
         return
@@ -340,7 +336,7 @@ def walk_dn(ldb, dn):
 def walk_naming_context(ldb, namingContext):
     """walk a naming context, looking for all records"""
     try:
-        res = ldb.search("objectClass=*", namingContext, ldb.SCOPE_DEFAULT, 
+        res = ldb.search("objectClass=*", namingContext, SCOPE_DEFAULT, 
                          ["objectClass"])
     except LdbError, e:
         print "Unable to fetch objectClasses for '%s' - %s\n" % (namingContext, e)
@@ -398,7 +394,7 @@ def build_objectclass(ldb, name):
     try:
         res = ldb.search(
             expression="(&(objectClass=classSchema)(ldapDisplayName=%s))" % name,
-            basedn=rootDse["schemaNamingContext"], scope=ldb.SCOPE_SUBTREE, 
+            base=rootDse["schemaNamingContext"], scope=SCOPE_SUBTREE, 
             attrs=attrs)
     except LdbError, e:
         print "unknown class '%s'\n" % name
@@ -503,10 +499,10 @@ objectCategory: CN=SubSchema,${SCHEMADN}
 
 def load_list(file):
     """load a list from a file"""
-    return open(file, 'r').splitlines()
+    return open(file, 'r').readlines()
 
 # get the rootDSE
-res = ldb.search("", "", ldb.SCOPE_BASE)
+res = ldb.search(base="", expression="", scope=SCOPE_BASE, attrs=["schemaNamingContext"])
 rootDse = res[0]
 
 # load the list of classes we are interested in
