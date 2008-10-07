@@ -178,7 +178,6 @@ static void
 ctdb_reload_nodes_event(struct event_context *ev, struct timed_event *te, 
 			       struct timeval t, void *private_data)
 {
-	int ret;
 	int i;
 
 	struct ctdb_context *ctdb = talloc_get_type(private_data, struct ctdb_context);
