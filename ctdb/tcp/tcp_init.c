@@ -31,16 +31,14 @@
 */
 static int ctdb_tcp_add_node(struct ctdb_node *node)
 {
-	struct ctdb_tcp *ctcp = talloc_get_type(node->ctdb->private_data,
-						struct ctdb_tcp);
 	struct ctdb_tcp_node *tnode;
-	tnode = talloc_zero(ctcp, struct ctdb_tcp_node);
+	tnode = talloc_zero(node, struct ctdb_tcp_node);
 	CTDB_NO_MEMORY(node->ctdb, tnode);
 
 	tnode->fd = -1;
 	node->private_data = tnode;
 
-	tnode->out_queue = ctdb_queue_setup(node->ctdb, ctcp, tnode->fd, CTDB_TCP_ALIGNMENT,
+	tnode->out_queue = ctdb_queue_setup(node->ctdb, node, tnode->fd, CTDB_TCP_ALIGNMENT,
 					ctdb_tcp_tnode_cb, node);
 	
 	return 0;

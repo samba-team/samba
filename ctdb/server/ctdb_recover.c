@@ -179,27 +179,18 @@ ctdb_reload_nodes_event(struct event_context *ev, struct timed_event *te,
 			       struct timeval t, void *private_data)
 {
 	int ret;
+	int i;
+
 	struct ctdb_context *ctdb = talloc_get_type(private_data, struct ctdb_context);
-	int ctdb_tcp_init(struct ctdb_context *);
 
-	/* shut down the transport */
-	if (ctdb->methods != NULL) {
-		ctdb->methods->shutdown(ctdb);
-	}
-
-	/* start the transport again */
 	ctdb_load_nodes_file(ctdb);
-	ret = ctdb_tcp_init(ctdb);
-	if (ret != 0) {
-		DEBUG(DEBUG_CRIT, (__location__ " Failed to init TCP\n"));
-		exit(1);
-	}
 
-	if (ctdb->methods == NULL) {
-		DEBUG(DEBUG_ALERT,(__location__ " Can not restart transport. ctdb->methods==NULL\n"));
-		ctdb_fatal(ctdb, "can not reinitialize transport.");
+	for (i=0; i<ctdb->num_nodes; i++) {
+		if (ctdb->methods->add_node(ctdb->nodes[i]) != 0) {
+			DEBUG(DEBUG_CRIT, (__location__ " methods->add_node failed at %d\n", i));
+			ctdb_fatal(ctdb, "failed to add node. shutting down\n");
+		}
 	}
-	ctdb->methods->initialise(ctdb);
 	ctdb->methods->start(ctdb);
 
 	return;
