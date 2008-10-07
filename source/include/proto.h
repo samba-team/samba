@@ -517,6 +517,7 @@ void display_set_stderr(void);
 /* The following definitions come from lib/errmap_unix.c  */
 
 NTSTATUS map_nt_error_from_unix(int unix_error);
+int map_errno_from_nt_status(NTSTATUS status);
 
 /* The following definitions come from lib/events.c  */
 
