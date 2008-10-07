@@ -451,9 +451,19 @@ int ctdb_set_public_addresses(struct ctdb_context *ctdb, const char *alist)
 		unsigned mask;
 		ctdb_sock_addr addr;
 		const char *iface;
-		char *tok;
+		char *tok, *line;
 
-		tok = strtok(lines[i], " \t");
+		line = lines[i];
+		while ((*line == ' ') || (*line == '\t')) {
+			line++;
+		}
+		if (*line == '#') {
+			continue;
+		}
+		if (strcmp(line, "")) {
+			continue;
+		}
+		tok = strtok(line, " \t");
 		if (!tok || !parse_ip_mask(tok, &addr, &mask)) {
 			DEBUG(DEBUG_CRIT,("Badly formed line %u in public address list\n", i+1));
 			talloc_free(lines);
