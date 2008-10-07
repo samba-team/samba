@@ -750,7 +750,7 @@ static struct swrap_packet *swrap_packet_init(struct timeval *tval,
 					      int socket_type,
 					      const unsigned char *payload,
 					      size_t payload_len,
-					      unsigned long tcp_seq_num,
+					      unsigned long tcp_seqno,
 					      unsigned long tcp_ack,
 					      unsigned char tcp_ctl,
 					      int unreachable,
@@ -852,7 +852,7 @@ static struct swrap_packet *swrap_packet_init(struct timeval *tval,
 	case SOCK_STREAM:
 		packet->ip.p.tcp.source_port	= src_port;
 		packet->ip.p.tcp.dest_port	= dest_port;
-		packet->ip.p.tcp.seq_num	= htonl(tcp_seq_num);
+		packet->ip.p.tcp.seq_num	= htonl(tcp_seqno);
 		packet->ip.p.tcp.ack_num	= htonl(tcp_ack);
 		packet->ip.p.tcp.hdr_length	= 0x50; /* 5 * 32 bit words */
 		packet->ip.p.tcp.control	= tcp_ctl;
@@ -916,7 +916,7 @@ static struct swrap_packet *swrap_marshall_packet(struct socket_info *si,
 {
 	const struct sockaddr_in *src_addr;
 	const struct sockaddr_in *dest_addr;
-	unsigned long tcp_seq_num = 0;
+	unsigned long tcp_seqno = 0;
 	unsigned long tcp_ack = 0;
 	unsigned char tcp_ctl = 0;
 	int unreachable = 0;
@@ -937,7 +937,7 @@ static struct swrap_packet *swrap_marshall_packet(struct socket_info *si,
 		src_addr = (const struct sockaddr_in *)si->myname;
 		dest_addr = (const struct sockaddr_in *)addr;
 
-		tcp_seq_num = si->io.pck_snd;
+		tcp_seqno = si->io.pck_snd;
 		tcp_ack = si->io.pck_rcv;
 		tcp_ctl = 0x02; /* SYN */
 
@@ -951,7 +951,7 @@ static struct swrap_packet *swrap_marshall_packet(struct socket_info *si,
 		dest_addr = (const struct sockaddr_in *)si->myname;
 		src_addr = (const struct sockaddr_in *)addr;
 
-		tcp_seq_num = si->io.pck_rcv;
+		tcp_seqno = si->io.pck_rcv;
 		tcp_ack = si->io.pck_snd;
 		tcp_ctl = 0x12; /** SYN,ACK */
 
@@ -966,7 +966,7 @@ static struct swrap_packet *swrap_marshall_packet(struct socket_info *si,
 		src_addr = (const struct sockaddr_in *)addr;
 
 		/* Unreachable: resend the data of SWRAP_CONNECT_SEND */
-		tcp_seq_num = si->io.pck_snd - 1;
+		tcp_seqno = si->io.pck_snd - 1;
 		tcp_ack = si->io.pck_rcv;
 		tcp_ctl = 0x02; /* SYN */
 		unreachable = 1;
@@ -979,7 +979,7 @@ static struct swrap_packet *swrap_marshall_packet(struct socket_info *si,
 		src_addr = (const struct sockaddr_in *)si->myname;
 		dest_addr = (const struct sockaddr_in *)addr;
 
-		tcp_seq_num = si->io.pck_snd;
+		tcp_seqno = si->io.pck_snd;
 		tcp_ack = si->io.pck_rcv;
 		tcp_ctl = 0x10; /* ACK */
 
@@ -991,7 +991,7 @@ static struct swrap_packet *swrap_marshall_packet(struct socket_info *si,
 		dest_addr = (const struct sockaddr_in *)si->myname;
 		src_addr = (const struct sockaddr_in *)addr;
 
-		tcp_seq_num = si->io.pck_rcv;
+		tcp_seqno = si->io.pck_rcv;
 		tcp_ack = si->io.pck_snd;
 		tcp_ctl = 0x02; /* SYN */
 
@@ -1005,7 +1005,7 @@ static struct swrap_packet *swrap_marshall_packet(struct socket_info *si,
 		src_addr = (const struct sockaddr_in *)si->myname;
 		dest_addr = (const struct sockaddr_in *)addr;
 
-		tcp_seq_num = si->io.pck_snd;
+		tcp_seqno = si->io.pck_snd;
 		tcp_ack = si->io.pck_rcv;
 		tcp_ctl = 0x12; /* SYN,ACK */
 
@@ -1019,7 +1019,7 @@ static struct swrap_packet *swrap_marshall_packet(struct socket_info *si,
 		dest_addr = (const struct sockaddr_in *)si->myname;
 		src_addr = (const struct sockaddr_in *)addr;
 
-		tcp_seq_num = si->io.pck_rcv;
+		tcp_seqno = si->io.pck_rcv;
 		tcp_ack = si->io.pck_snd;
 		tcp_ctl = 0x10; /* ACK */
 
@@ -1029,7 +1029,7 @@ static struct swrap_packet *swrap_marshall_packet(struct socket_info *si,
 		src_addr = (const struct sockaddr_in *)si->myname;
 		dest_addr = (const struct sockaddr_in *)si->peername;
 
-		tcp_seq_num = si->io.pck_snd;
+		tcp_seqno = si->io.pck_snd;
 		tcp_ack = si->io.pck_rcv;
 		tcp_ctl = 0x18; /* PSH,ACK */
 
@@ -1047,7 +1047,7 @@ static struct swrap_packet *swrap_marshall_packet(struct socket_info *si,
 			      		  buf, len, packet_len);
 		}
 
-		tcp_seq_num = si->io.pck_rcv;
+		tcp_seqno = si->io.pck_rcv;
 		tcp_ack = si->io.pck_snd;
 		tcp_ctl = 0x14; /** RST,ACK */
 
@@ -1061,7 +1061,7 @@ static struct swrap_packet *swrap_marshall_packet(struct socket_info *si,
 			return NULL;
 		}
 
-		tcp_seq_num = si->io.pck_rcv;
+		tcp_seqno = si->io.pck_rcv;
 		tcp_ack = si->io.pck_snd;
 		tcp_ctl = 0x14; /* RST,ACK */
 
@@ -1071,7 +1071,7 @@ static struct swrap_packet *swrap_marshall_packet(struct socket_info *si,
 		dest_addr = (const struct sockaddr_in *)si->myname;
 		src_addr = (const struct sockaddr_in *)si->peername;
 
-		tcp_seq_num = si->io.pck_rcv;
+		tcp_seqno = si->io.pck_rcv;
 		tcp_ack = si->io.pck_snd;
 		tcp_ctl = 0x18; /* PSH,ACK */
 
@@ -1087,7 +1087,7 @@ static struct swrap_packet *swrap_marshall_packet(struct socket_info *si,
 			return NULL;
 		}
 
-		tcp_seq_num = si->io.pck_rcv;
+		tcp_seqno = si->io.pck_rcv;
 		tcp_ack = si->io.pck_snd;
 		tcp_ctl = 0x14; /* RST,ACK */
 
@@ -1123,7 +1123,7 @@ static struct swrap_packet *swrap_marshall_packet(struct socket_info *si,
 		src_addr = (const struct sockaddr_in *)si->myname;
 		dest_addr = (const struct sockaddr_in *)si->peername;
 
-		tcp_seq_num = si->io.pck_snd;
+		tcp_seqno = si->io.pck_snd;
 		tcp_ack = si->io.pck_rcv;
 		tcp_ctl = 0x11; /* FIN, ACK */
 
@@ -1137,7 +1137,7 @@ static struct swrap_packet *swrap_marshall_packet(struct socket_info *si,
 		dest_addr = (const struct sockaddr_in *)si->myname;
 		src_addr = (const struct sockaddr_in *)si->peername;
 
-		tcp_seq_num = si->io.pck_rcv;
+		tcp_seqno = si->io.pck_rcv;
 		tcp_ack = si->io.pck_snd;
 		tcp_ctl = 0x11; /* FIN,ACK */
 
@@ -1151,7 +1151,7 @@ static struct swrap_packet *swrap_marshall_packet(struct socket_info *si,
 		src_addr = (const struct sockaddr_in *)si->myname;
 		dest_addr = (const struct sockaddr_in *)si->peername;
 
-		tcp_seq_num = si->io.pck_snd;
+		tcp_seqno = si->io.pck_snd;
 		tcp_ack = si->io.pck_rcv;
 		tcp_ctl = 0x10; /* ACK */
 
@@ -1164,7 +1164,7 @@ static struct swrap_packet *swrap_marshall_packet(struct socket_info *si,
 
 	return swrap_packet_init(&tv, src_addr, dest_addr, si->type,
 				   (const unsigned char *)buf, len,
-				   tcp_seq_num, tcp_ack, tcp_ctl, unreachable,
+				   tcp_seqno, tcp_ack, tcp_ctl, unreachable,
 				   packet_len);
 }
 
