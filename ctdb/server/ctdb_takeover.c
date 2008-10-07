@@ -460,7 +460,7 @@ int ctdb_set_public_addresses(struct ctdb_context *ctdb, const char *alist)
 		if (*line == '#') {
 			continue;
 		}
-		if (strcmp(line, "")) {
+		if (strcmp(line, "") == 0) {
 			continue;
 		}
 		tok = strtok(line, " \t");
