@@ -5,7 +5,7 @@ Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
 Version: 1.0
-Release: 58
+Release: 59
 Epoch: 0
 License: GNU GPL version 3
 Group: System Environment/Daemons
@@ -118,6 +118,20 @@ fi
 %{_includedir}/ctdb_private.h
 
 %changelog
+* Tue Oct 7 2008 : Version 1.0.59
+ - Updated "reloadnodes" logic. Instead of bouncing the entire tcp layer it is sufficient to just close and reopen all outgoing tcp connections.
+ - New eventscript 99.routing which can be used to re-attach routes to public interfaces after a takeip event. (routes may be deleted by the kernel when we release an ip)
+ - IDR tree fix from Jim Houston
+ - Better handling of critical events if the local clock is suddenly changed forward by a lot.
+ - Fix three slow memory leaks in the recovery daemon
+ - New ctdb command : ctdb recmaster   which prints the pnn of the recmaster
+ - Onnode enhancements from Martin S : "healthy" and "connected" are now possible nodespecifiers
+ - From Martin S : doc fixes
+ - lowering some debug levels for some nonvital informational messages
+ - Make the daemon daemon monitoring stronger and allow ctdbd to detect a hung
+   recovery daemon.
+ - From C Cowan : patches to compile ipv6 under AIX
+ - zero out some structs to keep valgrind happy
 * Wed Aug 27 2008 : Version 1.0.58
  - revert the name change tcp_tcp_client back to tcp_control_tcp so
    samba can build.
