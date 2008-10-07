@@ -113,7 +113,10 @@ bool session_claim(user_struct *vuser)
 				break;
 			}
 
-			sess_pid = ((struct sessionid *)rec->value.dptr)->pid;
+			memcpy(&sess_pid,
+			       ((char *)rec->value.dptr)
+			       + offsetof(struct sessionid, pid),
+			       sizeof(sess_pid));
 
 			if (!process_exists(sess_pid)) {
 				DEBUG(5, ("%s has died -- re-using session\n",
