@@ -238,7 +238,7 @@ static NTSTATUS get_nt_acl_xattr(vfs_handle_struct *handle,
 			security_info, ppdesc);
 }
 
-static NTSTATUS create_acl_blob(SEC_DESC *psd, DATA_BLOB *pblob)
+static NTSTATUS create_acl_blob(const SEC_DESC *psd, DATA_BLOB *pblob)
 {
 	struct xattr_NTACL xacl;
 	struct security_descriptor_timestamp sd_ts;
@@ -257,7 +257,7 @@ static NTSTATUS create_acl_blob(SEC_DESC *psd, DATA_BLOB *pblob)
 
 	xacl.version = 2;
 	xacl.info.sd_ts = &sd_ts;
-	xacl.info.sd_ts->sd = psd;
+	xacl.info.sd_ts->sd = CONST_DISCARD(SEC_DESC *, psd);
 	unix_timespec_to_nt_time(&xacl.info.sd_ts->last_changed, curr);
 
 	ndr_err = ndr_push_struct_blob(
@@ -307,7 +307,7 @@ static NTSTATUS store_acl_blob(files_struct *fsp,
 }
 
 static NTSTATUS fset_nt_acl_xattr(vfs_handle_struct *handle, files_struct *fsp,
-        uint32 security_info_sent, SEC_DESC *psd)
+        uint32 security_info_sent, const SEC_DESC *psd)
 {
 	NTSTATUS status;
 	DATA_BLOB blob;

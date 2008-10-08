@@ -9923,14 +9923,14 @@ void reply_pipe_close(connection_struct *conn, struct smb_request *req);
 
 /* The following definitions come from smbd/posix_acls.c  */
 
-NTSTATUS unpack_nt_owners(int snum, uid_t *puser, gid_t *pgrp, uint32 security_info_sent, SEC_DESC *psd);
+NTSTATUS unpack_nt_owners(int snum, uid_t *puser, gid_t *pgrp, uint32 security_info_sent, const SEC_DESC *psd);
 SMB_ACL_T free_empty_sys_acl(connection_struct *conn, SMB_ACL_T the_acl);
 NTSTATUS posix_fget_nt_acl(struct files_struct *fsp, uint32_t security_info,
 			   SEC_DESC **ppdesc);
 NTSTATUS posix_get_nt_acl(struct connection_struct *conn, const char *name,
 			  uint32_t security_info, SEC_DESC **ppdesc);
 int try_chown(connection_struct *conn, const char *fname, uid_t uid, gid_t gid);
-NTSTATUS set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd);
+NTSTATUS set_nt_acl(files_struct *fsp, uint32 security_info_sent, const SEC_DESC *psd);
 int get_acl_group_bits( connection_struct *conn, const char *fname, mode_t *mode );
 int chmod_acl(connection_struct *conn, const char *name, mode_t mode);
 int inherit_access_posix_acl(connection_struct *conn, const char *inherit_from_dir,

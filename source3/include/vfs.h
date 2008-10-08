@@ -108,8 +108,9 @@
 /* Leave at 22 - not yet released. Remove parameter fd from close_fn. - obnox */
 /* Changed to version 23 - remove set_nt_acl call. This can only be done via an
    open handle. JRA. */
+/* Changed to version 24 - make security descriptor const in fset_nt_acl. JRA. */
 
-#define SMB_VFS_INTERFACE_VERSION 23
+#define SMB_VFS_INTERFACE_VERSION 24
 
 
 /* to bug old modules which are trying to compile with the old functions */
@@ -365,7 +366,7 @@ struct vfs_ops {
 		NTSTATUS (*fset_nt_acl)(struct vfs_handle_struct *handle,
 					struct files_struct *fsp,
 					uint32 security_info_sent,
-					struct security_descriptor *psd);
+					const struct security_descriptor *psd);
 
 		/* POSIX ACL operations. */
 
