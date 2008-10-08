@@ -294,6 +294,18 @@ static void schedule_async_request(struct winbindd_child *child)
 		return;		/* Busy */
 	}
 
+	/*
+	 * This may be a reschedule, so we might
+	 * have an existing timeout event pending on
+	 * the first entry in the child->requests list
+	 * (we only send one request at a time).
+	 * Ensure we free it before we reschedule.
+	 * Bug #5814, from hargagan <shargagan@novell.com>.
+	 * JRA.
+	 */
+
+	TALLOC_FREE(request->reply_timeout_event);
+
 	if ((child->pid == 0) && (!fork_domain_child(child))) {
 		/* fork_domain_child failed.
 		   Cancel all outstanding requests */
@@ -538,6 +550,17 @@ void winbind_child_died(pid_t pid)
 	child->event.fd = 0;
 	child->event.flags = 0;
 	child->pid = 0;
+
+	if (child->requests) {
+		/*
+		 * schedule_async_request() will also
+		 * clear this event but the call is
+		 * idempotent so it doesn't hurt to
+		 * cover all possible future code
+		 * paths. JRA.
+		 */
+		TALLOC_FREE(child->requests->reply_timeout_event);
+	}
 
 	schedule_async_request(child);
 }
