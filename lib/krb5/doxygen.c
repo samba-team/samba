@@ -425,7 +425,7 @@ RCSID("$Id$");
  * @subsection mit_krb5_error_code Error messages
  *
  * To get the error string, Heimdal uses
- * krb5_get_error_string() or, if NULL is returned,
+ * krb5_get_error_message() or, if NULL is returned,
  * krb5_get_err_text(). This is to return custom error messages
  * (like ``Can't find host/datan.example.com\@CODE.COM in
  * /etc/krb5.conf.'' instead of a ``Key table entry not found'' that
