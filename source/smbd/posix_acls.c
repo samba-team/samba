@@ -3227,7 +3227,7 @@ int try_chown(connection_struct *conn, const char *fname, uid_t uid, gid_t gid)
  Take care of parent ACL inheritance.
 ****************************************************************************/
 
-static NTSTATUS append_parent_acl(files_struct *fsp,
+NTSTATUS append_parent_acl(files_struct *fsp,
 				const SEC_DESC *pcsd,
 				SEC_DESC **pp_new_sd)
 {
