@@ -717,12 +717,12 @@ static bool mappable_sid(const DOM_SID *sid)
 
 static bool nt_to_afs_acl(const char *filename,
 			  uint32 security_info_sent,
-			  struct security_descriptor *psd,
+			  const struct security_descriptor *psd,
 			  uint32 (*nt_to_afs_rights)(const char *filename,
 						     const SEC_ACE *ace),
 			  struct afs_acl *afs_acl)
 {
-	SEC_ACL *dacl;
+	const SEC_ACL *dacl;
 	int i;
 
 	/* Currently we *only* look at the dacl */
@@ -737,7 +737,7 @@ static bool nt_to_afs_acl(const char *filename,
 	dacl = psd->dacl;
 
 	for (i = 0; i < dacl->num_aces; i++) {
-		SEC_ACE *ace = &(dacl->aces[i]);
+		const SEC_ACE *ace = &(dacl->aces[i]);
 		const char *dom_name, *name;
 		enum lsa_SidType name_type;
 		char *p;
@@ -887,7 +887,7 @@ static void merge_unknown_aces(struct afs_acl *src, struct afs_acl *dst)
 
 static NTSTATUS afs_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 			   uint32 security_info_sent,
-			   struct security_descriptor *psd)
+			   const struct security_descriptor *psd)
 {
 	struct afs_acl old_afs_acl, new_afs_acl;
 	struct afs_acl dir_acl, file_acl;
@@ -1040,7 +1040,7 @@ static NTSTATUS afsacl_get_nt_acl(struct vfs_handle_struct *handle,
 NTSTATUS afsacl_fset_nt_acl(vfs_handle_struct *handle,
 			 files_struct *fsp,
 			 uint32 security_info_sent,
-			 SEC_DESC *psd)
+			 const SEC_DESC *psd)
 {
 	return afs_set_nt_acl(handle, fsp, security_info_sent, psd);
 }
