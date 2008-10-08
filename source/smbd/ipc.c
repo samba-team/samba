@@ -318,7 +318,7 @@ static void api_fd_reply(connection_struct *conn, uint16 vuid,
 	/* Get the file handle and hence the file name. */
 	/* 
 	 * NB. The setup array has already been transformed
-	 * via SVAL and so is in gost byte order.
+	 * via SVAL and so is in host byte order.
 	 */
 	pnum = ((int)setup[1]) & 0xFFFF;
 	subcommand = ((int)setup[0]) & 0xFFFF;
