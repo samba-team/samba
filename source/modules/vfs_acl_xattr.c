@@ -317,6 +317,22 @@ static NTSTATUS fset_nt_acl_xattr(vfs_handle_struct *handle, files_struct *fsp,
 		return status;
 	}
 
+	if ((security_info_sent & DACL_SECURITY_INFORMATION) &&
+			psd->dacl != NULL &&
+			(psd->type & (SE_DESC_DACL_AUTO_INHERITED|
+				SE_DESC_DACL_AUTO_INHERIT_REQ))==
+				(SE_DESC_DACL_AUTO_INHERITED|
+				SE_DESC_DACL_AUTO_INHERIT_REQ) ) {
+		SEC_DESC *new_psd = NULL;
+		status = append_parent_acl(fsp, psd, &new_psd);
+		if (!NT_STATUS_IS_OK(status)) {
+			/* Lower level acl set succeeded,
+			 * so still return OK. */
+			return NT_STATUS_OK;
+		}
+		psd = new_psd;
+	}
+
 	create_acl_blob(psd, &blob);
 	store_acl_blob(fsp, &blob);
 
