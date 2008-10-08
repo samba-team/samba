@@ -339,8 +339,7 @@ bool check_fsp_open(connection_struct *conn, struct smb_request *req,
 }
 
 /****************************************************************************
- Check if we have a correct fsp pointing to a file. Replacement for the
- CHECK_FSP macro.
+ Check if we have a correct fsp pointing to a file.
 ****************************************************************************/
 
 bool check_fsp(connection_struct *conn, struct smb_request *req,
@@ -4275,7 +4274,7 @@ void reply_close(struct smb_request *req)
 	fsp = file_fsp(SVAL(req->inbuf,smb_vwv0));
 
 	/*
-	 * We can only use CHECK_FSP if we know it's not a directory.
+	 * We can only use check_fsp if we know it's not a directory.
 	 */
 
 	if(!fsp || (fsp->conn != conn) || (fsp->vuid != req->vuid)) {
