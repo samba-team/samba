@@ -95,6 +95,10 @@ bool dcesrv_auth_bind(struct dcesrv_call_state *call)
 		return false;
 	}
 
+	if (call->conn->state_flags & DCESRV_CALL_STATE_FLAG_HEADER_SIGNING) {
+		gensec_want_feature(auth->gensec_security, GENSEC_FEATURE_SIGN_PKT_HEADER);
+	}
+
 	return true;
 }
 

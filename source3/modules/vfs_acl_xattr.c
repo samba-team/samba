@@ -133,26 +133,6 @@ static NTSTATUS get_acl_blob(TALLOC_CTX *ctx,
 	return NT_STATUS_OK;
 }
 
-static int mkdir_acl_xattr(vfs_handle_struct *handle,  const char *path, mode_t mode)
-{
-	return SMB_VFS_NEXT_MKDIR(handle, path, mode);
-}
-
-static int rmdir_acl_xattr(vfs_handle_struct *handle,  const char *path)
-{
-	return SMB_VFS_NEXT_RMDIR(handle, path);
-}
-
-static int open_acl_xattr(vfs_handle_struct *handle,  const char *fname, files_struct *fsp, int flags, mode_t mode)
-{
-	return SMB_VFS_NEXT_OPEN(handle, fname, fsp, flags, mode);
-}
-
-static int unlink_acl_xattr(vfs_handle_struct *handle,  const char *fname)
-{
-	return SMB_VFS_NEXT_UNLINK(handle, fname);
-}
-
 static NTSTATUS get_nt_acl_xattr_internal(vfs_handle_struct *handle,
 					files_struct *fsp,
 					const char *name,
@@ -196,6 +176,42 @@ static NTSTATUS get_nt_acl_xattr_internal(vfs_handle_struct *handle,
 
 	TALLOC_FREE(blob.data);
 	return status;
+}
+
+static int mkdir_acl_xattr(vfs_handle_struct *handle,  const char *path, mode_t mode)
+{
+	return SMB_VFS_NEXT_MKDIR(handle, path, mode);
+}
+
+/*********************************************************************
+ * Currently this only works for existing files. Need to work on
+ * inheritance for new files.
+*********************************************************************/
+
+static int open_acl_xattr(vfs_handle_struct *handle,  const char *fname, files_struct *fsp, int flags, mode_t mode)
+{
+	uint32_t access_granted = 0;
+	SEC_DESC *pdesc = NULL;
+	NTSTATUS status = get_nt_acl_xattr_internal(handle,
+					NULL,
+					fname,
+					(OWNER_SECURITY_INFORMATION |
+					 GROUP_SECURITY_INFORMATION |
+					 DACL_SECURITY_INFORMATION),
+					&pdesc);
+        if (NT_STATUS_IS_OK(status)) {
+		/* See if we can access it. */
+		if (!se_access_check(pdesc,
+					handle->conn->server_info->ptok,
+					fsp->access_mask,
+					&access_granted,
+					&status)) {
+			errno = map_errno_from_nt_status(status);
+			return -1;
+		}
+        }
+
+	return SMB_VFS_NEXT_OPEN(handle, fname, fsp, flags, mode);
 }
 
 static NTSTATUS fget_nt_acl_xattr(vfs_handle_struct *handle, files_struct *fsp,
@@ -312,9 +328,7 @@ static NTSTATUS fset_nt_acl_xattr(vfs_handle_struct *handle, files_struct *fsp,
 static vfs_op_tuple skel_op_tuples[] =
 {
 	{SMB_VFS_OP(mkdir_acl_xattr), SMB_VFS_OP_MKDIR, SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(rmdir_acl_xattr), SMB_VFS_OP_RMDIR, SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(open_acl_xattr),  SMB_VFS_OP_OPEN,  SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(unlink_acl_xattr),SMB_VFS_OP_UNLINK,SMB_VFS_LAYER_TRANSPARENT},
 
         /* NT File ACL operations */
 

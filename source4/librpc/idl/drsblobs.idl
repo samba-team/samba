@@ -409,20 +409,22 @@ interface drsblobs {
 		[size_is(1)] AuthenticationInformation array[];
 	} AuthenticationInformationArray;
 
+	/* This is nopull,nopush because we pass count down to the
+	 * manual parser of AuthenticationInformationArray */
 	typedef [public,nopull,nopush,noprint,gensize] struct {
 		uint32 count;
 		[relative] AuthenticationInformationArray *current;
 		[relative] AuthenticationInformationArray *previous;
 	} trustAuthInOutBlob;
 
+	void decode_trustAuthInOut(
+		[in] trustAuthInOutBlob blob
+		);
+
 	typedef [public,gensize] struct {
 		uint32 count;
 		[relative] AuthenticationInformation *current[count];
 	} trustCurrentPasswords;
-
-	void decode_trustAuthInOut(
-		[in] trustAuthInOutBlob blob
-		);
 
 	typedef [public,nopull] struct {
 		uint8 confounder[512];

@@ -127,6 +127,7 @@ LOGFILEBASE = @logfilebase@
 CONFIGFILE = $(CONFIGDIR)/smb.conf
 LMHOSTSFILE = $(CONFIGDIR)/lmhosts
 CTDBDIR = @ctdbdir@
+NCALRPCDIR = @ncalrpcdir@
 
 # This is where smbpasswd et al go
 PRIVATEDIR = @privatedir@
@@ -166,6 +167,7 @@ PATH_FLAGS = -DSMB_PASSWD_FILE=\"$(SMB_PASSWD_FILE)\" \
 	-DLOGFILEBASE=\"$(LOGFILEBASE)\" \
 	-DSHLIBEXT=\"@SHLIBEXT@\" \
 	-DCTDBDIR=\"$(CTDBDIR)\" \
+	-DNCALRPCDIR=\"$(NCALRPCDIR)\" \
 	-DCONFIGDIR=\"$(CONFIGDIR)\" \
 	-DCODEPAGEDIR=\"$(CODEPAGEDIR)\" \
 	-DCACHEDIR=\"$(CACHEDIR)\" \
@@ -636,6 +638,7 @@ AUTH_SERVER_OBJ = auth/auth_server.o
 AUTH_UNIX_OBJ = auth/auth_unix.o
 AUTH_WINBIND_OBJ = auth/auth_winbind.o
 AUTH_SCRIPT_OBJ = auth/auth_script.o
+AUTH_NETLOGOND_OBJ = auth/auth_netlogond.o
 
 AUTH_OBJ = auth/auth.o @AUTH_STATIC@ auth/auth_util.o auth/token_util.o \
 	   auth/auth_compat.o auth/auth_ntlmssp.o \
@@ -2194,6 +2197,10 @@ bin/domain.@SHLIBEXT@: $(BINARY_PREREQS) $(AUTH_DOMAIN_OBJ)
 bin/script.@SHLIBEXT@: $(BINARY_PREREQS) $(AUTH_SCRIPT_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD_MODULE) $(AUTH_SCRIPT_OBJ)
+
+bin/netlogond.@SHLIBEXT@: $(BINARY_PREREQS) $(AUTH_NETLOGOND_OBJ)
+	@echo "Building plugin $@"
+	@$(SHLD_MODULE) $(AUTH_NETLOGOND_OBJ)
 
 bin/smbserver.@SHLIBEXT@: $(BINARY_PREREQS) $(AUTH_SERVER_OBJ)
 	@echo "Building plugin $@"

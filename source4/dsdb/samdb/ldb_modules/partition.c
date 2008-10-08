@@ -589,7 +589,6 @@ static int partition_delete(struct ldb_module *module, struct ldb_request *req)
 /* rename */
 static int partition_rename(struct ldb_module *module, struct ldb_request *req)
 {
-	int i, matched = -1;
 	/* Find backend */
 	struct dsdb_control_current_partition *backend, *backend2;
 	
@@ -615,22 +614,6 @@ static int partition_rename(struct ldb_module *module, struct ldb_request *req)
 				       ldb_dn_get_linearized(backend->dn),
 				       ldb_dn_get_linearized(req->op.rename.newdn),
 				       ldb_dn_get_linearized(backend2->dn),
-				       ldb_strerror(LDB_ERR_AFFECTS_MULTIPLE_DSAS));
-		return LDB_ERR_AFFECTS_MULTIPLE_DSAS;
-	}
-
-	for (i=0; data && data->partitions && data->partitions[i]; i++) {
-		if (ldb_dn_compare_base(data->partitions[i]->dn, req->op.rename.olddn) == 0) {
-			matched = i;
-		}
-	}
-
-	if (matched > 0) {
-		ldb_asprintf_errstring(module->ldb, 
-				       "Cannot rename from %s to %s, subtree rename would cross partition %s: %s",
-				       ldb_dn_get_linearized(req->op.rename.olddn),
-				       ldb_dn_get_linearized(req->op.rename.newdn),
-				       ldb_dn_get_linearized(data->partitions[matched]->dn),
 				       ldb_strerror(LDB_ERR_AFFECTS_MULTIPLE_DSAS));
 		return LDB_ERR_AFFECTS_MULTIPLE_DSAS;
 	}

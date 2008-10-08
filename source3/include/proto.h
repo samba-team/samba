@@ -46,6 +46,8 @@ bool password_ok(const char *smb_name, DATA_BLOB password_blob);
 void attempt_machine_password_change(void);
 NTSTATUS auth_domain_init(void);
 
+NTSTATUS auth_netlogond_init(void);
+
 /* The following definitions come from auth/auth_ntlmssp.c  */
 
 NTSTATUS auth_ntlmssp_start(AUTH_NTLMSSP_STATE **auth_ntlmssp_state);
@@ -513,6 +515,7 @@ void display_set_stderr(void);
 /* The following definitions come from lib/errmap_unix.c  */
 
 NTSTATUS map_nt_error_from_unix(int unix_error);
+int map_errno_from_nt_status(NTSTATUS status);
 
 /* The following definitions come from lib/events.c  */
 
@@ -6421,6 +6424,8 @@ bool secrets_restore_schannel_session_info(TALLOC_CTX *mem_ctx,
 				struct dcinfo **ppdc);
 bool secrets_store_generic(const char *owner, const char *key, const char *secret);
 char *secrets_fetch_generic(const char *owner, const char *key);
+bool secrets_store_local_schannel_key(uint8_t schannel_key[16]);
+bool secrets_fetch_local_schannel_key(uint8_t schannel_key[16]);
 
 /* The following definitions come from passdb/util_builtin.c  */
 
