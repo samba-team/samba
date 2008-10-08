@@ -1211,8 +1211,8 @@ krb5_cc_set_config(krb5_context context, krb5_ccache id,
 
     /* Remove old configuration */
     ret = krb5_cc_remove_cred(context, id, 0, &cred);
-    if (ret)
-	goto out;
+    if (ret != KRB5_CC_NOTFOUND)
+        goto out;
 
     /* not that anyone care when this expire */
     cred.times.authtime = time(NULL);
