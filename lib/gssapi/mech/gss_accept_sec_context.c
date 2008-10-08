@@ -131,6 +131,9 @@ choose_mech(const gss_buffer_t input, gss_OID mech_oid)
 		 * SASL GSS-SPENGO where the first token is zero
 		 * length and the acceptor returns a mech_list, lets
 		 * hope that is what is happening now.
+		 *
+		 * http://msdn.microsoft.com/en-us/library/cc213114.aspx
+		 * "NegTokenInit2 Variation for Server-Initiation"
 		 */
 		*mech_oid = spnego_mechanism;
 		return GSS_S_COMPLETE;
