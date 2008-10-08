@@ -791,6 +791,21 @@ krb5_cc_set_flags(krb5_context context,
 }
 		
 /**
+ * Get the flags of `id', store them in `flags'.
+ *
+ * @ingroup krb5_ccache
+ */
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_cc_get_flags(krb5_context context,
+		  krb5_ccache id,
+		  krb5_flags *flags)
+{
+    *flags = 0;
+    return 0;
+}
+
+/**
  * Copy the contents of `from' to `to'.
  *
  * @ingroup krb5_ccache
@@ -838,12 +853,12 @@ krb5_cc_copy_cache_match(krb5_context context,
     return ret;
 }
 
+
 /**
  * Just like krb5_cc_copy_cache_match, but copy everything.
  *
- * @ingroup krb5_ccache
+ * @ingroup @krb5_ccache
  */
-
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_cc_copy_cache(krb5_context context,
@@ -851,6 +866,20 @@ krb5_cc_copy_cache(krb5_context context,
 		   krb5_ccache to)
 {
     return krb5_cc_copy_cache_match(context, from, to, 0, NULL, NULL);
+}
+
+/**
+ * MIT compat glue
+ *
+ * @ingroup krb5_ccache
+ */
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_cc_copy_creds(krb5_context context,
+		   const krb5_ccache from,
+		   krb5_ccache to)
+{
+    return krb5_cc_copy_cache(context, from, to);
 }
 
 /**
@@ -1269,4 +1298,3 @@ out:
     krb5_free_cred_contents (context, &mcred);
     return ret;
 }
-
