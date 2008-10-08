@@ -21,7 +21,7 @@ import sys
 
 # Find right directory when running from source tree
 sys.path.insert(0, "bin/python")
-sys.path.insert(0, "../lib/subunit/python")
+sys.path.insert(1, "../lib/subunit/python")
 
 from subunit import SubunitTestRunner
 from unittest import TestProgram
