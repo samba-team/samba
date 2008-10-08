@@ -2660,6 +2660,10 @@ uninstallpammodules::
 # Toplevel clean files
 TOPFILES=dynconfig.o
 
+cleanlibs::
+	-rm -f ../lib/*/*.o ../lib/*/*/*.o \
+		../libcli/*.o ../libcli/*/*.o
+
 clean:: cleanlibs
 	-rm -f include/build_env.h
 	-rm -f smbd/build_options.c
