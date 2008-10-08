@@ -55,6 +55,20 @@ LIBCLI_NBT_OBJ_FILES = $(addprefix $(libclinbtsrcdir)/nbt/, \
 	namerefresh.o \
 	namerelease.o)
 
+[BINARY::nmblookup]
+INSTALLDIR = BINDIR
+PRIVATE_DEPENDENCIES = \
+		LIBSAMBA-HOSTCONFIG \
+		LIBSAMBA-UTIL \
+		LIBCLI_NBT \
+		LIBPOPT \
+		POPT_SAMBA \
+		LIBNETIF \
+		LIBCLI_RESOLVE
+
+nmblookup_OBJ_FILES = $(libclinbtsrcdir)/tools/nmblookup.o
+MANPAGES += $(libclinbtsrcdir)/man/nmblookup.1
+
 [SUBSYSTEM::LIBCLI_NDR_NETLOGON]
 PUBLIC_DEPENDENCIES = LIBNDR  \
 	NDR_SECURITY 	
