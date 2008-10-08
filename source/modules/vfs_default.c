@@ -1036,7 +1036,7 @@ static NTSTATUS vfswrap_get_nt_acl(vfs_handle_struct *handle,
 	return result;
 }
 
-static NTSTATUS vfswrap_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
+static NTSTATUS vfswrap_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp, uint32 security_info_sent, const SEC_DESC *psd)
 {
 	NTSTATUS result;
 

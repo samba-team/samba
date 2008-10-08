@@ -371,7 +371,7 @@ static bool aixjfs2_process_smbacl(files_struct *fsp, SMB4ACL_T *smbacl)
 	return True;
 }
 
-static NTSTATUS aixjfs2_set_nt_acl_common(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
+static NTSTATUS aixjfs2_set_nt_acl_common(files_struct *fsp, uint32 security_info_sent, const SEC_DESC *psd)
 {
 	acl_type_t	acl_type_info;
 	NTSTATUS	result = NT_STATUS_ACCESS_DENIED;
@@ -395,7 +395,7 @@ static NTSTATUS aixjfs2_set_nt_acl_common(files_struct *fsp, uint32 security_inf
 	return result;
 }
 
-NTSTATUS aixjfs2_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
+NTSTATUS aixjfs2_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp, uint32 security_info_sent, const SEC_DESC *psd)
 {
 	return aixjfs2_set_nt_acl_common(fsp, security_info_sent, psd);
 }
