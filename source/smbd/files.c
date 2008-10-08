@@ -400,9 +400,7 @@ void file_free(files_struct *fsp)
 
 	string_free(&fsp->fsp_name);
 
-	if (fsp->fake_file_handle) {
-		destroy_fake_file_handle(&fsp->fake_file_handle);
-	}
+	TALLOC_FREE(fsp->fake_file_handle);
 
 	if (fsp->fh->ref_count == 1) {
 		SAFE_FREE(fsp->fh);
