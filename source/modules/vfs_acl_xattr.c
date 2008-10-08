@@ -89,7 +89,7 @@ static NTSTATUS get_acl_blob(TALLOC_CTX *ctx,
 	uint8_t *val = NULL;
 	uint8_t *tmp;
 	ssize_t sizeret;
-	int saved_errno;
+	int saved_errno = 0;
 
 	ZERO_STRUCTP(pblob);
 
@@ -277,7 +277,7 @@ static NTSTATUS store_acl_blob(files_struct *fsp,
 				DATA_BLOB *pblob)
 {
 	int ret;
-	int saved_errno;
+	int saved_errno = 0;
 
 	DEBUG(10,("store_acl_blob: storing blob length %u on file %s\n",
 			(unsigned int)pblob->length, fsp->fsp_name));
