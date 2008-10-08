@@ -9558,7 +9558,6 @@ NTSTATUS open_fake_file(connection_struct *conn,
 				const char *fname,
 				uint32 access_mask,
 				files_struct **result);
-void destroy_fake_file_handle(struct fake_file_handle **fh);
 NTSTATUS close_fake_file(files_struct *fsp);
 
 /* The following definitions come from smbd/file_access.c  */
