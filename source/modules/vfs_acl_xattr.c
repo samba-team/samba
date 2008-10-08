@@ -257,7 +257,7 @@ static NTSTATUS create_acl_blob(const SEC_DESC *psd, DATA_BLOB *pblob)
 
 	xacl.version = 2;
 	xacl.info.sd_ts = &sd_ts;
-	xacl.info.sd_ts->sd = psd;
+	xacl.info.sd_ts->sd = CONST_DISCARD(SEC_DESC *, psd);
 	unix_timespec_to_nt_time(&xacl.info.sd_ts->last_changed, curr);
 
 	ndr_err = ndr_push_struct_blob(
