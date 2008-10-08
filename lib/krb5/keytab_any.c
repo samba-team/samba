@@ -138,12 +138,16 @@ any_start_seq_get(krb5_context context,
 	return ENOMEM;
     }
     ed = (struct any_cursor_extra_data *)c->data;
-    ed->a = a;
-    ret = krb5_kt_start_seq_get(context, ed->a->kt, &ed->cursor);
-    if (ret) {
+    for (ed->a = a; ed->a != NULL; ed->a = ed->a->next) {
+	ret = krb5_kt_start_seq_get(context, ed->a->kt, &ed->cursor);
+	if (ret == 0)
+	    break;
+    }
+    if (ed->a == NULL) {
 	free (c->data);
 	c->data = NULL;
-	return ret;
+	krb5_clear_error_string (context);
+	return KRB5_KT_END;
     }
     return 0;
 }
