@@ -238,7 +238,7 @@ static NTSTATUS get_nt_acl_xattr(vfs_handle_struct *handle,
 			security_info, ppdesc);
 }
 
-static NTSTATUS create_acl_blob(SEC_DESC *psd, DATA_BLOB *pblob)
+static NTSTATUS create_acl_blob(const SEC_DESC *psd, DATA_BLOB *pblob)
 {
 	struct xattr_NTACL xacl;
 	struct security_descriptor_timestamp sd_ts;
@@ -307,7 +307,7 @@ static NTSTATUS store_acl_blob(files_struct *fsp,
 }
 
 static NTSTATUS fset_nt_acl_xattr(vfs_handle_struct *handle, files_struct *fsp,
-        uint32 security_info_sent, SEC_DESC *psd)
+        uint32 security_info_sent, const SEC_DESC *psd)
 {
 	NTSTATUS status;
 	DATA_BLOB blob;

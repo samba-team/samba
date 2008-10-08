@@ -988,7 +988,7 @@ static mode_t map_nt_perms( uint32 *mask, int type)
  Unpack a SEC_DESC into a UNIX owner and group.
 ****************************************************************************/
 
-NTSTATUS unpack_nt_owners(int snum, uid_t *puser, gid_t *pgrp, uint32 security_info_sent, SEC_DESC *psd)
+NTSTATUS unpack_nt_owners(int snum, uid_t *puser, gid_t *pgrp, uint32 security_info_sent, const SEC_DESC *psd)
 {
 	DOM_SID owner_sid;
 	DOM_SID grp_sid;
@@ -1329,11 +1329,13 @@ static void check_owning_objs(canon_ace *ace, DOM_SID *pfile_owner_sid, DOM_SID 
  Unpack a SEC_DESC into two canonical ace lists.
 ****************************************************************************/
 
-static bool create_canon_ace_lists(files_struct *fsp, SMB_STRUCT_STAT *pst,
-							DOM_SID *pfile_owner_sid,
-							DOM_SID *pfile_grp_sid,
-							canon_ace **ppfile_ace, canon_ace **ppdir_ace,
-							SEC_ACL *dacl)
+static bool create_canon_ace_lists(files_struct *fsp,
+					SMB_STRUCT_STAT *pst,
+					DOM_SID *pfile_owner_sid,
+					DOM_SID *pfile_grp_sid,
+					canon_ace **ppfile_ace,
+					canon_ace **ppdir_ace,
+					const SEC_ACL *dacl)
 {
 	bool all_aces_are_inherit_only = (fsp->is_directory ? True : False);
 	canon_ace *file_ace = NULL;
@@ -2016,12 +2018,14 @@ static mode_t create_default_mode(files_struct *fsp, bool interitable_mode)
  succeeding.
 ****************************************************************************/
 
-static bool unpack_canon_ace(files_struct *fsp, 
-							SMB_STRUCT_STAT *pst,
-							DOM_SID *pfile_owner_sid,
-							DOM_SID *pfile_grp_sid,
-							canon_ace **ppfile_ace, canon_ace **ppdir_ace,
-							uint32 security_info_sent, SEC_DESC *psd)
+static bool unpack_canon_ace(files_struct *fsp,
+				SMB_STRUCT_STAT *pst,
+				DOM_SID *pfile_owner_sid,
+				DOM_SID *pfile_grp_sid,
+				canon_ace **ppfile_ace,
+				canon_ace **ppdir_ace,
+				uint32 security_info_sent,
+				const SEC_DESC *psd)
 {
 	canon_ace *file_ace = NULL;
 	canon_ace *dir_ace = NULL;
@@ -3224,25 +3228,25 @@ int try_chown(connection_struct *conn, const char *fname, uid_t uid, gid_t gid)
 ****************************************************************************/
 
 static NTSTATUS append_parent_acl(files_struct *fsp,
-				SMB_STRUCT_STAT *psbuf,
-				SEC_DESC *psd,
+				const SEC_DESC *pcsd,
 				SEC_DESC **pp_new_sd)
 {
 	SEC_DESC *parent_sd = NULL;
 	files_struct *parent_fsp = NULL;
-	TALLOC_CTX *mem_ctx = talloc_parent(psd);
+	TALLOC_CTX *mem_ctx = talloc_tos();
 	char *parent_name = NULL;
 	SEC_ACE *new_ace = NULL;
-	unsigned int num_aces = psd->dacl->num_aces;
+	unsigned int num_aces = pcsd->dacl->num_aces;
 	SMB_STRUCT_STAT sbuf;
 	NTSTATUS status;
 	int info;
 	unsigned int i, j;
-	bool is_dacl_protected = (psd->type & SE_DESC_DACL_PROTECTED);
+	SEC_DESC *psd = dup_sec_desc(talloc_tos(), pcsd);
+	bool is_dacl_protected = (pcsd->type & SE_DESC_DACL_PROTECTED);
 
 	ZERO_STRUCT(sbuf);
 
-	if (mem_ctx == NULL) {
+	if (psd == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -3398,11 +3402,6 @@ static NTSTATUS append_parent_acl(files_struct *fsp,
 			parent_name));
 	}
 
-	/* This sucks. psd should be const and we should
-	 * be doing a deep-copy here. We're getting away
-	 * with is as we know parent_sd is talloced off
-	 * talloc_tos() as well as psd. JRA. */
-
 	psd->dacl->aces = new_ace;
 	psd->dacl->num_aces = i;
 	psd->type &= ~(SE_DESC_DACL_AUTO_INHERITED|
@@ -3418,7 +3417,7 @@ static NTSTATUS append_parent_acl(files_struct *fsp,
  This should be the only external function needed for the UNIX style set ACL.
 ****************************************************************************/
 
-NTSTATUS set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
+NTSTATUS set_nt_acl(files_struct *fsp, uint32 security_info_sent, const SEC_DESC *psd)
 {
 	connection_struct *conn = fsp->conn;
 	uid_t user = (uid_t)-1;
@@ -3529,10 +3528,12 @@ NTSTATUS set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 			      SE_DESC_DACL_AUTO_INHERIT_REQ))==
 			(SE_DESC_DACL_AUTO_INHERITED|
 			 SE_DESC_DACL_AUTO_INHERIT_REQ) ) {
-		status = append_parent_acl(fsp, &sbuf, psd, &psd);
+		SEC_DESC *new_sd = NULL;
+		status = append_parent_acl(fsp, psd, &new_sd);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
+		psd = new_sd;
 	}
 
 	acl_perms = unpack_canon_ace( fsp, &sbuf, &file_owner_sid, &file_grp_sid,
