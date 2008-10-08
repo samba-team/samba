@@ -115,21 +115,16 @@ proto (int sock, const char *service)
     } while(maj_stat & GSS_S_CONTINUE_NEEDED);
 
     if (auth_file != NULL) {
-	int fd = open (auth_file, O_WRONLY | O_CREAT, 0666);
-#if 0
-	krb5_ticket *ticket;
-	krb5_data *data;
+	gss_buffer_desc data;
 
-	ticket = context_hdl->ticket;
-	data = &ticket->ticket.authorization_data->val[0].ad_data;
-
-	if(fd < 0)
-	    err (1, "open %s", auth_file);
-	if (write (fd, data->data, data->length) != data->length)
-	    errx (1, "write to %s failed", auth_file);
-#endif
-	if (close (fd))
-	    err (1, "close %s", auth_file);
+	maj_stat = gsskrb5_extract_authz_data_from_sec_context(&min_stat,
+							       context_hdl,
+							       KRB5_AUTHDATA_WIN2K_PAC,
+							       &data);
+	if (maj_stat == GSS_S_COMPLETE) {
+	    rk_dumpdata(auth_file, data.value, data.length);
+	    gss_release_buffer(&min_stat, &data);
+	}
     }
 
     maj_stat = gss_display_name (&min_stat,
