@@ -636,6 +636,7 @@ struct smb_request {
 	size_t unread_bytes;
 	bool encrypted;
 	connection_struct *conn;
+	struct files_struct *chain_fsp;
 };
 
 /* Defines for the sent_oplock_break field above. */

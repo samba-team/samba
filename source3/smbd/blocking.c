@@ -704,7 +704,6 @@ static void process_blocking_lock_queue(void)
 		 * sitting around....
 		 */
 		chain_size = 0;
-		file_chain_reset();
 		fsp = blr->fsp;
 
 		conn = conn_find(SVAL(blr->inbuf,smb_tid));

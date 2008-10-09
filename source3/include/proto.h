@@ -9594,7 +9594,6 @@ void file_sync_all(connection_struct *conn);
 void file_free(struct smb_request *req, files_struct *fsp);
 files_struct *file_fnum(uint16 fnum);
 files_struct *file_fsp(struct smb_request *req, uint16 fid);
-void file_chain_reset(void);
 NTSTATUS dup_file_fsp(struct smb_request *req, files_struct *fsp,
 		      uint32 access_mask, uint32 share_access,
 		      uint32 create_options, files_struct **result);

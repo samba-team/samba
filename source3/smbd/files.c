@@ -28,9 +28,6 @@ static int real_max_open_files;
 static struct bitmap *file_bmap;
 
 static files_struct *Files;
- 
-/* a fsp to use when chaining */
-static files_struct *chain_fsp = NULL;
 
 static int files_used;
 
@@ -121,7 +118,9 @@ NTSTATUS file_new(struct smb_request *req, connection_struct *conn,
 	DEBUG(5,("allocated file structure %d, fnum = %d (%d used)\n",
 		 i, fsp->fnum, files_used));
 
-	chain_fsp = fsp;
+	if (req != NULL) {
+		req->chain_fsp = fsp;
+	}
 
 	/* A new fsp invalidates the positive and
 	  negative fsp_fi_cache as the new fsp is pushed
@@ -430,8 +429,8 @@ void file_free(struct smb_request *req, files_struct *fsp)
 	   information */
 	ZERO_STRUCTP(fsp);
 
-	if (fsp == chain_fsp) {
-		chain_fsp = NULL;
+	if ((req != NULL) && (fsp == req->chain_fsp)) {
+		req->chain_fsp = NULL;
 	}
 
 	/* Closing a file can invalidate the positive cache. */
@@ -475,24 +474,15 @@ files_struct *file_fsp(struct smb_request *req, uint16 fid)
 {
 	files_struct *fsp;
 
-	if (chain_fsp) {
-		return chain_fsp;
+	if ((req != NULL) && (req->chain_fsp != NULL)) {
+		return req->chain_fsp;
 	}
 
 	fsp = file_fnum(fid);
-	if (fsp) {
-		chain_fsp = fsp;
+	if ((fsp != NULL) && (req != NULL)) {
+		req->chain_fsp = fsp;
 	}
 	return fsp;
-}
-
-/****************************************************************************
- Reset the chained fsp - done at the start of a packet reply.
-****************************************************************************/
-
-void file_chain_reset(void)
-{
-	chain_fsp = NULL;
 }
 
 /****************************************************************************

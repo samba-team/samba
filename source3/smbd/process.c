@@ -376,6 +376,7 @@ void init_smb_request(struct smb_request *req,
 	req->unread_bytes = unread_bytes;
 	req->encrypted = encrypted;
 	req->conn = conn_find(req->tid);
+	req->chain_fsp = NULL;
 
 	/* Ensure we have at least wct words and 2 bytes of bcc. */
 	if (smb_size + req->wct*2 > req_size) {
@@ -1486,7 +1487,6 @@ static void construct_reply(char *inbuf, int size, size_t unread_bytes, bool enc
 	struct smb_request *req;
 
 	chain_size = 0;
-	file_chain_reset();
 	reset_chain_p();
 
 	if (!(req = talloc(talloc_tos(), struct smb_request))) {
@@ -1733,6 +1733,7 @@ void chain_reply(struct smb_request *req)
 		smb_panic("could not allocate smb_request");
 	}
 	init_smb_request(req2, (uint8 *)inbuf2,0, req->encrypted);
+	req2->chain_fsp = req->chain_fsp;
 
 	/* process the request */
 	switch_message(smb_com2, req2, new_size);
