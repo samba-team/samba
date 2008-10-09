@@ -275,7 +275,7 @@ static bool parse_ace(struct cli_state *cli, SEC_ACE *ace,
 	unsigned int aflags = 0;
 	unsigned int amask = 0;
 	DOM_SID sid;
-	SEC_ACCESS mask;
+	uint32_t mask;
 	const struct perm_value *v;
 	char *str = SMB_STRDUP(orig_str);
 	TALLOC_CTX *frame = talloc_stackframe();

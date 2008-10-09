@@ -512,7 +512,7 @@ SEC_DESC_BUF *se_create_child_secdesc(TALLOC_CTX *ctx, SEC_DESC *parent_ctr,
 		if (!inherit)
 			continue;
 
-		init_sec_access(&new_ace->access_mask, ace->access_mask);
+		new_ace->access_mask = ace->access_mask;
 		init_sec_ace(new_ace, &ace->trustee, ace->type,
 			     new_ace->access_mask, new_flags);
 
@@ -546,14 +546,3 @@ SEC_DESC_BUF *se_create_child_secdesc(TALLOC_CTX *ctx, SEC_DESC *parent_ctr,
 
 	return sdb;
 }
-
-/*******************************************************************
- Sets up a SEC_ACCESS structure.
-********************************************************************/
-
-void init_sec_access(uint32 *t, uint32 mask)
-{
-	*t = mask;
-}
-
-

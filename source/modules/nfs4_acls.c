@@ -221,7 +221,7 @@ static bool smbacl4_nfs42win(TALLOC_CTX *mem_ctx, SMB4ACL_T *acl, /* in */
 	}
 
 	for (aceint=aclint->first; aceint!=NULL; aceint=(SMB_ACE4_INT_T *)aceint->next) {
-		SEC_ACCESS mask;
+		uint32_t mask;
 		DOM_SID sid;
 		SMB_ACE4PROP_T	*ace = &aceint->prop;
 
@@ -256,7 +256,7 @@ static bool smbacl4_nfs42win(TALLOC_CTX *mem_ctx, SMB4ACL_T *acl, /* in */
 		DEBUG(10, ("mapped %d to %s\n", ace->who.id,
 			   sid_string_dbg(&sid)));
 
-		init_sec_access(&mask, ace->aceMask);
+		mask = ace->aceMask;
 		init_sec_ace(&nt_ace_list[good_aces++], &sid,
 			ace->aceType, mask,
 			ace->aceFlags & 0xf);

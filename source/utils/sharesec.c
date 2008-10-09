@@ -153,7 +153,7 @@ static bool parse_ace(SEC_ACE *ace, const char *orig_str)
 	unsigned int aflags = 0;
 	unsigned int amask = 0;
 	DOM_SID sid;
-	SEC_ACCESS mask;
+	uint32_t mask;
 	const struct perm_value *v;
 	char *str = SMB_STRDUP(orig_str);
 	TALLOC_CTX *frame = talloc_stackframe();

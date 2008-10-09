@@ -499,7 +499,7 @@ TALLOC_CTX *debug_ctx(void);
 /* The following definitions come from lib/display_sec.c  */
 
 char *get_sec_mask_str(TALLOC_CTX *ctx, uint32 type);
-void display_sec_access(SEC_ACCESS *info);
+void display_sec_access(uint32_t *info);
 void display_sec_ace_flags(uint8_t flags);
 void display_sec_ace(SEC_ACE *ace);
 void display_sec_acl(SEC_ACL *sec_acl);
@@ -794,7 +794,6 @@ NTSTATUS sec_desc_mod_sid(SEC_DESC *sd, DOM_SID *sid, uint32 mask);
 NTSTATUS sec_desc_del_sid(TALLOC_CTX *ctx, SEC_DESC **psd, DOM_SID *sid, size_t *sd_size);
 SEC_DESC_BUF *se_create_child_secdesc(TALLOC_CTX *ctx, SEC_DESC *parent_ctr, 
 				      bool child_container);
-void init_sec_access(uint32 *t, uint32 mask);
 
 /* The following definitions come from lib/select.c  */
 

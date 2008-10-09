@@ -290,22 +290,18 @@ static NTSTATUS lsa_get_generic_sd(TALLOC_CTX *mem_ctx, SEC_DESC **sd, size_t *s
 	DOM_SID adm_sid;
 
 	SEC_ACE ace[3];
-	SEC_ACCESS mask;
 
 	SEC_ACL *psa = NULL;
 
-	init_sec_access(&mask, LSA_POLICY_EXECUTE);
-	init_sec_ace(&ace[0], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+	init_sec_ace(&ace[0], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED, LSA_POLICY_EXECUTE, 0);
 
 	sid_copy(&adm_sid, get_global_sam_sid());
 	sid_append_rid(&adm_sid, DOMAIN_GROUP_RID_ADMINS);
-	init_sec_access(&mask, LSA_POLICY_ALL_ACCESS);
-	init_sec_ace(&ace[1], &adm_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+	init_sec_ace(&ace[1], &adm_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, LSA_POLICY_ALL_ACCESS, 0);
 
 	sid_copy(&local_adm_sid, &global_sid_Builtin);
 	sid_append_rid(&local_adm_sid, BUILTIN_ALIAS_RID_ADMINS);
-	init_sec_access(&mask, LSA_POLICY_ALL_ACCESS);
-	init_sec_ace(&ace[2], &local_adm_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+	init_sec_ace(&ace[2], &local_adm_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, LSA_POLICY_ALL_ACCESS, 0);
 
 	if((psa = make_sec_acl(mem_ctx, NT4_ACL_REVISION, 3, ace)) == NULL)
 		return NT_STATUS_NO_MEMORY;
