@@ -2769,6 +2769,10 @@ valgrindtest:: all torture timelimit
 	 VALGRIND="valgrind -q --num-callers=30 --log-file=${selftest_prefix}/valgrind.log" \
 	 PERL="$(PERL)" $(srcdir)/script/tests/selftest.sh ${selftest_prefix} all "${smbtorture4_path}"
 
+# Check for Winbind struct 32/64bit padding
+test_wbpad:
+	@echo "Testing winbind request/response structure for 32/64bit padding"
+	@./script/tests/wb_pad.sh || exit 1;
 
 ##
 ## Examples:
