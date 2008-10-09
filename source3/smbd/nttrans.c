@@ -1188,7 +1188,7 @@ static NTSTATUS copy_internals(TALLOC_CTX *ctx,
 			&info, &fsp2);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		close_file(fsp1,ERROR_CLOSE);
+		close_file(NULL, fsp1, ERROR_CLOSE);
 		return status;
 	}
 
@@ -1202,12 +1202,12 @@ static NTSTATUS copy_internals(TALLOC_CTX *ctx,
 	 * Thus we don't look at the error return from the
 	 * close of fsp1.
 	 */
-	close_file(fsp1,NORMAL_CLOSE);
+	close_file(NULL, fsp1, NORMAL_CLOSE);
 
 	/* Ensure the modtime is set correctly on the destination file. */
 	set_close_write_time(fsp2, get_mtimespec(&sbuf1));
 
-	status = close_file(fsp2,NORMAL_CLOSE);
+	status = close_file(NULL, fsp2, NORMAL_CLOSE);
 
 	/* Grrr. We have to do this as open_file_ntcreate adds aARCH when it
 	   creates the file. This isn't the correct thing to do in the copy

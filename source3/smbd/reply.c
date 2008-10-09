@@ -1687,7 +1687,7 @@ void reply_open(struct smb_request *req)
 
 	if (fattr & aDIR) {
 		DEBUG(3,("attempt to open a directory %s\n",fsp->fsp_name));
-		close_file(fsp,ERROR_CLOSE);
+		close_file(req, fsp, ERROR_CLOSE);
 		reply_doserror(req, ERRDOS,ERRnoaccess);
 		END_PROFILE(SMBopen);
 		return;
@@ -1830,14 +1830,14 @@ void reply_open_and_X(struct smb_request *req)
 	if (((smb_action == FILE_WAS_CREATED) || (smb_action == FILE_WAS_OVERWRITTEN)) && allocation_size) {
 		fsp->initial_allocation_size = smb_roundup(fsp->conn, allocation_size);
 		if (vfs_allocate_file_space(fsp, fsp->initial_allocation_size) == -1) {
-			close_file(fsp,ERROR_CLOSE);
+			close_file(req, fsp, ERROR_CLOSE);
 			reply_nterror(req, NT_STATUS_DISK_FULL);
 			END_PROFILE(SMBopenX);
 			return;
 		}
 		retval = vfs_set_filelen(fsp, (SMB_OFF_T)allocation_size);
 		if (retval < 0) {
-			close_file(fsp,ERROR_CLOSE);
+			close_file(req, fsp, ERROR_CLOSE);
 			reply_nterror(req, NT_STATUS_DISK_FULL);
 			END_PROFILE(SMBopenX);
 			return;
@@ -1848,7 +1848,7 @@ void reply_open_and_X(struct smb_request *req)
 	fattr = dos_mode(conn,fsp->fsp_name,&sbuf);
 	mtime = sbuf.st_mtime;
 	if (fattr & aDIR) {
-		close_file(fsp,ERROR_CLOSE);
+		close_file(req, fsp, ERROR_CLOSE);
 		reply_doserror(req, ERRDOS, ERRnoaccess);
 		END_PROFILE(SMBopenX);
 		return;
@@ -2363,11 +2363,11 @@ static NTSTATUS do_unlink(connection_struct *conn,
 
 	/* The set is across all open files on this dev/inode pair. */
 	if (!set_delete_on_close(fsp, True, &conn->server_info->utok)) {
-		close_file(fsp, NORMAL_CLOSE);
+		close_file(req, fsp, NORMAL_CLOSE);
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	return close_file(fsp,NORMAL_CLOSE);
+	return close_file(req, fsp, NORMAL_CLOSE);
 }
 
 /****************************************************************************
@@ -4285,7 +4285,7 @@ void reply_close(struct smb_request *req)
 		 * Special case - close NT SMB directory handle.
 		 */
 		DEBUG(3,("close directory fnum=%d\n", fsp->fnum));
-		status = close_file(fsp,NORMAL_CLOSE);
+		status = close_file(req, fsp, NORMAL_CLOSE);
 	} else {
 		time_t t;
 		/*
@@ -4309,7 +4309,7 @@ void reply_close(struct smb_request *req)
 		 * a disk full error. If not then it was probably an I/O error.
 		 */
  
-		status = close_file(fsp,NORMAL_CLOSE);
+		status = close_file(req, fsp, NORMAL_CLOSE);
 	}  
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -4384,7 +4384,7 @@ void reply_writeclose(struct smb_request *req)
 	if (numtowrite) {
 		DEBUG(3,("reply_writeclose: zero length write doesn't close file %s\n",
 			fsp->fsp_name ));
-		close_status = close_file(fsp,NORMAL_CLOSE);
+		close_status = close_file(req, fsp, NORMAL_CLOSE);
 	}
 
 	DEBUG(3,("writeclose fnum=%d num=%d wrote=%d (numopen=%d)\n",
@@ -4690,7 +4690,7 @@ void reply_printclose(struct smb_request *req)
 	DEBUG(3,("printclose fd=%d fnum=%d\n",
 		 fsp->fh->fd,fsp->fnum));
   
-	status = close_file(fsp,NORMAL_CLOSE);
+	status = close_file(req, fsp, NORMAL_CLOSE);
 
 	if(!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
@@ -5785,7 +5785,7 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 					      last_component_dest,
 					      attrs, replace_if_exists);
 
-		close_file(fsp, NORMAL_CLOSE);
+		close_file(req, fsp, NORMAL_CLOSE);
 
 		DEBUG(3, ("rename_internals: Error %s rename %s -> %s\n",
 			  nt_errstr(status), directory,newname));
@@ -5889,7 +5889,7 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 		status = rename_internals_fsp(conn, fsp, destname, dname,
 					      attrs, replace_if_exists);
 
-		close_file(fsp, NORMAL_CLOSE);
+		close_file(req, fsp, NORMAL_CLOSE);
 
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(3, ("rename_internals_fsp returned %s for "
@@ -6104,7 +6104,7 @@ NTSTATUS copy_file(TALLOC_CTX *ctx,
 	TALLOC_FREE(dest);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		close_file(fsp1,ERROR_CLOSE);
+		close_file(NULL, fsp1, ERROR_CLOSE);
 		return status;
 	}
 
@@ -6123,7 +6123,7 @@ NTSTATUS copy_file(TALLOC_CTX *ctx,
 		ret = vfs_transfer_file(fsp1, fsp2, src_sbuf.st_size);
 	}
 
-	close_file(fsp1,NORMAL_CLOSE);
+	close_file(NULL, fsp1, NORMAL_CLOSE);
 
 	/* Ensure the modtime is set correctly on the destination file. */
 	set_close_write_time(fsp2, get_mtimespec(&src_sbuf));
@@ -6134,7 +6134,7 @@ NTSTATUS copy_file(TALLOC_CTX *ctx,
 	 * Thus we don't look at the error return from the
 	 * close of fsp1.
 	 */
-	status = close_file(fsp2,NORMAL_CLOSE);
+	status = close_file(NULL, fsp2, NORMAL_CLOSE);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;

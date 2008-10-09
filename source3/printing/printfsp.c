@@ -53,7 +53,7 @@ NTSTATUS print_fsp_open(struct smb_request *req, connection_struct *conn,
 	jobid = print_job_start(conn->server_info, SNUM(conn), name, NULL);
 	if (jobid == -1) {
 		status = map_nt_error_from_unix(errno);
-		file_free(fsp);
+		file_free(req, fsp);
 		return status;
 	}
 
@@ -62,7 +62,7 @@ NTSTATUS print_fsp_open(struct smb_request *req, connection_struct *conn,
 	if (fsp->rap_print_jobid == 0) {
 		/* We need to delete the entry in the tdb. */
 		pjob_delete(lp_const_servicename(SNUM(conn)), jobid);
-		file_free(fsp);
+		file_free(req, fsp);
 		return NT_STATUS_ACCESS_DENIED;	/* No errno around here */
 	}
 

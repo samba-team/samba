@@ -137,7 +137,7 @@ NTSTATUS open_fake_file(struct smb_request *req, connection_struct *conn,
 	fsp->fake_file_handle = init_fake_file_handle(fake_file_type);
 	
 	if (fsp->fake_file_handle==NULL) {
-		file_free(fsp);
+		file_free(req, fsp);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -146,8 +146,8 @@ NTSTATUS open_fake_file(struct smb_request *req, connection_struct *conn,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS close_fake_file(files_struct *fsp)
+NTSTATUS close_fake_file(struct smb_request *req, files_struct *fsp)
 {
-	file_free(fsp);
+	file_free(req, fsp);
 	return NT_STATUS_OK;
 }

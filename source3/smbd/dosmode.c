@@ -285,7 +285,7 @@ static bool set_ea_dos_attribute(connection_struct *conn, const char *path, SMB_
 			ret = True;
 		}
 		unbecome_root();
-		close_file_fchmod(fsp);
+		close_file_fchmod(NULL, fsp);
 		return ret;
 	}
 	DEBUG(10,("set_ea_dos_attribute: set EA %s on file %s\n", attrstr, path));
@@ -547,7 +547,7 @@ int file_set_dosmode(connection_struct *conn, const char *fname,
 		become_root();
 		ret = SMB_VFS_FCHMOD(fsp, unixmode);
 		unbecome_root();
-		close_file_fchmod(fsp);
+		close_file_fchmod(NULL, fsp);
 		if (!newfile) {
 			notify_fname(conn, NOTIFY_ACTION_MODIFIED,
 				FILE_NOTIFY_CHANGE_ATTRIBUTES, fname);

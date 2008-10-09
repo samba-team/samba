@@ -1465,7 +1465,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 					  fname, &old_write_time);
 
 		if (lck == NULL) {
-			file_free(fsp);
+			file_free(req, fsp);
 			DEBUG(0, ("Could not get share mode lock\n"));
 			return NT_STATUS_SHARING_VIOLATION;
 		}
@@ -1476,7 +1476,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 					 oplock_request)) {
 			schedule_defer_open(lck, request_time, req);
 			TALLOC_FREE(lck);
-			file_free(fsp);
+			file_free(req, fsp);
 			return NT_STATUS_SHARING_VIOLATION;
 		}
 
@@ -1496,7 +1496,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 						  oplock_request)) {
 				schedule_defer_open(lck, request_time, req);
 				TALLOC_FREE(lck);
-				file_free(fsp);
+				file_free(req, fsp);
 				return NT_STATUS_SHARING_VIOLATION;
 			}
 		}
@@ -1504,7 +1504,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 		if (NT_STATUS_EQUAL(status, NT_STATUS_DELETE_PENDING)) {
 			/* DELETE_PENDING is not deferred for a second */
 			TALLOC_FREE(lck);
-			file_free(fsp);
+			file_free(req, fsp);
 			return status;
 		}
 
@@ -1525,7 +1525,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 					DEBUG(0, ("DOS open without an SMB "
 						  "request!\n"));
 					TALLOC_FREE(lck);
-					file_free(fsp);
+					file_free(req, fsp);
 					return NT_STATUS_INTERNAL_ERROR;
 				}
 
@@ -1540,7 +1540,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 				if (fsp_dup) {
 					TALLOC_FREE(lck);
-					file_free(fsp);
+					file_free(req, fsp);
 					if (pinfo) {
 						*pinfo = FILE_WAS_OPENED;
 					}
@@ -1626,7 +1626,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 			} else {
 				status = NT_STATUS_ACCESS_DENIED;
 			}
-			file_free(fsp);
+			file_free(req, fsp);
 			return status;
 		}
 
@@ -1664,7 +1664,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 		if (lck != NULL) {
 			TALLOC_FREE(lck);
 		}
-		file_free(fsp);
+		file_free(req, fsp);
 		return fsp_open;
 	}
 
@@ -1695,7 +1695,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 			DEBUG(0, ("open_file_ntcreate: Could not get share "
 				  "mode lock for %s\n", fname));
 			fd_close(fsp);
-			file_free(fsp);
+			file_free(req, fsp);
 			return NT_STATUS_SHARING_VIOLATION;
 		}
 
@@ -1706,7 +1706,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 			schedule_defer_open(lck, request_time, req);
 			TALLOC_FREE(lck);
 			fd_close(fsp);
-			file_free(fsp);
+			file_free(req, fsp);
 			return NT_STATUS_SHARING_VIOLATION;
 		}
 
@@ -1725,7 +1725,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 				schedule_defer_open(lck, request_time, req);
 				TALLOC_FREE(lck);
 				fd_close(fsp);
-				file_free(fsp);
+				file_free(req, fsp);
 				return NT_STATUS_SHARING_VIOLATION;
 			}
 		}
@@ -1734,7 +1734,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 			struct deferred_open_record state;
 
 			fd_close(fsp);
-			file_free(fsp);
+			file_free(req, fsp);
 
 			state.delayed_for_oplocks = False;
 			state.id = id;
@@ -1776,7 +1776,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 			TALLOC_FREE(lck);
 			fd_close(fsp);
-			file_free(fsp);
+			file_free(req, fsp);
 
 			return NT_STATUS_SHARING_VIOLATION;
 		}
@@ -1802,7 +1802,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 			status = map_nt_error_from_unix(errno);
 			TALLOC_FREE(lck);
 			fd_close(fsp);
-			file_free(fsp);
+			file_free(req, fsp);
 			return status;
 		}
 	}
@@ -1863,7 +1863,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 			del_share_mode(lck, fsp);
 			TALLOC_FREE(lck);
 			fd_close(fsp);
-			file_free(fsp);
+			file_free(req, fsp);
 			return status;
 		}
 		/* Note that here we set the *inital* delete on close flag,
@@ -1977,7 +1977,7 @@ NTSTATUS open_file_fchmod(struct smb_request *req, connection_struct *conn,
 	 */
 
 	if (!NT_STATUS_IS_OK(status)) {
-		file_free(fsp);
+		file_free(req, fsp);
 		return status;
 	}
 
@@ -1989,10 +1989,10 @@ NTSTATUS open_file_fchmod(struct smb_request *req, connection_struct *conn,
  Close the fchmod file fd - ensure no locks are lost.
 ****************************************************************************/
 
-NTSTATUS close_file_fchmod(files_struct *fsp)
+NTSTATUS close_file_fchmod(struct smb_request *req, files_struct *fsp)
 {
 	NTSTATUS status = fd_close(fsp);
-	file_free(fsp);
+	file_free(req, fsp);
 	return status;
 }
 
@@ -2238,7 +2238,7 @@ NTSTATUS open_directory(connection_struct *conn,
 
 	if (lck == NULL) {
 		DEBUG(0, ("open_directory: Could not get share mode lock for %s\n", fname));
-		file_free(fsp);
+		file_free(req, fsp);
 		return NT_STATUS_SHARING_VIOLATION;
 	}
 
@@ -2248,7 +2248,7 @@ NTSTATUS open_directory(connection_struct *conn,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(lck);
-		file_free(fsp);
+		file_free(req, fsp);
 		return status;
 	}
 
@@ -2261,7 +2261,7 @@ NTSTATUS open_directory(connection_struct *conn,
 		status = can_set_delete_on_close(fsp, True, 0);
 		if (!NT_STATUS_IS_OK(status) && !NT_STATUS_EQUAL(status, NT_STATUS_DIRECTORY_NOT_EMPTY)) {
 			TALLOC_FREE(lck);
-			file_free(fsp);
+			file_free(req, fsp);
 			return status;
 		}
 
@@ -2302,7 +2302,7 @@ NTSTATUS create_directory(connection_struct *conn, struct smb_request *req, cons
 				&fsp);
 
 	if (NT_STATUS_IS_OK(status)) {
-		close_file(fsp, NORMAL_CLOSE);
+		close_file(req, fsp, NORMAL_CLOSE);
 	}
 
 	return status;
@@ -2512,7 +2512,7 @@ static NTSTATUS open_streams_for_delete(connection_struct *conn,
 
 		DEBUG(10, ("Closing stream # %d, %s\n", i,
 			   streams[i]->fsp_name));
-		close_file(streams[i], NORMAL_CLOSE);
+		close_file(NULL, streams[i], NORMAL_CLOSE);
 	}
 
  fail:
@@ -2843,11 +2843,11 @@ NTSTATUS create_file_unixpath(connection_struct *conn,
 	DEBUG(10, ("create_file_unixpath: %s\n", nt_errstr(status)));
 
 	if (fsp != NULL) {
-		close_file(fsp, ERROR_CLOSE);
+		close_file(req, fsp, ERROR_CLOSE);
 		fsp = NULL;
 	}
 	if (base_fsp != NULL) {
-		close_file(base_fsp, ERROR_CLOSE);
+		close_file(req, base_fsp, ERROR_CLOSE);
 		base_fsp = NULL;
 	}
 	return status;
@@ -3094,7 +3094,7 @@ NTSTATUS create_file(connection_struct *conn,
 	DEBUG(10, ("create_file: %s\n", nt_errstr(status)));
 
 	if (fsp != NULL) {
-		close_file(fsp, ERROR_CLOSE);
+		close_file(req, fsp, ERROR_CLOSE);
 		fsp = NULL;
 	}
 	return status;

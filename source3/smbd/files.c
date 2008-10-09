@@ -145,7 +145,7 @@ void file_close_conn(connection_struct *conn)
 	for (fsp=Files;fsp;fsp=next) {
 		next = fsp->next;
 		if (fsp->conn == conn) {
-			close_file(fsp,SHUTDOWN_CLOSE); 
+			close_file(NULL, fsp, SHUTDOWN_CLOSE);
 		}
 	}
 }
@@ -161,7 +161,7 @@ void file_close_pid(uint16 smbpid, int vuid)
 	for (fsp=Files;fsp;fsp=next) {
 		next = fsp->next;
 		if ((fsp->file_pid == smbpid) && (fsp->vuid == vuid)) {
-			close_file(fsp,SHUTDOWN_CLOSE); 
+			close_file(NULL, fsp, SHUTDOWN_CLOSE);
 		}
 	}
 }
@@ -219,7 +219,7 @@ void file_close_user(int vuid)
 	for (fsp=Files;fsp;fsp=next) {
 		next=fsp->next;
 		if (fsp->vuid == vuid) {
-			close_file(fsp,SHUTDOWN_CLOSE);
+			close_file(NULL, fsp, SHUTDOWN_CLOSE);
 		}
 	}
 }
@@ -395,7 +395,7 @@ void file_sync_all(connection_struct *conn)
  Free up a fsp.
 ****************************************************************************/
 
-void file_free(files_struct *fsp)
+void file_free(struct smb_request *req, files_struct *fsp)
 {
 	DLIST_REMOVE(Files, fsp);
 

@@ -9370,7 +9370,8 @@ NTSTATUS change_oem_password(struct samu *hnd, char *old_passwd, char *new_passw
 /* The following definitions come from smbd/close.c  */
 
 void set_close_write_time(struct files_struct *fsp, struct timespec ts);
-NTSTATUS close_file(files_struct *fsp, enum file_close_type close_type);
+NTSTATUS close_file(struct smb_request *req, files_struct *fsp,
+		    enum file_close_type close_type);
 void msg_close_file(struct messaging_context *msg_ctx,
 		    void *private_data,
 		    uint32_t msg_type,
@@ -9535,7 +9536,7 @@ NTSTATUS open_fake_file(struct smb_request *req, connection_struct *conn,
 				const char *fname,
 				uint32 access_mask,
 				files_struct **result);
-NTSTATUS close_fake_file(files_struct *fsp);
+NTSTATUS close_fake_file(struct smb_request *req, files_struct *fsp);
 
 /* The following definitions come from smbd/file_access.c  */
 
@@ -9590,7 +9591,7 @@ files_struct *file_find_di_first(struct file_id id);
 files_struct *file_find_di_next(files_struct *start_fsp);
 files_struct *file_find_print(void);
 void file_sync_all(connection_struct *conn);
-void file_free(files_struct *fsp);
+void file_free(struct smb_request *req, files_struct *fsp);
 files_struct *file_fnum(uint16 fnum);
 files_struct *file_fsp(struct smb_request *req, uint16 fid);
 void file_chain_reset(void);
@@ -9791,7 +9792,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 NTSTATUS open_file_fchmod(struct smb_request *req, connection_struct *conn,
 			  const char *fname,
 			  SMB_STRUCT_STAT *psbuf, files_struct **result);
-NTSTATUS close_file_fchmod(files_struct *fsp);
+NTSTATUS close_file_fchmod(struct smb_request *req, files_struct *fsp);
 NTSTATUS open_directory(connection_struct *conn,
 			struct smb_request *req,
 			const char *fname,

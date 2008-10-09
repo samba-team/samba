@@ -505,7 +505,8 @@ static NTSTATUS update_write_time_on_close(struct files_struct *fsp)
  delete on close is done on normal and shutdown close.
 ****************************************************************************/
 
-static NTSTATUS close_normal_file(files_struct *fsp, enum file_close_type close_type)
+static NTSTATUS close_normal_file(struct smb_request *req, files_struct *fsp,
+				  enum file_close_type close_type)
 {
 	NTSTATUS status = NT_STATUS_OK;
 	NTSTATUS saved_status1 = NT_STATUS_OK;
@@ -536,7 +537,7 @@ static NTSTATUS close_normal_file(files_struct *fsp, enum file_close_type close_
 
 	if (fsp->print_file) {
 		print_fsp_end(fsp, close_type);
-		file_free(fsp);
+		file_free(req, fsp);
 		return NT_STATUS_OK;
 	}
 
@@ -585,7 +586,7 @@ static NTSTATUS close_normal_file(files_struct *fsp, enum file_close_type close_
 		conn->num_files_open,
 		nt_errstr(status) ));
 
-	file_free(fsp);
+	file_free(req, fsp);
 	return status;
 }
 
@@ -593,7 +594,8 @@ static NTSTATUS close_normal_file(files_struct *fsp, enum file_close_type close_
  Close a directory opened by an NT SMB call. 
 ****************************************************************************/
   
-static NTSTATUS close_directory(files_struct *fsp, enum file_close_type close_type)
+static NTSTATUS close_directory(struct smb_request *req, files_struct *fsp,
+				enum file_close_type close_type)
 {
 	struct share_mode_lock *lck = 0;
 	bool delete_dir = False;
@@ -698,7 +700,7 @@ static NTSTATUS close_directory(files_struct *fsp, enum file_close_type close_ty
 	 * Do the code common to files and directories.
 	 */
 	close_filestruct(fsp);
-	file_free(fsp);
+	file_free(req, fsp);
 	return status;
 }
 
@@ -706,17 +708,18 @@ static NTSTATUS close_directory(files_struct *fsp, enum file_close_type close_ty
  Close a files_struct.
 ****************************************************************************/
   
-NTSTATUS close_file(files_struct *fsp, enum file_close_type close_type)
+NTSTATUS close_file(struct smb_request *req, files_struct *fsp,
+		    enum file_close_type close_type)
 {
 	NTSTATUS status;
 	struct files_struct *base_fsp = fsp->base_fsp;
 
 	if(fsp->is_directory) {
-		status = close_directory(fsp, close_type);
+		status = close_directory(req, fsp, close_type);
 	} else if (fsp->fake_file_handle != NULL) {
-		status = close_fake_file(fsp);
+		status = close_fake_file(req, fsp);
 	} else {
-		status = close_normal_file(fsp, close_type);
+		status = close_normal_file(req, fsp, close_type);
 	}
 
 	if ((base_fsp != NULL) && (close_type != SHUTDOWN_CLOSE)) {
@@ -731,7 +734,7 @@ NTSTATUS close_file(files_struct *fsp, enum file_close_type close_type)
 		 */
 
 		SMB_ASSERT(base_fsp->base_fsp == NULL);
-		close_file(base_fsp, close_type);
+		close_file(req, base_fsp, close_type);
 	}
 
 	return status;
@@ -768,5 +771,5 @@ void msg_close_file(struct messaging_context *msg_ctx,
 		DEBUG(10,("msg_close_file: failed to find file.\n"));
 		return;
 	}
-	close_file(fsp, NORMAL_CLOSE);
+	close_file(NULL, fsp, NORMAL_CLOSE);
 }

@@ -1031,7 +1031,7 @@ static void call_trans2open(connection_struct *conn,
 	mtime = sbuf.st_mtime;
 	inode = sbuf.st_ino;
 	if (fattr & aDIR) {
-		close_file(fsp,ERROR_CLOSE);
+		close_file(req, fsp, ERROR_CLOSE);
 		reply_doserror(req, ERRDOS,ERRnoaccess);
 		return;
 	}
@@ -5016,12 +5016,12 @@ static NTSTATUS smb_set_file_size(connection_struct *conn,
 
 	if (vfs_set_filelen(new_fsp, size) == -1) {
 		status = map_nt_error_from_unix(errno);
-		close_file(new_fsp,NORMAL_CLOSE);
+		close_file(req, new_fsp,NORMAL_CLOSE);
 		return status;
 	}
 
 	trigger_write_time_update_immediate(new_fsp);
-	close_file(new_fsp,NORMAL_CLOSE);
+	close_file(req, new_fsp,NORMAL_CLOSE);
 	return NT_STATUS_OK;
 }
 
@@ -5771,7 +5771,7 @@ static NTSTATUS smb_set_file_allocation_info(connection_struct *conn,
 	if (allocation_size != get_file_size(*psbuf)) {
 		if (vfs_allocate_file_space(new_fsp, allocation_size) == -1) {
 			status = map_nt_error_from_unix(errno);
-			close_file(new_fsp,NORMAL_CLOSE);
+			close_file(req, new_fsp, NORMAL_CLOSE);
 			return status;
 		}
 	}
@@ -5783,7 +5783,7 @@ static NTSTATUS smb_set_file_allocation_info(connection_struct *conn,
 	 */
 	trigger_write_time_update_immediate(new_fsp);
 
-	close_file(new_fsp,NORMAL_CLOSE);
+	close_file(req, new_fsp, NORMAL_CLOSE);
 	return NT_STATUS_OK;
 }
 
@@ -6196,7 +6196,7 @@ static NTSTATUS smb_posix_mkdir(connection_struct *conn,
 				&fsp);
 
         if (NT_STATUS_IS_OK(status)) {
-                close_file(fsp, NORMAL_CLOSE);
+                close_file(req, fsp, NORMAL_CLOSE);
         }
 
 	info_level_return = SVAL(pdata,16);
@@ -6389,7 +6389,7 @@ static NTSTATUS smb_posix_open(connection_struct *conn,
 	/* Realloc the data size */
 	*ppdata = (char *)SMB_REALLOC(*ppdata,*pdata_return_size);
 	if (*ppdata == NULL) {
-		close_file(fsp,ERROR_CLOSE);
+		close_file(req, fsp, ERROR_CLOSE);
 		*pdata_return_size = 0;
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -6507,7 +6507,7 @@ static NTSTATUS smb_posix_unlink(connection_struct *conn,
 	if (lck == NULL) {
 		DEBUG(0, ("smb_posix_unlink: Could not get share mode "
 			"lock for file %s\n", fsp->fsp_name));
-		close_file(fsp, NORMAL_CLOSE);
+		close_file(req, fsp, NORMAL_CLOSE);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -6523,7 +6523,7 @@ static NTSTATUS smb_posix_unlink(connection_struct *conn,
 				continue;
 			}
 			/* Fail with sharing violation. */
-			close_file(fsp, NORMAL_CLOSE);
+			close_file(req, fsp, NORMAL_CLOSE);
 			TALLOC_FREE(lck);
 			return NT_STATUS_SHARING_VIOLATION;
 		}
@@ -6540,12 +6540,12 @@ static NTSTATUS smb_posix_unlink(connection_struct *conn,
 						psbuf);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		close_file(fsp, NORMAL_CLOSE);
+		close_file(req, fsp, NORMAL_CLOSE);
 		TALLOC_FREE(lck);
 		return status;
 	}
 	TALLOC_FREE(lck);
-	return close_file(fsp, NORMAL_CLOSE);
+	return close_file(req, fsp, NORMAL_CLOSE);
 }
 
 /****************************************************************************

@@ -2112,7 +2112,7 @@ WERROR _srvsvc_NetGetFileSecurity(pipes_struct *p,
 
 	psd->dacl->revision = NT4_ACL_REVISION;
 
-	close_file(fsp, NORMAL_CLOSE);
+	close_file(NULL, fsp, NORMAL_CLOSE);
 	vfs_ChDir(conn, oldcwd);
 	conn_free_internal(conn);
 	return WERR_OK;
@@ -2120,7 +2120,7 @@ WERROR _srvsvc_NetGetFileSecurity(pipes_struct *p,
 error_exit:
 
 	if (fsp) {
-		close_file(fsp, NORMAL_CLOSE);
+		close_file(NULL, fsp, NORMAL_CLOSE);
 	}
 
 	if (oldcwd) {
@@ -2231,7 +2231,7 @@ WERROR _srvsvc_NetSetFileSecurity(pipes_struct *p,
 		goto error_exit;
 	}
 
-	close_file(fsp, NORMAL_CLOSE);
+	close_file(NULL, fsp, NORMAL_CLOSE);
 	vfs_ChDir(conn, oldcwd);
 	conn_free_internal(conn);
 	return WERR_OK;
@@ -2239,7 +2239,7 @@ WERROR _srvsvc_NetSetFileSecurity(pipes_struct *p,
 error_exit:
 
 	if (fsp) {
-		close_file(fsp, NORMAL_CLOSE);
+		close_file(NULL, fsp, NORMAL_CLOSE);
 	}
 
 	if (oldcwd) {
