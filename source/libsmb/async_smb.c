@@ -360,7 +360,7 @@ static void cli_state_handler(struct event_context *event_ctx,
 		}
 		cli->evt_inbuf = tmp;
 
-		res = recv(cli->fd, cli->evt_inbuf + old_size, available, 0);
+		res = sys_recv(cli->fd, cli->evt_inbuf + old_size, available, 0);
 		if (res == -1) {
 			DEBUG(10, ("recv failed: %s\n", strerror(errno)));
 			status = map_nt_error_from_unix(errno);
@@ -404,7 +404,7 @@ static void cli_state_handler(struct event_context *event_ctx,
 			return;
 		}
 
-		sent = send(cli->fd, req->outbuf + req->sent,
+		sent = sys_send(cli->fd, req->outbuf + req->sent,
 			    to_send - req->sent, 0);
 
 		if (sent < 0) {
