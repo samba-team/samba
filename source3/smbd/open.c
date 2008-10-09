@@ -890,7 +890,8 @@ static bool open_match_attributes(connection_struct *conn,
  Try and find a duplicated file handle.
 ****************************************************************************/
 
-static files_struct *fcb_or_dos_open(connection_struct *conn,
+static files_struct *fcb_or_dos_open(struct smb_request *req,
+				     connection_struct *conn,
 				     const char *fname, 
 				     struct file_id id,
 				     uint16 file_pid,
@@ -940,7 +941,7 @@ static files_struct *fcb_or_dos_open(connection_struct *conn,
 	}
 
 	/* We need to duplicate this fsp. */
-	if (!NT_STATUS_IS_OK(dup_file_fsp(fsp, access_mask, share_access,
+	if (!NT_STATUS_IS_OK(dup_file_fsp(req, fsp, access_mask, share_access,
 					  create_options, &dup_fsp))) {
 		return NULL;
 	}
@@ -1178,7 +1179,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 		DEBUG(10, ("open_file_ntcreate: printer open fname=%s\n", fname));
 
-		return print_fsp_open(conn, fname, req->vuid, result);
+		return print_fsp_open(req, conn, fname, req->vuid, result);
 	}
 
 	if (!parent_dirname_talloc(talloc_tos(), fname, &parent_dir,
@@ -1435,7 +1436,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	status = file_new(conn, &fsp);
+	status = file_new(req, conn, &fsp);
 	if(!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -1530,7 +1531,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 				/* Use the client requested access mask here,
 				 * not the one we open with. */
-				fsp_dup = fcb_or_dos_open(conn, fname, id,
+				fsp_dup = fcb_or_dos_open(req, conn, fname, id,
 							  req->smbpid,
 							  req->vuid,
 							  access_mask,
@@ -1948,7 +1949,8 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
  Open a file for for write to ensure that we can fchmod it.
 ****************************************************************************/
 
-NTSTATUS open_file_fchmod(connection_struct *conn, const char *fname,
+NTSTATUS open_file_fchmod(struct smb_request *req, connection_struct *conn,
+			  const char *fname,
 			  SMB_STRUCT_STAT *psbuf, files_struct **result)
 {
 	files_struct *fsp = NULL;
@@ -1958,7 +1960,7 @@ NTSTATUS open_file_fchmod(connection_struct *conn, const char *fname,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	status = file_new(conn, &fsp);
+	status = file_new(req, conn, &fsp);
 	if(!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -2198,7 +2200,7 @@ NTSTATUS open_directory(connection_struct *conn,
 		return NT_STATUS_NOT_A_DIRECTORY;
 	}
 
-	status = file_new(conn, &fsp);
+	status = file_new(req, conn, &fsp);
 	if(!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -3000,7 +3002,7 @@ NTSTATUS create_file(connection_struct *conn,
 			 * also tries a QUERY_FILE_INFO on the file and then
 			 * close it
 			 */
-			status = open_fake_file(conn, req->vuid,
+			status = open_fake_file(req, conn, req->vuid,
 						fake_file_type, fname,
 						access_mask, &fsp);
 			if (!NT_STATUS_IS_OK(status)) {

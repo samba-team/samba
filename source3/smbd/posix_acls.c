@@ -3191,7 +3191,7 @@ int try_chown(connection_struct *conn, const char *fname, uid_t uid, gid_t gid)
 		return -1;
 	}
 
-	if (!NT_STATUS_IS_OK(open_file_fchmod(conn,fname,&st,&fsp))) {
+	if (!NT_STATUS_IS_OK(open_file_fchmod(NULL, conn, fname, &st, &fsp))) {
 		return -1;
 	}
 

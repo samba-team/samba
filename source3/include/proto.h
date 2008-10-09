@@ -6573,7 +6573,8 @@ bool sysv_cache_reload(void);
 
 /* The following definitions come from printing/printfsp.c  */
 
-NTSTATUS print_fsp_open(connection_struct *conn, const char *fname,
+NTSTATUS print_fsp_open(struct smb_request *req, connection_struct *conn,
+			const char *fname,
 			uint16_t current_vuid, files_struct **result);
 void print_fsp_end(files_struct *fsp, enum file_close_type close_type);
 
@@ -9528,7 +9529,7 @@ void reply_unix_error(struct smb_request *req, uint8 defclass, uint32 defcode,
 /* The following definitions come from smbd/fake_file.c  */
 
 enum FAKE_FILE_TYPE is_fake_file(const char *fname);
-NTSTATUS open_fake_file(connection_struct *conn,
+NTSTATUS open_fake_file(struct smb_request *req, connection_struct *conn,
 				uint16_t current_vuid,
 				enum FAKE_FILE_TYPE fake_file_type,
 				const char *fname,
@@ -9575,7 +9576,8 @@ NTSTATUS check_name(connection_struct *conn, const char *name);
 
 /* The following definitions come from smbd/files.c  */
 
-NTSTATUS file_new(connection_struct *conn, files_struct **result);
+NTSTATUS file_new(struct smb_request *req, connection_struct *conn,
+		  files_struct **result);
 void file_close_conn(connection_struct *conn);
 void file_close_pid(uint16 smbpid, int vuid);
 void file_init(void);
@@ -9592,11 +9594,9 @@ void file_free(files_struct *fsp);
 files_struct *file_fnum(uint16 fnum);
 files_struct *file_fsp(struct smb_request *req, uint16 fid);
 void file_chain_reset(void);
-NTSTATUS dup_file_fsp(files_struct *fsp,
-				uint32 access_mask,
-				uint32 share_access,
-				uint32 create_options,
-		      		files_struct **result);
+NTSTATUS dup_file_fsp(struct smb_request *req, files_struct *fsp,
+		      uint32 access_mask, uint32 share_access,
+		      uint32 create_options, files_struct **result);
 
 /* The following definitions come from smbd/ipc.c  */
 
@@ -9788,7 +9788,8 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 				 			/* Information (FILE_EXISTS etc.) */
 			    int *pinfo,
 			    files_struct **result);
-NTSTATUS open_file_fchmod(connection_struct *conn, const char *fname,
+NTSTATUS open_file_fchmod(struct smb_request *req, connection_struct *conn,
+			  const char *fname,
 			  SMB_STRUCT_STAT *psbuf, files_struct **result);
 NTSTATUS close_file_fchmod(files_struct *fsp);
 NTSTATUS open_directory(connection_struct *conn,

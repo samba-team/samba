@@ -277,7 +277,8 @@ static bool set_ea_dos_attribute(connection_struct *conn, const char *path, SMB_
 		 * are not violating security in doing the setxattr.
 		 */
 
-		if (!NT_STATUS_IS_OK(open_file_fchmod(conn,path,sbuf,&fsp)))
+		if (!NT_STATUS_IS_OK(open_file_fchmod(NULL, conn, path, sbuf,
+						      &fsp)))
 			return ret;
 		become_root();
 		if (SMB_VFS_SETXATTR(conn, path, SAMBA_XATTR_DOS_ATTRIB, attrstr, strlen(attrstr), 0) == 0) {
@@ -540,7 +541,8 @@ int file_set_dosmode(connection_struct *conn, const char *fname,
 		 * break batch oplocks open by others. JRA.
 		 */
 		files_struct *fsp;
-		if (!NT_STATUS_IS_OK(open_file_fchmod(conn,fname,st,&fsp)))
+		if (!NT_STATUS_IS_OK(open_file_fchmod(NULL, conn, fname, st,
+						      &fsp)))
 			return -1;
 		become_root();
 		ret = SMB_VFS_FCHMOD(fsp, unixmode);

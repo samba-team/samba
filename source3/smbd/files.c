@@ -57,7 +57,8 @@ static unsigned long get_gen_count(void)
  Find first available file slot.
 ****************************************************************************/
 
-NTSTATUS file_new(connection_struct *conn, files_struct **result)
+NTSTATUS file_new(struct smb_request *req, connection_struct *conn,
+		  files_struct **result)
 {
 	int i;
 	static int first_file;
@@ -498,16 +499,14 @@ void file_chain_reset(void)
  Duplicate the file handle part for a DOS or FCB open.
 ****************************************************************************/
 
-NTSTATUS dup_file_fsp(files_struct *fsp,
-				uint32 access_mask,
-				uint32 share_access,
-				uint32 create_options,
-		      		files_struct **result)
+NTSTATUS dup_file_fsp(struct smb_request *req, files_struct *fsp,
+		      uint32 access_mask, uint32 share_access,
+		      uint32 create_options, files_struct **result)
 {
 	NTSTATUS status;
 	files_struct *dup_fsp;
 
-	status = file_new(fsp->conn, &dup_fsp);
+	status = file_new(NULL, fsp->conn, &dup_fsp);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;

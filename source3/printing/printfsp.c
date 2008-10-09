@@ -25,7 +25,8 @@ open a print file and setup a fsp for it. This is a wrapper around
 print_job_start().
 ***************************************************************************/
 
-NTSTATUS print_fsp_open(connection_struct *conn, const char *fname,
+NTSTATUS print_fsp_open(struct smb_request *req, connection_struct *conn,
+			const char *fname,
 			uint16_t current_vuid, files_struct **result)
 {
 	int jobid;
@@ -34,7 +35,7 @@ NTSTATUS print_fsp_open(connection_struct *conn, const char *fname,
 	fstring name;
 	NTSTATUS status;
 
-	status = file_new(conn, &fsp);
+	status = file_new(req, conn, &fsp);
 	if(!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
