@@ -1399,7 +1399,7 @@ static void call_nt_transact_notify_change(connection_struct *conn,
 		return;
 	}
 
-	fsp = file_fsp(SVAL(setup,4));
+	fsp = file_fsp(req, SVAL(setup,4));
 	filter = IVAL(setup, 0);
 	recursive = (SVAL(setup, 6) != 0) ? True : False;
 
@@ -1499,7 +1499,7 @@ static void call_nt_transact_rename(connection_struct *conn,
 		return;
 	}
 
-	fsp = file_fsp(SVAL(params, 0));
+	fsp = file_fsp(req, SVAL(params, 0));
 	if (!check_fsp(conn, req, fsp)) {
 		return;
 	}
@@ -1568,7 +1568,7 @@ static void call_nt_transact_query_security_desc(connection_struct *conn,
 		return;
 	}
 
-	fsp = file_fsp(SVAL(params,0));
+	fsp = file_fsp(req, SVAL(params,0));
 	if(!fsp) {
 		reply_doserror(req, ERRDOS, ERRbadfid);
 		return;
@@ -1664,7 +1664,7 @@ static void call_nt_transact_set_security_desc(connection_struct *conn,
 		return;
 	}
 
-	if((fsp = file_fsp(SVAL(params,0))) == NULL) {
+	if((fsp = file_fsp(req, SVAL(params,0))) == NULL) {
 		reply_doserror(req, ERRDOS, ERRbadfid);
 		return;
 	}
@@ -1728,7 +1728,7 @@ static void call_nt_transact_ioctl(connection_struct *conn,
 	DEBUG(10,("call_nt_transact_ioctl: function[0x%08X] FID[0x%04X] isFSctl[0x%02X] compfilter[0x%02X]\n", 
 		 function, fidnum, isFSctl, compfilter));
 
-	fsp=file_fsp(fidnum);
+	fsp=file_fsp(req, fidnum);
 	/* this check is done in each implemented function case for now
 	   because I don't want to break anything... --metze
 	FSP_BELONGS_CONN(fsp,conn);*/
@@ -2035,7 +2035,7 @@ static void call_nt_transact_get_user_quota(connection_struct *conn,
 	}
 
 	/* maybe we can check the quota_fnum */
-	fsp = file_fsp(SVAL(params,0));
+	fsp = file_fsp(req, SVAL(params,0));
 	if (!check_fsp_ntquota_handle(conn, req, fsp)) {
 		DEBUG(3,("TRANSACT_GET_USER_QUOTA: no valid QUOTA HANDLE\n"));
 		reply_nterror(req, NT_STATUS_INVALID_HANDLE);
@@ -2302,7 +2302,7 @@ static void call_nt_transact_set_user_quota(connection_struct *conn,
 	}
 
 	/* maybe we can check the quota_fnum */
-	fsp = file_fsp(SVAL(params,0));
+	fsp = file_fsp(req, SVAL(params,0));
 	if (!check_fsp_ntquota_handle(conn, req, fsp)) {
 		DEBUG(3,("TRANSACT_GET_USER_QUOTA: no valid QUOTA HANDLE\n"));
 		reply_nterror(req, NT_STATUS_INVALID_HANDLE);

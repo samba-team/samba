@@ -470,7 +470,7 @@ files_struct *file_fnum(uint16 fnum)
  Get an fsp from a packet given the offset of a 16 bit fnum.
 ****************************************************************************/
 
-files_struct *file_fsp(uint16 fid)
+files_struct *file_fsp(struct smb_request *req, uint16 fid)
 {
 	files_struct *fsp;
 

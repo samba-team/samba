@@ -2899,7 +2899,7 @@ NTSTATUS create_file(connection_struct *conn,
 		 * This filename is relative to a directory fid.
 		 */
 		char *parent_fname = NULL;
-		files_struct *dir_fsp = file_fsp(root_dir_fid);
+		files_struct *dir_fsp = file_fsp(req, root_dir_fid);
 
 		if (dir_fsp == NULL) {
 			status = NT_STATUS_INVALID_HANDLE;

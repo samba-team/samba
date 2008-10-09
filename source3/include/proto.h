@@ -9590,7 +9590,7 @@ files_struct *file_find_print(void);
 void file_sync_all(connection_struct *conn);
 void file_free(files_struct *fsp);
 files_struct *file_fnum(uint16 fnum);
-files_struct *file_fsp(uint16 fid);
+files_struct *file_fsp(struct smb_request *req, uint16 fid);
 void file_chain_reset(void);
 NTSTATUS dup_file_fsp(files_struct *fsp,
 				uint32 access_mask,

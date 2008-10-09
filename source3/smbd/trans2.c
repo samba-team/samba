@@ -3298,7 +3298,7 @@ cap_low = 0x%x, cap_high = 0x%x\n",
 				 * but we didn't use the last 6 bytes for now 
 				 * --metze 
 				 */
-				fsp = file_fsp(SVAL(params,0));
+				fsp = file_fsp(req, SVAL(params,0));
 
 				if (!check_fsp_ntquota_handle(conn, req,
 							      fsp)) {
@@ -3873,7 +3873,7 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 			return;
 		}
 
-		fsp = file_fsp(SVAL(params,0));
+		fsp = file_fsp(req, SVAL(params,0));
 		info_level = SVAL(params,2);
 
 		DEBUG(3,("call_trans2qfilepathinfo: TRANSACT2_QFILEINFO: level = %d\n", info_level));
@@ -6582,7 +6582,7 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 			return;
 		}
 
-		fsp = file_fsp(SVAL(params,0));
+		fsp = file_fsp(req, SVAL(params,0));
 		/* Basic check for non-null fsp. */
 	        if (!check_fsp_open(conn, req, fsp)) {
 			return;
@@ -7250,7 +7250,7 @@ static void call_trans2ioctl(connection_struct *conn,
 			     unsigned int max_data_bytes)
 {
 	char *pdata = *ppdata;
-	files_struct *fsp = file_fsp(SVAL(req->inbuf,smb_vwv15));
+	files_struct *fsp = file_fsp(req, SVAL(req->inbuf,smb_vwv15));
 
 	/* check for an invalid fid before proceeding */
 
