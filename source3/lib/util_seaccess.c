@@ -176,6 +176,24 @@ void se_map_generic(uint32 *access_mask, const struct generic_mapping *mapping)
 	}
 }
 
+/* Map generic access rights to object specific rights for all the ACE's
+ * in a security_acl.
+ */
+
+void security_acl_map_generic(struct security_acl *sa,
+				const struct generic_mapping *mapping)
+{
+	unsigned int i;
+
+	if (!sa) {
+		return;
+	}
+
+	for (i = 0; i < sa->num_aces; i++) {
+		se_map_generic(&sa->aces[i].access_mask, mapping);
+	}
+}
+
 /* Map standard access rights to object specific rights.  This technique is
    used to give meaning to assigning read, write, execute and all access to
    objects.  Each type of object has its own mapping of standard to object

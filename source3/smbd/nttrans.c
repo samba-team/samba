@@ -713,6 +713,7 @@ static void do_nt_transact_create_pipe(connection_struct *conn,
 static NTSTATUS set_sd(files_struct *fsp, uint8 *data, uint32 sd_len,
 		       uint32 security_info_sent)
 {
+	extern const struct generic_mapping file_generic_mapping;
 	SEC_DESC *psd = NULL;
 	NTSTATUS status;
 
@@ -738,6 +739,10 @@ static NTSTATUS set_sd(files_struct *fsp, uint8 *data, uint32 sd_len,
 	if (psd->dacl==0) {
 		security_info_sent &= ~DACL_SECURITY_INFORMATION;
 	}
+
+	/* Convert all the generic bits. */
+	security_acl_map_generic(psd->dacl, &file_generic_mapping);
+	security_acl_map_generic(psd->sacl, &file_generic_mapping);
 
 	status = SMB_VFS_FSET_NT_ACL(fsp, security_info_sent, psd);
 
