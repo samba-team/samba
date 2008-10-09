@@ -592,7 +592,6 @@ static size_t afs_to_nt_acl_common(struct afs_acl *afs_acl,
 {
 	SEC_ACE *nt_ace_list;
 	DOM_SID owner_sid, group_sid;
-	SEC_ACCESS mask;
 	SEC_ACL *psa = NULL;
 	int good_aces;
 	size_t sd_size;
@@ -616,7 +615,7 @@ static size_t afs_to_nt_acl_common(struct afs_acl *afs_acl,
 	good_aces = 0;
 
 	while (afs_ace != NULL) {
-		uint32 nt_rights;
+		uint32_t nt_rights;
 		uint8 flag = SEC_ACE_FLAG_OBJECT_INHERIT |
 			SEC_ACE_FLAG_CONTAINER_INHERIT;
 
@@ -633,9 +632,8 @@ static size_t afs_to_nt_acl_common(struct afs_acl *afs_acl,
 		else
 			nt_rights = afs_to_nt_file_rights(afs_ace->rights);
 
-		init_sec_access(&mask, nt_rights);
 		init_sec_ace(&nt_ace_list[good_aces++], &(afs_ace->sid),
-			     SEC_ACE_TYPE_ACCESS_ALLOWED, mask, flag);
+			     SEC_ACE_TYPE_ACCESS_ALLOWED, nt_rights, flag);
 		afs_ace = afs_ace->next;
 	}
 

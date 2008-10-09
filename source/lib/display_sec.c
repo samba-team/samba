@@ -118,7 +118,7 @@ char *get_sec_mask_str(TALLOC_CTX *ctx, uint32 type)
 /****************************************************************************
  display sec_access structure
  ****************************************************************************/
-void display_sec_access(SEC_ACCESS *info)
+void display_sec_access(uint32_t *info)
 {
 	char *mask_str = get_sec_mask_str(NULL, *info);
 	printf("\t\tPermissions: 0x%x: %s\n", *info, mask_str ? mask_str : "");

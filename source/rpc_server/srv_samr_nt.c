@@ -113,36 +113,35 @@ static NTSTATUS make_samr_object_sd( TALLOC_CTX *ctx, SEC_DESC **psd, size_t *sd
 {
 	DOM_SID domadmin_sid;
 	SEC_ACE ace[5];		/* at most 5 entries */
-	SEC_ACCESS mask;
 	size_t i = 0;
 
 	SEC_ACL *psa = NULL;
 
 	/* basic access for Everyone */
 
-	init_sec_access(&mask, map->generic_execute | map->generic_read );
-	init_sec_ace(&ace[i++], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+	init_sec_ace(&ace[i++], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED,
+			map->generic_execute | map->generic_read, 0);
 
 	/* add Full Access 'BUILTIN\Administrators' and 'BUILTIN\Account Operators */
 
-	init_sec_access(&mask, map->generic_all);
-
-	init_sec_ace(&ace[i++], &global_sid_Builtin_Administrators, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
-	init_sec_ace(&ace[i++], &global_sid_Builtin_Account_Operators, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+	init_sec_ace(&ace[i++], &global_sid_Builtin_Administrators,
+			SEC_ACE_TYPE_ACCESS_ALLOWED, map->generic_all, 0);
+	init_sec_ace(&ace[i++], &global_sid_Builtin_Account_Operators,
+			SEC_ACE_TYPE_ACCESS_ALLOWED, map->generic_all, 0);
 
 	/* Add Full Access for Domain Admins if we are a DC */
 
 	if ( IS_DC ) {
 		sid_copy( &domadmin_sid, get_global_sam_sid() );
 		sid_append_rid( &domadmin_sid, DOMAIN_GROUP_RID_ADMINS );
-		init_sec_ace(&ace[i++], &domadmin_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+		init_sec_ace(&ace[i++], &domadmin_sid,
+			SEC_ACE_TYPE_ACCESS_ALLOWED, map->generic_all, 0);
 	}
 
 	/* if we have a sid, give it some special access */
 
 	if ( sid ) {
-		init_sec_access( &mask, sid_access );
-		init_sec_ace(&ace[i++], sid, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+		init_sec_ace(&ace[i++], sid, SEC_ACE_TYPE_ACCESS_ALLOWED, sid_access, 0);
 	}
 
 	/* create the security descriptor */
