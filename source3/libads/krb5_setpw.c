@@ -285,7 +285,7 @@ static krb5_error_code parse_setpw_reply(krb5_context context,
 		return KRB5KRB_AP_ERR_MODIFIED;
 	}
 	
-	p = packet->data;
+	p = (char *)packet->data;
 	/*
 	** see if it is an error
 	*/
@@ -368,7 +368,7 @@ static krb5_error_code parse_setpw_reply(krb5_context context,
 		return KRB5KRB_AP_ERR_MODIFIED;
 	}
 	
-	p = clearresult.data;
+	p = (char *)clearresult.data;
 	
 	res_code = RSVAL(p, 0);
 	
@@ -687,10 +687,10 @@ kerb_prompter(krb5_context ctx, void *data,
 	memset(prompts[0].reply->data, 0, prompts[0].reply->length);
 	if (prompts[0].reply->length > 0) {
 		if (data) {
-			strncpy(prompts[0].reply->data,
+			strncpy((char *)prompts[0].reply->data,
 				(const char *)data,
 				prompts[0].reply->length-1);
-			prompts[0].reply->length = strlen(prompts[0].reply->data);
+			prompts[0].reply->length = strlen((const char *)prompts[0].reply->data);
 		} else {
 			prompts[0].reply->length = 0;
 		}
