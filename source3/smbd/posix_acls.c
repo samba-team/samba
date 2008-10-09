@@ -890,13 +890,12 @@ static bool nt4_compatible_acls(void)
  not get. Deny entries are implicit on get with ace->perms = 0.
 ****************************************************************************/
 
-static SEC_ACCESS map_canon_ace_perms(int snum,
+static uint32_t map_canon_ace_perms(int snum,
 				enum security_ace_type *pacl_type,
 				mode_t perms,
 				bool directory_ace)
 {
-	SEC_ACCESS sa;
-	uint32 nt_mask = 0;
+	uint32_t nt_mask = 0;
 
 	*pacl_type = SEC_ACE_TYPE_ACCESS_ALLOWED;
 
@@ -935,8 +934,7 @@ static SEC_ACCESS map_canon_ace_perms(int snum,
 	DEBUG(10,("map_canon_ace_perms: Mapped (UNIX) %x to (NT) %x\n",
 			(unsigned int)perms, (unsigned int)nt_mask ));
 
-	init_sec_access(&sa,nt_mask);
-	return sa;
+	return nt_mask;
 }
 
 /****************************************************************************
@@ -2962,9 +2960,7 @@ static NTSTATUS posix_get_nt_acl_common(struct connection_struct *conn,
 			 */
 
 			for (ace = file_ace; ace != NULL; ace = ace->next) {
-				SEC_ACCESS acc;
-
-				acc = map_canon_ace_perms(SNUM(conn),
+				uint32_t acc = map_canon_ace_perms(SNUM(conn),
 						&nt_acl_type,
 						ace->perms,
 						S_ISDIR(sbuf->st_mode));
@@ -2979,19 +2975,14 @@ static NTSTATUS posix_get_nt_acl_common(struct connection_struct *conn,
 			/* The User must have access to a profile share - even
 			 * if we can't map the SID. */
 			if (lp_profile_acls(SNUM(conn))) {
-				SEC_ACCESS acc;
-
-				init_sec_access(&acc,FILE_GENERIC_ALL);
 				init_sec_ace(&nt_ace_list[num_aces++],
 						&global_sid_Builtin_Users,
 						SEC_ACE_TYPE_ACCESS_ALLOWED,
-						acc, 0);
+						FILE_GENERIC_ALL, 0);
 			}
 
 			for (ace = dir_ace; ace != NULL; ace = ace->next) {
-				SEC_ACCESS acc;
-
-				acc = map_canon_ace_perms(SNUM(conn),
+				uint32_t acc = map_canon_ace_perms(SNUM(conn),
 						&nt_acl_type,
 						ace->perms,
 						S_ISDIR(sbuf->st_mode));
@@ -3009,10 +3000,7 @@ static NTSTATUS posix_get_nt_acl_common(struct connection_struct *conn,
 			/* The User must have access to a profile share - even
 			 * if we can't map the SID. */
 			if (lp_profile_acls(SNUM(conn))) {
-				SEC_ACCESS acc;
-
-				init_sec_access(&acc,FILE_GENERIC_ALL);
-				init_sec_ace(&nt_ace_list[num_aces++], &global_sid_Builtin_Users, SEC_ACE_TYPE_ACCESS_ALLOWED, acc,
+				init_sec_ace(&nt_ace_list[num_aces++], &global_sid_Builtin_Users, SEC_ACE_TYPE_ACCESS_ALLOWED, FILE_GENERIC_ALL,
 						SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_CONTAINER_INHERIT|
 						SEC_ACE_FLAG_INHERIT_ONLY|0);
 			}

@@ -30,7 +30,7 @@ extern NT_USER_TOKEN anonymous_token;
 static uint32 check_ace(SEC_ACE *ace, const NT_USER_TOKEN *token, uint32 acc_desired, 
 			NTSTATUS *status)
 {
-	uint32 mask = ace->access_mask;
+	uint32_t mask = ace->access_mask;
 
 	/*
 	 * Inherit only is ignored.
@@ -346,7 +346,6 @@ NTSTATUS samr_make_sam_obj_sd(TALLOC_CTX *ctx, SEC_DESC **psd, size_t *sd_size)
 	DOM_SID act_sid;
 
 	SEC_ACE ace[3];
-	SEC_ACCESS mask;
 
 	SEC_ACL *psa = NULL;
 
@@ -357,13 +356,14 @@ NTSTATUS samr_make_sam_obj_sd(TALLOC_CTX *ctx, SEC_DESC **psd, size_t *sd_size)
 	sid_append_rid(&act_sid, BUILTIN_ALIAS_RID_ACCOUNT_OPS);
 
 	/*basic access for every one*/
-	init_sec_access(&mask, GENERIC_RIGHTS_SAM_EXECUTE | GENERIC_RIGHTS_SAM_READ);
-	init_sec_ace(&ace[0], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+	init_sec_ace(&ace[0], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED,
+		GENERIC_RIGHTS_SAM_EXECUTE | GENERIC_RIGHTS_SAM_READ, 0);
 
 	/*full access for builtin aliases Administrators and Account Operators*/
-	init_sec_access(&mask, GENERIC_RIGHTS_SAM_ALL_ACCESS);
-	init_sec_ace(&ace[1], &adm_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
-	init_sec_ace(&ace[2], &act_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+	init_sec_ace(&ace[1], &adm_sid,
+		SEC_ACE_TYPE_ACCESS_ALLOWED, GENERIC_RIGHTS_SAM_ALL_ACCESS, 0);
+	init_sec_ace(&ace[2], &act_sid,
+		SEC_ACE_TYPE_ACCESS_ALLOWED, GENERIC_RIGHTS_SAM_ALL_ACCESS, 0);
 
 	if ((psa = make_sec_acl(ctx, NT4_ACL_REVISION, 3, ace)) == NULL)
 		return NT_STATUS_NO_MEMORY;

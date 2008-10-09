@@ -70,9 +70,6 @@
 					PROTECTED_SACL_SECURITY_INFORMATION|\
 					PROTECTED_DACL_SECURITY_INFORMATION)
 
-/* SEC_ACCESS */
-typedef uint32 SEC_ACCESS;
-
 /* SEC_ACE */
 typedef struct security_ace SEC_ACE;
 #define  SEC_ACE_HEADER_SIZE (2 * sizeof(uint8) + sizeof(uint16) + sizeof(uint32))
