@@ -22,6 +22,7 @@
 
 extern int max_send;
 extern enum protocol_types Protocol;
+extern const struct generic_mapping file_generic_mapping;
 
 static char *nttrans_realloc(char **ptr, size_t size)
 {
@@ -713,7 +714,6 @@ static void do_nt_transact_create_pipe(connection_struct *conn,
 static NTSTATUS set_sd(files_struct *fsp, uint8 *data, uint32 sd_len,
 		       uint32 security_info_sent)
 {
-	extern const struct generic_mapping file_generic_mapping;
 	SEC_DESC *psd = NULL;
 	NTSTATUS status;
 
