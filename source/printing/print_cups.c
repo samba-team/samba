@@ -553,6 +553,8 @@ bool cups_cache_reload(void)
 		return false;
 	}
 
+	*p_pipe_fd = -1;
+
 	/* Set up an async refresh. */
 	if (!cups_pcap_load_async(p_pipe_fd)) {
 		return false;
