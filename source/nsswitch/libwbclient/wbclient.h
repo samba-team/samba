@@ -222,6 +222,25 @@ struct wbcAuthUserParams {
 };
 
 /**
+ * @brief Generic Blob
+ **/
+
+struct wbcBlob {
+	uint8_t *data;
+	size_t length;
+};
+
+/**
+ * @brief Named Blob
+ **/
+
+struct wbcNamedBlob {
+	const char *name;
+	uint32_t flags;
+	struct wbcBlob blob;
+};
+
+/**
  * @brief ChangePassword Parameters
  **/
 
