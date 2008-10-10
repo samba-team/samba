@@ -60,5 +60,5 @@ void load_printers(void)
 
 	/* load all printcap printers */
 	if (lp_load_printers() && lp_servicenumber(PRINTERS_NAME) >= 0)
-		pcap_printer_fn(lp_add_one_printer);
+		pcap_printer_fn(lp_add_one_printer, NULL);
 }

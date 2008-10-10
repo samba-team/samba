@@ -7848,7 +7848,7 @@ static void lp_add_auto_services(char *str)
  Auto-load one printer.
 ***************************************************************************/
 
-void lp_add_one_printer(char *name, char *comment)
+void lp_add_one_printer(const char *name, const char *comment, void *pdata)
 {
 	int printers = lp_servicenumber(PRINTERS_NAME);
 	int i;
