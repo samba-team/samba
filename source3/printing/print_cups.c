@@ -505,24 +505,32 @@ static void cups_async_callback(struct event_context *event_ctx,
 			"printer list\n"));
 	}
 	close(fd);
+	TALLOC_FREE(p);
 }
 
 bool cups_cache_reload(void)
 {
-	int fd = -1;
+	int *p_pipe_fd = TALLOC_P(NULL, int);
+
+	if (!p_pipe_fd) {
+		return false;
+	}
 
 	/* Set up an async refresh. */
-	if (!cups_pcap_load_async(&fd)) {
+	if (!cups_pcap_load_async(p_pipe_fd)) {
 		return false;
 	}
 	if (!local_pcap_copy) {
 		/* We have no local cache, wait directly for
 		 * async refresh to complete.
 		 */
+		DEBUG(10,("cups_cache_reload: sync read on fd %d\n",
+			*p_pipe_fd ));
+
 		cups_async_callback(smbd_event_context(),
 					NULL,
 					EVENT_FD_READ,
-					(void *)&fd);
+					(void *)p_pipe_fd);
 		if (!local_pcap_copy) {
 			return false;
 		}
@@ -531,14 +539,18 @@ bool cups_cache_reload(void)
 		 * local copy. */
 		pcap_cache_replace(local_pcap_copy);
 
+		DEBUG(10,("cups_cache_reload: async read on fd %d\n",
+			*p_pipe_fd ));
+
 		/* Trigger an event when the pipe can be read. */
 		cache_fd_event = event_add_fd(smbd_event_context(),
-					NULL, fd,
+					NULL, *p_pipe_fd,
 					EVENT_FD_READ,
 					cups_async_callback,
-					(void *)&fd);
+					(void *)p_pipe_fd);
 		if (!cache_fd_event) {
-			close(fd);
+			close(*p_pipe_fd);
+			TALLOC_FREE(p_pipe_fd);
 			return false;
 		}
 	}
