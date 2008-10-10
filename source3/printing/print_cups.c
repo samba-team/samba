@@ -392,6 +392,8 @@ static bool cups_pcap_load_async(int *pfd)
 	int fds[2];
 	pid_t pid;
 
+	*pfd = -1;
+
 	if (cache_fd_event) {
 		DEBUG(3,("cups_pcap_load_async: already waiting for "
 			"a refresh event\n" ));
@@ -441,34 +443,56 @@ static void cups_async_callback(struct event_context *event_ctx,
 	DEBUG(5,("cups_async_callback: callback received for printer data. "
 		"fd = %d\n", fd));
 
-	TALLOC_FREE(cache_fd_event);
-
 	while (1) {
 		char *name = NULL, *info = NULL;
 		size_t namelen = 0, infolen = 0;
+		ssize_t ret = -1;
 
-		if (sys_read(fd, &namelen, sizeof(namelen)) !=
-				sizeof(namelen)) {
+		ret = sys_read(fd, &namelen, sizeof(namelen));
+		if (ret == 0) {
+			/* EOF */
+			break;
+		}
+		if (ret != sizeof(namelen)) {
 			DEBUG(10,("cups_async_callback: namelen read failed %d %s\n",
 				errno, strerror(errno)));
 			break;
 		}
-		if (sys_read(fd, &infolen, sizeof(infolen)) !=
-				sizeof(infolen)) {
+
+		DEBUG(11,("cups_async_callback: read namelen %u\n",
+			(unsigned int)namelen));
+
+		ret = sys_read(fd, &infolen, sizeof(infolen));
+		if (ret == 0) {
+			/* EOF */
+			break;
+		}
+		if (ret != sizeof(infolen)) {
 			DEBUG(10,("cups_async_callback: infolen read failed %s\n",
 				strerror(errno)));
 			break;
 		}
+
+		DEBUG(11,("cups_async_callback: read infolen %u\n",
+			(unsigned int)infolen));
+
 		if (namelen) {
 			name = TALLOC_ARRAY(frame, char, namelen);
 			if (!name) {
 				break;
 			}
-			if (sys_read(fd, name, namelen) != namelen) {
+			ret = sys_read(fd, name, namelen);
+			if (ret == 0) {
+				/* EOF */
+				break;
+			}
+			if (ret != namelen) {
 				DEBUG(10,("cups_async_callback: name read failed %s\n",
 					strerror(errno)));
 				break;
 			}
+			DEBUG(11,("cups_async_callback: read name %s\n",
+				name));
 		} else {
 			name = NULL;
 		}
@@ -477,11 +501,18 @@ static void cups_async_callback(struct event_context *event_ctx,
 			if (!info) {
 				break;
 			}
-			if (sys_read(fd, info, infolen) != infolen) {
+			ret = sys_read(fd, info, infolen);
+			if (ret == 0) {
+				/* EOF */
+				break;
+			}
+			if (ret != infolen) {
 				DEBUG(10,("cups_async_callback: info read failed %s\n",
 					strerror(errno)));
 				break;
 			}
+			DEBUG(11,("cups_async_callback: read info %s\n",
+				info));
 		} else {
 			info = NULL;
 		}
@@ -506,6 +537,7 @@ static void cups_async_callback(struct event_context *event_ctx,
 	}
 	close(fd);
 	TALLOC_FREE(p);
+	TALLOC_FREE(cache_fd_event);
 }
 
 bool cups_cache_reload(void)
