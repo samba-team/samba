@@ -274,7 +274,7 @@ bool store_pipe_opendb( smb_np_struct *p )
 	TDB_DATA data;
 	bool ret = False;
 
-	if ( (prec = TALLOC_P( NULL, struct pipe_open_rec)) == NULL ) {
+	if ( (prec = TALLOC_P( talloc_tos(), struct pipe_open_rec)) == NULL ) {
 		DEBUG(0,("store_pipe_opendb: talloc failed!\n"));
 		return False;
 	}
@@ -309,7 +309,7 @@ bool delete_pipe_opendb( smb_np_struct *p )
 	TDB_DATA *key;
 	bool ret = False;
 
-	if ( (prec = TALLOC_P( NULL, struct pipe_open_rec)) == NULL ) {
+	if ( (prec = TALLOC_P( talloc_tos(), struct pipe_open_rec)) == NULL ) {
 		DEBUG(0,("store_pipe_opendb: talloc failed!\n"));
 		return False;
 	}
