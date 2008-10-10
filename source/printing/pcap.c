@@ -63,41 +63,51 @@
 #include "includes.h"
 
 
-typedef struct pcap_cache {
+struct pcap_cache {
 	char *name;
 	char *comment;
 	struct pcap_cache *next;
-} pcap_cache_t;
+};
 
-static pcap_cache_t *pcap_cache = NULL;
+/* The systemwide printcap cache. */
+static struct pcap_cache *pcap_cache = NULL;
 
-bool pcap_cache_add(const char *name, const char *comment)
+bool pcap_cache_add_specific(struct pcap_cache **ppcache, const char *name, const char *comment)
 {
-	pcap_cache_t *p;
+	struct pcap_cache *p;
 
-	if (name == NULL || ((p = SMB_MALLOC_P(pcap_cache_t)) == NULL))
-		return False;
+	if (name == NULL || ((p = SMB_MALLOC_P(struct pcap_cache)) == NULL))
+		return false;
 
 	p->name = SMB_STRDUP(name);
 	p->comment = (comment && *comment) ? SMB_STRDUP(comment) : NULL;
 
-	p->next = pcap_cache;
-	pcap_cache = p;
+	DEBUG(11,("pcap_cache_add_specific: Adding name %s info %s\n",
+		p->name, p->comment ? p->comment : ""));
 
-	return True;
+	p->next = *ppcache;
+	*ppcache = p;
+
+	return true;
 }
 
-static void pcap_cache_destroy(pcap_cache_t *cache)
+void pcap_cache_destroy_specific(struct pcap_cache **pp_cache)
 {
-	pcap_cache_t *p, *next;
+	struct pcap_cache *p, *next;
 
-	for (p = cache; p != NULL; p = next) {
+	for (p = *pp_cache; p != NULL; p = next) {
 		next = p->next;
 
 		SAFE_FREE(p->name);
 		SAFE_FREE(p->comment);
 		SAFE_FREE(p);
 	}
+	*pp_cache = NULL;
+}
+
+bool pcap_cache_add(const char *name, const char *comment)
+{
+	return pcap_cache_add_specific(&pcap_cache, name, comment);
 }
 
 bool pcap_cache_loaded(void)
@@ -105,11 +115,21 @@ bool pcap_cache_loaded(void)
 	return (pcap_cache != NULL);
 }
 
+void pcap_cache_replace(const struct pcap_cache *pcache)
+{
+	const struct pcap_cache *p;
+
+	pcap_cache_destroy_specific(&pcap_cache);
+	for (p = pcache; p; p = p->next) {
+		pcap_cache_add(p->name, p->comment);
+	}
+}
+
 void pcap_cache_reload(void)
 {
 	const char *pcap_name = lp_printcapname();
 	bool pcap_reloaded = False;
-	pcap_cache_t *tmp_cache = NULL;
+	struct pcap_cache *tmp_cache = NULL;
 	XFILE *pcap_file;
 	char *pcap_line;
 
@@ -223,9 +243,9 @@ done:
 	DEBUG(3, ("reload status: %s\n", (pcap_reloaded) ? "ok" : "error"));
 
 	if (pcap_reloaded)
-		pcap_cache_destroy(tmp_cache);
+		pcap_cache_destroy_specific(&tmp_cache);
 	else {
-		pcap_cache_destroy(pcap_cache);
+		pcap_cache_destroy_specific(&pcap_cache);
 		pcap_cache = tmp_cache;
 	}
 
@@ -235,7 +255,7 @@ done:
 
 bool pcap_printername_ok(const char *printername)
 {
-	pcap_cache_t *p;
+	struct pcap_cache *p;
 
 	for (p = pcap_cache; p != NULL; p = p->next)
 		if (strequal(p->name, printername))
@@ -245,19 +265,22 @@ bool pcap_printername_ok(const char *printername)
 }
 
 /***************************************************************************
-run a function on each printer name in the printcap file. The function is 
-passed the primary name and the comment (if possible). Note the fn() takes
-strings in DOS codepage. This means the xxx_printer_fn() calls must be fixed
-to return DOS codepage. FIXME !! JRA.
-
-XXX: I'm not sure if this comment still applies.. Anyone?  -Rob
+run a function on each printer name in the printcap file.
 ***************************************************************************/
-void pcap_printer_fn(void (*fn)(char *, char *))
-{
-	pcap_cache_t *p;
 
-	for (p = pcap_cache; p != NULL; p = p->next)
-		fn(p->name, p->comment);
+void pcap_printer_fn_specific(const struct pcap_cache *pc,
+			void (*fn)(const char *, const char *, void *),
+			void *pdata)
+{
+	const struct pcap_cache *p;
+
+	for (p = pc; p != NULL; p = p->next)
+		fn(p->name, p->comment, pdata);
 
 	return;
+}
+
+void pcap_printer_fn(void (*fn)(const char *, const char *, void *), void *pdata)
+{
+	return pcap_printer_fn_specific(pcap_cache, fn, pdata);
 }
