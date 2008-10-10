@@ -261,6 +261,50 @@ done:
 	return wbc_status;
 }
 
+static wbcErr wbc_create_logon_info(TALLOC_CTX *mem_ctx,
+				    const struct winbindd_response *resp,
+				    struct wbcLogonUserInfo **_i)
+{
+	wbcErr wbc_status = WBC_ERR_SUCCESS;
+	struct wbcLogonUserInfo *i;
+
+	i = talloc_zero(mem_ctx, struct wbcLogonUserInfo);
+	BAIL_ON_PTR_ERROR(i, wbc_status);
+
+	wbc_status = wbc_create_auth_info(i, resp, &i->info);
+	BAIL_ON_WBC_ERROR(wbc_status);
+
+	if (resp->data.auth.krb5ccname) {
+		wbc_status = wbcAddNamedBlob(&i->num_blobs,
+					     &i->blobs,
+					     "krb5ccname",
+					     0,
+					     (uint8_t *)resp->data.auth.krb5ccname,
+					     strlen(resp->data.auth.krb5ccname)+1);
+		BAIL_ON_WBC_ERROR(wbc_status);
+	}
+
+	if (resp->data.auth.unix_username) {
+		wbc_status = wbcAddNamedBlob(&i->num_blobs,
+					     &i->blobs,
+					     "unix_username",
+					     0,
+					     (uint8_t *)resp->data.auth.unix_username,
+					     strlen(resp->data.auth.unix_username)+1);
+		BAIL_ON_WBC_ERROR(wbc_status);
+	}
+
+	*_i = i;
+	i = NULL;
+done:
+	if (!WBC_ERROR_IS_OK(wbc_status) && i) {
+		wbcFreeMemory(i->blobs);
+	}
+
+	talloc_free(i);
+	return wbc_status;
+}
+
 /** @brief Authenticate with more detailed information
  *
  * @param params       Input parameters, WBC_AUTH_USER_LEVEL_HASH
@@ -893,5 +937,161 @@ wbcErr wbcChangeUserPassword(const char *username,
 	BAIL_ON_WBC_ERROR(wbc_status);
 
 done:
+	return wbc_status;
+}
+
+/** @brief Logon a User
+ *
+ * @param[in]  params      Pointer to a wbcLogonUserParams structure
+ * @param[out] info        Pointer to a pointer to a wbcLogonUserInfo structure
+ * @param[out] error       Pointer to a pointer to a wbcAuthErrorInfo structure
+ * @param[out] policy      Pointer to a pointer to a wbcUserPasswordPolicyInfo structure
+ *
+ * @return #wbcErr
+ *
+ **/
+
+wbcErr wbcLogonUser(const struct wbcLogonUserParams *params,
+		    struct wbcLogonUserInfo **info,
+		    struct wbcAuthErrorInfo **error,
+		    struct wbcUserPasswordPolicyInfo **policy)
+{
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+	int cmd = 0;
+	struct winbindd_request request;
+	struct winbindd_response response;
+	uint32_t i;
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	if (info) {
+		*info = NULL;
+	}
+	if (error) {
+		*error = NULL;
+	}
+	if (policy) {
+		*policy = NULL;
+	}
+
+	if (!params) {
+		wbc_status = WBC_ERR_INVALID_PARAM;
+		BAIL_ON_WBC_ERROR(wbc_status);
+	}
+
+	if (!params->username) {
+		wbc_status = WBC_ERR_INVALID_PARAM;
+		BAIL_ON_WBC_ERROR(wbc_status);
+	}
+
+	if ((params->num_blobs > 0) && (params->blobs == NULL)) {
+		wbc_status = WBC_ERR_INVALID_PARAM;
+		BAIL_ON_WBC_ERROR(wbc_status);
+	}
+	if ((params->num_blobs == 0) && (params->blobs != NULL)) {
+		wbc_status = WBC_ERR_INVALID_PARAM;
+		BAIL_ON_WBC_ERROR(wbc_status);
+	}
+
+	/* Initialize request */
+
+	cmd = WINBINDD_PAM_AUTH;
+	request.flags = WBFLAG_PAM_INFO3_TEXT |
+			WBFLAG_PAM_USER_SESSION_KEY |
+			WBFLAG_PAM_LMKEY;
+
+	if (!params->password) {
+		wbc_status = WBC_ERR_INVALID_PARAM;
+		BAIL_ON_WBC_ERROR(wbc_status);
+	}
+
+	strncpy(request.data.auth.user,
+		params->username,
+		sizeof(request.data.auth.user)-1);
+
+	strncpy(request.data.auth.pass,
+		params->password,
+		sizeof(request.data.auth.pass)-1);
+
+	for (i=0; i<params->num_blobs; i++) {
+
+		if (strcasecmp(params->blobs[i].name, "krb5_cc_type") == 0) {
+			if (params->blobs[i].blob.data) {
+				strncpy(request.data.auth.krb5_cc_type,
+					(const char *)params->blobs[i].blob.data,
+					sizeof(request.data.auth.krb5_cc_type) - 1);
+			}
+			continue;
+		}
+
+		if (strcasecmp(params->blobs[i].name, "user_uid") == 0) {
+			if (params->blobs[i].blob.data) {
+				memcpy(&request.data.auth.uid,
+					params->blobs[i].blob.data,
+					MIN(sizeof(request.data.auth.uid),
+					    params->blobs[i].blob.length));
+			}
+			continue;
+		}
+
+		if (strcasecmp(params->blobs[i].name, "flags") == 0) {
+			if (params->blobs[i].blob.data) {
+				uint32_t flags;
+				memcpy(&flags,
+					params->blobs[i].blob.data,
+					MIN(sizeof(flags),
+					    params->blobs[i].blob.length));
+				request.flags |= flags;
+			}
+			continue;
+		}
+
+		if (strcasecmp(params->blobs[i].name, "membership_of") == 0) {
+			if (params->blobs[i].blob.data &&
+			    params->blobs[i].blob.data[0] > 0) {
+				strncpy(request.data.auth.require_membership_of_sid,
+					(const char *)params->blobs[i].blob.data,
+					sizeof(request.data.auth.require_membership_of_sid) - 1);
+			}
+			continue;
+		}
+	}
+
+	wbc_status = wbcRequestResponse(cmd,
+					&request,
+					&response);
+
+	if (response.data.auth.nt_status != 0) {
+		if (error) {
+			wbc_status = wbc_create_error_info(NULL,
+							   &response,
+							   error);
+			BAIL_ON_WBC_ERROR(wbc_status);
+		}
+
+		wbc_status = WBC_ERR_AUTH_ERROR;
+		BAIL_ON_WBC_ERROR(wbc_status);
+	}
+	BAIL_ON_WBC_ERROR(wbc_status);
+
+	if (info) {
+		wbc_status = wbc_create_logon_info(NULL,
+						   &response,
+						   info);
+		BAIL_ON_WBC_ERROR(wbc_status);
+	}
+
+	if (policy) {
+		wbc_status = wbc_create_password_policy_info(NULL,
+							     &response,
+							     policy);
+		BAIL_ON_WBC_ERROR(wbc_status);
+	}
+
+done:
+	if (response.extra_data.data)
+		free(response.extra_data.data);
+
 	return wbc_status;
 }

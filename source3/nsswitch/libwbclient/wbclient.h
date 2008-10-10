@@ -238,6 +238,17 @@ struct wbcNamedBlob {
 };
 
 /**
+ * @brief Logon User Parameters
+ **/
+
+struct wbcLogonUserParams {
+	const char *username;
+	const char *password;
+	size_t num_blobs;
+	struct wbcNamedBlob *blobs;
+};
+
+/**
  * @brief ChangePassword Parameters
  **/
 
@@ -327,6 +338,18 @@ struct wbcAuthUserInfo {
 	 */
 	uint32_t num_sids;
 	struct wbcSidWithAttr *sids;
+};
+
+/**
+ * @brief Logon User Information
+ *
+ * Some of the strings are maybe NULL
+ **/
+
+struct wbcLogonUserInfo {
+	struct wbcAuthUserInfo *info;
+	size_t num_blobs;
+	struct wbcNamedBlob *blobs;
 };
 
 /* wbcAuthUserInfo->user_flags */
@@ -612,6 +635,11 @@ wbcErr wbcAuthenticateUser(const char *username,
 wbcErr wbcAuthenticateUserEx(const struct wbcAuthUserParams *params,
 			     struct wbcAuthUserInfo **info,
 			     struct wbcAuthErrorInfo **error);
+
+wbcErr wbcLogonUser(const struct wbcLogonUserParams *params,
+		    struct wbcLogonUserInfo **info,
+		    struct wbcAuthErrorInfo **error,
+		    struct wbcUserPasswordPolicyInfo **policy);
 
 wbcErr wbcLogoffUser(const char *username,
 		     uid_t uid,
