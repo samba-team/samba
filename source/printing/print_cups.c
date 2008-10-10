@@ -425,6 +425,11 @@ static bool cups_pcap_load_async(int *pfd)
 	}
 
 	/* Child. */
+	if (!reinit_after_fork(smbd_messaging_context(), true)) {
+		DEBUG(0,("cups_pcap_load_async: reinit_after_fork() failed\n"));
+		smb_panic("cups_pcap_load_async: reinit_after_fork() failed");
+	}
+
 	close(fds[0]);
 	cups_cache_reload_async(fds[1]);
 	close(fds[1]);
