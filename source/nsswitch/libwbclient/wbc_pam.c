@@ -332,6 +332,7 @@ wbcErr wbcAuthenticateUserEx(const struct wbcAuthUserParams *params,
 				params->account_name,
 				sizeof(request.data.auth.user)-1);
 		}
+
 		strncpy(request.data.auth.pass,
 			params->password.plaintext,
 			sizeof(request.data.auth.pass)-1);
@@ -415,6 +416,10 @@ wbcErr wbcAuthenticateUserEx(const struct wbcAuthUserParams *params,
 	if (cmd == 0) {
 		wbc_status = WBC_ERR_INVALID_PARAM;
 		BAIL_ON_WBC_ERROR(wbc_status);
+	}
+
+	if (params->flags) {
+		request.flags |= params->flags;
 	}
 
 	wbc_status = wbcRequestResponse(cmd,
