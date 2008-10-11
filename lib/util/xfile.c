@@ -36,6 +36,13 @@
 #include "includes.h"
 #include "system/filesys.h"
 
+#if _SAMBA_BUILD_ == 3
+#undef malloc
+#define malloc SMB_MALLOC
+#undef malloc_p
+#define malloc_p SMB_MALLOC_P
+#endif
+
 #define XBUFSIZE BUFSIZ
 
 static XFILE _x_stdin =  { 0, NULL, NULL, XBUFSIZE, 0, O_RDONLY, X_IOFBF, 0 };
@@ -222,7 +229,7 @@ size_t x_fwrite(const void *p, size_t size, size_t nmemb, XFILE *f)
 }
 
 /* at least fileno() is simple! */
-int x_fileno(XFILE *f)
+int x_fileno(const XFILE *f)
 {
 	return f->fd;
 }
@@ -386,4 +393,26 @@ off_t x_tseek(XFILE *f, off_t offset, int whence)
 
 	f->flags &= ~X_FLAG_EOF;
 	return lseek(f->fd, offset, whence);
+}
+
+XFILE *x_fdup(const XFILE *f)
+{
+	XFILE *ret;
+	int fd;
+
+	fd = dup(x_fileno(f));
+	if (fd < 0) {
+		return NULL;
+	}
+
+	ret = SMB_CALLOC_ARRAY(XFILE, 1);
+	if (!ret) {
+		close(fd);
+		return NULL;
+	}
+
+	ret->fd = fd;
+	ret->open_flags = f->open_flags;
+	x_setvbuf(ret, NULL, X_IOFBF, XBUFSIZE);
+	return ret;
 }
