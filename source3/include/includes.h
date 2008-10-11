@@ -648,7 +648,7 @@ typedef char fstring[FSTRING_LEN];
 /* Lists, trees, caching, database... */
 #include "xfile.h"
 #include "intl.h"
-#include "dlinklist.h"
+#include "../lib/util/dlinklist.h"
 #include "tdb.h"
 #include "util_tdb.h"
 
