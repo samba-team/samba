@@ -136,14 +136,13 @@ ifneq ($(SKIP_DEP_FILES),yes)
 clean::
 	@echo Removing dependency files
 	@find . -name '*.d' -o -name '*.hd' | xargs rm -f
-	@find ../lib -name '*.d' -o -name '*.hd' | xargs rm -f
 endif
 else
 include $(srcdir)/static_deps.mk
 endif
 
 clean::
-	@find ../lib ../libcli -name '*.o' -o -name '*.hd' | xargs rm -f
+	@find ../lib ../libcli -name '*.o' -o -name '*.ho' | xargs rm -f
 
 DEFAULT_HEADERS = $(srcdir)/../lib/util/dlinklist.h \
 		  $(srcdir)/version.h
