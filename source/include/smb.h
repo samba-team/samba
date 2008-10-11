@@ -422,6 +422,7 @@ struct idle_event;
 struct share_mode_entry;
 struct uuid;
 struct named_mutex;
+struct pcap_cache;
 
 struct vfs_fsp_data {
     struct vfs_fsp_data *next;
