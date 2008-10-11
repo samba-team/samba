@@ -372,11 +372,11 @@ _PUBLIC_ struct composite_context *nbt_name_register_wins_send(struct nbt_name_s
 	if (state->io == NULL) goto failed;
 
 	state->wins_port = io->in.wins_port;
-	state->wins_servers = str_list_copy(state, io->in.wins_servers);
+	state->wins_servers = (const char **)str_list_copy(state, io->in.wins_servers);
 	if (state->wins_servers == NULL ||
 	    state->wins_servers[0] == NULL) goto failed;
 
-	state->addresses = str_list_copy(state, io->in.addresses);
+	state->addresses = (const char **)str_list_copy(state, io->in.addresses);
 	if (state->addresses == NULL ||
 	    state->addresses[0] == NULL) goto failed;
 

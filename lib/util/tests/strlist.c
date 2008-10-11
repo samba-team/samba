@@ -71,17 +71,17 @@ static bool test_list_copy(struct torture_context *tctx)
 	const char *empty_list[] = { NULL };
 	const char **null_list = NULL;
 
-	result = str_list_copy(tctx, list);
+	result = (const char **)str_list_copy(tctx, list);
 	torture_assert_int_equal(tctx, str_list_length(result), 2, "list length");
 	torture_assert_str_equal(tctx, result[0], "foo", "element 0");
 	torture_assert_str_equal(tctx, result[1], "bar", "element 1");
 	torture_assert_str_equal(tctx, result[2], NULL, "element 2");
 
-	result = str_list_copy(tctx, empty_list);
+	result = (const char **)str_list_copy(tctx, empty_list);
 	torture_assert_int_equal(tctx, str_list_length(result), 0, "list length");
 	torture_assert_str_equal(tctx, result[0], NULL, "element 0");
 
-	result = str_list_copy(tctx, null_list);
+	result = (const char **)str_list_copy(tctx, null_list);
 	torture_assert(tctx, result == NULL, "result NULL");
 	
 	return true;

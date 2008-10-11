@@ -2754,7 +2754,7 @@ process a -c command string
 ****************************************************************************/
 static int process_command_string(struct smbclient_context *ctx, const char *cmd)
 {
-	const char **lines;
+	char **lines;
 	int i, rc = 0;
 
 	lines = str_list_make(NULL, cmd, ";");

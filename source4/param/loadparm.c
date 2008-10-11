@@ -885,7 +885,7 @@ const char **lp_parm_string_list(TALLOC_CTX *mem_ctx,
 	const char *value = lp_get_parametric(lp_ctx, service, type, option);
 
 	if (value != NULL)
-		return str_list_make(mem_ctx, value, separator);
+		return (const char **)str_list_make(mem_ctx, value, separator);
 
 	return NULL;
 }
@@ -1299,7 +1299,7 @@ static void copy_service(struct loadparm_service *pserviceDest,
 					strupper(*(char **)dest_ptr);
 					break;
 				case P_LIST:
-					*(const char ***)dest_ptr = str_list_copy(pserviceDest, 
+					*(const char ***)dest_ptr = (const char **)str_list_copy(pserviceDest, 
 										  *(const char ***)src_ptr);
 					break;
 				default:
@@ -1653,7 +1653,7 @@ static bool set_variable(TALLOC_CTX *mem_ctx, int parmnum, void *parm_ptr,
 		}
 
 		case P_LIST:
-			*(const char ***)parm_ptr = str_list_make(mem_ctx,
+			*(const char ***)parm_ptr = (const char **)str_list_make(mem_ctx,
 								  pszParmValue, NULL);
 			break;
 

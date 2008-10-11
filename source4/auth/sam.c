@@ -207,7 +207,7 @@ _PUBLIC_ NTSTATUS authsam_account_ok(TALLOC_CTX *mem_ctx,
 	if (logon_workstation && workstation_list && *workstation_list) {
 		bool invalid_ws = true;
 		int i;
-		const char **workstations = str_list_make(mem_ctx, workstation_list, ",");
+		const char **workstations = (const char **)str_list_make(mem_ctx, workstation_list, ",");
 		
 		for (i = 0; workstations && workstations[i]; i++) {
 			DEBUG(10,("sam_account_ok: checking for workstation match '%s' and '%s'\n",

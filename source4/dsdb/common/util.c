@@ -1912,7 +1912,7 @@ struct ldb_dn *samdb_dns_domain_to_dn(struct ldb_context *ldb, TALLOC_CTX *mem_c
 		return NULL;
 	}
 	
-	split_realm = str_list_make(tmp_ctx, dns_domain, ".");
+	split_realm = (const char **)str_list_make(tmp_ctx, dns_domain, ".");
 	if (!split_realm) {
 		talloc_free(tmp_ctx);
 		return NULL;

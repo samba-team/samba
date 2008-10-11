@@ -21,9 +21,8 @@
 #ifndef _SAMBA_UTIL_H_
 #define _SAMBA_UTIL_H_
 
+#include "lib/charset/charset.h"
 #include "../lib/util/attr.h"
-
-#include "charset/charset.h"
 
 /* for TALLOC_CTX */
 #include <talloc.h>
@@ -452,7 +451,7 @@ _PUBLIC_ bool strequal(const char *s1, const char *s2);
   separator list. The separator list must contain characters less than
   or equal to 0x2f for this to work correctly on multi-byte strings
 */
-_PUBLIC_ const char **str_list_make(TALLOC_CTX *mem_ctx, const char *string, const char *sep);
+_PUBLIC_ char **str_list_make(TALLOC_CTX *mem_ctx, const char *string, const char *sep);
 
 /**
  * build a null terminated list of strings from an argv-like input string 
@@ -473,12 +472,12 @@ _PUBLIC_ char *str_list_join_shell(TALLOC_CTX *mem_ctx, const char **list, char 
 /**
   return the number of elements in a string list
 */
-_PUBLIC_ size_t str_list_length(const char **list);
+_PUBLIC_ size_t str_list_length(const char * const *list);
 
 /**
   copy a string list
 */
-_PUBLIC_ const char **str_list_copy(TALLOC_CTX *mem_ctx, const char **list);
+_PUBLIC_ char **str_list_copy(TALLOC_CTX *mem_ctx, const char **list);
 
 /**
    Return true if all the elements of the list match exactly.

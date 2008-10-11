@@ -1843,97 +1843,6 @@ int fstr_sprintf(fstring s, const char *fmt, ...)
 
 #define S_LIST_ABS 16 /* List Allocation Block Size */
 
-char **str_list_make(TALLOC_CTX *mem_ctx, const char *string, const char *sep)
-{
-	char **list;
-	const char *str;
-	char *s;
-	int num, lsize;
-	char *tok;
-
-	if (!string || !*string)
-		return NULL;
-
-	list = TALLOC_ARRAY(mem_ctx, char *, S_LIST_ABS+1);
-	if (list == NULL) {
-		return NULL;
-	}
-	lsize = S_LIST_ABS;
-
-	s = talloc_strdup(list, string);
-	if (s == NULL) {
-		DEBUG(0,("str_list_make: Unable to allocate memory"));
-		TALLOC_FREE(list);
-		return NULL;
-	}
-	if (!sep) sep = LIST_SEP;
-
-	num = 0;
-	str = s;
-
-	while (next_token_talloc(list, &str, &tok, sep)) {
-
-		if (num == lsize) {
-			char **tmp;
-
-			lsize += S_LIST_ABS;
-
-			tmp = TALLOC_REALLOC_ARRAY(mem_ctx, list, char *,
-						   lsize + 1);
-			if (tmp == NULL) {
-				DEBUG(0,("str_list_make: "
-					"Unable to allocate memory"));
-				TALLOC_FREE(list);
-				return NULL;
-			}
-
-			list = tmp;
-
-			memset (&list[num], 0,
-				((sizeof(char**)) * (S_LIST_ABS +1)));
-		}
-
-		list[num] = tok;
-		num += 1;
-	}
-
-	list[num] = NULL;
-
-	TALLOC_FREE(s);
-	return list;
-}
-
-bool str_list_copy(TALLOC_CTX *mem_ctx, char ***dest, const char **src)
-{
-	char **list;
-	int i, num;
-
-	*dest = NULL;
-	if (!src)
-		return false;
-
-	num = 0;
-	while (src[num] != NULL) {
-		num += 1;
-	}
-
-	list = TALLOC_ARRAY(mem_ctx, char *, num+1);
-	if (list == NULL) {
-		return false;
-	}
-
-	for (i=0; i<num; i++) {
-		list[i] = talloc_strdup(list, src[i]);
-		if (list[i] == NULL) {
-			TALLOC_FREE(list);
-			return false;
-		}
-	}
-	list[i] = NULL;
-	*dest = list;
-	return true;
-}
-
 /**
  * Return true if all the elements of the list match exactly.
  **/
@@ -1956,22 +1865,6 @@ bool str_list_compare(char **list1, char **list2)
 	return true;
 }
 
-/******************************************************************************
- *****************************************************************************/
-
-int str_list_count( const char **list )
-{
-	int i = 0;
-
-	if ( ! list )
-		return 0;
-
-	/* count the number of list members */
-
-	for ( i=0; *list; i++, list++ );
-
-	return i;
-}
 
 /******************************************************************************
  version of standard_sub_basic() for string lists; uses talloc_sub_basic()

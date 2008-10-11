@@ -1672,9 +1672,9 @@ char *binary_string_rfc2254(char *buf, int len);
 char *binary_string(char *buf, int len);
 int fstr_sprintf(fstring s, const char *fmt, ...);
 char **str_list_make(TALLOC_CTX *mem_ctx, const char *string, const char *sep);
-bool str_list_copy(TALLOC_CTX *mem_ctx, char ***dest, const char **src);
+char **str_list_copy(TALLOC_CTX *mem_ctx, const char **list);
 bool str_list_compare(char **list1, char **list2);
-int str_list_count( const char **list );
+size_t str_list_length( const char **list );
 bool str_list_sub_basic( char **list, const char *smb_name,
 			 const char *domain_name );
 bool str_list_substitute(char **list, const char *pattern, const char *insert);

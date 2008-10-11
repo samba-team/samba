@@ -61,7 +61,7 @@ static const struct generic_mapping svc_generic_map =
 bool init_service_op_table( void )
 {
 	const char **service_list = lp_svcctl_list();
-	int num_services = SVCCTL_NUM_INTERNAL_SERVICES + str_list_count( service_list );
+	int num_services = SVCCTL_NUM_INTERNAL_SERVICES + str_list_length( service_list );
 	int i;
 
 	if ( !(svcctl_ops = TALLOC_ARRAY( NULL, struct service_control_op, num_services+1)) ) {
