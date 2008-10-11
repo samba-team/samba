@@ -582,6 +582,15 @@ _PUBLIC_ void *realloc_array(void *ptr, size_t el_size, unsigned count)
 	return realloc(ptr, el_size * count);
 }
 
+/****************************************************************************
+ Type-safe malloc.
+****************************************************************************/
+
+void *malloc_array(size_t el_size, unsigned int count)
+{
+	return realloc_array(NULL, el_size, count);
+}
+
 _PUBLIC_ void *talloc_check_name_abort(const void *ptr, const char *name)
 {
         void *result;
