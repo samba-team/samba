@@ -35,6 +35,7 @@ TORTURE_LOCAL_OBJ_FILES = \
 		$(torturesrcdir)/../../lib/util/tests/strlist.o \
 		$(torturesrcdir)/../../lib/util/tests/str.o \
 		$(torturesrcdir)/../../lib/util/tests/time.o \
+		$(torturesrcdir)/../../lib/util/tests/data_blob.o \
 		$(torturesrcdir)/../../lib/util/tests/file.o \
 		$(torturesrcdir)/../../lib/util/tests/genrand.o \
 		$(torturesrcdir)/../../lib/compression/testsuite.o \
