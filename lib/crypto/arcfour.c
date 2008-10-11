@@ -81,7 +81,7 @@ _PUBLIC_ void arcfour_crypt_blob(uint8_t *data, int len, const DATA_BLOB *key)
 */
 _PUBLIC_ void arcfour_crypt(uint8_t *data, const uint8_t keystr[16], int len)
 {
-	DATA_BLOB key = { discard_const_p(uint8_t, keystr), 16 };
+	DATA_BLOB key = data_blob_named(keystr, 16, "DATA_BLOB: "__location__);
 	
 	arcfour_crypt_blob(data, len, &key);
 
