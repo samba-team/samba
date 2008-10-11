@@ -82,9 +82,46 @@ static http_t *cups_connect(TALLOC_CTX *frame)
 	return http;
 }
 
-bool cups_cache_reload(void)
+static void send_pcap_info(const char *name, const char *info, void *pd)
+{
+	int fd = *(int *)pd;
+	size_t namelen = name ? strlen(name)+1 : 0;
+	size_t infolen = info ? strlen(info)+1 : 0;
+
+	DEBUG(11,("send_pcap_info: writing namelen %u\n", (unsigned int)namelen));
+	if (sys_write(fd, &namelen, sizeof(namelen)) != sizeof(namelen)) {
+		DEBUG(10,("send_pcap_info: namelen write failed %s\n",
+			strerror(errno)));
+		return;
+	}
+	DEBUG(11,("send_pcap_info: writing infolen %u\n", (unsigned int)infolen));
+	if (sys_write(fd, &infolen, sizeof(infolen)) != sizeof(infolen)) {
+		DEBUG(10,("send_pcap_info: infolen write failed %s\n",
+			strerror(errno)));
+		return;
+	}
+	if (namelen) {
+		DEBUG(11,("send_pcap_info: writing name %s\n", name));
+		if (sys_write(fd, name, namelen) != namelen) {
+			DEBUG(10,("send_pcap_info: name write failed %s\n",
+				strerror(errno)));
+			return;
+		}
+	}
+	if (infolen) {
+		DEBUG(11,("send_pcap_info: writing info %s\n", info));
+		if (sys_write(fd, info, infolen) != infolen) {
+			DEBUG(10,("send_pcap_info: info write failed %s\n",
+				strerror(errno)));
+			return;
+		}
+	}
+}
+
+static bool cups_cache_reload_async(int fd)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
+	struct pcap_cache *tmp_pcap_cache = NULL;
 	http_t		*http = NULL;		/* HTTP connection to server */
 	ipp_t		*request = NULL,	/* IPP Request */
 			*response = NULL;	/* IPP Response */
@@ -195,7 +232,7 @@ bool cups_cache_reload(void)
 		if (name == NULL)
 			break;
 
-		if (!pcap_cache_add(name, info)) {
+		if (!pcap_cache_add_specific(&tmp_pcap_cache, name, info)) {
 			goto out;
 		}
 	}
@@ -281,7 +318,7 @@ bool cups_cache_reload(void)
 		if (name == NULL)
 			break;
 
-		if (!pcap_cache_add(name, info)) {
+		if (!pcap_cache_add_specific(&tmp_pcap_cache, name, info)) {
 			goto out;
 		}
 	}
@@ -298,10 +335,229 @@ bool cups_cache_reload(void)
 	if (http)
 		httpClose(http);
 
+	/* Send all the entries up the pipe. */
+	if (tmp_pcap_cache) {
+		pcap_printer_fn_specific(tmp_pcap_cache,
+				send_pcap_info,
+				(void *)&fd);
+
+		pcap_cache_destroy_specific(&tmp_pcap_cache);
+	}
 	TALLOC_FREE(frame);
 	return ret;
 }
 
+static struct pcap_cache *local_pcap_copy;
+struct fd_event *cache_fd_event;
+
+static bool cups_pcap_load_async(int *pfd)
+{
+	int fds[2];
+	pid_t pid;
+
+	*pfd = -1;
+
+	if (cache_fd_event) {
+		DEBUG(3,("cups_pcap_load_async: already waiting for "
+			"a refresh event\n" ));
+		return false;
+	}
+
+	DEBUG(5,("cups_pcap_load_async: asynchronously loading cups printers\n"));
+
+	if (pipe(fds) == -1) {
+		return false;
+	}
+
+	pid = sys_fork();
+	if (pid == (pid_t)-1) {
+		DEBUG(10,("cups_pcap_load_async: fork failed %s\n",
+			strerror(errno) ));
+		close(fds[0]);
+		close(fds[1]);
+		return false;
+	}
+
+	if (pid) {
+		DEBUG(10,("cups_pcap_load_async: child pid = %u\n",
+			(unsigned int)pid ));
+		/* Parent. */
+		close(fds[1]);
+		*pfd = fds[0];
+		return true;
+	}
+
+	/* Child. */
+	if (!reinit_after_fork(smbd_messaging_context(), true)) {
+		DEBUG(0,("cups_pcap_load_async: reinit_after_fork() failed\n"));
+		smb_panic("cups_pcap_load_async: reinit_after_fork() failed");
+	}
+
+	close(fds[0]);
+	cups_cache_reload_async(fds[1]);
+	close(fds[1]);
+	_exit(0);
+}
+
+static void cups_async_callback(struct event_context *event_ctx,
+				struct fd_event *event,
+				uint16 flags,
+				void *p)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	int fd = *(int *)p;
+	struct pcap_cache *tmp_pcap_cache = NULL;
+
+	DEBUG(5,("cups_async_callback: callback received for printer data. "
+		"fd = %d\n", fd));
+
+	while (1) {
+		char *name = NULL, *info = NULL;
+		size_t namelen = 0, infolen = 0;
+		ssize_t ret = -1;
+
+		ret = sys_read(fd, &namelen, sizeof(namelen));
+		if (ret == 0) {
+			/* EOF */
+			break;
+		}
+		if (ret != sizeof(namelen)) {
+			DEBUG(10,("cups_async_callback: namelen read failed %d %s\n",
+				errno, strerror(errno)));
+			break;
+		}
+
+		DEBUG(11,("cups_async_callback: read namelen %u\n",
+			(unsigned int)namelen));
+
+		ret = sys_read(fd, &infolen, sizeof(infolen));
+		if (ret == 0) {
+			/* EOF */
+			break;
+		}
+		if (ret != sizeof(infolen)) {
+			DEBUG(10,("cups_async_callback: infolen read failed %s\n",
+				strerror(errno)));
+			break;
+		}
+
+		DEBUG(11,("cups_async_callback: read infolen %u\n",
+			(unsigned int)infolen));
+
+		if (namelen) {
+			name = TALLOC_ARRAY(frame, char, namelen);
+			if (!name) {
+				break;
+			}
+			ret = sys_read(fd, name, namelen);
+			if (ret == 0) {
+				/* EOF */
+				break;
+			}
+			if (ret != namelen) {
+				DEBUG(10,("cups_async_callback: name read failed %s\n",
+					strerror(errno)));
+				break;
+			}
+			DEBUG(11,("cups_async_callback: read name %s\n",
+				name));
+		} else {
+			name = NULL;
+		}
+		if (infolen) {
+			info = TALLOC_ARRAY(frame, char, infolen);
+			if (!info) {
+				break;
+			}
+			ret = sys_read(fd, info, infolen);
+			if (ret == 0) {
+				/* EOF */
+				break;
+			}
+			if (ret != infolen) {
+				DEBUG(10,("cups_async_callback: info read failed %s\n",
+					strerror(errno)));
+				break;
+			}
+			DEBUG(11,("cups_async_callback: read info %s\n",
+				info));
+		} else {
+			info = NULL;
+		}
+
+		/* Add to our local pcap cache. */
+		pcap_cache_add_specific(&tmp_pcap_cache, name, info);
+		TALLOC_FREE(name);
+		TALLOC_FREE(info);
+	}
+
+	TALLOC_FREE(frame);
+	if (tmp_pcap_cache) {
+		/* We got a namelist, replace our local cache. */
+		pcap_cache_destroy_specific(&local_pcap_copy);
+		local_pcap_copy = tmp_pcap_cache;
+
+		/* And the systemwide pcap cache. */
+		pcap_cache_replace(local_pcap_copy);
+	} else {
+		DEBUG(2,("cups_async_callback: failed to read a new "
+			"printer list\n"));
+	}
+	close(fd);
+	TALLOC_FREE(p);
+	TALLOC_FREE(cache_fd_event);
+}
+
+bool cups_cache_reload(void)
+{
+	int *p_pipe_fd = TALLOC_P(NULL, int);
+
+	if (!p_pipe_fd) {
+		return false;
+	}
+
+	*p_pipe_fd = -1;
+
+	/* Set up an async refresh. */
+	if (!cups_pcap_load_async(p_pipe_fd)) {
+		return false;
+	}
+	if (!local_pcap_copy) {
+		/* We have no local cache, wait directly for
+		 * async refresh to complete.
+		 */
+		DEBUG(10,("cups_cache_reload: sync read on fd %d\n",
+			*p_pipe_fd ));
+
+		cups_async_callback(smbd_event_context(),
+					NULL,
+					EVENT_FD_READ,
+					(void *)p_pipe_fd);
+		if (!local_pcap_copy) {
+			return false;
+		}
+	} else {
+		/* Replace the system cache with our
+		 * local copy. */
+		pcap_cache_replace(local_pcap_copy);
+
+		DEBUG(10,("cups_cache_reload: async read on fd %d\n",
+			*p_pipe_fd ));
+
+		/* Trigger an event when the pipe can be read. */
+		cache_fd_event = event_add_fd(smbd_event_context(),
+					NULL, *p_pipe_fd,
+					EVENT_FD_READ,
+					cups_async_callback,
+					(void *)p_pipe_fd);
+		if (!cache_fd_event) {
+			close(*p_pipe_fd);
+			TALLOC_FREE(p_pipe_fd);
+			return false;
+		}
+	}
+	return true;
+}
 
 /*
  * 'cups_job_delete()' - Delete a job.

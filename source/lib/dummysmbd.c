@@ -51,3 +51,13 @@ NTSTATUS can_delete_directory(struct connection_struct *conn,
 {
 	return NT_STATUS_OK;
 }
+
+struct event_context *smbd_event_context(void)
+{
+        return NULL;
+}
+
+struct messaging_context *smbd_messaging_context(void)
+{
+        return NULL;
+}
