@@ -36,6 +36,7 @@
 	torture_local_util_strlist, 
 	torture_local_util_file, 
 	torture_local_util_str, 
+	torture_local_util_time, 
 	torture_local_idtree, 
 	torture_local_genrand, 
 	torture_local_iconv,
