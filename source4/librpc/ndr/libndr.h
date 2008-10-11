@@ -26,7 +26,7 @@
 #define __LIBNDR_H__
 
 #include <talloc.h>
-#include "lib/util/util.h" /* for discard_const */
+#include "../lib/util/util.h" /* for discard_const */
 #include <sys/time.h>
 #include "lib/charset/charset.h"
 

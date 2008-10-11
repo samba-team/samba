@@ -19,7 +19,7 @@ mkinclude lib/cmdline/config.mk
 mkinclude ../lib/socket_wrapper/config.mk
 mkinclude ../lib/nss_wrapper/config.mk
 mkinclude lib/stream/config.mk
-mkinclude lib/util/config.mk
+mkinclude ../lib/util/config.mk
 mkinclude lib/tdr/config.mk
 mkinclude lib/dbwrap/config.mk
 mkinclude ../lib/crypto/config.mk

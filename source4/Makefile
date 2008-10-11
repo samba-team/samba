@@ -74,7 +74,7 @@ socketwrappersrcdir := ../lib/socket_wrapper
 nsswrappersrcdir := ../lib/nss_wrapper
 appwebsrcdir := lib/appweb
 libstreamsrcdir := lib/stream
-libutilsrcdir := lib/util
+libutilsrcdir := ../lib/util
 libtdrsrcdir := lib/tdr
 libdbwrapsrcdir := lib/dbwrap
 libcryptosrcdir := ../lib/crypto
@@ -144,7 +144,7 @@ endif
 clean::
 	@find ../lib ../libcli -name '*.o' -o -name '*.hd' | xargs rm -f
 
-DEFAULT_HEADERS = $(srcdir)/lib/util/dlinklist.h \
+DEFAULT_HEADERS = $(srcdir)/../lib/util/dlinklist.h \
 		  $(srcdir)/version.h
 
 libraries:: $(STATIC_LIBS) $(SHARED_LIBS)

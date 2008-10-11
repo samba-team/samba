@@ -28,14 +28,14 @@ TORTURE_LOCAL_OBJ_FILES = \
 		$(torturesrcdir)/../lib/messaging/tests/messaging.o \
 		$(torturesrcdir)/../lib/messaging/tests/irpc.o \
 		$(torturesrcdir)/../librpc/tests/binding_string.o \
-		$(torturesrcdir)/../lib/util/tests/idtree.o \
+		$(torturesrcdir)/../../lib/util/tests/idtree.o \
 		$(torturesrcdir)/../lib/socket/testsuite.o \
 		$(torturesrcdir)/../../lib/socket_wrapper/testsuite.o \
 		$(torturesrcdir)/../libcli/resolve/testsuite.o \
-		$(torturesrcdir)/../lib/util/tests/strlist.o \
-		$(torturesrcdir)/../lib/util/tests/str.o \
-		$(torturesrcdir)/../lib/util/tests/file.o \
-		$(torturesrcdir)/../lib/util/tests/genrand.o \
+		$(torturesrcdir)/../../lib/util/tests/strlist.o \
+		$(torturesrcdir)/../../lib/util/tests/str.o \
+		$(torturesrcdir)/../../lib/util/tests/file.o \
+		$(torturesrcdir)/../../lib/util/tests/genrand.o \
 		$(torturesrcdir)/../../lib/compression/testsuite.o \
 		$(torturesrcdir)/../lib/charset/tests/charset.o \
 		$(torturesrcdir)/../libcli/security/tests/sddl.o \

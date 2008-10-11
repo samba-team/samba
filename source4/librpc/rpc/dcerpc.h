@@ -27,7 +27,7 @@
 #ifndef __DCERPC_H__
 #define __DCERPC_H__
 
-#include "lib/util/data_blob.h"
+#include "../lib/util/data_blob.h"
 #include "librpc/gen_ndr/dcerpc.h"
 #include "librpc/ndr/libndr.h"
 

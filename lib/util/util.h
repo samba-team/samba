@@ -21,7 +21,7 @@
 #ifndef _SAMBA_UTIL_H_
 #define _SAMBA_UTIL_H_
 
-#include "util/attr.h"
+#include "../lib/util/attr.h"
 
 #include "charset/charset.h"
 
@@ -38,12 +38,12 @@ struct smbsrv_tcon;
 extern const char *logfile;
 extern const char *panic_action;
 
-#include "util/time.h"
-#include "util/data_blob.h"
-#include "util/xfile.h"
-#include "util/debug.h"
-#include "util/mutex.h"
-#include "util/byteorder.h"
+#include "../lib/util/time.h"
+#include "../lib/util/data_blob.h"
+#include "../lib/util/xfile.h"
+#include "../lib/util/debug.h"
+#include "../lib/util/mutex.h"
+#include "../lib/util/byteorder.h"
 
 /**
   this is a warning hack. The idea is to use this everywhere that we

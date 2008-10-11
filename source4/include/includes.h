@@ -42,12 +42,12 @@
 #ifndef _PRINTF_ATTRIBUTE
 #define _PRINTF_ATTRIBUTE(a1, a2) PRINTF_ATTRIBUTE(a1, a2)
 #endif
-#include "util/util.h"
+#include "../lib/util/util.h"
 
 #include "libcli/util/error.h"
 
 /* String routines */
-#include "util/safe_string.h"
+#include "../lib/util/safe_string.h"
 
 #if 0
 /* darn, we can't do this now that we don't link the ldb tools to all the smb libs */

@@ -22,7 +22,7 @@
 #ifndef __CREDENTIALS_H__
 #define __CREDENTIALS_H__
 
-#include "util/data_blob.h"
+#include "../lib/util/data_blob.h"
 #include "librpc/gen_ndr/misc.h"
 
 struct ccache_container;
