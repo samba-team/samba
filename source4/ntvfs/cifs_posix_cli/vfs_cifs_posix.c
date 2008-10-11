@@ -31,7 +31,7 @@
 #include "system/filesys.h"
 #include "cifsposix.h"
 #include "system/time.h"
-#include "lib/util/dlinklist.h"
+#include "../lib/util/dlinklist.h"
 #include "ntvfs/ntvfs.h"
 #include "ntvfs/cifs_posix_cli/proto.h"
 

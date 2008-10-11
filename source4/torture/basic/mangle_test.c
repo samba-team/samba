@@ -22,7 +22,7 @@
 #include "system/filesys.h"
 #include "system/dir.h"
 #include "../tdb/include/tdb.h"
-#include "lib/util/util_tdb.h"
+#include "../lib/util/util_tdb.h"
 #include "libcli/libcli.h"
 #include "torture/util.h"
 

@@ -25,7 +25,7 @@
 #include "lib/ldb/include/ldb_errors.h"
 #include "dsdb/samdb/samdb.h"
 #include "ldb_wrap.h"
-#include "util/util_ldb.h"
+#include "../lib/util/util_ldb.h"
 #include "libcli/auth/libcli_auth.h"
 #include "auth/auth.h"
 #include "param/param.h"

@@ -24,7 +24,7 @@
 #include "includes.h"
 #include "torture/torture.h"
 #include "auth/auth.h"
-#include "lib/util/dlinklist.h"
+#include "../lib/util/dlinklist.h"
 #include "../lib/crypto/crypto.h"
 #include "system/time.h"
 #include "torture/rpc/rpc.h"

@@ -33,7 +33,7 @@
 #include "libcli/security/security.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "auth/auth.h"
-#include "util/util_ldb.h"
+#include "../lib/util/util_ldb.h"
 #include "dsdb/samdb/samdb.h"
 #include "param/param.h"
 

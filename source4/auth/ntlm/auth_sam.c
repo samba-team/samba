@@ -23,7 +23,7 @@
 #include "librpc/gen_ndr/ndr_netlogon.h"
 #include "system/time.h"
 #include "lib/ldb/include/ldb.h"
-#include "util/util_ldb.h"
+#include "../lib/util/util_ldb.h"
 #include "auth/auth.h"
 #include "auth/ntlm/ntlm_check.h"
 #include "auth/ntlm/auth_proto.h"

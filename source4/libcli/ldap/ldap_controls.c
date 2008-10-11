@@ -20,7 +20,7 @@
 */
 
 #include "includes.h"
-#include "lib/util/asn1.h"
+#include "../lib/util/asn1.h"
 #include "libcli/ldap/ldap.h"
 #include "lib/ldb/include/ldb.h"
 

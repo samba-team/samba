@@ -21,7 +21,7 @@
 
 #include "includes.h"
 #include "lib/events/events.h"
-#include "lib/util/dlinklist.h"
+#include "../lib/util/dlinklist.h"
 #include "vfs_posix.h"
 #include "smbd/service_stream.h"
 #include "lib/messaging/irpc.h"

@@ -22,8 +22,8 @@
 
 #include "includes.h"
 #include "web_server/web_server.h"
-#include "lib/util/dlinklist.h"
-#include "lib/util/data_blob.h"
+#include "../lib/util/dlinklist.h"
+#include "../lib/util/data_blob.h"
 #include "lib/tls/tls.h"
 #include <Python.h>
 

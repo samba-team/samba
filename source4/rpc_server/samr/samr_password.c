@@ -32,7 +32,7 @@
 #include "auth/auth.h"
 #include "rpc_server/samr/proto.h"
 #include "libcli/auth/libcli_auth.h"
-#include "util/util_ldb.h"
+#include "../lib/util/util_ldb.h"
 #include "param/param.h"
 
 /* 

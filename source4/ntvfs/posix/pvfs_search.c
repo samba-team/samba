@@ -25,7 +25,7 @@
 #include "librpc/gen_ndr/security.h"
 #include "smbd/service_stream.h"
 #include "lib/events/events.h"
-#include "lib/util/dlinklist.h"
+#include "../lib/util/dlinklist.h"
 
 /* place a reasonable limit on old-style searches as clients tend to
    not send search close requests */

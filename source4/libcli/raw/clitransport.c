@@ -23,7 +23,7 @@
 #include "libcli/raw/libcliraw.h"
 #include "libcli/raw/raw_proto.h"
 #include "lib/socket/socket.h"
-#include "lib/util/dlinklist.h"
+#include "../lib/util/dlinklist.h"
 #include "lib/events/events.h"
 #include "lib/stream/packet.h"
 #include "librpc/gen_ndr/ndr_nbt.h"

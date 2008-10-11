@@ -27,7 +27,7 @@
 #include "librpc/gen_ndr/ndr_nbt.h"
 #include "param/param.h"
 #include "system/network.h"
-#include "util/dlinklist.h"
+#include "../lib/util/dlinklist.h"
 
 struct resolve_state {
 	struct resolve_context *ctx;

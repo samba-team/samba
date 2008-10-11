@@ -27,7 +27,7 @@
 #include "librpc/gen_ndr/samr.h" /* for struct samrPassword */
 #include "param/secrets.h"
 #include "system/filesys.h"
-#include "util/util_ldb.h"
+#include "../lib/util/util_ldb.h"
 #include "auth/credentials/credentials.h"
 #include "auth/credentials/credentials_krb5.h"
 #include "param/param.h"

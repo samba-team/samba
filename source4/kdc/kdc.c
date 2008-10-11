@@ -29,7 +29,7 @@
 #include "lib/events/events.h"
 #include "lib/socket/socket.h"
 #include "system/network.h"
-#include "lib/util/dlinklist.h"
+#include "../lib/util/dlinklist.h"
 #include "lib/messaging/irpc.h"
 #include "lib/stream/packet.h"
 #include "librpc/gen_ndr/samr.h"

@@ -28,7 +28,7 @@
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "librpc/gen_ndr/ndr_drsuapi.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
-#include "lib/util/dlinklist.h"
+#include "../lib/util/dlinklist.h"
 
 static int pdc_fsmo_init(struct ldb_module *module)
 {

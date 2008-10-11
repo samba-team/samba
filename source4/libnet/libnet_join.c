@@ -27,7 +27,7 @@
 #include "param/secrets.h"
 #include "dsdb/samdb/samdb.h"
 #include "ldb_wrap.h"
-#include "util/util_ldb.h"
+#include "../lib/util/util_ldb.h"
 #include "libcli/security/security.h"
 #include "auth/credentials/credentials.h"
 #include "auth/credentials/credentials_krb5.h"

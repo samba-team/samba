@@ -22,7 +22,7 @@
 #include "torture/ndr/ndr.h"
 #include "torture/ndr/proto.h"
 #include "torture/torture.h"
-#include "util/dlinklist.h"
+#include "../lib/util/dlinklist.h"
 #include "param/param.h"
 
 struct ndr_pull_test_data {

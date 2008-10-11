@@ -24,7 +24,7 @@
 #include "system/filesys.h"
 #include "../include/ctdb_private.h"
 #include "tdb_wrap.h"
-#include "lib/util/dlinklist.h"
+#include "../lib/util/dlinklist.h"
 
 /*
   find an attached ctdb_db handle given a name

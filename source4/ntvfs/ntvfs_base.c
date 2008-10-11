@@ -23,7 +23,7 @@
 */
 
 #include "includes.h"
-#include "lib/util/dlinklist.h"
+#include "../lib/util/dlinklist.h"
 #include "ntvfs/ntvfs.h"
 #include "param/param.h"
 

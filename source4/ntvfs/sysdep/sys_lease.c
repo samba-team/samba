@@ -26,7 +26,7 @@
 #include "system/filesys.h"
 #include "ntvfs/sysdep/sys_lease.h"
 #include "lib/events/events.h"
-#include "lib/util/dlinklist.h"
+#include "../lib/util/dlinklist.h"
 #include "param/param.h"
 
 /* list of registered backends */

@@ -19,7 +19,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "lib/util/asn1.h"
+#include "../lib/util/asn1.h"
 #include "../libcli/netlogon.h"
 
 struct ldap_message;

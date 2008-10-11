@@ -21,7 +21,7 @@
 
 #include "includes.h"
 #include "vfs_posix.h"
-#include "lib/util/unix_privs.h"
+#include "../lib/util/unix_privs.h"
 #include "librpc/gen_ndr/ndr_xattr.h"
 #include "param/param.h"
 

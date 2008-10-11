@@ -38,7 +38,7 @@
 #include "ldb/include/ldb_errors.h"
 #include "ldb/include/ldb_private.h"
 #include "dsdb/samdb/samdb.h"
-#include "lib/util/dlinklist.h"
+#include "../lib/util/dlinklist.h"
 #include "librpc/ndr/libndr.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "libcli/security/security.h"

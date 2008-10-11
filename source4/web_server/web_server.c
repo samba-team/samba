@@ -30,7 +30,7 @@
 #include "system/network.h"
 #include "lib/socket/netif.h"
 #include "lib/tls/tls.h"
-#include "lib/util/dlinklist.h"
+#include "../lib/util/dlinklist.h"
 #include "param/param.h"
 
 /* don't allow connections to hang around forever */

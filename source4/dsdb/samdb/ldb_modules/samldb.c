@@ -41,7 +41,7 @@
 #include "dsdb/samdb/samdb.h"
 #include "libcli/security/security.h"
 #include "librpc/gen_ndr/ndr_security.h"
-#include "util/util_ldb.h"
+#include "../lib/util/util_ldb.h"
 #include "ldb_wrap.h"
 
 struct samldb_ctx;

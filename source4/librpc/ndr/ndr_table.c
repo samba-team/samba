@@ -21,7 +21,7 @@
 */
 
 #include "includes.h"
-#include "lib/util/dlinklist.h"
+#include "../lib/util/dlinklist.h"
 #include "librpc/ndr/libndr.h"
 #include "librpc/ndr/ndr_table.h"
 

@@ -24,7 +24,7 @@
 #include "librpc/gen_ndr/ndr_dcerpc.h"
 #include "auth/auth.h"
 #include "auth/gensec/gensec.h"
-#include "lib/util/dlinklist.h"
+#include "../lib/util/dlinklist.h"
 #include "rpc_server/dcerpc_server.h"
 #include "rpc_server/dcerpc_server_proto.h"
 #include "librpc/rpc/dcerpc_proto.h"

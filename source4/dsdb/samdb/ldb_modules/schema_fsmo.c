@@ -29,7 +29,7 @@
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "librpc/gen_ndr/ndr_drsuapi.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
-#include "lib/util/dlinklist.h"
+#include "../lib/util/dlinklist.h"
 #include "param/param.h"
 
 static int generate_objectClasses(struct ldb_context *ldb, struct ldb_message *msg,

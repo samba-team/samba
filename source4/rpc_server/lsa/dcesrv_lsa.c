@@ -23,7 +23,7 @@
 */
 
 #include "rpc_server/lsa/lsa.h"
-#include "util/util_ldb.h"
+#include "../lib/util/util_ldb.h"
 #include "libcli/ldap/ldap_ndr.h"
 #include "system/kerberos.h"
 #include "auth/kerberos/kerberos.h"

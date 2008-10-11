@@ -21,7 +21,7 @@
 
 #include "includes.h"
 #include "system/filesys.h"
-#include "lib/util/wrap_xattr.h"
+#include "../lib/util/wrap_xattr.h"
 
 #if defined(HAVE_XATTR_SUPPORT) && defined(XATTR_ADDITIONAL_OPTIONS)
 static ssize_t _wrap_darwin_fgetxattr(int fd, const char *name, void *value, size_t size)

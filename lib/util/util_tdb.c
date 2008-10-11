@@ -22,7 +22,7 @@
 #include "includes.h"
 #include "../tdb/include/tdb.h"
 #include "pstring.h"
-#include "lib/util/util_tdb.h"
+#include "../lib/util/util_tdb.h"
 
 /* these are little tdb utility functions that are meant to make
    dealing with a tdb database a little less cumbersome in Samba */

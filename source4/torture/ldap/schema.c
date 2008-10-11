@@ -26,7 +26,7 @@
 #include "lib/ldb/include/ldb.h"
 #include "lib/ldb/include/ldb_errors.h"
 #include "dsdb/samdb/samdb.h"
-#include "lib/util/dlinklist.h"
+#include "../lib/util/dlinklist.h"
 
 #include "torture/torture.h"
 #include "torture/ldap/proto.h"

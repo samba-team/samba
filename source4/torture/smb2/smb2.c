@@ -23,7 +23,7 @@
 
 #include "torture/smbtorture.h"
 #include "torture/smb2/proto.h"
-#include "lib/util/dlinklist.h"
+#include "../lib/util/dlinklist.h"
 
 static bool wrap_simple_1smb2_test(struct torture_context *torture_ctx,
 				   struct torture_tcase *tcase,

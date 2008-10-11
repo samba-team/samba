@@ -41,7 +41,7 @@
 #include "libcli/util/clilsa.h"
 #include "system/dir.h"
 #include "system/filesys.h"
-#include "lib/util/dlinklist.h"
+#include "../lib/util/dlinklist.h"
 #include "system/readline.h"
 #include "auth/credentials/credentials.h"
 #include "auth/gensec/gensec.h"

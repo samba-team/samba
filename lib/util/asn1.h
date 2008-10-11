@@ -49,6 +49,6 @@ struct asn1_data {
 
 #define ASN1_MAX_OIDS 20
 
-#include "lib/util/asn1_proto.h"
+#include "../lib/util/asn1_proto.h"
 
 #endif /* _ASN_1_H */

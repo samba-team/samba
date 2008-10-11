@@ -20,7 +20,7 @@
 */
 
 #include "includes.h"
-#include "lib/util/dlinklist.h"
+#include "../lib/util/dlinklist.h"
 #include "system/network.h"
 #include "nbt_server/nbt_server.h"
 #include "nbt_server/wins/winsserver.h"

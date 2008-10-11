@@ -25,7 +25,7 @@
 #include "smbd/service_task.h"
 #include "winbind/wb_async_helpers.h"
 #include "libcli/security/security.h"
-#include "lib/util/dlinklist.h"
+#include "../lib/util/dlinklist.h"
 #include "param/param.h"
 
 static struct wbsrv_domain *find_domain_from_sid(struct wbsrv_service *service,

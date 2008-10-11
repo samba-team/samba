@@ -24,7 +24,7 @@
 #include "dsdb/samdb/samdb.h"
 #include "lib/ldb/include/ldb_errors.h"
 #include "lib/ldb/include/ldb_private.h"
-#include "lib/util/dlinklist.h"
+#include "../lib/util/dlinklist.h"
 #include "param/param.h"
 
 

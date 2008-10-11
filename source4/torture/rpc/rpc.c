@@ -25,7 +25,7 @@
 #include "torture/rpc/rpc.h"
 #include "torture/smbtorture.h"
 #include "librpc/ndr/ndr_table.h"
-#include "lib/util/dlinklist.h"
+#include "../lib/util/dlinklist.h"
 
 static bool torture_rpc_teardown (struct torture_context *tcase, 
 					  void *data)

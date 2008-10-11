@@ -19,7 +19,7 @@
 */
 
 #include "includes.h"
-#include "lib/util/dlinklist.h"
+#include "../lib/util/dlinklist.h"
 #include "lib/com/com.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 

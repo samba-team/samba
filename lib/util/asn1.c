@@ -18,7 +18,7 @@
 */
 
 #include "includes.h"
-#include "lib/util/asn1.h"
+#include "../lib/util/asn1.h"
 
 /* allocate an asn1 structure */
 struct asn1_data *asn1_init(TALLOC_CTX *mem_ctx)

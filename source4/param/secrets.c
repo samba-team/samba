@@ -28,8 +28,8 @@
 #include "tdb_wrap.h"
 #include "lib/ldb/include/ldb.h"
 #include "../tdb/include/tdb.h"
-#include "lib/util/util_tdb.h"
-#include "lib/util/util_ldb.h"
+#include "../lib/util/util_tdb.h"
+#include "../lib/util/util_ldb.h"
 #include "librpc/gen_ndr/ndr_security.h"
 
 /**

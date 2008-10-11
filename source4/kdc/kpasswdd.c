@@ -25,7 +25,7 @@
 #include "lib/events/events.h"
 #include "lib/socket/socket.h"
 #include "system/network.h"
-#include "lib/util/dlinklist.h"
+#include "../lib/util/dlinklist.h"
 #include "lib/ldb/include/ldb.h"
 #include "auth/gensec/gensec.h"
 #include "auth/credentials/credentials.h"

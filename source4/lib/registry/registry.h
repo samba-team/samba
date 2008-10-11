@@ -29,8 +29,8 @@ struct smb_iconv_convenience;
 #include "libcli/util/werror.h"
 #include "librpc/gen_ndr/security.h"
 #include "libcli/util/ntstatus.h"
-#include "util/time.h"
-#include "util/data_blob.h"
+#include "../lib/util/time.h"
+#include "../lib/util/data_blob.h"
 
 /**
  * The hive API. This API is generally used for

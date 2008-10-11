@@ -28,7 +28,7 @@
 
 #include "includes.h"
 #include "librpc/ndr/libndr.h"
-#include "lib/util/dlinklist.h"
+#include "../lib/util/dlinklist.h"
 #include "librpc/gen_ndr/dcerpc.h"
 #include "param/param.h"
 
