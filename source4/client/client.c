@@ -3032,7 +3032,8 @@ static bool do_connect(struct smbclient_context *ctx,
 		       const char *specified_server, const char **ports, 
 		       const char *specified_share, 
 		       struct cli_credentials *cred, 
-		       struct smbcli_options *options)
+		       struct smbcli_options *options,
+		       struct smbcli_session_options *session_options)
 {
 	NTSTATUS status;
 	char *server, *share;
@@ -3051,7 +3052,7 @@ static bool do_connect(struct smbclient_context *ctx,
 	
 	status = smbcli_full_connection(ctx, &ctx->cli, server, ports,
 					share, NULL, cred, resolve_ctx, 
-					ev_ctx, options);
+					ev_ctx, options, session_options);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("Connection to \\\\%s\\%s failed - %s\n", 
 			 server, share, nt_errstr(status));
@@ -3138,6 +3139,7 @@ static int do_message_op(const char *netbios_name, const char *desthost,
 	struct smbclient_context *ctx;
 	const char *cmdstr = NULL;
 	struct smbcli_options smb_options;
+	struct smbcli_session_options smb_session_options;
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -3227,6 +3229,7 @@ static int do_message_op(const char *netbios_name, const char *desthost,
 	poptFreeContext(pc);
 
 	lp_smbcli_options(cmdline_lp_ctx, &smb_options);
+	lp_smbcli_session_options(cmdline_lp_ctx, &smb_session_options);
 
 	ev_ctx = s4_event_context_init(talloc_autofree_context());
 
@@ -3255,7 +3258,7 @@ static int do_message_op(const char *netbios_name, const char *desthost,
 	
 	if (!do_connect(ctx, ev_ctx, lp_resolve_context(cmdline_lp_ctx),
 			desthost, lp_smb_ports(cmdline_lp_ctx), service,
-			cmdline_credentials, &smb_options))
+			cmdline_credentials, &smb_options, &smb_session_options))
 		return 1;
 
 	if (base_directory) 

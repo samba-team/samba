@@ -301,7 +301,7 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 		server_type |= NBT_SERVER_KDC;
 	}
 
-	if (!ldb_dn_compare_base(ldb_get_root_basedn(sam_ctx), ldb_get_default_basedn(sam_ctx))) {
+	if (ldb_dn_compare(ldb_get_root_basedn(sam_ctx), ldb_get_default_basedn(sam_ctx)) == 0) {
 		server_type |= NBT_SERVER_DS_DNS_FOREST;
 	}
 
@@ -331,68 +331,68 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 
 		/* could check if the user exists */
 		if (user_known) {
-			netlogon->nt5_ex.command      = LOGON_SAM_LOGON_RESPONSE_EX;
+			netlogon->data.nt5_ex.command      = LOGON_SAM_LOGON_RESPONSE_EX;
 		} else {
-			netlogon->nt5_ex.command      = LOGON_SAM_LOGON_USER_UNKNOWN_EX;
+			netlogon->data.nt5_ex.command      = LOGON_SAM_LOGON_USER_UNKNOWN_EX;
 		}
-		netlogon->nt5_ex.server_type  = server_type;
-		netlogon->nt5_ex.domain_uuid  = domain_uuid;
-		netlogon->nt5_ex.forest       = realm;
-		netlogon->nt5_ex.dns_domain   = dns_domain;
-		netlogon->nt5_ex.pdc_dns_name = pdc_dns_name;
-		netlogon->nt5_ex.domain       = flatname;
-		netlogon->nt5_ex.pdc_name     = lp_netbios_name(lp_ctx);
-		netlogon->nt5_ex.user_name    = user;
-		netlogon->nt5_ex.server_site  = server_site;
-		netlogon->nt5_ex.client_site  = client_site;
+		netlogon->data.nt5_ex.server_type  = server_type;
+		netlogon->data.nt5_ex.domain_uuid  = domain_uuid;
+		netlogon->data.nt5_ex.forest       = realm;
+		netlogon->data.nt5_ex.dns_domain   = dns_domain;
+		netlogon->data.nt5_ex.pdc_dns_name = pdc_dns_name;
+		netlogon->data.nt5_ex.domain       = flatname;
+		netlogon->data.nt5_ex.pdc_name     = lp_netbios_name(lp_ctx);
+		netlogon->data.nt5_ex.user_name    = user;
+		netlogon->data.nt5_ex.server_site  = server_site;
+		netlogon->data.nt5_ex.client_site  = client_site;
 
 		if (version & NETLOGON_NT_VERSION_5EX_WITH_IP) {
 			/* Clearly this needs to be fixed up for IPv6 */
 			extra_flags = NETLOGON_NT_VERSION_5EX_WITH_IP;
-			netlogon->nt5_ex.sockaddr.sa_family    = 2;
-			netlogon->nt5_ex.sockaddr.pdc_ip       = pdc_ip;
-			netlogon->nt5_ex.sockaddr.remaining = data_blob_talloc_zero(mem_ctx, 8);
+			netlogon->data.nt5_ex.sockaddr.sa_family    = 2;
+			netlogon->data.nt5_ex.sockaddr.pdc_ip       = pdc_ip;
+			netlogon->data.nt5_ex.sockaddr.remaining = data_blob_talloc_zero(mem_ctx, 8);
 		}
-		netlogon->nt5_ex.nt_version   = NETLOGON_NT_VERSION_1|NETLOGON_NT_VERSION_5EX|extra_flags;
-		netlogon->nt5_ex.lmnt_token   = 0xFFFF;
-		netlogon->nt5_ex.lm20_token   = 0xFFFF;
+		netlogon->data.nt5_ex.nt_version   = NETLOGON_NT_VERSION_1|NETLOGON_NT_VERSION_5EX|extra_flags;
+		netlogon->data.nt5_ex.lmnt_token   = 0xFFFF;
+		netlogon->data.nt5_ex.lm20_token   = 0xFFFF;
 
 	} else if (version & NETLOGON_NT_VERSION_5) {
 		netlogon->ntver = NETLOGON_NT_VERSION_5;
 
 		/* could check if the user exists */
 		if (user_known) {
-			netlogon->nt5.command      = LOGON_SAM_LOGON_RESPONSE;
+			netlogon->data.nt5.command      = LOGON_SAM_LOGON_RESPONSE;
 		} else {
-			netlogon->nt5.command      = LOGON_SAM_LOGON_USER_UNKNOWN;
+			netlogon->data.nt5.command      = LOGON_SAM_LOGON_USER_UNKNOWN;
 		}
-		netlogon->nt5.pdc_name     = pdc_name;
-		netlogon->nt5.user_name    = user;
-		netlogon->nt5.domain_name  = flatname;
-		netlogon->nt5.domain_uuid  = domain_uuid;
-		netlogon->nt5.forest       = realm;
-		netlogon->nt5.dns_domain   = dns_domain;
-		netlogon->nt5.pdc_dns_name = pdc_dns_name;
-		netlogon->nt5.pdc_ip       = pdc_ip;
-		netlogon->nt5.server_type  = server_type;
-		netlogon->nt5.nt_version   = NETLOGON_NT_VERSION_1|NETLOGON_NT_VERSION_5;
-		netlogon->nt5.lmnt_token   = 0xFFFF;
-		netlogon->nt5.lm20_token   = 0xFFFF;
+		netlogon->data.nt5.pdc_name     = pdc_name;
+		netlogon->data.nt5.user_name    = user;
+		netlogon->data.nt5.domain_name  = flatname;
+		netlogon->data.nt5.domain_uuid  = domain_uuid;
+		netlogon->data.nt5.forest       = realm;
+		netlogon->data.nt5.dns_domain   = dns_domain;
+		netlogon->data.nt5.pdc_dns_name = pdc_dns_name;
+		netlogon->data.nt5.pdc_ip       = pdc_ip;
+		netlogon->data.nt5.server_type  = server_type;
+		netlogon->data.nt5.nt_version   = NETLOGON_NT_VERSION_1|NETLOGON_NT_VERSION_5;
+		netlogon->data.nt5.lmnt_token   = 0xFFFF;
+		netlogon->data.nt5.lm20_token   = 0xFFFF;
 
 	} else /* (version & NETLOGON_NT_VERSION_1) and all other cases */ {
 		netlogon->ntver = NETLOGON_NT_VERSION_1;
 		/* could check if the user exists */
 		if (user_known) {
-			netlogon->nt4.command      = LOGON_SAM_LOGON_RESPONSE;
+			netlogon->data.nt4.command      = LOGON_SAM_LOGON_RESPONSE;
 		} else {
-			netlogon->nt4.command      = LOGON_SAM_LOGON_USER_UNKNOWN;
+			netlogon->data.nt4.command      = LOGON_SAM_LOGON_USER_UNKNOWN;
 		}
-		netlogon->nt4.server      = pdc_name;
-		netlogon->nt4.user_name   = user;
-		netlogon->nt4.domain      = flatname;
-		netlogon->nt4.nt_version  = NETLOGON_NT_VERSION_1;
-		netlogon->nt4.lmnt_token  = 0xFFFF;
-		netlogon->nt4.lm20_token  = 0xFFFF;
+		netlogon->data.nt4.server      = pdc_name;
+		netlogon->data.nt4.user_name   = user;
+		netlogon->data.nt4.domain      = flatname;
+		netlogon->data.nt4.nt_version  = NETLOGON_NT_VERSION_1;
+		netlogon->data.nt4.lmnt_token  = 0xFFFF;
+		netlogon->data.nt4.lm20_token  = 0xFFFF;
 	}
 
 	return NT_STATUS_OK;

@@ -472,6 +472,7 @@ static NTSTATUS torture_leave_ads_domain(struct torture_context *torture,
 	}
 
 	ldb_set_opaque(ldb_ctx, "credentials", cmdline_credentials);
+	ldb_set_opaque(ldb_ctx, "loadparm", cmdline_lp_ctx);
 
 	rtn = ldb_connect(ldb_ctx, remote_ldb_url, 0, NULL);
 	if (rtn != 0) {

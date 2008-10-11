@@ -870,10 +870,6 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 	call->context	= context;
 	call->ndr_pull	= pull;
 
-	if (call->pkt.pfc_flags & DCERPC_PFC_FLAG_OBJECT_UUID) {
-		pull->flags |= LIBNDR_FLAG_OBJECT_PRESENT;
-	}
-
 	if (!(call->pkt.drep[0] & DCERPC_DREP_LE)) {
 		pull->flags |= LIBNDR_FLAG_BIGENDIAN;
 	}
@@ -1110,6 +1106,10 @@ NTSTATUS dcesrv_input_process(struct dcesrv_connection *dce_conn)
 
 	if (!(CVAL(blob.data, DCERPC_DREP_OFFSET) & DCERPC_DREP_LE)) {
 		ndr->flags |= LIBNDR_FLAG_BIGENDIAN;
+	}
+
+	if (CVAL(blob.data, DCERPC_PFC_OFFSET) & DCERPC_PFC_FLAG_OBJECT_UUID) {
+		ndr->flags |= LIBNDR_FLAG_OBJECT_PRESENT;
 	}
 
 	ndr_err = ndr_pull_ncacn_packet(ndr, NDR_SCALARS|NDR_BUFFERS, &call->pkt);

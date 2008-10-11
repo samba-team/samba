@@ -43,7 +43,10 @@ bool password_ok(const char *smb_name, DATA_BLOB password_blob);
 
 /* The following definitions come from auth/auth_domain.c  */
 
-NTSTATUS auth_domain_init(void) ;
+void attempt_machine_password_change(void);
+NTSTATUS auth_domain_init(void);
+
+NTSTATUS auth_netlogond_init(void);
 
 /* The following definitions come from auth/auth_ntlmssp.c  */
 
@@ -489,7 +492,7 @@ TALLOC_CTX *debug_ctx(void);
 /* The following definitions come from lib/display_sec.c  */
 
 char *get_sec_mask_str(TALLOC_CTX *ctx, uint32 type);
-void display_sec_access(SEC_ACCESS *info);
+void display_sec_access(uint32_t *info);
 void display_sec_ace_flags(uint8_t flags);
 void display_sec_ace(SEC_ACE *ace);
 void display_sec_acl(SEC_ACL *sec_acl);
@@ -507,6 +510,7 @@ void display_set_stderr(void);
 /* The following definitions come from lib/errmap_unix.c  */
 
 NTSTATUS map_nt_error_from_unix(int unix_error);
+int map_errno_from_nt_status(NTSTATUS status);
 
 /* The following definitions come from lib/events.c  */
 
@@ -702,6 +706,7 @@ bool privilege_set_to_se_priv( SE_PRIV *mask, struct lsa_PrivilegeSet *privset )
 
 /* The following definitions come from lib/readline.c  */
 
+void smb_readline_done(void);
 char *smb_readline(const char *prompt, void (*callback)(void),
 		   char **(completion_fn)(const char *text, int start, int end));
 const char *smb_readline_get_line_buffer(void);
@@ -766,7 +771,6 @@ NTSTATUS sec_desc_mod_sid(SEC_DESC *sd, DOM_SID *sid, uint32 mask);
 NTSTATUS sec_desc_del_sid(TALLOC_CTX *ctx, SEC_DESC **psd, DOM_SID *sid, size_t *sd_size);
 SEC_DESC_BUF *se_create_child_secdesc(TALLOC_CTX *ctx, SEC_DESC *parent_ctr, 
 				      bool child_container);
-void init_sec_access(uint32 *t, uint32 mask);
 
 /* The following definitions come from lib/select.c  */
 
@@ -1421,6 +1425,7 @@ WERROR registry_push_value(TALLOC_CTX *mem_ctx,
 /* The following definitions come from lib/util_seaccess.c  */
 
 void se_map_generic(uint32 *access_mask, const struct generic_mapping *mapping);
+void security_acl_map_generic(struct security_acl *sa, const struct generic_mapping *mapping);
 void se_map_standard(uint32 *access_mask, struct standard_mapping *mapping);
 bool se_access_check(const SEC_DESC *sd, const NT_USER_TOKEN *token,
 		     uint32 acc_desired, uint32 *acc_granted, 
@@ -5819,7 +5824,7 @@ const char **lp_svcctl_list(void);
 char *lp_cups_options(int );
 char *lp_cups_server(void);
 char *lp_iprint_server(void);
-int lp_cups_timeout(void);
+int lp_cups_connection_timeout(void);
 const char *lp_ctdbd_socket(void);
 const char **lp_cluster_addresses(void);
 bool lp_clustering(void);
@@ -5985,7 +5990,7 @@ bool dump_a_parameter(int snum, char *parm_name, FILE * f, bool isGlobal);
 struct parm_struct *lp_get_parameter(const char *param_name);
 struct parm_struct *lp_next_parameter(int snum, int *i, int allparameters);
 bool lp_snum_ok(int iService);
-void lp_add_one_printer(char *name, char *comment);
+void lp_add_one_printer(const char *name, const char *comment, void *pdata);
 bool lp_loaded(void);
 void lp_killunused(bool (*snumused) (int));
 void lp_kill_all_services(void);
@@ -6414,6 +6419,8 @@ bool secrets_restore_schannel_session_info(TALLOC_CTX *mem_ctx,
 				struct dcinfo **ppdc);
 bool secrets_store_generic(const char *owner, const char *key, const char *secret);
 char *secrets_fetch_generic(const char *owner, const char *key);
+bool secrets_store_local_schannel_key(uint8_t schannel_key[16]);
+bool secrets_fetch_local_schannel_key(uint8_t schannel_key[16]);
 
 /* The following definitions come from passdb/util_builtin.c  */
 
@@ -6556,11 +6563,15 @@ char* get_server_name( Printer_entry *printer );
 
 /* The following definitions come from printing/pcap.c  */
 
+bool pcap_cache_add_specific(struct pcap_cache **ppcache, const char *name, const char *comment);
+void pcap_cache_destroy_specific(struct pcap_cache **ppcache);
 bool pcap_cache_add(const char *name, const char *comment);
 bool pcap_cache_loaded(void);
+void pcap_cache_replace(const struct pcap_cache *cache);
 void pcap_cache_reload(void);
 bool pcap_printername_ok(const char *printername);
-void pcap_printer_fn(void (*fn)(char *, char *));
+void pcap_printer_fn_specific(const struct pcap_cache *, void (*fn)(const char *, const char *, void *), void *);
+void pcap_printer_fn(void (*fn)(const char *, const char *, void *), void *);
 
 /* The following definitions come from printing/print_aix.c  */
 
@@ -9545,7 +9556,6 @@ NTSTATUS open_fake_file(connection_struct *conn,
 				const char *fname,
 				uint32 access_mask,
 				files_struct **result);
-void destroy_fake_file_handle(struct fake_file_handle **fh);
 NTSTATUS close_fake_file(files_struct *fsp);
 
 /* The following definitions come from smbd/file_access.c  */
@@ -9911,14 +9921,17 @@ void reply_pipe_close(connection_struct *conn, struct smb_request *req);
 
 /* The following definitions come from smbd/posix_acls.c  */
 
-NTSTATUS unpack_nt_owners(int snum, uid_t *puser, gid_t *pgrp, uint32 security_info_sent, SEC_DESC *psd);
+NTSTATUS unpack_nt_owners(int snum, uid_t *puser, gid_t *pgrp, uint32 security_info_sent, const SEC_DESC *psd);
 SMB_ACL_T free_empty_sys_acl(connection_struct *conn, SMB_ACL_T the_acl);
 NTSTATUS posix_fget_nt_acl(struct files_struct *fsp, uint32_t security_info,
 			   SEC_DESC **ppdesc);
 NTSTATUS posix_get_nt_acl(struct connection_struct *conn, const char *name,
 			  uint32_t security_info, SEC_DESC **ppdesc);
 int try_chown(connection_struct *conn, const char *fname, uid_t uid, gid_t gid);
-NTSTATUS set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd);
+NTSTATUS append_parent_acl(files_struct *fsp,
+				const SEC_DESC *pcsd,
+				SEC_DESC **pp_new_sd);
+NTSTATUS set_nt_acl(files_struct *fsp, uint32 security_info_sent, const SEC_DESC *psd);
 int get_acl_group_bits( connection_struct *conn, const char *fname, mode_t *mode );
 int chmod_acl(connection_struct *conn, const char *name, mode_t mode);
 int inherit_access_posix_acl(connection_struct *conn, const char *inherit_from_dir,

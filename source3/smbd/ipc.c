@@ -5,17 +5,17 @@
 
    SMB Version handling
    Copyright (C) John H Terpstra 1995-1998
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
    */
@@ -162,7 +162,7 @@ void send_trans_reply(connection_struct *conn, const uint8_t *inbuf,
 		copy_trans_params_and_data(outbuf, align,
 					   rparam, tot_param_sent, this_lparam,
 					   rdata, tot_data_sent, this_ldata);
-		
+
 		SSVAL(outbuf,smb_vwv3,this_lparam);
 		SSVAL(outbuf,smb_vwv4,smb_offset(smb_buf(outbuf)+1,outbuf));
 		SSVAL(outbuf,smb_vwv5,tot_param_sent);
@@ -318,7 +318,7 @@ static void api_fd_reply(connection_struct *conn, uint16 vuid,
 	/* Get the file handle and hence the file name. */
 	/* 
 	 * NB. The setup array has already been transformed
-	 * via SVAL and so is in gost byte order.
+	 * via SVAL and so is in host byte order.
 	 */
 	pnum = ((int)setup[1]) & 0xFFFF;
 	subcommand = ((int)setup[0]) & 0xFFFF;
@@ -735,11 +735,11 @@ void reply_transs(struct smb_request *req)
 
 	state->received_param += pcnt;
 	state->received_data += dcnt;
-		
+
 	if ((state->received_data > state->total_data) ||
 	    (state->received_param > state->total_param))
 		goto bad_param;
-		
+
 	if (pcnt) {
 		if (pdisp > state->total_param ||
 				pcnt > state->total_param ||

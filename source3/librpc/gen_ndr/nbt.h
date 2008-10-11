@@ -391,7 +391,7 @@ struct nbt_dgram_packet {
 }/* [public,flag(LIBNDR_FLAG_NOALIGN|LIBNDR_FLAG_BIGENDIAN|LIBNDR_PRINT_ARRAY_HEX)] */;
 
 struct nbt_sockaddr {
-	uint32_t sa_family;
+	uint32_t sockaddr_family;
 	const char * pdc_ip;/* [flag(LIBNDR_FLAG_BIGENDIAN)] */
 	DATA_BLOB remaining;/* [flag(LIBNDR_FLAG_REMAINING)] */
 }/* [gensize,public] */;

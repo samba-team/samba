@@ -475,8 +475,10 @@ _PUBLIC_ bool torture_open_connection_share(TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 
 	struct smbcli_options options;
+	struct smbcli_session_options session_options;
 
 	lp_smbcli_options(tctx->lp_ctx, &options);
+	lp_smbcli_session_options(tctx->lp_ctx, &session_options);
 
 	options.use_oplocks = torture_setting_bool(tctx, "use_oplocks", true);
 	options.use_level2_oplocks = torture_setting_bool(tctx, "use_level2_oplocks", true);
@@ -486,7 +488,7 @@ _PUBLIC_ bool torture_open_connection_share(TALLOC_CTX *mem_ctx,
 					sharename, NULL,
 					cmdline_credentials, 
 					lp_resolve_context(tctx->lp_ctx),
-					ev, &options);
+					ev, &options, &session_options);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to open connection - %s\n", nt_errstr(status));
 		return false;

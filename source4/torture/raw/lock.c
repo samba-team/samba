@@ -456,10 +456,13 @@ static bool test_async(struct torture_context *tctx,
 	const char *fname = BASEDIR "\\test.txt";
 	time_t t;
 	struct smbcli_request *req;
+	struct smbcli_session_options options;
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return false;
 	}
+
+	lp_smbcli_session_options(tctx->lp_ctx, &options);
 
 	printf("Testing LOCKING_ANDX_CANCEL_LOCK\n");
 	io.generic.level = RAW_LOCK_LOCKX;
@@ -590,7 +593,7 @@ static bool test_async(struct torture_context *tctx,
 	}
 
 	printf("create a new sessions\n");
-	session = smbcli_session_init(cli->transport, tctx, false);
+	session = smbcli_session_init(cli->transport, tctx, false, options);
 	setup.in.sesskey = cli->transport->negotiate.sesskey;
 	setup.in.capabilities = cli->transport->negotiate.capabilities;
 	setup.in.workgroup = lp_workgroup(tctx->lp_ctx);

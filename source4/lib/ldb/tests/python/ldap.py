@@ -8,6 +8,7 @@ import sys
 import time
 
 sys.path.append("bin/python")
+sys.path.append("../lib/subunit/python")
 
 import samba.getopt as options
 

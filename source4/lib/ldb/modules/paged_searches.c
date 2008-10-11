@@ -1,7 +1,7 @@
 /* 
    ldb database library
 
-   Copyright (C) Simo Sorce  2005-2006
+   Copyright (C) Simo Sorce  2005-2008
 
      ** NOTE! The following LGPL license applies to the ldb
      ** library. This does NOT imply that all of Samba is released
@@ -46,12 +46,7 @@ struct private_data {
 
 struct ps_context {
 	struct ldb_module *module;
-	void *up_context;
-	int (*up_callback)(struct ldb_context *, void *, struct ldb_reply *);
-
-	struct ldb_request *orig_req;
-
-	struct ldb_request *new_req;
+	struct ldb_request *req;
 
 	bool pending;
 
@@ -59,50 +54,12 @@ struct ps_context {
 	int num_referrals;
 };
 
-static struct ldb_handle *init_handle(void *mem_ctx, struct ldb_module *module,
-					    void *context,
-					    int (*callback)(struct ldb_context *, void *, struct ldb_reply *))
+static int check_ps_continuation(struct ldb_request *req, struct ldb_reply *ares)
 {
 	struct ps_context *ac;
-	struct ldb_handle *h;
-
-	h = talloc_zero(mem_ctx, struct ldb_handle);
-	if (h == NULL) {
-		ldb_set_errstring(module->ldb, "Out of Memory");
-		return NULL;
-	}
-
-	h->module = module;
-
-	ac = talloc_zero(h, struct ps_context);
-	if (ac == NULL) {
-		ldb_set_errstring(module->ldb, "Out of Memory");
-		talloc_free(h);
-		return NULL;
-	}
-
-	h->private_data = (void *)ac;
-
-	h->state = LDB_ASYNC_INIT;
-	h->status = LDB_SUCCESS;
-
-	ac->module = module;
-	ac->up_context = context;
-	ac->up_callback = callback;
-
-	ac->pending = false;
-
-
-
-	ac->saved_referrals = NULL;
-	ac->num_referrals = 0;
-
-	return h;
-}
-
-static int check_ps_continuation(struct ldb_reply *ares, struct ps_context *ac)
-{
 	struct ldb_paged_control *rep_control, *req_control;
+
+	ac = talloc_get_type(req->context, struct ps_context);
 
 	/* look up our paged control */
 	if (!ares->controls || strcmp(LDB_CONTROL_PAGED_RESULTS_OID, ares->controls[0]->oid) != 0) {
@@ -122,12 +79,12 @@ static int check_ps_continuation(struct ldb_reply *ares, struct ps_context *ac)
 	/* if there's a reply control we must find a request
 	 * control matching it */
 
-	if (strcmp(LDB_CONTROL_PAGED_RESULTS_OID, ac->new_req->controls[0]->oid) != 0) {
+	if (strcmp(LDB_CONTROL_PAGED_RESULTS_OID, req->controls[0]->oid) != 0) {
 		/* something wrong here */
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	req_control = talloc_get_type(ac->new_req->controls[0]->data, struct ldb_paged_control);
+	req_control = talloc_get_type(req->controls[0]->data, struct ldb_paged_control);
 
 	if (req_control->cookie) {
 		talloc_free(req_control->cookie);
@@ -142,7 +99,7 @@ static int check_ps_continuation(struct ldb_reply *ares, struct ps_context *ac)
 	return LDB_SUCCESS;
 }
 
-static int store_referral(char *referral, struct ps_context *ac)
+static int store_referral(struct ps_context *ac, char *referral)
 {
 	ac->saved_referrals = talloc_realloc(ac, ac->saved_referrals, char *, ac->num_referrals + 2);
 	if (!ac->saved_referrals) {
@@ -160,13 +117,14 @@ static int store_referral(char *referral, struct ps_context *ac)
 	return LDB_SUCCESS;
 }
 
-static int send_referrals(struct ldb_context *ldb, struct ps_context *ac)
+static int send_referrals(struct ps_context *ac)
 {
 	struct ldb_reply *ares;
+	int ret;
 	int i;
 
 	for (i = 0; i < ac->num_referrals; i++) {
-		ares = talloc_zero(ac, struct ldb_reply);
+		ares = talloc_zero(ac->req, struct ldb_reply);
 		if (!ares) {
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
@@ -174,69 +132,87 @@ static int send_referrals(struct ldb_context *ldb, struct ps_context *ac)
 		ares->type = LDB_REPLY_REFERRAL;
 		ares->referral = ac->saved_referrals[i];
 
-		ac->up_callback(ldb, ac->up_context, ares);
+		ret = ldb_module_send_referral(ac->req, ares->referral);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
 	}
 
 	return LDB_SUCCESS;
 }
 
-static int ps_callback(struct ldb_context *ldb, void *context, struct ldb_reply *ares)
+static int ps_next_request(struct ps_context *ac);
+
+static int ps_callback(struct ldb_request *req, struct ldb_reply *ares)
 {
-	struct ps_context *ac = NULL;
-	int ret = LDB_ERR_OPERATIONS_ERROR;
+	struct ps_context *ac;
+	int ret;
 
-	if (!context || !ares) {
-		ldb_set_errstring(ldb, "NULL Context or Result in callback");
-		goto error;
+	ac = talloc_get_type(req->context, struct ps_context);
+
+	if (!ares) {
+		return ldb_module_done(ac->req, NULL, NULL,
+					LDB_ERR_OPERATIONS_ERROR);
 	}
-
-	ac = talloc_get_type(context, struct ps_context);
+	if (ares->error != LDB_SUCCESS) {
+		return ldb_module_done(ac->req, ares->controls,
+					ares->response, ares->error);
+	}
 
 	switch (ares->type) {
 	case LDB_REPLY_ENTRY:
-		ac->up_callback(ldb, ac->up_context, ares);
+		ret = ldb_module_send_entry(ac->req, ares->message);
+		if (ret != LDB_SUCCESS) {
+			return ldb_module_done(ac->req, NULL, NULL, ret);
+		}
 		break;
 
 	case LDB_REPLY_REFERRAL:
-		ret = store_referral(ares->referral, ac);
+		ret = store_referral(ac, ares->referral);
 		if (ret != LDB_SUCCESS) {
-			goto error;
+			return ldb_module_done(ac->req, NULL, NULL, ret);
 		}
 		break;
 
 	case LDB_REPLY_DONE:
-		ret = check_ps_continuation(ares, ac);
+
+		ret = check_ps_continuation(req, ares);
 		if (ret != LDB_SUCCESS) {
-			goto error;
+			return ldb_module_done(ac->req, NULL, NULL, ret);
 		}
-		if (!ac->pending) {
-			/* send referrals */
-			ret = send_referrals(ldb, ac);
+
+		if (ac->pending) {
+
+			ret = ps_next_request(ac);
 			if (ret != LDB_SUCCESS) {
-				goto error;
+				return ldb_module_done(ac->req,
+							NULL, NULL, ret);
+			}
+
+		} else {
+
+			/* send referrals */
+			ret = send_referrals(ac);
+			if (ret != LDB_SUCCESS) {
+				return ldb_module_done(ac->req,
+							NULL, NULL, ret);
 			}
 
 			/* send REPLY_DONE */
-			ac->up_callback(ldb, ac->up_context, ares);
+			return ldb_module_done(ac->req, ares->controls,
+						ares->response, LDB_SUCCESS);
 		}
 		break;
-	default:
-		goto error;
 	}
 
-	return LDB_SUCCESS;
-
-error:
 	talloc_free(ares);
-	return ret;
+	return LDB_SUCCESS;
 }
 
 static int ps_search(struct ldb_module *module, struct ldb_request *req)
 {
 	struct private_data *private_data;
-	struct ldb_paged_control *control;
 	struct ps_context *ac;
-	struct ldb_handle *h;
 
 	private_data = talloc_get_type(module->private_data, struct private_data);
 
@@ -248,209 +224,145 @@ static int ps_search(struct ldb_module *module, struct ldb_request *req)
 		return ldb_next_request(module, req);
 	}
 
-	if (!req->callback || !req->context) {
-		ldb_set_errstring(module->ldb,
-				  "Async interface called with NULL callback function or NULL context");
+	ac = talloc_zero(req, struct ps_context);
+	if (ac == NULL) {
+		ldb_oom(module->ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	
-	h = init_handle(req, module, req->context, req->callback);
-	if (!h) {
+
+	ac->module = module;
+	ac->req = req;
+	ac->pending = false;
+	ac->saved_referrals = NULL;
+	ac->num_referrals = 0;
+
+	return ps_next_request(ac);
+}
+
+static int ps_next_request(struct ps_context *ac) {
+
+	struct ldb_paged_control *control;
+	struct ldb_control **controls;
+	struct ldb_request *new_req;
+	int ret;
+
+	controls = talloc_array(ac, struct ldb_control *, 2);
+	if (!controls) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	ac = talloc_get_type(h->private_data, struct ps_context);
 
-	ac->new_req = talloc(ac, struct ldb_request);
-	if (!ac->new_req) return LDB_ERR_OPERATIONS_ERROR;
+	controls[0] = talloc(controls, struct ldb_control);
+	if (!controls[0]) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
 
-	ac->new_req->controls = talloc_array(ac->new_req, struct ldb_control *, 2);
-	if (!ac->new_req->controls) return LDB_ERR_OPERATIONS_ERROR;
-
-	ac->new_req->controls[0] = talloc(ac->new_req->controls, struct ldb_control);
-	if (!ac->new_req->controls[0]) return LDB_ERR_OPERATIONS_ERROR;
-
-	control = talloc(ac->new_req->controls[0], struct ldb_paged_control);
-	if (!control) return LDB_ERR_OPERATIONS_ERROR;
+	control = talloc(controls[0], struct ldb_paged_control);
+	if (!control) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
 
 	control->size = PS_DEFAULT_PAGE_SIZE;
 	control->cookie = NULL;
 	control->cookie_len = 0;
 
-	ac->new_req->controls[0]->oid = LDB_CONTROL_PAGED_RESULTS_OID;
-	ac->new_req->controls[0]->critical = 1;
-	ac->new_req->controls[0]->data = control;
+	controls[0]->oid = LDB_CONTROL_PAGED_RESULTS_OID;
+	controls[0]->critical = 1;
+	controls[0]->data = control;
+	controls[1] = NULL;
 
-	ac->new_req->controls[1] = NULL;
-
-	ac->new_req->operation = req->operation;
-	ac->new_req->op.search.base = req->op.search.base;
-	ac->new_req->op.search.scope = req->op.search.scope;
-	ac->new_req->op.search.tree = req->op.search.tree;
-	ac->new_req->op.search.attrs = req->op.search.attrs;
-	ac->new_req->context = ac;
-	ac->new_req->callback = ps_callback;
-	ldb_set_timeout_from_prev_req(module->ldb, req, ac->new_req);
-
-	req->handle = h;
-
-	return ldb_next_request(module, ac->new_req);
-}
-
-static int ps_continuation(struct ldb_handle *handle)
-{
-	struct ps_context *ac;
-
-	if (!handle || !handle->private_data) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	ac = talloc_get_type(handle->private_data, struct ps_context);
-
-	/* reset the requests handle */
-	ac->new_req->handle = NULL;
-
-	return ldb_next_request(handle->module, ac->new_req);
-}
-
-static int ps_wait_once(struct ldb_handle *handle)
-{
-	struct ps_context *ac;
-	int ret;
-    
-	if (!handle || !handle->private_data) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	if (handle->state == LDB_ASYNC_DONE) {
-		return handle->status;
-	}
-
-	handle->state = LDB_ASYNC_PENDING;
-	handle->status = LDB_SUCCESS;
-
-	ac = talloc_get_type(handle->private_data, struct ps_context);
-
-	ret = ldb_wait(ac->new_req->handle, LDB_WAIT_NONE);
-
+	ret = ldb_build_search_req_ex(&new_req, ac->module->ldb, ac,
+					ac->req->op.search.base,
+					ac->req->op.search.scope,
+					ac->req->op.search.tree,
+					ac->req->op.search.attrs,
+					controls,
+					ac,
+					ps_callback,
+					ac->req);
 	if (ret != LDB_SUCCESS) {
-		handle->status = ret;
-		goto done;
+		return ret;
 	}
+	talloc_steal(new_req, controls);
 
-	if (ac->new_req->handle->status != LDB_SUCCESS) {
-		handle->status = ac->new_req->handle->status;
-		goto done;
-	}
-
-	if (ac->new_req->handle->state != LDB_ASYNC_DONE) {
-		return LDB_SUCCESS;
-	} 
-
-	/* see if we need to send another request for the next batch */
-	if (ac->pending) {
-		ret = ps_continuation(handle);
-		if (ret != LDB_SUCCESS) {
-			handle->status = ret;
-			goto done;
-		}
-
-		/* continue the search with the next request */
-		return LDB_SUCCESS;
-	}
-
-	ret = LDB_SUCCESS;
-
-done:
-	handle->state = LDB_ASYNC_DONE;
-	return ret;
+	return ldb_next_request(ac->module, new_req);
 }
 
-static int ps_wait(struct ldb_handle *handle, enum ldb_wait_type type)
-{
-	int ret;
-
-	if (!handle || !handle->private_data) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	if (type == LDB_WAIT_ALL) {
-		while (handle->state != LDB_ASYNC_DONE) {
-			ret = ps_wait_once(handle);
-			if (ret != LDB_SUCCESS) {
-				return ret;
-			}
-		}
-
-		return handle->status;
-	}
-	return ps_wait_once(handle);
-}
-
-static int check_supported_paged(struct ldb_context *ldb, void *context, 
-				 struct ldb_reply *ares) 
+static int check_supported_paged(struct ldb_request *req,
+				 struct ldb_reply *ares)
 {
 	struct private_data *data;
-	data = talloc_get_type(context,
-			       struct private_data);
-	if (ares->type == LDB_REPLY_ENTRY) {
+
+	data = talloc_get_type(req->context, struct private_data);
+
+	if (!ares) {
+		return ldb_request_done(req, LDB_ERR_OPERATIONS_ERROR);
+	}
+	if (ares->error != LDB_SUCCESS) {
+		return ldb_request_done(req, LDB_ERR_OPERATIONS_ERROR);
+	}
+
+	switch (ares->type) {
+	case LDB_REPLY_ENTRY:
 		if (ldb_msg_check_string_attribute(ares->message,
 						   "supportedControl",
 						   LDB_CONTROL_PAGED_RESULTS_OID)) {
 			data->paged_supported = true;
 		}
+		break;
+
+	case LDB_REPLY_REFERRAL:
+		/* ignore */
+		break;
+
+	case LDB_REPLY_DONE:
+		return ldb_request_done(req, LDB_SUCCESS);
 	}
+
+	talloc_free(ares);
 	return LDB_SUCCESS;
 }
-
 
 static int ps_init(struct ldb_module *module)
 {
 	static const char *attrs[] = { "supportedControl", NULL };
 	struct private_data *data;
+	struct ldb_dn *base;
 	int ret;
 	struct ldb_request *req;
 
 	data = talloc(module, struct private_data);
 	if (data == NULL) {
-		ldb_set_errstring(module->ldb, "Out of Memory");
-		return LDB_ERR_OTHER;
+		ldb_oom(module->ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	module->private_data = data;
 	data->paged_supported = false;
 
-	req = talloc(module, struct ldb_request);
-	if (req == NULL) {
-		ldb_set_errstring(module->ldb, "Out of Memory");
+	base = ldb_dn_new(module, module->ldb, "");
+	if (base == NULL) {
+		ldb_oom(module->ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-
-	req->operation = LDB_SEARCH;
-	req->op.search.base = ldb_dn_new(req, module->ldb, "");
-	req->op.search.scope = LDB_SCOPE_BASE;
-
-	req->op.search.tree = ldb_parse_tree(req, "objectClass=*");
-	if (req->op.search.tree == NULL) {
-		ldb_set_errstring(module->ldb, "Unable to parse search expression");
-		talloc_free(req);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	req->op.search.attrs = attrs;
-	req->controls = NULL;
-	req->context = data;
-	req->callback = check_supported_paged;
-	ldb_set_timeout(module->ldb, req, 0); /* use default timeout */
-
-	ret = ldb_next_request(module, req);
-	
-	if (ret == LDB_SUCCESS) {
-		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
-	}
-	
-	talloc_free(req);
+	ret = ldb_build_search_req(&req, module->ldb, module,
+				   base, LDB_SCOPE_BASE,
+				   "(objectClass=*)",
+				   attrs, NULL,
+				   data, check_supported_paged,
+				   NULL);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
+
+	ret = ldb_next_request(module, req);
+	if (ret == LDB_SUCCESS) {
+		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
+	}
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	talloc_free(base);
+	talloc_free(req);
 
 	return ldb_next_init(module);
 }
@@ -458,6 +370,5 @@ static int ps_init(struct ldb_module *module)
 _PUBLIC_ const struct ldb_module_ops ldb_paged_searches_module_ops = {
 	.name           = "paged_searches",
 	.search         = ps_search,
-	.wait           = ps_wait,
 	.init_context 	= ps_init
 };

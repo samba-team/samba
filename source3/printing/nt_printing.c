@@ -1377,6 +1377,7 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 		}
 	}
 	close_file(fsp, NORMAL_CLOSE);
+	fsp = NULL;
 
 	/* Get file version info (if available) for new file */
 	filepath = driver_unix_convert(conn,new_file,&stat_buf);
@@ -1417,6 +1418,7 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 		}
 	}
 	close_file(fsp, NORMAL_CLOSE);
+	fsp = NULL;
 
 	if (use_version && (new_major != old_major || new_minor != old_minor)) {
 		/* Compare versions and choose the larger version number */
@@ -5491,7 +5493,7 @@ static SEC_DESC_BUF *construct_default_printer_sdb(TALLOC_CTX *ctx)
 {
 	SEC_ACE ace[5];	/* max number of ace entries */
 	int i = 0;
-	SEC_ACCESS sa;
+	uint32_t sa;
 	SEC_ACL *psa = NULL;
 	SEC_DESC_BUF *sdb = NULL;
 	SEC_DESC *psd = NULL;
@@ -5500,7 +5502,7 @@ static SEC_DESC_BUF *construct_default_printer_sdb(TALLOC_CTX *ctx)
 
 	/* Create an ACE where Everyone is allowed to print */
 
-	init_sec_access(&sa, PRINTER_ACE_PRINT);
+	sa = PRINTER_ACE_PRINT;
 	init_sec_ace(&ace[i++], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED,
 		     sa, SEC_ACE_FLAG_CONTAINER_INHERIT);
 
@@ -5512,7 +5514,7 @@ static SEC_DESC_BUF *construct_default_printer_sdb(TALLOC_CTX *ctx)
 		sid_copy(&domadmins_sid, get_global_sam_sid());
 		sid_append_rid(&domadmins_sid, DOMAIN_GROUP_RID_ADMINS);
 		
-		init_sec_access(&sa, PRINTER_ACE_FULL_CONTROL);
+		sa = PRINTER_ACE_FULL_CONTROL;
 		init_sec_ace(&ace[i++], &domadmins_sid, 
 			SEC_ACE_TYPE_ACCESS_ALLOWED, sa, 
 			SEC_ACE_FLAG_OBJECT_INHERIT | SEC_ACE_FLAG_INHERIT_ONLY);
@@ -5522,7 +5524,7 @@ static SEC_DESC_BUF *construct_default_printer_sdb(TALLOC_CTX *ctx)
 	else if (secrets_fetch_domain_sid(lp_workgroup(), &adm_sid)) {
 		sid_append_rid(&adm_sid, DOMAIN_USER_RID_ADMIN);
 
-		init_sec_access(&sa, PRINTER_ACE_FULL_CONTROL);
+		sa = PRINTER_ACE_FULL_CONTROL;
 		init_sec_ace(&ace[i++], &adm_sid, 
 			SEC_ACE_TYPE_ACCESS_ALLOWED, sa, 
 			SEC_ACE_FLAG_OBJECT_INHERIT | SEC_ACE_FLAG_INHERIT_ONLY);
@@ -5532,7 +5534,7 @@ static SEC_DESC_BUF *construct_default_printer_sdb(TALLOC_CTX *ctx)
 
 	/* add BUILTIN\Administrators as FULL CONTROL */
 
-	init_sec_access(&sa, PRINTER_ACE_FULL_CONTROL);
+	sa = PRINTER_ACE_FULL_CONTROL;
 	init_sec_ace(&ace[i++], &global_sid_Builtin_Administrators, 
 		SEC_ACE_TYPE_ACCESS_ALLOWED, sa, 
 		SEC_ACE_FLAG_OBJECT_INHERIT | SEC_ACE_FLAG_INHERIT_ONLY);

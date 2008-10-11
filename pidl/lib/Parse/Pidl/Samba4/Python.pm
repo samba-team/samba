@@ -1173,6 +1173,7 @@ sub Parse($$$$$)
 	$self->pidl("{");
 	$self->indent;
 	$self->pidl("PyObject *m;");
+	$self->pidl("NTSTATUS status;");
 	$self->pidl("");
 
 	foreach (@{$self->{ready_types}}) {
@@ -1207,6 +1208,15 @@ sub Parse($$$$$)
 		$self->pidl("Py_INCREF($c_name);");
 		$self->pidl("PyModule_AddObject(m, \"$object_name\", $c_name);");
 	}
+
+	$self->pidl("");
+	$self->pidl("status = dcerpc_init();");
+	$self->pidl("if (!NT_STATUS_IS_OK(status)) {");
+	$self->indent;
+	$self->pidl("PyErr_SetNTSTATUS(status);");
+	$self->pidl("return;");
+	$self->deindent;
+	$self->pidl("}");
 
 	$self->deindent;
 	$self->pidl("}");

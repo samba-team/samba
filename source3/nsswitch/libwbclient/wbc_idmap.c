@@ -394,7 +394,7 @@ wbcErr wbcSetUidHwm(uid_t uid_hwm)
 
 /** @brief Set the highwater mark for allocated gids.
  *
- * @param uid_hwm      The new gid highwater mark value
+ * @param gid_hwm      The new gid highwater mark value
  *
  * @return #wbcErr
  **/

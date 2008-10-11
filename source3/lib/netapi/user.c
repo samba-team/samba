@@ -108,18 +108,18 @@ static void convert_USER_INFO_X_to_samr_user_info21(struct USER_INFO_X *infoX,
 			      infoX->usriX_workstations,
 			      infoX->usriX_usr_comment,
 			      &zero_parameters,
-			      0,
+			      infoX->usriX_user_id,
 			      infoX->usriX_primary_group_id,
 			      infoX->usriX_flags,
 			      fields_present,
 			      zero_logon_hours,
-			      0,
-			      0,
+			      infoX->usriX_bad_pw_count,
+			      infoX->usriX_num_logons,
 			      infoX->usriX_country_code,
+			      infoX->usriX_code_page,
 			      0,
 			      0,
-			      0,
-			      0);
+			      infoX->usriX_password_expired);
 }
 
 /****************************************************************
@@ -132,6 +132,7 @@ static NTSTATUS construct_USER_INFO_X(uint32_t level,
 	struct USER_INFO_0 *u0 = NULL;
 	struct USER_INFO_1 *u1 = NULL;
 	struct USER_INFO_2 *u2 = NULL;
+	struct USER_INFO_3 *u3 = NULL;
 	struct USER_INFO_1003 *u1003 = NULL;
 	struct USER_INFO_1006 *u1006 = NULL;
 	struct USER_INFO_1007 *u1007 = NULL;
@@ -193,6 +194,37 @@ static NTSTATUS construct_USER_INFO_X(uint32_t level,
 			uX->usriX_country_code	= u2->usri2_country_code;
 			uX->usriX_code_page	= u2->usri2_code_page;
 			break;
+		case 3:
+			u3 = (struct USER_INFO_3 *)buffer;
+			uX->usriX_name		= u3->usri3_name;
+			uX->usriX_password_age	= u3->usri3_password_age;
+			uX->usriX_priv		= u3->usri3_priv;
+			uX->usriX_home_dir	= u3->usri3_home_dir;
+			uX->usriX_comment	= u3->usri3_comment;
+			uX->usriX_flags		= u3->usri3_flags;
+			uX->usriX_script_path	= u3->usri3_script_path;
+			uX->usriX_auth_flags	= u3->usri3_auth_flags;
+			uX->usriX_full_name	= u3->usri3_full_name;
+			uX->usriX_usr_comment	= u3->usri3_usr_comment;
+			uX->usriX_parms		= u3->usri3_parms;
+			uX->usriX_workstations	= u3->usri3_workstations;
+			uX->usriX_last_logon	= u3->usri3_last_logon;
+			uX->usriX_last_logoff	= u3->usri3_last_logoff;
+			uX->usriX_acct_expires	= u3->usri3_acct_expires;
+			uX->usriX_max_storage	= u3->usri3_max_storage;
+			uX->usriX_units_per_week= u3->usri3_units_per_week;
+			uX->usriX_logon_hours	= u3->usri3_logon_hours;
+			uX->usriX_bad_pw_count	= u3->usri3_bad_pw_count;
+			uX->usriX_num_logons	= u3->usri3_num_logons;
+			uX->usriX_logon_server	= u3->usri3_logon_server;
+			uX->usriX_country_code	= u3->usri3_country_code;
+			uX->usriX_code_page	= u3->usri3_code_page;
+			uX->usriX_user_id	= u3->usri3_user_id;
+			uX->usriX_primary_group_id = u3->usri3_primary_group_id;
+			uX->usriX_profile	= u3->usri3_profile;
+			uX->usriX_home_dir_drive = u3->usri3_home_dir_drive;
+			uX->usriX_password_expired = u3->usri3_password_expired;
+			break;
 		case 1003:
 			u1003 = (struct USER_INFO_1003 *)buffer;
 			uX->usriX_password	= u1003->usri1003_password;
@@ -237,7 +269,6 @@ static NTSTATUS construct_USER_INFO_X(uint32_t level,
 			u1053 = (struct USER_INFO_1053 *)buffer;
 			uX->usriX_home_dir_drive = u1053->usri1053_home_dir_drive;
 			break;
-		case 3:
 		case 4:
 		default:
 			return NT_STATUS_INVALID_INFO_CLASS;
@@ -1753,9 +1784,17 @@ WERROR NetUserSetInfo_r(struct libnetapi_ctx *ctx,
 			user_mask = SAMR_USER_ACCESS_SET_ATTRIBUTES |
 				    SAMR_USER_ACCESS_GET_GROUPS;
 			break;
+		case 3:
+			user_mask = STD_RIGHT_READ_CONTROL_ACCESS |
+				    STD_RIGHT_WRITE_DAC_ACCESS |
+				    SAMR_USER_ACCESS_GET_GROUPS |
+				    SAMR_USER_ACCESS_SET_PASSWORD |
+				    SAMR_USER_ACCESS_SET_ATTRIBUTES |
+				    SAMR_USER_ACCESS_GET_ATTRIBUTES |
+				    SAMR_USER_ACCESS_SET_LOC_COM;
+			break;
 		case 1:
 		case 2:
-		case 3:
 		case 4:
 		case 21:
 		case 22:

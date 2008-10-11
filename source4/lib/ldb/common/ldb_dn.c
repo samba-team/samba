@@ -91,7 +91,7 @@ struct ldb_dn *ldb_dn_from_ldb_val(void *mem_ctx, struct ldb_context *ldb, const
 			 * exploded_dn control is used */
 			dn->special = true;
 			/* FIXME: add a GUID string to ldb_dn structure */
-		} else if (strdn->length >= 8 && strncasecmp((const char *)strdn->data, "<SID=", 8) == 0) {
+		} else if (strdn->length >= 5 && strncasecmp((const char *)strdn->data, "<SID=", 5) == 0) {
 			/* this is special DN returned when the
 			 * exploded_dn control is used */
 			dn->special = true;
@@ -150,7 +150,7 @@ struct ldb_dn *ldb_dn_new_fmt(void *mem_ctx, struct ldb_context *ldb, const char
 		 * exploded_dn control is used */
 		dn->special = true;
 		/* FIXME: add a GUID string to ldb_dn structure */
-	} else if (strncasecmp(strdn, "<SID=", 8) == 0) {
+	} else if (strncasecmp(strdn, "<SID=", 5) == 0) {
 		/* this is special DN returned when the
 		 * exploded_dn control is used */
 		dn->special = true;

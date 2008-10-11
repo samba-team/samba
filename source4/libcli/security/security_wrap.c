@@ -2712,6 +2712,28 @@ SWIGINTERN void delete_security_token(security_token *self){ talloc_free(self); 
 SWIGINTERN security_descriptor *new_security_descriptor(TALLOC_CTX *mem_ctx){ return security_descriptor_initialise(mem_ctx); }
 SWIGINTERN void delete_security_descriptor(security_descriptor *self){ talloc_free(self); }
 
+SWIGINTERNINLINE PyObject* 
+SWIG_From_unsigned_SS_long  (unsigned long value)
+{
+  return (value > LONG_MAX) ?
+    PyLong_FromUnsignedLong(value) : PyInt_FromLong((long)(value)); 
+}
+
+
+SWIGINTERNINLINE PyObject *
+SWIG_From_unsigned_SS_char  (unsigned char value)
+{    
+  return SWIG_From_unsigned_SS_long  (value);
+}
+
+
+SWIGINTERNINLINE PyObject *
+SWIG_From_signed_SS_char  (signed char value)
+{    
+  return SWIG_From_long  (value);
+}
+
+
 SWIGINTERN swig_type_info*
 SWIG_pchar_descriptor(void)
 {
@@ -3337,6 +3359,98 @@ SWIGINTERN PyObject *security_descriptor_swiginit(PyObject *SWIGUNUSEDPARM(self)
   return SWIG_Python_InitShadowInstance(args);
 }
 
+SWIGINTERN PyObject *_wrap_Sid_sid_rev_num_get(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  dom_sid *arg1 = (dom_sid *) 0 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  PyObject *swig_obj[1] ;
+  uint8_t result;
+  
+  if (!args) SWIG_fail;
+  swig_obj[0] = args;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_dom_sid, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Sid_sid_rev_num_get" "', argument " "1"" of type '" "dom_sid *""'"); 
+  }
+  arg1 = (dom_sid *)(argp1);
+  result = (uint8_t) ((arg1)->sid_rev_num);
+  resultobj = SWIG_From_unsigned_SS_char((unsigned char)(result));
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_Sid_num_auths_get(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  dom_sid *arg1 = (dom_sid *) 0 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  PyObject *swig_obj[1] ;
+  int8_t result;
+  
+  if (!args) SWIG_fail;
+  swig_obj[0] = args;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_dom_sid, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Sid_num_auths_get" "', argument " "1"" of type '" "dom_sid *""'"); 
+  }
+  arg1 = (dom_sid *)(argp1);
+  result = (int8_t) ((arg1)->num_auths);
+  resultobj = SWIG_From_signed_SS_char((signed char)(result));
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_Sid_id_auth_get(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  dom_sid *arg1 = (dom_sid *) 0 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  PyObject *swig_obj[1] ;
+  uint8_t *result = 0 ;
+  
+  if (!args) SWIG_fail;
+  swig_obj[0] = args;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_dom_sid, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Sid_id_auth_get" "', argument " "1"" of type '" "dom_sid *""'"); 
+  }
+  arg1 = (dom_sid *)(argp1);
+  result = (uint8_t *)(uint8_t *) ((arg1)->id_auth);
+  resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_unsigned_char, 0 |  0 );
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_Sid_sub_auths_get(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  dom_sid *arg1 = (dom_sid *) 0 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  PyObject *swig_obj[1] ;
+  uint32_t *result = 0 ;
+  
+  if (!args) SWIG_fail;
+  swig_obj[0] = args;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_dom_sid, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Sid_sub_auths_get" "', argument " "1"" of type '" "dom_sid *""'"); 
+  }
+  arg1 = (dom_sid *)(argp1);
+  result = (uint32_t *) ((arg1)->sub_auths);
+  resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_unsigned_int, 0 |  0 );
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
 SWIGINTERN PyObject *_wrap_new_Sid(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
   PyObject *resultobj = 0;
   TALLOC_CTX *arg1 = (TALLOC_CTX *) 0 ;
@@ -3561,6 +3675,10 @@ static PyMethodDef SwigMethods[] = {
 	 { (char *)"delete_security_descriptor", (PyCFunction)_wrap_delete_security_descriptor, METH_O, NULL},
 	 { (char *)"security_descriptor_swigregister", security_descriptor_swigregister, METH_VARARGS, NULL},
 	 { (char *)"security_descriptor_swiginit", security_descriptor_swiginit, METH_VARARGS, NULL},
+	 { (char *)"Sid_sid_rev_num_get", (PyCFunction)_wrap_Sid_sid_rev_num_get, METH_O, NULL},
+	 { (char *)"Sid_num_auths_get", (PyCFunction)_wrap_Sid_num_auths_get, METH_O, NULL},
+	 { (char *)"Sid_id_auth_get", (PyCFunction)_wrap_Sid_id_auth_get, METH_O, NULL},
+	 { (char *)"Sid_sub_auths_get", (PyCFunction)_wrap_Sid_sub_auths_get, METH_O, NULL},
 	 { (char *)"new_Sid", (PyCFunction) _wrap_new_Sid, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"Sid___str__", (PyCFunction)_wrap_Sid___str__, METH_O, NULL},
 	 { (char *)"Sid___eq__", (PyCFunction) _wrap_Sid___eq__, METH_VARARGS | METH_KEYWORDS, NULL},

@@ -49,6 +49,9 @@ quicktestone:: all
 testenv:: everything
 	$(SELFTEST) $(SELFTEST_NOSLOW_OPTS) --socket-wrapper --testenv
 
+testenv-%:: everything
+	SELFTEST_TESTENV=$* $(SELFTEST) $(SELFTEST_NOSLOW_OPTS) --socket-wrapper --testenv
+
 valgrindtest:: valgrindtest-all
 
 valgrindtest-quick:: all

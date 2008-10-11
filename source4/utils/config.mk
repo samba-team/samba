@@ -62,23 +62,6 @@ PRIVATE_DEPENDENCIES =
 setnttoken_OBJ_FILES = $(utilssrcdir)/setnttoken.o
 
 #################################
-# Start BINARY nmblookup
-[BINARY::nmblookup]
-INSTALLDIR = BINDIR
-PRIVATE_DEPENDENCIES = \
-		LIBSAMBA-HOSTCONFIG \
-		LIBSAMBA-UTIL \
-		LIBCLI_NBT \
-		LIBPOPT \
-		POPT_SAMBA \
-		LIBNETIF \
-		LIBCLI_RESOLVE
-# End BINARY nmblookup
-#################################
-
-nmblookup_OBJ_FILES = $(utilssrcdir)/nmblookup.o
-
-#################################
 # Start BINARY testparm
 [BINARY::testparm]
 INSTALLDIR = BINDIR

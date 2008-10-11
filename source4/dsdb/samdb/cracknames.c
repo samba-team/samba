@@ -356,15 +356,7 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 	const char *result_filter = NULL;
 	struct ldb_dn *name_dn = NULL;
 
-	struct smb_krb5_context *smb_krb5_context;
-	ret = smb_krb5_init_context(mem_ctx, 
-				    ldb_get_event_context(sam_ctx),
-				    (struct loadparm_context *)ldb_get_opaque(sam_ctx, "loadparm"), 
-				    &smb_krb5_context);
-				
-	if (ret) {
-		return WERR_NOMEM;
-	}
+	struct smb_krb5_context *smb_krb5_context = NULL;
 
 	info1->status = DRSUAPI_DS_NAME_STATUS_RESOLVE_ERROR;
 	info1->dns_domain_name = NULL;
@@ -380,6 +372,30 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 
 	/* here we need to set the domain_filter and/or the result_filter */
 	switch (format_offered) {
+	case DRSUAPI_DS_NAME_FORMAT_UNKNOWN:
+	{
+		int i;
+		enum drsuapi_DsNameFormat formats[] = {
+			DRSUAPI_DS_NAME_FORMAT_FQDN_1779, DRSUAPI_DS_NAME_FORMAT_USER_PRINCIPAL,
+			DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT, DRSUAPI_DS_NAME_FORMAT_CANONICAL,
+			DRSUAPI_DS_NAME_FORMAT_GUID, DRSUAPI_DS_NAME_FORMAT_DISPLAY,
+			DRSUAPI_DS_NAME_FORMAT_SERVICE_PRINCIPAL,
+			DRSUAPI_DS_NAME_FORMAT_SID_OR_SID_HISTORY,
+			DRSUAPI_DS_NAME_FORMAT_CANONICAL_EX
+		};
+		WERROR werr;
+		for (i=0; i < ARRAY_SIZE(formats); i++) {
+			werr = DsCrackNameOneName(sam_ctx, mem_ctx, format_flags, formats[i], format_desired, name, info1);
+			if (!W_ERROR_IS_OK(werr)) {
+				return werr;
+			}
+			if (info1->status != DRSUAPI_DS_NAME_STATUS_NOT_FOUND) {
+				return werr;
+			}
+		}
+		return werr;
+	}
+
 	case DRSUAPI_DS_NAME_FORMAT_CANONICAL:
 	case DRSUAPI_DS_NAME_FORMAT_CANONICAL_EX:
 	{
@@ -534,6 +550,16 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 	case DRSUAPI_DS_NAME_FORMAT_USER_PRINCIPAL: {
 		krb5_principal principal;
 		char *unparsed_name;
+
+		ret = smb_krb5_init_context(mem_ctx, 
+					    ldb_get_event_context(sam_ctx),
+					    (struct loadparm_context *)ldb_get_opaque(sam_ctx, "loadparm"), 
+					    &smb_krb5_context);
+		
+		if (ret) {
+			return WERR_NOMEM;
+		}
+
 		ret = krb5_parse_name(smb_krb5_context->krb5_context, name, &principal);
 		if (ret) {
 			info1->status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
@@ -560,6 +586,16 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 		krb5_principal principal;
 		char *unparsed_name_short;
 		char *service;
+
+		ret = smb_krb5_init_context(mem_ctx, 
+					    ldb_get_event_context(sam_ctx),
+					    (struct loadparm_context *)ldb_get_opaque(sam_ctx, "loadparm"), 
+					    &smb_krb5_context);
+		
+		if (ret) {
+			return WERR_NOMEM;
+		}
+
 		ret = krb5_parse_name(smb_krb5_context->krb5_context, name, &principal);
 		if (ret == 0 && principal->name.name_string.len < 2) {
 			info1->status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
@@ -797,7 +833,8 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 						   result_attrs,
 						   NULL,
 						   res,
-						   ldb_search_default_callback);
+						   ldb_search_default_callback,
+						   NULL);
 			if (ret == LDB_SUCCESS) {
 				struct ldb_search_options_control *search_options;
 				search_options = talloc(req, struct ldb_search_options_control);
@@ -811,8 +848,6 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 				info1->status = DRSUAPI_DS_NAME_STATUS_RESOLVE_ERROR;
 				return WERR_OK;
 			}
-			
-			ldb_set_timeout(sam_ctx, req, 0); /* use default timeout */
 			
 			ret = ldb_request(sam_ctx, req);
 			
@@ -1266,7 +1301,7 @@ NTSTATUS crack_auto_name_to_nt4_name(TALLOC_CTX *mem_ctx,
 				     const char **nt4_domain,
 				     const char **nt4_account)
 {
-	uint32_t format_offered = DRSUAPI_DS_NAME_FORMAT_UKNOWN;
+	uint32_t format_offered = DRSUAPI_DS_NAME_FORMAT_UNKNOWN;
 
 	/* Handle anonymous bind */
 	if (!name || !*name) {
@@ -1283,6 +1318,8 @@ NTSTATUS crack_auto_name_to_nt4_name(TALLOC_CTX *mem_ctx,
 		format_offered = DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT;
 	} else if (strchr_m(name, '/')) {
 		format_offered = DRSUAPI_DS_NAME_FORMAT_CANONICAL;
+	} else {
+		return NT_STATUS_NO_SUCH_USER;
 	}
 
 	return crack_name_to_nt4_name(mem_ctx, ev_ctx, lp_ctx, format_offered, name, nt4_domain, nt4_account);

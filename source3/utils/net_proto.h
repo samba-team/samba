@@ -471,6 +471,8 @@ int net_run_function(struct net_context *c, int argc, const char **argv,
 		      const char *whoami, struct functable *table);
 void net_display_usage_from_functable(struct functable *table);
 
+const char *net_share_type_str(int num_type);
+
 /* The following definitions come from utils/netlookup.c  */
 
 NTSTATUS net_lookup_name_from_sid(struct net_context *c,

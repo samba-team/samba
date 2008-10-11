@@ -386,6 +386,9 @@ _PUBLIC_ size_t strlen_m_term(const char *s)
 **/
 _PUBLIC_ char *strchr_m(const char *s, char c)
 {
+	if (s == NULL) {
+		return NULL;
+	}
 	/* characters below 0x3F are guaranteed to not appear in
 	   non-initial position in multi-byte charsets */
 	if ((c & 0xC0) == 0) {
@@ -410,6 +413,10 @@ _PUBLIC_ char *strchr_m(const char *s, char c)
 _PUBLIC_ char *strrchr_m(const char *s, char c)
 {
 	char *ret = NULL;
+
+	if (s == NULL) {
+		return NULL;
+	}
 
 	/* characters below 0x3F are guaranteed to not appear in
 	   non-initial position in multi-byte charsets */

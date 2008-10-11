@@ -223,9 +223,9 @@ wbcErr wbcLookupName(const char *domain,
 /** @brief Convert a SID to a domain and name
  *
  * @param *sid        Pointer to the domain SID to be resolved
- * @param domain      Resolved Domain name (possibly "")
- * @param name        Resolved User or group name
- * @param *name_type  Pointet to the resolved SID type
+ * @param pdomain     Resolved Domain name (possibly "")
+ * @param pname       Resolved User or group name
+ * @param *pname_type Pointet to the resolved SID type
  *
  * @return #wbcErr
  *

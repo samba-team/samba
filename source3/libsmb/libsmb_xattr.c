@@ -266,7 +266,7 @@ parse_ace(struct cli_state *ipc_cli,
         unsigned int aflags;
         unsigned int amask;
 	DOM_SID sid;
-	SEC_ACCESS mask;
+	uint32_t mask;
 	const struct perm_value *v;
         struct perm_value {
                 const char *perm;

@@ -387,6 +387,7 @@ NTSTATUS torture_rpc_init(void)
 	torture_suite_add_suite(suite, torture_rpc_atsvc(suite));
 	torture_suite_add_suite(suite, torture_rpc_wkssvc(suite));
 	torture_suite_add_suite(suite, torture_rpc_handles(suite));
+	torture_suite_add_suite(suite, torture_rpc_object_uuid(suite));
 	torture_suite_add_suite(suite, torture_rpc_winreg(suite));
 	torture_suite_add_simple_test(suite, "SPOOLSS", torture_rpc_spoolss);
 	torture_suite_add_suite(suite, torture_rpc_spoolss_notify(suite));

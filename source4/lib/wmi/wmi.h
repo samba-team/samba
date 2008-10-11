@@ -27,7 +27,7 @@
 
 /** FIXME: Use credentials struct rather than user/password here */
 WERROR WBEM_ConnectServer(struct com_context *ctx, const char *server, const char *nspace, 
-			  const char *user, const char *password, 
+			  struct cli_credentials *credentials,
 			  const char *locale, uint32_t flags, const char *authority, 
 			  struct IWbemContext* wbem_ctx, struct IWbemServices** services);
 const char *wmi_errstr(WERROR werror);

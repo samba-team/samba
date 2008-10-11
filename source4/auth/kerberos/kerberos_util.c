@@ -32,7 +32,7 @@ struct principal_container {
 	krb5_principal principal;
 };
 
-static int free_principal(struct principal_container *pc)
+static krb5_error_code free_principal(struct principal_container *pc)
 {
 	/* current heimdal - 0.6.3, which we need anyway, fixes segfaults here */
 	krb5_free_principal(pc->smb_krb5_context->krb5_context, pc->principal);
@@ -241,19 +241,17 @@ static krb5_error_code salt_principal_from_credentials(TALLOC_CTX *parent_ctx,
 	return 0;
 }
 
-static int free_keytab(struct keytab_container *ktc)
+static krb5_error_code free_keytab(struct keytab_container *ktc)
 {
-	krb5_kt_close(ktc->smb_krb5_context->krb5_context, ktc->keytab);
-
-	return 0;
+	return krb5_kt_close(ktc->smb_krb5_context->krb5_context, ktc->keytab);
 }
 
-int smb_krb5_open_keytab(TALLOC_CTX *mem_ctx,
+krb5_error_code smb_krb5_open_keytab(TALLOC_CTX *mem_ctx,
 			 struct smb_krb5_context *smb_krb5_context, 
 			 const char *keytab_name, struct keytab_container **ktc) 
 {
 	krb5_keytab keytab;
-	int ret;
+	krb5_error_code ret;
 	ret = krb5_kt_resolve(smb_krb5_context->krb5_context, keytab_name, &keytab);
 	if (ret) {
 		DEBUG(1,("failed to open krb5 keytab: %s\n", 
@@ -339,7 +337,7 @@ static krb5_error_code keytab_add_keys(TALLOC_CTX *parent_ctx,
 	return 0;
 }
 
-static int create_keytab(TALLOC_CTX *parent_ctx,
+static krb5_error_code create_keytab(TALLOC_CTX *parent_ctx,
 			 struct cli_credentials *machine_account,
 			 struct smb_krb5_context *smb_krb5_context,
 			 const char **enctype_strings,
@@ -603,7 +601,7 @@ static krb5_error_code remove_old_entries(TALLOC_CTX *parent_ctx,
 	return ret;
 }
 
-int smb_krb5_update_keytab(TALLOC_CTX *parent_ctx,
+krb5_error_code smb_krb5_update_keytab(TALLOC_CTX *parent_ctx,
 			   struct cli_credentials *machine_account,
 			   struct smb_krb5_context *smb_krb5_context,
 			   const char **enctype_strings,
@@ -635,7 +633,7 @@ int smb_krb5_update_keytab(TALLOC_CTX *parent_ctx,
 	return ret;
 }
 
-int smb_krb5_create_memory_keytab(TALLOC_CTX *parent_ctx,
+krb5_error_code smb_krb5_create_memory_keytab(TALLOC_CTX *parent_ctx,
 					   struct cli_credentials *machine_account,
 					   struct smb_krb5_context *smb_krb5_context,
 					   const char **enctype_strings,

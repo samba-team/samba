@@ -405,8 +405,9 @@ static struct db_record *db_ctdb_fetch_locked_transaction(struct db_ctdb_ctx *ct
 	return result;
 }
 
-static int db_ctdb_record_destructor(struct db_record *rec)
+static int db_ctdb_record_destructor(struct db_record **recp)
 {
+	struct db_record *rec = talloc_get_type_abort(*recp, struct db_record);
 	struct db_ctdb_transaction_handle *h = talloc_get_type_abort(
 		rec->private_data, struct db_ctdb_transaction_handle);
 	int ret = h->ctx->db->transaction_commit(h->ctx->db);
@@ -424,7 +425,7 @@ static struct db_record *db_ctdb_fetch_locked_persistent(struct db_ctdb_ctx *ctx
 							 TDB_DATA key)
 {
 	int res;
-	struct db_record *rec;
+	struct db_record *rec, **recp;
 
 	res = db_ctdb_transaction_start(ctx->db);
 	if (res == -1) {
@@ -438,7 +439,14 @@ static struct db_record *db_ctdb_fetch_locked_persistent(struct db_ctdb_ctx *ctx
 	}
 
 	/* destroy this transaction when we release the lock */
-	talloc_set_destructor((struct db_record *)talloc_new(rec), db_ctdb_record_destructor);
+	recp = talloc(rec, struct db_record *);
+	if (recp == NULL) {
+		ctx->db->transaction_cancel(ctx->db);
+		talloc_free(rec);
+		return NULL;
+	}
+	*recp = rec;
+	talloc_set_destructor(recp, db_ctdb_record_destructor);
 	return rec;
 }
 

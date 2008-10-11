@@ -91,7 +91,7 @@ plantest "ldb" none TEST_DATA_PREFIX=\$PREFIX $LDBDIR/tests/test-tdb.sh
 # that they stay passing
 ncacn_np_tests="RPC-SCHANNEL RPC-JOIN RPC-LSA RPC-DSSETUP RPC-ALTERCONTEXT RPC-MULTIBIND RPC-NETLOGON RPC-HANDLES RPC-SAMSYNC RPC-SAMBA3SESSIONKEY RPC-SAMBA3-GETUSERNAME RPC-SAMBA3-LSA RPC-BINDSAMBA3 RPC-NETLOGSAMBA3 RPC-ASYNCBIND RPC-LSALOOKUP RPC-LSA-GETUSER RPC-SCHANNEL2 RPC-AUTHCONTEXT"
 ncalrpc_tests="RPC-SCHANNEL RPC-JOIN RPC-LSA RPC-DSSETUP RPC-ALTERCONTEXT RPC-MULTIBIND RPC-NETLOGON RPC-DRSUAPI RPC-ASYNCBIND RPC-LSALOOKUP RPC-LSA-GETUSER RPC-SCHANNEL2 RPC-AUTHCONTEXT"
-ncacn_ip_tcp_tests="RPC-SCHANNEL RPC-JOIN RPC-LSA RPC-DSSETUP RPC-ALTERCONTEXT RPC-MULTIBIND RPC-NETLOGON RPC-HANDLES RPC-DSSYNC RPC-ASYNCBIND RPC-LSALOOKUP RPC-LSA-GETUSER RPC-SCHANNEL2 RPC-AUTHCONTEXT"
+ncacn_ip_tcp_tests="RPC-SCHANNEL RPC-JOIN RPC-LSA RPC-DSSETUP RPC-ALTERCONTEXT RPC-MULTIBIND RPC-NETLOGON RPC-HANDLES RPC-DSSYNC RPC-ASYNCBIND RPC-LSALOOKUP RPC-LSA-GETUSER RPC-SCHANNEL2 RPC-AUTHCONTEXT RPC-OBJECTUUID"
 slow_ncacn_np_tests="RPC-SAMLOGON RPC-SAMR RPC-SAMR-USERS RPC-SAMR-PASSWORDS"
 slow_ncalrpc_tests="RPC-SAMR RPC-SAMR-PASSWORDS"
 slow_ncacn_ip_tcp_tests="RPC-SAMR RPC-SAMR-PASSWORDS RPC-CRACKNAMES"
@@ -252,7 +252,7 @@ if test x"${PIDL_TESTS_SKIP}" = x"yes"; then
    echo "Skipping pidl tests - PIDL_TESTS_SKIP=yes"
 elif $PERL -e 'eval require Test::More;' > /dev/null 2>&1; then
   for f in $samba4srcdir/../pidl/tests/*.pl; do
-     plantest "pidl.`basename $f .pl`" none $PERL $f "|" $samba4srcdir/script/harness2subunit.pl
+     plantest "pidl.`basename $f .pl`" none $PERL $f "|" $samba4srcdir/../lib/subunit/harness2subunit.pl
   done
 else 
    echo "Skipping pidl tests - Test::More not installed"
@@ -326,11 +326,11 @@ for mech in \
 	"-k no --option=gensec:spengo=no"; do
 	signoptions="$mech --signing=off"
 	name="smb.signing on with $signoptions"
-	plantest "$name local-creds" member $VALGRIND $smb4torture //"\$NETBIOSNAME"/tmp $signoptions -U"\$NETBIOSNAME\\\\\$USERNAME"%"\$PASSWORD" BASE-XCOPY "$*"
+	plantest "$name local-creds" member $VALGRIND $smb4torture //"\$NETBIOSNAME"/tmp $signoptions -U"\$NETBIOSNAME/\$USERNAME"%"\$PASSWORD" BASE-XCOPY "$*"
 done
-plantest "--signing=yes anon" dc $VALGRIND $smb4torture //"\$NETBIOSNAME"/tmp -k no --signing=yes -U% BASE-XCOPY "$*"
-plantest "--signing=required anon" dc $VALGRIND $smb4torture //"\$NETBIOSNAME"/tmp -k no --signing=required -U% BASE-XCOPY "$*"
-plantest "--signing=no anon" member $VALGRIND $smb4torture //"\$NETBIOSNAME"/tmp -k no --signing=no -U% BASE-XCOPY "$*"
+plantest "smb.signing --signing=yes anon" dc $VALGRIND $smb4torture //"\$NETBIOSNAME"/tmp -k no --signing=yes -U% BASE-XCOPY "$*"
+plantest "smb.signing --signing=required anon" dc $VALGRIND $smb4torture //"\$NETBIOSNAME"/tmp -k no --signing=required -U% BASE-XCOPY "$*"
+plantest "smb.signing --signing=no anon" member $VALGRIND $smb4torture //"\$NETBIOSNAME"/tmp -k no --signing=no -U% BASE-XCOPY "$*"
 
 NBT_TESTS=`$smb4torture --list | grep "^NBT-" | xargs`
 
@@ -381,6 +381,7 @@ plantest "samdb.python" none $SUBUNITRUN samba.tests.samdb
 plantest "events.python" none PYTHONPATH="$PYTHONPATH:lib/events" $SUBUNITRUN tests
 plantest "messaging.python" none PYTHONPATH="$PYTHONPATH:lib/messaging/tests" $SUBUNITRUN bindings
 plantest "samba3sam.python" none PYTHONPATH="$PYTHONPATH:dsdb/samdb/ldb_modules/tests" $SUBUNITRUN samba3sam
+plantest "subunit.python" none $SUBUNITRUN subunit
 plantest "rpcecho.python" dc $SUBUNITRUN samba.tests.dcerpc.rpcecho
 plantest "winreg.python" dc $SUBUNITRUN -U\$USERNAME%\$PASSWORD samba.tests.dcerpc.registry
 plantest "ldap.python" dc $PYTHON $samba4srcdir/lib/ldb/tests/python/ldap.py $CONFIGURATION \$SERVER -U\$USERNAME%\$PASSWORD -W \$DOMAIN

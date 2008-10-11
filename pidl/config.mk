@@ -1,13 +1,13 @@
 PIDL = $(PERL) $(pidldir)/pidl
 
 $(pidldir)/Makefile: $(pidldir)/Makefile.PL
-	cd $(pidldir) && $(PERL) Makefile.PL PREFIX=$(prefix)
+	@cd $(pidldir) && $(PERL) Makefile.PL PREFIX=$(prefix)
 
 pidl-testcov: $(pidldir)/Makefile
 	cd $(pidldir) && cover -test
 
 installpidl:: $(pidldir)/Makefile
-	$(MAKE) -C $(pidldir) install_vendor VENDORPREFIX=$(prefix) \
+	@$(MAKE) -C $(pidldir) install_vendor VENDORPREFIX=$(prefix) \
 		                           INSTALLVENDORLIB=$(datarootdir)/perl5 \
 								   INSTALLVENDORBIN=$(bindir) \
 								   INSTALLVENDORSCRIPT=$(bindir) \

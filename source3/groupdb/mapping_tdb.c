@@ -666,8 +666,7 @@ static NTSTATUS del_aliasmem(const DOM_SID *alias, const DOM_SID *member)
 
 	if (num == 0) {
 		status = dbwrap_delete_bystring(db, key);
-		TALLOC_FREE(sids);
-		goto cancel;
+		goto commit;
 	}
 
 	member_string = talloc_strdup(sids, "");
@@ -693,7 +692,7 @@ static NTSTATUS del_aliasmem(const DOM_SID *alias, const DOM_SID *member)
 
 	status = dbwrap_store_bystring(
 		db, key, string_term_tdb_data(member_string), 0);
-
+ commit:
 	TALLOC_FREE(sids);
 
 	if (!NT_STATUS_IS_OK(status)) {

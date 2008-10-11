@@ -196,13 +196,14 @@ static void standard_new_task(struct event_context *ev,
 
 
 /* called when a task goes down */
-_NORETURN_ static void standard_terminate(struct event_context *ev, const char *reason) 
+_NORETURN_ static void standard_terminate(struct event_context *ev, struct loadparm_context *lp_ctx, 
+					  const char *reason) 
 {
 	DEBUG(2,("standard_terminate: reason[%s]\n",reason));
 
 	/* this reload_charcnv() has the effect of freeing the iconv context memory,
 	   which makes leak checking easier */
-	reload_charcnv(global_loadparm);
+	reload_charcnv(lp_ctx);
 
 	talloc_free(ev);
 

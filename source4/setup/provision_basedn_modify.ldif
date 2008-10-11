@@ -77,4 +77,12 @@ subRefs: ${SCHEMADN}
 replace: gPLink
 gPLink: [LDAP://CN={${POLICYGUID}},CN=Policies,CN=System,${DOMAINDN};0]
 -
+replace: wellKnownObjects
+wellKnownObjects: B:32:22b70c67d56e4efb91e9300fca3dc1aa:CN=ForeignSecurityPrincipals,${DOMAINDN}
+wellKnownObjects: B:32:2fbac1870ade11d297c400c04fd8d5cd:CN=Infrastructure,${DOMAINDN}
+wellKnownObjects: B:32:ab1d30f3768811d1aded00c04fd8d5cd:CN=System,${DOMAINDN}
+wellKnownObjects: B:32:a361b2ffffd211d1aa4b00c04fd7d83a:OU=Domain Controllers,${DOMAINDN}
+wellKnownObjects: B:32:aa312825768811d1aded00c04fd8d5cd:CN=Computers,${DOMAINDN}
+wellKnownObjects: B:32:a9d1ca15768811d1aded00c04fd8d5cd:CN=Users,${DOMAINDN}
+-
 ${DOMAINGUID_MOD}

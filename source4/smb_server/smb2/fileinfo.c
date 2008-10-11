@@ -369,7 +369,7 @@ void smb2srv_setinfo_recv(struct smb2srv_request *req)
 	SMB2SRV_SETUP_NTVFS_REQUEST(smb2srv_setinfo_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 
 	info->in.level			= SVAL(req->in.body, 0x02);
-	SMB2SRV_CHECK(smb2_pull_s32o32_blob(&req->in, info, req->in.body+0x04, &info->in.blob));
+	SMB2SRV_CHECK(smb2_pull_s32o16_blob(&req->in, info, req->in.body+0x04, &info->in.blob));
 	info->in.flags			= IVAL(req->in.body, 0x0C);
 	info->in.file.ntvfs		= smb2srv_pull_handle(req, req->in.body, 0x10);
 

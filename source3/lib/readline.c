@@ -45,6 +45,24 @@
 #  define RL_COMPLETION_CAST
 #endif /* HAVE_NEW_LIBREADLINE */
 
+static bool smb_rl_done;
+
+#if HAVE_LIBREADLINE
+/*
+ * MacOS/X does not have rl_done in readline.h, but
+ * readline.so has it
+ */
+extern int rl_done;
+#endif
+
+void smb_readline_done(void)
+{
+	smb_rl_done = true;
+#if HAVE_LIBREADLINE
+	rl_done = 1;
+#endif
+}
+
 /****************************************************************************
  Display the prompt and wait for input. Call callback() regularly
 ****************************************************************************/
@@ -69,7 +87,7 @@ static char *smb_readline_replacement(const char *prompt, void (*callback)(void)
 		return NULL;
 	}
 
-	while (1) {
+	while (!smb_rl_done) {
 		timeout.tv_sec = 5;
 		timeout.tv_usec = 0;
 
@@ -87,6 +105,7 @@ static char *smb_readline_replacement(const char *prompt, void (*callback)(void)
 			callback();
 		}
 	}
+	return NULL;
 }
 
 /****************************************************************************

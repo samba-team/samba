@@ -81,6 +81,7 @@ static bool test_session(struct smbcli_state *cli, struct torture_context *tctx)
 	const char *fname = BASEDIR "\\test.txt";
 	uint8_t c = 1;
 	int i;
+	struct smbcli_session_options options;
 
 	printf("TESTING SESSION HANDLING\n");
 
@@ -89,7 +90,10 @@ static bool test_session(struct smbcli_state *cli, struct torture_context *tctx)
 	}
 
 	printf("create a second security context on the same transport\n");
-	session = smbcli_session_init(cli->transport, tctx, false);
+
+	lp_smbcli_session_options(tctx->lp_ctx, &options);
+
+	session = smbcli_session_init(cli->transport, tctx, false, options);
 
 	setup.in.sesskey = cli->transport->negotiate.sesskey;
 	setup.in.capabilities = cli->transport->negotiate.capabilities; /* ignored in secondary session setup, except by our libs, which care about the extended security bit */
@@ -103,7 +107,7 @@ static bool test_session(struct smbcli_state *cli, struct torture_context *tctx)
 	session->vuid = setup.out.vuid;
 
 	printf("create a third security context on the same transport, with vuid set\n");
-	session2 = smbcli_session_init(cli->transport, tctx, false);
+	session2 = smbcli_session_init(cli->transport, tctx, false, options);
 
 	session2->vuid = session->vuid;
 	setup.in.sesskey = cli->transport->negotiate.sesskey;
@@ -130,7 +134,7 @@ static bool test_session(struct smbcli_state *cli, struct torture_context *tctx)
 
 	if (cli->transport->negotiate.capabilities & CAP_EXTENDED_SECURITY) {
 		printf("create a fourth security context on the same transport, without extended security\n");
-		session3 = smbcli_session_init(cli->transport, tctx, false);
+		session3 = smbcli_session_init(cli->transport, tctx, false, options);
 
 		session3->vuid = session->vuid;
 		setup.in.sesskey = cli->transport->negotiate.sesskey;
@@ -144,7 +148,7 @@ static bool test_session(struct smbcli_state *cli, struct torture_context *tctx)
 		CHECK_STATUS(status, NT_STATUS_LOGON_FAILURE);
 
 		printf("create a fouth anonymous security context on the same transport, without extended security\n");
-		session4 = smbcli_session_init(cli->transport, tctx, false);
+		session4 = smbcli_session_init(cli->transport, tctx, false, options);
 
 		session4->vuid = session->vuid;
 		setup.in.sesskey = cli->transport->negotiate.sesskey;
@@ -230,7 +234,7 @@ static bool test_session(struct smbcli_state *cli, struct torture_context *tctx)
 		
 		setups[i].in.credentials = cmdline_credentials;
 
-		sessions[i] = smbcli_session_init(cli->transport, tctx, false);
+		sessions[i] = smbcli_session_init(cli->transport, tctx, false, options);
 		composite_contexts[i] = smb_composite_sesssetup_send(sessions[i], &setups[i]);
 
 	}
@@ -379,6 +383,7 @@ static bool test_tree_ulogoff(struct smbcli_state *cli, struct torture_context *
 	const char *fname1 = BASEDIR "\\test1.txt";
 	const char *fname2 = BASEDIR "\\test2.txt";
 	uint8_t c = 1;
+	struct smbcli_session_options options;
 
 	printf("TESTING TREE with ulogoff\n");
 
@@ -389,8 +394,10 @@ static bool test_tree_ulogoff(struct smbcli_state *cli, struct torture_context *
 	share = torture_setting_string(tctx, "share", NULL);
 	host  = torture_setting_string(tctx, "host", NULL);
 
+	lp_smbcli_session_options(tctx->lp_ctx, &options);
+
 	printf("create the first new sessions\n");
-	session1 = smbcli_session_init(cli->transport, tctx, false);
+	session1 = smbcli_session_init(cli->transport, tctx, false, options);
 	setup.in.sesskey = cli->transport->negotiate.sesskey;
 	setup.in.capabilities = cli->transport->negotiate.capabilities;
 	setup.in.workgroup = lp_workgroup(tctx->lp_ctx);
@@ -446,7 +453,7 @@ static bool test_tree_ulogoff(struct smbcli_state *cli, struct torture_context *
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	printf("create the second new sessions\n");
-	session2 = smbcli_session_init(cli->transport, tctx, false);
+	session2 = smbcli_session_init(cli->transport, tctx, false, options);
 	setup.in.sesskey = cli->transport->negotiate.sesskey;
 	setup.in.capabilities = cli->transport->negotiate.capabilities;
 	setup.in.workgroup = lp_workgroup(tctx->lp_ctx);
@@ -634,6 +641,7 @@ static bool test_pid_2sess(struct smbcli_state *cli, struct torture_context *tct
 	const char *fname = BASEDIR "\\test.txt";
 	uint8_t c = 1;
 	uint16_t vuid1, vuid2;
+	struct smbcli_session_options options;
 
 	printf("TESTING PID HANDLING WITH 2 SESSIONS\n");
 
@@ -641,8 +649,10 @@ static bool test_pid_2sess(struct smbcli_state *cli, struct torture_context *tct
 		return false;
 	}
 
+	lp_smbcli_session_options(tctx->lp_ctx, &options);
+
 	printf("create a second security context on the same transport\n");
-	session = smbcli_session_init(cli->transport, tctx, false);
+	session = smbcli_session_init(cli->transport, tctx, false, options);
 
 	setup.in.sesskey = cli->transport->negotiate.sesskey;
 	setup.in.capabilities = cli->transport->negotiate.capabilities; /* ignored in secondary session setup, except by our libs, which care about the extended security bit */

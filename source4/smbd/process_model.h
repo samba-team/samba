@@ -63,7 +63,8 @@ struct model_ops {
 			 void *);
 
 	/* function to terminate a connection or task */
-	void (*terminate)(struct event_context *, const char *reason);
+	void (*terminate)(struct event_context *, struct loadparm_context *lp_ctx, 
+			  const char *reason);
 
 	/* function to set a title for the connection or task */
 	void (*set_title)(struct event_context *, const char *title);

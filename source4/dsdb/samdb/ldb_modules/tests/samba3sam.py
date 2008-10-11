@@ -26,7 +26,10 @@ import os
 import ldb
 from ldb import SCOPE_DEFAULT, SCOPE_BASE, SCOPE_SUBTREE
 from samba import Ldb, substitute_var
-from samba.tests import LdbTestCase, TestCaseInTempDir
+from samba.tests import LdbTestCase, TestCaseInTempDir, cmdline_loadparm
+import samba.dcerpc.security
+import samba.security
+import samba.ndr
 
 datadir = os.path.join(os.path.dirname(__file__), 
                        "../../../../../testdata/samba3")
@@ -76,7 +79,7 @@ class MapBaseTestCase(TestCaseInTempDir):
                 self.url = "tdb://" + self.file
                 self.basedn = basedn
                 self.substvars = {"BASEDN": self.basedn}
-                self.db = Ldb()
+                self.db = Ldb(lp=cmdline_loadparm)
                 self._dn = dn
 
             def dn(self, rdn):
@@ -112,19 +115,31 @@ class MapBaseTestCase(TestCaseInTempDir):
         os.unlink(self.samba4.file)
         super(MapBaseTestCase, self).tearDown()
 
+    def assertSidEquals(self, text, ndr_sid):
+        sid_obj1 = samba.ndr.ndr_unpack(samba.dcerpc.security.dom_sid, 
+                                        str(ndr_sid[0]))
+        sid_obj2 = samba.security.Sid(text)
+        # For now, this is the only way we can compare these since the 
+        # classes are in different places. Should reconcile that at some point.
+        self.assertEquals(sid_obj1.sid_rev_num, sid_obj2.sid_rev_num)
+        self.assertEquals(sid_obj1.num_auths, sid_obj2.num_auths)
+        # FIXME: self.assertEquals(sid_obj1.id_auth, sid_obj2.id_auth)
+        # FIXME: self.assertEquals(sid_obj1.sub_auths[:sid_obj1.num_auths], 
+        #                  sid_obj2.sub_auths[:sid_obj2.num_auths])
+
 
 class Samba3SamTestCase(MapBaseTestCase):
 
     def setUp(self):
         super(Samba3SamTestCase, self).setUp()
-        ldb = Ldb(self.ldburl)
+        ldb = Ldb(self.ldburl, lp=cmdline_loadparm)
         self.samba3.setup_data("samba3.ldif")
         self.templates.setup_data("provision_samba3sam_templates.ldif")
         ldif = read_datafile("provision_samba3sam.ldif")
         ldb.add_ldif(self.samba4.subst(ldif))
         self.setup_modules(ldb, self.samba3, self.samba4)
         del ldb
-        self.ldb = Ldb(self.ldburl)
+        self.ldb = Ldb(self.ldburl, lp=cmdline_loadparm)
 
     def test_search_non_mapped(self):
         """Looking up by non-mapped attribute"""
@@ -150,10 +165,8 @@ class Samba3SamTestCase(MapBaseTestCase):
         self.assertEquals(str(msg[0].dn), 
                           "cn=Replicator,ou=Groups,dc=vernstok,dc=nl")
         self.assertTrue("objectSid" in msg[0]) 
-        # FIXME: NDR unpack msg[0]["objectSid"] before comparing:
-        # self.assertEquals(msg[0]["objectSid"], 
-        #                   "S-1-5-21-4231626423-2410014848-2360679739-552")
-        # Check mapping of objectClass
+        self.assertSidEquals("S-1-5-21-4231626423-2410014848-2360679739-552",
+                             msg[0]["objectSid"])
         oc = set(msg[0]["objectClass"])
         self.assertEquals(oc, set(["group"]))
 
@@ -287,13 +300,13 @@ class MapTestCase(MapBaseTestCase):
 
     def setUp(self):
         super(MapTestCase, self).setUp()
-        ldb = Ldb(self.ldburl)
+        ldb = Ldb(self.ldburl, lp=cmdline_loadparm)
         self.templates.setup_data("provision_samba3sam_templates.ldif")
         ldif = read_datafile("provision_samba3sam.ldif")
         ldb.add_ldif(self.samba4.subst(ldif))
         self.setup_modules(ldb, self.samba3, self.samba4)
         del ldb
-        self.ldb = Ldb(self.ldburl)
+        self.ldb = Ldb(self.ldburl, lp=cmdline_loadparm)
 
     def test_map_search(self):
         """Running search tests on mapped data."""
@@ -459,17 +472,14 @@ primaryGroupID: 1-5-21-4231626423-2410014848-2360679739-512
         self.assertEquals(str(res[0].dn), self.samba4.dn("cn=X"))
         self.assertEquals(res[0]["dnsHostName"], "x")
         self.assertEquals(res[0]["lastLogon"], "x")
-        # FIXME:Properly compare sid,requires converting between NDR encoding 
-        # and string
-        #self.assertEquals(res[0]["objectSid"], 
-        #                  "S-1-5-21-4231626423-2410014848-2360679739-552")
+        self.assertSidEquals("S-1-5-21-4231626423-2410014848-2360679739-552", 
+                             res[0]["objectSid"])
         self.assertTrue("objectSid" in res[0])
         self.assertEquals(str(res[1].dn), self.samba4.dn("cn=A"))
         self.assertTrue(not "dnsHostName" in res[1])
         self.assertEquals(res[1]["lastLogon"], "x")
-        # FIXME: Properly compare sid,see above
-        #self.assertEquals(res[1]["objectSid"], 
-        #                  "S-1-5-21-4231626423-2410014848-2360679739-552")
+        self.assertSidEquals("S-1-5-21-4231626423-2410014848-2360679739-552",
+                             res[1]["objectSid"])
         self.assertTrue("objectSid" in res[1])
 
         # Search by generated attribute 

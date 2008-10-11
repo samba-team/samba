@@ -76,7 +76,8 @@ return a connection to a server
 static struct smbcli_state *connect_one(struct resolve_context *resolve_ctx, 
 					struct event_context *ev,
 					char *share, const char **ports,
-					struct smbcli_options *options)
+					struct smbcli_options *options,
+					struct smbcli_session_options *session_options)
 {
 	struct smbcli_state *c;
 	fstring server;
@@ -95,7 +96,7 @@ static struct smbcli_state *connect_one(struct resolve_context *resolve_ctx,
 					ports,
 					share, NULL,
 					cmdline_credentials, resolve_ctx, ev,
-					options);
+					options, session_options);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return NULL;
@@ -296,6 +297,7 @@ static void usage(poptContext pc)
 	struct event_context *ev;
 	struct loadparm_context *lp_ctx;
 	struct smbcli_options options;
+	struct smbcli_session_options session_options;
 	poptContext pc;
 	int argc_new, i;
 	char **argv_new;
@@ -360,9 +362,10 @@ static void usage(poptContext pc)
 	gensec_init(lp_ctx);
 
 	lp_smbcli_options(lp_ctx, &options);
+	lp_smbcli_session_options(lp_ctx, &session_options);
 
 	cli = connect_one(lp_resolve_context(lp_ctx), ev, share, 
-			  lp_smb_ports(lp_ctx), &options);
+			  lp_smb_ports(lp_ctx), &options, &session_options);
 	if (!cli) {
 		DEBUG(0,("Failed to connect to %s\n", share));
 		exit(1);

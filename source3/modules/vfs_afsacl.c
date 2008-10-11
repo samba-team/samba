@@ -592,7 +592,6 @@ static size_t afs_to_nt_acl_common(struct afs_acl *afs_acl,
 {
 	SEC_ACE *nt_ace_list;
 	DOM_SID owner_sid, group_sid;
-	SEC_ACCESS mask;
 	SEC_ACL *psa = NULL;
 	int good_aces;
 	size_t sd_size;
@@ -616,7 +615,7 @@ static size_t afs_to_nt_acl_common(struct afs_acl *afs_acl,
 	good_aces = 0;
 
 	while (afs_ace != NULL) {
-		uint32 nt_rights;
+		uint32_t nt_rights;
 		uint8 flag = SEC_ACE_FLAG_OBJECT_INHERIT |
 			SEC_ACE_FLAG_CONTAINER_INHERIT;
 
@@ -633,9 +632,8 @@ static size_t afs_to_nt_acl_common(struct afs_acl *afs_acl,
 		else
 			nt_rights = afs_to_nt_file_rights(afs_ace->rights);
 
-		init_sec_access(&mask, nt_rights);
 		init_sec_ace(&nt_ace_list[good_aces++], &(afs_ace->sid),
-			     SEC_ACE_TYPE_ACCESS_ALLOWED, mask, flag);
+			     SEC_ACE_TYPE_ACCESS_ALLOWED, nt_rights, flag);
 		afs_ace = afs_ace->next;
 	}
 
@@ -717,12 +715,12 @@ static bool mappable_sid(const DOM_SID *sid)
 
 static bool nt_to_afs_acl(const char *filename,
 			  uint32 security_info_sent,
-			  struct security_descriptor *psd,
+			  const struct security_descriptor *psd,
 			  uint32 (*nt_to_afs_rights)(const char *filename,
 						     const SEC_ACE *ace),
 			  struct afs_acl *afs_acl)
 {
-	SEC_ACL *dacl;
+	const SEC_ACL *dacl;
 	int i;
 
 	/* Currently we *only* look at the dacl */
@@ -737,7 +735,7 @@ static bool nt_to_afs_acl(const char *filename,
 	dacl = psd->dacl;
 
 	for (i = 0; i < dacl->num_aces; i++) {
-		SEC_ACE *ace = &(dacl->aces[i]);
+		const SEC_ACE *ace = &(dacl->aces[i]);
 		const char *dom_name, *name;
 		enum lsa_SidType name_type;
 		char *p;
@@ -887,7 +885,7 @@ static void merge_unknown_aces(struct afs_acl *src, struct afs_acl *dst)
 
 static NTSTATUS afs_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 			   uint32 security_info_sent,
-			   struct security_descriptor *psd)
+			   const struct security_descriptor *psd)
 {
 	struct afs_acl old_afs_acl, new_afs_acl;
 	struct afs_acl dir_acl, file_acl;
@@ -1040,7 +1038,7 @@ static NTSTATUS afsacl_get_nt_acl(struct vfs_handle_struct *handle,
 NTSTATUS afsacl_fset_nt_acl(vfs_handle_struct *handle,
 			 files_struct *fsp,
 			 uint32 security_info_sent,
-			 SEC_DESC *psd)
+			 const SEC_DESC *psd)
 {
 	return afs_set_nt_acl(handle, fsp, security_info_sent, psd);
 }

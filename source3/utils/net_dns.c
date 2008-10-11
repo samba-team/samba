@@ -145,14 +145,14 @@ error:
 int get_my_ip_address( struct sockaddr_storage **pp_ss )
 
 {
-	struct iface_struct nics[MAX_INTERFACES];
 	int i, n;
 	struct sockaddr_storage *list = NULL;
 	int count = 0;
 
-	/* find the first non-loopback address from our list of interfaces */
+	/* Honor the configured list of interfaces to register */
 
-	n = get_interfaces(nics, MAX_INTERFACES);
+	load_interfaces();
+	n = iface_count();
 
 	if (n <= 0) {
 		return -1;
@@ -163,19 +163,17 @@ int get_my_ip_address( struct sockaddr_storage **pp_ss )
 	}
 
 	for ( i=0; i<n; i++ ) {
-		if (is_loopback_addr(&nics[i].ip)) {
+		const struct sockaddr_storage *nic_sa_storage = NULL;
+
+		if ((nic_sa_storage = iface_n_sockaddr_storage(i)) == NULL)
+			continue;
+
+		/* Don't register loopback addresses */
+		if (is_loopback_addr(nic_sa_storage)) {
 			continue;
 		}
-#if defined(HAVE_IPV6)
-		if ((nics[i].ip.ss_family == AF_INET6)) {
-			memcpy(&list[count++], &nics[i].ip,
-			       sizeof(struct sockaddr_storage));
-		} else
-#endif
-		if (nics[i].ip.ss_family == AF_INET) {
-			memcpy(&list[count++], &nics[i].ip,
-			       sizeof(struct sockaddr_storage));
-		}
+
+		memcpy(&list[count++], nic_sa_storage, sizeof(struct sockaddr_storage));
 	}
 	*pp_ss = list;
 

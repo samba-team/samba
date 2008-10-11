@@ -89,7 +89,7 @@ static NTSTATUS get_acl_blob(TALLOC_CTX *ctx,
 	uint8_t *val = NULL;
 	uint8_t *tmp;
 	ssize_t sizeret;
-	int saved_errno;
+	int saved_errno = 0;
 
 	ZERO_STRUCTP(pblob);
 
@@ -131,26 +131,6 @@ static NTSTATUS get_acl_blob(TALLOC_CTX *ctx,
 	pblob->data = val;
 	pblob->length = sizeret;
 	return NT_STATUS_OK;
-}
-
-static int mkdir_acl_xattr(vfs_handle_struct *handle,  const char *path, mode_t mode)
-{
-	return SMB_VFS_NEXT_MKDIR(handle, path, mode);
-}
-
-static int rmdir_acl_xattr(vfs_handle_struct *handle,  const char *path)
-{
-	return SMB_VFS_NEXT_RMDIR(handle, path);
-}
-
-static int open_acl_xattr(vfs_handle_struct *handle,  const char *fname, files_struct *fsp, int flags, mode_t mode)
-{
-	return SMB_VFS_NEXT_OPEN(handle, fname, fsp, flags, mode);
-}
-
-static int unlink_acl_xattr(vfs_handle_struct *handle,  const char *fname)
-{
-	return SMB_VFS_NEXT_UNLINK(handle, fname);
 }
 
 static NTSTATUS get_nt_acl_xattr_internal(vfs_handle_struct *handle,
@@ -198,6 +178,42 @@ static NTSTATUS get_nt_acl_xattr_internal(vfs_handle_struct *handle,
 	return status;
 }
 
+static int mkdir_acl_xattr(vfs_handle_struct *handle,  const char *path, mode_t mode)
+{
+	return SMB_VFS_NEXT_MKDIR(handle, path, mode);
+}
+
+/*********************************************************************
+ * Currently this only works for existing files. Need to work on
+ * inheritance for new files.
+*********************************************************************/
+
+static int open_acl_xattr(vfs_handle_struct *handle,  const char *fname, files_struct *fsp, int flags, mode_t mode)
+{
+	uint32_t access_granted = 0;
+	SEC_DESC *pdesc = NULL;
+	NTSTATUS status = get_nt_acl_xattr_internal(handle,
+					NULL,
+					fname,
+					(OWNER_SECURITY_INFORMATION |
+					 GROUP_SECURITY_INFORMATION |
+					 DACL_SECURITY_INFORMATION),
+					&pdesc);
+        if (NT_STATUS_IS_OK(status)) {
+		/* See if we can access it. */
+		if (!se_access_check(pdesc,
+					handle->conn->server_info->ptok,
+					fsp->access_mask,
+					&access_granted,
+					&status)) {
+			errno = map_errno_from_nt_status(status);
+			return -1;
+		}
+        }
+
+	return SMB_VFS_NEXT_OPEN(handle, fname, fsp, flags, mode);
+}
+
 static NTSTATUS fget_nt_acl_xattr(vfs_handle_struct *handle, files_struct *fsp,
         uint32 security_info, SEC_DESC **ppdesc)
 {
@@ -222,7 +238,7 @@ static NTSTATUS get_nt_acl_xattr(vfs_handle_struct *handle,
 			security_info, ppdesc);
 }
 
-static NTSTATUS create_acl_blob(SEC_DESC *psd, DATA_BLOB *pblob)
+static NTSTATUS create_acl_blob(const SEC_DESC *psd, DATA_BLOB *pblob)
 {
 	struct xattr_NTACL xacl;
 	struct security_descriptor_timestamp sd_ts;
@@ -241,7 +257,7 @@ static NTSTATUS create_acl_blob(SEC_DESC *psd, DATA_BLOB *pblob)
 
 	xacl.version = 2;
 	xacl.info.sd_ts = &sd_ts;
-	xacl.info.sd_ts->sd = psd;
+	xacl.info.sd_ts->sd = CONST_DISCARD(SEC_DESC *, psd);
 	unix_timespec_to_nt_time(&xacl.info.sd_ts->last_changed, curr);
 
 	ndr_err = ndr_push_struct_blob(
@@ -261,7 +277,7 @@ static NTSTATUS store_acl_blob(files_struct *fsp,
 				DATA_BLOB *pblob)
 {
 	int ret;
-	int saved_errno;
+	int saved_errno = 0;
 
 	DEBUG(10,("store_acl_blob: storing blob length %u on file %s\n",
 			(unsigned int)pblob->length, fsp->fsp_name));
@@ -291,7 +307,7 @@ static NTSTATUS store_acl_blob(files_struct *fsp,
 }
 
 static NTSTATUS fset_nt_acl_xattr(vfs_handle_struct *handle, files_struct *fsp,
-        uint32 security_info_sent, SEC_DESC *psd)
+        uint32 security_info_sent, const SEC_DESC *psd)
 {
 	NTSTATUS status;
 	DATA_BLOB blob;
@@ -299,6 +315,22 @@ static NTSTATUS fset_nt_acl_xattr(vfs_handle_struct *handle, files_struct *fsp,
 	status = SMB_VFS_NEXT_FSET_NT_ACL(handle, fsp, security_info_sent, psd);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
+	}
+
+	if ((security_info_sent & DACL_SECURITY_INFORMATION) &&
+			psd->dacl != NULL &&
+			(psd->type & (SE_DESC_DACL_AUTO_INHERITED|
+				SE_DESC_DACL_AUTO_INHERIT_REQ))==
+				(SE_DESC_DACL_AUTO_INHERITED|
+				SE_DESC_DACL_AUTO_INHERIT_REQ) ) {
+		SEC_DESC *new_psd = NULL;
+		status = append_parent_acl(fsp, psd, &new_psd);
+		if (!NT_STATUS_IS_OK(status)) {
+			/* Lower level acl set succeeded,
+			 * so still return OK. */
+			return NT_STATUS_OK;
+		}
+		psd = new_psd;
 	}
 
 	create_acl_blob(psd, &blob);
@@ -312,9 +344,7 @@ static NTSTATUS fset_nt_acl_xattr(vfs_handle_struct *handle, files_struct *fsp,
 static vfs_op_tuple skel_op_tuples[] =
 {
 	{SMB_VFS_OP(mkdir_acl_xattr), SMB_VFS_OP_MKDIR, SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(rmdir_acl_xattr), SMB_VFS_OP_RMDIR, SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(open_acl_xattr),  SMB_VFS_OP_OPEN,  SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(unlink_acl_xattr),SMB_VFS_OP_UNLINK,SMB_VFS_LAYER_TRANSPARENT},
 
         /* NT File ACL operations */
 

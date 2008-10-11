@@ -1,5 +1,7 @@
 Using talloc in Samba4
-----------------------
+======================
+
+.. contents::
 
 Andrew Tridgell
 September 2004
@@ -18,7 +20,7 @@ get used to it.
 Perhaps the biggest change from Samba3 is that there is no distinction
 between a "talloc context" and a "talloc pointer". Any pointer
 returned from talloc() is itself a valid talloc context. This means
-you can do this:
+you can do this::
 
   struct foo *X = talloc(mem_ctx, struct foo);
   X->name = talloc_strdup(X, "foo");
@@ -271,7 +273,7 @@ equivalent to:
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 void *talloc_named_const(const void *context, size_t size, const char *name);
 
-This is equivalent to:
+This is equivalent to::
 
    ptr = talloc_size(context, size);
    talloc_set_name_const(ptr, name);
@@ -288,7 +290,7 @@ talloc_set_name() for details.
 void *talloc_init(const char *fmt, ...);
 
 This function creates a zero length named talloc context as a top
-level context. It is equivalent to:
+level context. It is equivalent to::
 
   talloc_named(NULL, 0, fmt, ...);
 
@@ -309,7 +311,7 @@ The talloc_realloc() macro changes the size of a talloc
 pointer. The "count" argument is the number of elements of type "type"
 that you want the resulting pointer to hold. 
 
-talloc_realloc() has the following equivalences:
+talloc_realloc() has the following equivalences::
 
   talloc_realloc(context, NULL, type, 1) ==> talloc(context, type);
   talloc_realloc(context, NULL, type, N) ==> talloc_array(context, type, N);
@@ -490,7 +492,7 @@ This disables tracking of the NULL memory context.
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 (type *)talloc_zero(const void *ctx, type);
 
-The talloc_zero() macro is equivalent to:
+The talloc_zero() macro is equivalent to::
 
   ptr = talloc(ctx, type);
   if (ptr) memset(ptr, 0, sizeof(type));
@@ -505,7 +507,7 @@ The talloc_zero_size() function is useful when you don't have a known type
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 void *talloc_memdup(const void *ctx, const void *p, size_t size);
 
-The talloc_memdup() function is equivalent to:
+The talloc_memdup() function is equivalent to::
 
   ptr = talloc_size(ctx, size);
   if (ptr) memcpy(ptr, p, size);
@@ -514,13 +516,14 @@ The talloc_memdup() function is equivalent to:
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 char *talloc_strdup(const void *ctx, const char *p);
 
-The talloc_strdup() function is equivalent to:
+The talloc_strdup() function is equivalent to::
 
   ptr = talloc_size(ctx, strlen(p)+1);
   if (ptr) memcpy(ptr, p, strlen(p)+1);
 
 This functions sets the name of the new pointer to the passed
-string. This is equivalent to:
+string. This is equivalent to::
+
    talloc_set_name_const(ptr, ptr)
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -540,7 +543,8 @@ The talloc_append_string() function appends the given formatted
 string to the given string.
 
 This function sets the name of the new pointer to the new
-string. This is equivalent to:
+string. This is equivalent to::
+
    talloc_set_name_const(ptr, ptr)
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -550,7 +554,8 @@ The talloc_vasprintf() function is the talloc equivalent of the C
 library function vasprintf()
 
 This functions sets the name of the new pointer to the new
-string. This is equivalent to:
+string. This is equivalent to::
+
    talloc_set_name_const(ptr, ptr)
 
 
@@ -561,7 +566,8 @@ The talloc_asprintf() function is the talloc equivalent of the C
 library function asprintf()
 
 This functions sets the name of the new pointer to the new
-string. This is equivalent to:
+string. This is equivalent to::
+
    talloc_set_name_const(ptr, ptr)
 
 
@@ -574,7 +580,8 @@ Use this varient when the string in the current talloc buffer may
 have been truncated in length.
 
 This functions sets the name of the new pointer to the new
-string. This is equivalent to:
+string. This is equivalent to::
+
    talloc_set_name_const(ptr, ptr)
 
 
@@ -587,14 +594,15 @@ Use this varient when the string in the current talloc buffer has
 not been changed.
 
 This functions sets the name of the new pointer to the new
-string. This is equivalent to:
+string. This is equivalent to::
+
    talloc_set_name_const(ptr, ptr)
 
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 ((type *)talloc_array(const void *ctx, type, uint_t count);
 
-The talloc_array() macro is equivalent to:
+The talloc_array() macro is equivalent to::
 
   (type *)talloc_size(ctx, sizeof(type) * count);
 
@@ -648,7 +656,7 @@ then the pointer is returned. It it doesn't then NULL is returned.
 
 This macro allows you to do type checking on talloc pointers. It is
 particularly useful for void* private pointers. It is equivalent to
-this:
+this::
 
    (type *)talloc_check_name(ptr, #type)
 
@@ -660,7 +668,8 @@ This macro allows you to force the name of a pointer to be a
 particular type. This can be used in conjunction with
 talloc_get_type() to do type checking on void* pointers.
 
-It is equivalent to this:
+It is equivalent to this::
+
    talloc_set_name_const(ptr, #type)
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

@@ -122,10 +122,12 @@ NTSTATUS file_new(connection_struct *conn, files_struct **result)
 
 	chain_fsp = fsp;
 
-	/* A new fsp invalidates a negative fsp_fi_cache. */
-	if (fsp_fi_cache.fsp == NULL) {
-		ZERO_STRUCT(fsp_fi_cache);
-	}
+	/* A new fsp invalidates the positive and
+	  negative fsp_fi_cache as the new fsp is pushed
+	  at the start of the list and we search from
+	  a cache hit to the *end* of the list. */
+
+	ZERO_STRUCT(fsp_fi_cache);
 
 	*result = fsp;
 	return NT_STATUS_OK;
@@ -326,8 +328,7 @@ files_struct *file_find_di_first(struct file_id id)
 	fsp_fi_cache.id = id;
 
 	for (fsp=Files;fsp;fsp=fsp->next) {
-		if ( fsp->fh->fd != -1 &&
-		     file_id_equal(&fsp->file_id, &id)) {
+		if (file_id_equal(&fsp->file_id, &id)) {
 			/* Setup positive cache. */
 			fsp_fi_cache.fsp = fsp;
 			return fsp;
@@ -348,8 +349,7 @@ files_struct *file_find_di_next(files_struct *start_fsp)
 	files_struct *fsp;
 
 	for (fsp = start_fsp->next;fsp;fsp=fsp->next) {
-		if ( fsp->fh->fd != -1 &&
-		     file_id_equal(&fsp->file_id, &start_fsp->file_id)) {
+		if (file_id_equal(&fsp->file_id, &start_fsp->file_id)) {
 			return fsp;
 		}
 	}
@@ -400,9 +400,7 @@ void file_free(files_struct *fsp)
 
 	string_free(&fsp->fsp_name);
 
-	if (fsp->fake_file_handle) {
-		destroy_fake_file_handle(&fsp->fake_file_handle);
-	}
+	TALLOC_FREE(fsp->fake_file_handle);
 
 	if (fsp->fh->ref_count == 1) {
 		SAFE_FREE(fsp->fh);

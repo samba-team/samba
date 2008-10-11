@@ -62,8 +62,10 @@ struct schema_fsmo_private_data {
 };
 
 struct schema_fsmo_search_data {
-	struct schema_fsmo_private_data *module_context;
-	struct ldb_request *orig_req;
+	struct ldb_module *module;
+	struct ldb_request *req;
+
+	const struct dsdb_schema *schema;
 };
 
 static int schema_fsmo_init(struct ldb_module *module)
@@ -151,6 +153,16 @@ static int schema_fsmo_add(struct ldb_module *module, struct ldb_request *req)
 	const char *oid = NULL;
 	uint32_t id32;
 	WERROR status;
+
+	/* special objects should always go through */
+	if (ldb_dn_is_special(req->op.add.message->dn)) {
+		return ldb_next_request(module, req);
+	}
+
+	/* replicated update should always go through */
+	if (ldb_request_get_control(req, DSDB_CONTROL_REPLICATED_UPDATE_OID)) {
+		return ldb_next_request(module, req);
+	}
 
 	schema = dsdb_get_schema(module->ldb);
 	if (!schema) {
@@ -315,41 +327,54 @@ static int generate_dITContentRules(struct ldb_context *ldb, struct ldb_message 
 /* Add objectClasses, attributeTypes and dITContentRules from the
    schema object (they are not stored in the database)
  */
-static int schema_fsmo_search_callback(struct ldb_context *ldb, void *context, struct ldb_reply *ares) 
+static int schema_fsmo_search_callback(struct ldb_request *req, struct ldb_reply *ares)
 {
-	const struct dsdb_schema *schema = dsdb_get_schema(ldb);
-	struct schema_fsmo_search_data *search_data = talloc_get_type(context, struct schema_fsmo_search_data);
-	struct ldb_request *orig_req = search_data->orig_req;
-	TALLOC_CTX *mem_ctx;
+	struct schema_fsmo_search_data *ac;
+	struct schema_fsmo_private_data *mc;
 	int i, ret;
 
+	ac = talloc_get_type(req->context, struct schema_fsmo_search_data);
+	mc = talloc_get_type(ac->module->private_data, struct schema_fsmo_private_data);
+
+	if (!ares) {
+		return ldb_module_done(ac->req, NULL, NULL,
+					LDB_ERR_OPERATIONS_ERROR);
+	}
+	if (ares->error != LDB_SUCCESS) {
+		return ldb_module_done(ac->req, ares->controls,
+					ares->response, ares->error);
+	}
 	/* Only entries are interesting, and we handle the case of the parent seperatly */
-	if (ares->type != LDB_REPLY_ENTRY) {
-		return orig_req->callback(ldb, orig_req->context, ares);
-	}
 
-	if (ldb_dn_compare(ares->message->dn, search_data->module_context->aggregate_dn) != 0) {
-		talloc_free(mem_ctx);
-		return orig_req->callback(ldb, orig_req->context, ares);
-	}
+	switch (ares->type) {
+	case LDB_REPLY_ENTRY:
 
-	mem_ctx = talloc_new(ares);
-	if (!mem_ctx) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
+		if (ldb_dn_compare(ares->message->dn, mc->aggregate_dn) != 0) {
+			return ldb_module_send_entry(ac->req, ares->message);
+		}
 
-	for (i=0; i < ARRAY_SIZE(generated_attrs); i++) {
-		if (ldb_attr_in_list(orig_req->op.search.attrs, generated_attrs[i].attr)) {
-			ret = generated_attrs[i].fn(ldb, ares->message, schema);
-			if (ret != LDB_SUCCESS) {
-				return ret;
+		for (i=0; i < ARRAY_SIZE(generated_attrs); i++) {
+			if (ldb_attr_in_list(ac->req->op.search.attrs, generated_attrs[i].attr)) {
+				ret = generated_attrs[i].fn(ac->module->ldb, ares->message, ac->schema);
+				if (ret != LDB_SUCCESS) {
+					return ret;
+				}
 			}
 		}
+
+		return ldb_module_send_entry(ac->req, ares->message);
+
+	case LDB_REPLY_REFERRAL:
+
+		return ldb_module_send_referral(ac->req, ares->referral);
+
+	case LDB_REPLY_DONE:
+
+		return ldb_module_done(ac->req, ares->controls,
+					ares->response, ares->error);
 	}
 
-	talloc_free(mem_ctx);
-	return orig_req->callback(ldb, orig_req->context, ares);
+	return LDB_SUCCESS;
 }
 
 /* search */
@@ -380,27 +405,24 @@ static int schema_fsmo_search(struct ldb_module *module, struct ldb_request *req
 		ldb_oom(module->ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	down_req = talloc(req, struct ldb_request);	
-	if (!down_req) {
-		ldb_oom(module->ldb);
+
+	search_context->module = module;
+	search_context->req = req;
+	search_context->schema = schema;
+
+	ret = ldb_build_search_req_ex(&down_req, module->ldb, search_context,
+					req->op.search.base,
+					req->op.search.scope,
+					req->op.search.tree,
+					req->op.search.attrs,
+					req->controls,
+					search_context, schema_fsmo_search_callback,
+					req);
+	if (ret != LDB_SUCCESS) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	
-	*down_req = *req;
-	search_context->orig_req = req;
-	search_context->module_context = talloc_get_type(module->private_data, struct schema_fsmo_private_data);
-	down_req->context = search_context;
 
-	down_req->callback = schema_fsmo_search_callback;
-
-	ret = ldb_next_request(module, down_req);
-
-	/* do not free down_req as the call results may be linked to it,
-	 * it will be freed when the upper level request get freed */
-	if (ret == LDB_SUCCESS) {
-		req->handle = down_req->handle;
-	}
-	return ret;
+	return ldb_next_request(module, down_req);
 }
 
 

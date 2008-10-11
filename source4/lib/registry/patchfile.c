@@ -69,7 +69,7 @@ WERROR reg_generate_diff_key(struct registry_key *oldkey,
 		old_num_values = 0;
 	}
 
-	/* Subkeys that were deleted */
+	/* Subkeys that were changed or deleted */
 	for (i = 0; i < old_num_subkeys; i++) {
 		error1 = reg_key_get_subkey_by_index(mem_ctx, oldkey, i,
 						     &keyname1, NULL, NULL);
@@ -81,24 +81,23 @@ WERROR reg_generate_diff_key(struct registry_key *oldkey,
 
 		if (newkey != NULL) {
 			error2 = reg_open_key(mem_ctx, newkey, keyname1, &t2);
-
-			if (W_ERROR_IS_OK(error2))
-				continue;
 		} else {
 			error2 = WERR_BADFILE;
 			t2 = NULL;
 		}
 
-		if (!W_ERROR_EQUAL(error2, WERR_BADFILE)) {
+		if (!W_ERROR_IS_OK(error2) && !W_ERROR_EQUAL(error2, WERR_BADFILE)) {
 			DEBUG(0, ("Error occured while getting subkey by name: %s\n",
 				win_errstr(error2)));
 			talloc_free(mem_ctx);
 			return error2;
 		}
 
-		/* newkey didn't have such a subkey, add del diff */
+		/* if "error2" is going to be "WERR_BADFILE", then newkey */
+		/* didn't have such a subkey and therefore add a del diff */
 		tmppath = talloc_asprintf(mem_ctx, "%s\\%s", path, keyname1);
-		callbacks->del_key(callback_data, tmppath);
+		if (!W_ERROR_IS_OK(error2))
+			callbacks->del_key(callback_data, tmppath);
 
 		/* perform here also the recursive invocation */
 		error1 = reg_open_key(mem_ctx, oldkey, keyname1, &t1);
@@ -385,14 +384,13 @@ static WERROR reg_diff_apply_add_key(void *_ctx, const char *key_name)
 static WERROR reg_diff_apply_del_key(void *_ctx, const char *key_name)
 {
 	struct registry_context *ctx = (struct registry_context *)_ctx;
-	WERROR error;
 
-	error = reg_key_del_abs(ctx, key_name);
+	/* We can't proof here for success, because a common superkey could */
+	/* have been deleted before the subkey's (diff order). This removed */
+	/* therefore all childs recursively and the "WERR_BADFILE" result is */
+	/* expected. */
 
-	if(!W_ERROR_IS_OK(error)) {
-		DEBUG(0, ("Unable to delete key '%s'\n", key_name));
-		return error;
-	}
+	reg_key_del_abs(ctx, key_name);
 
 	return WERR_OK;
 }
@@ -454,8 +452,7 @@ static WERROR reg_diff_apply_del_all_values(void *_ctx, const char *key_name)
 	struct registry_context *ctx = (struct registry_context *)_ctx;
 	struct registry_key *key;
 	WERROR error;
-	int i;
-	uint32_t num_values;
+	const char* value_name;
 
 	error = reg_open_key_abs(ctx, ctx, key_name, &key);
 
@@ -465,14 +462,15 @@ static WERROR reg_diff_apply_del_all_values(void *_ctx, const char *key_name)
 	}
 
 	W_ERROR_NOT_OK_RETURN(reg_key_get_info(ctx, key, NULL,
-			       NULL, &num_values, NULL, NULL, NULL, NULL));
+			       NULL, NULL, NULL, NULL, NULL, NULL));
 
-	for (i = 0; i < num_values; i++) {
-		const char *name;
-		W_ERROR_NOT_OK_RETURN(reg_key_get_value_by_index(ctx, key, i,
-								 &name,
-								 NULL, NULL));
-		W_ERROR_NOT_OK_RETURN(reg_del_value(key, name));
+	while (W_ERROR_IS_OK(reg_key_get_value_by_index(
+			ctx, key, 0, &value_name, NULL, NULL))) {
+		error = reg_del_value(key, value_name);
+		if (!W_ERROR_IS_OK(error)) {
+			DEBUG(0, ("Error deleting value '%s'\n", value_name));
+			return error;
+		}
 	}
 
 	return WERR_OK;

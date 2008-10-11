@@ -44,7 +44,7 @@ struct ldb_context *schannel_db_connect(TALLOC_CTX *mem_ctx, struct event_contex
 		"computerName: CASE_INSENSITIVE\n" \
 		"flatname: CASE_INSENSITIVE\n";
 
-	path = smbd_tmp_path(mem_ctx, lp_ctx, "schannel.ldb");
+	path = private_path(mem_ctx, lp_ctx, "schannel.ldb");
 	if (!path) {
 		return NULL;
 	}

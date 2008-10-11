@@ -147,6 +147,10 @@ security_descriptor_swigregister(security_descriptor)
 class Sid(object):
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
+    sid_rev_num = _swig_property(_security.Sid_sid_rev_num_get)
+    num_auths = _swig_property(_security.Sid_num_auths_get)
+    id_auth = _swig_property(_security.Sid_id_auth_get)
+    sub_auths = _swig_property(_security.Sid_sub_auths_get)
     def __init__(self, *args, **kwargs): 
         _security.Sid_swiginit(self,_security.new_Sid(*args, **kwargs))
     def __repr__(self):

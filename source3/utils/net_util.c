@@ -2,6 +2,7 @@
  *  Unix SMB/CIFS implementation.
  *  Helper routines for net
  *  Copyright (C) Volker Lendecke 2006
+ *  Copyright (C) Kai Blin 2008
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -593,5 +594,16 @@ void net_display_usage_from_functable(struct functable *table)
 	int i;
 	for (i=0; table[i].funcname != NULL; i++) {
 		d_printf("%s\n", table[i].usage);
+	}
+}
+
+const char *net_share_type_str(int num_type)
+{
+	switch(num_type) {
+		case 0: return "Disk";
+		case 1: return "Print";
+		case 2: return "Dev";
+		case 3: return "IPC";
+		default: return "Unknown";
 	}
 }

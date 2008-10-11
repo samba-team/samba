@@ -3156,15 +3156,14 @@ SWIGINTERN ldb_error ldb_search_ex(ldb *self,TALLOC_CTX *mem_ctx,ldb_dn *base,en
                            attrs,
                            controls,
                            res,
-                           ldb_search_default_callback);
+                           ldb_search_default_callback,
+                           NULL);
 
             if (ret != 0) {
                 talloc_free(res);
                 return ret;
             }
 
-            ldb_set_timeout(self, req, 0); /* use default timeout */
-                
             ret = ldb_request(self, req);
                 
             if (ret == 0) {
@@ -3496,22 +3495,6 @@ int py_module_del_transaction(struct ldb_module *mod)
     PyObject *py_result;
 
     py_result = PyObject_CallMethod(py_ldb, "del_transaction", "");
-
-    if (py_result == NULL) {
-        return LDB_ERR_OPERATIONS_ERROR;
-    }
-
-    Py_DECREF(py_result);
-
-    return LDB_SUCCESS;
-}
-
-int py_module_wait(struct ldb_handle *mod, enum ldb_wait_type wait_type)
-{
-    PyObject *py_ldb = mod->private_data;
-    PyObject *py_result;
-
-    py_result = PyObject_CallMethod(py_ldb, "wait", "i", wait_type);
 
     if (py_result == NULL) {
         return LDB_ERR_OPERATIONS_ERROR;
@@ -6665,7 +6648,6 @@ SWIGINTERN PyObject *_wrap_register_module(PyObject *SWIGUNUSEDPARM(self), PyObj
   arg1->start_transaction = py_module_start_transaction;
   arg1->end_transaction = py_module_end_transaction;
   arg1->del_transaction = py_module_del_transaction;
-  arg1->wait = py_module_wait;
   arg1->sequence_number = py_module_sequence_number;
   result = ldb_register_module((struct ldb_module_ops const *)arg1);
   if (result != 0) {

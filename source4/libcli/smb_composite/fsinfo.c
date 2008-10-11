@@ -127,7 +127,8 @@ static void fsinfo_composite_handler(struct composite_context *creq)
   composite fsinfo call - connects to a tree and queries a file system information
 */
 struct composite_context *smb_composite_fsinfo_send(struct smbcli_tree *tree, 
-						    struct smb_composite_fsinfo *io)
+						    struct smb_composite_fsinfo *io,
+						    struct resolve_context *resolve_ctx)
 {
 	struct composite_context *c;
 	struct fsinfo_state *state;
@@ -154,13 +155,14 @@ struct composite_context *smb_composite_fsinfo_send(struct smbcli_tree *tree,
 	state->connect->in.workgroup    = io->in.workgroup;
 
 	state->connect->in.options = tree->session->transport->options;
+	state->connect->in.session_options = tree->session->options;
 
 	c->state = COMPOSITE_STATE_IN_PROGRESS;
 	state->stage = FSINFO_CONNECT;
 	c->private_data = state;
 
 	state->creq = smb_composite_connect_send(state->connect, state,
-			 lp_resolve_context(global_loadparm), c->event_ctx);
+			 resolve_ctx, c->event_ctx);
 
 	if (state->creq == NULL) goto failed;
   
@@ -197,9 +199,10 @@ NTSTATUS smb_composite_fsinfo_recv(struct composite_context *c, TALLOC_CTX *mem_
 */
 NTSTATUS smb_composite_fsinfo(struct smbcli_tree *tree, 
 			      TALLOC_CTX *mem_ctx,
-			      struct smb_composite_fsinfo *io)
+			      struct smb_composite_fsinfo *io,
+			      struct resolve_context *resolve_ctx)
 {
-	struct composite_context *c = smb_composite_fsinfo_send(tree, io);
+	struct composite_context *c = smb_composite_fsinfo_send(tree, io, resolve_ctx);
 	return smb_composite_fsinfo_recv(c, mem_ctx);
 }
 

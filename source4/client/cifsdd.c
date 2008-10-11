@@ -357,7 +357,8 @@ static void print_transfer_stats(void)
 static struct dd_iohandle * open_file(struct resolve_context *resolve_ctx, 
 				      struct event_context *ev,
 				      const char * which, const char **ports,
-				      struct smbcli_options *smb_options)
+				      struct smbcli_options *smb_options,
+				      struct smbcli_session_options *smb_session_options)
 {
 	int			options = 0;
 	const char *		path = NULL;
@@ -379,13 +380,13 @@ static struct dd_iohandle * open_file(struct resolve_context *resolve_ctx,
 		path = check_arg_pathname("if");
 		handle = dd_open_path(resolve_ctx, ev, path, ports,
 				      check_arg_numeric("ibs"), options,
-				      smb_options);
+				      smb_options, smb_session_options);
 	} else if (strcmp(which, "of") == 0) {
 		options |= DD_WRITE;
 		path = check_arg_pathname("of");
 		handle = dd_open_path(resolve_ctx, ev, path, ports,
 				      check_arg_numeric("obs"), options,
-				      smb_options);
+				      smb_options, smb_session_options);
 	} else {
 		SMB_ASSERT(0);
 		return(NULL);
@@ -412,12 +413,14 @@ static int copy_files(struct event_context *ev, struct loadparm_context *lp_ctx)
 	struct dd_iohandle *	ofile;
 
 	struct smbcli_options options;
+	struct smbcli_session_options session_options;
 
 	ibs = check_arg_numeric("ibs");
 	obs = check_arg_numeric("obs");
 	count = check_arg_numeric("count");
 
 	lp_smbcli_options(lp_ctx, &options);
+	lp_smbcli_session_options(lp_ctx, &session_options);
 
 	/* Allocate IO buffer. We need more than the max IO size because we
 	 * could accumulate a remainder if ibs and obs don't match.
@@ -436,12 +439,14 @@ static int copy_files(struct event_context *ev, struct loadparm_context *lp_ctx)
 			(unsigned long long)iomax, options.max_xmit));
 
 	if (!(ifile = open_file(lp_resolve_context(lp_ctx), ev, "if",
-				lp_smb_ports(lp_ctx), &options))) {
+				lp_smb_ports(lp_ctx), &options,
+				&session_options))) {
 		return(FILESYS_EXIT_CODE);
 	}
 
 	if (!(ofile = open_file(lp_resolve_context(lp_ctx), ev, "of",
-				lp_smb_ports(lp_ctx), &options))) {
+				lp_smb_ports(lp_ctx), &options,
+				&session_options))) {
 		return(FILESYS_EXIT_CODE);
 	}
 

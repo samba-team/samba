@@ -271,7 +271,8 @@ WERROR NetShareDel_r(struct libnetapi_ctx *ctx,
 					   r->in.net_name,
 					   r->in.reserved,
 					   &werr);
-	if (!W_ERROR_IS_OK(werr)) {
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
 		goto done;
 	}
 

@@ -3,6 +3,7 @@
 
    Copyright (C) Jelmer Vernooij 2005
    Copyright (C) Martin Kuehl <mkhl@samba.org> 2006
+   Copyright (C) Simo Sorce <idra@samba.org> 2008
 
      ** NOTE! The following LGPL license applies to the ldb
      ** library. This does NOT imply that all of Samba is released
@@ -178,51 +179,181 @@ static int ldb_msg_partition(struct ldb_module *module, struct ldb_message *loca
 }
 
 
-/* Inbound requests: add, modify, rename, delete
- * ============================================= */
+static int map_add_do_local(struct map_context *ac);
+static int map_modify_do_local(struct map_context *ac);
+static int map_delete_do_local(struct map_context *ac);
+static int map_rename_do_local(struct map_context *ac);
+static int map_rename_do_fixup(struct map_context *ac);
+static int map_rename_local_callback(struct ldb_request *req,
+				     struct ldb_reply *ares);
 
-/* Add the remote record. */
-int map_add_do_remote(struct ldb_handle *handle)
+
+/*****************************************************************************
+ * COMMON INBOUND functions
+*****************************************************************************/
+
+/* Store the DN of a single search result in context. */
+static int map_search_self_callback(struct ldb_request *req, struct ldb_reply *ares)
+{
+	struct map_context *ac;
+	int ret;
+
+	ac = talloc_get_type(req->context, struct map_context);
+
+	if (!ares) {
+		return ldb_module_done(ac->req, NULL, NULL,
+					LDB_ERR_OPERATIONS_ERROR);
+	}
+	if (ares->error != LDB_SUCCESS) {
+		return ldb_module_done(ac->req, ares->controls,
+					ares->response, ares->error);
+	}
+
+	/* We are interested only in the single reply */
+	switch(ares->type) {
+	case LDB_REPLY_ENTRY:
+		/* We have already found a remote DN */
+		if (ac->local_dn) {
+			ldb_set_errstring(ac->module->ldb,
+					  "Too many results!");
+			return ldb_module_done(ac->req, NULL, NULL,
+						LDB_ERR_OPERATIONS_ERROR);
+		}
+
+		/* Store local DN */
+		ac->local_dn = talloc_steal(ac, ares->message->dn);
+		break;
+
+	case LDB_REPLY_DONE:
+
+		switch (ac->req->operation) {
+		case LDB_MODIFY:
+			ret = map_modify_do_local(ac);
+			break;
+		case LDB_DELETE:
+			ret = map_delete_do_local(ac);
+			break;
+		case LDB_RENAME:
+			ret = map_rename_do_local(ac);
+			break;
+		default:
+			/* if we get here we have definitely a problem */
+			ret = LDB_ERR_OPERATIONS_ERROR;
+		}
+		if (ret != LDB_SUCCESS) {
+			return ldb_module_done(ac->req, NULL, NULL,
+						LDB_ERR_OPERATIONS_ERROR);
+		}
+
+	default:
+		/* ignore referrals */
+		break;
+	}
+
+	talloc_free(ares);
+	return LDB_SUCCESS;
+}
+
+/* Build a request to search the local record by its DN. */
+static int map_search_self_req(struct ldb_request **req,
+				struct map_context *ac,
+				struct ldb_dn *dn)
+{
+	/* attrs[] is returned from this function in
+	 * ac->search_req->op.search.attrs, so it must be static, as
+	 * otherwise the compiler can put it on the stack */
+	static const char * const attrs[] = { IS_MAPPED, NULL };
+	struct ldb_parse_tree *tree;
+
+	/* Limit search to records with 'IS_MAPPED' present */
+	tree = ldb_parse_tree(ac, "(" IS_MAPPED "=*)");
+	if (tree == NULL) {
+		map_oom(ac->module);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	*req = map_search_base_req(ac, dn, attrs, tree,
+				   ac, map_search_self_callback);
+	if (*req == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	return LDB_SUCCESS;
+}
+
+static int map_op_local_callback(struct ldb_request *req,
+				 struct ldb_reply *ares)
+{
+	struct map_context *ac;
+	int ret;
+
+	ac = talloc_get_type(req->context, struct map_context);
+
+	if (!ares) {
+		return ldb_module_done(ac->req, NULL, NULL,
+					LDB_ERR_OPERATIONS_ERROR);
+	}
+	if (ares->error != LDB_SUCCESS) {
+		return ldb_module_done(ac->req, ares->controls,
+					ares->response, ares->error);
+	}
+
+	if (ares->type != LDB_REPLY_DONE) {
+		ldb_set_errstring(req->handle->ldb, "Invalid reply type!");
+		return ldb_module_done(ac->req, NULL, NULL,
+					LDB_ERR_OPERATIONS_ERROR);
+	}
+
+	/* Do the remote request. */
+	ret = ldb_next_remote_request(ac->module, ac->remote_req);
+	if (ret != LDB_SUCCESS) {
+		return ldb_module_done(ac->req, NULL, NULL,
+					LDB_ERR_OPERATIONS_ERROR);
+	}
+
+	return LDB_SUCCESS;
+}
+
+static int map_op_remote_callback(struct ldb_request *req,
+				  struct ldb_reply *ares)
 {
 	struct map_context *ac;
 
-	ac = talloc_get_type(handle->private_data, struct map_context);
+	ac = talloc_get_type(req->context, struct map_context);
 
-	ldb_set_timeout_from_prev_req(ac->module->ldb, ac->orig_req, ac->remote_req);
+	if (!ares) {
+		return ldb_module_done(ac->req, NULL, NULL,
+					LDB_ERR_OPERATIONS_ERROR);
+	}
+	if (ares->error != LDB_SUCCESS) {
+		return ldb_module_done(ac->req, ares->controls,
+					ares->response, ares->error);
+	}
 
-	ac->step = MAP_ADD_REMOTE;
+	if (ares->type != LDB_REPLY_DONE) {
+		ldb_set_errstring(req->handle->ldb, "Invalid reply type!");
+		return ldb_module_done(ac->req, NULL, NULL,
+					LDB_ERR_OPERATIONS_ERROR);
+	}
 
-	handle->state = LDB_ASYNC_INIT;
-	handle->status = LDB_SUCCESS;
-
-	return ldb_next_remote_request(ac->module, ac->remote_req);
+	return ldb_module_done(ac->req, ares->controls,
+					ares->response, ares->error);
 }
 
-/* Add the local record. */
-int map_add_do_local(struct ldb_handle *handle)
-{
-	struct map_context *ac;
 
-	ac = talloc_get_type(handle->private_data, struct map_context);
+/*****************************************************************************
+ * ADD operations
+*****************************************************************************/
 
-	ldb_set_timeout_from_prev_req(ac->module->ldb, ac->orig_req, ac->local_req);
-
-	ac->step = MAP_ADD_LOCAL;
-
-	handle->state = LDB_ASYNC_INIT;
-	handle->status = LDB_SUCCESS;
-
-	return ldb_next_request(ac->module, ac->local_req);
-}
 
 /* Add a record. */
 int map_add(struct ldb_module *module, struct ldb_request *req)
 {
 	const struct ldb_message *msg = req->op.add.message;
-	struct ldb_handle *h;
 	struct map_context *ac;
-	struct ldb_message *local, *remote;
+	struct ldb_message *remote_msg;
 	const char *dn;
+	int ret;
 
 	/* Do not manipulate our control entries */
 	if (ldb_dn_is_special(msg->dn)) {
@@ -240,141 +371,88 @@ int map_add(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	/* Prepare context and handle */
-	h = map_init_handle(req, module);
-	if (h == NULL) {
+	ac = map_init_context(module, req);
+	if (ac == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	ac = talloc_get_type(h->private_data, struct map_context);
 
-	/* Prepare the local operation */
-	ac->local_req = talloc(ac, struct ldb_request);
-	if (ac->local_req == NULL) {
-		goto oom;
-	}
-
-	*(ac->local_req) = *req;	/* copy the request */
-
-	ac->local_req->context = NULL;
-	ac->local_req->callback = NULL;
-
-	/* Prepare the remote operation */
-	ac->remote_req = talloc(ac, struct ldb_request);
-	if (ac->remote_req == NULL) {
-		goto oom;
-	}
-
-	*(ac->remote_req) = *req;	/* copy the request */
-
-	ac->remote_req->context = NULL;
-	ac->remote_req->callback = NULL;
 
 	/* Prepare the local message */
-	local = ldb_msg_new(ac->local_req);
-	if (local == NULL) {
-		goto oom;
+	ac->local_msg = ldb_msg_new(ac);
+	if (ac->local_msg == NULL) {
+		map_oom(module);
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	local->dn = msg->dn;
+	ac->local_msg->dn = msg->dn;
 
 	/* Prepare the remote message */
-	remote = ldb_msg_new(ac->remote_req);
-	if (remote == NULL) {
-		goto oom;
+	remote_msg = ldb_msg_new(ac);
+	if (remote_msg == NULL) {
+		map_oom(module);
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	remote->dn = ldb_dn_map_local(ac->module, remote, msg->dn);
+	remote_msg->dn = ldb_dn_map_local(ac->module, remote_msg, msg->dn);
 
 	/* Split local from remote message */
-	ldb_msg_partition(module, local, remote, msg);
-	ac->local_req->op.add.message = local;
-	ac->remote_req->op.add.message = remote;
+	ldb_msg_partition(module, ac->local_msg, remote_msg, msg);
 
-	if ((local->num_elements == 0) || (!map_check_local_db(ac->module))) {
+	/* Prepare the remote operation */
+	ret = ldb_build_add_req(&ac->remote_req, module->ldb,
+				ac, remote_msg,
+				req->controls,
+				ac, map_op_remote_callback,
+				req);
+	if (ret != LDB_SUCCESS) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	if ((ac->local_msg->num_elements == 0) ||
+	    ( ! map_check_local_db(ac->module))) {
 		/* No local data or db, just run the remote request */
-		talloc_free(ac->local_req);
-		req->handle = h;	/* return our own handle to deal with this call */
-		return map_add_do_remote(h);
+		return ldb_next_remote_request(ac->module, ac->remote_req);
 	}
 
 	/* Store remote DN in 'IS_MAPPED' */
 	/* TODO: use GUIDs here instead */
-	dn = ldb_dn_alloc_linearized(local, remote->dn);
-	if (ldb_msg_add_string(local, IS_MAPPED, dn) != 0) {
-		goto failed;
+	dn = ldb_dn_alloc_linearized(ac->local_msg, remote_msg->dn);
+	if (ldb_msg_add_string(ac->local_msg, IS_MAPPED, dn) != 0) {
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	req->handle = h;		/* return our own handle to deal with this call */
-	return map_add_do_local(h);
-
-oom:
-	map_oom(module);
-failed:
-	talloc_free(h);
-	return LDB_ERR_OPERATIONS_ERROR;
+	return map_add_do_local(ac);
 }
 
-/* Modify the remote record. */
-int map_modify_do_remote(struct ldb_handle *handle)
+/* Add the local record. */
+static int map_add_do_local(struct map_context *ac)
 {
-	struct map_context *ac;
+	struct ldb_request *local_req;
+	int ret;
 
-	ac = talloc_get_type(handle->private_data, struct map_context);
-
-	ldb_set_timeout_from_prev_req(ac->module->ldb, ac->orig_req, ac->remote_req);
-
-	ac->step = MAP_MODIFY_REMOTE;
-
-	handle->state = LDB_ASYNC_INIT;
-	handle->status = LDB_SUCCESS;
-
-	return ldb_next_remote_request(ac->module, ac->remote_req);
-}
-
-/* Modify the local record. */
-int map_modify_do_local(struct ldb_handle *handle)
-{
-	struct map_context *ac;
-	struct ldb_message *msg;
-	char *dn;
-
-	ac = talloc_get_type(handle->private_data, struct map_context);
-
-	if (ac->local_dn == NULL) {
-		/* No local record present, add it instead */
-		msg = discard_const_p(struct ldb_message, ac->local_req->op.mod.message);
-
-		/* Add local 'IS_MAPPED' */
-		/* TODO: use GUIDs here instead */
-		if (ldb_msg_add_empty(msg, IS_MAPPED, LDB_FLAG_MOD_ADD, NULL) != 0) {
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-		dn = ldb_dn_alloc_linearized(msg, ac->remote_req->op.mod.message->dn);
-		if (ldb_msg_add_string(msg, IS_MAPPED, dn) != 0) {
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-
-		/* Turn request into 'add' */
-		ac->local_req->operation = LDB_ADD;
-		ac->local_req->op.add.message = msg;
-		/* TODO: Could I just leave msg in there?  I think so,
-		 *	 but it looks clearer this way. */
+	/* Prepare the local operation */
+	ret = ldb_build_add_req(&local_req, ac->module->ldb, ac,
+				ac->local_msg,
+				ac->req->controls,
+				ac,
+				map_op_local_callback,
+				ac->req);
+	if (ret != LDB_SUCCESS) {
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
-
-	ldb_set_timeout_from_prev_req(ac->module->ldb, ac->orig_req, ac->local_req);
-
-	ac->step = MAP_MODIFY_LOCAL;
-
-	handle->state = LDB_ASYNC_INIT;
-	handle->status = LDB_SUCCESS;
-
-	return ldb_next_request(ac->module, ac->local_req);
+	return ldb_next_request(ac->module, local_req);
 }
+
+/*****************************************************************************
+ * MODIFY operations
+*****************************************************************************/
 
 /* Modify a record. */
 int map_modify(struct ldb_module *module, struct ldb_request *req)
 {
 	const struct ldb_message *msg = req->op.mod.message;
-	struct ldb_handle *h;
+	struct ldb_request *search_req;
+	struct ldb_message *remote_msg;
 	struct map_context *ac;
-	struct ldb_message *local, *remote;
+	int ret;
 
 	/* Do not manipulate our control entries */
 	if (ldb_dn_is_special(msg->dn)) {
@@ -395,257 +473,200 @@ int map_modify(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	/* Prepare context and handle */
-	h = map_init_handle(req, module);
-	if (h == NULL) {
+	ac = map_init_context(module, req);
+	if (ac == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	ac = talloc_get_type(h->private_data, struct map_context);
-
-	/* Prepare the local operation */
-	ac->local_req = talloc(ac, struct ldb_request);
-	if (ac->local_req == NULL) {
-		goto oom;
-	}
-
-	*(ac->local_req) = *req;	/* copy the request */
-
-	ac->local_req->context = NULL;
-	ac->local_req->callback = NULL;
-
-	/* Prepare the remote operation */
-	ac->remote_req = talloc(ac, struct ldb_request);
-	if (ac->remote_req == NULL) {
-		goto oom;
-	}
-
-	*(ac->remote_req) = *req;	/* copy the request */
-
-	ac->remote_req->context = NULL;
-	ac->remote_req->callback = NULL;
 
 	/* Prepare the local message */
-	local = ldb_msg_new(ac->local_req);
-	if (local == NULL) {
-		goto oom;
+	ac->local_msg = ldb_msg_new(ac);
+	if (ac->local_msg == NULL) {
+		map_oom(module);
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	local->dn = msg->dn;
+	ac->local_msg->dn = msg->dn;
 
 	/* Prepare the remote message */
-	remote = ldb_msg_new(ac->remote_req);
-	if (remote == NULL) {
-		goto oom;
+	remote_msg = ldb_msg_new(ac->remote_req);
+	if (remote_msg == NULL) {
+		map_oom(module);
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	remote->dn = ldb_dn_map_local(ac->module, remote, msg->dn);
+	remote_msg->dn = ldb_dn_map_local(ac->module, remote_msg, msg->dn);
 
 	/* Split local from remote message */
-	ldb_msg_partition(module, local, remote, msg);
-	ac->local_req->op.mod.message = local;
-	ac->remote_req->op.mod.message = remote;
+	ldb_msg_partition(module, ac->local_msg, remote_msg, msg);
 
-	if ((local->num_elements == 0) || (!map_check_local_db(ac->module))) {
+	/* Prepare the remote operation */
+	ret = ldb_build_mod_req(&ac->remote_req, module->ldb,
+				ac, remote_msg,
+				req->controls,
+				ac, map_op_remote_callback,
+				req);
+	if (ret != LDB_SUCCESS) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	if ((ac->local_msg->num_elements == 0) ||
+	    ( ! map_check_local_db(ac->module))) {
 		/* No local data or db, just run the remote request */
-		talloc_free(ac->local_req);
-		req->handle = h;	/* return our own handle to deal with this call */
-		return map_modify_do_remote(h);
+		return ldb_next_remote_request(ac->module, ac->remote_req);
 	}
 
 	/* prepare the search operation */
-	ac->search_req = map_search_self_req(ac, msg->dn);
-	if (ac->search_req == NULL) {
-		goto failed;
+	ret = map_search_self_req(&search_req, ac, msg->dn);
+	if (ret != LDB_SUCCESS) {
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ac->step = MAP_SEARCH_SELF_MODIFY;
-
-	req->handle = h;		/* return our own handle to deal with this call */
-	return ldb_next_request(module, ac->search_req);
-
-oom:
-	map_oom(module);
-failed:
-	talloc_free(h);
-	return LDB_ERR_OPERATIONS_ERROR;
+	return ldb_next_request(module, search_req);
 }
 
-/* Delete the remote record. */
-int map_delete_do_remote(struct ldb_handle *handle)
+/* Modify the local record. */
+static int map_modify_do_local(struct map_context *ac)
 {
-	struct map_context *ac;
+	struct ldb_request *local_req;
+	char *dn;
+	int ret;
 
-	ac = talloc_get_type(handle->private_data, struct map_context);
-
-	ldb_set_timeout_from_prev_req(ac->module->ldb, ac->orig_req, ac->remote_req);
-
-	ac->step = MAP_DELETE_REMOTE;
-
-	handle->state = LDB_ASYNC_INIT;
-	handle->status = LDB_SUCCESS;
-
-	return ldb_next_remote_request(ac->module, ac->remote_req);
-}
-
-/* Delete the local record. */
-int map_delete_do_local(struct ldb_handle *handle)
-{
-	struct map_context *ac;
-
-	ac = talloc_get_type(handle->private_data, struct map_context);
-
-	/* No local record, continue remotely */
 	if (ac->local_dn == NULL) {
-		return map_delete_do_remote(handle);
+		/* No local record present, add it instead */
+		/* Add local 'IS_MAPPED' */
+		/* TODO: use GUIDs here instead */
+		if (ldb_msg_add_empty(ac->local_msg, IS_MAPPED,
+					LDB_FLAG_MOD_ADD, NULL) != 0) {
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		dn = ldb_dn_alloc_linearized(ac->local_msg,
+					ac->remote_req->op.mod.message->dn);
+		if (ldb_msg_add_string(ac->local_msg, IS_MAPPED, dn) != 0) {
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+
+		/* Prepare the local operation */
+		ret = ldb_build_add_req(&local_req, ac->module->ldb, ac,
+					ac->local_msg,
+					ac->req->controls,
+					ac,
+					map_op_local_callback,
+					ac->req);
+		if (ret != LDB_SUCCESS) {
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+	} else {
+		/* Prepare the local operation */
+		ret = ldb_build_mod_req(&local_req, ac->module->ldb, ac,
+					ac->local_msg,
+					ac->req->controls,
+					ac,
+					map_op_local_callback,
+					ac->req);
+		if (ret != LDB_SUCCESS) {
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
 	}
 
-	ldb_set_timeout_from_prev_req(ac->module->ldb, ac->orig_req, ac->local_req);
-
-	ac->step = MAP_DELETE_LOCAL;
-
-	handle->state = LDB_ASYNC_INIT;
-	handle->status = LDB_SUCCESS;
-
-	return ldb_next_request(ac->module, ac->local_req);
+	return ldb_next_request(ac->module, local_req);
 }
+
+/*****************************************************************************
+ * DELETE operations
+*****************************************************************************/
 
 /* Delete a record. */
 int map_delete(struct ldb_module *module, struct ldb_request *req)
 {
-	struct ldb_handle *h;
+	struct ldb_request *search_req;
 	struct map_context *ac;
+	int ret;
 
 	/* Do not manipulate our control entries */
 	if (ldb_dn_is_special(req->op.del.dn)) {
 		return ldb_next_request(module, req);
 	}
 
-	/* No mapping requested (perhaps no DN mapping specified), skip to next module */
+	/* No mapping requested (perhaps no DN mapping specified).
+	 * Skip to next module */
 	if (!ldb_dn_check_local(module, req->op.del.dn)) {
 		return ldb_next_request(module, req);
 	}
 
 	/* Prepare context and handle */
-	h = map_init_handle(req, module);
-	if (h == NULL) {
+	ac = map_init_context(module, req);
+	if (ac == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	ac = talloc_get_type(h->private_data, struct map_context);
-
-	/* Prepare the local operation */
-	ac->local_req = talloc(ac, struct ldb_request);
-	if (ac->local_req == NULL) {
-		goto oom;
-	}
-
-	*(ac->local_req) = *req;	/* copy the request */
-	ac->local_req->op.del.dn = req->op.del.dn;
-
-	ac->local_req->context = NULL;
-	ac->local_req->callback = NULL;
 
 	/* Prepare the remote operation */
-	ac->remote_req = talloc(ac, struct ldb_request);
-	if (ac->remote_req == NULL) {
-		goto oom;
+	ret = ldb_build_del_req(&ac->remote_req, module->ldb, ac,
+				   ldb_dn_map_local(module, ac, req->op.del.dn),
+				   req->controls,
+				   ac,
+				   map_op_remote_callback,
+				   req);
+	if (ret != LDB_SUCCESS) {
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
-
-	*(ac->remote_req) = *req;	/* copy the request */
-	ac->remote_req->op.del.dn = ldb_dn_map_local(module, ac->remote_req, req->op.del.dn);
 
 	/* No local db, just run the remote request */
 	if (!map_check_local_db(ac->module)) {
-		req->handle = h;	/* return our own handle to deal with this call */
-		return map_delete_do_remote(h);
+		/* Do the remote request. */
+		return ldb_next_remote_request(ac->module, ac->remote_req);
 	}
-
-	ac->remote_req->context = NULL;
-	ac->remote_req->callback = NULL;
 
 	/* Prepare the search operation */
-	ac->search_req = map_search_self_req(ac, req->op.del.dn);
-	if (ac->search_req == NULL) {
-		goto failed;
+	ret = map_search_self_req(&search_req, ac, req->op.del.dn);
+	if (ret != LDB_SUCCESS) {
+		map_oom(module);
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	req->handle = h;		/* return our own handle to deal with this call */
-
-	ac->step = MAP_SEARCH_SELF_DELETE;
-
-	return ldb_next_request(module, ac->search_req);
-
-oom:
-	map_oom(module);
-failed:
-	talloc_free(h);
-	return LDB_ERR_OPERATIONS_ERROR;
+	return ldb_next_request(module, search_req);
 }
 
-/* Rename the remote record. */
-int map_rename_do_remote(struct ldb_handle *handle)
+/* Delete the local record. */
+static int map_delete_do_local(struct map_context *ac)
 {
-	struct map_context *ac;
-
-	ac = talloc_get_type(handle->private_data, struct map_context);
-
-	ldb_set_timeout_from_prev_req(ac->module->ldb, ac->orig_req, ac->remote_req);
-
-	ac->step = MAP_RENAME_REMOTE;
-
-	handle->state = LDB_ASYNC_INIT;
-	handle->status = LDB_SUCCESS;
-
-	return ldb_next_remote_request(ac->module, ac->remote_req);
-}
-
-/* Update the local 'IS_MAPPED' attribute. */
-int map_rename_do_fixup(struct ldb_handle *handle)
-{
-	struct map_context *ac;
-
-	ac = talloc_get_type(handle->private_data, struct map_context);
-
-	ldb_set_timeout_from_prev_req(ac->module->ldb, ac->orig_req, ac->down_req);
-
-	ac->step = MAP_RENAME_FIXUP;
-
-	handle->state = LDB_ASYNC_INIT;
-	handle->status = LDB_SUCCESS;
-
-	return ldb_next_request(ac->module, ac->down_req);
-}
-
-/* Rename the local record. */
-int map_rename_do_local(struct ldb_handle *handle)
-{
-	struct map_context *ac;
-
-	ac = talloc_get_type(handle->private_data, struct map_context);
+	struct ldb_request *local_req;
+	int ret;
 
 	/* No local record, continue remotely */
 	if (ac->local_dn == NULL) {
-		return map_rename_do_remote(handle);
+		/* Do the remote request. */
+		return ldb_next_remote_request(ac->module, ac->remote_req);
 	}
 
-	ldb_set_timeout_from_prev_req(ac->module->ldb, ac->orig_req, ac->local_req);
-
-	ac->step = MAP_RENAME_LOCAL;
-
-	handle->state = LDB_ASYNC_INIT;
-	handle->status = LDB_SUCCESS;
-
-	return ldb_next_request(ac->module, ac->local_req);
+	/* Prepare the local operation */
+	ret = ldb_build_del_req(&local_req, ac->module->ldb, ac,
+				   ac->req->op.del.dn,
+				   ac->req->controls,
+				   ac,
+				   map_op_local_callback,
+				   ac->req);
+	if (ret != LDB_SUCCESS) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	return ldb_next_request(ac->module, local_req);
 }
+
+/*****************************************************************************
+ * RENAME operations
+*****************************************************************************/
 
 /* Rename a record. */
 int map_rename(struct ldb_module *module, struct ldb_request *req)
 {
-	struct ldb_handle *h;
+	struct ldb_request *search_req;
 	struct map_context *ac;
+	int ret;
 
 	/* Do not manipulate our control entries */
 	if (ldb_dn_is_special(req->op.rename.olddn)) {
 		return ldb_next_request(module, req);
 	}
 
-	/* No mapping requested (perhaps no DN mapping specified), skip to next module */
+	/* No mapping requested (perhaps no DN mapping specified).
+	 * Skip to next module */
 	if ((!ldb_dn_check_local(module, req->op.rename.olddn)) &&
 	    (!ldb_dn_check_local(module, req->op.rename.newdn))) {
 		return ldb_next_request(module, req);
@@ -658,66 +679,113 @@ int map_rename(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	/* Prepare context and handle */
-	h = map_init_handle(req, module);
-	if (h == NULL) {
+	ac = map_init_context(module, req);
+	if (ac == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	ac = talloc_get_type(h->private_data, struct map_context);
-
-	/* Prepare the local operation */
-	ac->local_req = talloc(ac, struct ldb_request);
-	if (ac->local_req == NULL) {
-		goto oom;
-	}
-
-	*(ac->local_req) = *req;	/* copy the request */
-	ac->local_req->op.rename.olddn = req->op.rename.olddn;
-	ac->local_req->op.rename.newdn = req->op.rename.newdn;
-
-	ac->local_req->context = NULL;
-	ac->local_req->callback = NULL;
 
 	/* Prepare the remote operation */
-	ac->remote_req = talloc(ac, struct ldb_request);
-	if (ac->remote_req == NULL) {
-		goto oom;
+	ret = ldb_build_rename_req(&ac->remote_req, module->ldb, ac,
+				   ldb_dn_map_local(module, ac, req->op.rename.olddn),
+				   ldb_dn_map_local(module, ac, req->op.rename.newdn),
+				   req->controls,
+				   ac, map_op_remote_callback,
+				   req);
+	if (ret != LDB_SUCCESS) {
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
-
-	*(ac->remote_req) = *req;	/* copy the request */
-	ac->remote_req->op.rename.olddn = ldb_dn_map_local(module, ac->remote_req, req->op.rename.olddn);
-	ac->remote_req->op.rename.newdn = ldb_dn_map_local(module, ac->remote_req, req->op.rename.newdn);
-
-	ac->remote_req->context = NULL;
-	ac->remote_req->callback = NULL;
 
 	/* No local db, just run the remote request */
 	if (!map_check_local_db(ac->module)) {
-		req->handle = h;	/* return our own handle to deal with this call */
-		return map_rename_do_remote(h);
-	}
-
-	/* Prepare the fixup operation */
-	/* TODO: use GUIDs here instead -- or skip it when GUIDs are used. */
-	ac->down_req = map_build_fixup_req(ac, req->op.rename.newdn, ac->remote_req->op.rename.newdn);
-	if (ac->down_req == NULL) {
-		goto failed;
+		/* Do the remote request. */
+		return ldb_next_remote_request(ac->module, ac->remote_req);
 	}
 
 	/* Prepare the search operation */
-	ac->search_req = map_search_self_req(ac, req->op.rename.olddn);
-	if (ac->search_req == NULL) {
-		goto failed;
+	ret = map_search_self_req(&search_req, ac, req->op.rename.olddn);
+	if (ret != LDB_SUCCESS) {
+		map_oom(module);
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	req->handle = h;		/* return our own handle to deal with this call */
+	return ldb_next_request(module, search_req);
+}
 
-	ac->step = MAP_SEARCH_SELF_RENAME;
+/* Rename the local record. */
+static int map_rename_do_local(struct map_context *ac)
+{
+	struct ldb_request *local_req;
+	int ret;
 
-	return ldb_next_request(module, ac->search_req);
+	/* No local record, continue remotely */
+	if (ac->local_dn == NULL) {
+		/* Do the remote request. */
+		return ldb_next_remote_request(ac->module, ac->remote_req);
+	}
 
-oom:
-	map_oom(module);
-failed:
-	talloc_free(h);
-	return LDB_ERR_OPERATIONS_ERROR;
+	/* Prepare the local operation */
+	ret = ldb_build_rename_req(&local_req, ac->module->ldb, ac,
+				   ac->req->op.rename.olddn,
+				   ac->req->op.rename.newdn,
+				   ac->req->controls,
+				   ac,
+				   map_rename_local_callback,
+				   ac->req);
+	if (ret != LDB_SUCCESS) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	return ldb_next_request(ac->module, local_req);
+}
+
+static int map_rename_local_callback(struct ldb_request *req,
+				     struct ldb_reply *ares)
+{
+	struct map_context *ac;
+	int ret;
+
+	ac = talloc_get_type(req->context, struct map_context);
+
+	if (!ares) {
+		return ldb_module_done(ac->req, NULL, NULL,
+					LDB_ERR_OPERATIONS_ERROR);
+	}
+	if (ares->error != LDB_SUCCESS) {
+		return ldb_module_done(ac->req, ares->controls,
+					ares->response, ares->error);
+	}
+
+	if (ares->type != LDB_REPLY_DONE) {
+		ldb_set_errstring(req->handle->ldb, "Invalid reply type!");
+		return ldb_module_done(ac->req, NULL, NULL,
+					LDB_ERR_OPERATIONS_ERROR);
+	}
+
+	/* proceed with next step */
+	ret = map_rename_do_fixup(ac);
+	if (ret != LDB_SUCCESS) {
+		return ldb_module_done(ac->req, NULL, NULL,
+					LDB_ERR_OPERATIONS_ERROR);
+	}
+
+	return LDB_SUCCESS;
+}
+
+/* Update the local 'IS_MAPPED' attribute. */
+static int map_rename_do_fixup(struct map_context *ac)
+{
+	struct ldb_request *local_req;
+
+	/* Prepare the fixup operation */
+	/* TODO: use GUIDs here instead -- or skip it when GUIDs are used. */
+	local_req = map_build_fixup_req(ac,
+					ac->req->op.rename.newdn,
+					ac->remote_req->op.rename.newdn,
+					ac,
+					map_op_local_callback);
+	if (local_req == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	return ldb_next_request(ac->module, local_req);
 }

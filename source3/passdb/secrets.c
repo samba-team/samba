@@ -259,6 +259,31 @@ bool secrets_fetch_domain_guid(const char *domain, struct GUID *guid)
 	return True;
 }
 
+bool secrets_store_local_schannel_key(uint8_t schannel_key[16])
+{
+	return secrets_store(SECRETS_LOCAL_SCHANNEL_KEY, schannel_key, 16);
+}
+
+bool secrets_fetch_local_schannel_key(uint8_t schannel_key[16])
+{
+	size_t size = 0;
+	uint8_t *key;
+
+	key = (uint8_t *)secrets_fetch(SECRETS_LOCAL_SCHANNEL_KEY, &size);
+	if (key == NULL) {
+		return false;
+	}
+
+	if (size != 16) {
+		SAFE_FREE(key);
+		return false;
+	}
+
+	memcpy(schannel_key, key, 16);
+	SAFE_FREE(key);
+	return true;
+}
+
 /**
  * Form a key for fetching the machine trust account sec channel type
  *

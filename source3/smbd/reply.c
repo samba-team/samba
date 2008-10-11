@@ -29,7 +29,6 @@
 /* look in server.c for some explanation of these variables */
 extern enum protocol_types Protocol;
 extern int max_recv;
-unsigned int smb_echo_count = 0;
 extern uint32 global_client_caps;
 
 extern bool global_encrypted_passwords_negotiated;
@@ -340,8 +339,7 @@ bool check_fsp_open(connection_struct *conn, struct smb_request *req,
 }
 
 /****************************************************************************
- Check if we have a correct fsp pointing to a file. Replacement for the
- CHECK_FSP macro.
+ Check if we have a correct fsp pointing to a file.
 ****************************************************************************/
 
 bool check_fsp(connection_struct *conn, struct smb_request *req,
@@ -4273,7 +4271,7 @@ void reply_close(struct smb_request *req)
 	fsp = file_fsp(SVAL(req->inbuf,smb_vwv0));
 
 	/*
-	 * We can only use CHECK_FSP if we know it's not a directory.
+	 * We can only use check_fsp if we know it's not a directory.
 	 */
 
 	if(!fsp || (fsp->conn != conn) || (fsp->vuid != req->vuid)) {
@@ -4610,8 +4608,6 @@ void reply_echo(struct smb_request *req)
 	DEBUG(3,("echo %d times\n", smb_reverb));
 
 	TALLOC_FREE(req->outbuf);
-
-	smb_echo_count++;
 
 	END_PROFILE(SMBecho);
 	return;
@@ -5583,9 +5579,9 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 		DEBUG(3,("rename_internals_fsp: succeeded doing rename on %s -> %s\n",
 			fsp->fsp_name,newname));
 
-		rename_open_files(conn, lck, newname);
-
 		notify_rename(conn, fsp->is_directory, fsp->fsp_name, newname);
+
+		rename_open_files(conn, lck, newname);
 
 		/*
 		 * A rename acts as a new file create w.r.t. allowing an initial delete

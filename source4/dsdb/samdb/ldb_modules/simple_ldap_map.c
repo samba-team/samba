@@ -36,6 +36,11 @@
 #include "librpc/ndr/libndr.h"
 #include "dsdb/samdb/samdb.h"
 
+struct entryuuid_private {
+	struct ldb_context *ldb;
+	struct ldb_dn **base_dns;
+};
+
 static struct ldb_val encode_guid(struct ldb_module *module, TALLOC_CTX *ctx, const struct ldb_val *val)
 {
 	struct GUID guid;
@@ -598,15 +603,19 @@ static int nsuniqueid_init(struct ldb_module *module)
 	return ldb_next_init(module);
 }
 
-static int get_seq(struct ldb_context *ldb, void *context, 
-		   struct ldb_reply *ares) 
+static int get_seq(struct ldb_request *req,
+		   struct ldb_reply *ares)
 {
-	unsigned long long *seq = (unsigned long long *)context;
+	unsigned long long *seq = (unsigned long long *)req->context;
 	if (ares->type == LDB_REPLY_ENTRY) {
 		struct ldb_message_element *el = ldb_msg_find_element(ares->message, "contextCSN");
 		if (el) {
 			*seq = entryCSN_to_usn_int(ares, &el->values[0]);
 		}
+	}
+
+	if (ares->type == LDB_REPLY_DONE) {
+		return ldb_request_done(req, LDB_SUCCESS);
 	}
 
 	return LDB_SUCCESS;
@@ -635,7 +644,7 @@ static int entryuuid_sequence_number(struct ldb_module *module, struct ldb_reque
 	partition_ctrl = ldb_request_get_control(req, DSDB_CONTROL_CURRENT_PARTITION_OID);
 	if (!partition_ctrl) {
 		ldb_debug_set(module->ldb, LDB_DEBUG_FATAL,
-			      "instancetype_add: no current partition control found");
+			      "entryuuid_sequence_number: no current partition control found");
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 
@@ -643,39 +652,21 @@ static int entryuuid_sequence_number(struct ldb_module *module, struct ldb_reque
 				    struct dsdb_control_current_partition);
 	SMB_ASSERT(partition && partition->version == DSDB_CONTROL_CURRENT_PARTITION_VERSION);
 
-	search_req = talloc(req, struct ldb_request);
-	if (search_req == NULL) {
-		ldb_set_errstring(module->ldb, "Out of Memory");
-		return LDB_ERR_OPERATIONS_ERROR;
+	ret = ldb_build_search_req(&search_req, module->ldb, req,
+				   partition->dn, LDB_SCOPE_BASE,
+				   NULL, contextCSN_attr, NULL,
+				   &seq, get_seq,
+				   NULL);
+	if (ret != LDB_SUCCESS) {
+		return ret;
 	}
-	
-	/* Finally, we have it.  This saves searching over more
-	 * partitions than we expose to the client, such as a cn=samba
-	 * configuration partition */
 
-	search_req->operation = LDB_SEARCH;
-	search_req->op.search.base = partition->dn;
-	search_req->op.search.scope = LDB_SCOPE_BASE;
-	
-	search_req->op.search.tree = ldb_parse_tree(search_req, "objectClass=*");
-	if (search_req->op.search.tree == NULL) {
-		ldb_set_errstring(module->ldb, "Unable to parse search expression");
-		talloc_free(search_req);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	
-	search_req->op.search.attrs = contextCSN_attr;
-	search_req->controls = NULL;
-	search_req->context = &seq;
-	search_req->callback = get_seq;
-	ldb_set_timeout(module->ldb, search_req, 0); /* use default timeout */
-	
 	ret = ldb_next_request(module, search_req);
-	
+
 	if (ret == LDB_SUCCESS) {
 		ret = ldb_wait(search_req->handle, LDB_WAIT_ALL);
 	}
-	
+
 	talloc_free(search_req);
 	if (ret != LDB_SUCCESS) {
 		return ret;

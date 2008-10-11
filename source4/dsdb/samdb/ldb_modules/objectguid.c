@@ -1,9 +1,9 @@
 /* 
    ldb database library
 
-   Copyright (C) Simo Sorce  2004-2006
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2005
    Copyright (C) Andrew Tridgell 2005
+   Copyright (C) Simo Sorce  2004-2008
 
      ** NOTE! The following LGPL license applies to the ldb
      ** library. This does NOT imply that all of Samba is released
@@ -103,6 +103,36 @@ static int add_uint64_element(struct ldb_message *msg, const char *attr, uint64_
 	return 0;
 }
 
+struct og_context {
+	struct ldb_module *module;
+	struct ldb_request *req;
+};
+
+static int og_op_callback(struct ldb_request *req, struct ldb_reply *ares)
+{
+	struct og_context *ac;
+
+	ac = talloc_get_type(req->context, struct og_context);
+
+	if (!ares) {
+		return ldb_module_done(ac->req, NULL, NULL,
+					LDB_ERR_OPERATIONS_ERROR);
+	}
+	if (ares->error != LDB_SUCCESS) {
+		return ldb_module_done(ac->req, ares->controls,
+					ares->response, ares->error);
+	}
+
+	if (ares->type != LDB_REPLY_DONE) {
+		talloc_free(ares);
+		return ldb_module_done(ac->req, NULL, NULL,
+					LDB_ERR_OPERATIONS_ERROR);
+	}
+
+	return ldb_module_done(ac->req, ares->controls,
+				ares->response, ares->error);
+}
+
 /* add_record: add objectGUID attribute */
 static int objectguid_add(struct ldb_module *module, struct ldb_request *req)
 {
@@ -115,6 +145,7 @@ static int objectguid_add(struct ldb_module *module, struct ldb_request *req)
 	enum ndr_err_code ndr_err;
 	int ret;
 	time_t t = time(NULL);
+	struct og_context *ac;
 
 	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "objectguid_add_record\n");
 
@@ -127,15 +158,15 @@ static int objectguid_add(struct ldb_module *module, struct ldb_request *req)
 		return ldb_next_request(module, req);
 	}
 
-	down_req = talloc(req, struct ldb_request);
-	if (down_req == NULL) {
+	ac = talloc(req, struct og_context);
+	if (ac == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-
-	*down_req = *req;
+	ac->module = module;
+	ac->req = req;
 
 	/* we have to copy the message as the caller might have it as a const */
-	down_req->op.add.message = msg = ldb_msg_copy_shallow(down_req, req->op.add.message);
+	msg = ldb_msg_copy_shallow(ac, req->op.add.message);
 	if (msg == NULL) {
 		talloc_free(down_req);
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -149,44 +180,41 @@ static int objectguid_add(struct ldb_module *module, struct ldb_request *req)
 				       &guid,
 				       (ndr_push_flags_fn_t)ndr_push_GUID);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		talloc_free(down_req);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	ret = ldb_msg_add_value(msg, "objectGUID", &v, NULL);
 	if (ret) {
-		talloc_free(down_req);
 		return ret;
 	}
 	
 	if (add_time_element(msg, "whenCreated", t) != 0 ||
 	    add_time_element(msg, "whenChanged", t) != 0) {
-		talloc_free(down_req);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	/* Get a sequence number from the backend */
+	/* FIXME: ldb_sequence_number is still SYNC now, when this changes,
+	 * make sure this function is split and a callback is used */
 	ret = ldb_sequence_number(module->ldb, LDB_SEQ_NEXT, &seq_num);
 	if (ret == LDB_SUCCESS) {
 		if (add_uint64_element(msg, "uSNCreated", seq_num) != 0 ||
 		    add_uint64_element(msg, "uSNChanged", seq_num) != 0) {
-			talloc_free(down_req);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 	}
 
-	ldb_set_timeout_from_prev_req(module->ldb, req, down_req);
-
-	/* go on with the call chain */
-	ret = ldb_next_request(module, down_req);
-
-	/* do not free down_req as the call results may be linked to it,
-	 * it will be freed when the upper level request get freed */
-	if (ret == LDB_SUCCESS) {
-		req->handle = down_req->handle;
+	ret = ldb_build_add_req(&down_req, module->ldb, ac,
+				msg,
+				req->controls,
+				ac, og_op_callback,
+				req);
+	if (ret != LDB_SUCCESS) {
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	return ret;
+	/* go on with the call chain */
+	return ldb_next_request(module, down_req);
 }
 
 /* modify_record: update timestamps */
@@ -197,6 +225,7 @@ static int objectguid_modify(struct ldb_module *module, struct ldb_request *req)
 	int ret;
 	time_t t = time(NULL);
 	uint64_t seq_num;
+	struct og_context *ac;
 
 	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "objectguid_add_record\n");
 
@@ -205,22 +234,20 @@ static int objectguid_modify(struct ldb_module *module, struct ldb_request *req)
 		return ldb_next_request(module, req);
 	}
 
-	down_req = talloc(req, struct ldb_request);
-	if (down_req == NULL) {
+	ac = talloc(req, struct og_context);
+	if (ac == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-
-	*down_req = *req;
+	ac->module = module;
+	ac->req = req;
 
 	/* we have to copy the message as the caller might have it as a const */
-	down_req->op.mod.message = msg = ldb_msg_copy_shallow(down_req, req->op.mod.message);
+	msg = ldb_msg_copy_shallow(ac, req->op.mod.message);
 	if (msg == NULL) {
-		talloc_free(down_req);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	if (add_time_element(msg, "whenChanged", t) != 0) {
-		talloc_free(down_req);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -228,23 +255,21 @@ static int objectguid_modify(struct ldb_module *module, struct ldb_request *req)
 	ret = ldb_sequence_number(module->ldb, LDB_SEQ_NEXT, &seq_num);
 	if (ret == LDB_SUCCESS) {
 		if (add_uint64_element(msg, "uSNChanged", seq_num) != 0) {
-			talloc_free(down_req);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 	}
 
-	ldb_set_timeout_from_prev_req(module->ldb, req, down_req);
-
-	/* go on with the call chain */
-	ret = ldb_next_request(module, down_req);
-
-	/* do not free down_req as the call results may be linked to it,
-	 * it will be freed when the upper level request get freed */
-	if (ret == LDB_SUCCESS) {
-		req->handle = down_req->handle;
+	ret = ldb_build_mod_req(&down_req, module->ldb, ac,
+				msg,
+				req->controls,
+				ac, og_op_callback,
+				req);
+	if (ret != LDB_SUCCESS) {
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	return ret;
+	/* go on with the call chain */
+	return ldb_next_request(module, down_req);
 }
 
 _PUBLIC_ const struct ldb_module_ops ldb_objectguid_module_ops = {

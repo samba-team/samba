@@ -134,6 +134,14 @@
 		</para></listitem>
 		</varlistentry>
 
+		<varlistentry>
+		<term>mkhomedir</term>
+		<listitem><para>
+		Create homedirectory for a user on-the-fly, option is valid in
+		PAM session block.
+		</para></listitem>
+		</varlistentry>
+
 		</variablelist>
 
 

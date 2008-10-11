@@ -904,6 +904,7 @@ enum smb_setfileinfo_level {
 	RAW_SFILEINFO_UNIX_HLINK	      = SMB_SFILEINFO_UNIX_HLINK,
 	RAW_SFILEINFO_BASIC_INFORMATION       = SMB_SFILEINFO_BASIC_INFORMATION,
 	RAW_SFILEINFO_RENAME_INFORMATION      = SMB_SFILEINFO_RENAME_INFORMATION,
+	RAW_SFILEINFO_LINK_INFORMATION        = SMB_SFILEINFO_LINK_INFORMATION,
 	RAW_SFILEINFO_DISPOSITION_INFORMATION = SMB_SFILEINFO_DISPOSITION_INFORMATION,
 	RAW_SFILEINFO_POSITION_INFORMATION    = SMB_SFILEINFO_POSITION_INFORMATION,
 	RAW_SFILEINFO_FULL_EA_INFORMATION     = SMB_SFILEINFO_FULL_EA_INFORMATION,
@@ -984,6 +985,7 @@ union smb_setfileinfo {
 			NTTIME write_time;
 			NTTIME change_time;
 			uint32_t attrib;
+			uint32_t reserved;
 		} in;
 	} basic_info;
 
@@ -1028,6 +1030,17 @@ union smb_setfileinfo {
 			const char *new_name;
 		} in;
 	} rename_information;
+
+	/* RAW_SFILEINFO_LINK_INFORMATION interface */
+	struct {
+		enum smb_setfileinfo_level level;
+		struct {
+			union smb_handle_or_path file;
+			uint8_t overwrite;
+			uint64_t root_fid;
+			const char *new_name;
+		} in;
+	} link_information;
 
 	/* RAW_SFILEINFO_POSITION_INFORMATION interface */
 	struct {

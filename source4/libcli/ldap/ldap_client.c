@@ -435,7 +435,7 @@ static void ldap_connect_got_sock(struct composite_context *ctx,
 	packet_set_error_handler(conn->packet, ldap_error_handler);
 	packet_set_event_context(conn->packet, conn->event.event_ctx);
 	packet_set_fde(conn->packet, conn->event.fde);
-	packet_set_serialise(conn->packet);
+/*	packet_set_serialise(conn->packet); */
 
 	composite_done(ctx);
 }

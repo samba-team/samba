@@ -2,17 +2,17 @@
    Unix SMB/CIFS implementation.
    connection claim routines
    Copyright (C) Andrew Tridgell 1998
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -63,7 +63,7 @@ static int count_fn(struct db_record *rec,
 		    void *udp)
 {
 	struct count_stat *cs = (struct count_stat *)udp;
- 
+
 	if (crec->cnum == -1) {
 		return 0;
 	}
@@ -159,7 +159,7 @@ bool claim_connection(connection_struct *conn, const char *name,
 	}
 	crec.start = time(NULL);
 	crec.bcast_msg_flags = msg_flags;
-	
+
 	strlcpy(crec.machine,get_remote_machine_name(),sizeof(crec.machine));
 	strlcpy(crec.addr,conn?conn->client_address:
 			client_addr(get_client_fd(),addr,sizeof(addr)),
@@ -232,17 +232,17 @@ static TDB_DATA* make_pipe_rec_key( struct pipe_open_rec *prec )
 {
 	TDB_DATA *kbuf = NULL;
 	fstring key_string;
-	
+
 	if ( !prec )
 		return NULL;
-	
+
 	if ( (kbuf = TALLOC_P(prec, TDB_DATA)) == NULL ) {
 		return NULL;
 	}
-	
+
 	snprintf( key_string, sizeof(key_string), "%s/%d/%d",
 		prec->name, procid_to_pid(&prec->pid), prec->pnum );
-		
+
 	*kbuf = string_term_tdb_data(talloc_strdup(prec, key_string));
 	if (kbuf->dptr == NULL )
 		return NULL;
@@ -273,17 +273,17 @@ bool store_pipe_opendb( smb_np_struct *p )
 	TDB_DATA *key;
 	TDB_DATA data;
 	bool ret = False;
-	
-	if ( (prec = TALLOC_P( NULL, struct pipe_open_rec)) == NULL ) {
+
+	if ( (prec = TALLOC_P( talloc_tos(), struct pipe_open_rec)) == NULL ) {
 		DEBUG(0,("store_pipe_opendb: talloc failed!\n"));
 		return False;
 	}
-	
+
 	fill_pipe_open_rec( prec, p );
 	if ( (key = make_pipe_rec_key( prec )) == NULL ) {
 		goto done;
 	}
-	
+
 	data.dptr = (uint8 *)prec;
 	data.dsize = sizeof(struct pipe_open_rec);
 
@@ -293,7 +293,7 @@ bool store_pipe_opendb( smb_np_struct *p )
 	}
 
 	ret = NT_STATUS_IS_OK(dbrec->store(dbrec, data, TDB_REPLACE));
-	
+
 done:
 	TALLOC_FREE( prec );	
 	return ret;
@@ -308,24 +308,24 @@ bool delete_pipe_opendb( smb_np_struct *p )
 	struct pipe_open_rec *prec;
 	TDB_DATA *key;
 	bool ret = False;
-	
-	if ( (prec = TALLOC_P( NULL, struct pipe_open_rec)) == NULL ) {
+
+	if ( (prec = TALLOC_P( talloc_tos(), struct pipe_open_rec)) == NULL ) {
 		DEBUG(0,("store_pipe_opendb: talloc failed!\n"));
 		return False;
 	}
-	
+
 	fill_pipe_open_rec( prec, p );
 	if ( (key = make_pipe_rec_key( prec )) == NULL ) {
 		goto done;
 	}
-	
+
 	if (!(dbrec = connections_fetch_record(prec, *key))) {
 		DEBUG(0, ("connections_fetch_record failed\n"));
 		goto done;
 	}
 
 	ret = NT_STATUS_IS_OK(dbrec->delete_rec(dbrec));
-	
+
 done:
 	TALLOC_FREE( prec );
 	return ret;
