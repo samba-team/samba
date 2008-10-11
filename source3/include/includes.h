@@ -654,6 +654,7 @@ typedef char fstring[FSTRING_LEN];
 
 #include "../talloc/talloc.h"
 
+#include "../lib/util/data_blob.h"
 #include "../lib/util/time.h"
 /* And a little extension. Abort on type mismatch */
 #define talloc_get_type_abort(ptr, type) \

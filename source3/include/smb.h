@@ -246,15 +246,6 @@ struct id_map {
 	enum id_mapping status;
 };
 
-/* used to hold an arbitrary blob of data */
-typedef struct data_blob {
-	uint8 *data;
-	size_t length;
-	void (*free)(struct data_blob *data_blob);
-} DATA_BLOB;
-
-extern const DATA_BLOB data_blob_null;
-
 #include "librpc/gen_ndr/misc.h"
 #include "librpc/gen_ndr/security.h"
 #include "librpc/ndr/libndr.h"

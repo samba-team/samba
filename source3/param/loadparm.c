@@ -6529,7 +6529,7 @@ static void copy_service(struct service *pserviceDest, struct service *pserviceS
 					break;
 				case P_LIST:
 					TALLOC_FREE(*((char ***)dest_ptr));
-					str_list_copy(NULL, (char ***)dest_ptr,
+					*((char ***)dest_ptr) = str_list_copy(NULL, 
 						      *(const char ***)src_ptr);
 					break;
 				default:
@@ -7927,9 +7927,8 @@ static void lp_save_defaults(void)
 			continue;
 		switch (parm_table[i].type) {
 			case P_LIST:
-				str_list_copy(
-					NULL, &(parm_table[i].def.lvalue),
-					*(const char ***)parm_table[i].ptr);
+				parm_table[i].def.lvalue = str_list_copy(
+					NULL, *(const char ***)parm_table[i].ptr);
 				break;
 			case P_STRING:
 			case P_USTRING:

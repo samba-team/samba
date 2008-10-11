@@ -435,18 +435,6 @@ int connections_forall(int (*fn)(struct db_record *rec,
 		       void *private_data);
 bool connections_init(bool rw);
 
-/* The following definitions come from lib/data_blob.c  */
-
-DATA_BLOB data_blob(const void *p, size_t length);
-DATA_BLOB data_blob_talloc(TALLOC_CTX *mem_ctx, const void *p, size_t length);
-void data_blob_free(DATA_BLOB *d);
-void data_blob_clear(DATA_BLOB *d);
-void data_blob_clear_free(DATA_BLOB *d);
-DATA_BLOB data_blob_string_const(const char *str);
-DATA_BLOB data_blob_const(const void *p, size_t length);
-DATA_BLOB data_blob_talloc_zero(TALLOC_CTX *mem_ctx, size_t length);
-_PUBLIC_ char *data_blob_hex_string(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob);
-
 /* The following definitions come from lib/dbwrap_util.c  */
 
 int32_t dbwrap_fetch_int32(struct db_context *db, const char *keystr);

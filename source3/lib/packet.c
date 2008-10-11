@@ -21,7 +21,7 @@
 
 struct packet_context {
 	int fd;
-	struct data_blob in, out;
+	DATA_BLOB in, out;
 };
 
 /*
@@ -120,16 +120,16 @@ NTSTATUS packet_fd_read_sync(struct packet_context *ctx)
 }
 
 bool packet_handler(struct packet_context *ctx,
-		    bool (*full_req)(const struct data_blob *data,
+		    bool (*full_req)(const DATA_BLOB *data,
 				     size_t *length,
 				     void *private_data),
-		    NTSTATUS (*callback)(const struct data_blob *data,
+		    NTSTATUS (*callback)(const DATA_BLOB *data,
 					 void *private_data),
 		    void *private_data,
 		    NTSTATUS *status)
 {
 	size_t length;
-	struct data_blob data;
+	DATA_BLOB data;
 
 	if (!full_req(&ctx->in, &length, private_data)) {
 		return False;
@@ -211,7 +211,7 @@ NTSTATUS packet_send(struct packet_context *ctx, int num_blobs, ...)
 	va_start(ap, num_blobs);
 	for (i=0; i<num_blobs; i++) {
 		size_t tmp;
-		struct data_blob blob = va_arg(ap, struct data_blob);
+		DATA_BLOB blob = va_arg(ap, DATA_BLOB);
 
 		tmp = len + blob.length;
 		if (tmp < len) {
@@ -236,7 +236,7 @@ NTSTATUS packet_send(struct packet_context *ctx, int num_blobs, ...)
 
 	va_start(ap, num_blobs);
 	for (i=0; i<num_blobs; i++) {
-		struct data_blob blob = va_arg(ap, struct data_blob);
+		DATA_BLOB blob = va_arg(ap, DATA_BLOB);
 
 		memcpy(ctx->out.data+ctx->out.length, blob.data, blob.length);
 		ctx->out.length += blob.length;

@@ -46,10 +46,10 @@ NTSTATUS packet_fd_read_sync(struct packet_context *ctx);
  * Otherwise return True and store the callback result in *status
  */
 bool packet_handler(struct packet_context *ctx,
-		    bool (*full_req)(const struct data_blob *data,
+		    bool (*full_req)(const DATA_BLOB *data,
 				     size_t *length,
 				     void *private_data),
-		    NTSTATUS (*callback)(const struct data_blob *data,
+		    NTSTATUS (*callback)(const DATA_BLOB *data,
 					 void *private_data),
 		    void *private_data,
 		    NTSTATUS *status);

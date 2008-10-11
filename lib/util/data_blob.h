@@ -120,4 +120,6 @@ _PUBLIC_ bool data_blob_realloc(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, size_t len
 _PUBLIC_ bool data_blob_append(TALLOC_CTX *mem_ctx, DATA_BLOB *blob,
 				   const void *p, size_t length);
 
+extern const DATA_BLOB data_blob_null;
+
 #endif /* _SAMBA_DATABLOB_H_ */
