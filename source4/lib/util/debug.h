@@ -39,6 +39,7 @@ struct debug_ops {
 	void (*log_task_id)(int fd);
 };
 
+#define DEBUGLEVEL *debug_level
 extern int DEBUGLEVEL;
 
 #define debug_ctx() (_debug_ctx?_debug_ctx:(_debug_ctx=talloc_new(NULL)))
@@ -48,9 +49,9 @@ extern int DEBUGLEVEL;
 	if (DEBUGLVL(level)) { \
 		void* _debug_ctx=NULL; \
 		if (header) { \
-			do_debug_header(level, __location__, __FUNCTION__); \
+			dbghdr(level, __location__, __FUNCTION__); \
 		} \
-		do_debug body; \
+		dbgtext body; \
 		talloc_free(_debug_ctx); \
 	} \
 } while (0)
@@ -77,7 +78,7 @@ enum debug_logtype {DEBUG_STDOUT = 0, DEBUG_FILE = 1, DEBUG_STDERR = 2};
   the backend for debug messages. Note that the DEBUG() macro has already
   ensured that the log level has been met before this is called
 */
-_PUBLIC_ void do_debug_header(int level, const char *location, const char *func);
+_PUBLIC_ void dbghdr(int level, const char *location, const char *func);
 
 /**
   reopen the log file (usually called because the log file name might have changed)
@@ -125,4 +126,4 @@ _PUBLIC_ void register_debug_handlers(const char *name, struct debug_ops *ops);
   @note You should never have to call this function directly. Call the DEBUG()
   macro instead.
 */
-_PUBLIC_ void do_debug(const char *format, ...) PRINTF_ATTRIBUTE(1,2);
+_PUBLIC_ void dbgtext(const char *format, ...) PRINTF_ATTRIBUTE(1,2);

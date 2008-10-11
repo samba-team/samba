@@ -46,7 +46,7 @@ static void tdb_wrap_log(TDB_CONTEXT *tdb, enum tdb_debug_level level,
 {
 	va_list ap;
 	char *ptr = NULL;
-	int debug_level;
+	int dl;
 
 	va_start(ap, format);
 	vasprintf(&ptr, format, ap);
@@ -54,24 +54,24 @@ static void tdb_wrap_log(TDB_CONTEXT *tdb, enum tdb_debug_level level,
 	
 	switch (level) {
 	case TDB_DEBUG_FATAL:
-		debug_level = 0;
+		dl = 0;
 		break;
 	case TDB_DEBUG_ERROR:
-		debug_level = 1;
+		dl = 1;
 		break;
 	case TDB_DEBUG_WARNING:
-		debug_level = 2;
+		dl = 2;
 		break;
 	case TDB_DEBUG_TRACE:
-		debug_level = 5;
+		dl = 5;
 		break;
 	default:
-		debug_level = 0;
+		dl = 0;
 	}		
 
 	if (ptr != NULL) {
 		const char *name = tdb_name(tdb);
-		DEBUG(debug_level, ("tdb(%s): %s", name ? name : "unnamed", ptr));
+		DEBUG(dl, ("tdb(%s): %s", name ? name : "unnamed", ptr));
 		free(ptr);
 	}
 }

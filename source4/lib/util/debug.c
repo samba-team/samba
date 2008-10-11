@@ -31,7 +31,9 @@
 /** 
  * this global variable determines what messages are printed 
  */
-_PUBLIC_ int DEBUGLEVEL;
+int _debug_level = 0;
+_PUBLIC_ int *debug_level = &_debug_level;
+int *DEBUGLEVEL_CLASS = NULL; /* For samba 3 */
 
 /* the registered mutex handlers */
 static struct {
@@ -89,10 +91,17 @@ static void log_timestring(int level, const char *location, const char *func)
   the backend for debug messages. Note that the DEBUG() macro has already
   ensured that the log level has been met before this is called
 */
-_PUBLIC_ void do_debug_header(int level, const char *location, const char *func)
+_PUBLIC_ void dbghdr(int level, const char *location, const char *func)
 {
 	log_timestring(level, location, func);
 	log_task_id();
+}
+
+
+_PUBLIC_ void dbghdrclass(int level, int class, const char *location, const char *func)
+{
+	/* Simple wrapper, Samba 4 doesn't do debug classes */
+	dbghdr(level, location, func);
 }
 
 /**
@@ -102,7 +111,7 @@ _PUBLIC_ void do_debug_header(int level, const char *location, const char *func)
   @note You should never have to call this function directly. Call the DEBUG()
   macro instead.
 */
-_PUBLIC_ void do_debug(const char *format, ...)
+_PUBLIC_ void dbgtext(const char *format, ...)
 {
 	va_list ap;
 	char *s = NULL;

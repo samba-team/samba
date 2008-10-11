@@ -486,7 +486,8 @@ void force_check_log_size( void );
 bool need_to_check_log_size( void );
 void check_log_size( void );
 void dbgflush( void );
-bool dbghdr(int level, int cls, const char *file, const char *func, int line);
+bool dbghdrclass(int level, int cls, const char *location, const char *func);
+bool dbghdr(int level, const char *location, const char *func);
 TALLOC_CTX *debug_ctx(void);
 
 /* The following definitions come from lib/display_sec.c  */

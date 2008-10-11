@@ -323,39 +323,39 @@ int gensec_sasl_log(void *context,
 		    int sasl_log_level,
 		    const char *message) 
 {
-	int debug_level;
+	int dl;
 	switch (sasl_log_level) {
 	case SASL_LOG_NONE:
-		debug_level = 0;
+		dl = 0;
 		break;
 	case SASL_LOG_ERR:
-		debug_level = 1;
+		dl = 1;
 		break;
 	case SASL_LOG_FAIL:
-		debug_level = 2;
+		dl = 2;
 		break;
 	case SASL_LOG_WARN:
-		debug_level = 3;
+		dl = 3;
 		break;
 	case SASL_LOG_NOTE:
-		debug_level = 5;
+		dl = 5;
 		break;
 	case SASL_LOG_DEBUG:
-		debug_level = 10;
+		dl = 10;
 		break;
 	case SASL_LOG_TRACE:
-		debug_level = 11;
+		dl = 11;
 		break;
 #if DEBUG_PASSWORD
 	case SASL_LOG_PASS:
-		debug_level = 100;
+		dl = 100;
 		break;
 #endif
 	default:
-		debug_level = 0;
+		dl = 0;
 		break;
 	}
-	DEBUG(debug_level, ("gensec_sasl: %s\n", message));
+	DEBUG(dl, ("gensec_sasl: %s\n", message));
 
 	return SASL_OK;
 }

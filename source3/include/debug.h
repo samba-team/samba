@@ -40,11 +40,13 @@
 int  Debug1( const char *, ... ) PRINTF_ATTRIBUTE(1,2);
 /* PRINTFLIKE1 */
 bool dbgtext( const char *, ... ) PRINTF_ATTRIBUTE(1,2);
-bool dbghdr( int level, int cls, const char *file, const char *func, int line );
+bool dbghdrclass( int level, int cls, const char *location, const char *func);
+bool dbghdr( int level, const char *location, const char *func);
 
 #if defined(sgi) && (_COMPILER_VERSION >= 730)
 #pragma mips_frequency_hint NEVER Debug1
 #pragma mips_frequency_hint NEVER dbgtext
+#pragma mips_frequency_hint NEVER dbghdrclass
 #pragma mips_frequency_hint NEVER dbghdr
 #endif
 
@@ -192,7 +194,7 @@ extern bool *DEBUGLEVEL_CLASS_ISSET;
 
 #define DEBUGLVL( level ) \
   ( CHECK_DEBUGLVL(level) \
-   && dbghdr( level, DBGC_CLASS, __FILE__, FUNCTION_MACRO, (__LINE__) ) )
+   && dbghdrclass( level, DBGC_CLASS, __location__, FUNCTION_MACRO ) )
 
 
 #define DEBUGLVLC( dbgc_class, level ) \
@@ -200,7 +202,7 @@ extern bool *DEBUGLEVEL_CLASS_ISSET;
      unlikely((DEBUGLEVEL_CLASS[ dbgc_class ] >= (level))||  \
      (!DEBUGLEVEL_CLASS_ISSET[ dbgc_class ] && \
       DEBUGLEVEL_CLASS[ DBGC_ALL   ] >= (level))  ) \
-   && dbghdr( level, DBGC_CLASS, __FILE__, FUNCTION_MACRO, (__LINE__) ) )
+   && dbghdrclass( level, DBGC_CLASS, __location__, FUNCTION_MACRO) )
 
 
 #define DEBUG( level, body ) \
@@ -208,7 +210,7 @@ extern bool *DEBUGLEVEL_CLASS_ISSET;
            unlikely((DEBUGLEVEL_CLASS[ DBGC_CLASS ] >= (level))||  \
            (!DEBUGLEVEL_CLASS_ISSET[ DBGC_CLASS ] && \
             DEBUGLEVEL_CLASS[ DBGC_ALL   ] >= (level))  ) \
-       && (dbghdr( level, DBGC_CLASS, __FILE__, FUNCTION_MACRO, (__LINE__) )) \
+       && (dbghdrclass( level, DBGC_CLASS, __location__, FUNCTION_MACRO )) \
        && (dbgtext body) )
 
 #define DEBUGC( dbgc_class, level, body ) \
@@ -216,7 +218,7 @@ extern bool *DEBUGLEVEL_CLASS_ISSET;
            unlikely((DEBUGLEVEL_CLASS[ dbgc_class ] >= (level))||  \
            (!DEBUGLEVEL_CLASS_ISSET[ dbgc_class ] && \
 	    DEBUGLEVEL_CLASS[ DBGC_ALL   ] >= (level))  ) \
-       && (dbghdr( level, DBGC_CLASS, __FILE__, FUNCTION_MACRO, (__LINE__) )) \
+       && (dbghdrclass( level, DBGC_CLASS, __location__, FUNCTION_MACRO)) \
        && (dbgtext body) )
 
 #define DEBUGADD( level, body ) \
