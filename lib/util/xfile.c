@@ -405,11 +405,12 @@ XFILE *x_fdup(const XFILE *f)
 		return NULL;
 	}
 
-	ret = SMB_CALLOC_ARRAY(XFILE, 1);
+	ret = malloc_p(XFILE);
 	if (!ret) {
 		close(fd);
 		return NULL;
 	}
+	memset(ret, 0, sizeof(XFILE));
 
 	ret->fd = fd;
 	ret->open_flags = f->open_flags;

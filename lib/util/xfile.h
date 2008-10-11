@@ -62,7 +62,7 @@ int x_fclose(XFILE *f);
 size_t x_fwrite(const void *p, size_t size, size_t nmemb, XFILE *f);
 
 /** thank goodness for asprintf() */
-int x_fileno(XFILE *f);
+int x_fileno(const XFILE *f);
 
 /** simulate fflush() */
 int x_fflush(XFILE *f);
