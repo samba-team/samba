@@ -403,12 +403,12 @@ NTSTATUS kerberos_return_pac(TALLOC_CTX *mem_ctx,
 	DEBUG(10,("got TGT for %s in %s\n", auth_princ, cc));
 	if (expire_time) {
 		DEBUGADD(10,("\tvalid until: %s (%d)\n",
-			http_timestring(*expire_time),
+			http_timestring(talloc_tos(), *expire_time),
 			(int)*expire_time));
 	}
 	if (renew_till_time) {
 		DEBUGADD(10,("\trenewable till: %s (%d)\n",
-			http_timestring(*renew_till_time),
+			http_timestring(talloc_tos(), *renew_till_time),
 			(int)*renew_till_time));
 	}
 

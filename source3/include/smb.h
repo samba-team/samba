@@ -174,9 +174,6 @@ typedef uint32 codepoint_t;
 /* pipe string names */
 #define PIPE_LANMAN   "\\PIPE\\LANMAN"
 
-/* 64 bit time (100usec) since ????? - cifs6.txt, section 3.5, page 30 */
-typedef uint64_t NTTIME;
-
 #define MAX_HOURS_LEN 32
 
 #ifndef MAXSUBAUTHS

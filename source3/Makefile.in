@@ -320,6 +320,7 @@ LIB_OBJ = $(LIBSAMBAUTIL_OBJ) \
 	  lib/interface.o ../lib/crypto/md4.o \
 	  lib/pidfile.o \
 	  lib/signal.o lib/system.o lib/sendfile.o lib/recvfile.o lib/time.o \
+	  ../lib/util/time.o \
 	  lib/ufc.o lib/genrand.o lib/username.o \
 	  lib/util_pw.o lib/access.o lib/smbrun.o \
 	  lib/bitmap.o ../lib/crypto/crc32.o lib/dprintf.o \

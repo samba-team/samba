@@ -905,7 +905,7 @@ static bool calculate_next_machine_pwd_change(const char *domain,
 	if (time(NULL) < (pass_last_set_time + timeout)) {
 		next_change = pass_last_set_time + timeout;
 		DEBUG(10,("machine password still valid until: %s\n",
-			http_timestring(next_change)));
+			http_timestring(talloc_tos(), next_change)));
 		*t = timeval_set(next_change, 0);
 		return true;
 	}

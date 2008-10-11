@@ -104,7 +104,7 @@ static int generic_job_delete( const char *sharename, const char *lprm_command, 
 	slprintf(jobstr, sizeof(jobstr)-1, "%d", pjob->sysjob);
 	return print_run_command( -1, sharename, False, lprm_command, NULL,
 		   "%j", jobstr,
-		   "%T", http_timestring(pjob->starttime),
+		   "%T", http_timestring(talloc_tos(), pjob->starttime),
 		   NULL);
 }
 

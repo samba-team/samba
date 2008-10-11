@@ -182,7 +182,8 @@ static int net_ads_info(struct net_context *c, int argc, const char **argv)
 	d_printf("Realm: %s\n", ads->config.realm);
 	d_printf("Bind Path: %s\n", ads->config.bind_path);
 	d_printf("LDAP port: %d\n", ads->ldap.port);
-	d_printf("Server time: %s\n", http_timestring(ads->config.current_time));
+	d_printf("Server time: %s\n", 
+			 http_timestring(talloc_tos(), ads->config.current_time));
 
 	d_printf("KDC server: %s\n", ads->auth.kdc_server );
 	d_printf("Server time offset: %d\n", ads->auth.time_offset );

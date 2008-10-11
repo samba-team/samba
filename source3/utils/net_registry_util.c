@@ -27,7 +27,7 @@ void print_registry_key(const char *keyname, NTTIME *modtime)
 	d_printf("Keyname   = %s\n", keyname);
 	d_printf("Modtime   = %s\n",
 		 modtime
-		 ? http_timestring(nt_time_to_unix(*modtime))
+		 ? http_timestring(talloc_tos(), nt_time_to_unix(*modtime))
 		 : "None");
 	d_printf("\n");
 }

@@ -79,17 +79,17 @@ static void display_samr_user_info_21(struct samr_UserInfo21 *r)
 	dump_data(0, (uint8_t *)r->parameters.array, r->parameters.length*2);
 
 	printf("\tLogon Time               :\t%s\n",
-	       http_timestring(nt_time_to_unix(r->last_logon)));
+	       http_timestring(talloc_tos(), nt_time_to_unix(r->last_logon)));
 	printf("\tLogoff Time              :\t%s\n",
-	       http_timestring(nt_time_to_unix(r->last_logoff)));
+	       http_timestring(talloc_tos(), nt_time_to_unix(r->last_logoff)));
 	printf("\tKickoff Time             :\t%s\n",
-	       http_timestring(nt_time_to_unix(r->acct_expiry)));
+	       http_timestring(talloc_tos(), nt_time_to_unix(r->acct_expiry)));
 	printf("\tPassword last set Time   :\t%s\n",
-	       http_timestring(nt_time_to_unix(r->last_password_change)));
+	       http_timestring(talloc_tos(), nt_time_to_unix(r->last_password_change)));
 	printf("\tPassword can change Time :\t%s\n",
-	       http_timestring(nt_time_to_unix(r->allow_password_change)));
+	       http_timestring(talloc_tos(), nt_time_to_unix(r->allow_password_change)));
 	printf("\tPassword must change Time:\t%s\n",
-	       http_timestring(nt_time_to_unix(r->force_password_change)));
+	       http_timestring(talloc_tos(), nt_time_to_unix(r->force_password_change)));
 
 	printf("\tunknown_2[0..31]...\n"); /* user passwords? */
 
@@ -196,7 +196,7 @@ static void display_sam_dom_info_8(struct samr_DomInfo8 *info8)
 {
 	printf("Sequence No:\t%llu\n", (unsigned long long)info8->sequence_num);
 	printf("Domain Create Time:\t%s\n",
-		http_timestring(nt_time_to_unix(info8->domain_create_time)));
+		http_timestring(talloc_tos(), nt_time_to_unix(info8->domain_create_time)));
 }
 
 static void display_sam_dom_info_9(struct samr_DomInfo9 *info9)
@@ -218,7 +218,7 @@ static void display_sam_dom_info_13(struct samr_DomInfo13 *info13)
 {
 	printf("Sequence No:\t%llu\n", (unsigned long long)info13->sequence_num);
 	printf("Domain Create Time:\t%s\n",
-		http_timestring(nt_time_to_unix(info13->domain_create_time)));
+		http_timestring(talloc_tos(), nt_time_to_unix(info13->domain_create_time)));
 	printf("Unknown1:\t%d\n", info13->unknown1);
 	printf("Unknown2:\t%d\n", info13->unknown2);
 

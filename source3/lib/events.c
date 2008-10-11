@@ -436,7 +436,7 @@ void dump_event_list(struct event_context *event_ctx)
 			   te->event_name,
 			   (unsigned long)te,
 			   (int)evt.tv_sec,
-			   http_timestring(te->when.tv_sec)));
+			   http_timestring(talloc_tos(), te->when.tv_sec)));
 	}
 
 	for (fe = event_ctx->fd_events; fe; fe = fe->next) {

@@ -488,7 +488,8 @@ static void cgi_download(char *file)
 			printf("Content-Type: text/html\r\n");
 		}
 	}
-	printf("Expires: %s\r\n", http_timestring(time(NULL)+EXPIRY_TIME));
+	printf("Expires: %s\r\n", 
+		   http_timestring(talloc_tos(), time(NULL)+EXPIRY_TIME));
 
 	lang = lang_tdb_current();
 	if (lang) {
@@ -604,7 +605,7 @@ void cgi_setup(const char *rootdir, int auth_required)
 	}
 
 	printf("HTTP/1.0 200 OK\r\nConnection: close\r\n");
-	printf("Date: %s\r\n", http_timestring(time(NULL)));
+	printf("Date: %s\r\n", http_timestring(talloc_tos(), time(NULL)));
 	baseurl = "";
 	pathinfo = url+1;
 }

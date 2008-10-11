@@ -32,6 +32,14 @@
 #define TIME_T_MIN 0
 #endif
 
+#if (SIZEOF_LONG == 8)
+#define TIME_FIXUP_CONSTANT_INT 11644473600L
+#elif (SIZEOF_LONG_LONG == 8)
+#define TIME_FIXUP_CONSTANT_INT 11644473600LL
+#endif
+
+
+
 /*
  * we use the INT32_MAX here as on 64 bit systems,
  * gmtime() fails with INT64_MAX
@@ -64,27 +72,40 @@ _PUBLIC_ void GetTimeOfDay(struct timeval *tval)
 
 #define TIME_FIXUP_CONSTANT 11644473600LL
 
-/**
-interpret an 8 byte "filetime" structure to a time_t
-It's originally in "100ns units since jan 1st 1601"
-**/
-_PUBLIC_ time_t nt_time_to_unix(NTTIME nt)
+time_t convert_timespec_to_time_t(struct timespec ts)
 {
-	if (nt == 0) {
-		return 0;
+	/* 1 ns == 1,000,000,000 - one thousand millionths of a second.
+	   increment if it's greater than 500 millionth of a second. */
+	if (ts.tv_nsec > 500000000) {
+		return ts.tv_sec + 1;
 	}
-	if (nt == -1LL) {
-		return (time_t)-1;
-	}
-	nt += 1000*1000*10/2;
-	nt /= 1000*1000*10;
-	nt -= TIME_FIXUP_CONSTANT;
+	return ts.tv_sec;
+}
 
-	if (TIME_T_MIN > nt || nt > TIME_T_MAX) {
-		return 0;
-	}
+struct timespec convert_time_t_to_timespec(time_t t)
+{
+	struct timespec ts;
+	ts.tv_sec = t;
+	ts.tv_nsec = 0;
+	return ts;
+}
 
-	return (time_t)nt;
+
+
+/**
+ Interpret an 8 byte "filetime" structure to a time_t
+ It's originally in "100ns units since jan 1st 1601"
+
+ An 8 byte value of 0xffffffffffffffff will be returned as a timespec of
+
+	tv_sec = 0
+	tv_nsec = 0;
+
+ Returns GMT.
+**/
+time_t nt_time_to_unix(NTTIME nt)
+{
+	return convert_timespec_to_time_t(nt_time_to_unix_timespec(&nt));
 }
 
 
@@ -99,14 +120,20 @@ _PUBLIC_ void unix_to_nt_time(NTTIME *nt, time_t t)
 	if (t == (time_t)-1) {
 		*nt = (NTTIME)-1LL;
 		return;
-	}		
+	}	
+
+	if (t == TIME_T_MAX) {
+		*nt = 0x7fffffffffffffffLL;
+		return;
+	}
+
 	if (t == 0) {
 		*nt = 0;
 		return;
 	}		
 
 	t2 = t;
-	t2 += TIME_FIXUP_CONSTANT;
+	t2 += TIME_FIXUP_CONSTANT_INT;
 	t2 *= 1000*1000*10;
 
 	*nt = t2;
@@ -218,7 +245,7 @@ _PUBLIC_ void push_dos_date3(uint8_t *buf,int offset,time_t unixdate, int zone_o
 /*******************************************************************
   interpret a 32 bit dos packed date/time to some parameters
 ********************************************************************/
-static void interpret_dos_date(uint32_t date,int *year,int *month,int *day,int *hour,int *minute,int *second)
+void interpret_dos_date(uint32_t date,int *year,int *month,int *day,int *hour,int *minute,int *second)
 {
 	uint32_t p0,p1,p2,p3;
 
@@ -294,6 +321,10 @@ _PUBLIC_ char *http_timestring(TALLOC_CTX *mem_ctx, time_t t)
 	char *buf;
 	char tempTime[60];
 	struct tm *tm = localtime(&t);
+
+	if (t == TIME_T_MAX) {
+		return talloc_strdup(mem_ctx, "never");
+	}
 
 	if (!tm) {
 		return talloc_asprintf(mem_ctx,"%ld seconds since the Epoch",(long)t);
@@ -613,6 +644,50 @@ _PUBLIC_ int get_time_zone(time_t t)
 	return tm_diff(&tm_utc,tm);
 }
 
+struct timespec nt_time_to_unix_timespec(NTTIME *nt)
+{
+	int64_t d;
+	struct timespec ret;
+
+	if (*nt == 0 || *nt == (int64_t)-1) {
+		ret.tv_sec = 0;
+		ret.tv_nsec = 0;
+		return ret;
+	}
+
+	d = (int64_t)*nt;
+	/* d is now in 100ns units, since jan 1st 1601".
+	   Save off the ns fraction. */
+
+	/*
+	 * Take the last seven decimal digits and multiply by 100.
+	 * to convert from 100ns units to 1ns units.
+	 */
+        ret.tv_nsec = (long) ((d % (1000 * 1000 * 10)) * 100);
+
+	/* Convert to seconds */
+	d /= 1000*1000*10;
+
+	/* Now adjust by 369 years to make the secs since 1970 */
+	d -= TIME_FIXUP_CONSTANT_INT;
+
+	if (d <= (int64_t)TIME_T_MIN) {
+		ret.tv_sec = TIME_T_MIN;
+		ret.tv_nsec = 0;
+		return ret;
+	}
+
+	if (d >= (int64_t)TIME_T_MAX) {
+		ret.tv_sec = TIME_T_MAX;
+		ret.tv_nsec = 0;
+		return ret;
+	}
+
+	ret.tv_sec = (time_t)d;
+	return ret;
+}
+
+
 /**
   check if 2 NTTIMEs are equal.
 */
@@ -620,3 +695,16 @@ bool nt_time_equal(NTTIME *t1, NTTIME *t2)
 {
 	return *t1 == *t2;
 }
+
+/**
+ Check if it's a null timespec.
+**/
+
+bool null_timespec(struct timespec ts)
+{
+	return ts.tv_sec == 0 || 
+		ts.tv_sec == (time_t)0xFFFFFFFF || 
+		ts.tv_sec == (time_t)-1;
+}
+
+
