@@ -41,6 +41,8 @@ struct test_rootDSE {
 };
 
 struct test_schema_ctx {
+	struct ldb_context *ldb;
+
 	struct ldb_paged_control *ctrl;
 	uint32_t count;
 	bool pending;
@@ -57,8 +59,8 @@ static bool test_search_rootDSE(struct ldb_context *ldb, struct test_rootDSE *ro
 
 	d_printf("Testing RootDSE Search\n");
 
-	ret = ldb_search(ldb, ldb_dn_new(ldb, ldb, NULL), LDB_SCOPE_BASE, 
-			 NULL, NULL, &r);
+	ret = ldb_search(ldb, ldb, &r, ldb_dn_new(ldb, ldb, NULL),
+			 LDB_SCOPE_BASE, NULL, NULL);
 	if (ret != LDB_SUCCESS) {
 		return false;
 	} else if (r->count != 1) {
@@ -82,15 +84,24 @@ static bool test_search_rootDSE(struct ldb_context *ldb, struct test_rootDSE *ro
 	return true;
 }
 
-static int test_schema_search_callback(struct ldb_context *ldb, void *context, struct ldb_reply *ares)
+static int test_schema_search_callback(struct ldb_request *req, struct ldb_reply *ares)
 {
-	struct test_schema_ctx *actx = talloc_get_type(context, struct test_schema_ctx);
+	struct test_schema_ctx *actx;
 	int ret = LDB_SUCCESS;
+
+	actx = talloc_get_type(req->context, struct test_schema_ctx);
+
+	if (!ares) {
+		return ldb_request_done(req, LDB_ERR_OPERATIONS_ERROR);
+	}
+	if (ares->error != LDB_SUCCESS) {
+		return ldb_request_done(req, ares->error);
+	}
 
 	switch (ares->type) {
 	case LDB_REPLY_ENTRY:
 		actx->count++;
-		ret = actx->callback(actx->private_data, ldb, ares->message);
+		ret = actx->callback(actx->private_data, actx->ldb, ares->message);
 		break;
 
 	case LDB_REPLY_REFERRAL:
@@ -118,21 +129,22 @@ static int test_schema_search_callback(struct ldb_context *ldb, void *context, s
 				actx->pending = true;
 			}
 		}
-		break;
-		
+		talloc_free(ares);
+		return ldb_request_done(req, LDB_SUCCESS);
+
 	default:
 		d_printf("%s: unknown Reply Type %u\n", __location__, ares->type);
-		return LDB_ERR_OTHER;
+		return ldb_request_done(req, LDB_ERR_OTHER);
 	}
 
 	if (talloc_free(ares) == -1) {
 		d_printf("talloc_free failed\n");
 		actx->pending = 0;
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_request_done(req, LDB_ERR_OPERATIONS_ERROR);
 	}
 
 	if (ret) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_request_done(req, LDB_ERR_OPERATIONS_ERROR);
 	}
 
 	return LDB_SUCCESS;
@@ -149,10 +161,12 @@ static bool test_create_schema_type(struct ldb_context *ldb, struct test_rootDSE
 	int ret;
 	struct test_schema_ctx *actx;
 
-	req = talloc(ldb, struct ldb_request);
-	actx = talloc(req, struct test_schema_ctx);
+	actx = talloc(ldb, struct test_schema_ctx);
+	actx->ldb = ldb;
+	actx->private_data = private_data;
+	actx->callback= callback;
 
-	ctrl = talloc_array(req, struct ldb_control *, 2);
+	ctrl = talloc_array(actx, struct ldb_control *, 2);
 	ctrl[0] = talloc(ctrl, struct ldb_control);
 	ctrl[0]->oid = LDB_CONTROL_PAGED_RESULTS_OID;
 	ctrl[0]->critical = true;
@@ -163,33 +177,30 @@ static bool test_create_schema_type(struct ldb_context *ldb, struct test_rootDSE
 	ctrl[0]->data = control;
 	ctrl[1] = NULL;
 
-	req->operation = LDB_SEARCH;
-	req->op.search.base = ldb_dn_new(req, ldb, root->schemadn);
-	req->op.search.scope = LDB_SCOPE_SUBTREE;
-	req->op.search.tree = ldb_parse_tree(req, filter);
-	if (req->op.search.tree == NULL) return -1;
-	req->op.search.attrs = NULL;
-	req->controls = ctrl;
-	req->context = actx;
-	req->callback = test_schema_search_callback;
-	ldb_set_timeout(ldb, req, 0);
+	ret = ldb_build_search_req(&req, ldb, actx,
+				   ldb_dn_new(actx, ldb, root->schemadn),
+				   LDB_SCOPE_SUBTREE,
+				   filter, NULL,
+				   ctrl,
+				   actx, test_schema_search_callback,
+				   NULL);
 
-	actx->count		= 0;
-	actx->ctrl		= control;
-	actx->callback		= callback;
-	actx->private_data	= private_data;
+	actx->ctrl = control;
+	actx->count = 0;
 again:
 	actx->pending		= false;
 
 	ret = ldb_request(ldb, req);
 	if (ret != LDB_SUCCESS) {
 		d_printf("search failed - %s\n", ldb_errstring(ldb));
+		talloc_free(actx);
 		return false;
 	}
 
 	ret = ldb_wait(req->handle, LDB_WAIT_ALL);
        	if (ret != LDB_SUCCESS) {
 		d_printf("search error - %s\n", ldb_errstring(ldb));
+		talloc_free(actx);
 		return false;
 	}
 
@@ -197,6 +208,7 @@ again:
 		goto again;
 
 	d_printf("filter[%s] count[%u]\n", filter, actx->count);
+	talloc_free(actx);
 	return true;
 }
 

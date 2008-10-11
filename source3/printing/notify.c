@@ -34,6 +34,7 @@ static struct notify_queue {
 	size_t buflen;
 } *notify_queue_head = NULL;
 
+static struct timed_event *notify_event;
 
 static bool create_send_ctx(void)
 {
@@ -214,6 +215,22 @@ void print_notify_send_messages(struct messaging_context *msg_ctx,
 	num_messages = 0;
 }
 
+/*******************************************************************
+ Event handler to send the messages.
+*******************************************************************/
+
+static void print_notify_event_send_messages(struct event_context *event_ctx,
+					struct timed_event *te,
+					const struct timeval *now,
+					void *private_data)
+{
+	/* Remove this timed event handler. */
+	TALLOC_FREE(notify_event);
+
+	change_to_root_user();
+	print_notify_send_messages(smbd_messaging_context(), 0);
+}
+
 /**********************************************************************
  deep copy a SPOOLSS_NOTIFY_MSG structure using a TALLOC_CTX
  *********************************************************************/
@@ -304,6 +321,15 @@ to notify_queue_head\n", msg->type, msg->field, msg->printer));
 
 	DLIST_ADD_END(notify_queue_head, pnqueue, struct notify_queue *);
 	num_messages++;
+
+	if (smbd_event_context()) {
+		/* Add an event for 1 second's time to send this queue. */
+		notify_event = event_add_timed(smbd_event_context(), NULL,
+					timeval_current_ofs(1,0),
+					"print_notify",
+					print_notify_event_send_messages, NULL);
+	}
+
 }
 
 static void send_notify_field_values(const char *sharename, uint32 type,

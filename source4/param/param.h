@@ -60,6 +60,7 @@ enum announce_as {/* Types of machine we can announce as. */
 struct loadparm_context;
 struct loadparm_service;
 struct smbcli_options;
+struct smbcli_session_options;
 
 void reload_charcnv(struct loadparm_context *lp_ctx);
 
@@ -318,6 +319,8 @@ int lp_maxprintjobs(struct loadparm_service *service, struct loadparm_service *s
 struct smb_iconv_convenience *lp_iconv_convenience(struct loadparm_context *lp_ctx);
 void lp_smbcli_options(struct loadparm_context *lp_ctx,
 			 struct smbcli_options *options);
+void lp_smbcli_session_options(struct loadparm_context *lp_ctx,
+				 struct smbcli_session_options *options);
 
 /* The following definitions come from param/generic.c  */
 

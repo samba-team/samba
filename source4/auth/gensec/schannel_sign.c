@@ -21,7 +21,7 @@
 */
 
 #include "includes.h"
-#include "lib/crypto/crypto.h"
+#include "../lib/crypto/crypto.h"
 #include "auth/auth.h"
 #include "auth/gensec/schannel.h"
 #include "auth/credentials/credentials.h"

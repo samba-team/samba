@@ -107,8 +107,8 @@ static enum drsuapi_DsNameStatus LDB_lookup_spn_alias(krb5_context context, stru
 		return DRSUAPI_DS_NAME_STATUS_RESOLVE_ERROR;
 	}
 
-	ret = ldb_search(ldb_ctx, service_dn, LDB_SCOPE_BASE, "(objectClass=nTDSService)",
-			 directory_attrs, &res);
+	ret = ldb_search(ldb_ctx, tmp_ctx, &res, service_dn, LDB_SCOPE_BASE,
+			 directory_attrs, "(objectClass=nTDSService)");
 
 	if (ret != LDB_SUCCESS && ret != LDB_ERR_NO_SUCH_OBJECT) {
 		DEBUG(1, ("ldb_search: dn: %s not found: %s", service_dn_str, ldb_errstring(ldb_ctx)));
@@ -121,7 +121,6 @@ static enum drsuapi_DsNameStatus LDB_lookup_spn_alias(krb5_context context, stru
 		DEBUG(1, ("ldb_search: dn: %s not found", service_dn_str));
 		return DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
 	}
-	talloc_steal(tmp_ctx, res);
 	
 	spnmappings = ldb_msg_find_element(res->msgs[0], "sPNMappings");
 	if (!spnmappings || spnmappings->num_values == 0) {
@@ -292,7 +291,7 @@ static WERROR DsCrackNameUPN(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 	
 	realm = krb5_princ_realm(smb_krb5_context->krb5_context, principal);
 
-	ldb_ret = ldb_search_exp_fmt(sam_ctx, mem_ctx, &domain_res, 
+	ldb_ret = ldb_search(sam_ctx, mem_ctx, &domain_res,
 				     samdb_partitions_dn(sam_ctx, mem_ctx), 
 				     LDB_SCOPE_ONELEVEL,
 				     domain_attrs,
@@ -357,15 +356,7 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 	const char *result_filter = NULL;
 	struct ldb_dn *name_dn = NULL;
 
-	struct smb_krb5_context *smb_krb5_context;
-	ret = smb_krb5_init_context(mem_ctx, 
-				    ldb_get_event_context(sam_ctx),
-				    (struct loadparm_context *)ldb_get_opaque(sam_ctx, "loadparm"), 
-				    &smb_krb5_context);
-				
-	if (ret) {
-		return WERR_NOMEM;
-	}
+	struct smb_krb5_context *smb_krb5_context = NULL;
 
 	info1->status = DRSUAPI_DS_NAME_STATUS_RESOLVE_ERROR;
 	info1->dns_domain_name = NULL;
@@ -381,6 +372,30 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 
 	/* here we need to set the domain_filter and/or the result_filter */
 	switch (format_offered) {
+	case DRSUAPI_DS_NAME_FORMAT_UNKNOWN:
+	{
+		int i;
+		enum drsuapi_DsNameFormat formats[] = {
+			DRSUAPI_DS_NAME_FORMAT_FQDN_1779, DRSUAPI_DS_NAME_FORMAT_USER_PRINCIPAL,
+			DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT, DRSUAPI_DS_NAME_FORMAT_CANONICAL,
+			DRSUAPI_DS_NAME_FORMAT_GUID, DRSUAPI_DS_NAME_FORMAT_DISPLAY,
+			DRSUAPI_DS_NAME_FORMAT_SERVICE_PRINCIPAL,
+			DRSUAPI_DS_NAME_FORMAT_SID_OR_SID_HISTORY,
+			DRSUAPI_DS_NAME_FORMAT_CANONICAL_EX
+		};
+		WERROR werr;
+		for (i=0; i < ARRAY_SIZE(formats); i++) {
+			werr = DsCrackNameOneName(sam_ctx, mem_ctx, format_flags, formats[i], format_desired, name, info1);
+			if (!W_ERROR_IS_OK(werr)) {
+				return werr;
+			}
+			if (info1->status != DRSUAPI_DS_NAME_STATUS_NOT_FOUND) {
+				return werr;
+			}
+		}
+		return werr;
+	}
+
 	case DRSUAPI_DS_NAME_FORMAT_CANONICAL:
 	case DRSUAPI_DS_NAME_FORMAT_CANONICAL_EX:
 	{
@@ -535,6 +550,16 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 	case DRSUAPI_DS_NAME_FORMAT_USER_PRINCIPAL: {
 		krb5_principal principal;
 		char *unparsed_name;
+
+		ret = smb_krb5_init_context(mem_ctx, 
+					    ldb_get_event_context(sam_ctx),
+					    (struct loadparm_context *)ldb_get_opaque(sam_ctx, "loadparm"), 
+					    &smb_krb5_context);
+		
+		if (ret) {
+			return WERR_NOMEM;
+		}
+
 		ret = krb5_parse_name(smb_krb5_context->krb5_context, name, &principal);
 		if (ret) {
 			info1->status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
@@ -561,6 +586,16 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 		krb5_principal principal;
 		char *unparsed_name_short;
 		char *service;
+
+		ret = smb_krb5_init_context(mem_ctx, 
+					    ldb_get_event_context(sam_ctx),
+					    (struct loadparm_context *)ldb_get_opaque(sam_ctx, "loadparm"), 
+					    &smb_krb5_context);
+		
+		if (ret) {
+			return WERR_NOMEM;
+		}
+
 		ret = krb5_parse_name(smb_krb5_context->krb5_context, name, &principal);
 		if (ret == 0 && principal->name.name_string.len < 2) {
 			info1->status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
@@ -737,7 +772,7 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 
 	if (domain_filter) {
 		/* if we have a domain_filter look it up and set the result_basedn and the dns_domain_name */
-		ldb_ret = ldb_search_exp_fmt(sam_ctx, mem_ctx, &domain_res, 
+		ldb_ret = ldb_search(sam_ctx, mem_ctx, &domain_res,
 					     partitions_basedn,
 					     LDB_SCOPE_ONELEVEL,
 					     domain_attrs,
@@ -774,7 +809,7 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 		if (domain_res) {
 			result_basedn = samdb_result_dn(sam_ctx, mem_ctx, domain_res->msgs[0], "ncName", NULL);
 			
-			ret = ldb_search_exp_fmt(sam_ctx, mem_ctx, &res, 
+			ret = ldb_search(sam_ctx, mem_ctx, &res,
 						 result_basedn, LDB_SCOPE_SUBTREE, 
 						 result_attrs, "%s", result_filter);
 			if (ret != LDB_SUCCESS) {
@@ -798,7 +833,8 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 						   result_attrs,
 						   NULL,
 						   res,
-						   ldb_search_default_callback);
+						   ldb_search_default_callback,
+						   NULL);
 			if (ret == LDB_SUCCESS) {
 				struct ldb_search_options_control *search_options;
 				search_options = talloc(req, struct ldb_search_options_control);
@@ -812,8 +848,6 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 				info1->status = DRSUAPI_DS_NAME_STATUS_RESOLVE_ERROR;
 				return WERR_OK;
 			}
-			
-			ldb_set_timeout(sam_ctx, req, 0); /* use default timeout */
 			
 			ret = ldb_request(sam_ctx, req);
 			
@@ -936,7 +970,7 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 		
 		if (samdb_find_attribute(sam_ctx, result, "objectClass", "domain")) {
 
-			ldb_ret = ldb_search_exp_fmt(sam_ctx, mem_ctx, &domain_res, 
+			ldb_ret = ldb_search(sam_ctx, mem_ctx, &domain_res,
 						     partitions_basedn,
 						     LDB_SCOPE_ONELEVEL,
 						     domain_attrs,
@@ -976,7 +1010,7 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 					return WERR_OK;
 				}
 				dom_sid->num_auths--;
-				ldb_ret = ldb_search_exp_fmt(sam_ctx, mem_ctx, &domain_res, 
+				ldb_ret = ldb_search(sam_ctx, mem_ctx, &domain_res,
 							     NULL,
 							     LDB_SCOPE_BASE,
 							     attrs,
@@ -1000,7 +1034,7 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 					return WERR_OK;
 				}
 
-				ldb_ret = ldb_search_exp_fmt(sam_ctx, mem_ctx, &domain_res2, 
+				ldb_ret = ldb_search(sam_ctx, mem_ctx, &domain_res2,
 							     partitions_basedn,
 							     LDB_SCOPE_ONELEVEL,
 							     domain_attrs,
@@ -1267,7 +1301,7 @@ NTSTATUS crack_auto_name_to_nt4_name(TALLOC_CTX *mem_ctx,
 				     const char **nt4_domain,
 				     const char **nt4_account)
 {
-	uint32_t format_offered = DRSUAPI_DS_NAME_FORMAT_UKNOWN;
+	uint32_t format_offered = DRSUAPI_DS_NAME_FORMAT_UNKNOWN;
 
 	/* Handle anonymous bind */
 	if (!name || !*name) {
@@ -1284,6 +1318,8 @@ NTSTATUS crack_auto_name_to_nt4_name(TALLOC_CTX *mem_ctx,
 		format_offered = DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT;
 	} else if (strchr_m(name, '/')) {
 		format_offered = DRSUAPI_DS_NAME_FORMAT_CANONICAL;
+	} else {
+		return NT_STATUS_NO_SUCH_USER;
 	}
 
 	return crack_name_to_nt4_name(mem_ctx, ev_ctx, lp_ctx, format_offered, name, nt4_domain, nt4_account);

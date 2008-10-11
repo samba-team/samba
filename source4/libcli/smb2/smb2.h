@@ -178,6 +178,7 @@ struct smb2_request {
 
 
 #define SMB2_MIN_SIZE 0x42
+#define SMB2_MIN_SIZE_NO_BODY 0x40
 
 /* offsets into header elements for a sync SMB2 request */
 #define SMB2_HDR_PROTOCOL_ID    0x00

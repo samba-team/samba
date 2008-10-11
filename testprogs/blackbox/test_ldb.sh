@@ -117,5 +117,92 @@ echo "Search Options Control Query test returned 0 items"
 failed=`expr $failed + 1`
 fi
 
+wellknown_object_test() {
+	local guid=$1
+	local object=$2
+	local basedns
+	local dn
+	local r
+	local c
+	local n
+	local failed=0
+
+	basedns="<WKGUID=${guid},${BASEDN}> <wkGuId=${guid},${BASEDN}>"
+	for dn in ${basedns}; do
+		echo "Test ${dn} => ${object}"
+		r=`bin/ldbsearch $options $CONFIGURATION -H $p://$SERVER '(objectClass=*)' -b "${dn}" | grep 'dn: '`
+		n=`echo "${r}" | grep 'dn: ' | wc -l`
+		c=`echo "${r}" | grep "${object}" | wc -l`
+
+		if [ $n -lt 1 ]; then
+			echo "Object not found by WKGUID"
+			failed=`expr $failed + 1`
+			continue
+		fi
+		if [ $c -lt 1 ]; then
+			echo "Wrong object found by WKGUID: [${r}]"
+			failed=`expr $failed + 1`
+			continue
+		fi
+	done
+
+	return $failed
+}
+
+wellknown_object_test 22B70C67D56E4EFB91E9300FCA3DC1AA ForeignSecurityPrincipals
+st=$?
+if [ x"$st" != x"0" ]; then
+	failed=`expr $failed + $st`
+fi
+wellknown_object_test 2FBAC1870ADE11D297C400C04FD8D5CD Infrastructure
+st=$?
+if [ x"$st" != x"0" ]; then
+	failed=`expr $failed + $st`
+fi
+wellknown_object_test AB1D30F3768811D1ADED00C04FD8D5CD System
+st=$?
+if [ x"$st" != x"0" ]; then
+	failed=`expr $failed + $st`
+fi
+wellknown_object_test A361B2FFFFD211D1AA4B00C04FD7D83A Domain Controllers
+st=$?
+if [ x"$st" != x"0" ]; then
+	failed=`expr $failed + $st`
+fi
+wellknown_object_test AA312825768811D1ADED00C04FD8D5CD Computers
+st=$?
+if [ x"$st" != x"0" ]; then
+	failed=`expr $failed + $st`
+fi
+wellknown_object_test A9D1CA15768811D1ADED00C04FD8D5CD Users
+st=$?
+if [ x"$st" != x"0" ]; then
+	failed=`expr $failed + $st`
+fi
+
+echo "Getting HEX GUID/SID of $BASEDN"
+HEXDN=`bin/ldbsearch $CONFIGURATION $options -b "$BASEDN" -H $p://$SERVER -s base "(objectClass=*)" --controls=extended_dn:1:0 | grep 'dn: ' | cut -d ' ' -f2-`
+HEXGUID=`echo "$HEXDN" | cut -d ';' -f1`
+HEXSID=`echo "$HEXDN" | cut -d ';' -f2`
+echo "HEXGUID[$HEXGUID]"
+echo "HEXSID[$HEXSID]"
+
+echo "Getting STR GUID/SID of $BASEDN"
+STRDN=`bin/ldbsearch $CONFIGURATION $options -b "$BASEDN" -H $p://$SERVER -s base "(objectClass=*)" --controls=extended_dn:1:1 | grep 'dn: ' | cut -d ' ' -f2-`
+echo "STRDN: $STRDN"
+STRGUID=`echo "$STRDN" | cut -d ';' -f1`
+STRSID=`echo "$STRDN" | cut -d ';' -f2`
+echo "STRGUID[$STRGUID]"
+echo "STRSID[$STRSID]"
+
+SPECIALDNS="$HEXGUID $HEXSID $STRGUID $STRSID"
+for SPDN in $SPECIALDNS; do
+	echo "Search for $SPDN"
+	nentries=`bin/ldbsearch $options $CONFIGURATION -H $p://$SERVER -s base -b "$SPDN" '(objectClass=*)' | grep "dn: $BASEDN"  | wc -l`
+	if [ $nentries -lt 1 ]; then
+		echo "Special search returned 0 items"
+		failed=`expr $failed + 1`
+	fi
+done
 
 exit $failed

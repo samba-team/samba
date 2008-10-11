@@ -50,6 +50,14 @@ struct proxy_data {
 	const char **newstr;
 };
 
+struct proxy_ctx {
+	struct ldb_module *module;
+	struct ldb_request *req;
+
+#ifdef DEBUG_PROXY
+	int count;
+#endif
+};
 
 /*
   load the @PROXYINFO record
@@ -62,7 +70,6 @@ static int load_proxy_info(struct ldb_module *module)
 	int ret;
 	const char *olddn, *newdn, *url, *username, *password, *oldstr, *newstr;
 	struct cli_credentials *creds;
-	
 
 	/* see if we have already loaded it */
 	if (proxy->upstream != NULL) {
@@ -73,7 +80,7 @@ static int load_proxy_info(struct ldb_module *module)
 	if (dn == NULL) {
 		goto failed;
 	}
-	ret = ldb_search(module->ldb, dn, LDB_SCOPE_BASE, NULL, NULL, &res);
+	ret = ldb_search(module->ldb, proxy, &res, dn, LDB_SCOPE_BASE, NULL, NULL);
 	talloc_free(dn);
 	if (ret != LDB_SUCCESS || res->count != 1) {
 		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "Can't find @PROXYINFO\n");
@@ -105,7 +112,7 @@ static int load_proxy_info(struct ldb_module *module)
 		goto failed;
 	}
 
-	proxy->upstream = ldb_init(proxy);
+	proxy->upstream = ldb_init(proxy, ldb_get_event_context(ldb));
 	if (proxy->upstream == NULL) {
 		ldb_oom(module->ldb);
 		goto failed;
@@ -180,10 +187,10 @@ static void proxy_convert_blob(TALLOC_CTX *mem_ctx, struct ldb_val *v,
 /*
   convert a returned value
 */
-static void proxy_convert_value(struct ldb_module *module, struct ldb_message *msg, struct ldb_val *v)
+static void proxy_convert_value(struct proxy_data *proxy, struct ldb_message *msg, struct ldb_val *v)
 {
-	struct proxy_data *proxy = talloc_get_type(module->private_data, struct proxy_data);
 	int i;
+
 	for (i=0;proxy->oldstr[i];i++) {
 		char *p = strcasestr((char *)v->data, proxy->oldstr[i]);
 		if (p == NULL) continue;
@@ -195,20 +202,21 @@ static void proxy_convert_value(struct ldb_module *module, struct ldb_message *m
 /*
   convert a returned value
 */
-static struct ldb_parse_tree *proxy_convert_tree(struct ldb_module *module, 
+static struct ldb_parse_tree *proxy_convert_tree(TALLOC_CTX *mem_ctx,
+						 struct proxy_data *proxy,
 						 struct ldb_parse_tree *tree)
 {
-	struct proxy_data *proxy = talloc_get_type(module->private_data, struct proxy_data);
 	int i;
-	char *expression = ldb_filter_from_tree(module, tree);
+	char *expression = ldb_filter_from_tree(mem_ctx, tree);
+
 	for (i=0;proxy->newstr[i];i++) {
 		struct ldb_val v;
 		char *p = strcasestr(expression, proxy->newstr[i]);
 		if (p == NULL) continue;
 		v.data = (uint8_t *)expression;
 		v.length = strlen(expression)+1;
-		proxy_convert_blob(module, &v, proxy->newstr[i], proxy->oldstr[i]);
-		return ldb_parse_tree(module, (const char *)v.data);
+		proxy_convert_blob(mem_ctx, &v, proxy->newstr[i], proxy->oldstr[i]);
+		return ldb_parse_tree(mem_ctx, (const char *)v.data);
 	}
 	return tree;
 }
@@ -218,13 +226,14 @@ static struct ldb_parse_tree *proxy_convert_tree(struct ldb_module *module,
 /*
   convert a returned record
 */
-static void proxy_convert_record(struct ldb_module *module, struct ldb_message *msg)
+static void proxy_convert_record(struct ldb_context *ldb,
+				 struct proxy_data *proxy,
+				 struct ldb_message *msg)
 {
-	struct proxy_data *proxy = talloc_get_type(module->private_data, struct proxy_data);
 	int attr, v;
-	
+
 	/* fix the message DN */
-	if (ldb_dn_compare_base(module->ldb, proxy->olddn, msg->dn) == 0) {
+	if (ldb_dn_compare_base(proxy->olddn, msg->dn) == 0) {
 		ldb_dn_remove_base_components(msg->dn, ldb_dn_get_comp_num(proxy->olddn));
 		ldb_dn_add_base(msg->dn, proxy->newdn);
 	}
@@ -232,21 +241,71 @@ static void proxy_convert_record(struct ldb_module *module, struct ldb_message *
 	/* fix any attributes */
 	for (attr=0;attr<msg->num_elements;attr++) {
 		for (v=0;v<msg->elements[attr].num_values;v++) {
-			proxy_convert_value(module, msg, &msg->elements[attr].values[v]);
+			proxy_convert_value(proxy, msg, &msg->elements[attr].values[v]);
 		}
 	}
 
 	/* fix any DN components */
 	for (attr=0;attr<msg->num_elements;attr++) {
 		for (v=0;v<msg->elements[attr].num_values;v++) {
-			proxy_convert_value(module, msg, &msg->elements[attr].values[v]);
+			proxy_convert_value(proxy, msg, &msg->elements[attr].values[v]);
 		}
 	}
+}
+
+static int proxy_search_callback(struct ldb_request *req,
+				  struct ldb_reply *ares)
+{
+	struct proxy_data *proxy;
+	struct proxy_ctx *ac;
+	int ret;
+
+	ac = talloc_get_type(req->context, struct proxy_ctx);
+	proxy = talloc_get_type(ac->module->private_data, struct proxy_data);
+
+	if (!ares) {
+		return ldb_module_done(ac->req, NULL, NULL,
+					LDB_ERR_OPERATIONS_ERROR);
+	}
+	if (ares->error != LDB_SUCCESS) {
+		return ldb_module_done(ac->req, ares->controls,
+					ares->response, ares->error);
+	}
+
+	/* Only entries are interesting, and we only want the olddn */
+	switch (ares->type) {
+	case LDB_REPLY_ENTRY:
+
+#ifdef DEBUG_PROXY
+		ac->count++;
+#endif
+		proxy_convert_record(ac->module->ldb, proxy, ares->message);
+		ret = ldb_module_send_entry(ac->req, ares->message);
+		break;
+
+	case LDB_REPLY_REFERRAL:
+
+		/* ignore remote referrals */
+		break;
+
+	case LDB_REPLY_DONE:
+
+#ifdef DEBUG_PROXY
+		printf("# record %d\n", ac->count+1);
+#endif
+
+		return ldb_module_done(ac->req, NULL, NULL, LDB_SUCCESS);
+	}
+
+	talloc_free(ares);
+	return ret;
 }
 
 /* search */
 static int proxy_search_bytree(struct ldb_module *module, struct ldb_request *req)
 {
+	struct proxy_ctx *ac;
+	struct ldb_parse_tree *newtree;
 	struct proxy_data *proxy = talloc_get_type(module->private_data, struct proxy_data);
 	struct ldb_request *newreq;
 	struct ldb_dn *base;
@@ -259,55 +318,58 @@ static int proxy_search_bytree(struct ldb_module *module, struct ldb_request *re
 	}
 
 	if (load_proxy_info(module) != 0) {
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	/* see if the dn is within olddn */
-	if (ldb_dn_compare_base(module->ldb, proxy->newdn, req->op.search.base) != 0) {
+	if (ldb_dn_compare_base(proxy->newdn, req->op.search.base) != 0) {
 		goto passthru;
 	}
 
-	newreq = talloc(module, struct ldb_request);
-	if (newreq == NULL) {
-		return -1;
+	ac = talloc(req, struct proxy_ctx);
+	if (ac == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	newreq->op.search.tree = proxy_convert_tree(module, req->op.search.tree);
+	ac->module = module;
+	ac->req = req;
+#ifdef DEBUG_PROXY
+	ac->count = 0;
+#endif
+
+	newtree = proxy_convert_tree(ac, proxy, req->op.search.tree);
 
 	/* convert the basedn of this search */
-	base = ldb_dn_copy(proxy, req->op.search.base);
+	base = ldb_dn_copy(ac, req->op.search.base);
 	if (base == NULL) {
-		talloc_free(newreq);
 		goto failed;
 	}
 	ldb_dn_remove_base_components(base, ldb_dn_get_comp_num(proxy->newdn));
 	ldb_dn_add_base(base, proxy->olddn);
 
 	ldb_debug(module->ldb, LDB_DEBUG_FATAL, "proxying: '%s' with dn '%s' \n", 
-		  ldb_filter_from_tree(proxy, newreq->op.search.tree), ldb_dn_get_linearized(newreq->op.search.base));
+		  ldb_filter_from_tree(ac, newreq->op.search.tree), ldb_dn_get_linearized(newreq->op.search.base));
 	for (i = 0; req->op.search.attrs && req->op.search.attrs[i]; i++) {
 		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "attr: '%s'\n", req->op.search.attrs[i]);
 	}
 
-	newreq->op.search.base = base;
-	newreq->op.search.scope = req->op.search.scope;
-	newreq->op.search.attrs = req->op.search.attrs;
-	newreq->op.search.res = req->op.search.res;
-	newreq->controls = req->controls;
+	ret = ldb_build_search_req_ex(&newreq, module->ldb, ac,
+				      base, req->op.search.scope,
+				      newtree, req->op.search.attrs,
+				      req->controls,
+				      ac, proxy_search_callback,
+				      req);
+
+	/* FIXME: warning, need a real event system hooked up for this to work properly,
+	 * 	  for now this makes the module *not* ASYNC */
 	ret = ldb_request(proxy->upstream, newreq);
 	if (ret != LDB_SUCCESS) {
 		ldb_set_errstring(module->ldb, ldb_errstring(proxy->upstream));
-		talloc_free(newreq);
-		return -1;
 	}
-
-	for (i = 0; i < newreq->op.search.res->count; i++) {
-		printf("# record %d\n", i+1);
-		
-		proxy_convert_record(module, newreq->op.search.res->msgs[i]);
+	ret = ldb_wait(newreq->handle, LDB_WAIT_ALL);
+	if (ret != LDB_SUCCESS) {
+		ldb_set_errstring(module->ldb, ldb_errstring(proxy->upstream));
 	}
-
-	talloc_free(newreq);
 	return ret;
 
 failed:

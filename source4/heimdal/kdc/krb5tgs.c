@@ -1393,6 +1393,8 @@ tgs_build_reply(krb5_context context,
     char opt_str[128];
     int signedpath = 0;
 
+    Key *tkey;
+
     memset(&sessionkey, 0, sizeof(sessionkey));
     memset(&adtkt, 0, sizeof(adtkt));
     krb5_data_zero(&rspac);
@@ -1630,26 +1632,22 @@ server_lookup:
     }
 
     /* check PAC if not cross realm and if there is one */
-    if (!cross_realm) {
-	Key *tkey;
-
-	ret = hdb_enctype2key(context, &krbtgt->entry,
-			      krbtgt_etype, &tkey);
-	if(ret) {
-	    kdc_log(context, config, 0,
+    ret = hdb_enctype2key(context, &krbtgt->entry,
+			  krbtgt_etype, &tkey);
+    if(ret) {
+	kdc_log(context, config, 0,
 		    "Failed to find key for krbtgt PAC check");
-	    goto out;
-	}
+	goto out;
+    }
 
-	ret = check_PAC(context, config, cp,
-			client, server, ekey, &tkey->key,
-			tgt, &rspac, &signedpath);
-	if (ret) {
-	    kdc_log(context, config, 0,
-		    "Verify PAC failed for %s (%s) from %s with %s",
-		    spn, cpn, from, krb5_get_err_text(context, ret));
-	    goto out;
-	}
+    ret = check_PAC(context, config, cp,
+		    client, server, ekey, &tkey->key,
+		    tgt, &rspac, &signedpath);
+    if (ret) {
+	kdc_log(context, config, 0,
+		"Verify PAC failed for %s (%s) from %s with %s",
+		spn, cpn, from, krb5_get_err_text(context, ret));
+	goto out;
     }
 
     /* also check the krbtgt for signature */

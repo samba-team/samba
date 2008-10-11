@@ -667,74 +667,58 @@ static int ltdb_index_dn(struct ldb_module *module,
   extracting just the given attributes
 */
 static int ltdb_index_filter(const struct dn_list *dn_list, 
-			     struct ldb_handle *handle)
+			     struct ltdb_context *ac)
 {
-	struct ltdb_context *ac = talloc_get_type(handle->private_data, struct ltdb_context);
-	struct ldb_reply *ares = NULL;
+	struct ldb_message *msg;
 	unsigned int i;
 
 	for (i = 0; i < dn_list->count; i++) {
 		struct ldb_dn *dn;
 		int ret;
 
-		ares = talloc_zero(ac, struct ldb_reply);
-		if (!ares) {
-			handle->status = LDB_ERR_OPERATIONS_ERROR;
-			handle->state = LDB_ASYNC_DONE;
+		msg = ldb_msg_new(ac);
+		if (!msg) {
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 
-		ares->message = ldb_msg_new(ares);
-		if (!ares->message) {
-			handle->status = LDB_ERR_OPERATIONS_ERROR;
-			handle->state = LDB_ASYNC_DONE;
-			talloc_free(ares);
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-
-
-		dn = ldb_dn_new(ares->message, ac->module->ldb, dn_list->dn[i]);
+		dn = ldb_dn_new(msg, ac->module->ldb, dn_list->dn[i]);
 		if (dn == NULL) {
-			talloc_free(ares);
+			talloc_free(msg);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 
-		ret = ltdb_search_dn1(ac->module, dn, ares->message);
+		ret = ltdb_search_dn1(ac->module, dn, msg);
 		talloc_free(dn);
 		if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 			/* the record has disappeared? yes, this can happen */
-			talloc_free(ares);
+			talloc_free(msg);
 			continue;
 		}
 
 		if (ret != LDB_SUCCESS && ret != LDB_ERR_NO_SUCH_OBJECT) {
 			/* an internal error */
-			talloc_free(ares);
+			talloc_free(msg);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 
-		if (!ldb_match_msg(ac->module->ldb, ares->message, ac->tree, ac->base, ac->scope)) {
-			talloc_free(ares);
+		if (!ldb_match_msg(ac->module->ldb, msg,
+				   ac->tree, ac->base, ac->scope)) {
+			talloc_free(msg);
 			continue;
 		}
 
 		/* filter the attributes that the user wants */
-		ret = ltdb_filter_attrs(ares->message, ac->attrs);
+		ret = ltdb_filter_attrs(msg, ac->attrs);
 
 		if (ret == -1) {
-			handle->status = LDB_ERR_OPERATIONS_ERROR;
-			handle->state = LDB_ASYNC_DONE;
-			talloc_free(ares);
+			talloc_free(msg);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 
-		ares->type = LDB_REPLY_ENTRY;
-        	handle->state = LDB_ASYNC_PENDING;
-		handle->status = ac->callback(ac->module->ldb, ac->context, ares);
-
-		if (handle->status != LDB_SUCCESS) {
-			handle->state = LDB_ASYNC_DONE;
-			return handle->status;
+		ret = ldb_module_send_entry(ac->req, msg);
+		if (ret != LDB_SUCCESS) {
+			ac->callback_failed = true;
+			return ret;
 		}
 	}
 
@@ -746,9 +730,8 @@ static int ltdb_index_filter(const struct dn_list *dn_list,
   returns -1 if an indexed search is not possible, in which
   case the caller should call ltdb_search_full() 
 */
-int ltdb_search_indexed(struct ldb_handle *handle)
+int ltdb_search_indexed(struct ltdb_context *ac)
 {
-	struct ltdb_context *ac = talloc_get_type(handle->private_data, struct ltdb_context);
 	struct ltdb_private *ltdb = talloc_get_type(ac->module->private_data, struct ltdb_private);
 	struct dn_list *dn_list;
 	int ret, idxattr, idxone;
@@ -773,7 +756,7 @@ int ltdb_search_indexed(struct ldb_handle *handle)
 
 	ret = LDB_ERR_OPERATIONS_ERROR;
 
-	dn_list = talloc_zero(handle, struct dn_list);
+	dn_list = talloc_zero(ac, struct dn_list);
 	if (dn_list == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -810,9 +793,7 @@ int ltdb_search_indexed(struct ldb_handle *handle)
 	if (ret == LDB_SUCCESS) {
 		/* we've got a candidate list - now filter by the full tree
 		   and extract the needed attributes */
-		ret = ltdb_index_filter(dn_list, handle);
-		handle->status = ret;
-		handle->state = LDB_ASYNC_DONE;
+		ret = ltdb_index_filter(dn_list, ac);
 	}
 
 	talloc_free(dn_list);

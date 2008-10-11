@@ -29,7 +29,6 @@
 static int dcesrv_handle_destructor(struct dcesrv_handle *h)
 {
 	DLIST_REMOVE(h->context->handles, h);
-	talloc_free(h);
 	return 0;
 }
 

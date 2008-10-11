@@ -64,7 +64,7 @@ static bool test_cldap_netlogon(struct torture_context *tctx, const char *dest)
 	n1 = search.out.netlogon;
 
 	search.in.user         = "Administrator";
-	search.in.realm        = n1.nt5_ex.dns_domain;
+	search.in.realm        = n1.data.nt5_ex.dns_domain;
 	search.in.host         = "__cldap_torture__";
 
 	printf("Scanning for netlogon levels\n");
@@ -93,8 +93,8 @@ static bool test_cldap_netlogon(struct torture_context *tctx, const char *dest)
 	search.in.user = NULL;
 	status = cldap_netlogon(cldap, tctx, &search);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	CHECK_STRING(search.out.netlogon.nt5_ex.user_name, "");
-	CHECK_VAL(search.out.netlogon.nt5_ex.command, LOGON_SAM_LOGON_RESPONSE_EX);
+	CHECK_STRING(search.out.netlogon.data.nt5_ex.user_name, "");
+	CHECK_VAL(search.out.netlogon.data.nt5_ex.command, LOGON_SAM_LOGON_RESPONSE_EX);
 
 	printf("Trying with User=Administrator\n");
 
@@ -102,8 +102,8 @@ static bool test_cldap_netlogon(struct torture_context *tctx, const char *dest)
 	status = cldap_netlogon(cldap, tctx, &search);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	CHECK_STRING(search.out.netlogon.nt5_ex.user_name, search.in.user);
-	CHECK_VAL(search.out.netlogon.nt5_ex.command, LOGON_SAM_LOGON_USER_UNKNOWN_EX);
+	CHECK_STRING(search.out.netlogon.data.nt5_ex.user_name, search.in.user);
+	CHECK_VAL(search.out.netlogon.data.nt5_ex.command, LOGON_SAM_LOGON_USER_UNKNOWN_EX);
 
 	search.in.version = NETLOGON_NT_VERSION_5;
 	status = cldap_netlogon(cldap, tctx, &search);
@@ -114,8 +114,8 @@ static bool test_cldap_netlogon(struct torture_context *tctx, const char *dest)
 	search.in.user = NULL;
 	status = cldap_netlogon(cldap, tctx, &search);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	CHECK_STRING(search.out.netlogon.nt5_ex.user_name, "");
-	CHECK_VAL(search.out.netlogon.nt5_ex.command, LOGON_SAM_LOGON_RESPONSE);
+	CHECK_STRING(search.out.netlogon.data.nt5_ex.user_name, "");
+	CHECK_VAL(search.out.netlogon.data.nt5_ex.command, LOGON_SAM_LOGON_RESPONSE);
 
 	printf("Trying with User=Administrator\n");
 
@@ -123,18 +123,18 @@ static bool test_cldap_netlogon(struct torture_context *tctx, const char *dest)
 	status = cldap_netlogon(cldap, tctx, &search);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	CHECK_STRING(search.out.netlogon.nt5_ex.user_name, search.in.user);
-	CHECK_VAL(search.out.netlogon.nt5_ex.command, LOGON_SAM_LOGON_USER_UNKNOWN);
+	CHECK_STRING(search.out.netlogon.data.nt5_ex.user_name, search.in.user);
+	CHECK_VAL(search.out.netlogon.data.nt5_ex.command, LOGON_SAM_LOGON_USER_UNKNOWN);
 
 	search.in.version = NETLOGON_NT_VERSION_5 | NETLOGON_NT_VERSION_5EX;
 
 	printf("Trying with a GUID\n");
 	search.in.realm       = NULL;
-	search.in.domain_guid = GUID_string(tctx, &n1.nt5_ex.domain_uuid);
+	search.in.domain_guid = GUID_string(tctx, &n1.data.nt5_ex.domain_uuid);
 	status = cldap_netlogon(cldap, tctx, &search);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	CHECK_VAL(search.out.netlogon.nt5_ex.command, LOGON_SAM_LOGON_USER_UNKNOWN_EX);
-	CHECK_STRING(GUID_string(tctx, &search.out.netlogon.nt5_ex.domain_uuid), search.in.domain_guid);
+	CHECK_VAL(search.out.netlogon.data.nt5_ex.command, LOGON_SAM_LOGON_USER_UNKNOWN_EX);
+	CHECK_STRING(GUID_string(tctx, &search.out.netlogon.data.nt5_ex.domain_uuid), search.in.domain_guid);
 
 	printf("Trying with a incorrect GUID\n");
 	guid = GUID_random();
@@ -145,53 +145,53 @@ static bool test_cldap_netlogon(struct torture_context *tctx, const char *dest)
 
 	printf("Trying with a AAC\n");
 	search.in.acct_control = ACB_WSTRUST|ACB_SVRTRUST;
-	search.in.realm = n1.nt5_ex.dns_domain;
+	search.in.realm = n1.data.nt5_ex.dns_domain;
 	status = cldap_netlogon(cldap, tctx, &search);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	CHECK_VAL(search.out.netlogon.nt5_ex.command, LOGON_SAM_LOGON_RESPONSE_EX);
-	CHECK_STRING(search.out.netlogon.nt5_ex.user_name, "");
+	CHECK_VAL(search.out.netlogon.data.nt5_ex.command, LOGON_SAM_LOGON_RESPONSE_EX);
+	CHECK_STRING(search.out.netlogon.data.nt5_ex.user_name, "");
 
 	printf("Trying with a zero AAC\n");
 	search.in.acct_control = 0x0;
-	search.in.realm = n1.nt5_ex.dns_domain;
+	search.in.realm = n1.data.nt5_ex.dns_domain;
 	status = cldap_netlogon(cldap, tctx, &search);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	CHECK_VAL(search.out.netlogon.nt5_ex.command, LOGON_SAM_LOGON_RESPONSE_EX);
-	CHECK_STRING(search.out.netlogon.nt5_ex.user_name, "");
+	CHECK_VAL(search.out.netlogon.data.nt5_ex.command, LOGON_SAM_LOGON_RESPONSE_EX);
+	CHECK_STRING(search.out.netlogon.data.nt5_ex.user_name, "");
 
 	printf("Trying with a zero AAC and user=Administrator\n");
 	search.in.acct_control = 0x0;
 	search.in.user = "Administrator";
-	search.in.realm = n1.nt5_ex.dns_domain;
+	search.in.realm = n1.data.nt5_ex.dns_domain;
 	status = cldap_netlogon(cldap, tctx, &search);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	CHECK_VAL(search.out.netlogon.nt5_ex.command, LOGON_SAM_LOGON_USER_UNKNOWN_EX);
-	CHECK_STRING(search.out.netlogon.nt5_ex.user_name, "Administrator");
+	CHECK_VAL(search.out.netlogon.data.nt5_ex.command, LOGON_SAM_LOGON_USER_UNKNOWN_EX);
+	CHECK_STRING(search.out.netlogon.data.nt5_ex.user_name, "Administrator");
 
 	printf("Trying with a bad AAC\n");
 	search.in.user = NULL;
 	search.in.acct_control = 0xFF00FF00;
-	search.in.realm = n1.nt5_ex.dns_domain;
+	search.in.realm = n1.data.nt5_ex.dns_domain;
 	status = cldap_netlogon(cldap, tctx, &search);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	CHECK_VAL(search.out.netlogon.nt5_ex.command, LOGON_SAM_LOGON_RESPONSE_EX);
-	CHECK_STRING(search.out.netlogon.nt5_ex.user_name, "");
+	CHECK_VAL(search.out.netlogon.data.nt5_ex.command, LOGON_SAM_LOGON_RESPONSE_EX);
+	CHECK_STRING(search.out.netlogon.data.nt5_ex.user_name, "");
 
 	printf("Trying with a user only\n");
 	search = empty_search;
 	search.in.user = "Administrator";
 	status = cldap_netlogon(cldap, tctx, &search);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	CHECK_STRING(search.out.netlogon.nt5_ex.dns_domain, n1.nt5_ex.dns_domain);
-	CHECK_STRING(search.out.netlogon.nt5_ex.user_name, search.in.user);
+	CHECK_STRING(search.out.netlogon.data.nt5_ex.dns_domain, n1.data.nt5_ex.dns_domain);
+	CHECK_STRING(search.out.netlogon.data.nt5_ex.user_name, search.in.user);
 
 	printf("Trying with just a bad username\n");
 	search.in.user = "___no_such_user___";
 	status = cldap_netlogon(cldap, tctx, &search);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	CHECK_STRING(search.out.netlogon.nt5_ex.user_name, search.in.user);
-	CHECK_STRING(search.out.netlogon.nt5_ex.dns_domain, n1.nt5_ex.dns_domain);
-	CHECK_VAL(search.out.netlogon.nt5_ex.command, LOGON_SAM_LOGON_USER_UNKNOWN_EX);
+	CHECK_STRING(search.out.netlogon.data.nt5_ex.user_name, search.in.user);
+	CHECK_STRING(search.out.netlogon.data.nt5_ex.dns_domain, n1.data.nt5_ex.dns_domain);
+	CHECK_VAL(search.out.netlogon.data.nt5_ex.command, LOGON_SAM_LOGON_USER_UNKNOWN_EX);
 
 	printf("Trying with just a bad domain\n");
 	search = empty_search;
@@ -200,29 +200,29 @@ static bool test_cldap_netlogon(struct torture_context *tctx, const char *dest)
 	CHECK_STATUS(status, NT_STATUS_NOT_FOUND);
 
 	printf("Trying with a incorrect domain and correct guid\n");
-	search.in.domain_guid = GUID_string(tctx, &n1.nt5_ex.domain_uuid);
+	search.in.domain_guid = GUID_string(tctx, &n1.data.nt5_ex.domain_uuid);
 	status = cldap_netlogon(cldap, tctx, &search);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	CHECK_STRING(search.out.netlogon.nt5_ex.dns_domain, n1.nt5_ex.dns_domain);
-	CHECK_STRING(search.out.netlogon.nt5_ex.user_name, "");
-	CHECK_VAL(search.out.netlogon.nt5_ex.command, LOGON_SAM_LOGON_RESPONSE_EX);
+	CHECK_STRING(search.out.netlogon.data.nt5_ex.dns_domain, n1.data.nt5_ex.dns_domain);
+	CHECK_STRING(search.out.netlogon.data.nt5_ex.user_name, "");
+	CHECK_VAL(search.out.netlogon.data.nt5_ex.command, LOGON_SAM_LOGON_RESPONSE_EX);
 
 	printf("Trying with a incorrect domain and incorrect guid\n");
 	search.in.domain_guid = GUID_string(tctx, &guid);
 	status = cldap_netlogon(cldap, tctx, &search);
 	CHECK_STATUS(status, NT_STATUS_NOT_FOUND);
-	CHECK_STRING(search.out.netlogon.nt5_ex.dns_domain, n1.nt5_ex.dns_domain);
-	CHECK_STRING(search.out.netlogon.nt5_ex.user_name, "");
-	CHECK_VAL(search.out.netlogon.nt5_ex.command, LOGON_SAM_LOGON_RESPONSE_EX);
+	CHECK_STRING(search.out.netlogon.data.nt5_ex.dns_domain, n1.data.nt5_ex.dns_domain);
+	CHECK_STRING(search.out.netlogon.data.nt5_ex.user_name, "");
+	CHECK_VAL(search.out.netlogon.data.nt5_ex.command, LOGON_SAM_LOGON_RESPONSE_EX);
 
 	printf("Trying with a incorrect GUID and correct domain\n");
 	search.in.domain_guid = GUID_string(tctx, &guid);
-	search.in.realm = n1.nt5_ex.dns_domain;
+	search.in.realm = n1.data.nt5_ex.dns_domain;
 	status = cldap_netlogon(cldap, tctx, &search);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	CHECK_STRING(search.out.netlogon.nt5_ex.dns_domain, n1.nt5_ex.dns_domain);
-	CHECK_STRING(search.out.netlogon.nt5_ex.user_name, "");
-	CHECK_VAL(search.out.netlogon.nt5_ex.command, LOGON_SAM_LOGON_RESPONSE_EX);
+	CHECK_STRING(search.out.netlogon.data.nt5_ex.dns_domain, n1.data.nt5_ex.dns_domain);
+	CHECK_STRING(search.out.netlogon.data.nt5_ex.user_name, "");
+	CHECK_VAL(search.out.netlogon.data.nt5_ex.command, LOGON_SAM_LOGON_RESPONSE_EX);
 
 	return true;
 }
@@ -255,9 +255,9 @@ static bool test_cldap_netlogon_flags(struct torture_context *tctx,
 
 	n1 = search.out.netlogon;
 	if (n1.ntver == NETLOGON_NT_VERSION_5)
-		server_type = n1.nt5.server_type;
+		server_type = n1.data.nt5.server_type;
 	else if (n1.ntver == NETLOGON_NT_VERSION_5EX)
-		server_type = n1.nt5_ex.server_type;	
+		server_type = n1.data.nt5_ex.server_type;	
 
 	printf("The word is: %i\n", server_type);
 	if (server_type & NBT_SERVER_PDC)
@@ -366,9 +366,9 @@ static bool test_cldap_netlogon_flag_ds_dns_forest(struct torture_context *tctx,
 
 	n1 = search.out.netlogon;
 	if (n1.ntver == NETLOGON_NT_VERSION_5)
-		server_type = n1.nt5.server_type;
+		server_type = n1.data.nt5.server_type;
 	else if (n1.ntver == NETLOGON_NT_VERSION_5EX)
-		server_type = n1.nt5_ex.server_type;
+		server_type = n1.data.nt5_ex.server_type;
 
 	if (server_type & NBT_SERVER_DS_DNS_FOREST) {
 		struct cldap_search search2;

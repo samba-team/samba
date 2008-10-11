@@ -77,6 +77,7 @@ extern struct printif	iprint_printif;
 #define NEXT_JOBID(j) ((j+1) % PRINT_MAX_JOBID > 0 ? (j+1) % PRINT_MAX_JOBID : 1)
 
 #define MAX_CACHE_VALID_TIME 3600
+#define CUPS_DEFAULT_CONNECTION_TIMEOUT 30
 
 #ifndef PRINT_SPOOL_PREFIX
 #define PRINT_SPOOL_PREFIX "smbprn."

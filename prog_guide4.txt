@@ -5,7 +5,9 @@ FROM A FEW PEOPLE. DON'T TAKE THIS AS THE FINAL VERSION YET.
 
 
 Samba4 Programming Guide
-------------------------
+========================
+
+.. contents::
 
 The internals of Samba4 are quite different from previous versions of
 Samba, so even if you are an experienced Samba developer please take
@@ -144,8 +146,7 @@ data is a bug waiting to happen.
 Static data is evil as it has the following consequences:
 - it makes code much less likely to be thread-safe
 - it makes code much less likely to be recursion-safe
-- it leads to subtle side effects when the same code is called from
-  multiple places
+- it leads to subtle side effects when the same code is called from multiple places
 - doesn't play well with shared libraries or plugins
 
 Static data is particularly evil in library code (such as our internal
@@ -273,9 +274,9 @@ generating the right offsets.
 The same rule applies to strings. In many places in the SMB and MSRPC
 protocols complex strings are used on the wire, with complex rules
 about padding, format, alighment, termination etc. None of that
-information is useful to a high level calling routine or to a backend
-- its all just so much wire fluff. So, in Samba4 these strings are
-just "char *" and are always in our internal multi-byte format (which
+information is useful to a high level calling routine or to a backend - its 
+all just so much wire fluff. So, in Samba4 these strings are
+just "char \*" and are always in our internal multi-byte format (which
 is usually UTF8). It is up to the parse functions to worry about
 translating the format and getting the padding right.
 
@@ -580,13 +581,17 @@ DCERPC Handles
 The various handles that are used in the RPC servers should be created and 
 fetch using the dcesrv_handle_* functions.
 
-Use dcesrv_handle_new(struct dcesrv_connection *, uint8 handle_type) to obtain 
+Use dcesrv_handle_new(struct dcesrv_connection \*, uint8 handle_type) to obtain 
 a new handle of the specified type. Handle types are unique within each 
 pipe.
 
-The handle can later be fetched again using
-struct dcesrv_handle *dcesrv_handle_fetch(struct dcesrv_connection *dce_conn, struct policy_handle *p, uint8 handle_type)
-and destroyed by dcesrv_handle_destroy(struct dcesrv_handle *).
+The handle can later be fetched again using::
+
+	struct dcesrv_handle *dcesrv_handle_fetch(struct dcesrv_connection *dce_conn, struct policy_handle *p, uint8 handle_type)
+
+and destroyed by::
+
+	dcesrv_handle_destroy(struct dcesrv_handle *).
 
 User data should be stored in the 'data' member of the dcesrv_handle struct.
 
@@ -765,12 +770,10 @@ BUGS:
   no 137 resolution not possible
   should not fallback to anon when pass supplied
   should check pass-thu cap bit, and skip lots of tests
-  possibly allow the test suite to say "allow oversized replies" for
-     trans2 and other calls
+  possibly allow the test suite to say "allow oversized replies" for trans2 and other calls
   handle servers that don't have the setattre call in torture
   add max file coponent length test and max path len test
-  check for alloc failure in all core reply.c and trans2.c code where
-    allocation size depends on client parameter
+  check for alloc failure in all core reply.c and trans2.c code where allocation size depends on client parameter
 
 case-insenstive idea:
   all filenames on disk lowercase

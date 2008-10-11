@@ -94,12 +94,11 @@ static NTSTATUS idmap_tdb2_open_db(void)
 */
 static NTSTATUS idmap_tdb2_alloc_load(void)
 {
-	const char *range;
 	uid_t low_uid = 0;
 	uid_t high_uid = 0;
 	gid_t low_gid = 0;
 	gid_t high_gid = 0;
-	uint32 low_id, high_id;
+	uint32 low_id;
 
 	/* see if a idmap script is configured */
 	idmap_tdb2_state.idmap_script = lp_parm_const_string(-1, "idmap",
@@ -187,6 +186,10 @@ static NTSTATUS idmap_tdb2_allocate_id(struct unixid *xid)
 	uint32_t high_hwm;
 	uint32_t hwm;
 	int res;
+	NTSTATUS status;
+
+	status = idmap_tdb2_open_db();
+	NT_STATUS_NOT_OK_RETURN(status);
 
 	/* Get current high water mark */
 	switch (xid->type) {
@@ -264,6 +267,10 @@ static NTSTATUS idmap_tdb2_get_hwm(struct unixid *xid)
 	const char *hwmtype;
 	uint32_t hwm;
 	uint32_t high_hwm;
+	NTSTATUS status;
+
+	status = idmap_tdb2_open_db();
+	NT_STATUS_NOT_OK_RETURN(status);
 
 	/* Get current high water mark */
 	switch (xid->type) {
@@ -451,6 +458,10 @@ static NTSTATUS idmap_tdb2_id_to_sid(struct idmap_tdb2_context *ctx, struct id_m
 	NTSTATUS ret;
 	TDB_DATA data;
 	char *keystr;
+	NTSTATUS status;
+
+	status = idmap_tdb2_open_db();
+	NT_STATUS_NOT_OK_RETURN(status);
 
 	if (!ctx || !map) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -546,6 +557,10 @@ static NTSTATUS idmap_tdb2_sid_to_id(struct idmap_tdb2_context *ctx, struct id_m
 	TDB_DATA data;
 	char *keystr;
 	unsigned long rec_id = 0;
+	NTSTATUS status;
+
+	status = idmap_tdb2_open_db();
+	NT_STATUS_NOT_OK_RETURN(status);
 
 	if ((keystr = sid_string_talloc(ctx, map->sid)) == NULL) {
 		DEBUG(0, ("Out of memory!\n"));

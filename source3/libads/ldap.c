@@ -176,7 +176,7 @@ bool ads_closest_dc(ADS_STRUCT *ads)
 static bool ads_try_connect(ADS_STRUCT *ads, const char *server, bool gc)
 {
 	char *srv;
-	struct nbt_cldap_netlogon_5 cldap_reply;
+	struct NETLOGON_SAM_LOGON_RESPONSE_EX cldap_reply;
 	TALLOC_CTX *mem_ctx = NULL;
 	bool ret = false;
 
@@ -2828,6 +2828,7 @@ ADS_STATUS ads_domain_func_level(ADS_STRUCT *ads, uint32 *val)
 		if ( (ads_s = ads_init( ads->server.realm, ads->server.workgroup, 
 			ads->server.ldap_server )) == NULL )
 		{
+			status = ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
 			goto done;
 		}
 		ads_s->auth.flags = ADS_AUTH_ANON_BIND;

@@ -199,7 +199,7 @@ static WERROR cache_subkeys(struct ldb_key_data *kd)
 	struct ldb_result *res;
 	int ret;
 
-	ret = ldb_search(c, kd->dn, LDB_SCOPE_ONELEVEL, "(key=*)", NULL, &res);
+	ret = ldb_search(c, c, &res, kd->dn, LDB_SCOPE_ONELEVEL, NULL, "(key=*)");
 
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0, ("Error getting subkeys for '%s': %s\n",
@@ -220,8 +220,8 @@ static WERROR cache_values(struct ldb_key_data *kd)
 	struct ldb_result *res;
 	int ret;
 
-	ret = ldb_search(c, kd->dn, LDB_SCOPE_ONELEVEL,
-			 "(value=*)", NULL, &res);
+	ret = ldb_search(c, c, &res, kd->dn, LDB_SCOPE_ONELEVEL,
+			 NULL, "(value=*)");
 
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0, ("Error getting values for '%s': %s\n",
@@ -299,21 +299,25 @@ static WERROR ldb_get_value(TALLOC_CTX *mem_ctx, struct hive_key *k,
 	int ret;
 	char *query = talloc_asprintf(mem_ctx, "(value=%s)", name);
 
-	ret = ldb_search(c, kd->dn, LDB_SCOPE_ONELEVEL, query, NULL, &res);
+	ret = ldb_search(c, mem_ctx, &res, kd->dn, LDB_SCOPE_ONELEVEL, NULL, "%s", query);
 
 	talloc_free(query);
 
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0, ("Error getting values for '%s': %s\n",
 			ldb_dn_get_linearized(kd->dn), ldb_errstring(c)));
+		talloc_free(res);
 		return WERR_FOOBAR;
 	}
 
-	if (res->count == 0)
+	if (res->count == 0) {
+		talloc_free(res);
 		return WERR_BADFILE;
+	}
 
 	reg_ldb_unpack_value(mem_ctx, lp_iconv_convenience(global_loadparm), res->msgs[0], NULL, data_type, data);
 
+	talloc_free(res);
 	return WERR_OK;
 }
 
@@ -329,7 +333,7 @@ static WERROR ldb_open_key(TALLOC_CTX *mem_ctx, const struct hive_key *h,
 
 	ldap_path = reg_path_to_ldb(mem_ctx, h, name, NULL);
 
-	ret = ldb_search(c, ldap_path, LDB_SCOPE_BASE, "(key=*)", NULL, &res);
+	ret = ldb_search(c, mem_ctx, &res, ldap_path, LDB_SCOPE_BASE, NULL, "(key=*)");
 
 	if (ret != LDB_SUCCESS) {
 		DEBUG(3, ("Error opening key '%s': %s\n",
@@ -501,8 +505,8 @@ static WERROR ldb_del_key(const struct hive_key *key, const char *name)
 	}
 
 	/* Search for subkeys */
-	ret = ldb_search(c, ldap_path, LDB_SCOPE_ONELEVEL,
-			 "(key=*)", NULL, &res_keys);
+	ret = ldb_search(c, mem_ctx, &res_keys, ldap_path, LDB_SCOPE_ONELEVEL,
+			 NULL, "(key=*)");
 
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0, ("Error getting subkeys for '%s': %s\n",
@@ -512,8 +516,8 @@ static WERROR ldb_del_key(const struct hive_key *key, const char *name)
 	}
 
 	/* Search for values */
-	ret = ldb_search(c, ldap_path, LDB_SCOPE_ONELEVEL,
-			 "(value=*)", NULL, &res_vals);
+	ret = ldb_search(c, mem_ctx, &res_vals, ldap_path, LDB_SCOPE_ONELEVEL,
+			 NULL, "(value=*)");
 
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0, ("Error getting values for '%s': %s\n",

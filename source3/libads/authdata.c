@@ -108,7 +108,7 @@ static krb5_error_code check_pac_checksum(TALLOC_CTX *mem_ctx,
 	}
 
 	ndr_err = ndr_pull_struct_blob(pac_data_blob, pac_data,
-			pac_data,
+			NULL, pac_data,
 		       (ndr_pull_flags_fn_t)ndr_pull_PAC_DATA);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		status = ndr_map_error2ntstatus(ndr_err);
@@ -124,7 +124,7 @@ static krb5_error_code check_pac_checksum(TALLOC_CTX *mem_ctx,
 	}
 
 	ndr_err = ndr_pull_struct_blob(pac_data_blob, pac_data_raw,
-				       pac_data_raw,
+				       NULL, pac_data_raw,
 				       (ndr_pull_flags_fn_t)ndr_pull_PAC_DATA_RAW);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		status = ndr_map_error2ntstatus(ndr_err);
@@ -205,7 +205,7 @@ static krb5_error_code check_pac_checksum(TALLOC_CTX *mem_ctx,
 
 	/* We find the data blobs above, now we parse them to get at the exact portion we should zero */
 	ndr_err = ndr_pull_struct_blob(kdc_sig_blob, kdc_sig_wipe,
-				       kdc_sig_wipe,
+				       NULL, kdc_sig_wipe,
 				       (ndr_pull_flags_fn_t)ndr_pull_PAC_SIGNATURE_DATA);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		status = ndr_map_error2ntstatus(ndr_err);
@@ -215,7 +215,7 @@ static krb5_error_code check_pac_checksum(TALLOC_CTX *mem_ctx,
 	}
 
 	ndr_err = ndr_pull_struct_blob(srv_sig_blob, srv_sig_wipe,
-				       srv_sig_wipe,
+				       NULL, srv_sig_wipe,
 				       (ndr_pull_flags_fn_t)ndr_pull_PAC_SIGNATURE_DATA);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		status = ndr_map_error2ntstatus(ndr_err);
@@ -230,7 +230,7 @@ static krb5_error_code check_pac_checksum(TALLOC_CTX *mem_ctx,
 
 	/* and reencode, back into the same place it came from */
 	ndr_err = ndr_push_struct_blob(kdc_sig_blob, pac_data_raw,
-				       kdc_sig_wipe,
+				       NULL, kdc_sig_wipe,
 				       (ndr_push_flags_fn_t)ndr_push_PAC_SIGNATURE_DATA);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		status = ndr_map_error2ntstatus(ndr_err);
@@ -239,7 +239,7 @@ static krb5_error_code check_pac_checksum(TALLOC_CTX *mem_ctx,
 		return status;
 	}
 	ndr_err = ndr_push_struct_blob(srv_sig_blob, pac_data_raw,
-				       srv_sig_wipe,
+				       NULL, srv_sig_wipe,
 				       (ndr_push_flags_fn_t)ndr_push_PAC_SIGNATURE_DATA);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		status = ndr_map_error2ntstatus(ndr_err);
@@ -250,7 +250,7 @@ static krb5_error_code check_pac_checksum(TALLOC_CTX *mem_ctx,
 
 	/* push out the whole structure, but now with zero'ed signatures */
 	ndr_err = ndr_push_struct_blob(&modified_pac_blob, pac_data_raw,
-				       pac_data_raw,
+				       NULL, pac_data_raw,
 				       (ndr_push_flags_fn_t)ndr_push_PAC_DATA_RAW);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		status = ndr_map_error2ntstatus(ndr_err);

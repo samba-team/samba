@@ -77,7 +77,7 @@ NTSTATUS cli_do_rpc_ndr(struct rpc_pipe_client *cli,
 
 	prs_mem_free( &r_ps );
 
-	pull = ndr_pull_init_blob(&blob, mem_ctx);
+	pull = ndr_pull_init_blob(&blob, mem_ctx, NULL);
 	if (pull == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}

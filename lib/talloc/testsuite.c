@@ -1140,13 +1140,3 @@ bool torture_local_talloc(struct torture_context *tctx)
 
 	return ret;
 }
-
-#if _SAMBA_BUILD_ < 4
-int main(void)
-{
-	bool ret = torture_local_talloc(NULL);
-	if (!ret)
-		return -1;
-	return 0;
-}
-#endif

@@ -357,7 +357,7 @@ _PUBLIC_ NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *s, struc
 _PUBLIC_ NTSTATUS dcerpc_floor_get_lhs_data(struct epm_floor *epm_floor, struct ndr_syntax_id *syntax)
 {
 	TALLOC_CTX *mem_ctx = talloc_init("floor_get_lhs_data");
-	struct ndr_pull *ndr = ndr_pull_init_blob(&epm_floor->lhs.lhs_data, mem_ctx);
+	struct ndr_pull *ndr = ndr_pull_init_blob(&epm_floor->lhs.lhs_data, mem_ctx, NULL);
 	enum ndr_err_code ndr_err;
 	uint16_t if_version=0;
 

@@ -127,6 +127,7 @@ LOGFILEBASE = @logfilebase@
 CONFIGFILE = $(CONFIGDIR)/smb.conf
 LMHOSTSFILE = $(CONFIGDIR)/lmhosts
 CTDBDIR = @ctdbdir@
+NCALRPCDIR = @ncalrpcdir@
 
 # This is where smbpasswd et al go
 PRIVATEDIR = @privatedir@
@@ -166,6 +167,7 @@ PATH_FLAGS = -DSMB_PASSWD_FILE=\"$(SMB_PASSWD_FILE)\" \
 	-DLOGFILEBASE=\"$(LOGFILEBASE)\" \
 	-DSHLIBEXT=\"@SHLIBEXT@\" \
 	-DCTDBDIR=\"$(CTDBDIR)\" \
+	-DNCALRPCDIR=\"$(NCALRPCDIR)\" \
 	-DCONFIGDIR=\"$(CONFIGDIR)\" \
 	-DCODEPAGEDIR=\"$(CODEPAGEDIR)\" \
 	-DCACHEDIR=\"$(CACHEDIR)\" \
@@ -315,12 +317,12 @@ LIB_OBJ = $(LIBSAMBAUTIL_OBJ) \
 	  lib/async_sock.o \
 	  $(TDB_LIB_OBJ) \
 	  $(VERSION_OBJ) lib/charcnv.o lib/debug.o lib/fault.o \
-	  lib/interface.o lib/md4.o \
+	  lib/interface.o ../lib/crypto/md4.o \
 	  lib/pidfile.o \
 	  lib/signal.o lib/system.o lib/sendfile.o lib/recvfile.o lib/time.o \
 	  lib/ufc.o lib/genrand.o lib/username.o \
 	  lib/util_pw.o lib/access.o lib/smbrun.o \
-	  lib/bitmap.o lib/crc32.o lib/dprintf.o \
+	  lib/bitmap.o ../lib/crypto/crc32.o lib/dprintf.o \
 	  lib/xfile.o lib/wins_srv.o $(UTIL_REG_OBJ) \
 	  lib/util_str.o lib/clobber.o lib/util_sid.o lib/util_uuid.o \
 	  lib/util_unistr.o lib/util_file.o lib/data_blob.o \
@@ -328,7 +330,7 @@ LIB_OBJ = $(LIBSAMBAUTIL_OBJ) \
 	  lib/substitute.o lib/fsusage.o lib/dbwrap_util.o \
 	  lib/ms_fnmatch.o lib/select.o lib/errmap_unix.o \
 	  lib/tallocmsg.o lib/dmallocmsg.o libsmb/smb_signing.o \
-	  lib/md5.o lib/hmacmd5.o lib/arc4.o lib/iconv.o \
+	  ../lib/crypto/md5.o ../lib/crypto/hmacmd5.o lib/arc4.o lib/iconv.o \
 	  lib/pam_errors.o intl/lang_tdb.o lib/conn_tdb.o \
 	  lib/adt_tree.o lib/gencache.o \
 	  lib/module.o lib/events.o lib/ldap_escape.o @CHARSET_STATIC@ \
@@ -376,7 +378,9 @@ LIBADS_SERVER_OBJ = libads/kerberos_verify.o libads/authdata.o \
 
 SECRETS_OBJ = passdb/secrets.o passdb/machine_sid.o
 
-LIBNBT_OBJ = libcli/nbt/nbtname.o \
+LIBNBT_OBJ = ../libcli/nbt/nbtname.o \
+	     ../libcli/netlogon.o \
+	     ../libcli/ndr_netlogon.o \
 	     librpc/gen_ndr/ndr_nbt.o \
 	     librpc/gen_ndr/ndr_svcctl.o
 
@@ -619,6 +623,7 @@ VFS_FILEID_OBJ = modules/vfs_fileid.o
 VFS_AIO_FORK_OBJ = modules/vfs_aio_fork.o
 VFS_SYNCOPS_OBJ = modules/vfs_syncops.o
 VFS_ACL_XATTR_OBJ = modules/vfs_acl_xattr.o
+VFS_SMB_TRAFFIC_ANALYZER_OBJ = modules/vfs_smb_traffic_analyzer.o
 
 PLAINTEXT_AUTH_OBJ = auth/pampass.o auth/pass_check.o
 
@@ -633,6 +638,7 @@ AUTH_SERVER_OBJ = auth/auth_server.o
 AUTH_UNIX_OBJ = auth/auth_unix.o
 AUTH_WINBIND_OBJ = auth/auth_winbind.o
 AUTH_SCRIPT_OBJ = auth/auth_script.o
+AUTH_NETLOGOND_OBJ = auth/auth_netlogond.o
 
 AUTH_OBJ = auth/auth.o @AUTH_STATIC@ auth/auth_util.o auth/token_util.o \
 	   auth/auth_compat.o auth/auth_ntlmssp.o \
@@ -735,6 +741,10 @@ SMBTREE_OBJ = utils/smbtree.o $(PARAM_OBJ) \
 TESTPARM_OBJ = utils/testparm.o \
                $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) $(POPT_LIB_OBJ) \
 	       $(LIBSAMBA_OBJ)
+
+TEST_LP_LOAD_OBJ = param/test_lp_load.o \
+		   $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
+		   $(POPT_LIB_OBJ) $(LIBSAMBA_OBJ)
 
 PASSWD_UTIL_OBJ = utils/passwd_util.o
 
@@ -946,13 +956,14 @@ SHARESEC_OBJ  = $(SHARESEC_OBJ0) $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
 		$(LIBSAMBA_OBJ) \
                 $(POPT_LIB_OBJ)
 
-TALLOCTORT_OBJ = @tallocdir@/testsuite.o $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
-                 $(LIBSAMBA_OBJ)
+TALLOCTORT_OBJ = @tallocdir@/testsuite.o @tallocdir@/testsuite_main.o \
+		$(PARAM_OBJ) $(LIB_NONSMBD_OBJ) $(LIBSAMBA_OBJ)
 
 REPLACETORT_OBJ = @libreplacedir@/test/testsuite.o \
 		@libreplacedir@/test/getifaddrs.o \
 		@libreplacedir@/test/os2_delete.o \
 		@libreplacedir@/test/strptime.o \
+		@libreplacedir@/test/main.o \
 		$(LIBREPLACE_OBJ)
 
 NDRDUMP_OBJ = librpc/tools/ndrdump.o \
@@ -983,6 +994,14 @@ NSS_INFO_OBJ = winbindd/nss_info.o @NSS_INFO_STATIC@
 IDMAP_HASH_OBJ = \
 		winbindd/idmap_hash/idmap_hash.o \
 		winbindd/idmap_hash/mapfile.o
+
+IDMAP_ADEX_OBJ = \
+		winbindd/idmap_adex/idmap_adex.o \
+		winbindd/idmap_adex/cell_util.o \
+		winbindd/idmap_adex/likewise_cell.o \
+		winbindd/idmap_adex/provider_unified.o \
+		winbindd/idmap_adex/gc_util.o \
+		winbindd/idmap_adex/domain_util.o
 
 WINBINDD_OBJ1 = \
 		winbindd/winbindd.o       \
@@ -1059,7 +1078,7 @@ LDBDEL_OBJ = $(LDB_CMDLINE_OBJ) lib/ldb/tools/ldbdel.o
 LDBMODIFY_OBJ = $(LDB_CMDLINE_OBJ) lib/ldb/tools/ldbmodify.o
 
 WINBIND_KRB5_LOCATOR_OBJ1 = nsswitch/winbind_krb5_locator.o
-WINBIND_KRB5_LOCATOR_OBJ = $(WINBIND_KRB5_LOCATOR_OBJ1) $(WBCOMMON_OBJ) $(LIBREPLACE_OBJ)
+WINBIND_KRB5_LOCATOR_OBJ = $(WINBIND_KRB5_LOCATOR_OBJ1) $(LIBREPLACE_OBJ)
 
 POPT_OBJ=../lib/popt/findme.o ../lib/popt/popt.o ../lib/popt/poptconfig.o \
           ../lib/popt/popthelp.o ../lib/popt/poptparse.o
@@ -1126,6 +1145,8 @@ pam_modules:: $(PAM_MODULES)
 pam_smbpass: SHOWFLAGS bin/pam_smbpass.@SHLIBEXT@
 
 pam_winbind: SHOWFLAGS bin/pam_winbind.@SHLIBEXT@
+
+gpext_modules:: $(GPEXT_MODULES)
 
 torture:: SHOWFLAGS $(TORTURE_PROGS)
 
@@ -1697,6 +1718,7 @@ LIBWBCLIENT_OBJ0 = nsswitch/libwbclient/wbclient.o \
 		  nsswitch/libwbclient/wbc_pwd.o \
 		  nsswitch/libwbclient/wbc_idmap.o \
 		  nsswitch/libwbclient/wbc_sid.o \
+		  nsswitch/libwbclient/wbc_guid.o \
 		  nsswitch/libwbclient/wbc_pam.o
 LIBWBCLIENT_OBJ = $(LIBWBCLIENT_OBJ0) \
 		  $(WBCOMMON_OBJ) \
@@ -2155,15 +2177,15 @@ bin/vlp@EXEEXT@: $(BINARY_PREREQS) $(VLP_OBJ) @LIBTALLOC_SHARED@ @LIBTDB_SHARED@
 		$(LDAP_LIBS) $(KRB5LIBS) $(LIBS) $(LIBTALLOC_LIBS) $(LIBTDB_LIBS) \
 		@SONAMEFLAG@`basename $@`@NSSSONAMEVERSIONSUFFIX@
 
-bin/winbind_krb5_locator.@SHLIBEXT@: $(BINARY_PREREQS) $(WINBIND_KRB5_LOCATOR_OBJ)
+bin/winbind_krb5_locator.@SHLIBEXT@: $(BINARY_PREREQS) $(WINBIND_KRB5_LOCATOR_OBJ) @LIBWBCLIENT_SHARED@
 	@echo "Linking $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(WINBIND_KRB5_LOCATOR_OBJ) \
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(WINBIND_KRB5_LOCATOR_OBJ) $(WINBIND_LIBS) \
 		@SONAMEFLAG@`basename $@`
 
-bin/pam_winbind.@SHLIBEXT@: $(BINARY_PREREQS) $(PAM_WINBIND_OBJ)
+bin/pam_winbind.@SHLIBEXT@: $(BINARY_PREREQS) $(PAM_WINBIND_OBJ) @LIBTALLOC_SHARED@ @LIBWBCLIENT_SHARED@
 	@echo "Linking shared library $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(PAM_WINBIND_OBJ) -lpam @INIPARSERLIBS@ \
-		$(PAM_WINBIND_EXTRA_LIBS) @SONAMEFLAG@`basename $@`
+		$(PAM_WINBIND_EXTRA_LIBS) $(LIBTALLOC_LIBS) $(WINBIND_LIBS) @SONAMEFLAG@`basename $@`
 
 bin/builtin.@SHLIBEXT@: $(BINARY_PREREQS) $(AUTH_BUILTIN_OBJ)
 	@echo "Building plugin $@"
@@ -2176,6 +2198,10 @@ bin/domain.@SHLIBEXT@: $(BINARY_PREREQS) $(AUTH_DOMAIN_OBJ)
 bin/script.@SHLIBEXT@: $(BINARY_PREREQS) $(AUTH_SCRIPT_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD_MODULE) $(AUTH_SCRIPT_OBJ)
+
+bin/netlogond.@SHLIBEXT@: $(BINARY_PREREQS) $(AUTH_NETLOGOND_OBJ)
+	@echo "Building plugin $@"
+	@$(SHLD_MODULE) $(AUTH_NETLOGOND_OBJ)
 
 bin/smbserver.@SHLIBEXT@: $(BINARY_PREREQS) $(AUTH_SERVER_OBJ)
 	@echo "Building plugin $@"
@@ -2216,6 +2242,10 @@ bin/ad.@SHLIBEXT@: $(BINARY_PREREQS) winbindd/idmap_ad.o
 bin/hash.@SHLIBEXT@: $(BINARY_PREREQS) $(IDMAP_HASH_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD_MODULE) $(IDMAP_HASH_OBJ)
+
+bin/adex.@SHLIBEXT@: $(BINARY_PREREQS) $(IDMAP_ADEX_OBJ)
+	@echo "Building plugin $@"
+	@$(SHLD_MODULE) $(IDMAP_ADEX_OBJ)
 
 bin/tdb2.@SHLIBEXT@: $(BINARY_PREREQS) winbindd/idmap_tdb2.o
 	@echo "Building plugin $@"
@@ -2388,6 +2418,10 @@ bin/acl_xattr.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_ACL_XATTR_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD_MODULE) $(VFS_ACL_XATTR_OBJ)
 
+bin/smb_traffic_analyzer.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_SMB_TRAFFIC_ANALYZER_OBJ)
+	@echo "Building plugin $@"
+	@$(SHLD_MODULE) $(VFS_SMB_TRAFFIC_ANALYZER_OBJ)
+
 bin/registry.@SHLIBEXT@: $(BINARY_PREREQS) libgpo/gpext/registry.o
 	@echo "Building plugin $@"
 	@$(SHLD_MODULE) libgpo/gpext/registry.o
@@ -2395,6 +2429,10 @@ bin/registry.@SHLIBEXT@: $(BINARY_PREREQS) libgpo/gpext/registry.o
 bin/scripts.@SHLIBEXT@: $(BINARY_PREREQS) libgpo/gpext/scripts.o
 	@echo "Building plugin $@"
 	@$(SHLD_MODULE) libgpo/gpext/scripts.o
+
+bin/security.@SHLIBEXT@: $(BINARY_PREREQS) libgpo/gpext/security.o
+	@echo "Building plugin $@"
+	@$(SHLD_MODULE) libgpo/gpext/security.o
 
 #########################################################
 ## IdMap NSS plugins
@@ -2468,6 +2506,13 @@ bin/rpc_open_tcp@EXEEXT@: $(BINARY_PREREQS) $(RPC_OPEN_TCP_OBJ) @LIBTALLOC_SHARE
 		$(LIBS) $(LIBTALLOC_LIBS) @LIBTDB_SHARED@ $(WINBIND_LIBS) \
 		$(LDAP_LIBS) $(KRB5LIBS) $(NSCD_LIBS)
 
+bin/test_lp_load@EXEEXT@: $(BINARY_PREREQS) $(TEST_LP_LOAD_OBJ) @BUILD_POPT@ @LIBTALLOC_SHARED@ @LIBTDB_SHARED@
+	@echo "Linking $@"
+	@$(CC) $(FLAGS) -o $@ $(TEST_LP_LOAD_OBJ) \
+		$(LDFLAGS) $(DYNEEXP) $(LIBS) \
+		$(LDAP_LIBS) \
+		$(POPT_LIBS) $(LIBTALLOC_LIBS) $(LIBTDB_LIBS)
+
 install:: installservers installbin @INSTALL_CIFSMOUNT@ @INSTALL_CIFSUPCALL@ installman \
 		installscripts installdat installmodules @SWAT_INSTALL_TARGETS@ \
 		@INSTALL_PAM_MODULES@ installlibs
@@ -2518,6 +2563,8 @@ installmodules:: modules installdirs
 	@$(SHELL) $(srcdir)/script/linkmodules.sh $(DESTDIR)$(AUTHLIBDIR) domain.@SHLIBEXT@ trustdomain.@SHLIBEXT@ ntdomain.@SHLIBEXT@
 	@$(SHELL) $(srcdir)/script/linkmodules.sh $(DESTDIR)$(AUTHLIBDIR) builtin.@SHLIBEXT@ guest.@SHLIBEXT@ fixed_challenge.@SHLIBEXT@ name_to_ntstatus.@SHLIBEXT@
 	@$(SHELL) $(srcdir)/script/linkmodules.sh $(DESTDIR)$(NSSINFOLIBDIR) ../idmap/ad.@SHLIBEXT@ rfc2307.@SHLIBEXT@ sfu.@SHLIBEXT@ sfu20.@SHLIBEXT@
+	@$(SHELL) $(srcdir)/script/linkmodules.sh $(DESTDIR)$(NSSINFOLIBDIR) ../idmap/adex.@SHLIBEXT@ adex.@SHLIBEXT@
+	@$(SHELL) $(srcdir)/script/linkmodules.sh $(DESTDIR)$(NSSINFOLIBDIR) ../idmap/hash.@SHLIBEXT@ hash.@SHLIBEXT@
 
 installscripts:: installdirs
 	@$(SHELL) $(srcdir)/script/installscripts.sh $(INSTALLPERMS_BIN) $(DESTDIR)$(BINDIR) $(SCRIPTS)
@@ -2613,6 +2660,10 @@ uninstallpammodules::
 # Toplevel clean files
 TOPFILES=dynconfig.o
 
+cleanlibs::
+	-rm -f ../lib/*/*.o ../lib/*/*/*.o \
+		../libcli/*.o ../libcli/*/*.o
+
 clean:: cleanlibs
 	-rm -f include/build_env.h
 	-rm -f smbd/build_options.c
@@ -2636,10 +2687,10 @@ include/build_env.h: script/build_env.sh
 proto::
 
 etags::
-	etags `find $(srcdir) -name "*.[ch]"`
+	etags `find $(srcdir)/.. -name "*.[ch]"`
 
 ctags::
-	ctags `find $(srcdir) -name "*.[ch]"`
+	ctags `find $(srcdir)/.. -name "*.[ch]"`
 
 realclean:: clean
 	-rm -f config.log bin/.dummy script/findsmb script/gen-8bit-gap.sh
@@ -2723,6 +2774,10 @@ valgrindtest:: all torture timelimit
 	 VALGRIND="valgrind -q --num-callers=30 --log-file=${selftest_prefix}/valgrind.log" \
 	 PERL="$(PERL)" $(srcdir)/script/tests/selftest.sh ${selftest_prefix} all "${smbtorture4_path}"
 
+# Check for Winbind struct 32/64bit padding
+test_wbpad:
+	@echo "Testing winbind request/response structure for 32/64bit padding"
+	@./script/tests/wb_pad.sh || exit 1;
 
 ##
 ## Examples:

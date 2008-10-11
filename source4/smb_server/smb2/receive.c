@@ -153,7 +153,7 @@ static void smb2srv_chain_reply(struct smb2srv_request *p_req)
 	chain_offset = p_req->chain_offset;
 	p_req->chain_offset = 0;
 
-	if (p_req->in.size < (NBT_HDR_SIZE + chain_offset + SMB2_MIN_SIZE)) {
+	if (p_req->in.size < (NBT_HDR_SIZE + chain_offset + SMB2_MIN_SIZE_NO_BODY)) {
 		DEBUG(2,("Invalid SMB2 chained packet at offset 0x%X\n",
 			chain_offset));
 		smbsrv_terminate_connection(p_req->smb_conn, "Invalid SMB2 chained packet");
@@ -183,6 +183,19 @@ static void smb2srv_chain_reply(struct smb2srv_request *p_req)
 	req->in.body		= req->in.hdr	+ SMB2_HDR_BODY;
 	req->in.body_size	= req->in.size	- (NBT_HDR_SIZE+ chain_offset + SMB2_HDR_BODY);
 	req->in.dynamic 	= NULL;
+
+	req->seqnum		= BVAL(req->in.hdr, SMB2_HDR_MESSAGE_ID);
+
+	if (req->in.body_size < 2) {
+		/* error handling for this is different for negprot to 
+		   other packet types */
+		uint16_t opcode	= SVAL(req->in.hdr, SMB2_HDR_OPCODE);
+		if (opcode == SMB2_OP_NEGPROT) {
+			smbsrv_terminate_connection(req->smb_conn, "Bad body size in SMB2 negprot");			
+		} else {
+			smb2srv_send_error(req, NT_STATUS_INVALID_PARAMETER);
+		}
+	}
 
 	buffer_code		= SVAL(req->in.body, 0);
 	req->in.body_fixed	= (buffer_code & ~1);
@@ -290,6 +303,10 @@ static NTSTATUS smb2srv_reply(struct smb2srv_request *req)
 	uint64_t uid;
 	uint32_t flags;
 
+	if (SVAL(req->in.hdr, SMB2_HDR_LENGTH) != SMB2_HDR_BODY) {
+		smbsrv_terminate_connection(req->smb_conn, "Invalid SMB2 header length");
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 	opcode			= SVAL(req->in.hdr, SMB2_HDR_OPCODE);
 	req->chain_offset	= IVAL(req->in.hdr, SMB2_HDR_NEXT_COMMAND);
 	req->seqnum		= BVAL(req->in.hdr, SMB2_HDR_MESSAGE_ID);
@@ -297,6 +314,13 @@ static NTSTATUS smb2srv_reply(struct smb2srv_request *req)
 	uid			= BVAL(req->in.hdr, SMB2_HDR_SESSION_ID);
 	flags			= IVAL(req->in.hdr, SMB2_HDR_FLAGS);
 
+	if (req->smb_conn->highest_smb2_seqnum != 0 &&
+	    req->seqnum <= req->smb_conn->highest_smb2_seqnum) {
+		smbsrv_terminate_connection(req->smb_conn, "Invalid SMB2 sequence number");
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	req->smb_conn->highest_smb2_seqnum = req->seqnum;
+	
 	req->session	= smbsrv_session_find(req->smb_conn, uid, req->request_time);
 	req->tcon	= smbsrv_smb2_tcon_find(req->session, tid, req->request_time);
 
@@ -443,7 +467,7 @@ NTSTATUS smbsrv_recv_smb2_request(void *private, DATA_BLOB blob)
 		return NT_STATUS_OK;
 	}
 
-	if (blob.length < (NBT_HDR_SIZE + SMB2_MIN_SIZE)) {
+	if (blob.length < (NBT_HDR_SIZE + SMB2_MIN_SIZE_NO_BODY)) {
 		DEBUG(2,("Invalid SMB2 packet length count %ld\n", (long)blob.length));
 		smbsrv_terminate_connection(smb_conn, "Invalid SMB2 packet");
 		return NT_STATUS_OK;
@@ -469,6 +493,19 @@ NTSTATUS smbsrv_recv_smb2_request(void *private, DATA_BLOB blob)
 	req->in.body		= req->in.hdr	+ SMB2_HDR_BODY;
 	req->in.body_size	= req->in.size	- (SMB2_HDR_BODY+NBT_HDR_SIZE);
 	req->in.dynamic 	= NULL;
+
+	req->seqnum		= BVAL(req->in.hdr, SMB2_HDR_MESSAGE_ID);
+
+	if (req->in.body_size < 2) {
+		/* error handling for this is different for negprot to 
+		   other packet types */
+		uint16_t opcode	= SVAL(req->in.hdr, SMB2_HDR_OPCODE);
+		if (opcode == SMB2_OP_NEGPROT) {
+			smbsrv_terminate_connection(req->smb_conn, "Bad body size in SMB2 negprot");			
+		} else {
+			smb2srv_send_error(req, NT_STATUS_INVALID_PARAMETER);
+		}
+	}
 
 	buffer_code		= SVAL(req->in.body, 0);
 	req->in.body_fixed	= (buffer_code & ~1);

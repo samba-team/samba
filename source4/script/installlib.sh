@@ -15,7 +15,9 @@ for p in $*; do
    mv $LIBDIR/$p2 $LIBDIR/$p2.old
  fi
  cp $p $LIBDIR/
- ln -sf $p2 $LIBDIR/$lnname
+ if [ $p2 != $lnname ]; then
+  ln -sf $p2 $LIBDIR/$lnname
+ fi
 done
 
 cat << EOF

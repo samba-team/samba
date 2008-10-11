@@ -7,6 +7,8 @@
 #include "../lib/replace/replace.h"
 #include "system/syslog.h"
 #include "system/time.h"
+#include <talloc.h>
+#include "libwbclient/wbclient.h"
 
 #define MODULE_NAME "pam_winbind"
 #define PAM_SM_AUTH
@@ -97,6 +99,7 @@ do {                             \
 #define WINBIND_SILENT			0x00000800
 #define WINBIND_DEBUG_STATE		0x00001000
 #define WINBIND_WARN_PWD_EXPIRE		0x00002000
+#define WINBIND_MKHOMEDIR		0x00004000
 
 /*
  * here is the string to inform the user that the new passwords they
@@ -133,73 +136,11 @@ do {                             \
 	};\
 };
 
-#define PAM_WB_REMARK_DIRECT_RET(h,f,x)\
-{\
-	const char *error_string = NULL; \
-	error_string = _get_ntstatus_error_string(x);\
-	if (error_string != NULL) {\
-		_make_remark(h, f, PAM_ERROR_MSG, error_string);\
-		return ret;\
-	};\
-	_make_remark(h, f, PAM_ERROR_MSG, x);\
-	return ret;\
-};
-
-#define PAM_WB_REMARK_CHECK_RESPONSE(c,x,y)\
-{\
-	const char *ntstatus = x.data.auth.nt_status_string; \
-	const char *error_string = NULL; \
-	if (!strcasecmp(ntstatus,y)) {\
-		error_string = _get_ntstatus_error_string(y);\
-		if (error_string != NULL) {\
-			_make_remark(c, PAM_ERROR_MSG, error_string);\
-		};\
-		if (x.data.auth.error_string[0] != '\0') {\
-			_make_remark(c, PAM_ERROR_MSG, x.data.auth.error_string);\
-		};\
-		_make_remark(c, PAM_ERROR_MSG, y);\
-	};\
-};
-
-#define PAM_WB_REMARK_CHECK_RESPONSE_RET(c,x,y)\
-{\
-	const char *ntstatus = x.data.auth.nt_status_string; \
-	const char *error_string = NULL; \
-	if (!strcasecmp(ntstatus,y)) {\
-		error_string = _get_ntstatus_error_string(y);\
-		if (error_string != NULL) {\
-			_make_remark(c, PAM_ERROR_MSG, error_string);\
-			return ret;\
-		};\
-		if (x.data.auth.error_string[0] != '\0') {\
-			_make_remark(c, PAM_ERROR_MSG, x.data.auth.error_string);\
-			return ret;\
-		};\
-		_make_remark(c, PAM_ERROR_MSG, y);\
-		return ret;\
-	};\
-};
-
-/* from samr.idl */
-#define DOMAIN_PASSWORD_COMPLEX		0x00000001
-
-#define SAMR_REJECT_OTHER		0x00000000
-#define SAMR_REJECT_TOO_SHORT		0x00000001
-#define SAMR_REJECT_IN_HISTORY		0x00000002
-#define SAMR_REJECT_COMPLEXITY		0x00000005
-
-#define ACB_PWNOEXP			0x00000200
-
-/* from netlogon.idl */
-#define NETLOGON_CACHED_ACCOUNT		0x00000004
-#define NETLOGON_GRACE_LOGON		0x01000000
-
-/* from include/rpc_netlogon.h */
 #define LOGON_KRB5_FAIL_CLOCK_SKEW	0x02000000
 
-#define PAM_WB_CACHED_LOGON(x) (x & NETLOGON_CACHED_ACCOUNT)
+#define PAM_WB_CACHED_LOGON(x) (x & WBC_AUTH_USER_INFO_CACHED_ACCOUNT)
 #define PAM_WB_KRB5_CLOCK_SKEW(x) (x & LOGON_KRB5_FAIL_CLOCK_SKEW)
-#define PAM_WB_GRACE_LOGON(x)  ((NETLOGON_CACHED_ACCOUNT|NETLOGON_GRACE_LOGON) == ( x & (NETLOGON_CACHED_ACCOUNT|NETLOGON_GRACE_LOGON)))
+#define PAM_WB_GRACE_LOGON(x)  ((WBC_AUTH_USER_INFO_CACHED_ACCOUNT|WBC_AUTH_USER_INFO_GRACE_LOGON) == ( x & (WBC_AUTH_USER_INFO_CACHED_ACCOUNT|WBC_AUTH_USER_INFO_GRACE_LOGON)))
 
 struct pwb_context {
 	pam_handle_t *pamh;
@@ -209,3 +150,8 @@ struct pwb_context {
 	dictionary *dict;
 	uint32_t ctrl;
 };
+
+#define TALLOC_FREE(ctx) do { if ((ctx) != NULL) {talloc_free(ctx); ctx=NULL;} } while(0)
+#define TALLOC_ZERO_P(ctx, type) (type *)_talloc_zero(ctx, sizeof(type), #type)
+#define TALLOC_P(ctx, type) (type *)talloc_named_const(ctx, sizeof(type), #type)
+

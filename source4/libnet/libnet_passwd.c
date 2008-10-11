@@ -20,7 +20,7 @@
 
 #include "includes.h"
 #include "libnet/libnet.h"
-#include "lib/crypto/crypto.h"
+#include "../lib/crypto/crypto.h"
 #include "libcli/auth/libcli_auth.h"
 #include "librpc/gen_ndr/ndr_samr_c.h"
 

@@ -538,3 +538,94 @@ NTSTATUS rpccli_netlogon_sam_network_logon_ex(struct rpc_pipe_client *cli,
 
 	return result;
 }
+
+/*********************************************************
+ Change the domain password on the PDC.
+
+ Just changes the password betwen the two values specified.
+
+ Caller must have the cli connected to the netlogon pipe
+ already.
+**********************************************************/
+
+NTSTATUS rpccli_netlogon_set_trust_password(struct rpc_pipe_client *cli,
+					    TALLOC_CTX *mem_ctx,
+					    const unsigned char orig_trust_passwd_hash[16],
+					    const char *new_trust_pwd_cleartext,
+					    const unsigned char new_trust_passwd_hash[16],
+					    uint32_t sec_channel_type)
+{
+	NTSTATUS result;
+	uint32_t neg_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS;
+	struct netr_Authenticator clnt_creds, srv_cred;
+
+	result = rpccli_netlogon_setup_creds(cli,
+					     cli->desthost, /* server name */
+					     lp_workgroup(), /* domain */
+					     global_myname(), /* client name */
+					     global_myname(), /* machine account name */
+					     orig_trust_passwd_hash,
+					     sec_channel_type,
+					     &neg_flags);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(3,("rpccli_netlogon_set_trust_password: unable to setup creds (%s)!\n",
+			 nt_errstr(result)));
+		return result;
+	}
+
+	netlogon_creds_client_step(cli->dc, &clnt_creds);
+
+	if (neg_flags & NETLOGON_NEG_PASSWORD_SET2) {
+
+		struct netr_CryptPassword new_password;
+
+		init_netr_CryptPassword(new_trust_pwd_cleartext,
+					cli->dc->sess_key,
+					&new_password);
+
+		result = rpccli_netr_ServerPasswordSet2(cli, mem_ctx,
+							cli->dc->remote_machine,
+							cli->dc->mach_acct,
+							sec_channel_type,
+							global_myname(),
+							&clnt_creds,
+							&srv_cred,
+							&new_password);
+		if (!NT_STATUS_IS_OK(result)) {
+			DEBUG(0,("rpccli_netr_ServerPasswordSet2 failed: %s\n",
+				nt_errstr(result)));
+			return result;
+		}
+	} else {
+
+		struct samr_Password new_password;
+
+		cred_hash3(new_password.hash,
+			   new_trust_passwd_hash,
+			   cli->dc->sess_key, 1);
+
+		result = rpccli_netr_ServerPasswordSet(cli, mem_ctx,
+						       cli->dc->remote_machine,
+						       cli->dc->mach_acct,
+						       sec_channel_type,
+						       global_myname(),
+						       &clnt_creds,
+						       &srv_cred,
+						       &new_password);
+		if (!NT_STATUS_IS_OK(result)) {
+			DEBUG(0,("rpccli_netr_ServerPasswordSet failed: %s\n",
+				nt_errstr(result)));
+			return result;
+		}
+	}
+
+	/* Always check returned credentials. */
+	if (!netlogon_creds_client_check(cli->dc, &srv_cred.cred)) {
+		DEBUG(0,("credentials chain check failed\n"));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	return result;
+}
+

@@ -23,7 +23,7 @@
 #include "libcli/raw/libcliraw.h"
 #include "libcli/smb2/smb2.h"
 #include "libcli/smb2/smb2_calls.h"
-#include "lib/crypto/crypto.h"
+#include "../lib/crypto/crypto.h"
 
 /*
   sign an outgoing message

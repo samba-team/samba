@@ -75,17 +75,15 @@ static struct ldb_dn *find_schema_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ct
 	}
 	
 	/* Search for rootdse */
-	ldb_ret = ldb_search(ldb, basedn, LDB_SCOPE_BASE, NULL, rootdse_attrs, &rootdse_res);
+	ldb_ret = ldb_search(ldb, mem_ctx, &rootdse_res,
+			     basedn, LDB_SCOPE_BASE, rootdse_attrs, NULL);
 	if (ldb_ret != LDB_SUCCESS) {
-		ldb_ret = ldb_search(ldb, basedn, LDB_SCOPE_SUBTREE, 
-				 "(&(objectClass=dMD)(cn=Schema))", 
-				 NULL, &schema_res);
+		ldb_ret = ldb_search(ldb, mem_ctx, &schema_res, basedn, LDB_SCOPE_SUBTREE,
+				     NULL, "(&(objectClass=dMD)(cn=Schema))");
 		if (ldb_ret) {
 			printf("cn=Schema Search failed: %s\n", ldb_errstring(ldb));
 			return NULL;
 		}
-
-		talloc_steal(mem_ctx, schema_res);
 
 		if (schema_res->count != 1) {
 			talloc_free(schema_res);
@@ -223,7 +221,6 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum dsdb_sch
 
 	for (attribute=schema->attributes; attribute; attribute = attribute->next) {
 		const char *name = attribute->lDAPDisplayName;
-		const char *description = attribute->adminDescription;
 		const char *oid = attribute->attributeID_oid;
 		const char *syntax = attribute->attributeSyntax_oid;
 		const char *equality = NULL, *substring = NULL;
@@ -272,7 +269,16 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum dsdb_sch
 			}
 		}
 		
-		schema_entry = schema_attribute_description(mem_ctx, target, seperator, oid, name, description, equality, substring, syntax, single_value, false);
+		schema_entry = schema_attribute_description(mem_ctx, 
+							    target, 
+							    seperator, 
+							    oid, 
+							    name, 
+							    equality, 
+							    substring, 
+							    syntax, 
+							    single_value, 
+							    false);
 
 		if (schema_entry == NULL) {
 			ret.failures++;
@@ -293,7 +299,6 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum dsdb_sch
 	/* This is already sorted to have 'top' and similar classes first */
 	for (objectclass=schema->classes; objectclass; objectclass = objectclass->next) {
 		const char *name = objectclass->lDAPDisplayName;
-		const char *description = objectclass->adminDescription;
 		const char *oid = objectclass->governsID_oid;
 		const char *subClassOf = objectclass->subClassOf;
 		int objectClassCategory = objectclass->objectClassCategory;
@@ -358,7 +363,6 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum dsdb_sch
 							oid, 
 							name,
 							NULL, 
-							description,
 							subClassOf,
 							objectClassCategory,
 							must,

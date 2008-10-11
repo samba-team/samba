@@ -79,9 +79,6 @@ _PUBLIC_ const char *dyn_SWATDIR = SWATDIR;
 /** SETUP files (source files used by the provision) */
 _PUBLIC_ const char *dyn_SETUPDIR = SETUPDIR;
 
-/** EJS Javascript library includes */
-_PUBLIC_ const char *dyn_JSDIR = JSDIR;
-
 /** Where to find the winbindd socket */
 _PUBLIC_ const char *dyn_WINBINDD_SOCKET_DIR = WINBINDD_SOCKET_DIR;
 

@@ -166,7 +166,7 @@ static bool zfs_process_smbacl(files_struct *fsp, SMB4ACL_T *smbacl)
  */
 static NTSTATUS zfs_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 			   uint32 security_info_sent,
-			   struct security_descriptor *psd)
+			   const struct security_descriptor *psd)
 {
 	return smb_set_nt_acl_nfs4(fsp, security_info_sent, psd,
 			zfs_process_smbacl);
@@ -207,7 +207,7 @@ static NTSTATUS zfsacl_get_nt_acl(struct vfs_handle_struct *handle,
 static NTSTATUS zfsacl_fset_nt_acl(vfs_handle_struct *handle,
 			 files_struct *fsp,
 			 uint32 security_info_sent,
-			 SEC_DESC *psd)
+			 const SEC_DESC *psd)
 {
 	return zfs_set_nt_acl(handle, fsp, security_info_sent, psd);
 }

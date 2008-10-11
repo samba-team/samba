@@ -12,6 +12,8 @@ libdir = @libdir@
 VPATH = @srcdir@:@libreplacedir@
 srcdir = @srcdir@
 builddir = @builddir@
+sharedbuilddir = @sharedbuilddir@
+INSTALLCMD = @INSTALL@
 CPPFLAGS = @CPPFLAGS@ -I$(srcdir)/include -Iinclude 
 CFLAGS = $(CPPFLAGS) @CFLAGS@
 LDFLAGS = @LDFLAGS@
@@ -42,6 +44,15 @@ all:: showflags dirs $(PROGS) $(TDB_SOLIB) libtdb.a $(PYTHON_BUILD_TARGET)
 install:: all
 $(TDB_SOLIB): $(TDB_OBJ)
 	$(SHLD) $(SHLD_FLAGS) -o $@ $(TDB_OBJ) @SONAMEFLAG@$(TDB_SONAME)
+
+shared-build: all
+	${INSTALLCMD} -d $(sharedbuilddir)/lib
+	${INSTALLCMD} -m 644 libtdb.a $(sharedbuilddir)/lib
+	${INSTALLCMD} -m 755 $(TDB_SOLIB) $(sharedbuilddir)/lib
+	ln -sf $(TDB_SOLIB) $(sharedbuilddir)/lib/$(TDB_SONAME)
+	ln -sf $(TDB_SOLIB) $(sharedbuilddir)/lib/libtdb.so
+	${INSTALLCMD} -d $(sharedbuilddir)/include
+	${INSTALLCMD} -m 644 $(srcdir)/include/tdb.h $(sharedbuilddir)/include
 
 check: test
 

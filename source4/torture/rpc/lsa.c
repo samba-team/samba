@@ -29,7 +29,7 @@
 #include "libcli/auth/libcli_auth.h"
 #include "torture/rpc/rpc.h"
 #include "param/param.h"
-#include "lib/crypto/crypto.h"
+#include "../lib/crypto/crypto.h"
 #define TEST_MACHINENAME "lsatestmach"
 
 static void init_lsa_String(struct lsa_String *name, const char *s)
@@ -222,12 +222,13 @@ static bool test_LookupNames_bogus(struct dcerpc_pipe *p,
 	NTSTATUS status;
 	int i;
 
-	struct lsa_TranslatedName name;
+	struct lsa_TranslatedName name[2];
 	struct lsa_TransNameArray tnames;
 
-	tnames.names = &name;
-	tnames.count = 1;
-	name.name.string = "NT AUTHORITY\\BOGUS";
+	tnames.names = name;
+	tnames.count = 2;
+	name[0].name.string = "NT AUTHORITY\\BOGUS";
+	name[1].name.string = NULL;
 
 	printf("\nTesting LookupNames with bogus names\n");
 
@@ -337,8 +338,8 @@ static bool test_LookupNames2(struct dcerpc_pipe *p,
 	r.in.sids = &sids;
 	r.in.level = 1;
 	r.in.count = &count;
-	r.in.unknown1 = 0;
-	r.in.unknown2 = 0;
+	r.in.lookup_options = 0;
+	r.in.client_revision = 0;
 	r.out.count = &count;
 	r.out.sids = &sids;
 
@@ -382,8 +383,8 @@ static bool test_LookupNames3(struct dcerpc_pipe *p,
 	r.in.sids = &sids;
 	r.in.level = 1;
 	r.in.count = &count;
-	r.in.unknown1 = 0;
-	r.in.unknown2 = 0;
+	r.in.lookup_options = 0;
+	r.in.client_revision = 0;
 	r.out.count = &count;
 	r.out.sids = &sids;
 
@@ -424,8 +425,8 @@ static bool test_LookupNames4(struct dcerpc_pipe *p,
 	r.in.sids = &sids;
 	r.in.level = 1;
 	r.in.count = &count;
-	r.in.unknown1 = 0;
-	r.in.unknown2 = 0;
+	r.in.lookup_options = 0;
+	r.in.client_revision = 0;
 	r.out.count = &count;
 	r.out.sids = &sids;
 
@@ -1898,7 +1899,11 @@ static bool test_EnumTrustDom(struct dcerpc_pipe *p,
 		
 		/* NO_MORE_ENTRIES is allowed */
 		if (NT_STATUS_EQUAL(enum_status, NT_STATUS_NO_MORE_ENTRIES)) {
-			return true;
+			if (domains.count == 0) {
+				return true;
+			}
+			printf("EnumTrustDom failed - should have returned 0 trusted domains with 'NT_STATUS_NO_MORE_ENTRIES'\n");
+			return false;
 		} else if (NT_STATUS_EQUAL(enum_status, STATUS_MORE_ENTRIES)) {
 			/* Windows 2003 gets this off by one on the first run */
 			if (r.out.domains->count < 3 || r.out.domains->count > 4) {
@@ -1949,7 +1954,11 @@ static bool test_EnumTrustDom(struct dcerpc_pipe *p,
 		
 		/* NO_MORE_ENTRIES is allowed */
 		if (NT_STATUS_EQUAL(enum_status, NT_STATUS_NO_MORE_ENTRIES)) {
-			return true;
+			if (domains_ex.count == 0) {
+				return true;
+			}
+			printf("EnumTrustDomainsEx failed - should have returned 0 trusted domains with 'NT_STATUS_NO_MORE_ENTRIES'\n");
+			return false;
 		} else if (NT_STATUS_EQUAL(enum_status, STATUS_MORE_ENTRIES)) {
 			/* Windows 2003 gets this off by one on the first run */
 			if (r_ex.out.domains->count < 3 || r_ex.out.domains->count > 4) {
@@ -2077,7 +2086,7 @@ static bool test_CreateTrustedDomainEx2(struct dcerpc_pipe *p,
 	struct lsa_CreateTrustedDomainEx2 r;
 	struct lsa_TrustDomainInfoInfoEx trustinfo;
 	struct lsa_TrustDomainInfoAuthInfoInternal authinfo;
-	struct trustAuthInAndOutBlob auth_struct;
+	struct trustDomainPasswords auth_struct;
 	DATA_BLOB auth_blob;
 	struct dom_sid *domsid[12];
 	struct policy_handle trustdom_handle[12];
@@ -2114,7 +2123,7 @@ static bool test_CreateTrustedDomainEx2(struct dcerpc_pipe *p,
 
 		/* Try different trust types too */
 
-		/* 1 == downleven (NT4), 2 == uplevel (ADS), 3 == MIT (kerberos but not AD) */
+		/* 1 == downlevel (NT4), 2 == uplevel (ADS), 3 == MIT (kerberos but not AD) */
 		trustinfo.trust_type = (((i / 3) + 1) % 3) + 1;
 
 		trustinfo.trust_attributes = LSA_TRUST_ATTRIBUTE_USES_RC4_ENCRYPTION;
@@ -2125,9 +2134,9 @@ static bool test_CreateTrustedDomainEx2(struct dcerpc_pipe *p,
 		auth_struct.incoming.count = 0;
 
 		ndr_err = ndr_push_struct_blob(&auth_blob, mem_ctx, lp_iconv_convenience(tctx->lp_ctx), &auth_struct,
-					       (ndr_push_flags_fn_t)ndr_push_trustAuthInAndOutBlob);
+					       (ndr_push_flags_fn_t)ndr_push_trustDomainPasswords);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-			printf("ndr_push_struct_blob of trustAuthInAndOutBlob structure failed");
+			printf("ndr_push_struct_blob of trustDomainPasswords structure failed");
 			ret = false;
 		}
 
@@ -2159,6 +2168,7 @@ static bool test_CreateTrustedDomainEx2(struct dcerpc_pipe *p,
 				printf("QueryTrustedDomainInfo level 1 failed - %s\n", nt_errstr(status));
 				ret = false;
 			} else if (!q.out.info) {
+				printf("QueryTrustedDomainInfo level 1 failed to return an info pointer\n");
 				ret = false;
 			} else {
 				if (strcmp(q.out.info->info_ex.netbios_name.string, trustinfo.netbios_name.string) != 0) {
@@ -2187,11 +2197,13 @@ static bool test_CreateTrustedDomainEx2(struct dcerpc_pipe *p,
 
 	/* now that we have some domains to look over, we can test the enum calls */
 	if (!test_EnumTrustDom(p, mem_ctx, handle)) {
+		printf("test_EnumTrustDom failed\n");
 		ret = false;
 	}
 	
 	for (i=0; i<12; i++) {
 		if (!test_DeleteTrustedDomainBySid(p, mem_ctx, handle, domsid[i])) {
+			printf("test_DeleteTrustedDomainBySid failed\n");
 			ret = false;
 		}
 	}
@@ -2242,7 +2254,7 @@ static bool test_QueryInfoPolicy(struct dcerpc_pipe *p,
 	bool ret = true;
 	printf("\nTesting QueryInfoPolicy\n");
 
-	for (i=1;i<13;i++) {
+	for (i=1;i<=13;i++) {
 		r.in.handle = handle;
 		r.in.level = i;
 
@@ -2261,7 +2273,14 @@ static bool test_QueryInfoPolicy(struct dcerpc_pipe *p,
 			break;
 		case LSA_POLICY_INFO_DOMAIN:
 		case LSA_POLICY_INFO_ACCOUNT_DOMAIN:
+		case LSA_POLICY_INFO_DNS_INT:
 		case LSA_POLICY_INFO_DNS:
+		case LSA_POLICY_INFO_REPLICA:
+		case LSA_POLICY_INFO_QUOTA:
+		case LSA_POLICY_INFO_ROLE:
+		case LSA_POLICY_INFO_AUDIT_LOG:
+		case LSA_POLICY_INFO_AUDIT_EVENTS:
+		case LSA_POLICY_INFO_PD:
 			if (!NT_STATUS_IS_OK(status)) {
 				printf("QueryInfoPolicy failed - %s\n", nt_errstr(status));
 				ret = false;
@@ -2351,7 +2370,14 @@ static bool test_QueryInfoPolicy2(struct dcerpc_pipe *p,
 			break;
 		case LSA_POLICY_INFO_DOMAIN:
 		case LSA_POLICY_INFO_ACCOUNT_DOMAIN:
+		case LSA_POLICY_INFO_DNS_INT:
 		case LSA_POLICY_INFO_DNS:
+		case LSA_POLICY_INFO_REPLICA:
+		case LSA_POLICY_INFO_QUOTA:
+		case LSA_POLICY_INFO_ROLE:
+		case LSA_POLICY_INFO_AUDIT_LOG:
+		case LSA_POLICY_INFO_AUDIT_EVENTS:
+		case LSA_POLICY_INFO_PD:
 			if (!NT_STATUS_IS_OK(status)) {
 				printf("QueryInfoPolicy2 failed - %s\n", nt_errstr(status));
 				ret = false;
@@ -2457,7 +2483,6 @@ bool torture_rpc_lsa(struct torture_context *tctx)
 		if (!join) {
 			ret = false;
 		}
-
 		if (!test_LookupNames_wellknown(p, tctx, handle)) {
 			ret = false;
 		}		
@@ -2481,7 +2506,6 @@ bool torture_rpc_lsa(struct torture_context *tctx)
 		if (!test_CreateSecret(p, tctx, handle)) {
 			ret = false;
 		}
-		
 		if (!test_CreateTrustedDomain(p, tctx, handle)) {
 			ret = false;
 		}

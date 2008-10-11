@@ -4,6 +4,7 @@
    Copyright (C) Jelmer Vernooij 2005
    Copyright (C) Martin Kuehl <mkhl@samba.org> 2006
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2006
+   Copyright (C) Simo Sorce <idra@samba.org> 2008
 
      ** NOTE! The following LGPL license applies to the ldb
      ** library. This does NOT imply that all of Samba is released
@@ -905,7 +906,11 @@ static int map_subtree_collect_remote(struct ldb_module *module, void *mem_ctx, 
 
 /* Split subtrees that query attributes in the local partition from
  * those that query the remote partition. */
-static int ldb_parse_tree_partition(struct ldb_module *module, void *local_ctx, void *remote_ctx, struct ldb_parse_tree **local_tree, struct ldb_parse_tree **remote_tree, const struct ldb_parse_tree *tree)
+static int ldb_parse_tree_partition(struct ldb_module *module,
+					void *mem_ctx,
+					struct ldb_parse_tree **local_tree,
+					struct ldb_parse_tree **remote_tree,
+					const struct ldb_parse_tree *tree)
 {
 	int ret;
 
@@ -918,13 +923,13 @@ static int ldb_parse_tree_partition(struct ldb_module *module, void *local_ctx, 
 	}
 
 	/* Generate local tree */
-	ret = map_subtree_select_local(module, local_ctx, local_tree, tree);
+	ret = map_subtree_select_local(module, mem_ctx, local_tree, tree);
 	if (ret) {
 		return ret;
 	}
 
 	/* Generate remote tree */
-	ret = map_subtree_collect_remote(module, remote_ctx, remote_tree, tree);
+	ret = map_subtree_collect_remote(module, mem_ctx, remote_tree, tree);
 	if (ret) {
 		talloc_free(*local_tree);
 		return ret;
@@ -1008,24 +1013,46 @@ oom:
 /* Outbound requests: search
  * ========================= */
 
-/* Pass a merged search result up the callback chain. */
-int map_up_callback(struct ldb_context *ldb, const struct ldb_request *req, struct ldb_reply *ares)
+static int map_remote_search_callback(struct ldb_request *req,
+					struct ldb_reply *ares);
+static int map_local_merge_callback(struct ldb_request *req,
+					struct ldb_reply *ares);
+static int map_search_local(struct map_context *ac);
+
+static int map_save_entry(struct map_context *ac, struct ldb_reply *ares)
 {
+	struct map_reply *mr;
+
+	mr = talloc_zero(ac, struct map_reply);
+	if (mr == NULL) {
+		map_oom(ac->module);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	mr->remote = talloc_steal(mr, ares);
+	if (ac->r_current) {
+		ac->r_current->next = mr;
+	} else {
+		/* first entry */
+		ac->r_list = mr;
+	}
+	ac->r_current = mr;
+
+	return LDB_SUCCESS;
+}
+
+/* Pass a merged search result up the callback chain. */
+int map_return_entry(struct map_context *ac, struct ldb_reply *ares)
+{
+	struct ldb_message_element *el;
+	const char * const *attrs;
 	int i;
 
-	/* No callback registered, stop */
-	if (req->callback == NULL) {
-		return LDB_SUCCESS;
-	}
-
-	/* Only records need special treatment */
-	if (ares->type != LDB_REPLY_ENTRY) {
-		return req->callback(ldb, req->context, ares);
-	}
-
 	/* Merged result doesn't match original query, skip */
-	if (!ldb_match_msg(ldb, ares->message, req->op.search.tree, req->op.search.base, req->op.search.scope)) {
-		ldb_debug(ldb, LDB_DEBUG_TRACE, "ldb_map: "
+	if (!ldb_match_msg(ac->module->ldb, ares->message,
+			   ac->req->op.search.tree,
+			   ac->req->op.search.base,
+			   ac->req->op.search.scope)) {
+		ldb_debug(ac->module->ldb, LDB_DEBUG_TRACE, "ldb_map: "
 			  "Skipping record '%s': "
 			  "doesn't match original search\n",
 			  ldb_dn_get_linearized(ares->message->dn));
@@ -1033,10 +1060,16 @@ int map_up_callback(struct ldb_context *ldb, const struct ldb_request *req, stru
 	}
 
 	/* Limit result to requested attrs */
-	if ((req->op.search.attrs) && (!ldb_attr_in_list(req->op.search.attrs, "*"))) {
-		for (i = 0; i < ares->message->num_elements; ) {
-			struct ldb_message_element *el = &ares->message->elements[i];
-			if (!ldb_attr_in_list(req->op.search.attrs, el->name)) {
+	if (ac->req->op.search.attrs &&
+	    (! ldb_attr_in_list(ac->req->op.search.attrs, "*"))) {
+
+		attrs = ac->req->op.search.attrs;
+		i = 0;
+
+		while (i < ares->message->num_elements) {
+
+			el = &ares->message->elements[i];
+			if ( ! ldb_attr_in_list(attrs, el->name)) {
 				ldb_msg_remove_element(ares->message, el);
 			} else {
 				i++;
@@ -1044,129 +1077,16 @@ int map_up_callback(struct ldb_context *ldb, const struct ldb_request *req, stru
 		}
 	}
 
-	return req->callback(ldb, req->context, ares);
-}
-
-/* Merge the remote and local parts of a search result. */
-int map_local_merge_callback(struct ldb_context *ldb, void *context, struct ldb_reply *ares)
-{
-	struct map_search_context *sc;
-	int ret;
-
-	if (context == NULL || ares == NULL) {
-		ldb_set_errstring(ldb, talloc_asprintf(ldb, "ldb_map: "
-						       "NULL Context or Result in `map_local_merge_callback`"));
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	sc = talloc_get_type(context, struct map_search_context);
-
-	switch (ares->type) {
-	case LDB_REPLY_ENTRY:
-		/* We have already found a local record */
-		if (sc->local_res) {
-			ldb_set_errstring(ldb, talloc_asprintf(ldb, "ldb_map: "
-							       "Too many results to base search for local entry"));
-			talloc_free(ares);
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-
-		/* Store local result */
-		sc->local_res = ares;
-
-		/* Merge remote into local message */
-		ret = ldb_msg_merge_local(sc->ac->module, ares->message, sc->remote_res->message);
-		if (ret) {
-			talloc_free(ares);
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-
-		return map_up_callback(ldb, sc->ac->orig_req, ares);
-
-	case LDB_REPLY_DONE:
-		/* No local record found, continue with remote record */
-		if (sc->local_res == NULL) {
-			return map_up_callback(ldb, sc->ac->orig_req, sc->remote_res);
-		}
-		return LDB_SUCCESS;
-
-	default:
-		ldb_set_errstring(ldb, talloc_asprintf(ldb, "ldb_map: "
-						       "Unexpected result type in base search for local entry"));
-		talloc_free(ares);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-}
-
-/* Search the local part of a remote search result. */
-int map_remote_search_callback(struct ldb_context *ldb, void *context, struct ldb_reply *ares)
-{
-	struct map_context *ac;
-	struct map_search_context *sc;
-	struct ldb_request *req;
-	int ret;
-
-	if (context == NULL || ares == NULL) {
-		ldb_set_errstring(ldb, talloc_asprintf(ldb, "ldb_map: "
-						       "NULL Context or Result in `map_remote_search_callback`"));
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	ac = talloc_get_type(context, struct map_context);
-
-	/* It's not a record, stop searching */
-	if (ares->type != LDB_REPLY_ENTRY) {
-		return map_up_callback(ldb, ac->orig_req, ares);
-	}
-
-	/* Map result record into a local message */
-	ret = map_reply_remote(ac, ares);
-	if (ret) {
-		talloc_free(ares);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	/* There is no local db, stop searching */
-	if (!map_check_local_db(ac->module)) {
-		return map_up_callback(ldb, ac->orig_req, ares);
-	}
-
-	/* Prepare local search context */
-	sc = map_init_search_context(ac, ares);
-	if (sc == NULL) {
-		talloc_free(ares);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	/* Prepare local search request */
-	/* TODO: use GUIDs here instead? */
-
-	ac->search_reqs = talloc_realloc(ac, ac->search_reqs, struct ldb_request *, ac->num_searches + 2);
-	if (ac->search_reqs == NULL) {
-		talloc_free(ares);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	ac->search_reqs[ac->num_searches]
-		= req = map_search_base_req(ac, ares->message->dn, 
-					    NULL, NULL, sc, map_local_merge_callback);
-	if (req == NULL) {
-		talloc_free(sc);
-		talloc_free(ares);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	ac->num_searches++;
-	ac->search_reqs[ac->num_searches] = NULL;
-
-	return ldb_next_request(ac->module, req);
+	return ldb_module_send_entry(ac->req, ares->message);
 }
 
 /* Search a record. */
 int map_search(struct ldb_module *module, struct ldb_request *req)
 {
-	struct ldb_handle *h;
+	struct ldb_parse_tree *remote_tree;
+	struct ldb_parse_tree *local_tree;
+	struct ldb_request *remote_req;
 	struct map_context *ac;
-	struct ldb_parse_tree *local_tree, *remote_tree;
 	int ret;
 
 	const char *wildcard[] = { "*", NULL };
@@ -1176,8 +1096,9 @@ int map_search(struct ldb_module *module, struct ldb_request *req)
 		return ldb_next_request(module, req);
 
 	/* Do not manipulate our control entries */
-	if (ldb_dn_is_special(req->op.search.base))
+	if (ldb_dn_is_special(req->op.search.base)) {
 		return ldb_next_request(module, req);
+	}
 
 	/* No mapping requested, skip to next module */
 	if ((req->op.search.base) && (!ldb_dn_check_local(module, req->op.search.base))) {
@@ -1188,32 +1109,10 @@ int map_search(struct ldb_module *module, struct ldb_request *req)
 	 *	 targetting when there is no search base? */
 
 	/* Prepare context and handle */
-	h = map_init_handle(req, module);
-	if (h == NULL) {
+	ac = map_init_context(module, req);
+	if (ac == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	ac = talloc_get_type(h->private_data, struct map_context);
-
-	ac->search_reqs = talloc_array(ac, struct ldb_request *, 2);
-	if (ac->search_reqs == NULL) {
-		talloc_free(h);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	ac->num_searches = 1;
-	ac->search_reqs[1] = NULL;
-
-	/* Prepare the remote operation */
-	ac->search_reqs[0] = talloc(ac, struct ldb_request);
-	if (ac->search_reqs[0] == NULL) {
-		goto oom;
-	}
-
-	*(ac->search_reqs[0]) = *req;	/* copy the request */
-
-	ac->search_reqs[0]->handle = h;	/* return our own handle to deal with this call */
-
-	ac->search_reqs[0]->context = ac;
-	ac->search_reqs[0]->callback = map_remote_search_callback;
 
 	/* It is easier to deal with the two different ways of
 	 * expressing the wildcard in the same codepath */
@@ -1226,17 +1125,15 @@ int map_search(struct ldb_module *module, struct ldb_request *req)
 	ret = map_attrs_collect_and_partition(module, ac, 
 					      attrs, req->op.search.tree);
 	if (ret) {
-		goto failed;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ac->search_reqs[0]->op.search.attrs = ac->remote_attrs;
-
 	/* Split local from remote tree */
-	ret = ldb_parse_tree_partition(module, ac, ac->search_reqs[0], 
-				       &local_tree, &remote_tree, 
+	ret = ldb_parse_tree_partition(module, ac,
+				       &local_tree, &remote_tree,
 				       req->op.search.tree);
 	if (ret) {
-		goto failed;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	if (((local_tree != NULL) && (remote_tree != NULL)) &&
@@ -1251,7 +1148,7 @@ int map_search(struct ldb_module *module, struct ldb_request *req)
 		local_tree = talloc_zero(ac, struct ldb_parse_tree);
 		if (local_tree == NULL) {
 			map_oom(ac->module);
-			goto failed;
+			return LDB_ERR_OPERATIONS_ERROR;
 		}
 
 		local_tree->operation = LDB_OP_PRESENT;
@@ -1259,31 +1156,209 @@ int map_search(struct ldb_module *module, struct ldb_request *req)
 	}
 	if (remote_tree == NULL) {
 		/* Construct default remote parse tree */
-		remote_tree = ldb_parse_tree(ac->search_reqs[0], NULL);
+		remote_tree = ldb_parse_tree(ac, NULL);
 		if (remote_tree == NULL) {
-			goto failed;
+			return LDB_ERR_OPERATIONS_ERROR;
 		}
 	}
 
 	ac->local_tree = local_tree;
-	ac->search_reqs[0]->op.search.tree = remote_tree;
 
-	ldb_set_timeout_from_prev_req(module->ldb, req, ac->search_reqs[0]);
-
-	h->state = LDB_ASYNC_INIT;
-	h->status = LDB_SUCCESS;
-
-	ac->step = MAP_SEARCH_REMOTE;
-
-	ret = ldb_next_remote_request(module, ac->search_reqs[0]);
-	if (ret == LDB_SUCCESS) {
-		req->handle = h;
+	/* Prepare the remote operation */
+	ret = ldb_build_search_req_ex(&remote_req, module->ldb, ac,
+				      req->op.search.base,
+				      req->op.search.scope,
+				      remote_tree,
+				      ac->remote_attrs,
+				      req->controls,
+				      ac, map_remote_search_callback,
+				      req);
+	if (ret != LDB_SUCCESS) {
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	return ret;
 
-oom:
-	map_oom(module);
-failed:
-	talloc_free(h);
-	return LDB_ERR_OPERATIONS_ERROR;
+	return ldb_next_remote_request(module, remote_req);
+}
+
+/* Now, search the local part of a remote search result. */
+static int map_remote_search_callback(struct ldb_request *req,
+					struct ldb_reply *ares)
+{
+	struct map_context *ac;
+	int ret;
+
+	ac = talloc_get_type(req->context, struct map_context);
+
+	if (!ares) {
+		return ldb_module_done(ac->req, NULL, NULL,
+					LDB_ERR_OPERATIONS_ERROR);
+	}
+	if (ares->error != LDB_SUCCESS) {
+		return ldb_module_done(ac->req, ares->controls,
+					ares->response, ares->error);
+	}
+
+	switch (ares->type) {
+	case LDB_REPLY_REFERRAL:
+
+		/* ignore referrals */
+		talloc_free(ares);
+		return LDB_SUCCESS;
+
+	case LDB_REPLY_ENTRY:
+
+		/* Map result record into a local message */
+		ret = map_reply_remote(ac, ares);
+		if (ret) {
+			talloc_free(ares);
+			return ldb_module_done(ac->req, NULL, NULL,
+						LDB_ERR_OPERATIONS_ERROR);
+		}
+
+		/* if we have no local db, then we can just return the reply to
+		 * the upper layer, otherwise we must save it and process it
+		 * when all replies ahve been gathered */
+		if ( ! map_check_local_db(ac->module)) {
+			ret = map_return_entry(ac, ares);
+		} else {
+			ret = map_save_entry(ac,ares);
+		}
+
+		if (ret != LDB_SUCCESS) {
+			talloc_free(ares);
+			return ldb_module_done(ac->req, NULL, NULL,
+						LDB_ERR_OPERATIONS_ERROR);
+		}
+		break;
+
+	case LDB_REPLY_DONE:
+
+		if ( ! map_check_local_db(ac->module)) {
+			return ldb_module_done(ac->req, ares->controls,
+						ares->response, LDB_SUCCESS);
+		}
+
+		talloc_free(ares);
+
+		/* reset the pointer to the start of the list */
+		ac->r_current = ac->r_list;
+
+		/* no entry just return */
+		if (ac->r_current == NULL) {
+			return ldb_module_done(ac->req, ares->controls,
+						ares->response, LDB_SUCCESS);
+		}
+
+		ret = map_search_local(ac);
+		if (ret != LDB_SUCCESS) {
+			return ldb_module_done(ac->req, NULL, NULL, ret);
+		}
+	}
+
+	return LDB_SUCCESS;
+}
+
+static int map_search_local(struct map_context *ac)
+{
+	struct ldb_request *search_req;
+
+	if (ac->r_current == NULL || ac->r_current->remote == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	/* Prepare local search request */
+	/* TODO: use GUIDs here instead? */
+	search_req = map_search_base_req(ac,
+					 ac->r_current->remote->message->dn,
+					 NULL, NULL,
+					 ac, map_local_merge_callback);
+	if (search_req == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	return ldb_next_request(ac->module, search_req);
+}
+
+/* Merge the remote and local parts of a search result. */
+int map_local_merge_callback(struct ldb_request *req, struct ldb_reply *ares)
+{
+	struct map_context *ac;
+	int ret;
+
+	ac = talloc_get_type(req->context, struct map_context);
+
+	if (!ares) {
+		return ldb_module_done(ac->req, NULL, NULL,
+					LDB_ERR_OPERATIONS_ERROR);
+	}
+	if (ares->error != LDB_SUCCESS) {
+		return ldb_module_done(ac->req, ares->controls,
+					ares->response, ares->error);
+	}
+
+	switch (ares->type) {
+	case LDB_REPLY_ENTRY:
+		/* We have already found a local record */
+		if (ac->r_current->local) {
+			talloc_free(ares);
+			ldb_set_errstring(ac->module->ldb, "ldb_map: Too many results!");
+			return ldb_module_done(ac->req, NULL, NULL,
+						LDB_ERR_OPERATIONS_ERROR);
+		}
+
+		/* Store local result */
+		ac->r_current->local = talloc_steal(ac->r_current, ares);
+
+		break;
+
+	case LDB_REPLY_REFERRAL:
+		/* ignore referrals */
+		talloc_free(ares);
+		break;
+
+	case LDB_REPLY_DONE:
+		talloc_free(ares);
+
+		/* No local record found, map and send remote record */
+		if (ac->r_current->local != NULL) {
+			/* Merge remote into local message */
+			ret = ldb_msg_merge_local(ac->module,
+						  ac->r_current->local->message,
+						  ac->r_current->remote->message);
+			if (ret == LDB_SUCCESS) {
+				ret = map_return_entry(ac, ac->r_current->local);
+			}
+			if (ret != LDB_SUCCESS) {
+				return ldb_module_done(ac->req, NULL, NULL,
+							LDB_ERR_OPERATIONS_ERROR);
+			}
+		} else {
+			ret = map_return_entry(ac, ac->r_current->remote);
+			if (ret != LDB_SUCCESS) {
+				return ldb_module_done(ac->req,
+							NULL, NULL, ret);
+			}
+		}
+
+		if (ac->r_current->next != NULL) {
+			ac->r_current = ac->r_current->next;
+			if (ac->r_current->remote->type == LDB_REPLY_ENTRY) {
+				ret = map_search_local(ac);
+				if (ret != LDB_SUCCESS) {
+					return ldb_module_done(ac->req,
+							       NULL, NULL, ret);
+				}
+				break;
+			}
+		}
+
+		/* ok we are done with all search, finally it is time to
+		 * finish operations for this module */
+		return ldb_module_done(ac->req,
+					ac->r_current->remote->controls,
+					ac->r_current->remote->response,
+					ac->r_current->remote->error);
+	}
+
+	return LDB_SUCCESS;
 }

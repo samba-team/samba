@@ -69,12 +69,14 @@ NTSTATUS smbcli_negprot(struct smbcli_state *cli, bool unicode, int maxprotocol)
 /* wrapper around smb_raw_sesssetup() */
 NTSTATUS smbcli_session_setup(struct smbcli_state *cli, 
 			      struct cli_credentials *credentials,
-			      const char *workgroup)
+			      const char *workgroup,
+			      struct smbcli_session_options options)
 {
 	struct smb_composite_sesssetup setup;
 	NTSTATUS status;
 
-	cli->session = smbcli_session_init(cli->transport, cli, true);
+	cli->session = smbcli_session_init(cli->transport, cli, true,
+					   options);
 	if (!cli->session) return NT_STATUS_UNSUCCESSFUL;
 
 	setup.in.sesskey = cli->transport->negotiate.sesskey;
@@ -144,7 +146,8 @@ NTSTATUS smbcli_full_connection(TALLOC_CTX *parent_ctx,
 				struct cli_credentials *credentials,
 				struct resolve_context *resolve_ctx,
 				struct event_context *ev,
-				struct smbcli_options *options)
+				struct smbcli_options *options,
+				struct smbcli_session_options *session_options)
 {
 	struct smbcli_tree *tree;
 	NTSTATUS status;
@@ -155,7 +158,8 @@ NTSTATUS smbcli_full_connection(TALLOC_CTX *parent_ctx,
 					     &tree, host, ports, 
 					     sharename, devtype,
 					     credentials, resolve_ctx, ev,
-					     options);
+					     options,
+					     session_options);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}

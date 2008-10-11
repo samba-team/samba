@@ -4,6 +4,7 @@
    web server startup
 
    Copyright (C) Andrew Tridgell 2005
+   Copyright (C) Jelmer Vernooij 2008
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -29,6 +30,7 @@
 #include "system/network.h"
 #include "lib/socket/netif.h"
 #include "lib/tls/tls.h"
+#include "lib/util/dlinklist.h"
 #include "param/param.h"
 
 /* don't allow connections to hang around forever */
@@ -39,9 +41,6 @@
 */
 static int websrv_destructor(struct websrv_context *web)
 {
-	if (web->output.fd != -1) {
-		close(web->output.fd);
-	}
 	return 0;
 }
 
@@ -62,10 +61,90 @@ static void websrv_timeout(struct event_context *event_context,
 }
 
 /*
+  setup for a raw http level error
+*/
+void http_error(struct websrv_context *web, const char *status, const char *info)
+{
+	char *s;
+	s = talloc_asprintf(web,"<HTML><HEAD><TITLE>Error %s</TITLE></HEAD><BODY><H1>Error %s</H1><pre>%s</pre><p></BODY></HTML>\r\n\r\n", 
+			    status, status, info);
+	if (s == NULL) {
+		stream_terminate_connection(web->conn, "http_error: out of memory");
+		return;
+	}
+	websrv_output_headers(web, status, NULL);
+	websrv_output(web, s, strlen(s));
+}
+
+void websrv_output_headers(struct websrv_context *web, const char *status, struct http_header *headers)
+{
+	char *s;
+	DATA_BLOB b;
+	struct http_header *hdr;
+
+	s = talloc_asprintf(web, "HTTP/1.0 %s\r\n", status);
+	if (s == NULL) return;
+	for (hdr = headers; hdr; hdr = hdr->next) {
+		s = talloc_asprintf_append_buffer(s, "%s: %s\r\n", hdr->name, hdr->value);
+	}
+
+	s = talloc_asprintf_append_buffer(s, "\r\n");
+
+	b = web->output.content;
+	web->output.content = data_blob_string_const(s);
+	websrv_output(web, b.data, b.length);
+	data_blob_free(&b);
+}
+
+void websrv_output(struct websrv_context *web, void *data, size_t length)
+{
+	data_blob_append(web, &web->output.content, data, length);
+	EVENT_FD_NOT_READABLE(web->conn->event.fde);
+	EVENT_FD_WRITEABLE(web->conn->event.fde);
+	web->output.output_pending = true;
+}
+
+
+/*
+  parse one line of header input
+*/
+NTSTATUS http_parse_header(struct websrv_context *web, const char *line)
+{
+	if (line[0] == 0) {
+		web->input.end_of_headers = true;
+	} else if (strncasecmp(line,"GET ", 4)==0) {
+		web->input.url = talloc_strndup(web, &line[4], strcspn(&line[4], " \t"));
+	} else if (strncasecmp(line,"POST ", 5)==0) {
+		web->input.post_request = true;
+		web->input.url = talloc_strndup(web, &line[5], strcspn(&line[5], " \t"));
+	} else if (strchr(line, ':') == NULL) {
+		http_error(web, "400 Bad request", "This server only accepts GET and POST requests");
+		return NT_STATUS_INVALID_PARAMETER;
+	} else if (strncasecmp(line, "Content-Length: ", 16)==0) {
+		web->input.content_length = strtoul(&line[16], NULL, 10);
+	} else {
+		struct http_header *hdr = talloc_zero(web, struct http_header);
+		char *colon = strchr(line, ':');
+		if (colon == NULL) {
+			http_error(web, "500 Internal Server Error", "invalidly formatted header");
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		hdr->name = talloc_strndup(hdr, line, colon-line);
+		hdr->value = talloc_strdup(hdr, colon+1);
+		DLIST_ADD(web->input.headers, hdr);
+	}
+
+	/* ignore all other headers for now */
+	return NT_STATUS_OK;
+}
+
+/*
   called when a web connection becomes readable
 */
 static void websrv_recv(struct stream_connection *conn, uint16_t flags)
 {
+	struct web_server_data *wdata;
 	struct websrv_context *web = talloc_get_type(conn->private, 
 						     struct websrv_context);
 	NTSTATUS status;
@@ -123,7 +202,9 @@ static void websrv_recv(struct stream_connection *conn, uint16_t flags)
 		 destroy the stack variables being used by that
 		 rendering process when we handle the timeout. */
 		if (!talloc_reference(web->task, web)) goto failed;
-		http_process_input(web);
+		wdata = talloc_get_type(web->task->private, struct web_server_data);
+		if (wdata == NULL) goto failed;
+		wdata->http_process_input(wdata, web);
 		talloc_unlink(web->task, web);
 	}
 	return;
@@ -131,6 +212,7 @@ static void websrv_recv(struct stream_connection *conn, uint16_t flags)
 failed:
 	stream_terminate_connection(conn, "websrv_recv: failed");
 }
+
 
 
 /*
@@ -159,29 +241,7 @@ static void websrv_send(struct stream_connection *conn, uint16_t flags)
 
 	web->output.nsent += nsent;
 
-	/* possibly read some more raw data from a file */
-	if (web->output.content.length == web->output.nsent && 
-	    web->output.fd != -1) {
-		uint8_t buf[2048];
-		ssize_t nread;
-
-		data_blob_free(&web->output.content);
-		web->output.nsent = 0;
-
-		nread = read(web->output.fd, buf, sizeof(buf));
-		if (nread == -1 && errno == EINTR) {
-			return;
-		}
-		if (nread <= 0) {
-			close(web->output.fd);
-			web->output.fd = -1;
-			nread = 0;
-		}
-		web->output.content = data_blob_talloc(web, buf, nread);
-	}
-
-	if (web->output.content.length == web->output.nsent && 
-	    web->output.fd == -1) {
+	if (web->output.content.length == web->output.nsent) {
 		stream_terminate_connection(web->conn, "websrv_send: finished sending");
 	}
 }
@@ -192,7 +252,7 @@ static void websrv_send(struct stream_connection *conn, uint16_t flags)
 static void websrv_accept(struct stream_connection *conn)
 {
 	struct task_server *task = talloc_get_type(conn->private, struct task_server);
-	struct esp_data *edata = talloc_get_type(task->private, struct esp_data);
+	struct web_server_data *wdata = talloc_get_type(task->private, struct web_server_data);
 	struct websrv_context *web;
 	struct socket_context *tls_socket;
 
@@ -202,7 +262,6 @@ static void websrv_accept(struct stream_connection *conn)
 	web->task = task;
 	web->conn = conn;
 	conn->private = web;
-	web->output.fd = -1;
 	talloc_set_destructor(web, websrv_destructor);
 
 	event_add_timed(conn->event.ctx, web, 
@@ -210,7 +269,7 @@ static void websrv_accept(struct stream_connection *conn)
 			websrv_timeout, web);
 
 	/* Overwrite the socket with a (possibly) TLS socket */
-	tls_socket = tls_init_server(edata->tls_params, conn->socket, 
+	tls_socket = tls_init_server(wdata->tls_params, conn->socket, 
 				     conn->event.fde, "GPHO");
 	/* We might not have TLS, or it might not have initilised */
 	if (tls_socket) {
@@ -243,11 +302,12 @@ static void websrv_task_init(struct task_server *task)
 	NTSTATUS status;
 	uint16_t port = lp_web_port(task->lp_ctx);
 	const struct model_ops *model_ops;
+	struct web_server_data *wdata;
 
 	task_server_set_title(task, "task[websrv]");
 
 	/* run the web server as a single process */
-	model_ops = process_model_byname("single");
+	model_ops = process_model_startup(task->event_ctx, "single");
 	if (!model_ops) goto failed;
 
 	if (lp_interfaces(task->lp_ctx) && lp_bind_interfaces_only(task->lp_ctx)) {
@@ -280,8 +340,15 @@ static void websrv_task_init(struct task_server *task)
 
 	/* startup the esp processor - unfortunately we can't do this
 	   per connection as that wouldn't allow for session variables */
-	status = http_setup_esp(task);
-	if (!NT_STATUS_IS_OK(status)) goto failed;
+	wdata = talloc_zero(task, struct web_server_data);
+	if (wdata == NULL)goto failed;
+
+	task->private = wdata;
+	
+	wdata->tls_params = tls_initialise(wdata, task->lp_ctx);
+	if (wdata->tls_params == NULL) goto failed;
+
+	if (!wsgi_initialize(wdata)) goto failed;
 
 	return;
 

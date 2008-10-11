@@ -44,10 +44,6 @@ typedef struct _SMB_ACL4_INT_T
 	SMB_ACE4_INT_T	*last;
 } SMB_ACL4_INT_T;
 
-extern int try_chown(connection_struct *conn, const char *fname, uid_t uid, gid_t gid);
-extern NTSTATUS unpack_nt_owners(int snum, uid_t *puser, gid_t *pgrp,
-	uint32 security_info_sent, SEC_DESC *psd);
-
 static SMB_ACL4_INT_T *get_validated_aclint(SMB4ACL_T *acl)
 {
 	SMB_ACL4_INT_T *aclint = (SMB_ACL4_INT_T *)acl;
@@ -225,7 +221,7 @@ static bool smbacl4_nfs42win(TALLOC_CTX *mem_ctx, SMB4ACL_T *acl, /* in */
 	}
 
 	for (aceint=aclint->first; aceint!=NULL; aceint=(SMB_ACE4_INT_T *)aceint->next) {
-		SEC_ACCESS mask;
+		uint32_t mask;
 		DOM_SID sid;
 		SMB_ACE4PROP_T	*ace = &aceint->prop;
 
@@ -260,7 +256,7 @@ static bool smbacl4_nfs42win(TALLOC_CTX *mem_ctx, SMB4ACL_T *acl, /* in */
 		DEBUG(10, ("mapped %d to %s\n", ace->who.id,
 			   sid_string_dbg(&sid)));
 
-		init_sec_access(&mask, ace->aceMask);
+		mask = ace->aceMask;
 		init_sec_ace(&nt_ace_list[good_aces++], &sid,
 			ace->aceType, mask,
 			ace->aceFlags & 0xf);
@@ -518,7 +514,7 @@ static bool smbacl4_fill_ace4(
 	smbacl4_vfs_params *params,
 	uid_t ownerUID,
 	gid_t ownerGID,
-	SEC_ACE *ace_nt, /* input */
+	const SEC_ACE *ace_nt, /* input */
 	SMB_ACE4PROP_T *ace_v4 /* output */
 )
 {
@@ -650,7 +646,7 @@ static int smbacl4_MergeIgnoreReject(
 
 static SMB4ACL_T *smbacl4_win2nfs4(
 	const char *filename,
-	SEC_ACL *dacl,
+	const SEC_ACL *dacl,
 	smbacl4_vfs_params *pparams,
 	uid_t ownerUID,
 	gid_t ownerGID
@@ -694,7 +690,7 @@ static SMB4ACL_T *smbacl4_win2nfs4(
 
 NTSTATUS smb_set_nt_acl_nfs4(files_struct *fsp,
 	uint32 security_info_sent,
-	SEC_DESC *psd,
+	const SEC_DESC *psd,
 	set_nfs4acl_native_fn_t set_nfs4_native)
 {
 	smbacl4_vfs_params params;

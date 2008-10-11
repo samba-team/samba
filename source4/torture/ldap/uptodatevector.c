@@ -57,15 +57,14 @@ static bool test_check_uptodatevector(struct torture_context *torture,
 	torture_comment(torture, "Check replUpToDateVector on partition[%s]\n",
 				 ldb_dn_get_linearized(partition_dn));
 
-	ret = ldb_search(ldb, partition_dn, LDB_SCOPE_BASE, 
-			 "(objectClass=*)", attrs, &r);
+	ret = ldb_search(ldb, torture, &r, partition_dn, LDB_SCOPE_BASE, attrs,
+			 "(objectClass=*)");
 	if (ret != LDB_SUCCESS) {
 		return false;
 	} else if (r->count != 1) {
 		talloc_free(r);
 		return false;
 	}
-	talloc_steal(torture, r);
 
 	ZERO_STRUCT(utdv1);
 	utdv_val1 = ldb_msg_find_ldb_val(r->msgs[0], "replUpToDateVector");
@@ -104,15 +103,14 @@ static bool test_check_uptodatevector(struct torture_context *torture,
 		ret = ldb_modify(ldb, msg);
 		if (ret != LDB_SUCCESS) return false;
 
-		ret = ldb_search(ldb, partition_dn, LDB_SCOPE_BASE, 
-				 "(objectClass=*)", attrs, &r);
+		ret = ldb_search(ldb, msg, &r, partition_dn, LDB_SCOPE_BASE,
+				 attrs, "(objectClass=*)");
 		if (ret != LDB_SUCCESS) {
 			return false;
 		} else if (r->count != 1) {
 			talloc_free(r);
 			return false;
 		}
-		talloc_steal(msg, r);
 
 		ZERO_STRUCT(utdv);
 		utdv_val = ldb_msg_find_ldb_val(r->msgs[0], "replUpToDateVector");

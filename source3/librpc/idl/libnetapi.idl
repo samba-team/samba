@@ -517,7 +517,9 @@ interface libnetapi
 		uint32 usriX_code_page;
 		string usriX_profile;
 		string usriX_home_dir_drive;
+		uint32 usriX_user_id;
 		uint32 usriX_primary_group_id;
+		uint32 usriX_password_expired;
 	} USER_INFO_X;
 
 	[nopush,nopull] NET_API_STATUS NetUserAdd(

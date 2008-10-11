@@ -1068,13 +1068,3 @@ bool torture_local_replace(struct torture_context *ctx)
 
 	return ret;
 }
-
-#if _SAMBA_BUILD_<4
-int main(void)
-{
-	bool ret = torture_local_replace(NULL);
-	if (ret) 
-		return 0;
-	return -1;
-}
-#endif

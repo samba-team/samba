@@ -120,6 +120,10 @@ void async_request(TALLOC_CTX *mem_ctx, struct winbindd_child *child,
 
 	SMB_ASSERT(continuation != NULL);
 
+	DEBUG(10, ("Sending request to child pid %d (domain=%s)\n",
+		   (int)child->pid,
+		   (child->domain != NULL) ? child->domain->name : "''"));
+
 	state = TALLOC_P(mem_ctx, struct winbindd_async_request);
 
 	if (state == NULL) {
@@ -196,10 +200,12 @@ static void async_request_fail(struct winbindd_async_request *state)
 
 	TALLOC_FREE(state->reply_timeout_event);
 
-	SMB_ASSERT(state->child_pid != (pid_t)0);
+	/* If child exists and is not already reaped,
+	   send kill signal to child. */
 
-	/* If not already reaped, send kill signal to child. */
-	if (state->child->pid == state->child_pid) {
+	if ((state->child->pid != (pid_t)0) &&
+			(state->child->pid != (pid_t)-1) &&
+			(state->child->pid == state->child_pid)) {
 		kill(state->child_pid, SIGTERM);
 
 		/* 
@@ -294,13 +300,27 @@ static void schedule_async_request(struct winbindd_child *child)
 		return;		/* Busy */
 	}
 
+	/*
+	 * This may be a reschedule, so we might
+	 * have an existing timeout event pending on
+	 * the first entry in the child->requests list
+	 * (we only send one request at a time).
+	 * Ensure we free it before we reschedule.
+	 * Bug #5814, from hargagan <shargagan@novell.com>.
+	 * JRA.
+	 */
+
+	TALLOC_FREE(request->reply_timeout_event);
+
 	if ((child->pid == 0) && (!fork_domain_child(child))) {
-		/* Cancel all outstanding requests */
+		/* fork_domain_child failed.
+		   Cancel all outstanding requests */
 
 		while (request != NULL) {
 			/* request might be free'd in the continuation */
 			struct winbindd_async_request *next = request->next;
-			request->continuation(request->private_data, False);
+
+			async_request_fail(request);
 			request = next;
 		}
 		return;
@@ -486,6 +506,17 @@ void winbind_child_died(pid_t pid)
 	child->event.fd = 0;
 	child->event.flags = 0;
 	child->pid = 0;
+
+	if (child->requests) {
+		/*
+		 * schedule_async_request() will also
+		 * clear this event but the call is
+		 * idempotent so it doesn't hurt to
+		 * cover all possible future code
+		 * paths. JRA.
+		 */
+		TALLOC_FREE(child->requests->reply_timeout_event);
+	}
 
 	schedule_async_request(child);
 }

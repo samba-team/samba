@@ -27,7 +27,7 @@ static bool api_dssetup_DsRoleGetPrimaryDomainInformation(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -107,7 +107,7 @@ static bool api_dssetup_DsRoleDnsNameToFlatName(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -180,7 +180,7 @@ static bool api_dssetup_DsRoleDcAsDc(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -253,7 +253,7 @@ static bool api_dssetup_DsRoleDcAsReplica(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -326,7 +326,7 @@ static bool api_dssetup_DsRoleDemoteDc(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -399,7 +399,7 @@ static bool api_dssetup_DsRoleGetDcOperationProgress(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -472,7 +472,7 @@ static bool api_dssetup_DsRoleGetDcOperationResults(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -545,7 +545,7 @@ static bool api_dssetup_DsRoleCancel(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -618,7 +618,7 @@ static bool api_dssetup_DsRoleServerSaveStateForUpgrade(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -691,7 +691,7 @@ static bool api_dssetup_DsRoleUpgradeDownlevelServer(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -764,7 +764,7 @@ static bool api_dssetup_DsRoleAbortDownlevelServerUpgrade(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;

@@ -35,7 +35,8 @@
  Initialize the session context
 ****************************************************************************/
 struct smbcli_session *smbcli_session_init(struct smbcli_transport *transport, 
-					   TALLOC_CTX *parent_ctx, bool primary)
+					   TALLOC_CTX *parent_ctx, bool primary,
+					   struct smbcli_session_options options)
 {
 	struct smbcli_session *session;
 	uint16_t flags2;
@@ -53,9 +54,7 @@ struct smbcli_session *smbcli_session_init(struct smbcli_transport *transport,
 	}
 	session->pid = (uint16_t)getpid();
 	session->vuid = UID_FIELD_INVALID;
-	session->options.lanman_auth = lp_client_lanman_auth(global_loadparm);
-	session->options.ntlmv2_auth = lp_client_ntlmv2_auth(global_loadparm);
-	session->options.plaintext_auth = lp_client_plaintext_auth(global_loadparm);
+	session->options = options;
 	
 	capabilities = transport->negotiate.capabilities;
 

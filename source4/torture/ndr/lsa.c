@@ -1538,8 +1538,8 @@ static bool lsarlookupnames2_in_check(struct torture_context *tctx,
 	torture_assert_str_equal(tctx, r->in.names[1].string, "Administrators", 
 							 "names[1]");
 	torture_assert_int_equal(tctx, r->in.level, 1, "level");
-	torture_assert_int_equal(tctx, r->in.unknown1, 0, "unknown 1");
-	torture_assert_int_equal(tctx, r->in.unknown2, 0, "unknown 2");
+	torture_assert_int_equal(tctx, r->in.lookup_options, 0, "lookup_options");
+	torture_assert_int_equal(tctx, r->in.client_revision, 0, "client_revision");
 	torture_assert_int_equal(tctx, *r->in.count, 0, "count");
 	torture_assert_int_equal(tctx, r->in.sids->count, 0, "sids count");
 	torture_assert(tctx, r->in.sids->sids == NULL, "sids sids");
@@ -1637,8 +1637,8 @@ static bool lsarlookupnames3_in_check(struct torture_context *tctx,
 	torture_assert_str_equal(tctx, r->in.names[1].string, "Administrators", 
 							 "names[1]");
 	torture_assert_int_equal(tctx, r->in.level, 1, "level");
-	torture_assert_int_equal(tctx, r->in.unknown1, 0, "unknown 1");
-	torture_assert_int_equal(tctx, r->in.unknown2, 0, "unknown 2");
+	torture_assert_int_equal(tctx, r->in.lookup_options, 0, "lookup_options");
+	torture_assert_int_equal(tctx, r->in.client_revision, 0, "client_revision");
 	torture_assert_int_equal(tctx, *r->in.count, 0, "count");
 	torture_assert_int_equal(tctx, r->in.sids->count, 0, "sids count");
 	torture_assert(tctx, r->in.sids->sids == NULL, "sids sids");

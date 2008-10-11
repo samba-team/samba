@@ -1067,6 +1067,30 @@ static bool deadtime_fn(const struct timeval *now, void *private_data)
 	return True;
 }
 
+/*
+ * Do the recurring log file and smb.conf reload checks.
+ */
+
+static bool housekeeping_fn(const struct timeval *now, void *private_data)
+{
+	change_to_root_user();
+
+	/* update printer queue caches if necessary */
+	update_monitored_printq_cache();
+
+	/* check if we need to reload services */
+	check_reload(time(NULL));
+
+	/* Change machine password if neccessary. */
+	attempt_machine_password_change();
+
+        /*
+	 * Force a log file check.
+	 */
+        force_check_log_size();
+        check_log_size();
+	return true;
+}
 
 /****************************************************************************
  main program.
@@ -1423,6 +1447,13 @@ extern void build_options(bool screen);
 			     timeval_set(IDLE_CLOSED_TIMEOUT, 0),
 			     "deadtime", deadtime_fn, NULL))) {
 		DEBUG(0, ("Could not add deadtime event\n"));
+		exit(1);
+	}
+
+	if (!(event_add_idle(smbd_event_context(), NULL,
+			     timeval_set(SMBD_SELECT_TIMEOUT, 0),
+			     "housekeeping", housekeeping_fn, NULL))) {
+		DEBUG(0, ("Could not add housekeeping event\n"));
 		exit(1);
 	}
 

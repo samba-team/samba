@@ -65,6 +65,10 @@ class DomSidTests(unittest.TestCase):
         sid = security.random_sid()
         self.assertTrue(str(sid).startswith("S-1-5-21-"))
 
+    def test_repr(self):
+        sid = security.random_sid()
+        self.assertTrue(repr(sid).startswith("Sid('S-1-5-21-"))
+
 
 class PrivilegeTests(unittest.TestCase):
     def test_privilege_name(self):

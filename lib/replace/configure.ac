@@ -22,6 +22,9 @@ if test "$ac_cv_prog_gcc" = yes; then
    CFLAGS="$CFLAGS -Wno-format-y2k"
 fi
 
+m4_include(build_macros.m4)
+BUILD_WITH_SHARED_BUILD_DIR
+
 LIBS="${LIBREPLACE_NETWORK_LIBS}"
 AC_SUBST(LIBS)
 

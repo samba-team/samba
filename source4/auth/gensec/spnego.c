@@ -1094,6 +1094,20 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 	return NT_STATUS_INVALID_PARAMETER;
 }
 
+static void gensec_spnego_want_feature(struct gensec_security *gensec_security,
+				       uint32_t feature)
+{
+	struct spnego_state *spnego_state = (struct spnego_state *)gensec_security->private_data;
+
+	if (!spnego_state || !spnego_state->sub_sec_security) {
+		gensec_security->want_features |= feature;
+		return;
+	}
+
+	gensec_want_feature(spnego_state->sub_sec_security,
+			    feature);
+}
+
 static bool gensec_spnego_have_feature(struct gensec_security *gensec_security,
 				       uint32_t feature) 
 {
@@ -1133,6 +1147,7 @@ static const struct gensec_security_ops gensec_spnego_security_ops = {
 	.unwrap_packets   = gensec_spnego_unwrap_packets,
 	.session_key	  = gensec_spnego_session_key,
 	.session_info     = gensec_spnego_session_info,
+	.want_feature     = gensec_spnego_want_feature,
 	.have_feature     = gensec_spnego_have_feature,
 	.enabled          = true,
 	.priority         = GENSEC_SPNEGO

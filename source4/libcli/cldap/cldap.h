@@ -20,7 +20,7 @@
 */
 
 #include "lib/util/asn1.h"
-#include "libcli/netlogon.h"
+#include "../libcli/netlogon.h"
 
 struct ldap_message;
 

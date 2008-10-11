@@ -58,11 +58,7 @@ bin/smbtorture -V
 
 samba4srcdir=.
 samba4bindir=$samba4srcdir/bin
-SCRIPTDIR=$samba4srcdir/../testprogs/ejs
 smb4torture="$samba4bindir/smbtorture $TORTURE_OPTIONS"
-
-plantest "js.base" dc "$SCRIPTDIR/base.js" $CONFIGURATION
-plantest "js.ldb" none "$SCRIPTDIR/ldb.js" `pwd` $CONFIGURATION -d 10
 
 # Simple tests for LDAP and CLDAP
 
@@ -93,7 +89,7 @@ plantest "ldb" none TEST_DATA_PREFIX=\$PREFIX $LDBDIR/tests/test-tdb.sh
 # that they stay passing
 ncacn_np_tests="RPC-SCHANNEL RPC-JOIN RPC-LSA RPC-DSSETUP RPC-ALTERCONTEXT RPC-MULTIBIND RPC-NETLOGON RPC-HANDLES RPC-SAMSYNC RPC-SAMBA3SESSIONKEY RPC-SAMBA3-GETUSERNAME RPC-SAMBA3-LSA RPC-BINDSAMBA3 RPC-NETLOGSAMBA3 RPC-ASYNCBIND RPC-LSALOOKUP RPC-LSA-GETUSER RPC-SCHANNEL2 RPC-AUTHCONTEXT"
 ncalrpc_tests="RPC-SCHANNEL RPC-JOIN RPC-LSA RPC-DSSETUP RPC-ALTERCONTEXT RPC-MULTIBIND RPC-NETLOGON RPC-DRSUAPI RPC-ASYNCBIND RPC-LSALOOKUP RPC-LSA-GETUSER RPC-SCHANNEL2 RPC-AUTHCONTEXT"
-ncacn_ip_tcp_tests="RPC-SCHANNEL RPC-JOIN RPC-LSA RPC-DSSETUP RPC-ALTERCONTEXT RPC-MULTIBIND RPC-NETLOGON RPC-HANDLES RPC-DSSYNC RPC-ASYNCBIND RPC-LSALOOKUP RPC-LSA-GETUSER RPC-SCHANNEL2 RPC-AUTHCONTEXT"
+ncacn_ip_tcp_tests="RPC-SCHANNEL RPC-JOIN RPC-LSA RPC-DSSETUP RPC-ALTERCONTEXT RPC-MULTIBIND RPC-NETLOGON RPC-HANDLES RPC-DSSYNC RPC-ASYNCBIND RPC-LSALOOKUP RPC-LSA-GETUSER RPC-SCHANNEL2 RPC-AUTHCONTEXT RPC-OBJECTUUID"
 slow_ncacn_np_tests="RPC-SAMLOGON RPC-SAMR RPC-SAMR-USERS RPC-SAMR-PASSWORDS"
 slow_ncalrpc_tests="RPC-SAMR RPC-SAMR-PASSWORDS"
 slow_ncacn_ip_tcp_tests="RPC-SAMR RPC-SAMR-PASSWORDS RPC-CRACKNAMES"
@@ -254,7 +250,7 @@ if test x"${PIDL_TESTS_SKIP}" = x"yes"; then
    echo "Skipping pidl tests - PIDL_TESTS_SKIP=yes"
 elif $PERL -e 'eval require Test::More;' > /dev/null 2>&1; then
   for f in $samba4srcdir/../pidl/tests/*.pl; do
-     plantest "pidl.`basename $f .pl`" none $PERL $f "|" $samba4srcdir/script/harness2subunit.pl
+     plantest "pidl.`basename $f .pl`" none $PERL $f "|" $samba4srcdir/../lib/subunit/harness2subunit.pl
   done
 else 
    echo "Skipping pidl tests - Test::More not installed"
@@ -267,7 +263,7 @@ fi
 
 bbdir=../testprogs/blackbox
 
-plantest "blackbox.ndrdump" dc $samba4srcdir/librpc/tests/test_ndrdump.sh
+plantest "blackbox.ndrdump" none $samba4srcdir/librpc/tests/test_ndrdump.sh
 plantest "blackbox.net" dc $samba4srcdir/utils/tests/test_net.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$DOMAIN"
 plantest "blackbox.kinit" dc $bbdir/test_kinit.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$REALM" "\$DOMAIN" "$PREFIX" $CONFIGURATION 
 plantest "blackbox.cifsdd" dc $samba4srcdir/client/tests/test_cifsdd.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$DOMAIN" 
@@ -285,10 +281,6 @@ for t in "BASE-RW1"; do
     plantest "ntvfs.simple.`normalize_testname $t`" dc $VALGRIND $smb4torture $ADDARGS //\$SERVER/simple -U"\$USERNAME"%"\$PASSWORD" $t
 done
 
-DATADIR=$samba4srcdir/../testdata
-
-plantest "js.samba3sam" none $samba4bindir/smbscript $SCRIPTDIR/samba3sam.js $CONFIGURATION `pwd` $DATADIR/samba3/
-
 # Domain Member Tests
 
 plantest "rpc.echo against member server with local creds" member $VALGRIND $smb4torture ncacn_np:"\$NETBIOSNAME" -U"\$NETBIOSNAME/\$USERNAME"%"\$PASSWORD" RPC-ECHO "$*"
@@ -297,6 +289,46 @@ plantest "rpc.samr against member server with local creds" member $VALGRIND $smb
 plantest "rpc.samr.users against member server with local creds" member $VALGRIND $smb4torture ncacn_np:"\$NETBIOSNAME" -U"\$NETBIOSNAME/\$USERNAME"%"\$PASSWORD" "RPC-SAMR-USERS" "$*"
 plantest "rpc.samr.passwords against member server with local creds" member $VALGRIND $smb4torture ncacn_np:"\$NETBIOSNAME" -U"\$NETBIOSNAME/\$USERNAME"%"\$PASSWORD" "RPC-SAMR-PASSWORDS" "$*"
 plantest "blackbox.smbclient against member server with local creds" member $samba4srcdir/client/tests/test_smbclient.sh "\$NETBIOSNAME" "\$USERNAME" "\$PASSWORD" "\$NETBIOSNAME" "$PREFIX" 
+
+# Tests SMB signing
+
+for mech in \
+	"-k no" \
+	"-k no --option=usespnego=no" \
+	"-k no --option=gensec:spengo=no" \
+	"-k yes" \
+	"-k yes --option=gensec:fake_gssapi_krb5=yes --option=gensec:gssapi_krb5=no"; do
+   for signing in \
+	"--signing=on" \
+	"--signing=required"; do
+
+	signoptions="$mech $signing"
+	name="smb.signing on with $signoptions"
+	plantest "$name" dc $VALGRIND $smb4torture //"\$NETBIOSNAME"/tmp $signoptions -U"\$USERNAME"%"\$PASSWORD" BASE-XCOPY "$*"
+   done
+done
+
+for mech in \
+	"-k no" \
+	"-k no --option=usespnego=no" \
+	"-k no --option=gensec:spengo=no" \
+	"-k yes" \
+	"-k yes --option=gensec:fake_gssapi_krb5=yes --option=gensec:gssapi_krb5=no"; do
+	signoptions="$mech --signing=off"
+	name="smb.signing on with $signoptions"
+	plantest "$name domain-creds" member $VALGRIND $smb4torture //"\$NETBIOSNAME"/tmp $signoptions -U"\$DC_USERNAME"%"\$DC_PASSWORD" BASE-XCOPY "$*"
+done
+for mech in \
+	"-k no" \
+	"-k no --option=usespnego=no" \
+	"-k no --option=gensec:spengo=no"; do
+	signoptions="$mech --signing=off"
+	name="smb.signing on with $signoptions"
+	plantest "$name local-creds" member $VALGRIND $smb4torture //"\$NETBIOSNAME"/tmp $signoptions -U"\$NETBIOSNAME/\$USERNAME"%"\$PASSWORD" BASE-XCOPY "$*"
+done
+plantest "smb.signing --signing=yes anon" dc $VALGRIND $smb4torture //"\$NETBIOSNAME"/tmp -k no --signing=yes -U% BASE-XCOPY "$*"
+plantest "smb.signing --signing=required anon" dc $VALGRIND $smb4torture //"\$NETBIOSNAME"/tmp -k no --signing=required -U% BASE-XCOPY "$*"
+plantest "smb.signing --signing=no anon" member $VALGRIND $smb4torture //"\$NETBIOSNAME"/tmp -k no --signing=no -U% BASE-XCOPY "$*"
 
 NBT_TESTS=`$smb4torture --list | grep "^NBT-" | xargs`
 
@@ -347,6 +379,7 @@ plantest "samdb.python" none $SUBUNITRUN samba.tests.samdb
 plantest "events.python" none PYTHONPATH="$PYTHONPATH:lib/events" $SUBUNITRUN tests
 plantest "messaging.python" none PYTHONPATH="$PYTHONPATH:lib/messaging/tests" $SUBUNITRUN bindings
 plantest "samba3sam.python" none PYTHONPATH="$PYTHONPATH:dsdb/samdb/ldb_modules/tests" $SUBUNITRUN samba3sam
+plantest "subunit.python" none $SUBUNITRUN subunit
 plantest "rpcecho.python" dc $SUBUNITRUN samba.tests.dcerpc.rpcecho
 plantest "winreg.python" dc $SUBUNITRUN -U\$USERNAME%\$PASSWORD samba.tests.dcerpc.registry
 plantest "ldap.python" dc $PYTHON $samba4srcdir/lib/ldb/tests/python/ldap.py $CONFIGURATION \$SERVER -U\$USERNAME%\$PASSWORD -W \$DOMAIN

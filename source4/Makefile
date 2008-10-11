@@ -10,12 +10,11 @@ include mkconfig.mk
 
 pidldir := $(srcdir)/../pidl
 
-BASEDIR = $(prefix)
-TORTUREDIR = $(libdir)/torture
-SWATDIR = $(datadir)/swat
-JSDIR = $(datadir)/js
-SETUPDIR = $(datadir)/setup
-NCALRPCDIR = $(localstatedir)/ncalrpc
+basedir = $(prefix)
+torturedir = $(libdir)/torture
+swatdir = $(datadir)/swat
+setupdir = $(datadir)/setup
+ncalrpcdir = $(localstatedir)/ncalrpc
 
 BNLD = $(LD)
 BNLD_FLAGS = $(LDFLAGS) $(SYS_LDFLAGS)
@@ -78,7 +77,7 @@ libstreamsrcdir := lib/stream
 libutilsrcdir := lib/util
 libtdrsrcdir := lib/tdr
 libdbwrapsrcdir := lib/dbwrap
-libcryptosrcdir := lib/crypto
+libcryptosrcdir := ../lib/crypto
 libtorturesrcdir := lib/torture
 smb_serversrcdir := smb_server
 libcompressionsrcdir := ../lib/compression
@@ -98,14 +97,24 @@ ntvfssrcdir := ntvfs
 ntptrsrcdir := ntptr
 librpcsrcdir := librpc
 libclisrcdir := libcli
-ejsscriptsrcdir := scripting/ejs
+libclinbtsrcdir := ../libcli/nbt
 pyscriptsrcdir := $(srcdir)/scripting/python
 kdcsrcdir := kdc
 ntp_signdsrcdir := ntp_signd
 wmisrcdir := lib/wmi
 tallocsrcdir := ../lib/talloc
+comsrcdir := $(srcdir)/lib/com
 
 include data.mk
+
+$(foreach SCRIPT,$(wildcard scripting/bin/*),$(eval $(call binary_install_template,$(SCRIPT))))
+
+$(DESTDIR)$(bindir)/%: scripting/bin/% installdirs
+	@mkdir -p $(@D)
+	@echo Installing $(@F) as $@
+	@if test -f $@; then echo -n ""; rm -f $@.old; mv $@ $@.old; fi
+	@cp $< $@
+	@chmod $(INSTALLPERMS) $@
 
 pythonmods:: $(PYTHON_PYS) $(PYTHON_SO)
 
@@ -132,6 +141,9 @@ else
 include $(srcdir)/static_deps.mk
 endif
 
+clean::
+	@find ../lib ../libcli -name '*.o' -o -name '*.hd' | xargs rm -f
+
 DEFAULT_HEADERS = $(srcdir)/lib/util/dlinklist.h \
 		  $(srcdir)/version.h
 
@@ -152,7 +164,7 @@ testsuite:: bin/smbclient bin/cifsdd bin/smbtorture bin/nmblookup
 
 showlayout:: 
 	@echo 'Samba will be installed into:'
-	@echo '  basedir:     $(BASEDIR)'
+	@echo '  basedir:     $(basedir)'
 	@echo '  bindir:      $(bindir)'
 	@echo '  sbindir:     $(sbindir)'
 	@echo '  libdir:      $(libdir)'
@@ -163,11 +175,10 @@ showlayout::
 	@echo '  piddir:      $(piddir)'
 	@echo '  lockdir:     $(lockdir)'
 	@echo '  logfilebase: $(logfilebase)'
-	@echo '  setupdir:    $(SETUPDIR)'
-	@echo '  jsdir:       $(JSDIR)'
-	@echo '  swatdir:     $(SWATDIR)'
+	@echo '  setupdir:    $(setupdir)'
+	@echo '  swatdir:     $(swatdir)'
 	@echo '  mandir:      $(mandir)'
-	@echo '  torturedir:  $(TORTUREDIR)'
+	@echo '  torturedir:  $(torturedir)'
 	@echo '  datadir:     $(datadir)'
 	@echo '  winbindd_socket_dir:  $(winbindd_socket_dir)'
 	@echo '  ntp_signd_socket_dir:  $(ntp_signd_socket_dir)'
@@ -179,7 +190,7 @@ showflags::
 # The permissions to give the executables
 INSTALLPERMS = 0755
 
-install:: showlayout everything installbin installsbin installdat installswat installmisc \
+install:: showlayout everything installbin installsbin installdat installmisc \
 	      installlib installheader installpc installplugins
 
 # DESTDIR is used here to prevent packagers wasting their time
@@ -192,10 +203,10 @@ install:: showlayout everything installbin installsbin installdat installswat in
 
 installdirs::
 	@$(SHELL) $(srcdir)/script/installdirs.sh \
-		$(DESTDIR)$(BASEDIR) \
+		$(DESTDIR)$(basedir) \
 		$(DESTDIR)$(bindir) \
 		$(DESTDIR)$(sbindir) \
-		$(DESTDIR)$(TORTUREDIR) \
+		$(DESTDIR)$(torturedir) \
 		$(DESTDIR)$(libdir) \
 		$(DESTDIR)$(modulesdir) \
 		$(DESTDIR)$(mandir) \
@@ -209,7 +220,7 @@ installdirs::
 		$(DESTDIR)$(logfilebase) \
 		$(DESTDIR)$(privatedir)/tls \
 		$(DESTDIR)$(includedir) \
-		$(DESTDIR)$(PKGCONFIGDIR) \
+		$(DESTDIR)$(pkgconfigdir) \
 		$(DESTDIR)$(sysconfdir)
 
 installbin:: installdirs
@@ -226,24 +237,21 @@ installheader:: headers installdirs
 installdat:: installdirs
 	@$(SHELL) $(srcdir)/script/installdat.sh $(DESTDIR)$(datadir) $(srcdir)
 
-installswat:: installdirs
-#SWAT has been disabled until further notice
-#	@$(SHELL) $(srcdir)/script/installswat.sh $(DESTDIR)$(SWATDIR) $(srcdir)
-
 installman:: manpages installdirs
 	@$(SHELL) $(srcdir)/script/installman.sh $(DESTDIR)$(mandir) $(MANPAGES)
 
 installmisc:: installdirs
-	@$(SHELL) $(srcdir)/script/installmisc.sh $(srcdir) $(DESTDIR)$(JSDIR) $(DESTDIR)$(SETUPDIR) $(DESTDIR)$(bindir)
+	@$(SHELL) $(srcdir)/script/installmisc.sh $(srcdir) $(DESTDIR)$(setupdir)
 
 installpc:: installdirs
-	@$(SHELL) $(srcdir)/script/installpc.sh $(builddir) $(DESTDIR)$(PKGCONFIGDIR) $(PC_FILES)
+	@$(SHELL) $(srcdir)/script/installpc.sh $(builddir) $(DESTDIR)$(pkgconfigdir) $(PC_FILES)
 
-uninstall:: uninstallbin uninstallman uninstallmisc uninstalllib uninstallheader \
-	uninstallplugins
+uninstall:: uninstallbin uninstallsbin uninstalldat uninstallmisc uninstalllib uninstallheader \
+			uninstallman uninstallpc uninstallplugins
 
 uninstallmisc::
-	#FIXME
+	@echo "Removing MISC files"
+	@rm -rf $(DESTDIR)$(setupdir)/*
 
 $(DESTDIR)$(bindir)/%: bin/% installdirs
 	@mkdir -p $(@D)
@@ -259,19 +267,29 @@ $(DESTDIR)$(sbindir)/%: bin/% installdirs
 	@cp $< $@
 	@chmod $(INSTALLPERMS) $@
 
+uninstalldat::
+	@echo "Removing DAT files"
+	@rm -fr $(DESTDIR)$(datadir)/*
+
 uninstallbin::
 
 uninstalllib::
+	@echo "Removing libraries"
 	@$(SHELL) $(srcdir)/script/uninstalllib.sh $(DESTDIR)$(libdir) $(SHARED_LIBS)
-	#@$(SHELL) $(srcdir)/script/uninstalllib.sh $(DESTDIR)$(libdir) $(STATIC_LIBS) 
 
 uninstallheader::
-	@$(SHELL) $(srcdir)/script/uninstallheader.sh $(DESTDIR)$(includedir) $(PUBLIC_HEADERS)
+	@echo "Removing headers"
+	@rm -fr $(DESTDIR)$(includedir)/*
 
 uninstallman::
+	@echo "Removing manpages"
 	@$(SHELL) $(srcdir)/script/uninstallman.sh $(DESTDIR)$(mandir) $(MANPAGES)
 
 uninstallplugins::
+
+uninstallpc::
+	@echo "Removing package configurations"
+	@cd $(DESTDIR)$(pkgconfigdir); rm -f $(notdir $(PC_FILES))
 
 config.status:
 	@echo "config.status does not exist. Please run ./configure."

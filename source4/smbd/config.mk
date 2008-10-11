@@ -17,9 +17,7 @@ PIDFILE_OBJ_FILES = $(smbdsrcdir)/pidfile.o
 
 $(eval $(call proto_header_template,$(smbdsrcdir)/pidfile.h,$(PIDFILE_OBJ_FILES:.o=.c)))
 
-#################################
-# Start BINARY smbd
-[BINARY::smbd]
+[BINARY::samba]
 INSTALLDIR = SBINDIR
 PRIVATE_DEPENDENCIES = \
 		process_model \
@@ -36,8 +34,6 @@ PRIVATE_DEPENDENCIES = \
 		share \
 		CLUSTER
 
-smbd_OBJ_FILES = $(smbdsrcdir)/server.o
+samba_OBJ_FILES = $(smbdsrcdir)/server.o
 
-MANPAGES += $(smbdsrcdir)/smbd.8
-# End BINARY smbd
-#################################
+MANPAGES += $(smbdsrcdir)/samba.8

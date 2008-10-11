@@ -55,7 +55,7 @@ void sec_ace_copy(SEC_ACE *ace_dest, SEC_ACE *ace_src)
 ********************************************************************/
 
 void init_sec_ace(SEC_ACE *t, const DOM_SID *sid, enum security_ace_type type,
-		  uint32 mask, uint8 flag)
+		  uint32_t mask, uint8 flag)
 {
 	t->type = type;
 	t->flags = flag;

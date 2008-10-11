@@ -44,50 +44,13 @@ struct lsqlite3_private {
 
 struct lsql_context {
 	struct ldb_module *module;
+	struct ldb_request *req;
 
 	/* search stuff */
 	long long current_eid;
 	const char * const * attrs;
 	struct ldb_reply *ares;
-
-	/* async stuff */
-	void *context;
-	int (*callback)(struct ldb_context *, void *, struct ldb_reply *);
 };
-
-static struct ldb_handle *init_handle(struct lsqlite3_private *lsqlite3,
-					struct ldb_module *module,
-					struct ldb_request *req)
-{
-	struct lsql_context *ac;
-	struct ldb_handle *h;
-
-	h = talloc_zero(lsqlite3, struct ldb_handle);
-	if (h == NULL) {
-		ldb_set_errstring(module->ldb, "Out of Memory");
-		return NULL;
-	}
-
-	h->module = module;
-
-	ac = talloc(h, struct lsql_context);
-	if (ac == NULL) {
-		ldb_set_errstring(module->ldb, "Out of Memory");
-		talloc_free(h);
-		return NULL;
-	}
-
-	h->private_data = (void *)ac;
-
-	h->state = LDB_ASYNC_INIT;
-	h->status = LDB_SUCCESS;
-
-	ac->module = module;
-	ac->context = req->context;
-	ac->callback = req->callback;
-
-	return h;
-}
 
 /*
  * Macros used throughout
@@ -835,11 +798,6 @@ int lsql_search(struct ldb_module *module, struct ldb_request *req)
 	char *query = NULL;
         int ret;
 
-	req->handle = init_handle(lsqlite3, module, req);
-	if (req->handle == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
 	lsql_ac = talloc_get_type(req->handle->private_data, struct lsql_context);
 
 	if ((( ! ldb_dn_is_valid(req->op.search.base)) || ldb_dn_is_null(req->op.search.base)) &&
@@ -1013,10 +971,6 @@ static int lsql_add(struct ldb_module *module, struct ldb_request *req)
 	int i;
 	int ret = LDB_SUCCESS;
 
-	req->handle = init_handle(lsqlite3, module, req);
-	if (req->handle == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
 	lsql_ac = talloc_get_type(req->handle->private_data, struct lsql_context);
 	req->handle->state = LDB_ASYNC_DONE;
 	req->handle->status = LDB_SUCCESS;
@@ -1143,10 +1097,6 @@ static int lsql_modify(struct ldb_module *module, struct ldb_request *req)
 	int i;
 	int ret = LDB_SUCCESS;
 
-	req->handle = init_handle(lsqlite3, module, req);
-	if (req->handle == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
 	lsql_ac = talloc_get_type(req->handle->private_data, struct lsql_context);
 	req->handle->state = LDB_ASYNC_DONE;
 	req->handle->status = LDB_SUCCESS;
@@ -1329,10 +1279,6 @@ static int lsql_delete(struct ldb_module *module, struct ldb_request *req)
 	int ret = LDB_SUCCESS;
 
 
-	req->handle = init_handle(lsqlite3, module, req);
-	if (req->handle == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
 	lsql_ac = talloc_get_type(req->handle->private_data, struct lsql_context);
 	req->handle->state = LDB_ASYNC_DONE;
 	req->handle->status = LDB_SUCCESS;
@@ -1382,10 +1328,6 @@ static int lsql_rename(struct ldb_module *module, struct ldb_request *req)
 	char *query;
 	int ret = LDB_SUCCESS;
 
-	req->handle = init_handle(lsqlite3, module, req);
-	if (req->handle == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
 	lsql_ac = talloc_get_type(req->handle->private_data, struct lsql_context);
 	req->handle->state = LDB_ASYNC_DONE;
 	req->handle->status = LDB_SUCCESS;
@@ -1501,9 +1443,61 @@ static int lsql_request(struct ldb_module *module, struct ldb_request *req)
 	return LDB_ERR_OPERATIONS_ERROR;
 }
 
-static int lsql_wait(struct ldb_handle *handle, enum ldb_wait_type type)
+static int lsql_run_request(struct ldb_module *module, struct ldb_request *req)
 {
-	return handle->status;
+	switch (req->operation) {
+	case LDB_SEARCH:
+		return lsql_search(module, req);
+		break;
+	case LDB_ADD:
+		return lsql_add(module, req);
+		break;
+	case LDB_MODIFY:
+		return lsql_modify(module, req);
+		break;
+	case LDB_DELETE:
+		return lsql_delete(module, req);
+		break;
+	case LDB_RENAME:
+		return lsql_rename(module, req);
+		break;
+/* TODO:
+	case LDB_SEQUENCE_NUMBER:
+		return lsql_sequence_number(module, req);
+		break;
+ */
+	default:
+		return lsql_request(module, req);
+		break;
+	}
+
+	return LDB_ERR_OPERATIONS_ERROR;
+}
+
+static int lsql_handle_request(struct ldb_module *module, struct ldb_request *req)
+{
+	struct lsql_context *ac;
+
+	if (check_critical_controls(req->controls)) {
+		return LDB_ERR_UNSUPPORTED_CRITICAL_EXTENSION;
+	}
+
+	ac = talloc_zero(req, struct lsql_context);
+	if (ac == NULL) {
+		ldb_set_errstring(module->ldb, "Out of Memory");
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	ac->module = module;
+	ac->req = req;
+
+	req->handle = ldb_handle_new(req, lsql_run_request, ac);
+	if (req->handle == NULL) {
+		talloc_free(ac);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	return LDB_SUCCESS;
 }
 
 /*
@@ -1511,16 +1505,16 @@ static int lsql_wait(struct ldb_handle *handle, enum ldb_wait_type type)
  */
 static const struct ldb_module_ops lsqlite3_ops = {
 	.name              = "sqlite",
-	.search            = lsql_search,
-	.add               = lsql_add,
-        .modify            = lsql_modify,
-        .del               = lsql_delete,
-        .rename            = lsql_rename,
-	.request           = lsql_request,
+	.search            = lsql_handle_request,
+	.add               = lsql_handle_request,
+        .modify            = lsql_handle_request,
+        .del               = lsql_handle_request,
+        .rename            = lsql_handle_request,
+	.request           = lsql_handle_request,
 	.start_transaction = lsql_start_trans,
 	.end_transaction   = lsql_end_trans,
 	.del_transaction   = lsql_del_trans,
-	.wait              = lsql_wait,
+	/* TODO: .sequence_number   = lsql_handle_request */
 };
 
 /*

@@ -127,6 +127,7 @@ static NTSTATUS cldapd_startup_interfaces(struct cldapd_server *cldapd, struct l
 	int num_interfaces;
 	TALLOC_CTX *tmp_ctx = talloc_new(cldapd);
 	NTSTATUS status;
+	int i;
 
 	num_interfaces = iface_count(ifaces);
 
@@ -135,14 +136,14 @@ static NTSTATUS cldapd_startup_interfaces(struct cldapd_server *cldapd, struct l
 	if (!lp_bind_interfaces_only(lp_ctx)) {
 		status = cldapd_add_socket(cldapd, lp_ctx, "0.0.0.0");
 		NT_STATUS_NOT_OK_RETURN(status);
-	} else {
-		int i;
+	}
 
-		for (i=0; i<num_interfaces; i++) {
-			const char *address = talloc_strdup(tmp_ctx, iface_n_ip(ifaces, i));
-			status = cldapd_add_socket(cldapd, lp_ctx, address);
-			NT_STATUS_NOT_OK_RETURN(status);
-		}
+	/* now we have to also listen on the specific interfaces,
+	   so that replies always come from the right IP */
+	for (i=0; i<num_interfaces; i++) {
+		const char *address = talloc_strdup(tmp_ctx, iface_n_ip(ifaces, i));
+		status = cldapd_add_socket(cldapd, lp_ctx, address);
+		NT_STATUS_NOT_OK_RETURN(status);
 	}
 
 	talloc_free(tmp_ctx);

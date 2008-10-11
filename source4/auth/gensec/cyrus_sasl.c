@@ -110,7 +110,7 @@ static int gensec_sasl_get_password(sasl_conn_t *conn, void *context, int id,
 static int gensec_sasl_dispose(struct gensec_sasl_state *gensec_sasl_state)
 {
 	sasl_dispose(&gensec_sasl_state->conn);
-	return 0;
+	return SASL_OK;
 }
 
 static NTSTATUS gensec_sasl_client_start(struct gensec_security *gensec_security)

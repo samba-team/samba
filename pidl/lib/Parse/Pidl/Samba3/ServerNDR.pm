@@ -110,7 +110,7 @@ sub ParseFunction($$)
 	pidl "\treturn false;";
 	pidl "}";
 	pidl "";
-	pidl "pull = ndr_pull_init_blob(&blob, r);";
+	pidl "pull = ndr_pull_init_blob(&blob, r, NULL);";
 	pidl "if (pull == NULL) {";
 	pidl "\ttalloc_free(r);";
 	pidl "\treturn false;";

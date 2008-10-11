@@ -26,8 +26,6 @@
 static int net_mode_share;
 static bool sync_files(struct copy_clistate *cp_clistate, const char *mask);
 
-extern const char *share_type[];
-
 /**
  * @file net_rpc.c
  *
@@ -2876,7 +2874,7 @@ static void display_share_info_1(struct net_context *c,
 	if (c->opt_long_list_entries) {
 		d_printf("%-12s %-8.8s %-50s\n",
 			 r->shi1_netname,
-			 share_type[r->shi1_type & ~(STYPE_TEMPORARY|STYPE_HIDDEN)],
+			 net_share_type_str(r->shi1_type & ~(STYPE_TEMPORARY|STYPE_HIDDEN)),
 			 r->shi1_remark);
 	} else {
 		d_printf("%s\n", r->shi1_netname);

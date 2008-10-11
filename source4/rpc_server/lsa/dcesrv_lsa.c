@@ -1,3 +1,5 @@
+/* need access mask/acl implementation */
+
 /* 
    Unix SMB/CIFS implementation.
 
@@ -27,7 +29,7 @@
 #include "auth/kerberos/kerberos.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
 #include "librpc/gen_ndr/ndr_lsa.h"
-#include "lib/crypto/crypto.h"
+#include "../lib/crypto/crypto.h"
 
 /*
   this type allows us to distinguish handle types
@@ -141,7 +143,8 @@ static NTSTATUS dcesrv_lsa_DeleteObject(struct dcesrv_call_state *dce_call, TALL
 
 		return NT_STATUS_OK;
 	} else if (h->wire_handle.handle_type == LSA_HANDLE_TRUSTED_DOMAIN) {
-		struct lsa_trusted_domain_state *trusted_domain_state = h->data;
+		struct lsa_trusted_domain_state *trusted_domain_state = 
+			talloc_get_type(h->data, struct lsa_trusted_domain_state);
 		ret = ldb_transaction_start(trusted_domain_state->policy->sam_ldb);
 		if (ret != 0) {
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
@@ -187,6 +190,9 @@ static NTSTATUS dcesrv_lsa_DeleteObject(struct dcesrv_call_state *dce_call, TALL
 		r2.in.sid = astate->account_sid;
 		r2.out.rights = rights;
 
+		/* dcesrv_lsa_EnumAccountRights takes a LSA_HANDLE_POLICY,
+		   but we have a LSA_HANDLE_ACCOUNT here, so this call
+		   will always fail */
 		status = dcesrv_lsa_EnumAccountRights(dce_call, mem_ctx, &r2);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
 			return NT_STATUS_OK;
@@ -444,18 +450,46 @@ static NTSTATUS dcesrv_lsa_QueryInfoPolicy2(struct dcesrv_call_state *dce_call, 
 	ZERO_STRUCTP(r->out.info);
 
 	switch (r->in.level) {
+	case LSA_POLICY_INFO_AUDIT_LOG:
+		/* we don't need to fill in any of this */
+		ZERO_STRUCT(r->out.info->audit_log);
+		return NT_STATUS_OK;
+	case LSA_POLICY_INFO_AUDIT_EVENTS:
+		/* we don't need to fill in any of this */
+		ZERO_STRUCT(r->out.info->audit_events);
+		return NT_STATUS_OK;
+	case LSA_POLICY_INFO_PD:
+		/* we don't need to fill in any of this */
+		ZERO_STRUCT(r->out.info->pd);
+		return NT_STATUS_OK;
 	case LSA_POLICY_INFO_DOMAIN:
 	case LSA_POLICY_INFO_ACCOUNT_DOMAIN:
 		return dcesrv_lsa_info_AccountDomain(state, mem_ctx, &r->out.info->account_domain);
+	case LSA_POLICY_INFO_ROLE:
+		r->out.info->role.role = LSA_ROLE_PRIMARY;
+		return NT_STATUS_OK;
 
 	case LSA_POLICY_INFO_DNS:
+	case LSA_POLICY_INFO_DNS_INT:
 		return dcesrv_lsa_info_DNS(state, mem_ctx, &r->out.info->dns);
-	case LSA_POLICY_INFO_DB:
+
+	case LSA_POLICY_INFO_REPLICA:
+		ZERO_STRUCT(r->out.info->replica);
+		return NT_STATUS_OK;
+
+	case LSA_POLICY_INFO_QUOTA:
+		ZERO_STRUCT(r->out.info->quota);
+		return NT_STATUS_OK;
+
 	case LSA_POLICY_INFO_AUDIT_FULL_SET:
+	case LSA_POLICY_INFO_DB:
 	case LSA_POLICY_INFO_AUDIT_FULL_QUERY:
+		/* windows gives INVALID_PARAMETER */
+		r->out.info = NULL;
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
+	r->out.info = NULL;
 	return NT_STATUS_INVALID_INFO_CLASS;
 }
 
@@ -467,6 +501,8 @@ static NTSTATUS dcesrv_lsa_QueryInfoPolicy(struct dcesrv_call_state *dce_call, T
 {
 	struct lsa_QueryInfoPolicy2 r2;
 	NTSTATUS status;
+
+	ZERO_STRUCT(r2);
 
 	r2.in.handle = r->in.handle;
 	r2.in.level = r->in.level;
@@ -484,6 +520,7 @@ static NTSTATUS dcesrv_lsa_QueryInfoPolicy(struct dcesrv_call_state *dce_call, T
 static NTSTATUS dcesrv_lsa_SetInfoPolicy(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				  struct lsa_SetInfoPolicy *r)
 {
+	/* need to support this */
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
@@ -502,6 +539,13 @@ static NTSTATUS dcesrv_lsa_ClearAuditLog(struct dcesrv_call_state *dce_call, TAL
   lsa_CreateAccount 
 
   This call does not seem to have any long-term effects, hence no database operations
+
+  we need to talk to the MS product group to find out what this account database means!
+
+  answer is that the lsa database is totally separate from the SAM and
+  ldap databases. We are going to need a separate ldb to store these
+  accounts. The SIDs on this account bear no relation to the SIDs in
+  AD
 */
 static NTSTATUS dcesrv_lsa_CreateAccount(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				  struct lsa_CreateAccount *r)
@@ -626,7 +670,7 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomain_base(struct dcesrv_call_state *dc
 	const char *name;
 	DATA_BLOB session_key = data_blob(NULL, 0);
 	DATA_BLOB trustAuthIncoming, trustAuthOutgoing, auth_blob;
-	struct trustAuthInAndOutBlob auth_struct;
+	struct trustDomainPasswords auth_struct;
 	int ret;
 	NTSTATUS nt_status;
 	enum ndr_err_code ndr_err;
@@ -648,7 +692,7 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomain_base(struct dcesrv_call_state *dc
 	
 	dns_name = r->in.info->domain_name.string;
 	
-	trusted_domain_state = talloc(mem_ctx, struct lsa_trusted_domain_state);
+	trusted_domain_state = talloc_zero(mem_ctx, struct lsa_trusted_domain_state);
 	if (!trusted_domain_state) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -679,16 +723,49 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomain_base(struct dcesrv_call_state *dc
 		ndr_err = ndr_pull_struct_blob(&auth_blob, mem_ctx, 
 					       lp_iconv_convenience(dce_call->conn->dce_ctx->lp_ctx),
 					       &auth_struct,
-					       (ndr_pull_flags_fn_t)ndr_pull_trustAuthInAndOutBlob);
+					       (ndr_pull_flags_fn_t)ndr_pull_trustDomainPasswords);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			return NT_STATUS_INVALID_PARAMETER;
 		}				
+
+		if (op == NDR_LSA_CREATETRUSTEDDOMAINEX) {
+			if (auth_struct.incoming.count > 1) {
+				return NT_STATUS_INVALID_PARAMETER;
+			}
+		}
 	}
 
 	if (auth_struct.incoming.count) {
+		int i;
+		struct trustAuthInOutBlob incoming;
+		
+		incoming.count = auth_struct.incoming.count;
+		incoming.current = talloc(mem_ctx, struct AuthenticationInformationArray);
+		if (!incoming.current) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		
+		incoming.current->array = *auth_struct.incoming.current;
+		if (!incoming.current->array) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		incoming.previous = talloc(mem_ctx, struct AuthenticationInformationArray);
+		if (!incoming.previous) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		incoming.previous->array = talloc_array(mem_ctx, struct AuthenticationInformation, incoming.count);
+		if (!incoming.previous->array) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		for (i = 0; i < incoming.count; i++) {
+			incoming.previous->array[i].LastUpdateTime = 0;
+			incoming.previous->array[i].AuthType = 0;
+		}
 		ndr_err = ndr_push_struct_blob(&trustAuthIncoming, mem_ctx, 
 					       lp_iconv_convenience(dce_call->conn->dce_ctx->lp_ctx),
-					       &auth_struct.incoming,
+					       &incoming,
 					       (ndr_push_flags_fn_t)ndr_push_trustAuthInOutBlob);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			return NT_STATUS_INVALID_PARAMETER;
@@ -698,9 +775,36 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomain_base(struct dcesrv_call_state *dc
 	}
 	
 	if (auth_struct.outgoing.count) {
+		int i;
+		struct trustAuthInOutBlob outgoing;
+		
+		outgoing.count = auth_struct.outgoing.count;
+		outgoing.current = talloc(mem_ctx, struct AuthenticationInformationArray);
+		if (!outgoing.current) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		
+		outgoing.current->array = *auth_struct.outgoing.current;
+		if (!outgoing.current->array) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		outgoing.previous = talloc(mem_ctx, struct AuthenticationInformationArray);
+		if (!outgoing.previous) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		outgoing.previous->array = talloc_array(mem_ctx, struct AuthenticationInformation, outgoing.count);
+		if (!outgoing.previous->array) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		for (i = 0; i < outgoing.count; i++) {
+			outgoing.previous->array[i].LastUpdateTime = 0;
+			outgoing.previous->array[i].AuthType = 0;
+		}
 		ndr_err = ndr_push_struct_blob(&trustAuthOutgoing, mem_ctx, 
 					       lp_iconv_convenience(dce_call->conn->dce_ctx->lp_ctx),
-					       &auth_struct.outgoing,
+					       &outgoing,
 					       (ndr_push_flags_fn_t)ndr_push_trustAuthInOutBlob);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			return NT_STATUS_INVALID_PARAMETER;
@@ -859,11 +963,11 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomain_base(struct dcesrv_call_state *dc
 		if (auth_struct.incoming.count) {
 			int i;
 			for (i=0; i < auth_struct.incoming.count; i++ ) {
-				if (auth_struct.incoming.current->array[i].AuthType == TRUST_AUTH_TYPE_NT4OWF) {
+				if (auth_struct.incoming.current[i]->AuthType == TRUST_AUTH_TYPE_NT4OWF) {
 					samdb_msg_add_hash(trusted_domain_state->policy->sam_ldb, 
 							   mem_ctx, msg_user, "unicodePwd", 
-							   &auth_struct.incoming.current->array[i].AuthInfo.nt4owf.password);
-				} else if (auth_struct.incoming.current->array[i].AuthType == TRUST_AUTH_TYPE_CLEAR) {
+							   &auth_struct.incoming.current[i]->AuthInfo.nt4owf.password);
+				} else if (auth_struct.incoming.current[i]->AuthType == TRUST_AUTH_TYPE_CLEAR) {
 					struct samr_Password hash;
 /*
                                       . We cannot do this, as windows chooses to send in random passwords here, that won't convert to UTF8 
@@ -871,8 +975,8 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomain_base(struct dcesrv_call_state *dc
 							     mem_ctx, msg_user, "userPassword", 
 							     auth_struct.incoming.current->array[i].AuthInfo.clear.password);
 */
-					mdfour(hash.hash, auth_struct.incoming.current->array[i].AuthInfo.clear.password,
-					       auth_struct.incoming.current->array[i].AuthInfo.clear.size);
+					mdfour(hash.hash, auth_struct.incoming.current[i]->AuthInfo.clear.password,
+					       auth_struct.incoming.current[i]->AuthInfo.clear.size);
 					samdb_msg_add_hash(trusted_domain_state->policy->sam_ldb, 
 							   mem_ctx, msg_user, "unicodePwd", 
 							   &hash);
@@ -1004,7 +1108,7 @@ static NTSTATUS dcesrv_lsa_OpenTrustedDomain(struct dcesrv_call_state *dce_call,
 	ZERO_STRUCTP(r->out.trustdom_handle);
 	policy_state = policy_handle->data;
 
-	trusted_domain_state = talloc(mem_ctx, struct lsa_trusted_domain_state);
+	trusted_domain_state = talloc_zero(mem_ctx, struct lsa_trusted_domain_state);
 	if (!trusted_domain_state) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1088,7 +1192,7 @@ static NTSTATUS dcesrv_lsa_OpenTrustedDomainByName(struct dcesrv_call_state *dce
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	
-	trusted_domain_state = talloc(mem_ctx, struct lsa_trusted_domain_state);
+	trusted_domain_state = talloc_zero(mem_ctx, struct lsa_trusted_domain_state);
 	if (!trusted_domain_state) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1228,7 +1332,7 @@ static NTSTATUS dcesrv_lsa_QueryTrustedDomainInfo(struct dcesrv_call_state *dce_
 
 	DCESRV_PULL_HANDLE(h, r->in.trustdom_handle, LSA_HANDLE_TRUSTED_DOMAIN);
 
-	trusted_domain_state = h->data;
+	trusted_domain_state = talloc_get_type(h->data, struct lsa_trusted_domain_state);
 
 	/* pull all the user attributes */
 	ret = gendb_search_dn(trusted_domain_state->policy->sam_ldb, mem_ctx,
@@ -2786,6 +2890,7 @@ static NTSTATUS dcesrv_lsa_SetInfoPolicy2(struct dcesrv_call_state *dce_call,
 				   TALLOC_CTX *mem_ctx,
 				   struct lsa_SetInfoPolicy2 *r)
 {
+	/* need to support these */
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 

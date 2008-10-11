@@ -51,7 +51,7 @@ void wmi_init(struct com_context **ctx, struct cli_credentials *credentials)
 
 /** FIXME: Use credentials struct rather than user/password here */
 WERROR WBEM_ConnectServer(struct com_context *ctx, const char *server, const uint16_t *nspace, 
-			  const char *user, const char *password, 
+			  struct cli_credentials *credentials,
 			  const char *locale, uint32_t flags, const char *authority, 
 			  struct IWbemContext* wbem_ctx, struct IWbemServices** services)
 {
@@ -60,18 +60,6 @@ WERROR WBEM_ConnectServer(struct com_context *ctx, const char *server, const uin
         WERROR result, coresult;
         struct IUnknown **mqi;
         struct IWbemLevel1Login *pL;
-
-        if (user) {
-                char *cred;
-                struct cli_credentials *cc;
-
-                cred = talloc_asprintf(NULL, "%s%%%s", user, password);
-                cc = cli_credentials_init(cred);
-                cli_credentials_set_conf(cc, global_loadparm);
-                cli_credentials_parse_string(cc, cred, CRED_SPECIFIED);
-                dcom_add_server_credentials(ctx, server, cc);
-                talloc_free(cred);
-        }
 
         GUID_from_string(CLSID_WBEMLEVEL1LOGIN, &clsid);
         GUID_from_string(COM_IWBEMLEVEL1LOGIN_UUID, &iid);

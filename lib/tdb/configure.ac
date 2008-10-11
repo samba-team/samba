@@ -2,7 +2,7 @@ AC_PREREQ(2.50)
 AC_DEFUN([SMB_MODULE_DEFAULT], [echo -n ""])
 AC_DEFUN([SMB_LIBRARY_ENABLE], [echo -n ""])
 AC_DEFUN([SMB_ENABLE], [echo -n ""])
-AC_INIT(tdb, 1.1.2)
+AC_INIT(tdb, 1.1.3)
 AC_CONFIG_SRCDIR([common/tdb.c])
 AC_CONFIG_HEADER(include/config.h)
 AC_LIBREPLACE_ALL_CHECKS
@@ -27,4 +27,8 @@ if test -z "$PYTHON_CONFIG"; then
 	PYTHON_INSTALL_TARGET=""
 	PYTHON_CHECK_TARGET=""
 fi
+
+m4_include(build_macros.m4)
+BUILD_WITH_SHARED_BUILD_DIR
+
 AC_OUTPUT(Makefile tdb.pc)

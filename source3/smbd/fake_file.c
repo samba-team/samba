@@ -146,14 +146,6 @@ NTSTATUS open_fake_file(connection_struct *conn,
 	return NT_STATUS_OK;
 }
 
-void destroy_fake_file_handle(struct fake_file_handle **fh)
-{
-	if (!fh) {
-		return;
-	}
-	TALLOC_FREE(*fh);
-}
-
 NTSTATUS close_fake_file(files_struct *fsp)
 {
 	file_free(fsp);

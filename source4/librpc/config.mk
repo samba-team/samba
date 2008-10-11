@@ -144,9 +144,9 @@ PUBLIC_DEPENDENCIES = LIBNDR NDR_COMPRESSION NDR_SECURITY NDR_SAMR ASN1_UTIL
 NDR_DRSUAPI_OBJ_FILES = $(gen_ndrsrcdir)/ndr_drsuapi.o $(ndrsrcdir)/ndr_drsuapi.o
 
 [SUBSYSTEM::NDR_DRSBLOBS]
-PUBLIC_DEPENDENCIES = LIBNDR NDR_MISC NDR_DRSUAPI LIBCLI_DRSBLOBS
+PUBLIC_DEPENDENCIES = LIBNDR NDR_MISC NDR_DRSUAPI
 
-NDR_DRSBLOBS_OBJ_FILES = $(gen_ndrsrcdir)/ndr_drsblobs.o
+NDR_DRSBLOBS_OBJ_FILES = $(gen_ndrsrcdir)/ndr_drsblobs.o $(ndrsrcdir)/ndr_drsblobs.o
 
 [SUBSYSTEM::NDR_SASL_HELPERS]
 PUBLIC_DEPENDENCIES = LIBNDR
@@ -682,7 +682,7 @@ python_atsvc_OBJ_FILES = $(gen_ndrsrcdir)/py_atsvc.o
 
 [PYTHON::python_dcerpc_nbt]
 LIBRARY_REALNAME = samba/nbt.$(SHLIBEXT)
-PRIVATE_DEPENDENCIES = NDR_NBT PYTALLOC param swig_credentials python_dcerpc
+PRIVATE_DEPENDENCIES = NDR_NBT PYTALLOC param swig_credentials python_dcerpc python_dcerpc_misc python_dcerpc_security
 
 python_dcerpc_nbt_OBJ_FILES = $(gen_ndrsrcdir)/py_nbt.o
 
@@ -743,7 +743,6 @@ python_dcerpc_security_OBJ_FILES = $(gen_ndrsrcdir)/py_security.o
 $(IDL_HEADER_FILES) $(IDL_NDR_PARSE_H_FILES) $(IDL_NDR_PARSE_C_FILES) \
 	$(IDL_NDR_CLIENT_C_FILES) $(IDL_NDR_CLIENT_H_FILES) \
 	$(IDL_NDR_SERVER_C_FILES) $(IDL_SWIG_FILES) \
-	$(IDL_NDR_EJS_C_FILES) $(IDL_NDR_EJS_H_FILES) \
 	$(IDL_NDR_PY_C_FILES) $(IDL_NDR_PY_H_FILES): idl
 
 idl_full:: $(pidldir)/lib/Parse/Pidl/IDL.pm $(pidldir)/lib/Parse/Pidl/Expr.pm 

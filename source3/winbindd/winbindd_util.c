@@ -111,7 +111,16 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 	const char *alternative_name = NULL;
 	char *idmap_config_option;
 	const char *param;
+	const char **ignored_domains, **dom;
 	
+	ignored_domains = lp_parm_string_list(-1, "winbind", "ignore domains", NULL);
+	for (dom=ignored_domains; dom && *dom; dom++) {
+		if (gen_fnmatch(*dom, domain_name) == 0) {
+			DEBUG(2,("Ignoring domain '%s'\n", domain_name));
+			return NULL;
+		}
+	}
+
 	/* ignore alt_name if we are not in an AD domain */
 	
 	if ( (lp_security() == SEC_ADS) && alt_name && *alt_name) {
@@ -436,6 +445,10 @@ static void rescan_forest_root_trusts( void )
 						&dom_list[i].sid );
 		}
 
+		if (d == NULL) {
+			continue;
+		}
+
        		DEBUG(10,("rescan_forest_root_trusts: Following trust path "
 			  "for domain tree root %s (%s)\n",
 	       		  d->name, d->alt_name ));
@@ -499,6 +512,10 @@ static void rescan_forest_trusts( void )
 							dom_list[i].dns_name,
 							&cache_methods,
 							&dom_list[i].sid );
+			}
+
+			if (d == NULL) {
+				continue;
 			}
 			
 			DEBUG(10,("Following trust path for domain %s (%s)\n",
@@ -1058,13 +1075,12 @@ void free_getent_state(struct getent_state *state)
 	temp = state;
 
 	while(temp != NULL) {
-		struct getent_state *next;
+		struct getent_state *next = temp->next;
 
 		/* Free sam entries then list entry */
 
 		SAFE_FREE(state->sam_entries);
 		DLIST_REMOVE(state, state);
-		next = temp->next;
 
 		SAFE_FREE(temp);
 		temp = next;
@@ -1160,7 +1176,7 @@ void parse_add_domuser(void *buf, char *domuser, int *len)
 		}
 	}
 
-	safe_strcpy(buf, user, *len);
+	safe_strcpy((char *)buf, user, *len);
 }
 
 /* Ensure an incoming username from NSS is fully qualified. Replace the
@@ -1211,6 +1227,33 @@ void fill_domain_username(fstring name, const char *domain, const char *user, bo
 			 domain, *lp_winbind_separator(),
 			 tmp_user);
 	}
+}
+
+/**
+ * talloc version of fill_domain_username()
+ * return NULL on talloc failure.
+ */
+char *fill_domain_username_talloc(TALLOC_CTX *mem_ctx,
+				  const char *domain,
+				  const char *user,
+				  bool can_assume)
+{
+	char *tmp_user, *name;
+
+	tmp_user = talloc_strdup(mem_ctx, user);
+	strlower_m(tmp_user);
+
+	if (can_assume && assume_domain(domain)) {
+		name = tmp_user;
+	} else {
+		name = talloc_asprintf(mem_ctx, "%s%c%s",
+				       domain,
+				       *lp_winbind_separator(),
+				       tmp_user);
+		TALLOC_FREE(tmp_user);
+	}
+
+	return name;
 }
 
 /*

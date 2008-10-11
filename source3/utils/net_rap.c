@@ -34,13 +34,6 @@
 #define ERRMSG_BOTH_SERVER_IPADDRESS    "\nTarget server and IP address both "\
   "specified. Do not set both at the same time.  The target IP address was used\n"
 
-const char *share_type[] = {
-  "Disk",
-  "Print",
-  "Dev",
-  "IPC"
-};
-
 static int errmsg_not_implemented(void)
 {
 	d_printf("\nNot implemented\n");
@@ -201,7 +194,7 @@ static void long_share_fn(const char *share_name, uint32 type,
 			  const char *comment, void *state)
 {
 	d_printf("%-12s %-8.8s %-50s\n",
-		 share_name, share_type[type], comment);
+		 share_name, net_share_type_str(type), comment);
 }
 
 static void share_fn(const char *share_name, uint32 type,
@@ -388,7 +381,7 @@ static void display_conns_func(uint16 conn_id, uint16 conn_type, uint16 opens,
 			       const char *username, const char *netname)
 {
 	d_printf("%-14.14s %-8.8s %5d\n",
-		 netname, share_type[conn_type], opens);
+		 netname, net_share_type_str(conn_type), opens);
 }
 
 static int rap_session_info(struct net_context *c, int argc, const char **argv)

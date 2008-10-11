@@ -100,7 +100,7 @@ NTSTATUS dcerpc_ndr_request_recv(struct rpc_request *req)
 
 	prs_mem_free( &r_ps );
 
-	pull = ndr_pull_init_blob(&blob, req);
+	pull = ndr_pull_init_blob(&blob, req, NULL);
 	if (pull == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}

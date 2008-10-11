@@ -27,7 +27,7 @@ static bool api_initshutdown_Init(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -100,7 +100,7 @@ static bool api_initshutdown_Abort(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -173,7 +173,7 @@ static bool api_initshutdown_InitEx(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;

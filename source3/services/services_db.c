@@ -89,7 +89,6 @@ struct service_display_info common_unix_svcs[] = {
 static SEC_DESC* construct_service_sd( TALLOC_CTX *ctx )
 {
 	SEC_ACE ace[4];
-	SEC_ACCESS mask;
 	size_t i = 0;
 	SEC_DESC *sd = NULL;
 	SEC_ACL *acl = NULL;
@@ -97,15 +96,16 @@ static SEC_DESC* construct_service_sd( TALLOC_CTX *ctx )
 
 	/* basic access for Everyone */
 
-	init_sec_access(&mask, SERVICE_READ_ACCESS );
-	init_sec_ace(&ace[i++], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+	init_sec_ace(&ace[i++], &global_sid_World,
+		SEC_ACE_TYPE_ACCESS_ALLOWED, SERVICE_READ_ACCESS, 0);
 
-	init_sec_access(&mask,SERVICE_EXECUTE_ACCESS );
-	init_sec_ace(&ace[i++], &global_sid_Builtin_Power_Users, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+	init_sec_ace(&ace[i++], &global_sid_Builtin_Power_Users,
+			SEC_ACE_TYPE_ACCESS_ALLOWED, SERVICE_EXECUTE_ACCESS, 0);
 
-	init_sec_access(&mask,SERVICE_ALL_ACCESS );
-	init_sec_ace(&ace[i++], &global_sid_Builtin_Server_Operators, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
-	init_sec_ace(&ace[i++], &global_sid_Builtin_Administrators, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+	init_sec_ace(&ace[i++], &global_sid_Builtin_Server_Operators,
+		SEC_ACE_TYPE_ACCESS_ALLOWED, SERVICE_ALL_ACCESS, 0);
+	init_sec_ace(&ace[i++], &global_sid_Builtin_Administrators,
+		SEC_ACE_TYPE_ACCESS_ALLOWED, SERVICE_ALL_ACCESS, 0);
 
 	/* create the security descriptor */
 

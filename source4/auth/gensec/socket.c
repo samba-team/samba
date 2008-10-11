@@ -408,8 +408,10 @@ static NTSTATUS gensec_socket_send(struct socket_context *sock,
 }
 
 /* Turn a normal socket into a potentially GENSEC wrapped socket */
+/* CAREFUL: this function will steal 'current_socket' */
 
 NTSTATUS gensec_socket_init(struct gensec_security *gensec_security,
+			    TALLOC_CTX *mem_ctx,
 			    struct socket_context *current_socket,
 			    struct event_context *ev,
 			    void (*recv_handler)(void *, uint16_t),
@@ -420,7 +422,7 @@ NTSTATUS gensec_socket_init(struct gensec_security *gensec_security,
 	struct socket_context *new_sock;
 	NTSTATUS nt_status;
 
-	nt_status = socket_create_with_ops(current_socket, &gensec_socket_ops, &new_sock, 
+	nt_status = socket_create_with_ops(mem_ctx, &gensec_socket_ops, &new_sock, 
 					   SOCKET_TYPE_STREAM, current_socket->flags | SOCKET_FLAG_ENCRYPT);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		*new_socket = NULL;
@@ -432,22 +434,19 @@ NTSTATUS gensec_socket_init(struct gensec_security *gensec_security,
 	gensec_socket = talloc(new_sock, struct gensec_socket);
 	if (gensec_socket == NULL) {
 		*new_socket = NULL;
+		talloc_free(new_sock);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	new_sock->private_data       = gensec_socket;
 	gensec_socket->socket        = current_socket;
 
-	if (talloc_reference(gensec_socket, current_socket) == NULL) {
-		*new_socket = NULL;
-		return NT_STATUS_NO_MEMORY;
-	}
-
 	/* Nothing to do here, if we are not actually wrapping on this socket */
 	if (!gensec_have_feature(gensec_security, GENSEC_FEATURE_SEAL) &&
 	    !gensec_have_feature(gensec_security, GENSEC_FEATURE_SIGN)) {
 		
 		gensec_socket->wrap = false;
+		talloc_steal(gensec_socket, current_socket);
 		*new_socket = new_sock;
 		return NT_STATUS_OK;
 	}
@@ -469,6 +468,7 @@ NTSTATUS gensec_socket_init(struct gensec_security *gensec_security,
 	gensec_socket->packet = packet_init(gensec_socket);
 	if (gensec_socket->packet == NULL) {
 		*new_socket = NULL;
+		talloc_free(new_sock);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -481,6 +481,7 @@ NTSTATUS gensec_socket_init(struct gensec_security *gensec_security,
 
 	/* TODO: full-request that knows about maximum packet size */
 
+	talloc_steal(gensec_socket, current_socket);
 	*new_socket = new_sock;
 	return NT_STATUS_OK;
 }

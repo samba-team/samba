@@ -9,7 +9,8 @@ libdir = @libdir@
 VPATH = @libreplacedir@
 srcdir = @srcdir@
 builddir = @builddir@
-INSTALL = @INSTALL@
+sharedbuilddir = @sharedbuilddir@
+INSTALLCMD = @INSTALL@
 LIBS = @LIBS@
 
 .PHONY: test all showflags install installcheck clean distclean realdistclean
@@ -29,8 +30,14 @@ showflags:
 	@echo '  LIBS   = $(LIBS)'
 
 install: all
-	mkdir -p $(libdir)
-	$(INSTALL) libreplace.a $(libdir)
+	${INSTALLCMD} -d $(libdir)
+	${INSTALLCMD} -m 644 libreplace.a $(libdir)
+
+shared-build: all
+	${INSTALLCMD} -d $(sharedbuilddir)/include
+	${INSTALLCMD} -m 644 replace.h $(sharedbuilddir)/include
+	${INSTALLCMD} -d $(sharedbuilddir)/lib
+	${INSTALLCMD} -m 644 libreplace.a $(sharedbuilddir)/lib
 
 libreplace.a: $(OBJS)
 	ar -rcsv $@ $(OBJS)
@@ -40,7 +47,7 @@ test: all
 
 installcheck: install test
 
-TEST_OBJS = test/testsuite.o test/os2_delete.o test/strptime.o test/getifaddrs.o
+TEST_OBJS = test/main.o test/testsuite.o test/os2_delete.o test/strptime.o test/getifaddrs.o
 
 testsuite: libreplace.a $(TEST_OBJS)
 	$(CC) -o testsuite $(TEST_OBJS) -L. -lreplace $(LDFLAGS) $(LIBS)

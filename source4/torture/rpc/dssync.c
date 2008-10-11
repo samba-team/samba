@@ -29,7 +29,7 @@
 #include "torture/torture.h"
 #include "torture/ldap/proto.h"
 #include "libcli/auth/libcli_auth.h"
-#include "lib/crypto/crypto.h"
+#include "../lib/crypto/crypto.h"
 #include "auth/credentials/credentials.h"
 #include "libcli/auth/libcli_auth.h"
 #include "auth/gensec/gensec.h"
@@ -310,14 +310,14 @@ static bool test_GetInfo(struct torture_context *tctx, struct DsSyncTest *ctx)
 		ctx->site_name = talloc_asprintf(ctx, "%s", "Default-First-Site-Name");
 		printf("cldap_netlogon() returned %s. Defaulting to Site-Name: %s\n", errstr, ctx->site_name);		
 	} else {
-		ctx->site_name = talloc_steal(ctx, search.out.netlogon.nt5_ex.client_site);
+		ctx->site_name = talloc_steal(ctx, search.out.netlogon.data.nt5_ex.client_site);
 		printf("cldap_netlogon() returned Client Site-Name: %s.\n",ctx->site_name);
-		printf("cldap_netlogon() returned Server Site-Name: %s.\n",search.out.netlogon.nt5_ex.server_site);
+		printf("cldap_netlogon() returned Server Site-Name: %s.\n",search.out.netlogon.data.nt5_ex.server_site);
 	}
 
 	if (!ctx->domain_dn) {
 		struct ldb_context *ldb = ldb_init(ctx, tctx->ev);
-		struct ldb_dn *dn = samdb_dns_domain_to_dn(ldb, ctx, search.out.netlogon.nt5_ex.dns_domain);
+		struct ldb_dn *dn = samdb_dns_domain_to_dn(ldb, ctx, search.out.netlogon.data.nt5_ex.dns_domain);
 		ctx->domain_dn = ldb_dn_alloc_linearized(ctx, dn);
 		talloc_free(dn);
 		talloc_free(ldb);

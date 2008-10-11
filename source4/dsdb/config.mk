@@ -46,7 +46,7 @@ $(eval $(call proto_header_template,$(dsdbsrcdir)/schema/proto.h,$(SAMDB_SCHEMA_
 # Start SUBSYSTEM DREPL_SRV
 [MODULE::DREPL_SRV]
 INIT_FUNCTION = server_service_drepl_init
-SUBSYSTEM = smbd
+SUBSYSTEM = samba
 PRIVATE_DEPENDENCIES = \
 		SAMDB \
 		process_model 

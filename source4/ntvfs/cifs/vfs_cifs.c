@@ -206,6 +206,7 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 	io.in.service = remote_share;
 	io.in.service_type = "?????";
 	lp_smbcli_options(ntvfs->ctx->lp_ctx, &io.in.options);
+	lp_smbcli_session_options(ntvfs->ctx->lp_ctx, &io.in.session_options);
 
 	if (!(ntvfs->ctx->client_caps & NTVFS_CLIENT_CAP_LEVEL_II_OPLOCKS)) {
 		io.in.options.use_level2_oplocks = false;

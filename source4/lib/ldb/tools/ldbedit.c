@@ -303,7 +303,7 @@ int main(int argc, const char **argv)
 		}
 	}
 
-	ret = ldb_search(ldb, basedn, options->scope, expression, attrs, &result);
+	ret = ldb_search(ldb, ldb, &result, basedn, options->scope, attrs, "%s", expression);
 	if (ret != LDB_SUCCESS) {
 		printf("search failed - %s\n", ldb_errstring(ldb));
 		exit(1);

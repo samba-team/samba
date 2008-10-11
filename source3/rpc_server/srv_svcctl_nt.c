@@ -140,7 +140,6 @@ static NTSTATUS svcctl_access_check( SEC_DESC *sec_desc, NT_USER_TOKEN *token,
 static SEC_DESC* construct_scm_sd( TALLOC_CTX *ctx )
 {
 	SEC_ACE ace[2];
-	SEC_ACCESS mask;
 	size_t i = 0;
 	SEC_DESC *sd;
 	SEC_ACL *acl;
@@ -148,13 +147,13 @@ static SEC_DESC* construct_scm_sd( TALLOC_CTX *ctx )
 
 	/* basic access for Everyone */
 
-	init_sec_access(&mask, SC_MANAGER_READ_ACCESS );
-	init_sec_ace(&ace[i++], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+	init_sec_ace(&ace[i++], &global_sid_World,
+		SEC_ACE_TYPE_ACCESS_ALLOWED, SC_MANAGER_READ_ACCESS, 0);
 
 	/* Full Access 'BUILTIN\Administrators' */
 
-	init_sec_access(&mask,SC_MANAGER_ALL_ACCESS );
-	init_sec_ace(&ace[i++], &global_sid_Builtin_Administrators, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+	init_sec_ace(&ace[i++], &global_sid_Builtin_Administrators,
+		SEC_ACE_TYPE_ACCESS_ALLOWED, SC_MANAGER_ALL_ACCESS, 0);
 
 
 	/* create the security descriptor */

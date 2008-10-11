@@ -525,18 +525,21 @@ WERROR dsdb_read_prefixes_from_ldb(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 		return WERR_FOOBAR;
 	}
 
-	ret = ldb_search(ldb, schema_dn, LDB_SCOPE_BASE,NULL, schema_attrs,&schema_res);
+	ret = ldb_search(ldb, mem_ctx, &schema_res, schema_dn, LDB_SCOPE_BASE, schema_attrs, NULL);
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 		DEBUG(0,("dsdb_read_prefixes_from_ldb: no prefix map present\n"));
+		talloc_free(schema_res);
 		return WERR_FOOBAR;
 	} else if (ret != LDB_SUCCESS) {
 		DEBUG(0,("dsdb_read_prefixes_from_ldb: failed to search the schema head\n"));
+		talloc_free(schema_res);
 		return WERR_FOOBAR;
 	}
 
 	prefix_val = ldb_msg_find_ldb_val(schema_res->msgs[0], "prefixMap");
 	if (!prefix_val) {
 		DEBUG(0,("dsdb_read_prefixes_from_ldb: no prefixMap attribute found\n"));
+		talloc_free(schema_res);
 		return WERR_FOOBAR;
 	}
 
@@ -550,8 +553,11 @@ WERROR dsdb_read_prefixes_from_ldb(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		DEBUG(0,("dsdb_read_prefixes_from_ldb: ndr_pull_struct_blob failed\n"));
 		talloc_free(blob);
+		talloc_free(schema_res);
 		return WERR_FOOBAR;
 	}
+
+	talloc_free(schema_res);
 
 	if (blob->version != PREFIX_MAP_VERSION_DSDB) {
 		DEBUG(0,("dsdb_read_prefixes_from_ldb: blob->version incorect\n"));
@@ -905,7 +911,7 @@ static int fetch_oc_recursive(struct ldb_context *ldb, struct ldb_dn *schemadn,
 		const char *name = ldb_msg_find_attr_as_string(search_from->msgs[i], 
 							       "lDAPDisplayname", NULL);
 
-		ret = ldb_search_exp_fmt(ldb, mem_ctx, &res,
+		ret = ldb_search(ldb, mem_ctx, &res,
 					schemadn, LDB_SCOPE_SUBTREE, NULL,
 					"(&(&(objectClass=classSchema)(subClassOf=%s))(!(lDAPDisplayName=%s)))",
 					name, name);
@@ -946,17 +952,15 @@ static int fetch_objectclass_schema(struct ldb_context *ldb, struct ldb_dn *sche
 	}
 	
 	/* Download 'top' */
-	ret = ldb_search(ldb, schemadn, LDB_SCOPE_SUBTREE, 
-			 "(&(objectClass=classSchema)(lDAPDisplayName=top))", 
-			 NULL, &top_res);
+	ret = ldb_search(ldb, local_ctx, &top_res,
+			 schemadn, LDB_SCOPE_SUBTREE, NULL,
+			 "(&(objectClass=classSchema)(lDAPDisplayName=top))");
 	if (ret != LDB_SUCCESS) {
 		*error_string = talloc_asprintf(mem_ctx, 
 						"dsdb_schema: failed to search for top classSchema object: %s",
 						ldb_errstring(ldb));
 		return ret;
 	}
-
-	talloc_steal(local_ctx, top_res);
 
 	if (top_res->count != 1) {
 		*error_string = talloc_asprintf(mem_ctx, 
@@ -1008,10 +1012,8 @@ int dsdb_schema_from_schema_dn(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 	/*
 	 * setup the prefix mappings and schema info
 	 */
-	ret = ldb_search(ldb, schema_dn,
-			 LDB_SCOPE_BASE,
-			 NULL, schema_attrs,
-			 &schema_res);
+	ret = ldb_search(ldb, tmp_ctx, &schema_res,
+			 schema_dn, LDB_SCOPE_BASE, schema_attrs, NULL);
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 		talloc_free(tmp_ctx);
 		return ret;
@@ -1022,7 +1024,6 @@ int dsdb_schema_from_schema_dn(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 		talloc_free(tmp_ctx);
 		return ret;
 	}
-	talloc_steal(tmp_ctx, schema_res);
 	if (schema_res->count != 1) {
 		*error_string_out = talloc_asprintf(mem_ctx, 
 			      "dsdb_schema: [%u] schema heads found on a base search",
@@ -1034,10 +1035,9 @@ int dsdb_schema_from_schema_dn(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 	/*
 	 * load the attribute definitions
 	 */
-	ret = ldb_search(ldb, schema_dn,
-			 LDB_SCOPE_ONELEVEL,
-			 "(objectClass=attributeSchema)", NULL,
-			 &a_res);
+	ret = ldb_search(ldb, tmp_ctx, &a_res,
+			 schema_dn, LDB_SCOPE_ONELEVEL, NULL,
+			 "(objectClass=attributeSchema)");
 	if (ret != LDB_SUCCESS) {
 		*error_string_out = talloc_asprintf(mem_ctx, 
 				       "dsdb_schema: failed to search attributeSchema objects: %s",
@@ -1045,7 +1045,6 @@ int dsdb_schema_from_schema_dn(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 		talloc_free(tmp_ctx);
 		return ret;
 	}
-	talloc_steal(tmp_ctx, a_res);
 
 	/*
 	 * load the objectClass definitions

@@ -35,6 +35,7 @@
 
 struct sesssetup_state {
 	union smb_sesssetup setup;
+	NTSTATUS remote_status;
 	NTSTATUS gensec_status;
 	struct smb_composite_sesssetup *io;
 	struct smbcli_request *req;
@@ -85,9 +86,25 @@ static void request_handler(struct smbcli_request *req)
 	DATA_BLOB session_key = data_blob(NULL, 0);
 	DATA_BLOB null_data_blob = data_blob(NULL, 0);
 	NTSTATUS session_key_err, nt_status;
+	struct smbcli_request *check_req = NULL;
 
-	c->status = smb_raw_sesssetup_recv(req, state, &state->setup);
+	if (req->sign_caller_checks) {
+		req->do_not_free = true;
+		check_req = req;
+	}
+
+	state->remote_status = smb_raw_sesssetup_recv(req, state, &state->setup);
+	c->status = state->remote_status;
 	state->req = NULL;
+
+	/*
+	 * we only need to check the signature if the
+	 * NT_STATUS_OK is returned
+	 */
+	if (!NT_STATUS_IS_OK(state->remote_status)) {
+		talloc_free(check_req);
+		check_req = NULL;
+	}
 
 	switch (state->setup.old.level) {
 	case RAW_SESSSETUP_OLD:
@@ -102,6 +119,7 @@ static void request_handler(struct smbcli_request *req)
 							      state->io, 
 							      &state->req);
 				if (NT_STATUS_IS_OK(nt_status)) {
+					talloc_free(check_req);
 					c->status = nt_status;
 					composite_continue_smb(c, state->req, request_handler, c);
 					return;
@@ -120,6 +138,7 @@ static void request_handler(struct smbcli_request *req)
 							      state->io, 
 							      &state->req);
 				if (NT_STATUS_IS_OK(nt_status)) {
+					talloc_free(check_req);
 					c->status = nt_status;
 					composite_continue_smb(c, state->req, request_handler, c);
 					return;
@@ -138,6 +157,7 @@ static void request_handler(struct smbcli_request *req)
 								      state->io, 
 								      &state->req);
 				if (NT_STATUS_IS_OK(nt_status)) {
+					talloc_free(check_req);
 					c->status = nt_status;
 					composite_continue_smb(c, state->req, request_handler, c);
 					return;
@@ -169,12 +189,16 @@ static void request_handler(struct smbcli_request *req)
 			state->setup.spnego.in.secblob = data_blob(NULL, 0);
 		}
 
-		/* we need to do another round of session setup. We keep going until both sides
-		   are happy */
-		session_key_err = gensec_session_key(session->gensec, &session_key);
-		if (NT_STATUS_IS_OK(session_key_err)) {
-			set_user_session_key(session, &session_key);
-			smbcli_transport_simple_set_signing(session->transport, session_key, null_data_blob);
+		if (NT_STATUS_IS_OK(state->remote_status)) {
+			if (state->setup.spnego.in.secblob.length) {
+				c->status = NT_STATUS_INTERNAL_ERROR;
+				break;
+			}
+			session_key_err = gensec_session_key(session->gensec, &session_key);
+			if (NT_STATUS_IS_OK(session_key_err)) {
+				set_user_session_key(session, &session_key);
+				smbcli_transport_simple_set_signing(session->transport, session_key, null_data_blob);
+			}
 		}
 
 		if (state->setup.spnego.in.secblob.length) {
@@ -186,6 +210,9 @@ static void request_handler(struct smbcli_request *req)
 			session->vuid = state->io->out.vuid;
 			state->req = smb_raw_sesssetup_send(session, &state->setup);
 			session->vuid = vuid;
+			if (state->req) {
+				state->req->sign_caller_checks = true;
+			}
 			composite_continue_smb(c, state->req, request_handler, c);
 			return;
 		}
@@ -194,6 +221,15 @@ static void request_handler(struct smbcli_request *req)
 	case RAW_SESSSETUP_SMB2:
 		c->status = NT_STATUS_INTERNAL_ERROR;
 		break;
+	}
+
+	if (check_req) {
+		check_req->sign_caller_checks = false;
+		if (!smbcli_request_check_sign_mac(check_req)) {
+			c->status = NT_STATUS_ACCESS_DENIED;
+		}
+		talloc_free(check_req);
+		check_req = NULL;
 	}
 
 	/* enforce the local signing required flag */
@@ -222,11 +258,14 @@ static NTSTATUS session_setup_nt1(struct composite_context *c,
 				  struct smb_composite_sesssetup *io,
 				  struct smbcli_request **req) 
 {
-	NTSTATUS nt_status;
+	NTSTATUS nt_status = NT_STATUS_INTERNAL_ERROR;
 	struct sesssetup_state *state = talloc_get_type(c->private_data, struct sesssetup_state);
 	DATA_BLOB names_blob = NTLMv2_generate_names_blob(state, lp_iconv_convenience(global_loadparm), session->transport->socket->hostname, lp_workgroup(global_loadparm));
-	DATA_BLOB session_key;
+	DATA_BLOB session_key = data_blob(NULL, 0);
 	int flags = CLI_CRED_NTLM_AUTH;
+
+	smbcli_temp_set_signing(session->transport);
+
 	if (session->options.lanman_auth) {
 		flags |= CLI_CRED_LANMAN_AUTH;
 	}
@@ -258,12 +297,6 @@ static NTSTATUS session_setup_nt1(struct composite_context *c,
 							      &state->setup.nt1.in.password2,
 							      NULL, &session_key);
 		NT_STATUS_NOT_OK_RETURN(nt_status);
-
-		smbcli_transport_simple_set_signing(session->transport, session_key, 
-						    state->setup.nt1.in.password2);
-		set_user_session_key(session, &session_key);
-		
-		data_blob_free(&session_key);
 	} else if (session->options.plaintext_auth) {
 		const char *password = cli_credentials_get_password(io->in.credentials);
 		state->setup.nt1.in.password1 = data_blob_talloc(state, password, strlen(password));
@@ -277,6 +310,15 @@ static NTSTATUS session_setup_nt1(struct composite_context *c,
 	if (!*req) {
 		return NT_STATUS_NO_MEMORY;
 	}
+
+	if (NT_STATUS_IS_OK(nt_status)) {
+		smbcli_transport_simple_set_signing(session->transport, session_key, 
+						    state->setup.nt1.in.password2);
+		set_user_session_key(session, &session_key);
+		
+		data_blob_free(&session_key);
+	}
+
 	return (*req)->status;
 }
 
@@ -350,9 +392,7 @@ static NTSTATUS session_setup_spnego(struct composite_context *c,
 				     struct smbcli_request **req) 
 {
 	struct sesssetup_state *state = talloc_get_type(c->private_data, struct sesssetup_state);
-	NTSTATUS status, session_key_err;
-	DATA_BLOB session_key = data_blob(NULL, 0);
-	DATA_BLOB null_data_blob = data_blob(NULL, 0);
+	NTSTATUS status;
 	const char *chosen_oid = NULL;
 
 	state->setup.spnego.level           = RAW_SESSSETUP_SPNEGO;
@@ -440,15 +480,18 @@ static NTSTATUS session_setup_spnego(struct composite_context *c,
 	}
 	state->gensec_status = status;
 
-	session_key_err = gensec_session_key(session->gensec, &session_key);
-	if (NT_STATUS_IS_OK(session_key_err)) {
-		smbcli_transport_simple_set_signing(session->transport, session_key, null_data_blob);
-	}
-
 	*req = smb_raw_sesssetup_send(session, &state->setup);
 	if (!*req) {
 		return NT_STATUS_NO_MEMORY;
 	}
+
+	/*
+	 * we need to check the signature ourself
+	 * as the session key might be the acceptor subkey
+	 * which comes within the response itself
+	 */
+	(*req)->sign_caller_checks = true;
+
 	return (*req)->status;
 }
 

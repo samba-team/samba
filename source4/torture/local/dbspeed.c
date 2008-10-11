@@ -211,21 +211,18 @@ static bool test_ldb_speed(struct torture_context *torture, const void *_data)
 	for (count=0;timeval_elapsed(&tv) < timelimit;count++) {
 		struct ldb_dn *dn;
 		struct ldb_result *res;
-		char *expr;
 
 		i = random() % torture_entries;
 		dn = ldb_dn_new_fmt(tmp_ctx, ldb, "SID=S-1-5-21-53173311-3623041448-2049097239-%u", i);
-		if (ldb_search(ldb, dn, LDB_SCOPE_BASE, NULL, NULL, &res) != LDB_SUCCESS || res->count != 1) {
+		if (ldb_search(ldb, tmp_ctx, &res, dn, LDB_SCOPE_BASE, NULL, NULL) != LDB_SUCCESS || res->count != 1) {
 			torture_fail(torture, talloc_asprintf(torture, "Failed to find SID %d", i));
 		}
 		talloc_free(res);
 		talloc_free(dn);
-		expr = talloc_asprintf(tmp_ctx, "(UID=%u)", i);
-		if (ldb_search(ldb, NULL, LDB_SCOPE_SUBTREE, expr, NULL, &res) != LDB_SUCCESS || res->count != 1) {
+		if (ldb_search(ldb, tmp_ctx, &res, NULL, LDB_SCOPE_SUBTREE, NULL, "(UID=%u)", i) != LDB_SUCCESS || res->count != 1) {
 			torture_fail(torture, talloc_asprintf(torture, "Failed to find UID %d", i));
 		}
 		talloc_free(res);
-		talloc_free(expr);
 	}
 
 	if (talloc_total_blocks(torture) > 100) {

@@ -44,6 +44,11 @@ static const struct {
 		.rtype = SID_NAME_WKN_GRP,
 	},
 	{
+		.name = "Owner Rights",
+		.sid = SID_OWNER_RIGHTS,
+		.rtype = SID_NAME_WKN_GRP,
+	},
+	{
 		.domain = "NT AUTHORITY",
 		.name = "Dialup",
 		.sid = SID_NT_DIALUP,
@@ -111,7 +116,7 @@ static const struct {
 	},
 	{
 		.domain = "NT AUTHORITY",
-		.name = "Termainal Server User",
+		.name = "Terminal Server User",
 		.sid = SID_NT_TERMINAL_SERVER_USERS,
 		.rtype = SID_NAME_WKN_GRP,
 	},
@@ -143,6 +148,42 @@ static const struct {
 		.domain = "NT AUTHORITY",
 		.name = "Network Service",
 		.sid = SID_NT_NETWORK_SERVICE,
+		.rtype = SID_NAME_WKN_GRP,
+	},
+	{
+		.domain = "NT AUTHORITY",
+		.name = "Digest Authentication",
+		.sid = SID_NT_DIGEST_AUTHENTICATION,
+		.rtype = SID_NAME_WKN_GRP,
+	},
+	{
+		.domain = "NT AUTHORITY",
+		.name = "Enterprise Domain Controllers",
+		.sid = SID_NT_ENTERPRISE_DCS,
+		.rtype = SID_NAME_WKN_GRP,
+	},
+	{
+		.domain = "NT AUTHORITY",
+		.name = "NTLM Authentication",
+		.sid = SID_NT_NTLM_AUTHENTICATION,
+		.rtype = SID_NAME_WKN_GRP,
+	},
+	{
+		.domain = "NT AUTHORITY",
+		.name = "Other Organization",
+		.sid = SID_NT_OTHER_ORGANISATION,
+		.rtype = SID_NAME_WKN_GRP,
+	},
+	{
+		.domain = "NT AUTHORITY",
+		.name = "SChannel Authentication",
+		.sid = SID_NT_SCHANNEL_AUTHENTICATION,
+		.rtype = SID_NAME_WKN_GRP,
+	},
+	{
+		.domain = "NT AUTHORITY",
+		.name = "IUSR",
+		.sid = SID_NT_IUSR,
 		.rtype = SID_NAME_WKN_GRP,
 	},
 	{
@@ -484,7 +525,18 @@ NTSTATUS dcesrv_lsa_LookupSids2(struct dcesrv_call_state *dce_call,
 	int i;
 	NTSTATUS status = NT_STATUS_OK;
 
+	if (r->in.level < LSA_LOOKUP_NAMES_ALL ||
+	    r->in.level > LSA_LOOKUP_NAMES_RODC_REFERRAL_TO_FULL_DC) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
 	r->out.domains = NULL;
+
+	/* NOTE: the WSPP test suite tries SIDs with invalid revision numbers,
+	   and expects NT_STATUS_INVALID_PARAMETER back - we just treat it as 
+	   an unknown SID. We could add a SID validator here. (tridge) 
+	   MS-DTYP 2.4.2
+	*/
 
 	status = dcesrv_lsa_get_policy_state(dce_call, mem_ctx, &state);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -542,7 +594,7 @@ NTSTATUS dcesrv_lsa_LookupSids2(struct dcesrv_call_state *dce_call,
 						    authority_name, sid, 
 						    r->out.domains, &sid_index);
 		if (!NT_STATUS_IS_OK(status2)) {
-			return status2;
+			continue;
 		}
 
 		r->out.names->names[i].sid_type    = rtype;
@@ -579,6 +631,8 @@ NTSTATUS dcesrv_lsa_LookupSids3(struct dcesrv_call_state *dce_call,
 	NTSTATUS status;
 	struct dcesrv_handle *h;
 
+	ZERO_STRUCT(r2);
+	
 	/* No policy handle on the wire, so make one up here */
 	r2.in.handle = talloc(mem_ctx, struct policy_handle);
 	if (!r2.in.handle) {
@@ -608,9 +662,6 @@ NTSTATUS dcesrv_lsa_LookupSids3(struct dcesrv_call_state *dce_call,
 	r2.out.names   = r->out.names;
 
 	status = dcesrv_lsa_LookupSids2(dce_call, mem_ctx, &r2);
-	if (dce_call->fault_code != 0) {
-		return status;
-	}
 
 	r->out.domains = r2.out.domains;
 	r->out.names   = r2.out.names;
@@ -630,6 +681,8 @@ NTSTATUS dcesrv_lsa_LookupSids(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 	NTSTATUS status;
 	int i;
 
+	ZERO_STRUCT(r2);
+
 	r2.in.handle   = r->in.handle;
 	r2.in.sids     = r->in.sids;
 	r2.in.names    = NULL;
@@ -641,9 +694,8 @@ NTSTATUS dcesrv_lsa_LookupSids(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 	r2.out.names   = NULL;
 
 	status = dcesrv_lsa_LookupSids2(dce_call, mem_ctx, &r2);
-	if (dce_call->fault_code != 0) {
-		return status;
-	}
+	/* we deliberately don't check for error from the above,
+	   as even on error we are supposed to return the names  */
 
 	r->out.domains = r2.out.domains;
 	if (!r2.out.names) {
@@ -685,6 +737,11 @@ NTSTATUS dcesrv_lsa_LookupNames3(struct dcesrv_call_state *dce_call,
 
 	DCESRV_PULL_HANDLE(policy_handle, r->in.handle, LSA_HANDLE_POLICY);
 
+	if (r->in.level < LSA_LOOKUP_NAMES_ALL ||
+	    r->in.level > LSA_LOOKUP_NAMES_RODC_REFERRAL_TO_FULL_DC) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
 	policy_state = policy_handle->data;
 
 	r->out.domains = NULL;
@@ -720,7 +777,7 @@ NTSTATUS dcesrv_lsa_LookupNames3(struct dcesrv_call_state *dce_call,
 		r->out.sids->sids[i].sid_type    = SID_NAME_UNKNOWN;
 		r->out.sids->sids[i].sid         = NULL;
 		r->out.sids->sids[i].sid_index   = 0xFFFFFFFF;
-		r->out.sids->sids[i].unknown     = 0;
+		r->out.sids->sids[i].flags       = 0;
 
 		status2 = dcesrv_lsa_lookup_name(dce_call->event_ctx, lp_ctx, policy_state, mem_ctx, name, &authority_name, &sid, &rtype);
 		if (!NT_STATUS_IS_OK(status2) || sid->num_auths == 0) {
@@ -730,13 +787,13 @@ NTSTATUS dcesrv_lsa_LookupNames3(struct dcesrv_call_state *dce_call,
 		status2 = dcesrv_lsa_authority_list(policy_state, mem_ctx, rtype, authority_name, 
 						    sid, r->out.domains, &sid_index);
 		if (!NT_STATUS_IS_OK(status2)) {
-			return status2;
+			continue;
 		}
 
 		r->out.sids->sids[i].sid_type    = rtype;
 		r->out.sids->sids[i].sid         = sid;
 		r->out.sids->sids[i].sid_index   = sid_index;
-		r->out.sids->sids[i].unknown     = 0;
+		r->out.sids->sids[i].flags       = 0;
 
 		(*r->out.count)++;
 	}
@@ -765,6 +822,8 @@ NTSTATUS dcesrv_lsa_LookupNames4(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	NTSTATUS status;
 	struct dcesrv_handle *h;
 
+	ZERO_STRUCT(r2);
+
 	/* No policy handle on the wire, so make one up here */
 	r2.in.handle = talloc(mem_ctx, struct policy_handle);
 	if (!r2.in.handle) {
@@ -786,18 +845,16 @@ NTSTATUS dcesrv_lsa_LookupNames4(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 
 	r2.in.num_names = r->in.num_names;
 	r2.in.names = r->in.names;
+	r2.in.level = r->in.level;
 	r2.in.sids = r->in.sids;
 	r2.in.count = r->in.count;
-	r2.in.unknown1 = r->in.unknown1;
-	r2.in.unknown2 = r->in.unknown2;
+	r2.in.lookup_options = r->in.lookup_options;
+	r2.in.client_revision = r->in.client_revision;
 	r2.out.domains = r->out.domains;
 	r2.out.sids = r->out.sids;
 	r2.out.count = r->out.count;
 	
 	status = dcesrv_lsa_LookupNames3(dce_call, mem_ctx, &r2);
-	if (dce_call->fault_code != 0) {
-		return status;
-	}
 	
 	r->out.domains = r2.out.domains;
 	r->out.sids = r2.out.sids;
@@ -820,6 +877,11 @@ NTSTATUS dcesrv_lsa_LookupNames2(struct dcesrv_call_state *dce_call,
 	r->out.domains = NULL;
 
 	DCESRV_PULL_HANDLE(h, r->in.handle, LSA_HANDLE_POLICY);
+
+	if (r->in.level < LSA_LOOKUP_NAMES_ALL ||
+	    r->in.level > LSA_LOOKUP_NAMES_RODC_REFERRAL_TO_FULL_DC) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
 	state = h->data;
 
@@ -851,7 +913,10 @@ NTSTATUS dcesrv_lsa_LookupNames2(struct dcesrv_call_state *dce_call,
 		r->out.sids->count++;
 
 		r->out.sids->sids[i].sid_type    = SID_NAME_UNKNOWN;
-		r->out.sids->sids[i].rid         = 0xFFFFFFFF;
+		/* MS-LSAT 3.1.4.7 - rid zero is considered equivalent
+		   to sid NULL - so we should return 0 rid for
+		   unmapped entries */
+		r->out.sids->sids[i].rid         = 0;
 		r->out.sids->sids[i].sid_index   = 0xFFFFFFFF;
 		r->out.sids->sids[i].unknown     = 0;
 
@@ -864,7 +929,7 @@ NTSTATUS dcesrv_lsa_LookupNames2(struct dcesrv_call_state *dce_call,
 		status2 = dcesrv_lsa_authority_list(state, mem_ctx, rtype, authority_name, 
 						    sid, r->out.domains, &sid_index);
 		if (!NT_STATUS_IS_OK(status2)) {
-			return status2;
+			continue;
 		}
 
 		r->out.sids->sids[i].sid_type    = rtype;
@@ -895,18 +960,20 @@ NTSTATUS dcesrv_lsa_LookupNames(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	NTSTATUS status;
 	int i;
 
+	ZERO_STRUCT(r2);
+
 	r2.in.handle    = r->in.handle;
 	r2.in.num_names = r->in.num_names;
 	r2.in.names     = r->in.names;
 	r2.in.sids      = NULL;
 	r2.in.level     = r->in.level;
 	r2.in.count     = r->in.count;
-	r2.in.unknown1  = 0;
-	r2.in.unknown2  = 0;
+	r2.in.lookup_options = 0;
+	r2.in.client_revision = 0;
 	r2.out.count    = r->out.count;
 
 	status = dcesrv_lsa_LookupNames2(dce_call, mem_ctx, &r2);
-	if (dce_call->fault_code != 0) {
+	if (r2.out.sids == NULL) {
 		return status;
 	}
 

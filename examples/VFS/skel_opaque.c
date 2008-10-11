@@ -315,7 +315,7 @@ static size_t skel_get_nt_acl(vfs_handle_struct *handle,
 }
 
 static NTSTATUS skel_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
-	uint32 security_info_sent, SEC_DESC *psd)
+	uint32 security_info_sent, const SEC_DESC *psd)
 {
 	errno = ENOSYS;
 	return NT_STATUS_NOT_IMPLEMENTED;

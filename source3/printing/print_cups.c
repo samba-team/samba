@@ -2,19 +2,24 @@
  * Support code for the Common UNIX Printing System ("CUPS")
  *
  * Copyright 1999-2003 by Michael R Sweet.
+ * Copyright 2008 Jeremy Allison.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
+ */
+
+/*
+ * JRA. Converted to utf8 pull/push.
  */
 
 #include "includes.h"
@@ -23,6 +28,17 @@
 #ifdef HAVE_CUPS
 #include <cups/cups.h>
 #include <cups/language.h>
+
+static SIG_ATOMIC_T gotalarm;
+
+/***************************************************************
+ Signal function to tell us we timed out.
+****************************************************************/
+
+static void gotalarm_sig(void)
+{
+        gotalarm = 1;
+}
 
 extern userdom_struct current_user_info;
 
@@ -40,16 +56,23 @@ cups_passwd_cb(const char *prompt)	/* I - Prompt */
 	return (NULL);
 }
 
-static http_t *cups_connect(void)
+static http_t *cups_connect(TALLOC_CTX *frame)
 {
-	http_t *http;
-	char *server, *p;
+	http_t *http = NULL;
+	char *server = NULL, *p = NULL;
 	int port;
-	
+	int timeout = lp_cups_connection_timeout();
+	size_t size;
+
 	if (lp_cups_server() != NULL && strlen(lp_cups_server()) > 0) {
-		server = smb_xstrdup(lp_cups_server());
+		if (!push_utf8_talloc(frame, &server, lp_cups_server(), &size)) {
+			return NULL;
+		}
 	} else {
-		server = smb_xstrdup(cupsServer());
+		server = talloc_strdup(frame,cupsServer());
+	}
+	if (!server) {
+		return NULL;
 	}
 
 	p = strchr(server, ':');
@@ -59,23 +82,70 @@ static http_t *cups_connect(void)
 	} else {
 		port = ippPort();
 	}
-	
+
 	DEBUG(10, ("connecting to cups server %s:%d\n",
 		   server, port));
 
-	if ((http = httpConnect(server, port)) == NULL) {
-		DEBUG(0,("Unable to connect to CUPS server %s:%d - %s\n", 
+	gotalarm = 0;
+
+	if (timeout) {
+                CatchSignal(SIGALRM, SIGNAL_CAST gotalarm_sig);
+                alarm(timeout);
+        }
+
+	http = httpConnect(server, port);
+
+	CatchSignal(SIGALRM, SIGNAL_CAST SIG_IGN);
+        alarm(0);
+
+	if (http == NULL) {
+		DEBUG(0,("Unable to connect to CUPS server %s:%d - %s\n",
 			 server, port, strerror(errno)));
-		SAFE_FREE(server);
-		return NULL;
 	}
 
-	SAFE_FREE(server);
 	return http;
 }
 
-bool cups_cache_reload(void)
+static void send_pcap_info(const char *name, const char *info, void *pd)
 {
+	int fd = *(int *)pd;
+	size_t namelen = name ? strlen(name)+1 : 0;
+	size_t infolen = info ? strlen(info)+1 : 0;
+
+	DEBUG(11,("send_pcap_info: writing namelen %u\n", (unsigned int)namelen));
+	if (sys_write(fd, &namelen, sizeof(namelen)) != sizeof(namelen)) {
+		DEBUG(10,("send_pcap_info: namelen write failed %s\n",
+			strerror(errno)));
+		return;
+	}
+	DEBUG(11,("send_pcap_info: writing infolen %u\n", (unsigned int)infolen));
+	if (sys_write(fd, &infolen, sizeof(infolen)) != sizeof(infolen)) {
+		DEBUG(10,("send_pcap_info: infolen write failed %s\n",
+			strerror(errno)));
+		return;
+	}
+	if (namelen) {
+		DEBUG(11,("send_pcap_info: writing name %s\n", name));
+		if (sys_write(fd, name, namelen) != namelen) {
+			DEBUG(10,("send_pcap_info: name write failed %s\n",
+				strerror(errno)));
+			return;
+		}
+	}
+	if (infolen) {
+		DEBUG(11,("send_pcap_info: writing info %s\n", info));
+		if (sys_write(fd, info, infolen) != infolen) {
+			DEBUG(10,("send_pcap_info: info write failed %s\n",
+				strerror(errno)));
+			return;
+		}
+	}
+}
+
+static bool cups_cache_reload_async(int fd)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct pcap_cache *tmp_pcap_cache = NULL;
 	http_t		*http = NULL;		/* HTTP connection to server */
 	ipp_t		*request = NULL,	/* IPP Request */
 			*response = NULL;	/* IPP Response */
@@ -87,8 +157,9 @@ bool cups_cache_reload(void)
 			{
 			  "printer-name",
 			  "printer-info"
-			};       
+			};
 	bool ret = False;
+	size_t size;
 
 	DEBUG(5, ("reloading cups printcap cache\n"));
 
@@ -102,7 +173,7 @@ bool cups_cache_reload(void)
 	* Try to connect to the server...
 	*/
 
-	if ((http = cups_connect()) == NULL) {
+	if ((http = cups_connect(frame)) == NULL) {
 		goto out;
 	}
 
@@ -123,7 +194,7 @@ bool cups_cache_reload(void)
 	language = cupsLangDefault();
 
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_CHARSET,
-                     "attributes-charset", NULL, cupsLangEncoding(language));
+                     "attributes-charset", NULL, "utf-8");
 
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_LANGUAGE,
                      "attributes-natural-language", NULL, language->language);
@@ -163,12 +234,24 @@ bool cups_cache_reload(void)
 
 		while (attr != NULL && attr->group_tag == IPP_TAG_PRINTER) {
         		if (strcmp(attr->name, "printer-name") == 0 &&
-			    attr->value_tag == IPP_TAG_NAME)
-				name = attr->values[0].string.text;
+			    attr->value_tag == IPP_TAG_NAME) {
+				if (!pull_utf8_talloc(frame,
+						&name,
+						attr->values[0].string.text,
+						&size)) {
+					goto out;
+				}
+			}
 
         		if (strcmp(attr->name, "printer-info") == 0 &&
-			    attr->value_tag == IPP_TAG_TEXT)
-				info = attr->values[0].string.text;
+			    attr->value_tag == IPP_TAG_TEXT) {
+				if (!pull_utf8_talloc(frame,
+						&info,
+						attr->values[0].string.text,
+						&size)) {
+					goto out;
+				}
+			}
 
         		attr = attr->next;
 		}
@@ -180,7 +263,7 @@ bool cups_cache_reload(void)
 		if (name == NULL)
 			break;
 
-		if (!pcap_cache_add(name, info)) {
+		if (!pcap_cache_add_specific(&tmp_pcap_cache, name, info)) {
 			goto out;
 		}
 	}
@@ -203,7 +286,7 @@ bool cups_cache_reload(void)
 	request->request.op.request_id   = 1;
 
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_CHARSET,
-                     "attributes-charset", NULL, cupsLangEncoding(language));
+                     "attributes-charset", NULL, "utf-8");
 
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_LANGUAGE,
                      "attributes-natural-language", NULL, language->language);
@@ -243,12 +326,24 @@ bool cups_cache_reload(void)
 
 		while (attr != NULL && attr->group_tag == IPP_TAG_PRINTER) {
         		if (strcmp(attr->name, "printer-name") == 0 &&
-			    attr->value_tag == IPP_TAG_NAME)
-				name = attr->values[0].string.text;
+			    attr->value_tag == IPP_TAG_NAME) {
+				if (!pull_utf8_talloc(frame,
+						&name,
+						attr->values[0].string.text,
+						&size)) {
+					goto out;
+				}
+			}
 
         		if (strcmp(attr->name, "printer-info") == 0 &&
-			    attr->value_tag == IPP_TAG_TEXT)
-				info = attr->values[0].string.text;
+			    attr->value_tag == IPP_TAG_TEXT) {
+				if (!pull_utf8_talloc(frame,
+						&info,
+						attr->values[0].string.text,
+						&size)) {
+					goto out;
+				}
+			}
 
         		attr = attr->next;
 		}
@@ -260,7 +355,7 @@ bool cups_cache_reload(void)
 		if (name == NULL)
 			break;
 
-		if (!pcap_cache_add(name, info)) {
+		if (!pcap_cache_add_specific(&tmp_pcap_cache, name, info)) {
 			goto out;
 		}
 	}
@@ -277,9 +372,229 @@ bool cups_cache_reload(void)
 	if (http)
 		httpClose(http);
 
+	/* Send all the entries up the pipe. */
+	if (tmp_pcap_cache) {
+		pcap_printer_fn_specific(tmp_pcap_cache,
+				send_pcap_info,
+				(void *)&fd);
+
+		pcap_cache_destroy_specific(&tmp_pcap_cache);
+	}
+	TALLOC_FREE(frame);
 	return ret;
 }
 
+static struct pcap_cache *local_pcap_copy;
+struct fd_event *cache_fd_event;
+
+static bool cups_pcap_load_async(int *pfd)
+{
+	int fds[2];
+	pid_t pid;
+
+	*pfd = -1;
+
+	if (cache_fd_event) {
+		DEBUG(3,("cups_pcap_load_async: already waiting for "
+			"a refresh event\n" ));
+		return false;
+	}
+
+	DEBUG(5,("cups_pcap_load_async: asynchronously loading cups printers\n"));
+
+	if (pipe(fds) == -1) {
+		return false;
+	}
+
+	pid = sys_fork();
+	if (pid == (pid_t)-1) {
+		DEBUG(10,("cups_pcap_load_async: fork failed %s\n",
+			strerror(errno) ));
+		close(fds[0]);
+		close(fds[1]);
+		return false;
+	}
+
+	if (pid) {
+		DEBUG(10,("cups_pcap_load_async: child pid = %u\n",
+			(unsigned int)pid ));
+		/* Parent. */
+		close(fds[1]);
+		*pfd = fds[0];
+		return true;
+	}
+
+	/* Child. */
+	if (!reinit_after_fork(smbd_messaging_context(), true)) {
+		DEBUG(0,("cups_pcap_load_async: reinit_after_fork() failed\n"));
+		smb_panic("cups_pcap_load_async: reinit_after_fork() failed");
+	}
+
+	close(fds[0]);
+	cups_cache_reload_async(fds[1]);
+	close(fds[1]);
+	_exit(0);
+}
+
+static void cups_async_callback(struct event_context *event_ctx,
+				struct fd_event *event,
+				uint16 flags,
+				void *p)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	int fd = *(int *)p;
+	struct pcap_cache *tmp_pcap_cache = NULL;
+
+	DEBUG(5,("cups_async_callback: callback received for printer data. "
+		"fd = %d\n", fd));
+
+	while (1) {
+		char *name = NULL, *info = NULL;
+		size_t namelen = 0, infolen = 0;
+		ssize_t ret = -1;
+
+		ret = sys_read(fd, &namelen, sizeof(namelen));
+		if (ret == 0) {
+			/* EOF */
+			break;
+		}
+		if (ret != sizeof(namelen)) {
+			DEBUG(10,("cups_async_callback: namelen read failed %d %s\n",
+				errno, strerror(errno)));
+			break;
+		}
+
+		DEBUG(11,("cups_async_callback: read namelen %u\n",
+			(unsigned int)namelen));
+
+		ret = sys_read(fd, &infolen, sizeof(infolen));
+		if (ret == 0) {
+			/* EOF */
+			break;
+		}
+		if (ret != sizeof(infolen)) {
+			DEBUG(10,("cups_async_callback: infolen read failed %s\n",
+				strerror(errno)));
+			break;
+		}
+
+		DEBUG(11,("cups_async_callback: read infolen %u\n",
+			(unsigned int)infolen));
+
+		if (namelen) {
+			name = TALLOC_ARRAY(frame, char, namelen);
+			if (!name) {
+				break;
+			}
+			ret = sys_read(fd, name, namelen);
+			if (ret == 0) {
+				/* EOF */
+				break;
+			}
+			if (ret != namelen) {
+				DEBUG(10,("cups_async_callback: name read failed %s\n",
+					strerror(errno)));
+				break;
+			}
+			DEBUG(11,("cups_async_callback: read name %s\n",
+				name));
+		} else {
+			name = NULL;
+		}
+		if (infolen) {
+			info = TALLOC_ARRAY(frame, char, infolen);
+			if (!info) {
+				break;
+			}
+			ret = sys_read(fd, info, infolen);
+			if (ret == 0) {
+				/* EOF */
+				break;
+			}
+			if (ret != infolen) {
+				DEBUG(10,("cups_async_callback: info read failed %s\n",
+					strerror(errno)));
+				break;
+			}
+			DEBUG(11,("cups_async_callback: read info %s\n",
+				info));
+		} else {
+			info = NULL;
+		}
+
+		/* Add to our local pcap cache. */
+		pcap_cache_add_specific(&tmp_pcap_cache, name, info);
+		TALLOC_FREE(name);
+		TALLOC_FREE(info);
+	}
+
+	TALLOC_FREE(frame);
+	if (tmp_pcap_cache) {
+		/* We got a namelist, replace our local cache. */
+		pcap_cache_destroy_specific(&local_pcap_copy);
+		local_pcap_copy = tmp_pcap_cache;
+
+		/* And the systemwide pcap cache. */
+		pcap_cache_replace(local_pcap_copy);
+	} else {
+		DEBUG(2,("cups_async_callback: failed to read a new "
+			"printer list\n"));
+	}
+	close(fd);
+	TALLOC_FREE(p);
+	TALLOC_FREE(cache_fd_event);
+}
+
+bool cups_cache_reload(void)
+{
+	int *p_pipe_fd = TALLOC_P(NULL, int);
+
+	if (!p_pipe_fd) {
+		return false;
+	}
+
+	*p_pipe_fd = -1;
+
+	/* Set up an async refresh. */
+	if (!cups_pcap_load_async(p_pipe_fd)) {
+		return false;
+	}
+	if (!local_pcap_copy) {
+		/* We have no local cache, wait directly for
+		 * async refresh to complete.
+		 */
+		DEBUG(10,("cups_cache_reload: sync read on fd %d\n",
+			*p_pipe_fd ));
+
+		cups_async_callback(smbd_event_context(),
+					NULL,
+					EVENT_FD_READ,
+					(void *)p_pipe_fd);
+		if (!local_pcap_copy) {
+			return false;
+		}
+	} else {
+		/* Replace the system cache with our
+		 * local copy. */
+		pcap_cache_replace(local_pcap_copy);
+
+		DEBUG(10,("cups_cache_reload: async read on fd %d\n",
+			*p_pipe_fd ));
+
+		/* Trigger an event when the pipe can be read. */
+		cache_fd_event = event_add_fd(smbd_event_context(),
+					NULL, *p_pipe_fd,
+					EVENT_FD_READ,
+					cups_async_callback,
+					(void *)p_pipe_fd);
+		if (!cache_fd_event) {
+			close(*p_pipe_fd);
+			TALLOC_FREE(p_pipe_fd);
+			return false;
+		}
+	}
+	return true;
+}
 
 /*
  * 'cups_job_delete()' - Delete a job.
@@ -287,13 +602,15 @@ bool cups_cache_reload(void)
 
 static int cups_job_delete(const char *sharename, const char *lprm_command, struct printjob *pjob)
 {
+	TALLOC_CTX *frame = talloc_stackframe();
 	int		ret = 1;		/* Return value */
 	http_t		*http = NULL;		/* HTTP connection to server */
 	ipp_t		*request = NULL,	/* IPP Request */
 			*response = NULL;	/* IPP Response */
 	cups_lang_t	*language = NULL;	/* Default language */
+	char *user = NULL;
 	char		uri[HTTP_MAX_URI]; /* printer-uri attribute */
-
+	size_t size;
 
 	DEBUG(5,("cups_job_delete(%s, %p (%d))\n", sharename, pjob, pjob->sysjob));
 
@@ -307,7 +624,7 @@ static int cups_job_delete(const char *sharename, const char *lprm_command, stru
 	* Try to connect to the server...
 	*/
 
-	if ((http = cups_connect()) == NULL) {
+	if ((http = cups_connect(frame)) == NULL) {
 		goto out;
 	}
 
@@ -329,7 +646,7 @@ static int cups_job_delete(const char *sharename, const char *lprm_command, stru
 	language = cupsLangDefault();
 
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_CHARSET,
-        	     "attributes-charset", NULL, cupsLangEncoding(language));
+                     "attributes-charset", NULL, "utf-8");
 
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_LANGUAGE,
         	     "attributes-natural-language", NULL, language->language);
@@ -338,8 +655,12 @@ static int cups_job_delete(const char *sharename, const char *lprm_command, stru
 
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_URI, "job-uri", NULL, uri);
 
+	if (!push_utf8_talloc(frame, &user, pjob->user, &size)) {
+		goto out;
+	}
+
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_NAME, "requesting-user-name",
-        	     NULL, pjob->user);
+        	     NULL, user);
 
        /*
 	* Do the request and get back a response...
@@ -367,6 +688,7 @@ static int cups_job_delete(const char *sharename, const char *lprm_command, stru
 	if (http)
 		httpClose(http);
 
+	TALLOC_FREE(frame);
 	return ret;
 }
 
@@ -377,13 +699,15 @@ static int cups_job_delete(const char *sharename, const char *lprm_command, stru
 
 static int cups_job_pause(int snum, struct printjob *pjob)
 {
+	TALLOC_CTX *frame = talloc_stackframe();
 	int		ret = 1;		/* Return value */
 	http_t		*http = NULL;		/* HTTP connection to server */
 	ipp_t		*request = NULL,	/* IPP Request */
 			*response = NULL;	/* IPP Response */
 	cups_lang_t	*language = NULL;	/* Default language */
+	char *user = NULL;
 	char		uri[HTTP_MAX_URI]; /* printer-uri attribute */
-
+	size_t size;
 
 	DEBUG(5,("cups_job_pause(%d, %p (%d))\n", snum, pjob, pjob->sysjob));
 
@@ -397,7 +721,7 @@ static int cups_job_pause(int snum, struct printjob *pjob)
 	* Try to connect to the server...
 	*/
 
-	if ((http = cups_connect()) == NULL) {
+	if ((http = cups_connect(frame)) == NULL) {
 		goto out;
 	}
 
@@ -419,7 +743,7 @@ static int cups_job_pause(int snum, struct printjob *pjob)
 	language = cupsLangDefault();
 
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_CHARSET,
-        	     "attributes-charset", NULL, cupsLangEncoding(language));
+                     "attributes-charset", NULL, "utf-8");
 
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_LANGUAGE,
         	     "attributes-natural-language", NULL, language->language);
@@ -428,8 +752,11 @@ static int cups_job_pause(int snum, struct printjob *pjob)
 
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_URI, "job-uri", NULL, uri);
 
+	if (!push_utf8_talloc(frame, &user, pjob->user, &size)) {
+		goto out;
+	}
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_NAME, "requesting-user-name",
-        	     NULL, pjob->user);
+        	     NULL, user);
 
        /*
 	* Do the request and get back a response...
@@ -457,6 +784,7 @@ static int cups_job_pause(int snum, struct printjob *pjob)
 	if (http)
 		httpClose(http);
 
+	TALLOC_FREE(frame);
 	return ret;
 }
 
@@ -467,13 +795,15 @@ static int cups_job_pause(int snum, struct printjob *pjob)
 
 static int cups_job_resume(int snum, struct printjob *pjob)
 {
+	TALLOC_CTX *frame = talloc_stackframe();
 	int		ret = 1;		/* Return value */
 	http_t		*http = NULL;		/* HTTP connection to server */
 	ipp_t		*request = NULL,	/* IPP Request */
 			*response = NULL;	/* IPP Response */
 	cups_lang_t	*language = NULL;	/* Default language */
+	char *user = NULL;
 	char		uri[HTTP_MAX_URI]; /* printer-uri attribute */
-
+	size_t size;
 
 	DEBUG(5,("cups_job_resume(%d, %p (%d))\n", snum, pjob, pjob->sysjob));
 
@@ -487,7 +817,7 @@ static int cups_job_resume(int snum, struct printjob *pjob)
 	* Try to connect to the server...
 	*/
 
-	if ((http = cups_connect()) == NULL) {
+	if ((http = cups_connect(frame)) == NULL) {
 		goto out;
 	}
 
@@ -509,7 +839,7 @@ static int cups_job_resume(int snum, struct printjob *pjob)
 	language = cupsLangDefault();
 
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_CHARSET,
-        	     "attributes-charset", NULL, cupsLangEncoding(language));
+                     "attributes-charset", NULL, "utf-8");
 
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_LANGUAGE,
         	     "attributes-natural-language", NULL, language->language);
@@ -518,8 +848,11 @@ static int cups_job_resume(int snum, struct printjob *pjob)
 
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_URI, "job-uri", NULL, uri);
 
+	if (!push_utf8_talloc(frame, &user, pjob->user, &size)) {
+		goto out;
+	}
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_NAME, "requesting-user-name",
-        	     NULL, pjob->user);
+        	     NULL, user);
 
        /*
 	* Do the request and get back a response...
@@ -547,6 +880,7 @@ static int cups_job_resume(int snum, struct printjob *pjob)
 	if (http)
 		httpClose(http);
 
+	TALLOC_FREE(frame);
 	return ret;
 }
 
@@ -557,6 +891,7 @@ static int cups_job_resume(int snum, struct printjob *pjob)
 
 static int cups_job_submit(int snum, struct printjob *pjob)
 {
+	TALLOC_CTX *frame = talloc_stackframe();
 	int		ret = 1;		/* Return value */
 	http_t		*http = NULL;		/* HTTP connection to server */
 	ipp_t		*request = NULL,	/* IPP Request */
@@ -567,6 +902,12 @@ static int cups_job_submit(int snum, struct printjob *pjob)
 	char *new_jobname = NULL;
 	int		num_options = 0;
 	cups_option_t 	*options = NULL;
+	char *printername = NULL;
+	char *user = NULL;
+	char *jobname = NULL;
+	char *cupsoptions = NULL;
+	char *filename = NULL;
+	size_t size;
 	char addr[INET6_ADDRSTRLEN];
 
 	DEBUG(5,("cups_job_submit(%d, %p (%d))\n", snum, pjob, pjob->sysjob));
@@ -581,7 +922,7 @@ static int cups_job_submit(int snum, struct printjob *pjob)
 	* Try to connect to the server...
 	*/
 
-	if ((http = cups_connect()) == NULL) {
+	if ((http = cups_connect(frame)) == NULL) {
 		goto out;
 	}
 
@@ -604,19 +945,25 @@ static int cups_job_submit(int snum, struct printjob *pjob)
 	language = cupsLangDefault();
 
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_CHARSET,
-        	     "attributes-charset", NULL, cupsLangEncoding(language));
+                     "attributes-charset", NULL, "utf-8");
 
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_LANGUAGE,
         	     "attributes-natural-language", NULL, language->language);
 
+	if (!push_utf8_talloc(frame, &printername, PRINTERNAME(snum), &size)) {
+		goto out;
+	}
 	slprintf(uri, sizeof(uri) - 1, "ipp://localhost/printers/%s",
-	         PRINTERNAME(snum));
+	         printername);
 
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_URI,
         	     "printer-uri", NULL, uri);
 
+	if (!push_utf8_talloc(frame, &user, pjob->user, &size)) {
+		goto out;
+	}
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_NAME, "requesting-user-name",
-        	     NULL, pjob->user);
+        	     NULL, user);
 
 	clientname = client_name(get_client_fd());
 	if (strcmp(clientname, "UNKNOWN") == 0) {
@@ -627,31 +974,43 @@ static int cups_job_submit(int snum, struct printjob *pjob)
 	             "job-originating-host-name", NULL,
 		      clientname);
 
-	if (asprintf(&new_jobname,"%s%.8u %s", PRINT_SPOOL_PREFIX,
-			(unsigned int)pjob->smbjob, pjob->jobname) < 0) {
+	if (!push_utf8_talloc(frame, &jobname, pjob->jobname, &size)) {
+		goto out;
+	}
+	new_jobname = talloc_asprintf(frame,
+			"%s%.8u %s", PRINT_SPOOL_PREFIX,
+			(unsigned int)pjob->smbjob,
+			jobname);
+	if (new_jobname == NULL) {
 		goto out;
 	}
 
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_NAME, "job-name", NULL,
         	     new_jobname);
 
-	/* 
-	 * add any options defined in smb.conf 
+	/*
+	 * add any options defined in smb.conf
 	 */
 
+	if (!push_utf8_talloc(frame, &cupsoptions, lp_cups_options(snum), &size)) {
+		goto out;
+	}
 	num_options = 0;
 	options     = NULL;
-	num_options = cupsParseOptions(lp_cups_options(snum), num_options, &options);
+	num_options = cupsParseOptions(cupsoptions, num_options, &options);
 
 	if ( num_options )
-		cupsEncodeOptions(request, num_options, options); 
+		cupsEncodeOptions(request, num_options, options);
 
        /*
 	* Do the request and get back a response...
 	*/
 
-	slprintf(uri, sizeof(uri) - 1, "/printers/%s", PRINTERNAME(snum));
+	slprintf(uri, sizeof(uri) - 1, "/printers/%s", printername);
 
+	if (!push_utf8_talloc(frame, &filename, pjob->filename, &size)) {
+		goto out;
+	}
 	if ((response = cupsDoFileRequest(http, request, uri, pjob->filename)) != NULL) {
 		if (response->request.status.status_code >= IPP_OK_CONFLICT) {
 			DEBUG(0,("Unable to print file to %s - %s\n", PRINTERNAME(snum),
@@ -678,7 +1037,7 @@ static int cups_job_submit(int snum, struct printjob *pjob)
 	if (http)
 		httpClose(http);
 
-	SAFE_FREE(new_jobname);
+	TALLOC_FREE(frame);
 
 	return ret;
 }
@@ -690,10 +1049,11 @@ static int cups_job_submit(int snum, struct printjob *pjob)
 static int cups_queue_get(const char *sharename,
                enum printing_types printing_type,
                char *lpq_command,
-               print_queue_struct **q, 
+               print_queue_struct **q,
                print_status_struct *status)
 {
-	fstring		printername;
+	TALLOC_CTX *frame = talloc_stackframe();
+	char *printername = NULL;
 	http_t		*http = NULL;		/* HTTP connection to server */
 	ipp_t		*request = NULL,	/* IPP Request */
 			*response = NULL;	/* IPP Response */
@@ -704,13 +1064,14 @@ static int cups_queue_get(const char *sharename,
 			qalloc = 0;		/* Number of queue entries allocated */
 	print_queue_struct *queue = NULL,	/* Queue entries */
 			*temp;		/* Temporary pointer for queue */
-	const char	*user_name,	/* job-originating-user-name attribute */
-			*job_name;	/* job-name attribute */
+	char		*user_name = NULL,	/* job-originating-user-name attribute */
+			*job_name = NULL;	/* job-name attribute */
 	int		job_id;		/* job-id attribute */
 	int		job_k_octets;	/* job-k-octets attribute */
 	time_t		job_time;	/* time-at-creation attribute */
 	ipp_jstate_t	job_status;	/* job-status attribute */
 	int		job_priority;	/* job-priority attribute */
+	size_t size;
 	static const char *jattrs[] =	/* Requested job attributes */
 			{
 			  "job-id",
@@ -729,15 +1090,16 @@ static int cups_queue_get(const char *sharename,
 
 	*q = NULL;
 
-	/* HACK ALERT!!!  The problem with support the 'printer name' 
-	   option is that we key the tdb off the sharename.  So we will 
-	   overload the lpq_command string to pass in the printername 
-	   (which is basically what we do for non-cups printers ... using 
+	/* HACK ALERT!!!  The problem with support the 'printer name'
+	   option is that we key the tdb off the sharename.  So we will
+	   overload the lpq_command string to pass in the printername
+	   (which is basically what we do for non-cups printers ... using
 	   the lpq_command to get the queue listing). */
 
-	fstrcpy( printername, lpq_command );
-
-	DEBUG(5,("cups_queue_get(%s, %p, %p)\n", printername, q, status));
+	if (!push_utf8_talloc(frame, &printername, lpq_command, &size)) {
+		goto out;
+	}
+	DEBUG(5,("cups_queue_get(%s, %p, %p)\n", lpq_command, q, status));
 
        /*
         * Make sure we don't ask for passwords...
@@ -749,7 +1111,7 @@ static int cups_queue_get(const char *sharename,
 	* Try to connect to the server...
 	*/
 
-	if ((http = cups_connect()) == NULL) {
+	if ((http = cups_connect(frame)) == NULL) {
 		goto out;
 	}
 
@@ -777,7 +1139,7 @@ static int cups_queue_get(const char *sharename,
 	language = cupsLangDefault();
 
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_CHARSET,
-                     "attributes-charset", NULL, cupsLangEncoding(language));
+                     "attributes-charset", NULL, "utf-8");
 
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_LANGUAGE,
                      "attributes-natural-language", NULL, language->language);
@@ -882,12 +1244,24 @@ static int cups_queue_get(const char *sharename,
 				job_time = attr->values[0].integer;
 
         		if (strcmp(attr->name, "job-name") == 0 &&
-			    attr->value_tag == IPP_TAG_NAME)
-				job_name = attr->values[0].string.text;
+			    attr->value_tag == IPP_TAG_NAME) {
+				if (!pull_utf8_talloc(frame,
+						&job_name,
+						attr->values[0].string.text,
+						&size)) {
+					goto out;
+				}
+			}
 
         		if (strcmp(attr->name, "job-originating-user-name") == 0 &&
-			    attr->value_tag == IPP_TAG_NAME)
-				user_name = attr->values[0].string.text;
+			    attr->value_tag == IPP_TAG_NAME) {
+				if (!pull_utf8_talloc(frame,
+						&user_name,
+						attr->values[0].string.text,
+						&size)) {
+					goto out;
+				}
+			}
 
         		attr = attr->next;
 		}
@@ -911,8 +1285,8 @@ static int cups_queue_get(const char *sharename,
 			         LPQ_PRINTING;
 		temp->priority = job_priority;
 		temp->time     = job_time;
-		strncpy(temp->fs_user, user_name, sizeof(temp->fs_user) - 1);
-		strncpy(temp->fs_file, job_name, sizeof(temp->fs_file) - 1);
+		strlcpy(temp->fs_user, user_name, sizeof(temp->fs_user));
+		strlcpy(temp->fs_file, job_name, sizeof(temp->fs_file));
 
 		qcount ++;
 
@@ -939,7 +1313,7 @@ static int cups_queue_get(const char *sharename,
 	request->request.op.request_id   = 1;
 
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_CHARSET,
-                     "attributes-charset", NULL, cupsLangEncoding(language));
+                     "attributes-charset", NULL, "utf-8");
 
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_LANGUAGE,
                      "attributes-natural-language", NULL, language->language);
@@ -982,8 +1356,15 @@ static int cups_queue_get(const char *sharename,
 	}
 
         if ((attr = ippFindAttribute(response, "printer-state-message",
-	                             IPP_TAG_TEXT)) != NULL)
-	        fstrcpy(status->message, attr->values[0].string.text);
+	                             IPP_TAG_TEXT)) != NULL) {
+		char *msg = NULL;
+		if (!pull_utf8_talloc(frame, &msg,
+				attr->values[0].string.text,
+				&size)) {
+			goto out;
+		}
+	        fstrcpy(status->message, msg);
+	}
 
        /*
         * Return the job queue...
@@ -1001,6 +1382,7 @@ static int cups_queue_get(const char *sharename,
 	if (http)
 		httpClose(http);
 
+	TALLOC_FREE(frame);
 	return qcount;
 }
 
@@ -1011,13 +1393,16 @@ static int cups_queue_get(const char *sharename,
 
 static int cups_queue_pause(int snum)
 {
+	TALLOC_CTX *frame = talloc_stackframe();
 	int		ret = 1;		/* Return value */
 	http_t		*http = NULL;		/* HTTP connection to server */
 	ipp_t		*request = NULL,	/* IPP Request */
 			*response = NULL;	/* IPP Response */
 	cups_lang_t	*language = NULL;	/* Default language */
+	char *printername = NULL;
+	char *username = NULL;
 	char		uri[HTTP_MAX_URI]; /* printer-uri attribute */
-
+	size_t size;
 
 	DEBUG(5,("cups_queue_pause(%d)\n", snum));
 
@@ -1031,7 +1416,7 @@ static int cups_queue_pause(int snum)
 	 * Try to connect to the server...
 	 */
 
-	if ((http = cups_connect()) == NULL) {
+	if ((http = cups_connect(frame)) == NULL) {
 		goto out;
 	}
 
@@ -1053,18 +1438,24 @@ static int cups_queue_pause(int snum)
 	language = cupsLangDefault();
 
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_CHARSET,
-        	     "attributes-charset", NULL, cupsLangEncoding(language));
+                     "attributes-charset", NULL, "utf-8");
 
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_LANGUAGE,
         	     "attributes-natural-language", NULL, language->language);
 
+	if (!push_utf8_talloc(frame, &printername, PRINTERNAME(snum), &size)) {
+		goto out;
+	}
 	slprintf(uri, sizeof(uri) - 1, "ipp://localhost/printers/%s",
-	         PRINTERNAME(snum));
+	         printername);
 
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_URI, "printer-uri", NULL, uri);
 
+	if (!push_utf8_talloc(frame, &username, current_user_info.unix_name, &size)) {
+		goto out;
+	}
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_NAME, "requesting-user-name",
-        	     NULL, current_user_info.unix_name);
+        	     NULL, username);
 
        /*
 	* Do the request and get back a response...
@@ -1092,6 +1483,7 @@ static int cups_queue_pause(int snum)
 	if (http)
 		httpClose(http);
 
+	TALLOC_FREE(frame);
 	return ret;
 }
 
@@ -1102,13 +1494,16 @@ static int cups_queue_pause(int snum)
 
 static int cups_queue_resume(int snum)
 {
+	TALLOC_CTX *frame = talloc_stackframe();
 	int		ret = 1;		/* Return value */
 	http_t		*http = NULL;		/* HTTP connection to server */
 	ipp_t		*request = NULL,	/* IPP Request */
 			*response = NULL;	/* IPP Response */
 	cups_lang_t	*language = NULL;	/* Default language */
+	char *printername = NULL;
+	char *username = NULL;
 	char		uri[HTTP_MAX_URI]; /* printer-uri attribute */
-
+	size_t size;
 
 	DEBUG(5,("cups_queue_resume(%d)\n", snum));
 
@@ -1122,7 +1517,7 @@ static int cups_queue_resume(int snum)
 	* Try to connect to the server...
 	*/
 
-	if ((http = cups_connect()) == NULL) {
+	if ((http = cups_connect(frame)) == NULL) {
 		goto out;
 	}
 
@@ -1144,18 +1539,24 @@ static int cups_queue_resume(int snum)
 	language = cupsLangDefault();
 
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_CHARSET,
-        	     "attributes-charset", NULL, cupsLangEncoding(language));
+                     "attributes-charset", NULL, "utf-8");
 
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_LANGUAGE,
         	     "attributes-natural-language", NULL, language->language);
 
+	if (!push_utf8_talloc(frame, &printername, PRINTERNAME(snum), &size)) {
+		goto out;
+	}
 	slprintf(uri, sizeof(uri) - 1, "ipp://localhost/printers/%s",
-	         PRINTERNAME(snum));
+	         printername);
 
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_URI, "printer-uri", NULL, uri);
 
+	if (!push_utf8_talloc(frame, &username, current_user_info.unix_name, &size)) {
+		goto out;
+	}
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_NAME, "requesting-user-name",
-        	     NULL, current_user_info.unix_name);
+        	     NULL, username);
 
        /*
 	* Do the request and get back a response...
@@ -1183,6 +1584,7 @@ static int cups_queue_resume(int snum)
 	if (http)
 		httpClose(http);
 
+	TALLOC_FREE(frame);
 	return ret;
 }
 
@@ -1204,15 +1606,16 @@ struct printif	cups_printif =
 
 bool cups_pull_comment_location(NT_PRINTER_INFO_LEVEL_2 *printer)
 {
+	TALLOC_CTX *frame = talloc_stackframe();
 	http_t		*http = NULL;		/* HTTP connection to server */
 	ipp_t		*request = NULL,	/* IPP Request */
 			*response = NULL;	/* IPP Response */
 	ipp_attribute_t	*attr;		/* Current attribute */
 	cups_lang_t	*language = NULL;	/* Default language */
-	char		*name,		/* printer-name attribute */
-			*info,		/* printer-info attribute */
-			*location;	/* printer-location attribute */
 	char		uri[HTTP_MAX_URI];
+	char *server = NULL;
+	char *sharename = NULL;
+	char *name = NULL;
 	static const char *requested[] =/* Requested attributes */
 			{
 			  "printer-name",
@@ -1220,6 +1623,7 @@ bool cups_pull_comment_location(NT_PRINTER_INFO_LEVEL_2 *printer)
 			  "printer-location"
 			};
 	bool ret = False;
+	size_t size;
 
 	DEBUG(5, ("pulling %s location\n", printer->sharename));
 
@@ -1233,7 +1637,7 @@ bool cups_pull_comment_location(NT_PRINTER_INFO_LEVEL_2 *printer)
 	 * Try to connect to the server...
 	 */
 
-	if ((http = cups_connect()) == NULL) {
+	if ((http = cups_connect(frame)) == NULL) {
 		goto out;
 	}
 
@@ -1245,13 +1649,26 @@ bool cups_pull_comment_location(NT_PRINTER_INFO_LEVEL_2 *printer)
 	language = cupsLangDefault();
 
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_CHARSET,
-                     "attributes-charset", NULL, cupsLangEncoding(language));
+                     "attributes-charset", NULL, "utf-8");
 
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_LANGUAGE,
                      "attributes-natural-language", NULL, language->language);
 
+	if (lp_cups_server() != NULL && strlen(lp_cups_server()) > 0) {
+		if (!push_utf8_talloc(frame, &server, lp_cups_server(), &size)) {
+			goto out;
+		}
+	} else {
+		server = talloc_strdup(frame,cupsServer());
+	}
+	if (server) {
+		goto out;
+	}
+	if (!push_utf8_talloc(frame, &sharename, printer->sharename, &size)) {
+		goto out;
+	}
 	slprintf(uri, sizeof(uri) - 1, "ipp://%s/printers/%s",
-		 lp_cups_server(), printer->sharename);
+		 server, sharename);
 
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_URI,
                      "printer-uri", NULL, uri);
@@ -1286,43 +1703,64 @@ bool cups_pull_comment_location(NT_PRINTER_INFO_LEVEL_2 *printer)
 		 * Pull the needed attributes from this printer...
 		 */
 
-		name       = NULL;
-		info       = NULL;
-		location   = NULL;
-
 		while ( attr && (attr->group_tag == IPP_TAG_PRINTER) ) {
+        		if (strcmp(attr->name, "printer-name") == 0 &&
+			    attr->value_tag == IPP_TAG_NAME) {
+				if (!pull_utf8_talloc(frame,
+						&name,
+						attr->values[0].string.text,
+						&size)) {
+					goto out;
+				}
+			}
+
 			/* Grab the comment if we don't have one */
         		if ( (strcmp(attr->name, "printer-info") == 0)
 			     && (attr->value_tag == IPP_TAG_TEXT)
-			     && !strlen(printer->comment) ) 
+			     && !strlen(printer->comment) )
 			{
-				DEBUG(5,("cups_pull_comment_location: Using cups comment: %s\n",
-					 attr->values[0].string.text));				
-			    	strlcpy(printer->comment,
+				char *comment = NULL;
+				if (!pull_utf8_talloc(frame,
+						&comment,
 						attr->values[0].string.text,
-						sizeof(printer->comment));
+						&size)) {
+					goto out;
+				}
+				DEBUG(5,("cups_pull_comment_location: Using cups comment: %s\n",
+					 comment));
+			    	strlcpy(printer->comment,
+					comment,
+					sizeof(printer->comment));
 			}
 
-			/* Grab the location if we don't have one */ 
+			/* Grab the location if we don't have one */
 			if ( (strcmp(attr->name, "printer-location") == 0)
-			     && (attr->value_tag == IPP_TAG_TEXT) 
+			     && (attr->value_tag == IPP_TAG_TEXT)
 			     && !strlen(printer->location) )
 			{
+				char *location = NULL;
+				if (!pull_utf8_talloc(frame,
+						&location,
+						attr->values[0].string.text,
+						&size)) {
+					goto out;
+				}
 				DEBUG(5,("cups_pull_comment_location: Using cups location: %s\n",
-					 attr->values[0].string.text));				
-			    	fstrcpy(printer->location,attr->values[0].string.text);
+					 location));
+			    	strlcpy(printer->location,
+					location,
+					sizeof(printer->location));
 			}
 
         		attr = attr->next;
 		}
 
 		/*
-		 * See if we have everything needed...
+		 * We have everything needed...
 		 */
 
-		if (name == NULL)
+		if (name != NULL)
 			break;
-
 	}
 
 	ret = True;
@@ -1337,6 +1775,7 @@ bool cups_pull_comment_location(NT_PRINTER_INFO_LEVEL_2 *printer)
 	if (http)
 		httpClose(http);
 
+	TALLOC_FREE(frame);
 	return ret;
 }
 

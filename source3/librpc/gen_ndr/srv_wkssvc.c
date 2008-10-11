@@ -27,7 +27,7 @@ static bool api_wkssvc_NetWkstaGetInfo(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -107,7 +107,7 @@ static bool api_wkssvc_NetWkstaSetInfo(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -182,7 +182,7 @@ static bool api_wkssvc_NetWkstaEnumUsers(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -264,7 +264,7 @@ static bool api_wkssvc_NetrWkstaUserGetInfo(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -344,7 +344,7 @@ static bool api_wkssvc_NetrWkstaUserSetInfo(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -419,7 +419,7 @@ static bool api_wkssvc_NetWkstaTransportEnum(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -501,7 +501,7 @@ static bool api_wkssvc_NetrWkstaTransportAdd(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -576,7 +576,7 @@ static bool api_wkssvc_NetrWkstaTransportDel(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -649,7 +649,7 @@ static bool api_wkssvc_NetrUseAdd(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -724,7 +724,7 @@ static bool api_wkssvc_NetrUseGetInfo(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -804,7 +804,7 @@ static bool api_wkssvc_NetrUseDel(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -877,7 +877,7 @@ static bool api_wkssvc_NetrUseEnum(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -959,7 +959,7 @@ static bool api_wkssvc_NetrMessageBufferSend(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -1032,7 +1032,7 @@ static bool api_wkssvc_NetrWorkstationStatisticsGet(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -1112,7 +1112,7 @@ static bool api_wkssvc_NetrLogonDomainNameAdd(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -1185,7 +1185,7 @@ static bool api_wkssvc_NetrLogonDomainNameDel(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -1258,7 +1258,7 @@ static bool api_wkssvc_NetrJoinDomain(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -1331,7 +1331,7 @@ static bool api_wkssvc_NetrUnjoinDomain(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -1404,7 +1404,7 @@ static bool api_wkssvc_NetrRenameMachineInDomain(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -1477,7 +1477,7 @@ static bool api_wkssvc_NetrValidateName(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -1550,7 +1550,7 @@ static bool api_wkssvc_NetrGetJoinInformation(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -1631,7 +1631,7 @@ static bool api_wkssvc_NetrGetJoinableOus(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -1712,7 +1712,7 @@ static bool api_wkssvc_NetrJoinDomain2(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -1785,7 +1785,7 @@ static bool api_wkssvc_NetrUnjoinDomain2(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -1858,7 +1858,7 @@ static bool api_wkssvc_NetrRenameMachineInDomain2(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -1931,7 +1931,7 @@ static bool api_wkssvc_NetrValidateName2(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -2004,7 +2004,7 @@ static bool api_wkssvc_NetrGetJoinableOus2(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -2085,7 +2085,7 @@ static bool api_wkssvc_NetrAddAlternateComputerName(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -2158,7 +2158,7 @@ static bool api_wkssvc_NetrRemoveAlternateComputerName(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -2231,7 +2231,7 @@ static bool api_wkssvc_NetrSetPrimaryComputername(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -2304,7 +2304,7 @@ static bool api_wkssvc_NetrEnumerateComputerNames(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;

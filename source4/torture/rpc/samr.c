@@ -24,7 +24,7 @@
 #include "system/time.h"
 #include "librpc/gen_ndr/lsa.h"
 #include "librpc/gen_ndr/ndr_samr_c.h"
-#include "lib/crypto/crypto.h"
+#include "../lib/crypto/crypto.h"
 #include "libcli/auth/libcli_auth.h"
 #include "libcli/security/security.h"
 #include "torture/rpc/rpc.h"

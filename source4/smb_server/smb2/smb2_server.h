@@ -75,7 +75,7 @@ struct smbsrv_request;
 /* useful way of catching field size errors with file and line number */
 #define SMB2SRV_CHECK_BODY_SIZE(req, size, dynamic) do { \
 	size_t is_size = req->in.body_size; \
-	uint16_t field_size = SVAL(req->in.body, 0); \
+	uint16_t field_size; \
 	uint16_t want_size = ((dynamic)?(size)+1:(size)); \
 	if (is_size < (size)) { \
 		DEBUG(0,("%s: buffer too small 0x%x. Expected 0x%x\n", \
@@ -83,6 +83,7 @@ struct smbsrv_request;
 		smb2srv_send_error(req,  NT_STATUS_INVALID_PARAMETER); \
 		return; \
 	}\
+	field_size = SVAL(req->in.body, 0);       \
 	if (field_size != want_size) { \
 		DEBUG(0,("%s: unexpected fixed body size 0x%x. Expected 0x%x\n", \
 			 __location__, (unsigned)field_size, (unsigned)want_size)); \

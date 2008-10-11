@@ -43,7 +43,10 @@ bool password_ok(const char *smb_name, DATA_BLOB password_blob);
 
 /* The following definitions come from auth/auth_domain.c  */
 
-NTSTATUS auth_domain_init(void) ;
+void attempt_machine_password_change(void);
+NTSTATUS auth_domain_init(void);
+
+NTSTATUS auth_netlogond_init(void);
 
 /* The following definitions come from auth/auth_ntlmssp.c  */
 
@@ -437,10 +440,6 @@ int connections_forall(int (*fn)(struct db_record *rec,
 		       void *private_data);
 bool connections_init(bool rw);
 
-/* The following definitions come from lib/crc32.c  */
-
-uint32 crc32_calc_buffer(const char *buf, size_t size);
-
 /* The following definitions come from lib/data_blob.c  */
 
 DATA_BLOB data_blob(const void *p, size_t length);
@@ -498,7 +497,7 @@ TALLOC_CTX *debug_ctx(void);
 /* The following definitions come from lib/display_sec.c  */
 
 char *get_sec_mask_str(TALLOC_CTX *ctx, uint32 type);
-void display_sec_access(SEC_ACCESS *info);
+void display_sec_access(uint32_t *info);
 void display_sec_ace_flags(uint8_t flags);
 void display_sec_ace(SEC_ACE *ace);
 void display_sec_acl(SEC_ACL *sec_acl);
@@ -516,6 +515,7 @@ void display_set_stderr(void);
 /* The following definitions come from lib/errmap_unix.c  */
 
 NTSTATUS map_nt_error_from_unix(int unix_error);
+int map_errno_from_nt_status(NTSTATUS status);
 
 /* The following definitions come from lib/events.c  */
 
@@ -596,16 +596,6 @@ void set_need_random_reseed(void);
 void generate_random_buffer( unsigned char *out, int len);
 char *generate_random_str(size_t len);
 
-/* The following definitions come from lib/hmacmd5.c  */
-
-void hmac_md5_init_rfc2104(const unsigned char *key, int key_len, HMACMD5Context *ctx);
-void hmac_md5_init_limK_to_64(const unsigned char* key, int key_len,
-			HMACMD5Context *ctx);
-void hmac_md5_update(const unsigned char *text, int text_len, HMACMD5Context *ctx);
-void hmac_md5_final(unsigned char *digest, HMACMD5Context *ctx);
-void hmac_md5( unsigned char key[16], const unsigned char *data, int data_len,
-	       unsigned char *digest);
-
 /* The following definitions come from lib/iconv.c  */
 
 NTSTATUS smb_register_charset(struct charset_functions *funcs) ;
@@ -648,12 +638,6 @@ char *escape_rdn_val_string_alloc(const char *s);
 /* The following definitions come from lib/md4.c  */
 
 void mdfour(unsigned char *out, const unsigned char *in, int n);
-
-/* The following definitions come from lib/md5.c  */
-
-void MD5Init(struct MD5Context *ctx);
-void MD5Update(struct MD5Context *ctx, unsigned char const *buf, unsigned len);
-void MD5Final(unsigned char digest[16], struct MD5Context *ctx);
 
 /* The following definitions come from lib/module.c  */
 
@@ -727,6 +711,7 @@ bool privilege_set_to_se_priv( SE_PRIV *mask, struct lsa_PrivilegeSet *privset )
 
 /* The following definitions come from lib/readline.c  */
 
+void smb_readline_done(void);
 char *smb_readline(const char *prompt, void (*callback)(void),
 		   char **(completion_fn)(const char *text, int start, int end));
 const char *smb_readline_get_line_buffer(void);
@@ -791,7 +776,6 @@ NTSTATUS sec_desc_mod_sid(SEC_DESC *sd, DOM_SID *sid, uint32 mask);
 NTSTATUS sec_desc_del_sid(TALLOC_CTX *ctx, SEC_DESC **psd, DOM_SID *sid, size_t *sd_size);
 SEC_DESC_BUF *se_create_child_secdesc(TALLOC_CTX *ctx, SEC_DESC *parent_ctr, 
 				      bool child_container);
-void init_sec_access(uint32 *t, uint32 mask);
 
 /* The following definitions come from lib/select.c  */
 
@@ -1446,6 +1430,7 @@ WERROR registry_push_value(TALLOC_CTX *mem_ctx,
 /* The following definitions come from lib/util_seaccess.c  */
 
 void se_map_generic(uint32 *access_mask, const struct generic_mapping *mapping);
+void security_acl_map_generic(struct security_acl *sa, const struct generic_mapping *mapping);
 void se_map_standard(uint32 *access_mask, struct standard_mapping *mapping);
 bool se_access_check(const SEC_DESC *sd, const NT_USER_TOKEN *token,
 		     uint32 acc_desired, uint32 *acc_granted, 
@@ -1927,20 +1912,15 @@ NTSTATUS kerberos_return_info3_from_pac(TALLOC_CTX *mem_ctx,
 					struct netr_SamInfo3 **info3);
 
 /* The following definitions come from libads/cldap.c  */
-
 bool ads_cldap_netlogon(TALLOC_CTX *mem_ctx,
 			const char *server,
 			const char *realm,
-			uint32_t *nt_version,
-			union nbt_cldap_netlogon **reply);
+			uint32_t nt_version,
+			struct netlogon_samlogon_response **reply);
 bool ads_cldap_netlogon_5(TALLOC_CTX *mem_ctx,
 			  const char *server,
 			  const char *realm,
-			  struct nbt_cldap_netlogon_5 *reply5);
-bool pull_mailslot_cldap_reply(TALLOC_CTX *mem_ctx,
-			       const DATA_BLOB *blob,
-			       union nbt_cldap_netlogon *r,
-			       uint32_t *nt_version);
+			  struct NETLOGON_SAM_LOGON_RESPONSE_EX *reply5);
 
 /* The following definitions come from libads/disp_sec.c  */
 
@@ -2203,23 +2183,6 @@ ADS_STATUS ads_setup_sasl_wrapping(ADS_STRUCT *ads,
 ADS_STATUS ads_change_trust_account_password(ADS_STRUCT *ads, char *host_principal);
 ADS_STATUS ads_guess_service_principal(ADS_STRUCT *ads,
 				       char **returned_principal);
-
-/* The following definitions come from libcli/nbt/nbtname.c  */
-
-_PUBLIC_ void ndr_print_nbt_string(struct ndr_print *ndr, const char *name, const char *s);
-_PUBLIC_ enum ndr_err_code ndr_pull_nbt_string(struct ndr_pull *ndr, int ndr_flags, const char **s);
-_PUBLIC_ enum ndr_err_code ndr_push_nbt_string(struct ndr_push *ndr, int ndr_flags, const char *s);
-_PUBLIC_ enum ndr_err_code ndr_pull_nbt_name(struct ndr_pull *ndr, int ndr_flags, struct nbt_name *r);
-_PUBLIC_ enum ndr_err_code ndr_push_nbt_name(struct ndr_push *ndr, int ndr_flags, const struct nbt_name *r);
-_PUBLIC_ NTSTATUS nbt_name_dup(TALLOC_CTX *mem_ctx, struct nbt_name *name, struct nbt_name *newname);
-_PUBLIC_ NTSTATUS nbt_name_to_blob(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, struct nbt_name *name);
-_PUBLIC_ NTSTATUS nbt_name_from_blob(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob, struct nbt_name *name);
-_PUBLIC_ void nbt_choose_called_name(TALLOC_CTX *mem_ctx,
-			    struct nbt_name *n, const char *name, int type);
-_PUBLIC_ char *nbt_name_string(TALLOC_CTX *mem_ctx, const struct nbt_name *name);
-_PUBLIC_ enum ndr_err_code ndr_pull_wrepl_nbt_name(struct ndr_pull *ndr, int ndr_flags, const struct nbt_name **_r);
-_PUBLIC_ enum ndr_err_code ndr_push_wrepl_nbt_name(struct ndr_push *ndr, int ndr_flags, const struct nbt_name *r);
-_PUBLIC_ void ndr_print_wrepl_nbt_name(struct ndr_print *ndr, const char *name, const struct nbt_name *r);
 
 /* The following definitions come from libgpo/gpext/gpext.c  */
 
@@ -2870,93 +2833,6 @@ _PUBLIC_ void ndr_print_netr_SamDatabaseID(struct ndr_print *ndr, const char *na
 _PUBLIC_ enum ndr_err_code ndr_push_samr_RejectReason(struct ndr_push *ndr, int ndr_flags, enum samr_RejectReason r);
 _PUBLIC_ enum ndr_err_code ndr_pull_samr_RejectReason(struct ndr_pull *ndr, int ndr_flags, enum samr_RejectReason *r);
 _PUBLIC_ void ndr_print_samr_RejectReason(struct ndr_print *ndr, const char *name, enum samr_RejectReason r);
-
-/* The following definitions come from librpc/gen_ndr/ndr_nbt.c  */
-
-_PUBLIC_ void ndr_print_nbt_operation(struct ndr_print *ndr, const char *name, uint16_t r);
-_PUBLIC_ void ndr_print_nbt_name_type(struct ndr_print *ndr, const char *name, enum nbt_name_type r);
-_PUBLIC_ void ndr_print_nbt_name(struct ndr_print *ndr, const char *name, const struct nbt_name *r);
-_PUBLIC_ void ndr_print_nbt_qclass(struct ndr_print *ndr, const char *name, enum nbt_qclass r);
-_PUBLIC_ void ndr_print_nbt_qtype(struct ndr_print *ndr, const char *name, enum nbt_qtype r);
-_PUBLIC_ void ndr_print_nbt_name_question(struct ndr_print *ndr, const char *name, const struct nbt_name_question *r);
-_PUBLIC_ void ndr_print_nb_flags(struct ndr_print *ndr, const char *name, uint16_t r);
-_PUBLIC_ void ndr_print_nbt_rdata_address(struct ndr_print *ndr, const char *name, const struct nbt_rdata_address *r);
-_PUBLIC_ void ndr_print_nbt_rdata_netbios(struct ndr_print *ndr, const char *name, const struct nbt_rdata_netbios *r);
-_PUBLIC_ void ndr_print_nbt_statistics(struct ndr_print *ndr, const char *name, const struct nbt_statistics *r);
-_PUBLIC_ void ndr_print_nbt_status_name(struct ndr_print *ndr, const char *name, const struct nbt_status_name *r);
-_PUBLIC_ void ndr_print_nbt_rdata_status(struct ndr_print *ndr, const char *name, const struct nbt_rdata_status *r);
-_PUBLIC_ void ndr_print_nbt_rdata_data(struct ndr_print *ndr, const char *name, const struct nbt_rdata_data *r);
-_PUBLIC_ void ndr_print_nbt_rdata(struct ndr_print *ndr, const char *name, const union nbt_rdata *r);
-_PUBLIC_ void ndr_print_nbt_res_rec(struct ndr_print *ndr, const char *name, const struct nbt_res_rec *r);
-_PUBLIC_ enum ndr_err_code ndr_push_nbt_name_packet(struct ndr_push *ndr, int ndr_flags, const struct nbt_name_packet *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_nbt_name_packet(struct ndr_pull *ndr, int ndr_flags, struct nbt_name_packet *r);
-_PUBLIC_ void ndr_print_nbt_name_packet(struct ndr_print *ndr, const char *name, const struct nbt_name_packet *r);
-_PUBLIC_ void ndr_print_dgram_msg_type(struct ndr_print *ndr, const char *name, enum dgram_msg_type r);
-_PUBLIC_ void ndr_print_dgram_flags(struct ndr_print *ndr, const char *name, uint8_t r);
-_PUBLIC_ void ndr_print_smb_command(struct ndr_print *ndr, const char *name, enum smb_command r);
-_PUBLIC_ void ndr_print_smb_trans_body(struct ndr_print *ndr, const char *name, const struct smb_trans_body *r);
-_PUBLIC_ void ndr_print_smb_body(struct ndr_print *ndr, const char *name, const union smb_body *r);
-_PUBLIC_ enum ndr_err_code ndr_push_dgram_smb_packet(struct ndr_push *ndr, int ndr_flags, const struct dgram_smb_packet *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_dgram_smb_packet(struct ndr_pull *ndr, int ndr_flags, struct dgram_smb_packet *r);
-_PUBLIC_ void ndr_print_dgram_smb_packet(struct ndr_print *ndr, const char *name, const struct dgram_smb_packet *r);
-_PUBLIC_ void ndr_print_dgram_message_body(struct ndr_print *ndr, const char *name, const union dgram_message_body *r);
-_PUBLIC_ void ndr_print_dgram_message(struct ndr_print *ndr, const char *name, const struct dgram_message *r);
-_PUBLIC_ void ndr_print_dgram_err_code(struct ndr_print *ndr, const char *name, enum dgram_err_code r);
-_PUBLIC_ void ndr_print_dgram_data(struct ndr_print *ndr, const char *name, const union dgram_data *r);
-_PUBLIC_ enum ndr_err_code ndr_push_nbt_dgram_packet(struct ndr_push *ndr, int ndr_flags, const struct nbt_dgram_packet *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_nbt_dgram_packet(struct ndr_pull *ndr, int ndr_flags, struct nbt_dgram_packet *r);
-_PUBLIC_ void ndr_print_nbt_dgram_packet(struct ndr_print *ndr, const char *name, const struct nbt_dgram_packet *r);
-_PUBLIC_ void ndr_print_nbt_netlogon_command(struct ndr_print *ndr, const char *name, enum nbt_netlogon_command r);
-_PUBLIC_ void ndr_print_nbt_netlogon_version(struct ndr_print *ndr, const char *name, uint32_t r);
-_PUBLIC_ void ndr_print_nbt_netlogon_query_for_pdc(struct ndr_print *ndr, const char *name, const struct nbt_netlogon_query_for_pdc *r);
-_PUBLIC_ void ndr_print_nbt_netlogon_query_for_pdc2(struct ndr_print *ndr, const char *name, const struct nbt_netlogon_query_for_pdc2 *r);
-_PUBLIC_ void ndr_print_nbt_netlogon_response_from_pdc(struct ndr_print *ndr, const char *name, const struct nbt_netlogon_response_from_pdc *r);
-_PUBLIC_ void ndr_print_nbt_server_type(struct ndr_print *ndr, const char *name, uint32_t r);
-_PUBLIC_ void ndr_print_nbt_dc_sock_addr(struct ndr_print *ndr, const char *name, const struct nbt_dc_sock_addr *r);
-_PUBLIC_ void ndr_print_nbt_netlogon_response_from_pdc2(struct ndr_print *ndr, const char *name, const struct nbt_netlogon_response_from_pdc2 *r);
-_PUBLIC_ void ndr_print_nbt_db_change(struct ndr_print *ndr, const char *name, const struct nbt_db_change *r);
-_PUBLIC_ void ndr_print_nbt_netlogon_announce_uas(struct ndr_print *ndr, const char *name, const struct nbt_netlogon_announce_uas *r);
-_PUBLIC_ void ndr_print_nbt_netlogon_request(struct ndr_print *ndr, const char *name, const union nbt_netlogon_request *r);
-_PUBLIC_ enum ndr_err_code ndr_push_nbt_netlogon_packet(struct ndr_push *ndr, int ndr_flags, const struct nbt_netlogon_packet *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_nbt_netlogon_packet(struct ndr_pull *ndr, int ndr_flags, struct nbt_netlogon_packet *r);
-_PUBLIC_ void ndr_print_nbt_netlogon_packet(struct ndr_print *ndr, const char *name, const struct nbt_netlogon_packet *r);
-_PUBLIC_ void ndr_print_nbt_cldap_netlogon_1(struct ndr_print *ndr, const char *name, const struct nbt_cldap_netlogon_1 *r);
-_PUBLIC_ void ndr_print_nbt_cldap_netlogon_3(struct ndr_print *ndr, const char *name, const struct nbt_cldap_netlogon_3 *r);
-_PUBLIC_ enum ndr_err_code ndr_push_nbt_cldap_netlogon_5(struct ndr_push *ndr, int ndr_flags, const struct nbt_cldap_netlogon_5 *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_nbt_cldap_netlogon_5(struct ndr_pull *ndr, int ndr_flags, struct nbt_cldap_netlogon_5 *r);
-_PUBLIC_ void ndr_print_nbt_cldap_netlogon_5(struct ndr_print *ndr, const char *name, const struct nbt_cldap_netlogon_5 *r);
-_PUBLIC_ void ndr_print_nbt_cldap_netlogon_13(struct ndr_print *ndr, const char *name, const struct nbt_cldap_netlogon_13 *r);
-_PUBLIC_ enum ndr_err_code ndr_push_nbt_cldap_netlogon_15(struct ndr_push *ndr, int ndr_flags, const struct nbt_cldap_netlogon_15 *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_nbt_cldap_netlogon_15(struct ndr_pull *ndr, int ndr_flags, struct nbt_cldap_netlogon_15 *r);
-_PUBLIC_ void ndr_print_nbt_cldap_netlogon_15(struct ndr_print *ndr, const char *name, const struct nbt_cldap_netlogon_15 *r);
-_PUBLIC_ enum ndr_err_code ndr_push_nbt_cldap_netlogon_29(struct ndr_push *ndr, int ndr_flags, const struct nbt_cldap_netlogon_29 *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_nbt_cldap_netlogon_29(struct ndr_pull *ndr, int ndr_flags, struct nbt_cldap_netlogon_29 *r);
-_PUBLIC_ void ndr_print_nbt_cldap_netlogon_29(struct ndr_print *ndr, const char *name, const struct nbt_cldap_netlogon_29 *r);
-_PUBLIC_ enum ndr_err_code ndr_push_nbt_cldap_netlogon(struct ndr_push *ndr, int ndr_flags, const union nbt_cldap_netlogon *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_nbt_cldap_netlogon(struct ndr_pull *ndr, int ndr_flags, union nbt_cldap_netlogon *r);
-_PUBLIC_ void ndr_print_nbt_cldap_netlogon(struct ndr_print *ndr, const char *name, const union nbt_cldap_netlogon *r);
-_PUBLIC_ void ndr_print_nbt_ntlogon_command(struct ndr_print *ndr, const char *name, enum nbt_ntlogon_command r);
-_PUBLIC_ void ndr_print_nbt_ntlogon_sam_logon(struct ndr_print *ndr, const char *name, const struct nbt_ntlogon_sam_logon *r);
-_PUBLIC_ void ndr_print_nbt_ntlogon_sam_logon_reply(struct ndr_print *ndr, const char *name, const struct nbt_ntlogon_sam_logon_reply *r);
-_PUBLIC_ void ndr_print_nbt_ntlogon_request(struct ndr_print *ndr, const char *name, const union nbt_ntlogon_request *r);
-_PUBLIC_ enum ndr_err_code ndr_push_nbt_ntlogon_packet(struct ndr_push *ndr, int ndr_flags, const struct nbt_ntlogon_packet *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_nbt_ntlogon_packet(struct ndr_pull *ndr, int ndr_flags, struct nbt_ntlogon_packet *r);
-_PUBLIC_ void ndr_print_nbt_ntlogon_packet(struct ndr_print *ndr, const char *name, const struct nbt_ntlogon_packet *r);
-_PUBLIC_ void ndr_print_nbt_browse_opcode(struct ndr_print *ndr, const char *name, enum nbt_browse_opcode r);
-_PUBLIC_ void ndr_print_nbt_browse_host_announcement(struct ndr_print *ndr, const char *name, const struct nbt_browse_host_announcement *r);
-_PUBLIC_ void ndr_print_nbt_browse_announcement_request(struct ndr_print *ndr, const char *name, const struct nbt_browse_announcement_request *r);
-_PUBLIC_ void ndr_print_nbt_browse_election_request(struct ndr_print *ndr, const char *name, const struct nbt_browse_election_request *r);
-_PUBLIC_ void ndr_print_nbt_browse_backup_list_request(struct ndr_print *ndr, const char *name, const struct nbt_browse_backup_list_request *r);
-_PUBLIC_ void ndr_print_nbt_browse_backup_list_response(struct ndr_print *ndr, const char *name, const struct nbt_browse_backup_list_response *r);
-_PUBLIC_ void ndr_print_nbt_browse_become_backup(struct ndr_print *ndr, const char *name, const struct nbt_browse_become_backup *r);
-_PUBLIC_ void ndr_print_nbt_browse_domain_announcement(struct ndr_print *ndr, const char *name, const struct nbt_browse_domain_announcement *r);
-_PUBLIC_ void ndr_print_nbt_browse_master_announcement(struct ndr_print *ndr, const char *name, const struct nbt_browse_master_announcement *r);
-_PUBLIC_ void ndr_print_nbt_browse_reset_state(struct ndr_print *ndr, const char *name, const struct nbt_browse_reset_state *r);
-_PUBLIC_ void ndr_print_nbt_browse_local_master_announcement(struct ndr_print *ndr, const char *name, const struct nbt_browse_local_master_announcement *r);
-_PUBLIC_ void ndr_print_nbt_browse_payload(struct ndr_print *ndr, const char *name, const union nbt_browse_payload *r);
-_PUBLIC_ enum ndr_err_code ndr_push_nbt_browse_packet(struct ndr_push *ndr, int ndr_flags, const struct nbt_browse_packet *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_nbt_browse_packet(struct ndr_pull *ndr, int ndr_flags, struct nbt_browse_packet *r);
-_PUBLIC_ void ndr_print_nbt_browse_packet(struct ndr_print *ndr, const char *name, const struct nbt_browse_packet *r);
 
 /* The following definitions come from librpc/gen_ndr/ndr_netlogon.c  */
 
@@ -3898,7 +3774,7 @@ NTSTATUS rpc_wkssvc_init(void);
 /* The following definitions come from librpc/ndr/ndr.c  */
 
 _PUBLIC_ size_t ndr_align_size(uint32_t offset, size_t n);
-_PUBLIC_ struct ndr_pull *ndr_pull_init_blob(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx);
+_PUBLIC_ struct ndr_pull *ndr_pull_init_blob(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *iconv_convenience);
 _PUBLIC_ enum ndr_err_code ndr_pull_advance(struct ndr_pull *ndr, uint32_t size);
 _PUBLIC_ void ndr_pull_save(struct ndr_pull *ndr, struct ndr_pull_save *save);
 _PUBLIC_ void ndr_pull_restore(struct ndr_pull *ndr, struct ndr_pull_save *save);
@@ -3960,16 +3836,15 @@ _PUBLIC_ enum ndr_err_code ndr_print_set_switch_value(struct ndr_print *ndr, con
 _PUBLIC_ uint32_t ndr_push_get_switch_value(struct ndr_push *ndr, const void *p);
 _PUBLIC_ uint32_t ndr_pull_get_switch_value(struct ndr_pull *ndr, const void *p);
 _PUBLIC_ uint32_t ndr_print_get_switch_value(struct ndr_print *ndr, const void *p);
-_PUBLIC_ enum ndr_err_code ndr_pull_struct_blob(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx, void *p,
-			      ndr_pull_flags_fn_t fn);
-_PUBLIC_ enum ndr_err_code ndr_pull_struct_blob_all(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx, void *p,
-				  ndr_pull_flags_fn_t fn);
+_PUBLIC_ enum ndr_err_code ndr_pull_struct_blob(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *iconv_convenience, void *p, ndr_pull_flags_fn_t fn);
+_PUBLIC_ enum ndr_err_code ndr_pull_struct_blob_all(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx,
+						    struct smb_iconv_convenience *iconv_convenience,
+						    void *p, ndr_pull_flags_fn_t fn);
 _PUBLIC_ enum ndr_err_code ndr_pull_union_blob(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx, void *p,
 			     uint32_t level, ndr_pull_flags_fn_t fn);
 _PUBLIC_ enum ndr_err_code ndr_pull_union_blob_all(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx, void *p,
 			     uint32_t level, ndr_pull_flags_fn_t fn);
-_PUBLIC_ enum ndr_err_code ndr_push_struct_blob(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, const void *p,
-			      ndr_push_flags_fn_t fn);
+_PUBLIC_ enum ndr_err_code ndr_push_struct_blob(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *iconv_convenience, const void *p, ndr_push_flags_fn_t fn);
 _PUBLIC_ enum ndr_err_code ndr_push_union_blob(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, void *p,
 			     uint32_t level, ndr_push_flags_fn_t fn);
 _PUBLIC_ size_t ndr_size_struct(const void *p, int flags, ndr_push_flags_fn_t push);
@@ -4313,7 +4188,7 @@ bool receive_getdc_response(TALLOC_CTX *mem_ctx,
 			    const char *domain_name,
 			    uint32_t *nt_version,
 			    const char **dc_name,
-			    union nbt_cldap_netlogon **reply);
+			    struct netlogon_samlogon_response **reply);
 
 /* The following definitions come from libsmb/clientgen.c  */
 
@@ -5954,6 +5829,7 @@ const char **lp_svcctl_list(void);
 char *lp_cups_options(int );
 char *lp_cups_server(void);
 char *lp_iprint_server(void);
+int lp_cups_connection_timeout(void);
 const char *lp_ctdbd_socket(void);
 const char **lp_cluster_addresses(void);
 bool lp_clustering(void);
@@ -6119,7 +5995,7 @@ bool dump_a_parameter(int snum, char *parm_name, FILE * f, bool isGlobal);
 struct parm_struct *lp_get_parameter(const char *param_name);
 struct parm_struct *lp_next_parameter(int snum, int *i, int allparameters);
 bool lp_snum_ok(int iService);
-void lp_add_one_printer(char *name, char *comment);
+void lp_add_one_printer(const char *name, const char *comment, void *pdata);
 bool lp_loaded(void);
 void lp_killunused(bool (*snumused) (int));
 void lp_kill_all_services(void);
@@ -6548,6 +6424,8 @@ bool secrets_restore_schannel_session_info(TALLOC_CTX *mem_ctx,
 				struct dcinfo **ppdc);
 bool secrets_store_generic(const char *owner, const char *key, const char *secret);
 char *secrets_fetch_generic(const char *owner, const char *key);
+bool secrets_store_local_schannel_key(uint8_t schannel_key[16]);
+bool secrets_fetch_local_schannel_key(uint8_t schannel_key[16]);
 
 /* The following definitions come from passdb/util_builtin.c  */
 
@@ -6690,11 +6568,15 @@ char* get_server_name( Printer_entry *printer );
 
 /* The following definitions come from printing/pcap.c  */
 
+bool pcap_cache_add_specific(struct pcap_cache **ppcache, const char *name, const char *comment);
+void pcap_cache_destroy_specific(struct pcap_cache **ppcache);
 bool pcap_cache_add(const char *name, const char *comment);
 bool pcap_cache_loaded(void);
+void pcap_cache_replace(const struct pcap_cache *cache);
 void pcap_cache_reload(void);
 bool pcap_printername_ok(const char *printername);
-void pcap_printer_fn(void (*fn)(char *, char *));
+void pcap_printer_fn_specific(const struct pcap_cache *, void (*fn)(const char *, const char *, void *), void *);
+void pcap_printer_fn(void (*fn)(const char *, const char *, void *), void *);
 
 /* The following definitions come from printing/print_aix.c  */
 
@@ -7049,6 +6931,12 @@ NTSTATUS rpccli_netlogon_sam_network_logon_ex(struct rpc_pipe_client *cli,
 					      DATA_BLOB lm_response,
 					      DATA_BLOB nt_response,
 					      struct netr_SamInfo3 **info3);
+NTSTATUS rpccli_netlogon_set_trust_password(struct rpc_pipe_client *cli,
+					    TALLOC_CTX *mem_ctx,
+					    const unsigned char orig_trust_passwd_hash[16],
+					    const char *new_trust_pwd_cleartext,
+					    const unsigned char new_trust_passwd_hash[16],
+					    uint32_t sec_channel_type);
 
 /* The following definitions come from rpc_client/cli_pipe.c  */
 
@@ -7427,6 +7315,9 @@ void init_netr_PasswordInfo(struct netr_PasswordInfo *r,
 			    const char *workstation,
 			    struct samr_Password lmpassword,
 			    struct samr_Password ntpassword);
+void init_netr_CryptPassword(const char *pwd,
+			     unsigned char session_key[16],
+			     struct netr_CryptPassword *pwd_buf);
 
 /* The following definitions come from rpc_client/init_samr.c  */
 
@@ -9670,7 +9561,6 @@ NTSTATUS open_fake_file(connection_struct *conn,
 				const char *fname,
 				uint32 access_mask,
 				files_struct **result);
-void destroy_fake_file_handle(struct fake_file_handle **fh);
 NTSTATUS close_fake_file(files_struct *fsp);
 
 /* The following definitions come from smbd/file_access.c  */
@@ -10036,14 +9926,17 @@ void reply_pipe_close(connection_struct *conn, struct smb_request *req);
 
 /* The following definitions come from smbd/posix_acls.c  */
 
-NTSTATUS unpack_nt_owners(int snum, uid_t *puser, gid_t *pgrp, uint32 security_info_sent, SEC_DESC *psd);
+NTSTATUS unpack_nt_owners(int snum, uid_t *puser, gid_t *pgrp, uint32 security_info_sent, const SEC_DESC *psd);
 SMB_ACL_T free_empty_sys_acl(connection_struct *conn, SMB_ACL_T the_acl);
 NTSTATUS posix_fget_nt_acl(struct files_struct *fsp, uint32_t security_info,
 			   SEC_DESC **ppdesc);
 NTSTATUS posix_get_nt_acl(struct connection_struct *conn, const char *name,
 			  uint32_t security_info, SEC_DESC **ppdesc);
 int try_chown(connection_struct *conn, const char *fname, uid_t uid, gid_t gid);
-NTSTATUS set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd);
+NTSTATUS append_parent_acl(files_struct *fsp,
+				const SEC_DESC *pcsd,
+				SEC_DESC **pp_new_sd);
+NTSTATUS set_nt_acl(files_struct *fsp, uint32 security_info_sent, const SEC_DESC *psd);
 int get_acl_group_bits( connection_struct *conn, const char *fname, mode_t *mode );
 int chmod_acl(connection_struct *conn, const char *name, mode_t mode);
 int inherit_access_posix_acl(connection_struct *conn, const char *inherit_from_dir,

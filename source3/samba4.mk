@@ -7,7 +7,7 @@ PARTLINK = $(PROG_LD) -r
 MDLD = $(SHLD)
 MDLD_FLAGS = $(LDSHFLAGS) 
 
-samba4srcdir = $(call abspath,$(srcdir)/../source4)
+samba4srcdir = $(srcdir)/../source4
 
 # Flags used for the samba 4 files
 # $(srcdir)/include is required for config.h
@@ -83,12 +83,11 @@ libcmdlinesrcdir := $(samba4srcdir)/lib/cmdline
 poptsrcdir := $(samba4srcdir)/../lib/popt
 socketwrappersrcdir := $(samba4srcdir)/../lib/socket_wrapper
 nsswrappersrcdir := $(samba4srcdir)/../lib/nss_wrapper
-appwebsrcdir := $(samba4srcdir)/lib/appweb
 libstreamsrcdir := $(samba4srcdir)/lib/stream
 libutilsrcdir := $(samba4srcdir)/lib/util
 libtdrsrcdir := $(samba4srcdir)/lib/tdr
 libdbwrapsrcdir := $(samba4srcdir)/lib/dbwrap
-libcryptosrcdir := $(samba4srcdir)/lib/crypto
+libcryptosrcdir := $(samba4srcdir)/../lib/crypto
 libtorturesrcdir := $(samba4srcdir)/lib/torture
 libcompressionsrcdir := $(samba4srcdir)/../lib/compression
 libgencachesrcdir := $(samba4srcdir)/lib
@@ -108,7 +107,7 @@ ntvfssrcdir := $(samba4srcdir)/ntvfs
 ntptrsrcdir := $(samba4srcdir)/ntptr
 clientsrcdir := $(samba4srcdir)/client
 libclisrcdir := $(samba4srcdir)/libcli
-ejsscriptsrcdir := $(samba4srcdir)/scripting/ejs
+libclinbtsrcdir := $(samba4srcdir)/../libcli/nbt
 pyscriptsrcdir := $(samba4srcdir)/scripting/python
 kdcsrcdir := $(samba4srcdir)/kdc
 smbreadlinesrcdir := $(samba4srcdir)/lib/smbreadline
@@ -116,6 +115,7 @@ ntp_signdsrcdir := $(samba4srcdir)/ntp_signd
 tdbsrcdir := $(samba4srcdir)/../lib/tdb
 ldbsrcdir := $(samba4srcdir)/lib/ldb
 tallocsrcdir := $(samba4srcdir)/../lib/talloc
+comsrcdir := $(samba4srcdir)/lib/com
 override ASN1C = bin/asn1_compile4
 override ET_COMPILER = bin/compile_et4
 include samba4-data.mk
@@ -158,7 +158,7 @@ clean::
 proto:: $(PROTO_HEADERS)
 modules:: $(PLUGINS)
 
-all:: basics bin/smbd4 bin/regpatch4 bin/regdiff4 bin/regshell4 bin/regtree4 bin/smbclient4
+all:: basics bin/samba4 bin/regpatch4 bin/regdiff4 bin/regshell4 bin/regtree4 bin/smbclient4
 torture:: basics bin/smbtorture4
 everything:: basics $(patsubst %,%4,$(BINARIES))
 

@@ -252,10 +252,10 @@ source4/param/proto.h
 source4/param/secrets_proto.h
 source4/param/share_proto.h
 source4/passdb/proto.h
-source4/pidl/blib
-source4/pidl/cover_db
-source4/pidl/Makefile
-source4/pidl/pm_to_blib
+pidl/blib
+pidl/cover_db
+pidl/Makefile
+pidl/pm_to_blib
 source4/rpc_server/common/proto.h
 source4/rpc_server/dcerpc_server_proto.h
 source4/rpc_server/lsa/proto.h

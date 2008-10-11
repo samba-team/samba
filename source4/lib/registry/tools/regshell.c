@@ -207,8 +207,8 @@ static WERROR cmd_ls(struct regshell_context *ctx, int argc, char **argv)
 {
 	int i;
 	WERROR error;
-	uint32_t data_type;
-	DATA_BLOB data;
+	uint32_t valuetype;
+	DATA_BLOB valuedata;
 	const char *name = NULL;
 
 	for (i = 0; W_ERROR_IS_OK(error = reg_key_get_subkey_by_index(ctx,
@@ -221,19 +221,15 @@ static WERROR cmd_ls(struct regshell_context *ctx, int argc, char **argv)
 	}
 
 	if (!W_ERROR_EQUAL(error, WERR_NO_MORE_ITEMS)) {
-		DEBUG(0, ("Error occured while browsing thru keys: %s\n",
-			win_errstr(error)));
+		fprintf(stderr, "Error occured while browsing thru keys: %s\n",
+			win_errstr(error));
+		return error;
 	}
 
 	for (i = 0; W_ERROR_IS_OK(error = reg_key_get_value_by_index(ctx,
-								     ctx->current,
-								     i,
-								     &name,
-								     &data_type,
-								     &data)); i++) {
-		printf("V \"%s\" %s %s\n", name, str_regtype(data_type),
-			   reg_val_data_string(ctx, lp_iconv_convenience(cmdline_lp_ctx), data_type, data));
-	}
+		ctx->current, i, &name, &valuetype, &valuedata)); i++)
+		printf("V \"%s\" %s %s\n", name, str_regtype(valuetype),
+			   reg_val_data_string(ctx, lp_iconv_convenience(cmdline_lp_ctx), valuetype, valuedata));
 
 	return WERR_OK;
 }
@@ -250,7 +246,8 @@ static WERROR cmd_mkkey(struct regshell_context *ctx, int argc, char **argv)
 	error = reg_key_add_name(ctx, ctx->current, argv[1], 0, NULL, &tmp);
 
 	if (!W_ERROR_IS_OK(error)) {
-		fprintf(stderr, "Error adding new subkey '%s'\n", argv[1]);
+		fprintf(stderr, "Error adding new subkey '%s': %s\n", argv[1],
+			win_errstr(error));
 		return error;
 	}
 
@@ -438,7 +435,7 @@ static char **reg_complete_key(const char *text, int start, int end)
 	len = strlen(text);
 	for(i = 0; j < MAX_COMPLETIONS-1; i++) {
 		status = reg_key_get_subkey_by_index(mem_ctx, base, i,
-						     &subkeyname, NULL, NULL);
+					     &subkeyname, NULL, NULL);
 		if(W_ERROR_IS_OK(status)) {
 			if(!strncmp(text, subkeyname, len)) {
 				matches[j] = strdup(subkeyname);
@@ -536,7 +533,8 @@ int main(int argc, char **argv)
 	if (ctx->current == NULL) {
 		int i;
 
-		for (i = 0; reg_predefined_keys[i].handle; i++) {
+		for (i = 0; (reg_predefined_keys[i].handle != 0) &&
+			(ctx->current == NULL); i++) {
 			WERROR err;
 			err = reg_get_predefined_key(ctx->registry,
 						     reg_predefined_keys[i].handle,

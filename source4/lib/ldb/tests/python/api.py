@@ -2,7 +2,7 @@
 # Simple tests for the ldb python bindings.
 # Copyright (C) 2007 Jelmer Vernooij <jelmer@samba.org>
 
-import sys
+import os, sys
 import unittest
 
 # Required for the standalone LDB build
@@ -47,6 +47,14 @@ class SimpleLdb(unittest.TestCase):
     def test_set_modules_dir(self):
         x = ldb.Ldb()
         x.set_modules_dir("/tmp")
+
+    def test_modules_none(self):
+        x = ldb.Ldb()
+        self.assertEquals([], x.modules())
+
+    def test_modules_tdb(self):
+        x = ldb.Ldb("bar.ldb")
+        self.assertEquals("[<ldb module 'tdb'>]", repr(x.modules()))
 
     def test_search(self):
         l = ldb.Ldb("foo.ldb")
@@ -451,12 +459,32 @@ class MessageElementTests(unittest.TestCase):
         x = ldb.MessageElement(["foo"])
         self.assertEquals("foo", x)
 
-class ExampleModule:
-    name = "example"
-
 class ModuleTests(unittest.TestCase):
     def test_register_module(self):
-        ldb.register_module(ExampleModule())
+        class ExampleModule:
+            name = "example"
+        ldb.register_module(ExampleModule)
+
+    def test_use_module(self):
+        ops = []
+        class ExampleModule:
+            name = "bla"
+
+            def __init__(self, ldb, next):
+                ops.append("init")
+                self.next = next
+
+            def search(self, *args, **kwargs):
+                return self.next.search(*args, **kwargs)
+
+        ldb.register_module(ExampleModule)
+        if os.path.exists("usemodule.ldb"):
+            os.unlink("usemodule.ldb")
+        l = ldb.Ldb("usemodule.ldb")
+        l.add({"dn": "@MODULES", "@LIST": "bla"})
+        self.assertEquals([], ops)
+        l = ldb.Ldb("usemodule.ldb")
+        self.assertEquals(["init"], ops)
 
 if __name__ == '__main__':
     import unittest

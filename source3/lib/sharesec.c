@@ -124,7 +124,7 @@ static bool share_info_db_init(void)
 
 SEC_DESC *get_share_security_default( TALLOC_CTX *ctx, size_t *psize, uint32 def_access)
 {
-	SEC_ACCESS sa;
+	uint32_t sa;
 	SEC_ACE ace;
 	SEC_ACL *psa = NULL;
 	SEC_DESC *psd = NULL;
@@ -132,7 +132,7 @@ SEC_DESC *get_share_security_default( TALLOC_CTX *ctx, size_t *psize, uint32 def
 
 	se_map_generic(&spec_access, &file_generic_mapping);
 
-	init_sec_access(&sa, def_access | spec_access );
+	sa = (def_access | spec_access );
 	init_sec_ace(&ace, &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED, sa, 0);
 
 	if ((psa = make_sec_acl(ctx, NT4_ACL_REVISION, 1, &ace)) != NULL) {
@@ -332,7 +332,7 @@ bool parse_usershare_acl(TALLOC_CTX *ctx, const char *acl_str, SEC_DESC **ppsd)
 	}
 
 	for (i = 0; i < num_aces; i++) {
-		SEC_ACCESS sa;
+		uint32_t sa;
 		uint32 g_access;
 		uint32 s_access;
 		DOM_SID sid;
@@ -380,7 +380,7 @@ bool parse_usershare_acl(TALLOC_CTX *ctx, const char *acl_str, SEC_DESC **ppsd)
 		pacl++; /* Go past any ',' */
 
 		se_map_generic(&s_access, &file_generic_mapping);
-		init_sec_access(&sa, g_access | s_access );
+		sa = (g_access | s_access);
 		init_sec_ace(&ace_list[i], &sid, type, sa, 0);
 	}
 

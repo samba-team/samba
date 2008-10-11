@@ -386,6 +386,8 @@ struct smbsrv_connection {
 	struct loadparm_context *lp_ctx;
 
 	bool smb2_signing_required;
+
+	uint64_t highest_smb2_seqnum;
 };
 
 struct model_ops;

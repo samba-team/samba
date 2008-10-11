@@ -5,8 +5,8 @@ TALLOC_SONAME = libtalloc.$(SHLIBEXT).1
 
 all:: libtalloc.a $(TALLOC_SOLIB) testsuite
 
-testsuite:: $(LIBOBJ) testsuite.o
-	$(CC) $(CFLAGS) -o testsuite testsuite.o $(LIBOBJ) $(LIBS)
+testsuite:: $(LIBOBJ) testsuite.o testsuite_main.o
+	$(CC) $(CFLAGS) -o testsuite testsuite.o testsuite_main.o $(LIBOBJ) $(LIBS)
 
 libtalloc.a: $(LIBOBJ)
 	ar -rv $@ $(LIBOBJ)
@@ -22,13 +22,13 @@ install:: all
 	${INSTALLCMD} -m 644 talloc.pc $(DESTDIR)$(libdir)/pkgconfig
 	if [ -f talloc.3 ];then ${INSTALLCMD} -d $(DESTDIR)$(mandir)/man3; fi
 	if [ -f talloc.3 ];then ${INSTALLCMD} -m 644 talloc.3 $(DESTDIR)$(mandir)/man3; fi
-	which swig >/dev/null 2>&1 && ${INSTALLCMD} -d $(DESTDIR)`swig -swiglib` || true
-	which swig >/dev/null 2>&1 && ${INSTALLCMD} -m 644 talloc.i $(DESTDIR)`swig -swiglib` || true
+	which swig >/dev/null 2>&1 && ${INSTALLCMD} -d $(DESTDIR)$(prefix)`swig -swiglib` || true
+	which swig >/dev/null 2>&1 && ${INSTALLCMD} -m 644 talloc.i $(DESTDIR)$(prefix)`swig -swiglib` || true
 
 doc:: talloc.3 talloc.3.html
 
 clean::
-	rm -f *~ $(LIBOBJ) $(TALLOC_SOLIB) libtalloc.a testsuite testsuite.o *.gc?? talloc.3 talloc.3.html
+	rm -f *~ $(LIBOBJ) $(TALLOC_SOLIB) libtalloc.a testsuite testsuite.o testsuite_main.o *.gc?? talloc.3 talloc.3.html
 
 test:: testsuite
 	./testsuite

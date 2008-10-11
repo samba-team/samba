@@ -341,7 +341,7 @@ static NTSTATUS dcesrv_samr_EnumDomains(struct dcesrv_call_state *dce_call, TALL
 
 	partitions_basedn = samdb_partitions_dn(c_state->sam_ctx, mem_ctx);
 
-	ret = ldb_search_exp_fmt(c_state->sam_ctx, mem_ctx, &dom_res, ldb_get_default_basedn(c_state->sam_ctx),
+	ret = ldb_search(c_state->sam_ctx, mem_ctx, &dom_res, ldb_get_default_basedn(c_state->sam_ctx),
 				 LDB_SCOPE_SUBTREE, dom_attrs, "(|(|(objectClass=domain)(objectClass=builtinDomain))(objectClass=samba4LocalDomain))");
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0,("samdb: unable to find domains: %s\n", ldb_errstring(c_state->sam_ctx)));
@@ -373,7 +373,7 @@ static NTSTATUS dcesrv_samr_EnumDomains(struct dcesrv_call_state *dce_call, TALL
 	for (i=0;i<dom_res->count-start_i;i++) {
 		array->entries[i].idx = start_i + i;
 		/* try and find the domain */
-		ret = ldb_search_exp_fmt(c_state->sam_ctx, mem_ctx, &ref_res, partitions_basedn,
+		ret = ldb_search(c_state->sam_ctx, mem_ctx, &ref_res, partitions_basedn,
 					 LDB_SCOPE_SUBTREE, ref_attrs, "(&(objectClass=crossRef)(ncName=%s))", 
 					 ldb_dn_get_linearized(dom_res->msgs[i]->dn));
 
@@ -1502,7 +1502,7 @@ static NTSTATUS dcesrv_samr_EnumDomainUsers(struct dcesrv_call_state *dce_call, 
 	d_state = h->data;
 	
 	/* don't have to worry about users in the builtin domain, as there are none */
-	ret = ldb_search_exp_fmt(d_state->sam_ctx, mem_ctx, &res, d_state->domain_dn, LDB_SCOPE_SUBTREE, attrs, "objectClass=user");
+	ret = ldb_search(d_state->sam_ctx, mem_ctx, &res, d_state->domain_dn, LDB_SCOPE_SUBTREE, attrs, "objectClass=user");
 
 	if (ret != LDB_SUCCESS) {
 		DEBUG(3, ("Failed to search for Domain Users in %s: %s\n", 
@@ -2110,7 +2110,7 @@ static NTSTATUS dcesrv_samr_QueryGroupInfo(struct dcesrv_call_state *dce_call, T
 
 	a_state = h->data;
 	
-	ret = ldb_search_exp_fmt(a_state->sam_ctx, mem_ctx, &res, a_state->account_dn, LDB_SCOPE_SUBTREE, attrs, "objectClass=*");
+	ret = ldb_search(a_state->sam_ctx, mem_ctx, &res, a_state->account_dn, LDB_SCOPE_SUBTREE, attrs, "objectClass=*");
 	
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 		return NT_STATUS_NO_SUCH_GROUP;
@@ -2246,7 +2246,7 @@ static NTSTATUS dcesrv_samr_AddGroupMember(struct dcesrv_call_state *dce_call, T
 
 	/* In native mode, AD can also nest domain groups. Not sure yet
 	 * whether this is also available via RPC. */
-	ret = ldb_search_exp_fmt(d_state->sam_ctx, mem_ctx, &res,
+	ret = ldb_search(d_state->sam_ctx, mem_ctx, &res,
 				 d_state->domain_dn, LDB_SCOPE_SUBTREE, attrs,
 				 "(&(objectSid=%s)(objectclass=user))",
 				 ldap_encode_ndr_dom_sid(mem_ctx, membersid));
@@ -2348,7 +2348,7 @@ static NTSTATUS dcesrv_samr_DeleteGroupMember(struct dcesrv_call_state *dce_call
 
 	/* In native mode, AD can also nest domain groups. Not sure yet
 	 * whether this is also available via RPC. */
-	ret = ldb_search_exp_fmt(d_state->sam_ctx, mem_ctx, &res,
+	ret = ldb_search(d_state->sam_ctx, mem_ctx, &res,
 				 d_state->domain_dn, LDB_SCOPE_SUBTREE, attrs,
 				 "(&(objectSid=%s)(objectclass=user))",
 				 ldap_encode_ndr_dom_sid(mem_ctx, membersid));

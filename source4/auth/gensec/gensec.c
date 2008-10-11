@@ -490,6 +490,7 @@ static NTSTATUS gensec_start(TALLOC_CTX *mem_ctx,
 	NT_STATUS_HAVE_NO_MEMORY(*gensec_security);
 
 	(*gensec_security)->ops = NULL;
+	(*gensec_security)->private_data = NULL;
 
 	ZERO_STRUCT((*gensec_security)->target);
 	ZERO_STRUCT((*gensec_security)->peer_addr);
@@ -525,6 +526,7 @@ _PUBLIC_ NTSTATUS gensec_subcontext_start(TALLOC_CTX *mem_ctx,
 	(*gensec_security)->private_data = NULL;
 
 	(*gensec_security)->subcontext = true;
+	(*gensec_security)->want_features = parent->want_features;
 	(*gensec_security)->event_ctx = parent->event_ctx;
 	(*gensec_security)->msg_ctx = parent->msg_ctx;
 	(*gensec_security)->lp_ctx = parent->lp_ctx;
@@ -1015,7 +1017,11 @@ _PUBLIC_ NTSTATUS gensec_update_recv(struct gensec_update_request *req, TALLOC_C
 _PUBLIC_ void gensec_want_feature(struct gensec_security *gensec_security,
 			 uint32_t feature) 
 {
-	gensec_security->want_features |= feature;
+	if (!gensec_security->ops || !gensec_security->ops->want_feature) {
+		gensec_security->want_features |= feature;
+		return;
+	}
+	gensec_security->ops->want_feature(gensec_security, feature);
 }
 
 /** 

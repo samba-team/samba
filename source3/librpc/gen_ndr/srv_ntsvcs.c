@@ -27,7 +27,7 @@ static bool api_PNP_Disconnect(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -100,7 +100,7 @@ static bool api_PNP_Connect(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -173,7 +173,7 @@ static bool api_PNP_GetVersion(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -253,7 +253,7 @@ static bool api_PNP_GetGlobalState(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -326,7 +326,7 @@ static bool api_PNP_InitDetection(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -399,7 +399,7 @@ static bool api_PNP_ReportLogOn(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -472,7 +472,7 @@ static bool api_PNP_ValidateDeviceInstance(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -545,7 +545,7 @@ static bool api_PNP_GetRootDeviceInstance(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -618,7 +618,7 @@ static bool api_PNP_GetRelatedDeviceInstance(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -691,7 +691,7 @@ static bool api_PNP_EnumerateSubKeys(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -764,7 +764,7 @@ static bool api_PNP_GetDeviceList(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -837,7 +837,7 @@ static bool api_PNP_GetDeviceListSize(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -917,7 +917,7 @@ static bool api_PNP_GetDepth(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -990,7 +990,7 @@ static bool api_PNP_GetDeviceRegProp(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -1073,7 +1073,7 @@ static bool api_PNP_SetDeviceRegProp(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -1146,7 +1146,7 @@ static bool api_PNP_GetClassInstance(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -1219,7 +1219,7 @@ static bool api_PNP_CreateKey(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -1292,7 +1292,7 @@ static bool api_PNP_DeleteRegistryKey(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -1365,7 +1365,7 @@ static bool api_PNP_GetClassCount(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -1438,7 +1438,7 @@ static bool api_PNP_GetClassName(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -1511,7 +1511,7 @@ static bool api_PNP_DeleteClassKey(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -1584,7 +1584,7 @@ static bool api_PNP_GetInterfaceDeviceAlias(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -1657,7 +1657,7 @@ static bool api_PNP_GetInterfaceDeviceList(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -1730,7 +1730,7 @@ static bool api_PNP_GetInterfaceDeviceListSize(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -1803,7 +1803,7 @@ static bool api_PNP_RegisterDeviceClassAssociation(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -1876,7 +1876,7 @@ static bool api_PNP_UnregisterDeviceClassAssociation(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -1949,7 +1949,7 @@ static bool api_PNP_GetClassRegProp(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -2022,7 +2022,7 @@ static bool api_PNP_SetClassRegProp(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -2095,7 +2095,7 @@ static bool api_PNP_CreateDevInst(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -2168,7 +2168,7 @@ static bool api_PNP_DeviceInstanceAction(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -2241,7 +2241,7 @@ static bool api_PNP_GetDeviceStatus(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -2314,7 +2314,7 @@ static bool api_PNP_SetDeviceProblem(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -2387,7 +2387,7 @@ static bool api_PNP_DisableDevInst(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -2460,7 +2460,7 @@ static bool api_PNP_UninstallDevInst(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -2533,7 +2533,7 @@ static bool api_PNP_AddID(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -2606,7 +2606,7 @@ static bool api_PNP_RegisterDriver(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -2679,7 +2679,7 @@ static bool api_PNP_QueryRemove(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -2752,7 +2752,7 @@ static bool api_PNP_RequestDeviceEject(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -2825,7 +2825,7 @@ static bool api_PNP_IsDockStationPresent(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -2898,7 +2898,7 @@ static bool api_PNP_RequestEjectPC(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -2971,7 +2971,7 @@ static bool api_PNP_HwProfFlags(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -3053,7 +3053,7 @@ static bool api_PNP_GetHwProfInfo(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -3128,7 +3128,7 @@ static bool api_PNP_AddEmptyLogConf(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -3201,7 +3201,7 @@ static bool api_PNP_FreeLogConf(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -3274,7 +3274,7 @@ static bool api_PNP_GetFirstLogConf(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -3347,7 +3347,7 @@ static bool api_PNP_GetNextLogConf(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -3420,7 +3420,7 @@ static bool api_PNP_GetLogConfPriority(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -3493,7 +3493,7 @@ static bool api_PNP_AddResDes(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -3566,7 +3566,7 @@ static bool api_PNP_FreeResDes(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -3639,7 +3639,7 @@ static bool api_PNP_GetNextResDes(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -3712,7 +3712,7 @@ static bool api_PNP_GetResDesData(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -3785,7 +3785,7 @@ static bool api_PNP_GetResDesDataSize(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -3858,7 +3858,7 @@ static bool api_PNP_ModifyResDes(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -3931,7 +3931,7 @@ static bool api_PNP_DetectResourceLimit(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -4004,7 +4004,7 @@ static bool api_PNP_QueryResConfList(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -4077,7 +4077,7 @@ static bool api_PNP_SetHwProf(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -4150,7 +4150,7 @@ static bool api_PNP_QueryArbitratorFreeData(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -4223,7 +4223,7 @@ static bool api_PNP_QueryArbitratorFreeSize(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -4296,7 +4296,7 @@ static bool api_PNP_RunDetection(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -4369,7 +4369,7 @@ static bool api_PNP_RegisterNotification(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -4442,7 +4442,7 @@ static bool api_PNP_UnregisterNotification(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -4515,7 +4515,7 @@ static bool api_PNP_GetCustomDevProp(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -4588,7 +4588,7 @@ static bool api_PNP_GetVersionInternal(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -4661,7 +4661,7 @@ static bool api_PNP_GetBlockedDriverInfo(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -4734,7 +4734,7 @@ static bool api_PNP_GetServerSideDeviceInstallFlags(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;

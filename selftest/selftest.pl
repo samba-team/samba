@@ -303,7 +303,7 @@ Target Specific:
  --expected-failures=FILE   specify list of tests that is guaranteed to fail
 
 Samba4 Specific:
- --ldap=openldap|fedora-ds     back smbd onto specified ldap server
+ --ldap=openldap|fedora-ds     back samba onto specified ldap server
 
 Samba3 Specific:
  --bindir=PATH              path to binaries
@@ -417,8 +417,6 @@ sub prefix_pathvar($$)
 	}
 }
 prefix_pathvar("PKG_CONFIG_PATH", "$old_pwd/source4/bin/pkgconfig");
-# Required for smbscript:
-prefix_pathvar("PATH", "$old_pwd/source4/bin");
 prefix_pathvar("PYTHONPATH", "$old_pwd/source4/bin/python");
 
 if ($opt_socket_wrapper_keep_pcap) {
@@ -576,7 +574,6 @@ sub write_clientconf($$)
 	}
 	print CF "
 	private dir = $prefix_abs/client/private
-	js include = $srcdir_abs/scripting/libjs
 	name resolve order = bcast
 	panic action = $srcdir_abs/script/gdb_backtrace \%PID\% \%PROG\%
 	max xmit = 32K
@@ -812,7 +809,7 @@ if ($opt_testenv) {
 Welcome to the Samba4 Test environment '$testenv_name'
 
 This matches the client environment used in make test
-smbd is pid `cat \$PIDDIR/smbd.pid`
+server is pid `cat \$PIDDIR/samba.pid`
 
 Some useful environment variables:
 TORTURE_OPTIONS=\$TORTURE_OPTIONS

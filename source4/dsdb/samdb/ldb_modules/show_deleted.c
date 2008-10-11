@@ -27,7 +27,7 @@
  *
  *  Component: ldb deleted objects control module
  *
- *  Description: this module hides deleted objects, and returns them if the control is there
+ *  Description: this module hides deleted objects, and returns them if the right control is there
  *
  *  Author: Stefan Metzmacher
  */
@@ -42,36 +42,38 @@
 struct show_deleted_search_request {
 
 	struct ldb_module *module;
-	void *up_context;
-	int (*up_callback)(struct ldb_context *, void *, struct ldb_reply *);
-
-	bool remove_from_msg;
+	struct ldb_request *req;
 };
 
-static int show_deleted_search_callback(struct ldb_context *ldb, void *context, struct ldb_reply *ares)
+static int show_deleted_search_callback(struct ldb_request *req,
+					struct ldb_reply *ares)
 {
 	struct show_deleted_search_request *ar;
 
-	ar = talloc_get_type(context, struct show_deleted_search_request);
+	ar = talloc_get_type(req->context, struct show_deleted_search_request);
 
-	if (ares->type == LDB_REPLY_ENTRY) {
-		bool isDeleted;
-
-		isDeleted = ldb_msg_find_attr_as_bool(ares->message, "isDeleted", false);
-
-		if (isDeleted) {
-			goto skip_deleted;
-		}
-
-		if (ar->remove_from_msg) {
-			ldb_msg_remove_attr(ares->message, "isDeleted");
-		}
+	if (!ares) {
+		return ldb_module_done(ar->req, NULL, NULL,
+					LDB_ERR_OPERATIONS_ERROR);
+	}
+	if (ares->error != LDB_SUCCESS) {
+		return ldb_module_done(ar->req, ares->controls,
+					ares->response, ares->error);
 	}
 
-	return ar->up_callback(ldb, ar->up_context, ares);
+	switch (ares->type) {
+	case LDB_REPLY_ENTRY:
 
-skip_deleted:
-	talloc_free(ares);
+		return ldb_module_send_entry(ar->req, ares->message);
+
+	case LDB_REPLY_REFERRAL:
+		return ldb_module_send_referral(ar->req, ares->referral);
+
+	case LDB_REPLY_DONE:
+		return ldb_module_done(ar->req, ares->controls,
+					ares->response, LDB_SUCCESS);
+
+	}
 	return LDB_SUCCESS;
 }
 
@@ -81,116 +83,68 @@ static int show_deleted_search(struct ldb_module *module, struct ldb_request *re
 	struct ldb_control **saved_controls;
 	struct show_deleted_search_request *ar;
 	struct ldb_request *down_req;
-	char **new_attrs;
-	uint32_t num_attrs = 0;
-	uint32_t i;
+	char *old_filter;
+	char *new_filter;
 	int ret;
+
+	ar = talloc_zero(req, struct show_deleted_search_request);
+	if (ar == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	ar->module = module;
+	ar->req = req;
 
 	/* check if there's a show deleted control */
 	control = ldb_request_get_control(req, LDB_CONTROL_SHOW_DELETED_OID);
 
-	/* copy the request for modification */
-	down_req = talloc(req, struct ldb_request);
-	if (down_req == NULL) {
-		ldb_oom(module->ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
+	if ( ! control) {
+		old_filter = ldb_filter_from_tree(ar, req->op.search.tree);
+		new_filter = talloc_asprintf(ar, "(&(!(isDeleted=TRUE))%s)",
+						 old_filter);
 
-	/* copy the request */
-	*down_req = *req;
+		ret = ldb_build_search_req(&down_req, module->ldb, ar,
+					   req->op.search.base,
+					   req->op.search.scope,
+					   new_filter,
+					   req->op.search.attrs,
+					   req->controls,
+					   ar, show_deleted_search_callback,
+					   req);
+
+	} else {
+		ret = ldb_build_search_req_ex(&down_req, module->ldb, ar,
+					      req->op.search.base,
+					      req->op.search.scope,
+					      req->op.search.tree,
+					      req->op.search.attrs,
+					      req->controls,
+					      ar, show_deleted_search_callback,
+					      req);
+	}
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
 
 	/* if a control is there remove if from the modified request */
 	if (control && !save_controls(control, down_req, &saved_controls)) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	/* if we had a control, then just go on to the next request as we have nothing to hide */
-	if (control) {
-		goto next_request;
-	}
-
-	ar = talloc(down_req, struct show_deleted_search_request);
-	if (ar == NULL) {
-		ldb_oom(module->ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	ar->module		= module;
-	ar->up_context		= req->context;
-	ar->up_callback		= req->callback;
-	ar->remove_from_msg	= true;
-
-	/* check if attrs only is specified, in that case check wether we need to modify them */
-	if (down_req->op.search.attrs) {
-		for (i=0; (down_req->op.search.attrs && down_req->op.search.attrs[i]); i++) {
-			num_attrs++;
-			if (strcasecmp(down_req->op.search.attrs[i], "*") == 0) {
-				ar->remove_from_msg = false;
-			} else if (strcasecmp(down_req->op.search.attrs[i], "isDeleted") == 0) {
-				ar->remove_from_msg = false;
-			}
-		}
-	} else {
-		ar->remove_from_msg = false;
-	}
-
-	if (ar->remove_from_msg) {
-		new_attrs = talloc_array(down_req, char *, num_attrs + 2);
-		if (!new_attrs) {
-			ldb_oom(module->ldb);
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-		for (i=0; i < num_attrs; i++) {
-			new_attrs[i] = discard_const_p(char, down_req->op.search.attrs[i]);		
-		}
-		new_attrs[i] = talloc_strdup(new_attrs, "isDeleted");
-		if (!new_attrs[i]) {
-			ldb_oom(module->ldb);
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-		new_attrs[i+1] = NULL;
-		down_req->op.search.attrs = (const char * const *)new_attrs;
-	}
-
-	down_req->context = ar;
-	down_req->callback = show_deleted_search_callback;
-	ldb_set_timeout_from_prev_req(module->ldb, req, down_req);
-
-next_request:
 	/* perform the search */
-	ret = ldb_next_request(module, down_req);
-
-	/* do not free down_req as the call results may be linked to it,
-	 * it will be freed when the upper level request get freed */
-	if (ret == LDB_SUCCESS) {
-		req->handle = down_req->handle;
-	}
-
-	return ret;
+	return ldb_next_request(module, down_req);
 }
 
 static int show_deleted_init(struct ldb_module *module)
 {
-	struct ldb_request *req;
 	int ret;
 
-	req = talloc(module, struct ldb_request);
-	if (req == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	req->operation = LDB_REQ_REGISTER_CONTROL;
-	req->op.reg_control.oid = LDB_CONTROL_SHOW_DELETED_OID;
-	req->controls = NULL;
-
-	ret = ldb_request(module->ldb, req);
+	ret = ldb_mod_register_control(module, LDB_CONTROL_SHOW_DELETED_OID);
 	if (ret != LDB_SUCCESS) {
-		ldb_debug(module->ldb, LDB_DEBUG_ERROR, "show_deleted: Unable to register control with rootdse!\n");
-		talloc_free(req);
+		ldb_debug(module->ldb, LDB_DEBUG_ERROR,
+			"extended_dn: Unable to register control with rootdse!\n");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	talloc_free(req);
 	return ldb_next_init(module);
 }
 

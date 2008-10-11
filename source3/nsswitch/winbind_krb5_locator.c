@@ -1,7 +1,7 @@
 /*
    Unix SMB/CIFS implementation.
    kerberos locator plugin
-   Copyright (C) Guenther Deschner 2007
+   Copyright (C) Guenther Deschner 2007-2008
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -18,6 +18,7 @@
 */
 
 #include "nsswitch/winbind_client.h"
+#include "libwbclient/wbclient.h"
 
 #ifndef DEBUG_KRB5
 #undef DEBUG_KRB5
@@ -244,37 +245,50 @@ static void smb_krb5_locator_close(void *private_data)
 
 static bool ask_winbind(const char *realm, char **dcname)
 {
-	NSS_STATUS status;
-	struct winbindd_request request;
-	struct winbindd_response response;
+	wbcErr wbc_status;
+	const char *dc = NULL;
+	struct wbcDomainControllerInfoEx *dc_info = NULL;
+	uint32_t flags;
 
-	ZERO_STRUCT(request);
-	ZERO_STRUCT(response);
+	flags = WBC_LOOKUP_DC_KDC_REQUIRED |
+		WBC_LOOKUP_DC_IS_DNS_NAME |
+		WBC_LOOKUP_DC_RETURN_DNS_NAME |
+		WBC_LOOKUP_DC_IP_REQUIRED;
 
-	request.flags = 0x40020600;
-			/* DS_KDC_REQUIRED |
-			DS_IS_DNS_NAME |
-			DS_RETURN_DNS_NAME |
-			DS_IP_REQUIRED */
+	wbc_status = wbcLookupDomainControllerEx(realm, NULL, NULL, flags, &dc_info);
 
-	strncpy(request.domain_name, realm,
-		sizeof(request.domain_name)-1);
-
-	status = winbindd_request_response(WINBINDD_DSGETDCNAME,
-					   &request, &response);
-	if (status != NSS_STATUS_SUCCESS) {
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
 #ifdef DEBUG_KRB5
 		fprintf(stderr,"[%5u]: smb_krb5_locator_lookup: failed with: %s\n",
-			(unsigned int)getpid(), nss_err_str(status));
+			(unsigned int)getpid(), wbcErrorString(wbc_status));
 #endif
 		return false;
 	}
 
-	*dcname = strdup(response.data.dc_name);
-	if (!*dcname) {
+	if (dc_info->dc_address) {
+		dc = dc_info->dc_address;
+		if (dc[0] == '\\') dc++;
+		if (dc[0] == '\\') dc++;
+	}
+
+	if (!dc && dc_info->dc_unc) {
+		dc = dc_info->dc_unc;
+		if (dc[0] == '\\') dc++;
+		if (dc[0] == '\\') dc++;
+	}
+
+	if (!dc) {
+		wbcFreeMemory(dc_info);
 		return false;
 	}
 
+	*dcname = strdup(dc);
+	if (!*dcname) {
+		wbcFreeMemory(dc_info);
+		return false;
+	}
+
+	wbcFreeMemory(dc_info);
 	return true;
 }
 

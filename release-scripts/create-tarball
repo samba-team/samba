@@ -7,7 +7,7 @@ OPT_TAG=""
 OPT_KEYID=""
 
 TOPDIR="`dirname $0`/.."
-VER_H="${TOPDIR}/source/include/version.h"
+VER_H="${TOPDIR}/source3/include/version.h"
 
 function exitOnError
 {
@@ -38,7 +38,7 @@ function printUsage
 }
 
 ##
-## Parse the command line options 
+## Parse the command line options
 ##
 
 function parseOptions
@@ -115,7 +115,7 @@ function buildDocs
 
 	rsync -av "${OPT_DOCSDIR}"/ docs/
 	exitOnError $? "Failed top copy docs from ${OPT_DOCSDIR}"
-	
+
 	return 0
     fi
 
@@ -163,23 +163,23 @@ function createReleaseTag
 ##
 ## Main driver
 ##
-function main 
+function main
 {
     parseOptions "$@"
     exitOnError $? "Failed to parse options"
-    
+
     cd $TOPDIR
 
     git-checkout ${OPT_BRANCH}
     exitOnError $? "Invalid branch name \"${OPT_BRANCH}\""
 
-    (cd source && ./script/mkversion.sh)
+    (cd source3 && ./script/mkversion.sh)
     if [ ! -f $VER_H ]; then
 	exitOnError 1 "Failed to find ${VER_H}!"
     fi
 
-    version=`grep SAMBA_VERSION_OFFICIAL_STRING $VER_H | awk '{print $3}'`
-    vendor_version=`grep SAMBA_VERSION_VENDOR_SUFFIX $VER_H | awk '{print $3}'`
+    version=`grep "define SAMBA_VERSION_OFFICIAL_STRING" $VER_H | awk '{print $3}'`
+    vendor_version=`grep "define SAMBA_VERSION_VENDOR_SUFFIX" $VER_H | awk '{print $3}'`
     if [ -n "$vendor_version" ]; then
 	version="$version-$vendor_version"
     fi
@@ -198,7 +198,7 @@ function main
     buildDocs
     exitOnError $? "Failed to build documentation"
 
-    ( cd source && ./autogen.sh )
+    ( cd source3 && ./autogen.sh )
 
     cd ..
     tar cf samba-${version}.tar --exclude=.git* --exclude=CVS --exclude=.svn samba-${version}

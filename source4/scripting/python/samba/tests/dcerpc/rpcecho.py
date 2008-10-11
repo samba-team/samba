@@ -25,7 +25,8 @@ from samba.tests import RpcInterfaceTestCase
 
 class RpcEchoTests(RpcInterfaceTestCase):
     def setUp(self):
-        self.conn = echo.rpcecho("ncalrpc:", self.get_loadparm())
+        self.conn = echo.rpcecho("ncalrpc:", self.get_loadparm(),
+                                 self.get_credentials())
 
     def test_two_contexts(self):
         self.conn2 = echo.rpcecho("ncalrpc:", self.get_loadparm(), basis_connection=self.conn)

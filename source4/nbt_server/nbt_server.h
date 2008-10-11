@@ -19,7 +19,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "libcli/nbt/libnbt.h"
+#include "../libcli/nbt/libnbt.h"
 #include "libcli/wrepl/winsrepl.h"
 #include "libcli/dgram/libdgram.h"
 #include "librpc/gen_ndr/irpc.h"

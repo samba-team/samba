@@ -10,7 +10,7 @@
 
 import "misc.idl", "security.idl", "svcctl.idl", "samr.idl";
 [
-	helper("libcli/netlogon.h", "libcli/nbt/libnbt.h")
+	helper("../libcli/netlogon.h", "../libcli/nbt/libnbt.h")
 ]
 interface nbt
 {

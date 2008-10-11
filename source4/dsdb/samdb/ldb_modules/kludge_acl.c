@@ -2,7 +2,7 @@
    ldb database library
 
    Copyright (C) Andrew Bartlett 2005
-   Copyright (C) Simo Sorce 2006
+   Copyright (C) Simo Sorce 2006-2008
 
     This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -74,15 +74,14 @@ static const char *user_name(TALLOC_CTX *mem_ctx, struct ldb_module *module)
 struct kludge_acl_context {
 
 	struct ldb_module *module;
-	void *up_context;
-	int (*up_callback)(struct ldb_context *, void *, struct ldb_reply *);
+	struct ldb_request *req;
 
 	enum security_user_level user_type;
 	bool allowedAttributes;
 	bool allowedAttributesEffective;
 	bool allowedChildClasses;
 	bool allowedChildClassesEffective;
-	const char **attrs;
+	const char * const *attrs;
 };
 
 /* read all objectClasses */
@@ -191,6 +190,7 @@ static int kludge_acl_childClasses(struct ldb_context *ldb, struct ldb_message *
 		      (comparison_fn_t)data_blob_cmp);
 	
 		for (i=1 ; i < allowedClasses->num_values; i++) {
+
 			struct ldb_val *val1 = &allowedClasses->values[i-1];
 			struct ldb_val *val2 = &allowedClasses->values[i];
 			if (data_blob_cmp(val1, val2) == 0) {
@@ -207,80 +207,111 @@ static int kludge_acl_childClasses(struct ldb_context *ldb, struct ldb_message *
 
 /* find all attributes allowed by all these objectClasses */
 
-static int kludge_acl_callback(struct ldb_context *ldb, void *context, struct ldb_reply *ares)
+static int kludge_acl_callback(struct ldb_request *req, struct ldb_reply *ares)
 {
 	struct kludge_acl_context *ac;
 	struct kludge_private_data *data;
 	int i, ret;
 
-	ac = talloc_get_type(context, struct kludge_acl_context);
+	ac = talloc_get_type(req->context, struct kludge_acl_context);
 	data = talloc_get_type(ac->module->private_data, struct kludge_private_data);
 
-	if (ares->type != LDB_REPLY_ENTRY) {
-		return ac->up_callback(ldb, ac->up_context, ares);
+	if (!ares) {
+		return ldb_module_done(ac->req, NULL, NULL,
+					LDB_ERR_OPERATIONS_ERROR);
+	}
+	if (ares->error != LDB_SUCCESS) {
+		return ldb_module_done(ac->req, ares->controls,
+					ares->response, ares->error);
 	}
 
-	if (ac->allowedAttributes) {
-		ret = kludge_acl_allowedAttributes(ldb, ares->message, "allowedAttributes");
-		if (ret != LDB_SUCCESS) {
-			return ret;
-
-		}
-	}
-	if (ac->allowedChildClasses) {
-		ret = kludge_acl_childClasses(ldb, ares->message, "allowedChildClasses");
-		if (ret != LDB_SUCCESS) {
-			return ret;
-		}
-	}
-
-	if (data && data->password_attrs) /* if we are not initialized just get through */
-	{
-		switch (ac->user_type) {
-		case SECURITY_SYSTEM:
-			if (ac->allowedAttributesEffective) {
-				ret = kludge_acl_allowedAttributes(ldb, ares->message, "allowedAttributesEffective");
-				if (ret != LDB_SUCCESS) {
-					return ret;
-				}
-			}
-			if (ac->allowedChildClassesEffective) {
-				ret = kludge_acl_childClasses(ldb, ares->message, "allowedChildClassesEffective");
-				if (ret != LDB_SUCCESS) {
-					return ret;
-				}
-			}
-			break;
-		case SECURITY_ADMINISTRATOR:
-			if (ac->allowedAttributesEffective) {
-				ret = kludge_acl_allowedAttributes(ldb, ares->message, "allowedAttributesEffective");
-				if (ret != LDB_SUCCESS) {
-					return ret;
-				}
-			}
-			if (ac->allowedChildClassesEffective) {
-				ret = kludge_acl_childClasses(ldb, ares->message, "allowedChildClassesEffective");
-				if (ret != LDB_SUCCESS) {
-					return ret;
-				}
-			}
-			/* fall though */
-		default:
-			/* remove password attributes */
-			for (i = 0; data->password_attrs[i]; i++) {
-				ldb_msg_remove_attr(ares->message, data->password_attrs[i]);
+	switch (ares->type) {
+	case LDB_REPLY_ENTRY:
+		if (ac->allowedAttributes) {
+			ret = kludge_acl_allowedAttributes(ac->module->ldb,
+						   ares->message,
+						   "allowedAttributes");
+			if (ret != LDB_SUCCESS) {
+				return ldb_module_done(ac->req, NULL, NULL, ret);
 			}
 		}
-	}
+		if (ac->allowedChildClasses) {
+			ret = kludge_acl_childClasses(ac->module->ldb,
+						ares->message,
+						"allowedChildClasses");
+			if (ret != LDB_SUCCESS) {
+				return ldb_module_done(ac->req, NULL, NULL, ret);
+			}
+		}
 
-	if ((ac->allowedAttributes || ac->allowedAttributesEffective
-	     || ac->allowedChildClasses || ac->allowedChildClassesEffective) && 
-	    (!ldb_attr_in_list(ac->attrs, "objectClass") && 
-	     !ldb_attr_in_list(ac->attrs, "*"))) {
-		ldb_msg_remove_attr(ares->message, "objectClass");
-	}
+		if (data && data->password_attrs) /* if we are not initialized just get through */
+		{
+			switch (ac->user_type) {
+			case SECURITY_SYSTEM:
+				if (ac->allowedAttributesEffective) {
+					ret = kludge_acl_allowedAttributes(ac->module->ldb, ares->message,
+									"allowedClassesAttributesEffective");
+					if (ret != LDB_SUCCESS) {
+						return ldb_module_done(ac->req, NULL, NULL, ret);
+					}
+				}
+				if (ac->allowedChildClassesEffective) {
+					ret = kludge_acl_childClasses(ac->module->ldb, ares->message,
+									"allowedClassesChildClassesEffective");
+					if (ret != LDB_SUCCESS) {
+						return ldb_module_done(ac->req, NULL, NULL, ret);
+					}
+				}
+				break;
 
-	return ac->up_callback(ldb, ac->up_context, ares);
+			case SECURITY_ADMINISTRATOR:
+				if (ac->allowedAttributesEffective) {
+					ret = kludge_acl_allowedAttributes(ac->module->ldb, ares->message,
+									"allowedClassesAttributesEffective");
+					if (ret != LDB_SUCCESS) {
+						return ldb_module_done(ac->req, NULL, NULL, ret);
+					}
+				}
+				if (ac->allowedChildClassesEffective) {
+					ret = kludge_acl_childClasses(ac->module->ldb, ares->message,
+									"allowedClassesChildClassesEffective");
+					if (ret != LDB_SUCCESS) {
+						return ldb_module_done(ac->req, NULL, NULL, ret);
+					}
+				}
+				/* fall through */
+			default:
+				/* remove password attributes */
+				for (i = 0; data->password_attrs[i]; i++) {
+					ldb_msg_remove_attr(ares->message, data->password_attrs[i]);
+				}
+			}
+		}
+
+		if (ac->allowedAttributes ||
+		    ac->allowedAttributesEffective ||
+		    ac->allowedChildClasses ||
+		    ac->allowedChildClassesEffective) {
+
+			if (!ldb_attr_in_list(ac->attrs, "objectClass") &&
+		            !ldb_attr_in_list(ac->attrs, "*")) {
+
+				ldb_msg_remove_attr(ares->message,
+						    "objectClass");
+			}
+		}
+
+		return ldb_module_send_entry(ac->req, ares->message);
+
+	case LDB_REPLY_REFERRAL:
+		return ldb_module_send_referral(ac->req, ares->referral);
+
+	case LDB_REPLY_DONE:
+		return ldb_module_done(ac->req, ares->controls,
+					ares->response, LDB_SUCCESS);
+
+	}
+	return LDB_SUCCESS;
 }
 
 static int kludge_acl_search(struct ldb_module *module, struct ldb_request *req)
@@ -288,9 +319,10 @@ static int kludge_acl_search(struct ldb_module *module, struct ldb_request *req)
 	struct kludge_acl_context *ac;
 	struct ldb_request *down_req;
 	struct kludge_private_data *data;
+	const char * const *attrs;
 	int ret, i;
-
-	req->handle = NULL;
+	struct ldb_control *sd_control;
+	struct ldb_control **sd_saved_controls;
 
 	ac = talloc(req, struct kludge_acl_context);
 	if (ac == NULL) {
@@ -301,22 +333,9 @@ static int kludge_acl_search(struct ldb_module *module, struct ldb_request *req)
 	data = talloc_get_type(module->private_data, struct kludge_private_data);
 
 	ac->module = module;
-	ac->up_context = req->context;
-	ac->up_callback = req->callback;
+	ac->req = req;
 	ac->user_type = what_is_user(module);
 	ac->attrs = req->op.search.attrs;
-
-	down_req = talloc_zero(req, struct ldb_request);
-	if (down_req == NULL) {
-		ldb_oom(module->ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	down_req->operation = req->operation;
-	down_req->op.search.base = req->op.search.base;
-	down_req->op.search.scope = req->op.search.scope;
-	down_req->op.search.tree = req->op.search.tree;
-	down_req->op.search.attrs = req->op.search.attrs;
 
 	ac->allowedAttributes = ldb_attr_in_list(req->op.search.attrs, "allowedAttributes");
 
@@ -327,12 +346,11 @@ static int kludge_acl_search(struct ldb_module *module, struct ldb_request *req)
 	ac->allowedChildClassesEffective = ldb_attr_in_list(req->op.search.attrs, "allowedChildClassesEffective");
 
 	if (ac->allowedAttributes || ac->allowedAttributesEffective || ac->allowedChildClasses || ac->allowedChildClassesEffective) {
-		down_req->op.search.attrs
-			= ldb_attr_list_copy_add(down_req, down_req->op.search.attrs, "objectClass");
+		attrs = ldb_attr_list_copy_add(ac, req->op.search.attrs, "objectClass");
+	} else {
+		attrs = req->op.search.attrs;
 	}
 
-	/*  FIXME: I hink we should copy the tree and keep the original
-	 *  unmodified. SSS */
 	/* replace any attributes in the parse tree that are private,
 	   so we don't allow a search for 'userPassword=penguin',
 	   just as we would not allow that attribute to be returned */
@@ -340,30 +358,45 @@ static int kludge_acl_search(struct ldb_module *module, struct ldb_request *req)
 	case SECURITY_SYSTEM:
 		break;
 	default:
+	/* FIXME: We should copy the tree and keep the original unmodified. */
 		/* remove password attributes */
-		for (i = 0; data && data->password_attrs && data->password_attrs[i]; i++) {
-			ldb_parse_tree_attr_replace(down_req->op.search.tree, 
+
+		if (!data || !data->password_attrs) {
+			break;
+		}
+		for (i = 0; data->password_attrs[i]; i++) {
+			ldb_parse_tree_attr_replace(req->op.search.tree,
 						    data->password_attrs[i],
 						    "kludgeACLredactedattribute");
 		}
 	}
 
-	down_req->controls = req->controls;
-
-	down_req->context = ac;
-	down_req->callback = kludge_acl_callback;
-	ldb_set_timeout_from_prev_req(module->ldb, req, down_req);
-
-	/* perform the search */
-	ret = ldb_next_request(module, down_req);
-
-	/* do not free down_req as the call results may be linked to it,
-	 * it will be freed when the upper level request get freed */
-	if (ret == LDB_SUCCESS) {
-		req->handle = down_req->handle;
+	ret = ldb_build_search_req_ex(&down_req,
+					module->ldb, ac,
+					req->op.search.base,
+					req->op.search.scope,
+					req->op.search.tree,
+					attrs,
+					req->controls,
+					ac, kludge_acl_callback,
+					req);
+	if (ret != LDB_SUCCESS) {
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	return ret;
+	/* check if there's an SD_FLAGS control */
+	sd_control = ldb_request_get_control(down_req, LDB_CONTROL_SD_FLAGS_OID);
+	if (sd_control) {
+		/* save it locally and remove it from the list */
+		/* we do not need to replace them later as we
+		 * are keeping the original req intact */
+		if (!save_controls(sd_control, down_req, &sd_saved_controls)) {
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+	}
+
+	/* perform the search */
+	return ldb_next_request(module, down_req);
 }
 
 /* ANY change type */
@@ -409,14 +442,12 @@ static int kludge_acl_init(struct ldb_module *module)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ret = ldb_search(module->ldb, ldb_dn_new(mem_ctx, module->ldb, "@KLUDGEACL"),
-			 LDB_SCOPE_BASE,
-			 NULL, attrs,
-			 &res);
+	ret = ldb_search(module->ldb, mem_ctx, &res,
+			 ldb_dn_new(mem_ctx, module->ldb, "@KLUDGEACL"),
+			 LDB_SCOPE_BASE, attrs, NULL);
 	if (ret != LDB_SUCCESS) {
 		goto done;
 	}
-	talloc_steal(mem_ctx, res);
 	if (res->count == 0) {
 		goto done;
 	}
@@ -443,6 +474,13 @@ static int kludge_acl_init(struct ldb_module *module)
 		talloc_steal(data->password_attrs, password_attributes->values[i].data);
 	}
 	data->password_attrs[i] = NULL;
+
+	ret = ldb_mod_register_control(module, LDB_CONTROL_SD_FLAGS_OID);
+	if (ret != LDB_SUCCESS) {
+		ldb_debug(module->ldb, LDB_DEBUG_ERROR,
+			"partition: Unable to register control with rootdse!\n");
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
 
 done:
 	talloc_free(mem_ctx);

@@ -35,7 +35,7 @@ SMB_EXT_LIB_FROM_PKGCONFIG(LIBTALLOC, talloc >= 1.2.0,
 	]
 )
 
-SMB_EXT_LIB_FROM_PKGCONFIG(LIBTDB, tdb >= 1.1.0,
+SMB_EXT_LIB_FROM_PKGCONFIG(LIBTDB, tdb >= 1.1.3,
 	[],
 	[
 		m4_include(../lib/tdb/libtdb.m4)
@@ -95,7 +95,6 @@ m4_include(ntvfs/unixuid/config.m4)
 m4_include(auth/config.m4)
 m4_include(kdc/config.m4)
 m4_include(ntvfs/sysdep/config.m4)
-m4_include(lib/appweb/config.m4)
 m4_include(nsswitch/config.m4)
 
 dnl Samba 4 files

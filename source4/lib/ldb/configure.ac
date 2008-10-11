@@ -43,6 +43,10 @@ AC_SUBST(LDB_MODULESDIR)
 TESTS=""
 EXTRA_OBJ=""
 
+m4_include(build_macros.m4)
+BUILD_WITH_SHARED_BUILD_DIR
+
+m4_include(pkg.m4)
 m4_include(libpopt.m4)
 m4_include(libtalloc.m4)
 m4_include(libtdb.m4)

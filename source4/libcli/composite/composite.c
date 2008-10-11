@@ -28,7 +28,7 @@
 #include "libcli/composite/composite.h"
 #include "lib/messaging/irpc.h"
 #include "librpc/rpc/dcerpc.h"
-#include "libcli/nbt/libnbt.h"
+#include "../libcli/nbt/libnbt.h"
 
 /*
  create a new composite_context structure
@@ -214,5 +214,5 @@ _PUBLIC_ void composite_continue_nbt(struct composite_context *ctx,
 {
 	if (composite_nomem(new_req, ctx)) return;
 	new_req->async.fn = continuation;
-	new_req->async.private = private_data;
+	new_req->async.private_data = private_data;
 }

@@ -484,7 +484,7 @@ static NTSTATUS kdc_add_socket(struct kdc_server *kdc, const char *address,
 	/* within the kdc task we want to be a single process, so
 	   ask for the single process model ops and pass these to the
 	   stream_setup_socket() call. */
-	model_ops = process_model_byname("single");
+	model_ops = process_model_startup(kdc->task->event_ctx, "single");
 	if (!model_ops) {
 		DEBUG(0,("Can't find 'single' process model_ops\n"));
 		talloc_free(kdc_socket);
@@ -584,13 +584,11 @@ static NTSTATUS kdc_check_generic_kerberos(struct irpc_message *msg,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	
-#if 0
-	/* Windows does not check this */
 	if (pac_validate.MessageType != 3) {
 		/* We don't implement any other message types - such as certificate validation - yet */
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-#endif	
+
 	if (pac_validate.ChecksumAndSignature.length != (pac_validate.ChecksumLength + pac_validate.SignatureLength)
 	    || pac_validate.ChecksumAndSignature.length < pac_validate.ChecksumLength
 	    || pac_validate.ChecksumAndSignature.length < pac_validate.SignatureLength ) {
@@ -669,6 +667,11 @@ static void kdc_task_init(struct task_server *task)
 	NTSTATUS status;
 	krb5_error_code ret;
 	struct interface *ifaces;
+	struct hdb_method hdb_samba4 = {
+		.interface_version = HDB_INTERFACE_VERSION,
+		.prefix = "samba4:",
+		.create = hdb_samba4_create
+	};
 
 	switch (lp_server_role(task->lp_ctx)) {
 	case ROLE_STANDALONE:
@@ -726,12 +729,22 @@ static void kdc_task_init(struct task_server *task)
 	}
 	kdc->config->num_db = 1;
 		
-	status = kdc_hdb_ldb_create(kdc, task->event_ctx, task->lp_ctx, 
+	status = kdc_hdb_samba4_create(kdc, task->event_ctx, task->lp_ctx, 
 				    kdc->smb_krb5_context->krb5_context, 
 				    &kdc->config->db[0], NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		task_server_terminate(task, "kdc: hdb_ldb_create (setup KDC database) failed");
 		return; 
+	}
+
+
+	/* Register hdb-samba4 hooks */
+	ret = krb5_plugin_register(kdc->smb_krb5_context->krb5_context, 
+				   PLUGIN_TYPE_DATA, "hdb",
+				   &hdb_samba4);
+	if(ret) {
+		task_server_terminate(task, "kdc: failed to register hdb keytab");
+		return;
 	}
 
 	ret = krb5_kt_register(kdc->smb_krb5_context->krb5_context, &hdb_kt_ops);

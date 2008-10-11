@@ -18,6 +18,7 @@ AC_PREFIX_DEFAULT(/usr/local/samba)
 rootsbindir="\${SBINDIR}"
 lockdir="\${VARDIR}/locks"
 piddir="\${VARDIR}/locks"
+ncalrpcdir="\${VARDIR}/ncalrpc"
 test "${mandir}" || mandir="\${prefix}/man"
 logfilebase="\${VARDIR}"
 privatedir="\${prefix}/private"
@@ -46,6 +47,7 @@ AC_ARG_WITH(fhs,
     codepagedir="\${MODULESDIR}"
     statedir="\${VARDIR}/lib/samba"
     cachedir="\${VARDIR}/lib/samba"
+    ncalrpcdir="\${VARDIR}/ncalrpc"
     AC_DEFINE(FHS_COMPATIBLE, 1, [Whether to use fully FHS-compatible paths])
     ;;
   esac])
@@ -111,6 +113,22 @@ AC_ARG_WITH(piddir,
   ;;
   * )
     piddir="$withval"
+    ;;
+  esac])
+
+#################################################
+# set ncalrpc directory location
+AC_ARG_WITH(ncalprcdir,
+[AS_HELP_STRING([--with-ncalprcdir=DIR], [Where to put ncalrpc sockets ($ac_default_prefix/var/ncalrpc)])],
+[ case "$withval" in
+  yes|no)
+  #
+  # Just in case anybody calls it without argument
+  #
+    AC_MSG_WARN([--with-ncalrpcdir called without argument - will use default])
+  ;;
+  * )
+    ncalrpcdir="$withval"
     ;;
   esac])
 
@@ -227,6 +245,7 @@ AC_ARG_WITH(mandir,
 AC_SUBST(configdir)
 AC_SUBST(lockdir)
 AC_SUBST(piddir)
+AC_SUBST(ncalrpcdir)
 AC_SUBST(logfilebase)
 AC_SUBST(ctdbdir)
 AC_SUBST(privatedir)

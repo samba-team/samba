@@ -138,7 +138,7 @@ int smb2_deltree(struct smb2_tree *tree, const char *dname)
 	}
 
 	ZERO_STRUCT(create_parm);
-	create_parm.in.desired_access = SEC_FLAG_MAXIMUM_ALLOWED;
+	create_parm.in.desired_access = SEC_FILE_READ_DATA;
 	create_parm.in.share_access = 
 		NTCREATEX_SHARE_ACCESS_READ|
 		NTCREATEX_SHARE_ACCESS_WRITE;
@@ -197,6 +197,12 @@ int smb2_deltree(struct smb2_tree *tree, const char *dname)
 	smb2_util_close(tree, create_parm.out.file.handle);
 
 	status = smb2_util_rmdir(tree, dname);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_CANNOT_DELETE)) {
+		/* it could be read-only */
+		status = smb2_util_setatr(tree, dname, FILE_ATTRIBUTE_NORMAL);
+		status = smb2_util_rmdir(tree, dname);
+	}
+
 	if (NT_STATUS_IS_ERR(status)) {
 		DEBUG(2,("Failed to delete %s - %s\n", 
 			 dname, nt_errstr(status)));

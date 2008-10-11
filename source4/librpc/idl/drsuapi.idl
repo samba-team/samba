@@ -877,7 +877,7 @@ interface drsuapi
 	} drsuapi_DsNameFlags;
 
 	typedef [v1_enum] enum {
-		DRSUAPI_DS_NAME_FORMAT_UKNOWN			= 0,
+		DRSUAPI_DS_NAME_FORMAT_UNKNOWN			= 0,
 		DRSUAPI_DS_NAME_FORMAT_FQDN_1779		= 1,
 		DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT		= 2,
 		DRSUAPI_DS_NAME_FORMAT_DISPLAY			= 3,
@@ -970,7 +970,7 @@ interface drsuapi
 	typedef struct {
 		[charset(UTF16),string] uint16 *server_dn;
 		[charset(UTF16),string] uint16 *domain_dn;
-		uint32 unknown; /* 0x000000001 */
+		boolean32 commit;
 	} drsuapi_DsRemoveDSServerRequest1;
 
 	typedef [switch_type(int32)] union {
@@ -978,7 +978,7 @@ interface drsuapi
 	} drsuapi_DsRemoveDSServerRequest;
 
 	typedef struct {
-		WERROR status;
+		boolean32 last_dc_in_domain;
 	} drsuapi_DsRemoveDSServerResult1;
 
 	typedef [switch_type(int32)] union {

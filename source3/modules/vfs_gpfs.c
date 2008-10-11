@@ -179,7 +179,7 @@ static int gpfs_get_nfs4_acl(const char *fname, SMB4ACL_T **ppacl)
 			   "who: %d\n", gace->aceType, gace->aceIFlags,
 			   gace->aceFlags, gace->aceMask, gace->aceWho));
 
-		memset(&smbace, 0, sizeof(SMB4ACE_T));
+		ZERO_STRUCT(smbace);
 		if (gace->aceIFlags & ACE4_IFLAG_SPECIAL_ID) {
 			smbace.flags |= SMB_ACE4_ID_SPECIAL;
 			switch (gace->aceWho) {
@@ -365,7 +365,7 @@ static bool gpfsacl_process_smbacl(files_struct *fsp, SMB4ACL_T *smbacl)
 	return True;
 }
 
-static NTSTATUS gpfsacl_set_nt_acl_internal(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
+static NTSTATUS gpfsacl_set_nt_acl_internal(files_struct *fsp, uint32 security_info_sent, const SEC_DESC *psd)
 {
 	struct gpfs_acl *acl;
 	NTSTATUS result = NT_STATUS_ACCESS_DENIED;
@@ -386,7 +386,7 @@ static NTSTATUS gpfsacl_set_nt_acl_internal(files_struct *fsp, uint32 security_i
 	return result;
 }
 
-static NTSTATUS gpfsacl_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
+static NTSTATUS gpfsacl_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp, uint32 security_info_sent, const SEC_DESC *psd)
 {
 	return gpfsacl_set_nt_acl_internal(fsp, security_info_sent, psd);
 }
@@ -739,7 +739,7 @@ static int gpfsacl_emu_chmod(const char *path, mode_t mode)
 		if (haveAllowEntry[i]==True)
 			continue;
 		
-		memset(&ace, 0, sizeof(SMB_ACE4PROP_T));
+		ZERO_STRUCT(ace);
 		ace.aceType = SMB_ACE4_ACCESS_ALLOWED_ACE_TYPE;
 		ace.flags |= SMB_ACE4_ID_SPECIAL;
 		ace.who.special_id = i;
@@ -761,7 +761,7 @@ static int gpfsacl_emu_chmod(const char *path, mode_t mode)
 	}
 	
 	/* don't add complementary DENY ACEs here */
-	memset(&fake_fsp, 0, sizeof(struct files_struct));
+	ZERO_STRUCT(fake_fsp);
 	fake_fsp.fsp_name = (char *)path; /* no file_new is needed here */
 	
 	/* put the acl */

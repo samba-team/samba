@@ -111,7 +111,8 @@ static void usr1_handler(int x)
 /***************************************************** 
 return a connection to a server
 *******************************************************/
-static struct smbcli_state *do_connection(const char *the_service, bool unicode, int maxprotocol)
+static struct smbcli_state *do_connection(const char *the_service, bool unicode, int maxprotocol,
+					  struct smbcli_session_options session_options)
 {
 	struct smbcli_state *c;
 	struct nmb_name called, calling;
@@ -210,11 +211,12 @@ static struct smbcli_state *do_connection(const char *the_service, bool unicode,
 	if (!smbcli_session_setup(c, username, 
 			       password, strlen(password),
 			       password, strlen(password),
-			       workgroup)) {
+			       workgroup, session_options)) {
 		/* if a password was not supplied then try again with a
 			null username */
 		if (password[0] || !username[0] ||
-				!smbcli_session_setup(c, "", "", 0, "", 0, workgroup)) {
+				!smbcli_session_setup(c, "", "", 0, "", 0, workgroup, 
+						      session_options)) {
 			DEBUG(0,("%d: session setup failed: %s\n",
 				sys_getpid(), smbcli_errstr(c)));
 			talloc_free(c);
@@ -329,6 +331,9 @@ static void send_fs_socket(struct loadparm_context *lp_ctx,
 	int fd, closed = 0, res = 1;
 	pid_t parentpid = getppid();
 	struct smb_conn_opt conn_options;
+	struct smbcli_session_options session_options;
+
+	lp_smbcli_session_options(lp_ctx, &session_options);
 
 	memset(&conn_options, 0, sizeof(conn_options));
 
@@ -409,7 +414,8 @@ static void send_fs_socket(struct loadparm_context *lp_ctx,
 			DEBUG(2,("mount.smbfs[%d]: got signal, getting new socket\n", sys_getpid()));
 			c = do_connection(the_service, 
 					  lp_unicode(lp_ctx), 
-					  lp_cli_maxprotocol(lp_ctx));
+					  lp_cli_maxprotocol(lp_ctx),
+					  session_options);
 		}
 	}
 
@@ -430,14 +436,17 @@ static void init_mount(struct loadparm_context *lp_ctx)
 	struct smbcli_state *c;
 	char *args[20];
 	int i, status;
+	struct smbcli_session_options session_options;
 
 	if (realpath(mpoint, mount_point) == NULL) {
 		fprintf(stderr, "Could not resolve mount point %s\n", mpoint);
 		return;
 	}
 
+	lp_smbcli_session_options(lp_ctx, &session_options);
 
-	c = do_connection(service, lp_unicode(lp_ctx), lp_cli_maxprotocol(lp_ctx));
+	c = do_connection(service, lp_unicode(lp_ctx), lp_cli_maxprotocol(lp_ctx),
+			  session_options);
 	if (!c) {
 		fprintf(stderr,"SMB connection failed\n");
 		exit(1);

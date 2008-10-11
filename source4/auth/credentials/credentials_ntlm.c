@@ -23,7 +23,7 @@
 
 #include "includes.h"
 #include "librpc/gen_ndr/samr.h" /* for struct samrPassword */
-#include "lib/crypto/crypto.h"
+#include "../lib/crypto/crypto.h"
 #include "libcli/auth/libcli_auth.h"
 #include "auth/credentials/credentials.h"
 

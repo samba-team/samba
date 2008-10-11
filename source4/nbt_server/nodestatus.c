@@ -104,7 +104,7 @@ void nbtd_query_status(struct nbt_name_socket *nbtsock,
 {
 	struct nbt_name *name;
 	struct nbtd_iface_name *iname;
-	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private, 
+	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private_data,
 						       struct nbtd_interface);
 
 	NBTD_ASSERT_PACKET(packet, src, packet->qdcount == 1);
