@@ -52,6 +52,9 @@ testenv:: everything
 testenv-%:: everything
 	SELFTEST_TESTENV=$* $(SELFTEST) $(SELFTEST_NOSLOW_OPTS) --socket-wrapper --testenv
 
+test-%:: 
+	$(MAKE) test TESTS=$*
+
 valgrindtest:: valgrindtest-all
 
 valgrindtest-quick:: all
