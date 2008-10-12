@@ -295,7 +295,7 @@ static int command_get_quota(const char *path, enum SMB_QUOTA_TYPE qtype, unid_t
 				dp->bsize = 1024;
 			}
 
-			file_lines_free(lines);
+			TALLOC_FREE(lines);
 			lines = NULL;
 
 			DEBUG (3, ("Parsed output of get_quota, ...\n"));
@@ -331,7 +331,7 @@ static int command_get_quota(const char *path, enum SMB_QUOTA_TYPE qtype, unid_t
 
 invalid_param:
 
-	file_lines_free(lines);
+	TALLOC_FREE(lines);
 	DEBUG(0,("The output of get_quota_command is invalid!\n"));
 	return -1;
 }
@@ -392,7 +392,7 @@ static int command_set_quota(const char *path, enum SMB_QUOTA_TYPE qtype, unid_t
 
 			DEBUG (3, ("Read output from set_quota, \"%s\"\n", line));
 
-			file_lines_free(lines);
+			TALLOC_FREE(lines);
 
 			return 0;
 		}

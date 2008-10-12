@@ -238,7 +238,7 @@ static int generic_queue_get(const char *printer_name,
 	}
 	
 	numlines = 0;
-	qlines = fd_lines_load(fd, &numlines,0);
+	qlines = fd_lines_load(fd, &numlines,0,NULL);
 	close(fd);
 
 	/* turn the lpq output into a series of job structures */
@@ -247,7 +247,7 @@ static int generic_queue_get(const char *printer_name,
 	if (numlines && qlines) {
 		queue = SMB_MALLOC_ARRAY(print_queue_struct, numlines+1);
 		if (!queue) {
-			file_lines_free(qlines);
+			TALLOC_FREE(qlines);
 			*q = NULL;
 			return 0;
 		}
@@ -262,7 +262,7 @@ static int generic_queue_get(const char *printer_name,
 		}		
 	}
 
-	file_lines_free(qlines);
+	TALLOC_FREE(qlines);
         *q = queue;
 	return qcount;
 }

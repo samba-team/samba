@@ -3046,7 +3046,7 @@ static bool start_gentest(struct event_context *ev,
 	/* generate the seeds - after this everything is deterministic */
 	if (options.use_preset_seeds) {
 		int numops;
-		char **preset = file_lines_load(options.seeds_file, &numops, NULL);
+		char **preset = file_lines_load(options.seeds_file, &numops, 0, NULL);
 		if (!preset) {
 			printf("Failed to load %s - %s\n", options.seeds_file, strerror(errno));
 			exit(1);
@@ -3193,7 +3193,7 @@ static bool split_unc_name(const char *unc, char **server, char **share)
 	}
 
 	if (ignore_file) {
-		options.ignore_patterns = file_lines_load(ignore_file, NULL, NULL);
+		options.ignore_patterns = file_lines_load(ignore_file, NULL, 0, NULL);
 	}
 
 	argv_new = discard_const_p(char *, poptGetArgs(pc));

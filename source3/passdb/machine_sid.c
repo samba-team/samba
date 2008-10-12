@@ -41,15 +41,15 @@ static bool read_sid_from_file(const char *fname, DOM_SID *sid)
 	int numlines;
 	bool ret;
 
-	lines = file_lines_load(fname, &numlines,0);
+	lines = file_lines_load(fname, &numlines,0, NULL);
 	
 	if (!lines || numlines < 1) {
-		if (lines) file_lines_free(lines);
+		if (lines) TALLOC_FREE(lines);
 		return False;
 	}
 	
 	ret = string_to_sid(sid, lines[0]);
-	file_lines_free(lines);
+	TALLOC_FREE(lines);
 	return ret;
 }
 

@@ -3925,10 +3925,10 @@ static void map_to_os2_driver(fstring drivername)
 		return;
 	}
 
-	lines = file_lines_load(mapfile, &numlines,0);
+	lines = file_lines_load(mapfile, &numlines,0,NULL);
 	if (numlines == 0 || lines == NULL) {
 		DEBUG(0,("No entries in OS/2 driver map %s\n",mapfile));
-		SAFE_FREE(lines);
+		TALLOC_FREE(lines);
 		return;
 	}
 
@@ -3972,12 +3972,12 @@ static void map_to_os2_driver(fstring drivername)
 			DEBUG(3,("Mapped windows driver %s to os2 driver%s\n",drivername,os2_name));
 			set_last_from_to(drivername,os2_name);
 			fstrcpy(drivername,os2_name);
-			file_lines_free(lines);
+			TALLOC_FREE(lines);
 			return;
 		}
 	}
 
-	file_lines_free(lines);
+	TALLOC_FREE(lines);
 }
 
 /****************************************************************************

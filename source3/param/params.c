@@ -118,7 +118,7 @@ static void myfile_close(myFILE *f)
 {
 	if (!f)
 		return;
-	SAFE_FREE(f->buf);
+	TALLOC_FREE(f->buf);
 	SAFE_FREE(f);
 }
 
@@ -525,7 +525,7 @@ static myFILE *OpenConfFile( const char *FileName )
 	if (!ret)
 		return NULL;
 
-	ret->buf = file_load(FileName, &ret->size, 0);
+	ret->buf = file_load(FileName, &ret->size, 0, NULL);
 	if( NULL == ret->buf ) {
 		DEBUG( lvl, ("%s Unable to open configuration file \"%s\":\n\t%s\n",
 			func, FileName, strerror(errno)) );

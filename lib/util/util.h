@@ -522,12 +522,12 @@ _PUBLIC_ char *afdgets(int fd, TALLOC_CTX *mem_ctx, size_t hint);
 /**
 load a file into memory from a fd.
 **/
-_PUBLIC_ char *fd_load(int fd, size_t *size, TALLOC_CTX *mem_ctx);
+_PUBLIC_ char *fd_load(int fd, size_t *size, size_t maxsize, TALLOC_CTX *mem_ctx);
 
 /**
 load a file into memory
 **/
-_PUBLIC_ char *file_load(const char *fname, size_t *size, TALLOC_CTX *mem_ctx);
+_PUBLIC_ char *file_load(const char *fname, size_t *size, size_t maxsize, TALLOC_CTX *mem_ctx);
 
 /**
 mmap (if possible) or read a file
@@ -538,14 +538,14 @@ _PUBLIC_ void *map_file(const char *fname, size_t size);
 load a file into memory and return an array of pointers to lines in the file
 must be freed with talloc_free(). 
 **/
-_PUBLIC_ char **file_lines_load(const char *fname, int *numlines, TALLOC_CTX *mem_ctx);
+_PUBLIC_ char **file_lines_load(const char *fname, int *numlines, size_t maxsize, TALLOC_CTX *mem_ctx);
 
 /**
 load a fd into memory and return an array of pointers to lines in the file
 must be freed with talloc_free(). If convert is true calls unix_to_dos on
 the list.
 **/
-_PUBLIC_ char **fd_lines_load(int fd, int *numlines, TALLOC_CTX *mem_ctx);
+_PUBLIC_ char **fd_lines_load(int fd, int *numlines, size_t maxsize, TALLOC_CTX *mem_ctx);
 
 /**
 take a list of lines and modify them to produce a list where \ continues

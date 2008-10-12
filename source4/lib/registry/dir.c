@@ -327,7 +327,7 @@ static WERROR reg_dir_get_value(TALLOC_CTX *mem_ctx,
 	size_t size;
 	char *contents;
 
-	contents = file_load(path, &size, mem_ctx);
+	contents = file_load(path, &size, 0, mem_ctx);
 	talloc_free(path);
 	if (contents == NULL)
 		return WERR_BADFILE;

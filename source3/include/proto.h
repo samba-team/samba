@@ -1362,16 +1362,16 @@ const char *strip_hostname(const char *s);
 /* The following definitions come from lib/util_file.c  */
 
 char *fgets_slash(char *s2,int maxlen,XFILE *f);
-char *fd_load(int fd, size_t *psize, size_t maxsize);
-char *file_load(const char *fname, size_t *size, size_t maxsize);
+char *file_load(const char *fname, size_t *size, size_t maxsize, TALLOC_CTX *mem_ctx);
+char **file_lines_parse(char *p, size_t size, int *numlines, TALLOC_CTX *mem_ctx);
 bool unmap_file(void* start, size_t size);
-void *map_file(char *fname, size_t size);
-char **file_lines_load(const char *fname, int *numlines, size_t maxsize);
-char **fd_lines_load(int fd, int *numlines, size_t maxsize);
-char **file_lines_pload(char *syscmd, int *numlines);
+void *map_file(const char *fname, size_t size);
+char **file_lines_load(const char *fname, int *numlines, size_t maxsize, TALLOC_CTX *mem_ctx);
+char **fd_lines_load(int fd, int *numlines, size_t maxsize, TALLOC_CTX *mem_ctx);
+char **file_lines_pload(const char *syscmd, int *numlines);
 void file_lines_free(char **lines);
 void file_lines_slashcont(char **lines);
-bool file_save(const char *fname, void *packet, size_t length);
+bool file_save(const char *fname, const void *packet, size_t length);
 
 /* The following definitions come from lib/util_nscd.c  */
 

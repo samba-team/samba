@@ -118,7 +118,7 @@ _PUBLIC_ bool cli_credentials_parse_file(struct cli_credentials *cred, const cha
 	char **lines;
 	int i, numlines;
 
-	lines = file_lines_load(file, &numlines, NULL);
+	lines = file_lines_load(file, &numlines, 0, NULL);
 
 	if (lines == NULL)
 	{

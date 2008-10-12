@@ -1154,7 +1154,7 @@ static int get_server_info(uint32 servertype,
 	bool local_list_only;
 	int i;
 
-	lines = file_lines_load(lock_path(SERVER_LIST), NULL, 0);
+	lines = file_lines_load(lock_path(SERVER_LIST), NULL, 0, NULL);
 	if (!lines) {
 		DEBUG(4,("Can't open %s - %s\n",lock_path(SERVER_LIST),strerror(errno)));
 		return 0;
@@ -1186,7 +1186,7 @@ static int get_server_info(uint32 servertype,
 			*servers = SMB_REALLOC_ARRAY(*servers,struct srv_info_struct, alloced);
 			if (!*servers) {
 				DEBUG(0,("get_server_info: failed to enlarge servers info struct!\n"));
-				file_lines_free(lines);
+				TALLOC_FREE(lines);
 				return 0;
 			}
 			memset((char *)((*servers)+count),'\0',sizeof(**servers)*(alloced-count));
@@ -1267,7 +1267,7 @@ static int get_server_info(uint32 servertype,
 		}
 	}
   
-	file_lines_free(lines);
+	TALLOC_FREE(lines);
 	return count;
 }
 

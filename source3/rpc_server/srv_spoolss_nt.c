@@ -6280,7 +6280,7 @@ bool add_printer_hook(TALLOC_CTX *ctx, NT_USER_TOKEN *token, NT_PRINTER_INFO_LEV
 
 	numlines = 0;
 	/* Get lines and convert them back to dos-codepage */
-	qlines = fd_lines_load(fd, &numlines, 0);
+	qlines = fd_lines_load(fd, &numlines, 0, NULL);
 	DEBUGADD(10,("Lines returned = [%d]\n", numlines));
 	close(fd);
 
@@ -6293,7 +6293,7 @@ bool add_printer_hook(TALLOC_CTX *ctx, NT_USER_TOKEN *token, NT_PRINTER_INFO_LEV
 		DEBUGADD(6,("Line[0] = [%s]\n", qlines[0]));
 	}
 
-	file_lines_free(qlines);
+	TALLOC_FREE(qlines);
 	return True;
 }
 
@@ -7512,7 +7512,7 @@ WERROR enumports_hook(TALLOC_CTX *ctx, int *count, char ***lines )
 		}
 
 		numlines = 0;
-		qlines = fd_lines_load(fd, &numlines, 0);
+		qlines = fd_lines_load(fd, &numlines, 0, NULL);
 		DEBUGADD(10,("Lines returned = [%d]\n", numlines));
 		close(fd);
 	}
@@ -7537,7 +7537,7 @@ static WERROR enumports_level_1(RPC_BUFFER *buffer, uint32 offered, uint32 *need
 
 	result = enumports_hook(talloc_tos(), &numlines, &qlines );
 	if (!W_ERROR_IS_OK(result)) {
-		file_lines_free(qlines);
+		TALLOC_FREE(qlines);
 		return result;
 	}
 
@@ -7545,7 +7545,7 @@ static WERROR enumports_level_1(RPC_BUFFER *buffer, uint32 offered, uint32 *need
 		if((ports=SMB_MALLOC_ARRAY( PORT_INFO_1, numlines )) == NULL) {
 			DEBUG(10,("Returning WERR_NOMEM [%s]\n",
 				  dos_errstr(WERR_NOMEM)));
-			file_lines_free(qlines);
+			TALLOC_FREE(qlines);
 			return WERR_NOMEM;
 		}
 
@@ -7554,7 +7554,7 @@ static WERROR enumports_level_1(RPC_BUFFER *buffer, uint32 offered, uint32 *need
 			fill_port_1(&ports[i], qlines[i]);
 		}
 	}
-	file_lines_free(qlines);
+	TALLOC_FREE(qlines);
 
 	*returned = numlines;
 
@@ -7603,13 +7603,13 @@ static WERROR enumports_level_2(RPC_BUFFER *buffer, uint32 offered, uint32 *need
 
 	result = enumports_hook(talloc_tos(), &numlines, &qlines );
 	if ( !W_ERROR_IS_OK(result)) {
-		file_lines_free(qlines);
+		TALLOC_FREE(qlines);
 		return result;
 	}
 
 	if(numlines) {
 		if((ports=SMB_MALLOC_ARRAY( PORT_INFO_2, numlines)) == NULL) {
-			file_lines_free(qlines);
+			TALLOC_FREE(qlines);
 			return WERR_NOMEM;
 		}
 
@@ -7619,7 +7619,7 @@ static WERROR enumports_level_2(RPC_BUFFER *buffer, uint32 offered, uint32 *need
 		}
 	}
 
-	file_lines_free(qlines);
+	TALLOC_FREE(qlines);
 
 	*returned = numlines;
 

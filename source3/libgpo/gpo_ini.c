@@ -63,7 +63,7 @@ static NTSTATUS convert_file_from_ucs2(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	data_in = (uint8 *)file_load(filename_in, &n, 0);
+	data_in = (uint8 *)file_load(filename_in, &n, 0, NULL);
 	if (!data_in) {
 		status = NT_STATUS_NO_SUCH_FILE;
 		goto out;
@@ -116,7 +116,7 @@ static NTSTATUS convert_file_from_ucs2(TALLOC_CTX *mem_ctx,
 		close(tmp_fd);
 	}
 
-	SAFE_FREE(data_in);
+	TALLOC_FREE(data_in);
 
 	return status;
 }

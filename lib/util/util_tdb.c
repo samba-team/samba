@@ -40,12 +40,12 @@ TDB_DATA make_tdb_data(const uint8_t *dptr, size_t dsize)
 
 TDB_DATA string_tdb_data(const char *string)
 {
-	return make_tdb_data((const uint8 *)string, string ? strlen(string) : 0 );
+	return make_tdb_data((const uint8_t *)string, string ? strlen(string) : 0 );
 }
 
 TDB_DATA string_term_tdb_data(const char *string)
 {
-	return make_tdb_data((const uint8 *)string, string ? strlen(string) + 1 : 0);
+	return make_tdb_data((const uint8_t *)string, string ? strlen(string) + 1 : 0);
 }
 
 /****************************************************************************

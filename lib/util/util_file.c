@@ -22,6 +22,11 @@
 #include "includes.h"
 #include "system/shmem.h"
 #include "system/filesys.h"
+#if _SAMBA_BUILD_ == 3
+#undef malloc
+#undef realloc
+#define realloc_p(p, type, count) (type *)realloc_array(p, sizeof(type), count, false)
+#endif
 
 /**
  * @file
@@ -160,23 +165,30 @@ _PUBLIC_ char *afdgets(int fd, TALLOC_CTX *mem_ctx, size_t hint)
 /**
 load a file into memory from a fd.
 **/
-_PUBLIC_ char *fd_load(int fd, size_t *size, TALLOC_CTX *mem_ctx)
+_PUBLIC_ char *fd_load(int fd, size_t *psize, size_t maxsize, TALLOC_CTX *mem_ctx)
 {
 	struct stat sbuf;
 	char *p;
+	size_t size;
 
 	if (fstat(fd, &sbuf) != 0) return NULL;
 
-	p = (char *)talloc_size(mem_ctx, sbuf.st_size+1);
+	size = sbuf.st_size;
+
+	if (maxsize) {
+		size = MIN(size, maxsize);
+	}
+
+	p = (char *)talloc_size(mem_ctx, size+1);
 	if (!p) return NULL;
 
-	if (read(fd, p, sbuf.st_size) != sbuf.st_size) {
+	if (read(fd, p, size) != size) {
 		talloc_free(p);
 		return NULL;
 	}
-	p[sbuf.st_size] = 0;
+	p[size] = 0;
 
-	if (size) *size = sbuf.st_size;
+	if (psize) *psize = size;
 
 	return p;
 }
@@ -184,7 +196,7 @@ _PUBLIC_ char *fd_load(int fd, size_t *size, TALLOC_CTX *mem_ctx)
 /**
 load a file into memory
 **/
-_PUBLIC_ char *file_load(const char *fname, size_t *size, TALLOC_CTX *mem_ctx)
+_PUBLIC_ char *file_load(const char *fname, size_t *size, size_t maxsize, TALLOC_CTX *mem_ctx)
 {
 	int fd;
 	char *p;
@@ -194,7 +206,7 @@ _PUBLIC_ char *file_load(const char *fname, size_t *size, TALLOC_CTX *mem_ctx)
 	fd = open(fname,O_RDONLY);
 	if (fd == -1) return NULL;
 
-	p = fd_load(fd, size, mem_ctx);
+	p = fd_load(fd, size, maxsize, mem_ctx);
 
 	close(fd);
 
@@ -224,7 +236,7 @@ _PUBLIC_ void *map_file(const char *fname, size_t size)
 	}
 #endif
 	if (!p) {
-		p = file_load(fname, &s2, talloc_autofree_context());
+		p = file_load(fname, &s2, 0, talloc_autofree_context());
 		if (!p) return NULL;
 		if (s2 != size) {
 			DEBUG(1,("incorrect size for %s - got %d expected %d\n",
@@ -237,12 +249,31 @@ _PUBLIC_ void *map_file(const char *fname, size_t size)
 	return p;
 }
 
+/**
+ unmap or free memory
+**/
+
+bool unmap_file(void *start, size_t size)
+{
+#ifdef HAVE_MMAP
+	if (munmap( start, size ) != 0) {
+		DEBUG( 1, ("map_file: Failed to unmap address %p "
+			"of size %u - %s\n", 
+			start, (unsigned int)size, strerror(errno) ));
+		return false;
+	}
+	return true;
+#else
+	talloc_free(start);
+	return true;
+#endif
+}
 
 /**
 parse a buffer into lines
 'p' will be freed on error, and otherwise will be made a child of the returned array
 **/
-static char **file_lines_parse(char *p, size_t size, int *numlines, TALLOC_CTX *mem_ctx)
+char **file_lines_parse(char *p, size_t size, int *numlines, TALLOC_CTX *mem_ctx)
 {
 	int i;
 	char *s, **ret;
@@ -288,12 +319,12 @@ static char **file_lines_parse(char *p, size_t size, int *numlines, TALLOC_CTX *
 load a file into memory and return an array of pointers to lines in the file
 must be freed with talloc_free(). 
 **/
-_PUBLIC_ char **file_lines_load(const char *fname, int *numlines, TALLOC_CTX *mem_ctx)
+_PUBLIC_ char **file_lines_load(const char *fname, int *numlines, size_t maxsize, TALLOC_CTX *mem_ctx)
 {
 	char *p;
 	size_t size;
 
-	p = file_load(fname, &size, mem_ctx);
+	p = file_load(fname, &size, maxsize, mem_ctx);
 	if (!p) return NULL;
 
 	return file_lines_parse(p, size, numlines, mem_ctx);
@@ -304,12 +335,12 @@ load a fd into memory and return an array of pointers to lines in the file
 must be freed with talloc_free(). If convert is true calls unix_to_dos on
 the list.
 **/
-_PUBLIC_ char **fd_lines_load(int fd, int *numlines, TALLOC_CTX *mem_ctx)
+_PUBLIC_ char **fd_lines_load(int fd, int *numlines, size_t maxsize, TALLOC_CTX *mem_ctx)
 {
 	char *p;
 	size_t size;
 
-	p = fd_load(fd, &size, mem_ctx);
+	p = fd_load(fd, &size, maxsize, mem_ctx);
 	if (!p) return NULL;
 
 	return file_lines_parse(p, size, numlines, mem_ctx);
@@ -402,3 +433,5 @@ _PUBLIC_ bool large_file_support(const char *path)
 	close(fd);
 	return ret == 0;
 }
+
+

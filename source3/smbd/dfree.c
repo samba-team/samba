@@ -112,7 +112,7 @@ SMB_BIG_UINT sys_disk_free(connection_struct *conn, const char *path, bool small
 				*bsize = STR_TO_SMB_BIG_UINT(p, NULL);
 			else
 				*bsize = 1024;
-			file_lines_free(lines);
+			TALLOC_FREE(lines);
 			DEBUG (3, ("Parsed output of dfree, dsize=%u, dfree=%u, bsize=%u\n",
 				(unsigned int)*dsize, (unsigned int)*dfree, (unsigned int)*bsize));
 

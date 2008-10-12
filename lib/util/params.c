@@ -510,7 +510,7 @@ static myFILE *OpenConfFile( const char *FileName )
   ret = talloc(talloc_autofree_context(), myFILE);
   if (!ret) return NULL;
 
-  ret->buf = file_load(FileName, &ret->size, ret);
+  ret->buf = file_load(FileName, &ret->size, 0, ret);
   if( NULL == ret->buf )
     {
     DEBUG( 1,
