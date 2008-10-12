@@ -2690,7 +2690,9 @@ include/build_env.h: script/build_env.sh
 proto::
 
 etags::
-	etags `find $(srcdir)/.. -name "*.[ch]"`
+	etags `find $(srcdir) -name "*.[ch]"`
+	etags --append `find $(srcdir)/../lib -name "*.[ch]"`
+	etags --append `find $(srcdir)/../source4 -name "*.[ch]"`
 
 ctags::
 	ctags `find $(srcdir)/.. -name "*.[ch]"`
