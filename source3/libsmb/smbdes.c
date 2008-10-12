@@ -389,7 +389,7 @@ void des_crypt112_16(unsigned char out[16], unsigned char in[16], const unsigned
 void SamOEMhash( unsigned char *data, const unsigned char key[16], size_t len)
 {
 	struct arcfour_state arc4_state;
-	DATA_BLOB keyblob = { key, 16 };
+	const DATA_BLOB keyblob = data_blob_const(key, 16);
 
 	arcfour_init(&arc4_state, &keyblob);
 	arcfour_crypt_sbox(&arc4_state, data, len);
