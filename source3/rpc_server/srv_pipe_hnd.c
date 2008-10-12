@@ -1207,8 +1207,6 @@ static int close_internal_rpc_pipe_hnd(struct pipes_struct *p)
 	return True;
 }
 
-static smb_np_struct *get_rpc_pipe(int pnum);
-
 /****************************************************************************
  Find an rpc pipe given a pipe handle in a buffer and an offset.
 ****************************************************************************/
@@ -1226,7 +1224,7 @@ smb_np_struct *get_rpc_pipe_p(uint16 pnum)
  Find an rpc pipe given a pipe handle.
 ****************************************************************************/
 
-static smb_np_struct *get_rpc_pipe(int pnum)
+smb_np_struct *get_rpc_pipe(int pnum)
 {
 	smb_np_struct *p;
 
