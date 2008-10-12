@@ -27,7 +27,7 @@
 #include "ntvfs/sysdep/sys_lease.h"
 #include "ntvfs/ntvfs.h"
 #include "librpc/gen_ndr/ndr_opendb.h"
-#include "lib/util/dlinklist.h"
+#include "../lib/util/dlinklist.h"
 #include "cluster/cluster.h"
 
 #define LINUX_LEASE_RT_SIGNAL (SIGRTMIN+1)

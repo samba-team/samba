@@ -20,7 +20,7 @@
 */
 
 #include "includes.h"
-#include "lib/util/dlinklist.h"
+#include "../lib/util/dlinklist.h"
 #include "librpc/gen_ndr/com_dcom.h"
 #include "lib/com/dcom/dcom.h"
 

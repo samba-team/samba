@@ -28,7 +28,7 @@
 #include "librpc/rpc/dcerpc.h"
 #include "lib/com/dcom/dcom.h"
 #include "librpc/ndr/ndr_table.h"
-#include "lib/util/dlinklist.h"
+#include "../lib/util/dlinklist.h"
 #include "auth/credentials/credentials.h"
 #include "libcli/composite/composite.h"
 
