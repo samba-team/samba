@@ -801,7 +801,7 @@ static ADS_STATUS ads_do_paged_search_args(ADS_STRUCT *ads,
 					   int *count, struct berval **cookie)
 {
 	int rc, i, version;
-	char *utf8_expr, *utf8_path, **search_attrs;
+	char *utf8_expr, *utf8_path, **search_attrs = NULL;
 	size_t converted_size;
 	LDAPControl PagedResults, NoReferrals, ExternalCtrl, *controls[4], **rcontrols;
 	BerElement *cookie_be = NULL;

@@ -105,7 +105,7 @@ XFILE *x_fopen(const char *fname, int flags, mode_t mode)
 {
 	XFILE *ret;
 
-	ret = malloc_p(XFILE);
+	ret = (XFILE *)malloc_p(XFILE);
 	if (!ret) return NULL;
 
 	memset(ret, 0, sizeof(XFILE));
@@ -403,7 +403,7 @@ XFILE *x_fdup(const XFILE *f)
 		return NULL;
 	}
 
-	ret = malloc_p(XFILE);
+	ret = (XFILE *)malloc_p(XFILE);
 	if (!ret) {
 		close(fd);
 		return NULL;
