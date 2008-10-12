@@ -39,28 +39,6 @@ static void gotalarm_sig(void)
 	gotalarm = 1;
 }
 
-/***************************************************************
- Make a TDB_DATA and keep the const warning in one place
-****************************************************************/
-
-TDB_DATA make_tdb_data(const uint8 *dptr, size_t dsize)
-{
-	TDB_DATA ret;
-	ret.dptr = CONST_DISCARD(uint8 *, dptr);
-	ret.dsize = dsize;
-	return ret;
-}
-
-TDB_DATA string_tdb_data(const char *string)
-{
-	return make_tdb_data((const uint8 *)string, string ? strlen(string) : 0 );
-}
-
-TDB_DATA string_term_tdb_data(const char *string)
-{
-	return make_tdb_data((const uint8 *)string, string ? strlen(string) + 1 : 0);
-}
-
 /****************************************************************************
  Lock a chain with timeout (in seconds).
 ****************************************************************************/
@@ -109,34 +87,12 @@ int tdb_chainlock_with_timeout( TDB_CONTEXT *tdb, TDB_DATA key, unsigned int tim
 	return tdb_chainlock_with_timeout_internal(tdb, key, timeout, F_WRLCK);
 }
 
-/****************************************************************************
- Lock a chain by string. Return -1 if timeout or lock failed.
-****************************************************************************/
-
-int tdb_lock_bystring(TDB_CONTEXT *tdb, const char *keyval)
-{
-	TDB_DATA key = string_term_tdb_data(keyval);
-	
-	return tdb_chainlock(tdb, key);
-}
-
 int tdb_lock_bystring_with_timeout(TDB_CONTEXT *tdb, const char *keyval,
 				   int timeout)
 {
 	TDB_DATA key = string_term_tdb_data(keyval);
 	
 	return tdb_chainlock_with_timeout(tdb, key, timeout);
-}
-
-/****************************************************************************
- Unlock a chain by string.
-****************************************************************************/
-
-void tdb_unlock_bystring(TDB_CONTEXT *tdb, const char *keyval)
-{
-	TDB_DATA key = string_term_tdb_data(keyval);
-
-	tdb_chainunlock(tdb, key);
 }
 
 /****************************************************************************
@@ -150,155 +106,8 @@ int tdb_read_lock_bystring_with_timeout(TDB_CONTEXT *tdb, const char *keyval, un
 	return tdb_chainlock_with_timeout_internal(tdb, key, timeout, F_RDLCK);
 }
 
-/****************************************************************************
- Read unlock a chain by string.
-****************************************************************************/
-
-void tdb_read_unlock_bystring(TDB_CONTEXT *tdb, const char *keyval)
-{
-	TDB_DATA key = string_term_tdb_data(keyval);
-	
-	tdb_chainunlock_read(tdb, key);
-}
 
 
-/****************************************************************************
- Fetch a int32 value by a arbitrary blob key, return -1 if not found.
- Output is int32 in native byte order.
-****************************************************************************/
-
-int32 tdb_fetch_int32_byblob(TDB_CONTEXT *tdb, TDB_DATA key)
-{
-	TDB_DATA data;
-	int32 ret;
-
-	data = tdb_fetch(tdb, key);
-	if (!data.dptr || data.dsize != sizeof(int32)) {
-		SAFE_FREE(data.dptr);
-		return -1;
-	}
-
-	ret = IVAL(data.dptr,0);
-	SAFE_FREE(data.dptr);
-	return ret;
-}
-
-/****************************************************************************
- Fetch a int32 value by string key, return -1 if not found.
- Output is int32 in native byte order.
-****************************************************************************/
-
-int32 tdb_fetch_int32(TDB_CONTEXT *tdb, const char *keystr)
-{
-	TDB_DATA key = string_term_tdb_data(keystr);
-
-	return tdb_fetch_int32_byblob(tdb, key);
-}
-
-/****************************************************************************
- Store a int32 value by an arbitary blob key, return 0 on success, -1 on failure.
- Input is int32 in native byte order. Output in tdb is in little-endian.
-****************************************************************************/
-
-int tdb_store_int32_byblob(TDB_CONTEXT *tdb, TDB_DATA key, int32 v)
-{
-	TDB_DATA data;
-	int32 v_store;
-
-	SIVAL(&v_store,0,v);
-	data.dptr = (uint8 *)&v_store;
-	data.dsize = sizeof(int32);
-
-	return tdb_store(tdb, key, data, TDB_REPLACE);
-}
-
-/****************************************************************************
- Store a int32 value by string key, return 0 on success, -1 on failure.
- Input is int32 in native byte order. Output in tdb is in little-endian.
-****************************************************************************/
-
-int tdb_store_int32(TDB_CONTEXT *tdb, const char *keystr, int32 v)
-{
-	TDB_DATA key = string_term_tdb_data(keystr);
-
-	return tdb_store_int32_byblob(tdb, key, v);
-}
-
-/****************************************************************************
- Fetch a uint32 value by a arbitrary blob key, return -1 if not found.
- Output is uint32 in native byte order.
-****************************************************************************/
-
-bool tdb_fetch_uint32_byblob(TDB_CONTEXT *tdb, TDB_DATA key, uint32 *value)
-{
-	TDB_DATA data;
-
-	data = tdb_fetch(tdb, key);
-	if (!data.dptr || data.dsize != sizeof(uint32)) {
-		SAFE_FREE(data.dptr);
-		return False;
-	}
-
-	*value = IVAL(data.dptr,0);
-	SAFE_FREE(data.dptr);
-	return True;
-}
-
-/****************************************************************************
- Fetch a uint32 value by string key, return -1 if not found.
- Output is uint32 in native byte order.
-****************************************************************************/
-
-bool tdb_fetch_uint32(TDB_CONTEXT *tdb, const char *keystr, uint32 *value)
-{
-	TDB_DATA key = string_term_tdb_data(keystr);
-
-	return tdb_fetch_uint32_byblob(tdb, key, value);
-}
-
-/****************************************************************************
- Store a uint32 value by an arbitary blob key, return 0 on success, -1 on failure.
- Input is uint32 in native byte order. Output in tdb is in little-endian.
-****************************************************************************/
-
-bool tdb_store_uint32_byblob(TDB_CONTEXT *tdb, TDB_DATA key, uint32 value)
-{
-	TDB_DATA data;
-	uint32 v_store;
-	bool ret = True;
-
-	SIVAL(&v_store, 0, value);
-	data.dptr = (uint8 *)&v_store;
-	data.dsize = sizeof(uint32);
-
-	if (tdb_store(tdb, key, data, TDB_REPLACE) == -1)
-		ret = False;
-
-	return ret;
-}
-
-/****************************************************************************
- Store a uint32 value by string key, return 0 on success, -1 on failure.
- Input is uint32 in native byte order. Output in tdb is in little-endian.
-****************************************************************************/
-
-bool tdb_store_uint32(TDB_CONTEXT *tdb, const char *keystr, uint32 value)
-{
-	TDB_DATA key = string_term_tdb_data(keystr);
-
-	return tdb_store_uint32_byblob(tdb, key, value);
-}
-/****************************************************************************
- Store a buffer by a null terminated string key.  Return 0 on success, -1
- on failure.
-****************************************************************************/
-
-int tdb_store_bystring(TDB_CONTEXT *tdb, const char *keystr, TDB_DATA data, int flags)
-{
-	TDB_DATA key = string_term_tdb_data(keystr);
-
-	return tdb_store(tdb, key, data, flags);
-}
 
 int tdb_trans_store_bystring(TDB_CONTEXT *tdb, const char *keystr,
 			     TDB_DATA data, int flags)
@@ -306,112 +115,6 @@ int tdb_trans_store_bystring(TDB_CONTEXT *tdb, const char *keystr,
 	TDB_DATA key = string_term_tdb_data(keystr);
 	
 	return tdb_trans_store(tdb, key, data, flags);
-}
-
-/****************************************************************************
- Fetch a buffer using a null terminated string key.  Don't forget to call
- free() on the result dptr.
-****************************************************************************/
-
-TDB_DATA tdb_fetch_bystring(TDB_CONTEXT *tdb, const char *keystr)
-{
-	TDB_DATA key = string_term_tdb_data(keystr);
-
-	return tdb_fetch(tdb, key);
-}
-
-/****************************************************************************
- Delete an entry using a null terminated string key. 
-****************************************************************************/
-
-int tdb_delete_bystring(TDB_CONTEXT *tdb, const char *keystr)
-{
-	TDB_DATA key = string_term_tdb_data(keystr);
-
-	return tdb_delete(tdb, key);
-}
-
-/****************************************************************************
- Atomic integer change. Returns old value. To create, set initial value in *oldval. 
-****************************************************************************/
-
-int32 tdb_change_int32_atomic(TDB_CONTEXT *tdb, const char *keystr, int32 *oldval, int32 change_val)
-{
-	int32 val;
-	int32 ret = -1;
-
-	if (tdb_lock_bystring(tdb, keystr) == -1)
-		return -1;
-
-	if ((val = tdb_fetch_int32(tdb, keystr)) == -1) {
-		/* The lookup failed */
-		if (tdb_error(tdb) != TDB_ERR_NOEXIST) {
-			/* but not because it didn't exist */
-			goto err_out;
-		}
-		
-		/* Start with 'old' value */
-		val = *oldval;
-
-	} else {
-		/* It worked, set return value (oldval) to tdb data */
-		*oldval = val;
-	}
-
-	/* Increment value for storage and return next time */
-	val += change_val;
-		
-	if (tdb_store_int32(tdb, keystr, val) == -1)
-		goto err_out;
-
-	ret = 0;
-
-  err_out:
-
-	tdb_unlock_bystring(tdb, keystr);
-	return ret;
-}
-
-/****************************************************************************
- Atomic unsigned integer change. Returns old value. To create, set initial value in *oldval. 
-****************************************************************************/
-
-bool tdb_change_uint32_atomic(TDB_CONTEXT *tdb, const char *keystr, uint32 *oldval, uint32 change_val)
-{
-	uint32 val;
-	bool ret = False;
-
-	if (tdb_lock_bystring(tdb, keystr) == -1)
-		return False;
-
-	if (!tdb_fetch_uint32(tdb, keystr, &val)) {
-		/* It failed */
-		if (tdb_error(tdb) != TDB_ERR_NOEXIST) { 
-			/* and not because it didn't exist */
-			goto err_out;
-		}
-
-		/* Start with 'old' value */
-		val = *oldval;
-
-	} else {
-		/* it worked, set return value (oldval) to tdb data */
-		*oldval = val;
-
-	}
-
-	/* get a new value to store */
-	val += change_val;
-		
-	if (!tdb_store_uint32(tdb, keystr, val))
-		goto err_out;
-
-	ret = True;
-
-  err_out:
-
-	tdb_unlock_bystring(tdb, keystr);
-	return ret;
 }
 
 /****************************************************************************

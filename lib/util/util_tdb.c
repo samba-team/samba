@@ -21,7 +21,6 @@
 
 #include "includes.h"
 #include "../tdb/include/tdb.h"
-#include "pstring.h"
 #include "../lib/util/util_tdb.h"
 
 /* these are little tdb utility functions that are meant to make
@@ -31,12 +30,22 @@
  Make a TDB_DATA and keep the const warning in one place
 ****************************************************************/
 
-static TDB_DATA make_tdb_data(const char *dptr, size_t dsize)
+TDB_DATA make_tdb_data(const uint8_t *dptr, size_t dsize)
 {
 	TDB_DATA ret;
-	ret.dptr = discard_const_p(unsigned char, dptr);
+	ret.dptr = discard_const_p(uint8_t, dptr);
 	ret.dsize = dsize;
 	return ret;
+}
+
+TDB_DATA string_tdb_data(const char *string)
+{
+	return make_tdb_data((const uint8 *)string, string ? strlen(string) : 0 );
+}
+
+TDB_DATA string_term_tdb_data(const char *string)
+{
+	return make_tdb_data((const uint8 *)string, string ? strlen(string) + 1 : 0);
 }
 
 /****************************************************************************
@@ -45,7 +54,7 @@ static TDB_DATA make_tdb_data(const char *dptr, size_t dsize)
 
 int tdb_lock_bystring(struct tdb_context *tdb, const char *keyval)
 {
-	TDB_DATA key = make_tdb_data(keyval, strlen(keyval)+1);
+	TDB_DATA key = string_term_tdb_data(keyval);
 	
 	return tdb_chainlock(tdb, key);
 }
@@ -56,7 +65,7 @@ int tdb_lock_bystring(struct tdb_context *tdb, const char *keyval)
 
 void tdb_unlock_bystring(struct tdb_context *tdb, const char *keyval)
 {
-	TDB_DATA key = make_tdb_data(keyval, strlen(keyval)+1);
+	TDB_DATA key = string_term_tdb_data(keyval);
 
 	tdb_chainunlock(tdb, key);
 }
@@ -67,7 +76,7 @@ void tdb_unlock_bystring(struct tdb_context *tdb, const char *keyval)
 
 int tdb_read_lock_bystring(struct tdb_context *tdb, const char *keyval)
 {
-	TDB_DATA key = make_tdb_data(keyval, strlen(keyval)+1);
+	TDB_DATA key = string_term_tdb_data(keyval);
 	
 	return tdb_chainlock_read(tdb, key);
 }
@@ -78,7 +87,7 @@ int tdb_read_lock_bystring(struct tdb_context *tdb, const char *keyval)
 
 void tdb_read_unlock_bystring(struct tdb_context *tdb, const char *keyval)
 {
-	TDB_DATA key = make_tdb_data(keyval, strlen(keyval)+1);
+	TDB_DATA key = string_term_tdb_data(keyval);
 	
 	tdb_chainunlock_read(tdb, key);
 }
@@ -89,9 +98,8 @@ void tdb_read_unlock_bystring(struct tdb_context *tdb, const char *keyval)
  Output is int32_t in native byte order.
 ****************************************************************************/
 
-int32_t tdb_fetch_int32_byblob(struct tdb_context *tdb, const char *keyval, size_t len)
+int32_t tdb_fetch_int32_byblob(struct tdb_context *tdb, TDB_DATA key)
 {
-	TDB_DATA key = make_tdb_data(keyval, len);
 	TDB_DATA data;
 	int32_t ret;
 
@@ -113,7 +121,7 @@ int32_t tdb_fetch_int32_byblob(struct tdb_context *tdb, const char *keyval, size
 
 int32_t tdb_fetch_int32(struct tdb_context *tdb, const char *keystr)
 {
-	return tdb_fetch_int32_byblob(tdb, keystr, strlen(keystr) + 1);
+	return tdb_fetch_int32_byblob(tdb, string_term_tdb_data(keystr));
 }
 
 /****************************************************************************
@@ -121,9 +129,8 @@ int32_t tdb_fetch_int32(struct tdb_context *tdb, const char *keystr)
  Input is int32_t in native byte order. Output in tdb is in little-endian.
 ****************************************************************************/
 
-int tdb_store_int32_byblob(struct tdb_context *tdb, const char *keystr, size_t len, int32_t v)
+int tdb_store_int32_byblob(struct tdb_context *tdb, TDB_DATA key, int32_t v)
 {
-	TDB_DATA key = make_tdb_data(keystr, len);
 	TDB_DATA data;
 	int32_t v_store;
 
@@ -141,7 +148,7 @@ int tdb_store_int32_byblob(struct tdb_context *tdb, const char *keystr, size_t l
 
 int tdb_store_int32(struct tdb_context *tdb, const char *keystr, int32_t v)
 {
-	return tdb_store_int32_byblob(tdb, keystr, strlen(keystr) + 1, v);
+	return tdb_store_int32_byblob(tdb, string_term_tdb_data(keystr), v);
 }
 
 /****************************************************************************
@@ -149,9 +156,8 @@ int tdb_store_int32(struct tdb_context *tdb, const char *keystr, int32_t v)
  Output is uint32_t in native byte order.
 ****************************************************************************/
 
-bool tdb_fetch_uint32_byblob(struct tdb_context *tdb, const char *keyval, size_t len, uint32_t *value)
+bool tdb_fetch_uint32_byblob(struct tdb_context *tdb, TDB_DATA key, uint32_t *value)
 {
-	TDB_DATA key = make_tdb_data(keyval, len);
 	TDB_DATA data;
 
 	data = tdb_fetch(tdb, key);
@@ -172,7 +178,7 @@ bool tdb_fetch_uint32_byblob(struct tdb_context *tdb, const char *keyval, size_t
 
 bool tdb_fetch_uint32(struct tdb_context *tdb, const char *keystr, uint32_t *value)
 {
-	return tdb_fetch_uint32_byblob(tdb, keystr, strlen(keystr) + 1, value);
+	return tdb_fetch_uint32_byblob(tdb, string_term_tdb_data(keystr), value);
 }
 
 /****************************************************************************
@@ -180,9 +186,8 @@ bool tdb_fetch_uint32(struct tdb_context *tdb, const char *keystr, uint32_t *val
  Input is uint32_t in native byte order. Output in tdb is in little-endian.
 ****************************************************************************/
 
-bool tdb_store_uint32_byblob(struct tdb_context *tdb, const char *keystr, size_t len, uint32_t value)
+bool tdb_store_uint32_byblob(struct tdb_context *tdb, TDB_DATA key, uint32_t value)
 {
-	TDB_DATA key = make_tdb_data(keystr, len);
 	TDB_DATA data;
 	uint32_t v_store;
 	bool ret = true;
@@ -204,7 +209,7 @@ bool tdb_store_uint32_byblob(struct tdb_context *tdb, const char *keystr, size_t
 
 bool tdb_store_uint32(struct tdb_context *tdb, const char *keystr, uint32_t value)
 {
-	return tdb_store_uint32_byblob(tdb, keystr, strlen(keystr) + 1, value);
+	return tdb_store_uint32_byblob(tdb, string_term_tdb_data(keystr), value);
 }
 /****************************************************************************
  Store a buffer by a null terminated string key.  Return 0 on success, -1
@@ -213,7 +218,7 @@ bool tdb_store_uint32(struct tdb_context *tdb, const char *keystr, uint32_t valu
 
 int tdb_store_bystring(struct tdb_context *tdb, const char *keystr, TDB_DATA data, int flags)
 {
-	TDB_DATA key = make_tdb_data(keystr, strlen(keystr)+1);
+	TDB_DATA key = string_term_tdb_data(keystr);
 	
 	return tdb_store(tdb, key, data, flags);
 }
@@ -225,7 +230,7 @@ int tdb_store_bystring(struct tdb_context *tdb, const char *keystr, TDB_DATA dat
 
 TDB_DATA tdb_fetch_bystring(struct tdb_context *tdb, const char *keystr)
 {
-	TDB_DATA key = make_tdb_data(keystr, strlen(keystr)+1);
+	TDB_DATA key = string_term_tdb_data(keystr);
 
 	return tdb_fetch(tdb, key);
 }
@@ -236,7 +241,7 @@ TDB_DATA tdb_fetch_bystring(struct tdb_context *tdb, const char *keystr)
 
 int tdb_delete_bystring(struct tdb_context *tdb, const char *keystr)
 {
-	TDB_DATA key = make_tdb_data(keystr, strlen(keystr)+1);
+	TDB_DATA key = string_term_tdb_data(keystr);
 
 	return tdb_delete(tdb, key);
 }
@@ -332,215 +337,4 @@ int tdb_traverse_delete_fn(struct tdb_context *the_tdb, TDB_DATA key, TDB_DATA d
                      void *state)
 {
     return tdb_delete(the_tdb, key);
-}
-
-
-
-/****************************************************************************
- Useful pair of routines for packing/unpacking data consisting of
- integers and strings.
-****************************************************************************/
-
-size_t tdb_pack(TDB_CONTEXT *tdb, char *buf, int bufsize, const char *fmt, ...)
-{
-	va_list ap;
-	uint8_t bt;
-	uint16_t w;
-	uint32_t d;
-	int i;
-	void *p;
-	int len;
-	char *s;
-	char c;
-	char *buf0 = buf;
-	const char *fmt0 = fmt;
-	int bufsize0 = bufsize;
-	tdb_log_func log_fn = tdb_log_fn(tdb);
-
-	va_start(ap, fmt);
-
-	while (*fmt) {
-		switch ((c = *fmt++)) {
-		case 'b': /* unsigned 8-bit integer */
-			len = 1;
-			bt = (uint8_t)va_arg(ap, int);
-			if (bufsize && bufsize >= len)
-				SSVAL(buf, 0, bt);
-			break;
-		case 'w': /* unsigned 16-bit integer */
-			len = 2;
-			w = (uint16_t)va_arg(ap, int);
-			if (bufsize && bufsize >= len)
-				SSVAL(buf, 0, w);
-			break;
-		case 'd': /* signed 32-bit integer (standard int in most systems) */
-			len = 4;
-			d = va_arg(ap, uint32_t);
-			if (bufsize && bufsize >= len)
-				SIVAL(buf, 0, d);
-			break;
-		case 'p': /* pointer */
-			len = 4;
-			p = va_arg(ap, void *);
-			d = p?1:0;
-			if (bufsize && bufsize >= len)
-				SIVAL(buf, 0, d);
-			break;
-		case 'P': /* null-terminated string */
-			s = va_arg(ap,char *);
-			w = strlen(s);
-			len = w + 1;
-			if (bufsize && bufsize >= len)
-				memcpy(buf, s, len);
-			break;
-		case 'f': /* null-terminated string */
-			s = va_arg(ap,char *);
-			w = strlen(s);
-			len = w + 1;
-			if (bufsize && bufsize >= len)
-				memcpy(buf, s, len);
-			break;
-		case 'B': /* fixed-length string */
-			i = va_arg(ap, int);
-			s = va_arg(ap, char *);
-			len = 4+i;
-			if (bufsize && bufsize >= len) {
-				SIVAL(buf, 0, i);
-				memcpy(buf+4, s, i);
-			}
-			break;
-		default:
-			log_fn(tdb, 0,"Unknown tdb_pack format %c in %s\n", 
-			       c, fmt);
-			len = 0;
-			break;
-		}
-
-		buf += len;
-		if (bufsize)
-			bufsize -= len;
-		if (bufsize < 0)
-			bufsize = 0;
-	}
-
-	va_end(ap);
-
-	log_fn(tdb, 18,"tdb_pack(%s, %d) -> %d\n", 
-	       fmt0, bufsize0, (int)PTR_DIFF(buf, buf0));
-	
-	return PTR_DIFF(buf, buf0);
-}
-
-/****************************************************************************
- Useful pair of routines for packing/unpacking data consisting of
- integers and strings.
-****************************************************************************/
-
-int tdb_unpack(TDB_CONTEXT *tdb, char *buf, int bufsize, const char *fmt, ...)
-{
-	va_list ap;
-	uint8_t *bt;
-	uint16_t *w;
-	uint32_t *d;
-	int len;
-	int *i;
-	void **p;
-	char *s, **b, **ps;
-	char c;
-	char *buf0 = buf;
-	const char *fmt0 = fmt;
-	int bufsize0 = bufsize;
-	tdb_log_func log_fn = tdb_log_fn(tdb);
-
-	va_start(ap, fmt);
-
-	while (*fmt) {
-		switch ((c=*fmt++)) {
-		case 'b':
-			len = 1;
-			bt = va_arg(ap, uint8_t *);
-			if (bufsize < len)
-				goto no_space;
-			*bt = SVAL(buf, 0);
-			break;
-		case 'w':
-			len = 2;
-			w = va_arg(ap, uint16_t *);
-			if (bufsize < len)
-				goto no_space;
-			*w = SVAL(buf, 0);
-			break;
-		case 'd':
-			len = 4;
-			d = va_arg(ap, uint32_t *);
-			if (bufsize < len)
-				goto no_space;
-			*d = IVAL(buf, 0);
-			break;
-		case 'p':
-			len = 4;
-			p = va_arg(ap, void **);
-			if (bufsize < len)
-				goto no_space;
-
-			/*
-			 * This isn't a real pointer - only a token (1 or 0)
-			 * to mark the fact a pointer is present.
-			 */
-
-			*p = (void *)(IVAL(buf, 0) ? (void *)1 : NULL);
-			break;
-		case 'P':
-			/* Return a malloc'ed string. */
-			ps = va_arg(ap,char **	);
-			len = strlen((const char *)buf) + 1;
-			*ps = strdup((const char *)buf);
-			break;
-		case 'f':
-			s = va_arg(ap,char *);
-			len = strlen(buf) + 1;
-			if (bufsize < len || len > sizeof(fstring))
-				goto no_space;
-			memcpy(s, buf, len);
-			break;
-		case 'B':
-			i = va_arg(ap, int *);
-			b = va_arg(ap, char **);
-			len = 4;
-			if (bufsize < len)
-				goto no_space;
-			*i = IVAL(buf, 0);
-			if (! *i) {
-				*b = NULL;
-				break;
-			}
-			len += *i;
-			if (bufsize < len)
-				goto no_space;
-			*b = (char *)malloc(*i);
-			if (! *b)
-				goto no_space;
-			memcpy(*b, buf+4, *i);
-			break;
-		default:
-			log_fn(tdb, 0, "Unknown tdb_unpack format %c in %s\n",
-			       c, fmt);
-
-			len = 0;
-			break;
-		}
-
-		buf += len;
-		bufsize -= len;
-	}
-
-	va_end(ap);
-
-	log_fn(tdb, 18, "tdb_unpack(%s, %d) -> %d\n",
-	       fmt0, bufsize0, (int)PTR_DIFF(buf, buf0));
-
-	return PTR_DIFF(buf, buf0);
-
- no_space:
-	return -1;
 }
