@@ -18,7 +18,7 @@
 */
 
 #include "memcache.h"
-#include "rbtree.h"
+#include "../lib/util/rbtree.h"
 
 static struct memcache *global_cache;
 

@@ -23,6 +23,7 @@ LIBSAMBA-UTIL_OBJ_FILES = $(addprefix $(libutilsrcdir)/, \
 		mutex.o \
 		idtree.o \
 		become_daemon.o \
+		rbtree.o \
 		params.o)
 
 PUBLIC_HEADERS += $(addprefix $(libutilsrcdir)/, util.h \

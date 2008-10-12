@@ -312,7 +312,7 @@ LIBSAMBAUTIL_OBJ = @LIBTALLOC_STATIC@ \
 LIB_OBJ = $(LIBSAMBAUTIL_OBJ) \
 	  lib/messages.o librpc/gen_ndr/ndr_messaging.o lib/messages_local.o \
 	  lib/messages_ctdbd.o lib/packet.o lib/ctdbd_conn.o lib/talloc_stack.o \
-	  lib/interfaces.o lib/rbtree.o lib/memcache.o \
+	  lib/interfaces.o ../lib/util/rbtree.o lib/memcache.o \
 	  lib/util_transfer_file.o lib/async_req.o \
 	  lib/async_sock.o \
 	  $(TDB_LIB_OBJ) \
