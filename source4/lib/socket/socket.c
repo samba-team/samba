@@ -491,7 +491,7 @@ static const struct {
 **/
 _PUBLIC_ void set_socket_options(int fd, const char *options)
 {
-	const char **options_list = str_list_make(NULL, options, " \t,");
+	const char **options_list = (const char **)str_list_make(NULL, options, " \t,");
 	int j;
 
 	if (!options_list)
