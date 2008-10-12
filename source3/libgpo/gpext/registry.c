@@ -410,7 +410,7 @@ static NTSTATUS reg_parse_registry(TALLOC_CTX *mem_ctx,
 		return status;
 	}
 
-	buf = (uint16 *)file_load(real_filename, &n, 0);
+	buf = (uint16 *)file_load(real_filename, &n, 0, NULL);
 	if (!buf) {
 		TALLOC_FREE(reg_file);
 		return NT_STATUS_CANNOT_LOAD_REGISTRY_FILE;
@@ -455,7 +455,7 @@ static NTSTATUS reg_parse_registry(TALLOC_CTX *mem_ctx,
 	status = NT_STATUS_OK;
 
  out:
-	SAFE_FREE(buf);
+	TALLOC_FREE(buf);
 	prs_mem_free(&ps);
 
 	return status;
