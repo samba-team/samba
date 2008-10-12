@@ -1296,10 +1296,9 @@ connection_struct *make_connection(const char *service_in, DATA_BLOB password,
 
 void close_cnum(connection_struct *conn, uint16 vuid)
 {
-	if (IS_IPC(conn)) {
-		pipe_close_conn(conn);
-	} else {
-		file_close_conn(conn);
+	file_close_conn(conn);
+
+	if (!IS_IPC(conn)) {
 		dptr_closecnum(conn);
 	}
 

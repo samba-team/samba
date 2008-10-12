@@ -48,8 +48,6 @@ int count_all_current_connections(void);
 bool claim_connection(connection_struct *conn, const char *name,
 		      uint32 msg_flags);
 bool register_message_flags(bool doreg, uint32 msg_flags);
-bool store_pipe_opendb( smb_np_struct *p );
-bool delete_pipe_opendb( smb_np_struct *p );
 
 /* The following definitions come from winbindd/winbindd.c  */
 

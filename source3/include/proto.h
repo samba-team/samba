@@ -8692,19 +8692,7 @@ bool api_pipe_request(pipes_struct *p);
 pipes_struct *get_first_internal_pipe(void);
 pipes_struct *get_next_internal_pipe(pipes_struct *p);
 void set_pipe_handle_offset(int max_open_files);
-void reset_chain_p(void);
 void init_rpc_pipe_hnd(void);
-smb_np_struct *open_rpc_pipe_p(const char *pipe_name, 
-			      connection_struct *conn, uint16 vuid);
-ssize_t write_to_pipe(smb_np_struct *p, char *data, size_t n);
-ssize_t read_from_pipe(smb_np_struct *p, char *data, size_t n,
-		bool *is_data_outstanding);
-bool wait_rpc_pipe_hnd_state(smb_np_struct *p, uint16 priority);
-bool set_rpc_pipe_hnd_state(smb_np_struct *p, uint16 device_state);
-bool close_rpc_pipe_hnd(smb_np_struct *p);
-void pipe_close_conn(connection_struct *conn);
-smb_np_struct *get_rpc_pipe_p(uint16 pnum);
-smb_np_struct *get_rpc_pipe(int pnum);
 struct pipes_struct *make_internal_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 					      const char *pipe_name,
 					      const char *client_address,
@@ -9414,8 +9402,6 @@ int count_all_current_connections(void);
 bool claim_connection(connection_struct *conn, const char *name,
 		      uint32 msg_flags);
 bool register_message_flags(bool doreg, uint32 msg_flags);
-bool store_pipe_opendb( smb_np_struct *p );
-bool delete_pipe_opendb( smb_np_struct *p );
 
 /* The following definitions come from smbd/dfree.c  */
 

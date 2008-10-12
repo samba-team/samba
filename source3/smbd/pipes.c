@@ -312,29 +312,3 @@ void reply_pipe_read_and_X(struct smb_request *req)
 
 	chain_reply(req);
 }
-
-/****************************************************************************
- Reply to a close.
-****************************************************************************/
-
-void reply_pipe_close(connection_struct *conn, struct smb_request *req)
-{
-	smb_np_struct *p = get_rpc_pipe_p(SVAL(req->inbuf,smb_vwv0));
-
-	if (!p) {
-		reply_doserror(req, ERRDOS, ERRbadfid);
-		return;
-	}
-
-	DEBUG(5,("reply_pipe_close: pnum:%x\n", p->pnum));
-
-	if (!close_rpc_pipe_hnd(p)) {
-		reply_doserror(req, ERRDOS, ERRbadfid);
-		return;
-	}
-	
-	/* TODO: REMOVE PIPE FROM DB */
-
-	reply_outbuf(req, 0, 0);
-	return;
-}

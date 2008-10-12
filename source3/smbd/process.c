@@ -1487,7 +1487,6 @@ static void construct_reply(char *inbuf, int size, size_t unread_bytes, bool enc
 	struct smb_request *req;
 
 	chain_size = 0;
-	reset_chain_p();
 
 	if (!(req = talloc(talloc_tos(), struct smb_request))) {
 		smb_panic("could not allocate smb_request");
