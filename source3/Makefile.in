@@ -433,7 +433,7 @@ LIBMSRPC_OBJ = rpc_client/cli_lsarpc.o rpc_client/cli_samr.o \
 	       rpc_client/cli_svcctl.o \
 	       rpc_client/init_samr.o \
 		   librpc/rpc/dcerpc.o \
-		   librpc/rpc/binding.o
+		   ../librpc/rpc/binding.o
 
 LIBMSRPC_GEN_OBJ = librpc/gen_ndr/cli_lsa.o \
 		   librpc/gen_ndr/cli_dfs.o \

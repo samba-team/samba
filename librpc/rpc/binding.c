@@ -23,6 +23,10 @@
 */
 
 #include "includes.h"
+#include "librpc/gen_ndr/ndr_epmapper.h"
+#include "librpc/gen_ndr/ndr_misc.h"
+#include "librpc/rpc/dcerpc.h"
+#undef strcasecmp
 
 #define MAX_PROTSEQ		10
 
@@ -69,7 +73,18 @@ static const struct {
 	const char *name;
 	uint32_t flag;
 } ncacn_options[] = {
-	{ "", 0 }
+	{"sign", DCERPC_SIGN},
+	{"seal", DCERPC_SEAL},
+	{"connect", DCERPC_CONNECT},
+	{"spnego", DCERPC_AUTH_SPNEGO},
+	{"ntlm", DCERPC_AUTH_NTLM},
+	{"krb5", DCERPC_AUTH_KRB5},
+	{"validate", DCERPC_DEBUG_VALIDATE_BOTH},
+	{"print", DCERPC_DEBUG_PRINT_BOTH},
+	{"padcheck", DCERPC_DEBUG_PAD_CHECK},
+	{"bigendian", DCERPC_PUSH_BIGENDIAN},
+	{"smb2", DCERPC_SMB2},
+	{"hdrsign", DCERPC_HEADER_SIGNING}
 };
 
 const char *epm_floor_string(TALLOC_CTX *mem_ctx, struct epm_floor *epm_floor)
@@ -96,7 +111,8 @@ const char *epm_floor_string(TALLOC_CTX *mem_ctx, struct epm_floor *epm_floor)
 
 				return talloc_asprintf(mem_ctx, " uuid %s/0x%02x", uuidstr, syntax.if_version);
 			} else { /* IPX */
-				return NULL;
+				return talloc_asprintf(mem_ctx, "IPX:%s", 
+						data_blob_hex_string(mem_ctx, &epm_floor->rhs.uuid.unknown));
 			}
 
 		case EPM_PROTOCOL_NCACN:
@@ -261,7 +277,7 @@ _PUBLIC_ NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *s, struc
 		}
 
 		for (i=0;i<ARRAY_SIZE(transports);i++) {
-			if (strcmp(type, transports[i].name) == 0) {
+			if (strcasecmp(type, transports[i].name) == 0) {
 				b->transport = transports[i].transport;
 				break;
 			}
@@ -325,7 +341,7 @@ _PUBLIC_ NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *s, struc
 	/* some options are pre-parsed for convenience */
 	for (i=0;b->options[i];i++) {
 		for (j=0;j<ARRAY_SIZE(ncacn_options);j++) {
-			if (strcmp(ncacn_options[j].name, b->options[i]) == 0) {
+			if (strcasecmp(ncacn_options[j].name, b->options[i]) == 0) {
 				int k;
 				b->flags |= ncacn_options[j].flag;
 				for (k=i;b->options[k];k++) {
@@ -384,7 +400,7 @@ _PUBLIC_ NTSTATUS dcerpc_floor_get_lhs_data(struct epm_floor *epm_floor, struct 
 
 static DATA_BLOB dcerpc_floor_pack_lhs_data(TALLOC_CTX *mem_ctx, const struct ndr_syntax_id *syntax)
 {
-	struct ndr_push *ndr = ndr_push_init_ctx(mem_ctx);
+	struct ndr_push *ndr = ndr_push_init_ctx(mem_ctx, NULL);
 
 	ndr->flags |= LIBNDR_FLAG_NOALIGN;
 

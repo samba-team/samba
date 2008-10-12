@@ -43,7 +43,7 @@ struct rpc_request *dcerpc_ndr_request_send(struct dcerpc_pipe *p, const struct 
 	ret->call = call;
 	ret->r = r;
 
-	push = ndr_push_init_ctx(mem_ctx);
+	push = ndr_push_init_ctx(mem_ctx, NULL);
 	if (!push) {
 		return NULL;
 	}

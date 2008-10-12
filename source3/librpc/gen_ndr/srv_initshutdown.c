@@ -56,7 +56,7 @@ static bool api_initshutdown_Init(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(initshutdown_Init, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -129,7 +129,7 @@ static bool api_initshutdown_Abort(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(initshutdown_Abort, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -202,7 +202,7 @@ static bool api_initshutdown_InitEx(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(initshutdown_InitEx, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;

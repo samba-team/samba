@@ -63,7 +63,7 @@ static bool api_dssetup_DsRoleGetPrimaryDomainInformation(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(dssetup_DsRoleGetPrimaryDomainInformation, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -136,7 +136,7 @@ static bool api_dssetup_DsRoleDnsNameToFlatName(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(dssetup_DsRoleDnsNameToFlatName, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -209,7 +209,7 @@ static bool api_dssetup_DsRoleDcAsDc(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(dssetup_DsRoleDcAsDc, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -282,7 +282,7 @@ static bool api_dssetup_DsRoleDcAsReplica(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(dssetup_DsRoleDcAsReplica, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -355,7 +355,7 @@ static bool api_dssetup_DsRoleDemoteDc(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(dssetup_DsRoleDemoteDc, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -428,7 +428,7 @@ static bool api_dssetup_DsRoleGetDcOperationProgress(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(dssetup_DsRoleGetDcOperationProgress, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -501,7 +501,7 @@ static bool api_dssetup_DsRoleGetDcOperationResults(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(dssetup_DsRoleGetDcOperationResults, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -574,7 +574,7 @@ static bool api_dssetup_DsRoleCancel(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(dssetup_DsRoleCancel, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -647,7 +647,7 @@ static bool api_dssetup_DsRoleServerSaveStateForUpgrade(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(dssetup_DsRoleServerSaveStateForUpgrade, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -720,7 +720,7 @@ static bool api_dssetup_DsRoleUpgradeDownlevelServer(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(dssetup_DsRoleUpgradeDownlevelServer, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -793,7 +793,7 @@ static bool api_dssetup_DsRoleAbortDownlevelServerUpgrade(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(dssetup_DsRoleAbortDownlevelServerUpgrade, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;

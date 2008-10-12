@@ -63,7 +63,7 @@ static bool api_winreg_OpenHKCR(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(winreg_OpenHKCR, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -143,7 +143,7 @@ static bool api_winreg_OpenHKCU(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(winreg_OpenHKCU, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -223,7 +223,7 @@ static bool api_winreg_OpenHKLM(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(winreg_OpenHKLM, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -303,7 +303,7 @@ static bool api_winreg_OpenHKPD(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(winreg_OpenHKPD, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -383,7 +383,7 @@ static bool api_winreg_OpenHKU(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(winreg_OpenHKU, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -458,7 +458,7 @@ static bool api_winreg_CloseKey(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(winreg_CloseKey, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -539,7 +539,7 @@ static bool api_winreg_CreateKey(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(winreg_CreateKey, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -612,7 +612,7 @@ static bool api_winreg_DeleteKey(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(winreg_DeleteKey, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -685,7 +685,7 @@ static bool api_winreg_DeleteValue(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(winreg_DeleteValue, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -762,7 +762,7 @@ static bool api_winreg_EnumKey(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(winreg_EnumKey, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -841,7 +841,7 @@ static bool api_winreg_EnumValue(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(winreg_EnumValue, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -914,7 +914,7 @@ static bool api_winreg_FlushKey(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(winreg_FlushKey, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -989,7 +989,7 @@ static bool api_winreg_GetKeySecurity(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(winreg_GetKeySecurity, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1062,7 +1062,7 @@ static bool api_winreg_LoadKey(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(winreg_LoadKey, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1135,7 +1135,7 @@ static bool api_winreg_NotifyChangeKeyValue(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(winreg_NotifyChangeKeyValue, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1215,7 +1215,7 @@ static bool api_winreg_OpenKey(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(winreg_OpenKey, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1338,7 +1338,7 @@ static bool api_winreg_QueryInfoKey(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(winreg_QueryInfoKey, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1416,7 +1416,7 @@ static bool api_winreg_QueryValue(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(winreg_QueryValue, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1489,7 +1489,7 @@ static bool api_winreg_ReplaceKey(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(winreg_ReplaceKey, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1562,7 +1562,7 @@ static bool api_winreg_RestoreKey(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(winreg_RestoreKey, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1635,7 +1635,7 @@ static bool api_winreg_SaveKey(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(winreg_SaveKey, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1708,7 +1708,7 @@ static bool api_winreg_SetKeySecurity(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(winreg_SetKeySecurity, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1781,7 +1781,7 @@ static bool api_winreg_SetValue(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(winreg_SetValue, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1854,7 +1854,7 @@ static bool api_winreg_UnLoadKey(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(winreg_UnLoadKey, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1927,7 +1927,7 @@ static bool api_winreg_InitiateSystemShutdown(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(winreg_InitiateSystemShutdown, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -2000,7 +2000,7 @@ static bool api_winreg_AbortSystemShutdown(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(winreg_AbortSystemShutdown, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -2080,7 +2080,7 @@ static bool api_winreg_GetVersion(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(winreg_GetVersion, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -2160,7 +2160,7 @@ static bool api_winreg_OpenHKCC(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(winreg_OpenHKCC, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -2240,7 +2240,7 @@ static bool api_winreg_OpenHKDD(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(winreg_OpenHKDD, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -2317,7 +2317,7 @@ static bool api_winreg_QueryMultipleValues(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(winreg_QueryMultipleValues, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -2390,7 +2390,7 @@ static bool api_winreg_InitiateSystemShutdownEx(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(winreg_InitiateSystemShutdownEx, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -2463,7 +2463,7 @@ static bool api_winreg_SaveKeyEx(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(winreg_SaveKeyEx, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -2543,7 +2543,7 @@ static bool api_winreg_OpenHKPT(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(winreg_OpenHKPT, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -2623,7 +2623,7 @@ static bool api_winreg_OpenHKPN(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(winreg_OpenHKPN, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -2696,7 +2696,7 @@ static bool api_winreg_QueryMultipleValues2(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(winreg_QueryMultipleValues2, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;

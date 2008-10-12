@@ -56,7 +56,7 @@ static bool api_epm_Insert(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(epm_Insert, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -129,7 +129,7 @@ static bool api_epm_Delete(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(epm_Delete, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -216,7 +216,7 @@ static bool api_epm_Lookup(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(epm_Lookup, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -303,7 +303,7 @@ static bool api_epm_Map(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(epm_Map, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -378,7 +378,7 @@ static bool api_epm_LookupHandleFree(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(epm_LookupHandleFree, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -451,7 +451,7 @@ static bool api_epm_InqObject(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(epm_InqObject, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -524,7 +524,7 @@ static bool api_epm_MgmtDelete(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(epm_MgmtDelete, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -597,7 +597,7 @@ static bool api_epm_MapAuth(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(epm_MapAuth, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;

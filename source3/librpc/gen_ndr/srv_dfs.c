@@ -63,7 +63,7 @@ static bool api_dfs_GetManagerVersion(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(dfs_GetManagerVersion, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -136,7 +136,7 @@ static bool api_dfs_Add(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(dfs_Add, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -209,7 +209,7 @@ static bool api_dfs_Remove(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(dfs_Remove, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -282,7 +282,7 @@ static bool api_dfs_SetInfo(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(dfs_SetInfo, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -362,7 +362,7 @@ static bool api_dfs_GetInfo(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(dfs_GetInfo, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -438,7 +438,7 @@ static bool api_dfs_Enum(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(dfs_Enum, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -511,7 +511,7 @@ static bool api_dfs_Rename(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(dfs_Rename, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -584,7 +584,7 @@ static bool api_dfs_Move(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(dfs_Move, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -657,7 +657,7 @@ static bool api_dfs_ManagerGetConfigInfo(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(dfs_ManagerGetConfigInfo, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -730,7 +730,7 @@ static bool api_dfs_ManagerSendSiteInfo(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(dfs_ManagerSendSiteInfo, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -805,7 +805,7 @@ static bool api_dfs_AddFtRoot(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(dfs_AddFtRoot, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -880,7 +880,7 @@ static bool api_dfs_RemoveFtRoot(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(dfs_RemoveFtRoot, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -953,7 +953,7 @@ static bool api_dfs_AddStdRoot(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(dfs_AddStdRoot, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1026,7 +1026,7 @@ static bool api_dfs_RemoveStdRoot(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(dfs_RemoveStdRoot, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1099,7 +1099,7 @@ static bool api_dfs_ManagerInitialize(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(dfs_ManagerInitialize, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1172,7 +1172,7 @@ static bool api_dfs_AddStdRootForced(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(dfs_AddStdRootForced, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1249,7 +1249,7 @@ static bool api_dfs_GetDcAddress(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(dfs_GetDcAddress, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1322,7 +1322,7 @@ static bool api_dfs_SetDcAddress(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(dfs_SetDcAddress, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1395,7 +1395,7 @@ static bool api_dfs_FlushFtTable(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(dfs_FlushFtTable, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1468,7 +1468,7 @@ static bool api_dfs_Add2(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(dfs_Add2, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1541,7 +1541,7 @@ static bool api_dfs_Remove2(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(dfs_Remove2, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1617,7 +1617,7 @@ static bool api_dfs_EnumEx(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(dfs_EnumEx, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1690,7 +1690,7 @@ static bool api_dfs_SetInfo2(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(dfs_SetInfo2, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;

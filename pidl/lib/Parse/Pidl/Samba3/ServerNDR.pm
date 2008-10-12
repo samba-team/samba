@@ -171,7 +171,7 @@ sub ParseFunction($$)
 	pidl "\tNDR_PRINT_OUT_DEBUG($fn->{NAME}, r);";
 	pidl "}";
 	pidl "";
-	pidl "push = ndr_push_init_ctx(r);";
+	pidl "push = ndr_push_init_ctx(r, NULL);";
 	pidl "if (push == NULL) {";
 	pidl "\ttalloc_free(r);";
 	pidl "\treturn false;";

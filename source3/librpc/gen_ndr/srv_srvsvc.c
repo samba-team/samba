@@ -66,7 +66,7 @@ static bool api_srvsvc_NetCharDevEnum(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetCharDevEnum, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -146,7 +146,7 @@ static bool api_srvsvc_NetCharDevGetInfo(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetCharDevGetInfo, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -219,7 +219,7 @@ static bool api_srvsvc_NetCharDevControl(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetCharDevControl, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -302,7 +302,7 @@ static bool api_srvsvc_NetCharDevQEnum(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetCharDevQEnum, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -382,7 +382,7 @@ static bool api_srvsvc_NetCharDevQGetInfo(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetCharDevQGetInfo, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -457,7 +457,7 @@ static bool api_srvsvc_NetCharDevQSetInfo(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetCharDevQSetInfo, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -530,7 +530,7 @@ static bool api_srvsvc_NetCharDevQPurge(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetCharDevQPurge, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -603,7 +603,7 @@ static bool api_srvsvc_NetCharDevQPurgeSelf(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetCharDevQPurgeSelf, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -685,7 +685,7 @@ static bool api_srvsvc_NetConnEnum(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetConnEnum, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -767,7 +767,7 @@ static bool api_srvsvc_NetFileEnum(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetFileEnum, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -847,7 +847,7 @@ static bool api_srvsvc_NetFileGetInfo(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetFileGetInfo, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -920,7 +920,7 @@ static bool api_srvsvc_NetFileClose(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetFileClose, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1002,7 +1002,7 @@ static bool api_srvsvc_NetSessEnum(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetSessEnum, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1075,7 +1075,7 @@ static bool api_srvsvc_NetSessDel(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetSessDel, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1150,7 +1150,7 @@ static bool api_srvsvc_NetShareAdd(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetShareAdd, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1232,7 +1232,7 @@ static bool api_srvsvc_NetShareEnumAll(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetShareEnumAll, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1312,7 +1312,7 @@ static bool api_srvsvc_NetShareGetInfo(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetShareGetInfo, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1387,7 +1387,7 @@ static bool api_srvsvc_NetShareSetInfo(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetShareSetInfo, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1460,7 +1460,7 @@ static bool api_srvsvc_NetShareDel(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetShareDel, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1533,7 +1533,7 @@ static bool api_srvsvc_NetShareDelSticky(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetShareDelSticky, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1613,7 +1613,7 @@ static bool api_srvsvc_NetShareCheck(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetShareCheck, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1693,7 +1693,7 @@ static bool api_srvsvc_NetSrvGetInfo(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetSrvGetInfo, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1768,7 +1768,7 @@ static bool api_srvsvc_NetSrvSetInfo(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetSrvSetInfo, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1850,7 +1850,7 @@ static bool api_srvsvc_NetDiskEnum(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetDiskEnum, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1930,7 +1930,7 @@ static bool api_srvsvc_NetServerStatisticsGet(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetServerStatisticsGet, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -2003,7 +2003,7 @@ static bool api_srvsvc_NetTransportAdd(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetTransportAdd, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -2086,7 +2086,7 @@ static bool api_srvsvc_NetTransportEnum(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetTransportEnum, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -2159,7 +2159,7 @@ static bool api_srvsvc_NetTransportDel(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetTransportDel, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -2239,7 +2239,7 @@ static bool api_srvsvc_NetRemoteTOD(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetRemoteTOD, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -2312,7 +2312,7 @@ static bool api_srvsvc_NetSetServiceBits(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetSetServiceBits, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -2392,7 +2392,7 @@ static bool api_srvsvc_NetPathType(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetPathType, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -2473,7 +2473,7 @@ static bool api_srvsvc_NetPathCanonicalize(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetPathCanonicalize, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -2546,7 +2546,7 @@ static bool api_srvsvc_NetPathCompare(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetPathCompare, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -2619,7 +2619,7 @@ static bool api_srvsvc_NetNameValidate(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetNameValidate, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -2692,7 +2692,7 @@ static bool api_srvsvc_NETRPRNAMECANONICALIZE(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(srvsvc_NETRPRNAMECANONICALIZE, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -2765,7 +2765,7 @@ static bool api_srvsvc_NetPRNameCompare(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetPRNameCompare, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -2847,7 +2847,7 @@ static bool api_srvsvc_NetShareEnum(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetShareEnum, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -2927,7 +2927,7 @@ static bool api_srvsvc_NetShareDelStart(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetShareDelStart, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -3002,7 +3002,7 @@ static bool api_srvsvc_NetShareDelCommit(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetShareDelCommit, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -3082,7 +3082,7 @@ static bool api_srvsvc_NetGetFileSecurity(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetGetFileSecurity, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -3155,7 +3155,7 @@ static bool api_srvsvc_NetSetFileSecurity(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetSetFileSecurity, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -3228,7 +3228,7 @@ static bool api_srvsvc_NetServerTransportAddEx(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetServerTransportAddEx, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -3301,7 +3301,7 @@ static bool api_srvsvc_NetServerSetServiceBitsEx(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetServerSetServiceBitsEx, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -3374,7 +3374,7 @@ static bool api_srvsvc_NETRDFSGETVERSION(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(srvsvc_NETRDFSGETVERSION, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -3447,7 +3447,7 @@ static bool api_srvsvc_NETRDFSCREATELOCALPARTITION(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(srvsvc_NETRDFSCREATELOCALPARTITION, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -3520,7 +3520,7 @@ static bool api_srvsvc_NETRDFSDELETELOCALPARTITION(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(srvsvc_NETRDFSDELETELOCALPARTITION, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -3593,7 +3593,7 @@ static bool api_srvsvc_NETRDFSSETLOCALVOLUMESTATE(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(srvsvc_NETRDFSSETLOCALVOLUMESTATE, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -3666,7 +3666,7 @@ static bool api_srvsvc_NETRDFSSETSERVERINFO(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(srvsvc_NETRDFSSETSERVERINFO, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -3739,7 +3739,7 @@ static bool api_srvsvc_NETRDFSCREATEEXITPOINT(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(srvsvc_NETRDFSCREATEEXITPOINT, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -3812,7 +3812,7 @@ static bool api_srvsvc_NETRDFSDELETEEXITPOINT(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(srvsvc_NETRDFSDELETEEXITPOINT, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -3885,7 +3885,7 @@ static bool api_srvsvc_NETRDFSMODIFYPREFIX(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(srvsvc_NETRDFSMODIFYPREFIX, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -3958,7 +3958,7 @@ static bool api_srvsvc_NETRDFSFIXLOCALVOLUME(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(srvsvc_NETRDFSFIXLOCALVOLUME, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -4031,7 +4031,7 @@ static bool api_srvsvc_NETRDFSMANAGERREPORTSITEINFO(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(srvsvc_NETRDFSMANAGERREPORTSITEINFO, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -4104,7 +4104,7 @@ static bool api_srvsvc_NETRSERVERTRANSPORTDELEX(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(srvsvc_NETRSERVERTRANSPORTDELEX, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;

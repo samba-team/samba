@@ -63,7 +63,7 @@ static bool api_netr_LogonUasLogon(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(netr_LogonUasLogon, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -143,7 +143,7 @@ static bool api_netr_LogonUasLogoff(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(netr_LogonUasLogoff, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -230,7 +230,7 @@ static bool api_netr_LogonSamLogon(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(netr_LogonSamLogon, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -305,7 +305,7 @@ static bool api_netr_LogonSamLogoff(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(netr_LogonSamLogoff, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -385,7 +385,7 @@ static bool api_netr_ServerReqChallenge(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(netr_ServerReqChallenge, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -465,7 +465,7 @@ static bool api_netr_ServerAuthenticate(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(netr_ServerAuthenticate, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -545,7 +545,7 @@ static bool api_netr_ServerPasswordSet(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(netr_ServerPasswordSet, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -627,7 +627,7 @@ static bool api_netr_DatabaseDeltas(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(netr_DatabaseDeltas, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -709,7 +709,7 @@ static bool api_netr_DatabaseSync(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(netr_DatabaseSync, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -808,7 +808,7 @@ static bool api_netr_AccountDeltas(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(netr_AccountDeltas, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -908,7 +908,7 @@ static bool api_netr_AccountSync(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(netr_AccountSync, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -988,7 +988,7 @@ static bool api_netr_GetDcName(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(netr_GetDcName, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1068,7 +1068,7 @@ static bool api_netr_LogonControl(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(netr_LogonControl, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1148,7 +1148,7 @@ static bool api_netr_GetAnyDCName(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(netr_GetAnyDCName, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1228,7 +1228,7 @@ static bool api_netr_LogonControl2(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(netr_LogonControl2, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1309,7 +1309,7 @@ static bool api_netr_ServerAuthenticate2(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(netr_ServerAuthenticate2, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1391,7 +1391,7 @@ static bool api_netr_DatabaseSync2(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(netr_DatabaseSync2, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1472,7 +1472,7 @@ static bool api_netr_DatabaseRedo(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(netr_DatabaseRedo, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1552,7 +1552,7 @@ static bool api_netr_LogonControl2Ex(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(netr_LogonControl2Ex, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1632,7 +1632,7 @@ static bool api_netr_NetrEnumerateTrustedDomains(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(netr_NetrEnumerateTrustedDomains, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1712,7 +1712,7 @@ static bool api_netr_DsRGetDCName(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(netr_DsRGetDCName, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1785,7 +1785,7 @@ static bool api_netr_NETRLOGONDUMMYROUTINE1(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(netr_NETRLOGONDUMMYROUTINE1, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1858,7 +1858,7 @@ static bool api_netr_NETRLOGONSETSERVICEBITS(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(netr_NETRLOGONSETSERVICEBITS, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1938,7 +1938,7 @@ static bool api_netr_LogonGetTrustRid(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(netr_LogonGetTrustRid, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -2011,7 +2011,7 @@ static bool api_netr_NETRLOGONCOMPUTESERVERDIGEST(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(netr_NETRLOGONCOMPUTESERVERDIGEST, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -2084,7 +2084,7 @@ static bool api_netr_NETRLOGONCOMPUTECLIENTDIGEST(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(netr_NETRLOGONCOMPUTECLIENTDIGEST, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -2166,7 +2166,7 @@ static bool api_netr_ServerAuthenticate3(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(netr_ServerAuthenticate3, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -2246,7 +2246,7 @@ static bool api_netr_DsRGetDCNameEx(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(netr_DsRGetDCNameEx, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -2326,7 +2326,7 @@ static bool api_netr_DsRGetSiteName(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(netr_DsRGetSiteName, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -2407,7 +2407,7 @@ static bool api_netr_LogonGetDomainInfo(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(netr_LogonGetDomainInfo, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -2487,7 +2487,7 @@ static bool api_netr_ServerPasswordSet2(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(netr_ServerPasswordSet2, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -2573,7 +2573,7 @@ static bool api_netr_ServerPasswordGet(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(netr_ServerPasswordGet, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -2646,7 +2646,7 @@ static bool api_netr_NETRLOGONSENDTOSAM(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(netr_NETRLOGONSENDTOSAM, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -2726,7 +2726,7 @@ static bool api_netr_DsRAddressToSitenamesW(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(netr_DsRAddressToSitenamesW, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -2806,7 +2806,7 @@ static bool api_netr_DsRGetDCNameEx2(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(netr_DsRGetDCNameEx2, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -2879,7 +2879,7 @@ static bool api_netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -2959,7 +2959,7 @@ static bool api_netr_NetrEnumerateTrustedDomainsEx(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(netr_NetrEnumerateTrustedDomainsEx, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -3039,7 +3039,7 @@ static bool api_netr_DsRAddressToSitenamesExW(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(netr_DsRAddressToSitenamesExW, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -3119,7 +3119,7 @@ static bool api_netr_DsrGetDcSiteCoverageW(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(netr_DsrGetDcSiteCoverageW, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -3206,7 +3206,7 @@ static bool api_netr_LogonSamLogonEx(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(netr_LogonSamLogonEx, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -3286,7 +3286,7 @@ static bool api_netr_DsrEnumerateDomainTrusts(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(netr_DsrEnumerateDomainTrusts, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -3359,7 +3359,7 @@ static bool api_netr_DsrDeregisterDNSHostRecords(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(netr_DsrDeregisterDNSHostRecords, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -3451,7 +3451,7 @@ static bool api_netr_ServerTrustPasswordsGet(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(netr_ServerTrustPasswordsGet, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -3531,7 +3531,7 @@ static bool api_netr_DsRGetForestTrustInformation(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(netr_DsRGetForestTrustInformation, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -3617,7 +3617,7 @@ static bool api_netr_GetForestTrustInformation(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(netr_GetForestTrustInformation, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -3705,7 +3705,7 @@ static bool api_netr_LogonSamLogonWithFlags(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(netr_LogonSamLogonWithFlags, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -3778,7 +3778,7 @@ static bool api_netr_NETRSERVERGETTRUSTINFO(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(netr_NETRSERVERGETTRUSTINFO, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;

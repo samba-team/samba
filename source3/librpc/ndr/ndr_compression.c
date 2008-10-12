@@ -86,7 +86,7 @@ static enum ndr_err_code ndr_pull_compression_mszip(struct ndr_pull *subndr,
 	struct decomp_state *decomp_state;
 	bool last = false;
 
-	ndrpush = ndr_push_init_ctx(subndr);
+	ndrpush = ndr_push_init_ctx(subndr, NULL);
 	NDR_ERR_HAVE_NO_MEMORY(ndrpush);
 
 	decomp_state = ZIPdecomp_state(subndr);
@@ -197,7 +197,7 @@ static enum ndr_err_code ndr_pull_compression_xpress(struct ndr_pull *subndr,
 	DATA_BLOB uncompressed;
 	bool last = false;
 
-	ndrpush = ndr_push_init_ctx(subndr);
+	ndrpush = ndr_push_init_ctx(subndr, NULL);
 	NDR_ERR_HAVE_NO_MEMORY(ndrpush);
 
 	while (!last) {
@@ -264,7 +264,7 @@ enum ndr_err_code ndr_push_compression_start(struct ndr_push *subndr,
 {
 	struct ndr_push *comndr;
 
-	comndr = ndr_push_init_ctx(subndr);
+	comndr = ndr_push_init_ctx(subndr, NULL);
 	NDR_ERR_HAVE_NO_MEMORY(comndr);
 	comndr->flags	= subndr->flags;
 

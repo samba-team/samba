@@ -56,7 +56,7 @@ static bool api_PNP_Disconnect(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(PNP_Disconnect, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -129,7 +129,7 @@ static bool api_PNP_Connect(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(PNP_Connect, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -209,7 +209,7 @@ static bool api_PNP_GetVersion(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(PNP_GetVersion, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -282,7 +282,7 @@ static bool api_PNP_GetGlobalState(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(PNP_GetGlobalState, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -355,7 +355,7 @@ static bool api_PNP_InitDetection(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(PNP_InitDetection, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -428,7 +428,7 @@ static bool api_PNP_ReportLogOn(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(PNP_ReportLogOn, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -501,7 +501,7 @@ static bool api_PNP_ValidateDeviceInstance(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(PNP_ValidateDeviceInstance, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -574,7 +574,7 @@ static bool api_PNP_GetRootDeviceInstance(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(PNP_GetRootDeviceInstance, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -647,7 +647,7 @@ static bool api_PNP_GetRelatedDeviceInstance(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(PNP_GetRelatedDeviceInstance, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -720,7 +720,7 @@ static bool api_PNP_EnumerateSubKeys(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(PNP_EnumerateSubKeys, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -793,7 +793,7 @@ static bool api_PNP_GetDeviceList(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(PNP_GetDeviceList, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -873,7 +873,7 @@ static bool api_PNP_GetDeviceListSize(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(PNP_GetDeviceListSize, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -946,7 +946,7 @@ static bool api_PNP_GetDepth(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(PNP_GetDepth, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1029,7 +1029,7 @@ static bool api_PNP_GetDeviceRegProp(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(PNP_GetDeviceRegProp, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1102,7 +1102,7 @@ static bool api_PNP_SetDeviceRegProp(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(PNP_SetDeviceRegProp, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1175,7 +1175,7 @@ static bool api_PNP_GetClassInstance(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(PNP_GetClassInstance, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1248,7 +1248,7 @@ static bool api_PNP_CreateKey(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(PNP_CreateKey, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1321,7 +1321,7 @@ static bool api_PNP_DeleteRegistryKey(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(PNP_DeleteRegistryKey, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1394,7 +1394,7 @@ static bool api_PNP_GetClassCount(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(PNP_GetClassCount, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1467,7 +1467,7 @@ static bool api_PNP_GetClassName(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(PNP_GetClassName, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1540,7 +1540,7 @@ static bool api_PNP_DeleteClassKey(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(PNP_DeleteClassKey, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1613,7 +1613,7 @@ static bool api_PNP_GetInterfaceDeviceAlias(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(PNP_GetInterfaceDeviceAlias, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1686,7 +1686,7 @@ static bool api_PNP_GetInterfaceDeviceList(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(PNP_GetInterfaceDeviceList, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1759,7 +1759,7 @@ static bool api_PNP_GetInterfaceDeviceListSize(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(PNP_GetInterfaceDeviceListSize, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1832,7 +1832,7 @@ static bool api_PNP_RegisterDeviceClassAssociation(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(PNP_RegisterDeviceClassAssociation, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1905,7 +1905,7 @@ static bool api_PNP_UnregisterDeviceClassAssociation(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(PNP_UnregisterDeviceClassAssociation, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1978,7 +1978,7 @@ static bool api_PNP_GetClassRegProp(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(PNP_GetClassRegProp, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -2051,7 +2051,7 @@ static bool api_PNP_SetClassRegProp(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(PNP_SetClassRegProp, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -2124,7 +2124,7 @@ static bool api_PNP_CreateDevInst(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(PNP_CreateDevInst, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -2197,7 +2197,7 @@ static bool api_PNP_DeviceInstanceAction(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(PNP_DeviceInstanceAction, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -2270,7 +2270,7 @@ static bool api_PNP_GetDeviceStatus(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(PNP_GetDeviceStatus, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -2343,7 +2343,7 @@ static bool api_PNP_SetDeviceProblem(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(PNP_SetDeviceProblem, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -2416,7 +2416,7 @@ static bool api_PNP_DisableDevInst(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(PNP_DisableDevInst, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -2489,7 +2489,7 @@ static bool api_PNP_UninstallDevInst(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(PNP_UninstallDevInst, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -2562,7 +2562,7 @@ static bool api_PNP_AddID(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(PNP_AddID, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -2635,7 +2635,7 @@ static bool api_PNP_RegisterDriver(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(PNP_RegisterDriver, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -2708,7 +2708,7 @@ static bool api_PNP_QueryRemove(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(PNP_QueryRemove, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -2781,7 +2781,7 @@ static bool api_PNP_RequestDeviceEject(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(PNP_RequestDeviceEject, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -2854,7 +2854,7 @@ static bool api_PNP_IsDockStationPresent(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(PNP_IsDockStationPresent, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -2927,7 +2927,7 @@ static bool api_PNP_RequestEjectPC(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(PNP_RequestEjectPC, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -3009,7 +3009,7 @@ static bool api_PNP_HwProfFlags(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(PNP_HwProfFlags, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -3084,7 +3084,7 @@ static bool api_PNP_GetHwProfInfo(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(PNP_GetHwProfInfo, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -3157,7 +3157,7 @@ static bool api_PNP_AddEmptyLogConf(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(PNP_AddEmptyLogConf, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -3230,7 +3230,7 @@ static bool api_PNP_FreeLogConf(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(PNP_FreeLogConf, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -3303,7 +3303,7 @@ static bool api_PNP_GetFirstLogConf(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(PNP_GetFirstLogConf, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -3376,7 +3376,7 @@ static bool api_PNP_GetNextLogConf(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(PNP_GetNextLogConf, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -3449,7 +3449,7 @@ static bool api_PNP_GetLogConfPriority(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(PNP_GetLogConfPriority, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -3522,7 +3522,7 @@ static bool api_PNP_AddResDes(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(PNP_AddResDes, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -3595,7 +3595,7 @@ static bool api_PNP_FreeResDes(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(PNP_FreeResDes, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -3668,7 +3668,7 @@ static bool api_PNP_GetNextResDes(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(PNP_GetNextResDes, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -3741,7 +3741,7 @@ static bool api_PNP_GetResDesData(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(PNP_GetResDesData, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -3814,7 +3814,7 @@ static bool api_PNP_GetResDesDataSize(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(PNP_GetResDesDataSize, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -3887,7 +3887,7 @@ static bool api_PNP_ModifyResDes(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(PNP_ModifyResDes, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -3960,7 +3960,7 @@ static bool api_PNP_DetectResourceLimit(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(PNP_DetectResourceLimit, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -4033,7 +4033,7 @@ static bool api_PNP_QueryResConfList(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(PNP_QueryResConfList, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -4106,7 +4106,7 @@ static bool api_PNP_SetHwProf(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(PNP_SetHwProf, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -4179,7 +4179,7 @@ static bool api_PNP_QueryArbitratorFreeData(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(PNP_QueryArbitratorFreeData, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -4252,7 +4252,7 @@ static bool api_PNP_QueryArbitratorFreeSize(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(PNP_QueryArbitratorFreeSize, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -4325,7 +4325,7 @@ static bool api_PNP_RunDetection(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(PNP_RunDetection, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -4398,7 +4398,7 @@ static bool api_PNP_RegisterNotification(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(PNP_RegisterNotification, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -4471,7 +4471,7 @@ static bool api_PNP_UnregisterNotification(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(PNP_UnregisterNotification, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -4544,7 +4544,7 @@ static bool api_PNP_GetCustomDevProp(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(PNP_GetCustomDevProp, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -4617,7 +4617,7 @@ static bool api_PNP_GetVersionInternal(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(PNP_GetVersionInternal, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -4690,7 +4690,7 @@ static bool api_PNP_GetBlockedDriverInfo(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(PNP_GetBlockedDriverInfo, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -4763,7 +4763,7 @@ static bool api_PNP_GetServerSideDeviceInstallFlags(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(PNP_GetServerSideDeviceInstallFlags, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
