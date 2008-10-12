@@ -8824,6 +8824,7 @@ bool set_rpc_pipe_hnd_state(smb_np_struct *p, uint16 device_state);
 bool close_rpc_pipe_hnd(smb_np_struct *p);
 void pipe_close_conn(connection_struct *conn);
 smb_np_struct *get_rpc_pipe_p(uint16 pnum);
+smb_np_struct *get_rpc_pipe(int pnum);
 struct pipes_struct *make_internal_rpc_pipe_p(const char *pipe_name,
 					      const char *client_address,
 					      struct auth_serversupplied_info *server_info,
