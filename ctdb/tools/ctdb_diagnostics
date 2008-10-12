@@ -93,6 +93,11 @@ show_all "uname -a"
 [ -x /bin/rpm ] && {
     show_all "rpm -qa | egrep 'samba|ctdb|gpfs'"
 }
+[ -x /usr/bin/dpkg-query ] && {
+    show_all "/usr/bin/dpkg-query --show 'ctdb'"
+    show_all "/usr/bin/dpkg-query --show 'samba'"
+    #show_all "/usr/bin/dpkg-query --show 'gpfs'"
+}
 
 
 cat <<EOF
