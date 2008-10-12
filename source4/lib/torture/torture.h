@@ -267,7 +267,7 @@ void torture_result(struct torture_context *test,
 	char *__got; \
 	const char *__expected = (expected); \
 	size_t __size; \
-	__got = file_load(filename, &__size, torture_ctx); \
+	__got = file_load(filename, &__size, 0, torture_ctx); \
 	if (__got == NULL) { \
 		torture_result(torture_ctx, TORTURE_FAIL, \
 			       __location__": unable to open %s: %s\n", \
@@ -288,7 +288,7 @@ void torture_result(struct torture_context *test,
 #define torture_assert_file_contains(torture_ctx,filename,expected,cmt)\
 	do { const char *__got, *__expected = (expected); \
 	size_t __size; \
-	__got = file_load(filename, *size, torture_ctx); \
+	__got = file_load(filename, *size, 0, torture_ctx); \
 	if (strcmp_safe(__got, __expected) != 0) { \
 		torture_result(torture_ctx, TORTURE_FAIL, \
 					   __location__": %s contained:\n%sExpected: %s%s\n", \

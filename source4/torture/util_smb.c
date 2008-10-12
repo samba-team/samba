@@ -514,7 +514,7 @@ _PUBLIC_ bool torture_get_conn_index(int conn_index,
 		return true;
 	}
 
-	unc_list = file_lines_load(p, &num_unc_names, NULL);
+	unc_list = file_lines_load(p, &num_unc_names, 0, NULL);
 	if (!unc_list || num_unc_names <= 0) {
 		DEBUG(0,("Failed to load unc names list from '%s'\n", p));
 		return false;

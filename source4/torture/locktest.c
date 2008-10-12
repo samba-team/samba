@@ -137,7 +137,7 @@ static struct smbcli_state *connect_one(struct event_context *ev,
 		p = lp_parm_string(lp_ctx, NULL, "torture", "unclist");
 		if (p) {
 			char *h, *s;
-			unc_list = file_lines_load(p, &num_unc_names, NULL);
+			unc_list = file_lines_load(p, &num_unc_names, 0, NULL);
 			if (!unc_list || num_unc_names <= 0) {
 				printf("Failed to load unc names list from '%s'\n", p);
 				exit(1);

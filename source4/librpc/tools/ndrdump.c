@@ -291,11 +291,7 @@ static void ndrdump_data(uint8_t *d, uint32_t l, bool force)
 			exit(1);
 		}
 			
-#if (_SAMBA_BUILD_ >= 4)
-		data = (uint8_t *)file_load(ctx_filename, &size, mem_ctx);
-#else
-		data = (uint8_t *)file_load(ctx_filename, &size, 0);
-#endif
+		data = (uint8_t *)file_load(ctx_filename, &size, 0, mem_ctx);
 		if (!data) {
 			perror(ctx_filename);
 			exit(1);
@@ -322,11 +318,7 @@ static void ndrdump_data(uint8_t *d, uint32_t l, bool force)
 	} 
 
 	if (filename)
-#if (_SAMBA_BUILD_ >= 4)
-		data = (uint8_t *)file_load(filename, &size, mem_ctx);
-#else
-		data = (uint8_t *)file_load(filename, &size, 0);
-#endif
+		data = (uint8_t *)file_load(filename, &size, 0, mem_ctx);
 	else
 		data = (uint8_t *)stdin_load(mem_ctx, &size);
 

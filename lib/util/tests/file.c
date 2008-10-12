@@ -42,7 +42,7 @@ static bool test_file_load_save(struct torture_context *tctx)
 	torture_assert_file_contains_text(tctx, TEST_FILENAME, TEST_DATA, 
 								      "file contents");
 
-	data = file_load(TEST_FILENAME, &len, mem_ctx);
+	data = file_load(TEST_FILENAME, &len, 0, mem_ctx);
 	torture_assert(tctx, data, "loading file");
 
 	torture_assert_int_equal(tctx, len, strlen(TEST_DATA), "Length");
