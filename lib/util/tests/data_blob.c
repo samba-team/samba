@@ -27,10 +27,48 @@ static bool test_string(struct torture_context *tctx)
 	DATA_BLOB blob = data_blob_string_const("bla");	
 
 	torture_assert_int_equal(tctx, blob.length, 3, "blob length");
-	torture_assert_str_equal(tctx, blob.data, "bla", "blob data");
+	torture_assert_str_equal(tctx, (char *)blob.data, "bla", "blob data");
 
-	data_blob_free(&blob);
+	return true;
+}
 
+static bool test_zero(struct torture_context *tctx)
+{
+	int i;
+	DATA_BLOB z = data_blob_talloc_zero(tctx, 4);
+	torture_assert_int_equal(tctx, z.length, 4, "length");
+	for (i = 0; i < z.length; i++)
+		torture_assert_int_equal(tctx, z.data[i], 0, "contents");
+	data_blob_free(&z);
+	return true;
+}
+
+
+static bool test_clear(struct torture_context *tctx)
+{
+	int i;
+	DATA_BLOB z = data_blob("lalala", 6);
+	torture_assert_int_equal(tctx, z.length, 6, "length");
+	data_blob_clear(&z);
+	for (i = 0; i < z.length; i++)
+		torture_assert_int_equal(tctx, z.data[i], 0, "contents");
+	data_blob_free(&z);
+	return true;
+}
+
+static bool test_cmp(struct torture_context *tctx)
+{
+	DATA_BLOB a = data_blob_string_const("bla");
+	DATA_BLOB b = data_blob_string_const("blae");
+	torture_assert(tctx, data_blob_cmp(&a, &b) != 0, "cmp different");
+	torture_assert(tctx, data_blob_cmp(&a, &a) == 0, "cmp self");
+	return true;
+}
+
+static bool test_hex_string(struct torture_context *tctx)
+{
+	DATA_BLOB a = data_blob_string_const("\xC\xA\xF\xE");
+	torture_assert_str_equal(tctx, data_blob_hex_string(tctx, &a), "0C0A0F0E", "hex string");
 	return true;
 }
 
@@ -39,6 +77,10 @@ struct torture_suite *torture_local_util_data_blob(TALLOC_CTX *mem_ctx)
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "DATABLOB");
 
 	torture_suite_add_simple_test(suite, "string", test_string);
+	torture_suite_add_simple_test(suite, "zero", test_zero);;
+	torture_suite_add_simple_test(suite, "clear", test_clear);
+	torture_suite_add_simple_test(suite, "cmp", test_cmp);
+	torture_suite_add_simple_test(suite, "hex string", test_hex_string);
 
 	return suite;
 }
