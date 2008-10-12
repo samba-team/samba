@@ -24,9 +24,6 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
-#define	PIPE		"\\PIPE\\"
-#define	PIPELEN		strlen(PIPE)
-
 static smb_np_struct *chain_p;
 static int pipes_open;
 
