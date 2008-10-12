@@ -22,7 +22,7 @@
 */
 
 #include "includes.h"
-#include "byteorder.h"
+#include "../lib/util/byteorder.h"
 
 void SMBencrypt_hash(const uchar lm_hash[16], const uchar *c8, uchar p24[24])
 {

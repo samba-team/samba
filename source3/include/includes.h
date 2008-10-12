@@ -678,7 +678,7 @@ typedef char fstring[FSTRING_LEN];
 #include "smb.h"
 #include "nameserv.h"
 #include "secrets.h"
-#include "byteorder.h"
+#include "../lib/util/byteorder.h"
 #include "privileges.h"
 #include "rpc_misc.h"
 #include "rpc_dce.h"
