@@ -8705,13 +8705,23 @@ bool close_rpc_pipe_hnd(smb_np_struct *p);
 void pipe_close_conn(connection_struct *conn);
 smb_np_struct *get_rpc_pipe_p(uint16 pnum);
 smb_np_struct *get_rpc_pipe(int pnum);
-struct pipes_struct *make_internal_rpc_pipe_p(const char *pipe_name,
+struct pipes_struct *make_internal_rpc_pipe_p(TALLOC_CTX *mem_ctx,
+					      const char *pipe_name,
 					      const char *client_address,
 					      struct auth_serversupplied_info *server_info,
 					      uint16_t vuid);
 ssize_t read_from_internal_pipe(struct pipes_struct *p, char *data, size_t n,
 				bool *is_data_outstanding);
 ssize_t write_to_internal_pipe(struct pipes_struct *p, char *data, size_t n);
+
+bool fsp_is_np(struct files_struct *fsp);
+NTSTATUS np_open(struct smb_request *smb_req, struct connection_struct *conn,
+		 const char *name, struct files_struct **pfsp);
+NTSTATUS np_write(struct files_struct *fsp, uint8_t *data, size_t len,
+		  ssize_t *nwritten);
+NTSTATUS np_read(struct files_struct *fsp, uint8_t *data, size_t len,
+		 ssize_t *nread, bool *is_data_outstanding);
+
 
 /* The following definitions come from rpc_server/srv_samr_nt.c  */
 

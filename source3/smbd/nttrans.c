@@ -268,7 +268,8 @@ bool is_ntfs_stream_name(const char *fname)
 static void nt_open_pipe(char *fname, connection_struct *conn,
 			 struct smb_request *req, int *ppnum)
 {
-	smb_np_struct *p = NULL;
+	files_struct *fsp;
+	NTSTATUS status;
 
 	DEBUG(4,("nt_open_pipe: Opening pipe %s.\n", fname));
 
@@ -285,19 +286,13 @@ static void nt_open_pipe(char *fname, connection_struct *conn,
 
 	DEBUG(3,("nt_open_pipe: Known pipe %s opening.\n", fname));
 
-	p = open_rpc_pipe_p(fname, conn, req->vuid);
-	if (!p) {
-		reply_doserror(req, ERRSRV, ERRnofids);
+	status = np_open(req, conn, fname, &fsp);
+	if (!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
 		return;
 	}
 
-	/* TODO: Add pipe to db */
-
-	if ( !store_pipe_opendb( p ) ) {
-		DEBUG(3,("nt_open_pipe: failed to store %s pipe open.\n", fname));
-	}
-
-	*ppnum = p->pnum;
+	*ppnum = fsp->fnum;
 	return;
 }
 

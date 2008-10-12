@@ -194,11 +194,15 @@ void send_trans_reply(connection_struct *conn, const uint8_t *inbuf,
  Start the first part of an RPC reply which began with an SMBtrans request.
 ****************************************************************************/
 
-static void api_rpc_trans_reply(connection_struct *conn, struct smb_request *req, smb_np_struct *p)
+static void api_rpc_trans_reply(connection_struct *conn,
+				struct smb_request *req,
+				files_struct *fsp,
+				int max_trans_reply)
 {
 	bool is_data_outstanding;
-	char *rdata = (char *)SMB_MALLOC(p->max_trans_reply);
-	int data_len;
+	uint8_t *rdata = SMB_MALLOC_ARRAY(uint8_t, max_trans_reply);
+	ssize_t data_len;
+	NTSTATUS status;
 
 	if(rdata == NULL) {
 		DEBUG(0,("api_rpc_trans_reply: malloc fail.\n"));
@@ -206,14 +210,15 @@ static void api_rpc_trans_reply(connection_struct *conn, struct smb_request *req
 		return;
 	}
 
-	if((data_len = read_from_pipe( p, rdata, p->max_trans_reply,
-					&is_data_outstanding)) < 0) {
+	status = np_read(fsp, rdata, max_trans_reply, &data_len,
+			 &is_data_outstanding);
+	if (!NT_STATUS_IS_OK(status)) {
 		SAFE_FREE(rdata);
 		api_no_reply(conn,req);
 		return;
 	}
 
-	send_trans_reply(conn, req->inbuf, NULL, 0, rdata, data_len,
+	send_trans_reply(conn, req->inbuf, NULL, 0, (char *)rdata, data_len,
 			 is_data_outstanding);
 	SAFE_FREE(rdata);
 	return;
@@ -223,25 +228,18 @@ static void api_rpc_trans_reply(connection_struct *conn, struct smb_request *req
  WaitNamedPipeHandleState 
 ****************************************************************************/
 
-static void api_WNPHS(connection_struct *conn, struct smb_request *req, smb_np_struct *p,
-		      char *param, int param_len)
+static void api_WNPHS(connection_struct *conn, struct smb_request *req,
+		      struct files_struct *fsp, char *param, int param_len)
 {
-	uint16 priority;
-
 	if (!param || param_len < 2) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		return;
 	}
 
-	priority = SVAL(param,0);
-	DEBUG(4,("WaitNamedPipeHandleState priority %x\n", priority));
+	DEBUG(4,("WaitNamedPipeHandleState priority %x\n",
+		 (int)SVAL(param,0)));
 
-	if (wait_rpc_pipe_hnd_state(p, priority)) {
-		/* now send the reply */
-		send_trans_reply(conn, req->inbuf, NULL, 0, NULL, 0, False);
-		return;
-	}
-	api_no_reply(conn,req);
+	send_trans_reply(conn, req->inbuf, NULL, 0, NULL, 0, False);
 }
 
 
@@ -249,25 +247,17 @@ static void api_WNPHS(connection_struct *conn, struct smb_request *req, smb_np_s
  SetNamedPipeHandleState 
 ****************************************************************************/
 
-static void api_SNPHS(connection_struct *conn, struct smb_request *req, smb_np_struct *p,
-		      char *param, int param_len)
+static void api_SNPHS(connection_struct *conn, struct smb_request *req,
+		      struct files_struct *fsp, char *param, int param_len)
 {
-	uint16 id;
-
 	if (!param || param_len < 2) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		return;
 	}
 
-	id = SVAL(param,0);
-	DEBUG(4,("SetNamedPipeHandleState to code %x\n", id));
+	DEBUG(4,("SetNamedPipeHandleState to code %x\n", (int)SVAL(param,0)));
 
-	if (set_rpc_pipe_hnd_state(p, id)) {
-		/* now send the reply */
-		send_trans_reply(conn, req->inbuf, NULL, 0, NULL, 0, False);
-		return;
-	}
-	api_no_reply(conn,req);
+	send_trans_reply(conn, req->inbuf, NULL, 0, NULL, 0, False);
 }
 
 
@@ -297,14 +287,14 @@ static void api_no_reply(connection_struct *conn, struct smb_request *req)
 
 static void api_fd_reply(connection_struct *conn, uint16 vuid,
 			 struct smb_request *req,
-			 uint16 *setup, char *data, char *params,
+			 uint16 *setup, uint8_t *data, char *params,
 			 int suwcnt, int tdscnt, int tpscnt,
 			 int mdrcnt, int mprcnt)
 {
-	bool reply = False;
-	smb_np_struct *p = NULL;
+	struct files_struct *fsp;
 	int pnum;
 	int subcommand;
+	NTSTATUS status;
 
 	DEBUG(5,("api_fd_reply\n"));
 
@@ -323,7 +313,9 @@ static void api_fd_reply(connection_struct *conn, uint16 vuid,
 	pnum = ((int)setup[1]) & 0xFFFF;
 	subcommand = ((int)setup[0]) & 0xFFFF;
 
-	if(!(p = get_rpc_pipe(pnum))) {
+	fsp = file_fsp(req, pnum);
+
+	if (!fsp_is_np(fsp)) {
 		if (subcommand == TRANSACT_WAITNAMEDPIPEHANDLESTATE) {
 			/* Win9x does this call with a unicode pipe name, not a pnum. */
 			/* Just return success for now... */
@@ -338,37 +330,37 @@ static void api_fd_reply(connection_struct *conn, uint16 vuid,
 		return;
 	}
 
-	if (vuid != p->vuid) {
+	if (vuid != fsp->vuid) {
 		DEBUG(1, ("Got pipe request (pnum %x) using invalid VUID %d, "
-			  "expected %d\n", pnum, vuid, p->vuid));
+			  "expected %d\n", pnum, vuid, fsp->vuid));
 		reply_nterror(req, NT_STATUS_INVALID_HANDLE);
 		return;
 	}
 
-	DEBUG(3,("Got API command 0x%x on pipe \"%s\" (pnum %x)\n", subcommand, p->name, pnum));
+	DEBUG(3,("Got API command 0x%x on pipe \"%s\" (pnum %x)\n",
+		 subcommand, fsp->fsp_name, pnum));
 
-	/* record maximum data length that can be transmitted in an SMBtrans */
-	p->max_trans_reply = mdrcnt;
-
-	DEBUG(10,("api_fd_reply: p:%p max_trans_reply: %d\n", p, p->max_trans_reply));
+	DEBUG(10, ("api_fd_reply: p:%p max_trans_reply: %d\n", fsp, mdrcnt));
 
 	switch (subcommand) {
-	case TRANSACT_DCERPCCMD:
+	case TRANSACT_DCERPCCMD: {
 		/* dce/rpc command */
-		reply = write_to_pipe(p, data, tdscnt);
-		if (!reply) {
+		ssize_t nwritten;
+		status = np_write(fsp, data, tdscnt, &nwritten);
+		if (!NT_STATUS_IS_OK(status)) {
 			api_no_reply(conn, req);
 			return;
 		}
-		api_rpc_trans_reply(conn, req, p);
+		api_rpc_trans_reply(conn, req, fsp, mdrcnt);
 		break;
+	}
 	case TRANSACT_WAITNAMEDPIPEHANDLESTATE:
 		/* Wait Named Pipe Handle state */
-		api_WNPHS(conn, req, p, params, tpscnt);
+		api_WNPHS(conn, req, fsp, params, tpscnt);
 		break;
 	case TRANSACT_SETNAMEDPIPEHANDLESTATE:
 		/* Set Named Pipe Handle state */
-		api_SNPHS(conn, req, p, params, tpscnt);
+		api_SNPHS(conn, req, fsp, params, tpscnt);
 		break;
 	default:
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
@@ -406,7 +398,7 @@ static void named_pipe(connection_struct *conn, uint16 vuid,
 		DEBUG(4,("named pipe command from Win95 (wow!)\n"));
 
 		api_fd_reply(conn, vuid, req,
-			     setup, data, params,
+			     setup, (uint8_t *)data, params,
 			     suwcnt, tdscnt, tpscnt,
 			     mdrcnt, mprcnt);
 		return;
@@ -414,7 +406,7 @@ static void named_pipe(connection_struct *conn, uint16 vuid,
 
 	if (strlen(name) < 1) {
 		api_fd_reply(conn, vuid, req,
-			     setup, data,
+			     setup, (uint8_t *)data,
 			     params, suwcnt, tdscnt,
 			     tpscnt, mdrcnt, mprcnt);
 		return;

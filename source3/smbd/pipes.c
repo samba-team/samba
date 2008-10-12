@@ -54,9 +54,10 @@ void reply_open_pipe_and_X(connection_struct *conn, struct smb_request *req)
 {
 	const char *fname = NULL;
 	char *pipe_name = NULL;
-	smb_np_struct *p;
+	files_struct *fsp;
 	int size=0,fmode=0,mtime=0,rmode=0;
 	TALLOC_CTX *ctx = talloc_tos();
+	NTSTATUS status;
 
 	/* XXXX we need to handle passed times, sattr and flags */
 	srvstr_pull_buf_talloc(ctx, req->inbuf, req->flags2, &pipe_name,
@@ -101,9 +102,9 @@ void reply_open_pipe_and_X(connection_struct *conn, struct smb_request *req)
 	/* can be opened and add it in after the open. */
 	DEBUG(3,("Known pipe %s opening.\n",fname));
 
-	p = open_rpc_pipe_p(fname, conn, req->vuid);
-	if (!p) {
-		reply_doserror(req, ERRSRV, ERRnofids);
+	status = np_open(req, conn, fname, &fsp);
+	if (!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
 		return;
 	}
 
@@ -119,7 +120,7 @@ void reply_open_pipe_and_X(connection_struct *conn, struct smb_request *req)
 		rmode = 1;
 	}
 
-	SSVAL(req->outbuf,smb_vwv2, p->pnum);
+	SSVAL(req->outbuf,smb_vwv2, fsp->fnum);
 	SSVAL(req->outbuf,smb_vwv3,fmode);
 	srv_put_dos_date3((char *)req->outbuf,smb_vwv4,mtime);
 	SIVAL(req->outbuf,smb_vwv6,size);
@@ -136,27 +137,32 @@ void reply_open_pipe_and_X(connection_struct *conn, struct smb_request *req)
 
 void reply_pipe_write(struct smb_request *req)
 {
-	smb_np_struct *p = get_rpc_pipe_p(SVAL(req->inbuf,smb_vwv0));
+	files_struct *fsp = file_fsp(req, SVAL(req->inbuf,smb_vwv0));
 	size_t numtowrite = SVAL(req->inbuf,smb_vwv1);
-	int nwritten;
-	char *data;
+	ssize_t nwritten;
+	uint8_t *data;
 
-	if (!p) {
+	if (!fsp_is_np(fsp)) {
 		reply_doserror(req, ERRDOS, ERRbadfid);
 		return;
 	}
 
-	if (p->vuid != req->vuid) {
+	if (fsp->vuid != req->vuid) {
 		reply_nterror(req, NT_STATUS_INVALID_HANDLE);
 		return;
 	}
 
-	data = smb_buf(req->inbuf) + 3;
+	data = (uint8_t *)smb_buf(req->inbuf) + 3;
 
 	if (numtowrite == 0) {
 		nwritten = 0;
 	} else {
-		nwritten = write_to_pipe(p, data, numtowrite);
+		NTSTATUS status;
+		status = np_write(fsp, data, numtowrite, &nwritten);
+		if (!NT_STATUS_IS_OK(status)) {
+			reply_nterror(req, status);
+			return;
+		}
 	}
 
 	if ((nwritten == 0 && numtowrite != 0) || (nwritten < 0)) {
@@ -168,7 +174,8 @@ void reply_pipe_write(struct smb_request *req)
 
 	SSVAL(req->outbuf,smb_vwv0,nwritten);
   
-	DEBUG(3,("write-IPC pnum=%04x nwritten=%d\n", p->pnum, nwritten));
+	DEBUG(3,("write-IPC pnum=%04x nwritten=%d\n", fsp->fnum,
+		 (int)nwritten));
 
 	return;
 }
@@ -182,31 +189,33 @@ void reply_pipe_write(struct smb_request *req)
 
 void reply_pipe_write_and_X(struct smb_request *req)
 {
-	smb_np_struct *p = get_rpc_pipe_p(SVAL(req->inbuf,smb_vwv2));
+	files_struct *fsp = file_fsp(req, SVAL(req->inbuf, smb_vwv2));
 	size_t numtowrite = SVAL(req->inbuf,smb_vwv10);
-	int nwritten = -1;
+	ssize_t nwritten;
 	int smb_doff = SVAL(req->inbuf, smb_vwv11);
 	bool pipe_start_message_raw =
 		((SVAL(req->inbuf, smb_vwv7)
 		  & (PIPE_START_MESSAGE|PIPE_RAW_MODE))
 		 == (PIPE_START_MESSAGE|PIPE_RAW_MODE));
-	char *data;
+	uint8_t *data;
 
-	if (!p) {
+	if (!fsp_is_np(fsp)) {
 		reply_doserror(req, ERRDOS, ERRbadfid);
 		return;
 	}
 
-	if (p->vuid != req->vuid) {
+	if (fsp->vuid != req->vuid) {
 		reply_nterror(req, NT_STATUS_INVALID_HANDLE);
 		return;
 	}
 
-	data = smb_base(req->inbuf) + smb_doff;
+	data = (uint8_t *)smb_base(req->inbuf) + smb_doff;
 
 	if (numtowrite == 0) {
 		nwritten = 0;
 	} else {
+		NTSTATUS status;
+
 		if(pipe_start_message_raw) {
 			/*
 			 * For the start of a message in named pipe byte mode,
@@ -225,7 +234,11 @@ void reply_pipe_write_and_X(struct smb_request *req)
 			data += 2;
 			numtowrite -= 2;
 		}                        
-		nwritten = write_to_pipe(p, data, numtowrite);
+		status = np_write(fsp, data, numtowrite, &nwritten);
+		if (!NT_STATUS_IS_OK(status)) {
+			reply_nterror(req, status);
+			return;
+		}
 	}
 
 	if ((nwritten == 0 && numtowrite != 0) || (nwritten < 0)) {
@@ -238,7 +251,8 @@ void reply_pipe_write_and_X(struct smb_request *req)
 	nwritten = (pipe_start_message_raw ? nwritten + 2 : nwritten);
 	SSVAL(req->outbuf,smb_vwv2,nwritten);
   
-	DEBUG(3,("writeX-IPC pnum=%04x nwritten=%d\n", p->pnum, nwritten));
+	DEBUG(3,("writeX-IPC pnum=%04x nwritten=%d\n", fsp->fnum,
+		 (int)nwritten));
 
 	chain_reply(req);
 }
@@ -251,12 +265,13 @@ void reply_pipe_write_and_X(struct smb_request *req)
 
 void reply_pipe_read_and_X(struct smb_request *req)
 {
-	smb_np_struct *p = get_rpc_pipe_p(SVAL(req->inbuf,smb_vwv2));
+	files_struct *fsp = file_fsp(req, SVAL(req->inbuf,smb_vwv0));
 	int smb_maxcnt = SVAL(req->inbuf,smb_vwv5);
 	int smb_mincnt = SVAL(req->inbuf,smb_vwv6);
-	int nread = -1;
-	char *data;
+	ssize_t nread;
+	uint8_t *data;
 	bool unused;
+	NTSTATUS status;
 
 	/* we don't use the offset given to use for pipe reads. This
            is deliberate, instead we always return the next lump of
@@ -265,18 +280,23 @@ void reply_pipe_read_and_X(struct smb_request *req)
 	uint32 smb_offs = IVAL(req->inbuf,smb_vwv3);
 #endif
 
-	if (!p) {
+	if (!fsp_is_np(fsp)) {
 		reply_doserror(req, ERRDOS, ERRbadfid);
+		return;
+	}
+
+	if (fsp->vuid != req->vuid) {
+		reply_nterror(req, NT_STATUS_INVALID_HANDLE);
 		return;
 	}
 
 	reply_outbuf(req, 12, smb_maxcnt);
 
-	data = smb_buf(req->outbuf);
+	data = (uint8_t *)smb_buf(req->outbuf);
 
-	nread = read_from_pipe(p, data, smb_maxcnt, &unused);
+	status = np_read(fsp, data, smb_maxcnt, &nread, &unused);
 
-	if (nread < 0) {
+	if (!NT_STATUS_IS_OK(status)) {
 		reply_doserror(req, ERRDOS, ERRnoaccess);
 		return;
 	}
@@ -288,7 +308,7 @@ void reply_pipe_read_and_X(struct smb_request *req)
 	SSVAL(smb_buf(req->outbuf),-2,nread);
   
 	DEBUG(3,("readX-IPC pnum=%04x min=%d max=%d nread=%d\n",
-		 p->pnum, smb_mincnt, smb_maxcnt, nread));
+		 fsp->fnum, smb_mincnt, smb_maxcnt, (int)nread));
 
 	chain_reply(req);
 }

@@ -208,7 +208,8 @@ smb_np_struct *open_rpc_pipe_p(const char *pipe_name,
 	p->namedpipe_read = read_from_internal_pipe;
 	p->namedpipe_write = write_to_internal_pipe;
 
-	p->np_state = p->namedpipe_create(pipe_name, conn->client_address,
+	p->np_state = p->namedpipe_create(NULL, pipe_name,
+					  conn->client_address,
 					  conn->server_info, vuid);
 
 	if (p->np_state == NULL) {
@@ -258,7 +259,8 @@ smb_np_struct *open_rpc_pipe_p(const char *pipe_name,
  Make an internal namedpipes structure
 ****************************************************************************/
 
-struct pipes_struct *make_internal_rpc_pipe_p(const char *pipe_name,
+struct pipes_struct *make_internal_rpc_pipe_p(TALLOC_CTX *mem_ctx,
+					      const char *pipe_name,
 					      const char *client_address,
 					      struct auth_serversupplied_info *server_info,
 					      uint16_t vuid)
@@ -267,7 +269,7 @@ struct pipes_struct *make_internal_rpc_pipe_p(const char *pipe_name,
 
 	DEBUG(4,("Create pipe requested %s\n", pipe_name));
 
-	p = TALLOC_ZERO_P(NULL, pipes_struct);
+	p = TALLOC_ZERO_P(mem_ctx, struct pipes_struct);
 
 	if (!p) {
 		DEBUG(0,("ERROR! no memory for pipes_struct!\n"));
@@ -1243,4 +1245,94 @@ smb_np_struct *get_rpc_pipe(int pnum)
 	}
 
 	return NULL;
+}
+
+bool fsp_is_np(struct files_struct *fsp)
+{
+	return ((fsp != NULL)
+		&& (fsp->fake_file_handle != NULL)
+		&& (fsp->fake_file_handle->type == FAKE_FILE_TYPE_NAMED_PIPE));
+}
+
+NTSTATUS np_open(struct smb_request *smb_req, struct connection_struct *conn,
+		 const char *name, struct files_struct **pfsp)
+{
+	NTSTATUS status;
+	struct files_struct *fsp;
+	struct pipes_struct *p;
+
+	status = file_new(smb_req, conn, &fsp);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("file_new failed: %s\n", nt_errstr(status)));
+		return status;
+	}
+
+	fsp->conn = conn;
+	fsp->fh->fd = -1;
+	fsp->vuid = smb_req->vuid;
+	fsp->can_lock = false;
+	fsp->access_mask = FILE_READ_DATA | FILE_WRITE_DATA;
+	string_set(&fsp->fsp_name, name);
+
+	fsp->fake_file_handle = talloc(NULL, struct fake_file_handle);
+	if (fsp->fake_file_handle == NULL) {
+		file_free(smb_req, fsp);
+		return NT_STATUS_NO_MEMORY;
+	}
+	fsp->fake_file_handle->type = FAKE_FILE_TYPE_NAMED_PIPE;
+
+	p = make_internal_rpc_pipe_p(fsp->fake_file_handle, name,
+				     conn->client_address, conn->server_info,
+				     smb_req->vuid);
+	if (p == NULL) {
+		file_free(smb_req, fsp);
+		return NT_STATUS_PIPE_NOT_AVAILABLE;
+	}
+	fsp->fake_file_handle->private_data = p;
+
+	*pfsp = fsp;
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS np_write(struct files_struct *fsp, uint8_t *data, size_t len,
+		  ssize_t *nwritten)
+{
+	struct pipes_struct *p;
+
+	if (!fsp_is_np(fsp)) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	p = talloc_get_type_abort(
+		fsp->fake_file_handle->private_data, struct pipes_struct);
+
+	DEBUG(6, ("np_write: %x name: %s len: %d\n", (int)fsp->fnum,
+		  fsp->fsp_name, (int)len));
+	dump_data(50, data, len);
+
+	*nwritten = write_to_internal_pipe(p, (char *)data, len);
+
+	return ((*nwritten) >= 0)
+		? NT_STATUS_OK : NT_STATUS_UNEXPECTED_IO_ERROR;
+}
+
+NTSTATUS np_read(struct files_struct *fsp, uint8_t *data, size_t len,
+		 ssize_t *nread, bool *is_data_outstanding)
+{
+	struct pipes_struct *p;
+
+	if (!fsp_is_np(fsp)) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	p = talloc_get_type_abort(
+		fsp->fake_file_handle->private_data, struct pipes_struct);
+
+	*nread = read_from_internal_pipe(p, (char *)data, len,
+					 is_data_outstanding);
+
+	return ((*nread) >= 0)
+		? NT_STATUS_OK : NT_STATUS_UNEXPECTED_IO_ERROR;
+
 }

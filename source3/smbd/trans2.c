@@ -3754,7 +3754,7 @@ static void call_trans2qpipeinfo(connection_struct *conn,
 	unsigned int data_size = 0;
 	unsigned int param_size = 2;
 	uint16 info_level;
-	smb_np_struct *p_pipe = NULL;
+	files_struct *fsp;
 
 	if (!params) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
@@ -3766,8 +3766,8 @@ static void call_trans2qpipeinfo(connection_struct *conn,
 		return;
 	}
 
-	p_pipe = get_rpc_pipe_p(SVAL(params,0));
-	if (p_pipe == NULL) {
+	fsp = file_fsp(req, SVAL(params,0));
+	if (!fsp_is_np(fsp)) {
 		reply_nterror(req, NT_STATUS_INVALID_HANDLE);
 		return;
 	}

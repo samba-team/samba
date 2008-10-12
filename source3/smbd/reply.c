@@ -4261,13 +4261,6 @@ void reply_close(struct smb_request *req)
 		return;
 	}
 
-	/* If it's an IPC, pass off to the pipe handler. */
-	if (IS_IPC(conn)) {
-		reply_pipe_close(conn, req);
-		END_PROFILE(SMBclose);
-		return;
-	}
-
 	fsp = file_fsp(req, SVAL(req->inbuf,smb_vwv0));
 
 	/*

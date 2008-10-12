@@ -317,6 +317,7 @@ typedef struct smb_np_struct {
 	 *          is stored in np_state, above.
 	 */
 	struct pipes_struct *(*namedpipe_create)(
+		TALLOC_CTX *mem_ctx,
 		const char *pipe_name,
 		const char *client_address,
 		struct auth_serversupplied_info *server_info,
