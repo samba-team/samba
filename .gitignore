@@ -235,7 +235,6 @@ lib/util/asn1_proto.h
 lib/util/pidfile.h
 lib/util/unix_privs.h
 lib/util/util_proto.h
-lib/util/util_tdb.h
 source4/mkconfig.mk
 source4/nbt_server/dgram/proto.h
 source4/nbt_server/nbt_server_proto.h

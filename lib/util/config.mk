@@ -64,8 +64,6 @@ PUBLIC_DEPENDENCIES = LIBTDB
 
 UTIL_TDB_OBJ_FILES = $(libutilsrcdir)/util_tdb.o
 
-$(eval $(call proto_header_template,$(libutilsrcdir)/util_tdb.h,$(UTIL_TDB_OBJ_FILES:.o=.c)))
-
 [SUBSYSTEM::UTIL_LDB]
 PUBLIC_DEPENDENCIES = LIBLDB
 
