@@ -187,7 +187,7 @@ _PUBLIC_ char *str_list_join_shell(TALLOC_CTX *mem_ctx, const char **list, char 
 /**
   return the number of elements in a string list
 */
-_PUBLIC_ size_t str_list_length(const char **list)
+_PUBLIC_ size_t str_list_length(const char * const*list)
 {
 	size_t ret;
 	for (ret=0;list && list[ret];ret++) /* noop */ ;
