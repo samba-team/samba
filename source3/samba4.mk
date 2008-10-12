@@ -62,7 +62,7 @@ include $(pidldir)/config.mk
 include samba4-config.mk
 include samba4-templates.mk
 
-zlibsrcdir := $(samba4srcdir)/lib/zlib
+zlibsrcdir := $(samba4srcdir)/../lib/zlib
 dynconfigsrcdir := $(samba4srcdir)/dynconfig
 heimdalsrcdir := $(samba4srcdir)/heimdal
 dsdbsrcdir := $(samba4srcdir)/dsdb
