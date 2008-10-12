@@ -307,3 +307,7 @@ tags
 packaging/RHEL-CTDB/samba.spec
 packaging/RHEL/samba.spec
 packaging/RHEL/makerpms.sh
+source3/librpc/gen_ndr/cli_drsblobs.c
+source3/librpc/gen_ndr/cli_drsblobs.h
+source3/librpc/gen_ndr/srv_drsblobs.c
+source3/librpc/gen_ndr/srv_drsblobs.h
