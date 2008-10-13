@@ -2437,7 +2437,7 @@ static NTSTATUS get_user_info_20(TALLOC_CTX *mem_ctx,
 	if (munged_dial) {
 		blob = base64_decode_data_blob(munged_dial);
 	} else {
-		blob = data_blob_string_const("");
+		blob = data_blob_string_const_null("");
 	}
 
 	status = init_samr_parameters_string(mem_ctx, &blob, &parameters);
@@ -2546,7 +2546,7 @@ static NTSTATUS get_user_info_21(TALLOC_CTX *mem_ctx,
 	if (munged_dial) {
 		blob = base64_decode_data_blob(munged_dial);
 	} else {
-		blob = data_blob_string_const("");
+		blob = data_blob_string_const_null("");
 	}
 
 	status = init_samr_parameters_string(mem_ctx, &blob, &parameters);

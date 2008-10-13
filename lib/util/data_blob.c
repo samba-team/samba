@@ -183,6 +183,18 @@ _PUBLIC_ DATA_BLOB data_blob_string_const(const char *str)
 }
 
 /**
+  useful for constructing data blobs in test suites, while
+  avoiding const warnings
+**/
+_PUBLIC_ DATA_BLOB data_blob_string_const_null(const char *str)
+{
+	DATA_BLOB blob;
+	blob.data = discard_const_p(uint8_t, str);
+	blob.length = str ? strlen(str)+1 : 0;
+	return blob;
+}
+
+/**
  * Create a new data blob from const data 
  */
 

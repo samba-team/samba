@@ -5066,7 +5066,7 @@ static bool run_local_gencache(int dummy)
 		return False;
 	}
 
-	blob = data_blob_string_const("bar");
+	blob = data_blob_string_const_null("bar");
 	tm = time(NULL);
 
 	if (!gencache_set_data_blob("foo", &blob, tm)) {

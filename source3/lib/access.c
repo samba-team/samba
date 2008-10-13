@@ -104,7 +104,7 @@ static bool string_match(const char *tok,const char *s)
 
 		if (memcache_lookup(
 			    NULL, SINGLETON_CACHE,
-			    data_blob_string_const("yp_default_domain"),
+			    data_blob_string_const_null("yp_default_domain"),
 			    &tmp)) {
 
 			SMB_ASSERT(tmp.length > 0);
@@ -116,8 +116,8 @@ static bool string_match(const char *tok,const char *s)
 
 			memcache_add(
 				NULL, SINGLETON_CACHE,
-				data_blob_string_const("yp_default_domain"),
-				data_blob_string_const(mydomain?mydomain:""));
+				data_blob_string_const_null("yp_default_domain"),
+				data_blob_string_const_null(mydomain?mydomain:""));
 		}
 
 		if (!mydomain) {

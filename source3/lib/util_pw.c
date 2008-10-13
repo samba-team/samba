@@ -47,7 +47,7 @@ struct passwd *getpwnam_alloc(TALLOC_CTX *mem_ctx, const char *name)
 	struct passwd *temp, *cached;
 
 	temp = (struct passwd *)memcache_lookup_talloc(
-		NULL, GETPWNAM_CACHE, data_blob_string_const(name));
+		NULL, GETPWNAM_CACHE, data_blob_string_const_null(name));
 	if (temp != NULL) {
 		return tcopy_passwd(mem_ctx, temp);
 	}
@@ -65,7 +65,7 @@ struct passwd *getpwnam_alloc(TALLOC_CTX *mem_ctx, const char *name)
 		return temp;
 	}
 
-	memcache_add_talloc(NULL, GETPWNAM_CACHE, data_blob_string_const(name),
+	memcache_add_talloc(NULL, GETPWNAM_CACHE, data_blob_string_const_null(name),
 			    cached);
 	return tcopy_passwd(mem_ctx, temp);
 }
