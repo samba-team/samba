@@ -32,6 +32,16 @@ static bool test_string(struct torture_context *tctx)
 	return true;
 }
 
+static bool test_string_null(struct torture_context *tctx)
+{
+	DATA_BLOB blob = data_blob_string_const_null("bla");	
+
+	torture_assert_int_equal(tctx, blob.length, 4, "blob length");
+	torture_assert_str_equal(tctx, (char *)blob.data, "bla", "blob data");
+
+	return true;
+}
+
 static bool test_zero(struct torture_context *tctx)
 {
 	int i;
@@ -77,6 +87,7 @@ struct torture_suite *torture_local_util_data_blob(TALLOC_CTX *mem_ctx)
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "DATABLOB");
 
 	torture_suite_add_simple_test(suite, "string", test_string);
+	torture_suite_add_simple_test(suite, "string_null", test_string_null);
 	torture_suite_add_simple_test(suite, "zero", test_zero);;
 	torture_suite_add_simple_test(suite, "clear", test_clear);
 	torture_suite_add_simple_test(suite, "cmp", test_cmp);
