@@ -53,6 +53,7 @@ $(libwind_la_OBJECTS): wind_err.h
 libwind_la_LDFLAGS = -version-info 0:0:0
 
 libwind_la_LIBADD = \
+	libnwind.la \
 	$(LIB_com_err)
 
 if versionscript
