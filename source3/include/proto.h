@@ -2718,10 +2718,6 @@ bool unwrap_edata_ntstatus(TALLOC_CTX *mem_ctx,
 			   DATA_BLOB *edata, 
 			   DATA_BLOB *edata_out);
 bool unwrap_pac(TALLOC_CTX *mem_ctx, DATA_BLOB *auth_data, DATA_BLOB *unwrapped_pac_data);
-int cli_krb5_get_ticket(const char *principal, time_t time_offset, 
-			DATA_BLOB *ticket, DATA_BLOB *session_key_krb5, 
-			uint32 extra_ap_opts, const char *ccname, 
-			time_t *tgs_expire);
 
 /* The following definitions come from libsmb/clilist.c  */
 
