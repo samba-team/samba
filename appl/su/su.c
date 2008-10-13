@@ -350,7 +350,7 @@ main(int argc, char **argv)
 	su_user = argv[optind++];
 
     if (!issuid() && getuid() != 0)
-	warnx("Not setuid and you are root, expect this to fail");
+	warnx("Not setuid and you are not root, expect this to fail");
 
     pwd = k_getpwnam(su_user);
     if(pwd == NULL)
