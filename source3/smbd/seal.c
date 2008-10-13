@@ -426,7 +426,7 @@ static NTSTATUS srv_enc_spnego_gss_negotiate(unsigned char **ppdata, size_t *p_d
 	data_blob_free(&auth_reply);
 
 	SAFE_FREE(*ppdata);
-	*ppdata = memdup(response.data, response.length);
+	*ppdata = (unsigned char *)memdup(response.data, response.length);
 	if ((*ppdata) == NULL && response.length > 0) {
 		status = NT_STATUS_NO_MEMORY;
 	}
@@ -468,7 +468,7 @@ static NTSTATUS srv_enc_ntlm_negotiate(unsigned char **ppdata, size_t *p_data_si
 	}
 
 	SAFE_FREE(*ppdata);
-	*ppdata = memdup(response.data, response.length);
+	*ppdata = (unsigned char *)memdup(response.data, response.length);
 	if ((*ppdata) == NULL && response.length > 0) {
 		status = NT_STATUS_NO_MEMORY;
 	}
@@ -595,7 +595,7 @@ static NTSTATUS srv_enc_spnego_ntlm_auth(connection_struct *conn,
 	}
 
 	SAFE_FREE(*ppdata);
-	*ppdata = memdup(response.data, response.length);
+	*ppdata = (unsigned char *)memdup(response.data, response.length);
 	if ((*ppdata) == NULL && response.length > 0)
 		return NT_STATUS_NO_MEMORY;
 	*p_data_size = response.length;
@@ -649,7 +649,7 @@ static NTSTATUS srv_enc_raw_ntlm_auth(connection_struct *conn,
 
 	/* Return the raw blob. */
 	SAFE_FREE(*ppdata);
-	*ppdata = memdup(response.data, response.length);
+	*ppdata = (unsigned char *)memdup(response.data, response.length);
 	if ((*ppdata) == NULL && response.length > 0)
 		return NT_STATUS_NO_MEMORY;
 	*p_data_size = response.length;
