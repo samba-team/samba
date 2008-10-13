@@ -447,22 +447,6 @@ _PUBLIC_ enum ndr_err_code ndr_push_array_uint8(struct ndr_push *ndr, int ndr_fl
 }
 
 /*
-  save the current position
- */
-_PUBLIC_ void ndr_push_save(struct ndr_push *ndr, struct ndr_push_save *save)
-{
-	save->offset = ndr->offset;
-}
-
-/*
-  restore the position
- */
-_PUBLIC_ void ndr_push_restore(struct ndr_push *ndr, struct ndr_push_save *save)
-{
-	ndr->offset = save->offset;
-}
-
-/*
   push a unique non-zero value if a pointer is non-NULL, otherwise 0
 */
 _PUBLIC_ enum ndr_err_code ndr_push_unique_ptr(struct ndr_push *ndr, const void *p)
@@ -846,4 +830,3 @@ _PUBLIC_ uint32_t ndr_size_DATA_BLOB(int ret, const DATA_BLOB *data, int flags)
 	if (!data) return ret;
 	return ret + data->length;
 }
-

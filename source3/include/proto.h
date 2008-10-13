@@ -3758,8 +3758,6 @@ NTSTATUS rpc_wkssvc_init(void);
 _PUBLIC_ size_t ndr_align_size(uint32_t offset, size_t n);
 _PUBLIC_ struct ndr_pull *ndr_pull_init_blob(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *iconv_convenience);
 _PUBLIC_ enum ndr_err_code ndr_pull_advance(struct ndr_pull *ndr, uint32_t size);
-_PUBLIC_ void ndr_pull_save(struct ndr_pull *ndr, struct ndr_pull_save *save);
-_PUBLIC_ void ndr_pull_restore(struct ndr_pull *ndr, struct ndr_pull_save *save);
 _PUBLIC_ struct ndr_push *ndr_push_init_ctx(TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *iconv_convenience);
 _PUBLIC_ DATA_BLOB ndr_push_blob(struct ndr_push *ndr);
 _PUBLIC_ enum ndr_err_code ndr_push_expand(struct ndr_push *ndr, uint32_t extra_size);
@@ -3822,13 +3820,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_struct_blob(const DATA_BLOB *blob, TALLOC_CT
 _PUBLIC_ enum ndr_err_code ndr_pull_struct_blob_all(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx,
 						    struct smb_iconv_convenience *iconv_convenience,
 						    void *p, ndr_pull_flags_fn_t fn);
-_PUBLIC_ enum ndr_err_code ndr_pull_union_blob(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx, void *p,
-			     uint32_t level, ndr_pull_flags_fn_t fn);
-_PUBLIC_ enum ndr_err_code ndr_pull_union_blob_all(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx, void *p,
-			     uint32_t level, ndr_pull_flags_fn_t fn);
 _PUBLIC_ enum ndr_err_code ndr_push_struct_blob(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *iconv_convenience, const void *p, ndr_push_flags_fn_t fn);
-_PUBLIC_ enum ndr_err_code ndr_push_union_blob(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, void *p,
-			     uint32_t level, ndr_push_flags_fn_t fn);
 _PUBLIC_ size_t ndr_size_struct(const void *p, int flags, ndr_push_flags_fn_t push);
 _PUBLIC_ size_t ndr_size_union(const void *p, int flags, uint32_t level, ndr_push_flags_fn_t push);
 _PUBLIC_ uint32_t ndr_push_get_relative_base_offset(struct ndr_push *ndr);
@@ -3884,8 +3876,6 @@ _PUBLIC_ enum ndr_err_code ndr_pull_align(struct ndr_pull *ndr, size_t size);
 _PUBLIC_ enum ndr_err_code ndr_push_bytes(struct ndr_push *ndr, const uint8_t *data, uint32_t n);
 _PUBLIC_ enum ndr_err_code ndr_push_zero(struct ndr_push *ndr, uint32_t n);
 _PUBLIC_ enum ndr_err_code ndr_push_array_uint8(struct ndr_push *ndr, int ndr_flags, const uint8_t *data, uint32_t n);
-_PUBLIC_ void ndr_push_save(struct ndr_push *ndr, struct ndr_push_save *save);
-_PUBLIC_ void ndr_push_restore(struct ndr_push *ndr, struct ndr_push_save *save);
 _PUBLIC_ enum ndr_err_code ndr_push_unique_ptr(struct ndr_push *ndr, const void *p);
 _PUBLIC_ enum ndr_err_code ndr_push_full_ptr(struct ndr_push *ndr, const void *p);
 _PUBLIC_ enum ndr_err_code ndr_push_ref_ptr(struct ndr_push *ndr);

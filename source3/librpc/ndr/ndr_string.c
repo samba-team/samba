@@ -258,22 +258,6 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, 
 		*s = as;
 		break;
 
-	case LIBNDR_FLAG_STR_FIXLEN15:
-	case LIBNDR_FLAG_STR_FIXLEN32:
-		len1 = (flags & LIBNDR_FLAG_STR_FIXLEN32)?32:15;
-		NDR_PULL_NEED_BYTES(ndr, len1*byte_mul);
-		if (!convert_string_talloc(ndr->current_mem_ctx, chset, CH_UNIX,
-					   ndr->data+ndr->offset, len1*byte_mul,
-					   (void **)(void *)&as,
-					   &converted_size, false))
-		{
-			return ndr_pull_error(ndr, NDR_ERR_CHARCNV, 
-					      "Bad char conversion");
-		}
-		NDR_CHECK(ndr_pull_advance(ndr, len1*byte_mul));
-		*s = as;
-		break;
-
 	case LIBNDR_FLAG_STR_NOTERM:
 		if (!(ndr->flags & LIBNDR_FLAG_REMAINING)) {
 			return ndr_pull_error(ndr, NDR_ERR_STRING, "Bad string flags 0x%x (missing NDR_REMAINING)\n",
@@ -346,10 +330,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_string(struct ndr_push *ndr, int ndr_flags, 
 
 	flags &= ~LIBNDR_FLAG_STR_CONFORMANT;
 
-	if (!(flags & 
-	      (LIBNDR_FLAG_STR_NOTERM |
-	       LIBNDR_FLAG_STR_FIXLEN15 |
-	       LIBNDR_FLAG_STR_FIXLEN32))) {
+	if (!(flags & LIBNDR_FLAG_STR_NOTERM)) {
 		s_len++;
 	}
 	if (!convert_string_talloc(ndr, CH_UNIX, chset, s, s_len,
@@ -397,21 +378,6 @@ _PUBLIC_ enum ndr_err_code ndr_push_string(struct ndr_push *ndr, int ndr_flags, 
 		NDR_CHECK(ndr_push_bytes(ndr, dest, d_len));
 		break;
 
-	case LIBNDR_FLAG_STR_FIXLEN15:
-	case LIBNDR_FLAG_STR_FIXLEN32: {
-		ssize_t fix_len = (flags & LIBNDR_FLAG_STR_FIXLEN32)?32:15;
-		uint32_t pad_len = fix_len - d_len;
-		if (d_len > fix_len) {
-			return ndr_push_error(ndr, NDR_ERR_CHARCNV, 
-					      "Bad char conversion");
-		}
-		NDR_CHECK(ndr_push_bytes(ndr, dest, d_len));
-		if (pad_len != 0) {
-			NDR_CHECK(ndr_push_zero(ndr, pad_len));
-		}
-		break;
-	}
-
 	default:
 		if (ndr->flags & LIBNDR_FLAG_REMAINING) {
 			NDR_CHECK(ndr_push_bytes(ndr, dest, d_len));
@@ -437,13 +403,6 @@ _PUBLIC_ size_t ndr_string_array_size(struct ndr_push *ndr, const char *s)
 	unsigned byte_mul = 2;
 	unsigned c_len_term = 1;
 
-	if (flags & LIBNDR_FLAG_STR_FIXLEN32) {
-		return 32;
-	}
-	if (flags & LIBNDR_FLAG_STR_FIXLEN15) {
-		return 15;
-	}
-	
 	c_len = s?strlen_m(s):0;
 
 	if (flags & (LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_UTF8)) {
@@ -653,21 +612,21 @@ _PUBLIC_ uint32_t ndr_string_length(const void *_var, uint32_t element_size)
 _PUBLIC_ enum ndr_err_code ndr_check_string_terminator(struct ndr_pull *ndr, uint32_t count, uint32_t element_size)
 {
 	uint32_t i;
-	struct ndr_pull_save save_offset;
+	uint32_t save_offset;
 
-	ndr_pull_save(ndr, &save_offset);
+	save_offset = ndr->offset;
 	ndr_pull_advance(ndr, (count - 1) * element_size);
 	NDR_PULL_NEED_BYTES(ndr, element_size);
 
 	for (i = 0; i < element_size; i++) {
 		 if (ndr->data[ndr->offset+i] != 0) {
-			ndr_pull_restore(ndr, &save_offset);
+			ndr->offset = save_offset;
 
 			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "String terminator not present or outside string boundaries");
 		 }
 	}
 
-	ndr_pull_restore(ndr, &save_offset);
+	ndr->offset = save_offset;
 
 	return NDR_ERR_SUCCESS;
 }

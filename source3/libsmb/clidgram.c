@@ -249,7 +249,7 @@ bool receive_getdc_response(TALLOC_CTX *mem_ctx,
 	blob.data += 4;
 	blob.length -= 4;
 
-	ndr_err = ndr_pull_union_blob_all(&blob, mem_ctx, &p, DGRAM_SMB,
+	ndr_err = ndr_pull_union_blob_all(&blob, mem_ctx, NULL, &p, DGRAM_SMB,
 		       (ndr_pull_flags_fn_t)ndr_pull_dgram_smb_packet);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		DEBUG(0,("failed to parse packet\n"));
