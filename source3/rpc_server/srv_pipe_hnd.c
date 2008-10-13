@@ -134,11 +134,11 @@ static bool pipe_init_outgoing_data(pipes_struct *p)
  Make an internal namedpipes structure
 ****************************************************************************/
 
-struct pipes_struct *make_internal_rpc_pipe_p(TALLOC_CTX *mem_ctx,
-					      const char *pipe_name,
-					      const char *client_address,
-					      struct auth_serversupplied_info *server_info,
-					      uint16_t vuid)
+static struct pipes_struct *make_internal_rpc_pipe_p(TALLOC_CTX *mem_ctx,
+						     const char *pipe_name,
+						     const char *client_address,
+						     struct auth_serversupplied_info *server_info,
+						     uint16_t vuid)
 {
 	pipes_struct *p;
 
@@ -780,7 +780,7 @@ incoming data size = %u\n", (unsigned int)p->in_data.pdu_received_len, (unsigned
  Accepts incoming data on an internal rpc pipe.
 ****************************************************************************/
 
-ssize_t write_to_internal_pipe(struct pipes_struct *p, char *data, size_t n)
+static ssize_t write_to_internal_pipe(struct pipes_struct *p, char *data, size_t n)
 {
 	size_t data_left = n;
 
@@ -815,8 +815,8 @@ ssize_t write_to_internal_pipe(struct pipes_struct *p, char *data, size_t n)
  have been prepared into arrays of headers + data stream sections.
 ****************************************************************************/
 
-ssize_t read_from_internal_pipe(struct pipes_struct *p, char *data, size_t n,
-				bool *is_data_outstanding)
+static ssize_t read_from_internal_pipe(struct pipes_struct *p, char *data, size_t n,
+				       bool *is_data_outstanding)
 {
 	uint32 pdu_remaining = 0;
 	ssize_t data_returned = 0;

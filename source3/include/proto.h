@@ -8693,14 +8693,6 @@ pipes_struct *get_first_internal_pipe(void);
 pipes_struct *get_next_internal_pipe(pipes_struct *p);
 void set_pipe_handle_offset(int max_open_files);
 void init_rpc_pipe_hnd(void);
-struct pipes_struct *make_internal_rpc_pipe_p(TALLOC_CTX *mem_ctx,
-					      const char *pipe_name,
-					      const char *client_address,
-					      struct auth_serversupplied_info *server_info,
-					      uint16_t vuid);
-ssize_t read_from_internal_pipe(struct pipes_struct *p, char *data, size_t n,
-				bool *is_data_outstanding);
-ssize_t write_to_internal_pipe(struct pipes_struct *p, char *data, size_t n);
 
 bool fsp_is_np(struct files_struct *fsp);
 NTSTATUS np_open(struct smb_request *smb_req, struct connection_struct *conn,
