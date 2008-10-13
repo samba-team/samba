@@ -29,8 +29,9 @@
 #include "includes.h"
 #include "librpc/ndr/libndr.h"
 #include "../lib/util/dlinklist.h"
-#include "librpc/gen_ndr/dcerpc.h"
+#if _SAMBA_BUILD_ == 4
 #include "param/param.h"
+#endif
 
 #define NDR_BASE_MARSHALL_SIZE 1024
 
@@ -163,15 +164,19 @@ _PUBLIC_ enum ndr_err_code ndr_push_expand(struct ndr_push *ndr, uint32_t extra_
 	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ void ndr_print_debug_helper(struct ndr_print *ndr, const char *format, ...)
+_PUBLIC_ void ndr_print_debug_helper(struct ndr_print *ndr, const char *format, ...) 
 {
 	va_list ap;
 	char *s = NULL;
-	int i;
+	int i, ret;
 
 	va_start(ap, format);
-	vasprintf(&s, format, ap);
+	ret = vasprintf(&s, format, ap);
 	va_end(ap);
+
+	if (ret == -1) {
+		return;
+	}
 
 	for (i=0;i<ndr->depth;i++) {
 		DEBUGADD(0,("    "));
@@ -350,12 +355,17 @@ _PUBLIC_ enum ndr_err_code ndr_pull_error(struct ndr_pull *ndr,
 {
 	char *s=NULL;
 	va_list ap;
+	int ret;
 
 	va_start(ap, format);
-	vasprintf(&s, format, ap);
+	ret = vasprintf(&s, format, ap);
 	va_end(ap);
 
-	DEBUG(3,("ndr_pull_error(%u): %s\n", ndr_err, s));
+	if (ret == -1) {
+		return NDR_ERR_ALLOC;
+	}
+
+	DEBUG(1,("ndr_pull_error(%u): %s\n", ndr_err, s));
 
 	free(s);
 
@@ -367,16 +377,21 @@ _PUBLIC_ enum ndr_err_code ndr_pull_error(struct ndr_pull *ndr,
 */
 _PUBLIC_ enum ndr_err_code ndr_push_error(struct ndr_push *ndr,
 				 enum ndr_err_code ndr_err,
-				 const char *format, ...)
+				 const char *format, ...) 
 {
 	char *s=NULL;
 	va_list ap;
+	int ret;
 
 	va_start(ap, format);
-	vasprintf(&s, format, ap);
+	ret = vasprintf(&s, format, ap);
 	va_end(ap);
 
-	DEBUG(3,("ndr_push_error(%u): %s\n", ndr_err, s));
+	if (ret == -1) {
+		return NDR_ERR_ALLOC;
+	}
+
+	DEBUG(1,("ndr_push_error(%u): %s\n", ndr_err, s));
 
 	free(s);
 

@@ -152,6 +152,14 @@ struct ndr_print {
 #define NDR_PRINT_OUT_DEBUG(type, p) NDR_PRINT_FUNCTION_DEBUG(type, NDR_OUT, p)
 #define NDR_PRINT_IN_DEBUG(type, p) NDR_PRINT_FUNCTION_DEBUG(type, NDR_IN | NDR_SET_VALUES, p)
 
+/* useful macro for debugging in strings */
+#define NDR_PRINT_STRUCT_STRING(ctx, type, p) ndr_print_struct_string(ctx, (ndr_print_fn_t)ndr_print_ ##type, #p, p)
+#define NDR_PRINT_UNION_STRING(ctx, type, level, p) ndr_print_union_string(ctx, (ndr_print_fn_t)ndr_print_ ##type, #p, level, p)
+#define NDR_PRINT_FUNCTION_STRING(ctx, type, flags, p) ndr_print_function_string(ctx, (ndr_print_function_t)ndr_print_ ##type, #type, flags, p)
+#define NDR_PRINT_BOTH_STRING(ctx, type, p) NDR_PRINT_FUNCTION_STRING(ctx, type, NDR_BOTH, p)
+#define NDR_PRINT_OUT_STRING(ctx, type, p) NDR_PRINT_FUNCTION_STRING(ctx, type, NDR_OUT, p)
+#define NDR_PRINT_IN_STRING(ctx, type, p) NDR_PRINT_FUNCTION_STRING(ctx, type, NDR_IN | NDR_SET_VALUES, p)
+
 #define NDR_BE(ndr) (((ndr)->flags & (LIBNDR_FLAG_BIGENDIAN|LIBNDR_FLAG_LITTLE_ENDIAN)) == LIBNDR_FLAG_BIGENDIAN)
 
 enum ndr_err_code {

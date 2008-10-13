@@ -8,7 +8,7 @@ dcerpcsrcdir = $(librpcsrcdir)/rpc
 PUBLIC_DEPENDENCIES = LIBSAMBA-ERRORS LIBTALLOC LIBSAMBA-UTIL CHARSET \
 					  LIBSAMBA-HOSTCONFIG
 
-LIBNDR_OBJ_FILES = $(addprefix $(ndrsrcdir)/, ndr.o ndr_basic.o ndr_string.o uuid.o)
+LIBNDR_OBJ_FILES = $(addprefix $(ndrsrcdir)/, ndr_string.o) ../librpc/ndr/ndr_basic.o ../librpc/ndr/uuid.o ../librpc/ndr/ndr.o
 
 $(eval $(call proto_header_template,$(ndrsrcdir)/libndr_proto.h,$(LIBNDR_OBJ_FILES:.o=.c)))
 
@@ -36,9 +36,9 @@ PRIVATE_DEPENDENCIES = \
 # End BINARY ndrdump
 #################################
 
-ndrdump_OBJ_FILES = $(librpcsrcdir)/tools/ndrdump.o
+ndrdump_OBJ_FILES = ../librpc/tools/ndrdump.o
 
-MANPAGES += $(librpcsrcdir)/tools/ndrdump.1
+MANPAGES += ../librpc/tools/ndrdump.1
 
 ################################################
 # Start SUBSYSTEM NDR_COMPRESSION
@@ -107,7 +107,7 @@ NDR_EFS_OBJ_FILES = $(gen_ndrsrcdir)/ndr_efs.o
 [SUBSYSTEM::NDR_MISC]
 PUBLIC_DEPENDENCIES = LIBNDR
 
-NDR_MISC_OBJ_FILES = $(gen_ndrsrcdir)/ndr_misc.o $(ndrsrcdir)/ndr_misc.o
+NDR_MISC_OBJ_FILES = $(gen_ndrsrcdir)/ndr_misc.o ../librpc/ndr/ndr_misc.o
 
 PUBLIC_HEADERS += $(gen_ndrsrcdir)/misc.h $(gen_ndrsrcdir)/ndr_misc.h
 
