@@ -105,7 +105,7 @@ static NTSTATUS cmd_disconnect(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int a
 
 static NTSTATUS cmd_disk_free(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
-	SMB_BIG_UINT diskfree, bsize, dfree, dsize;
+	uint64_t diskfree, bsize, dfree, dsize;
 	if (argc != 2) {
 		printf("Usage: disk_free <path>\n");
 		return NT_STATUS_OK;

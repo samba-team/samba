@@ -426,7 +426,7 @@ typedef int VOLATILE SIG_ATOMIC_T;
 
 #ifdef LARGE_SMB_DEV_T
 #define SDEV_T_VAL(p, ofs, v) (SIVAL((p),(ofs),(v)&0xFFFFFFFF), SIVAL((p),(ofs)+4,(v)>>32))
-#define DEV_T_VAL(p, ofs) ((SMB_DEV_T)(((SMB_BIG_UINT)(IVAL((p),(ofs))))| (((SMB_BIG_UINT)(IVAL((p),(ofs)+4))) << 32)))
+#define DEV_T_VAL(p, ofs) ((SMB_DEV_T)(((uint64_t)(IVAL((p),(ofs))))| (((uint64_t)(IVAL((p),(ofs)+4))) << 32)))
 #else 
 #define SDEV_T_VAL(p, ofs, v) (SIVAL((p),(ofs),v),SIVAL((p),(ofs)+4,0))
 #define DEV_T_VAL(p, ofs) ((SMB_DEV_T)(IVAL((p),(ofs))))
@@ -452,7 +452,7 @@ typedef int VOLATILE SIG_ATOMIC_T;
 
 #ifdef LARGE_SMB_INO_T
 #define SINO_T_VAL(p, ofs, v) (SIVAL((p),(ofs),(v)&0xFFFFFFFF), SIVAL((p),(ofs)+4,(v)>>32))
-#define INO_T_VAL(p, ofs) ((SMB_INO_T)(((SMB_BIG_UINT)(IVAL(p,ofs)))| (((SMB_BIG_UINT)(IVAL(p,(ofs)+4))) << 32)))
+#define INO_T_VAL(p, ofs) ((SMB_INO_T)(((uint64_t)(IVAL(p,ofs)))| (((uint64_t)(IVAL(p,(ofs)+4))) << 32)))
 #else 
 #define SINO_T_VAL(p, ofs, v) (SIVAL(p,ofs,v),SIVAL(p,(ofs)+4,0))
 #define INO_T_VAL(p, ofs) ((SMB_INO_T)(IVAL((p),(ofs))))
@@ -466,20 +466,13 @@ typedef int VOLATILE SIG_ATOMIC_T;
 #  endif
 #endif
 
-#if defined(HAVE_LONGLONG)
-#define SMB_BIG_UINT unsigned long long
-#define SMB_BIG_INT long long
 #define SBIG_UINT(p, ofs, v) (SIVAL(p,ofs,(v)&0xFFFFFFFF), SIVAL(p,(ofs)+4,(v)>>32))
-#else
-#define SMB_BIG_UINT unsigned long
-#define SMB_BIG_INT long
-#define SBIG_UINT(p, ofs, v) (SIVAL(p,ofs,v),SIVAL(p,(ofs)+4,0))
-#endif
+#define IVAL2_TO_SMB_BIG_UINT(buf,off) ( (((uint64_t)(IVAL((buf),(off)))) & ((uint64_t)0xFFFFFFFF)) | \
+		(( ((uint64_t)(IVAL((buf),(off+4)))) & ((uint64_t)0xFFFFFFFF) ) << 32 ) )
 
-#define SMB_BIG_UINT_BITS (sizeof(SMB_BIG_UINT)*8)
 
 /* this should really be a 64 bit type if possible */
-#define br_off SMB_BIG_UINT
+typedef uint64_t br_off;
 
 #define SMB_OFF_T_BITS (sizeof(SMB_OFF_T)*8)
 
@@ -497,15 +490,11 @@ typedef int VOLATILE SIG_ATOMIC_T;
 #ifdef LARGE_SMB_OFF_T
 #define SOFF_T(p, ofs, v) (SIVAL(p,ofs,(v)&0xFFFFFFFF), SIVAL(p,(ofs)+4,(v)>>32))
 #define SOFF_T_R(p, ofs, v) (SIVAL(p,(ofs)+4,(v)&0xFFFFFFFF), SIVAL(p,ofs,(v)>>32))
-#define IVAL_TO_SMB_OFF_T(buf,off) ((SMB_OFF_T)(( ((SMB_BIG_UINT)(IVAL((buf),(off)))) & ((SMB_BIG_UINT)0xFFFFFFFF) )))
-#define IVAL2_TO_SMB_BIG_UINT(buf,off) ( (((SMB_BIG_UINT)(IVAL((buf),(off)))) & ((SMB_BIG_UINT)0xFFFFFFFF)) | \
-		(( ((SMB_BIG_UINT)(IVAL((buf),(off+4)))) & ((SMB_BIG_UINT)0xFFFFFFFF) ) << 32 ) )
+#define IVAL_TO_SMB_OFF_T(buf,off) ((SMB_OFF_T)(( ((uint64_t)(IVAL((buf),(off)))) & ((uint64_t)0xFFFFFFFF) )))
 #else 
 #define SOFF_T(p, ofs, v) (SIVAL(p,ofs,v),SIVAL(p,(ofs)+4,0))
 #define SOFF_T_R(p, ofs, v) (SIVAL(p,(ofs)+4,v),SIVAL(p,ofs,0))
 #define IVAL_TO_SMB_OFF_T(buf,off) ((SMB_OFF_T)(( ((uint32)(IVAL((buf),(off)))) & 0xFFFFFFFF )))
-#define IVAL2_TO_SMB_BIG_UINT(buf,off) ( (((SMB_BIG_UINT)(IVAL((buf),(off)))) & ((SMB_BIG_UINT)0xFFFFFFFF)) | \
-		                (( ((SMB_BIG_UINT)(IVAL((buf),(off+4)))) & ((SMB_BIG_UINT)0xFFFFFFFF) ) << 32 ) )
 #endif
 
 /*

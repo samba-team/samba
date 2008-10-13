@@ -423,12 +423,12 @@ bool status_profile_dump(bool verbose)
 static int print_count_samples(
 	const struct profile_stats * const current,
 	const struct profile_stats * const last,
-	SMB_BIG_UINT delta_usec)
+	uint64_t delta_usec)
 {
 	int i;
 	int count = 0;
 	unsigned step;
-	SMB_BIG_UINT spent;
+	uint64_t spent;
 	int delta_sec;
 	const char * name;
 	char buf[40];
@@ -467,13 +467,13 @@ static int print_count_samples(
 }
 
 static struct profile_stats	sample_data[2];
-static SMB_BIG_UINT		sample_time[2];
+static uint64_t		sample_time[2];
 
 bool status_profile_rates(bool verbose)
 {
-	SMB_BIG_UINT remain_usec;
-	SMB_BIG_UINT next_usec;
-	SMB_BIG_UINT delta_usec;
+	uint64_t remain_usec;
+	uint64_t next_usec;
+	uint64_t delta_usec;
 
 	int last = 0;
 	int current = 1;

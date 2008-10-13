@@ -2389,9 +2389,9 @@ uint32 print_job_start(struct auth_serversupplied_info *server_info, int snum,
 
 	/* see if we have sufficient disk space */
 	if (lp_minprintspace(snum)) {
-		SMB_BIG_UINT dspace, dsize;
+		uint64_t dspace, dsize;
 		if (sys_fsusage(path, &dspace, &dsize) == 0 &&
-		    dspace < 2*(SMB_BIG_UINT)lp_minprintspace(snum)) {
+		    dspace < 2*(uint64_t)lp_minprintspace(snum)) {
 			DEBUG(3, ("print_job_start: disk space check failed.\n"));
 			release_print_db(pdb);
 			errno = ENOSPC;

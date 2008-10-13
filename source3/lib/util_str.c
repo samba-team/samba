@@ -2279,10 +2279,10 @@ char *base64_encode_data_blob(TALLOC_CTX *mem_ctx, DATA_BLOB data)
 }
 
 /* read a SMB_BIG_UINT from a string */
-SMB_BIG_UINT STR_TO_SMB_BIG_UINT(const char *nptr, const char **entptr)
+uint64_t STR_TO_SMB_BIG_UINT(const char *nptr, const char **entptr)
 {
 
-	SMB_BIG_UINT val = -1;
+	uint64_t val = -1;
 	const char *p = nptr;
 
 	if (!p) {
@@ -2295,11 +2295,7 @@ SMB_BIG_UINT STR_TO_SMB_BIG_UINT(const char *nptr, const char **entptr)
 	while (*p && isspace(*p))
 		p++;
 
-#ifdef LARGE_SMB_OFF_T
-	sscanf(p,"%llu",&val);
-#else /* LARGE_SMB_OFF_T */
-	sscanf(p,"%lu",&val);
-#endif /* LARGE_SMB_OFF_T */
+	sscanf(p,"%"PRIu64,&val);
 	if (entptr) {
 		while (*p && isdigit(*p))
 			p++;

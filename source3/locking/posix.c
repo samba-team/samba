@@ -79,7 +79,7 @@ static const char *posix_lock_type_name(int lock_type)
 ****************************************************************************/
 
 static bool posix_lock_in_range(SMB_OFF_T *offset_out, SMB_OFF_T *count_out,
-				SMB_BIG_UINT u_offset, SMB_BIG_UINT u_count)
+				uint64_t u_offset, uint64_t u_count)
 {
 	SMB_OFF_T offset = (SMB_OFF_T)u_offset;
 	SMB_OFF_T count = (SMB_OFF_T)u_count;
@@ -132,9 +132,9 @@ static bool posix_lock_in_range(SMB_OFF_T *offset_out, SMB_OFF_T *count_out,
 	 * ignore this lock.
 	 */
 
-	if (u_offset & ~((SMB_BIG_UINT)max_positive_lock_offset)) {
+	if (u_offset & ~((uint64_t)max_positive_lock_offset)) {
 		DEBUG(10,("posix_lock_in_range: (offset = %.0f) offset > %.0f and we cannot handle this. Ignoring lock.\n",
-				(double)u_offset, (double)((SMB_BIG_UINT)max_positive_lock_offset) ));
+				(double)u_offset, (double)((uint64_t)max_positive_lock_offset) ));
 		return False;
 	}
 
@@ -142,7 +142,7 @@ static bool posix_lock_in_range(SMB_OFF_T *offset_out, SMB_OFF_T *count_out,
 	 * We must truncate the count to less than max_positive_lock_offset.
 	 */
 
-	if (u_count & ~((SMB_BIG_UINT)max_positive_lock_offset)) {
+	if (u_count & ~((uint64_t)max_positive_lock_offset)) {
 		count = max_positive_lock_offset;
 	}
 
@@ -271,8 +271,8 @@ static bool posix_fcntl_getlock(files_struct *fsp, SMB_OFF_T *poffset, SMB_OFF_T
 ****************************************************************************/
 
 bool is_posix_locked(files_struct *fsp,
-			SMB_BIG_UINT *pu_offset,
-			SMB_BIG_UINT *pu_count,
+			uint64_t *pu_offset,
+			uint64_t *pu_count,
 			enum brl_type *plock_type,
 			enum brl_flavour lock_flav)
 {
@@ -302,8 +302,8 @@ bool is_posix_locked(files_struct *fsp,
 
 	if (lock_flav == POSIX_LOCK) {
 		/* Only POSIX lock queries need to know the details. */
-		*pu_offset = (SMB_BIG_UINT)offset;
-		*pu_count = (SMB_BIG_UINT)count;
+		*pu_offset = (uint64_t)offset;
+		*pu_count = (uint64_t)count;
 		*plock_type = (posix_lock_type == F_RDLCK) ? READ_LOCK : WRITE_LOCK;
 	}
 	return True;
@@ -929,8 +929,8 @@ lock: start = %.0f, size = %.0f", (double)l_curr->start, (double)l_curr->size, (
 ****************************************************************************/
 
 bool set_posix_lock_windows_flavour(files_struct *fsp,
-			SMB_BIG_UINT u_offset,
-			SMB_BIG_UINT u_count,
+			uint64_t u_offset,
+			uint64_t u_count,
 			enum brl_type lock_type,
 			const struct lock_context *lock_ctx,
 			const struct lock_struct *plocks,
@@ -1066,8 +1066,8 @@ bool set_posix_lock_windows_flavour(files_struct *fsp,
 ****************************************************************************/
 
 bool release_posix_lock_windows_flavour(files_struct *fsp,
-				SMB_BIG_UINT u_offset,
-				SMB_BIG_UINT u_count,
+				uint64_t u_offset,
+				uint64_t u_count,
 				enum brl_type deleted_lock_type,
 				const struct lock_context *lock_ctx,
 				const struct lock_struct *plocks,
@@ -1189,8 +1189,8 @@ bool release_posix_lock_windows_flavour(files_struct *fsp,
 ****************************************************************************/
 
 bool set_posix_lock_posix_flavour(files_struct *fsp,
-			SMB_BIG_UINT u_offset,
-			SMB_BIG_UINT u_count,
+			uint64_t u_offset,
+			uint64_t u_count,
 			enum brl_type lock_type,
 			int *errno_ret)
 {
@@ -1229,8 +1229,8 @@ bool set_posix_lock_posix_flavour(files_struct *fsp,
 ****************************************************************************/
 
 bool release_posix_lock_posix_flavour(files_struct *fsp,
-				SMB_BIG_UINT u_offset,
-				SMB_BIG_UINT u_count,
+				uint64_t u_offset,
+				uint64_t u_count,
 				const struct lock_context *lock_ctx,
 				const struct lock_struct *plocks,
 				int num_locks)

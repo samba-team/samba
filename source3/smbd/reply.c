@@ -1178,10 +1178,10 @@ void reply_setatr(struct smb_request *req)
 void reply_dskattr(struct smb_request *req)
 {
 	connection_struct *conn = req->conn;
-	SMB_BIG_UINT dfree,dsize,bsize;
+	uint64_t dfree,dsize,bsize;
 	START_PROFILE(SMBdskattr);
 
-	if (get_dfree_info(conn,".",True,&bsize,&dfree,&dsize) == (SMB_BIG_UINT)-1) {
+	if (get_dfree_info(conn,".",True,&bsize,&dfree,&dsize) == (uint64_t)-1) {
 		reply_unixerror(req, ERRHRD, ERRgeneral);
 		END_PROFILE(SMBdskattr);
 		return;
@@ -1200,8 +1200,8 @@ void reply_dskattr(struct smb_request *req)
 		total_space = dsize * (double)bsize;
 		free_space = dfree * (double)bsize;
 
-		dsize = (SMB_BIG_UINT)((total_space+63*512) / (64*512));
-		dfree = (SMB_BIG_UINT)((free_space+63*512) / (64*512));
+		dsize = (uint64_t)((total_space+63*512) / (64*512));
+		dfree = (uint64_t)((free_space+63*512) / (64*512));
 		
 		if (dsize > 0xFFFF) dsize = 0xFFFF;
 		if (dfree > 0xFFFF) dfree = 0xFFFF;
@@ -1744,7 +1744,7 @@ void reply_open_and_X(struct smb_request *req)
 	int smb_action = 0;
 	files_struct *fsp;
 	NTSTATUS status;
-	SMB_BIG_UINT allocation_size;
+	uint64_t allocation_size;
 	ssize_t retval = -1;
 	uint32 access_mask;
 	uint32 share_mode;
@@ -1767,7 +1767,7 @@ void reply_open_and_X(struct smb_request *req)
 	core_oplock_request = CORE_OPLOCK_REQUEST(req->inbuf);
 	oplock_request = ex_oplock_request | core_oplock_request;
 	smb_ofun = SVAL(req->inbuf,smb_vwv8);
-	allocation_size = (SMB_BIG_UINT)IVAL(req->inbuf,smb_vwv9);
+	allocation_size = (uint64_t)IVAL(req->inbuf,smb_vwv9);
 
 	/* If it's an IPC, pass off the pipe handler. */
 	if (IS_IPC(conn)) {
@@ -2887,8 +2887,8 @@ void reply_readbraw(struct smb_request *req)
 	maxcount = MIN(65535,maxcount);
 
 	if (is_locked(fsp,(uint32)req->smbpid,
-			(SMB_BIG_UINT)maxcount,
-			(SMB_BIG_UINT)startpos,
+			(uint64_t)maxcount,
+			(uint64_t)startpos,
 			READ_LOCK)) {
 		reply_readbraw_error();
 		END_PROFILE(SMBreadbraw);
@@ -2985,8 +2985,8 @@ void reply_lockread(struct smb_request *req)
 	br_lck = do_lock(smbd_messaging_context(),
 			fsp,
 			req->smbpid,
-			(SMB_BIG_UINT)numtoread,
-			(SMB_BIG_UINT)startpos,
+			(uint64_t)numtoread,
+			(uint64_t)startpos,
 			WRITE_LOCK,
 			WINDOWS_LOCK,
 			False, /* Non-blocking lock. */
@@ -3090,8 +3090,8 @@ Returning short read of maximum allowed for compatibility with Windows 2000.\n",
 
 	data = smb_buf(req->outbuf) + 3;
   
-	if (is_locked(fsp, (uint32)req->smbpid, (SMB_BIG_UINT)numtoread,
-		      (SMB_BIG_UINT)startpos, READ_LOCK)) {
+	if (is_locked(fsp, (uint32)req->smbpid, (uint64_t)numtoread,
+		      (uint64_t)startpos, READ_LOCK)) {
 		reply_doserror(req, ERRDOS,ERRlock);
 		END_PROFILE(SMBread);
 		return;
@@ -3377,8 +3377,8 @@ void reply_read_and_X(struct smb_request *req)
 
 	}
 
-	if (is_locked(fsp, (uint32)req->smbpid, (SMB_BIG_UINT)smb_maxcnt,
-		      (SMB_BIG_UINT)startpos, READ_LOCK)) {
+	if (is_locked(fsp, (uint32)req->smbpid, (uint64_t)smb_maxcnt,
+		      (uint64_t)startpos, READ_LOCK)) {
 		END_PROFILE(SMBreadX);
 		reply_doserror(req, ERRDOS, ERRlock);
 		return;
@@ -3487,8 +3487,8 @@ void reply_writebraw(struct smb_request *req)
 		return;
 	}
 
-	if (is_locked(fsp,(uint32)req->smbpid,(SMB_BIG_UINT)tcount,
-				(SMB_BIG_UINT)startpos, WRITE_LOCK)) {
+	if (is_locked(fsp,(uint32)req->smbpid,(uint64_t)tcount,
+				(uint64_t)startpos, WRITE_LOCK)) {
 		reply_doserror(req, ERRDOS, ERRlock);
 		error_to_writebrawerr(req);
 		END_PROFILE(SMBwritebraw);
@@ -3673,8 +3673,8 @@ void reply_writeunlock(struct smb_request *req)
 	data = smb_buf(req->inbuf) + 3;
   
 	if (numtowrite
-	    && is_locked(fsp, (uint32)req->smbpid, (SMB_BIG_UINT)numtowrite,
-			 (SMB_BIG_UINT)startpos, WRITE_LOCK)) {
+	    && is_locked(fsp, (uint32)req->smbpid, (uint64_t)numtowrite,
+			 (uint64_t)startpos, WRITE_LOCK)) {
 		reply_doserror(req, ERRDOS, ERRlock);
 		END_PROFILE(SMBwriteunlock);
 		return;
@@ -3708,8 +3708,8 @@ void reply_writeunlock(struct smb_request *req)
 		status = do_unlock(smbd_messaging_context(),
 				fsp,
 				req->smbpid,
-				(SMB_BIG_UINT)numtowrite, 
-				(SMB_BIG_UINT)startpos,
+				(uint64_t)numtowrite, 
+				(uint64_t)startpos,
 				WINDOWS_LOCK);
 
 		if (NT_STATUS_V(status)) {
@@ -3779,8 +3779,8 @@ void reply_write(struct smb_request *req)
 	startpos = IVAL_TO_SMB_OFF_T(req->inbuf,smb_vwv2);
 	data = smb_buf(req->inbuf) + 3;
   
-	if (is_locked(fsp, (uint32)req->smbpid, (SMB_BIG_UINT)numtowrite,
-		      (SMB_BIG_UINT)startpos, WRITE_LOCK)) {
+	if (is_locked(fsp, (uint32)req->smbpid, (uint64_t)numtowrite,
+		      (uint64_t)startpos, WRITE_LOCK)) {
 		reply_doserror(req, ERRDOS, ERRlock);
 		END_PROFILE(SMBwrite);
 		return;
@@ -4035,8 +4035,8 @@ void reply_write_and_X(struct smb_request *req)
 	}
 
 	if (is_locked(fsp,(uint32)req->smbpid,
-		      (SMB_BIG_UINT)numtowrite,
-		      (SMB_BIG_UINT)startpos, WRITE_LOCK)) {
+		      (uint64_t)numtowrite,
+		      (uint64_t)startpos, WRITE_LOCK)) {
 		reply_doserror(req, ERRDOS, ERRlock);
 		END_PROFILE(SMBwriteX);
 		return;
@@ -4358,8 +4358,8 @@ void reply_writeclose(struct smb_request *req)
 	data = smb_buf(req->inbuf) + 1;
   
 	if (numtowrite
-	    && is_locked(fsp, (uint32)req->smbpid, (SMB_BIG_UINT)numtowrite,
-			 (SMB_BIG_UINT)startpos, WRITE_LOCK)) {
+	    && is_locked(fsp, (uint32)req->smbpid, (uint64_t)numtowrite,
+			 (uint64_t)startpos, WRITE_LOCK)) {
 		reply_doserror(req, ERRDOS,ERRlock);
 		END_PROFILE(SMBwriteclose);
 		return;
@@ -4413,7 +4413,7 @@ void reply_writeclose(struct smb_request *req)
 void reply_lock(struct smb_request *req)
 {
 	connection_struct *conn = req->conn;
-	SMB_BIG_UINT count,offset;
+	uint64_t count,offset;
 	NTSTATUS status;
 	files_struct *fsp;
 	struct byte_range_lock *br_lck = NULL;
@@ -4435,8 +4435,8 @@ void reply_lock(struct smb_request *req)
 
 	release_level_2_oplocks_on_change(fsp);
 
-	count = (SMB_BIG_UINT)IVAL(req->inbuf,smb_vwv1);
-	offset = (SMB_BIG_UINT)IVAL(req->inbuf,smb_vwv3);
+	count = (uint64_t)IVAL(req->inbuf,smb_vwv1);
+	offset = (uint64_t)IVAL(req->inbuf,smb_vwv3);
 
 	DEBUG(3,("lock fd=%d fnum=%d offset=%.0f count=%.0f\n",
 		 fsp->fh->fd, fsp->fnum, (double)offset, (double)count));
@@ -4473,7 +4473,7 @@ void reply_lock(struct smb_request *req)
 void reply_unlock(struct smb_request *req)
 {
 	connection_struct *conn = req->conn;
-	SMB_BIG_UINT count,offset;
+	uint64_t count,offset;
 	NTSTATUS status;
 	files_struct *fsp;
 
@@ -4492,8 +4492,8 @@ void reply_unlock(struct smb_request *req)
 		return;
 	}
 	
-	count = (SMB_BIG_UINT)IVAL(req->inbuf,smb_vwv1);
-	offset = (SMB_BIG_UINT)IVAL(req->inbuf,smb_vwv3);
+	count = (uint64_t)IVAL(req->inbuf,smb_vwv1);
+	offset = (uint64_t)IVAL(req->inbuf,smb_vwv3);
 	
 	status = do_unlock(smbd_messaging_context(),
 			fsp,
@@ -6491,17 +6491,17 @@ uint32 get_lock_pid( char *data, int data_offset, bool large_file_format)
  Get a lock count, dealing with large count requests.
 ****************************************************************************/
 
-SMB_BIG_UINT get_lock_count( char *data, int data_offset, bool large_file_format)
+uint64_t get_lock_count( char *data, int data_offset, bool large_file_format)
 {
-	SMB_BIG_UINT count = 0;
+	uint64_t count = 0;
 
 	if(!large_file_format) {
-		count = (SMB_BIG_UINT)IVAL(data,SMB_LKLEN_OFFSET(data_offset));
+		count = (uint64_t)IVAL(data,SMB_LKLEN_OFFSET(data_offset));
 	} else {
 
 #if defined(HAVE_LONGLONG)
-		count = (((SMB_BIG_UINT) IVAL(data,SMB_LARGE_LKLEN_OFFSET_HIGH(data_offset))) << 32) |
-			((SMB_BIG_UINT) IVAL(data,SMB_LARGE_LKLEN_OFFSET_LOW(data_offset)));
+		count = (((uint64_t) IVAL(data,SMB_LARGE_LKLEN_OFFSET_HIGH(data_offset))) << 32) |
+			((uint64_t) IVAL(data,SMB_LARGE_LKLEN_OFFSET_LOW(data_offset)));
 #else /* HAVE_LONGLONG */
 
 		/*
@@ -6518,7 +6518,7 @@ SMB_BIG_UINT get_lock_count( char *data, int data_offset, bool large_file_format
 				SIVAL(data,SMB_LARGE_LKLEN_OFFSET_HIGH(data_offset),0);
 		}
 
-		count = (SMB_BIG_UINT)IVAL(data,SMB_LARGE_LKLEN_OFFSET_LOW(data_offset));
+		count = (uint64_t)IVAL(data,SMB_LARGE_LKLEN_OFFSET_LOW(data_offset));
 #endif /* HAVE_LONGLONG */
 	}
 
@@ -6563,19 +6563,19 @@ static uint32 map_lock_offset(uint32 high, uint32 low)
  Get a lock offset, dealing with large offset requests.
 ****************************************************************************/
 
-SMB_BIG_UINT get_lock_offset( char *data, int data_offset, bool large_file_format, bool *err)
+uint64_t get_lock_offset( char *data, int data_offset, bool large_file_format, bool *err)
 {
-	SMB_BIG_UINT offset = 0;
+	uint64_t offset = 0;
 
 	*err = False;
 
 	if(!large_file_format) {
-		offset = (SMB_BIG_UINT)IVAL(data,SMB_LKOFF_OFFSET(data_offset));
+		offset = (uint64_t)IVAL(data,SMB_LKOFF_OFFSET(data_offset));
 	} else {
 
 #if defined(HAVE_LONGLONG)
-		offset = (((SMB_BIG_UINT) IVAL(data,SMB_LARGE_LKOFF_OFFSET_HIGH(data_offset))) << 32) |
-				((SMB_BIG_UINT) IVAL(data,SMB_LARGE_LKOFF_OFFSET_LOW(data_offset)));
+		offset = (((uint64_t) IVAL(data,SMB_LARGE_LKOFF_OFFSET_HIGH(data_offset))) << 32) |
+				((uint64_t) IVAL(data,SMB_LARGE_LKOFF_OFFSET_LOW(data_offset)));
 #else /* HAVE_LONGLONG */
 
 		/*
@@ -6592,7 +6592,7 @@ SMB_BIG_UINT get_lock_offset( char *data, int data_offset, bool large_file_forma
 
 			if((new_low = map_lock_offset(high, low)) == 0) {
 				*err = True;
-				return (SMB_BIG_UINT)-1;
+				return (uint64_t)-1;
 			}
 
 			DEBUG(3,("get_lock_offset: truncating lock offset (high)0x%x (low)0x%x to offset 0x%x.\n",
@@ -6601,7 +6601,7 @@ SMB_BIG_UINT get_lock_offset( char *data, int data_offset, bool large_file_forma
 			SIVAL(data,SMB_LARGE_LKOFF_OFFSET_LOW(data_offset),new_low);
 		}
 
-		offset = (SMB_BIG_UINT)IVAL(data,SMB_LARGE_LKOFF_OFFSET_LOW(data_offset));
+		offset = (uint64_t)IVAL(data,SMB_LARGE_LKOFF_OFFSET_LOW(data_offset));
 #endif /* HAVE_LONGLONG */
 	}
 
@@ -6620,7 +6620,7 @@ void reply_lockingX(struct smb_request *req)
 	unsigned char oplocklevel;
 	uint16 num_ulocks;
 	uint16 num_locks;
-	SMB_BIG_UINT count = 0, offset = 0;
+	uint64_t count = 0, offset = 0;
 	uint32 lock_pid;
 	int32 lock_timeout;
 	int i;

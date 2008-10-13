@@ -180,11 +180,7 @@ static int parse_quota_set(TALLOC_CTX *ctx,
 
 	switch (todo) {
 		case PARSE_LIM:
-#if defined(HAVE_LONGLONG)
-			if (sscanf(p,"%llu/%llu",&pqt->softlim,&pqt->hardlim)!=2) {
-#else
-			if (sscanf(p,"%lu/%lu",&pqt->softlim,&pqt->hardlim)!=2) {
-#endif
+			if (sscanf(p,"%"PRIu64"/%"PRIu64,&pqt->softlim,&pqt->hardlim)!=2) {
 				return -1;
 			}
 

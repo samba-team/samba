@@ -450,7 +450,7 @@ static uint32 _reg_perfcount_get_size_field(uint32 CounterType)
 /*********************************************************************
 *********************************************************************/
 
-static uint32 _reg_perfcount_compute_scale(SMB_BIG_INT data)
+static uint32 _reg_perfcount_compute_scale(int64_t data)
 {
 	int scale = 0;
 	if(data == 0)
@@ -482,7 +482,7 @@ static bool _reg_perfcount_get_counter_info(PERF_DATA_BLOCK *block,
 	char buf[PERFCOUNT_MAX_LEN];
 	size_t dsize, padding;
 	long int data32, dbuf[2];
-	SMB_BIG_INT data64;
+	int64_t data64;
 	uint32 counter_size;
 
 	obj->counters[obj->NumCounters].DefaultScale = 0;
@@ -521,7 +521,7 @@ static bool _reg_perfcount_get_counter_info(PERF_DATA_BLOCK *block,
 		memcpy(buf, data.dptr, data.dsize);
 		data32 = strtol(buf, NULL, 0);
 		if((obj->counters[obj->NumCounters].CounterType & 0x00000F00) == PERF_TYPE_NUMBER)
-			obj->counters[obj->NumCounters].DefaultScale = _reg_perfcount_compute_scale((SMB_BIG_INT)data32);
+			obj->counters[obj->NumCounters].DefaultScale = _reg_perfcount_compute_scale((int64_t)data32);
 		else
 			obj->counters[obj->NumCounters].DefaultScale = 0;
 		dbuf[0] = data32;
@@ -823,7 +823,7 @@ static int _reg_perfcount_assemble_global(PERF_DATA_BLOCK *block,
 /*********************************************************************
 *********************************************************************/
 
-static bool _reg_perfcount_get_64(SMB_BIG_UINT *retval,
+static bool _reg_perfcount_get_64(uint64_t *retval,
 				  TDB_CONTEXT *tdb,
 				  int key_part1,
 				  const char *key_part2)
@@ -855,7 +855,7 @@ static bool _reg_perfcount_get_64(SMB_BIG_UINT *retval,
 static bool _reg_perfcount_init_data_block_perf(PERF_DATA_BLOCK *block,
 						TDB_CONTEXT *names)
 {
-	SMB_BIG_UINT PerfFreq, PerfTime, PerfTime100nSec;
+	uint64_t PerfFreq, PerfTime, PerfTime100nSec;
 	TDB_CONTEXT *counters;
 	bool status = False;
 	const char *fname = counters_directory( DATA_DB );

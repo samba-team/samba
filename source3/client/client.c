@@ -84,9 +84,9 @@ static struct sockaddr_storage dest_ss;
 static bool abort_mget = true;
 
 /* timing globals */
-SMB_BIG_UINT get_total_size = 0;
+uint64_t get_total_size = 0;
 unsigned int get_total_time_ms = 0;
-static SMB_BIG_UINT put_total_size = 0;
+static uint64_t put_total_size = 0;
 static unsigned int put_total_time_ms = 0;
 
 /* totals globals */
@@ -2555,7 +2555,7 @@ static int cmd_lock(void)
 {
 	TALLOC_CTX *ctx = talloc_tos();
 	char *buf = NULL;
-	SMB_BIG_UINT start, len;
+	uint64_t start, len;
 	enum brl_type lock_type;
 	int fnum;
 
@@ -2584,14 +2584,14 @@ static int cmd_lock(void)
 		return 1;
 	}
 
-	start = (SMB_BIG_UINT)strtol(buf, (char **)NULL, 16);
+	start = (uint64_t)strtol(buf, (char **)NULL, 16);
 
 	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		d_printf("lock <fnum> [r|w] <hex-start> <hex-len>\n");
 		return 1;
 	}
 
-	len = (SMB_BIG_UINT)strtol(buf, (char **)NULL, 16);
+	len = (uint64_t)strtol(buf, (char **)NULL, 16);
 
 	if (!cli_posix_lock(cli, fnum, start, len, true, lock_type)) {
 		d_printf("lock failed %d: %s\n", fnum, cli_errstr(cli));
@@ -2604,7 +2604,7 @@ static int cmd_unlock(void)
 {
 	TALLOC_CTX *ctx = talloc_tos();
 	char *buf = NULL;
-	SMB_BIG_UINT start, len;
+	uint64_t start, len;
 	int fnum;
 
 	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
@@ -2618,14 +2618,14 @@ static int cmd_unlock(void)
 		return 1;
 	}
 
-	start = (SMB_BIG_UINT)strtol(buf, (char **)NULL, 16);
+	start = (uint64_t)strtol(buf, (char **)NULL, 16);
 
 	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		d_printf("unlock <fnum> <hex-start> <hex-len>\n");
 		return 1;
 	}
 
-	len = (SMB_BIG_UINT)strtol(buf, (char **)NULL, 16);
+	len = (uint64_t)strtol(buf, (char **)NULL, 16);
 
 	if (!cli_posix_unlock(cli, fnum, start, len)) {
 		d_printf("unlock failed %d: %s\n", fnum, cli_errstr(cli));

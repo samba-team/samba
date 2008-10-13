@@ -74,10 +74,10 @@ struct vfs_full_audit_private_data {
 static int smb_full_audit_connect(vfs_handle_struct *handle,
 			 const char *svc, const char *user);
 static void smb_full_audit_disconnect(vfs_handle_struct *handle);
-static SMB_BIG_UINT smb_full_audit_disk_free(vfs_handle_struct *handle,
+static uint64_t smb_full_audit_disk_free(vfs_handle_struct *handle,
 				    const char *path,
-				    bool small_query, SMB_BIG_UINT *bsize, 
-				    SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize);
+				    bool small_query, uint64_t *bsize, 
+				    uint64_t *dfree, uint64_t *dsize);
 static int smb_full_audit_get_quota(struct vfs_handle_struct *handle,
 			   enum SMB_QUOTA_TYPE qtype, unid_t id,
 			   SMB_DISK_QUOTA *qt);
@@ -910,12 +910,12 @@ static void smb_full_audit_disconnect(vfs_handle_struct *handle)
 	return;
 }
 
-static SMB_BIG_UINT smb_full_audit_disk_free(vfs_handle_struct *handle,
+static uint64_t smb_full_audit_disk_free(vfs_handle_struct *handle,
 				    const char *path,
-				    bool small_query, SMB_BIG_UINT *bsize, 
-				    SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
+				    bool small_query, uint64_t *bsize, 
+				    uint64_t *dfree, uint64_t *dsize)
 {
-	SMB_BIG_UINT result;
+	uint64_t result;
 
 	result = SMB_VFS_NEXT_DISK_FREE(handle, path, small_query, bsize,
 					dfree, dsize);

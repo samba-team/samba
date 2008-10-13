@@ -360,7 +360,7 @@ typedef struct {
 struct fd_handle {
 	size_t ref_count;
 	int fd;
-	SMB_BIG_UINT position_information;
+	uint64_t position_information;
 	SMB_OFF_T pos;
 	uint32 private_options;	/* NT Create options, but we only look at
 				 * NTCREATEX_OPTIONS_PRIVATE_DENY_DOS and
@@ -436,7 +436,7 @@ typedef struct files_struct {
 	unsigned int num_smb_operations;
 	uint16 rap_print_jobid;
 	struct file_id file_id;
-	SMB_BIG_UINT initial_allocation_size; /* Faked up initial allocation on disk. */
+	uint64_t initial_allocation_size; /* Faked up initial allocation on disk. */
 	mode_t mode;
 	uint16 file_pid;
 	uint16 vuid;
@@ -547,10 +547,10 @@ struct stream_struct {
 
 struct dfree_cached_info {
 	time_t last_dfree_time;
-	SMB_BIG_UINT dfree_ret;
-	SMB_BIG_UINT bsize;
-	SMB_BIG_UINT dfree;
-	SMB_BIG_UINT dsize;
+	uint64_t dfree_ret;
+	uint64_t bsize;
+	uint64_t dfree;
+	uint64_t dsize;
 };
 
 struct dptr_struct;
