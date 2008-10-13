@@ -122,6 +122,22 @@ krb5_principal_get_comp_string(krb5_context context,
     return princ_ncomp(principal, component);
 }
 
+/**
+ * Get number of component is principal.
+ *
+ * @param context Kerberos 5 context
+ * @param principal principal to query
+ * @return number of components in string
+ * @ingroup krb5
+ */
+
+unsigned int KRB5_LIB_FUNCTION
+krb5_principal_get_num_comp(krb5_context context,
+			    krb5_const_principal principal)
+{
+    return princ_num_comp(principal);
+}
+
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_parse_name_flags(krb5_context context,
 		      const char *name,
