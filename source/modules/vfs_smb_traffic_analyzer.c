@@ -182,24 +182,22 @@ static void smb_traffic_analyzer_send_data(vfs_handle_struct *handle,
 	seconds=(float) (tv.tv_usec / 1000);
 
 	/* check if anonymization is required */
-	
+
 	anon_prefix=lp_parm_const_string(SNUM(handle->conn),"smb_traffic_analyzer",\
 					"anonymize_prefix", NULL );
 	if (anon_prefix!=NULL) {
 		username = talloc_asprintf(talloc_tos(),
 			"%s%i",
 			anon_prefix,
-			str_checksum(			
+			str_checksum(
 				handle->conn->server_info->sanitized_username )	); 
 	} else {
-		username = talloc_asprintf(talloc_tos(),
-			"%s",
-			handle->conn->server_info->sanitized_username);
-	}		
+		username = handle->conn->server_info->sanitized_username;
+	}
 
 	if (!username) {
 		return;
-	}					
+	}
 
 	str = talloc_asprintf(talloc_tos(),
 			"V1,%u,\"%s\",\"%s\",\"%c\",\"%s\",\"%s\","
