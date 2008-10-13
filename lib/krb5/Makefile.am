@@ -52,6 +52,7 @@ LIB_pkinit = ../hx509/libhx509.la
 endif
 
 libkrb5_la_LIBADD = \
+	libnkrb5.la \
 	$(LIB_pkinit) \
 	$(LIB_sqlite3) \
 	$(LIB_com_err) \
@@ -64,15 +65,18 @@ libkrb5_la_LIBADD = \
 	$(LIB_dlopen)
 
 lib_LTLIBRARIES = libkrb5.la
+noinst_LTLIBRARIES = libnkrb5.la
 
 ERR_FILES = krb5_err.c krb_err.c heim_err.c k524_err.c
 
-libkrb5_la_CPPFLAGS = \
+libnkrb5_la_CPPFLAGS = \
 	-DBUILD_KRB5_LIB \
 	$(AM_CPPFLAGS) \
 	-DHEIMDAL_LOCALEDIR='"$(localedir)"'
 
-dist_libkrb5_la_SOURCES =			\
+libkrb5_la_SOURCES =
+
+dist_libnkrb5_la_SOURCES =			\
 	acache.c				\
 	acl.c					\
 	add_et_list.c				\
@@ -182,11 +186,11 @@ dist_libkrb5_la_SOURCES =			\
 	write_message.c
 
 if HAVE_OPENSSL
-dist_libkrb5_la_SOURCES += ../hcrypto/evp-aes-cts.c
+dist_libnkrb5_la_SOURCES += ../hcrypto/evp-aes-cts.c
 endif
 
 
-nodist_libkrb5_la_SOURCES =			\
+nodist_libnkrb5_la_SOURCES =			\
 	$(ERR_FILES)
 
 libkrb5_la_LDFLAGS = -version-info 25:0:0
@@ -198,10 +202,10 @@ endif
 $(libkrb5_la_OBJECTS) $(verify_krb5_conf_OBJECTS): $(srcdir)/krb5-protos.h $(srcdir)/krb5-private.h
 
 $(srcdir)/krb5-protos.h:
-	cd $(srcdir) && perl ../../cf/make-proto.pl -E KRB5_LIB -q -P comment -o krb5-protos.h $(dist_libkrb5_la_SOURCES) || rm -f krb5-protos.h
+	cd $(srcdir) && perl ../../cf/make-proto.pl -E KRB5_LIB -q -P comment -o krb5-protos.h $(dist_libnkrb5_la_SOURCES) || rm -f krb5-protos.h
 
 $(srcdir)/krb5-private.h:
-	cd $(srcdir) && perl ../../cf/make-proto.pl -q -P comment -p krb5-private.h $(dist_libkrb5_la_SOURCES) || rm -f krb5-private.h
+	cd $(srcdir) && perl ../../cf/make-proto.pl -q -P comment -p krb5-private.h $(dist_libnkrb5_la_SOURCES) || rm -f krb5-private.h
 
 man_MANS =					\
 	kerberos.8				\
@@ -287,7 +291,7 @@ CLEANFILES = \
 	heim_err.c heim_err.h \
 	k524_err.c k524_err.h
 
-$(libkrb5_la_OBJECTS): krb5_err.h krb_err.h heim_err.h k524_err.h
+$(libnkrb5_la_OBJECTS): krb5_err.h krb_err.h heim_err.h k524_err.h
 
 EXTRA_DIST = \
 	krb5_err.et \
