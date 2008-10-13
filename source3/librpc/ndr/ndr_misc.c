@@ -24,20 +24,6 @@
 
 #include "includes.h"
 
-/**
- * see if a range of memory is all zero. A NULL pointer is considered
- * to be all zero 
- */
-bool all_zero(const uint8_t *ptr, size_t size)
-{
-	int i;
-	if (!ptr) return True;
-	for (i=0;i<size;i++) {
-		if (ptr[i]) return False;
-	}
-	return True;
-}
-
 void ndr_print_GUID(struct ndr_print *ndr, const char *name, const struct GUID *guid)
 {
 	ndr->print(ndr, "%-25s: %s", name, GUID_string(ndr, guid));
@@ -48,47 +34,4 @@ bool ndr_syntax_id_equal(const struct ndr_syntax_id *i1,
 {
 	return GUID_equal(&i1->uuid, &i2->uuid)
 		&& (i1->if_version == i2->if_version);
-}
-
-enum ndr_err_code ndr_push_server_id(struct ndr_push *ndr, int ndr_flags, const struct server_id *r)
-{
-	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_push_align(ndr, 4));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS,
-					  (uint32_t)r->pid));
-#ifdef CLUSTER_SUPPORT
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS,
-					  (uint32_t)r->vnn));
-#endif
-	}
-	if (ndr_flags & NDR_BUFFERS) {
-	}
-	return NDR_ERR_SUCCESS;
-}
-
-enum ndr_err_code ndr_pull_server_id(struct ndr_pull *ndr, int ndr_flags, struct server_id *r)
-{
-	if (ndr_flags & NDR_SCALARS) {
-		uint32_t pid;
-		NDR_CHECK(ndr_pull_align(ndr, 4));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &pid));
-#ifdef CLUSTER_SUPPORT
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->vnn));
-#endif
-		r->pid = (pid_t)pid;
-	}
-	if (ndr_flags & NDR_BUFFERS) {
-	}
-	return NDR_ERR_SUCCESS;
-}
-
-void ndr_print_server_id(struct ndr_print *ndr, const char *name, const struct server_id *r)
-{
-	ndr_print_struct(ndr, name, "server_id");
-	ndr->depth++;
-	ndr_print_uint32(ndr, "id", (uint32_t)r->pid);
-#ifdef CLUSTER_SUPPORT
-	ndr_print_uint32(ndr, "vnn", (uint32_t)r->vnn);
-#endif
-	ndr->depth--;
 }
