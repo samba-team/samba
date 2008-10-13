@@ -264,7 +264,7 @@ LIBNDR_OBJ = ../librpc/ndr/ndr_basic.o \
 	     librpc/ndr/ndr_sec_helper.o \
 	     librpc/ndr/ndr_string.o \
 	     librpc/ndr/sid.o \
-	     librpc/ndr/uuid.o \
+	     ../librpc/ndr/uuid.o \
 		 librpc/ndr/util.o
 
 RPCCLIENT_NDR_OBJ = rpc_client/ndr.o

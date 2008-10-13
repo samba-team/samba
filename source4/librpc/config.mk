@@ -8,7 +8,7 @@ dcerpcsrcdir = $(librpcsrcdir)/rpc
 PUBLIC_DEPENDENCIES = LIBSAMBA-ERRORS LIBTALLOC LIBSAMBA-UTIL CHARSET \
 					  LIBSAMBA-HOSTCONFIG
 
-LIBNDR_OBJ_FILES = $(addprefix $(ndrsrcdir)/, ndr.o ndr_string.o uuid.o) ../librpc/ndr/ndr_basic.o 
+LIBNDR_OBJ_FILES = $(addprefix $(ndrsrcdir)/, ndr.o ndr_string.o) ../librpc/ndr/ndr_basic.o ../librpc/ndr/uuid.o
 
 $(eval $(call proto_header_template,$(ndrsrcdir)/libndr_proto.h,$(LIBNDR_OBJ_FILES:.o=.c)))
 
