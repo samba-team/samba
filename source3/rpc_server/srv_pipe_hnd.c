@@ -26,23 +26,6 @@
 
 static int pipes_open;
 
-/*
- * Sometimes I can't decide if I hate Windows printer driver
- * writers more than I hate the Windows spooler service driver
- * writers. This gets around a combination of bugs in the spooler
- * and the HP 8500 PCL driver that causes a spooler spin. JRA.
- *
- * bumped up from 20 -> 64 after viewing traffic from WordPerfect
- * 2002 running on NT 4.- SP6
- * bumped up from 64 -> 256 after viewing traffic from con2prt
- * for lots of printers on a WinNT 4.x SP6 box.
- */
- 
-#ifndef MAX_OPEN_SPOOLSS_PIPES
-#define MAX_OPEN_SPOOLSS_PIPES 256
-#endif
-static int current_spoolss_pipes_open;
-
 static pipes_struct *InternalPipes;
 static struct bitmap *bmap;
 
