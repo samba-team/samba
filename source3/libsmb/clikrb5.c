@@ -4,7 +4,7 @@
    Copyright (C) Andrew Tridgell 2001
    Copyright (C) Luke Howard 2002-2003
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2005
-   Copyright (C) Guenther Deschner 2005-2007
+   Copyright (C) Guenther Deschner 2005-2009
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -1963,6 +1963,275 @@ krb5_error_code krb5_auth_con_set_req_cksumtype(
 	return retval;
 }
 #endif
+
+#if defined(HAVE_KRB5_GET_CREDS_OPT_SET_IMPERSONATE) && \
+    defined(HAVE_KRB5_GET_CREDS_OPT_ALLOC) && \
+    defined(HAVE_KRB5_GET_CREDS)
+static krb5_error_code smb_krb5_get_credentials_for_user_opt(krb5_context context,
+							     krb5_ccache ccache,
+							     krb5_principal me,
+							     krb5_principal server,
+							     krb5_principal impersonate_princ,
+							     krb5_creds **out_creds)
+{
+	krb5_error_code ret;
+	krb5_get_creds_opt opt;
+
+	ret = krb5_get_creds_opt_alloc(context, &opt);
+	if (ret) {
+		goto done;
+	}
+	krb5_get_creds_opt_add_options(context, opt, KRB5_GC_FORWARDABLE);
+
+	if (impersonate_princ) {
+		ret = krb5_get_creds_opt_set_impersonate(context, opt,
+							 impersonate_princ);
+		if (ret) {
+			goto done;
+		}
+	}
+
+	ret = krb5_get_creds(context, opt, ccache, server, out_creds);
+	if (ret) {
+		goto done;
+	}
+
+ done:
+	if (opt) {
+		krb5_get_creds_opt_free(context, opt);
+	}
+	return ret;
+}
+#endif /* HAVE_KRB5_GET_CREDS_OPT_SET_IMPERSONATE */
+
+#ifdef HAVE_KRB5_GET_CREDENTIALS_FOR_USER
+static krb5_error_code smb_krb5_get_credentials_for_user(krb5_context context,
+							 krb5_ccache ccache,
+							 krb5_principal me,
+							 krb5_principal server,
+							 krb5_principal impersonate_princ,
+							 krb5_creds **out_creds)
+{
+	krb5_error_code ret;
+	krb5_creds in_creds;
+
+#if !HAVE_DECL_KRB5_GET_CREDENTIALS_FOR_USER
+krb5_error_code KRB5_CALLCONV
+krb5_get_credentials_for_user(krb5_context context, krb5_flags options,
+                              krb5_ccache ccache, krb5_creds *in_creds,
+                              krb5_data *subject_cert,
+                              krb5_creds **out_creds);
+#endif /* !HAVE_DECL_KRB5_GET_CREDENTIALS_FOR_USER */
+
+	ZERO_STRUCT(in_creds);
+
+	if (impersonate_princ) {
+
+		in_creds.server = me;
+		in_creds.client = impersonate_princ;
+
+		ret = krb5_get_credentials_for_user(context,
+						    0, /* krb5_flags options */
+						    ccache,
+						    &in_creds,
+						    NULL, /* krb5_data *subject_cert */
+						    out_creds);
+	} else {
+		in_creds.client = me;
+		in_creds.server = server;
+
+		ret = krb5_get_credentials(context, 0, ccache,
+					   &in_creds, out_creds);
+	}
+
+	return ret;
+}
+#endif /* HAVE_KRB5_GET_CREDENTIALS_FOR_USER */
+
+/*
+ * smb_krb5_get_credentials
+ *
+ * @brief Get krb5 credentials for a server
+ *
+ * @param[in] context		An initialized krb5_context
+ * @param[in] ccache		An initialized krb5_ccache
+ * @param[in] me		The krb5_principal of the caller
+ * @param[in] server		The krb5_principal of the requested service
+ * @param[in] impersonate_princ The krb5_principal of a user to impersonate as (optional)
+ * @param[out] out_creds	The returned krb5_creds structure
+ * @return krb5_error_code
+ *
+ */
+krb5_error_code smb_krb5_get_credentials(krb5_context context,
+					 krb5_ccache ccache,
+					 krb5_principal me,
+					 krb5_principal server,
+					 krb5_principal impersonate_princ,
+					 krb5_creds **out_creds)
+{
+	krb5_error_code ret;
+	krb5_creds *creds = NULL;
+
+	*out_creds = NULL;
+
+	if (impersonate_princ) {
+#ifdef HAVE_KRB5_GET_CREDS_OPT_SET_IMPERSONATE /* Heimdal */
+		ret = smb_krb5_get_credentials_for_user_opt(context, ccache, me, server, impersonate_princ, &creds);
+#elif defined(HAVE_KRB5_GET_CREDENTIALS_FOR_USER) /* MIT */
+		ret = smb_krb5_get_credentials_for_user(context, ccache, me, server, impersonate_princ, &creds);
+#else
+		ret = ENOTSUP;
+#endif
+	} else {
+		krb5_creds in_creds;
+
+		ZERO_STRUCT(in_creds);
+
+		in_creds.client = me;
+		in_creds.server = server;
+
+		ret = krb5_get_credentials(context, 0, ccache,
+					   &in_creds, &creds);
+	}
+	if (ret) {
+		goto done;
+	}
+
+	ret = krb5_cc_store_cred(context, ccache, creds);
+	if (ret) {
+		goto done;
+	}
+
+	if (out_creds) {
+		*out_creds = creds;
+	}
+
+ done:
+	if (creds && ret) {
+		krb5_free_creds(context, creds);
+	}
+
+	return ret;
+}
+
+/*
+ * smb_krb5_get_creds
+ *
+ * @brief Get krb5 credentials for a server
+ *
+ * @param[in] server_s		The string name of the service
+ * @param[in] time_offset	The offset to the KDCs time in seconds (optional)
+ * @param[in] cc		The krb5 credential cache string name (optional)
+ * @param[in] impersonate_princ_s The string principal name to impersonate (optional)
+ * @param[out] creds_p		The returned krb5_creds structure
+ * @return krb5_error_code
+ *
+ */
+krb5_error_code smb_krb5_get_creds(const char *server_s,
+				   time_t time_offset,
+				   const char *cc,
+				   const char *impersonate_princ_s,
+				   krb5_creds **creds_p)
+{
+	krb5_error_code ret;
+	krb5_context context = NULL;
+	krb5_principal me = NULL;
+	krb5_principal server = NULL;
+	krb5_principal impersonate_princ = NULL;
+	krb5_creds *creds = NULL;
+	krb5_ccache ccache = NULL;
+
+	*creds_p = NULL;
+
+	initialize_krb5_error_table();
+	ret = krb5_init_context(&context);
+	if (ret) {
+		goto done;
+	}
+
+	if (time_offset != 0) {
+		krb5_set_real_time(context, time(NULL) + time_offset, 0);
+	}
+
+	ret = krb5_cc_resolve(context, cc ? cc :
+		krb5_cc_default_name(context), &ccache);
+	if (ret) {
+		goto done;
+	}
+
+	ret = krb5_cc_get_principal(context, ccache, &me);
+	if (ret) {
+		goto done;
+	}
+
+	ret = smb_krb5_parse_name(context, server_s, &server);
+	if (ret) {
+		goto done;
+	}
+
+	if (impersonate_princ_s) {
+		ret = smb_krb5_parse_name(context, impersonate_princ_s,
+					  &impersonate_princ);
+		if (ret) {
+			goto done;
+		}
+	}
+
+	ret = smb_krb5_get_credentials(context, ccache,
+				       me, server, impersonate_princ,
+				       &creds);
+	if (ret) {
+		goto done;
+	}
+
+	ret = krb5_cc_store_cred(context, ccache, creds);
+	if (ret) {
+		goto done;
+	}
+
+	if (creds_p) {
+		*creds_p = creds;
+	}
+
+	DEBUG(1,("smb_krb5_get_creds: got ticket for %s\n",
+		server_s));
+
+	if (impersonate_princ_s) {
+		char *client = NULL;
+
+		ret = smb_krb5_unparse_name(talloc_tos(), context, creds->client, &client);
+		if (ret) {
+			goto done;
+		}
+		DEBUGADD(1,("smb_krb5_get_creds: using S4U2SELF impersonation as %s\n",
+			client));
+		TALLOC_FREE(client);
+	}
+
+ done:
+	if (!context) {
+		return ret;
+	}
+
+	if (creds && ret) {
+		krb5_free_creds(context, creds);
+	}
+	if (server) {
+		krb5_free_principal(context, server);
+	}
+	if (me) {
+		krb5_free_principal(context, me);
+	}
+	if (impersonate_princ) {
+		krb5_free_principal(context, impersonate_princ);
+	}
+	if (ccache) {
+		krb5_cc_close(context, ccache);
+	}
+	krb5_free_context(context);
+
+	return ret;
+}
 
 #else /* HAVE_KRB5 */
  /* this saves a few linking headaches */
