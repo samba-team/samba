@@ -389,7 +389,7 @@ int spnego_gen_negTokenTarg(const char *principal, int time_offset,
 	/* get a kerberos ticket for the service and extract the session key */
 	retval = cli_krb5_get_ticket(principal, time_offset,
 					&tkt, session_key_krb5, extra_ap_opts, NULL, 
-					expire_time);
+					expire_time, NULL);
 
 	if (retval)
 		return retval;
