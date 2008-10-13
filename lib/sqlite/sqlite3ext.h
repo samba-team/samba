@@ -12,10 +12,10 @@
 ** This header file defines the SQLite interface for use by
 ** shared libraries that want to be imported as extensions into
 ** an SQLite instance.  Shared libraries that intend to be loaded
-** as extensions by SQLite should #include this file instead of
+** as extensions by SQLite should #include this file instead of 
 ** sqlite3.h.
 **
-** @(#) $Id: sqlite3ext.h,v 1.18 2008/03/02 03:32:05 mlcreech Exp $
+** @(#) $Id: sqlite3ext.h,v 1.24 2008/06/30 15:09:29 danielk1977 Exp $
 */
 #ifndef _SQLITE3EXT_H_
 #define _SQLITE3EXT_H_
@@ -78,7 +78,7 @@ struct sqlite3_api_routines {
   int  (*complete)(const char*sql);
   int  (*complete16)(const void*sql);
   int  (*create_collation)(sqlite3*,const char*,int,void*,int(*)(void*,int,const void*,int,const void*));
-  int  (*create_collation16)(sqlite3*,const char*,int,void*,int(*)(void*,int,const void*,int,const void*));
+  int  (*create_collation16)(sqlite3*,const void*,int,void*,int(*)(void*,int,const void*,int,const void*));
   int  (*create_function)(sqlite3*,const char*,int,int,void*,void (*xFunc)(sqlite3_context*,int,sqlite3_value**),void (*xStep)(sqlite3_context*,int,sqlite3_value**),void (*xFinal)(sqlite3_context*));
   int  (*create_function16)(sqlite3*,const void*,int,int,void*,void (*xFunc)(sqlite3_context*,int,sqlite3_value**),void (*xStep)(sqlite3_context*,int,sqlite3_value**),void (*xFinal)(sqlite3_context*));
   int (*create_module)(sqlite3*,const char*,const sqlite3_module*,void*);
@@ -182,6 +182,17 @@ struct sqlite3_api_routines {
   sqlite3_vfs *(*vfs_find)(const char*);
   int (*vfs_register)(sqlite3_vfs*,int);
   int (*vfs_unregister)(sqlite3_vfs*);
+  int (*xthreadsafe)(void);
+  void (*result_zeroblob)(sqlite3_context*,int);
+  void (*result_error_code)(sqlite3_context*,int);
+  int (*test_control)(int, ...);
+  void (*randomness)(int,void*);
+  sqlite3 *(*context_db_handle)(sqlite3_context*);
+  int (*extended_result_codes)(sqlite3*,int);
+  int (*limit)(sqlite3*,int,int);
+  sqlite3_stmt *(*next_stmt)(sqlite3*,sqlite3_stmt*);
+  const char *(*sql)(sqlite3_stmt*);
+  int (*status)(int,int*,int*,int);
 };
 
 /*
@@ -342,9 +353,20 @@ struct sqlite3_api_routines {
 #define sqlite3_vfs_find               sqlite3_api->vfs_find
 #define sqlite3_vfs_register           sqlite3_api->vfs_register
 #define sqlite3_vfs_unregister         sqlite3_api->vfs_unregister
+#define sqlite3_threadsafe             sqlite3_api->xthreadsafe
+#define sqlite3_result_zeroblob        sqlite3_api->result_zeroblob
+#define sqlite3_result_error_code      sqlite3_api->result_error_code
+#define sqlite3_test_control           sqlite3_api->test_control
+#define sqlite3_randomness             sqlite3_api->randomness
+#define sqlite3_context_db_handle      sqlite3_api->context_db_handle
+#define sqlite3_extended_result_codes  sqlite3_api->extended_result_codes
+#define sqlite3_limit                  sqlite3_api->limit
+#define sqlite3_next_stmt              sqlite3_api->next_stmt
+#define sqlite3_sql                    sqlite3_api->sql
+#define sqlite3_status                 sqlite3_api->status
 #endif /* SQLITE_CORE */
 
-#define SQLITE_EXTENSION_INIT1     const sqlite3_api_routines *sqlite3_api;
+#define SQLITE_EXTENSION_INIT1     const sqlite3_api_routines *sqlite3_api = 0;
 #define SQLITE_EXTENSION_INIT2(v)  sqlite3_api = v;
 
 #endif /* _SQLITE3EXT_H_ */
