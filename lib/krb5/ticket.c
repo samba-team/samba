@@ -105,6 +105,23 @@ krb5_ticket_get_endtime(krb5_context context,
     return ticket->ticket.endtime;
 }
 
+/**
+ * Get the flags from the Kerberos ticket
+ *
+ * @param context Kerberos context
+ * @param ticket Kerberos ticket
+ *
+ * @return ticket flags
+ *
+ * @ingroup krb5_ticket
+ */
+unsigned long
+krb5_ticket_get_flags(krb5_context context,
+		      const krb5_ticket *ticket)
+{
+    return TicketFlags2int(ticket->ticket.flags.b);
+}
+
 static int
 find_type_in_ad(krb5_context context,
 		int type,
