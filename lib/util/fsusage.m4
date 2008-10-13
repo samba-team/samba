@@ -54,6 +54,37 @@ if test $space = no; then
   fi
 fi
 
+# fsusage.c assumes that statvfs has an f_frsize entry. Some weird
+# systems use f_bsize.
+AC_CACHE_CHECK([that statvfs.f_frsize works],samba_cv_frsize, [
+    AC_TRY_COMPILE([#include <sys/types.h>
+#include <sys/statvfs.h>],[struct statvfs buf; buf.f_frsize = 0],
+	samba_cv_frsize=yes,samba_cv_frsize=no)])
+if test x"$samba_cv_frsize" = x"yes"; then
+    AC_DEFINE(HAVE_FRSIZE, 1, [Whether statvfs.f_frsize exists])
+fi
+
+
+# if test $fu_cv_sys_stat_statvfs64 = yes || test $fu_cv_sys_stat_statvfs = yes ; then
+#   AC_MSG_CHECKING([for struct statvfs with statvfs.f_frsize (SVR4)])
+#   AC_CACHE_VAL(fu_cv_struct_statvfs_f_frsize,
+#   [AC_TRY_RUN([
+# #include <sys/statvfs.h>
+#   main ()
+#   {
+#   struct statvfs fsd;
+#   fsd.f_frsize = 0;
+#   exit (statvfs (".", &fsd));
+#   }],
+#   fu_cv_struct_statvfs_f_frsize=yes,
+#   fu_cv_struct_statvfs_f_frsize=no,
+#   fu_cv_struct_statvfs_f_frsize=no)])
+#   AC_MSG_RESULT($fu_cv_sys_stat_statvfs_f_frsize)
+#   if test $fu_cv_struct_statvfs_f_frsize = yes; then
+#     AC_DEFINE(HAVE_STRUCT_STATVFS_F_FRSIZE,1,[Whether struct statvfs has f_frsize property])
+#   fi
+# fi
+
 if test $space = no; then
   # DEC Alpha running OSF/1
   AC_MSG_CHECKING([for 3-argument statfs function (DEC OSF/1)])
