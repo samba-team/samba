@@ -112,7 +112,7 @@ main (int argc, char **argv)
 	if (ret)
 	    krb5_err (context, 1, ret, "krb5_parse_name: %s", principal);
 
-	ret = krb5_cc_cache_match(context, p, type, &id);
+	ret = krb5_cc_cache_match(context, p, &id);
 	if (ret)
 	    krb5_err (context, 1, ret,
 		      N_("Did not find principal: %s", ""), principal);

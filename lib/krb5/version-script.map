@@ -1,6 +1,6 @@
 # $Id$
 
-HEIMDAL_KRB5_1.0 {
+HEIMDAL_KRB5_2.0 {
 	global:
 		krb524_convert_creds_kdc;
 		krb524_convert_creds_kdc_ccache;

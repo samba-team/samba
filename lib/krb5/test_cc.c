@@ -316,8 +316,7 @@ test_def_cc_name(krb5_context context)
 }
 
 static void
-test_cache_find(krb5_context context, const char *type, const char *principal,
-		int find)
+test_cache_find(krb5_context context, const char *principal, int find)
 {
     krb5_principal client;
     krb5_error_code ret;
@@ -327,7 +326,7 @@ test_cache_find(krb5_context context, const char *type, const char *principal,
     if (ret)
 	krb5_err(context, 1, ret, "parse_name for %s failed", principal);
 
-    ret = krb5_cc_cache_match(context, client, type, &id);
+    ret = krb5_cc_cache_match(context, client, &id);
     if (ret && find)
 	krb5_err(context, 1, ret, "cc_cache_match for %s failed", principal);
     if (ret == 0 && !find)
@@ -377,6 +376,41 @@ test_cache_iter(krb5_context context, const char *type, int destroy)
 
     krb5_cc_cache_end_seq_get(context, cursor);
 }
+
+static void
+test_cache_iter_all(krb5_context context)
+{
+    krb5_cccol_cursor cursor;
+    krb5_error_code ret;
+    krb5_ccache id;
+
+    ret = krb5_cccol_cursor_new (context, &cursor);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_cccol_cursor_new");
+
+
+    while ((ret = krb5_cccol_cursor_next (context, cursor, &id)) == 0) {
+	krb5_principal principal;
+	char *name;
+
+	if (debug_flag)
+	    printf("name: %s\n", krb5_cc_get_name(context, id));
+	ret = krb5_cc_get_principal(context, id, &principal);
+	if (ret == 0) {
+	    ret = krb5_unparse_name(context, principal, &name);
+	    if (ret == 0) {
+		if (debug_flag)
+		    printf("\tprincipal: %s\n", name);
+		free(name);
+	    }
+	    krb5_free_principal(context, principal);
+	}
+	krb5_cc_close(context, id);
+    }
+
+    krb5_cccol_cursor_free(context, &cursor);
+}
+
 
 static void
 test_copy(krb5_context context, const char *fromtype, const char *totype)
@@ -548,6 +582,9 @@ main(int argc, char **argv)
     test_init_vs_destroy(context, &krb5_scc_ops);
     test_mcc_default();
     test_def_cc_name(context);
+
+    test_cache_iter_all(context);
+
     test_cache_iter(context, "MEMORY", 0);
     {
 	krb5_principal p;
@@ -558,8 +595,8 @@ main(int argc, char **argv)
 	krb5_free_principal(context, p);
     }
 
-    test_cache_find(context, "MEMORY", "lha@SU.SE", 1);
-    test_cache_find(context, "MEMORY", "hulabundulahotentot@SU.SE", 0);
+    test_cache_find(context, "lha@SU.SE", 1);
+    test_cache_find(context, "hulabundulahotentot@SU.SE", 0);
 
     test_cache_iter(context, "MEMORY", 0);
     test_cache_iter(context, "MEMORY", 1);

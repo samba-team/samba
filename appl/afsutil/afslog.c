@@ -266,7 +266,7 @@ main(int argc, char **argv)
 
 	    ret = krb5_parse_name(context, client_string, &client);
 	    if (ret == 0)
-		ret = krb5_cc_cache_match(context, client, NULL, &id);
+		ret = krb5_cc_cache_match(context, client, &id);
 	    if (ret)
 		id = NULL;
 	}

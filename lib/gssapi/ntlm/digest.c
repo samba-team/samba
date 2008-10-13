@@ -84,7 +84,7 @@ get_ccache(krb5_context context, int *destroy, krb5_ccache *id)
     if (ret)
 	goto out;
 
-    ret = krb5_cc_cache_match(context, principal, NULL, id);
+    ret = krb5_cc_cache_match(context, principal, id);
     if (ret == 0)
 	return 0;
 

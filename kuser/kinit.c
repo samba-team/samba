@@ -793,7 +793,7 @@ main (int argc, char **argv)
 		}
 	    }
 	} else {
-	    ret = krb5_cc_cache_match(context, principal, NULL, &ccache);
+	    ret = krb5_cc_cache_match(context, principal, &ccache);
 	    if (ret)
 		ret = krb5_cc_default (context, &ccache);
 	}
