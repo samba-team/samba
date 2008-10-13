@@ -104,8 +104,6 @@ find_all_addresses (krb5_context context, krb5_addresses *res, int flags)
     unsigned int num, idx;
     krb5_addresses ignore_addresses;
 
-    res->val = NULL;
-
     if (getifaddrs(&ifa0) == -1) {
 	ret = errno;
 	krb5_set_error_message(context, ret, "getifaddrs: %s", strerror(ret));
@@ -230,13 +228,14 @@ get_addrs_int (krb5_context context, krb5_addresses *res, int flags)
 {
     krb5_error_code ret = -1;
 
+    res->len = 0;
+    res->val = NULL;
+
     if (flags & SCAN_INTERFACES) {
 	ret = find_all_addresses (context, res, flags);
 	if(ret || res->len == 0)
 	    ret = gethostname_fallback (context, res);
     } else {
-	res->len = 0;
-	res->val = NULL;
 	ret = 0;
     }
 
