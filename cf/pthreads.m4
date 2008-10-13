@@ -1,4 +1,4 @@
-dnl $Id$
+Dnl $Id$
 
 AC_DEFUN([KRB_PTHREADS], [
 AC_MSG_CHECKING(if compiling threadsafe libraries)
@@ -40,6 +40,11 @@ case "$host" in
 		PTHREADS_LIBS=-pthread
 		;;
 	esac
+	;;
+*-*-kfreebsd*-gnu*)
+	native_pthread_support=yes
+	PTHREADS_CFLAGS=-pthread
+	PTHREADS_LIBS=-pthread
 	;;
 *-*-aix*)
 	dnl AIX is disabled since we don't handle the utmp/utmpx
