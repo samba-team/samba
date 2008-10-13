@@ -2342,6 +2342,7 @@ static int net_ads_kerberos_pac(struct net_context *c, int argc, const char **ar
 	TALLOC_CTX *mem_ctx = NULL;
 	NTSTATUS status;
 	int ret = -1;
+	const char *impersonate_princ_s = NULL;
 
 	if (c->display_usage) {
 		d_printf(_("Usage:\n"
@@ -2355,6 +2356,10 @@ static int net_ads_kerberos_pac(struct net_context *c, int argc, const char **ar
 		goto out;
 	}
 
+	if (argc > 0) {
+		impersonate_princ_s = argv[0];
+	}
+
 	c->opt_password = net_prompt_pass(c, c->opt_user_name);
 
 	status = kerberos_return_pac(mem_ctx,
@@ -2363,10 +2368,11 @@ static int net_ads_kerberos_pac(struct net_context *c, int argc, const char **ar
 			     	     0,
 				     NULL,
 				     NULL,
-				     NULL,
+				     "/tmp/schrott",
 				     true,
 				     true,
 				     2592000, /* one month */
+				     impersonate_princ_s,
 				     &pac);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf(_("failed to query kerberos PAC: %s\n"),
