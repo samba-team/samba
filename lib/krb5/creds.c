@@ -286,7 +286,7 @@ krb5_compare_creds(krb5_context context, krb5_flags whichfields,
  */
 
 unsigned long
-krb5_creds_get_ticket_flags(krb5_context context, krb5_creds creds)
+krb5_creds_get_ticket_flags(krb5_context context, krb5_creds *creds)
 {
-    return TicketFlags2int(creds->ticketflags.b);
+    return TicketFlags2int(creds->flags.b);
 }
