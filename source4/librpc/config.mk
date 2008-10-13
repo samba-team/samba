@@ -107,7 +107,7 @@ NDR_EFS_OBJ_FILES = $(gen_ndrsrcdir)/ndr_efs.o
 [SUBSYSTEM::NDR_MISC]
 PUBLIC_DEPENDENCIES = LIBNDR
 
-NDR_MISC_OBJ_FILES = $(gen_ndrsrcdir)/ndr_misc.o $(ndrsrcdir)/ndr_misc.o
+NDR_MISC_OBJ_FILES = $(gen_ndrsrcdir)/ndr_misc.o ../librpc/ndr/ndr_misc.o
 
 PUBLIC_HEADERS += $(gen_ndrsrcdir)/misc.h $(gen_ndrsrcdir)/ndr_misc.h
 
