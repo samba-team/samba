@@ -3388,6 +3388,9 @@ if test x"$with_ads_support" != x"no"; then
   AC_CHECK_FUNC_EXT(krb5_enctype_to_string, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_fwd_tgt_creds, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_auth_con_set_req_cksumtype, $KRB5_LIBS)
+  AC_CHECK_FUNC_EXT(krb5_get_creds_opt_alloc, $KRB5_LIBS)
+  AC_CHECK_FUNC_EXT(krb5_get_creds_opt_set_impersonate, $KRB5_LIBS)
+  AC_CHECK_FUNC_EXT(krb5_get_creds, $KRB5_LIBS)
 
   # MIT krb5 1.7beta3 (in Ubuntu Karmic) does not have this declaration
   # but does have the symbol
