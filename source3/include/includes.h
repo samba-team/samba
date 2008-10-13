@@ -1075,7 +1075,17 @@ int smb_krb5_kt_add_entry_ext(krb5_context context,
 			      krb5_data password,
 			      bool no_salt,
 			      bool keep_old_entries);
-
+krb5_error_code smb_krb5_get_credentials(krb5_context context,
+					 krb5_ccache ccache,
+					 krb5_principal me,
+					 krb5_principal server,
+					 krb5_principal impersonate_princ,
+					 krb5_creds **out_creds);
+krb5_error_code smb_krb5_get_creds(const char *server_s,
+				   time_t time_offset,
+				   const char *cc,
+				   const char *impersonate_princ_s,
+				   krb5_creds **creds_p);
 #endif /* HAVE_KRB5 */
 
 
