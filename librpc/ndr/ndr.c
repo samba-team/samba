@@ -29,8 +29,9 @@
 #include "includes.h"
 #include "librpc/ndr/libndr.h"
 #include "../lib/util/dlinklist.h"
-#include "librpc/gen_ndr/dcerpc.h"
+#if _SAMBA_BUILD_ == 4
 #include "param/param.h"
+#endif
 
 #define NDR_BASE_MARSHALL_SIZE 1024
 

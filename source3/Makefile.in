@@ -257,7 +257,7 @@ DRSUAPI_OBJ = $(LIBNDR_DRSUAPI_OBJ) \
 	      $(COMPRESSION_OBJ)
 
 LIBNDR_OBJ = ../librpc/ndr/ndr_basic.o \
-	     librpc/ndr/ndr.o \
+	     ../librpc/ndr/ndr.o \
 	     ../librpc/ndr/ndr_misc.o \
 	     librpc/gen_ndr/ndr_misc.o \
 	     librpc/gen_ndr/ndr_security.o \
