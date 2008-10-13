@@ -174,6 +174,41 @@ ctdb_control_getnodemap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA ind
 	return 0;
 }
 
+/*
+   get an old style ipv4-only nodemap
+*/
+int 
+ctdb_control_getnodemapv4(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indata, TDB_DATA *outdata)
+{
+	uint32_t i, num_nodes;
+	struct ctdb_node_mapv4 *node_map;
+
+	CHECK_CONTROL_DATA_SIZE(0);
+
+	num_nodes = ctdb->num_nodes;
+
+	outdata->dsize = offsetof(struct ctdb_node_mapv4, nodes) + num_nodes*sizeof(struct ctdb_node_and_flagsv4);
+	outdata->dptr  = (unsigned char *)talloc_zero_size(outdata, outdata->dsize);
+	if (!outdata->dptr) {
+		DEBUG(DEBUG_ALERT, (__location__ " Failed to allocate nodemap array\n"));
+		exit(1);
+	}
+
+	node_map = (struct ctdb_node_mapv4 *)outdata->dptr;
+	node_map->num = num_nodes;
+	for (i=0; i<num_nodes; i++) {
+		if (parse_ipv4(ctdb->nodes[i]->address.address, 0, &node_map->nodes[i].sin) == 0) {
+			DEBUG(DEBUG_ERR, (__location__ " Failed to parse %s into a sockaddr\n", ctdb->nodes[i]->address.address));
+			return -1;
+		}
+
+		node_map->nodes[i].pnn   = ctdb->nodes[i]->pnn;
+		node_map->nodes[i].flags = ctdb->nodes[i]->flags;
+	}
+
+	return 0;
+}
+
 static void
 ctdb_reload_nodes_event(struct event_context *ev, struct timed_event *te, 
 			       struct timeval t, void *private_data)

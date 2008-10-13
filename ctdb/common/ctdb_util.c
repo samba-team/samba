@@ -362,12 +362,12 @@ void set_close_on_exec(int fd)
 }
 
 
-static bool parse_ipv4(const char *s, unsigned port, ctdb_sock_addr *saddr)
+bool parse_ipv4(const char *s, unsigned port, struct sockaddr_in *sin)
 {
-	saddr->ip.sin_family = AF_INET;
-	saddr->ip.sin_port   = htons(port);
+	sin->sin_family = AF_INET;
+	sin->sin_port   = htons(port);
 
-	if (inet_pton(AF_INET, s, &saddr->ip.sin_addr) != 1) {
+	if (inet_pton(AF_INET, s, &sin->sin_addr) != 1) {
 		DEBUG(DEBUG_ERR, (__location__ " Failed to translate %s into sin_addr\n", s));
 		return false;
 	}
@@ -427,7 +427,7 @@ bool parse_ip_port(const char *addr, ctdb_sock_addr *saddr)
 	/* now is this a ipv4 or ipv6 address ?*/
 	p = index(s, ':');
 	if (p == NULL) {
-		ret = parse_ipv4(s, port, saddr);
+		ret = parse_ipv4(s, port, &saddr->ip);
 	} else {
 		ret = parse_ipv6(s, port, saddr);
 	}
@@ -447,7 +447,7 @@ bool parse_ip(const char *addr, ctdb_sock_addr *saddr)
 	/* now is this a ipv4 or ipv6 address ?*/
 	p = index(addr, ':');
 	if (p == NULL) {
-		ret = parse_ipv4(addr, 0, saddr);
+		ret = parse_ipv4(addr, 0, &saddr->ip);
 	} else {
 		ret = parse_ipv6(addr, 0, saddr);
 	}
@@ -493,7 +493,7 @@ bool parse_ip_mask(const char *str, ctdb_sock_addr *addr, unsigned *mask)
 	/* now is this a ipv4 or ipv6 address ?*/
 	p = index(s, ':');
 	if (p == NULL) {
-		ret = parse_ipv4(s, 0, addr);
+		ret = parse_ipv4(s, 0, &addr->ip);
 	} else {
 		ret = parse_ipv6(s, 0, addr);
 	}
