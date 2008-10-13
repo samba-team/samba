@@ -627,6 +627,7 @@ static NTSTATUS winbindd_raw_kerberos_login(struct winbindd_domain *domain,
 						true,
 						true,
 						WINBINDD_PAM_AUTH_KRB5_RENEW_TIME,
+						NULL,
 						info3);
 	if (!internal_ccache) {
 		gain_root_privilege();

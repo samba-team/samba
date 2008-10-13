@@ -388,6 +388,7 @@ NTSTATUS kerberos_return_pac(TALLOC_CTX *mem_ctx,
 			     bool request_pac,
 			     bool add_netbios_addr,
 			     time_t renewable_time,
+			     const char *impersonate_princ_s,
 			     struct PAC_DATA **pac_ret)
 {
 	krb5_error_code ret;
@@ -398,6 +399,7 @@ NTSTATUS kerberos_return_pac(TALLOC_CTX *mem_ctx,
 	const char *auth_princ = NULL;
 	const char *local_service = NULL;
 	const char *cc = "MEMORY:kerberos_return_pac";
+	krb5_creds *creds = NULL;
 
 	ZERO_STRUCT(tkt);
 	ZERO_STRUCT(ap_rep);
@@ -460,8 +462,26 @@ NTSTATUS kerberos_return_pac(TALLOC_CTX *mem_ctx,
 	    (*expire_time == 0) && (*renew_till_time == 0)) {
 		return NT_STATUS_INVALID_LOGON_TYPE;
 	}
+#if 1
+	ret = smb_krb5_get_creds(local_service,
+				 time_offset,
+				 cc,
+				 impersonate_princ_s,
+				 &creds);
+	if (ret) {
+		DEBUG(1,("failed to get credentials for %s: %s\n",
+			local_service, error_message(ret)));
+		status = krb5_to_nt_status(ret);
+		goto out;
+	}
 
+	ret = smb_krb5_get_tkt_from_creds(creds, &tkt);
+	if (ret) {
+		status = krb5_to_nt_status(ret);
+		goto out;
+	}
 
+#else
 	ret = cli_krb5_get_ticket(local_service,
 				  time_offset,
 				  &tkt,
@@ -475,7 +495,7 @@ NTSTATUS kerberos_return_pac(TALLOC_CTX *mem_ctx,
 		status = krb5_to_nt_status(ret);
 		goto out;
 	}
-
+#endif
 	status = ads_verify_ticket(mem_ctx,
 				   lp_realm(),
 				   time_offset,
@@ -527,6 +547,7 @@ static NTSTATUS kerberos_return_pac_logon_info(TALLOC_CTX *mem_ctx,
 					       bool request_pac,
 					       bool add_netbios_addr,
 					       time_t renewable_time,
+					       const char *impersonate_princ_s,
 					       struct PAC_LOGON_INFO **logon_info)
 {
 	NTSTATUS status;
@@ -543,6 +564,7 @@ static NTSTATUS kerberos_return_pac_logon_info(TALLOC_CTX *mem_ctx,
 				     request_pac,
 				     add_netbios_addr,
 				     renewable_time,
+				     impersonate_princ_s,
 				     &pac_data);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -577,6 +599,7 @@ NTSTATUS kerberos_return_info3_from_pac(TALLOC_CTX *mem_ctx,
 					bool request_pac,
 					bool add_netbios_addr,
 					time_t renewable_time,
+					const char *impersonate_princ_s,
 					struct netr_SamInfo3 **info3)
 {
 	NTSTATUS status;
@@ -592,6 +615,7 @@ NTSTATUS kerberos_return_info3_from_pac(TALLOC_CTX *mem_ctx,
 						request_pac,
 						add_netbios_addr,
 						renewable_time,
+						impersonate_princ_s,
 						&logon_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
