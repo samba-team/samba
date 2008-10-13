@@ -1572,7 +1572,7 @@ static bool manage_client_krb5_init(struct spnego_data spnego)
 	       spnego.negTokenInit.mechListMIC.length);
 	principal[spnego.negTokenInit.mechListMIC.length] = '\0';
 
-	retval = cli_krb5_get_ticket(principal, 0, &tkt, &session_key_krb5, 0, NULL, NULL);
+	retval = cli_krb5_get_ticket(principal, 0, &tkt, &session_key_krb5, 0, NULL, NULL, NULL);
 
 	if (retval) {
 		char *user = NULL;
@@ -1596,7 +1596,7 @@ static bool manage_client_krb5_init(struct spnego_data spnego)
 			return False;
 		}
 
-		retval = cli_krb5_get_ticket(principal, 0, &tkt, &session_key_krb5, 0, NULL, NULL);
+		retval = cli_krb5_get_ticket(principal, 0, &tkt, &session_key_krb5, 0, NULL, NULL, NULL);
 
 		if (retval) {
 			DEBUG(10, ("Kinit suceeded, but getting a ticket failed: %s\n", error_message(retval)));
