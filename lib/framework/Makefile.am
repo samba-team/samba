@@ -21,7 +21,7 @@ Heimdal_la_LIBADD = \
 	$(LIB_pkinit) \
 	../wind/libnwind.la  \
 	$(LIB_hcrypto) \
-	../wind/libnasn1.la  \
+	../asn1/libnasn1.la  \
 	$(LIB_sqlite3) \
 	../com_err/libncom_err.la \
 	../roken/libnroken.la
