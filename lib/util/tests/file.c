@@ -49,6 +49,12 @@ static bool test_file_load_save(struct torture_context *tctx)
 	
 	torture_assert_mem_equal(tctx, data, TEST_DATA, len, "Contents");
 
+	data = file_load(TEST_FILENAME, &len, 5, mem_ctx);
+
+	torture_assert_int_equal(tctx, len, 5, "Length");
+
+	torture_assert_mem_equal(tctx, data, TEST_DATA, len, "Contents");
+
 	unlink(TEST_FILENAME);
 	return true;
 }
