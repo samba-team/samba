@@ -36,9 +36,9 @@ PRIVATE_DEPENDENCIES = \
 # End BINARY ndrdump
 #################################
 
-ndrdump_OBJ_FILES = $(librpcsrcdir)/tools/ndrdump.o
+ndrdump_OBJ_FILES = ../librpc/tools/ndrdump.o
 
-MANPAGES += $(librpcsrcdir)/tools/ndrdump.1
+MANPAGES += ../librpc/tools/ndrdump.1
 
 ################################################
 # Start SUBSYSTEM NDR_COMPRESSION

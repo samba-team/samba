@@ -968,7 +968,7 @@ REPLACETORT_OBJ = @libreplacedir@/test/testsuite.o \
 		@libreplacedir@/test/main.o \
 		$(LIBREPLACE_OBJ)
 
-NDRDUMP_OBJ = librpc/tools/ndrdump.o \
+NDRDUMP_OBJ = ../librpc/tools/ndrdump.o \
 	      $(PARAM_OBJ) $(LIBNDR_GEN_OBJ) \
 	      $(LIBSAMBA_OBJ) $(LIB_NONSMBD_OBJ) $(POPT_LIB_OBJ) \
 	      librpc/gen_ndr/ndr_svcctl.o

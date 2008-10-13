@@ -1291,6 +1291,7 @@ enum remote_arch_types get_remote_arch(void);
 void print_asc(int level, const unsigned char *buf,int len);
 void dump_data(int level, const unsigned char *buf1,int len);
 void dump_data_pw(const char *msg, const uchar * data, size_t len);
+void dump_data_skip_zeros(int level, const uint8_t *buf, int len);
 const char *tab_depth(int level, int depth);
 int str_checksum(const char *s);
 void zero_free(void *p, size_t size);

@@ -2217,25 +2217,60 @@ void print_asc(int level, const unsigned char *buf,int len)
 		DEBUG(level,("%c", isprint(buf[i])?buf[i]:'.'));
 }
 
-void dump_data(int level, const unsigned char *buf1,int len)
+/**
+ * Write dump of binary data to the log file.
+ *
+ * The data is only written if the log level is at least level.
+ */
+static void _dump_data(int level, const uint8_t *buf, int len,
+		       bool omit_zero_bytes)
 {
-	const unsigned char *buf = (const unsigned char *)buf1;
 	int i=0;
+	const uint8_t empty[16];
+	bool skipped = false;
+
 	if (len<=0) return;
 
 	if (!DEBUGLVL(level)) return;
-	
-	DEBUGADD(level,("[%03X] ",i));
+
+	memset(&empty, '\0', 16);
+
 	for (i=0;i<len;) {
+
+		if (i%16 == 0) {
+			if ((omit_zero_bytes == true) &&
+			    (i > 0) &&
+			    (len > i+16) &&
+			    (memcmp(&buf[i], &empty, 16) == 0))
+			{
+				i +=16;
+				continue;
+			}
+
+			if (i<len)  {
+				DEBUGADD(level,("[%04X] ",i));
+			}
+		}
+
 		DEBUGADD(level,("%02X ",(int)buf[i]));
 		i++;
-		if (i%8 == 0) DEBUGADD(level,(" "));
-		if (i%16 == 0) {      
+		if (i%8 == 0) DEBUGADD(level,("  "));
+		if (i%16 == 0) {
+
 			print_asc(level,&buf[i-16],8); DEBUGADD(level,(" "));
 			print_asc(level,&buf[i-8],8); DEBUGADD(level,("\n"));
-			if (i<len) DEBUGADD(level,("[%03X] ",i));
+
+			if ((omit_zero_bytes == true) &&
+			    (len > i+16) &&
+			    (memcmp(&buf[i], &empty, 16) == 0)) {
+				if (!skipped) {
+					DEBUGADD(level,("skipping zero buffer bytes\n"));
+					skipped = true;
+				}
+			}
 		}
 	}
+
 	if (i%16) {
 		int n;
 		n = 16 - (i%16);
@@ -2248,7 +2283,31 @@ void dump_data(int level, const unsigned char *buf1,int len)
 		if (n>0) print_asc(level,&buf[i-n],n);
 		DEBUGADD(level,("\n"));
 	}
+
 }
+
+/**
+ * Write dump of binary data to the log file.
+ *
+ * The data is only written if the log level is at least level.
+ */
+_PUBLIC_ void dump_data(int level, const uint8_t *buf, int len)
+{
+	_dump_data(level, buf, len, false);
+}
+
+/**
+ * Write dump of binary data to the log file.
+ *
+ * The data is only written if the log level is at least level.
+ * 16 zero bytes in a row are ommited
+ */
+_PUBLIC_ void dump_data_skip_zeros(int level, const uint8_t *buf, int len)
+{
+	_dump_data(level, buf, len, true);
+}
+
+
 
 void dump_data_pw(const char *msg, const uchar * data, size_t len)
 {

@@ -26,6 +26,11 @@
 #include "librpc/gen_ndr/misc.h"
 #include "librpc/gen_ndr/security.h"
 
+/* Samba 3 doesn't use iconv_convenience: */
+extern void *global_loadparm;
+extern void *cmdline_lp_ctx;
+struct smb_iconv_convenience *lp_iconv_convenience(void *lp_ctx);
+
 /*
   this provides definitions for the libcli/rpc/ MSRPC library
 */
