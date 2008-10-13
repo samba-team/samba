@@ -335,6 +335,46 @@ struct PAC_LOGON_INFO *get_logon_info_from_pac(struct PAC_DATA *pac_data)
 	return NULL;
 }
 
+static krb5_error_code smb_krb5_get_tkt_from_creds(krb5_creds *creds,
+						   DATA_BLOB *tkt)
+{
+	krb5_error_code ret;
+	krb5_context context;
+	krb5_auth_context auth_context = NULL;
+	krb5_data inbuf, outbuf;
+
+	ret = krb5_init_context(&context);
+	if (ret) {
+		return ret;
+	}
+
+	ret = krb5_auth_con_init(context, &auth_context);
+	if (ret) {
+		goto done;
+	}
+
+	ZERO_STRUCT(inbuf);
+
+	ret = krb5_mk_req_extended(context, &auth_context, AP_OPTS_USE_SUBKEY,
+				   &inbuf, creds, &outbuf);
+	if (ret) {
+		goto done;
+	}
+
+	*tkt = data_blob(outbuf.data, outbuf.length);
+ done:
+	if (!context) {
+		return ret;
+	}
+	krb5_free_data_contents(context, &outbuf);
+	if (auth_context) {
+		krb5_auth_con_free(context, auth_context);
+	}
+	krb5_free_context(context);
+
+	return ret;
+}
+
 /****************************************************************
 ****************************************************************/
 
