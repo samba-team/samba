@@ -221,7 +221,7 @@ handle_krb5_mech(const char *oid, const char *principal, DATA_BLOB *secblob,
 
 	/* get a kerberos ticket for the service and extract the session key */
 	retval = cli_krb5_get_ticket(principal, 0, &tkt, sess_key, 0, ccname,
-				     NULL);
+				     NULL, NULL);
 
 	if (retval) {
 		syslog(LOG_DEBUG, "%s: failed to obtain service ticket (%d)",

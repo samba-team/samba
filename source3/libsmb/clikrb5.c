@@ -826,7 +826,8 @@ cleanup_princ:
 int cli_krb5_get_ticket(const char *principal, time_t time_offset, 
 			DATA_BLOB *ticket, DATA_BLOB *session_key_krb5, 
 			uint32 extra_ap_opts, const char *ccname, 
-			time_t *tgs_expire)
+			time_t *tgs_expire,
+			const char *impersonate_princ_s)
 
 {
 	krb5_error_code retval;
@@ -2237,7 +2238,8 @@ krb5_error_code smb_krb5_get_creds(const char *server_s,
  /* this saves a few linking headaches */
  int cli_krb5_get_ticket(const char *principal, time_t time_offset, 
 			DATA_BLOB *ticket, DATA_BLOB *session_key_krb5, uint32 extra_ap_opts,
-			const char *ccname, time_t *tgs_expire) 
+			const char *ccname, time_t *tgs_expire,
+			const char *impersonate_princ_s)
 {
 	 DEBUG(0,("NO KERBEROS SUPPORT\n"));
 	 return 1;
