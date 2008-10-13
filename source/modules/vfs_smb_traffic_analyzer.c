@@ -42,6 +42,7 @@ static enum sock_type smb_traffic_analyzer_connMode(vfs_handle_struct *handle)
 	}
 }
 
+
 /* Connect to an internet socket */
 
 static int smb_traffic_analyzer_connect_inet_socket(vfs_handle_struct *handle,
@@ -160,6 +161,8 @@ static void smb_traffic_analyzer_send_data(vfs_handle_struct *handle,
 	struct tm *tm = NULL;
 	int seconds;
 	char *str = NULL;
+	char *username = NULL;
+	const char *anon_prefix = NULL;
 	size_t len;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, rf_sock, struct refcounted_sock, return);
@@ -178,11 +181,31 @@ static void smb_traffic_analyzer_send_data(vfs_handle_struct *handle,
 	}
 	seconds=(float) (tv.tv_usec / 1000);
 
+	/* check if anonymization is required */
+	
+	anon_prefix=lp_parm_const_string(SNUM(handle->conn),"smb_traffic_analyzer",\
+					"anonymize_prefix", NULL );
+	if (anon_prefix!=NULL) {
+		username = talloc_asprintf(talloc_tos(),
+			"%s%i",
+			anon_prefix,
+			str_checksum(			
+				handle->conn->server_info->sanitized_username )	); 
+	} else {
+		username = talloc_asprintf(talloc_tos(),
+			"%s",
+			handle->conn->server_info->sanitized_username);
+	}		
+
+	if (!username) {
+		return;
+	}					
+
 	str = talloc_asprintf(talloc_tos(),
 			"V1,%u,\"%s\",\"%s\",\"%c\",\"%s\",\"%s\","
 			"\"%04d-%02d-%02d %02d:%02d:%02d.%03d\"\n",
 			(unsigned int)result,
-			handle->conn->server_info->sanitized_username,
+			username,
 			pdb_get_domain(handle->conn->server_info->sam_account),
 			Write ? 'W' : 'R',
 			handle->conn->connectpath,
