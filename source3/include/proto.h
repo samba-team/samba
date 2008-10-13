@@ -1707,6 +1707,7 @@ NTSTATUS kerberos_return_pac(TALLOC_CTX *mem_ctx,
 			     bool request_pac,
 			     bool add_netbios_addr,
 			     time_t renewable_time,
+			     const char *impersonate_princ_s,
 			     struct PAC_DATA **pac_ret);
 NTSTATUS kerberos_return_info3_from_pac(TALLOC_CTX *mem_ctx,
 					const char *name,
@@ -1718,6 +1719,7 @@ NTSTATUS kerberos_return_info3_from_pac(TALLOC_CTX *mem_ctx,
 					bool request_pac,
 					bool add_netbios_addr,
 					time_t renewable_time,
+					const char *impersonate_princ_s,
 					struct netr_SamInfo3 **info3);
 
 /* The following definitions come from libads/cldap.c  */
