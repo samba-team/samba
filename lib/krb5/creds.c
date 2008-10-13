@@ -272,3 +272,21 @@ krb5_compare_creds(krb5_context context, krb5_flags whichfields,
 
     return match;
 }
+
+/**
+ * Returns the ticket flags for the credentials in creds.
+ * See also krb5_ticket_get_flags().
+ *
+ * @param context Kerberos 5 context.
+ * @param creds credential to get ticket flags from
+ *
+ * @return ticket flags
+ *
+ * @ingroup krb5
+ */
+
+unsigned long
+krb5_creds_get_ticket_flags(krb5_context context, krb5_creds creds)
+{
+    return TicketFlags2int(creds->ticketflags.b);
+}
