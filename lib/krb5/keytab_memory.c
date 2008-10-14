@@ -197,7 +197,7 @@ mkt_remove_entry(krb5_context context,
     int found = 0;
 
     if (d->num_entries == 0) {
-	krb5_clear_error_string(context);
+	krb5_clear_error_message(context);
         return KRB5_KT_NOTFOUND;
     }
 
@@ -214,7 +214,7 @@ mkt_remove_entry(krb5_context context,
 	}
     }
     if (!found) {
-	krb5_clear_error_string (context);
+	krb5_clear_error_message (context);
 	return KRB5_KT_NOTFOUND;
     }
     e = realloc(d->entries, d->num_entries * sizeof(*d->entries));

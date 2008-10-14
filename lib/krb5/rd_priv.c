@@ -56,7 +56,7 @@ krb5_rd_priv(krb5_context context,
 	 (KRB5_AUTH_CONTEXT_RET_TIME | KRB5_AUTH_CONTEXT_RET_SEQUENCE)))
     {
 	if (outdata == NULL) {
-	    krb5_clear_error_string (context);
+	    krb5_clear_error_message (context);
 	    return KRB5_RC_REQUIRED; /* XXX better error, MIT returns this */
 	}
 	/* if these fields are not present in the priv-part, silently
@@ -67,16 +67,16 @@ krb5_rd_priv(krb5_context context,
     memset(&priv, 0, sizeof(priv));
     ret = decode_KRB_PRIV (inbuf->data, inbuf->length, &priv, &len);
     if (ret) {
-	krb5_clear_error_string (context);
+	krb5_clear_error_message (context);
 	goto failure;
     }
     if (priv.pvno != 5) {
-	krb5_clear_error_string (context);
+	krb5_clear_error_message (context);
 	ret = KRB5KRB_AP_ERR_BADVERSION;
 	goto failure;
     }
     if (priv.msg_type != krb_priv) {
-	krb5_clear_error_string (context);
+	krb5_clear_error_message (context);
 	ret = KRB5KRB_AP_ERR_MSG_TYPE;
 	goto failure;
     }
@@ -103,7 +103,7 @@ krb5_rd_priv(krb5_context context,
     ret = decode_EncKrbPrivPart (plain.data, plain.length, &part, &len);
     krb5_data_free (&plain);
     if (ret) {
-	krb5_clear_error_string (context);
+	krb5_clear_error_message (context);
 	goto failure;
     }
 
@@ -114,7 +114,7 @@ krb5_rd_priv(krb5_context context,
 	&& !krb5_address_compare (context,
 				  auth_context->remote_address,
 				  part.s_address)) {
-	krb5_clear_error_string (context);
+	krb5_clear_error_message (context);
 	ret = KRB5KRB_AP_ERR_BADADDR;
 	goto failure_part;
     }
@@ -126,7 +126,7 @@ krb5_rd_priv(krb5_context context,
 	&& !krb5_address_compare (context,
 				  auth_context->local_address,
 				  part.r_address)) {
-	krb5_clear_error_string (context);
+	krb5_clear_error_message (context);
 	ret = KRB5KRB_AP_ERR_BADADDR;
 	goto failure_part;
     }
@@ -139,7 +139,7 @@ krb5_rd_priv(krb5_context context,
 	if (part.timestamp == NULL ||
 	    part.usec      == NULL ||
 	    abs(*part.timestamp - sec) > context->max_skew) {
-	    krb5_clear_error_string (context);
+	    krb5_clear_error_message (context);
 	    ret = KRB5KRB_AP_ERR_SKEW;
 	    goto failure_part;
 	}
@@ -156,7 +156,7 @@ krb5_rd_priv(krb5_context context,
 	     && auth_context->remote_seqnumber != 0)
 	    || (part.seq_number != NULL
 		&& *part.seq_number != auth_context->remote_seqnumber)) {
-	    krb5_clear_error_string (context);
+	    krb5_clear_error_message (context);
 	    ret = KRB5KRB_AP_ERR_BADORDER;
 	    goto failure_part;
 	}

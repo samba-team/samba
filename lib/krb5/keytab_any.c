@@ -146,7 +146,7 @@ any_start_seq_get(krb5_context context,
     if (ed->a == NULL) {
 	free (c->data);
 	c->data = NULL;
-	krb5_clear_error_string (context);
+	krb5_clear_error_message (context);
 	return KRB5_KT_END;
     }
     return 0;
@@ -178,7 +178,7 @@ any_next_entry (krb5_context context,
 		break;
 	}
 	if (ed->a == NULL) {
-	    krb5_clear_error_string (context);
+	    krb5_clear_error_message (context);
 	    return KRB5_KT_END;
 	}
     } while (1);

@@ -232,7 +232,7 @@ default_db(krb5_context context, sqlite3 **db)
     ret = sqlite3_open_v2(name, db, SQLITE_OPEN_READWRITE, NULL);
     free(name);
     if (ret != SQLITE_OK) {
-	krb5_clear_error_string(context);
+	krb5_clear_error_message(context);
 	return ENOENT;
     }
 	
@@ -282,7 +282,7 @@ get_def_name(krb5_context context, char **str)
 out:
     sqlite3_finalize(stmt);
     sqlite3_close(db);
-    krb5_clear_error_string(context);
+    krb5_clear_error_message(context);
     return ENOENT;
 }
 
@@ -973,7 +973,7 @@ scc_get_next (krb5_context context,
 next:
     ret = sqlite3_step(ctx->stmt);
     if (ret == SQLITE_DONE) {
-	krb5_clear_error_string(context);
+	krb5_clear_error_message(context);
         return KRB5_CC_END;
     } else if (ret != SQLITE_ROW) {
 	krb5_set_error_message(context, KRB5_CC_IO,
@@ -1235,7 +1235,7 @@ scc_get_cache_next(krb5_context context,
 again:
     ret = sqlite3_step(ctx->stmt);
     if (ret == SQLITE_DONE) {
-	krb5_clear_error_string(context);
+	krb5_clear_error_message(context);
         return KRB5_CC_END;
     } else if (ret != SQLITE_ROW) {
 	krb5_set_error_message(context, KRB5_CC_IO,

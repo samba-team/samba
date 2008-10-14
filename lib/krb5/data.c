@@ -197,7 +197,7 @@ krb5_copy_data(krb5_context context,
     }
     ret = der_copy_octet_string(indata, *outdata);
     if(ret) {
-	krb5_clear_error_string (context);
+	krb5_clear_error_message (context);
 	free(*outdata);
 	*outdata = NULL;
     }

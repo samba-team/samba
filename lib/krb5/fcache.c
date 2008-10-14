@@ -512,7 +512,7 @@ init_fcc (krb5_context context,
 
     sp = krb5_storage_from_fd(fd);
     if(sp == NULL) {
-	krb5_clear_error_string(context);
+	krb5_clear_error_message(context);
 	ret = ENOMEM;
 	goto out;
     }
@@ -657,7 +657,7 @@ fcc_get_principal(krb5_context context,
 	return ret;
     ret = krb5_ret_principal(sp, principal);
     if (ret)
-	krb5_clear_error_string(context);
+	krb5_clear_error_message(context);
     krb5_storage_free(sp);
     fcc_unlock(context, fd);
     close(fd);
@@ -693,7 +693,7 @@ fcc_get_first (krb5_context context,
     }
     ret = krb5_ret_principal (FCC_CURSOR(*cursor)->sp, &principal);
     if(ret) {
-	krb5_clear_error_string(context);
+	krb5_clear_error_message(context);
 	fcc_end_get(context, id, cursor);
 	return ret;
     }
@@ -714,7 +714,7 @@ fcc_get_next (krb5_context context,
 
     ret = krb5_ret_creds(FCC_CURSOR(*cursor)->sp, creds);
     if (ret)
-	krb5_clear_error_string(context);
+	krb5_clear_error_message(context);
 
     fcc_unlock(context, FCC_CURSOR(*cursor)->fd);
     return ret;
@@ -816,7 +816,7 @@ fcc_get_cache_next(krb5_context context, krb5_cc_cursor cursor, krb5_ccache *id)
     char *expandedfn = NULL;
 
     if (!iter->first) {
-	krb5_clear_error_string(context);
+	krb5_clear_error_message(context);
 	return KRB5_CC_END;
     }
     iter->first = 0;

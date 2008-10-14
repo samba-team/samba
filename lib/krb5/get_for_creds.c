@@ -72,7 +72,7 @@ add_addrs(krb5_context context,
 		addr->val[i++] = ad;
 	}
 	else if (ret == KRB5_PROG_ATYPE_NOSUPP)
-	    krb5_clear_error_string (context);
+	    krb5_clear_error_message (context);
 	else
 	    goto fail;
 	addr->len = i;

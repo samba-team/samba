@@ -81,19 +81,19 @@ krb5_rd_cred(krb5_context context,
     ret = decode_KRB_CRED(in_data->data, in_data->length,
 			  &cred, &len);
     if(ret) {
-	krb5_clear_error_string(context);
+	krb5_clear_error_message(context);
 	return ret;
     }
 
     if (cred.pvno != 5) {
 	ret = KRB5KRB_AP_ERR_BADVERSION;
-	krb5_clear_error_string (context);
+	krb5_clear_error_message (context);
 	goto out;
     }
 
     if (cred.msg_type != krb_cred) {
 	ret = KRB5KRB_AP_ERR_MSG_TYPE;
-	krb5_clear_error_string (context);
+	krb5_clear_error_message (context);
 	goto out;
     }
 
@@ -222,7 +222,7 @@ krb5_rd_cred(krb5_context context,
 	    enc_krb_cred_part.usec      == NULL ||
 	    abs(*enc_krb_cred_part.timestamp - sec)
 	    > context->max_skew) {
-	    krb5_clear_error_string (context);
+	    krb5_clear_error_message (context);
 	    ret = KRB5KRB_AP_ERR_SKEW;
 	    goto out;
 	}

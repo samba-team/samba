@@ -109,7 +109,7 @@ loadlib(krb5_context context,
     if ((*e)->symbol == NULL) {
 	dlclose((*e)->dsohandle);
 	free(*e);
-	krb5_clear_error_string(context);
+	krb5_clear_error_message(context);
 	return ENOMEM;
     }
 

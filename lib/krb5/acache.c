@@ -76,7 +76,7 @@ static krb5_error_code
 translate_cc_error(krb5_context context, cc_int32 error)
 {
     int i;
-    krb5_clear_error_string(context);
+    krb5_clear_error_message(context);
     for(i = 0; i < sizeof(cc_errors)/sizeof(cc_errors[0]); i++)
 	if (cc_errors[i].error == error)
 	    return cc_errors[i].ret;
@@ -91,7 +91,7 @@ init_ccapi(krb5_context context)
     HEIMDAL_MUTEX_lock(&acc_mutex);
     if (init_func) {
 	HEIMDAL_MUTEX_unlock(&acc_mutex);
-	krb5_clear_error_string(context);
+	krb5_clear_error_message(context);
 	return 0;
     }
 
@@ -386,7 +386,7 @@ make_ccred_from_cred(krb5_context context,
 fail:
     free_ccred(cred);
 
-    krb5_clear_error_string(context);
+    krb5_clear_error_message(context);
     return ret;
 }
 
@@ -458,7 +458,7 @@ acc_alloc(krb5_context context, krb5_ccache *id)
 
     ret = krb5_data_alloc(&(*id)->data, sizeof(*a));
     if (ret) {
-	krb5_clear_error_string(context);
+	krb5_clear_error_message(context);
 	return ret;
     }
 
@@ -695,7 +695,7 @@ acc_get_first (krb5_context context,
 
     error = (*a->ccache->func->new_credentials_iterator)(a->ccache, &iter);
     if (error) {
-	krb5_clear_error_string(context);
+	krb5_clear_error_message(context);
 	return ENOENT;
     }
     *cursor = iter;
@@ -863,7 +863,7 @@ acc_get_cache_first(krb5_context context, krb5_cc_cursor *cursor)
 							&iter->iter);
     if (error) {
 	free(iter);
-	krb5_clear_error_string(context);
+	krb5_clear_error_message(context);
 	return ENOENT;
     }
     *cursor = iter;

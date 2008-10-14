@@ -440,7 +440,7 @@ krb5_sendto (krb5_context context,
 	 }
 	 krb5_krbhst_reset(context, handle);
      }
-     krb5_clear_error_string (context);
+     krb5_clear_error_message (context);
      ret = KRB5_KDC_UNREACH;
 out:
      return ret;

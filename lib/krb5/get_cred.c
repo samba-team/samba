@@ -563,10 +563,10 @@ get_cred_kdc(krb5_context context,
 	krb5_free_error_contents(context, &error);
     } else if(resp.data && ((char*)resp.data)[0] == 4) {
 	ret = KRB5KRB_AP_ERR_V4_REPLY;
-	krb5_clear_error_string(context);
+	krb5_clear_error_message(context);
     } else {
 	ret = KRB5KRB_AP_ERR_MSG_TYPE;
-	krb5_clear_error_string(context);
+	krb5_clear_error_message(context);
     }
 
 out:
@@ -671,7 +671,7 @@ not_found(krb5_context context, krb5_const_principal p, krb5_error_code code)
 
     ret = krb5_unparse_name(context, p, &str);
     if(ret) {
-	krb5_clear_error_string(context);
+	krb5_clear_error_message(context);
 	return code;
     }
     krb5_set_error_message(context, code,

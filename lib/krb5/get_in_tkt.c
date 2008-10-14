@@ -380,7 +380,7 @@ _krb5_extract_ticket(krb5_context context,
 			  rep->enc_part.key.keyvalue.data,
 			  rep->enc_part.key.keyvalue.length);
     if (ret) {
-	krb5_clear_error_string(context);
+	krb5_clear_error_message(context);
 	goto out;
     }
 
@@ -438,7 +438,7 @@ _krb5_extract_ticket(krb5_context context,
 	    strcmp(rep->enc_part.srealm, crealm) != 0)
 	{
 	    ret = KRB5KRB_AP_ERR_MODIFIED;
-	    krb5_clear_error_string(context);
+	    krb5_clear_error_message(context);
 	    goto out;
 	}
     }
@@ -483,7 +483,7 @@ _krb5_extract_ticket(krb5_context context,
 
     if (creds->times.starttime != 0
 	&& tmp_time != creds->times.starttime) {
-	krb5_clear_error_string (context);
+	krb5_clear_error_message (context);
 	ret = KRB5KRB_AP_ERR_MODIFIED;
 	goto out;
     }
@@ -497,7 +497,7 @@ _krb5_extract_ticket(krb5_context context,
 
     if (creds->times.renew_till != 0
 	&& tmp_time > creds->times.renew_till) {
-	krb5_clear_error_string (context);
+	krb5_clear_error_message (context);
 	ret = KRB5KRB_AP_ERR_MODIFIED;
 	goto out;
     }
@@ -508,7 +508,7 @@ _krb5_extract_ticket(krb5_context context,
 
     if (creds->times.endtime != 0
 	&& rep->enc_part.endtime > creds->times.endtime) {
-	krb5_clear_error_string (context);
+	krb5_clear_error_message (context);
 	ret = KRB5KRB_AP_ERR_MODIFIED;
 	goto out;
     }
@@ -960,7 +960,7 @@ krb5_get_in_cred(krb5_context context,
 		    done = 0;
 		    preauth = my_preauth;
 		    krb5_free_error_contents(context, &error);
-		    krb5_clear_error_string(context);
+		    krb5_clear_error_message(context);
 		    continue;
 		}
 		if(ret_as_reply)

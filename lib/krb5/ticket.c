@@ -205,7 +205,7 @@ find_type_in_ad(krb5_context context,
 				   &child.elements, &len, ret);
 		if (ret) {
 		    free_AD_KDCIssued(&child);
-		    krb5_clear_error_string(context);
+		    krb5_clear_error_message(context);
 		    goto out;
 		}
 		if(buf.length != len)
@@ -219,7 +219,7 @@ find_type_in_ad(krb5_context context,
 		    goto out;
 		}
 		if (!valid) {
-		    krb5_clear_error_string(context);
+		    krb5_clear_error_message(context);
 		    ret = ENOENT;
 		    free_AD_KDCIssued(&child);
 		    goto out;

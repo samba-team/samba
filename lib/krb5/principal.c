@@ -931,7 +931,7 @@ krb5_425_conv_principal_ext2(krb5_context context,
 	}
 	krb5_free_principal(context, pr);
 	*princ = NULL;
-	krb5_clear_error_string (context);
+	krb5_clear_error_message (context);
 	return HEIM_ERR_V4_PRINC_NO_CONV;
     }
     if(resolve){
@@ -1040,7 +1040,7 @@ krb5_425_conv_principal_ext2(krb5_context context,
 			       "default_domain", NULL);
     if(p == NULL){
 	/* this should be an error, just faking a name is not good */
-	krb5_clear_error_string (context);
+	krb5_clear_error_message (context);
 	return HEIM_ERR_V4_PRINC_NO_CONV;
     }
 	
@@ -1054,7 +1054,7 @@ local_host:
 	return 0;
     }
     krb5_free_principal(context, pr);
-    krb5_clear_error_string (context);
+    krb5_clear_error_message (context);
     return HEIM_ERR_V4_PRINC_NO_CONV;
 no_host:
     p = krb5_config_get_string(context, NULL,
@@ -1080,7 +1080,7 @@ no_host:
 	return 0;
     }
     krb5_free_principal(context, pr);
-    krb5_clear_error_string (context);
+    krb5_clear_error_message (context);
     return HEIM_ERR_V4_PRINC_NO_CONV;
 }
 

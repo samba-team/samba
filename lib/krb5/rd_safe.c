@@ -114,18 +114,18 @@ krb5_rd_safe(krb5_context context,
 	return ret;
     if (safe.pvno != 5) {
 	ret = KRB5KRB_AP_ERR_BADVERSION;
-	krb5_clear_error_string (context);
+	krb5_clear_error_message (context);
 	goto failure;
     }
     if (safe.msg_type != krb_safe) {
 	ret = KRB5KRB_AP_ERR_MSG_TYPE;
-	krb5_clear_error_string (context);
+	krb5_clear_error_message (context);
 	goto failure;
     }
     if (!krb5_checksum_is_keyed(context, safe.cksum.cksumtype)
 	|| !krb5_checksum_is_collision_proof(context, safe.cksum.cksumtype)) {
 	ret = KRB5KRB_AP_ERR_INAPP_CKSUM;
-	krb5_clear_error_string (context);
+	krb5_clear_error_message (context);
 	goto failure;
     }
 
@@ -137,7 +137,7 @@ krb5_rd_safe(krb5_context context,
 				  auth_context->remote_address,
 				  safe.safe_body.s_address)) {
 	ret = KRB5KRB_AP_ERR_BADADDR;
-	krb5_clear_error_string (context);
+	krb5_clear_error_message (context);
 	goto failure;
     }
 
@@ -149,7 +149,7 @@ krb5_rd_safe(krb5_context context,
 				  auth_context->local_address,
 				  safe.safe_body.r_address)) {
 	ret = KRB5KRB_AP_ERR_BADADDR;
-	krb5_clear_error_string (context);
+	krb5_clear_error_message (context);
 	goto failure;
     }
 
@@ -163,7 +163,7 @@ krb5_rd_safe(krb5_context context,
 	    safe.safe_body.usec      == NULL ||
 	    abs(*safe.safe_body.timestamp - sec) > context->max_skew) {
 	    ret = KRB5KRB_AP_ERR_SKEW;
-	    krb5_clear_error_string (context);
+	    krb5_clear_error_message (context);
 	    goto failure;
 	}
     }
@@ -180,7 +180,7 @@ krb5_rd_safe(krb5_context context,
 		&& *safe.safe_body.seq_number !=
 		auth_context->remote_seqnumber)) {
 	    ret = KRB5KRB_AP_ERR_BADORDER;
-	    krb5_clear_error_string (context);
+	    krb5_clear_error_message (context);
 	    goto failure;
 	}
 	auth_context->remote_seqnumber++;

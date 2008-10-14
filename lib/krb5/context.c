@@ -433,7 +433,7 @@ krb5_free_context(krb5_context context)
     free_error_table (context->et_list);
     free(context->cc_ops);
     free(context->kt_types);
-    krb5_clear_error_string(context);
+    krb5_clear_error_message(context);
     if(context->warn_dest != NULL)
 	krb5_closelog(context, context->warn_dest);
     krb5_set_extra_addresses(context, NULL);

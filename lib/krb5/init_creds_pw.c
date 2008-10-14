@@ -673,7 +673,7 @@ set_paid(struct pa_info_data *paid, krb5_context context,
     paid->salt.salttype = salttype;
     paid->salt.saltvalue.data = malloc(salt_len + 1);
     if (paid->salt.saltvalue.data == NULL) {
-	krb5_clear_error_string(context);
+	krb5_clear_error_message(context);
 	return ENOMEM;
     }
     memcpy(paid->salt.saltvalue.data, salt_string, salt_len);
@@ -684,7 +684,7 @@ set_paid(struct pa_info_data *paid, krb5_context context,
 
 	ret = krb5_copy_data(context, s2kparams, &paid->s2kparams);
 	if (ret) {
-	    krb5_clear_error_string(context);
+	    krb5_clear_error_message(context);
 	    krb5_free_salt(context, paid->salt);
 	    return ret;
 	}
@@ -1294,7 +1294,7 @@ init_cred_loop(krb5_context context,
 	ret = decode_AS_REP(resp.data, resp.length, &rep.kdc_rep, &size);
 	if (ret == 0) {
 	    krb5_data_free(&resp);
-	    krb5_clear_error_string(context);
+	    krb5_clear_error_message(context);
 	    break;
 	} else {
 	    /* let's try to parse it as a KRB-ERROR */
@@ -1436,7 +1436,7 @@ krb5_get_init_creds(krb5_context context,
 	    if (prompter == NULL || ctx.password == NULL)
 		goto out;
 
-	    krb5_clear_error_string (context);
+	    krb5_clear_error_message (context);
 
 	    if (ctx.in_tkt_service != NULL
 		&& strcmp (ctx.in_tkt_service, "kadmin/changepw") == 0)
@@ -1530,7 +1530,7 @@ krb5_get_init_creds_password(krb5_context context,
 	    memset (buf, 0, sizeof(buf));
 	    krb5_get_init_creds_opt_free(context, options);
 	    ret = KRB5_LIBOS_PWDINTR;
-	    krb5_clear_error_string (context);
+	    krb5_clear_error_message (context);
 	    return ret;
 	}
 	password = password_data.data;

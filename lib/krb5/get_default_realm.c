@@ -68,7 +68,7 @@ krb5_get_default_realm(krb5_context context,
 
     if (context->default_realms == NULL
 	|| context->default_realms[0] == NULL) {
-	krb5_clear_error_string(context);
+	krb5_clear_error_message(context);
 	ret = krb5_set_default_realm (context, NULL);
 	if (ret)
 	    return ret;

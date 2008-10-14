@@ -70,7 +70,7 @@ struct krb5_pac_data {
 #define CHECK(r,f,l)						\
 	do {							\
 		if (((r) = f ) != 0) {				\
-			krb5_clear_error_string(context);	\
+			krb5_clear_error_message(context);	\
 			goto l;					\
 		}						\
 	} while(0)

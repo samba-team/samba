@@ -112,12 +112,12 @@ krb5_sendauth(krb5_context context,
 	krb5_set_error_message (context, ret, "read: %s", strerror(ret));
 	return ret;
     } else if (sret != sizeof(repl)) {
-	krb5_clear_error_string (context);
+	krb5_clear_error_message (context);
 	return KRB5_SENDAUTH_BADRESPONSE;
     }
 
     if (repl != 0) {
-	krb5_clear_error_string (context);
+	krb5_clear_error_message (context);
 	return KRB5_SENDAUTH_REJECTED;
     }
 
@@ -205,7 +205,7 @@ krb5_sendauth(krb5_context context,
 	    }
 	    return ret;
 	} else {
-	    krb5_clear_error_string(context);
+	    krb5_clear_error_message(context);
 	    return ret;
 	}
     }

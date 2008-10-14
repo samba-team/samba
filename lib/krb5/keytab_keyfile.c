@@ -217,7 +217,7 @@ akf_start_seq_get(krb5_context context,
     if(ret) {
 	krb5_storage_free(c->sp);
 	close(c->fd);
-	krb5_clear_error_string (context);
+	krb5_clear_error_message (context);
 	if(ret == KRB5_KT_END)
 	    return KRB5_KT_NOTFOUND;
 	return ret;

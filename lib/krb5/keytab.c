@@ -129,7 +129,7 @@ krb5_error_code KRB5_LIB_FUNCTION
 krb5_kt_default_name(krb5_context context, char *name, size_t namesize)
 {
     if (strlcpy (name, context->default_keytab, namesize) >= namesize) {
-	krb5_clear_error_string (context);
+	krb5_clear_error_message (context);
 	return KRB5_CONFIG_NOTENUFSPACE;
     }
     return 0;
@@ -150,7 +150,7 @@ krb5_kt_default_modify_name(krb5_context context, char *name, size_t namesize)
 	else {
 	    size_t len = strcspn(context->default_keytab + 4, ",");
 	    if(len >= namesize) {
-		krb5_clear_error_string(context);
+		krb5_clear_error_message(context);
 		return KRB5_CONFIG_NOTENUFSPACE;
 	    }
 	    strlcpy(name, context->default_keytab + 4, namesize);
@@ -160,7 +160,7 @@ krb5_kt_default_modify_name(krb5_context context, char *name, size_t namesize)
     } else
 	kt = context->default_keytab_modify;
     if (strlcpy (name, kt, namesize) >= namesize) {
-	krb5_clear_error_string (context);
+	krb5_clear_error_message (context);
 	return KRB5_CONFIG_NOTENUFSPACE;
     }
     return 0;

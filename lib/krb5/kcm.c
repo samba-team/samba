@@ -136,7 +136,7 @@ kcm_send_request(krb5_context context,
 
     ret = krb5_storage_to_data(request, &request_data);
     if (ret) {
-	krb5_clear_error_string(context);
+	krb5_clear_error_message(context);
 	return KRB5_CC_NOMEM;
     }
 
@@ -154,7 +154,7 @@ kcm_send_request(krb5_context context,
     krb5_data_free(&request_data);
 
     if (ret) {
-	krb5_clear_error_string(context);
+	krb5_clear_error_message(context);
 	ret = KRB5_CC_NOSUPP;
     }
 

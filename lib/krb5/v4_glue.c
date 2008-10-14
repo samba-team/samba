@@ -245,7 +245,7 @@ _krb5_krb_tf_setup(krb5_context context,
     krb5_storage_set_byteorder(sp, KRB5_STORAGE_BYTEORDER_HOST);
     krb5_storage_set_eof_code(sp, KRB5_CC_IO);
 
-    krb5_clear_error_string(context);
+    krb5_clear_error_message(context);
 
     if (!append) {
 	RCHECK(ret, krb5_store_stringz(sp, v4creds->pname), error);
@@ -926,7 +926,7 @@ _krb5_krb_rd_req(krb5_context context,
 	krb5_storage_free(sp);
 
     if (ret)
-	krb5_clear_error_string(context);
+	krb5_clear_error_message(context);
 
     return ret;
 }

@@ -401,14 +401,14 @@ fkt_start_seq_get_int(krb5_context context,
 	krb5_storage_free(c->sp);
 	_krb5_xunlock(context, c->fd);
 	close(c->fd);
-	krb5_clear_error_string(context);
+	krb5_clear_error_message(context);
 	return ret;
     }
     if(pvno != 5) {
 	krb5_storage_free(c->sp);
 	_krb5_xunlock(context, c->fd);
 	close(c->fd);
-	krb5_clear_error_string (context);
+	krb5_clear_error_message (context);
 	return KRB5_KEYTAB_BADVNO;
     }
     ret = krb5_ret_int8(c->sp, &tag);
@@ -416,7 +416,7 @@ fkt_start_seq_get_int(krb5_context context,
 	krb5_storage_free(c->sp);
 	_krb5_xunlock(context, c->fd);
 	close(c->fd);
-	krb5_clear_error_string(context);
+	krb5_clear_error_message(context);
 	return ret;
     }
     id->version = tag;
@@ -733,7 +733,7 @@ fkt_remove_entry(krb5_context context,
     krb5_kt_end_seq_get(context, id, &cursor);
   out:
     if (!found) {
-	krb5_clear_error_string (context);
+	krb5_clear_error_message (context);
 	return KRB5_KT_NOTFOUND;
     }
     return 0;

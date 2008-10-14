@@ -46,7 +46,7 @@ krb5_rd_error(krb5_context context,
 
     ret = decode_KRB_ERROR(msg->data, msg->length, result, &len);
     if(ret) {
-	krb5_clear_error_string(context);
+	krb5_clear_error_message(context);
 	return ret;
     }
     result->error_code += KRB5KDC_ERR_NONE;
@@ -119,7 +119,7 @@ krb5_error_from_rd_error(krb5_context context,
 				   creds ? ")" : "");
 	    break;
 	default :
-	    krb5_clear_error_string(context);
+	    krb5_clear_error_message(context);
 	    break;
 	}
     }

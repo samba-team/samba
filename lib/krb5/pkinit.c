@@ -99,7 +99,7 @@ BN_to_integer(krb5_context context, BIGNUM *bn, heim_integer *integer)
     integer->length = BN_num_bytes(bn);
     integer->data = malloc(integer->length);
     if (integer->data == NULL) {
-	krb5_clear_error_string(context);
+	krb5_clear_error_message(context);
 	return ENOMEM;
     }
     BN_bn2bin(bn, integer->data);
@@ -330,7 +330,7 @@ build_auth_pack(krb5_context context,
     int32_t usec;
     Checksum checksum;
 
-    krb5_clear_error_string(context);
+    krb5_clear_error_message(context);
 
     memset(&checksum, 0, sizeof(checksum));
 
@@ -377,12 +377,12 @@ build_auth_pack(krb5_context context,
 	if (1 /* support_cached_dh */) {
 	    ALLOC(a->clientDHNonce, 1);
 	    if (a->clientDHNonce == NULL) {
-		krb5_clear_error_string(context);
+		krb5_clear_error_message(context);
 		return ENOMEM;
 	    }
 	    ret = krb5_data_alloc(a->clientDHNonce, 40);
 	    if (a->clientDHNonce == NULL) {
-		krb5_clear_error_string(context);
+		krb5_clear_error_message(context);
 		return ret;
 	    }
 	    memset(a->clientDHNonce->data, 0, a->clientDHNonce->length);
@@ -519,13 +519,13 @@ pk_mk_padata(krb5_context context,
 	ret = copy_PrincipalName(req_body->sname, &ap.pkAuthenticator.kdcName);
 	if (ret) {
 	    free_AuthPack_Win2k(&ap);
-	    krb5_clear_error_string(context);
+	    krb5_clear_error_message(context);
 	    goto out;
 	}
 	ret = copy_Realm(&req_body->realm, &ap.pkAuthenticator.kdcRealm);
 	if (ret) {
 	    free_AuthPack_Win2k(&ap);
-	    krb5_clear_error_string(context);
+	    krb5_clear_error_message(context);
 	    goto out;
 	}
 
@@ -752,7 +752,7 @@ _krb5_pk_verify_sign(krb5_context context,
 
     *signer = calloc(1, sizeof(**signer));
     if (*signer == NULL) {
-	krb5_clear_error_string(context);
+	krb5_clear_error_message(context);
 	ret = ENOMEM;
 	goto out;
     }
@@ -1403,7 +1403,7 @@ _krb5_pk_rd_pa_reply(krb5_context context,
 	    return ret;
 	}
 
-	krb5_clear_error_string(context);
+	krb5_clear_error_message(context);
 	
 	switch (w2krep.element) {
 	case choice_PA_PK_AS_REP_Win2k_encKeyPack: {
@@ -1690,13 +1690,13 @@ pk_copy_error(krb5_context context,
     vasprintf(&f, fmt, va);
     va_end(va);
     if (f == NULL) {
-	krb5_clear_error_string(context);
+	krb5_clear_error_message(context);
 	return;
     }
 
     s = hx509_get_error_string(hx509ctx, hxret);
     if (s == NULL) {
-	krb5_clear_error_string(context);
+	krb5_clear_error_message(context);
 	free(f);
 	return;
     }

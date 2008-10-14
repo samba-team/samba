@@ -1314,7 +1314,7 @@ des_verify(krb5_context context,
     EVP_DigestFinal_ex (m, res, NULL);
     EVP_MD_CTX_destroy(m);
     if(memcmp(res, tmp + 8, sizeof(res)) != 0) {
-	krb5_clear_error_string (context);
+	krb5_clear_error_message (context);
 	ret = KRB5KRB_AP_ERR_BAD_INTEGRITY;
     }
     memset(tmp, 0, sizeof(tmp));
@@ -1768,7 +1768,7 @@ create_checksum (krb5_context context,
     int keyed_checksum;
 
     if (ct->flags & F_DISABLED) {
-	krb5_clear_error_string (context);
+	krb5_clear_error_message (context);
 	return KRB5_PROG_SUMTYPE_NOSUPP;
     }
     keyed_checksum = (ct->flags & F_KEYED) != 0;
@@ -1859,7 +1859,7 @@ verify_checksum(krb5_context context,
 	return KRB5_PROG_SUMTYPE_NOSUPP;
     }
     if(ct->checksumsize != cksum->checksum.length) {
-	krb5_clear_error_string (context);
+	krb5_clear_error_message (context);
 	return KRB5KRB_AP_ERR_BAD_INTEGRITY; /* XXX */
     }
     keyed_checksum = (ct->flags & F_KEYED) != 0;
@@ -1891,7 +1891,7 @@ verify_checksum(krb5_context context,
 
     if(c.checksum.length != cksum->checksum.length ||
        memcmp(c.checksum.data, cksum->checksum.data, c.checksum.length)) {
-	krb5_clear_error_string (context);
+	krb5_clear_error_message (context);
 	ret = KRB5KRB_AP_ERR_BAD_INTEGRITY;
     } else {
 	ret = 0;
@@ -2049,7 +2049,7 @@ evp_encrypt(krb5_context context,
 	size_t len = EVP_CIPHER_CTX_iv_length(c);
 	void *loiv = malloc(len);
 	if (loiv == NULL) {
-	    krb5_clear_error_string(context);
+	    krb5_clear_error_message(context);
 	    return ENOMEM;
 	}
 	memset(loiv, 0, len);
@@ -2269,7 +2269,7 @@ ARCFOUR_subdecrypt(krb5_context context,
     memset (k3_c_data, 0, sizeof(k3_c_data));
 
     if (memcmp (cksum.checksum.data, data, 16) != 0) {
-	krb5_clear_error_string (context);
+	krb5_clear_error_message (context);
 	return KRB5KRB_AP_ERR_BAD_INTEGRITY;
     } else {
 	return 0;
@@ -2828,7 +2828,7 @@ encrypt_internal_derived(krb5_context context,
 			  &cksum);
     if(ret == 0 && cksum.checksum.length != checksum_sz) {
 	free_Checksum (&cksum);
-	krb5_clear_error_string (context);
+	krb5_clear_error_message (context);
 	ret = KRB5_CRYPTO_INTERNAL;
     }
     if(ret)
@@ -2893,7 +2893,7 @@ encrypt_internal(krb5_context context,
 			  block_sz,
 			  &cksum);
     if(ret == 0 && cksum.checksum.length != checksum_sz) {
-	krb5_clear_error_string (context);
+	krb5_clear_error_message (context);
 	free_Checksum(&cksum);
 	ret = KRB5_CRYPTO_INTERNAL;
     }
@@ -2982,7 +2982,7 @@ decrypt_internal_derived(krb5_context context,
     }
 
     if (((len - checksum_sz) % et->padsize) != 0) {
-	krb5_clear_error_string(context);
+	krb5_clear_error_message(context);
 	return KRB5_BAD_MSIZE;
     }
 
@@ -3052,7 +3052,7 @@ decrypt_internal(krb5_context context,
     struct encryption_type *et = crypto->et;
 
     if ((len % et->padsize) != 0) {
-	krb5_clear_error_string(context);
+	krb5_clear_error_message(context);
 	return KRB5_BAD_MSIZE;
     }
 
@@ -3115,7 +3115,7 @@ decrypt_internal_special(krb5_context context,
     krb5_error_code ret;
 
     if ((len % et->padsize) != 0) {
-	krb5_clear_error_string(context);
+	krb5_clear_error_message(context);
 	return KRB5_BAD_MSIZE;
     }
 
@@ -3195,7 +3195,7 @@ krb5_encrypt_iov_ivec(krb5_context context,
     krb5_crypto_iov *tiv, *piv, *hiv;
 
     if(!derived_crypto(context, crypto)) {
-	krb5_clear_error_string(context);
+	krb5_clear_error_message(context);
 	return KRB5_CRYPTO_INTERNAL;
     }
 
@@ -3279,7 +3279,7 @@ krb5_encrypt_iov_ivec(krb5_context context,
     free(p);
     if(ret == 0 && cksum.checksum.length != trailersz) {
 	free_Checksum (&cksum);
-	krb5_clear_error_string (context);
+	krb5_clear_error_message (context);
 	ret = KRB5_CRYPTO_INTERNAL;
     }
     if(ret)
@@ -3395,7 +3395,7 @@ krb5_decrypt_iov_ivec(krb5_context context,
     krb5_crypto_iov *tiv, *hiv;
 
     if(!derived_crypto(context, crypto)) {
-	krb5_clear_error_string(context);
+	krb5_clear_error_message(context);
 	return KRB5_CRYPTO_INTERNAL;
     }
 
@@ -3550,7 +3550,7 @@ krb5_create_checksum_iov(krb5_context context,
     char *p, *q;
 
     if(!derived_crypto(context, crypto)) {
-	krb5_clear_error_string(context);
+	krb5_clear_error_message(context);
 	return KRB5_CRYPTO_INTERNAL;
     }
 

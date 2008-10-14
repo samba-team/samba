@@ -117,7 +117,7 @@ krb5_recvauth_match_version(krb5_context context,
 	    || strncmp (version, her_version, len)) {
 	    repl = 1;
 	    krb5_net_write (context, p_fd, &repl, 1);
-	    krb5_clear_error_string (context);
+	    krb5_clear_error_message (context);
 	    return KRB5_SENDAUTH_BADAUTHVERS;
 	}
     }
@@ -129,7 +129,7 @@ krb5_recvauth_match_version(krb5_context context,
 	return ret;
     }
     if (n == 0) {
-	krb5_clear_error_string (context);
+	krb5_clear_error_message (context);
 	return KRB5_SENDAUTH_BADAPPLVERS;
     }
     len = ntohl(len);

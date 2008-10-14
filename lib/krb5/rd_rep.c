@@ -55,12 +55,12 @@ krb5_rd_rep(krb5_context context,
 	return ret;
     if (ap_rep.pvno != 5) {
 	ret = KRB5KRB_AP_ERR_BADVERSION;
-	krb5_clear_error_string (context);
+	krb5_clear_error_message (context);
 	goto out;
     }
     if (ap_rep.msg_type != krb_ap_rep) {
 	ret = KRB5KRB_AP_ERR_MSG_TYPE;
-	krb5_clear_error_string (context);
+	krb5_clear_error_message (context);
 	goto out;
     }
 
@@ -97,7 +97,7 @@ krb5_rd_rep(krb5_context context,
 	    krb5_free_ap_rep_enc_part(context, *repl);
 	    *repl = NULL;
 	    ret = KRB5KRB_AP_ERR_MUT_FAIL;
-	    krb5_clear_error_string (context);
+	    krb5_clear_error_message (context);
 	    goto out;
 	}
     }

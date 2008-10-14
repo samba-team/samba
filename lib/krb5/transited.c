@@ -80,7 +80,7 @@ make_path(krb5_context context, struct tr_realm *r,
 	while(1){
 	    p = strchr(p, '.');
 	    if(p == NULL) {
-		krb5_clear_error_string (context);
+		krb5_clear_error_message (context);
 		return KRB5KDC_ERR_POLICY;
 	    }
 	    p++;
@@ -132,7 +132,7 @@ make_path(krb5_context context, struct tr_realm *r,
 	    p--;
 	}
     } else {
-	krb5_clear_error_string (context);
+	krb5_clear_error_message (context);
 	return KRB5KDC_ERR_POLICY;
     }
     r->next = path;

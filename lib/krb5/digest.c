@@ -824,7 +824,7 @@ krb5_digest_get_session_key(krb5_context context,
 	return 0;
     ret = der_copy_octet_string(digest->response.session_key, data);
     if (ret)
-	krb5_clear_error_string(context);
+	krb5_clear_error_message(context);
 
     return ret;
 }
@@ -940,7 +940,7 @@ krb5_ntlm_init_get_challange(krb5_context context,
 
     ret = der_copy_octet_string(&ntlm->initReply.challange, challange);
     if (ret)
-	krb5_clear_error_string(context);
+	krb5_clear_error_message(context);
 
     return ret;
 }
@@ -954,7 +954,7 @@ krb5_ntlm_init_get_opaque(krb5_context context,
 
     ret = der_copy_octet_string(&ntlm->initReply.opaque, opaque);
     if (ret)
-	krb5_clear_error_string(context);
+	krb5_clear_error_message(context);
 
     return ret;
 }
@@ -966,7 +966,7 @@ krb5_ntlm_init_get_targetname(krb5_context context,
 {
     *name = strdup(ntlm->initReply.targetname);
     if (*name == NULL) {
-	krb5_clear_error_string(context);
+	krb5_clear_error_message(context);
 	return ENOMEM;
     }
     return 0;
@@ -988,7 +988,7 @@ krb5_ntlm_init_get_targetinfo(krb5_context context,
 			 ntlm->initReply.targetinfo->data,
 			 ntlm->initReply.targetinfo->length);
     if (ret) {
-	krb5_clear_error_string(context);
+	krb5_clear_error_message(context);
 	return ret;
     }
     return 0;
@@ -1161,7 +1161,7 @@ krb5_ntlm_rep_get_sessionkey(krb5_context context,
 			       N_("no ntlm session key", ""));
 	return EINVAL;
     }
-    krb5_clear_error_string(context);
+    krb5_clear_error_message(context);
     return krb5_data_copy(data,
 			  ntlm->response.sessionkey->data,
 			  ntlm->response.sessionkey->length);

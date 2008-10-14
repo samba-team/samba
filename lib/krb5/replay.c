@@ -220,7 +220,7 @@ krb5_rc_store(krb5_context context,
 	    continue;
 	if(memcmp(tmp.data, ent.data, sizeof(ent.data)) == 0){
 	    fclose(f);
-	    krb5_clear_error_string (context);
+	    krb5_clear_error_message (context);
 	    return KRB5_RC_REPLAY;
 	}
     }
@@ -265,7 +265,7 @@ krb5_rc_get_lifespan(krb5_context context,
 	*auth_lifespan = ent.stamp;
 	return 0;
     }
-    krb5_clear_error_string (context);
+    krb5_clear_error_message (context);
     return KRB5_RC_IO_UNKNOWN;
 }
 

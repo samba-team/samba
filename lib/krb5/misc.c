@@ -48,7 +48,7 @@ _krb5_s4u2self_to_checksumdata(krb5_context context,
 
     sp = krb5_storage_emem();
     if (sp == NULL) {
-	krb5_clear_error_string(context);
+	krb5_clear_error_message(context);
 	return ENOMEM;
     }
     krb5_storage_set_flags(sp, KRB5_STORAGE_BYTEORDER_LE);
@@ -81,6 +81,6 @@ _krb5_s4u2self_to_checksumdata(krb5_context context,
     return ret;
 
 out:
-    krb5_clear_error_string(context);
+    krb5_clear_error_message(context);
     return ret;
 }

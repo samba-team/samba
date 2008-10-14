@@ -113,17 +113,17 @@ krb5_decode_ap_req(krb5_context context,
 	return ret;
     if (ap_req->pvno != 5){
 	free_AP_REQ(ap_req);
-	krb5_clear_error_string (context);
+	krb5_clear_error_message (context);
 	return KRB5KRB_AP_ERR_BADVERSION;
     }
     if (ap_req->msg_type != krb_ap_req){
 	free_AP_REQ(ap_req);
-	krb5_clear_error_string (context);
+	krb5_clear_error_message (context);
 	return KRB5KRB_AP_ERR_MSG_TYPE;
     }
     if (ap_req->ticket.tkt_vno != 5){
 	free_AP_REQ(ap_req);
-	krb5_clear_error_string (context);
+	krb5_clear_error_message (context);
 	return KRB5KRB_AP_ERR_BADVERSION;
     }
     return 0;
@@ -209,7 +209,7 @@ find_etypelist(krb5_context context,
 			   etypes,
 			   NULL);
     if (ret)
-	krb5_clear_error_string(context);
+	krb5_clear_error_message(context);
 
     free_AD_IF_RELEVANT(&adIfRelevant);
 
@@ -240,12 +240,12 @@ krb5_decrypt_ticket(krb5_context context,
 	   || (t.flags.invalid
 	       && !(flags & KRB5_VERIFY_AP_REQ_IGNORE_INVALID))) {
 	    free_EncTicketPart(&t);
-	    krb5_clear_error_string (context);
+	    krb5_clear_error_message (context);
 	    return KRB5KRB_AP_ERR_TKT_NYV;
 	}
 	if(now - t.endtime > context->max_skew) {
 	    free_EncTicketPart(&t);
-	    krb5_clear_error_string (context);
+	    krb5_clear_error_message (context);
 	    return KRB5KRB_AP_ERR_TKT_EXPIRED;
 	}
 	
@@ -358,7 +358,7 @@ krb5_verify_ap_req2(krb5_context context,
     t = calloc(1, sizeof(*t));
     if (t == NULL) {
 	ret = ENOMEM;
-	krb5_clear_error_string (context);
+	krb5_clear_error_message (context);
 	goto out;
     }
 
@@ -414,7 +414,7 @@ krb5_verify_ap_req2(krb5_context context,
 	krb5_free_principal (context, p2);
 	if (!res) {
 	    ret = KRB5KRB_AP_ERR_BADMATCH;
-	    krb5_clear_error_string (context);
+	    krb5_clear_error_message (context);
 	    goto out;
 	}
     }
@@ -427,7 +427,7 @@ krb5_verify_ap_req2(krb5_context context,
 				 ac->remote_address,
 				 t->ticket.caddr)) {
 	ret = KRB5KRB_AP_ERR_BADADDR;
-	krb5_clear_error_string (context);
+	krb5_clear_error_message (context);
 	goto out;
     }
 
@@ -439,7 +439,7 @@ krb5_verify_ap_req2(krb5_context context,
 
 	if (abs(ac->authenticator->ctime - now) > context->max_skew) {
 	    ret = KRB5KRB_AP_ERR_SKEW;
-	    krb5_clear_error_string (context);
+	    krb5_clear_error_message (context);
 	    goto out;
 	}
     }
