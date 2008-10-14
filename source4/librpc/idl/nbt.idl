@@ -291,7 +291,7 @@ interface nbt
 		[switch_is(smb_command)]   smb_body body;
 	} dgram_smb_packet;
 
-    	const uint32 DGRAM_SMB = 0xff534d42; /* 0xffSMB */
+	const uint32 DGRAM_SMB = 0xff534d42; /* 0xffSMB */
 
 	typedef [nodiscriminant] union {
 		[case(DGRAM_SMB)] dgram_smb_packet smb;
@@ -334,47 +334,46 @@ interface nbt
 
 	/******************************************
 	 * \MAILSLOT\NET\NETLOGON mailslot requests
-	 * and 
-	 * \MAILSLOT\NET\NTLOGON mailslot requests 
+	 * and
+	 * \MAILSLOT\NET\NTLOGON mailslot requests
 	 */
 
 	typedef [public,gensize] struct {
-		uint32			sa_family;
+		uint32			sockaddr_family;
 		[flag(NDR_BIG_ENDIAN)]	ipv4address pdc_ip;
 		[flag(NDR_REMAINING)]	DATA_BLOB remaining;
 	} nbt_sockaddr;
 
 	typedef [bitmap32bit,public] bitmap {
-		NBT_SERVER_PDC           = 0x00000001,
-		NBT_SERVER_GC            = 0x00000004,
-		NBT_SERVER_LDAP          = 0x00000008,
-		NBT_SERVER_DS            = 0x00000010,
-		NBT_SERVER_KDC           = 0x00000020,
-		NBT_SERVER_TIMESERV      = 0x00000040,
-		NBT_SERVER_CLOSEST       = 0x00000080,
-		NBT_SERVER_WRITABLE      = 0x00000100, 
-		NBT_SERVER_GOOD_TIMESERV = 0x00000200,
-		NBT_SERVER_NDNC          = 0x00000400,
-		NBT_SERVER_SEL_SEC_DOM_6 = 0x00000800,
-		NBT_SERVER_FUL_SEC_DOM_6 = 0x00001000,
-		NBT_SERVER_DS_DNS_CONTR  = 0x04000000,
-		NBT_SERVER_DS_DNS_DOMAIN = 0x02000000,
-		NBT_SERVER_DS_DNS_FOREST = 0x01000000
+		NBT_SERVER_PDC				= 0x00000001,
+		NBT_SERVER_GC				= 0x00000004,
+		NBT_SERVER_LDAP				= 0x00000008,
+		NBT_SERVER_DS				= 0x00000010,
+		NBT_SERVER_KDC				= 0x00000020,
+		NBT_SERVER_TIMESERV			= 0x00000040,
+		NBT_SERVER_CLOSEST			= 0x00000080,
+		NBT_SERVER_WRITABLE			= 0x00000100,
+		NBT_SERVER_GOOD_TIMESERV		= 0x00000200,
+		NBT_SERVER_NDNC				= 0x00000400,
+		NBT_SERVER_SELECT_SECRET_DOMAIN_6	= 0x00000800,
+		NBT_SERVER_FULL_SECRET_DOMAIN_6		= 0x00001000,
+		NBT_SERVER_DS_DNS_CONTR  		= 0x04000000,
+		NBT_SERVER_DS_DNS_DOMAIN 		= 0x02000000,
+		NBT_SERVER_DS_DNS_FOREST 		= 0x01000000
 	} nbt_server_type;
 
 	typedef [bitmap32bit,public] bitmap {
-		NETLOGON_NT_VERSION_1   =  0x00000001,
-		NETLOGON_NT_VERSION_5   =  0x00000002,
-		NETLOGON_NT_VERSION_5EX =  0x00000004,
-		NETLOGON_NT_VERSION_5EX_WITH_IP = 0x00000008,
-		NETLOGON_NT_VERSION_WITH_CLOSEST_SITE = 0x00000010,
-		NETLOGON_NT_VERSION_AVIOD_NT4EMUL = 0x01000000,
-		NETLOGON_NT_VERSION_PDC = 0x10000000,
-		NETLOGON_NT_VERSION_IP = 0x20000000,
-		NETLOGON_NT_VERSION_LOCAL = 0x40000000,
-		NETLOGON_NT_VERSION_GC = 0x80000000
+		NETLOGON_NT_VERSION_1			= 0x00000001,
+		NETLOGON_NT_VERSION_5			= 0x00000002,
+		NETLOGON_NT_VERSION_5EX			= 0x00000004,
+		NETLOGON_NT_VERSION_5EX_WITH_IP		= 0x00000008,
+		NETLOGON_NT_VERSION_WITH_CLOSEST_SITE	= 0x00000010,
+		NETLOGON_NT_VERSION_AVIOD_NT4EMUL	= 0x01000000,
+		NETLOGON_NT_VERSION_PDC			= 0x10000000,
+		NETLOGON_NT_VERSION_IP			= 0x20000000,
+		NETLOGON_NT_VERSION_LOCAL		= 0x40000000,
+		NETLOGON_NT_VERSION_GC			= 0x80000000
 	} netlogon_nt_version_flags;
-
 
 	typedef [enum16bit,public] enum {
 		LOGON_PRIMARY_QUERY               = 7,	/* Was also NETLOGON_QUERY_FOR_PDC */
@@ -382,10 +381,10 @@ interface nbt
 		NETLOGON_RESPONSE_FROM_PDC        = 12,
 		LOGON_SAM_LOGON_REQUEST           = 18, /* Was also NETLOGON_QUERY_FOR_PDC2, NTLOGON_SAM_LOGON */
 		LOGON_SAM_LOGON_RESPONSE          = 19, /* Was also NTLOGON_SAM_LOGON_REPLY */
-		LOGON_SAM_LOGON_PAUSE_RESPONSE    = 20, 
+		LOGON_SAM_LOGON_PAUSE_RESPONSE    = 20,
 		LOGON_SAM_LOGON_USER_UNKNOWN      = 21, /* Was also NTLOGON_SAM_LOGON_REPLY15 */
 		LOGON_SAM_LOGON_RESPONSE_EX       = 23,  /* was NETLOGON_RESPONSE_FROM_PDC2     */
-		LOGON_SAM_LOGON_PAUSE_RESPONSE_EX = 24, 
+		LOGON_SAM_LOGON_PAUSE_RESPONSE_EX = 24,
 		LOGON_SAM_LOGON_USER_UNKNOWN_EX   = 25 /* was NETLOGON_RESPONSE_FROM_PDC_USER */
 	} netlogon_command;
 
@@ -437,7 +436,7 @@ interface nbt
 		nbt_server_type      server_type;
 		netlogon_nt_version_flags    nt_version;
 		uint16               lmnt_token;
-		uint16               lm20_token;		
+		uint16               lm20_token;
 	} NETLOGON_SAM_LOGON_RESPONSE;
 
 	/* response from pdc hand marshaled (we have an additional
@@ -458,11 +457,11 @@ interface nbt
 		nbt_string           client_site;
 
 		/* Optional on NETLOGON_NT_VERSION_5EX_WITH_IP */
-		 [value(ndr_size_nbt_sockaddr(&sockaddr, ndr->flags))] uint8 sockaddr_size; 
-		 [subcontext(0),subcontext_size(sockaddr_size)] nbt_sockaddr sockaddr;
-		
+		[value(ndr_size_nbt_sockaddr(&sockaddr, ndr->flags))] uint8 sockaddr_size;
+		[subcontext(0),subcontext_size(sockaddr_size)] nbt_sockaddr sockaddr;
+
 		/* Optional on NETLOGON_NT_VERSION_WITH_CLOSEST_SITE */
-		 nbt_string           next_closest_site;
+		nbt_string           next_closest_site;
 
 		netlogon_nt_version_flags               nt_version;
 		uint16               lmnt_token;
@@ -548,7 +547,7 @@ interface nbt
 	/********************************************************/
 	typedef bitmap svcctl_ServerType svcctl_ServerType;
 
-	typedef [enum8bit] enum { 
+	typedef [enum8bit] enum {
 		HostAnnouncement 	= 1,
 		AnnouncementRequest	= 2,
 		Election		= 8,
@@ -576,7 +575,7 @@ interface nbt
 
 	typedef struct {
 		uint8 Unused;
-		astring ResponseName; 
+		astring ResponseName;
 	} nbt_browse_announcement_request;
 
 	typedef struct {
@@ -584,7 +583,7 @@ interface nbt
 		uint32 Criteria;
 		uint32 UpTime; /* In milliseconds */
 		uint32 Reserved; /* Must be zero */
-		astring ServerName; 
+		astring ServerName;
 	} nbt_browse_election_request;
 
 	typedef struct {
@@ -649,6 +648,6 @@ interface nbt
 
 	typedef [public,flag(NDR_NOALIGN)] struct {
 		nbt_browse_opcode opcode;
-		[switch_is(opcode)] nbt_browse_payload payload;	
+		[switch_is(opcode)] nbt_browse_payload payload;
 	} nbt_browse_packet;
 }

@@ -280,10 +280,10 @@ static bool test_cldap_netlogon_flags(struct torture_context *tctx,
 		printf("NBT_SERVER_GOOD_TIMESERV ");
 	if (server_type & NBT_SERVER_NDNC)
 		printf("NBT_SERVER_NDNC ");
-	if (server_type & NBT_SERVER_SEL_SEC_DOM_6)
-		printf("NBT_SERVER_SEL_SEC_DOM_6 ");
-	if (server_type & NBT_SERVER_FUL_SEC_DOM_6)
-		printf("NBT_SERVER_FUL_SEC_DOM_6 ");
+	if (server_type & NBT_SERVER_SELECT_SECRET_DOMAIN_6)
+		printf("NBT_SERVER_SELECT_SECRET_DOMAIN_6");
+	if (server_type & NBT_SERVER_FULL_SECRET_DOMAIN_6)
+		printf("NBT_SERVER_FULL_SECRET_DOMAIN_6");
 	if (server_type & NBT_SERVER_DS_DNS_CONTR)
 		printf("NBT_SERVER_DS_DNS_CONTR ");
 	if (server_type & NBT_SERVER_DS_DNS_DOMAIN)
