@@ -217,14 +217,13 @@ krb5_get_validated_creds(krb5_context context,
 			 krb5_creds *creds,
 			 krb5_principal client,
 			 krb5_ccache ccache,
-			 char *service);
+			 char *service)
 {
     krb5_verify_init_creds_opt vopt;
     krb5_principal server;
     krb5_error_code ret;
-    krb5_ccache id;
 
-    if (krb5_principal_compare(creds->client, client) != TRUE) {
+    if (krb5_principal_compare(context, creds->client, client) != TRUE) {
 	krb5_set_error_message(context, KRB5_PRINC_NOMATCH,
 			       N_("Validation credentials and client "
 				  "doesn't match", ""));
