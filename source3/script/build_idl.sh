@@ -20,11 +20,11 @@ for f in ${IDL_FILES}; do
 	ndr="librpc/gen_ndr/ndr_$basename.c"
 
 	if [ -f $ndr ]; then
-		if [ "x`find librpc/idl/$f -newer $ndr -print`" = "xlibrpc/idl/$f" ]; then
-			list="$list librpc/idl/$f"
+		if [ "x`find ${IDL_PATH}/$f -newer $ndr -print`" = "x${IDL_PATH}/$f" ]; then
+			list="$list ${IDL_PATH}/$f"
 		fi
 	else 
-		list="$list librpc/idl/$f"
+		list="$list ${IDL_PATH}/$f"
 	fi
 done
 
