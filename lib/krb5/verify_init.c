@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2002 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2008 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  *
@@ -194,6 +194,52 @@ cleanup:
 
     if (ret == 0 && ccache != NULL && *ccache == NULL)
 	*ccache = local_ccache;
+
+    return ret;
+}
+
+/**
+ * Validate the newly fetch credential, see also krb5_verify_init_creds().
+ * 
+ * @param context a Kerberos 5 context
+ * @param creds the credentials to verify
+ * @param client the client name to match up
+ * @param ccache the credential cache to use 
+ * @param service a service name to use, used with
+ *        krb5_sname_to_principal() to build a hostname to use to
+ *        verify.
+ *
+ * @ingroup krb5_ccache
+ */
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_get_validated_creds(krb5_context context,
+			 krb5_creds *creds,
+			 krb5_principal client,
+			 krb5_ccache ccache,
+			 char *service);
+{
+    krb5_verify_init_creds_opt vopt;
+    krb5_principal server;
+    krb5_error_code ret;
+    krb5_ccache id;
+
+    if (krb5_principal_compare(creds->client, client) != TRUE) {
+	krb5_set_error_message(context, KRB5_PRINC_NOMATCH,
+			       N_("Validation credentials and client "
+				  "doesn't match", ""));
+	return KRB5_PRINC_NOMATCH;
+    }
+
+    ret = krb5_sname_to_principal (context, NULL, service, 
+				   KRB5_NT_SRV_HST, &server);
+    if(ret)
+	return ret;
+
+    krb5_verify_init_creds_opt_init(&vopt);
+
+    ret = krb5_verify_init_creds(context, creds, server, NULL, NULL, &vopt);
+    krb5_free_principal(context, server);
 
     return ret;
 }
