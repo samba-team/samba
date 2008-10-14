@@ -364,7 +364,7 @@ NDR_WINBIND_OBJ_FILES = $(gen_ndrsrcdir)/ndr_winbind.o
 #PUBLIC_HEADERS += $(gen_ndrsrcdir)/winbind.h
 
 $(librpcsrcdir)/idl-deps:
-	$(PERL) $(librpcsrcdir)/idl-deps.pl $(librpcsrcdir)/idl/*.idl >$@
+	$(PERL) $(librpcsrcdir)/idl-deps.pl $(librpcsrcdir)/idl/*.idl ../librpc/idl/*.idl >$@
 
 clean:: 
 	rm -f $(librpcsrcdir)/idl-deps
@@ -745,9 +745,9 @@ $(IDL_HEADER_FILES) $(IDL_NDR_PARSE_H_FILES) $(IDL_NDR_PARSE_C_FILES) \
 	$(IDL_NDR_PY_C_FILES) $(IDL_NDR_PY_H_FILES): idl
 
 idl_full:: $(pidldir)/lib/Parse/Pidl/IDL.pm $(pidldir)/lib/Parse/Pidl/Expr.pm 
-	@CPP="$(CPP)" PIDL="$(PIDL)" $(librpcsrcdir)/scripts/build_idl.sh FULL $(librpcsrcdir)/gen_ndr $(librpcsrcdir)/idl/*.idl
+	@CPP="$(CPP)" PIDL="$(PIDL)" $(librpcsrcdir)/scripts/build_idl.sh FULL $(librpcsrcdir)/gen_ndr $(librpcsrcdir)/idl/*.idl ../librpc/idl/*.idl
 
 idl:: $(pidldir)/lib/Parse/Pidl/IDL.pm $(pidldir)/lib/Parse/Pidl/Expr.pm 
-	@CPP="$(CPP)" PIDL="$(PIDL)" $(librpcsrcdir)/scripts/build_idl.sh PARTIAL $(librpcsrcdir)/gen_ndr $(librpcsrcdir)/idl/*.idl
+	@CPP="$(CPP)" PIDL="$(PIDL)" $(librpcsrcdir)/scripts/build_idl.sh PARTIAL $(librpcsrcdir)/gen_ndr $(librpcsrcdir)/idl/*.idl ../librpc/idl/*.idl
 
 
