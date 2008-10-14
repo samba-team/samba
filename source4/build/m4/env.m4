@@ -77,7 +77,6 @@ m4_include(build/m4/check_python.m4)
 
 m4_include(build/m4/ac_pkg_swig.m4)
 
-
 AC_PROG_SWIG(1.3.36)
 
 AC_SAMBA_PYTHON_DEVEL([

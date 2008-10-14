@@ -6220,7 +6220,7 @@ fi
 
 AC_ARG_ENABLE(merged-build, 
 [AS_HELP_STRING([--enable-merged-build], [Build Samba 4 as well])], 
-[], [ enable_merged_build=auto ])
+[ enable_merged_build=$enableval ], [ enable_merged_build=auto ])
 
 if test x$enable_merged_build = xauto; then
 	merged_build_possible=yes
