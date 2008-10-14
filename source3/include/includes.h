@@ -286,24 +286,14 @@ typedef int ber_int_t;
 #endif
 
 /*
- * Define VOLATILE if needed.
- */
-
-#if defined(HAVE_VOLATILE)
-#define VOLATILE volatile
-#else
-#define VOLATILE
-#endif
-
-/*
  * Define additional missing types
  */
 #if defined(HAVE_SIG_ATOMIC_T_TYPE) && defined(AIX)
 typedef sig_atomic_t SIG_ATOMIC_T;
 #elif defined(HAVE_SIG_ATOMIC_T_TYPE) && !defined(AIX)
-typedef sig_atomic_t VOLATILE SIG_ATOMIC_T;
+typedef sig_atomic_t volatile SIG_ATOMIC_T;
 #else
-typedef int VOLATILE SIG_ATOMIC_T;
+typedef int volatile SIG_ATOMIC_T;
 #endif
 
 #ifndef uchar
