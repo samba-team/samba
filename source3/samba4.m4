@@ -21,7 +21,7 @@ m4_include(lib/zlib.m4)
 
 AC_CONFIG_FILES(../source4/lib/registry/registry.pc)
 AC_CONFIG_FILES(../source4/librpc/dcerpc.pc)
-AC_CONFIG_FILES(../source4/librpc/ndr.pc)
+AC_CONFIG_FILES(../librpc/ndr.pc)
 AC_CONFIG_FILES(../source4/lib/torture/torture.pc)
 AC_CONFIG_FILES(../source4/auth/gensec/gensec.pc)
 AC_CONFIG_FILES(../source4/param/samba-hostconfig.pc)
