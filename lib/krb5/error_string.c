@@ -38,8 +38,16 @@ RCSID("$Id$");
 #undef __attribute__
 #define __attribute__(X)
 
+/**
+ * Clears the error message from the Kerberos 5 context.
+ *
+ * @param context The Kerberos 5 context to clear
+ *
+ * @ingroup krb5_error
+ */
+
 void KRB5_LIB_FUNCTION
-krb5_clear_error_string(krb5_context context)
+krb5_clear_error_message(krb5_context context)
 {
     HEIMDAL_MUTEX_lock(context->mutex);
     if (context->error_string)
@@ -91,7 +99,7 @@ krb5_vset_error_message (krb5_context context, krb5_error_code ret,
     __attribute__ ((format (printf, 3, 0)))
 {
 
-    krb5_clear_error_string(context);
+    krb5_clear_error_message(context);
     HEIMDAL_MUTEX_lock(context->mutex);
     context->error_code = ret;
     vasprintf(&context->error_string, fmt, args);
@@ -247,6 +255,13 @@ krb5_vset_error_string(krb5_context context, const char *fmt, va_list args)
 {
     krb5_vset_error_message(context, 0, fmt, args);
     return 0;
+}
+
+void KRB5_LIB_FUNCTION
+krb5_clear_error_string(krb5_context context)
+     __attribute__((deprecated))
+{
+    return krb5_clear_error_message(context);
 }
 
 #endif /* !HEIMDAL_SMALLER */
