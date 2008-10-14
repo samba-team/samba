@@ -7,12 +7,6 @@ AC_ARG_VAR([PYTHON_VERSION],[The installed Python
 
 AC_PROG_SWIG(1.3.36)
 
-AC_PATH_PROG([PYTHON],[python[$PYTHON_VERSION]])
-if test -z "$PYTHON"; then
-	working_python=no
-	AC_MSG_WARN([No python found])
-fi
-
 AC_DEFUN([TRY_LINK_PYTHON],
 [
 	if test $working_python = no; then
@@ -36,45 +30,68 @@ AC_DEFUN([TRY_LINK_PYTHON],
 	fi
 ])
 
-dnl assume no working python
-working_python=no
-
-if test -z "$PYTHON_VERSION"; then 
-	AC_PATH_PROGS([PYTHON_CONFIG], [python2.6-config python2.5-config python2.4-config python-config])
-else 
-	AC_PATH_PROG([PYTHON_CONFIG], [python[$PYTHON_VERSION]-config])
-fi
-
-if test -z "$PYTHON_CONFIG"; then
-	AC_MSG_WARN([No python-config found])
-else
-	TRY_LINK_PYTHON([`$PYTHON_CONFIG --ldflags`], [`$PYTHON_CONFIG --includes`])
-	TRY_LINK_PYTHON([`$PYTHON_CONFIG --ldflags`], [`$PYTHON_CONFIG --cflags`])
-	if test x$working_python = xno; then
-		# It seems the library path isn't included on some systems
-		base=`$PYTHON_CONFIG --prefix`
-       	TRY_LINK_PYTHON([`echo -n -L${base}/lib " "; $PYTHON_CONFIG --ldflags`], [`$PYTHON_CONFIG --includes`])
-       	TRY_LINK_PYTHON([`echo -n -L${base}/lib " "; $PYTHON_CONFIG --ldflags`], [`$PYTHON_CONFIG --cflags`])
+dnl Try to find a Python implementation including header files
+dnl AC_SAMBA_PYTHON_DEVEL(RUN-IF-FOUND, RUN-IF-NOT-FOUND)
+dnl
+dnl Will set the following variables:
+dnl $PYTHON
+dnl $PYTHON_CONFIG (if found)
+dnl $PYTHON_CFLAGS
+dnl $PYTHON_LDFLAGS
+AC_DEFUN([AC_SAMBA_PYTHON_DEVEL],
+[
+	AC_PATH_PROG([PYTHON],[python[$PYTHON_VERSION]])
+	if test -z "$PYTHON"; then
+		working_python=no
+		AC_MSG_WARN([No python found])
 	fi
-fi
 
-if test x$PYTHON != x
-then
-	DISTUTILS_CFLAGS=`$PYTHON -c "from distutils import sysconfig; print '-I%s -I%s %s' % (sysconfig.get_python_inc(), sysconfig.get_python_inc(plat_specific=1), sysconfig.get_config_var('CFLAGS'))"`
-	DISTUTILS_LDFLAGS=`$PYTHON -c "from distutils import sysconfig; print '%s %s -lpython%s -L%s' % (sysconfig.get_config_var('LIBS'), sysconfig.get_config_var('SYSLIBS'), sysconfig.get_config_var('VERSION'), sysconfig.get_config_var('LIBPL'))"`
-	TRY_LINK_PYTHON($DISTUTILS_LDFLAGS, $DISTUTILS_CFLAGS)
-fi
+	dnl assume no working python
+	working_python=no
 
+	if test -z "$PYTHON_VERSION"; then 
+		AC_PATH_PROGS([PYTHON_CONFIG], [python2.6-config python2.5-config python2.4-config python-config])
+	else 
+		AC_PATH_PROG([PYTHON_CONFIG], [python[$PYTHON_VERSION]-config])
+	fi
+
+	if test -z "$PYTHON_CONFIG"; then
+		AC_MSG_WARN([No python-config found])
+	else
+		TRY_LINK_PYTHON([`$PYTHON_CONFIG --ldflags`], [`$PYTHON_CONFIG --includes`])
+		TRY_LINK_PYTHON([`$PYTHON_CONFIG --ldflags`], [`$PYTHON_CONFIG --cflags`])
+		if test x$working_python = xno; then
+			# It seems the library path isn't included on some systems
+			base=`$PYTHON_CONFIG --prefix`
+			TRY_LINK_PYTHON([`echo -n -L${base}/lib " "; $PYTHON_CONFIG --ldflags`], [`$PYTHON_CONFIG --includes`])
+			TRY_LINK_PYTHON([`echo -n -L${base}/lib " "; $PYTHON_CONFIG --ldflags`], [`$PYTHON_CONFIG --cflags`])
+		fi
+	fi
+
+	if test x$PYTHON != x
+	then
+		DISTUTILS_CFLAGS=`$PYTHON -c "from distutils import sysconfig; print '-I%s -I%s %s' % (sysconfig.get_python_inc(), sysconfig.get_python_inc(plat_specific=1), sysconfig.get_config_var('CFLAGS'))"`
+		DISTUTILS_LDFLAGS=`$PYTHON -c "from distutils import sysconfig; print '%s %s -lpython%s -L%s' % (sysconfig.get_config_var('LIBS'), sysconfig.get_config_var('SYSLIBS'), sysconfig.get_config_var('VERSION'), sysconfig.get_config_var('LIBPL'))"`
+		TRY_LINK_PYTHON($DISTUTILS_LDFLAGS, $DISTUTILS_CFLAGS)
+	fi
+
+	AC_MSG_CHECKING(working python module support)
+	if test $working_python = yes; then
+		AC_MSG_RESULT([yes])
+		$1
+	else
+		AC_MSG_RESULT([no])
+		$2
+	fi
+])
+
+AC_SAMBA_PYTHON_DEVEL([
 SMB_EXT_LIB(EXT_LIB_PYTHON, [$PYTHON_LDFLAGS], [$PYTHON_CFLAGS])
-
-AC_MSG_CHECKING(working python module support)
-if test $working_python = yes; then
-	SMB_ENABLE(EXT_LIB_PYTHON,YES)
-	SMB_ENABLE(LIBPYTHON,YES)
-	AC_MSG_RESULT([yes])
-else
-	AC_MSG_ERROR([Python not found. Please install Python 2.x and its development headers/libraries.])
-fi
+SMB_ENABLE(EXT_LIB_PYTHON,YES)
+SMB_ENABLE(LIBPYTHON,YES)
+],[
+AC_MSG_ERROR([Python not found. Please install Python 2.x and its development headers/libraries.])
+])
 
 AC_MSG_CHECKING(python library directory)
 pythondir=`$PYTHON -c "from distutils import sysconfig; print sysconfig.get_python_lib(1, 0, '\\${prefix}')"`
