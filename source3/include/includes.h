@@ -310,12 +310,6 @@ typedef int VOLATILE SIG_ATOMIC_T;
 #define uchar unsigned char
 #endif
 
-#ifdef HAVE_UNSIGNED_CHAR
-#define schar signed char
-#else
-#define schar char
-#endif
-
 /*
    Samba needs type definitions for int16, int32, uint16 and uint32.
 
