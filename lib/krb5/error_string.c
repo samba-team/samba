@@ -257,6 +257,15 @@ krb5_vset_error_string(krb5_context context, const char *fmt, va_list args)
     return 0;
 }
 
+/**
+ * Clar the error message returned by krb5_get_error_string(),
+ * deprecated, use krb5_clear_error_message().
+ *
+ * @param context Kerberos context
+ *
+ * @ingroup krb5_deprecated
+ */
+
 void KRB5_LIB_FUNCTION
 krb5_clear_error_string(krb5_context context)
      __attribute__((deprecated))
