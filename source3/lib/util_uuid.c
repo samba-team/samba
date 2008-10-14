@@ -20,12 +20,6 @@
 
 #include "includes.h"
 
-/*
- * Offset between 15-Oct-1582 and 1-Jan-70
- */
-#define TIME_OFFSET_HIGH 0x01B21DD2
-#define TIME_OFFSET_LOW  0x13814000
-
 void smb_uuid_pack(const struct GUID uu, UUID_FLAT *ptr)
 {
 	SIVAL(ptr->info, 0, uu.time_low);
@@ -53,51 +47,6 @@ void smb_uuid_generate_random(struct GUID *uu)
 
 	uu->clock_seq[0] = (uu->clock_seq[0] & 0x3F) | 0x80;
 	uu->time_hi_and_version = (uu->time_hi_and_version & 0x0FFF) | 0x4000;
-}
-
-bool smb_string_to_uuid(const char *in, struct GUID* uu)
-{
-	bool ret = False;
-	const char *ptr = in;
-	char *end = (char *)in;
-	int i;
-	unsigned v1, v2;
-
-	if (!in || !uu) goto out;
-
-	uu->time_low = strtoul(ptr, &end, 16);
-	if ((end - ptr) != 8 || *end != '-') goto out;
-	ptr = (end + 1);
-
-	uu->time_mid = strtoul(ptr, &end, 16);
-	if ((end - ptr) != 4 || *end != '-') goto out;
-	ptr = (end + 1);
-
-	uu->time_hi_and_version = strtoul(ptr, &end, 16);
-	if ((end - ptr) != 4 || *end != '-') goto out;
-	ptr = (end + 1);
-
-	if (sscanf(ptr, "%02x%02x", &v1, &v2) != 2) {
-		goto out;
-	}
-	uu->clock_seq[0] = v1;
-	uu->clock_seq[1] = v2;
-	ptr += 4;
-
-	if (*ptr != '-') goto out;
-	ptr++;
-
-	for (i = 0; i < 6; i++) {
-		if (sscanf(ptr, "%02x", &v1) != 1) {
-			goto out;
-		}
-		uu->node[i] = v1;
-		ptr += 2;
-	}
-
-	ret = True;
-out:
-        return ret;
 }
 
 /*****************************************************************

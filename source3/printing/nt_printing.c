@@ -3536,7 +3536,7 @@ bool is_printer_published(Printer_entry *print_hnd, int snum,
 		case REG_SZ:		
 			rpcstr_pull( guid_str, regval_data_p(guid_val), 
 				     sizeof(guid_str)-1, -1, STR_TERMINATE );
-			ret = smb_string_to_uuid( guid_str, guid );
+			ret = NT_STATUS_IS_OK(GUID_from_string( guid_str, guid ));
 			break;			
 		case REG_BINARY:
 			if ( regval_size(guid_val) != sizeof(struct GUID) ) {
