@@ -112,7 +112,6 @@ static NTSTATUS server_check_password(struct auth_method_context *ctx,
 	NTSTATUS nt_status;
 	struct auth_serversupplied_info *server_info;
 	struct cli_credentials *creds;
-	const char *user;
 	struct smb_composite_sesssetup session_setup;
 
 	struct smbcli_session *session = talloc_get_type(ctx->private_data, struct smbcli_session);
