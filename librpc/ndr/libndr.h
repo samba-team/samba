@@ -26,9 +26,11 @@
 #define __LIBNDR_H__
 
 #include <talloc.h>
-#include "../lib/util/util.h" /* for discard_const */
 #include <sys/time.h>
+#if _SAMBA_BUILD_ == 4
+#include "../lib/util/util.h" /* for discard_const */
 #include "lib/charset/charset.h"
+#endif
 
 /*
   this provides definitions for the libcli/rpc/ MSRPC library
@@ -300,7 +302,9 @@ typedef enum ndr_err_code (*ndr_pull_flags_fn_t)(struct ndr_pull *, int ndr_flag
 typedef void (*ndr_print_fn_t)(struct ndr_print *, const char *, const void *);
 typedef void (*ndr_print_function_t)(struct ndr_print *, const char *, int, const void *);
 
+#if _SAMBA_BUILD_ == 4
 #include "libcli/util/error.h"
+#endif
 #include "librpc/gen_ndr/misc.h"
 
 extern const struct ndr_syntax_id ndr_transfer_syntax;
