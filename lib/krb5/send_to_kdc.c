@@ -499,6 +499,16 @@ krb5_set_send_to_kdc_func(krb5_context context,
     return 0;
 }
 
+krb5_error_code KRB5_LIB_FUNCTION
+_krb5_copy_send_to_kdc_func(krb5_context context, krb5_context to)
+{
+    return krb5_set_send_to_kdc_func(to,
+				     context->send_to_kdc->func, 
+				     context->send_to_kdc->data);
+}
+
+
+
 struct krb5_sendto_ctx_data {
     int flags;
     int type;
