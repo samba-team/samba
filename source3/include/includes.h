@@ -310,15 +310,11 @@ typedef int volatile SIG_ATOMIC_T;
 */
 
 #ifndef uint8
-#define uint8 unsigned char
+#define uint8 uint8_t
 #endif
 
 #if !defined(int16) && !defined(HAVE_INT16_FROM_RPC_RPC_H)
-#  if (SIZEOF_SHORT == 4)
-#    define int16 __ERROR___CANNOT_DETERMINE_TYPE_FOR_INT16;
-#  else /* SIZEOF_SHORT != 4 */
-#    define int16 short
-#  endif /* SIZEOF_SHORT != 4 */
+#  define int16 int16_t
    /* needed to work around compile issue on HP-UX 11.x */
 #  define _INT16	1
 #endif
@@ -328,25 +324,13 @@ typedef int volatile SIG_ATOMIC_T;
  * case as int16 may be a typedef from rpc/rpc.h
  */
 
+
 #if !defined(uint16) && !defined(HAVE_UINT16_FROM_RPC_RPC_H)
-#if (SIZEOF_SHORT == 4)
-#define uint16 __ERROR___CANNOT_DETERMINE_TYPE_FOR_INT16;
-#else /* SIZEOF_SHORT != 4 */
-#define uint16 unsigned short
-#endif /* SIZEOF_SHORT != 4 */
+#  define uint16 uint16_t
 #endif
 
 #if !defined(int32) && !defined(HAVE_INT32_FROM_RPC_RPC_H)
-#  if (SIZEOF_INT == 4)
-#    define int32 int
-#  elif (SIZEOF_LONG == 4)
-#    define int32 long
-#  elif (SIZEOF_SHORT == 4)
-#    define int32 short
-#  else
-     /* uggh - no 32 bit type?? probably a CRAY. just hope this works ... */
-#    define int32 int
-#  endif
+#  define int32 int32_t
    /* needed to work around compile issue on HP-UX 11.x */
 #  define _INT32	1
 #endif
@@ -357,16 +341,7 @@ typedef int volatile SIG_ATOMIC_T;
  */
 
 #if !defined(uint32) && !defined(HAVE_UINT32_FROM_RPC_RPC_H)
-#if (SIZEOF_INT == 4)
-#define uint32 unsigned int
-#elif (SIZEOF_LONG == 4)
-#define uint32 unsigned long
-#elif (SIZEOF_SHORT == 4)
-#define uint32 unsigned short
-#else
-/* uggh - no 32 bit type?? probably a CRAY. just hope this works ... */
-#define uint32 unsigned
-#endif
+#  define uint32 uint32_t
 #endif
 
 /*
@@ -374,19 +349,11 @@ typedef int volatile SIG_ATOMIC_T;
  */
 
 #if !defined(uint64)
-#if (SIZEOF_LONG == 8)
-#define uint64 unsigned long
-#elif (SIZEOF_LONG_LONG == 8)
-#define uint64 unsigned long long
-#endif	/* don't lie.  If we don't have it, then don't use it */
+#  define uint64 uint64_t
 #endif
 
 #if !defined(int64)
-#if (SIZEOF_LONG == 8)
-#define int64 long
-#elif (SIZEOF_LONG_LONG == 8)
-#define int64 long long
-#endif	/* don't lie.  If we don't have it, then don't use it */
+#  define int64 int64_t
 #endif
 
 
