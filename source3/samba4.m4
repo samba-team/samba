@@ -3,6 +3,26 @@ AC_SUBST(BLDSHARED)
 smbtorture4_path=bin/smbtorture4
 m4_include(build/m4/public.m4)
 
+m4_include(build/m4/check_python.m4)
+
+m4_include(build/m4/ac_pkg_swig.m4)
+
+AC_PROG_SWIG(1.3.36)
+
+AC_SAMBA_PYTHON_DEVEL([
+SMB_EXT_LIB(EXT_LIB_PYTHON, [$PYTHON_LDFLAGS], [$PYTHON_CFLAGS])
+SMB_ENABLE(EXT_LIB_PYTHON,YES)
+SMB_ENABLE(LIBPYTHON,YES)
+],[
+AC_MSG_ERROR([Python not found. Please install Python 2.x and its development headers/libraries.])
+])
+
+AC_MSG_CHECKING(python library directory)
+pythondir=`$PYTHON -c "from distutils import sysconfig; print sysconfig.get_python_lib(1, 0, '\\${prefix}')"`
+AC_MSG_RESULT($pythondir)
+
+AC_SUBST(pythondir)
+
 m4_include(lib/smbreadline/readline.m4)
 m4_include(heimdal_build/internal.m4)
 m4_include(../lib/util/fault.m4)
@@ -21,7 +41,7 @@ m4_include(lib/zlib.m4)
 
 AC_CONFIG_FILES(../source4/lib/registry/registry.pc)
 AC_CONFIG_FILES(../source4/librpc/dcerpc.pc)
-AC_CONFIG_FILES(../source4/librpc/ndr.pc)
+AC_CONFIG_FILES(../librpc/ndr.pc)
 AC_CONFIG_FILES(../source4/lib/torture/torture.pc)
 AC_CONFIG_FILES(../source4/auth/gensec/gensec.pc)
 AC_CONFIG_FILES(../source4/param/samba-hostconfig.pc)
@@ -87,7 +107,6 @@ eventsdir="../source4/lib/events"
 m4_include(lib/events/libevents.m4)
 
 dnl m4_include(auth/kerberos/config.m4)
-m4_include(scripting/python/config.m4)
 m4_include(auth/gensec/config.m4)
 m4_include(smbd/process_model.m4)
 m4_include(ntvfs/posix/config.m4)

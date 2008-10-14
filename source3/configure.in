@@ -6219,7 +6219,29 @@ MSG
 fi
 
 AC_ARG_ENABLE(merged-build, 
-[AS_HELP_STRING([--enable-merged-build], [Build Samba 4 as well])])
+[AS_HELP_STRING([--enable-merged-build], [Build Samba 4 as well])], 
+[ enable_merged_build=$enableval ], [ enable_merged_build=auto ])
+
+if test x$enable_merged_build = xauto; then
+	merged_build_possible=yes
+
+	# Check for GNU make
+	m4_include(../source4/build/m4/check_make.m4)
+	AC_SAMBA_GNU_MAKE([true], [merged_build_possible=no])
+
+	# Check for perl
+	m4_include(../source4/build/m4/check_perl.m4)
+	AC_SAMBA_PERL([true], [merged_build_possible=no])
+
+	# Check for python
+	m4_include(../source4/build/m4/check_python.m4)
+	AC_SAMBA_PYTHON_DEVEL([true], [merged_build_possible=no])
+
+	AC_MSG_CHECKING([whether it would be possible to do a merged build])
+	AC_MSG_RESULT([$merged_build_possible])
+
+	dnl FIXME: enable_merged_build=$merged_build_possible
+fi
 
 if test x$enable_merged_build = xyes; then
 	MERGED_BUILD=1
