@@ -56,6 +56,54 @@
 #include <inttypes.h>
 #endif
 
+#ifndef __PRI64_PREFIX
+# if __WORDSIZE == 64
+#  define __PRI64_PREFIX	"l"
+# else
+#  define __PRI64_PREFIX	"ll"
+# endif
+#endif
+
+/* Decimal notation.  */
+#ifndef PRId8
+# define PRId8		"d"
+#endif
+#ifndef PRId16
+# define PRId16		"d"
+#endif
+#ifndef PRId32
+# define PRId32		"d"
+#endif
+#ifndef PRId64
+# define PRId64		__PRI64_PREFIX "d"
+#endif
+
+#ifndef PRIi8
+# define PRIi8		"i"
+#endif
+#ifndef PRIi8
+# define PRIi16		"i"
+#endif
+#ifndef PRIi8
+# define PRIi32		"i"
+#endif
+#ifndef PRIi8
+# define PRIi64		__PRI64_PREFIX "i"
+#endif
+
+#ifndef PRIu8
+# define PRIu8		"u"
+#endif
+#ifndef PRIu16
+# define PRIu16		"u"
+#endif
+#ifndef PRIu32
+# define PRIu32		"u"
+#endif
+#ifndef PRIu64
+# define PRIu64		__PRI64_PREFIX "u"
+#endif
+
 #ifdef HAVE_STRING_H
 #include <string.h>
 #endif
