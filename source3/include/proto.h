@@ -1762,7 +1762,6 @@ int islower_ascii(int c);
 
 void smb_uuid_pack(const struct GUID uu, UUID_FLAT *ptr);
 void smb_uuid_unpack(const UUID_FLAT in, struct GUID *uu);
-void smb_uuid_generate_random(struct GUID *uu);
 char *guid_binstring(const struct GUID *guid);
 
 /* The following definitions come from lib/version.c  */

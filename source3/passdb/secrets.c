@@ -238,7 +238,7 @@ bool secrets_fetch_domain_guid(const char *domain, struct GUID *guid)
 
 	if (!dyn_guid) {
 		if (lp_server_role() == ROLE_DOMAIN_PDC) {
-			smb_uuid_generate_random(&new_guid);
+			new_guid = GUID_random();
 			if (!secrets_store_domain_guid(domain, &new_guid))
 				return False;
 			dyn_guid = (struct GUID *)secrets_fetch(key, &size);

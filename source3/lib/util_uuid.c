@@ -38,17 +38,6 @@ void smb_uuid_unpack(const UUID_FLAT in, struct GUID *uu)
 	memcpy(uu->node, in.info+10, 6);
 }
 
-void smb_uuid_generate_random(struct GUID *uu)
-{
-	UUID_FLAT tmp;
-
-	generate_random_buffer(tmp.info, sizeof(tmp.info));
-	smb_uuid_unpack(tmp, uu);
-
-	uu->clock_seq[0] = (uu->clock_seq[0] & 0x3F) | 0x80;
-	uu->time_hi_and_version = (uu->time_hi_and_version & 0x0FFF) | 0x4000;
-}
-
 /*****************************************************************
  Return the binary string representation of a GUID.
  Caller must free.
