@@ -77,8 +77,8 @@ const char *lock_flav_name(enum brl_flavour lock_flav)
 
 bool is_locked(files_struct *fsp,
 		uint32 smbpid,
-		SMB_BIG_UINT count,
-		SMB_BIG_UINT offset, 
+		uint64_t count,
+		uint64_t offset, 
 		enum brl_type lock_type)
 {
 	int strict_locking = lp_strict_locking(fsp->conn->params);
@@ -144,8 +144,8 @@ bool is_locked(files_struct *fsp,
 
 NTSTATUS query_lock(files_struct *fsp,
 			uint32 *psmbpid,
-			SMB_BIG_UINT *pcount,
-			SMB_BIG_UINT *poffset,
+			uint64_t *pcount,
+			uint64_t *poffset,
 			enum brl_type *plock_type,
 			enum brl_flavour lock_flav)
 {
@@ -184,8 +184,8 @@ NTSTATUS query_lock(files_struct *fsp,
 struct byte_range_lock *do_lock(struct messaging_context *msg_ctx,
 			files_struct *fsp,
 			uint32 lock_pid,
-			SMB_BIG_UINT count,
-			SMB_BIG_UINT offset,
+			uint64_t count,
+			uint64_t offset,
 			enum brl_type lock_type,
 			enum brl_flavour lock_flav,
 			bool blocking_lock,
@@ -251,8 +251,8 @@ struct byte_range_lock *do_lock(struct messaging_context *msg_ctx,
 NTSTATUS do_unlock(struct messaging_context *msg_ctx,
 			files_struct *fsp,
 			uint32 lock_pid,
-			SMB_BIG_UINT count,
-			SMB_BIG_UINT offset,
+			uint64_t count,
+			uint64_t offset,
 			enum brl_flavour lock_flav)
 {
 	bool ok = False;
@@ -304,8 +304,8 @@ NTSTATUS do_unlock(struct messaging_context *msg_ctx,
 
 NTSTATUS do_lock_cancel(files_struct *fsp,
 			uint32 lock_pid,
-			SMB_BIG_UINT count,
-			SMB_BIG_UINT offset,
+			uint64_t count,
+			uint64_t offset,
 			enum brl_flavour lock_flav)
 {
 	bool ok = False;

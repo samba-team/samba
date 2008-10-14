@@ -22,14 +22,14 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_QUOTA
 
-static SMB_BIG_UINT limit_nt2unix(SMB_BIG_UINT in, SMB_BIG_UINT bsize)
+static uint64_t limit_nt2unix(uint64_t in, uint64_t bsize)
 {
-	SMB_BIG_UINT ret = (SMB_BIG_UINT)0;
+	uint64_t ret = (uint64_t)0;
 
-	ret = 	(SMB_BIG_UINT)(in/bsize);
+	ret = 	(uint64_t)(in/bsize);
 	if (in>0 && ret==0) {
 		/* we have to make sure that a overflow didn't set NO_LIMIT */
-		ret = (SMB_BIG_UINT)1;
+		ret = (uint64_t)1;
 	}
 
 	if (in == SMB_NTQUOTAS_NO_LIMIT)
@@ -42,11 +42,11 @@ static SMB_BIG_UINT limit_nt2unix(SMB_BIG_UINT in, SMB_BIG_UINT bsize)
 	return ret;
 }
 
-static SMB_BIG_UINT limit_unix2nt(SMB_BIG_UINT in, SMB_BIG_UINT bsize)
+static uint64_t limit_unix2nt(uint64_t in, uint64_t bsize)
 {
-	SMB_BIG_UINT ret = (SMB_BIG_UINT)0;
+	uint64_t ret = (uint64_t)0;
 
-	ret = (SMB_BIG_UINT)(in*bsize);
+	ret = (uint64_t)(in*bsize);
 	
 	if (ret < in) {
 		/* we overflow */
@@ -59,14 +59,14 @@ static SMB_BIG_UINT limit_unix2nt(SMB_BIG_UINT in, SMB_BIG_UINT bsize)
 	return ret;
 }
 
-static SMB_BIG_UINT limit_blk2inodes(SMB_BIG_UINT in)
+static uint64_t limit_blk2inodes(uint64_t in)
 {
-	SMB_BIG_UINT ret = (SMB_BIG_UINT)0;
+	uint64_t ret = (uint64_t)0;
 	
-	ret = (SMB_BIG_UINT)(in/2);
+	ret = (uint64_t)(in/2);
 	
 	if (ret == 0 && in != 0)
-		ret = (SMB_BIG_UINT)1;
+		ret = (uint64_t)1;
 
 	return ret;	
 }
@@ -100,7 +100,7 @@ int vfs_get_ntquota(files_struct *fsp, enum SMB_QUOTA_TYPE qtype, DOM_SID *psid,
 		return ret;
 	}
 		
-	qt->usedspace = (SMB_BIG_UINT)D.curblocks*D.bsize;
+	qt->usedspace = (uint64_t)D.curblocks*D.bsize;
 	qt->softlim = limit_unix2nt(D.softlimit, D.bsize);
 	qt->hardlim = limit_unix2nt(D.hardlimit, D.bsize);
 	qt->qflags = D.qflags;
@@ -121,7 +121,7 @@ int vfs_set_ntquota(files_struct *fsp, enum SMB_QUOTA_TYPE qtype, DOM_SID *psid,
 
 	id.uid = -1;
 
-	D.bsize     = (SMB_BIG_UINT)QUOTABLOCK_SIZE;
+	D.bsize     = (uint64_t)QUOTABLOCK_SIZE;
 
 	D.softlimit = limit_nt2unix(qt->softlim,D.bsize);
 	D.hardlimit = limit_nt2unix(qt->hardlim,D.bsize);

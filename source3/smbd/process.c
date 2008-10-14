@@ -743,7 +743,7 @@ static NTSTATUS receive_message_or_smb(TALLOC_CTX *mem_ctx, char **buffer,
 			pop_message = True;
 		} else {
 			struct timeval tv;
-			SMB_BIG_INT tdif;
+			int64_t tdif;
 
 			GetTimeOfDay(&tv);
 			tdif = usec_time_diff(&msg->end_time, &tv);

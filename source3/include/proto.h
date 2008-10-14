@@ -557,7 +557,7 @@ void pull_file_id_16(char *buf, struct file_id *id);
 
 /* The following definitions come from lib/fsusage.c  */
 
-int sys_fsusage(const char *path, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize);
+int sys_fsusage(const char *path, uint64_t *dfree, uint64_t *dsize);
 
 /* The following definitions come from lib/gencache.c  */
 
@@ -1676,7 +1676,7 @@ void rfc1738_unescape(char *buf);
 DATA_BLOB base64_decode_data_blob(const char *s);
 void base64_decode_inplace(char *s);
 char *base64_encode_data_blob(TALLOC_CTX *mem_ctx, DATA_BLOB data);
-SMB_BIG_UINT STR_TO_SMB_BIG_UINT(const char *nptr, const char **entptr);
+uint64_t STR_TO_SMB_BIG_UINT(const char *nptr, const char **entptr);
 SMB_OFF_T conv_str_size(const char * str);
 void string_append(char **left, const char *right);
 bool add_string_to_array(TALLOC_CTX *mem_ctx,
@@ -4248,13 +4248,13 @@ bool cli_lock(struct cli_state *cli, int fnum,
 	      uint32 offset, uint32 len, int timeout, enum brl_type lock_type);
 bool cli_unlock(struct cli_state *cli, int fnum, uint32 offset, uint32 len);
 bool cli_lock64(struct cli_state *cli, int fnum,
-		SMB_BIG_UINT offset, SMB_BIG_UINT len, int timeout, enum brl_type lock_type);
-bool cli_unlock64(struct cli_state *cli, int fnum, SMB_BIG_UINT offset, SMB_BIG_UINT len);
+		uint64_t offset, uint64_t len, int timeout, enum brl_type lock_type);
+bool cli_unlock64(struct cli_state *cli, int fnum, uint64_t offset, uint64_t len);
 bool cli_posix_lock(struct cli_state *cli, int fnum,
-			SMB_BIG_UINT offset, SMB_BIG_UINT len,
+			uint64_t offset, uint64_t len,
 			bool wait_lock, enum brl_type lock_type);
-bool cli_posix_unlock(struct cli_state *cli, int fnum, SMB_BIG_UINT offset, SMB_BIG_UINT len);
-bool cli_posix_getlock(struct cli_state *cli, int fnum, SMB_BIG_UINT *poffset, SMB_BIG_UINT *plen);
+bool cli_posix_unlock(struct cli_state *cli, int fnum, uint64_t offset, uint64_t len);
+bool cli_posix_getlock(struct cli_state *cli, int fnum, uint64_t *poffset, uint64_t *plen);
 bool cli_getattrE(struct cli_state *cli, int fd,
 		  uint16 *attr, SMB_OFF_T *size,
 		  time_t *change_time,
@@ -5106,20 +5106,20 @@ const char *lock_type_name(enum brl_type lock_type);
 const char *lock_flav_name(enum brl_flavour lock_flav);
 bool is_locked(files_struct *fsp,
 		uint32 smbpid,
-		SMB_BIG_UINT count,
-		SMB_BIG_UINT offset, 
+		uint64_t count,
+		uint64_t offset, 
 		enum brl_type lock_type);
 NTSTATUS query_lock(files_struct *fsp,
 			uint32 *psmbpid,
-			SMB_BIG_UINT *pcount,
-			SMB_BIG_UINT *poffset,
+			uint64_t *pcount,
+			uint64_t *poffset,
 			enum brl_type *plock_type,
 			enum brl_flavour lock_flav);
 struct byte_range_lock *do_lock(struct messaging_context *msg_ctx,
 			files_struct *fsp,
 			uint32 lock_pid,
-			SMB_BIG_UINT count,
-			SMB_BIG_UINT offset,
+			uint64_t count,
+			uint64_t offset,
 			enum brl_type lock_type,
 			enum brl_flavour lock_flav,
 			bool blocking_lock,
@@ -5128,13 +5128,13 @@ struct byte_range_lock *do_lock(struct messaging_context *msg_ctx,
 NTSTATUS do_unlock(struct messaging_context *msg_ctx,
 			files_struct *fsp,
 			uint32 lock_pid,
-			SMB_BIG_UINT count,
-			SMB_BIG_UINT offset,
+			uint64_t count,
+			uint64_t offset,
 			enum brl_flavour lock_flav);
 NTSTATUS do_lock_cancel(files_struct *fsp,
 			uint32 lock_pid,
-			SMB_BIG_UINT count,
-			SMB_BIG_UINT offset,
+			uint64_t count,
+			uint64_t offset,
 			enum brl_flavour lock_flav);
 void locking_close_file(struct messaging_context *msg_ctx,
 			files_struct *fsp);
@@ -5186,8 +5186,8 @@ int share_mode_forall(void (*fn)(const struct share_mode_entry *, const char *,
 /* The following definitions come from locking/posix.c  */
 
 bool is_posix_locked(files_struct *fsp,
-			SMB_BIG_UINT *pu_offset,
-			SMB_BIG_UINT *pu_count,
+			uint64_t *pu_offset,
+			uint64_t *pu_count,
 			enum brl_type *plock_type,
 			enum brl_flavour lock_flav);
 bool posix_locking_init(bool read_only);
@@ -5195,28 +5195,28 @@ bool posix_locking_end(void);
 void reduce_windows_lock_ref_count(files_struct *fsp, unsigned int dcount);
 int fd_close_posix(struct files_struct *fsp);
 bool set_posix_lock_windows_flavour(files_struct *fsp,
-			SMB_BIG_UINT u_offset,
-			SMB_BIG_UINT u_count,
+			uint64_t u_offset,
+			uint64_t u_count,
 			enum brl_type lock_type,
 			const struct lock_context *lock_ctx,
 			const struct lock_struct *plocks,
 			int num_locks,
 			int *errno_ret);
 bool release_posix_lock_windows_flavour(files_struct *fsp,
-				SMB_BIG_UINT u_offset,
-				SMB_BIG_UINT u_count,
+				uint64_t u_offset,
+				uint64_t u_count,
 				enum brl_type deleted_lock_type,
 				const struct lock_context *lock_ctx,
 				const struct lock_struct *plocks,
 				int num_locks);
 bool set_posix_lock_posix_flavour(files_struct *fsp,
-			SMB_BIG_UINT u_offset,
-			SMB_BIG_UINT u_count,
+			uint64_t u_offset,
+			uint64_t u_count,
 			enum brl_type lock_type,
 			int *errno_ret);
 bool release_posix_lock_posix_flavour(files_struct *fsp,
-				SMB_BIG_UINT u_offset,
-				SMB_BIG_UINT u_count,
+				uint64_t u_offset,
+				uint64_t u_count,
 				const struct lock_context *lock_ctx,
 				const struct lock_struct *plocks,
 				int num_locks);
@@ -9322,16 +9322,16 @@ bool push_blocking_lock_request( struct byte_range_lock *br_lck,
 		uint32 lock_pid,
 		enum brl_type lock_type,
 		enum brl_flavour lock_flav,
-		SMB_BIG_UINT offset,
-		SMB_BIG_UINT count,
+		uint64_t offset,
+		uint64_t count,
 		uint32 blocking_pid);
 void cancel_pending_lock_requests_by_fid(files_struct *fsp, struct byte_range_lock *br_lck);
 void remove_pending_lock_requests_by_mid(int mid);
 bool blocking_lock_was_deferred(int mid);
 bool blocking_lock_cancel(files_struct *fsp,
 			uint32 lock_pid,
-			SMB_BIG_UINT offset,
-			SMB_BIG_UINT count,
+			uint64_t offset,
+			uint64_t count,
 			enum brl_flavour lock_flav,
 			unsigned char locktype,
                         NTSTATUS err);
@@ -9397,14 +9397,14 @@ bool register_message_flags(bool doreg, uint32 msg_flags);
 
 /* The following definitions come from smbd/dfree.c  */
 
-SMB_BIG_UINT sys_disk_free(connection_struct *conn, const char *path, bool small_query, 
-                              SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfree,SMB_BIG_UINT *dsize);
-SMB_BIG_UINT get_dfree_info(connection_struct *conn,
+uint64_t sys_disk_free(connection_struct *conn, const char *path, bool small_query, 
+                              uint64_t *bsize,uint64_t *dfree,uint64_t *dsize);
+uint64_t get_dfree_info(connection_struct *conn,
 			const char *path,
 			bool small_query,
-			SMB_BIG_UINT *bsize,
-			SMB_BIG_UINT *dfree,
-			SMB_BIG_UINT *dsize);
+			uint64_t *bsize,
+			uint64_t *dfree,
+			uint64_t *dsize);
 
 /* The following definitions come from smbd/dir.c  */
 
@@ -9806,7 +9806,7 @@ NTSTATUS create_file_unixpath(connection_struct *conn,
 			      uint32_t create_options,
 			      uint32_t file_attributes,
 			      uint32_t oplock_request,
-			      SMB_BIG_UINT allocation_size,
+			      uint64_t allocation_size,
 			      struct security_descriptor *sd,
 			      struct ea_list *ea_list,
 
@@ -9823,7 +9823,7 @@ NTSTATUS create_file(connection_struct *conn,
 		     uint32_t create_options,
 		     uint32_t file_attributes,
 		     uint32_t oplock_request,
-		     SMB_BIG_UINT allocation_size,
+		     uint64_t allocation_size,
 		     struct security_descriptor *sd,
 		     struct ea_list *ea_list,
 
@@ -9950,18 +9950,18 @@ void smbd_process(void);
 
 /* The following definitions come from smbd/quotas.c  */
 
-bool disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize);
-bool disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize);
+bool disk_quotas(const char *path, uint64_t *bsize, uint64_t *dfree, uint64_t *dsize);
+bool disk_quotas(const char *path, uint64_t *bsize, uint64_t *dfree, uint64_t *dsize);
 bool disk_quotas(const char *path,
-		SMB_BIG_UINT *bsize,
-		SMB_BIG_UINT *dfree,
-		SMB_BIG_UINT *dsize);
-bool disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize);
-bool disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize);
-bool disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize);
-bool disk_quotas_vxfs(const char *name, char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize);
-bool disk_quotas(const char *path,SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfree,SMB_BIG_UINT *dsize);
-bool disk_quotas(const char *path,SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfree,SMB_BIG_UINT *dsize);
+		uint64_t *bsize,
+		uint64_t *dfree,
+		uint64_t *dsize);
+bool disk_quotas(const char *path, uint64_t *bsize, uint64_t *dfree, uint64_t *dsize);
+bool disk_quotas(const char *path, uint64_t *bsize, uint64_t *dfree, uint64_t *dsize);
+bool disk_quotas(const char *path, uint64_t *bsize, uint64_t *dfree, uint64_t *dsize);
+bool disk_quotas_vxfs(const char *name, char *path, uint64_t *bsize, uint64_t *dfree, uint64_t *dsize);
+bool disk_quotas(const char *path,uint64_t *bsize,uint64_t *dfree,uint64_t *dsize);
+bool disk_quotas(const char *path,uint64_t *bsize,uint64_t *dfree,uint64_t *dsize);
 
 /* The following definitions come from smbd/reply.c  */
 
@@ -10071,8 +10071,8 @@ NTSTATUS copy_file(TALLOC_CTX *ctx,
 			bool target_is_directory);
 void reply_copy(struct smb_request *req);
 uint32 get_lock_pid( char *data, int data_offset, bool large_file_format);
-SMB_BIG_UINT get_lock_count( char *data, int data_offset, bool large_file_format);
-SMB_BIG_UINT get_lock_offset( char *data, int data_offset, bool large_file_format, bool *err);
+uint64_t get_lock_count( char *data, int data_offset, bool large_file_format);
+uint64_t get_lock_offset( char *data, int data_offset, bool large_file_format, bool *err);
 void reply_lockingX(struct smb_request *req);
 void reply_readbmpx(struct smb_request *req);
 void reply_readbs(struct smb_request *req);
@@ -10190,8 +10190,8 @@ int sys_statvfs(const char *path, vfs_statvfs_struct *statbuf);
 
 /* The following definitions come from smbd/trans2.c  */
 
-SMB_BIG_UINT smb_roundup(connection_struct *conn, SMB_BIG_UINT val);
-SMB_BIG_UINT get_allocation_size(connection_struct *conn, files_struct *fsp, const SMB_STRUCT_STAT *sbuf);
+uint64_t smb_roundup(connection_struct *conn, uint64_t val);
+uint64_t get_allocation_size(connection_struct *conn, files_struct *fsp, const SMB_STRUCT_STAT *sbuf);
 NTSTATUS get_ea_value(TALLOC_CTX *mem_ctx, connection_struct *conn,
 		      files_struct *fsp, const char *fname,
 		      const char *ea_name, struct ea_struct *pea);
@@ -10275,7 +10275,7 @@ ssize_t vfs_pwrite_data(struct smb_request *req,
 			const char *buffer,
 			size_t N,
 			SMB_OFF_T offset);
-int vfs_allocate_file_space(files_struct *fsp, SMB_BIG_UINT len);
+int vfs_allocate_file_space(files_struct *fsp, uint64_t len);
 int vfs_set_filelen(files_struct *fsp, SMB_OFF_T len);
 int vfs_fill_sparse(files_struct *fsp, SMB_OFF_T len);
 SMB_OFF_T vfs_transfer_file(files_struct *in, files_struct *out, SMB_OFF_T n);

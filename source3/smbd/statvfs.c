@@ -118,7 +118,7 @@ static int darwin_statvfs(const char *path, vfs_statvfs_struct *statbuf)
 	statbuf->UserBlocksAvail = sbuf.f_bavail;
 	statbuf->TotalFileNodes = sbuf.f_files;
 	statbuf->FreeFileNodes = sbuf.f_ffree;
-	statbuf->FsIdentifier = *(SMB_BIG_UINT *)(&sbuf.f_fsid); /* Ick. */
+	statbuf->FsIdentifier = *(uint64_t *)(&sbuf.f_fsid); /* Ick. */
 	statbuf->FsCapabilities = darwin_fs_capabilities(sbuf.f_mntonname);
 
 	return 0;

@@ -501,13 +501,13 @@ ssize_t vfs_pwrite_data(struct smb_request *req,
  Returns 0 on success, -1 on failure.
 ****************************************************************************/
 
-int vfs_allocate_file_space(files_struct *fsp, SMB_BIG_UINT len)
+int vfs_allocate_file_space(files_struct *fsp, uint64_t len)
 {
 	int ret;
 	SMB_STRUCT_STAT st;
 	connection_struct *conn = fsp->conn;
-	SMB_BIG_UINT space_avail;
-	SMB_BIG_UINT bsize,dfree,dsize;
+	uint64_t space_avail;
+	uint64_t bsize,dfree,dsize;
 
 	release_level_2_oplocks_on_change(fsp);
 
@@ -527,10 +527,10 @@ int vfs_allocate_file_space(files_struct *fsp, SMB_BIG_UINT len)
 	if (ret == -1)
 		return ret;
 
-	if (len == (SMB_BIG_UINT)st.st_size)
+	if (len == (uint64_t)st.st_size)
 		return 0;
 
-	if (len < (SMB_BIG_UINT)st.st_size) {
+	if (len < (uint64_t)st.st_size) {
 		/* Shrink - use ftruncate. */
 
 		DEBUG(10,("vfs_allocate_file_space: file %s, shrink. Current size %.0f\n",
@@ -551,7 +551,7 @@ int vfs_allocate_file_space(files_struct *fsp, SMB_BIG_UINT len)
 	len -= st.st_size;
 	len /= 1024; /* Len is now number of 1k blocks needed. */
 	space_avail = get_dfree_info(conn,fsp->fsp_name,False,&bsize,&dfree,&dsize);
-	if (space_avail == (SMB_BIG_UINT)-1) {
+	if (space_avail == (uint64_t)-1) {
 		return -1;
 	}
 

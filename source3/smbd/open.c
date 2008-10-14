@@ -2533,7 +2533,7 @@ NTSTATUS create_file_unixpath(connection_struct *conn,
 			      uint32_t create_options,
 			      uint32_t file_attributes,
 			      uint32_t oplock_request,
-			      SMB_BIG_UINT allocation_size,
+			      uint64_t allocation_size,
 			      struct security_descriptor *sd,
 			      struct ea_list *ea_list,
 
@@ -2809,7 +2809,7 @@ NTSTATUS create_file_unixpath(connection_struct *conn,
 			}
 		} else {
 			fsp->initial_allocation_size = smb_roundup(
-				fsp->conn, (SMB_BIG_UINT)sbuf.st_size);
+				fsp->conn, (uint64_t)sbuf.st_size);
 		}
 	}
 
@@ -2863,7 +2863,7 @@ NTSTATUS create_file(connection_struct *conn,
 		     uint32_t create_options,
 		     uint32_t file_attributes,
 		     uint32_t oplock_request,
-		     SMB_BIG_UINT allocation_size,
+		     uint64_t allocation_size,
 		     struct security_descriptor *sd,
 		     struct ea_list *ea_list,
 

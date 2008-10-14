@@ -28,15 +28,15 @@
 static char *capencode(TALLOC_CTX *ctx, const char *from);
 static char *capdecode(TALLOC_CTX *ctx, const char *from);
 
-static SMB_BIG_UINT cap_disk_free(vfs_handle_struct *handle, const char *path,
-	bool small_query, SMB_BIG_UINT *bsize,
-	SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
+static uint64_t cap_disk_free(vfs_handle_struct *handle, const char *path,
+	bool small_query, uint64_t *bsize,
+	uint64_t *dfree, uint64_t *dsize)
 {
 	char *cappath = capencode(talloc_tos(), path);
 
 	if (!cappath) {
 		errno = ENOMEM;
-		return (SMB_BIG_UINT)-1;
+		return (uint64_t)-1;
 	}
 	return SMB_VFS_NEXT_DISK_FREE(handle, cappath, small_query, bsize,
 					dfree, dsize);

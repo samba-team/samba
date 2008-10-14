@@ -78,10 +78,10 @@ static bool parse_user_quota_record(const char *rdata, unsigned int rdata_count,
 	 * maybe its the change time in NTTIME
 	 */
 
-	/* the used space 8 bytes (SMB_BIG_UINT)*/
-	qt.usedspace = (SMB_BIG_UINT)IVAL(rdata,16);
+	/* the used space 8 bytes (uint64_t)*/
+	qt.usedspace = (uint64_t)IVAL(rdata,16);
 #ifdef LARGE_SMB_OFF_T
-	qt.usedspace |= (((SMB_BIG_UINT)IVAL(rdata,20)) << 32);
+	qt.usedspace |= (((uint64_t)IVAL(rdata,20)) << 32);
 #else /* LARGE_SMB_OFF_T */
 	if ((IVAL(rdata,20) != 0)&&
 		((qt.usedspace != 0xFFFFFFFF)||
@@ -91,10 +91,10 @@ static bool parse_user_quota_record(const char *rdata, unsigned int rdata_count,
 	}
 #endif /* LARGE_SMB_OFF_T */
 
-	/* the soft quotas 8 bytes (SMB_BIG_UINT)*/
-	qt.softlim = (SMB_BIG_UINT)IVAL(rdata,24);
+	/* the soft quotas 8 bytes (uint64_t)*/
+	qt.softlim = (uint64_t)IVAL(rdata,24);
 #ifdef LARGE_SMB_OFF_T
-	qt.softlim |= (((SMB_BIG_UINT)IVAL(rdata,28)) << 32);
+	qt.softlim |= (((uint64_t)IVAL(rdata,28)) << 32);
 #else /* LARGE_SMB_OFF_T */
 	if ((IVAL(rdata,28) != 0)&&
 		((qt.softlim != 0xFFFFFFFF)||
@@ -104,10 +104,10 @@ static bool parse_user_quota_record(const char *rdata, unsigned int rdata_count,
 	}
 #endif /* LARGE_SMB_OFF_T */
 
-	/* the hard quotas 8 bytes (SMB_BIG_UINT)*/
-	qt.hardlim = (SMB_BIG_UINT)IVAL(rdata,32);
+	/* the hard quotas 8 bytes (uint64_t)*/
+	qt.hardlim = (uint64_t)IVAL(rdata,32);
 #ifdef LARGE_SMB_OFF_T
-	qt.hardlim |= (((SMB_BIG_UINT)IVAL(rdata,36)) << 32);
+	qt.hardlim |= (((uint64_t)IVAL(rdata,36)) << 32);
 #else /* LARGE_SMB_OFF_T */
 	if ((IVAL(rdata,36) != 0)&&
 		((qt.hardlim != 0xFFFFFFFF)||
@@ -216,7 +216,7 @@ bool cli_set_user_quota(struct cli_state *cli, int quota_fnum, SMB_NTQUOTA_STRUC
 	sid_len = ndr_size_dom_sid(&pqt->sid, 0);
 	SIVAL(data,0,0);
 	SIVAL(data,4,sid_len);
-	SBIG_UINT(data, 8,(SMB_BIG_UINT)0);
+	SBIG_UINT(data, 8,(uint64_t)0);
 	SBIG_UINT(data,16,pqt->usedspace);
 	SBIG_UINT(data,24,pqt->softlim);
 	SBIG_UINT(data,32,pqt->hardlim);
@@ -458,10 +458,10 @@ bool cli_get_fs_quota_info(struct cli_state *cli, int quota_fnum, SMB_NTQUOTA_ST
 
 	/* unknown_1 24 NULL bytes in pdata*/
 
-	/* the soft quotas 8 bytes (SMB_BIG_UINT)*/
-	qt.softlim = (SMB_BIG_UINT)IVAL(rdata,24);
+	/* the soft quotas 8 bytes (uint64_t)*/
+	qt.softlim = (uint64_t)IVAL(rdata,24);
 #ifdef LARGE_SMB_OFF_T
-	qt.softlim |= (((SMB_BIG_UINT)IVAL(rdata,28)) << 32);
+	qt.softlim |= (((uint64_t)IVAL(rdata,28)) << 32);
 #else /* LARGE_SMB_OFF_T */
 	if ((IVAL(rdata,28) != 0)&&
 		((qt.softlim != 0xFFFFFFFF)||
@@ -471,10 +471,10 @@ bool cli_get_fs_quota_info(struct cli_state *cli, int quota_fnum, SMB_NTQUOTA_ST
 	}
 #endif /* LARGE_SMB_OFF_T */
 
-	/* the hard quotas 8 bytes (SMB_BIG_UINT)*/
-	qt.hardlim = (SMB_BIG_UINT)IVAL(rdata,32);
+	/* the hard quotas 8 bytes (uint64_t)*/
+	qt.hardlim = (uint64_t)IVAL(rdata,32);
 #ifdef LARGE_SMB_OFF_T
-	qt.hardlim |= (((SMB_BIG_UINT)IVAL(rdata,36)) << 32);
+	qt.hardlim |= (((uint64_t)IVAL(rdata,36)) << 32);
 #else /* LARGE_SMB_OFF_T */
 	if ((IVAL(rdata,36) != 0)&&
 		((qt.hardlim != 0xFFFFFFFF)||
@@ -562,18 +562,14 @@ cleanup:
 	return ret;	
 }
 
-static const char *quota_str_static(SMB_BIG_UINT val, bool special, bool _numeric)
+static const char *quota_str_static(uint64_t val, bool special, bool _numeric)
 {
 	const char *result;
 
 	if (!_numeric&&special&&(val == SMB_NTQUOTAS_NO_LIMIT)) {
 		return "NO LIMIT";
 	}
-#if defined(HAVE_LONGLONG)
-	result = talloc_asprintf(talloc_tos(), "%llu", val);
-#else
-	result = talloc_asprintf(talloc_tos(), "%lu", val);
-#endif
+	result = talloc_asprintf(talloc_tos(), "%"PRIu64, val);
 	SMB_ASSERT(result != NULL);
 	return result;
 }

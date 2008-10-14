@@ -1211,7 +1211,7 @@ static int smbldap_search_ext(struct smbldap_state *ldap_state,
 
 	if (ldap_state->last_rebind.tv_sec > 0) {
 		struct timeval	tval;
-		SMB_BIG_INT	tdiff = 0;
+		int64_t	tdiff = 0;
 		int		sleep_time = 0;
 
 		ZERO_STRUCT(tval);

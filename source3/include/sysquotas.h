@@ -37,8 +37,8 @@
  Some stuff for the sys_quota api.
  **************************************************/ 
 
-#define SMB_QUOTAS_NO_LIMIT	((SMB_BIG_UINT)(0))
-#define SMB_QUOTAS_NO_SPACE	((SMB_BIG_UINT)(1))
+#define SMB_QUOTAS_NO_LIMIT	((uint64_t)(0))
+#define SMB_QUOTAS_NO_SPACE	((uint64_t)(1))
 
 #define SMB_QUOTAS_SET_NO_LIMIT(dp) \
 {\
@@ -58,14 +58,14 @@
 
 typedef struct _SMB_DISK_QUOTA {
 	enum SMB_QUOTA_TYPE qtype;
-	SMB_BIG_UINT bsize;
-	SMB_BIG_UINT hardlimit; /* In bsize units. */
-	SMB_BIG_UINT softlimit; /* In bsize units. */
-	SMB_BIG_UINT curblocks; /* In bsize units. */
-	SMB_BIG_UINT ihardlimit; /* inode hard limit. */
-	SMB_BIG_UINT isoftlimit; /* inode soft limit. */
-	SMB_BIG_UINT curinodes; /* Current used inodes. */
-	uint32       qflags;
+	uint64_t bsize;
+	uint64_t hardlimit; /* In bsize units. */
+	uint64_t softlimit; /* In bsize units. */
+	uint64_t curblocks; /* In bsize units. */
+	uint64_t ihardlimit; /* inode hard limit. */
+	uint64_t isoftlimit; /* inode soft limit. */
+	uint64_t curinodes; /* Current used inodes. */
+	uint32_t       qflags;
 } SMB_DISK_QUOTA;
 
 #ifndef QUOTABLOCK_SIZE

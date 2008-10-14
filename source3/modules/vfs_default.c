@@ -40,10 +40,10 @@ static void vfswrap_disconnect(vfs_handle_struct *handle)
 
 /* Disk operations */
 
-static SMB_BIG_UINT vfswrap_disk_free(vfs_handle_struct *handle,  const char *path, bool small_query, SMB_BIG_UINT *bsize,
-			       SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
+static uint64_t vfswrap_disk_free(vfs_handle_struct *handle,  const char *path, bool small_query, uint64_t *bsize,
+			       uint64_t *dfree, uint64_t *dsize)
 {
-	SMB_BIG_UINT result;
+	uint64_t result;
 
 	result = sys_disk_free(handle->conn, path, small_query, bsize, dfree, dsize);
 	return result;

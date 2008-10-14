@@ -23,10 +23,10 @@
  Normalise for DOS usage.
 ****************************************************************************/
 
-static void disk_norm(bool small_query, SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfree,SMB_BIG_UINT *dsize)
+static void disk_norm(bool small_query, uint64_t *bsize,uint64_t *dfree,uint64_t *dsize)
 {
 	/* check if the disk is beyond the max disk size */
-	SMB_BIG_UINT maxdisksize = lp_maxdisksize();
+	uint64_t maxdisksize = lp_maxdisksize();
 	if (maxdisksize) {
 		/* convert to blocks - and don't overflow */
 		maxdisksize = ((maxdisksize*1024)/(*bsize))*1024;
@@ -62,13 +62,13 @@ static void disk_norm(bool small_query, SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfree,
  Return number of 1K blocks available on a path and total number.
 ****************************************************************************/
 
-SMB_BIG_UINT sys_disk_free(connection_struct *conn, const char *path, bool small_query, 
-                              SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfree,SMB_BIG_UINT *dsize)
+uint64_t sys_disk_free(connection_struct *conn, const char *path, bool small_query, 
+                              uint64_t *bsize,uint64_t *dfree,uint64_t *dsize)
 {
-	SMB_BIG_UINT dfree_retval;
-	SMB_BIG_UINT dfree_q = 0;
-	SMB_BIG_UINT bsize_q = 0;
-	SMB_BIG_UINT dsize_q = 0;
+	uint64_t dfree_retval;
+	uint64_t dfree_q = 0;
+	uint64_t bsize_q = 0;
+	uint64_t dsize_q = 0;
 	const char *dfree_command;
 
 	(*dfree) = (*dsize) = 0;
@@ -90,7 +90,7 @@ SMB_BIG_UINT sys_disk_free(connection_struct *conn, const char *path, bool small
 				path);
 
 		if (!syscmd) {
-			return (SMB_BIG_UINT)-1;
+			return (uint64_t)-1;
 		}
 
 		DEBUG (3, ("disk_free: Running command %s\n", syscmd));
@@ -126,14 +126,14 @@ SMB_BIG_UINT sys_disk_free(connection_struct *conn, const char *path, bool small
 			if (sys_fsusage(path, dfree, dsize) != 0) {
 				DEBUG (0, ("disk_free: sys_fsusage() failed. Error was : %s\n",
 					strerror(errno) ));
-				return (SMB_BIG_UINT)-1;
+				return (uint64_t)-1;
 			}
 		}
 	} else {
 		if (sys_fsusage(path, dfree, dsize) != 0) {
 			DEBUG (0, ("disk_free: sys_fsusage() failed. Error was : %s\n",
 				strerror(errno) ));
-			return (SMB_BIG_UINT)-1;
+			return (uint64_t)-1;
 		}
 	}
 
@@ -174,16 +174,16 @@ SMB_BIG_UINT sys_disk_free(connection_struct *conn, const char *path, bool small
  Potentially returned cached dfree info.
 ****************************************************************************/
 
-SMB_BIG_UINT get_dfree_info(connection_struct *conn,
+uint64_t get_dfree_info(connection_struct *conn,
 			const char *path,
 			bool small_query,
-			SMB_BIG_UINT *bsize,
-			SMB_BIG_UINT *dfree,
-			SMB_BIG_UINT *dsize)
+			uint64_t *bsize,
+			uint64_t *dfree,
+			uint64_t *dsize)
 {
 	int dfree_cache_time = lp_dfree_cache_time(SNUM(conn));
 	struct dfree_cached_info *dfc = conn->dfree_info;
-	SMB_BIG_UINT dfree_ret;
+	uint64_t dfree_ret;
 
 	if (!dfree_cache_time) {
 		return SMB_VFS_DISK_FREE(conn,path,small_query,bsize,dfree,dsize);
@@ -199,7 +199,7 @@ SMB_BIG_UINT get_dfree_info(connection_struct *conn,
 
 	dfree_ret = SMB_VFS_DISK_FREE(conn,path,small_query,bsize,dfree,dsize);
 
-	if (dfree_ret == (SMB_BIG_UINT)-1) {
+	if (dfree_ret == (uint64_t)-1) {
 		/* Don't cache bad data. */
 		return dfree_ret;
 	}

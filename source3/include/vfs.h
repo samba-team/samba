@@ -282,8 +282,8 @@ struct vfs_ops {
 
 		int (*connect_fn)(struct vfs_handle_struct *handle, const char *service, const char *user);
 		void (*disconnect)(struct vfs_handle_struct *handle);
-		SMB_BIG_UINT (*disk_free)(struct vfs_handle_struct *handle, const char *path, bool small_query, SMB_BIG_UINT *bsize,
-			SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize);
+		uint64_t (*disk_free)(struct vfs_handle_struct *handle, const char *path, bool small_query, uint64_t *bsize,
+			uint64_t *dfree, uint64_t *dsize);
 		int (*get_quota)(struct vfs_handle_struct *handle, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *qt);
 		int (*set_quota)(struct vfs_handle_struct *handle, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *qt);
 		int (*get_shadow_copy_data)(struct vfs_handle_struct *handle, struct files_struct *fsp, SHADOW_COPY_DATA *shadow_copy_data, bool labels);
@@ -625,14 +625,14 @@ typedef struct vfs_statvfs_struct {
 	 if no distinction is made return the same value in each.
 	*/
 
-	SMB_BIG_UINT TotalBlocks;
-	SMB_BIG_UINT BlocksAvail;       /* bfree */
-	SMB_BIG_UINT UserBlocksAvail;   /* bavail */
+	uint64_t TotalBlocks;
+	uint64_t BlocksAvail;       /* bfree */
+	uint64_t UserBlocksAvail;   /* bavail */
 
 	/* For undefined Node fields or FSID return -1 */
-	SMB_BIG_UINT TotalFileNodes;
-	SMB_BIG_UINT FreeFileNodes;
-	SMB_BIG_UINT FsIdentifier;   /* fsid */
+	uint64_t TotalFileNodes;
+	uint64_t FreeFileNodes;
+	uint64_t FsIdentifier;   /* fsid */
 	/* NB Namelen comes from FILE_SYSTEM_ATTRIBUTE_INFO call */
 	/* NB flags can come from FILE_SYSTEM_DEVICE_INFO call   */
 

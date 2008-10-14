@@ -232,7 +232,7 @@ struct cli_state {
 
 typedef struct file_info {
 	struct cli_state *cli;
-	SMB_BIG_UINT size;
+	uint64_t size;
 	uint16 mode;
 	uid_t uid;
 	gid_t gid;

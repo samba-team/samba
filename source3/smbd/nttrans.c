@@ -386,7 +386,7 @@ void reply_ntcreate_and_X(struct smb_request *req)
 	uint32 create_disposition;
 	uint32 create_options;
 	uint16 root_dir_fid;
-	SMB_BIG_UINT allocation_size;
+	uint64_t allocation_size;
 	/* Breakout the oplock request bits so we can set the
 	   reply bits separately. */
 	uint32 fattr=0;
@@ -418,10 +418,10 @@ void reply_ntcreate_and_X(struct smb_request *req)
 	create_options = IVAL(req->inbuf,smb_ntcreate_CreateOptions);
 	root_dir_fid = (uint16)IVAL(req->inbuf,smb_ntcreate_RootDirectoryFid);
 
-	allocation_size = (SMB_BIG_UINT)IVAL(req->inbuf,
+	allocation_size = (uint64_t)IVAL(req->inbuf,
 					     smb_ntcreate_AllocationSize);
 #ifdef LARGE_SMB_OFF_T
-	allocation_size |= (((SMB_BIG_UINT)IVAL(
+	allocation_size |= (((uint64_t)IVAL(
 				     req->inbuf,
 				     smb_ntcreate_AllocationSize + 4)) << 32);
 #endif
@@ -814,7 +814,7 @@ static void call_nt_transact_create(connection_struct *conn,
 	struct ea_list *ea_list = NULL;
 	NTSTATUS status;
 	size_t param_len;
-	SMB_BIG_UINT allocation_size;
+	uint64_t allocation_size;
 	int oplock_request;
 	uint8_t oplock_granted;
 	TALLOC_CTX *ctx = talloc_tos();
@@ -857,9 +857,9 @@ static void call_nt_transact_create(connection_struct *conn,
 	sd_len = IVAL(params,36);
 	ea_len = IVAL(params,40);
 	root_dir_fid = (uint16)IVAL(params,4);
-	allocation_size = (SMB_BIG_UINT)IVAL(params,12);
+	allocation_size = (uint64_t)IVAL(params,12);
 #ifdef LARGE_SMB_OFF_T
-	allocation_size |= (((SMB_BIG_UINT)IVAL(params,16)) << 32);
+	allocation_size |= (((uint64_t)IVAL(params,16)) << 32);
 #endif
 
 	/*
@@ -2127,16 +2127,16 @@ static void call_nt_transact_get_user_quota(connection_struct *conn,
 				/* then the len of the SID 4 bytes */
 				SIVAL(entry,4,sid_len);
 
-				/* unknown data 8 bytes SMB_BIG_UINT */
-				SBIG_UINT(entry,8,(SMB_BIG_UINT)0); /* this is not 0 in windows...-metze*/
+				/* unknown data 8 bytes uint64_t */
+				SBIG_UINT(entry,8,(uint64_t)0); /* this is not 0 in windows...-metze*/
 
-				/* the used disk space 8 bytes SMB_BIG_UINT */
+				/* the used disk space 8 bytes uint64_t */
 				SBIG_UINT(entry,16,tmp_list->quotas->usedspace);
 
-				/* the soft quotas 8 bytes SMB_BIG_UINT */
+				/* the soft quotas 8 bytes uint64_t */
 				SBIG_UINT(entry,24,tmp_list->quotas->softlim);
 
-				/* the hard quotas 8 bytes SMB_BIG_UINT */
+				/* the hard quotas 8 bytes uint64_t */
 				SBIG_UINT(entry,32,tmp_list->quotas->hardlim);
 
 				/* and now the SID */
@@ -2225,16 +2225,16 @@ static void call_nt_transact_get_user_quota(connection_struct *conn,
 			/* then the len of the SID 4 bytes */
 			SIVAL(entry,4,sid_len);
 
-			/* unknown data 8 bytes SMB_BIG_UINT */
-			SBIG_UINT(entry,8,(SMB_BIG_UINT)0); /* this is not 0 in windows...-mezte*/
+			/* unknown data 8 bytes uint64_t */
+			SBIG_UINT(entry,8,(uint64_t)0); /* this is not 0 in windows...-mezte*/
 
-			/* the used disk space 8 bytes SMB_BIG_UINT */
+			/* the used disk space 8 bytes uint64_t */
 			SBIG_UINT(entry,16,qt.usedspace);
 
-			/* the soft quotas 8 bytes SMB_BIG_UINT */
+			/* the soft quotas 8 bytes uint64_t */
 			SBIG_UINT(entry,24,qt.softlim);
 
-			/* the hard quotas 8 bytes SMB_BIG_UINT */
+			/* the hard quotas 8 bytes uint64_t */
 			SBIG_UINT(entry,32,qt.hardlim);
 
 			/* and now the SID */
@@ -2328,10 +2328,10 @@ static void call_nt_transact_set_user_quota(connection_struct *conn,
 	 * maybe its the change time in NTTIME
 	 */
 
-	/* the used space 8 bytes (SMB_BIG_UINT)*/
-	qt.usedspace = (SMB_BIG_UINT)IVAL(pdata,16);
+	/* the used space 8 bytes (uint64_t)*/
+	qt.usedspace = (uint64_t)IVAL(pdata,16);
 #ifdef LARGE_SMB_OFF_T
-	qt.usedspace |= (((SMB_BIG_UINT)IVAL(pdata,20)) << 32);
+	qt.usedspace |= (((uint64_t)IVAL(pdata,20)) << 32);
 #else /* LARGE_SMB_OFF_T */
 	if ((IVAL(pdata,20) != 0)&&
 		((qt.usedspace != 0xFFFFFFFF)||
@@ -2342,10 +2342,10 @@ static void call_nt_transact_set_user_quota(connection_struct *conn,
 	}
 #endif /* LARGE_SMB_OFF_T */
 
-	/* the soft quotas 8 bytes (SMB_BIG_UINT)*/
-	qt.softlim = (SMB_BIG_UINT)IVAL(pdata,24);
+	/* the soft quotas 8 bytes (uint64_t)*/
+	qt.softlim = (uint64_t)IVAL(pdata,24);
 #ifdef LARGE_SMB_OFF_T
-	qt.softlim |= (((SMB_BIG_UINT)IVAL(pdata,28)) << 32);
+	qt.softlim |= (((uint64_t)IVAL(pdata,28)) << 32);
 #else /* LARGE_SMB_OFF_T */
 	if ((IVAL(pdata,28) != 0)&&
 		((qt.softlim != 0xFFFFFFFF)||
@@ -2356,10 +2356,10 @@ static void call_nt_transact_set_user_quota(connection_struct *conn,
 	}
 #endif /* LARGE_SMB_OFF_T */
 
-	/* the hard quotas 8 bytes (SMB_BIG_UINT)*/
-	qt.hardlim = (SMB_BIG_UINT)IVAL(pdata,32);
+	/* the hard quotas 8 bytes (uint64_t)*/
+	qt.hardlim = (uint64_t)IVAL(pdata,32);
 #ifdef LARGE_SMB_OFF_T
-	qt.hardlim |= (((SMB_BIG_UINT)IVAL(pdata,36)) << 32);
+	qt.hardlim |= (((uint64_t)IVAL(pdata,36)) << 32);
 #else /* LARGE_SMB_OFF_T */
 	if ((IVAL(pdata,36) != 0)&&
 		((qt.hardlim != 0xFFFFFFFF)||
