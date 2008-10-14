@@ -87,6 +87,32 @@ set_etypes (krb5_context context,
 }
 
 /*
+ *
+ */
+
+static krb5_error_code
+copy_etypes (krb5_context context,
+	     krb5_enctype *enctypes,
+	     krb5_enctype **ret_enctypes)
+{
+    unsigned int i;
+
+    for (i = 0; enctypes[i]; i++)
+	;
+    i++;
+
+    *ret_enctypes = malloc(sizeof(ret_enctypes[0]) * i);
+    if (*ret_enctypes == NULL) {
+	krb5_set_error_message(context, ENOMEM, 
+			       N_("malloc: out of memory", ""));
+	return ENOMEM;
+    }
+    memcpy(*ret_enctypes, enctypes, sizeof(ret_enctypes[0]) * i);
+    return 0;
+}
+
+
+/*
  * read variables from the configuration file and set in `context'
  */
 
@@ -208,6 +234,38 @@ init_context_from_config_file(krb5_context context)
     return 0;
 }
 
+static krb5_error_code
+cc_ops_register(krb5_context context)
+{
+    context->cc_ops = NULL;
+    context->num_cc_ops = 0;
+
+    krb5_cc_register(context, &krb5_acc_ops, TRUE);
+    krb5_cc_register(context, &krb5_fcc_ops, TRUE);
+    krb5_cc_register(context, &krb5_mcc_ops, TRUE);
+    krb5_cc_register(context, &krb5_scc_ops, TRUE);
+#ifdef HAVE_KCM
+    krb5_cc_register(context, &krb5_kcm_ops, TRUE);
+#endif
+    return 0;
+}
+
+static krb5_error_code
+kt_ops_register(krb5_context context)
+{
+    context->num_kt_types = 0;
+    context->kt_types     = NULL;
+
+    krb5_kt_register (context, &krb5_fkt_ops);
+    krb5_kt_register (context, &krb5_wrfkt_ops);
+    krb5_kt_register (context, &krb5_javakt_ops);
+    krb5_kt_register (context, &krb5_mkt_ops);
+    krb5_kt_register (context, &krb5_akf_ops);
+    krb5_kt_register (context, &krb5_any_ops);
+    return 0;
+}
+
+
 /**
  * Initializes the context structure and reads the configuration file
  * /etc/krb5.conf. The structure should be freed by calling
@@ -256,25 +314,8 @@ krb5_init_context(krb5_context *context)
 
     /* init error tables */
     krb5_init_ets(p);
-
-    p->cc_ops = NULL;
-    p->num_cc_ops = 0;
-    krb5_cc_register(p, &krb5_acc_ops, TRUE);
-    krb5_cc_register(p, &krb5_fcc_ops, TRUE);
-    krb5_cc_register(p, &krb5_mcc_ops, TRUE);
-    krb5_cc_register(p, &krb5_scc_ops, TRUE);
-#ifdef HAVE_KCM
-    krb5_cc_register(p, &krb5_kcm_ops, TRUE);
-#endif
-
-    p->num_kt_types = 0;
-    p->kt_types     = NULL;
-    krb5_kt_register (p, &krb5_fkt_ops);
-    krb5_kt_register (p, &krb5_wrfkt_ops);
-    krb5_kt_register (p, &krb5_javakt_ops);
-    krb5_kt_register (p, &krb5_mkt_ops);
-    krb5_kt_register (p, &krb5_akf_ops);
-    krb5_kt_register (p, &krb5_any_ops);
+    cc_ops_register(p);
+    kt_ops_register(p);
 
 out:
     if(ret) {
@@ -299,10 +340,75 @@ out:
  */
 
 krb5_error_code KRB5_LIB_FUNCTION
-krb5_copy_context(krb5_context in, krb5_context **out)
+krb5_copy_context(krb5_context context, krb5_context *out)
 {
-    krb5_clear_error_message(in);
-    return EINVAL;
+    krb5_error_code ret;
+    krb5_context p;
+
+    *out = NULL;
+
+    p = calloc(1, sizeof(*p));
+    if (p == NULL) {
+	ret = ENOMEM;
+	krb5_set_error_message(context, ret, N_("malloc: out of memory", ""));
+	goto out;
+    }
+
+    if (context->default_cc_name)
+	p->default_cc_name = strdup(context->default_cc_name);
+    if (context->default_cc_name_env)
+	p->default_cc_name_env = strdup(context->default_cc_name_env);
+    
+    ret = copy_etypes(context, context->etypes, &p->etypes);
+    if (ret)
+	goto out;
+    ret = copy_etypes(context, context->etypes_des, &p->etypes_des);
+    if (ret)
+	goto out;
+
+    ret = krb5_copy_host_realm(context, 
+			       context->default_realms, &p->default_realms);
+    if (ret)
+	goto out;
+
+    p->cf = context->cf; /* XXX krb5_config_file_copy() */
+
+    /* XXX should copy */
+    krb5_init_ets(p);
+    cc_ops_register(p);
+    kt_ops_register(p);
+
+#if 0 /* XXX */
+    if(context->warn_dest != NULL)
+	;
+#endif
+
+    ret = krb5_set_extra_addresses(p, context->extra_addresses);
+    if (ret)
+	goto out;
+    ret = krb5_set_extra_addresses(p, context->ignore_addresses);
+    if (ret)
+	goto out;
+
+    ret = _krb5_copy_send_to_kdc_func(p, context);
+    if (ret)
+	goto out;
+
+    p->mutex = malloc(sizeof(p->mutex));
+    if (p->mutex == NULL) {
+	ret = ENOMEM;
+	krb5_set_error_message(context, ret, N_("malloc: out of memory", ""));
+	goto out;
+    }
+    HEIMDAL_MUTEX_init(context->mutex);
+
+    *out = p;
+
+    return 0;
+
+ out:
+    krb5_free_context(p);
+    return ret;
 }
 
 /**
