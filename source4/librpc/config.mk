@@ -318,7 +318,7 @@ NDR_KEYSVC_OBJ_FILES = $(gen_ndrsrcdir)/ndr_keysvc.o
 [SUBSYSTEM::NDR_KRB5PAC]
 PUBLIC_DEPENDENCIES = LIBNDR NDR_NETLOGON NDR_SECURITY
 
-NDR_KRB5PAC_OBJ_FILES = $(gen_ndrsrcdir)/ndr_krb5pac.o $(ndrsrcdir)/ndr_krb5pac.o
+NDR_KRB5PAC_OBJ_FILES = $(gen_ndrsrcdir)/ndr_krb5pac.o ../librpc/ndr/ndr_krb5pac.o
 
 [SUBSYSTEM::NDR_XATTR]
 PUBLIC_DEPENDENCIES = LIBNDR NDR_SECURITY
