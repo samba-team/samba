@@ -59,7 +59,7 @@ do_ext_keytab(krb5_principal principal, void *data)
 	keys = malloc(sizeof(*keys) * princ.n_key_data);
 	if (keys == NULL) {
 	    kadm5_free_principal_ent(kadm_handle, &princ);
-	    krb5_clear_error_string(context);
+	    krb5_clear_error_message(context);
 	    return ENOMEM;
 	}
 	for (i = 0; i < princ.n_key_data; i++) {
@@ -83,7 +83,7 @@ do_ext_keytab(krb5_principal principal, void *data)
 	keys = malloc(sizeof(*keys) * n_k);
 	if (keys == NULL) {
 	    kadm5_free_principal_ent(kadm_handle, &princ);
-	    krb5_clear_error_string(context);
+	    krb5_clear_error_message(context);
 	    return ENOMEM;
 	}
 	for (i = 0; i < n_k; i++) {
