@@ -329,7 +329,7 @@ LIB_OBJ = $(LIBSAMBAUTIL_OBJ) \
 	  lib/util_str.o lib/clobber.o lib/util_sid.o lib/util_uuid.o \
 	  lib/util_unistr.o ../lib/util/util_file.o lib/util_file.o ../lib/util/data_blob.o \
 	  lib/util.o lib/util_sock.o lib/sock_exec.o lib/util_sec.o \
-	  lib/substitute.o lib/fsusage.o lib/dbwrap_util.o \
+	  lib/substitute.o ../lib/util/fsusage.o lib/dbwrap_util.o \
 	  lib/ms_fnmatch.o lib/select.o lib/errmap_unix.o \
 	  lib/tallocmsg.o lib/dmallocmsg.o libsmb/smb_signing.o \
 	  ../lib/crypto/md5.o ../lib/crypto/hmacmd5.o ../lib/crypto/arcfour.o \

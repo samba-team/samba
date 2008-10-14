@@ -250,14 +250,14 @@ static int kludge_acl_callback(struct ldb_request *req, struct ldb_reply *ares)
 			case SECURITY_SYSTEM:
 				if (ac->allowedAttributesEffective) {
 					ret = kludge_acl_allowedAttributes(ac->module->ldb, ares->message,
-									"allowedClassesAttributesEffective");
+									"allowedAttributesEffective");
 					if (ret != LDB_SUCCESS) {
 						return ldb_module_done(ac->req, NULL, NULL, ret);
 					}
 				}
 				if (ac->allowedChildClassesEffective) {
 					ret = kludge_acl_childClasses(ac->module->ldb, ares->message,
-									"allowedClassesChildClassesEffective");
+									"allowedChildClassesEffective");
 					if (ret != LDB_SUCCESS) {
 						return ldb_module_done(ac->req, NULL, NULL, ret);
 					}
@@ -267,14 +267,14 @@ static int kludge_acl_callback(struct ldb_request *req, struct ldb_reply *ares)
 			case SECURITY_ADMINISTRATOR:
 				if (ac->allowedAttributesEffective) {
 					ret = kludge_acl_allowedAttributes(ac->module->ldb, ares->message,
-									"allowedClassesAttributesEffective");
+									"allowedAttributesEffective");
 					if (ret != LDB_SUCCESS) {
 						return ldb_module_done(ac->req, NULL, NULL, ret);
 					}
 				}
 				if (ac->allowedChildClassesEffective) {
 					ret = kludge_acl_childClasses(ac->module->ldb, ares->message,
-									"allowedClassesChildClassesEffective");
+									"allowedChildClassesEffective");
 					if (ret != LDB_SUCCESS) {
 						return ldb_module_done(ac->req, NULL, NULL, ret);
 					}

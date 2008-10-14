@@ -19,7 +19,7 @@
 
 #include "includes.h"
 #include "system/filesys.h"
-
+ 
 /**
  * @file
  * @brief Utility functions for getting the amount of free disk space
@@ -30,12 +30,17 @@
 */
 static uint64_t adjust_blocks(uint64_t blocks, uint64_t fromsize, uint64_t tosize)
 {
-	if (fromsize == tosize)	/* e.g., from 512 to 512 */
+	if (fromsize == tosize)	{ /* e.g., from 512 to 512 */
 		return blocks;
-	else if (fromsize > tosize)	/* e.g., from 2048 to 512 */
+	} else if (fromsize > tosize) { /* e.g., from 2048 to 512 */
 		return blocks * (fromsize / tosize);
-	else				/* e.g., from 256 to 512 */
+	} else { /* e.g., from 256 to 512 */
+		/* Protect against broken filesystems... */
+		if (fromsize == 0) {
+			fromsize = tosize;
+		}
 		return (blocks + 1) / (tosize / fromsize);
+	}
 }
 
 /**
