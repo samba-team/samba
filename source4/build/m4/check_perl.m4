@@ -30,6 +30,3 @@ else
 fi
 ])
 
-AC_SAMBA_PERL([], [AC_MSG_ERROR([Please install perl from http://www.perl.com/])])
-
-AC_PATH_PROG(YAPP, yapp, false)

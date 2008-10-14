@@ -1,11 +1,12 @@
-m4_include(scripting/python/ac_pkg_swig.m4)
-
+dnl Autoconf macros for finding a Python development environment
+dnl
+dnl Copyright (C) 2007-2008 Jelmer Vernooij <jelmer@samba.org>
+dnl Published under the GNU GPL, v3 or later
+dnl
 AC_ARG_VAR([PYTHON_VERSION],[The installed Python
 	version to use, for example '2.3'. This string 
 	will be appended to the Python interpreter
 	canonical name.])
-
-AC_PROG_SWIG(1.3.36)
 
 AC_DEFUN([TRY_LINK_PYTHON],
 [
@@ -85,16 +86,4 @@ AC_DEFUN([AC_SAMBA_PYTHON_DEVEL],
 	fi
 ])
 
-AC_SAMBA_PYTHON_DEVEL([
-SMB_EXT_LIB(EXT_LIB_PYTHON, [$PYTHON_LDFLAGS], [$PYTHON_CFLAGS])
-SMB_ENABLE(EXT_LIB_PYTHON,YES)
-SMB_ENABLE(LIBPYTHON,YES)
-],[
-AC_MSG_ERROR([Python not found. Please install Python 2.x and its development headers/libraries.])
-])
 
-AC_MSG_CHECKING(python library directory)
-pythondir=`$PYTHON -c "from distutils import sysconfig; print sysconfig.get_python_lib(1, 0, '\\${prefix}')"`
-AC_MSG_RESULT($pythondir)
-
-AC_SUBST(pythondir)
