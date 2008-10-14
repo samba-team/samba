@@ -5,6 +5,8 @@ dnl  Released under the GNU GPL
 dnl -------------------------------------------------------
 dnl
 
+AC_DEFUN([AC_SAMBA_PERL],
+[
 case "$host_os" in
 	*irix*)
 		# On IRIX, we prefer Freeware or Nekoware Perl, because the
@@ -18,11 +20,16 @@ esac
 
 if test x"$PERL" = x""; then
 	AC_MSG_WARN([No version of perl was found!])
-	AC_MSG_ERROR([Please install perl from http://www.perl.com/])
+	$2
+else
+	if test x"$debug" = x"yes";then
+		PERL="$PERL -W"
+	fi
+	export PERL
+	$1
 fi
-if test x"$debug" = x"yes";then
-	PERL="$PERL -W"
-fi
-export PERL
+])
+
+AC_SAMBA_PERL([], [AC_MSG_ERROR([Please install perl from http://www.perl.com/])])
 
 AC_PATH_PROG(YAPP, yapp, false)
