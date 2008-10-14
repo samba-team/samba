@@ -32,18 +32,6 @@
 
 #define MAX_PIPE_NAME_LEN	24
 
-/* PIPE/<name>/<pid>/<pnum> */
-#define PIPEDB_KEY_FORMAT "PIPE/%s/%u/%d"
-
-struct pipe_dbrec {
-	struct server_id pid;
-	int pnum;
-	uid_t uid;
-
-	char name[MAX_PIPE_NAME_LEN];
-	fstring	user;
-};
-
 /****************************************************************************
  Reply to an open and X on a named pipe.
  This code is basically stolen from reply_open_and_X with some
