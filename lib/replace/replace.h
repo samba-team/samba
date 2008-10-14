@@ -52,6 +52,7 @@
    which causes a warning storm on irix */
 #undef HAVE_INTTYPES_H
 #elif HAVE_INTTYPES_H
+#define __STDC_FORMAT_MACROS
 #include <inttypes.h>
 #endif
 
