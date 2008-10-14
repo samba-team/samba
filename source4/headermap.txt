@@ -12,7 +12,7 @@ librpc/rpc/dcerpc.h: dcerpc.h
 lib/ldb/include/ldb.h: ldb.h
 lib/ldb/include/ldb_errors.h: ldb_errors.h
 auth/gensec/gensec.h: gensec.h
-librpc/ndr/libndr.h: ndr.h
+../librpc/ndr/libndr.h: ndr.h
 lib/registry/registry.h: registry.h
 libcli/util/werror.h: core/werror.h
 libcli/util/doserr.h: core/doserr.h

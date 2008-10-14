@@ -19,7 +19,7 @@ LIBNDR_SOVERSION = 0
 # End SUBSYSTEM LIBNDR
 ################################################
 
-PUBLIC_HEADERS += $(ndrsrcdir)/libndr.h
+PUBLIC_HEADERS += ../librpc/ndr/libndr.h
 
 #################################
 # Start BINARY ndrdump
