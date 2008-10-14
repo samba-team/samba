@@ -3510,6 +3510,10 @@ NTSTATUS set_nt_acl(files_struct *fsp, uint32 security_info_sent, const SEC_DESC
 
 	create_file_sids(&sbuf, &file_owner_sid, &file_grp_sid);
 
+	/* See here: http://www.codeproject.com/KB/winsdk/accessctrl2.aspx
+ 	 * for details. JRA.
+ 	 */
+
 	if ((security_info_sent & DACL_SECURITY_INFORMATION) &&
 		psd->dacl != NULL &&
 		(psd->type & (SE_DESC_DACL_AUTO_INHERITED|
