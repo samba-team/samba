@@ -104,6 +104,7 @@ fi
 %{_sysconfdir}/ctdb/events.d/70.iscsi
 %{_sysconfdir}/ctdb/events.d/90.ipmux
 %{_sysconfdir}/ctdb/events.d/91.lvs
+%{_sysconfdir}/ctdb/events.d/99.routing
 %{_sysconfdir}/ctdb/statd-callout
 %{_sbindir}/ctdbd
 %{_bindir}/ctdb
