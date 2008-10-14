@@ -87,7 +87,6 @@ eventsdir="../source4/lib/events"
 m4_include(lib/events/libevents.m4)
 
 dnl m4_include(auth/kerberos/config.m4)
-m4_include(scripting/python/config.m4)
 m4_include(auth/gensec/config.m4)
 m4_include(smbd/process_model.m4)
 m4_include(ntvfs/posix/config.m4)
