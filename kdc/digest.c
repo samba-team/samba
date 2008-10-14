@@ -288,7 +288,7 @@ _kdc_do_digest(krb5_context context,
 	    krb5_free_principal(context, principal);
 	    goto out;
 	}
-	krb5_clear_error_string(context);
+	krb5_clear_error_message(context);
 
 	ret = _kdc_db_fetch(context, config, principal,
 			    HDB_F_GET_SERVER, NULL, &server);
@@ -399,7 +399,7 @@ _kdc_do_digest(krb5_context context,
 	}
 	ret = krb5_store_stringz(sp, ireq.u.init.type);
 	if (ret) {
-	    krb5_clear_error_string(context);
+	    krb5_clear_error_message(context);
 	    goto out;
 	}
 
@@ -421,7 +421,7 @@ _kdc_do_digest(krb5_context context,
 	
 	ret = krb5_store_stringz(sp, r.u.initReply.nonce);
 	if (ret) {
-	    krb5_clear_error_string(context);
+	    krb5_clear_error_message(context);
 	    goto out;
 	}
 
@@ -447,14 +447,14 @@ _kdc_do_digest(krb5_context context,
 	if (ireq.u.init.hostname) {
 	    ret = krb5_store_stringz(sp, *ireq.u.init.hostname);
 	    if (ret) {
-		krb5_clear_error_string(context);
+		krb5_clear_error_message(context);
 		goto out;
 	    }
 	}
 
 	ret = krb5_storage_to_data(sp, &buf);
 	if (ret) {
-	    krb5_clear_error_string(context);
+	    krb5_clear_error_message(context);
 	    goto out;
 	}
 
@@ -488,7 +488,7 @@ _kdc_do_digest(krb5_context context,
 	hex_encode(buf.data, buf.length, &r.u.initReply.opaque);
 	free(buf.data);
 	if (r.u.initReply.opaque == NULL) {
-	    krb5_clear_error_string(context);
+	    krb5_clear_error_message(context);
 	    ret = ENOMEM;
 	    goto out;
 	}
@@ -507,7 +507,7 @@ _kdc_do_digest(krb5_context context,
 	}
 	ret = krb5_store_stringz(sp, ireq.u.digestRequest.type);
 	if (ret) {
-	    krb5_clear_error_string(context);
+	    krb5_clear_error_message(context);
 	    goto out;
 	}
 
@@ -516,7 +516,7 @@ _kdc_do_digest(krb5_context context,
 	if (ireq.u.digestRequest.hostname) {
 	    ret = krb5_store_stringz(sp, *ireq.u.digestRequest.hostname);
 	    if (ret) {
-		krb5_clear_error_string(context);
+		krb5_clear_error_message(context);
 		goto out;
 	    }
 	}
@@ -546,7 +546,7 @@ _kdc_do_digest(krb5_context context,
 	
 	ret = krb5_storage_to_data(sp, &buf);
 	if (ret) {
-	    krb5_clear_error_string(context);
+	    krb5_clear_error_message(context);
 	    goto out;
 	}
 
@@ -644,7 +644,7 @@ _kdc_do_digest(krb5_context context,
 
 	    hex_encode(md, sizeof(md), &mdx);
 	    if (mdx == NULL) {
-		krb5_clear_error_string(context);
+		krb5_clear_error_message(context);
 		ret = ENOMEM;
 		goto out;
 	    }
@@ -763,7 +763,7 @@ _kdc_do_digest(krb5_context context,
 
 	    hex_encode(md, sizeof(md), &mdx);
 	    if (mdx == NULL) {
-		krb5_clear_error_string(context);
+		krb5_clear_error_message(context);
 		ret = ENOMEM;
 		goto out;
 	    }
@@ -879,7 +879,7 @@ _kdc_do_digest(krb5_context context,
 	    hex_encode(answer.data, answer.length, &mdx);
 	    if (mdx == NULL) {
 		free(answer.data);
-		krb5_clear_error_string(context);
+		krb5_clear_error_message(context);
 		ret = ENOMEM;
 		goto out;
 	    }
@@ -925,7 +925,7 @@ _kdc_do_digest(krb5_context context,
 		r.u.response.rsp = calloc(1, sizeof(*r.u.response.rsp));
 		if (r.u.response.rsp == NULL) {
 		    free(answer.data);
-		    krb5_clear_error_string(context);
+		    krb5_clear_error_message(context);
 		    ret = ENOMEM;
 		    goto out;
 		}
@@ -933,7 +933,7 @@ _kdc_do_digest(krb5_context context,
 		hex_encode(md, sizeof(md), r.u.response.rsp);
 		if (r.u.response.rsp == NULL) {
 		    free(answer.data);
-		    krb5_clear_error_string(context);
+		    krb5_clear_error_message(context);
 		    ret = ENOMEM;
 		    goto out;
 		}
@@ -950,14 +950,14 @@ _kdc_do_digest(krb5_context context,
 		r.u.response.session_key =
 		    calloc(1, sizeof(*r.u.response.session_key));
 		if (r.u.response.session_key == NULL) {
-		    krb5_clear_error_string(context);
+		    krb5_clear_error_message(context);
 		    ret = ENOMEM;
 		    goto out;
 		}
 
 		ret = krb5_data_copy(r.u.response.session_key, md, 16);
 		if (ret) {
-		    krb5_clear_error_string(context);
+		    krb5_clear_error_message(context);
 		    goto out;
 		}
 	    }
@@ -1076,13 +1076,13 @@ _kdc_do_digest(krb5_context context,
 	}
 	ret = krb5_store_uint32(sp, r.u.ntlmInitReply.flags);
 	if (ret) {
-	    krb5_clear_error_string(context);
+	    krb5_clear_error_message(context);
 	    goto out;
 	}
 
 	ret = krb5_storage_to_data(sp, &buf);
 	if (ret) {
-	    krb5_clear_error_string(context);
+	    krb5_clear_error_message(context);
 	    goto out;
 	}
 
@@ -1364,7 +1364,7 @@ _kdc_do_digest(krb5_context context,
 
 	s = krb5_get_error_message(context, ret);
 	if (s == NULL) {
-	    krb5_clear_error_string(context);
+	    krb5_clear_error_message(context);
 	    goto out;
 	}
 	

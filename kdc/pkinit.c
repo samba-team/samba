@@ -90,7 +90,7 @@ pk_check_pkauthenticator_win2k(krb5_context context,
 
     /* XXX cusec */
     if (a->ctime == 0 || abs(a->ctime - now) > context->max_skew) {
-	krb5_clear_error_string(context);
+	krb5_clear_error_message(context);
 	return KRB5KRB_AP_ERR_SKEW;
     }
     return 0;
@@ -112,13 +112,13 @@ pk_check_pkauthenticator(krb5_context context,
 
     /* XXX cusec */
     if (a->ctime == 0 || abs(a->ctime - now) > context->max_skew) {
-	krb5_clear_error_string(context);
+	krb5_clear_error_message(context);
 	return KRB5KRB_AP_ERR_SKEW;
     }
 
     ASN1_MALLOC_ENCODE(KDC_REQ_BODY, buf, buf_size, &req->req_body, &len, ret);
     if (ret) {
-	krb5_clear_error_string(context);
+	krb5_clear_error_message(context);
 	return ret;
     }
     if (buf_size != len)
@@ -133,18 +133,18 @@ pk_check_pkauthenticator(krb5_context context,
 			       &checksum);
     free(buf);
     if (ret) {
-	krb5_clear_error_string(context);
+	krb5_clear_error_message(context);
 	return ret;
     }
 	
     if (a->paChecksum == NULL) {
-	krb5_clear_error_string(context);
+	krb5_clear_error_message(context);
 	ret = KRB5_KDC_ERR_PA_CHECKSUM_MUST_BE_INCLUDED;
 	goto out;
     }
 
     if (der_heim_octet_string_cmp(a->paChecksum, &checksum.checksum) != 0) {
-	krb5_clear_error_string(context);
+	krb5_clear_error_message(context);
 	ret = KRB5KRB_ERR_GENERIC;
     }
 
@@ -327,7 +327,7 @@ get_dh_param(krb5_context context,
 				 &glue,
 				 &size);
 	if (ret) {
-	    krb5_clear_error_string(context);
+	    krb5_clear_error_message(context);
 	    return ret;
 	}
 
@@ -371,7 +371,7 @@ _kdc_pk_rd_padata(krb5_context context,
 
     if (!config->enable_pkinit) {
 	kdc_log(context, config, 0, "PK-INIT request but PK-INIT not enabled");
-	krb5_clear_error_string(context);
+	krb5_clear_error_message(context);
 	return 0;
     }
 
@@ -379,7 +379,7 @@ _kdc_pk_rd_padata(krb5_context context,
 
     client_params = calloc(1, sizeof(*client_params));
     if (client_params == NULL) {
-	krb5_clear_error_string(context);
+	krb5_clear_error_message(context);
 	ret = ENOMEM;
 	goto out;
     }
@@ -492,7 +492,7 @@ _kdc_pk_rd_padata(krb5_context context,
 	}
 
     } else {
-	krb5_clear_error_string(context);
+	krb5_clear_error_message(context);
 	ret = KRB5KDC_ERR_PADATA_TYPE_NOSUPP;
 	goto out;
     }
@@ -659,7 +659,7 @@ BN_to_integer(krb5_context context, BIGNUM *bn, heim_integer *integer)
     integer->length = BN_num_bytes(bn);
     integer->data = malloc(integer->length);
     if (integer->data == NULL) {
-	krb5_clear_error_string(context);
+	krb5_clear_error_message(context);
 	return ENOMEM;
     }
     BN_bn2bin(bn, integer->data);
@@ -718,7 +718,7 @@ pk_mk_pa_reply_enckey(krb5_context context,
 
 	ret = copy_EncryptionKey(reply_key, &kp.replyKey);
 	if (ret) {
-	    krb5_clear_error_string(context);
+	    krb5_clear_error_message(context);
 	    goto out;
 	}
 	kp.nonce = client_params->nonce;
@@ -734,13 +734,13 @@ pk_mk_pa_reply_enckey(krb5_context context,
 
 	ret = copy_EncryptionKey(reply_key, &kp.replyKey);
 	if (ret) {
-	    krb5_clear_error_string(context);
+	    krb5_clear_error_message(context);
 	    goto out;
 	}
 
 	ret = krb5_crypto_init(context, reply_key, 0, &ascrypto);
 	if (ret) {
-	    krb5_clear_error_string(context);
+	    krb5_clear_error_message(context);
 	    goto out;
 	}
 
@@ -748,13 +748,13 @@ pk_mk_pa_reply_enckey(krb5_context context,
 				   req_buffer->data, req_buffer->length,
 				   &kp.asChecksum);
 	if (ret) {
-	    krb5_clear_error_string(context);
+	    krb5_clear_error_message(context);
 	    goto out;
 	}
 			
 	ret = krb5_crypto_destroy(context, ascrypto);
 	if (ret) {
-	    krb5_clear_error_string(context);
+	    krb5_clear_error_message(context);
 	    goto out;
 	}
 	ASN1_MALLOC_ENCODE(ReplyKeyPack, buf.data, buf.length, &kp, &size,ret);
@@ -971,7 +971,7 @@ _kdc_pk_mk_pa_reply(krb5_context context,
     int i;
 
     if (!config->enable_pkinit) {
-	krb5_clear_error_string(context);
+	krb5_clear_error_message(context);
 	return 0;
     }
 

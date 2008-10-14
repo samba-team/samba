@@ -501,7 +501,7 @@ check_constrained_delegation(krb5_context context,
 
     ret = hdb_entry_get_ConstrainedDelegACL(&client->entry, &acl);
     if (ret) {
-	krb5_clear_error_string(context);
+	krb5_clear_error_message(context);
 	return ret;
     }
 
@@ -1578,7 +1578,7 @@ server_lookup:
 	    if(i == b->etype.len) {
 		kdc_log(context, config, 0,
 			"Addition ticket have not matching etypes", spp);
-		krb5_clear_error_string(context);
+		krb5_clear_error_message(context);
 		return KRB5KDC_ERR_ETYPE_NOSUPP;
 	    }
 	    etype = b->etype.val[i];
