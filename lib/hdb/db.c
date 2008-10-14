@@ -112,7 +112,7 @@ DB_seq(krb5_context context, HDB *db,
 	return code;
     }
     if(code == 1) {
-	krb5_clear_error_string(context);
+	krb5_clear_error_message(context);
 	return HDB_ERR_NOENTRY;
     }
 
@@ -195,7 +195,7 @@ DB__get(krb5_context context, HDB *db, krb5_data key, krb5_data *reply)
 	return code;
     }
     if(code == 1) {
-	krb5_clear_error_string(context);
+	krb5_clear_error_message(context);
 	return HDB_ERR_NOENTRY;
     }
 
@@ -227,7 +227,7 @@ DB__put(krb5_context context, HDB *db, int replace,
 	return code;
     }
     if(code == 1) {
-	krb5_clear_error_string(context);
+	krb5_clear_error_message(context);
 	return HDB_ERR_EXISTS;
     }
     return 0;
@@ -284,7 +284,7 @@ DB_open(krb5_context context, HDB *db, int flags, mode_t mode)
     else
 	ret = hdb_init_db(context, db);
     if(ret == HDB_ERR_NOENTRY) {
-	krb5_clear_error_string(context);
+	krb5_clear_error_message(context);
 	return 0;
     }
     if (ret) {

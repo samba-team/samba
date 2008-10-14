@@ -298,7 +298,7 @@ hdb_entry_get_password(krb5_context context, HDB *db,
 	    ret = der_copy_octet_string(&ext->data.u.password.password, &pw);
 	}
 	if (ret) {
-	    krb5_clear_error_string(context);
+	    krb5_clear_error_message(context);
 	    return ret;
 	}
 
@@ -323,7 +323,7 @@ hdb_entry_get_password(krb5_context context, HDB *db,
 	krb5_set_error_message(context, ENOENT, "no password attributefor %s", str);
 	free(str);
     } else
-	krb5_clear_error_string(context);
+	krb5_clear_error_message(context);
 
     return ENOENT;
 }

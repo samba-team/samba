@@ -215,7 +215,7 @@ entry2string_int (krb5_context context, krb5_storage *sp, hdb_entry *ent)
 	    ASN1_MALLOC_ENCODE(HDB_extension, d, size,
 			       &ent->extensions->val[i], &sz, ret);
 	    if (ret) {
-		krb5_clear_error_string(context);
+		krb5_clear_error_message(context);
 		return ret;
 	    }
 	    if(size != sz)

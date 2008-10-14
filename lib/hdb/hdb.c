@@ -167,7 +167,7 @@ hdb_foreach(krb5_context context,
     hdb_entry_ex entry;
     ret = db->hdb_firstkey(context, db, flags, &entry);
     if (ret == 0)
-	krb5_clear_error_string(context);
+	krb5_clear_error_message(context);
     while(ret == 0){
 	ret = (*func)(context, db, &entry, data);
 	hdb_free_entry(context, &entry);
@@ -234,7 +234,7 @@ hdb_init_db(krb5_context context, HDB *db)
     ret2 = db->hdb_unlock(context, db);
     if (ret) {
 	if (ret2)
-	    krb5_clear_error_string(context);
+	    krb5_clear_error_message(context);
 	return ret;
     }
     return ret2;
