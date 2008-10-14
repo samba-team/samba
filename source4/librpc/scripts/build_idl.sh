@@ -7,7 +7,7 @@ IDL_FILES="$*"
 
 [ -d $OUTDIR ] || mkdir -p $OUTDIR || exit 1
 
-PIDL="$PIDL --outputdir $OUTDIR --header --ndr-parser --server --client --swig --python --dcom-proxy --com-header -- $IDL_FILES"
+PIDL="$PIDL --outputdir $OUTDIR --header --ndr-parser --server --client --swig --python --dcom-proxy --com-header --includedir ../librpc/idl -- $IDL_FILES"
 
 if [ x$FULLBUILD = xFULL ]; then
       echo Rebuilding all idl files in $IDLDIR

@@ -1,14 +1,14 @@
 #!/bin/sh
 
-PIDL_ARGS="--outputdir librpc/gen_ndr --header --ndr-parser --samba3-ndr-server --samba3-ndr-client --"
-PIDL_EXTRA_ARGS="$*"
+ARGS="--includedir=../librpc/idl --outputdir librpc/gen_ndr --header --ndr-parser --samba3-ndr-server --samba3-ndr-client $PIDL_ARGS --"
+IDL_FILES="$*"
 
 oldpwd=`pwd`
 cd ${srcdir}
 
 [ -d librpc/gen_ndr ] || mkdir -p librpc/gen_ndr || exit 1
 
-PIDL="$PIDL ${PIDL_ARGS} ${PIDL_EXTRA_ARGS}"
+PIDL="$PIDL $ARGS"
 
 ##
 ## Find newer files rather than rebuild all of them
@@ -20,11 +20,11 @@ for f in ${IDL_FILES}; do
 	ndr="librpc/gen_ndr/ndr_$basename.c"
 
 	if [ -f $ndr ]; then
-		if [ "x`find ${IDL_PATH}/$f -newer $ndr -print`" = "x${IDL_PATH}/$f" ]; then
-			list="$list ${IDL_PATH}/$f"
+		if [ "x`find $f -newer $ndr -print`" = "x$f" ]; then
+			list="$list $f"
 		fi
 	else 
-		list="$list ${IDL_PATH}/$f"
+		list="$list $f"
 	fi
 done
 
