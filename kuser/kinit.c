@@ -352,7 +352,7 @@ store_ntlmkey(krb5_context context, krb5_ccache id,
 
     asprintf(&name, "ntlm-key-%s", domain);
     if (name == NULL) {
-	krb5_clear_error_string(context);
+	krb5_clear_error_message(context);
 	return ENOMEM;
     }
 

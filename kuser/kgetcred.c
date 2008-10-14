@@ -175,7 +175,7 @@ main(int argc, char **argv)
 
 	ret = decode_Ticket(c.ticket.data, c.ticket.length, &ticket, NULL);
 	if (ret) {
-	    krb5_clear_error_string(context);
+	    krb5_clear_error_message(context);
 	    krb5_err (context, 1, ret, "decode_Ticket");
 	}
 	krb5_free_cred_contents(context, &c);
