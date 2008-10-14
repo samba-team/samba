@@ -23,6 +23,7 @@
 /* Module support */
 typedef NTSTATUS (init_module_function) (void);
 
+NTSTATUS init_samba_module(void);
 
 typedef int smb_event_id_t;
 #define SMB_EVENT_ID_INVALID	(-1)
