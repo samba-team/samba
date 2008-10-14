@@ -350,7 +350,7 @@ AC_CACHE_CHECK([that the C compiler understands negative enum values],samba_cv_C
 ],
 	samba_cv_CC_NEGATIVE_ENUM_VALUES=yes,samba_cv__CC_NEGATIVE_ENUM_VALUES=no)])
 if test x"$samba_cv_CC_NEGATIVE_ENUM_VALUES" != x"yes"; then
-	AC_MSG_WARN([using --unit-enums for pidl])
+	AC_MSG_WARN([using --uint-enums for pidl])
 	PIDL_ARGS="$PIDL_ARGS --uint-enums"
 fi
 
