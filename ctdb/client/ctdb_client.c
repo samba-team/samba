@@ -2538,7 +2538,7 @@ int ctdb_ctrl_get_tcp_tickles(struct ctdb_context *ctdb,
 	ret = ctdb_control(ctdb, destnode, 0, 
 			   CTDB_CONTROL_GET_TCP_TICKLE_LIST, 0, data, 
 			   mem_ctx, &outdata, &status, NULL, NULL);
-	if (ret != 0) {
+	if (ret != 0 || status != 0) {
 		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for get tcp tickles failed\n"));
 		return -1;
 	}
