@@ -47,6 +47,7 @@ static void samba3_smb_accept(struct stream_connection *conn)
 	const char *prog;
 	char *argv[2];
 	char *reason;
+	extern char **environ;
 
 	close(0);
 	close(1);
