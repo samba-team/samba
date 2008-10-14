@@ -5,7 +5,7 @@ Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
 Version: 1.0
-Release: 59
+Release: 60
 Epoch: 0
 License: GNU GPL version 3
 Group: System Environment/Daemons
@@ -118,6 +118,12 @@ fi
 %{_includedir}/ctdb_private.h
 
 %changelog
+* Wed Oct 15 2008 : Version 1.0.60
+ - Verify that nodes we try to ban/unban are reachable and print an error othervise.
+ - Update the client and server sides of TAKEIP/RELEASEIP/GETPUBLICIPS and GETNODEMAP to fall back to the old style ipv4-only controls if the new ipv4/ipv6 controls fail. This allows an ipv4/v6 enabled ctdb daemon to interoperate with earlier ipv4-only versions of the daemons.
+ - From Mathieu Parent : log debian systems log the package versions in ctdb diagnostics
+ - From Mathieu Parent : specify logdir location for debian (this patch was later reversed)
+ - From Michael Adams : allow # comments in nodes/public_addresses files
 * Tue Oct 7 2008 : Version 1.0.59
  - Updated "reloadnodes" logic. Instead of bouncing the entire tcp layer it is sufficient to just close and reopen all outgoing tcp connections.
  - New eventscript 99.routing which can be used to re-attach routes to public interfaces after a takeip event. (routes may be deleted by the kernel when we release an ip)
