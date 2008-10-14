@@ -109,8 +109,9 @@
 /* Changed to version 23 - remove set_nt_acl call. This can only be done via an
    open handle. JRA. */
 /* Changed to version 24 - make security descriptor const in fset_nt_acl. JRA. */
+/* Changed to version 25 - Jelmer's change from SMB_BIG_UINT to uint64_t. */
 
-#define SMB_VFS_INTERFACE_VERSION 24
+#define SMB_VFS_INTERFACE_VERSION 25
 
 
 /* to bug old modules which are trying to compile with the old functions */
