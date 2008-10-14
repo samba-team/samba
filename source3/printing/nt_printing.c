@@ -3221,7 +3221,7 @@ static void store_printer_guid(NT_PRINTER_INFO_LEVEL_2 *info2,
 
 	ZERO_STRUCT( unistr_guid );	
 	
-	init_unistr2( &unistr_guid, smb_uuid_string(talloc_tos(), guid),
+	init_unistr2( &unistr_guid, GUID_string(talloc_tos(), &guid),
 		      UNI_STR_TERMINATE );
 
 	regval_ctr_addvalue(ctr, "objectGUID", REG_SZ, 
@@ -3841,7 +3841,7 @@ static int unpack_values(NT_PRINTER_DATA *printer_data, const uint8 *buf, int bu
 			memcpy( &guid, data_p, sizeof(struct GUID) );
 
 			init_unistr2( &unistr_guid,
-				      smb_uuid_string(talloc_tos(), guid), 
+				      GUID_string(talloc_tos(), &guid), 
 				      UNI_STR_TERMINATE );
 
 			regval_ctr_addvalue( printer_data->keys[key_index].values, 

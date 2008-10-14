@@ -2062,7 +2062,7 @@ static void dump_guid(ADS_STRUCT *ads, const char *field, struct berval **values
 
 		memcpy(guid.info, values[i]->bv_val, sizeof(guid.info));
 		smb_uuid_unpack(guid, &tmp);
-		printf("%s: %s\n", field, smb_uuid_string(talloc_tos(), tmp));
+		printf("%s: %s\n", field, GUID_string(talloc_tos(), &tmp));
 	}
 }
 
@@ -3748,7 +3748,7 @@ const char *ads_get_extended_right_name_by_guid(ADS_STRUCT *ads,
 	}
 
 	expr = talloc_asprintf(mem_ctx, "(rightsGuid=%s)", 
-			       smb_uuid_string(mem_ctx, *rights_guid));
+			       GUID_string(mem_ctx, rights_guid));
 	if (!expr) {
 		goto done;
 	}

@@ -112,8 +112,8 @@ static void display_query_info_12(struct lsa_DnsDomainInfo *r)
 	d_printf("Domain DNS Name: %s\n", r->dns_domain.string);
 	d_printf("Domain Forest Name: %s\n", r->dns_forest.string);
 	d_printf("Domain Sid: %s\n", sid_string_tos(r->sid));
-	d_printf("Domain GUID: %s\n", smb_uuid_string(talloc_tos(),
-						      r->domain_guid));
+	d_printf("Domain GUID: %s\n", GUID_string(talloc_tos(),
+						      &r->domain_guid));
 }
 
 static void display_lsa_query_info(union lsa_PolicyInformation *info,

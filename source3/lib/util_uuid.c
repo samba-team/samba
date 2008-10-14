@@ -55,22 +55,6 @@ void smb_uuid_generate_random(struct GUID *uu)
 	uu->time_hi_and_version = (uu->time_hi_and_version & 0x0FFF) | 0x4000;
 }
 
-const char *smb_uuid_string(TALLOC_CTX *mem_ctx, const struct GUID uu)
-{
-	char *result;
-
-	result = talloc_asprintf(
-		mem_ctx,
-		"%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x",
-		uu.time_low, uu.time_mid, uu.time_hi_and_version,
-		uu.clock_seq[0], uu.clock_seq[1],
-		uu.node[0], uu.node[1], uu.node[2], 
-		uu.node[3], uu.node[4], uu.node[5]);
-
-	SMB_ASSERT(result != NULL);
-	return result;
-}
-
 bool smb_string_to_uuid(const char *in, struct GUID* uu)
 {
 	bool ret = False;

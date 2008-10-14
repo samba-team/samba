@@ -114,15 +114,15 @@ static void ads_disp_sec_ace_object(ADS_STRUCT *ads,
 {
 	if (object->flags & SEC_ACE_OBJECT_PRESENT) {
 		printf("Object type: SEC_ACE_OBJECT_PRESENT\n");
-		printf("Object GUID: %s (%s)\n", smb_uuid_string(mem_ctx, 
-			object->type.type), 
+		printf("Object GUID: %s (%s)\n", GUID_string(mem_ctx, 
+			&object->type.type), 
 			ads_interprete_guid_from_object(ads, mem_ctx, 
 				&object->type.type));
 	}
 	if (object->flags & SEC_ACE_OBJECT_INHERITED_PRESENT) {
 		printf("Object type: SEC_ACE_OBJECT_INHERITED_PRESENT\n");
-		printf("Object GUID: %s (%s)\n", smb_uuid_string(mem_ctx,
-			object->inherited_type.inherited_type),
+		printf("Object GUID: %s (%s)\n", GUID_string(mem_ctx,
+			&object->inherited_type.inherited_type),
 			ads_interprete_guid_from_object(ads, mem_ctx, 
 				&object->inherited_type.inherited_type));
 	}

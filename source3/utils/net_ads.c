@@ -67,7 +67,7 @@ static int net_ads_cldap_netlogon(struct net_context *c, ADS_STRUCT *ads)
 		break;
 	}
 
-	d_printf("GUID: %s\n", smb_uuid_string(talloc_tos(), reply.domain_uuid));
+	d_printf("GUID: %s\n", GUID_string(talloc_tos(), &reply.domain_uuid));
 
 	d_printf("Flags:\n"
 		 "\tIs a PDC:                                   %s\n"

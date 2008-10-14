@@ -4373,7 +4373,7 @@ static bool construct_printer_info_7(Printer_entry *print_hnd, PRINTER_INFO_7 *p
 
 	if (is_printer_published(print_hnd, snum, &guid)) {
 		if (asprintf(&guid_str, "{%s}",
-			     smb_uuid_string(talloc_tos(), guid)) == -1) {
+			     GUID_string(talloc_tos(), &guid)) == -1) {
 			return false;
 		}
 		strupper_m(guid_str);

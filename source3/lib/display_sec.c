@@ -157,13 +157,13 @@ static void disp_sec_ace_object(struct security_ace_object *object)
 {
 	if (object->flags & SEC_ACE_OBJECT_PRESENT) {
 		printf("Object type: SEC_ACE_OBJECT_PRESENT\n");
-		printf("Object GUID: %s\n", smb_uuid_string(talloc_tos(),
-			object->type.type));
+		printf("Object GUID: %s\n", GUID_string(talloc_tos(),
+			&object->type.type));
 	}
 	if (object->flags & SEC_ACE_OBJECT_INHERITED_PRESENT) {
 		printf("Object type: SEC_ACE_OBJECT_INHERITED_PRESENT\n");
-		printf("Object GUID: %s\n", smb_uuid_string(talloc_tos(), 
-			object->inherited_type.inherited_type));
+		printf("Object GUID: %s\n", GUID_string(talloc_tos(), 
+			&object->inherited_type.inherited_type));
 	}
 }
 
