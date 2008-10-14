@@ -23,7 +23,7 @@
 #include "includes.h"
 #include "../lib/compression/lzxpress.h"
 #include "librpc/ndr/libndr.h"
-#include "librpc/ndr/ndr_compression.h"
+#include "../librpc/ndr/ndr_compression.h"
 #include <zlib.h>
 
 static voidpf ndr_zlib_alloc(voidpf opaque, uInt items, uInt size)

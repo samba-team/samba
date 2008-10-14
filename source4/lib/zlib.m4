@@ -1,4 +1,3 @@
-
 AC_CHECK_HEADERS(zlib.h)
 
 AC_CHECK_LIB_EXT(z, ZLIB_LIBS, zlibVersion)

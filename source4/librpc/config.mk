@@ -48,9 +48,7 @@ PUBLIC_DEPENDENCIES = LIBSAMBA-ERRORS LIBNDR
 # End SUBSYSTEM NDR_COMPRESSION
 ################################################
 
-NDR_COMPRESSION_OBJ_FILES = $(ndrsrcdir)/ndr_compression.o
-
-$(eval $(call proto_header_template,$(ndrsrcdir)/ndr_compression.h,$(NDR_COMPRESSION_OBJ_FILES:.o=.c)))
+NDR_COMPRESSION_OBJ_FILES = ../librpc/ndr/ndr_compression.o
 
 [SUBSYSTEM::NDR_SECURITY]
 PUBLIC_DEPENDENCIES = NDR_MISC LIBSECURITY

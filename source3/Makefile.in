@@ -247,7 +247,7 @@ SERVER_MUTEX_OBJ = lib/server_mutex.o
 PASSCHANGE_OBJ = libsmb/passchange.o
 
 LIBNDR_DRSUAPI_OBJ = librpc/ndr/ndr_drsuapi.o \
-		     librpc/ndr/ndr_compression.o \
+		     ../librpc/ndr/ndr_compression.o \
 		     librpc/gen_ndr/ndr_drsuapi.o \
 		     librpc/gen_ndr/ndr_drsblobs.o
 
