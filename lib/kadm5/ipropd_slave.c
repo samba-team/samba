@@ -549,7 +549,7 @@ main(int argc, char **argv)
 
     ret = kadm5_log_init (server_context);
     if (ret) {
-	krb5_clear_error_string(context);
+	krb5_clear_error_message(context);
 	krb5_err (context, 1, ret, "kadm5_log_init");
     }
 

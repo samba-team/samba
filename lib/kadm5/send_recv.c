@@ -48,7 +48,7 @@ _kadm5_client_send(kadm5_client_context *context, krb5_storage *sp)
     len = krb5_storage_seek(sp, 0, SEEK_CUR);
     ret = krb5_data_alloc(&msg, len);
     if (ret) {
-	krb5_clear_error_string(context->context);
+	krb5_clear_error_message(context->context);
 	return ret;
     }
     krb5_storage_seek(sp, 0, SEEK_SET);
@@ -61,14 +61,14 @@ _kadm5_client_send(kadm5_client_context *context, krb5_storage *sp)
 
     sock = krb5_storage_from_fd(context->sock);
     if(sock == NULL) {
-	krb5_clear_error_string(context->context);
+	krb5_clear_error_message(context->context);
 	krb5_data_free(&out);
 	return ENOMEM;
     }
 
     ret = krb5_store_data(sock, out);
     if (ret)
-	krb5_clear_error_string(context->context);
+	krb5_clear_error_message(context->context);
     krb5_storage_free(sock);
     krb5_data_free(&out);
     return ret;
@@ -83,12 +83,12 @@ _kadm5_client_recv(kadm5_client_context *context, krb5_data *reply)
 
     sock = krb5_storage_from_fd(context->sock);
     if(sock == NULL) {
-	krb5_clear_error_string(context->context);
+	krb5_clear_error_message(context->context);
 	return ENOMEM;
     }
     ret = krb5_ret_data(sock, &data);
     krb5_storage_free(sock);
-    krb5_clear_error_string(context->context);
+    krb5_clear_error_message(context->context);
     if(ret == KRB5_CC_END)
 	return KADM5_RPC_ERROR;
     else if(ret)

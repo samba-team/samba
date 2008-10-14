@@ -54,7 +54,7 @@ kadm5_c_randkey_principal(void *server_handle,
 
     sp = krb5_storage_from_mem(buf, sizeof(buf));
     if (sp == NULL) {
-	krb5_clear_error_string(context->context);
+	krb5_clear_error_message(context->context);
 	return ENOMEM;
     }
     krb5_store_int32(sp, kadm_randkey);
@@ -68,11 +68,11 @@ kadm5_c_randkey_principal(void *server_handle,
 	return ret;
     sp = krb5_storage_from_data(&reply);
     if (sp == NULL) {
-	krb5_clear_error_string(context->context);
+	krb5_clear_error_message(context->context);
 	krb5_data_free (&reply);
 	return ENOMEM;
     }
-    krb5_clear_error_string(context->context);
+    krb5_clear_error_message(context->context);
     krb5_ret_int32(sp, &tmp);
     ret = tmp;
     if(ret == 0){
