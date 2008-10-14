@@ -286,12 +286,32 @@ out:
 }
 
 /**
+ * Make a copy for the Kerberos 5 context, allocated krb5_contex shoud
+ * be freed with krb5_free_context().
+ *
+ * @param in the Kerberos context to copy
+ * @param out the copy of the Kerberos, set to NULL error.
+ *
+ * @return Returns 0 to indicate success.  Otherwise an kerberos et
+ * error code is returned, see krb5_get_error_message().
+ *
+ * @ingroup krb5
+ */
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_copy_context(krb5_context in, krb5_context **out)
+{
+    krb5_clear_error_message(in);
+    return EINVAL;
+}
+
+/**
  * Frees the krb5_context allocated by krb5_init_context().
  *
  * @param context context to be freed.
  *
- *  @ingroup krb5
-*/
+ * @ingroup krb5
+ */
 
 void KRB5_LIB_FUNCTION
 krb5_free_context(krb5_context context)
