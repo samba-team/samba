@@ -50,7 +50,7 @@ static struct {
 	.nlist = ETCDIR "/ctdb/nodes",
 	.transport = "tcp",
 	.event_script_dir = ETCDIR "/ctdb/events.d",
-	.logfile = LOGDIR "/log.ctdb",
+	.logfile = VARDIR "/log/log.ctdb",
 	.db_dir = VARDIR "/ctdb",
 	.db_dir_persistent = VARDIR "/ctdb/persistent",
 };
