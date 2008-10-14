@@ -1133,7 +1133,7 @@ int32_t ctdb_control_tcp_add(struct ctdb_context *ctdb, TDB_DATA indata)
 
 	vnn = find_public_ip_vnn(ctdb, &p->dest);
 	if (vnn == NULL) {
-		DEBUG(DEBUG_ERR,(__location__ " got TCP_ADD control for an address which is not a public address '%s'\n",
+		DEBUG(DEBUG_INFO,(__location__ " got TCP_ADD control for an address which is not a public address '%s'\n",
 			ctdb_addr_to_str(&p->dest)));
 
 		return -1;
