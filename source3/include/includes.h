@@ -908,14 +908,6 @@ int setresuid(uid_t ruid, uid_t euid, uid_t suid);
 int setresgid(gid_t rgid, gid_t egid, gid_t sgid);
 #endif
 
-/*
- * Some older systems seem not to have MAXHOSTNAMELEN
- * defined.
- */
-#ifndef MAXHOSTNAMELEN
-#define MAXHOSTNAMELEN 255
-#endif
-
 /* yuck, I'd like a better way of doing this */
 #define DIRP_SIZE (256 + 32)
 
