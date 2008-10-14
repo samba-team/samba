@@ -8,9 +8,9 @@ dnl
 
 AC_DEFUN([AC_SAMBA_GNU_MAKE],
 [
-AC_CACHE_CHECK([whether we have GNU make], samba_cv_gnu_make, [
 AC_PATH_PROGS(MAKE,gmake make)
 
+AC_CACHE_CHECK([whether we have GNU make], samba_cv_gnu_make, [
 if ! $ac_cv_path_MAKE --version | head -1 | grep GNU 2>/dev/null >/dev/null
 then
 	samba_cv_gnu_make=no
