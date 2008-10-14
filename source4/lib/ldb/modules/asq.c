@@ -222,10 +222,10 @@ static int asq_build_first_request(struct asq_context *ac, struct ldb_request **
 
 	base_attrs[1] = NULL;
 
-	ret = ldb_build_search_req_ex(base_req, ac->module->ldb, ac,
+	ret = ldb_build_search_req(base_req, ac->module->ldb, ac,
 					ac->req->op.search.base,
 					LDB_SCOPE_BASE,
-					ac->req->op.search.tree,
+					NULL,
 					(const char * const *)base_attrs,
 					NULL,
 					ac, asq_base_callback,

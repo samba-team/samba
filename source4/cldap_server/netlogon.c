@@ -349,7 +349,7 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 		if (version & NETLOGON_NT_VERSION_5EX_WITH_IP) {
 			/* Clearly this needs to be fixed up for IPv6 */
 			extra_flags = NETLOGON_NT_VERSION_5EX_WITH_IP;
-			netlogon->data.nt5_ex.sockaddr.sa_family    = 2;
+			netlogon->data.nt5_ex.sockaddr.sockaddr_family    = 2;
 			netlogon->data.nt5_ex.sockaddr.pdc_ip       = pdc_ip;
 			netlogon->data.nt5_ex.sockaddr.remaining = data_blob_talloc_zero(mem_ctx, 8);
 		}
