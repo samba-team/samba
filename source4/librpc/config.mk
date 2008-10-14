@@ -745,9 +745,9 @@ $(IDL_HEADER_FILES) $(IDL_NDR_PARSE_H_FILES) $(IDL_NDR_PARSE_C_FILES) \
 	$(IDL_NDR_PY_C_FILES) $(IDL_NDR_PY_H_FILES): idl
 
 idl_full:: $(pidldir)/lib/Parse/Pidl/IDL.pm $(pidldir)/lib/Parse/Pidl/Expr.pm 
-	@CPP="$(CPP)" PIDL="$(PIDL)" $(librpcsrcdir)/scripts/build_idl.sh FULL $(librpcsrcdir)/idl $(librpcsrcdir)/gen_ndr
+	@CPP="$(CPP)" PIDL="$(PIDL)" $(librpcsrcdir)/scripts/build_idl.sh FULL $(librpcsrcdir)/gen_ndr $(librpcsrcdir)/idl/*.idl
 
 idl:: $(pidldir)/lib/Parse/Pidl/IDL.pm $(pidldir)/lib/Parse/Pidl/Expr.pm 
-	@CPP="$(CPP)" PIDL="$(PIDL)" $(librpcsrcdir)/scripts/build_idl.sh PARTIAL $(librpcsrcdir)/idl $(librpcsrcdir)/gen_ndr
+	@CPP="$(CPP)" PIDL="$(PIDL)" $(librpcsrcdir)/scripts/build_idl.sh PARTIAL $(librpcsrcdir)/gen_ndr $(librpcsrcdir)/idl/*.idl
 
 
