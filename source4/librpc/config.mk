@@ -12,7 +12,7 @@ LIBNDR_OBJ_FILES = $(addprefix $(ndrsrcdir)/, ndr_string.o) ../librpc/ndr/ndr_ba
 
 $(eval $(call proto_header_template,$(ndrsrcdir)/libndr_proto.h,$(LIBNDR_OBJ_FILES:.o=.c)))
 
-PC_FILES += $(librpcsrcdir)/ndr.pc
+PC_FILES += ../librpc/ndr.pc
 LIBNDR_VERSION = 0.0.1
 LIBNDR_SOVERSION = 0
 
