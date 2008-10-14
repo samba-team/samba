@@ -118,7 +118,7 @@ _gsskrb5_clear_status (void)
 
     if (_gsskrb5_init (&context) != 0)
 	return;
-    krb5_clear_error_string(context);
+    krb5_clear_error_message(context);
 }
 
 void
