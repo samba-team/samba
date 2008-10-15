@@ -80,11 +80,23 @@ interface netlogon
 	   but it doesn't look as though this structure is reflected at the
 	   NDR level. Maybe it is left to the application to decode the bindata array.
 	*/
-	typedef struct {
-		uint16 size;
-		uint16 length;
-		[size_is(size/2),length_is(length/2)] uint16 *bindata;
+	typedef [public] struct {
+		dlong lockout_duration;
+		udlong reset_count;
+		uint32 bad_attempt_lockout;
+		uint32 dummy;
 	} netr_AcctLockStr;
+
+	/* - MSV1_0_ALLOW_SERVER_TRUST_ACCOUNT
+	 *   sets the NETLOGON_SERVER_TRUST_ACCOUNT user_flag
+	 * - MSV1_0_UPDATE_LOGON_STATISTICS
+	 *   sets the logon time on network logon
+	 * - MSV1_0_RETURN_USER_PARAMETERS
+	 *   sets the user parameters in the driveletter
+	 * - MSV1_0_RETURN_PROFILE_PATH
+	 *   returns the profilepath in the driveletter and
+	 *   sets LOGON_PROFILE_PATH_RETURNED user_flag
+	 */
 
 	typedef [public,bitmap32bit] bitmap {
 		MSV1_0_CLEARTEXT_PASSWORD_ALLOWED	= 0x00000002,
@@ -160,16 +172,17 @@ interface netlogon
 
 	/* Flags for user_flags below */
 	typedef [public,bitmap32bit] bitmap {
-		NETLOGON_GUEST			= 0x0001,
-		NETLOGON_NOENCRYPTION		= 0x0002,
-		NETLOGON_CACHED_ACCOUNT		= 0x0004,
-		NETLOGON_USED_LM_PASSWORD	= 0x0008,
-		NETLOGON_EXTRA_SIDS 		= 0x0020,
-		NETLOGON_SUBAUTH_SESSION_KEY	= 0x0040,
-		NETLOGON_SERVER_TRUST_ACCOUNT	= 0x0080,
-		NETLOGON_NTLMV2_ENABLED		= 0x0100,
-		NETLOGON_RESOURCE_GROUPS	= 0x0200,
-		NETLOGON_PROFILE_PATH_RETURNED	= 0x0400
+		NETLOGON_GUEST			= 0x00000001,
+		NETLOGON_NOENCRYPTION		= 0x00000002,
+		NETLOGON_CACHED_ACCOUNT		= 0x00000004,
+		NETLOGON_USED_LM_PASSWORD	= 0x00000008,
+		NETLOGON_EXTRA_SIDS 		= 0x00000020,
+		NETLOGON_SUBAUTH_SESSION_KEY	= 0x00000040,
+		NETLOGON_SERVER_TRUST_ACCOUNT	= 0x00000080,
+		NETLOGON_NTLMV2_ENABLED		= 0x00000100,
+		NETLOGON_RESOURCE_GROUPS	= 0x00000200,
+		NETLOGON_PROFILE_PATH_RETURNED	= 0x00000400,
+		NETLOGON_GRACE_LOGON		= 0x01000000
 	} netr_UserFlags;
 
 	typedef struct {
@@ -446,7 +459,7 @@ interface netlogon
 		NTTIME domain_create_time;
 		uint32 SecurityInformation;
 		sec_desc_buf sdbuf;
-		netr_AcctLockStr account_lockout;
+		lsa_BinaryString account_lockout;
 		lsa_String unknown2;
 		lsa_String unknown3;
 		lsa_String unknown4;
@@ -797,20 +810,26 @@ interface netlogon
 	/*****************/
 	/* Function 0x0C */
 
+	typedef [bitmap32bit] bitmap {
+		NETLOGON_CTRL_REPL_NEEDED	= 0x0001,
+		NETLOGON_CTRL_REPL_IN_PROGRESS	= 0x0002,
+		NETLOGON_CTRL_REPL_FULL_SYNC	= 0x0004
+	} netr_InfoFlags;
+
 	typedef struct {
-		uint32 flags;
+		netr_InfoFlags flags;
 		uint32 pdc_connection_status;
 	} netr_NETLOGON_INFO_1;
 
 	typedef struct {
-		uint32 flags;
+		netr_InfoFlags flags;
 		uint32 pdc_connection_status;
 		[string,charset(UTF16)] uint16 trusted_dc_name[];
 		uint32 tc_connection_status;
 	} netr_NETLOGON_INFO_2;
 
 	typedef struct {
-		uint32 flags;
+		netr_InfoFlags flags;
 		uint32 logon_attempts;
 		uint32 unknown1;
 		uint32 unknown2;
@@ -871,12 +890,9 @@ interface netlogon
 		);
 
 
-	/* If this flag is not set, then the passwords and LM session keys are
-	 * encrypted with DES calls.  (And the user session key is
-	 * unencrypted) */ 
-	const int NETLOGON_NEG_ARCFOUR  = 0x00000004;
-	const int NETLOGON_NEG_128BIT   = 0x00004000;
-	const int NETLOGON_NEG_SCHANNEL = 0x40000000;
+	/* If NETLOGON_NEG_ARCFOUR flag is not set, then the passwords and LM
+	 * session keys are encrypted with DES calls.  (And the user session key
+	 * is unencrypted) */
 
 	/*****************/
 	/* Function 0x0F */
@@ -907,14 +923,14 @@ interface netlogon
 		NETLOGON_NEG_AUTHENTICATED_RPC_LSASS	= 0x20000000,
 		NETLOGON_NEG_SCHANNEL			= 0x40000000 /* AUTHENTICATED_RPC */
 	} netr_NegotiateFlags;
- 
+
 	NTSTATUS netr_ServerAuthenticate2(
 		[in,unique]  [string,charset(UTF16)] uint16 *server_name,
 		[in]         [string,charset(UTF16)] uint16 account_name[],
 		[in]         netr_SchannelType secure_channel_type,
 		[in]         [string,charset(UTF16)] uint16 computer_name[],
 		[in,out,ref] netr_Credential *credentials,
-		[in,out,ref] uint32 *negotiate_flags
+		[in,out,ref] netr_NegotiateFlags *negotiate_flags
 		);
 
 
@@ -976,8 +992,25 @@ interface netlogon
 	/*****************/
 	/* Function 0x14 */
 
-	/* two unkown bits still: DS_IP_VERSION_AGNOSTIC and
-	 * DS_TRY_NEXTCLOSEST_SITE - Guenther */
+	/* one unkown bit still: DS_IP_VERSION_AGNOSTIC - gd*/
+
+	const int DSGETDC_VALID_FLAGS = (DS_FORCE_REDISCOVERY |
+					 DS_DIRECTORY_SERVICE_REQUIRED |
+					 DS_DIRECTORY_SERVICE_PREFERRED |
+					 DS_GC_SERVER_REQUIRED |
+					 DS_PDC_REQUIRED |
+					 DS_BACKGROUND_ONLY |
+					 DS_IP_REQUIRED |
+					 DS_KDC_REQUIRED |
+					 DS_TIMESERV_REQUIRED |
+					 DS_WRITABLE_REQUIRED |
+					 DS_GOOD_TIMESERV_PREFERRED |
+					 DS_AVOID_SELF |
+					 DS_ONLY_LDAP_NEEDED |
+					 DS_IS_FLAT_NAME |
+					 DS_IS_DNS_NAME |
+					 DS_RETURN_FLAT_NAME |
+					 DS_RETURN_DNS_NAME);
 
 	typedef [bitmap32bit] bitmap {
 		DS_FORCE_REDISCOVERY		= 0x00000001,
@@ -1007,19 +1040,21 @@ interface netlogon
 	} netr_DsRGetDCNameInfo_AddressType;
 
 	typedef [bitmap32bit] bitmap {
-		DS_SERVER_PDC		 = NBT_SERVER_PDC,
-		DS_SERVER_GC		 = NBT_SERVER_GC,
-		DS_SERVER_LDAP		 = NBT_SERVER_LDAP,
-		DS_SERVER_DS		 = NBT_SERVER_DS,
-		DS_SERVER_KDC		 = NBT_SERVER_KDC,
-		DS_SERVER_TIMESERV	 = NBT_SERVER_TIMESERV,
-		DS_SERVER_CLOSEST	 = NBT_SERVER_CLOSEST,
-		DS_SERVER_WRITABLE	 = NBT_SERVER_WRITABLE,
-		DS_SERVER_GOOD_TIMESERV	 = NBT_SERVER_GOOD_TIMESERV,
-		DS_SERVER_NDNC		 = 0x00000400,
-		DS_DNS_CONTROLLER	 = 0x20000000,
-		DS_DNS_DOMAIN		 = 0x40000000,
-		DS_DNS_FOREST		 = 0x80000000
+		DS_SERVER_PDC			 = NBT_SERVER_PDC,
+		DS_SERVER_GC			 = NBT_SERVER_GC,
+		DS_SERVER_LDAP			 = NBT_SERVER_LDAP,
+		DS_SERVER_DS			 = NBT_SERVER_DS,
+		DS_SERVER_KDC			 = NBT_SERVER_KDC,
+		DS_SERVER_TIMESERV		 = NBT_SERVER_TIMESERV,
+		DS_SERVER_CLOSEST		 = NBT_SERVER_CLOSEST,
+		DS_SERVER_WRITABLE		 = NBT_SERVER_WRITABLE,
+		DS_SERVER_GOOD_TIMESERV		 = NBT_SERVER_GOOD_TIMESERV,
+		DS_SERVER_NDNC			 = NBT_SERVER_NDNC,
+		DS_SERVER_SELECT_SECRET_DOMAIN_6 = NBT_SERVER_SELECT_SECRET_DOMAIN_6,
+		DS_SERVER_FULL_SECRET_DOMAIN_6	 = NBT_SERVER_FULL_SECRET_DOMAIN_6,
+		DS_DNS_CONTROLLER		 = 0x20000000,
+		DS_DNS_DOMAIN			 = 0x40000000,
+		DS_DNS_FOREST			 = 0x80000000
 	} netr_DsR_DcFlags;
 
 	typedef struct {
@@ -1070,12 +1105,12 @@ interface netlogon
 	/****************/
 	/* Function 0x1a */
 	[public] NTSTATUS netr_ServerAuthenticate3(
-		[in,unique]         [string,charset(UTF16)] uint16 *server_name,
+		[in,unique]  [string,charset(UTF16)] uint16 *server_name,
 		[in]         [string,charset(UTF16)] uint16 account_name[],
 		[in]         netr_SchannelType secure_channel_type,
 		[in]         [string,charset(UTF16)] uint16 computer_name[],
 		[in,out,ref] netr_Credential *credentials,
-		[in,out,ref] uint32 *negotiate_flags,
+		[in,out,ref] netr_NegotiateFlags *negotiate_flags,
 		[out,ref]    uint32 *rid
 		);
 
@@ -1379,7 +1414,7 @@ interface netlogon
 	/****************/
 	/* Function 0x2a */
 	NTSTATUS netr_ServerTrustPasswordsGet(
-		[in,unique]  [string,charset(UTF16)] uint16 *server_name,
+		[in,unique] [string,charset(UTF16)] uint16 *server_name,
 		[in]  [string,charset(UTF16)] uint16 account_name[],
 		[in]  netr_SchannelType secure_channel_type,
 		[in]  [string,charset(UTF16)] uint16 computer_name[],
