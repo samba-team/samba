@@ -3066,15 +3066,15 @@ _PUBLIC_ enum ndr_err_code ndr_push_samr_PasswordProperties(struct ndr_push *ndr
 _PUBLIC_ enum ndr_err_code ndr_pull_samr_PasswordProperties(struct ndr_pull *ndr, int ndr_flags, uint32_t *r);
 _PUBLIC_ void ndr_print_samr_PasswordProperties(struct ndr_print *ndr, const char *name, uint32_t r);
 _PUBLIC_ void ndr_print_samr_DomInfo1(struct ndr_print *ndr, const char *name, const struct samr_DomInfo1 *r);
-_PUBLIC_ void ndr_print_samr_DomInfo2(struct ndr_print *ndr, const char *name, const struct samr_DomInfo2 *r);
+_PUBLIC_ void ndr_print_samr_DomGeneralInformation(struct ndr_print *ndr, const char *name, const struct samr_DomGeneralInformation *r);
 _PUBLIC_ void ndr_print_samr_DomInfo3(struct ndr_print *ndr, const char *name, const struct samr_DomInfo3 *r);
-_PUBLIC_ void ndr_print_samr_DomInfo4(struct ndr_print *ndr, const char *name, const struct samr_DomInfo4 *r);
+_PUBLIC_ void ndr_print_samr_DomOEMInformation(struct ndr_print *ndr, const char *name, const struct samr_DomOEMInformation *r);
 _PUBLIC_ void ndr_print_samr_DomInfo5(struct ndr_print *ndr, const char *name, const struct samr_DomInfo5 *r);
 _PUBLIC_ void ndr_print_samr_DomInfo6(struct ndr_print *ndr, const char *name, const struct samr_DomInfo6 *r);
 _PUBLIC_ void ndr_print_samr_DomInfo7(struct ndr_print *ndr, const char *name, const struct samr_DomInfo7 *r);
 _PUBLIC_ void ndr_print_samr_DomInfo8(struct ndr_print *ndr, const char *name, const struct samr_DomInfo8 *r);
 _PUBLIC_ void ndr_print_samr_DomInfo9(struct ndr_print *ndr, const char *name, const struct samr_DomInfo9 *r);
-_PUBLIC_ void ndr_print_samr_DomInfo11(struct ndr_print *ndr, const char *name, const struct samr_DomInfo11 *r);
+_PUBLIC_ void ndr_print_samr_DomGeneralInformation2(struct ndr_print *ndr, const char *name, const struct samr_DomGeneralInformation2 *r);
 _PUBLIC_ void ndr_print_samr_DomInfo12(struct ndr_print *ndr, const char *name, const struct samr_DomInfo12 *r);
 _PUBLIC_ void ndr_print_samr_DomInfo13(struct ndr_print *ndr, const char *name, const struct samr_DomInfo13 *r);
 _PUBLIC_ void ndr_print_samr_DomainInfo(struct ndr_print *ndr, const char *name, const union samr_DomainInfo *r);
@@ -7287,22 +7287,22 @@ void init_samr_DomInfo1(struct samr_DomInfo1 *r,
 			uint32_t password_properties,
 			int64_t max_password_age,
 			int64_t min_password_age);
-void init_samr_DomInfo2(struct samr_DomInfo2 *r,
-			NTTIME force_logoff_time,
-			const char *comment,
-			const char *domain_name,
-			const char *primary,
-			uint64_t sequence_num,
-			uint32_t unknown2,
-			enum samr_Role role,
-			uint32_t unknown3,
-			uint32_t num_users,
-			uint32_t num_groups,
-			uint32_t num_aliases);
+void init_samr_DomGeneralInformation(struct samr_DomGeneralInformation *r,
+				     NTTIME force_logoff_time,
+				     const char *oem_information,
+				     const char *domain_name,
+				     const char *primary,
+				     uint64_t sequence_num,
+				     uint32_t unknown2,
+				     enum samr_Role role,
+				     uint32_t unknown3,
+				     uint32_t num_users,
+				     uint32_t num_groups,
+				     uint32_t num_aliases);
 void init_samr_DomInfo3(struct samr_DomInfo3 *r,
 			NTTIME force_logoff_time);
-void init_samr_DomInfo4(struct samr_DomInfo4 *r,
-			const char *comment);
+void init_samr_DomOEMInformation(struct samr_DomOEMInformation *r,
+				 const char *oem_information);
 void init_samr_DomInfo5(struct samr_DomInfo5 *r,
 			const char *domain_name);
 void init_samr_DomInfo6(struct samr_DomInfo6 *r,

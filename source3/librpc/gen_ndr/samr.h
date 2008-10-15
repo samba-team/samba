@@ -125,9 +125,9 @@ struct samr_DomInfo1 {
 	int64_t min_password_age;
 };
 
-struct samr_DomInfo2 {
+struct samr_DomGeneralInformation {
 	NTTIME force_logoff_time;
-	struct lsa_String comment;
+	struct lsa_String oem_information;
 	struct lsa_String domain_name;
 	struct lsa_String primary;
 	uint64_t sequence_num;
@@ -143,8 +143,8 @@ struct samr_DomInfo3 {
 	NTTIME force_logoff_time;
 };
 
-struct samr_DomInfo4 {
-	struct lsa_String comment;
+struct samr_DomOEMInformation {
+	struct lsa_String oem_information;
 };
 
 struct samr_DomInfo5 {
@@ -168,8 +168,8 @@ struct samr_DomInfo9 {
 	uint32_t unknown;
 };
 
-struct samr_DomInfo11 {
-	struct samr_DomInfo2 info2;
+struct samr_DomGeneralInformation2 {
+	struct samr_DomGeneralInformation general;
 	uint64_t lockout_duration;
 	uint64_t lockout_window;
 	uint16_t lockout_threshold;
@@ -190,15 +190,15 @@ struct samr_DomInfo13 {
 
 union samr_DomainInfo {
 	struct samr_DomInfo1 info1;/* [case] */
-	struct samr_DomInfo2 info2;/* [case(2)] */
+	struct samr_DomGeneralInformation general;/* [case(2)] */
 	struct samr_DomInfo3 info3;/* [case(3)] */
-	struct samr_DomInfo4 info4;/* [case(4)] */
+	struct samr_DomOEMInformation oem;/* [case(4)] */
 	struct samr_DomInfo5 info5;/* [case(5)] */
 	struct samr_DomInfo6 info6;/* [case(6)] */
 	struct samr_DomInfo7 info7;/* [case(7)] */
 	struct samr_DomInfo8 info8;/* [case(8)] */
 	struct samr_DomInfo9 info9;/* [case(9)] */
-	struct samr_DomInfo11 info11;/* [case(11)] */
+	struct samr_DomGeneralInformation2 general2;/* [case(11)] */
 	struct samr_DomInfo12 info12;/* [case(12)] */
 	struct samr_DomInfo13 info13;/* [case(13)] */
 }/* [switch_type(uint16)] */;

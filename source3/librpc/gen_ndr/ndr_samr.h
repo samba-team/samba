@@ -163,15 +163,15 @@ enum ndr_err_code ndr_push_samr_PasswordProperties(struct ndr_push *ndr, int ndr
 enum ndr_err_code ndr_pull_samr_PasswordProperties(struct ndr_pull *ndr, int ndr_flags, uint32_t *r);
 void ndr_print_samr_PasswordProperties(struct ndr_print *ndr, const char *name, uint32_t r);
 void ndr_print_samr_DomInfo1(struct ndr_print *ndr, const char *name, const struct samr_DomInfo1 *r);
-void ndr_print_samr_DomInfo2(struct ndr_print *ndr, const char *name, const struct samr_DomInfo2 *r);
+void ndr_print_samr_DomGeneralInformation(struct ndr_print *ndr, const char *name, const struct samr_DomGeneralInformation *r);
 void ndr_print_samr_DomInfo3(struct ndr_print *ndr, const char *name, const struct samr_DomInfo3 *r);
-void ndr_print_samr_DomInfo4(struct ndr_print *ndr, const char *name, const struct samr_DomInfo4 *r);
+void ndr_print_samr_DomOEMInformation(struct ndr_print *ndr, const char *name, const struct samr_DomOEMInformation *r);
 void ndr_print_samr_DomInfo5(struct ndr_print *ndr, const char *name, const struct samr_DomInfo5 *r);
 void ndr_print_samr_DomInfo6(struct ndr_print *ndr, const char *name, const struct samr_DomInfo6 *r);
 void ndr_print_samr_DomInfo7(struct ndr_print *ndr, const char *name, const struct samr_DomInfo7 *r);
 void ndr_print_samr_DomInfo8(struct ndr_print *ndr, const char *name, const struct samr_DomInfo8 *r);
 void ndr_print_samr_DomInfo9(struct ndr_print *ndr, const char *name, const struct samr_DomInfo9 *r);
-void ndr_print_samr_DomInfo11(struct ndr_print *ndr, const char *name, const struct samr_DomInfo11 *r);
+void ndr_print_samr_DomGeneralInformation2(struct ndr_print *ndr, const char *name, const struct samr_DomGeneralInformation2 *r);
 void ndr_print_samr_DomInfo12(struct ndr_print *ndr, const char *name, const struct samr_DomInfo12 *r);
 void ndr_print_samr_DomInfo13(struct ndr_print *ndr, const char *name, const struct samr_DomInfo13 *r);
 void ndr_print_samr_DomainInfo(struct ndr_print *ndr, const char *name, const union samr_DomainInfo *r);
