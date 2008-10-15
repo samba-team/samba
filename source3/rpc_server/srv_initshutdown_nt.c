@@ -37,7 +37,7 @@ WERROR _initshutdown_Init(pipes_struct *p, struct initshutdown_Init *r)
 	s.in.message = r->in.message;
 	s.in.timeout = r->in.timeout;
 	s.in.force_apps = r->in.force_apps;
-	s.in.reboot = r->in.reboot;
+	s.in.do_reboot = r->in.do_reboot;
 	s.in.reason = 0;
 
 	/* thunk down to _winreg_InitiateSystemShutdownEx() 
@@ -56,7 +56,7 @@ WERROR _initshutdown_InitEx(pipes_struct *p, struct initshutdown_InitEx *r)
 	s.in.message = r->in.message;
 	s.in.timeout = r->in.timeout;
 	s.in.force_apps = r->in.force_apps;
-	s.in.reboot = r->in.reboot;
+	s.in.do_reboot = r->in.do_reboot;
 	s.in.reason = r->in.reason;
 
 	return _winreg_InitiateSystemShutdownEx( p, &s);

@@ -61,7 +61,7 @@ static bool test_Init(struct torture_context *tctx,
 	init_lsa_StringLarge(r.in.message, "spottyfood");
 	r.in.force_apps = 1;
 	r.in.timeout = 30;
-	r.in.reboot = 1;
+	r.in.do_reboot = 1;
 
 	status = dcerpc_initshutdown_Init(p, tctx, &r);
 
@@ -83,7 +83,7 @@ static bool test_InitEx(struct torture_context *tctx,
 	init_lsa_StringLarge(r.in.message, "spottyfood");
 	r.in.force_apps = 1;
 	r.in.timeout = 30;
-	r.in.reboot = 1;
+	r.in.do_reboot = 1;
 	r.in.reason = 0;
 
 	status = dcerpc_initshutdown_InitEx(p, tctx, &r);

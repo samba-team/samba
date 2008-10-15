@@ -1630,7 +1630,7 @@ static bool test_InitiateSystemShutdown(struct torture_context *tctx,
 	init_lsa_StringLarge(r.in.message, "spottyfood");
 	r.in.force_apps = 1;
 	r.in.timeout = 30;
-	r.in.reboot = 1;
+	r.in.do_reboot = 1;
 
 	torture_assert_ntstatus_ok(tctx,
 				   dcerpc_winreg_InitiateSystemShutdown(p, tctx, &r),
@@ -1655,7 +1655,7 @@ static bool test_InitiateSystemShutdownEx(struct torture_context *tctx,
 	init_lsa_StringLarge(r.in.message, "spottyfood");
 	r.in.force_apps = 1;
 	r.in.timeout = 30;
-	r.in.reboot = 1;
+	r.in.do_reboot = 1;
 	r.in.reason = 0;
 
 	torture_assert_ntstatus_ok(tctx,

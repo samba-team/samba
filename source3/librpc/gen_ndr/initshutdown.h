@@ -13,7 +13,7 @@ struct initshutdown_Init {
 		struct lsa_StringLarge *message;/* [unique] */
 		uint32_t timeout;
 		uint8_t force_apps;
-		uint8_t reboot;
+		uint8_t do_reboot;
 	} in;
 
 	struct {
@@ -41,7 +41,7 @@ struct initshutdown_InitEx {
 		struct lsa_StringLarge *message;/* [unique] */
 		uint32_t timeout;
 		uint8_t force_apps;
-		uint8_t reboot;
+		uint8_t do_reboot;
 		uint32_t reason;
 	} in;
 

@@ -475,7 +475,7 @@ WERROR _winreg_InitiateSystemShutdown(pipes_struct *p, struct winreg_InitiateSys
 	s.in.message = r->in.message;
 	s.in.timeout = r->in.timeout;
 	s.in.force_apps = r->in.force_apps;
-	s.in.reboot = r->in.reboot;
+	s.in.do_reboot = r->in.do_reboot;
 	s.in.reason = 0;
 
 	/* thunk down to _winreg_InitiateSystemShutdownEx() 
@@ -526,7 +526,7 @@ WERROR _winreg_InitiateSystemShutdownEx(pipes_struct *p, struct winreg_InitiateS
 	}
 
 	fstr_sprintf(str_timeout, "%d", r->in.timeout);
-	fstr_sprintf(do_reboot, r->in.reboot ? SHUTDOWN_R_STRING : "");
+	fstr_sprintf(do_reboot, r->in.do_reboot ? SHUTDOWN_R_STRING : "");
 	fstr_sprintf(f, r->in.force_apps ? SHUTDOWN_F_STRING : "");
 	fstr_sprintf(str_reason, "%d", r->in.reason );
 
