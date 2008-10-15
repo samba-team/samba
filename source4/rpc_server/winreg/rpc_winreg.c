@@ -457,7 +457,7 @@ static WERROR dcesrv_winreg_QueryValue(struct dcesrv_call_state *dce_call,
 	case SECURITY_USER:
 		key = h->data;
 		
-		result = reg_key_get_value_by_name(mem_ctx, key, r->in.value_name.name,
+		result = reg_key_get_value_by_name(mem_ctx, key, r->in.value_name->name,
 						   &value_type, &value_data);
 		
 		if (!W_ERROR_IS_OK(result)) {

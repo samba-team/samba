@@ -2,7 +2,7 @@
   winreg interface definition
 */
 
-import "lsa.idl", "initshutdown.idl", "security.idl";
+import "lsa.idl", "security.idl";
 
 [ 
   uuid("338cd001-2244-31f1-aaaa-900038001003"),

@@ -197,7 +197,7 @@ static const uint8_t queryvalue_in_data[] = {
 static bool queryvalue_in_check(struct torture_context *tctx, 
 								  struct winreg_QueryValue *r)
 {
-	torture_assert_str_equal(tctx, r->in.value_name.name, "HOMEPATH", "name");
+	torture_assert_str_equal(tctx, r->in.value_name->name, "HOMEPATH", "name");
 	torture_assert_int_equal(tctx, *r->in.type, 0, "type");
 	torture_assert_int_equal(tctx, *r->in.size, 4095, "size");
 	torture_assert_int_equal(tctx, *r->in.length, 0, "length");

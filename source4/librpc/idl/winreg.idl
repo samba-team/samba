@@ -240,7 +240,7 @@ import "lsa.idl", "security.idl";
 	/* Function: 0x11 */
 	[public] WERROR winreg_QueryValue(
 		[in,ref] policy_handle *handle,
-		[in] winreg_String value_name,
+		[in,ref] winreg_String *value_name,
 		[in,out,unique] winreg_Type *type,
 		[in,out,unique,size_is(*size),length_is(*length)] uint8 *data,
 		[in,out,unique] uint32 *size,

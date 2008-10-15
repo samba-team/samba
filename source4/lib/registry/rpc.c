@@ -260,7 +260,7 @@ static WERROR rpc_get_value_by_name(TALLOC_CTX *mem_ctx,
 
 	ZERO_STRUCT(r);
 	r.in.handle = &mykeydata->pol;
-	r.in.value_name = name;
+	r.in.value_name = &name;
 	r.in.type = type;
 	r.in.data = &value;
 	r.in.size = &val_size;

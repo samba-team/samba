@@ -1539,7 +1539,8 @@ static bool test_QueryValue(struct dcerpc_pipe *p,
 	ZERO_STRUCT(r);
 	r.in.handle = handle;
 	r.in.data = NULL;
-	r.in.value_name.name = valuename;
+	r.in.value_name = talloc_zero(tctx, struct winreg_String);
+	r.in.value_name->name = valuename;
 	r.in.type = &zero_type;
 	r.in.size = &offered;
 	r.in.length = &zero;
