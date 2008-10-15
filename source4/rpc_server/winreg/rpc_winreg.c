@@ -470,16 +470,16 @@ static WERROR dcesrv_winreg_QueryValue(struct dcesrv_call_state *dce_call,
 			return WERR_NOMEM;
 		}
 		*r->out.type = value_type;
-		r->out.length = talloc(mem_ctx, uint32_t);
-		if (!r->out.length) {
+		r->out.data_length = talloc(mem_ctx, uint32_t);
+		if (!r->out.data_length) {
 			return WERR_NOMEM;
 		}
-		*r->out.length = value_data.length;
+		*r->out.data_length = value_data.length;
 		if (r->in.data == NULL) {
-			r->out.size = talloc(mem_ctx, uint32_t);
-			*r->out.size = value_data.length;
+			r->out.data_size = talloc(mem_ctx, uint32_t);
+			*r->out.data_size = value_data.length;
 		} else {
-			r->out.size = r->in.size;
+			r->out.data_size = r->in.data_size;
 			r->out.data = value_data.data;
 		}
 		

@@ -1542,8 +1542,8 @@ static bool test_QueryValue(struct dcerpc_pipe *p,
 	r.in.value_name = talloc_zero(tctx, struct winreg_String);
 	r.in.value_name->name = valuename;
 	r.in.type = &zero_type;
-	r.in.size = &offered;
-	r.in.length = &zero;
+	r.in.data_size = &offered;
+	r.in.data_length = &zero;
 
 	status = dcerpc_winreg_QueryValue(p, tctx, &r);
 	if (NT_STATUS_IS_ERR(status)) {
