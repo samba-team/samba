@@ -222,7 +222,8 @@ enum lsa_PolicyInfo
 	LSA_POLICY_INFO_DB=9,
 	LSA_POLICY_INFO_AUDIT_FULL_SET=10,
 	LSA_POLICY_INFO_AUDIT_FULL_QUERY=11,
-	LSA_POLICY_INFO_DNS=12
+	LSA_POLICY_INFO_DNS=12,
+	LSA_POLICY_INFO_DNS_INT=13
 }
 #else
  { __donnot_use_enum_lsa_PolicyInfo=0x7FFFFFFF}
@@ -238,6 +239,7 @@ enum lsa_PolicyInfo
 #define LSA_POLICY_INFO_AUDIT_FULL_SET ( 10 )
 #define LSA_POLICY_INFO_AUDIT_FULL_QUERY ( 11 )
 #define LSA_POLICY_INFO_DNS ( 12 )
+#define LSA_POLICY_INFO_DNS_INT ( 13 )
 #endif
 ;
 
@@ -324,7 +326,8 @@ enum lsa_LookupNamesLevel
 	LSA_LOOKUP_NAMES_PRIMARY_DOMAIN_ONLY=3,
 	LSA_LOOKUP_NAMES_UPLEVEL_TRUSTS_ONLY=4,
 	LSA_LOOKUP_NAMES_FOREST_TRUSTS_ONLY=5,
-	LSA_LOOKUP_NAMES_UPLEVEL_TRUSTS_ONLY2=6
+	LSA_LOOKUP_NAMES_UPLEVEL_TRUSTS_ONLY2=6,
+	LSA_LOOKUP_NAMES_RODC_REFERRAL_TO_FULL_DC=7
 }
 #else
  { __donnot_use_enum_lsa_LookupNamesLevel=0x7FFFFFFF}
@@ -334,6 +337,7 @@ enum lsa_LookupNamesLevel
 #define LSA_LOOKUP_NAMES_UPLEVEL_TRUSTS_ONLY ( 4 )
 #define LSA_LOOKUP_NAMES_FOREST_TRUSTS_ONLY ( 5 )
 #define LSA_LOOKUP_NAMES_UPLEVEL_TRUSTS_ONLY2 ( 6 )
+#define LSA_LOOKUP_NAMES_RODC_REFERRAL_TO_FULL_DC ( 7 )
 #endif
 ;
 
@@ -374,33 +378,73 @@ enum lsa_TrustDomInfoEnum
 #ifndef USE_UINT_ENUMS
  {
 	LSA_TRUSTED_DOMAIN_INFO_NAME=1,
-	LSA_TRUSTED_DOMAIN_INFO_CONTROLLERS_INFO=2,
+	LSA_TRUSTED_DOMAIN_INFO_CONTROLLERS=2,
 	LSA_TRUSTED_DOMAIN_INFO_POSIX_OFFSET=3,
 	LSA_TRUSTED_DOMAIN_INFO_PASSWORD=4,
 	LSA_TRUSTED_DOMAIN_INFO_BASIC=5,
 	LSA_TRUSTED_DOMAIN_INFO_INFO_EX=6,
 	LSA_TRUSTED_DOMAIN_INFO_AUTH_INFO=7,
 	LSA_TRUSTED_DOMAIN_INFO_FULL_INFO=8,
-	LSA_TRUSTED_DOMAIN_INFO_11=11,
-	LSA_TRUSTED_DOMAIN_INFO_INFO_ALL=12
+	LSA_TRUSTED_DOMAIN_INFO_AUTH_INFO_INTERNAL=9,
+	LSA_TRUSTED_DOMAIN_INFO_FULL_INFO_INTERNAL=10,
+	LSA_TRUSTED_DOMAIN_INFO_INFO_EX2_INTERNAL=11,
+	LSA_TRUSTED_DOMAIN_INFO_FULL_INFO_2_INTERNAL=12,
+	LSA_TRUSTED_DOMAIN_SUPPORTED_ENCRTYPION_TYPES=13
 }
 #else
  { __donnot_use_enum_lsa_TrustDomInfoEnum=0x7FFFFFFF}
 #define LSA_TRUSTED_DOMAIN_INFO_NAME ( 1 )
-#define LSA_TRUSTED_DOMAIN_INFO_CONTROLLERS_INFO ( 2 )
+#define LSA_TRUSTED_DOMAIN_INFO_CONTROLLERS ( 2 )
 #define LSA_TRUSTED_DOMAIN_INFO_POSIX_OFFSET ( 3 )
 #define LSA_TRUSTED_DOMAIN_INFO_PASSWORD ( 4 )
 #define LSA_TRUSTED_DOMAIN_INFO_BASIC ( 5 )
 #define LSA_TRUSTED_DOMAIN_INFO_INFO_EX ( 6 )
 #define LSA_TRUSTED_DOMAIN_INFO_AUTH_INFO ( 7 )
 #define LSA_TRUSTED_DOMAIN_INFO_FULL_INFO ( 8 )
-#define LSA_TRUSTED_DOMAIN_INFO_11 ( 11 )
-#define LSA_TRUSTED_DOMAIN_INFO_INFO_ALL ( 12 )
+#define LSA_TRUSTED_DOMAIN_INFO_AUTH_INFO_INTERNAL ( 9 )
+#define LSA_TRUSTED_DOMAIN_INFO_FULL_INFO_INTERNAL ( 10 )
+#define LSA_TRUSTED_DOMAIN_INFO_INFO_EX2_INTERNAL ( 11 )
+#define LSA_TRUSTED_DOMAIN_INFO_FULL_INFO_2_INTERNAL ( 12 )
+#define LSA_TRUSTED_DOMAIN_SUPPORTED_ENCRTYPION_TYPES ( 13 )
 #endif
 ;
 
+/* bitmap lsa_TrustDirection */
+#define LSA_TRUST_DIRECTION_INBOUND ( 0x00000001 )
+#define LSA_TRUST_DIRECTION_OUTBOUND ( 0x00000002 )
+
+enum lsa_TrustType
+#ifndef USE_UINT_ENUMS
+ {
+	LSA_TRUST_TYPE_DOWNLEVEL=0x00000001,
+	LSA_TRUST_TYPE_UPLEVEL=0x00000002,
+	LSA_TRUST_TYPE_MIT=0x00000003
+}
+#else
+ { __donnot_use_enum_lsa_TrustType=0x7FFFFFFF}
+#define LSA_TRUST_TYPE_DOWNLEVEL ( 0x00000001 )
+#define LSA_TRUST_TYPE_UPLEVEL ( 0x00000002 )
+#define LSA_TRUST_TYPE_MIT ( 0x00000003 )
+#endif
+;
+
+/* bitmap lsa_TrustAttributes */
+#define LSA_TRUST_ATTRIBUTE_NON_TRANSITIVE ( 0x00000001 )
+#define LSA_TRUST_ATTRIBUTE_UPLEVEL_ONLY ( 0x00000002 )
+#define LSA_TRUST_ATTRIBUTE_QUARANTINED_DOMAIN ( 0x00000004 )
+#define LSA_TRUST_ATTRIBUTE_FOREST_TRANSITIVE ( 0x00000008 )
+#define LSA_TRUST_ATTRIBUTE_CROSS_ORGANIZATION ( 0x00000010 )
+#define LSA_TRUST_ATTRIBUTE_WITHIN_FOREST ( 0x00000020 )
+#define LSA_TRUST_ATTRIBUTE_TREAT_AS_EXTERNAL ( 0x00000040 )
+#define LSA_TRUST_ATTRIBUTE_USES_RC4_ENCRYPTION ( 0x00000080 )
+
 struct lsa_TrustDomainInfoName {
 	struct lsa_StringLarge netbios_name;
+};
+
+struct lsa_TrustDomainInfoControllers {
+	uint32_t entries;
+	struct lsa_StringLarge *netbios_names;/* [unique,size_is(entries)] */
 };
 
 struct lsa_TrustDomainInfoPosixOffset {
@@ -422,13 +466,30 @@ struct lsa_TrustDomainInfoInfoEx {
 	struct lsa_StringLarge netbios_name;
 	struct dom_sid2 *sid;/* [unique] */
 	uint32_t trust_direction;
-	uint32_t trust_type;
+	enum lsa_TrustType trust_type;
 	uint32_t trust_attributes;
 };
 
+enum lsa_TrustAuthType
+#ifndef USE_UINT_ENUMS
+ {
+	TRUST_AUTH_TYPE_NONE=0,
+	TRUST_AUTH_TYPE_NT4OWF=1,
+	TRUST_AUTH_TYPE_CLEAR=2,
+	TRUST_AUTH_TYPE_VERSION=3
+}
+#else
+ { __donnot_use_enum_lsa_TrustAuthType=0x7FFFFFFF}
+#define TRUST_AUTH_TYPE_NONE ( 0 )
+#define TRUST_AUTH_TYPE_NT4OWF ( 1 )
+#define TRUST_AUTH_TYPE_CLEAR ( 2 )
+#define TRUST_AUTH_TYPE_VERSION ( 3 )
+#endif
+;
+
 struct lsa_TrustDomainInfoBuffer {
 	NTTIME last_update_time;
-	uint32_t secret_type;
+	enum lsa_TrustAuthType AuthType;
 	struct lsa_DATA_BUF2 data;
 };
 
@@ -447,28 +508,46 @@ struct lsa_TrustDomainInfoFullInfo {
 	struct lsa_TrustDomainInfoAuthInfo auth_info;
 };
 
-struct lsa_TrustDomainInfo11 {
-	struct lsa_TrustDomainInfoInfoEx info_ex;
-	struct lsa_DATA_BUF2 data1;
+struct lsa_TrustDomainInfoAuthInfoInternal {
+	struct lsa_DATA_BUF2 auth_blob;
 };
 
-struct lsa_TrustDomainInfoInfoAll {
+struct lsa_TrustDomainInfoFullInfoInternal {
 	struct lsa_TrustDomainInfoInfoEx info_ex;
-	struct lsa_DATA_BUF2 data1;
+	struct lsa_TrustDomainInfoPosixOffset posix_offset;
+	struct lsa_TrustDomainInfoAuthInfoInternal auth_info;
+};
+
+struct lsa_TrustDomainInfoInfoEx2Internal {
+	struct lsa_TrustDomainInfoInfoEx info_ex;
+	uint32_t forest_trust_length;
+	uint8_t *forest_trust_data;/* [unique,size_is(forest_trust_length)] */
+};
+
+struct lsa_TrustDomainInfoFullInfo2Internal {
+	struct lsa_TrustDomainInfoInfoEx2Internal info;
 	struct lsa_TrustDomainInfoPosixOffset posix_offset;
 	struct lsa_TrustDomainInfoAuthInfo auth_info;
 };
 
+struct lsa_TrustDomainInfoSupportedEncTypes {
+	uint32_t enc_types;
+};
+
 union lsa_TrustedDomainInfo {
 	struct lsa_TrustDomainInfoName name;/* [case(LSA_TRUSTED_DOMAIN_INFO_NAME)] */
+	struct lsa_TrustDomainInfoControllers controllers;/* [case(LSA_TRUSTED_DOMAIN_INFO_CONTROLLERS)] */
 	struct lsa_TrustDomainInfoPosixOffset posix_offset;/* [case(LSA_TRUSTED_DOMAIN_INFO_POSIX_OFFSET)] */
 	struct lsa_TrustDomainInfoPassword password;/* [case(LSA_TRUSTED_DOMAIN_INFO_PASSWORD)] */
 	struct lsa_TrustDomainInfoBasic info_basic;/* [case(LSA_TRUSTED_DOMAIN_INFO_BASIC)] */
 	struct lsa_TrustDomainInfoInfoEx info_ex;/* [case(LSA_TRUSTED_DOMAIN_INFO_INFO_EX)] */
 	struct lsa_TrustDomainInfoAuthInfo auth_info;/* [case(LSA_TRUSTED_DOMAIN_INFO_AUTH_INFO)] */
 	struct lsa_TrustDomainInfoFullInfo full_info;/* [case(LSA_TRUSTED_DOMAIN_INFO_FULL_INFO)] */
-	struct lsa_TrustDomainInfo11 info11;/* [case(LSA_TRUSTED_DOMAIN_INFO_11)] */
-	struct lsa_TrustDomainInfoInfoAll info_all;/* [case(LSA_TRUSTED_DOMAIN_INFO_INFO_ALL)] */
+	struct lsa_TrustDomainInfoAuthInfoInternal auth_info_internal;/* [case(LSA_TRUSTED_DOMAIN_INFO_AUTH_INFO_INTERNAL)] */
+	struct lsa_TrustDomainInfoFullInfoInternal full_info_internal;/* [case(LSA_TRUSTED_DOMAIN_INFO_FULL_INFO_INTERNAL)] */
+	struct lsa_TrustDomainInfoInfoEx2Internal info_ex2_internal;/* [case(LSA_TRUSTED_DOMAIN_INFO_INFO_EX2_INTERNAL)] */
+	struct lsa_TrustDomainInfoFullInfo2Internal full_info2_internal;/* [case(LSA_TRUSTED_DOMAIN_INFO_FULL_INFO_2_INTERNAL)] */
+	struct lsa_TrustDomainInfoSupportedEncTypes enc_types;/* [case(LSA_TRUSTED_DOMAIN_SUPPORTED_ENCRTYPION_TYPES)] */
 }/* [switch_type(lsa_TrustDomInfoEnum)] */;
 
 struct lsa_DATA_BUF_PTR {
@@ -549,7 +628,7 @@ struct lsa_TranslatedSid3 {
 	enum lsa_SidType sid_type;
 	struct dom_sid2 *sid;/* [unique] */
 	uint32_t sid_index;
-	uint32_t unknown;
+	uint32_t flags;
 };
 
 struct lsa_TransSidArray3 {
@@ -977,6 +1056,12 @@ struct lsa_QueryTrustedDomainInfo {
 
 struct lsa_SetInformationTrustedDomain {
 	struct {
+		struct policy_handle *trustdom_handle;/* [ref] */
+		enum lsa_TrustDomInfoEnum level;
+		union lsa_TrustedDomainInfo *info;/* [ref,switch_is(level)] */
+	} in;
+
+	struct {
 		NTSTATUS result;
 	} out;
 
@@ -1164,6 +1249,13 @@ struct lsa_QueryTrustedDomainInfoBySid {
 
 struct lsa_SetTrustedDomainInfo {
 	struct {
+		struct policy_handle *handle;/* [ref] */
+		struct dom_sid2 *dom_sid;/* [ref] */
+		enum lsa_TrustDomInfoEnum level;
+		union lsa_TrustedDomainInfo *info;/* [ref,switch_is(level)] */
+	} in;
+
+	struct {
 		NTSTATUS result;
 	} out;
 
@@ -1306,6 +1398,14 @@ struct lsa_EnumTrustedDomainsEx {
 
 struct lsa_CreateTrustedDomainEx {
 	struct {
+		struct policy_handle *policy_handle;/* [ref] */
+		struct lsa_TrustDomainInfoInfoEx *info;/* [ref] */
+		struct lsa_TrustDomainInfoAuthInfoInternal *auth_info;/* [ref] */
+		uint32_t access_mask;
+	} in;
+
+	struct {
+		struct policy_handle *trustdom_handle;/* [ref] */
 		NTSTATUS result;
 	} out;
 
@@ -1403,8 +1503,8 @@ struct lsa_LookupNames2 {
 		uint32_t num_names;/* [range(0,1000)] */
 		struct lsa_String *names;/* [size_is(num_names)] */
 		enum lsa_LookupNamesLevel level;
-		uint32_t unknown1;
-		uint32_t unknown2;
+		uint32_t lookup_options;
+		uint32_t client_revision;
 		struct lsa_TransSidArray2 *sids;/* [ref] */
 		uint32_t *count;/* [ref] */
 	} in;
@@ -1421,6 +1521,14 @@ struct lsa_LookupNames2 {
 
 struct lsa_CreateTrustedDomainEx2 {
 	struct {
+		struct policy_handle *policy_handle;/* [ref] */
+		struct lsa_TrustDomainInfoInfoEx *info;/* [ref] */
+		struct lsa_TrustDomainInfoAuthInfoInternal *auth_info;/* [ref] */
+		uint32_t access_mask;
+	} in;
+
+	struct {
+		struct policy_handle *trustdom_handle;/* [ref] */
 		NTSTATUS result;
 	} out;
 
@@ -1497,8 +1605,8 @@ struct lsa_LookupNames3 {
 		uint32_t num_names;/* [range(0,1000)] */
 		struct lsa_String *names;/* [size_is(num_names)] */
 		enum lsa_LookupNamesLevel level;
-		uint32_t unknown1;
-		uint32_t unknown2;
+		uint32_t lookup_options;
+		uint32_t client_revision;
 		struct lsa_TransSidArray3 *sids;/* [ref] */
 		uint32_t *count;/* [ref] */
 	} in;
@@ -1601,8 +1709,8 @@ struct lsa_LookupNames4 {
 		uint32_t num_names;/* [range(0,1000)] */
 		struct lsa_String *names;/* [size_is(num_names)] */
 		enum lsa_LookupNamesLevel level;
-		uint32_t unknown1;
-		uint32_t unknown2;
+		uint32_t lookup_options;
+		uint32_t client_revision;
 		struct lsa_TransSidArray3 *sids;/* [ref] */
 		uint32_t *count;/* [ref] */
 	} in;

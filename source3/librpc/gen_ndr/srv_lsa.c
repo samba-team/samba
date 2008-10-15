@@ -3982,6 +3982,13 @@ static bool api_lsa_CreateTrustedDomainEx(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_CreateTrustedDomainEx, r);
 	}
 
+	ZERO_STRUCT(r->out);
+	r->out.trustdom_handle = talloc_zero(r, struct policy_handle);
+	if (r->out.trustdom_handle == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
 	r->out.result = _lsa_CreateTrustedDomainEx(p, r);
 
 	if (p->rng_fault_state) {
@@ -4598,6 +4605,13 @@ static bool api_lsa_CreateTrustedDomainEx2(pipes_struct *p)
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(lsa_CreateTrustedDomainEx2, r);
+	}
+
+	ZERO_STRUCT(r->out);
+	r->out.trustdom_handle = talloc_zero(r, struct policy_handle);
+	if (r->out.trustdom_handle == NULL) {
+		talloc_free(r);
+		return false;
 	}
 
 	r->out.result = _lsa_CreateTrustedDomainEx2(p, r);
