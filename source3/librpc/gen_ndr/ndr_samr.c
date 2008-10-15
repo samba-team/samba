@@ -406,12 +406,12 @@ _PUBLIC_ void ndr_print_samr_DomInfo1(struct ndr_print *ndr, const char *name, c
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_samr_DomInfo2(struct ndr_push *ndr, int ndr_flags, const struct samr_DomInfo2 *r)
+static enum ndr_err_code ndr_push_samr_DomGeneralInformation(struct ndr_push *ndr, int ndr_flags, const struct samr_DomGeneralInformation *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
 		NDR_CHECK(ndr_push_NTTIME(ndr, NDR_SCALARS, r->force_logoff_time));
-		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_SCALARS, &r->comment));
+		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_SCALARS, &r->oem_information));
 		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_SCALARS, &r->domain_name));
 		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_SCALARS, &r->primary));
 		NDR_CHECK(ndr_push_udlong(ndr, NDR_SCALARS, r->sequence_num));
@@ -423,19 +423,19 @@ static enum ndr_err_code ndr_push_samr_DomInfo2(struct ndr_push *ndr, int ndr_fl
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->num_aliases));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
-		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_BUFFERS, &r->comment));
+		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_BUFFERS, &r->oem_information));
 		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_BUFFERS, &r->domain_name));
 		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_BUFFERS, &r->primary));
 	}
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_samr_DomInfo2(struct ndr_pull *ndr, int ndr_flags, struct samr_DomInfo2 *r)
+static enum ndr_err_code ndr_pull_samr_DomGeneralInformation(struct ndr_pull *ndr, int ndr_flags, struct samr_DomGeneralInformation *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_NTTIME(ndr, NDR_SCALARS, &r->force_logoff_time));
-		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_SCALARS, &r->comment));
+		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_SCALARS, &r->oem_information));
 		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_SCALARS, &r->domain_name));
 		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_SCALARS, &r->primary));
 		NDR_CHECK(ndr_pull_udlong(ndr, NDR_SCALARS, &r->sequence_num));
@@ -447,19 +447,19 @@ static enum ndr_err_code ndr_pull_samr_DomInfo2(struct ndr_pull *ndr, int ndr_fl
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->num_aliases));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
-		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_BUFFERS, &r->comment));
+		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_BUFFERS, &r->oem_information));
 		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_BUFFERS, &r->domain_name));
 		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_BUFFERS, &r->primary));
 	}
 	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ void ndr_print_samr_DomInfo2(struct ndr_print *ndr, const char *name, const struct samr_DomInfo2 *r)
+_PUBLIC_ void ndr_print_samr_DomGeneralInformation(struct ndr_print *ndr, const char *name, const struct samr_DomGeneralInformation *r)
 {
-	ndr_print_struct(ndr, name, "samr_DomInfo2");
+	ndr_print_struct(ndr, name, "samr_DomGeneralInformation");
 	ndr->depth++;
 	ndr_print_NTTIME(ndr, "force_logoff_time", r->force_logoff_time);
-	ndr_print_lsa_String(ndr, "comment", &r->comment);
+	ndr_print_lsa_String(ndr, "oem_information", &r->oem_information);
 	ndr_print_lsa_String(ndr, "domain_name", &r->domain_name);
 	ndr_print_lsa_String(ndr, "primary", &r->primary);
 	ndr_print_udlong(ndr, "sequence_num", r->sequence_num);
@@ -502,35 +502,35 @@ _PUBLIC_ void ndr_print_samr_DomInfo3(struct ndr_print *ndr, const char *name, c
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_samr_DomInfo4(struct ndr_push *ndr, int ndr_flags, const struct samr_DomInfo4 *r)
+static enum ndr_err_code ndr_push_samr_DomOEMInformation(struct ndr_push *ndr, int ndr_flags, const struct samr_DomOEMInformation *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
-		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_SCALARS, &r->comment));
+		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_SCALARS, &r->oem_information));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
-		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_BUFFERS, &r->comment));
+		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_BUFFERS, &r->oem_information));
 	}
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_samr_DomInfo4(struct ndr_pull *ndr, int ndr_flags, struct samr_DomInfo4 *r)
+static enum ndr_err_code ndr_pull_samr_DomOEMInformation(struct ndr_pull *ndr, int ndr_flags, struct samr_DomOEMInformation *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
-		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_SCALARS, &r->comment));
+		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_SCALARS, &r->oem_information));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
-		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_BUFFERS, &r->comment));
+		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_BUFFERS, &r->oem_information));
 	}
 	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ void ndr_print_samr_DomInfo4(struct ndr_print *ndr, const char *name, const struct samr_DomInfo4 *r)
+_PUBLIC_ void ndr_print_samr_DomOEMInformation(struct ndr_print *ndr, const char *name, const struct samr_DomOEMInformation *r)
 {
-	ndr_print_struct(ndr, name, "samr_DomInfo4");
+	ndr_print_struct(ndr, name, "samr_DomOEMInformation");
 	ndr->depth++;
-	ndr_print_lsa_String(ndr, "comment", &r->comment);
+	ndr_print_lsa_String(ndr, "oem_information", &r->oem_information);
 	ndr->depth--;
 }
 
@@ -691,41 +691,41 @@ _PUBLIC_ void ndr_print_samr_DomInfo9(struct ndr_print *ndr, const char *name, c
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_samr_DomInfo11(struct ndr_push *ndr, int ndr_flags, const struct samr_DomInfo11 *r)
+static enum ndr_err_code ndr_push_samr_DomGeneralInformation2(struct ndr_push *ndr, int ndr_flags, const struct samr_DomGeneralInformation2 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 8));
-		NDR_CHECK(ndr_push_samr_DomInfo2(ndr, NDR_SCALARS, &r->info2));
+		NDR_CHECK(ndr_push_samr_DomGeneralInformation(ndr, NDR_SCALARS, &r->general));
 		NDR_CHECK(ndr_push_hyper(ndr, NDR_SCALARS, r->lockout_duration));
 		NDR_CHECK(ndr_push_hyper(ndr, NDR_SCALARS, r->lockout_window));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->lockout_threshold));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
-		NDR_CHECK(ndr_push_samr_DomInfo2(ndr, NDR_BUFFERS, &r->info2));
+		NDR_CHECK(ndr_push_samr_DomGeneralInformation(ndr, NDR_BUFFERS, &r->general));
 	}
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_samr_DomInfo11(struct ndr_pull *ndr, int ndr_flags, struct samr_DomInfo11 *r)
+static enum ndr_err_code ndr_pull_samr_DomGeneralInformation2(struct ndr_pull *ndr, int ndr_flags, struct samr_DomGeneralInformation2 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 8));
-		NDR_CHECK(ndr_pull_samr_DomInfo2(ndr, NDR_SCALARS, &r->info2));
+		NDR_CHECK(ndr_pull_samr_DomGeneralInformation(ndr, NDR_SCALARS, &r->general));
 		NDR_CHECK(ndr_pull_hyper(ndr, NDR_SCALARS, &r->lockout_duration));
 		NDR_CHECK(ndr_pull_hyper(ndr, NDR_SCALARS, &r->lockout_window));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->lockout_threshold));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
-		NDR_CHECK(ndr_pull_samr_DomInfo2(ndr, NDR_BUFFERS, &r->info2));
+		NDR_CHECK(ndr_pull_samr_DomGeneralInformation(ndr, NDR_BUFFERS, &r->general));
 	}
 	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ void ndr_print_samr_DomInfo11(struct ndr_print *ndr, const char *name, const struct samr_DomInfo11 *r)
+_PUBLIC_ void ndr_print_samr_DomGeneralInformation2(struct ndr_print *ndr, const char *name, const struct samr_DomGeneralInformation2 *r)
 {
-	ndr_print_struct(ndr, name, "samr_DomInfo11");
+	ndr_print_struct(ndr, name, "samr_DomGeneralInformation2");
 	ndr->depth++;
-	ndr_print_samr_DomInfo2(ndr, "info2", &r->info2);
+	ndr_print_samr_DomGeneralInformation(ndr, "general", &r->general);
 	ndr_print_hyper(ndr, "lockout_duration", r->lockout_duration);
 	ndr_print_hyper(ndr, "lockout_window", r->lockout_window);
 	ndr_print_uint16(ndr, "lockout_threshold", r->lockout_threshold);
@@ -818,7 +818,7 @@ static enum ndr_err_code ndr_push_samr_DomainInfo(struct ndr_push *ndr, int ndr_
 			break; }
 
 			case 2: {
-				NDR_CHECK(ndr_push_samr_DomInfo2(ndr, NDR_SCALARS, &r->info2));
+				NDR_CHECK(ndr_push_samr_DomGeneralInformation(ndr, NDR_SCALARS, &r->general));
 			break; }
 
 			case 3: {
@@ -826,7 +826,7 @@ static enum ndr_err_code ndr_push_samr_DomainInfo(struct ndr_push *ndr, int ndr_
 			break; }
 
 			case 4: {
-				NDR_CHECK(ndr_push_samr_DomInfo4(ndr, NDR_SCALARS, &r->info4));
+				NDR_CHECK(ndr_push_samr_DomOEMInformation(ndr, NDR_SCALARS, &r->oem));
 			break; }
 
 			case 5: {
@@ -850,7 +850,7 @@ static enum ndr_err_code ndr_push_samr_DomainInfo(struct ndr_push *ndr, int ndr_
 			break; }
 
 			case 11: {
-				NDR_CHECK(ndr_push_samr_DomInfo11(ndr, NDR_SCALARS, &r->info11));
+				NDR_CHECK(ndr_push_samr_DomGeneralInformation2(ndr, NDR_SCALARS, &r->general2));
 			break; }
 
 			case 12: {
@@ -872,14 +872,14 @@ static enum ndr_err_code ndr_push_samr_DomainInfo(struct ndr_push *ndr, int ndr_
 			break;
 
 			case 2:
-				NDR_CHECK(ndr_push_samr_DomInfo2(ndr, NDR_BUFFERS, &r->info2));
+				NDR_CHECK(ndr_push_samr_DomGeneralInformation(ndr, NDR_BUFFERS, &r->general));
 			break;
 
 			case 3:
 			break;
 
 			case 4:
-				NDR_CHECK(ndr_push_samr_DomInfo4(ndr, NDR_BUFFERS, &r->info4));
+				NDR_CHECK(ndr_push_samr_DomOEMInformation(ndr, NDR_BUFFERS, &r->oem));
 			break;
 
 			case 5:
@@ -900,7 +900,7 @@ static enum ndr_err_code ndr_push_samr_DomainInfo(struct ndr_push *ndr, int ndr_
 			break;
 
 			case 11:
-				NDR_CHECK(ndr_push_samr_DomInfo11(ndr, NDR_BUFFERS, &r->info11));
+				NDR_CHECK(ndr_push_samr_DomGeneralInformation2(ndr, NDR_BUFFERS, &r->general2));
 			break;
 
 			case 12:
@@ -932,7 +932,7 @@ static enum ndr_err_code ndr_pull_samr_DomainInfo(struct ndr_pull *ndr, int ndr_
 			break; }
 
 			case 2: {
-				NDR_CHECK(ndr_pull_samr_DomInfo2(ndr, NDR_SCALARS, &r->info2));
+				NDR_CHECK(ndr_pull_samr_DomGeneralInformation(ndr, NDR_SCALARS, &r->general));
 			break; }
 
 			case 3: {
@@ -940,7 +940,7 @@ static enum ndr_err_code ndr_pull_samr_DomainInfo(struct ndr_pull *ndr, int ndr_
 			break; }
 
 			case 4: {
-				NDR_CHECK(ndr_pull_samr_DomInfo4(ndr, NDR_SCALARS, &r->info4));
+				NDR_CHECK(ndr_pull_samr_DomOEMInformation(ndr, NDR_SCALARS, &r->oem));
 			break; }
 
 			case 5: {
@@ -964,7 +964,7 @@ static enum ndr_err_code ndr_pull_samr_DomainInfo(struct ndr_pull *ndr, int ndr_
 			break; }
 
 			case 11: {
-				NDR_CHECK(ndr_pull_samr_DomInfo11(ndr, NDR_SCALARS, &r->info11));
+				NDR_CHECK(ndr_pull_samr_DomGeneralInformation2(ndr, NDR_SCALARS, &r->general2));
 			break; }
 
 			case 12: {
@@ -985,14 +985,14 @@ static enum ndr_err_code ndr_pull_samr_DomainInfo(struct ndr_pull *ndr, int ndr_
 			break;
 
 			case 2:
-				NDR_CHECK(ndr_pull_samr_DomInfo2(ndr, NDR_BUFFERS, &r->info2));
+				NDR_CHECK(ndr_pull_samr_DomGeneralInformation(ndr, NDR_BUFFERS, &r->general));
 			break;
 
 			case 3:
 			break;
 
 			case 4:
-				NDR_CHECK(ndr_pull_samr_DomInfo4(ndr, NDR_BUFFERS, &r->info4));
+				NDR_CHECK(ndr_pull_samr_DomOEMInformation(ndr, NDR_BUFFERS, &r->oem));
 			break;
 
 			case 5:
@@ -1013,7 +1013,7 @@ static enum ndr_err_code ndr_pull_samr_DomainInfo(struct ndr_pull *ndr, int ndr_
 			break;
 
 			case 11:
-				NDR_CHECK(ndr_pull_samr_DomInfo11(ndr, NDR_BUFFERS, &r->info11));
+				NDR_CHECK(ndr_pull_samr_DomGeneralInformation2(ndr, NDR_BUFFERS, &r->general2));
 			break;
 
 			case 12:
@@ -1040,7 +1040,7 @@ _PUBLIC_ void ndr_print_samr_DomainInfo(struct ndr_print *ndr, const char *name,
 		break;
 
 		case 2:
-			ndr_print_samr_DomInfo2(ndr, "info2", &r->info2);
+			ndr_print_samr_DomGeneralInformation(ndr, "general", &r->general);
 		break;
 
 		case 3:
@@ -1048,7 +1048,7 @@ _PUBLIC_ void ndr_print_samr_DomainInfo(struct ndr_print *ndr, const char *name,
 		break;
 
 		case 4:
-			ndr_print_samr_DomInfo4(ndr, "info4", &r->info4);
+			ndr_print_samr_DomOEMInformation(ndr, "oem", &r->oem);
 		break;
 
 		case 5:
@@ -1072,7 +1072,7 @@ _PUBLIC_ void ndr_print_samr_DomainInfo(struct ndr_print *ndr, const char *name,
 		break;
 
 		case 11:
-			ndr_print_samr_DomInfo11(ndr, "info11", &r->info11);
+			ndr_print_samr_DomGeneralInformation2(ndr, "general2", &r->general2);
 		break;
 
 		case 12:

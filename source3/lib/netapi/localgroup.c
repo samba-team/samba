@@ -822,7 +822,7 @@ WERROR NetLocalGroupEnum_r(struct libnetapi_ctx *ctx,
 	}
 
 	if (r->out.total_entries) {
-		*r->out.total_entries += builtin_info->info2.num_aliases;
+		*r->out.total_entries += builtin_info->general.num_aliases;
 	}
 
 	status = rpccli_samr_QueryDomainInfo(pipe_cli, ctx,
@@ -835,7 +835,7 @@ WERROR NetLocalGroupEnum_r(struct libnetapi_ctx *ctx,
 	}
 
 	if (r->out.total_entries) {
-		*r->out.total_entries += domain_info->info2.num_aliases;
+		*r->out.total_entries += domain_info->general.num_aliases;
 	}
 
 	status = rpccli_samr_EnumDomainAliases(pipe_cli, ctx,

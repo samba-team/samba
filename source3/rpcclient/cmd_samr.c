@@ -146,24 +146,24 @@ static void display_sam_dom_info_1(struct samr_DomInfo1 *info1)
 		display_time(info1->min_password_age));
 }
 
-static void display_sam_dom_info_2(struct samr_DomInfo2 *info2)
+static void display_sam_dom_info_2(struct samr_DomGeneralInformation *general)
 {
-	printf("Domain:\t\t%s\n", info2->domain_name.string);
-	printf("Server:\t\t%s\n", info2->primary.string);
-	printf("Comment:\t%s\n", info2->comment.string);
+	printf("Domain:\t\t%s\n", general->domain_name.string);
+	printf("Server:\t\t%s\n", general->primary.string);
+	printf("Comment:\t%s\n", general->oem_information.string);
 
-	printf("Total Users:\t%d\n", info2->num_users);
-	printf("Total Groups:\t%d\n", info2->num_groups);
-	printf("Total Aliases:\t%d\n", info2->num_aliases);
+	printf("Total Users:\t%d\n", general->num_users);
+	printf("Total Groups:\t%d\n", general->num_groups);
+	printf("Total Aliases:\t%d\n", general->num_aliases);
 
-	printf("Sequence No:\t%llu\n", (unsigned long long)info2->sequence_num);
+	printf("Sequence No:\t%llu\n", (unsigned long long)general->sequence_num);
 
 	printf("Force Logoff:\t%d\n",
-		(int)nt_time_to_unix_abs(&info2->force_logoff_time));
+		(int)nt_time_to_unix_abs(&general->force_logoff_time));
 
-	printf("Unknown 2:\t0x%x\n", info2->unknown2);
-	printf("Server Role:\t%s\n", server_role_str(info2->role));
-	printf("Unknown 3:\t0x%x\n", info2->unknown3);
+	printf("Unknown 2:\t0x%x\n", general->unknown2);
+	printf("Server Role:\t%s\n", server_role_str(general->role));
+	printf("Unknown 3:\t0x%x\n", general->unknown3);
 }
 
 static void display_sam_dom_info_3(struct samr_DomInfo3 *info3)
@@ -172,9 +172,9 @@ static void display_sam_dom_info_3(struct samr_DomInfo3 *info3)
 		(int)nt_time_to_unix_abs(&info3->force_logoff_time));
 }
 
-static void display_sam_dom_info_4(struct samr_DomInfo4 *info4)
+static void display_sam_dom_info_4(struct samr_DomOEMInformation *oem)
 {
-	printf("Comment:\t%s\n", info4->comment.string);
+	printf("Comment:\t%s\n", oem->oem_information.string);
 }
 
 static void display_sam_dom_info_5(struct samr_DomInfo5 *info5)
@@ -1607,13 +1607,13 @@ static NTSTATUS cmd_samr_query_dominfo(struct rpc_pipe_client *cli,
 		display_sam_dom_info_1(&info->info1);
 		break;
 	case 2:
-		display_sam_dom_info_2(&info->info2);
+		display_sam_dom_info_2(&info->general);
 		break;
 	case 3:
 		display_sam_dom_info_3(&info->info3);
 		break;
 	case 4:
-		display_sam_dom_info_4(&info->info4);
+		display_sam_dom_info_4(&info->oem);
 		break;
 	case 5:
 		display_sam_dom_info_5(&info->info5);

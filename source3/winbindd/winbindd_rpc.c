@@ -1018,7 +1018,7 @@ static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 					     &info);
 
 	if (NT_STATUS_IS_OK(result)) {
-		*seq = info->info2.sequence_num;
+		*seq = info->general.sequence_num;
 		got_seq_num = True;
 	}
 
