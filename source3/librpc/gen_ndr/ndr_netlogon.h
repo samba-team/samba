@@ -118,9 +118,11 @@ void ndr_print_netr_IdentityInfo(struct ndr_print *ndr, const char *name, const 
 void ndr_print_netr_PasswordInfo(struct ndr_print *ndr, const char *name, const struct netr_PasswordInfo *r);
 void ndr_print_netr_ChallengeResponse(struct ndr_print *ndr, const char *name, const struct netr_ChallengeResponse *r);
 void ndr_print_netr_NetworkInfo(struct ndr_print *ndr, const char *name, const struct netr_NetworkInfo *r);
-enum ndr_err_code ndr_push_netr_LogonInfo(struct ndr_push *ndr, int ndr_flags, const union netr_LogonInfo *r);
-enum ndr_err_code ndr_pull_netr_LogonInfo(struct ndr_pull *ndr, int ndr_flags, union netr_LogonInfo *r);
-void ndr_print_netr_LogonInfo(struct ndr_print *ndr, const char *name, const union netr_LogonInfo *r);
+void ndr_print_netr_GenericInfo(struct ndr_print *ndr, const char *name, const struct netr_GenericInfo *r);
+void ndr_print_netr_LogonInfoClass(struct ndr_print *ndr, const char *name, enum netr_LogonInfoClass r);
+enum ndr_err_code ndr_push_netr_LogonLevel(struct ndr_push *ndr, int ndr_flags, const union netr_LogonLevel *r);
+enum ndr_err_code ndr_pull_netr_LogonLevel(struct ndr_pull *ndr, int ndr_flags, union netr_LogonLevel *r);
+void ndr_print_netr_LogonLevel(struct ndr_print *ndr, const char *name, const union netr_LogonLevel *r);
 enum ndr_err_code ndr_push_netr_UserSessionKey(struct ndr_push *ndr, int ndr_flags, const struct netr_UserSessionKey *r);
 enum ndr_err_code ndr_pull_netr_UserSessionKey(struct ndr_pull *ndr, int ndr_flags, struct netr_UserSessionKey *r);
 void ndr_print_netr_UserSessionKey(struct ndr_print *ndr, const char *name, const struct netr_UserSessionKey *r);
@@ -138,6 +140,7 @@ enum ndr_err_code ndr_pull_netr_SamInfo3(struct ndr_pull *ndr, int ndr_flags, st
 void ndr_print_netr_SamInfo3(struct ndr_print *ndr, const char *name, const struct netr_SamInfo3 *r);
 void ndr_print_netr_SamInfo6(struct ndr_print *ndr, const char *name, const struct netr_SamInfo6 *r);
 void ndr_print_netr_PacInfo(struct ndr_print *ndr, const char *name, const struct netr_PacInfo *r);
+void ndr_print_netr_GenericInfo2(struct ndr_print *ndr, const char *name, const struct netr_GenericInfo2 *r);
 enum ndr_err_code ndr_push_netr_Validation(struct ndr_push *ndr, int ndr_flags, const union netr_Validation *r);
 enum ndr_err_code ndr_pull_netr_Validation(struct ndr_pull *ndr, int ndr_flags, union netr_Validation *r);
 void ndr_print_netr_Validation(struct ndr_print *ndr, const char *name, const union netr_Validation *r);
@@ -147,7 +150,6 @@ void ndr_print_netr_Credential(struct ndr_print *ndr, const char *name, const st
 enum ndr_err_code ndr_push_netr_Authenticator(struct ndr_push *ndr, int ndr_flags, const struct netr_Authenticator *r);
 enum ndr_err_code ndr_pull_netr_Authenticator(struct ndr_pull *ndr, int ndr_flags, struct netr_Authenticator *r);
 void ndr_print_netr_Authenticator(struct ndr_print *ndr, const char *name, const struct netr_Authenticator *r);
-void ndr_print_netr_LogonLevel(struct ndr_print *ndr, const char *name, enum netr_LogonLevel r);
 void ndr_print_netr_DELTA_DELETE_USER(struct ndr_print *ndr, const char *name, const struct netr_DELTA_DELETE_USER *r);
 void ndr_print_netr_USER_KEY16(struct ndr_print *ndr, const char *name, const struct netr_USER_KEY16 *r);
 void ndr_print_netr_PasswordHistory(struct ndr_print *ndr, const char *name, const struct netr_PasswordHistory *r);

@@ -155,11 +155,11 @@ interface netlogon
 	typedef [public,switch_type(netr_LogonInfoClass)] union {
 		[case(NetlogonInteractiveInformation)]           netr_PasswordInfo *password;
 		[case(NetlogonNetworkInformation)]               netr_NetworkInfo  *network;
- 		[case(NetlogonServiceInformation)]               netr_PasswordInfo *password;
- 		[case(NetlogonGenericInformation)]               netr_GenericInfo  *generic;
+		[case(NetlogonServiceInformation)]               netr_PasswordInfo *password;
+		[case(NetlogonGenericInformation)]               netr_GenericInfo  *generic;
 		[case(NetlogonInteractiveTransitiveInformation)] netr_PasswordInfo *password;
 		[case(NetlogonNetworkTransitiveInformation)]     netr_NetworkInfo  *network;
- 		[case(NetlogonServiceTransitiveInformation)]     netr_PasswordInfo *password;
+		[case(NetlogonServiceTransitiveInformation)]     netr_PasswordInfo *password;
 	} netr_LogonLevel;
 
 	typedef [public,flag(NDR_PAHEX)] struct {
@@ -304,7 +304,7 @@ interface netlogon
 		[in,unique] [string,charset(UTF16)] uint16 *computer_name,
 		[in,unique] netr_Authenticator *credential,
 		[in,out,unique] netr_Authenticator *return_authenticator,
-		[in] uint16 logon_level,
+		[in] netr_LogonInfoClass logon_level,
 		[in] [switch_is(logon_level)] netr_LogonLevel logon
 		);
 	
@@ -1382,7 +1382,7 @@ interface netlogon
 	NTSTATUS netr_LogonSamLogonEx(
 		[in,unique] [string,charset(UTF16)] uint16 *server_name,
 		[in,unique] [string,charset(UTF16)] uint16 *computer_name,
-		[in]  uint16 logon_level,
+		[in]  netr_LogonInfoClass logon_level,
 		[in]  [switch_is(logon_level)] netr_LogonLevel logon,
 		[in]  uint16 validation_level,
 		[out] [switch_is(validation_level)] netr_Validation validation,
@@ -1456,7 +1456,7 @@ interface netlogon
 		[in,unique] [string,charset(UTF16)] uint16 *computer_name,
 		[in,unique] netr_Authenticator *credential,
 		[in,out,unique] netr_Authenticator *return_authenticator,
-		[in]  uint16 logon_level,
+		[in]  netr_LogonInfoClass logon_level,
 		[in]  [switch_is(logon_level)] netr_LogonLevel logon,
 		[in]  uint16 validation_level,
 		[out] [switch_is(validation_level)] netr_Validation validation,

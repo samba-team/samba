@@ -135,13 +135,32 @@ interface netlogon
 		netr_ChallengeResponse lm;
 	} netr_NetworkInfo;
 
-	typedef [public,switch_type(uint16)] union {
-		[case(1)] netr_PasswordInfo *password;
-		[case(2)] netr_NetworkInfo  *network;
-		[case(3)] netr_PasswordInfo *password;
-		[case(5)] netr_PasswordInfo *password;
-		[case(6)] netr_NetworkInfo  *network;
-	} netr_LogonInfo;
+	typedef [flag(NDR_PAHEX)] struct {
+		netr_IdentityInfo identity_info;
+		lsa_String  package_name;
+		uint32 length;
+		[size_is(length)] uint8 *data;
+	} netr_GenericInfo;
+
+	typedef enum {
+		NetlogonInteractiveInformation = 1,
+		NetlogonNetworkInformation = 2,
+		NetlogonServiceInformation = 3,
+		NetlogonGenericInformation = 4,
+		NetlogonInteractiveTransitiveInformation = 5,
+		NetlogonNetworkTransitiveInformation = 6,
+		NetlogonServiceTransitiveInformation = 7
+	} netr_LogonInfoClass;
+
+	typedef [public,switch_type(netr_LogonInfoClass)] union {
+		[case(NetlogonInteractiveInformation)]           netr_PasswordInfo *password;
+		[case(NetlogonNetworkInformation)]               netr_NetworkInfo  *network;
+		[case(NetlogonServiceInformation)]               netr_PasswordInfo *password;
+		[case(NetlogonGenericInformation)]               netr_GenericInfo  *generic;
+		[case(NetlogonInteractiveTransitiveInformation)] netr_PasswordInfo *password;
+		[case(NetlogonNetworkTransitiveInformation)]     netr_NetworkInfo  *network;
+		[case(NetlogonServiceTransitiveInformation)]     netr_PasswordInfo *password;
+	} netr_LogonLevel;
 
 	typedef [public,flag(NDR_PAHEX)] struct {
 		uint8 key[16];
@@ -234,12 +253,25 @@ interface netlogon
 		lsa_String unknown4;
 	} netr_PacInfo;
 
+	typedef [flag(NDR_PAHEX)] struct {
+		uint32 length;
+		[size_is(length)] uint8 *data;
+	} netr_GenericInfo2;
+
+	typedef enum {
+		NetlogonValidationUasInfo = 1,
+		NetlogonValidationSamInfo = 2,
+		NetlogonValidationSamInfo2 = 3,
+		NetlogonValidationGenericInfo2 = 5,
+		NetlogonValidationSamInfo4 = 6
+	} netr_ValidationInfoClass;
+
 	typedef [public,switch_type(uint16)] union {
-		[case(2)] netr_SamInfo2 *sam2;
-		[case(3)] netr_SamInfo3 *sam3;
+		[case(NetlogonValidationSamInfo)] netr_SamInfo2 *sam2;
+		[case(NetlogonValidationSamInfo2)] netr_SamInfo3 *sam3;
 		[case(4)] netr_PacInfo  *pac;
-		[case(5)] netr_PacInfo  *pac;
-		[case(6)] netr_SamInfo6 *sam6;
+		[case(NetlogonValidationGenericInfo2)] netr_GenericInfo2  *generic;
+		[case(NetlogonValidationSamInfo4)] netr_SamInfo6 *sam6;
 	} netr_Validation;
 
 	typedef [public, flag(NDR_PAHEX)] struct {
@@ -251,21 +283,16 @@ interface netlogon
 		time_t timestamp;
 	} netr_Authenticator;
 
-	typedef enum {
-		INTERACTIVE_LOGON_TYPE = 1,
-		NET_LOGON_TYPE = 2
-	} netr_LogonLevel;
-
 	NTSTATUS netr_LogonSamLogon(
-		[in,unique] [string,charset(UTF16)] uint16 *server_name,
-		[in,unique] [string,charset(UTF16)] uint16 *computer_name,
-		[in,unique] netr_Authenticator *credential,
-		[in,out,unique] netr_Authenticator *return_authenticator,
-		[in]  netr_LogonLevel logon_level,
-		[in,ref]  [switch_is(logon_level)] netr_LogonInfo *logon,
-		[in]  uint16 validation_level,
+		[in,unique] [string,charset(UTF16)] uint16         *server_name,
+		[in,unique] [string,charset(UTF16)] uint16         *computer_name,
+		[in,unique] netr_Authenticator                     *credential,
+		[in,out,unique] netr_Authenticator                 *return_authenticator,
+		[in]  netr_LogonInfoClass                           logon_level,
+		[in,ref]  [switch_is(logon_level)] netr_LogonLevel *logon,
+		[in]  uint16                                        validation_level,
 		[out,ref] [switch_is(validation_level)] netr_Validation *validation,
-		[out,ref] uint8 *authoritative
+		[out,ref] uint8                                    *authoritative
 		);
 
 
@@ -277,8 +304,8 @@ interface netlogon
 		[in,unique] [string,charset(UTF16)] uint16 *computer_name,
 		[in,unique] netr_Authenticator *credential,
 		[in,out,unique] netr_Authenticator *return_authenticator,
-		[in] netr_LogonLevel logon_level,
-		[in] [switch_is(logon_level)] netr_LogonInfo logon
+		[in] netr_LogonInfoClass logon_level,
+		[in] [switch_is(logon_level)] netr_LogonLevel logon
 		);
 	
 
@@ -423,7 +450,7 @@ interface netlogon
 
 	typedef struct {
 		lsa_String domain_name;
-		lsa_String comment;
+		lsa_String oem_information; /* comment */
 		dlong force_logoff_time;
 		uint16 min_password_length;
 		uint16 password_history_length;
@@ -1357,8 +1384,8 @@ interface netlogon
 	NTSTATUS netr_LogonSamLogonEx(
 		[in,unique] [string,charset(UTF16)] uint16 *server_name,
 		[in,unique] [string,charset(UTF16)] uint16 *computer_name,
-		[in]  netr_LogonLevel logon_level,
-		[in,ref]  [switch_is(logon_level)] netr_LogonInfo *logon,
+		[in]  netr_LogonInfoClass logon_level,
+		[in,ref]  [switch_is(logon_level)] netr_LogonLevel *logon,
 		[in]  uint16 validation_level,
 		[out,ref] [switch_is(validation_level)] netr_Validation *validation,
 		[out,ref] uint8 *authoritative,
@@ -1430,8 +1457,8 @@ interface netlogon
 		[in,unique] [string,charset(UTF16)] uint16 *computer_name,
 		[in,unique] netr_Authenticator *credential,
 		[in,out,unique] netr_Authenticator *return_authenticator,
-		[in]  netr_LogonLevel logon_level,
-		[in]  [switch_is(logon_level)] netr_LogonInfo logon,
+		[in]  netr_LogonInfoClass logon_level,
+		[in]  [switch_is(logon_level)] netr_LogonLevel logon,
 		[in]  uint16 validation_level,
 		[out,ref] [switch_is(validation_level)] netr_Validation *validation,
 		[out,ref] uint8 *authoritative,
