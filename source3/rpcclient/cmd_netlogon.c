@@ -688,7 +688,7 @@ static NTSTATUS cmd_netlogon_sam_logon(struct rpc_pipe_client *cli,
 				       const char **argv)
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	int logon_type = NET_LOGON_TYPE;
+	int logon_type = NetlogonNetworkInformation;
 	const char *username, *password;
 	int auth_level = 2;
 	uint32 logon_param = 0;

@@ -146,7 +146,7 @@ NTSTATUS rpccli_netlogon_sam_logon(struct rpc_pipe_client *cli,
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	struct netr_Authenticator clnt_creds;
 	struct netr_Authenticator ret_creds;
-	union netr_LogonInfo *logon;
+	union netr_LogonLevel *logon;
 	union netr_Validation validation;
 	uint8_t authoritative;
 	int validation_level = 3;
@@ -156,7 +156,7 @@ NTSTATUS rpccli_netlogon_sam_logon(struct rpc_pipe_client *cli,
 	ZERO_STRUCT(ret_creds);
 	ZERO_STRUCT(zeros);
 
-	logon = TALLOC_ZERO_P(mem_ctx, union netr_LogonInfo);
+	logon = TALLOC_ZERO_P(mem_ctx, union netr_LogonLevel);
 	if (!logon) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -172,7 +172,7 @@ NTSTATUS rpccli_netlogon_sam_logon(struct rpc_pipe_client *cli,
 	netlogon_creds_client_step(cli->dc, &clnt_creds);
 
 	switch (logon_type) {
-	case INTERACTIVE_LOGON_TYPE: {
+	case NetlogonInteractiveInformation: {
 
 		struct netr_PasswordInfo *password_info;
 
@@ -231,7 +231,7 @@ NTSTATUS rpccli_netlogon_sam_logon(struct rpc_pipe_client *cli,
 
 		break;
 	}
-	case NET_LOGON_TYPE: {
+	case NetlogonNetworkInformation: {
 		struct netr_NetworkInfo *network_info;
 		uint8 chal[8];
 		unsigned char local_lm_response[24];
@@ -327,7 +327,7 @@ NTSTATUS rpccli_netlogon_sam_network_logon(struct rpc_pipe_client *cli,
 	uint8 zeros[16];
 	struct netr_Authenticator clnt_creds;
 	struct netr_Authenticator ret_creds;
-	union netr_LogonInfo *logon = NULL;
+	union netr_LogonLevel *logon = NULL;
 	struct netr_NetworkInfo *network_info;
 	uint8_t authoritative;
 	union netr_Validation validation;
@@ -342,7 +342,7 @@ NTSTATUS rpccli_netlogon_sam_network_logon(struct rpc_pipe_client *cli,
 	ZERO_STRUCT(lm);
 	ZERO_STRUCT(nt);
 
-	logon = TALLOC_ZERO_P(mem_ctx, union netr_LogonInfo);
+	logon = TALLOC_ZERO_P(mem_ctx, union netr_LogonLevel);
 	if (!logon) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -398,7 +398,7 @@ NTSTATUS rpccli_netlogon_sam_network_logon(struct rpc_pipe_client *cli,
 					   global_myname(),
 					   &clnt_creds,
 					   &ret_creds,
-					   NET_LOGON_TYPE,
+					   NetlogonNetworkInformation,
 					   logon,
 					   validation_level,
 					   &validation,
@@ -447,7 +447,7 @@ NTSTATUS rpccli_netlogon_sam_network_logon_ex(struct rpc_pipe_client *cli,
 	const char *workstation_name_slash;
 	const char *server_name_slash;
 	uint8 zeros[16];
-	union netr_LogonInfo *logon = NULL;
+	union netr_LogonLevel *logon = NULL;
 	struct netr_NetworkInfo *network_info;
 	uint8_t authoritative;
 	union netr_Validation validation;
@@ -462,7 +462,7 @@ NTSTATUS rpccli_netlogon_sam_network_logon_ex(struct rpc_pipe_client *cli,
 	ZERO_STRUCT(lm);
 	ZERO_STRUCT(nt);
 
-	logon = TALLOC_ZERO_P(mem_ctx, union netr_LogonInfo);
+	logon = TALLOC_ZERO_P(mem_ctx, union netr_LogonLevel);
 	if (!logon) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -514,7 +514,7 @@ NTSTATUS rpccli_netlogon_sam_network_logon_ex(struct rpc_pipe_client *cli,
 	result = rpccli_netr_LogonSamLogonEx(cli, mem_ctx,
 					     server_name_slash,
 					     global_myname(),
-					     NET_LOGON_TYPE,
+					     NetlogonNetworkInformation,
 					     logon,
 					     validation_level,
 					     &validation,

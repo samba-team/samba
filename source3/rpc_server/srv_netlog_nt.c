@@ -756,7 +756,7 @@ NTSTATUS _netr_LogonSamLogon(pipes_struct *p,
 {
 	NTSTATUS status = NT_STATUS_OK;
 	struct netr_SamInfo3 *sam3 = NULL;
-	union netr_LogonInfo *logon = r->in.logon;
+	union netr_LogonLevel *logon = r->in.logon;
 	fstring nt_username, nt_domain, nt_workstation;
 	auth_usersupplied_info *user_info = NULL;
 	auth_serversupplied_info *server_info = NULL;
@@ -838,7 +838,7 @@ NTSTATUS _netr_LogonSamLogon(pipes_struct *p,
 	}
 
 	switch (r->in.logon_level) {
-	case INTERACTIVE_LOGON_TYPE:
+	case NetlogonInteractiveInformation:
 		fstrcpy(nt_username,
 			logon->password->identity_info.account_name.string);
 		fstrcpy(nt_domain,
@@ -848,7 +848,7 @@ NTSTATUS _netr_LogonSamLogon(pipes_struct *p,
 
 		DEBUG(3,("SAM Logon (Interactive). Domain:[%s].  ", lp_workgroup()));
 		break;
-	case NET_LOGON_TYPE:
+	case NetlogonNetworkInformation:
 		fstrcpy(nt_username,
 			logon->network->identity_info.account_name.string);
 		fstrcpy(nt_domain,
@@ -873,7 +873,7 @@ NTSTATUS _netr_LogonSamLogon(pipes_struct *p,
 	status = NT_STATUS_OK;
 
 	switch (r->in.logon_level) {
-	case NET_LOGON_TYPE:
+	case NetlogonNetworkInformation:
 	{
 		const char *wksname = nt_workstation;
 
@@ -902,7 +902,7 @@ NTSTATUS _netr_LogonSamLogon(pipes_struct *p,
 		}
 		break;
 	}
-	case INTERACTIVE_LOGON_TYPE:
+	case NetlogonInteractiveInformation:
 		/* 'Interactive' authentication, supplies the password in its
 		   MD4 form, encrypted with the session key.  We will convert
 		   this to challenge/response for the auth subsystem to chew
