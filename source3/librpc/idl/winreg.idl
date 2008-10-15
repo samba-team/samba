@@ -169,7 +169,7 @@ import "lsa.idl", "initshutdown.idl", "security.idl";
 	/******************/
 	/* Function: 0x0a */
 
-	WERROR winreg_EnumValue(
+	[public] WERROR winreg_EnumValue(
 		[in,ref]        policy_handle *handle,
 		[in]            uint32 enum_index,
 		[in,out,ref]    winreg_ValNameBuf *name,
@@ -232,7 +232,7 @@ import "lsa.idl", "initshutdown.idl", "security.idl";
 
 	/******************/
 	/* Function: 0x10 */
-	WERROR winreg_QueryInfoKey(
+	[public] WERROR winreg_QueryInfoKey(
 		[in,ref] policy_handle *handle,
 		[in,out,ref] winreg_String *classname,
 		[out,ref] uint32 *num_subkeys,
@@ -247,7 +247,7 @@ import "lsa.idl", "initshutdown.idl", "security.idl";
 
 	/******************/
 	/* Function: 0x11 */
-	WERROR winreg_QueryValue(
+	[public] WERROR winreg_QueryValue(
 		[in,ref] policy_handle *handle,
 		[in,ref] winreg_String *value_name,
 		[in,out,unique] winreg_Type *type,
@@ -258,7 +258,7 @@ import "lsa.idl", "initshutdown.idl", "security.idl";
 
 	/******************/
 	/* Function: 0x12 */
-	WERROR winreg_ReplaceKey(
+	[todo] WERROR winreg_ReplaceKey(
 	);
 
 	/******************/
