@@ -57,11 +57,18 @@ sub ODL2IDL
 		if ($x->{TYPE} eq "IMPORT") {
 			foreach my $idl_file (@{$x->{PATHS}}) {
 				$idl_file = unmake_str($idl_file);
-				unless (-f "$basedir/$idl_file") {
+				my $idl_path = undef;
+				foreach ($basedir, @$opt_incdirs) {
+					if (-f "$_/$idl_file") {
+						$idl_path = "$_/$idl_file";
+						last;
+					}
+				}
+				unless ($idl_path) {
 					error($x, "Unable to open include file `$idl_file'");
 					next;
 				}
-				my $podl = Parse::Pidl::IDL::parse_file("$basedir/$idl_file", $opt_incdirs);
+				my $podl = Parse::Pidl::IDL::parse_file($idl_path, $opt_incdirs);
 				if (defined(@$podl)) {
 					require Parse::Pidl::Typelist;
 
@@ -74,7 +81,7 @@ sub ODL2IDL
 						}
 					}
 				} else {
-					error($x, "Failed to parse $idl_file");
+					error($x, "Failed to parse $idl_path");
 				}
 			}
 		}
