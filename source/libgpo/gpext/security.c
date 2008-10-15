@@ -249,7 +249,7 @@ static struct gp_extension_methods security_methods = {
 /****************************************************************
 ****************************************************************/
 
-static NTSTATUS gpext_security_init(void)
+NTSTATUS gpext_security_init(void)
 {
 	NTSTATUS status;
 
