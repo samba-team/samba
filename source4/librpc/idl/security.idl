@@ -252,6 +252,13 @@ interface security
 		uint32 sub_auths[num_auths];
 	} dom_sid;
 
+	/* id used to identify a endpoint, possibly in a cluster */
+	typedef [public] struct {
+		hyper id;
+		uint32 id2;
+		uint32 node;
+	} server_id;
+
 	typedef [bitmap8bit] bitmap {
 		SEC_ACE_FLAG_OBJECT_INHERIT		= 0x01,
 		SEC_ACE_FLAG_CONTAINER_INHERIT		= 0x02,
