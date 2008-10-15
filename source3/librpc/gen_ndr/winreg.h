@@ -3,7 +3,6 @@
 #include <stdint.h>
 
 #include "librpc/gen_ndr/lsa.h"
-#include "librpc/gen_ndr/initshutdown.h"
 #include "librpc/gen_ndr/security.h"
 #ifndef _HEADER_winreg
 #define _HEADER_winreg
@@ -389,16 +388,16 @@ struct winreg_QueryValue {
 		struct policy_handle *handle;/* [ref] */
 		struct winreg_String *value_name;/* [ref] */
 		enum winreg_Type *type;/* [unique] */
-		uint8_t *data;/* [unique,length_is(*value_length),size_is(*data_size)] */
+		uint8_t *data;/* [unique,length_is(*data_length),size_is(*data_size)] */
 		uint32_t *data_size;/* [unique] */
-		uint32_t *value_length;/* [unique] */
+		uint32_t *data_length;/* [unique] */
 	} in;
 
 	struct {
 		enum winreg_Type *type;/* [unique] */
-		uint8_t *data;/* [unique,length_is(*value_length),size_is(*data_size)] */
+		uint8_t *data;/* [unique,length_is(*data_length),size_is(*data_size)] */
 		uint32_t *data_size;/* [unique] */
-		uint32_t *value_length;/* [unique] */
+		uint32_t *data_length;/* [unique] */
 		WERROR result;
 	} out;
 

@@ -1403,7 +1403,7 @@ static bool api_winreg_QueryValue(pipes_struct *p)
 	r->out.type = r->in.type;
 	r->out.data = r->in.data;
 	r->out.data_size = r->in.data_size;
-	r->out.value_length = r->in.value_length;
+	r->out.data_length = r->in.data_length;
 	r->out.result = _winreg_QueryValue(p, r);
 
 	if (p->rng_fault_state) {

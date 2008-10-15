@@ -872,9 +872,9 @@ NTSTATUS rpccli_winreg_QueryValue(struct rpc_pipe_client *cli,
 				  struct policy_handle *handle /* [in] [ref] */,
 				  struct winreg_String *value_name /* [in] [ref] */,
 				  enum winreg_Type *type /* [in,out] [unique] */,
-				  uint8_t *data /* [in,out] [unique,length_is(*value_length),size_is(*data_size)] */,
+				  uint8_t *data /* [in,out] [unique,length_is(*data_length),size_is(*data_size)] */,
 				  uint32_t *data_size /* [in,out] [unique] */,
-				  uint32_t *value_length /* [in,out] [unique] */,
+				  uint32_t *data_length /* [in,out] [unique] */,
 				  WERROR *werror)
 {
 	struct winreg_QueryValue r;
@@ -886,7 +886,7 @@ NTSTATUS rpccli_winreg_QueryValue(struct rpc_pipe_client *cli,
 	r.in.type = type;
 	r.in.data = data;
 	r.in.data_size = data_size;
-	r.in.value_length = value_length;
+	r.in.data_length = data_length;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(winreg_QueryValue, &r);
@@ -920,8 +920,8 @@ NTSTATUS rpccli_winreg_QueryValue(struct rpc_pipe_client *cli,
 	if (data_size && r.out.data_size) {
 		*data_size = *r.out.data_size;
 	}
-	if (value_length && r.out.value_length) {
-		*value_length = *r.out.value_length;
+	if (data_length && r.out.data_length) {
+		*data_length = *r.out.data_length;
 	}
 
 	/* Return result */
