@@ -265,11 +265,24 @@
 
 	/*****************/
 	/* Function 0x11 */
+
+	typedef [public,gensize] struct {
+		uint32 service_type;
+		uint32 start_type;
+		uint32 error_control;
+		[string,charset(UTF16)] [range(0,8192)] uint16 *executablepath;
+		[string,charset(UTF16)] [range(0,8192)] uint16 *loadordergroup;
+		uint32 tag_id;
+		[string,charset(UTF16)] [range(0,8192)] uint16 *dependencies;
+		[string,charset(UTF16)] [range(0,8192)] uint16 *startname;
+		[string,charset(UTF16)] [range(0,8192)] uint16 *displayname;
+	} QUERY_SERVICE_CONFIG;
+
 	WERROR svcctl_QueryServiceConfigW(
 		[in,ref] policy_handle *handle,
-		[out] uint8 query[buf_size], /*QUERY_SERVICE_CONFIG */
-		[in] uint32 buf_size,
-		[out,ref] uint32 *bytes_needed
+		[out] QUERY_SERVICE_CONFIG *query,
+		[in] [range(0,8192)] uint32 buf_size,
+		[out,ref] [range(0,8192)] uint32 *bytes_needed
 	);
 
 	/*****************/
