@@ -308,7 +308,7 @@ import "misc.idl", "security.idl";
 	/* Function: 0x0a */
 	[public] NTSTATUS lsa_CreateAccount (
 		[in]    policy_handle *handle,
-		[in]    dom_sid2 *sid,
+		[in,ref] dom_sid2 *sid,
 		[in]    uint32 access_mask,
 		[out]   policy_handle *acct_handle
 		);
@@ -462,9 +462,9 @@ import "misc.idl", "security.idl";
 
 	/*****************************************/
 	/* Function:     0x11                    */
-	NTSTATUS lsa_OpenAccount (
+	NTSTATUS lsa_OpenAccount(
 		[in]         policy_handle *handle,
-		[in]         dom_sid2 *sid,
+		[in,ref]     dom_sid2 *sid,
 		[in]         uint32 access_mask,
 		[out]        policy_handle *acct_handle
 		);
@@ -494,7 +494,7 @@ import "misc.idl", "security.idl";
 	/* Function:            0x13 */
 	NTSTATUS lsa_AddPrivilegesToAccount(
 		[in]         policy_handle *handle,
-		[in]         lsa_PrivilegeSet *privs
+		[in,ref]     lsa_PrivilegeSet *privs
 		);
 	
 
@@ -743,8 +743,8 @@ import "misc.idl", "security.idl";
 	/* Function:     0x1f */
 	NTSTATUS lsa_LookupPrivValue(
 		[in]     policy_handle *handle,
-		[in]     lsa_String *name,
-		[out]    lsa_LUID *luid
+		[in,ref] lsa_String *name,
+		[out,ref] lsa_LUID *luid
 		);
 
 
@@ -796,8 +796,8 @@ import "misc.idl", "security.idl";
 	
 	NTSTATUS lsa_EnumAccountRights (
 		[in]     policy_handle *handle,
-		[in]     dom_sid2 *sid,
-		[out]    lsa_RightSet *rights
+		[in,ref] dom_sid2 *sid,
+		[out,ref] lsa_RightSet *rights
 		);
 
 
@@ -805,17 +805,17 @@ import "misc.idl", "security.idl";
 	/* Function:       0x25 */
 	NTSTATUS lsa_AddAccountRights (
 		[in]     policy_handle *handle,
-		[in]     dom_sid2 *sid,
-		[in]     lsa_RightSet *rights
+		[in,ref] dom_sid2 *sid,
+		[in,ref] lsa_RightSet *rights
 		);
-	
+
 	/**********************/
 	/* Function:       0x26 */
 	NTSTATUS lsa_RemoveAccountRights (
 		[in]     policy_handle *handle,
-		[in]     dom_sid2 *sid,
-		[in]         uint32 unknown,
-		[in]     lsa_RightSet *rights
+		[in,ref] dom_sid2 *sid,
+		[in]     uint8 remove_all,
+		[in,ref] lsa_RightSet *rights
 		);
 
 	/* Function:   0x27 */

@@ -349,7 +349,7 @@ NTSTATUS smblsa_sid_del_privileges(struct smbcli_state *cli, struct dom_sid *sid
 
 	r.in.handle = &cli->lsa->handle;
 	r.in.sid = sid;
-	r.in.unknown = 0;
+	r.in.remove_all = 0;
 	r.in.rights = rights;
 
 	return dcerpc_lsa_RemoveAccountRights(cli->lsa->pipe, mem_ctx, &r);

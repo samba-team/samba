@@ -810,7 +810,7 @@ import "misc.idl", "security.idl";
 		[in,ref] dom_sid2 *sid,
 		[in,ref] lsa_RightSet *rights
 		);
-	
+
 	/**********************/
 	/* Function:       0x26 */
 	NTSTATUS lsa_RemoveAccountRights (
