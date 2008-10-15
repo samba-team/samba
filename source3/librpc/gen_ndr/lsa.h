@@ -12,6 +12,9 @@
 #define MAX_REF_DOMAINS	( LSA_REF_DOMAIN_LIST_MULTIPLIER )
 #define MAX_LOOKUP_SIDS	( 0x5000 )
 #define LSA_ENUM_TRUST_DOMAIN_EX_MULTIPLIER	( 82 )
+#define LSA_CLIENT_REVISION_NO_DNS	( 0x00000001 )
+#define LSA_CLIENT_REVISION_DNS	( 0x00000002 )
+#define LSA_LOOKUP_OPTIONS_NO_ISOLATED	( 0x80000000 )
 struct lsa_String {
 	uint16_t length;/* [value(2*strlen_m(string))] */
 	uint16_t size;/* [value(2*strlen_m(string))] */
