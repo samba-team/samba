@@ -1202,8 +1202,8 @@ NTSTATUS _lsa_LookupNames4(pipes_struct *p,
 	q.in.num_names		= r->in.num_names;
 	q.in.names		= r->in.names;
 	q.in.level		= r->in.level;
-	q.in.unknown1		= r->in.unknown1;
-	q.in.unknown2		= r->in.unknown2;
+	q.in.lookup_options	= r->in.lookup_options;
+	q.in.client_revision	= r->in.client_revision;
 	q.in.sids		= r->in.sids;
 	q.in.count		= r->in.count;
 
