@@ -4525,7 +4525,7 @@ static bool test_Connect(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	printf("testing samr_Connect4\n");
 
 	r4.in.system_name = "";
-	r4.in.unknown = 0;
+	r4.in.client_version = 0;
 	r4.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r4.out.connect_handle = &h;
 
@@ -4543,7 +4543,7 @@ static bool test_Connect(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	printf("testing samr_Connect5\n");
 
-	info.info1.unknown1 = 0;
+	info.info1.client_version = 0;
 	info.info1.unknown2 = 0;
 
 	r5.in.system_name = "";

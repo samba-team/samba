@@ -53,7 +53,7 @@ static NTSTATUS torture_samr_Connect5(struct torture_context *tctx,
 	struct samr_Connect5 r5;
 	union samr_ConnectInfo info;
 
-	info.info1.unknown1 = 0;
+	info.info1.client_version = 0;
 	info.info1.unknown2 = 0;
 	r5.in.system_name = "";
 	r5.in.level = 1;
