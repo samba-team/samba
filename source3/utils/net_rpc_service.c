@@ -264,8 +264,9 @@ static NTSTATUS rpc_service_status_internal(struct net_context *c,
 	WERROR result = WERR_GENERAL_FAILURE;
 	NTSTATUS status;
 	SERVICE_STATUS service_status;
-	SERVICE_CONFIG config;
-	fstring ascii_string;
+	struct QUERY_SERVICE_CONFIG config;
+	uint32_t buf_size = sizeof(config);
+	uint32_t ret_size = 0;
 
 	if (argc != 1 ) {
 		d_printf("Usage: net rpc service status <service>\n");
@@ -314,8 +315,23 @@ static NTSTATUS rpc_service_status_internal(struct net_context *c,
 
 	/* get the config */
 
-	result = rpccli_svcctl_query_config(pipe_hnd, mem_ctx, &hService, &config  );
-	if ( !W_ERROR_IS_OK(result) ) {
+	status = rpccli_svcctl_QueryServiceConfigW(pipe_hnd, mem_ctx,
+						   &hService,
+						   &config,
+						   buf_size,
+						   &ret_size,
+						   &result);
+	if (W_ERROR_EQUAL(result, WERR_INSUFFICIENT_BUFFER)) {
+		buf_size = ret_size;
+		status = rpccli_svcctl_QueryServiceConfigW(pipe_hnd, mem_ctx,
+							   &hService,
+							   &config,
+							   buf_size,
+							   &ret_size,
+							   &result);
+	}
+
+	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result) ) {
 		d_fprintf(stderr, "Query config request failed.  [%s]\n", dos_errstr(result));
 		goto done;
 	}
@@ -329,29 +345,24 @@ static NTSTATUS rpc_service_status_internal(struct net_context *c,
 	d_printf("\tError Control        = 0x%x\n", config.error_control);
 	d_printf("\tTag ID               = 0x%x\n", config.tag_id);
 
-	if ( config.executablepath ) {
-		rpcstr_pull( ascii_string, config.executablepath->buffer, sizeof(ascii_string), -1, STR_TERMINATE );
-		d_printf("\tExecutable Path      = %s\n", ascii_string);
+	if (config.executablepath) {
+		d_printf("\tExecutable Path      = %s\n", config.executablepath);
 	}
 
-	if ( config.loadordergroup ) {
-		rpcstr_pull( ascii_string, config.loadordergroup->buffer, sizeof(ascii_string), -1, STR_TERMINATE );
-		d_printf("\tLoad Order Group     = %s\n", ascii_string);
+	if (config.loadordergroup) {
+		d_printf("\tLoad Order Group     = %s\n", config.loadordergroup);
 	}
 
-	if ( config.dependencies ) {
-		rpcstr_pull( ascii_string, config.dependencies->buffer, sizeof(ascii_string), -1, STR_TERMINATE );
-		d_printf("\tDependencies         = %s\n", ascii_string);
+	if (config.dependencies) {
+		d_printf("\tDependencies         = %s\n", config.dependencies);
 	}
 
-	if ( config.startname ) {
-		rpcstr_pull( ascii_string, config.startname->buffer, sizeof(ascii_string), -1, STR_TERMINATE );
-		d_printf("\tStart Name           = %s\n", ascii_string);
+	if (config.startname) {
+		d_printf("\tStart Name           = %s\n", config.startname);
 	}
 
-	if ( config.displayname ) {
-		rpcstr_pull( ascii_string, config.displayname->buffer, sizeof(ascii_string), -1, STR_TERMINATE );
-		d_printf("\tDisplay Name         = %s\n", ascii_string);
+	if (config.displayname) {
+		d_printf("\tDisplay Name         = %s\n", config.displayname);
 	}
 
 done:

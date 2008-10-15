@@ -7172,8 +7172,6 @@ WERROR rpccli_spoolss_rffpcnex(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 WERROR rpccli_svcctl_enumerate_services( struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
                                       POLICY_HND *hSCM, uint32 type, uint32 state, 
 				      uint32 *returned, ENUM_SERVICES_STATUS **service_array  );
-WERROR rpccli_svcctl_query_config(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-                                POLICY_HND *hService, SERVICE_CONFIG *config );
 
 /* The following definitions come from rpc_client/init_lsa.c  */
 
