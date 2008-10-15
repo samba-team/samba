@@ -730,6 +730,17 @@ import "misc.idl", "lsa.idl", "security.idl";
 		NTTIME acct_expiry;
 	} samr_UserInfo17;
 
+	typedef [public, flag(NDR_PAHEX)] struct {
+		uint8 hash[16];
+	} samr_Password;
+
+	typedef struct {
+		samr_Password lm_pwd;
+		samr_Password nt_pwd;
+		boolean8 lm_pwd_active;
+		boolean8 nt_pwd_active;
+	} samr_UserInfo18;
+
 	typedef struct {
 		lsa_String parameters;
 	} samr_UserInfo20;
@@ -767,6 +778,10 @@ import "misc.idl", "lsa.idl", "security.idl";
 		SAMR_FIELD_SEC_DESC         = 0x10000000,
 		SAMR_FIELD_OWF_PWD          = 0x20000000
 	} samr_FieldsPresent;
+
+	/* used for 'password_expired' in samr_UserInfo21 */
+	const int PASS_MUST_CHANGE_AT_NEXT_LOGON = 0x01;
+	const int PASS_DONT_CHANGE_AT_NEXT_LOGON = 0x00;
 
 	typedef struct {
 		NTTIME last_logon;
@@ -850,6 +865,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 		[case(14)] samr_UserInfo14 info14;
 		[case(16)] samr_UserInfo16 info16;
 		[case(17)] samr_UserInfo17 info17;
+		[case(18)] samr_UserInfo18 info18;
 		[case(20)] samr_UserInfo20 info20;
 		[case(21)] samr_UserInfo21 info21;
 		[case(23)] samr_UserInfo23 info23;
@@ -875,10 +891,6 @@ import "misc.idl", "lsa.idl", "security.idl";
 
 	/************************/
 	/* Function    0x26     */
-	typedef [public, flag(NDR_PAHEX)] struct {
-		uint8 hash[16];
-	} samr_Password;
-
 	/*
 	  this is a password change interface that doesn't give
 	  the server the plaintext password. Depricated.
@@ -1229,9 +1241,16 @@ import "misc.idl", "lsa.idl", "security.idl";
 
 	/************************/
 	/* Function    0x3e     */
+
+	typedef enum {
+		SAMR_CONNECT_PRE_W2K	= 1,
+		SAMR_CONNECT_W2K	= 2,
+		SAMR_CONNECT_AFTER_W2K	= 3
+	} samr_ConnectVersion;
+
 	NTSTATUS samr_Connect4(
 		[in,unique,string,charset(UTF16)] uint16 *system_name,
-		[in] uint32 unknown,
+		[in] samr_ConnectVersion client_version,
 		[in] samr_ConnectAccessMask access_mask,
 		[out,ref]  policy_handle *connect_handle
 		);
@@ -1264,7 +1283,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 	/* Function    0x40      */
 
 	typedef struct {
-		uint32         unknown1; /* w2k3 gives 3 */
+		samr_ConnectVersion client_version; /* w2k3 gives 3 */
 		uint32         unknown2; /* w2k3 gives 0 */
 	} samr_ConnectInfo1;
 

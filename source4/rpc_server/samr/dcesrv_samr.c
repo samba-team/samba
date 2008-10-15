@@ -4262,7 +4262,7 @@ static NTSTATUS dcesrv_samr_Connect5(struct dcesrv_call_state *dce_call, TALLOC_
 
 	status = dcesrv_samr_Connect(dce_call, mem_ctx, &c);
 
-	r->out.info->info1.unknown1 = 3;
+	r->out.info->info1.client_version = SAMR_CONNECT_AFTER_W2K;
 	r->out.info->info1.unknown2 = 0;
 	r->out.level = r->in.level;
 
