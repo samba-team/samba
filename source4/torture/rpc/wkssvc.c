@@ -1218,7 +1218,7 @@ static bool test_NetrJoinDomain2(struct torture_context *tctx,
 	}
 
 	switch (join_status) {
-		case NET_SETUP_DOMAIN_NAME::
+		case NET_SETUP_DOMAIN_NAME:
 			expected_err = WERR_SETUP_ALREADY_JOINED;
 			break;
 		case NET_SETUP_UNKNOWN_STATUS:
@@ -1271,7 +1271,7 @@ static bool test_NetrJoinDomain2(struct torture_context *tctx,
 		return false;
 	}
 
-	if (join_status != NetSetupDomainName) {
+	if (join_status != NET_SETUP_DOMAIN_NAME) {
 		torture_comment(tctx,
 				"Join verify failed: got %d\n", join_status);
 		return false;
@@ -1302,12 +1302,12 @@ static bool test_NetrUnjoinDomain2(struct torture_context *tctx,
 	}
 
 	switch (join_status) {
-		case NetSetupUnjoined:
+		case NET_SETUP_UNJOINED:
 			expected_err = WERR_SETUP_NOT_JOINED;
 			break;
-		case NetSetupDomainName:
-		case NetSetupUnknownStatus:
-		case NetSetupWorkgroupName:
+		case NET_SETUP_DOMAIN_NAME:
+		case NET_SETUP_UNKNOWN_STATUS:
+		case NET_SETUP_WORKGROUP_NAME:
 		default:
 			expected_err = WERR_OK;
 			break;
@@ -1350,11 +1350,11 @@ static bool test_NetrUnjoinDomain2(struct torture_context *tctx,
 	}
 
 	switch (join_status) {
-		case NetSetupUnjoined:
-		case NetSetupWorkgroupName:
+		case NET_SETUP_UNJOINED:
+		case NET_SETUP_WORKGROUP_NAME:
 			break;
-		case NetSetupUnknown:
-		case NetSetupDomainName:
+		case NET_SETUP_UNKNOWN_STATUS:
+		case NET_SETUP_DOMAIN_NAME:
 		default:
 			torture_comment(tctx,
 				"Unjoin verify failed: got %d\n", join_status);
