@@ -504,13 +504,13 @@ NTSTATUS rpc_info_internals(struct net_context *c,
 					     2,
 					     &info);
 	if (NT_STATUS_IS_OK(result)) {
-		d_printf("Domain Name: %s\n", info->info2.domain_name.string);
+		d_printf("Domain Name: %s\n", info->general.domain_name.string);
 		d_printf("Domain SID: %s\n", sid_str);
 		d_printf("Sequence number: %llu\n",
-			(unsigned long long)info->info2.sequence_num);
-		d_printf("Num users: %u\n", info->info2.num_users);
-		d_printf("Num domain groups: %u\n", info->info2.num_groups);
-		d_printf("Num local groups: %u\n", info->info2.num_aliases);
+			(unsigned long long)info->general.sequence_num);
+		d_printf("Num users: %u\n", info->general.num_users);
+		d_printf("Num domain groups: %u\n", info->general.num_groups);
+		d_printf("Num local groups: %u\n", info->general.num_aliases);
 	}
 
  done:

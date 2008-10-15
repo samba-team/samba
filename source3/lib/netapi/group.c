@@ -1224,7 +1224,7 @@ WERROR NetGroupEnum_r(struct libnetapi_ctx *ctx,
 	}
 
 	if (r->out.total_entries) {
-		*r->out.total_entries = domain_info->info2.num_groups;
+		*r->out.total_entries = domain_info->general.num_groups;
 	}
 
 	status = rpccli_samr_QueryDisplayInfo2(pipe_cli,

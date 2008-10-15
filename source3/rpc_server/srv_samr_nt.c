@@ -2942,18 +2942,18 @@ static NTSTATUS samr_QueryDomainInfo_internal(const char *fn_name,
 			if (lp_server_role() == ROLE_DOMAIN_BDC)
 				server_role = ROLE_DOMAIN_BDC;
 
-			init_samr_DomInfo2(&dom_info->info2,
-					   nt_logout,
-					   lp_serverstring(),
-					   lp_workgroup(),
-					   global_myname(),
-					   seq_num,
-					   1,
-					   server_role,
-					   1,
-					   num_users,
-					   num_groups,
-					   num_aliases);
+			init_samr_DomGeneralInformation(&dom_info->general,
+							nt_logout,
+							lp_serverstring(),
+							lp_workgroup(),
+							global_myname(),
+							seq_num,
+							1,
+							server_role,
+							1,
+							num_users,
+							num_groups,
+							num_aliases);
 			break;
 		case 0x03:
 
@@ -2978,8 +2978,8 @@ static NTSTATUS samr_QueryDomainInfo_internal(const char *fn_name,
 
 			break;
 		case 0x04:
-			init_samr_DomInfo4(&dom_info->info4,
-					   lp_serverstring());
+			init_samr_DomOEMInformation(&dom_info->oem,
+						    lp_serverstring());
 			break;
 		case 0x05:
 			init_samr_DomInfo5(&dom_info->info5,
