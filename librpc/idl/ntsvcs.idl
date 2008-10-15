@@ -12,12 +12,12 @@ interface ntsvcs
 	/******************/
 	/* Function: 0x00 */
 
-	WERROR PNP_Disconnect();
+	[todo] WERROR PNP_Disconnect();
 
 	/******************/
 	/* Function: 0x01 */
 
-	WERROR PNP_Connect();
+	[todo] WERROR PNP_Connect();
 
 	/******************/
 	/* Function: 0x02 */
@@ -29,17 +29,17 @@ interface ntsvcs
 	/******************/
 	/* Function: 0x03 */
 
-	WERROR PNP_GetGlobalState();
+	[todo] WERROR PNP_GetGlobalState();
 
 	/******************/
 	/* Function: 0x04 */
 
-	WERROR PNP_InitDetection();
+	[todo] WERROR PNP_InitDetection();
 
 	/******************/
 	/* Function: 0x05 */
 
-	WERROR PNP_ReportLogOn();
+	[todo] WERROR PNP_ReportLogOn();
 
 	/******************/
 	/* Function: 0x06 */
@@ -52,22 +52,22 @@ interface ntsvcs
 	/******************/
 	/* Function: 0x07 */
 
-	WERROR PNP_GetRootDeviceInstance();
+	[todo] WERROR PNP_GetRootDeviceInstance();
 
 	/******************/
 	/* Function: 0x08 */
 
-	WERROR PNP_GetRelatedDeviceInstance();
+	[todo] WERROR PNP_GetRelatedDeviceInstance();
 
 	/******************/
 	/* Function: 0x09 */
 
-	WERROR PNP_EnumerateSubKeys();
+	[todo] WERROR PNP_EnumerateSubKeys();
 
 	/******************/
 	/* Function: 0x0a */
 
-	WERROR PNP_GetDeviceList();
+	[todo] WERROR PNP_GetDeviceList();
 
 	/******************/
 	/* Function: 0x0b */
@@ -81,7 +81,7 @@ interface ntsvcs
 	/******************/
 	/* Function: 0x0c */
 
-	WERROR PNP_GetDepth();
+	[todo] WERROR PNP_GetDepth();
 
 	/******************/
 	/* Function: 0x0d */
@@ -101,132 +101,132 @@ interface ntsvcs
 	/******************/
 	/* Function: 0x0e */
 
-	WERROR PNP_SetDeviceRegProp();
+	[todo] WERROR PNP_SetDeviceRegProp();
 
 	/******************/
 	/* Function: 0x0f */
 
-	WERROR PNP_GetClassInstance();
+	[todo] WERROR PNP_GetClassInstance();
 
 	/******************/
 	/* Function: 0x10 */
 
-	WERROR PNP_CreateKey();
+	[todo] WERROR PNP_CreateKey();
 
 	/******************/
 	/* Function: 0x11 */
 
-	WERROR PNP_DeleteRegistryKey();
+	[todo] WERROR PNP_DeleteRegistryKey();
 
 	/******************/
 	/* Function: 0x12 */
 
-	WERROR PNP_GetClassCount();
+	[todo] WERROR PNP_GetClassCount();
 
 	/******************/
 	/* Function: 0x13 */
 
-	WERROR PNP_GetClassName();
+	[todo] WERROR PNP_GetClassName();
 
 	/******************/
 	/* Function: 0x14 */
 
-	WERROR PNP_DeleteClassKey();
+	[todo] WERROR PNP_DeleteClassKey();
 
 	/******************/
 	/* Function: 0x15 */
 
-	WERROR PNP_GetInterfaceDeviceAlias();
+	[todo] WERROR PNP_GetInterfaceDeviceAlias();
 
 	/******************/
 	/* Function: 0x16 */
 
-	WERROR PNP_GetInterfaceDeviceList();
+	[todo] WERROR PNP_GetInterfaceDeviceList();
 
 	/******************/
 	/* Function: 0x17 */
 
-	WERROR PNP_GetInterfaceDeviceListSize();
+	[todo] WERROR PNP_GetInterfaceDeviceListSize();
 
 	/******************/
 	/* Function: 0x18 */
 
-	WERROR PNP_RegisterDeviceClassAssociation();
+	[todo] WERROR PNP_RegisterDeviceClassAssociation();
 
 	/******************/
 	/* Function: 0x19 */
 
-	WERROR PNP_UnregisterDeviceClassAssociation();
+	[todo] WERROR PNP_UnregisterDeviceClassAssociation();
 
 	/******************/
 	/* Function: 0x1a */
 
-	WERROR PNP_GetClassRegProp();
+	[todo] WERROR PNP_GetClassRegProp();
 
 	/******************/
 	/* Function: 0x1b */
 
-	WERROR PNP_SetClassRegProp();
+	[todo] WERROR PNP_SetClassRegProp();
 
 	/******************/
 	/* Function: 0x1c */
 
-	WERROR PNP_CreateDevInst();
+	[todo] WERROR PNP_CreateDevInst();
 
 	/******************/
 	/* Function: 0x1d */
 
-	WERROR PNP_DeviceInstanceAction();
+	[todo] WERROR PNP_DeviceInstanceAction();
 
 	/******************/
 	/* Function: 0x1e */
 
-	WERROR PNP_GetDeviceStatus();
+	[todo] WERROR PNP_GetDeviceStatus();
 
 	/******************/
 	/* Function: 0x1f */
 
-	WERROR PNP_SetDeviceProblem();
+	[todo] WERROR PNP_SetDeviceProblem();
 
 	/******************/
 	/* Function: 0x20 */
 
-	WERROR PNP_DisableDevInst();
+	[todo] WERROR PNP_DisableDevInst();
 
 	/******************/
 	/* Function: 0x21 */
 
-	WERROR PNP_UninstallDevInst();
+	[todo] WERROR PNP_UninstallDevInst();
 
 	/******************/
 	/* Function: 0x22 */
 
-	WERROR PNP_AddID();
+	[todo] WERROR PNP_AddID();
 
 	/******************/
 	/* Function: 0x23 */
 
-	WERROR PNP_RegisterDriver();
+	[todo] WERROR PNP_RegisterDriver();
 
 	/******************/
 	/* Function: 0x24 */
 
-	WERROR PNP_QueryRemove();
+	[todo] WERROR PNP_QueryRemove();
 
 	/******************/
 	/* Function: 0x25 */
 
-	WERROR PNP_RequestDeviceEject();
+	[todo] WERROR PNP_RequestDeviceEject();
 
 	/******************/
 	/* Function: 0x26 */
 
-	WERROR PNP_IsDockStationPresent();
+	[todo] WERROR PNP_IsDockStationPresent();
 
 	/******************/
 	/* Function: 0x27 */
 
-	WERROR PNP_RequestEjectPC();
+	[todo] WERROR PNP_RequestEjectPC();
 
 	/******************/
 	/* Function: 0x28 */
@@ -262,115 +262,115 @@ interface ntsvcs
 	/******************/
 	/* Function: 0x2a */
 
-	WERROR PNP_AddEmptyLogConf();
+	[todo] WERROR PNP_AddEmptyLogConf();
 
 	/******************/
 	/* Function: 0x2b */
 
-	WERROR PNP_FreeLogConf();
+	[todo] WERROR PNP_FreeLogConf();
 
 	/******************/
 	/* Function: 0x2c */
 
-	WERROR PNP_GetFirstLogConf();
+	[todo] WERROR PNP_GetFirstLogConf();
 
 	/******************/
 	/* Function: 0x2d */
 
-	WERROR PNP_GetNextLogConf();
+	[todo] WERROR PNP_GetNextLogConf();
 
 	/******************/
 	/* Function: 0x2e */
 
-	WERROR PNP_GetLogConfPriority();
+	[todo] WERROR PNP_GetLogConfPriority();
 
 	/******************/
 	/* Function: 0x2f */
 
-	WERROR PNP_AddResDes();
+	[todo] WERROR PNP_AddResDes();
 
 	/******************/
 	/* Function: 0x30 */
 
-	WERROR PNP_FreeResDes();
+	[todo] WERROR PNP_FreeResDes();
 
 	/******************/
 	/* Function: 0x31 */
 
-	WERROR PNP_GetNextResDes();
+	[todo] WERROR PNP_GetNextResDes();
 
 	/******************/
 	/* Function: 0x32 */
 
-	WERROR PNP_GetResDesData();
+	[todo] WERROR PNP_GetResDesData();
 
 	/******************/
 	/* Function: 0x33 */
 
-	WERROR PNP_GetResDesDataSize();
+	[todo] WERROR PNP_GetResDesDataSize();
 
 	/******************/
 	/* Function: 0x34 */
 
-	WERROR PNP_ModifyResDes();
+	[todo] WERROR PNP_ModifyResDes();
 
 	/******************/
 	/* Function: 0x35 */
 
-	WERROR PNP_DetectResourceLimit();
+	[todo] WERROR PNP_DetectResourceLimit();
 
 	/******************/
 	/* Function: 0x36 */
 
-	WERROR PNP_QueryResConfList();
+	[todo] WERROR PNP_QueryResConfList();
 
 	/******************/
 	/* Function: 0x37 */
 
-	WERROR PNP_SetHwProf();
+	[todo] WERROR PNP_SetHwProf();
 
 	/******************/
 	/* Function: 0x38 */
 
-	WERROR PNP_QueryArbitratorFreeData();
+	[todo] WERROR PNP_QueryArbitratorFreeData();
 
 	/******************/
 	/* Function: 0x39 */
 
-	WERROR PNP_QueryArbitratorFreeSize();
+	[todo] WERROR PNP_QueryArbitratorFreeSize();
 
 	/******************/
 	/* Function: 0x3a */
 
-	WERROR PNP_RunDetection();
+	[todo] WERROR PNP_RunDetection();
 
 	/******************/
 	/* Function: 0x3b */
 
-	WERROR PNP_RegisterNotification();
+	[todo] WERROR PNP_RegisterNotification();
 
 	/******************/
 	/* Function: 0x3c */
 
-	WERROR PNP_UnregisterNotification();
+	[todo] WERROR PNP_UnregisterNotification();
 
 	/******************/
 	/* Function: 0x3d */
 
-	WERROR PNP_GetCustomDevProp();
+	[todo] WERROR PNP_GetCustomDevProp();
 
 	/******************/
 	/* Function: 0x3e */
 
-	WERROR PNP_GetVersionInternal();
+	[todo] WERROR PNP_GetVersionInternal();
 
 	/******************/
 	/* Function: 0x3f */
 
-	WERROR PNP_GetBlockedDriverInfo();
+	[todo] WERROR PNP_GetBlockedDriverInfo();
 
 	/******************/
 	/* Function: 0x40 */
 
-	WERROR PNP_GetServerSideDeviceInstallFlags();
+	[todo] WERROR PNP_GetServerSideDeviceInstallFlags();
 }
