@@ -263,12 +263,12 @@ static WERROR rpc_get_value_by_name(TALLOC_CTX *mem_ctx,
 	r.in.value_name = &name;
 	r.in.type = type;
 	r.in.data = &value;
-	r.in.size = &val_size;
-	r.in.length = &zero;
+	r.in.data_size = &val_size;
+	r.in.data_length = &zero;
 	r.out.type = type;
 	r.out.data = &value;
-	r.out.size = &val_size;
-	r.out.length = &zero;
+	r.out.data_size = &val_size;
+	r.out.data_length = &zero;
 
 	status = dcerpc_winreg_QueryValue(mykeydata->pipe, mem_ctx, &r);
 
@@ -278,7 +278,7 @@ static WERROR rpc_get_value_by_name(TALLOC_CTX *mem_ctx,
 	}
 
 	*type = *(r.out.type);
-	*data = data_blob_talloc(mem_ctx, r.out.data, *r.out.length);
+	*data = data_blob_talloc(mem_ctx, r.out.data, *r.out.data_length);
 
 	return r.out.result;
 }
