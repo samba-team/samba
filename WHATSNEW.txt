@@ -6,9 +6,13 @@
 
 This is a bug fix release of the Samba 3.2 series.
 
-Major bug fixes included in Samba 3.2.5 are:
+Major enhancements included in Samba 3.2.5 are:
 
-  o 
+  o Fix Winbind crash bugs.
+  o Fix moving of readonly files.
+  o Fix access to cups-printers with cups 1.3.4.
+  o Add new SMB traffic analyzer VFS module.
+
 
 ######################################################################
 Changes
@@ -18,6 +22,68 @@ Changes since 3.2.4
 -------------------
 
 
+o   Jeremy Allison <jra@samba.org>
+    * BUG 5080: Fix access to cups-printers with cups 1.3.4.
+    * BUG 5737: Fix Winbind crash in an unusual failure mode.
+    * BUG 5783: Fix FindFirst where search pattern equals the mangled filename.
+    * BUG 5790: Fix returning of STATUS_OBJECT_NAME_NOT_FOUND on set file
+      disposition.
+    * BUG 5797: Fix moving of readonly files.
+    * BUG 5814: Fix Winbind crash bug while doing "rescan_trusted_domain".
+    * BUG 5818: Sort ACEs in smbcacl output properly and honor inheritance.
+    * Fix rename_open_files.
+    * Restructure VFS SMB traffic analyzer VFS module.
+    * Correctly fix smbclient to terminate on eof from server.
+
+
+o   Gerald (Jerry) Carter <jerry@samba.org>
+    * Use the same prerequisite for DDNS update as Windows XP.
+    * Make "lwinet ads dns register" honor the "interfaces" parameter.
+
+
+o   Guenther Deschner <gd@samba.org>
+    * Fix duplicate installation of cifs.upcall.
+    * Fix _srvsvc_NetShareAdd segfault.
+
+
+o   Holger Hetterich <hhetter@novell.com>
+    * Add new VFS module to analyze SMB traffic
+
+
+o   Jeff Layton <jlayton@redhat.com>
+    * Have uppercase_string return success on NULL pointer in mount.cifs.
+    * Make mount.cifs return codes match the return codes for /bin/mount.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 5691: SIGBUS und Solaris.
+    * Fix a potential NULL deref in found by the IBM Checker.
+    * Fix an uninitialized variable found by the IBM Checker.
+    * Fix an unlikely memleak found by the IBM Checker.
+    * Fix some missing error handlings.
+    * Add workaround for domain joins using a netbios name which is different
+      from the hostname.
+
+
+o   Derrell Lipman <derrell.lipman@unwireduniverse.com>
+    * BUG 5805: Don't close stdout when calling setup_logging multiple times.
+
+
+o   Jim McDonough <jmcd@samba.org>
+    * Fix the new vfs_smb_traffic_analyzer build for static links.
+
+
+o   Tim Prouty <tim.prouty@isilon.com>
+    * Fix several build warnings.
+
+
+o   Andrew Tridgell <tridge@samba.org>
+    * Fix segfault on startup with trusted domains.
+    * Re-add "winbind:ignore domains" parameter.
+
+
+o   Jelmer Vernooij <jelmer@samba.org>
+    * Avoid freeing fsp twice when opening new_file fails (Debian #431696).
 
 
 ######################################################################
