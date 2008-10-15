@@ -858,9 +858,9 @@ NTSTATUS rpccli_svcctl_OpenServiceW(struct rpc_pipe_client *cli,
 NTSTATUS rpccli_svcctl_QueryServiceConfigW(struct rpc_pipe_client *cli,
 					   TALLOC_CTX *mem_ctx,
 					   struct policy_handle *handle /* [in] [ref] */,
-					   uint8_t *query /* [out]  */,
-					   uint32_t buf_size /* [in]  */,
-					   uint32_t *bytes_needed /* [out] [ref] */,
+					   struct QUERY_SERVICE_CONFIG *query /* [out] [ref] */,
+					   uint32_t buf_size /* [in] [range(0,8192)] */,
+					   uint32_t *bytes_needed /* [out] [ref,range(0,8192)] */,
 					   WERROR *werror)
 {
 	struct svcctl_QueryServiceConfigW r;
@@ -893,7 +893,7 @@ NTSTATUS rpccli_svcctl_QueryServiceConfigW(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	memcpy(query, r.out.query, r.in.buf_size * sizeof(*query));
+	*query = *r.out.query;
 	*bytes_needed = *r.out.bytes_needed;
 
 	/* Return result */
