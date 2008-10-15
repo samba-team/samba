@@ -1633,12 +1633,9 @@ static enum ndr_err_code ndr_push_epm_entry_t(struct ndr_push *ndr, int ndr_flag
 		NDR_CHECK(ndr_push_align(ndr, 4));
 		NDR_CHECK(ndr_push_GUID(ndr, NDR_SCALARS, &r->object));
 		NDR_CHECK(ndr_push_full_ptr(ndr, r->tower));
-		{
-			uint32_t _flags_save_string = ndr->flags;
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_LEN4);
-			NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->annotation));
-			ndr->flags = _flags_save_string;
-		}
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, strlen(r->annotation) + 1));
+		NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->annotation, strlen(r->annotation) + 1, sizeof(uint8_t), CH_DOS));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		if (r->tower) {
@@ -1661,12 +1658,9 @@ static enum ndr_err_code ndr_pull_epm_entry_t(struct ndr_pull *ndr, int ndr_flag
 		} else {
 			r->tower = NULL;
 		}
-		{
-			uint32_t _flags_save_string = ndr->flags;
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_LEN4);
-			NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->annotation));
-			ndr->flags = _flags_save_string;
-		}
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->__annotation_offset));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->__annotation_length));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->annotation, r->__annotation_length, sizeof(uint8_t), CH_DOS));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		if (r->tower) {
@@ -1690,6 +1684,8 @@ _PUBLIC_ void ndr_print_epm_entry_t(struct ndr_print *ndr, const char *name, con
 		ndr_print_epm_twr_t(ndr, "tower", r->tower);
 	}
 	ndr->depth--;
+	ndr_print_uint32(ndr, "__annotation_offset", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?0:r->__annotation_offset);
+	ndr_print_uint32(ndr, "__annotation_length", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?strlen(r->annotation) + 1:r->__annotation_length);
 	ndr_print_string(ndr, "annotation", r->annotation);
 	ndr->depth--;
 }
