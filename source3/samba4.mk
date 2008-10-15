@@ -11,7 +11,7 @@ samba4srcdir = $(srcdir)/../source4
 
 # Flags used for the samba 4 files
 # $(srcdir)/include is required for config.h
-SAMBA4_CFLAGS = -I$(samba4srcdir) -I$(samba4srcdir)/include \
+SAMBA4_CFLAGS = -I.. -I$(samba4srcdir) -I$(samba4srcdir)/include \
 		 -I$(samba4srcdir)/../lib/replace -I$(samba4srcdir)/lib \
 		 -I$(heimdalsrcdir)/lib/hcrypto -I$(tallocdir) \
 		 -I$(srcdir)/include -D_SAMBA_BUILD_=4 -DHAVE_CONFIG_H
