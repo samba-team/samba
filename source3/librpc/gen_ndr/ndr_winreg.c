@@ -1519,7 +1519,7 @@ _PUBLIC_ void ndr_print_winreg_EnumKey(struct ndr_print *ndr, const char *name, 
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_winreg_EnumValue(struct ndr_push *ndr, int flags, const struct winreg_EnumValue *r)
+_PUBLIC_ enum ndr_err_code ndr_push_winreg_EnumValue(struct ndr_push *ndr, int flags, const struct winreg_EnumValue *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) {
@@ -1580,7 +1580,7 @@ static enum ndr_err_code ndr_push_winreg_EnumValue(struct ndr_push *ndr, int fla
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_winreg_EnumValue(struct ndr_pull *ndr, int flags, struct winreg_EnumValue *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_winreg_EnumValue(struct ndr_pull *ndr, int flags, struct winreg_EnumValue *r)
 {
 	uint32_t _ptr_type;
 	uint32_t _ptr_value;
@@ -2252,7 +2252,7 @@ _PUBLIC_ void ndr_print_winreg_OpenKey(struct ndr_print *ndr, const char *name, 
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_winreg_QueryInfoKey(struct ndr_push *ndr, int flags, const struct winreg_QueryInfoKey *r)
+_PUBLIC_ enum ndr_err_code ndr_push_winreg_QueryInfoKey(struct ndr_push *ndr, int flags, const struct winreg_QueryInfoKey *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) {
@@ -2306,7 +2306,7 @@ static enum ndr_err_code ndr_push_winreg_QueryInfoKey(struct ndr_push *ndr, int 
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_winreg_QueryInfoKey(struct ndr_pull *ndr, int flags, struct winreg_QueryInfoKey *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_winreg_QueryInfoKey(struct ndr_pull *ndr, int flags, struct winreg_QueryInfoKey *r)
 {
 	TALLOC_CTX *_mem_save_handle_0;
 	TALLOC_CTX *_mem_save_classname_0;
@@ -2488,7 +2488,7 @@ _PUBLIC_ void ndr_print_winreg_QueryInfoKey(struct ndr_print *ndr, const char *n
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_winreg_QueryValue(struct ndr_push *ndr, int flags, const struct winreg_QueryValue *r)
+_PUBLIC_ enum ndr_err_code ndr_push_winreg_QueryValue(struct ndr_push *ndr, int flags, const struct winreg_QueryValue *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) {
@@ -2544,7 +2544,7 @@ static enum ndr_err_code ndr_push_winreg_QueryValue(struct ndr_push *ndr, int fl
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_winreg_QueryValue(struct ndr_pull *ndr, int flags, struct winreg_QueryValue *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_winreg_QueryValue(struct ndr_pull *ndr, int flags, struct winreg_QueryValue *r)
 {
 	uint32_t _ptr_type;
 	uint32_t _ptr_data;

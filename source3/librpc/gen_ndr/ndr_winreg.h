@@ -119,6 +119,8 @@ void ndr_print_winreg_DeleteValue(struct ndr_print *ndr, const char *name, int f
 enum ndr_err_code ndr_push_winreg_EnumKey(struct ndr_push *ndr, int flags, const struct winreg_EnumKey *r);
 enum ndr_err_code ndr_pull_winreg_EnumKey(struct ndr_pull *ndr, int flags, struct winreg_EnumKey *r);
 void ndr_print_winreg_EnumKey(struct ndr_print *ndr, const char *name, int flags, const struct winreg_EnumKey *r);
+enum ndr_err_code ndr_push_winreg_EnumValue(struct ndr_push *ndr, int flags, const struct winreg_EnumValue *r);
+enum ndr_err_code ndr_pull_winreg_EnumValue(struct ndr_pull *ndr, int flags, struct winreg_EnumValue *r);
 void ndr_print_winreg_EnumValue(struct ndr_print *ndr, const char *name, int flags, const struct winreg_EnumValue *r);
 enum ndr_err_code ndr_push_winreg_FlushKey(struct ndr_push *ndr, int flags, const struct winreg_FlushKey *r);
 enum ndr_err_code ndr_pull_winreg_FlushKey(struct ndr_pull *ndr, int flags, struct winreg_FlushKey *r);
@@ -133,7 +135,11 @@ void ndr_print_winreg_NotifyChangeKeyValue(struct ndr_print *ndr, const char *na
 enum ndr_err_code ndr_push_winreg_OpenKey(struct ndr_push *ndr, int flags, const struct winreg_OpenKey *r);
 enum ndr_err_code ndr_pull_winreg_OpenKey(struct ndr_pull *ndr, int flags, struct winreg_OpenKey *r);
 void ndr_print_winreg_OpenKey(struct ndr_print *ndr, const char *name, int flags, const struct winreg_OpenKey *r);
+enum ndr_err_code ndr_push_winreg_QueryInfoKey(struct ndr_push *ndr, int flags, const struct winreg_QueryInfoKey *r);
+enum ndr_err_code ndr_pull_winreg_QueryInfoKey(struct ndr_pull *ndr, int flags, struct winreg_QueryInfoKey *r);
 void ndr_print_winreg_QueryInfoKey(struct ndr_print *ndr, const char *name, int flags, const struct winreg_QueryInfoKey *r);
+enum ndr_err_code ndr_push_winreg_QueryValue(struct ndr_push *ndr, int flags, const struct winreg_QueryValue *r);
+enum ndr_err_code ndr_pull_winreg_QueryValue(struct ndr_pull *ndr, int flags, struct winreg_QueryValue *r);
 void ndr_print_winreg_QueryValue(struct ndr_print *ndr, const char *name, int flags, const struct winreg_QueryValue *r);
 void ndr_print_winreg_ReplaceKey(struct ndr_print *ndr, const char *name, int flags, const struct winreg_ReplaceKey *r);
 void ndr_print_winreg_RestoreKey(struct ndr_print *ndr, const char *name, int flags, const struct winreg_RestoreKey *r);
