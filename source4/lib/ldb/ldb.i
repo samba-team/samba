@@ -1219,25 +1219,6 @@ int py_module_del_transaction(struct ldb_module *mod)
     return LDB_SUCCESS;
 }
 
-int py_module_sequence_number(struct ldb_module *mod, struct ldb_request *req)
-{
-    PyObject *py_ldb = mod->private_data;
-    PyObject *py_result;
-    int ret;
-
-    py_result = PyObject_CallMethod(py_ldb, "sequence_number", "ili", req->op.seq_num.type, req->op.seq_num.seq_num, req->op.seq_num.flags);
-
-    if (py_result == NULL) {
-        return LDB_ERR_OPERATIONS_ERROR;
-    }
-
-    ret = PyInt_AsLong(py_result);
-
-    Py_DECREF(py_result);
-
-    return ret;
-}
-
 static int py_module_destructor(void *_mod)
 {
     struct ldb_module *mod = _mod;
@@ -1292,7 +1273,6 @@ int py_module_init (struct ldb_module *mod)
     $1->start_transaction = py_module_start_transaction;
     $1->end_transaction = py_module_end_transaction;
     $1->del_transaction = py_module_del_transaction;
-    $1->sequence_number = py_module_sequence_number;
 }
 
 %feature("docstring") ldb_register_module "S.register_module(module) -> None\n"

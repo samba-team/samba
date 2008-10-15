@@ -3505,25 +3505,6 @@ int py_module_del_transaction(struct ldb_module *mod)
     return LDB_SUCCESS;
 }
 
-int py_module_sequence_number(struct ldb_module *mod, struct ldb_request *req)
-{
-    PyObject *py_ldb = mod->private_data;
-    PyObject *py_result;
-    int ret;
-
-    py_result = PyObject_CallMethod(py_ldb, "sequence_number", "ili", req->op.seq_num.type, req->op.seq_num.seq_num, req->op.seq_num.flags);
-
-    if (py_result == NULL) {
-        return LDB_ERR_OPERATIONS_ERROR;
-    }
-
-    ret = PyInt_AsLong(py_result);
-
-    Py_DECREF(py_result);
-
-    return ret;
-}
-
 static int py_module_destructor(void *_mod)
 {
     struct ldb_module *mod = _mod;
@@ -6648,7 +6629,6 @@ SWIGINTERN PyObject *_wrap_register_module(PyObject *SWIGUNUSEDPARM(self), PyObj
   arg1->start_transaction = py_module_start_transaction;
   arg1->end_transaction = py_module_end_transaction;
   arg1->del_transaction = py_module_del_transaction;
-  arg1->sequence_number = py_module_sequence_number;
   result = ldb_register_module((struct ldb_module_ops const *)arg1);
   if (result != 0) {
     PyErr_SetObject(PyExc_LdbError, Py_BuildValue((char *)"(i,s)", result, ldb_strerror(result)));

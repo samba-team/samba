@@ -603,10 +603,18 @@ static int nsuniqueid_init(struct ldb_module *module)
 	return ldb_next_init(module);
 }
 
-static int get_seq(struct ldb_request *req,
-		   struct ldb_reply *ares)
+static int get_seq_callback(struct ldb_request *req,
+			    struct ldb_reply *ares)
 {
 	unsigned long long *seq = (unsigned long long *)req->context;
+
+	if (!ares) {
+		return ldb_request_done(req, LDB_ERR_OPERATIONS_ERROR);
+	}
+	if (ares->error != LDB_SUCCESS) {
+		return ldb_request_done(req, ares->error);
+	}
+
 	if (ares->type == LDB_REPLY_ENTRY) {
 		struct ldb_message_element *el = ldb_msg_find_element(ares->message, "contextCSN");
 		if (el) {
@@ -618,6 +626,7 @@ static int get_seq(struct ldb_request *req,
 		return ldb_request_done(req, LDB_SUCCESS);
 	}
 
+	talloc_free(ares);
 	return LDB_SUCCESS;
 }
 
@@ -626,7 +635,7 @@ static int entryuuid_sequence_number(struct ldb_module *module, struct ldb_reque
 	int ret;
 	struct map_private *map_private;
 	struct entryuuid_private *entryuuid_private;
-	unsigned long long seq = 0;
+	unsigned long long seq_num = 0;
 	struct ldb_request *search_req;
 
 	const struct ldb_control *partition_ctrl;
@@ -635,6 +644,12 @@ static int entryuuid_sequence_number(struct ldb_module *module, struct ldb_reque
 	static const char *contextCSN_attr[] = {
 		"contextCSN", NULL
 	};
+
+	struct ldb_seqnum_request *seq;
+	struct ldb_seqnum_result *seqr;
+	struct ldb_extended *ext;
+
+	seq = talloc_get_type(req->op.extended.data, struct ldb_seqnum_request);
 
 	map_private = talloc_get_type(module->private_data, struct map_private);
 
@@ -655,7 +670,7 @@ static int entryuuid_sequence_number(struct ldb_module *module, struct ldb_reque
 	ret = ldb_build_search_req(&search_req, module->ldb, req,
 				   partition->dn, LDB_SCOPE_BASE,
 				   NULL, contextCSN_attr, NULL,
-				   &seq, get_seq,
+				   &seq_num, get_seq_callback,
 				   NULL);
 	if (ret != LDB_SUCCESS) {
 		return ret;
@@ -672,36 +687,59 @@ static int entryuuid_sequence_number(struct ldb_module *module, struct ldb_reque
 		return ret;
 	}
 
-	switch (req->op.seq_num.type) {
+	ext = talloc_zero(req, struct ldb_extended);
+	if (!ext) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	seqr = talloc_zero(req, struct ldb_seqnum_result);
+	if (seqr == NULL) {
+		talloc_free(ext);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	ext->oid = LDB_EXTENDED_SEQUENCE_NUMBER;
+	ext->data = seqr;
+
+	switch (seq->type) {
 	case LDB_SEQ_HIGHEST_SEQ:
-		req->op.seq_num.seq_num = seq;
+		seqr->seq_num = seq_num;
 		break;
 	case LDB_SEQ_NEXT:
-		req->op.seq_num.seq_num = seq;
-		req->op.seq_num.seq_num++;
+		seqr->seq_num = seq_num;
+		seqr->seq_num++;
 		break;
 	case LDB_SEQ_HIGHEST_TIMESTAMP:
 	{
-		req->op.seq_num.seq_num = (seq >> 24);
+		seqr->seq_num = (seq_num >> 24);
 		break;
 	}
 	}
-	req->op.seq_num.flags = 0;
-	req->op.seq_num.flags |= LDB_SEQ_TIMESTAMP_SEQUENCE;
-	req->op.seq_num.flags |= LDB_SEQ_GLOBAL_SEQUENCE;
-	return LDB_SUCCESS;
+	seqr->flags = 0;
+	seqr->flags |= LDB_SEQ_TIMESTAMP_SEQUENCE;
+	seqr->flags |= LDB_SEQ_GLOBAL_SEQUENCE;
+
+	/* send request done */
+	return ldb_module_done(req, NULL, ext, LDB_SUCCESS);
+}
+
+static int entryuuid_extended(struct ldb_module *module, struct ldb_request *req)
+{
+	if (strcmp(req->op.extended.oid, LDB_EXTENDED_SEQUENCE_NUMBER) == 0) {
+		return entryuuid_sequence_number(module, req);
+	}
+
+	return ldb_next_request(module, req);
 }
 
 _PUBLIC_ const struct ldb_module_ops ldb_entryuuid_module_ops = {
 	.name		   = "entryuuid",
 	.init_context	   = entryuuid_init,
-	.sequence_number   = entryuuid_sequence_number,
+	.extended          = entryuuid_extended,
 	LDB_MAP_OPS
 };
 
 _PUBLIC_ const struct ldb_module_ops ldb_nsuniqueid_module_ops = {
 	.name		   = "nsuniqueid",
 	.init_context	   = nsuniqueid_init,
-	.sequence_number   = entryuuid_sequence_number,
+	.extended          = entryuuid_extended,
 	LDB_MAP_OPS
 };

@@ -517,10 +517,6 @@ int ldb_next_request(struct ldb_module *module, struct ldb_request *request)
 		FIND_OP(module, extended);
 		ret = module->ops->extended(module, request);
 		break;
-	case LDB_SEQUENCE_NUMBER:
-		FIND_OP(module, sequence_number);
-		ret = module->ops->sequence_number(module, request);
-		break;
 	default:
 		FIND_OP(module, request);
 		ret = module->ops->request(module, request);

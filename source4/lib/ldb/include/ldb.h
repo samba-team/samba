@@ -652,7 +652,6 @@ enum ldb_request_type {
 	LDB_DELETE,
 	LDB_RENAME,
 	LDB_EXTENDED,
-	LDB_SEQUENCE_NUMBER,
 	LDB_REQ_REGISTER_CONTROL,
 	LDB_REQ_REGISTER_PARTITION
 };
@@ -679,21 +678,38 @@ struct ldb_extended {
 	void *data; /* NULL or a valid talloc pointer! talloc_get_type() will be used on it */
 };
 
+#define LDB_EXTENDED_SEQUENCE_NUMBER	"1.3.6.1.4.1.7165.4.4.3"
+
+enum ldb_sequence_type {
+	LDB_SEQ_HIGHEST_SEQ,
+	LDB_SEQ_HIGHEST_TIMESTAMP,
+	LDB_SEQ_NEXT
+};
+
+struct ldb_seqnum_request {
+	enum ldb_sequence_type type;
+};
+
+struct ldb_seqnum_result {
+	uint64_t seq_num;
+	uint32_t flags;
+};
+
 struct ldb_result {
 	unsigned int count;
 	struct ldb_message **msgs;
-	char **refs;
 	struct ldb_extended *extended;
 	struct ldb_control **controls;
+	char **refs;
 };
 
 struct ldb_reply {
+	int error;
 	enum ldb_reply_type type;
 	struct ldb_message *message;
 	struct ldb_extended *response;
-	char *referral;
 	struct ldb_control **controls;
-	int error;
+	char *referral;
 };
 
 struct ldb_request;
@@ -732,18 +748,6 @@ struct ldb_register_partition {
 	struct ldb_dn *dn;
 };
 
-enum ldb_sequence_type {
-	LDB_SEQ_HIGHEST_SEQ,
-	LDB_SEQ_HIGHEST_TIMESTAMP,
-	LDB_SEQ_NEXT
-};
-
-struct ldb_sequence_number {
-	enum ldb_sequence_type type;
-	uint64_t seq_num;
-	uint32_t flags;
-};
-
 typedef int (*ldb_request_callback_t)(struct ldb_request *, struct ldb_reply *);
 
 struct ldb_request {
@@ -757,7 +761,6 @@ struct ldb_request {
 		struct ldb_delete del;
 		struct ldb_rename rename;
 		struct ldb_extended extended;
-		struct ldb_sequence_number seq_num;
 		struct ldb_register_control reg_control;
 		struct ldb_register_partition reg_partition;
 	} op;

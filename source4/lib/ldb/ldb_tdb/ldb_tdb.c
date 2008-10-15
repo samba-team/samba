@@ -79,6 +79,30 @@ static int ltdb_err_map(enum TDB_ERROR tdb_code)
 	return LDB_ERR_OTHER;
 }
 
+/*
+  lock the database for read - use by ltdb_search and ltdb_sequence_number
+*/
+int ltdb_lock_read(struct ldb_module *module)
+{
+	struct ltdb_private *ltdb = (struct ltdb_private *)module->private_data;
+	if (ltdb->in_transaction == 0) {
+		return tdb_lockall_read(ltdb->tdb);
+	}
+	return 0;
+}
+
+/*
+  unlock the database after a ltdb_lock_read()
+*/
+int ltdb_unlock_read(struct ldb_module *module)
+{
+	struct ltdb_private *ltdb = (struct ltdb_private *)module->private_data;
+	if (ltdb->in_transaction == 0) {
+		return tdb_unlockall_read(ltdb->tdb);
+	}
+	return 0;
+}
+
 
 /*
   form a TDB_DATA for a record key
@@ -860,61 +884,88 @@ static int ltdb_del_trans(struct ldb_module *module)
 /*
   return sequenceNumber from @BASEINFO
 */
-static int ltdb_sequence_number(struct ldb_module *module,
-				struct ldb_request *req)
+static int ltdb_sequence_number(struct ltdb_context *ctx,
+				struct ldb_extended **ext)
 {
+	struct ldb_module *module = ctx->module;
+	struct ldb_request *req = ctx->req;
 	TALLOC_CTX *tmp_ctx;
+	struct ldb_seqnum_request *seq;
+	struct ldb_seqnum_result *res;
 	struct ldb_message *msg = NULL;
 	struct ldb_dn *dn;
 	const char *date;
-	int tret;
+	int ret;
 
+	seq = talloc_get_type(req->op.extended.data,
+				struct ldb_seqnum_request);
+	if (seq == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	req->handle->state = LDB_ASYNC_PENDING;
+
+	if (ltdb_lock_read(module) != 0) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	res = talloc_zero(req, struct ldb_seqnum_result);
+	if (res == NULL) {
+		ret = LDB_ERR_OPERATIONS_ERROR;
+		goto done;
+	}
 	tmp_ctx = talloc_new(req);
 	if (tmp_ctx == NULL) {
-		talloc_free(tmp_ctx);
-		return LDB_ERR_OPERATIONS_ERROR;
+		ret = LDB_ERR_OPERATIONS_ERROR;
+		goto done;
 	}
 
 	dn = ldb_dn_new(tmp_ctx, module->ldb, LTDB_BASEINFO);
 
 	msg = talloc(tmp_ctx, struct ldb_message);
 	if (msg == NULL) {
-		talloc_free(tmp_ctx);
-		return LDB_ERR_OPERATIONS_ERROR;
+		ret = LDB_ERR_OPERATIONS_ERROR;
+		goto done;
 	}
 
-	req->op.seq_num.flags = 0;
-
-	tret = ltdb_search_dn1(module, dn, msg);
-	if (tret != LDB_SUCCESS) {
-		talloc_free(tmp_ctx);
-		/* zero is as good as anything when we don't know */
-		req->op.seq_num.seq_num = 0;
-		return tret;
+	ret = ltdb_search_dn1(module, dn, msg);
+	if (ret != LDB_SUCCESS) {
+		goto done;
 	}
 
-	switch (req->op.seq_num.type) {
+	switch (seq->type) {
 	case LDB_SEQ_HIGHEST_SEQ:
-		req->op.seq_num.seq_num = ldb_msg_find_attr_as_uint64(msg, LTDB_SEQUENCE_NUMBER, 0);
+		res->seq_num = ldb_msg_find_attr_as_uint64(msg, LTDB_SEQUENCE_NUMBER, 0);
 		break;
 	case LDB_SEQ_NEXT:
-		req->op.seq_num.seq_num = ldb_msg_find_attr_as_uint64(msg, LTDB_SEQUENCE_NUMBER, 0);
-		req->op.seq_num.seq_num++;
+		res->seq_num = ldb_msg_find_attr_as_uint64(msg, LTDB_SEQUENCE_NUMBER, 0);
+		res->seq_num++;
 		break;
 	case LDB_SEQ_HIGHEST_TIMESTAMP:
 		date = ldb_msg_find_attr_as_string(msg, LTDB_MOD_TIMESTAMP, NULL);
 		if (date) {
-			req->op.seq_num.seq_num = ldb_string_to_time(date);
+			res->seq_num = ldb_string_to_time(date);
 		} else {
-			req->op.seq_num.seq_num = 0;
+			res->seq_num = 0;
 			/* zero is as good as anything when we don't know */
 		}
 		break;
 	}
 
-	talloc_free(tmp_ctx);
+	*ext = talloc_zero(req, struct ldb_extended);
+	if (*ext == NULL) {
+		ret = LDB_ERR_OPERATIONS_ERROR;
+		goto done;
+	}
+	(*ext)->oid = LDB_EXTENDED_SEQUENCE_NUMBER;
+	(*ext)->data = talloc_steal(*ext, res);
 
-	return LDB_SUCCESS;
+	ret = LDB_SUCCESS;
+
+done:
+	talloc_free(tmp_ctx);
+	ltdb_unlock_read(module);
+	return ret;
 }
 
 void ltdb_request_done(struct ldb_request *req, int error)
@@ -949,6 +1000,47 @@ static void ltdb_timeout(struct event_context *ev,
 	ltdb_request_done(ctx->req, LDB_ERR_TIME_LIMIT_EXCEEDED);
 }
 
+static void ltdb_request_extended_done(struct ldb_request *req,
+					struct ldb_extended *ext,
+					int error)
+{
+	struct ldb_reply *ares;
+
+	/* if we already returned an error just return */
+	if (req->handle->status != LDB_SUCCESS) {
+		return;
+	}
+
+	ares = talloc_zero(req, struct ldb_reply);
+	if (!ares) {
+		ldb_oom(req->handle->ldb);
+		req->callback(req, NULL);
+		return;
+	}
+	ares->type = LDB_REPLY_DONE;
+	ares->response = ext;
+	ares->error = error;
+
+	req->callback(req, ares);
+}
+
+static void ltdb_handle_extended(struct ltdb_context *ctx)
+{
+	struct ldb_extended *ext = NULL;
+	int ret;
+
+	if (strcmp(ctx->req->op.extended.oid,
+		   LDB_EXTENDED_SEQUENCE_NUMBER) == 0) {
+		/* get sequence number */
+		ret = ltdb_sequence_number(ctx, &ext);
+	} else {
+		/* not recognized */
+		ret = LDB_ERR_UNSUPPORTED_CRITICAL_EXTENSION;
+	}
+
+	ltdb_request_extended_done(ctx->req, ext, ret);
+}
+
 static void ltdb_callback(struct event_context *ev,
 			  struct timed_event *te,
 			  struct timeval t,
@@ -975,6 +1067,9 @@ static void ltdb_callback(struct event_context *ev,
 	case LDB_RENAME:
 		ret = ltdb_rename(ctx);
 		break;
+	case LDB_EXTENDED:
+		ltdb_handle_extended(ctx);
+		return;
 	default:
 		/* no other op supported */
 		ret = LDB_ERR_UNWILLING_TO_PERFORM;
@@ -1037,11 +1132,10 @@ static const struct ldb_module_ops ltdb_ops = {
 	.modify            = ltdb_handle_request,
 	.del               = ltdb_handle_request,
 	.rename            = ltdb_handle_request,
-/*	.request           = ltdb_handle_request, */
+	.extended          = ltdb_handle_request,
 	.start_transaction = ltdb_start_trans,
 	.end_transaction   = ltdb_end_trans,
 	.del_transaction   = ltdb_del_trans,
-	.sequence_number   = ltdb_sequence_number
 };
 
 /*

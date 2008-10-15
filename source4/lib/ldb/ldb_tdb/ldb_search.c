@@ -277,30 +277,6 @@ int ltdb_search_dn1(struct ldb_module *module, struct ldb_dn *dn, struct ldb_mes
 }
 
 /*
-  lock the database for read - use by ltdb_search
-*/
-static int ltdb_lock_read(struct ldb_module *module)
-{
-	struct ltdb_private *ltdb = (struct ltdb_private *)module->private_data;
-	if (ltdb->in_transaction == 0) {
-		return tdb_lockall_read(ltdb->tdb);
-	}
-	return 0;
-}
-
-/*
-  unlock the database after a ltdb_lock_read()
-*/
-static int ltdb_unlock_read(struct ldb_module *module)
-{
-	struct ltdb_private *ltdb = (struct ltdb_private *)module->private_data;
-	if (ltdb->in_transaction == 0) {
-		return tdb_unlockall_read(ltdb->tdb);
-	}
-	return 0;
-}
-
-/*
   add a set of attributes from a record to a set of results
   return 0 on success, -1 on failure
 */
