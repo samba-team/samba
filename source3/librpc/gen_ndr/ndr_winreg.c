@@ -35,13 +35,13 @@ _PUBLIC_ void ndr_print_winreg_AccessMask(struct ndr_print *ndr, const char *nam
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_winreg_Type(struct ndr_push *ndr, int ndr_flags, enum winreg_Type r)
+_PUBLIC_ enum ndr_err_code ndr_push_winreg_Type(struct ndr_push *ndr, int ndr_flags, enum winreg_Type r)
 {
 	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_winreg_Type(struct ndr_pull *ndr, int ndr_flags, enum winreg_Type *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_winreg_Type(struct ndr_pull *ndr, int ndr_flags, enum winreg_Type *r)
 {
 	uint32_t v;
 	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
@@ -414,6 +414,31 @@ _PUBLIC_ void ndr_print_winreg_ValNameBuf(struct ndr_print *ndr, const char *nam
 	ndr->depth--;
 }
 
+_PUBLIC_ enum ndr_err_code ndr_push_winreg_NotifyChangeType(struct ndr_push *ndr, int ndr_flags, uint32_t r)
+{
+	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_winreg_NotifyChangeType(struct ndr_pull *ndr, int ndr_flags, uint32_t *r)
+{
+	uint32_t v;
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_winreg_NotifyChangeType(struct ndr_print *ndr, const char *name, uint32_t r)
+{
+	ndr_print_uint32(ndr, name, r);
+	ndr->depth++;
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "REG_NOTIFY_CHANGE_NAME", REG_NOTIFY_CHANGE_NAME, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "REG_NOTIFY_CHANGE_ATTRIBUTES", REG_NOTIFY_CHANGE_ATTRIBUTES, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "REG_NOTIFY_CHANGE_LAST_SET", REG_NOTIFY_CHANGE_LAST_SET, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "REG_NOTIFY_CHANGE_SECURITY", REG_NOTIFY_CHANGE_SECURITY, r);
+	ndr->depth--;
+}
+
 static enum ndr_err_code ndr_push_KeySecurityAttribute(struct ndr_push *ndr, int ndr_flags, const struct KeySecurityAttribute *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
@@ -688,7 +713,7 @@ _PUBLIC_ void ndr_print_winreg_OpenHKCU(struct ndr_print *ndr, const char *name,
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_winreg_OpenHKLM(struct ndr_push *ndr, int flags, const struct winreg_OpenHKLM *r)
+_PUBLIC_ enum ndr_err_code ndr_push_winreg_OpenHKLM(struct ndr_push *ndr, int flags, const struct winreg_OpenHKLM *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.system_name));
@@ -707,7 +732,7 @@ static enum ndr_err_code ndr_push_winreg_OpenHKLM(struct ndr_push *ndr, int flag
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_winreg_OpenHKLM(struct ndr_pull *ndr, int flags, struct winreg_OpenHKLM *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_winreg_OpenHKLM(struct ndr_pull *ndr, int flags, struct winreg_OpenHKLM *r)
 {
 	uint32_t _ptr_system_name;
 	TALLOC_CTX *_mem_save_system_name_0;
@@ -952,7 +977,7 @@ _PUBLIC_ void ndr_print_winreg_OpenHKU(struct ndr_print *ndr, const char *name, 
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_winreg_CloseKey(struct ndr_push *ndr, int flags, const struct winreg_CloseKey *r)
+_PUBLIC_ enum ndr_err_code ndr_push_winreg_CloseKey(struct ndr_push *ndr, int flags, const struct winreg_CloseKey *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) {
@@ -970,7 +995,7 @@ static enum ndr_err_code ndr_push_winreg_CloseKey(struct ndr_push *ndr, int flag
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_winreg_CloseKey(struct ndr_pull *ndr, int flags, struct winreg_CloseKey *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_winreg_CloseKey(struct ndr_pull *ndr, int flags, struct winreg_CloseKey *r)
 {
 	TALLOC_CTX *_mem_save_handle_0;
 	if (flags & NDR_IN) {
@@ -1028,7 +1053,7 @@ _PUBLIC_ void ndr_print_winreg_CloseKey(struct ndr_print *ndr, const char *name,
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_winreg_CreateKey(struct ndr_push *ndr, int flags, const struct winreg_CreateKey *r)
+_PUBLIC_ enum ndr_err_code ndr_push_winreg_CreateKey(struct ndr_push *ndr, int flags, const struct winreg_CreateKey *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) {
@@ -1062,7 +1087,7 @@ static enum ndr_err_code ndr_push_winreg_CreateKey(struct ndr_push *ndr, int fla
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_winreg_CreateKey(struct ndr_pull *ndr, int flags, struct winreg_CreateKey *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_winreg_CreateKey(struct ndr_pull *ndr, int flags, struct winreg_CreateKey *r)
 {
 	uint32_t _ptr_secdesc;
 	uint32_t _ptr_action_taken;
@@ -1187,7 +1212,7 @@ _PUBLIC_ void ndr_print_winreg_CreateKey(struct ndr_print *ndr, const char *name
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_winreg_DeleteKey(struct ndr_push *ndr, int flags, const struct winreg_DeleteKey *r)
+_PUBLIC_ enum ndr_err_code ndr_push_winreg_DeleteKey(struct ndr_push *ndr, int flags, const struct winreg_DeleteKey *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) {
@@ -1202,7 +1227,7 @@ static enum ndr_err_code ndr_push_winreg_DeleteKey(struct ndr_push *ndr, int fla
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_winreg_DeleteKey(struct ndr_pull *ndr, int flags, struct winreg_DeleteKey *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_winreg_DeleteKey(struct ndr_pull *ndr, int flags, struct winreg_DeleteKey *r)
 {
 	TALLOC_CTX *_mem_save_handle_0;
 	if (flags & NDR_IN) {
@@ -1307,7 +1332,7 @@ _PUBLIC_ void ndr_print_winreg_DeleteValue(struct ndr_print *ndr, const char *na
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_winreg_EnumKey(struct ndr_push *ndr, int flags, const struct winreg_EnumKey *r)
+_PUBLIC_ enum ndr_err_code ndr_push_winreg_EnumKey(struct ndr_push *ndr, int flags, const struct winreg_EnumKey *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) {
@@ -1346,7 +1371,7 @@ static enum ndr_err_code ndr_push_winreg_EnumKey(struct ndr_push *ndr, int flags
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_winreg_EnumKey(struct ndr_pull *ndr, int flags, struct winreg_EnumKey *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_winreg_EnumKey(struct ndr_pull *ndr, int flags, struct winreg_EnumKey *r)
 {
 	uint32_t _ptr_keyclass;
 	uint32_t _ptr_last_changed_time;
@@ -1809,7 +1834,7 @@ _PUBLIC_ void ndr_print_winreg_EnumValue(struct ndr_print *ndr, const char *name
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_winreg_FlushKey(struct ndr_push *ndr, int flags, const struct winreg_FlushKey *r)
+_PUBLIC_ enum ndr_err_code ndr_push_winreg_FlushKey(struct ndr_push *ndr, int flags, const struct winreg_FlushKey *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) {
@@ -1823,7 +1848,7 @@ static enum ndr_err_code ndr_push_winreg_FlushKey(struct ndr_push *ndr, int flag
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_winreg_FlushKey(struct ndr_pull *ndr, int flags, struct winreg_FlushKey *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_winreg_FlushKey(struct ndr_pull *ndr, int flags, struct winreg_FlushKey *r)
 {
 	TALLOC_CTX *_mem_save_handle_0;
 	if (flags & NDR_IN) {
@@ -1866,7 +1891,7 @@ _PUBLIC_ void ndr_print_winreg_FlushKey(struct ndr_print *ndr, const char *name,
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_winreg_GetKeySecurity(struct ndr_push *ndr, int flags, const struct winreg_GetKeySecurity *r)
+_PUBLIC_ enum ndr_err_code ndr_push_winreg_GetKeySecurity(struct ndr_push *ndr, int flags, const struct winreg_GetKeySecurity *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) {
@@ -1889,7 +1914,7 @@ static enum ndr_err_code ndr_push_winreg_GetKeySecurity(struct ndr_push *ndr, in
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_winreg_GetKeySecurity(struct ndr_pull *ndr, int flags, struct winreg_GetKeySecurity *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_winreg_GetKeySecurity(struct ndr_pull *ndr, int flags, struct winreg_GetKeySecurity *r)
 {
 	TALLOC_CTX *_mem_save_handle_0;
 	TALLOC_CTX *_mem_save_sd_0;
@@ -2066,7 +2091,7 @@ _PUBLIC_ void ndr_print_winreg_LoadKey(struct ndr_print *ndr, const char *name, 
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_winreg_NotifyChangeKeyValue(struct ndr_push *ndr, int flags, const struct winreg_NotifyChangeKeyValue *r)
+_PUBLIC_ enum ndr_err_code ndr_push_winreg_NotifyChangeKeyValue(struct ndr_push *ndr, int flags, const struct winreg_NotifyChangeKeyValue *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) {
@@ -2074,7 +2099,7 @@ static enum ndr_err_code ndr_push_winreg_NotifyChangeKeyValue(struct ndr_push *n
 		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->in.watch_subtree));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.notify_filter));
+		NDR_CHECK(ndr_push_winreg_NotifyChangeType(ndr, NDR_SCALARS, r->in.notify_filter));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.unknown));
 		NDR_CHECK(ndr_push_winreg_String(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.string1));
 		NDR_CHECK(ndr_push_winreg_String(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.string2));
@@ -2086,7 +2111,7 @@ static enum ndr_err_code ndr_push_winreg_NotifyChangeKeyValue(struct ndr_push *n
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_winreg_NotifyChangeKeyValue(struct ndr_pull *ndr, int flags, struct winreg_NotifyChangeKeyValue *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_winreg_NotifyChangeKeyValue(struct ndr_pull *ndr, int flags, struct winreg_NotifyChangeKeyValue *r)
 {
 	TALLOC_CTX *_mem_save_handle_0;
 	if (flags & NDR_IN) {
@@ -2098,7 +2123,7 @@ static enum ndr_err_code ndr_pull_winreg_NotifyChangeKeyValue(struct ndr_pull *n
 		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->in.watch_subtree));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.notify_filter));
+		NDR_CHECK(ndr_pull_winreg_NotifyChangeType(ndr, NDR_SCALARS, &r->in.notify_filter));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.unknown));
 		NDR_CHECK(ndr_pull_winreg_String(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.string1));
 		NDR_CHECK(ndr_pull_winreg_String(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.string2));
@@ -2125,7 +2150,7 @@ _PUBLIC_ void ndr_print_winreg_NotifyChangeKeyValue(struct ndr_print *ndr, const
 		ndr_print_policy_handle(ndr, "handle", r->in.handle);
 		ndr->depth--;
 		ndr_print_uint8(ndr, "watch_subtree", r->in.watch_subtree);
-		ndr_print_uint32(ndr, "notify_filter", r->in.notify_filter);
+		ndr_print_winreg_NotifyChangeType(ndr, "notify_filter", r->in.notify_filter);
 		ndr_print_uint32(ndr, "unknown", r->in.unknown);
 		ndr_print_winreg_String(ndr, "string1", &r->in.string1);
 		ndr_print_winreg_String(ndr, "string2", &r->in.string2);
@@ -2141,7 +2166,7 @@ _PUBLIC_ void ndr_print_winreg_NotifyChangeKeyValue(struct ndr_print *ndr, const
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_winreg_OpenKey(struct ndr_push *ndr, int flags, const struct winreg_OpenKey *r)
+_PUBLIC_ enum ndr_err_code ndr_push_winreg_OpenKey(struct ndr_push *ndr, int flags, const struct winreg_OpenKey *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.parent_handle == NULL) {
@@ -2162,7 +2187,7 @@ static enum ndr_err_code ndr_push_winreg_OpenKey(struct ndr_push *ndr, int flags
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_winreg_OpenKey(struct ndr_pull *ndr, int flags, struct winreg_OpenKey *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_winreg_OpenKey(struct ndr_pull *ndr, int flags, struct winreg_OpenKey *r)
 {
 	TALLOC_CTX *_mem_save_parent_handle_0;
 	TALLOC_CTX *_mem_save_handle_0;
@@ -3181,11 +3206,11 @@ static enum ndr_err_code ndr_push_winreg_InitiateSystemShutdown(struct ndr_push 
 		}
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.message));
 		if (r->in.message) {
-			NDR_CHECK(ndr_push_initshutdown_String(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.message));
+			NDR_CHECK(ndr_push_lsa_StringLarge(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.message));
 		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.timeout));
 		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->in.force_apps));
-		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->in.do_reboot));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->in.reboot));
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
@@ -3221,12 +3246,12 @@ static enum ndr_err_code ndr_pull_winreg_InitiateSystemShutdown(struct ndr_pull 
 		if (r->in.message) {
 			_mem_save_message_0 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.message, 0);
-			NDR_CHECK(ndr_pull_initshutdown_String(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.message));
+			NDR_CHECK(ndr_pull_lsa_StringLarge(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.message));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_message_0, 0);
 		}
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.timeout));
 		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->in.force_apps));
-		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->in.do_reboot));
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->in.reboot));
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
@@ -3253,12 +3278,12 @@ _PUBLIC_ void ndr_print_winreg_InitiateSystemShutdown(struct ndr_print *ndr, con
 		ndr_print_ptr(ndr, "message", r->in.message);
 		ndr->depth++;
 		if (r->in.message) {
-			ndr_print_initshutdown_String(ndr, "message", r->in.message);
+			ndr_print_lsa_StringLarge(ndr, "message", r->in.message);
 		}
 		ndr->depth--;
 		ndr_print_uint32(ndr, "timeout", r->in.timeout);
 		ndr_print_uint8(ndr, "force_apps", r->in.force_apps);
-		ndr_print_uint8(ndr, "do_reboot", r->in.do_reboot);
+		ndr_print_uint8(ndr, "reboot", r->in.reboot);
 		ndr->depth--;
 	}
 	if (flags & NDR_OUT) {
@@ -3335,7 +3360,7 @@ _PUBLIC_ void ndr_print_winreg_AbortSystemShutdown(struct ndr_print *ndr, const 
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_winreg_GetVersion(struct ndr_push *ndr, int flags, const struct winreg_GetVersion *r)
+_PUBLIC_ enum ndr_err_code ndr_push_winreg_GetVersion(struct ndr_push *ndr, int flags, const struct winreg_GetVersion *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) {
@@ -3353,7 +3378,7 @@ static enum ndr_err_code ndr_push_winreg_GetVersion(struct ndr_push *ndr, int fl
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_winreg_GetVersion(struct ndr_pull *ndr, int flags, struct winreg_GetVersion *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_winreg_GetVersion(struct ndr_pull *ndr, int flags, struct winreg_GetVersion *r)
 {
 	TALLOC_CTX *_mem_save_handle_0;
 	TALLOC_CTX *_mem_save_version_0;
@@ -3588,7 +3613,7 @@ _PUBLIC_ void ndr_print_winreg_OpenHKDD(struct ndr_print *ndr, const char *name,
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_winreg_QueryMultipleValues(struct ndr_push *ndr, int flags, const struct winreg_QueryMultipleValues *r)
+_PUBLIC_ enum ndr_err_code ndr_push_winreg_QueryMultipleValues(struct ndr_push *ndr, int flags, const struct winreg_QueryMultipleValues *r)
 {
 	uint32_t cntr_values_1;
 	if (flags & NDR_IN) {
@@ -3650,7 +3675,7 @@ static enum ndr_err_code ndr_push_winreg_QueryMultipleValues(struct ndr_push *nd
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_winreg_QueryMultipleValues(struct ndr_pull *ndr, int flags, struct winreg_QueryMultipleValues *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_winreg_QueryMultipleValues(struct ndr_pull *ndr, int flags, struct winreg_QueryMultipleValues *r)
 {
 	uint32_t cntr_values_1;
 	uint32_t _ptr_buffer;
@@ -3872,11 +3897,11 @@ static enum ndr_err_code ndr_push_winreg_InitiateSystemShutdownEx(struct ndr_pus
 		}
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.message));
 		if (r->in.message) {
-			NDR_CHECK(ndr_push_initshutdown_String(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.message));
+			NDR_CHECK(ndr_push_lsa_StringLarge(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.message));
 		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.timeout));
 		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->in.force_apps));
-		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->in.do_reboot));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->in.reboot));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.reason));
 	}
 	if (flags & NDR_OUT) {
@@ -3913,12 +3938,12 @@ static enum ndr_err_code ndr_pull_winreg_InitiateSystemShutdownEx(struct ndr_pul
 		if (r->in.message) {
 			_mem_save_message_0 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.message, 0);
-			NDR_CHECK(ndr_pull_initshutdown_String(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.message));
+			NDR_CHECK(ndr_pull_lsa_StringLarge(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.message));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_message_0, 0);
 		}
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.timeout));
 		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->in.force_apps));
-		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->in.do_reboot));
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->in.reboot));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.reason));
 	}
 	if (flags & NDR_OUT) {
@@ -3946,12 +3971,12 @@ _PUBLIC_ void ndr_print_winreg_InitiateSystemShutdownEx(struct ndr_print *ndr, c
 		ndr_print_ptr(ndr, "message", r->in.message);
 		ndr->depth++;
 		if (r->in.message) {
-			ndr_print_initshutdown_String(ndr, "message", r->in.message);
+			ndr_print_lsa_StringLarge(ndr, "message", r->in.message);
 		}
 		ndr->depth--;
 		ndr_print_uint32(ndr, "timeout", r->in.timeout);
 		ndr_print_uint8(ndr, "force_apps", r->in.force_apps);
-		ndr_print_uint8(ndr, "do_reboot", r->in.do_reboot);
+		ndr_print_uint8(ndr, "reboot", r->in.reboot);
 		ndr_print_uint32(ndr, "reason", r->in.reason);
 		ndr->depth--;
 	}

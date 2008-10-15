@@ -475,7 +475,7 @@ WERROR _winreg_InitiateSystemShutdown(pipes_struct *p, struct winreg_InitiateSys
 	s.in.message = r->in.message;
 	s.in.timeout = r->in.timeout;
 	s.in.force_apps = r->in.force_apps;
-	s.in.do_reboot = r->in.do_reboot;
+	s.in.reboot = r->in.reboot;
 	s.in.reason = 0;
 
 	/* thunk down to _winreg_InitiateSystemShutdownEx() 
@@ -514,8 +514,8 @@ WERROR _winreg_InitiateSystemShutdownEx(pipes_struct *p, struct winreg_InitiateS
 
 	/* pull the message string and perform necessary sanity checks on it */
 
-	if ( r->in.message && r->in.message->name && r->in.message->name->name ) {
-		if ( (msg = talloc_strdup(p->mem_ctx, r->in.message->name->name )) == NULL ) {
+	if ( r->in.message && r->in.message->string ) {
+		if ( (msg = talloc_strdup(p->mem_ctx, r->in.message->string )) == NULL ) {
 			return WERR_NOMEM;
 		}
 		chkmsg = TALLOC_ARRAY(p->mem_ctx, char, strlen(msg)+1);
@@ -526,7 +526,7 @@ WERROR _winreg_InitiateSystemShutdownEx(pipes_struct *p, struct winreg_InitiateS
 	}
 
 	fstr_sprintf(str_timeout, "%d", r->in.timeout);
-	fstr_sprintf(do_reboot, r->in.do_reboot ? SHUTDOWN_R_STRING : "");
+	fstr_sprintf(do_reboot, r->in.reboot ? SHUTDOWN_R_STRING : "");
 	fstr_sprintf(f, r->in.force_apps ? SHUTDOWN_F_STRING : "");
 	fstr_sprintf(str_reason, "%d", r->in.reason );
 

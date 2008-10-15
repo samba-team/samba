@@ -5012,8 +5012,7 @@ NTSTATUS rpc_init_shutdown_internals(struct net_context *c,
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
         const char *msg = "This machine will be shutdown shortly";
 	uint32 timeout = 20;
-	struct initshutdown_String msg_string;
-	struct initshutdown_String_sub s;
+	struct lsa_StringLarge msg_string;
 
 	if (c->opt_comment) {
 		msg = c->opt_comment;
@@ -5022,8 +5021,7 @@ NTSTATUS rpc_init_shutdown_internals(struct net_context *c,
 		timeout = c->opt_timeout;
 	}
 
-	s.name = msg;
-	msg_string.name = &s;
+	msg_string.string = msg;
 
 	/* create an entry */
 	result = rpccli_initshutdown_Init(pipe_hnd, mem_ctx, NULL,
@@ -5067,16 +5065,14 @@ NTSTATUS rpc_reg_shutdown_internals(struct net_context *c,
 {
         const char *msg = "This machine will be shutdown shortly";
 	uint32 timeout = 20;
-	struct initshutdown_String msg_string;
-	struct initshutdown_String_sub s;
+	struct lsa_StringLarge msg_string;
 	NTSTATUS result;
 	WERROR werr;
 
 	if (c->opt_comment) {
 		msg = c->opt_comment;
 	}
-	s.name = msg;
-	msg_string.name = &s;
+	msg_string.string = msg;
 
 	if (c->opt_timeout) {
 		timeout = c->opt_timeout;

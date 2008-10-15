@@ -96,6 +96,12 @@ struct winreg_ValNameBuf {
 	const char *name;/* [unique,length_is(length/2),charset(UTF16),size_is(size/2)] */
 };
 
+/* bitmap winreg_NotifyChangeType */
+#define REG_NOTIFY_CHANGE_NAME ( 0x00000001 )
+#define REG_NOTIFY_CHANGE_ATTRIBUTES ( 0x00000002 )
+#define REG_NOTIFY_CHANGE_LAST_SET ( 0x00000004 )
+#define REG_NOTIFY_CHANGE_SECURITY ( 0x00000008 )
+
 struct KeySecurityAttribute {
 	uint32_t data_size;
 	struct KeySecurityData sec_data;
@@ -476,10 +482,10 @@ struct winreg_UnLoadKey {
 struct winreg_InitiateSystemShutdown {
 	struct {
 		uint16_t *hostname;/* [unique] */
-		struct initshutdown_String *message;/* [unique] */
+		struct lsa_StringLarge *message;/* [unique] */
 		uint32_t timeout;
 		uint8_t force_apps;
-		uint8_t do_reboot;
+		uint8_t reboot;
 	} in;
 
 	struct {
@@ -564,10 +570,10 @@ struct winreg_QueryMultipleValues {
 struct winreg_InitiateSystemShutdownEx {
 	struct {
 		uint16_t *hostname;/* [unique] */
-		struct initshutdown_String *message;/* [unique] */
+		struct lsa_StringLarge *message;/* [unique] */
 		uint32_t timeout;
 		uint8_t force_apps;
-		uint8_t do_reboot;
+		uint8_t reboot;
 		uint32_t reason;
 	} in;
 

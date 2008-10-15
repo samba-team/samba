@@ -2542,16 +2542,6 @@ _PUBLIC_ void ndr_print_eventlog_WriteClusterEvents(struct ndr_print *ndr, const
 _PUBLIC_ void ndr_print_eventlog_GetLogIntormation(struct ndr_print *ndr, const char *name, int flags, const struct eventlog_GetLogIntormation *r);
 _PUBLIC_ void ndr_print_eventlog_FlushEventLog(struct ndr_print *ndr, const char *name, int flags, const struct eventlog_FlushEventLog *r);
 
-/* The following definitions come from librpc/gen_ndr/ndr_initshutdown.c  */
-
-_PUBLIC_ void ndr_print_initshutdown_String_sub(struct ndr_print *ndr, const char *name, const struct initshutdown_String_sub *r);
-_PUBLIC_ enum ndr_err_code ndr_push_initshutdown_String(struct ndr_push *ndr, int ndr_flags, const struct initshutdown_String *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_initshutdown_String(struct ndr_pull *ndr, int ndr_flags, struct initshutdown_String *r);
-_PUBLIC_ void ndr_print_initshutdown_String(struct ndr_print *ndr, const char *name, const struct initshutdown_String *r);
-_PUBLIC_ void ndr_print_initshutdown_Init(struct ndr_print *ndr, const char *name, int flags, const struct initshutdown_Init *r);
-_PUBLIC_ void ndr_print_initshutdown_Abort(struct ndr_print *ndr, const char *name, int flags, const struct initshutdown_Abort *r);
-_PUBLIC_ void ndr_print_initshutdown_InitEx(struct ndr_print *ndr, const char *name, int flags, const struct initshutdown_InitEx *r);
-
 /* The following definitions come from librpc/gen_ndr/ndr_krb5pac.c  */
 
 _PUBLIC_ void ndr_print_PAC_LOGON_NAME(struct ndr_print *ndr, const char *name, const struct PAC_LOGON_NAME *r);

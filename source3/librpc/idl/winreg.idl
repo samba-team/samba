@@ -18,14 +18,14 @@ import "lsa.idl", "initshutdown.idl", "security.idl";
 		KEY_QUERY_VALUE 		= 0x00001,
 		KEY_SET_VALUE 			= 0x00002,
 		KEY_CREATE_SUB_KEY 		= 0x00004,
-		KEY_ENUMERATE_SUB_KEYS 	= 0x00008,
-		KEY_NOTIFY 				= 0x00010,
+		KEY_ENUMERATE_SUB_KEYS		= 0x00008,
+		KEY_NOTIFY			= 0x00010,
 		KEY_CREATE_LINK 		= 0x00020,
 		KEY_WOW64_64KEY 		= 0x00100,
 		KEY_WOW64_32KEY 		= 0x00200
 	} winreg_AccessMask;
 
-	typedef [v1_enum] enum {
+	typedef [public,v1_enum] enum {
 		REG_NONE                       = 0,
 		REG_SZ                         = 1,
 		REG_EXPAND_SZ                  = 2,
@@ -64,7 +64,7 @@ import "lsa.idl", "initshutdown.idl", "security.idl";
 
 	/******************/
 	/* Function: 0x02 */
-	WERROR winreg_OpenHKLM(
+	[public] WERROR winreg_OpenHKLM(
 		[in,unique] uint16 *system_name,
 		[in]      winreg_AccessMask access_mask,
 		[out,ref] policy_handle *handle
@@ -88,7 +88,7 @@ import "lsa.idl", "initshutdown.idl", "security.idl";
 
 	/******************/
 	/* Function: 0x05 */
-	WERROR winreg_CloseKey(
+	[public] WERROR winreg_CloseKey(
 		[in,out,ref] policy_handle *handle
 	);
 
@@ -113,7 +113,7 @@ import "lsa.idl", "initshutdown.idl", "security.idl";
 		REG_OPENED_EXISTING_KEY = 2
 	} winreg_CreateAction;
 
-	WERROR winreg_CreateKey(
+	[public] WERROR winreg_CreateKey(
 		[in,ref] policy_handle *handle,
 		[in] winreg_String name,
 		[in] winreg_String keyclass,
@@ -126,7 +126,7 @@ import "lsa.idl", "initshutdown.idl", "security.idl";
 
 	/******************/
 	/* Function: 0x07 */
-	WERROR winreg_DeleteKey(
+	[public] WERROR winreg_DeleteKey(
 		[in,ref] policy_handle *handle,
 		[in]	 winreg_String key
 	);
@@ -149,7 +149,7 @@ import "lsa.idl", "initshutdown.idl", "security.idl";
 
 	/******************/
 	/* Function: 0x09 */
-	WERROR winreg_EnumKey(
+	[public] WERROR winreg_EnumKey(
 		[in,ref]        policy_handle    *handle,
 		[in]            uint32           enum_index,
 		[in,out,ref]    winreg_StringBuf *name,
@@ -181,13 +181,13 @@ import "lsa.idl", "initshutdown.idl", "security.idl";
 
 	/******************/
 	/* Function: 0x0b */
-	WERROR winreg_FlushKey(
+	[public] WERROR winreg_FlushKey(
 		[in,ref] policy_handle *handle
 	);
 
 	/******************/
 	/* Function: 0x0c */
-	WERROR winreg_GetKeySecurity(
+	[public] WERROR winreg_GetKeySecurity(
 		[in,ref] policy_handle *handle,
 		[in] security_secinfo sec_info,
 		[in,out,ref] KeySecurityData *sd
@@ -203,19 +203,26 @@ import "lsa.idl", "initshutdown.idl", "security.idl";
 
 	/******************/
 	/* Function: 0x0e */
-	WERROR winreg_NotifyChangeKeyValue(
+	typedef [public,bitmap32bit] bitmap {
+		REG_NOTIFY_CHANGE_NAME		= 0x00000001,
+		REG_NOTIFY_CHANGE_ATTRIBUTES	= 0x00000002,
+		REG_NOTIFY_CHANGE_LAST_SET	= 0x00000004,
+		REG_NOTIFY_CHANGE_SECURITY	= 0x00000008
+	} winreg_NotifyChangeType;
+
+	[public] WERROR winreg_NotifyChangeKeyValue(
 		[in,ref] policy_handle *handle,
-		[in] uint8 watch_subtree,
-		[in] uint32 notify_filter,
+		[in] boolean8 watch_subtree,
+		[in] winreg_NotifyChangeType notify_filter,
 		[in] uint32 unknown,
 		[in] winreg_String string1,
-		[in] winreg_String string2, 
+		[in] winreg_String string2,
 		[in] uint32 unknown2
 	);
 
 	/******************/
 	/* Function: 0x0f */
-	WERROR winreg_OpenKey(
+	[public] WERROR winreg_OpenKey(
 		[in,ref] policy_handle *parent_handle,
 		[in] winreg_String keyname,
 		[in] uint32 unknown,
@@ -304,10 +311,14 @@ import "lsa.idl", "initshutdown.idl", "security.idl";
 	/* Function: 0x18 */
 	WERROR winreg_InitiateSystemShutdown(
 		[in,unique] uint16 *hostname,
-		[in,unique] initshutdown_String *message,
+		/*
+		 * Note: lsa_String and winreg_String both result
+		 *       in WERR_INVALID_PARAM
+		 */
+		[in,unique] lsa_StringLarge *message,
 		[in]	uint32 timeout,
 		[in]	uint8 force_apps,
-		[in]	uint8 do_reboot
+		[in]	uint8 reboot
 	);
 
 	/******************/
@@ -318,7 +329,7 @@ import "lsa.idl", "initshutdown.idl", "security.idl";
 
 	/******************/
 	/* Function: 0x1a */
-	WERROR winreg_GetVersion(
+	[public] WERROR winreg_GetVersion(
 		[in,ref]     policy_handle *handle,
 		[out,ref]    uint32 *version
 	);
@@ -348,7 +359,7 @@ import "lsa.idl", "initshutdown.idl", "security.idl";
 	
 	/******************/
 	/* Function: 0x1d */
-	WERROR winreg_QueryMultipleValues(
+	[public] WERROR winreg_QueryMultipleValues(
 		[in,ref] policy_handle *key_handle, 
 		[in,out,ref,size_is(num_values),length_is(num_values)] QueryMultipleValue *values,
 		[in] uint32 num_values,
@@ -360,10 +371,14 @@ import "lsa.idl", "initshutdown.idl", "security.idl";
 	/* Function: 0x1e */
 	WERROR winreg_InitiateSystemShutdownEx(
 		[in,unique] uint16 *hostname,
-		[in,unique] initshutdown_String *message,
+		/*
+		 * Note: lsa_String and winreg_String both result
+		 *       in WERR_INVALID_PARAM
+		 */
+		[in,unique] lsa_StringLarge *message,
 		[in] uint32 timeout,
 		[in] uint8 force_apps,
-		[in] uint8 do_reboot,
+		[in] uint8 reboot,
 		[in] uint32 reason
 	);
 

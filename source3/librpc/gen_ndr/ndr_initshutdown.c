@@ -4,106 +4,6 @@
 #include "librpc/gen_ndr/ndr_initshutdown.h"
 
 #include "librpc/gen_ndr/ndr_lsa.h"
-static enum ndr_err_code ndr_push_initshutdown_String_sub(struct ndr_push *ndr, int ndr_flags, const struct initshutdown_String_sub *r)
-{
-	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_push_align(ndr, 4));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, strlen_m_term(r->name)));
-		{
-			uint32_t _flags_save_string = ndr->flags;
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_LEN4|LIBNDR_FLAG_STR_NOTERM);
-			NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->name));
-			ndr->flags = _flags_save_string;
-		}
-	}
-	if (ndr_flags & NDR_BUFFERS) {
-	}
-	return NDR_ERR_SUCCESS;
-}
-
-static enum ndr_err_code ndr_pull_initshutdown_String_sub(struct ndr_pull *ndr, int ndr_flags, struct initshutdown_String_sub *r)
-{
-	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_pull_align(ndr, 4));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->name_size));
-		{
-			uint32_t _flags_save_string = ndr->flags;
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_LEN4|LIBNDR_FLAG_STR_NOTERM);
-			NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->name));
-			ndr->flags = _flags_save_string;
-		}
-	}
-	if (ndr_flags & NDR_BUFFERS) {
-	}
-	return NDR_ERR_SUCCESS;
-}
-
-_PUBLIC_ void ndr_print_initshutdown_String_sub(struct ndr_print *ndr, const char *name, const struct initshutdown_String_sub *r)
-{
-	ndr_print_struct(ndr, name, "initshutdown_String_sub");
-	ndr->depth++;
-	ndr_print_uint32(ndr, "name_size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?strlen_m_term(r->name):r->name_size);
-	ndr_print_string(ndr, "name", r->name);
-	ndr->depth--;
-}
-
-_PUBLIC_ enum ndr_err_code ndr_push_initshutdown_String(struct ndr_push *ndr, int ndr_flags, const struct initshutdown_String *r)
-{
-	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_push_align(ndr, 4));
-		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, strlen_m(r->name->name) * 2));
-		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, strlen_m_term(r->name->name) * 2));
-		NDR_CHECK(ndr_push_unique_ptr(ndr, r->name));
-	}
-	if (ndr_flags & NDR_BUFFERS) {
-		if (r->name) {
-			NDR_CHECK(ndr_push_initshutdown_String_sub(ndr, NDR_SCALARS, r->name));
-		}
-	}
-	return NDR_ERR_SUCCESS;
-}
-
-_PUBLIC_ enum ndr_err_code ndr_pull_initshutdown_String(struct ndr_pull *ndr, int ndr_flags, struct initshutdown_String *r)
-{
-	uint32_t _ptr_name;
-	TALLOC_CTX *_mem_save_name_0;
-	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_pull_align(ndr, 4));
-		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->name_len));
-		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->name_size));
-		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_name));
-		if (_ptr_name) {
-			NDR_PULL_ALLOC(ndr, r->name);
-		} else {
-			r->name = NULL;
-		}
-	}
-	if (ndr_flags & NDR_BUFFERS) {
-		if (r->name) {
-			_mem_save_name_0 = NDR_PULL_GET_MEM_CTX(ndr);
-			NDR_PULL_SET_MEM_CTX(ndr, r->name, 0);
-			NDR_CHECK(ndr_pull_initshutdown_String_sub(ndr, NDR_SCALARS, r->name));
-			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_name_0, 0);
-		}
-	}
-	return NDR_ERR_SUCCESS;
-}
-
-_PUBLIC_ void ndr_print_initshutdown_String(struct ndr_print *ndr, const char *name, const struct initshutdown_String *r)
-{
-	ndr_print_struct(ndr, name, "initshutdown_String");
-	ndr->depth++;
-	ndr_print_uint16(ndr, "name_len", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?strlen_m(r->name->name) * 2:r->name_len);
-	ndr_print_uint16(ndr, "name_size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?strlen_m_term(r->name->name) * 2:r->name_size);
-	ndr_print_ptr(ndr, "name", r->name);
-	ndr->depth++;
-	if (r->name) {
-		ndr_print_initshutdown_String_sub(ndr, "name", r->name);
-	}
-	ndr->depth--;
-	ndr->depth--;
-}
-
 static enum ndr_err_code ndr_push_initshutdown_Init(struct ndr_push *ndr, int flags, const struct initshutdown_Init *r)
 {
 	if (flags & NDR_IN) {
@@ -113,11 +13,11 @@ static enum ndr_err_code ndr_push_initshutdown_Init(struct ndr_push *ndr, int fl
 		}
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.message));
 		if (r->in.message) {
-			NDR_CHECK(ndr_push_initshutdown_String(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.message));
+			NDR_CHECK(ndr_push_lsa_StringLarge(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.message));
 		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.timeout));
 		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->in.force_apps));
-		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->in.do_reboot));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->in.reboot));
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
@@ -153,12 +53,12 @@ static enum ndr_err_code ndr_pull_initshutdown_Init(struct ndr_pull *ndr, int fl
 		if (r->in.message) {
 			_mem_save_message_0 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.message, 0);
-			NDR_CHECK(ndr_pull_initshutdown_String(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.message));
+			NDR_CHECK(ndr_pull_lsa_StringLarge(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.message));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_message_0, 0);
 		}
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.timeout));
 		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->in.force_apps));
-		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->in.do_reboot));
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->in.reboot));
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
@@ -185,12 +85,12 @@ _PUBLIC_ void ndr_print_initshutdown_Init(struct ndr_print *ndr, const char *nam
 		ndr_print_ptr(ndr, "message", r->in.message);
 		ndr->depth++;
 		if (r->in.message) {
-			ndr_print_initshutdown_String(ndr, "message", r->in.message);
+			ndr_print_lsa_StringLarge(ndr, "message", r->in.message);
 		}
 		ndr->depth--;
 		ndr_print_uint32(ndr, "timeout", r->in.timeout);
 		ndr_print_uint8(ndr, "force_apps", r->in.force_apps);
-		ndr_print_uint8(ndr, "do_reboot", r->in.do_reboot);
+		ndr_print_uint8(ndr, "reboot", r->in.reboot);
 		ndr->depth--;
 	}
 	if (flags & NDR_OUT) {
@@ -276,11 +176,11 @@ static enum ndr_err_code ndr_push_initshutdown_InitEx(struct ndr_push *ndr, int 
 		}
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.message));
 		if (r->in.message) {
-			NDR_CHECK(ndr_push_initshutdown_String(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.message));
+			NDR_CHECK(ndr_push_lsa_StringLarge(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.message));
 		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.timeout));
 		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->in.force_apps));
-		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->in.do_reboot));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->in.reboot));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.reason));
 	}
 	if (flags & NDR_OUT) {
@@ -317,12 +217,12 @@ static enum ndr_err_code ndr_pull_initshutdown_InitEx(struct ndr_pull *ndr, int 
 		if (r->in.message) {
 			_mem_save_message_0 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.message, 0);
-			NDR_CHECK(ndr_pull_initshutdown_String(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.message));
+			NDR_CHECK(ndr_pull_lsa_StringLarge(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.message));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_message_0, 0);
 		}
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.timeout));
 		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->in.force_apps));
-		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->in.do_reboot));
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->in.reboot));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.reason));
 	}
 	if (flags & NDR_OUT) {
@@ -350,12 +250,12 @@ _PUBLIC_ void ndr_print_initshutdown_InitEx(struct ndr_print *ndr, const char *n
 		ndr_print_ptr(ndr, "message", r->in.message);
 		ndr->depth++;
 		if (r->in.message) {
-			ndr_print_initshutdown_String(ndr, "message", r->in.message);
+			ndr_print_lsa_StringLarge(ndr, "message", r->in.message);
 		}
 		ndr->depth--;
 		ndr_print_uint32(ndr, "timeout", r->in.timeout);
 		ndr_print_uint8(ndr, "force_apps", r->in.force_apps);
-		ndr_print_uint8(ndr, "do_reboot", r->in.do_reboot);
+		ndr_print_uint8(ndr, "reboot", r->in.reboot);
 		ndr_print_uint32(ndr, "reason", r->in.reason);
 		ndr->depth--;
 	}
