@@ -696,9 +696,10 @@ import "misc.idl", "security.idl";
 		);
 
 	/* Function:        0x22 */
-	NTSTATUS lsa_DeleteObject(
-		[in,out] policy_handle *handle
+	NTSTATUS lsa_DeleteObject (
+		[in,out]     policy_handle *handle
 		);
+
 
 	/*******************/
 	/* Function:      0x23 */
@@ -1075,6 +1076,11 @@ import "misc.idl", "security.idl";
 		[in]         uint32 unknown1,
 		[in]         uint32 unknown2
 		);
+
+	const int LSA_CLIENT_REVISION_NO_DNS     = 0x00000001;
+	const int LSA_CLIENT_REVISION_DNS        = 0x00000002;
+
+	const int LSA_LOOKUP_OPTIONS_NO_ISOLATED = 0x80000000;
 
 	/* Function 0x4d */
 	NTSTATUS lsa_LookupNames4(
