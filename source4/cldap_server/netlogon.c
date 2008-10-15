@@ -282,8 +282,8 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 	server_type      = 
 		NBT_SERVER_DS | NBT_SERVER_TIMESERV |
 		NBT_SERVER_CLOSEST | NBT_SERVER_WRITABLE | 
-		NBT_SERVER_GOOD_TIMESERV | NBT_SERVER_DS_DNS_CONTR |
-		NBT_SERVER_DS_DNS_DOMAIN;
+		NBT_SERVER_GOOD_TIMESERV | DS_DNS_CONTROLLER |
+		DS_DNS_DOMAIN;
 
 	if (samdb_is_pdc(sam_ctx)) {
 		server_type |= NBT_SERVER_PDC;
@@ -302,7 +302,7 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 	}
 
 	if (ldb_dn_compare(ldb_get_root_basedn(sam_ctx), ldb_get_default_basedn(sam_ctx)) == 0) {
-		server_type |= NBT_SERVER_DS_DNS_FOREST;
+		server_type |= DS_DNS_FOREST;
 	}
 
 	pdc_name         = talloc_asprintf(mem_ctx, "\\\\%s", lp_netbios_name(lp_ctx));

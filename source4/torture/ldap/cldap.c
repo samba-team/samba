@@ -24,6 +24,7 @@
 #include "libcli/cldap/cldap.h"
 #include "libcli/ldap/ldap.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
+#include "librpc/gen_ndr/netlogon.h"
 #include "torture/torture.h"
 #include "lib/ldb/include/ldb.h"
 #include "param/param.h"
@@ -284,12 +285,12 @@ static bool test_cldap_netlogon_flags(struct torture_context *tctx,
 		printf("NBT_SERVER_SELECT_SECRET_DOMAIN_6");
 	if (server_type & NBT_SERVER_FULL_SECRET_DOMAIN_6)
 		printf("NBT_SERVER_FULL_SECRET_DOMAIN_6");
-	if (server_type & NBT_SERVER_DS_DNS_CONTR)
-		printf("NBT_SERVER_DS_DNS_CONTR ");
-	if (server_type & NBT_SERVER_DS_DNS_DOMAIN)
-		printf("NBT_SERVER_DS_DNS_DOMAIN ");
-	if (server_type & NBT_SERVER_DS_DNS_FOREST)
-		printf("NBT_SERVER_DS_DNS_FOREST ");
+	if (server_type & DS_DNS_CONTROLLER)
+		printf("DS_DNS_CONTROLLER ");
+	if (server_type & DS_DNS_DOMAIN)
+		printf("DS_DNS_DOMAIN ");
+	if (server_type & DS_DNS_FOREST)
+		printf("DS_DNS_FOREST ");
 
 	printf("\n");
 
@@ -370,7 +371,7 @@ static bool test_cldap_netlogon_flag_ds_dns_forest(struct torture_context *tctx,
 	else if (n1.ntver == NETLOGON_NT_VERSION_5EX)
 		server_type = n1.data.nt5_ex.server_type;
 
-	if (server_type & NBT_SERVER_DS_DNS_FOREST) {
+	if (server_type & DS_DNS_FOREST) {
 		struct cldap_search search2;
 		const char *attrs[] = { "defaultNamingContext", "rootDomainNamingContext", 
 			NULL };

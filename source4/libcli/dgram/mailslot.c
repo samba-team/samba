@@ -197,7 +197,7 @@ NTSTATUS dgram_mailslot_send(struct nbt_dgram_socket *dgmsock,
 	trans->data_offset = 70 + strlen(mailslot_name);
 	trans->opcode      = 1; /* write mail slot */
 	trans->priority    = 1;
-	trans->class       = 2;
+	trans->_class      = 2;
 	trans->mailslot_name = mailslot_name;
 	trans->data = *request;
 
