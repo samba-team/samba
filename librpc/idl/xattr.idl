@@ -75,6 +75,12 @@ interface xattr
 		[size_is(num_eas)] xattr_EA *eas;
 	} xattr_DosEAs;
 
+	/* Slightly different version, used by the vfs_xattr_tdb module */
+	typedef [public] struct {
+		uint32 num_eas;
+		xattr_EA eas[num_eas];
+	} tdb_xattrs;
+
 	/* we store stream information in this xattr structure. Then
 	   the streams themselves are stored in
 	   user.DosStream.STREAMNAME or in external files, according

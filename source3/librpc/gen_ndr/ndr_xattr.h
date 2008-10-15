@@ -7,12 +7,23 @@
 #define _HEADER_NDR_xattr
 
 #define NDR_XATTR_CALL_COUNT (0)
-enum ndr_err_code ndr_push_tdb_xattr(struct ndr_push *ndr, int ndr_flags, const struct tdb_xattr *r);
-enum ndr_err_code ndr_pull_tdb_xattr(struct ndr_pull *ndr, int ndr_flags, struct tdb_xattr *r);
-void ndr_print_tdb_xattr(struct ndr_print *ndr, const char *name, const struct tdb_xattr *r);
+void ndr_print_xattr_DosInfo1(struct ndr_print *ndr, const char *name, const struct xattr_DosInfo1 *r);
+void ndr_print_xattr_DosInfo2Old(struct ndr_print *ndr, const char *name, const struct xattr_DosInfo2Old *r);
+void ndr_print_xattr_DosInfo(struct ndr_print *ndr, const char *name, const union xattr_DosInfo *r);
+enum ndr_err_code ndr_push_xattr_DosAttrib(struct ndr_push *ndr, int ndr_flags, const struct xattr_DosAttrib *r);
+enum ndr_err_code ndr_pull_xattr_DosAttrib(struct ndr_pull *ndr, int ndr_flags, struct xattr_DosAttrib *r);
+void ndr_print_xattr_DosAttrib(struct ndr_print *ndr, const char *name, const struct xattr_DosAttrib *r);
+void ndr_print_xattr_EA(struct ndr_print *ndr, const char *name, const struct xattr_EA *r);
+enum ndr_err_code ndr_push_xattr_DosEAs(struct ndr_push *ndr, int ndr_flags, const struct xattr_DosEAs *r);
+enum ndr_err_code ndr_pull_xattr_DosEAs(struct ndr_pull *ndr, int ndr_flags, struct xattr_DosEAs *r);
+void ndr_print_xattr_DosEAs(struct ndr_print *ndr, const char *name, const struct xattr_DosEAs *r);
 enum ndr_err_code ndr_push_tdb_xattrs(struct ndr_push *ndr, int ndr_flags, const struct tdb_xattrs *r);
 enum ndr_err_code ndr_pull_tdb_xattrs(struct ndr_pull *ndr, int ndr_flags, struct tdb_xattrs *r);
 void ndr_print_tdb_xattrs(struct ndr_print *ndr, const char *name, const struct tdb_xattrs *r);
+void ndr_print_xattr_DosStream(struct ndr_print *ndr, const char *name, const struct xattr_DosStream *r);
+enum ndr_err_code ndr_push_xattr_DosStreams(struct ndr_push *ndr, int ndr_flags, const struct xattr_DosStreams *r);
+enum ndr_err_code ndr_pull_xattr_DosStreams(struct ndr_pull *ndr, int ndr_flags, struct xattr_DosStreams *r);
+void ndr_print_xattr_DosStreams(struct ndr_print *ndr, const char *name, const struct xattr_DosStreams *r);
 enum ndr_err_code ndr_push_security_descriptor_timestamp(struct ndr_push *ndr, int ndr_flags, const struct security_descriptor_timestamp *r);
 enum ndr_err_code ndr_pull_security_descriptor_timestamp(struct ndr_pull *ndr, int ndr_flags, struct security_descriptor_timestamp *r);
 void ndr_print_security_descriptor_timestamp(struct ndr_print *ndr, const char *name, const struct security_descriptor_timestamp *r);

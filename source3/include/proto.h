@@ -3677,15 +3677,6 @@ _PUBLIC_ void ndr_print_wkssvc_NetrRemoveAlternateComputerName(struct ndr_print 
 _PUBLIC_ void ndr_print_wkssvc_NetrSetPrimaryComputername(struct ndr_print *ndr, const char *name, int flags, const struct wkssvc_NetrSetPrimaryComputername *r);
 _PUBLIC_ void ndr_print_wkssvc_NetrEnumerateComputerNames(struct ndr_print *ndr, const char *name, int flags, const struct wkssvc_NetrEnumerateComputerNames *r);
 
-/* The following definitions come from librpc/gen_ndr/ndr_xattr.c  */
-
-_PUBLIC_ enum ndr_err_code ndr_push_tdb_xattr(struct ndr_push *ndr, int ndr_flags, const struct tdb_xattr *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_tdb_xattr(struct ndr_pull *ndr, int ndr_flags, struct tdb_xattr *r);
-_PUBLIC_ void ndr_print_tdb_xattr(struct ndr_print *ndr, const char *name, const struct tdb_xattr *r);
-_PUBLIC_ enum ndr_err_code ndr_push_tdb_xattrs(struct ndr_push *ndr, int ndr_flags, const struct tdb_xattrs *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_tdb_xattrs(struct ndr_pull *ndr, int ndr_flags, struct tdb_xattrs *r);
-_PUBLIC_ void ndr_print_tdb_xattrs(struct ndr_print *ndr, const char *name, const struct tdb_xattrs *r);
-
 /* The following definitions come from librpc/gen_ndr/srv_dfs.c  */
 
 void netdfs_get_pipe_fns(struct api_struct **fns, int *n_fns);
