@@ -737,6 +737,16 @@ struct netr_DsRGetDCNameInfo {
 	const char *client_site_name;/* [unique,charset(UTF16)] */
 }/* [public] */;
 
+/* bitmap netr_TrustFlags */
+#define NETR_TRUST_FLAG_IN_FOREST ( 0x00000001 )
+#define NETR_TRUST_FLAG_OUTBOUND ( 0x00000002 )
+#define NETR_TRUST_FLAG_TREEROOT ( 0x00000004 )
+#define NETR_TRUST_FLAG_PRIMARY ( 0x00000008 )
+#define NETR_TRUST_FLAG_NATIVE ( 0x00000010 )
+#define NETR_TRUST_FLAG_INBOUND ( 0x00000020 )
+#define NETR_TRUST_FLAG_MIT_KRB5 ( 0x00000080 )
+#define NETR_TRUST_FLAG_AES ( 0x00000100 )
+
 struct netr_BinaryString {
 	uint16_t length;
 	uint16_t size;
@@ -762,25 +772,57 @@ union netr_DomainQuery {
 	struct netr_DomainQuery1 *query1;/* [unique,case] */
 };
 
+struct netr_trust_extension {
+	uint32_t length;/* [value(8)] */
+	uint32_t dummy;/* [value(0)] */
+	uint32_t size;/* [value(8)] */
+	uint32_t flags;
+	uint32_t parent_index;
+	uint32_t trust_type;
+	uint32_t trust_attributes;
+};
+
+struct netr_trust_extension_container {
+	uint16_t length;
+	uint16_t size;/* [value(length)] */
+	struct netr_trust_extension *info;/* [unique] */
+};
+
 struct netr_DomainTrustInfo {
 	struct lsa_String domainname;
 	struct lsa_String fulldomainname;
 	struct lsa_String forest;
 	struct GUID guid;
 	struct dom_sid2 *sid;/* [unique] */
-	struct netr_BinaryString unknown1[4];
-	uint32_t unknown[4];
+	struct netr_trust_extension_container trust_extension;
+	struct lsa_String dummystring[3];
+	uint32_t dummy[4];
 };
+
+struct netr_LsaPolicyInfo {
+	uint32_t policy_size;
+	uint8_t *policy;/* [unique,size_is(policy_size)] */
+};
+
+/* bitmap netr_WorkstationFlags */
+#define NETR_WS_FLAG_HANDLES_INBOUND_TRUSTS ( 0x00000001 )
+#define NETR_WS_FLAG_HANDLES_SPN_UPDATE ( 0x00000002 )
 
 struct netr_DomainInfo1 {
 	struct netr_DomainTrustInfo domaininfo;
 	uint32_t num_trusts;
 	struct netr_DomainTrustInfo *trusts;/* [unique,size_is(num_trusts)] */
-	uint32_t unknown[14];
+	struct netr_LsaPolicyInfo lsa_policy;
+	struct lsa_String dns_hostname;
+	struct lsa_String dummystring[3];
+	uint32_t workstation_flags;
+	uint32_t supported_enc_types;
+	uint32_t dummy[2];
 };
 
 union netr_DomainInfo {
 	struct netr_DomainInfo1 *info1;/* [unique,case] */
+	struct netr_DomainInfo1 *info2;/* [unique,case(2)] */
 };
 
 struct netr_CryptPassword {
@@ -797,14 +839,6 @@ struct netr_DsRAddress {
 	uint8_t *buffer;/* [unique,size_is(size)] */
 	uint32_t size;
 };
-
-/* bitmap netr_TrustFlags */
-#define NETR_TRUST_FLAG_IN_FOREST ( 0x00000001 )
-#define NETR_TRUST_FLAG_OUTBOUND ( 0x00000002 )
-#define NETR_TRUST_FLAG_TREEROOT ( 0x00000004 )
-#define NETR_TRUST_FLAG_PRIMARY ( 0x00000008 )
-#define NETR_TRUST_FLAG_NATIVE ( 0x00000010 )
-#define NETR_TRUST_FLAG_INBOUND ( 0x00000020 )
 
 enum netr_TrustType
 #ifndef USE_UINT_ENUMS
