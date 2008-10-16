@@ -2909,7 +2909,7 @@ static NTSTATUS rpc_pipe_open_np(struct cli_state *cli,
 	fnum = cli_nt_create(cli, result->trans.np.pipe_name,
 			     DESIRED_ACCESS_PIPE);
 	if (fnum == -1) {
-		DEBUG(1,("rpc_pipe_open_np: cli_nt_create failed on pipe %s "
+		DEBUG(3,("rpc_pipe_open_np: cli_nt_create failed on pipe %s "
 			 "to machine %s.  Error was %s\n",
 			 result->trans.np.pipe_name, cli->desthost,
 			 cli_errstr(cli)));
