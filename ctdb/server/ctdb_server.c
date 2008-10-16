@@ -158,7 +158,20 @@ int ctdb_set_nlist(struct ctdb_context *ctdb, const char *nlist)
 	}
 
 	for (i=0;i<nlines;i++) {
-		if (ctdb_add_node(ctdb, lines[i]) != 0) {
+		char *node;
+
+		node = lines[i];
+		/* strip leading spaces */
+		while((*node == ' ') || (*node == '\t')) {
+			node++;
+		}
+		if (*node == '#') {
+			continue;
+		}
+		if (strcmp(node, "") == 0) {
+			continue;
+		}
+		if (ctdb_add_node(ctdb, node) != 0) {
 			talloc_free(lines);
 			return -1;
 		}

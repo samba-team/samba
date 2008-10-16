@@ -5,7 +5,7 @@ Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
 Version: 1.0
-Release: 58
+Release: 61
 Epoch: 0
 License: GNU GPL version 3
 Group: System Environment/Daemons
@@ -96,6 +96,7 @@ fi
 %{_docdir}/ctdb/README.eventscripts
 %{_sysconfdir}/ctdb/events.d/00.ctdb
 %{_sysconfdir}/ctdb/events.d/10.interface
+%{_sysconfdir}/ctdb/events.d/20.multipathd
 %{_sysconfdir}/ctdb/events.d/40.vsftpd
 %{_sysconfdir}/ctdb/events.d/41.httpd
 %{_sysconfdir}/ctdb/events.d/50.samba
@@ -104,6 +105,7 @@ fi
 %{_sysconfdir}/ctdb/events.d/70.iscsi
 %{_sysconfdir}/ctdb/events.d/90.ipmux
 %{_sysconfdir}/ctdb/events.d/91.lvs
+%{_sysconfdir}/ctdb/events.d/99.routing
 %{_sysconfdir}/ctdb/statd-callout
 %{_sbindir}/ctdbd
 %{_bindir}/ctdb
@@ -118,6 +120,31 @@ fi
 %{_includedir}/ctdb_private.h
 
 %changelog
+* Wed Oct 15 2008 : Version 1.0.61
+ - Use "route add -net" instead of "ip route add" when adding routes in 99.routing
+ - lower the loglevel os several debug statements
+ - check the status returned from ctdb_ctrl_get_tickles() before we try to print them out to the screen.
+ - install a new eventscript 20.multipathd whoich can be used to monitor that multipath devices are healthy
+* Wed Oct 15 2008 : Version 1.0.60
+ - Verify that nodes we try to ban/unban are reachable and print an error othervise.
+ - Update the client and server sides of TAKEIP/RELEASEIP/GETPUBLICIPS and GETNODEMAP to fall back to the old style ipv4-only controls if the new ipv4/ipv6 controls fail. This allows an ipv4/v6 enabled ctdb daemon to interoperate with earlier ipv4-only versions of the daemons.
+ - From Mathieu Parent : log debian systems log the package versions in ctdb diagnostics
+ - From Mathieu Parent : specify logdir location for debian (this patch was later reversed)
+ - From Michael Adams : allow # comments in nodes/public_addresses files
+* Tue Oct 7 2008 : Version 1.0.59
+ - Updated "reloadnodes" logic. Instead of bouncing the entire tcp layer it is sufficient to just close and reopen all outgoing tcp connections.
+ - New eventscript 99.routing which can be used to re-attach routes to public interfaces after a takeip event. (routes may be deleted by the kernel when we release an ip)
+ - IDR tree fix from Jim Houston
+ - Better handling of critical events if the local clock is suddenly changed forward by a lot.
+ - Fix three slow memory leaks in the recovery daemon
+ - New ctdb command : ctdb recmaster   which prints the pnn of the recmaster
+ - Onnode enhancements from Martin S : "healthy" and "connected" are now possible nodespecifiers
+ - From Martin S : doc fixes
+ - lowering some debug levels for some nonvital informational messages
+ - Make the daemon daemon monitoring stronger and allow ctdbd to detect a hung
+   recovery daemon.
+ - From C Cowan : patches to compile ipv6 under AIX
+ - zero out some structs to keep valgrind happy
 * Wed Aug 27 2008 : Version 1.0.58
  - revert the name change tcp_tcp_client back to tcp_control_tcp so
    samba can build.
