@@ -756,7 +756,7 @@ member: cn=ldaptestuser4,cn=ldaptestcontainer,""" + self.base_dn + """
 
         ldb.delete(res[0].dn)
 
-        attrs = ["cn", "name", "objectClass", "objectGUID", "whenCreated", "nTSecurityDescriptor", "memberOf"]
+        attrs = ["cn", "name", "objectClass", "objectGUID", "whenCreated", "nTSecurityDescriptor", "memberOf", "allowedAttributes", "allowedAttributesEffective"]
         print "Testing ldb.search for (&(cn=ldaptestUSer2)(objectClass=user))"
         res = ldb.search(self.base_dn, expression="(&(cn=ldaptestUSer2)(objectClass=user))", scope=SCOPE_SUBTREE, attrs=attrs)
         self.assertEquals(len(res), 1, "Could not find (&(cn=ldaptestUSer2)(objectClass=user))")
@@ -768,9 +768,11 @@ member: cn=ldaptestuser4,cn=ldaptestcontainer,""" + self.base_dn + """
         self.assertTrue("objectGUID" in res[0])
         self.assertTrue("whenCreated" in res[0])
         self.assertTrue("nTSecurityDescriptor" in res[0])
+        self.assertTrue("allowedAttributes" in res[0])
+        self.assertTrue("allowedAttributesEffective" in res[0])
         self.assertEquals(res[0]["memberOf"][0].upper(), ("CN=ldaptestgroup2,CN=Users," + self.base_dn).upper())
 
-        attrs = ["cn", "name", "objectClass", "objectGUID", "whenCreated", "nTSecurityDescriptor", "member"]
+        attrs = ["cn", "name", "objectClass", "objectGUID", "whenCreated", "nTSecurityDescriptor", "member", "allowedAttributes", "allowedAttributesEffective"]
         print "Testing ldb.search for (&(cn=ldaptestgroup2)(objectClass=group))"
         res = ldb.search(self.base_dn, expression="(&(cn=ldaptestgroup2)(objectClass=group))", scope=SCOPE_SUBTREE, attrs=attrs)
         self.assertEquals(len(res), 1, "Could not find (&(cn=ldaptestgroup2)(objectClass=group))")
@@ -782,6 +784,8 @@ member: cn=ldaptestuser4,cn=ldaptestcontainer,""" + self.base_dn + """
         self.assertTrue("objectGuid" not in res[0])
         self.assertTrue("whenCreated" in res[0])
         self.assertTrue("nTSecurityDescriptor" in res[0])
+        self.assertTrue("allowedAttributes" in res[0])
+        self.assertTrue("allowedAttributesEffective" in res[0])
         memberUP = []
         for m in res[0]["member"]:
             memberUP.append(m.upper())
