@@ -382,11 +382,17 @@ static int fix_attributes(struct ldb_context *ldb, const struct dsdb_schema *sch
 	int i;
 	for (i=0; i < msg->num_elements; i++) {
 		const struct dsdb_attribute *attribute = dsdb_attribute_by_lDAPDisplayName(schema, msg->elements[i].name);
+		/* Add in a very special case for 'clearTextPassword',
+		 * which is used for internal processing only, and is
+		 * not presented in the schema */
 		if (!attribute) {
-			ldb_asprintf_errstring(ldb, "attribute %s is not a valid attribute in schema", msg->elements[i].name);
-			return LDB_ERR_UNDEFINED_ATTRIBUTE_TYPE;
+			if (strcasecmp(msg->elements[i].name, "clearTextPassword") != 0) {
+				ldb_asprintf_errstring(ldb, "attribute %s is not a valid attribute in schema", msg->elements[i].name);
+				return LDB_ERR_UNDEFINED_ATTRIBUTE_TYPE;
+			}
+		} else {
+			msg->elements[i].name = attribute->lDAPDisplayName;
 		}
-		msg->elements[i].name = attribute->lDAPDisplayName;
 	}
 
 	return LDB_SUCCESS;

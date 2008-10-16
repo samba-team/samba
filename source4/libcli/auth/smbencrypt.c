@@ -536,9 +536,40 @@ bool decode_pw_buffer(uint8_t in_buffer[516], char *new_pwrd,
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("decode_pw_buffer: new_pwrd: "));
 	dump_data(100, (const uint8_t *)new_pwrd, converted_pw_len);
-	DEBUG(100,("multibyte len:%d\n", converted_pw_len));
+	DEBUG(100,("multibyte len:%d\n", (int)converted_pw_len));
 	DEBUG(100,("original char len:%d\n", byte_len/2));
 #endif
 	
+	return true;
+}
+
+/***********************************************************
+ decode a password buffer
+ *new_pw_size is the length in bytes of the extracted unicode password
+************************************************************/
+bool extract_pw_from_buffer(TALLOC_CTX *mem_ctx, 
+			    uint8_t in_buffer[516], DATA_BLOB *new_pass)
+{
+	int byte_len=0;
+
+	/* The length of the new password is in the last 4 bytes of the data buffer. */
+
+	byte_len = IVAL(in_buffer, 512);
+
+#ifdef DEBUG_PASSWORD
+	dump_data(100, in_buffer, 516);
+#endif
+
+	/* Password cannot be longer than the size of the password buffer */
+	if ( (byte_len < 0) || (byte_len > 512)) {
+		return false;
+	}
+
+	*new_pass = data_blob_talloc(mem_ctx, &in_buffer[512 - byte_len], byte_len);
+
+	if (!*new_pass->data) {
+		return false;
+	}
+
 	return true;
 }

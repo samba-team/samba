@@ -968,19 +968,14 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomain_base(struct dcesrv_call_state *dc
 							   mem_ctx, msg_user, "unicodePwd", 
 							   &auth_struct.incoming.current[i]->AuthInfo.nt4owf.password);
 				} else if (auth_struct.incoming.current[i]->AuthType == TRUST_AUTH_TYPE_CLEAR) {
-					struct samr_Password hash;
-/*
-                                      . We cannot do this, as windows chooses to send in random passwords here, that won't convert to UTF8 
-					samdb_msg_add_string(trusted_domain_state->policy->sam_ldb, 
-							     mem_ctx, msg_user, "userPassword", 
-							     auth_struct.incoming.current->array[i].AuthInfo.clear.password);
-*/
-					mdfour(hash.hash, auth_struct.incoming.current[i]->AuthInfo.clear.password,
-					       auth_struct.incoming.current[i]->AuthInfo.clear.size);
-					samdb_msg_add_hash(trusted_domain_state->policy->sam_ldb, 
-							   mem_ctx, msg_user, "unicodePwd", 
-							   &hash);
-				}
+					DATA_BLOB new_password = data_blob_const(auth_struct.incoming.current[i]->AuthInfo.clear.password,
+										 auth_struct.incoming.current[i]->AuthInfo.clear.size);
+					ret = ldb_msg_add_value(msg_user, "clearTextPassword", &new_password, NULL);
+					if (ret != LDB_SUCCESS) {
+						ldb_transaction_cancel(policy_state->sam_ldb);
+						return NT_STATUS_NO_MEMORY;
+					}
+				} 
 			}
 		}
 

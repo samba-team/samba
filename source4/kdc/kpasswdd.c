@@ -175,7 +175,7 @@ static bool kpasswd_make_pwchange_reply(struct kdc_server *kdc,
 static bool kpasswdd_change_password(struct kdc_server *kdc,
 				     TALLOC_CTX *mem_ctx, 
 				     struct auth_session_info *session_info,
-				     const char *password,
+				     const DATA_BLOB *password,
 				     DATA_BLOB *reply)
 {
 	NTSTATUS status;
@@ -219,6 +219,8 @@ static bool kpasswd_process_request(struct kdc_server *kdc,
 				    DATA_BLOB *reply)
 {
 	struct auth_session_info *session_info;
+	ssize_t pw_len;
+
 	if (!NT_STATUS_IS_OK(gensec_session_info(gensec_security, 
 						 &session_info))) {
 		return kpasswdd_make_error_reply(kdc, mem_ctx, 
@@ -230,12 +232,20 @@ static bool kpasswd_process_request(struct kdc_server *kdc,
 	switch (version) {
 	case KRB5_KPASSWD_VERS_CHANGEPW:
 	{
-		char *password = talloc_strndup(mem_ctx, (const char *)input->data, input->length);
-		if (!password) {
+		DATA_BLOB password;
+		pw_len = convert_string_talloc(mem_ctx, lp_iconv_convenience(kdc->task->lp_ctx), 
+					       CH_UTF8, CH_UTF16, 
+					       (const char *)input->data, 
+					       input->length,
+					       (void **)&password.data);
+
+		if (pw_len == -1) {
 			return false;
 		}
+		password.length = pw_len;
+	
 		return kpasswdd_change_password(kdc, mem_ctx, session_info, 
-						password, reply);
+						&password, reply);
 		break;
 	}
 	case KRB5_KPASSWD_VERS_SETPW:
@@ -248,7 +258,7 @@ static bool kpasswd_process_request(struct kdc_server *kdc,
 		krb5_context context = kdc->smb_krb5_context->krb5_context;
 
 		ChangePasswdDataMS chpw;
-		char *password;
+		DATA_BLOB password;
 
 		krb5_principal principal;
 		char *set_password_on_princ;
@@ -271,13 +281,18 @@ static bool kpasswd_process_request(struct kdc_server *kdc,
 							reply);
 		}
 		
-		password = talloc_strndup(mem_ctx, 
-					  (const char *)chpw.newpasswd.data, 
-					  chpw.newpasswd.length);
-		if (!password) {
+		pw_len = convert_string_talloc(mem_ctx, lp_iconv_convenience(kdc->task->lp_ctx), 
+					       CH_UTF8, CH_UTF16, 
+					       (const char *)chpw.newpasswd.data, 
+					       chpw.newpasswd.length,
+					       (void **)&password.data);
+		if (pw_len == -1) {
 			free_ChangePasswdDataMS(&chpw);
 			return false;
 		}
+		
+		password.length = pw_len;
+	
 		if ((chpw.targname && !chpw.targrealm) 
 		    || (!chpw.targname && chpw.targrealm)) {
 			return kpasswdd_make_error_reply(kdc, mem_ctx, 
@@ -306,7 +321,7 @@ static bool kpasswd_process_request(struct kdc_server *kdc,
 		} else {
 			free_ChangePasswdDataMS(&chpw);
 			return kpasswdd_change_password(kdc, mem_ctx, session_info, 
-							password, reply);
+							&password, reply);
 		}
 		free_ChangePasswdDataMS(&chpw);
 
@@ -371,7 +386,7 @@ static bool kpasswd_process_request(struct kdc_server *kdc,
 			/* Admin password set */
 			status = samdb_set_password(samdb, mem_ctx,
 						    set_password_on_dn, NULL,
-						    msg, password, NULL, NULL, 
+						    msg, &password, NULL, NULL, 
 						    false, /* this is not a user password change */
 						    &reject_reason, &dominfo);
 		}

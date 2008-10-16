@@ -107,7 +107,7 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 
 	if (r->in.secure_channel_type == SEC_CHAN_DNS_DOMAIN) {
 		char *encoded_account = ldb_binary_encode_string(mem_ctx, r->in.account_name);
-		char *flatname;
+		const char *flatname;
 		if (!encoded_account) {
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -370,7 +370,7 @@ static NTSTATUS dcesrv_netr_ServerPasswordSet(struct dcesrv_call_state *dce_call
 					   creds->sid,
 					   NULL, /* Don't have plaintext */
 					   NULL, &r->in.new_password,
-					   false, /* This is not considered a password change */
+					   true, /* Password change */
 					   NULL, NULL);
 	return nt_status;
 }
@@ -385,15 +385,14 @@ static NTSTATUS dcesrv_netr_ServerPasswordSet2(struct dcesrv_call_state *dce_cal
 	struct creds_CredentialState *creds;
 	struct ldb_context *sam_ctx;
 	NTSTATUS nt_status;
-	char new_pass[512];
-	bool ret;
+	DATA_BLOB new_password;
 
 	struct samr_CryptPassword password_buf;
 
 	nt_status = dcesrv_netr_creds_server_step_check(dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx,
 							r->in.computer_name, mem_ctx, 
-						 &r->in.credential, &r->out.return_authenticator,
-						 &creds);
+							&r->in.credential, &r->out.return_authenticator,
+							&creds);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 
 	sam_ctx = samdb_connect(mem_ctx, dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx, system_session(mem_ctx, dce_call->conn->dce_ctx->lp_ctx));
@@ -402,22 +401,20 @@ static NTSTATUS dcesrv_netr_ServerPasswordSet2(struct dcesrv_call_state *dce_cal
 	}
 
 	memcpy(password_buf.data, r->in.new_password.data, 512);
-	SIVAL(password_buf.data,512,r->in.new_password.length);
+	SIVAL(password_buf.data, 512, r->in.new_password.length);
 	creds_arcfour_crypt(creds, password_buf.data, 516);
 
-	ret = decode_pw_buffer(password_buf.data, new_pass, sizeof(new_pass),
-			       STR_UNICODE);
-	if (!ret) {
-		DEBUG(3,("netr_ServerPasswordSet2: failed to decode password buffer\n"));
-		return NT_STATUS_ACCESS_DENIED;
+	if (!extract_pw_from_buffer(mem_ctx, password_buf.data, &new_password)) {
+		DEBUG(3,("samr: failed to decode password buffer\n"));
+		return NT_STATUS_WRONG_PASSWORD;
 	}
-
+		
 	/* Using the sid for the account as the key, set the password */
 	nt_status = samdb_set_password_sid(sam_ctx, mem_ctx,
 					   creds->sid,
-					   new_pass, /* we have plaintext */
+					   &new_password, /* we have plaintext */
 					   NULL, NULL,
-					   false, /* This is not considered a password change */
+					   true, /* Password change */
 					   NULL, NULL);
 	return nt_status;
 }

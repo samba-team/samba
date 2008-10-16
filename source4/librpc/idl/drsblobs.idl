@@ -332,7 +332,7 @@ interface drsblobs {
 		);
 
 	typedef [public] struct {
-		[flag(STR_NOTERM|NDR_REMAINING)] string cleartext;
+		[flag(NDR_REMAINING)] DATA_BLOB cleartext;
 	} package_PrimaryCLEARTEXTBlob;
 
 	void decode_PrimaryCLEARTEXT(
