@@ -5,7 +5,7 @@ Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
 Version: 1.0
-Release: 61
+Release: 62
 Epoch: 0
 License: GNU GPL version 3
 Group: System Environment/Daemons
@@ -120,6 +120,9 @@ fi
 %{_includedir}/ctdb_private.h
 
 %changelog
+* Thu Oct 16 2008 : Version 1.0.62
+ - Allow multiple eventscritps using the same prefix number.
+   It is undefined which order scripts with the same prefix will execute in.
 * Wed Oct 15 2008 : Version 1.0.61
  - Use "route add -net" instead of "ip route add" when adding routes in 99.routing
  - lower the loglevel os several debug statements
