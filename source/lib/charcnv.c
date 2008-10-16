@@ -1166,7 +1166,7 @@ static size_t pull_ascii_base_talloc(TALLOC_CTX *ctx,
 					int flags)
 {
 	char *dest = NULL;
-	size_t converted_size;
+	size_t dest_len;
 
 #ifdef DEVELOPER
 	/* Ensure we never use the braindead "malloc" varient. */
@@ -1176,6 +1176,10 @@ static size_t pull_ascii_base_talloc(TALLOC_CTX *ctx,
 #endif
 
 	*ppdest = NULL;
+
+	if (!src_len) {
+		return 0;
+	}
 
 	if (flags & STR_TERMINATE) {
 		if (src_len == (size_t)-1) {
@@ -1194,18 +1198,41 @@ static size_t pull_ascii_base_talloc(TALLOC_CTX *ctx,
 					(unsigned int)src_len);
 			smb_panic(msg);
 		}
+	} else {
+		/* Can't have an unlimited length
+ 		 * non STR_TERMINATE'd.
+ 		 */
+		if (src_len == (size_t)-1) {
+			errno = EINVAL;
+			return 0;
+		}
 	}
+
+	/* src_len != -1 here. */
 
 	if (!convert_string_allocate(ctx, CH_DOS, CH_UNIX, src, src_len, &dest,
-				     &converted_size, True))
-	{
-		converted_size = 0;
+				     &dest_len, True)) {
+		dest_len = 0;
 	}
 
-	if (converted_size && dest) {
+	if (dest_len && dest) {
 		/* Did we already process the terminating zero ? */
-		if (dest[converted_size - 1] != 0) {
-			dest[converted_size - 1] = 0;
+		if (dest[dest_len-1] != 0) {
+			size_t size = talloc_get_size(dest);
+			/* Have we got space to append the '\0' ? */
+			if (size <= dest_len) {
+				/* No, realloc. */
+				dest = TALLOC_REALLOC_ARRAY(ctx, dest, char,
+						dest_len+1);
+				if (!dest) {
+					/* talloc fail. */
+					dest_len = (size_t)-1;
+					return 0;
+				}
+			}
+			/* Yay - space ! */
+			dest[dest_len] = '\0';
+			dest_len++;
 		}
 	} else if (dest) {
 		dest[0] = 0;
@@ -1562,20 +1589,25 @@ size_t pull_ucs2_base_talloc(TALLOC_CTX *ctx,
 		if (src_len >= 1024*1024) {
 			smb_panic("Bad src length in pull_ucs2_base_talloc\n");
 		}
+	} else {
+		/* Can't have an unlimited length
+		 * non STR_TERMINATE'd.
+		 */
+		if (src_len == (size_t)-1) {
+			errno = EINVAL;
+			return 0;
+		}
 	}
 
+	/* src_len != -1 here. */
+
 	/* ucs2 is always a multiple of 2 bytes */
-	if (src_len != (size_t)-1) {
-		src_len &= ~1;
-	}
+	src_len &= ~1;
 
 	if (!convert_string_talloc(ctx, CH_UTF16LE, CH_UNIX, src, src_len,
 				   (void *)&dest, &dest_len, True)) {
 		dest_len = 0;
 	}
-
-	if (src_len == (size_t)-1)
-		src_len = dest_len*2;
 
 	if (dest_len) {
 		/* Did we already process the terminating zero ? */
