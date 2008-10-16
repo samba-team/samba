@@ -151,6 +151,8 @@ static void ctdb_log_handler(struct event_context *ev, struct fd_event *fde,
 		ctdb->log->buf_used += n;
 	}
 
+	this_log_level = script_log_level;
+
 	while (ctdb->log->buf_used > 0 &&
 	       (p = memchr(ctdb->log->buf, '\n', ctdb->log->buf_used)) != NULL) {
 		int n1 = (p - ctdb->log->buf)+1;
@@ -159,7 +161,9 @@ static void ctdb_log_handler(struct event_context *ev, struct fd_event *fde,
 		if (n2 > 0 && ctdb->log->buf[n2-1] == '\r') {
 			n2--;
 		}
-		do_debug("%*.*s\n", n2, n2, ctdb->log->buf);
+		if (script_log_level <= LogLevel) {
+			do_debug("%*.*s\n", n2, n2, ctdb->log->buf);
+		}
 		memmove(ctdb->log->buf, p+1, sizeof(ctdb->log->buf) - n1);
 		ctdb->log->buf_used -= n1;
 	}
@@ -167,8 +171,10 @@ static void ctdb_log_handler(struct event_context *ev, struct fd_event *fde,
 	/* the buffer could have completely filled - unfortunately we have
 	   no choice but to dump it out straight away */
 	if (ctdb->log->buf_used == sizeof(ctdb->log->buf)) {
-		do_debug("%*.*s\n", 
-			 (int)ctdb->log->buf_used, (int)ctdb->log->buf_used, ctdb->log->buf);
+		if (script_log_level <= LogLevel) {
+			do_debug("%*.*s\n", 
+				(int)ctdb->log->buf_used, (int)ctdb->log->buf_used, ctdb->log->buf);
+		}
 		ctdb->log->buf_used = 0;
 	}
 }

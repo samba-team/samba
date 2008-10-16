@@ -1423,4 +1423,6 @@ void ctdb_canonicalize_ip(const ctdb_sock_addr *ip, ctdb_sock_addr *cip);
 
 int32_t ctdb_control_recd_ping(struct ctdb_context *ctdb);
 
+extern int script_log_level;
+
 #endif
