@@ -303,6 +303,10 @@ int ctdb_ctrl_getnodemap(struct ctdb_context *ctdb,
 		    struct timeval timeout, uint32_t destnode, 
 		    TALLOC_CTX *mem_ctx, struct ctdb_node_map **nodemap);
 
+int ctdb_ctrl_getnodemapv4(struct ctdb_context *ctdb, 
+		    struct timeval timeout, uint32_t destnode, 
+		    TALLOC_CTX *mem_ctx, struct ctdb_node_map **nodemap);
+
 int ctdb_ctrl_reload_nodes_file(struct ctdb_context *ctdb, 
 		    struct timeval timeout, uint32_t destnode);
 

@@ -131,6 +131,9 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 	case CTDB_CONTROL_GET_DBMAP:
 		return ctdb_control_getdbmap(ctdb, opcode, indata, outdata);
 
+	case CTDB_CONTROL_GET_NODEMAPv4:
+		return ctdb_control_getnodemapv4(ctdb, opcode, indata, outdata);
+
 	case CTDB_CONTROL_GET_NODEMAP:
 		return ctdb_control_getnodemap(ctdb, opcode, indata, outdata);
 
@@ -283,13 +286,25 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		DEBUG(DEBUG_NOTICE,("Received SHUTDOWN command. Stopping CTDB daemon.\n"));
 		exit(0);
 
+	case CTDB_CONTROL_TAKEOVER_IPv4:
+		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_public_ipv4));
+		return ctdb_control_takeover_ipv4(ctdb, c, indata, async_reply);
+
 	case CTDB_CONTROL_TAKEOVER_IP:
 		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_public_ip));
 		return ctdb_control_takeover_ip(ctdb, c, indata, async_reply);
 
+	case CTDB_CONTROL_RELEASE_IPv4:
+		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_public_ipv4));
+		return ctdb_control_release_ipv4(ctdb, c, indata, async_reply);
+
 	case CTDB_CONTROL_RELEASE_IP:
 		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_public_ip));
 		return ctdb_control_release_ip(ctdb, c, indata, async_reply);
+
+	case CTDB_CONTROL_GET_PUBLIC_IPSv4:
+		CHECK_CONTROL_DATA_SIZE(0);
+		return ctdb_control_get_public_ipsv4(ctdb, c, outdata);
 
 	case CTDB_CONTROL_GET_PUBLIC_IPS:
 		CHECK_CONTROL_DATA_SIZE(0);

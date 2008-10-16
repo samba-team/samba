@@ -1196,6 +1196,13 @@ static int control_ban(struct ctdb_context *ctdb, int argc, const char **argv)
 		usage();
 	}
 
+	/* verify we can access the node */
+	ret = ctdb_ctrl_getpnn(ctdb, TIMELIMIT(), options.pnn);
+	if (ret == -1) {
+		DEBUG(DEBUG_ERR,("Can not ban node. Node is not operational.\n"));
+		return -1;
+	}
+
 	ban_time = strtoul(argv[0], NULL, 0);
 
 	b.pnn = options.pnn;
@@ -1221,6 +1228,13 @@ static int control_unban(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	int ret;
 	TDB_DATA data;
+
+	/* verify we can access the node */
+	ret = ctdb_ctrl_getpnn(ctdb, TIMELIMIT(), options.pnn);
+	if (ret == -1) {
+		DEBUG(DEBUG_ERR,("Can not unban node. Node is not operational.\n"));
+		return -1;
+	}
 
 	data.dptr = (uint8_t *)&options.pnn;
 	data.dsize = sizeof(uint32_t);

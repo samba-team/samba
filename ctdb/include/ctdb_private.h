@@ -476,7 +476,7 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_GET_DEBUG               = 7,
 		    CTDB_CONTROL_SET_DEBUG               = 8,
 		    CTDB_CONTROL_GET_DBMAP               = 9,
-		    CTDB_CONTROL_GET_NODEMAP             = 10,
+		    CTDB_CONTROL_GET_NODEMAPv4           = 10, /* obsolete */
 		    CTDB_CONTROL_SET_DMASTER             = 11,
 		    /* #12 removed */
 		    CTDB_CONTROL_PULL_DB                 = 13,
@@ -508,8 +508,8 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    /* #39 removed */
 		    /* #40 removed */
 		    /* #41 removed */
-		    CTDB_CONTROL_TAKEOVER_IP             = 42,
-		    CTDB_CONTROL_RELEASE_IP              = 43,
+		    CTDB_CONTROL_TAKEOVER_IPv4           = 42, /* obsolete */
+		    CTDB_CONTROL_RELEASE_IPv4            = 43, /* obsolete */
 		    CTDB_CONTROL_TCP_CLIENT              = 44,
 		    CTDB_CONTROL_TCP_ADD                 = 45,
 		    CTDB_CONTROL_TCP_REMOVE              = 46,
@@ -517,7 +517,7 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_SET_TUNABLE             = 48,
 		    CTDB_CONTROL_GET_TUNABLE             = 49,
 		    CTDB_CONTROL_LIST_TUNABLES           = 50,
-		    CTDB_CONTROL_GET_PUBLIC_IPS          = 51,
+		    CTDB_CONTROL_GET_PUBLIC_IPSv4        = 51, /* obsolete */
 		    CTDB_CONTROL_MODIFY_FLAGS            = 52,
 		    CTDB_CONTROL_GET_ALL_TUNABLES        = 53,
 		    CTDB_CONTROL_KILL_TCP                = 54,
@@ -554,6 +554,10 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_TRANS2_ERROR            = 85,
 		    CTDB_CONTROL_TRANS2_COMMIT_RETRY     = 86,
 		    CTDB_CONTROL_RECD_PING		 = 87,
+		    CTDB_CONTROL_RELEASE_IP              = 88,
+		    CTDB_CONTROL_TAKEOVER_IP             = 89,
+		    CTDB_CONTROL_GET_PUBLIC_IPS          = 90,
+		    CTDB_CONTROL_GET_NODEMAP             = 91,
 };	
 
 /*
@@ -1014,6 +1018,7 @@ ctdb_control_send(struct ctdb_context *ctdb,
 int ctdb_control_getvnnmap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indata, TDB_DATA *outdata);
 int ctdb_control_setvnnmap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indata, TDB_DATA *outdata);
 int ctdb_control_getdbmap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indata, TDB_DATA *outdata);
+int ctdb_control_getnodemapv4(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indata, TDB_DATA *outdata);
 int ctdb_control_getnodemap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indata, TDB_DATA *outdata);
 int ctdb_control_writerecord(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indata, TDB_DATA *outdata);
 
@@ -1094,6 +1099,17 @@ struct ctdb_node_and_flags {
 struct ctdb_node_map {
 	uint32_t num;
 	struct ctdb_node_and_flags nodes[1];
+};
+
+struct ctdb_node_and_flagsv4 {
+	uint32_t pnn;
+	uint32_t flags;
+	struct sockaddr_in sin;
+};
+
+struct ctdb_node_mapv4 {
+	uint32_t num;
+	struct ctdb_node_and_flagsv4 nodes[1];
 };
 
 struct ctdb_control_wipe_database {
@@ -1180,7 +1196,15 @@ int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb,
 				 struct ctdb_req_control *c,
 				 TDB_DATA indata, 
 				 bool *async_reply);
+int32_t ctdb_control_takeover_ipv4(struct ctdb_context *ctdb, 
+				 struct ctdb_req_control *c,
+				 TDB_DATA indata, 
+				 bool *async_reply);
 int32_t ctdb_control_release_ip(struct ctdb_context *ctdb, 
+				 struct ctdb_req_control *c,
+				 TDB_DATA indata, 
+				 bool *async_reply);
+int32_t ctdb_control_release_ipv4(struct ctdb_context *ctdb, 
 				 struct ctdb_req_control *c,
 				 TDB_DATA indata, 
 				 bool *async_reply);
@@ -1191,6 +1215,11 @@ int32_t ctdb_control_end_recovery(struct ctdb_context *ctdb,
 				 struct ctdb_req_control *c,
 				 bool *async_reply);
 
+struct ctdb_public_ipv4 {
+	uint32_t pnn;
+	struct sockaddr_in sin;
+};
+
 struct ctdb_public_ip {
 	uint32_t pnn;
 	ctdb_sock_addr addr;
@@ -1200,12 +1229,21 @@ int ctdb_ctrl_takeover_ip(struct ctdb_context *ctdb, struct timeval timeout,
 int ctdb_ctrl_release_ip(struct ctdb_context *ctdb, struct timeval timeout, 
 			 uint32_t destnode, struct ctdb_public_ip *ip);
 
+struct ctdb_all_public_ipsv4 {
+	uint32_t num;
+	struct ctdb_public_ipv4 ips[1];
+};
+
 struct ctdb_all_public_ips {
 	uint32_t num;
 	struct ctdb_public_ip ips[1];
 };
+int32_t ctdb_control_get_public_ipsv4(struct ctdb_context *ctdb, struct ctdb_req_control *c, TDB_DATA *outdata);
 int32_t ctdb_control_get_public_ips(struct ctdb_context *ctdb, struct ctdb_req_control *c, TDB_DATA *outdata);
 int ctdb_ctrl_get_public_ips(struct ctdb_context *ctdb, 
+			struct timeval timeout, uint32_t destnode, 
+			TALLOC_CTX *mem_ctx, struct ctdb_all_public_ips **ips);
+int ctdb_ctrl_get_public_ipsv4(struct ctdb_context *ctdb, 
 			struct timeval timeout, uint32_t destnode, 
 			TALLOC_CTX *mem_ctx, struct ctdb_all_public_ips **ips);
 
@@ -1271,6 +1309,7 @@ void ctdb_start_freeze(struct ctdb_context *ctdb);
 bool parse_ip_mask(const char *s, ctdb_sock_addr *addr, unsigned *mask);
 bool parse_ip_port(const char *s, ctdb_sock_addr *addr);
 bool parse_ip(const char *s, ctdb_sock_addr *addr);
+bool parse_ipv4(const char *s, unsigned port, struct sockaddr_in *sin);
  
 
 int ctdb_sys_open_capture_socket(const char *iface, void **private_data);
