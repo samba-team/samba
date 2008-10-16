@@ -2823,63 +2823,117 @@ _PUBLIC_ size_t ndr_size_drsuapi_DsGetNCChangesCtr6(const struct drsuapi_DsGetNC
 	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_drsuapi_DsGetNCChangesCtr6);
 }
 
-static enum ndr_err_code ndr_push_drsuapi_DsGetNCChangesMSZIPCtr1(struct ndr_push *ndr, int ndr_flags, const struct drsuapi_DsGetNCChangesMSZIPCtr1 *r)
+_PUBLIC_ enum ndr_err_code ndr_push_drsuapi_DsGetNCChangesCtr1TS(struct ndr_push *ndr, int ndr_flags, const struct drsuapi_DsGetNCChangesCtr1TS *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_push_align(ndr, 4));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->decompressed_length));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->compressed_length));
-		NDR_CHECK(ndr_push_unique_ptr(ndr, r->ctr1));
+		NDR_CHECK(ndr_push_align(ndr, 1));
+		{
+			struct ndr_push *_ndr_ctr1;
+			NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_ctr1, 0xFFFFFC01, -1));
+			NDR_CHECK(ndr_push_drsuapi_DsGetNCChangesCtr1(_ndr_ctr1, NDR_SCALARS|NDR_BUFFERS, &r->ctr1));
+			NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_ctr1, 0xFFFFFC01, -1));
+		}
 	}
 	if (ndr_flags & NDR_BUFFERS) {
-		if (r->ctr1) {
-			{
-				struct ndr_push *_ndr_ctr1;
-				NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_ctr1, 4, r->compressed_length));
-				{
-					struct ndr_push *_ndr_ctr1_compressed;
-					NDR_CHECK(ndr_push_compression_start(_ndr_ctr1, &_ndr_ctr1_compressed, NDR_COMPRESSION_MSZIP, r->decompressed_length));
-					NDR_CHECK(ndr_push_drsuapi_DsGetNCChangesCtr1(_ndr_ctr1_compressed, NDR_SCALARS|NDR_BUFFERS, r->ctr1));
-					NDR_CHECK(ndr_push_compression_end(_ndr_ctr1, _ndr_ctr1_compressed, NDR_COMPRESSION_MSZIP, r->decompressed_length));
-				}
-				NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_ctr1, 4, r->compressed_length));
-			}
-		}
 	}
 	return NDR_ERR_SUCCESS;
 }
 
+_PUBLIC_ enum ndr_err_code ndr_pull_drsuapi_DsGetNCChangesCtr1TS(struct ndr_pull *ndr, int ndr_flags, struct drsuapi_DsGetNCChangesCtr1TS *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 1));
+		{
+			struct ndr_pull *_ndr_ctr1;
+			NDR_CHECK(ndr_pull_subcontext_start(ndr, &_ndr_ctr1, 0xFFFFFC01, -1));
+			NDR_CHECK(ndr_pull_drsuapi_DsGetNCChangesCtr1(_ndr_ctr1, NDR_SCALARS|NDR_BUFFERS, &r->ctr1));
+			NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_ctr1, 0xFFFFFC01, -1));
+		}
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_drsuapi_DsGetNCChangesCtr1TS(struct ndr_print *ndr, const char *name, const struct drsuapi_DsGetNCChangesCtr1TS *r)
+{
+	ndr_print_struct(ndr, name, "drsuapi_DsGetNCChangesCtr1TS");
+	ndr->depth++;
+	ndr_print_drsuapi_DsGetNCChangesCtr1(ndr, "ctr1", &r->ctr1);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_drsuapi_DsGetNCChangesCtr6TS(struct ndr_push *ndr, int ndr_flags, const struct drsuapi_DsGetNCChangesCtr6TS *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 1));
+		{
+			struct ndr_push *_ndr_ctr6;
+			NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_ctr6, 0xFFFFFC01, -1));
+			NDR_CHECK(ndr_push_drsuapi_DsGetNCChangesCtr6(_ndr_ctr6, NDR_SCALARS|NDR_BUFFERS, &r->ctr6));
+			NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_ctr6, 0xFFFFFC01, -1));
+		}
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_drsuapi_DsGetNCChangesCtr6TS(struct ndr_pull *ndr, int ndr_flags, struct drsuapi_DsGetNCChangesCtr6TS *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 1));
+		{
+			struct ndr_pull *_ndr_ctr6;
+			NDR_CHECK(ndr_pull_subcontext_start(ndr, &_ndr_ctr6, 0xFFFFFC01, -1));
+			NDR_CHECK(ndr_pull_drsuapi_DsGetNCChangesCtr6(_ndr_ctr6, NDR_SCALARS|NDR_BUFFERS, &r->ctr6));
+			NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_ctr6, 0xFFFFFC01, -1));
+		}
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_drsuapi_DsGetNCChangesCtr6TS(struct ndr_print *ndr, const char *name, const struct drsuapi_DsGetNCChangesCtr6TS *r)
+{
+	ndr_print_struct(ndr, name, "drsuapi_DsGetNCChangesCtr6TS");
+	ndr->depth++;
+	ndr_print_drsuapi_DsGetNCChangesCtr6(ndr, "ctr6", &r->ctr6);
+	ndr->depth--;
+}
+
 static enum ndr_err_code ndr_pull_drsuapi_DsGetNCChangesMSZIPCtr1(struct ndr_pull *ndr, int ndr_flags, struct drsuapi_DsGetNCChangesMSZIPCtr1 *r)
 {
-	uint32_t _ptr_ctr1;
-	TALLOC_CTX *_mem_save_ctr1_0;
+	uint32_t _ptr_ts;
+	TALLOC_CTX *_mem_save_ts_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->decompressed_length));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->compressed_length));
-		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_ctr1));
-		if (_ptr_ctr1) {
-			NDR_PULL_ALLOC(ndr, r->ctr1);
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_ts));
+		if (_ptr_ts) {
+			NDR_PULL_ALLOC(ndr, r->ts);
 		} else {
-			r->ctr1 = NULL;
+			r->ts = NULL;
 		}
 	}
 	if (ndr_flags & NDR_BUFFERS) {
-		if (r->ctr1) {
-			_mem_save_ctr1_0 = NDR_PULL_GET_MEM_CTX(ndr);
-			NDR_PULL_SET_MEM_CTX(ndr, r->ctr1, 0);
+		if (r->ts) {
+			_mem_save_ts_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->ts, 0);
 			{
-				struct ndr_pull *_ndr_ctr1;
-				NDR_CHECK(ndr_pull_subcontext_start(ndr, &_ndr_ctr1, 4, r->compressed_length));
+				struct ndr_pull *_ndr_ts;
+				NDR_CHECK(ndr_pull_subcontext_start(ndr, &_ndr_ts, 4, r->compressed_length));
 				{
-					struct ndr_pull *_ndr_ctr1_compressed;
-					NDR_CHECK(ndr_pull_compression_start(_ndr_ctr1, &_ndr_ctr1_compressed, NDR_COMPRESSION_MSZIP, r->decompressed_length));
-					NDR_CHECK(ndr_pull_drsuapi_DsGetNCChangesCtr1(_ndr_ctr1_compressed, NDR_SCALARS|NDR_BUFFERS, r->ctr1));
-					NDR_CHECK(ndr_pull_compression_end(_ndr_ctr1, _ndr_ctr1_compressed, NDR_COMPRESSION_MSZIP, r->decompressed_length));
+					struct ndr_pull *_ndr_ts_compressed;
+					NDR_CHECK(ndr_pull_compression_start(_ndr_ts, &_ndr_ts_compressed, NDR_COMPRESSION_MSZIP, r->decompressed_length));
+					NDR_CHECK(ndr_pull_drsuapi_DsGetNCChangesCtr1TS(_ndr_ts_compressed, NDR_SCALARS|NDR_BUFFERS, r->ts));
+					NDR_CHECK(ndr_pull_compression_end(_ndr_ts, _ndr_ts_compressed, NDR_COMPRESSION_MSZIP, r->decompressed_length));
 				}
-				NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_ctr1, 4, r->compressed_length));
+				NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_ts, 4, r->compressed_length));
 			}
-			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_ctr1_0, 0);
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_ts_0, 0);
 		}
 	}
 	return NDR_ERR_SUCCESS;
@@ -2891,72 +2945,46 @@ _PUBLIC_ void ndr_print_drsuapi_DsGetNCChangesMSZIPCtr1(struct ndr_print *ndr, c
 	ndr->depth++;
 	ndr_print_uint32(ndr, "decompressed_length", r->decompressed_length);
 	ndr_print_uint32(ndr, "compressed_length", r->compressed_length);
-	ndr_print_ptr(ndr, "ctr1", r->ctr1);
+	ndr_print_ptr(ndr, "ts", r->ts);
 	ndr->depth++;
-	if (r->ctr1) {
-		ndr_print_drsuapi_DsGetNCChangesCtr1(ndr, "ctr1", r->ctr1);
+	if (r->ts) {
+		ndr_print_drsuapi_DsGetNCChangesCtr1TS(ndr, "ts", r->ts);
 	}
 	ndr->depth--;
 	ndr->depth--;
-}
-
-static enum ndr_err_code ndr_push_drsuapi_DsGetNCChangesMSZIPCtr6(struct ndr_push *ndr, int ndr_flags, const struct drsuapi_DsGetNCChangesMSZIPCtr6 *r)
-{
-	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_push_align(ndr, 4));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->decompressed_length));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->compressed_length));
-		NDR_CHECK(ndr_push_unique_ptr(ndr, r->ctr6));
-	}
-	if (ndr_flags & NDR_BUFFERS) {
-		if (r->ctr6) {
-			{
-				struct ndr_push *_ndr_ctr6;
-				NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_ctr6, 4, r->compressed_length));
-				{
-					struct ndr_push *_ndr_ctr6_compressed;
-					NDR_CHECK(ndr_push_compression_start(_ndr_ctr6, &_ndr_ctr6_compressed, NDR_COMPRESSION_MSZIP, r->decompressed_length));
-					NDR_CHECK(ndr_push_drsuapi_DsGetNCChangesCtr6(_ndr_ctr6_compressed, NDR_SCALARS|NDR_BUFFERS, r->ctr6));
-					NDR_CHECK(ndr_push_compression_end(_ndr_ctr6, _ndr_ctr6_compressed, NDR_COMPRESSION_MSZIP, r->decompressed_length));
-				}
-				NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_ctr6, 4, r->compressed_length));
-			}
-		}
-	}
-	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_drsuapi_DsGetNCChangesMSZIPCtr6(struct ndr_pull *ndr, int ndr_flags, struct drsuapi_DsGetNCChangesMSZIPCtr6 *r)
 {
-	uint32_t _ptr_ctr6;
-	TALLOC_CTX *_mem_save_ctr6_0;
+	uint32_t _ptr_ts;
+	TALLOC_CTX *_mem_save_ts_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->decompressed_length));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->compressed_length));
-		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_ctr6));
-		if (_ptr_ctr6) {
-			NDR_PULL_ALLOC(ndr, r->ctr6);
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_ts));
+		if (_ptr_ts) {
+			NDR_PULL_ALLOC(ndr, r->ts);
 		} else {
-			r->ctr6 = NULL;
+			r->ts = NULL;
 		}
 	}
 	if (ndr_flags & NDR_BUFFERS) {
-		if (r->ctr6) {
-			_mem_save_ctr6_0 = NDR_PULL_GET_MEM_CTX(ndr);
-			NDR_PULL_SET_MEM_CTX(ndr, r->ctr6, 0);
+		if (r->ts) {
+			_mem_save_ts_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->ts, 0);
 			{
-				struct ndr_pull *_ndr_ctr6;
-				NDR_CHECK(ndr_pull_subcontext_start(ndr, &_ndr_ctr6, 4, r->compressed_length));
+				struct ndr_pull *_ndr_ts;
+				NDR_CHECK(ndr_pull_subcontext_start(ndr, &_ndr_ts, 4, r->compressed_length));
 				{
-					struct ndr_pull *_ndr_ctr6_compressed;
-					NDR_CHECK(ndr_pull_compression_start(_ndr_ctr6, &_ndr_ctr6_compressed, NDR_COMPRESSION_MSZIP, r->decompressed_length));
-					NDR_CHECK(ndr_pull_drsuapi_DsGetNCChangesCtr6(_ndr_ctr6_compressed, NDR_SCALARS|NDR_BUFFERS, r->ctr6));
-					NDR_CHECK(ndr_pull_compression_end(_ndr_ctr6, _ndr_ctr6_compressed, NDR_COMPRESSION_MSZIP, r->decompressed_length));
+					struct ndr_pull *_ndr_ts_compressed;
+					NDR_CHECK(ndr_pull_compression_start(_ndr_ts, &_ndr_ts_compressed, NDR_COMPRESSION_MSZIP, r->decompressed_length));
+					NDR_CHECK(ndr_pull_drsuapi_DsGetNCChangesCtr6TS(_ndr_ts_compressed, NDR_SCALARS|NDR_BUFFERS, r->ts));
+					NDR_CHECK(ndr_pull_compression_end(_ndr_ts, _ndr_ts_compressed, NDR_COMPRESSION_MSZIP, r->decompressed_length));
 				}
-				NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_ctr6, 4, r->compressed_length));
+				NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_ts, 4, r->compressed_length));
 			}
-			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_ctr6_0, 0);
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_ts_0, 0);
 		}
 	}
 	return NDR_ERR_SUCCESS;
@@ -2968,72 +2996,46 @@ _PUBLIC_ void ndr_print_drsuapi_DsGetNCChangesMSZIPCtr6(struct ndr_print *ndr, c
 	ndr->depth++;
 	ndr_print_uint32(ndr, "decompressed_length", r->decompressed_length);
 	ndr_print_uint32(ndr, "compressed_length", r->compressed_length);
-	ndr_print_ptr(ndr, "ctr6", r->ctr6);
+	ndr_print_ptr(ndr, "ts", r->ts);
 	ndr->depth++;
-	if (r->ctr6) {
-		ndr_print_drsuapi_DsGetNCChangesCtr6(ndr, "ctr6", r->ctr6);
+	if (r->ts) {
+		ndr_print_drsuapi_DsGetNCChangesCtr6TS(ndr, "ts", r->ts);
 	}
 	ndr->depth--;
 	ndr->depth--;
-}
-
-static enum ndr_err_code ndr_push_drsuapi_DsGetNCChangesXPRESSCtr1(struct ndr_push *ndr, int ndr_flags, const struct drsuapi_DsGetNCChangesXPRESSCtr1 *r)
-{
-	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_push_align(ndr, 4));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->decompressed_length));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->compressed_length));
-		NDR_CHECK(ndr_push_unique_ptr(ndr, r->ctr1));
-	}
-	if (ndr_flags & NDR_BUFFERS) {
-		if (r->ctr1) {
-			{
-				struct ndr_push *_ndr_ctr1;
-				NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_ctr1, 4, r->compressed_length));
-				{
-					struct ndr_push *_ndr_ctr1_compressed;
-					NDR_CHECK(ndr_push_compression_start(_ndr_ctr1, &_ndr_ctr1_compressed, NDR_COMPRESSION_XPRESS, r->decompressed_length));
-					NDR_CHECK(ndr_push_drsuapi_DsGetNCChangesCtr1(_ndr_ctr1_compressed, NDR_SCALARS|NDR_BUFFERS, r->ctr1));
-					NDR_CHECK(ndr_push_compression_end(_ndr_ctr1, _ndr_ctr1_compressed, NDR_COMPRESSION_XPRESS, r->decompressed_length));
-				}
-				NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_ctr1, 4, r->compressed_length));
-			}
-		}
-	}
-	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_drsuapi_DsGetNCChangesXPRESSCtr1(struct ndr_pull *ndr, int ndr_flags, struct drsuapi_DsGetNCChangesXPRESSCtr1 *r)
 {
-	uint32_t _ptr_ctr1;
-	TALLOC_CTX *_mem_save_ctr1_0;
+	uint32_t _ptr_ts;
+	TALLOC_CTX *_mem_save_ts_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->decompressed_length));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->compressed_length));
-		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_ctr1));
-		if (_ptr_ctr1) {
-			NDR_PULL_ALLOC(ndr, r->ctr1);
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_ts));
+		if (_ptr_ts) {
+			NDR_PULL_ALLOC(ndr, r->ts);
 		} else {
-			r->ctr1 = NULL;
+			r->ts = NULL;
 		}
 	}
 	if (ndr_flags & NDR_BUFFERS) {
-		if (r->ctr1) {
-			_mem_save_ctr1_0 = NDR_PULL_GET_MEM_CTX(ndr);
-			NDR_PULL_SET_MEM_CTX(ndr, r->ctr1, 0);
+		if (r->ts) {
+			_mem_save_ts_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->ts, 0);
 			{
-				struct ndr_pull *_ndr_ctr1;
-				NDR_CHECK(ndr_pull_subcontext_start(ndr, &_ndr_ctr1, 4, r->compressed_length));
+				struct ndr_pull *_ndr_ts;
+				NDR_CHECK(ndr_pull_subcontext_start(ndr, &_ndr_ts, 4, r->compressed_length));
 				{
-					struct ndr_pull *_ndr_ctr1_compressed;
-					NDR_CHECK(ndr_pull_compression_start(_ndr_ctr1, &_ndr_ctr1_compressed, NDR_COMPRESSION_XPRESS, r->decompressed_length));
-					NDR_CHECK(ndr_pull_drsuapi_DsGetNCChangesCtr1(_ndr_ctr1_compressed, NDR_SCALARS|NDR_BUFFERS, r->ctr1));
-					NDR_CHECK(ndr_pull_compression_end(_ndr_ctr1, _ndr_ctr1_compressed, NDR_COMPRESSION_XPRESS, r->decompressed_length));
+					struct ndr_pull *_ndr_ts_compressed;
+					NDR_CHECK(ndr_pull_compression_start(_ndr_ts, &_ndr_ts_compressed, NDR_COMPRESSION_XPRESS, r->decompressed_length));
+					NDR_CHECK(ndr_pull_drsuapi_DsGetNCChangesCtr1TS(_ndr_ts_compressed, NDR_SCALARS|NDR_BUFFERS, r->ts));
+					NDR_CHECK(ndr_pull_compression_end(_ndr_ts, _ndr_ts_compressed, NDR_COMPRESSION_XPRESS, r->decompressed_length));
 				}
-				NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_ctr1, 4, r->compressed_length));
+				NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_ts, 4, r->compressed_length));
 			}
-			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_ctr1_0, 0);
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_ts_0, 0);
 		}
 	}
 	return NDR_ERR_SUCCESS;
@@ -3045,72 +3047,46 @@ _PUBLIC_ void ndr_print_drsuapi_DsGetNCChangesXPRESSCtr1(struct ndr_print *ndr, 
 	ndr->depth++;
 	ndr_print_uint32(ndr, "decompressed_length", r->decompressed_length);
 	ndr_print_uint32(ndr, "compressed_length", r->compressed_length);
-	ndr_print_ptr(ndr, "ctr1", r->ctr1);
+	ndr_print_ptr(ndr, "ts", r->ts);
 	ndr->depth++;
-	if (r->ctr1) {
-		ndr_print_drsuapi_DsGetNCChangesCtr1(ndr, "ctr1", r->ctr1);
+	if (r->ts) {
+		ndr_print_drsuapi_DsGetNCChangesCtr1TS(ndr, "ts", r->ts);
 	}
 	ndr->depth--;
 	ndr->depth--;
-}
-
-static enum ndr_err_code ndr_push_drsuapi_DsGetNCChangesXPRESSCtr6(struct ndr_push *ndr, int ndr_flags, const struct drsuapi_DsGetNCChangesXPRESSCtr6 *r)
-{
-	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_push_align(ndr, 4));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->decompressed_length));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->compressed_length));
-		NDR_CHECK(ndr_push_unique_ptr(ndr, r->ctr6));
-	}
-	if (ndr_flags & NDR_BUFFERS) {
-		if (r->ctr6) {
-			{
-				struct ndr_push *_ndr_ctr6;
-				NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_ctr6, 4, r->compressed_length));
-				{
-					struct ndr_push *_ndr_ctr6_compressed;
-					NDR_CHECK(ndr_push_compression_start(_ndr_ctr6, &_ndr_ctr6_compressed, NDR_COMPRESSION_XPRESS, r->decompressed_length));
-					NDR_CHECK(ndr_push_drsuapi_DsGetNCChangesCtr6(_ndr_ctr6_compressed, NDR_SCALARS|NDR_BUFFERS, r->ctr6));
-					NDR_CHECK(ndr_push_compression_end(_ndr_ctr6, _ndr_ctr6_compressed, NDR_COMPRESSION_XPRESS, r->decompressed_length));
-				}
-				NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_ctr6, 4, r->compressed_length));
-			}
-		}
-	}
-	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_drsuapi_DsGetNCChangesXPRESSCtr6(struct ndr_pull *ndr, int ndr_flags, struct drsuapi_DsGetNCChangesXPRESSCtr6 *r)
 {
-	uint32_t _ptr_ctr6;
-	TALLOC_CTX *_mem_save_ctr6_0;
+	uint32_t _ptr_ts;
+	TALLOC_CTX *_mem_save_ts_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->decompressed_length));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->compressed_length));
-		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_ctr6));
-		if (_ptr_ctr6) {
-			NDR_PULL_ALLOC(ndr, r->ctr6);
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_ts));
+		if (_ptr_ts) {
+			NDR_PULL_ALLOC(ndr, r->ts);
 		} else {
-			r->ctr6 = NULL;
+			r->ts = NULL;
 		}
 	}
 	if (ndr_flags & NDR_BUFFERS) {
-		if (r->ctr6) {
-			_mem_save_ctr6_0 = NDR_PULL_GET_MEM_CTX(ndr);
-			NDR_PULL_SET_MEM_CTX(ndr, r->ctr6, 0);
+		if (r->ts) {
+			_mem_save_ts_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->ts, 0);
 			{
-				struct ndr_pull *_ndr_ctr6;
-				NDR_CHECK(ndr_pull_subcontext_start(ndr, &_ndr_ctr6, 4, r->compressed_length));
+				struct ndr_pull *_ndr_ts;
+				NDR_CHECK(ndr_pull_subcontext_start(ndr, &_ndr_ts, 4, r->compressed_length));
 				{
-					struct ndr_pull *_ndr_ctr6_compressed;
-					NDR_CHECK(ndr_pull_compression_start(_ndr_ctr6, &_ndr_ctr6_compressed, NDR_COMPRESSION_XPRESS, r->decompressed_length));
-					NDR_CHECK(ndr_pull_drsuapi_DsGetNCChangesCtr6(_ndr_ctr6_compressed, NDR_SCALARS|NDR_BUFFERS, r->ctr6));
-					NDR_CHECK(ndr_pull_compression_end(_ndr_ctr6, _ndr_ctr6_compressed, NDR_COMPRESSION_XPRESS, r->decompressed_length));
+					struct ndr_pull *_ndr_ts_compressed;
+					NDR_CHECK(ndr_pull_compression_start(_ndr_ts, &_ndr_ts_compressed, NDR_COMPRESSION_XPRESS, r->decompressed_length));
+					NDR_CHECK(ndr_pull_drsuapi_DsGetNCChangesCtr6TS(_ndr_ts_compressed, NDR_SCALARS|NDR_BUFFERS, r->ts));
+					NDR_CHECK(ndr_pull_compression_end(_ndr_ts, _ndr_ts_compressed, NDR_COMPRESSION_XPRESS, r->decompressed_length));
 				}
-				NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_ctr6, 4, r->compressed_length));
+				NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_ts, 4, r->compressed_length));
 			}
-			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_ctr6_0, 0);
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_ts_0, 0);
 		}
 	}
 	return NDR_ERR_SUCCESS;
@@ -3122,10 +3098,10 @@ _PUBLIC_ void ndr_print_drsuapi_DsGetNCChangesXPRESSCtr6(struct ndr_print *ndr, 
 	ndr->depth++;
 	ndr_print_uint32(ndr, "decompressed_length", r->decompressed_length);
 	ndr_print_uint32(ndr, "compressed_length", r->compressed_length);
-	ndr_print_ptr(ndr, "ctr6", r->ctr6);
+	ndr_print_ptr(ndr, "ts", r->ts);
 	ndr->depth++;
-	if (r->ctr6) {
-		ndr_print_drsuapi_DsGetNCChangesCtr6(ndr, "ctr6", r->ctr6);
+	if (r->ts) {
+		ndr_print_drsuapi_DsGetNCChangesCtr6TS(ndr, "ts", r->ts);
 	}
 	ndr->depth--;
 	ndr->depth--;
@@ -3304,11 +3280,10 @@ static enum ndr_err_code ndr_push_drsuapi_DsGetNCChangesCtr2(struct ndr_push *nd
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
-		NDR_CHECK(ndr_push_set_switch_value(ndr, &r->ctr, 1 | (DRSUAPI_COMPRESSION_TYPE_MSZIP << 16)));
-		NDR_CHECK(ndr_push_drsuapi_DsGetNCChangesCompressedCtr(ndr, NDR_SCALARS, &r->ctr));
+		NDR_CHECK(ndr_push_drsuapi_DsGetNCChangesMSZIPCtr1(ndr, NDR_SCALARS, &r->mszip1));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
-		NDR_CHECK(ndr_push_drsuapi_DsGetNCChangesCompressedCtr(ndr, NDR_BUFFERS, &r->ctr));
+		NDR_CHECK(ndr_push_drsuapi_DsGetNCChangesMSZIPCtr1(ndr, NDR_BUFFERS, &r->mszip1));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -3317,11 +3292,10 @@ static enum ndr_err_code ndr_pull_drsuapi_DsGetNCChangesCtr2(struct ndr_pull *nd
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
-		NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->ctr, 1 | (DRSUAPI_COMPRESSION_TYPE_MSZIP << 16)));
-		NDR_CHECK(ndr_pull_drsuapi_DsGetNCChangesCompressedCtr(ndr, NDR_SCALARS, &r->ctr));
+		NDR_CHECK(ndr_pull_drsuapi_DsGetNCChangesMSZIPCtr1(ndr, NDR_SCALARS, &r->mszip1));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
-		NDR_CHECK(ndr_pull_drsuapi_DsGetNCChangesCompressedCtr(ndr, NDR_BUFFERS, &r->ctr));
+		NDR_CHECK(ndr_pull_drsuapi_DsGetNCChangesMSZIPCtr1(ndr, NDR_BUFFERS, &r->mszip1));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -3330,8 +3304,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsGetNCChangesCtr2(struct ndr_print *ndr, const 
 {
 	ndr_print_struct(ndr, name, "drsuapi_DsGetNCChangesCtr2");
 	ndr->depth++;
-	ndr_print_set_switch_value(ndr, &r->ctr, 1 | (DRSUAPI_COMPRESSION_TYPE_MSZIP << 16));
-	ndr_print_drsuapi_DsGetNCChangesCompressedCtr(ndr, "ctr", &r->ctr);
+	ndr_print_drsuapi_DsGetNCChangesMSZIPCtr1(ndr, "mszip1", &r->mszip1);
 	ndr->depth--;
 }
 
@@ -5609,7 +5582,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsRemoveDSServerRequest1(struct ndr_pu
 		NDR_CHECK(ndr_push_align(ndr, 4));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->server_dn));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->domain_dn));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->unknown));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->commit));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		if (r->server_dn) {
@@ -5648,7 +5621,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsRemoveDSServerRequest1(struct ndr_pu
 		} else {
 			r->domain_dn = NULL;
 		}
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->unknown));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->commit));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		if (r->server_dn) {
@@ -5695,7 +5668,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsRemoveDSServerRequest1(struct ndr_print *ndr, 
 		ndr_print_string(ndr, "domain_dn", r->domain_dn);
 	}
 	ndr->depth--;
-	ndr_print_uint32(ndr, "unknown", r->unknown);
+	ndr_print_uint32(ndr, "commit", r->commit);
 	ndr->depth--;
 }
 
@@ -5778,7 +5751,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsRemoveDSServerResult1(struct ndr_pus
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
-		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->status));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->last_dc_in_domain));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -5789,7 +5762,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsRemoveDSServerResult1(struct ndr_pul
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
-		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->status));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->last_dc_in_domain));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -5800,7 +5773,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsRemoveDSServerResult1(struct ndr_print *ndr, c
 {
 	ndr_print_struct(ndr, name, "drsuapi_DsRemoveDSServerResult1");
 	ndr->depth++;
-	ndr_print_WERROR(ndr, "status", r->status);
+	ndr_print_uint32(ndr, "last_dc_in_domain", r->last_dc_in_domain);
 	ndr->depth--;
 }
 

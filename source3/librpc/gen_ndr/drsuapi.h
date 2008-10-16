@@ -575,29 +575,37 @@ struct drsuapi_DsGetNCChangesCtr6 {
 	WERROR drs_error;
 }/* [gensize,public] */;
 
+struct drsuapi_DsGetNCChangesCtr1TS {
+	struct drsuapi_DsGetNCChangesCtr1 ctr1;/* [subcontext(0xFFFFFC01)] */
+}/* [public] */;
+
+struct drsuapi_DsGetNCChangesCtr6TS {
+	struct drsuapi_DsGetNCChangesCtr6 ctr6;/* [subcontext(0xFFFFFC01)] */
+}/* [public] */;
+
 struct drsuapi_DsGetNCChangesMSZIPCtr1 {
 	uint32_t decompressed_length;
 	uint32_t compressed_length;
-	struct drsuapi_DsGetNCChangesCtr1 *ctr1;/* [unique,compression(NDR_COMPRESSION_MSZIP,compressed_length,decompressed_length),subcontext_size(compressed_length),subcontext(4)] */
-};
+	struct drsuapi_DsGetNCChangesCtr1TS *ts;/* [unique,compression(NDR_COMPRESSION_MSZIP,compressed_length,decompressed_length),subcontext_size(compressed_length),subcontext(4)] */
+}/* [nopush] */;
 
 struct drsuapi_DsGetNCChangesMSZIPCtr6 {
 	uint32_t decompressed_length;
 	uint32_t compressed_length;
-	struct drsuapi_DsGetNCChangesCtr6 *ctr6;/* [unique,compression(NDR_COMPRESSION_MSZIP,compressed_length,decompressed_length),subcontext_size(compressed_length),subcontext(4)] */
-};
+	struct drsuapi_DsGetNCChangesCtr6TS *ts;/* [unique,compression(NDR_COMPRESSION_MSZIP,compressed_length,decompressed_length),subcontext_size(compressed_length),subcontext(4)] */
+}/* [nopush] */;
 
 struct drsuapi_DsGetNCChangesXPRESSCtr1 {
 	uint32_t decompressed_length;
 	uint32_t compressed_length;
-	struct drsuapi_DsGetNCChangesCtr1 *ctr1;/* [unique,compression(NDR_COMPRESSION_XPRESS,compressed_length,decompressed_length),subcontext_size(compressed_length),subcontext(4)] */
-};
+	struct drsuapi_DsGetNCChangesCtr1TS *ts;/* [unique,compression(NDR_COMPRESSION_XPRESS,compressed_length,decompressed_length),subcontext_size(compressed_length),subcontext(4)] */
+}/* [nopush] */;
 
 struct drsuapi_DsGetNCChangesXPRESSCtr6 {
 	uint32_t decompressed_length;
 	uint32_t compressed_length;
-	struct drsuapi_DsGetNCChangesCtr6 *ctr6;/* [unique,compression(NDR_COMPRESSION_XPRESS,compressed_length,decompressed_length),subcontext_size(compressed_length),subcontext(4)] */
-};
+	struct drsuapi_DsGetNCChangesCtr6TS *ts;/* [unique,compression(NDR_COMPRESSION_XPRESS,compressed_length,decompressed_length),subcontext_size(compressed_length),subcontext(4)] */
+}/* [nopush] */;
 
 enum drsuapi_DsGetNCChangesCompressionType
 #ifndef USE_UINT_ENUMS
@@ -620,7 +628,7 @@ union drsuapi_DsGetNCChangesCompressedCtr {
 }/* [nodiscriminant,flag(LIBNDR_PRINT_ARRAY_HEX)] */;
 
 struct drsuapi_DsGetNCChangesCtr2 {
-	union drsuapi_DsGetNCChangesCompressedCtr ctr;/* [switch_is(1|(DRSUAPI_COMPRESSION_TYPE_MSZIP<<16))] */
+	struct drsuapi_DsGetNCChangesMSZIPCtr1 mszip1;
 };
 
 struct drsuapi_DsGetNCChangesCtr7 {
@@ -889,7 +897,7 @@ union drsuapi_DsWriteAccountSpnResult {
 struct drsuapi_DsRemoveDSServerRequest1 {
 	const char *server_dn;/* [unique,charset(UTF16)] */
 	const char *domain_dn;/* [unique,charset(UTF16)] */
-	uint32_t unknown;
+	uint32_t commit;
 };
 
 union drsuapi_DsRemoveDSServerRequest {
@@ -897,7 +905,7 @@ union drsuapi_DsRemoveDSServerRequest {
 }/* [switch_type(int32)] */;
 
 struct drsuapi_DsRemoveDSServerResult1 {
-	WERROR status;
+	uint32_t last_dc_in_domain;
 };
 
 union drsuapi_DsRemoveDSServerResult {
