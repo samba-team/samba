@@ -2396,40 +2396,42 @@ static void becomeDC_drsuapi_pull_partition_send(struct libnet_BecomeDC_state *s
 	r = talloc(s, struct drsuapi_DsGetNCChanges);
 	if (composite_nomem(r, c)) return;
 
-	r->in.level = talloc(r, int32_t);
-	if (composite_nomem(r->in.level, c)) return;
-	r->out.level = talloc(r, int32_t);
-	if (composite_nomem(r->out.level, c)) return;
+	r->out.level_out = talloc(r, int32_t);
+	if (composite_nomem(r->out.level_out, c)) return;
+	r->in.req = talloc(r, union drsuapi_DsGetNCChangesRequest);
+	if (composite_nomem(r->in.req, c)) return;
+	r->out.ctr = talloc(r, union drsuapi_DsGetNCChangesCtr);
+	if (composite_nomem(r->out.ctr, c)) return;
 
 	r->in.bind_handle	= &drsuapi_h->bind_handle;
 	if (drsuapi_h->remote_info28.supported_extensions & DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V8) {
-		*r->in.level				= 8;
-		r->in.req.req8.destination_dsa_guid	= partition->destination_dsa_guid;
-		r->in.req.req8.source_dsa_invocation_id	= partition->source_dsa_invocation_id;
-		r->in.req.req8.naming_context		= &partition->nc;
-		r->in.req.req8.highwatermark		= partition->highwatermark;
-		r->in.req.req8.uptodateness_vector	= NULL;
-		r->in.req.req8.replica_flags		= partition->replica_flags;
-		r->in.req.req8.max_object_count		= 133;
-		r->in.req.req8.max_ndr_size		= 1336811;
-		r->in.req.req8.extended_op		= DRSUAPI_EXOP_NONE;
-		r->in.req.req8.fsmo_info		= 0;
-		r->in.req.req8.partial_attribute_set	= NULL;
-		r->in.req.req8.partial_attribute_set_ex	= NULL;
-		r->in.req.req8.mapping_ctr.num_mappings	= 0;
-		r->in.req.req8.mapping_ctr.mappings	= NULL;
+		r->in.level				= 8;
+		r->in.req->req8.destination_dsa_guid	= partition->destination_dsa_guid;
+		r->in.req->req8.source_dsa_invocation_id= partition->source_dsa_invocation_id;
+		r->in.req->req8.naming_context		= &partition->nc;
+		r->in.req->req8.highwatermark		= partition->highwatermark;
+		r->in.req->req8.uptodateness_vector	= NULL;
+		r->in.req->req8.replica_flags		= partition->replica_flags;
+		r->in.req->req8.max_object_count	= 133;
+		r->in.req->req8.max_ndr_size		= 1336811;
+		r->in.req->req8.extended_op		= DRSUAPI_EXOP_NONE;
+		r->in.req->req8.fsmo_info		= 0;
+		r->in.req->req8.partial_attribute_set	= NULL;
+		r->in.req->req8.partial_attribute_set_ex= NULL;
+		r->in.req->req8.mapping_ctr.num_mappings= 0;
+		r->in.req->req8.mapping_ctr.mappings	= NULL;
 	} else {
-		*r->in.level				= 5;
-		r->in.req.req5.destination_dsa_guid	= partition->destination_dsa_guid;
-		r->in.req.req5.source_dsa_invocation_id	= partition->source_dsa_invocation_id;
-		r->in.req.req5.naming_context		= &partition->nc;
-		r->in.req.req5.highwatermark		= partition->highwatermark;
-		r->in.req.req5.uptodateness_vector	= NULL;
-		r->in.req.req5.replica_flags		= partition->replica_flags;
-		r->in.req.req5.max_object_count		= 133;
-		r->in.req.req5.max_ndr_size		= 1336770;
-		r->in.req.req5.extended_op		= DRSUAPI_EXOP_NONE;
-		r->in.req.req5.fsmo_info		= 0;
+		r->in.level				= 5;
+		r->in.req->req5.destination_dsa_guid	= partition->destination_dsa_guid;
+		r->in.req->req5.source_dsa_invocation_id= partition->source_dsa_invocation_id;
+		r->in.req->req5.naming_context		= &partition->nc;
+		r->in.req->req5.highwatermark		= partition->highwatermark;
+		r->in.req->req5.uptodateness_vector	= NULL;
+		r->in.req->req5.replica_flags		= partition->replica_flags;
+		r->in.req->req5.max_object_count	= 133;
+		r->in.req->req5.max_ndr_size		= 1336770;
+		r->in.req->req5.extended_op		= DRSUAPI_EXOP_NONE;
+		r->in.req->req5.fsmo_info		= 0;
 	}
 
 	/* 
@@ -2461,28 +2463,28 @@ static WERROR becomeDC_drsuapi_pull_partition_recv(struct libnet_BecomeDC_state 
 		return r->out.result;
 	}
 
-	if (*r->out.level == 1) {
+	if (*r->out.level_out == 1) {
 		ctr_level = 1;
-		ctr1 = &r->out.ctr.ctr1;
-	} else if (*r->out.level == 2 &&
-		   r->out.ctr.ctr2.mszip1.ts) {
+		ctr1 = &r->out.ctr->ctr1;
+	} else if (*r->out.level_out == 2 &&
+		   r->out.ctr->ctr2.mszip1.ts) {
 		ctr_level = 1;
-		ctr1 = &r->out.ctr.ctr2.mszip1.ts->ctr1;
-	} else if (*r->out.level == 6) {
+		ctr1 = &r->out.ctr->ctr2.mszip1.ts->ctr1;
+	} else if (*r->out.level_out == 6) {
 		ctr_level = 6;
-		ctr6 = &r->out.ctr.ctr6;
-	} else if (*r->out.level == 7 &&
-		   r->out.ctr.ctr7.level == 6 &&
-		   r->out.ctr.ctr7.type == DRSUAPI_COMPRESSION_TYPE_MSZIP &&
-		   r->out.ctr.ctr7.ctr.mszip6.ts) {
+		ctr6 = &r->out.ctr->ctr6;
+	} else if (*r->out.level_out == 7 &&
+		   r->out.ctr->ctr7.level == 6 &&
+		   r->out.ctr->ctr7.type == DRSUAPI_COMPRESSION_TYPE_MSZIP &&
+		   r->out.ctr->ctr7.ctr.mszip6.ts) {
 		ctr_level = 6;
-		ctr6 = &r->out.ctr.ctr7.ctr.mszip6.ts->ctr6;
-	} else if (*r->out.level == 7 &&
-		   r->out.ctr.ctr7.level == 6 &&
-		   r->out.ctr.ctr7.type == DRSUAPI_COMPRESSION_TYPE_XPRESS &&
-		   r->out.ctr.ctr7.ctr.xpress6.ts) {
+		ctr6 = &r->out.ctr->ctr7.ctr.mszip6.ts->ctr6;
+	} else if (*r->out.level_out == 7 &&
+		   r->out.ctr->ctr7.level == 6 &&
+		   r->out.ctr->ctr7.type == DRSUAPI_COMPRESSION_TYPE_XPRESS &&
+		   r->out.ctr->ctr7.ctr.xpress6.ts) {
 		ctr_level = 6;
-		ctr6 = &r->out.ctr.ctr7.ctr.xpress6.ts->ctr6;
+		ctr6 = &r->out.ctr->ctr7.ctr.xpress6.ts->ctr6;
 	} else {
 		return WERR_BAD_NET_RESP;
 	}

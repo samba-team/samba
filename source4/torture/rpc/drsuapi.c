@@ -525,6 +525,8 @@ static bool test_DsGetNCChanges(struct dcerpc_pipe *p, struct torture_context *t
 	bool ret = true;
 	int i;
 	struct drsuapi_DsGetNCChanges r;
+	union drsuapi_DsGetNCChangesRequest req;
+	union drsuapi_DsGetNCChangesCtr ctr;
 	struct drsuapi_DsReplicaObjectIdentifier nc;
 	struct GUID null_guid;
 	struct dom_sid null_sid;
@@ -553,30 +555,32 @@ static bool test_DsGetNCChanges(struct dcerpc_pipe *p, struct torture_context *t
 			array[i].level);
 
 		r.in.bind_handle	= &priv->bind_handle;
-		r.in.level		= &array[i].level;
-		r.out.level		= &level_out;
+		r.in.level		= array[i].level;
+		r.out.level_out		= &level_out;
+		r.out.ctr		= &ctr;
 
-		switch (*r.in.level) {
+		switch (r.in.level) {
 		case 5:
 			nc.guid	= null_guid;
 			nc.sid	= null_sid;
 			nc.dn	= priv->domain_obj_dn?priv->domain_obj_dn:"";
 
-			r.in.req.req5.destination_dsa_guid		= GUID_random();
-			r.in.req.req5.source_dsa_invocation_id		= null_guid;
-			r.in.req.req5.naming_context			= &nc;
-			r.in.req.req5.highwatermark.tmp_highest_usn	= 0;
-			r.in.req.req5.highwatermark.reserved_usn	= 0;
-			r.in.req.req5.highwatermark.highest_usn		= 0;
-			r.in.req.req5.uptodateness_vector		= NULL;
-			r.in.req.req5.replica_flags			= 0;
+			r.in.req					= &req;
+			r.in.req->req5.destination_dsa_guid		= GUID_random();
+			r.in.req->req5.source_dsa_invocation_id		= null_guid;
+			r.in.req->req5.naming_context			= &nc;
+			r.in.req->req5.highwatermark.tmp_highest_usn	= 0;
+			r.in.req->req5.highwatermark.reserved_usn	= 0;
+			r.in.req->req5.highwatermark.highest_usn	= 0;
+			r.in.req->req5.uptodateness_vector		= NULL;
+			r.in.req->req5.replica_flags			= 0;
 			if (lp_parm_bool(tctx->lp_ctx, NULL, "drsuapi","compression", false)) {
-				r.in.req.req5.replica_flags		|= DRSUAPI_DS_REPLICA_NEIGHBOUR_COMPRESS_CHANGES;
+				r.in.req->req5.replica_flags		|= DRSUAPI_DS_REPLICA_NEIGHBOUR_COMPRESS_CHANGES;
 			}
-			r.in.req.req5.max_object_count			= 0;
-			r.in.req.req5.max_ndr_size			= 0;
-			r.in.req.req5.extended_op			= DRSUAPI_EXOP_NONE;
-			r.in.req.req5.fsmo_info				= 0;
+			r.in.req->req5.max_object_count			= 0;
+			r.in.req->req5.max_ndr_size			= 0;
+			r.in.req->req5.extended_op			= DRSUAPI_EXOP_NONE;
+			r.in.req->req5.fsmo_info			= 0;
 
 			break;
 		case 8:
@@ -584,33 +588,34 @@ static bool test_DsGetNCChanges(struct dcerpc_pipe *p, struct torture_context *t
 			nc.sid	= null_sid;
 			nc.dn	= priv->domain_obj_dn?priv->domain_obj_dn:"";
 
-			r.in.req.req8.destination_dsa_guid		= GUID_random();
-			r.in.req.req8.source_dsa_invocation_id		= null_guid;
-			r.in.req.req8.naming_context			= &nc;
-			r.in.req.req8.highwatermark.tmp_highest_usn	= 0;
-			r.in.req.req8.highwatermark.reserved_usn	= 0;
-			r.in.req.req8.highwatermark.highest_usn		= 0;
-			r.in.req.req8.uptodateness_vector		= NULL;
-			r.in.req.req8.replica_flags			= 0;
+			r.in.req					= &req;
+			r.in.req->req8.destination_dsa_guid		= GUID_random();
+			r.in.req->req8.source_dsa_invocation_id		= null_guid;
+			r.in.req->req8.naming_context			= &nc;
+			r.in.req->req8.highwatermark.tmp_highest_usn	= 0;
+			r.in.req->req8.highwatermark.reserved_usn	= 0;
+			r.in.req->req8.highwatermark.highest_usn	= 0;
+			r.in.req->req8.uptodateness_vector		= NULL;
+			r.in.req->req8.replica_flags			= 0;
 			if (lp_parm_bool(tctx->lp_ctx, NULL, "drsuapi", "compression", false)) {
-				r.in.req.req8.replica_flags		|= DRSUAPI_DS_REPLICA_NEIGHBOUR_COMPRESS_CHANGES;
+				r.in.req->req8.replica_flags		|= DRSUAPI_DS_REPLICA_NEIGHBOUR_COMPRESS_CHANGES;
 			}
 			if (lp_parm_bool(tctx->lp_ctx, NULL, "drsuapi", "neighbour_writeable", true)) {
-				r.in.req.req8.replica_flags		|= DRSUAPI_DS_REPLICA_NEIGHBOUR_WRITEABLE;
+				r.in.req->req8.replica_flags		|= DRSUAPI_DS_REPLICA_NEIGHBOUR_WRITEABLE;
 			}
-			r.in.req.req8.replica_flags			|= DRSUAPI_DS_REPLICA_NEIGHBOUR_SYNC_ON_STARTUP
+			r.in.req->req8.replica_flags			|= DRSUAPI_DS_REPLICA_NEIGHBOUR_SYNC_ON_STARTUP
 									| DRSUAPI_DS_REPLICA_NEIGHBOUR_DO_SCHEDULED_SYNCS
 									| DRSUAPI_DS_REPLICA_NEIGHBOUR_RETURN_OBJECT_PARENTS
 									| DRSUAPI_DS_REPLICA_NEIGHBOUR_NEVER_SYNCED
 									;
-			r.in.req.req8.max_object_count			= 402;
-			r.in.req.req8.max_ndr_size			= 402116;
-			r.in.req.req8.extended_op			= DRSUAPI_EXOP_NONE;
-			r.in.req.req8.fsmo_info				= 0;
-			r.in.req.req8.partial_attribute_set		= NULL;
-			r.in.req.req8.partial_attribute_set_ex		= NULL;
-			r.in.req.req8.mapping_ctr.num_mappings		= 0;
-			r.in.req.req8.mapping_ctr.mappings		= NULL;
+			r.in.req->req8.max_object_count			= 402;
+			r.in.req->req8.max_ndr_size			= 402116;
+			r.in.req->req8.extended_op			= DRSUAPI_EXOP_NONE;
+			r.in.req->req8.fsmo_info			= 0;
+			r.in.req->req8.partial_attribute_set		= NULL;
+			r.in.req->req8.partial_attribute_set_ex		= NULL;
+			r.in.req->req8.mapping_ctr.num_mappings		= 0;
+			r.in.req->req8.mapping_ctr.mappings		= NULL;
 
 			break;
 		}
