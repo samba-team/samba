@@ -506,6 +506,7 @@ static bool test_DsGetNCChanges(struct dcerpc_pipe *p, struct torture_context *t
 	struct drsuapi_DsReplicaObjectIdentifier nc;
 	struct GUID null_guid;
 	struct dom_sid null_sid;
+	int32_t level_out;
 	struct {
 		int32_t level;
 	} array[] = {
@@ -531,6 +532,7 @@ static bool test_DsGetNCChanges(struct dcerpc_pipe *p, struct torture_context *t
 
 		r.in.bind_handle	= &priv->bind_handle;
 		r.in.level		= &array[i].level;
+		r.out.level		= &level_out;
 
 		switch (*r.in.level) {
 		case 5:
