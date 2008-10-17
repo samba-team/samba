@@ -337,11 +337,13 @@ WERROR dcesrv_drsuapi_DsCrackNames(struct dcesrv_call_state *dce_call, TALLOC_CT
 	struct drsuapi_bind_state *b_state;
 	struct dcesrv_handle *h;
 
-	r->out.level = r->in.level;
-	ZERO_STRUCT(r->out.ctr);
+	*r->out.level_out = r->in.level;
 
 	DCESRV_PULL_HANDLE_WERR(h, r->in.bind_handle, DRSUAPI_BIND_HANDLE);
 	b_state = h->data;
+
+	r->out.ctr = talloc_zero(mem_ctx, union drsuapi_DsNameCtr);
+	W_ERROR_HAVE_NO_MEMORY(r->out.ctr);
 
 	switch (r->in.level) {
 		case 1: {
@@ -353,16 +355,16 @@ WERROR dcesrv_drsuapi_DsCrackNames(struct dcesrv_call_state *dce_call, TALLOC_CT
 			ctr1 = talloc(mem_ctx, struct drsuapi_DsNameCtr1);
 			W_ERROR_HAVE_NO_MEMORY(ctr1);
 
-			count = r->in.req.req1.count;
+			count = r->in.req->req1.count;
 			names = talloc_array(mem_ctx, struct drsuapi_DsNameInfo1, count);
 			W_ERROR_HAVE_NO_MEMORY(names);
 
 			for (i=0; i < count; i++) {
 				status = DsCrackNameOneName(b_state->sam_ctx, mem_ctx,
-							    r->in.req.req1.format_flags,
-							    r->in.req.req1.format_offered,
-							    r->in.req.req1.format_desired,
-							    r->in.req.req1.names[i].str,
+							    r->in.req->req1.format_flags,
+							    r->in.req->req1.format_offered,
+							    r->in.req->req1.format_desired,
+							    r->in.req->req1.names[i].str,
 							    &names[i]);
 				if (!W_ERROR_IS_OK(status)) {
 					return status;
@@ -371,7 +373,7 @@ WERROR dcesrv_drsuapi_DsCrackNames(struct dcesrv_call_state *dce_call, TALLOC_CT
 
 			ctr1->count = count;
 			ctr1->array = names;
-			r->out.ctr.ctr1 = ctr1;
+			r->out.ctr->ctr1 = ctr1;
 
 			return WERR_OK;
 		}

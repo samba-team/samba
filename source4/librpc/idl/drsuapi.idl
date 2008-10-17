@@ -927,9 +927,10 @@ interface drsuapi
 
 	WERROR drsuapi_DsCrackNames(
 		[in] policy_handle *bind_handle,
-		[in, out] int32 level,
-		[in,switch_is(level)] drsuapi_DsNameRequest req,
-		[out,switch_is(level)] drsuapi_DsNameCtr ctr
+		[in] int32 level,
+		[in,ref,switch_is(level)] drsuapi_DsNameRequest *req,
+		[out,ref] int32 *level_out,
+		[out,ref,switch_is(*level_out)] drsuapi_DsNameCtr *ctr
 		);
 
 	/*****************/

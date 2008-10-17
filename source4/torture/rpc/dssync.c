@@ -265,6 +265,9 @@ static bool test_GetInfo(struct torture_context *tctx, struct DsSyncTest *ctx)
 {
 	NTSTATUS status;
 	struct drsuapi_DsCrackNames r;
+	union drsuapi_DsNameRequest req;
+	union drsuapi_DsNameCtr ctr;
+	int32_t level_out = 0;
 	struct drsuapi_DsNameString names[1];
 	bool ret = true;
 	struct cldap_socket *cldap;
@@ -274,14 +277,18 @@ static bool test_GetInfo(struct torture_context *tctx, struct DsSyncTest *ctx)
 
 	r.in.bind_handle		= &ctx->admin.drsuapi.bind_handle;
 	r.in.level			= 1;
-	r.in.req.req1.codepage		= 1252; /* western european */
-	r.in.req.req1.language		= 0x00000407; /* german */
-	r.in.req.req1.count		= 1;
-	r.in.req.req1.names		= names;
-	r.in.req.req1.format_flags	= DRSUAPI_DS_NAME_FLAG_NO_FLAGS;		
-	r.in.req.req1.format_offered	= DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT;
-	r.in.req.req1.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779;
+	r.in.req			= &req;
+	r.in.req->req1.codepage		= 1252; /* western european */
+	r.in.req->req1.language		= 0x00000407; /* german */
+	r.in.req->req1.count		= 1;
+	r.in.req->req1.names		= names;
+	r.in.req->req1.format_flags	= DRSUAPI_DS_NAME_FLAG_NO_FLAGS;
+	r.in.req->req1.format_offered	= DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT;
+	r.in.req->req1.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779;
 	names[0].str = talloc_asprintf(ctx, "%s\\", lp_workgroup(tctx->lp_ctx));
+
+	r.out.level_out			= &level_out;
+	r.out.ctr			= &ctr;
 
 	status = dcerpc_drsuapi_DsCrackNames(ctx->admin.drsuapi.pipe, ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -296,7 +303,7 @@ static bool test_GetInfo(struct torture_context *tctx, struct DsSyncTest *ctx)
 		return false;
 	}
 
-	ctx->domain_dn = r.out.ctr.ctr1->array[0].result_name;
+	ctx->domain_dn = r.out.ctr->ctr1->array[0].result_name;
 	
 	ZERO_STRUCT(search);
 	search.in.dest_address = ctx->drsuapi_binding->host;
