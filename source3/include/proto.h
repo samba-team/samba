@@ -1232,10 +1232,10 @@ const char *tmpdir(void);
 bool add_gid_to_array_unique(TALLOC_CTX *mem_ctx, gid_t gid,
 			     gid_t **gids, size_t *num_gids);
 const char *get_numlist(const char *p, uint32 **num, int *count);
-bool file_exist(const char *fname,SMB_STRUCT_STAT *sbuf);
+bool file_exist_stat(const char *fname,SMB_STRUCT_STAT *sbuf);
 bool socket_exist(const char *fname);
 time_t file_modtime(const char *fname);
-bool directory_exist(char *dname,SMB_STRUCT_STAT *st);
+bool directory_exist_stat(char *dname,SMB_STRUCT_STAT *st);
 SMB_OFF_T get_file_size(char *file_name);
 char *attrib_string(uint16 mode);
 void show_msg(char *buf);
@@ -1263,7 +1263,7 @@ void add_to_large_array(TALLOC_CTX *mem_ctx, size_t element_size,
 			void *element, void *_array, uint32 *num_elements,
 			ssize_t *array_size);
 void safe_free(void *p);
-char *get_myname(TALLOC_CTX *ctx);
+char *get_myname_talloc(TALLOC_CTX *ctx);
 char *get_mydnsdomname(TALLOC_CTX *ctx);
 int interpret_protocol(const char *str,int def);
 char *automount_lookup(TALLOC_CTX *ctx, const char *user_name);

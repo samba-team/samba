@@ -18,6 +18,7 @@ LIBSAMBA-UTIL_OBJ_FILES = $(addprefix $(libutilsrcdir)/, \
 		util_file.o \
 		data_blob.o \
 		util.o \
+		util_net.o \
 		fsusage.o \
 		ms_fnmatch.o \
 		mutex.o \

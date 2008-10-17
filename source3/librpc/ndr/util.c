@@ -155,20 +155,6 @@ void ndr_print_server_id(struct ndr_print *ndr, const char *name, const struct s
 	ndr->depth--;
 }
 
-/**
- * see if a range of memory is all zero. A NULL pointer is considered
- * to be all zero 
- */
-bool all_zero(const uint8_t *ptr, size_t size)
- {
-	int i;
-	if (!ptr) return True;
-	for (i=0;i<size;i++) {
-		if (ptr[i]) return False;
-	}
-	return True;
-}
-
 _PUBLIC_ void ndr_print_bool(struct ndr_print *ndr, const char *name, const bool b)
 {
 	ndr->print(ndr, "%-25s: %s", name, b?"true":"false");

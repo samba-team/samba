@@ -25,6 +25,10 @@
 #include "system/network.h"
 #include "system/filesys.h"
 #include "system/locale.h"
+#undef malloc
+#undef strcasecmp
+#undef strdup
+#undef realloc
 
 /**
  * @file
@@ -217,112 +221,10 @@ _PUBLIC_ char *get_myname(void)
 }
 
 /**
- Return true if a string could be a pure IP address.
-**/
-
-_PUBLIC_ bool is_ipaddress(const char *str)
-{
-	bool pure_address = true;
-	int i;
-
-	if (str == NULL) return false;
-
-	for (i=0; pure_address && str[i]; i++)
-		if (!(isdigit((int)str[i]) || str[i] == '.'))
-			pure_address = false;
-
-	/* Check that a pure number is not misinterpreted as an IP */
-	pure_address = pure_address && (strchr(str, '.') != NULL);
-
-	return pure_address;
-}
-
-/**
- Interpret an internet address or name into an IP address in 4 byte form.
-**/
-_PUBLIC_ uint32_t interpret_addr(const char *str)
-{
-	struct hostent *hp;
-	uint32_t res;
-
-	if (str == NULL || *str == 0 ||
-	    strcmp(str,"0.0.0.0") == 0) {
-		return 0;
-	}
-	if (strcmp(str,"255.255.255.255") == 0) {
-		return 0xFFFFFFFF;
-	}
-	/* recognise 'localhost' as a special name. This fixes problems with
-	   some hosts that don't have localhost in /etc/hosts */
-	if (strcasecmp(str,"localhost") == 0) {
-		str = "127.0.0.1";
-	}
-
-	/* if it's in the form of an IP address then get the lib to interpret it */
-	if (is_ipaddress(str)) {
-		res = inet_addr(str);
-	} else {
-		/* otherwise assume it's a network name of some sort and use 
-			sys_gethostbyname */
-		if ((hp = sys_gethostbyname(str)) == 0) {
-			DEBUG(3,("sys_gethostbyname: Unknown host. %s\n",str));
-			return 0;
-		}
-
-		if(hp->h_addr == NULL) {
-			DEBUG(3,("sys_gethostbyname: host address is invalid for host %s\n",str));
-			return 0;
-		}
-		memcpy((char *)&res,(char *)hp->h_addr, 4);
-	}
-
-	if (res == (uint32_t)-1)
-		return(0);
-
-	return(res);
-}
-
-/**
- A convenient addition to interpret_addr().
-**/
-_PUBLIC_ struct in_addr interpret_addr2(const char *str)
-{
-	struct in_addr ret;
-	uint32_t a = interpret_addr(str);
-	ret.s_addr = a;
-	return ret;
-}
-
-/**
- Check if an IP is the 0.0.0.0.
-**/
-
-_PUBLIC_ bool is_zero_ip(struct in_addr ip)
-{
-	return ip.s_addr == 0;
-}
-
-/**
- Are two IPs on the same subnet?
-**/
-
-_PUBLIC_ bool same_net(struct in_addr ip1, struct in_addr ip2, struct in_addr mask)
-{
-	uint32_t net1,net2,nmask;
-
-	nmask = ntohl(mask.s_addr);
-	net1  = ntohl(ip1.s_addr);
-	net2  = ntohl(ip2.s_addr);
-            
-	return((net1 & nmask) == (net2 & nmask));
-}
-
-
-/**
  Check if a process exists. Does this work on all unixes?
 **/
 
-_PUBLIC_ bool process_exists(pid_t pid)
+_PUBLIC_ bool process_exists_by_pid(pid_t pid)
 {
 	/* Doing kill with a non-positive pid causes messages to be
 	 * sent to places we don't want. */
@@ -381,7 +283,7 @@ _PUBLIC_ bool fcntl_lock(int fd, int op, off_t offset, off_t count, int type)
 }
 
 
-static void print_asc(int level, const uint8_t *buf,int len)
+void print_asc(int level, const uint8_t *buf,int len)
 {
 	int i;
 	for (i=0;i<len;i++)
@@ -509,13 +411,62 @@ _PUBLIC_ void *smb_xmemdup(const void *p, size_t size)
  strdup that aborts on malloc fail.
 **/
 
-_PUBLIC_ char *smb_xstrdup(const char *s)
+char *smb_xstrdup(const char *s)
 {
+#if defined(PARANOID_MALLOC_CHECKER)
+#ifdef strdup
+#undef strdup
+#endif
+#endif
+
+#ifndef HAVE_STRDUP
+#define strdup rep_strdup
+#endif
+
 	char *s1 = strdup(s);
-	if (!s1)
-		smb_panic("smb_xstrdup: malloc fail\n");
+#if defined(PARANOID_MALLOC_CHECKER)
+#ifdef strdup
+#undef strdup
+#endif
+#define strdup(s) __ERROR_DONT_USE_STRDUP_DIRECTLY
+#endif
+	if (!s1) {
+		smb_panic("smb_xstrdup: malloc failed");
+	}
+	return s1;
+
+}
+
+/**
+ strndup that aborts on malloc fail.
+**/
+
+char *smb_xstrndup(const char *s, size_t n)
+{
+#if defined(PARANOID_MALLOC_CHECKER)
+#ifdef strndup
+#undef strndup
+#endif
+#endif
+
+#if (defined(BROKEN_STRNDUP) || !defined(HAVE_STRNDUP))
+#undef HAVE_STRNDUP
+#define strndup rep_strndup
+#endif
+
+	char *s1 = strndup(s, n);
+#if defined(PARANOID_MALLOC_CHECKER)
+#ifdef strndup
+#undef strndup
+#endif
+#define strndup(s,n) __ERROR_DONT_USE_STRNDUP_DIRECTLY
+#endif
+	if (!s1) {
+		smb_panic("smb_xstrndup: malloc failed");
+	}
 	return s1;
 }
+
 
 
 /**

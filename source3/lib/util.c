@@ -439,19 +439,6 @@ bool set_cmdline_auth_info_machine_account_creds(void)
 	return true;
 }
 
-/**************************************************************************n
- Find a suitable temporary directory. The result should be copied immediately
- as it may be overwritten by a subsequent call.
-****************************************************************************/
-
-const char *tmpdir(void)
-{
-	char *p;
-	if ((p = getenv("TMPDIR")))
-		return p;
-	return "/tmp";
-}
-
 /****************************************************************************
  Add a gid to an array of gids if it's not already there.
 ****************************************************************************/
@@ -540,7 +527,7 @@ const char *get_numlist(const char *p, uint32 **num, int *count)
  Check if a file exists - call vfs_file_exist for samba files.
 ********************************************************************/
 
-bool file_exist(const char *fname,SMB_STRUCT_STAT *sbuf)
+bool file_exist_stat(const char *fname,SMB_STRUCT_STAT *sbuf)
 {
 	SMB_STRUCT_STAT st;
 	if (!sbuf)
@@ -566,24 +553,10 @@ bool socket_exist(const char *fname)
 }
 
 /*******************************************************************
- Check a files mod time.
-********************************************************************/
-
-time_t file_modtime(const char *fname)
-{
-	SMB_STRUCT_STAT st;
-  
-	if (sys_stat(fname,&st) != 0) 
-		return(0);
-
-	return(st.st_mtime);
-}
-
-/*******************************************************************
  Check if a directory exists.
 ********************************************************************/
 
-bool directory_exist(char *dname,SMB_STRUCT_STAT *st)
+bool directory_exist_stat(char *dname,SMB_STRUCT_STAT *st)
 {
 	SMB_STRUCT_STAT st2;
 	bool ret;
@@ -925,36 +898,6 @@ ssize_t write_data_at_offset(int fd, const char *buffer, size_t N, SMB_OFF_T pos
 	}
 	return write_data(fd, buffer, N);
 #endif
-}
-
-/****************************************************************************
- Set a fd into blocking/nonblocking mode. Uses POSIX O_NONBLOCK if available,
- else
-  if SYSV use O_NDELAY
-  if BSD use FNDELAY
-****************************************************************************/
-
-int set_blocking(int fd, bool set)
-{
-	int val;
-#ifdef O_NONBLOCK
-#define FLAG_TO_SET O_NONBLOCK
-#else
-#ifdef SYSV
-#define FLAG_TO_SET O_NDELAY
-#else /* BSD */
-#define FLAG_TO_SET FNDELAY
-#endif
-#endif
-
-	if((val = sys_fcntl_long(fd, F_GETFL, 0)) == -1)
-		return -1;
-	if(set) /* Turn blocking on - ie. clear nonblock flag */
-		val &= ~FLAG_TO_SET;
-	else
-		val |= FLAG_TO_SET;
-	return sys_fcntl_long( fd, F_SETFL, val);
-#undef FLAG_TO_SET
 }
 
 /*******************************************************************
@@ -1334,7 +1277,7 @@ void safe_free(void *p)
  Get my own name and IP.
 ****************************************************************************/
 
-char *get_myname(TALLOC_CTX *ctx)
+char *talloc_get_myname(TALLOC_CTX *ctx)
 {
 	char *p;
 	char hostname[HOST_NAME_MAX];
@@ -1547,14 +1490,6 @@ bool process_exists(const struct server_id pid)
 #else
 	return False;
 #endif
-}
-
-bool process_exists_by_pid(pid_t pid)
-{
-	/* Doing kill with a non-positive pid causes messages to be
-	 * sent to places we don't want. */
-	SMB_ASSERT(pid > 0);
-	return(kill(pid,0) == 0 || errno != ESRCH);
 }
 
 /*******************************************************************
@@ -2003,42 +1938,6 @@ void free_namearray(name_compare_entry *name_array)
 #define DBGC_CLASS DBGC_LOCKING
 
 /****************************************************************************
- Simple routine to do POSIX file locking. Cruft in NFS and 64->32 bit mapping
- is dealt with in posix.c
- Returns True if the lock was granted, False otherwise.
-****************************************************************************/
-
-bool fcntl_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
-{
-	SMB_STRUCT_FLOCK lock;
-	int ret;
-
-	DEBUG(8,("fcntl_lock fd=%d op=%d offset=%.0f count=%.0f type=%d\n",
-		fd,op,(double)offset,(double)count,type));
-
-	lock.l_type = type;
-	lock.l_whence = SEEK_SET;
-	lock.l_start = offset;
-	lock.l_len = count;
-	lock.l_pid = 0;
-
-	ret = sys_fcntl_ptr(fd,op,&lock);
-
-	if (ret == -1) {
-		int sav = errno;
-		DEBUG(3,("fcntl_lock: lock failed at offset %.0f count %.0f op %d type %d (%s)\n",
-			(double)offset,(double)count,op,type,strerror(errno)));
-		errno = sav;
-		return False;
-	}
-
-	/* everything went OK */
-	DEBUG(8,("fcntl_lock: Lock call successful\n"));
-
-	return True;
-}
-
-/****************************************************************************
  Simple routine to query existing file locks. Cruft in NFS and 64->32 bit mapping
  is dealt with in posix.c
  Returns True if we have information regarding this lock region (and returns
@@ -2210,116 +2109,6 @@ enum remote_arch_types get_remote_arch(void)
 	return ra_type;
 }
 
-void print_asc(int level, const unsigned char *buf,int len)
-{
-	int i;
-	for (i=0;i<len;i++)
-		DEBUG(level,("%c", isprint(buf[i])?buf[i]:'.'));
-}
-
-/**
- * Write dump of binary data to the log file.
- *
- * The data is only written if the log level is at least level.
- */
-static void _dump_data(int level, const uint8_t *buf, int len,
-		       bool omit_zero_bytes)
-{
-	int i=0;
-	const uint8_t empty[16];
-	bool skipped = false;
-
-	if (len<=0) return;
-
-	if (!DEBUGLVL(level)) return;
-
-	memset(&empty, '\0', 16);
-
-	for (i=0;i<len;) {
-
-		if (i%16 == 0) {
-			if ((omit_zero_bytes == true) &&
-			    (i > 0) &&
-			    (len > i+16) &&
-			    (memcmp(&buf[i], &empty, 16) == 0))
-			{
-				i +=16;
-				continue;
-			}
-
-			if (i<len)  {
-				DEBUGADD(level,("[%04X] ",i));
-			}
-		}
-
-		DEBUGADD(level,("%02X ",(int)buf[i]));
-		i++;
-		if (i%8 == 0) DEBUGADD(level,("  "));
-		if (i%16 == 0) {
-
-			print_asc(level,&buf[i-16],8); DEBUGADD(level,(" "));
-			print_asc(level,&buf[i-8],8); DEBUGADD(level,("\n"));
-
-			if ((omit_zero_bytes == true) &&
-			    (len > i+16) &&
-			    (memcmp(&buf[i], &empty, 16) == 0)) {
-				if (!skipped) {
-					DEBUGADD(level,("skipping zero buffer bytes\n"));
-					skipped = true;
-				}
-			}
-		}
-	}
-
-	if (i%16) {
-		int n;
-		n = 16 - (i%16);
-		DEBUGADD(level,(" "));
-		if (n>8) DEBUGADD(level,(" "));
-		while (n--) DEBUGADD(level,("   "));
-		n = MIN(8,i%16);
-		print_asc(level,&buf[i-(i%16)],n); DEBUGADD(level,( " " ));
-		n = (i%16) - n;
-		if (n>0) print_asc(level,&buf[i-n],n);
-		DEBUGADD(level,("\n"));
-	}
-
-}
-
-/**
- * Write dump of binary data to the log file.
- *
- * The data is only written if the log level is at least level.
- */
-_PUBLIC_ void dump_data(int level, const uint8_t *buf, int len)
-{
-	_dump_data(level, buf, len, false);
-}
-
-/**
- * Write dump of binary data to the log file.
- *
- * The data is only written if the log level is at least level.
- * 16 zero bytes in a row are ommited
- */
-_PUBLIC_ void dump_data_skip_zeros(int level, const uint8_t *buf, int len)
-{
-	_dump_data(level, buf, len, true);
-}
-
-
-
-void dump_data_pw(const char *msg, const uchar * data, size_t len)
-{
-#ifdef DEBUG_PASSWORD
-	DEBUG(11, ("%s", msg));
-	if (data != NULL && len > 0)
-	{
-		dump_data(11, data, len);
-	}
-#endif
-}
-
 const char *tab_depth(int level, int depth)
 {
 	if( CHECK_DEBUGLVL(level) ) {
@@ -2484,78 +2273,6 @@ void *smb_xmalloc_array(size_t size, unsigned int count)
 	return p;
 }
 
-/**
- Memdup with smb_panic on fail.
-**/
-
-void *smb_xmemdup(const void *p, size_t size)
-{
-	void *p2;
-	p2 = SMB_XMALLOC_ARRAY(unsigned char,size);
-	memcpy(p2, p, size);
-	return p2;
-}
-
-/**
- strdup that aborts on malloc fail.
-**/
-
-char *smb_xstrdup(const char *s)
-{
-#if defined(PARANOID_MALLOC_CHECKER)
-#ifdef strdup
-#undef strdup
-#endif
-#endif
-
-#ifndef HAVE_STRDUP
-#define strdup rep_strdup
-#endif
-
-	char *s1 = strdup(s);
-#if defined(PARANOID_MALLOC_CHECKER)
-#ifdef strdup
-#undef strdup
-#endif
-#define strdup(s) __ERROR_DONT_USE_STRDUP_DIRECTLY
-#endif
-	if (!s1) {
-		smb_panic("smb_xstrdup: malloc failed");
-	}
-	return s1;
-
-}
-
-/**
- strndup that aborts on malloc fail.
-**/
-
-char *smb_xstrndup(const char *s, size_t n)
-{
-#if defined(PARANOID_MALLOC_CHECKER)
-#ifdef strndup
-#undef strndup
-#endif
-#endif
-
-#if (defined(BROKEN_STRNDUP) || !defined(HAVE_STRNDUP))
-#undef HAVE_STRNDUP
-#define strndup rep_strndup
-#endif
-
-	char *s1 = strndup(s, n);
-#if defined(PARANOID_MALLOC_CHECKER)
-#ifdef strndup
-#undef strndup
-#endif
-#define strndup(s,n) __ERROR_DONT_USE_STRNDUP_DIRECTLY
-#endif
-	if (!s1) {
-		smb_panic("smb_xstrndup: malloc failed");
-	}
-	return s1;
-}
-
 /*
   vasprintf that aborts on malloc fail
 */
@@ -2576,22 +2293,6 @@ char *smb_xstrndup(const char *s, size_t n)
 }
 
 /*****************************************************************
- Like strdup but for memory.
-*****************************************************************/
-
-void *memdup(const void *p, size_t size)
-{
-	void *p2;
-	if (size == 0)
-		return NULL;
-	p2 = SMB_MALLOC(size);
-	if (!p2)
-		return NULL;
-	memcpy(p2, p, size);
-	return p2;
-}
-
-/*****************************************************************
  Get local hostname and cache result.
 *****************************************************************/
 
@@ -2601,7 +2302,7 @@ char *myhostname(void)
 	if (ret == NULL) {
 		/* This is cached forever so
 		 * use NULL talloc ctx. */
-		ret = get_myname(NULL);
+		ret = talloc_get_myname(NULL);
 	}
 	return ret;
 }
@@ -2620,7 +2321,7 @@ static char *xx_path(const char *name, const char *rootpath)
 	}
 	trim_string(fname,"","/");
 
-	if (!directory_exist(fname,NULL)) {
+	if (!directory_exist_stat(fname,NULL)) {
 		mkdir(fname,0755);
 	}
 
@@ -3028,25 +2729,6 @@ bool name_to_fqdn(fstring fqdn, const char *name)
 	DEBUG(10,("name_to_fqdn: lookup for %s -> %s.\n", name, full));
 	fstrcpy(fqdn, full);
 	return true;
-}
-
-/**********************************************************************
- Extension to talloc_get_type: Abort on type mismatch
-***********************************************************************/
-
-void *talloc_check_name_abort(const void *ptr, const char *name)
-{
-	void *result;
-
-	result = talloc_check_name(ptr, name);
-	if (result != NULL)
-		return result;
-
-	DEBUG(0, ("Talloc type mismatch, expected %s, got %s\n",
-		  name, talloc_get_name(ptr)));
-	smb_panic("talloc type mismatch");
-	/* Keep the compiler happy */
-	return NULL;
 }
 
 /**********************************************************************
