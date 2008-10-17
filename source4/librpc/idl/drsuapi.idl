@@ -989,9 +989,10 @@ interface drsuapi
 
 	WERROR drsuapi_DsRemoveDSServer(
 		[in] policy_handle *bind_handle,
-		[in,out] int32 level,
-		[in,switch_is(level)] drsuapi_DsRemoveDSServerRequest req,
-		[out,switch_is(level)] drsuapi_DsRemoveDSServerResult res
+		[in] int32 level,
+		[in,ref,switch_is(level)] drsuapi_DsRemoveDSServerRequest *req,
+		[out,ref] int32 *level_out,
+		[out,ref,switch_is(*level_out)] drsuapi_DsRemoveDSServerResult *res
 		);
 
 	/*****************/
