@@ -527,10 +527,6 @@ int ldb_request(struct ldb_context *ldb, struct ldb_request *req)
 		FIRST_OP(ldb, extended);
 		ret = module->ops->extended(module, req);
 		break;
-	case LDB_SEQUENCE_NUMBER:
-		FIRST_OP(ldb, sequence_number);
-		ret = module->ops->sequence_number(module, req);
-		break;
 	default:
 		FIRST_OP(ldb, request);
 		ret = module->ops->request(module, req);
@@ -1172,34 +1168,46 @@ int ldb_rename(struct ldb_context *ldb,
 int ldb_sequence_number(struct ldb_context *ldb,
 			enum ldb_sequence_type type, uint64_t *seq_num)
 {
-	struct ldb_request *req;
+	struct ldb_seqnum_request *seq;
+	struct ldb_seqnum_result *seqr;
+	struct ldb_result *res;
+	TALLOC_CTX *tmp_ctx;
 	int ret;
 
-	req = talloc_zero(ldb, struct ldb_request);
-	if (req == NULL) {
+	*seq_num = 0;
+
+	tmp_ctx = talloc_zero(ldb, struct ldb_request);
+	if (tmp_ctx == NULL) {
 		ldb_set_errstring(ldb, "Out of Memory");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-
-	req->operation = LDB_SEQUENCE_NUMBER;
-	req->controls = NULL;
-	req->context = NULL;
-	req->callback = ldb_op_default_callback;
-	ldb_set_timeout(ldb, req, 0); /* use default timeout */
-
-	req->op.seq_num.type = type;
-	/* do request and autostart a transaction */
-	ret = ldb_request(ldb, req);
-
-	if (ret == LDB_SUCCESS) {
-		*seq_num = req->op.seq_num.seq_num;
+	seq = talloc_zero(tmp_ctx, struct ldb_seqnum_request);
+	if (seq == NULL) {
+		ldb_set_errstring(ldb, "Out of Memory");
+		ret = LDB_ERR_OPERATIONS_ERROR;
+		goto done;
 	}
+	seq->type = type;
 
-	talloc_free(req);
+	ret = ldb_extended(ldb, LDB_EXTENDED_SEQUENCE_NUMBER, seq, &res);
+	if (ret != LDB_SUCCESS) {
+		goto done;
+	}
+	talloc_steal(tmp_ctx, res);
+
+	if (strcmp(LDB_EXTENDED_SEQUENCE_NUMBER, res->extended->oid) != 0) {
+		ldb_set_errstring(ldb, "Invalid OID in reply");
+		ret = LDB_ERR_OPERATIONS_ERROR;
+		goto done;
+	}
+	seqr = talloc_get_type(res->extended->data,
+				struct ldb_seqnum_result);
+	*seq_num = seqr->seq_num;
+
+done:
+	talloc_free(tmp_ctx);
 	return ret;
 }
-
-
 
 /*
   return extended error information

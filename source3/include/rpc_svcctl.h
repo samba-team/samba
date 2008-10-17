@@ -142,18 +142,6 @@ typedef struct {
 } ENUM_SERVICES_STATUS;
 
 typedef struct {
-	uint32 service_type;
-	uint32 start_type;
-	uint32 error_control;
-	UNISTR2 *executablepath;
-	UNISTR2 *loadordergroup;
-	uint32 tag_id;
-	UNISTR2 *dependencies;
-	UNISTR2 *startname;
-	UNISTR2 *displayname;
-} SERVICE_CONFIG;
-
-typedef struct {
 	uint32 unknown;	
         UNISTR description;
 } SERVICE_DESCRIPTION;
@@ -211,20 +199,6 @@ typedef struct {
 	uint32 *resume;
 	WERROR status;
 } SVCCTL_R_ENUM_SERVICES_STATUS;
-
-/**************************/
-
-typedef struct {
-	POLICY_HND handle;
-	uint32 buffer_size;
-} SVCCTL_Q_QUERY_SERVICE_CONFIG;
-
-typedef struct {
-	SERVICE_CONFIG config;
-	uint32 needed;
-	WERROR status;
-} SVCCTL_R_QUERY_SERVICE_CONFIG;
-
 
 /**************************/
 

@@ -7172,8 +7172,6 @@ WERROR rpccli_spoolss_rffpcnex(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 WERROR rpccli_svcctl_enumerate_services( struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
                                       POLICY_HND *hSCM, uint32 type, uint32 state, 
 				      uint32 *returned, ENUM_SERVICES_STATUS **service_array  );
-WERROR rpccli_svcctl_query_config(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-                                POLICY_HND *hService, SERVICE_CONFIG *config );
 
 /* The following definitions come from rpc_client/init_lsa.c  */
 
@@ -8166,11 +8164,8 @@ bool convert_port_data_1( NT_PORT_DATA_1 *port1, RPC_BUFFER *buf ) ;
 bool svcctl_io_enum_services_status( const char *desc, ENUM_SERVICES_STATUS *enum_status, RPC_BUFFER *buffer, int depth );
 bool svcctl_io_service_status_process( const char *desc, SERVICE_STATUS_PROCESS *status, RPC_BUFFER *buffer, int depth );
 uint32 svcctl_sizeof_enum_services_status( ENUM_SERVICES_STATUS *status );
-uint32 svcctl_sizeof_service_config( SERVICE_CONFIG *config );
 bool svcctl_io_q_enum_services_status(const char *desc, SVCCTL_Q_ENUM_SERVICES_STATUS *q_u, prs_struct *ps, int depth);
 bool svcctl_io_r_enum_services_status(const char *desc, SVCCTL_R_ENUM_SERVICES_STATUS *r_u, prs_struct *ps, int depth);
-bool svcctl_io_q_query_service_config(const char *desc, SVCCTL_Q_QUERY_SERVICE_CONFIG *q_u, prs_struct *ps, int depth);
-bool svcctl_io_r_query_service_config(const char *desc, SVCCTL_R_QUERY_SERVICE_CONFIG *r_u, prs_struct *ps, int depth);
 bool svcctl_io_q_query_service_config2(const char *desc, SVCCTL_Q_QUERY_SERVICE_CONFIG2 *q_u, prs_struct *ps, int depth);
 void init_service_description_buffer(SERVICE_DESCRIPTION *desc, const char *service_desc );
 bool svcctl_io_service_description( const char *desc, SERVICE_DESCRIPTION *description, RPC_BUFFER *buffer, int depth );
@@ -9096,7 +9091,6 @@ WERROR _svcctl_ControlService(pipes_struct *p,
 WERROR _svcctl_EnumDependentServicesW(pipes_struct *p,
 				      struct svcctl_EnumDependentServicesW *r);
 WERROR _svcctl_query_service_status_ex( pipes_struct *p, SVCCTL_Q_QUERY_SERVICE_STATUSEX *q_u, SVCCTL_R_QUERY_SERVICE_STATUSEX *r_u );
-WERROR _svcctl_query_service_config( pipes_struct *p, SVCCTL_Q_QUERY_SERVICE_CONFIG *q_u, SVCCTL_R_QUERY_SERVICE_CONFIG *r_u );
 WERROR _svcctl_query_service_config2( pipes_struct *p, SVCCTL_Q_QUERY_SERVICE_CONFIG2 *q_u, SVCCTL_R_QUERY_SERVICE_CONFIG2 *r_u );
 WERROR _svcctl_LockServiceDatabase(pipes_struct *p,
 				   struct svcctl_LockServiceDatabase *r);

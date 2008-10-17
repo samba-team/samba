@@ -1044,6 +1044,29 @@ interface drsuapi
 		[size_is(count)] drsuapi_DsGetDCInfo2 *array;
 	} drsuapi_DsGetDCInfoCtr2;
 
+	typedef struct {
+		[charset(UTF16),string] uint16 *netbios_name;
+		[charset(UTF16),string] uint16 *dns_name;
+		[charset(UTF16),string] uint16 *site_name;
+		[charset(UTF16),string] uint16 *site_dn;
+		[charset(UTF16),string] uint16 *computer_dn;
+		[charset(UTF16),string] uint16 *server_dn;
+		[charset(UTF16),string] uint16 *ntds_dn;
+		uint32 is_pdc;
+		uint32 is_enabled;
+		uint32 is_gc;
+		uint32 is_rodc;
+		GUID site_guid;
+		GUID computer_guid;
+		GUID server_guid;
+		GUID ntds_guid;
+	} drsuapi_DsGetDCInfo3;
+
+	typedef struct {
+		[range(0,10000)] uint32 count;
+		[size_is(count)] drsuapi_DsGetDCInfo3 *array;
+	} drsuapi_DsGetDCInfoCtr3;
+
 	/*
 	 * this represents an active connection to the
 	 * Directory System Agent (DSA)
@@ -1075,12 +1098,14 @@ interface drsuapi
 	typedef [v1_enum] enum {
 		DRSUAPI_DC_INFO_CTR_1  = 1,
 		DRSUAPI_DC_INFO_CTR_2  = 2,
+		DRSUAPI_DC_INFO_CTR_3  = 3,
 		DRSUAPI_DC_CONNECTION_CTR_01 = -1
 	} drsuapi_DsGetDCInfoCtrLevels;
 
         typedef [switch_type(int32)] union {
 		[case(DRSUAPI_DC_INFO_CTR_1)]  drsuapi_DsGetDCInfoCtr1  ctr1;
 		[case(DRSUAPI_DC_INFO_CTR_2)]  drsuapi_DsGetDCInfoCtr2  ctr2;
+		[case(DRSUAPI_DC_INFO_CTR_3)]  drsuapi_DsGetDCInfoCtr3  ctr3;
 		[case(DRSUAPI_DC_CONNECTION_CTR_01)] drsuapi_DsGetDCConnectionCtr01 ctr01;
 	} drsuapi_DsGetDCInfoCtr;
 

@@ -539,17 +539,24 @@ static NTSTATUS libnet_dssync_getncchanges(TALLOC_CTX *mem_ctx,
 		if (level_out == 1) {
 			out_level = 1;
 			ctr1 = &ctr.ctr1;
-		} else if (level_out == 2) {
+		} else if (level_out == 2 && ctr.ctr2.mszip1.ts) {
 			out_level = 1;
-			ctr1 = ctr.ctr2.ctr.mszip1.ctr1;
+			ctr1 = &ctr.ctr2.mszip1.ts->ctr1;
 		} else if (level_out == 6) {
 			out_level = 6;
 			ctr6 = &ctr.ctr6;
 		} else if (level_out == 7
 			   && ctr.ctr7.level == 6
-			   && ctr.ctr7.type == DRSUAPI_COMPRESSION_TYPE_MSZIP) {
+			   && ctr.ctr7.type == DRSUAPI_COMPRESSION_TYPE_MSZIP
+			   && ctr.ctr7.ctr.mszip6.ts) {
 			out_level = 6;
-			ctr6 = ctr.ctr7.ctr.mszip6.ctr6;
+			ctr6 = &ctr.ctr7.ctr.mszip6.ts->ctr6;
+		} else if (level_out == 7
+			   && ctr.ctr7.level == 6
+			   && ctr.ctr7.type == DRSUAPI_COMPRESSION_TYPE_XPRESS
+			   && ctr.ctr7.ctr.xpress6.ts) {
+			out_level = 6;
+			ctr6 = &ctr.ctr7.ctr.xpress6.ts->ctr6;
 		}
 
 		if (out_level == 1) {

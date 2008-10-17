@@ -194,7 +194,7 @@ static int objectguid_add(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	/* Get a sequence number from the backend */
-	/* FIXME: ldb_sequence_number is still SYNC now, when this changes,
+	/* FIXME: ldb_sequence_number is a semi-async call,
 	 * make sure this function is split and a callback is used */
 	ret = ldb_sequence_number(module->ldb, LDB_SEQ_NEXT, &seq_num);
 	if (ret == LDB_SUCCESS) {

@@ -112,6 +112,8 @@ int ltdb_filter_attrs(struct ldb_message *msg, const char * const *attrs);
 int ltdb_search(struct ltdb_context *ctx);
 
 /* The following definitions come from lib/ldb/ldb_tdb/ldb_tdb.c  */
+int ltdb_lock_read(struct ldb_module *module);
+int ltdb_unlock_read(struct ldb_module *module);
 struct TDB_DATA ltdb_key(struct ldb_module *module, struct ldb_dn *dn);
 int ltdb_store(struct ldb_module *module, const struct ldb_message *msg, int flgs);
 int ltdb_delete_noindex(struct ldb_module *module, struct ldb_dn *dn);
