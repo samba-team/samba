@@ -807,7 +807,7 @@ interface drsuapi
 		[case(1)] drsuapi_DsGetMembershipsRequest1 req1;
 	} drsuapi_DsGetMembershipsRequest;
 
-	WERROR drsuapi_DsGetMemberships(
+	[todo] WERROR drsuapi_DsGetMemberships(
 		[in] policy_handle *bind_handle,
 		[in] int32 level,
 		[in,ref] [switch_is(level)] drsuapi_DsGetMembershipsRequest *req,
@@ -850,7 +850,7 @@ interface drsuapi
 		[case(1)] drsuapi_DsGetNT4ChangeLogInfo1 info1;
 	} drsuapi_DsGetNT4ChangeLogInfo;
 
-	WERROR drsuapi_DsGetNT4ChangeLog(
+	[todo] WERROR drsuapi_DsGetNT4ChangeLog(
 		[in] policy_handle *bind_handle,
 		[in] uint32 level,
 		[in,ref] [switch_is(level)] drsuapi_DsGetNT4ChangeLogRequest *req,
@@ -880,7 +880,7 @@ interface drsuapi
 	} drsuapi_DsNameFlags;
 
 	typedef [v1_enum] enum {
-		DRSUAPI_DS_NAME_FORMAT_UKNOWN			= 0,
+		DRSUAPI_DS_NAME_FORMAT_UNKNOWN			= 0,
 		DRSUAPI_DS_NAME_FORMAT_FQDN_1779		= 1,
 		DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT		= 2,
 		DRSUAPI_DS_NAME_FORMAT_DISPLAY			= 3,
@@ -1555,7 +1555,6 @@ interface drsuapi
 		[out,ref] int32 *level_out,
 		[out,ref] [switch_is(*level_out)] drsuapi_DsGetMemberships2Ctr *ctr
 		);
-
 
 	/*****************/
         /* Function 0x16 */
