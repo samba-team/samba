@@ -2687,7 +2687,8 @@ clean:: cleanlibs
 		bin/timelimit \
 		.headers.stamp */src/*.o \
 		../lib/*/*.o \
-		../libcli/*.o ../libcli/*/*.o
+		../libcli/*.o ../libcli/*/*.o \
+		../librpc/*/*.o \
 	-rm -rf t_dir
 
 include/build_env.h: script/build_env.sh
