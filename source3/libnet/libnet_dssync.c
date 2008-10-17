@@ -297,7 +297,7 @@ static NTSTATUS libnet_dssync_lookup_nc(TALLOC_CTX *mem_ctx,
 	req.req1.count		= 1;
 	req.req1.names		= names;
 	req.req1.format_flags	= DRSUAPI_DS_NAME_FLAG_NO_FLAGS;
-	req.req1.format_offered	= DRSUAPI_DS_NAME_FORMAT_UKNOWN;
+	req.req1.format_offered	= DRSUAPI_DS_NAME_FORMAT_UNKNOWN;
 	req.req1.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779;
 
 	status = rpccli_drsuapi_DsCrackNames(ctx->cli, mem_ctx,
