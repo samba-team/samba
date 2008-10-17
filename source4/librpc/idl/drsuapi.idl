@@ -1232,9 +1232,10 @@ interface drsuapi
 
 	[public] WERROR drsuapi_DsAddEntry(
 		[in] policy_handle *bind_handle,
-		[in,out] int32 level,
-		[in,switch_is(level)] drsuapi_DsAddEntryRequest req,
-		[out,switch_is(level)] drsuapi_DsAddEntryCtr ctr
+		[in] int32 level,
+		[in,ref,switch_is(level)] drsuapi_DsAddEntryRequest *req,
+		[out,ref] int32 *level_out,
+		[out,ref,switch_is(*level_out)] drsuapi_DsAddEntryCtr *ctr
 		);
 
 	/*****************/

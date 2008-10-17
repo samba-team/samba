@@ -2173,11 +2173,15 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 	/* setup request structure */
 	r->in.bind_handle						= &s->drsuapi1.bind_handle;
 	r->in.level							= 2;
-	r->in.req.req2.first_object.next_object				= NULL;
-	r->in.req.req2.first_object.object.identifier			= identifier;
-	r->in.req.req2.first_object.object.flags			= 0x00000000;
-	r->in.req.req2.first_object.object.attribute_ctr.num_attributes	= num_attrs;
-	r->in.req.req2.first_object.object.attribute_ctr.attributes	= attrs;
+	r->in.req							= talloc(s, union drsuapi_DsAddEntryRequest);
+	r->in.req->req2.first_object.next_object			= NULL;
+	r->in.req->req2.first_object.object.identifier			= identifier;
+	r->in.req->req2.first_object.object.flags			= 0x00000000;
+	r->in.req->req2.first_object.object.attribute_ctr.num_attributes= num_attrs;
+	r->in.req->req2.first_object.object.attribute_ctr.attributes	= attrs;
+
+	r->out.level_out	= talloc(s, int32_t);
+	r->out.ctr		= talloc(s, union drsuapi_DsAddEntryCtr);
 
 	req = dcerpc_drsuapi_DsAddEntry_send(s->drsuapi1.pipe, r, r);
 	composite_continue_rpc(c, req, becomeDC_drsuapi1_add_entry_recv, s);
@@ -2212,37 +2216,37 @@ static void becomeDC_drsuapi1_add_entry_recv(struct rpc_request *req)
 		return;
 	}
 
-	if (r->out.level == 3) {
-		if (r->out.ctr.ctr3.count != 1) {
+	if (*r->out.level_out == 3) {
+		if (r->out.ctr->ctr3.count != 1) {
 			WERROR status;
 
-			if (r->out.ctr.ctr3.level != 1) {
+			if (r->out.ctr->ctr3.level != 1) {
 				composite_error(c, NT_STATUS_INVALID_NETWORK_RESPONSE);
 				return;
 			}
 
-			if (!r->out.ctr.ctr3.error) {
+			if (!r->out.ctr->ctr3.error) {
 				composite_error(c, NT_STATUS_INVALID_NETWORK_RESPONSE);
 				return;
 			}
 
-			status = r->out.ctr.ctr3.error->info1.status;
+			status = r->out.ctr->ctr3.error->info1.status;
 
-			if (!r->out.ctr.ctr3.error->info1.info) {
+			if (!r->out.ctr->ctr3.error->info1.info) {
 				composite_error(c, werror_to_ntstatus(status));
 				return;
 			}
 
 			/* see if we can get a more detailed error */
-			switch (r->out.ctr.ctr3.error->info1.level) {
+			switch (r->out.ctr->ctr3.error->info1.level) {
 			case 1:
-				status = r->out.ctr.ctr3.error->info1.info->error1.status;
+				status = r->out.ctr->ctr3.error->info1.info->error1.status;
 				break;
 			case 4:
 			case 5:
 			case 6:
 			case 7:
-				status = r->out.ctr.ctr3.error->info1.info->errorX.status;
+				status = r->out.ctr->ctr3.error->info1.info->errorX.status;
 				break;
 			}
 
@@ -2250,14 +2254,14 @@ static void becomeDC_drsuapi1_add_entry_recv(struct rpc_request *req)
 			return;
 		}
 
-		s->dest_dsa.ntds_guid	= r->out.ctr.ctr3.objects[0].guid;
-	} else if (r->out.level == 2) {
-		if (r->out.ctr.ctr2.count != 1) {
-			composite_error(c, werror_to_ntstatus(r->out.ctr.ctr2.error.status));
+		s->dest_dsa.ntds_guid	= r->out.ctr->ctr3.objects[0].guid;
+	} else if (*r->out.level_out == 2) {
+		if (r->out.ctr->ctr2.count != 1) {
+			composite_error(c, werror_to_ntstatus(r->out.ctr->ctr2.error.status));
 			return;
 		}
 
-		s->dest_dsa.ntds_guid	= r->out.ctr.ctr2.objects[0].guid;
+		s->dest_dsa.ntds_guid	= r->out.ctr->ctr2.objects[0].guid;
 	} else {
 		composite_error(c, NT_STATUS_INVALID_NETWORK_RESPONSE);
 		return;
