@@ -291,7 +291,9 @@ static void async_getcap_callback(struct ctdb_context *ctdb, uint32_t node_pnn, 
 		DEBUG(DEBUG_ERR, (__location__ " Invalid lenght/pointer for getcap callback : %u %p\n",  (unsigned)outdata.dsize, outdata.dptr));
 		return;
 	}
-	ctdb->nodes[node_pnn]->capabilities = *((uint32_t *)outdata.dptr);
+	if (node_pnn < ctdb->num_nodes) {
+		ctdb->nodes[node_pnn]->capabilities = *((uint32_t *)outdata.dptr);
+	}
 }
 
 /*
@@ -1310,7 +1312,16 @@ static int recover_database(struct ctdb_recoverd *rec,
 	return 0;
 }
 
-		
+/*
+  reload the nodes file 
+*/
+static void reload_nodes_file(struct ctdb_context *ctdb)
+{
+
+	ctdb_load_nodes_file(ctdb);
+}
+
+	
 /*
   we are the recmaster, and recovery is needed - start a recovery run
  */
@@ -1327,6 +1338,12 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	uint32_t *nodes;
 
 	DEBUG(DEBUG_NOTICE, (__location__ " Starting do_recovery\n"));
+
+	if (ctdb->num_nodes != nodemap->num) {
+		DEBUG(DEBUG_ERR, (__location__ " ctdb->num_nodes (%d) != nodemap->num (%d) reloading nodes file\n", ctdb->num_nodes, nodemap->num));
+		reload_nodes_file(ctdb);
+		return -1;
+	}
 
 	/* if recovery fails, force it again */
 	rec->need_recovery = true;
@@ -2527,6 +2544,11 @@ again:
 	/* update the list of public ips that a node can handle for
 	   all connected nodes
 	*/
+	if (ctdb->num_nodes != nodemap->num) {
+		DEBUG(DEBUG_ERR, (__location__ " ctdb->num_nodes (%d) != nodemap->num (%d) reloading nodes file\n", ctdb->num_nodes, nodemap->num));
+		reload_nodes_file(ctdb);
+		goto again;
+	}
 	for (j=0; j<nodemap->num; j++) {
 		if (nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
 			continue;
