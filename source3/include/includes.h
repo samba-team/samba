@@ -1087,10 +1087,6 @@ LDAP *ldap_open_with_timeout(const char *server, int port, unsigned int to);
 ssize_t readahead(int fd, off64_t offset, size_t count);
 #endif
 
-/* TRUE and FALSE are part of the C99 standard and gcc, but
-   unfortunately many vendor compilers don't support them.  Use True
-   and False instead. */
-
 #ifdef TRUE
 #undef TRUE
 #endif
