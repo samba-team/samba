@@ -62,6 +62,8 @@ static bool test_DsGetDomainControllerInfo(struct dcerpc_pipe *p, struct torture
 {
 	NTSTATUS status;
 	struct drsuapi_DsGetDomainControllerInfo r;
+	union drsuapi_DsGetDCInfoCtr ctr;
+	int32_t level_out = 0;
 	bool found = false;
 	int i, j, k;
 	
@@ -91,16 +93,21 @@ static bool test_DsGetDomainControllerInfo(struct dcerpc_pipe *p, struct torture
 
 	for (i=0; i < ARRAY_SIZE(levels); i++) {
 		for (j=0; j < ARRAY_SIZE(names); j++) {
+			union drsuapi_DsGetDCInfoRequest req;
 			level = levels[i];
 			r.in.bind_handle = &priv->bind_handle;
 			r.in.level = 1;
+			r.in.req = &req;
 			
-			r.in.req.req1.domain_name = names[j].name;
-			r.in.req.req1.level = level;
+			r.in.req->req1.domain_name = names[j].name;
+			r.in.req->req1.level = level;
+
+			r.out.ctr = &ctr;
+			r.out.level_out = &level_out;
 			
 			torture_comment(torture,
 				   "testing DsGetDomainControllerInfo level %d on domainname '%s'\n",
-			       r.in.req.req1.level, r.in.req.req1.domain_name);
+			       r.in.req->req1.level, r.in.req->req1.domain_name);
 		
 			status = dcerpc_drsuapi_DsGetDomainControllerInfo(p, torture, &r);
 			torture_assert_ntstatus_ok(torture, status,
@@ -115,13 +122,13 @@ static bool test_DsGetDomainControllerInfo(struct dcerpc_pipe *p, struct torture
 			}
 
 			torture_assert_int_equal(torture, 
-									 r.in.req.req1.level, r.out.level_out, 
+									 r.in.req->req1.level, *r.out.level_out,
 									 "dcerpc_drsuapi_DsGetDomainControllerInfo level"); 
 
 			switch (level) {
 			case 1:
-				for (k=0; k < r.out.ctr.ctr1.count; k++) {
-					if (strcasecmp_m(r.out.ctr.ctr1.array[k].netbios_name, 
+				for (k=0; k < r.out.ctr->ctr1.count; k++) {
+					if (strcasecmp_m(r.out.ctr->ctr1.array[k].netbios_name,
 							 torture_join_netbios_name(priv->join)) == 0) {
 						found = true;
 						break;
@@ -129,11 +136,11 @@ static bool test_DsGetDomainControllerInfo(struct dcerpc_pipe *p, struct torture
 				}
 				break;
 			case 2:
-				for (k=0; k < r.out.ctr.ctr2.count; k++) {
-					if (strcasecmp_m(r.out.ctr.ctr2.array[k].netbios_name, 
+				for (k=0; k < r.out.ctr->ctr2.count; k++) {
+					if (strcasecmp_m(r.out.ctr->ctr2.array[k].netbios_name,
 							 torture_join_netbios_name(priv->join)) == 0) {
 						found = true;
-						priv->dcinfo	= r.out.ctr.ctr2.array[k];
+						priv->dcinfo	= r.out.ctr->ctr2.array[k];
 						break;
 					}
 				}
@@ -146,12 +153,15 @@ static bool test_DsGetDomainControllerInfo(struct dcerpc_pipe *p, struct torture
 
 	r.in.bind_handle = &priv->bind_handle;
 	r.in.level = 1;
-	
-	r.in.req.req1.domain_name = "__UNKNOWN_DOMAIN__"; /* This is clearly ignored for this level */
-	r.in.req.req1.level = -1;
+
+	r.out.ctr = &ctr;
+	r.out.level_out = &level_out;
+
+	r.in.req->req1.domain_name = "__UNKNOWN_DOMAIN__"; /* This is clearly ignored for this level */
+	r.in.req->req1.level = -1;
 	
 	printf("testing DsGetDomainControllerInfo level %d on domainname '%s'\n",
-	       r.in.req.req1.level, r.in.req.req1.domain_name);
+	       r.in.req->req1.level, r.in.req->req1.domain_name);
 	
 	status = dcerpc_drsuapi_DsGetDomainControllerInfo(p, torture, &r);
 
@@ -164,8 +174,8 @@ static bool test_DsGetDomainControllerInfo(struct dcerpc_pipe *p, struct torture
 		const char *dc_account = talloc_asprintf(torture, "%s\\%s$",
 							 torture_join_dom_netbios_name(priv->join), 
 							 priv->dcinfo.netbios_name);
-		for (k=0; k < r.out.ctr.ctr01.count; k++) {
-			if (strcasecmp_m(r.out.ctr.ctr01.array[k].client_account, 
+		for (k=0; k < r.out.ctr->ctr01.count; k++) {
+			if (strcasecmp_m(r.out.ctr->ctr01.array[k].client_account,
 					 dc_account)) {
 				found = true;
 				break;
