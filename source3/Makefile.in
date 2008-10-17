@@ -247,7 +247,7 @@ SERVER_MUTEX_OBJ = lib/server_mutex.o
 
 PASSCHANGE_OBJ = libsmb/passchange.o
 
-LIBNDR_DRSUAPI_OBJ = librpc/ndr/ndr_drsuapi.o \
+LIBNDR_DRSUAPI_OBJ = ../librpc/ndr/ndr_drsuapi.o \
 		     ../librpc/ndr/ndr_compression.o \
 		     librpc/gen_ndr/ndr_drsuapi.o \
 		     librpc/gen_ndr/ndr_drsblobs.o
@@ -1212,7 +1212,7 @@ samba3-idl::
 		../librpc/idl/notify.idl ../librpc/idl/epmapper.idl librpc/idl/messaging.idl \
 		../librpc/idl/xattr.idl ../librpc/idl/misc.idl librpc/idl/samr.idl \
 		../librpc/idl/security.idl ../librpc/idl/dssetup.idl librpc/idl/krb5pac.idl \
-		../librpc/idl/ntsvcs.idl librpc/idl/libnetapi.idl librpc/idl/drsuapi.idl \
+		../librpc/idl/ntsvcs.idl librpc/idl/libnetapi.idl ../librpc/idl/drsuapi.idl \
 		librpc/idl/drsblobs.idl ../librpc/idl/nbt.idl
 
 #####################################################################

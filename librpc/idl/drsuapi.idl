@@ -8,7 +8,7 @@ import "security.idl", "misc.idl", "samr.idl";
   endpoint("ncacn_np:[\\pipe\\lsass]","ncacn_np:[\\pipe\\protected_storage]", "ncacn_ip_tcp:", "ncalrpc:"),
   authservice("ldap"),
   helpstring("Active Directory Replication"),
-  helper("librpc/ndr/ndr_drsuapi.h"),
+  helper("../librpc/ndr/ndr_drsuapi.h"),
   pointer_default(unique)
 ]
 interface drsuapi

@@ -6,7 +6,7 @@
 #ifndef _HEADER_NDR_drsuapi
 #define _HEADER_NDR_drsuapi
 
-#include "librpc/ndr/ndr_drsuapi.h"
+#include "../librpc/ndr/ndr_drsuapi.h"
 #define NDR_DRSUAPI_UUID "e3514235-4b06-11d1-ab04-00c04fc2dcd2"
 #define NDR_DRSUAPI_VERSION 4.0
 #define NDR_DRSUAPI_NAME "drsuapi"
