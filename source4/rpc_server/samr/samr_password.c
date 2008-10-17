@@ -184,7 +184,7 @@ NTSTATUS dcesrv_samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call, 
 				     struct samr_OemChangePasswordUser2 *r)
 {
 	NTSTATUS status;
-	DATA_BLOB new_password;
+	DATA_BLOB new_password, new_unicode_password;
 	char *new_pass;
 	struct samr_CryptPassword *pwbuf = r->in.password;
 	struct ldb_context *sam_ctx;
@@ -196,6 +196,7 @@ NTSTATUS dcesrv_samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call, 
 	DATA_BLOB lm_pwd_blob;
 	uint8_t new_lm_hash[16];
 	struct samr_Password lm_verifier;
+	ssize_t unicode_pw_len;
 
 	if (pwbuf == NULL) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -260,6 +261,18 @@ NTSTATUS dcesrv_samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call, 
 		return NT_STATUS_WRONG_PASSWORD;
 	}
 
+	unicode_pw_len = convert_string_talloc(mem_ctx, lp_iconv_convenience(dce_call->conn->dce_ctx->lp_ctx), 
+					       CH_DOS, CH_UTF16, 
+					       (const char *)new_password.data, 
+					       new_password.length,
+					       (void **)&new_unicode_password.data);
+	if (unicode_pw_len == -1) {
+		DEBUG(3,("samr: failed to convert incoming password buffer to UTF16 charset\n"));
+		ldb_transaction_cancel(sam_ctx);
+		return NT_STATUS_WRONG_PASSWORD;
+	}
+	new_unicode_password.length = unicode_pw_len;
+
 	E_deshash(new_pass, new_lm_hash);
 	E_old_pw_hash(new_lm_hash, lm_pwd->hash, lm_verifier.hash);
 	if (memcmp(lm_verifier.hash, r->in.hash->hash, 16) != 0) {
@@ -283,7 +296,7 @@ NTSTATUS dcesrv_samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call, 
 	 * due to password policies */
 	status = samdb_set_password(sam_ctx, mem_ctx,
 				    user_dn, NULL, 
-				    mod, &new_password, 
+				    mod, &new_unicode_password, 
 				    NULL, NULL,
 				    true, /* this is a user password change */
 				    NULL, 

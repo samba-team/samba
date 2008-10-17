@@ -1644,7 +1644,7 @@ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
 		char *new_pass;
 		
 		/* check the various password restrictions */
-		if (restrictions && minPwdLength > utf16_len_n(new_password->data, (new_password->length / 2))) {
+		if (restrictions && minPwdLength > utf16_len_n(new_password->data, new_password->length) / 2) {
 			if (reject_reason) {
 				*reject_reason = SAMR_REJECT_TOO_SHORT;
 			}
