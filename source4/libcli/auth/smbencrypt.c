@@ -544,6 +544,28 @@ bool decode_pw_buffer(uint8_t in_buffer[516], char *new_pwrd,
 }
 
 /***********************************************************
+ encode a password buffer with an already unicode password.  The
+ rest of the buffer is filled with random data to make it harder to attack.
+************************************************************/
+bool set_pw_in_buffer(uint8_t buffer[516], DATA_BLOB *password)
+{
+	if (password->length > 512) {
+		return false;
+	}
+
+	memcpy(&buffer[512 - password->length], password->data, password->length);
+
+	generate_random_buffer(buffer, 512 - password->length);
+
+	/* 
+	 * The length of the new password is in the last 4 bytes of
+	 * the data buffer.
+	 */
+	SIVAL(buffer, 512, password->length);
+	return true;
+}
+
+/***********************************************************
  decode a password buffer
  *new_pw_size is the length in bytes of the extracted unicode password
 ************************************************************/
