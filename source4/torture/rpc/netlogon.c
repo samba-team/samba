@@ -29,6 +29,7 @@
 #include "lib/cmdline/popt_common.h"
 #include "torture/rpc/rpc.h"
 #include "torture/rpc/netlogon.h"
+#include "../lib/crypto/crypto.h"
 #include "libcli/auth/libcli_auth.h"
 #include "librpc/gen_ndr/ndr_netlogon_c.h"
 #include "librpc/gen_ndr/ndr_lsa_c.h"
@@ -77,11 +78,10 @@ static bool test_SetupCredentials(struct dcerpc_pipe *p, struct torture_context 
 	struct netr_ServerAuthenticate a;
 	struct netr_Credential credentials1, credentials2, credentials3;
 	struct creds_CredentialState *creds;
-	struct samr_Password mach_password;
-        const char *plain_pass;
-	const char *machine_name;
+	const struct samr_Password *mach_password;
+   	const char *machine_name;
 
-	plain_pass = cli_credentials_get_password(credentials);
+	mach_password = cli_credentials_get_nt_hash(credentials, tctx);
 	machine_name = cli_credentials_get_workstation(credentials);
 
 	torture_comment(tctx, "Testing ServerReqChallenge\n");
@@ -99,8 +99,6 @@ static bool test_SetupCredentials(struct dcerpc_pipe *p, struct torture_context 
 	status = dcerpc_netr_ServerReqChallenge(p, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "ServerReqChallenge");
 
-	E_md4hash(plain_pass, mach_password.hash);
-
 	a.in.server_name = NULL;
 	a.in.account_name = talloc_asprintf(tctx, "%s$", machine_name);
 	a.in.secure_channel_type = SEC_CHAN_BDC;
@@ -109,7 +107,7 @@ static bool test_SetupCredentials(struct dcerpc_pipe *p, struct torture_context 
 	a.out.credentials = &credentials3;
 
 	creds_client_init(creds, &credentials1, &credentials2, 
-			  &mach_password, &credentials3, 
+			  mach_password, &credentials3, 
 			  0);
 
 	torture_comment(tctx, "Testing ServerAuthenticate\n");
@@ -142,12 +140,12 @@ bool test_SetupCredentials2(struct dcerpc_pipe *p, struct torture_context *tctx,
 	struct netr_ServerAuthenticate2 a;
 	struct netr_Credential credentials1, credentials2, credentials3;
 	struct creds_CredentialState *creds;
-	struct samr_Password mach_password;
+	const struct samr_Password *mach_password;
 	const char *machine_name;
 	const char *plain_pass;
 
+	mach_password = cli_credentials_get_nt_hash(machine_credentials, tctx);
 	machine_name = cli_credentials_get_workstation(machine_credentials);
-	plain_pass = cli_credentials_get_password(machine_credentials);
 
 	torture_comment(tctx, "Testing ServerReqChallenge\n");
 
@@ -164,8 +162,6 @@ bool test_SetupCredentials2(struct dcerpc_pipe *p, struct torture_context *tctx,
 	status = dcerpc_netr_ServerReqChallenge(p, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "ServerReqChallenge");
 
-	E_md4hash(plain_pass, mach_password.hash);
-
 	a.in.server_name = NULL;
 	a.in.account_name = talloc_asprintf(tctx, "%s$", machine_name);
 	a.in.secure_channel_type = sec_chan_type;
@@ -176,7 +172,7 @@ bool test_SetupCredentials2(struct dcerpc_pipe *p, struct torture_context *tctx,
 	a.out.credentials = &credentials3;
 
 	creds_client_init(creds, &credentials1, &credentials2, 
-			  &mach_password, &credentials3, 
+			  mach_password, &credentials3, 
 			  negotiate_flags);
 
 	torture_comment(tctx, "Testing ServerAuthenticate2\n");
@@ -326,6 +322,24 @@ static bool test_SetPassword(struct torture_context *tctx,
 }
 
 /*
+  generate a random password for password change tests
+*/
+static DATA_BLOB netlogon_very_rand_pass(TALLOC_CTX *mem_ctx, int len)
+{
+	int i;
+	DATA_BLOB password = data_blob_talloc(mem_ctx, NULL, len * 2 /* number of unicode chars */);
+	generate_random_buffer(password.data, password.length);
+
+	for (i=0; i < len; i++) {
+		if (((uint16_t *)password.data)[i] == 0) {
+			((uint16_t *)password.data)[i] = 1;
+		}
+	}
+
+	return password;
+}
+
+/*
   try a change password for our machine account
 */
 static bool test_SetPassword2(struct torture_context *tctx, 
@@ -335,8 +349,10 @@ static bool test_SetPassword2(struct torture_context *tctx,
 	NTSTATUS status;
 	struct netr_ServerPasswordSet2 r;
 	const char *password;
+	DATA_BLOB new_random_pass;
 	struct creds_CredentialState *creds;
 	struct samr_CryptPassword password_buf;
+	struct samr_Password nt_hash;
 
 	if (!test_SetupCredentials(p, tctx, machine_credentials, &creds)) {
 		return false;
@@ -443,6 +459,37 @@ static bool test_SetPassword2(struct torture_context *tctx,
 	}
 
 	cli_credentials_set_password(machine_credentials, password, CRED_SPECIFIED);
+
+	torture_assert (tctx, 
+		test_SetupCredentials(p, tctx, machine_credentials, &creds), 
+		"ServerPasswordSet failed to actually change the password");
+
+	new_random_pass = netlogon_very_rand_pass(tctx, 128);
+
+	/* now try a random stream of bytes for a password */
+	set_pw_in_buffer(password_buf.data, &new_random_pass);
+
+	creds_arcfour_crypt(creds, password_buf.data, 516);
+
+	memcpy(r.in.new_password.data, password_buf.data, 512);
+	r.in.new_password.length = IVAL(password_buf.data, 512);
+
+	torture_comment(tctx, 
+		"Testing a third ServerPasswordSet2 on machine account, with a compleatly random password\n");
+
+	creds_client_authenticator(creds, &r.in.credential);
+
+	status = dcerpc_netr_ServerPasswordSet2(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "ServerPasswordSet (3)");
+
+	if (!creds_client_check(creds, &r.out.return_authenticator.cred)) {
+		torture_comment(tctx, "Credential chaining failed\n");
+	}
+
+	mdfour(nt_hash.hash, new_random_pass.data, new_random_pass.length);
+
+	cli_credentials_set_password(machine_credentials, NULL, CRED_UNINITIALISED);
+	cli_credentials_set_nt_hash(machine_credentials, &nt_hash, CRED_SPECIFIED);
 
 	torture_assert (tctx, 
 		test_SetupCredentials(p, tctx, machine_credentials, &creds), 
