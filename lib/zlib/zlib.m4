@@ -1,3 +1,4 @@
+AC_DEFUN([AC_ZLIB],[
 AC_CHECK_HEADERS(zlib.h)
 
 AC_CHECK_LIB_EXT(z, ZLIB_LIBS, zlibVersion)
@@ -20,7 +21,9 @@ AC_CACHE_CHECK([for zlib >= 1.2.3], samba_cv_zlib_1_2_3, [
 if test x"$ac_cv_header_zlib_h" = x"yes" -a \
 	x"$ac_cv_lib_ext_z_zlibVersion" = x"yes" -a \
 	x"$samba_cv_zlib_1_2_3" = x"yes"; then
-	SMB_EXT_LIB(ZLIB, [${ZLIB_LIBS}])
+	$1
 else
-	SMB_INCLUDE_MK(lib/zlib.mk)
+	$2
 fi
+])
+

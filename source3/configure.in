@@ -6248,32 +6248,10 @@ if test x$enable_merged_build = xyes; then
 	m4_include(samba4.m4)
 fi
 
-AC_CHECK_HEADERS(zlib.h)
-
-AC_CHECK_LIB_EXT(z, ZLIB_LIBS, zlibVersion)
-
-AC_CACHE_CHECK([for zlib >= 1.2.3], samba_cv_zlib_1_2_3, [
-	AC_TRY_COMPILE([
-		#include <zlib.h>
-		],[
-		#if (ZLIB_VERNUM >= 0x1230)
-		#else
-		#error "ZLIB_VERNUM < 0x1230"
-		#endif
-		],[
-		samba_cv_zlib_1_2_3=yes
-		],[
-		samba_cv_zlib_1_2_3=no
-		])
-])
-
+m4_include(../lib/zlib/zlib.m4)
 AC_SUBST(ZLIB_LIBS)
 AC_SUBST(ZLIB_OBJS)
-if test x"$ac_cv_header_zlib_h" = x"yes" -a \
-	x"$ac_cv_lib_ext_z_zlibVersion" = x"yes" -a \
-	x"$samba_cv_zlib_1_2_3" = x"yes"; then
-	ZLIB_OBJS=""
-else
+AC_ZLIB([ZLIB_OBJS=""], [
 	ZLIB_LIBS=""
 	for o in adler32.o compress.o crc32.o gzio.o uncompr.o \
 		     deflate.o trees.o zutil.o inflate.o infback.o \
@@ -6282,7 +6260,7 @@ else
 		ZLIB_OBJS="$ZLIB_OBJS ../lib/zlib/$o"
 	done
 	CFLAGS="$CFLAGS -I../lib/zlib"
-fi
+])
 
 dnl Remove -L/usr/lib/? from LDFLAGS and LIBS
 LIB_REMOVE_USR_LIB(LDFLAGS)
