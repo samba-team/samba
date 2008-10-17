@@ -962,9 +962,10 @@ interface drsuapi
 
 	WERROR drsuapi_DsWriteAccountSpn(
 		[in] policy_handle *bind_handle,
-		[in,out] int32 level,
-		[in,switch_is(level)] drsuapi_DsWriteAccountSpnRequest req,
-		[out,switch_is(level)] drsuapi_DsWriteAccountSpnResult res
+		[in] int32 level,
+		[in,ref,switch_is(level)] drsuapi_DsWriteAccountSpnRequest *req,
+		[out,ref] int32 *level_out,
+		[out,ref,switch_is(*level_out)] drsuapi_DsWriteAccountSpnResult *res
 		);
 
 	/*****************/

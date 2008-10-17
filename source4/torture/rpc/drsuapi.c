@@ -184,21 +184,28 @@ static bool test_DsWriteAccountSpn(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct drsuapi_DsWriteAccountSpn r;
+	union drsuapi_DsWriteAccountSpnRequest req;
 	struct drsuapi_DsNameString names[2];
+	union drsuapi_DsWriteAccountSpnResult res;
+	int32_t level_out;
 	bool ret = true;
 
 	r.in.bind_handle		= &priv->bind_handle;
 	r.in.level			= 1;
+	r.in.req			= &req;
 
 	printf("testing DsWriteAccountSpn\n");
 
-	r.in.req.req1.operation	= DRSUAPI_DS_SPN_OPERATION_ADD;
-	r.in.req.req1.unknown1	= 0;
-	r.in.req.req1.object_dn	= priv->dcinfo.computer_dn;
-	r.in.req.req1.count	= 2;
-	r.in.req.req1.spn_names	= names;
+	r.in.req->req1.operation	= DRSUAPI_DS_SPN_OPERATION_ADD;
+	r.in.req->req1.unknown1	= 0;
+	r.in.req->req1.object_dn	= priv->dcinfo.computer_dn;
+	r.in.req->req1.count		= 2;
+	r.in.req->req1.spn_names	= names;
 	names[0].str = talloc_asprintf(mem_ctx, "smbtortureSPN/%s",priv->dcinfo.netbios_name);
 	names[1].str = talloc_asprintf(mem_ctx, "smbtortureSPN/%s",priv->dcinfo.dns_name);
+
+	r.out.res			= &res;
+	r.out.level_out			= &level_out;
 
 	status = dcerpc_drsuapi_DsWriteAccountSpn(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -213,8 +220,8 @@ static bool test_DsWriteAccountSpn(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		ret = false;
 	}
 
-	r.in.req.req1.operation	= DRSUAPI_DS_SPN_OPERATION_DELETE;
-	r.in.req.req1.unknown1	= 0;
+	r.in.req->req1.operation	= DRSUAPI_DS_SPN_OPERATION_DELETE;
+	r.in.req->req1.unknown1		= 0;
 
 	status = dcerpc_drsuapi_DsWriteAccountSpn(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
