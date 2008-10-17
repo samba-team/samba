@@ -37,7 +37,13 @@ m4_include(lib/charset/config.m4)
 m4_include(lib/socket/config.m4)
 m4_include(nsswitch/nsstest.m4)
 m4_include(../pidl/config.m4)
-m4_include(lib/zlib.m4)
+m4_include(../lib/zlib/zlib.m4)
+AC_ZLIB([
+SMB_EXT_LIB(ZLIB, [${ZLIB_LIBS}])
+],[
+SMB_INCLUDE_MK(lib/zlib.mk)
+])
+
 
 AC_CONFIG_FILES(../source4/lib/registry/registry.pc)
 AC_CONFIG_FILES(../source4/librpc/dcerpc.pc)

@@ -41,7 +41,7 @@
 	msgstr = lang_msg(format);
 	if (!msgstr) return -1;
 
-	VA_COPY(ap2, ap);
+	va_copy(ap2, ap);
 
 	ret = vasprintf(&p, msgstr, ap2);
 

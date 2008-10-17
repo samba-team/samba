@@ -2565,7 +2565,7 @@ char *smb_xstrndup(const char *s, size_t n)
 	int n;
 	va_list ap2;
 
-	VA_COPY(ap2, ap);
+	va_copy(ap2, ap);
 
 	n = vasprintf(ptr, format, ap2);
 	if (n == -1 || ! *ptr) {
