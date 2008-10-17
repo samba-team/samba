@@ -839,24 +839,8 @@ enum flush_reason_enum {
 #define SYNC_DNS 1
 #endif
 
-#ifndef SEEK_SET
-#define SEEK_SET 0
-#endif
-
-#ifndef INADDR_LOOPBACK
-#define INADDR_LOOPBACK 0x7f000001
-#endif
-
-#ifndef INADDR_NONE
-#define INADDR_NONE 0xffffffff
-#endif
-
 #ifndef HAVE_CRYPT
 #define crypt ufc_crypt
-#endif
-
-#ifndef O_ACCMODE
-#define O_ACCMODE (O_RDONLY | O_WRONLY | O_RDWR)
 #endif
 
 #if defined(HAVE_CRYPT16) && defined(HAVE_GETAUTHUID)
@@ -874,15 +858,6 @@ int setresgid(gid_t rgid, gid_t egid, gid_t sgid);
 /* yuck, I'd like a better way of doing this */
 #define DIRP_SIZE (256 + 32)
 
-/*
- * glibc on linux doesn't seem to have MSG_WAITALL
- * defined. I think the kernel has it though..
- */
-
-#ifndef MSG_WAITALL
-#define MSG_WAITALL 0
-#endif
-
 /* default socket options. Dave Miller thinks we should default to TCP_NODELAY
    given the socket IO pattern that Samba uses */
 #ifdef TCP_NODELAY
@@ -897,84 +872,6 @@ int setresgid(gid_t rgid, gid_t egid, gid_t sgid);
 #  include <dmalloc.h>
 #endif
 
-
-/* Some POSIX definitions for those without */
- 
-#ifndef S_IFDIR
-#define S_IFDIR         0x4000
-#endif
-#ifndef S_ISDIR
-#define S_ISDIR(mode)   ((mode & 0xF000) == S_IFDIR)
-#endif
-#ifndef S_IRWXU
-#define S_IRWXU 00700           /* read, write, execute: owner */
-#endif
-#ifndef S_IRUSR
-#define S_IRUSR 00400           /* read permission: owner */
-#endif
-#ifndef S_IWUSR
-#define S_IWUSR 00200           /* write permission: owner */
-#endif
-#ifndef S_IXUSR
-#define S_IXUSR 00100           /* execute permission: owner */
-#endif
-#ifndef S_IRWXG
-#define S_IRWXG 00070           /* read, write, execute: group */
-#endif
-#ifndef S_IRGRP
-#define S_IRGRP 00040           /* read permission: group */
-#endif
-#ifndef S_IWGRP
-#define S_IWGRP 00020           /* write permission: group */
-#endif
-#ifndef S_IXGRP
-#define S_IXGRP 00010           /* execute permission: group */
-#endif
-#ifndef S_IRWXO
-#define S_IRWXO 00007           /* read, write, execute: other */
-#endif
-#ifndef S_IROTH
-#define S_IROTH 00004           /* read permission: other */
-#endif
-#ifndef S_IWOTH
-#define S_IWOTH 00002           /* write permission: other */
-#endif
-#ifndef S_IXOTH
-#define S_IXOTH 00001           /* execute permission: other */
-#endif
-
-/* For sys_adminlog(). */
-#ifndef LOG_EMERG
-#define LOG_EMERG       0       /* system is unusable */
-#endif
-
-#ifndef LOG_ALERT
-#define LOG_ALERT       1       /* action must be taken immediately */
-#endif
-
-#ifndef LOG_CRIT
-#define LOG_CRIT        2       /* critical conditions */
-#endif
-
-#ifndef LOG_ERR
-#define LOG_ERR         3       /* error conditions */
-#endif
-
-#ifndef LOG_WARNING
-#define LOG_WARNING     4       /* warning conditions */
-#endif
-
-#ifndef LOG_NOTICE
-#define LOG_NOTICE      5       /* normal but significant condition */
-#endif
-
-#ifndef LOG_INFO
-#define LOG_INFO        6       /* informational */
-#endif
-
-#ifndef LOG_DEBUG
-#define LOG_DEBUG       7       /* debug-level messages */
-#endif
 
 #if HAVE_KERNEL_SHARE_MODES
 #ifndef LOCK_MAND 
@@ -1002,19 +899,6 @@ extern int DEBUGLEVEL;
 #define F_SETLKW 14
 #endif
 
-
-/* Needed for sys_dlopen/sys_dlsym/sys_dlclose */
-#ifndef RTLD_GLOBAL
-#define RTLD_GLOBAL 0
-#endif
-
-#ifndef RTLD_LAZY
-#define RTLD_LAZY 0
-#endif
-
-#ifndef RTLD_NOW
-#define RTLD_NOW 0
-#endif
 
 /* needed for some systems without iconv. Doesn't really matter
    what error code we use */
@@ -1047,17 +931,6 @@ char *talloc_asprintf_strupper_m(TALLOC_CTX *t, const char *fmt, ...) PRINTF_ATT
    for snprintf and vsnprintf */
 #define slprintf snprintf
 #define vslprintf vsnprintf
-
-/* we need to use __va_copy() on some platforms */
-#ifdef HAVE_VA_COPY
-#define VA_COPY(dest, src) va_copy(dest, src)
-#else
-#ifdef HAVE___VA_COPY
-#define VA_COPY(dest, src) __va_copy(dest, src)
-#else
-#define VA_COPY(dest, src) (dest) = (src)
-#endif
-#endif
 
 /*
  * Veritas File System.  Often in addition to native.
