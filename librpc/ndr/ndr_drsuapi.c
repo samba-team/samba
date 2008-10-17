@@ -91,7 +91,11 @@ enum ndr_err_code ndr_push_drsuapi_DsReplicaOID(struct ndr_push *ndr, int ndr_fl
 		if (r->oid) {
 			DATA_BLOB blob;
 
+#if (_SAMBA_BUILD_ == 3)
+			if (StrnCaseCmp("ff", r->oid, 2) == 0) {
+#else
 			if (strncasecmp("ff", r->oid, 2) == 0) {
+#endif
 				blob = strhex_to_data_blob(ndr, r->oid);
 				if (!blob.data) {
 					return ndr_push_error(ndr, NDR_ERR_SUBCONTEXT,
@@ -163,7 +167,11 @@ size_t ndr_size_drsuapi_DsReplicaOID_oid(const char *oid, int flags)
 
 	if (!oid) return 0;
 
+#if (_SAMBA_BUILD_ == 3)
+	if (StrnCaseCmp("ff", oid, 2) == 0) {
+#else
 	if (strncasecmp("ff", oid, 2) == 0) {
+#endif
 		_blob = strhex_to_data_blob(NULL, oid);
 		if (_blob.data) {
 			ret = _blob.length;
