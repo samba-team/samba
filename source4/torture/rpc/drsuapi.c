@@ -238,6 +238,8 @@ static bool test_DsReplicaGetInfo(struct dcerpc_pipe *p, struct torture_context 
 	NTSTATUS status;
 	struct drsuapi_DsReplicaGetInfo r;
 	union drsuapi_DsReplicaGetInfoRequest req;
+	union drsuapi_DsReplicaInfo info;
+	enum drsuapi_DsReplicaInfoType info_type;
 	bool ret = true;
 	int i;
 	struct {
@@ -314,6 +316,7 @@ static bool test_DsReplicaGetInfo(struct dcerpc_pipe *p, struct torture_context 
 	}
 
 	r.in.bind_handle	= &priv->bind_handle;
+	r.in.req		= &req;
 
 	for (i=0; i < ARRAY_SIZE(array); i++) {
 		const char *object_dn;
@@ -326,21 +329,23 @@ static bool test_DsReplicaGetInfo(struct dcerpc_pipe *p, struct torture_context 
 		r.in.level = array[i].level;
 		switch(r.in.level) {
 		case DRSUAPI_DS_REPLICA_GET_INFO:
-			req.req1.info_type	= array[i].infotype;
-			req.req1.object_dn	= object_dn;
-			ZERO_STRUCT(req.req1.guid1);
+			r.in.req->req1.info_type	= array[i].infotype;
+			r.in.req->req1.object_dn	= object_dn;
+			ZERO_STRUCT(r.in.req->req1.guid1);
 			break;
 		case DRSUAPI_DS_REPLICA_GET_INFO2:
-			req.req2.info_type	= array[i].infotype;
-			req.req2.object_dn	= object_dn;
-			ZERO_STRUCT(req.req1.guid1);
-			req.req2.unknown1	= 0;
-			req.req2.string1	= NULL;
-			req.req2.string2	= NULL;
-			req.req2.unknown2	= 0;
+			r.in.req->req2.info_type	= array[i].infotype;
+			r.in.req->req2.object_dn	= object_dn;
+			ZERO_STRUCT(r.in.req->req2.guid1);
+			r.in.req->req2.unknown1	= 0;
+			r.in.req->req2.string1	= NULL;
+			r.in.req->req2.string2	= NULL;
+			r.in.req->req2.unknown2	= 0;
 			break;
 		}
-		r.in.req = &req;
+
+		r.out.info		= &info;
+		r.out.info_type		= &info_type;
 
 		status = dcerpc_drsuapi_DsReplicaGetInfo(p, tctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
