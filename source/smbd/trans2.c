@@ -6168,9 +6168,11 @@ static int call_trans2mkdir(connection_struct *conn, char *inbuf, char *outbuf, 
 		if (!ea_list) {
 			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 		}
-	} else if (IVAL(pdata,0) != 4) {
-		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 	}
+	/* If total_data == 4 Windows doesn't care what values
+	 * are placed in that field, it just ignores them.
+	 * The System i QNTC IBM SMB client puts bad values here,
+	 * so ignore them. */
 
 	status = create_directory(conn, directory);
 
