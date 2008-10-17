@@ -810,6 +810,8 @@ static bool test_FetchNT4Data(struct torture_context *tctx,
 	bool ret = true;
 	struct drsuapi_DsGetNT4ChangeLog r;
 	union drsuapi_DsGetNT4ChangeLogRequest req;
+	union drsuapi_DsGetNT4ChangeLogInfo info;
+	int32_t level_out = 0;
 	struct GUID null_guid;
 	struct dom_sid null_sid;
 	DATA_BLOB cookie;
@@ -821,6 +823,8 @@ static bool test_FetchNT4Data(struct torture_context *tctx,
 	ZERO_STRUCT(r);
 	r.in.bind_handle	= &ctx->new_dc.drsuapi.bind_handle;
 	r.in.level		= 1;
+	r.out.info		= &info;
+	r.out.level_out		= &level_out;
 
 	req.req1.unknown1	= lp_parm_int(tctx->lp_ctx, NULL, "dssync", "nt4-1", 3);
 	req.req1.unknown2	= lp_parm_int(tctx->lp_ctx, NULL, "dssync", "nt4-2", 0x00004000);
