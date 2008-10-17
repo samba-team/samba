@@ -4714,7 +4714,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsNameFormat(struct ndr_print *ndr, const char *
 	const char *val = NULL;
 
 	switch (r) {
-		case DRSUAPI_DS_NAME_FORMAT_UKNOWN: val = "DRSUAPI_DS_NAME_FORMAT_UKNOWN"; break;
+		case DRSUAPI_DS_NAME_FORMAT_UNKNOWN: val = "DRSUAPI_DS_NAME_FORMAT_UNKNOWN"; break;
 		case DRSUAPI_DS_NAME_FORMAT_FQDN_1779: val = "DRSUAPI_DS_NAME_FORMAT_FQDN_1779"; break;
 		case DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT: val = "DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT"; break;
 		case DRSUAPI_DS_NAME_FORMAT_DISPLAY: val = "DRSUAPI_DS_NAME_FORMAT_DISPLAY"; break;
