@@ -443,7 +443,7 @@ struct winreg_SaveKey {
 struct winreg_SetKeySecurity {
 	struct {
 		struct policy_handle *handle;/* [ref] */
-		uint32_t access_mask;
+		uint32_t sec_info;
 		struct KeySecurityData *sd;/* [ref] */
 	} in;
 

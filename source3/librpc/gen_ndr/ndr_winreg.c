@@ -3003,7 +3003,7 @@ static enum ndr_err_code ndr_push_winreg_SetKeySecurity(struct ndr_push *ndr, in
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.handle));
-		NDR_CHECK(ndr_push_winreg_AccessMask(ndr, NDR_SCALARS, r->in.access_mask));
+		NDR_CHECK(ndr_push_security_secinfo(ndr, NDR_SCALARS, r->in.sec_info));
 		if (r->in.sd == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
@@ -3027,7 +3027,7 @@ static enum ndr_err_code ndr_pull_winreg_SetKeySecurity(struct ndr_pull *ndr, in
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.handle, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_winreg_AccessMask(ndr, NDR_SCALARS, &r->in.access_mask));
+		NDR_CHECK(ndr_pull_security_secinfo(ndr, NDR_SCALARS, &r->in.sec_info));
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->in.sd);
 		}
@@ -3056,7 +3056,7 @@ _PUBLIC_ void ndr_print_winreg_SetKeySecurity(struct ndr_print *ndr, const char 
 		ndr->depth++;
 		ndr_print_policy_handle(ndr, "handle", r->in.handle);
 		ndr->depth--;
-		ndr_print_winreg_AccessMask(ndr, "access_mask", r->in.access_mask);
+		ndr_print_security_secinfo(ndr, "sec_info", r->in.sec_info);
 		ndr_print_ptr(ndr, "sd", r->in.sd);
 		ndr->depth++;
 		ndr_print_KeySecurityData(ndr, "sd", r->in.sd);

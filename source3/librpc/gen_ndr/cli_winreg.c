@@ -1070,7 +1070,7 @@ NTSTATUS rpccli_winreg_SaveKey(struct rpc_pipe_client *cli,
 NTSTATUS rpccli_winreg_SetKeySecurity(struct rpc_pipe_client *cli,
 				      TALLOC_CTX *mem_ctx,
 				      struct policy_handle *handle /* [in] [ref] */,
-				      uint32_t access_mask /* [in]  */,
+				      uint32_t sec_info /* [in]  */,
 				      struct KeySecurityData *sd /* [in] [ref] */,
 				      WERROR *werror)
 {
@@ -1079,7 +1079,7 @@ NTSTATUS rpccli_winreg_SetKeySecurity(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 	r.in.handle = handle;
-	r.in.access_mask = access_mask;
+	r.in.sec_info = sec_info;
 	r.in.sd = sd;
 
 	if (DEBUGLEVEL >= 10) {
