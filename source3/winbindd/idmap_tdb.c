@@ -228,7 +228,7 @@ static NTSTATUS idmap_tdb_open_db(TALLOC_CTX *memctx, TDB_CONTEXT **tdbctx)
 		goto done;
 	}
 
-	if (!file_exist(tdbfile, &stbuf)) {
+	if (!file_exist_stat(tdbfile, &stbuf)) {
 		tdb_is_new = True;
 	}
 

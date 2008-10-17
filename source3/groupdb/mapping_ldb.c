@@ -63,7 +63,7 @@ static bool init_group_mapping(void)
 	/* Ensure this db is created read/write for root only. */
 	ldb_set_create_perms(ldb, 0600);
 
-	existed = file_exist(db_path, NULL);
+	existed = file_exist(db_path);
 
 	if (lp_parm_bool(-1, "groupmap", "nosync", False)) {
 		flags |= LDB_FLG_NOSYNC;
@@ -99,7 +99,7 @@ static bool init_group_mapping(void)
 
 	/* possibly upgrade */
 	tdb_path = state_path("group_mapping.tdb");
-	if (file_exist(tdb_path, NULL) && !mapping_upgrade(tdb_path)) {
+	if (file_exist(tdb_path) && !mapping_upgrade(tdb_path)) {
 		unlink(state_path("group_mapping.ldb"));
 		goto failed;
 	}

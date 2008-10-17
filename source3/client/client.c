@@ -1203,7 +1203,7 @@ static void do_mget(file_info *finfo, const char *dir)
 		strlower_m(finfo->name);
 	}
 
-	if (!directory_exist(finfo->name,NULL) &&
+	if (!directory_exist(finfo->name) &&
 	    mkdir(finfo->name,0777) != 0) {
 		d_printf("failed to create directory %s\n",finfo->name);
 		client_set_cur_dir(saved_curdir);
@@ -1752,7 +1752,7 @@ static int cmd_put(void)
 		SMB_STRUCT_STAT st;
 		/* allow '-' to represent stdin
 		   jdblair, 24.jun.98 */
-		if (!file_exist(lname,&st) &&
+		if (!file_exist_stat(lname,&st) &&
 		    (strcmp(lname,"-"))) {
 			d_printf("%s does not exist\n",lname);
 			return 1;
@@ -3566,7 +3566,7 @@ static int cmd_reput(void)
 		return 1;
 	}
 
-	if (!file_exist(local_name, &st)) {
+	if (!file_exist_stat(local_name, &st)) {
 		d_printf("%s does not exist\n", local_name);
 		return 1;
 	}

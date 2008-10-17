@@ -315,29 +315,35 @@ LIBSAMBAUTIL_OBJ = @LIBTALLOC_STATIC@ \
 		$(SOCKET_WRAPPER_OBJ) \
 		$(NSS_WRAPPER_OBJ)
 
-LIB_OBJ = $(LIBSAMBAUTIL_OBJ) \
+UTIL_OBJ = ../lib/util/rbtree.o ../lib/util/signal.o ../lib/util/time.o \
+		   ../lib/util/xfile.o ../lib/util/util_strlist.o  \
+		   ../lib/util/util_file.o ../lib/util/data_blob.o \
+		   ../lib/util/util.o ../lib/util/fsusage.o 
+
+CRYPTO_OBJ = ../lib/crypto/crc32.o ../lib/crypto/md5.o \
+			 ../lib/crypto/hmacmd5.o ../lib/crypto/arcfour.o \
+			 ../lib/crypto/md4.o
+
+LIB_OBJ = $(LIBSAMBAUTIL_OBJ) $(UTIL_OBJ) $(CRYPTO_OBJ) \
 	  lib/messages.o librpc/gen_ndr/ndr_messaging.o lib/messages_local.o \
 	  lib/messages_ctdbd.o lib/packet.o lib/ctdbd_conn.o lib/talloc_stack.o \
-	  lib/interfaces.o ../lib/util/rbtree.o lib/memcache.o \
+	  lib/interfaces.o lib/memcache.o \
 	  lib/util_transfer_file.o lib/async_req.o \
 	  lib/async_sock.o \
 	  $(TDB_LIB_OBJ) \
 	  $(VERSION_OBJ) lib/charcnv.o lib/debug.o lib/fault.o \
-	  lib/interface.o ../lib/crypto/md4.o \
-	  lib/pidfile.o \
-	  ../lib/util/signal.o lib/system.o lib/sendfile.o lib/recvfile.o lib/time.o \
-	  ../lib/util/time.o \
+	  lib/interface.o lib/pidfile.o \
+	  lib/system.o lib/sendfile.o lib/recvfile.o lib/time.o \
 	  lib/ufc.o lib/genrand.o lib/username.o \
 	  lib/util_pw.o lib/access.o lib/smbrun.o \
-	  lib/bitmap.o ../lib/crypto/crc32.o lib/dprintf.o $(UTIL_REG_OBJ) \
-	  ../lib/util/xfile.o ../lib/util/util_strlist.o lib/wins_srv.o \
+	  lib/bitmap.o lib/dprintf.o $(UTIL_REG_OBJ) \
+	  lib/wins_srv.o \
 	  lib/util_str.o lib/clobber.o lib/util_sid.o lib/util_uuid.o \
-	  lib/util_unistr.o ../lib/util/util_file.o lib/util_file.o ../lib/util/data_blob.o \
-	  lib/util.o ../lib/util/util.o lib/util_sock.o lib/sock_exec.o lib/util_sec.o \
-	  lib/substitute.o ../lib/util/fsusage.o lib/dbwrap_util.o \
+	  lib/util_unistr.o lib/util_file.o \
+	  lib/util.o lib/util_sock.o lib/sock_exec.o lib/util_sec.o \
+	  lib/substitute.o lib/dbwrap_util.o \
 	  lib/ms_fnmatch.o lib/select.o lib/errmap_unix.o \
 	  lib/tallocmsg.o lib/dmallocmsg.o libsmb/smb_signing.o \
-	  ../lib/crypto/md5.o ../lib/crypto/hmacmd5.o ../lib/crypto/arcfour.o \
 	  lib/iconv.o lib/pam_errors.o intl/lang_tdb.o lib/conn_tdb.o \
 	  lib/adt_tree.o lib/gencache.o \
 	  lib/module.o lib/events.o lib/ldap_escape.o @CHARSET_STATIC@ \

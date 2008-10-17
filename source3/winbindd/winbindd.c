@@ -66,7 +66,7 @@ static bool reload_services_file(const char *logfile)
 	if (lp_loaded()) {
 		const char *fname = lp_configfile();
 
-		if (file_exist(fname,NULL) && !strcsequal(fname,get_dyn_CONFIGFILE())) {
+		if (file_exist(fname) && !strcsequal(fname,get_dyn_CONFIGFILE())) {
 			set_dyn_CONFIGFILE(fname);
 		}
 	}
@@ -1120,7 +1120,7 @@ int main(int argc, char **argv, char **envp)
 		exit(1);
 	}
 
-	if (!directory_exist(lp_lockdir(), NULL)) {
+	if (!directory_exist(lp_lockdir())) {
 		mkdir(lp_lockdir(), 0755);
 	}
 

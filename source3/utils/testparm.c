@@ -56,7 +56,7 @@ cannot be set in the smb.conf file. nmbd will abort with this setting.\n");
 		ret = 1;
 	}
 
-	if (!directory_exist(lp_lockdir(), &st)) {
+	if (!directory_exist_stat(lp_lockdir(), &st)) {
 		fprintf(stderr, "ERROR: lock directory %s does not exist\n",
 		       lp_lockdir());
 		ret = 1;
@@ -66,7 +66,7 @@ cannot be set in the smb.conf file. nmbd will abort with this setting.\n");
 		ret = 1;
 	}
 
-	if (!directory_exist(lp_piddir(), &st)) {
+	if (!directory_exist_stat(lp_piddir(), &st)) {
 		fprintf(stderr, "ERROR: pid directory %s does not exist\n",
 		       lp_piddir());
 		ret = 1;

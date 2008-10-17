@@ -344,7 +344,7 @@ ELOG_TDB *elog_open_tdb( char *logname, bool force_clear )
 	/* make sure that the eventlog dir exists */
 
 	eventlogdir = state_path( "eventlog" );
-	if ( !directory_exist( eventlogdir, NULL ) )
+	if ( !directory_exist( eventlogdir ) )
 		mkdir( eventlogdir, 0755 );
 
 	/* get the path on disk */

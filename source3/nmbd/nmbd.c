@@ -332,7 +332,7 @@ static bool reload_nmbd_services(bool test)
 
 	if ( lp_loaded() ) {
 		const char *fname = lp_configfile();
-		if (file_exist(fname,NULL) && !strcsequal(fname,get_dyn_CONFIGFILE())) {
+		if (file_exist(fname) && !strcsequal(fname,get_dyn_CONFIGFILE())) {
 			set_dyn_CONFIGFILE(fname);
 			test = False;
 		}
@@ -905,7 +905,7 @@ static bool open_sockets(bool isdaemon, int port)
 	}
 #endif
 
-	if (!directory_exist(lp_lockdir(), NULL)) {
+	if (!directory_exist(lp_lockdir())) {
 		mkdir(lp_lockdir(), 0755);
 	}
 

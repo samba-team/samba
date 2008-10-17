@@ -6930,7 +6930,7 @@ static bool handle_include(int snum, const char *pszParmValue, char **ptr)
 
 	string_set(ptr, fname);
 
-	if (file_exist(fname, NULL)) {
+	if (file_exist(fname)) {
 		bool ret = pm_process(fname, do_section, do_parameter, NULL);
 		SAFE_FREE(fname);
 		return ret;

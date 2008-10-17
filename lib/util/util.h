@@ -574,7 +574,7 @@ _PUBLIC_ bool same_net(struct in_addr ip1,struct in_addr ip2,struct in_addr mask
 /**
  Check if a process exists. Does this work on all unixes?
 **/
-_PUBLIC_ bool process_exists(pid_t pid);
+_PUBLIC_ bool process_exists_by_pid(pid_t pid);
 
 /**
  Simple routine to do POSIX file locking. Cruft in NFS and 64->32 bit mapping

@@ -2810,7 +2810,7 @@ NTSTATUS rpc_pipe_open_ncalrpc(TALLOC_CTX *mem_ctx, const char *socket_path,
 	result->abstract_syntax = *abstract_syntax;
 	result->transfer_syntax = ndr_transfer_syntax;
 
-	result->desthost = get_myname(result);
+	result->desthost = talloc_get_myname(result);
 	result->srv_name_slash = talloc_asprintf_strupper_m(
 		result, "\\\\%s", result->desthost);
 	if ((result->desthost == NULL) || (result->srv_name_slash == NULL)) {

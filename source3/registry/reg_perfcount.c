@@ -63,7 +63,7 @@ void perfcount_init_keys( void )
 
 	/* no registry keys; just create the perfmon directory */
 	
-	if ( !directory_exist( p, NULL ) )
+	if ( !directory_exist( p ) )
 		mkdir( p, 0755 );
 	
 	return;

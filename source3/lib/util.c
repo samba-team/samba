@@ -2321,7 +2321,7 @@ static char *xx_path(const char *name, const char *rootpath)
 	}
 	trim_string(fname,"","/");
 
-	if (!directory_exist_stat(fname,NULL)) {
+	if (!directory_exist(fname)) {
 		mkdir(fname,0755);
 	}
 

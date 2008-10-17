@@ -840,7 +840,7 @@ bool reload_services(bool test)
 
 	if (lp_loaded()) {
 		char *fname = lp_configfile();
-		if (file_exist(fname, NULL) &&
+		if (file_exist(fname) &&
 		    !strcsequal(fname, get_dyn_CONFIGFILE())) {
 			set_dyn_CONFIGFILE(fname);
 			test = False;
@@ -1319,7 +1319,7 @@ extern void build_options(bool screen);
 		setpgid( (pid_t)0, (pid_t)0);
 #endif
 
-	if (!directory_exist(lp_lockdir(), NULL))
+	if (!directory_exist(lp_lockdir()))
 		mkdir(lp_lockdir(), 0755);
 
 	if (is_daemon)
