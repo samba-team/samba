@@ -809,6 +809,7 @@ static bool test_FetchNT4Data(struct torture_context *tctx,
 	NTSTATUS status;
 	bool ret = true;
 	struct drsuapi_DsGetNT4ChangeLog r;
+	union drsuapi_DsGetNT4ChangeLogRequest req;
 	struct GUID null_guid;
 	struct dom_sid null_sid;
 	DATA_BLOB cookie;
@@ -821,12 +822,14 @@ static bool test_FetchNT4Data(struct torture_context *tctx,
 	r.in.bind_handle	= &ctx->new_dc.drsuapi.bind_handle;
 	r.in.level		= 1;
 
-	r.in.req.req1.unknown1	= lp_parm_int(tctx->lp_ctx, NULL, "dssync", "nt4-1", 3);
-	r.in.req.req1.unknown2	= lp_parm_int(tctx->lp_ctx, NULL, "dssync", "nt4-2", 0x00004000);
+	req.req1.unknown1	= lp_parm_int(tctx->lp_ctx, NULL, "dssync", "nt4-1", 3);
+	req.req1.unknown2	= lp_parm_int(tctx->lp_ctx, NULL, "dssync", "nt4-2", 0x00004000);
 
 	while (1) {
-		r.in.req.req1.length	= cookie.length;
-		r.in.req.req1.data	= cookie.data;
+		req.req1.length	= cookie.length;
+		req.req1.data	= cookie.data;
+
+		r.in.req = &req;
 
 		status = dcerpc_drsuapi_DsGetNT4ChangeLog(ctx->new_dc.drsuapi.pipe, ctx, &r);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED)) {
@@ -845,16 +848,16 @@ static bool test_FetchNT4Data(struct torture_context *tctx,
 		} else if (!W_ERROR_IS_OK(r.out.result)) {
 			printf("DsGetNT4ChangeLog failed - %s\n", win_errstr(r.out.result));
 			ret = false;
-		} else if (r.out.level != 1) {
-			printf("DsGetNT4ChangeLog unknown level - %u\n", r.out.level);
+		} else if (*r.out.level_out != 1) {
+			printf("DsGetNT4ChangeLog unknown level - %u\n", *r.out.level_out);
 			ret = false;
-		} else if (NT_STATUS_IS_OK(r.out.info.info1.status)) {
-		} else if (NT_STATUS_EQUAL(r.out.info.info1.status, STATUS_MORE_ENTRIES)) {
-			cookie.length	= r.out.info.info1.length1;
-			cookie.data	= r.out.info.info1.data1;
+		} else if (NT_STATUS_IS_OK(r.out.info->info1.status)) {
+		} else if (NT_STATUS_EQUAL(r.out.info->info1.status, STATUS_MORE_ENTRIES)) {
+			cookie.length	= r.out.info->info1.length1;
+			cookie.data	= r.out.info->info1.data1;
 			continue;
 		} else {
-			printf("DsGetNT4ChangeLog failed - %s\n", nt_errstr(r.out.info.info1.status));
+			printf("DsGetNT4ChangeLog failed - %s\n", nt_errstr(r.out.info->info1.status));
 			ret = false;
 		}
 

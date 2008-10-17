@@ -237,6 +237,7 @@ static bool test_DsReplicaGetInfo(struct dcerpc_pipe *p, struct torture_context 
 {
 	NTSTATUS status;
 	struct drsuapi_DsReplicaGetInfo r;
+	union drsuapi_DsReplicaGetInfoRequest req;
 	bool ret = true;
 	int i;
 	struct {
@@ -325,20 +326,21 @@ static bool test_DsReplicaGetInfo(struct dcerpc_pipe *p, struct torture_context 
 		r.in.level = array[i].level;
 		switch(r.in.level) {
 		case DRSUAPI_DS_REPLICA_GET_INFO:
-			r.in.req.req1.info_type	= array[i].infotype;
-			r.in.req.req1.object_dn	= object_dn;
-			ZERO_STRUCT(r.in.req.req1.guid1);
+			req.req1.info_type	= array[i].infotype;
+			req.req1.object_dn	= object_dn;
+			ZERO_STRUCT(req.req1.guid1);
 			break;
 		case DRSUAPI_DS_REPLICA_GET_INFO2:
-			r.in.req.req2.info_type	= array[i].infotype;
-			r.in.req.req2.object_dn	= object_dn;
-			ZERO_STRUCT(r.in.req.req1.guid1);
-			r.in.req.req2.unknown1	= 0;
-			r.in.req.req2.string1	= NULL;
-			r.in.req.req2.string2	= NULL;
-			r.in.req.req2.unknown2	= 0;
+			req.req2.info_type	= array[i].infotype;
+			req.req2.object_dn	= object_dn;
+			ZERO_STRUCT(req.req1.guid1);
+			req.req2.unknown1	= 0;
+			req.req2.string1	= NULL;
+			req.req2.string2	= NULL;
+			req.req2.unknown2	= 0;
 			break;
 		}
+		r.in.req = &req;
 
 		status = dcerpc_drsuapi_DsReplicaGetInfo(p, tctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -611,20 +613,23 @@ bool test_QuerySitesByCost(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct drsuapi_QuerySitesByCost r;
+	union drsuapi_QuerySitesByCostRequest req;
 	bool ret = true;
 
 	const char *my_site = "Default-First-Site-Name";
 	const char *remote_site1 = "smbtorture-nonexisting-site1";
 	const char *remote_site2 = "smbtorture-nonexisting-site2";
 
+	req.req1.site_from = talloc_strdup(mem_ctx, my_site);
+	req.req1.num_req = 2;
+	req.req1.site_to = talloc_zero_array(mem_ctx, const char *, 2);
+	req.req1.site_to[0] = talloc_strdup(mem_ctx, remote_site1);
+	req.req1.site_to[1] = talloc_strdup(mem_ctx, remote_site2);
+	req.req1.flags = 0;
+
 	r.in.bind_handle = &priv->bind_handle;
 	r.in.level = 1;
-	r.in.req.req1.site_from = talloc_strdup(mem_ctx, my_site);
-	r.in.req.req1.num_req = 2;
-	r.in.req.req1.site_to = talloc_zero_array(mem_ctx, const char *, r.in.req.req1.num_req);
-	r.in.req.req1.site_to[0] = talloc_strdup(mem_ctx, remote_site1);
-	r.in.req.req1.site_to[1] = talloc_strdup(mem_ctx, remote_site2);
-	r.in.req.req1.flags = 0;
+	r.in.req = &req;
 
 	status = dcerpc_drsuapi_QuerySitesByCost(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -641,17 +646,17 @@ bool test_QuerySitesByCost(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	if (W_ERROR_IS_OK(r.out.result)) {
 
-		if (!W_ERROR_EQUAL(r.out.ctr.ctr1.info[0].error_code, WERR_DS_OBJ_NOT_FOUND) ||
-		    !W_ERROR_EQUAL(r.out.ctr.ctr1.info[1].error_code, WERR_DS_OBJ_NOT_FOUND)) {	
+		if (!W_ERROR_EQUAL(r.out.ctr->ctr1.info[0].error_code, WERR_DS_OBJ_NOT_FOUND) ||
+		    !W_ERROR_EQUAL(r.out.ctr->ctr1.info[1].error_code, WERR_DS_OBJ_NOT_FOUND)) {
 			printf("expected error_code WERR_DS_OBJ_NOT_FOUND, got %s\n", 
-				win_errstr(r.out.ctr.ctr1.info[0].error_code));
+				win_errstr(r.out.ctr->ctr1.info[0].error_code));
 			ret = false;
 		}
 
-		if ((r.out.ctr.ctr1.info[0].site_cost != (uint32_t) -1) ||
-		    (r.out.ctr.ctr1.info[1].site_cost != (uint32_t) -1)) {
+		if ((r.out.ctr->ctr1.info[0].site_cost != (uint32_t) -1) ||
+		    (r.out.ctr->ctr1.info[1].site_cost != (uint32_t) -1)) {
 			printf("expected site_cost %d, got %d\n", 
-				(uint32_t) -1, r.out.ctr.ctr1.info[0].site_cost);
+				(uint32_t) -1, r.out.ctr->ctr1.info[0].site_cost);
 			ret = false;
 		}
 	}
