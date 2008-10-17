@@ -288,7 +288,7 @@ import "lsa.idl", "security.idl";
 	/* Function: 0x15 */
 	WERROR winreg_SetKeySecurity(
 		[in,ref] policy_handle *handle,
-		[in] winreg_AccessMask access_mask,
+		[in] security_secinfo sec_info,
 		[in,ref] KeySecurityData *sd
 	);
 
