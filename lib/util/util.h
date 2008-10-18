@@ -634,7 +634,7 @@ _PUBLIC_ bool all_zero(const uint8_t *ptr, size_t size);
 /**
   realloc an array, checking for integer overflow in the array size
 */
-_PUBLIC_ void *realloc_array(void *ptr, size_t el_size, unsigned count);
+_PUBLIC_ void *realloc_array(void *ptr, size_t el_size, unsigned count, bool free_on_fail);
 
 /* The following definitions come from lib/util/fsusage.c  */
 

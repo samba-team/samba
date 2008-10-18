@@ -569,11 +569,13 @@ _PUBLIC_ bool all_zero(const uint8_t *ptr, size_t size)
 /**
   realloc an array, checking for integer overflow in the array size
 */
-_PUBLIC_ void *realloc_array(void *ptr, size_t el_size, unsigned count)
+_PUBLIC_ void *realloc_array(void *ptr, size_t el_size, unsigned count, bool free_on_fail)
 {
 #define MAX_MALLOC_SIZE 0x7fffffff
 	if (count == 0 ||
 	    count >= MAX_MALLOC_SIZE/el_size) {
+		if (free_on_fail)
+			SAFE_FREE(ptr);
 		return NULL;
 	}
 	if (!ptr) {
@@ -588,7 +590,7 @@ _PUBLIC_ void *realloc_array(void *ptr, size_t el_size, unsigned count)
 
 void *malloc_array(size_t el_size, unsigned int count)
 {
-	return realloc_array(NULL, el_size, count);
+	return realloc_array(NULL, el_size, count, false);
 }
 
 _PUBLIC_ void *talloc_check_name_abort(const void *ptr, const char *name)

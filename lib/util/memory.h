@@ -40,20 +40,12 @@
 /**
  * Allocate an array of elements of one data type. Does type-checking.
  */
-#if _SAMBA_BUILD_ == 3
 #define malloc_array_p(type, count) (type *)realloc_array(NULL, sizeof(type), count, false)
-#else
-#define malloc_array_p(type, count) (type *)realloc_array(NULL, sizeof(type), count)
-#endif
 
 /** 
  * Resize an array of elements of one data type. Does type-checking.
  */
-#if _SAMBA_BUILD_ == 3
 #define realloc_p(p, type, count) (type *)realloc_array(p, sizeof(type), count, false)
-#else
-#define realloc_p(p, type, count) (type *)realloc_array(p, sizeof(type), count)
-#endif
 
 /** 
  * zero a structure 
