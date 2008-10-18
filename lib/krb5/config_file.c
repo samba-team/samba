@@ -367,6 +367,36 @@ krb5_config_file_free (krb5_context context, krb5_config_section *s)
     return 0;
 }
 
+krb5_error_code
+_krb5_config_copy(krb5_context context,
+		  krb5_config_section *c,
+		  krb5_config_section **d)
+{
+    krb5_config_binding **previous = NULL;
+
+    while (c) {
+	*d = calloc(1, sizeof(**d));
+
+	(*d)->name = strdup(c->name);
+	(*d)->type = c->type;
+	if ((*d)->type == krb5_config_string)
+	    (*d)->u.string = strdup(c->u.string);
+	else if ((*d)->type == krb5_config_list)
+	    krb5_config_copy (context, c->u.list, &(*d)->u.list);
+	else
+	    krb5_abortx(context,
+			"unknown binding type (%d) in krb5_config_copy",
+			(*d)->type);
+	if (previous)
+	    *previous = *d;
+
+	previous = &(*d)->next;
+	c = c->next;
+    }
+}
+
+
+
 const void *
 krb5_config_get_next (krb5_context context,
 		      const krb5_config_section *c,

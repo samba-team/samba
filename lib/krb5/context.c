@@ -349,10 +349,18 @@ krb5_copy_context(krb5_context context, krb5_context *out)
 
     p = calloc(1, sizeof(*p));
     if (p == NULL) {
-	ret = ENOMEM;
-	krb5_set_error_message(context, ret, N_("malloc: out of memory", ""));
-	goto out;
+	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
+	return ENOMEM;
     }
+
+    p->mutex = malloc(sizeof(p->mutex));
+    if (p->mutex == NULL) {
+	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
+	free(p);
+	return ENOMEM;
+    }
+    HEIMDAL_MUTEX_init(context->mutex);
+
 
     if (context->default_cc_name)
 	p->default_cc_name = strdup(context->default_cc_name);
@@ -377,7 +385,9 @@ krb5_copy_context(krb5_context context, krb5_context *out)
 	    goto out;
     }
 
-    p->cf = context->cf; /* XXX krb5_config_file_copy() */
+    ret = _krb5_config_copy(context, context->cf, &p->cf);
+    if (ret)
+	goto out;
 
     /* XXX should copy */
     krb5_init_ets(p);
@@ -399,14 +409,6 @@ krb5_copy_context(krb5_context context, krb5_context *out)
     ret = _krb5_copy_send_to_kdc_func(p, context);
     if (ret)
 	goto out;
-
-    p->mutex = malloc(sizeof(p->mutex));
-    if (p->mutex == NULL) {
-	ret = ENOMEM;
-	krb5_set_error_message(context, ret, N_("malloc: out of memory", ""));
-	goto out;
-    }
-    HEIMDAL_MUTEX_init(context->mutex);
 
     *out = p;
 
