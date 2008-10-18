@@ -502,9 +502,12 @@ krb5_set_send_to_kdc_func(krb5_context context,
 krb5_error_code KRB5_LIB_FUNCTION
 _krb5_copy_send_to_kdc_func(krb5_context context, krb5_context to)
 {
-    return krb5_set_send_to_kdc_func(to,
-				     context->send_to_kdc->func, 
-				     context->send_to_kdc->data);
+    if (context->send_to_kdc)
+	return krb5_set_send_to_kdc_func(to,
+					 context->send_to_kdc->func, 
+					 context->send_to_kdc->data);
+    else
+	return krb5_set_send_to_kdc_func(to, NULL, NULL);
 }
 
 
