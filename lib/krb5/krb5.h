@@ -397,7 +397,7 @@ typedef struct krb5_creds {
 
 typedef struct krb5_cc_cache_cursor_data *krb5_cc_cache_cursor;
 
-#define KRB5_CC_OPS_VERSION 1
+#define KRB5_CC_OPS_VERSION 2
 
 typedef struct krb5_cc_ops {
     int version;
@@ -426,6 +426,7 @@ typedef struct krb5_cc_ops {
     krb5_error_code (*move)(krb5_context, krb5_ccache, krb5_ccache);
     krb5_error_code (*get_default_name)(krb5_context, char **);
     krb5_error_code (*set_default)(krb5_context, krb5_ccache);
+    krb5_error_code (*lastchange)(krb5_context, krb5_ccache, krb5_timestamp *);
 } krb5_cc_ops;
 
 struct krb5_log_facility;
