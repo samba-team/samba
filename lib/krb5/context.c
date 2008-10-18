@@ -353,7 +353,7 @@ krb5_copy_context(krb5_context context, krb5_context *out)
 	return ENOMEM;
     }
 
-    p->mutex = malloc(sizeof(p->mutex));
+    p->mutex = malloc(sizeof(*p->mutex));
     if (p->mutex == NULL) {
 	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	free(p);
