@@ -216,9 +216,9 @@ _PUBLIC_ size_t strhex_to_str(char *p, size_t len, const char *strhex)
 /** 
  * Parse a hex string and return a data blob. 
  */
-_PUBLIC_ _PURE_ DATA_BLOB strhex_to_data_blob(const char *strhex) 
+_PUBLIC_ _PURE_ DATA_BLOB strhex_to_data_blob(TALLOC_CTX *mem_ctx, const char *strhex) 
 {
-	DATA_BLOB ret_blob = data_blob(NULL, strlen(strhex)/2+1);
+	DATA_BLOB ret_blob = data_blob(mem_ctx, strlen(strhex)/2+1);
 
 	ret_blob.length = strhex_to_str((char *)ret_blob.data, 	
 					strlen(strhex), 

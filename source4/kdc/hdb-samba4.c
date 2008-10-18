@@ -277,12 +277,11 @@ static krb5_error_code LDB_message2entry_keys(krb5_context context,
 	if (scpk) {
 		DATA_BLOB blob;
 
-		blob = strhex_to_data_blob(scpk->data);
+		blob = strhex_to_data_blob(mem_ctx, scpk->data);
 		if (!blob.data) {
 			ret = ENOMEM;
 			goto out;
 		}
-		talloc_steal(mem_ctx, blob.data);
 
 		/* we cannot use ndr_pull_struct_blob_all() here, as w2k and w2k3 add padding bytes */
 		ndr_err = ndr_pull_struct_blob(&blob, mem_ctx, iconv_convenience, &_pkb,
