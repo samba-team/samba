@@ -629,6 +629,7 @@ LDAP_entry2mods(krb5_context context, HDB * db, hdb_entry_ex * ent,
 	    && ent->entry.keys.val[i].key.keytype == ETYPE_ARCFOUR_HMAC_MD5) {
 	    char *ntHexPassword;
 	    char *nt;
+	    time_t now = time(NULL);
 		
 	    /* the key might have been 'sealed', but samba passwords
 	       are clear in the directory */
@@ -650,7 +651,11 @@ LDAP_entry2mods(krb5_context context, HDB * db, hdb_entry_ex * ent,
 	    free(ntHexPassword);
 	    if (ret)
 		goto out;
-		
+	    ret = LDAP_addmod_integer(context, &mods, LDAP_MOD_REPLACE,
+				      "sambaPwdLastSet", now);
+	    if (ret)
+		goto out;
+
 	    /* have to kill the LM passwod if it exists */
 	    vals = ldap_get_values_len(HDB2LDAP(db), msg, "sambaLMPassword");
 	    if (vals) {
@@ -1170,6 +1175,27 @@ LDAP_message2entry(krb5_context context, HDB * db, LDAPMessage * msg,
 	/* OPTIONAL */
 	free(ent->entry.pw_end);
 	ent->entry.pw_end = NULL;
+    }
+
+    ret = LDAP_get_integer_value(db, msg, "sambaPwdLastSet", &tmp_time);
+    if (ret == 0) {
+	time_t delta;
+
+	if (ent->entry.pw_end == NULL) {
+            ent->entry.pw_end = malloc(sizeof(*ent->entry.pw_end));
+            if (ent->entry.pw_end == NULL) {
+                krb5_set_error_string(context, "malloc: out of memory");
+                ret = ENOMEM;
+                goto out;
+            }
+        }
+
+	delta = krb5_config_get_time_default(context, NULL, 
+					     365 * 24 * 60 * 60,
+					     "kadmin",
+					     "password_lifetime",
+					     NULL);
+        *ent->entry.pw_end = tmp_time + delta;
     }
 
     ret = LDAP_get_integer_value(db, msg, "sambaPwdMustChange", &tmp_time);
