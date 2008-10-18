@@ -382,7 +382,7 @@ _krb5_config_copy(krb5_context context,
 	if ((*d)->type == krb5_config_string)
 	    (*d)->u.string = strdup(c->u.string);
 	else if ((*d)->type == krb5_config_list)
-	    krb5_config_copy (context, c->u.list, &(*d)->u.list);
+	    _krb5_config_copy (context, c->u.list, &(*d)->u.list);
 	else
 	    krb5_abortx(context,
 			"unknown binding type (%d) in krb5_config_copy",
