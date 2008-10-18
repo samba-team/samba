@@ -436,8 +436,8 @@ rameter is ignored when using CUPS libraries.\n",
 	}
 
 done:
-	TALLOC_FREE(frame);
 	gfree_loadparm();
+	TALLOC_FREE(frame);
 	return ret;
 }
 
