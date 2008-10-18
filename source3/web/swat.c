@@ -384,7 +384,8 @@ static void show_parameters(int snum, int allparameters, unsigned int parm_filte
 					break;
 
 				case P_LIST:
-					if (!str_list_compare(*(char ***)ptr, (char **)(parm->def.lvalue))) continue;
+					if (!str_list_equal(*(const char ***)ptr, 
+							    (const char **)(parm->def.lvalue))) continue;
 					break;
 
 				case P_STRING:

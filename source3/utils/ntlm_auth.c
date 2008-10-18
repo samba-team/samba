@@ -1813,7 +1813,7 @@ static void manage_ntlm_server_1_request(struct ntlm_auth_state *state,
 				if (ntlm_server_1_lm_session_key 
 				    && (memcmp(zeros, lm_key, 
 					       sizeof(lm_key)) != 0)) {
-					hex_lm_key = hex_encode(NULL,
+					hex_lm_key = hex_encode_talloc(NULL,
 								(const unsigned char *)lm_key,
 								sizeof(lm_key));
 					x_fprintf(x_stdout, "LANMAN-Session-Key: %s\n", hex_lm_key);
@@ -1823,7 +1823,7 @@ static void manage_ntlm_server_1_request(struct ntlm_auth_state *state,
 				if (ntlm_server_1_user_session_key 
 				    && (memcmp(zeros, user_session_key, 
 					       sizeof(user_session_key)) != 0)) {
-					hex_user_session_key = hex_encode(NULL,
+					hex_user_session_key = hex_encode_talloc(NULL,
 									  (const unsigned char *)user_session_key, 
 									  sizeof(user_session_key));
 					x_fprintf(x_stdout, "User-Session-Key: %s\n", hex_user_session_key);
@@ -2262,7 +2262,7 @@ static bool check_auth_crap(void)
 	if (request_lm_key 
 	    && (memcmp(zeros, lm_key, 
 		       sizeof(lm_key)) != 0)) {
-		hex_lm_key = hex_encode(NULL, (const unsigned char *)lm_key,
+		hex_lm_key = hex_encode_talloc(NULL, (const unsigned char *)lm_key,
 					sizeof(lm_key));
 		x_fprintf(x_stdout, "LM_KEY: %s\n", hex_lm_key);
 		TALLOC_FREE(hex_lm_key);
@@ -2270,7 +2270,7 @@ static bool check_auth_crap(void)
 	if (request_user_session_key 
 	    && (memcmp(zeros, user_session_key, 
 		       sizeof(user_session_key)) != 0)) {
-		hex_user_session_key = hex_encode(NULL, (const unsigned char *)user_session_key, 
+		hex_user_session_key = hex_encode_talloc(NULL, (const unsigned char *)user_session_key, 
 						  sizeof(user_session_key));
 		x_fprintf(x_stdout, "NT_KEY: %s\n", hex_user_session_key);
 		TALLOC_FREE(hex_user_session_key);

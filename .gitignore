@@ -181,7 +181,7 @@ source4/libcli/composite/proto.h
 source4/libcli/finddcs.h
 source4/libcli/ldap/ldap_proto.h
 source4/libcli/libcli_proto.h
-source4/libcli/nbt/nbtname.h
+libcli/nbt/nbtname.h
 source4/libcli/nbt/nbt_proto.h
 source4/libcli/ndr_netlogon_proto.h
 source4/libcli/netlogon_proto.h
@@ -196,7 +196,7 @@ source4/libcli/util/proto.h
 source4/libcli/wrepl/winsrepl_proto.h
 source4/lib/cmdline/credentials.h
 source4/lib/cmdline/popt_credentials.h
-source4/lib/crypto/test_proto.h
+lib/crypto/test_proto.h
 source4/lib/db_wrap_proto.h
 source4/lib/ldb/bin
 source4/lib/ldb/examples/ldbreader
@@ -230,7 +230,7 @@ source4/lib/tdb/bin/tdbdump
 source4/lib/tdb/bin/tdbtool
 source4/lib/tdb/bin/tdbtorture
 source4/lib/tdr/tdr_proto.h
-source4/lib/util/apidocs
+lib/util/apidocs
 lib/util/asn1_proto.h
 lib/util/pidfile.h
 lib/util/unix_privs.h

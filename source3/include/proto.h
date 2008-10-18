@@ -1614,7 +1614,7 @@ char *alpha_strcpy_fn(const char *fn,
 char *StrnCpy_fn(const char *fn, int line,char *dest,const char *src,size_t n);
 size_t strhex_to_str(char *buf, size_t buf_len, const char *strhex, size_t strhex_len);
 DATA_BLOB strhex_to_data_blob(TALLOC_CTX *mem_ctx, const char *strhex);
-char *hex_encode(TALLOC_CTX *mem_ctx, const unsigned char *buff_in, size_t len);
+char *hex_encode_talloc(TALLOC_CTX *mem_ctx, const unsigned char *buff_in, size_t len);
 bool in_list(const char *s, const char *list, bool casesensitive);
 void string_free(char **s);
 bool string_set(char **dest,const char *src);
@@ -1664,7 +1664,7 @@ char *binary_string(char *buf, int len);
 int fstr_sprintf(fstring s, const char *fmt, ...);
 char **str_list_make(TALLOC_CTX *mem_ctx, const char *string, const char *sep);
 char **str_list_copy(TALLOC_CTX *mem_ctx, const char **list);
-bool str_list_compare(char **list1, char **list2);
+bool str_list_equal(const char **list1, const char **list2);
 size_t str_list_length( const char * const*list );
 bool str_list_sub_basic( char **list, const char *smb_name,
 			 const char *domain_name );

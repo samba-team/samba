@@ -81,8 +81,8 @@ int main(int argc, const char **argv)
 
 
 done:
-	TALLOC_FREE(frame);
 	gfree_loadparm();
+	TALLOC_FREE(frame);
 	return ret;
 }
 
