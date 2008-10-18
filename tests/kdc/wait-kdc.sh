@@ -36,6 +36,7 @@
 
 name=${1:-KDC}
 log=${2:-messages.log}
+waitfor=${3:-${name} started}
 
 t=0
 waitsec=20
@@ -46,7 +47,7 @@ while true ; do
     t=`expr ${t} + 2`
     sleep 2
     echo "Have waited $t seconds"
-    if tail -30 ${log} | grep "${name} started" > /dev/null; then
+    if tail -30 ${log} | grep "${waitfor}" > /dev/null; then
 	break
     fi
     if tail -30 ${log} | grep "No sockets" ; then
