@@ -7423,7 +7423,7 @@ static bool equal_parameter(parm_type type, void *ptr1, void *ptr2)
 			return (*((char *)ptr1) == *((char *)ptr2));
 
 		case P_LIST:
-			return str_list_compare(*(char ***)ptr1, *(char ***)ptr2);
+			return str_list_equal(*(const char ***)ptr1, *(const char ***)ptr2);
 
 		case P_STRING:
 		case P_USTRING:
@@ -7512,8 +7512,8 @@ static bool is_default(int i)
 		return False;
 	switch (parm_table[i].type) {
 		case P_LIST:
-			return str_list_compare (parm_table[i].def.lvalue, 
-						*(char ***)parm_table[i].ptr);
+			return str_list_equal((const char **)parm_table[i].def.lvalue, 
+						*(const char ***)parm_table[i].ptr);
 		case P_STRING:
 		case P_USTRING:
 			return strequal(parm_table[i].def.svalue,

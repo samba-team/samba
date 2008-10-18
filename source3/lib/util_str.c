@@ -1843,29 +1843,6 @@ int fstr_sprintf(fstring s, const char *fmt, ...)
 
 #define S_LIST_ABS 16 /* List Allocation Block Size */
 
-/**
- * Return true if all the elements of the list match exactly.
- **/
-bool str_list_compare(char **list1, char **list2)
-{
-	int num;
-
-	if (!list1 || !list2)
-		return (list1 == list2);
-
-	for (num = 0; list1[num]; num++) {
-		if (!list2[num])
-			return false;
-		if (!strcsequal(list1[num], list2[num]))
-			return false;
-	}
-	if (list2[num])
-		return false; /* if list2 has more elements than list1 fail */
-
-	return true;
-}
-
-
 /******************************************************************************
  version of standard_sub_basic() for string lists; uses talloc_sub_basic()
  for the work

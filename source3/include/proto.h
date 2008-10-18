@@ -1664,7 +1664,7 @@ char *binary_string(char *buf, int len);
 int fstr_sprintf(fstring s, const char *fmt, ...);
 char **str_list_make(TALLOC_CTX *mem_ctx, const char *string, const char *sep);
 char **str_list_copy(TALLOC_CTX *mem_ctx, const char **list);
-bool str_list_compare(char **list1, char **list2);
+bool str_list_equal(const char **list1, const char **list2);
 size_t str_list_length( const char * const*list );
 bool str_list_sub_basic( char **list, const char *smb_name,
 			 const char *domain_name );
