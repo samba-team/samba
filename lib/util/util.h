@@ -79,79 +79,11 @@ extern const char *panic_action;
 	DEBUG(0,("PANIC: assert failed at %s(%d)\n", __FILE__, __LINE__)); \
 	smb_panic("assert failed"); }} while (0)
 
-#ifndef SAFE_FREE /* Oh no this is also defined in tdb.h */
-/**
- * Free memory if the pointer and zero the pointer.
- *
- * @note You are explicitly allowed to pass NULL pointers -- they will
- * always be ignored.
- **/
-#define SAFE_FREE(x) do { if ((x) != NULL) {free(discard_const_p(void *, (x))); (x)=NULL;} } while(0)
-#endif
-
-/** 
- * Type-safe version of malloc. Allocated one copy of the 
- * specified data type.
- */
-#define malloc_p(type) (type *)malloc(sizeof(type))
-
-/**
- * Allocate an array of elements of one data type. Does type-checking.
- */
-#define malloc_array_p(type, count) (type *)realloc_array(NULL, sizeof(type), count)
-
-/** 
- * Resize an array of elements of one data type. Does type-checking.
- */
-#define realloc_p(p, type, count) (type *)realloc_array(p, sizeof(type), count)
-
 #if defined(VALGRIND)
 #define strlen(x) valgrind_strlen(x)
 #endif
 
-/** 
- * zero a structure 
- */
-#ifndef ZERO_STRUCT
-#define ZERO_STRUCT(x) memset((char *)&(x), 0, sizeof(x))
-#endif
-
-/** 
- * zero a structure given a pointer to the structure 
- */
-#ifndef ZERO_STRUCTP
-#define ZERO_STRUCTP(x) do { if ((x) != NULL) memset((char *)(x), 0, sizeof(*(x))); } while(0)
-#endif
-
-/** 
- * zero a structure given a pointer to the structure - no zero check 
- */
-#ifndef ZERO_STRUCTPN
-#define ZERO_STRUCTPN(x) memset((char *)(x), 0, sizeof(*(x)))
-#endif
-
-/* zero an array - note that sizeof(array) must work - ie. it must not be a
-   pointer */
-#ifndef ZERO_ARRAY
-#define ZERO_ARRAY(x) memset((char *)(x), 0, sizeof(x))
-#endif
-
-/**
- * work out how many elements there are in a static array 
- */
-#ifndef ARRAY_SIZE
-#define ARRAY_SIZE(a) (sizeof(a)/sizeof(a[0]))
-#endif
-
-/** 
- * pointer difference macro 
- */
-#ifndef PTR_DIFF
-#define PTR_DIFF(p1,p2) ((ptrdiff_t)(((const char *)(p1)) - (const char *)(p2)))
-#endif
-
-/* The following definitions come from lib/util/fault.c  */
-
+#include "../lib/util/memory.h"
 
 /**
  * Write backtrace to debug log
