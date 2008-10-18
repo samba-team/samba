@@ -178,7 +178,7 @@ _PUBLIC_ char *safe_strcat(char *dest, const char *src, size_t maxlength)
 
 
 **/
-_PUBLIC_ size_t strhex_to_str(char *p, size_t len, const char *strhex)
+_PUBLIC_ size_t strhex_to_str(char *p, size_t p_len, const char *strhex, size_t strhex_len)
 {
 	size_t i;
 	size_t num_chars = 0;
@@ -186,7 +186,7 @@ _PUBLIC_ size_t strhex_to_str(char *p, size_t len, const char *strhex)
 	const char     *hexchars = "0123456789ABCDEF";
 	char           *p1 = NULL, *p2 = NULL;
 
-	for (i = 0; i < len && strhex[i] != 0; i++) {
+	for (i = 0; i < strhex_len && strhex[i] != 0; i++) {
 		if (strncasecmp(hexchars, "0x", 2) == 0) {
 			i++; /* skip two chars */
 			continue;
@@ -204,6 +204,10 @@ _PUBLIC_ size_t strhex_to_str(char *p, size_t len, const char *strhex)
 		hinybble = PTR_DIFF(p1, hexchars);
 		lonybble = PTR_DIFF(p2, hexchars);
 
+		if (num_chars >= p_len) {
+			break;
+		}
+
 		p[num_chars] = (hinybble << 4) | lonybble;
 		num_chars++;
 
@@ -220,9 +224,9 @@ _PUBLIC_ _PURE_ DATA_BLOB strhex_to_data_blob(TALLOC_CTX *mem_ctx, const char *s
 {
 	DATA_BLOB ret_blob = data_blob(mem_ctx, strlen(strhex)/2+1);
 
-	ret_blob.length = strhex_to_str((char *)ret_blob.data, 	
-					strlen(strhex), 
-					strhex);
+	ret_blob.length = strhex_to_str((char *)ret_blob.data, ret_blob.length,
+					strhex,
+					strlen(strhex));
 
 	return ret_blob;
 }
