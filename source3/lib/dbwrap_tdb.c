@@ -31,14 +31,14 @@ static int db_tdb_record_destr(struct db_record* data)
 	struct db_tdb_ctx *ctx =
 		talloc_get_type_abort(data->private_data, struct db_tdb_ctx);
 
-	/* This hex_encode() call allocates memory on data context. By way how current 
+	/* This hex_encode_talloc() call allocates memory on data context. By way how current 
 	   __talloc_free() code works, it is OK to allocate in the destructor as 
 	   the children of data will be freed after call to the destructor and this 
 	   new 'child' will be caught and freed correctly.
 	 */
 	DEBUG(10, (DEBUGLEVEL > 10
 		   ? "Unlocking key %s\n" : "Unlocking key %.20s\n",
-		   hex_encode(data, (unsigned char *)data->key.dptr,
+		   hex_encode_talloc(data, (unsigned char *)data->key.dptr,
 			      data->key.dsize)));
 
 	if (tdb_chainunlock(ctx->wtdb->tdb, data->key) != 0) {
@@ -94,7 +94,7 @@ static struct db_record *db_tdb_fetch_locked(struct db_context *db,
 
 	/* Do not accidently allocate/deallocate w/o need when debug level is lower than needed */
 	if(DEBUGLEVEL >= 10) {
-		char *keystr = hex_encode(NULL, (unsigned char*)key.dptr, key.dsize);
+		char *keystr = hex_encode_talloc(NULL, (unsigned char*)key.dptr, key.dsize);
 		DEBUG(10, (DEBUGLEVEL > 10
 			   ? "Locking key %s\n" : "Locking key %.20s\n",
 			   keystr));

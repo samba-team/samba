@@ -821,7 +821,7 @@ static int db_ctdb_record_destr(struct db_record* data)
 		   ? "Unlocking db %u key %s\n"
 		   : "Unlocking db %u key %.20s\n",
 		   (int)crec->ctdb_ctx->db_id,
-		   hex_encode(data, (unsigned char *)data->key.dptr,
+		   hex_encode_talloc(data, (unsigned char *)data->key.dptr,
 			      data->key.dsize)));
 
 	if (tdb_chainunlock(crec->ctdb_ctx->wtdb->tdb, data->key) != 0) {
@@ -871,7 +871,7 @@ static struct db_record *fetch_locked_internal(struct db_ctdb_ctx *ctx,
 again:
 
 	if (DEBUGLEVEL >= 10) {
-		char *keystr = hex_encode(result, key.dptr, key.dsize);
+		char *keystr = hex_encode_talloc(result, key.dptr, key.dsize);
 		DEBUG(10, (DEBUGLEVEL > 10
 			   ? "Locking db %u key %s\n"
 			   : "Locking db %u key %.20s\n",

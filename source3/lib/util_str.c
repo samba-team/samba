@@ -939,7 +939,7 @@ DATA_BLOB strhex_to_data_blob(TALLOC_CTX *mem_ctx, const char *strhex)
  * Routine to print a buffer as HEX digits, into an allocated string.
  */
 
-char *hex_encode(TALLOC_CTX *mem_ctx, const unsigned char *buff_in, size_t len)
+char *hex_encode_talloc(TALLOC_CTX *mem_ctx, const unsigned char *buff_in, size_t len)
 {
 	int i;
 	char *hex_buffer;
