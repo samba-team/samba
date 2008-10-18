@@ -7,6 +7,9 @@
 
 [appdefaults]
 	pkinit_anchors = FILE:@srcdir@/../../lib/hx509/data/ca.crt
+	reconnect-min = 2s
+	reconnect-backoff = 2s
+	reconnect-max = 10s
 
 [realms]
 	TEST.H5L.SE = {
