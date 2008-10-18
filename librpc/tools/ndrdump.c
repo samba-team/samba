@@ -26,8 +26,6 @@
 #include "librpc/ndr/libndr.h"
 #include "librpc/ndr/ndr_table.h"
 #include "param/param.h"
-#else
-#define _NORETURN_
 #endif
 
 static const struct ndr_interface_call *find_function(
