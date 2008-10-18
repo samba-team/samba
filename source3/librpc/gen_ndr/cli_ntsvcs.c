@@ -424,12 +424,19 @@ NTSTATUS rpccli_PNP_EnumerateSubKeys(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_PNP_GetDeviceList(struct rpc_pipe_client *cli,
 				  TALLOC_CTX *mem_ctx,
+				  const char *filter /* [in] [unique,charset(UTF16)] */,
+				  uint16_t *buffer /* [out] [ref,length_is(*length),size_is(*length)] */,
+				  uint32_t *length /* [in,out] [ref] */,
+				  uint32_t flags /* [in]  */,
 				  WERROR *werror)
 {
 	struct PNP_GetDeviceList r;
 	NTSTATUS status;
 
 	/* In parameters */
+	r.in.filter = filter;
+	r.in.length = length;
+	r.in.flags = flags;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(PNP_GetDeviceList, &r);
@@ -454,6 +461,8 @@ NTSTATUS rpccli_PNP_GetDeviceList(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
+	memcpy(buffer, r.out.buffer, *r.in.length * sizeof(*buffer));
+	*length = *r.out.length;
 
 	/* Return result */
 	if (werror) {
@@ -555,11 +564,11 @@ NTSTATUS rpccli_PNP_GetDeviceRegProp(struct rpc_pipe_client *cli,
 				     TALLOC_CTX *mem_ctx,
 				     const char *devicepath /* [in] [ref,charset(UTF16)] */,
 				     uint32_t property /* [in]  */,
-				     uint32_t *unknown1 /* [in,out] [ref] */,
+				     uint32_t *reg_data_type /* [in,out] [ref] */,
 				     uint8_t *buffer /* [out] [ref,length_is(*buffer_size),size_is(*buffer_size)] */,
 				     uint32_t *buffer_size /* [in,out] [ref] */,
 				     uint32_t *needed /* [in,out] [ref] */,
-				     uint32_t unknown3 /* [in]  */,
+				     uint32_t flags /* [in]  */,
 				     WERROR *werror)
 {
 	struct PNP_GetDeviceRegProp r;
@@ -568,10 +577,10 @@ NTSTATUS rpccli_PNP_GetDeviceRegProp(struct rpc_pipe_client *cli,
 	/* In parameters */
 	r.in.devicepath = devicepath;
 	r.in.property = property;
-	r.in.unknown1 = unknown1;
+	r.in.reg_data_type = reg_data_type;
 	r.in.buffer_size = buffer_size;
 	r.in.needed = needed;
-	r.in.unknown3 = unknown3;
+	r.in.flags = flags;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(PNP_GetDeviceRegProp, &r);
@@ -596,7 +605,7 @@ NTSTATUS rpccli_PNP_GetDeviceRegProp(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	*unknown1 = *r.out.unknown1;
+	*reg_data_type = *r.out.reg_data_type;
 	memcpy(buffer, r.out.buffer, *r.in.buffer_size * sizeof(*buffer));
 	*buffer_size = *r.out.buffer_size;
 	*needed = *r.out.needed;
