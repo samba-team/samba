@@ -70,7 +70,7 @@ bool torture_local_crypto_md5(struct torture_context *torture)
 		DATA_BLOB md5blob;
 
 		data = data_blob_string_const(testarray[i].data);
-		md5blob  = strhex_to_data_blob(testarray[i].md5);
+		md5blob  = strhex_to_data_blob(NULL, testarray[i].md5);
 
 		MD5Init(&ctx);
 		MD5Update(&ctx, data.data, data.length);

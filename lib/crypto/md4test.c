@@ -64,7 +64,7 @@ bool torture_local_crypto_md4(struct torture_context *torture)
 		DATA_BLOB md4blob;
 
 		data = data_blob_string_const(testarray[i].data);
-		md4blob  = strhex_to_data_blob(testarray[i].md4);
+		md4blob  = strhex_to_data_blob(NULL, testarray[i].md4);
 
 		mdfour(md4, data.data, data.length);
 
