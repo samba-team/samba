@@ -1439,3 +1439,51 @@ krb5_cc_last_change_time(krb5_context context,
     *mtime = 0;
     return (*id->ops->lastchange)(context, id, mtime);
 }
+
+/**
+ * Return the last modfication time for a cache collection. The query
+ * can be limited to a specific cache type. If the function return 0
+ * and mtime is 0, there was no credentials in the caches.
+ *
+ * @param context A Kerberos 5 context
+ * @param id The credential cache to probe
+ * @param mtime the last modification time, set to 0 on error.
+
+ * @return Return 0 or and error. See krb5_get_error_message().
+ *
+ * @ingroup krb5_ccache
+ */
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_cccol_last_change_time(krb5_context context,
+			    const char *type,
+			    krb5_timestamp *mtime)
+{
+    krb5_cccol_cursor cursor;
+    krb5_error_code ret;
+    krb5_ccache id;
+    krb5_timestamp t = 0;
+
+    *mtime = 0;
+
+    ret = krb5_cccol_cursor_new (context, &cursor);
+    if (ret)
+	return ret;
+
+    while ((ret = krb5_cccol_cursor_next (context, cursor, &id)) == 0) {
+
+	if (type && strcmp(krb5_cc_get_type(context, id), type) != 0)
+	    continue;
+
+	ret = krb5_cc_last_change_time(context, id, &t);
+	krb5_cc_close(context, id);
+	if (ret)
+	    continue;
+	if (t > *mtime)
+	    *mtime = t;
+    }
+
+    krb5_cccol_cursor_free(context, &cursor);
+
+    return 0;
+}
