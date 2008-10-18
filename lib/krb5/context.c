@@ -353,13 +353,13 @@ krb5_copy_context(krb5_context context, krb5_context *out)
 	return ENOMEM;
     }
 
-    p->mutex = malloc(sizeof(*p->mutex));
+    p->mutex = malloc(sizeof(HEIMDAL_MUTEX));
     if (p->mutex == NULL) {
 	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	free(p);
 	return ENOMEM;
     }
-    HEIMDAL_MUTEX_init(context->mutex);
+    HEIMDAL_MUTEX_init(p->mutex);
 
 
     if (context->default_cc_name)
