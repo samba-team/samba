@@ -14,6 +14,7 @@ LIBSAMBA-UTIL_OBJ_FILES = $(addprefix $(libutilsrcdir)/, \
 		genrand.o \
 		dprintf.o \
 		util_str.o \
+		substitute.o \
 		util_strlist.o \
 		util_file.o \
 		data_blob.o \
