@@ -1190,10 +1190,6 @@ const char *time_to_asc(const time_t t);
 const char *display_time(NTTIME nttime);
 bool nt_time_is_set(const NTTIME *nt);
 
-/* The following definitions come from lib/ufc.c  */
-
-char *ufc_crypt(const char *key,const char *salt);
-
 /* The following definitions come from lib/username.c  */
 
 char *get_user_home_dir(TALLOC_CTX *mem_ctx, const char *user);

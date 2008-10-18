@@ -4318,12 +4318,6 @@ AC_ARG_WITH(pam_smbpass,
 )
 
 
-###############################################
-# test for where we get crypt() from
-AC_SEARCH_LIBS(crypt, [crypt],
-  [test "$ac_cv_search_crypt" = "none required" || AUTH_LIBS="-lcrypt $AUTH_LIBS"
-  AC_DEFINE(HAVE_CRYPT,1,[Whether the system has the crypt() function])])
-
 ##
 ## moved after the check for -lcrypt in order to
 ## ensure that the necessary libraries are included
