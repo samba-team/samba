@@ -359,17 +359,23 @@ krb5_copy_context(krb5_context context, krb5_context *out)
     if (context->default_cc_name_env)
 	p->default_cc_name_env = strdup(context->default_cc_name_env);
     
-    ret = copy_etypes(context, context->etypes, &p->etypes);
-    if (ret)
-	goto out;
-    ret = copy_etypes(context, context->etypes_des, &p->etypes_des);
-    if (ret)
-	goto out;
+    if (context->etypes) {
+	ret = copy_etypes(context, context->etypes, &p->etypes);
+	if (ret)
+	    goto out;
+    }
+    if (context->etypes_des) {
+	ret = copy_etypes(context, context->etypes_des, &p->etypes_des);
+	if (ret)
+	    goto out;
+    }
 
-    ret = krb5_copy_host_realm(context, 
-			       context->default_realms, &p->default_realms);
-    if (ret)
-	goto out;
+    if (context->default_realms) {
+	ret = krb5_copy_host_realm(context, 
+				   context->default_realms, &p->default_realms);
+	if (ret)
+	    goto out;
+    }
 
     p->cf = context->cf; /* XXX krb5_config_file_copy() */
 
