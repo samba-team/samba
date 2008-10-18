@@ -35,8 +35,10 @@
 
 RCSID("$Id$");
 
+static const char *config_name = "ipropd-slave";
+
 static krb5_log_facility *log_facility;
-static char *master_time_lost = "5 min";
+static char *server_time_lost = "5 min";
 static int time_before_lost;
 const char *slave_str = NULL;
 
@@ -44,39 +46,53 @@ static int
 connect_to_master (krb5_context context, const char *master,
 		   const char *port_str)
 {
-    int fd;
-    struct sockaddr_in addr;
-    struct hostent *he;
+    char port[NI_MAXSERV];
+    struct addrinfo *ai, *a;
+    struct addrinfo hints;
+    int error;
+    int s = -1;
 
-    fd = socket (AF_INET, SOCK_STREAM, 0);
-    if (fd < 0)
-	krb5_err (context, 1, errno, "socket AF_INET");
-    memset (&addr, 0, sizeof(addr));
-    addr.sin_family = AF_INET;
-    if (port_str) {
-	addr.sin_port = krb5_getportbyname (context,
-					    port_str, "tcp",
-					    0);
-	if (addr.sin_port == 0) {
-	    char *ptr;
-	    long port;
-	
-	    port = strtol (port_str, &ptr, 10);
-	    if (port == 0 && ptr == port_str)
-		krb5_errx (context, 1, "bad port `%s'", port_str);
-	    addr.sin_port = htons(port);
-	}
-    } else {
-	addr.sin_port = krb5_getportbyname (context, IPROP_SERVICE,
-					    "tcp", IPROP_PORT);
+    memset (&hints, 0, sizeof(hints));
+    hints.ai_socktype = SOCK_STREAM;
+
+    if (port_str == NULL) {
+	snprintf(port, sizeof(port), "%u", IPROP_PORT);
+	port_str = port;
     }
-    he = roken_gethostbyname (master);
-    if (he == NULL)
-	krb5_errx (context, 1, "gethostbyname: %s", hstrerror(h_errno));
-    memcpy (&addr.sin_addr, he->h_addr, sizeof(addr.sin_addr));
-    if(connect(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0)
-	krb5_err (context, 1, errno, "connect");
-    return fd;
+
+    error = getaddrinfo (master, port_str, &hints, &ai);
+    if (error) {
+	krb5_warnx(context, "Failed to get address of to %s: %s", 
+		   master, gai_strerror(error));
+	return -1;
+    }
+
+    for (a = ai; a != NULL; a = a->ai_next) {
+	char node[NI_MAXHOST];
+	error = getnameinfo(a->ai_addr, a->ai_addrlen, 
+			    node, sizeof(node), NULL, 0, NI_NUMERICHOST);
+	if (error)
+	    strlcpy(node, "[unknown-addr]", sizeof(node));
+
+	s = socket (a->ai_family, a->ai_socktype, a->ai_protocol);
+	if (s < 0)
+	    continue;
+	if (connect (s, a->ai_addr, a->ai_addrlen) < 0) {
+	    krb5_warn(context, errno, "connection failed to %s[%s]",
+		      master, node);
+	    close (s);
+	    continue;
+	}
+	krb5_warnx(context, "connection successful "
+		   "to master: %s[%s]", master, node);
+	break;
+    }
+    freeaddrinfo (ai);
+
+    if (a == NULL)
+	return -1;
+
+    return s;
 }
 
 static void
@@ -133,7 +149,7 @@ get_creds(krb5_context context, const char *keytab_str,
     if(ret) krb5_err(context, 1, ret, "krb5_cc_store_cred");
 }
 
-static void
+static krb5_error_code
 ihave (krb5_context context, krb5_auth_context auth_context,
        int fd, uint32_t version)
 {
@@ -151,7 +167,8 @@ ihave (krb5_context context, krb5_auth_context auth_context,
 
     ret = krb5_write_priv_message(context, auth_context, &fd, &data);
     if (ret)
-	krb5_err (context, 1, ret, "krb5_write_priv_message");
+	krb5_warn (context, ret, "krb5_write_message");
+    return ret;
 }
 
 static void
@@ -226,8 +243,8 @@ receive_loop (krb5_context context,
 	if (ret) krb5_errx(context, 1, "entry %ld: too short", (long)vers);
 	if (len < 0)
 	    krb5_errx(context, 1, "log is corrupted, "
-			"negative length of entry version %ld: %ld",
-			(long)vers, (long)len);
+		      "negative length of entry version %ld: %ld",
+		      (long)vers, (long)len);
 	cur = krb5_storage_seek(sp, 0, SEEK_CUR);
 
 	krb5_warnx (context, "replaying entry %d", (int)vers);
@@ -237,8 +254,8 @@ receive_loop (krb5_context context,
 	if (ret) {
 	    const char *s = krb5_get_error_message(server_context->context, ret);
 	    krb5_warnx (context,
-		       "kadm5_log_replay: %ld. Lost entry entry, "
-		       "Database out of sync ?: %s (%d)",
+			"kadm5_log_replay: %ld. Lost entry entry, "
+			"Database out of sync ?: %s (%d)",
 			(long)vers, s ? s : "unknown error", ret);
 	    krb5_free_error_message(context, s);
 	}
@@ -318,7 +335,7 @@ send_im_here (krb5_context context, int fd,
 	krb5_err (context, 1, ret, "krb5_write_priv_message");
 }
 
-static void
+static krb5_error_code
 receive_everything (krb5_context context, int fd,
 		    kadm5_server_context *server_context,
 		    krb5_auth_context auth_context)
@@ -355,8 +372,10 @@ receive_everything (krb5_context context, int fd,
     do {
 	ret = krb5_read_priv_message(context, auth_context, &fd, &data);
 
-	if (ret)
-	    krb5_err (context, 1, ret, "krb5_read_priv_message");
+	if (ret) {
+	    krb5_warn (context, ret, "krb5_read_priv_message");
+	    goto cleanup;
+	}
 
 	sp = krb5_storage_from_data (&data);
 	if (sp == NULL)
@@ -408,11 +427,12 @@ receive_everything (krb5_context context, int fd,
     if (ret)
 	krb5_err (context, 1, ret, "kadm5_log_nop");
 
-    krb5_data_free (&data);
-
     ret = mydb->hdb_rename (context, mydb, server_context->db->hdb_name);
     if (ret)
 	krb5_err (context, 1, ret, "db->rename");
+
+ cleanup:
+    krb5_data_free (&data);
 
     ret = mydb->hdb_close (context, mydb);
     if (ret)
@@ -423,6 +443,7 @@ receive_everything (krb5_context context, int fd,
 	krb5_err (context, 1, ret, "db->destroy");
 
     krb5_warnx(context, "receive complete database, version %ld", (long)vno);
+    return ret;
 }
 
 static char *config_file;
@@ -438,8 +459,8 @@ static struct getargs args[] = {
     { "realm", 'r', arg_string, &realm },
     { "keytab", 'k', arg_string, &keytab_str,
       "keytab to get authentication from", "kspec" },
-    { "time-lost", 0, arg_string, &master_time_lost,
-      "time before master is considered lost", "time" },
+    { "time-lost", 0, arg_string, &server_time_lost,
+      "time before server is considered lost", "time" },
     { "port", 0, arg_string, &port_str,
       "port ipropd-slave will connect to", "port"},
     { "detach", 0, arg_flag, &detach_from_console,
@@ -473,6 +494,11 @@ main(int argc, char **argv)
     krb5_principal server;
     char **files;
     int optidx;
+    time_t reconnect_min;
+    time_t backoff;
+    time_t reconnect_max;
+    time_t reconnect;
+    time_t before = 0;
 
     const char *master;
 
@@ -527,9 +553,9 @@ main(int argc, char **argv)
     if(ret)
 	krb5_err(context, 1, ret, "krb5_kt_register");
 
-    time_before_lost = parse_time (master_time_lost,  "s");
+    time_before_lost = parse_time (server_time_lost,  "s");
     if (time_before_lost < 0)
-	krb5_errx (context, 1, "couldn't parse time: %s", master_time_lost);
+	krb5_errx (context, 1, "couldn't parse time: %s", server_time_lost);
 
     memset(&conf, 0, sizeof(conf));
     if(realm) {
@@ -548,14 +574,10 @@ main(int argc, char **argv)
     server_context = (kadm5_server_context *)kadm_handle;
 
     ret = kadm5_log_init (server_context);
-    if (ret) {
-	krb5_clear_error_message(context);
+    if (ret)
 	krb5_err (context, 1, ret, "kadm5_log_init");
-    }
 
     get_creds(context, keytab_str, &ccache, master);
-
-    master_fd = connect_to_master (context, master, port_str);
 
     ret = krb5_sname_to_principal (context, master, IPROP_NAME,
 				   KRB5_NT_SRV_HST, &server);
@@ -563,77 +585,139 @@ main(int argc, char **argv)
 	krb5_err (context, 1, ret, "krb5_sname_to_principal");
 
     auth_context = NULL;
-    ret = krb5_sendauth (context, &auth_context, &master_fd,
-			 IPROP_VERSION, NULL, server,
-			 AP_OPTS_MUTUAL_REQUIRED, NULL, NULL,
-			 ccache, NULL, NULL, NULL);
-    if (ret)
-	krb5_err (context, 1, ret, "krb5_sendauth");
+    master_fd = -1;
 
-    krb5_warnx(context, "ipropd-slave started at version: %ld",
-	       (long)server_context->log_context.version);
+    krb5_appdefault_time(context, config_name, NULL, "reconnect-min",
+			 10, &reconnect_min);
+    krb5_appdefault_time(context, config_name, NULL, "reconnect-max",
+			 300, &reconnect_max);
+    krb5_appdefault_time(context, config_name, NULL, "reconnect-backoff",
+			 10, &backoff);
+    reconnect = reconnect_min;
 
-    ihave (context, auth_context, master_fd,
-	   server_context->log_context.version);
+    while (!exit_flag) {
+	time_t now, elapsed;
+	int connected = FALSE;
 
-    while (exit_flag == 0) {
-	krb5_data out;
-	krb5_storage *sp;
-	int32_t tmp;
-	fd_set readset;
-	struct timeval to;
+	now = time(NULL);
+	elapsed = now - before;
 
-	if (master_fd >= FD_SETSIZE)
-	    krb5_errx (context, 1, "fd too large");
-
-	FD_ZERO(&readset);
-	FD_SET(master_fd, &readset);
-
-	to.tv_sec = time_before_lost;
-	to.tv_usec = 0;
-
-	ret = select (master_fd + 1,
-		      &readset, NULL, NULL, &to);
-	if (ret < 0) {
-	    if (errno == EINTR)
-		continue;
-	    else
-		krb5_err (context, 1, errno, "select");
+	if (elapsed < reconnect) {
+	    time_t left = reconnect - elapsed;
+	    krb5_warnx(context, "sleeping %d seconds before "
+		       "retrying to connect", (int)left);
+	    sleep(left);
 	}
-	if (ret == 0)
-	    krb5_errx (context, 1, "server didn't send a message "
-		       "in %d seconds", time_before_lost);
+	before = now;
 
-	ret = krb5_read_priv_message(context, auth_context, &master_fd, &out);
+	master_fd = connect_to_master (context, master, port_str);
+	if (master_fd < 0)
+	    goto retry;
 
+	reconnect = reconnect_min;
+
+	if (auth_context) {
+	    krb5_auth_con_free(context, auth_context);
+	    auth_context = NULL;
+	    get_creds(context, keytab_str, &ccache, master);
+	}
+	ret = krb5_sendauth (context, &auth_context, &master_fd,
+			     IPROP_VERSION, NULL, server,
+			     AP_OPTS_MUTUAL_REQUIRED, NULL, NULL,
+			     ccache, NULL, NULL, NULL);
+	if (ret) {
+	    krb5_warn (context, ret, "krb5_sendauth");
+	    goto retry;
+	}
+
+	krb5_warnx(context, "ipropd-slave started at version: %ld",
+		   (long)server_context->log_context.version);
+
+	ret = ihave (context, auth_context, master_fd,
+		     server_context->log_context.version);
 	if (ret)
-	    krb5_err (context, 1, ret, "krb5_read_priv_message");
+	    goto retry;
 
-	sp = krb5_storage_from_mem (out.data, out.length);
-	krb5_ret_int32 (sp, &tmp);
-	switch (tmp) {
-	case FOR_YOU :
-	    receive (context, sp, server_context);
-	    ihave (context, auth_context, master_fd,
-		   server_context->log_context.version);
-	    break;
-	case TELL_YOU_EVERYTHING :
-	    receive_everything (context, master_fd, server_context,
-				auth_context);
-	    break;
-	case ARE_YOU_THERE :
-	    send_im_here (context, master_fd, auth_context);
-	    break;
-	case NOW_YOU_HAVE :
-	case I_HAVE :
-	case ONE_PRINC :
-	case I_AM_HERE :
-	default :
-	    krb5_warnx (context, "Ignoring command %d", tmp);
-	    break;
+	connected = TRUE;
+
+	while (connected && !exit_flag) {
+	    krb5_data out;
+	    krb5_storage *sp;
+	    int32_t tmp;
+	    fd_set readset;
+	    struct timeval to;
+
+	    if (master_fd >= FD_SETSIZE)
+		krb5_errx (context, 1, "fd too large");
+
+	    FD_ZERO(&readset);
+	    FD_SET(master_fd, &readset);
+
+	    to.tv_sec = time_before_lost;
+	    to.tv_usec = 0;
+
+	    ret = select (master_fd + 1,
+			  &readset, NULL, NULL, &to);
+	    if (ret < 0) {
+		if (errno == EINTR)
+		    continue;
+		else
+		    krb5_err (context, 1, errno, "select");
+	    }
+	    if (ret == 0)
+		krb5_errx (context, 1, "server didn't send a message "
+			   "in %d seconds", time_before_lost);
+
+	    ret = krb5_read_priv_message(context, auth_context, &master_fd, &out);
+	    if (ret) {
+		krb5_warn (context, ret, "krb5_read_priv_message");
+		connected = FALSE;
+		continue;
+	    }
+
+	    sp = krb5_storage_from_mem (out.data, out.length);
+	    krb5_ret_int32 (sp, &tmp);
+	    switch (tmp) {
+	    case FOR_YOU :
+		receive (context, sp, server_context);
+		ret = ihave (context, auth_context, master_fd,
+			     server_context->log_context.version);
+		if (ret)
+		    connected = FALSE;
+		break;
+	    case TELL_YOU_EVERYTHING :
+		ret = receive_everything (context, master_fd, server_context,
+					  auth_context);
+		if (ret)
+		    connected = FALSE;
+		break;
+	    case ARE_YOU_THERE :
+		send_im_here (context, master_fd, auth_context);
+		break;
+	    case NOW_YOU_HAVE :
+	    case I_HAVE :
+	    case ONE_PRINC :
+	    case I_AM_HERE :
+	    default :
+		krb5_warnx (context, "Ignoring command %d", tmp);
+		break;
+	    }
+	    krb5_storage_free (sp);
+	    krb5_data_free (&out);
+
 	}
-	krb5_storage_free (sp);
-	krb5_data_free (&out);
+    retry:
+	if (connected == FALSE)
+	    krb5_warnx (context, "disconnected for server");
+	if (exit_flag)
+	    krb5_warnx (context, "got an exit signal");
+
+	if (master_fd >= 0)
+	    close(master_fd);
+
+	reconnect += backoff;
+	if (reconnect > reconnect_max)
+	    reconnect = reconnect_max;
     }
 
     if(exit_flag == SIGXCPU)
@@ -642,7 +726,7 @@ main(int argc, char **argv)
 	krb5_warnx(context, "%s terminated", getprogname());
     else
 	krb5_warnx(context, "%s unexpected exit reason: %ld",
-		   getprogname(), (long)exit_flag);
-
+		       getprogname(), (long)exit_flag);
+    
     return 0;
 }
