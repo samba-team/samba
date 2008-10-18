@@ -393,6 +393,7 @@ _krb5_config_copy(krb5_context context,
 	previous = &(*d)->next;
 	c = c->next;
     }
+    return 0;
 }
 
 
