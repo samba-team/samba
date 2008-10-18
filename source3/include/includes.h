@@ -593,6 +593,7 @@ struct smb_iconv_convenience *lp_iconv_convenience(void *lp_ctx);
 /* Lists, trees, caching, database... */
 #include "../lib/util/xfile.h"
 #include "../lib/util/memory.h"
+#include "../lib/util/attr.h"
 #include "intl.h"
 #include "../lib/util/dlinklist.h"
 #include "tdb.h"
@@ -1107,19 +1108,11 @@ ssize_t readahead(int fd, off64_t offset, size_t count);
 #define CONST_DISCARD(type, ptr)      ((type) ((void *) (ptr)))
 #define CONST_ADD(type, ptr)          ((type) ((const void *) (ptr)))
 
-#ifndef NORETURN_ATTRIBUTE
-#if (__GNUC__ >= 3)
-#define NORETURN_ATTRIBUTE __attribute__ ((noreturn))
-#else
-#define NORETURN_ATTRIBUTE
-#endif
-#endif
-
-void smb_panic( const char *why ) NORETURN_ATTRIBUTE ;
-void dump_core(void) NORETURN_ATTRIBUTE ;
-void exit_server(const char *const reason) NORETURN_ATTRIBUTE ;
-void exit_server_cleanly(const char *const reason) NORETURN_ATTRIBUTE ;
-void exit_server_fault(void) NORETURN_ATTRIBUTE ;
+void smb_panic( const char *why ) _NORETURN_;
+void dump_core(void) _NORETURN_;
+void exit_server(const char *const reason) _NORETURN_;
+void exit_server_cleanly(const char *const reason) _NORETURN_;
+void exit_server_fault(void) _NORETURN_;
 
 #ifdef HAVE_LIBNSCD
 #include "libnscd.h"
