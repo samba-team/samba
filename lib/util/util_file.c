@@ -25,7 +25,6 @@
 #if _SAMBA_BUILD_ == 3
 #undef malloc
 #undef realloc
-#define realloc_p(p, type, count) (type *)realloc_array(p, sizeof(type), count, false)
 #endif
 
 /**

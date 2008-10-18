@@ -38,7 +38,6 @@
 
 #if _SAMBA_BUILD_ == 3
 #undef malloc
-#define malloc_p(type) malloc(sizeof(type))
 #endif
 
 #define XBUFSIZE BUFSIZ
