@@ -1073,26 +1073,6 @@ static void *realloc_(void *ptr, size_t size)
 #endif /* PARANOID_MALLOC_CHECKER */
 
 /****************************************************************************
- Type-safe malloc.
-****************************************************************************/
-
-void *malloc_array(size_t el_size, unsigned int count)
-{
-	if (count >= MAX_ALLOC_SIZE/el_size) {
-		return NULL;
-	}
-
-	if (el_size == 0 || count == 0) {
-		return NULL;
-	}
-#if defined(PARANOID_MALLOC_CHECKER)
-	return malloc_(el_size*count);
-#else
-	return malloc(el_size*count);
-#endif
-}
-
-/****************************************************************************
  Type-safe memalign
 ****************************************************************************/
 
@@ -1190,21 +1170,6 @@ void *Realloc(void *p, size_t size, bool free_old_on_error)
 	}
 
 	return(ret);
-}
-
-/****************************************************************************
- Type-safe realloc.
-****************************************************************************/
-
-void *realloc_array(void *p, size_t el_size, unsigned int count, bool free_old_on_error)
-{
-	if (count >= MAX_ALLOC_SIZE/el_size) {
-		if (free_old_on_error) {
-			SAFE_FREE(p);
-		}
-		return NULL;
-	}
-	return Realloc(p, el_size*count, free_old_on_error);
 }
 
 /****************************************************************************

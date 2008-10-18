@@ -23,6 +23,9 @@
 */
 
 #include "includes.h"
+#include "system/network.h"
+#include "system/locale.h"
+#include "system/filesys.h"
 
 /**
  Interpret an internet address or name into an IP address in 4 byte form.

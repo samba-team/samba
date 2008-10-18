@@ -1237,7 +1237,7 @@ bool file_exist(const char *fname);
 bool socket_exist(const char *fname);
 time_t file_modtime(const char *fname);
 bool directory_exist_stat(char *dname,SMB_STRUCT_STAT *st);
-bool directory_exist(char *dname);
+bool directory_exist(const char *dname);
 SMB_OFF_T get_file_size(char *file_name);
 char *attrib_string(uint16 mode);
 void show_msg(char *buf);
