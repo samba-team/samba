@@ -35,9 +35,11 @@ extern const struct ndr_interface_table ndr_table_drsblobs;
 
 #define NDR_DECODE_TRUSTAUTHINOUT (0x0b)
 
-#define NDR_DECODE_DSCOMPRESSED (0x0c)
+#define NDR_DECODE_TRUSTDOMAINPASSWORDS (0x0c)
 
-#define NDR_DRSBLOBS_CALL_COUNT (13)
+#define NDR_DECODE_EXTENDEDERRORINFO (0x0d)
+
+#define NDR_DRSBLOBS_CALL_COUNT (14)
 void ndr_print_replPropertyMetaData1(struct ndr_print *ndr, const char *name, const struct replPropertyMetaData1 *r);
 void ndr_print_replPropertyMetaDataCtr1(struct ndr_print *ndr, const char *name, const struct replPropertyMetaDataCtr1 *r);
 void ndr_print_replPropertyMetaDataCtr(struct ndr_print *ndr, const char *name, const union replPropertyMetaDataCtr *r);
@@ -102,21 +104,44 @@ void ndr_print_package_PrimaryWDigestHash(struct ndr_print *ndr, const char *nam
 enum ndr_err_code ndr_push_package_PrimaryWDigestBlob(struct ndr_push *ndr, int ndr_flags, const struct package_PrimaryWDigestBlob *r);
 enum ndr_err_code ndr_pull_package_PrimaryWDigestBlob(struct ndr_pull *ndr, int ndr_flags, struct package_PrimaryWDigestBlob *r);
 void ndr_print_package_PrimaryWDigestBlob(struct ndr_print *ndr, const char *name, const struct package_PrimaryWDigestBlob *r);
-void ndr_print_trustAuthInOutSecret1(struct ndr_print *ndr, const char *name, const struct trustAuthInOutSecret1 *r);
-void ndr_print_trustAuthInOutCtr1(struct ndr_print *ndr, const char *name, const struct trustAuthInOutCtr1 *r);
-void ndr_print_trustAuthInOutSecret2V1(struct ndr_print *ndr, const char *name, const struct trustAuthInOutSecret2V1 *r);
-void ndr_print_trustAuthInOutSecret2V2(struct ndr_print *ndr, const char *name, const struct trustAuthInOutSecret2V2 *r);
-void ndr_print_trustAuthInOutCtr2(struct ndr_print *ndr, const char *name, const struct trustAuthInOutCtr2 *r);
-void ndr_print_trustAuthInOutCtr(struct ndr_print *ndr, const char *name, const union trustAuthInOutCtr *r);
+void ndr_print_AuthInfoNone(struct ndr_print *ndr, const char *name, const struct AuthInfoNone *r);
+void ndr_print_AuthInfoNT4Owf(struct ndr_print *ndr, const char *name, const struct AuthInfoNT4Owf *r);
+void ndr_print_AuthInfoClear(struct ndr_print *ndr, const char *name, const struct AuthInfoClear *r);
+void ndr_print_AuthInfoVersion(struct ndr_print *ndr, const char *name, const struct AuthInfoVersion *r);
+void ndr_print_AuthInfo(struct ndr_print *ndr, const char *name, const union AuthInfo *r);
+enum ndr_err_code ndr_push_AuthenticationInformation(struct ndr_push *ndr, int ndr_flags, const struct AuthenticationInformation *r);
+enum ndr_err_code ndr_pull_AuthenticationInformation(struct ndr_pull *ndr, int ndr_flags, struct AuthenticationInformation *r);
+void ndr_print_AuthenticationInformation(struct ndr_print *ndr, const char *name, const struct AuthenticationInformation *r);
+enum ndr_err_code ndr_push_AuthenticationInformationArray(struct ndr_push *ndr, int ndr_flags, const struct AuthenticationInformationArray *r);
+enum ndr_err_code ndr_pull_AuthenticationInformationArray(struct ndr_pull *ndr, int ndr_flags, struct AuthenticationInformationArray *r);
+void ndr_print_AuthenticationInformationArray(struct ndr_print *ndr, const char *name, const struct AuthenticationInformationArray *r);
 enum ndr_err_code ndr_push_trustAuthInOutBlob(struct ndr_push *ndr, int ndr_flags, const struct trustAuthInOutBlob *r);
 enum ndr_err_code ndr_pull_trustAuthInOutBlob(struct ndr_pull *ndr, int ndr_flags, struct trustAuthInOutBlob *r);
 void ndr_print_trustAuthInOutBlob(struct ndr_print *ndr, const char *name, const struct trustAuthInOutBlob *r);
+size_t ndr_size_trustAuthInOutBlob(const struct trustAuthInOutBlob *r, int flags);
+enum ndr_err_code ndr_push_trustCurrentPasswords(struct ndr_push *ndr, int ndr_flags, const struct trustCurrentPasswords *r);
+enum ndr_err_code ndr_pull_trustCurrentPasswords(struct ndr_pull *ndr, int ndr_flags, struct trustCurrentPasswords *r);
+void ndr_print_trustCurrentPasswords(struct ndr_print *ndr, const char *name, const struct trustCurrentPasswords *r);
+size_t ndr_size_trustCurrentPasswords(const struct trustCurrentPasswords *r, int flags);
+enum ndr_err_code ndr_push_trustDomainPasswords(struct ndr_push *ndr, int ndr_flags, const struct trustDomainPasswords *r);
+enum ndr_err_code ndr_pull_trustDomainPasswords(struct ndr_pull *ndr, int ndr_flags, struct trustDomainPasswords *r);
+void ndr_print_trustDomainPasswords(struct ndr_print *ndr, const char *name, const struct trustDomainPasswords *r);
 enum ndr_err_code ndr_push_DsCompressedChunk(struct ndr_push *ndr, int ndr_flags, const struct DsCompressedChunk *r);
 enum ndr_err_code ndr_pull_DsCompressedChunk(struct ndr_pull *ndr, int ndr_flags, struct DsCompressedChunk *r);
 void ndr_print_DsCompressedChunk(struct ndr_print *ndr, const char *name, const struct DsCompressedChunk *r);
-enum ndr_err_code ndr_push_DsCompressedBlob(struct ndr_push *ndr, int ndr_flags, const struct DsCompressedBlob *r);
-enum ndr_err_code ndr_pull_DsCompressedBlob(struct ndr_pull *ndr, int ndr_flags, struct DsCompressedBlob *r);
-void ndr_print_DsCompressedBlob(struct ndr_print *ndr, const char *name, const struct DsCompressedBlob *r);
+void ndr_print_ExtendedErrorAString(struct ndr_print *ndr, const char *name, const struct ExtendedErrorAString *r);
+void ndr_print_ExtendedErrorUString(struct ndr_print *ndr, const char *name, const struct ExtendedErrorUString *r);
+void ndr_print_ExtendedErrorBlob(struct ndr_print *ndr, const char *name, const struct ExtendedErrorBlob *r);
+void ndr_print_ExtendedErrorComputerNamePresent(struct ndr_print *ndr, const char *name, enum ExtendedErrorComputerNamePresent r);
+void ndr_print_ExtendedErrorComputerNameU(struct ndr_print *ndr, const char *name, const union ExtendedErrorComputerNameU *r);
+void ndr_print_ExtendedErrorComputerName(struct ndr_print *ndr, const char *name, const struct ExtendedErrorComputerName *r);
+void ndr_print_ExtendedErrorParamType(struct ndr_print *ndr, const char *name, enum ExtendedErrorParamType r);
+void ndr_print_ExtendedErrorParamU(struct ndr_print *ndr, const char *name, const union ExtendedErrorParamU *r);
+void ndr_print_ExtendedErrorParam(struct ndr_print *ndr, const char *name, const struct ExtendedErrorParam *r);
+enum ndr_err_code ndr_push_ExtendedErrorInfo(struct ndr_push *ndr, int ndr_flags, const struct ExtendedErrorInfo *r);
+enum ndr_err_code ndr_pull_ExtendedErrorInfo(struct ndr_pull *ndr, int ndr_flags, struct ExtendedErrorInfo *r);
+void ndr_print_ExtendedErrorInfo(struct ndr_print *ndr, const char *name, const struct ExtendedErrorInfo *r);
+void ndr_print_ExtendedErrorInfoPtr(struct ndr_print *ndr, const char *name, const struct ExtendedErrorInfoPtr *r);
 void ndr_print_decode_replPropertyMetaData(struct ndr_print *ndr, const char *name, int flags, const struct decode_replPropertyMetaData *r);
 void ndr_print_decode_replUpToDateVector(struct ndr_print *ndr, const char *name, int flags, const struct decode_replUpToDateVector *r);
 void ndr_print_decode_repsFromTo(struct ndr_print *ndr, const char *name, int flags, const struct decode_repsFromTo *r);
@@ -129,5 +154,6 @@ void ndr_print_decode_PrimaryKerberos(struct ndr_print *ndr, const char *name, i
 void ndr_print_decode_PrimaryCLEARTEXT(struct ndr_print *ndr, const char *name, int flags, const struct decode_PrimaryCLEARTEXT *r);
 void ndr_print_decode_PrimaryWDigest(struct ndr_print *ndr, const char *name, int flags, const struct decode_PrimaryWDigest *r);
 void ndr_print_decode_trustAuthInOut(struct ndr_print *ndr, const char *name, int flags, const struct decode_trustAuthInOut *r);
-void ndr_print_decode_DsCompressed(struct ndr_print *ndr, const char *name, int flags, const struct decode_DsCompressed *r);
+void ndr_print_decode_trustDomainPasswords(struct ndr_print *ndr, const char *name, int flags, const struct decode_trustDomainPasswords *r);
+void ndr_print_decode_ExtendedErrorInfo(struct ndr_print *ndr, const char *name, int flags, const struct decode_ExtendedErrorInfo *r);
 #endif /* _HEADER_NDR_drsblobs */

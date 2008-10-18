@@ -144,7 +144,7 @@ NDR_DRSUAPI_OBJ_FILES = $(gen_ndrsrcdir)/ndr_drsuapi.o ../librpc/ndr/ndr_drsuapi
 [SUBSYSTEM::NDR_DRSBLOBS]
 PUBLIC_DEPENDENCIES = LIBNDR NDR_MISC NDR_DRSUAPI
 
-NDR_DRSBLOBS_OBJ_FILES = $(gen_ndrsrcdir)/ndr_drsblobs.o $(ndrsrcdir)/ndr_drsblobs.o
+NDR_DRSBLOBS_OBJ_FILES = $(gen_ndrsrcdir)/ndr_drsblobs.o ../librpc/ndr/ndr_drsblobs.o
 
 [SUBSYSTEM::NDR_SASL_HELPERS]
 PUBLIC_DEPENDENCIES = LIBNDR
