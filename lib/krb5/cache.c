@@ -1418,3 +1418,24 @@ krb5_cccol_cursor_free(krb5_context context, krb5_cccol_cursor *cursor)
     return 0;
 }
 
+/**
+ * Return the last time the credential cache was modified.
+ *
+ * @param context A Kerberos 5 context
+ * @param id The credential cache to probe
+ * @param mtime the last modification time, set to 0 on error.
+
+ * @return Return 0 or and error. See krb5_get_error_message().
+ *
+ * @ingroup krb5_ccache
+ */
+
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_cc_last_change_time(krb5_context context,
+			 krb5_ccache id, 
+			 krb5_timestamp *mtime)
+{
+    *mtime = 0;
+    return (*id->ops->lastchange)(context, id, mtime);
+}

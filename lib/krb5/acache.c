@@ -1003,6 +1003,28 @@ acc_set_default(krb5_context context, krb5_ccache id)
     return 0;
 }
 
+static krb5_error_code
+acc_lastchange(krb5_context context, krb5_ccache id, krb5_timestamp *mtime)
+{
+    krb5_acc *a = ACACHE(id);
+    cc_int32 error;
+    cc_time_t t;
+
+    if (a->ccache == NULL) {
+	krb5_set_error_message(context, KRB5_CC_NOTFOUND,
+			       N_("No API credential found", ""));
+	return KRB5_CC_NOTFOUND;
+    }
+
+    error = (*a->ccache->func->get_change_time)(a->ccache, &t);
+    if (error)
+	return translate_cc_error(context, error);
+
+    *mtime = t;
+
+    return 0;
+}
+
 /**
  * Variable containing the API based credential cache implemention.
  *
@@ -1032,5 +1054,6 @@ KRB5_LIB_VARIABLE const krb5_cc_ops krb5_acc_ops = {
     acc_end_cache_get,
     acc_move,
     acc_get_default_name,
-    acc_set_default
+    acc_set_default,
+    acc_lastchange
 };

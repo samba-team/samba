@@ -928,6 +928,27 @@ fcc_default_name(krb5_context context, char **str)
 					str);
 }
 
+static krb5_error_code
+fcc_lastchange(krb5_context context, krb5_ccache id, krb5_timestamp *mtime)
+{
+    krb5_error_code ret;
+    struct stat sb;
+    int fd;
+
+    ret = fcc_open(context, id, &fd, O_RDONLY | O_BINARY | O_CLOEXEC, 0);
+    if(ret)
+	return ret;
+    ret = fstat(fd, &sb);
+    close(fd);
+    if (ret) {
+	ret = errno;
+	krb5_set_error_message(context, ret, N_("Failed to stat cache file", ""));
+	return ret;
+    }
+    *mtime = sb.st_mtime;
+    return 0;
+}
+
 /**
  * Variable containing the FILE based credential cache implemention.
  *
@@ -956,5 +977,6 @@ KRB5_LIB_VARIABLE const krb5_cc_ops krb5_fcc_ops = {
     fcc_get_cache_next,
     fcc_end_cache_get,
     fcc_move,
-    fcc_default_name
+    fcc_default_name,
+    fcc_lastchange
 };

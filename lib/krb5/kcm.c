@@ -872,6 +872,13 @@ kcm_default_name(krb5_context context, char **str)
 					str);
 }
 
+static krb5_error_code
+kcm_lastchange(krb5_context context, krb5_ccache id, krb5_timestamp *mtime)
+{
+    *mtime = time(NULL);
+    return 0;
+}
+
 /**
  * Variable containing the KCM based credential cache implemention.
  *
@@ -900,7 +907,9 @@ KRB5_LIB_VARIABLE const krb5_cc_ops krb5_kcm_ops = {
     NULL,
     NULL,
     kcm_move,
-    kcm_default_name
+    kcm_default_name,
+    NULL,
+    kcm_lastchange
 };
 
 krb5_boolean
