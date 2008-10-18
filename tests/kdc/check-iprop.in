@@ -236,6 +236,38 @@ echo "pushing one change"
 ${kadmin} -l cpw --random-password user@${R} > /dev/null || exit 1
 sleep 2
 
+echo "Killing master"
+kill $ipdm
+
+sleep 4
+
+if ! tail -30 messages.log | grep 'disconnected for server' > /dev/null; then
+    echo "client didnt disconnect"
+    exit 1
+fi
+
+echo "probing for slave pid"
+kill -0 ${ipds}  || { echo "slave no longer there"; exit 1; }
+
+echo "Staring master again"
+${ipropdmaster} --hostname=localhost -k ${keytab} \
+    --database=${objdir}/current-db &
+ipdm=$!
+sh ${srcdir}/wait-kdc.sh ipropd-master || exit 1
+
+echo "probing for slave pid"
+kill -0 ${ipds}  || { echo "slave no longer there"; exit 1; }
+
+sh ${srcdir}/wait-kdc.sh ipropd-slave messages.log "connection successful to master" || exit 1
+
+sh ${srcdir}/wait-kdc.sh ipropd-slave messages.log "ipropd-slave started at version" || exit 1
+
+echo "pushing one change"
+${kadmin} -l cpw --random-password user@${R} > /dev/null || exit 1
+sleep 2
+
+echo "shutting down all services"
+
 trap "" EXIT
 kill ${ipdm} ${ipds} ${kdcpid}
 
