@@ -147,6 +147,8 @@ struct hc_CIPHER {
     void *set_asn1_parameters;
     void *get_asn1_parameters;
     int (*ctrl)(EVP_CIPHER_CTX *, int type, int arg, void *ptr);
+#define EVP_CTRL_RAND_KEY		0x6
+
     void *app_data;
 };
 
