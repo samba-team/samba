@@ -63,7 +63,7 @@ find_var(char **env, char *assignment, size_t len)
  */
 
 static int
-rk_read_env_file(FILE *F, char ***env, int *assigned)
+read_env_file(FILE *F, char ***env, int *assigned)
 {
     int idx = 0;
     int i;
@@ -139,7 +139,7 @@ read_environment(const char *file, char ***env)
     if ((F = fopen(file, "r")) == NULL)
 	return 0;
 
-    rk_read_env_file(F, env, &assigned);
+    read_env_file(F, env, &assigned);
     fclose(F);
     return assigned;
 }

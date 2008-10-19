@@ -1553,8 +1553,8 @@ env_find(unsigned char *var)
 	return(NULL);
 }
 
-#ifdef IRIX4
-#define environ _environ
+#if !HAVE_DECL_ENVIRON
+extern char **environ;
 #endif
 
 void

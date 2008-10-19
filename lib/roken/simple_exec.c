@@ -51,6 +51,10 @@ RCSID("$Id$");
 
 #include "roken.h"
 
+#if !HAVE_DECL_ENVIRON
+extern char **environ;
+#endif
+
 #define EX_NOEXEC	126
 #define EX_NOTFOUND	127
 

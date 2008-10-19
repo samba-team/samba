@@ -38,7 +38,9 @@ RCSID("$Id$");
 
 #include <stdlib.h>
 
+#if !HAVE_DECL_ENVIRON
 extern char **environ;
+#endif
 
 /*
  * putenv --

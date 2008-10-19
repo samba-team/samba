@@ -64,6 +64,10 @@ RCSID("$Id$");
 
 #include "supaths.h"
 
+#if !HAVE_DECL_ENVIRON
+extern char **environ;
+#endif
+
 int kerberos_flag = 1;
 int csh_f_flag;
 int full_login;
@@ -506,7 +510,7 @@ main(int argc, char **argv)
         if (ok == 5)
            krb5_start_session();
 #endif
-	execv(shell, args);
+	execve(shell, args, environ);
     }
 
     exit(1);

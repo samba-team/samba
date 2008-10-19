@@ -41,7 +41,9 @@ RCSID("$Id$");
 
 #include "roken.h"
 
+#if !HAVE_DECL_ENVIRON
 extern char **environ;
+#endif
 
 /*
  * unsetenv --

@@ -444,10 +444,6 @@ extern int optind;
 extern int opterr;
 #endif
 
-#if !HAVE_DECL_ENVIRON
-extern char **environ;
-#endif
-
 #ifndef HAVE_GETIPNODEBYNAME
 struct hostent * ROKEN_LIB_FUNCTION
 getipnodebyname (const char *, int, int, int *);

@@ -1186,7 +1186,9 @@ startslave(const char *host, const char *utmp_host,
 }
 
 char	*envinit[3];
+#if !HAVE_DECL_ENVIRON
 extern char **environ;
+#endif
 
 void
 init_env(void)

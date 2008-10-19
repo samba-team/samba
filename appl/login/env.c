@@ -69,6 +69,11 @@ add_env(const char *var, const char *value)
     extend_env(str);
 }
 
+#if !HAVE_DECL_ENVIRON
+extern char **environ;
+#endif
+
+
 void
 copy_env(void)
 {
