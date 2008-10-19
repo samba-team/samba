@@ -179,7 +179,7 @@ void pcap_cache_reload(void)
 		goto done;
 	}
 
-	for (; (pcap_line = fgets_slash(NULL, 1024, pcap_file)) != NULL; safe_free(pcap_line)) {
+	for (; (pcap_line = fgets_slash(NULL, 1024, pcap_file)) != NULL; free(pcap_line)) {
 		char name[MAXPRINTERLEN+1];
 		char comment[62];
 		char *p, *q;

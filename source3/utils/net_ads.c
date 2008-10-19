@@ -480,7 +480,7 @@ static int ads_user_add(struct net_context *c, int argc, const char **argv)
 	asprintf(&upn, "%s@%s", argv[0], ads->config.realm);
 	status = ads_krb5_set_password(ads->auth.kdc_server, upn, argv[1],
 				       ads->auth.time_offset);
-	safe_free(upn);
+	SAFE_FREE(upn);
 	if (ADS_ERR_OK(status)) {
 		d_printf("User %s added\n", argv[0]);
 		rc = 0;
@@ -534,7 +534,7 @@ static int ads_user_info(struct net_context *c, int argc, const char **argv)
 
 	asprintf(&searchstring, "(sAMAccountName=%s)", escaped_user);
 	rc = ads_search(ads, &res, searchstring, attrs);
-	safe_free(searchstring);
+	SAFE_FREE(searchstring);
 
 	if (!ADS_ERR_OK(rc)) {
 		d_fprintf(stderr, "ads_search: %s\n", ads_errstr(rc));

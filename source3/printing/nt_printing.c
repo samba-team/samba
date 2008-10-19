@@ -280,7 +280,7 @@ static bool upgrade_to_version_3(void)
 	DEBUG(0,("upgrade_to_version_3: upgrading print tdb's to version 3\n"));
  
 	for (kbuf = tdb_firstkey(tdb_drivers); kbuf.dptr;
-			newkey = tdb_nextkey(tdb_drivers, kbuf), safe_free(kbuf.dptr), kbuf=newkey) {
+			newkey = tdb_nextkey(tdb_drivers, kbuf), free(kbuf.dptr), kbuf=newkey) {
 
 		dbuf = tdb_fetch(tdb_drivers, kbuf);
 
@@ -807,7 +807,7 @@ int get_ntforms(nt_forms_struct **list)
 
 	for (kbuf = tdb_firstkey(tdb_forms);
 	     kbuf.dptr;
-	     newkey = tdb_nextkey(tdb_forms, kbuf), safe_free(kbuf.dptr), kbuf=newkey) 
+	     newkey = tdb_nextkey(tdb_forms, kbuf), free(kbuf.dptr), kbuf=newkey) 
 	{
 		if (strncmp((const char *)kbuf.dptr, FORMS_PREFIX, strlen(FORMS_PREFIX)) != 0) 
 			continue;
@@ -1024,7 +1024,7 @@ int get_ntdrivers(fstring **list, const char *architecture, uint32 version)
 
 	for (kbuf = tdb_firstkey(tdb_drivers);
 	     kbuf.dptr;
-	     newkey = tdb_nextkey(tdb_drivers, kbuf), safe_free(kbuf.dptr), kbuf=newkey) {
+	     newkey = tdb_nextkey(tdb_drivers, kbuf), free(kbuf.dptr), kbuf=newkey) {
 
 		if (strncmp((const char *)kbuf.dptr, key, strlen(key)) != 0)
 			continue;
@@ -3123,8 +3123,7 @@ static void map_single_multi_sz_into_ctr(REGVAL_CTR *ctr, const char *val_name,
 	regval_ctr_delvalue(ctr, val_name);
 	regval_ctr_addvalue(ctr, val_name, REG_MULTI_SZ, 
 			    (char *) conv_strs, str_size);	
-	safe_free(conv_strs);
-	
+	SAFE_FREE(conv_strs);
 }
 
 /****************************************************************************
