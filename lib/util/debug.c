@@ -33,7 +33,10 @@
  */
 int _debug_level = 0;
 _PUBLIC_ int *debug_level = &_debug_level;
-int *DEBUGLEVEL_CLASS = NULL; /* For samba 3 */
+static int debug_all_class_hack = 1;
+int *DEBUGLEVEL_CLASS = &debug_all_class_hack; /* For samba 3 */
+static bool debug_all_class_isset_hack = true;
+bool    *DEBUGLEVEL_CLASS_ISSET = &debug_all_class_isset_hack; /* For samba 3 */
 
 /* the registered mutex handlers */
 static struct {
