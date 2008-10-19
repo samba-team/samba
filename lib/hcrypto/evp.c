@@ -1627,6 +1627,43 @@ EVP_BytesToKey(const EVP_CIPHER *type,
 }
 
 /**
+ * Generate a random key for the specificed EVP_CIPHER.
+ *
+ * @param ctx EVP_CIPHER_CTX type to build the key for.
+ * @param key return key, must be at least EVP_CIPHER_key_length() byte long.
+ *
+ * @return 1 for success, 0 for failure.
+ *
+ * @ingroup hcrypto_core
+ */
+
+int
+EVP_CIPHER_CTX_rand_key(EVP_CIPHER_CTX *ctx, void *key)
+{
+    if (ctx->cipher->flags & EVP_CIPH_RAND_KEY)
+	return EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_RAND_KEY, 0, key);
+    if (RAND_bytes(key, ctx->key_len) != 1)
+	return 0;
+    return 1;
+}
+
+/**
+ * Perform a operation on a ctx
+ *
+ * @return 1 for success, 0 for failure.
+ *
+ * @ingroup hcrypto_core
+ */
+
+int
+EVP_CIPHER_CTX_ctrl(EVP_CIPHER_CTX *ctx, int type, int arg, void *data)
+{
+    if (ctx->cipher == NULL || ctx->cipher->ctrl == NULL)
+	return 0;
+    return (*ctx->cipher->ctrl)(ctx, type, arg, data);
+}
+
+/**
  * Add all algorithms to the crypto core.
  *
  * @ingroup hcrypto_core
