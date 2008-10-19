@@ -22,8 +22,9 @@
 */
 
 #include "includes.h"
-#include "libcli/raw/smb.h"
 #include "system/locale.h"
+#undef strncasecmp
+#undef strcasemp
 
 /**
  * @file
@@ -403,51 +404,6 @@ _PUBLIC_ size_t ascii_len_n(const char *src, size_t n)
 	}
 
 	return len;
-}
-
-
-/**
- Return a string representing a CIFS attribute for a file.
-**/
-_PUBLIC_ char *attrib_string(TALLOC_CTX *mem_ctx, uint32_t attrib)
-{
-	int i, len;
-	const struct {
-		char c;
-		uint16_t attr;
-	} attr_strs[] = {
-		{'V', FILE_ATTRIBUTE_VOLUME},
-		{'D', FILE_ATTRIBUTE_DIRECTORY},
-		{'A', FILE_ATTRIBUTE_ARCHIVE},
-		{'H', FILE_ATTRIBUTE_HIDDEN},
-		{'S', FILE_ATTRIBUTE_SYSTEM},
-		{'N', FILE_ATTRIBUTE_NORMAL},
-		{'R', FILE_ATTRIBUTE_READONLY},
-		{'d', FILE_ATTRIBUTE_DEVICE},
-		{'t', FILE_ATTRIBUTE_TEMPORARY},
-		{'s', FILE_ATTRIBUTE_SPARSE},
-		{'r', FILE_ATTRIBUTE_REPARSE_POINT},
-		{'c', FILE_ATTRIBUTE_COMPRESSED},
-		{'o', FILE_ATTRIBUTE_OFFLINE},
-		{'n', FILE_ATTRIBUTE_NONINDEXED},
-		{'e', FILE_ATTRIBUTE_ENCRYPTED}
-	};
-	char *ret;
-
-	ret = talloc_array(mem_ctx, char, ARRAY_SIZE(attr_strs)+1);
-	if (!ret) {
-		return NULL;
-	}
-
-	for (len=i=0; i<ARRAY_SIZE(attr_strs); i++) {
-		if (attrib & attr_strs[i].attr) {
-			ret[len++] = attr_strs[i].c;
-		}
-	}
-
-	ret[len] = 0;
-
-	return ret;
 }
 
 /**
