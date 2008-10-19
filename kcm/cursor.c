@@ -149,3 +149,18 @@ kcm_cursor_delete(krb5_context context,
     return ret;
 }
 
+krb5_error_code
+kcm_cursor_update(krb5_context context,
+		  kcm_ccache ccache,
+		  struct kcm_creds *creds)
+{
+    kcm_cursor *p;
+
+    /* assert(is_locked(&ccache->mutex)) */
+
+    for (p = ccache->cursors; p != NULL; p = p->next)
+	if (p->credp == creds)
+	    p->credp = creds->next;
+
+    return 0;
+}
