@@ -23,8 +23,6 @@ then
 	PERL=perl
 fi
 
-incdir=`dirname $0`
-
 plantest() {
 	name=$1
 	env=$2
@@ -56,9 +54,9 @@ plansmbtorturetest() {
 	plantest "$modname" "$env" $cmdline
 }
 
-$incdir/../bin/smbtorture -V
+bin/smbtorture -V
 
-samba4srcdir=$incdir/..
+samba4srcdir=.
 samba4bindir=$samba4srcdir/bin
 smb4torture="$samba4bindir/smbtorture $TORTURE_OPTIONS"
 
@@ -263,7 +261,7 @@ fi
 # the API. These mainly test that the various command-line options of commands 
 # work correctly.
 
-bbdir=$incdir/../../testprogs/blackbox
+bbdir=../testprogs/blackbox
 
 plantest "blackbox.ndrdump" none $samba4srcdir/librpc/tests/test_ndrdump.sh
 plantest "blackbox.net" dc $samba4srcdir/utils/tests/test_net.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$DOMAIN"

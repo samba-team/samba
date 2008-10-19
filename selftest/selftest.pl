@@ -405,8 +405,8 @@ if (defined($ENV{RUN_FROM_BUILD_FARM}) and
 
 my $tls_enabled = not $opt_quick;
 $ENV{TLS_ENABLED} = ($tls_enabled?"yes":"no");
-$ENV{LDB_MODULES_PATH} = "$old_pwd/bin/modules/ldb";
-$ENV{LD_SAMBA_MODULE_PATH} = "$old_pwd/bin/modules";
+$ENV{LDB_MODULES_PATH} = "$old_pwd/source4/bin/modules/ldb";
+$ENV{LD_SAMBA_MODULE_PATH} = "$old_pwd/source4/bin/modules";
 sub prefix_pathvar($$)
 {
 	my ($name, $newpath) = @_;
@@ -416,8 +416,8 @@ sub prefix_pathvar($$)
 		$ENV{$name} = $newpath;
 	}
 }
-prefix_pathvar("PKG_CONFIG_PATH", "$old_pwd/bin/pkgconfig");
-prefix_pathvar("PYTHONPATH", "$old_pwd/bin/python");
+prefix_pathvar("PKG_CONFIG_PATH", "$old_pwd/source4/bin/pkgconfig");
+prefix_pathvar("PYTHONPATH", "$old_pwd/source4/bin/python");
 
 if ($opt_socket_wrapper_keep_pcap) {
 	# Socket wrapper keep pcap implies socket wrapper pcap
