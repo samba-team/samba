@@ -338,10 +338,10 @@ test_compare(hx509_context context)
     ret = compare_subject(c2, c3, &l3);
     if (ret) return 1;
     
-    if (l0 != l0) return 1;
-    if (l1 < l2) return 1;
-    if (l2 < l3) return 1;
-    if (l1 < l3) return 1;
+    if (l0 != 0) return 1;
+    if (l2 < l1) return 1;
+    if (l3 < l2) return 1;
+    if (l3 < l1) return 1;
 
     hx509_cert_free(c1);
     hx509_cert_free(c2);
