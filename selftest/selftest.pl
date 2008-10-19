@@ -283,12 +283,12 @@ sub ShowHelp()
 	print "Samba test runner
 Copyright (C) Jelmer Vernooij <jelmer\@samba.org>
 
-Usage: $Script [OPTIONS] PREFIX
+Usage: $Script [OPTIONS] TESTNAME-REGEX
 
 Generic options:
  --help                     this help page
  --target=samba[34]|win|kvm Samba version to target
- --testlist=FILE			file to read available tests from
+ --testlist=FILE	    file to read available tests from
 
 Paths:
  --prefix=DIR               prefix to run tests in [st]
@@ -296,14 +296,14 @@ Paths:
  --builddir=DIR             output directory [.]
 
 Target Specific:
- --socket-wrapper-pcap		save traffic to pcap directories
+ --socket-wrapper-pcap	    save traffic to pcap directories
  --socket-wrapper-keep-pcap keep all pcap files, not just those for tests that 
                             failed
  --socket-wrapper           enable socket wrapper
  --expected-failures=FILE   specify list of tests that is guaranteed to fail
 
 Samba4 Specific:
- --ldap=openldap|fedora-ds     back samba onto specified ldap server
+ --ldap=openldap|fedora-ds  back samba onto specified ldap server
 
 Samba3 Specific:
  --bindir=PATH              path to binaries
