@@ -5,7 +5,7 @@ Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
 Version: 1.0
-Release: 62
+Release: 63
 Epoch: 0
 License: GNU GPL version 3
 Group: System Environment/Daemons
@@ -120,6 +120,11 @@ fi
 %{_includedir}/ctdb_private.h
 
 %changelog
+* Mon Oct 20 2008 : Version 1.0.63
+ - Remove logging of "periodic cleanup ..." in 50.samba
+ - When we reload a nodes file, we must detect this and reload the file also
+   in the recovery daemon before we try to dereference somethoung beyond the end
+   of the nodes array.
 * Thu Oct 16 2008 : Version 1.0.62
  - Allow multiple eventscritps using the same prefix number.
    It is undefined which order scripts with the same prefix will execute in.
