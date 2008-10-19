@@ -797,6 +797,20 @@ LDAP__lookup_princ(krb5_context context,
     krb5_error_code ret;
     int rc;
     char *filter = NULL;
+    size_t len;
+
+    /* 
+     * Filter out searches for *@REALM, which takes very long time,
+     * and other ldap special characters, this should really be
+     * quoting instead.
+     */
+    len = strcspn(princname, "()*=&\\|~=<>!");
+    if (princname[len] != '\0') {
+	krb5_set_error_message(context, HDB_ERR_NOENTRY,
+			       "Principal contains ldap "
+			       "search term: %s", princname);
+	return HDB_ERR_NOENTRY;
+    }
 
     ret = LDAP__connect(context, db);
     if (ret)
