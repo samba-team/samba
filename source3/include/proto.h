@@ -578,7 +578,7 @@ void gencache_unlock_entry( const char *key );
 void set_rand_reseed_callback(void (*fn)(int *));
 void set_need_random_reseed(void);
 void generate_random_buffer( unsigned char *out, int len);
-char *generate_random_str(size_t len);
+char *generate_random_str(TALLOC_CTX *mem_ctx, size_t len);
 
 /* The following definitions come from lib/iconv.c  */
 

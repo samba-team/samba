@@ -775,7 +775,7 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(user_pol);
 
 	if (!r->in.machine_password) {
-		r->in.machine_password = talloc_strdup(mem_ctx, generate_random_str(DEFAULT_TRUST_ACCOUNT_PASSWORD_LENGTH));
+		r->in.machine_password = generate_random_str(mem_ctx, DEFAULT_TRUST_ACCOUNT_PASSWORD_LENGTH);
 		NT_STATUS_HAVE_NO_MEMORY(r->in.machine_password);
 	}
 
