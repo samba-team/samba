@@ -104,6 +104,8 @@
 #define	OpenSSL_add_all_algorithms hc_OpenSSL_add_all_algorithms
 #define	OpenSSL_add_all_algorithms_conf hc_OpenSSL_add_all_algorithms_conf
 #define	OpenSSL_add_all_algorithms_noconf hc_OpenSSL_add_all_algorithms_noconf
+#define EVP_CIPHER_CTX_ctrl hc_EVP_CIPHER_CTX_ctrl
+#define EVP_CIPHER_CTX_rand_key hc_EVP_CIPHER_CTX_rand_key
 
 /*
  *
@@ -279,6 +281,10 @@ size_t	EVP_CIPHER_CTX_key_length(const EVP_CIPHER_CTX *);
 size_t	EVP_CIPHER_CTX_iv_length(const EVP_CIPHER_CTX *);
 void *	EVP_CIPHER_CTX_get_app_data(EVP_CIPHER_CTX *);
 void	EVP_CIPHER_CTX_set_app_data(EVP_CIPHER_CTX *, void *);
+
+int	EVP_CIPHER_CTX_ctrl(EVP_CIPHER_CTX *, int, int, void *);
+int	EVP_CIPHER_CTX_rand_key(EVP_CIPHER_CTX *, void *);
+
 
 int	EVP_CipherInit_ex(EVP_CIPHER_CTX *,const EVP_CIPHER *, ENGINE *,
 			  const void *, const void *, int);
