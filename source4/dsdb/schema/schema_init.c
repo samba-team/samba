@@ -199,9 +199,8 @@ WERROR dsdb_get_oid_mappings_ldb(const struct dsdb_schema *schema,
 		return ntstatus_to_werror(nt_status);
 	}
 
-	*schemaInfo = strhex_to_data_blob(schema->schema_info);
+	*schemaInfo = strhex_to_data_blob(mem_ctx, schema->schema_info);
 	W_ERROR_HAVE_NO_MEMORY(schemaInfo->data);
-	talloc_steal(mem_ctx, schemaInfo->data);
 
 	return WERR_OK;
 }
@@ -819,12 +818,11 @@ int dsdb_schema_from_ldb_results(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 	}
 	info_val = ldb_msg_find_ldb_val(schema_res->msgs[0], "schemaInfo");
 	if (!info_val) {
-		info_val_default = strhex_to_data_blob("FF0000000000000000000000000000000000000000");
+		info_val_default = strhex_to_data_blob(mem_ctx, "FF0000000000000000000000000000000000000000");
 		if (!info_val_default.data) {
 			dsdb_oom(error_string, mem_ctx);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
-		talloc_steal(mem_ctx, info_val_default.data);
 		info_val = &info_val_default;
 	}
 

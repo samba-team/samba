@@ -64,12 +64,4 @@ struct dfs_path {
 	bool posix_path;
 };
 
-#define init_dfsroot(conn, inbuf, outbuf)                    	\
-{ if (lp_msdfs_root(SNUM(conn)) && lp_host_msdfs()) {        	\
-        DEBUG(2,("Serving %s as a Dfs root\n", 			\
-		 lp_servicename(SNUM(conn)) )); 		\
-	SSVAL(outbuf, smb_vwv2, SMB_SHARE_IN_DFS 		\
-	      | SVAL(outbuf, smb_vwv2));   			\
-} }
-
 #endif /* _MSDFS_H */

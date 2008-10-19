@@ -236,12 +236,12 @@ _PUBLIC_ char *safe_strcat(char *dest, const char *src, size_t maxlength);
 
 
 **/
-_PUBLIC_ size_t strhex_to_str(char *p, size_t len, const char *strhex);
+_PUBLIC_ size_t strhex_to_str(char *p, size_t p_len, const char *strhex, size_t strhex_len);
 
 /** 
  * Parse a hex string and return a data blob. 
  */
-_PUBLIC_ _PURE_ DATA_BLOB strhex_to_data_blob(const char *strhex) ;
+_PUBLIC_ _PURE_ DATA_BLOB strhex_to_data_blob(TALLOC_CTX *mem_ctx, const char *strhex) ;
 
 /**
  * Routine to print a buffer as HEX digits, into an allocated string.

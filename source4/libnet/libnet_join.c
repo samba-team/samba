@@ -162,15 +162,29 @@ static NTSTATUS libnet_JoinADSDomain(struct libnet_context *ctx, struct libnet_J
 	ZERO_STRUCT(r_crack_names);
 	r_crack_names.in.bind_handle		= &drsuapi_bind_handle;
 	r_crack_names.in.level			= 1;
-	r_crack_names.in.req.req1.codepage	= 1252; /* western european */
-	r_crack_names.in.req.req1.language	= 0x00000407; /* german */
-	r_crack_names.in.req.req1.count		= 1;
-	r_crack_names.in.req.req1.names		= names;
-	r_crack_names.in.req.req1.format_flags	= DRSUAPI_DS_NAME_FLAG_NO_FLAGS;
-	r_crack_names.in.req.req1.format_offered= DRSUAPI_DS_NAME_FORMAT_SID_OR_SID_HISTORY;
-	r_crack_names.in.req.req1.format_desired= DRSUAPI_DS_NAME_FORMAT_FQDN_1779;
+	r_crack_names.in.req			= talloc(r, union drsuapi_DsNameRequest);
+	if (!r_crack_names.in.req) {
+		r->out.error_string = NULL;
+		talloc_free(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+	r_crack_names.in.req->req1.codepage	= 1252; /* western european */
+	r_crack_names.in.req->req1.language	= 0x00000407; /* german */
+	r_crack_names.in.req->req1.count	= 1;
+	r_crack_names.in.req->req1.names	= names;
+	r_crack_names.in.req->req1.format_flags	= DRSUAPI_DS_NAME_FLAG_NO_FLAGS;
+	r_crack_names.in.req->req1.format_offered = DRSUAPI_DS_NAME_FORMAT_SID_OR_SID_HISTORY;
+	r_crack_names.in.req->req1.format_desired = DRSUAPI_DS_NAME_FORMAT_FQDN_1779;
 	names[0].str = dom_sid_string(tmp_ctx, r->out.account_sid);
 	if (!names[0].str) {
+		r->out.error_string = NULL;
+		talloc_free(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	r_crack_names.out.ctr			= talloc(r, union drsuapi_DsNameCtr);
+	r_crack_names.out.level_out		= talloc(r, int32_t);
+	if (!r_crack_names.out.ctr || !r_crack_names.out.level_out) {
 		r->out.error_string = NULL;
 		talloc_free(tmp_ctx);
 		return NT_STATUS_NO_MEMORY;
@@ -201,24 +215,24 @@ static NTSTATUS libnet_JoinADSDomain(struct libnet_context *ctx, struct libnet_J
 						  "DsCrackNames failed - %s", win_errstr(r_crack_names.out.result));
 		talloc_free(tmp_ctx);
 		return NT_STATUS_UNSUCCESSFUL;
-	} else if (r_crack_names.out.level != 1 
-		   || !r_crack_names.out.ctr.ctr1 
-		   || r_crack_names.out.ctr.ctr1->count != 1) {
+	} else if (*r_crack_names.out.level_out != 1
+		   || !r_crack_names.out.ctr->ctr1
+		   || r_crack_names.out.ctr->ctr1->count != 1) {
 		r->out.error_string = talloc_asprintf(r, "DsCrackNames failed");
 		talloc_free(tmp_ctx);
 		return NT_STATUS_INVALID_PARAMETER;
-	} else if (r_crack_names.out.ctr.ctr1->array[0].status != DRSUAPI_DS_NAME_STATUS_OK) {
-		r->out.error_string = talloc_asprintf(r, "DsCrackNames failed: %d", r_crack_names.out.ctr.ctr1->array[0].status);
+	} else if (r_crack_names.out.ctr->ctr1->array[0].status != DRSUAPI_DS_NAME_STATUS_OK) {
+		r->out.error_string = talloc_asprintf(r, "DsCrackNames failed: %d", r_crack_names.out.ctr->ctr1->array[0].status);
 		talloc_free(tmp_ctx);
 		return NT_STATUS_UNSUCCESSFUL;
-	} else if (r_crack_names.out.ctr.ctr1->array[0].result_name == NULL) {
+	} else if (r_crack_names.out.ctr->ctr1->array[0].result_name == NULL) {
 		r->out.error_string = talloc_asprintf(r, "DsCrackNames failed: no result name");
 		talloc_free(tmp_ctx);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	/* Store the DN of our machine account. */
-	account_dn_str = r_crack_names.out.ctr.ctr1->array[0].result_name;
+	account_dn_str = r_crack_names.out.ctr->ctr1->array[0].result_name;
 
 	/* Now we know the user's DN, open with LDAP, read and modify a few things */
 
@@ -328,8 +342,8 @@ static NTSTATUS libnet_JoinADSDomain(struct libnet_context *ctx, struct libnet_J
 	}
 				
 	/* DsCrackNames to find out the DN of the domain. */
-	r_crack_names.in.req.req1.format_offered = DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT;
-	r_crack_names.in.req.req1.format_desired = DRSUAPI_DS_NAME_FORMAT_FQDN_1779;
+	r_crack_names.in.req->req1.format_offered = DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT;
+	r_crack_names.in.req->req1.format_desired = DRSUAPI_DS_NAME_FORMAT_FQDN_1779;
 	names[0].str = talloc_asprintf(tmp_ctx, "%s\\", r->out.domain_name);
 	if (!names[0].str) {
 		r->out.error_string = NULL;
@@ -362,11 +376,11 @@ static NTSTATUS libnet_JoinADSDomain(struct libnet_context *ctx, struct libnet_J
 					  "DsCrackNames failed - %s", win_errstr(r_crack_names.out.result));
 		talloc_free(tmp_ctx);
 		return NT_STATUS_UNSUCCESSFUL;
-	} else if (r_crack_names.out.level != 1 
-		   || !r_crack_names.out.ctr.ctr1 
-		   || r_crack_names.out.ctr.ctr1->count != 1
-		   || !r_crack_names.out.ctr.ctr1->array[0].result_name		  
-		   || r_crack_names.out.ctr.ctr1->array[0].status != DRSUAPI_DS_NAME_STATUS_OK) {
+	} else if (*r_crack_names.out.level_out != 1
+		   || !r_crack_names.out.ctr->ctr1
+		   || r_crack_names.out.ctr->ctr1->count != 1
+		   || !r_crack_names.out.ctr->ctr1->array[0].result_name
+		   || r_crack_names.out.ctr->ctr1->array[0].status != DRSUAPI_DS_NAME_STATUS_OK) {
 		r->out.error_string = talloc_asprintf(r, "DsCrackNames failed");
 		talloc_free(tmp_ctx);
 		return NT_STATUS_UNSUCCESSFUL;
@@ -377,8 +391,8 @@ static NTSTATUS libnet_JoinADSDomain(struct libnet_context *ctx, struct libnet_J
 	talloc_steal(r, account_dn_str);
 
 	/* Store the domain DN. */
-	r->out.domain_dn_str = r_crack_names.out.ctr.ctr1->array[0].result_name;
-	talloc_steal(r, r_crack_names.out.ctr.ctr1->array[0].result_name);
+	r->out.domain_dn_str = r_crack_names.out.ctr->ctr1->array[0].result_name;
+	talloc_steal(r, r_crack_names.out.ctr->ctr1->array[0].result_name);
 
 	/* Store the KVNO of the account, critical for some kerberos
 	 * operations */

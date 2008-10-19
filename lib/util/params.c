@@ -105,11 +105,6 @@ static int mygetc(myFILE *f)
 	return (int)( *(f->p++) & 0x00FF );
 }
 
-static void myfile_close(myFILE *f)
-{
-	talloc_free(f);
-}
-
 /* -------------------------------------------------------------------------- **
  * Functions...
  */
@@ -565,7 +560,7 @@ bool pm_process( const char *FileName,
     if( NULL == InFile->bufr )
       {
       DEBUG(0,("%s memory allocation failure.\n", func));
-      myfile_close(InFile);
+      talloc_free(InFile);
       return( false );
       }
     result = Parse( InFile, sfunc, pfunc, userdata );
@@ -573,7 +568,7 @@ bool pm_process( const char *FileName,
     InFile->bSize = 0;
     }
 
-  myfile_close(InFile);
+  talloc_free(InFile);
 
   if( !result )                               /* Generic failure. */
     {

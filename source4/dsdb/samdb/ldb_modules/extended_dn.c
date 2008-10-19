@@ -424,7 +424,7 @@ static int extended_search(struct ldb_module *module, struct ldb_request *req)
 				valstr = str;
 			} else {
 				DATA_BLOB binary;
-				binary = strhex_to_data_blob(str);
+				binary = strhex_to_data_blob(NULL, str);
 				if (!binary.data) {
 					ldb_oom(module->ldb);
 					return LDB_ERR_OPERATIONS_ERROR;
@@ -471,7 +471,7 @@ static int extended_search(struct ldb_module *module, struct ldb_request *req)
 				valstr = str;
 			} else {
 				DATA_BLOB binary;
-				binary = strhex_to_data_blob(str);
+				binary = strhex_to_data_blob(NULL, str);
 				if (!binary.data) {
 					ldb_oom(module->ldb);
 					return LDB_ERR_OPERATIONS_ERROR;

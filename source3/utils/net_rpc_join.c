@@ -330,12 +330,8 @@ int net_rpc_join_newstyle(struct net_context *c, int argc, const char **argv)
 	
 	/* Create a random machine account password */
 
-	{ 
-		char *str;
-		str = generate_random_str(DEFAULT_TRUST_ACCOUNT_PASSWORD_LENGTH);
-		clear_trust_password = SMB_STRDUP(str);
-		E_md4hash(clear_trust_password, md4_trust_password);
-	}
+	clear_trust_password = generate_random_str(talloc_tos(), DEFAULT_TRUST_ACCOUNT_PASSWORD_LENGTH);
+	E_md4hash(clear_trust_password, md4_trust_password);
 
 	/* Set password on machine account */
 
@@ -468,7 +464,7 @@ done:
 
 	cli_shutdown(cli);
 
-	SAFE_FREE(clear_trust_password);
+	TALLOC_FREE(clear_trust_password);
 
 	return retval;
 }

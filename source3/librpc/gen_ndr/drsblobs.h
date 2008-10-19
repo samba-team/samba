@@ -4,11 +4,15 @@
 
 #include "librpc/gen_ndr/drsuapi.h"
 #include "librpc/gen_ndr/misc.h"
+#include "librpc/gen_ndr/samr.h"
+#include "librpc/gen_ndr/lsa.h"
 #ifndef _HEADER_drsblobs
 #define _HEADER_drsblobs
 
 #define SUPPLEMENTAL_CREDENTIALS_PREFIX	( "                                                " )
 enum drsuapi_DsAttributeId;
+
+enum lsa_TrustAuthType;
 
 struct replPropertyMetaData1 {
 	enum drsuapi_DsAttributeId attid;
@@ -247,7 +251,7 @@ struct package_PrimaryKerberosBlob {
 }/* [public] */;
 
 struct package_PrimaryCLEARTEXTBlob {
-	const char * cleartext;/* [flag(LIBNDR_FLAG_STR_NOTERM|LIBNDR_FLAG_REMAINING)] */
+	DATA_BLOB cleartext;/* [flag(LIBNDR_FLAG_REMAINING)] */
 }/* [public] */;
 
 struct package_PrimaryWDigestHash {
@@ -263,62 +267,157 @@ struct package_PrimaryWDigestBlob {
 	struct package_PrimaryWDigestHash *hashes;
 }/* [public] */;
 
-struct trustAuthInOutSecret1 {
-	NTTIME time1;
-	uint32_t unknown1;
-	DATA_BLOB value;
-	DATA_BLOB _pad;/* [flag(LIBNDR_FLAG_ALIGN4)] */
+struct AuthInfoNone {
+	uint32_t size;/* [value(0)] */
 };
 
-struct trustAuthInOutCtr1 {
-	struct trustAuthInOutSecret1 *value1;/* [relative] */
-	struct trustAuthInOutSecret1 *value2;/* [relative] */
+struct AuthInfoNT4Owf {
+	uint32_t size;/* [value(16)] */
+	struct samr_Password password;
 };
 
-struct trustAuthInOutSecret2V1 {
-	NTTIME time1;
-	uint32_t unknown1;
-	DATA_BLOB value;
-	NTTIME time2;
-	uint32_t unknown2;
-	uint32_t unknown3;
-	uint32_t unknown4;
-	DATA_BLOB _pad;/* [flag(LIBNDR_FLAG_ALIGN4)] */
+struct AuthInfoClear {
+	uint32_t size;
+	uint8_t *password;
 };
 
-struct trustAuthInOutSecret2V2 {
-	NTTIME time1;
-	uint32_t unknown1;
-	DATA_BLOB value;
-	NTTIME time2;
-	uint32_t unknown2;
-	uint32_t unknown3;
-	DATA_BLOB _pad;/* [flag(LIBNDR_FLAG_ALIGN4)] */
+struct AuthInfoVersion {
+	uint32_t size;/* [value(4)] */
+	uint32_t version;
 };
 
-struct trustAuthInOutCtr2 {
-	struct trustAuthInOutSecret2V1 *value1;/* [relative] */
-	struct trustAuthInOutSecret2V2 *value2;/* [relative] */
-};
-
-union trustAuthInOutCtr {
-	struct trustAuthInOutCtr1 ctr1;/* [case] */
-	struct trustAuthInOutCtr2 ctr2;/* [case(2)] */
+union AuthInfo {
+	struct AuthInfoNone none;/* [case(TRUST_AUTH_TYPE_NONE)] */
+	struct AuthInfoNT4Owf nt4owf;/* [case(TRUST_AUTH_TYPE_NT4OWF)] */
+	struct AuthInfoClear clear;/* [case(TRUST_AUTH_TYPE_CLEAR)] */
+	struct AuthInfoVersion version;/* [case(TRUST_AUTH_TYPE_VERSION)] */
 }/* [nodiscriminant] */;
 
-struct trustAuthInOutBlob {
-	uint32_t version;
-	union trustAuthInOutCtr ctr;/* [switch_is(version)] */
+struct AuthenticationInformation {
+	NTTIME LastUpdateTime;
+	enum lsa_TrustAuthType AuthType;
+	union AuthInfo AuthInfo;/* [switch_is(AuthType)] */
+	DATA_BLOB _pad;/* [flag(LIBNDR_FLAG_ALIGN4)] */
 }/* [public] */;
+
+struct AuthenticationInformationArray {
+	struct AuthenticationInformation *array;/* [size_is] */
+}/* [noprint,nopush,nopull] */;
+
+struct trustAuthInOutBlob {
+	uint32_t count;
+	struct AuthenticationInformationArray *current;/* [relative] */
+	struct AuthenticationInformationArray *previous;/* [relative] */
+}/* [noprint,gensize,nopull,public,nopush] */;
+
+struct trustCurrentPasswords {
+	uint32_t count;
+	struct AuthenticationInformation **current;/* [relative] */
+}/* [gensize,public] */;
+
+struct trustDomainPasswords {
+	uint8_t confounder[512];
+	struct trustCurrentPasswords outgoing;/* [subcontext_size(outgoing_size),subcontext(0)] */
+	struct trustCurrentPasswords incoming;/* [subcontext_size(incoming_size),subcontext(0)] */
+	uint32_t outgoing_size;/* [value(ndr_size_trustCurrentPasswords(&outgoing,ndr->flags))] */
+	uint32_t incoming_size;/* [value(ndr_size_trustCurrentPasswords(&incoming,ndr->flags))] */
+}/* [public,nopull] */;
 
 struct DsCompressedChunk {
 	uint32_t marker;
 	DATA_BLOB data;
 }/* [public] */;
 
-struct DsCompressedBlob {
-	struct DsCompressedChunk chunks[5];
+struct ExtendedErrorAString {
+	uint16_t __size;
+	const char *string;/* [unique,charset(DOS),size_is(__size)] */
+};
+
+struct ExtendedErrorUString {
+	uint16_t __size;
+	const char *string;/* [unique,charset(UTF16),size_is(__size)] */
+};
+
+struct ExtendedErrorBlob {
+	uint16_t length;
+	uint8_t *data;/* [unique,size_is(length)] */
+};
+
+enum ExtendedErrorComputerNamePresent
+#ifndef USE_UINT_ENUMS
+ {
+	EXTENDED_ERROR_COMPUTER_NAME_PRESENT=1,
+	EXTENDED_ERROR_COMPUTER_NAME_NOT_PRESENT=2
+}
+#else
+ { __donnot_use_enum_ExtendedErrorComputerNamePresent=0x7FFFFFFF}
+#define EXTENDED_ERROR_COMPUTER_NAME_PRESENT ( 1 )
+#define EXTENDED_ERROR_COMPUTER_NAME_NOT_PRESENT ( 2 )
+#endif
+;
+
+union ExtendedErrorComputerNameU {
+	struct ExtendedErrorUString name;/* [case(EXTENDED_ERROR_COMPUTER_NAME_PRESENT)] */
+}/* [switch_type(ExtendedErrorComputerNamePresent)] */;
+
+struct ExtendedErrorComputerName {
+	enum ExtendedErrorComputerNamePresent present;
+	union ExtendedErrorComputerNameU n;/* [switch_is(present)] */
+};
+
+enum ExtendedErrorParamType
+#ifndef USE_UINT_ENUMS
+ {
+	EXTENDED_ERROR_PARAM_TYPE_ASCII_STRING=1,
+	EXTENDED_ERROR_PARAM_TYPE_UNICODE_STRING=2,
+	EXTENDED_ERROR_PARAM_TYPE_UINT32=3,
+	EXTENDED_ERROR_PARAM_TYPE_UINT16=4,
+	EXTENDED_ERROR_PARAM_TYPE_UINT64=5,
+	EXTENDED_ERROR_PARAM_TYPE_NONE=6,
+	EXTENDED_ERROR_PARAM_TYPE_BLOB=7
+}
+#else
+ { __donnot_use_enum_ExtendedErrorParamType=0x7FFFFFFF}
+#define EXTENDED_ERROR_PARAM_TYPE_ASCII_STRING ( 1 )
+#define EXTENDED_ERROR_PARAM_TYPE_UNICODE_STRING ( 2 )
+#define EXTENDED_ERROR_PARAM_TYPE_UINT32 ( 3 )
+#define EXTENDED_ERROR_PARAM_TYPE_UINT16 ( 4 )
+#define EXTENDED_ERROR_PARAM_TYPE_UINT64 ( 5 )
+#define EXTENDED_ERROR_PARAM_TYPE_NONE ( 6 )
+#define EXTENDED_ERROR_PARAM_TYPE_BLOB ( 7 )
+#endif
+;
+
+union ExtendedErrorParamU {
+	struct ExtendedErrorAString a_string;/* [case(EXTENDED_ERROR_PARAM_TYPE_ASCII_STRING)] */
+	struct ExtendedErrorUString u_string;/* [case(EXTENDED_ERROR_PARAM_TYPE_UNICODE_STRING)] */
+	uint32_t uint32;/* [case(EXTENDED_ERROR_PARAM_TYPE_UINT32)] */
+	uint16_t uint16;/* [case(EXTENDED_ERROR_PARAM_TYPE_UINT16)] */
+	uint64_t uint64;/* [case(EXTENDED_ERROR_PARAM_TYPE_UINT64)] */
+	struct ExtendedErrorBlob blob;/* [case(EXTENDED_ERROR_PARAM_TYPE_BLOB)] */
+}/* [switch_type(ExtendedErrorParamType)] */;
+
+struct ExtendedErrorParam {
+	enum ExtendedErrorParamType type;
+	union ExtendedErrorParamU p;/* [switch_is(type)] */
+};
+
+struct ExtendedErrorInfo {
+	struct ExtendedErrorInfo *next;/* [unique] */
+	struct ExtendedErrorComputerName computer_name;
+	uint64_t pid;
+	NTTIME time;
+	uint32_t generating_component;
+	WERROR status;
+	uint16_t detection_location;
+	uint16_t flags;
+	uint16_t num_params;
+	struct ExtendedErrorParam *params;/* [size_is(num_params)] */
 }/* [public] */;
+
+struct ExtendedErrorInfoPtr {
+	struct ExtendedErrorInfo *info;/* [unique] */
+};
 
 
 struct decode_replPropertyMetaData {
@@ -417,9 +516,17 @@ struct decode_trustAuthInOut {
 };
 
 
-struct decode_DsCompressed {
+struct decode_trustDomainPasswords {
 	struct {
-		struct DsCompressedBlob blob;
+		struct trustDomainPasswords blob;
+	} in;
+
+};
+
+
+struct decode_ExtendedErrorInfo {
+	struct {
+		struct ExtendedErrorInfoPtr ptr;/* [subcontext(0xFFFFFC01)] */
 	} in;
 
 };

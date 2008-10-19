@@ -328,11 +328,10 @@ WERROR dsdb_attach_schema_from_ldif_file(struct ldb_context *ldb, const char *pf
 
 	info_val = ldb_msg_find_ldb_val(msg, "schemaInfo");
 	if (!info_val) {
-		info_val_default = strhex_to_data_blob("FF0000000000000000000000000000000000000000");
+		info_val_default = strhex_to_data_blob(mem_ctx, "FF0000000000000000000000000000000000000000");
 		if (!info_val_default.data) {
 			goto nomem;
 		}
-		talloc_steal(mem_ctx, info_val_default.data);
 		info_val = &info_val_default;
 	}
 

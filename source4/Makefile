@@ -301,8 +301,8 @@ data.mk: config.status $(MK_FILES)
 testcov-html:: 
 
 include $(pidldir)/config.mk
-selftestdir := $(srcdir)/selftest
-include $(selftestdir)/config.mk
+selftestdir := $(srcdir)/../selftest
+include $(srcdir)/selftest/config.mk
 
 showflags::
 	@echo '  pwd        = '`/bin/pwd`

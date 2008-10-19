@@ -62,6 +62,8 @@ static bool test_DsGetDomainControllerInfo(struct dcerpc_pipe *p, struct torture
 {
 	NTSTATUS status;
 	struct drsuapi_DsGetDomainControllerInfo r;
+	union drsuapi_DsGetDCInfoCtr ctr;
+	int32_t level_out = 0;
 	bool found = false;
 	int i, j, k;
 	
@@ -91,16 +93,21 @@ static bool test_DsGetDomainControllerInfo(struct dcerpc_pipe *p, struct torture
 
 	for (i=0; i < ARRAY_SIZE(levels); i++) {
 		for (j=0; j < ARRAY_SIZE(names); j++) {
+			union drsuapi_DsGetDCInfoRequest req;
 			level = levels[i];
 			r.in.bind_handle = &priv->bind_handle;
 			r.in.level = 1;
+			r.in.req = &req;
 			
-			r.in.req.req1.domain_name = names[j].name;
-			r.in.req.req1.level = level;
+			r.in.req->req1.domain_name = names[j].name;
+			r.in.req->req1.level = level;
+
+			r.out.ctr = &ctr;
+			r.out.level_out = &level_out;
 			
 			torture_comment(torture,
 				   "testing DsGetDomainControllerInfo level %d on domainname '%s'\n",
-			       r.in.req.req1.level, r.in.req.req1.domain_name);
+			       r.in.req->req1.level, r.in.req->req1.domain_name);
 		
 			status = dcerpc_drsuapi_DsGetDomainControllerInfo(p, torture, &r);
 			torture_assert_ntstatus_ok(torture, status,
@@ -115,13 +122,13 @@ static bool test_DsGetDomainControllerInfo(struct dcerpc_pipe *p, struct torture
 			}
 
 			torture_assert_int_equal(torture, 
-									 r.in.req.req1.level, r.out.level_out, 
+									 r.in.req->req1.level, *r.out.level_out,
 									 "dcerpc_drsuapi_DsGetDomainControllerInfo level"); 
 
 			switch (level) {
 			case 1:
-				for (k=0; k < r.out.ctr.ctr1.count; k++) {
-					if (strcasecmp_m(r.out.ctr.ctr1.array[k].netbios_name, 
+				for (k=0; k < r.out.ctr->ctr1.count; k++) {
+					if (strcasecmp_m(r.out.ctr->ctr1.array[k].netbios_name,
 							 torture_join_netbios_name(priv->join)) == 0) {
 						found = true;
 						break;
@@ -129,11 +136,11 @@ static bool test_DsGetDomainControllerInfo(struct dcerpc_pipe *p, struct torture
 				}
 				break;
 			case 2:
-				for (k=0; k < r.out.ctr.ctr2.count; k++) {
-					if (strcasecmp_m(r.out.ctr.ctr2.array[k].netbios_name, 
+				for (k=0; k < r.out.ctr->ctr2.count; k++) {
+					if (strcasecmp_m(r.out.ctr->ctr2.array[k].netbios_name,
 							 torture_join_netbios_name(priv->join)) == 0) {
 						found = true;
-						priv->dcinfo	= r.out.ctr.ctr2.array[k];
+						priv->dcinfo	= r.out.ctr->ctr2.array[k];
 						break;
 					}
 				}
@@ -146,12 +153,15 @@ static bool test_DsGetDomainControllerInfo(struct dcerpc_pipe *p, struct torture
 
 	r.in.bind_handle = &priv->bind_handle;
 	r.in.level = 1;
-	
-	r.in.req.req1.domain_name = "__UNKNOWN_DOMAIN__"; /* This is clearly ignored for this level */
-	r.in.req.req1.level = -1;
+
+	r.out.ctr = &ctr;
+	r.out.level_out = &level_out;
+
+	r.in.req->req1.domain_name = "__UNKNOWN_DOMAIN__"; /* This is clearly ignored for this level */
+	r.in.req->req1.level = -1;
 	
 	printf("testing DsGetDomainControllerInfo level %d on domainname '%s'\n",
-	       r.in.req.req1.level, r.in.req.req1.domain_name);
+	       r.in.req->req1.level, r.in.req->req1.domain_name);
 	
 	status = dcerpc_drsuapi_DsGetDomainControllerInfo(p, torture, &r);
 
@@ -164,8 +174,8 @@ static bool test_DsGetDomainControllerInfo(struct dcerpc_pipe *p, struct torture
 		const char *dc_account = talloc_asprintf(torture, "%s\\%s$",
 							 torture_join_dom_netbios_name(priv->join), 
 							 priv->dcinfo.netbios_name);
-		for (k=0; k < r.out.ctr.ctr01.count; k++) {
-			if (strcasecmp_m(r.out.ctr.ctr01.array[k].client_account, 
+		for (k=0; k < r.out.ctr->ctr01.count; k++) {
+			if (strcasecmp_m(r.out.ctr->ctr01.array[k].client_account,
 					 dc_account)) {
 				found = true;
 				break;
@@ -184,21 +194,28 @@ static bool test_DsWriteAccountSpn(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct drsuapi_DsWriteAccountSpn r;
+	union drsuapi_DsWriteAccountSpnRequest req;
 	struct drsuapi_DsNameString names[2];
+	union drsuapi_DsWriteAccountSpnResult res;
+	int32_t level_out;
 	bool ret = true;
 
 	r.in.bind_handle		= &priv->bind_handle;
 	r.in.level			= 1;
+	r.in.req			= &req;
 
 	printf("testing DsWriteAccountSpn\n");
 
-	r.in.req.req1.operation	= DRSUAPI_DS_SPN_OPERATION_ADD;
-	r.in.req.req1.unknown1	= 0;
-	r.in.req.req1.object_dn	= priv->dcinfo.computer_dn;
-	r.in.req.req1.count	= 2;
-	r.in.req.req1.spn_names	= names;
+	r.in.req->req1.operation	= DRSUAPI_DS_SPN_OPERATION_ADD;
+	r.in.req->req1.unknown1	= 0;
+	r.in.req->req1.object_dn	= priv->dcinfo.computer_dn;
+	r.in.req->req1.count		= 2;
+	r.in.req->req1.spn_names	= names;
 	names[0].str = talloc_asprintf(mem_ctx, "smbtortureSPN/%s",priv->dcinfo.netbios_name);
 	names[1].str = talloc_asprintf(mem_ctx, "smbtortureSPN/%s",priv->dcinfo.dns_name);
+
+	r.out.res			= &res;
+	r.out.level_out			= &level_out;
 
 	status = dcerpc_drsuapi_DsWriteAccountSpn(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -213,8 +230,8 @@ static bool test_DsWriteAccountSpn(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		ret = false;
 	}
 
-	r.in.req.req1.operation	= DRSUAPI_DS_SPN_OPERATION_DELETE;
-	r.in.req.req1.unknown1	= 0;
+	r.in.req->req1.operation	= DRSUAPI_DS_SPN_OPERATION_DELETE;
+	r.in.req->req1.unknown1		= 0;
 
 	status = dcerpc_drsuapi_DsWriteAccountSpn(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -508,6 +525,8 @@ static bool test_DsGetNCChanges(struct dcerpc_pipe *p, struct torture_context *t
 	bool ret = true;
 	int i;
 	struct drsuapi_DsGetNCChanges r;
+	union drsuapi_DsGetNCChangesRequest req;
+	union drsuapi_DsGetNCChangesCtr ctr;
 	struct drsuapi_DsReplicaObjectIdentifier nc;
 	struct GUID null_guid;
 	struct dom_sid null_sid;
@@ -536,30 +555,32 @@ static bool test_DsGetNCChanges(struct dcerpc_pipe *p, struct torture_context *t
 			array[i].level);
 
 		r.in.bind_handle	= &priv->bind_handle;
-		r.in.level		= &array[i].level;
-		r.out.level		= &level_out;
+		r.in.level		= array[i].level;
+		r.out.level_out		= &level_out;
+		r.out.ctr		= &ctr;
 
-		switch (*r.in.level) {
+		switch (r.in.level) {
 		case 5:
 			nc.guid	= null_guid;
 			nc.sid	= null_sid;
 			nc.dn	= priv->domain_obj_dn?priv->domain_obj_dn:"";
 
-			r.in.req.req5.destination_dsa_guid		= GUID_random();
-			r.in.req.req5.source_dsa_invocation_id		= null_guid;
-			r.in.req.req5.naming_context			= &nc;
-			r.in.req.req5.highwatermark.tmp_highest_usn	= 0;
-			r.in.req.req5.highwatermark.reserved_usn	= 0;
-			r.in.req.req5.highwatermark.highest_usn		= 0;
-			r.in.req.req5.uptodateness_vector		= NULL;
-			r.in.req.req5.replica_flags			= 0;
+			r.in.req					= &req;
+			r.in.req->req5.destination_dsa_guid		= GUID_random();
+			r.in.req->req5.source_dsa_invocation_id		= null_guid;
+			r.in.req->req5.naming_context			= &nc;
+			r.in.req->req5.highwatermark.tmp_highest_usn	= 0;
+			r.in.req->req5.highwatermark.reserved_usn	= 0;
+			r.in.req->req5.highwatermark.highest_usn	= 0;
+			r.in.req->req5.uptodateness_vector		= NULL;
+			r.in.req->req5.replica_flags			= 0;
 			if (lp_parm_bool(tctx->lp_ctx, NULL, "drsuapi","compression", false)) {
-				r.in.req.req5.replica_flags		|= DRSUAPI_DS_REPLICA_NEIGHBOUR_COMPRESS_CHANGES;
+				r.in.req->req5.replica_flags		|= DRSUAPI_DS_REPLICA_NEIGHBOUR_COMPRESS_CHANGES;
 			}
-			r.in.req.req5.max_object_count			= 0;
-			r.in.req.req5.max_ndr_size			= 0;
-			r.in.req.req5.extended_op			= DRSUAPI_EXOP_NONE;
-			r.in.req.req5.fsmo_info				= 0;
+			r.in.req->req5.max_object_count			= 0;
+			r.in.req->req5.max_ndr_size			= 0;
+			r.in.req->req5.extended_op			= DRSUAPI_EXOP_NONE;
+			r.in.req->req5.fsmo_info			= 0;
 
 			break;
 		case 8:
@@ -567,33 +588,34 @@ static bool test_DsGetNCChanges(struct dcerpc_pipe *p, struct torture_context *t
 			nc.sid	= null_sid;
 			nc.dn	= priv->domain_obj_dn?priv->domain_obj_dn:"";
 
-			r.in.req.req8.destination_dsa_guid		= GUID_random();
-			r.in.req.req8.source_dsa_invocation_id		= null_guid;
-			r.in.req.req8.naming_context			= &nc;
-			r.in.req.req8.highwatermark.tmp_highest_usn	= 0;
-			r.in.req.req8.highwatermark.reserved_usn	= 0;
-			r.in.req.req8.highwatermark.highest_usn		= 0;
-			r.in.req.req8.uptodateness_vector		= NULL;
-			r.in.req.req8.replica_flags			= 0;
+			r.in.req					= &req;
+			r.in.req->req8.destination_dsa_guid		= GUID_random();
+			r.in.req->req8.source_dsa_invocation_id		= null_guid;
+			r.in.req->req8.naming_context			= &nc;
+			r.in.req->req8.highwatermark.tmp_highest_usn	= 0;
+			r.in.req->req8.highwatermark.reserved_usn	= 0;
+			r.in.req->req8.highwatermark.highest_usn	= 0;
+			r.in.req->req8.uptodateness_vector		= NULL;
+			r.in.req->req8.replica_flags			= 0;
 			if (lp_parm_bool(tctx->lp_ctx, NULL, "drsuapi", "compression", false)) {
-				r.in.req.req8.replica_flags		|= DRSUAPI_DS_REPLICA_NEIGHBOUR_COMPRESS_CHANGES;
+				r.in.req->req8.replica_flags		|= DRSUAPI_DS_REPLICA_NEIGHBOUR_COMPRESS_CHANGES;
 			}
 			if (lp_parm_bool(tctx->lp_ctx, NULL, "drsuapi", "neighbour_writeable", true)) {
-				r.in.req.req8.replica_flags		|= DRSUAPI_DS_REPLICA_NEIGHBOUR_WRITEABLE;
+				r.in.req->req8.replica_flags		|= DRSUAPI_DS_REPLICA_NEIGHBOUR_WRITEABLE;
 			}
-			r.in.req.req8.replica_flags			|= DRSUAPI_DS_REPLICA_NEIGHBOUR_SYNC_ON_STARTUP
+			r.in.req->req8.replica_flags			|= DRSUAPI_DS_REPLICA_NEIGHBOUR_SYNC_ON_STARTUP
 									| DRSUAPI_DS_REPLICA_NEIGHBOUR_DO_SCHEDULED_SYNCS
 									| DRSUAPI_DS_REPLICA_NEIGHBOUR_RETURN_OBJECT_PARENTS
 									| DRSUAPI_DS_REPLICA_NEIGHBOUR_NEVER_SYNCED
 									;
-			r.in.req.req8.max_object_count			= 402;
-			r.in.req.req8.max_ndr_size			= 402116;
-			r.in.req.req8.extended_op			= DRSUAPI_EXOP_NONE;
-			r.in.req.req8.fsmo_info				= 0;
-			r.in.req.req8.partial_attribute_set		= NULL;
-			r.in.req.req8.partial_attribute_set_ex		= NULL;
-			r.in.req.req8.mapping_ctr.num_mappings		= 0;
-			r.in.req.req8.mapping_ctr.mappings		= NULL;
+			r.in.req->req8.max_object_count			= 402;
+			r.in.req->req8.max_ndr_size			= 402116;
+			r.in.req->req8.extended_op			= DRSUAPI_EXOP_NONE;
+			r.in.req->req8.fsmo_info			= 0;
+			r.in.req->req8.partial_attribute_set		= NULL;
+			r.in.req->req8.partial_attribute_set_ex		= NULL;
+			r.in.req->req8.mapping_ctr.num_mappings		= 0;
+			r.in.req->req8.mapping_ctr.mappings		= NULL;
 
 			break;
 		}

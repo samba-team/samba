@@ -33,13 +33,12 @@ NTSTATUS trust_pw_change_and_store_it(struct rpc_pipe_client *cli, TALLOC_CTX *m
 {
 	unsigned char new_trust_passwd_hash[16];
 	char *new_trust_passwd;
-	char *str;
 	NTSTATUS nt_status;
 		
 	/* Create a random machine account password */
-	str = generate_random_str(DEFAULT_TRUST_ACCOUNT_PASSWORD_LENGTH);
+	new_trust_passwd = generate_random_str(mem_ctx, DEFAULT_TRUST_ACCOUNT_PASSWORD_LENGTH);
 
-	if ((new_trust_passwd = talloc_strdup(mem_ctx, str)) == NULL) {
+	if (new_trust_passwd == NULL) {
 		DEBUG(0, ("talloc_strdup failed\n"));
 		return NT_STATUS_NO_MEMORY;
 	}

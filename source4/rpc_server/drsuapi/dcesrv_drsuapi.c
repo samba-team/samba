@@ -337,11 +337,13 @@ WERROR dcesrv_drsuapi_DsCrackNames(struct dcesrv_call_state *dce_call, TALLOC_CT
 	struct drsuapi_bind_state *b_state;
 	struct dcesrv_handle *h;
 
-	r->out.level = r->in.level;
-	ZERO_STRUCT(r->out.ctr);
+	*r->out.level_out = r->in.level;
 
 	DCESRV_PULL_HANDLE_WERR(h, r->in.bind_handle, DRSUAPI_BIND_HANDLE);
 	b_state = h->data;
+
+	r->out.ctr = talloc_zero(mem_ctx, union drsuapi_DsNameCtr);
+	W_ERROR_HAVE_NO_MEMORY(r->out.ctr);
 
 	switch (r->in.level) {
 		case 1: {
@@ -353,16 +355,16 @@ WERROR dcesrv_drsuapi_DsCrackNames(struct dcesrv_call_state *dce_call, TALLOC_CT
 			ctr1 = talloc(mem_ctx, struct drsuapi_DsNameCtr1);
 			W_ERROR_HAVE_NO_MEMORY(ctr1);
 
-			count = r->in.req.req1.count;
+			count = r->in.req->req1.count;
 			names = talloc_array(mem_ctx, struct drsuapi_DsNameInfo1, count);
 			W_ERROR_HAVE_NO_MEMORY(names);
 
 			for (i=0; i < count; i++) {
 				status = DsCrackNameOneName(b_state->sam_ctx, mem_ctx,
-							    r->in.req.req1.format_flags,
-							    r->in.req.req1.format_offered,
-							    r->in.req.req1.format_desired,
-							    r->in.req.req1.names[i].str,
+							    r->in.req->req1.format_flags,
+							    r->in.req->req1.format_offered,
+							    r->in.req->req1.format_desired,
+							    r->in.req->req1.names[i].str,
 							    &names[i]);
 				if (!W_ERROR_IS_OK(status)) {
 					return status;
@@ -371,7 +373,7 @@ WERROR dcesrv_drsuapi_DsCrackNames(struct dcesrv_call_state *dce_call, TALLOC_CT
 
 			ctr1->count = count;
 			ctr1->array = names;
-			r->out.ctr.ctr1 = ctr1;
+			r->out.ctr->ctr1 = ctr1;
 
 			return WERR_OK;
 		}
@@ -389,17 +391,20 @@ static WERROR dcesrv_drsuapi_DsWriteAccountSpn(struct dcesrv_call_state *dce_cal
 	struct drsuapi_bind_state *b_state;
 	struct dcesrv_handle *h;
 
-	r->out.level = r->in.level;
+	*r->out.level_out = r->in.level;
 
 	DCESRV_PULL_HANDLE_WERR(h, r->in.bind_handle, DRSUAPI_BIND_HANDLE);
 	b_state = h->data;
+
+	r->out.res = talloc(mem_ctx, union drsuapi_DsWriteAccountSpnResult);
+	W_ERROR_HAVE_NO_MEMORY(r->out.res);
 
 	switch (r->in.level) {
 		case 1: {
 			struct drsuapi_DsWriteAccountSpnRequest1 *req;
 			struct ldb_message *msg;
 			int count, i, ret;
-			req = &r->in.req.req1;
+			req = &r->in.req->req1;
 			count = req->count;
 
 			msg = ldb_msg_new(mem_ctx);
@@ -409,7 +414,7 @@ static WERROR dcesrv_drsuapi_DsWriteAccountSpn(struct dcesrv_call_state *dce_cal
 
 			msg->dn = ldb_dn_new(msg, b_state->sam_ctx, req->object_dn);
 			if ( ! ldb_dn_validate(msg->dn)) {
-				r->out.res.res1.status = WERR_OK;
+				r->out.res->res1.status = WERR_OK;
 				return WERR_OK;
 			}
 			
@@ -440,9 +445,9 @@ static WERROR dcesrv_drsuapi_DsWriteAccountSpn(struct dcesrv_call_state *dce_cal
 				DEBUG(0,("Failed to modify SPNs on %s: %s\n",
 					 ldb_dn_get_linearized(msg->dn), 
 					 ldb_errstring(b_state->sam_ctx)));
-				r->out.res.res1.status = WERR_ACCESS_DENIED;
+				r->out.res->res1.status = WERR_ACCESS_DENIED;
 			} else {
-				r->out.res.res1.status = WERR_OK;
+				r->out.res->res1.status = WERR_OK;
 			}
 
 			return WERR_OK;
@@ -519,14 +524,16 @@ static WERROR dcesrv_drsuapi_DsGetDomainControllerInfo_1(struct drsuapi_bind_sta
 
 	int ret, i;
 
-	r->out.level_out = r->in.req.req1.level;
+	*r->out.level_out = r->in.req->req1.level;
+	r->out.ctr = talloc(mem_ctx, union drsuapi_DsGetDCInfoCtr);
+	W_ERROR_HAVE_NO_MEMORY(r->out.ctr);
 
 	sites_dn = samdb_sites_dn(b_state->sam_ctx, mem_ctx);
 	if (!sites_dn) {
 		return WERR_DS_OBJ_NOT_FOUND;
 	}
 
-	switch (r->out.level_out) {
+	switch (*r->out.level_out) {
 	case -1:
 		/* this level is not like the others */
 		return WERR_UNKNOWN_LEVEL;
@@ -549,9 +556,9 @@ static WERROR dcesrv_drsuapi_DsGetDomainControllerInfo_1(struct drsuapi_bind_sta
 		return WERR_GENERAL_FAILURE;
 	}
 
-	switch (r->out.level_out) {
+	switch (*r->out.level_out) {
 	case 1:
-		ctr1 = &r->out.ctr.ctr1;
+		ctr1 = &r->out.ctr->ctr1;
 		ctr1->count = res->count;
 		ctr1->array = talloc_zero_array(mem_ctx, 
 						struct drsuapi_DsGetDCInfo1, 
@@ -614,7 +621,7 @@ static WERROR dcesrv_drsuapi_DsGetDomainControllerInfo_1(struct drsuapi_bind_sta
 		}
 		break;
 	case 2:
-		ctr2 = &r->out.ctr.ctr2;
+		ctr2 = &r->out.ctr->ctr2;
 		ctr2->count = res->count;
 		ctr2->array = talloc_zero_array(mem_ctx, 
 						 struct drsuapi_DsGetDCInfo2, 

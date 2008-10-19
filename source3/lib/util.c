@@ -1228,17 +1228,6 @@ void add_to_large_array(TALLOC_CTX *mem_ctx, size_t element_size,
 }
 
 /****************************************************************************
- Free memory, checks for NULL.
- Use directly SAFE_FREE()
- Exists only because we need to pass a function pointer somewhere --SSS
-****************************************************************************/
-
-void safe_free(void *p)
-{
-	SAFE_FREE(p);
-}
-
-/****************************************************************************
  Get my own name and IP.
 ****************************************************************************/
 

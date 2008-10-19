@@ -2,13 +2,13 @@
 
 import "security.idl", "misc.idl", "samr.idl";
 
-[ 
+[
   uuid("e3514235-4b06-11d1-ab04-00c04fc2dcd2"),
   version(4.0),
   endpoint("ncacn_np:[\\pipe\\lsass]","ncacn_np:[\\pipe\\protected_storage]", "ncacn_ip_tcp:", "ncalrpc:"),
   authservice("ldap"),
   helpstring("Active Directory Replication"),
-  helper("librpc/ndr/ndr_drsuapi.h"),
+  helper("../librpc/ndr/ndr_drsuapi.h"),
   pointer_default(unique)
 ]
 interface drsuapi
@@ -115,11 +115,11 @@ interface drsuapi
 	} drsuapi_DsBindInfoCtr;
 
 	/* this is a magic guid you need to pass to DsBind to make drsuapi_DsWriteAccountSpn() work
-	 * 
+	 *
 	 * maybe the bind_guid could also be the invocation_id see drsuapi_DsReplicaConnection04
 	 */
 	const char *DRSUAPI_DS_BIND_GUID = "e24d201a-4fd6-11d1-a3da-0000f875ae0d";
-	/* 
+	/*
 	 * this magic guid are needed to fetch the whole tree with drsuapi_DsGetNCChanges()
 	 * as administrator and this values are also used in the destination_dsa_guid field
 	 * of drsuapi_DsGetNCChangesReq5/8 and the source_dsa_guid is zero.
@@ -232,7 +232,7 @@ interface drsuapi
 		DRSUAPI_DS_REPLICA_NEIGHBOUR_PREEMPTED				= 0x01000000,
 		DRSUAPI_DS_REPLICA_NEIGHBOUR_IGNORE_CHANGE_NOTIFICATIONS	= 0x04000000,
 		DRSUAPI_DS_REPLICA_NEIGHBOUR_DISABLE_SCHEDULED_SYNC		= 0x08000000,
-		/* 
+		/*
 		 * the following NOTE applies to DsGetNCChangesRequest5:
 		 *  - the data is only compressed when 10 or more objects are replicated
 		 *  - but there could also be a size limit of 35 KBytes or something like that
@@ -454,7 +454,7 @@ interface drsuapi
 		DRSUAPI_ATTRIBUTE_objectCategory		= 0x0009030e,
 		DRSUAPI_ATTRIBUTE_gPLink			= 0x0009037b,
 		DRSUAPI_ATTRIBUTE_msDS_Behavior_Version		= 0x000905b3,
-		DRSUAPI_ATTRIBUTE_msDS_KeyVersionNumber		= 0x000906f6,		
+		DRSUAPI_ATTRIBUTE_msDS_KeyVersionNumber		= 0x000906f6,
 		DRSUAPI_ATTRIBUTE_msDS_HasDomainNCs		= 0x0009071c,
 		DRSUAPI_ATTRIBUTE_msDS_hasMasterNCs		= 0x0009072c
 	} drsuapi_DsAttributeId;
@@ -1144,7 +1144,7 @@ interface drsuapi
 
 	/*
 	 * please note the the current idl
-	 * for DsAddEntry does only parse 
+	 * for DsAddEntry does only parse
 	 * what I saw between 2 w2k3 boxes
 	 * in my dssync experiments I got some other replies
 	 * so all I want to say is that this is very incomplete yet...

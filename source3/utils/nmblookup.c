@@ -219,7 +219,7 @@ static bool query_one(const char *lookup, unsigned int lookup_type)
 		}
 	}
 
-	safe_free(ip_list);
+	free(ip_list);
 
 	return (ip_list != NULL);
 }

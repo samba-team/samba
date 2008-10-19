@@ -639,9 +639,13 @@ static void unbecomeDC_drsuapi_remove_ds_server_send(struct libnet_UnbecomeDC_st
 
 	r->in.bind_handle	= &s->drsuapi.bind_handle;
 	r->in.level		= 1;
-	r->in.req.req1.server_dn= s->dest_dsa.server_dn_str;
-	r->in.req.req1.domain_dn= s->domain.dn_str;
-	r->in.req.req1.commit	= true;
+	r->in.req		= talloc(s, union drsuapi_DsRemoveDSServerRequest);
+	r->in.req->req1.server_dn = s->dest_dsa.server_dn_str;
+	r->in.req->req1.domain_dn = s->domain.dn_str;
+	r->in.req->req1.commit	= true;
+
+	r->out.level_out	= talloc(s, int32_t);
+	r->out.res		= talloc(s, union drsuapi_DsRemoveDSServerResult);
 
 	req = dcerpc_drsuapi_DsRemoveDSServer_send(s->drsuapi.pipe, s, r);
 	composite_continue_rpc(c, req, unbecomeDC_drsuapi_remove_ds_server_recv, s);
@@ -662,7 +666,7 @@ static void unbecomeDC_drsuapi_remove_ds_server_recv(struct rpc_request *req)
 		return;
 	}
 
-	if (r->out.level != 1) {
+	if (*r->out.level_out != 1) {
 		composite_error(c, NT_STATUS_INVALID_NETWORK_RESPONSE);
 		return;
 	}

@@ -67,7 +67,12 @@ interface ntsvcs
 	/******************/
 	/* Function: 0x0a */
 
-	[todo] WERROR PNP_GetDeviceList();
+	[todo] WERROR PNP_GetDeviceList(
+		[in,unique] [string,charset(UTF16)] uint16 *filter,
+		[out,ref] [size_is(*length),length_is(*length)] uint16 *buffer,
+		[in,out,ref] uint32 *length,
+		[in] uint32 flags
+		);
 
 	/******************/
 	/* Function: 0x0b */
@@ -91,11 +96,11 @@ interface ntsvcs
 	WERROR PNP_GetDeviceRegProp(
 		[in,ref] [string,charset(UTF16)] uint16 *devicepath,
 		[in] uint32 property,
-		[in,out,ref] uint32 *unknown1,
+		[in,out,ref] uint32 *reg_data_type,
 		[out,ref] [size_is(*buffer_size)] [length_is(*buffer_size)] uint8 *buffer,
 		[in,out,ref] uint32 *buffer_size,
 		[in,out,ref] uint32 *needed,
-		[in] uint32 unknown3
+		[in] uint32 flags
 		);
 
 	/******************/

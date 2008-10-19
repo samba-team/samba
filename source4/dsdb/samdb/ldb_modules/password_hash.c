@@ -482,12 +482,11 @@ static int setup_primary_kerberos(struct setup_password_fields_io *io,
 	if (old_scp) {
 		DATA_BLOB blob;
 
-		blob = strhex_to_data_blob(old_scp->data);
+		blob = strhex_to_data_blob(io->ac, old_scp->data);
 		if (!blob.data) {
 			ldb_oom(io->ac->module->ldb);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
-		talloc_steal(io->ac, blob.data);
 
 		/* TODO: use ndr_pull_struct_blob_all(), when the ndr layer handles it correct with relative pointers */
 		ndr_err = ndr_pull_struct_blob(&blob, io->ac, lp_iconv_convenience(ldb_get_opaque(io->ac->module->ldb, "loadparm")), &_old_pkb,
@@ -596,12 +595,11 @@ static int setup_primary_kerberos_newer(struct setup_password_fields_io *io,
 	if (old_scp) {
 		DATA_BLOB blob;
 
-		blob = strhex_to_data_blob(old_scp->data);
+		blob = strhex_to_data_blob(io->ac, old_scp->data);
 		if (!blob.data) {
 			ldb_oom(io->ac->module->ldb);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
-		talloc_steal(io->ac, blob.data);
 
 		/* TODO: use ndr_pull_struct_blob_all(), when the ndr layer handles it correct with relative pointers */
 		ndr_err = ndr_pull_struct_blob(&blob, io->ac,

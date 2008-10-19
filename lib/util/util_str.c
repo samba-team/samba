@@ -22,70 +22,14 @@
 */
 
 #include "includes.h"
-#include "libcli/raw/smb.h"
 #include "system/locale.h"
+#undef strncasecmp
+#undef strcasemp
 
 /**
  * @file
  * @brief String utilities.
  **/
-
-
-/**
- Trim the specified elements off the front and back of a string.
-**/
-_PUBLIC_ bool trim_string(char *s, const char *front, const char *back)
-{
-	bool ret = false;
-	size_t front_len;
-	size_t back_len;
-	size_t len;
-
-	/* Ignore null or empty strings. */
-	if (!s || (s[0] == '\0'))
-		return false;
-
-	front_len	= front? strlen(front) : 0;
-	back_len	= back? strlen(back) : 0;
-
-	len = strlen(s);
-
-	if (front_len) {
-		while (len && strncmp(s, front, front_len)==0) {
-			/* Must use memmove here as src & dest can
-			 * easily overlap. Found by valgrind. JRA. */
-			memmove(s, s+front_len, (len-front_len)+1);
-			len -= front_len;
-			ret=true;
-		}
-	}
-	
-	if (back_len) {
-		while ((len >= back_len) && strncmp(s+len-back_len,back,back_len)==0) {
-			s[len-back_len]='\0';
-			len -= back_len;
-			ret=true;
-		}
-	}
-	return ret;
-}
-
-/**
- Find the number of 'c' chars in a string
-**/
-_PUBLIC_ _PURE_ size_t count_chars(const char *s, char c)
-{
-	size_t count = 0;
-
-	while (*s) {
-		if (*s == c) count++;
-		s ++;
-	}
-
-	return count;
-}
-
-
 
 /**
  Safe string copy into a known length string. maxlength does not
@@ -168,137 +112,6 @@ _PUBLIC_ char *safe_strcat(char *dest, const char *src, size_t maxlength)
 	return dest;
 }
 
-/**
- Routine to get hex characters and turn them into a 16 byte array.
- the array can be variable length, and any non-hex-numeric
- characters are skipped.  "0xnn" or "0Xnn" is specially catered
- for.
-
- valid examples: "0A5D15"; "0x15, 0x49, 0xa2"; "59\ta9\te3\n"
-
-
-**/
-_PUBLIC_ size_t strhex_to_str(char *p, size_t len, const char *strhex)
-{
-	size_t i;
-	size_t num_chars = 0;
-	uint8_t   lonybble, hinybble;
-	const char     *hexchars = "0123456789ABCDEF";
-	char           *p1 = NULL, *p2 = NULL;
-
-	for (i = 0; i < len && strhex[i] != 0; i++) {
-		if (strncasecmp(hexchars, "0x", 2) == 0) {
-			i++; /* skip two chars */
-			continue;
-		}
-
-		if (!(p1 = strchr(hexchars, toupper((unsigned char)strhex[i]))))
-			break;
-
-		i++; /* next hex digit */
-
-		if (!(p2 = strchr(hexchars, toupper((unsigned char)strhex[i]))))
-			break;
-
-		/* get the two nybbles */
-		hinybble = PTR_DIFF(p1, hexchars);
-		lonybble = PTR_DIFF(p2, hexchars);
-
-		p[num_chars] = (hinybble << 4) | lonybble;
-		num_chars++;
-
-		p1 = NULL;
-		p2 = NULL;
-	}
-	return num_chars;
-}
-
-/** 
- * Parse a hex string and return a data blob. 
- */
-_PUBLIC_ _PURE_ DATA_BLOB strhex_to_data_blob(const char *strhex) 
-{
-	DATA_BLOB ret_blob = data_blob(NULL, strlen(strhex)/2+1);
-
-	ret_blob.length = strhex_to_str((char *)ret_blob.data, 	
-					strlen(strhex), 
-					strhex);
-
-	return ret_blob;
-}
-
-
-/**
- * Routine to print a buffer as HEX digits, into an allocated string.
- */
-_PUBLIC_ void hex_encode(const unsigned char *buff_in, size_t len, char **out_hex_buffer)
-{
-	int i;
-	char *hex_buffer;
-
-	*out_hex_buffer = malloc_array_p(char, (len*2)+1);
-	hex_buffer = *out_hex_buffer;
-
-	for (i = 0; i < len; i++)
-		slprintf(&hex_buffer[i*2], 3, "%02X", buff_in[i]);
-}
-
-/**
- * talloc version of hex_encode()
- */
-_PUBLIC_ char *hex_encode_talloc(TALLOC_CTX *mem_ctx, const unsigned char *buff_in, size_t len)
-{
-	int i;
-	char *hex_buffer;
-
-	hex_buffer = talloc_array(mem_ctx, char, (len*2)+1);
-
-	for (i = 0; i < len; i++)
-		slprintf(&hex_buffer[i*2], 3, "%02X", buff_in[i]);
-
-	return hex_buffer;
-}
-
-/**
- Unescape a URL encoded string, in place.
-**/
-
-_PUBLIC_ void rfc1738_unescape(char *buf)
-{
-	char *p=buf;
-
-	while ((p=strchr(p,'+')))
-		*p = ' ';
-
-	p = buf;
-
-	while (p && *p && (p=strchr(p,'%'))) {
-		int c1 = p[1];
-		int c2 = p[2];
-
-		if (c1 >= '0' && c1 <= '9')
-			c1 = c1 - '0';
-		else if (c1 >= 'A' && c1 <= 'F')
-			c1 = 10 + c1 - 'A';
-		else if (c1 >= 'a' && c1 <= 'f')
-			c1 = 10 + c1 - 'a';
-		else {p++; continue;}
-
-		if (c2 >= '0' && c2 <= '9')
-			c2 = c2 - '0';
-		else if (c2 >= 'A' && c2 <= 'F')
-			c2 = 10 + c2 - 'A';
-		else if (c2 >= 'a' && c2 <= 'f')
-			c2 = 10 + c2 - 'a';
-		else {p++; continue;}
-			
-		*p = (c1<<4) | c2;
-
-		memmove(p+1, p+3, strlen(p+3)+1);
-		p++;
-	}
-}
-
 #ifdef VALGRIND
 size_t valgrind_strlen(const char *s)
 {
@@ -365,109 +178,6 @@ _PUBLIC_ bool add_string_to_array(TALLOC_CTX *mem_ctx,
 	*num += 1;
 
 	return true;
-}
-
-
-
-/**
-  varient of strcmp() that handles NULL ptrs
-**/
-_PUBLIC_ int strcmp_safe(const char *s1, const char *s2)
-{
-	if (s1 == s2) {
-		return 0;
-	}
-	if (s1 == NULL || s2 == NULL) {
-		return s1?-1:1;
-	}
-	return strcmp(s1, s2);
-}
-
-
-/**
-return the number of bytes occupied by a buffer in ASCII format
-the result includes the null termination
-limited by 'n' bytes
-**/
-_PUBLIC_ size_t ascii_len_n(const char *src, size_t n)
-{
-	size_t len;
-
-	len = strnlen(src, n);
-	if (len+1 <= n) {
-		len += 1;
-	}
-
-	return len;
-}
-
-
-/**
- Return a string representing a CIFS attribute for a file.
-**/
-_PUBLIC_ char *attrib_string(TALLOC_CTX *mem_ctx, uint32_t attrib)
-{
-	int i, len;
-	const struct {
-		char c;
-		uint16_t attr;
-	} attr_strs[] = {
-		{'V', FILE_ATTRIBUTE_VOLUME},
-		{'D', FILE_ATTRIBUTE_DIRECTORY},
-		{'A', FILE_ATTRIBUTE_ARCHIVE},
-		{'H', FILE_ATTRIBUTE_HIDDEN},
-		{'S', FILE_ATTRIBUTE_SYSTEM},
-		{'N', FILE_ATTRIBUTE_NORMAL},
-		{'R', FILE_ATTRIBUTE_READONLY},
-		{'d', FILE_ATTRIBUTE_DEVICE},
-		{'t', FILE_ATTRIBUTE_TEMPORARY},
-		{'s', FILE_ATTRIBUTE_SPARSE},
-		{'r', FILE_ATTRIBUTE_REPARSE_POINT},
-		{'c', FILE_ATTRIBUTE_COMPRESSED},
-		{'o', FILE_ATTRIBUTE_OFFLINE},
-		{'n', FILE_ATTRIBUTE_NONINDEXED},
-		{'e', FILE_ATTRIBUTE_ENCRYPTED}
-	};
-	char *ret;
-
-	ret = talloc_array(mem_ctx, char, ARRAY_SIZE(attr_strs)+1);
-	if (!ret) {
-		return NULL;
-	}
-
-	for (len=i=0; i<ARRAY_SIZE(attr_strs); i++) {
-		if (attrib & attr_strs[i].attr) {
-			ret[len++] = attr_strs[i].c;
-		}
-	}
-
-	ret[len] = 0;
-
-	return ret;
-}
-
-/**
- Set a boolean variable from the text value stored in the passed string.
- Returns true in success, false if the passed string does not correctly 
- represent a boolean.
-**/
-
-_PUBLIC_ bool set_boolean(const char *boolean_string, bool *boolean)
-{
-	if (strwicmp(boolean_string, "yes") == 0 ||
-	    strwicmp(boolean_string, "true") == 0 ||
-	    strwicmp(boolean_string, "on") == 0 ||
-	    strwicmp(boolean_string, "1") == 0) {
-		*boolean = true;
-		return true;
-	} else if (strwicmp(boolean_string, "no") == 0 ||
-		   strwicmp(boolean_string, "false") == 0 ||
-		   strwicmp(boolean_string, "off") == 0 ||
-		   strwicmp(boolean_string, "0") == 0) {
-		*boolean = false;
-		return true;
-	}
-	return false;
 }
 
 /**
@@ -558,44 +268,6 @@ _PUBLIC_ bool conv_str_u64(const char * str, uint64_t * val)
 }
 
 /**
-return the number of bytes occupied by a buffer in CH_UTF16 format
-the result includes the null termination
-**/
-_PUBLIC_ size_t utf16_len(const void *buf)
-{
-	size_t len;
-
-	for (len = 0; SVAL(buf,len); len += 2) ;
-
-	return len + 2;
-}
-
-/**
-return the number of bytes occupied by a buffer in CH_UTF16 format
-the result includes the null termination
-limited by 'n' bytes
-**/
-_PUBLIC_ size_t utf16_len_n(const void *src, size_t n)
-{
-	size_t len;
-
-	for (len = 0; (len+2 < n) && SVAL(src, len); len += 2) ;
-
-	if (len+2 <= n) {
-		len += 2;
-	}
-
-	return len;
-}
-
-_PUBLIC_ size_t ucs2_align(const void *base_ptr, const void *p, int flags)
-{
-	if (flags & (STR_NOALIGN|STR_ASCII))
-		return 0;
-	return PTR_DIFF(p, base_ptr) & 1;
-}
-
-/**
 Do a case-insensitive, whitespace-ignoring string compare.
 **/
 _PUBLIC_ int strwicmp(const char *psz1, const char *psz2)
@@ -626,17 +298,6 @@ _PUBLIC_ int strwicmp(const char *psz1, const char *psz2)
 }
 
 /**
- String replace.
-**/
-_PUBLIC_ void string_replace(char *s, char oldc, char newc)
-{
-	while (*s) {
-		if (*s == oldc) *s = newc;
-		s++;
-	}
-}
-
-/**
  * Compare 2 strings.
  *
  * @note The comparison is case-insensitive.
@@ -650,3 +311,23 @@ _PUBLIC_ bool strequal(const char *s1, const char *s2)
   
 	return strcasecmp(s1,s2) == 0;
 }
+
+_PUBLIC_ size_t ucs2_align(const void *base_ptr, const void *p, int flags)
+{
+	if (flags & (STR_NOALIGN|STR_ASCII))
+		return 0;
+	return PTR_DIFF(p, base_ptr) & 1;
+}
+
+/**
+ String replace.
+**/
+_PUBLIC_ void string_replace(char *s, char oldc, char newc)
+{
+	while (*s) {
+		if (*s == oldc) *s = newc;
+		s++;
+	}
+}
+
+

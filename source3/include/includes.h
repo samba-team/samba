@@ -71,23 +71,6 @@
 #undef HAVE_TERMIOS_H
 #endif
 
-#ifndef _PUBLIC_
-#ifdef HAVE_VISIBILITY_ATTR
-#  define _PUBLIC_ __attribute__((visibility("default")))
-#else
-#  define _PUBLIC_
-#endif
-#endif
-
-#if defined(__GNUC__) && !defined(__cplusplus)
-/** gcc attribute used on function parameters so that it does not emit
- * warnings about them being unused. **/
-#  define UNUSED(param) param __attribute__ ((unused))
-#else
-#  define UNUSED(param) param
-/** Feel free to add definitions for other compilers here. */
-#endif
-
 #ifdef RELIANTUNIX
 /*
  * <unistd.h> has to be included before any other to get
@@ -288,12 +271,10 @@ typedef int ber_int_t;
 /*
  * Define additional missing types
  */
-#if defined(HAVE_SIG_ATOMIC_T_TYPE) && defined(AIX)
+#if defined(AIX)
 typedef sig_atomic_t SIG_ATOMIC_T;
-#elif defined(HAVE_SIG_ATOMIC_T_TYPE) && !defined(AIX)
-typedef sig_atomic_t volatile SIG_ATOMIC_T;
 #else
-typedef int volatile SIG_ATOMIC_T;
+typedef sig_atomic_t volatile SIG_ATOMIC_T;
 #endif
 
 #ifndef uchar
@@ -593,6 +574,7 @@ struct smb_iconv_convenience *lp_iconv_convenience(void *lp_ctx);
 /* Lists, trees, caching, database... */
 #include "../lib/util/xfile.h"
 #include "../lib/util/memory.h"
+#include "../lib/util/attr.h"
 #include "intl.h"
 #include "../lib/util/dlinklist.h"
 #include "tdb.h"
@@ -781,14 +763,6 @@ enum flush_reason_enum {
 
 /* prototypes from lib/util_transfer_file.c */
 #include "transfer_file.h"
-
-#ifdef __COMPAR_FN_T
-#define QSORT_CAST (__compar_fn_t)
-#endif
-
-#ifndef QSORT_CAST
-#define QSORT_CAST (int (*)(const void *, const void *))
-#endif
 
 #ifndef DEFAULT_PRINTING
 #ifdef HAVE_CUPS
@@ -1107,19 +1081,11 @@ ssize_t readahead(int fd, off64_t offset, size_t count);
 #define CONST_DISCARD(type, ptr)      ((type) ((void *) (ptr)))
 #define CONST_ADD(type, ptr)          ((type) ((const void *) (ptr)))
 
-#ifndef NORETURN_ATTRIBUTE
-#if (__GNUC__ >= 3)
-#define NORETURN_ATTRIBUTE __attribute__ ((noreturn))
-#else
-#define NORETURN_ATTRIBUTE
-#endif
-#endif
-
-void smb_panic( const char *why ) NORETURN_ATTRIBUTE ;
-void dump_core(void) NORETURN_ATTRIBUTE ;
-void exit_server(const char *const reason) NORETURN_ATTRIBUTE ;
-void exit_server_cleanly(const char *const reason) NORETURN_ATTRIBUTE ;
-void exit_server_fault(void) NORETURN_ATTRIBUTE ;
+void smb_panic( const char *why ) _NORETURN_;
+void dump_core(void) _NORETURN_;
+void exit_server(const char *const reason) _NORETURN_;
+void exit_server_cleanly(const char *const reason) _NORETURN_;
+void exit_server_fault(void) _NORETURN_;
 
 #ifdef HAVE_LIBNSCD
 #include "libnscd.h"

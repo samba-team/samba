@@ -888,7 +888,7 @@ bool reload_services(bool test)
 enum server_exit_reason { SERVER_EXIT_NORMAL, SERVER_EXIT_ABNORMAL };
 
 static void exit_server_common(enum server_exit_reason how,
-	const char *const reason) NORETURN_ATTRIBUTE;
+	const char *const reason) _NORETURN_;
 
 static void exit_server_common(enum server_exit_reason how,
 	const char *const reason)
