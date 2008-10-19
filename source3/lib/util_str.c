@@ -558,47 +558,6 @@ bool trim_char(char *s,char cfront,char cback)
 }
 
 /**
- Trim the specified elements off the front and back of a string.
-**/
-
-bool trim_string(char *s,const char *front,const char *back)
-{
-	bool ret = false;
-	size_t front_len;
-	size_t back_len;
-	size_t len;
-
-	/* Ignore null or empty strings. */
-	if (!s || (s[0] == '\0'))
-		return false;
-
-	front_len	= front? strlen(front) : 0;
-	back_len	= back? strlen(back) : 0;
-
-	len = strlen(s);
-
-	if (front_len) {
-		while (len && strncmp(s, front, front_len)==0) {
-			/* Must use memmove here as src & dest can
-			 * easily overlap. Found by valgrind. JRA. */
-			memmove(s, s+front_len, (len-front_len)+1);
-			len -= front_len;
-			ret=true;
-		}
-	}
-
-	if (back_len) {
-		while ((len >= back_len) &&
-				strncmp(s+len-back_len,back,back_len)==0) {
-			s[len-back_len]='\0';
-			len -= back_len;
-			ret=true;
-		}
-	}
-	return ret;
-}
-
-/**
  Does a string have any uppercase chars in it?
 **/
 
@@ -646,29 +605,6 @@ bool strhaslower(const char *s)
 	ret = (*p != 0);
 	SAFE_FREE(tmp);
 	return ret;
-}
-
-/**
- Find the number of 'c' chars in a string
-**/
-
-size_t count_chars(const char *s,char c)
-{
-	smb_ucs2_t *ptr;
-	int count;
-	smb_ucs2_t *alloc_tmpbuf = NULL;
-	size_t converted_size;
-
-	if (!push_ucs2_allocate(&alloc_tmpbuf, s, &converted_size)) {
-		return 0;
-	}
-
-	for(count=0,ptr=alloc_tmpbuf;*ptr;ptr++)
-		if(*ptr==UCS2_CHAR(c))
-			count++;
-
-	SAFE_FREE(alloc_tmpbuf);
-	return(count);
 }
 
 /**
@@ -869,88 +805,6 @@ static char *strncpyn(char *dest, const char *src, size_t n, char c)
 	return p;
 }
 #endif
-
-/**
- Routine to get hex characters and turn them into a 16 byte array.
- the array can be variable length, and any non-hex-numeric
- characters are skipped.  "0xnn" or "0Xnn" is specially catered
- for.
-
- valid examples: "0A5D15"; "0x15, 0x49, 0xa2"; "59\ta9\te3\n"
-
-**/
-
-size_t strhex_to_str(char *buf, size_t buf_len, const char *strhex, size_t strhex_len)
-{
-	size_t i;
-	size_t num_chars = 0;
-	unsigned char   lonybble, hinybble;
-	const char     *hexchars = "0123456789ABCDEF";
-	char           *p1 = NULL, *p2 = NULL;
-
-	for (i = 0; i < strhex_len && strhex[i] != 0; i++) {
-		if (strnequal(hexchars, "0x", 2)) {
-			i++; /* skip two chars */
-			continue;
-		}
-
-		if (!(p1 = strchr_m(hexchars, toupper_ascii(strhex[i]))))
-			break;
-
-		i++; /* next hex digit */
-
-		if (!(p2 = strchr_m(hexchars, toupper_ascii(strhex[i]))))
-			break;
-
-		/* get the two nybbles */
-		hinybble = PTR_DIFF(p1, hexchars);
-		lonybble = PTR_DIFF(p2, hexchars);
-
-		if (num_chars >= buf_len) {
-			break;
-		}
-		buf[num_chars] = (hinybble << 4) | lonybble;
-		num_chars++;
-
-		p1 = NULL;
-		p2 = NULL;
-	}
-	return num_chars;
-}
-
-DATA_BLOB strhex_to_data_blob(TALLOC_CTX *mem_ctx, const char *strhex)
-{
-	DATA_BLOB ret_blob;
-
-	if (mem_ctx != NULL)
-		ret_blob = data_blob_talloc(mem_ctx, NULL, strlen(strhex)/2+1);
-	else
-		ret_blob = data_blob(NULL, strlen(strhex)/2+1);
-
-	ret_blob.length = strhex_to_str((char*)ret_blob.data,
-					ret_blob.length,
-					strhex,
-					strlen(strhex));
-
-	return ret_blob;
-}
-
-/**
- * Routine to print a buffer as HEX digits, into an allocated string.
- */
-
-char *hex_encode_talloc(TALLOC_CTX *mem_ctx, const unsigned char *buff_in, size_t len)
-{
-	int i;
-	char *hex_buffer;
-
-	hex_buffer = TALLOC_ARRAY(mem_ctx, char, (len*2)+1);
-
-	for (i = 0; i < len; i++)
-		slprintf(&hex_buffer[i*2], 3, "%02X", buff_in[i]);
-
-	return hex_buffer;
-}
 
 /**
  Check if a string is part of a list.
@@ -2105,41 +1959,6 @@ void ipstr_list_free(char* ipstr_list)
 	SAFE_FREE(ipstr_list);
 }
 
-/**
- Unescape a URL encoded string, in place.
-**/
-
-void rfc1738_unescape(char *buf)
-{
-	char *p=buf;
-
-	while (p && *p && (p=strchr_m(p,'%'))) {
-		int c1 = p[1];
-		int c2 = p[2];
-
-		if (c1 >= '0' && c1 <= '9')
-			c1 = c1 - '0';
-		else if (c1 >= 'A' && c1 <= 'F')
-			c1 = 10 + c1 - 'A';
-		else if (c1 >= 'a' && c1 <= 'f')
-			c1 = 10 + c1 - 'a';
-		else {p++; continue;}
-
-		if (c2 >= '0' && c2 <= '9')
-			c2 = c2 - '0';
-		else if (c2 >= 'A' && c2 <= 'F')
-			c2 = 10 + c2 - 'A';
-		else if (c2 >= 'a' && c2 <= 'f')
-			c2 = 10 + c2 - 'a';
-		else {p++; continue;}
-
-		*p = (c1<<4) | c2;
-
-		memmove(p+1, p+3, strlen(p+3)+1);
-		p++;
-	}
-}
-
 static const char b64[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
 /**
@@ -2549,54 +2368,6 @@ bool validate_net_name( const char *name,
 	return true;
 }
 
-
-/**
-return the number of bytes occupied by a buffer in ASCII format
-the result includes the null termination
-limited by 'n' bytes
-**/
-size_t ascii_len_n(const char *src, size_t n)
-{
-	size_t len;
-
-	len = strnlen(src, n);
-	if (len+1 <= n) {
-		len += 1;
-	}
-
-	return len;
-}
-
-/**
-return the number of bytes occupied by a buffer in CH_UTF16 format
-the result includes the null termination
-**/
-size_t utf16_len(const void *buf)
-{
-	size_t len;
-
-	for (len = 0; SVAL(buf,len); len += 2) ;
-
-	return len + 2;
-}
-
-/**
-return the number of bytes occupied by a buffer in CH_UTF16 format
-the result includes the null termination
-limited by 'n' bytes
-**/
-size_t utf16_len_n(const void *src, size_t n)
-{
-	size_t len;
-
-	for (len = 0; (len+2 < n) && SVAL(src, len); len += 2) ;
-
-	if (len+2 <= n) {
-		len += 2;
-	}
-
-	return len;
-}
 
 /*******************************************************************
  Add a shell escape character '\' to any character not in a known list
