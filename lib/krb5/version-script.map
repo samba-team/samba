@@ -128,6 +128,7 @@ HEIMDAL_KRB5_2.0 {
 		krb5_cksumtype_to_enctype;
 		krb5_cksumtype_valid;
 		krb5_clear_error_string;
+		krb5_clear_error_message;
 		krb5_closelog;
 		krb5_compare_creds;
 		krb5_config_file_free;
