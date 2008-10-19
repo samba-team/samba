@@ -1125,7 +1125,7 @@ NTLM_AUTH_OBJ = ${NTLM_AUTH_OBJ1} $(LIBSAMBA_OBJ) $(POPT_LIB_OBJ) \
 		$(LIBNDR_GEN_OBJ0) $(LIBNDR_GEN_OBJ1)
 
 
-VLP_OBJ1 = ../testsuite/printing/vlp.o $(RPC_CLIENT_OBJ1) $(RPC_PARSE_OBJ2) $(RPC_CLIENT_OBJ) ../librpc/rpc/binding.o
+VLP_OBJ1 = printing/tests/vlp.o $(RPC_CLIENT_OBJ1) $(RPC_PARSE_OBJ2) $(RPC_CLIENT_OBJ) ../librpc/rpc/binding.o
 
 VLP_OBJ = $(VLP_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) \
 	  $(LIB_NONSMBD_OBJ) $(KRBCLIENT_OBJ) $(LIBMSRPC_GEN_OBJ) \
