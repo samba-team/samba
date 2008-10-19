@@ -577,7 +577,7 @@ void gencache_unlock_entry( const char *key );
 
 void set_rand_reseed_callback(void (*fn)(int *));
 void set_need_random_reseed(void);
-void generate_random_buffer( unsigned char *out, int len);
+void generate_random_buffer(uint8_t *out, int len);
 char *generate_random_str(TALLOC_CTX *mem_ctx, size_t len);
 
 /* The following definitions come from lib/iconv.c  */
@@ -769,12 +769,6 @@ int sys_select_intr(int maxfd, fd_set *readfds, fd_set *writefds, fd_set *errorf
 
 /* The following definitions come from lib/sendfile.c  */
 
-ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T offset, size_t count);
-ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T offset, size_t count);
-ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T offset, size_t count);
-ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T offset, size_t count);
-ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T offset, size_t count);
-ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T offset, size_t count);
 ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T offset, size_t count);
 
 /* The following definitions come from lib/server_mutex.c  */

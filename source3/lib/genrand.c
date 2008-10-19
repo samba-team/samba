@@ -156,7 +156,7 @@ static int do_reseed(bool use_fd, int fd)
  Interface to the (hopefully) good crypto random number generator.
 ********************************************************************/
 
-void generate_random_buffer( unsigned char *out, int len)
+void generate_random_buffer(uint8_t *out, int len)
 {
 	static int urand_fd = -1;
 	unsigned char md4_buf[64];
