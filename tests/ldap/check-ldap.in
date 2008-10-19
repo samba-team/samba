@@ -136,6 +136,11 @@ echo "Getting ${server} ticket"
 ${kgetcred} ${server}@${R} || { ec=1 ; eval "${testfailed}"; }
 
 
+echo "Getting *@$R inital ticket (fail)";
+${kinit} --password-file=${objdir}/foopassword '*'@$R 2>/dev/null && \
+	{ ec=1 ; eval "${testfailed}"; }
+
+
 echo "killing kdc (${kdcpid})"
 kill $kdcpid || exit 1
 
