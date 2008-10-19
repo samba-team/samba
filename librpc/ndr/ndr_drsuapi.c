@@ -25,6 +25,8 @@
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "../lib/util/asn1.h"
 #include "librpc/ndr/ndr_compression.h"
+/* We don't need multibyte if we're just comparing to 'ff' */
+#undef strncasecmp
 
 void ndr_print_drsuapi_DsReplicaObjectListItem(struct ndr_print *ndr, const char *name,
 					       const struct drsuapi_DsReplicaObjectListItem *r)
@@ -91,11 +93,7 @@ enum ndr_err_code ndr_push_drsuapi_DsReplicaOID(struct ndr_push *ndr, int ndr_fl
 		if (r->oid) {
 			DATA_BLOB blob;
 
-#if (_SAMBA_BUILD_ == 3)
-			if (StrnCaseCmp("ff", r->oid, 2) == 0) {
-#else
 			if (strncasecmp("ff", r->oid, 2) == 0) {
-#endif
 				blob = strhex_to_data_blob(ndr, r->oid);
 				if (!blob.data) {
 					return ndr_push_error(ndr, NDR_ERR_SUBCONTEXT,
@@ -167,11 +165,7 @@ size_t ndr_size_drsuapi_DsReplicaOID_oid(const char *oid, int flags)
 
 	if (!oid) return 0;
 
-#if (_SAMBA_BUILD_ == 3)
-	if (StrnCaseCmp("ff", oid, 2) == 0) {
-#else
 	if (strncasecmp("ff", oid, 2) == 0) {
-#endif
 		_blob = strhex_to_data_blob(NULL, oid);
 		if (_blob.data) {
 			ret = _blob.length;
