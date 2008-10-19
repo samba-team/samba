@@ -2,12 +2,12 @@ TEST_FORMAT = plain
 
 SELFTEST = $(LD_LIBPATH_OVERRIDE) $(PERL) $(selftestdir)/selftest.pl --prefix=${selftest_prefix} \
     --builddir=$(builddir) --srcdir=$(srcdir) \
-    --expected-failures=$(srcdir)/samba4-knownfail \
+    --expected-failures=$(srcdir)/selftest/knownfail \
 	--format=$(TEST_FORMAT) \
-    --exclude=$(srcdir)/samba4-skip --testlist="./selftest/samba4_tests.sh|" \
+    --exclude=$(srcdir)/selftest/skip --testlist="./selftest/tests.sh|" \
     $(TEST_OPTIONS) 
 
-SELFTEST_NOSLOW_OPTS = --exclude=$(srcdir)/samba4-slow
+SELFTEST_NOSLOW_OPTS = --exclude=$(srcdir)/selftest/slow
 SELFTEST_QUICK_OPTS = $(SELFTEST_NOSLOW_OPTS) --quick 
 
 slowtest:: everything
