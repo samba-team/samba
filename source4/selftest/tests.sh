@@ -58,7 +58,30 @@ bin/smbtorture -V
 
 samba4srcdir=.
 samba4bindir=$samba4srcdir/bin
+
+prefix_abs="$SELFTEST_PREFIX/s4client"
+
+mkdir "$prefix_abs"
+conffile="$SELFTEST_CONFFILE"
+
+TORTURE_OPTIONS=""
+TORTURE_OPTIONS="$TORTURE_OPTIONS --configfile=$conffile"
+TORTURE_OPTIONS="$TORTURE_OPTIONS --maximum-runtime=$SELFTEST_MAXTIME"
+TORTURE_OPTIONS="$TORTURE_OPTIONS --target=$SELFTEST_TARGET"
+TORTURE_OPTIONS="$TORTURE_OPTIONS --basedir=$prefix_abs"
+if [ -n "$SELFTEST_VERBOSE" ]; then
+	TORTURE_OPTIONS="$TORTURE_OPTIONS --option=torture:progress=no"
+fi
+TORTURE_OPTIONS="$TORTURE_OPTIONS --format=subunit"
+if [ -n "$SELFTEST_QUICK" ]; then
+	TORTURE_OPTIONS="$TORTURE_OPTIONS --option=torture:quick=yes"
+fi
 smb4torture="$samba4bindir/smbtorture $TORTURE_OPTIONS"
+
+echo "OPTIONS $TORTURE_OPTIONS"
+
+SMB_CONF_PATH="$conffile"
+CONFIGURATION="--configfile=$conffile"
 
 # Simple tests for LDAP and CLDAP
 

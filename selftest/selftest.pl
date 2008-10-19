@@ -588,24 +588,9 @@ sub write_clientconf($$)
 	close(CF);
 }
 
-my @torture_options = ();
-push (@torture_options, "--configfile=$conffile");
-# ensure any one smbtorture call doesn't run too long
-push (@torture_options, "--maximum-runtime=$torture_maxtime");
-push (@torture_options, "--target=$opt_target");
-push (@torture_options, "--basedir=$prefix_abs");
-push (@torture_options, "--option=torture:progress=no") unless ($opt_verbose);
-push (@torture_options, "--format=subunit");
-push (@torture_options, "--option=torture:quick=yes") if ($opt_quick);
-
-$ENV{TORTURE_OPTIONS} = join(' ', @torture_options);
-print "OPTIONS $ENV{TORTURE_OPTIONS}\n";
-
 my @todo = ();
 
 my $testsdir = "$srcdir/selftest";
-$ENV{SMB_CONF_PATH} = "$conffile";
-$ENV{CONFIGURATION} = "--configfile=$conffile";
 
 my %required_envs = ();
 
@@ -639,6 +624,26 @@ sub read_testlist($)
 if ($#testlists == -1) {
 	die("No testlists specified");
 }
+
+$ENV{SELFTEST_PREFIX} = "$prefix_abs";
+if ($opt_socket_wrapper) {
+	$ENV{SELFTEST_INTERFACES} = $interfaces;
+} else {
+	$ENV{SELFTEST_INTERFACES} = "";
+}
+if ($opt_verbose) {
+	$ENV{SELFTEST_VERBOSE} = "1";
+} else {
+	$ENV{SELFTEST_VERBOSE} = "";
+}
+if ($opt_quick) {
+	$ENV{SELFTEST_QUICK} = "1";
+} else {
+	$ENV{SELFTEST_QUICK} = "";
+}
+$ENV{SELFTEST_TARGET} = $opt_target;
+$ENV{SELFTEST_MAXTIME} = $torture_maxtime;
+$ENV{SELFTEST_CONFFILE} = $conffile;
 
 my @available = ();
 foreach my $fn (@testlists) {
