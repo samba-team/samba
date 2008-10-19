@@ -196,7 +196,7 @@ TORTURE_PROGS = bin/smbtorture@EXEEXT@ bin/msgtest@EXEEXT@ \
 	bin/locktest2@EXEEXT@ bin/nsstest@EXEEXT@ bin/vfstest@EXEEXT@ \
 	bin/pdbtest@EXEEXT@ bin/talloctort@EXEEXT@ bin/replacetort@EXEEXT@ \
 	bin/tdbtorture@EXEEXT@ \
-	bin/smbconftort@EXEEXT@
+	bin/smbconftort@EXEEXT@ bin/vlp@EXEEXT@
 
 BIN_PROGS = @EXTRA_BIN_PROGS@ \
 	$(BIN_PROGS1) $(BIN_PROGS2) $(BIN_PROGS3) $(BIN_PROGS4) 
@@ -1162,7 +1162,7 @@ pam_winbind: SHOWFLAGS bin/pam_winbind.@SHLIBEXT@
 
 gpext_modules:: $(GPEXT_MODULES)
 
-torture:: SHOWFLAGS $(TORTURE_PROGS)
+torture:: SHOWFLAGS $(TORTURE_PROGS) 
 
 smbtorture : SHOWFLAGS bin/smbtorture@EXEEXT@
 
