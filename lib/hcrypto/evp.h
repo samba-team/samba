@@ -134,7 +134,8 @@ struct hc_CIPHER {
 #define EVP_CIPH_CBC_MODE		2
 #define EVP_CIPH_MODE			0x7
 
-#define EVP_CIPH_ALWAYS_CALL_INIT	0x20
+#define EVP_CIPH_ALWAYS_CALL_INIT	0x020
+#define EVP_CIPH_RAND_KEY		0x200
 
     int (*init)(EVP_CIPHER_CTX*,const unsigned char*,const unsigned char*,int);
     int (*do_cipher)(EVP_CIPHER_CTX *, unsigned char *,
@@ -143,7 +144,7 @@ struct hc_CIPHER {
     int ctx_size;
     void *set_asn1_parameters;
     void *get_asn1_parameters;
-    void *ctrl;
+    int (*ctrl)(EVP_CIPHER_CTX *, int type, int arg, void *ptr);
     void *app_data;
 };
 
