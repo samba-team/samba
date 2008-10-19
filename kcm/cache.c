@@ -534,20 +534,6 @@ kcm_ccache_store_cred_internal(krb5_context context,
     return ret;
 }
 
-static void
-remove_cred(krb5_context context,
-	    struct kcm_creds **c)
-{
-    struct kcm_creds *cred;
-
-    cred = *c;
-
-    *c = cred->next;
-
-    krb5_free_cred_contents(context, &cred->cred);
-    free(cred);
-}
-
 krb5_error_code
 kcm_ccache_remove_cred_internal(krb5_context context,
 				kcm_ccache ccache,
@@ -561,7 +547,12 @@ kcm_ccache_remove_cred_internal(krb5_context context,
 
     for (c = &ccache->creds; *c != NULL; c = &(*c)->next) {
 	if (krb5_compare_creds(context, whichfields, mcreds, &(*c)->cred)) {
-	    remove_cred(context, c);
+	    struct kcm_creds *cred = *c;
+
+	    kcm_cursor_update(context, ccache, cred);
+	    *c = cred->next;
+	    krb5_free_cred_contents(context, &cred->cred);
+	    free(cred);
 	    ret = 0;
 	}
     }
