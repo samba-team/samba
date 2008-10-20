@@ -259,7 +259,7 @@ NDR_PROTECTED_STORAGE_OBJ_FILES = $(gen_ndrsrcdir)/ndr_protected_storage.o
 [SUBSYSTEM::NDR_ORPC]
 PUBLIC_DEPENDENCIES = LIBNDR 
 
-NDR_ORPC_OBJ_FILES = $(gen_ndrsrcdir)/ndr_orpc.o $(ndrsrcdir)/ndr_orpc.o 
+NDR_ORPC_OBJ_FILES = $(gen_ndrsrcdir)/ndr_orpc.o ../librpc/ndr/ndr_orpc.o 
 
 [SUBSYSTEM::NDR_OXIDRESOLVER]
 PUBLIC_DEPENDENCIES = LIBNDR NDR_ORPC NDR_MISC
