@@ -37,7 +37,7 @@ static void *lowcase_table;
 /*******************************************************************
 load the case handling tables
 ********************************************************************/
-static void load_case_tables(void)
+void load_case_tables(void)
 {
 	TALLOC_CTX *mem_ctx;
 
