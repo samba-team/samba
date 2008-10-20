@@ -25,8 +25,7 @@ $(1)4: $(2) $(LIBREPLACE_OBJ) ;
 clean::
 	@rm -f $(1)
 
-binaries:: $(1)
-
+everything:: $(1)4
 
 endef
 
@@ -40,7 +39,7 @@ $(1)4: $(2) $(LIBREPLACE_OBJ) ;
 clean::
 	rm -f $(1)
 
-binaries:: $(1)
+binaries:: $(1)4
 
 
 endef
