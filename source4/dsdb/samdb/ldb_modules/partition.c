@@ -87,7 +87,7 @@ static struct partition_context *partition_init_ctx(struct ldb_module *module, s
  *    helper functions to call the next module in chain
  *    */
 
-int partition_request(struct ldb_module *module, struct ldb_request *request)
+static int partition_request(struct ldb_module *module, struct ldb_request *request)
 {
 	int ret;
 	switch (request->operation) {

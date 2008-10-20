@@ -161,7 +161,7 @@ failed:
   check special dn's have valid attributes
   currently only @ATTRIBUTES is checked
 */
-int ltdb_check_special_dn(struct ldb_module *module,
+static int ltdb_check_special_dn(struct ldb_module *module,
 			  const struct ldb_message *msg)
 {
 	int i, j;
@@ -968,7 +968,7 @@ done:
 	return ret;
 }
 
-void ltdb_request_done(struct ldb_request *req, int error)
+static void ltdb_request_done(struct ldb_request *req, int error)
 {
 	struct ldb_reply *ares;
 

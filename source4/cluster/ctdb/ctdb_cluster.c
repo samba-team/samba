@@ -30,6 +30,7 @@
 #include "../lib/util/dlinklist.h"
 #include "param/param.h"
 #include "librpc/gen_ndr/security.h"
+#include "cluster/ctdb/ctdb_cluster.h"
 
 /* a linked list of messaging handlers, allowing incoming messages
    to be directed to the right messaging context */

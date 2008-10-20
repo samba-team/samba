@@ -330,7 +330,7 @@ static WERROR dcesrv_drsuapi_DsGetNT4ChangeLog(struct dcesrv_call_state *dce_cal
 /* 
   drsuapi_DsCrackNames 
 */
-WERROR dcesrv_drsuapi_DsCrackNames(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_drsuapi_DsCrackNames(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 			    struct drsuapi_DsCrackNames *r)
 {
 	WERROR status;
@@ -478,7 +478,7 @@ static WERROR dcesrv_DRSUAPI_REMOVE_DS_DOMAIN(struct dcesrv_call_state *dce_call
 }
 
 /* Obtain the site name from a server DN */
-const char *result_site_name(struct ldb_dn *site_dn)
+static const char *result_site_name(struct ldb_dn *site_dn)
 {
 	/* Format is cn=<NETBIOS name>,cn=Servers,cn=<site>,cn=sites.... */
 	const struct ldb_val *val = ldb_dn_get_component_val(site_dn, 2);

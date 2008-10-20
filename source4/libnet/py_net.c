@@ -24,7 +24,7 @@
 #include "libcli/security/security.h"
 #include "lib/events/events.h"
 
-struct libnet_context *py_net_ctx(PyObject *obj, struct event_context *ev)
+static struct libnet_context *py_net_ctx(PyObject *obj, struct event_context *ev)
 {
 	/* FIXME: Use obj */
 	return libnet_context_init(ev, global_loadparm);

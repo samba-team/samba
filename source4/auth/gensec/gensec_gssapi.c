@@ -1361,7 +1361,7 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 	return NT_STATUS_OK;
 }
 
-size_t gensec_gssapi_sig_size(struct gensec_security *gensec_security, size_t data_size)
+static size_t gensec_gssapi_sig_size(struct gensec_security *gensec_security, size_t data_size)
 {
 	struct gensec_gssapi_state *gensec_gssapi_state
 		= talloc_get_type(gensec_security->private_data, struct gensec_gssapi_state);

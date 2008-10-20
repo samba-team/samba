@@ -31,6 +31,7 @@
 #include "system/time.h"
 #include "system/dir.h"
 #include "ntvfs/ntvfs.h"
+#include "ntvfs/cifs_posix_cli/proto.h"
 
 /*
   convert a windows path to a unix path - don't do any manging or case sensitive handling

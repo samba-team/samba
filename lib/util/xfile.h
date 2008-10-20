@@ -96,4 +96,6 @@ char *x_fgets(char *s, int size, XFILE *stream) ;
  * set then an error is returned */
 off_t x_tseek(XFILE *f, off_t offset, int whence);
 
+XFILE *x_fdup(const XFILE *f);
+
 #endif /* _XFILE_H_ */

@@ -29,6 +29,7 @@
 #include "libnet/userman.h"
 #include "libnet/userinfo.h"
 #include "librpc/gen_ndr/ndr_samr_c.h"
+#include "libnet/libnet_proto.h"
 
 
 struct userinfo_state {

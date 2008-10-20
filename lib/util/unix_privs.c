@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "system/filesys.h"
+#include "../lib/util/unix_privs.h"
 
 /**
  * @file

@@ -23,6 +23,7 @@
 
 #include "includes.h"
 #include "system/kerberos.h"
+#include "auth/kerberos/kerberos.h"
 
 #ifdef HAVE_KRB5
 

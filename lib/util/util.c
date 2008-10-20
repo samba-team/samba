@@ -283,7 +283,6 @@ _PUBLIC_ bool fcntl_lock(int fd, int op, off_t offset, off_t count, int type)
 	return true;
 }
 
-
 void print_asc(int level, const uint8_t *buf,int len)
 {
 	int i;

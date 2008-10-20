@@ -86,3 +86,5 @@ int map_return_fatal_error(struct ldb_request *req,
 int map_return_normal_error(struct ldb_request *req,
 			    struct ldb_reply *ares,
 			    int error);
+
+int map_return_entry(struct map_context *ac, struct ldb_reply *ares);

@@ -120,8 +120,6 @@ const struct ndr_interface_list *ndr_table_list(void)
 }
 
 
-NTSTATUS ndr_table_register_builtin_tables(void);
-
 NTSTATUS ndr_table_init(void)
 {
 	static bool initialized = false;

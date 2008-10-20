@@ -26,6 +26,7 @@
 #include "libnet/composite.h"
 #include "libnet/groupman.h"
 #include "librpc/gen_ndr/ndr_samr_c.h"
+#include "libnet/libnet_proto.h"
 
 
 struct groupadd_state {

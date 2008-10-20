@@ -80,6 +80,8 @@ enum debug_logtype {DEBUG_STDOUT = 0, DEBUG_FILE = 1, DEBUG_STDERR = 2};
 */
 _PUBLIC_ void dbghdr(int level, const char *location, const char *func);
 
+_PUBLIC_ void dbghdrclass(int level, int class, const char *location, const char *func);
+
 /**
   reopen the log file (usually called because the log file name might have changed)
 */
@@ -127,3 +129,5 @@ _PUBLIC_ void register_debug_handlers(const char *name, struct debug_ops *ops);
   macro instead.
 */
 _PUBLIC_ void dbgtext(const char *format, ...) PRINTF_ATTRIBUTE(1,2);
+
+extern XFILE *dbf;

@@ -24,6 +24,8 @@
 #include "librpc/gen_ndr/srvsvc.h"
 #include "rpc_server/common/common.h"
 #include "param/param.h"
+#include "ntvfs/ipc/ipc.h"
+#include "ntvfs/ipc/proto.h"
 
 /* At this moment these are just dummy functions, but you might get the
  * idea. */

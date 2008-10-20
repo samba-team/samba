@@ -30,6 +30,7 @@
 #include "libnet/userman.h"
 #include "libnet/groupinfo.h"
 #include "librpc/gen_ndr/ndr_samr_c.h"
+#include "libnet/libnet_proto.h"
 
 
 struct groupinfo_state {

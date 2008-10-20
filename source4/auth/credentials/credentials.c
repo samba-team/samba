@@ -25,6 +25,7 @@
 #include "librpc/gen_ndr/samr.h" /* for struct samrPassword */
 #include "auth/credentials/credentials.h"
 #include "auth/credentials/credentials_krb5.h"
+#include "auth/credentials/credentials_proto.h"
 #include "libcli/auth/libcli_auth.h"
 #include "lib/events/events.h"
 #include "param/param.h"

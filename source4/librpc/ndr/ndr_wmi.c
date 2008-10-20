@@ -29,36 +29,6 @@
 int NDR_CHECK_depth = 0;
 int NDR_CHECK_shift = 0x18;
 
-int get_CIMTYPE_size(int t)
-{
-	if (t & CIM_FLAG_ARRAY) return 4;
-	t &= 0x1FF;
-	switch (t) {
-        case CIM_SINT8:
-        case CIM_UINT8:
-		return 1;
-        case CIM_SINT16:
-        case CIM_UINT16:
-        case CIM_BOOLEAN:
-		return 2;
-        case CIM_SINT32:
-        case CIM_UINT32:
-        case CIM_REAL32:
-        case CIM_STRING:
-        case CIM_DATETIME:
-        case CIM_REFERENCE:
-        case CIM_OBJECT:
-		return 4;
-        case CIM_SINT64:
-        case CIM_UINT64:
-        case CIM_REAL64:
-		return 8;
-	default:
-		DEBUG(0, ("Unknown CIMTYPE size for %04X", t));
-		return 4;
-	}
-}
-
 enum ndr_err_code ndr_push_BSTR(struct ndr_push *ndr, int ndr_flags, const struct BSTR *r)
 {
 	uint32_t len;

@@ -80,8 +80,8 @@ struct samldb_ctx {
 	struct samldb_step *curstep;
 };
 
-struct samldb_ctx *samldb_ctx_init(struct ldb_module *module,
-				   struct ldb_request *req)
+static struct samldb_ctx *samldb_ctx_init(struct ldb_module *module,
+					  struct ldb_request *req)
 {
 	struct samldb_ctx *ac;
 

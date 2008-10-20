@@ -211,6 +211,10 @@ char *ldb_casefold_default(void *context, void *mem_ctx, const char *s, size_t n
 
 void ldb_msg_remove_element(struct ldb_message *msg, struct ldb_message_element *el);
 
+int ldb_msg_element_compare_name(struct ldb_message_element *el1, 
+				 struct ldb_message_element *el2);
+void ldb_dump_results(struct ldb_context *ldb, struct ldb_result *result, FILE *f);
+
 /**
   Obtain current/next database sequence number
 */
@@ -272,5 +276,8 @@ int ldb_module_done(struct ldb_request *req,
 		    int error);
 
 int ldb_mod_register_control(struct ldb_module *module, const char *oid);
+
+
+struct ldb_val ldb_binary_decode(void *mem_ctx, const char *str);
 
 #endif

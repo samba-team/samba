@@ -36,4 +36,6 @@ extern struct poptOption popt_common_credentials[];
 extern struct cli_credentials *cmdline_credentials;
 extern struct loadparm_context *cmdline_lp_ctx;
 
+void popt_common_dont_ask(void);
+
 #endif /* _POPT_COMMON_H */

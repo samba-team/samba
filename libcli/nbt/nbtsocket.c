@@ -23,6 +23,7 @@
 #include "lib/events/events.h"
 #include "../lib/util/dlinklist.h"
 #include "../libcli/nbt/libnbt.h"
+#include "../libcli/nbt/nbt_proto.h"
 #include "lib/socket/socket.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
 #include "param/param.h"
