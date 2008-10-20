@@ -1604,14 +1604,17 @@ static bool test_LookupPrivDisplayName(struct dcerpc_pipe *p,
 	/* produce a reasonable range of language output without screwing up
 	   terminals */
 	uint16_t language_id = (random() % 4) + 0x409;
+	uint16_t returned_language_id = 0;
+	struct lsa_StringLarge *disp_name = NULL;
 
 	printf("\nTesting LookupPrivDisplayName(%s)\n", priv_name->string);
 	
 	r.in.handle = handle;
 	r.in.name = priv_name;
-	r.in.language_id = &language_id;
-	r.out.language_id = &language_id;
-	r.in.unknown = 0;
+	r.in.language_id = language_id;
+	r.in.language_id_sys = 0;
+	r.out.returned_language_id = &returned_language_id;
+	r.out.disp_name = &disp_name;
 
 	status = dcerpc_lsa_LookupPrivDisplayName(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1619,8 +1622,8 @@ static bool test_LookupPrivDisplayName(struct dcerpc_pipe *p,
 		return false;
 	}
 	printf("%s -> \"%s\"  (language 0x%x/0x%x)\n", 
-	       priv_name->string, r.out.disp_name->string, 
-	       *r.in.language_id, *r.out.language_id);
+	       priv_name->string, disp_name->string,
+	       r.in.language_id, *r.out.returned_language_id);
 
 	return true;
 }

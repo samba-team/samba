@@ -2729,6 +2729,7 @@ static NTSTATUS dcesrv_lsa_LookupPrivDisplayName(struct dcesrv_call_state *dce_c
 {
 	struct dcesrv_handle *h;
 	struct lsa_policy_state *state;
+	struct lsa_StringLarge *disp_name = NULL;
 	int id;
 
 	DCESRV_PULL_HANDLE(h, r->in.handle, LSA_HANDLE_POLICY);
@@ -2739,16 +2740,19 @@ static NTSTATUS dcesrv_lsa_LookupPrivDisplayName(struct dcesrv_call_state *dce_c
 	if (id == -1) {
 		return NT_STATUS_NO_SUCH_PRIVILEGE;
 	}
-	
-	r->out.disp_name = talloc(mem_ctx, struct lsa_StringLarge);
-	if (r->out.disp_name == NULL) {
+
+	disp_name = talloc(mem_ctx, struct lsa_StringLarge);
+	if (disp_name == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	r->out.disp_name->string = sec_privilege_display_name(id, r->in.language_id);
-	if (r->out.disp_name->string == NULL) {
+	disp_name->string = sec_privilege_display_name(id, &r->in.language_id);
+	if (disp_name->string == NULL) {
 		return NT_STATUS_INTERNAL_ERROR;
 	}
+
+	*r->out.disp_name = disp_name;
+	*r->out.returned_language_id = 0;
 
 	return NT_STATUS_OK;
 }

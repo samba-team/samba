@@ -773,14 +773,15 @@ import "misc.idl", "security.idl";
 
 	/*******************/
 	/* Function:  0x21 */
-	NTSTATUS lsa_LookupPrivDisplayName (
-		[in]     policy_handle *handle,
-		[in]     lsa_String *name,
-		[out,unique]        lsa_StringLarge *disp_name,
+	NTSTATUS lsa_LookupPrivDisplayName(
+		[in] policy_handle *handle,
+		[in,ref] lsa_String *name,
+		[in] uint16 language_id,
+		[in] uint16 language_id_sys,
+		[out,ref] lsa_StringLarge **disp_name,
 		/* see http://www.microsoft.com/globaldev/nlsweb/ for
 		   language definitions */
-		[in,out] uint16 *language_id,
-		[in]         uint16 unknown
+		[out,ref] uint16 *returned_language_id
 		);
 
 	/*******************/

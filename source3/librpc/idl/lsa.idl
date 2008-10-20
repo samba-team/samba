@@ -778,7 +778,7 @@ import "misc.idl", "security.idl";
 
 	/*******************/
 	/* Function:  0x21 */
-	NTSTATUS lsa_LookupPrivDisplayName (
+	NTSTATUS lsa_LookupPrivDisplayName(
 		[in] policy_handle *handle,
 		[in,ref] lsa_String *name,
 		[in] uint16 language_id,
