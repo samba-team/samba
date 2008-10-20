@@ -2762,6 +2762,14 @@ out:
 		     user, "wbcLogoffUser");
 	}
 
+	/*
+	 * Delete the krb5 ccname variable from the PAM environment
+	 * if it was set by winbind.
+	 */
+	if (ctx->ctrl & WINBIND_KRB5_AUTH) {
+		pam_putenv(pamh, "KRB5CCNAME");
+	}
+
 	_PAM_LOG_FUNCTION_LEAVE("pam_sm_close_session", ctx, retval);
 
 	TALLOC_FREE(ctx);
