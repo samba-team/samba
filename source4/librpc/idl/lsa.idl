@@ -263,11 +263,12 @@ import "misc.idl", "security.idl";
 		LSA_POLICY_INFO_ROLE=6,
 		LSA_POLICY_INFO_REPLICA=7,
 		LSA_POLICY_INFO_QUOTA=8,
-		LSA_POLICY_INFO_DB=9,
+		LSA_POLICY_INFO_MOD=9,
 		LSA_POLICY_INFO_AUDIT_FULL_SET=10,
 		LSA_POLICY_INFO_AUDIT_FULL_QUERY=11,
 		LSA_POLICY_INFO_DNS=12,
-		LSA_POLICY_INFO_DNS_INT=13
+		LSA_POLICY_INFO_DNS_INT=13,
+		LSA_POLICY_INFO_L_ACCOUNT_DOMAIN=14
 	} lsa_PolicyInfo;
 
 	typedef [switch_type(uint16)] union {
@@ -279,11 +280,12 @@ import "misc.idl", "security.idl";
 		[case(LSA_POLICY_INFO_ROLE)]             lsa_ServerRole         role;
 		[case(LSA_POLICY_INFO_REPLICA)]          lsa_ReplicaSourceInfo  replica;
 		[case(LSA_POLICY_INFO_QUOTA)]            lsa_DefaultQuotaInfo   quota;
-		[case(LSA_POLICY_INFO_DB)]               lsa_ModificationInfo   db;
+		[case(LSA_POLICY_INFO_MOD)]              lsa_ModificationInfo   mod;
 		[case(LSA_POLICY_INFO_AUDIT_FULL_SET)]   lsa_AuditFullSetInfo   auditfullset;
 		[case(LSA_POLICY_INFO_AUDIT_FULL_QUERY)] lsa_AuditFullQueryInfo auditfullquery;
 		[case(LSA_POLICY_INFO_DNS)]              lsa_DnsDomainInfo      dns;
 		[case(LSA_POLICY_INFO_DNS_INT)]          lsa_DnsDomainInfo      dns;
+		[case(LSA_POLICY_INFO_L_ACCOUNT_DOMAIN)] lsa_DomainInfo         l_account_domain;
 	} lsa_PolicyInformation;
 
 	NTSTATUS lsa_QueryInfoPolicy (
@@ -512,23 +514,39 @@ import "misc.idl", "security.idl";
 	/* Function:           0x16 */
 	[todo] NTSTATUS lsa_SetQuotasForAccount();
 	
+	typedef [bitmap32bit] bitmap {
+		LSA_POLICY_MODE_INTERACTIVE             = 0x00000001,
+		LSA_POLICY_MODE_NETWORK                 = 0x00000002,
+		LSA_POLICY_MODE_BATCH                   = 0x00000004,
+		LSA_POLICY_MODE_SERVICE                 = 0x00000010,
+		LSA_POLICY_MODE_PROXY			= 0x00000020,
+		LSA_POLICY_MODE_DENY_INTERACTIVE        = 0x00000040,
+		LSA_POLICY_MODE_DENY_NETWORK            = 0x00000080,
+		LSA_POLICY_MODE_DENY_BATCH              = 0x00000100,
+		LSA_POLICY_MODE_DENY_SERVICE            = 0x00000200,
+		LSA_POLICY_MODE_REMOTE_INTERACTIVE      = 0x00000400,
+		LSA_POLICY_MODE_DENY_REMOTE_INTERACTIVE = 0x00000800,
+		LSA_POLICY_MODE_ALL			= 0x00000FF7,
+		LSA_POLICY_MODE_ALL_NT4			= 0x00000037
+	} lsa_SystemAccessModeFlags;
+
 	/* Function:    0x17 */
 	NTSTATUS lsa_GetSystemAccessAccount(
-		[in]	policy_handle *handle,
+		[in]      policy_handle *handle,
 		[out,ref] uint32 *access_mask
 		);
 
 	/* Function:    0x18 */
 	NTSTATUS lsa_SetSystemAccessAccount(
-		[in]	policy_handle *handle,
-		[in]	uint32 access_mask
+		[in] policy_handle *handle,
+		[in] uint32 access_mask
 		);
 
 	/* Function:        0x19 */
 	NTSTATUS lsa_OpenTrustedDomain(
 		[in]     policy_handle *handle,
 		[in]     dom_sid2      *sid,
-		[in]         uint32         access_mask,
+		[in]     uint32         access_mask,
 		[out]    policy_handle *trustdom_handle
 		);
 

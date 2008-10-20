@@ -399,7 +399,6 @@ static WERROR dcesrv_dssetup_DsRoleGetPrimaryDomainInformation(struct dcesrv_cal
 	return WERR_INVALID_PARAM;
 }
 
-
 /*
   fill in the AccountDomain info
 */
@@ -462,9 +461,15 @@ static NTSTATUS dcesrv_lsa_QueryInfoPolicy2(struct dcesrv_call_state *dce_call, 
 		/* we don't need to fill in any of this */
 		ZERO_STRUCT(r->out.info->pd);
 		return NT_STATUS_OK;
+
 	case LSA_POLICY_INFO_DOMAIN:
+		return dcesrv_lsa_info_AccountDomain(state, mem_ctx, &r->out.info->domain);
 	case LSA_POLICY_INFO_ACCOUNT_DOMAIN:
 		return dcesrv_lsa_info_AccountDomain(state, mem_ctx, &r->out.info->account_domain);
+	case LSA_POLICY_INFO_L_ACCOUNT_DOMAIN:
+		return dcesrv_lsa_info_AccountDomain(state, mem_ctx, &r->out.info->l_account_domain);
+
+
 	case LSA_POLICY_INFO_ROLE:
 		r->out.info->role.role = LSA_ROLE_PRIMARY;
 		return NT_STATUS_OK;
@@ -481,9 +486,8 @@ static NTSTATUS dcesrv_lsa_QueryInfoPolicy2(struct dcesrv_call_state *dce_call, 
 		ZERO_STRUCT(r->out.info->quota);
 		return NT_STATUS_OK;
 
+	case LSA_POLICY_INFO_MOD:
 	case LSA_POLICY_INFO_AUDIT_FULL_SET:
-	case LSA_POLICY_INFO_DB:
-	case LSA_POLICY_INFO_AUDIT_FULL_QUERY:
 		/* windows gives INVALID_PARAMETER */
 		r->out.info = NULL;
 		return NT_STATUS_INVALID_PARAMETER;
@@ -2050,7 +2054,36 @@ static NTSTATUS dcesrv_lsa_SetQuotasForAccount(struct dcesrv_call_state *dce_cal
 static NTSTATUS dcesrv_lsa_GetSystemAccessAccount(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct lsa_GetSystemAccessAccount *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	int i;
+	NTSTATUS status;
+	struct lsa_EnumPrivsAccount enumPrivs;
+
+	enumPrivs.in.handle = r->in.handle;
+
+	status = dcesrv_lsa_EnumPrivsAccount(dce_call, mem_ctx, &enumPrivs);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}	
+
+	*(r->out.access_mask) = 0x00000000;
+
+	for (i = 0; i < enumPrivs.out.privs->count; i++) {
+		int priv = enumPrivs.out.privs->set[i].luid.low;
+
+		switch (priv) {
+		case SEC_PRIV_INTERACTIVE_LOGON:
+			*(r->out.access_mask) |= LSA_POLICY_MODE_INTERACTIVE;
+			break;
+		case SEC_PRIV_NETWORK_LOGON:
+			*(r->out.access_mask) |= LSA_POLICY_MODE_NETWORK;
+			break;
+		case SEC_PRIV_REMOTE_INTERACTIVE_LOGON:
+			*(r->out.access_mask) |= LSA_POLICY_MODE_REMOTE_INTERACTIVE;
+			break;
+		}
+	}
+
+	return NT_STATUS_OK;
 }
 
 
