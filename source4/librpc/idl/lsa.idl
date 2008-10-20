@@ -83,10 +83,10 @@ import "misc.idl", "security.idl";
 	} lsa_PrivArray;
 
 	[public] NTSTATUS lsa_EnumPrivs (
-		[in]     policy_handle *handle,
-		[in,out] uint32 *resume_handle,
-		[in]         uint32 max_count,
-		[out]    lsa_PrivArray *privs
+		[in]		policy_handle *handle,
+		[in,out,ref]	uint32 *resume_handle,
+		[out,ref]	lsa_PrivArray *privs,
+		[in]		uint32 max_count
 		);
 
 	/******************/
