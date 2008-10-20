@@ -1535,25 +1535,6 @@ static void process_smb(char *inbuf, size_t nread, size_t unread_bytes, bool enc
 
 	DO_PROFILE_INC(smb_count);
 
-	if (trans_num == 0) {
-		char addr[INET6_ADDRSTRLEN];
-
-		/* on the first packet, check the global hosts allow/ hosts
-		deny parameters before doing any parsing of the packet
-		passed to us by the client.  This prevents attacks on our
-		parsing code from hosts not in the hosts allow list */
-
-		if (!check_access(smbd_server_fd(), lp_hostsallow(-1),
-				  lp_hostsdeny(-1))) {
-			/* send a negative session response "not listening on calling name" */
-			static unsigned char buf[5] = {0x83, 0, 0, 1, 0x81};
-			DEBUG( 1, ( "Connection denied from %s\n",
-				client_addr(get_client_fd(),addr,sizeof(addr)) ) );
-			(void)srv_send_smb(smbd_server_fd(),(char *)buf,false);
-			exit_server_cleanly("connection denied");
-		}
-	}
-
 	DEBUG( 6, ( "got message type 0x%x of len 0x%x\n", msg_type,
 		    smb_len(inbuf) ) );
 	DEBUG( 3, ( "Transaction %d of length %d (%u toread)\n", trans_num,
@@ -1892,6 +1873,28 @@ void smbd_process(void)
 {
 	unsigned int num_smbs = 0;
 	size_t unread_bytes = 0;
+
+	char addr[INET6_ADDRSTRLEN];
+
+	/*
+	 * Before the first packet, check the global hosts allow/ hosts deny
+	 * parameters before doing any parsing of packets passed to us by the
+	 * client. This prevents attacks on our parsing code from hosts not in
+	 * the hosts allow list.
+	 */
+
+	if (!check_access(smbd_server_fd(), lp_hostsallow(-1),
+			  lp_hostsdeny(-1))) {
+		/*
+		 * send a negative session response "not listening on calling
+		 * name"
+		 */
+		unsigned char buf[5] = {0x83, 0, 0, 1, 0x81};
+		DEBUG( 1, ("Connection denied from %s\n",
+			   client_addr(get_client_fd(),addr,sizeof(addr)) ) );
+		(void)srv_send_smb(smbd_server_fd(),(char *)buf,false);
+		exit_server_cleanly("connection denied");
+	}
 
 	max_recv = MIN(lp_maxxmit(),BUFFER_SIZE);
 
