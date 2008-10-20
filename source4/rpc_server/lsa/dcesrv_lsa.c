@@ -2875,19 +2875,23 @@ static NTSTATUS dcesrv_lsa_GetUserName(struct dcesrv_call_state *dce_call, TALLO
 	const char *account_name;
 	const char *authority_name;
 	struct lsa_String *_account_name;
-	struct lsa_StringPointer *_authority_name = NULL;
+	struct lsa_String *_authority_name = NULL;
 
 	/* this is what w2k3 does */
 	r->out.account_name = r->in.account_name;
 	r->out.authority_name = r->in.authority_name;
 
-	if (r->in.account_name && r->in.account_name->string) {
+	if (r->in.account_name
+	    && *r->in.account_name
+	    /* && *(*r->in.account_name)->string */
+	    ) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (r->in.authority_name &&
-	    r->in.authority_name->string &&
-	    r->in.authority_name->string->string) {
+	if (r->in.authority_name
+	    && *r->in.authority_name
+	    /* && *(*r->in.authority_name)->string */
+	    ) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -2899,15 +2903,15 @@ static NTSTATUS dcesrv_lsa_GetUserName(struct dcesrv_call_state *dce_call, TALLO
 	_account_name->string = account_name;
 
 	if (r->in.authority_name) {
-		_authority_name = talloc(mem_ctx, struct lsa_StringPointer);
+		_authority_name = talloc(mem_ctx, struct lsa_String);
 		NT_STATUS_HAVE_NO_MEMORY(_authority_name);
-		_authority_name->string = talloc(mem_ctx, struct lsa_String);
-		NT_STATUS_HAVE_NO_MEMORY(_authority_name->string);
-		_authority_name->string->string = authority_name;
+		_authority_name->string = authority_name;
 	}
 
-	r->out.account_name = _account_name;
-	r->out.authority_name = _authority_name;
+	*r->out.account_name = _account_name;
+	if (r->out.authority_name) {
+		*r->out.authority_name = _authority_name;
+	}
 
 	return status;
 }

@@ -2446,14 +2446,27 @@ static bool test_GetUserName(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	struct lsa_GetUserName r;
 	NTSTATUS status;
 	bool ret = true;
-	struct lsa_StringPointer authority_name_p;
+	struct lsa_String *authority_name_p = NULL;
+	struct lsa_String *account_name_p = NULL;
 
 	printf("\nTesting GetUserName\n");
 
-	r.in.system_name = "\\";
-	r.in.account_name = NULL;
-	r.in.authority_name = &authority_name_p;
-	authority_name_p.string = NULL;
+	r.in.system_name	= "\\";
+	r.in.account_name	= &account_name_p;
+	r.in.authority_name	= NULL;
+	r.out.account_name	= &account_name_p;
+
+	status = dcerpc_lsa_GetUserName(p, mem_ctx, &r);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("GetUserName failed - %s\n", nt_errstr(status));
+		ret = false;
+	}
+
+	account_name_p = NULL;
+	r.in.account_name	= &account_name_p;
+	r.in.authority_name	= &authority_name_p;
+	r.out.account_name	= &account_name_p;
 
 	status = dcerpc_lsa_GetUserName(p, mem_ctx, &r);
 

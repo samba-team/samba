@@ -1583,7 +1583,8 @@ static struct dom_sid *whoami(TALLOC_CTX *mem_ctx,
 	struct dcerpc_pipe *lsa;
 	struct lsa_GetUserName r;
 	NTSTATUS status;
-	struct lsa_StringPointer authority_name_p;
+	struct lsa_String *authority_name_p = NULL;
+	struct lsa_String *account_name_p = NULL;
 	struct dom_sid *result;
 
 	status = pipe_bind_smb(mem_ctx, lp_ctx, tree, "\\pipe\\lsarpc",
@@ -1595,11 +1596,13 @@ static struct dom_sid *whoami(TALLOC_CTX *mem_ctx,
 	}
 
 	r.in.system_name = "\\";
-	r.in.account_name = NULL;
-	authority_name_p.string = NULL;
+	r.in.account_name = &account_name_p;
 	r.in.authority_name = &authority_name_p;
+	r.out.account_name = &account_name_p;
 
 	status = dcerpc_lsa_GetUserName(lsa, mem_ctx, &r);
+
+	authority_name_p = *r.out.authority_name;
 
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("(%s) GetUserName failed - %s\n",
@@ -1608,8 +1611,8 @@ static struct dom_sid *whoami(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	result = name2sid(mem_ctx, lsa, r.out.account_name->string,
-			  r.out.authority_name->string->string);
+	result = name2sid(mem_ctx, lsa, account_name_p->string,
+			  authority_name_p->string);
 
 	talloc_free(lsa);
 	return result;

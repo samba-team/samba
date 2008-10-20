@@ -870,14 +870,10 @@ import "misc.idl", "security.idl";
 
 	/**********************/
 	/* Function:     0x2d */
-	typedef struct {
-		lsa_String *string;
-	} lsa_StringPointer;
-
 	NTSTATUS lsa_GetUserName(
 		[in,unique] [string,charset(UTF16)] uint16 *system_name,
-		[in,out,unique] lsa_String *account_name,
-		[in,out,unique] lsa_StringPointer *authority_name
+		[in,out,ref] lsa_String **account_name,
+		[in,out,unique] lsa_String **authority_name
 		);
 
 	/**********************/
