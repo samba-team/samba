@@ -1191,6 +1191,7 @@ struct passwd *Get_Pwnam_alloc(TALLOC_CTX *mem_ctx, const char *user);
 
 /* The following definitions come from lib/util.c  */
 
+bool all_zero(const uint8_t *ptr, size_t size);
 bool set_global_myname(const char *myname);
 const char *global_myname(void);
 bool set_global_myworkgroup(const char *myworkgroup);
