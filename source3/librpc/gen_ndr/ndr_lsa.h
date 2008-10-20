@@ -207,6 +207,7 @@ void ndr_print_lsa_PolicyAuditPolicy(struct ndr_print *ndr, const char *name, en
 void ndr_print_lsa_AuditEventsInfo(struct ndr_print *ndr, const char *name, const struct lsa_AuditEventsInfo *r);
 void ndr_print_lsa_DomainInfo(struct ndr_print *ndr, const char *name, const struct lsa_DomainInfo *r);
 void ndr_print_lsa_PDAccountInfo(struct ndr_print *ndr, const char *name, const struct lsa_PDAccountInfo *r);
+void ndr_print_lsa_Role(struct ndr_print *ndr, const char *name, enum lsa_Role r);
 void ndr_print_lsa_ServerRole(struct ndr_print *ndr, const char *name, const struct lsa_ServerRole *r);
 void ndr_print_lsa_ReplicaSourceInfo(struct ndr_print *ndr, const char *name, const struct lsa_ReplicaSourceInfo *r);
 void ndr_print_lsa_DefaultQuotaInfo(struct ndr_print *ndr, const char *name, const struct lsa_DefaultQuotaInfo *r);
@@ -221,6 +222,8 @@ enum ndr_err_code ndr_push_lsa_SidArray(struct ndr_push *ndr, int ndr_flags, con
 enum ndr_err_code ndr_pull_lsa_SidArray(struct ndr_pull *ndr, int ndr_flags, struct lsa_SidArray *r);
 void ndr_print_lsa_SidArray(struct ndr_print *ndr, const char *name, const struct lsa_SidArray *r);
 void ndr_print_lsa_DomainList(struct ndr_print *ndr, const char *name, const struct lsa_DomainList *r);
+enum ndr_err_code ndr_push_lsa_SidType(struct ndr_push *ndr, int ndr_flags, enum lsa_SidType r);
+enum ndr_err_code ndr_pull_lsa_SidType(struct ndr_pull *ndr, int ndr_flags, enum lsa_SidType *r);
 void ndr_print_lsa_SidType(struct ndr_print *ndr, const char *name, enum lsa_SidType r);
 void ndr_print_lsa_TranslatedSid(struct ndr_print *ndr, const char *name, const struct lsa_TranslatedSid *r);
 void ndr_print_lsa_TransSidArray(struct ndr_print *ndr, const char *name, const struct lsa_TransSidArray *r);

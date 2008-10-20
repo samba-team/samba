@@ -834,14 +834,13 @@ _PUBLIC_ void ndr_print_lsa_PolicyAccessMask(struct ndr_print *ndr, const char *
 static enum ndr_err_code ndr_push_lsa_AuditLogInfo(struct ndr_push *ndr, int ndr_flags, const struct lsa_AuditLogInfo *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_align(ndr, 8));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->percent_full));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->log_size));
-		NDR_CHECK(ndr_push_NTTIME(ndr, NDR_SCALARS, r->retention_time));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->maximum_log_size));
+		NDR_CHECK(ndr_push_hyper(ndr, NDR_SCALARS, r->retention_time));
 		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->shutdown_in_progress));
-		NDR_CHECK(ndr_push_NTTIME(ndr, NDR_SCALARS, r->time_to_shutdown));
+		NDR_CHECK(ndr_push_hyper(ndr, NDR_SCALARS, r->time_to_shutdown));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->next_audit_record));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->unknown));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -851,14 +850,13 @@ static enum ndr_err_code ndr_push_lsa_AuditLogInfo(struct ndr_push *ndr, int ndr
 static enum ndr_err_code ndr_pull_lsa_AuditLogInfo(struct ndr_pull *ndr, int ndr_flags, struct lsa_AuditLogInfo *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_align(ndr, 8));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->percent_full));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->log_size));
-		NDR_CHECK(ndr_pull_NTTIME(ndr, NDR_SCALARS, &r->retention_time));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->maximum_log_size));
+		NDR_CHECK(ndr_pull_hyper(ndr, NDR_SCALARS, &r->retention_time));
 		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->shutdown_in_progress));
-		NDR_CHECK(ndr_pull_NTTIME(ndr, NDR_SCALARS, &r->time_to_shutdown));
+		NDR_CHECK(ndr_pull_hyper(ndr, NDR_SCALARS, &r->time_to_shutdown));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->next_audit_record));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->unknown));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -870,12 +868,11 @@ _PUBLIC_ void ndr_print_lsa_AuditLogInfo(struct ndr_print *ndr, const char *name
 	ndr_print_struct(ndr, name, "lsa_AuditLogInfo");
 	ndr->depth++;
 	ndr_print_uint32(ndr, "percent_full", r->percent_full);
-	ndr_print_uint32(ndr, "log_size", r->log_size);
-	ndr_print_NTTIME(ndr, "retention_time", r->retention_time);
+	ndr_print_uint32(ndr, "maximum_log_size", r->maximum_log_size);
+	ndr_print_hyper(ndr, "retention_time", r->retention_time);
 	ndr_print_uint8(ndr, "shutdown_in_progress", r->shutdown_in_progress);
-	ndr_print_NTTIME(ndr, "time_to_shutdown", r->time_to_shutdown);
+	ndr_print_hyper(ndr, "time_to_shutdown", r->time_to_shutdown);
 	ndr_print_uint32(ndr, "next_audit_record", r->next_audit_record);
-	ndr_print_uint32(ndr, "unknown", r->unknown);
 	ndr->depth--;
 }
 
@@ -1078,12 +1075,36 @@ _PUBLIC_ void ndr_print_lsa_PDAccountInfo(struct ndr_print *ndr, const char *nam
 	ndr->depth--;
 }
 
+static enum ndr_err_code ndr_push_lsa_Role(struct ndr_push *ndr, int ndr_flags, enum lsa_Role r)
+{
+	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_lsa_Role(struct ndr_pull *ndr, int ndr_flags, enum lsa_Role *r)
+{
+	uint32_t v;
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_lsa_Role(struct ndr_print *ndr, const char *name, enum lsa_Role r)
+{
+	const char *val = NULL;
+
+	switch (r) {
+		case LSA_ROLE_BACKUP: val = "LSA_ROLE_BACKUP"; break;
+		case LSA_ROLE_PRIMARY: val = "LSA_ROLE_PRIMARY"; break;
+	}
+	ndr_print_enum(ndr, name, "ENUM", val, r);
+}
+
 static enum ndr_err_code ndr_push_lsa_ServerRole(struct ndr_push *ndr, int ndr_flags, const struct lsa_ServerRole *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_push_align(ndr, 2));
-		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->unknown));
-		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->role));
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_lsa_Role(ndr, NDR_SCALARS, r->role));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -1093,9 +1114,8 @@ static enum ndr_err_code ndr_push_lsa_ServerRole(struct ndr_push *ndr, int ndr_f
 static enum ndr_err_code ndr_pull_lsa_ServerRole(struct ndr_pull *ndr, int ndr_flags, struct lsa_ServerRole *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_pull_align(ndr, 2));
-		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->unknown));
-		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->role));
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_lsa_Role(ndr, NDR_SCALARS, &r->role));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -1106,8 +1126,7 @@ _PUBLIC_ void ndr_print_lsa_ServerRole(struct ndr_print *ndr, const char *name, 
 {
 	ndr_print_struct(ndr, name, "lsa_ServerRole");
 	ndr->depth++;
-	ndr_print_uint16(ndr, "unknown", r->unknown);
-	ndr_print_uint16(ndr, "role", r->role);
+	ndr_print_lsa_Role(ndr, "role", r->role);
 	ndr->depth--;
 }
 
@@ -1259,8 +1278,7 @@ _PUBLIC_ void ndr_print_lsa_AuditFullSetInfo(struct ndr_print *ndr, const char *
 static enum ndr_err_code ndr_push_lsa_AuditFullQueryInfo(struct ndr_push *ndr, int ndr_flags, const struct lsa_AuditFullQueryInfo *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_push_align(ndr, 2));
-		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->unknown));
+		NDR_CHECK(ndr_push_align(ndr, 1));
 		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->shutdown_on_full));
 		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->log_is_full));
 	}
@@ -1272,8 +1290,7 @@ static enum ndr_err_code ndr_push_lsa_AuditFullQueryInfo(struct ndr_push *ndr, i
 static enum ndr_err_code ndr_pull_lsa_AuditFullQueryInfo(struct ndr_pull *ndr, int ndr_flags, struct lsa_AuditFullQueryInfo *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_pull_align(ndr, 2));
-		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->unknown));
+		NDR_CHECK(ndr_pull_align(ndr, 1));
 		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->shutdown_on_full));
 		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->log_is_full));
 	}
@@ -1286,7 +1303,6 @@ _PUBLIC_ void ndr_print_lsa_AuditFullQueryInfo(struct ndr_print *ndr, const char
 {
 	ndr_print_struct(ndr, name, "lsa_AuditFullQueryInfo");
 	ndr->depth++;
-	ndr_print_uint16(ndr, "unknown", r->unknown);
 	ndr_print_uint8(ndr, "shutdown_on_full", r->shutdown_on_full);
 	ndr_print_uint8(ndr, "log_is_full", r->log_is_full);
 	ndr->depth--;
@@ -1388,11 +1404,12 @@ _PUBLIC_ void ndr_print_lsa_PolicyInfo(struct ndr_print *ndr, const char *name, 
 		case LSA_POLICY_INFO_ROLE: val = "LSA_POLICY_INFO_ROLE"; break;
 		case LSA_POLICY_INFO_REPLICA: val = "LSA_POLICY_INFO_REPLICA"; break;
 		case LSA_POLICY_INFO_QUOTA: val = "LSA_POLICY_INFO_QUOTA"; break;
-		case LSA_POLICY_INFO_DB: val = "LSA_POLICY_INFO_DB"; break;
+		case LSA_POLICY_INFO_MOD: val = "LSA_POLICY_INFO_MOD"; break;
 		case LSA_POLICY_INFO_AUDIT_FULL_SET: val = "LSA_POLICY_INFO_AUDIT_FULL_SET"; break;
 		case LSA_POLICY_INFO_AUDIT_FULL_QUERY: val = "LSA_POLICY_INFO_AUDIT_FULL_QUERY"; break;
 		case LSA_POLICY_INFO_DNS: val = "LSA_POLICY_INFO_DNS"; break;
 		case LSA_POLICY_INFO_DNS_INT: val = "LSA_POLICY_INFO_DNS_INT"; break;
+		case LSA_POLICY_INFO_L_ACCOUNT_DOMAIN: val = "LSA_POLICY_INFO_L_ACCOUNT_DOMAIN"; break;
 	}
 	ndr_print_enum(ndr, name, "ENUM", val, r);
 }
@@ -1435,8 +1452,8 @@ static enum ndr_err_code ndr_push_lsa_PolicyInformation(struct ndr_push *ndr, in
 				NDR_CHECK(ndr_push_lsa_DefaultQuotaInfo(ndr, NDR_SCALARS, &r->quota));
 			break; }
 
-			case LSA_POLICY_INFO_DB: {
-				NDR_CHECK(ndr_push_lsa_ModificationInfo(ndr, NDR_SCALARS, &r->db));
+			case LSA_POLICY_INFO_MOD: {
+				NDR_CHECK(ndr_push_lsa_ModificationInfo(ndr, NDR_SCALARS, &r->mod));
 			break; }
 
 			case LSA_POLICY_INFO_AUDIT_FULL_SET: {
@@ -1453,6 +1470,10 @@ static enum ndr_err_code ndr_push_lsa_PolicyInformation(struct ndr_push *ndr, in
 
 			case LSA_POLICY_INFO_DNS_INT: {
 				NDR_CHECK(ndr_push_lsa_DnsDomainInfo(ndr, NDR_SCALARS, &r->dns));
+			break; }
+
+			case LSA_POLICY_INFO_L_ACCOUNT_DOMAIN: {
+				NDR_CHECK(ndr_push_lsa_DomainInfo(ndr, NDR_SCALARS, &r->l_account_domain));
 			break; }
 
 			default:
@@ -1491,7 +1512,7 @@ static enum ndr_err_code ndr_push_lsa_PolicyInformation(struct ndr_push *ndr, in
 			case LSA_POLICY_INFO_QUOTA:
 			break;
 
-			case LSA_POLICY_INFO_DB:
+			case LSA_POLICY_INFO_MOD:
 			break;
 
 			case LSA_POLICY_INFO_AUDIT_FULL_SET:
@@ -1506,6 +1527,10 @@ static enum ndr_err_code ndr_push_lsa_PolicyInformation(struct ndr_push *ndr, in
 
 			case LSA_POLICY_INFO_DNS_INT:
 				NDR_CHECK(ndr_push_lsa_DnsDomainInfo(ndr, NDR_BUFFERS, &r->dns));
+			break;
+
+			case LSA_POLICY_INFO_L_ACCOUNT_DOMAIN:
+				NDR_CHECK(ndr_push_lsa_DomainInfo(ndr, NDR_BUFFERS, &r->l_account_domain));
 			break;
 
 			default:
@@ -1558,8 +1583,8 @@ static enum ndr_err_code ndr_pull_lsa_PolicyInformation(struct ndr_pull *ndr, in
 				NDR_CHECK(ndr_pull_lsa_DefaultQuotaInfo(ndr, NDR_SCALARS, &r->quota));
 			break; }
 
-			case LSA_POLICY_INFO_DB: {
-				NDR_CHECK(ndr_pull_lsa_ModificationInfo(ndr, NDR_SCALARS, &r->db));
+			case LSA_POLICY_INFO_MOD: {
+				NDR_CHECK(ndr_pull_lsa_ModificationInfo(ndr, NDR_SCALARS, &r->mod));
 			break; }
 
 			case LSA_POLICY_INFO_AUDIT_FULL_SET: {
@@ -1576,6 +1601,10 @@ static enum ndr_err_code ndr_pull_lsa_PolicyInformation(struct ndr_pull *ndr, in
 
 			case LSA_POLICY_INFO_DNS_INT: {
 				NDR_CHECK(ndr_pull_lsa_DnsDomainInfo(ndr, NDR_SCALARS, &r->dns));
+			break; }
+
+			case LSA_POLICY_INFO_L_ACCOUNT_DOMAIN: {
+				NDR_CHECK(ndr_pull_lsa_DomainInfo(ndr, NDR_SCALARS, &r->l_account_domain));
 			break; }
 
 			default:
@@ -1613,7 +1642,7 @@ static enum ndr_err_code ndr_pull_lsa_PolicyInformation(struct ndr_pull *ndr, in
 			case LSA_POLICY_INFO_QUOTA:
 			break;
 
-			case LSA_POLICY_INFO_DB:
+			case LSA_POLICY_INFO_MOD:
 			break;
 
 			case LSA_POLICY_INFO_AUDIT_FULL_SET:
@@ -1628,6 +1657,10 @@ static enum ndr_err_code ndr_pull_lsa_PolicyInformation(struct ndr_pull *ndr, in
 
 			case LSA_POLICY_INFO_DNS_INT:
 				NDR_CHECK(ndr_pull_lsa_DnsDomainInfo(ndr, NDR_BUFFERS, &r->dns));
+			break;
+
+			case LSA_POLICY_INFO_L_ACCOUNT_DOMAIN:
+				NDR_CHECK(ndr_pull_lsa_DomainInfo(ndr, NDR_BUFFERS, &r->l_account_domain));
 			break;
 
 			default:
@@ -1675,8 +1708,8 @@ _PUBLIC_ void ndr_print_lsa_PolicyInformation(struct ndr_print *ndr, const char 
 			ndr_print_lsa_DefaultQuotaInfo(ndr, "quota", &r->quota);
 		break;
 
-		case LSA_POLICY_INFO_DB:
-			ndr_print_lsa_ModificationInfo(ndr, "db", &r->db);
+		case LSA_POLICY_INFO_MOD:
+			ndr_print_lsa_ModificationInfo(ndr, "mod", &r->mod);
 		break;
 
 		case LSA_POLICY_INFO_AUDIT_FULL_SET:
@@ -1693,6 +1726,10 @@ _PUBLIC_ void ndr_print_lsa_PolicyInformation(struct ndr_print *ndr, const char 
 
 		case LSA_POLICY_INFO_DNS_INT:
 			ndr_print_lsa_DnsDomainInfo(ndr, "dns", &r->dns);
+		break;
+
+		case LSA_POLICY_INFO_L_ACCOUNT_DOMAIN:
+			ndr_print_lsa_DomainInfo(ndr, "l_account_domain", &r->l_account_domain);
 		break;
 
 		default:
@@ -1926,13 +1963,13 @@ _PUBLIC_ void ndr_print_lsa_DomainList(struct ndr_print *ndr, const char *name, 
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_lsa_SidType(struct ndr_push *ndr, int ndr_flags, enum lsa_SidType r)
+_PUBLIC_ enum ndr_err_code ndr_push_lsa_SidType(struct ndr_push *ndr, int ndr_flags, enum lsa_SidType r)
 {
 	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_lsa_SidType(struct ndr_pull *ndr, int ndr_flags, enum lsa_SidType *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_lsa_SidType(struct ndr_pull *ndr, int ndr_flags, enum lsa_SidType *r)
 {
 	uint16_t v;
 	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &v));
@@ -6064,10 +6101,10 @@ _PUBLIC_ void ndr_print_lsa_EnumAccounts(struct ndr_print *ndr, const char *name
 _PUBLIC_ enum ndr_err_code ndr_push_lsa_CreateTrustedDomain(struct ndr_push *ndr, int flags, const struct lsa_CreateTrustedDomain *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.handle == NULL) {
+		if (r->in.policy_handle == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.handle));
+		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.policy_handle));
 		if (r->in.info == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
@@ -6086,19 +6123,19 @@ _PUBLIC_ enum ndr_err_code ndr_push_lsa_CreateTrustedDomain(struct ndr_push *ndr
 
 _PUBLIC_ enum ndr_err_code ndr_pull_lsa_CreateTrustedDomain(struct ndr_pull *ndr, int flags, struct lsa_CreateTrustedDomain *r)
 {
-	TALLOC_CTX *_mem_save_handle_0;
+	TALLOC_CTX *_mem_save_policy_handle_0;
 	TALLOC_CTX *_mem_save_info_0;
 	TALLOC_CTX *_mem_save_trustdom_handle_0;
 	if (flags & NDR_IN) {
 		ZERO_STRUCT(r->out);
 
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
-			NDR_PULL_ALLOC(ndr, r->in.handle);
+			NDR_PULL_ALLOC(ndr, r->in.policy_handle);
 		}
-		_mem_save_handle_0 = NDR_PULL_GET_MEM_CTX(ndr);
-		NDR_PULL_SET_MEM_CTX(ndr, r->in.handle, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.handle));
-		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
+		_mem_save_policy_handle_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->in.policy_handle, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.policy_handle));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_policy_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->in.info);
 		}
@@ -6133,9 +6170,9 @@ _PUBLIC_ void ndr_print_lsa_CreateTrustedDomain(struct ndr_print *ndr, const cha
 	if (flags & NDR_IN) {
 		ndr_print_struct(ndr, "in", "lsa_CreateTrustedDomain");
 		ndr->depth++;
-		ndr_print_ptr(ndr, "handle", r->in.handle);
+		ndr_print_ptr(ndr, "policy_handle", r->in.policy_handle);
 		ndr->depth++;
-		ndr_print_policy_handle(ndr, "handle", r->in.handle);
+		ndr_print_policy_handle(ndr, "policy_handle", r->in.policy_handle);
 		ndr->depth--;
 		ndr_print_ptr(ndr, "info", r->in.info);
 		ndr->depth++;

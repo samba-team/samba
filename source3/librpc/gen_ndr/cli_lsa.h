@@ -57,7 +57,7 @@ NTSTATUS rpccli_lsa_EnumAccounts(struct rpc_pipe_client *cli,
 				 uint32_t num_entries /* [in] [range(0,8192)] */);
 NTSTATUS rpccli_lsa_CreateTrustedDomain(struct rpc_pipe_client *cli,
 					TALLOC_CTX *mem_ctx,
-					struct policy_handle *handle /* [in] [ref] */,
+					struct policy_handle *policy_handle /* [in] [ref] */,
 					struct lsa_DomainInfo *info /* [in] [ref] */,
 					uint32_t access_mask /* [in]  */,
 					struct policy_handle *trustdom_handle /* [out] [ref] */);

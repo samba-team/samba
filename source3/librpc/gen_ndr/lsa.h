@@ -97,12 +97,11 @@ struct lsa_ObjectAttribute {
 
 struct lsa_AuditLogInfo {
 	uint32_t percent_full;
-	uint32_t log_size;
-	NTTIME retention_time;
+	uint32_t maximum_log_size;
+	uint64_t retention_time;
 	uint8_t shutdown_in_progress;
-	NTTIME time_to_shutdown;
+	uint64_t time_to_shutdown;
 	uint32_t next_audit_record;
-	uint32_t unknown;
 };
 
 enum lsa_PolicyAuditPolicy
@@ -166,9 +165,21 @@ struct lsa_PDAccountInfo {
 	struct lsa_String name;
 };
 
+enum lsa_Role
+#ifndef USE_UINT_ENUMS
+ {
+	LSA_ROLE_BACKUP=2,
+	LSA_ROLE_PRIMARY=3
+}
+#else
+ { __donnot_use_enum_lsa_Role=0x7FFFFFFF}
+#define LSA_ROLE_BACKUP ( 2 )
+#define LSA_ROLE_PRIMARY ( 3 )
+#endif
+;
+
 struct lsa_ServerRole {
-	uint16_t unknown;
-	uint16_t role;
+	enum lsa_Role role;
 };
 
 struct lsa_ReplicaSourceInfo {
@@ -195,7 +206,6 @@ struct lsa_AuditFullSetInfo {
 };
 
 struct lsa_AuditFullQueryInfo {
-	uint16_t unknown;
 	uint8_t shutdown_on_full;
 	uint8_t log_is_full;
 };
@@ -219,11 +229,12 @@ enum lsa_PolicyInfo
 	LSA_POLICY_INFO_ROLE=6,
 	LSA_POLICY_INFO_REPLICA=7,
 	LSA_POLICY_INFO_QUOTA=8,
-	LSA_POLICY_INFO_DB=9,
+	LSA_POLICY_INFO_MOD=9,
 	LSA_POLICY_INFO_AUDIT_FULL_SET=10,
 	LSA_POLICY_INFO_AUDIT_FULL_QUERY=11,
 	LSA_POLICY_INFO_DNS=12,
-	LSA_POLICY_INFO_DNS_INT=13
+	LSA_POLICY_INFO_DNS_INT=13,
+	LSA_POLICY_INFO_L_ACCOUNT_DOMAIN=14
 }
 #else
  { __donnot_use_enum_lsa_PolicyInfo=0x7FFFFFFF}
@@ -235,11 +246,12 @@ enum lsa_PolicyInfo
 #define LSA_POLICY_INFO_ROLE ( 6 )
 #define LSA_POLICY_INFO_REPLICA ( 7 )
 #define LSA_POLICY_INFO_QUOTA ( 8 )
-#define LSA_POLICY_INFO_DB ( 9 )
+#define LSA_POLICY_INFO_MOD ( 9 )
 #define LSA_POLICY_INFO_AUDIT_FULL_SET ( 10 )
 #define LSA_POLICY_INFO_AUDIT_FULL_QUERY ( 11 )
 #define LSA_POLICY_INFO_DNS ( 12 )
 #define LSA_POLICY_INFO_DNS_INT ( 13 )
+#define LSA_POLICY_INFO_L_ACCOUNT_DOMAIN ( 14 )
 #endif
 ;
 
@@ -252,10 +264,11 @@ union lsa_PolicyInformation {
 	struct lsa_ServerRole role;/* [case(LSA_POLICY_INFO_ROLE)] */
 	struct lsa_ReplicaSourceInfo replica;/* [case(LSA_POLICY_INFO_REPLICA)] */
 	struct lsa_DefaultQuotaInfo quota;/* [case(LSA_POLICY_INFO_QUOTA)] */
-	struct lsa_ModificationInfo db;/* [case(LSA_POLICY_INFO_DB)] */
+	struct lsa_ModificationInfo mod;/* [case(LSA_POLICY_INFO_MOD)] */
 	struct lsa_AuditFullSetInfo auditfullset;/* [case(LSA_POLICY_INFO_AUDIT_FULL_SET)] */
 	struct lsa_AuditFullQueryInfo auditfullquery;/* [case(LSA_POLICY_INFO_AUDIT_FULL_QUERY)] */
 	struct lsa_DnsDomainInfo dns;/* [case(LSA_POLICY_INFO_DNS)] */
+	struct lsa_DomainInfo l_account_domain;/* [case(LSA_POLICY_INFO_L_ACCOUNT_DOMAIN)] */
 }/* [switch_type(uint16)] */;
 
 struct lsa_SidPtr {
@@ -362,6 +375,21 @@ struct lsa_PrivilegeSet {
 	uint32_t unknown;
 	struct lsa_LUIDAttribute *set;/* [size_is(count)] */
 };
+
+/* bitmap lsa_SystemAccessModeFlags */
+#define LSA_POLICY_MODE_INTERACTIVE ( 0x00000001 )
+#define LSA_POLICY_MODE_NETWORK ( 0x00000002 )
+#define LSA_POLICY_MODE_BATCH ( 0x00000004 )
+#define LSA_POLICY_MODE_SERVICE ( 0x00000010 )
+#define LSA_POLICY_MODE_PROXY ( 0x00000020 )
+#define LSA_POLICY_MODE_DENY_INTERACTIVE ( 0x00000040 )
+#define LSA_POLICY_MODE_DENY_NETWORK ( 0x00000080 )
+#define LSA_POLICY_MODE_DENY_BATCH ( 0x00000100 )
+#define LSA_POLICY_MODE_DENY_SERVICE ( 0x00000200 )
+#define LSA_POLICY_MODE_REMOTE_INTERACTIVE ( 0x00000400 )
+#define LSA_POLICY_MODE_DENY_REMOTE_INTERACTIVE ( 0x00000800 )
+#define LSA_POLICY_MODE_ALL ( 0x00000FF7 )
+#define LSA_POLICY_MODE_ALL_NT4 ( 0x00000037 )
 
 struct lsa_DATA_BUF {
 	uint32_t length;
@@ -845,7 +873,7 @@ struct lsa_EnumAccounts {
 
 struct lsa_CreateTrustedDomain {
 	struct {
-		struct policy_handle *handle;/* [ref] */
+		struct policy_handle *policy_handle;/* [ref] */
 		struct lsa_DomainInfo *info;/* [ref] */
 		uint32_t access_mask;
 	} in;
