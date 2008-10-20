@@ -260,7 +260,9 @@ static enum ndr_err_code ndr_push_compression_mszip_chunk(struct ndr_push *ndrpu
 	ndrpush->offset = tmp_offset;
 
 	DEBUG(9,("MSZIP comp plain_chunk_size: %08X (%u) comp_chunk_size: %08X (%u)\n",
-		 plain_chunk.length, plain_chunk.length, comp_chunk_size, comp_chunk_size));
+		 (unsigned int)plain_chunk.length,
+		 (unsigned int)plain_chunk.length,
+		 comp_chunk_size, comp_chunk_size));
 
 	ndrpush->offset += comp_chunk_size;
 	return NDR_ERR_SUCCESS;
@@ -307,7 +309,7 @@ static enum ndr_err_code ndr_pull_compression_xpress_chunk(struct ndr_pull *ndrp
 	if (ret < 0) {
 		return ndr_pull_error(ndrpull, NDR_ERR_COMPRESSION,
 				      "XPRESS lzxpress_decompress() returned %d\n",
-				      ret);
+				      (int)ret);
 	}
 	plain_chunk.length = ret;
 
@@ -361,7 +363,7 @@ static enum ndr_err_code ndr_push_compression_xpress_chunk(struct ndr_push *ndrp
 	if (ret < 0) {
 		return ndr_pull_error(ndrpull, NDR_ERR_COMPRESSION,
 				      "XPRESS lzxpress_compress() returned %d\n",
-				      ret);
+				      (int)ret);
 	}
 	comp_chunk.length = ret;
 
