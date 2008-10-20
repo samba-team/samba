@@ -32,7 +32,7 @@ struct rpc_key {
 	const char* classname;	
 	uint32_t num_subkeys;
 	uint32_t max_subkeylen;
-	uint32_t max_classlen;
+	uint32_t max_subkeysize;
 	uint32_t num_values;
 	uint32_t max_valnamelen;
 	uint32_t max_valbufsize;
@@ -380,7 +380,7 @@ static WERROR rpc_query_key(TALLOC_CTX *mem_ctx, const struct registry_key *k)
 	r.out.classname = &classname;
 	r.out.num_subkeys = &mykeydata->num_subkeys;
 	r.out.max_subkeylen = &mykeydata->max_subkeylen;
-	r.out.max_classlen = &mykeydata->max_classlen;
+	r.out.max_subkeysize = &mykeydata->max_subkeysize;
 	r.out.num_values = &mykeydata->num_values;
 	r.out.max_valnamelen = &mykeydata->max_valnamelen;
 	r.out.max_valbufsize = &mykeydata->max_valbufsize;

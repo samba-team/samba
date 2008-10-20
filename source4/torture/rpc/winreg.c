@@ -1396,7 +1396,7 @@ static bool test_QueryInfoKey(struct dcerpc_pipe *p,
 			      struct policy_handle *handle, char *class)
 {
 	struct winreg_QueryInfoKey r;
-	uint32_t num_subkeys, max_subkeylen, max_classlen,
+	uint32_t num_subkeys, max_subkeylen, max_subkeysize,
 		num_values, max_valnamelen, max_valbufsize,
 		secdescsize;
 	NTTIME last_changed_time;
@@ -1405,7 +1405,7 @@ static bool test_QueryInfoKey(struct dcerpc_pipe *p,
 	r.in.handle = handle;
 	r.out.num_subkeys = &num_subkeys;
 	r.out.max_subkeylen = &max_subkeylen;
-	r.out.max_classlen = &max_classlen;
+	r.out.max_subkeysize = &max_subkeysize;
 	r.out.num_values = &num_values;
 	r.out.max_valnamelen = &max_valnamelen;
 	r.out.max_valbufsize = &max_valbufsize;

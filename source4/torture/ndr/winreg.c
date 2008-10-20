@@ -417,7 +417,7 @@ static bool queryinfokey_out_check(struct torture_context *tctx, struct winreg_Q
 	torture_assert_str_equal(tctx, r->out.classname->name, "", "class out name");
 	torture_assert_int_equal(tctx, *r->out.num_subkeys, 0, "num subkeys");
 	torture_assert_int_equal(tctx, *r->out.max_subkeylen, 0, "subkey length");
-	torture_assert_int_equal(tctx, *r->out.max_classlen, 140, "subkey size");
+	torture_assert_int_equal(tctx, *r->out.max_subkeysize, 140, "subkey size");
 	torture_assert_werr_ok(tctx, r->out.result, "return code");
 	return true;
 }
