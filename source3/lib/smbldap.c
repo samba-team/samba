@@ -1025,13 +1025,6 @@ static int smbldap_open(struct smbldap_state *ldap_state)
 	int rc, opt_rc;
 	bool reopen = False;
 	SMB_ASSERT(ldap_state);
-		
-#ifndef NO_LDAP_SECURITY
-	if (geteuid() != 0) {
-		DEBUG(0, ("smbldap_open: cannot access LDAP when not root\n"));
-		return  LDAP_INSUFFICIENT_ACCESS;
-	}
-#endif
 
 	if ((ldap_state->ldap_struct != NULL) && ((ldap_state->last_ping + SMBLDAP_DONT_PING_TIME) < time(NULL))) {
 
