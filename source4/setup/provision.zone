@@ -10,10 +10,10 @@ $TTL 1W
                                 1W )            ; minimum
 			IN NS	${HOSTNAME}
 ${HOSTIP6_BASE_LINE}
-			IN A	${HOSTIP}
+${HOSTIP_BASE_LINE}
 ;
 ${HOSTIP6_HOST_LINE}
-${HOSTNAME}		IN A	${HOSTIP}
+${HOSTIP_HOST_LINE}
 gc._msdcs		IN CNAME	${HOSTNAME}
 ${HOSTGUID}._msdcs	IN CNAME	${HOSTNAME}
 ;
