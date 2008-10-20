@@ -488,6 +488,7 @@ static NTSTATUS dcesrv_lsa_QueryInfoPolicy2(struct dcesrv_call_state *dce_call, 
 
 	case LSA_POLICY_INFO_MOD:
 	case LSA_POLICY_INFO_AUDIT_FULL_SET:
+	case LSA_POLICY_INFO_AUDIT_FULL_QUERY:
 		/* windows gives INVALID_PARAMETER */
 		r->out.info = NULL;
 		return NT_STATUS_INVALID_PARAMETER;

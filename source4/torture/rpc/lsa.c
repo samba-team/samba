@@ -1727,7 +1727,7 @@ static bool test_QueryForestTrustInformation(struct dcerpc_pipe *p,
 	status = dcerpc_lsa_lsaRQueryForestTrustInformation(p, tctx, &r);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("lsaRQueryForestTrustInformation failed - %s\n", nt_errstr(status));
+		printf("lsaRQueryForestTrustInformation of %s failed - %s\n", trusted_domain_name, nt_errstr(status));
 		ret = false;
 	}
 
@@ -2337,6 +2337,7 @@ static bool test_QueryInfoPolicyCalls(	bool version2,
 		switch (i) {
 		case LSA_POLICY_INFO_MOD:
 		case LSA_POLICY_INFO_AUDIT_FULL_SET:
+		case LSA_POLICY_INFO_AUDIT_FULL_QUERY:
 			if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER)) {
 				printf("Server should have failed level %u: %s\n", i, nt_errstr(status));
 				ret = false;
