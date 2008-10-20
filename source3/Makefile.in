@@ -988,7 +988,7 @@ NDRDUMP_OBJ = ../librpc/tools/ndrdump.o \
 	      librpc/gen_ndr/ndr_svcctl.o \
 		  librpc/gen_ndr/tables.o ../librpc/ndr/ndr_table.o \
 	      ../librpc/ndr/ndr_krb5pac.o \
-		  librpc/gen_ndr/ndr_krb5pac.o
+		  librpc/gen_ndr/ndr_krb5pac.o libsmb/asn1.o
 
 DEBUG2HTML_OBJ = utils/debug2html.o utils/debugparse.o
 
