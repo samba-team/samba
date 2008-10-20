@@ -642,6 +642,16 @@ static int smbconf_reg_shutdown(struct smbconf_ctx *ctx)
 	return ctx->ops->close_conf(ctx);
 }
 
+static bool smbconf_reg_requires_messaging(struct smbconf_ctx *ctx)
+{
+#ifdef CLUSTER_SUPPORT
+	if (lp_clustering() && lp_parm_bool(-1, "ctdb", "registry.tdb", true)) {
+		return true;
+	}
+#endif
+	return false;
+}
+
 static WERROR smbconf_reg_open(struct smbconf_ctx *ctx)
 {
 	WERROR werr;
@@ -1119,6 +1129,7 @@ done:
 struct smbconf_ops smbconf_ops_reg = {
 	.init			= smbconf_reg_init,
 	.shutdown		= smbconf_reg_shutdown,
+	.requires_messaging	= smbconf_reg_requires_messaging,
 	.open_conf		= smbconf_reg_open,
 	.close_conf		= smbconf_reg_close,
 	.get_csn		= smbconf_reg_get_csn,
