@@ -10,8 +10,6 @@ PUBLIC_DEPENDENCIES = LIBSAMBA-ERRORS LIBTALLOC LIBSAMBA-UTIL CHARSET \
 
 LIBNDR_OBJ_FILES = $(addprefix $(ndrsrcdir)/, ndr_string.o) ../librpc/ndr/ndr_basic.o ../librpc/ndr/uuid.o ../librpc/ndr/ndr.o
 
-$(eval $(call proto_header_template,$(ndrsrcdir)/libndr_proto.h,$(LIBNDR_OBJ_FILES:.o=.c)))
-
 PC_FILES += ../librpc/ndr.pc
 LIBNDR_VERSION = 0.0.1
 LIBNDR_SOVERSION = 0
@@ -90,7 +88,7 @@ NDR_DCOM_OBJ_FILES = $(gen_ndrsrcdir)/ndr_dcom.o
 [SUBSYSTEM::NDR_WMI]
 PUBLIC_DEPENDENCIES = LIBNDR NDR_SECURITY NDR_DCOM
 
-NDR_WMI_OBJ_FILES = $(gen_ndrsrcdir)/ndr_wmi.o $(ndrsrcdir)/ndr_wmi.o
+NDR_WMI_OBJ_FILES = $(gen_ndrsrcdir)/ndr_wmi.o ../librpc/ndr/ndr_wmi.o
 
 [SUBSYSTEM::NDR_DSBACKUP]
 PUBLIC_DEPENDENCIES = LIBNDR
