@@ -29,7 +29,7 @@ interface krb5pac
 		netr_SamInfo3 info3;
 		dom_sid2 *res_group_dom_sid;
 		samr_RidWithAttributeArray res_groups;
-    	} PAC_LOGON_INFO;
+	} PAC_LOGON_INFO;
 
 	typedef struct {
 		[value(2*strlen_m(upn_name))] uint16 upn_size;
@@ -46,7 +46,7 @@ interface krb5pac
 
 	typedef [public] struct {
 		PAC_LOGON_INFO *info;
-    	} PAC_LOGON_INFO_CTR;
+	} PAC_LOGON_INFO_CTR;
 
 	typedef [public,v1_enum] enum {
 		PAC_TYPE_LOGON_INFO = 1,
@@ -126,5 +126,9 @@ interface krb5pac
 		[in] PAC_Validate pac_validate
 		);
 
-
+	/* used for samba3 netsamlogon cache */
+	typedef [public] struct {
+		time_t timestamp;
+		netr_SamInfo3 info3;
+	} netsamlogoncache_entry;
 }

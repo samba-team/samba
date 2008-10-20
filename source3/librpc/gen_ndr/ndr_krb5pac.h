@@ -17,7 +17,9 @@ extern const struct ndr_interface_table ndr_table_krb5pac;
 
 #define NDR_DECODE_LOGIN_INFO (0x02)
 
-#define NDR_KRB5PAC_CALL_COUNT (3)
+#define NDR_DECODE_PAC_VALIDATE (0x03)
+
+#define NDR_KRB5PAC_CALL_COUNT (4)
 void ndr_print_PAC_LOGON_NAME(struct ndr_print *ndr, const char *name, const struct PAC_LOGON_NAME *r);
 enum ndr_err_code ndr_push_PAC_SIGNATURE_DATA(struct ndr_push *ndr, int ndr_flags, const struct PAC_SIGNATURE_DATA *r);
 enum ndr_err_code ndr_pull_PAC_SIGNATURE_DATA(struct ndr_pull *ndr, int ndr_flags, struct PAC_SIGNATURE_DATA *r);
@@ -46,10 +48,14 @@ void ndr_print_PAC_BUFFER_RAW(struct ndr_print *ndr, const char *name, const str
 enum ndr_err_code ndr_push_PAC_DATA_RAW(struct ndr_push *ndr, int ndr_flags, const struct PAC_DATA_RAW *r);
 enum ndr_err_code ndr_pull_PAC_DATA_RAW(struct ndr_pull *ndr, int ndr_flags, struct PAC_DATA_RAW *r);
 void ndr_print_PAC_DATA_RAW(struct ndr_print *ndr, const char *name, const struct PAC_DATA_RAW *r);
+enum ndr_err_code ndr_push_PAC_Validate(struct ndr_push *ndr, int ndr_flags, const struct PAC_Validate *r);
+enum ndr_err_code ndr_pull_PAC_Validate(struct ndr_pull *ndr, int ndr_flags, struct PAC_Validate *r);
+void ndr_print_PAC_Validate(struct ndr_print *ndr, const char *name, const struct PAC_Validate *r);
 enum ndr_err_code ndr_push_netsamlogoncache_entry(struct ndr_push *ndr, int ndr_flags, const struct netsamlogoncache_entry *r);
 enum ndr_err_code ndr_pull_netsamlogoncache_entry(struct ndr_pull *ndr, int ndr_flags, struct netsamlogoncache_entry *r);
 void ndr_print_netsamlogoncache_entry(struct ndr_print *ndr, const char *name, const struct netsamlogoncache_entry *r);
 void ndr_print_decode_pac(struct ndr_print *ndr, const char *name, int flags, const struct decode_pac *r);
 void ndr_print_decode_pac_raw(struct ndr_print *ndr, const char *name, int flags, const struct decode_pac_raw *r);
 void ndr_print_decode_login_info(struct ndr_print *ndr, const char *name, int flags, const struct decode_login_info *r);
+void ndr_print_decode_pac_validate(struct ndr_print *ndr, const char *name, int flags, const struct decode_pac_validate *r);
 #endif /* _HEADER_NDR_krb5pac */

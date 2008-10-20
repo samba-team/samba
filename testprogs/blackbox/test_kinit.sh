@@ -1,7 +1,7 @@
 #!/bin/sh
 # Blackbox tests for kinit and kerberos integration with smbclient etc
 # Copyright (C) 2006-2007 Jelmer Vernooij <jelmer@samba.org>
-# Copyright (C) 2006-2007 Andrew Bartlett <abartlet@samba.org>
+# Copyright (C) 2006-2008 Andrew Bartlett <abartlet@samba.org>
 
 if [ $# -lt 5 ]; then
 cat <<EOF
@@ -73,9 +73,47 @@ testit "kinit with user password" $samba4bindir/samba4kinit --password-file=./tm
 test_smbclient "Test login with user kerberos ccache" 'ls' -k yes || failed=`expr $failed + 1`
 
 NEWUSERPASS=testPaSS@34%
-testit "change user password" $VALGRIND $net password change -W$DOMAIN -U$DOMAIN\\nettestuser%$USERPASS $CONFIGURATION  -k no $NEWUSERPASS $@ || failed=`expr $failed + 1`
+testit "change user password with 'net password change' (rpc)" $VALGRIND $net password change -W$DOMAIN -U$DOMAIN\\nettestuser%$USERPASS $CONFIGURATION  -k no $NEWUSERPASS $@ || failed=`expr $failed + 1`
 
 echo $NEWUSERPASS > ./tmpuserpassfile
+testit "kinit with user password" $samba4bindir/samba4kinit --password-file=./tmpuserpassfile --request-pac nettestuser@$REALM   || failed=`expr $failed + 1`
+
+test_smbclient "Test login with user kerberos ccache" 'ls' -k yes || failed=`expr $failed + 1`
+
+
+USERPASS=$NEWUSERPASS
+NEWUSERPASS=testPaSS@56%
+echo $NEWUSERPASS > ./tmpuserpassfile
+
+cat > ./tmpkpasswdscript <<EOF
+expect Password
+password ${USERPASS}\n
+expect New password
+send ${NEWUSERPASS}\n
+expect New password
+send ${NEWUSERPASS}\n
+expect Success
+EOF
+
+testit "change user password with kpasswd" $samba4bindir/rkpty ./tmpkpasswdscript $samba4bindir/samba4kpasswd nettestuser@$REALM || failed=`expr $failed + 1`
+
+testit "kinit with user password" $samba4bindir/samba4kinit --password-file=./tmpuserpassfile --request-pac nettestuser@$REALM   || failed=`expr $failed + 1`
+
+NEWUSERPASS=testPaSS@78%
+echo $NEWUSERPASS > ./tmpuserpassfile
+
+test_smbclient "Test login with user kerberos ccache" 'ls' -k yes || failed=`expr $failed + 1`
+
+cat > ./tmpkpasswdscript <<EOF
+expect New password
+send ${NEWUSERPASS}\n
+expect New password
+send ${NEWUSERPASS}\n
+expect Success
+EOF
+
+testit "set user password with kpasswd" $samba4bindir/rkpty ./tmpkpasswdscript $samba4bindir/samba4kpasswd --cache=$PREFIX/tmpccache nettestuser@$REALM || failed=`expr $failed + 1`
+
 testit "kinit with user password" $samba4bindir/samba4kinit --password-file=./tmpuserpassfile --request-pac nettestuser@$REALM   || failed=`expr $failed + 1`
 
 test_smbclient "Test login with user kerberos ccache" 'ls' -k yes || failed=`expr $failed + 1`
@@ -85,5 +123,5 @@ export KRB5CCNAME
 
 testit "del user with kerberos ccache" $VALGRIND $net user delete nettestuser $CONFIGURATION -k yes $@ || failed=`expr $failed + 1`
 
-rm -f tmpccfile tmppassfile tmpuserpassfile tmpuserccache
+rm -f tmpccfile tmppassfile tmpuserpassfile tmpuserccache tmpkpasswdscript
 exit $failed

@@ -170,10 +170,6 @@ _PUBLIC_ enum ndr_err_code ndr_push_PAC_LOGON_INFO_CTR(struct ndr_push *ndr, int
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0x00081001));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0xCCCCCCCC));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, NDR_ROUND(ndr_size_PAC_LOGON_INFO(r->info, ndr->flags) + 4, 8)));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0x00000000));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->info));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
@@ -190,10 +186,6 @@ _PUBLIC_ enum ndr_err_code ndr_pull_PAC_LOGON_INFO_CTR(struct ndr_pull *ndr, int
 	TALLOC_CTX *_mem_save_info_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->unknown1));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->unknown2));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->_ndr_size));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->unknown3));
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_info));
 		if (_ptr_info) {
 			NDR_PULL_ALLOC(ndr, r->info);
@@ -216,10 +208,6 @@ _PUBLIC_ void ndr_print_PAC_LOGON_INFO_CTR(struct ndr_print *ndr, const char *na
 {
 	ndr_print_struct(ndr, name, "PAC_LOGON_INFO_CTR");
 	ndr->depth++;
-	ndr_print_uint32(ndr, "unknown1", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?0x00081001:r->unknown1);
-	ndr_print_uint32(ndr, "unknown2", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?0xCCCCCCCC:r->unknown2);
-	ndr_print_uint32(ndr, "_ndr_size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?NDR_ROUND(ndr_size_PAC_LOGON_INFO(r->info, ndr->flags) + 4, 8):r->_ndr_size);
-	ndr_print_uint32(ndr, "unknown3", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?0x00000000:r->unknown3);
 	ndr_print_ptr(ndr, "info", r->info);
 	ndr->depth++;
 	if (r->info) {
@@ -304,7 +292,12 @@ _PUBLIC_ enum ndr_err_code ndr_push_PAC_INFO(struct ndr_push *ndr, int ndr_flags
 		int level = ndr_push_get_switch_value(ndr, r);
 		switch (level) {
 			case PAC_TYPE_LOGON_INFO: {
-				NDR_CHECK(ndr_push_PAC_LOGON_INFO_CTR(ndr, NDR_SCALARS, &r->logon_info));
+				{
+					struct ndr_push *_ndr_logon_info;
+					NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_logon_info, 0xFFFFFC01, -1));
+					NDR_CHECK(ndr_push_PAC_LOGON_INFO_CTR(_ndr_logon_info, NDR_SCALARS|NDR_BUFFERS, &r->logon_info));
+					NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_logon_info, 0xFFFFFC01, -1));
+				}
 			break; }
 
 			case PAC_TYPE_SRV_CHECKSUM: {
@@ -334,7 +327,6 @@ _PUBLIC_ enum ndr_err_code ndr_push_PAC_INFO(struct ndr_push *ndr, int ndr_flags
 		int level = ndr_push_get_switch_value(ndr, r);
 		switch (level) {
 			case PAC_TYPE_LOGON_INFO:
-				NDR_CHECK(ndr_push_PAC_LOGON_INFO_CTR(ndr, NDR_BUFFERS, &r->logon_info));
 			break;
 
 			case PAC_TYPE_SRV_CHECKSUM:
@@ -361,7 +353,12 @@ _PUBLIC_ enum ndr_err_code ndr_pull_PAC_INFO(struct ndr_pull *ndr, int ndr_flags
 	if (ndr_flags & NDR_SCALARS) {
 		switch (level) {
 			case PAC_TYPE_LOGON_INFO: {
-				NDR_CHECK(ndr_pull_PAC_LOGON_INFO_CTR(ndr, NDR_SCALARS, &r->logon_info));
+				{
+					struct ndr_pull *_ndr_logon_info;
+					NDR_CHECK(ndr_pull_subcontext_start(ndr, &_ndr_logon_info, 0xFFFFFC01, -1));
+					NDR_CHECK(ndr_pull_PAC_LOGON_INFO_CTR(_ndr_logon_info, NDR_SCALARS|NDR_BUFFERS, &r->logon_info));
+					NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_logon_info, 0xFFFFFC01, -1));
+				}
 			break; }
 
 			case PAC_TYPE_SRV_CHECKSUM: {
@@ -390,7 +387,6 @@ _PUBLIC_ enum ndr_err_code ndr_pull_PAC_INFO(struct ndr_pull *ndr, int ndr_flags
 	if (ndr_flags & NDR_BUFFERS) {
 		switch (level) {
 			case PAC_TYPE_LOGON_INFO:
-				NDR_CHECK(ndr_pull_PAC_LOGON_INFO_CTR(ndr, NDR_BUFFERS, &r->logon_info));
 			break;
 
 			case PAC_TYPE_SRV_CHECKSUM:
@@ -672,6 +668,58 @@ _PUBLIC_ void ndr_print_PAC_DATA_RAW(struct ndr_print *ndr, const char *name, co
 	ndr->depth--;
 }
 
+_PUBLIC_ enum ndr_err_code ndr_push_PAC_Validate(struct ndr_push *ndr, int ndr_flags, const struct PAC_Validate *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, NETLOGON_GENERIC_KRB5_PAC_VALIDATE));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->ChecksumLength));
+		NDR_CHECK(ndr_push_int32(ndr, NDR_SCALARS, r->SignatureType));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->SignatureLength));
+		{
+			uint32_t _flags_save_DATA_BLOB = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_REMAINING);
+			NDR_CHECK(ndr_push_DATA_BLOB(ndr, NDR_SCALARS, r->ChecksumAndSignature));
+			ndr->flags = _flags_save_DATA_BLOB;
+		}
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_PAC_Validate(struct ndr_pull *ndr, int ndr_flags, struct PAC_Validate *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->MessageType));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->ChecksumLength));
+		NDR_CHECK(ndr_pull_int32(ndr, NDR_SCALARS, &r->SignatureType));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->SignatureLength));
+		{
+			uint32_t _flags_save_DATA_BLOB = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_REMAINING);
+			NDR_CHECK(ndr_pull_DATA_BLOB(ndr, NDR_SCALARS, &r->ChecksumAndSignature));
+			ndr->flags = _flags_save_DATA_BLOB;
+		}
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_PAC_Validate(struct ndr_print *ndr, const char *name, const struct PAC_Validate *r)
+{
+	ndr_print_struct(ndr, name, "PAC_Validate");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "MessageType", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?NETLOGON_GENERIC_KRB5_PAC_VALIDATE:r->MessageType);
+	ndr_print_uint32(ndr, "ChecksumLength", r->ChecksumLength);
+	ndr_print_int32(ndr, "SignatureType", r->SignatureType);
+	ndr_print_uint32(ndr, "SignatureLength", r->SignatureLength);
+	ndr_print_DATA_BLOB(ndr, "ChecksumAndSignature", r->ChecksumAndSignature);
+	ndr->depth--;
+}
+
 _PUBLIC_ enum ndr_err_code ndr_push_netsamlogoncache_entry(struct ndr_push *ndr, int ndr_flags, const struct netsamlogoncache_entry *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
@@ -830,6 +878,47 @@ _PUBLIC_ void ndr_print_decode_login_info(struct ndr_print *ndr, const char *nam
 	ndr->depth--;
 }
 
+static enum ndr_err_code ndr_push_decode_pac_validate(struct ndr_push *ndr, int flags, const struct decode_pac_validate *r)
+{
+	if (flags & NDR_IN) {
+		NDR_CHECK(ndr_push_PAC_Validate(ndr, NDR_SCALARS, &r->in.pac_validate));
+	}
+	if (flags & NDR_OUT) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_decode_pac_validate(struct ndr_pull *ndr, int flags, struct decode_pac_validate *r)
+{
+	if (flags & NDR_IN) {
+		NDR_CHECK(ndr_pull_PAC_Validate(ndr, NDR_SCALARS, &r->in.pac_validate));
+	}
+	if (flags & NDR_OUT) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_decode_pac_validate(struct ndr_print *ndr, const char *name, int flags, const struct decode_pac_validate *r)
+{
+	ndr_print_struct(ndr, name, "decode_pac_validate");
+	ndr->depth++;
+	if (flags & NDR_SET_VALUES) {
+		ndr->flags |= LIBNDR_PRINT_SET_VALUES;
+	}
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "decode_pac_validate");
+		ndr->depth++;
+		ndr_print_PAC_Validate(ndr, "pac_validate", &r->in.pac_validate);
+		ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "decode_pac_validate");
+		ndr->depth++;
+		ndr->depth--;
+	}
+	ndr->depth--;
+}
+
 static const struct ndr_interface_call krb5pac_calls[] = {
 	{
 		"decode_pac",
@@ -853,6 +942,14 @@ static const struct ndr_interface_call krb5pac_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_decode_login_info,
 		(ndr_pull_flags_fn_t) ndr_pull_decode_login_info,
 		(ndr_print_function_t) ndr_print_decode_login_info,
+		false,
+	},
+	{
+		"decode_pac_validate",
+		sizeof(struct decode_pac_validate),
+		(ndr_push_flags_fn_t) ndr_push_decode_pac_validate,
+		(ndr_pull_flags_fn_t) ndr_pull_decode_pac_validate,
+		(ndr_print_function_t) ndr_print_decode_pac_validate,
 		false,
 	},
 	{ NULL, 0, NULL, NULL, NULL, false }
@@ -884,7 +981,7 @@ const struct ndr_interface_table ndr_table_krb5pac = {
 		NDR_KRB5PAC_VERSION
 	},
 	.helpstring	= NDR_KRB5PAC_HELPSTRING,
-	.num_calls	= 3,
+	.num_calls	= 4,
 	.calls		= krb5pac_calls,
 	.endpoints	= &krb5pac_endpoints,
 	.authservices	= &krb5pac_authservices
