@@ -632,7 +632,9 @@ typedef int bool;
 char *ufc_crypt(const char *key, const char *salt);
 #define crypt ufc_crypt
 #else
+#ifdef HAVE_CRYPT_H
 #include <crypt.h>
+#endif
 #endif
 
 #endif /* _LIBREPLACE_REPLACE_H */
