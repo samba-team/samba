@@ -716,14 +716,6 @@ enum flush_reason_enum {
 #include "modules/nfs4_acls.h"
 #include "nsswitch/libwbclient/wbclient.h"
 
-/* generated rpc server implementation functions */
-#include "librpc/gen_ndr/srv_echo.h"
-#include "librpc/gen_ndr/srv_svcctl.h"
-#include "librpc/gen_ndr/srv_lsa.h"
-#include "librpc/gen_ndr/srv_eventlog.h"
-#include "librpc/gen_ndr/srv_winreg.h"
-#include "librpc/gen_ndr/srv_initshutdown.h"
-
 /***** automatically generated prototypes *****/
 #ifndef NO_PROTO_H
 #include "proto.h"

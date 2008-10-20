@@ -517,6 +517,8 @@ again:
 	bidx = idx;
 	for (i = 0; (i < IDMAP_AD_MAX_IDS) && ids[idx]; i++, idx++) {
 
+		ids[idx]->status = ID_UNKNOWN;
+
 		sidstr = sid_binstring(ids[idx]->sid);
 		filter = talloc_asprintf_append_buffer(filter, "(objectSid=%s)", sidstr);
 			

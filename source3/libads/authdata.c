@@ -23,6 +23,7 @@
 */
 
 #include "includes.h"
+#include "librpc/gen_ndr/ndr_krb5pac.h"
 
 #ifdef HAVE_KRB5
 
