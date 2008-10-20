@@ -655,7 +655,7 @@ HEIMDAL_COM_ERR_OBJ_FILES = \
 # Start BINARY asn1_compile
 [BINARY::asn1_compile]
 USE_HOSTCC = YES
-PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN_GETPROGNAME_H LIBREPLACE_NETWORK
+PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN LIBREPLACE_NETWORK
 
 ASN1C = $(builddir)/bin/asn1_compile
 
@@ -679,11 +679,6 @@ dist:: $(heimdalsrcdir)/lib/asn1/lex.c
 
 asn1_compile_OBJ_FILES = \
 	$(asn1_compile_ASN1_OBJ_FILES) \
-	$(heimdalsrcdir)/lib/roken/emalloc.ho \
-	$(heimdalsrcdir)/lib/roken/strupr.ho \
-	$(heimdalsrcdir)/lib/roken/get_window_size.ho \
-	$(heimdalsrcdir)/lib/roken/estrdup.ho \
-	$(heimdalsrcdir)/lib/roken/ecalloc.ho \
 	$(heimdalsrcdir)/lib/vers/print_version.ho \
 	$(socketwrappersrcdir)/socket_wrapper.ho \
 	$(heimdalbuildsrcdir)/replace.ho
@@ -704,7 +699,7 @@ $(eval $(call heimdal_proto_header_template, \
 # Start BINARY compile_et
 [BINARY::compile_et]
 USE_HOSTCC = YES
-PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN_GETPROGNAME_H LIBREPLACE_NETWORK
+PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN LIBREPLACE_NETWORK
 # End BINARY compile_et
 #######################
 
@@ -714,8 +709,6 @@ compile_et_OBJ_FILES = $(heimdalsrcdir)/lib/vers/print_version.ho \
 	$(heimdalsrcdir)/lib/com_err/parse.ho \
 	$(heimdalsrcdir)/lib/com_err/lex.ho \
 	$(heimdalsrcdir)/lib/com_err/compile_et.ho \
-	$(heimdalsrcdir)/lib/roken/get_window_size.ho \
-	$(heimdalsrcdir)/lib/roken/strupr.ho \
 	$(socketwrappersrcdir)/socket_wrapper.ho \
 	$(heimdalbuildsrcdir)/replace.ho
 
