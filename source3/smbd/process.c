@@ -105,7 +105,11 @@ static bool valid_smb_header(const uint8_t *inbuf)
 	if (is_encrypted_packet(inbuf)) {
 		return true;
 	}
-	return (strncmp(smb_base(inbuf),"\377SMB",4) == 0);
+	/*
+	 * This used to be (strncmp(smb_base(inbuf),"\377SMB",4) == 0)
+	 * but it just looks weird to call strncmp for this one.
+	 */
+	return (IVAL(smb_base(inbuf), 0) == 0x424D53FF);
 }
 
 /* Socket functions for smbd packet processing. */
@@ -974,7 +978,7 @@ force write permissions on print services.
 */
 static const struct smb_message_struct {
 	const char *name;
-	void (*fn_new)(struct smb_request *req);
+	void (*fn)(struct smb_request *req);
 	int flags;
 } smb_messages[256] = {
 
@@ -1350,7 +1354,7 @@ static connection_struct *switch_message(uint8 type, struct smb_request *req, in
 		exit_server_cleanly("Non-SMB packet");
 	}
 
-	if (smb_messages[type].fn_new == NULL) {
+	if (smb_messages[type].fn == NULL) {
 		DEBUG(0,("Unknown message type %d!\n",type));
 		smb_dump("Unknown", 1, (char *)req->inbuf, size);
 		reply_unknown_new(req, type);
@@ -1472,7 +1476,7 @@ static connection_struct *switch_message(uint8 type, struct smb_request *req, in
 		return conn;
 	}
 
-	smb_messages[type].fn_new(req);
+	smb_messages[type].fn(req);
 	return req->conn;
 }
 
@@ -1533,25 +1537,6 @@ static void process_smb(char *inbuf, size_t nread, size_t unread_bytes, bool enc
 	int msg_type = CVAL(inbuf,0);
 
 	DO_PROFILE_INC(smb_count);
-
-	if (trans_num == 0) {
-		char addr[INET6_ADDRSTRLEN];
-
-		/* on the first packet, check the global hosts allow/ hosts
-		deny parameters before doing any parsing of the packet
-		passed to us by the client.  This prevents attacks on our
-		parsing code from hosts not in the hosts allow list */
-
-		if (!check_access(smbd_server_fd(), lp_hostsallow(-1),
-				  lp_hostsdeny(-1))) {
-			/* send a negative session response "not listening on calling name" */
-			static unsigned char buf[5] = {0x83, 0, 0, 1, 0x81};
-			DEBUG( 1, ( "Connection denied from %s\n",
-				client_addr(get_client_fd(),addr,sizeof(addr)) ) );
-			(void)srv_send_smb(smbd_server_fd(),(char *)buf,false);
-			exit_server_cleanly("connection denied");
-		}
-	}
 
 	DEBUG( 6, ( "got message type 0x%x of len 0x%x\n", msg_type,
 		    smb_len(inbuf) ) );
@@ -1892,6 +1877,28 @@ void smbd_process(void)
 {
 	unsigned int num_smbs = 0;
 	size_t unread_bytes = 0;
+
+	char addr[INET6_ADDRSTRLEN];
+
+	/*
+	 * Before the first packet, check the global hosts allow/ hosts deny
+	 * parameters before doing any parsing of packets passed to us by the
+	 * client. This prevents attacks on our parsing code from hosts not in
+	 * the hosts allow list.
+	 */
+
+	if (!check_access(smbd_server_fd(), lp_hostsallow(-1),
+			  lp_hostsdeny(-1))) {
+		/*
+		 * send a negative session response "not listening on calling
+		 * name"
+		 */
+		unsigned char buf[5] = {0x83, 0, 0, 1, 0x81};
+		DEBUG( 1, ("Connection denied from %s\n",
+			   client_addr(get_client_fd(),addr,sizeof(addr)) ) );
+		(void)srv_send_smb(smbd_server_fd(),(char *)buf,false);
+		exit_server_cleanly("connection denied");
+	}
 
 	max_recv = MIN(lp_maxxmit(),BUFFER_SIZE);
 

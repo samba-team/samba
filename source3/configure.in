@@ -657,6 +657,8 @@ AC_SUBST(LIBREPLACE_OBJS)
 
 # add -ldl to the global LIBS
 LIBS="${LIBS} ${LIBDL} ${LIBREPLACE_NETWORK_LIBS}"
+AUTH_LIBS="${AUTH_LIBS} ${CRYPT_LIBS}"
+
 
 AC_CHECK_HEADERS(aio.h sys/fcntl.h sys/select.h fcntl.h sys/time.h sys/unistd.h rpc/nettype.h)
 AC_CHECK_HEADERS(unistd.h utime.h grp.h sys/id.h memory.h alloca.h)
@@ -4317,12 +4319,6 @@ AC_ARG_WITH(pam_smbpass,
   AC_MSG_RESULT(no)
 )
 
-
-###############################################
-# test for where we get crypt() from
-AC_SEARCH_LIBS(crypt, [crypt],
-  [test "$ac_cv_search_crypt" = "none required" || AUTH_LIBS="-lcrypt $AUTH_LIBS"
-  AC_DEFINE(HAVE_CRYPT,1,[Whether the system has the crypt() function])])
 
 ##
 ## moved after the check for -lcrypt in order to

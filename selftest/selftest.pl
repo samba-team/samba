@@ -283,12 +283,12 @@ sub ShowHelp()
 	print "Samba test runner
 Copyright (C) Jelmer Vernooij <jelmer\@samba.org>
 
-Usage: $Script [OPTIONS] PREFIX
+Usage: $Script [OPTIONS] TESTNAME-REGEX
 
 Generic options:
  --help                     this help page
  --target=samba[34]|win|kvm Samba version to target
- --testlist=FILE			file to read available tests from
+ --testlist=FILE	    file to read available tests from
 
 Paths:
  --prefix=DIR               prefix to run tests in [st]
@@ -296,14 +296,14 @@ Paths:
  --builddir=DIR             output directory [.]
 
 Target Specific:
- --socket-wrapper-pcap		save traffic to pcap directories
+ --socket-wrapper-pcap	    save traffic to pcap directories
  --socket-wrapper-keep-pcap keep all pcap files, not just those for tests that 
                             failed
  --socket-wrapper           enable socket wrapper
  --expected-failures=FILE   specify list of tests that is guaranteed to fail
 
 Samba4 Specific:
- --ldap=openldap|fedora-ds     back samba onto specified ldap server
+ --ldap=openldap|fedora-ds  back samba onto specified ldap server
 
 Samba3 Specific:
  --bindir=PATH              path to binaries
@@ -533,6 +533,7 @@ my $interfaces = join(',', ("127.0.0.6/8",
 			    "127.0.0.11/8"));
 
 my $conffile = "$prefix_abs/client/client.conf";
+$ENV{SMB_CONF_PATH} = $conffile;
 
 sub write_clientconf($$)
 {
@@ -588,24 +589,9 @@ sub write_clientconf($$)
 	close(CF);
 }
 
-my @torture_options = ();
-push (@torture_options, "--configfile=$conffile");
-# ensure any one smbtorture call doesn't run too long
-push (@torture_options, "--maximum-runtime=$torture_maxtime");
-push (@torture_options, "--target=$opt_target");
-push (@torture_options, "--basedir=$prefix_abs");
-push (@torture_options, "--option=torture:progress=no") unless ($opt_verbose);
-push (@torture_options, "--format=subunit");
-push (@torture_options, "--option=torture:quick=yes") if ($opt_quick);
-
-$ENV{TORTURE_OPTIONS} = join(' ', @torture_options);
-print "OPTIONS $ENV{TORTURE_OPTIONS}\n";
-
 my @todo = ();
 
 my $testsdir = "$srcdir/selftest";
-$ENV{SMB_CONF_PATH} = "$conffile";
-$ENV{CONFIGURATION} = "--configfile=$conffile";
 
 my %required_envs = ();
 
@@ -639,6 +625,26 @@ sub read_testlist($)
 if ($#testlists == -1) {
 	die("No testlists specified");
 }
+
+$ENV{SELFTEST_PREFIX} = "$prefix_abs";
+if ($opt_socket_wrapper) {
+	$ENV{SELFTEST_INTERFACES} = $interfaces;
+} else {
+	$ENV{SELFTEST_INTERFACES} = "";
+}
+if ($opt_verbose) {
+	$ENV{SELFTEST_VERBOSE} = "1";
+} else {
+	$ENV{SELFTEST_VERBOSE} = "";
+}
+if ($opt_quick) {
+	$ENV{SELFTEST_QUICK} = "1";
+} else {
+	$ENV{SELFTEST_QUICK} = "";
+}
+$ENV{SELFTEST_TARGET} = $opt_target;
+$ENV{SELFTEST_MAXTIME} = $torture_maxtime;
+$ENV{SELFTEST_CONFFILE} = $conffile;
 
 my @available = ();
 foreach my $fn (@testlists) {

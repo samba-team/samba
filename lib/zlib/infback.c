@@ -309,7 +309,7 @@ void FAR *out_desc;
                 break;
             case 3:
                 strm->msg = "invalid block type";
-                state->mode = BAD;
+                state->mode = BAD_DATA;
             }
             DROPBITS(2);
             break;
@@ -320,7 +320,7 @@ void FAR *out_desc;
             NEEDBITS(32);
             if ((hold & 0xffff) != ((hold >> 16) ^ 0xffff)) {
                 strm->msg = "invalid stored block lengths";
-                state->mode = BAD;
+                state->mode = BAD_DATA;
                 break;
             }
             state->length = (unsigned)hold & 0xffff;
@@ -358,7 +358,7 @@ void FAR *out_desc;
 #ifndef PKZIP_BUG_WORKAROUND
             if (state->nlen > 286 || state->ndist > 30) {
                 strm->msg = "too many length or distance symbols";
-                state->mode = BAD;
+                state->mode = BAD_DATA;
                 break;
             }
 #endif
@@ -380,7 +380,7 @@ void FAR *out_desc;
                                 &(state->lenbits), state->work);
             if (ret) {
                 strm->msg = "invalid code lengths set";
-                state->mode = BAD;
+                state->mode = BAD_DATA;
                 break;
             }
             Tracev((stderr, "inflate:       code lengths ok\n"));
@@ -404,7 +404,7 @@ void FAR *out_desc;
                         DROPBITS(this.bits);
                         if (state->have == 0) {
                             strm->msg = "invalid bit length repeat";
-                            state->mode = BAD;
+                            state->mode = BAD_DATA;
                             break;
                         }
                         len = (unsigned)(state->lens[state->have - 1]);
@@ -427,7 +427,7 @@ void FAR *out_desc;
                     }
                     if (state->have + copy > state->nlen + state->ndist) {
                         strm->msg = "invalid bit length repeat";
-                        state->mode = BAD;
+                        state->mode = BAD_DATA;
                         break;
                     }
                     while (copy--)
@@ -436,7 +436,7 @@ void FAR *out_desc;
             }
 
             /* handle error breaks in while */
-            if (state->mode == BAD) break;
+            if (state->mode == BAD_DATA) break;
 
             /* build code tables */
             state->next = state->codes;
@@ -446,7 +446,7 @@ void FAR *out_desc;
                                 &(state->lenbits), state->work);
             if (ret) {
                 strm->msg = "invalid literal/lengths set";
-                state->mode = BAD;
+                state->mode = BAD_DATA;
                 break;
             }
             state->distcode = (code const FAR *)(state->next);
@@ -455,7 +455,7 @@ void FAR *out_desc;
                             &(state->next), &(state->distbits), state->work);
             if (ret) {
                 strm->msg = "invalid distances set";
-                state->mode = BAD;
+                state->mode = BAD_DATA;
                 break;
             }
             Tracev((stderr, "inflate:       codes ok\n"));
@@ -513,7 +513,7 @@ void FAR *out_desc;
             /* invalid code */
             if (this.op & 64) {
                 strm->msg = "invalid literal/length code";
-                state->mode = BAD;
+                state->mode = BAD_DATA;
                 break;
             }
 
@@ -545,7 +545,7 @@ void FAR *out_desc;
             DROPBITS(this.bits);
             if (this.op & 64) {
                 strm->msg = "invalid distance code";
-                state->mode = BAD;
+                state->mode = BAD_DATA;
                 break;
             }
             state->offset = (unsigned)this.val;
@@ -560,7 +560,7 @@ void FAR *out_desc;
             if (state->offset > state->wsize - (state->whave < state->wsize ?
                                                 left : 0)) {
                 strm->msg = "invalid distance too far back";
-                state->mode = BAD;
+                state->mode = BAD_DATA;
                 break;
             }
             Tracevv((stderr, "inflate:         distance %u\n", state->offset));
@@ -595,7 +595,7 @@ void FAR *out_desc;
             }
             goto inf_leave;
 
-        case BAD:
+        case BAD_DATA:
             ret = Z_DATA_ERROR;
             goto inf_leave;
 

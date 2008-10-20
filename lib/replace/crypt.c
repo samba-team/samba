@@ -16,7 +16,7 @@
 
 */
 
-#include "includes.h"
+#include "replace.h"
 
 #ifndef HAVE_CRYPT
 

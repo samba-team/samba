@@ -188,7 +188,7 @@ sub summary($)
 	}
 	close(SUMMARY);
 
-	print "\nA summary with detailed informations can be found in:\n  $self->{summaryfile}\n";
+	print "\nA summary with detailed information can be found in:\n  $self->{summaryfile}\n";
 
 	if ($#{$self->{suitesfailed}} == -1) {
 		my $ok = $self->{statistics}->{TESTS_EXPECTED_OK} + 

@@ -4,11 +4,11 @@
 
 # The output of this script is parsed by selftest.pl, which then decides 
 # which of the tests to actually run. It will, for example, skip all tests 
-# listed in samba4-skip or only run a subset during "make quicktest".
+# listed in selftest/skip or only run a subset during "make quicktest".
 
 # The idea is that this script outputs all of the tests of Samba 4, not 
 # just those that are known to pass, and list those that should be skipped 
-# or are known to file in samba4-skip/samba4-knownfail. This makes it 
+# or are known to fail in selftest/skip or selftest/knownfail. This makes it 
 # very easy to see what functionality is still missing in Samba 4 and makes 
 # it possible to run the testsuite against other servers, such as Samba 3 or 
 # Windows that have a different set of features.
@@ -58,7 +58,32 @@ bin/smbtorture -V
 
 samba4srcdir=.
 samba4bindir=$samba4srcdir/bin
+
+prefix_abs="$SELFTEST_PREFIX/s4client"
+
+mkdir "$prefix_abs"
+conffile="$SELFTEST_CONFFILE"
+
+TORTURE_OPTIONS=""
+TORTURE_OPTIONS="$TORTURE_OPTIONS --configfile=$conffile"
+TORTURE_OPTIONS="$TORTURE_OPTIONS --maximum-runtime=$SELFTEST_MAXTIME"
+TORTURE_OPTIONS="$TORTURE_OPTIONS --target=$SELFTEST_TARGET"
+TORTURE_OPTIONS="$TORTURE_OPTIONS --basedir=$prefix_abs"
+if [ -n "$SELFTEST_VERBOSE" ]; then
+	TORTURE_OPTIONS="$TORTURE_OPTIONS --option=torture:progress=no"
+fi
+TORTURE_OPTIONS="$TORTURE_OPTIONS --format=subunit"
+if [ -n "$SELFTEST_QUICK" ]; then
+	TORTURE_OPTIONS="$TORTURE_OPTIONS --option=torture:quick=yes"
+fi
 smb4torture="$samba4bindir/smbtorture $TORTURE_OPTIONS"
+
+echo "OPTIONS $TORTURE_OPTIONS"
+
+SMB_CONF_PATH="$conffile"
+export SMB_CONF_PATH
+CONFIGURATION="--configfile=$conffile"
+export CONFIGURATION
 
 # Simple tests for LDAP and CLDAP
 

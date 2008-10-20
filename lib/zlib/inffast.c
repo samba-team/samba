@@ -49,7 +49,7 @@
 
         LEN -- ran out of enough output space or enough available input
         TYPE -- reached end of block code, inflate() to interpret next block
-        BAD -- error in block data
+        BAD_DATA -- error in block data
 
    Notes:
 
@@ -176,7 +176,7 @@ unsigned start;         /* inflate()'s starting value for strm->avail_out */
 #ifdef INFLATE_STRICT
                 if (dist > dmax) {
                     strm->msg = (char *)"invalid distance too far back";
-                    state->mode = BAD;
+                    state->mode = BAD_DATA;
                     break;
                 }
 #endif
@@ -188,7 +188,7 @@ unsigned start;         /* inflate()'s starting value for strm->avail_out */
                     op = dist - op;             /* distance back in window */
                     if (op > whave) {
                         strm->msg = "invalid distance too far back";
-                        state->mode = BAD;
+                        state->mode = BAD_DATA;
                         break;
                     }
                     from = window - OFF;
@@ -264,7 +264,7 @@ unsigned start;         /* inflate()'s starting value for strm->avail_out */
             }
             else {
                 strm->msg = "invalid distance code";
-                state->mode = BAD;
+                state->mode = BAD_DATA;
                 break;
             }
         }
@@ -279,7 +279,7 @@ unsigned start;         /* inflate()'s starting value for strm->avail_out */
         }
         else {
             strm->msg = "invalid literal/length code";
-            state->mode = BAD;
+            state->mode = BAD_DATA;
             break;
         }
     } while (in < last && out < end);

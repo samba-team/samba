@@ -609,19 +609,19 @@ int flush;
 #endif
                 ((BITS(8) << 8) + (hold >> 8)) % 31) {
                 strm->msg = "incorrect header check";
-                state->mode = BAD;
+                state->mode = BAD_DATA;
                 break;
             }
             if (BITS(4) != Z_DEFLATED) {
                 strm->msg = "unknown compression method";
-                state->mode = BAD;
+                state->mode = BAD_DATA;
                 break;
             }
             DROPBITS(4);
             len = BITS(4) + 8;
             if (len > state->wbits) {
                 strm->msg = "invalid window size";
-                state->mode = BAD;
+                state->mode = BAD_DATA;
                 break;
             }
             state->dmax = 1U << len;
@@ -636,12 +636,12 @@ int flush;
             state->flags = (int)(hold);
             if ((state->flags & 0xff) != Z_DEFLATED) {
                 strm->msg = "unknown compression method";
-                state->mode = BAD;
+                state->mode = BAD_DATA;
                 break;
             }
             if (state->flags & 0xe000) {
                 strm->msg = "unknown header flags set";
-                state->mode = BAD;
+                state->mode = BAD_DATA;
                 break;
             }
             if (state->head != Z_NULL)
@@ -745,7 +745,7 @@ int flush;
                 NEEDBITS(16);
                 if (hold != (state->check & 0xffff)) {
                     strm->msg = "header crc mismatch";
-                    state->mode = BAD;
+                    state->mode = BAD_DATA;
                     break;
                 }
                 INITBITS();
@@ -800,7 +800,7 @@ int flush;
                 break;
             case 3:
                 strm->msg = "invalid block type";
-                state->mode = BAD;
+                state->mode = BAD_DATA;
             }
             DROPBITS(2);
             break;
@@ -809,7 +809,7 @@ int flush;
             NEEDBITS(32);
             if ((hold & 0xffff) != ((hold >> 16) ^ 0xffff)) {
                 strm->msg = "invalid stored block lengths";
-                state->mode = BAD;
+                state->mode = BAD_DATA;
                 break;
             }
             state->length = (unsigned)hold & 0xffff;
@@ -845,7 +845,7 @@ int flush;
 #ifndef PKZIP_BUG_WORKAROUND
             if (state->nlen > 286 || state->ndist > 30) {
                 strm->msg = "too many length or distance symbols";
-                state->mode = BAD;
+                state->mode = BAD_DATA;
                 break;
             }
 #endif
@@ -867,7 +867,7 @@ int flush;
                                 &(state->lenbits), state->work);
             if (ret) {
                 strm->msg = "invalid code lengths set";
-                state->mode = BAD;
+                state->mode = BAD_DATA;
                 break;
             }
             Tracev((stderr, "inflate:       code lengths ok\n"));
@@ -891,7 +891,7 @@ int flush;
                         DROPBITS(this.bits);
                         if (state->have == 0) {
                             strm->msg = "invalid bit length repeat";
-                            state->mode = BAD;
+                            state->mode = BAD_DATA;
                             break;
                         }
                         len = state->lens[state->have - 1];
@@ -914,7 +914,7 @@ int flush;
                     }
                     if (state->have + copy > state->nlen + state->ndist) {
                         strm->msg = "invalid bit length repeat";
-                        state->mode = BAD;
+                        state->mode = BAD_DATA;
                         break;
                     }
                     while (copy--)
@@ -923,7 +923,7 @@ int flush;
             }
 
             /* handle error breaks in while */
-            if (state->mode == BAD) break;
+            if (state->mode == BAD_DATA) break;
 
             /* build code tables */
             state->next = state->codes;
@@ -933,7 +933,7 @@ int flush;
                                 &(state->lenbits), state->work);
             if (ret) {
                 strm->msg = "invalid literal/lengths set";
-                state->mode = BAD;
+                state->mode = BAD_DATA;
                 break;
             }
             state->distcode = (code const FAR *)(state->next);
@@ -942,7 +942,7 @@ int flush;
                             &(state->next), &(state->distbits), state->work);
             if (ret) {
                 strm->msg = "invalid distances set";
-                state->mode = BAD;
+                state->mode = BAD_DATA;
                 break;
             }
             Tracev((stderr, "inflate:       codes ok\n"));
@@ -985,7 +985,7 @@ int flush;
             }
             if (this.op & 64) {
                 strm->msg = "invalid literal/length code";
-                state->mode = BAD;
+                state->mode = BAD_DATA;
                 break;
             }
             state->extra = (unsigned)(this.op) & 15;
@@ -1017,7 +1017,7 @@ int flush;
             DROPBITS(this.bits);
             if (this.op & 64) {
                 strm->msg = "invalid distance code";
-                state->mode = BAD;
+                state->mode = BAD_DATA;
                 break;
             }
             state->offset = (unsigned)this.val;
@@ -1032,13 +1032,13 @@ int flush;
 #ifdef INFLATE_STRICT
             if (state->offset > state->dmax) {
                 strm->msg = "invalid distance too far back";
-                state->mode = BAD;
+                state->mode = BAD_DATA;
                 break;
             }
 #endif
             if (state->offset > state->whave + out - left) {
                 strm->msg = "invalid distance too far back";
-                state->mode = BAD;
+                state->mode = BAD_DATA;
                 break;
             }
             Tracevv((stderr, "inflate:         distance %u\n", state->offset));
@@ -1090,7 +1090,7 @@ int flush;
 #endif
                      REVERSE(hold)) != state->check) {
                     strm->msg = "incorrect data check";
-                    state->mode = BAD;
+                    state->mode = BAD_DATA;
                     break;
                 }
                 INITBITS();
@@ -1103,7 +1103,7 @@ int flush;
                 NEEDBITS(32);
                 if (hold != (state->total & 0xffffffffUL)) {
                     strm->msg = "incorrect length check";
-                    state->mode = BAD;
+                    state->mode = BAD_DATA;
                     break;
                 }
                 INITBITS();
@@ -1114,7 +1114,7 @@ int flush;
         case DONE:
             ret = Z_STREAM_END;
             goto inf_leave;
-        case BAD:
+        case BAD_DATA:
             ret = Z_DATA_ERROR;
             goto inf_leave;
         case MEM:

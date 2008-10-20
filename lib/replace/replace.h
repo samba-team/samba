@@ -628,4 +628,13 @@ typedef int bool;
 #define MAX_DNS_NAME_LENGTH 256 /* Actually 255 but +1 for terminating null. */
 #endif
 
+#ifndef HAVE_CRYPT
+char *ufc_crypt(const char *key, const char *salt);
+#define crypt ufc_crypt
+#else
+#ifdef HAVE_CRYPT_H
+#include <crypt.h>
+#endif
+#endif
+
 #endif /* _LIBREPLACE_REPLACE_H */
