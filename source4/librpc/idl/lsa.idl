@@ -356,11 +356,11 @@ import "misc.idl", "security.idl";
 		[size_is(count)] lsa_DomainInfo *domains;
 	} lsa_DomainList;
 
-	NTSTATUS lsa_EnumTrustDom (
+	NTSTATUS lsa_EnumTrustDom(
 		[in]               policy_handle *handle,
-		[in,out]           uint32 *resume_handle,
-		[in]               uint32 max_size,
-		[out]              lsa_DomainList *domains
+		[in,out,ref]       uint32 *resume_handle,
+		[out,ref]          lsa_DomainList *domains,
+		[in]               uint32 max_size
 		);
 
 
