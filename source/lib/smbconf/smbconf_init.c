@@ -20,9 +20,6 @@
 #include "includes.h"
 #include "smbconf_private.h"
 
-#define INCLUDES_VALNAME "includes"
-
-
 /**
  * smbconf initialization dispatcher
  *
