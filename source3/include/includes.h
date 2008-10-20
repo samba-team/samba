@@ -813,10 +813,6 @@ enum flush_reason_enum {
 #define SYNC_DNS 1
 #endif
 
-#ifndef HAVE_CRYPT
-#define crypt ufc_crypt
-#endif
-
 #if defined(HAVE_CRYPT16) && defined(HAVE_GETAUTHUID)
 #define ULTRIX_AUTH 1
 #endif
