@@ -8,6 +8,7 @@
 #ifndef _HEADER_krb5pac
 #define _HEADER_krb5pac
 
+#define NETLOGON_GENERIC_KRB5_PAC_VALIDATE	( 3 )
 struct PAC_LOGON_NAME {
 	NTTIME logon_time;
 	uint16_t size;/* [value(2*strlen_m(account_name))] */
@@ -39,10 +40,6 @@ struct PAC_UNKNOWN_12 {
 };
 
 struct PAC_LOGON_INFO_CTR {
-	uint32_t unknown1;/* [value(0x00081001)] */
-	uint32_t unknown2;/* [value(0xCCCCCCCC)] */
-	uint32_t _ndr_size;/* [value(NDR_ROUND(ndr_size_PAC_LOGON_INFO(info,ndr->flags)+4,8))] */
-	uint32_t unknown3;/* [value(0x00000000)] */
 	struct PAC_LOGON_INFO *info;/* [unique] */
 }/* [public] */;
 
@@ -72,7 +69,7 @@ struct DATA_BLOB_REM {
 };
 
 union PAC_INFO {
-	struct PAC_LOGON_INFO_CTR logon_info;/* [case(PAC_TYPE_LOGON_INFO)] */
+	struct PAC_LOGON_INFO_CTR logon_info;/* [subcontext(0xFFFFFC01),case(PAC_TYPE_LOGON_INFO)] */
 	struct PAC_SIGNATURE_DATA srv_cksum;/* [case(PAC_TYPE_SRV_CHECKSUM)] */
 	struct PAC_SIGNATURE_DATA kdc_cksum;/* [case(PAC_TYPE_KDC_CHECKSUM)] */
 	struct PAC_LOGON_NAME logon_name;/* [case(PAC_TYPE_LOGON_NAME)] */
@@ -105,6 +102,14 @@ struct PAC_DATA_RAW {
 	struct PAC_BUFFER_RAW *buffers;
 }/* [public] */;
 
+struct PAC_Validate {
+	uint32_t MessageType;/* [value(NETLOGON_GENERIC_KRB5_PAC_VALIDATE)] */
+	uint32_t ChecksumLength;
+	int32_t SignatureType;
+	uint32_t SignatureLength;
+	DATA_BLOB ChecksumAndSignature;/* [flag(LIBNDR_FLAG_REMAINING)] */
+}/* [public] */;
+
 struct netsamlogoncache_entry {
 	time_t timestamp;
 	struct netr_SamInfo3 info3;
@@ -130,6 +135,14 @@ struct decode_pac_raw {
 struct decode_login_info {
 	struct {
 		struct PAC_LOGON_INFO logon_info;
+	} in;
+
+};
+
+
+struct decode_pac_validate {
+	struct {
+		struct PAC_Validate pac_validate;
 	} in;
 
 };
