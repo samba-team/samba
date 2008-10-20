@@ -327,13 +327,12 @@ import "misc.idl", "security.idl";
 		[size_is(num_sids)] lsa_SidPtr *sids;
 	} lsa_SidArray;
 
-	[public] NTSTATUS lsa_EnumAccounts (
+	[public] NTSTATUS lsa_EnumAccounts(
 		[in]         policy_handle *handle,
-		[in,out]     uint32 *resume_handle,
-		[in,range(0,8192)] uint32 num_entries,
-		[out]        lsa_SidArray *sids
+		[in,out,ref] uint32 *resume_handle,
+		[out,ref]    lsa_SidArray *sids,
+		[in,range(0,8192)] uint32 num_entries
 		);
-
 
 	/*************************************************/
 	/* Function: 0x0c                                */
