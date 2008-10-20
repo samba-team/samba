@@ -204,10 +204,12 @@ static struct sec_desc_buf *samsync_query_lsa_sec_desc(TALLOC_CTX *mem_ctx,
 						       struct policy_handle *handle) 
 {
 	struct lsa_QuerySecurity r;
+	struct sec_desc_buf *sdbuf = NULL;
 	NTSTATUS status;
 
 	r.in.handle = handle;
 	r.in.sec_info = 0x7;
+	r.out.sdbuf = &sdbuf;
 
 	status = dcerpc_lsa_QuerySecurity(samsync_state->p_lsa, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -215,7 +217,7 @@ static struct sec_desc_buf *samsync_query_lsa_sec_desc(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	return r.out.sdbuf;
+	return sdbuf;
 }
 
 #define TEST_UINT64_EQUAL(i1, i2) do {\

@@ -1462,6 +1462,7 @@ static bool test_QuerySecurity(struct dcerpc_pipe *p,
 {
 	NTSTATUS status;
 	struct lsa_QuerySecurity r;
+	struct sec_desc_buf *sdbuf = NULL;
 
 	if (torture_setting_bool(tctx, "samba4", false)) {
 		printf("\nskipping QuerySecurity test against Samba4\n");
@@ -1472,6 +1473,7 @@ static bool test_QuerySecurity(struct dcerpc_pipe *p,
 
 	r.in.handle = acct_handle;
 	r.in.sec_info = 7;
+	r.out.sdbuf = &sdbuf;
 
 	status = dcerpc_lsa_QuerySecurity(p, tctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {

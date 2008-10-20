@@ -91,13 +91,11 @@ import "misc.idl", "security.idl";
 
 	/******************/
 	/* Function: 0x03 */
-
 	NTSTATUS lsa_QuerySecurity (
-		[in]     policy_handle *handle,
-		[in]         security_secinfo sec_info,
-		[out,unique]        sec_desc_buf *sdbuf
+		[in]		policy_handle *handle,
+		[in]		security_secinfo sec_info,
+		[out,ref]	sec_desc_buf **sdbuf
 		);
-
 
 	/******************/
 	/* Function: 0x04 */

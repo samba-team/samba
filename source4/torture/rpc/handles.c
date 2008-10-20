@@ -109,6 +109,7 @@ static bool test_handles_lsa_shared(struct torture_context *torture)
 	struct lsa_OpenPolicy r;
 	struct lsa_Close c;
 	struct lsa_QuerySecurity qsec;
+	struct sec_desc_buf *sdbuf = NULL;
 	uint16_t system_name = '\\';
 	TALLOC_CTX *mem_ctx = talloc_new(torture);
 	enum dcerpc_transport_t transport;
@@ -167,6 +168,7 @@ static bool test_handles_lsa_shared(struct torture_context *torture)
 
 	qsec.in.handle 		= &handle;
 	qsec.in.sec_info	= 0;
+	qsec.out.sdbuf		= &sdbuf;
 	c.in.handle = &handle;
 	c.out.handle = &handle2;
 
