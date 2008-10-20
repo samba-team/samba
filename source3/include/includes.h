@@ -1075,7 +1075,6 @@ ssize_t readahead(int fd, off64_t offset, size_t count);
 #endif
 
 #define CONST_DISCARD(type, ptr)      ((type) ((void *) (ptr)))
-#define CONST_ADD(type, ptr)          ((type) ((const void *) (ptr)))
 
 void smb_panic( const char *why ) _NORETURN_;
 void dump_core(void) _NORETURN_;
