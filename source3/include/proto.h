@@ -2412,6 +2412,16 @@ ADS_STATUS gp_get_machine_token(ADS_STRUCT *ads,
 
 #include "librpc/ndr/libndr.h"
 
+/* The following definitions come from librpc/ndr/util.c  */
+
+NTSTATUS ndr_map_error2ntstatus(enum ndr_err_code ndr_err);
+enum ndr_err_code ndr_push_server_id(struct ndr_push *ndr, int ndr_flags, const struct server_id *r);
+enum ndr_err_code ndr_pull_server_id(struct ndr_pull *ndr, int ndr_flags, struct server_id *r);
+void ndr_print_server_id(struct ndr_print *ndr, const char *name, const struct server_id *r);
+_PUBLIC_ void ndr_print_bool(struct ndr_print *ndr, const char *name, const bool b);
+_PUBLIC_ void ndr_print_sockaddr_storage(struct ndr_print *ndr, const char *name, const struct sockaddr_storage *ss);
+const char *ndr_errstr(enum ndr_err_code err);
+
 /* The following definitions come from librpc/ndr/ndr_sec_helper.c  */
 
 size_t ndr_size_dom_sid(const struct dom_sid *sid, int flags);
@@ -2742,7 +2752,6 @@ NTSTATUS cli_raw_ntlm_smb_encryption_start(struct cli_state *cli,
 				const char *user,
 				const char *pass,
 				const char *domain);
-NTSTATUS cli_gss_smb_encryption_start(struct cli_state *cli);
 NTSTATUS cli_gss_smb_encryption_start(struct cli_state *cli);
 NTSTATUS cli_force_encryption(struct cli_state *c,
 			const char *username,
