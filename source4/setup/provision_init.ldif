@@ -34,6 +34,7 @@ dn: @OPTIONS
 checkBaseOnSearch: TRUE
 
 dn: @KLUDGEACL
+passwordAttribute: clearTextPassword
 passwordAttribute: userPassword
 passwordAttribute: ntPwdHash
 passwordAttribute: sambaNTPwdHistory
