@@ -27,6 +27,7 @@
 #include "lib/socket/socket.h"
 #include "libcli/resolve/resolve.h"
 #include "param/param.h"
+#include "libcli/raw/raw_proto.h"
 
 struct sock_connect_state {
 	struct composite_context *ctx;

@@ -319,7 +319,7 @@ static const struct gensec_security_ops gensec_sasl_security_ops = {
 	.priority         = GENSEC_SASL
 };
 
-int gensec_sasl_log(void *context, 
+static int gensec_sasl_log(void *context, 
 		    int sasl_log_level,
 		    const char *message) 
 {

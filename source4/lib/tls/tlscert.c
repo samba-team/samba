@@ -31,6 +31,10 @@
 #define LIFETIME          700*24*60*60
 #define DH_BITS 		  1024
 
+void tls_cert_generate(TALLOC_CTX *mem_ctx, 
+		       const char *keyfile, const char *certfile,
+		       const char *cafile);
+
 /* 
    auto-generate a set of self signed certificates
 */

@@ -65,7 +65,7 @@ import "security.idl", "svcctl.idl";
 	/******************/
 	/* Function: 0x01 */
 	WERROR srvsvc_NetCharDevGetInfo(
-		[in,unique]   [string,charset(UTF16)] uint16 *server_unc,
+		[in,unique] [string,charset(UTF16)] uint16 *server_unc,
 		[in]   [string,charset(UTF16)] uint16 device_name[],
 		[in]   uint32 level,
 		[out,switch_is(level)]   srvsvc_NetCharDevInfo info
@@ -74,7 +74,7 @@ import "security.idl", "svcctl.idl";
 	/******************/
 	/* Function: 0x02 */
 	WERROR srvsvc_NetCharDevControl(
-		[in,unique]   [string,charset(UTF16)] uint16 *server_unc,
+		[in,unique] [string,charset(UTF16)] uint16 *server_unc,
 		[in]   [string,charset(UTF16)] uint16 device_name[],
 		[in]   uint32 opcode
 		);
@@ -131,7 +131,7 @@ import "security.idl", "svcctl.idl";
 	/******************/
 	/* Function: 0x04 */
 	WERROR srvsvc_NetCharDevQGetInfo(
-		[in,unique]   [string,charset(UTF16)] uint16 *server_unc,
+		[in,unique] [string,charset(UTF16)] uint16 *server_unc,
 		[in]   [string,charset(UTF16)] uint16 queue_name[],
 		[in]   [string,charset(UTF16)] uint16 user[],
 		[in]   uint32 level,
@@ -151,14 +151,14 @@ import "security.idl", "svcctl.idl";
 	/******************/
 	/* Function: 0x06 */
 	WERROR srvsvc_NetCharDevQPurge(
-		[in,unique]   [string,charset(UTF16)] uint16 *server_unc,
+		[in,unique] [string,charset(UTF16)] uint16 *server_unc,
 		[in]   [string,charset(UTF16)] uint16 queue_name[]
 		);
 
 	/******************/
 	/* Function: 0x07 */
 	WERROR srvsvc_NetCharDevQPurgeSelf(
-		[in,unique]   [string,charset(UTF16)] uint16 *server_unc,
+		[in,unique] [string,charset(UTF16)] uint16 *server_unc,
 		[in]   [string,charset(UTF16)] uint16 queue_name[],
 		[in]   [string,charset(UTF16)] uint16 computer_name[]
 		);

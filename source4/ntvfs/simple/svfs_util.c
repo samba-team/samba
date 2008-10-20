@@ -28,6 +28,7 @@
 #include "system/time.h"
 #include "system/dir.h"
 #include "ntvfs/ntvfs.h"
+#include "ntvfs/simple/proto.h"
 
 /*
   convert a windows path to a unix path - don't do any manging or case sensitive handling

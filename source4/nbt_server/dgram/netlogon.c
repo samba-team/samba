@@ -31,6 +31,7 @@
 #include "smbd/service_task.h"
 #include "cldap_server/cldap_server.h"
 #include "libcli/security/security.h"
+#include "nbt_server/dgram/proto.h"
 
 /*
   reply to a GETDC request

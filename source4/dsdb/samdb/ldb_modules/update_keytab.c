@@ -54,8 +54,8 @@ struct update_kt_ctx {
 	bool found;
 };
 
-struct update_kt_ctx *update_kt_ctx_init(struct ldb_module *module,
-					 struct ldb_request *req)
+static struct update_kt_ctx *update_kt_ctx_init(struct ldb_module *module,
+						struct ldb_request *req)
 {
 	struct update_kt_ctx *ac;
 

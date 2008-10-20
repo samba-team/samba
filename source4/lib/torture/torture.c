@@ -235,19 +235,6 @@ void torture_ui_test_start(struct torture_context *context,
 		context->ui_ops->test_start(context, tcase, test);
 }
 
-int str_list_match(const char *name, char **list)
-{
-	int i, ret = 0;
-	if (list == NULL)
-		return 0;
-
-	for (i = 0; list[i]; i++) {
-		if (gen_fnmatch(list[i], name) == 0)
-			ret++;
-	}
-	return ret;
-}
-
 void torture_ui_test_result(struct torture_context *context, 
 			    enum torture_result result,
 			    const char *comment)

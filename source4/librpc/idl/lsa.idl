@@ -288,7 +288,7 @@ import "misc.idl", "security.idl";
 		[case(LSA_POLICY_INFO_L_ACCOUNT_DOMAIN)] lsa_DomainInfo         l_account_domain;
 	} lsa_PolicyInformation;
 
-	NTSTATUS lsa_QueryInfoPolicy (
+	NTSTATUS lsa_QueryInfoPolicy(
 		[in]                            policy_handle *handle,
 		[in]                            lsa_PolicyInfo level,
 		[out,unique,switch_is(level)]   lsa_PolicyInformation *info
@@ -718,14 +718,14 @@ import "misc.idl", "security.idl";
 	/* Function:       0x1a */
 	NTSTATUS lsa_QueryTrustedDomainInfo(
 		[in]     policy_handle                   *trustdom_handle,
-		[in]     lsa_TrustDomInfoEnum             level, 
+		[in]     lsa_TrustDomInfoEnum             level,
 		[out,switch_is(level),unique] lsa_TrustedDomainInfo *info
 		);
 
 	/* Function:     0x1b */
 	NTSTATUS lsa_SetInformationTrustedDomain(
 		[in]                  policy_handle         *trustdom_handle,
-		[in]                  lsa_TrustDomInfoEnum   level, 
+		[in]                  lsa_TrustDomInfoEnum   level,
 		[in,switch_is(level)] lsa_TrustedDomainInfo *info
 		);
 
@@ -792,8 +792,6 @@ import "misc.idl", "security.idl";
 		[in,out]     policy_handle *handle
 		);
 
-
-	
 	/*******************/
 	/* Function:      0x23 */
 	NTSTATUS lsa_EnumAccountsWithUserRight (
@@ -840,7 +838,7 @@ import "misc.idl", "security.idl";
 	NTSTATUS lsa_QueryTrustedDomainInfoBySid(
 		[in]               policy_handle         *handle,
 		[in]               dom_sid2              *dom_sid,
-		[in]                   lsa_TrustDomInfoEnum  level, 
+		[in]               lsa_TrustDomInfoEnum  level,
 		[out,switch_is(level),unique] lsa_TrustedDomainInfo *info
         );
 
@@ -848,9 +846,10 @@ import "misc.idl", "security.idl";
 	NTSTATUS lsa_SetTrustedDomainInfo(
 		[in]               policy_handle         *handle,
 		[in]               dom_sid2              *dom_sid,
-		[in]                   lsa_TrustDomInfoEnum  level, 
+		[in]               lsa_TrustDomInfoEnum  level,
 		[in,switch_is(level)] lsa_TrustedDomainInfo *info
         );
+
 	/* Function:      0x29 */
 	NTSTATUS lsa_DeleteTrustedDomain(
 		[in]               policy_handle         *handle,
@@ -888,8 +887,8 @@ import "misc.idl", "security.idl";
 	/* Function:          0x2e */
 
 	NTSTATUS lsa_QueryInfoPolicy2(
-		[in]                 policy_handle *handle,
-		[in]                     lsa_PolicyInfo level,
+		[in]                         policy_handle *handle,
+		[in]                         lsa_PolicyInfo level,
 		[out,unique,switch_is(level)]   lsa_PolicyInformation *info
 		);
 
@@ -903,9 +902,9 @@ import "misc.idl", "security.idl";
 	/**********************/
 	/* Function 0x30 */
 	NTSTATUS lsa_QueryTrustedDomainInfoByName(
-		[in]                   policy_handle         *handle,
+		[in]                   policy_handle          *handle,
 		[in]                   lsa_String             trusted_domain,
-		[in]                   lsa_TrustDomInfoEnum   level, 
+		[in]                   lsa_TrustDomInfoEnum   level,
 		[out,unique,switch_is(level)] lsa_TrustedDomainInfo *info
 		);
 
@@ -914,7 +913,7 @@ import "misc.idl", "security.idl";
 	NTSTATUS lsa_SetTrustedDomainInfoByName(
 		[in]                   policy_handle         *handle,
 		[in]                   lsa_String             trusted_domain,
-		[in]                   lsa_TrustDomInfoEnum   level, 
+		[in]                   lsa_TrustDomInfoEnum   level,
 		[in,unique,switch_is(level)] lsa_TrustedDomainInfo *info
 		);
 
@@ -980,7 +979,7 @@ import "misc.idl", "security.idl";
 
 	NTSTATUS lsa_QueryDomainInformationPolicy(
 		[in]		policy_handle *handle,
-		[in] 			uint16 level,
+		[in] 		uint16 level,
 		[out,unique,switch_is(level)]	lsa_DomainInformationPolicy *info
 		);
 

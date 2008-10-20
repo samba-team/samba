@@ -46,33 +46,6 @@ extern const char *panic_action;
 #include "../lib/util/byteorder.h"
 
 /**
-  this is a warning hack. The idea is to use this everywhere that we
-  get the "discarding const" warning from gcc. That doesn't actually
-  fix the problem of course, but it means that when we do get to
-  cleaning them up we can do it by searching the code for
-  discard_const.
-
-  It also means that other error types aren't as swamped by the noise
-  of hundreds of const warnings, so we are more likely to notice when
-  we get new errors.
-
-  Please only add more uses of this macro when you find it
-  _really_ hard to fix const warnings. Our aim is to eventually use
-  this function in only a very few places.
-
-  Also, please call this via the discard_const_p() macro interface, as that
-  makes the return type safe.
-*/
-#ifndef discard_const
-#define discard_const(ptr) ((void *)((uintptr_t)(ptr)))
-#endif
-
-/** Type-safe version of discard_const */
-#ifndef discard_const_p
-#define discard_const_p(type, ptr) ((type *)discard_const(ptr))
-#endif
-
-/**
  * assert macros 
  */
 #define SMB_ASSERT(b) do { if (!(b)) { \
@@ -458,6 +431,9 @@ load a file into memory from a fd.
 **/
 _PUBLIC_ char *fd_load(int fd, size_t *size, size_t maxsize, TALLOC_CTX *mem_ctx);
 
+
+char **file_lines_parse(char *p, size_t size, int *numlines, TALLOC_CTX *mem_ctx);
+
 /**
 load a file into memory
 **/
@@ -612,6 +588,8 @@ _PUBLIC_ void *smb_xmemdup(const void *p, size_t size);
 **/
 _PUBLIC_ char *smb_xstrdup(const char *s);
 
+char *smb_xstrndup(const char *s, size_t n);
+
 /**
  Like strdup but for memory.
 **/
@@ -635,6 +613,8 @@ _PUBLIC_ bool all_zero(const uint8_t *ptr, size_t size);
   realloc an array, checking for integer overflow in the array size
 */
 _PUBLIC_ void *realloc_array(void *ptr, size_t el_size, unsigned count, bool free_on_fail);
+
+void *malloc_array(size_t el_size, unsigned int count);
 
 /* The following definitions come from lib/util/fsusage.c  */
 
@@ -741,5 +721,9 @@ bool pm_process( const char *fileName,
 _PUBLIC_ void *talloc_check_name_abort(const void *ptr, const char *name);
 #define talloc_get_type_abort(ptr, type) \
 	(type *)talloc_check_name_abort(ptr, #type)
+
+bool unmap_file(void *start, size_t size);
+
+void print_asc(int level, const uint8_t *buf,int len);
 
 #endif /* _SAMBA_UTIL_H_ */

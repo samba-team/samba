@@ -23,6 +23,7 @@
 
 #include "includes.h"
 #include "auth/auth.h"
+#include "auth/auth_proto.h"
 #include "libcli/security/security.h"
 #include "libcli/auth/libcli_auth.h"
 #include "dsdb/samdb/samdb.h"

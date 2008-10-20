@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "auth/credentials/credentials.h"
+#include "lib/cmdline/credentials.h"
 
 static const char *cmdline_get_userpassword(struct cli_credentials *credentials)
 {

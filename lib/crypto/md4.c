@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "../lib/crypto/md4.h"
 
 /* NOTE: This code makes no attempt to be fast! 
 

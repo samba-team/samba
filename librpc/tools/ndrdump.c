@@ -171,7 +171,7 @@ static void ndrdump_data(uint8_t *d, uint32_t l, bool force)
 	};
 
 	ndr_table_init();
-#if (_SAMBA_BUILD_ >= 3)
+
 	/* Initialise samba stuff */
 	load_case_tables();
 
@@ -179,8 +179,7 @@ static void ndrdump_data(uint8_t *d, uint32_t l, bool force)
 
 	dbf = x_stderr;
 
-	setup_logging(argv[0],True);
-#endif
+	setup_logging(argv[0], true);
 
 	pc = poptGetContext("ndrdump", argc, argv, long_options, 0);
 	

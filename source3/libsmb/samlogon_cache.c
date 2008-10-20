@@ -22,6 +22,7 @@
 */
 
 #include "includes.h"
+#include "librpc/gen_ndr/ndr_krb5pac.h"
 
 #define NETSAMLOGON_TDB	"netsamlogon_cache.tdb"
 

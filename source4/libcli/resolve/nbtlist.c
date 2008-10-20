@@ -30,6 +30,7 @@
 #include "librpc/gen_ndr/ndr_nbt.h"
 #include "../libcli/nbt/libnbt.h"
 #include "param/param.h"
+#include "libcli/resolve/resolve.h"
 
 struct nbtlist_state {
 	struct nbt_name name;

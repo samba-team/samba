@@ -205,7 +205,7 @@ static struct ldb_message *ltdb_pull_attrs(struct ldb_module *module,
   return LDB_ERR_NO_SUCH_OBJECT on record-not-found
   and LDB_SUCCESS on success
 */
-int ltdb_search_base(struct ldb_module *module, struct ldb_dn *dn)
+static int ltdb_search_base(struct ldb_module *module, struct ldb_dn *dn)
 {
 	struct ltdb_private *ltdb = (struct ltdb_private *)module->private_data;
 	TDB_DATA tdb_key, tdb_data;

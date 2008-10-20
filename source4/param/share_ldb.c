@@ -287,7 +287,7 @@ static NTSTATUS sldb_get_config(TALLOC_CTX *mem_ctx,
 		goto done; \
 	} } while(0)
 
-NTSTATUS sldb_create(struct share_context *ctx, const char *name, struct share_info *info, int count)
+static NTSTATUS sldb_create(struct share_context *ctx, const char *name, struct share_info *info, int count)
 {
 	struct ldb_context *ldb;
 	struct ldb_message *msg;
@@ -426,7 +426,7 @@ done:
 		goto done; \
 	} } while(0)
 
-NTSTATUS sldb_set(struct share_context *ctx, const char *name, struct share_info *info, int count)
+static NTSTATUS sldb_set(struct share_context *ctx, const char *name, struct share_info *info, int count)
 {
 	struct ldb_context *ldb;
 	struct ldb_message *msg;
@@ -535,7 +535,7 @@ done:
 	return ret;
 }
 
-NTSTATUS sldb_remove(struct share_context *ctx, const char *name)
+static NTSTATUS sldb_remove(struct share_context *ctx, const char *name)
 {
 	struct ldb_context *ldb;
 	struct ldb_dn *dn;

@@ -474,7 +474,7 @@ const static struct torture_ui_ops quiet_ui_ops = {
 	.test_result = quiet_test_result
 };
 
-void run_shell(struct torture_context *tctx)
+static void run_shell(struct torture_context *tctx)
 {
 	char *cline;
 	int argc;

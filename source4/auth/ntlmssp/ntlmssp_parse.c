@@ -20,8 +20,8 @@
 */
 
 #include "includes.h"
-#include "pstring.h"
 #include "param/param.h"
+#include "auth/ntlmssp/msrpc_parse.h"
 
 /*
   this is a tiny msrpc packet generator. I am only using this to

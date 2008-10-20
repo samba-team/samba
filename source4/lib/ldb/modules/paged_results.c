@@ -70,7 +70,7 @@ struct private_data {
 	
 };
 
-int store_destructor(struct results_store *del)
+static int store_destructor(struct results_store *del)
 {
 	struct private_data *priv = del->priv;
 	struct results_store *loop;

@@ -716,14 +716,6 @@ enum flush_reason_enum {
 #include "modules/nfs4_acls.h"
 #include "nsswitch/libwbclient/wbclient.h"
 
-/* generated rpc server implementation functions */
-#include "librpc/gen_ndr/srv_echo.h"
-#include "librpc/gen_ndr/srv_svcctl.h"
-#include "librpc/gen_ndr/srv_lsa.h"
-#include "librpc/gen_ndr/srv_eventlog.h"
-#include "librpc/gen_ndr/srv_winreg.h"
-#include "librpc/gen_ndr/srv_initshutdown.h"
-
 /***** automatically generated prototypes *****/
 #ifndef NO_PROTO_H
 #include "proto.h"
@@ -811,10 +803,6 @@ enum flush_reason_enum {
 
 #ifndef HAVE_PIPE
 #define SYNC_DNS 1
-#endif
-
-#ifndef HAVE_CRYPT
-#define crypt ufc_crypt
 #endif
 
 #if defined(HAVE_CRYPT16) && defined(HAVE_GETAUTHUID)
@@ -1079,7 +1067,6 @@ ssize_t readahead(int fd, off64_t offset, size_t count);
 #endif
 
 #define CONST_DISCARD(type, ptr)      ((type) ((void *) (ptr)))
-#define CONST_ADD(type, ptr)          ((type) ((const void *) (ptr)))
 
 void smb_panic( const char *why ) _NORETURN_;
 void dump_core(void) _NORETURN_;

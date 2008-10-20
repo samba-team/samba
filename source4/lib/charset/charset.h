@@ -147,4 +147,8 @@ struct smb_iconv_convenience *smb_iconv_convenience_init(TALLOC_CTX *mem_ctx,
 							 const char *dos_charset,
 							 const char *unix_charset,
 							 bool native_iconv);
+
+void load_case_tables(void);
+bool charset_register_backend(const void *_funcs);
+
 #endif /* __CHARSET_H__ */

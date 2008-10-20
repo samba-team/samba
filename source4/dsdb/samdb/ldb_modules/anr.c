@@ -36,7 +36,7 @@
 /**
  * Make a and 'and' or 'or' tree from the two supplied elements 
  */
-struct ldb_parse_tree *make_parse_list(struct ldb_module *module,
+static struct ldb_parse_tree *make_parse_list(struct ldb_module *module,
 				       TALLOC_CTX *mem_ctx, enum ldb_parse_op op, 
 				       struct ldb_parse_tree *first_arm, struct ldb_parse_tree *second_arm)
 {
@@ -63,7 +63,7 @@ struct ldb_parse_tree *make_parse_list(struct ldb_module *module,
 /**
  * Make an equality or prefix match tree, from the attribute, operation and matching value supplied
  */
-struct ldb_parse_tree *make_match_tree(struct ldb_module *module,
+static struct ldb_parse_tree *make_match_tree(struct ldb_module *module,
 				       TALLOC_CTX *mem_ctx, enum ldb_parse_op op, 
 				       const char *attr, const DATA_BLOB *match)
 {
