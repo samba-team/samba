@@ -869,6 +869,13 @@ NTSTATUS _samr_QuerySecurity(pipes_struct *p,
 	DEBUG(10,("_samr_QuerySecurity: querying security on SID: %s\n",
 		  sid_string_dbg(&pol_sid)));
 
+	status = access_check_samr_function(acc_granted,
+					    STD_RIGHT_READ_CONTROL_ACCESS,
+					    "_samr_QuerySecurity");
+	if (NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
 	/* Check what typ of SID is beeing queried (e.g Domain SID, User SID, Group SID) */
 
 	/* To query the security of the SAM it self an invalid SID with S-0-0 is passed to this function */
@@ -1197,15 +1204,15 @@ NTSTATUS _samr_EnumDomainAliases(pipes_struct *p,
 	if (!find_policy_by_hnd(p, r->in.domain_handle, (void **)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
+	DEBUG(5,("_samr_EnumDomainAliases: sid %s\n",
+		 sid_string_dbg(&info->sid)));
+
 	status = access_check_samr_function(info->acc_granted,
 					    SA_RIGHT_DOMAIN_ENUM_ACCOUNTS,
 					    "_samr_EnumDomainAliases");
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-
-	DEBUG(5,("_samr_EnumDomainAliases: sid %s\n",
-		 sid_string_dbg(&info->sid)));
 
 	samr_array = TALLOC_ZERO_P(p->mem_ctx, struct samr_SamArray);
 	if (!samr_array) {
@@ -1472,6 +1479,13 @@ NTSTATUS _samr_QueryDisplayInfo(pipes_struct *p,
 	/* find the policy handle.  open a policy on it. */
 	if (!find_policy_by_hnd(p, r->in.domain_handle, (void **)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
+
+	status = access_check_samr_function(info->acc_granted,
+					    SA_RIGHT_DOMAIN_ENUM_ACCOUNTS,
+					    "_samr_QueryDisplayInfo");
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	/*
 	 * calculate how many entries we will return.
@@ -2106,6 +2120,13 @@ NTSTATUS _samr_LookupRids(pipes_struct *p,
 	if (!get_lsa_policy_samr_sid(p, r->in.domain_handle, &pol_sid, &acc_granted, NULL))
 		return NT_STATUS_INVALID_HANDLE;
 
+	status = access_check_samr_function(acc_granted,
+					    SA_RIGHT_DOMAIN_ENUM_ACCOUNTS,
+					    "_samr__LookupRids");
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
 	if (num_rids > 1000) {
 		DEBUG(0, ("Got asked for %d rids (more than 1000) -- according "
 			  "to samba4 idl this is not possible\n", num_rids));
@@ -2678,6 +2699,13 @@ NTSTATUS _samr_QueryUserInfo(pipes_struct *p,
 	if (!find_policy_by_hnd(p, r->in.user_handle, (void **)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
+	status = access_check_samr_function(info->acc_granted,
+					    SA_RIGHT_DOMAIN_OPEN_ACCOUNT,
+					    "_samr_QueryUserInfo");
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
 	domain_sid = info->sid;
 
 	sid_split_rid(&domain_sid, &rid);
@@ -2925,6 +2953,13 @@ static NTSTATUS samr_QueryDomainInfo_internal(const char *fn_name,
 	if (!find_policy_by_hnd(p, handle, (void **)(void *)&info)) {
 		return NT_STATUS_INVALID_HANDLE;
 	}
+
+	status = access_check_samr_function(info->acc_granted,
+					    SA_RIGHT_SAM_OPEN_DOMAIN,
+					    "_samr_QueryDomainInfo_internal" );
+
+	if ( !NT_STATUS_IS_OK(status) )
+		return status;
 
 	switch (level) {
 		case 0x01:
@@ -5660,15 +5695,31 @@ NTSTATUS _samr_QueryDomainInfo2(pipes_struct *p,
 NTSTATUS _samr_SetDomainInfo(pipes_struct *p,
 			     struct samr_SetDomainInfo *r)
 {
+	struct samr_info *info = NULL;
 	time_t u_expire, u_min_age;
 	time_t u_logout;
 	time_t u_lock_duration, u_reset_time;
+	NTSTATUS result;
 
 	DEBUG(5,("_samr_SetDomainInfo: %d\n", __LINE__));
 
 	/* find the policy handle.  open a policy on it. */
-	if (!find_policy_by_hnd(p, r->in.domain_handle, NULL))
+	if (!find_policy_by_hnd(p, r->in.domain_handle, (void **)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
+
+	/* We do have different access bits for info
+	 * levels here, but we're really just looking for
+	 * GENERIC_RIGHTS_DOMAIN_WRITE access. Unfortunately
+	 * this maps to different specific bits. So
+	 * assume if we have SA_RIGHT_DOMAIN_SET_INFO_1
+	 * set we are ok. */
+
+	result = access_check_samr_function(info->acc_granted,
+					    SA_RIGHT_DOMAIN_SET_INFO_1,
+					    "_samr_SetDomainInfo");
+
+	if (!NT_STATUS_IS_OK(result))
+		return result;
 
 	DEBUG(5,("_samr_SetDomainInfo: level: %d\n", r->in.level));
 
@@ -5727,12 +5778,20 @@ NTSTATUS _samr_GetDisplayEnumerationIndex(pipes_struct *p,
 	int i;
 	uint32_t num_account = 0;
 	struct samr_displayentry *entries = NULL;
+	NTSTATUS status;
 
 	DEBUG(5,("_samr_GetDisplayEnumerationIndex: %d\n", __LINE__));
 
 	/* find the policy handle.  open a policy on it. */
 	if (!find_policy_by_hnd(p, r->in.domain_handle, (void **)(void *)&info)) {
 		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	status = access_check_samr_function(info->acc_granted,
+					    SA_RIGHT_DOMAIN_ENUM_ACCOUNTS,
+					    "_samr_GetDisplayEnumerationIndex");
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	if ((r->in.level < 1) || (r->in.level > 3)) {
