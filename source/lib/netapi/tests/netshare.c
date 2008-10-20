@@ -36,13 +36,13 @@ static NET_API_STATUS test_netshareenum(const char *hostname,
 	uint32_t total_entries = 0;
 	uint32_t resume_handle = 0;
 	int found_share = 0;
-	const char *current_name;
+	const char *current_name = NULL;
 	uint8_t *buffer = NULL;
 	int i;
 
-	struct SHARE_INFO_0 *i0;
-	struct SHARE_INFO_1 *i1;
-	struct SHARE_INFO_2 *i2;
+	struct SHARE_INFO_0 *i0 = NULL;
+	struct SHARE_INFO_1 *i1 = NULL;
+	struct SHARE_INFO_2 *i2 = NULL;
 
 	printf("testing NetShareEnum level %d\n", level);
 

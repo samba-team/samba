@@ -37,8 +37,8 @@ static NET_API_STATUS test_netfileenum(const char *hostname,
 	uint8_t *buffer = NULL;
 	int i;
 
-	struct FILE_INFO_2 *i2;
-	struct FILE_INFO_3 *i3;
+	struct FILE_INFO_2 *i2 = NULL;
+	struct FILE_INFO_3 *i3 = NULL;
 
 	printf("testing NetFileEnum level %d\n", level);
 
@@ -98,8 +98,6 @@ NET_API_STATUS netapitest_file(struct libnetapi_ctx *ctx,
 			       const char *hostname)
 {
 	NET_API_STATUS status = 0;
-	uint8_t *buffer = NULL;
-	uint32_t levels[] = { 2, 3 };
 	uint32_t enum_levels[] = { 2, 3 };
 	int i;
 
@@ -118,14 +116,18 @@ NET_API_STATUS netapitest_file(struct libnetapi_ctx *ctx,
 
 	/* basic queries */
 #if 0
-	for (i=0; i<ARRAY_SIZE(levels); i++) {
+	{
+		uint32_t levels[] = { 2, 3 };
+		for (i=0; i<ARRAY_SIZE(levels); i++) {
+			uint8_t *buffer = NULL;
 
-		printf("testing NetFileGetInfo level %d\n", levels[i]);
+			printf("testing NetFileGetInfo level %d\n", levels[i]);
 
-		status = NetFileGetInfo(hostname, fid, levels[i], &buffer);
-		if (status && status != 124) {
-			NETAPI_STATUS(ctx, status, "NetFileGetInfo");
-			goto out;
+			status = NetFileGetInfo(hostname, fid, levels[i], &buffer);
+			if (status && status != 124) {
+				NETAPI_STATUS(ctx, status, "NetFileGetInfo");
+				goto out;
+			}
 		}
 	}
 #endif
