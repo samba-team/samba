@@ -533,6 +533,7 @@ my $interfaces = join(',', ("127.0.0.6/8",
 			    "127.0.0.11/8"));
 
 my $conffile = "$prefix_abs/client/client.conf";
+$ENV{SMB_CONF_PATH} = $conffile;
 
 sub write_clientconf($$)
 {

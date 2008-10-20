@@ -81,7 +81,9 @@ smb4torture="$samba4bindir/smbtorture $TORTURE_OPTIONS"
 echo "OPTIONS $TORTURE_OPTIONS"
 
 SMB_CONF_PATH="$conffile"
+export SMB_CONF_PATH
 CONFIGURATION="--configfile=$conffile"
+export CONFIGURATION
 
 # Simple tests for LDAP and CLDAP
 
