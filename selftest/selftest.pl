@@ -434,7 +434,9 @@ if ($opt_socket_wrapper) {
 	$socket_wrapper_dir = SocketWrapper::setup_dir("$prefix/w", $opt_socket_wrapper_pcap);
 	print "SOCKET_WRAPPER_DIR=$socket_wrapper_dir\n";
 } else {
-	warn("Not using socket wrapper, but also not running as root. Will not be able to listen on proper ports") unless $< == 0;
+	 unless ($< == 0) { 
+		 print "WARNING: Not using socket wrapper, but also not running as root. Will not be able to listen on proper ports\n";
+	 }
 }
 
 my $target;
