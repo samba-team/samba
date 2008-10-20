@@ -1213,7 +1213,7 @@ samba3-idl::
 		../librpc/idl/eventlog.idl ../librpc/idl/wkssvc.idl librpc/idl/netlogon.idl \
 		../librpc/idl/notify.idl ../librpc/idl/epmapper.idl librpc/idl/messaging.idl \
 		../librpc/idl/xattr.idl ../librpc/idl/misc.idl librpc/idl/samr.idl \
-		../librpc/idl/security.idl ../librpc/idl/dssetup.idl librpc/idl/krb5pac.idl \
+		../librpc/idl/security.idl ../librpc/idl/dssetup.idl ../librpc/idl/krb5pac.idl \
 		../librpc/idl/ntsvcs.idl librpc/idl/libnetapi.idl ../librpc/idl/drsuapi.idl \
 		../librpc/idl/drsblobs.idl ../librpc/idl/nbt.idl
 
