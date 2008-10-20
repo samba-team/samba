@@ -657,6 +657,11 @@ static NTSTATUS kdc_check_generic_kerberos(struct irpc_message *msg,
 }
 
 
+static struct hdb_method hdb_samba4 = {
+	.interface_version = HDB_INTERFACE_VERSION,
+	.prefix = "samba4:",
+	.create = hdb_samba4_create
+};
 
 /*
   startup the kdc task
@@ -667,11 +672,6 @@ static void kdc_task_init(struct task_server *task)
 	NTSTATUS status;
 	krb5_error_code ret;
 	struct interface *ifaces;
-	struct hdb_method hdb_samba4 = {
-		.interface_version = HDB_INTERFACE_VERSION,
-		.prefix = "samba4:",
-		.create = hdb_samba4_create
-	};
 
 	switch (lp_server_role(task->lp_ctx)) {
 	case ROLE_STANDALONE:
