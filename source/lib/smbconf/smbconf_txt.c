@@ -243,6 +243,11 @@ static int smbconf_txt_shutdown(struct smbconf_ctx *ctx)
 	return ctx->ops->close_conf(ctx);
 }
 
+static bool smbconf_txt_requires_messaging(struct smbconf_ctx *ctx)
+{
+	return false;
+}
+
 static WERROR smbconf_txt_open(struct smbconf_ctx *ctx)
 {
 	return smbconf_txt_load_file(ctx);
@@ -604,6 +609,7 @@ static WERROR smbconf_txt_delete_includes(struct smbconf_ctx *ctx,
 static struct smbconf_ops smbconf_ops_txt = {
 	.init			= smbconf_txt_init,
 	.shutdown		= smbconf_txt_shutdown,
+	.requires_messaging	= smbconf_txt_requires_messaging,
 	.open_conf		= smbconf_txt_open,
 	.close_conf		= smbconf_txt_close,
 	.get_csn		= smbconf_txt_get_csn,

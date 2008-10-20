@@ -56,6 +56,7 @@ WERROR smbconf_init_txt(TALLOC_CTX *mem_ctx,
 /*
  * the smbconf API functions
  */
+bool smbconf_backend_requires_messaging(struct smbconf_ctx *ctx);
 void smbconf_shutdown(struct smbconf_ctx *ctx);
 bool smbconf_changed(struct smbconf_ctx *ctx, struct smbconf_csn *csn,
 		     const char *service, const char *param);

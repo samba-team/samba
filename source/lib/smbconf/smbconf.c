@@ -43,6 +43,15 @@ static WERROR smbconf_global_check(struct smbconf_ctx *ctx)
  **********************************************************************/
 
 /**
+ * Tell whether the backend requires messaging to be set up
+ * for the backend to work correctly.
+ */
+bool smbconf_backend_requires_messaging(struct smbconf_ctx *ctx)
+{
+	return ctx->ops->requires_messaging(ctx);
+}
+
+/**
  * Close the configuration.
  */
 void smbconf_shutdown(struct smbconf_ctx *ctx)

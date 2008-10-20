@@ -23,6 +23,7 @@
 struct smbconf_ops {
 	WERROR (*init)(struct smbconf_ctx *ctx, const char *path);
 	int (*shutdown)(struct smbconf_ctx *ctx);
+	bool (*requires_messaging)(struct smbconf_ctx *ctx);
 	WERROR (*open_conf)(struct smbconf_ctx *ctx);
 	int (*close_conf)(struct smbconf_ctx *ctx);
 	void (*get_csn)(struct smbconf_ctx *ctx, struct smbconf_csn *csn,
