@@ -373,7 +373,7 @@ clean::
 
 $(gen_ndrsrcdir)/tables.c: $(IDL_NDR_PARSE_H_FILES)
 	@echo Generating $@
-	@$(PERL) $(librpcsrcdir)/tables.pl --output=$@ $^ > $(gen_ndrsrcdir)/tables.x
+	@$(PERL) ../librpc/tables.pl --output=$@ $^ > $(gen_ndrsrcdir)/tables.x
 	@mv $(gen_ndrsrcdir)/tables.x $@
 
 [SUBSYSTEM::NDR_TABLE]
@@ -390,9 +390,7 @@ PUBLIC_DEPENDENCIES = \
 	NDR_SASL_HELPERS NDR_NOTIFY NDR_WINBIND NDR_FRSRPC NDR_FRSAPI NDR_NFS4ACL NDR_NTP_SIGND \
 	NDR_DCOM NDR_WMI
 
-NDR_TABLE_OBJ_FILES = $(ndrsrcdir)/ndr_table.o $(gen_ndrsrcdir)/tables.o
-
-$(eval $(call proto_header_template,$(ndrsrcdir)/ndr_table.h,$(NDR_TABLE_OBJ_FILES:.o=.c)))
+NDR_TABLE_OBJ_FILES = ../librpc/ndr/ndr_table.o $(gen_ndrsrcdir)/tables.o
 
 [SUBSYSTEM::RPC_NDR_ROT]
 PUBLIC_DEPENDENCIES = NDR_ROT dcerpc

@@ -984,7 +984,11 @@ REPLACETORT_OBJ = @libreplacedir@/test/testsuite.o \
 NDRDUMP_OBJ = ../librpc/tools/ndrdump.o \
 	      $(PARAM_OBJ) $(LIBNDR_GEN_OBJ) \
 	      $(LIBSAMBA_OBJ) $(LIB_NONSMBD_OBJ) $(POPT_LIB_OBJ) \
-	      librpc/gen_ndr/ndr_svcctl.o
+		  $(LIBNDR_DRSUAPI_OBJ) $(COMPRESSION_OBJ) \
+	      librpc/gen_ndr/ndr_svcctl.o \
+		  librpc/gen_ndr/tables.o ../librpc/ndr/ndr_table.o \
+	      ../librpc/ndr/ndr_krb5pac.o \
+		  librpc/gen_ndr/ndr_krb5pac.o
 
 DEBUG2HTML_OBJ = utils/debug2html.o utils/debugparse.o
 
@@ -1216,6 +1220,10 @@ samba3-idl::
 		../librpc/idl/security.idl ../librpc/idl/dssetup.idl ../librpc/idl/krb5pac.idl \
 		../librpc/idl/ntsvcs.idl librpc/idl/libnetapi.idl ../librpc/idl/drsuapi.idl \
 		../librpc/idl/drsblobs.idl ../librpc/idl/nbt.idl
+
+librpc/gen_ndr/tables.c:: librpc/gen_ndr/*.h
+	@echo "Generating $@"
+	@$(PERL) ../librpc/tables.pl $^ > $@
 
 #####################################################################
 
@@ -1539,7 +1547,7 @@ bin/locktest2@EXEEXT@: $(BINARY_PREREQS) $(LOCKTEST2_OBJ) @BUILD_POPT@ @LIBTALLO
 bin/ndrdump@EXEEXT@: $(BINARY_PREREQS) $(NDRDUMP_OBJ) @BUILD_POPT@ @LIBTALLOC_SHARED@ @LIBTDB_SHARED@
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(NDRDUMP_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) \
-		$(POPT_LIBS) $(LDAP_LIBS) $(LIBTALLOC_LIBS) $(LIBTDB_LIBS)
+		$(POPT_LIBS) $(LDAP_LIBS) $(LIBTALLOC_LIBS) $(LIBTDB_LIBS) $(ZLIB_LIBS)
 
 bin/debug2html@EXEEXT@: $(BINARY_PREREQS) $(DEBUG2HTML_OBJ) @BUILD_POPT@ @LIBTALLOC_SHARED@
 	@echo Linking $@

@@ -19,12 +19,12 @@
 */
 
 #include "includes.h"
-#if (_SAMBA_BUILD_ >= 4)
-#include "lib/cmdline/popt_common.h"
 #include "system/filesys.h"
 #include "system/locale.h"
 #include "librpc/ndr/libndr.h"
 #include "librpc/ndr/ndr_table.h"
+#if (_SAMBA_BUILD_ >= 4)
+#include "lib/cmdline/popt_common.h"
 #include "param/param.h"
 #endif
 
@@ -49,8 +49,6 @@ static const struct ndr_interface_call *find_function(
 	return &p->calls[i];
 }
 
-#if (_SAMBA_BUILD_ >= 4)
-
 _NORETURN_ static void show_pipes(void)
 {
 	const struct ndr_interface_list *l;
@@ -65,8 +63,6 @@ _NORETURN_ static void show_pipes(void)
 	}
 	exit(1);
 }
-
-#endif
 
 _NORETURN_ static void show_functions(const struct ndr_interface_table *p)
 {
@@ -174,9 +170,8 @@ static void ndrdump_data(uint8_t *d, uint32_t l, bool force)
 		{ NULL }
 	};
 
-#if (_SAMBA_BUILD_ >= 4)
 	ndr_table_init();
-#else
+#if (_SAMBA_BUILD_ >= 3)
 	/* Initialise samba stuff */
 	load_case_tables();
 
@@ -213,21 +208,13 @@ static void ndrdump_data(uint8_t *d, uint32_t l, bool force)
 
 	if (!pipe_name) {
 		poptPrintUsage(pc, stderr, 0);
-#if (_SAMBA_BUILD_ >= 4)
 		show_pipes();
-#endif
 		exit(1);
 	}
 
 	if (plugin != NULL) {
 		p = load_iface_from_plugin(plugin, pipe_name);
 	} 
-#if (_SAMBA_BUILD_ <= 3)
-	else {
-		fprintf(stderr, "Only loading from DSO's supported in Samba 3\n");
-		exit(1);
-	}
-#else
 	if (!p) {
 		p = ndr_table_by_name(pipe_name);
 	}
@@ -241,7 +228,6 @@ static void ndrdump_data(uint8_t *d, uint32_t l, bool force)
 			p = ndr_table_by_uuid(&uuid);
 		}
 	}
-#endif
 
 	if (!p) {
 		printf("Unknown pipe or UUID '%s'\n", pipe_name);

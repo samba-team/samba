@@ -24,6 +24,7 @@
 #include "../lib/util/dlinklist.h"
 #include "librpc/ndr/libndr.h"
 #include "librpc/ndr/ndr_table.h"
+#undef strcasecmp
 
 static struct ndr_interface_list *ndr_interfaces;
 
