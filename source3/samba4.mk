@@ -161,11 +161,3 @@ modules:: $(PLUGINS)
 all:: basics bin/samba4 bin/regpatch4 bin/regdiff4 bin/regshell4 bin/regtree4 bin/smbclient4
 torture:: basics bin/smbtorture4
 everything:: basics $(patsubst %,%4,$(BINARIES))
-
-
-etags::
-	etags --append=yes `find $(samba4srcdir) -name "*.[ch]"`
-
-ctags::
-	ctags --append=yes `find $(samba4srcdir) -name "*.[ch]"`
-
