@@ -1314,6 +1314,7 @@ static NTSTATUS fill_trust_domain_ex(TALLOC_CTX *mem_ctx,
 static NTSTATUS dcesrv_lsa_QueryTrustedDomainInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 					   struct lsa_QueryTrustedDomainInfo *r)
 {
+	union lsa_TrustedDomainInfo *info = NULL;
 	struct dcesrv_handle *h;
 	struct lsa_trusted_domain_state *trusted_domain_state;
 	struct ldb_message *msg;
@@ -1342,17 +1343,19 @@ static NTSTATUS dcesrv_lsa_QueryTrustedDomainInfo(struct dcesrv_call_state *dce_
 	}
 	msg = res[0];
 	
-	r->out.info = talloc(mem_ctx, union lsa_TrustedDomainInfo);
-	if (!r->out.info) {
+	info = talloc_zero(mem_ctx, union lsa_TrustedDomainInfo);
+	if (!info) {
 		return NT_STATUS_NO_MEMORY;
 	}
+	*r->out.info = info;
+
 	switch (r->in.level) {
 	case LSA_TRUSTED_DOMAIN_INFO_NAME:
-		r->out.info->name.netbios_name.string
+		info->name.netbios_name.string
 			= samdb_result_string(msg, "flatname", NULL);					   
 		break;
 	case LSA_TRUSTED_DOMAIN_INFO_POSIX_OFFSET:
-		r->out.info->posix_offset.posix_offset
+		info->posix_offset.posix_offset
 			= samdb_result_uint(msg, "posixOffset", 0);					   
 		break;
 #if 0  /* Win2k3 doesn't implement this */
@@ -1364,32 +1367,32 @@ static NTSTATUS dcesrv_lsa_QueryTrustedDomainInfo(struct dcesrv_call_state *dce_
 		break;
 #endif
 	case LSA_TRUSTED_DOMAIN_INFO_INFO_EX:
-		return fill_trust_domain_ex(mem_ctx, msg, &r->out.info->info_ex);
+		return fill_trust_domain_ex(mem_ctx, msg, &info->info_ex);
 
 	case LSA_TRUSTED_DOMAIN_INFO_FULL_INFO:
-		ZERO_STRUCT(r->out.info->full_info);
-		return fill_trust_domain_ex(mem_ctx, msg, &r->out.info->full_info.info_ex);
+		ZERO_STRUCT(info->full_info);
+		return fill_trust_domain_ex(mem_ctx, msg, &info->full_info.info_ex);
 
 	case LSA_TRUSTED_DOMAIN_INFO_FULL_INFO_2_INTERNAL:
-		ZERO_STRUCT(r->out.info->full_info2_internal);
-		r->out.info->full_info2_internal.posix_offset.posix_offset
+		ZERO_STRUCT(info->full_info2_internal);
+		info->full_info2_internal.posix_offset.posix_offset
 			= samdb_result_uint(msg, "posixOffset", 0);					   
-		return fill_trust_domain_ex(mem_ctx, msg, &r->out.info->full_info2_internal.info.info_ex);
+		return fill_trust_domain_ex(mem_ctx, msg, &info->full_info2_internal.info.info_ex);
 		
 	case LSA_TRUSTED_DOMAIN_SUPPORTED_ENCRTYPION_TYPES:
-		r->out.info->enc_types.enc_types
+		info->enc_types.enc_types
 			= samdb_result_uint(msg, "msDs-supportedEncryptionTypes", KERB_ENCTYPE_RC4_HMAC_MD5);
 		break;
 
 	case LSA_TRUSTED_DOMAIN_INFO_CONTROLLERS:
 	case LSA_TRUSTED_DOMAIN_INFO_INFO_EX2_INTERNAL:
 		/* oops, we don't want to return the info after all */
-		talloc_free(r->out.info);
+		talloc_free(info);
 		r->out.info = NULL;
 		return NT_STATUS_INVALID_PARAMETER;
 	default:
 		/* oops, we don't want to return the info after all */
-		talloc_free(r->out.info);
+		talloc_free(info);
 		r->out.info = NULL;
 		return NT_STATUS_INVALID_INFO_CLASS;
 	}
@@ -1407,6 +1410,7 @@ static NTSTATUS dcesrv_lsa_QueryTrustedDomainInfoBySid(struct dcesrv_call_state 
 	NTSTATUS status;
 	struct lsa_OpenTrustedDomain open;
 	struct lsa_QueryTrustedDomainInfo query;
+	union lsa_TrustedDomainInfo *info;
 	struct dcesrv_handle *h;
 	open.in.handle = r->in.handle;
 	open.in.sid = r->in.dom_sid;
@@ -1423,7 +1427,7 @@ static NTSTATUS dcesrv_lsa_QueryTrustedDomainInfoBySid(struct dcesrv_call_state 
 	/* Ensure this handle goes away at the end of this call */
 	DCESRV_PULL_HANDLE(h, open.out.trustdom_handle, DCESRV_HANDLE_ANY);
 	talloc_steal(mem_ctx, h);
-	
+
 	query.in.trustdom_handle = open.out.trustdom_handle;
 	query.in.level = r->in.level;
 	query.out.info = r->out.info;

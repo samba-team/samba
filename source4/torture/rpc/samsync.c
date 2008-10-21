@@ -967,6 +967,7 @@ static bool samsync_handle_trusted_domain(TALLOC_CTX *mem_ctx, struct samsync_st
 	struct policy_handle trustdom_handle;
 	struct lsa_QueryTrustedDomainInfo q;
 	union lsa_TrustedDomainInfo *info[9];
+	union lsa_TrustedDomainInfo *_info = NULL;
 	int levels [] = {1, 3, 8};
 	int i;
 
@@ -987,6 +988,7 @@ static bool samsync_handle_trusted_domain(TALLOC_CTX *mem_ctx, struct samsync_st
 	for (i=0; i< ARRAY_SIZE(levels); i++) {
 		q.in.trustdom_handle = &trustdom_handle;
 		q.in.level = levels[i];
+		q.out.info = &_info;
 		status = dcerpc_lsa_QueryTrustedDomainInfo(samsync_state->p_lsa, mem_ctx, &q);
 		if (!NT_STATUS_IS_OK(status)) {
 			if (q.in.level == 8 && NT_STATUS_EQUAL(status,NT_STATUS_INVALID_PARAMETER)) {
@@ -997,7 +999,7 @@ static bool samsync_handle_trusted_domain(TALLOC_CTX *mem_ctx, struct samsync_st
 			       levels[i], nt_errstr(status));
 			return false;
 		}
-		info[levels[i]]  = q.out.info;
+		info[levels[i]]  = _info;
 	}
 
 	if (info[8]) {
