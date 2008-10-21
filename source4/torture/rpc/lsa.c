@@ -1903,9 +1903,13 @@ static bool test_query_each_TrustDom(struct dcerpc_pipe *p,
 
 		for (j=0; j < ARRAY_SIZE(levels); j++) {
 			struct lsa_QueryTrustedDomainInfoByName q;
-			union lsa_TrustedDomainInfo info;
+			union lsa_TrustedDomainInfo *info = NULL;
+			struct lsa_String name;
+
+			name.string = domains->domains[i].name.string;
+
 			q.in.handle         = handle;
-			q.in.trusted_domain.string = domains->domains[i].name.string;
+			q.in.trusted_domain = &name;
 			q.in.level          = levels[j];
 			q.out.info          = &info;
 			status = dcerpc_lsa_QueryTrustedDomainInfoByName(p, mem_ctx, &q);

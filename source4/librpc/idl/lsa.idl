@@ -897,9 +897,9 @@ import "misc.idl", "security.idl";
 	/* Function 0x30 */
 	NTSTATUS lsa_QueryTrustedDomainInfoByName(
 		[in]                   policy_handle          *handle,
-		[in]                   lsa_String             trusted_domain,
+		[in,ref]               lsa_String             *trusted_domain,
 		[in]                   lsa_TrustDomInfoEnum   level,
-		[out,unique,switch_is(level)] lsa_TrustedDomainInfo *info
+		[out,ref,switch_is(level)] lsa_TrustedDomainInfo **info
 		);
 
 	/**********************/

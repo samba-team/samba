@@ -1461,7 +1461,7 @@ static NTSTATUS dcesrv_lsa_QueryTrustedDomainInfoByName(struct dcesrv_call_state
 	struct lsa_QueryTrustedDomainInfo query;
 	struct dcesrv_handle *h;
 	open.in.handle = r->in.handle;
-	open.in.name = r->in.trusted_domain;
+	open.in.name = *r->in.trusted_domain;
 	open.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	open.out.trustdom_handle = talloc(mem_ctx, struct policy_handle);
 	if (!open.out.trustdom_handle) {
@@ -1478,12 +1478,12 @@ static NTSTATUS dcesrv_lsa_QueryTrustedDomainInfoByName(struct dcesrv_call_state
 
 	query.in.trustdom_handle = open.out.trustdom_handle;
 	query.in.level = r->in.level;
+	query.out.info = r->out.info;
 	status = dcesrv_lsa_QueryTrustedDomainInfo(dce_call, mem_ctx, &query);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
-	r->out.info = query.out.info;
 	return NT_STATUS_OK;
 }
 
