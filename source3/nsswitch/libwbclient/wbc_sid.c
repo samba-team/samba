@@ -675,3 +675,47 @@ wbcErr wbcListGroups(const char *domain_name,
 	}
 	return wbc_status;
 }
+
+wbcErr wbcGetDisplayName(const struct wbcDomainSid *sid,
+			 char **pdomain,
+			 char **pfullname,
+			 enum wbcSidType *pname_type)
+{
+	wbcErr wbc_status;
+	char *domain = NULL;
+	char *name = NULL;
+	enum wbcSidType name_type;
+
+	wbc_status = wbcLookupSid(sid, &domain, &name, &name_type);
+	BAIL_ON_WBC_ERROR(wbc_status);
+
+	if (name_type == WBC_SID_NAME_USER) {
+		uid_t uid;
+		struct passwd *pwd;
+
+		wbc_status = wbcSidToUid(sid, &uid);
+		BAIL_ON_WBC_ERROR(wbc_status);
+
+		wbc_status = wbcGetpwuid(uid, &pwd);
+		BAIL_ON_WBC_ERROR(wbc_status);
+
+		wbcFreeMemory(name);
+
+		name = talloc_strdup(NULL, pwd->pw_gecos);
+		BAIL_ON_PTR_ERROR(name, wbc_status);
+	}
+
+	wbc_status = WBC_ERR_SUCCESS;
+
+ done:
+	if (WBC_ERROR_IS_OK(wbc_status)) {
+		*pdomain = domain;
+		*pfullname = name;
+		*pname_type = name_type;
+	} else {
+		wbcFreeMemory(domain);
+		wbcFreeMemory(name);
+	}
+
+	return wbc_status;
+}

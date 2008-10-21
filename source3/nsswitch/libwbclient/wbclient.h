@@ -526,6 +526,11 @@ wbcErr wbcListGroups(const char *domain_name,
 		     uint32_t *num_groups,
 		     const char ***groups);
 
+wbcErr wbcGetDisplayName(const struct wbcDomainSid *sid,
+			 char **pdomain,
+			 char **pfullname,
+			 enum wbcSidType *pname_type);
+
 /*
  * SID/uid/gid Mappings
  */
