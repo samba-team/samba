@@ -309,7 +309,7 @@ static WERROR ldb_get_default_value(TALLOC_CTX *mem_ctx, struct hive_key *k,
 	struct ldb_result *res;
 	int ret;
 
-	ret = ldb_search(c, kd->dn, LDB_SCOPE_BASE, "", attrs, &res);
+	ret = ldb_search(c, mem_ctx, &res, kd->dn, LDB_SCOPE_BASE, attrs, "%s", "");
 
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0, ("Error getting default value for '%s': %s\n",
@@ -373,7 +373,7 @@ static WERROR ldb_get_value(TALLOC_CTX *mem_ctx, struct hive_key *k,
 	} else {
 		/* normal value */
 		query = talloc_asprintf(mem_ctx, "(value=%s)", name);
-		ret = ldb_search(c, kd->dn, &res, LDB_SCOPE_ONELEVEL, query, NULL, "%s", query);
+		ret = ldb_search(c, mem_ctx, &res, kd->dn, LDB_SCOPE_ONELEVEL, NULL, "%s", query);
 		talloc_free(query);
 
 		if (ret != LDB_SUCCESS) {

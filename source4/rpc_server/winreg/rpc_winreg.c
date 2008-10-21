@@ -496,7 +496,7 @@ static WERROR dcesrv_winreg_QueryValue(struct dcesrv_call_state *dce_call,
 			/* if the lookup wasn't successful, send client query back */
 			value_type = *r->in.type;
 			value_data.data = r->in.data;
-			value_data.length = *r->in.length;
+			value_data.length = *r->in.data_length;
 		}
 
 		r->out.type = talloc(mem_ctx, uint32_t);
@@ -508,7 +508,7 @@ static WERROR dcesrv_winreg_QueryValue(struct dcesrv_call_state *dce_call,
 		if (!r->out.data_length) {
 			return WERR_NOMEM;
 		}
-		*r->out.length = value_data.length;
+		*r->out.data_length = value_data.length;
 		r->out.data_size = talloc(mem_ctx, uint32_t);
 		if (!r->out.data_size) {
 			return WERR_NOMEM;
