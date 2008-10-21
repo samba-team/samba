@@ -1027,6 +1027,7 @@ static bool samsync_handle_account(TALLOC_CTX *mem_ctx, struct samsync_state *sa
 	struct lsa_OpenAccount a;
 	struct policy_handle acct_handle;
 	struct lsa_EnumPrivsAccount e;
+	struct lsa_PrivilegeSet *privs = NULL;
 	struct lsa_LookupPrivName r;
 
 	int i, j;
@@ -1049,6 +1050,7 @@ static bool samsync_handle_account(TALLOC_CTX *mem_ctx, struct samsync_state *sa
 	found_priv_in_lsa = talloc_zero_array(mem_ctx, bool, account->privilege_entries);
 
 	e.in.handle = &acct_handle;
+	e.out.privs = &privs;
 
 	status = dcerpc_lsa_EnumPrivsAccount(samsync_state->p_lsa, mem_ctx, &e);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1056,23 +1058,23 @@ static bool samsync_handle_account(TALLOC_CTX *mem_ctx, struct samsync_state *sa
 		return false;
 	}
 
-	if ((account->privilege_entries && !e.out.privs)) {
+	if ((account->privilege_entries && !privs)) {
 		printf("Account %s has privileges in SamSync, but not LSA\n",
 		       dom_sid_string(mem_ctx, dom_sid));
 		return false;
 	}
 
-	if (!account->privilege_entries && e.out.privs && e.out.privs->count) {
+	if (!account->privilege_entries && privs && privs->count) {
 		printf("Account %s has privileges in LSA, but not SamSync\n",
 		       dom_sid_string(mem_ctx, dom_sid));
 		return false;
 	}
 
-	TEST_INT_EQUAL(account->privilege_entries, e.out.privs->count);
+	TEST_INT_EQUAL(account->privilege_entries, privs->count);
 	
-	for (i=0;i< e.out.privs->count; i++) {
+	for (i=0;i< privs->count; i++) {
 		r.in.handle = samsync_state->lsa_handle;
-		r.in.luid = &e.out.privs->set[i].luid;
+		r.in.luid = &privs->set[i].luid;
 		
 		status = dcerpc_lsa_LookupPrivName(samsync_state->p_lsa, mem_ctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {

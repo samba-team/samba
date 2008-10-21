@@ -867,11 +867,13 @@ static bool test_EnumPrivsAccount(struct dcerpc_pipe *p,
 {
 	NTSTATUS status;
 	struct lsa_EnumPrivsAccount r;
+	struct lsa_PrivilegeSet *privs = NULL;
 	bool ret = true;
 
 	printf("\nTesting EnumPrivsAccount\n");
 
 	r.in.handle = acct_handle;
+	r.out.privs = &privs;
 
 	status = dcerpc_lsa_EnumPrivsAccount(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -879,17 +881,17 @@ static bool test_EnumPrivsAccount(struct dcerpc_pipe *p,
 		return false;
 	}
 
-	if (r.out.privs && r.out.privs->count > 0) {
+	if (privs && privs->count > 0) {
 		int i;
-		for (i=0;i<r.out.privs->count;i++) {
+		for (i=0;i<privs->count;i++) {
 			test_LookupPrivName(p, mem_ctx, handle, 
-					    &r.out.privs->set[i].luid);
+					    &privs->set[i].luid);
 		}
 
 		ret &= test_RemovePrivilegesFromAccount(p, mem_ctx, handle, acct_handle, 
-							&r.out.privs->set[0].luid);
+							&privs->set[0].luid);
 		ret &= test_AddPrivilegesToAccount(p, mem_ctx, acct_handle, 
-						   &r.out.privs->set[0].luid);
+						   &privs->set[0].luid);
 	}
 
 	return ret;

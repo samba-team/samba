@@ -488,7 +488,7 @@ import "misc.idl", "security.idl";
 		[size_is(count)] lsa_LUIDAttribute set[*];
 	} lsa_PrivilegeSet;
 	
-	NTSTATUS lsa_EnumPrivsAccount (
+	NTSTATUS lsa_EnumPrivsAccount(
 		[in]         policy_handle *handle,
 		[out,ref] lsa_PrivilegeSet **privs
 		);

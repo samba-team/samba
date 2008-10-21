@@ -1724,15 +1724,21 @@ static NTSTATUS dcesrv_lsa_EnumPrivsAccount(struct dcesrv_call_state *dce_call,
 	const char * const attrs[] = { "privilege", NULL};
 	struct ldb_message_element *el;
 	const char *sidstr;
+	struct lsa_PrivilegeSet *privs;
 
 	DCESRV_PULL_HANDLE(h, r->in.handle, LSA_HANDLE_ACCOUNT);
 
 	astate = h->data;
 
-	r->out.privs = talloc(mem_ctx, struct lsa_PrivilegeSet);
-	r->out.privs->count = 0;
-	r->out.privs->unknown = 0;
-	r->out.privs->set = NULL;
+	privs = talloc(mem_ctx, struct lsa_PrivilegeSet);
+	if (privs == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	privs->count = 0;
+	privs->unknown = 0;
+	privs->set = NULL;
+
+	*r->out.privs = privs;
 
 	sidstr = ldap_encode_ndr_dom_sid(mem_ctx, astate->account_sid);
 	if (sidstr == NULL) {
@@ -1750,9 +1756,9 @@ static NTSTATUS dcesrv_lsa_EnumPrivsAccount(struct dcesrv_call_state *dce_call,
 		return NT_STATUS_OK;
 	}
 
-	r->out.privs->set = talloc_array(r->out.privs, 
-					 struct lsa_LUIDAttribute, el->num_values);
-	if (r->out.privs->set == NULL) {
+	privs->set = talloc_array(privs,
+				  struct lsa_LUIDAttribute, el->num_values);
+	if (privs->set == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -1761,12 +1767,12 @@ static NTSTATUS dcesrv_lsa_EnumPrivsAccount(struct dcesrv_call_state *dce_call,
 		if (id == -1) {
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
-		r->out.privs->set[i].attribute = 0;
-		r->out.privs->set[i].luid.low = id;
-		r->out.privs->set[i].luid.high = 0;
+		privs->set[i].attribute = 0;
+		privs->set[i].luid.low = id;
+		privs->set[i].luid.high = 0;
 	}
 
-	r->out.privs->count = el->num_values;
+	privs->count = el->num_values;
 
 	return NT_STATUS_OK;
 }
@@ -2058,8 +2064,18 @@ static NTSTATUS dcesrv_lsa_GetSystemAccessAccount(struct dcesrv_call_state *dce_
 	int i;
 	NTSTATUS status;
 	struct lsa_EnumPrivsAccount enumPrivs;
+	struct lsa_PrivilegeSet *privs;
+
+	privs = talloc(mem_ctx, struct lsa_PrivilegeSet);
+	if (!privs) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	privs->count = 0;
+	privs->unknown = 0;
+	privs->set = NULL;
 
 	enumPrivs.in.handle = r->in.handle;
+	enumPrivs.out.privs = &privs;
 
 	status = dcesrv_lsa_EnumPrivsAccount(dce_call, mem_ctx, &enumPrivs);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2068,8 +2084,8 @@ static NTSTATUS dcesrv_lsa_GetSystemAccessAccount(struct dcesrv_call_state *dce_
 
 	*(r->out.access_mask) = 0x00000000;
 
-	for (i = 0; i < enumPrivs.out.privs->count; i++) {
-		int priv = enumPrivs.out.privs->set[i].luid.low;
+	for (i = 0; i < privs->count; i++) {
+		int priv = privs->set[i].luid.low;
 
 		switch (priv) {
 		case SEC_PRIV_INTERACTIVE_LOGON:
