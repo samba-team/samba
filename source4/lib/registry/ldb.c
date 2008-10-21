@@ -391,7 +391,6 @@ static WERROR ldb_get_value(TALLOC_CTX *mem_ctx, struct hive_key *k,
 		talloc_free(res);
 	}
 
-	talloc_free(res);
 	return WERR_OK;
 }
 
