@@ -49,4 +49,4 @@ BINDIR=`dirname $0`/../bin
 plantest "talloctort" none $VALGRIND $BINDIR/talloctort 
 plantest "replacetort" none $VALGRIND $BINDIR/replacetort
 plantest "tdbtorture" none $VALGRIND $BINDIR/tdbtorture
-plantest "smbconftort" none $VALGRIND $BINDIR/smbconftort $CONFIGURATION
+#plantest "smbconftort" none $VALGRIND $BINDIR/smbconftort $CONFIGURATION

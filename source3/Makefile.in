@@ -2807,8 +2807,11 @@ valgrindtest:: all torture timelimit
 	 VALGRIND="valgrind -q --num-callers=30 --log-file=${selftest_prefix}/valgrind.log" \
 	 PERL="$(PERL)" $(srcdir)/script/tests/selftest.sh ${selftest_prefix} all "${smbtorture4_path}"
 
-selftest::
-	../selftest/selftest.pl --prefix=st --target=samba3 --testlist="`pwd`/selftest/tests.sh|" 
+selftest:: all torture timelimit
+	@../selftest/selftest.pl --prefix=st --target=samba3 \
+		--testlist="$(srcdir)/selftest/tests.sh|" \
+		--expected-failures=$(srcdir)/selftest/knownfail \
+		--exclude=$(srcdir)/selftest/skip 
 
 # Check for Winbind struct 32/64bit padding
 test_wbpad:
