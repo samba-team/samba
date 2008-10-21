@@ -31,9 +31,11 @@ o   Jeremy Allison <jra@samba.org>
     * BUG 5797: Fix moving of readonly files.
     * BUG 5814: Fix Winbind crash bug while doing "rescan_trusted_domain".
     * BUG 5818: Sort ACEs in smbcacl output properly and honor inheritance.
+    * BUG 5826: Fix truncated filenames when accessing old servers.
     * Fix rename_open_files.
     * Restructure VFS SMB traffic analyzer VFS module.
     * Correctly fix smbclient to terminate on eof from server.
+    * Unify access checks for lsa server functions.
 
 
 o   Gerald (Jerry) Carter <jerry@samba.org>
@@ -44,6 +46,7 @@ o   Gerald (Jerry) Carter <jerry@samba.org>
 o   Guenther Deschner <gd@samba.org>
     * Fix duplicate installation of cifs.upcall.
     * Fix _srvsvc_NetShareAdd segfault.
+    * Ensure consistency when reporting password complexity.
 
 
 o   Holger Hetterich <hhetter@novell.com>
