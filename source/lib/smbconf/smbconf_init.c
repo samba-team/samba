@@ -79,11 +79,12 @@ WERROR smbconf_init(TALLOC_CTX *mem_ctx, struct smbconf_ctx **conf_ctx,
 	} else {
 		/*
 		 * Separator was specified but this is not a known backend.
-		 * Can't handle this.
+		 * As a last resort, try to interpret the original source
+		 * string as a file name that contains a ":" sign.
+		 * This may occur with an include directive like this:
+		 * 'include = /path/to/file.%T'
 		 */
-		DEBUG(1, ("smbconf_init: ERROR - unknown backend '%s' given\n",
-			  backend));
-		werr = WERR_INVALID_PARAM;
+		werr = smbconf_init_txt(mem_ctx, conf_ctx, source);
 	}
 
 done:
