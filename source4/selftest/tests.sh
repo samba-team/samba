@@ -61,7 +61,7 @@ samba4bindir=$samba4srcdir/bin
 
 prefix_abs="$SELFTEST_PREFIX/s4client"
 
-mkdir "$prefix_abs"
+test -d "$prefix_abs" || mkdir "$prefix_abs"
 conffile="$SELFTEST_CONFFILE"
 
 TORTURE_OPTIONS=""
