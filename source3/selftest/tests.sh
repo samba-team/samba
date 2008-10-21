@@ -49,4 +49,20 @@ BINDIR=`dirname $0`/../bin
 plantest "talloctort" none $VALGRIND $BINDIR/talloctort 
 plantest "replacetort" none $VALGRIND $BINDIR/replacetort
 plantest "tdbtorture" none $VALGRIND $BINDIR/tdbtorture
-#plantest "smbconftort" none $VALGRIND $BINDIR/smbconftort $CONFIGURATION
+plantest "smbconftort" none $VALGRIND $BINDIR/smbconftort $CONFIGURATION
+
+tests="FDPASS LOCK1 LOCK2 LOCK3 LOCK4 LOCK5 LOCK6 LOCK7"
+tests="$tests UNLINK BROWSE ATTR TRANS2 TORTURE "
+tests="$tests OPLOCK1 OPLOCK2 OPLOCK3"
+tests="$tests DIR DIR1 TCON TCONDEV RW1 RW2 RW3"
+tests="$tests OPEN XCOPY RENAME DELETE PROPERTIES W2K"
+tests="$tests TCON2 IOCTL CHKPATH FDSESS LOCAL-SUBSTITUTE"
+
+for t in $tests; do
+    plantest "$t" dc $VALGRIND $BINDIR/smbtorture \$UNC -U"\$USERNAME"%"\$PASSWORD" $t
+done
+
+plantest "blackbox.smbclient" dc script/tests/test_smbclient_s3.sh \$SERVER \$SERVER_IP
+plantest "blackbox.wbinfo" dc script/tests/test_wbinfo_s3.sh \$DOMAIN \$SERVER \$USERNAME \$PASSWORD
+plantest "blackbox.net" dc script/tests/test_net_s3.sh
+

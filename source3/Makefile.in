@@ -2811,7 +2811,8 @@ selftest:: all torture timelimit
 	@../selftest/selftest.pl --prefix=st --target=samba3 \
 		--testlist="$(srcdir)/selftest/tests.sh|" \
 		--expected-failures=$(srcdir)/selftest/knownfail \
-		--exclude=$(srcdir)/selftest/skip 
+		--exclude=$(srcdir)/selftest/skip \
+		--socket-wrapper
 
 # Check for Winbind struct 32/64bit padding
 test_wbpad:
