@@ -45,6 +45,8 @@ normalize_testname() {
 }
 
 BINDIR=`dirname $0`/../bin
+SCRIPTDIR=`dirname $0`/../script/tests
+export SCRIPTDIR
 
 plantest "talloctort" none $VALGRIND $BINDIR/talloctort 
 plantest "replacetort" none $VALGRIND $BINDIR/replacetort
@@ -59,10 +61,10 @@ tests="$tests OPEN XCOPY RENAME DELETE PROPERTIES W2K"
 tests="$tests TCON2 IOCTL CHKPATH FDSESS LOCAL-SUBSTITUTE"
 
 for t in $tests; do
-    plantest "$t" dc $VALGRIND $BINDIR/smbtorture \$UNC -U"\$USERNAME"%"\$PASSWORD" $t
+	name=`normalize_testname $t`
+    plantest "$name" dc $VALGRIND $BINDIR/smbtorture //\$SERVER/tmp -U\$USERNAME%\$PASSWORD $t
 done
 
-plantest "blackbox.smbclient" dc script/tests/test_smbclient_s3.sh \$SERVER \$SERVER_IP
-plantest "blackbox.wbinfo" dc script/tests/test_wbinfo_s3.sh \$DOMAIN \$SERVER \$USERNAME \$PASSWORD
-plantest "blackbox.net" dc script/tests/test_net_s3.sh
-
+plantest "blackbox.smbclient" dc BINDIR="$BINDIR" script/tests/test_smbclient_s3.sh \$SERVER \$SERVER_IP
+plantest "blackbox.wbinfo" dc BINDIR="$BINDIR" script/tests/test_wbinfo_s3.sh \$DOMAIN \$SERVER \$USERNAME \$PASSWORD
+plantest "blackbox.net" dc BINDIR="$BINDIR" SCRIPTDIR="$SCRIPTDIR" script/tests/test_net_s3.sh
