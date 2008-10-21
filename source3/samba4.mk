@@ -158,6 +158,6 @@ clean::
 proto:: $(PROTO_HEADERS)
 modules:: $(PLUGINS)
 
-all:: basics bin/samba4 bin/regpatch4 bin/regdiff4 bin/regshell4 bin/regtree4 bin/smbclient4
-torture:: basics bin/smbtorture4
-everything:: basics $(patsubst %,%4,$(BINARIES))
+all:: bin/samba4 bin/regpatch4 bin/regdiff4 bin/regshell4 bin/regtree4 bin/smbclient4
+torture:: bin/smbtorture4
+everything:: $(patsubst %,%4,$(BINARIES))

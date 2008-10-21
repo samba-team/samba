@@ -125,7 +125,7 @@ m4_include(nsswitch/config.m4)
 dnl Samba 4 files
 AC_SUBST(LD)
 AC_LIBREPLACE_SHLD_FLAGS
-SMB_WRITE_MAKEVARS(samba4-config.mk, [prefix exec_prefix CPPFLAGS LDSHFLAGS POPT_OBJ CFLAGS TALLOC_OBJ POPT_LIBS])
+SMB_WRITE_MAKEVARS(samba4-config.mk, [prefix exec_prefix CPPFLAGS LDSHFLAGS POPT_OBJ CFLAGS TALLOC_OBJ POPT_LIBS srcdir builddir])
 		 
 oldbuilddir="$builddir"
 builddir="$builddir/../source4"

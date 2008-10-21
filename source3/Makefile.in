@@ -1154,8 +1154,10 @@ RPC_OPEN_TCP_OBJ = torture/rpc_open_tcp.o \
 ######################################################################
 # now the rules...
 ######################################################################
-all:: SHOWFLAGS libs $(SBIN_PROGS) $(BIN_PROGS) $(ROOT_SBIN_PROGS) \
+all:: SHOWFLAGS basics libs $(SBIN_PROGS) $(BIN_PROGS) $(ROOT_SBIN_PROGS) \
 	$(MODULES) $(NSS_MODULES) $(PAM_MODULES) @EXTRA_ALL_TARGETS@
+
+basics::
 
 nss_modules:: $(NSS_MODULES)
 
@@ -1167,7 +1169,7 @@ pam_winbind: SHOWFLAGS bin/pam_winbind.@SHLIBEXT@
 
 gpext_modules:: $(GPEXT_MODULES)
 
-torture:: SHOWFLAGS $(TORTURE_PROGS) 
+torture:: SHOWFLAGS basics $(TORTURE_PROGS) 
 
 smbtorture : SHOWFLAGS bin/smbtorture@EXEEXT@
 
