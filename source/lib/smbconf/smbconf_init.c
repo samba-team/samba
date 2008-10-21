@@ -72,7 +72,7 @@ WERROR smbconf_init(TALLOC_CTX *mem_ctx, struct smbconf_ctx **conf_ctx,
 	} else if (sep == NULL) {
 		/*
 		 * If no separator was given in the source, and the string is
-		 * not a know backend, assume file backend and use the source
+		 * not a known backend, assume file backend and use the source
 		 * string as a path argument.
 		 */
 		werr = smbconf_init_txt(mem_ctx, conf_ctx, backend);
