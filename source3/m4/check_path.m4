@@ -303,6 +303,7 @@ AC_ARG_ENABLE(debug,
 	debug=yes
     fi])
 
+AC_SUBST(developer)
 developer=no
 AC_ARG_ENABLE(developer, [AS_HELP_STRING([--enable-developer], [Turn on developer warnings and debugging (default=no)])],
     [if eval "test x$enable_developer = xyes"; then
