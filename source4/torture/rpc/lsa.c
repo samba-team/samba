@@ -1838,7 +1838,7 @@ static bool test_query_each_TrustDom(struct dcerpc_pipe *p,
 
 			for (j=0; j < ARRAY_SIZE(levels); j++) {
 				struct lsa_QueryTrustedDomainInfoBySid q;
-				union lsa_TrustedDomainInfo info;
+				union lsa_TrustedDomainInfo *info = NULL;
 				
 				if (!domains->domains[i].sid) {
 					continue;
@@ -1848,6 +1848,7 @@ static bool test_query_each_TrustDom(struct dcerpc_pipe *p,
 				q.in.dom_sid = domains->domains[i].sid;
 				q.in.level   = levels[j];
 				q.out.info   = &info;
+
 				status = dcerpc_lsa_QueryTrustedDomainInfoBySid(p, mem_ctx, &q);
 				if (!NT_STATUS_IS_OK(status) && ok[j]) {
 					printf("QueryTrustedDomainInfoBySid level %d failed - %s\n", 

@@ -192,6 +192,7 @@ static bool get_downleveltrust(struct torture_context *tctx, struct dcerpc_pipe 
 
 	for (i=0; i<domains.count; i++) {
 		struct lsa_QueryTrustedDomainInfoBySid q;
+		union lsa_TrustedDomainInfo *info = NULL;
 
 		if (domains.domains[i].sid == NULL)
 			continue;
@@ -199,11 +200,13 @@ static bool get_downleveltrust(struct torture_context *tctx, struct dcerpc_pipe 
 		q.in.handle = handle;
 		q.in.dom_sid = domains.domains[i].sid;
 		q.in.level = 6;
+		q.out.info = &info;
+
 		status = dcerpc_lsa_QueryTrustedDomainInfoBySid(p, tctx, &q);
 		if (!NT_STATUS_IS_OK(status)) continue;
 
-		if ((q.out.info->info_ex.trust_direction & 2) &&
-		    (q.out.info->info_ex.trust_type == 1)) {
+		if ((info->info_ex.trust_direction & 2) &&
+		    (info->info_ex.trust_type == 1)) {
 			*sid = domains.domains[i].sid;
 			return true;
 		}

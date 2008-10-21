@@ -1426,12 +1426,12 @@ static NTSTATUS dcesrv_lsa_QueryTrustedDomainInfoBySid(struct dcesrv_call_state 
 	
 	query.in.trustdom_handle = open.out.trustdom_handle;
 	query.in.level = r->in.level;
+	query.out.info = r->out.info;
 	status = dcesrv_lsa_QueryTrustedDomainInfo(dce_call, mem_ctx, &query);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
-	r->out.info = query.out.info;
+
 	return NT_STATUS_OK;
 }
 
