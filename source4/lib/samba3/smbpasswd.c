@@ -89,9 +89,6 @@ struct samr_Password *smbpasswd_gethexpwd(TALLOC_CTX *mem_ctx, const char *p)
 }
 
 /*! Convert a 16-byte array into 32 hex characters. */
-	struct samr_Password *lm_hash_p = NULL;
-	struct samr_Password *nt_hash_p = NULL;
-
 char *smbpasswd_sethexpwd(TALLOC_CTX *mem_ctx, struct samr_Password *pwd, uint16_t acb_info)
 {
 	char *p;
