@@ -172,7 +172,7 @@ done:
  * @param domain      Domain name (possibly "")
  * @param name        User or group name
  * @param *sid        Pointer to the resolved domain SID
- * @param *name_type  Pointet to the SID type
+ * @param *name_type  Pointer to the SID type
  *
  * @return #wbcErr
  *
@@ -225,7 +225,7 @@ wbcErr wbcLookupName(const char *domain,
  * @param *sid        Pointer to the domain SID to be resolved
  * @param pdomain     Resolved Domain name (possibly "")
  * @param pname       Resolved User or group name
- * @param *pname_type Pointet to the resolved SID type
+ * @param *pname_type Pointer to the resolved SID type
  *
  * @return #wbcErr
  *
