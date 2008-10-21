@@ -2711,6 +2711,7 @@ static NTSTATUS dcesrv_lsa_LookupPrivName(struct dcesrv_call_state *dce_call,
 {
 	struct dcesrv_handle *h;
 	struct lsa_policy_state *state;
+	struct lsa_StringLarge *name;
 	const char *privname;
 
 	DCESRV_PULL_HANDLE(h, r->in.handle, LSA_HANDLE_POLICY);
@@ -2726,11 +2727,14 @@ static NTSTATUS dcesrv_lsa_LookupPrivName(struct dcesrv_call_state *dce_call,
 		return NT_STATUS_NO_SUCH_PRIVILEGE;
 	}
 
-	r->out.name = talloc(mem_ctx, struct lsa_StringLarge);
-	if (r->out.name == NULL) {
+	name = talloc(mem_ctx, struct lsa_StringLarge);
+	if (name == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	r->out.name->string = privname;
+
+	name->string = privname;
+
+	*r->out.name = name;
 
 	return NT_STATUS_OK;	
 }

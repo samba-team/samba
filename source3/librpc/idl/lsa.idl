@@ -769,7 +769,7 @@ import "misc.idl", "security.idl";
 
 
 	/* Function:      0x20 */
-	NTSTATUS lsa_LookupPrivName (
+	NTSTATUS lsa_LookupPrivName(
 		[in]     policy_handle *handle,
 		[in,ref] lsa_LUID *luid,
 		[out,ref] lsa_StringLarge **name

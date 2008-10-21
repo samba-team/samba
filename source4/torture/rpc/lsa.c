@@ -767,9 +767,11 @@ static bool test_LookupPrivName(struct dcerpc_pipe *p,
 {
 	NTSTATUS status;
 	struct lsa_LookupPrivName r;
+	struct lsa_StringLarge *name = NULL;
 
 	r.in.handle = handle;
 	r.in.luid = luid;
+	r.out.name = &name;
 
 	status = dcerpc_lsa_LookupPrivName(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -807,22 +809,24 @@ static bool test_RemovePrivilegesFromAccount(struct dcerpc_pipe *p,
 	if (!NT_STATUS_IS_OK(status)) {
 		
 		struct lsa_LookupPrivName r_name;
+		struct lsa_StringLarge *name = NULL;
 		
 		r_name.in.handle = handle;
 		r_name.in.luid = luid;
-		
+		r_name.out.name = &name;
+
 		status = dcerpc_lsa_LookupPrivName(p, mem_ctx, &r_name);
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("\nLookupPrivName failed - %s\n", nt_errstr(status));
 			return false;
 		}
 		/* Windows 2008 does not allow this to be removed */
-		if (strcmp("SeAuditPrivilege", r_name.out.name->string) == 0) {
+		if (strcmp("SeAuditPrivilege", name->string) == 0) {
 			return ret;
 		}
 
 		printf("RemovePrivilegesFromAccount failed to remove %s - %s\n", 
-		       r_name.out.name->string, 
+		       name->string,
 		       nt_errstr(status));
 		return false;
 	}

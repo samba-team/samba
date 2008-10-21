@@ -1073,8 +1073,12 @@ static bool samsync_handle_account(TALLOC_CTX *mem_ctx, struct samsync_state *sa
 	TEST_INT_EQUAL(account->privilege_entries, privs->count);
 	
 	for (i=0;i< privs->count; i++) {
+
+		struct lsa_StringLarge *name = NULL;
+
 		r.in.handle = samsync_state->lsa_handle;
 		r.in.luid = &privs->set[i].luid;
+		r.out.name = &name;
 		
 		status = dcerpc_lsa_LookupPrivName(samsync_state->p_lsa, mem_ctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -1087,7 +1091,7 @@ static bool samsync_handle_account(TALLOC_CTX *mem_ctx, struct samsync_state *sa
 			return false;
 		}
 		for (j=0;j<account->privilege_entries; j++) {
-			if (strcmp(r.out.name->string, account->privilege_name[j].string) == 0) {
+			if (strcmp(name->string, account->privilege_name[j].string) == 0) {
 				found_priv_in_lsa[j] = true;
 				break;
 			}
