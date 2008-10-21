@@ -1487,14 +1487,14 @@ NTSTATUS _lsa_GetUserName(pipes_struct *p,
 		domname = pdb_get_domain(p->server_info->sam_account);
 	}
 
-	account_name = TALLOC(p->mem_ctx, struct lsa_String);
+	account_name = TALLOC_P(p->mem_ctx, struct lsa_String);
 	if (!account_name) {
 		return NT_STATUS_NO_MEMORY;
 	}
 	init_lsa_String(account_name, username);
 
 	if (r->out.authority_name) {
-		authority_name = TALLOC(p->mem_ctx, struct lsa_String);
+		authority_name = TALLOC_P(p->mem_ctx, struct lsa_String);
 		if (!authority_name) {
 			return NT_STATUS_NO_MEMORY;
 		}
