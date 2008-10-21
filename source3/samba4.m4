@@ -129,8 +129,12 @@ SMB_WRITE_MAKEVARS(samba4-config.mk, [prefix exec_prefix CPPFLAGS LDSHFLAGS POPT
 		 
 oldbuilddir="$builddir"
 builddir="$builddir/../source4"
+oldsrcdir="$srcdir"
+srcdir="$srcdir/../source4"
+AC_SUBST(srcdir)
 SMB_WRITE_PERLVARS(../source4/build/smb_build/config.pm)
 builddir="$oldbuilddir"
+srcdir="$oldsrcdir"
 
 echo "configure: creating ../source4/config.mk"
 cat >../source4/config.mk<<CEOF
