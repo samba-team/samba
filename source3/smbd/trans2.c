@@ -1006,22 +1006,23 @@ static void call_trans2open(connection_struct *conn,
 		return;
 	}
 
-	status = create_file(conn,			/* conn */
-			     req,			/* req */
-			     0,				/* root_dir_fid */
-			     fname,			/* fname */
-			     access_mask,		/* access_mask */
-			     share_mode,		/* share_access */
-			     create_disposition,	/* create_disposition*/
-			     create_options,		/* create_options */
-			     open_attr,			/* file_attributes */
-			     oplock_request,		/* oplock_request */
-			     open_size,			/* allocation_size */
-			     NULL,			/* sd */
-			     ea_list,			/* ea_list */
-			     &fsp,			/* result */
-			     &smb_action,		/* pinfo */
-			     &sbuf);			/* psbuf */
+	status = SMB_VFS_CREATE_FILE(
+		conn,					/* conn */
+		req,					/* req */
+		0,					/* root_dir_fid */
+		fname,					/* fname */
+		access_mask,				/* access_mask */
+		share_mode,				/* share_access */
+		create_disposition,			/* create_disposition*/
+		create_options,				/* create_options */
+		open_attr,				/* file_attributes */
+		oplock_request,				/* oplock_request */
+		open_size,				/* allocation_size */
+		NULL,					/* sd */
+		ea_list,				/* ea_list */
+		&fsp,					/* result */
+		&smb_action,				/* pinfo */
+		&sbuf);					/* psbuf */
 
 	if (!NT_STATUS_IS_OK(status)) {
 		if (open_was_deferred(req->mid)) {

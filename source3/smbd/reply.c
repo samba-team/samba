@@ -1630,22 +1630,23 @@ void reply_open(struct smb_request *req)
 		return;
 	}
 
-	status = create_file(conn,			/* conn */
-			     req,			/* req */
-			     0,				/* root_dir_fid */
-			     fname,			/* fname */
-			     access_mask,		/* access_mask */
-			     share_mode,		/* share_access */
-			     create_disposition,	/* create_disposition*/
-			     create_options,		/* create_options */
-			     dos_attr,			/* file_attributes */
-			     oplock_request,		/* oplock_request */
-			     0,				/* allocation_size */
-			     NULL,			/* sd */
-			     NULL,			/* ea_list */
-			     &fsp,			/* result */
-			     &info,			/* pinfo */
-			     &sbuf);			/* psbuf */
+	status = SMB_VFS_CREATE_FILE(
+		conn,					/* conn */
+		req,					/* req */
+		0,					/* root_dir_fid */
+		fname,					/* fname */
+		access_mask,				/* access_mask */
+		share_mode,				/* share_access */
+		create_disposition,			/* create_disposition*/
+		create_options,				/* create_options */
+		dos_attr,				/* file_attributes */
+		oplock_request,				/* oplock_request */
+		0,					/* allocation_size */
+		NULL,					/* sd */
+		NULL,					/* ea_list */
+		&fsp,					/* result */
+		&info,					/* pinfo */
+		&sbuf);					/* psbuf */
 
 	if (!NT_STATUS_IS_OK(status)) {
 		if (open_was_deferred(req->mid)) {
@@ -1774,22 +1775,23 @@ void reply_open_and_X(struct smb_request *req)
 		return;
 	}
 
-	status = create_file(conn,			/* conn */
-			     req,			/* req */
-			     0,				/* root_dir_fid */
-			     fname,			/* fname */
-			     access_mask,		/* access_mask */
-			     share_mode,		/* share_access */
-			     create_disposition,	/* create_disposition*/
-			     create_options,		/* create_options */
-			     smb_attr,			/* file_attributes */
-			     oplock_request,		/* oplock_request */
-			     0,				/* allocation_size */
-			     NULL,			/* sd */
-			     NULL,			/* ea_list */
-			     &fsp,			/* result */
-			     &smb_action,		/* pinfo */
-			     &sbuf);			/* psbuf */
+	status = SMB_VFS_CREATE_FILE(
+		conn,					/* conn */
+		req,					/* req */
+		0,					/* root_dir_fid */
+		fname,					/* fname */
+		access_mask,				/* access_mask */
+		share_mode,				/* share_access */
+		create_disposition,			/* create_disposition*/
+		create_options,				/* create_options */
+		smb_attr,				/* file_attributes */
+		oplock_request,				/* oplock_request */
+		0,					/* allocation_size */
+		NULL,					/* sd */
+		NULL,					/* ea_list */
+		&fsp,					/* result */
+		&smb_action,				/* pinfo */
+		&sbuf);					/* psbuf */
 
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBopenX);
@@ -1972,22 +1974,23 @@ void reply_mknew(struct smb_request *req)
 		create_disposition = FILE_OVERWRITE_IF;
 	}
 
-	status = create_file(conn,			/* conn */
-			     req,			/* req */
-			     0,				/* root_dir_fid */
-			     fname,			/* fname */
-			     access_mask,		/* access_mask */
-			     share_mode,		/* share_access */
-			     create_disposition,	/* create_disposition*/
-			     create_options,		/* create_options */
-			     fattr,			/* file_attributes */
-			     oplock_request,		/* oplock_request */
-			     0,				/* allocation_size */
-			     NULL,			/* sd */
-			     NULL,			/* ea_list */
-			     &fsp,			/* result */
-			     NULL,			/* pinfo */
-			     &sbuf);			/* psbuf */
+	status = SMB_VFS_CREATE_FILE(
+		conn,					/* conn */
+		req,					/* req */
+		0,					/* root_dir_fid */
+		fname,					/* fname */
+		access_mask,				/* access_mask */
+		share_mode,				/* share_access */
+		create_disposition,			/* create_disposition*/
+		create_options,				/* create_options */
+		fattr,					/* file_attributes */
+		oplock_request,				/* oplock_request */
+		0,					/* allocation_size */
+		NULL,					/* sd */
+		NULL,					/* ea_list */
+		&fsp,					/* result */
+		NULL,					/* pinfo */
+		&sbuf);					/* psbuf */
 
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBcreate);

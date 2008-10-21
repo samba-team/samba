@@ -208,6 +208,31 @@ static int vfswrap_open(vfs_handle_struct *handle,  const char *fname,
 	return result;
 }
 
+static NTSTATUS vfswrap_create_file(vfs_handle_struct *handle,
+				    struct smb_request *req,
+				    uint16_t root_dir_fid,
+				    const char *fname,
+				    uint32_t access_mask,
+				    uint32_t share_access,
+				    uint32_t create_disposition,
+				    uint32_t create_options,
+				    uint32_t file_attributes,
+				    uint32_t oplock_request,
+				    uint64_t allocation_size,
+				    struct security_descriptor *sd,
+				    struct ea_list *ea_list,
+				    files_struct **result,
+				    int *pinfo,
+				    SMB_STRUCT_STAT *psbuf)
+{
+	return create_file_default(handle->conn, req, root_dir_fid, fname,
+				   access_mask, share_access,
+				   create_disposition, create_options,
+				   file_attributes, oplock_request,
+				   allocation_size, sd, ea_list, result, pinfo,
+				   psbuf);
+}
+
 static int vfswrap_close(vfs_handle_struct *handle, files_struct *fsp)
 {
 	int result;
@@ -1358,6 +1383,8 @@ static vfs_op_tuple vfs_default_ops[] = {
 	/* File operations */
 
 	{SMB_VFS_OP(vfswrap_open),	SMB_VFS_OP_OPEN,
+	 SMB_VFS_LAYER_OPAQUE},
+	{SMB_VFS_OP(vfswrap_create_file),	SMB_VFS_OP_CREATE_FILE,
 	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(vfswrap_close),	SMB_VFS_OP_CLOSE,
 	 SMB_VFS_LAYER_OPAQUE},

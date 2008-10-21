@@ -3082,23 +3082,23 @@ NTSTATUS create_file_unixpath(connection_struct *conn,
 	return status;
 }
 
-NTSTATUS create_file(connection_struct *conn,
-		     struct smb_request *req,
-		     uint16_t root_dir_fid,
-		     const char *fname,
-		     uint32_t access_mask,
-		     uint32_t share_access,
-		     uint32_t create_disposition,
-		     uint32_t create_options,
-		     uint32_t file_attributes,
-		     uint32_t oplock_request,
-		     uint64_t allocation_size,
-		     struct security_descriptor *sd,
-		     struct ea_list *ea_list,
+NTSTATUS create_file_default(connection_struct *conn,
+			     struct smb_request *req,
+			     uint16_t root_dir_fid,
+			     const char *fname,
+			     uint32_t access_mask,
+			     uint32_t share_access,
+			     uint32_t create_disposition,
+			     uint32_t create_options,
+			     uint32_t file_attributes,
+			     uint32_t oplock_request,
+			     uint64_t allocation_size,
+			     struct security_descriptor *sd,
+			     struct ea_list *ea_list,
 
-		     files_struct **result,
-		     int *pinfo,
-		     SMB_STRUCT_STAT *psbuf)
+			     files_struct **result,
+			     int *pinfo,
+			     SMB_STRUCT_STAT *psbuf)
 {
 	struct case_semantics_state *case_state = NULL;
 	SMB_STRUCT_STAT sbuf;

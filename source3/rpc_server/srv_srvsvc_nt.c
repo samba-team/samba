@@ -2048,7 +2048,7 @@ WERROR _srvsvc_NetGetFileSecurity(pipes_struct *p,
 		goto error_exit;
 	}
 
-	nt_status = create_file(
+	nt_status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
 		NULL,					/* req */
 		0,					/* root_dir_fid */
@@ -2162,7 +2162,7 @@ WERROR _srvsvc_NetSetFileSecurity(pipes_struct *p,
 		goto error_exit;
 	}
 
-	nt_status = create_file(
+	nt_status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
 		NULL,					/* req */
 		0,					/* root_dir_fid */

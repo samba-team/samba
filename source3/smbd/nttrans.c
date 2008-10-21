@@ -474,10 +474,23 @@ void reply_ntcreate_and_X(struct smb_request *req)
 			? BATCH_OPLOCK : 0;
 	}
 
-	status = create_file(conn, req, root_dir_fid, fname,
-			     access_mask, share_access, create_disposition,
-			     create_options, file_attributes, oplock_request,
-			     allocation_size, NULL, NULL, &fsp, &info, &sbuf);
+	status = SMB_VFS_CREATE_FILE(
+		conn,					/* conn */
+		req,					/* req */
+		root_dir_fid,				/* root_dir_fid */
+		fname,					/* fname */
+		access_mask,				/* access_mask */
+		share_access,				/* share_access */
+		create_disposition,			/* create_disposition*/
+		create_options,				/* create_options */
+		file_attributes,			/* file_attributes */
+		oplock_request,				/* oplock_request */
+		allocation_size,			/* allocation_size */
+		NULL,					/* sd */
+		NULL,					/* ea_list */
+		&fsp,					/* result */
+		&info,					/* pinfo */
+		&sbuf);					/* psbuf */
 
 	if (!NT_STATUS_IS_OK(status)) {
 		if (open_was_deferred(req->mid)) {
@@ -932,10 +945,23 @@ static void call_nt_transact_create(connection_struct *conn,
 			? BATCH_OPLOCK : 0;
 	}
 
-	status = create_file(conn, req, root_dir_fid, fname,
-			     access_mask, share_access, create_disposition,
-			     create_options, file_attributes, oplock_request,
-			     allocation_size, sd, ea_list, &fsp, &info, &sbuf);
+	status = SMB_VFS_CREATE_FILE(
+		conn,					/* conn */
+		req,					/* req */
+		root_dir_fid,				/* root_dir_fid */
+		fname,					/* fname */
+		access_mask,				/* access_mask */
+		share_access,				/* share_access */
+		create_disposition,			/* create_disposition*/
+		create_options,				/* create_options */
+		file_attributes,			/* file_attributes */
+		oplock_request,				/* oplock_request */
+		allocation_size,			/* allocation_size */
+		sd,					/* sd */
+		ea_list,				/* ea_list */
+		&fsp,					/* result */
+		&info,					/* pinfo */
+		&sbuf);					/* psbuf */
 
 	if(!NT_STATUS_IS_OK(status)) {
 		if (open_was_deferred(req->mid)) {
