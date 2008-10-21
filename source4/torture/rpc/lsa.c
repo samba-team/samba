@@ -2294,6 +2294,7 @@ static bool test_QueryDomainInfoPolicy(struct dcerpc_pipe *p,
 				 struct policy_handle *handle)
 {
 	struct lsa_QueryDomainInformationPolicy r;
+	union lsa_DomainInformationPolicy *info = NULL;
 	NTSTATUS status;
 	int i;
 	bool ret = true;
@@ -2303,6 +2304,7 @@ static bool test_QueryDomainInfoPolicy(struct dcerpc_pipe *p,
 	for (i=2;i<4;i++) {
 		r.in.handle = handle;
 		r.in.level = i;
+		r.out.info = &info;
 
 		printf("\nTrying QueryDomainInformationPolicy level %d\n", i);
 

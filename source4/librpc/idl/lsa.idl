@@ -974,7 +974,7 @@ import "misc.idl", "security.idl";
 	NTSTATUS lsa_QueryDomainInformationPolicy(
 		[in]		policy_handle *handle,
 		[in] 		uint16 level,
-		[out,unique,switch_is(level)]	lsa_DomainInformationPolicy *info
+		[out,ref,switch_is(level)]	lsa_DomainInformationPolicy **info
 		);
 
 	/* Function 0x36 */
