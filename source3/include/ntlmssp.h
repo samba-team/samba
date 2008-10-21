@@ -157,14 +157,14 @@ typedef struct ntlmssp_state
 	unsigned char recv_sign_key[16];
 	unsigned char recv_seal_key[16];
 
-	unsigned char send_seal_arc4_state[258];
-	unsigned char recv_seal_arc4_state[258];
+	struct arcfour_state send_seal_arc4_state;
+	struct arcfour_state recv_seal_arc4_state;
 
 	uint32 ntlm2_send_seq_num;
 	uint32 ntlm2_recv_seq_num;
 
 	/* ntlmv1 */
-	unsigned char ntlmv1_arc4_state[258];
+	struct arcfour_state ntlmv1_arc4_state;
 	uint32 ntlmv1_seq_num;
 
 	/* it turns out that we don't always get the

@@ -33,7 +33,7 @@
 
 #include "includes.h"
 #include "lib/events/events.h"
-#include "lib/util/dlinklist.h"
+#include "../lib/util/dlinklist.h"
 #include "libcli/ldap/ldap.h"
 #include "libcli/ldap/ldap_ndr.h"
 #include "libcli/cldap/cldap.h"

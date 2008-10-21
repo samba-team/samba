@@ -20,7 +20,7 @@
 */
 
 #include "includes.h"
-#include "lib/util/dlinklist.h"
+#include "../lib/util/dlinklist.h"
 #include "nbt_server/nbt_server.h"
 #include "smbd/service_task.h"
 #include "lib/socket/socket.h"
@@ -38,7 +38,7 @@ static void nbtd_request_handler(struct nbt_name_socket *nbtsock,
 				 struct nbt_name_packet *packet, 
 				 struct socket_address *src)
 {
-	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private, 
+	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private_data,
 						       struct nbtd_interface);
 	struct nbtd_server *nbtsrv = iface->nbtsrv;
 

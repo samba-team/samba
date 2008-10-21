@@ -25,7 +25,7 @@
 #include "includes.h"
 #include "system/time.h"
 #include "system/filesys.h"
-#include "lib/util/dlinklist.h"
+#include "../lib/util/dlinklist.h"
 #include "libcli/libcli.h"
 #include "libcli/raw/libcliraw.h"
 #include "torture/torture.h"

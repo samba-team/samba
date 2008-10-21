@@ -71,12 +71,11 @@ NTSTATUS dcesrv_lsa_get_policy_state(struct dcesrv_call_state *dce_call, TALLOC_
 		return NT_STATUS_NO_MEMORY;		
 	}
 
-	ret = ldb_search(state->sam_ldb, state->domain_dn, LDB_SCOPE_BASE, NULL, dom_attrs, &dom_res);
-	
+	ret = ldb_search(state->sam_ldb, mem_ctx, &dom_res,
+			 state->domain_dn, LDB_SCOPE_BASE, dom_attrs, NULL);
 	if (ret != LDB_SUCCESS) {
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
-	talloc_steal(mem_ctx, dom_res);
 	if (dom_res->count != 1) {
 		return NT_STATUS_NO_SUCH_DOMAIN;		
 	}
@@ -95,7 +94,7 @@ NTSTATUS dcesrv_lsa_get_policy_state(struct dcesrv_call_state *dce_call, TALLOC_
 	
 	talloc_free(dom_res);
 
-	ret = ldb_search_exp_fmt(state->sam_ldb, state, &ref_res,
+	ret = ldb_search(state->sam_ldb, state, &ref_res,
 				 partitions_basedn, LDB_SCOPE_SUBTREE, ref_attrs,
 				 "(&(objectclass=crossRef)(ncName=%s))",
 				 ldb_dn_get_linearized(state->domain_dn));
@@ -125,7 +124,7 @@ NTSTATUS dcesrv_lsa_get_policy_state(struct dcesrv_call_state *dce_call, TALLOC_
 
 	talloc_free(ref_res);
 
-	ret = ldb_search_exp_fmt(state->sam_ldb, state, &forest_ref_res,
+	ret = ldb_search(state->sam_ldb, state, &forest_ref_res,
 				 partitions_basedn, LDB_SCOPE_SUBTREE, ref_attrs,
 				 "(&(objectclass=crossRef)(ncName=%s))",
 				 ldb_dn_get_linearized(state->forest_dn));
@@ -200,6 +199,12 @@ NTSTATUS dcesrv_lsa_OpenPolicy2(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 
 	ZERO_STRUCTP(r->out.handle);
 
+	if (r->in.attr != NULL &&
+	    r->in.attr->root_dir != NULL) {
+		/* MS-LSAD 3.1.4.4.1 */
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
 	status = dcesrv_lsa_get_policy_state(dce_call, mem_ctx, &state);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -212,6 +217,8 @@ NTSTATUS dcesrv_lsa_OpenPolicy2(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 
 	handle->data = talloc_steal(handle, state);
 
+	/* need to check the access mask against - need ACLs - fails
+	   WSPP test */
 	state->access_mask = r->in.access_mask;
 	state->handle = handle;
 	*r->out.handle = handle->wire_handle;

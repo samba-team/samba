@@ -43,7 +43,10 @@ bool password_ok(const char *smb_name, DATA_BLOB password_blob);
 
 /* The following definitions come from auth/auth_domain.c  */
 
-NTSTATUS auth_domain_init(void) ;
+void attempt_machine_password_change(void);
+NTSTATUS auth_domain_init(void);
+
+NTSTATUS auth_netlogond_init(void);
 
 /* The following definitions come from auth/auth_ntlmssp.c  */
 
@@ -312,11 +315,6 @@ int afs_syscall( int subcall,
 bool afs_settoken_str(const char *token_string);
 bool afs_settoken_str(const char *token_string);
 
-/* The following definitions come from lib/arc4.c  */
-
-void smb_arc4_init(unsigned char arc4_state_out[258], const unsigned char *key, size_t keylen);
-void smb_arc4_crypt(unsigned char arc4_state_inout[258], unsigned char *data, size_t len);
-
 /* The following definitions come from lib/audit.c  */
 
 const char *audit_category_str(uint32 category);
@@ -437,22 +435,6 @@ int connections_forall(int (*fn)(struct db_record *rec,
 		       void *private_data);
 bool connections_init(bool rw);
 
-/* The following definitions come from lib/crc32.c  */
-
-uint32 crc32_calc_buffer(const char *buf, size_t size);
-
-/* The following definitions come from lib/data_blob.c  */
-
-DATA_BLOB data_blob(const void *p, size_t length);
-DATA_BLOB data_blob_talloc(TALLOC_CTX *mem_ctx, const void *p, size_t length);
-void data_blob_free(DATA_BLOB *d);
-void data_blob_clear(DATA_BLOB *d);
-void data_blob_clear_free(DATA_BLOB *d);
-DATA_BLOB data_blob_string_const(const char *str);
-DATA_BLOB data_blob_const(const void *p, size_t length);
-DATA_BLOB data_blob_talloc_zero(TALLOC_CTX *mem_ctx, size_t length);
-_PUBLIC_ char *data_blob_hex_string(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob);
-
 /* The following definitions come from lib/dbwrap_util.c  */
 
 int32_t dbwrap_fetch_int32(struct db_context *db, const char *keystr);
@@ -492,13 +474,14 @@ void force_check_log_size( void );
 bool need_to_check_log_size( void );
 void check_log_size( void );
 void dbgflush( void );
-bool dbghdr(int level, int cls, const char *file, const char *func, int line);
+bool dbghdrclass(int level, int cls, const char *location, const char *func);
+bool dbghdr(int level, const char *location, const char *func);
 TALLOC_CTX *debug_ctx(void);
 
 /* The following definitions come from lib/display_sec.c  */
 
 char *get_sec_mask_str(TALLOC_CTX *ctx, uint32 type);
-void display_sec_access(SEC_ACCESS *info);
+void display_sec_access(uint32_t *info);
 void display_sec_ace_flags(uint8_t flags);
 void display_sec_ace(SEC_ACE *ace);
 void display_sec_acl(SEC_ACL *sec_acl);
@@ -516,6 +499,7 @@ void display_set_stderr(void);
 /* The following definitions come from lib/errmap_unix.c  */
 
 NTSTATUS map_nt_error_from_unix(int unix_error);
+int map_errno_from_nt_status(NTSTATUS status);
 
 /* The following definitions come from lib/events.c  */
 
@@ -573,7 +557,7 @@ void pull_file_id_16(char *buf, struct file_id *id);
 
 /* The following definitions come from lib/fsusage.c  */
 
-int sys_fsusage(const char *path, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize);
+int sys_fsusage(const char *path, uint64_t *dfree, uint64_t *dsize);
 
 /* The following definitions come from lib/gencache.c  */
 
@@ -593,18 +577,8 @@ void gencache_unlock_entry( const char *key );
 
 void set_rand_reseed_callback(void (*fn)(int *));
 void set_need_random_reseed(void);
-void generate_random_buffer( unsigned char *out, int len);
-char *generate_random_str(size_t len);
-
-/* The following definitions come from lib/hmacmd5.c  */
-
-void hmac_md5_init_rfc2104(const unsigned char *key, int key_len, HMACMD5Context *ctx);
-void hmac_md5_init_limK_to_64(const unsigned char* key, int key_len,
-			HMACMD5Context *ctx);
-void hmac_md5_update(const unsigned char *text, int text_len, HMACMD5Context *ctx);
-void hmac_md5_final(unsigned char *digest, HMACMD5Context *ctx);
-void hmac_md5( unsigned char key[16], const unsigned char *data, int data_len,
-	       unsigned char *digest);
+void generate_random_buffer(uint8_t *out, int len);
+char *generate_random_str(TALLOC_CTX *mem_ctx, size_t len);
 
 /* The following definitions come from lib/iconv.c  */
 
@@ -648,12 +622,6 @@ char *escape_rdn_val_string_alloc(const char *s);
 /* The following definitions come from lib/md4.c  */
 
 void mdfour(unsigned char *out, const unsigned char *in, int n);
-
-/* The following definitions come from lib/md5.c  */
-
-void MD5Init(struct MD5Context *ctx);
-void MD5Update(struct MD5Context *ctx, unsigned char const *buf, unsigned len);
-void MD5Final(unsigned char digest[16], struct MD5Context *ctx);
 
 /* The following definitions come from lib/module.c  */
 
@@ -727,6 +695,7 @@ bool privilege_set_to_se_priv( SE_PRIV *mask, struct lsa_PrivilegeSet *privset )
 
 /* The following definitions come from lib/readline.c  */
 
+void smb_readline_done(void);
 char *smb_readline(const char *prompt, void (*callback)(void),
 		   char **(completion_fn)(const char *text, int start, int end));
 const char *smb_readline_get_line_buffer(void);
@@ -791,7 +760,6 @@ NTSTATUS sec_desc_mod_sid(SEC_DESC *sd, DOM_SID *sid, uint32 mask);
 NTSTATUS sec_desc_del_sid(TALLOC_CTX *ctx, SEC_DESC **psd, DOM_SID *sid, size_t *sd_size);
 SEC_DESC_BUF *se_create_child_secdesc(TALLOC_CTX *ctx, SEC_DESC *parent_ctr, 
 				      bool child_container);
-void init_sec_access(uint32 *t, uint32 mask);
 
 /* The following definitions come from lib/select.c  */
 
@@ -801,12 +769,6 @@ int sys_select_intr(int maxfd, fd_set *readfds, fd_set *writefds, fd_set *errorf
 
 /* The following definitions come from lib/sendfile.c  */
 
-ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T offset, size_t count);
-ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T offset, size_t count);
-ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T offset, size_t count);
-ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T offset, size_t count);
-ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T offset, size_t count);
-ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T offset, size_t count);
 ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T offset, size_t count);
 
 /* The following definitions come from lib/server_mutex.c  */
@@ -1147,11 +1109,9 @@ void push_dos_date3(uint8_t *buf,int offset,time_t unixdate, int zone_offset);
 time_t pull_dos_date(const uint8_t *date_ptr, int zone_offset);
 time_t pull_dos_date2(const uint8_t *date_ptr, int zone_offset);
 time_t pull_dos_date3(const uint8_t *date_ptr, int zone_offset);
-char *http_timestring(time_t t);
 char *timestring(TALLOC_CTX *mem_ctx, time_t t);
 const char *nt_time_string(TALLOC_CTX *mem_ctx, NTTIME nt);
 NTTIME nttime_from_string(const char *s);
-int64_t usec_time_diff(struct timeval *tv1, struct timeval *tv2);
 struct timeval timeval_zero(void);
 bool timeval_is_zero(const struct timeval *tv);
 struct timeval timeval_current(void);
@@ -1224,10 +1184,6 @@ const char *time_to_asc(const time_t t);
 const char *display_time(NTTIME nttime);
 bool nt_time_is_set(const NTTIME *nt);
 
-/* The following definitions come from lib/ufc.c  */
-
-char *ufc_crypt(const char *key,const char *salt);
-
 /* The following definitions come from lib/username.c  */
 
 char *get_user_home_dir(TALLOC_CTX *mem_ctx, const char *user);
@@ -1235,6 +1191,7 @@ struct passwd *Get_Pwnam_alloc(TALLOC_CTX *mem_ctx, const char *user);
 
 /* The following definitions come from lib/util.c  */
 
+bool all_zero(const uint8_t *ptr, size_t size);
 bool set_global_myname(const char *myname);
 const char *global_myname(void);
 bool set_global_myworkgroup(const char *myworkgroup);
@@ -1266,10 +1223,12 @@ const char *tmpdir(void);
 bool add_gid_to_array_unique(TALLOC_CTX *mem_ctx, gid_t gid,
 			     gid_t **gids, size_t *num_gids);
 const char *get_numlist(const char *p, uint32 **num, int *count);
-bool file_exist(const char *fname,SMB_STRUCT_STAT *sbuf);
+bool file_exist_stat(const char *fname,SMB_STRUCT_STAT *sbuf);
+bool file_exist(const char *fname);
 bool socket_exist(const char *fname);
 time_t file_modtime(const char *fname);
-bool directory_exist(char *dname,SMB_STRUCT_STAT *st);
+bool directory_exist_stat(char *dname,SMB_STRUCT_STAT *st);
+bool directory_exist(const char *dname);
 SMB_OFF_T get_file_size(char *file_name);
 char *attrib_string(uint16 mode);
 void show_msg(char *buf);
@@ -1297,7 +1256,7 @@ void add_to_large_array(TALLOC_CTX *mem_ctx, size_t element_size,
 			void *element, void *_array, uint32 *num_elements,
 			ssize_t *array_size);
 void safe_free(void *p);
-char *get_myname(TALLOC_CTX *ctx);
+char *talloc_get_myname(TALLOC_CTX *ctx);
 char *get_mydnsdomname(TALLOC_CTX *ctx);
 int interpret_protocol(const char *str,int def);
 char *automount_lookup(TALLOC_CTX *ctx, const char *user_name);
@@ -1325,6 +1284,7 @@ enum remote_arch_types get_remote_arch(void);
 void print_asc(int level, const unsigned char *buf,int len);
 void dump_data(int level, const unsigned char *buf1,int len);
 void dump_data_pw(const char *msg, const uchar * data, size_t len);
+void dump_data_skip_zeros(int level, const uint8_t *buf, int len);
 const char *tab_depth(int level, int depth);
 int str_checksum(const char *s);
 void zero_free(void *p, size_t size);
@@ -1396,16 +1356,16 @@ const char *strip_hostname(const char *s);
 /* The following definitions come from lib/util_file.c  */
 
 char *fgets_slash(char *s2,int maxlen,XFILE *f);
-char *fd_load(int fd, size_t *psize, size_t maxsize);
-char *file_load(const char *fname, size_t *size, size_t maxsize);
+char *file_load(const char *fname, size_t *size, size_t maxsize, TALLOC_CTX *mem_ctx);
+char **file_lines_parse(char *p, size_t size, int *numlines, TALLOC_CTX *mem_ctx);
 bool unmap_file(void* start, size_t size);
-void *map_file(char *fname, size_t size);
-char **file_lines_load(const char *fname, int *numlines, size_t maxsize);
-char **fd_lines_load(int fd, int *numlines, size_t maxsize);
-char **file_lines_pload(char *syscmd, int *numlines);
+void *map_file(const char *fname, size_t size);
+char **file_lines_load(const char *fname, int *numlines, size_t maxsize, TALLOC_CTX *mem_ctx);
+char **fd_lines_load(int fd, int *numlines, size_t maxsize, TALLOC_CTX *mem_ctx);
+char **file_lines_pload(const char *syscmd, int *numlines);
 void file_lines_free(char **lines);
 void file_lines_slashcont(char **lines);
-bool file_save(const char *fname, void *packet, size_t length);
+bool file_save(const char *fname, const void *packet, size_t length);
 
 /* The following definitions come from lib/util_nscd.c  */
 
@@ -1446,6 +1406,7 @@ WERROR registry_push_value(TALLOC_CTX *mem_ctx,
 /* The following definitions come from lib/util_seaccess.c  */
 
 void se_map_generic(uint32 *access_mask, const struct generic_mapping *mapping);
+void security_acl_map_generic(struct security_acl *sa, const struct generic_mapping *mapping);
 void se_map_standard(uint32 *access_mask, struct standard_mapping *mapping);
 bool se_access_check(const SEC_DESC *sd, const NT_USER_TOKEN *token,
 		     uint32 acc_desired, uint32 *acc_granted, 
@@ -1644,7 +1605,7 @@ char *alpha_strcpy_fn(const char *fn,
 char *StrnCpy_fn(const char *fn, int line,char *dest,const char *src,size_t n);
 size_t strhex_to_str(char *buf, size_t buf_len, const char *strhex, size_t strhex_len);
 DATA_BLOB strhex_to_data_blob(TALLOC_CTX *mem_ctx, const char *strhex);
-char *hex_encode(TALLOC_CTX *mem_ctx, const unsigned char *buff_in, size_t len);
+char *hex_encode_talloc(TALLOC_CTX *mem_ctx, const unsigned char *buff_in, size_t len);
 bool in_list(const char *s, const char *list, bool casesensitive);
 void string_free(char **s);
 bool string_set(char **dest,const char *src);
@@ -1693,9 +1654,9 @@ char *binary_string_rfc2254(char *buf, int len);
 char *binary_string(char *buf, int len);
 int fstr_sprintf(fstring s, const char *fmt, ...);
 char **str_list_make(TALLOC_CTX *mem_ctx, const char *string, const char *sep);
-bool str_list_copy(TALLOC_CTX *mem_ctx, char ***dest, const char **src);
-bool str_list_compare(char **list1, char **list2);
-int str_list_count( const char **list );
+char **str_list_copy(TALLOC_CTX *mem_ctx, const char **list);
+bool str_list_equal(const char **list1, const char **list2);
+size_t str_list_length( const char * const*list );
 bool str_list_sub_basic( char **list, const char *smb_name,
 			 const char *domain_name );
 bool str_list_substitute(char **list, const char *pattern, const char *insert);
@@ -1708,7 +1669,7 @@ void rfc1738_unescape(char *buf);
 DATA_BLOB base64_decode_data_blob(const char *s);
 void base64_decode_inplace(char *s);
 char *base64_encode_data_blob(TALLOC_CTX *mem_ctx, DATA_BLOB data);
-SMB_BIG_UINT STR_TO_SMB_BIG_UINT(const char *nptr, const char **entptr);
+uint64_t STR_TO_SMB_BIG_UINT(const char *nptr, const char **entptr);
 SMB_OFF_T conv_str_size(const char * str);
 void string_append(char **left, const char *right);
 bool add_string_to_array(TALLOC_CTX *mem_ctx,
@@ -1794,9 +1755,6 @@ int islower_ascii(int c);
 
 void smb_uuid_pack(const struct GUID uu, UUID_FLAT *ptr);
 void smb_uuid_unpack(const UUID_FLAT in, struct GUID *uu);
-void smb_uuid_generate_random(struct GUID *uu);
-const char *smb_uuid_string(TALLOC_CTX *mem_ctx, const struct GUID uu);
-bool smb_string_to_uuid(const char *in, struct GUID* uu);
 char *guid_binstring(const struct GUID *guid);
 
 /* The following definitions come from lib/version.c  */
@@ -1927,20 +1885,15 @@ NTSTATUS kerberos_return_info3_from_pac(TALLOC_CTX *mem_ctx,
 					struct netr_SamInfo3 **info3);
 
 /* The following definitions come from libads/cldap.c  */
-
 bool ads_cldap_netlogon(TALLOC_CTX *mem_ctx,
 			const char *server,
 			const char *realm,
-			uint32_t *nt_version,
-			union nbt_cldap_netlogon **reply);
+			uint32_t nt_version,
+			struct netlogon_samlogon_response **reply);
 bool ads_cldap_netlogon_5(TALLOC_CTX *mem_ctx,
 			  const char *server,
 			  const char *realm,
-			  struct nbt_cldap_netlogon_5 *reply5);
-bool pull_mailslot_cldap_reply(TALLOC_CTX *mem_ctx,
-			       const DATA_BLOB *blob,
-			       union nbt_cldap_netlogon *r,
-			       uint32_t *nt_version);
+			  struct NETLOGON_SAM_LOGON_RESPONSE_EX *reply5);
 
 /* The following definitions come from libads/disp_sec.c  */
 
@@ -2204,23 +2157,6 @@ ADS_STATUS ads_change_trust_account_password(ADS_STRUCT *ads, char *host_princip
 ADS_STATUS ads_guess_service_principal(ADS_STRUCT *ads,
 				       char **returned_principal);
 
-/* The following definitions come from libcli/nbt/nbtname.c  */
-
-_PUBLIC_ void ndr_print_nbt_string(struct ndr_print *ndr, const char *name, const char *s);
-_PUBLIC_ enum ndr_err_code ndr_pull_nbt_string(struct ndr_pull *ndr, int ndr_flags, const char **s);
-_PUBLIC_ enum ndr_err_code ndr_push_nbt_string(struct ndr_push *ndr, int ndr_flags, const char *s);
-_PUBLIC_ enum ndr_err_code ndr_pull_nbt_name(struct ndr_pull *ndr, int ndr_flags, struct nbt_name *r);
-_PUBLIC_ enum ndr_err_code ndr_push_nbt_name(struct ndr_push *ndr, int ndr_flags, const struct nbt_name *r);
-_PUBLIC_ NTSTATUS nbt_name_dup(TALLOC_CTX *mem_ctx, struct nbt_name *name, struct nbt_name *newname);
-_PUBLIC_ NTSTATUS nbt_name_to_blob(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, struct nbt_name *name);
-_PUBLIC_ NTSTATUS nbt_name_from_blob(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob, struct nbt_name *name);
-_PUBLIC_ void nbt_choose_called_name(TALLOC_CTX *mem_ctx,
-			    struct nbt_name *n, const char *name, int type);
-_PUBLIC_ char *nbt_name_string(TALLOC_CTX *mem_ctx, const struct nbt_name *name);
-_PUBLIC_ enum ndr_err_code ndr_pull_wrepl_nbt_name(struct ndr_pull *ndr, int ndr_flags, const struct nbt_name **_r);
-_PUBLIC_ enum ndr_err_code ndr_push_wrepl_nbt_name(struct ndr_push *ndr, int ndr_flags, const struct nbt_name *r);
-_PUBLIC_ void ndr_print_wrepl_nbt_name(struct ndr_print *ndr, const char *name, const struct nbt_name *r);
-
 /* The following definitions come from libgpo/gpext/gpext.c  */
 
 struct gp_extension *get_gp_extension_list(void);
@@ -2444,1652 +2380,48 @@ ADS_STATUS gp_get_machine_token(ADS_STRUCT *ads,
 				const char *dn,
 				struct nt_user_token **token);
 
-/* The following definitions come from librpc/gen_ndr/ndr_dfs.c  */
+#include "librpc/gen_ndr/ndr_dfs.h"
+#include "librpc/gen_ndr/ndr_dssetup.h"
+#include "librpc/gen_ndr/ndr_echo.h"
+#include "librpc/gen_ndr/ndr_eventlog.h"
+#include "librpc/gen_ndr/ndr_krb5pac.h"
+#include "librpc/gen_ndr/ndr_lsa.h"
+#include "librpc/gen_ndr/ndr_misc.h"
+#include "librpc/gen_ndr/ndr_netlogon.h"
+#include "librpc/gen_ndr/ndr_notify.h"
+#include "librpc/gen_ndr/ndr_ntsvcs.h"
+#include "librpc/gen_ndr/ndr_samr.h"
+#include "librpc/gen_ndr/ndr_security.h"
+#include "librpc/gen_ndr/ndr_srvsvc.h"
+#include "librpc/gen_ndr/ndr_svcctl.h"
+#include "librpc/gen_ndr/ndr_winreg.h"
+#include "librpc/gen_ndr/ndr_wkssvc.h"
+
+#include "librpc/gen_ndr/srv_dfs.h"
+#include "librpc/gen_ndr/srv_dssetup.h"
+#include "librpc/gen_ndr/srv_echo.h"
+#include "librpc/gen_ndr/srv_eventlog.h"
+#include "librpc/gen_ndr/srv_initshutdown.h"
+#include "librpc/gen_ndr/srv_lsa.h"
+#include "librpc/gen_ndr/srv_netlogon.h"
+#include "librpc/gen_ndr/srv_ntsvcs.h"
+#include "librpc/gen_ndr/srv_samr.h"
+#include "librpc/gen_ndr/srv_srvsvc.h"
+#include "librpc/gen_ndr/srv_svcctl.h"
+#include "librpc/gen_ndr/srv_winreg.h"
+#include "librpc/gen_ndr/srv_wkssvc.h"
+
+#include "librpc/ndr/libndr.h"
+
+/* The following definitions come from librpc/ndr/util.c  */
 
-_PUBLIC_ void ndr_print_dfs_ManagerVersion(struct ndr_print *ndr, const char *name, enum dfs_ManagerVersion r);
-_PUBLIC_ void ndr_print_dfs_Info0(struct ndr_print *ndr, const char *name, const struct dfs_Info0 *r);
-_PUBLIC_ void ndr_print_dfs_Info1(struct ndr_print *ndr, const char *name, const struct dfs_Info1 *r);
-_PUBLIC_ enum ndr_err_code ndr_push_dfs_VolumeState(struct ndr_push *ndr, int ndr_flags, uint32_t r);
-_PUBLIC_ enum ndr_err_code ndr_pull_dfs_VolumeState(struct ndr_pull *ndr, int ndr_flags, uint32_t *r);
-_PUBLIC_ void ndr_print_dfs_VolumeState(struct ndr_print *ndr, const char *name, uint32_t r);
-_PUBLIC_ void ndr_print_dfs_Info2(struct ndr_print *ndr, const char *name, const struct dfs_Info2 *r);
-_PUBLIC_ enum ndr_err_code ndr_push_dfs_StorageState(struct ndr_push *ndr, int ndr_flags, uint32_t r);
-_PUBLIC_ enum ndr_err_code ndr_pull_dfs_StorageState(struct ndr_pull *ndr, int ndr_flags, uint32_t *r);
-_PUBLIC_ void ndr_print_dfs_StorageState(struct ndr_print *ndr, const char *name, uint32_t r);
-_PUBLIC_ void ndr_print_dfs_StorageInfo(struct ndr_print *ndr, const char *name, const struct dfs_StorageInfo *r);
-_PUBLIC_ void ndr_print_dfs_Info3(struct ndr_print *ndr, const char *name, const struct dfs_Info3 *r);
-_PUBLIC_ void ndr_print_dfs_Info4(struct ndr_print *ndr, const char *name, const struct dfs_Info4 *r);
-_PUBLIC_ enum ndr_err_code ndr_push_dfs_PropertyFlags(struct ndr_push *ndr, int ndr_flags, uint32_t r);
-_PUBLIC_ enum ndr_err_code ndr_pull_dfs_PropertyFlags(struct ndr_pull *ndr, int ndr_flags, uint32_t *r);
-_PUBLIC_ void ndr_print_dfs_PropertyFlags(struct ndr_print *ndr, const char *name, uint32_t r);
-_PUBLIC_ void ndr_print_dfs_Info5(struct ndr_print *ndr, const char *name, const struct dfs_Info5 *r);
-_PUBLIC_ void ndr_print_dfs_Target_PriorityClass(struct ndr_print *ndr, const char *name, enum dfs_Target_PriorityClass r);
-_PUBLIC_ void ndr_print_dfs_Target_Priority(struct ndr_print *ndr, const char *name, const struct dfs_Target_Priority *r);
-_PUBLIC_ void ndr_print_dfs_StorageInfo2(struct ndr_print *ndr, const char *name, const struct dfs_StorageInfo2 *r);
-_PUBLIC_ void ndr_print_dfs_Info6(struct ndr_print *ndr, const char *name, const struct dfs_Info6 *r);
-_PUBLIC_ void ndr_print_dfs_Info7(struct ndr_print *ndr, const char *name, const struct dfs_Info7 *r);
-_PUBLIC_ void ndr_print_dfs_Info100(struct ndr_print *ndr, const char *name, const struct dfs_Info100 *r);
-_PUBLIC_ void ndr_print_dfs_Info101(struct ndr_print *ndr, const char *name, const struct dfs_Info101 *r);
-_PUBLIC_ void ndr_print_dfs_Info102(struct ndr_print *ndr, const char *name, const struct dfs_Info102 *r);
-_PUBLIC_ void ndr_print_dfs_Info103(struct ndr_print *ndr, const char *name, const struct dfs_Info103 *r);
-_PUBLIC_ void ndr_print_dfs_Info104(struct ndr_print *ndr, const char *name, const struct dfs_Info104 *r);
-_PUBLIC_ void ndr_print_dfs_Info105(struct ndr_print *ndr, const char *name, const struct dfs_Info105 *r);
-_PUBLIC_ void ndr_print_dfs_Info106(struct ndr_print *ndr, const char *name, const struct dfs_Info106 *r);
-_PUBLIC_ void ndr_print_dfs_Info200(struct ndr_print *ndr, const char *name, const struct dfs_Info200 *r);
-_PUBLIC_ void ndr_print_dfs_VolumeFlavor(struct ndr_print *ndr, const char *name, enum dfs_VolumeFlavor r);
-_PUBLIC_ void ndr_print_dfs_Info300(struct ndr_print *ndr, const char *name, const struct dfs_Info300 *r);
-_PUBLIC_ void ndr_print_dfs_Info(struct ndr_print *ndr, const char *name, const union dfs_Info *r);
-_PUBLIC_ void ndr_print_dfs_EnumArray1(struct ndr_print *ndr, const char *name, const struct dfs_EnumArray1 *r);
-_PUBLIC_ void ndr_print_dfs_EnumArray2(struct ndr_print *ndr, const char *name, const struct dfs_EnumArray2 *r);
-_PUBLIC_ void ndr_print_dfs_EnumArray3(struct ndr_print *ndr, const char *name, const struct dfs_EnumArray3 *r);
-_PUBLIC_ void ndr_print_dfs_EnumArray4(struct ndr_print *ndr, const char *name, const struct dfs_EnumArray4 *r);
-_PUBLIC_ void ndr_print_dfs_EnumArray5(struct ndr_print *ndr, const char *name, const struct dfs_EnumArray5 *r);
-_PUBLIC_ void ndr_print_dfs_EnumArray6(struct ndr_print *ndr, const char *name, const struct dfs_EnumArray6 *r);
-_PUBLIC_ void ndr_print_dfs_EnumArray200(struct ndr_print *ndr, const char *name, const struct dfs_EnumArray200 *r);
-_PUBLIC_ void ndr_print_dfs_EnumArray300(struct ndr_print *ndr, const char *name, const struct dfs_EnumArray300 *r);
-_PUBLIC_ void ndr_print_dfs_EnumInfo(struct ndr_print *ndr, const char *name, const union dfs_EnumInfo *r);
-_PUBLIC_ void ndr_print_dfs_EnumStruct(struct ndr_print *ndr, const char *name, const struct dfs_EnumStruct *r);
-_PUBLIC_ void ndr_print_dfs_UnknownStruct(struct ndr_print *ndr, const char *name, const struct dfs_UnknownStruct *r);
-_PUBLIC_ enum ndr_err_code ndr_push_dfs_GetManagerVersion(struct ndr_push *ndr, int flags, const struct dfs_GetManagerVersion *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_dfs_GetManagerVersion(struct ndr_pull *ndr, int flags, struct dfs_GetManagerVersion *r);
-_PUBLIC_ void ndr_print_dfs_GetManagerVersion(struct ndr_print *ndr, const char *name, int flags, const struct dfs_GetManagerVersion *r);
-_PUBLIC_ void ndr_print_dfs_Add(struct ndr_print *ndr, const char *name, int flags, const struct dfs_Add *r);
-_PUBLIC_ void ndr_print_dfs_Remove(struct ndr_print *ndr, const char *name, int flags, const struct dfs_Remove *r);
-_PUBLIC_ void ndr_print_dfs_SetInfo(struct ndr_print *ndr, const char *name, int flags, const struct dfs_SetInfo *r);
-_PUBLIC_ void ndr_print_dfs_GetInfo(struct ndr_print *ndr, const char *name, int flags, const struct dfs_GetInfo *r);
-_PUBLIC_ void ndr_print_dfs_Enum(struct ndr_print *ndr, const char *name, int flags, const struct dfs_Enum *r);
-_PUBLIC_ void ndr_print_dfs_Rename(struct ndr_print *ndr, const char *name, int flags, const struct dfs_Rename *r);
-_PUBLIC_ void ndr_print_dfs_Move(struct ndr_print *ndr, const char *name, int flags, const struct dfs_Move *r);
-_PUBLIC_ void ndr_print_dfs_ManagerGetConfigInfo(struct ndr_print *ndr, const char *name, int flags, const struct dfs_ManagerGetConfigInfo *r);
-_PUBLIC_ void ndr_print_dfs_ManagerSendSiteInfo(struct ndr_print *ndr, const char *name, int flags, const struct dfs_ManagerSendSiteInfo *r);
-_PUBLIC_ void ndr_print_dfs_AddFtRoot(struct ndr_print *ndr, const char *name, int flags, const struct dfs_AddFtRoot *r);
-_PUBLIC_ void ndr_print_dfs_RemoveFtRoot(struct ndr_print *ndr, const char *name, int flags, const struct dfs_RemoveFtRoot *r);
-_PUBLIC_ void ndr_print_dfs_AddStdRoot(struct ndr_print *ndr, const char *name, int flags, const struct dfs_AddStdRoot *r);
-_PUBLIC_ void ndr_print_dfs_RemoveStdRoot(struct ndr_print *ndr, const char *name, int flags, const struct dfs_RemoveStdRoot *r);
-_PUBLIC_ void ndr_print_dfs_ManagerInitialize(struct ndr_print *ndr, const char *name, int flags, const struct dfs_ManagerInitialize *r);
-_PUBLIC_ void ndr_print_dfs_AddStdRootForced(struct ndr_print *ndr, const char *name, int flags, const struct dfs_AddStdRootForced *r);
-_PUBLIC_ void ndr_print_dfs_GetDcAddress(struct ndr_print *ndr, const char *name, int flags, const struct dfs_GetDcAddress *r);
-_PUBLIC_ void ndr_print_dfs_SetDcAddress(struct ndr_print *ndr, const char *name, int flags, const struct dfs_SetDcAddress *r);
-_PUBLIC_ void ndr_print_dfs_FlushFtTable(struct ndr_print *ndr, const char *name, int flags, const struct dfs_FlushFtTable *r);
-_PUBLIC_ void ndr_print_dfs_Add2(struct ndr_print *ndr, const char *name, int flags, const struct dfs_Add2 *r);
-_PUBLIC_ void ndr_print_dfs_Remove2(struct ndr_print *ndr, const char *name, int flags, const struct dfs_Remove2 *r);
-_PUBLIC_ enum ndr_err_code ndr_push_dfs_EnumEx(struct ndr_push *ndr, int flags, const struct dfs_EnumEx *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_dfs_EnumEx(struct ndr_pull *ndr, int flags, struct dfs_EnumEx *r);
-_PUBLIC_ void ndr_print_dfs_EnumEx(struct ndr_print *ndr, const char *name, int flags, const struct dfs_EnumEx *r);
-_PUBLIC_ void ndr_print_dfs_SetInfo2(struct ndr_print *ndr, const char *name, int flags, const struct dfs_SetInfo2 *r);
-
-/* The following definitions come from librpc/gen_ndr/ndr_dssetup.c  */
-
-_PUBLIC_ void ndr_print_dssetup_DsRole(struct ndr_print *ndr, const char *name, enum dssetup_DsRole r);
-_PUBLIC_ void ndr_print_dssetup_DsRoleFlags(struct ndr_print *ndr, const char *name, uint32_t r);
-_PUBLIC_ void ndr_print_dssetup_DsRolePrimaryDomInfoBasic(struct ndr_print *ndr, const char *name, const struct dssetup_DsRolePrimaryDomInfoBasic *r);
-_PUBLIC_ void ndr_print_dssetup_DsUpgrade(struct ndr_print *ndr, const char *name, enum dssetup_DsUpgrade r);
-_PUBLIC_ void ndr_print_dssetup_DsPrevious(struct ndr_print *ndr, const char *name, enum dssetup_DsPrevious r);
-_PUBLIC_ void ndr_print_dssetup_DsRoleUpgradeStatus(struct ndr_print *ndr, const char *name, const struct dssetup_DsRoleUpgradeStatus *r);
-_PUBLIC_ void ndr_print_dssetup_DsRoleOp(struct ndr_print *ndr, const char *name, enum dssetup_DsRoleOp r);
-_PUBLIC_ void ndr_print_dssetup_DsRoleOpStatus(struct ndr_print *ndr, const char *name, const struct dssetup_DsRoleOpStatus *r);
-_PUBLIC_ void ndr_print_dssetup_DsRoleInfoLevel(struct ndr_print *ndr, const char *name, enum dssetup_DsRoleInfoLevel r);
-_PUBLIC_ void ndr_print_dssetup_DsRoleInfo(struct ndr_print *ndr, const char *name, const union dssetup_DsRoleInfo *r);
-_PUBLIC_ void ndr_print_dssetup_DsRoleGetPrimaryDomainInformation(struct ndr_print *ndr, const char *name, int flags, const struct dssetup_DsRoleGetPrimaryDomainInformation *r);
-_PUBLIC_ void ndr_print_dssetup_DsRoleDnsNameToFlatName(struct ndr_print *ndr, const char *name, int flags, const struct dssetup_DsRoleDnsNameToFlatName *r);
-_PUBLIC_ void ndr_print_dssetup_DsRoleDcAsDc(struct ndr_print *ndr, const char *name, int flags, const struct dssetup_DsRoleDcAsDc *r);
-_PUBLIC_ void ndr_print_dssetup_DsRoleDcAsReplica(struct ndr_print *ndr, const char *name, int flags, const struct dssetup_DsRoleDcAsReplica *r);
-_PUBLIC_ void ndr_print_dssetup_DsRoleDemoteDc(struct ndr_print *ndr, const char *name, int flags, const struct dssetup_DsRoleDemoteDc *r);
-_PUBLIC_ void ndr_print_dssetup_DsRoleGetDcOperationProgress(struct ndr_print *ndr, const char *name, int flags, const struct dssetup_DsRoleGetDcOperationProgress *r);
-_PUBLIC_ void ndr_print_dssetup_DsRoleGetDcOperationResults(struct ndr_print *ndr, const char *name, int flags, const struct dssetup_DsRoleGetDcOperationResults *r);
-_PUBLIC_ void ndr_print_dssetup_DsRoleCancel(struct ndr_print *ndr, const char *name, int flags, const struct dssetup_DsRoleCancel *r);
-_PUBLIC_ void ndr_print_dssetup_DsRoleServerSaveStateForUpgrade(struct ndr_print *ndr, const char *name, int flags, const struct dssetup_DsRoleServerSaveStateForUpgrade *r);
-_PUBLIC_ void ndr_print_dssetup_DsRoleUpgradeDownlevelServer(struct ndr_print *ndr, const char *name, int flags, const struct dssetup_DsRoleUpgradeDownlevelServer *r);
-_PUBLIC_ void ndr_print_dssetup_DsRoleAbortDownlevelServerUpgrade(struct ndr_print *ndr, const char *name, int flags, const struct dssetup_DsRoleAbortDownlevelServerUpgrade *r);
-
-/* The following definitions come from librpc/gen_ndr/ndr_echo.c  */
-
-_PUBLIC_ void ndr_print_echo_info1(struct ndr_print *ndr, const char *name, const struct echo_info1 *r);
-_PUBLIC_ void ndr_print_echo_info2(struct ndr_print *ndr, const char *name, const struct echo_info2 *r);
-_PUBLIC_ void ndr_print_echo_info3(struct ndr_print *ndr, const char *name, const struct echo_info3 *r);
-_PUBLIC_ void ndr_print_STRUCT_echo_info4(struct ndr_print *ndr, const char *name, const struct echo_info4 *r);
-_PUBLIC_ void ndr_print_echo_info5(struct ndr_print *ndr, const char *name, const struct echo_info5 *r);
-_PUBLIC_ void ndr_print_echo_info6(struct ndr_print *ndr, const char *name, const struct echo_info6 *r);
-_PUBLIC_ void ndr_print_echo_info7(struct ndr_print *ndr, const char *name, const struct echo_info7 *r);
-_PUBLIC_ void ndr_print_echo_Info(struct ndr_print *ndr, const char *name, const union echo_Info *r);
-_PUBLIC_ void ndr_print_echo_Enum1(struct ndr_print *ndr, const char *name, enum echo_Enum1 r);
-_PUBLIC_ void ndr_print_echo_Enum1_32(struct ndr_print *ndr, const char *name, enum echo_Enum1_32 r);
-_PUBLIC_ void ndr_print_echo_Enum2(struct ndr_print *ndr, const char *name, const struct echo_Enum2 *r);
-_PUBLIC_ void ndr_print_echo_Enum3(struct ndr_print *ndr, const char *name, const union echo_Enum3 *r);
-_PUBLIC_ void ndr_print_echo_Surrounding(struct ndr_print *ndr, const char *name, const struct echo_Surrounding *r);
-_PUBLIC_ void ndr_print_echo_AddOne(struct ndr_print *ndr, const char *name, int flags, const struct echo_AddOne *r);
-_PUBLIC_ void ndr_print_echo_EchoData(struct ndr_print *ndr, const char *name, int flags, const struct echo_EchoData *r);
-_PUBLIC_ void ndr_print_echo_SinkData(struct ndr_print *ndr, const char *name, int flags, const struct echo_SinkData *r);
-_PUBLIC_ void ndr_print_echo_SourceData(struct ndr_print *ndr, const char *name, int flags, const struct echo_SourceData *r);
-_PUBLIC_ void ndr_print_echo_TestCall(struct ndr_print *ndr, const char *name, int flags, const struct echo_TestCall *r);
-_PUBLIC_ void ndr_print_echo_TestCall2(struct ndr_print *ndr, const char *name, int flags, const struct echo_TestCall2 *r);
-_PUBLIC_ void ndr_print_echo_TestSleep(struct ndr_print *ndr, const char *name, int flags, const struct echo_TestSleep *r);
-_PUBLIC_ void ndr_print_echo_TestEnum(struct ndr_print *ndr, const char *name, int flags, const struct echo_TestEnum *r);
-_PUBLIC_ void ndr_print_echo_TestSurrounding(struct ndr_print *ndr, const char *name, int flags, const struct echo_TestSurrounding *r);
-_PUBLIC_ void ndr_print_echo_TestDoublePointer(struct ndr_print *ndr, const char *name, int flags, const struct echo_TestDoublePointer *r);
-
-/* The following definitions come from librpc/gen_ndr/ndr_eventlog.c  */
-
-_PUBLIC_ void ndr_print_eventlog_OpenUnknown0(struct ndr_print *ndr, const char *name, const struct eventlog_OpenUnknown0 *r);
-_PUBLIC_ enum ndr_err_code ndr_push_eventlog_Record(struct ndr_push *ndr, int ndr_flags, const struct eventlog_Record *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_eventlog_Record(struct ndr_pull *ndr, int ndr_flags, struct eventlog_Record *r);
-_PUBLIC_ void ndr_print_eventlog_Record(struct ndr_print *ndr, const char *name, const struct eventlog_Record *r);
-_PUBLIC_ void ndr_print_eventlog_ClearEventLogW(struct ndr_print *ndr, const char *name, int flags, const struct eventlog_ClearEventLogW *r);
-_PUBLIC_ void ndr_print_eventlog_BackupEventLogW(struct ndr_print *ndr, const char *name, int flags, const struct eventlog_BackupEventLogW *r);
-_PUBLIC_ void ndr_print_eventlog_CloseEventLog(struct ndr_print *ndr, const char *name, int flags, const struct eventlog_CloseEventLog *r);
-_PUBLIC_ void ndr_print_eventlog_DeregisterEventSource(struct ndr_print *ndr, const char *name, int flags, const struct eventlog_DeregisterEventSource *r);
-_PUBLIC_ void ndr_print_eventlog_GetNumRecords(struct ndr_print *ndr, const char *name, int flags, const struct eventlog_GetNumRecords *r);
-_PUBLIC_ void ndr_print_eventlog_GetOldestRecord(struct ndr_print *ndr, const char *name, int flags, const struct eventlog_GetOldestRecord *r);
-_PUBLIC_ void ndr_print_eventlog_ChangeNotify(struct ndr_print *ndr, const char *name, int flags, const struct eventlog_ChangeNotify *r);
-_PUBLIC_ void ndr_print_eventlog_OpenEventLogW(struct ndr_print *ndr, const char *name, int flags, const struct eventlog_OpenEventLogW *r);
-_PUBLIC_ void ndr_print_eventlog_RegisterEventSourceW(struct ndr_print *ndr, const char *name, int flags, const struct eventlog_RegisterEventSourceW *r);
-_PUBLIC_ void ndr_print_eventlog_OpenBackupEventLogW(struct ndr_print *ndr, const char *name, int flags, const struct eventlog_OpenBackupEventLogW *r);
-_PUBLIC_ void ndr_print_eventlog_ReadEventLogW(struct ndr_print *ndr, const char *name, int flags, const struct eventlog_ReadEventLogW *r);
-_PUBLIC_ void ndr_print_eventlog_ReportEventW(struct ndr_print *ndr, const char *name, int flags, const struct eventlog_ReportEventW *r);
-_PUBLIC_ void ndr_print_eventlog_ClearEventLogA(struct ndr_print *ndr, const char *name, int flags, const struct eventlog_ClearEventLogA *r);
-_PUBLIC_ void ndr_print_eventlog_BackupEventLogA(struct ndr_print *ndr, const char *name, int flags, const struct eventlog_BackupEventLogA *r);
-_PUBLIC_ void ndr_print_eventlog_OpenEventLogA(struct ndr_print *ndr, const char *name, int flags, const struct eventlog_OpenEventLogA *r);
-_PUBLIC_ void ndr_print_eventlog_RegisterEventSourceA(struct ndr_print *ndr, const char *name, int flags, const struct eventlog_RegisterEventSourceA *r);
-_PUBLIC_ void ndr_print_eventlog_OpenBackupEventLogA(struct ndr_print *ndr, const char *name, int flags, const struct eventlog_OpenBackupEventLogA *r);
-_PUBLIC_ void ndr_print_eventlog_ReadEventLogA(struct ndr_print *ndr, const char *name, int flags, const struct eventlog_ReadEventLogA *r);
-_PUBLIC_ void ndr_print_eventlog_ReportEventA(struct ndr_print *ndr, const char *name, int flags, const struct eventlog_ReportEventA *r);
-_PUBLIC_ void ndr_print_eventlog_RegisterClusterSvc(struct ndr_print *ndr, const char *name, int flags, const struct eventlog_RegisterClusterSvc *r);
-_PUBLIC_ void ndr_print_eventlog_DeregisterClusterSvc(struct ndr_print *ndr, const char *name, int flags, const struct eventlog_DeregisterClusterSvc *r);
-_PUBLIC_ void ndr_print_eventlog_WriteClusterEvents(struct ndr_print *ndr, const char *name, int flags, const struct eventlog_WriteClusterEvents *r);
-_PUBLIC_ void ndr_print_eventlog_GetLogIntormation(struct ndr_print *ndr, const char *name, int flags, const struct eventlog_GetLogIntormation *r);
-_PUBLIC_ void ndr_print_eventlog_FlushEventLog(struct ndr_print *ndr, const char *name, int flags, const struct eventlog_FlushEventLog *r);
-
-/* The following definitions come from librpc/gen_ndr/ndr_initshutdown.c  */
-
-_PUBLIC_ void ndr_print_initshutdown_String_sub(struct ndr_print *ndr, const char *name, const struct initshutdown_String_sub *r);
-_PUBLIC_ enum ndr_err_code ndr_push_initshutdown_String(struct ndr_push *ndr, int ndr_flags, const struct initshutdown_String *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_initshutdown_String(struct ndr_pull *ndr, int ndr_flags, struct initshutdown_String *r);
-_PUBLIC_ void ndr_print_initshutdown_String(struct ndr_print *ndr, const char *name, const struct initshutdown_String *r);
-_PUBLIC_ void ndr_print_initshutdown_Init(struct ndr_print *ndr, const char *name, int flags, const struct initshutdown_Init *r);
-_PUBLIC_ void ndr_print_initshutdown_Abort(struct ndr_print *ndr, const char *name, int flags, const struct initshutdown_Abort *r);
-_PUBLIC_ void ndr_print_initshutdown_InitEx(struct ndr_print *ndr, const char *name, int flags, const struct initshutdown_InitEx *r);
-
-/* The following definitions come from librpc/gen_ndr/ndr_krb5pac.c  */
-
-_PUBLIC_ void ndr_print_PAC_LOGON_NAME(struct ndr_print *ndr, const char *name, const struct PAC_LOGON_NAME *r);
-_PUBLIC_ enum ndr_err_code ndr_push_PAC_SIGNATURE_DATA(struct ndr_push *ndr, int ndr_flags, const struct PAC_SIGNATURE_DATA *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_PAC_SIGNATURE_DATA(struct ndr_pull *ndr, int ndr_flags, struct PAC_SIGNATURE_DATA *r);
-_PUBLIC_ void ndr_print_PAC_SIGNATURE_DATA(struct ndr_print *ndr, const char *name, const struct PAC_SIGNATURE_DATA *r);
-_PUBLIC_ void ndr_print_PAC_LOGON_INFO(struct ndr_print *ndr, const char *name, const struct PAC_LOGON_INFO *r);
-_PUBLIC_ enum ndr_err_code ndr_push_PAC_LOGON_INFO_CTR(struct ndr_push *ndr, int ndr_flags, const struct PAC_LOGON_INFO_CTR *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_PAC_LOGON_INFO_CTR(struct ndr_pull *ndr, int ndr_flags, struct PAC_LOGON_INFO_CTR *r);
-_PUBLIC_ void ndr_print_PAC_LOGON_INFO_CTR(struct ndr_print *ndr, const char *name, const struct PAC_LOGON_INFO_CTR *r);
-_PUBLIC_ enum ndr_err_code ndr_push_PAC_TYPE(struct ndr_push *ndr, int ndr_flags, enum PAC_TYPE r);
-_PUBLIC_ enum ndr_err_code ndr_pull_PAC_TYPE(struct ndr_pull *ndr, int ndr_flags, enum PAC_TYPE *r);
-_PUBLIC_ void ndr_print_PAC_TYPE(struct ndr_print *ndr, const char *name, enum PAC_TYPE r);
-_PUBLIC_ void ndr_print_DATA_BLOB_REM(struct ndr_print *ndr, const char *name, const struct DATA_BLOB_REM *r);
-_PUBLIC_ enum ndr_err_code ndr_push_PAC_INFO(struct ndr_push *ndr, int ndr_flags, const union PAC_INFO *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_PAC_INFO(struct ndr_pull *ndr, int ndr_flags, union PAC_INFO *r);
-_PUBLIC_ void ndr_print_PAC_INFO(struct ndr_print *ndr, const char *name, const union PAC_INFO *r);
-_PUBLIC_ size_t ndr_size_PAC_INFO(const union PAC_INFO *r, uint32_t level, int flags);
-_PUBLIC_ enum ndr_err_code ndr_push_PAC_DATA(struct ndr_push *ndr, int ndr_flags, const struct PAC_DATA *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_PAC_DATA(struct ndr_pull *ndr, int ndr_flags, struct PAC_DATA *r);
-_PUBLIC_ void ndr_print_PAC_DATA(struct ndr_print *ndr, const char *name, const struct PAC_DATA *r);
-_PUBLIC_ enum ndr_err_code ndr_push_PAC_BUFFER_RAW(struct ndr_push *ndr, int ndr_flags, const struct PAC_BUFFER_RAW *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_PAC_BUFFER_RAW(struct ndr_pull *ndr, int ndr_flags, struct PAC_BUFFER_RAW *r);
-_PUBLIC_ void ndr_print_PAC_BUFFER_RAW(struct ndr_print *ndr, const char *name, const struct PAC_BUFFER_RAW *r);
-_PUBLIC_ enum ndr_err_code ndr_push_PAC_DATA_RAW(struct ndr_push *ndr, int ndr_flags, const struct PAC_DATA_RAW *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_PAC_DATA_RAW(struct ndr_pull *ndr, int ndr_flags, struct PAC_DATA_RAW *r);
-_PUBLIC_ void ndr_print_PAC_DATA_RAW(struct ndr_print *ndr, const char *name, const struct PAC_DATA_RAW *r);
-_PUBLIC_ enum ndr_err_code ndr_push_netsamlogoncache_entry(struct ndr_push *ndr, int ndr_flags, const struct netsamlogoncache_entry *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_netsamlogoncache_entry(struct ndr_pull *ndr, int ndr_flags, struct netsamlogoncache_entry *r);
-_PUBLIC_ void ndr_print_netsamlogoncache_entry(struct ndr_print *ndr, const char *name, const struct netsamlogoncache_entry *r);
-_PUBLIC_ void ndr_print_decode_pac(struct ndr_print *ndr, const char *name, int flags, const struct decode_pac *r);
-_PUBLIC_ void ndr_print_decode_pac_raw(struct ndr_print *ndr, const char *name, int flags, const struct decode_pac_raw *r);
-_PUBLIC_ void ndr_print_decode_login_info(struct ndr_print *ndr, const char *name, int flags, const struct decode_login_info *r);
-
-/* The following definitions come from librpc/gen_ndr/ndr_lsa.c  */
-
-_PUBLIC_ enum ndr_err_code ndr_push_lsa_String(struct ndr_push *ndr, int ndr_flags, const struct lsa_String *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_lsa_String(struct ndr_pull *ndr, int ndr_flags, struct lsa_String *r);
-_PUBLIC_ void ndr_print_lsa_String(struct ndr_print *ndr, const char *name, const struct lsa_String *r);
-_PUBLIC_ enum ndr_err_code ndr_push_lsa_StringLarge(struct ndr_push *ndr, int ndr_flags, const struct lsa_StringLarge *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_lsa_StringLarge(struct ndr_pull *ndr, int ndr_flags, struct lsa_StringLarge *r);
-_PUBLIC_ void ndr_print_lsa_StringLarge(struct ndr_print *ndr, const char *name, const struct lsa_StringLarge *r);
-_PUBLIC_ enum ndr_err_code ndr_push_lsa_Strings(struct ndr_push *ndr, int ndr_flags, const struct lsa_Strings *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_lsa_Strings(struct ndr_pull *ndr, int ndr_flags, struct lsa_Strings *r);
-_PUBLIC_ void ndr_print_lsa_Strings(struct ndr_print *ndr, const char *name, const struct lsa_Strings *r);
-_PUBLIC_ enum ndr_err_code ndr_push_lsa_AsciiString(struct ndr_push *ndr, int ndr_flags, const struct lsa_AsciiString *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_lsa_AsciiString(struct ndr_pull *ndr, int ndr_flags, struct lsa_AsciiString *r);
-_PUBLIC_ void ndr_print_lsa_AsciiString(struct ndr_print *ndr, const char *name, const struct lsa_AsciiString *r);
-_PUBLIC_ enum ndr_err_code ndr_push_lsa_AsciiStringLarge(struct ndr_push *ndr, int ndr_flags, const struct lsa_AsciiStringLarge *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_lsa_AsciiStringLarge(struct ndr_pull *ndr, int ndr_flags, struct lsa_AsciiStringLarge *r);
-_PUBLIC_ void ndr_print_lsa_AsciiStringLarge(struct ndr_print *ndr, const char *name, const struct lsa_AsciiStringLarge *r);
-_PUBLIC_ enum ndr_err_code ndr_push_lsa_BinaryString(struct ndr_push *ndr, int ndr_flags, const struct lsa_BinaryString *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_lsa_BinaryString(struct ndr_pull *ndr, int ndr_flags, struct lsa_BinaryString *r);
-_PUBLIC_ void ndr_print_lsa_BinaryString(struct ndr_print *ndr, const char *name, const struct lsa_BinaryString *r);
-_PUBLIC_ void ndr_print_lsa_LUID(struct ndr_print *ndr, const char *name, const struct lsa_LUID *r);
-_PUBLIC_ void ndr_print_lsa_PrivEntry(struct ndr_print *ndr, const char *name, const struct lsa_PrivEntry *r);
-_PUBLIC_ void ndr_print_lsa_PrivArray(struct ndr_print *ndr, const char *name, const struct lsa_PrivArray *r);
-_PUBLIC_ void ndr_print_lsa_QosInfo(struct ndr_print *ndr, const char *name, const struct lsa_QosInfo *r);
-_PUBLIC_ void ndr_print_lsa_ObjectAttribute(struct ndr_print *ndr, const char *name, const struct lsa_ObjectAttribute *r);
-_PUBLIC_ enum ndr_err_code ndr_push_lsa_PolicyAccessMask(struct ndr_push *ndr, int ndr_flags, uint32_t r);
-_PUBLIC_ enum ndr_err_code ndr_pull_lsa_PolicyAccessMask(struct ndr_pull *ndr, int ndr_flags, uint32_t *r);
-_PUBLIC_ void ndr_print_lsa_PolicyAccessMask(struct ndr_print *ndr, const char *name, uint32_t r);
-_PUBLIC_ void ndr_print_lsa_AuditLogInfo(struct ndr_print *ndr, const char *name, const struct lsa_AuditLogInfo *r);
-_PUBLIC_ void ndr_print_lsa_PolicyAuditPolicy(struct ndr_print *ndr, const char *name, enum lsa_PolicyAuditPolicy r);
-_PUBLIC_ void ndr_print_lsa_AuditEventsInfo(struct ndr_print *ndr, const char *name, const struct lsa_AuditEventsInfo *r);
-_PUBLIC_ void ndr_print_lsa_DomainInfo(struct ndr_print *ndr, const char *name, const struct lsa_DomainInfo *r);
-_PUBLIC_ void ndr_print_lsa_PDAccountInfo(struct ndr_print *ndr, const char *name, const struct lsa_PDAccountInfo *r);
-_PUBLIC_ void ndr_print_lsa_ServerRole(struct ndr_print *ndr, const char *name, const struct lsa_ServerRole *r);
-_PUBLIC_ void ndr_print_lsa_ReplicaSourceInfo(struct ndr_print *ndr, const char *name, const struct lsa_ReplicaSourceInfo *r);
-_PUBLIC_ void ndr_print_lsa_DefaultQuotaInfo(struct ndr_print *ndr, const char *name, const struct lsa_DefaultQuotaInfo *r);
-_PUBLIC_ void ndr_print_lsa_ModificationInfo(struct ndr_print *ndr, const char *name, const struct lsa_ModificationInfo *r);
-_PUBLIC_ void ndr_print_lsa_AuditFullSetInfo(struct ndr_print *ndr, const char *name, const struct lsa_AuditFullSetInfo *r);
-_PUBLIC_ void ndr_print_lsa_AuditFullQueryInfo(struct ndr_print *ndr, const char *name, const struct lsa_AuditFullQueryInfo *r);
-_PUBLIC_ void ndr_print_lsa_DnsDomainInfo(struct ndr_print *ndr, const char *name, const struct lsa_DnsDomainInfo *r);
-_PUBLIC_ void ndr_print_lsa_PolicyInfo(struct ndr_print *ndr, const char *name, enum lsa_PolicyInfo r);
-_PUBLIC_ void ndr_print_lsa_PolicyInformation(struct ndr_print *ndr, const char *name, const union lsa_PolicyInformation *r);
-_PUBLIC_ void ndr_print_lsa_SidPtr(struct ndr_print *ndr, const char *name, const struct lsa_SidPtr *r);
-_PUBLIC_ enum ndr_err_code ndr_push_lsa_SidArray(struct ndr_push *ndr, int ndr_flags, const struct lsa_SidArray *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_lsa_SidArray(struct ndr_pull *ndr, int ndr_flags, struct lsa_SidArray *r);
-_PUBLIC_ void ndr_print_lsa_SidArray(struct ndr_print *ndr, const char *name, const struct lsa_SidArray *r);
-_PUBLIC_ void ndr_print_lsa_DomainList(struct ndr_print *ndr, const char *name, const struct lsa_DomainList *r);
-_PUBLIC_ void ndr_print_lsa_SidType(struct ndr_print *ndr, const char *name, enum lsa_SidType r);
-_PUBLIC_ void ndr_print_lsa_TranslatedSid(struct ndr_print *ndr, const char *name, const struct lsa_TranslatedSid *r);
-_PUBLIC_ void ndr_print_lsa_TransSidArray(struct ndr_print *ndr, const char *name, const struct lsa_TransSidArray *r);
-_PUBLIC_ void ndr_print_lsa_RefDomainList(struct ndr_print *ndr, const char *name, const struct lsa_RefDomainList *r);
-_PUBLIC_ void ndr_print_lsa_LookupNamesLevel(struct ndr_print *ndr, const char *name, enum lsa_LookupNamesLevel r);
-_PUBLIC_ void ndr_print_lsa_TranslatedName(struct ndr_print *ndr, const char *name, const struct lsa_TranslatedName *r);
-_PUBLIC_ void ndr_print_lsa_TransNameArray(struct ndr_print *ndr, const char *name, const struct lsa_TransNameArray *r);
-_PUBLIC_ void ndr_print_lsa_LUIDAttribute(struct ndr_print *ndr, const char *name, const struct lsa_LUIDAttribute *r);
-_PUBLIC_ void ndr_print_lsa_PrivilegeSet(struct ndr_print *ndr, const char *name, const struct lsa_PrivilegeSet *r);
-_PUBLIC_ void ndr_print_lsa_DATA_BUF(struct ndr_print *ndr, const char *name, const struct lsa_DATA_BUF *r);
-_PUBLIC_ void ndr_print_lsa_DATA_BUF2(struct ndr_print *ndr, const char *name, const struct lsa_DATA_BUF2 *r);
-_PUBLIC_ void ndr_print_lsa_TrustDomInfoEnum(struct ndr_print *ndr, const char *name, enum lsa_TrustDomInfoEnum r);
-_PUBLIC_ void ndr_print_lsa_TrustDomainInfoName(struct ndr_print *ndr, const char *name, const struct lsa_TrustDomainInfoName *r);
-_PUBLIC_ void ndr_print_lsa_TrustDomainInfoPosixOffset(struct ndr_print *ndr, const char *name, const struct lsa_TrustDomainInfoPosixOffset *r);
-_PUBLIC_ void ndr_print_lsa_TrustDomainInfoPassword(struct ndr_print *ndr, const char *name, const struct lsa_TrustDomainInfoPassword *r);
-_PUBLIC_ void ndr_print_lsa_TrustDomainInfoBasic(struct ndr_print *ndr, const char *name, const struct lsa_TrustDomainInfoBasic *r);
-_PUBLIC_ void ndr_print_lsa_TrustDomainInfoInfoEx(struct ndr_print *ndr, const char *name, const struct lsa_TrustDomainInfoInfoEx *r);
-_PUBLIC_ void ndr_print_lsa_TrustDomainInfoBuffer(struct ndr_print *ndr, const char *name, const struct lsa_TrustDomainInfoBuffer *r);
-_PUBLIC_ void ndr_print_lsa_TrustDomainInfoAuthInfo(struct ndr_print *ndr, const char *name, const struct lsa_TrustDomainInfoAuthInfo *r);
-_PUBLIC_ void ndr_print_lsa_TrustDomainInfoFullInfo(struct ndr_print *ndr, const char *name, const struct lsa_TrustDomainInfoFullInfo *r);
-_PUBLIC_ void ndr_print_lsa_TrustDomainInfo11(struct ndr_print *ndr, const char *name, const struct lsa_TrustDomainInfo11 *r);
-_PUBLIC_ void ndr_print_lsa_TrustDomainInfoInfoAll(struct ndr_print *ndr, const char *name, const struct lsa_TrustDomainInfoInfoAll *r);
-_PUBLIC_ void ndr_print_lsa_TrustedDomainInfo(struct ndr_print *ndr, const char *name, const union lsa_TrustedDomainInfo *r);
-_PUBLIC_ void ndr_print_lsa_DATA_BUF_PTR(struct ndr_print *ndr, const char *name, const struct lsa_DATA_BUF_PTR *r);
-_PUBLIC_ void ndr_print_lsa_RightSet(struct ndr_print *ndr, const char *name, const struct lsa_RightSet *r);
-_PUBLIC_ void ndr_print_lsa_DomainListEx(struct ndr_print *ndr, const char *name, const struct lsa_DomainListEx *r);
-_PUBLIC_ void ndr_print_lsa_DomainInfoKerberos(struct ndr_print *ndr, const char *name, const struct lsa_DomainInfoKerberos *r);
-_PUBLIC_ void ndr_print_lsa_DomainInfoEfs(struct ndr_print *ndr, const char *name, const struct lsa_DomainInfoEfs *r);
-_PUBLIC_ void ndr_print_lsa_DomainInformationPolicy(struct ndr_print *ndr, const char *name, const union lsa_DomainInformationPolicy *r);
-_PUBLIC_ void ndr_print_lsa_TranslatedName2(struct ndr_print *ndr, const char *name, const struct lsa_TranslatedName2 *r);
-_PUBLIC_ void ndr_print_lsa_TransNameArray2(struct ndr_print *ndr, const char *name, const struct lsa_TransNameArray2 *r);
-_PUBLIC_ void ndr_print_lsa_TranslatedSid2(struct ndr_print *ndr, const char *name, const struct lsa_TranslatedSid2 *r);
-_PUBLIC_ void ndr_print_lsa_TransSidArray2(struct ndr_print *ndr, const char *name, const struct lsa_TransSidArray2 *r);
-_PUBLIC_ void ndr_print_lsa_TranslatedSid3(struct ndr_print *ndr, const char *name, const struct lsa_TranslatedSid3 *r);
-_PUBLIC_ void ndr_print_lsa_TransSidArray3(struct ndr_print *ndr, const char *name, const struct lsa_TransSidArray3 *r);
-_PUBLIC_ void ndr_print_lsa_ForestTrustBinaryData(struct ndr_print *ndr, const char *name, const struct lsa_ForestTrustBinaryData *r);
-_PUBLIC_ void ndr_print_lsa_ForestTrustDomainInfo(struct ndr_print *ndr, const char *name, const struct lsa_ForestTrustDomainInfo *r);
-_PUBLIC_ void ndr_print_lsa_ForestTrustData(struct ndr_print *ndr, const char *name, const union lsa_ForestTrustData *r);
-_PUBLIC_ void ndr_print_lsa_ForestTrustRecordType(struct ndr_print *ndr, const char *name, enum lsa_ForestTrustRecordType r);
-_PUBLIC_ void ndr_print_lsa_ForestTrustRecord(struct ndr_print *ndr, const char *name, const struct lsa_ForestTrustRecord *r);
-_PUBLIC_ enum ndr_err_code ndr_push_lsa_ForestTrustInformation(struct ndr_push *ndr, int ndr_flags, const struct lsa_ForestTrustInformation *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_lsa_ForestTrustInformation(struct ndr_pull *ndr, int ndr_flags, struct lsa_ForestTrustInformation *r);
-_PUBLIC_ void ndr_print_lsa_ForestTrustInformation(struct ndr_print *ndr, const char *name, const struct lsa_ForestTrustInformation *r);
-_PUBLIC_ void ndr_print_lsa_Close(struct ndr_print *ndr, const char *name, int flags, const struct lsa_Close *r);
-_PUBLIC_ enum ndr_err_code ndr_push_lsa_Delete(struct ndr_push *ndr, int flags, const struct lsa_Delete *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_lsa_Delete(struct ndr_pull *ndr, int flags, struct lsa_Delete *r);
-_PUBLIC_ void ndr_print_lsa_Delete(struct ndr_print *ndr, const char *name, int flags, const struct lsa_Delete *r);
-_PUBLIC_ enum ndr_err_code ndr_push_lsa_EnumPrivs(struct ndr_push *ndr, int flags, const struct lsa_EnumPrivs *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_lsa_EnumPrivs(struct ndr_pull *ndr, int flags, struct lsa_EnumPrivs *r);
-_PUBLIC_ void ndr_print_lsa_EnumPrivs(struct ndr_print *ndr, const char *name, int flags, const struct lsa_EnumPrivs *r);
-_PUBLIC_ void ndr_print_lsa_QuerySecurity(struct ndr_print *ndr, const char *name, int flags, const struct lsa_QuerySecurity *r);
-_PUBLIC_ void ndr_print_lsa_SetSecObj(struct ndr_print *ndr, const char *name, int flags, const struct lsa_SetSecObj *r);
-_PUBLIC_ void ndr_print_lsa_ChangePassword(struct ndr_print *ndr, const char *name, int flags, const struct lsa_ChangePassword *r);
-_PUBLIC_ enum ndr_err_code ndr_push_lsa_OpenPolicy(struct ndr_push *ndr, int flags, const struct lsa_OpenPolicy *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_lsa_OpenPolicy(struct ndr_pull *ndr, int flags, struct lsa_OpenPolicy *r);
-_PUBLIC_ void ndr_print_lsa_OpenPolicy(struct ndr_print *ndr, const char *name, int flags, const struct lsa_OpenPolicy *r);
-_PUBLIC_ void ndr_print_lsa_QueryInfoPolicy(struct ndr_print *ndr, const char *name, int flags, const struct lsa_QueryInfoPolicy *r);
-_PUBLIC_ void ndr_print_lsa_SetInfoPolicy(struct ndr_print *ndr, const char *name, int flags, const struct lsa_SetInfoPolicy *r);
-_PUBLIC_ void ndr_print_lsa_ClearAuditLog(struct ndr_print *ndr, const char *name, int flags, const struct lsa_ClearAuditLog *r);
-_PUBLIC_ enum ndr_err_code ndr_push_lsa_CreateAccount(struct ndr_push *ndr, int flags, const struct lsa_CreateAccount *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_lsa_CreateAccount(struct ndr_pull *ndr, int flags, struct lsa_CreateAccount *r);
-_PUBLIC_ void ndr_print_lsa_CreateAccount(struct ndr_print *ndr, const char *name, int flags, const struct lsa_CreateAccount *r);
-_PUBLIC_ enum ndr_err_code ndr_push_lsa_EnumAccounts(struct ndr_push *ndr, int flags, const struct lsa_EnumAccounts *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_lsa_EnumAccounts(struct ndr_pull *ndr, int flags, struct lsa_EnumAccounts *r);
-_PUBLIC_ void ndr_print_lsa_EnumAccounts(struct ndr_print *ndr, const char *name, int flags, const struct lsa_EnumAccounts *r);
-_PUBLIC_ enum ndr_err_code ndr_push_lsa_CreateTrustedDomain(struct ndr_push *ndr, int flags, const struct lsa_CreateTrustedDomain *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_lsa_CreateTrustedDomain(struct ndr_pull *ndr, int flags, struct lsa_CreateTrustedDomain *r);
-_PUBLIC_ void ndr_print_lsa_CreateTrustedDomain(struct ndr_print *ndr, const char *name, int flags, const struct lsa_CreateTrustedDomain *r);
-_PUBLIC_ void ndr_print_lsa_EnumTrustDom(struct ndr_print *ndr, const char *name, int flags, const struct lsa_EnumTrustDom *r);
-_PUBLIC_ enum ndr_err_code ndr_push_lsa_LookupNames(struct ndr_push *ndr, int flags, const struct lsa_LookupNames *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_lsa_LookupNames(struct ndr_pull *ndr, int flags, struct lsa_LookupNames *r);
-_PUBLIC_ void ndr_print_lsa_LookupNames(struct ndr_print *ndr, const char *name, int flags, const struct lsa_LookupNames *r);
-_PUBLIC_ enum ndr_err_code ndr_push_lsa_LookupSids(struct ndr_push *ndr, int flags, const struct lsa_LookupSids *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_lsa_LookupSids(struct ndr_pull *ndr, int flags, struct lsa_LookupSids *r);
-_PUBLIC_ void ndr_print_lsa_LookupSids(struct ndr_print *ndr, const char *name, int flags, const struct lsa_LookupSids *r);
-_PUBLIC_ enum ndr_err_code ndr_push_lsa_CreateSecret(struct ndr_push *ndr, int flags, const struct lsa_CreateSecret *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_lsa_CreateSecret(struct ndr_pull *ndr, int flags, struct lsa_CreateSecret *r);
-_PUBLIC_ void ndr_print_lsa_CreateSecret(struct ndr_print *ndr, const char *name, int flags, const struct lsa_CreateSecret *r);
-_PUBLIC_ void ndr_print_lsa_OpenAccount(struct ndr_print *ndr, const char *name, int flags, const struct lsa_OpenAccount *r);
-_PUBLIC_ void ndr_print_lsa_EnumPrivsAccount(struct ndr_print *ndr, const char *name, int flags, const struct lsa_EnumPrivsAccount *r);
-_PUBLIC_ void ndr_print_lsa_AddPrivilegesToAccount(struct ndr_print *ndr, const char *name, int flags, const struct lsa_AddPrivilegesToAccount *r);
-_PUBLIC_ void ndr_print_lsa_RemovePrivilegesFromAccount(struct ndr_print *ndr, const char *name, int flags, const struct lsa_RemovePrivilegesFromAccount *r);
-_PUBLIC_ void ndr_print_lsa_GetQuotasForAccount(struct ndr_print *ndr, const char *name, int flags, const struct lsa_GetQuotasForAccount *r);
-_PUBLIC_ void ndr_print_lsa_SetQuotasForAccount(struct ndr_print *ndr, const char *name, int flags, const struct lsa_SetQuotasForAccount *r);
-_PUBLIC_ void ndr_print_lsa_GetSystemAccessAccount(struct ndr_print *ndr, const char *name, int flags, const struct lsa_GetSystemAccessAccount *r);
-_PUBLIC_ void ndr_print_lsa_SetSystemAccessAccount(struct ndr_print *ndr, const char *name, int flags, const struct lsa_SetSystemAccessAccount *r);
-_PUBLIC_ void ndr_print_lsa_OpenTrustedDomain(struct ndr_print *ndr, const char *name, int flags, const struct lsa_OpenTrustedDomain *r);
-_PUBLIC_ void ndr_print_lsa_QueryTrustedDomainInfo(struct ndr_print *ndr, const char *name, int flags, const struct lsa_QueryTrustedDomainInfo *r);
-_PUBLIC_ void ndr_print_lsa_SetInformationTrustedDomain(struct ndr_print *ndr, const char *name, int flags, const struct lsa_SetInformationTrustedDomain *r);
-_PUBLIC_ enum ndr_err_code ndr_push_lsa_OpenSecret(struct ndr_push *ndr, int flags, const struct lsa_OpenSecret *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_lsa_OpenSecret(struct ndr_pull *ndr, int flags, struct lsa_OpenSecret *r);
-_PUBLIC_ void ndr_print_lsa_OpenSecret(struct ndr_print *ndr, const char *name, int flags, const struct lsa_OpenSecret *r);
-_PUBLIC_ enum ndr_err_code ndr_push_lsa_SetSecret(struct ndr_push *ndr, int flags, const struct lsa_SetSecret *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_lsa_SetSecret(struct ndr_pull *ndr, int flags, struct lsa_SetSecret *r);
-_PUBLIC_ void ndr_print_lsa_SetSecret(struct ndr_print *ndr, const char *name, int flags, const struct lsa_SetSecret *r);
-_PUBLIC_ enum ndr_err_code ndr_push_lsa_QuerySecret(struct ndr_push *ndr, int flags, const struct lsa_QuerySecret *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_lsa_QuerySecret(struct ndr_pull *ndr, int flags, struct lsa_QuerySecret *r);
-_PUBLIC_ void ndr_print_lsa_QuerySecret(struct ndr_print *ndr, const char *name, int flags, const struct lsa_QuerySecret *r);
-_PUBLIC_ void ndr_print_lsa_LookupPrivValue(struct ndr_print *ndr, const char *name, int flags, const struct lsa_LookupPrivValue *r);
-_PUBLIC_ void ndr_print_lsa_LookupPrivName(struct ndr_print *ndr, const char *name, int flags, const struct lsa_LookupPrivName *r);
-_PUBLIC_ void ndr_print_lsa_LookupPrivDisplayName(struct ndr_print *ndr, const char *name, int flags, const struct lsa_LookupPrivDisplayName *r);
-_PUBLIC_ void ndr_print_lsa_DeleteObject(struct ndr_print *ndr, const char *name, int flags, const struct lsa_DeleteObject *r);
-_PUBLIC_ void ndr_print_lsa_EnumAccountsWithUserRight(struct ndr_print *ndr, const char *name, int flags, const struct lsa_EnumAccountsWithUserRight *r);
-_PUBLIC_ void ndr_print_lsa_EnumAccountRights(struct ndr_print *ndr, const char *name, int flags, const struct lsa_EnumAccountRights *r);
-_PUBLIC_ void ndr_print_lsa_AddAccountRights(struct ndr_print *ndr, const char *name, int flags, const struct lsa_AddAccountRights *r);
-_PUBLIC_ void ndr_print_lsa_RemoveAccountRights(struct ndr_print *ndr, const char *name, int flags, const struct lsa_RemoveAccountRights *r);
-_PUBLIC_ void ndr_print_lsa_QueryTrustedDomainInfoBySid(struct ndr_print *ndr, const char *name, int flags, const struct lsa_QueryTrustedDomainInfoBySid *r);
-_PUBLIC_ void ndr_print_lsa_SetTrustedDomainInfo(struct ndr_print *ndr, const char *name, int flags, const struct lsa_SetTrustedDomainInfo *r);
-_PUBLIC_ void ndr_print_lsa_DeleteTrustedDomain(struct ndr_print *ndr, const char *name, int flags, const struct lsa_DeleteTrustedDomain *r);
-_PUBLIC_ void ndr_print_lsa_StorePrivateData(struct ndr_print *ndr, const char *name, int flags, const struct lsa_StorePrivateData *r);
-_PUBLIC_ void ndr_print_lsa_RetrievePrivateData(struct ndr_print *ndr, const char *name, int flags, const struct lsa_RetrievePrivateData *r);
-_PUBLIC_ enum ndr_err_code ndr_push_lsa_OpenPolicy2(struct ndr_push *ndr, int flags, const struct lsa_OpenPolicy2 *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_lsa_OpenPolicy2(struct ndr_pull *ndr, int flags, struct lsa_OpenPolicy2 *r);
-_PUBLIC_ void ndr_print_lsa_OpenPolicy2(struct ndr_print *ndr, const char *name, int flags, const struct lsa_OpenPolicy2 *r);
-_PUBLIC_ void ndr_print_lsa_GetUserName(struct ndr_print *ndr, const char *name, int flags, const struct lsa_GetUserName *r);
-_PUBLIC_ void ndr_print_lsa_QueryInfoPolicy2(struct ndr_print *ndr, const char *name, int flags, const struct lsa_QueryInfoPolicy2 *r);
-_PUBLIC_ void ndr_print_lsa_SetInfoPolicy2(struct ndr_print *ndr, const char *name, int flags, const struct lsa_SetInfoPolicy2 *r);
-_PUBLIC_ void ndr_print_lsa_QueryTrustedDomainInfoByName(struct ndr_print *ndr, const char *name, int flags, const struct lsa_QueryTrustedDomainInfoByName *r);
-_PUBLIC_ void ndr_print_lsa_SetTrustedDomainInfoByName(struct ndr_print *ndr, const char *name, int flags, const struct lsa_SetTrustedDomainInfoByName *r);
-_PUBLIC_ void ndr_print_lsa_EnumTrustedDomainsEx(struct ndr_print *ndr, const char *name, int flags, const struct lsa_EnumTrustedDomainsEx *r);
-_PUBLIC_ void ndr_print_lsa_CreateTrustedDomainEx(struct ndr_print *ndr, const char *name, int flags, const struct lsa_CreateTrustedDomainEx *r);
-_PUBLIC_ void ndr_print_lsa_CloseTrustedDomainEx(struct ndr_print *ndr, const char *name, int flags, const struct lsa_CloseTrustedDomainEx *r);
-_PUBLIC_ void ndr_print_lsa_QueryDomainInformationPolicy(struct ndr_print *ndr, const char *name, int flags, const struct lsa_QueryDomainInformationPolicy *r);
-_PUBLIC_ void ndr_print_lsa_SetDomainInformationPolicy(struct ndr_print *ndr, const char *name, int flags, const struct lsa_SetDomainInformationPolicy *r);
-_PUBLIC_ void ndr_print_lsa_OpenTrustedDomainByName(struct ndr_print *ndr, const char *name, int flags, const struct lsa_OpenTrustedDomainByName *r);
-_PUBLIC_ void ndr_print_lsa_TestCall(struct ndr_print *ndr, const char *name, int flags, const struct lsa_TestCall *r);
-_PUBLIC_ enum ndr_err_code ndr_push_lsa_LookupSids2(struct ndr_push *ndr, int flags, const struct lsa_LookupSids2 *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_lsa_LookupSids2(struct ndr_pull *ndr, int flags, struct lsa_LookupSids2 *r);
-_PUBLIC_ void ndr_print_lsa_LookupSids2(struct ndr_print *ndr, const char *name, int flags, const struct lsa_LookupSids2 *r);
-_PUBLIC_ enum ndr_err_code ndr_push_lsa_LookupNames2(struct ndr_push *ndr, int flags, const struct lsa_LookupNames2 *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_lsa_LookupNames2(struct ndr_pull *ndr, int flags, struct lsa_LookupNames2 *r);
-_PUBLIC_ void ndr_print_lsa_LookupNames2(struct ndr_print *ndr, const char *name, int flags, const struct lsa_LookupNames2 *r);
-_PUBLIC_ void ndr_print_lsa_CreateTrustedDomainEx2(struct ndr_print *ndr, const char *name, int flags, const struct lsa_CreateTrustedDomainEx2 *r);
-_PUBLIC_ void ndr_print_lsa_CREDRWRITE(struct ndr_print *ndr, const char *name, int flags, const struct lsa_CREDRWRITE *r);
-_PUBLIC_ void ndr_print_lsa_CREDRREAD(struct ndr_print *ndr, const char *name, int flags, const struct lsa_CREDRREAD *r);
-_PUBLIC_ void ndr_print_lsa_CREDRENUMERATE(struct ndr_print *ndr, const char *name, int flags, const struct lsa_CREDRENUMERATE *r);
-_PUBLIC_ void ndr_print_lsa_CREDRWRITEDOMAINCREDENTIALS(struct ndr_print *ndr, const char *name, int flags, const struct lsa_CREDRWRITEDOMAINCREDENTIALS *r);
-_PUBLIC_ void ndr_print_lsa_CREDRREADDOMAINCREDENTIALS(struct ndr_print *ndr, const char *name, int flags, const struct lsa_CREDRREADDOMAINCREDENTIALS *r);
-_PUBLIC_ void ndr_print_lsa_CREDRDELETE(struct ndr_print *ndr, const char *name, int flags, const struct lsa_CREDRDELETE *r);
-_PUBLIC_ void ndr_print_lsa_CREDRGETTARGETINFO(struct ndr_print *ndr, const char *name, int flags, const struct lsa_CREDRGETTARGETINFO *r);
-_PUBLIC_ void ndr_print_lsa_CREDRPROFILELOADED(struct ndr_print *ndr, const char *name, int flags, const struct lsa_CREDRPROFILELOADED *r);
-_PUBLIC_ enum ndr_err_code ndr_push_lsa_LookupNames3(struct ndr_push *ndr, int flags, const struct lsa_LookupNames3 *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_lsa_LookupNames3(struct ndr_pull *ndr, int flags, struct lsa_LookupNames3 *r);
-_PUBLIC_ void ndr_print_lsa_LookupNames3(struct ndr_print *ndr, const char *name, int flags, const struct lsa_LookupNames3 *r);
-_PUBLIC_ void ndr_print_lsa_CREDRGETSESSIONTYPES(struct ndr_print *ndr, const char *name, int flags, const struct lsa_CREDRGETSESSIONTYPES *r);
-_PUBLIC_ void ndr_print_lsa_LSARREGISTERAUDITEVENT(struct ndr_print *ndr, const char *name, int flags, const struct lsa_LSARREGISTERAUDITEVENT *r);
-_PUBLIC_ void ndr_print_lsa_LSARGENAUDITEVENT(struct ndr_print *ndr, const char *name, int flags, const struct lsa_LSARGENAUDITEVENT *r);
-_PUBLIC_ void ndr_print_lsa_LSARUNREGISTERAUDITEVENT(struct ndr_print *ndr, const char *name, int flags, const struct lsa_LSARUNREGISTERAUDITEVENT *r);
-_PUBLIC_ void ndr_print_lsa_lsaRQueryForestTrustInformation(struct ndr_print *ndr, const char *name, int flags, const struct lsa_lsaRQueryForestTrustInformation *r);
-_PUBLIC_ void ndr_print_lsa_LSARSETFORESTTRUSTINFORMATION(struct ndr_print *ndr, const char *name, int flags, const struct lsa_LSARSETFORESTTRUSTINFORMATION *r);
-_PUBLIC_ void ndr_print_lsa_CREDRRENAME(struct ndr_print *ndr, const char *name, int flags, const struct lsa_CREDRRENAME *r);
-_PUBLIC_ enum ndr_err_code ndr_push_lsa_LookupSids3(struct ndr_push *ndr, int flags, const struct lsa_LookupSids3 *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_lsa_LookupSids3(struct ndr_pull *ndr, int flags, struct lsa_LookupSids3 *r);
-_PUBLIC_ void ndr_print_lsa_LookupSids3(struct ndr_print *ndr, const char *name, int flags, const struct lsa_LookupSids3 *r);
-_PUBLIC_ void ndr_print_lsa_LookupNames4(struct ndr_print *ndr, const char *name, int flags, const struct lsa_LookupNames4 *r);
-_PUBLIC_ void ndr_print_lsa_LSAROPENPOLICYSCE(struct ndr_print *ndr, const char *name, int flags, const struct lsa_LSAROPENPOLICYSCE *r);
-_PUBLIC_ void ndr_print_lsa_LSARADTREGISTERSECURITYEVENTSOURCE(struct ndr_print *ndr, const char *name, int flags, const struct lsa_LSARADTREGISTERSECURITYEVENTSOURCE *r);
-_PUBLIC_ void ndr_print_lsa_LSARADTUNREGISTERSECURITYEVENTSOURCE(struct ndr_print *ndr, const char *name, int flags, const struct lsa_LSARADTUNREGISTERSECURITYEVENTSOURCE *r);
-_PUBLIC_ void ndr_print_lsa_LSARADTREPORTSECURITYEVENT(struct ndr_print *ndr, const char *name, int flags, const struct lsa_LSARADTREPORTSECURITYEVENT *r);
-
-/* The following definitions come from librpc/gen_ndr/ndr_misc.c  */
-
-_PUBLIC_ enum ndr_err_code ndr_push_GUID(struct ndr_push *ndr, int ndr_flags, const struct GUID *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_GUID(struct ndr_pull *ndr, int ndr_flags, struct GUID *r);
-_PUBLIC_ size_t ndr_size_GUID(const struct GUID *r, int flags);
-_PUBLIC_ enum ndr_err_code ndr_push_ndr_syntax_id(struct ndr_push *ndr, int ndr_flags, const struct ndr_syntax_id *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_ndr_syntax_id(struct ndr_pull *ndr, int ndr_flags, struct ndr_syntax_id *r);
-_PUBLIC_ void ndr_print_ndr_syntax_id(struct ndr_print *ndr, const char *name, const struct ndr_syntax_id *r);
-_PUBLIC_ enum ndr_err_code ndr_push_policy_handle(struct ndr_push *ndr, int ndr_flags, const struct policy_handle *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_policy_handle(struct ndr_pull *ndr, int ndr_flags, struct policy_handle *r);
-_PUBLIC_ void ndr_print_policy_handle(struct ndr_print *ndr, const char *name, const struct policy_handle *r);
-_PUBLIC_ enum ndr_err_code ndr_push_netr_SchannelType(struct ndr_push *ndr, int ndr_flags, enum netr_SchannelType r);
-_PUBLIC_ enum ndr_err_code ndr_pull_netr_SchannelType(struct ndr_pull *ndr, int ndr_flags, enum netr_SchannelType *r);
-_PUBLIC_ void ndr_print_netr_SchannelType(struct ndr_print *ndr, const char *name, enum netr_SchannelType r);
-_PUBLIC_ enum ndr_err_code ndr_push_netr_SamDatabaseID(struct ndr_push *ndr, int ndr_flags, enum netr_SamDatabaseID r);
-_PUBLIC_ enum ndr_err_code ndr_pull_netr_SamDatabaseID(struct ndr_pull *ndr, int ndr_flags, enum netr_SamDatabaseID *r);
-_PUBLIC_ void ndr_print_netr_SamDatabaseID(struct ndr_print *ndr, const char *name, enum netr_SamDatabaseID r);
-_PUBLIC_ enum ndr_err_code ndr_push_samr_RejectReason(struct ndr_push *ndr, int ndr_flags, enum samr_RejectReason r);
-_PUBLIC_ enum ndr_err_code ndr_pull_samr_RejectReason(struct ndr_pull *ndr, int ndr_flags, enum samr_RejectReason *r);
-_PUBLIC_ void ndr_print_samr_RejectReason(struct ndr_print *ndr, const char *name, enum samr_RejectReason r);
-
-/* The following definitions come from librpc/gen_ndr/ndr_nbt.c  */
-
-_PUBLIC_ void ndr_print_nbt_operation(struct ndr_print *ndr, const char *name, uint16_t r);
-_PUBLIC_ void ndr_print_nbt_name_type(struct ndr_print *ndr, const char *name, enum nbt_name_type r);
-_PUBLIC_ void ndr_print_nbt_name(struct ndr_print *ndr, const char *name, const struct nbt_name *r);
-_PUBLIC_ void ndr_print_nbt_qclass(struct ndr_print *ndr, const char *name, enum nbt_qclass r);
-_PUBLIC_ void ndr_print_nbt_qtype(struct ndr_print *ndr, const char *name, enum nbt_qtype r);
-_PUBLIC_ void ndr_print_nbt_name_question(struct ndr_print *ndr, const char *name, const struct nbt_name_question *r);
-_PUBLIC_ void ndr_print_nb_flags(struct ndr_print *ndr, const char *name, uint16_t r);
-_PUBLIC_ void ndr_print_nbt_rdata_address(struct ndr_print *ndr, const char *name, const struct nbt_rdata_address *r);
-_PUBLIC_ void ndr_print_nbt_rdata_netbios(struct ndr_print *ndr, const char *name, const struct nbt_rdata_netbios *r);
-_PUBLIC_ void ndr_print_nbt_statistics(struct ndr_print *ndr, const char *name, const struct nbt_statistics *r);
-_PUBLIC_ void ndr_print_nbt_status_name(struct ndr_print *ndr, const char *name, const struct nbt_status_name *r);
-_PUBLIC_ void ndr_print_nbt_rdata_status(struct ndr_print *ndr, const char *name, const struct nbt_rdata_status *r);
-_PUBLIC_ void ndr_print_nbt_rdata_data(struct ndr_print *ndr, const char *name, const struct nbt_rdata_data *r);
-_PUBLIC_ void ndr_print_nbt_rdata(struct ndr_print *ndr, const char *name, const union nbt_rdata *r);
-_PUBLIC_ void ndr_print_nbt_res_rec(struct ndr_print *ndr, const char *name, const struct nbt_res_rec *r);
-_PUBLIC_ enum ndr_err_code ndr_push_nbt_name_packet(struct ndr_push *ndr, int ndr_flags, const struct nbt_name_packet *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_nbt_name_packet(struct ndr_pull *ndr, int ndr_flags, struct nbt_name_packet *r);
-_PUBLIC_ void ndr_print_nbt_name_packet(struct ndr_print *ndr, const char *name, const struct nbt_name_packet *r);
-_PUBLIC_ void ndr_print_dgram_msg_type(struct ndr_print *ndr, const char *name, enum dgram_msg_type r);
-_PUBLIC_ void ndr_print_dgram_flags(struct ndr_print *ndr, const char *name, uint8_t r);
-_PUBLIC_ void ndr_print_smb_command(struct ndr_print *ndr, const char *name, enum smb_command r);
-_PUBLIC_ void ndr_print_smb_trans_body(struct ndr_print *ndr, const char *name, const struct smb_trans_body *r);
-_PUBLIC_ void ndr_print_smb_body(struct ndr_print *ndr, const char *name, const union smb_body *r);
-_PUBLIC_ enum ndr_err_code ndr_push_dgram_smb_packet(struct ndr_push *ndr, int ndr_flags, const struct dgram_smb_packet *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_dgram_smb_packet(struct ndr_pull *ndr, int ndr_flags, struct dgram_smb_packet *r);
-_PUBLIC_ void ndr_print_dgram_smb_packet(struct ndr_print *ndr, const char *name, const struct dgram_smb_packet *r);
-_PUBLIC_ void ndr_print_dgram_message_body(struct ndr_print *ndr, const char *name, const union dgram_message_body *r);
-_PUBLIC_ void ndr_print_dgram_message(struct ndr_print *ndr, const char *name, const struct dgram_message *r);
-_PUBLIC_ void ndr_print_dgram_err_code(struct ndr_print *ndr, const char *name, enum dgram_err_code r);
-_PUBLIC_ void ndr_print_dgram_data(struct ndr_print *ndr, const char *name, const union dgram_data *r);
-_PUBLIC_ enum ndr_err_code ndr_push_nbt_dgram_packet(struct ndr_push *ndr, int ndr_flags, const struct nbt_dgram_packet *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_nbt_dgram_packet(struct ndr_pull *ndr, int ndr_flags, struct nbt_dgram_packet *r);
-_PUBLIC_ void ndr_print_nbt_dgram_packet(struct ndr_print *ndr, const char *name, const struct nbt_dgram_packet *r);
-_PUBLIC_ void ndr_print_nbt_netlogon_command(struct ndr_print *ndr, const char *name, enum nbt_netlogon_command r);
-_PUBLIC_ void ndr_print_nbt_netlogon_version(struct ndr_print *ndr, const char *name, uint32_t r);
-_PUBLIC_ void ndr_print_nbt_netlogon_query_for_pdc(struct ndr_print *ndr, const char *name, const struct nbt_netlogon_query_for_pdc *r);
-_PUBLIC_ void ndr_print_nbt_netlogon_query_for_pdc2(struct ndr_print *ndr, const char *name, const struct nbt_netlogon_query_for_pdc2 *r);
-_PUBLIC_ void ndr_print_nbt_netlogon_response_from_pdc(struct ndr_print *ndr, const char *name, const struct nbt_netlogon_response_from_pdc *r);
-_PUBLIC_ void ndr_print_nbt_server_type(struct ndr_print *ndr, const char *name, uint32_t r);
-_PUBLIC_ void ndr_print_nbt_dc_sock_addr(struct ndr_print *ndr, const char *name, const struct nbt_dc_sock_addr *r);
-_PUBLIC_ void ndr_print_nbt_netlogon_response_from_pdc2(struct ndr_print *ndr, const char *name, const struct nbt_netlogon_response_from_pdc2 *r);
-_PUBLIC_ void ndr_print_nbt_db_change(struct ndr_print *ndr, const char *name, const struct nbt_db_change *r);
-_PUBLIC_ void ndr_print_nbt_netlogon_announce_uas(struct ndr_print *ndr, const char *name, const struct nbt_netlogon_announce_uas *r);
-_PUBLIC_ void ndr_print_nbt_netlogon_request(struct ndr_print *ndr, const char *name, const union nbt_netlogon_request *r);
-_PUBLIC_ enum ndr_err_code ndr_push_nbt_netlogon_packet(struct ndr_push *ndr, int ndr_flags, const struct nbt_netlogon_packet *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_nbt_netlogon_packet(struct ndr_pull *ndr, int ndr_flags, struct nbt_netlogon_packet *r);
-_PUBLIC_ void ndr_print_nbt_netlogon_packet(struct ndr_print *ndr, const char *name, const struct nbt_netlogon_packet *r);
-_PUBLIC_ void ndr_print_nbt_cldap_netlogon_1(struct ndr_print *ndr, const char *name, const struct nbt_cldap_netlogon_1 *r);
-_PUBLIC_ void ndr_print_nbt_cldap_netlogon_3(struct ndr_print *ndr, const char *name, const struct nbt_cldap_netlogon_3 *r);
-_PUBLIC_ enum ndr_err_code ndr_push_nbt_cldap_netlogon_5(struct ndr_push *ndr, int ndr_flags, const struct nbt_cldap_netlogon_5 *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_nbt_cldap_netlogon_5(struct ndr_pull *ndr, int ndr_flags, struct nbt_cldap_netlogon_5 *r);
-_PUBLIC_ void ndr_print_nbt_cldap_netlogon_5(struct ndr_print *ndr, const char *name, const struct nbt_cldap_netlogon_5 *r);
-_PUBLIC_ void ndr_print_nbt_cldap_netlogon_13(struct ndr_print *ndr, const char *name, const struct nbt_cldap_netlogon_13 *r);
-_PUBLIC_ enum ndr_err_code ndr_push_nbt_cldap_netlogon_15(struct ndr_push *ndr, int ndr_flags, const struct nbt_cldap_netlogon_15 *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_nbt_cldap_netlogon_15(struct ndr_pull *ndr, int ndr_flags, struct nbt_cldap_netlogon_15 *r);
-_PUBLIC_ void ndr_print_nbt_cldap_netlogon_15(struct ndr_print *ndr, const char *name, const struct nbt_cldap_netlogon_15 *r);
-_PUBLIC_ enum ndr_err_code ndr_push_nbt_cldap_netlogon_29(struct ndr_push *ndr, int ndr_flags, const struct nbt_cldap_netlogon_29 *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_nbt_cldap_netlogon_29(struct ndr_pull *ndr, int ndr_flags, struct nbt_cldap_netlogon_29 *r);
-_PUBLIC_ void ndr_print_nbt_cldap_netlogon_29(struct ndr_print *ndr, const char *name, const struct nbt_cldap_netlogon_29 *r);
-_PUBLIC_ enum ndr_err_code ndr_push_nbt_cldap_netlogon(struct ndr_push *ndr, int ndr_flags, const union nbt_cldap_netlogon *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_nbt_cldap_netlogon(struct ndr_pull *ndr, int ndr_flags, union nbt_cldap_netlogon *r);
-_PUBLIC_ void ndr_print_nbt_cldap_netlogon(struct ndr_print *ndr, const char *name, const union nbt_cldap_netlogon *r);
-_PUBLIC_ void ndr_print_nbt_ntlogon_command(struct ndr_print *ndr, const char *name, enum nbt_ntlogon_command r);
-_PUBLIC_ void ndr_print_nbt_ntlogon_sam_logon(struct ndr_print *ndr, const char *name, const struct nbt_ntlogon_sam_logon *r);
-_PUBLIC_ void ndr_print_nbt_ntlogon_sam_logon_reply(struct ndr_print *ndr, const char *name, const struct nbt_ntlogon_sam_logon_reply *r);
-_PUBLIC_ void ndr_print_nbt_ntlogon_request(struct ndr_print *ndr, const char *name, const union nbt_ntlogon_request *r);
-_PUBLIC_ enum ndr_err_code ndr_push_nbt_ntlogon_packet(struct ndr_push *ndr, int ndr_flags, const struct nbt_ntlogon_packet *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_nbt_ntlogon_packet(struct ndr_pull *ndr, int ndr_flags, struct nbt_ntlogon_packet *r);
-_PUBLIC_ void ndr_print_nbt_ntlogon_packet(struct ndr_print *ndr, const char *name, const struct nbt_ntlogon_packet *r);
-_PUBLIC_ void ndr_print_nbt_browse_opcode(struct ndr_print *ndr, const char *name, enum nbt_browse_opcode r);
-_PUBLIC_ void ndr_print_nbt_browse_host_announcement(struct ndr_print *ndr, const char *name, const struct nbt_browse_host_announcement *r);
-_PUBLIC_ void ndr_print_nbt_browse_announcement_request(struct ndr_print *ndr, const char *name, const struct nbt_browse_announcement_request *r);
-_PUBLIC_ void ndr_print_nbt_browse_election_request(struct ndr_print *ndr, const char *name, const struct nbt_browse_election_request *r);
-_PUBLIC_ void ndr_print_nbt_browse_backup_list_request(struct ndr_print *ndr, const char *name, const struct nbt_browse_backup_list_request *r);
-_PUBLIC_ void ndr_print_nbt_browse_backup_list_response(struct ndr_print *ndr, const char *name, const struct nbt_browse_backup_list_response *r);
-_PUBLIC_ void ndr_print_nbt_browse_become_backup(struct ndr_print *ndr, const char *name, const struct nbt_browse_become_backup *r);
-_PUBLIC_ void ndr_print_nbt_browse_domain_announcement(struct ndr_print *ndr, const char *name, const struct nbt_browse_domain_announcement *r);
-_PUBLIC_ void ndr_print_nbt_browse_master_announcement(struct ndr_print *ndr, const char *name, const struct nbt_browse_master_announcement *r);
-_PUBLIC_ void ndr_print_nbt_browse_reset_state(struct ndr_print *ndr, const char *name, const struct nbt_browse_reset_state *r);
-_PUBLIC_ void ndr_print_nbt_browse_local_master_announcement(struct ndr_print *ndr, const char *name, const struct nbt_browse_local_master_announcement *r);
-_PUBLIC_ void ndr_print_nbt_browse_payload(struct ndr_print *ndr, const char *name, const union nbt_browse_payload *r);
-_PUBLIC_ enum ndr_err_code ndr_push_nbt_browse_packet(struct ndr_push *ndr, int ndr_flags, const struct nbt_browse_packet *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_nbt_browse_packet(struct ndr_pull *ndr, int ndr_flags, struct nbt_browse_packet *r);
-_PUBLIC_ void ndr_print_nbt_browse_packet(struct ndr_print *ndr, const char *name, const struct nbt_browse_packet *r);
-
-/* The following definitions come from librpc/gen_ndr/ndr_netlogon.c  */
-
-_PUBLIC_ void ndr_print_netr_UasInfo(struct ndr_print *ndr, const char *name, const struct netr_UasInfo *r);
-_PUBLIC_ void ndr_print_netr_UasLogoffInfo(struct ndr_print *ndr, const char *name, const struct netr_UasLogoffInfo *r);
-_PUBLIC_ enum ndr_err_code ndr_push_netr_AcctLockStr(struct ndr_push *ndr, int ndr_flags, const struct netr_AcctLockStr *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_netr_AcctLockStr(struct ndr_pull *ndr, int ndr_flags, struct netr_AcctLockStr *r);
-_PUBLIC_ void ndr_print_netr_AcctLockStr(struct ndr_print *ndr, const char *name, const struct netr_AcctLockStr *r);
-_PUBLIC_ enum ndr_err_code ndr_push_netr_LogonParameterControl(struct ndr_push *ndr, int ndr_flags, uint32_t r);
-_PUBLIC_ enum ndr_err_code ndr_pull_netr_LogonParameterControl(struct ndr_pull *ndr, int ndr_flags, uint32_t *r);
-_PUBLIC_ void ndr_print_netr_LogonParameterControl(struct ndr_print *ndr, const char *name, uint32_t r);
-_PUBLIC_ void ndr_print_netr_IdentityInfo(struct ndr_print *ndr, const char *name, const struct netr_IdentityInfo *r);
-_PUBLIC_ void ndr_print_netr_PasswordInfo(struct ndr_print *ndr, const char *name, const struct netr_PasswordInfo *r);
-_PUBLIC_ void ndr_print_netr_ChallengeResponse(struct ndr_print *ndr, const char *name, const struct netr_ChallengeResponse *r);
-_PUBLIC_ void ndr_print_netr_NetworkInfo(struct ndr_print *ndr, const char *name, const struct netr_NetworkInfo *r);
-_PUBLIC_ enum ndr_err_code ndr_push_netr_LogonInfo(struct ndr_push *ndr, int ndr_flags, const union netr_LogonInfo *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_netr_LogonInfo(struct ndr_pull *ndr, int ndr_flags, union netr_LogonInfo *r);
-_PUBLIC_ void ndr_print_netr_LogonInfo(struct ndr_print *ndr, const char *name, const union netr_LogonInfo *r);
-_PUBLIC_ enum ndr_err_code ndr_push_netr_UserSessionKey(struct ndr_push *ndr, int ndr_flags, const struct netr_UserSessionKey *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_netr_UserSessionKey(struct ndr_pull *ndr, int ndr_flags, struct netr_UserSessionKey *r);
-_PUBLIC_ void ndr_print_netr_UserSessionKey(struct ndr_print *ndr, const char *name, const struct netr_UserSessionKey *r);
-_PUBLIC_ enum ndr_err_code ndr_push_netr_LMSessionKey(struct ndr_push *ndr, int ndr_flags, const struct netr_LMSessionKey *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_netr_LMSessionKey(struct ndr_pull *ndr, int ndr_flags, struct netr_LMSessionKey *r);
-_PUBLIC_ void ndr_print_netr_LMSessionKey(struct ndr_print *ndr, const char *name, const struct netr_LMSessionKey *r);
-_PUBLIC_ enum ndr_err_code ndr_push_netr_UserFlags(struct ndr_push *ndr, int ndr_flags, uint32_t r);
-_PUBLIC_ enum ndr_err_code ndr_pull_netr_UserFlags(struct ndr_pull *ndr, int ndr_flags, uint32_t *r);
-_PUBLIC_ void ndr_print_netr_UserFlags(struct ndr_print *ndr, const char *name, uint32_t r);
-_PUBLIC_ void ndr_print_netr_SamBaseInfo(struct ndr_print *ndr, const char *name, const struct netr_SamBaseInfo *r);
-_PUBLIC_ void ndr_print_netr_SamInfo2(struct ndr_print *ndr, const char *name, const struct netr_SamInfo2 *r);
-_PUBLIC_ void ndr_print_netr_SidAttr(struct ndr_print *ndr, const char *name, const struct netr_SidAttr *r);
-_PUBLIC_ enum ndr_err_code ndr_push_netr_SamInfo3(struct ndr_push *ndr, int ndr_flags, const struct netr_SamInfo3 *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_netr_SamInfo3(struct ndr_pull *ndr, int ndr_flags, struct netr_SamInfo3 *r);
-_PUBLIC_ void ndr_print_netr_SamInfo3(struct ndr_print *ndr, const char *name, const struct netr_SamInfo3 *r);
-_PUBLIC_ void ndr_print_netr_SamInfo6(struct ndr_print *ndr, const char *name, const struct netr_SamInfo6 *r);
-_PUBLIC_ void ndr_print_netr_PacInfo(struct ndr_print *ndr, const char *name, const struct netr_PacInfo *r);
-_PUBLIC_ enum ndr_err_code ndr_push_netr_Validation(struct ndr_push *ndr, int ndr_flags, const union netr_Validation *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_netr_Validation(struct ndr_pull *ndr, int ndr_flags, union netr_Validation *r);
-_PUBLIC_ void ndr_print_netr_Validation(struct ndr_print *ndr, const char *name, const union netr_Validation *r);
-_PUBLIC_ enum ndr_err_code ndr_push_netr_Credential(struct ndr_push *ndr, int ndr_flags, const struct netr_Credential *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_netr_Credential(struct ndr_pull *ndr, int ndr_flags, struct netr_Credential *r);
-_PUBLIC_ void ndr_print_netr_Credential(struct ndr_print *ndr, const char *name, const struct netr_Credential *r);
-_PUBLIC_ enum ndr_err_code ndr_push_netr_Authenticator(struct ndr_push *ndr, int ndr_flags, const struct netr_Authenticator *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_netr_Authenticator(struct ndr_pull *ndr, int ndr_flags, struct netr_Authenticator *r);
-_PUBLIC_ void ndr_print_netr_Authenticator(struct ndr_print *ndr, const char *name, const struct netr_Authenticator *r);
-_PUBLIC_ void ndr_print_netr_LogonLevel(struct ndr_print *ndr, const char *name, enum netr_LogonLevel r);
-_PUBLIC_ void ndr_print_netr_DELTA_DELETE_USER(struct ndr_print *ndr, const char *name, const struct netr_DELTA_DELETE_USER *r);
-_PUBLIC_ void ndr_print_netr_USER_KEY16(struct ndr_print *ndr, const char *name, const struct netr_USER_KEY16 *r);
-_PUBLIC_ void ndr_print_netr_PasswordHistory(struct ndr_print *ndr, const char *name, const struct netr_PasswordHistory *r);
-_PUBLIC_ void ndr_print_netr_USER_KEYS2(struct ndr_print *ndr, const char *name, const struct netr_USER_KEYS2 *r);
-_PUBLIC_ void ndr_print_netr_USER_KEY_UNION(struct ndr_print *ndr, const char *name, const struct netr_USER_KEY_UNION *r);
-_PUBLIC_ enum ndr_err_code ndr_push_netr_USER_KEYS(struct ndr_push *ndr, int ndr_flags, const struct netr_USER_KEYS *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_netr_USER_KEYS(struct ndr_pull *ndr, int ndr_flags, struct netr_USER_KEYS *r);
-_PUBLIC_ void ndr_print_netr_USER_KEYS(struct ndr_print *ndr, const char *name, const struct netr_USER_KEYS *r);
-_PUBLIC_ void ndr_print_netr_USER_PRIVATE_INFO(struct ndr_print *ndr, const char *name, const struct netr_USER_PRIVATE_INFO *r);
-_PUBLIC_ void ndr_print_netr_DELTA_USER(struct ndr_print *ndr, const char *name, const struct netr_DELTA_USER *r);
-_PUBLIC_ void ndr_print_netr_DELTA_DOMAIN(struct ndr_print *ndr, const char *name, const struct netr_DELTA_DOMAIN *r);
-_PUBLIC_ void ndr_print_netr_DELTA_GROUP(struct ndr_print *ndr, const char *name, const struct netr_DELTA_GROUP *r);
-_PUBLIC_ void ndr_print_netr_DELTA_RENAME(struct ndr_print *ndr, const char *name, const struct netr_DELTA_RENAME *r);
-_PUBLIC_ void ndr_print_netr_DELTA_GROUP_MEMBER(struct ndr_print *ndr, const char *name, const struct netr_DELTA_GROUP_MEMBER *r);
-_PUBLIC_ void ndr_print_netr_DELTA_ALIAS(struct ndr_print *ndr, const char *name, const struct netr_DELTA_ALIAS *r);
-_PUBLIC_ void ndr_print_netr_DELTA_ALIAS_MEMBER(struct ndr_print *ndr, const char *name, const struct netr_DELTA_ALIAS_MEMBER *r);
-_PUBLIC_ void ndr_print_netr_QUOTA_LIMITS(struct ndr_print *ndr, const char *name, const struct netr_QUOTA_LIMITS *r);
-_PUBLIC_ void ndr_print_netr_DELTA_POLICY(struct ndr_print *ndr, const char *name, const struct netr_DELTA_POLICY *r);
-_PUBLIC_ void ndr_print_netr_DELTA_TRUSTED_DOMAIN(struct ndr_print *ndr, const char *name, const struct netr_DELTA_TRUSTED_DOMAIN *r);
-_PUBLIC_ void ndr_print_netr_DELTA_DELETE_TRUST(struct ndr_print *ndr, const char *name, const struct netr_DELTA_DELETE_TRUST *r);
-_PUBLIC_ void ndr_print_netr_DELTA_ACCOUNT(struct ndr_print *ndr, const char *name, const struct netr_DELTA_ACCOUNT *r);
-_PUBLIC_ void ndr_print_netr_DELTA_DELETE_ACCOUNT(struct ndr_print *ndr, const char *name, const struct netr_DELTA_DELETE_ACCOUNT *r);
-_PUBLIC_ void ndr_print_netr_DELTA_DELETE_SECRET(struct ndr_print *ndr, const char *name, const struct netr_DELTA_DELETE_SECRET *r);
-_PUBLIC_ void ndr_print_netr_CIPHER_VALUE(struct ndr_print *ndr, const char *name, const struct netr_CIPHER_VALUE *r);
-_PUBLIC_ void ndr_print_netr_DELTA_SECRET(struct ndr_print *ndr, const char *name, const struct netr_DELTA_SECRET *r);
-_PUBLIC_ void ndr_print_netr_DeltaEnum(struct ndr_print *ndr, const char *name, enum netr_DeltaEnum r);
-_PUBLIC_ void ndr_print_netr_DELTA_UNION(struct ndr_print *ndr, const char *name, const union netr_DELTA_UNION *r);
-_PUBLIC_ void ndr_print_netr_DELTA_ID_UNION(struct ndr_print *ndr, const char *name, const union netr_DELTA_ID_UNION *r);
-_PUBLIC_ void ndr_print_netr_DELTA_ENUM(struct ndr_print *ndr, const char *name, const struct netr_DELTA_ENUM *r);
-_PUBLIC_ void ndr_print_netr_DELTA_ENUM_ARRAY(struct ndr_print *ndr, const char *name, const struct netr_DELTA_ENUM_ARRAY *r);
-_PUBLIC_ void ndr_print_netr_UAS_INFO_0(struct ndr_print *ndr, const char *name, const struct netr_UAS_INFO_0 *r);
-_PUBLIC_ void ndr_print_netr_AccountBuffer(struct ndr_print *ndr, const char *name, const struct netr_AccountBuffer *r);
-_PUBLIC_ void ndr_print_netr_InfoFlags(struct ndr_print *ndr, const char *name, uint32_t r);
-_PUBLIC_ void ndr_print_netr_NETLOGON_INFO_1(struct ndr_print *ndr, const char *name, const struct netr_NETLOGON_INFO_1 *r);
-_PUBLIC_ void ndr_print_netr_NETLOGON_INFO_2(struct ndr_print *ndr, const char *name, const struct netr_NETLOGON_INFO_2 *r);
-_PUBLIC_ void ndr_print_netr_NETLOGON_INFO_3(struct ndr_print *ndr, const char *name, const struct netr_NETLOGON_INFO_3 *r);
-_PUBLIC_ void ndr_print_netr_CONTROL_QUERY_INFORMATION(struct ndr_print *ndr, const char *name, const union netr_CONTROL_QUERY_INFORMATION *r);
-_PUBLIC_ void ndr_print_netr_LogonControlCode(struct ndr_print *ndr, const char *name, enum netr_LogonControlCode r);
-_PUBLIC_ void ndr_print_netr_CONTROL_DATA_INFORMATION(struct ndr_print *ndr, const char *name, const union netr_CONTROL_DATA_INFORMATION *r);
-_PUBLIC_ void ndr_print_netr_NegotiateFlags(struct ndr_print *ndr, const char *name, uint32_t r);
-_PUBLIC_ void ndr_print_netr_Blob(struct ndr_print *ndr, const char *name, const struct netr_Blob *r);
-_PUBLIC_ void ndr_print_netr_DsRGetDCName_flags(struct ndr_print *ndr, const char *name, uint32_t r);
-_PUBLIC_ void ndr_print_netr_DsRGetDCNameInfo_AddressType(struct ndr_print *ndr, const char *name, enum netr_DsRGetDCNameInfo_AddressType r);
-_PUBLIC_ void ndr_print_netr_DsR_DcFlags(struct ndr_print *ndr, const char *name, uint32_t r);
-_PUBLIC_ enum ndr_err_code ndr_push_netr_DsRGetDCNameInfo(struct ndr_push *ndr, int ndr_flags, const struct netr_DsRGetDCNameInfo *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_netr_DsRGetDCNameInfo(struct ndr_pull *ndr, int ndr_flags, struct netr_DsRGetDCNameInfo *r);
-_PUBLIC_ void ndr_print_netr_DsRGetDCNameInfo(struct ndr_print *ndr, const char *name, const struct netr_DsRGetDCNameInfo *r);
-_PUBLIC_ void ndr_print_netr_BinaryString(struct ndr_print *ndr, const char *name, const struct netr_BinaryString *r);
-_PUBLIC_ void ndr_print_netr_DomainQuery1(struct ndr_print *ndr, const char *name, const struct netr_DomainQuery1 *r);
-_PUBLIC_ void ndr_print_netr_DomainQuery(struct ndr_print *ndr, const char *name, const union netr_DomainQuery *r);
-_PUBLIC_ void ndr_print_netr_DomainTrustInfo(struct ndr_print *ndr, const char *name, const struct netr_DomainTrustInfo *r);
-_PUBLIC_ void ndr_print_netr_DomainInfo1(struct ndr_print *ndr, const char *name, const struct netr_DomainInfo1 *r);
-_PUBLIC_ void ndr_print_netr_DomainInfo(struct ndr_print *ndr, const char *name, const union netr_DomainInfo *r);
-_PUBLIC_ void ndr_print_netr_CryptPassword(struct ndr_print *ndr, const char *name, const struct netr_CryptPassword *r);
-_PUBLIC_ void ndr_print_netr_DsRAddressToSitenamesWCtr(struct ndr_print *ndr, const char *name, const struct netr_DsRAddressToSitenamesWCtr *r);
-_PUBLIC_ void ndr_print_netr_DsRAddress(struct ndr_print *ndr, const char *name, const struct netr_DsRAddress *r);
-_PUBLIC_ void ndr_print_netr_TrustFlags(struct ndr_print *ndr, const char *name, uint32_t r);
-_PUBLIC_ void ndr_print_netr_TrustType(struct ndr_print *ndr, const char *name, enum netr_TrustType r);
-_PUBLIC_ void ndr_print_netr_TrustAttributes(struct ndr_print *ndr, const char *name, uint32_t r);
-_PUBLIC_ void ndr_print_netr_DomainTrust(struct ndr_print *ndr, const char *name, const struct netr_DomainTrust *r);
-_PUBLIC_ void ndr_print_netr_DomainTrustList(struct ndr_print *ndr, const char *name, const struct netr_DomainTrustList *r);
-_PUBLIC_ void ndr_print_netr_DsRAddressToSitenamesExWCtr(struct ndr_print *ndr, const char *name, const struct netr_DsRAddressToSitenamesExWCtr *r);
-_PUBLIC_ void ndr_print_DcSitesCtr(struct ndr_print *ndr, const char *name, const struct DcSitesCtr *r);
-_PUBLIC_ void ndr_print_netr_LogonUasLogon(struct ndr_print *ndr, const char *name, int flags, const struct netr_LogonUasLogon *r);
-_PUBLIC_ void ndr_print_netr_LogonUasLogoff(struct ndr_print *ndr, const char *name, int flags, const struct netr_LogonUasLogoff *r);
-_PUBLIC_ void ndr_print_netr_LogonSamLogon(struct ndr_print *ndr, const char *name, int flags, const struct netr_LogonSamLogon *r);
-_PUBLIC_ void ndr_print_netr_LogonSamLogoff(struct ndr_print *ndr, const char *name, int flags, const struct netr_LogonSamLogoff *r);
-_PUBLIC_ void ndr_print_netr_ServerReqChallenge(struct ndr_print *ndr, const char *name, int flags, const struct netr_ServerReqChallenge *r);
-_PUBLIC_ void ndr_print_netr_ServerAuthenticate(struct ndr_print *ndr, const char *name, int flags, const struct netr_ServerAuthenticate *r);
-_PUBLIC_ void ndr_print_netr_ServerPasswordSet(struct ndr_print *ndr, const char *name, int flags, const struct netr_ServerPasswordSet *r);
-_PUBLIC_ void ndr_print_netr_DatabaseDeltas(struct ndr_print *ndr, const char *name, int flags, const struct netr_DatabaseDeltas *r);
-_PUBLIC_ void ndr_print_netr_DatabaseSync(struct ndr_print *ndr, const char *name, int flags, const struct netr_DatabaseSync *r);
-_PUBLIC_ void ndr_print_netr_AccountDeltas(struct ndr_print *ndr, const char *name, int flags, const struct netr_AccountDeltas *r);
-_PUBLIC_ void ndr_print_netr_AccountSync(struct ndr_print *ndr, const char *name, int flags, const struct netr_AccountSync *r);
-_PUBLIC_ void ndr_print_netr_GetDcName(struct ndr_print *ndr, const char *name, int flags, const struct netr_GetDcName *r);
-_PUBLIC_ void ndr_print_netr_LogonControl(struct ndr_print *ndr, const char *name, int flags, const struct netr_LogonControl *r);
-_PUBLIC_ void ndr_print_netr_GetAnyDCName(struct ndr_print *ndr, const char *name, int flags, const struct netr_GetAnyDCName *r);
-_PUBLIC_ void ndr_print_netr_LogonControl2(struct ndr_print *ndr, const char *name, int flags, const struct netr_LogonControl2 *r);
-_PUBLIC_ void ndr_print_netr_ServerAuthenticate2(struct ndr_print *ndr, const char *name, int flags, const struct netr_ServerAuthenticate2 *r);
-_PUBLIC_ void ndr_print_netr_DatabaseSync2(struct ndr_print *ndr, const char *name, int flags, const struct netr_DatabaseSync2 *r);
-_PUBLIC_ void ndr_print_netr_DatabaseRedo(struct ndr_print *ndr, const char *name, int flags, const struct netr_DatabaseRedo *r);
-_PUBLIC_ void ndr_print_netr_LogonControl2Ex(struct ndr_print *ndr, const char *name, int flags, const struct netr_LogonControl2Ex *r);
-_PUBLIC_ void ndr_print_netr_NetrEnumerateTrustedDomains(struct ndr_print *ndr, const char *name, int flags, const struct netr_NetrEnumerateTrustedDomains *r);
-_PUBLIC_ void ndr_print_netr_DsRGetDCName(struct ndr_print *ndr, const char *name, int flags, const struct netr_DsRGetDCName *r);
-_PUBLIC_ void ndr_print_netr_NETRLOGONDUMMYROUTINE1(struct ndr_print *ndr, const char *name, int flags, const struct netr_NETRLOGONDUMMYROUTINE1 *r);
-_PUBLIC_ void ndr_print_netr_NETRLOGONSETSERVICEBITS(struct ndr_print *ndr, const char *name, int flags, const struct netr_NETRLOGONSETSERVICEBITS *r);
-_PUBLIC_ void ndr_print_netr_LogonGetTrustRid(struct ndr_print *ndr, const char *name, int flags, const struct netr_LogonGetTrustRid *r);
-_PUBLIC_ void ndr_print_netr_NETRLOGONCOMPUTESERVERDIGEST(struct ndr_print *ndr, const char *name, int flags, const struct netr_NETRLOGONCOMPUTESERVERDIGEST *r);
-_PUBLIC_ void ndr_print_netr_NETRLOGONCOMPUTECLIENTDIGEST(struct ndr_print *ndr, const char *name, int flags, const struct netr_NETRLOGONCOMPUTECLIENTDIGEST *r);
-_PUBLIC_ void ndr_print_netr_ServerAuthenticate3(struct ndr_print *ndr, const char *name, int flags, const struct netr_ServerAuthenticate3 *r);
-_PUBLIC_ void ndr_print_netr_DsRGetDCNameEx(struct ndr_print *ndr, const char *name, int flags, const struct netr_DsRGetDCNameEx *r);
-_PUBLIC_ void ndr_print_netr_DsRGetSiteName(struct ndr_print *ndr, const char *name, int flags, const struct netr_DsRGetSiteName *r);
-_PUBLIC_ void ndr_print_netr_LogonGetDomainInfo(struct ndr_print *ndr, const char *name, int flags, const struct netr_LogonGetDomainInfo *r);
-_PUBLIC_ void ndr_print_netr_ServerPasswordSet2(struct ndr_print *ndr, const char *name, int flags, const struct netr_ServerPasswordSet2 *r);
-_PUBLIC_ void ndr_print_netr_ServerPasswordGet(struct ndr_print *ndr, const char *name, int flags, const struct netr_ServerPasswordGet *r);
-_PUBLIC_ void ndr_print_netr_NETRLOGONSENDTOSAM(struct ndr_print *ndr, const char *name, int flags, const struct netr_NETRLOGONSENDTOSAM *r);
-_PUBLIC_ void ndr_print_netr_DsRAddressToSitenamesW(struct ndr_print *ndr, const char *name, int flags, const struct netr_DsRAddressToSitenamesW *r);
-_PUBLIC_ void ndr_print_netr_DsRGetDCNameEx2(struct ndr_print *ndr, const char *name, int flags, const struct netr_DsRGetDCNameEx2 *r);
-_PUBLIC_ void ndr_print_netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN(struct ndr_print *ndr, const char *name, int flags, const struct netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN *r);
-_PUBLIC_ void ndr_print_netr_NetrEnumerateTrustedDomainsEx(struct ndr_print *ndr, const char *name, int flags, const struct netr_NetrEnumerateTrustedDomainsEx *r);
-_PUBLIC_ void ndr_print_netr_DsRAddressToSitenamesExW(struct ndr_print *ndr, const char *name, int flags, const struct netr_DsRAddressToSitenamesExW *r);
-_PUBLIC_ void ndr_print_netr_DsrGetDcSiteCoverageW(struct ndr_print *ndr, const char *name, int flags, const struct netr_DsrGetDcSiteCoverageW *r);
-_PUBLIC_ void ndr_print_netr_LogonSamLogonEx(struct ndr_print *ndr, const char *name, int flags, const struct netr_LogonSamLogonEx *r);
-_PUBLIC_ void ndr_print_netr_DsrEnumerateDomainTrusts(struct ndr_print *ndr, const char *name, int flags, const struct netr_DsrEnumerateDomainTrusts *r);
-_PUBLIC_ void ndr_print_netr_DsrDeregisterDNSHostRecords(struct ndr_print *ndr, const char *name, int flags, const struct netr_DsrDeregisterDNSHostRecords *r);
-_PUBLIC_ void ndr_print_netr_ServerTrustPasswordsGet(struct ndr_print *ndr, const char *name, int flags, const struct netr_ServerTrustPasswordsGet *r);
-_PUBLIC_ void ndr_print_netr_DsRGetForestTrustInformation(struct ndr_print *ndr, const char *name, int flags, const struct netr_DsRGetForestTrustInformation *r);
-_PUBLIC_ void ndr_print_netr_GetForestTrustInformation(struct ndr_print *ndr, const char *name, int flags, const struct netr_GetForestTrustInformation *r);
-_PUBLIC_ void ndr_print_netr_LogonSamLogonWithFlags(struct ndr_print *ndr, const char *name, int flags, const struct netr_LogonSamLogonWithFlags *r);
-_PUBLIC_ void ndr_print_netr_NETRSERVERGETTRUSTINFO(struct ndr_print *ndr, const char *name, int flags, const struct netr_NETRSERVERGETTRUSTINFO *r);
-
-/* The following definitions come from librpc/gen_ndr/ndr_notify.c  */
-
-_PUBLIC_ enum ndr_err_code ndr_push_notify_entry(struct ndr_push *ndr, int ndr_flags, const struct notify_entry *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_notify_entry(struct ndr_pull *ndr, int ndr_flags, struct notify_entry *r);
-_PUBLIC_ void ndr_print_notify_entry(struct ndr_print *ndr, const char *name, const struct notify_entry *r);
-_PUBLIC_ void ndr_print_notify_depth(struct ndr_print *ndr, const char *name, const struct notify_depth *r);
-_PUBLIC_ enum ndr_err_code ndr_push_notify_array(struct ndr_push *ndr, int ndr_flags, const struct notify_array *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_notify_array(struct ndr_pull *ndr, int ndr_flags, struct notify_array *r);
-_PUBLIC_ void ndr_print_notify_array(struct ndr_print *ndr, const char *name, const struct notify_array *r);
-_PUBLIC_ enum ndr_err_code ndr_push_notify_event(struct ndr_push *ndr, int ndr_flags, const struct notify_event *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_notify_event(struct ndr_pull *ndr, int ndr_flags, struct notify_event *r);
-_PUBLIC_ void ndr_print_notify_event(struct ndr_print *ndr, const char *name, const struct notify_event *r);
-
-/* The following definitions come from librpc/gen_ndr/ndr_ntsvcs.c  */
-
-_PUBLIC_ void ndr_print_PNP_HwProfInfo(struct ndr_print *ndr, const char *name, const struct PNP_HwProfInfo *r);
-_PUBLIC_ void ndr_print_PNP_Disconnect(struct ndr_print *ndr, const char *name, int flags, const struct PNP_Disconnect *r);
-_PUBLIC_ void ndr_print_PNP_Connect(struct ndr_print *ndr, const char *name, int flags, const struct PNP_Connect *r);
-_PUBLIC_ void ndr_print_PNP_GetVersion(struct ndr_print *ndr, const char *name, int flags, const struct PNP_GetVersion *r);
-_PUBLIC_ void ndr_print_PNP_GetGlobalState(struct ndr_print *ndr, const char *name, int flags, const struct PNP_GetGlobalState *r);
-_PUBLIC_ void ndr_print_PNP_InitDetection(struct ndr_print *ndr, const char *name, int flags, const struct PNP_InitDetection *r);
-_PUBLIC_ void ndr_print_PNP_ReportLogOn(struct ndr_print *ndr, const char *name, int flags, const struct PNP_ReportLogOn *r);
-_PUBLIC_ void ndr_print_PNP_ValidateDeviceInstance(struct ndr_print *ndr, const char *name, int flags, const struct PNP_ValidateDeviceInstance *r);
-_PUBLIC_ void ndr_print_PNP_GetRootDeviceInstance(struct ndr_print *ndr, const char *name, int flags, const struct PNP_GetRootDeviceInstance *r);
-_PUBLIC_ void ndr_print_PNP_GetRelatedDeviceInstance(struct ndr_print *ndr, const char *name, int flags, const struct PNP_GetRelatedDeviceInstance *r);
-_PUBLIC_ void ndr_print_PNP_EnumerateSubKeys(struct ndr_print *ndr, const char *name, int flags, const struct PNP_EnumerateSubKeys *r);
-_PUBLIC_ void ndr_print_PNP_GetDeviceList(struct ndr_print *ndr, const char *name, int flags, const struct PNP_GetDeviceList *r);
-_PUBLIC_ void ndr_print_PNP_GetDeviceListSize(struct ndr_print *ndr, const char *name, int flags, const struct PNP_GetDeviceListSize *r);
-_PUBLIC_ void ndr_print_PNP_GetDepth(struct ndr_print *ndr, const char *name, int flags, const struct PNP_GetDepth *r);
-_PUBLIC_ void ndr_print_PNP_GetDeviceRegProp(struct ndr_print *ndr, const char *name, int flags, const struct PNP_GetDeviceRegProp *r);
-_PUBLIC_ void ndr_print_PNP_SetDeviceRegProp(struct ndr_print *ndr, const char *name, int flags, const struct PNP_SetDeviceRegProp *r);
-_PUBLIC_ void ndr_print_PNP_GetClassInstance(struct ndr_print *ndr, const char *name, int flags, const struct PNP_GetClassInstance *r);
-_PUBLIC_ void ndr_print_PNP_CreateKey(struct ndr_print *ndr, const char *name, int flags, const struct PNP_CreateKey *r);
-_PUBLIC_ void ndr_print_PNP_DeleteRegistryKey(struct ndr_print *ndr, const char *name, int flags, const struct PNP_DeleteRegistryKey *r);
-_PUBLIC_ void ndr_print_PNP_GetClassCount(struct ndr_print *ndr, const char *name, int flags, const struct PNP_GetClassCount *r);
-_PUBLIC_ void ndr_print_PNP_GetClassName(struct ndr_print *ndr, const char *name, int flags, const struct PNP_GetClassName *r);
-_PUBLIC_ void ndr_print_PNP_DeleteClassKey(struct ndr_print *ndr, const char *name, int flags, const struct PNP_DeleteClassKey *r);
-_PUBLIC_ void ndr_print_PNP_GetInterfaceDeviceAlias(struct ndr_print *ndr, const char *name, int flags, const struct PNP_GetInterfaceDeviceAlias *r);
-_PUBLIC_ void ndr_print_PNP_GetInterfaceDeviceList(struct ndr_print *ndr, const char *name, int flags, const struct PNP_GetInterfaceDeviceList *r);
-_PUBLIC_ void ndr_print_PNP_GetInterfaceDeviceListSize(struct ndr_print *ndr, const char *name, int flags, const struct PNP_GetInterfaceDeviceListSize *r);
-_PUBLIC_ void ndr_print_PNP_RegisterDeviceClassAssociation(struct ndr_print *ndr, const char *name, int flags, const struct PNP_RegisterDeviceClassAssociation *r);
-_PUBLIC_ void ndr_print_PNP_UnregisterDeviceClassAssociation(struct ndr_print *ndr, const char *name, int flags, const struct PNP_UnregisterDeviceClassAssociation *r);
-_PUBLIC_ void ndr_print_PNP_GetClassRegProp(struct ndr_print *ndr, const char *name, int flags, const struct PNP_GetClassRegProp *r);
-_PUBLIC_ void ndr_print_PNP_SetClassRegProp(struct ndr_print *ndr, const char *name, int flags, const struct PNP_SetClassRegProp *r);
-_PUBLIC_ void ndr_print_PNP_CreateDevInst(struct ndr_print *ndr, const char *name, int flags, const struct PNP_CreateDevInst *r);
-_PUBLIC_ void ndr_print_PNP_DeviceInstanceAction(struct ndr_print *ndr, const char *name, int flags, const struct PNP_DeviceInstanceAction *r);
-_PUBLIC_ void ndr_print_PNP_GetDeviceStatus(struct ndr_print *ndr, const char *name, int flags, const struct PNP_GetDeviceStatus *r);
-_PUBLIC_ void ndr_print_PNP_SetDeviceProblem(struct ndr_print *ndr, const char *name, int flags, const struct PNP_SetDeviceProblem *r);
-_PUBLIC_ void ndr_print_PNP_DisableDevInst(struct ndr_print *ndr, const char *name, int flags, const struct PNP_DisableDevInst *r);
-_PUBLIC_ void ndr_print_PNP_UninstallDevInst(struct ndr_print *ndr, const char *name, int flags, const struct PNP_UninstallDevInst *r);
-_PUBLIC_ void ndr_print_PNP_AddID(struct ndr_print *ndr, const char *name, int flags, const struct PNP_AddID *r);
-_PUBLIC_ void ndr_print_PNP_RegisterDriver(struct ndr_print *ndr, const char *name, int flags, const struct PNP_RegisterDriver *r);
-_PUBLIC_ void ndr_print_PNP_QueryRemove(struct ndr_print *ndr, const char *name, int flags, const struct PNP_QueryRemove *r);
-_PUBLIC_ void ndr_print_PNP_RequestDeviceEject(struct ndr_print *ndr, const char *name, int flags, const struct PNP_RequestDeviceEject *r);
-_PUBLIC_ void ndr_print_PNP_IsDockStationPresent(struct ndr_print *ndr, const char *name, int flags, const struct PNP_IsDockStationPresent *r);
-_PUBLIC_ void ndr_print_PNP_RequestEjectPC(struct ndr_print *ndr, const char *name, int flags, const struct PNP_RequestEjectPC *r);
-_PUBLIC_ void ndr_print_PNP_HwProfFlags(struct ndr_print *ndr, const char *name, int flags, const struct PNP_HwProfFlags *r);
-_PUBLIC_ void ndr_print_PNP_GetHwProfInfo(struct ndr_print *ndr, const char *name, int flags, const struct PNP_GetHwProfInfo *r);
-_PUBLIC_ void ndr_print_PNP_AddEmptyLogConf(struct ndr_print *ndr, const char *name, int flags, const struct PNP_AddEmptyLogConf *r);
-_PUBLIC_ void ndr_print_PNP_FreeLogConf(struct ndr_print *ndr, const char *name, int flags, const struct PNP_FreeLogConf *r);
-_PUBLIC_ void ndr_print_PNP_GetFirstLogConf(struct ndr_print *ndr, const char *name, int flags, const struct PNP_GetFirstLogConf *r);
-_PUBLIC_ void ndr_print_PNP_GetNextLogConf(struct ndr_print *ndr, const char *name, int flags, const struct PNP_GetNextLogConf *r);
-_PUBLIC_ void ndr_print_PNP_GetLogConfPriority(struct ndr_print *ndr, const char *name, int flags, const struct PNP_GetLogConfPriority *r);
-_PUBLIC_ void ndr_print_PNP_AddResDes(struct ndr_print *ndr, const char *name, int flags, const struct PNP_AddResDes *r);
-_PUBLIC_ void ndr_print_PNP_FreeResDes(struct ndr_print *ndr, const char *name, int flags, const struct PNP_FreeResDes *r);
-_PUBLIC_ void ndr_print_PNP_GetNextResDes(struct ndr_print *ndr, const char *name, int flags, const struct PNP_GetNextResDes *r);
-_PUBLIC_ void ndr_print_PNP_GetResDesData(struct ndr_print *ndr, const char *name, int flags, const struct PNP_GetResDesData *r);
-_PUBLIC_ void ndr_print_PNP_GetResDesDataSize(struct ndr_print *ndr, const char *name, int flags, const struct PNP_GetResDesDataSize *r);
-_PUBLIC_ void ndr_print_PNP_ModifyResDes(struct ndr_print *ndr, const char *name, int flags, const struct PNP_ModifyResDes *r);
-_PUBLIC_ void ndr_print_PNP_DetectResourceLimit(struct ndr_print *ndr, const char *name, int flags, const struct PNP_DetectResourceLimit *r);
-_PUBLIC_ void ndr_print_PNP_QueryResConfList(struct ndr_print *ndr, const char *name, int flags, const struct PNP_QueryResConfList *r);
-_PUBLIC_ void ndr_print_PNP_SetHwProf(struct ndr_print *ndr, const char *name, int flags, const struct PNP_SetHwProf *r);
-_PUBLIC_ void ndr_print_PNP_QueryArbitratorFreeData(struct ndr_print *ndr, const char *name, int flags, const struct PNP_QueryArbitratorFreeData *r);
-_PUBLIC_ void ndr_print_PNP_QueryArbitratorFreeSize(struct ndr_print *ndr, const char *name, int flags, const struct PNP_QueryArbitratorFreeSize *r);
-_PUBLIC_ void ndr_print_PNP_RunDetection(struct ndr_print *ndr, const char *name, int flags, const struct PNP_RunDetection *r);
-_PUBLIC_ void ndr_print_PNP_RegisterNotification(struct ndr_print *ndr, const char *name, int flags, const struct PNP_RegisterNotification *r);
-_PUBLIC_ void ndr_print_PNP_UnregisterNotification(struct ndr_print *ndr, const char *name, int flags, const struct PNP_UnregisterNotification *r);
-_PUBLIC_ void ndr_print_PNP_GetCustomDevProp(struct ndr_print *ndr, const char *name, int flags, const struct PNP_GetCustomDevProp *r);
-_PUBLIC_ void ndr_print_PNP_GetVersionInternal(struct ndr_print *ndr, const char *name, int flags, const struct PNP_GetVersionInternal *r);
-_PUBLIC_ void ndr_print_PNP_GetBlockedDriverInfo(struct ndr_print *ndr, const char *name, int flags, const struct PNP_GetBlockedDriverInfo *r);
-_PUBLIC_ void ndr_print_PNP_GetServerSideDeviceInstallFlags(struct ndr_print *ndr, const char *name, int flags, const struct PNP_GetServerSideDeviceInstallFlags *r);
-
-/* The following definitions come from librpc/gen_ndr/ndr_samr.c  */
-
-_PUBLIC_ enum ndr_err_code ndr_push_samr_AcctFlags(struct ndr_push *ndr, int ndr_flags, uint32_t r);
-_PUBLIC_ enum ndr_err_code ndr_pull_samr_AcctFlags(struct ndr_pull *ndr, int ndr_flags, uint32_t *r);
-_PUBLIC_ void ndr_print_samr_AcctFlags(struct ndr_print *ndr, const char *name, uint32_t r);
-_PUBLIC_ void ndr_print_samr_ConnectAccessMask(struct ndr_print *ndr, const char *name, uint32_t r);
-_PUBLIC_ void ndr_print_samr_UserAccessMask(struct ndr_print *ndr, const char *name, uint32_t r);
-_PUBLIC_ void ndr_print_samr_DomainAccessMask(struct ndr_print *ndr, const char *name, uint32_t r);
-_PUBLIC_ void ndr_print_samr_GroupAccessMask(struct ndr_print *ndr, const char *name, uint32_t r);
-_PUBLIC_ void ndr_print_samr_AliasAccessMask(struct ndr_print *ndr, const char *name, uint32_t r);
-_PUBLIC_ void ndr_print_samr_SamEntry(struct ndr_print *ndr, const char *name, const struct samr_SamEntry *r);
-_PUBLIC_ void ndr_print_samr_SamArray(struct ndr_print *ndr, const char *name, const struct samr_SamArray *r);
-_PUBLIC_ void ndr_print_samr_Role(struct ndr_print *ndr, const char *name, enum samr_Role r);
-_PUBLIC_ enum ndr_err_code ndr_push_samr_PasswordProperties(struct ndr_push *ndr, int ndr_flags, uint32_t r);
-_PUBLIC_ enum ndr_err_code ndr_pull_samr_PasswordProperties(struct ndr_pull *ndr, int ndr_flags, uint32_t *r);
-_PUBLIC_ void ndr_print_samr_PasswordProperties(struct ndr_print *ndr, const char *name, uint32_t r);
-_PUBLIC_ void ndr_print_samr_DomInfo1(struct ndr_print *ndr, const char *name, const struct samr_DomInfo1 *r);
-_PUBLIC_ void ndr_print_samr_DomInfo2(struct ndr_print *ndr, const char *name, const struct samr_DomInfo2 *r);
-_PUBLIC_ void ndr_print_samr_DomInfo3(struct ndr_print *ndr, const char *name, const struct samr_DomInfo3 *r);
-_PUBLIC_ void ndr_print_samr_DomInfo4(struct ndr_print *ndr, const char *name, const struct samr_DomInfo4 *r);
-_PUBLIC_ void ndr_print_samr_DomInfo5(struct ndr_print *ndr, const char *name, const struct samr_DomInfo5 *r);
-_PUBLIC_ void ndr_print_samr_DomInfo6(struct ndr_print *ndr, const char *name, const struct samr_DomInfo6 *r);
-_PUBLIC_ void ndr_print_samr_DomInfo7(struct ndr_print *ndr, const char *name, const struct samr_DomInfo7 *r);
-_PUBLIC_ void ndr_print_samr_DomInfo8(struct ndr_print *ndr, const char *name, const struct samr_DomInfo8 *r);
-_PUBLIC_ void ndr_print_samr_DomInfo9(struct ndr_print *ndr, const char *name, const struct samr_DomInfo9 *r);
-_PUBLIC_ void ndr_print_samr_DomInfo11(struct ndr_print *ndr, const char *name, const struct samr_DomInfo11 *r);
-_PUBLIC_ void ndr_print_samr_DomInfo12(struct ndr_print *ndr, const char *name, const struct samr_DomInfo12 *r);
-_PUBLIC_ void ndr_print_samr_DomInfo13(struct ndr_print *ndr, const char *name, const struct samr_DomInfo13 *r);
-_PUBLIC_ void ndr_print_samr_DomainInfo(struct ndr_print *ndr, const char *name, const union samr_DomainInfo *r);
-_PUBLIC_ void ndr_print_samr_Ids(struct ndr_print *ndr, const char *name, const struct samr_Ids *r);
-_PUBLIC_ enum ndr_err_code ndr_push_samr_GroupAttrs(struct ndr_push *ndr, int ndr_flags, uint32_t r);
-_PUBLIC_ enum ndr_err_code ndr_pull_samr_GroupAttrs(struct ndr_pull *ndr, int ndr_flags, uint32_t *r);
-_PUBLIC_ void ndr_print_samr_GroupAttrs(struct ndr_print *ndr, const char *name, uint32_t r);
-_PUBLIC_ void ndr_print_samr_GroupInfoAll(struct ndr_print *ndr, const char *name, const struct samr_GroupInfoAll *r);
-_PUBLIC_ void ndr_print_samr_GroupInfoAttributes(struct ndr_print *ndr, const char *name, const struct samr_GroupInfoAttributes *r);
-_PUBLIC_ void ndr_print_samr_GroupInfoEnum(struct ndr_print *ndr, const char *name, enum samr_GroupInfoEnum r);
-_PUBLIC_ void ndr_print_samr_GroupInfo(struct ndr_print *ndr, const char *name, const union samr_GroupInfo *r);
-_PUBLIC_ void ndr_print_samr_RidTypeArray(struct ndr_print *ndr, const char *name, const struct samr_RidTypeArray *r);
-_PUBLIC_ void ndr_print_samr_AliasInfoAll(struct ndr_print *ndr, const char *name, const struct samr_AliasInfoAll *r);
-_PUBLIC_ void ndr_print_samr_AliasInfoEnum(struct ndr_print *ndr, const char *name, enum samr_AliasInfoEnum r);
-_PUBLIC_ void ndr_print_samr_AliasInfo(struct ndr_print *ndr, const char *name, const union samr_AliasInfo *r);
-_PUBLIC_ void ndr_print_samr_UserInfo1(struct ndr_print *ndr, const char *name, const struct samr_UserInfo1 *r);
-_PUBLIC_ void ndr_print_samr_UserInfo2(struct ndr_print *ndr, const char *name, const struct samr_UserInfo2 *r);
-_PUBLIC_ enum ndr_err_code ndr_push_samr_LogonHours(struct ndr_push *ndr, int ndr_flags, const struct samr_LogonHours *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_samr_LogonHours(struct ndr_pull *ndr, int ndr_flags, struct samr_LogonHours *r);
-_PUBLIC_ void ndr_print_samr_LogonHours(struct ndr_print *ndr, const char *name, const struct samr_LogonHours *r);
-_PUBLIC_ void ndr_print_samr_UserInfo3(struct ndr_print *ndr, const char *name, const struct samr_UserInfo3 *r);
-_PUBLIC_ void ndr_print_samr_UserInfo4(struct ndr_print *ndr, const char *name, const struct samr_UserInfo4 *r);
-_PUBLIC_ void ndr_print_samr_UserInfo5(struct ndr_print *ndr, const char *name, const struct samr_UserInfo5 *r);
-_PUBLIC_ void ndr_print_samr_UserInfo6(struct ndr_print *ndr, const char *name, const struct samr_UserInfo6 *r);
-_PUBLIC_ void ndr_print_samr_UserInfo7(struct ndr_print *ndr, const char *name, const struct samr_UserInfo7 *r);
-_PUBLIC_ void ndr_print_samr_UserInfo8(struct ndr_print *ndr, const char *name, const struct samr_UserInfo8 *r);
-_PUBLIC_ void ndr_print_samr_UserInfo9(struct ndr_print *ndr, const char *name, const struct samr_UserInfo9 *r);
-_PUBLIC_ void ndr_print_samr_UserInfo10(struct ndr_print *ndr, const char *name, const struct samr_UserInfo10 *r);
-_PUBLIC_ void ndr_print_samr_UserInfo11(struct ndr_print *ndr, const char *name, const struct samr_UserInfo11 *r);
-_PUBLIC_ void ndr_print_samr_UserInfo12(struct ndr_print *ndr, const char *name, const struct samr_UserInfo12 *r);
-_PUBLIC_ void ndr_print_samr_UserInfo13(struct ndr_print *ndr, const char *name, const struct samr_UserInfo13 *r);
-_PUBLIC_ void ndr_print_samr_UserInfo14(struct ndr_print *ndr, const char *name, const struct samr_UserInfo14 *r);
-_PUBLIC_ void ndr_print_samr_UserInfo16(struct ndr_print *ndr, const char *name, const struct samr_UserInfo16 *r);
-_PUBLIC_ void ndr_print_samr_UserInfo17(struct ndr_print *ndr, const char *name, const struct samr_UserInfo17 *r);
-_PUBLIC_ enum ndr_err_code ndr_push_samr_Password(struct ndr_push *ndr, int ndr_flags, const struct samr_Password *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_samr_Password(struct ndr_pull *ndr, int ndr_flags, struct samr_Password *r);
-_PUBLIC_ void ndr_print_samr_Password(struct ndr_print *ndr, const char *name, const struct samr_Password *r);
-_PUBLIC_ void ndr_print_samr_UserInfo18(struct ndr_print *ndr, const char *name, const struct samr_UserInfo18 *r);
-_PUBLIC_ void ndr_print_samr_UserInfo20(struct ndr_print *ndr, const char *name, const struct samr_UserInfo20 *r);
-_PUBLIC_ void ndr_print_samr_FieldsPresent(struct ndr_print *ndr, const char *name, uint32_t r);
-_PUBLIC_ void ndr_print_samr_UserInfo21(struct ndr_print *ndr, const char *name, const struct samr_UserInfo21 *r);
-_PUBLIC_ enum ndr_err_code ndr_push_samr_CryptPassword(struct ndr_push *ndr, int ndr_flags, const struct samr_CryptPassword *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_samr_CryptPassword(struct ndr_pull *ndr, int ndr_flags, struct samr_CryptPassword *r);
-_PUBLIC_ void ndr_print_samr_CryptPassword(struct ndr_print *ndr, const char *name, const struct samr_CryptPassword *r);
-_PUBLIC_ void ndr_print_samr_UserInfo23(struct ndr_print *ndr, const char *name, const struct samr_UserInfo23 *r);
-_PUBLIC_ void ndr_print_samr_UserInfo24(struct ndr_print *ndr, const char *name, const struct samr_UserInfo24 *r);
-_PUBLIC_ void ndr_print_samr_CryptPasswordEx(struct ndr_print *ndr, const char *name, const struct samr_CryptPasswordEx *r);
-_PUBLIC_ void ndr_print_samr_UserInfo25(struct ndr_print *ndr, const char *name, const struct samr_UserInfo25 *r);
-_PUBLIC_ void ndr_print_samr_UserInfo26(struct ndr_print *ndr, const char *name, const struct samr_UserInfo26 *r);
-_PUBLIC_ void ndr_print_samr_UserInfo(struct ndr_print *ndr, const char *name, const union samr_UserInfo *r);
-_PUBLIC_ enum ndr_err_code ndr_push_samr_RidWithAttribute(struct ndr_push *ndr, int ndr_flags, const struct samr_RidWithAttribute *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_samr_RidWithAttribute(struct ndr_pull *ndr, int ndr_flags, struct samr_RidWithAttribute *r);
-_PUBLIC_ void ndr_print_samr_RidWithAttribute(struct ndr_print *ndr, const char *name, const struct samr_RidWithAttribute *r);
-_PUBLIC_ enum ndr_err_code ndr_push_samr_RidWithAttributeArray(struct ndr_push *ndr, int ndr_flags, const struct samr_RidWithAttributeArray *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_samr_RidWithAttributeArray(struct ndr_pull *ndr, int ndr_flags, struct samr_RidWithAttributeArray *r);
-_PUBLIC_ void ndr_print_samr_RidWithAttributeArray(struct ndr_print *ndr, const char *name, const struct samr_RidWithAttributeArray *r);
-_PUBLIC_ void ndr_print_samr_DispEntryGeneral(struct ndr_print *ndr, const char *name, const struct samr_DispEntryGeneral *r);
-_PUBLIC_ void ndr_print_samr_DispInfoGeneral(struct ndr_print *ndr, const char *name, const struct samr_DispInfoGeneral *r);
-_PUBLIC_ void ndr_print_samr_DispEntryFull(struct ndr_print *ndr, const char *name, const struct samr_DispEntryFull *r);
-_PUBLIC_ void ndr_print_samr_DispInfoFull(struct ndr_print *ndr, const char *name, const struct samr_DispInfoFull *r);
-_PUBLIC_ void ndr_print_samr_DispEntryFullGroup(struct ndr_print *ndr, const char *name, const struct samr_DispEntryFullGroup *r);
-_PUBLIC_ void ndr_print_samr_DispInfoFullGroups(struct ndr_print *ndr, const char *name, const struct samr_DispInfoFullGroups *r);
-_PUBLIC_ void ndr_print_samr_DispEntryAscii(struct ndr_print *ndr, const char *name, const struct samr_DispEntryAscii *r);
-_PUBLIC_ void ndr_print_samr_DispInfoAscii(struct ndr_print *ndr, const char *name, const struct samr_DispInfoAscii *r);
-_PUBLIC_ void ndr_print_samr_DispInfo(struct ndr_print *ndr, const char *name, const union samr_DispInfo *r);
-_PUBLIC_ void ndr_print_samr_PwInfo(struct ndr_print *ndr, const char *name, const struct samr_PwInfo *r);
-_PUBLIC_ void ndr_print_samr_ConnectVersion(struct ndr_print *ndr, const char *name, enum samr_ConnectVersion r);
-_PUBLIC_ void ndr_print_samr_ChangeReject(struct ndr_print *ndr, const char *name, const struct samr_ChangeReject *r);
-_PUBLIC_ void ndr_print_samr_ConnectInfo1(struct ndr_print *ndr, const char *name, const struct samr_ConnectInfo1 *r);
-_PUBLIC_ void ndr_print_samr_ConnectInfo(struct ndr_print *ndr, const char *name, const union samr_ConnectInfo *r);
-_PUBLIC_ void ndr_print_samr_ValidateFieldsPresent(struct ndr_print *ndr, const char *name, uint32_t r);
-_PUBLIC_ void ndr_print_samr_ValidatePasswordLevel(struct ndr_print *ndr, const char *name, enum samr_ValidatePasswordLevel r);
-_PUBLIC_ void ndr_print_samr_ValidationStatus(struct ndr_print *ndr, const char *name, enum samr_ValidationStatus r);
-_PUBLIC_ void ndr_print_samr_ValidationBlob(struct ndr_print *ndr, const char *name, const struct samr_ValidationBlob *r);
-_PUBLIC_ void ndr_print_samr_ValidatePasswordInfo(struct ndr_print *ndr, const char *name, const struct samr_ValidatePasswordInfo *r);
-_PUBLIC_ void ndr_print_samr_ValidatePasswordRepCtr(struct ndr_print *ndr, const char *name, const struct samr_ValidatePasswordRepCtr *r);
-_PUBLIC_ void ndr_print_samr_ValidatePasswordRep(struct ndr_print *ndr, const char *name, const union samr_ValidatePasswordRep *r);
-_PUBLIC_ void ndr_print_samr_ValidatePasswordReq3(struct ndr_print *ndr, const char *name, const struct samr_ValidatePasswordReq3 *r);
-_PUBLIC_ void ndr_print_samr_ValidatePasswordReq2(struct ndr_print *ndr, const char *name, const struct samr_ValidatePasswordReq2 *r);
-_PUBLIC_ void ndr_print_samr_ValidatePasswordReq1(struct ndr_print *ndr, const char *name, const struct samr_ValidatePasswordReq1 *r);
-_PUBLIC_ void ndr_print_samr_ValidatePasswordReq(struct ndr_print *ndr, const char *name, const union samr_ValidatePasswordReq *r);
-_PUBLIC_ void ndr_print_samr_Connect(struct ndr_print *ndr, const char *name, int flags, const struct samr_Connect *r);
-_PUBLIC_ enum ndr_err_code ndr_push_samr_Close(struct ndr_push *ndr, int flags, const struct samr_Close *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_samr_Close(struct ndr_pull *ndr, int flags, struct samr_Close *r);
-_PUBLIC_ void ndr_print_samr_Close(struct ndr_print *ndr, const char *name, int flags, const struct samr_Close *r);
-_PUBLIC_ void ndr_print_samr_SetSecurity(struct ndr_print *ndr, const char *name, int flags, const struct samr_SetSecurity *r);
-_PUBLIC_ void ndr_print_samr_QuerySecurity(struct ndr_print *ndr, const char *name, int flags, const struct samr_QuerySecurity *r);
-_PUBLIC_ void ndr_print_samr_Shutdown(struct ndr_print *ndr, const char *name, int flags, const struct samr_Shutdown *r);
-_PUBLIC_ void ndr_print_samr_LookupDomain(struct ndr_print *ndr, const char *name, int flags, const struct samr_LookupDomain *r);
-_PUBLIC_ void ndr_print_samr_EnumDomains(struct ndr_print *ndr, const char *name, int flags, const struct samr_EnumDomains *r);
-_PUBLIC_ enum ndr_err_code ndr_push_samr_OpenDomain(struct ndr_push *ndr, int flags, const struct samr_OpenDomain *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_samr_OpenDomain(struct ndr_pull *ndr, int flags, struct samr_OpenDomain *r);
-_PUBLIC_ void ndr_print_samr_OpenDomain(struct ndr_print *ndr, const char *name, int flags, const struct samr_OpenDomain *r);
-_PUBLIC_ void ndr_print_samr_QueryDomainInfo(struct ndr_print *ndr, const char *name, int flags, const struct samr_QueryDomainInfo *r);
-_PUBLIC_ void ndr_print_samr_SetDomainInfo(struct ndr_print *ndr, const char *name, int flags, const struct samr_SetDomainInfo *r);
-_PUBLIC_ void ndr_print_samr_CreateDomainGroup(struct ndr_print *ndr, const char *name, int flags, const struct samr_CreateDomainGroup *r);
-_PUBLIC_ void ndr_print_samr_EnumDomainGroups(struct ndr_print *ndr, const char *name, int flags, const struct samr_EnumDomainGroups *r);
-_PUBLIC_ void ndr_print_samr_CreateUser(struct ndr_print *ndr, const char *name, int flags, const struct samr_CreateUser *r);
-_PUBLIC_ void ndr_print_samr_EnumDomainUsers(struct ndr_print *ndr, const char *name, int flags, const struct samr_EnumDomainUsers *r);
-_PUBLIC_ void ndr_print_samr_CreateDomAlias(struct ndr_print *ndr, const char *name, int flags, const struct samr_CreateDomAlias *r);
-_PUBLIC_ void ndr_print_samr_EnumDomainAliases(struct ndr_print *ndr, const char *name, int flags, const struct samr_EnumDomainAliases *r);
-_PUBLIC_ void ndr_print_samr_GetAliasMembership(struct ndr_print *ndr, const char *name, int flags, const struct samr_GetAliasMembership *r);
-_PUBLIC_ enum ndr_err_code ndr_push_samr_LookupNames(struct ndr_push *ndr, int flags, const struct samr_LookupNames *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_samr_LookupNames(struct ndr_pull *ndr, int flags, struct samr_LookupNames *r);
-_PUBLIC_ void ndr_print_samr_LookupNames(struct ndr_print *ndr, const char *name, int flags, const struct samr_LookupNames *r);
-_PUBLIC_ void ndr_print_samr_LookupRids(struct ndr_print *ndr, const char *name, int flags, const struct samr_LookupRids *r);
-_PUBLIC_ void ndr_print_samr_OpenGroup(struct ndr_print *ndr, const char *name, int flags, const struct samr_OpenGroup *r);
-_PUBLIC_ void ndr_print_samr_QueryGroupInfo(struct ndr_print *ndr, const char *name, int flags, const struct samr_QueryGroupInfo *r);
-_PUBLIC_ void ndr_print_samr_SetGroupInfo(struct ndr_print *ndr, const char *name, int flags, const struct samr_SetGroupInfo *r);
-_PUBLIC_ void ndr_print_samr_AddGroupMember(struct ndr_print *ndr, const char *name, int flags, const struct samr_AddGroupMember *r);
-_PUBLIC_ void ndr_print_samr_DeleteDomainGroup(struct ndr_print *ndr, const char *name, int flags, const struct samr_DeleteDomainGroup *r);
-_PUBLIC_ void ndr_print_samr_DeleteGroupMember(struct ndr_print *ndr, const char *name, int flags, const struct samr_DeleteGroupMember *r);
-_PUBLIC_ void ndr_print_samr_QueryGroupMember(struct ndr_print *ndr, const char *name, int flags, const struct samr_QueryGroupMember *r);
-_PUBLIC_ void ndr_print_samr_SetMemberAttributesOfGroup(struct ndr_print *ndr, const char *name, int flags, const struct samr_SetMemberAttributesOfGroup *r);
-_PUBLIC_ void ndr_print_samr_OpenAlias(struct ndr_print *ndr, const char *name, int flags, const struct samr_OpenAlias *r);
-_PUBLIC_ void ndr_print_samr_QueryAliasInfo(struct ndr_print *ndr, const char *name, int flags, const struct samr_QueryAliasInfo *r);
-_PUBLIC_ void ndr_print_samr_SetAliasInfo(struct ndr_print *ndr, const char *name, int flags, const struct samr_SetAliasInfo *r);
-_PUBLIC_ void ndr_print_samr_DeleteDomAlias(struct ndr_print *ndr, const char *name, int flags, const struct samr_DeleteDomAlias *r);
-_PUBLIC_ void ndr_print_samr_AddAliasMember(struct ndr_print *ndr, const char *name, int flags, const struct samr_AddAliasMember *r);
-_PUBLIC_ void ndr_print_samr_DeleteAliasMember(struct ndr_print *ndr, const char *name, int flags, const struct samr_DeleteAliasMember *r);
-_PUBLIC_ void ndr_print_samr_GetMembersInAlias(struct ndr_print *ndr, const char *name, int flags, const struct samr_GetMembersInAlias *r);
-_PUBLIC_ enum ndr_err_code ndr_push_samr_OpenUser(struct ndr_push *ndr, int flags, const struct samr_OpenUser *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_samr_OpenUser(struct ndr_pull *ndr, int flags, struct samr_OpenUser *r);
-_PUBLIC_ void ndr_print_samr_OpenUser(struct ndr_print *ndr, const char *name, int flags, const struct samr_OpenUser *r);
-_PUBLIC_ void ndr_print_samr_DeleteUser(struct ndr_print *ndr, const char *name, int flags, const struct samr_DeleteUser *r);
-_PUBLIC_ enum ndr_err_code ndr_push_samr_QueryUserInfo(struct ndr_push *ndr, int flags, const struct samr_QueryUserInfo *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_samr_QueryUserInfo(struct ndr_pull *ndr, int flags, struct samr_QueryUserInfo *r);
-_PUBLIC_ void ndr_print_samr_QueryUserInfo(struct ndr_print *ndr, const char *name, int flags, const struct samr_QueryUserInfo *r);
-_PUBLIC_ enum ndr_err_code ndr_push_samr_SetUserInfo(struct ndr_push *ndr, int flags, const struct samr_SetUserInfo *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_samr_SetUserInfo(struct ndr_pull *ndr, int flags, struct samr_SetUserInfo *r);
-_PUBLIC_ void ndr_print_samr_SetUserInfo(struct ndr_print *ndr, const char *name, int flags, const struct samr_SetUserInfo *r);
-_PUBLIC_ void ndr_print_samr_ChangePasswordUser(struct ndr_print *ndr, const char *name, int flags, const struct samr_ChangePasswordUser *r);
-_PUBLIC_ void ndr_print_samr_GetGroupsForUser(struct ndr_print *ndr, const char *name, int flags, const struct samr_GetGroupsForUser *r);
-_PUBLIC_ void ndr_print_samr_QueryDisplayInfo(struct ndr_print *ndr, const char *name, int flags, const struct samr_QueryDisplayInfo *r);
-_PUBLIC_ void ndr_print_samr_GetDisplayEnumerationIndex(struct ndr_print *ndr, const char *name, int flags, const struct samr_GetDisplayEnumerationIndex *r);
-_PUBLIC_ void ndr_print_samr_TestPrivateFunctionsDomain(struct ndr_print *ndr, const char *name, int flags, const struct samr_TestPrivateFunctionsDomain *r);
-_PUBLIC_ void ndr_print_samr_TestPrivateFunctionsUser(struct ndr_print *ndr, const char *name, int flags, const struct samr_TestPrivateFunctionsUser *r);
-_PUBLIC_ enum ndr_err_code ndr_push_samr_GetUserPwInfo(struct ndr_push *ndr, int flags, const struct samr_GetUserPwInfo *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_samr_GetUserPwInfo(struct ndr_pull *ndr, int flags, struct samr_GetUserPwInfo *r);
-_PUBLIC_ void ndr_print_samr_GetUserPwInfo(struct ndr_print *ndr, const char *name, int flags, const struct samr_GetUserPwInfo *r);
-_PUBLIC_ void ndr_print_samr_RemoveMemberFromForeignDomain(struct ndr_print *ndr, const char *name, int flags, const struct samr_RemoveMemberFromForeignDomain *r);
-_PUBLIC_ void ndr_print_samr_QueryDomainInfo2(struct ndr_print *ndr, const char *name, int flags, const struct samr_QueryDomainInfo2 *r);
-_PUBLIC_ void ndr_print_samr_QueryUserInfo2(struct ndr_print *ndr, const char *name, int flags, const struct samr_QueryUserInfo2 *r);
-_PUBLIC_ void ndr_print_samr_QueryDisplayInfo2(struct ndr_print *ndr, const char *name, int flags, const struct samr_QueryDisplayInfo2 *r);
-_PUBLIC_ void ndr_print_samr_GetDisplayEnumerationIndex2(struct ndr_print *ndr, const char *name, int flags, const struct samr_GetDisplayEnumerationIndex2 *r);
-_PUBLIC_ void ndr_print_samr_CreateUser2(struct ndr_print *ndr, const char *name, int flags, const struct samr_CreateUser2 *r);
-_PUBLIC_ void ndr_print_samr_QueryDisplayInfo3(struct ndr_print *ndr, const char *name, int flags, const struct samr_QueryDisplayInfo3 *r);
-_PUBLIC_ void ndr_print_samr_AddMultipleMembersToAlias(struct ndr_print *ndr, const char *name, int flags, const struct samr_AddMultipleMembersToAlias *r);
-_PUBLIC_ void ndr_print_samr_RemoveMultipleMembersFromAlias(struct ndr_print *ndr, const char *name, int flags, const struct samr_RemoveMultipleMembersFromAlias *r);
-_PUBLIC_ void ndr_print_samr_OemChangePasswordUser2(struct ndr_print *ndr, const char *name, int flags, const struct samr_OemChangePasswordUser2 *r);
-_PUBLIC_ void ndr_print_samr_ChangePasswordUser2(struct ndr_print *ndr, const char *name, int flags, const struct samr_ChangePasswordUser2 *r);
-_PUBLIC_ void ndr_print_samr_GetDomPwInfo(struct ndr_print *ndr, const char *name, int flags, const struct samr_GetDomPwInfo *r);
-_PUBLIC_ void ndr_print_samr_Connect2(struct ndr_print *ndr, const char *name, int flags, const struct samr_Connect2 *r);
-_PUBLIC_ enum ndr_err_code ndr_push_samr_SetUserInfo2(struct ndr_push *ndr, int flags, const struct samr_SetUserInfo2 *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_samr_SetUserInfo2(struct ndr_pull *ndr, int flags, struct samr_SetUserInfo2 *r);
-_PUBLIC_ void ndr_print_samr_SetUserInfo2(struct ndr_print *ndr, const char *name, int flags, const struct samr_SetUserInfo2 *r);
-_PUBLIC_ void ndr_print_samr_SetBootKeyInformation(struct ndr_print *ndr, const char *name, int flags, const struct samr_SetBootKeyInformation *r);
-_PUBLIC_ void ndr_print_samr_GetBootKeyInformation(struct ndr_print *ndr, const char *name, int flags, const struct samr_GetBootKeyInformation *r);
-_PUBLIC_ void ndr_print_samr_Connect3(struct ndr_print *ndr, const char *name, int flags, const struct samr_Connect3 *r);
-_PUBLIC_ void ndr_print_samr_Connect4(struct ndr_print *ndr, const char *name, int flags, const struct samr_Connect4 *r);
-_PUBLIC_ void ndr_print_samr_ChangePasswordUser3(struct ndr_print *ndr, const char *name, int flags, const struct samr_ChangePasswordUser3 *r);
-_PUBLIC_ enum ndr_err_code ndr_push_samr_Connect5(struct ndr_push *ndr, int flags, const struct samr_Connect5 *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_samr_Connect5(struct ndr_pull *ndr, int flags, struct samr_Connect5 *r);
-_PUBLIC_ void ndr_print_samr_Connect5(struct ndr_print *ndr, const char *name, int flags, const struct samr_Connect5 *r);
-_PUBLIC_ void ndr_print_samr_RidToSid(struct ndr_print *ndr, const char *name, int flags, const struct samr_RidToSid *r);
-_PUBLIC_ void ndr_print_samr_SetDsrmPassword(struct ndr_print *ndr, const char *name, int flags, const struct samr_SetDsrmPassword *r);
-_PUBLIC_ void ndr_print_samr_ValidatePassword(struct ndr_print *ndr, const char *name, int flags, const struct samr_ValidatePassword *r);
-
-/* The following definitions come from librpc/gen_ndr/ndr_security.c  */
-
-_PUBLIC_ void ndr_print_security_ace_flags(struct ndr_print *ndr, const char *name, uint8_t r);
-_PUBLIC_ void ndr_print_security_ace_type(struct ndr_print *ndr, const char *name, enum security_ace_type r);
-_PUBLIC_ void ndr_print_security_ace_object_flags(struct ndr_print *ndr, const char *name, uint32_t r);
-_PUBLIC_ void ndr_print_security_ace_object_type(struct ndr_print *ndr, const char *name, const union security_ace_object_type *r);
-_PUBLIC_ void ndr_print_security_ace_object_inherited_type(struct ndr_print *ndr, const char *name, const union security_ace_object_inherited_type *r);
-_PUBLIC_ void ndr_print_security_ace_object(struct ndr_print *ndr, const char *name, const struct security_ace_object *r);
-_PUBLIC_ void ndr_print_security_ace_object_ctr(struct ndr_print *ndr, const char *name, const union security_ace_object_ctr *r);
-_PUBLIC_ enum ndr_err_code ndr_push_security_ace(struct ndr_push *ndr, int ndr_flags, const struct security_ace *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_security_ace(struct ndr_pull *ndr, int ndr_flags, struct security_ace *r);
-_PUBLIC_ void ndr_print_security_ace(struct ndr_print *ndr, const char *name, const struct security_ace *r);
-_PUBLIC_ void ndr_print_security_acl_revision(struct ndr_print *ndr, const char *name, enum security_acl_revision r);
-_PUBLIC_ enum ndr_err_code ndr_push_security_acl(struct ndr_push *ndr, int ndr_flags, const struct security_acl *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_security_acl(struct ndr_pull *ndr, int ndr_flags, struct security_acl *r);
-_PUBLIC_ void ndr_print_security_acl(struct ndr_print *ndr, const char *name, const struct security_acl *r);
-_PUBLIC_ void ndr_print_security_descriptor_revision(struct ndr_print *ndr, const char *name, enum security_descriptor_revision r);
-_PUBLIC_ void ndr_print_security_descriptor_type(struct ndr_print *ndr, const char *name, uint16_t r);
-_PUBLIC_ enum ndr_err_code ndr_push_security_descriptor(struct ndr_push *ndr, int ndr_flags, const struct security_descriptor *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_security_descriptor(struct ndr_pull *ndr, int ndr_flags, struct security_descriptor *r);
-_PUBLIC_ void ndr_print_security_descriptor(struct ndr_print *ndr, const char *name, const struct security_descriptor *r);
-_PUBLIC_ enum ndr_err_code ndr_push_sec_desc_buf(struct ndr_push *ndr, int ndr_flags, const struct sec_desc_buf *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_sec_desc_buf(struct ndr_pull *ndr, int ndr_flags, struct sec_desc_buf *r);
-_PUBLIC_ void ndr_print_sec_desc_buf(struct ndr_print *ndr, const char *name, const struct sec_desc_buf *r);
-_PUBLIC_ enum ndr_err_code ndr_push_security_token(struct ndr_push *ndr, int ndr_flags, const struct security_token *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_security_token(struct ndr_pull *ndr, int ndr_flags, struct security_token *r);
-_PUBLIC_ void ndr_print_security_token(struct ndr_print *ndr, const char *name, const struct security_token *r);
-_PUBLIC_ enum ndr_err_code ndr_push_security_secinfo(struct ndr_push *ndr, int ndr_flags, uint32_t r);
-_PUBLIC_ enum ndr_err_code ndr_pull_security_secinfo(struct ndr_pull *ndr, int ndr_flags, uint32_t *r);
-_PUBLIC_ void ndr_print_security_secinfo(struct ndr_print *ndr, const char *name, uint32_t r);
-
-/* The following definitions come from librpc/gen_ndr/ndr_srvsvc.c  */
-
-_PUBLIC_ void ndr_print_srvsvc_NetCharDevInfo0(struct ndr_print *ndr, const char *name, const struct srvsvc_NetCharDevInfo0 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetCharDevCtr0(struct ndr_print *ndr, const char *name, const struct srvsvc_NetCharDevCtr0 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetCharDevInfo1(struct ndr_print *ndr, const char *name, const struct srvsvc_NetCharDevInfo1 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetCharDevCtr1(struct ndr_print *ndr, const char *name, const struct srvsvc_NetCharDevCtr1 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetCharDevInfo(struct ndr_print *ndr, const char *name, const union srvsvc_NetCharDevInfo *r);
-_PUBLIC_ void ndr_print_srvsvc_NetCharDevCtr(struct ndr_print *ndr, const char *name, const union srvsvc_NetCharDevCtr *r);
-_PUBLIC_ void ndr_print_srvsvc_NetCharDevQInfo0(struct ndr_print *ndr, const char *name, const struct srvsvc_NetCharDevQInfo0 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetCharDevQCtr0(struct ndr_print *ndr, const char *name, const struct srvsvc_NetCharDevQCtr0 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetCharDevQInfo1(struct ndr_print *ndr, const char *name, const struct srvsvc_NetCharDevQInfo1 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetCharDevQCtr1(struct ndr_print *ndr, const char *name, const struct srvsvc_NetCharDevQCtr1 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetCharDevQInfo(struct ndr_print *ndr, const char *name, const union srvsvc_NetCharDevQInfo *r);
-_PUBLIC_ void ndr_print_srvsvc_NetCharDevQCtr(struct ndr_print *ndr, const char *name, const union srvsvc_NetCharDevQCtr *r);
-_PUBLIC_ void ndr_print_srvsvc_NetConnInfo0(struct ndr_print *ndr, const char *name, const struct srvsvc_NetConnInfo0 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetConnCtr0(struct ndr_print *ndr, const char *name, const struct srvsvc_NetConnCtr0 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetConnInfo1(struct ndr_print *ndr, const char *name, const struct srvsvc_NetConnInfo1 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetConnCtr1(struct ndr_print *ndr, const char *name, const struct srvsvc_NetConnCtr1 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetConnCtr(struct ndr_print *ndr, const char *name, const union srvsvc_NetConnCtr *r);
-_PUBLIC_ void ndr_print_srvsvc_NetConnInfoCtr(struct ndr_print *ndr, const char *name, const struct srvsvc_NetConnInfoCtr *r);
-_PUBLIC_ void ndr_print_srvsvc_NetFileInfo2(struct ndr_print *ndr, const char *name, const struct srvsvc_NetFileInfo2 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetFileCtr2(struct ndr_print *ndr, const char *name, const struct srvsvc_NetFileCtr2 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetFileInfo3(struct ndr_print *ndr, const char *name, const struct srvsvc_NetFileInfo3 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetFileCtr3(struct ndr_print *ndr, const char *name, const struct srvsvc_NetFileCtr3 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetFileInfo(struct ndr_print *ndr, const char *name, const union srvsvc_NetFileInfo *r);
-_PUBLIC_ void ndr_print_srvsvc_NetFileCtr(struct ndr_print *ndr, const char *name, const union srvsvc_NetFileCtr *r);
-_PUBLIC_ void ndr_print_srvsvc_NetFileInfoCtr(struct ndr_print *ndr, const char *name, const struct srvsvc_NetFileInfoCtr *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSessInfo0(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSessInfo0 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSessCtr0(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSessCtr0 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSessInfo1(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSessInfo1 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSessCtr1(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSessCtr1 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSessInfo2(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSessInfo2 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSessCtr2(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSessCtr2 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSessInfo10(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSessInfo10 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSessCtr10(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSessCtr10 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSessInfo502(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSessInfo502 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSessCtr502(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSessCtr502 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSessCtr(struct ndr_print *ndr, const char *name, const union srvsvc_NetSessCtr *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSessInfoCtr(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSessInfoCtr *r);
-_PUBLIC_ void ndr_print_srvsvc_ShareType(struct ndr_print *ndr, const char *name, enum srvsvc_ShareType r);
-_PUBLIC_ void ndr_print_srvsvc_NetShareInfo0(struct ndr_print *ndr, const char *name, const struct srvsvc_NetShareInfo0 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetShareCtr0(struct ndr_print *ndr, const char *name, const struct srvsvc_NetShareCtr0 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetShareInfo1(struct ndr_print *ndr, const char *name, const struct srvsvc_NetShareInfo1 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetShareCtr1(struct ndr_print *ndr, const char *name, const struct srvsvc_NetShareCtr1 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetShareInfo2(struct ndr_print *ndr, const char *name, const struct srvsvc_NetShareInfo2 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetShareCtr2(struct ndr_print *ndr, const char *name, const struct srvsvc_NetShareCtr2 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetShareInfo501(struct ndr_print *ndr, const char *name, const struct srvsvc_NetShareInfo501 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetShareCtr501(struct ndr_print *ndr, const char *name, const struct srvsvc_NetShareCtr501 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetShareInfo502(struct ndr_print *ndr, const char *name, const struct srvsvc_NetShareInfo502 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetShareCtr502(struct ndr_print *ndr, const char *name, const struct srvsvc_NetShareCtr502 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetShareInfo1004(struct ndr_print *ndr, const char *name, const struct srvsvc_NetShareInfo1004 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetShareCtr1004(struct ndr_print *ndr, const char *name, const struct srvsvc_NetShareCtr1004 *r);
-_PUBLIC_ void ndr_print_NetShareInfo1005Flags(struct ndr_print *ndr, const char *name, uint32_t r);
-_PUBLIC_ void ndr_print_srvsvc_NetShareInfo1005(struct ndr_print *ndr, const char *name, const struct srvsvc_NetShareInfo1005 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetShareCtr1005(struct ndr_print *ndr, const char *name, const struct srvsvc_NetShareCtr1005 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetShareInfo1006(struct ndr_print *ndr, const char *name, const struct srvsvc_NetShareInfo1006 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetShareCtr1006(struct ndr_print *ndr, const char *name, const struct srvsvc_NetShareCtr1006 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetShareInfo1007(struct ndr_print *ndr, const char *name, const struct srvsvc_NetShareInfo1007 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetShareCtr1007(struct ndr_print *ndr, const char *name, const struct srvsvc_NetShareCtr1007 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetShareCtr1501(struct ndr_print *ndr, const char *name, const struct srvsvc_NetShareCtr1501 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetShareInfo(struct ndr_print *ndr, const char *name, const union srvsvc_NetShareInfo *r);
-_PUBLIC_ void ndr_print_srvsvc_NetShareCtr(struct ndr_print *ndr, const char *name, const union srvsvc_NetShareCtr *r);
-_PUBLIC_ void ndr_print_srvsvc_NetShareInfoCtr(struct ndr_print *ndr, const char *name, const struct srvsvc_NetShareInfoCtr *r);
-_PUBLIC_ enum ndr_err_code ndr_push_srvsvc_PlatformId(struct ndr_push *ndr, int ndr_flags, enum srvsvc_PlatformId r);
-_PUBLIC_ enum ndr_err_code ndr_pull_srvsvc_PlatformId(struct ndr_pull *ndr, int ndr_flags, enum srvsvc_PlatformId *r);
-_PUBLIC_ void ndr_print_srvsvc_PlatformId(struct ndr_print *ndr, const char *name, enum srvsvc_PlatformId r);
-_PUBLIC_ void ndr_print_srvsvc_NetSrvInfo100(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSrvInfo100 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSrvInfo101(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSrvInfo101 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSrvInfo102(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSrvInfo102 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSrvInfo402(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSrvInfo402 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSrvInfo403(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSrvInfo403 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSrvInfo502(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSrvInfo502 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSrvInfo503(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSrvInfo503 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSrvInfo599(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSrvInfo599 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSrvInfo1005(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSrvInfo1005 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSrvInfo1010(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSrvInfo1010 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSrvInfo1016(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSrvInfo1016 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSrvInfo1017(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSrvInfo1017 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSrvInfo1018(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSrvInfo1018 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSrvInfo1107(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSrvInfo1107 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSrvInfo1501(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSrvInfo1501 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSrvInfo1502(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSrvInfo1502 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSrvInfo1503(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSrvInfo1503 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSrvInfo1506(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSrvInfo1506 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSrvInfo1509(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSrvInfo1509 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSrvInfo1510(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSrvInfo1510 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSrvInfo1511(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSrvInfo1511 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSrvInfo1512(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSrvInfo1512 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSrvInfo1513(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSrvInfo1513 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSrvInfo1514(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSrvInfo1514 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSrvInfo1515(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSrvInfo1515 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSrvInfo1516(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSrvInfo1516 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSrvInfo1518(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSrvInfo1518 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSrvInfo1520(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSrvInfo1520 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSrvInfo1521(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSrvInfo1521 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSrvInfo1522(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSrvInfo1522 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSrvInfo1523(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSrvInfo1523 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSrvInfo1524(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSrvInfo1524 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSrvInfo1525(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSrvInfo1525 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSrvInfo1528(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSrvInfo1528 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSrvInfo1529(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSrvInfo1529 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSrvInfo1530(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSrvInfo1530 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSrvInfo1533(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSrvInfo1533 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSrvInfo1534(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSrvInfo1534 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSrvInfo1535(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSrvInfo1535 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSrvInfo1536(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSrvInfo1536 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSrvInfo1537(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSrvInfo1537 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSrvInfo1538(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSrvInfo1538 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSrvInfo1539(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSrvInfo1539 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSrvInfo1540(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSrvInfo1540 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSrvInfo1541(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSrvInfo1541 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSrvInfo1542(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSrvInfo1542 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSrvInfo1543(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSrvInfo1543 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSrvInfo1544(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSrvInfo1544 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSrvInfo1545(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSrvInfo1545 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSrvInfo1546(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSrvInfo1546 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSrvInfo1547(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSrvInfo1547 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSrvInfo1548(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSrvInfo1548 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSrvInfo1549(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSrvInfo1549 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSrvInfo1550(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSrvInfo1550 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSrvInfo1552(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSrvInfo1552 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSrvInfo1553(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSrvInfo1553 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSrvInfo1554(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSrvInfo1554 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSrvInfo1555(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSrvInfo1555 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSrvInfo1556(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSrvInfo1556 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSrvInfo(struct ndr_print *ndr, const char *name, const union srvsvc_NetSrvInfo *r);
-_PUBLIC_ void ndr_print_srvsvc_NetDiskInfo0(struct ndr_print *ndr, const char *name, const struct srvsvc_NetDiskInfo0 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetDiskInfo(struct ndr_print *ndr, const char *name, const struct srvsvc_NetDiskInfo *r);
-_PUBLIC_ void ndr_print_srvsvc_Statistics(struct ndr_print *ndr, const char *name, const struct srvsvc_Statistics *r);
-_PUBLIC_ void ndr_print_srvsvc_NetTransportInfo0(struct ndr_print *ndr, const char *name, const struct srvsvc_NetTransportInfo0 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetTransportCtr0(struct ndr_print *ndr, const char *name, const struct srvsvc_NetTransportCtr0 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetTransportInfo1(struct ndr_print *ndr, const char *name, const struct srvsvc_NetTransportInfo1 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetTransportCtr1(struct ndr_print *ndr, const char *name, const struct srvsvc_NetTransportCtr1 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetTransportInfo2(struct ndr_print *ndr, const char *name, const struct srvsvc_NetTransportInfo2 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetTransportCtr2(struct ndr_print *ndr, const char *name, const struct srvsvc_NetTransportCtr2 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetTransportInfo3(struct ndr_print *ndr, const char *name, const struct srvsvc_NetTransportInfo3 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetTransportCtr3(struct ndr_print *ndr, const char *name, const struct srvsvc_NetTransportCtr3 *r);
-_PUBLIC_ void ndr_print_srvsvc_NetTransportCtr(struct ndr_print *ndr, const char *name, const union srvsvc_NetTransportCtr *r);
-_PUBLIC_ void ndr_print_srvsvc_NetRemoteTODInfo(struct ndr_print *ndr, const char *name, const struct srvsvc_NetRemoteTODInfo *r);
-_PUBLIC_ void ndr_print_srvsvc_NetTransportInfo(struct ndr_print *ndr, const char *name, const union srvsvc_NetTransportInfo *r);
-_PUBLIC_ void ndr_print_srvsvc_NetCharDevEnum(struct ndr_print *ndr, const char *name, int flags, const struct srvsvc_NetCharDevEnum *r);
-_PUBLIC_ void ndr_print_srvsvc_NetCharDevGetInfo(struct ndr_print *ndr, const char *name, int flags, const struct srvsvc_NetCharDevGetInfo *r);
-_PUBLIC_ void ndr_print_srvsvc_NetCharDevControl(struct ndr_print *ndr, const char *name, int flags, const struct srvsvc_NetCharDevControl *r);
-_PUBLIC_ void ndr_print_srvsvc_NetCharDevQEnum(struct ndr_print *ndr, const char *name, int flags, const struct srvsvc_NetCharDevQEnum *r);
-_PUBLIC_ void ndr_print_srvsvc_NetCharDevQGetInfo(struct ndr_print *ndr, const char *name, int flags, const struct srvsvc_NetCharDevQGetInfo *r);
-_PUBLIC_ void ndr_print_srvsvc_NetCharDevQSetInfo(struct ndr_print *ndr, const char *name, int flags, const struct srvsvc_NetCharDevQSetInfo *r);
-_PUBLIC_ void ndr_print_srvsvc_NetCharDevQPurge(struct ndr_print *ndr, const char *name, int flags, const struct srvsvc_NetCharDevQPurge *r);
-_PUBLIC_ void ndr_print_srvsvc_NetCharDevQPurgeSelf(struct ndr_print *ndr, const char *name, int flags, const struct srvsvc_NetCharDevQPurgeSelf *r);
-_PUBLIC_ void ndr_print_srvsvc_NetConnEnum(struct ndr_print *ndr, const char *name, int flags, const struct srvsvc_NetConnEnum *r);
-_PUBLIC_ void ndr_print_srvsvc_NetFileEnum(struct ndr_print *ndr, const char *name, int flags, const struct srvsvc_NetFileEnum *r);
-_PUBLIC_ void ndr_print_srvsvc_NetFileGetInfo(struct ndr_print *ndr, const char *name, int flags, const struct srvsvc_NetFileGetInfo *r);
-_PUBLIC_ void ndr_print_srvsvc_NetFileClose(struct ndr_print *ndr, const char *name, int flags, const struct srvsvc_NetFileClose *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSessEnum(struct ndr_print *ndr, const char *name, int flags, const struct srvsvc_NetSessEnum *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSessDel(struct ndr_print *ndr, const char *name, int flags, const struct srvsvc_NetSessDel *r);
-_PUBLIC_ void ndr_print_srvsvc_NetShareAdd(struct ndr_print *ndr, const char *name, int flags, const struct srvsvc_NetShareAdd *r);
-_PUBLIC_ void ndr_print_srvsvc_NetShareEnumAll(struct ndr_print *ndr, const char *name, int flags, const struct srvsvc_NetShareEnumAll *r);
-_PUBLIC_ void ndr_print_srvsvc_NetShareGetInfo(struct ndr_print *ndr, const char *name, int flags, const struct srvsvc_NetShareGetInfo *r);
-_PUBLIC_ void ndr_print_srvsvc_NetShareSetInfo(struct ndr_print *ndr, const char *name, int flags, const struct srvsvc_NetShareSetInfo *r);
-_PUBLIC_ void ndr_print_srvsvc_NetShareDel(struct ndr_print *ndr, const char *name, int flags, const struct srvsvc_NetShareDel *r);
-_PUBLIC_ void ndr_print_srvsvc_NetShareDelSticky(struct ndr_print *ndr, const char *name, int flags, const struct srvsvc_NetShareDelSticky *r);
-_PUBLIC_ void ndr_print_srvsvc_NetShareCheck(struct ndr_print *ndr, const char *name, int flags, const struct srvsvc_NetShareCheck *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSrvGetInfo(struct ndr_print *ndr, const char *name, int flags, const struct srvsvc_NetSrvGetInfo *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSrvSetInfo(struct ndr_print *ndr, const char *name, int flags, const struct srvsvc_NetSrvSetInfo *r);
-_PUBLIC_ void ndr_print_srvsvc_NetDiskEnum(struct ndr_print *ndr, const char *name, int flags, const struct srvsvc_NetDiskEnum *r);
-_PUBLIC_ void ndr_print_srvsvc_NetServerStatisticsGet(struct ndr_print *ndr, const char *name, int flags, const struct srvsvc_NetServerStatisticsGet *r);
-_PUBLIC_ void ndr_print_srvsvc_NetTransportAdd(struct ndr_print *ndr, const char *name, int flags, const struct srvsvc_NetTransportAdd *r);
-_PUBLIC_ void ndr_print_srvsvc_NetTransportEnum(struct ndr_print *ndr, const char *name, int flags, const struct srvsvc_NetTransportEnum *r);
-_PUBLIC_ void ndr_print_srvsvc_NetTransportDel(struct ndr_print *ndr, const char *name, int flags, const struct srvsvc_NetTransportDel *r);
-_PUBLIC_ void ndr_print_srvsvc_NetRemoteTOD(struct ndr_print *ndr, const char *name, int flags, const struct srvsvc_NetRemoteTOD *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSetServiceBits(struct ndr_print *ndr, const char *name, int flags, const struct srvsvc_NetSetServiceBits *r);
-_PUBLIC_ void ndr_print_srvsvc_NetPathType(struct ndr_print *ndr, const char *name, int flags, const struct srvsvc_NetPathType *r);
-_PUBLIC_ void ndr_print_srvsvc_NetPathCanonicalize(struct ndr_print *ndr, const char *name, int flags, const struct srvsvc_NetPathCanonicalize *r);
-_PUBLIC_ void ndr_print_srvsvc_NetPathCompare(struct ndr_print *ndr, const char *name, int flags, const struct srvsvc_NetPathCompare *r);
-_PUBLIC_ void ndr_print_srvsvc_NetNameValidate(struct ndr_print *ndr, const char *name, int flags, const struct srvsvc_NetNameValidate *r);
-_PUBLIC_ void ndr_print_srvsvc_NETRPRNAMECANONICALIZE(struct ndr_print *ndr, const char *name, int flags, const struct srvsvc_NETRPRNAMECANONICALIZE *r);
-_PUBLIC_ void ndr_print_srvsvc_NetPRNameCompare(struct ndr_print *ndr, const char *name, int flags, const struct srvsvc_NetPRNameCompare *r);
-_PUBLIC_ void ndr_print_srvsvc_NetShareEnum(struct ndr_print *ndr, const char *name, int flags, const struct srvsvc_NetShareEnum *r);
-_PUBLIC_ void ndr_print_srvsvc_NetShareDelStart(struct ndr_print *ndr, const char *name, int flags, const struct srvsvc_NetShareDelStart *r);
-_PUBLIC_ void ndr_print_srvsvc_NetShareDelCommit(struct ndr_print *ndr, const char *name, int flags, const struct srvsvc_NetShareDelCommit *r);
-_PUBLIC_ void ndr_print_srvsvc_NetGetFileSecurity(struct ndr_print *ndr, const char *name, int flags, const struct srvsvc_NetGetFileSecurity *r);
-_PUBLIC_ void ndr_print_srvsvc_NetSetFileSecurity(struct ndr_print *ndr, const char *name, int flags, const struct srvsvc_NetSetFileSecurity *r);
-_PUBLIC_ void ndr_print_srvsvc_NetServerTransportAddEx(struct ndr_print *ndr, const char *name, int flags, const struct srvsvc_NetServerTransportAddEx *r);
-_PUBLIC_ void ndr_print_srvsvc_NetServerSetServiceBitsEx(struct ndr_print *ndr, const char *name, int flags, const struct srvsvc_NetServerSetServiceBitsEx *r);
-_PUBLIC_ void ndr_print_srvsvc_NETRDFSGETVERSION(struct ndr_print *ndr, const char *name, int flags, const struct srvsvc_NETRDFSGETVERSION *r);
-_PUBLIC_ void ndr_print_srvsvc_NETRDFSCREATELOCALPARTITION(struct ndr_print *ndr, const char *name, int flags, const struct srvsvc_NETRDFSCREATELOCALPARTITION *r);
-_PUBLIC_ void ndr_print_srvsvc_NETRDFSDELETELOCALPARTITION(struct ndr_print *ndr, const char *name, int flags, const struct srvsvc_NETRDFSDELETELOCALPARTITION *r);
-_PUBLIC_ void ndr_print_srvsvc_NETRDFSSETLOCALVOLUMESTATE(struct ndr_print *ndr, const char *name, int flags, const struct srvsvc_NETRDFSSETLOCALVOLUMESTATE *r);
-_PUBLIC_ void ndr_print_srvsvc_NETRDFSSETSERVERINFO(struct ndr_print *ndr, const char *name, int flags, const struct srvsvc_NETRDFSSETSERVERINFO *r);
-_PUBLIC_ void ndr_print_srvsvc_NETRDFSCREATEEXITPOINT(struct ndr_print *ndr, const char *name, int flags, const struct srvsvc_NETRDFSCREATEEXITPOINT *r);
-_PUBLIC_ void ndr_print_srvsvc_NETRDFSDELETEEXITPOINT(struct ndr_print *ndr, const char *name, int flags, const struct srvsvc_NETRDFSDELETEEXITPOINT *r);
-_PUBLIC_ void ndr_print_srvsvc_NETRDFSMODIFYPREFIX(struct ndr_print *ndr, const char *name, int flags, const struct srvsvc_NETRDFSMODIFYPREFIX *r);
-_PUBLIC_ void ndr_print_srvsvc_NETRDFSFIXLOCALVOLUME(struct ndr_print *ndr, const char *name, int flags, const struct srvsvc_NETRDFSFIXLOCALVOLUME *r);
-_PUBLIC_ void ndr_print_srvsvc_NETRDFSMANAGERREPORTSITEINFO(struct ndr_print *ndr, const char *name, int flags, const struct srvsvc_NETRDFSMANAGERREPORTSITEINFO *r);
-_PUBLIC_ void ndr_print_srvsvc_NETRSERVERTRANSPORTDELEX(struct ndr_print *ndr, const char *name, int flags, const struct srvsvc_NETRSERVERTRANSPORTDELEX *r);
-
-/* The following definitions come from librpc/gen_ndr/ndr_svcctl.c  */
-
-_PUBLIC_ void ndr_print_SERVICE_LOCK_STATUS(struct ndr_print *ndr, const char *name, const struct SERVICE_LOCK_STATUS *r);
-_PUBLIC_ void ndr_print_SERVICE_STATUS(struct ndr_print *ndr, const char *name, const struct SERVICE_STATUS *r);
-_PUBLIC_ void ndr_print_ENUM_SERVICE_STATUS(struct ndr_print *ndr, const char *name, const struct ENUM_SERVICE_STATUS *r);
-_PUBLIC_ enum ndr_err_code ndr_push_svcctl_ServerType(struct ndr_push *ndr, int ndr_flags, uint32_t r);
-_PUBLIC_ enum ndr_err_code ndr_pull_svcctl_ServerType(struct ndr_pull *ndr, int ndr_flags, uint32_t *r);
-_PUBLIC_ void ndr_print_svcctl_ServerType(struct ndr_print *ndr, const char *name, uint32_t r);
-_PUBLIC_ void ndr_print_svcctl_MgrAccessMask(struct ndr_print *ndr, const char *name, uint32_t r);
-_PUBLIC_ void ndr_print_svcctl_ServiceAccessMask(struct ndr_print *ndr, const char *name, uint32_t r);
-_PUBLIC_ void ndr_print_svcctl_CloseServiceHandle(struct ndr_print *ndr, const char *name, int flags, const struct svcctl_CloseServiceHandle *r);
-_PUBLIC_ void ndr_print_svcctl_ControlService(struct ndr_print *ndr, const char *name, int flags, const struct svcctl_ControlService *r);
-_PUBLIC_ void ndr_print_svcctl_DeleteService(struct ndr_print *ndr, const char *name, int flags, const struct svcctl_DeleteService *r);
-_PUBLIC_ void ndr_print_svcctl_LockServiceDatabase(struct ndr_print *ndr, const char *name, int flags, const struct svcctl_LockServiceDatabase *r);
-_PUBLIC_ void ndr_print_svcctl_QueryServiceObjectSecurity(struct ndr_print *ndr, const char *name, int flags, const struct svcctl_QueryServiceObjectSecurity *r);
-_PUBLIC_ void ndr_print_svcctl_SetServiceObjectSecurity(struct ndr_print *ndr, const char *name, int flags, const struct svcctl_SetServiceObjectSecurity *r);
-_PUBLIC_ void ndr_print_svcctl_QueryServiceStatus(struct ndr_print *ndr, const char *name, int flags, const struct svcctl_QueryServiceStatus *r);
-_PUBLIC_ void ndr_print_svcctl_SetServiceStatus(struct ndr_print *ndr, const char *name, int flags, const struct svcctl_SetServiceStatus *r);
-_PUBLIC_ void ndr_print_svcctl_UnlockServiceDatabase(struct ndr_print *ndr, const char *name, int flags, const struct svcctl_UnlockServiceDatabase *r);
-_PUBLIC_ void ndr_print_svcctl_NotifyBootConfigStatus(struct ndr_print *ndr, const char *name, int flags, const struct svcctl_NotifyBootConfigStatus *r);
-_PUBLIC_ void ndr_print_svcctl_SCSetServiceBitsW(struct ndr_print *ndr, const char *name, int flags, const struct svcctl_SCSetServiceBitsW *r);
-_PUBLIC_ void ndr_print_svcctl_ChangeServiceConfigW(struct ndr_print *ndr, const char *name, int flags, const struct svcctl_ChangeServiceConfigW *r);
-_PUBLIC_ void ndr_print_svcctl_CreateServiceW(struct ndr_print *ndr, const char *name, int flags, const struct svcctl_CreateServiceW *r);
-_PUBLIC_ void ndr_print_svcctl_EnumDependentServicesW(struct ndr_print *ndr, const char *name, int flags, const struct svcctl_EnumDependentServicesW *r);
-_PUBLIC_ void ndr_print_svcctl_EnumServicesStatusW(struct ndr_print *ndr, const char *name, int flags, const struct svcctl_EnumServicesStatusW *r);
-_PUBLIC_ void ndr_print_svcctl_OpenSCManagerW(struct ndr_print *ndr, const char *name, int flags, const struct svcctl_OpenSCManagerW *r);
-_PUBLIC_ void ndr_print_svcctl_OpenServiceW(struct ndr_print *ndr, const char *name, int flags, const struct svcctl_OpenServiceW *r);
-_PUBLIC_ void ndr_print_svcctl_QueryServiceConfigW(struct ndr_print *ndr, const char *name, int flags, const struct svcctl_QueryServiceConfigW *r);
-_PUBLIC_ void ndr_print_svcctl_QueryServiceLockStatusW(struct ndr_print *ndr, const char *name, int flags, const struct svcctl_QueryServiceLockStatusW *r);
-_PUBLIC_ void ndr_print_svcctl_StartServiceW(struct ndr_print *ndr, const char *name, int flags, const struct svcctl_StartServiceW *r);
-_PUBLIC_ void ndr_print_svcctl_GetServiceDisplayNameW(struct ndr_print *ndr, const char *name, int flags, const struct svcctl_GetServiceDisplayNameW *r);
-_PUBLIC_ void ndr_print_svcctl_GetServiceKeyNameW(struct ndr_print *ndr, const char *name, int flags, const struct svcctl_GetServiceKeyNameW *r);
-_PUBLIC_ void ndr_print_svcctl_SCSetServiceBitsA(struct ndr_print *ndr, const char *name, int flags, const struct svcctl_SCSetServiceBitsA *r);
-_PUBLIC_ void ndr_print_svcctl_ChangeServiceConfigA(struct ndr_print *ndr, const char *name, int flags, const struct svcctl_ChangeServiceConfigA *r);
-_PUBLIC_ void ndr_print_svcctl_CreateServiceA(struct ndr_print *ndr, const char *name, int flags, const struct svcctl_CreateServiceA *r);
-_PUBLIC_ void ndr_print_svcctl_EnumDependentServicesA(struct ndr_print *ndr, const char *name, int flags, const struct svcctl_EnumDependentServicesA *r);
-_PUBLIC_ void ndr_print_svcctl_EnumServicesStatusA(struct ndr_print *ndr, const char *name, int flags, const struct svcctl_EnumServicesStatusA *r);
-_PUBLIC_ void ndr_print_svcctl_OpenSCManagerA(struct ndr_print *ndr, const char *name, int flags, const struct svcctl_OpenSCManagerA *r);
-_PUBLIC_ void ndr_print_svcctl_OpenServiceA(struct ndr_print *ndr, const char *name, int flags, const struct svcctl_OpenServiceA *r);
-_PUBLIC_ void ndr_print_svcctl_QueryServiceConfigA(struct ndr_print *ndr, const char *name, int flags, const struct svcctl_QueryServiceConfigA *r);
-_PUBLIC_ void ndr_print_svcctl_QueryServiceLockStatusA(struct ndr_print *ndr, const char *name, int flags, const struct svcctl_QueryServiceLockStatusA *r);
-_PUBLIC_ void ndr_print_svcctl_StartServiceA(struct ndr_print *ndr, const char *name, int flags, const struct svcctl_StartServiceA *r);
-_PUBLIC_ void ndr_print_svcctl_GetServiceDisplayNameA(struct ndr_print *ndr, const char *name, int flags, const struct svcctl_GetServiceDisplayNameA *r);
-_PUBLIC_ void ndr_print_svcctl_GetServiceKeyNameA(struct ndr_print *ndr, const char *name, int flags, const struct svcctl_GetServiceKeyNameA *r);
-_PUBLIC_ void ndr_print_svcctl_GetCurrentGroupeStateW(struct ndr_print *ndr, const char *name, int flags, const struct svcctl_GetCurrentGroupeStateW *r);
-_PUBLIC_ void ndr_print_svcctl_EnumServiceGroupW(struct ndr_print *ndr, const char *name, int flags, const struct svcctl_EnumServiceGroupW *r);
-_PUBLIC_ void ndr_print_svcctl_ChangeServiceConfig2A(struct ndr_print *ndr, const char *name, int flags, const struct svcctl_ChangeServiceConfig2A *r);
-_PUBLIC_ void ndr_print_svcctl_ChangeServiceConfig2W(struct ndr_print *ndr, const char *name, int flags, const struct svcctl_ChangeServiceConfig2W *r);
-_PUBLIC_ void ndr_print_svcctl_QueryServiceConfig2A(struct ndr_print *ndr, const char *name, int flags, const struct svcctl_QueryServiceConfig2A *r);
-_PUBLIC_ void ndr_print_svcctl_QueryServiceConfig2W(struct ndr_print *ndr, const char *name, int flags, const struct svcctl_QueryServiceConfig2W *r);
-_PUBLIC_ void ndr_print_svcctl_QueryServiceStatusEx(struct ndr_print *ndr, const char *name, int flags, const struct svcctl_QueryServiceStatusEx *r);
-_PUBLIC_ void ndr_print_EnumServicesStatusExA(struct ndr_print *ndr, const char *name, int flags, const struct EnumServicesStatusExA *r);
-_PUBLIC_ void ndr_print_EnumServicesStatusExW(struct ndr_print *ndr, const char *name, int flags, const struct EnumServicesStatusExW *r);
-_PUBLIC_ void ndr_print_svcctl_SCSendTSMessage(struct ndr_print *ndr, const char *name, int flags, const struct svcctl_SCSendTSMessage *r);
-
-/* The following definitions come from librpc/gen_ndr/ndr_winreg.c  */
-
-_PUBLIC_ void ndr_print_winreg_AccessMask(struct ndr_print *ndr, const char *name, uint32_t r);
-_PUBLIC_ void ndr_print_winreg_Type(struct ndr_print *ndr, const char *name, enum winreg_Type r);
-_PUBLIC_ enum ndr_err_code ndr_push_winreg_String(struct ndr_push *ndr, int ndr_flags, const struct winreg_String *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_winreg_String(struct ndr_pull *ndr, int ndr_flags, struct winreg_String *r);
-_PUBLIC_ void ndr_print_winreg_String(struct ndr_print *ndr, const char *name, const struct winreg_String *r);
-_PUBLIC_ void ndr_print_KeySecurityData(struct ndr_print *ndr, const char *name, const struct KeySecurityData *r);
-_PUBLIC_ void ndr_print_winreg_SecBuf(struct ndr_print *ndr, const char *name, const struct winreg_SecBuf *r);
-_PUBLIC_ void ndr_print_winreg_CreateAction(struct ndr_print *ndr, const char *name, enum winreg_CreateAction r);
-_PUBLIC_ void ndr_print_winreg_StringBuf(struct ndr_print *ndr, const char *name, const struct winreg_StringBuf *r);
-_PUBLIC_ void ndr_print_winreg_ValNameBuf(struct ndr_print *ndr, const char *name, const struct winreg_ValNameBuf *r);
-_PUBLIC_ void ndr_print_KeySecurityAttribute(struct ndr_print *ndr, const char *name, const struct KeySecurityAttribute *r);
-_PUBLIC_ void ndr_print_QueryMultipleValue(struct ndr_print *ndr, const char *name, const struct QueryMultipleValue *r);
-_PUBLIC_ void ndr_print_winreg_OpenHKCR(struct ndr_print *ndr, const char *name, int flags, const struct winreg_OpenHKCR *r);
-_PUBLIC_ void ndr_print_winreg_OpenHKCU(struct ndr_print *ndr, const char *name, int flags, const struct winreg_OpenHKCU *r);
-_PUBLIC_ void ndr_print_winreg_OpenHKLM(struct ndr_print *ndr, const char *name, int flags, const struct winreg_OpenHKLM *r);
-_PUBLIC_ void ndr_print_winreg_OpenHKPD(struct ndr_print *ndr, const char *name, int flags, const struct winreg_OpenHKPD *r);
-_PUBLIC_ void ndr_print_winreg_OpenHKU(struct ndr_print *ndr, const char *name, int flags, const struct winreg_OpenHKU *r);
-_PUBLIC_ void ndr_print_winreg_CloseKey(struct ndr_print *ndr, const char *name, int flags, const struct winreg_CloseKey *r);
-_PUBLIC_ void ndr_print_winreg_CreateKey(struct ndr_print *ndr, const char *name, int flags, const struct winreg_CreateKey *r);
-_PUBLIC_ void ndr_print_winreg_DeleteKey(struct ndr_print *ndr, const char *name, int flags, const struct winreg_DeleteKey *r);
-_PUBLIC_ void ndr_print_winreg_DeleteValue(struct ndr_print *ndr, const char *name, int flags, const struct winreg_DeleteValue *r);
-_PUBLIC_ void ndr_print_winreg_EnumKey(struct ndr_print *ndr, const char *name, int flags, const struct winreg_EnumKey *r);
-_PUBLIC_ void ndr_print_winreg_EnumValue(struct ndr_print *ndr, const char *name, int flags, const struct winreg_EnumValue *r);
-_PUBLIC_ void ndr_print_winreg_FlushKey(struct ndr_print *ndr, const char *name, int flags, const struct winreg_FlushKey *r);
-_PUBLIC_ void ndr_print_winreg_GetKeySecurity(struct ndr_print *ndr, const char *name, int flags, const struct winreg_GetKeySecurity *r);
-_PUBLIC_ void ndr_print_winreg_LoadKey(struct ndr_print *ndr, const char *name, int flags, const struct winreg_LoadKey *r);
-_PUBLIC_ void ndr_print_winreg_NotifyChangeKeyValue(struct ndr_print *ndr, const char *name, int flags, const struct winreg_NotifyChangeKeyValue *r);
-_PUBLIC_ void ndr_print_winreg_OpenKey(struct ndr_print *ndr, const char *name, int flags, const struct winreg_OpenKey *r);
-_PUBLIC_ void ndr_print_winreg_QueryInfoKey(struct ndr_print *ndr, const char *name, int flags, const struct winreg_QueryInfoKey *r);
-_PUBLIC_ void ndr_print_winreg_QueryValue(struct ndr_print *ndr, const char *name, int flags, const struct winreg_QueryValue *r);
-_PUBLIC_ void ndr_print_winreg_ReplaceKey(struct ndr_print *ndr, const char *name, int flags, const struct winreg_ReplaceKey *r);
-_PUBLIC_ void ndr_print_winreg_RestoreKey(struct ndr_print *ndr, const char *name, int flags, const struct winreg_RestoreKey *r);
-_PUBLIC_ void ndr_print_winreg_SaveKey(struct ndr_print *ndr, const char *name, int flags, const struct winreg_SaveKey *r);
-_PUBLIC_ void ndr_print_winreg_SetKeySecurity(struct ndr_print *ndr, const char *name, int flags, const struct winreg_SetKeySecurity *r);
-_PUBLIC_ void ndr_print_winreg_SetValue(struct ndr_print *ndr, const char *name, int flags, const struct winreg_SetValue *r);
-_PUBLIC_ void ndr_print_winreg_UnLoadKey(struct ndr_print *ndr, const char *name, int flags, const struct winreg_UnLoadKey *r);
-_PUBLIC_ void ndr_print_winreg_InitiateSystemShutdown(struct ndr_print *ndr, const char *name, int flags, const struct winreg_InitiateSystemShutdown *r);
-_PUBLIC_ void ndr_print_winreg_AbortSystemShutdown(struct ndr_print *ndr, const char *name, int flags, const struct winreg_AbortSystemShutdown *r);
-_PUBLIC_ void ndr_print_winreg_GetVersion(struct ndr_print *ndr, const char *name, int flags, const struct winreg_GetVersion *r);
-_PUBLIC_ void ndr_print_winreg_OpenHKCC(struct ndr_print *ndr, const char *name, int flags, const struct winreg_OpenHKCC *r);
-_PUBLIC_ void ndr_print_winreg_OpenHKDD(struct ndr_print *ndr, const char *name, int flags, const struct winreg_OpenHKDD *r);
-_PUBLIC_ void ndr_print_winreg_QueryMultipleValues(struct ndr_print *ndr, const char *name, int flags, const struct winreg_QueryMultipleValues *r);
-_PUBLIC_ void ndr_print_winreg_InitiateSystemShutdownEx(struct ndr_print *ndr, const char *name, int flags, const struct winreg_InitiateSystemShutdownEx *r);
-_PUBLIC_ void ndr_print_winreg_SaveKeyEx(struct ndr_print *ndr, const char *name, int flags, const struct winreg_SaveKeyEx *r);
-_PUBLIC_ void ndr_print_winreg_OpenHKPT(struct ndr_print *ndr, const char *name, int flags, const struct winreg_OpenHKPT *r);
-_PUBLIC_ void ndr_print_winreg_OpenHKPN(struct ndr_print *ndr, const char *name, int flags, const struct winreg_OpenHKPN *r);
-_PUBLIC_ void ndr_print_winreg_QueryMultipleValues2(struct ndr_print *ndr, const char *name, int flags, const struct winreg_QueryMultipleValues2 *r);
-
-/* The following definitions come from librpc/gen_ndr/ndr_wkssvc.c  */
-
-_PUBLIC_ void ndr_print_wkssvc_NetWkstaInfo100(struct ndr_print *ndr, const char *name, const struct wkssvc_NetWkstaInfo100 *r);
-_PUBLIC_ void ndr_print_wkssvc_NetWkstaInfo101(struct ndr_print *ndr, const char *name, const struct wkssvc_NetWkstaInfo101 *r);
-_PUBLIC_ void ndr_print_wkssvc_NetWkstaInfo102(struct ndr_print *ndr, const char *name, const struct wkssvc_NetWkstaInfo102 *r);
-_PUBLIC_ void ndr_print_wkssvc_NetWkstaInfo502(struct ndr_print *ndr, const char *name, const struct wkssvc_NetWkstaInfo502 *r);
-_PUBLIC_ void ndr_print_wkssvc_NetWkstaInfo1010(struct ndr_print *ndr, const char *name, const struct wkssvc_NetWkstaInfo1010 *r);
-_PUBLIC_ void ndr_print_wkssvc_NetWkstaInfo1011(struct ndr_print *ndr, const char *name, const struct wkssvc_NetWkstaInfo1011 *r);
-_PUBLIC_ void ndr_print_wkssvc_NetWkstaInfo1012(struct ndr_print *ndr, const char *name, const struct wkssvc_NetWkstaInfo1012 *r);
-_PUBLIC_ void ndr_print_wkssvc_NetWkstaInfo1013(struct ndr_print *ndr, const char *name, const struct wkssvc_NetWkstaInfo1013 *r);
-_PUBLIC_ void ndr_print_wkssvc_NetWkstaInfo1018(struct ndr_print *ndr, const char *name, const struct wkssvc_NetWkstaInfo1018 *r);
-_PUBLIC_ void ndr_print_wkssvc_NetWkstaInfo1023(struct ndr_print *ndr, const char *name, const struct wkssvc_NetWkstaInfo1023 *r);
-_PUBLIC_ void ndr_print_wkssvc_NetWkstaInfo1027(struct ndr_print *ndr, const char *name, const struct wkssvc_NetWkstaInfo1027 *r);
-_PUBLIC_ void ndr_print_wkssvc_NetWkstaInfo1028(struct ndr_print *ndr, const char *name, const struct wkssvc_NetWkstaInfo1028 *r);
-_PUBLIC_ void ndr_print_wkssvc_NetWkstaInfo1032(struct ndr_print *ndr, const char *name, const struct wkssvc_NetWkstaInfo1032 *r);
-_PUBLIC_ void ndr_print_wkssvc_NetWkstaInfo1033(struct ndr_print *ndr, const char *name, const struct wkssvc_NetWkstaInfo1033 *r);
-_PUBLIC_ void ndr_print_wkssvc_NetWkstaInfo1041(struct ndr_print *ndr, const char *name, const struct wkssvc_NetWkstaInfo1041 *r);
-_PUBLIC_ void ndr_print_wkssvc_NetWkstaInfo1042(struct ndr_print *ndr, const char *name, const struct wkssvc_NetWkstaInfo1042 *r);
-_PUBLIC_ void ndr_print_wkssvc_NetWkstaInfo1043(struct ndr_print *ndr, const char *name, const struct wkssvc_NetWkstaInfo1043 *r);
-_PUBLIC_ void ndr_print_wkssvc_NetWkstaInfo1044(struct ndr_print *ndr, const char *name, const struct wkssvc_NetWkstaInfo1044 *r);
-_PUBLIC_ void ndr_print_wkssvc_NetWkstaInfo1045(struct ndr_print *ndr, const char *name, const struct wkssvc_NetWkstaInfo1045 *r);
-_PUBLIC_ void ndr_print_wkssvc_NetWkstaInfo1046(struct ndr_print *ndr, const char *name, const struct wkssvc_NetWkstaInfo1046 *r);
-_PUBLIC_ void ndr_print_wkssvc_NetWkstaInfo1047(struct ndr_print *ndr, const char *name, const struct wkssvc_NetWkstaInfo1047 *r);
-_PUBLIC_ void ndr_print_wkssvc_NetWkstaInfo1048(struct ndr_print *ndr, const char *name, const struct wkssvc_NetWkstaInfo1048 *r);
-_PUBLIC_ void ndr_print_wkssvc_NetWkstaInfo1049(struct ndr_print *ndr, const char *name, const struct wkssvc_NetWkstaInfo1049 *r);
-_PUBLIC_ void ndr_print_wkssvc_NetWkstaInfo1050(struct ndr_print *ndr, const char *name, const struct wkssvc_NetWkstaInfo1050 *r);
-_PUBLIC_ void ndr_print_wkssvc_NetWkstaInfo1051(struct ndr_print *ndr, const char *name, const struct wkssvc_NetWkstaInfo1051 *r);
-_PUBLIC_ void ndr_print_wkssvc_NetWkstaInfo1052(struct ndr_print *ndr, const char *name, const struct wkssvc_NetWkstaInfo1052 *r);
-_PUBLIC_ void ndr_print_wkssvc_NetWkstaInfo1053(struct ndr_print *ndr, const char *name, const struct wkssvc_NetWkstaInfo1053 *r);
-_PUBLIC_ void ndr_print_wkssvc_NetWkstaInfo1054(struct ndr_print *ndr, const char *name, const struct wkssvc_NetWkstaInfo1054 *r);
-_PUBLIC_ void ndr_print_wkssvc_NetWkstaInfo1055(struct ndr_print *ndr, const char *name, const struct wkssvc_NetWkstaInfo1055 *r);
-_PUBLIC_ void ndr_print_wkssvc_NetWkstaInfo1056(struct ndr_print *ndr, const char *name, const struct wkssvc_NetWkstaInfo1056 *r);
-_PUBLIC_ void ndr_print_wkssvc_NetWkstaInfo1057(struct ndr_print *ndr, const char *name, const struct wkssvc_NetWkstaInfo1057 *r);
-_PUBLIC_ void ndr_print_wkssvc_NetWkstaInfo1058(struct ndr_print *ndr, const char *name, const struct wkssvc_NetWkstaInfo1058 *r);
-_PUBLIC_ void ndr_print_wkssvc_NetWkstaInfo1059(struct ndr_print *ndr, const char *name, const struct wkssvc_NetWkstaInfo1059 *r);
-_PUBLIC_ void ndr_print_wkssvc_NetWkstaInfo1060(struct ndr_print *ndr, const char *name, const struct wkssvc_NetWkstaInfo1060 *r);
-_PUBLIC_ void ndr_print_wkssvc_NetWkstaInfo1061(struct ndr_print *ndr, const char *name, const struct wkssvc_NetWkstaInfo1061 *r);
-_PUBLIC_ void ndr_print_wkssvc_NetWkstaInfo1062(struct ndr_print *ndr, const char *name, const struct wkssvc_NetWkstaInfo1062 *r);
-_PUBLIC_ void ndr_print_wkssvc_NetWkstaInfo(struct ndr_print *ndr, const char *name, const union wkssvc_NetWkstaInfo *r);
-_PUBLIC_ void ndr_print_wkssvc_NetrWkstaUserInfo0(struct ndr_print *ndr, const char *name, const struct wkssvc_NetrWkstaUserInfo0 *r);
-_PUBLIC_ void ndr_print_wkssvc_NetWkstaEnumUsersCtr0(struct ndr_print *ndr, const char *name, const struct wkssvc_NetWkstaEnumUsersCtr0 *r);
-_PUBLIC_ void ndr_print_wkssvc_NetrWkstaUserInfo1(struct ndr_print *ndr, const char *name, const struct wkssvc_NetrWkstaUserInfo1 *r);
-_PUBLIC_ void ndr_print_wkssvc_NetWkstaEnumUsersCtr1(struct ndr_print *ndr, const char *name, const struct wkssvc_NetWkstaEnumUsersCtr1 *r);
-_PUBLIC_ void ndr_print_wkssvc_NetWkstaEnumUsersCtr(struct ndr_print *ndr, const char *name, const union wkssvc_NetWkstaEnumUsersCtr *r);
-_PUBLIC_ void ndr_print_wkssvc_NetWkstaEnumUsersInfo(struct ndr_print *ndr, const char *name, const struct wkssvc_NetWkstaEnumUsersInfo *r);
-_PUBLIC_ void ndr_print_wkssvc_NetrWkstaUserInfo1101(struct ndr_print *ndr, const char *name, const struct wkssvc_NetrWkstaUserInfo1101 *r);
-_PUBLIC_ void ndr_print_wkssvc_NetrWkstaUserInfo(struct ndr_print *ndr, const char *name, const union wkssvc_NetrWkstaUserInfo *r);
-_PUBLIC_ void ndr_print_wkssvc_NetWkstaTransportInfo0(struct ndr_print *ndr, const char *name, const struct wkssvc_NetWkstaTransportInfo0 *r);
-_PUBLIC_ void ndr_print_wkssvc_NetWkstaTransportCtr0(struct ndr_print *ndr, const char *name, const struct wkssvc_NetWkstaTransportCtr0 *r);
-_PUBLIC_ void ndr_print_wkssvc_NetWkstaTransportCtr(struct ndr_print *ndr, const char *name, const union wkssvc_NetWkstaTransportCtr *r);
-_PUBLIC_ void ndr_print_wkssvc_NetWkstaTransportInfo(struct ndr_print *ndr, const char *name, const struct wkssvc_NetWkstaTransportInfo *r);
-_PUBLIC_ void ndr_print_wkssvc_NetrUseInfo3(struct ndr_print *ndr, const char *name, const struct wkssvc_NetrUseInfo3 *r);
-_PUBLIC_ void ndr_print_wkssvc_NetrUseInfo2(struct ndr_print *ndr, const char *name, const struct wkssvc_NetrUseInfo2 *r);
-_PUBLIC_ void ndr_print_wkssvc_NetrUseInfo1(struct ndr_print *ndr, const char *name, const struct wkssvc_NetrUseInfo1 *r);
-_PUBLIC_ void ndr_print_wkssvc_NetrUseInfo0(struct ndr_print *ndr, const char *name, const struct wkssvc_NetrUseInfo0 *r);
-_PUBLIC_ void ndr_print_wkssvc_NetrUseGetInfoCtr(struct ndr_print *ndr, const char *name, const union wkssvc_NetrUseGetInfoCtr *r);
-_PUBLIC_ void ndr_print_wkssvc_NetrUseEnumCtr2(struct ndr_print *ndr, const char *name, const struct wkssvc_NetrUseEnumCtr2 *r);
-_PUBLIC_ void ndr_print_wkssvc_NetrUseEnumCtr1(struct ndr_print *ndr, const char *name, const struct wkssvc_NetrUseEnumCtr1 *r);
-_PUBLIC_ void ndr_print_wkssvc_NetrUseEnumCtr0(struct ndr_print *ndr, const char *name, const struct wkssvc_NetrUseEnumCtr0 *r);
-_PUBLIC_ void ndr_print_wkssvc_NetrUseEnumCtr(struct ndr_print *ndr, const char *name, const union wkssvc_NetrUseEnumCtr *r);
-_PUBLIC_ void ndr_print_wkssvc_NetrUseEnumInfo(struct ndr_print *ndr, const char *name, const struct wkssvc_NetrUseEnumInfo *r);
-_PUBLIC_ void ndr_print_wkssvc_NetrWorkstationStatistics(struct ndr_print *ndr, const char *name, const struct wkssvc_NetrWorkstationStatistics *r);
-_PUBLIC_ void ndr_print_wkssvc_renameflags(struct ndr_print *ndr, const char *name, uint32_t r);
-_PUBLIC_ void ndr_print_wkssvc_NetValidateNameType(struct ndr_print *ndr, const char *name, enum wkssvc_NetValidateNameType r);
-_PUBLIC_ void ndr_print_wkssvc_NetJoinStatus(struct ndr_print *ndr, const char *name, enum wkssvc_NetJoinStatus r);
-_PUBLIC_ void ndr_print_wkssvc_PasswordBuffer(struct ndr_print *ndr, const char *name, const struct wkssvc_PasswordBuffer *r);
-_PUBLIC_ void ndr_print_wkssvc_joinflags(struct ndr_print *ndr, const char *name, uint32_t r);
-_PUBLIC_ void ndr_print_wkssvc_ComputerNameType(struct ndr_print *ndr, const char *name, enum wkssvc_ComputerNameType r);
-_PUBLIC_ void ndr_print_wkssvc_ComputerNamesCtr(struct ndr_print *ndr, const char *name, const struct wkssvc_ComputerNamesCtr *r);
-_PUBLIC_ void ndr_print_wkssvc_NetWkstaGetInfo(struct ndr_print *ndr, const char *name, int flags, const struct wkssvc_NetWkstaGetInfo *r);
-_PUBLIC_ void ndr_print_wkssvc_NetWkstaSetInfo(struct ndr_print *ndr, const char *name, int flags, const struct wkssvc_NetWkstaSetInfo *r);
-_PUBLIC_ void ndr_print_wkssvc_NetWkstaEnumUsers(struct ndr_print *ndr, const char *name, int flags, const struct wkssvc_NetWkstaEnumUsers *r);
-_PUBLIC_ void ndr_print_wkssvc_NetrWkstaUserGetInfo(struct ndr_print *ndr, const char *name, int flags, const struct wkssvc_NetrWkstaUserGetInfo *r);
-_PUBLIC_ void ndr_print_wkssvc_NetrWkstaUserSetInfo(struct ndr_print *ndr, const char *name, int flags, const struct wkssvc_NetrWkstaUserSetInfo *r);
-_PUBLIC_ void ndr_print_wkssvc_NetWkstaTransportEnum(struct ndr_print *ndr, const char *name, int flags, const struct wkssvc_NetWkstaTransportEnum *r);
-_PUBLIC_ void ndr_print_wkssvc_NetrWkstaTransportAdd(struct ndr_print *ndr, const char *name, int flags, const struct wkssvc_NetrWkstaTransportAdd *r);
-_PUBLIC_ void ndr_print_wkssvc_NetrWkstaTransportDel(struct ndr_print *ndr, const char *name, int flags, const struct wkssvc_NetrWkstaTransportDel *r);
-_PUBLIC_ void ndr_print_wkssvc_NetrUseAdd(struct ndr_print *ndr, const char *name, int flags, const struct wkssvc_NetrUseAdd *r);
-_PUBLIC_ void ndr_print_wkssvc_NetrUseGetInfo(struct ndr_print *ndr, const char *name, int flags, const struct wkssvc_NetrUseGetInfo *r);
-_PUBLIC_ void ndr_print_wkssvc_NetrUseDel(struct ndr_print *ndr, const char *name, int flags, const struct wkssvc_NetrUseDel *r);
-_PUBLIC_ void ndr_print_wkssvc_NetrUseEnum(struct ndr_print *ndr, const char *name, int flags, const struct wkssvc_NetrUseEnum *r);
-_PUBLIC_ void ndr_print_wkssvc_NetrMessageBufferSend(struct ndr_print *ndr, const char *name, int flags, const struct wkssvc_NetrMessageBufferSend *r);
-_PUBLIC_ void ndr_print_wkssvc_NetrWorkstationStatisticsGet(struct ndr_print *ndr, const char *name, int flags, const struct wkssvc_NetrWorkstationStatisticsGet *r);
-_PUBLIC_ void ndr_print_wkssvc_NetrLogonDomainNameAdd(struct ndr_print *ndr, const char *name, int flags, const struct wkssvc_NetrLogonDomainNameAdd *r);
-_PUBLIC_ void ndr_print_wkssvc_NetrLogonDomainNameDel(struct ndr_print *ndr, const char *name, int flags, const struct wkssvc_NetrLogonDomainNameDel *r);
-_PUBLIC_ void ndr_print_wkssvc_NetrJoinDomain(struct ndr_print *ndr, const char *name, int flags, const struct wkssvc_NetrJoinDomain *r);
-_PUBLIC_ void ndr_print_wkssvc_NetrUnjoinDomain(struct ndr_print *ndr, const char *name, int flags, const struct wkssvc_NetrUnjoinDomain *r);
-_PUBLIC_ void ndr_print_wkssvc_NetrRenameMachineInDomain(struct ndr_print *ndr, const char *name, int flags, const struct wkssvc_NetrRenameMachineInDomain *r);
-_PUBLIC_ void ndr_print_wkssvc_NetrValidateName(struct ndr_print *ndr, const char *name, int flags, const struct wkssvc_NetrValidateName *r);
-_PUBLIC_ void ndr_print_wkssvc_NetrGetJoinInformation(struct ndr_print *ndr, const char *name, int flags, const struct wkssvc_NetrGetJoinInformation *r);
-_PUBLIC_ void ndr_print_wkssvc_NetrGetJoinableOus(struct ndr_print *ndr, const char *name, int flags, const struct wkssvc_NetrGetJoinableOus *r);
-_PUBLIC_ void ndr_print_wkssvc_NetrJoinDomain2(struct ndr_print *ndr, const char *name, int flags, const struct wkssvc_NetrJoinDomain2 *r);
-_PUBLIC_ void ndr_print_wkssvc_NetrUnjoinDomain2(struct ndr_print *ndr, const char *name, int flags, const struct wkssvc_NetrUnjoinDomain2 *r);
-_PUBLIC_ void ndr_print_wkssvc_NetrRenameMachineInDomain2(struct ndr_print *ndr, const char *name, int flags, const struct wkssvc_NetrRenameMachineInDomain2 *r);
-_PUBLIC_ void ndr_print_wkssvc_NetrValidateName2(struct ndr_print *ndr, const char *name, int flags, const struct wkssvc_NetrValidateName2 *r);
-_PUBLIC_ void ndr_print_wkssvc_NetrGetJoinableOus2(struct ndr_print *ndr, const char *name, int flags, const struct wkssvc_NetrGetJoinableOus2 *r);
-_PUBLIC_ void ndr_print_wkssvc_NetrAddAlternateComputerName(struct ndr_print *ndr, const char *name, int flags, const struct wkssvc_NetrAddAlternateComputerName *r);
-_PUBLIC_ void ndr_print_wkssvc_NetrRemoveAlternateComputerName(struct ndr_print *ndr, const char *name, int flags, const struct wkssvc_NetrRemoveAlternateComputerName *r);
-_PUBLIC_ void ndr_print_wkssvc_NetrSetPrimaryComputername(struct ndr_print *ndr, const char *name, int flags, const struct wkssvc_NetrSetPrimaryComputername *r);
-_PUBLIC_ void ndr_print_wkssvc_NetrEnumerateComputerNames(struct ndr_print *ndr, const char *name, int flags, const struct wkssvc_NetrEnumerateComputerNames *r);
-
-/* The following definitions come from librpc/gen_ndr/ndr_xattr.c  */
-
-_PUBLIC_ enum ndr_err_code ndr_push_tdb_xattr(struct ndr_push *ndr, int ndr_flags, const struct tdb_xattr *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_tdb_xattr(struct ndr_pull *ndr, int ndr_flags, struct tdb_xattr *r);
-_PUBLIC_ void ndr_print_tdb_xattr(struct ndr_print *ndr, const char *name, const struct tdb_xattr *r);
-_PUBLIC_ enum ndr_err_code ndr_push_tdb_xattrs(struct ndr_push *ndr, int ndr_flags, const struct tdb_xattrs *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_tdb_xattrs(struct ndr_pull *ndr, int ndr_flags, struct tdb_xattrs *r);
-_PUBLIC_ void ndr_print_tdb_xattrs(struct ndr_print *ndr, const char *name, const struct tdb_xattrs *r);
-
-/* The following definitions come from librpc/gen_ndr/srv_dfs.c  */
-
-void netdfs_get_pipe_fns(struct api_struct **fns, int *n_fns);
-NTSTATUS rpc_netdfs_init(void);
-
-/* The following definitions come from librpc/gen_ndr/srv_dssetup.c  */
-
-void dssetup_get_pipe_fns(struct api_struct **fns, int *n_fns);
-NTSTATUS rpc_dssetup_init(void);
-
-/* The following definitions come from librpc/gen_ndr/srv_echo.c  */
-
-void rpcecho_get_pipe_fns(struct api_struct **fns, int *n_fns);
-NTSTATUS rpc_rpcecho_init(void);
-
-/* The following definitions come from librpc/gen_ndr/srv_eventlog.c  */
-
-void eventlog_get_pipe_fns(struct api_struct **fns, int *n_fns);
-NTSTATUS rpc_eventlog_init(void);
-
-/* The following definitions come from librpc/gen_ndr/srv_initshutdown.c  */
-
-void initshutdown_get_pipe_fns(struct api_struct **fns, int *n_fns);
-NTSTATUS rpc_initshutdown_init(void);
-
-/* The following definitions come from librpc/gen_ndr/srv_lsa.c  */
-
-void lsarpc_get_pipe_fns(struct api_struct **fns, int *n_fns);
-NTSTATUS rpc_lsarpc_init(void);
-
-/* The following definitions come from librpc/gen_ndr/srv_netlogon.c  */
-
-void netlogon_get_pipe_fns(struct api_struct **fns, int *n_fns);
-NTSTATUS rpc_netlogon_init(void);
-
-/* The following definitions come from librpc/gen_ndr/srv_ntsvcs.c  */
-
-void ntsvcs_get_pipe_fns(struct api_struct **fns, int *n_fns);
-NTSTATUS rpc_ntsvcs_init(void);
-
-/* The following definitions come from librpc/gen_ndr/srv_samr.c  */
-
-void samr_get_pipe_fns(struct api_struct **fns, int *n_fns);
-NTSTATUS rpc_samr_init(void);
-
-/* The following definitions come from librpc/gen_ndr/srv_srvsvc.c  */
-
-void srvsvc_get_pipe_fns(struct api_struct **fns, int *n_fns);
-NTSTATUS rpc_srvsvc_init(void);
-
-/* The following definitions come from librpc/gen_ndr/srv_svcctl.c  */
-
-void svcctl_get_pipe_fns(struct api_struct **fns, int *n_fns);
-NTSTATUS rpc_svcctl_init(void);
-
-/* The following definitions come from librpc/gen_ndr/srv_winreg.c  */
-
-void winreg_get_pipe_fns(struct api_struct **fns, int *n_fns);
-NTSTATUS rpc_winreg_init(void);
-
-/* The following definitions come from librpc/gen_ndr/srv_wkssvc.c  */
-
-void wkssvc_get_pipe_fns(struct api_struct **fns, int *n_fns);
-NTSTATUS rpc_wkssvc_init(void);
-
-/* The following definitions come from librpc/ndr/ndr.c  */
-
-_PUBLIC_ size_t ndr_align_size(uint32_t offset, size_t n);
-_PUBLIC_ struct ndr_pull *ndr_pull_init_blob(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx);
-_PUBLIC_ enum ndr_err_code ndr_pull_advance(struct ndr_pull *ndr, uint32_t size);
-_PUBLIC_ void ndr_pull_save(struct ndr_pull *ndr, struct ndr_pull_save *save);
-_PUBLIC_ void ndr_pull_restore(struct ndr_pull *ndr, struct ndr_pull_save *save);
-_PUBLIC_ struct ndr_push *ndr_push_init_ctx(TALLOC_CTX *mem_ctx);
-_PUBLIC_ DATA_BLOB ndr_push_blob(struct ndr_push *ndr);
-_PUBLIC_ enum ndr_err_code ndr_push_expand(struct ndr_push *ndr, uint32_t extra_size);
-_PUBLIC_ void ndr_print_debug_helper(struct ndr_print *ndr, const char *format, ...) _PRINTF_ATTRIBUTE(2,3);
-_PUBLIC_ void ndr_print_string_helper(struct ndr_print *ndr, const char *format, ...) _PRINTF_ATTRIBUTE(2,3);
-_PUBLIC_ void ndr_print_debug(ndr_print_fn_t fn, const char *name, void *ptr);
-_PUBLIC_ void ndr_print_union_debug(ndr_print_fn_t fn, const char *name, uint32_t level, void *ptr);
-_PUBLIC_ void ndr_print_function_debug(ndr_print_function_t fn, const char *name, int flags, void *ptr);
-_PUBLIC_ char *ndr_print_struct_string(TALLOC_CTX *mem_ctx, ndr_print_fn_t fn, const char *name, void *ptr);
-_PUBLIC_ char *ndr_print_union_string(TALLOC_CTX *mem_ctx, ndr_print_fn_t fn, const char *name, uint32_t level, void *ptr);
-_PUBLIC_ char *ndr_print_function_string(TALLOC_CTX *mem_ctx,
-				ndr_print_function_t fn, const char *name, 
-				int flags, void *ptr);
-_PUBLIC_ void ndr_set_flags(uint32_t *pflags, uint32_t new_flags);
 NTSTATUS ndr_map_error2ntstatus(enum ndr_err_code ndr_err);
-const char *ndr_errstr(enum ndr_err_code err);
-_PUBLIC_ enum ndr_err_code ndr_pull_error(struct ndr_pull *ndr,
-				 enum ndr_err_code ndr_err,
-				 const char *format, ...) _PRINTF_ATTRIBUTE(3,4);
-_PUBLIC_ enum ndr_err_code ndr_push_error(struct ndr_push *ndr,
-				 enum ndr_err_code ndr_err,
-				 const char *format, ...)  _PRINTF_ATTRIBUTE(3,4);
-_PUBLIC_ enum ndr_err_code ndr_pull_subcontext_start(struct ndr_pull *ndr,
-				   struct ndr_pull **_subndr,
-				   size_t header_size,
-				   ssize_t size_is);
-_PUBLIC_ enum ndr_err_code ndr_pull_subcontext_end(struct ndr_pull *ndr,
-				 struct ndr_pull *subndr,
-				 size_t header_size,
-				 ssize_t size_is);
-_PUBLIC_ enum ndr_err_code ndr_push_subcontext_start(struct ndr_push *ndr,
-				   struct ndr_push **_subndr,
-				   size_t header_size,
-				   ssize_t size_is);
-_PUBLIC_ enum ndr_err_code ndr_push_subcontext_end(struct ndr_push *ndr,
-				 struct ndr_push *subndr,
-				 size_t header_size,
-				 ssize_t size_is);
-_PUBLIC_ enum ndr_err_code ndr_token_store(TALLOC_CTX *mem_ctx,
-			 struct ndr_token_list **list, 
-			 const void *key, 
-			 uint32_t value);
-_PUBLIC_ enum ndr_err_code ndr_token_retrieve_cmp_fn(struct ndr_token_list **list, const void *key, uint32_t *v,
-				   comparison_fn_t _cmp_fn, bool _remove_tok);
-_PUBLIC_ enum ndr_err_code ndr_token_retrieve(struct ndr_token_list **list, const void *key, uint32_t *v);
-_PUBLIC_ uint32_t ndr_token_peek(struct ndr_token_list **list, const void *key);
-_PUBLIC_ enum ndr_err_code ndr_pull_array_size(struct ndr_pull *ndr, const void *p);
-_PUBLIC_ uint32_t ndr_get_array_size(struct ndr_pull *ndr, const void *p);
-_PUBLIC_ enum ndr_err_code ndr_check_array_size(struct ndr_pull *ndr, void *p, uint32_t size);
-_PUBLIC_ enum ndr_err_code ndr_pull_array_length(struct ndr_pull *ndr, const void *p);
-_PUBLIC_ uint32_t ndr_get_array_length(struct ndr_pull *ndr, const void *p);
-_PUBLIC_ enum ndr_err_code ndr_check_array_length(struct ndr_pull *ndr, void *p, uint32_t length);
-_PUBLIC_ enum ndr_err_code ndr_push_set_switch_value(struct ndr_push *ndr, const void *p, uint32_t val);
-_PUBLIC_ enum ndr_err_code ndr_pull_set_switch_value(struct ndr_pull *ndr, const void *p, uint32_t val);
-_PUBLIC_ enum ndr_err_code ndr_print_set_switch_value(struct ndr_print *ndr, const void *p, uint32_t val);
-_PUBLIC_ uint32_t ndr_push_get_switch_value(struct ndr_push *ndr, const void *p);
-_PUBLIC_ uint32_t ndr_pull_get_switch_value(struct ndr_pull *ndr, const void *p);
-_PUBLIC_ uint32_t ndr_print_get_switch_value(struct ndr_print *ndr, const void *p);
-_PUBLIC_ enum ndr_err_code ndr_pull_struct_blob(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx, void *p,
-			      ndr_pull_flags_fn_t fn);
-_PUBLIC_ enum ndr_err_code ndr_pull_struct_blob_all(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx, void *p,
-				  ndr_pull_flags_fn_t fn);
-_PUBLIC_ enum ndr_err_code ndr_pull_union_blob(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx, void *p,
-			     uint32_t level, ndr_pull_flags_fn_t fn);
-_PUBLIC_ enum ndr_err_code ndr_pull_union_blob_all(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx, void *p,
-			     uint32_t level, ndr_pull_flags_fn_t fn);
-_PUBLIC_ enum ndr_err_code ndr_push_struct_blob(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, const void *p,
-			      ndr_push_flags_fn_t fn);
-_PUBLIC_ enum ndr_err_code ndr_push_union_blob(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, void *p,
-			     uint32_t level, ndr_push_flags_fn_t fn);
-_PUBLIC_ size_t ndr_size_struct(const void *p, int flags, ndr_push_flags_fn_t push);
-_PUBLIC_ size_t ndr_size_union(const void *p, int flags, uint32_t level, ndr_push_flags_fn_t push);
-_PUBLIC_ uint32_t ndr_push_get_relative_base_offset(struct ndr_push *ndr);
-_PUBLIC_ void ndr_push_restore_relative_base_offset(struct ndr_push *ndr, uint32_t offset);
-_PUBLIC_ enum ndr_err_code ndr_push_setup_relative_base_offset1(struct ndr_push *ndr, const void *p, uint32_t offset);
-_PUBLIC_ enum ndr_err_code ndr_push_setup_relative_base_offset2(struct ndr_push *ndr, const void *p);
-_PUBLIC_ enum ndr_err_code ndr_push_relative_ptr1(struct ndr_push *ndr, const void *p);
-_PUBLIC_ enum ndr_err_code ndr_push_relative_ptr2(struct ndr_push *ndr, const void *p);
-_PUBLIC_ uint32_t ndr_pull_get_relative_base_offset(struct ndr_pull *ndr);
-_PUBLIC_ void ndr_pull_restore_relative_base_offset(struct ndr_pull *ndr, uint32_t offset);
-_PUBLIC_ enum ndr_err_code ndr_pull_setup_relative_base_offset1(struct ndr_pull *ndr, const void *p, uint32_t offset);
-_PUBLIC_ enum ndr_err_code ndr_pull_setup_relative_base_offset2(struct ndr_pull *ndr, const void *p);
-_PUBLIC_ enum ndr_err_code ndr_pull_relative_ptr1(struct ndr_pull *ndr, const void *p, uint32_t rel_offset);
-_PUBLIC_ enum ndr_err_code ndr_pull_relative_ptr2(struct ndr_pull *ndr, const void *p);
-
-/* The following definitions come from librpc/ndr/ndr_basic.c  */
-
-_PUBLIC_ void ndr_check_padding(struct ndr_pull *ndr, size_t n);
-_PUBLIC_ enum ndr_err_code ndr_pull_int8(struct ndr_pull *ndr, int ndr_flags, int8_t *v);
-_PUBLIC_ enum ndr_err_code ndr_pull_uint8(struct ndr_pull *ndr, int ndr_flags, uint8_t *v);
-_PUBLIC_ enum ndr_err_code ndr_pull_int16(struct ndr_pull *ndr, int ndr_flags, int16_t *v);
-_PUBLIC_ enum ndr_err_code ndr_pull_uint16(struct ndr_pull *ndr, int ndr_flags, uint16_t *v);
-_PUBLIC_ enum ndr_err_code ndr_pull_int32(struct ndr_pull *ndr, int ndr_flags, int32_t *v);
-_PUBLIC_ enum ndr_err_code ndr_pull_uint32(struct ndr_pull *ndr, int ndr_flags, uint32_t *v);
-_PUBLIC_ enum ndr_err_code ndr_pull_generic_ptr(struct ndr_pull *ndr, uint32_t *v);
-_PUBLIC_ enum ndr_err_code ndr_pull_ref_ptr(struct ndr_pull *ndr, uint32_t *v);
-_PUBLIC_ enum ndr_err_code ndr_pull_udlong(struct ndr_pull *ndr, int ndr_flags, uint64_t *v);
-_PUBLIC_ enum ndr_err_code ndr_pull_udlongr(struct ndr_pull *ndr, int ndr_flags, uint64_t *v);
-_PUBLIC_ enum ndr_err_code ndr_pull_dlong(struct ndr_pull *ndr, int ndr_flags, int64_t *v);
-_PUBLIC_ enum ndr_err_code ndr_pull_hyper(struct ndr_pull *ndr, int ndr_flags, uint64_t *v);
-_PUBLIC_ enum ndr_err_code ndr_pull_pointer(struct ndr_pull *ndr, int ndr_flags, void* *v);
-_PUBLIC_ enum ndr_err_code ndr_pull_NTSTATUS(struct ndr_pull *ndr, int ndr_flags, NTSTATUS *status);
-_PUBLIC_ enum ndr_err_code ndr_push_NTSTATUS(struct ndr_push *ndr, int ndr_flags, NTSTATUS status);
-_PUBLIC_ void ndr_print_NTSTATUS(struct ndr_print *ndr, const char *name, NTSTATUS r);
-_PUBLIC_ enum ndr_err_code ndr_pull_WERROR(struct ndr_pull *ndr, int ndr_flags, WERROR *status);
-_PUBLIC_ enum ndr_err_code ndr_push_WERROR(struct ndr_push *ndr, int ndr_flags, WERROR status);
-_PUBLIC_ void ndr_print_WERROR(struct ndr_print *ndr, const char *name, WERROR r);
-_PUBLIC_ enum ndr_err_code ndr_pull_bytes(struct ndr_pull *ndr, uint8_t *data, uint32_t n);
-_PUBLIC_ enum ndr_err_code ndr_pull_array_uint8(struct ndr_pull *ndr, int ndr_flags, uint8_t *data, uint32_t n);
-_PUBLIC_ enum ndr_err_code ndr_push_int8(struct ndr_push *ndr, int ndr_flags, int8_t v);
-_PUBLIC_ enum ndr_err_code ndr_push_uint8(struct ndr_push *ndr, int ndr_flags, uint8_t v);
-_PUBLIC_ enum ndr_err_code ndr_push_int16(struct ndr_push *ndr, int ndr_flags, int16_t v);
-_PUBLIC_ enum ndr_err_code ndr_push_uint16(struct ndr_push *ndr, int ndr_flags, uint16_t v);
-_PUBLIC_ enum ndr_err_code ndr_push_int32(struct ndr_push *ndr, int ndr_flags, int32_t v);
-_PUBLIC_ enum ndr_err_code ndr_push_uint32(struct ndr_push *ndr, int ndr_flags, uint32_t v);
-_PUBLIC_ enum ndr_err_code ndr_push_udlong(struct ndr_push *ndr, int ndr_flags, uint64_t v);
-_PUBLIC_ enum ndr_err_code ndr_push_udlongr(struct ndr_push *ndr, int ndr_flags, uint64_t v);
-_PUBLIC_ enum ndr_err_code ndr_push_dlong(struct ndr_push *ndr, int ndr_flags, int64_t v);
-_PUBLIC_ enum ndr_err_code ndr_push_hyper(struct ndr_push *ndr, int ndr_flags, uint64_t v);
-_PUBLIC_ enum ndr_err_code ndr_push_pointer(struct ndr_push *ndr, int ndr_flags, void* v);
-_PUBLIC_ enum ndr_err_code ndr_push_align(struct ndr_push *ndr, size_t size);
-_PUBLIC_ enum ndr_err_code ndr_pull_align(struct ndr_pull *ndr, size_t size);
-_PUBLIC_ enum ndr_err_code ndr_push_bytes(struct ndr_push *ndr, const uint8_t *data, uint32_t n);
-_PUBLIC_ enum ndr_err_code ndr_push_zero(struct ndr_push *ndr, uint32_t n);
-_PUBLIC_ enum ndr_err_code ndr_push_array_uint8(struct ndr_push *ndr, int ndr_flags, const uint8_t *data, uint32_t n);
-_PUBLIC_ void ndr_push_save(struct ndr_push *ndr, struct ndr_push_save *save);
-_PUBLIC_ void ndr_push_restore(struct ndr_push *ndr, struct ndr_push_save *save);
-_PUBLIC_ enum ndr_err_code ndr_push_unique_ptr(struct ndr_push *ndr, const void *p);
-_PUBLIC_ enum ndr_err_code ndr_push_full_ptr(struct ndr_push *ndr, const void *p);
-_PUBLIC_ enum ndr_err_code ndr_push_ref_ptr(struct ndr_push *ndr);
-_PUBLIC_ enum ndr_err_code ndr_push_NTTIME(struct ndr_push *ndr, int ndr_flags, NTTIME t);
-_PUBLIC_ enum ndr_err_code ndr_pull_NTTIME(struct ndr_pull *ndr, int ndr_flags, NTTIME *t);
-_PUBLIC_ enum ndr_err_code ndr_push_NTTIME_1sec(struct ndr_push *ndr, int ndr_flags, NTTIME t);
-_PUBLIC_ enum ndr_err_code ndr_pull_NTTIME_1sec(struct ndr_pull *ndr, int ndr_flags, NTTIME *t);
-_PUBLIC_ enum ndr_err_code ndr_pull_NTTIME_hyper(struct ndr_pull *ndr, int ndr_flags, NTTIME *t);
-_PUBLIC_ enum ndr_err_code ndr_push_NTTIME_hyper(struct ndr_push *ndr, int ndr_flags, NTTIME t);
-_PUBLIC_ enum ndr_err_code ndr_push_time_t(struct ndr_push *ndr, int ndr_flags, time_t t);
-_PUBLIC_ enum ndr_err_code ndr_pull_time_t(struct ndr_pull *ndr, int ndr_flags, time_t *t);
-_PUBLIC_ enum ndr_err_code ndr_pull_ipv4address(struct ndr_pull *ndr, int ndr_flags, const char **address);
-_PUBLIC_ enum ndr_err_code ndr_push_ipv4address(struct ndr_push *ndr, int ndr_flags, const char *address);
-_PUBLIC_ void ndr_print_ipv4address(struct ndr_print *ndr, const char *name, 
-			   const char *address);
-_PUBLIC_ void ndr_print_struct(struct ndr_print *ndr, const char *name, const char *type);
-_PUBLIC_ void ndr_print_enum(struct ndr_print *ndr, const char *name, const char *type, 
-		    const char *val, uint32_t value);
-_PUBLIC_ void ndr_print_bitmap_flag(struct ndr_print *ndr, size_t size, const char *flag_name, uint32_t flag, uint32_t value);
-_PUBLIC_ void ndr_print_int8(struct ndr_print *ndr, const char *name, int8_t v);
-_PUBLIC_ void ndr_print_uint8(struct ndr_print *ndr, const char *name, uint8_t v);
-_PUBLIC_ void ndr_print_int16(struct ndr_print *ndr, const char *name, int16_t v);
-_PUBLIC_ void ndr_print_uint16(struct ndr_print *ndr, const char *name, uint16_t v);
-_PUBLIC_ void ndr_print_int32(struct ndr_print *ndr, const char *name, int32_t v);
-_PUBLIC_ void ndr_print_uint32(struct ndr_print *ndr, const char *name, uint32_t v);
-_PUBLIC_ void ndr_print_udlong(struct ndr_print *ndr, const char *name, uint64_t v);
-_PUBLIC_ void ndr_print_udlongr(struct ndr_print *ndr, const char *name, uint64_t v);
-_PUBLIC_ void ndr_print_dlong(struct ndr_print *ndr, const char *name, int64_t v);
-_PUBLIC_ void ndr_print_hyper(struct ndr_print *ndr, const char *name, uint64_t v);
-_PUBLIC_ void ndr_print_pointer(struct ndr_print *ndr, const char *name, void *v);
-_PUBLIC_ void ndr_print_ptr(struct ndr_print *ndr, const char *name, const void *p);
-_PUBLIC_ void ndr_print_NTTIME(struct ndr_print *ndr, const char *name, NTTIME t);
-_PUBLIC_ void ndr_print_NTTIME_1sec(struct ndr_print *ndr, const char *name, NTTIME t);
-_PUBLIC_ void ndr_print_NTTIME_hyper(struct ndr_print *ndr, const char *name, NTTIME t);
-_PUBLIC_ void ndr_print_time_t(struct ndr_print *ndr, const char *name, time_t t);
-_PUBLIC_ void ndr_print_union(struct ndr_print *ndr, const char *name, int level, const char *type);
-_PUBLIC_ void ndr_print_bad_level(struct ndr_print *ndr, const char *name, uint16_t level);
-_PUBLIC_ void ndr_print_array_uint8(struct ndr_print *ndr, const char *name, 
-			   const uint8_t *data, uint32_t count);
-_PUBLIC_ void ndr_print_DATA_BLOB(struct ndr_print *ndr, const char *name, DATA_BLOB r);
-_PUBLIC_ enum ndr_err_code ndr_push_DATA_BLOB(struct ndr_push *ndr, int ndr_flags, DATA_BLOB blob);
-_PUBLIC_ enum ndr_err_code ndr_pull_DATA_BLOB(struct ndr_pull *ndr, int ndr_flags, DATA_BLOB *blob);
-_PUBLIC_ uint32_t ndr_size_DATA_BLOB(int ret, const DATA_BLOB *data, int flags);
-_PUBLIC_ void ndr_print_bool(struct ndr_print *ndr, const char *name, const bool b);
-_PUBLIC_ void ndr_print_sockaddr_storage(struct ndr_print *ndr, const char *name, const struct sockaddr_storage *ss);
-
-/* The following definitions come from librpc/ndr/ndr_krb5pac.c  */
-
-enum ndr_err_code ndr_push_PAC_BUFFER(struct ndr_push *ndr, int ndr_flags, const struct PAC_BUFFER *r);
-enum ndr_err_code ndr_pull_PAC_BUFFER(struct ndr_pull *ndr, int ndr_flags, struct PAC_BUFFER *r);
-void ndr_print_PAC_BUFFER(struct ndr_print *ndr, const char *name, const struct PAC_BUFFER *r);
-
-/* The following definitions come from librpc/ndr/ndr_misc.c  */
-
-bool all_zero(const uint8_t *ptr, size_t size);
-void ndr_print_GUID(struct ndr_print *ndr, const char *name, const struct GUID *guid);
-bool ndr_syntax_id_equal(const struct ndr_syntax_id *i1,
-			 const struct ndr_syntax_id *i2);
 enum ndr_err_code ndr_push_server_id(struct ndr_push *ndr, int ndr_flags, const struct server_id *r);
 enum ndr_err_code ndr_pull_server_id(struct ndr_pull *ndr, int ndr_flags, struct server_id *r);
 void ndr_print_server_id(struct ndr_print *ndr, const char *name, const struct server_id *r);
+_PUBLIC_ void ndr_print_bool(struct ndr_print *ndr, const char *name, const bool b);
+_PUBLIC_ void ndr_print_sockaddr_storage(struct ndr_print *ndr, const char *name, const struct sockaddr_storage *ss);
+const char *ndr_errstr(enum ndr_err_code err);
 
 /* The following definitions come from librpc/ndr/ndr_sec_helper.c  */
 
@@ -4104,22 +2436,6 @@ void ndr_print_dom_sid2(struct ndr_print *ndr, const char *name, const struct do
 void ndr_print_dom_sid28(struct ndr_print *ndr, const char *name, const struct dom_sid *sid);
 void ndr_print_dom_sid0(struct ndr_print *ndr, const char *name, const struct dom_sid *sid);
 
-/* The following definitions come from librpc/ndr/ndr_string.c  */
-
-_PUBLIC_ enum ndr_err_code ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const char **s);
-_PUBLIC_ enum ndr_err_code ndr_push_string(struct ndr_push *ndr, int ndr_flags, const char *s);
-_PUBLIC_ size_t ndr_string_array_size(struct ndr_push *ndr, const char *s);
-_PUBLIC_ void ndr_print_string(struct ndr_print *ndr, const char *name, const char *s);
-_PUBLIC_ uint32_t ndr_size_string(int ret, const char * const* string, int flags) ;
-_PUBLIC_ enum ndr_err_code ndr_pull_string_array(struct ndr_pull *ndr, int ndr_flags, const char ***_a);
-_PUBLIC_ enum ndr_err_code ndr_push_string_array(struct ndr_push *ndr, int ndr_flags, const char **a);
-_PUBLIC_ void ndr_print_string_array(struct ndr_print *ndr, const char *name, const char **a);
-_PUBLIC_ uint32_t ndr_string_length(const void *_var, uint32_t element_size);
-_PUBLIC_ enum ndr_err_code ndr_check_string_terminator(struct ndr_pull *ndr, uint32_t count, uint32_t element_size);
-_PUBLIC_ enum ndr_err_code ndr_pull_charset(struct ndr_pull *ndr, int ndr_flags, const char **var, uint32_t length, uint8_t byte_mul, charset_t chset);
-_PUBLIC_ enum ndr_err_code ndr_push_charset(struct ndr_push *ndr, int ndr_flags, const char *var, uint32_t length, uint8_t byte_mul, charset_t chset);
-_PUBLIC_ uint32_t ndr_charset_length(const void *var, charset_t chset);
-
 /* The following definitions come from librpc/ndr/sid.c  */
 
 enum ndr_err_code ndr_push_dom_sid(struct ndr_push *ndr, int ndr_flags, const struct dom_sid *r);
@@ -4131,20 +2447,6 @@ enum ndr_err_code ndr_pull_dom_sid28(struct ndr_pull *ndr, int ndr_flags, struct
 enum ndr_err_code ndr_push_dom_sid28(struct ndr_push *ndr, int ndr_flags, const struct dom_sid *sid);
 enum ndr_err_code ndr_pull_dom_sid0(struct ndr_pull *ndr, int ndr_flags, struct dom_sid *sid);
 enum ndr_err_code ndr_push_dom_sid0(struct ndr_push *ndr, int ndr_flags, const struct dom_sid *sid);
-
-/* The following definitions come from librpc/ndr/uuid.c  */
-
-_PUBLIC_ NTSTATUS GUID_from_string(const char *s, struct GUID *guid);
-_PUBLIC_ NTSTATUS NS_GUID_from_string(const char *s, struct GUID *guid);
-struct GUID GUID_random(void);
-_PUBLIC_ struct GUID GUID_zero(void);
-_PUBLIC_ bool GUID_all_zero(const struct GUID *u);
-_PUBLIC_ bool GUID_equal(const struct GUID *u1, const struct GUID *u2);
-_PUBLIC_ int GUID_compare(const struct GUID *u1, const struct GUID *u2);
-_PUBLIC_ char *GUID_string(TALLOC_CTX *mem_ctx, const struct GUID *guid);
-_PUBLIC_ char *GUID_string2(TALLOC_CTX *mem_ctx, const struct GUID *guid);
-_PUBLIC_ char *NS_GUID_string(TALLOC_CTX *mem_ctx, const struct GUID *guid);
-_PUBLIC_ bool policy_handle_empty(struct policy_handle *h) ;
 
 /* The following definitions come from librpc/rpc/binding.c  */
 
@@ -4313,7 +2615,7 @@ bool receive_getdc_response(TALLOC_CTX *mem_ctx,
 			    const char *domain_name,
 			    uint32_t *nt_version,
 			    const char **dc_name,
-			    union nbt_cldap_netlogon **reply);
+			    struct netlogon_samlogon_response **reply);
 
 /* The following definitions come from libsmb/clientgen.c  */
 
@@ -4400,13 +2702,13 @@ bool cli_lock(struct cli_state *cli, int fnum,
 	      uint32 offset, uint32 len, int timeout, enum brl_type lock_type);
 bool cli_unlock(struct cli_state *cli, int fnum, uint32 offset, uint32 len);
 bool cli_lock64(struct cli_state *cli, int fnum,
-		SMB_BIG_UINT offset, SMB_BIG_UINT len, int timeout, enum brl_type lock_type);
-bool cli_unlock64(struct cli_state *cli, int fnum, SMB_BIG_UINT offset, SMB_BIG_UINT len);
+		uint64_t offset, uint64_t len, int timeout, enum brl_type lock_type);
+bool cli_unlock64(struct cli_state *cli, int fnum, uint64_t offset, uint64_t len);
 bool cli_posix_lock(struct cli_state *cli, int fnum,
-			SMB_BIG_UINT offset, SMB_BIG_UINT len,
+			uint64_t offset, uint64_t len,
 			bool wait_lock, enum brl_type lock_type);
-bool cli_posix_unlock(struct cli_state *cli, int fnum, SMB_BIG_UINT offset, SMB_BIG_UINT len);
-bool cli_posix_getlock(struct cli_state *cli, int fnum, SMB_BIG_UINT *poffset, SMB_BIG_UINT *plen);
+bool cli_posix_unlock(struct cli_state *cli, int fnum, uint64_t offset, uint64_t len);
+bool cli_posix_getlock(struct cli_state *cli, int fnum, uint64_t *poffset, uint64_t *plen);
 bool cli_getattrE(struct cli_state *cli, int fd,
 		  uint16 *attr, SMB_OFF_T *size,
 		  time_t *change_time,
@@ -4451,7 +2753,6 @@ NTSTATUS cli_raw_ntlm_smb_encryption_start(struct cli_state *cli,
 				const char *user,
 				const char *pass,
 				const char *domain);
-NTSTATUS cli_gss_smb_encryption_start(struct cli_state *cli);
 NTSTATUS cli_gss_smb_encryption_start(struct cli_state *cli);
 NTSTATUS cli_force_encryption(struct cli_state *c,
 			const char *username,
@@ -5258,20 +3559,20 @@ const char *lock_type_name(enum brl_type lock_type);
 const char *lock_flav_name(enum brl_flavour lock_flav);
 bool is_locked(files_struct *fsp,
 		uint32 smbpid,
-		SMB_BIG_UINT count,
-		SMB_BIG_UINT offset, 
+		uint64_t count,
+		uint64_t offset, 
 		enum brl_type lock_type);
 NTSTATUS query_lock(files_struct *fsp,
 			uint32 *psmbpid,
-			SMB_BIG_UINT *pcount,
-			SMB_BIG_UINT *poffset,
+			uint64_t *pcount,
+			uint64_t *poffset,
 			enum brl_type *plock_type,
 			enum brl_flavour lock_flav);
 struct byte_range_lock *do_lock(struct messaging_context *msg_ctx,
 			files_struct *fsp,
 			uint32 lock_pid,
-			SMB_BIG_UINT count,
-			SMB_BIG_UINT offset,
+			uint64_t count,
+			uint64_t offset,
 			enum brl_type lock_type,
 			enum brl_flavour lock_flav,
 			bool blocking_lock,
@@ -5280,13 +3581,13 @@ struct byte_range_lock *do_lock(struct messaging_context *msg_ctx,
 NTSTATUS do_unlock(struct messaging_context *msg_ctx,
 			files_struct *fsp,
 			uint32 lock_pid,
-			SMB_BIG_UINT count,
-			SMB_BIG_UINT offset,
+			uint64_t count,
+			uint64_t offset,
 			enum brl_flavour lock_flav);
 NTSTATUS do_lock_cancel(files_struct *fsp,
 			uint32 lock_pid,
-			SMB_BIG_UINT count,
-			SMB_BIG_UINT offset,
+			uint64_t count,
+			uint64_t offset,
 			enum brl_flavour lock_flav);
 void locking_close_file(struct messaging_context *msg_ctx,
 			files_struct *fsp);
@@ -5338,8 +3639,8 @@ int share_mode_forall(void (*fn)(const struct share_mode_entry *, const char *,
 /* The following definitions come from locking/posix.c  */
 
 bool is_posix_locked(files_struct *fsp,
-			SMB_BIG_UINT *pu_offset,
-			SMB_BIG_UINT *pu_count,
+			uint64_t *pu_offset,
+			uint64_t *pu_count,
 			enum brl_type *plock_type,
 			enum brl_flavour lock_flav);
 bool posix_locking_init(bool read_only);
@@ -5347,28 +3648,28 @@ bool posix_locking_end(void);
 void reduce_windows_lock_ref_count(files_struct *fsp, unsigned int dcount);
 int fd_close_posix(struct files_struct *fsp);
 bool set_posix_lock_windows_flavour(files_struct *fsp,
-			SMB_BIG_UINT u_offset,
-			SMB_BIG_UINT u_count,
+			uint64_t u_offset,
+			uint64_t u_count,
 			enum brl_type lock_type,
 			const struct lock_context *lock_ctx,
 			const struct lock_struct *plocks,
 			int num_locks,
 			int *errno_ret);
 bool release_posix_lock_windows_flavour(files_struct *fsp,
-				SMB_BIG_UINT u_offset,
-				SMB_BIG_UINT u_count,
+				uint64_t u_offset,
+				uint64_t u_count,
 				enum brl_type deleted_lock_type,
 				const struct lock_context *lock_ctx,
 				const struct lock_struct *plocks,
 				int num_locks);
 bool set_posix_lock_posix_flavour(files_struct *fsp,
-			SMB_BIG_UINT u_offset,
-			SMB_BIG_UINT u_count,
+			uint64_t u_offset,
+			uint64_t u_count,
 			enum brl_type lock_type,
 			int *errno_ret);
 bool release_posix_lock_posix_flavour(files_struct *fsp,
-				SMB_BIG_UINT u_offset,
-				SMB_BIG_UINT u_count,
+				uint64_t u_offset,
+				uint64_t u_count,
 				const struct lock_context *lock_ctx,
 				const struct lock_struct *plocks,
 				int num_locks);
@@ -5954,6 +4255,7 @@ const char **lp_svcctl_list(void);
 char *lp_cups_options(int );
 char *lp_cups_server(void);
 char *lp_iprint_server(void);
+int lp_cups_connection_timeout(void);
 const char *lp_ctdbd_socket(void);
 const char **lp_cluster_addresses(void);
 bool lp_clustering(void);
@@ -6119,7 +4421,7 @@ bool dump_a_parameter(int snum, char *parm_name, FILE * f, bool isGlobal);
 struct parm_struct *lp_get_parameter(const char *param_name);
 struct parm_struct *lp_next_parameter(int snum, int *i, int allparameters);
 bool lp_snum_ok(int iService);
-void lp_add_one_printer(char *name, char *comment);
+void lp_add_one_printer(const char *name, const char *comment, void *pdata);
 bool lp_loaded(void);
 void lp_killunused(bool (*snumused) (int));
 void lp_kill_all_services(void);
@@ -6548,6 +4850,8 @@ bool secrets_restore_schannel_session_info(TALLOC_CTX *mem_ctx,
 				struct dcinfo **ppdc);
 bool secrets_store_generic(const char *owner, const char *key, const char *secret);
 char *secrets_fetch_generic(const char *owner, const char *key);
+bool secrets_store_local_schannel_key(uint8_t schannel_key[16]);
+bool secrets_fetch_local_schannel_key(uint8_t schannel_key[16]);
 
 /* The following definitions come from passdb/util_builtin.c  */
 
@@ -6690,11 +4994,15 @@ char* get_server_name( Printer_entry *printer );
 
 /* The following definitions come from printing/pcap.c  */
 
+bool pcap_cache_add_specific(struct pcap_cache **ppcache, const char *name, const char *comment);
+void pcap_cache_destroy_specific(struct pcap_cache **ppcache);
 bool pcap_cache_add(const char *name, const char *comment);
 bool pcap_cache_loaded(void);
+void pcap_cache_replace(const struct pcap_cache *cache);
 void pcap_cache_reload(void);
 bool pcap_printername_ok(const char *printername);
-void pcap_printer_fn(void (*fn)(char *, char *));
+void pcap_printer_fn_specific(const struct pcap_cache *, void (*fn)(const char *, const char *, void *), void *);
+void pcap_printer_fn(void (*fn)(const char *, const char *, void *), void *);
 
 /* The following definitions come from printing/print_aix.c  */
 
@@ -6718,7 +5026,8 @@ bool sysv_cache_reload(void);
 
 /* The following definitions come from printing/printfsp.c  */
 
-NTSTATUS print_fsp_open(connection_struct *conn, const char *fname,
+NTSTATUS print_fsp_open(struct smb_request *req, connection_struct *conn,
+			const char *fname,
 			uint16_t current_vuid, files_struct **result);
 void print_fsp_end(files_struct *fsp, enum file_close_type close_type);
 
@@ -7049,6 +5358,12 @@ NTSTATUS rpccli_netlogon_sam_network_logon_ex(struct rpc_pipe_client *cli,
 					      DATA_BLOB lm_response,
 					      DATA_BLOB nt_response,
 					      struct netr_SamInfo3 **info3);
+NTSTATUS rpccli_netlogon_set_trust_password(struct rpc_pipe_client *cli,
+					    TALLOC_CTX *mem_ctx,
+					    const unsigned char orig_trust_passwd_hash[16],
+					    const char *new_trust_pwd_cleartext,
+					    const unsigned char new_trust_passwd_hash[16],
+					    uint32_t sec_channel_type);
 
 /* The following definitions come from rpc_client/cli_pipe.c  */
 
@@ -7313,8 +5628,6 @@ WERROR rpccli_spoolss_rffpcnex(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 WERROR rpccli_svcctl_enumerate_services( struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
                                       POLICY_HND *hSCM, uint32 type, uint32 state, 
 				      uint32 *returned, ENUM_SERVICES_STATUS **service_array  );
-WERROR rpccli_svcctl_query_config(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-                                POLICY_HND *hService, SERVICE_CONFIG *config );
 
 /* The following definitions come from rpc_client/init_lsa.c  */
 
@@ -7427,6 +5740,9 @@ void init_netr_PasswordInfo(struct netr_PasswordInfo *r,
 			    const char *workstation,
 			    struct samr_Password lmpassword,
 			    struct samr_Password ntpassword);
+void init_netr_CryptPassword(const char *pwd,
+			     unsigned char session_key[16],
+			     struct netr_CryptPassword *pwd_buf);
 
 /* The following definitions come from rpc_client/init_samr.c  */
 
@@ -7436,22 +5752,22 @@ void init_samr_DomInfo1(struct samr_DomInfo1 *r,
 			uint32_t password_properties,
 			int64_t max_password_age,
 			int64_t min_password_age);
-void init_samr_DomInfo2(struct samr_DomInfo2 *r,
-			NTTIME force_logoff_time,
-			const char *comment,
-			const char *domain_name,
-			const char *primary,
-			uint64_t sequence_num,
-			uint32_t unknown2,
-			enum samr_Role role,
-			uint32_t unknown3,
-			uint32_t num_users,
-			uint32_t num_groups,
-			uint32_t num_aliases);
+void init_samr_DomGeneralInformation(struct samr_DomGeneralInformation *r,
+				     NTTIME force_logoff_time,
+				     const char *oem_information,
+				     const char *domain_name,
+				     const char *primary,
+				     uint64_t sequence_num,
+				     uint32_t unknown2,
+				     enum samr_Role role,
+				     uint32_t unknown3,
+				     uint32_t num_users,
+				     uint32_t num_groups,
+				     uint32_t num_aliases);
 void init_samr_DomInfo3(struct samr_DomInfo3 *r,
 			NTTIME force_logoff_time);
-void init_samr_DomInfo4(struct samr_DomInfo4 *r,
-			const char *comment);
+void init_samr_DomOEMInformation(struct samr_DomOEMInformation *r,
+				 const char *oem_information);
 void init_samr_DomInfo5(struct samr_DomInfo5 *r,
 			const char *domain_name);
 void init_samr_DomInfo6(struct samr_DomInfo6 *r,
@@ -8304,11 +6620,8 @@ bool convert_port_data_1( NT_PORT_DATA_1 *port1, RPC_BUFFER *buf ) ;
 bool svcctl_io_enum_services_status( const char *desc, ENUM_SERVICES_STATUS *enum_status, RPC_BUFFER *buffer, int depth );
 bool svcctl_io_service_status_process( const char *desc, SERVICE_STATUS_PROCESS *status, RPC_BUFFER *buffer, int depth );
 uint32 svcctl_sizeof_enum_services_status( ENUM_SERVICES_STATUS *status );
-uint32 svcctl_sizeof_service_config( SERVICE_CONFIG *config );
 bool svcctl_io_q_enum_services_status(const char *desc, SVCCTL_Q_ENUM_SERVICES_STATUS *q_u, prs_struct *ps, int depth);
 bool svcctl_io_r_enum_services_status(const char *desc, SVCCTL_R_ENUM_SERVICES_STATUS *r_u, prs_struct *ps, int depth);
-bool svcctl_io_q_query_service_config(const char *desc, SVCCTL_Q_QUERY_SERVICE_CONFIG *q_u, prs_struct *ps, int depth);
-bool svcctl_io_r_query_service_config(const char *desc, SVCCTL_R_QUERY_SERVICE_CONFIG *r_u, prs_struct *ps, int depth);
 bool svcctl_io_q_query_service_config2(const char *desc, SVCCTL_Q_QUERY_SERVICE_CONFIG2 *q_u, prs_struct *ps, int depth);
 void init_service_description_buffer(SERVICE_DESCRIPTION *desc, const char *service_desc );
 bool svcctl_io_service_description( const char *desc, SERVICE_DESCRIPTION *description, RPC_BUFFER *buffer, int depth );
@@ -8827,26 +7140,16 @@ bool api_pipe_request(pipes_struct *p);
 pipes_struct *get_first_internal_pipe(void);
 pipes_struct *get_next_internal_pipe(pipes_struct *p);
 void set_pipe_handle_offset(int max_open_files);
-void reset_chain_p(void);
 void init_rpc_pipe_hnd(void);
-smb_np_struct *open_rpc_pipe_p(const char *pipe_name, 
-			      connection_struct *conn, uint16 vuid);
-ssize_t write_to_pipe(smb_np_struct *p, char *data, size_t n);
-ssize_t read_from_pipe(smb_np_struct *p, char *data, size_t n,
-		bool *is_data_outstanding);
-bool wait_rpc_pipe_hnd_state(smb_np_struct *p, uint16 priority);
-bool set_rpc_pipe_hnd_state(smb_np_struct *p, uint16 device_state);
-bool close_rpc_pipe_hnd(smb_np_struct *p);
-void pipe_close_conn(connection_struct *conn);
-smb_np_struct *get_rpc_pipe_p(uint16 pnum);
-smb_np_struct *get_rpc_pipe(int pnum);
-struct pipes_struct *make_internal_rpc_pipe_p(const char *pipe_name,
-					      const char *client_address,
-					      struct auth_serversupplied_info *server_info,
-					      uint16_t vuid);
-ssize_t read_from_internal_pipe(struct pipes_struct *p, char *data, size_t n,
-				bool *is_data_outstanding);
-ssize_t write_to_internal_pipe(struct pipes_struct *p, char *data, size_t n);
+
+bool fsp_is_np(struct files_struct *fsp);
+NTSTATUS np_open(struct smb_request *smb_req, struct connection_struct *conn,
+		 const char *name, struct files_struct **pfsp);
+NTSTATUS np_write(struct files_struct *fsp, uint8_t *data, size_t len,
+		  ssize_t *nwritten);
+NTSTATUS np_read(struct files_struct *fsp, uint8_t *data, size_t len,
+		 ssize_t *nread, bool *is_data_outstanding);
+
 
 /* The following definitions come from rpc_server/srv_samr_nt.c  */
 
@@ -9244,7 +7547,6 @@ WERROR _svcctl_ControlService(pipes_struct *p,
 WERROR _svcctl_EnumDependentServicesW(pipes_struct *p,
 				      struct svcctl_EnumDependentServicesW *r);
 WERROR _svcctl_query_service_status_ex( pipes_struct *p, SVCCTL_Q_QUERY_SERVICE_STATUSEX *q_u, SVCCTL_R_QUERY_SERVICE_STATUSEX *r_u );
-WERROR _svcctl_query_service_config( pipes_struct *p, SVCCTL_Q_QUERY_SERVICE_CONFIG *q_u, SVCCTL_R_QUERY_SERVICE_CONFIG *r_u );
 WERROR _svcctl_query_service_config2( pipes_struct *p, SVCCTL_Q_QUERY_SERVICE_CONFIG2 *q_u, SVCCTL_R_QUERY_SERVICE_CONFIG2 *r_u );
 WERROR _svcctl_LockServiceDatabase(pipes_struct *p,
 				   struct svcctl_LockServiceDatabase *r);
@@ -9467,16 +7769,16 @@ bool push_blocking_lock_request( struct byte_range_lock *br_lck,
 		uint32 lock_pid,
 		enum brl_type lock_type,
 		enum brl_flavour lock_flav,
-		SMB_BIG_UINT offset,
-		SMB_BIG_UINT count,
+		uint64_t offset,
+		uint64_t count,
 		uint32 blocking_pid);
 void cancel_pending_lock_requests_by_fid(files_struct *fsp, struct byte_range_lock *br_lck);
 void remove_pending_lock_requests_by_mid(int mid);
 bool blocking_lock_was_deferred(int mid);
 bool blocking_lock_cancel(files_struct *fsp,
 			uint32 lock_pid,
-			SMB_BIG_UINT offset,
-			SMB_BIG_UINT count,
+			uint64_t offset,
+			uint64_t count,
 			enum brl_flavour lock_flav,
 			unsigned char locktype,
                         NTSTATUS err);
@@ -9505,7 +7807,8 @@ NTSTATUS change_oem_password(struct samu *hnd, char *old_passwd, char *new_passw
 /* The following definitions come from smbd/close.c  */
 
 void set_close_write_time(struct files_struct *fsp, struct timespec ts);
-NTSTATUS close_file(files_struct *fsp, enum file_close_type close_type);
+NTSTATUS close_file(struct smb_request *req, files_struct *fsp,
+		    enum file_close_type close_type);
 void msg_close_file(struct messaging_context *msg_ctx,
 		    void *private_data,
 		    uint32_t msg_type,
@@ -9538,19 +7841,17 @@ int count_all_current_connections(void);
 bool claim_connection(connection_struct *conn, const char *name,
 		      uint32 msg_flags);
 bool register_message_flags(bool doreg, uint32 msg_flags);
-bool store_pipe_opendb( smb_np_struct *p );
-bool delete_pipe_opendb( smb_np_struct *p );
 
 /* The following definitions come from smbd/dfree.c  */
 
-SMB_BIG_UINT sys_disk_free(connection_struct *conn, const char *path, bool small_query, 
-                              SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfree,SMB_BIG_UINT *dsize);
-SMB_BIG_UINT get_dfree_info(connection_struct *conn,
+uint64_t sys_disk_free(connection_struct *conn, const char *path, bool small_query, 
+                              uint64_t *bsize,uint64_t *dfree,uint64_t *dsize);
+uint64_t get_dfree_info(connection_struct *conn,
 			const char *path,
 			bool small_query,
-			SMB_BIG_UINT *bsize,
-			SMB_BIG_UINT *dfree,
-			SMB_BIG_UINT *dsize);
+			uint64_t *bsize,
+			uint64_t *dfree,
+			uint64_t *dsize);
 
 /* The following definitions come from smbd/dir.c  */
 
@@ -9664,14 +7965,13 @@ void reply_unix_error(struct smb_request *req, uint8 defclass, uint32 defcode,
 /* The following definitions come from smbd/fake_file.c  */
 
 enum FAKE_FILE_TYPE is_fake_file(const char *fname);
-NTSTATUS open_fake_file(connection_struct *conn,
+NTSTATUS open_fake_file(struct smb_request *req, connection_struct *conn,
 				uint16_t current_vuid,
 				enum FAKE_FILE_TYPE fake_file_type,
 				const char *fname,
 				uint32 access_mask,
 				files_struct **result);
-void destroy_fake_file_handle(struct fake_file_handle **fh);
-NTSTATUS close_fake_file(files_struct *fsp);
+NTSTATUS close_fake_file(struct smb_request *req, files_struct *fsp);
 
 /* The following definitions come from smbd/file_access.c  */
 
@@ -9712,7 +8012,8 @@ NTSTATUS check_name(connection_struct *conn, const char *name);
 
 /* The following definitions come from smbd/files.c  */
 
-NTSTATUS file_new(connection_struct *conn, files_struct **result);
+NTSTATUS file_new(struct smb_request *req, connection_struct *conn,
+		  files_struct **result);
 void file_close_conn(connection_struct *conn);
 void file_close_pid(uint16 smbpid, int vuid);
 void file_init(void);
@@ -9725,15 +8026,12 @@ files_struct *file_find_di_first(struct file_id id);
 files_struct *file_find_di_next(files_struct *start_fsp);
 files_struct *file_find_print(void);
 void file_sync_all(connection_struct *conn);
-void file_free(files_struct *fsp);
+void file_free(struct smb_request *req, files_struct *fsp);
 files_struct *file_fnum(uint16 fnum);
-files_struct *file_fsp(uint16 fid);
-void file_chain_reset(void);
-NTSTATUS dup_file_fsp(files_struct *fsp,
-				uint32 access_mask,
-				uint32 share_access,
-				uint32 create_options,
-		      		files_struct **result);
+files_struct *file_fsp(struct smb_request *req, uint16 fid);
+NTSTATUS dup_file_fsp(struct smb_request *req, files_struct *fsp,
+		      uint32 access_mask, uint32 share_access,
+		      uint32 create_options, files_struct **result);
 
 /* The following definitions come from smbd/ipc.c  */
 
@@ -9925,9 +8223,10 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 				 			/* Information (FILE_EXISTS etc.) */
 			    int *pinfo,
 			    files_struct **result);
-NTSTATUS open_file_fchmod(connection_struct *conn, const char *fname,
+NTSTATUS open_file_fchmod(struct smb_request *req, connection_struct *conn,
+			  const char *fname,
 			  SMB_STRUCT_STAT *psbuf, files_struct **result);
-NTSTATUS close_file_fchmod(files_struct *fsp);
+NTSTATUS close_file_fchmod(struct smb_request *req, files_struct *fsp);
 NTSTATUS open_directory(connection_struct *conn,
 			struct smb_request *req,
 			const char *fname,
@@ -9954,7 +8253,7 @@ NTSTATUS create_file_unixpath(connection_struct *conn,
 			      uint32_t create_options,
 			      uint32_t file_attributes,
 			      uint32_t oplock_request,
-			      SMB_BIG_UINT allocation_size,
+			      uint64_t allocation_size,
 			      struct security_descriptor *sd,
 			      struct ea_list *ea_list,
 
@@ -9971,7 +8270,7 @@ NTSTATUS create_file(connection_struct *conn,
 		     uint32_t create_options,
 		     uint32_t file_attributes,
 		     uint32_t oplock_request,
-		     SMB_BIG_UINT allocation_size,
+		     uint64_t allocation_size,
 		     struct security_descriptor *sd,
 		     struct ea_list *ea_list,
 
@@ -10036,14 +8335,17 @@ void reply_pipe_close(connection_struct *conn, struct smb_request *req);
 
 /* The following definitions come from smbd/posix_acls.c  */
 
-NTSTATUS unpack_nt_owners(int snum, uid_t *puser, gid_t *pgrp, uint32 security_info_sent, SEC_DESC *psd);
+NTSTATUS unpack_nt_owners(int snum, uid_t *puser, gid_t *pgrp, uint32 security_info_sent, const SEC_DESC *psd);
 SMB_ACL_T free_empty_sys_acl(connection_struct *conn, SMB_ACL_T the_acl);
 NTSTATUS posix_fget_nt_acl(struct files_struct *fsp, uint32_t security_info,
 			   SEC_DESC **ppdesc);
 NTSTATUS posix_get_nt_acl(struct connection_struct *conn, const char *name,
 			  uint32_t security_info, SEC_DESC **ppdesc);
 int try_chown(connection_struct *conn, const char *fname, uid_t uid, gid_t gid);
-NTSTATUS set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd);
+NTSTATUS append_parent_acl(files_struct *fsp,
+				const SEC_DESC *pcsd,
+				SEC_DESC **pp_new_sd);
+NTSTATUS set_nt_acl(files_struct *fsp, uint32 security_info_sent, const SEC_DESC *psd);
 int get_acl_group_bits( connection_struct *conn, const char *fname, mode_t *mode );
 int chmod_acl(connection_struct *conn, const char *name, mode_t mode);
 int inherit_access_posix_acl(connection_struct *conn, const char *inherit_from_dir,
@@ -10095,18 +8397,18 @@ void smbd_process(void);
 
 /* The following definitions come from smbd/quotas.c  */
 
-bool disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize);
-bool disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize);
+bool disk_quotas(const char *path, uint64_t *bsize, uint64_t *dfree, uint64_t *dsize);
+bool disk_quotas(const char *path, uint64_t *bsize, uint64_t *dfree, uint64_t *dsize);
 bool disk_quotas(const char *path,
-		SMB_BIG_UINT *bsize,
-		SMB_BIG_UINT *dfree,
-		SMB_BIG_UINT *dsize);
-bool disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize);
-bool disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize);
-bool disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize);
-bool disk_quotas_vxfs(const char *name, char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize);
-bool disk_quotas(const char *path,SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfree,SMB_BIG_UINT *dsize);
-bool disk_quotas(const char *path,SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfree,SMB_BIG_UINT *dsize);
+		uint64_t *bsize,
+		uint64_t *dfree,
+		uint64_t *dsize);
+bool disk_quotas(const char *path, uint64_t *bsize, uint64_t *dfree, uint64_t *dsize);
+bool disk_quotas(const char *path, uint64_t *bsize, uint64_t *dfree, uint64_t *dsize);
+bool disk_quotas(const char *path, uint64_t *bsize, uint64_t *dfree, uint64_t *dsize);
+bool disk_quotas_vxfs(const char *name, char *path, uint64_t *bsize, uint64_t *dfree, uint64_t *dsize);
+bool disk_quotas(const char *path,uint64_t *bsize,uint64_t *dfree,uint64_t *dsize);
+bool disk_quotas(const char *path,uint64_t *bsize,uint64_t *dfree,uint64_t *dsize);
 
 /* The following definitions come from smbd/reply.c  */
 
@@ -10216,8 +8518,8 @@ NTSTATUS copy_file(TALLOC_CTX *ctx,
 			bool target_is_directory);
 void reply_copy(struct smb_request *req);
 uint32 get_lock_pid( char *data, int data_offset, bool large_file_format);
-SMB_BIG_UINT get_lock_count( char *data, int data_offset, bool large_file_format);
-SMB_BIG_UINT get_lock_offset( char *data, int data_offset, bool large_file_format, bool *err);
+uint64_t get_lock_count( char *data, int data_offset, bool large_file_format);
+uint64_t get_lock_offset( char *data, int data_offset, bool large_file_format, bool *err);
 void reply_lockingX(struct smb_request *req);
 void reply_readbmpx(struct smb_request *req);
 void reply_readbs(struct smb_request *req);
@@ -10335,8 +8637,8 @@ int sys_statvfs(const char *path, vfs_statvfs_struct *statbuf);
 
 /* The following definitions come from smbd/trans2.c  */
 
-SMB_BIG_UINT smb_roundup(connection_struct *conn, SMB_BIG_UINT val);
-SMB_BIG_UINT get_allocation_size(connection_struct *conn, files_struct *fsp, const SMB_STRUCT_STAT *sbuf);
+uint64_t smb_roundup(connection_struct *conn, uint64_t val);
+uint64_t get_allocation_size(connection_struct *conn, files_struct *fsp, const SMB_STRUCT_STAT *sbuf);
 NTSTATUS get_ea_value(TALLOC_CTX *mem_ctx, connection_struct *conn,
 		      files_struct *fsp, const char *fname,
 		      const char *ea_name, struct ea_struct *pea);
@@ -10420,7 +8722,7 @@ ssize_t vfs_pwrite_data(struct smb_request *req,
 			const char *buffer,
 			size_t N,
 			SMB_OFF_T offset);
-int vfs_allocate_file_space(files_struct *fsp, SMB_BIG_UINT len);
+int vfs_allocate_file_space(files_struct *fsp, uint64_t len);
 int vfs_set_filelen(files_struct *fsp, SMB_OFF_T len);
 int vfs_fill_sparse(files_struct *fsp, SMB_OFF_T len);
 SMB_OFF_T vfs_transfer_file(files_struct *in, files_struct *out, SMB_OFF_T n);

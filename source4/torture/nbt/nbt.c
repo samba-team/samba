@@ -18,7 +18,7 @@
 */
 
 #include "includes.h"
-#include "libcli/nbt/libnbt.h"
+#include "../libcli/nbt/libnbt.h"
 #include "torture/torture.h"
 #include "torture/nbt/proto.h"
 #include "torture/smbtorture.h"

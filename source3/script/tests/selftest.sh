@@ -166,9 +166,9 @@ cat >$SERVERCONFFILE<<EOF
 	domain logons = yes
 	time server = yes
 
-	add user script = $PERL $SRCDIR/lib/nss_wrapper/nss_wrapper.pl --path $NSS_WRAPPER_PASSWD --type passwd --action add --name %u
-	add machine script = $PERL $SRCDIR/lib/nss_wrapper/nss_wrapper.pl --path $NSS_WRAPPER_PASSWD --type passwd --action add --name %u
-	delete user script = $PERL $SRCDIR/lib/nss_wrapper/nss_wrapper.pl --path $NSS_WRAPPER_PASSWD --type passwd --action delete --name %u
+	add user script = $PERL $SRCDIR/../lib/nss_wrapper/nss_wrapper.pl --path $NSS_WRAPPER_PASSWD --type passwd --action add --name %u
+	add machine script = $PERL $SRCDIR/../lib/nss_wrapper/nss_wrapper.pl --path $NSS_WRAPPER_PASSWD --type passwd --action add --name %u
+	delete user script = $PERL $SRCDIR/../lib/nss_wrapper/nss_wrapper.pl --path $NSS_WRAPPER_PASSWD --type passwd --action delete --name %u
 
 	kernel oplocks = no
 	kernel change notify = no

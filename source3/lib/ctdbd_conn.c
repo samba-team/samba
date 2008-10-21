@@ -155,7 +155,7 @@ static NTSTATUS ctdbd_connect(TALLOC_CTX *mem_ctx,
  * Do we have a complete ctdb packet in the queue?
  */
 
-static bool ctdb_req_complete(const struct data_blob *data,
+static bool ctdb_req_complete(const DATA_BLOB *data,
 			      size_t *length,
 			      void *private_data)
 {
@@ -220,7 +220,7 @@ struct req_pull_state {
  * Pull a ctdb request out of the incoming packet queue
  */
 
-static NTSTATUS ctdb_req_pull(const struct data_blob *data,
+static NTSTATUS ctdb_req_pull(const DATA_BLOB *data,
 			      void *private_data)
 {
 	struct req_pull_state *state = (struct req_pull_state *)private_data;
@@ -260,7 +260,7 @@ static struct messaging_rec *ctdb_pull_messaging_rec(TALLOC_CTX *mem_ctx,
 	blob = data_blob_const(msg->data, msg->datalen);
 
 	ndr_err = ndr_pull_struct_blob(
-		&blob, result, result,
+		&blob, result, NULL, result,
 		(ndr_pull_flags_fn_t)ndr_pull_messaging_rec);
 
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -497,7 +497,7 @@ NTSTATUS ctdbd_messaging_connection(TALLOC_CTX *mem_ctx,
 /*
  * Packet handler to receive and handle a ctdb message
  */
-static NTSTATUS ctdb_handle_message(const struct data_blob *data,
+static NTSTATUS ctdb_handle_message(const DATA_BLOB *data,
 				    void *private_data)
 {
 	struct ctdbd_connection *conn = talloc_get_type_abort(
@@ -636,7 +636,7 @@ NTSTATUS ctdbd_messaging_send(struct ctdbd_connection *conn,
 	}
 
 	ndr_err = ndr_push_struct_blob(
-		&blob, mem_ctx, msg,
+		&blob, mem_ctx, NULL, msg,
 		(ndr_push_flags_fn_t)ndr_push_messaging_rec);
 
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -1025,7 +1025,7 @@ struct ctdbd_traverse_state {
  * Handle a traverse record coming in on the ctdbd connection
  */
 
-static NTSTATUS ctdb_traverse_handler(const struct data_blob *blob,
+static NTSTATUS ctdb_traverse_handler(const DATA_BLOB *blob,
 				      void *private_data)
 {
 	struct ctdbd_traverse_state *state =

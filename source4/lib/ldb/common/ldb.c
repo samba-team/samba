@@ -88,15 +88,14 @@ void ldb_set_default_dns(struct ldb_context *ldb)
 	};
 
 	tmp_ctx = talloc_new(ldb);
-	ret = ldb_search(ldb, ldb_dn_new(tmp_ctx, ldb, NULL), LDB_SCOPE_BASE,
-			 "(objectClass=*)", attrs, &res);
+	ret = ldb_search(ldb, tmp_ctx, &res, ldb_dn_new(tmp_ctx, ldb, NULL),
+			 LDB_SCOPE_BASE, attrs, "(objectClass=*)");
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return;
 	}
 
 	if (res->count != 1) {
-		talloc_free(res);
 		talloc_free(tmp_ctx);
 		return;
 	}
@@ -125,7 +124,6 @@ void ldb_set_default_dns(struct ldb_context *ldb)
 		ldb_set_opaque(ldb, "defaultNamingContext", tmp_dn);
 	}
 
-	talloc_free(res);
 	talloc_free(tmp_ctx);
 }
 
@@ -194,9 +192,6 @@ int ldb_connect(struct ldb_context *ldb, const char *url,
 			  url, ldb_errstring(ldb));
 		return LDB_ERR_OTHER;
 	}
-
-	/* TODO: get timeout from options if available there */
-	ldb->default_timeout = 300; /* set default to 5 minutes */
 
 	/* set the default base dn */
 	ldb_set_default_dns(ldb);
@@ -398,24 +393,44 @@ static int ldb_autotransaction_request(struct ldb_context *ldb,
 
 int ldb_wait(struct ldb_handle *handle, enum ldb_wait_type type)
 {
-	int ret;
+	struct event_context *ev;
+
 	if (!handle) {
-		return LDB_SUCCESS;
+		return LDB_ERR_UNAVAILABLE;
 	}
 
-	ret = handle->module->ops->wait(handle, type);
-	if (!ldb_errstring(handle->module->ldb)) {
-		/* Set a default error string, to place the blame somewhere */
-		ldb_asprintf_errstring(handle->module->ldb,
-					"error waiting on module %s: %s (%d)",
-					handle->module->ops->name,
-					ldb_strerror(ret), ret);
+	if (handle->state == LDB_ASYNC_DONE) {
+		return handle->status;
 	}
-	return ret;
+
+	ev = ldb_get_event_context(handle->ldb);
+	if (NULL == ev) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	switch (type) {
+	case LDB_WAIT_NONE:
+		event_loop_once(ev);
+		if (handle->state == LDB_ASYNC_DONE ||
+		    handle->status != LDB_SUCCESS) {
+			return handle->status;
+		}
+		break;
+
+	case LDB_WAIT_ALL:
+		while (handle->state != LDB_ASYNC_DONE) {
+			event_loop_once(ev);
+			if (handle->status != LDB_SUCCESS) {
+				return handle->status;
+			}
+		}
+		return handle->status;
+	}
+
+	return LDB_SUCCESS;
 }
 
 /* set the specified timeout or, if timeout is 0 set the default timeout */
-/* timeout == -1 means no timeout */
 int ldb_set_timeout(struct ldb_context *ldb,
 		    struct ldb_request *req,
 		    int timeout)
@@ -437,20 +452,14 @@ int ldb_set_timeout_from_prev_req(struct ldb_context *ldb,
 				  struct ldb_request *oldreq,
 				  struct ldb_request *newreq)
 {
-	time_t now;
-
 	if (newreq == NULL) return LDB_ERR_OPERATIONS_ERROR;
 
-	now = time(NULL);
-
-	if (oldreq == NULL)
+	if (oldreq == NULL) {
 		return ldb_set_timeout(ldb, newreq, 0);
-
-	if ((now - oldreq->starttime) > oldreq->timeout) {
-		return LDB_ERR_TIME_LIMIT_EXCEEDED;
 	}
+
 	newreq->starttime = oldreq->starttime;
-	newreq->timeout = oldreq->timeout - (now - oldreq->starttime);
+	newreq->timeout = oldreq->timeout;
 
 	return LDB_SUCCESS;
 }
@@ -485,6 +494,11 @@ int ldb_request(struct ldb_context *ldb, struct ldb_request *req)
 	struct ldb_module *module;
 	int ret;
 
+	if (req->callback == NULL) {
+		ldb_set_errstring(ldb, "Requests MUST define callbacks");
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+
 	ldb_reset_err_string(ldb);
 
 	/* call the first module in the chain */
@@ -513,10 +527,6 @@ int ldb_request(struct ldb_context *ldb, struct ldb_request *req)
 		FIRST_OP(ldb, extended);
 		ret = module->ops->extended(module, req);
 		break;
-	case LDB_SEQUENCE_NUMBER:
-		FIRST_OP(ldb, sequence_number);
-		ret = module->ops->sequence_number(module, req);
-		break;
 	default:
 		FIRST_OP(ldb, request);
 		ret = module->ops->request(module, req);
@@ -524,6 +534,13 @@ int ldb_request(struct ldb_context *ldb, struct ldb_request *req)
 	}
 
 	return ret;
+}
+
+int ldb_request_done(struct ldb_request *req, int status)
+{
+	req->handle->state = LDB_ASYNC_DONE;
+	req->handle->status = status;
+	return status;
 }
 
 /*
@@ -534,32 +551,27 @@ int ldb_request(struct ldb_context *ldb, struct ldb_request *req)
   Use talloc_free to free the ldb_message returned in 'res', if successful
 
 */
-int ldb_search_default_callback(struct ldb_context *ldb,
-				void *context,
+int ldb_search_default_callback(struct ldb_request *req,
 				struct ldb_reply *ares)
 {
 	struct ldb_result *res;
 	int n;
 
- 	if (!context) {
-		ldb_set_errstring(ldb, "NULL Context in callback");
-		return LDB_ERR_OPERATIONS_ERROR;
+	res = talloc_get_type(req->context, struct ldb_result);
+
+	if (!ares) {
+		return ldb_request_done(req, LDB_ERR_OPERATIONS_ERROR);
 	}
-
-	res = talloc_get_type(context, struct ldb_result);
-
-	if (!res || !ares) {
-		ldb_set_errstring(ldb, "NULL res or ares in callback");
-		goto error;
+	if (ares->error != LDB_SUCCESS) {
+		return ldb_request_done(req, ares->error);
 	}
 
 	switch (ares->type) {
 	case LDB_REPLY_ENTRY:
 		res->msgs = talloc_realloc(res, res->msgs,
-					   struct ldb_message *,
-					   res->count + 2);
+					struct ldb_message *, res->count + 2);
 		if (! res->msgs) {
-			goto error;
+			return ldb_request_done(req, LDB_ERR_OPERATIONS_ERROR);
 		}
 
 		res->msgs[res->count + 1] = NULL;
@@ -567,6 +579,7 @@ int ldb_search_default_callback(struct ldb_context *ldb,
 		res->msgs[res->count] = talloc_move(res->msgs, &ares->message);
 		res->count++;
 		break;
+
 	case LDB_REPLY_REFERRAL:
 		if (res->refs) {
 			for (n = 0; res->refs[n]; n++) /*noop*/ ;
@@ -576,37 +589,63 @@ int ldb_search_default_callback(struct ldb_context *ldb,
 
 		res->refs = talloc_realloc(res, res->refs, char *, n + 2);
 		if (! res->refs) {
-			goto error;
+			return ldb_request_done(req, LDB_ERR_OPERATIONS_ERROR);
 		}
 
 		res->refs[n] = talloc_move(res->refs, &ares->referral);
 		res->refs[n + 1] = NULL;
 		break;
-	case LDB_REPLY_EXTENDED:
+
 	case LDB_REPLY_DONE:
 		/* TODO: we should really support controls on entries
 		 * and referrals too! */
 		res->controls = talloc_move(res, &ares->controls);
-		break;
+
+		/* this is the last message, and means the request is done */
+		/* we have to signal and eventual ldb_wait() waiting that the
+		 * async request operation was completed */
+		return ldb_request_done(req, LDB_SUCCESS);
 	}
+
 	talloc_free(ares);
 	return LDB_SUCCESS;
-
-error:
-	talloc_free(ares);
-	return LDB_ERR_OPERATIONS_ERROR;
 }
 
-int ldb_build_search_req(struct ldb_request **ret_req,
+int ldb_op_default_callback(struct ldb_request *req, struct ldb_reply *ares)
+{
+	int ret;
+
+	if (!ares) {
+		return ldb_request_done(req, LDB_ERR_OPERATIONS_ERROR);
+	}
+
+	if (ares->error != LDB_SUCCESS) {
+		ret = ares->error;
+		talloc_free(ares);
+		return ldb_request_done(req, ret);
+	}
+
+	if (ares->type != LDB_REPLY_DONE) {
+		talloc_free(ares);
+		ldb_set_errstring(req->handle->ldb, "Invalid reply type!");
+		return ldb_request_done(req, LDB_ERR_OPERATIONS_ERROR);
+	}
+
+	talloc_free(ares);
+	return ldb_request_done(req, LDB_SUCCESS);
+}
+
+int ldb_build_search_req_ex(struct ldb_request **ret_req,
 			struct ldb_context *ldb,
 			void *mem_ctx,
 			struct ldb_dn *base,
 	       		enum ldb_scope scope,
-			const char *expression,
+			struct ldb_parse_tree *tree,
 			const char * const *attrs,
 			struct ldb_control **controls,
 			void *context,
-			ldb_request_callback_t callback)
+			ldb_request_callback_t callback,
+			struct ldb_request *parent)
 {
 	struct ldb_request *req;
 
@@ -614,7 +653,7 @@ int ldb_build_search_req(struct ldb_request **ret_req,
 
 	req = talloc(mem_ctx, struct ldb_request);
 	if (req == NULL) {
-		ldb_set_errstring(ldb, "Out of Memory");
+		ldb_oom(ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -626,9 +665,9 @@ int ldb_build_search_req(struct ldb_request **ret_req,
 	}
 	req->op.search.scope = scope;
 
-	req->op.search.tree = ldb_parse_tree(req, expression);
+	req->op.search.tree = tree;
 	if (req->op.search.tree == NULL) {
-		ldb_set_errstring(ldb, "Unable to parse search expression");
+		ldb_set_errstring(ldb, "'tree' can't be NULL");
 		talloc_free(req);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -638,8 +677,46 @@ int ldb_build_search_req(struct ldb_request **ret_req,
 	req->context = context;
 	req->callback = callback;
 
+	ldb_set_timeout_from_prev_req(ldb, parent, req);
+
+	req->handle = ldb_handle_new(req, ldb);
+	if (req->handle == NULL) {
+		ldb_oom(ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
 	*ret_req = req;
 	return LDB_SUCCESS;
+}
+
+int ldb_build_search_req(struct ldb_request **ret_req,
+			struct ldb_context *ldb,
+			void *mem_ctx,
+			struct ldb_dn *base,
+			enum ldb_scope scope,
+			const char *expression,
+			const char * const *attrs,
+			struct ldb_control **controls,
+			void *context,
+			ldb_request_callback_t callback,
+			struct ldb_request *parent)
+{
+	struct ldb_parse_tree *tree;
+	int ret;
+
+	tree = ldb_parse_tree(mem_ctx, expression);
+	if (tree == NULL) {
+		ldb_set_errstring(ldb, "Unable to parse search expression");
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	ret = ldb_build_search_req_ex(ret_req, ldb, mem_ctx, base,
+				      scope, tree, attrs, controls,
+				      context, callback, parent);
+	if (ret == LDB_SUCCESS) {
+		talloc_steal(*ret_req, tree);
+	}
+	return ret;
 }
 
 int ldb_build_add_req(struct ldb_request **ret_req,
@@ -648,7 +725,8 @@ int ldb_build_add_req(struct ldb_request **ret_req,
 			const struct ldb_message *message,
 			struct ldb_control **controls,
 			void *context,
-			ldb_request_callback_t callback)
+			ldb_request_callback_t callback,
+			struct ldb_request *parent)
 {
 	struct ldb_request *req;
 
@@ -666,6 +744,14 @@ int ldb_build_add_req(struct ldb_request **ret_req,
 	req->context = context;
 	req->callback = callback;
 
+	ldb_set_timeout_from_prev_req(ldb, parent, req);
+
+	req->handle = ldb_handle_new(req, ldb);
+	if (req->handle == NULL) {
+		ldb_oom(ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
 	*ret_req = req;
 
 	return LDB_SUCCESS;
@@ -677,7 +763,8 @@ int ldb_build_mod_req(struct ldb_request **ret_req,
 			const struct ldb_message *message,
 			struct ldb_control **controls,
 			void *context,
-			ldb_request_callback_t callback)
+			ldb_request_callback_t callback,
+			struct ldb_request *parent)
 {
 	struct ldb_request *req;
 
@@ -695,6 +782,14 @@ int ldb_build_mod_req(struct ldb_request **ret_req,
 	req->context = context;
 	req->callback = callback;
 
+	ldb_set_timeout_from_prev_req(ldb, parent, req);
+
+	req->handle = ldb_handle_new(req, ldb);
+	if (req->handle == NULL) {
+		ldb_oom(ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
 	*ret_req = req;
 
 	return LDB_SUCCESS;
@@ -706,7 +801,8 @@ int ldb_build_del_req(struct ldb_request **ret_req,
 			struct ldb_dn *dn,
 			struct ldb_control **controls,
 			void *context,
-			ldb_request_callback_t callback)
+			ldb_request_callback_t callback,
+			struct ldb_request *parent)
 {
 	struct ldb_request *req;
 
@@ -724,6 +820,14 @@ int ldb_build_del_req(struct ldb_request **ret_req,
 	req->context = context;
 	req->callback = callback;
 
+	ldb_set_timeout_from_prev_req(ldb, parent, req);
+
+	req->handle = ldb_handle_new(req, ldb);
+	if (req->handle == NULL) {
+		ldb_oom(ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
 	*ret_req = req;
 
 	return LDB_SUCCESS;
@@ -736,7 +840,8 @@ int ldb_build_rename_req(struct ldb_request **ret_req,
 			struct ldb_dn *newdn,
 			struct ldb_control **controls,
 			void *context,
-			ldb_request_callback_t callback)
+			ldb_request_callback_t callback,
+			struct ldb_request *parent)
 {
 	struct ldb_request *req;
 
@@ -755,47 +860,46 @@ int ldb_build_rename_req(struct ldb_request **ret_req,
 	req->context = context;
 	req->callback = callback;
 
+	ldb_set_timeout_from_prev_req(ldb, parent, req);
+
+	req->handle = ldb_handle_new(req, ldb);
+	if (req->handle == NULL) {
+		ldb_oom(ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
 	*ret_req = req;
 
 	return LDB_SUCCESS;
 }
 
-int ldb_extended_default_callback(struct ldb_context *ldb,
-				  void *context,
+int ldb_extended_default_callback(struct ldb_request *req,
 				  struct ldb_reply *ares)
 {
 	struct ldb_result *res;
 
- 	if (!context) {
-		ldb_set_errstring(ldb, "NULL Context in callback");
-		return LDB_ERR_OPERATIONS_ERROR;
+	res = talloc_get_type(req->context, struct ldb_result);
+
+	if (!ares) {
+		return ldb_request_done(req, LDB_ERR_OPERATIONS_ERROR);
+	}
+	if (ares->error != LDB_SUCCESS) {
+		return ldb_request_done(req, ares->error);
 	}
 
-	res = talloc_get_type(context, struct ldb_result);
-	if (!res || !ares) {
-		ldb_set_errstring(ldb, "NULL res or ares in callback");
-		goto error;
-	}
+	if (ares->type == LDB_REPLY_DONE) {
 
-	switch (ares->type) {
-	case LDB_REPLY_ENTRY:
-	case LDB_REPLY_REFERRAL:
-	case LDB_REPLY_DONE:
-		ldb_set_errstring(ldb, "invalid ares type in callback");
-		goto error;
-	case LDB_REPLY_EXTENDED:
-		/* TODO: we should really support controls on entries and
-		 * referrals too! */
+		/* TODO: we should really support controls on entries and referrals too! */
 		res->extended = talloc_move(res, &ares->response);
 		res->controls = talloc_move(res, &ares->controls);
-		break;
-	}
-	talloc_free(ares);
-	return LDB_SUCCESS;
 
-error:
+		talloc_free(ares);
+		return ldb_request_done(req, LDB_SUCCESS);
+	}
+
 	talloc_free(ares);
-	return LDB_ERR_OPERATIONS_ERROR;
+	ldb_set_errstring(req->handle->ldb, "Invalid reply type!");
+	return ldb_request_done(req, LDB_ERR_OPERATIONS_ERROR);
 }
 
 int ldb_build_extended_req(struct ldb_request **ret_req,
@@ -805,7 +909,8 @@ int ldb_build_extended_req(struct ldb_request **ret_req,
 			   void *data,
 			   struct ldb_control **controls,
 			   void *context,
-			   ldb_request_callback_t callback)
+			   ldb_request_callback_t callback,
+			   struct ldb_request *parent)
 {
 	struct ldb_request *req;
 
@@ -823,6 +928,14 @@ int ldb_build_extended_req(struct ldb_request **ret_req,
 	req->controls = controls;
 	req->context = context;
 	req->callback = callback;
+
+	ldb_set_timeout_from_prev_req(ldb, parent, req);
+
+	req->handle = ldb_handle_new(req, ldb);
+	if (req->handle == NULL) {
+		ldb_oom(ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
 
 	*ret_req = req;
 
@@ -847,7 +960,8 @@ int ldb_extended(struct ldb_context *ldb,
 
 	ret = ldb_build_extended_req(&req, ldb, ldb,
 				     oid, data, NULL,
-				     res, ldb_extended_default_callback);
+				     res, ldb_extended_default_callback,
+				     NULL);
 	if (ret != LDB_SUCCESS) goto done;
 
 	ldb_set_timeout(ldb, req, 0); /* use default timeout */
@@ -873,36 +987,48 @@ done:
   note that ldb_search() will automatically replace a NULL 'base' value
   with the defaultNamingContext from the rootDSE if available.
 */
-int ldb_search(struct ldb_context *ldb,
-	       struct ldb_dn *base,
-	       enum ldb_scope scope,
-	       const char *expression,
-	       const char * const *attrs,
-	       struct ldb_result **_res)
+int ldb_search(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
+		struct ldb_result **result, struct ldb_dn *base,
+		enum ldb_scope scope, const char * const *attrs,
+		const char *exp_fmt, ...)
 {
 	struct ldb_request *req;
-	int ret;
 	struct ldb_result *res;
+	char *expression;
+	va_list ap;
+	int ret;
 
-	*_res = NULL;
+	expression = NULL;
+	*result = NULL;
+	req = NULL;
 
-	res = talloc_zero(ldb, struct ldb_result);
+	res = talloc_zero(mem_ctx, struct ldb_result);
 	if (!res) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ret = ldb_build_search_req(&req, ldb, ldb,
+	if (exp_fmt) {
+		va_start(ap, exp_fmt);
+		expression = talloc_vasprintf(mem_ctx, exp_fmt, ap);
+		va_end(ap);
+
+		if (!expression) {
+			talloc_free(res);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+	}
+
+	ret = ldb_build_search_req(&req, ldb, mem_ctx,
 					base?base:ldb_get_default_basedn(ldb),
 	       				scope,
 					expression,
 					attrs,
 					NULL,
 					res,
-					ldb_search_default_callback);
+					ldb_search_default_callback,
+					NULL);
 
 	if (ret != LDB_SUCCESS) goto done;
-
-	ldb_set_timeout(ldb, req, 0); /* use default timeout */
 
 	ret = ldb_request(ldb, req);
 
@@ -910,58 +1036,22 @@ int ldb_search(struct ldb_context *ldb,
 		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
 	}
 
-	talloc_free(req);
-
 done:
 	if (ret != LDB_SUCCESS) {
 		talloc_free(res);
-	}
-
-	*_res = res;
-	return ret;
-}
-
-/*
- a useful search function where you can easily define the expression and that
- takes a memory context where results are allocated
-*/
-
-int ldb_search_exp_fmt(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
-			struct ldb_result **result, struct ldb_dn *base,
-			enum ldb_scope scope, const char * const *attrs,
-                        const char *exp_fmt, ...)
-{
-	struct ldb_result *res;
-	char *expression;
-	va_list ap;
-	int ret;
-
-	res = NULL;
-	*result = NULL;
-
-	va_start(ap, exp_fmt);
-	expression = talloc_vasprintf(mem_ctx, exp_fmt, ap);
-	va_end(ap);
-
-	if ( ! expression) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	ret = ldb_search(ldb, base, scope, expression, attrs, &res);
-
-	if (ret == LDB_SUCCESS) {
-		talloc_steal(mem_ctx, res);
-		*result = res;
+		res = NULL;
 	}
 
 	talloc_free(expression);
+	talloc_free(req);
 
+	*result = res;
 	return ret;
 }
 
 /*
-  add a record to the database. Will fail if a record with the
-  given class and key already exists
+  add a record to the database. Will fail if a record with the given class
+  and key already exists
 */
 int ldb_add(struct ldb_context *ldb,
 	    const struct ldb_message *message)
@@ -978,11 +1068,10 @@ int ldb_add(struct ldb_context *ldb,
 					message,
 					NULL,
 					NULL,
+					ldb_op_default_callback,
 					NULL);
 
 	if (ret != LDB_SUCCESS) return ret;
-
-	ldb_set_timeout(ldb, req, 0); /* use default timeout */
 
 	/* do request and autostart a transaction */
 	ret = ldb_autotransaction_request(ldb, req);
@@ -1009,11 +1098,10 @@ int ldb_modify(struct ldb_context *ldb,
 					message,
 					NULL,
 					NULL,
+					ldb_op_default_callback,
 					NULL);
 
 	if (ret != LDB_SUCCESS) return ret;
-
-	ldb_set_timeout(ldb, req, 0); /* use default timeout */
 
 	/* do request and autostart a transaction */
 	ret = ldb_autotransaction_request(ldb, req);
@@ -1035,11 +1123,10 @@ int ldb_delete(struct ldb_context *ldb, struct ldb_dn *dn)
 					dn,
 					NULL,
 					NULL,
+					ldb_op_default_callback,
 					NULL);
 
 	if (ret != LDB_SUCCESS) return ret;
-
-	ldb_set_timeout(ldb, req, 0); /* use default timeout */
 
 	/* do request and autostart a transaction */
 	ret = ldb_autotransaction_request(ldb, req);
@@ -1062,11 +1149,10 @@ int ldb_rename(struct ldb_context *ldb,
 					newdn,
 					NULL,
 					NULL,
+					ldb_op_default_callback,
 					NULL);
 
 	if (ret != LDB_SUCCESS) return ret;
-
-	ldb_set_timeout(ldb, req, 0); /* use default timeout */
 
 	/* do request and autostart a transaction */
 	ret = ldb_autotransaction_request(ldb, req);
@@ -1080,37 +1166,48 @@ int ldb_rename(struct ldb_context *ldb,
   return the global sequence number
 */
 int ldb_sequence_number(struct ldb_context *ldb,
-			enum ldb_sequence_type type,
-			uint64_t *seq_num)
+			enum ldb_sequence_type type, uint64_t *seq_num)
 {
-	struct ldb_request *req;
+	struct ldb_seqnum_request *seq;
+	struct ldb_seqnum_result *seqr;
+	struct ldb_result *res;
+	TALLOC_CTX *tmp_ctx;
 	int ret;
 
-	req = talloc(ldb, struct ldb_request);
-	if (req == NULL) {
+	*seq_num = 0;
+
+	tmp_ctx = talloc_zero(ldb, struct ldb_request);
+	if (tmp_ctx == NULL) {
 		ldb_set_errstring(ldb, "Out of Memory");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-
-	req->operation = LDB_SEQUENCE_NUMBER;
-	req->controls = NULL;
-	req->context = NULL;
-	req->callback = NULL;
-	ldb_set_timeout(ldb, req, 0); /* use default timeout */
-
-	req->op.seq_num.type = type;
-	/* do request and autostart a transaction */
-	ret = ldb_request(ldb, req);
-
-	if (ret == LDB_SUCCESS) {
-		*seq_num = req->op.seq_num.seq_num;
+	seq = talloc_zero(tmp_ctx, struct ldb_seqnum_request);
+	if (seq == NULL) {
+		ldb_set_errstring(ldb, "Out of Memory");
+		ret = LDB_ERR_OPERATIONS_ERROR;
+		goto done;
 	}
+	seq->type = type;
 
-	talloc_free(req);
+	ret = ldb_extended(ldb, LDB_EXTENDED_SEQUENCE_NUMBER, seq, &res);
+	if (ret != LDB_SUCCESS) {
+		goto done;
+	}
+	talloc_steal(tmp_ctx, res);
+
+	if (strcmp(LDB_EXTENDED_SEQUENCE_NUMBER, res->extended->oid) != 0) {
+		ldb_set_errstring(ldb, "Invalid OID in reply");
+		ret = LDB_ERR_OPERATIONS_ERROR;
+		goto done;
+	}
+	seqr = talloc_get_type(res->extended->data,
+				struct ldb_seqnum_result);
+	*seq_num = seqr->seq_num;
+
+done:
+	talloc_free(tmp_ctx);
 	return ret;
 }
-
-
 
 /*
   return extended error information

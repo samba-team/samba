@@ -62,7 +62,7 @@ admin_sid=`$wbinfo -n "$DOMAIN/$USERNAME" | cut -d " " -f1`
 echo "$DOMAIN/$USERNAME resolved to $admin_sid"
 
 testit "wbinfo -s $admin_sid against $TARGET" $wbinfo -s $admin_sid || failed=`expr $failed + 1`
-admin_name=`wbinfo -s $admin_sid | cut -d " " -f1| tr a-z A-Z`
+admin_name=`$wbinfo -s $admin_sid | cut -d " " -f1| tr a-z A-Z`
 echo "$admin_sid resolved to $admin_name"
 
 tested_name=`echo $DOMAIN/$USERNAME | tr a-z A-Z`
@@ -100,7 +100,7 @@ else
 	echo "success: wbinfo -U check for sane mapping"
 fi
 
-admin_uid=`wbinfo -U $admin_sid`
+admin_uid=`$wbinfo -U $admin_sid`
 
 testit "wbinfo -G against $TARGET" $wbinfo -G 30000 || failed=`expr $failed + 1`
 
@@ -149,7 +149,7 @@ testit "wbinfo --all-domains against $TARGET" $wbinfo --all-domains || failed=`e
 testit "wbinfo --own-domain against $TARGET" $wbinfo --own-domain || failed=`expr $failed + 1`
 
 echo "test: wbinfo --own-domain against $TARGET check output"
-own_domain=`wbinfo --own-domain`
+own_domain=`$wbinfo --own-domain`
 if test x$own_domain = x$DOMAIN; then
 	echo "success: wbinfo --own-domain against $TARGET check output"
 else

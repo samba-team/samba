@@ -19,9 +19,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "lib/replace/replace.h"
+#include "../replace/replace.h"
+#include "heimdal/lib/gssapi/gssapi_mech.h"
 
-void *__gss_ntlm_initialize(void)
+gssapi_mech_interface __gss_ntlm_initialize(void)
 {
 	return NULL;
 }

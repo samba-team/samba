@@ -22,11 +22,11 @@
 */
 #include "includes.h"
 #include "lib/events/events.h"
-#include "lib/tdb/include/tdb.h"
+#include "../tdb/include/tdb.h"
 #include "system/network.h"
 #include "system/filesys.h"
 #include "../include/ctdb_private.h"
-#include "lib/util/dlinklist.h"
+#include "../lib/util/dlinklist.h"
 
 /*
   this dispatches the messages to the registered ctdb message handler

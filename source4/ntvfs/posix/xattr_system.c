@@ -21,7 +21,7 @@
 
 #include "includes.h"
 #include "vfs_posix.h"
-#include "lib/util/wrap_xattr.h"
+#include "../lib/util/wrap_xattr.h"
 
 /*
   pull a xattr as a blob, from either a file or a file descriptor

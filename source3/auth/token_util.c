@@ -84,7 +84,7 @@ NT_USER_TOKEN *get_root_nt_token( void )
 
 	cache_data = memcache_lookup_talloc(
 		NULL, SINGLETON_CACHE_TALLOC,
-		data_blob_string_const("root_nt_token"));
+		data_blob_string_const_null("root_nt_token"));
 
 	if (cache_data != NULL) {
 		return talloc_get_type_abort(
@@ -109,7 +109,7 @@ NT_USER_TOKEN *get_root_nt_token( void )
 
 	memcache_add_talloc(
 		NULL, SINGLETON_CACHE_TALLOC,
-		data_blob_string_const("root_nt_token"), token);
+		data_blob_string_const_null("root_nt_token"), token);
 
 	return token;
 }

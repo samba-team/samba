@@ -30,7 +30,7 @@
 
 static pid_t initialised;
 static int select_pipe[2];
-static VOLATILE unsigned pipe_written, pipe_read;
+static volatile unsigned pipe_written, pipe_read;
 
 /*******************************************************************
  Call this from all Samba signal handlers if you want to avoid a 
@@ -161,7 +161,7 @@ int sys_select_intr(int maxfd, fd_set *readfds, fd_set *writefds, fd_set *errorf
 			errorfds_buf = *errorfds;
 		if (ptval && (errno == EINTR)) {
 			struct timeval now_time;
-			SMB_BIG_INT tdif;
+			int64_t tdif;
 
 			GetTimeOfDay(&now_time);
 			tdif = usec_time_diff(&end_time, &now_time);

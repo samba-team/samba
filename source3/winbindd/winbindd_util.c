@@ -111,7 +111,16 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 	const char *alternative_name = NULL;
 	char *idmap_config_option;
 	const char *param;
+	const char **ignored_domains, **dom;
 	
+	ignored_domains = lp_parm_string_list(-1, "winbind", "ignore domains", NULL);
+	for (dom=ignored_domains; dom && *dom; dom++) {
+		if (gen_fnmatch(*dom, domain_name) == 0) {
+			DEBUG(2,("Ignoring domain '%s'\n", domain_name));
+			return NULL;
+		}
+	}
+
 	/* ignore alt_name if we are not in an AD domain */
 	
 	if ( (lp_security() == SEC_ADS) && alt_name && *alt_name) {
@@ -436,6 +445,10 @@ static void rescan_forest_root_trusts( void )
 						&dom_list[i].sid );
 		}
 
+		if (d == NULL) {
+			continue;
+		}
+
        		DEBUG(10,("rescan_forest_root_trusts: Following trust path "
 			  "for domain tree root %s (%s)\n",
 	       		  d->name, d->alt_name ));
@@ -499,6 +512,10 @@ static void rescan_forest_trusts( void )
 							dom_list[i].dns_name,
 							&cache_methods,
 							&dom_list[i].sid );
+			}
+
+			if (d == NULL) {
+				continue;
 			}
 			
 			DEBUG(10,("Following trust path for domain %s (%s)\n",
@@ -1058,13 +1075,12 @@ void free_getent_state(struct getent_state *state)
 	temp = state;
 
 	while(temp != NULL) {
-		struct getent_state *next;
+		struct getent_state *next = temp->next;
 
 		/* Free sam entries then list entry */
 
 		SAFE_FREE(state->sam_entries);
 		DLIST_REMOVE(state, state);
-		next = temp->next;
 
 		SAFE_FREE(temp);
 		temp = next;
@@ -1160,7 +1176,7 @@ void parse_add_domuser(void *buf, char *domuser, int *len)
 		}
 	}
 
-	safe_strcpy(buf, user, *len);
+	safe_strcpy((char *)buf, user, *len);
 }
 
 /* Ensure an incoming username from NSS is fully qualified. Replace the
@@ -1211,6 +1227,33 @@ void fill_domain_username(fstring name, const char *domain, const char *user, bo
 			 domain, *lp_winbind_separator(),
 			 tmp_user);
 	}
+}
+
+/**
+ * talloc version of fill_domain_username()
+ * return NULL on talloc failure.
+ */
+char *fill_domain_username_talloc(TALLOC_CTX *mem_ctx,
+				  const char *domain,
+				  const char *user,
+				  bool can_assume)
+{
+	char *tmp_user, *name;
+
+	tmp_user = talloc_strdup(mem_ctx, user);
+	strlower_m(tmp_user);
+
+	if (can_assume && assume_domain(domain)) {
+		name = tmp_user;
+	} else {
+		name = talloc_asprintf(mem_ctx, "%s%c%s",
+				       domain,
+				       *lp_winbind_separator(),
+				       tmp_user);
+		TALLOC_FREE(tmp_user);
+	}
+
+	return name;
 }
 
 /*
@@ -1378,34 +1421,107 @@ NTSTATUS lookup_usergroups_cached(struct winbindd_domain *domain,
  We use this to remove spaces from user and group names
 ********************************************************************/
 
-void ws_name_replace( char *name, char replace )
+NTSTATUS normalize_name_map(TALLOC_CTX *mem_ctx,
+			     struct winbindd_domain *domain,
+			     char *name,
+			     char **normalized)
 {
-	char replace_char[2] = { 0x0, 0x0 };
-    
-	if ( !lp_winbind_normalize_names() || (replace == '\0') ) 
-		return;
+	NTSTATUS nt_status;
 
-	replace_char[0] = replace;	
-	all_string_sub( name, " ", replace_char, 0 );
+	if (!name || !normalized) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
-	return;	
+	if (!lp_winbind_normalize_names()) {
+		return NT_STATUS_PROCEDURE_NOT_FOUND;
+	}
+
+	/* Alias support and whitespace replacement are mutually
+	   exclusive */
+
+	nt_status = resolve_username_to_alias(mem_ctx, domain,
+					      name, normalized );
+	if (NT_STATUS_IS_OK(nt_status)) {
+		/* special return code to let the caller know we
+		   mapped to an alias */
+		return NT_STATUS_FILE_RENAMED;
+	}
+
+	/* check for an unreachable domain */
+
+	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND)) {
+		DEBUG(5,("normalize_name_map: Setting domain %s offline\n",
+			 domain->name));
+		set_domain_offline(domain);
+		return nt_status;
+	}
+
+	/* deal with whitespace */
+
+	*normalized = talloc_strdup(mem_ctx, name);
+	if (!(*normalized)) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	all_string_sub( *normalized, " ", "_", 0 );
+
+	return NT_STATUS_OK;
 }
 
 /*********************************************************************
- We use this to do the inverse of ws_name_replace()
+ We use this to do the inverse of normalize_name_map()
 ********************************************************************/
 
-void ws_name_return( char *name, char replace )
+NTSTATUS normalize_name_unmap(TALLOC_CTX *mem_ctx,
+			      char *name,
+			      char **normalized)
 {
-	char replace_char[2] = { 0x0, 0x0 };
-    
-	if ( !lp_winbind_normalize_names() || (replace == '\0') ) 
-		return;
-	
-	replace_char[0] = replace;	
-	all_string_sub( name, replace_char, " ", 0 );
+	NTSTATUS nt_status;
+	struct winbindd_domain *domain = find_our_domain();
 
-	return;	
+	if (!name || !normalized) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	
+	if (!lp_winbind_normalize_names()) {
+		return NT_STATUS_PROCEDURE_NOT_FOUND;
+	}
+
+	/* Alias support and whitespace replacement are mutally
+	   exclusive */
+
+	/* When mapping from an alias to a username, we don't know the
+	   domain.  But we only need a domain structure to cache
+	   a successful lookup , so just our own domain structure for
+	   the seqnum. */
+
+	nt_status = resolve_alias_to_username(mem_ctx, domain,
+					      name, normalized);
+	if (NT_STATUS_IS_OK(nt_status)) {
+		/* Special return code to let the caller know we mapped
+		   from an alias */
+		return NT_STATUS_FILE_RENAMED;
+	}
+
+	/* check for an unreachable domain */
+
+	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND)) {
+		DEBUG(5,("normalize_name_unmap: Setting domain %s offline\n",
+			 domain->name));
+		set_domain_offline(domain);
+		return nt_status;
+	}
+
+	/* deal with whitespace */
+
+	*normalized = talloc_strdup(mem_ctx, name);
+	if (!(*normalized)) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	all_string_sub(*normalized, "_", " ", 0);
+
+	return NT_STATUS_OK;
 }
 
 /*********************************************************************

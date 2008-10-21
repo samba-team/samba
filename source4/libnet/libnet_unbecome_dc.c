@@ -289,7 +289,7 @@ static void unbecomeDC_recv_cldap(struct cldap_request *req)
 	c->status = cldap_netlogon_recv(req, s, &s->cldap.io);
 	if (!composite_is_ok(c)) return;
 
-	s->cldap.netlogon = s->cldap.io.out.netlogon.nt5_ex;
+	s->cldap.netlogon = s->cldap.io.out.netlogon.data.nt5_ex;
 
 	s->domain.dns_name		= s->cldap.netlogon.dns_domain;
 	s->domain.netbios_name		= s->cldap.netlogon.domain;
@@ -337,8 +337,8 @@ static NTSTATUS unbecomeDC_ldap_rootdse(struct libnet_UnbecomeDC_state *s)
 	basedn = ldb_dn_new(s, s->ldap.ldb, NULL);
 	NT_STATUS_HAVE_NO_MEMORY(basedn);
 
-	ret = ldb_search(s->ldap.ldb, basedn, LDB_SCOPE_BASE, 
-			 "(objectClass=*)", attrs, &r);
+	ret = ldb_search(s->ldap.ldb, s, &r, basedn, LDB_SCOPE_BASE, attrs,
+			 "(objectClass=*)");
 	talloc_free(basedn);
 	if (ret != LDB_SUCCESS) {
 		return NT_STATUS_LDAP(ret);
@@ -346,7 +346,6 @@ static NTSTATUS unbecomeDC_ldap_rootdse(struct libnet_UnbecomeDC_state *s)
 		talloc_free(r);
 		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
-	talloc_steal(s, r);
 
 	s->domain.dn_str	= ldb_msg_find_attr_as_string(r->msgs[0], "defaultNamingContext", NULL);
 	if (!s->domain.dn_str) return NT_STATUS_INVALID_NETWORK_RESPONSE;
@@ -371,7 +370,6 @@ static NTSTATUS unbecomeDC_ldap_computer_object(struct libnet_UnbecomeDC_state *
 	int ret;
 	struct ldb_result *r;
 	struct ldb_dn *basedn;
-	char *filter;
 	static const char *attrs[] = {
 		"distinguishedName",
 		"userAccountControl",
@@ -381,12 +379,9 @@ static NTSTATUS unbecomeDC_ldap_computer_object(struct libnet_UnbecomeDC_state *
 	basedn = ldb_dn_new(s, s->ldap.ldb, s->domain.dn_str);
 	NT_STATUS_HAVE_NO_MEMORY(basedn);
 
-	filter = talloc_asprintf(basedn, "(&(|(objectClass=user)(objectClass=computer))(sAMAccountName=%s$))",
-				 s->dest_dsa.netbios_name);
-	NT_STATUS_HAVE_NO_MEMORY(filter);
-
-	ret = ldb_search(s->ldap.ldb, basedn, LDB_SCOPE_SUBTREE, 
-			 filter, attrs, &r);
+	ret = ldb_search(s->ldap.ldb, s, &r, basedn, LDB_SCOPE_SUBTREE, attrs,
+			 "(&(|(objectClass=user)(objectClass=computer))(sAMAccountName=%s$))",
+			 s->dest_dsa.netbios_name);
 	talloc_free(basedn);
 	if (ret != LDB_SUCCESS) {
 		return NT_STATUS_LDAP(ret);
@@ -462,8 +457,8 @@ static NTSTATUS unbecomeDC_ldap_move_computer(struct libnet_UnbecomeDC_state *s)
 				s->domain.dn_str);
 	NT_STATUS_HAVE_NO_MEMORY(basedn);
 
-	ret = ldb_search(s->ldap.ldb, basedn, LDB_SCOPE_BASE,
-			 "(objectClass=*)", _1_1_attrs, &r);
+	ret = ldb_search(s->ldap.ldb, s, &r, basedn, LDB_SCOPE_BASE,
+			 _1_1_attrs, "(objectClass=*)");
 	talloc_free(basedn);
 	if (ret != LDB_SUCCESS) {
 		return NT_STATUS_LDAP(ret);
@@ -644,9 +639,13 @@ static void unbecomeDC_drsuapi_remove_ds_server_send(struct libnet_UnbecomeDC_st
 
 	r->in.bind_handle	= &s->drsuapi.bind_handle;
 	r->in.level		= 1;
-	r->in.req.req1.server_dn= s->dest_dsa.server_dn_str;
-	r->in.req.req1.domain_dn= s->domain.dn_str;
-	r->in.req.req1.unknown	= 0x00000001;
+	r->in.req		= talloc(s, union drsuapi_DsRemoveDSServerRequest);
+	r->in.req->req1.server_dn = s->dest_dsa.server_dn_str;
+	r->in.req->req1.domain_dn = s->domain.dn_str;
+	r->in.req->req1.commit	= true;
+
+	r->out.level_out	= talloc(s, int32_t);
+	r->out.res		= talloc(s, union drsuapi_DsRemoveDSServerResult);
 
 	req = dcerpc_drsuapi_DsRemoveDSServer_send(s->drsuapi.pipe, s, r);
 	composite_continue_rpc(c, req, unbecomeDC_drsuapi_remove_ds_server_recv, s);
@@ -667,13 +666,8 @@ static void unbecomeDC_drsuapi_remove_ds_server_recv(struct rpc_request *req)
 		return;
 	}
 
-	if (r->out.level != 1) {
+	if (*r->out.level_out != 1) {
 		composite_error(c, NT_STATUS_INVALID_NETWORK_RESPONSE);
-		return;
-	}
-		
-	if (!W_ERROR_IS_OK(r->out.res.res1.status)) {
-		composite_error(c, werror_to_ntstatus(r->out.res.res1.status));
 		return;
 	}
 

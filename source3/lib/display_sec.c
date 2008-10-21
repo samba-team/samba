@@ -118,7 +118,7 @@ char *get_sec_mask_str(TALLOC_CTX *ctx, uint32 type)
 /****************************************************************************
  display sec_access structure
  ****************************************************************************/
-void display_sec_access(SEC_ACCESS *info)
+void display_sec_access(uint32_t *info)
 {
 	char *mask_str = get_sec_mask_str(NULL, *info);
 	printf("\t\tPermissions: 0x%x: %s\n", *info, mask_str ? mask_str : "");
@@ -157,13 +157,13 @@ static void disp_sec_ace_object(struct security_ace_object *object)
 {
 	if (object->flags & SEC_ACE_OBJECT_PRESENT) {
 		printf("Object type: SEC_ACE_OBJECT_PRESENT\n");
-		printf("Object GUID: %s\n", smb_uuid_string(talloc_tos(),
-			object->type.type));
+		printf("Object GUID: %s\n", GUID_string(talloc_tos(),
+			&object->type.type));
 	}
 	if (object->flags & SEC_ACE_OBJECT_INHERITED_PRESENT) {
 		printf("Object type: SEC_ACE_OBJECT_INHERITED_PRESENT\n");
-		printf("Object GUID: %s\n", smb_uuid_string(talloc_tos(), 
-			object->inherited_type.inherited_type));
+		printf("Object GUID: %s\n", GUID_string(talloc_tos(), 
+			&object->inherited_type.inherited_type));
 	}
 }
 

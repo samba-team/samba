@@ -28,9 +28,6 @@ static int real_max_open_files;
 static struct bitmap *file_bmap;
 
 static files_struct *Files;
- 
-/* a fsp to use when chaining */
-static files_struct *chain_fsp = NULL;
 
 static int files_used;
 
@@ -57,7 +54,8 @@ static unsigned long get_gen_count(void)
  Find first available file slot.
 ****************************************************************************/
 
-NTSTATUS file_new(connection_struct *conn, files_struct **result)
+NTSTATUS file_new(struct smb_request *req, connection_struct *conn,
+		  files_struct **result)
 {
 	int i;
 	static int first_file;
@@ -120,12 +118,16 @@ NTSTATUS file_new(connection_struct *conn, files_struct **result)
 	DEBUG(5,("allocated file structure %d, fnum = %d (%d used)\n",
 		 i, fsp->fnum, files_used));
 
-	chain_fsp = fsp;
-
-	/* A new fsp invalidates a negative fsp_fi_cache. */
-	if (fsp_fi_cache.fsp == NULL) {
-		ZERO_STRUCT(fsp_fi_cache);
+	if (req != NULL) {
+		req->chain_fsp = fsp;
 	}
+
+	/* A new fsp invalidates the positive and
+	  negative fsp_fi_cache as the new fsp is pushed
+	  at the start of the list and we search from
+	  a cache hit to the *end* of the list. */
+
+	ZERO_STRUCT(fsp_fi_cache);
 
 	*result = fsp;
 	return NT_STATUS_OK;
@@ -142,7 +144,7 @@ void file_close_conn(connection_struct *conn)
 	for (fsp=Files;fsp;fsp=next) {
 		next = fsp->next;
 		if (fsp->conn == conn) {
-			close_file(fsp,SHUTDOWN_CLOSE); 
+			close_file(NULL, fsp, SHUTDOWN_CLOSE);
 		}
 	}
 }
@@ -158,7 +160,7 @@ void file_close_pid(uint16 smbpid, int vuid)
 	for (fsp=Files;fsp;fsp=next) {
 		next = fsp->next;
 		if ((fsp->file_pid == smbpid) && (fsp->vuid == vuid)) {
-			close_file(fsp,SHUTDOWN_CLOSE); 
+			close_file(NULL, fsp, SHUTDOWN_CLOSE);
 		}
 	}
 }
@@ -216,7 +218,7 @@ void file_close_user(int vuid)
 	for (fsp=Files;fsp;fsp=next) {
 		next=fsp->next;
 		if (fsp->vuid == vuid) {
-			close_file(fsp,SHUTDOWN_CLOSE);
+			close_file(NULL, fsp, SHUTDOWN_CLOSE);
 		}
 	}
 }
@@ -326,8 +328,7 @@ files_struct *file_find_di_first(struct file_id id)
 	fsp_fi_cache.id = id;
 
 	for (fsp=Files;fsp;fsp=fsp->next) {
-		if ( fsp->fh->fd != -1 &&
-		     file_id_equal(&fsp->file_id, &id)) {
+		if (file_id_equal(&fsp->file_id, &id)) {
 			/* Setup positive cache. */
 			fsp_fi_cache.fsp = fsp;
 			return fsp;
@@ -348,8 +349,7 @@ files_struct *file_find_di_next(files_struct *start_fsp)
 	files_struct *fsp;
 
 	for (fsp = start_fsp->next;fsp;fsp=fsp->next) {
-		if ( fsp->fh->fd != -1 &&
-		     file_id_equal(&fsp->file_id, &start_fsp->file_id)) {
+		if (file_id_equal(&fsp->file_id, &start_fsp->file_id)) {
 			return fsp;
 		}
 	}
@@ -394,15 +394,13 @@ void file_sync_all(connection_struct *conn)
  Free up a fsp.
 ****************************************************************************/
 
-void file_free(files_struct *fsp)
+void file_free(struct smb_request *req, files_struct *fsp)
 {
 	DLIST_REMOVE(Files, fsp);
 
 	string_free(&fsp->fsp_name);
 
-	if (fsp->fake_file_handle) {
-		destroy_fake_file_handle(&fsp->fake_file_handle);
-	}
+	TALLOC_FREE(fsp->fake_file_handle);
 
 	if (fsp->fh->ref_count == 1) {
 		SAFE_FREE(fsp->fh);
@@ -431,8 +429,8 @@ void file_free(files_struct *fsp)
 	   information */
 	ZERO_STRUCTP(fsp);
 
-	if (fsp == chain_fsp) {
-		chain_fsp = NULL;
+	if ((req != NULL) && (fsp == req->chain_fsp)) {
+		req->chain_fsp = NULL;
 	}
 
 	/* Closing a file can invalidate the positive cache. */
@@ -472,44 +470,33 @@ files_struct *file_fnum(uint16 fnum)
  Get an fsp from a packet given the offset of a 16 bit fnum.
 ****************************************************************************/
 
-files_struct *file_fsp(uint16 fid)
+files_struct *file_fsp(struct smb_request *req, uint16 fid)
 {
 	files_struct *fsp;
 
-	if (chain_fsp) {
-		return chain_fsp;
+	if ((req != NULL) && (req->chain_fsp != NULL)) {
+		return req->chain_fsp;
 	}
 
 	fsp = file_fnum(fid);
-	if (fsp) {
-		chain_fsp = fsp;
+	if ((fsp != NULL) && (req != NULL)) {
+		req->chain_fsp = fsp;
 	}
 	return fsp;
-}
-
-/****************************************************************************
- Reset the chained fsp - done at the start of a packet reply.
-****************************************************************************/
-
-void file_chain_reset(void)
-{
-	chain_fsp = NULL;
 }
 
 /****************************************************************************
  Duplicate the file handle part for a DOS or FCB open.
 ****************************************************************************/
 
-NTSTATUS dup_file_fsp(files_struct *fsp,
-				uint32 access_mask,
-				uint32 share_access,
-				uint32 create_options,
-		      		files_struct **result)
+NTSTATUS dup_file_fsp(struct smb_request *req, files_struct *fsp,
+		      uint32 access_mask, uint32 share_access,
+		      uint32 create_options, files_struct **result)
 {
 	NTSTATUS status;
 	files_struct *dup_fsp;
 
-	status = file_new(fsp->conn, &dup_fsp);
+	status = file_new(NULL, fsp->conn, &dup_fsp);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;

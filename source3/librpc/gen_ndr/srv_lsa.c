@@ -27,7 +27,7 @@ static bool api_lsa_Close(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -58,7 +58,7 @@ static bool api_lsa_Close(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_Close, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -102,7 +102,7 @@ static bool api_lsa_Delete(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -131,7 +131,7 @@ static bool api_lsa_Delete(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_Delete, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -175,7 +175,7 @@ static bool api_lsa_EnumPrivs(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -212,7 +212,7 @@ static bool api_lsa_EnumPrivs(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_EnumPrivs, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -256,7 +256,7 @@ static bool api_lsa_QuerySecurity(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -292,7 +292,7 @@ static bool api_lsa_QuerySecurity(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_QuerySecurity, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -336,7 +336,7 @@ static bool api_lsa_SetSecObj(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -365,7 +365,7 @@ static bool api_lsa_SetSecObj(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_SetSecObj, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -409,7 +409,7 @@ static bool api_lsa_ChangePassword(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -438,7 +438,7 @@ static bool api_lsa_ChangePassword(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_ChangePassword, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -482,7 +482,7 @@ static bool api_lsa_OpenPolicy(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -518,7 +518,7 @@ static bool api_lsa_OpenPolicy(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_OpenPolicy, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -562,7 +562,7 @@ static bool api_lsa_QueryInfoPolicy(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -598,7 +598,7 @@ static bool api_lsa_QueryInfoPolicy(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_QueryInfoPolicy, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -642,7 +642,7 @@ static bool api_lsa_SetInfoPolicy(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -671,7 +671,7 @@ static bool api_lsa_SetInfoPolicy(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_SetInfoPolicy, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -715,7 +715,7 @@ static bool api_lsa_ClearAuditLog(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -744,7 +744,7 @@ static bool api_lsa_ClearAuditLog(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_ClearAuditLog, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -788,7 +788,7 @@ static bool api_lsa_CreateAccount(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -824,7 +824,7 @@ static bool api_lsa_CreateAccount(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_CreateAccount, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -868,7 +868,7 @@ static bool api_lsa_EnumAccounts(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -905,7 +905,7 @@ static bool api_lsa_EnumAccounts(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_EnumAccounts, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -949,7 +949,7 @@ static bool api_lsa_CreateTrustedDomain(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -985,7 +985,7 @@ static bool api_lsa_CreateTrustedDomain(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_CreateTrustedDomain, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1029,7 +1029,7 @@ static bool api_lsa_EnumTrustDom(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -1066,7 +1066,7 @@ static bool api_lsa_EnumTrustDom(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_EnumTrustDom, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1110,7 +1110,7 @@ static bool api_lsa_LookupNames(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -1148,7 +1148,7 @@ static bool api_lsa_LookupNames(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_LookupNames, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1192,7 +1192,7 @@ static bool api_lsa_LookupSids(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -1230,7 +1230,7 @@ static bool api_lsa_LookupSids(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_LookupSids, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1274,7 +1274,7 @@ static bool api_lsa_CreateSecret(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -1310,7 +1310,7 @@ static bool api_lsa_CreateSecret(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_CreateSecret, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1354,7 +1354,7 @@ static bool api_lsa_OpenAccount(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -1390,7 +1390,7 @@ static bool api_lsa_OpenAccount(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_OpenAccount, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1434,7 +1434,7 @@ static bool api_lsa_EnumPrivsAccount(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -1470,7 +1470,7 @@ static bool api_lsa_EnumPrivsAccount(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_EnumPrivsAccount, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1514,7 +1514,7 @@ static bool api_lsa_AddPrivilegesToAccount(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -1543,7 +1543,7 @@ static bool api_lsa_AddPrivilegesToAccount(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_AddPrivilegesToAccount, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1587,7 +1587,7 @@ static bool api_lsa_RemovePrivilegesFromAccount(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -1616,7 +1616,7 @@ static bool api_lsa_RemovePrivilegesFromAccount(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_RemovePrivilegesFromAccount, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1660,7 +1660,7 @@ static bool api_lsa_GetQuotasForAccount(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -1689,7 +1689,7 @@ static bool api_lsa_GetQuotasForAccount(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_GetQuotasForAccount, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1733,7 +1733,7 @@ static bool api_lsa_SetQuotasForAccount(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -1762,7 +1762,7 @@ static bool api_lsa_SetQuotasForAccount(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_SetQuotasForAccount, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1806,7 +1806,7 @@ static bool api_lsa_GetSystemAccessAccount(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -1842,7 +1842,7 @@ static bool api_lsa_GetSystemAccessAccount(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_GetSystemAccessAccount, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1886,7 +1886,7 @@ static bool api_lsa_SetSystemAccessAccount(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -1915,7 +1915,7 @@ static bool api_lsa_SetSystemAccessAccount(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_SetSystemAccessAccount, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1959,7 +1959,7 @@ static bool api_lsa_OpenTrustedDomain(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -1995,7 +1995,7 @@ static bool api_lsa_OpenTrustedDomain(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_OpenTrustedDomain, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -2039,7 +2039,7 @@ static bool api_lsa_QueryTrustedDomainInfo(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -2075,7 +2075,7 @@ static bool api_lsa_QueryTrustedDomainInfo(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_QueryTrustedDomainInfo, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -2119,7 +2119,7 @@ static bool api_lsa_SetInformationTrustedDomain(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -2148,7 +2148,7 @@ static bool api_lsa_SetInformationTrustedDomain(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_SetInformationTrustedDomain, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -2192,7 +2192,7 @@ static bool api_lsa_OpenSecret(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -2228,7 +2228,7 @@ static bool api_lsa_OpenSecret(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_OpenSecret, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -2272,7 +2272,7 @@ static bool api_lsa_SetSecret(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -2301,7 +2301,7 @@ static bool api_lsa_SetSecret(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_SetSecret, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -2345,7 +2345,7 @@ static bool api_lsa_QuerySecret(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -2379,7 +2379,7 @@ static bool api_lsa_QuerySecret(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_QuerySecret, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -2423,7 +2423,7 @@ static bool api_lsa_LookupPrivValue(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -2459,7 +2459,7 @@ static bool api_lsa_LookupPrivValue(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_LookupPrivValue, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -2503,7 +2503,7 @@ static bool api_lsa_LookupPrivName(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -2539,7 +2539,7 @@ static bool api_lsa_LookupPrivName(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_LookupPrivName, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -2583,7 +2583,7 @@ static bool api_lsa_LookupPrivDisplayName(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -2625,7 +2625,7 @@ static bool api_lsa_LookupPrivDisplayName(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_LookupPrivDisplayName, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -2669,7 +2669,7 @@ static bool api_lsa_DeleteObject(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -2700,7 +2700,7 @@ static bool api_lsa_DeleteObject(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_DeleteObject, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -2744,7 +2744,7 @@ static bool api_lsa_EnumAccountsWithUserRight(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -2780,7 +2780,7 @@ static bool api_lsa_EnumAccountsWithUserRight(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_EnumAccountsWithUserRight, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -2824,7 +2824,7 @@ static bool api_lsa_EnumAccountRights(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -2860,7 +2860,7 @@ static bool api_lsa_EnumAccountRights(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_EnumAccountRights, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -2904,7 +2904,7 @@ static bool api_lsa_AddAccountRights(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -2933,7 +2933,7 @@ static bool api_lsa_AddAccountRights(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_AddAccountRights, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -2977,7 +2977,7 @@ static bool api_lsa_RemoveAccountRights(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -3006,7 +3006,7 @@ static bool api_lsa_RemoveAccountRights(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_RemoveAccountRights, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -3050,7 +3050,7 @@ static bool api_lsa_QueryTrustedDomainInfoBySid(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -3086,7 +3086,7 @@ static bool api_lsa_QueryTrustedDomainInfoBySid(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_QueryTrustedDomainInfoBySid, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -3130,7 +3130,7 @@ static bool api_lsa_SetTrustedDomainInfo(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -3159,7 +3159,7 @@ static bool api_lsa_SetTrustedDomainInfo(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_SetTrustedDomainInfo, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -3203,7 +3203,7 @@ static bool api_lsa_DeleteTrustedDomain(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -3232,7 +3232,7 @@ static bool api_lsa_DeleteTrustedDomain(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_DeleteTrustedDomain, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -3276,7 +3276,7 @@ static bool api_lsa_StorePrivateData(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -3305,7 +3305,7 @@ static bool api_lsa_StorePrivateData(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_StorePrivateData, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -3349,7 +3349,7 @@ static bool api_lsa_RetrievePrivateData(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -3378,7 +3378,7 @@ static bool api_lsa_RetrievePrivateData(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_RetrievePrivateData, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -3422,7 +3422,7 @@ static bool api_lsa_OpenPolicy2(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -3458,7 +3458,7 @@ static bool api_lsa_OpenPolicy2(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_OpenPolicy2, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -3502,7 +3502,7 @@ static bool api_lsa_GetUserName(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -3534,7 +3534,7 @@ static bool api_lsa_GetUserName(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_GetUserName, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -3578,7 +3578,7 @@ static bool api_lsa_QueryInfoPolicy2(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -3614,7 +3614,7 @@ static bool api_lsa_QueryInfoPolicy2(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_QueryInfoPolicy2, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -3658,7 +3658,7 @@ static bool api_lsa_SetInfoPolicy2(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -3687,7 +3687,7 @@ static bool api_lsa_SetInfoPolicy2(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_SetInfoPolicy2, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -3731,7 +3731,7 @@ static bool api_lsa_QueryTrustedDomainInfoByName(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -3767,7 +3767,7 @@ static bool api_lsa_QueryTrustedDomainInfoByName(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_QueryTrustedDomainInfoByName, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -3811,7 +3811,7 @@ static bool api_lsa_SetTrustedDomainInfoByName(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -3840,7 +3840,7 @@ static bool api_lsa_SetTrustedDomainInfoByName(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_SetTrustedDomainInfoByName, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -3884,7 +3884,7 @@ static bool api_lsa_EnumTrustedDomainsEx(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -3921,7 +3921,7 @@ static bool api_lsa_EnumTrustedDomainsEx(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_EnumTrustedDomainsEx, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -3965,7 +3965,7 @@ static bool api_lsa_CreateTrustedDomainEx(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -3982,6 +3982,13 @@ static bool api_lsa_CreateTrustedDomainEx(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_CreateTrustedDomainEx, r);
 	}
 
+	ZERO_STRUCT(r->out);
+	r->out.trustdom_handle = talloc_zero(r, struct policy_handle);
+	if (r->out.trustdom_handle == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
 	r->out.result = _lsa_CreateTrustedDomainEx(p, r);
 
 	if (p->rng_fault_state) {
@@ -3994,7 +4001,7 @@ static bool api_lsa_CreateTrustedDomainEx(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_CreateTrustedDomainEx, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -4038,7 +4045,7 @@ static bool api_lsa_CloseTrustedDomainEx(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -4069,7 +4076,7 @@ static bool api_lsa_CloseTrustedDomainEx(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_CloseTrustedDomainEx, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -4113,7 +4120,7 @@ static bool api_lsa_QueryDomainInformationPolicy(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -4149,7 +4156,7 @@ static bool api_lsa_QueryDomainInformationPolicy(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_QueryDomainInformationPolicy, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -4193,7 +4200,7 @@ static bool api_lsa_SetDomainInformationPolicy(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -4222,7 +4229,7 @@ static bool api_lsa_SetDomainInformationPolicy(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_SetDomainInformationPolicy, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -4266,7 +4273,7 @@ static bool api_lsa_OpenTrustedDomainByName(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -4302,7 +4309,7 @@ static bool api_lsa_OpenTrustedDomainByName(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_OpenTrustedDomainByName, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -4346,7 +4353,7 @@ static bool api_lsa_TestCall(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -4375,7 +4382,7 @@ static bool api_lsa_TestCall(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_TestCall, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -4419,7 +4426,7 @@ static bool api_lsa_LookupSids2(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -4457,7 +4464,7 @@ static bool api_lsa_LookupSids2(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_LookupSids2, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -4501,7 +4508,7 @@ static bool api_lsa_LookupNames2(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -4539,7 +4546,7 @@ static bool api_lsa_LookupNames2(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_LookupNames2, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -4583,7 +4590,7 @@ static bool api_lsa_CreateTrustedDomainEx2(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -4600,6 +4607,13 @@ static bool api_lsa_CreateTrustedDomainEx2(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_CreateTrustedDomainEx2, r);
 	}
 
+	ZERO_STRUCT(r->out);
+	r->out.trustdom_handle = talloc_zero(r, struct policy_handle);
+	if (r->out.trustdom_handle == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
 	r->out.result = _lsa_CreateTrustedDomainEx2(p, r);
 
 	if (p->rng_fault_state) {
@@ -4612,7 +4626,7 @@ static bool api_lsa_CreateTrustedDomainEx2(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_CreateTrustedDomainEx2, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -4656,7 +4670,7 @@ static bool api_lsa_CREDRWRITE(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -4685,7 +4699,7 @@ static bool api_lsa_CREDRWRITE(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_CREDRWRITE, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -4729,7 +4743,7 @@ static bool api_lsa_CREDRREAD(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -4758,7 +4772,7 @@ static bool api_lsa_CREDRREAD(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_CREDRREAD, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -4802,7 +4816,7 @@ static bool api_lsa_CREDRENUMERATE(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -4831,7 +4845,7 @@ static bool api_lsa_CREDRENUMERATE(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_CREDRENUMERATE, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -4875,7 +4889,7 @@ static bool api_lsa_CREDRWRITEDOMAINCREDENTIALS(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -4904,7 +4918,7 @@ static bool api_lsa_CREDRWRITEDOMAINCREDENTIALS(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_CREDRWRITEDOMAINCREDENTIALS, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -4948,7 +4962,7 @@ static bool api_lsa_CREDRREADDOMAINCREDENTIALS(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -4977,7 +4991,7 @@ static bool api_lsa_CREDRREADDOMAINCREDENTIALS(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_CREDRREADDOMAINCREDENTIALS, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -5021,7 +5035,7 @@ static bool api_lsa_CREDRDELETE(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -5050,7 +5064,7 @@ static bool api_lsa_CREDRDELETE(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_CREDRDELETE, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -5094,7 +5108,7 @@ static bool api_lsa_CREDRGETTARGETINFO(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -5123,7 +5137,7 @@ static bool api_lsa_CREDRGETTARGETINFO(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_CREDRGETTARGETINFO, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -5167,7 +5181,7 @@ static bool api_lsa_CREDRPROFILELOADED(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -5196,7 +5210,7 @@ static bool api_lsa_CREDRPROFILELOADED(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_CREDRPROFILELOADED, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -5240,7 +5254,7 @@ static bool api_lsa_LookupNames3(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -5278,7 +5292,7 @@ static bool api_lsa_LookupNames3(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_LookupNames3, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -5322,7 +5336,7 @@ static bool api_lsa_CREDRGETSESSIONTYPES(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -5351,7 +5365,7 @@ static bool api_lsa_CREDRGETSESSIONTYPES(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_CREDRGETSESSIONTYPES, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -5395,7 +5409,7 @@ static bool api_lsa_LSARREGISTERAUDITEVENT(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -5424,7 +5438,7 @@ static bool api_lsa_LSARREGISTERAUDITEVENT(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_LSARREGISTERAUDITEVENT, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -5468,7 +5482,7 @@ static bool api_lsa_LSARGENAUDITEVENT(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -5497,7 +5511,7 @@ static bool api_lsa_LSARGENAUDITEVENT(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_LSARGENAUDITEVENT, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -5541,7 +5555,7 @@ static bool api_lsa_LSARUNREGISTERAUDITEVENT(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -5570,7 +5584,7 @@ static bool api_lsa_LSARUNREGISTERAUDITEVENT(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_LSARUNREGISTERAUDITEVENT, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -5614,7 +5628,7 @@ static bool api_lsa_lsaRQueryForestTrustInformation(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -5650,7 +5664,7 @@ static bool api_lsa_lsaRQueryForestTrustInformation(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_lsaRQueryForestTrustInformation, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -5694,7 +5708,7 @@ static bool api_lsa_LSARSETFORESTTRUSTINFORMATION(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -5723,7 +5737,7 @@ static bool api_lsa_LSARSETFORESTTRUSTINFORMATION(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_LSARSETFORESTTRUSTINFORMATION, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -5767,7 +5781,7 @@ static bool api_lsa_CREDRRENAME(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -5796,7 +5810,7 @@ static bool api_lsa_CREDRRENAME(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_CREDRRENAME, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -5840,7 +5854,7 @@ static bool api_lsa_LookupSids3(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -5878,7 +5892,7 @@ static bool api_lsa_LookupSids3(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_LookupSids3, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -5922,7 +5936,7 @@ static bool api_lsa_LookupNames4(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -5960,7 +5974,7 @@ static bool api_lsa_LookupNames4(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_LookupNames4, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -6004,7 +6018,7 @@ static bool api_lsa_LSAROPENPOLICYSCE(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -6033,7 +6047,7 @@ static bool api_lsa_LSAROPENPOLICYSCE(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_LSAROPENPOLICYSCE, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -6077,7 +6091,7 @@ static bool api_lsa_LSARADTREGISTERSECURITYEVENTSOURCE(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -6106,7 +6120,7 @@ static bool api_lsa_LSARADTREGISTERSECURITYEVENTSOURCE(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_LSARADTREGISTERSECURITYEVENTSOURCE, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -6150,7 +6164,7 @@ static bool api_lsa_LSARADTUNREGISTERSECURITYEVENTSOURCE(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -6179,7 +6193,7 @@ static bool api_lsa_LSARADTUNREGISTERSECURITYEVENTSOURCE(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_LSARADTUNREGISTERSECURITYEVENTSOURCE, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -6223,7 +6237,7 @@ static bool api_lsa_LSARADTREPORTSECURITYEVENT(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -6252,7 +6266,7 @@ static bool api_lsa_LSARADTREPORTSECURITYEVENT(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(lsa_LSARADTREPORTSECURITYEVENT, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;

@@ -176,7 +176,7 @@ bool ads_closest_dc(ADS_STRUCT *ads)
 static bool ads_try_connect(ADS_STRUCT *ads, const char *server, bool gc)
 {
 	char *srv;
-	struct nbt_cldap_netlogon_5 cldap_reply;
+	struct NETLOGON_SAM_LOGON_RESPONSE_EX cldap_reply;
 	TALLOC_CTX *mem_ctx = NULL;
 	bool ret = false;
 
@@ -801,7 +801,7 @@ static ADS_STATUS ads_do_paged_search_args(ADS_STRUCT *ads,
 					   int *count, struct berval **cookie)
 {
 	int rc, i, version;
-	char *utf8_expr, *utf8_path, **search_attrs;
+	char *utf8_expr, *utf8_path, **search_attrs = NULL;
 	size_t converted_size;
 	LDAPControl PagedResults, NoReferrals, ExternalCtrl, *controls[4], **rcontrols;
 	BerElement *cookie_be = NULL;
@@ -832,7 +832,7 @@ static ADS_STATUS ads_do_paged_search_args(ADS_STRUCT *ads,
 	else {
 		/* This would be the utf8-encoded version...*/
 		/* if (!(search_attrs = ads_push_strvals(ctx, attrs))) */
-		if (!(str_list_copy(talloc_tos(), &search_attrs, attrs))) {
+		if (!(search_attrs = str_list_copy(talloc_tos(), attrs))) {
 			rc = LDAP_NO_MEMORY;
 			goto done;
 		}
@@ -1144,7 +1144,7 @@ ADS_STATUS ads_do_search_all_fn(ADS_STRUCT *ads, const char *bind_path,
 	else {
 		/* This would be the utf8-encoded version...*/
 		/* if (!(search_attrs = ads_push_strvals(ctx, attrs)))  */
-		if (!(str_list_copy(talloc_tos(), &search_attrs, attrs)))
+		if (!(search_attrs = str_list_copy(talloc_tos(), attrs)))
 		{
 			DEBUG(1,("ads_do_search: str_list_copy() failed!"));
 			rc = LDAP_NO_MEMORY;
@@ -2062,7 +2062,7 @@ static void dump_guid(ADS_STRUCT *ads, const char *field, struct berval **values
 
 		memcpy(guid.info, values[i]->bv_val, sizeof(guid.info));
 		smb_uuid_unpack(guid, &tmp);
-		printf("%s: %s\n", field, smb_uuid_string(talloc_tos(), tmp));
+		printf("%s: %s\n", field, GUID_string(talloc_tos(), &tmp));
 	}
 }
 
@@ -2828,6 +2828,7 @@ ADS_STATUS ads_domain_func_level(ADS_STRUCT *ads, uint32 *val)
 		if ( (ads_s = ads_init( ads->server.realm, ads->server.workgroup, 
 			ads->server.ldap_server )) == NULL )
 		{
+			status = ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
 			goto done;
 		}
 		ads_s->auth.flags = ADS_AUTH_ANON_BIND;
@@ -3747,7 +3748,7 @@ const char *ads_get_extended_right_name_by_guid(ADS_STRUCT *ads,
 	}
 
 	expr = talloc_asprintf(mem_ctx, "(rightsGuid=%s)", 
-			       smb_uuid_string(mem_ctx, *rights_guid));
+			       GUID_string(mem_ctx, rights_guid));
 	if (!expr) {
 		goto done;
 	}

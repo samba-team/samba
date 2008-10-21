@@ -1,7 +1,7 @@
 /* 
    ldb database library
 
-   Copyright (C) Simo Sorce  2004-2006
+   Copyright (C) Simo Sorce  2004-2008
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2005
    Copyright (C) Andrew Tridgell 2005
    Copyright (C) Stefan Metzmacher <metze@samba.org> 2007
@@ -51,68 +51,34 @@
 
 struct replmd_replicated_request {
 	struct ldb_module *module;
-	struct ldb_handle *handle;
-	struct ldb_request *orig_req;
+	struct ldb_request *req;
 
 	const struct dsdb_schema *schema;
 
 	struct dsdb_extended_replicated_objects *objs;
 
+	/* the controls we pass down */
+	struct ldb_control **controls;
+
 	uint32_t index_current;
 
-	struct {
-		TALLOC_CTX *mem_ctx;
-		struct ldb_request *search_req;
-		struct ldb_message *search_msg;
-		int search_ret;
-		struct ldb_request *change_req;
-		int change_ret;
-	} sub;
+	struct ldb_message *search_msg;
 };
 
-static struct replmd_replicated_request *replmd_replicated_init_handle(struct ldb_module *module,
-								       struct ldb_request *req,
-								       struct dsdb_extended_replicated_objects *objs)
+static struct replmd_replicated_request *replmd_ctx_init(struct ldb_module *module,
+					  struct ldb_request *req)
 {
-	struct replmd_replicated_request *ar;
-	struct ldb_handle *h;
-	const struct dsdb_schema *schema;
+	struct replmd_replicated_request *ac;
 
-	schema = dsdb_get_schema(module->ldb);
-	if (!schema) {
-		ldb_debug_set(module->ldb, LDB_DEBUG_FATAL,
-			      "replmd_replicated_init_handle: no loaded schema found\n");
+	ac = talloc_zero(req, struct replmd_replicated_request);
+	if (ac == NULL) {
+		ldb_oom(module->ldb);
 		return NULL;
 	}
 
-	h = talloc_zero(req, struct ldb_handle);
-	if (h == NULL) {
-		ldb_set_errstring(module->ldb, "Out of Memory");
-		return NULL;
-	}
-
-	h->module	= module;
-	h->state	= LDB_ASYNC_PENDING;
-	h->status	= LDB_SUCCESS;
-
-	ar = talloc_zero(h, struct replmd_replicated_request);
-	if (ar == NULL) {
-		ldb_set_errstring(module->ldb, "Out of Memory");
-		talloc_free(h);
-		return NULL;
-	}
-
-	h->private_data	= ar;
-
-	ar->module	= module;
-	ar->handle	= h;
-	ar->orig_req	= req;
-	ar->schema	= schema;
-	ar->objs	= objs;
-
-	req->handle = h;
-
-	return ar;
+	ac->module = module;
+	ac->req	= req;
+	return ac;
 }
 
 /*
@@ -124,16 +90,16 @@ static int add_time_element(struct ldb_message *msg, const char *attr, time_t t)
 	char *s;
 
 	if (ldb_msg_find_element(msg, attr) != NULL) {
-		return 0;
+		return LDB_SUCCESS;
 	}
 
 	s = ldb_timestring(msg, t);
 	if (s == NULL) {
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	if (ldb_msg_add_string(msg, attr, s) != 0) {
-		return -1;
+	if (ldb_msg_add_string(msg, attr, s) != LDB_SUCCESS) {
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	el = ldb_msg_find_element(msg, attr);
@@ -141,7 +107,7 @@ static int add_time_element(struct ldb_message *msg, const char *attr, time_t t)
 	   is ignored */
 	el->flags = LDB_FLAG_MOD_REPLACE;
 
-	return 0;
+	return LDB_SUCCESS;
 }
 
 /*
@@ -152,11 +118,11 @@ static int add_uint64_element(struct ldb_message *msg, const char *attr, uint64_
 	struct ldb_message_element *el;
 
 	if (ldb_msg_find_element(msg, attr) != NULL) {
-		return 0;
+		return LDB_SUCCESS;
 	}
 
-	if (ldb_msg_add_fmt(msg, attr, "%llu", (unsigned long long)v) != 0) {
-		return -1;
+	if (ldb_msg_add_fmt(msg, attr, "%llu", (unsigned long long)v) != LDB_SUCCESS) {
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	el = ldb_msg_find_element(msg, attr);
@@ -164,7 +130,7 @@ static int add_uint64_element(struct ldb_message *msg, const char *attr, uint64_
 	   is ignored */
 	el->flags = LDB_FLAG_MOD_REPLACE;
 
-	return 0;
+	return LDB_SUCCESS;
 }
 
 static int replmd_replPropertyMetaData1_attid_sort(const struct replPropertyMetaData1 *m1,
@@ -236,34 +202,37 @@ static void replmd_ldb_message_sort(struct ldb_message *msg,
 		  discard_const_p(void, schema), (ldb_qsort_cmp_fn_t)replmd_ldb_message_element_attid_sort);
 }
 
-static int replmd_prepare_originating(struct ldb_module *module, struct ldb_request *req,
-				      struct ldb_dn *dn, const char *fn_name,
-				      int (*fn)(struct ldb_module *,
-			 			struct ldb_request *,
-						const struct dsdb_schema *))
+static int replmd_op_callback(struct ldb_request *req, struct ldb_reply *ares)
 {
-	const struct dsdb_schema *schema;
- 
-	/* do not manipulate our control entries */
-	if (ldb_dn_is_special(dn)) {
-		return ldb_next_request(module, req);
+	struct replmd_replicated_request *ac;
+
+	ac = talloc_get_type(req->context, struct replmd_replicated_request);
+
+	if (!ares) {
+		return ldb_module_done(ac->req, NULL, NULL,
+					LDB_ERR_OPERATIONS_ERROR);
+	}
+	if (ares->error != LDB_SUCCESS) {
+		return ldb_module_done(ac->req, ares->controls,
+					ares->response, ares->error);
 	}
 
-	schema = dsdb_get_schema(module->ldb);
-	if (!schema) {
-		ldb_debug_set(module->ldb, LDB_DEBUG_FATAL,
-			      "%s: no dsdb_schema loaded",
-			      fn_name);
-		return LDB_ERR_CONSTRAINT_VIOLATION;
+	if (ares->type != LDB_REPLY_DONE) {
+		ldb_set_errstring(ac->module->ldb,
+				  "invalid ldb_reply_type in callback");
+		talloc_free(ares);
+		return ldb_module_done(ac->req, NULL, NULL,
+					LDB_ERR_OPERATIONS_ERROR);
 	}
 
-	return fn(module, req, schema);
+	return ldb_module_done(ac->req, ares->controls,
+				ares->response, LDB_SUCCESS);
 }
 
-static int replmd_add_originating(struct ldb_module *module,
-				  struct ldb_request *req,
-				  const struct dsdb_schema *schema)
+static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 {
+	struct replmd_replicated_request *ac;
+	const struct dsdb_schema *schema;
 	enum ndr_err_code ndr_err;
 	struct ldb_request *down_req;
 	struct ldb_message *msg;
@@ -280,11 +249,30 @@ static int replmd_add_originating(struct ldb_module *module,
 	int ret;
 	uint32_t i, ni=0;
 
-	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "replmd_add_originating\n");
+	/* do not manipulate our control entries */
+	if (ldb_dn_is_special(req->op.add.message->dn)) {
+		return ldb_next_request(module, req);
+	}
 
-	if (ldb_msg_find_element(req->op.add.message, "objectGUID")) {
+	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "replmd_add\n");
+
+	schema = dsdb_get_schema(module->ldb);
+	if (!schema) {
+		ldb_debug_set(module->ldb, LDB_DEBUG_FATAL,
+			      "replmd_modify: no dsdb_schema loaded");
+		return LDB_ERR_CONSTRAINT_VIOLATION;
+	}
+
+	ac = replmd_ctx_init(module, req);
+	if (!ac) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	ac->schema = schema;
+
+	if (ldb_msg_find_element(req->op.add.message, "objectGUID") != NULL) {
 		ldb_debug_set(module->ldb, LDB_DEBUG_ERROR,
-			      "replmd_add_originating: it's not allowed to add an object with objectGUID\n");
+			      "replmd_add: it's not allowed to add an object with objectGUID\n");
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
@@ -301,22 +289,13 @@ static int replmd_add_originating(struct ldb_module *module,
 	our_invocation_id = samdb_ntds_invocation_id(module->ldb);
 	if (!our_invocation_id) {
 		ldb_debug_set(module->ldb, LDB_DEBUG_ERROR,
-			      "replmd_add_originating: unable to find invocationId\n");
+			      "replmd_add: unable to find invocationId\n");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-
-	/* create a copy of the request */
-	down_req = talloc(req, struct ldb_request);
-	if (down_req == NULL) {
-		ldb_oom(module->ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	*down_req = *req;
 
 	/* we have to copy the message as the caller might have it as a const */
-	down_req->op.add.message = msg = ldb_msg_copy_shallow(down_req, req->op.add.message);
+	msg = ldb_msg_copy_shallow(ac, req->op.add.message);
 	if (msg == NULL) {
-		talloc_free(down_req);
 		ldb_oom(module->ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -325,7 +304,6 @@ static int replmd_add_originating(struct ldb_module *module,
 	unix_to_nt_time(&now, t);
 	time_str = ldb_timestring(msg, t);
 	if (!time_str) {
-		talloc_free(down_req);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -343,7 +321,6 @@ static int replmd_add_originating(struct ldb_module *module,
 	 */
 	ret = ldb_msg_add_string(msg, "whenCreated", time_str);
 	if (ret != LDB_SUCCESS) {
-		talloc_free(down_req);
 		ldb_oom(module->ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -356,7 +333,6 @@ static int replmd_add_originating(struct ldb_module *module,
 					       struct replPropertyMetaData1,
 					       nmd.ctr.ctr1.count);
 	if (!nmd.ctr.ctr1.array) {
-		talloc_free(down_req);
 		ldb_oom(module->ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -371,9 +347,8 @@ static int replmd_add_originating(struct ldb_module *module,
 		sa = dsdb_attribute_by_lDAPDisplayName(schema, e->name);
 		if (!sa) {
 			ldb_debug_set(module->ldb, LDB_DEBUG_ERROR,
-				      "replmd_add_originating: attribute '%s' not defined in schema\n",
+				      "replmd_add: attribute '%s' not defined in schema\n",
 				      e->name);
-			talloc_free(down_req);
 			return LDB_ERR_NO_SUCH_ATTRIBUTE;
 		}
 
@@ -419,7 +394,6 @@ static int replmd_add_originating(struct ldb_module *module,
 				       &nmd,
 				       (ndr_push_flags_fn_t)ndr_push_replPropertyMetaDataBlob);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		talloc_free(down_req);
 		ldb_oom(module->ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -429,31 +403,26 @@ static int replmd_add_originating(struct ldb_module *module,
 	 */
 	ret = ldb_msg_add_value(msg, "objectGUID", &guid_value, NULL);
 	if (ret != LDB_SUCCESS) {
-		talloc_free(down_req);
 		ldb_oom(module->ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	ret = ldb_msg_add_string(msg, "whenChanged", time_str);
 	if (ret != LDB_SUCCESS) {
-		talloc_free(down_req);
 		ldb_oom(module->ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	ret = samdb_msg_add_uint64(module->ldb, msg, msg, "uSNCreated", seq_num);
 	if (ret != LDB_SUCCESS) {
-		talloc_free(down_req);
 		ldb_oom(module->ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	ret = samdb_msg_add_uint64(module->ldb, msg, msg, "uSNChanged", seq_num);
 	if (ret != LDB_SUCCESS) {
-		talloc_free(down_req);
 		ldb_oom(module->ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	ret = ldb_msg_add_value(msg, "replPropertyMetaData", &nmd_value, NULL);
 	if (ret != LDB_SUCCESS) {
-		talloc_free(down_req);
 		ldb_oom(module->ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -463,49 +432,54 @@ static int replmd_add_originating(struct ldb_module *module,
 	 */
 	replmd_ldb_message_sort(msg, schema);
 
-	ldb_set_timeout_from_prev_req(module->ldb, req, down_req);
-
-	/* go on with the call chain */
-	ret = ldb_next_request(module, down_req);
-
-	/* do not free down_req as the call results may be linked to it,
-	 * it will be freed when the upper level request get freed */
-	if (ret == LDB_SUCCESS) {
-		req->handle = down_req->handle;
+	ret = ldb_build_add_req(&down_req, module->ldb, ac,
+				msg,
+				req->controls,
+				ac, replmd_op_callback,
+				req);
+	if (ret != LDB_SUCCESS) {
+		return ret;
 	}
 
-	return ret;
+	/* go on with the call chain */
+	return ldb_next_request(module, down_req);
 }
 
-static int replmd_add(struct ldb_module *module, struct ldb_request *req)
+static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
 {
-	return replmd_prepare_originating(module, req, req->op.add.message->dn,
-					  "replmd_add", replmd_add_originating);
-}
-
-static int replmd_modify_originating(struct ldb_module *module,
-				     struct ldb_request *req,
-				     const struct dsdb_schema *schema)
-{
+	struct replmd_replicated_request *ac;
+	const struct dsdb_schema *schema;
 	struct ldb_request *down_req;
 	struct ldb_message *msg;
 	int ret;
 	time_t t = time(NULL);
 	uint64_t seq_num;
 
-	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "replmd_modify_originating\n");
+	/* do not manipulate our control entries */
+	if (ldb_dn_is_special(req->op.mod.message->dn)) {
+		return ldb_next_request(module, req);
+	}
 
-	down_req = talloc(req, struct ldb_request);
-	if (down_req == NULL) {
+	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "replmd_modify\n");
+
+	schema = dsdb_get_schema(module->ldb);
+	if (!schema) {
+		ldb_debug_set(module->ldb, LDB_DEBUG_FATAL,
+			      "replmd_modify: no dsdb_schema loaded");
+		return LDB_ERR_CONSTRAINT_VIOLATION;
+	}
+
+	ac = replmd_ctx_init(module, req);
+	if (!ac) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	*down_req = *req;
+	ac->schema = schema;
 
 	/* we have to copy the message as the caller might have it as a const */
-	down_req->op.mod.message = msg = ldb_msg_copy_shallow(down_req, req->op.mod.message);
+	msg = ldb_msg_copy_shallow(ac, req->op.mod.message);
 	if (msg == NULL) {
-		talloc_free(down_req);
+		talloc_free(ac);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -521,16 +495,16 @@ static int replmd_modify_originating(struct ldb_module *module,
 	 * - calculate the new replPropertyMetaData attribute
 	 */
 
-	if (add_time_element(msg, "whenChanged", t) != 0) {
-		talloc_free(down_req);
+	if (add_time_element(msg, "whenChanged", t) != LDB_SUCCESS) {
+		talloc_free(ac);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	/* Get a sequence number from the backend */
 	ret = ldb_sequence_number(module->ldb, LDB_SEQ_NEXT, &seq_num);
 	if (ret == LDB_SUCCESS) {
-		if (add_uint64_element(msg, "uSNChanged", seq_num) != 0) {
-			talloc_free(down_req);
+		if (add_uint64_element(msg, "uSNChanged", seq_num) != LDB_SUCCESS) {
+			talloc_free(ac);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 	}
@@ -540,96 +514,71 @@ static int replmd_modify_originating(struct ldb_module *module,
 	 * - replace the old object with the newly constructed one
 	 */
 
-	ldb_set_timeout_from_prev_req(module->ldb, req, down_req);
+	ret = ldb_build_mod_req(&down_req, module->ldb, ac,
+				msg,
+				req->controls,
+				ac, replmd_op_callback,
+				req);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	talloc_steal(down_req, msg);
 
 	/* go on with the call chain */
-	ret = ldb_next_request(module, down_req);
-
-	/* do not free down_req as the call results may be linked to it,
-	 * it will be freed when the upper level request get freed */
-	if (ret == LDB_SUCCESS) {
-		req->handle = down_req->handle;
-	}
-
-	return ret;
-}
-
-static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
-{
-	return replmd_prepare_originating(module, req, req->op.mod.message->dn,
-					  "replmd_modify", replmd_modify_originating);
-}
-
-static int replmd_replicated_request_reply_helper(struct replmd_replicated_request *ar, int ret)
-{
-	struct ldb_reply *ares = NULL;
-
-	ar->handle->status = ret;
-	ar->handle->state = LDB_ASYNC_DONE;
-
-	if (!ar->orig_req->callback) {
-		return LDB_SUCCESS;
-	}
-	
-	/* we're done and need to report the success to the caller */
-	ares = talloc_zero(ar, struct ldb_reply);
-	if (!ares) {
-		ar->handle->status = LDB_ERR_OPERATIONS_ERROR;
-		ar->handle->state = LDB_ASYNC_DONE;
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	ares->type	= LDB_REPLY_EXTENDED;
-	ares->response	= NULL;
-
-	return ar->orig_req->callback(ar->module->ldb, ar->orig_req->context, ares);
-}
-
-static int replmd_replicated_request_done(struct replmd_replicated_request *ar)
-{
-	return replmd_replicated_request_reply_helper(ar, LDB_SUCCESS);
+	return ldb_next_request(module, down_req);
 }
 
 static int replmd_replicated_request_error(struct replmd_replicated_request *ar, int ret)
 {
-	return replmd_replicated_request_reply_helper(ar, ret);
+	return ret;
 }
 
 static int replmd_replicated_request_werror(struct replmd_replicated_request *ar, WERROR status)
 {
 	int ret = LDB_ERR_OTHER;
 	/* TODO: do some error mapping */
-	return replmd_replicated_request_reply_helper(ar, ret);
+	return ret;
 }
 
 static int replmd_replicated_apply_next(struct replmd_replicated_request *ar);
 
-static int replmd_replicated_apply_add_callback(struct ldb_context *ldb,
-						void *private_data,
+static int replmd_replicated_apply_add_callback(struct ldb_request *req,
 						struct ldb_reply *ares)
 {
-#ifdef REPLMD_FULL_ASYNC /* TODO: activate this code when ldb support full async code */ 
-	struct replmd_replicated_request *ar = talloc_get_type(private_data,
+	struct replmd_replicated_request *ar = talloc_get_type(req->context,
 					       struct replmd_replicated_request);
+	int ret;
 
-	ar->sub.change_ret = ldb_wait(ar->sub.search_req->handle, LDB_WAIT_ALL);
-	if (ar->sub.change_ret != LDB_SUCCESS) {
-		return replmd_replicated_request_error(ar, ar->sub.change_ret);
+
+	if (!ares) {
+		return ldb_module_done(ar->req, NULL, NULL,
+					LDB_ERR_OPERATIONS_ERROR);
+	}
+	if (ares->error != LDB_SUCCESS) {
+		return ldb_module_done(ar->req, ares->controls,
+					ares->response, ares->error);
 	}
 
-	talloc_free(ar->sub.mem_ctx);
-	ZERO_STRUCT(ar->sub);
+	if (ares->type != LDB_REPLY_DONE) {
+		ldb_set_errstring(ar->module->ldb, "Invalid reply type\n!");
+		return ldb_module_done(ar->req, NULL, NULL,
+					LDB_ERR_OPERATIONS_ERROR);
+	}
 
+	talloc_free(ares);
 	ar->index_current++;
 
-	return replmd_replicated_apply_next(ar);
-#else
+	ret = replmd_replicated_apply_next(ar);
+	if (ret != LDB_SUCCESS) {
+		return ldb_module_done(ar->req, NULL, NULL, ret);
+	}
+
 	return LDB_SUCCESS;
-#endif
 }
 
 static int replmd_replicated_apply_add(struct replmd_replicated_request *ar)
 {
+	struct ldb_request *change_req;
 	enum ndr_err_code ndr_err;
 	struct ldb_message *msg;
 	struct replPropertyMetaDataBlob *md;
@@ -696,39 +645,17 @@ static int replmd_replicated_apply_add(struct replmd_replicated_request *ar)
 
 	replmd_ldb_message_sort(msg, ar->schema);
 
-	ret = ldb_build_add_req(&ar->sub.change_req,
+	ret = ldb_build_add_req(&change_req,
 				ar->module->ldb,
-				ar->sub.mem_ctx,
-				msg,
-				NULL,
 				ar,
-				replmd_replicated_apply_add_callback);
+				msg,
+				ar->controls,
+				ar,
+				replmd_replicated_apply_add_callback,
+				ar->req);
 	if (ret != LDB_SUCCESS) return replmd_replicated_request_error(ar, ret);
 
-#ifdef REPLMD_FULL_ASYNC /* TODO: activate this code when ldb support full async code */ 
-	return ldb_next_request(ar->module, ar->sub.change_req);
-#else
-	ret = ldb_next_request(ar->module, ar->sub.change_req);
-	if (ret != LDB_SUCCESS) {
-		ldb_asprintf_errstring(ar->module->ldb, "Failed to add replicated object %s: %s", ldb_dn_get_linearized(ar->sub.change_req->op.add.message->dn), 
-				       ldb_errstring(ar->module->ldb));
-		return replmd_replicated_request_error(ar, ret);
-	}
-
-	ar->sub.change_ret = ldb_wait(ar->sub.change_req->handle, LDB_WAIT_ALL);
-	if (ar->sub.change_ret != LDB_SUCCESS) {
-		ldb_asprintf_errstring(ar->module->ldb, "Failed while waiting on add replicated object %s: %s", ldb_dn_get_linearized(ar->sub.change_req->op.add.message->dn), 
-				       ldb_errstring(ar->module->ldb));
-		return replmd_replicated_request_error(ar, ar->sub.change_ret);
-	}
-
-	talloc_free(ar->sub.mem_ctx);
-	ZERO_STRUCT(ar->sub);
-
-	ar->index_current++;
-
-	return LDB_SUCCESS;
-#endif
+	return ldb_next_request(ar->module, change_req);
 }
 
 static int replmd_replPropertyMetaData1_conflict_compare(struct replPropertyMetaData1 *m1,
@@ -752,35 +679,42 @@ static int replmd_replPropertyMetaData1_conflict_compare(struct replPropertyMeta
 	return m1->originating_usn - m2->originating_usn;
 }
 
-static int replmd_replicated_apply_merge_callback(struct ldb_context *ldb,
-						  void *private_data,
+static int replmd_replicated_apply_merge_callback(struct ldb_request *req,
 						  struct ldb_reply *ares)
 {
-#ifdef REPLMD_FULL_ASYNC /* TODO: activate this code when ldb support full async code */ 
-	struct replmd_replicated_request *ar = talloc_get_type(private_data,
+	struct replmd_replicated_request *ar = talloc_get_type(req->context,
 					       struct replmd_replicated_request);
+	int ret;
 
-	ret = ldb_next_request(ar->module, ar->sub.change_req);
-	if (ret != LDB_SUCCESS) return replmd_replicated_request_error(ar, ret);
-
-	ar->sub.change_ret = ldb_wait(ar->sub.search_req->handle, LDB_WAIT_ALL);
-	if (ar->sub.change_ret != LDB_SUCCESS) {
-		return replmd_replicated_request_error(ar, ar->sub.change_ret);
+	if (!ares) {
+		return ldb_module_done(ar->req, NULL, NULL,
+					LDB_ERR_OPERATIONS_ERROR);
+	}
+	if (ares->error != LDB_SUCCESS) {
+		return ldb_module_done(ar->req, ares->controls,
+					ares->response, ares->error);
 	}
 
-	talloc_free(ar->sub.mem_ctx);
-	ZERO_STRUCT(ar->sub);
+	if (ares->type != LDB_REPLY_DONE) {
+		ldb_set_errstring(ar->module->ldb, "Invalid reply type\n!");
+		return ldb_module_done(ar->req, NULL, NULL,
+					LDB_ERR_OPERATIONS_ERROR);
+	}
 
+	talloc_free(ares);
 	ar->index_current++;
 
+	ret = replmd_replicated_apply_next(ar);
+	if (ret != LDB_SUCCESS) {
+		return ldb_module_done(ar->req, NULL, NULL, ret);
+	}
+
 	return LDB_SUCCESS;
-#else
-	return LDB_SUCCESS;
-#endif
 }
 
 static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 {
+	struct ldb_request *change_req;
 	enum ndr_err_code ndr_err;
 	struct ldb_message *msg;
 	struct replPropertyMetaDataBlob *rmd;
@@ -801,11 +735,11 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 	/*
 	 * TODO: add rename conflict handling
 	 */
-	if (ldb_dn_compare(msg->dn, ar->sub.search_msg->dn) != 0) {
+	if (ldb_dn_compare(msg->dn, ar->search_msg->dn) != 0) {
 		ldb_debug_set(ar->module->ldb, LDB_DEBUG_FATAL, "replmd_replicated_apply_merge[%u]: rename not supported",
 			      ar->index_current);
 		ldb_debug(ar->module->ldb, LDB_DEBUG_FATAL, "%s => %s\n",
-			  ldb_dn_get_linearized(ar->sub.search_msg->dn),
+			  ldb_dn_get_linearized(ar->search_msg->dn),
 			  ldb_dn_get_linearized(msg->dn));
 		return replmd_replicated_request_werror(ar, WERR_NOT_SUPPORTED);
 	}
@@ -816,9 +750,9 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 	}
 
 	/* find existing meta data */
-	omd_value = ldb_msg_find_ldb_val(ar->sub.search_msg, "replPropertyMetaData");
+	omd_value = ldb_msg_find_ldb_val(ar->search_msg, "replPropertyMetaData");
 	if (omd_value) {
-		ndr_err = ndr_pull_struct_blob(omd_value, ar->sub.mem_ctx, 
+		ndr_err = ndr_pull_struct_blob(omd_value, ar,
 					       lp_iconv_convenience(ldb_get_opaque(ar->module->ldb, "loadparm")), &omd,
 					       (ndr_pull_flags_fn_t)ndr_pull_replPropertyMetaDataBlob);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -834,7 +768,7 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 	ZERO_STRUCT(nmd);
 	nmd.version = 1;
 	nmd.ctr.ctr1.count = omd.ctr.ctr1.count + rmd->ctr.ctr1.count;
-	nmd.ctr.ctr1.array = talloc_array(ar->sub.mem_ctx,
+	nmd.ctr.ctr1.array = talloc_array(ar,
 					  struct replPropertyMetaData1,
 					  nmd.ctr.ctr1.count);
 	if (!nmd.ctr.ctr1.array) return replmd_replicated_request_werror(ar, WERR_NOMEM);
@@ -917,14 +851,16 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 	if (msg->num_elements == 0) {
 		ldb_debug(ar->module->ldb, LDB_DEBUG_TRACE, "replmd_replicated_apply_merge[%u]: skip replace\n",
 			  ar->index_current);
-		goto next_object;
+
+		ar->index_current++;
+		return replmd_replicated_apply_next(ar);
 	}
 
 	ldb_debug(ar->module->ldb, LDB_DEBUG_TRACE, "replmd_replicated_apply_merge[%u]: replace %u attributes\n",
 		  ar->index_current, msg->num_elements);
 
 	/*
-	 * when we now that we'll modify the record, add the whenChanged, uSNChanged
+	 * when we know that we'll modify the record, add the whenChanged, uSNChanged
 	 * and replPopertyMetaData attributes
 	 */
 	ret = ldb_msg_add_string(msg, "whenChanged", ar->objs->objects[ar->index_current].when_changed);
@@ -947,150 +883,123 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 		msg->elements[i].flags = LDB_FLAG_MOD_REPLACE;
 	}
 
-	ret = ldb_build_mod_req(&ar->sub.change_req,
+	ret = ldb_build_mod_req(&change_req,
 				ar->module->ldb,
-				ar->sub.mem_ctx,
-				msg,
-				NULL,
 				ar,
-				replmd_replicated_apply_merge_callback);
+				msg,
+				ar->controls,
+				ar,
+				replmd_replicated_apply_merge_callback,
+				ar->req);
 	if (ret != LDB_SUCCESS) return replmd_replicated_request_error(ar, ret);
 
-#ifdef REPLMD_FULL_ASYNC /* TODO: activate this code when ldb support full async code */ 
-	return ldb_next_request(ar->module, ar->sub.change_req);
-#else
-	ret = ldb_next_request(ar->module, ar->sub.change_req);
-	if (ret != LDB_SUCCESS) return replmd_replicated_request_error(ar, ret);
-
-	ar->sub.change_ret = ldb_wait(ar->sub.change_req->handle, LDB_WAIT_ALL);
-	if (ar->sub.change_ret != LDB_SUCCESS) {
-		return replmd_replicated_request_error(ar, ar->sub.change_ret);
-	}
-
-next_object:
-	talloc_free(ar->sub.mem_ctx);
-	ZERO_STRUCT(ar->sub);
-
-	ar->index_current++;
-
-	return LDB_SUCCESS;
-#endif
+	return ldb_next_request(ar->module, change_req);
 }
 
-static int replmd_replicated_apply_search_callback(struct ldb_context *ldb,
-						   void *private_data,
+static int replmd_replicated_apply_search_callback(struct ldb_request *req,
 						   struct ldb_reply *ares)
 {
-	struct replmd_replicated_request *ar = talloc_get_type(private_data,
+	struct replmd_replicated_request *ar = talloc_get_type(req->context,
 					       struct replmd_replicated_request);
-	bool is_done = false;
+	int ret;
+
+	if (!ares) {
+		return ldb_module_done(ar->req, NULL, NULL,
+					LDB_ERR_OPERATIONS_ERROR);
+	}
+	if (ares->error != LDB_SUCCESS &&
+	    ares->error != LDB_ERR_NO_SUCH_OBJECT) {
+		return ldb_module_done(ar->req, ares->controls,
+					ares->response, ares->error);
+	}
 
 	switch (ares->type) {
 	case LDB_REPLY_ENTRY:
-		ar->sub.search_msg = talloc_steal(ar->sub.mem_ctx, ares->message);
+		ar->search_msg = talloc_steal(ar, ares->message);
 		break;
+
 	case LDB_REPLY_REFERRAL:
 		/* we ignore referrals */
 		break;
-	case LDB_REPLY_EXTENDED:
+
 	case LDB_REPLY_DONE:
-		is_done = true;
+		if (ar->search_msg != NULL) {
+			ret = replmd_replicated_apply_merge(ar);
+		} else {
+			ret = replmd_replicated_apply_add(ar);
+		}
+		if (ret != LDB_SUCCESS) {
+			return ldb_module_done(ar->req, NULL, NULL, ret);
+		}
 	}
 
 	talloc_free(ares);
-
-#ifdef REPLMD_FULL_ASYNC /* TODO: activate this code when ldb support full async code */ 
-	if (is_done) {
-		ar->sub.search_ret = ldb_wait(ar->sub.search_req->handle, LDB_WAIT_ALL);
-		if (ar->sub.search_ret != LDB_SUCCESS) {
-			return replmd_replicated_request_error(ar, ar->sub.search_ret);
-		}
-		if (ar->sub.search_msg) {
-			return replmd_replicated_apply_merge(ar);
-		}
-		return replmd_replicated_apply_add(ar);
-	}
-#endif
 	return LDB_SUCCESS;
 }
 
-static int replmd_replicated_apply_search(struct replmd_replicated_request *ar)
+static int replmd_replicated_uptodate_vector(struct replmd_replicated_request *ar);
+
+static int replmd_replicated_apply_next(struct replmd_replicated_request *ar)
 {
 	int ret;
 	char *tmp_str;
 	char *filter;
+	struct ldb_request *search_req;
 
-	tmp_str = ldb_binary_encode(ar->sub.mem_ctx, ar->objs->objects[ar->index_current].guid_value);
+	if (ar->index_current >= ar->objs->num_objects) {
+		/* done with it, go to the last op */
+		return replmd_replicated_uptodate_vector(ar);
+	}
+
+	ar->search_msg = NULL;
+
+	tmp_str = ldb_binary_encode(ar, ar->objs->objects[ar->index_current].guid_value);
 	if (!tmp_str) return replmd_replicated_request_werror(ar, WERR_NOMEM);
 
-	filter = talloc_asprintf(ar->sub.mem_ctx, "(objectGUID=%s)", tmp_str);
+	filter = talloc_asprintf(ar, "(objectGUID=%s)", tmp_str);
 	if (!filter) return replmd_replicated_request_werror(ar, WERR_NOMEM);
 	talloc_free(tmp_str);
 
-	ret = ldb_build_search_req(&ar->sub.search_req,
+	ret = ldb_build_search_req(&search_req,
 				   ar->module->ldb,
-				   ar->sub.mem_ctx,
+				   ar,
 				   ar->objs->partition_dn,
 				   LDB_SCOPE_SUBTREE,
 				   filter,
 				   NULL,
 				   NULL,
 				   ar,
-				   replmd_replicated_apply_search_callback);
+				   replmd_replicated_apply_search_callback,
+				   ar->req);
 	if (ret != LDB_SUCCESS) return replmd_replicated_request_error(ar, ret);
 
-#ifdef REPLMD_FULL_ASYNC /* TODO: activate this code when ldb support full async code */ 
-	return ldb_next_request(ar->module, ar->sub.search_req);
-#else
-	ret = ldb_next_request(ar->module, ar->sub.search_req);
-	if (ret != LDB_SUCCESS) return replmd_replicated_request_error(ar, ret);
-
-	ar->sub.search_ret = ldb_wait(ar->sub.search_req->handle, LDB_WAIT_ALL);
-	if (ar->sub.search_ret != LDB_SUCCESS && ar->sub.search_ret != LDB_ERR_NO_SUCH_OBJECT) {
-		return replmd_replicated_request_error(ar, ar->sub.search_ret);
-	}
-	if (ar->sub.search_msg) {
-		return replmd_replicated_apply_merge(ar);
-	}
-
-	return replmd_replicated_apply_add(ar);
-#endif
+	return ldb_next_request(ar->module, search_req);
 }
 
-static int replmd_replicated_apply_next(struct replmd_replicated_request *ar)
-{
-#ifdef REPLMD_FULL_ASYNC /* TODO: activate this code when ldb support full async code */ 
-	if (ar->index_current >= ar->objs->num_objects) {
-		return replmd_replicated_uptodate_vector(ar);
-	}
-#endif
-
-	ar->sub.mem_ctx = talloc_new(ar);
-	if (!ar->sub.mem_ctx) return replmd_replicated_request_werror(ar, WERR_NOMEM);
-
-	return replmd_replicated_apply_search(ar);
-}
-
-static int replmd_replicated_uptodate_modify_callback(struct ldb_context *ldb,
-						      void *private_data,
+static int replmd_replicated_uptodate_modify_callback(struct ldb_request *req,
 						      struct ldb_reply *ares)
 {
-#ifdef REPLMD_FULL_ASYNC /* TODO: activate this code when ldb support full async code */ 
-	struct replmd_replicated_request *ar = talloc_get_type(private_data,
+	struct replmd_replicated_request *ar = talloc_get_type(req->context,
 					       struct replmd_replicated_request);
 
-	ar->sub.change_ret = ldb_wait(ar->sub.search_req->handle, LDB_WAIT_ALL);
-	if (ar->sub.change_ret != LDB_SUCCESS) {
-		return replmd_replicated_request_error(ar, ar->sub.change_ret);
+	if (!ares) {
+		return ldb_module_done(ar->req, NULL, NULL,
+					LDB_ERR_OPERATIONS_ERROR);
+	}
+	if (ares->error != LDB_SUCCESS) {
+		return ldb_module_done(ar->req, ares->controls,
+					ares->response, ares->error);
 	}
 
-	talloc_free(ar->sub.mem_ctx);
-	ZERO_STRUCT(ar->sub);
+	if (ares->type != LDB_REPLY_DONE) {
+		ldb_set_errstring(ar->module->ldb, "Invalid reply type\n!");
+		return ldb_module_done(ar->req, NULL, NULL,
+					LDB_ERR_OPERATIONS_ERROR);
+	}
 
-	return replmd_replicated_request_done(ar);
-#else
-	return LDB_SUCCESS;
-#endif
+	talloc_free(ares);
+
+	return ldb_module_done(ar->req, NULL, NULL, LDB_SUCCESS);
 }
 
 static int replmd_drsuapi_DsReplicaCursor2_compare(const struct drsuapi_DsReplicaCursor2 *c1,
@@ -1101,6 +1010,7 @@ static int replmd_drsuapi_DsReplicaCursor2_compare(const struct drsuapi_DsReplic
 
 static int replmd_replicated_uptodate_modify(struct replmd_replicated_request *ar)
 {
+	struct ldb_request *change_req;
 	enum ndr_err_code ndr_err;
 	struct ldb_message *msg;
 	struct replUpToDateVectorBlob ouv;
@@ -1142,9 +1052,9 @@ static int replmd_replicated_uptodate_modify(struct replmd_replicated_request *a
 	/*
 	 * first create the new replUpToDateVector
 	 */
-	ouv_value = ldb_msg_find_ldb_val(ar->sub.search_msg, "replUpToDateVector");
+	ouv_value = ldb_msg_find_ldb_val(ar->search_msg, "replUpToDateVector");
 	if (ouv_value) {
-		ndr_err = ndr_pull_struct_blob(ouv_value, ar->sub.mem_ctx, 
+		ndr_err = ndr_pull_struct_blob(ouv_value, ar,
 					       lp_iconv_convenience(ldb_get_opaque(ar->module->ldb, "loadparm")), &ouv,
 					       (ndr_pull_flags_fn_t)ndr_pull_replUpToDateVectorBlob);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -1165,7 +1075,7 @@ static int replmd_replicated_uptodate_modify(struct replmd_replicated_request *a
 	 */
 	nuv.ctr.ctr2.count = 1 + ouv.ctr.ctr2.count;
 	if (ruv) nuv.ctr.ctr2.count += ruv->count;
-	nuv.ctr.ctr2.cursors = talloc_array(ar->sub.mem_ctx,
+	nuv.ctr.ctr2.cursors = talloc_array(ar,
 					    struct drsuapi_DsReplicaCursor2,
 					    nuv.ctr.ctr2.count);
 	if (!nuv.ctr.ctr2.cursors) return replmd_replicated_request_werror(ar, WERR_NOMEM);
@@ -1266,9 +1176,9 @@ static int replmd_replicated_uptodate_modify(struct replmd_replicated_request *a
 	/*
 	 * create the change ldb_message
 	 */
-	msg = ldb_msg_new(ar->sub.mem_ctx);
+	msg = ldb_msg_new(ar);
 	if (!msg) return replmd_replicated_request_werror(ar, WERR_NOMEM);
-	msg->dn = ar->sub.search_msg->dn;
+	msg->dn = ar->search_msg->dn;
 
 	ndr_err = ndr_push_struct_blob(&nuv_value, msg, 
 				       lp_iconv_convenience(ldb_get_opaque(ar->module->ldb, "loadparm")), 
@@ -1301,12 +1211,12 @@ static int replmd_replicated_uptodate_modify(struct replmd_replicated_request *a
 	 * first see if we already have a repsFrom value for the current source dsa
 	 * if so we'll later replace this value
 	 */
-	orf_el = ldb_msg_find_element(ar->sub.search_msg, "repsFrom");
+	orf_el = ldb_msg_find_element(ar->search_msg, "repsFrom");
 	if (orf_el) {
 		for (i=0; i < orf_el->num_values; i++) {
 			struct repsFromToBlob *trf;
 
-			trf = talloc(ar->sub.mem_ctx, struct repsFromToBlob);
+			trf = talloc(ar, struct repsFromToBlob);
 			if (!trf) return replmd_replicated_request_werror(ar, WERR_NOMEM);
 
 			ndr_err = ndr_pull_struct_blob(&orf_el->values[i], trf, lp_iconv_convenience(ldb_get_opaque(ar->module->ldb, "loadparm")), trf,
@@ -1375,72 +1285,62 @@ static int replmd_replicated_uptodate_modify(struct replmd_replicated_request *a
 	nrf_el->flags = LDB_FLAG_MOD_REPLACE;
 
 	/* prepare the ldb_modify() request */
-	ret = ldb_build_mod_req(&ar->sub.change_req,
+	ret = ldb_build_mod_req(&change_req,
 				ar->module->ldb,
-				ar->sub.mem_ctx,
-				msg,
-				NULL,
 				ar,
-				replmd_replicated_uptodate_modify_callback);
+				msg,
+				ar->controls,
+				ar,
+				replmd_replicated_uptodate_modify_callback,
+				ar->req);
 	if (ret != LDB_SUCCESS) return replmd_replicated_request_error(ar, ret);
 
-#ifdef REPLMD_FULL_ASYNC /* TODO: activate this code when ldb support full async code */ 
-	return ldb_next_request(ar->module, ar->sub.change_req);
-#else
-	ret = ldb_next_request(ar->module, ar->sub.change_req);
-	if (ret != LDB_SUCCESS) return replmd_replicated_request_error(ar, ret);
-
-	ar->sub.change_ret = ldb_wait(ar->sub.search_req->handle, LDB_WAIT_ALL);
-	if (ar->sub.change_ret != LDB_SUCCESS) {
-		return replmd_replicated_request_error(ar, ar->sub.change_ret);
-	}
-
-	talloc_free(ar->sub.mem_ctx);
-	ZERO_STRUCT(ar->sub);
-
-	return replmd_replicated_request_done(ar);
-#endif
+	return ldb_next_request(ar->module, change_req);
 }
 
-static int replmd_replicated_uptodate_search_callback(struct ldb_context *ldb,
-						      void *private_data,
+static int replmd_replicated_uptodate_search_callback(struct ldb_request *req,
 						      struct ldb_reply *ares)
 {
-	struct replmd_replicated_request *ar = talloc_get_type(private_data,
+	struct replmd_replicated_request *ar = talloc_get_type(req->context,
 					       struct replmd_replicated_request);
-	bool is_done = false;
+	int ret;
+
+	if (!ares) {
+		return ldb_module_done(ar->req, NULL, NULL,
+					LDB_ERR_OPERATIONS_ERROR);
+	}
+	if (ares->error != LDB_SUCCESS &&
+	    ares->error != LDB_ERR_NO_SUCH_OBJECT) {
+		return ldb_module_done(ar->req, ares->controls,
+					ares->response, ares->error);
+	}
 
 	switch (ares->type) {
 	case LDB_REPLY_ENTRY:
-		ar->sub.search_msg = talloc_steal(ar->sub.mem_ctx, ares->message);
+		ar->search_msg = talloc_steal(ar, ares->message);
 		break;
+
 	case LDB_REPLY_REFERRAL:
 		/* we ignore referrals */
 		break;
-	case LDB_REPLY_EXTENDED:
+
 	case LDB_REPLY_DONE:
-		is_done = true;
+		if (ar->search_msg == NULL) {
+			ret = replmd_replicated_request_werror(ar, WERR_DS_DRA_INTERNAL_ERROR);
+		} else {
+			ret = replmd_replicated_uptodate_modify(ar);
+		}
+		if (ret != LDB_SUCCESS) {
+			return ldb_module_done(ar->req, NULL, NULL, ret);
+		}
 	}
 
 	talloc_free(ares);
-
-#ifdef REPLMD_FULL_ASYNC /* TODO: activate this code when ldb support full async code */ 
-	if (is_done) {
-		ar->sub.search_ret = ldb_wait(ar->sub.search_req->handle, LDB_WAIT_ALL);
-		if (ar->sub.search_ret != LDB_SUCCESS) {
-			return replmd_replicated_request_error(ar, ar->sub.search_ret);
-		}
-		if (!ar->sub.search_msg) {
-			return replmd_replicated_request_werror(ar, WERR_DS_DRA_INTERNAL_ERROR);
-		}
-
-		return replmd_replicated_uptodate_modify(ar);
-	}
-#endif
 	return LDB_SUCCESS;
 }
 
-static int replmd_replicated_uptodate_search(struct replmd_replicated_request *ar)
+
+static int replmd_replicated_uptodate_vector(struct replmd_replicated_request *ar)
 {
 	int ret;
 	static const char *attrs[] = {
@@ -1448,49 +1348,32 @@ static int replmd_replicated_uptodate_search(struct replmd_replicated_request *a
 		"repsFrom",
 		NULL
 	};
+	struct ldb_request *search_req;
 
-	ret = ldb_build_search_req(&ar->sub.search_req,
+	ar->search_msg = NULL;
+
+	ret = ldb_build_search_req(&search_req,
 				   ar->module->ldb,
-				   ar->sub.mem_ctx,
+				   ar,
 				   ar->objs->partition_dn,
 				   LDB_SCOPE_BASE,
 				   "(objectClass=*)",
 				   attrs,
 				   NULL,
 				   ar,
-				   replmd_replicated_uptodate_search_callback);
+				   replmd_replicated_uptodate_search_callback,
+				   ar->req);
 	if (ret != LDB_SUCCESS) return replmd_replicated_request_error(ar, ret);
 
-#ifdef REPLMD_FULL_ASYNC /* TODO: activate this code when ldb support full async code */ 
-	return ldb_next_request(ar->module, ar->sub.search_req);
-#else
-	ret = ldb_next_request(ar->module, ar->sub.search_req);
-	if (ret != LDB_SUCCESS) return replmd_replicated_request_error(ar, ret);
-
-	ar->sub.search_ret = ldb_wait(ar->sub.search_req->handle, LDB_WAIT_ALL);
-	if (ar->sub.search_ret != LDB_SUCCESS) {
-		return replmd_replicated_request_error(ar, ar->sub.search_ret);
-	}
-	if (!ar->sub.search_msg) {
-		return replmd_replicated_request_werror(ar, WERR_DS_DRA_INTERNAL_ERROR);
-	}
-
-	return replmd_replicated_uptodate_modify(ar);
-#endif
-}
-
-static int replmd_replicated_uptodate_vector(struct replmd_replicated_request *ar)
-{
-	ar->sub.mem_ctx = talloc_new(ar);
-	if (!ar->sub.mem_ctx) return replmd_replicated_request_werror(ar, WERR_NOMEM);
-
-	return replmd_replicated_uptodate_search(ar);
+	return ldb_next_request(ar->module, search_req);
 }
 
 static int replmd_extended_replicated_objects(struct ldb_module *module, struct ldb_request *req)
 {
 	struct dsdb_extended_replicated_objects *objs;
 	struct replmd_replicated_request *ar;
+	struct ldb_control **ctrls;
+	int ret;
 
 	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "replmd_extended_replicated_objects\n");
 
@@ -1506,25 +1389,35 @@ static int replmd_extended_replicated_objects(struct ldb_module *module, struct 
 		return LDB_ERR_PROTOCOL_ERROR;
 	}
 
-	ar = replmd_replicated_init_handle(module, req, objs);
-	if (!ar) {
+	ar = replmd_ctx_init(module, req);
+	if (!ar)
 		return LDB_ERR_OPERATIONS_ERROR;
+
+	ar->objs = objs;
+	ar->schema = dsdb_get_schema(module->ldb);
+	if (!ar->schema) {
+		ldb_debug_set(module->ldb, LDB_DEBUG_FATAL, "replmd_ctx_init: no loaded schema found\n");
+		talloc_free(ar);
+		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 
-#ifdef REPLMD_FULL_ASYNC /* TODO: activate this code when ldb support full async code */ 
+	ctrls = req->controls;
+
+	if (req->controls) {
+		req->controls = talloc_memdup(ar, req->controls,
+					      talloc_get_size(req->controls));
+		if (!req->controls) return replmd_replicated_request_werror(ar, WERR_NOMEM);
+	}
+
+	ret = ldb_request_add_control(req, DSDB_CONTROL_REPLICATED_UPDATE_OID, false, NULL);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	ar->controls = req->controls;
+	req->controls = ctrls;
+
 	return replmd_replicated_apply_next(ar);
-#else
-	while (ar->index_current < ar->objs->num_objects &&
-	       req->handle->state != LDB_ASYNC_DONE) { 
-		replmd_replicated_apply_next(ar);
-	}
-
-	if (req->handle->state != LDB_ASYNC_DONE) {
-		replmd_replicated_uptodate_vector(ar);
-	}
-
-	return LDB_SUCCESS;
-#endif
 }
 
 static int replmd_extended(struct ldb_module *module, struct ldb_request *req)
@@ -1536,53 +1429,9 @@ static int replmd_extended(struct ldb_module *module, struct ldb_request *req)
 	return ldb_next_request(module, req);
 }
 
-static int replmd_wait_none(struct ldb_handle *handle) {
-	struct replmd_replicated_request *ar;
-    
-	if (!handle || !handle->private_data) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	ar = talloc_get_type(handle->private_data, struct replmd_replicated_request);
-	if (!ar) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	/* we do only sync calls */
-	if (handle->state != LDB_ASYNC_DONE) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	return handle->status;
-}
-
-static int replmd_wait_all(struct ldb_handle *handle) {
-
-	int ret;
-
-	while (handle->state != LDB_ASYNC_DONE) {
-		ret = replmd_wait_none(handle);
-		if (ret != LDB_SUCCESS) {
-			return ret;
-		}
-	}
-
-	return handle->status;
-}
-
-static int replmd_wait(struct ldb_handle *handle, enum ldb_wait_type type)
-{
-	if (type == LDB_WAIT_ALL) {
-		return replmd_wait_all(handle);
-	} else {
-		return replmd_wait_none(handle);
-	}
-}
-
 _PUBLIC_ const struct ldb_module_ops ldb_repl_meta_data_module_ops = {
 	.name          = "repl_meta_data",
 	.add           = replmd_add,
 	.modify        = replmd_modify,
 	.extended      = replmd_extended,
-	.wait          = replmd_wait
 };

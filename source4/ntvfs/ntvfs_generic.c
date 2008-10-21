@@ -533,6 +533,8 @@ NTSTATUS ntvfs_map_open(struct ntvfs_module_context *ntvfs,
 
 		/* we need to check these bits before we check the private mask */
 		if (io2->generic.in.create_options & SMB2_CREATE_OPTIONS_NOT_SUPPORTED_MASK) {
+			DEBUG(2,(__location__ " create_options 0x%x not supported\n",
+				 io2->generic.in.create_options));
 			status = NT_STATUS_NOT_SUPPORTED;
 			break;
 		}

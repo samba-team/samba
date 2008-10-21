@@ -465,6 +465,7 @@ def setup_samdb_partitions(samdb_path, setup_path, message, lp, session_info,
                     "objectclass",
                     "samldb",
                     "kludge_acl",
+                    "password_hash",
                     "operational"]
     tdb_modules_list = [
                     "subtree_rename",
@@ -516,7 +517,7 @@ def setup_samdb_partitions(samdb_path, setup_path, message, lp, session_info,
                 "DOMAINDN_LDB": domaindn_ldb,
                 "SCHEMADN_MOD": "schema_fsmo,instancetype",
                 "CONFIGDN_MOD": "naming_fsmo,instancetype",
-                "DOMAINDN_MOD": "pdc_fsmo,password_hash,instancetype",
+                "DOMAINDN_MOD": "pdc_fsmo,instancetype",
                 "MODULES_LIST": ",".join(modules_list),
                 "TDB_MODULES_LIST": tdb_modules_list_as_string,
                 "MODULES_LIST2": ",".join(modules_list2),
@@ -744,6 +745,8 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
 
     samdb = SamDB(path, session_info=session_info, 
                   credentials=credentials, lp=lp)
+    if fill == FILL_DRS:
+        return samdb
 
     message("Pre-loading the Samba 4 and AD schema")
     samdb.set_domain_sid(domainsid)
@@ -956,13 +959,16 @@ def provision(setup_dir, message, session_info,
     paths = provision_paths_from_lp(lp, names.dnsdomain)
 
     if hostip is None:
-        hostip = socket.getaddrinfo(names.hostname, None, socket.AF_INET, socket.AI_CANONNAME, socket.IPPROTO_IP)[0][-1][0]
+        try:
+            hostip = socket.getaddrinfo(names.hostname, None, socket.AF_INET, socket.AI_CANONNAME, socket.IPPROTO_IP)[0][-1][0]
+        except socket.gaierror, (socket.EAI_NODATA, msg):
+            hostip = None
 
     if hostip6 is None:
         try:
             hostip6 = socket.getaddrinfo(names.hostname, None, socket.AF_INET6, socket.AI_CANONNAME, socket.IPPROTO_IP)[0][-1][0]
-        except socket.gaierror: 
-            pass
+        except socket.gaierror, (socket.EAI_NODATA, msg): 
+            hostip6 = None
 
     if serverrole is None:
         serverrole = lp.get("server role")
@@ -1423,12 +1429,20 @@ def create_zone_file(path, setup_path, dnsdomain, domaindn,
         hostip6_base_line = ""
         hostip6_host_line = ""
 
+    if hostip is not None:
+        hostip_base_line = "            IN A    " + hostip
+        hostip_host_line = hostname + "        IN A    " + hostip
+    else:
+        hostip_base_line = ""
+        hostip_host_line = ""
+
     setup_file(setup_path("provision.zone"), path, {
             "DNSPASS_B64": b64encode(dnspass),
             "HOSTNAME": hostname,
             "DNSDOMAIN": dnsdomain,
             "REALM": realm,
-            "HOSTIP": hostip,
+            "HOSTIP_BASE_LINE": hostip_base_line,
+            "HOSTIP_HOST_LINE": hostip_host_line,
             "DOMAINGUID": domainguid,
             "DATESTRING": time.strftime("%Y%m%d%H"),
             "DEFAULTSITE": DEFAULTSITE,

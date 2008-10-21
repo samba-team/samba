@@ -21,7 +21,7 @@
 */
 
 #include "includes.h"
-#include "lib/util/dlinklist.h"
+#include "../lib/util/dlinklist.h"
 #include "smbd/process_model.h"
 
 /*

@@ -31,7 +31,7 @@
 
 %import "stdint.i"
 %include "exception.i"
-%import "../../lib/talloc/talloc.i"
+%import "../../../lib/talloc/talloc.i"
 %import "../../lib/ldb/ldb.i"
 %import "../../auth/credentials/credentials.i"
 %import "../../param/param.i"

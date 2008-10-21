@@ -49,7 +49,7 @@ bool aix_cache_reload(void)
 
 	iEtat = 0;
 	/* scan qconfig file for searching <printername>:	*/
-	for (;(line = fgets_slash(NULL, 1024, pfile)); safe_free(line)) {
+	for (;(line = fgets_slash(NULL, 1024, pfile)); free(line)) {
 		if (*line == '*' || *line == 0)
 			continue;
 
@@ -65,7 +65,7 @@ bool aix_cache_reload(void)
 				if (strcmp(p, "bsh") != 0) {
 					name = talloc_strdup(ctx, p);
 					if (!name) {
-						safe_free(line);
+						SAFE_FREE(line);
 						x_fclose(pfile);
 						TALLOC_FREE(ctx);
 						return false;
@@ -85,7 +85,7 @@ bool aix_cache_reload(void)
 				/* probably a good printer ???		*/
 				iEtat = 0;
 				if (!pcap_cache_add(name, NULL)) {
-					safe_free(line);
+					SAFE_FREE(line);
 					x_fclose(pfile);
 					TALLOC_FREE(ctx);
 					return false;
@@ -100,7 +100,7 @@ bool aix_cache_reload(void)
 				/* it's a good virtual printer */
 				iEtat = 0;
 				if (!pcap_cache_add(name, NULL)) {
-					safe_free(line);
+					SAFE_FREE(line);
 					x_fclose(pfile);
 					TALLOC_FREE(ctx);
 					return false;

@@ -464,12 +464,10 @@ struct cli_state *cli_initialise(void)
 		return NULL;
 	}
 
-	cli = talloc(NULL, struct cli_state);
+	cli = TALLOC_ZERO_P(NULL, struct cli_state);
 	if (!cli) {
 		return NULL;
 	}
-
-	ZERO_STRUCTP(cli);
 
 	cli->port = 0;
 	cli->fd = -1;

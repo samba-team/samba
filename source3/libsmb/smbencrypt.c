@@ -22,7 +22,7 @@
 */
 
 #include "includes.h"
-#include "byteorder.h"
+#include "../lib/util/byteorder.h"
 
 void SMBencrypt_hash(const uchar lm_hash[16], const uchar *c8, uchar p24[24])
 {
@@ -847,7 +847,7 @@ DATA_BLOB decrypt_drsuapi_blob(TALLOC_CTX *mem_ctx,
 	 * of the remaining bytes
 	 */
 	crc32_given = IVAL(dec_buffer.data, 0);
-	crc32_calc = crc32_calc_buffer((const char *)dec_buffer.data + 4 , dec_buffer.length - 4);
+	crc32_calc = crc32_calc_buffer(dec_buffer.data + 4 , dec_buffer.length - 4);
 	if (crc32_given != crc32_calc) {
 		DEBUG(1,("CRC32: given[0x%08X] calc[0x%08X]\n",
 		      crc32_given, crc32_calc));

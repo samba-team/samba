@@ -70,10 +70,10 @@ struct async_req *cli_read_andx_send(TALLOC_CTX *mem_ctx,
 	SSVAL(vwv + 8, 0, 0);
 	SSVAL(vwv + 9, 0, 0);
 
-	if ((SMB_BIG_UINT)offset >> 32) {
+	if ((uint64_t)offset >> 32) {
 		bigoffset = True;
 		SIVAL(vwv + 10, 0,
-		      (((SMB_BIG_UINT)offset)>>32) & 0xffffffff);
+		      (((uint64_t)offset)>>32) & 0xffffffff);
 		wct += 2;
 	}
 
@@ -543,7 +543,7 @@ static bool cli_issue_write(struct cli_state *cli,
 	      smb_buf(cli->outbuf) - smb_base(cli->outbuf) + 1);
 
 	if (large_writex) {
-		SIVAL(cli->outbuf,smb_vwv12,(((SMB_BIG_UINT)offset)>>32) & 0xffffffff);
+		SIVAL(cli->outbuf,smb_vwv12,(((uint64_t)offset)>>32) & 0xffffffff);
 	}
 
 	p = smb_base(cli->outbuf) + SVAL(cli->outbuf,smb_vwv11) -1;

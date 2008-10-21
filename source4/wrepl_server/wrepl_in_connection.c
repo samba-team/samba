@@ -218,7 +218,7 @@ NTSTATUS wreplsrv_in_connection_merge(struct wreplsrv_partner *partner,
 	/* within the wrepl task we want to be a single process, so
 	   ask for the single process model ops and pass these to the
 	   stream_setup_socket() call. */
-	model_ops = process_model_byname("single");
+	model_ops = process_model_startup(service->task->event_ctx, "single");
 	if (!model_ops) {
 		DEBUG(0,("Can't find 'single' process model_ops"));
 		return NT_STATUS_INTERNAL_ERROR;
@@ -273,7 +273,7 @@ NTSTATUS wreplsrv_setup_sockets(struct wreplsrv_service *service, struct loadpar
 	/* within the wrepl task we want to be a single process, so
 	   ask for the single process model ops and pass these to the
 	   stream_setup_socket() call. */
-	model_ops = process_model_byname("single");
+	model_ops = process_model_startup(task->event_ctx, "single");
 	if (!model_ops) {
 		DEBUG(0,("Can't find 'single' process model_ops"));
 		return NT_STATUS_INTERNAL_ERROR;

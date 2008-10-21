@@ -840,7 +840,7 @@ bool reload_services(bool test)
 
 	if (lp_loaded()) {
 		char *fname = lp_configfile();
-		if (file_exist(fname, NULL) &&
+		if (file_exist(fname) &&
 		    !strcsequal(fname, get_dyn_CONFIGFILE())) {
 			set_dyn_CONFIGFILE(fname);
 			test = False;
@@ -888,7 +888,7 @@ bool reload_services(bool test)
 enum server_exit_reason { SERVER_EXIT_NORMAL, SERVER_EXIT_ABNORMAL };
 
 static void exit_server_common(enum server_exit_reason how,
-	const char *const reason) NORETURN_ATTRIBUTE;
+	const char *const reason) _NORETURN_;
 
 static void exit_server_common(enum server_exit_reason how,
 	const char *const reason)
@@ -1067,6 +1067,30 @@ static bool deadtime_fn(const struct timeval *now, void *private_data)
 	return True;
 }
 
+/*
+ * Do the recurring log file and smb.conf reload checks.
+ */
+
+static bool housekeeping_fn(const struct timeval *now, void *private_data)
+{
+	change_to_root_user();
+
+	/* update printer queue caches if necessary */
+	update_monitored_printq_cache();
+
+	/* check if we need to reload services */
+	check_reload(time(NULL));
+
+	/* Change machine password if neccessary. */
+	attempt_machine_password_change();
+
+        /*
+	 * Force a log file check.
+	 */
+        force_check_log_size();
+        check_log_size();
+	return true;
+}
 
 /****************************************************************************
  main program.
@@ -1295,7 +1319,7 @@ extern void build_options(bool screen);
 		setpgid( (pid_t)0, (pid_t)0);
 #endif
 
-	if (!directory_exist(lp_lockdir(), NULL))
+	if (!directory_exist(lp_lockdir()))
 		mkdir(lp_lockdir(), 0755);
 
 	if (is_daemon)
@@ -1423,6 +1447,13 @@ extern void build_options(bool screen);
 			     timeval_set(IDLE_CLOSED_TIMEOUT, 0),
 			     "deadtime", deadtime_fn, NULL))) {
 		DEBUG(0, ("Could not add deadtime event\n"));
+		exit(1);
+	}
+
+	if (!(event_add_idle(smbd_event_context(), NULL,
+			     timeval_set(SMBD_SELECT_TIMEOUT, 0),
+			     "housekeeping", housekeeping_fn, NULL))) {
+		DEBUG(0, ("Could not add housekeeping event\n"));
 		exit(1);
 	}
 

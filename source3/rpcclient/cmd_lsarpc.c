@@ -61,12 +61,11 @@ done:
 static void display_query_info_1(struct lsa_AuditLogInfo *r)
 {
 	d_printf("percent_full:\t%d\n", r->percent_full);
-	d_printf("log_size:\t%d\n", r->log_size);
+	d_printf("maximum_log_size:\t%d\n", r->maximum_log_size);
 	d_printf("retention_time:\t%lld\n", (long long)r->retention_time);
 	d_printf("shutdown_in_progress:\t%d\n", r->shutdown_in_progress);
 	d_printf("time_to_shutdown:\t%lld\n", (long long)r->time_to_shutdown);
 	d_printf("next_audit_record:\t%d\n", r->next_audit_record);
-	d_printf("unknown:\t%d\n", r->unknown);
 }
 
 static void display_query_info_2(struct lsa_AuditEventsInfo *r)
@@ -103,7 +102,6 @@ static void display_query_info_11(struct lsa_AuditFullQueryInfo *r)
 {
 	d_printf("Shutdown on full: %d\n", r->shutdown_on_full);
 	d_printf("Log is full: %d\n", r->log_is_full);
-	d_printf("Unknown: %d\n", r->unknown);
 }
 
 static void display_query_info_12(struct lsa_DnsDomainInfo *r)
@@ -112,8 +110,8 @@ static void display_query_info_12(struct lsa_DnsDomainInfo *r)
 	d_printf("Domain DNS Name: %s\n", r->dns_domain.string);
 	d_printf("Domain Forest Name: %s\n", r->dns_forest.string);
 	d_printf("Domain Sid: %s\n", sid_string_tos(r->sid));
-	d_printf("Domain GUID: %s\n", smb_uuid_string(talloc_tos(),
-						      r->domain_guid));
+	d_printf("Domain GUID: %s\n", GUID_string(talloc_tos(),
+						      &r->domain_guid));
 }
 
 static void display_lsa_query_info(union lsa_PolicyInformation *info,
@@ -1184,7 +1182,8 @@ static NTSTATUS cmd_lsa_get_username(struct rpc_pipe_client *cli,
 	/* Print results */
 
 	printf("Account Name: %s, Authority Name: %s\n",
-		account_name->string, authority_name->string);
+		account_name->string, authority_name ? authority_name->string :
+		"");
 
 	rpccli_lsa_Close(cli, mem_ctx, &pol);
  done:

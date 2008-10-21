@@ -46,7 +46,7 @@ sub show($$)
 
 	print "Summary:\n\n";
 	showitem($output, "SSL in SWAT and LDAP", ["GNUTLS"]);
-	showitem($output, "threads in smbd (see --with-pthread)", ["PTHREAD"]);
+	showitem($output, "threads in server (see --with-pthread)", ["PTHREAD"]);
 	showitem($output, "intelligent command line editing", ["READLINE"]);
 	showitem($output, "changing process titles (see --with-setproctitle)", ["SETPROCTITLE"]);
 	showitem($output, "using extended attributes", ["XATTR"]);

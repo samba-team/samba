@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "utils/net.h"
+#include "librpc/gen_ndr/ndr_krb5pac.h"
 
 #ifdef HAVE_ADS
 
@@ -43,7 +44,7 @@ static const char *assume_own_realm(struct net_context *c)
 static int net_ads_cldap_netlogon(struct net_context *c, ADS_STRUCT *ads)
 {
 	char addr[INET6_ADDRSTRLEN];
-	struct nbt_cldap_netlogon_5 reply;
+	struct NETLOGON_SAM_LOGON_RESPONSE_EX reply;
 
 	print_sockaddr(addr, sizeof(addr), &ads->ldap.ss);
 	if ( !ads_cldap_netlogon_5(talloc_tos(), addr, ads->server.realm, &reply ) ) {
@@ -55,19 +56,19 @@ static int net_ads_cldap_netlogon(struct net_context *c, ADS_STRUCT *ads)
 		addr);
 
 	d_printf("Response Type: ");
-	switch (reply.type) {
-	case SAMLOGON_AD_UNK_R:
-		d_printf("SAMLOGON\n");
+	switch (reply.command) {
+	case LOGON_SAM_LOGON_USER_UNKNOWN_EX:
+		d_printf("LOGON_SAM_LOGON_USER_UNKNOWN_EX\n");
 		break;
-	case SAMLOGON_AD_R:
-		d_printf("SAMLOGON_USER\n");
+	case LOGON_SAM_LOGON_RESPONSE_EX:
+		d_printf("LOGON_SAM_LOGON_RESPONSE_EX\n");
 		break;
 	default:
-		d_printf("0x%x\n", reply.type);
+		d_printf("0x%x\n", reply.command);
 		break;
 	}
 
-	d_printf("GUID: %s\n", smb_uuid_string(talloc_tos(), reply.domain_uuid));
+	d_printf("GUID: %s\n", GUID_string(talloc_tos(), &reply.domain_uuid));
 
 	d_printf("Flags:\n"
 		 "\tIs a PDC:                                   %s\n"
@@ -182,7 +183,8 @@ static int net_ads_info(struct net_context *c, int argc, const char **argv)
 	d_printf("Realm: %s\n", ads->config.realm);
 	d_printf("Bind Path: %s\n", ads->config.bind_path);
 	d_printf("LDAP port: %d\n", ads->ldap.port);
-	d_printf("Server time: %s\n", http_timestring(ads->config.current_time));
+	d_printf("Server time: %s\n", 
+			 http_timestring(talloc_tos(), ads->config.current_time));
 
 	d_printf("KDC server: %s\n", ads->auth.kdc_server );
 	d_printf("Server time offset: %d\n", ads->auth.time_offset );
@@ -359,7 +361,7 @@ static int net_ads_workgroup(struct net_context *c, int argc, const char **argv)
 {
 	ADS_STRUCT *ads;
 	char addr[INET6_ADDRSTRLEN];
-	struct nbt_cldap_netlogon_5 reply;
+	struct NETLOGON_SAM_LOGON_RESPONSE_EX reply;
 
 	if (c->display_usage) {
 		d_printf("Usage:\n"
@@ -479,7 +481,7 @@ static int ads_user_add(struct net_context *c, int argc, const char **argv)
 	asprintf(&upn, "%s@%s", argv[0], ads->config.realm);
 	status = ads_krb5_set_password(ads->auth.kdc_server, upn, argv[1],
 				       ads->auth.time_offset);
-	safe_free(upn);
+	SAFE_FREE(upn);
 	if (ADS_ERR_OK(status)) {
 		d_printf("User %s added\n", argv[0]);
 		rc = 0;
@@ -533,7 +535,7 @@ static int ads_user_info(struct net_context *c, int argc, const char **argv)
 
 	asprintf(&searchstring, "(sAMAccountName=%s)", escaped_user);
 	rc = ads_search(ads, &res, searchstring, attrs);
-	safe_free(searchstring);
+	SAFE_FREE(searchstring);
 
 	if (!ADS_ERR_OK(rc)) {
 		d_fprintf(stderr, "ads_search: %s\n", ads_errstr(rc));

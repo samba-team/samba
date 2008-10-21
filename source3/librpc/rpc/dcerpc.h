@@ -72,4 +72,52 @@ struct dcerpc_binding {
 	uint32_t assoc_group_id;
 };
 
+
+/* dcerpc pipe flags */
+#define DCERPC_DEBUG_PRINT_IN          (1<<0)
+#define DCERPC_DEBUG_PRINT_OUT         (1<<1)
+#define DCERPC_DEBUG_PRINT_BOTH (DCERPC_DEBUG_PRINT_IN | DCERPC_DEBUG_PRINT_OUT)
+
+#define DCERPC_DEBUG_VALIDATE_IN       (1<<2)
+#define DCERPC_DEBUG_VALIDATE_OUT      (1<<3)
+#define DCERPC_DEBUG_VALIDATE_BOTH (DCERPC_DEBUG_VALIDATE_IN | DCERPC_DEBUG_VALIDATE_OUT)
+
+#define DCERPC_CONNECT                 (1<<4)
+#define DCERPC_SIGN                    (1<<5)
+#define DCERPC_SEAL                    (1<<6)
+
+#define DCERPC_PUSH_BIGENDIAN          (1<<7)
+#define DCERPC_PULL_BIGENDIAN          (1<<8)
+
+#define DCERPC_SCHANNEL                (1<<9)
+
+/* use a 128 bit session key */
+#define DCERPC_SCHANNEL_128            (1<<12)
+
+/* check incoming pad bytes */
+#define DCERPC_DEBUG_PAD_CHECK         (1<<13)
+
+/* set LIBNDR_FLAG_REF_ALLOC flag when decoding NDR */
+#define DCERPC_NDR_REF_ALLOC           (1<<14)
+
+#define DCERPC_AUTH_OPTIONS    (DCERPC_SEAL|DCERPC_SIGN|DCERPC_SCHANNEL|DCERPC_AUTH_SPNEGO|DCERPC_AUTH_KRB5|DCERPC_AUTH_NTLM)
+
+/* select spnego auth */
+#define DCERPC_AUTH_SPNEGO             (1<<15)
+
+/* select krb5 auth */
+#define DCERPC_AUTH_KRB5               (1<<16)
+
+#define DCERPC_SMB2                    (1<<17)
+
+/* select NTLM auth */
+#define DCERPC_AUTH_NTLM               (1<<18)
+
+/* this triggers the DCERPC_PFC_FLAG_CONC_MPX flag in the bind request */
+#define DCERPC_CONCURRENT_MULTIPLEX     (1<<19)
+
+/* this triggers the DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN flag in the bind request */
+#define DCERPC_HEADER_SIGNING          (1<<20)
+
+
 #endif /* __DCERPC_H__ */

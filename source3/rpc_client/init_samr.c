@@ -41,21 +41,21 @@ void init_samr_DomInfo1(struct samr_DomInfo1 *r,
  inits a structure.
 ********************************************************************/
 
-void init_samr_DomInfo2(struct samr_DomInfo2 *r,
-			NTTIME force_logoff_time,
-			const char *comment,
-			const char *domain_name,
-			const char *primary,
-			uint64_t sequence_num,
-			uint32_t unknown2,
-			enum samr_Role role,
-			uint32_t unknown3,
-			uint32_t num_users,
-			uint32_t num_groups,
-			uint32_t num_aliases)
+void init_samr_DomGeneralInformation(struct samr_DomGeneralInformation *r,
+				     NTTIME force_logoff_time,
+				     const char *oem_information,
+				     const char *domain_name,
+				     const char *primary,
+				     uint64_t sequence_num,
+				     uint32_t unknown2,
+				     enum samr_Role role,
+				     uint32_t unknown3,
+				     uint32_t num_users,
+				     uint32_t num_groups,
+				     uint32_t num_aliases)
 {
 	r->force_logoff_time = force_logoff_time;
-	init_lsa_String(&r->comment, comment);
+	init_lsa_String(&r->oem_information, oem_information);
 	init_lsa_String(&r->domain_name, domain_name);
 	init_lsa_String(&r->primary, primary);
 	r->sequence_num = sequence_num;
@@ -81,10 +81,10 @@ void init_samr_DomInfo3(struct samr_DomInfo3 *r,
  inits a structure.
 ********************************************************************/
 
-void init_samr_DomInfo4(struct samr_DomInfo4 *r,
-			const char *comment)
+void init_samr_DomOEMInformation(struct samr_DomOEMInformation *r,
+				 const char *oem_information)
 {
-	init_lsa_String(&r->comment, comment);
+	init_lsa_String(&r->oem_information, oem_information);
 }
 
 /*******************************************************************

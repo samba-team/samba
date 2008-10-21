@@ -41,16 +41,15 @@ struct ltdb_private {
 */
 struct ltdb_context {
 	struct ldb_module *module;
+	struct ldb_request *req;
+
+	bool callback_failed;
 
 	/* search stuff */
 	const struct ldb_parse_tree *tree;
 	struct ldb_dn *base;
 	enum ldb_scope scope;
 	const char * const *attrs;
-
-	/* async stuff */
-	void *context;
-	int (*callback)(struct ldb_context *, void *, struct ldb_reply *);
 };
 
 /* special record types */
@@ -80,7 +79,7 @@ int ltdb_check_at_attributes_values(const struct ldb_val *value);
 
 struct ldb_parse_tree;
 
-int ltdb_search_indexed(struct ldb_handle *handle);
+int ltdb_search_indexed(struct ltdb_context *ctx);
 int ltdb_index_add(struct ldb_module *module, const struct ldb_message *msg);
 int ltdb_index_del(struct ldb_module *module, const struct ldb_message *msg);
 int ltdb_index_one(struct ldb_module *module, const struct ldb_message *msg, int add);
@@ -110,11 +109,11 @@ int ltdb_add_attr_results(struct ldb_module *module,
 			  unsigned int *count, 
 			  struct ldb_message ***res);
 int ltdb_filter_attrs(struct ldb_message *msg, const char * const *attrs);
-int ltdb_search(struct ldb_module *module, struct ldb_request *req);
+int ltdb_search(struct ltdb_context *ctx);
 
 /* The following definitions come from lib/ldb/ldb_tdb/ldb_tdb.c  */
-struct ldb_handle *init_ltdb_handle(struct ltdb_private *ltdb, struct ldb_module *module,
-				    struct ldb_request *req);
+int ltdb_lock_read(struct ldb_module *module);
+int ltdb_unlock_read(struct ldb_module *module);
 struct TDB_DATA ltdb_key(struct ldb_module *module, struct ldb_dn *dn);
 int ltdb_store(struct ldb_module *module, const struct ldb_message *msg, int flgs);
 int ltdb_delete_noindex(struct ldb_module *module, struct ldb_dn *dn);
@@ -127,4 +126,3 @@ struct tdb_context *ltdb_wrap_open(TALLOC_CTX *mem_ctx,
 				   const char *path, int hash_size, int tdb_flags,
 				   int open_flags, mode_t mode,
 				   struct ldb_context *ldb);
-

@@ -35,20 +35,20 @@ static NET_API_STATUS test_netuserenum(const char *hostname,
 	uint32_t entries_read = 0;
 	uint32_t total_entries = 0;
 	uint32_t resume_handle = 0;
-	const char *current_name;
+	const char *current_name = NULL;
 	int found_user = 0;
 	uint8_t *buffer = NULL;
 	int i;
 
-	struct USER_INFO_0 *info0;
-	struct USER_INFO_1 *info1;
-	struct USER_INFO_2 *info2;
-	struct USER_INFO_3 *info3;
-	struct USER_INFO_4 *info4;
-	struct USER_INFO_10 *info10;
-	struct USER_INFO_11 *info11;
-	struct USER_INFO_20 *info20;
-	struct USER_INFO_23 *info23;
+	struct USER_INFO_0 *info0 = NULL;
+	struct USER_INFO_1 *info1 = NULL;
+	struct USER_INFO_2 *info2 = NULL;
+	struct USER_INFO_3 *info3 = NULL;
+	struct USER_INFO_4 *info4 = NULL;
+	struct USER_INFO_10 *info10 = NULL;
+	struct USER_INFO_11 *info11 = NULL;
+	struct USER_INFO_20 *info20 = NULL;
+	struct USER_INFO_23 *info23 = NULL;
 
 	printf("testing NetUserEnum level %d\n", level);
 

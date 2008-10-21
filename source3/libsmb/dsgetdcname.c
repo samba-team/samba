@@ -35,8 +35,7 @@ struct ip_service_name {
 static NTSTATUS make_dc_info_from_cldap_reply(TALLOC_CTX *mem_ctx,
 					      uint32_t flags,
 					      struct sockaddr_storage *ss,
-					      uint32_t nt_version,
-					      union nbt_cldap_netlogon *r,
+					      struct NETLOGON_SAM_LOGON_RESPONSE_EX *r,
 					      struct netr_DsRGetDCNameInfo **info);
 
 /****************************************************************
@@ -186,175 +185,50 @@ static NTSTATUS dsgetdcname_cache_store(TALLOC_CTX *mem_ctx,
 /****************************************************************
 ****************************************************************/
 
-#define SET_STRING(x) \
-	talloc_strdup(mem_ctx, x); \
-	NT_STATUS_HAVE_NO_MEMORY(x);
-
-static NTSTATUS map_logon29_from_cldap_reply(TALLOC_CTX *mem_ctx,
-					     uint32_t flags,
-					     struct sockaddr_storage *ss,
-					     uint32_t nt_version,
-					     union nbt_cldap_netlogon *r,
-					     struct nbt_cldap_netlogon_29 *p)
-{
-	char addr[INET6_ADDRSTRLEN];
-
-	ZERO_STRUCTP(p);
-
-	print_sockaddr(addr, sizeof(addr), ss);
-
-	/* FIXME */
-	p->dc_sock_addr_size = 0x10; /* the w32 winsock addr size */
-	p->dc_sock_addr.family = 2; /* AF_INET */
-	p->dc_sock_addr.pdc_ip = talloc_strdup(mem_ctx, addr);
-
-	switch (nt_version & 0x0000001f) {
-		case 0:
-			return NT_STATUS_INVALID_PARAMETER;
-		case 1:
-		case 16:
-		case 17:
-			p->pdc_name	= SET_STRING(r->logon1.pdc_name);
-			p->domain	= SET_STRING(r->logon1.domain_name);
-
-			if (flags & DS_PDC_REQUIRED) {
-				p->server_type = NBT_SERVER_WRITABLE |
-						 NBT_SERVER_PDC;
-			}
-			break;
-		case 2:
-		case 3:
-		case 18:
-		case 19:
-			p->pdc_name	= SET_STRING(r->logon3.pdc_name);
-			p->domain	= SET_STRING(r->logon3.domain_name);
-			p->pdc_dns_name	= SET_STRING(r->logon3.pdc_dns_name);
-			p->dns_domain	= SET_STRING(r->logon3.dns_domain);
-			p->server_type	= r->logon3.server_type;
-			p->forest	= SET_STRING(r->logon3.forest);
-			p->domain_uuid	= r->logon3.domain_uuid;
-
-			break;
-		case 4:
-		case 5:
-		case 6:
-		case 7:
-			p->pdc_name	= SET_STRING(r->logon5.pdc_name);
-			p->domain	= SET_STRING(r->logon5.domain);
-			p->pdc_dns_name	= SET_STRING(r->logon5.pdc_dns_name);
-			p->dns_domain	= SET_STRING(r->logon5.dns_domain);
-			p->server_type	= r->logon5.server_type;
-			p->forest	= SET_STRING(r->logon5.forest);
-			p->domain_uuid	= r->logon5.domain_uuid;
-			p->server_site	= SET_STRING(r->logon5.server_site);
-			p->client_site	= SET_STRING(r->logon5.client_site);
-
-			break;
-		case 8:
-		case 9:
-		case 10:
-		case 11:
-		case 12:
-		case 13:
-		case 14:
-		case 15:
-			p->pdc_name	= SET_STRING(r->logon13.pdc_name);
-			p->domain	= SET_STRING(r->logon13.domain);
-			p->pdc_dns_name	= SET_STRING(r->logon13.pdc_dns_name);
-			p->dns_domain	= SET_STRING(r->logon13.dns_domain);
-			p->server_type	= r->logon13.server_type;
-			p->forest	= SET_STRING(r->logon13.forest);
-			p->domain_uuid	= r->logon13.domain_uuid;
-			p->server_site	= SET_STRING(r->logon13.server_site);
-			p->client_site	= SET_STRING(r->logon13.client_site);
-
-			break;
-		case 20:
-		case 21:
-		case 22:
-		case 23:
-		case 24:
-		case 25:
-		case 26:
-		case 27:
-		case 28:
-			p->pdc_name	= SET_STRING(r->logon15.pdc_name);
-			p->domain	= SET_STRING(r->logon15.domain);
-			p->pdc_dns_name	= SET_STRING(r->logon15.pdc_dns_name);
-			p->dns_domain	= SET_STRING(r->logon15.dns_domain);
-			p->server_type	= r->logon15.server_type;
-			p->forest	= SET_STRING(r->logon15.forest);
-			p->domain_uuid	= r->logon15.domain_uuid;
-			p->server_site	= SET_STRING(r->logon15.server_site);
-			p->client_site	= SET_STRING(r->logon15.client_site);
-
-			break;
-		case 29:
-		case 30:
-		case 31:
-			p->pdc_name	= SET_STRING(r->logon29.pdc_name);
-			p->domain	= SET_STRING(r->logon29.domain);
-			p->pdc_dns_name	= SET_STRING(r->logon29.pdc_dns_name);
-			p->dns_domain	= SET_STRING(r->logon29.dns_domain);
-			p->server_type	= r->logon29.server_type;
-			p->forest	= SET_STRING(r->logon29.forest);
-			p->domain_uuid	= r->logon29.domain_uuid;
-			p->server_site	= SET_STRING(r->logon29.server_site);
-			p->client_site	= SET_STRING(r->logon29.client_site);
-			p->next_closest_site = SET_STRING(r->logon29.next_closest_site);
-
-			break;
-		default:
-			return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	return NT_STATUS_OK;
-}
-
-/****************************************************************
-****************************************************************/
-
 static NTSTATUS store_cldap_reply(TALLOC_CTX *mem_ctx,
 				  uint32_t flags,
 				  struct sockaddr_storage *ss,
 				  uint32_t nt_version,
-				  union nbt_cldap_netlogon *r)
+				  struct NETLOGON_SAM_LOGON_RESPONSE_EX *r)
 {
 	DATA_BLOB blob;
 	enum ndr_err_code ndr_err;
 	NTSTATUS status;
-	struct nbt_cldap_netlogon_29 logon29;
+	char addr[INET6_ADDRSTRLEN];
 
-	status = map_logon29_from_cldap_reply(mem_ctx, flags, ss,
-					      nt_version, r, &logon29);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
+       print_sockaddr(addr, sizeof(addr), ss);
 
-	ndr_err = ndr_push_struct_blob(&blob, mem_ctx, &logon29,
-		       (ndr_push_flags_fn_t)ndr_push_nbt_cldap_netlogon_29);
+	/* FIXME */
+	r->sockaddr_size = 0x10; /* the w32 winsock addr size */
+	r->sockaddr.sockaddr_family = 2; /* AF_INET */
+	r->sockaddr.pdc_ip = talloc_strdup(mem_ctx, addr);
+
+	ndr_err = ndr_push_struct_blob(&blob, mem_ctx, NULL, r,
+		       (ndr_push_flags_fn_t)ndr_push_NETLOGON_SAM_LOGON_RESPONSE_EX);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return ndr_map_error2ntstatus(ndr_err);
 	}
 
-	if (logon29.domain) {
-		status = dsgetdcname_cache_store(mem_ctx, logon29.domain, &blob);
+	if (r->domain) {
+		status = dsgetdcname_cache_store(mem_ctx, r->domain, &blob);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto done;
 		}
-		if (logon29.client_site) {
-			sitename_store(logon29.domain, logon29.client_site);
+		if (r->client_site) {
+			sitename_store(r->domain, r->client_site);
 		}
 	}
-	if (logon29.dns_domain) {
-		status = dsgetdcname_cache_store(mem_ctx, logon29.dns_domain, &blob);
+	if (r->dns_domain) {
+		status = dsgetdcname_cache_store(mem_ctx, r->dns_domain, &blob);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto done;
 		}
-		if (logon29.client_site) {
-			sitename_store(logon29.dns_domain, logon29.client_site);
+		if (r->client_site) {
+			sitename_store(r->dns_domain, r->client_site);
 		}
 	}
+
+	status = NT_STATUS_OK;
 
  done:
 	data_blob_free(&blob);
@@ -387,7 +261,7 @@ static NTSTATUS dsgetdcname_cache_refresh(TALLOC_CTX *mem_ctx,
 /****************************************************************
 ****************************************************************/
 
-static uint32_t get_cldap_reply_server_flags(union nbt_cldap_netlogon *r,
+static uint32_t get_cldap_reply_server_flags(struct netlogon_samlogon_response *r,
 					     uint32_t nt_version)
 {
 	switch (nt_version & 0x0000001f) {
@@ -400,12 +274,12 @@ static uint32_t get_cldap_reply_server_flags(union nbt_cldap_netlogon *r,
 		case 3:
 		case 18:
 		case 19:
-			return r->logon3.server_type;
+			return r->data.nt5.server_type;
 		case 4:
 		case 5:
 		case 6:
 		case 7:
-			return r->logon5.server_type;
+			return r->data.nt5_ex.server_type;
 		case 8:
 		case 9:
 		case 10:
@@ -414,7 +288,7 @@ static uint32_t get_cldap_reply_server_flags(union nbt_cldap_netlogon *r,
 		case 13:
 		case 14:
 		case 15:
-			return r->logon13.server_type;
+			return r->data.nt5_ex.server_type;
 		case 20:
 		case 21:
 		case 22:
@@ -424,11 +298,11 @@ static uint32_t get_cldap_reply_server_flags(union nbt_cldap_netlogon *r,
 		case 26:
 		case 27:
 		case 28:
-			return r->logon15.server_type;
+			return r->data.nt5_ex.server_type;
 		case 29:
 		case 30:
 		case 31:
-			return r->logon29.server_type;
+			return r->data.nt5_ex.server_type;
 		default:
 			return 0;
 	}
@@ -486,8 +360,7 @@ static NTSTATUS dsgetdcname_cache_fetch(TALLOC_CTX *mem_ctx,
 	DATA_BLOB blob;
 	enum ndr_err_code ndr_err;
 	struct netr_DsRGetDCNameInfo *info;
-	union nbt_cldap_netlogon p;
-	struct nbt_cldap_netlogon_29 r;
+	struct NETLOGON_SAM_LOGON_RESPONSE_EX r;
 	NTSTATUS status;
 
 	if (!gencache_init()) {
@@ -508,8 +381,8 @@ static NTSTATUS dsgetdcname_cache_fetch(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	ndr_err = ndr_pull_struct_blob(&blob, mem_ctx, &r,
-		      (ndr_pull_flags_fn_t)ndr_pull_nbt_cldap_netlogon_29);
+	ndr_err = ndr_pull_struct_blob(&blob, mem_ctx, NULL, &r,
+		      (ndr_pull_flags_fn_t)ndr_pull_NETLOGON_SAM_LOGON_RESPONSE_EX);
 
 	data_blob_free(&blob);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -517,11 +390,8 @@ static NTSTATUS dsgetdcname_cache_fetch(TALLOC_CTX *mem_ctx,
 		return ndr_map_error2ntstatus(ndr_err);
 	}
 
-	p.logon29 = r;
-
 	status = make_dc_info_from_cldap_reply(mem_ctx, flags, NULL,
-					       29,
-					       &p, &info);
+					       &r, &info);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -916,8 +786,7 @@ static void map_dc_and_domain_names(uint32_t flags,
 static NTSTATUS make_dc_info_from_cldap_reply(TALLOC_CTX *mem_ctx,
 					      uint32_t flags,
 					      struct sockaddr_storage *ss,
-					      uint32_t nt_version,
-					      union nbt_cldap_netlogon *r,
+					      struct NETLOGON_SAM_LOGON_RESPONSE_EX *r,
 					      struct netr_DsRGetDCNameInfo **info)
 {
 	const char *dc_hostname = NULL;
@@ -938,163 +807,28 @@ static NTSTATUS make_dc_info_from_cldap_reply(TALLOC_CTX *mem_ctx,
 		dc_address_type = DS_ADDRESS_TYPE_INET;
 	}
 
-	switch (nt_version & 0x0000001f) {
-		case 0:
-		case 1:
-		case 16:
-		case 17:
-			if (!ss) {
-				dc_address	= r->logon1.pdc_name;
-				dc_address_type	= DS_ADDRESS_TYPE_NETBIOS;
-			}
-
-			map_dc_and_domain_names(flags,
-						r->logon1.pdc_name,
-						r->logon1.domain_name,
-						NULL,
-						NULL,
-						&dc_flags,
-						&dc_hostname,
-						&dc_domain_name);
-
-			if (flags & DS_PDC_REQUIRED) {
-				dc_flags = NBT_SERVER_WRITABLE | NBT_SERVER_PDC;
-			}
-			break;
-		case 2:
-		case 3:
-		case 18:
-		case 19:
-			if (!ss) {
-				dc_address	= r->logon3.pdc_ip;
-				dc_address_type	= DS_ADDRESS_TYPE_INET;
-			}
-
-			map_dc_and_domain_names(flags,
-						r->logon3.pdc_name,
-						r->logon3.domain_name,
-						r->logon3.pdc_dns_name,
-						r->logon3.dns_domain,
-						&dc_flags,
-						&dc_hostname,
-						&dc_domain_name);
-
-			dc_flags	|= r->logon3.server_type;
-			dc_forest	= r->logon3.forest;
-			dc_domain_guid	= &r->logon3.domain_uuid;
-
-			break;
-		case 4:
-		case 5:
-		case 6:
-		case 7:
-			if (!ss) {
-				dc_address	= r->logon5.pdc_name;
-				dc_address_type	= DS_ADDRESS_TYPE_NETBIOS;
-			}
-
-			map_dc_and_domain_names(flags,
-						r->logon5.pdc_name,
-						r->logon5.domain,
-						r->logon5.pdc_dns_name,
-						r->logon5.dns_domain,
-						&dc_flags,
-						&dc_hostname,
-						&dc_domain_name);
-
-			dc_flags	|= r->logon5.server_type;
-			dc_forest	= r->logon5.forest;
-			dc_domain_guid	= &r->logon5.domain_uuid;
-			dc_server_site	= r->logon5.server_site;
-			dc_client_site	= r->logon5.client_site;
-
-			break;
-		case 8:
-		case 9:
-		case 10:
-		case 11:
-		case 12:
-		case 13:
-		case 14:
-		case 15:
-			if (!ss) {
-				dc_address	= r->logon13.dc_sock_addr.pdc_ip;
-				dc_address_type	= DS_ADDRESS_TYPE_INET;
-			}
-
-			map_dc_and_domain_names(flags,
-						r->logon13.pdc_name,
-						r->logon13.domain,
-						r->logon13.pdc_dns_name,
-						r->logon13.dns_domain,
-						&dc_flags,
-						&dc_hostname,
-						&dc_domain_name);
-
-			dc_flags	|= r->logon13.server_type;
-			dc_forest	= r->logon13.forest;
-			dc_domain_guid	= &r->logon13.domain_uuid;
-			dc_server_site	= r->logon13.server_site;
-			dc_client_site	= r->logon13.client_site;
-
-			break;
-		case 20:
-		case 21:
-		case 22:
-		case 23:
-		case 24:
-		case 25:
-		case 26:
-		case 27:
-		case 28:
-			if (!ss) {
-				dc_address	= r->logon15.pdc_name;
-				dc_address_type	= DS_ADDRESS_TYPE_NETBIOS;
-			}
-
-			map_dc_and_domain_names(flags,
-						r->logon15.pdc_name,
-						r->logon15.domain,
-						r->logon15.pdc_dns_name,
-						r->logon15.dns_domain,
-						&dc_flags,
-						&dc_hostname,
-						&dc_domain_name);
-
-			dc_flags	|= r->logon15.server_type;
-			dc_forest	= r->logon15.forest;
-			dc_domain_guid	= &r->logon15.domain_uuid;
-			dc_server_site	= r->logon15.server_site;
-			dc_client_site	= r->logon15.client_site;
-
-			break;
-		case 29:
-		case 30:
-		case 31:
-			if (!ss) {
-				dc_address	= r->logon29.dc_sock_addr.pdc_ip;
-				dc_address_type	= DS_ADDRESS_TYPE_INET;
-			}
-
-			map_dc_and_domain_names(flags,
-						r->logon29.pdc_name,
-						r->logon29.domain,
-						r->logon29.pdc_dns_name,
-						r->logon29.dns_domain,
-						&dc_flags,
-						&dc_hostname,
-						&dc_domain_name);
-
-			dc_flags	|= r->logon29.server_type;
-			dc_forest	= r->logon29.forest;
-			dc_domain_guid	= &r->logon29.domain_uuid;
-			dc_server_site	= r->logon29.server_site;
-			dc_client_site	= r->logon29.client_site;
-
-			break;
-		default:
-			return NT_STATUS_INVALID_PARAMETER;
+	if (!ss && r->sockaddr.pdc_ip) {
+		dc_address	= r->sockaddr.pdc_ip;
+		dc_address_type	= DS_ADDRESS_TYPE_INET;
+	} else {
+		dc_address      = r->pdc_name;
+		dc_address_type = DS_ADDRESS_TYPE_NETBIOS;
 	}
+
+	map_dc_and_domain_names(flags,
+				r->pdc_name,
+				r->domain,
+				r->pdc_dns_name,
+				r->dns_domain,
+				&dc_flags,
+				&dc_hostname,
+				&dc_domain_name);
+
+	dc_flags	|= r->server_type;
+	dc_forest	= r->forest;
+	dc_domain_guid	= &r->domain_uuid;
+	dc_server_site	= r->server_site;
+	dc_client_site	= r->client_site;
 
 	return make_domain_controller_info(mem_ctx,
 					   dc_hostname,
@@ -1117,19 +851,19 @@ static uint32_t map_ds_flags_to_nt_version(uint32_t flags)
 	uint32_t nt_version = 0;
 
 	if (flags & DS_PDC_REQUIRED) {
-		nt_version |= NETLOGON_VERSION_PDC;
+		nt_version |= NETLOGON_NT_VERSION_PDC;
 	}
 
 	if (flags & DS_GC_SERVER_REQUIRED) {
-		nt_version |= NETLOGON_VERSION_GC;
+		nt_version |= NETLOGON_NT_VERSION_GC;
 	}
 
 	if (flags & DS_TRY_NEXTCLOSEST_SITE) {
-		nt_version |= NETLOGON_VERSION_WITH_CLOSEST_SITE;
+		nt_version |= NETLOGON_NT_VERSION_WITH_CLOSEST_SITE;
 	}
 
 	if (flags & DS_IP_REQUIRED) {
-		nt_version |= NETLOGON_VERSION_IP;
+		nt_version |= NETLOGON_NT_VERSION_IP;
 	}
 
 	return nt_version;
@@ -1147,9 +881,9 @@ static NTSTATUS process_dc_dns(TALLOC_CTX *mem_ctx,
 {
 	int i = 0;
 	bool valid_dc = false;
-	union nbt_cldap_netlogon *r = NULL;
-	uint32_t nt_version = NETLOGON_VERSION_5 |
-			      NETLOGON_VERSION_5EX;
+	struct netlogon_samlogon_response *r = NULL;
+	uint32_t nt_version = NETLOGON_NT_VERSION_5 |
+			      NETLOGON_NT_VERSION_5EX;
 	uint32_t ret_flags = 0;
 	NTSTATUS status;
 
@@ -1161,9 +895,10 @@ static NTSTATUS process_dc_dns(TALLOC_CTX *mem_ctx,
 
 		if (ads_cldap_netlogon(mem_ctx, dclist[i].hostname,
 					domain_name,
-					&nt_version,
+					nt_version,
 					&r))
 		{
+			nt_version = r->ntver;
 			ret_flags = get_cldap_reply_server_flags(r, nt_version);
 
 			if (check_cldap_reply_required_flags(ret_flags, flags)) {
@@ -1180,10 +915,10 @@ static NTSTATUS process_dc_dns(TALLOC_CTX *mem_ctx,
 	}
 
 	status = make_dc_info_from_cldap_reply(mem_ctx, flags, &dclist[i].ss,
-					       nt_version, r, info);
+					       &r->data.nt5_ex, info);
 	if (NT_STATUS_IS_OK(status)) {
 		return store_cldap_reply(mem_ctx, flags, &dclist[i].ss,
-					 nt_version, r);
+					 nt_version, &r->data.nt5_ex);
 	}
 
 	return status;
@@ -1234,11 +969,11 @@ static NTSTATUS process_dc_netbios(TALLOC_CTX *mem_ctx,
 	int i;
 	const char *dc_name = NULL;
 	fstring tmp_dc_name;
-	union nbt_cldap_netlogon *r = NULL;
+	struct netlogon_samlogon_response *r = NULL;
 	bool store_cache = false;
-	uint32_t nt_version = NETLOGON_VERSION_1 |
-			      NETLOGON_VERSION_5 |
-			      NETLOGON_VERSION_5EX_WITH_IP;
+	uint32_t nt_version = NETLOGON_NT_VERSION_1 |
+			      NETLOGON_NT_VERSION_5 |
+			      NETLOGON_NT_VERSION_5EX_WITH_IP;
 
 	if (!msg_ctx) {
 		msg_ctx = msg_context(mem_ctx);
@@ -1288,21 +1023,22 @@ static NTSTATUS process_dc_netbios(TALLOC_CTX *mem_ctx,
 				     &dclist[i].ss,
 				     tmp_dc_name))
 		{
-			struct nbt_cldap_netlogon_1 logon1;
+			struct NETLOGON_SAM_LOGON_RESPONSE_NT40 logon1;
 
-			r = TALLOC_ZERO_P(mem_ctx, union nbt_cldap_netlogon);
+			r = TALLOC_ZERO_P(mem_ctx, struct netlogon_samlogon_response);
 			NT_STATUS_HAVE_NO_MEMORY(r);
 
 			ZERO_STRUCT(logon1);
 
-			nt_version = NETLOGON_VERSION_1;
+			nt_version = NETLOGON_NT_VERSION_1;
 
 			logon1.nt_version = nt_version;
-			logon1.pdc_name = tmp_dc_name;
-			logon1.domain_name = talloc_strdup_upper(mem_ctx, domain_name);
-			NT_STATUS_HAVE_NO_MEMORY(logon1.domain_name);
+			logon1.server = tmp_dc_name;
+			logon1.domain = talloc_strdup_upper(mem_ctx, domain_name);
+			NT_STATUS_HAVE_NO_MEMORY(logon1.domain);
 
-			r->logon1 = logon1;
+			r->data.nt4 = logon1;
+			r->ntver = nt_version;
 
 			namecache_store(tmp_dc_name, NBT_NAME_SERVER, 1, &ip_list);
 
@@ -1315,10 +1051,10 @@ static NTSTATUS process_dc_netbios(TALLOC_CTX *mem_ctx,
  make_reply:
 
 	status = make_dc_info_from_cldap_reply(mem_ctx, flags, &dclist[i].ss,
-					       nt_version, r, info);
+					       &r->data.nt5_ex, info);
 	if (NT_STATUS_IS_OK(status) && store_cache) {
 		return store_cldap_reply(mem_ctx, flags, &dclist[i].ss,
-					 nt_version, r);
+					 nt_version, &r->data.nt5_ex);
 	}
 
 	return status;

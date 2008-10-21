@@ -24,30 +24,8 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
-#define	PIPE		"\\PIPE\\"
-#define	PIPELEN		strlen(PIPE)
-
-static smb_np_struct *chain_p;
 static int pipes_open;
 
-/*
- * Sometimes I can't decide if I hate Windows printer driver
- * writers more than I hate the Windows spooler service driver
- * writers. This gets around a combination of bugs in the spooler
- * and the HP 8500 PCL driver that causes a spooler spin. JRA.
- *
- * bumped up from 20 -> 64 after viewing traffic from WordPerfect
- * 2002 running on NT 4.- SP6
- * bumped up from 64 -> 256 after viewing traffic from con2prt
- * for lots of printers on a WinNT 4.x SP6 box.
- */
- 
-#ifndef MAX_OPEN_SPOOLSS_PIPES
-#define MAX_OPEN_SPOOLSS_PIPES 256
-#endif
-static int current_spoolss_pipes_open;
-
-static smb_np_struct *Pipes;
 static pipes_struct *InternalPipes;
 static struct bitmap *bmap;
 
@@ -94,15 +72,6 @@ void set_pipe_handle_offset(int max_open_files)
 }
 
 /****************************************************************************
- Reset pipe chain handle number.
-****************************************************************************/
-
-void reset_chain_p(void)
-{
-	chain_p = NULL;
-}
-
-/****************************************************************************
  Initialise pipe handle states.
 ****************************************************************************/
 
@@ -145,132 +114,20 @@ static bool pipe_init_outgoing_data(pipes_struct *p)
 }
 
 /****************************************************************************
- Find first available pipe slot.
-****************************************************************************/
-
-smb_np_struct *open_rpc_pipe_p(const char *pipe_name, 
-			      connection_struct *conn, uint16 vuid)
-{
-	int i;
-	smb_np_struct *p, *p_it;
-	static int next_pipe;
-	bool is_spoolss_pipe = False;
-
-	DEBUG(4,("Open pipe requested %s (pipes_open=%d)\n",
-		 pipe_name, pipes_open));
-
-	if (strstr(pipe_name, "spoolss")) {
-		is_spoolss_pipe = True;
-	}
- 
-	if (is_spoolss_pipe && current_spoolss_pipes_open >= MAX_OPEN_SPOOLSS_PIPES) {
-		DEBUG(10,("open_rpc_pipe_p: spooler bug workaround. Denying open on pipe %s\n",
-			pipe_name ));
-		return NULL;
-	}
-
-	/* not repeating pipe numbers makes it easier to track things in 
-	   log files and prevents client bugs where pipe numbers are reused
-	   over connection restarts */
-
-	if (next_pipe == 0) {
-		next_pipe = (sys_getpid() ^ time(NULL)) % MAX_OPEN_PIPES;
-	}
-
-	i = bitmap_find(bmap, next_pipe);
-
-	if (i == -1) {
-		DEBUG(0,("ERROR! Out of pipe structures\n"));
-		return NULL;
-	}
-
-	next_pipe = (i+1) % MAX_OPEN_PIPES;
-
-	for (p = Pipes; p; p = p->next) {
-		DEBUG(5,("open_rpc_pipe_p: name %s pnum=%x\n", p->name, p->pnum));  
-	}
-
-	p = talloc(NULL, smb_np_struct);
-	if (!p) {
-		DEBUG(0,("ERROR! no memory for smb_np_struct!\n"));
-		return NULL;
-	}
-
-	ZERO_STRUCTP(p);
-
-	p->name = talloc_strdup(p, pipe_name);
-	if (p->name == NULL) {
-		TALLOC_FREE(p);
-		DEBUG(0,("ERROR! no memory for pipe name!\n"));
-		return NULL;
-	}
-
-	/* add a dso mechanism instead of this, here */
-
-	p->namedpipe_create = make_internal_rpc_pipe_p;
-	p->namedpipe_read = read_from_internal_pipe;
-	p->namedpipe_write = write_to_internal_pipe;
-
-	p->np_state = p->namedpipe_create(pipe_name, conn->client_address,
-					  conn->server_info, vuid);
-
-	if (p->np_state == NULL) {
-		DEBUG(0,("open_rpc_pipe_p: make_internal_rpc_pipe_p failed.\n"));
-		TALLOC_FREE(p);
-		return NULL;
-	}
-
-	DLIST_ADD(Pipes, p);
-
-	/*
-	 * Initialize the incoming RPC data buffer with one PDU worth of memory.
-	 * We cheat here and say we're marshalling, as we intend to add incoming
-	 * data directly into the prs_struct and we want it to auto grow. We will
-	 * change the type to UNMARSALLING before processing the stream.
-	 */
-
-	bitmap_set(bmap, i);
-	i += pipe_handle_offset;
-
-	pipes_open++;
-
-	p->pnum = i;
-
-	p->open = True;
-	p->device_state = 0;
-	p->priority = 0;
-	p->conn = conn;
-	p->vuid  = vuid;
-
-	p->max_trans_reply = 0;
-
-	DEBUG(4,("Opened pipe %s with handle %x (pipes_open=%d)\n",
-		 pipe_name, i, pipes_open));
-	
-	chain_p = p;
-	
-	/* Iterate over p_it as a temp variable, to display all open pipes */ 
-	for (p_it = Pipes; p_it; p_it = p_it->next) {
-		DEBUG(5,("open pipes: name %s pnum=%x\n", p_it->name, p_it->pnum));  
-	}
-
-	return chain_p;
-}
-
-/****************************************************************************
  Make an internal namedpipes structure
 ****************************************************************************/
 
-struct pipes_struct *make_internal_rpc_pipe_p(const char *pipe_name,
-					      const char *client_address,
-					      struct auth_serversupplied_info *server_info,
-					      uint16_t vuid)
+static struct pipes_struct *make_internal_rpc_pipe_p(TALLOC_CTX *mem_ctx,
+						     const char *pipe_name,
+						     const char *client_address,
+						     struct auth_serversupplied_info *server_info,
+						     uint16_t vuid)
 {
 	pipes_struct *p;
 
 	DEBUG(4,("Create pipe requested %s\n", pipe_name));
 
-	p = TALLOC_ZERO_P(NULL, pipes_struct);
+	p = TALLOC_ZERO_P(mem_ctx, struct pipes_struct);
 
 	if (!p) {
 		DEBUG(0,("ERROR! no memory for pipes_struct!\n"));
@@ -903,26 +760,10 @@ incoming data size = %u\n", (unsigned int)p->in_data.pdu_received_len, (unsigned
 }
 
 /****************************************************************************
- Accepts incoming data on an rpc pipe.
-****************************************************************************/
-
-ssize_t write_to_pipe(smb_np_struct *p, char *data, size_t n)
-{
-	DEBUG(6,("write_to_pipe: %x", p->pnum));
-
-	DEBUG(6,(" name: %s open: %s len: %d\n",
-		 p->name, BOOLSTR(p->open), (int)n));
-
-	dump_data(50, (uint8 *)data, n);
-
-	return p->namedpipe_write(p->np_state, data, n);
-}
-
-/****************************************************************************
  Accepts incoming data on an internal rpc pipe.
 ****************************************************************************/
 
-ssize_t write_to_internal_pipe(struct pipes_struct *p, char *data, size_t n)
+static ssize_t write_to_internal_pipe(struct pipes_struct *p, char *data, size_t n)
 {
 	size_t data_left = n;
 
@@ -957,32 +798,8 @@ ssize_t write_to_internal_pipe(struct pipes_struct *p, char *data, size_t n)
  have been prepared into arrays of headers + data stream sections.
 ****************************************************************************/
 
-ssize_t read_from_pipe(smb_np_struct *p, char *data, size_t n,
-		bool *is_data_outstanding)
-{
-	if (!p || !p->open) {
-		DEBUG(0,("read_from_pipe: pipe not open\n"));
-		return -1;		
-	}
-
-	DEBUG(6,("read_from_pipe: %x", p->pnum));
-
-	return p->namedpipe_read(p->np_state, data, n, is_data_outstanding);
-}
-
-/****************************************************************************
- Replies to a request to read data from a pipe.
-
- Headers are interspersed with the data at PDU intervals. By the time
- this function is called, the start of the data could possibly have been
- read by an SMBtrans (file_offset != 0).
-
- Calling create_rpc_reply() here is a hack. The data should already
- have been prepared into arrays of headers + data stream sections.
-****************************************************************************/
-
-ssize_t read_from_internal_pipe(struct pipes_struct *p, char *data, size_t n,
-				bool *is_data_outstanding)
+static ssize_t read_from_internal_pipe(struct pipes_struct *p, char *data, size_t n,
+				       bool *is_data_outstanding)
 {
 	uint32 pdu_remaining = 0;
 	ssize_t data_returned = 0;
@@ -1072,106 +889,6 @@ returning %d bytes.\n", p->name, (unsigned int)p->out_data.current_pdu_len,
 }
 
 /****************************************************************************
- Wait device state on a pipe. Exactly what this is for is unknown...
-****************************************************************************/
-
-bool wait_rpc_pipe_hnd_state(smb_np_struct *p, uint16 priority)
-{
-	if (p == NULL) {
-		return False;
-	}
-
-	if (p->open) {
-		DEBUG(3,("wait_rpc_pipe_hnd_state: Setting pipe wait state priority=%x on pipe (name=%s)\n",
-		         priority, p->name));
-
-		p->priority = priority;
-		
-		return True;
-	} 
-
-	DEBUG(3,("wait_rpc_pipe_hnd_state: Error setting pipe wait state priority=%x (name=%s)\n",
-		 priority, p->name));
-	return False;
-}
-
-
-/****************************************************************************
- Set device state on a pipe. Exactly what this is for is unknown...
-****************************************************************************/
-
-bool set_rpc_pipe_hnd_state(smb_np_struct *p, uint16 device_state)
-{
-	if (p == NULL) {
-		return False;
-	}
-
-	if (p->open) {
-		DEBUG(3,("set_rpc_pipe_hnd_state: Setting pipe device state=%x on pipe (name=%s)\n",
-		         device_state, p->name));
-
-		p->device_state = device_state;
-		
-		return True;
-	} 
-
-	DEBUG(3,("set_rpc_pipe_hnd_state: Error setting pipe device state=%x (name=%s)\n",
-		 device_state, p->name));
-	return False;
-}
-
-
-/****************************************************************************
- Close an rpc pipe.
-****************************************************************************/
-
-bool close_rpc_pipe_hnd(smb_np_struct *p)
-{
-	if (!p) {
-		DEBUG(0,("Invalid pipe in close_rpc_pipe_hnd\n"));
-		return False;
-	}
-
-	TALLOC_FREE(p->np_state);
-
-	bitmap_clear(bmap, p->pnum - pipe_handle_offset);
-
-	pipes_open--;
-
-	DEBUG(4,("closed pipe name %s pnum=%x (pipes_open=%d)\n", 
-		 p->name, p->pnum, pipes_open));  
-
-	DLIST_REMOVE(Pipes, p);
-	
-	/* TODO: Remove from pipe open db */
-	
-	if ( !delete_pipe_opendb( p ) ) {
-		DEBUG(3,("close_rpc_pipe_hnd: failed to delete %s "
-			"pipe from open db.\n", p->name));
-	}
-
-	TALLOC_FREE(p);
-
-	return True;
-}
-
-/****************************************************************************
- Close all pipes on a connection.
-****************************************************************************/
-
-void pipe_close_conn(connection_struct *conn)
-{
-	smb_np_struct *p, *next;
-
-	for (p=Pipes;p;p=next) {
-		next = p->next;
-		if (p->conn == conn) {
-			close_rpc_pipe_hnd(p);
-		}
-	}
-}
-
-/****************************************************************************
  Close an rpc pipe.
 ****************************************************************************/
 
@@ -1210,40 +927,92 @@ static int close_internal_rpc_pipe_hnd(struct pipes_struct *p)
 	return True;
 }
 
-/****************************************************************************
- Find an rpc pipe given a pipe handle in a buffer and an offset.
-****************************************************************************/
-
-smb_np_struct *get_rpc_pipe_p(uint16 pnum)
+bool fsp_is_np(struct files_struct *fsp)
 {
-	if (chain_p) {
-		return chain_p;
-	}
-
-	return get_rpc_pipe(pnum);
+	return ((fsp != NULL)
+		&& (fsp->fake_file_handle != NULL)
+		&& (fsp->fake_file_handle->type == FAKE_FILE_TYPE_NAMED_PIPE));
 }
 
-/****************************************************************************
- Find an rpc pipe given a pipe handle.
-****************************************************************************/
-
-smb_np_struct *get_rpc_pipe(int pnum)
+NTSTATUS np_open(struct smb_request *smb_req, struct connection_struct *conn,
+		 const char *name, struct files_struct **pfsp)
 {
-	smb_np_struct *p;
+	NTSTATUS status;
+	struct files_struct *fsp;
+	struct pipes_struct *p;
 
-	DEBUG(4,("search for pipe pnum=%x\n", pnum));
-
-	for (p=Pipes;p;p=p->next) {
-		DEBUG(5,("pipe name %s pnum=%x (pipes_open=%d)\n", 
-		          p->name, p->pnum, pipes_open));  
+	status = file_new(smb_req, conn, &fsp);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("file_new failed: %s\n", nt_errstr(status)));
+		return status;
 	}
 
-	for (p=Pipes;p;p=p->next) {
-		if (p->pnum == pnum) {
-			chain_p = p;
-			return p;
-		}
+	fsp->conn = conn;
+	fsp->fh->fd = -1;
+	fsp->vuid = smb_req->vuid;
+	fsp->can_lock = false;
+	fsp->access_mask = FILE_READ_DATA | FILE_WRITE_DATA;
+	string_set(&fsp->fsp_name, name);
+
+	fsp->fake_file_handle = talloc(NULL, struct fake_file_handle);
+	if (fsp->fake_file_handle == NULL) {
+		file_free(smb_req, fsp);
+		return NT_STATUS_NO_MEMORY;
+	}
+	fsp->fake_file_handle->type = FAKE_FILE_TYPE_NAMED_PIPE;
+
+	p = make_internal_rpc_pipe_p(fsp->fake_file_handle, name,
+				     conn->client_address, conn->server_info,
+				     smb_req->vuid);
+	if (p == NULL) {
+		file_free(smb_req, fsp);
+		return NT_STATUS_PIPE_NOT_AVAILABLE;
+	}
+	fsp->fake_file_handle->private_data = p;
+
+	*pfsp = fsp;
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS np_write(struct files_struct *fsp, uint8_t *data, size_t len,
+		  ssize_t *nwritten)
+{
+	struct pipes_struct *p;
+
+	if (!fsp_is_np(fsp)) {
+		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	return NULL;
+	p = talloc_get_type_abort(
+		fsp->fake_file_handle->private_data, struct pipes_struct);
+
+	DEBUG(6, ("np_write: %x name: %s len: %d\n", (int)fsp->fnum,
+		  fsp->fsp_name, (int)len));
+	dump_data(50, data, len);
+
+	*nwritten = write_to_internal_pipe(p, (char *)data, len);
+
+	return ((*nwritten) >= 0)
+		? NT_STATUS_OK : NT_STATUS_UNEXPECTED_IO_ERROR;
+}
+
+NTSTATUS np_read(struct files_struct *fsp, uint8_t *data, size_t len,
+		 ssize_t *nread, bool *is_data_outstanding)
+{
+	struct pipes_struct *p;
+
+	if (!fsp_is_np(fsp)) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	p = talloc_get_type_abort(
+		fsp->fake_file_handle->private_data, struct pipes_struct);
+
+	*nread = read_from_internal_pipe(p, (char *)data, len,
+					 is_data_outstanding);
+
+	return ((*nread) >= 0)
+		? NT_STATUS_OK : NT_STATUS_UNEXPECTED_IO_ERROR;
+
 }

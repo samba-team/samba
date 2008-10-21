@@ -433,7 +433,7 @@ bool reload_services(bool test)
 
 	if (lp_loaded()) {
 		const char *fname = lp_configfile();
-		if (file_exist(fname, NULL) &&
+		if (file_exist(fname) &&
 		    !strcsequal(fname, get_dyn_CONFIGFILE())) {
 			set_dyn_CONFIGFILE(fname);
 			test = False;

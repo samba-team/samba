@@ -20,7 +20,7 @@
 */
 
 #include "includes.h"
-#include "libcli/nbt/libnbt.h"
+#include "../libcli/nbt/libnbt.h"
 #include "libcli/resolve/resolve.h"
 #include "param/param.h"
 #include "lib/socket/netif.h"
@@ -79,7 +79,7 @@ NTSTATUS resolve_name_wins(struct nbt_name *name,
 bool resolve_context_add_wins_method(struct resolve_context *ctx, const char **address_list, struct interface *ifaces, uint16_t nbt_port, int nbt_timeout)
 {
 	struct resolve_wins_data *wins_data = talloc(ctx, struct resolve_wins_data);
-	wins_data->address_list = str_list_copy(wins_data, address_list);
+	wins_data->address_list = (const char **)str_list_copy(wins_data, address_list);
 	wins_data->ifaces = talloc_reference(wins_data, ifaces);
 	wins_data->nbt_port = nbt_port;
 	wins_data->nbt_timeout = nbt_timeout;

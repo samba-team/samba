@@ -74,9 +74,8 @@ static NTSTATUS wreplsrv_scavenging_owned_records(struct wreplsrv_service *servi
 				 "(expireTime<=%s))",
 				 owner_filter, now_timestr);
 	NT_STATUS_HAVE_NO_MEMORY(filter);
-	ret = ldb_search(service->wins_db->ldb, NULL, LDB_SCOPE_SUBTREE, filter, NULL, &res);
+	ret = ldb_search(service->wins_db->ldb, tmp_mem, &res, NULL, LDB_SCOPE_SUBTREE, NULL, "%s", filter);
 	if (ret != LDB_SUCCESS) return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	talloc_steal(tmp_mem, res);
 	DEBUG(10,("WINS scavenging: filter '%s' count %d\n", filter, res->count));
 
 	tombstone_extra_time = timeval_add(&service->startup_time,
@@ -188,9 +187,8 @@ static NTSTATUS wreplsrv_scavenging_replica_non_active_records(struct wreplsrv_s
 				 "(!(recordState=%u))(expireTime<=%s))",
 				 owner_filter, WREPL_STATE_ACTIVE, now_timestr);
 	NT_STATUS_HAVE_NO_MEMORY(filter);
-	ret = ldb_search(service->wins_db->ldb, NULL, LDB_SCOPE_SUBTREE, filter, NULL, &res);
+	ret = ldb_search(service->wins_db->ldb, tmp_mem, &res, NULL, LDB_SCOPE_SUBTREE, NULL, "%s", filter);
 	if (ret != LDB_SUCCESS) return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	talloc_steal(tmp_mem, res);
 	DEBUG(10,("WINS scavenging: filter '%s' count %d\n", filter, res->count));
 
 	tombstone_extra_time = timeval_add(&service->startup_time,
@@ -404,9 +402,8 @@ static NTSTATUS wreplsrv_scavenging_replica_active_records(struct wreplsrv_servi
 				 "(recordState=%u)(expireTime<=%s))",
 				 owner_filter, WREPL_STATE_ACTIVE, now_timestr);
 	NT_STATUS_HAVE_NO_MEMORY(filter);
-	ret = ldb_search(service->wins_db->ldb, NULL, LDB_SCOPE_SUBTREE, filter, NULL, &res);
+	ret = ldb_search(service->wins_db->ldb, tmp_mem, &res, NULL, LDB_SCOPE_SUBTREE, NULL, "%s", filter);
 	if (ret != LDB_SUCCESS) return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	talloc_steal(tmp_mem, res);
 	DEBUG(10,("WINS scavenging: filter '%s' count %d\n", filter, res->count));
 
 	for (i=0; i < res->count; i++) {

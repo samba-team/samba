@@ -45,10 +45,8 @@ uint64_t winsdb_get_maxVersion(struct winsdb_handle *h)
 	if (!dn) goto failed;
 
 	/* find the record in the WINS database */
-	ret = ldb_search(ldb, dn, LDB_SCOPE_BASE, 
-			 NULL, NULL, &res);
+	ret = ldb_search(ldb, tmp_ctx, &res, dn, LDB_SCOPE_BASE, NULL, NULL);
 	if (ret != LDB_SUCCESS) goto failed;
-	talloc_steal(tmp_ctx, res);
 	if (res->count > 1) goto failed;
 
 	if (res->count == 1) {
@@ -82,13 +80,9 @@ uint64_t winsdb_set_maxVersion(struct winsdb_handle *h, uint64_t newMaxVersion)
 	if (!dn) goto failed;
 
 	/* find the record in the WINS database */
-	ret = ldb_search(wins_db, dn, LDB_SCOPE_BASE, NULL, NULL, &res);
-
+	ret = ldb_search(wins_db, tmp_ctx, &res, dn, LDB_SCOPE_BASE, NULL, NULL);
 	if (ret != LDB_SUCCESS) goto failed;
-	talloc_steal(tmp_ctx, res);
 	if (res->count > 1) goto failed;
-
-	talloc_steal(tmp_ctx, res);
 
 	if (res->count == 1) {
 		oldMaxVersion = ldb_msg_find_attr_as_uint64(res->msgs[0], "maxVersion", 0);
@@ -143,10 +137,8 @@ uint64_t winsdb_get_seqnumber(struct winsdb_handle *h)
 	if (!dn) goto failed;
 
 	/* find the record in the WINS database */
-	ret = ldb_search(ldb, dn, LDB_SCOPE_BASE, 
-			 NULL, NULL, &res);
+	ret = ldb_search(ldb, tmp_ctx, &res, dn, LDB_SCOPE_BASE, NULL, NULL);
 	if (ret != LDB_SUCCESS) goto failed;
-	talloc_steal(tmp_ctx, res);
 	if (res->count > 1) goto failed;
 
 	if (res->count == 1) {
@@ -589,10 +581,10 @@ NTSTATUS winsdb_lookup(struct winsdb_handle *h,
 	time_t now = time(NULL);
 
 	/* find the record in the WINS database */
-	ret = ldb_search(wins_db, winsdb_dn(tmp_ctx, wins_db, name), LDB_SCOPE_BASE, 
-			 NULL, NULL, &res);
+	ret = ldb_search(wins_db, tmp_ctx, &res,
+			 winsdb_dn(tmp_ctx, wins_db, name),
+			 LDB_SCOPE_BASE, NULL, NULL);
 
-	talloc_steal(tmp_ctx, res);
 	if (ret != LDB_SUCCESS || res->count > 1) {
 		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
 		goto failed;
@@ -964,9 +956,8 @@ static bool winsdb_check_or_add_module_list(struct event_context *ev_ctx,
 	if (!dn) goto failed;
 
 	/* find the record in the WINS database */
-	ret = ldb_search(h->ldb, dn, LDB_SCOPE_BASE, NULL, NULL, &res);
+	ret = ldb_search(h->ldb, tmp_ctx, &res, dn, LDB_SCOPE_BASE, NULL, NULL);
 	if (ret != LDB_SUCCESS) goto failed;
-	talloc_steal(tmp_ctx, res);
 
 	if (res->count > 0) goto skip;
 

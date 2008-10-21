@@ -59,12 +59,12 @@ bool sysv_cache_reload(void)
                 scheduler = file_lines_pload("/usr/bin/lpstat -r", NULL);
                 if(!strcmp(*scheduler,"scheduler is running")){
                         DEBUG(3,("No Printers found!!!\n"));
-			file_lines_free(scheduler);
+			TALLOC_FREE(scheduler);
                         return True;
                 }
                 else{
                         DEBUG(3,("Scheduler is not running!!!\n"));
-			file_lines_free(scheduler);
+			TALLOC_FREE(scheduler);
 			return False;
 		}
 #else
@@ -111,12 +111,12 @@ bool sysv_cache_reload(void)
 		
 		/* add it to the cache */
 		if (!pcap_cache_add(name, NULL)) {
-			file_lines_free(lines);
+			TALLOC_FREE(lines);
 			return False;
 		}
 	}
 
-	file_lines_free(lines);
+	TALLOC_FREE(lines);
 	return True;
 }
 

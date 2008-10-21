@@ -21,7 +21,7 @@
 */
 
 #include "includes.h"
-#include "lib/util/dlinklist.h"
+#include "../lib/util/dlinklist.h"
 #include "lib/events/events.h"
 #include "lib/socket/socket.h"
 #include "lib/stream/packet.h"

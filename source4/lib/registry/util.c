@@ -140,8 +140,7 @@ _PUBLIC_ bool reg_string_to_val(TALLOC_CTX *mem_ctx,
 			break;
 
 		case REG_BINARY:
-			*data = strhex_to_data_blob(data_str);
-			talloc_steal(mem_ctx, data->data);
+			*data = strhex_to_data_blob(mem_ctx, data_str);
 			break;
 
 		default:

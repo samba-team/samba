@@ -29,7 +29,7 @@
  This is what sys_select() used to do in Samba.
 ********************************************************************/
 
-int sys_select_intr(int maxfd, fd_set *readfds, fd_set *writefds, fd_set *errorfds, struct timeval *tval)
+static int sys_select_intr(int maxfd, fd_set *readfds, fd_set *writefds, fd_set *errorfds, struct timeval *tval)
 {
 	int ret;
 	fd_set *readfds2, readfds_buf, *writefds2, writefds_buf, *errorfds2, errorfds_buf;
@@ -82,7 +82,7 @@ static char *smb_readline_replacement(const char *prompt, void (*callback)(void)
 	int fd = STDIN_FILENO;
 	char *ret;
 
-	do_debug("%s", prompt);
+	printf("%s", prompt);
 
 	line = (char *)malloc(BUFSIZ);
 	if (!line) {

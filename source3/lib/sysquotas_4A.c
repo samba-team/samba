@@ -89,7 +89,7 @@ int sys_get_vfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qt
 	int ret = -1;
 	uint32 qflags = 0;
 	struct dqblk D;
-	SMB_BIG_UINT bsize = (SMB_BIG_UINT)QUOTABLOCK_SIZE;
+	uint64_t bsize = (uint64_t)QUOTABLOCK_SIZE;
 
 	ZERO_STRUCT(D);
 	ZERO_STRUCT(*dp);
@@ -162,12 +162,12 @@ int sys_get_vfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qt
 	}
 
 	dp->bsize = bsize;
-	dp->softlimit = (SMB_BIG_UINT)D.dqb_bsoftlimit;
-	dp->hardlimit = (SMB_BIG_UINT)D.dqb_bhardlimit;
-	dp->ihardlimit = (SMB_BIG_UINT)D.dqb_ihardlimit;
-	dp->isoftlimit = (SMB_BIG_UINT)D.dqb_isoftlimit;
-	dp->curinodes = (SMB_BIG_UINT)D.dqb_curinodes;
-	dp->curblocks = (SMB_BIG_UINT)D.dqb_curblocks;
+	dp->softlimit = (uint64_t)D.dqb_bsoftlimit;
+	dp->hardlimit = (uint64_t)D.dqb_bhardlimit;
+	dp->ihardlimit = (uint64_t)D.dqb_ihardlimit;
+	dp->isoftlimit = (uint64_t)D.dqb_isoftlimit;
+	dp->curinodes = (uint64_t)D.dqb_curinodes;
+	dp->curblocks = (uint64_t)D.dqb_curblocks;
 
 
 	dp->qflags = qflags;
@@ -184,7 +184,7 @@ int sys_set_vfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qt
 	uint32 qflags = 0;
 	uint32 oldqflags = 0;
 	struct dqblk D;
-	SMB_BIG_UINT bsize = (SMB_BIG_UINT)QUOTABLOCK_SIZE;
+	uint64_t bsize = (uint64_t)QUOTABLOCK_SIZE;
 
 	ZERO_STRUCT(D);
 

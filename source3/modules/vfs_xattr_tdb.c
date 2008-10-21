@@ -48,7 +48,7 @@ static NTSTATUS xattr_tdb_pull_attrs(TALLOC_CTX *mem_ctx,
 	blob = data_blob_const(data->dptr, data->dsize);
 
 	ndr_err = ndr_pull_struct_blob(
-		&blob, result, result,
+		&blob, result, NULL, result,
 		(ndr_pull_flags_fn_t)ndr_pull_tdb_xattrs);
 
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -74,7 +74,7 @@ static NTSTATUS xattr_tdb_push_attrs(TALLOC_CTX *mem_ctx,
 	enum ndr_err_code ndr_err;
 
 	ndr_err = ndr_push_struct_blob(
-		&blob, mem_ctx, attribs,
+		&blob, mem_ctx, NULL, attribs,
 		(ndr_push_flags_fn_t)ndr_push_tdb_xattrs);
 
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -177,25 +177,25 @@ static ssize_t xattr_tdb_getattr(struct db_context *db_ctx,
 		return -1;
 	}
 
-	for (i=0; i<attribs->num_xattrs; i++) {
-		if (strcmp(attribs->xattrs[i].name, name) == 0) {
+	for (i=0; i<attribs->num_eas; i++) {
+		if (strcmp(attribs->eas[i].name, name) == 0) {
 			break;
 		}
 	}
 
-	if (i == attribs->num_xattrs) {
+	if (i == attribs->num_eas) {
 		errno = ENOATTR;
 		goto fail;
 	}
 
-	if (attribs->xattrs[i].value.length > size) {
+	if (attribs->eas[i].value.length > size) {
 		errno = ERANGE;
 		goto fail;
 	}
 
-	memcpy(value, attribs->xattrs[i].value.data,
-	       attribs->xattrs[i].value.length);
-	result = attribs->xattrs[i].value.length;
+	memcpy(value, attribs->eas[i].value.data,
+	       attribs->eas[i].value.length);
+	result = attribs->eas[i].value.length;
 
  fail:
 	TALLOC_FREE(attribs);
@@ -273,8 +273,8 @@ static int xattr_tdb_setattr(struct db_context *db_ctx,
 		return -1;
 	}
 
-	for (i=0; i<attribs->num_xattrs; i++) {
-		if (strcmp(attribs->xattrs[i].name, name) == 0) {
+	for (i=0; i<attribs->num_eas; i++) {
+		if (strcmp(attribs->eas[i].name, name) == 0) {
 			if (flags & XATTR_CREATE) {
 				TALLOC_FREE(rec);
 				errno = EEXIST;
@@ -284,8 +284,8 @@ static int xattr_tdb_setattr(struct db_context *db_ctx,
 		}
 	}
 
-	if (i == attribs->num_xattrs) {
-		struct tdb_xattr *tmp;
+	if (i == attribs->num_eas) {
+		struct xattr_EA *tmp;
 
 		if (flags & XATTR_REPLACE) {
 			TALLOC_FREE(rec);
@@ -294,8 +294,8 @@ static int xattr_tdb_setattr(struct db_context *db_ctx,
 		}
 
 		tmp = TALLOC_REALLOC_ARRAY(
-			attribs, attribs->xattrs, struct tdb_xattr,
-			attribs->num_xattrs + 1);
+			attribs, attribs->eas, struct xattr_EA,
+			attribs->num_eas+ 1);
 
 		if (tmp == NULL) {
 			DEBUG(0, ("TALLOC_REALLOC_ARRAY failed\n"));
@@ -304,13 +304,13 @@ static int xattr_tdb_setattr(struct db_context *db_ctx,
 			return -1;
 		}
 
-		attribs->xattrs = tmp;
-		attribs->num_xattrs += 1;
+		attribs->eas = tmp;
+		attribs->num_eas += 1;
 	}
 
-	attribs->xattrs[i].name = name;
-	attribs->xattrs[i].value.data = CONST_DISCARD(uint8 *, value);
-	attribs->xattrs[i].value.length = size;
+	attribs->eas[i].name = name;
+	attribs->eas[i].value.data = CONST_DISCARD(uint8 *, value);
+	attribs->eas[i].value.length = size;
 
 	status = xattr_tdb_save_attrs(rec, attribs);
 
@@ -386,15 +386,15 @@ static ssize_t xattr_tdb_listattr(struct db_context *db_ctx,
 	}
 
 	DEBUG(10, ("xattr_tdb_listattr: Found %d xattrs\n",
-		   attribs->num_xattrs));
+		   attribs->num_eas));
 
-	for (i=0; i<attribs->num_xattrs; i++) {
+	for (i=0; i<attribs->num_eas; i++) {
 		size_t tmp;
 
 		DEBUG(10, ("xattr_tdb_listattr: xattrs[i].name: %s\n",
-			   attribs->xattrs[i].name));
+			   attribs->eas[i].name));
 
-		tmp = strlen(attribs->xattrs[i].name);
+		tmp = strlen(attribs->eas[i].name);
 
 		/*
 		 * Try to protect against overflow
@@ -420,10 +420,10 @@ static ssize_t xattr_tdb_listattr(struct db_context *db_ctx,
 
 	len = 0;
 
-	for (i=0; i<attribs->num_xattrs; i++) {
-		strlcpy(list+len, attribs->xattrs[i].name,
+	for (i=0; i<attribs->num_eas; i++) {
+		strlcpy(list+len, attribs->eas[i].name,
 			size-len);
-		len += (strlen(attribs->xattrs[i].name) + 1);
+		len += (strlen(attribs->eas[i].name) + 1);
 	}
 
 	TALLOC_FREE(attribs);
@@ -496,23 +496,23 @@ static int xattr_tdb_removeattr(struct db_context *db_ctx,
 		return -1;
 	}
 
-	for (i=0; i<attribs->num_xattrs; i++) {
-		if (strcmp(attribs->xattrs[i].name, name) == 0) {
+	for (i=0; i<attribs->num_eas; i++) {
+		if (strcmp(attribs->eas[i].name, name) == 0) {
 			break;
 		}
 	}
 
-	if (i == attribs->num_xattrs) {
+	if (i == attribs->num_eas) {
 		TALLOC_FREE(rec);
 		errno = ENOATTR;
 		return -1;
 	}
 
-	attribs->xattrs[i] =
-		attribs->xattrs[attribs->num_xattrs-1];
-	attribs->num_xattrs -= 1;
+	attribs->eas[i] =
+		attribs->eas[attribs->num_eas-1];
+	attribs->num_eas -= 1;
 
-	if (attribs->num_xattrs == 0) {
+	if (attribs->num_eas == 0) {
 		rec->delete_rec(rec);
 		TALLOC_FREE(rec);
 		return 0;

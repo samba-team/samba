@@ -27,7 +27,7 @@ static bool api_eventlog_ClearEventLogW(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -56,7 +56,7 @@ static bool api_eventlog_ClearEventLogW(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(eventlog_ClearEventLogW, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -100,7 +100,7 @@ static bool api_eventlog_BackupEventLogW(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -129,7 +129,7 @@ static bool api_eventlog_BackupEventLogW(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(eventlog_BackupEventLogW, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -173,7 +173,7 @@ static bool api_eventlog_CloseEventLog(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -204,7 +204,7 @@ static bool api_eventlog_CloseEventLog(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(eventlog_CloseEventLog, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -248,7 +248,7 @@ static bool api_eventlog_DeregisterEventSource(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -277,7 +277,7 @@ static bool api_eventlog_DeregisterEventSource(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(eventlog_DeregisterEventSource, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -321,7 +321,7 @@ static bool api_eventlog_GetNumRecords(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -357,7 +357,7 @@ static bool api_eventlog_GetNumRecords(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(eventlog_GetNumRecords, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -401,7 +401,7 @@ static bool api_eventlog_GetOldestRecord(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -437,7 +437,7 @@ static bool api_eventlog_GetOldestRecord(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(eventlog_GetOldestRecord, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -481,7 +481,7 @@ static bool api_eventlog_ChangeNotify(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -510,7 +510,7 @@ static bool api_eventlog_ChangeNotify(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(eventlog_ChangeNotify, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -554,7 +554,7 @@ static bool api_eventlog_OpenEventLogW(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -590,7 +590,7 @@ static bool api_eventlog_OpenEventLogW(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(eventlog_OpenEventLogW, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -634,7 +634,7 @@ static bool api_eventlog_RegisterEventSourceW(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -663,7 +663,7 @@ static bool api_eventlog_RegisterEventSourceW(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(eventlog_RegisterEventSourceW, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -707,7 +707,7 @@ static bool api_eventlog_OpenBackupEventLogW(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -736,7 +736,7 @@ static bool api_eventlog_OpenBackupEventLogW(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(eventlog_OpenBackupEventLogW, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -780,7 +780,7 @@ static bool api_eventlog_ReadEventLogW(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -828,7 +828,7 @@ static bool api_eventlog_ReadEventLogW(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(eventlog_ReadEventLogW, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -872,7 +872,7 @@ static bool api_eventlog_ReportEventW(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -901,7 +901,7 @@ static bool api_eventlog_ReportEventW(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(eventlog_ReportEventW, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -945,7 +945,7 @@ static bool api_eventlog_ClearEventLogA(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -974,7 +974,7 @@ static bool api_eventlog_ClearEventLogA(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(eventlog_ClearEventLogA, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1018,7 +1018,7 @@ static bool api_eventlog_BackupEventLogA(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -1047,7 +1047,7 @@ static bool api_eventlog_BackupEventLogA(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(eventlog_BackupEventLogA, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1091,7 +1091,7 @@ static bool api_eventlog_OpenEventLogA(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -1120,7 +1120,7 @@ static bool api_eventlog_OpenEventLogA(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(eventlog_OpenEventLogA, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1164,7 +1164,7 @@ static bool api_eventlog_RegisterEventSourceA(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -1193,7 +1193,7 @@ static bool api_eventlog_RegisterEventSourceA(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(eventlog_RegisterEventSourceA, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1237,7 +1237,7 @@ static bool api_eventlog_OpenBackupEventLogA(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -1266,7 +1266,7 @@ static bool api_eventlog_OpenBackupEventLogA(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(eventlog_OpenBackupEventLogA, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1310,7 +1310,7 @@ static bool api_eventlog_ReadEventLogA(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -1339,7 +1339,7 @@ static bool api_eventlog_ReadEventLogA(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(eventlog_ReadEventLogA, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1383,7 +1383,7 @@ static bool api_eventlog_ReportEventA(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -1412,7 +1412,7 @@ static bool api_eventlog_ReportEventA(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(eventlog_ReportEventA, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1456,7 +1456,7 @@ static bool api_eventlog_RegisterClusterSvc(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -1485,7 +1485,7 @@ static bool api_eventlog_RegisterClusterSvc(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(eventlog_RegisterClusterSvc, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1529,7 +1529,7 @@ static bool api_eventlog_DeregisterClusterSvc(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -1558,7 +1558,7 @@ static bool api_eventlog_DeregisterClusterSvc(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(eventlog_DeregisterClusterSvc, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1602,7 +1602,7 @@ static bool api_eventlog_WriteClusterEvents(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -1631,7 +1631,7 @@ static bool api_eventlog_WriteClusterEvents(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(eventlog_WriteClusterEvents, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1675,7 +1675,7 @@ static bool api_eventlog_GetLogIntormation(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -1704,7 +1704,7 @@ static bool api_eventlog_GetLogIntormation(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(eventlog_GetLogIntormation, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -1748,7 +1748,7 @@ static bool api_eventlog_FlushEventLog(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -1777,7 +1777,7 @@ static bool api_eventlog_FlushEventLog(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(eventlog_FlushEventLog, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;

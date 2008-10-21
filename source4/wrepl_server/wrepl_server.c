@@ -20,7 +20,7 @@
 */
 
 #include "includes.h"
-#include "lib/util/dlinklist.h"
+#include "../lib/util/dlinklist.h"
 #include "smbd/service_task.h"
 #include "smbd/service.h"
 #include "lib/messaging/irpc.h"
@@ -55,10 +55,8 @@ static uint64_t wins_config_db_get_seqnumber(struct ldb_context *ldb)
 	if (!dn) goto failed;
 
 	/* find the record in the WINS database */
-	ret = ldb_search(ldb, dn, LDB_SCOPE_BASE, 
-			 NULL, NULL, &res);
+	ret = ldb_search(ldb, tmp_ctx, &res, dn, LDB_SCOPE_BASE, NULL, NULL);
 	if (ret != LDB_SUCCESS) goto failed;
-	talloc_steal(tmp_ctx, res);
 	if (res->count > 1) goto failed;
 
 	if (res->count == 1) {
@@ -157,10 +155,10 @@ NTSTATUS wreplsrv_load_partners(struct wreplsrv_service *service)
 	service->config.seqnumber = new_seqnumber;
 
 	/* find the record in the WINS database */
-	ret = ldb_search(service->config.ldb, ldb_dn_new(tmp_ctx, service->config.ldb, "CN=PARTNERS"), LDB_SCOPE_SUBTREE,
-			 "(objectClass=wreplPartner)", NULL, &res);
+	ret = ldb_search(service->config.ldb, tmp_ctx, &res,
+			 ldb_dn_new(tmp_ctx, service->config.ldb, "CN=PARTNERS"),
+			 LDB_SCOPE_SUBTREE, NULL, "(objectClass=wreplPartner)");
 	if (ret != LDB_SUCCESS) goto failed;
-	talloc_steal(tmp_ctx, res);
 
 	/* first disable all existing partners */
 	for (partner=service->partners; partner; partner = partner->next) {
@@ -391,11 +389,10 @@ static NTSTATUS wreplsrv_load_table(struct wreplsrv_service *service)
 	}
 
 	/* find the record in the WINS database */
-	ret = ldb_search(ldb, NULL, LDB_SCOPE_SUBTREE,
-			 "(objectClass=winsRecord)", attrs, &res);
+	ret = ldb_search(ldb, tmp_ctx, &res, NULL, LDB_SCOPE_SUBTREE,
+			 attrs, "(objectClass=winsRecord)");
 	status = NT_STATUS_INTERNAL_DB_CORRUPTION;
 	if (ret != LDB_SUCCESS) goto failed;
-	talloc_steal(tmp_ctx, res);
 
 	for (i=0; i < res->count; i++) {
 		wins_owner     = ldb_msg_find_attr_as_string(res->msgs[i], "winsOwner", NULL);

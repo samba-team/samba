@@ -1,24 +1,23 @@
 #!/bin/sh
 
 FULLBUILD=$1
-IDLDIR=$2
-OUTDIR=$3
-shift 3
-PIDL_EXTRA_ARGS="$*"
+OUTDIR=$2
+shift 2
+IDL_FILES="$*"
 
 [ -d $OUTDIR ] || mkdir -p $OUTDIR || exit 1
 
-PIDL="$PIDL --outputdir $OUTDIR --header --ndr-parser --server --client --swig --python $PIDL_EXTRA_ARGS"
+PIDL="$PIDL --outputdir $OUTDIR --header --ndr-parser --server --client --swig --python --dcom-proxy --com-header --includedir ../librpc/idl -- "
 
 if [ x$FULLBUILD = xFULL ]; then
       echo Rebuilding all idl files in $IDLDIR
-      $PIDL $IDLDIR/*.idl || exit 1
+      $PIDL $IDL_FILES || exit 1
       exit 0
 fi
 
 list=""
 
-for f in $IDLDIR/*.idl ; do
+for f in $IDL_FILES ; do
     basename=`basename $f .idl`
     ndr="$OUTDIR/ndr_$basename.c"
     # blergh - most shells don't have the -nt function

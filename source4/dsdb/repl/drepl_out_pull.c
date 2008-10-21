@@ -27,7 +27,7 @@
 #include "lib/messaging/irpc.h"
 #include "dsdb/repl/drepl_service.h"
 #include "lib/ldb/include/ldb_errors.h"
-#include "lib/util/dlinklist.h"
+#include "../lib/util/dlinklist.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "librpc/gen_ndr/ndr_drsuapi.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"

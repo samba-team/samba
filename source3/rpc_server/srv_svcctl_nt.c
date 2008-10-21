@@ -6,6 +6,7 @@
  *
  *  Largely Rewritten (Again) by:
  *  Copyright (C) Gerald (Jerry) Carter             2005.
+ *  Copyright (C) Guenther Deschner                 2008.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -61,7 +62,7 @@ static const struct generic_mapping svc_generic_map =
 bool init_service_op_table( void )
 {
 	const char **service_list = lp_svcctl_list();
-	int num_services = SVCCTL_NUM_INTERNAL_SERVICES + str_list_count( service_list );
+	int num_services = SVCCTL_NUM_INTERNAL_SERVICES + str_list_length( service_list );
 	int i;
 
 	if ( !(svcctl_ops = TALLOC_ARRAY( NULL, struct service_control_op, num_services+1)) ) {
@@ -140,7 +141,6 @@ static NTSTATUS svcctl_access_check( SEC_DESC *sec_desc, NT_USER_TOKEN *token,
 static SEC_DESC* construct_scm_sd( TALLOC_CTX *ctx )
 {
 	SEC_ACE ace[2];
-	SEC_ACCESS mask;
 	size_t i = 0;
 	SEC_DESC *sd;
 	SEC_ACL *acl;
@@ -148,13 +148,13 @@ static SEC_DESC* construct_scm_sd( TALLOC_CTX *ctx )
 
 	/* basic access for Everyone */
 
-	init_sec_access(&mask, SC_MANAGER_READ_ACCESS );
-	init_sec_ace(&ace[i++], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+	init_sec_ace(&ace[i++], &global_sid_World,
+		SEC_ACE_TYPE_ACCESS_ALLOWED, SC_MANAGER_READ_ACCESS, 0);
 
 	/* Full Access 'BUILTIN\Administrators' */
 
-	init_sec_access(&mask,SC_MANAGER_ALL_ACCESS );
-	init_sec_ace(&ace[i++], &global_sid_Builtin_Administrators, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+	init_sec_ace(&ace[i++], &global_sid_Builtin_Administrators,
+		SEC_ACE_TYPE_ACCESS_ALLOWED, SC_MANAGER_ALL_ACCESS, 0);
 
 
 	/* create the security descriptor */
@@ -611,7 +611,9 @@ WERROR _svcctl_query_service_status_ex( pipes_struct *p, SVCCTL_Q_QUERY_SERVICE_
 /********************************************************************
 ********************************************************************/
 
-static WERROR fill_svc_config( TALLOC_CTX *ctx, const char *name, SERVICE_CONFIG *config, NT_USER_TOKEN *token )
+static WERROR fill_svc_config( TALLOC_CTX *ctx, const char *name,
+			       struct QUERY_SERVICE_CONFIG *config,
+			       NT_USER_TOKEN *token )
 {
 	REGVAL_CTR *values;
 	REGISTRY_VALUE *val;
@@ -623,20 +625,17 @@ static WERROR fill_svc_config( TALLOC_CTX *ctx, const char *name, SERVICE_CONFIG
 
 	/* now fill in the individual values */
 
-	config->displayname = TALLOC_ZERO_P( ctx, UNISTR2 );
 	if ( (val = regval_ctr_getvalue( values, "DisplayName" )) != NULL )
-		init_unistr2( config->displayname, regval_sz( val ), UNI_STR_TERMINATE );
+		config->displayname = regval_sz(val);
 	else
-		init_unistr2( config->displayname, name, UNI_STR_TERMINATE );
+		config->displayname = name;
 
 	if ( (val = regval_ctr_getvalue( values, "ObjectName" )) != NULL ) {
-		config->startname = TALLOC_ZERO_P( ctx, UNISTR2 );
-		init_unistr2( config->startname, regval_sz( val ), UNI_STR_TERMINATE );
+		config->startname = regval_sz(val);
 	}
 
 	if ( (val = regval_ctr_getvalue( values, "ImagePath" )) != NULL ) {
-		config->executablepath = TALLOC_ZERO_P( ctx, UNISTR2 );
-		init_unistr2( config->executablepath, regval_sz( val ), UNI_STR_TERMINATE );
+		config->executablepath = regval_sz(val);
 	}
 
 	/* a few hard coded values */
@@ -664,11 +663,13 @@ static WERROR fill_svc_config( TALLOC_CTX *ctx, const char *name, SERVICE_CONFIG
 }
 
 /********************************************************************
+ _svcctl_QueryServiceConfigW
 ********************************************************************/
 
-WERROR _svcctl_query_service_config( pipes_struct *p, SVCCTL_Q_QUERY_SERVICE_CONFIG *q_u, SVCCTL_R_QUERY_SERVICE_CONFIG *r_u )
+WERROR _svcctl_QueryServiceConfigW(pipes_struct *p,
+				   struct svcctl_QueryServiceConfigW *r)
 {
-	SERVICE_INFO *info = find_service_info_by_hnd( p, &q_u->handle );
+	SERVICE_INFO *info = find_service_info_by_hnd( p, r->in.handle );
 	uint32 buffer_size;
 	WERROR wresult;
 
@@ -683,17 +684,17 @@ WERROR _svcctl_query_service_config( pipes_struct *p, SVCCTL_Q_QUERY_SERVICE_CON
 	/* we have to set the outgoing buffer size to the same as the
 	   incoming buffer size (even in the case of failure */
 
-	r_u->needed      = q_u->buffer_size;
+	*r->out.bytes_needed = r->in.buf_size;
 
-	wresult = fill_svc_config( p->mem_ctx, info->name, &r_u->config, p->pipe_user.nt_user_token );
+	wresult = fill_svc_config( p->mem_ctx, info->name, r->out.query, p->pipe_user.nt_user_token );
 	if ( !W_ERROR_IS_OK(wresult) )
 		return wresult;
 
-	buffer_size = svcctl_sizeof_service_config( &r_u->config );
-	r_u->needed = (buffer_size > q_u->buffer_size) ? buffer_size : q_u->buffer_size;
+	buffer_size = ndr_size_QUERY_SERVICE_CONFIG(r->out.query, 0);
+	*r->out.bytes_needed = (buffer_size > r->in.buf_size) ? buffer_size : r->in.buf_size;
 
-        if (buffer_size > q_u->buffer_size ) {
-		ZERO_STRUCTP( &r_u->config );
+        if (buffer_size > r->in.buf_size ) {
+		TALLOC_FREE(r->out.query);
                 return WERR_INSUFFICIENT_BUFFER;
 	}
 
@@ -952,12 +953,6 @@ WERROR _svcctl_CreateServiceW(pipes_struct *p, struct svcctl_CreateServiceW *r)
 }
 
 WERROR _svcctl_EnumServicesStatusW(pipes_struct *p, struct svcctl_EnumServicesStatusW *r)
-{
-	p->rng_fault_state = True;
-	return WERR_NOT_SUPPORTED;
-}
-
-WERROR _svcctl_QueryServiceConfigW(pipes_struct *p, struct svcctl_QueryServiceConfigW *r)
 {
 	p->rng_fault_state = True;
 	return WERR_NOT_SUPPORTED;

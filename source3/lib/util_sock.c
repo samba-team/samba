@@ -1706,7 +1706,7 @@ static bool lookup_nc(struct name_addr_pair *nc)
 
 	if (!memcache_lookup(
 			NULL, SINGLETON_CACHE,
-			data_blob_string_const("get_peer_name"),
+			data_blob_string_const_null("get_peer_name"),
 			&tmp)) {
 		return false;
 	}
@@ -1733,7 +1733,7 @@ static void store_nc(const struct name_addr_pair *nc)
 	memcpy(tmp.data+sizeof(nc->ss), nc->name, namelen+1);
 
 	memcache_add(NULL, SINGLETON_CACHE,
-			data_blob_string_const("get_peer_name"),
+			data_blob_string_const_null("get_peer_name"),
 			tmp);
 	data_blob_free(&tmp);
 }
@@ -1945,7 +1945,7 @@ const char *get_mydnsfullname(void)
 	DATA_BLOB tmp;
 
 	if (memcache_lookup(NULL, SINGLETON_CACHE,
-			data_blob_string_const("get_mydnsfullname"),
+			data_blob_string_const_null("get_mydnsfullname"),
 			&tmp)) {
 		SMB_ASSERT(tmp.length > 0);
 		return (const char *)tmp.data;
@@ -1989,11 +1989,11 @@ const char *get_mydnsfullname(void)
 	 */
 
 	memcache_add(NULL, SINGLETON_CACHE,
-			data_blob_string_const("get_mydnsfullname"),
-			data_blob_string_const(res->ai_canonname));
+			data_blob_string_const_null("get_mydnsfullname"),
+			data_blob_string_const_null(res->ai_canonname));
 
 	if (!memcache_lookup(NULL, SINGLETON_CACHE,
-			data_blob_string_const("get_mydnsfullname"),
+			data_blob_string_const_null("get_mydnsfullname"),
 			&tmp)) {
 		tmp = data_blob_talloc(talloc_tos(), res->ai_canonname,
 				strlen(res->ai_canonname) + 1);

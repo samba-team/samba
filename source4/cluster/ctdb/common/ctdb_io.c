@@ -21,9 +21,9 @@
 */
 
 #include "includes.h"
-#include "lib/tdb/include/tdb.h"
+#include "../tdb/include/tdb.h"
 #include "lib/events/events.h"
-#include "lib/util/dlinklist.h"
+#include "../lib/util/dlinklist.h"
 #include "system/network.h"
 #include "system/filesys.h"
 #include "../include/ctdb_private.h"

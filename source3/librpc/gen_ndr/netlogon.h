@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 
+#include "librpc/gen_ndr/misc.h"
 #include "librpc/gen_ndr/lsa.h"
 #include "librpc/gen_ndr/samr.h"
 #include "librpc/gen_ndr/security.h"
@@ -78,10 +79,41 @@ struct netr_NetworkInfo {
 	struct netr_ChallengeResponse lm;
 }/* [flag(LIBNDR_PRINT_ARRAY_HEX)] */;
 
-union netr_LogonInfo {
-	struct netr_PasswordInfo *password;/* [unique,case] */
-	struct netr_NetworkInfo *network;/* [unique,case(2)] */
-}/* [public,switch_type(uint16)] */;
+struct netr_GenericInfo {
+	struct netr_IdentityInfo identity_info;
+	struct lsa_String package_name;
+	uint32_t length;
+	uint8_t *data;/* [unique,size_is(length)] */
+}/* [flag(LIBNDR_PRINT_ARRAY_HEX)] */;
+
+enum netr_LogonInfoClass
+#ifndef USE_UINT_ENUMS
+ {
+	NetlogonInteractiveInformation=1,
+	NetlogonNetworkInformation=2,
+	NetlogonServiceInformation=3,
+	NetlogonGenericInformation=4,
+	NetlogonInteractiveTransitiveInformation=5,
+	NetlogonNetworkTransitiveInformation=6,
+	NetlogonServiceTransitiveInformation=7
+}
+#else
+ { __donnot_use_enum_netr_LogonInfoClass=0x7FFFFFFF}
+#define NetlogonInteractiveInformation ( 1 )
+#define NetlogonNetworkInformation ( 2 )
+#define NetlogonServiceInformation ( 3 )
+#define NetlogonGenericInformation ( 4 )
+#define NetlogonInteractiveTransitiveInformation ( 5 )
+#define NetlogonNetworkTransitiveInformation ( 6 )
+#define NetlogonServiceTransitiveInformation ( 7 )
+#endif
+;
+
+union netr_LogonLevel {
+	struct netr_PasswordInfo *password;/* [unique,case(NetlogonInteractiveInformation)] */
+	struct netr_NetworkInfo *network;/* [unique,case(NetlogonNetworkInformation)] */
+	struct netr_GenericInfo *generic;/* [unique,case(NetlogonGenericInformation)] */
+}/* [public,switch_type(netr_LogonInfoClass)] */;
 
 struct netr_UserSessionKey {
 	uint8_t key[16];
@@ -172,11 +204,36 @@ struct netr_PacInfo {
 	struct lsa_String unknown4;
 };
 
+struct netr_GenericInfo2 {
+	uint32_t length;
+	uint8_t *data;/* [unique,size_is(length)] */
+}/* [flag(LIBNDR_PRINT_ARRAY_HEX)] */;
+
+enum netr_ValidationInfoClass
+#ifndef USE_UINT_ENUMS
+ {
+	NetlogonValidationUasInfo=1,
+	NetlogonValidationSamInfo=2,
+	NetlogonValidationSamInfo2=3,
+	NetlogonValidationGenericInfo2=5,
+	NetlogonValidationSamInfo4=6
+}
+#else
+ { __donnot_use_enum_netr_ValidationInfoClass=0x7FFFFFFF}
+#define NetlogonValidationUasInfo ( 1 )
+#define NetlogonValidationSamInfo ( 2 )
+#define NetlogonValidationSamInfo2 ( 3 )
+#define NetlogonValidationGenericInfo2 ( 5 )
+#define NetlogonValidationSamInfo4 ( 6 )
+#endif
+;
+
 union netr_Validation {
-	struct netr_SamInfo2 *sam2;/* [unique,case(2)] */
-	struct netr_SamInfo3 *sam3;/* [unique,case(3)] */
+	struct netr_SamInfo2 *sam2;/* [unique,case(NetlogonValidationSamInfo)] */
+	struct netr_SamInfo3 *sam3;/* [unique,case(NetlogonValidationSamInfo2)] */
 	struct netr_PacInfo *pac;/* [unique,case(4)] */
-	struct netr_SamInfo6 *sam6;/* [unique,case(6)] */
+	struct netr_GenericInfo2 *generic;/* [unique,case(NetlogonValidationGenericInfo2)] */
+	struct netr_SamInfo6 *sam6;/* [unique,case(NetlogonValidationSamInfo4)] */
 }/* [public,switch_type(uint16)] */;
 
 struct netr_Credential {
@@ -187,19 +244,6 @@ struct netr_Authenticator {
 	struct netr_Credential cred;
 	time_t timestamp;
 }/* [public] */;
-
-enum netr_LogonLevel
-#ifndef USE_UINT_ENUMS
- {
-	INTERACTIVE_LOGON_TYPE=1,
-	NET_LOGON_TYPE=2
-}
-#else
- { __donnot_use_enum_netr_LogonLevel=0x7FFFFFFF}
-#define INTERACTIVE_LOGON_TYPE ( 1 )
-#define NET_LOGON_TYPE ( 2 )
-#endif
-;
 
 enum netr_SchannelType;
 
@@ -298,7 +342,7 @@ struct netr_DELTA_USER {
 
 struct netr_DELTA_DOMAIN {
 	struct lsa_String domain_name;
-	struct lsa_String comment;
+	struct lsa_String oem_information;
 	int64_t force_logoff_time;
 	uint16_t min_password_length;
 	uint16_t password_history_length;
@@ -736,6 +780,16 @@ struct netr_DsRGetDCNameInfo {
 	const char *client_site_name;/* [unique,charset(UTF16)] */
 }/* [public] */;
 
+/* bitmap netr_TrustFlags */
+#define NETR_TRUST_FLAG_IN_FOREST ( 0x00000001 )
+#define NETR_TRUST_FLAG_OUTBOUND ( 0x00000002 )
+#define NETR_TRUST_FLAG_TREEROOT ( 0x00000004 )
+#define NETR_TRUST_FLAG_PRIMARY ( 0x00000008 )
+#define NETR_TRUST_FLAG_NATIVE ( 0x00000010 )
+#define NETR_TRUST_FLAG_INBOUND ( 0x00000020 )
+#define NETR_TRUST_FLAG_MIT_KRB5 ( 0x00000080 )
+#define NETR_TRUST_FLAG_AES ( 0x00000100 )
+
 struct netr_BinaryString {
 	uint16_t length;
 	uint16_t size;
@@ -761,25 +815,57 @@ union netr_DomainQuery {
 	struct netr_DomainQuery1 *query1;/* [unique,case] */
 };
 
+struct netr_trust_extension {
+	uint32_t length;/* [value(8)] */
+	uint32_t dummy;/* [value(0)] */
+	uint32_t size;/* [value(8)] */
+	uint32_t flags;
+	uint32_t parent_index;
+	uint32_t trust_type;
+	uint32_t trust_attributes;
+};
+
+struct netr_trust_extension_container {
+	uint16_t length;
+	uint16_t size;/* [value(length)] */
+	struct netr_trust_extension *info;/* [unique] */
+};
+
 struct netr_DomainTrustInfo {
 	struct lsa_String domainname;
 	struct lsa_String fulldomainname;
 	struct lsa_String forest;
 	struct GUID guid;
 	struct dom_sid2 *sid;/* [unique] */
-	struct netr_BinaryString unknown1[4];
-	uint32_t unknown[4];
+	struct netr_trust_extension_container trust_extension;
+	struct lsa_String dummystring[3];
+	uint32_t dummy[4];
 };
+
+struct netr_LsaPolicyInfo {
+	uint32_t policy_size;
+	uint8_t *policy;/* [unique,size_is(policy_size)] */
+};
+
+/* bitmap netr_WorkstationFlags */
+#define NETR_WS_FLAG_HANDLES_INBOUND_TRUSTS ( 0x00000001 )
+#define NETR_WS_FLAG_HANDLES_SPN_UPDATE ( 0x00000002 )
 
 struct netr_DomainInfo1 {
 	struct netr_DomainTrustInfo domaininfo;
 	uint32_t num_trusts;
 	struct netr_DomainTrustInfo *trusts;/* [unique,size_is(num_trusts)] */
-	uint32_t unknown[14];
+	struct netr_LsaPolicyInfo lsa_policy;
+	struct lsa_String dns_hostname;
+	struct lsa_String dummystring[3];
+	uint32_t workstation_flags;
+	uint32_t supported_enc_types;
+	uint32_t dummy[2];
 };
 
 union netr_DomainInfo {
 	struct netr_DomainInfo1 *info1;/* [unique,case] */
+	struct netr_DomainInfo1 *info2;/* [unique,case(2)] */
 };
 
 struct netr_CryptPassword {
@@ -796,14 +882,6 @@ struct netr_DsRAddress {
 	uint8_t *buffer;/* [unique,size_is(size)] */
 	uint32_t size;
 };
-
-/* bitmap netr_TrustFlags */
-#define NETR_TRUST_FLAG_IN_FOREST ( 0x00000001 )
-#define NETR_TRUST_FLAG_OUTBOUND ( 0x00000002 )
-#define NETR_TRUST_FLAG_TREEROOT ( 0x00000004 )
-#define NETR_TRUST_FLAG_PRIMARY ( 0x00000008 )
-#define NETR_TRUST_FLAG_NATIVE ( 0x00000010 )
-#define NETR_TRUST_FLAG_INBOUND ( 0x00000020 )
 
 enum netr_TrustType
 #ifndef USE_UINT_ENUMS
@@ -894,8 +972,8 @@ struct netr_LogonSamLogon {
 		const char *server_name;/* [unique,charset(UTF16)] */
 		const char *computer_name;/* [unique,charset(UTF16)] */
 		struct netr_Authenticator *credential;/* [unique] */
-		enum netr_LogonLevel logon_level;
-		union netr_LogonInfo *logon;/* [ref,switch_is(logon_level)] */
+		enum netr_LogonInfoClass logon_level;
+		union netr_LogonLevel *logon;/* [ref,switch_is(logon_level)] */
 		uint16_t validation_level;
 		struct netr_Authenticator *return_authenticator;/* [unique] */
 	} in;
@@ -915,8 +993,8 @@ struct netr_LogonSamLogoff {
 		const char *server_name;/* [unique,charset(UTF16)] */
 		const char *computer_name;/* [unique,charset(UTF16)] */
 		struct netr_Authenticator *credential;/* [unique] */
-		enum netr_LogonLevel logon_level;
-		union netr_LogonInfo logon;/* [switch_is(logon_level)] */
+		enum netr_LogonInfoClass logon_level;
+		union netr_LogonLevel logon;/* [switch_is(logon_level)] */
 		struct netr_Authenticator *return_authenticator;/* [unique] */
 	} in;
 
@@ -1480,8 +1558,8 @@ struct netr_LogonSamLogonEx {
 	struct {
 		const char *server_name;/* [unique,charset(UTF16)] */
 		const char *computer_name;/* [unique,charset(UTF16)] */
-		enum netr_LogonLevel logon_level;
-		union netr_LogonInfo *logon;/* [ref,switch_is(logon_level)] */
+		enum netr_LogonInfoClass logon_level;
+		union netr_LogonLevel *logon;/* [ref,switch_is(logon_level)] */
 		uint16_t validation_level;
 		uint32_t *flags;/* [ref] */
 	} in;
@@ -1582,8 +1660,8 @@ struct netr_LogonSamLogonWithFlags {
 		const char *server_name;/* [unique,charset(UTF16)] */
 		const char *computer_name;/* [unique,charset(UTF16)] */
 		struct netr_Authenticator *credential;/* [unique] */
-		enum netr_LogonLevel logon_level;
-		union netr_LogonInfo logon;/* [switch_is(logon_level)] */
+		enum netr_LogonInfoClass logon_level;
+		union netr_LogonLevel logon;/* [switch_is(logon_level)] */
 		uint16_t validation_level;
 		struct netr_Authenticator *return_authenticator;/* [unique] */
 		uint32_t *flags;/* [ref] */

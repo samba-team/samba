@@ -31,7 +31,7 @@
 #include "dynconfig/dynconfig.h"
 
 #include "torture/smbtorture.h"
-#include "lib/util/dlinklist.h"
+#include "../lib/util/dlinklist.h"
 #include "librpc/rpc/dcerpc.h"
 #include "param/param.h"
 
@@ -474,7 +474,7 @@ const static struct torture_ui_ops quiet_ui_ops = {
 	.test_result = quiet_test_result
 };
 
-void run_shell(struct torture_context *tctx)
+static void run_shell(struct torture_context *tctx)
 {
 	char *cline;
 	int argc;

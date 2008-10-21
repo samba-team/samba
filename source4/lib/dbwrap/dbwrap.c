@@ -21,7 +21,7 @@
 */
 
 #include "includes.h"
-#include "lib/tdb/include/tdb.h"
+#include "../tdb/include/tdb.h"
 #include "lib/dbwrap/dbwrap.h"
 #include "param/param.h"
 

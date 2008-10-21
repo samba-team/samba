@@ -8,18 +8,16 @@ dcerpcsrcdir = $(librpcsrcdir)/rpc
 PUBLIC_DEPENDENCIES = LIBSAMBA-ERRORS LIBTALLOC LIBSAMBA-UTIL CHARSET \
 					  LIBSAMBA-HOSTCONFIG
 
-LIBNDR_OBJ_FILES = $(addprefix $(ndrsrcdir)/, ndr.o ndr_basic.o ndr_string.o uuid.o)
+LIBNDR_OBJ_FILES = $(addprefix $(ndrsrcdir)/, ndr_string.o) ../librpc/ndr/ndr_basic.o ../librpc/ndr/uuid.o ../librpc/ndr/ndr.o
 
-$(eval $(call proto_header_template,$(ndrsrcdir)/libndr_proto.h,$(LIBNDR_OBJ_FILES:.o=.c)))
-
-PC_FILES += $(librpcsrcdir)/ndr.pc
+PC_FILES += ../librpc/ndr.pc
 LIBNDR_VERSION = 0.0.1
 LIBNDR_SOVERSION = 0
 
 # End SUBSYSTEM LIBNDR
 ################################################
 
-PUBLIC_HEADERS += $(ndrsrcdir)/libndr.h
+PUBLIC_HEADERS += ../librpc/ndr/libndr.h
 
 #################################
 # Start BINARY ndrdump
@@ -36,9 +34,9 @@ PRIVATE_DEPENDENCIES = \
 # End BINARY ndrdump
 #################################
 
-ndrdump_OBJ_FILES = $(librpcsrcdir)/tools/ndrdump.o
+ndrdump_OBJ_FILES = ../librpc/tools/ndrdump.o
 
-MANPAGES += $(librpcsrcdir)/tools/ndrdump.1
+MANPAGES += ../librpc/tools/ndrdump.1
 
 ################################################
 # Start SUBSYSTEM NDR_COMPRESSION
@@ -48,9 +46,7 @@ PUBLIC_DEPENDENCIES = LIBSAMBA-ERRORS LIBNDR
 # End SUBSYSTEM NDR_COMPRESSION
 ################################################
 
-NDR_COMPRESSION_OBJ_FILES = $(ndrsrcdir)/ndr_compression.o
-
-$(eval $(call proto_header_template,$(ndrsrcdir)/ndr_compression.h,$(NDR_COMPRESSION_OBJ_FILES:.o=.c)))
+NDR_COMPRESSION_OBJ_FILES = ../librpc/ndr/ndr_compression.o
 
 [SUBSYSTEM::NDR_SECURITY]
 PUBLIC_DEPENDENCIES = NDR_MISC LIBSECURITY
@@ -84,6 +80,16 @@ PUBLIC_DEPENDENCIES = LIBNDR NDR_SECURITY NDR_NBT
 
 NDR_IRPC_OBJ_FILES = $(gen_ndrsrcdir)/ndr_irpc.o
 
+[SUBSYSTEM::NDR_DCOM]
+PUBLIC_DEPENDENCIES = LIBNDR NDR_SECURITY NDR_ORPC
+
+NDR_DCOM_OBJ_FILES = $(gen_ndrsrcdir)/ndr_dcom.o
+
+[SUBSYSTEM::NDR_WMI]
+PUBLIC_DEPENDENCIES = LIBNDR NDR_SECURITY NDR_DCOM
+
+NDR_WMI_OBJ_FILES = $(gen_ndrsrcdir)/ndr_wmi.o ../librpc/ndr/ndr_wmi.o
+
 [SUBSYSTEM::NDR_DSBACKUP]
 PUBLIC_DEPENDENCIES = LIBNDR
 
@@ -97,7 +103,7 @@ NDR_EFS_OBJ_FILES = $(gen_ndrsrcdir)/ndr_efs.o
 [SUBSYSTEM::NDR_MISC]
 PUBLIC_DEPENDENCIES = LIBNDR
 
-NDR_MISC_OBJ_FILES = $(gen_ndrsrcdir)/ndr_misc.o $(ndrsrcdir)/ndr_misc.o
+NDR_MISC_OBJ_FILES = $(gen_ndrsrcdir)/ndr_misc.o ../librpc/ndr/ndr_misc.o
 
 PUBLIC_HEADERS += $(gen_ndrsrcdir)/misc.h $(gen_ndrsrcdir)/ndr_misc.h
 
@@ -131,12 +137,12 @@ NDR_FRSAPI_OBJ_FILES = $(gen_ndrsrcdir)/ndr_frsapi.o
 [SUBSYSTEM::NDR_DRSUAPI]
 PUBLIC_DEPENDENCIES = LIBNDR NDR_COMPRESSION NDR_SECURITY NDR_SAMR ASN1_UTIL
 
-NDR_DRSUAPI_OBJ_FILES = $(gen_ndrsrcdir)/ndr_drsuapi.o $(ndrsrcdir)/ndr_drsuapi.o
+NDR_DRSUAPI_OBJ_FILES = $(gen_ndrsrcdir)/ndr_drsuapi.o ../librpc/ndr/ndr_drsuapi.o
 
 [SUBSYSTEM::NDR_DRSBLOBS]
-PUBLIC_DEPENDENCIES = LIBNDR NDR_MISC NDR_DRSUAPI LIBCLI_DRSBLOBS
+PUBLIC_DEPENDENCIES = LIBNDR NDR_MISC NDR_DRSUAPI
 
-NDR_DRSBLOBS_OBJ_FILES = $(gen_ndrsrcdir)/ndr_drsblobs.o
+NDR_DRSBLOBS_OBJ_FILES = $(gen_ndrsrcdir)/ndr_drsblobs.o ../librpc/ndr/ndr_drsblobs.o
 
 [SUBSYSTEM::NDR_SASL_HELPERS]
 PUBLIC_DEPENDENCIES = LIBNDR
@@ -253,7 +259,7 @@ NDR_PROTECTED_STORAGE_OBJ_FILES = $(gen_ndrsrcdir)/ndr_protected_storage.o
 [SUBSYSTEM::NDR_ORPC]
 PUBLIC_DEPENDENCIES = LIBNDR 
 
-NDR_ORPC_OBJ_FILES = $(gen_ndrsrcdir)/ndr_orpc.o $(ndrsrcdir)/ndr_orpc.o 
+NDR_ORPC_OBJ_FILES = $(gen_ndrsrcdir)/ndr_orpc.o ../librpc/ndr/ndr_orpc.o 
 
 [SUBSYSTEM::NDR_OXIDRESOLVER]
 PUBLIC_DEPENDENCIES = LIBNDR NDR_ORPC NDR_MISC
@@ -310,7 +316,7 @@ NDR_KEYSVC_OBJ_FILES = $(gen_ndrsrcdir)/ndr_keysvc.o
 [SUBSYSTEM::NDR_KRB5PAC]
 PUBLIC_DEPENDENCIES = LIBNDR NDR_NETLOGON NDR_SECURITY
 
-NDR_KRB5PAC_OBJ_FILES = $(gen_ndrsrcdir)/ndr_krb5pac.o $(ndrsrcdir)/ndr_krb5pac.o
+NDR_KRB5PAC_OBJ_FILES = $(gen_ndrsrcdir)/ndr_krb5pac.o ../librpc/ndr/ndr_krb5pac.o
 
 [SUBSYSTEM::NDR_XATTR]
 PUBLIC_DEPENDENCIES = LIBNDR NDR_SECURITY
@@ -356,7 +362,7 @@ NDR_WINBIND_OBJ_FILES = $(gen_ndrsrcdir)/ndr_winbind.o
 #PUBLIC_HEADERS += $(gen_ndrsrcdir)/winbind.h
 
 $(librpcsrcdir)/idl-deps:
-	$(PERL) $(librpcsrcdir)/idl-deps.pl $(librpcsrcdir)/idl/*.idl >$@
+	$(PERL) $(librpcsrcdir)/idl-deps.pl $(filter-out ../librpc/idl/security.idl,$(wildcard $(librpcsrcdir)/idl/*.idl ../librpc/idl/*.idl)) >$@
 
 clean:: 
 	rm -f $(librpcsrcdir)/idl-deps
@@ -365,7 +371,7 @@ clean::
 
 $(gen_ndrsrcdir)/tables.c: $(IDL_NDR_PARSE_H_FILES)
 	@echo Generating $@
-	@$(PERL) $(librpcsrcdir)/tables.pl --output=$@ $^ > $(gen_ndrsrcdir)/tables.x
+	@$(PERL) ../librpc/tables.pl --output=$@ $^ > $(gen_ndrsrcdir)/tables.x
 	@mv $(gen_ndrsrcdir)/tables.x $@
 
 [SUBSYSTEM::NDR_TABLE]
@@ -379,11 +385,10 @@ PUBLIC_DEPENDENCIES = \
 	NDR_NETLOGON NDR_TRKWKS NDR_KEYSVC NDR_KRB5PAC NDR_XATTR NDR_SCHANNEL \
 	NDR_ROT NDR_DRSBLOBS NDR_SVCCTL NDR_NBT NDR_WINSREPL NDR_SECURITY \
 	NDR_INITSHUTDOWN NDR_DNSSERVER NDR_WINSTATION NDR_IRPC NDR_OPENDB \
-	NDR_SASL_HELPERS NDR_NOTIFY NDR_WINBIND NDR_FRSRPC NDR_FRSAPI NDR_NFS4ACL NDR_NTP_SIGND
+	NDR_SASL_HELPERS NDR_NOTIFY NDR_WINBIND NDR_FRSRPC NDR_FRSAPI NDR_NFS4ACL NDR_NTP_SIGND \
+	NDR_DCOM NDR_WMI
 
-NDR_TABLE_OBJ_FILES = $(ndrsrcdir)/ndr_table.o $(gen_ndrsrcdir)/tables.o
-
-$(eval $(call proto_header_template,$(ndrsrcdir)/ndr_table.h,$(NDR_TABLE_OBJ_FILES:.o=.c)))
+NDR_TABLE_OBJ_FILES = ../librpc/ndr/ndr_table.o $(gen_ndrsrcdir)/tables.o
 
 [SUBSYSTEM::RPC_NDR_ROT]
 PUBLIC_DEPENDENCIES = NDR_ROT dcerpc
@@ -607,8 +612,9 @@ PC_FILES += $(librpcsrcdir)/dcerpc.pc
 dcerpc_VERSION = 0.0.1
 dcerpc_SOVERSION = 0
 
-dcerpc_OBJ_FILES = $(addprefix $(dcerpcsrcdir)/, dcerpc.o dcerpc_auth.o dcerpc_schannel.o dcerpc_util.o binding.o \
-				  dcerpc_error.o dcerpc_smb.o dcerpc_smb2.o dcerpc_sock.o dcerpc_connect.o dcerpc_secondary.o)
+dcerpc_OBJ_FILES = $(addprefix $(dcerpcsrcdir)/, dcerpc.o dcerpc_auth.o dcerpc_schannel.o dcerpc_util.o \
+				  dcerpc_error.o dcerpc_smb.o dcerpc_smb2.o dcerpc_sock.o dcerpc_connect.o dcerpc_secondary.o) \
+					../librpc/rpc/binding.o
 
 $(eval $(call proto_header_template,$(dcerpcsrcdir)/dcerpc_proto.h,$(dcerpc_OBJ_FILES:.o=.c)))
 
@@ -671,7 +677,7 @@ python_atsvc_OBJ_FILES = $(gen_ndrsrcdir)/py_atsvc.o
 
 [PYTHON::python_dcerpc_nbt]
 LIBRARY_REALNAME = samba/nbt.$(SHLIBEXT)
-PRIVATE_DEPENDENCIES = NDR_NBT PYTALLOC param swig_credentials python_dcerpc
+PRIVATE_DEPENDENCIES = NDR_NBT PYTALLOC param swig_credentials python_dcerpc python_dcerpc_misc python_dcerpc_security
 
 python_dcerpc_nbt_OBJ_FILES = $(gen_ndrsrcdir)/py_nbt.o
 
@@ -732,13 +738,12 @@ python_dcerpc_security_OBJ_FILES = $(gen_ndrsrcdir)/py_security.o
 $(IDL_HEADER_FILES) $(IDL_NDR_PARSE_H_FILES) $(IDL_NDR_PARSE_C_FILES) \
 	$(IDL_NDR_CLIENT_C_FILES) $(IDL_NDR_CLIENT_H_FILES) \
 	$(IDL_NDR_SERVER_C_FILES) $(IDL_SWIG_FILES) \
-	$(IDL_NDR_EJS_C_FILES) $(IDL_NDR_EJS_H_FILES) \
 	$(IDL_NDR_PY_C_FILES) $(IDL_NDR_PY_H_FILES): idl
 
 idl_full:: $(pidldir)/lib/Parse/Pidl/IDL.pm $(pidldir)/lib/Parse/Pidl/Expr.pm 
-	@CPP="$(CPP)" PIDL="$(PIDL)" $(librpcsrcdir)/scripts/build_idl.sh FULL $(librpcsrcdir)/idl $(librpcsrcdir)/gen_ndr
+	@CPP="$(CPP)" PIDL="$(PIDL)" $(librpcsrcdir)/scripts/build_idl.sh FULL $(librpcsrcdir)/gen_ndr $(IDL_FILES) 
 
 idl:: $(pidldir)/lib/Parse/Pidl/IDL.pm $(pidldir)/lib/Parse/Pidl/Expr.pm 
-	@CPP="$(CPP)" PIDL="$(PIDL)" $(librpcsrcdir)/scripts/build_idl.sh PARTIAL $(librpcsrcdir)/idl $(librpcsrcdir)/gen_ndr
+	@CPP="$(CPP)" PIDL="$(PIDL)" $(librpcsrcdir)/scripts/build_idl.sh PARTIAL $(librpcsrcdir)/gen_ndr $(IDL_FILES)
 
 

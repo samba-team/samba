@@ -1,0 +1,45 @@
+#include "idl_types.h"
+
+/*
+  initshutdown interface definition
+*/
+
+import "lsa.idl";
+
+[ 
+  uuid("894de0c0-0d55-11d3-a322-00c04fa321a1"),
+  version(1.0),
+  endpoint("ncacn_np:[\\pipe\\InitShutdown]"),
+  pointer_default(unique),
+  helpstring("Init shutdown service")
+] interface initshutdown
+{
+	WERROR initshutdown_Init(
+		[in,unique] uint16 *hostname,
+		/*
+		 * Note: lsa_String and winreg_String both result
+		 *       in WERR_INVALID_PARAM
+		 */
+		[in,unique] lsa_StringLarge *message,
+		[in] uint32 timeout,
+		[in] uint8 force_apps,
+		[in] uint8 do_reboot
+	);
+
+	WERROR initshutdown_Abort(
+		[in,unique] uint16 *server
+	);
+
+	WERROR initshutdown_InitEx(
+  		[in,unique] uint16 *hostname,
+		/*
+		 * Note: lsa_String and winreg_String both result
+		 *       in WERR_INVALID_PARAM
+		 */
+		[in,unique] lsa_StringLarge *message,
+		[in] uint32 timeout,
+		[in] uint8 force_apps,
+		[in] uint8 do_reboot,
+		[in] uint32 reason
+	);
+}

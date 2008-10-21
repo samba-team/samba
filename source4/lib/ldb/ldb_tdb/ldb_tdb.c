@@ -3,7 +3,7 @@
 
    Copyright (C) Andrew Tridgell  2004
    Copyright (C) Stefan Metzmacher  2004
-   Copyright (C) Simo Sorce       2006
+   Copyright (C) Simo Sorce       2006-2008
 
 
      ** NOTE! The following LGPL license applies to the ldb
@@ -38,6 +38,10 @@
  *
  *  - description: make the module use asyncronous calls
  *    date: Feb 2006
+ *    Author: Simo Sorce
+ *
+ *  - description: make it possible to use event contexts
+ *    date: Jan 2008
  *    Author: Simo Sorce
  */
 
@@ -75,40 +79,30 @@ static int ltdb_err_map(enum TDB_ERROR tdb_code)
 	return LDB_ERR_OTHER;
 }
 
-
-struct ldb_handle *init_ltdb_handle(struct ltdb_private *ltdb,
-				    struct ldb_module *module,
-				    struct ldb_request *req)
+/*
+  lock the database for read - use by ltdb_search and ltdb_sequence_number
+*/
+int ltdb_lock_read(struct ldb_module *module)
 {
-	struct ltdb_context *ac;
-	struct ldb_handle *h;
-
-	h = talloc_zero(req, struct ldb_handle);
-	if (h == NULL) {
-		ldb_set_errstring(module->ldb, "Out of Memory");
-		return NULL;
+	struct ltdb_private *ltdb = (struct ltdb_private *)module->private_data;
+	if (ltdb->in_transaction == 0) {
+		return tdb_lockall_read(ltdb->tdb);
 	}
-
-	h->module = module;
-
-	ac = talloc_zero(h, struct ltdb_context);
-	if (ac == NULL) {
-		ldb_set_errstring(module->ldb, "Out of Memory");
-		talloc_free(h);
-		return NULL;
-	}
-
-	h->private_data = (void *)ac;
-
-	h->state = LDB_ASYNC_INIT;
-	h->status = LDB_SUCCESS;
-
-	ac->module = module;
-	ac->context = req->context;
-	ac->callback = req->callback;
-
-	return h;
+	return 0;
 }
+
+/*
+  unlock the database after a ltdb_lock_read()
+*/
+int ltdb_unlock_read(struct ldb_module *module)
+{
+	struct ltdb_private *ltdb = (struct ltdb_private *)module->private_data;
+	if (ltdb->in_transaction == 0) {
+		return tdb_unlockall_read(ltdb->tdb);
+	}
+	return 0;
+}
+
 
 /*
   form a TDB_DATA for a record key
@@ -167,7 +161,7 @@ failed:
   check special dn's have valid attributes
   currently only @ATTRIBUTES is checked
 */
-int ltdb_check_special_dn(struct ldb_module *module,
+static int ltdb_check_special_dn(struct ldb_module *module,
 			  const struct ldb_message *msg)
 {
 	int i, j;
@@ -296,36 +290,20 @@ static int ltdb_add_internal(struct ldb_module *module,
 /*
   add a record to the database
 */
-static int ltdb_add(struct ldb_module *module, struct ldb_request *req)
+static int ltdb_add(struct ltdb_context *ctx)
 {
-	struct ltdb_private *ltdb;
-	struct ltdb_context *ltdb_ac;
-	int tret, ret = LDB_SUCCESS;
+	struct ldb_module *module = ctx->module;
+	struct ldb_request *req = ctx->req;
+	int tret;
 
-	ltdb = talloc_get_type(module->private_data, struct ltdb_private);
-
-	if (check_critical_controls(req->controls)) {
-		return LDB_ERR_UNSUPPORTED_CRITICAL_EXTENSION;
-	}
-
-	req->handle = init_ltdb_handle(ltdb, module, req);
-	if (req->handle == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	ltdb_ac = talloc_get_type(req->handle->private_data, struct ltdb_context);
+	req->handle->state = LDB_ASYNC_PENDING;
 
 	tret = ltdb_add_internal(module, req->op.add.message);
 	if (tret != LDB_SUCCESS) {
-		req->handle->status = tret;
-		goto done;
+		return tret;
 	}
 
-	if (ltdb_ac->callback) {
-		ret = ltdb_ac->callback(module->ldb, ltdb_ac->context, NULL);
-	}
-done:
-	req->handle->state = LDB_ASYNC_DONE;
-	return ret;
+	return LDB_SUCCESS;
 }
 
 /*
@@ -402,42 +380,24 @@ done:
 /*
   delete a record from the database
 */
-static int ltdb_delete(struct ldb_module *module, struct ldb_request *req)
+static int ltdb_delete(struct ltdb_context *ctx)
 {
-	struct ltdb_private *ltdb;
-	struct ltdb_context *ltdb_ac;
-	int tret, ret = LDB_SUCCESS;
+	struct ldb_module *module = ctx->module;
+	struct ldb_request *req = ctx->req;
+	int tret;
 
-	ltdb = talloc_get_type(module->private_data, struct ltdb_private);
-
-	if (check_critical_controls(req->controls)) {
-		return LDB_ERR_UNSUPPORTED_CRITICAL_EXTENSION;
-	}
-
-	req->handle = NULL;
+	req->handle->state = LDB_ASYNC_PENDING;
 
 	if (ltdb_cache_load(module) != 0) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	req->handle = init_ltdb_handle(ltdb, module, req);
-	if (req->handle == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	ltdb_ac = talloc_get_type(req->handle->private_data, struct ltdb_context);
-
 	tret = ltdb_delete_internal(module, req->op.del.dn);
 	if (tret != LDB_SUCCESS) {
-		req->handle->status = tret;
-		goto done;
+		return tret;
 	}
 
-	if (ltdb_ac->callback) {
-		ret = ltdb_ac->callback(module->ldb, ltdb_ac->context, NULL);
-	}
-done:
-	req->handle->state = LDB_ASYNC_DONE;
-	return ret;
+	return LDB_SUCCESS;
 }
 
 /*
@@ -784,83 +744,50 @@ failed:
 /*
   modify a record
 */
-static int ltdb_modify(struct ldb_module *module, struct ldb_request *req)
+static int ltdb_modify(struct ltdb_context *ctx)
 {
-	struct ltdb_private *ltdb;
-	struct ltdb_context *ltdb_ac;
-	int tret, ret = LDB_SUCCESS;
+	struct ldb_module *module = ctx->module;
+	struct ldb_request *req = ctx->req;
+	int tret;
 
-	ltdb = talloc_get_type(module->private_data, struct ltdb_private);
-
-	if (check_critical_controls(req->controls)) {
-		return LDB_ERR_UNSUPPORTED_CRITICAL_EXTENSION;
-	}
-
-	req->handle = NULL;
-
-	req->handle = init_ltdb_handle(ltdb, module, req);
-	if (req->handle == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	ltdb_ac = talloc_get_type(req->handle->private_data, struct ltdb_context);
+	req->handle->state = LDB_ASYNC_PENDING;
 
 	tret = ltdb_check_special_dn(module, req->op.mod.message);
 	if (tret != LDB_SUCCESS) {
-		req->handle->status = tret;
-		goto done;
+		return tret;
 	}
 
 	if (ltdb_cache_load(module) != 0) {
-		ret = LDB_ERR_OPERATIONS_ERROR;
-		goto done;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	tret = ltdb_modify_internal(module, req->op.mod.message);
 	if (tret != LDB_SUCCESS) {
-		req->handle->status = tret;
-		goto done;
+		return tret;
 	}
 
-	if (ltdb_ac->callback) {
-		ret = ltdb_ac->callback(module->ldb, ltdb_ac->context, NULL);
-	}
-done:
-	req->handle->state = LDB_ASYNC_DONE;
-	return ret;
+	return LDB_SUCCESS;
 }
 
 /*
   rename a record
 */
-static int ltdb_rename(struct ldb_module *module, struct ldb_request *req)
+static int ltdb_rename(struct ltdb_context *ctx)
 {
-	struct ltdb_private *ltdb;
-	struct ltdb_context *ltdb_ac;
+	struct ldb_module *module = ctx->module;
+	struct ldb_request *req = ctx->req;
 	struct ldb_message *msg;
-	int tret, ret = LDB_SUCCESS;
+	int tret;
 
-	ltdb = talloc_get_type(module->private_data, struct ltdb_private);
+	req->handle->state = LDB_ASYNC_PENDING;
 
-	if (check_critical_controls(req->controls)) {
-		return LDB_ERR_UNSUPPORTED_CRITICAL_EXTENSION;
-	}
-
-	req->handle = NULL;
-
-	if (ltdb_cache_load(module) != 0) {
+	if (ltdb_cache_load(ctx->module) != 0) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	req->handle = init_ltdb_handle(ltdb, module, req);
-	if (req->handle == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	ltdb_ac = talloc_get_type(req->handle->private_data, struct ltdb_context);
-
-	msg = talloc(ltdb_ac, struct ldb_message);
+	msg = talloc(ctx, struct ldb_message);
 	if (msg == NULL) {
-		ret = LDB_ERR_OPERATIONS_ERROR;
-		goto done;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	/* in case any attribute of the message was indexed, we need
@@ -868,14 +795,12 @@ static int ltdb_rename(struct ldb_module *module, struct ldb_request *req)
 	tret = ltdb_search_dn1(module, req->op.rename.olddn, msg);
 	if (tret != LDB_SUCCESS) {
 		/* not finding the old record is an error */
-		req->handle->status = tret;
-		goto done;
+		return tret;
 	}
 
 	msg->dn = ldb_dn_copy(msg, req->op.rename.newdn);
 	if (!msg->dn) {
-		ret = LDB_ERR_OPERATIONS_ERROR;
-		goto done;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	if (ldb_dn_compare(req->op.rename.olddn, req->op.rename.newdn) == 0) {
@@ -886,38 +811,32 @@ static int ltdb_rename(struct ldb_module *module, struct ldb_request *req)
 		   The only drawback to this is that if the delete
 		   succeeds but the add fails, we rely on the
 		   transaction to roll this all back. */
-		ret = ltdb_delete_internal(module, req->op.rename.olddn);
-		if (ret != LDB_SUCCESS) {
-			goto done;
+		tret = ltdb_delete_internal(module, req->op.rename.olddn);
+		if (tret != LDB_SUCCESS) {
+			return tret;
 		}
 
-		ret = ltdb_add_internal(module, msg);
-		if (ret != LDB_SUCCESS) {
-			goto done;
+		tret = ltdb_add_internal(module, msg);
+		if (tret != LDB_SUCCESS) {
+			return tret;
 		}
 	} else {
 		/* The rename operation is changing DNs.  Try to add the new
 		   DN first to avoid clobbering another DN not related to
 		   this rename operation. */
-		ret = ltdb_add_internal(module, msg);
-		if (ret != LDB_SUCCESS) {
-			goto done;
+		tret = ltdb_add_internal(module, msg);
+		if (tret != LDB_SUCCESS) {
+			return tret;
 		}
 
 		tret = ltdb_delete_internal(module, req->op.rename.olddn);
 		if (tret != LDB_SUCCESS) {
 			ltdb_delete_internal(module, req->op.rename.newdn);
-			ret = LDB_ERR_OPERATIONS_ERROR;
-			goto done;
+			return LDB_ERR_OPERATIONS_ERROR;
 		}
 	}
 
-	if (ltdb_ac->callback) {
-		ret = ltdb_ac->callback(module->ldb, ltdb_ac->context, NULL);
-	}
-done:
-	req->handle->state = LDB_ASYNC_DONE;
-	return ret;
+	return LDB_SUCCESS;
 }
 
 static int ltdb_start_trans(struct ldb_module *module)
@@ -962,95 +881,261 @@ static int ltdb_del_trans(struct ldb_module *module)
 	return LDB_SUCCESS;
 }
 
-static int ltdb_wait(struct ldb_handle *handle, enum ldb_wait_type type)
-{
-	return handle->status;
-}
-
-static int ltdb_request(struct ldb_module *module, struct ldb_request *req)
-{
-	/* check for oustanding critical controls
-	 * and return an error if found */
-	if (check_critical_controls(req->controls)) {
-		return LDB_ERR_UNSUPPORTED_CRITICAL_EXTENSION;
-	}
-
-	/* search, add, modify, delete, rename are handled by their own,
-	 * no other op supported */
-	return LDB_ERR_OPERATIONS_ERROR;
-}
-
 /*
   return sequenceNumber from @BASEINFO
 */
-static int ltdb_sequence_number(struct ldb_module *module,
-				struct ldb_request *req)
+static int ltdb_sequence_number(struct ltdb_context *ctx,
+				struct ldb_extended **ext)
 {
+	struct ldb_module *module = ctx->module;
+	struct ldb_request *req = ctx->req;
 	TALLOC_CTX *tmp_ctx;
+	struct ldb_seqnum_request *seq;
+	struct ldb_seqnum_result *res;
 	struct ldb_message *msg = NULL;
 	struct ldb_dn *dn;
 	const char *date;
-	int tret;
+	int ret;
 
+	seq = talloc_get_type(req->op.extended.data,
+				struct ldb_seqnum_request);
+	if (seq == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	req->handle->state = LDB_ASYNC_PENDING;
+
+	if (ltdb_lock_read(module) != 0) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	res = talloc_zero(req, struct ldb_seqnum_result);
+	if (res == NULL) {
+		ret = LDB_ERR_OPERATIONS_ERROR;
+		goto done;
+	}
 	tmp_ctx = talloc_new(req);
 	if (tmp_ctx == NULL) {
-		talloc_free(tmp_ctx);
-		return LDB_ERR_OPERATIONS_ERROR;
+		ret = LDB_ERR_OPERATIONS_ERROR;
+		goto done;
 	}
 
 	dn = ldb_dn_new(tmp_ctx, module->ldb, LTDB_BASEINFO);
 
 	msg = talloc(tmp_ctx, struct ldb_message);
 	if (msg == NULL) {
-		talloc_free(tmp_ctx);
-		return LDB_ERR_OPERATIONS_ERROR;
+		ret = LDB_ERR_OPERATIONS_ERROR;
+		goto done;
 	}
 
-	req->op.seq_num.flags = 0;
-
-	tret = ltdb_search_dn1(module, dn, msg);
-	if (tret != LDB_SUCCESS) {
-		talloc_free(tmp_ctx);
-		/* zero is as good as anything when we don't know */
-		req->op.seq_num.seq_num = 0;
-		return LDB_SUCCESS;
+	ret = ltdb_search_dn1(module, dn, msg);
+	if (ret != LDB_SUCCESS) {
+		goto done;
 	}
 
-	switch (req->op.seq_num.type) {
+	switch (seq->type) {
 	case LDB_SEQ_HIGHEST_SEQ:
-		req->op.seq_num.seq_num = ldb_msg_find_attr_as_uint64(msg, LTDB_SEQUENCE_NUMBER, 0);
+		res->seq_num = ldb_msg_find_attr_as_uint64(msg, LTDB_SEQUENCE_NUMBER, 0);
 		break;
 	case LDB_SEQ_NEXT:
-		req->op.seq_num.seq_num = ldb_msg_find_attr_as_uint64(msg, LTDB_SEQUENCE_NUMBER, 0);
-		req->op.seq_num.seq_num++;
+		res->seq_num = ldb_msg_find_attr_as_uint64(msg, LTDB_SEQUENCE_NUMBER, 0);
+		res->seq_num++;
 		break;
 	case LDB_SEQ_HIGHEST_TIMESTAMP:
 		date = ldb_msg_find_attr_as_string(msg, LTDB_MOD_TIMESTAMP, NULL);
 		if (date) {
-			req->op.seq_num.seq_num = ldb_string_to_time(date);
+			res->seq_num = ldb_string_to_time(date);
 		} else {
-			req->op.seq_num.seq_num = 0;
+			res->seq_num = 0;
 			/* zero is as good as anything when we don't know */
 		}
 		break;
 	}
+
+	*ext = talloc_zero(req, struct ldb_extended);
+	if (*ext == NULL) {
+		ret = LDB_ERR_OPERATIONS_ERROR;
+		goto done;
+	}
+	(*ext)->oid = LDB_EXTENDED_SEQUENCE_NUMBER;
+	(*ext)->data = talloc_steal(*ext, res);
+
+	ret = LDB_SUCCESS;
+
+done:
 	talloc_free(tmp_ctx);
+	ltdb_unlock_read(module);
+	return ret;
+}
+
+static void ltdb_request_done(struct ldb_request *req, int error)
+{
+	struct ldb_reply *ares;
+
+	/* if we already returned an error just return */
+	if (req->handle->status != LDB_SUCCESS) {
+		return;
+	}
+
+	ares = talloc_zero(req, struct ldb_reply);
+	if (!ares) {
+		ldb_oom(req->handle->ldb);
+		req->callback(req, NULL);
+		return;
+	}
+	ares->type = LDB_REPLY_DONE;
+	ares->error = error;
+
+	req->callback(req, ares);
+}
+
+static void ltdb_timeout(struct event_context *ev,
+			  struct timed_event *te,
+			  struct timeval t,
+			  void *private_data)
+{
+	struct ltdb_context *ctx;
+	ctx = talloc_get_type(private_data, struct ltdb_context);
+
+	ltdb_request_done(ctx->req, LDB_ERR_TIME_LIMIT_EXCEEDED);
+}
+
+static void ltdb_request_extended_done(struct ldb_request *req,
+					struct ldb_extended *ext,
+					int error)
+{
+	struct ldb_reply *ares;
+
+	/* if we already returned an error just return */
+	if (req->handle->status != LDB_SUCCESS) {
+		return;
+	}
+
+	ares = talloc_zero(req, struct ldb_reply);
+	if (!ares) {
+		ldb_oom(req->handle->ldb);
+		req->callback(req, NULL);
+		return;
+	}
+	ares->type = LDB_REPLY_DONE;
+	ares->response = ext;
+	ares->error = error;
+
+	req->callback(req, ares);
+}
+
+static void ltdb_handle_extended(struct ltdb_context *ctx)
+{
+	struct ldb_extended *ext = NULL;
+	int ret;
+
+	if (strcmp(ctx->req->op.extended.oid,
+		   LDB_EXTENDED_SEQUENCE_NUMBER) == 0) {
+		/* get sequence number */
+		ret = ltdb_sequence_number(ctx, &ext);
+	} else {
+		/* not recognized */
+		ret = LDB_ERR_UNSUPPORTED_CRITICAL_EXTENSION;
+	}
+
+	ltdb_request_extended_done(ctx->req, ext, ret);
+}
+
+static void ltdb_callback(struct event_context *ev,
+			  struct timed_event *te,
+			  struct timeval t,
+			  void *private_data)
+{
+	struct ltdb_context *ctx;
+	int ret;
+
+	ctx = talloc_get_type(private_data, struct ltdb_context);
+
+	switch (ctx->req->operation) {
+	case LDB_SEARCH:
+		ret = ltdb_search(ctx);
+		break;
+	case LDB_ADD:
+		ret = ltdb_add(ctx);
+		break;
+	case LDB_MODIFY:
+		ret = ltdb_modify(ctx);
+		break;
+	case LDB_DELETE:
+		ret = ltdb_delete(ctx);
+		break;
+	case LDB_RENAME:
+		ret = ltdb_rename(ctx);
+		break;
+	case LDB_EXTENDED:
+		ltdb_handle_extended(ctx);
+		return;
+	default:
+		/* no other op supported */
+		ret = LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+
+	if (!ctx->callback_failed) {
+		ltdb_request_done(ctx->req, ret);
+	}
+}
+
+static int ltdb_handle_request(struct ldb_module *module,
+				struct ldb_request *req)
+{
+	struct event_context *ev;
+	struct ltdb_context *ac;
+	struct timed_event *te;
+	struct timeval tv;
+
+	if (check_critical_controls(req->controls)) {
+		return LDB_ERR_UNSUPPORTED_CRITICAL_EXTENSION;
+	}
+
+	if (req->starttime == 0 || req->timeout == 0) {
+		ldb_set_errstring(module->ldb, "Invalid timeout settings");
+		return LDB_ERR_TIME_LIMIT_EXCEEDED;
+	}
+
+	ev = ldb_get_event_context(module->ldb);
+
+	ac = talloc_zero(req, struct ltdb_context);
+	if (ac == NULL) {
+		ldb_set_errstring(module->ldb, "Out of Memory");
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	ac->module = module;
+	ac->req = req;
+
+	tv.tv_sec = 0;
+	tv.tv_usec = 0;
+	te = event_add_timed(ev, ac, tv, ltdb_callback, ac);
+	if (NULL == te) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+
+	tv.tv_sec = req->starttime + req->timeout;
+	te = event_add_timed(ev, ac, tv, ltdb_timeout, ac);
+	if (NULL == te) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
 	return LDB_SUCCESS;
 }
 
 static const struct ldb_module_ops ltdb_ops = {
 	.name              = "tdb",
-	.search            = ltdb_search,
-	.add               = ltdb_add,
-	.modify            = ltdb_modify,
-	.del               = ltdb_delete,
-	.rename            = ltdb_rename,
-	.request           = ltdb_request,
+	.search            = ltdb_handle_request,
+	.add               = ltdb_handle_request,
+	.modify            = ltdb_handle_request,
+	.del               = ltdb_handle_request,
+	.rename            = ltdb_handle_request,
+	.extended          = ltdb_handle_request,
 	.start_transaction = ltdb_start_trans,
 	.end_transaction   = ltdb_end_trans,
 	.del_transaction   = ltdb_del_trans,
-	.wait              = ltdb_wait,
-	.sequence_number   = ltdb_sequence_number
 };
 
 /*
@@ -1114,7 +1199,7 @@ static int ltdb_connect(struct ldb_context *ldb, const char *url,
 	ltdb->sequence_number = 0;
 
 	*module = talloc(ldb, struct ldb_module);
-	if (!module) {
+	if ((*module) == NULL) {
 		ldb_oom(ldb);
 		talloc_free(ltdb);
 		return -1;

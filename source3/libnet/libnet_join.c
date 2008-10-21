@@ -357,10 +357,15 @@ static ADS_STATUS libnet_join_set_machine_spn(TALLOC_CTX *mem_ctx,
 	strupper_m(spn);
 	spn_array[0] = spn;
 
-	if (name_to_fqdn(my_fqdn, r->in.machine_name) &&
-	    !strequal(my_fqdn, r->in.machine_name)) {
+	if (!name_to_fqdn(my_fqdn, r->in.machine_name)
+	    || (strchr(my_fqdn, '.') == NULL)) {
+		fstr_sprintf(my_fqdn, "%s.%s", r->in.machine_name,
+			     r->out.dns_domain_name);
+	}
 
-		strlower_m(my_fqdn);
+	strlower_m(my_fqdn);
+
+	if (!strequal(my_fqdn, r->in.machine_name)) {
 		spn = talloc_asprintf(mem_ctx, "HOST/%s", my_fqdn);
 		if (!spn) {
 			return ADS_ERROR_LDAP(LDAP_NO_MEMORY);
@@ -770,7 +775,7 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(user_pol);
 
 	if (!r->in.machine_password) {
-		r->in.machine_password = talloc_strdup(mem_ctx, generate_random_str(DEFAULT_TRUST_ACCOUNT_PASSWORD_LENGTH));
+		r->in.machine_password = generate_random_str(mem_ctx, DEFAULT_TRUST_ACCOUNT_PASSWORD_LENGTH);
 		NT_STATUS_HAVE_NO_MEMORY(r->in.machine_password);
 	}
 

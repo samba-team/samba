@@ -117,8 +117,10 @@ static struct smbcli_state *connect_one(struct event_context *ev,
 	NTSTATUS status;
 	int retries = 10;
 	struct smbcli_options options;
+	struct smbcli_session_options session_options;
 
 	lp_smbcli_options(lp_ctx, &options);
+	lp_smbcli_session_options(lp_ctx, &session_options);
 
 	printf("connect_one(%s, %d, %d)\n", share, snum, conn);
 
@@ -135,7 +137,7 @@ static struct smbcli_state *connect_one(struct event_context *ev,
 		p = lp_parm_string(lp_ctx, NULL, "torture", "unclist");
 		if (p) {
 			char *h, *s;
-			unc_list = file_lines_load(p, &num_unc_names, NULL);
+			unc_list = file_lines_load(p, &num_unc_names, 0, NULL);
 			if (!unc_list || num_unc_names <= 0) {
 				printf("Failed to load unc names list from '%s'\n", p);
 				exit(1);
@@ -164,7 +166,7 @@ static struct smbcli_state *connect_one(struct event_context *ev,
 						share, NULL,
 						servers[snum], 
 						lp_resolve_context(lp_ctx),
-						ev, &options);
+						ev, &options, &session_options);
 		if (!NT_STATUS_IS_OK(status)) {
 			sleep(2);
 		}

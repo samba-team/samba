@@ -20,7 +20,6 @@
 
 #include "includes.h"
 #ifdef HAVE_NS_API_H
-#undef VOLATILE
 
 #include <ns_daemon.h>
 #endif

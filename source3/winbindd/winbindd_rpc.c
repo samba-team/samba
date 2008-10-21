@@ -279,6 +279,8 @@ NTSTATUS msrpc_name_to_sid(struct winbindd_domain *domain,
 	char *full_name = NULL;
 	struct rpc_pipe_client *cli;
 	POLICY_HND lsa_policy;
+	NTSTATUS name_map_status = NT_STATUS_UNSUCCESSFUL;
+	char *mapped_name = NULL;
 
 	if (name == NULL || *name=='\0') {
 		full_name = talloc_asprintf(mem_ctx, "%s", domain_name);
@@ -294,9 +296,19 @@ NTSTATUS msrpc_name_to_sid(struct winbindd_domain *domain,
 
 	DEBUG(3,("rpc: name_to_sid name=%s\n", full_name));
 
-	ws_name_return( full_name, WB_REPLACE_CHAR );
+	name_map_status = normalize_name_unmap(mem_ctx, full_name,
+					       &mapped_name);
 
-	DEBUG(3,("name_to_sid [rpc] %s for domain %s\n", full_name?full_name:"", domain_name ));
+	/* Reset the full_name pointer if we mapped anytthing */
+
+	if (NT_STATUS_IS_OK(name_map_status) ||
+	    NT_STATUS_EQUAL(name_map_status, NT_STATUS_FILE_RENAMED))
+	{
+		full_name = mapped_name;
+	}
+
+	DEBUG(3,("name_to_sid [rpc] %s for domain %s\n",
+		 full_name?full_name:"", domain_name ));
 
 	result = cm_connect_lsa(domain, mem_ctx, &cli, &lsa_policy);
 	if (!NT_STATUS_IS_OK(result))
@@ -332,6 +344,8 @@ NTSTATUS msrpc_sid_to_name(struct winbindd_domain *domain,
 	NTSTATUS result;
 	struct rpc_pipe_client *cli;
 	POLICY_HND lsa_policy;
+	NTSTATUS name_map_status = NT_STATUS_UNSUCCESSFUL;
+	char *mapped_name = NULL;
 
 	DEBUG(3,("sid_to_name [rpc] %s for domain %s\n", sid_string_dbg(sid),
 		 domain->name ));
@@ -356,9 +370,17 @@ NTSTATUS msrpc_sid_to_name(struct winbindd_domain *domain,
 	*domain_name = domains[0];
 	*name = names[0];
 
-	ws_name_replace( *name, WB_REPLACE_CHAR );	
-		
 	DEBUG(5,("Mapped sid to [%s]\\[%s]\n", domains[0], *name));
+
+	name_map_status = normalize_name_map(mem_ctx, domain, *name,
+					     &mapped_name);
+	if (NT_STATUS_IS_OK(name_map_status) ||
+	    NT_STATUS_EQUAL(name_map_status, NT_STATUS_FILE_RENAMED))
+	{
+		*name = mapped_name;
+		DEBUG(5,("returning mapped name -- %s\n", *name));
+	}
+
 	return NT_STATUS_OK;
 }
 
@@ -411,8 +433,20 @@ NTSTATUS msrpc_rids_to_names(struct winbindd_domain *domain,
 
 	ret_names = *names;
 	for (i=0; i<num_rids; i++) {
+		NTSTATUS name_map_status = NT_STATUS_UNSUCCESSFUL;
+		char *mapped_name = NULL;
+
 		if ((*types)[i] != SID_NAME_UNKNOWN) {
-			ws_name_replace( ret_names[i], WB_REPLACE_CHAR );
+			name_map_status = normalize_name_map(mem_ctx,
+							     domain,
+							     ret_names[i],
+							     &mapped_name);
+			if (NT_STATUS_IS_OK(name_map_status) ||
+			    NT_STATUS_EQUAL(name_map_status, NT_STATUS_FILE_RENAMED))
+			{
+				ret_names[i] = mapped_name;
+			}
+
 			*domain_name = domains[i];
 		}
 	}
@@ -820,7 +854,10 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 		}
 
 		for (r=0; r<tmp_names.count; r++) {
-			(*names)[i+r] = CONST_DISCARD(char *, tmp_names.names[r].string);
+			(*names)[i+r] = fill_domain_username_talloc(mem_ctx,
+						domain->name,
+						tmp_names.names[r].string,
+						true);
 			(*name_types)[i+r] = tmp_types.ids[r];
 		}
 
@@ -981,7 +1018,7 @@ static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 					     &info);
 
 	if (NT_STATUS_IS_OK(result)) {
-		*seq = info->info2.sequence_num;
+		*seq = info->general.sequence_num;
 		got_seq_num = True;
 	}
 

@@ -153,7 +153,7 @@ static bool parse_ace(SEC_ACE *ace, const char *orig_str)
 	unsigned int aflags = 0;
 	unsigned int amask = 0;
 	DOM_SID sid;
-	SEC_ACCESS mask;
+	uint32_t mask;
 	const struct perm_value *v;
 	char *str = SMB_STRDUP(orig_str);
 	TALLOC_CTX *frame = talloc_stackframe();
@@ -401,7 +401,7 @@ static void sort_acl(SEC_ACL *the_acl)
 
 static int change_share_sec(TALLOC_CTX *mem_ctx, const char *sharename, char *the_acl, enum acl_mode mode)
 {
-	SEC_DESC *sd;
+	SEC_DESC *sd = NULL;
 	SEC_DESC *old = NULL;
 	size_t sd_size = 0;
 	uint32 i, j;

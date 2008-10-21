@@ -22,7 +22,7 @@ def show_sessions(conn):
 
 	sessions = conn.smbsrv_information(irpc.SMBSRV_INFO_SESSIONS).next()
 	print "User                                  Client      Connected at"
-	print "-------------------------------------------------------------------------------"
+	print "-" * 79
 	for session in sessions:
 		fulluser = "%s/%s" % (session.account_name, session.domain_name)
 		print "%-30s %16s   %s" % (fulluser, session.client_ip, sys.httptime(session.connect_time))
@@ -33,7 +33,7 @@ def show_tcons(open_connection):
 	conn = open_connection("smb_server")
 	tcons = conn.smbsrv_information(irpc.SMBSRV_INFO_TCONS).next()
 	print "Share                                 Client      Connected at"
-	print "-------------------------------------------------------------------------------"
+	print "-" * 79
 	for tcon in tcons:
 		print "%-30s %16s   %s" % (tcon.share_name, tcon.client_ip, sys.httptime(tcon.connect_time))
 
@@ -76,7 +76,7 @@ else:
 	try:
 		conn = open_connection("smb_server")
 	except RuntimeError, (num, msg):
-		if msg ==  'NT_STATUS_OBJECT_NAME_NOT_FOUND':
+		if msg == 'NT_STATUS_OBJECT_NAME_NOT_FOUND':
 			print "No active connections"
 	else:
 		show_sessions(conn)

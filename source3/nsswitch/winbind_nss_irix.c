@@ -32,7 +32,6 @@ int asprintf(char **,const char *, ...) PRINTF_ATTRIBUTE(2,3);
 #endif
 
 #ifdef HAVE_NS_API_H
-#undef VOLATILE
 #undef STATIC
 #undef DYNAMIC
 #include <ns_daemon.h>

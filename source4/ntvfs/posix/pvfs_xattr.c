@@ -21,7 +21,7 @@
 
 #include "includes.h"
 #include "vfs_posix.h"
-#include "lib/util/unix_privs.h"
+#include "../lib/util/unix_privs.h"
 #include "librpc/gen_ndr/ndr_xattr.h"
 #include "param/param.h"
 
@@ -50,7 +50,7 @@ static NTSTATUS pull_xattr_blob(struct pvfs_state *pvfs,
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED)||
 	    NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED)||
 	    NT_STATUS_EQUAL(status, NT_STATUS_INVALID_SYSTEM_SERVICE)) {
-		DEBUG(5,("pvfs_xattr: xattr not supported in filesystem: %s\n", nt_errstr(status)));
+		DEBUG(2,("pvfs_xattr: xattr not supported in filesystem: %s\n", nt_errstr(status)));
 		pvfs->flags &= ~PVFS_FLAG_XATTR_ENABLE;
 		status = NT_STATUS_NOT_FOUND;
 	}

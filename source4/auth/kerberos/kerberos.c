@@ -23,6 +23,7 @@
 
 #include "includes.h"
 #include "system/kerberos.h"
+#include "auth/kerberos/kerberos.h"
 
 #ifdef HAVE_KRB5
 
@@ -33,7 +34,7 @@
   This version is built to use a keyblock, rather than needing the
   original password.
 */
- int kerberos_kinit_keyblock_cc(krb5_context ctx, krb5_ccache cc, 
+ krb5_error_code kerberos_kinit_keyblock_cc(krb5_context ctx, krb5_ccache cc, 
 				krb5_principal principal, krb5_keyblock *keyblock,
 				time_t *expire_time, time_t *kdc_time)
 {
@@ -77,7 +78,7 @@
   simulate a kinit, putting the tgt in the given credentials cache. 
   Orignally by remus@snapserver.com
 */
- int kerberos_kinit_password_cc(krb5_context ctx, krb5_ccache cc, 
+ krb5_error_code kerberos_kinit_password_cc(krb5_context ctx, krb5_ccache cc, 
 				krb5_principal principal, const char *password, 
 				time_t *expire_time, time_t *kdc_time)
 {

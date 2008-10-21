@@ -459,8 +459,8 @@ NTSTATUS make_auth_context_subsystem(struct auth_context **auth_context)
 	NTSTATUS nt_status;
 
 	if (lp_auth_methods()
-	    && !str_list_copy(talloc_tos(), &auth_method_list,
-			      lp_auth_methods())) {
+	    && !(auth_method_list = str_list_copy(talloc_tos(), 
+			      lp_auth_methods()))) {
 		return NT_STATUS_NO_MEMORY;
 	}
 

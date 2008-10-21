@@ -197,10 +197,10 @@ static const uint8_t queryvalue_in_data[] = {
 static bool queryvalue_in_check(struct torture_context *tctx, 
 								  struct winreg_QueryValue *r)
 {
-	torture_assert_str_equal(tctx, r->in.value_name.name, "HOMEPATH", "name");
+	torture_assert_str_equal(tctx, r->in.value_name->name, "HOMEPATH", "name");
 	torture_assert_int_equal(tctx, *r->in.type, 0, "type");
-	torture_assert_int_equal(tctx, *r->in.size, 4095, "size");
-	torture_assert_int_equal(tctx, *r->in.length, 0, "length");
+	torture_assert_int_equal(tctx, *r->in.data_size, 4095, "size");
+	torture_assert_int_equal(tctx, *r->in.data_length, 0, "length");
 	torture_assert(tctx, r->in.data == NULL, "data pointer");
 
 	return true;
@@ -218,8 +218,8 @@ static bool queryvalue_out_check(struct torture_context *tctx,
 	torture_assert_werr_ok(tctx, r->out.result, "return code");
 	torture_assert_int_equal(tctx, *r->out.type, 1, "type");
 	torture_assert(tctx, r->out.data == NULL, "data pointer");
-	torture_assert_int_equal(tctx, *r->out.size, 76, "size");
-	torture_assert_int_equal(tctx, *r->out.length, 0, "length");
+	torture_assert_int_equal(tctx, *r->out.data_size, 76, "size");
+	torture_assert_int_equal(tctx, *r->out.data_length, 0, "length");
 
 	return true;
 }
@@ -417,7 +417,7 @@ static bool queryinfokey_out_check(struct torture_context *tctx, struct winreg_Q
 	torture_assert_str_equal(tctx, r->out.classname->name, "", "class out name");
 	torture_assert_int_equal(tctx, *r->out.num_subkeys, 0, "num subkeys");
 	torture_assert_int_equal(tctx, *r->out.max_subkeylen, 0, "subkey length");
-	torture_assert_int_equal(tctx, *r->out.max_subkeysize, 140, "subkey size");
+	torture_assert_int_equal(tctx, *r->out.max_classlen, 140, "subkey size");
 	torture_assert_werr_ok(tctx, r->out.result, "return code");
 	return true;
 }

@@ -62,7 +62,11 @@ to be run that way.</para>
 
 <refsect1>
 	<title>CONFIGURATION FOR KEYCTL</title>
-	<para>cifs.upcall is designed to be called from the kernel via the request-key callout program. This requres that request-key be told where and how to call this program. The current cifs.upcall program handles two different key types:</para>
+	<para>cifs.upcall is designed to be called from the kernel via the
+	request-key callout program. This requires that request-key be told
+	where and how to call this program. The current cifs.upcall program
+	handles two different key types:
+	</para>
 
 	<variablelist>
 		<varlistentry>

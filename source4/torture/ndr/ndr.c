@@ -22,7 +22,7 @@
 #include "torture/ndr/ndr.h"
 #include "torture/ndr/proto.h"
 #include "torture/torture.h"
-#include "util/dlinklist.h"
+#include "../lib/util/dlinklist.h"
 #include "param/param.h"
 
 struct ndr_pull_test_data {
@@ -96,7 +96,7 @@ static bool test_check_string_terminator(struct torture_context *tctx)
 	TALLOC_CTX *mem_ctx = tctx;
 
 	/* Simple test */
-	blob = strhex_to_data_blob("0000");
+	blob = strhex_to_data_blob(tctx, "0000");
 	
 	ndr = ndr_pull_init_blob(&blob, mem_ctx, lp_iconv_convenience(tctx->lp_ctx));
 
@@ -115,7 +115,7 @@ static bool test_check_string_terminator(struct torture_context *tctx)
 
 	talloc_free(ndr);
 
-	blob = strhex_to_data_blob("11220000");
+	blob = strhex_to_data_blob(tctx, "11220000");
 	ndr = ndr_pull_init_blob(&blob, mem_ctx, lp_iconv_convenience(tctx->lp_ctx));
 
 	torture_assert_ndr_success(tctx,

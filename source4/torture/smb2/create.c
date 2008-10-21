@@ -256,6 +256,13 @@ static bool test_create_gentest(struct torture_context *torture, struct smb2_tre
 	status = smb2_getinfo_file(tree, tmp_ctx, &q);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_EQUAL(q.access_information.out.access_flags, io.in.desired_access);
+
+	io.in.file_attributes = 0;
+	io.in.desired_access  = 0;
+	io.in.query_maximal_access = false;
+	io.in.share_access = 0;
+	status = smb2_create(tree, tmp_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);
 	
 	talloc_free(tmp_ctx);
 

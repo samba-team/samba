@@ -290,22 +290,18 @@ static NTSTATUS lsa_get_generic_sd(TALLOC_CTX *mem_ctx, SEC_DESC **sd, size_t *s
 	DOM_SID adm_sid;
 
 	SEC_ACE ace[3];
-	SEC_ACCESS mask;
 
 	SEC_ACL *psa = NULL;
 
-	init_sec_access(&mask, LSA_POLICY_EXECUTE);
-	init_sec_ace(&ace[0], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+	init_sec_ace(&ace[0], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED, LSA_POLICY_EXECUTE, 0);
 
 	sid_copy(&adm_sid, get_global_sam_sid());
 	sid_append_rid(&adm_sid, DOMAIN_GROUP_RID_ADMINS);
-	init_sec_access(&mask, LSA_POLICY_ALL_ACCESS);
-	init_sec_ace(&ace[1], &adm_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+	init_sec_ace(&ace[1], &adm_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, LSA_POLICY_ALL_ACCESS, 0);
 
 	sid_copy(&local_adm_sid, &global_sid_Builtin);
 	sid_append_rid(&local_adm_sid, BUILTIN_ALIAS_RID_ADMINS);
-	init_sec_access(&mask, LSA_POLICY_ALL_ACCESS);
-	init_sec_ace(&ace[2], &local_adm_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+	init_sec_ace(&ace[2], &local_adm_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, LSA_POLICY_ALL_ACCESS, 0);
 
 	if((psa = make_sec_acl(mem_ctx, NT4_ACL_REVISION, 3, ace)) == NULL)
 		return NT_STATUS_NO_MEMORY;
@@ -434,7 +430,7 @@ NTSTATUS _lsa_OpenPolicy(pipes_struct *p,
 	lsa_get_generic_sd(p->mem_ctx, &psd, &sd_size);
 
 	if(!se_access_check(psd, p->pipe_user.nt_user_token, des_access, &acc_granted, &status)) {
-		if (geteuid() != 0) {
+		if (p->pipe_user.ut.uid != sec_initial_uid()) {
 			return status;
 		}
 		DEBUG(4,("ACCESS should be DENIED (granted: %#010x;  required: %#010x)\n",
@@ -1206,8 +1202,8 @@ NTSTATUS _lsa_LookupNames4(pipes_struct *p,
 	q.in.num_names		= r->in.num_names;
 	q.in.names		= r->in.names;
 	q.in.level		= r->in.level;
-	q.in.unknown1		= r->in.unknown1;
-	q.in.unknown2		= r->in.unknown2;
+	q.in.lookup_options	= r->in.lookup_options;
+	q.in.client_revision	= r->in.client_revision;
 	q.in.sids		= r->in.sids;
 	q.in.count		= r->in.count;
 
@@ -1466,6 +1462,16 @@ NTSTATUS _lsa_GetUserName(pipes_struct *p,
 	struct lsa_String *account_name = NULL;
 	struct lsa_String *authority_name = NULL;
 
+	if (r->in.account_name &&
+	   *r->in.account_name) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (r->in.authority_name &&
+	   *r->in.authority_name) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
 	if (p->server_info->guest) {
 		/*
 		 * I'm 99% sure this is not the right place to do this,
@@ -1481,21 +1487,24 @@ NTSTATUS _lsa_GetUserName(pipes_struct *p,
 		domname = pdb_get_domain(p->server_info->sam_account);
 	}
 
-	account_name = TALLOC_ZERO_P(p->mem_ctx, struct lsa_String);
+	account_name = TALLOC_P(p->mem_ctx, struct lsa_String);
 	if (!account_name) {
 		return NT_STATUS_NO_MEMORY;
 	}
+	init_lsa_String(account_name, username);
 
-	authority_name = TALLOC_ZERO_P(p->mem_ctx, struct lsa_String);
-	if (!authority_name) {
-		return NT_STATUS_NO_MEMORY;
+	if (r->out.authority_name) {
+		authority_name = TALLOC_P(p->mem_ctx, struct lsa_String);
+		if (!authority_name) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		init_lsa_String(authority_name, domname);
 	}
 
-	init_lsa_String(account_name, username);
-	init_lsa_String(authority_name, domname);
-
 	*r->out.account_name = account_name;
-	*r->out.authority_name = authority_name;
+	if (r->out.authority_name) {
+		*r->out.authority_name = authority_name;
+	}
 
 	return NT_STATUS_OK;
 }
@@ -1526,7 +1535,8 @@ NTSTATUS _lsa_CreateAccount(pipes_struct *p,
 	/* check to see if the pipe_user is a Domain Admin since
 	   account_pol.tdb was already opened as root, this is all we have */
 
-	if ( !nt_token_check_domain_rid( p->pipe_user.nt_user_token, DOMAIN_GROUP_RID_ADMINS ) )
+	if ( p->pipe_user.ut.uid != sec_initial_uid()
+		&& !nt_token_check_domain_rid( p->pipe_user.nt_user_token, DOMAIN_GROUP_RID_ADMINS ) )
 		return NT_STATUS_ACCESS_DENIED;
 
 	if ( is_privileged_sid( r->in.sid ) )
@@ -1612,6 +1622,9 @@ NTSTATUS _lsa_EnumPrivsAccount(pipes_struct *p,
 	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
+	if (!(info->access & LSA_POLICY_VIEW_LOCAL_INFORMATION))
+		return NT_STATUS_ACCESS_DENIED;
+
 	if ( !get_privileges_for_sids( &mask, &info->sid, 1 ) )
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 
@@ -1672,6 +1685,9 @@ NTSTATUS _lsa_GetSystemAccessAccount(pipes_struct *p,
 	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
+	if (!(info->access & LSA_POLICY_VIEW_LOCAL_INFORMATION))
+		return NT_STATUS_ACCESS_DENIED;
+
 	if (!lookup_sid(p->mem_ctx, &info->sid, NULL, NULL, NULL))
 		return NT_STATUS_ACCESS_DENIED;
 
@@ -1706,7 +1722,8 @@ NTSTATUS _lsa_SetSystemAccessAccount(pipes_struct *p,
 	/* check to see if the pipe_user is a Domain Admin since
 	   account_pol.tdb was already opened as root, this is all we have */
 
-	if ( !nt_token_check_domain_rid( p->pipe_user.nt_user_token, DOMAIN_GROUP_RID_ADMINS ) )
+	if ( p->pipe_user.ut.uid != sec_initial_uid()
+		&& !nt_token_check_domain_rid( p->pipe_user.nt_user_token, DOMAIN_GROUP_RID_ADMINS ) )
 		return NT_STATUS_ACCESS_DENIED;
 
 	if (!pdb_getgrsid(&map, info->sid))
@@ -1815,7 +1832,6 @@ NTSTATUS _lsa_QuerySecurity(pipes_struct *p,
 	/* check if the user has enough rights */
 	if (!(handle->access & LSA_POLICY_VIEW_LOCAL_INFORMATION))
 		return NT_STATUS_ACCESS_DENIED;
-
 
 	switch (r->in.sec_info) {
 	case 1:
@@ -2074,6 +2090,9 @@ NTSTATUS _lsa_EnumAccountRights(pipes_struct *p,
 	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
+	if (!(info->access & LSA_POLICY_VIEW_LOCAL_INFORMATION))
+		return NT_STATUS_ACCESS_DENIED;
+
 	/* according to an NT4 PDC, you can add privileges to SIDs even without
 	   call_lsa_create_account() first.  And you can use any arbitrary SID. */
 
@@ -2115,6 +2134,9 @@ NTSTATUS _lsa_LookupPrivValue(pipes_struct *p,
 
 	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
+
+	if (!(info->access & LSA_POLICY_VIEW_LOCAL_INFORMATION))
+		return NT_STATUS_ACCESS_DENIED;
 
 	name = r->in.name->string;
 

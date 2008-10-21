@@ -98,7 +98,7 @@ enum FAKE_FILE_TYPE is_fake_file(const char *fname)
  Open a fake quota file with a share mode.
 ****************************************************************************/
 
-NTSTATUS open_fake_file(connection_struct *conn,
+NTSTATUS open_fake_file(struct smb_request *req, connection_struct *conn,
 				uint16_t current_vuid,
 				enum FAKE_FILE_TYPE fake_file_type,
 				const char *fname,
@@ -118,7 +118,7 @@ NTSTATUS open_fake_file(connection_struct *conn,
 
 	}
 
-	status = file_new(conn, &fsp);
+	status = file_new(req, conn, &fsp);
 	if(!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -137,7 +137,7 @@ NTSTATUS open_fake_file(connection_struct *conn,
 	fsp->fake_file_handle = init_fake_file_handle(fake_file_type);
 	
 	if (fsp->fake_file_handle==NULL) {
-		file_free(fsp);
+		file_free(req, fsp);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -146,16 +146,8 @@ NTSTATUS open_fake_file(connection_struct *conn,
 	return NT_STATUS_OK;
 }
 
-void destroy_fake_file_handle(struct fake_file_handle **fh)
+NTSTATUS close_fake_file(struct smb_request *req, files_struct *fsp)
 {
-	if (!fh) {
-		return;
-	}
-	TALLOC_FREE(*fh);
-}
-
-NTSTATUS close_fake_file(files_struct *fsp)
-{
-	file_free(fsp);
+	file_free(req, fsp);
 	return NT_STATUS_OK;
 }

@@ -235,7 +235,7 @@ static int print_sam_info (struct samu *sam_pwent, bool verbosity, bool smbpwdst
 	uid_t uid;
 	time_t tmp;
 
-	/* TODO: chaeck if entry is a user or a workstation */
+	/* TODO: check if entry is a user or a workstation */
 	if (!sam_pwent) return -1;
 
 	if (verbosity) {
@@ -260,25 +260,32 @@ static int print_sam_info (struct samu *sam_pwent, bool verbosity, bool smbpwdst
 		printf ("Munged dial:          %s\n", pdb_get_munged_dial(sam_pwent));
 
 		tmp = pdb_get_logon_time(sam_pwent);
-		printf ("Logon time:           %s\n", tmp ? http_timestring(tmp) : "0");
+		printf ("Logon time:           %s\n", 
+				tmp ? http_timestring(talloc_tos(), tmp) : "0");
 
 		tmp = pdb_get_logoff_time(sam_pwent);
-		printf ("Logoff time:          %s\n", tmp ? http_timestring(tmp) : "0");
+		printf ("Logoff time:          %s\n", 
+				tmp ? http_timestring(talloc_tos(), tmp) : "0");
 
 		tmp = pdb_get_kickoff_time(sam_pwent);
-		printf ("Kickoff time:         %s\n", tmp ? http_timestring(tmp) : "0");
+		printf ("Kickoff time:         %s\n", 
+				tmp ? http_timestring(talloc_tos(), tmp) : "0");
 
 		tmp = pdb_get_pass_last_set_time(sam_pwent);
-		printf ("Password last set:    %s\n", tmp ? http_timestring(tmp) : "0");
+		printf ("Password last set:    %s\n", 
+				tmp ? http_timestring(talloc_tos(), tmp) : "0");
 
 		tmp = pdb_get_pass_can_change_time(sam_pwent);
-		printf ("Password can change:  %s\n", tmp ? http_timestring(tmp) : "0");
+		printf ("Password can change:  %s\n", 
+				tmp ? http_timestring(talloc_tos(), tmp) : "0");
 
 		tmp = pdb_get_pass_must_change_time(sam_pwent);
-		printf ("Password must change: %s\n", tmp ? http_timestring(tmp) : "0");
+		printf ("Password must change: %s\n", 
+				tmp ? http_timestring(talloc_tos(), tmp) : "0");
 
 		tmp = pdb_get_bad_password_time(sam_pwent);
-		printf ("Last bad password   : %s\n", tmp ? http_timestring(tmp) : "0");
+		printf ("Last bad password   : %s\n", 
+				tmp ? http_timestring(talloc_tos(), tmp) : "0");
 		printf ("Bad password count  : %d\n",
 			pdb_get_bad_password_count(sam_pwent));
 

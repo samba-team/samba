@@ -148,7 +148,7 @@ static bool nbt_test_netlogon(struct torture_context *tctx)
 	torture_assert(tctx, response != NULL, "Failed to receive a netlogon reply packet");
 
 	torture_assert(tctx, response->response_type == NETLOGON_GET_PDC, "Got incorrect type of netlogon response");
-	torture_assert(tctx, response->get_pdc.command == NETLOGON_RESPONSE_FROM_PDC, "Got incorrect netlogon response command");
+	torture_assert(tctx, response->data.get_pdc.command == NETLOGON_RESPONSE_FROM_PDC, "Got incorrect netlogon response command");
 
 	return true;
 }
@@ -243,10 +243,10 @@ static bool nbt_test_netlogon2(struct torture_context *tctx)
 	torture_assert(tctx, response != NULL, "Failed to receive a netlogon reply packet");
 
 	torture_assert_int_equal(tctx, response->response_type, NETLOGON_SAMLOGON, "Got incorrect type of netlogon response");
-	map_netlogon_samlogon_response(&response->samlogon);
+	map_netlogon_samlogon_response(&response->data.samlogon);
 
-	torture_assert_int_equal(tctx, response->samlogon.nt5_ex.command, LOGON_SAM_LOGON_RESPONSE_EX, "Got incorrect netlogon response command");
-	torture_assert_int_equal(tctx, response->samlogon.nt5_ex.nt_version, NETLOGON_NT_VERSION_5EX_WITH_IP|NETLOGON_NT_VERSION_5EX|NETLOGON_NT_VERSION_1, "Got incorrect netlogon response command");
+	torture_assert_int_equal(tctx, response->data.samlogon.data.nt5_ex.command, LOGON_SAM_LOGON_RESPONSE_EX, "Got incorrect netlogon response command");
+	torture_assert_int_equal(tctx, response->data.samlogon.data.nt5_ex.nt_version, NETLOGON_NT_VERSION_5EX_WITH_IP|NETLOGON_NT_VERSION_5EX|NETLOGON_NT_VERSION_1, "Got incorrect netlogon response command");
 
 	/* setup (another) temporary mailslot listener for replies */
 	dgmslot = dgram_mailslot_temp(dgmsock, NBT_MAILSLOT_GETDC,
@@ -282,11 +282,11 @@ static bool nbt_test_netlogon2(struct torture_context *tctx)
 	torture_assert(tctx, response != NULL, "Failed to receive a netlogon reply packet");
 
 	torture_assert_int_equal(tctx, response->response_type, NETLOGON_SAMLOGON, "Got incorrect type of netlogon response");
-	map_netlogon_samlogon_response(&response->samlogon);
+	map_netlogon_samlogon_response(&response->data.samlogon);
 
-	torture_assert_int_equal(tctx, response->samlogon.nt5_ex.command, LOGON_SAM_LOGON_USER_UNKNOWN, "Got incorrect netlogon response command");
+	torture_assert_int_equal(tctx, response->data.samlogon.data.nt5_ex.command, LOGON_SAM_LOGON_USER_UNKNOWN, "Got incorrect netlogon response command");
 
-	torture_assert_str_equal(tctx, response->samlogon.nt5_ex.user_name, TEST_NAME"$", "Got incorrect user in netlogon response");
+	torture_assert_str_equal(tctx, response->data.samlogon.data.nt5_ex.user_name, TEST_NAME"$", "Got incorrect user in netlogon response");
 
 	join_ctx = torture_join_domain(tctx, TEST_NAME, 
 				       ACB_WSTRUST, &machine_credentials);
@@ -333,9 +333,9 @@ static bool nbt_test_netlogon2(struct torture_context *tctx)
 	torture_assert(tctx, response != NULL, "Failed to receive a netlogon reply packet");
 
 	torture_assert_int_equal(tctx, response->response_type, NETLOGON_SAMLOGON, "Got incorrect type of netlogon response");
-	map_netlogon_samlogon_response(&response->samlogon);
+	map_netlogon_samlogon_response(&response->data.samlogon);
 
-	torture_assert_int_equal(tctx, response->samlogon.nt5_ex.command, LOGON_SAM_LOGON_USER_UNKNOWN, "Got incorrect netlogon response command");
+	torture_assert_int_equal(tctx, response->data.samlogon.data.nt5_ex.command, LOGON_SAM_LOGON_USER_UNKNOWN, "Got incorrect netlogon response command");
 
 	/* setup (another) temporary mailslot listener for replies */
 	dgmslot = dgram_mailslot_temp(dgmsock, NBT_MAILSLOT_GETDC,
@@ -374,9 +374,9 @@ static bool nbt_test_netlogon2(struct torture_context *tctx)
 	torture_assert(tctx, response != NULL, "Failed to receive a netlogon reply packet");
 
 	torture_assert_int_equal(tctx, response->response_type, NETLOGON_SAMLOGON, "Got incorrect type of netlogon response");
-	map_netlogon_samlogon_response(&response->samlogon);
+	map_netlogon_samlogon_response(&response->data.samlogon);
 
-	torture_assert_int_equal(tctx, response->samlogon.nt5_ex.command, LOGON_SAM_LOGON_RESPONSE, "Got incorrect netlogon response command");
+	torture_assert_int_equal(tctx, response->data.samlogon.data.nt5_ex.command, LOGON_SAM_LOGON_RESPONSE, "Got incorrect netlogon response command");
 
 	dgmslot->private = NULL;
 
@@ -413,9 +413,9 @@ static bool nbt_test_netlogon2(struct torture_context *tctx)
 	torture_assert(tctx, response != NULL, "Failed to receive a netlogon reply packet");
 
 	torture_assert_int_equal(tctx, response->response_type, NETLOGON_SAMLOGON, "Got incorrect type of netlogon response");
-	map_netlogon_samlogon_response(&response->samlogon);
+	map_netlogon_samlogon_response(&response->data.samlogon);
 
-	torture_assert_int_equal(tctx, response->samlogon.nt5_ex.command, LOGON_SAM_LOGON_USER_UNKNOWN, "Got incorrect netlogon response command");
+	torture_assert_int_equal(tctx, response->data.samlogon.data.nt5_ex.command, LOGON_SAM_LOGON_USER_UNKNOWN, "Got incorrect netlogon response command");
 
 	torture_leave_domain(tctx, join_ctx);
 	return true;
@@ -522,11 +522,11 @@ static bool nbt_test_ntlogon(struct torture_context *tctx)
 	torture_assert(tctx, response != NULL, "Failed to receive a netlogon reply packet");
 
 	torture_assert_int_equal(tctx, response->response_type, NETLOGON_SAMLOGON, "Got incorrect type of netlogon response");
-	map_netlogon_samlogon_response(&response->samlogon);
+	map_netlogon_samlogon_response(&response->data.samlogon);
 
-	torture_assert_int_equal(tctx, response->samlogon.nt5_ex.command, LOGON_SAM_LOGON_RESPONSE, "Got incorrect netlogon response command");
+	torture_assert_int_equal(tctx, response->data.samlogon.data.nt5_ex.command, LOGON_SAM_LOGON_RESPONSE, "Got incorrect netlogon response command");
 
-	torture_assert_str_equal(tctx, response->samlogon.nt5_ex.user_name, TEST_NAME"$", "Got incorrect user in netlogon response");
+	torture_assert_str_equal(tctx, response->data.samlogon.data.nt5_ex.user_name, TEST_NAME"$", "Got incorrect user in netlogon response");
 
 
 	/* setup a temporary mailslot listener for replies */
@@ -566,11 +566,11 @@ static bool nbt_test_ntlogon(struct torture_context *tctx)
 	torture_assert(tctx, response != NULL, "Failed to receive a netlogon reply packet");
 
 	torture_assert_int_equal(tctx, response->response_type, NETLOGON_SAMLOGON, "Got incorrect type of netlogon response");
-	map_netlogon_samlogon_response(&response->samlogon);
+	map_netlogon_samlogon_response(&response->data.samlogon);
 
-	torture_assert_int_equal(tctx, response->samlogon.nt5_ex.command, LOGON_SAM_LOGON_RESPONSE, "Got incorrect netlogon response command");
+	torture_assert_int_equal(tctx, response->data.samlogon.data.nt5_ex.command, LOGON_SAM_LOGON_RESPONSE, "Got incorrect netlogon response command");
 
-	torture_assert_str_equal(tctx, response->samlogon.nt5_ex.user_name, TEST_NAME"$", "Got incorrect user in netlogon response");
+	torture_assert_str_equal(tctx, response->data.samlogon.data.nt5_ex.user_name, TEST_NAME"$", "Got incorrect user in netlogon response");
 
 
 	/* setup (another) temporary mailslot listener for replies */
@@ -606,7 +606,7 @@ static bool nbt_test_ntlogon(struct torture_context *tctx)
 	torture_assert(tctx, response != NULL, "Failed to receive a netlogon reply packet");
 
 	torture_assert_int_equal(tctx, response->response_type, NETLOGON_GET_PDC, "Got incorrect type of ntlogon response");
-	torture_assert_int_equal(tctx, response->get_pdc.command, NETLOGON_RESPONSE_FROM_PDC, "Got incorrect ntlogon response command");
+	torture_assert_int_equal(tctx, response->data.get_pdc.command, NETLOGON_RESPONSE_FROM_PDC, "Got incorrect ntlogon response command");
 
 	torture_leave_domain(tctx, join_ctx);
 
@@ -643,7 +643,7 @@ static bool nbt_test_ntlogon(struct torture_context *tctx)
 	torture_assert(tctx, response != NULL, "Failed to receive a netlogon reply packet");
 
 	torture_assert_int_equal(tctx, response->response_type, NETLOGON_GET_PDC, "Got incorrect type of ntlogon response");
-	torture_assert_int_equal(tctx, response->get_pdc.command, NETLOGON_RESPONSE_FROM_PDC, "Got incorrect ntlogon response command");
+	torture_assert_int_equal(tctx, response->data.get_pdc.command, NETLOGON_RESPONSE_FROM_PDC, "Got incorrect ntlogon response command");
 
 
 	return true;

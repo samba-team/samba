@@ -29,7 +29,7 @@
 #include "smb_server/smb_server.h"
 #include "librpc/rpc/dcerpc_proto.h"
 #include "lib/socket/netif.h"
-#include "util/dlinklist.h"
+#include "../lib/util/dlinklist.h"
 #include "ntvfs/ntvfs.h"
 #include "param/param.h"
 

@@ -27,7 +27,7 @@ static bool api_echo_AddOne(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -63,7 +63,7 @@ static bool api_echo_AddOne(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(echo_AddOne, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -107,7 +107,7 @@ static bool api_echo_EchoData(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -143,7 +143,7 @@ static bool api_echo_EchoData(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(echo_EchoData, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -187,7 +187,7 @@ static bool api_echo_SinkData(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -216,7 +216,7 @@ static bool api_echo_SinkData(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(echo_SinkData, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -260,7 +260,7 @@ static bool api_echo_SourceData(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -296,7 +296,7 @@ static bool api_echo_SourceData(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(echo_SourceData, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -340,7 +340,7 @@ static bool api_echo_TestCall(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -376,7 +376,7 @@ static bool api_echo_TestCall(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(echo_TestCall, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -420,7 +420,7 @@ static bool api_echo_TestCall2(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -456,7 +456,7 @@ static bool api_echo_TestCall2(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(echo_TestCall2, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -500,7 +500,7 @@ static bool api_echo_TestSleep(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -529,7 +529,7 @@ static bool api_echo_TestSleep(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(echo_TestSleep, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -573,7 +573,7 @@ static bool api_echo_TestEnum(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -606,7 +606,7 @@ static bool api_echo_TestEnum(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(echo_TestEnum, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -650,7 +650,7 @@ static bool api_echo_TestSurrounding(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -681,7 +681,7 @@ static bool api_echo_TestSurrounding(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(echo_TestSurrounding, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;
@@ -725,7 +725,7 @@ static bool api_echo_TestDoublePointer(pipes_struct *p)
 		return false;
 	}
 
-	pull = ndr_pull_init_blob(&blob, r);
+	pull = ndr_pull_init_blob(&blob, r, NULL);
 	if (pull == NULL) {
 		talloc_free(r);
 		return false;
@@ -754,7 +754,7 @@ static bool api_echo_TestDoublePointer(pipes_struct *p)
 		NDR_PRINT_OUT_DEBUG(echo_TestDoublePointer, r);
 	}
 
-	push = ndr_push_init_ctx(r);
+	push = ndr_push_init_ctx(r, NULL);
 	if (push == NULL) {
 		talloc_free(r);
 		return false;

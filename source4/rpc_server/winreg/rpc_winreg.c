@@ -489,8 +489,8 @@ static WERROR dcesrv_winreg_QueryValue(struct dcesrv_call_state *dce_call,
 	case SECURITY_SYSTEM:
 	case SECURITY_ADMINISTRATOR:
 	case SECURITY_USER:
-		result = reg_key_get_value_by_name(mem_ctx, key,
-			 r->in.value_name.name, &value_type, &value_data);
+		result = reg_key_get_value_by_name(mem_ctx, key, 
+			 r->in.value_name->name, &value_type, &value_data);
 		
 		if (!W_ERROR_IS_OK(result)) {
 			/* if the lookup wasn't successful, send client query back */
@@ -504,17 +504,16 @@ static WERROR dcesrv_winreg_QueryValue(struct dcesrv_call_state *dce_call,
 			return WERR_NOMEM;
 		}
 		*r->out.type = value_type;
-		r->out.length = talloc(mem_ctx, uint32_t);
-		if (!r->out.length) {
+		r->out.data_length = talloc(mem_ctx, uint32_t);
+		if (!r->out.data_length) {
 			return WERR_NOMEM;
 		}
 		*r->out.length = value_data.length;
-		r->out.size = talloc(mem_ctx, uint32_t);
-		if (!r->out.size) {
+		r->out.data_size = talloc(mem_ctx, uint32_t);
+		if (!r->out.data_size) {
 			return WERR_NOMEM;
 		}
-		*r->out.size = value_data.length;
-
+		*r->out.data_size = value_data.length;
 		r->out.data = value_data.data;
 
 		return result;

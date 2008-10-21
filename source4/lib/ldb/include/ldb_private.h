@@ -43,6 +43,12 @@ struct ldb_module_ops;
 
 struct ldb_backend_ops;
 
+struct ldb_handle {
+	int status;
+	enum ldb_state state;
+	struct ldb_context *ldb;
+};
+
 /* basic module structure */
 struct ldb_module {
 	struct ldb_module *prev, *next;
@@ -51,9 +57,8 @@ struct ldb_module {
 	const struct ldb_module_ops *ops;
 };
 
-/* 
-   these function pointers define the operations that a ldb module must perform
-   they correspond exactly to the ldb_*() interface 
+/*
+   these function pointers define the operations that a ldb module can intercept
 */
 struct ldb_module_ops {
 	const char *name;
@@ -68,21 +73,9 @@ struct ldb_module_ops {
 	int (*start_transaction)(struct ldb_module *);
 	int (*end_transaction)(struct ldb_module *);
 	int (*del_transaction)(struct ldb_module *);
-	int (*wait)(struct ldb_handle *, enum ldb_wait_type);
 	int (*sequence_number)(struct ldb_module *, struct ldb_request *);
+    void *private_data;
 };
-
-
-typedef int (*ldb_connect_fn) (struct ldb_context *ldb, const char *url, unsigned int flags, const char *options[],
-			       struct ldb_module **module);
-
-
-struct ldb_backend_ops {
-	const char *name;
-	ldb_connect_fn connect_fn;
-};
-
-const char *ldb_default_modules_dir(void);
 
 /*
   schema related information needed for matching rules
@@ -144,27 +137,6 @@ struct ldb_context {
 int ldb_connect_backend(struct ldb_context *ldb, const char *url, const char *options[],
 			struct ldb_module **backend_module);
 void ldb_set_default_dns(struct ldb_context *ldb);
-
-/* The following definitions come from lib/ldb/common/ldb_modules.c  */
-
-const char **ldb_modules_list_from_string(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, const char *string);
-int ldb_load_modules_list(struct ldb_context *ldb, const char **module_list, struct ldb_module *backend, struct ldb_module **out);
-int ldb_load_modules(struct ldb_context *ldb, const char *options[]);
-int ldb_init_module_chain(struct ldb_context *ldb, struct ldb_module *module);
-int ldb_next_request(struct ldb_module *module, struct ldb_request *request);
-int ldb_next_start_trans(struct ldb_module *module);
-int ldb_next_end_trans(struct ldb_module *module);
-int ldb_next_del_trans(struct ldb_module *module);
-int ldb_next_init(struct ldb_module *module);
-
-void ldb_set_errstring(struct ldb_context *ldb, const char *err_string);
-void ldb_asprintf_errstring(struct ldb_context *ldb, const char *format, ...) PRINTF_ATTRIBUTE(2,3);
-void ldb_reset_err_string(struct ldb_context *ldb);
-
-int ldb_register_module(const struct ldb_module_ops *);
-int ldb_register_backend(const char *url_prefix, ldb_connect_fn);
-void *ldb_dso_load_symbol(struct ldb_context *ldb, const char *name,
-			    const char *symbol);
 
 /* The following definitions come from lib/ldb/common/ldb_debug.c  */
 void ldb_debug(struct ldb_context *ldb, enum ldb_debug_level level, const char *fmt, ...) PRINTF_ATTRIBUTE(3, 4);
@@ -239,6 +211,10 @@ char *ldb_casefold_default(void *context, void *mem_ctx, const char *s, size_t n
 
 void ldb_msg_remove_element(struct ldb_message *msg, struct ldb_message_element *el);
 
+int ldb_msg_element_compare_name(struct ldb_message_element *el1, 
+				 struct ldb_message_element *el2);
+void ldb_dump_results(struct ldb_context *ldb, struct ldb_result *result, FILE *f);
+
 /**
   Obtain current/next database sequence number
 */
@@ -247,5 +223,61 @@ int ldb_sequence_number(struct ldb_context *ldb, enum ldb_sequence_type type, ui
 #define LDB_SEQ_GLOBAL_SEQUENCE    0x01
 #define LDB_SEQ_TIMESTAMP_SEQUENCE 0x02
 
+
+/* MODULES specific headers -- SSS */
+
+/* The following definitions come from lib/ldb/common/ldb_modules.c  */
+
+const char **ldb_modules_list_from_string(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, const char *string);
+int ldb_load_modules_list(struct ldb_context *ldb, const char **module_list, struct ldb_module *backend, struct ldb_module **out);
+int ldb_load_modules(struct ldb_context *ldb, const char *options[]);
+int ldb_init_module_chain(struct ldb_context *ldb, struct ldb_module *module);
+int ldb_next_request(struct ldb_module *module, struct ldb_request *request);
+int ldb_next_start_trans(struct ldb_module *module);
+int ldb_next_end_trans(struct ldb_module *module);
+int ldb_next_del_trans(struct ldb_module *module);
+int ldb_next_init(struct ldb_module *module);
+
+void ldb_set_errstring(struct ldb_context *ldb, const char *err_string);
+void ldb_asprintf_errstring(struct ldb_context *ldb, const char *format, ...) PRINTF_ATTRIBUTE(2,3);
+void ldb_reset_err_string(struct ldb_context *ldb);
+
+const char *ldb_default_modules_dir(void);
+
+int ldb_register_module(const struct ldb_module_ops *);
+
+typedef int (*ldb_connect_fn)(struct ldb_context *ldb, const char *url,
+			      unsigned int flags, const char *options[],
+			      struct ldb_module **module);
+
+struct ldb_backend_ops {
+	const char *name;
+	ldb_connect_fn connect_fn;
+};
+
+const char *ldb_default_modules_dir(void);
+
+int ldb_register_backend(const char *url_prefix, ldb_connect_fn);
+
+void *ldb_dso_load_symbol(struct ldb_context *ldb, const char *name,
+			    const char *symbol);
+
+struct ldb_handle *ldb_handle_new(TALLOC_CTX *mem_ctx, struct ldb_context *ldb);
+
+int ldb_module_send_entry(struct ldb_request *req,
+			  struct ldb_message *msg);
+
+int ldb_module_send_referral(struct ldb_request *req,
+					   char *ref);
+
+int ldb_module_done(struct ldb_request *req,
+		    struct ldb_control **ctrls,
+		    struct ldb_extended *response,
+		    int error);
+
+int ldb_mod_register_control(struct ldb_module *module, const char *oid);
+
+
+struct ldb_val ldb_binary_decode(void *mem_ctx, const char *str);
 
 #endif

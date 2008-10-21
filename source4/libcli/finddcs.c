@@ -217,7 +217,7 @@ static void fallback_node_status(struct finddcs_state *state)
 static void fallback_node_status_replied(struct nbt_name_request *name_req) 
 {
 	int i;
-	struct finddcs_state *state = talloc_get_type(name_req->async.private, struct finddcs_state);
+	struct finddcs_state *state = talloc_get_type(name_req->async.private_data, struct finddcs_state);
 	state->ctx->status = nbt_name_status_recv(name_req, state, &state->node_status);
 	if (!composite_is_ok(state->ctx)) return;
 

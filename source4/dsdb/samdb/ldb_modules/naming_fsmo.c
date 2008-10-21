@@ -29,7 +29,7 @@
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "librpc/gen_ndr/ndr_drsuapi.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
-#include "lib/util/dlinklist.h"
+#include "../lib/util/dlinklist.h"
 
 static int naming_fsmo_init(struct ldb_module *module)
 {
@@ -64,10 +64,9 @@ static int naming_fsmo_init(struct ldb_module *module)
 	}
 	module->private_data = naming_fsmo;
 
-	ret = ldb_search(module->ldb, naming_dn,
-			 LDB_SCOPE_BASE,
-			 NULL, naming_attrs,
-			 &naming_res);
+	ret = ldb_search(module->ldb, mem_ctx, &naming_res,
+			 naming_dn, LDB_SCOPE_BASE,
+			 naming_attrs, NULL);
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 		ldb_debug(module->ldb, LDB_DEBUG_WARNING,
 			  "naming_fsmo_init: no partitions dn present: (skip loading of naming contexts details)\n");
@@ -81,7 +80,6 @@ static int naming_fsmo_init(struct ldb_module *module)
 		talloc_free(mem_ctx);
 		return ret;
 	}
-	talloc_steal(mem_ctx, naming_res);
 	if (naming_res->count == 0) {
 		ldb_debug(module->ldb, LDB_DEBUG_WARNING,
 			  "naming_fsmo_init: no cross-ref container present: (skip loading of naming contexts details)\n");

@@ -26,8 +26,6 @@
 static int net_mode_share;
 static bool sync_files(struct copy_clistate *cp_clistate, const char *mask);
 
-extern const char *share_type[];
-
 /**
  * @file net_rpc.c
  *
@@ -506,13 +504,13 @@ NTSTATUS rpc_info_internals(struct net_context *c,
 					     2,
 					     &info);
 	if (NT_STATUS_IS_OK(result)) {
-		d_printf("Domain Name: %s\n", info->info2.domain_name.string);
+		d_printf("Domain Name: %s\n", info->general.domain_name.string);
 		d_printf("Domain SID: %s\n", sid_str);
 		d_printf("Sequence number: %llu\n",
-			(unsigned long long)info->info2.sequence_num);
-		d_printf("Num users: %u\n", info->info2.num_users);
-		d_printf("Num domain groups: %u\n", info->info2.num_groups);
-		d_printf("Num local groups: %u\n", info->info2.num_aliases);
+			(unsigned long long)info->general.sequence_num);
+		d_printf("Num users: %u\n", info->general.num_users);
+		d_printf("Num domain groups: %u\n", info->general.num_groups);
+		d_printf("Num local groups: %u\n", info->general.num_aliases);
 	}
 
  done:
@@ -2876,7 +2874,7 @@ static void display_share_info_1(struct net_context *c,
 	if (c->opt_long_list_entries) {
 		d_printf("%-12s %-8.8s %-50s\n",
 			 r->shi1_netname,
-			 share_type[r->shi1_type & ~(STYPE_TEMPORARY|STYPE_HIDDEN)],
+			 net_share_type_str(r->shi1_type & ~(STYPE_TEMPORARY|STYPE_HIDDEN)),
 			 r->shi1_remark);
 	} else {
 		d_printf("%s\n", r->shi1_netname);
@@ -5014,8 +5012,7 @@ NTSTATUS rpc_init_shutdown_internals(struct net_context *c,
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
         const char *msg = "This machine will be shutdown shortly";
 	uint32 timeout = 20;
-	struct initshutdown_String msg_string;
-	struct initshutdown_String_sub s;
+	struct lsa_StringLarge msg_string;
 
 	if (c->opt_comment) {
 		msg = c->opt_comment;
@@ -5024,8 +5021,7 @@ NTSTATUS rpc_init_shutdown_internals(struct net_context *c,
 		timeout = c->opt_timeout;
 	}
 
-	s.name = msg;
-	msg_string.name = &s;
+	msg_string.string = msg;
 
 	/* create an entry */
 	result = rpccli_initshutdown_Init(pipe_hnd, mem_ctx, NULL,
@@ -5069,16 +5065,14 @@ NTSTATUS rpc_reg_shutdown_internals(struct net_context *c,
 {
         const char *msg = "This machine will be shutdown shortly";
 	uint32 timeout = 20;
-	struct initshutdown_String msg_string;
-	struct initshutdown_String_sub s;
+	struct lsa_StringLarge msg_string;
 	NTSTATUS result;
 	WERROR werr;
 
 	if (c->opt_comment) {
 		msg = c->opt_comment;
 	}
-	s.name = msg;
-	msg_string.name = &s;
+	msg_string.string = msg;
 
 	if (c->opt_timeout) {
 		timeout = c->opt_timeout;

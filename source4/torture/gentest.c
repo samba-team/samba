@@ -214,7 +214,9 @@ static bool connect_servers(struct event_context *ev,
 		for (j=0;j<NINSTANCES;j++) {
 			NTSTATUS status;
 			struct smbcli_options smb_options;
+			struct smbcli_session_options smb_session_options;
 			lp_smbcli_options(lp_ctx, &smb_options);
+			lp_smbcli_session_options(lp_ctx, &smb_session_options);
 
 			printf("Connecting to \\\\%s\\%s as %s - instance %d\n",
 			       servers[i].server_name, servers[i].share_name, 
@@ -238,7 +240,8 @@ static bool connect_servers(struct event_context *ev,
 								     servers[i].share_name, "A:",
 								     servers[i].credentials,
 								     lp_resolve_context(lp_ctx), ev,
-								     &smb_options);
+								     &smb_options,
+								     &smb_session_options);
 			}
 			if (!NT_STATUS_IS_OK(status)) {
 				printf("Failed to connect to \\\\%s\\%s - %s\n",
@@ -1165,6 +1168,8 @@ static void idle_func_smb2(struct smb2_transport *transport, void *private)
 */
 static bool compare_status(NTSTATUS status1, NTSTATUS status2)
 {
+	char *s;
+
 	if (NT_STATUS_EQUAL(status1, status2)) return true;
 
 	/* one code being an error and the other OK is always an error */
@@ -1178,6 +1183,17 @@ static bool compare_status(NTSTATUS status1, NTSTATUS status2)
 	    ignore_pattern(nt_errstr(status2))) {
 		return true;
 	}
+
+	/* also support ignore patterns of the form NT_STATUS_XX:NT_STATUS_YY
+	   meaning that the first server returns NT_STATUS_XX and the 2nd
+	   returns NT_STATUS_YY */
+	s = talloc_asprintf(current_op.mem_ctx, "%s:%s", 
+			    nt_errstr(status1), 
+			    nt_errstr(status2));
+	if (ignore_pattern(s)) {
+		return true;
+	}
+
 	current_op.mismatch = nt_errstr(status1);
 	return false;
 }
@@ -1348,7 +1364,7 @@ again:
 	} \
 	current_op.status = status[0]; \
 	for (i=1;i<NSERVERS;i++) { \
-		if (!compare_status(status[i], status[0])) { \
+		if (!compare_status(status[0], status[1])) { \
 			printf("status different in %s - %s %s\n", #call, \
 			       nt_errstr(status[0]), nt_errstr(status[i])); \
 			current_op.mismatch = nt_errstr(status[0]); \
@@ -2166,6 +2182,9 @@ static void gen_setfileinfo(int instance, union smb_setfileinfo *info)
 	case RAW_SFILEINFO_MODE_INFORMATION:
 		info->mode_information.in.mode = gen_bits_mask(0xFFFFFFFF);
 		break;
+	case RAW_SFILEINFO_FULL_EA_INFORMATION:
+		info->full_ea_information.in.eas = gen_ea_list();
+		break;
 	case RAW_SFILEINFO_GENERIC:
 	case RAW_SFILEINFO_SEC_DESC:
 	case RAW_SFILEINFO_UNIX_BASIC:
@@ -2222,7 +2241,8 @@ static void gen_setfileinfo(int instance, union smb_setfileinfo *info)
 	do {
 		i = gen_int_range(0, num_levels-1);
 	} while (ignore_pattern(levels[i].name));
-	
+
+	ZERO_STRUCTP(info);
 	info->generic.level = levels[i].level;
 
 	switch (info->generic.level) {
@@ -2278,6 +2298,9 @@ static void gen_setfileinfo(int instance, union smb_setfileinfo *info)
 		break;
 	case RAW_SFILEINFO_MODE_INFORMATION:
 		info->mode_information.in.mode = gen_bits_mask(0xFFFFFFFF);
+		break;
+	case RAW_SFILEINFO_FULL_EA_INFORMATION:
+		info->full_ea_information.in.eas = gen_ea_list();
 		break;
 
 	case RAW_SFILEINFO_GENERIC:
@@ -2372,9 +2395,8 @@ static bool handler_smb_spathinfo(int instance)
 	union smb_setfileinfo parm[NSERVERS];
 	NTSTATUS status[NSERVERS];
 
-	parm[0].generic.in.file.path = gen_fname_open(instance);
-
 	gen_setfileinfo(instance, &parm[0]);
+	parm[0].generic.in.file.path = gen_fname_open(instance);
 
 	GEN_COPY_PARM;
 
@@ -2743,9 +2765,8 @@ static bool handler_smb2_sfileinfo(int instance)
 	union smb_setfileinfo parm[NSERVERS];
 	NTSTATUS status[NSERVERS];
 
-	parm[0].generic.in.file.fnum = gen_fnum(instance);
-
 	gen_setfileinfo(instance, &parm[0]);
+	parm[0].generic.in.file.fnum = gen_fnum(instance);
 
 	GEN_COPY_PARM;
 	GEN_SET_FNUM_SMB2(generic.in.file.handle);
@@ -2907,11 +2928,10 @@ static int run_test(struct event_context *ev, struct loadparm_context *lp_ctx)
 		current_op.opnum = op;
 		current_op.name = gen_ops[which_op].name;
 		current_op.status = NT_STATUS_OK;
+		talloc_free(current_op.mem_ctx);
 		current_op.mem_ctx = talloc_named(NULL, 0, "%s", current_op.name);
 
 		ret = gen_ops[which_op].handler(instance);
-
-		talloc_free(current_op.mem_ctx);
 
 		gen_ops[which_op].count++;
 		if (NT_STATUS_IS_OK(current_op.status)) {
@@ -3026,7 +3046,7 @@ static bool start_gentest(struct event_context *ev,
 	/* generate the seeds - after this everything is deterministic */
 	if (options.use_preset_seeds) {
 		int numops;
-		char **preset = file_lines_load(options.seeds_file, &numops, NULL);
+		char **preset = file_lines_load(options.seeds_file, &numops, 0, NULL);
 		if (!preset) {
 			printf("Failed to load %s - %s\n", options.seeds_file, strerror(errno));
 			exit(1);
@@ -3173,7 +3193,7 @@ static bool split_unc_name(const char *unc, char **server, char **share)
 	}
 
 	if (ignore_file) {
-		options.ignore_patterns = file_lines_load(ignore_file, NULL, NULL);
+		options.ignore_patterns = file_lines_load(ignore_file, NULL, 0, NULL);
 	}
 
 	argv_new = discard_const_p(char *, poptGetArgs(pc));

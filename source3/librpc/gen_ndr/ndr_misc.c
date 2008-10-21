@@ -123,7 +123,9 @@ _PUBLIC_ void ndr_print_netr_SchannelType(struct ndr_print *ndr, const char *nam
 	const char *val = NULL;
 
 	switch (r) {
+		case SEC_CHAN_NULL: val = "SEC_CHAN_NULL"; break;
 		case SEC_CHAN_WKSTA: val = "SEC_CHAN_WKSTA"; break;
+		case SEC_CHAN_DNS_DOMAIN: val = "SEC_CHAN_DNS_DOMAIN"; break;
 		case SEC_CHAN_DOMAIN: val = "SEC_CHAN_DOMAIN"; break;
 		case SEC_CHAN_BDC: val = "SEC_CHAN_BDC"; break;
 	}

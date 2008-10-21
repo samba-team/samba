@@ -66,22 +66,19 @@ static void cldapd_rootdse_fill(struct cldapd_server *cldapd,
 		attrs[i] = NULL;
 	}
 
-	lreq = talloc(mem_ctx, struct ldb_request);
-	if (lreq == NULL) goto nomem;
-
 	res = talloc_zero(mem_ctx, struct ldb_result);
 	if (res == NULL) goto nomem;
 
-	lreq->operation = LDB_SEARCH;
-	lreq->op.search.base = basedn;
-	lreq->op.search.scope = scope;
-	lreq->op.search.tree = search->tree;
-	lreq->op.search.attrs = attrs;
+	ldb_ret = ldb_build_search_req_ex(&lreq, cldapd->samctx, mem_ctx,
+					  basedn, scope,
+					  search->tree, attrs,
+					  NULL,
+					  res, ldb_search_default_callback,
+					  NULL);
 
-	lreq->controls = NULL;
-
-	lreq->context = res;
-	lreq->callback = ldb_search_default_callback;
+	if (ldb_ret != LDB_SUCCESS) {
+		goto reply;
+	}
 
 	/* Copy the timeout from the incoming call */
 	ldb_set_timeout(cldapd->samctx, lreq, search->timelimit);

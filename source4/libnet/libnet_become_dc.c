@@ -770,7 +770,7 @@ static void becomeDC_recv_cldap(struct cldap_request *req)
 	c->status = cldap_netlogon_recv(req, s, &s->cldap.io);
 	if (!composite_is_ok(c)) return;
 
-	s->cldap.netlogon = s->cldap.io.out.netlogon.nt5_ex;
+	s->cldap.netlogon = s->cldap.io.out.netlogon.data.nt5_ex;
 
 	s->domain.dns_name		= s->cldap.netlogon.dns_domain;
 	s->domain.netbios_name		= s->cldap.netlogon.domain;
@@ -820,8 +820,8 @@ static NTSTATUS becomeDC_ldap1_rootdse(struct libnet_BecomeDC_state *s)
 	basedn = ldb_dn_new(s, s->ldap1.ldb, NULL);
 	NT_STATUS_HAVE_NO_MEMORY(basedn);
 
-	ret = ldb_search(s->ldap1.ldb, basedn, LDB_SCOPE_BASE, 
-			 "(objectClass=*)", attrs, &r);
+	ret = ldb_search(s->ldap1.ldb, s, &r, basedn, LDB_SCOPE_BASE, attrs,
+			 "(objectClass=*)");
 	talloc_free(basedn);
 	if (ret != LDB_SUCCESS) {
 		return NT_STATUS_LDAP(ret);
@@ -829,7 +829,6 @@ static NTSTATUS becomeDC_ldap1_rootdse(struct libnet_BecomeDC_state *s)
 		talloc_free(r);
 		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
-	talloc_steal(s, r);
 
 	s->ldap1.rootdse = r->msgs[0];
 
@@ -864,8 +863,8 @@ static NTSTATUS becomeDC_ldap1_crossref_behavior_version(struct libnet_BecomeDC_
 	basedn = ldb_dn_new(s, s->ldap1.ldb, s->forest.config_dn_str);
 	NT_STATUS_HAVE_NO_MEMORY(basedn);
 
-	ret = ldb_search(s->ldap1.ldb, basedn, LDB_SCOPE_ONELEVEL,
-			 "(cn=Partitions)", attrs, &r);
+	ret = ldb_search(s->ldap1.ldb, s, &r, basedn, LDB_SCOPE_ONELEVEL, attrs,
+			 "(cn=Partitions)");
 	talloc_free(basedn);
 	if (ret != LDB_SUCCESS) {
 		return NT_STATUS_LDAP(ret);
@@ -893,8 +892,8 @@ static NTSTATUS becomeDC_ldap1_domain_behavior_version(struct libnet_BecomeDC_st
 	basedn = ldb_dn_new(s, s->ldap1.ldb, s->domain.dn_str);
 	NT_STATUS_HAVE_NO_MEMORY(basedn);
 
-	ret = ldb_search(s->ldap1.ldb, basedn, LDB_SCOPE_BASE,
-			 "(objectClass=*)", attrs, &r);
+	ret = ldb_search(s->ldap1.ldb, s, &r, basedn, LDB_SCOPE_BASE, attrs,
+			 "(objectClass=*)");
 	talloc_free(basedn);
 	if (ret != LDB_SUCCESS) {
 		return NT_STATUS_LDAP(ret);
@@ -922,8 +921,8 @@ static NTSTATUS becomeDC_ldap1_schema_object_version(struct libnet_BecomeDC_stat
 	basedn = ldb_dn_new(s, s->ldap1.ldb, s->forest.schema_dn_str);
 	NT_STATUS_HAVE_NO_MEMORY(basedn);
 
-	ret = ldb_search(s->ldap1.ldb, basedn, LDB_SCOPE_BASE,
-			 "(objectClass=*)", attrs, &r);
+	ret = ldb_search(s->ldap1.ldb, s, &r, basedn, LDB_SCOPE_BASE, attrs,
+			 "(objectClass=*)");
 	talloc_free(basedn);
 	if (ret != LDB_SUCCESS) {
 		return NT_STATUS_LDAP(ret);
@@ -952,8 +951,8 @@ static NTSTATUS becomeDC_ldap1_w2k3_update_revision(struct libnet_BecomeDC_state
 				s->domain.dn_str);
 	NT_STATUS_HAVE_NO_MEMORY(basedn);
 
-	ret = ldb_search(s->ldap1.ldb, basedn, LDB_SCOPE_BASE,
-			 "(objectClass=*)", attrs, &r);
+	ret = ldb_search(s->ldap1.ldb, s, &r, basedn, LDB_SCOPE_BASE, attrs,
+			 "(objectClass=*)");
 	talloc_free(basedn);
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 		/* w2k doesn't have this object */
@@ -1000,8 +999,8 @@ static NTSTATUS becomeDC_ldap1_infrastructure_fsmo(struct libnet_BecomeDC_state 
 				s->domain.dn_str);
 	NT_STATUS_HAVE_NO_MEMORY(basedn);
 
-	ret = ldb_search(s->ldap1.ldb, basedn, LDB_SCOPE_BASE,
-			 "(objectClass=*)", _1_1_attrs, &r);
+	ret = ldb_search(s->ldap1.ldb, s, &r, basedn, LDB_SCOPE_BASE,
+			 _1_1_attrs, "(objectClass=*)");
 	talloc_free(basedn);
 	if (ret != LDB_SUCCESS) {
 		return NT_STATUS_LDAP(ret);
@@ -1013,8 +1012,8 @@ static NTSTATUS becomeDC_ldap1_infrastructure_fsmo(struct libnet_BecomeDC_state 
 	basedn = talloc_steal(s, r->msgs[0]->dn);
 	talloc_free(r);
 
-	ret = ldb_search(s->ldap1.ldb, basedn, LDB_SCOPE_BASE,
-			 "(objectClass=*)", fsmo_attrs, &r);
+	ret = ldb_search(s->ldap1.ldb, s, &r, basedn, LDB_SCOPE_BASE,
+			 fsmo_attrs, "(objectClass=*)");
 	talloc_free(basedn);
 	if (ret != LDB_SUCCESS) {
 		return NT_STATUS_LDAP(ret);
@@ -1038,8 +1037,8 @@ static NTSTATUS becomeDC_ldap1_infrastructure_fsmo(struct libnet_BecomeDC_state 
 	s->infrastructure_fsmo.server_dn_str = ldb_dn_alloc_linearized(s, server_dn);
 	NT_STATUS_HAVE_NO_MEMORY(s->infrastructure_fsmo.server_dn_str);
 
-	ret = ldb_search(s->ldap1.ldb, server_dn, LDB_SCOPE_BASE,
-			 "(objectClass=*)", dns_attrs, &r);
+	ret = ldb_search(s->ldap1.ldb, s, &r, server_dn, LDB_SCOPE_BASE,
+			 dns_attrs, "(objectClass=*)");
 	if (ret != LDB_SUCCESS) {
 		return NT_STATUS_LDAP(ret);
 	} else if (r->count != 1) {
@@ -1053,8 +1052,8 @@ static NTSTATUS becomeDC_ldap1_infrastructure_fsmo(struct libnet_BecomeDC_state 
 
 	talloc_free(r);
 
-	ret = ldb_search(s->ldap1.ldb, ntds_dn, LDB_SCOPE_BASE,
-			 "(objectClass=*)", guid_attrs, &r);
+	ret = ldb_search(s->ldap1.ldb, s, &r, ntds_dn, LDB_SCOPE_BASE,
+			 guid_attrs, "(objectClass=*)");
 	if (ret != LDB_SUCCESS) {
 		return NT_STATUS_LDAP(ret);
 	} else if (r->count != 1) {
@@ -1097,8 +1096,8 @@ static NTSTATUS becomeDC_ldap1_rid_manager_fsmo(struct libnet_BecomeDC_state *s)
 	basedn = ldb_dn_new(s, s->ldap1.ldb, s->domain.dn_str);
 	NT_STATUS_HAVE_NO_MEMORY(basedn);
 
-	ret = ldb_search(s->ldap1.ldb, basedn, LDB_SCOPE_BASE,
-			 "(objectClass=*)", rid_attrs, &r);
+	ret = ldb_search(s->ldap1.ldb, s, &r, basedn, LDB_SCOPE_BASE,
+			 rid_attrs, "(objectClass=*)");
 	talloc_free(basedn);
 	if (ret != LDB_SUCCESS) {
 		return NT_STATUS_LDAP(ret);
@@ -1115,8 +1114,8 @@ static NTSTATUS becomeDC_ldap1_rid_manager_fsmo(struct libnet_BecomeDC_state *s)
 
 	talloc_free(r);
 
-	ret = ldb_search(s->ldap1.ldb, basedn, LDB_SCOPE_BASE,
-			 "(objectClass=*)", fsmo_attrs, &r);
+	ret = ldb_search(s->ldap1.ldb, s, &r, basedn, LDB_SCOPE_BASE,
+			 fsmo_attrs, "(objectClass=*)");
 	talloc_free(basedn);
 	if (ret != LDB_SUCCESS) {
 		return NT_STATUS_LDAP(ret);
@@ -1140,8 +1139,8 @@ static NTSTATUS becomeDC_ldap1_rid_manager_fsmo(struct libnet_BecomeDC_state *s)
 	s->rid_manager_fsmo.server_dn_str = ldb_dn_alloc_linearized(s, server_dn);
 	NT_STATUS_HAVE_NO_MEMORY(s->rid_manager_fsmo.server_dn_str);
 
-	ret = ldb_search(s->ldap1.ldb, server_dn, LDB_SCOPE_BASE,
-			 "(objectClass=*)", dns_attrs, &r);
+	ret = ldb_search(s->ldap1.ldb, s, &r, server_dn, LDB_SCOPE_BASE,
+			 dns_attrs, "(objectClass=*)");
 	if (ret != LDB_SUCCESS) {
 		return NT_STATUS_LDAP(ret);
 	} else if (r->count != 1) {
@@ -1155,8 +1154,8 @@ static NTSTATUS becomeDC_ldap1_rid_manager_fsmo(struct libnet_BecomeDC_state *s)
 
 	talloc_free(r);
 
-	ret = ldb_search(s->ldap1.ldb, ntds_dn, LDB_SCOPE_BASE,
-			 "(objectClass=*)", guid_attrs, &r);
+	ret = ldb_search(s->ldap1.ldb, s, &r, ntds_dn, LDB_SCOPE_BASE,
+			 guid_attrs, "(objectClass=*)");
 	if (ret != LDB_SUCCESS) {
 		return NT_STATUS_LDAP(ret);
 	} else if (r->count != 1) {
@@ -1182,8 +1181,8 @@ static NTSTATUS becomeDC_ldap1_site_object(struct libnet_BecomeDC_state *s)
 				s->forest.config_dn_str);
 	NT_STATUS_HAVE_NO_MEMORY(basedn);
 
-	ret = ldb_search(s->ldap1.ldb, basedn, LDB_SCOPE_BASE, 
-			 "(objectClass=*)", NULL, &r);
+	ret = ldb_search(s->ldap1.ldb, s, &r, basedn, LDB_SCOPE_BASE,
+			 NULL, "(objectClass=*)");
 	talloc_free(basedn);
 	if (ret != LDB_SUCCESS) {
 		return NT_STATUS_LDAP(ret);
@@ -1214,7 +1213,6 @@ static NTSTATUS becomeDC_ldap1_computer_object(struct libnet_BecomeDC_state *s)
 	int ret;
 	struct ldb_result *r;
 	struct ldb_dn *basedn;
-	char *filter;
 	static const char *attrs[] = {
 		"distinguishedName",
 		"userAccountControl",
@@ -1224,12 +1222,9 @@ static NTSTATUS becomeDC_ldap1_computer_object(struct libnet_BecomeDC_state *s)
 	basedn = ldb_dn_new(s, s->ldap1.ldb, s->domain.dn_str);
 	NT_STATUS_HAVE_NO_MEMORY(basedn);
 
-	filter = talloc_asprintf(basedn, "(&(|(objectClass=user)(objectClass=computer))(sAMAccountName=%s$))",
-				 s->dest_dsa.netbios_name);
-	NT_STATUS_HAVE_NO_MEMORY(filter);
-
-	ret = ldb_search(s->ldap1.ldb, basedn, LDB_SCOPE_SUBTREE, 
-			 filter, attrs, &r);
+	ret = ldb_search(s->ldap1.ldb, s, &r, basedn, LDB_SCOPE_SUBTREE, attrs,
+			 "(&(|(objectClass=user)(objectClass=computer))(sAMAccountName=%s$))",
+			 s->dest_dsa.netbios_name);
 	talloc_free(basedn);
 	if (ret != LDB_SUCCESS) {
 		return NT_STATUS_LDAP(ret);
@@ -1263,8 +1258,8 @@ static NTSTATUS becomeDC_ldap1_server_object_1(struct libnet_BecomeDC_state *s)
 				s->forest.config_dn_str);
 	NT_STATUS_HAVE_NO_MEMORY(basedn);
 
-	ret = ldb_search(s->ldap1.ldb, basedn, LDB_SCOPE_BASE, 
-			 "(objectClass=*)", NULL, &r);
+	ret = ldb_search(s->ldap1.ldb, s, &r, basedn, LDB_SCOPE_BASE,
+			 NULL, "(objectClass=*)");
 	talloc_free(basedn);
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 		/* if the object doesn't exist, we'll create it later */
@@ -1320,8 +1315,8 @@ static NTSTATUS becomeDC_ldap1_server_object_2(struct libnet_BecomeDC_state *s)
 	basedn = ldb_dn_new(s, s->ldap1.ldb, s->dest_dsa.computer_dn_str);
 	NT_STATUS_HAVE_NO_MEMORY(basedn);
 
-	ret = ldb_search(s->ldap1.ldb, basedn, LDB_SCOPE_BASE, 
-			 "(objectClass=*)", attrs, &r);
+	ret = ldb_search(s->ldap1.ldb, s, &r, basedn, LDB_SCOPE_BASE,
+			 attrs, "(objectClass=*)");
 	talloc_free(basedn);
 	if (ret != LDB_SUCCESS) {
 		return NT_STATUS_LDAP(ret);
@@ -2178,11 +2173,15 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 	/* setup request structure */
 	r->in.bind_handle						= &s->drsuapi1.bind_handle;
 	r->in.level							= 2;
-	r->in.req.req2.first_object.next_object				= NULL;
-	r->in.req.req2.first_object.object.identifier			= identifier;
-	r->in.req.req2.first_object.object.flags			= 0x00000000;
-	r->in.req.req2.first_object.object.attribute_ctr.num_attributes	= num_attrs;
-	r->in.req.req2.first_object.object.attribute_ctr.attributes	= attrs;
+	r->in.req							= talloc(s, union drsuapi_DsAddEntryRequest);
+	r->in.req->req2.first_object.next_object			= NULL;
+	r->in.req->req2.first_object.object.identifier			= identifier;
+	r->in.req->req2.first_object.object.flags			= 0x00000000;
+	r->in.req->req2.first_object.object.attribute_ctr.num_attributes= num_attrs;
+	r->in.req->req2.first_object.object.attribute_ctr.attributes	= attrs;
+
+	r->out.level_out	= talloc(s, int32_t);
+	r->out.ctr		= talloc(s, union drsuapi_DsAddEntryCtr);
 
 	req = dcerpc_drsuapi_DsAddEntry_send(s->drsuapi1.pipe, r, r);
 	composite_continue_rpc(c, req, becomeDC_drsuapi1_add_entry_recv, s);
@@ -2217,37 +2216,37 @@ static void becomeDC_drsuapi1_add_entry_recv(struct rpc_request *req)
 		return;
 	}
 
-	if (r->out.level == 3) {
-		if (r->out.ctr.ctr3.count != 1) {
+	if (*r->out.level_out == 3) {
+		if (r->out.ctr->ctr3.count != 1) {
 			WERROR status;
 
-			if (r->out.ctr.ctr3.level != 1) {
+			if (r->out.ctr->ctr3.level != 1) {
 				composite_error(c, NT_STATUS_INVALID_NETWORK_RESPONSE);
 				return;
 			}
 
-			if (!r->out.ctr.ctr3.error) {
+			if (!r->out.ctr->ctr3.error) {
 				composite_error(c, NT_STATUS_INVALID_NETWORK_RESPONSE);
 				return;
 			}
 
-			status = r->out.ctr.ctr3.error->info1.status;
+			status = r->out.ctr->ctr3.error->info1.status;
 
-			if (!r->out.ctr.ctr3.error->info1.info) {
+			if (!r->out.ctr->ctr3.error->info1.info) {
 				composite_error(c, werror_to_ntstatus(status));
 				return;
 			}
 
 			/* see if we can get a more detailed error */
-			switch (r->out.ctr.ctr3.error->info1.level) {
+			switch (r->out.ctr->ctr3.error->info1.level) {
 			case 1:
-				status = r->out.ctr.ctr3.error->info1.info->error1.status;
+				status = r->out.ctr->ctr3.error->info1.info->error1.status;
 				break;
 			case 4:
 			case 5:
 			case 6:
 			case 7:
-				status = r->out.ctr.ctr3.error->info1.info->errorX.status;
+				status = r->out.ctr->ctr3.error->info1.info->errorX.status;
 				break;
 			}
 
@@ -2255,14 +2254,14 @@ static void becomeDC_drsuapi1_add_entry_recv(struct rpc_request *req)
 			return;
 		}
 
-		s->dest_dsa.ntds_guid	= r->out.ctr.ctr3.objects[0].guid;
-	} else if (r->out.level == 2) {
-		if (r->out.ctr.ctr2.count != 1) {
-			composite_error(c, werror_to_ntstatus(r->out.ctr.ctr2.error.status));
+		s->dest_dsa.ntds_guid	= r->out.ctr->ctr3.objects[0].guid;
+	} else if (*r->out.level_out == 2) {
+		if (r->out.ctr->ctr2.count != 1) {
+			composite_error(c, werror_to_ntstatus(r->out.ctr->ctr2.error.status));
 			return;
 		}
 
-		s->dest_dsa.ntds_guid	= r->out.ctr.ctr2.objects[0].guid;
+		s->dest_dsa.ntds_guid	= r->out.ctr->ctr2.objects[0].guid;
 	} else {
 		composite_error(c, NT_STATUS_INVALID_NETWORK_RESPONSE);
 		return;
@@ -2397,40 +2396,42 @@ static void becomeDC_drsuapi_pull_partition_send(struct libnet_BecomeDC_state *s
 	r = talloc(s, struct drsuapi_DsGetNCChanges);
 	if (composite_nomem(r, c)) return;
 
-	r->in.level = talloc(r, int32_t);
-	if (composite_nomem(r->in.level, c)) return;
-	r->out.level = talloc(r, int32_t);
-	if (composite_nomem(r->out.level, c)) return;
+	r->out.level_out = talloc(r, int32_t);
+	if (composite_nomem(r->out.level_out, c)) return;
+	r->in.req = talloc(r, union drsuapi_DsGetNCChangesRequest);
+	if (composite_nomem(r->in.req, c)) return;
+	r->out.ctr = talloc(r, union drsuapi_DsGetNCChangesCtr);
+	if (composite_nomem(r->out.ctr, c)) return;
 
 	r->in.bind_handle	= &drsuapi_h->bind_handle;
 	if (drsuapi_h->remote_info28.supported_extensions & DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V8) {
-		*r->in.level				= 8;
-		r->in.req.req8.destination_dsa_guid	= partition->destination_dsa_guid;
-		r->in.req.req8.source_dsa_invocation_id	= partition->source_dsa_invocation_id;
-		r->in.req.req8.naming_context		= &partition->nc;
-		r->in.req.req8.highwatermark		= partition->highwatermark;
-		r->in.req.req8.uptodateness_vector	= NULL;
-		r->in.req.req8.replica_flags		= partition->replica_flags;
-		r->in.req.req8.max_object_count		= 133;
-		r->in.req.req8.max_ndr_size		= 1336811;
-		r->in.req.req8.extended_op		= DRSUAPI_EXOP_NONE;
-		r->in.req.req8.fsmo_info		= 0;
-		r->in.req.req8.partial_attribute_set	= NULL;
-		r->in.req.req8.partial_attribute_set_ex	= NULL;
-		r->in.req.req8.mapping_ctr.num_mappings	= 0;
-		r->in.req.req8.mapping_ctr.mappings	= NULL;
+		r->in.level				= 8;
+		r->in.req->req8.destination_dsa_guid	= partition->destination_dsa_guid;
+		r->in.req->req8.source_dsa_invocation_id= partition->source_dsa_invocation_id;
+		r->in.req->req8.naming_context		= &partition->nc;
+		r->in.req->req8.highwatermark		= partition->highwatermark;
+		r->in.req->req8.uptodateness_vector	= NULL;
+		r->in.req->req8.replica_flags		= partition->replica_flags;
+		r->in.req->req8.max_object_count	= 133;
+		r->in.req->req8.max_ndr_size		= 1336811;
+		r->in.req->req8.extended_op		= DRSUAPI_EXOP_NONE;
+		r->in.req->req8.fsmo_info		= 0;
+		r->in.req->req8.partial_attribute_set	= NULL;
+		r->in.req->req8.partial_attribute_set_ex= NULL;
+		r->in.req->req8.mapping_ctr.num_mappings= 0;
+		r->in.req->req8.mapping_ctr.mappings	= NULL;
 	} else {
-		*r->in.level				= 5;
-		r->in.req.req5.destination_dsa_guid	= partition->destination_dsa_guid;
-		r->in.req.req5.source_dsa_invocation_id	= partition->source_dsa_invocation_id;
-		r->in.req.req5.naming_context		= &partition->nc;
-		r->in.req.req5.highwatermark		= partition->highwatermark;
-		r->in.req.req5.uptodateness_vector	= NULL;
-		r->in.req.req5.replica_flags		= partition->replica_flags;
-		r->in.req.req5.max_object_count		= 133;
-		r->in.req.req5.max_ndr_size		= 1336770;
-		r->in.req.req5.extended_op		= DRSUAPI_EXOP_NONE;
-		r->in.req.req5.fsmo_info		= 0;
+		r->in.level				= 5;
+		r->in.req->req5.destination_dsa_guid	= partition->destination_dsa_guid;
+		r->in.req->req5.source_dsa_invocation_id= partition->source_dsa_invocation_id;
+		r->in.req->req5.naming_context		= &partition->nc;
+		r->in.req->req5.highwatermark		= partition->highwatermark;
+		r->in.req->req5.uptodateness_vector	= NULL;
+		r->in.req->req5.replica_flags		= partition->replica_flags;
+		r->in.req->req5.max_object_count	= 133;
+		r->in.req->req5.max_ndr_size		= 1336770;
+		r->in.req->req5.extended_op		= DRSUAPI_EXOP_NONE;
+		r->in.req->req5.fsmo_info		= 0;
 	}
 
 	/* 
@@ -2462,28 +2463,28 @@ static WERROR becomeDC_drsuapi_pull_partition_recv(struct libnet_BecomeDC_state 
 		return r->out.result;
 	}
 
-	if (*r->out.level == 1) {
+	if (*r->out.level_out == 1) {
 		ctr_level = 1;
-		ctr1 = &r->out.ctr.ctr1;
-	} else if (*r->out.level == 2 &&
-		   r->out.ctr.ctr2.mszip1.ts) {
+		ctr1 = &r->out.ctr->ctr1;
+	} else if (*r->out.level_out == 2 &&
+		   r->out.ctr->ctr2.mszip1.ts) {
 		ctr_level = 1;
-		ctr1 = &r->out.ctr.ctr2.mszip1.ts->ctr1;
-	} else if (*r->out.level == 6) {
+		ctr1 = &r->out.ctr->ctr2.mszip1.ts->ctr1;
+	} else if (*r->out.level_out == 6) {
 		ctr_level = 6;
-		ctr6 = &r->out.ctr.ctr6;
-	} else if (*r->out.level == 7 &&
-		   r->out.ctr.ctr7.level == 6 &&
-		   r->out.ctr.ctr7.type == DRSUAPI_COMPRESSION_TYPE_MSZIP &&
-		   r->out.ctr.ctr7.ctr.mszip6.ts) {
+		ctr6 = &r->out.ctr->ctr6;
+	} else if (*r->out.level_out == 7 &&
+		   r->out.ctr->ctr7.level == 6 &&
+		   r->out.ctr->ctr7.type == DRSUAPI_COMPRESSION_TYPE_MSZIP &&
+		   r->out.ctr->ctr7.ctr.mszip6.ts) {
 		ctr_level = 6;
-		ctr6 = &r->out.ctr.ctr7.ctr.mszip6.ts->ctr6;
-	} else if (*r->out.level == 7 &&
-		   r->out.ctr.ctr7.level == 6 &&
-		   r->out.ctr.ctr7.type == DRSUAPI_COMPRESSION_TYPE_XPRESS &&
-		   r->out.ctr.ctr7.ctr.xpress6.ts) {
+		ctr6 = &r->out.ctr->ctr7.ctr.mszip6.ts->ctr6;
+	} else if (*r->out.level_out == 7 &&
+		   r->out.ctr->ctr7.level == 6 &&
+		   r->out.ctr->ctr7.type == DRSUAPI_COMPRESSION_TYPE_XPRESS &&
+		   r->out.ctr->ctr7.ctr.xpress6.ts) {
 		ctr_level = 6;
-		ctr6 = &r->out.ctr.ctr7.ctr.xpress6.ts->ctr6;
+		ctr6 = &r->out.ctr->ctr7.ctr.xpress6.ts->ctr6;
 	} else {
 		return WERR_BAD_NET_RESP;
 	}
@@ -2908,8 +2909,8 @@ static NTSTATUS becomeDC_ldap2_move_computer(struct libnet_BecomeDC_state *s)
 				s->domain.dn_str);
 	NT_STATUS_HAVE_NO_MEMORY(basedn);
 
-	ret = ldb_search(s->ldap2.ldb, basedn, LDB_SCOPE_BASE,
-			 "(objectClass=*)", _1_1_attrs, &r);
+	ret = ldb_search(s->ldap2.ldb, s, &r, basedn, LDB_SCOPE_BASE,
+			 _1_1_attrs, "(objectClass=*)");
 	talloc_free(basedn);
 	if (ret != LDB_SUCCESS) {
 		return NT_STATUS_LDAP(ret);

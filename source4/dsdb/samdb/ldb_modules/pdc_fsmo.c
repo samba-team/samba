@@ -28,7 +28,7 @@
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "librpc/gen_ndr/ndr_drsuapi.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
-#include "lib/util/dlinklist.h"
+#include "../lib/util/dlinklist.h"
 
 static int pdc_fsmo_init(struct ldb_module *module)
 {
@@ -63,10 +63,9 @@ static int pdc_fsmo_init(struct ldb_module *module)
 	}
 	module->private_data = pdc_fsmo;
 
-	ret = ldb_search(module->ldb, pdc_dn,
-			 LDB_SCOPE_BASE,
-			 NULL, pdc_attrs,
-			 &pdc_res);
+	ret = ldb_search(module->ldb, mem_ctx, &pdc_res,
+			 pdc_dn, LDB_SCOPE_BASE,
+			 pdc_attrs, NULL);
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 		ldb_debug(module->ldb, LDB_DEBUG_WARNING,
 			  "pdc_fsmo_init: no domain object present: (skip loading of domain details)\n");
@@ -79,7 +78,6 @@ static int pdc_fsmo_init(struct ldb_module *module)
 		talloc_free(mem_ctx);
 		return ret;
 	}
-	talloc_steal(mem_ctx, pdc_res);
 	if (pdc_res->count == 0) {
 		ldb_debug(module->ldb, LDB_DEBUG_WARNING,
 			  "pdc_fsmo_init: no domain object present: (skip loading of domain details)\n");

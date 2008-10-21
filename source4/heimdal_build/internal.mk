@@ -322,6 +322,7 @@ HEIMDAL_KRB5_OBJ_FILES = \
 	$(heimdalsrcdir)/lib/krb5/pkinit.o \
 	$(heimdalsrcdir)/lib/krb5/plugin.o \
 	$(heimdalsrcdir)/lib/krb5/principal.o \
+	$(heimdalsrcdir)/lib/krb5/prog_setup.o \
 	$(heimdalsrcdir)/lib/krb5/pac.o \
 	$(heimdalsrcdir)/lib/krb5/prompter_posix.o \
 	$(heimdalsrcdir)/lib/krb5/rd_cred.o \
@@ -600,6 +601,7 @@ HEIMDAL_ROKEN_OBJ_FILES = \
 	$(heimdalsrcdir)/lib/roken/dumpdata.o \
 	$(heimdalsrcdir)/lib/roken/emalloc.o \
 	$(heimdalsrcdir)/lib/roken/ecalloc.o \
+	$(heimdalsrcdir)/lib/roken/getarg.o \
 	$(heimdalsrcdir)/lib/roken/get_window_size.o \
 	$(heimdalsrcdir)/lib/roken/h_errno.o \
 	$(heimdalsrcdir)/lib/roken/issuid.o \
@@ -612,6 +614,7 @@ HEIMDAL_ROKEN_OBJ_FILES = \
 	$(heimdalsrcdir)/lib/roken/roken_gethostby.o \
 	$(heimdalsrcdir)/lib/roken/signal.o \
 	$(heimdalsrcdir)/lib/roken/vis.o \
+	$(heimdalsrcdir)/lib/roken/setprogname.o \
 	$(heimdalsrcdir)/lib/roken/strlwr.o \
 	$(heimdalsrcdir)/lib/roken/strsep_copy.o \
 	$(heimdalsrcdir)/lib/roken/strsep.o \
@@ -652,7 +655,7 @@ HEIMDAL_COM_ERR_OBJ_FILES = \
 # Start BINARY asn1_compile
 [BINARY::asn1_compile]
 USE_HOSTCC = YES
-PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN_GETPROGNAME_H LIBREPLACE_NETWORK
+PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN LIBREPLACE_NETWORK
 
 ASN1C = $(builddir)/bin/asn1_compile
 
@@ -676,13 +679,6 @@ dist:: $(heimdalsrcdir)/lib/asn1/lex.c
 
 asn1_compile_OBJ_FILES = \
 	$(asn1_compile_ASN1_OBJ_FILES) \
-	$(heimdalsrcdir)/lib/roken/emalloc.ho \
-	$(heimdalsrcdir)/lib/roken/getarg.ho \
-	$(heimdalsrcdir)/lib/roken/setprogname.ho \
-	$(heimdalsrcdir)/lib/roken/strupr.ho \
-	$(heimdalsrcdir)/lib/roken/get_window_size.ho \
-	$(heimdalsrcdir)/lib/roken/estrdup.ho \
-	$(heimdalsrcdir)/lib/roken/ecalloc.ho \
 	$(heimdalsrcdir)/lib/vers/print_version.ho \
 	$(socketwrappersrcdir)/socket_wrapper.ho \
 	$(heimdalbuildsrcdir)/replace.ho
@@ -703,7 +699,7 @@ $(eval $(call heimdal_proto_header_template, \
 # Start BINARY compile_et
 [BINARY::compile_et]
 USE_HOSTCC = YES
-PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN_GETPROGNAME_H LIBREPLACE_NETWORK
+PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN LIBREPLACE_NETWORK
 # End BINARY compile_et
 #######################
 
@@ -713,10 +709,6 @@ compile_et_OBJ_FILES = $(heimdalsrcdir)/lib/vers/print_version.ho \
 	$(heimdalsrcdir)/lib/com_err/parse.ho \
 	$(heimdalsrcdir)/lib/com_err/lex.ho \
 	$(heimdalsrcdir)/lib/com_err/compile_et.ho \
-	$(heimdalsrcdir)/lib/roken/getarg.ho \
-	$(heimdalsrcdir)/lib/roken/get_window_size.ho \
-	$(heimdalsrcdir)/lib/roken/strupr.ho \
-	$(heimdalsrcdir)/lib/roken/setprogname.ho \
 	$(socketwrappersrcdir)/socket_wrapper.ho \
 	$(heimdalbuildsrcdir)/replace.ho
 
@@ -761,8 +753,30 @@ PRIVATE_DEPENDENCIES = HEIMDAL_KRB5 HEIMDAL_NTLM
 #######################
 
 samba4kinit_OBJ_FILES = $(heimdalsrcdir)/kuser/kinit.o \
-	$(heimdalsrcdir)/lib/vers/print_version.o \
-	$(heimdalsrcdir)/lib/roken/setprogname.o \
-	$(heimdalsrcdir)/lib/roken/getarg.o 
+	$(heimdalsrcdir)/lib/vers/print_version.o 
 
 $(samba4kinit_OBJ_FILES): CFLAGS+=-I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/roken
+
+#######################
+# Start BINARY compile_et
+[BINARY::samba4kpasswd]
+PRIVATE_DEPENDENCIES = HEIMDAL_KRB5 HEIMDAL_NTLM
+# End BINARY compile_et
+#######################
+
+samba4kpasswd_OBJ_FILES = $(heimdalsrcdir)/kpasswd/kpasswd.o \
+	$(heimdalsrcdir)/lib/vers/print_version.o 
+
+$(samba4kpasswd_OBJ_FILES): CFLAGS+=-I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/roken
+
+#######################
+# Start BINARY compile_et
+[BINARY::rkpty]
+PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN OPENPTY
+# End BINARY compile_et
+#######################
+
+rkpty_OBJ_FILES = $(heimdalsrcdir)/lib/roken/rkpty.o \
+	$(socketwrappersrcdir)/socket_wrapper.o
+
+$(rkpty_OBJ_FILES): CFLAGS+=-I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/roken -DPACKAGE=\"Samba\"

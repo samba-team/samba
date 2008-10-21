@@ -32,6 +32,8 @@ extern const struct ndr_interface_table ndr_table_rpcecho;
 #define NDR_ECHO_TESTDOUBLEPOINTER (0x09)
 
 #define NDR_RPCECHO_CALL_COUNT (10)
+enum ndr_err_code ndr_push_echo_info1(struct ndr_push *ndr, int ndr_flags, const struct echo_info1 *r);
+enum ndr_err_code ndr_pull_echo_info1(struct ndr_pull *ndr, int ndr_flags, struct echo_info1 *r);
 void ndr_print_echo_info1(struct ndr_print *ndr, const char *name, const struct echo_info1 *r);
 void ndr_print_echo_info2(struct ndr_print *ndr, const char *name, const struct echo_info2 *r);
 void ndr_print_echo_info3(struct ndr_print *ndr, const char *name, const struct echo_info3 *r);

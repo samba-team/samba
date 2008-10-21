@@ -21,7 +21,7 @@
 
 #include "includes.h"
 #include "smb_server/smb_server.h"
-#include "lib/util/dlinklist.h"
+#include "../lib/util/dlinklist.h"
 
 
 /*

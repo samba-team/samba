@@ -689,25 +689,25 @@ static WERROR gp_reg_generate_sd(TALLOC_CTX *mem_ctx,
 				 size_t *sd_size)
 {
 	SEC_ACE ace[6];
-	SEC_ACCESS mask;
+	uint32_t mask;
 
 	SEC_ACL *acl = NULL;
 
 	uint8_t inherit_flags;
 
-	init_sec_access(&mask, REG_KEY_ALL);
+	mask = REG_KEY_ALL;
 	init_sec_ace(&ace[0],
 		     &global_sid_System,
 		     SEC_ACE_TYPE_ACCESS_ALLOWED,
 		     mask, 0);
 
-	init_sec_access(&mask, REG_KEY_ALL);
+	mask = REG_KEY_ALL;
 	init_sec_ace(&ace[1],
 		     &global_sid_Builtin_Administrators,
 		     SEC_ACE_TYPE_ACCESS_ALLOWED,
 		     mask, 0);
 
-	init_sec_access(&mask, REG_KEY_READ);
+	mask = REG_KEY_READ;
 	init_sec_ace(&ace[2],
 		     sid ? sid : &global_sid_Authenticated_Users,
 		     SEC_ACE_TYPE_ACCESS_ALLOWED,
@@ -717,19 +717,19 @@ static WERROR gp_reg_generate_sd(TALLOC_CTX *mem_ctx,
 			SEC_ACE_FLAG_CONTAINER_INHERIT |
 			SEC_ACE_FLAG_INHERIT_ONLY;
 
-	init_sec_access(&mask, REG_KEY_ALL);
+	mask = REG_KEY_ALL;
 	init_sec_ace(&ace[3],
 		     &global_sid_System,
 		     SEC_ACE_TYPE_ACCESS_ALLOWED,
 		     mask, inherit_flags);
 
-	init_sec_access(&mask, REG_KEY_ALL);
+	mask = REG_KEY_ALL;
 	init_sec_ace(&ace[4],
 		     &global_sid_Builtin_Administrators,
 		     SEC_ACE_TYPE_ACCESS_ALLOWED,
 		     mask, inherit_flags);
 
-	init_sec_access(&mask, REG_KEY_READ);
+	mask = REG_KEY_READ;
 	init_sec_ace(&ace[5],
 		     sid ? sid : &global_sid_Authenticated_Users,
 		     SEC_ACE_TYPE_ACCESS_ALLOWED,

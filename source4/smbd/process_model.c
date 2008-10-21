@@ -20,7 +20,10 @@
 
 #include "includes.h"
 #include "smbd/process_model.h"
+#include "smbd/process_model_proto.h"
 #include "param/param.h"
+
+static const struct model_ops *process_model_byname(const char *name);
 
 /*
   setup the events for the chosen process model
@@ -99,7 +102,7 @@ _PUBLIC_ NTSTATUS process_model_init(struct loadparm_context *lp_ctx)
 /*
   return the operations structure for a named backend of the specified type
 */
-_PUBLIC_ const struct model_ops *process_model_byname(const char *name)
+static const struct model_ops *process_model_byname(const char *name)
 {
 	int i;
 

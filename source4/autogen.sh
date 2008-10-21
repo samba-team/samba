@@ -2,6 +2,18 @@
 
 # Run this script to build samba from git.
 
+while true; do
+    case $1 in
+	(--version-file)
+	    VERSION_FILE=$2
+	    shift 2
+	    ;;
+	(*)
+	    break
+	    ;;
+    esac
+done
+
 ## insert all possible names (only works with
 ## autoconf 2.x)
 TESTAUTOHEADER="autoheader autoheader-2.53 autoheader2.50 autoheader259 autoheader253"
@@ -48,12 +60,12 @@ if test "$AUTOCONFFOUND" = "0" -o "$AUTOHEADERFOUND" = "0"; then
 fi
 
 echo "$0: running script/mkversion.sh"
-./script/mkversion.sh || exit 1
+./script/mkversion.sh $VERSION_FILE || exit 1
 
 rm -rf autom4te*.cache
 rm -f configure include/config_tmp.h*
 
-IPATHS="-I. -Ilib/replace"
+IPATHS="-I. -I../lib/replace"
 
 echo "$0: running $AUTOHEADER $IPATHS"
 $AUTOHEADER $IPATHS || exit 1

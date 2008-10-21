@@ -208,7 +208,7 @@ struct nmb_data {
 	time_t death_time; /* The time the record must be removed (do not remove if 0). */
 	time_t refresh_time; /* The time the record should be refreshed. */
   
-	SMB_BIG_UINT id;		/* unique id */
+	uint64_t id;		/* unique id */
 	struct in_addr wins_ip;	/* the adress of the wins server this record comes from */
 
 	int wins_flags;		/* similar to the netbios flags but different ! */
@@ -539,17 +539,6 @@ struct packet_struct
 	} packet;
 };
 
-/* NETLOGON opcodes */
-
-#define QUERYFORPDC	 7 /* Query for PDC. */
-#define SAM_UAS_CHANGE  10 /* Announce change to UAS or SAM. */
-#define QUERYFORPDC_R	12 /* Response to Query for PDC. */
-#define SAMLOGON	18
-#define SAMLOGON_R	19
-#define SAMLOGON_UNK_R	21
-#define SAMLOGON_AD_UNK_R 23
-#define SAMLOGON_AD_R   25
-
 /* Ids for netbios packet types. */
 
 #define ANN_HostAnnouncement         1
@@ -617,7 +606,7 @@ typedef struct _WINS_RECORD {
 	char type;
 	int nb_flags;
 	int wins_flags;
-	SMB_BIG_UINT id;
+	uint64_t id;
 	int num_ips;
 	struct in_addr ip[25];
 	struct in_addr wins_ip;

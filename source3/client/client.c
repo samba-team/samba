@@ -84,9 +84,9 @@ static struct sockaddr_storage dest_ss;
 static bool abort_mget = true;
 
 /* timing globals */
-SMB_BIG_UINT get_total_size = 0;
+uint64_t get_total_size = 0;
 unsigned int get_total_time_ms = 0;
-static SMB_BIG_UINT put_total_size = 0;
+static uint64_t put_total_size = 0;
 static unsigned int put_total_time_ms = 0;
 
 /* totals globals */
@@ -1203,7 +1203,7 @@ static void do_mget(file_info *finfo, const char *dir)
 		strlower_m(finfo->name);
 	}
 
-	if (!directory_exist(finfo->name,NULL) &&
+	if (!directory_exist(finfo->name) &&
 	    mkdir(finfo->name,0777) != 0) {
 		d_printf("failed to create directory %s\n",finfo->name);
 		client_set_cur_dir(saved_curdir);
@@ -1752,7 +1752,7 @@ static int cmd_put(void)
 		SMB_STRUCT_STAT st;
 		/* allow '-' to represent stdin
 		   jdblair, 24.jun.98 */
-		if (!file_exist(lname,&st) &&
+		if (!file_exist_stat(lname,&st) &&
 		    (strcmp(lname,"-"))) {
 			d_printf("%s does not exist\n",lname);
 			return 1;
@@ -2555,7 +2555,7 @@ static int cmd_lock(void)
 {
 	TALLOC_CTX *ctx = talloc_tos();
 	char *buf = NULL;
-	SMB_BIG_UINT start, len;
+	uint64_t start, len;
 	enum brl_type lock_type;
 	int fnum;
 
@@ -2584,14 +2584,14 @@ static int cmd_lock(void)
 		return 1;
 	}
 
-	start = (SMB_BIG_UINT)strtol(buf, (char **)NULL, 16);
+	start = (uint64_t)strtol(buf, (char **)NULL, 16);
 
 	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		d_printf("lock <fnum> [r|w] <hex-start> <hex-len>\n");
 		return 1;
 	}
 
-	len = (SMB_BIG_UINT)strtol(buf, (char **)NULL, 16);
+	len = (uint64_t)strtol(buf, (char **)NULL, 16);
 
 	if (!cli_posix_lock(cli, fnum, start, len, true, lock_type)) {
 		d_printf("lock failed %d: %s\n", fnum, cli_errstr(cli));
@@ -2604,7 +2604,7 @@ static int cmd_unlock(void)
 {
 	TALLOC_CTX *ctx = talloc_tos();
 	char *buf = NULL;
-	SMB_BIG_UINT start, len;
+	uint64_t start, len;
 	int fnum;
 
 	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
@@ -2618,14 +2618,14 @@ static int cmd_unlock(void)
 		return 1;
 	}
 
-	start = (SMB_BIG_UINT)strtol(buf, (char **)NULL, 16);
+	start = (uint64_t)strtol(buf, (char **)NULL, 16);
 
 	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		d_printf("unlock <fnum> <hex-start> <hex-len>\n");
 		return 1;
 	}
 
-	len = (SMB_BIG_UINT)strtol(buf, (char **)NULL, 16);
+	len = (uint64_t)strtol(buf, (char **)NULL, 16);
 
 	if (!cli_posix_unlock(cli, fnum, start, len)) {
 		d_printf("unlock failed %d: %s\n", fnum, cli_errstr(cli));
@@ -3038,7 +3038,7 @@ static int cmd_getfacl(void)
 				break;
 			case SMB_POSIX_ACL_GROUP:
 				uorg = IVAL(retbuf,SMB_POSIX_ACL_HEADER_SIZE+(i*SMB_POSIX_ACL_ENTRY_SIZE)+2);
-				d_printf("group:%u", uorg);
+				d_printf("group:%u:", uorg);
 				break;
 			case SMB_POSIX_ACL_MASK:
 				d_printf("mask::");
@@ -3075,7 +3075,7 @@ static int cmd_getfacl(void)
 				break;
 			case SMB_POSIX_ACL_GROUP:
 				uorg = IVAL(retbuf,SMB_POSIX_ACL_HEADER_SIZE+((i+num_file_acls)*SMB_POSIX_ACL_ENTRY_SIZE)+2);
-				d_printf("default:group:%u", uorg);
+				d_printf("default:group:%u:", uorg);
 				break;
 			case SMB_POSIX_ACL_MASK:
 				d_printf("default:mask::");
@@ -3566,7 +3566,7 @@ static int cmd_reput(void)
 		return 1;
 	}
 
-	if (!file_exist(local_name, &st)) {
+	if (!file_exist_stat(local_name, &st)) {
 		d_printf("%s does not exist\n", local_name);
 		return 1;
 	}
@@ -4345,6 +4345,8 @@ cleanup:
 	}
 }
 
+static bool finished;
+
 /****************************************************************************
  Make sure we swallow keepalives during idle time.
 ****************************************************************************/
@@ -4391,6 +4393,8 @@ static void readline_callback(void)
 			DEBUG(0, ("Read from server failed, maybe it closed "
 				  "the connection\n"));
 
+			finished = true;
+			smb_readline_done();
 			if (NT_STATUS_EQUAL(status, NT_STATUS_END_OF_FILE)) {
 				set_smb_read_error(&cli->smb_rw_error,
 						   SMB_READ_EOF);
@@ -4417,9 +4421,17 @@ static void readline_callback(void)
 
 	/* Ping the server to keep the connection alive using SMBecho. */
 	{
+		NTSTATUS status;
 		unsigned char garbage[16];
 		memset(garbage, 0xf0, sizeof(garbage));
-		cli_echo(cli, 1, data_blob_const(garbage, sizeof(garbage)));
+		status = cli_echo(cli, 1, data_blob_const(garbage, sizeof(garbage)));
+
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("SMBecho failed. Maybe server has closed "
+				"the connection\n"));
+			finished = true;
+			smb_readline_done();
+		}
 	}
 }
 
@@ -4431,7 +4443,7 @@ static int process_stdin(void)
 {
 	int rc = 0;
 
-	while (1) {
+	while (!finished) {
 		TALLOC_CTX *frame = talloc_stackframe();
 		char *tok = NULL;
 		char *the_prompt = NULL;

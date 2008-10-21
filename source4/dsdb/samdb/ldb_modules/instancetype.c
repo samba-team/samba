@@ -1,7 +1,7 @@
 /* 
    ldb database library
 
-   Copyright (C) Simo Sorce  2004-2006
+   Copyright (C) Simo Sorce  2004-2008
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2005
    Copyright (C) Andrew Tridgell 2005
    Copyright (C) Stefan Metzmacher <metze@samba.org> 2007
@@ -41,11 +41,43 @@
 #include "dsdb/samdb/samdb.h"
 #include "dsdb/common/flags.h"
 
+struct it_context {
+	struct ldb_module *module;
+	struct ldb_request *req;
+};
+
+static int it_callback(struct ldb_request *req, struct ldb_reply *ares)
+{
+	struct it_context *ac;
+
+	ac = talloc_get_type(req->context, struct it_context);
+
+
+	if (!ares) {
+		return ldb_module_done(ac->req, NULL, NULL,
+					LDB_ERR_OPERATIONS_ERROR);
+	}
+	if (ares->error != LDB_SUCCESS) {
+		return ldb_module_done(ac->req, ares->controls,
+					ares->response, ares->error);
+	}
+
+	if (ares->type != LDB_REPLY_DONE) {
+		ldb_set_errstring(req->handle->ldb, "Invalid reply type!");
+		return ldb_module_done(ac->req, NULL, NULL,
+					LDB_ERR_OPERATIONS_ERROR);
+	}
+
+	return ldb_module_done(ac->req, ares->controls,
+					ares->response, ares->error);
+}
+
 /* add_record: add instancetype attribute */
 static int instancetype_add(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_request *down_req;
 	struct ldb_message *msg;
+	struct it_context *ac;
 	uint32_t instance_type;
 	int ret;
 	const struct ldb_control *partition_ctrl;
@@ -70,18 +102,16 @@ static int instancetype_add(struct ldb_module *module, struct ldb_request *req)
 				    struct dsdb_control_current_partition);
 	SMB_ASSERT(partition && partition->version == DSDB_CONTROL_CURRENT_PARTITION_VERSION);
 
-	down_req = talloc(req, struct ldb_request);
-	if (down_req == NULL) {
-		ldb_oom(module->ldb);
+	ac = talloc(req, struct it_context);
+	if (ac == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-
-	*down_req = *req;
+	ac->module = module;
+	ac->req = req;
 
 	/* we have to copy the message as the caller might have it as a const */
-	down_req->op.add.message = msg = ldb_msg_copy_shallow(down_req, req->op.add.message);
+	msg = ldb_msg_copy_shallow(ac, req->op.add.message);
 	if (msg == NULL) {
-		talloc_free(down_req);
 		ldb_oom(module->ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -99,23 +129,21 @@ static int instancetype_add(struct ldb_module *module, struct ldb_request *req)
 
 	ret = ldb_msg_add_fmt(msg, "instanceType", "%u", instance_type);
 	if (ret != LDB_SUCCESS) {
-		talloc_free(down_req);
 		ldb_oom(module->ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ldb_set_timeout_from_prev_req(module->ldb, req, down_req);
-
-	/* go on with the call chain */
-	ret = ldb_next_request(module, down_req);
-
-	/* do not free down_req as the call results may be linked to it,
-	 * it will be freed when the upper level request get freed */
-	if (ret == LDB_SUCCESS) {
-		req->handle = down_req->handle;
+	ret = ldb_build_add_req(&down_req, module->ldb, ac,
+				msg,
+				req->controls,
+				ac, it_callback,
+				req);
+	if (ret != LDB_SUCCESS) {
+		return ret;
 	}
 
-	return ret;
+	/* go on with the call chain */
+	return ldb_next_request(module, down_req);
 }
 
 _PUBLIC_ const struct ldb_module_ops ldb_instancetype_module_ops = {

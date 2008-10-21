@@ -86,7 +86,7 @@ static NTSTATUS keytab_startup(struct dssync_context *ctx, TALLOC_CTX *mem_ctx,
 		old_utdv = talloc(mem_ctx, struct replUpToDateVectorBlob);
 
 		ndr_err = ndr_pull_struct_blob(&entry->password, old_utdv,
-				old_utdv,
+				NULL, old_utdv,
 				(ndr_pull_flags_fn_t)ndr_pull_replUpToDateVectorBlob);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
@@ -124,7 +124,7 @@ static NTSTATUS keytab_finish(struct dssync_context *ctx, TALLOC_CTX *mem_ctx,
 			NDR_PRINT_DEBUG(replUpToDateVectorBlob, new_utdv);
 		}
 
-		ndr_err = ndr_push_struct_blob(&blob, mem_ctx, new_utdv,
+		ndr_err = ndr_push_struct_blob(&blob, mem_ctx, NULL, new_utdv,
 				(ndr_push_flags_fn_t)ndr_push_replUpToDateVectorBlob);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			status = ndr_map_error2ntstatus(ndr_err);
@@ -179,7 +179,7 @@ static  NTSTATUS parse_supplemental_credentials(TALLOC_CTX *mem_ctx,
 	bool newer_keys = false;
 	uint32_t j;
 
-	ndr_err = ndr_pull_struct_blob_all(blob, mem_ctx, &scb,
+	ndr_err = ndr_pull_struct_blob_all(blob, mem_ctx, NULL, &scb,
 			(ndr_pull_flags_fn_t)ndr_pull_supplementalCredentialsBlob);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		status = ndr_map_error2ntstatus(ndr_err);
@@ -236,7 +236,7 @@ static  NTSTATUS parse_supplemental_credentials(TALLOC_CTX *mem_ctx,
 		status = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
-	ndr_err = ndr_pull_struct_blob(&scpk_blob, mem_ctx, pkb,
+	ndr_err = ndr_pull_struct_blob(&scpk_blob, mem_ctx, NULL, pkb,
 			(ndr_pull_flags_fn_t)ndr_pull_package_PrimaryKerberosBlob);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		status = ndr_map_error2ntstatus(ndr_err);

@@ -25,7 +25,8 @@
 #include "events.h"
 #include "ldb.h"
 #include "ldb_errors.h"
-#include "lib/util/util_ldb.h"
+#include "../lib/util/util_ldb.h"
+#include "../lib/crypto/crypto.h"
 #include "dsdb/samdb/samdb.h"
 #include "libcli/security/security.h"
 #include "librpc/gen_ndr/ndr_security.h"
@@ -571,7 +572,7 @@ uint_t samdb_result_hashes(TALLOC_CTX *mem_ctx, struct ldb_message *msg,
 	return count;
 }
 
-NTSTATUS samdb_result_passwords(TALLOC_CTX *mem_ctx, struct ldb_message *msg, 
+NTSTATUS samdb_result_passwords(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx, struct ldb_message *msg, 
 				struct samr_Password **lm_pwd, struct samr_Password **nt_pwd) 
 {
 	struct samr_Password *lmPwdHash, *ntPwdHash;
@@ -587,14 +588,21 @@ NTSTATUS samdb_result_passwords(TALLOC_CTX *mem_ctx, struct ldb_message *msg,
 		}
 	}
 	if (lm_pwd) {
-		int num_lm;
-		num_lm = samdb_result_hashes(mem_ctx, msg, "dBCSPwd", &lmPwdHash);
-		if (num_lm == 0) {
-			*lm_pwd = NULL;
-		} else if (num_lm > 1) {
-			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		/* Ensure that if we have turned off LM
+		 * authentication, that we never use the LM hash, even
+		 * if we store it */
+		if (lp_lanman_auth(lp_ctx)) {
+			int num_lm;
+			num_lm = samdb_result_hashes(mem_ctx, msg, "dBCSPwd", &lmPwdHash);
+			if (num_lm == 0) {
+				*lm_pwd = NULL;
+			} else if (num_lm > 1) {
+				return NT_STATUS_INTERNAL_DB_CORRUPTION;
+			} else {
+				*lm_pwd = &lmPwdHash[0];
+			}
 		} else {
-			*lm_pwd = &lmPwdHash[0];
+			*lm_pwd = NULL;
 		}
 	}
 	return NT_STATUS_OK;
@@ -1024,7 +1032,7 @@ const struct dom_sid *samdb_domain_sid(struct ldb_context *ldb)
 		goto failed;
 	}
 
-	ret = ldb_search_exp_fmt(ldb, tmp_ctx, &res, ldb_get_default_basedn(ldb), LDB_SCOPE_BASE, attrs, "objectSid=*");
+	ret = ldb_search(ldb, tmp_ctx, &res, ldb_get_default_basedn(ldb), LDB_SCOPE_BASE, attrs, "objectSid=*");
 
 	if (ret != LDB_SUCCESS) {
 		goto failed;
@@ -1137,13 +1145,12 @@ struct ldb_dn *samdb_ntds_settings_dn(struct ldb_context *ldb)
 	}
 	
 
-	ret = ldb_search(ldb, ldb_dn_new(tmp_ctx, ldb, ""), LDB_SCOPE_BASE, NULL, root_attrs, &root_res);
+	ret = ldb_search(ldb, tmp_ctx, &root_res, ldb_dn_new(tmp_ctx, ldb, ""), LDB_SCOPE_BASE, root_attrs, NULL);
 	if (ret) {
 		DEBUG(1,("Searching for dsServiceName in rootDSE failed: %s\n", 
 			 ldb_errstring(ldb)));
 		goto failed;
 	}
-	talloc_steal(tmp_ctx, root_res);
 
 	if (root_res->count != 1) {
 		goto failed;
@@ -1189,11 +1196,10 @@ const struct GUID *samdb_ntds_invocation_id(struct ldb_context *ldb)
 		goto failed;
 	}
 
-	ret = ldb_search(ldb, samdb_ntds_settings_dn(ldb), LDB_SCOPE_BASE, NULL, attrs, &res);
+	ret = ldb_search(ldb, tmp_ctx, &res, samdb_ntds_settings_dn(ldb), LDB_SCOPE_BASE, attrs, NULL);
 	if (ret) {
 		goto failed;
 	}
-	talloc_steal(tmp_ctx, res);
 
 	if (res->count != 1) {
 		goto failed;
@@ -1283,11 +1289,10 @@ const struct GUID *samdb_ntds_objectGUID(struct ldb_context *ldb)
 		goto failed;
 	}
 
-	ret = ldb_search(ldb, samdb_ntds_settings_dn(ldb), LDB_SCOPE_BASE, NULL, attrs, &res);
+	ret = ldb_search(ldb, tmp_ctx, &res, samdb_ntds_settings_dn(ldb), LDB_SCOPE_BASE, attrs, NULL);
 	if (ret) {
 		goto failed;
 	}
-	talloc_steal(tmp_ctx, res);
 
 	if (res->count != 1) {
 		goto failed;
@@ -1397,14 +1402,13 @@ bool samdb_is_pdc(struct ldb_context *ldb)
 		return false;
 	}
 
-	ret = ldb_search(ldb, ldb_get_default_basedn(ldb), LDB_SCOPE_BASE, NULL, dom_attrs, &dom_res);
+	ret = ldb_search(ldb, tmp_ctx, &dom_res, ldb_get_default_basedn(ldb), LDB_SCOPE_BASE, dom_attrs, NULL);
 	if (ret) {
 		DEBUG(1,("Searching for fSMORoleOwner in %s failed: %s\n", 
 			 ldb_dn_get_linearized(ldb_get_default_basedn(ldb)), 
 			 ldb_errstring(ldb)));
 		goto failed;
 	}
-	talloc_steal(tmp_ctx, dom_res);
 	if (dom_res->count != 1) {
 		goto failed;
 	}
@@ -1444,17 +1448,17 @@ bool samdb_is_gc(struct ldb_context *ldb)
 	}
 
 	/* Query cn=ntds settings,.... */
-	ret = ldb_search(ldb, samdb_ntds_settings_dn(ldb), LDB_SCOPE_BASE, NULL, attrs, &res);
+	ret = ldb_search(ldb, tmp_ctx, &res, samdb_ntds_settings_dn(ldb), LDB_SCOPE_BASE, attrs, NULL);
 	if (ret) {
+		talloc_free(tmp_ctx);
 		return false;
 	}
 	if (res->count != 1) {
-		talloc_free(res);
+		talloc_free(tmp_ctx);
 		return false;
 	}
 
 	options = ldb_msg_find_attr_as_int(res->msgs[0], "options", 0);
-	talloc_free(res);
 	talloc_free(tmp_ctx);
 
 	/* if options attribute has the 0x00000001 flag set, then enable the global catlog */
@@ -1478,10 +1482,9 @@ int samdb_search_for_parent_domain(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 	if (local_ctx == NULL) return LDB_ERR_OPERATIONS_ERROR;
 	
 	while ((sdn = ldb_dn_get_parent(local_ctx, sdn))) {
-		ret = ldb_search(ldb, sdn, LDB_SCOPE_BASE, 
-				 "(|(|(objectClass=domain)(objectClass=builtinDomain))(objectClass=samba4LocalDomain))", attrs, &res);
+		ret = ldb_search(ldb, local_ctx, &res, sdn, LDB_SCOPE_BASE, attrs,
+				 "(|(|(objectClass=domain)(objectClass=builtinDomain))(objectClass=samba4LocalDomain))");
 		if (ret == LDB_SUCCESS) {
-			talloc_steal(local_ctx, res);
 			if (res->count == 1) {
 				break;
 			}
@@ -1536,7 +1539,7 @@ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
 			    struct ldb_dn *user_dn,
 			    struct ldb_dn *domain_dn,
 			    struct ldb_message *mod,
-			    const char *new_pass,
+			    const DATA_BLOB *new_password,
 			    struct samr_Password *lmNewHash, 
 			    struct samr_Password *ntNewHash,
 			    bool user_change,
@@ -1637,40 +1640,47 @@ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
 		*_dominfo = dominfo;
 	}
 
-	if (restrictions && new_pass) {
-
+	if (restrictions && new_password) {
+		char *new_pass;
+		
 		/* check the various password restrictions */
-		if (restrictions && minPwdLength > strlen_m(new_pass)) {
+		if (restrictions && minPwdLength > utf16_len_n(new_password->data, new_password->length) / 2) {
 			if (reject_reason) {
 				*reject_reason = SAMR_REJECT_TOO_SHORT;
 			}
 			return NT_STATUS_PASSWORD_RESTRICTION;
 		}
+
+		/* Create the NT hash */
+		mdfour(local_ntNewHash.hash, new_password->data, new_password->length);
 		
-		/* possibly check password complexity */
-		if (restrictions && pwdProperties & DOMAIN_PASSWORD_COMPLEX &&
-		    !samdb_password_complexity_ok(new_pass)) {
-			if (reject_reason) {
-				*reject_reason = SAMR_REJECT_COMPLEXITY;
-			}
-			return NT_STATUS_PASSWORD_RESTRICTION;
-		}
-		
-		/* compute the new nt and lm hashes */
-		if (E_deshash(new_pass, local_lmNewHash.hash)) {
-			lmNewHash = &local_lmNewHash;
-		}
-		if (!E_md4hash(new_pass, local_ntNewHash.hash)) {
-			/* If we can't convert this password to UCS2, then we should not accept it */
-			if (reject_reason) {
-				*reject_reason = SAMR_REJECT_OTHER;
-			}
-			return NT_STATUS_PASSWORD_RESTRICTION;
-		}
 		ntNewHash = &local_ntNewHash;
+
+		/* Only check complexity if we can convert it at all.  Assuming unconvertable passwords are 'strong' */
+		if (convert_string_talloc(mem_ctx, lp_iconv_convenience(ldb_get_opaque(ctx, "loadparm")), 
+					  CH_UTF16, CH_UNIX, 
+					  new_password->data, new_password->length, 
+					  (void **)&new_pass) != -1) {
+			
+			
+			/* possibly check password complexity */
+			if (restrictions && pwdProperties & DOMAIN_PASSWORD_COMPLEX &&
+			    !samdb_password_complexity_ok(new_pass)) {
+				if (reject_reason) {
+					*reject_reason = SAMR_REJECT_COMPLEXITY;
+				}
+				return NT_STATUS_PASSWORD_RESTRICTION;
+			}
+			
+			/* compute the new lm hashes (for checking history - case insenitivly!) */
+			if (E_deshash(new_pass, local_lmNewHash.hash)) {
+				lmNewHash = &local_lmNewHash;
+			}
+			
+		}
 	}
 
-	if (user_change) {
+	if (restrictions && user_change) {
 		/* are all password changes disallowed? */
 		if (pwdProperties & DOMAIN_REFUSE_PASSWORD_CHANGE) {
 			if (reject_reason) {
@@ -1736,16 +1746,15 @@ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
 #define CHECK_RET(x) do { if (x != 0) return NT_STATUS_NO_MEMORY; } while(0)
 
 	/* the password is acceptable. Start forming the new fields */
-	if (new_pass) {
-		/* if we know the cleartext, then only set it.
+	if (new_password) {
+		/* if we know the cleartext UTF16 password, then set it.
 		 * Modules in ldb will set all the appropriate
 		 * hashes */
-		CHECK_RET(samdb_msg_add_string(ctx, mem_ctx, mod, 
-					       "userPassword", new_pass));
+		CHECK_RET(ldb_msg_add_value(mod, "clearTextPassword", new_password, NULL));
 	} else {
 		/* We don't have the cleartext, so delete the old one
 		 * and set what we have of the hashes */
-		CHECK_RET(samdb_msg_add_delete(ctx, mem_ctx, mod, "userPassword"));
+		CHECK_RET(samdb_msg_add_delete(ctx, mem_ctx, mod, "clearTextPassword"));
 
 		if (lmNewHash) {
 			CHECK_RET(samdb_msg_add_hash(ctx, mem_ctx, mod, "dBCSPwd", lmNewHash));
@@ -1774,7 +1783,7 @@ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
 */
 NTSTATUS samdb_set_password_sid(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
 				const struct dom_sid *user_sid,
-				const char *new_pass,
+				const DATA_BLOB *new_pass,
 				struct samr_Password *lmNewHash, 
 				struct samr_Password *ntNewHash,
 				bool user_change,
@@ -1917,7 +1926,7 @@ struct ldb_dn *samdb_dns_domain_to_dn(struct ldb_context *ldb, TALLOC_CTX *mem_c
 		return NULL;
 	}
 	
-	split_realm = str_list_make(tmp_ctx, dns_domain, ".");
+	split_realm = (const char **)str_list_make(tmp_ctx, dns_domain, ".");
 	if (!split_realm) {
 		talloc_free(tmp_ctx);
 		return NULL;
@@ -1955,7 +1964,7 @@ struct ldb_dn *samdb_domain_to_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 	struct ldb_result *res_domain_ref;
 	char *escaped_domain = ldb_binary_encode_string(mem_ctx, domain_name);
 	/* find the domain's DN */
-	int ret_domain = ldb_search_exp_fmt(ldb, mem_ctx, 
+	int ret_domain = ldb_search(ldb, mem_ctx,
 					    &res_domain_ref, 
 					    samdb_partitions_dn(ldb, mem_ctx), 
 					    LDB_SCOPE_ONELEVEL, 
@@ -1967,7 +1976,7 @@ struct ldb_dn *samdb_domain_to_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 	}
 	
 	if (res_domain_ref->count == 0) {
-		ret_domain = ldb_search_exp_fmt(ldb, mem_ctx, 
+		ret_domain = ldb_search(ldb, mem_ctx,
 						&res_domain_ref, 
 						samdb_dns_domain_to_dn(ldb, mem_ctx, domain_name),
 						LDB_SCOPE_BASE,

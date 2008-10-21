@@ -2,7 +2,7 @@
    ldb database library
 
    Copyright (C) Andrew Tridgell 2005
-   Copyright (C) Simo Sorce 2006
+   Copyright (C) Simo Sorce 2006-2008
 
      ** NOTE! The following LGPL license applies to the ldb
      ** library. This does NOT imply that all of Samba is released
@@ -173,38 +173,53 @@ failed:
 */
 
 struct operational_context {
-
 	struct ldb_module *module;
-	void *up_context;
-	int (*up_callback)(struct ldb_context *, void *, struct ldb_reply *);
+	struct ldb_request *req;
 
 	const char * const *attrs;
 };
 
-static int operational_callback(struct ldb_context *ldb, void *context, struct ldb_reply *ares)
+static int operational_callback(struct ldb_request *req, struct ldb_reply *ares)
 {
 	struct operational_context *ac;
+	int ret;
 
-	if (!context || !ares) {
-		ldb_set_errstring(ldb, "NULL Context or Result in callback");
-		goto error;
+	ac = talloc_get_type(req->context, struct operational_context);
+
+	if (!ares) {
+		return ldb_module_done(ac->req, NULL, NULL,
+					LDB_ERR_OPERATIONS_ERROR);
+	}
+	if (ares->error != LDB_SUCCESS) {
+		return ldb_module_done(ac->req, ares->controls,
+					ares->response, ares->error);
 	}
 
-	ac = talloc_get_type(context, struct operational_context);
-
-	if (ares->type == LDB_REPLY_ENTRY) {
+	switch (ares->type) {
+	case LDB_REPLY_ENTRY:
 		/* for each record returned post-process to add any derived
 		   attributes that have been asked for */
-		if (operational_search_post_process(ac->module, ares->message, ac->attrs) != 0) {
-			goto error;
+		ret = operational_search_post_process(ac->module,
+							ares->message,
+							ac->attrs);
+		if (ret != 0) {
+			return ldb_module_done(ac->req, NULL, NULL,
+						LDB_ERR_OPERATIONS_ERROR);
 		}
+		return ldb_module_send_entry(ac->req, ares->message);
+
+	case LDB_REPLY_REFERRAL:
+		/* ignore referrals */
+		break;
+
+	case LDB_REPLY_DONE:
+
+		return ldb_module_done(ac->req, ares->controls,
+					ares->response, LDB_SUCCESS);
 	}
 
-	return ac->up_callback(ldb, ac->up_context, ares);
-
-error:
 	talloc_free(ares);
-	return LDB_ERR_OPERATIONS_ERROR;
+	return LDB_SUCCESS;
 }
 
 static int operational_search(struct ldb_module *module, struct ldb_request *req)
@@ -212,9 +227,8 @@ static int operational_search(struct ldb_module *module, struct ldb_request *req
 	struct operational_context *ac;
 	struct ldb_request *down_req;
 	const char **search_attrs = NULL;
-	int i, a, ret;
-
-	req->handle = NULL;
+	int i, a;
+	int ret;
 
 	ac = talloc(req, struct operational_context);
 	if (ac == NULL) {
@@ -222,21 +236,10 @@ static int operational_search(struct ldb_module *module, struct ldb_request *req
 	}
 
 	ac->module = module;
-	ac->up_context = req->context;
-	ac->up_callback = req->callback;
+	ac->req = req;
 	ac->attrs = req->op.search.attrs;
 
-	down_req = talloc_zero(req, struct ldb_request);
-	if (down_req == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	down_req->operation = req->operation;
-	down_req->op.search.base = req->op.search.base;
-	down_req->op.search.scope = req->op.search.scope;
-	down_req->op.search.tree = req->op.search.tree;
-
-	/*  FIXME: I hink we should copy the tree and keep the original
+	/*  FIXME: We must copy the tree and keep the original
 	 *  unmodified. SSS */
 	/* replace any attributes in the parse tree that are
 	   searchable, but are stored using a different name in the
@@ -264,27 +267,26 @@ static int operational_search(struct ldb_module *module, struct ldb_request *req
 			}
 		}
 	}
-	
+
 	/* use new set of attrs if any */
-	if (search_attrs) down_req->op.search.attrs = search_attrs;
-	else down_req->op.search.attrs = req->op.search.attrs;
-	
-	down_req->controls = req->controls;
-
-	down_req->context = ac;
-	down_req->callback = operational_callback;
-	ldb_set_timeout_from_prev_req(module->ldb, req, down_req);
-
-	/* perform the search */
-	ret = ldb_next_request(module, down_req);
-
-	/* do not free down_req as the call results may be linked to it,
-	 * it will be freed when the upper level request get freed */
-	if (ret == LDB_SUCCESS) {
-		req->handle = down_req->handle;
+	if (search_attrs == NULL) {
+		search_attrs = req->op.search.attrs;
 	}
 
-	return ret;
+	ret = ldb_build_search_req_ex(&down_req, module->ldb, ac,
+					req->op.search.base,
+					req->op.search.scope,
+					req->op.search.tree,
+					(const char * const *)search_attrs,
+					req->controls,
+					ac, operational_callback,
+					req);
+	if (ret != LDB_SUCCESS) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	/* perform the search */
+	return ldb_next_request(module, down_req);
 }
 
 static int operational_init(struct ldb_module *ctx)

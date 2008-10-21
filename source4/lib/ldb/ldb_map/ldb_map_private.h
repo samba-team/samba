@@ -3,7 +3,7 @@
 #define map_oom(module) ldb_set_errstring(module->ldb, talloc_asprintf(module, "Out of Memory"));
 
 /* The type of search callback functions */
-typedef int (*ldb_search_callback)(struct ldb_context *, void *, struct ldb_reply *);
+typedef int (*ldb_map_callback_t)(struct ldb_request *, struct ldb_reply *);
 
 /* The special DN from which the local and remote base DNs are fetched */
 #define MAP_DN_NAME	"@MAP"
@@ -13,25 +13,17 @@ typedef int (*ldb_search_callback)(struct ldb_context *, void *, struct ldb_repl
 /* Private data structures
  * ======================= */
 
+struct map_reply {
+	struct map_reply *next;
+	struct ldb_reply *remote;
+	struct ldb_reply *local;
+};
+
 /* Context data for mapped requests */
 struct map_context {
-	enum map_step {
-		MAP_SEARCH_REMOTE,
-		MAP_ADD_REMOTE,
-		MAP_ADD_LOCAL,
-		MAP_SEARCH_SELF_MODIFY,
-		MAP_MODIFY_REMOTE,
-		MAP_MODIFY_LOCAL,
-		MAP_SEARCH_SELF_DELETE,
-		MAP_DELETE_REMOTE,
-		MAP_DELETE_LOCAL,
-		MAP_SEARCH_SELF_RENAME,
-		MAP_RENAME_REMOTE,
-		MAP_RENAME_FIXUP,
-		MAP_RENAME_LOCAL
-	} step;
 
 	struct ldb_module *module;
+	struct ldb_request *req;
 
 	struct ldb_dn *local_dn;
 	const struct ldb_parse_tree *local_tree;
@@ -39,32 +31,20 @@ struct map_context {
 	const char * const *remote_attrs;
 	const char * const *all_attrs;
 
-	struct ldb_request *orig_req;
-	struct ldb_request *local_req;
+	struct ldb_message *local_msg;
 	struct ldb_request *remote_req;
-	struct ldb_request *down_req;
-	struct ldb_request *search_req;
 
-	/* for search, we may have a lot of contexts */
-	int num_searches;
-	struct ldb_request **search_reqs;
+	struct map_reply *r_list;
+	struct map_reply *r_current;
 };
-
-/* Context data for mapped search requests */
-struct map_search_context {
-	struct map_context *ac;
-	struct ldb_reply *local_res;
-	struct ldb_reply *remote_res;
-};
-
 
 /* Common operations
  * ================= */
 
 /* The following definitions come from lib/ldb/modules/ldb_map.c */
 const struct ldb_map_context *map_get_context(struct ldb_module *module);
-struct map_search_context *map_init_search_context(struct map_context *ac, struct ldb_reply *ares);
-struct ldb_handle *map_init_handle(struct ldb_request *req, struct ldb_module *module);
+struct map_context *map_init_context(struct ldb_module *module,
+					struct ldb_request *req);
 
 int ldb_next_remote_request(struct ldb_module *module, struct ldb_request *request);
 
@@ -86,25 +66,25 @@ struct ldb_dn *ldb_dn_map_local(struct ldb_module *module, void *mem_ctx, struct
 struct ldb_dn *ldb_dn_map_remote(struct ldb_module *module, void *mem_ctx, struct ldb_dn *dn);
 struct ldb_dn *ldb_dn_map_rebase_remote(struct ldb_module *module, void *mem_ctx, struct ldb_dn *dn);
 
-struct ldb_request *map_search_base_req(struct map_context *ac, struct ldb_dn *dn, const char * const *attrs, const struct ldb_parse_tree *tree, void *context, ldb_search_callback callback);
-struct ldb_request *map_search_self_req(struct map_context *ac, struct ldb_dn *dn);
-struct ldb_request *map_build_fixup_req(struct map_context *ac, struct ldb_dn *olddn, struct ldb_dn *newdn);
+struct ldb_request *map_search_base_req(struct map_context *ac,
+					struct ldb_dn *dn,
+					const char * const *attrs,
+					const struct ldb_parse_tree *tree,
+					void *context,
+					ldb_map_callback_t callback);
+struct ldb_request *map_build_fixup_req(struct map_context *ac,
+					struct ldb_dn *olddn,
+					struct ldb_dn *newdn,
+					void *context,
+					ldb_map_callback_t callback);
+int map_subtree_collect_remote_simple(struct ldb_module *module, void *mem_ctx,
+					struct ldb_parse_tree **new,
+					const struct ldb_parse_tree *tree,
+					const struct ldb_map_attribute *map);
+int map_return_fatal_error(struct ldb_request *req,
+			   struct ldb_reply *ares);
+int map_return_normal_error(struct ldb_request *req,
+			    struct ldb_reply *ares,
+			    int error);
 
-int map_subtree_collect_remote_simple(struct ldb_module *module, void *mem_ctx, struct ldb_parse_tree **new, const struct ldb_parse_tree *tree, const struct ldb_map_attribute *map);
-
-/* LDB Requests
- * ============ */
-
-/* The following definitions come from lib/ldb/modules/ldb_map_inbound.c */
-int map_add_do_remote(struct ldb_handle *handle);
-int map_add_do_local(struct ldb_handle *handle);
-
-int map_modify_do_remote(struct ldb_handle *handle);
-int map_modify_do_local(struct ldb_handle *handle);
-
-int map_delete_do_remote(struct ldb_handle *handle);
-int map_delete_do_local(struct ldb_handle *handle);
-
-int map_rename_do_remote(struct ldb_handle *handle);
-int map_rename_do_fixup(struct ldb_handle *handle);
-int map_rename_do_local(struct ldb_handle *handle);
+int map_return_entry(struct map_context *ac, struct ldb_reply *ares);

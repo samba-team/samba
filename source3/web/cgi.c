@@ -451,7 +451,7 @@ static void cgi_download(char *file)
 	if (S_ISDIR(st.st_mode))
 	{
 		snprintf(buf, sizeof(buf), "%s/index.html", file);
-		if (!file_exist(buf, &st) || !S_ISREG(st.st_mode))
+		if (!file_exist_stat(buf, &st) || !S_ISREG(st.st_mode))
 		{
 			cgi_setup_error("404 File Not Found","",
 					"The requested file was not found");
@@ -488,7 +488,8 @@ static void cgi_download(char *file)
 			printf("Content-Type: text/html\r\n");
 		}
 	}
-	printf("Expires: %s\r\n", http_timestring(time(NULL)+EXPIRY_TIME));
+	printf("Expires: %s\r\n", 
+		   http_timestring(talloc_tos(), time(NULL)+EXPIRY_TIME));
 
 	lang = lang_tdb_current();
 	if (lang) {
@@ -604,7 +605,7 @@ void cgi_setup(const char *rootdir, int auth_required)
 	}
 
 	printf("HTTP/1.0 200 OK\r\nConnection: close\r\n");
-	printf("Date: %s\r\n", http_timestring(time(NULL)));
+	printf("Date: %s\r\n", http_timestring(talloc_tos(), time(NULL)));
 	baseurl = "";
 	pathinfo = url+1;
 }

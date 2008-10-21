@@ -391,3 +391,20 @@ void init_netr_PasswordInfo(struct netr_PasswordInfo *r,
 	r->lmpassword = lmpassword;
 	r->ntpassword = ntpassword;
 }
+
+/*************************************************************************
+ inits a netr_CryptPassword structure
+ *************************************************************************/
+
+void init_netr_CryptPassword(const char *pwd,
+			     unsigned char session_key[16],
+			     struct netr_CryptPassword *pwd_buf)
+{
+	struct samr_CryptPassword password_buf;
+
+	encode_pw_buffer(password_buf.data, pwd, STR_UNICODE);
+
+	SamOEMhash(password_buf.data, session_key, 516);
+	memcpy(pwd_buf->data, password_buf.data, 512);
+	pwd_buf->length = IVAL(password_buf.data, 512);
+}

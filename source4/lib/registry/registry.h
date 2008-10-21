@@ -29,8 +29,8 @@ struct smb_iconv_convenience;
 #include "libcli/util/werror.h"
 #include "librpc/gen_ndr/security.h"
 #include "libcli/util/ntstatus.h"
-#include "util/time.h"
-#include "util/data_blob.h"
+#include "../lib/util/time.h"
+#include "../lib/util/data_blob.h"
 
 /**
  * The hive API. This API is generally used for
@@ -508,6 +508,18 @@ WERROR reg_diff_load(const char *filename,
 		     const struct reg_diff_callbacks *callbacks,
 		     void *callback_data);
 
+WERROR reg_dotreg_diff_load(int fd,
+				     struct smb_iconv_convenience *iconv_convenience,
+				     const struct reg_diff_callbacks *callbacks,
+				     void *callback_data);
+
+WERROR reg_preg_diff_load(int fd,
+		   struct smb_iconv_convenience *iconv_convenience, 
+				   const struct reg_diff_callbacks *callbacks,
+				   void *callback_data);
+
+WERROR local_get_predefined_key(struct registry_context *ctx,
+				uint32_t key_id, struct registry_key **key);
 
 
 #endif /* _REGISTRY_H */

@@ -3,7 +3,6 @@
 #include <stdint.h>
 
 #include "librpc/gen_ndr/lsa.h"
-#include "librpc/gen_ndr/initshutdown.h"
 #include "librpc/gen_ndr/security.h"
 #ifndef _HEADER_winreg
 #define _HEADER_winreg
@@ -85,16 +84,16 @@ enum winreg_CreateAction
 ;
 
 struct winreg_StringBuf {
-	uint16_t length;/* [value(strlen_m_term_null(name)*2)] */
-	uint16_t size;
-	const char *name;/* [unique,length_is(length/2),charset(UTF16),size_is(size/2)] */
-};
-
-struct winreg_ValNameBuf {
 	uint16_t length;/* [value(strlen_m_term(name)*2)] */
 	uint16_t size;
 	const char *name;/* [unique,length_is(length/2),charset(UTF16),size_is(size/2)] */
 };
+
+/* bitmap winreg_NotifyChangeType */
+#define REG_NOTIFY_CHANGE_NAME ( 0x00000001 )
+#define REG_NOTIFY_CHANGE_ATTRIBUTES ( 0x00000002 )
+#define REG_NOTIFY_CHANGE_LAST_SET ( 0x00000004 )
+#define REG_NOTIFY_CHANGE_SECURITY ( 0x00000008 )
 
 struct KeySecurityAttribute {
 	uint32_t data_size;
@@ -262,7 +261,7 @@ struct winreg_EnumValue {
 	struct {
 		struct policy_handle *handle;/* [ref] */
 		uint32_t enum_index;
-		struct winreg_ValNameBuf *name;/* [ref] */
+		struct winreg_StringBuf *name;/* [ref] */
 		enum winreg_Type *type;/* [unique] */
 		uint8_t *value;/* [unique,length_is(*length),size_is(*size)] */
 		uint32_t *size;/* [unique] */
@@ -270,7 +269,7 @@ struct winreg_EnumValue {
 	} in;
 
 	struct {
-		struct winreg_ValNameBuf *name;/* [ref] */
+		struct winreg_StringBuf *name;/* [ref] */
 		enum winreg_Type *type;/* [unique] */
 		uint8_t *value;/* [unique,length_is(*length),size_is(*size)] */
 		uint32_t *size;/* [unique] */
@@ -383,16 +382,16 @@ struct winreg_QueryValue {
 		struct policy_handle *handle;/* [ref] */
 		struct winreg_String *value_name;/* [ref] */
 		enum winreg_Type *type;/* [unique] */
-		uint8_t *data;/* [unique,length_is(*value_length),size_is(*data_size)] */
+		uint8_t *data;/* [unique,length_is(*data_length),size_is(*data_size)] */
 		uint32_t *data_size;/* [unique] */
-		uint32_t *value_length;/* [unique] */
+		uint32_t *data_length;/* [unique] */
 	} in;
 
 	struct {
 		enum winreg_Type *type;/* [unique] */
-		uint8_t *data;/* [unique,length_is(*value_length),size_is(*data_size)] */
+		uint8_t *data;/* [unique,length_is(*data_length),size_is(*data_size)] */
 		uint32_t *data_size;/* [unique] */
-		uint32_t *value_length;/* [unique] */
+		uint32_t *data_length;/* [unique] */
 		WERROR result;
 	} out;
 
@@ -438,7 +437,7 @@ struct winreg_SaveKey {
 struct winreg_SetKeySecurity {
 	struct {
 		struct policy_handle *handle;/* [ref] */
-		uint32_t access_mask;
+		uint32_t sec_info;
 		struct KeySecurityData *sd;/* [ref] */
 	} in;
 
@@ -476,7 +475,7 @@ struct winreg_UnLoadKey {
 struct winreg_InitiateSystemShutdown {
 	struct {
 		uint16_t *hostname;/* [unique] */
-		struct initshutdown_String *message;/* [unique] */
+		struct lsa_StringLarge *message;/* [unique] */
 		uint32_t timeout;
 		uint8_t force_apps;
 		uint8_t do_reboot;
@@ -564,7 +563,7 @@ struct winreg_QueryMultipleValues {
 struct winreg_InitiateSystemShutdownEx {
 	struct {
 		uint16_t *hostname;/* [unique] */
-		struct initshutdown_String *message;/* [unique] */
+		struct lsa_StringLarge *message;/* [unique] */
 		uint32_t timeout;
 		uint8_t force_apps;
 		uint8_t do_reboot;

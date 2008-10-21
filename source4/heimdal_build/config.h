@@ -7,7 +7,7 @@
 #define HAVE_HEIMDAL_CONFIG_H
 
 #include "include/config.h"
-#include "lib/replace/replace.h"
+#include "../replace/replace.h"
 
 #define RCSID(msg) struct __rcsid { int __rcsdi; }
 #define KRB5

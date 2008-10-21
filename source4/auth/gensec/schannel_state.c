@@ -25,10 +25,11 @@
 #include "lib/ldb/include/ldb_errors.h"
 #include "dsdb/samdb/samdb.h"
 #include "ldb_wrap.h"
-#include "util/util_ldb.h"
+#include "../lib/util/util_ldb.h"
 #include "libcli/auth/libcli_auth.h"
 #include "auth/auth.h"
 #include "param/param.h"
+#include "auth/gensec/schannel_state.h"
 
 /**
   connect to the schannel ldb
@@ -44,7 +45,7 @@ struct ldb_context *schannel_db_connect(TALLOC_CTX *mem_ctx, struct event_contex
 		"computerName: CASE_INSENSITIVE\n" \
 		"flatname: CASE_INSENSITIVE\n";
 
-	path = smbd_tmp_path(mem_ctx, lp_ctx, "schannel.ldb");
+	path = private_path(mem_ctx, lp_ctx, "schannel.ldb");
 	if (!path) {
 		return NULL;
 	}
@@ -195,7 +196,7 @@ NTSTATUS schannel_fetch_session_key_ldb(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	ret = ldb_search_exp_fmt(ldb, mem_ctx, &res,
+	ret = ldb_search(ldb, mem_ctx, &res,
 				 NULL, LDB_SCOPE_SUBTREE, NULL,
 				"(&(computerName=%s)(flatname=%s))", computer_name, domain);
 	if (ret != LDB_SUCCESS) {

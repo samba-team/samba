@@ -76,7 +76,7 @@ int sys_get_xfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qt
 {
 	int ret = -1;
 	uint32 qflags = 0;
-	SMB_BIG_UINT bsize = (SMB_BIG_UINT)BBSIZE;
+	uint64_t bsize = (uint64_t)BBSIZE;
 	struct fs_disk_quota D;
 	struct fs_quota_stat F;
 	ZERO_STRUCT(D);
@@ -145,12 +145,12 @@ int sys_get_xfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qt
 	}
 
 	dp->bsize = bsize;
-	dp->softlimit = (SMB_BIG_UINT)D.d_blk_softlimit;
-	dp->hardlimit = (SMB_BIG_UINT)D.d_blk_hardlimit;
-	dp->ihardlimit = (SMB_BIG_UINT)D.d_ino_hardlimit;
-	dp->isoftlimit = (SMB_BIG_UINT)D.d_ino_softlimit;
-	dp->curinodes = (SMB_BIG_UINT)D.d_icount;
-	dp->curblocks = (SMB_BIG_UINT)D.d_bcount;
+	dp->softlimit = (uint64_t)D.d_blk_softlimit;
+	dp->hardlimit = (uint64_t)D.d_blk_hardlimit;
+	dp->ihardlimit = (uint64_t)D.d_ino_hardlimit;
+	dp->isoftlimit = (uint64_t)D.d_ino_softlimit;
+	dp->curinodes = (uint64_t)D.d_icount;
+	dp->curblocks = (uint64_t)D.d_bcount;
 	dp->qflags = qflags;
 
 	return ret;
@@ -163,7 +163,7 @@ int sys_set_xfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qt
 {
 	int ret = -1;
 	uint32 qflags = 0;
-	SMB_BIG_UINT bsize = (SMB_BIG_UINT)BBSIZE;
+	uint64_t bsize = (uint64_t)BBSIZE;
 	struct fs_disk_quota D;
 	struct fs_quota_stat F;
 	int q_on = 0;

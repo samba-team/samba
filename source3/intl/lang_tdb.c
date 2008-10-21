@@ -33,14 +33,14 @@ static bool load_msg(const char *msg_file)
 	char *msgid, *msgstr;
 	TDB_DATA data;
 
-	lines = file_lines_load(msg_file, &num_lines,0);
+	lines = file_lines_load(msg_file, &num_lines, 0, NULL);
 
 	if (!lines) {
 		return False;
 	}
 
 	if (tdb_lockall(tdb) != 0) {
-		file_lines_free(lines);
+		TALLOC_FREE(lines);
 		return False;
 	}
 
@@ -68,7 +68,7 @@ static bool load_msg(const char *msg_file)
 		}
 	}
 
-	file_lines_free(lines);
+	TALLOC_FREE(lines);
 	tdb_unlockall(tdb);
 
 	return True;

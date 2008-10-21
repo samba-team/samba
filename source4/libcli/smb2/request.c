@@ -23,7 +23,7 @@
 #include "includes.h"
 #include "libcli/raw/libcliraw.h"
 #include "libcli/smb2/smb2.h"
-#include "lib/util/dlinklist.h"
+#include "../lib/util/dlinklist.h"
 #include "lib/events/events.h"
 #include "libcli/smb2/smb2_calls.h"
 #include "param/param.h"
@@ -279,7 +279,7 @@ NTSTATUS smb2_pull_o16s16_blob(struct smb2_request_buffer *buf, TALLOC_CTX *mem_
 {
 	uint16_t ofs, size;
 	if (smb2_oob(buf, ptr, 4)) {
-		return NT_STATUS_BUFFER_TOO_SMALL;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 	ofs  = SVAL(ptr, 0);
 	size = SVAL(ptr, 2);
@@ -288,7 +288,7 @@ NTSTATUS smb2_pull_o16s16_blob(struct smb2_request_buffer *buf, TALLOC_CTX *mem_
 		return NT_STATUS_OK;
 	}
 	if (smb2_oob(buf, buf->hdr + ofs, size)) {
-		return NT_STATUS_BUFFER_TOO_SMALL;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 	*blob = data_blob_talloc(mem_ctx, buf->hdr + ofs, size);
 	NT_STATUS_HAVE_NO_MEMORY(blob->data);
@@ -315,12 +315,12 @@ NTSTATUS smb2_push_o16s16_blob(struct smb2_request_buffer *buf,
 
 	/* we have only 16 bit for the size */
 	if (blob.length > 0xFFFF) {
-		return NT_STATUS_BUFFER_TOO_SMALL;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	/* check if there're enough room for ofs and size */
 	if (smb2_oob(buf, ptr, 4)) {
-		return NT_STATUS_BUFFER_TOO_SMALL;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	if (blob.data == NULL) {
@@ -376,7 +376,7 @@ NTSTATUS smb2_push_o16s32_blob(struct smb2_request_buffer *buf,
 
 	/* check if there're enough room for ofs and size */
 	if (smb2_oob(buf, ptr, 6)) {
-		return NT_STATUS_BUFFER_TOO_SMALL;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	if (blob.data == NULL) {
@@ -432,7 +432,7 @@ NTSTATUS smb2_push_o32s32_blob(struct smb2_request_buffer *buf,
 
 	/* check if there're enough room for ofs and size */
 	if (smb2_oob(buf, ptr, 8)) {
-		return NT_STATUS_BUFFER_TOO_SMALL;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	if (blob.data == NULL) {
@@ -488,7 +488,7 @@ NTSTATUS smb2_push_s32o32_blob(struct smb2_request_buffer *buf,
 
 	/* check if there're enough room for ofs and size */
 	if (smb2_oob(buf, ptr, 8)) {
-		return NT_STATUS_BUFFER_TOO_SMALL;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	if (blob.data == NULL) {
@@ -533,7 +533,7 @@ NTSTATUS smb2_pull_o16s32_blob(struct smb2_request_buffer *buf, TALLOC_CTX *mem_
 	uint32_t size;
 
 	if (smb2_oob(buf, ptr, 6)) {
-		return NT_STATUS_BUFFER_TOO_SMALL;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 	ofs  = SVAL(ptr, 0);
 	size = IVAL(ptr, 2);
@@ -542,7 +542,7 @@ NTSTATUS smb2_pull_o16s32_blob(struct smb2_request_buffer *buf, TALLOC_CTX *mem_
 		return NT_STATUS_OK;
 	}
 	if (smb2_oob(buf, buf->hdr + ofs, size)) {
-		return NT_STATUS_BUFFER_TOO_SMALL;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 	*blob = data_blob_talloc(mem_ctx, buf->hdr + ofs, size);
 	NT_STATUS_HAVE_NO_MEMORY(blob->data);
@@ -557,7 +557,7 @@ NTSTATUS smb2_pull_o32s32_blob(struct smb2_request_buffer *buf, TALLOC_CTX *mem_
 {
 	uint32_t ofs, size;
 	if (smb2_oob(buf, ptr, 8)) {
-		return NT_STATUS_BUFFER_TOO_SMALL;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 	ofs  = IVAL(ptr, 0);
 	size = IVAL(ptr, 4);
@@ -566,7 +566,7 @@ NTSTATUS smb2_pull_o32s32_blob(struct smb2_request_buffer *buf, TALLOC_CTX *mem_
 		return NT_STATUS_OK;
 	}
 	if (smb2_oob(buf, buf->hdr + ofs, size)) {
-		return NT_STATUS_BUFFER_TOO_SMALL;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 	*blob = data_blob_talloc(mem_ctx, buf->hdr + ofs, size);
 	NT_STATUS_HAVE_NO_MEMORY(blob->data);
@@ -584,7 +584,7 @@ NTSTATUS smb2_pull_o16As32_blob(struct smb2_request_buffer *buf, TALLOC_CTX *mem
 {
 	uint32_t ofs, size;
 	if (smb2_oob(buf, ptr, 8)) {
-		return NT_STATUS_BUFFER_TOO_SMALL;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 	ofs  = SVAL(ptr, 0);
 	size = IVAL(ptr, 4);
@@ -593,7 +593,7 @@ NTSTATUS smb2_pull_o16As32_blob(struct smb2_request_buffer *buf, TALLOC_CTX *mem
 		return NT_STATUS_OK;
 	}
 	if (smb2_oob(buf, buf->hdr + ofs, size)) {
-		return NT_STATUS_BUFFER_TOO_SMALL;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 	*blob = data_blob_talloc(mem_ctx, buf->hdr + ofs, size);
 	NT_STATUS_HAVE_NO_MEMORY(blob->data);
@@ -608,7 +608,7 @@ NTSTATUS smb2_pull_s32o32_blob(struct smb2_request_buffer *buf, TALLOC_CTX *mem_
 {
 	uint32_t ofs, size;
 	if (smb2_oob(buf, ptr, 8)) {
-		return NT_STATUS_BUFFER_TOO_SMALL;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 	size = IVAL(ptr, 0);
 	ofs  = IVAL(ptr, 4);
@@ -617,7 +617,31 @@ NTSTATUS smb2_pull_s32o32_blob(struct smb2_request_buffer *buf, TALLOC_CTX *mem_
 		return NT_STATUS_OK;
 	}
 	if (smb2_oob(buf, buf->hdr + ofs, size)) {
-		return NT_STATUS_BUFFER_TOO_SMALL;
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	*blob = data_blob_talloc(mem_ctx, buf->hdr + ofs, size);
+	NT_STATUS_HAVE_NO_MEMORY(blob->data);
+	return NT_STATUS_OK;
+}
+
+/*
+  pull a uint32_t length/ uint16_t ofs/blob triple from a data blob
+  the ptr points to the start of the offset/length pair
+*/
+NTSTATUS smb2_pull_s32o16_blob(struct smb2_request_buffer *buf, TALLOC_CTX *mem_ctx, uint8_t *ptr, DATA_BLOB *blob)
+{
+	uint32_t ofs, size;
+	if (smb2_oob(buf, ptr, 8)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	size = IVAL(ptr, 0);
+	ofs  = SVAL(ptr, 4);
+	if (ofs == 0) {
+		*blob = data_blob(NULL, 0);
+		return NT_STATUS_OK;
+	}
+	if (smb2_oob(buf, buf->hdr + ofs, size)) {
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 	*blob = data_blob_talloc(mem_ctx, buf->hdr + ofs, size);
 	NT_STATUS_HAVE_NO_MEMORY(blob->data);

@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "libcli/auth/libcli_auth.h"
 
 /* NOTES: 
 

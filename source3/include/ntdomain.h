@@ -287,63 +287,6 @@ typedef struct pipes_struct {
 
 } pipes_struct;
 
-typedef struct smb_np_struct {
-	struct smb_np_struct *next, *prev;
-	int pnum;
-	connection_struct *conn;
-	uint16 vuid; /* points to the unauthenticated user that opened this pipe. */
-	bool open; /* open connection */
-	uint16 device_state;
-	uint16 priority;
-	char *name;
-
-	/* When replying to an SMBtrans, this is the maximum amount of
-           data that can be sent in the initial reply. */
-	int max_trans_reply;
-
-	/*
-	 * NamedPipe state information.
-	 */
-	struct pipes_struct *np_state;
-
-	/*
-	 * NamedPipe functions, to be called to perform
-	 * Named Pipe transactions on request from an
-	 * SMB client.
-	 */
-
-	/* call to create a named pipe connection.
-	 * returns: state information representing the connection.
-	 *          is stored in np_state, above.
-	 */
-	struct pipes_struct *(*namedpipe_create)(
-		const char *pipe_name,
-		const char *client_address,
-		struct auth_serversupplied_info *server_info,
-		uint16_t vuid);
-
-	/* call to perform a write namedpipe operation
-	 */
-	ssize_t (*namedpipe_write)(struct pipes_struct *p,
-				   char *data, size_t n);
-
-	/* call to perform a read namedpipe operation.
-	 *
-	 * NOTE: the only reason that the pipe_outstanding
-	 * argument is here is because samba does not use
-	 * the namedpipe_transact function yet: instead,
-	 * it performs the same as what namedpipe_transact
-	 * does - a write, followed by a read.
-	 *
-	 * when samba is modified to use namedpipe_transact,
-	 * the pipe_outstanding argument may be removed.
-	 */
-	ssize_t (*namedpipe_read)(struct pipes_struct *p,
-				  char *data, size_t max_len,
-				  bool *pipe_outstanding);
-
-} smb_np_struct;
-
 struct api_struct {  
 	const char *name;
 	uint8 opnum;

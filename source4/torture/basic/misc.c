@@ -448,7 +448,7 @@ static int init_benchrw_params(struct torture_context *tctx,
 	p = torture_setting_string(tctx, "unclist", NULL);
 	if (p) {
 		char *h, *s;
-		unc_list = file_lines_load(p, &num_unc_names, NULL);
+		unc_list = file_lines_load(p, &num_unc_names, 0, NULL);
 		if (!unc_list || num_unc_names <= 0) {
 			torture_comment(tctx, "Failed to load unc names list "
 					"from '%s'\n", p);
@@ -823,6 +823,7 @@ static struct composite_context *torture_connect_async(
 	smb->in.fallback_to_anonymous=false;
 	smb->in.workgroup=workgroup;
 	lp_smbcli_options(tctx->lp_ctx, &smb->in.options);
+	lp_smbcli_session_options(tctx->lp_ctx, &smb->in.session_options);
 	
 	return smb_composite_connect_send(smb,mem_ctx,
 					  lp_resolve_context(tctx->lp_ctx),ev);

@@ -23,7 +23,7 @@
 #include "libcli/raw/interfaces.h"
 #include "lib/events/events.h"
 #include "lib/socket/socket.h"
-#include "lib/util/dlinklist.h"
+#include "../lib/util/dlinklist.h"
 
 /*
   this header declares the core context structures associated with smb
@@ -386,6 +386,8 @@ struct smbsrv_connection {
 	struct loadparm_context *lp_ctx;
 
 	bool smb2_signing_required;
+
+	uint64_t highest_smb2_seqnum;
 };
 
 struct model_ops;

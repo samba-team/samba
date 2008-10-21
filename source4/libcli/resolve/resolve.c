@@ -27,7 +27,7 @@
 #include "librpc/gen_ndr/ndr_nbt.h"
 #include "param/param.h"
 #include "system/network.h"
-#include "util/dlinklist.h"
+#include "../lib/util/dlinklist.h"
 
 struct resolve_state {
 	struct resolve_context *ctx;
@@ -165,6 +165,10 @@ struct composite_context *resolve_name_send(struct resolve_context *ctx,
 	}
 
 	state->method = ctx->methods;
+	if (state->method == NULL) {
+		composite_error(c, NT_STATUS_BAD_NETWORK_NAME);
+		return c;
+	}
 	state->creq = setup_next_method(c);
 	if (composite_nomem(state->creq, c)) return c;
 	

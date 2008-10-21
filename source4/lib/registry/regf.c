@@ -2066,7 +2066,7 @@ WERROR reg_open_regf_file(TALLOC_CTX *parent_ctx, const char *location,
 
 	pull = tdr_pull_init(regf, regf->iconv_convenience);
 
-	pull->data.data = (uint8_t*)fd_load(regf->fd, &pull->data.length, regf);
+	pull->data.data = (uint8_t*)fd_load(regf->fd, &pull->data.length, 0, regf);
 
 	if (pull->data.data == NULL) {
 		DEBUG(0, ("Error reading data\n"));

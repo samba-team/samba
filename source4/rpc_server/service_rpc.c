@@ -25,7 +25,7 @@
 #include "librpc/gen_ndr/ndr_dcerpc.h"
 #include "auth/auth.h"
 #include "auth/gensec/gensec.h"
-#include "lib/util/dlinklist.h"
+#include "../lib/util/dlinklist.h"
 #include "rpc_server/dcerpc_server.h"
 #include "lib/events/events.h"
 #include "smbd/service_task.h"
@@ -436,6 +436,25 @@ static void dcesrv_task_init(struct task_server *task)
 	NTSTATUS status;
 	struct dcesrv_context *dce_ctx;
 	struct dcesrv_endpoint *e;
+	extern NTSTATUS dcerpc_server_wkssvc_init(void);
+	extern NTSTATUS dcerpc_server_drsuapi_init(void);
+	extern NTSTATUS dcerpc_server_winreg_init(void);
+	extern NTSTATUS dcerpc_server_spoolss_init(void);
+	extern NTSTATUS dcerpc_server_epmapper_init(void);
+	extern NTSTATUS dcerpc_server_srvsvc_init(void);
+	extern NTSTATUS dcerpc_server_netlogon_init(void);
+	extern NTSTATUS dcerpc_server_rpcecho_init(void);
+	extern NTSTATUS dcerpc_server_unixinfo_init(void);
+	extern NTSTATUS dcerpc_server_samr_init(void);
+	extern NTSTATUS dcerpc_server_remote_init(void);
+	extern NTSTATUS dcerpc_server_lsa_init(void);
+	init_module_fn static_init[] = { STATIC_DCESRV_MODULES };
+	init_module_fn *shared_init = load_samba_modules(NULL, task->lp_ctx, "dcerpc_server");
+
+	run_init_functions(static_init);
+	run_init_functions(shared_init);
+
+	talloc_free(shared_init);
 
 	task_server_set_title(task, "task[dcesrv]");
 
@@ -462,25 +481,6 @@ failed:
 
 NTSTATUS server_service_rpc_init(void)
 {
-	extern NTSTATUS dcerpc_server_wkssvc_init(void);
-	extern NTSTATUS dcerpc_server_drsuapi_init(void);
-	extern NTSTATUS dcerpc_server_winreg_init(void);
-	extern NTSTATUS dcerpc_server_spoolss_init(void);
-	extern NTSTATUS dcerpc_server_epmapper_init(void);
-	extern NTSTATUS dcerpc_server_srvsvc_init(void);
-	extern NTSTATUS dcerpc_server_netlogon_init(void);
-	extern NTSTATUS dcerpc_server_rpcecho_init(void);
-	extern NTSTATUS dcerpc_server_unixinfo_init(void);
-	extern NTSTATUS dcerpc_server_samr_init(void);
-	extern NTSTATUS dcerpc_server_remote_init(void);
-	extern NTSTATUS dcerpc_server_lsa_init(void);
-	init_module_fn static_init[] = { STATIC_DCESRV_MODULES };
-	init_module_fn *shared_init = load_samba_modules(NULL, global_loadparm, "dcerpc_server");
 
-	run_init_functions(static_init);
-	run_init_functions(shared_init);
-
-	talloc_free(shared_init);
-	
 	return register_server_service("rpc", dcesrv_task_init);
 }

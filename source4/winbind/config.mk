@@ -4,7 +4,7 @@
 # Start SUBSYSTEM WINBIND
 [MODULE::WINBIND]
 INIT_FUNCTION = server_service_winbind_init
-SUBSYSTEM = smbd
+SUBSYSTEM = samba
 PRIVATE_DEPENDENCIES = \
 		WB_HELPER \
 		IDMAP \
@@ -13,7 +13,8 @@ PRIVATE_DEPENDENCIES = \
 		RPC_NDR_LSA \
 		dcerpc_samr \
 		PAM_ERRORS \
-		LIBCLI_LDAP
+		LIBCLI_LDAP \
+		LIBSAMBA-NET
 # End SUBSYSTEM WINBIND
 #######################
 

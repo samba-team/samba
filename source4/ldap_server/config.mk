@@ -4,7 +4,7 @@
 # Start SUBSYSTEM LDAP
 [MODULE::LDAP]
 INIT_FUNCTION = server_service_ldap_init
-SUBSYSTEM = smbd
+SUBSYSTEM = samba
 PRIVATE_DEPENDENCIES = CREDENTIALS \
 		LIBCLI_LDAP SAMDB \
 		process_model \

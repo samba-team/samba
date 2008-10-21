@@ -26,11 +26,12 @@
 #include "lib/ldb/include/ldb.h"
 #include "dsdb/samdb/samdb.h"
 #include "auth/auth.h"
-#include "util/util_ldb.h"
+#include "../lib/util/util_ldb.h"
 #include "param/param.h"
 #include "smbd/service_task.h"
 #include "cldap_server/cldap_server.h"
 #include "libcli/security/security.h"
+#include "nbt_server/dgram/proto.h"
 
 /*
   reply to a GETDC request
@@ -77,7 +78,7 @@ static void nbtd_netlogon_getdc(struct dgram_mailslot_handler *dgmslot,
 	/* setup a GETDC reply */
 	ZERO_STRUCT(netlogon_response);
 	netlogon_response.response_type = NETLOGON_GET_PDC;
-	pdc = &netlogon_response.get_pdc;
+	pdc = &netlogon_response.data.get_pdc;
 
 	pdc->command = NETLOGON_RESPONSE_FROM_PDC;
 	pdc->pdc_name         = lp_netbios_name(iface->nbtsrv->task->lp_ctx);
@@ -132,7 +133,7 @@ static void nbtd_netlogon_samlogon(struct dgram_mailslot_handler *dgmslot,
 
 	status = fill_netlogon_samlogon_response(samctx, packet, NULL, name->name, sid, NULL, 
 						 netlogon->req.logon.user_name, netlogon->req.logon.acct_control, src->addr, 
-						 netlogon->req.logon.nt_version, iface->nbtsrv->task->lp_ctx, &netlogon_response.samlogon);
+						 netlogon->req.logon.nt_version, iface->nbtsrv->task->lp_ctx, &netlogon_response.data.samlogon);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(2,("NBT netlogon query failed domain=%s sid=%s version=%d - %s\n",
 			 name->name, dom_sid_string(packet, sid), netlogon->req.logon.nt_version, nt_errstr(status)));

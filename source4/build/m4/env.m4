@@ -1,6 +1,7 @@
 dnl SMB Build Environment Checks
 dnl -------------------------------------------------------
 dnl  Copyright (C) Stefan (metze) Metzmacher 2004
+dnl  Copyright (C) Jelmer Vernooij 2005,2008
 dnl  Released under the GNU GPL
 dnl -------------------------------------------------------
 dnl
@@ -40,7 +41,54 @@ fi
 
 m4_include(build/m4/check_path.m4)
 m4_include(build/m4/check_perl.m4)
+
+AC_SAMBA_PERL([], [AC_MSG_ERROR([Please install perl from http://www.perl.com/])])
+
+AC_PATH_PROG(YAPP, yapp, false)
+
 m4_include(build/m4/check_cc.m4)
 m4_include(build/m4/check_ld.m4)
 m4_include(build/m4/check_make.m4)
+
+AC_SAMBA_GNU_MAKE([AC_MSG_RESULT(found)], [AC_MSG_ERROR([Unable to find GNU make])])
+AC_SAMBA_GNU_MAKE_VERSION()
+GNU_MAKE_VERSION=$samba_cv_gnu_make_version
+AC_SUBST(GNU_MAKE_VERSION)
+
+new_make=no
+AC_MSG_CHECKING([for GNU make >= 3.81])
+if $PERL -e " \$_ = '$GNU_MAKE_VERSION'; s/@<:@^\d\.@:>@.*//g; exit (\$_ < 3.81);"; then
+	new_make=yes
+fi
+AC_MSG_RESULT($new_make)
+automatic_dependencies=no
+AX_CFLAGS_GCC_OPTION([-M -MT conftest.d -MF conftest.o], [], [ automatic_dependencies=$new_make ], [])
+AC_MSG_CHECKING([Whether to use automatic dependencies])
+AC_ARG_ENABLE(automatic-dependencies,
+[  --enable-automatic-dependencies Enable automatic dependencies],
+[ automatic_dependencies=$enableval ], 
+[ automatic_dependencies=no ])
+AC_MSG_RESULT($automatic_dependencies)
+AC_SUBST(automatic_dependencies)
+
 m4_include(build/m4/check_doc.m4)
+
+m4_include(build/m4/check_python.m4)
+
+m4_include(build/m4/ac_pkg_swig.m4)
+
+AC_PROG_SWIG(1.3.36)
+
+AC_SAMBA_PYTHON_DEVEL([
+SMB_EXT_LIB(EXT_LIB_PYTHON, [$PYTHON_LDFLAGS], [$PYTHON_CFLAGS])
+SMB_ENABLE(EXT_LIB_PYTHON,YES)
+SMB_ENABLE(LIBPYTHON,YES)
+],[
+AC_MSG_ERROR([Python not found. Please install Python 2.x and its development headers/libraries.])
+])
+
+AC_MSG_CHECKING(python library directory)
+pythondir=`$PYTHON -c "from distutils import sysconfig; print sysconfig.get_python_lib(1, 0, '\\${prefix}')"`
+AC_MSG_RESULT($pythondir)
+
+AC_SUBST(pythondir)

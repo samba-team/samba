@@ -7,7 +7,7 @@
 
 struct echo_info1 {
 	uint8_t v;
-};
+}/* [public] */;
 
 struct echo_info2 {
 	uint16_t v;

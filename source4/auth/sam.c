@@ -23,12 +23,13 @@
 #include "system/time.h"
 #include "auth/auth.h"
 #include <ldb.h>
-#include "util/util_ldb.h"
+#include "../lib/util/util_ldb.h"
 #include "dsdb/samdb/samdb.h"
 #include "libcli/security/security.h"
 #include "libcli/ldap/ldap.h"
 #include "librpc/gen_ndr/ndr_netlogon.h"
 #include "param/param.h"
+#include "auth/auth_sam.h"
 
 const char *user_attrs[] = {
 	/* required for the krb5 kdc */
@@ -207,7 +208,7 @@ _PUBLIC_ NTSTATUS authsam_account_ok(TALLOC_CTX *mem_ctx,
 	if (logon_workstation && workstation_list && *workstation_list) {
 		bool invalid_ws = true;
 		int i;
-		const char **workstations = str_list_make(mem_ctx, workstation_list, ",");
+		const char **workstations = (const char **)str_list_make(mem_ctx, workstation_list, ",");
 		
 		for (i = 0; workstations && workstations[i]; i++) {
 			DEBUG(10,("sam_account_ok: checking for workstation match '%s' and '%s'\n",

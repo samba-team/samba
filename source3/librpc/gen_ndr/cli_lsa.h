@@ -57,7 +57,7 @@ NTSTATUS rpccli_lsa_EnumAccounts(struct rpc_pipe_client *cli,
 				 uint32_t num_entries /* [in] [range(0,8192)] */);
 NTSTATUS rpccli_lsa_CreateTrustedDomain(struct rpc_pipe_client *cli,
 					TALLOC_CTX *mem_ctx,
-					struct policy_handle *handle /* [in] [ref] */,
+					struct policy_handle *policy_handle /* [in] [ref] */,
 					struct lsa_DomainInfo *info /* [in] [ref] */,
 					uint32_t access_mask /* [in]  */,
 					struct policy_handle *trustdom_handle /* [out] [ref] */);
@@ -133,7 +133,10 @@ NTSTATUS rpccli_lsa_QueryTrustedDomainInfo(struct rpc_pipe_client *cli,
 					   enum lsa_TrustDomInfoEnum level /* [in]  */,
 					   union lsa_TrustedDomainInfo **info /* [out] [ref,switch_is(level)] */);
 NTSTATUS rpccli_lsa_SetInformationTrustedDomain(struct rpc_pipe_client *cli,
-						TALLOC_CTX *mem_ctx);
+						TALLOC_CTX *mem_ctx,
+						struct policy_handle *trustdom_handle /* [in] [ref] */,
+						enum lsa_TrustDomInfoEnum level /* [in]  */,
+						union lsa_TrustedDomainInfo *info /* [in] [ref,switch_is(level)] */);
 NTSTATUS rpccli_lsa_OpenSecret(struct rpc_pipe_client *cli,
 			       TALLOC_CTX *mem_ctx,
 			       struct policy_handle *handle /* [in] [ref] */,
@@ -201,7 +204,11 @@ NTSTATUS rpccli_lsa_QueryTrustedDomainInfoBySid(struct rpc_pipe_client *cli,
 						enum lsa_TrustDomInfoEnum level /* [in]  */,
 						union lsa_TrustedDomainInfo **info /* [out] [ref,switch_is(level)] */);
 NTSTATUS rpccli_lsa_SetTrustedDomainInfo(struct rpc_pipe_client *cli,
-					 TALLOC_CTX *mem_ctx);
+					 TALLOC_CTX *mem_ctx,
+					 struct policy_handle *handle /* [in] [ref] */,
+					 struct dom_sid2 *dom_sid /* [in] [ref] */,
+					 enum lsa_TrustDomInfoEnum level /* [in]  */,
+					 union lsa_TrustedDomainInfo *info /* [in] [ref,switch_is(level)] */);
 NTSTATUS rpccli_lsa_DeleteTrustedDomain(struct rpc_pipe_client *cli,
 					TALLOC_CTX *mem_ctx,
 					struct policy_handle *handle /* [in] [ref] */,
@@ -250,7 +257,12 @@ NTSTATUS rpccli_lsa_EnumTrustedDomainsEx(struct rpc_pipe_client *cli,
 					 struct lsa_DomainListEx *domains /* [out] [ref] */,
 					 uint32_t max_size /* [in]  */);
 NTSTATUS rpccli_lsa_CreateTrustedDomainEx(struct rpc_pipe_client *cli,
-					  TALLOC_CTX *mem_ctx);
+					  TALLOC_CTX *mem_ctx,
+					  struct policy_handle *policy_handle /* [in] [ref] */,
+					  struct lsa_TrustDomainInfoInfoEx *info /* [in] [ref] */,
+					  struct lsa_TrustDomainInfoAuthInfoInternal *auth_info /* [in] [ref] */,
+					  uint32_t access_mask /* [in]  */,
+					  struct policy_handle *trustdom_handle /* [out] [ref] */);
 NTSTATUS rpccli_lsa_CloseTrustedDomainEx(struct rpc_pipe_client *cli,
 					 TALLOC_CTX *mem_ctx,
 					 struct policy_handle *handle /* [in,out] [ref] */);
@@ -291,10 +303,15 @@ NTSTATUS rpccli_lsa_LookupNames2(struct rpc_pipe_client *cli,
 				 struct lsa_TransSidArray2 *sids /* [in,out] [ref] */,
 				 enum lsa_LookupNamesLevel level /* [in]  */,
 				 uint32_t *count /* [in,out] [ref] */,
-				 uint32_t unknown1 /* [in]  */,
-				 uint32_t unknown2 /* [in]  */);
+				 uint32_t lookup_options /* [in]  */,
+				 uint32_t client_revision /* [in]  */);
 NTSTATUS rpccli_lsa_CreateTrustedDomainEx2(struct rpc_pipe_client *cli,
-					   TALLOC_CTX *mem_ctx);
+					   TALLOC_CTX *mem_ctx,
+					   struct policy_handle *policy_handle /* [in] [ref] */,
+					   struct lsa_TrustDomainInfoInfoEx *info /* [in] [ref] */,
+					   struct lsa_TrustDomainInfoAuthInfoInternal *auth_info /* [in] [ref] */,
+					   uint32_t access_mask /* [in]  */,
+					   struct policy_handle *trustdom_handle /* [out] [ref] */);
 NTSTATUS rpccli_lsa_CREDRWRITE(struct rpc_pipe_client *cli,
 			       TALLOC_CTX *mem_ctx);
 NTSTATUS rpccli_lsa_CREDRREAD(struct rpc_pipe_client *cli,
@@ -320,8 +337,8 @@ NTSTATUS rpccli_lsa_LookupNames3(struct rpc_pipe_client *cli,
 				 struct lsa_TransSidArray3 *sids /* [in,out] [ref] */,
 				 enum lsa_LookupNamesLevel level /* [in]  */,
 				 uint32_t *count /* [in,out] [ref] */,
-				 uint32_t unknown1 /* [in]  */,
-				 uint32_t unknown2 /* [in]  */);
+				 uint32_t lookup_options /* [in]  */,
+				 uint32_t client_revision /* [in]  */);
 NTSTATUS rpccli_lsa_CREDRGETSESSIONTYPES(struct rpc_pipe_client *cli,
 					 TALLOC_CTX *mem_ctx);
 NTSTATUS rpccli_lsa_LSARREGISTERAUDITEVENT(struct rpc_pipe_client *cli,
@@ -357,8 +374,8 @@ NTSTATUS rpccli_lsa_LookupNames4(struct rpc_pipe_client *cli,
 				 struct lsa_TransSidArray3 *sids /* [in,out] [ref] */,
 				 enum lsa_LookupNamesLevel level /* [in]  */,
 				 uint32_t *count /* [in,out] [ref] */,
-				 uint32_t unknown1 /* [in]  */,
-				 uint32_t unknown2 /* [in]  */);
+				 uint32_t lookup_options /* [in]  */,
+				 uint32_t client_revision /* [in]  */);
 NTSTATUS rpccli_lsa_LSAROPENPOLICYSCE(struct rpc_pipe_client *cli,
 				      TALLOC_CTX *mem_ctx);
 NTSTATUS rpccli_lsa_LSARADTREGISTERSECURITYEVENTSOURCE(struct rpc_pipe_client *cli,

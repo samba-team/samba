@@ -262,9 +262,8 @@ static NTSTATUS wreplsrv_in_send_request(struct wreplsrv_in_call *call)
 				 (long long)owner_in->min_version, 
 				 (long long)owner_in->max_version);
 	NT_STATUS_HAVE_NO_MEMORY(filter);
-	ret = ldb_search(service->wins_db->ldb, NULL, LDB_SCOPE_SUBTREE, filter, NULL, &res);
+	ret = ldb_search(service->wins_db->ldb, call, &res, NULL, LDB_SCOPE_SUBTREE, NULL, "%s", filter);
 	if (ret != LDB_SUCCESS) return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	talloc_steal(call, res);
 	DEBUG(10,("WINSREPL: filter '%s' count %d\n", filter, res->count));
 
 	if (res->count == 0) {

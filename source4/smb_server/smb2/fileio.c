@@ -254,6 +254,12 @@ void smb2srv_read_recv(struct smb2srv_request *req)
 	union smb_read *io;
 
 	SMB2SRV_CHECK_BODY_SIZE(req, 0x30, true);
+
+	/* MS-SMB2 2.2.19 read must have a single byte of zero */
+	if (req->in.body_size - req->in.body_fixed < 1) {
+		smb2srv_send_error(req,  NT_STATUS_INVALID_PARAMETER);
+		return;
+	}
 	SMB2SRV_TALLOC_IO_PTR(io, union smb_read);
 	SMB2SRV_SETUP_NTVFS_REQUEST(smb2srv_read_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 

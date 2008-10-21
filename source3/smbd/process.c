@@ -105,7 +105,11 @@ static bool valid_smb_header(const uint8_t *inbuf)
 	if (is_encrypted_packet(inbuf)) {
 		return true;
 	}
-	return (strncmp(smb_base(inbuf),"\377SMB",4) == 0);
+	/*
+	 * This used to be (strncmp(smb_base(inbuf),"\377SMB",4) == 0)
+	 * but it just looks weird to call strncmp for this one.
+	 */
+	return (IVAL(smb_base(inbuf), 0) == 0x424D53FF);
 }
 
 /* Socket functions for smbd packet processing. */
@@ -376,6 +380,7 @@ void init_smb_request(struct smb_request *req,
 	req->unread_bytes = unread_bytes;
 	req->encrypted = encrypted;
 	req->conn = conn_find(req->tid);
+	req->chain_fsp = NULL;
 
 	/* Ensure we have at least wct words and 2 bytes of bcc. */
 	if (smb_size + req->wct*2 > req_size) {
@@ -706,7 +711,7 @@ The timeout is in milliseconds
 ****************************************************************************/
 
 static NTSTATUS receive_message_or_smb(TALLOC_CTX *mem_ctx, char **buffer,
-				       size_t *buffer_len, int timeout,
+				       size_t *buffer_len,
 				       size_t *p_unread, bool *p_encrypted)
 {
 	fd_set r_fds, w_fds;
@@ -720,13 +725,8 @@ static NTSTATUS receive_message_or_smb(TALLOC_CTX *mem_ctx, char **buffer,
 
  again:
 
-	if (timeout >= 0) {
-		to.tv_sec = timeout / 1000;
-		to.tv_usec = (timeout % 1000) * 1000;
-	} else {
-		to.tv_sec = SMBD_SELECT_TIMEOUT;
-		to.tv_usec = 0;
-	}
+	to.tv_sec = SMBD_SELECT_TIMEOUT;
+	to.tv_usec = 0;
 
 	/*
 	 * Note that this call must be before processing any SMB
@@ -747,7 +747,7 @@ static NTSTATUS receive_message_or_smb(TALLOC_CTX *mem_ctx, char **buffer,
 			pop_message = True;
 		} else {
 			struct timeval tv;
-			SMB_BIG_INT tdif;
+			int64_t tdif;
 
 			GetTimeOfDay(&tv);
 			tdif = usec_time_diff(&msg->end_time, &tv);
@@ -869,7 +869,7 @@ static NTSTATUS receive_message_or_smb(TALLOC_CTX *mem_ctx, char **buffer,
 
 	/* Did we timeout ? */
 	if (selrtn == 0) {
-		return NT_STATUS_IO_TIMEOUT;
+		goto again;
 	}
 
 	/*
@@ -978,7 +978,7 @@ force write permissions on print services.
 */
 static const struct smb_message_struct {
 	const char *name;
-	void (*fn_new)(struct smb_request *req);
+	void (*fn)(struct smb_request *req);
 	int flags;
 } smb_messages[256] = {
 
@@ -1354,7 +1354,7 @@ static connection_struct *switch_message(uint8 type, struct smb_request *req, in
 		exit_server_cleanly("Non-SMB packet");
 	}
 
-	if (smb_messages[type].fn_new == NULL) {
+	if (smb_messages[type].fn == NULL) {
 		DEBUG(0,("Unknown message type %d!\n",type));
 		smb_dump("Unknown", 1, (char *)req->inbuf, size);
 		reply_unknown_new(req, type);
@@ -1476,7 +1476,7 @@ static connection_struct *switch_message(uint8 type, struct smb_request *req, in
 		return conn;
 	}
 
-	smb_messages[type].fn_new(req);
+	smb_messages[type].fn(req);
 	return req->conn;
 }
 
@@ -1491,8 +1491,6 @@ static void construct_reply(char *inbuf, int size, size_t unread_bytes, bool enc
 	struct smb_request *req;
 
 	chain_size = 0;
-	file_chain_reset();
-	reset_chain_p();
 
 	if (!(req = talloc(talloc_tos(), struct smb_request))) {
 		smb_panic("could not allocate smb_request");
@@ -1539,25 +1537,6 @@ static void process_smb(char *inbuf, size_t nread, size_t unread_bytes, bool enc
 	int msg_type = CVAL(inbuf,0);
 
 	DO_PROFILE_INC(smb_count);
-
-	if (trans_num == 0) {
-		char addr[INET6_ADDRSTRLEN];
-
-		/* on the first packet, check the global hosts allow/ hosts
-		deny parameters before doing any parsing of the packet
-		passed to us by the client.  This prevents attacks on our
-		parsing code from hosts not in the hosts allow list */
-
-		if (!check_access(smbd_server_fd(), lp_hostsallow(-1),
-				  lp_hostsdeny(-1))) {
-			/* send a negative session response "not listening on calling name" */
-			static unsigned char buf[5] = {0x83, 0, 0, 1, 0x81};
-			DEBUG( 1, ( "Connection denied from %s\n",
-				client_addr(get_client_fd(),addr,sizeof(addr)) ) );
-			(void)srv_send_smb(smbd_server_fd(),(char *)buf,false);
-			exit_server_cleanly("connection denied");
-		}
-	}
 
 	DEBUG( 6, ( "got message type 0x%x of len 0x%x\n", msg_type,
 		    smb_len(inbuf) ) );
@@ -1738,6 +1717,7 @@ void chain_reply(struct smb_request *req)
 		smb_panic("could not allocate smb_request");
 	}
 	init_smb_request(req2, (uint8 *)inbuf2,0, req->encrypted);
+	req2->chain_fsp = req->chain_fsp;
 
 	/* process the request */
 	switch_message(smb_com2, req2, new_size);
@@ -1837,23 +1817,6 @@ void chain_reply(struct smb_request *req)
 }
 
 /****************************************************************************
- Setup the needed select timeout in milliseconds.
-****************************************************************************/
-
-static int setup_select_timeout(void)
-{
-	int select_timeout;
-
-	select_timeout = SMBD_SELECT_TIMEOUT*1000;
-
-	if (print_notify_messages_pending()) {
-		select_timeout = MIN(select_timeout, 1000);
-	}
-
-	return select_timeout;
-}
-
-/****************************************************************************
  Check if services need reloading.
 ****************************************************************************/
 
@@ -1907,113 +1870,40 @@ void check_reload(time_t t)
 }
 
 /****************************************************************************
- Process any timeout housekeeping. Return False if the caller should exit.
-****************************************************************************/
-
-static void timeout_processing(int *select_timeout,
-			       time_t *last_timeout_processing_time)
-{
-	time_t t;
-
-	*last_timeout_processing_time = t = time(NULL);
-
-	/* become root again if waiting */
-	change_to_root_user();
-
-	/* check if we need to reload services */
-	check_reload(t);
-
-	if(global_machine_password_needs_changing && 
-			/* for ADS we need to do a regular ADS password change, not a domain
-					password change */
-			lp_security() == SEC_DOMAIN) {
-
-		unsigned char trust_passwd_hash[16];
-		time_t lct;
-		void *lock;
-
-		/*
-		 * We're in domain level security, and the code that
-		 * read the machine password flagged that the machine
-		 * password needs changing.
-		 */
-
-		/*
-		 * First, open the machine password file with an exclusive lock.
-		 */
-
-		lock = secrets_get_trust_account_lock(NULL, lp_workgroup());
-
-		if (lock == NULL) {
-			DEBUG(0,("process: unable to lock the machine account password for \
-machine %s in domain %s.\n", global_myname(), lp_workgroup() ));
-			return;
-		}
-
-		if(!secrets_fetch_trust_account_password(lp_workgroup(), trust_passwd_hash, &lct, NULL)) {
-			DEBUG(0,("process: unable to read the machine account password for \
-machine %s in domain %s.\n", global_myname(), lp_workgroup()));
-			TALLOC_FREE(lock);
-			return;
-		}
-
-		/*
-		 * Make sure someone else hasn't already done this.
-		 */
-
-		if(t < lct + lp_machine_password_timeout()) {
-			global_machine_password_needs_changing = False;
-			TALLOC_FREE(lock);
-			return;
-		}
-
-		/* always just contact the PDC here */
-    
-		change_trust_account_password( lp_workgroup(), NULL);
-		global_machine_password_needs_changing = False;
-		TALLOC_FREE(lock);
-	}
-
-	/* update printer queue caches if necessary */
-  
-	update_monitored_printq_cache();
-  
-	/*
-	 * Now we are root, check if the log files need pruning.
-	 * Force a log file check.
-	 */
-	force_check_log_size();
-	check_log_size();
-
-	/* Send any queued printer notify message to interested smbd's. */
-
-	print_notify_send_messages(smbd_messaging_context(), 0);
-
-	/*
-	 * Modify the select timeout depending upon
-	 * what we have remaining in our queues.
-	 */
-
-	*select_timeout = setup_select_timeout();
-
-	return;
-}
-
-/****************************************************************************
  Process commands from the client
 ****************************************************************************/
 
 void smbd_process(void)
 {
-	time_t last_timeout_processing_time = time(NULL);
 	unsigned int num_smbs = 0;
 	size_t unread_bytes = 0;
+
+	char addr[INET6_ADDRSTRLEN];
+
+	/*
+	 * Before the first packet, check the global hosts allow/ hosts deny
+	 * parameters before doing any parsing of packets passed to us by the
+	 * client. This prevents attacks on our parsing code from hosts not in
+	 * the hosts allow list.
+	 */
+
+	if (!check_access(smbd_server_fd(), lp_hostsallow(-1),
+			  lp_hostsdeny(-1))) {
+		/*
+		 * send a negative session response "not listening on calling
+		 * name"
+		 */
+		unsigned char buf[5] = {0x83, 0, 0, 1, 0x81};
+		DEBUG( 1, ("Connection denied from %s\n",
+			   client_addr(get_client_fd(),addr,sizeof(addr)) ) );
+		(void)srv_send_smb(smbd_server_fd(),(char *)buf,false);
+		exit_server_cleanly("connection denied");
+	}
 
 	max_recv = MIN(lp_maxxmit(),BUFFER_SIZE);
 
 	while (True) {
-		int select_timeout = setup_select_timeout();
-		int num_echos;
+		NTSTATUS status;
 		char *inbuf = NULL;
 		size_t inbuf_len = 0;
 		bool encrypted = false;
@@ -2021,81 +1911,23 @@ void smbd_process(void)
 
 		errno = 0;
 
-		/* Did someone ask for immediate checks on things like blocking locks ? */
-		if (select_timeout == 0) {
-			timeout_processing(&select_timeout,
-					   &last_timeout_processing_time);
-			num_smbs = 0; /* Reset smb counter. */
-		}
-
 		run_events(smbd_event_context(), 0, NULL, NULL);
 
-		while (True) {
-			NTSTATUS status;
+		status = receive_message_or_smb(
+			talloc_tos(), &inbuf, &inbuf_len,
+			&unread_bytes, &encrypted);
 
-			status = receive_message_or_smb(
-				talloc_tos(), &inbuf, &inbuf_len,
-				select_timeout,	&unread_bytes, &encrypted);
-
-			if (NT_STATUS_IS_OK(status)) {
-				break;
-			}
-
-			if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
-				timeout_processing(
-					&select_timeout,
-					&last_timeout_processing_time);
-				continue;
-			}
-
+		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(3, ("receive_message_or_smb failed: %s, "
 				  "exiting\n", nt_errstr(status)));
 			return;
-
-			num_smbs = 0; /* Reset smb counter. */
 		}
-
-
-		/*
-		 * Ensure we do timeout processing if the SMB we just got was
-		 * only an echo request. This allows us to set the select
-		 * timeout in 'receive_message_or_smb()' to any value we like
-		 * without worrying that the client will send echo requests
-		 * faster than the select timeout, thus starving out the
-		 * essential processing (change notify, blocking locks) that
-		 * the timeout code does. JRA.
-		 */
-		num_echos = smb_echo_count;
 
 		process_smb(inbuf, inbuf_len, unread_bytes, encrypted);
 
 		TALLOC_FREE(inbuf);
 
-		if (smb_echo_count != num_echos) {
-			timeout_processing(&select_timeout,
-					   &last_timeout_processing_time);
-			num_smbs = 0; /* Reset smb counter. */
-		}
-
 		num_smbs++;
-
-		/*
-		 * If we are getting smb requests in a constant stream
-		 * with no echos, make sure we attempt timeout processing
-		 * every select_timeout milliseconds - but only check for this
-		 * every 200 smb requests.
-		 */
-		
-		if ((num_smbs % 200) == 0) {
-			time_t new_check_time = time(NULL);
-			if(new_check_time - last_timeout_processing_time >= (select_timeout/1000)) {
-				timeout_processing(
-					&select_timeout,
-					&last_timeout_processing_time);
-				num_smbs = 0; /* Reset smb counter. */
-				last_timeout_processing_time = new_check_time; /* Reset time. */
-			}
-		}
 
 		/* The timeout_processing function isn't run nearly
 		   often enough to implement 'max log size' without

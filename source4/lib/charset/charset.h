@@ -97,6 +97,7 @@ size_t count_chars_w(const char *s, char c);
 void strupper_m(char *s);
 void strlower_m(char *s);
 char *strupper_talloc(TALLOC_CTX *ctx, const char *src);
+char *talloc_strdup_upper(TALLOC_CTX *ctx, const char *src);
 char *strupper_talloc_n(TALLOC_CTX *ctx, const char *src, size_t n);
 char *strlower_talloc(TALLOC_CTX *ctx, const char *src);
 bool strhasupper(const char *string);
@@ -146,4 +147,8 @@ struct smb_iconv_convenience *smb_iconv_convenience_init(TALLOC_CTX *mem_ctx,
 							 const char *dos_charset,
 							 const char *unix_charset,
 							 bool native_iconv);
+
+void load_case_tables(void);
+bool charset_register_backend(const void *_funcs);
+
 #endif /* __CHARSET_H__ */

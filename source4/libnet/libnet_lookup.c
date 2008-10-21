@@ -129,7 +129,7 @@ NTSTATUS libnet_Lookup_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
 	if (NT_STATUS_IS_OK(status)) {
 		s = talloc_get_type(c->private_data, struct lookup_state);
 
-		io->out.address = str_list_make(mem_ctx, s->address, NULL);
+		io->out.address = (const char **)str_list_make(mem_ctx, s->address, NULL);
 		NT_STATUS_HAVE_NO_MEMORY(io->out.address);
 	}
 

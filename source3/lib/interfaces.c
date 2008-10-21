@@ -86,7 +86,7 @@
 
 #define SOCKET_WRAPPER_NOT_REPLACE
 #include "interfaces.h"
-#include "lib/replace/replace.h"
+#include "../replace/replace.h"
 
 /****************************************************************************
  Utility functions.

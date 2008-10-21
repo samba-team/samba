@@ -20,9 +20,10 @@
 */
 
 #include "includes.h"
-#include "lib/util/asn1.h"
+#include "../lib/util/asn1.h"
 #include "libcli/ldap/ldap.h"
 #include "lib/ldb/include/ldb.h"
+#include "libcli/ldap/ldap_proto.h"
 
 struct control_handler {
 	const char *oid;

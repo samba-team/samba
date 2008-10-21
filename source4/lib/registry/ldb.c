@@ -225,7 +225,7 @@ static WERROR cache_subkeys(struct ldb_key_data *kd)
 	struct ldb_result *res;
 	int ret;
 
-	ret = ldb_search(c, kd->dn, LDB_SCOPE_ONELEVEL, "(key=*)", NULL, &res);
+	ret = ldb_search(c, c, &res, kd->dn, LDB_SCOPE_ONELEVEL, NULL, "(key=*)");
 
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0, ("Error getting subkeys for '%s': %s\n",
@@ -246,8 +246,8 @@ static WERROR cache_values(struct ldb_key_data *kd)
 	struct ldb_result *res;
 	int ret;
 
-	ret = ldb_search(c, kd->dn, LDB_SCOPE_ONELEVEL,
-			 "(value=*)", NULL, &res);
+	ret = ldb_search(c, c, &res, kd->dn, LDB_SCOPE_ONELEVEL,
+			 NULL, "(value=*)");
 
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0, ("Error getting values for '%s': %s\n",
@@ -373,7 +373,7 @@ static WERROR ldb_get_value(TALLOC_CTX *mem_ctx, struct hive_key *k,
 	} else {
 		/* normal value */
 		query = talloc_asprintf(mem_ctx, "(value=%s)", name);
-		ret = ldb_search(c, kd->dn, LDB_SCOPE_ONELEVEL, query, NULL, &res);
+		ret = ldb_search(c, kd->dn, &res, LDB_SCOPE_ONELEVEL, query, NULL, "%s", query);
 		talloc_free(query);
 
 		if (ret != LDB_SUCCESS) {
@@ -391,6 +391,7 @@ static WERROR ldb_get_value(TALLOC_CTX *mem_ctx, struct hive_key *k,
 		talloc_free(res);
 	}
 
+	talloc_free(res);
 	return WERR_OK;
 }
 
@@ -406,7 +407,7 @@ static WERROR ldb_open_key(TALLOC_CTX *mem_ctx, const struct hive_key *h,
 
 	ldap_path = reg_path_to_ldb(mem_ctx, h, name, NULL);
 
-	ret = ldb_search(c, ldap_path, LDB_SCOPE_BASE, "(key=*)", NULL, &res);
+	ret = ldb_search(c, mem_ctx, &res, ldap_path, LDB_SCOPE_BASE, NULL, "(key=*)");
 
 	if (ret != LDB_SUCCESS) {
 		DEBUG(3, ("Error opening key '%s': %s\n",
@@ -598,8 +599,8 @@ static WERROR ldb_del_key(const struct hive_key *key, const char *name)
 	}
 
 	/* Search for subkeys */
-	ret = ldb_search(c, ldap_path, LDB_SCOPE_ONELEVEL,
-			 "(key=*)", NULL, &res_keys);
+	ret = ldb_search(c, mem_ctx, &res_keys, ldap_path, LDB_SCOPE_ONELEVEL,
+			 NULL, "(key=*)");
 
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0, ("Error getting subkeys for '%s': %s\n",
@@ -609,8 +610,8 @@ static WERROR ldb_del_key(const struct hive_key *key, const char *name)
 	}
 
 	/* Search for values */
-	ret = ldb_search(c, ldap_path, LDB_SCOPE_ONELEVEL,
-			 "(value=*)", NULL, &res_vals);
+	ret = ldb_search(c, mem_ctx, &res_vals, ldap_path, LDB_SCOPE_ONELEVEL,
+			 NULL, "(value=*)");
 
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0, ("Error getting values for '%s': %s\n",

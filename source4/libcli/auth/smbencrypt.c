@@ -25,7 +25,7 @@
 #include "system/time.h"
 #include "auth/ntlmssp/ntlmssp.h"
 #include "auth/ntlmssp/msrpc_parse.h"
-#include "lib/crypto/crypto.h"
+#include "../lib/crypto/crypto.h"
 #include "libcli/auth/libcli_auth.h"
 #include "pstring.h"
 #include "param/param.h"
@@ -497,10 +497,10 @@ bool encode_pw_buffer(uint8_t buffer[516], const char *password, int string_flag
  returned password including termination.
 ************************************************************/
 bool decode_pw_buffer(uint8_t in_buffer[516], char *new_pwrd,
-		      int new_pwrd_size, uint32_t *new_pw_len,
-		      int string_flags)
+		      int new_pwrd_size, int string_flags)
 {
 	int byte_len=0;
+	ssize_t converted_pw_len;
 
 	/* the incoming buffer can be any alignment. */
 	string_flags |= STR_NOALIGN;
@@ -526,15 +526,72 @@ bool decode_pw_buffer(uint8_t in_buffer[516], char *new_pwrd,
 	}
 
 	/* decode into the return buffer.  Buffer length supplied */
- 	*new_pw_len = pull_string(lp_iconv_convenience(global_loadparm), new_pwrd, &in_buffer[512 - byte_len], new_pwrd_size, 
+ 	converted_pw_len = pull_string(lp_iconv_convenience(global_loadparm), new_pwrd, &in_buffer[512 - byte_len], new_pwrd_size, 
 				  byte_len, string_flags);
+
+	if (converted_pw_len == -1) {
+		return false;
+	}
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("decode_pw_buffer: new_pwrd: "));
-	dump_data(100, (const uint8_t *)new_pwrd, *new_pw_len);
-	DEBUG(100,("multibyte len:%d\n", *new_pw_len));
+	dump_data(100, (const uint8_t *)new_pwrd, converted_pw_len);
+	DEBUG(100,("multibyte len:%d\n", (int)converted_pw_len));
 	DEBUG(100,("original char len:%d\n", byte_len/2));
 #endif
 	
+	return true;
+}
+
+/***********************************************************
+ encode a password buffer with an already unicode password.  The
+ rest of the buffer is filled with random data to make it harder to attack.
+************************************************************/
+bool set_pw_in_buffer(uint8_t buffer[516], DATA_BLOB *password)
+{
+	if (password->length > 512) {
+		return false;
+	}
+
+	memcpy(&buffer[512 - password->length], password->data, password->length);
+
+	generate_random_buffer(buffer, 512 - password->length);
+
+	/* 
+	 * The length of the new password is in the last 4 bytes of
+	 * the data buffer.
+	 */
+	SIVAL(buffer, 512, password->length);
+	return true;
+}
+
+/***********************************************************
+ decode a password buffer
+ *new_pw_size is the length in bytes of the extracted unicode password
+************************************************************/
+bool extract_pw_from_buffer(TALLOC_CTX *mem_ctx, 
+			    uint8_t in_buffer[516], DATA_BLOB *new_pass)
+{
+	int byte_len=0;
+
+	/* The length of the new password is in the last 4 bytes of the data buffer. */
+
+	byte_len = IVAL(in_buffer, 512);
+
+#ifdef DEBUG_PASSWORD
+	dump_data(100, in_buffer, 516);
+#endif
+
+	/* Password cannot be longer than the size of the password buffer */
+	if ( (byte_len < 0) || (byte_len > 512)) {
+		return false;
+	}
+
+	*new_pass = data_blob_talloc(mem_ctx, &in_buffer[512 - byte_len], byte_len);
+
+	if (!*new_pass->data) {
+		return false;
+	}
+
 	return true;
 }

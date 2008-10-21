@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "scripting/python/modules.h"
 #include <Python.h>
 
 extern void init_ldb(void);

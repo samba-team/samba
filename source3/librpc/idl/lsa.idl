@@ -4,7 +4,7 @@
   lsa interface definition
 */
 
-import "security.idl";
+import "misc.idl", "security.idl";
 
 [ uuid("12345778-1234-abcd-ef00-0123456789ab"),
   version(0.0),
@@ -14,6 +14,7 @@ import "security.idl";
 ] interface lsarpc
 {
 	typedef bitmap security_secinfo security_secinfo;
+	typedef bitmap kerb_EncTypes kerb_EncTypes;
 
 	typedef [public,noejs] struct {
 		[value(2*strlen_m(string))] uint16 length;
@@ -108,7 +109,7 @@ import "security.idl";
 
 	/******************/
 	/* Function: 0x05 */
-	NTSTATUS lsa_ChangePassword ();
+	[todo] NTSTATUS lsa_ChangePassword ();
 
 
 	/******************/
@@ -160,12 +161,11 @@ import "security.idl";
 
 	typedef struct {
 		uint32 percent_full;
-		uint32 log_size;
-		NTTIME retention_time;
+		uint32 maximum_log_size;
+		hyper  retention_time;
 		uint8  shutdown_in_progress;
-		NTTIME time_to_shutdown;
+		hyper  time_to_shutdown;
 		uint32 next_audit_record;
-		uint32 unknown;
 	} lsa_AuditLogInfo;
 
 	typedef [v1_enum] enum {
@@ -203,9 +203,13 @@ import "security.idl";
 		lsa_String name;
 	} lsa_PDAccountInfo;
 
+	typedef [v1_enum] enum {
+		LSA_ROLE_BACKUP=2,
+		LSA_ROLE_PRIMARY=3
+	} lsa_Role;
+
 	typedef struct {
-		uint16 unknown; /* an midl padding bug? */
-		uint16 role;
+		lsa_Role role;
 	} lsa_ServerRole;
 
 	typedef struct {
@@ -224,7 +228,7 @@ import "security.idl";
 
 	typedef struct {
 		hyper modified_id;
-		NTTIME db_create_time;
+		NTTIME_hyper db_create_time;
 	} lsa_ModificationInfo;
 
 	typedef struct {
@@ -232,7 +236,6 @@ import "security.idl";
 	} lsa_AuditFullSetInfo;
 
 	typedef struct {
-		uint16 unknown; /* an midl padding bug? */
 		uint8 shutdown_on_full;
 		uint8 log_is_full;
 	} lsa_AuditFullQueryInfo;
@@ -260,10 +263,12 @@ import "security.idl";
 		LSA_POLICY_INFO_ROLE=6,
 		LSA_POLICY_INFO_REPLICA=7,
 		LSA_POLICY_INFO_QUOTA=8,
-		LSA_POLICY_INFO_DB=9,
+		LSA_POLICY_INFO_MOD=9,
 		LSA_POLICY_INFO_AUDIT_FULL_SET=10,
 		LSA_POLICY_INFO_AUDIT_FULL_QUERY=11,
-		LSA_POLICY_INFO_DNS=12
+		LSA_POLICY_INFO_DNS=12,
+		LSA_POLICY_INFO_DNS_INT=13,
+		LSA_POLICY_INFO_L_ACCOUNT_DOMAIN=14
 	} lsa_PolicyInfo;
 
 	typedef [switch_type(uint16)] union {
@@ -275,10 +280,12 @@ import "security.idl";
 		[case(LSA_POLICY_INFO_ROLE)]             lsa_ServerRole         role;
 		[case(LSA_POLICY_INFO_REPLICA)]          lsa_ReplicaSourceInfo  replica;
 		[case(LSA_POLICY_INFO_QUOTA)]            lsa_DefaultQuotaInfo   quota;
-		[case(LSA_POLICY_INFO_DB)]               lsa_ModificationInfo   db;
+		[case(LSA_POLICY_INFO_MOD)]              lsa_ModificationInfo   mod;
 		[case(LSA_POLICY_INFO_AUDIT_FULL_SET)]   lsa_AuditFullSetInfo   auditfullset;
 		[case(LSA_POLICY_INFO_AUDIT_FULL_QUERY)] lsa_AuditFullQueryInfo auditfullquery;
 		[case(LSA_POLICY_INFO_DNS)]              lsa_DnsDomainInfo      dns;
+		[case(LSA_POLICY_INFO_DNS_INT)]          lsa_DnsDomainInfo      dns;
+		[case(LSA_POLICY_INFO_L_ACCOUNT_DOMAIN)] lsa_DomainInfo         l_account_domain;
 	} lsa_PolicyInformation;
 
 	NTSTATUS lsa_QueryInfoPolicy(
@@ -297,7 +304,7 @@ import "security.idl";
 
 	/******************/
 	/* Function:       0x09 */
-	NTSTATUS lsa_ClearAuditLog ();
+	[todo] NTSTATUS lsa_ClearAuditLog ();
 
 	/******************/
 	/* Function: 0x0a */
@@ -334,7 +341,7 @@ import "security.idl";
 	/* Function: 0x0c                                */
 
 	[public] NTSTATUS lsa_CreateTrustedDomain(
-		[in]         policy_handle *handle,
+		[in]         policy_handle *policy_handle,
 		[in]         lsa_DomainInfo *info,
 		[in]         uint32 access_mask,
 		[out]        policy_handle *trustdom_handle
@@ -362,7 +369,7 @@ import "security.idl";
 
 	/******************/
 	/* Function: 0x0e */
-	typedef enum {
+	typedef [public] enum {
 		SID_NAME_USE_NONE = 0,/* NOTUSED */
 		SID_NAME_USER     = 1, /* user */
 		SID_NAME_DOM_GRP  = 2, /* domain group */
@@ -409,7 +416,8 @@ import "security.idl";
 		LSA_LOOKUP_NAMES_PRIMARY_DOMAIN_ONLY = 3,
 		LSA_LOOKUP_NAMES_UPLEVEL_TRUSTS_ONLY = 4,
 		LSA_LOOKUP_NAMES_FOREST_TRUSTS_ONLY = 5,
-		LSA_LOOKUP_NAMES_UPLEVEL_TRUSTS_ONLY2 = 6
+		LSA_LOOKUP_NAMES_UPLEVEL_TRUSTS_ONLY2 = 6,
+		LSA_LOOKUP_NAMES_RODC_REFERRAL_TO_FULL_DC = 7
 	} lsa_LookupNamesLevel;
 
 	[public] NTSTATUS lsa_LookupNames (
@@ -506,28 +514,44 @@ import "security.idl";
 		);
 
 	/* Function:           0x15 */
-	NTSTATUS lsa_GetQuotasForAccount();
+	[todo] NTSTATUS lsa_GetQuotasForAccount();
 	
 	/* Function:           0x16 */
-	NTSTATUS lsa_SetQuotasForAccount();
+	[todo] NTSTATUS lsa_SetQuotasForAccount();
 	
+	typedef [bitmap32bit] bitmap {
+		LSA_POLICY_MODE_INTERACTIVE             = 0x00000001,
+		LSA_POLICY_MODE_NETWORK                 = 0x00000002,
+		LSA_POLICY_MODE_BATCH                   = 0x00000004,
+		LSA_POLICY_MODE_SERVICE                 = 0x00000010,
+		LSA_POLICY_MODE_PROXY			= 0x00000020,
+		LSA_POLICY_MODE_DENY_INTERACTIVE        = 0x00000040,
+		LSA_POLICY_MODE_DENY_NETWORK            = 0x00000080,
+		LSA_POLICY_MODE_DENY_BATCH              = 0x00000100,
+		LSA_POLICY_MODE_DENY_SERVICE            = 0x00000200,
+		LSA_POLICY_MODE_REMOTE_INTERACTIVE      = 0x00000400,
+		LSA_POLICY_MODE_DENY_REMOTE_INTERACTIVE = 0x00000800,
+		LSA_POLICY_MODE_ALL			= 0x00000FF7,
+		LSA_POLICY_MODE_ALL_NT4			= 0x00000037
+	} lsa_SystemAccessModeFlags;
+
 	/* Function:    0x17 */
 	NTSTATUS lsa_GetSystemAccessAccount(
-		[in]	policy_handle *handle,
+		[in]      policy_handle *handle,
 		[out,ref] uint32 *access_mask
 		);
 
 	/* Function:    0x18 */
 	NTSTATUS lsa_SetSystemAccessAccount(
-		[in]	policy_handle *handle,
-		[in]	uint32 access_mask
+		[in] policy_handle *handle,
+		[in] uint32 access_mask
 		);
 
 	/* Function:        0x19 */
 	NTSTATUS lsa_OpenTrustedDomain(
 		[in]     policy_handle *handle,
 		[in]     dom_sid2      *sid,
-		[in]         uint32         access_mask,
+		[in]     uint32         access_mask,
 		[out]    policy_handle *trustdom_handle
 		);
 
@@ -543,21 +567,52 @@ import "security.idl";
 	} lsa_DATA_BUF2;
 
 	typedef enum {
-		LSA_TRUSTED_DOMAIN_INFO_NAME             = 1,
-		LSA_TRUSTED_DOMAIN_INFO_CONTROLLERS_INFO = 2,
-		LSA_TRUSTED_DOMAIN_INFO_POSIX_OFFSET     = 3,
-		LSA_TRUSTED_DOMAIN_INFO_PASSWORD         = 4,
-		LSA_TRUSTED_DOMAIN_INFO_BASIC            = 5,
-		LSA_TRUSTED_DOMAIN_INFO_INFO_EX          = 6,
-		LSA_TRUSTED_DOMAIN_INFO_AUTH_INFO        = 7,
-		LSA_TRUSTED_DOMAIN_INFO_FULL_INFO        = 8,
-		LSA_TRUSTED_DOMAIN_INFO_11               = 11,
-		LSA_TRUSTED_DOMAIN_INFO_INFO_ALL         = 12
+		LSA_TRUSTED_DOMAIN_INFO_NAME                  = 1,
+		LSA_TRUSTED_DOMAIN_INFO_CONTROLLERS           = 2,
+		LSA_TRUSTED_DOMAIN_INFO_POSIX_OFFSET          = 3,
+		LSA_TRUSTED_DOMAIN_INFO_PASSWORD              = 4,
+		LSA_TRUSTED_DOMAIN_INFO_BASIC                 = 5,
+		LSA_TRUSTED_DOMAIN_INFO_INFO_EX               = 6,
+		LSA_TRUSTED_DOMAIN_INFO_AUTH_INFO             = 7,
+		LSA_TRUSTED_DOMAIN_INFO_FULL_INFO             = 8,
+		LSA_TRUSTED_DOMAIN_INFO_AUTH_INFO_INTERNAL    = 9,
+		LSA_TRUSTED_DOMAIN_INFO_FULL_INFO_INTERNAL    = 10,
+		LSA_TRUSTED_DOMAIN_INFO_INFO_EX2_INTERNAL     = 11,
+		LSA_TRUSTED_DOMAIN_INFO_FULL_INFO_2_INTERNAL  = 12,
+		LSA_TRUSTED_DOMAIN_SUPPORTED_ENCRTYPION_TYPES = 13
 	} lsa_TrustDomInfoEnum;
+
+	typedef [public,bitmap32bit] bitmap {
+		LSA_TRUST_DIRECTION_INBOUND  = 0x00000001,
+		LSA_TRUST_DIRECTION_OUTBOUND = 0x00000002
+	} lsa_TrustDirection;
+
+	typedef [v1_enum] enum {
+		LSA_TRUST_TYPE_DOWNLEVEL  = 0x00000001,
+		LSA_TRUST_TYPE_UPLEVEL    = 0x00000002,
+		LSA_TRUST_TYPE_MIT        = 0x00000003
+	} lsa_TrustType;
+
+	typedef [public,bitmap32bit] bitmap {
+		LSA_TRUST_ATTRIBUTE_NON_TRANSITIVE      = 0x00000001,
+		LSA_TRUST_ATTRIBUTE_UPLEVEL_ONLY        = 0x00000002,
+		LSA_TRUST_ATTRIBUTE_QUARANTINED_DOMAIN  = 0x00000004,
+		LSA_TRUST_ATTRIBUTE_FOREST_TRANSITIVE   = 0x00000008,
+		LSA_TRUST_ATTRIBUTE_CROSS_ORGANIZATION  = 0x00000010,
+		LSA_TRUST_ATTRIBUTE_WITHIN_FOREST       = 0x00000020,
+		LSA_TRUST_ATTRIBUTE_TREAT_AS_EXTERNAL   = 0x00000040,
+		LSA_TRUST_ATTRIBUTE_USES_RC4_ENCRYPTION = 0x00000080
+	} lsa_TrustAttributes;
 
 	typedef struct {
 		lsa_StringLarge  netbios_name;
 	} lsa_TrustDomainInfoName;
+
+
+	typedef struct {
+		uint32 entries;
+		[size_is(entries)] lsa_StringLarge  *netbios_names;
+	} lsa_TrustDomainInfoControllers;
 
 	typedef struct {
 		uint32         posix_offset;
@@ -576,15 +631,22 @@ import "security.idl";
 	typedef struct {
 		lsa_StringLarge     domain_name;
 		lsa_StringLarge     netbios_name;
-		dom_sid2      *sid;
-		uint32         trust_direction;
-		uint32         trust_type;
-		uint32         trust_attributes;
+		dom_sid2           *sid;
+		lsa_TrustDirection  trust_direction;
+		lsa_TrustType       trust_type;
+		lsa_TrustAttributes trust_attributes;
 	} lsa_TrustDomainInfoInfoEx;
+
+	typedef [public,v1_enum] enum {
+		TRUST_AUTH_TYPE_NONE = 0,
+		TRUST_AUTH_TYPE_NT4OWF = 1,
+		TRUST_AUTH_TYPE_CLEAR = 2,
+		TRUST_AUTH_TYPE_VERSION = 3
+	} lsa_TrustAuthType;
 
 	typedef struct {
 		NTTIME_hyper   last_update_time;
-		uint32         secret_type;
+		lsa_TrustAuthType AuthType;
 		lsa_DATA_BUF2  data;
 	} lsa_TrustDomainInfoBuffer;
 
@@ -604,27 +666,58 @@ import "security.idl";
 	} lsa_TrustDomainInfoFullInfo;
 
 	typedef struct {
-		lsa_TrustDomainInfoInfoEx      info_ex;
-		lsa_DATA_BUF2                  data1;
-	} lsa_TrustDomainInfo11;
+		lsa_DATA_BUF2                          auth_blob;
+	} lsa_TrustDomainInfoAuthInfoInternal;
+
+	typedef struct {
+		lsa_TrustDomainInfoInfoEx              info_ex;
+		lsa_TrustDomainInfoPosixOffset         posix_offset;
+		lsa_TrustDomainInfoAuthInfoInternal    auth_info;
+	} lsa_TrustDomainInfoFullInfoInternal;
 
 	typedef struct {
 		lsa_TrustDomainInfoInfoEx      info_ex;
-		lsa_DATA_BUF2                  data1;
+		uint32 forest_trust_length;
+		[size_is(forest_trust_length)] uint8 *forest_trust_data;
+	} lsa_TrustDomainInfoInfoEx2Internal;
+
+	typedef struct {
+		lsa_TrustDomainInfoInfoEx2Internal     info;
 		lsa_TrustDomainInfoPosixOffset posix_offset;
 		lsa_TrustDomainInfoAuthInfo    auth_info;
-	} lsa_TrustDomainInfoInfoAll;
+	} lsa_TrustDomainInfoFullInfo2Internal;
+
+	typedef struct {
+		kerb_EncTypes enc_types;
+	} lsa_TrustDomainInfoSupportedEncTypes;
 
 	typedef [switch_type(lsa_TrustDomInfoEnum)] union {
-		[case(LSA_TRUSTED_DOMAIN_INFO_NAME)]         lsa_TrustDomainInfoName        name;
-		[case(LSA_TRUSTED_DOMAIN_INFO_POSIX_OFFSET)] lsa_TrustDomainInfoPosixOffset posix_offset;
-		[case(LSA_TRUSTED_DOMAIN_INFO_PASSWORD)]     lsa_TrustDomainInfoPassword    password;
-		[case(LSA_TRUSTED_DOMAIN_INFO_BASIC)]        lsa_TrustDomainInfoBasic       info_basic;
-		[case(LSA_TRUSTED_DOMAIN_INFO_INFO_EX)]      lsa_TrustDomainInfoInfoEx      info_ex;
-		[case(LSA_TRUSTED_DOMAIN_INFO_AUTH_INFO)]    lsa_TrustDomainInfoAuthInfo    auth_info;
-		[case(LSA_TRUSTED_DOMAIN_INFO_FULL_INFO)]    lsa_TrustDomainInfoFullInfo    full_info;
-		[case(LSA_TRUSTED_DOMAIN_INFO_11)]           lsa_TrustDomainInfo11          info11;
-		[case(LSA_TRUSTED_DOMAIN_INFO_INFO_ALL)]     lsa_TrustDomainInfoInfoAll     info_all;
+		[case(LSA_TRUSTED_DOMAIN_INFO_NAME)]
+		        lsa_TrustDomainInfoName              name;
+		[case(LSA_TRUSTED_DOMAIN_INFO_CONTROLLERS)]
+		        lsa_TrustDomainInfoControllers   controllers;
+		[case(LSA_TRUSTED_DOMAIN_INFO_POSIX_OFFSET)]
+		        lsa_TrustDomainInfoPosixOffset       posix_offset;
+		[case(LSA_TRUSTED_DOMAIN_INFO_PASSWORD)]
+		        lsa_TrustDomainInfoPassword          password;
+		[case(LSA_TRUSTED_DOMAIN_INFO_BASIC)]
+		        lsa_TrustDomainInfoBasic             info_basic;
+		[case(LSA_TRUSTED_DOMAIN_INFO_INFO_EX)]
+		        lsa_TrustDomainInfoInfoEx            info_ex;
+		[case(LSA_TRUSTED_DOMAIN_INFO_AUTH_INFO)]
+		        lsa_TrustDomainInfoAuthInfo          auth_info;
+		[case(LSA_TRUSTED_DOMAIN_INFO_FULL_INFO)]
+		        lsa_TrustDomainInfoFullInfo          full_info;
+		[case(LSA_TRUSTED_DOMAIN_INFO_AUTH_INFO_INTERNAL)]
+		        lsa_TrustDomainInfoAuthInfoInternal  auth_info_internal;
+		[case(LSA_TRUSTED_DOMAIN_INFO_FULL_INFO_INTERNAL)]
+		        lsa_TrustDomainInfoFullInfoInternal  full_info_internal;
+		[case(LSA_TRUSTED_DOMAIN_INFO_INFO_EX2_INTERNAL)]
+		        lsa_TrustDomainInfoInfoEx2Internal   info_ex2_internal;
+		[case(LSA_TRUSTED_DOMAIN_INFO_FULL_INFO_2_INTERNAL)]
+		        lsa_TrustDomainInfoFullInfo2Internal     full_info2_internal;
+		[case(LSA_TRUSTED_DOMAIN_SUPPORTED_ENCRTYPION_TYPES)]
+		        lsa_TrustDomainInfoSupportedEncTypes enc_types;
 	} lsa_TrustedDomainInfo;
 
 	/* Function:       0x1a */
@@ -635,7 +728,11 @@ import "security.idl";
 		);
 
 	/* Function:     0x1b */
-	NTSTATUS lsa_SetInformationTrustedDomain();
+	NTSTATUS lsa_SetInformationTrustedDomain(
+		[in]                  policy_handle         *trustdom_handle,
+		[in]                  lsa_TrustDomInfoEnum   level,
+		[in,switch_is(level)] lsa_TrustedDomainInfo *info
+		);
 
 	/* Function:          0x1c */
 	[public] NTSTATUS lsa_OpenSecret(
@@ -695,9 +792,10 @@ import "security.idl";
 		[out,ref] uint16 *returned_language_id
 		);
 
-	/* Function:        0x22 */
-	NTSTATUS lsa_DeleteObject(
-		[in,out] policy_handle *handle
+	/*******************/
+	/* Function:  0x22 */
+	NTSTATUS lsa_DeleteObject (
+		[in,out]     policy_handle *handle
 		);
 
 	/*******************/
@@ -732,7 +830,7 @@ import "security.idl";
 		[in,ref] dom_sid2 *sid,
 		[in,ref] lsa_RightSet *rights
 		);
-	
+
 	/**********************/
 	/* Function:       0x26 */
 	NTSTATUS lsa_RemoveAccountRights (
@@ -751,7 +849,13 @@ import "security.idl";
         );
 
 	/* Function:     0x28 */
-	NTSTATUS lsa_SetTrustedDomainInfo();
+	NTSTATUS lsa_SetTrustedDomainInfo(
+		[in]               policy_handle         *handle,
+		[in]               dom_sid2              *dom_sid,
+		[in]               lsa_TrustDomInfoEnum  level,
+		[in,switch_is(level)] lsa_TrustedDomainInfo *info
+        );
+
 	/* Function:      0x29 */
 	NTSTATUS lsa_DeleteTrustedDomain(
 		[in]               policy_handle         *handle,
@@ -759,9 +863,9 @@ import "security.idl";
 	);
 
 	/* Function:       0x2a */
-	NTSTATUS lsa_StorePrivateData();
+	[todo] NTSTATUS lsa_StorePrivateData();
 	/* Function:        0x2b */
-	NTSTATUS lsa_RetrievePrivateData();
+	[todo] NTSTATUS lsa_RetrievePrivateData();
 
 
 	/**********************/
@@ -811,7 +915,7 @@ import "security.idl";
 	NTSTATUS lsa_SetTrustedDomainInfoByName(
 		[in]                   policy_handle         *handle,
 		[in]                   lsa_String             trusted_domain,
-		[in]                   lsa_TrustDomInfoEnum   level, 
+		[in]                   lsa_TrustDomInfoEnum   level,
 		[in,unique,switch_is(level)] lsa_TrustedDomainInfo *info
 		);
 
@@ -832,9 +936,15 @@ import "security.idl";
 		[in]               uint32 max_size
 		);
 
-
 	/* Function 0x33 */
-	NTSTATUS lsa_CreateTrustedDomainEx();
+	NTSTATUS lsa_CreateTrustedDomainEx(
+		[in]  policy_handle               *policy_handle,
+		[in]  lsa_TrustDomainInfoInfoEx   *info,
+		[in]  lsa_TrustDomainInfoAuthInfoInternal *auth_info,
+		[in]  uint32 access_mask,
+		[out] policy_handle               *trustdom_handle
+		);
+
 
 	/* Function 0x34 */
 	NTSTATUS lsa_CloseTrustedDomainEx(
@@ -892,7 +1002,7 @@ import "security.idl";
 		);
 
 	/* Function 0x38 */
-	NTSTATUS lsa_TestCall();
+	[todo] NTSTATUS lsa_TestCall();
 
 	/**********************/
 	/* Function 0x39 */
@@ -943,36 +1053,42 @@ import "security.idl";
 		[in,out,ref] lsa_TransSidArray2 *sids,
 		[in]         lsa_LookupNamesLevel level,
 		[in,out,ref] uint32 *count,
-		[in]         uint32 unknown1,
-		[in]         uint32 unknown2
+		[in]         uint32 lookup_options,
+		[in]         uint32 client_revision /* LSA_CLIENT_REVISION* */
 		);
 
 	/* Function 0x3b */
-	NTSTATUS lsa_CreateTrustedDomainEx2();
+	NTSTATUS lsa_CreateTrustedDomainEx2(
+		[in]  policy_handle               *policy_handle,
+		[in]  lsa_TrustDomainInfoInfoEx   *info,
+		[in]  lsa_TrustDomainInfoAuthInfoInternal *auth_info,
+		[in]  uint32                       access_mask,
+		[out] policy_handle               *trustdom_handle
+		);
 
 	/* Function 0x3c */
-	NTSTATUS lsa_CREDRWRITE();
+	[todo] NTSTATUS lsa_CREDRWRITE();
 
 	/* Function 0x3d */
-	NTSTATUS lsa_CREDRREAD();
+	[todo] NTSTATUS lsa_CREDRREAD();
 
 	/* Function 0x3e */
-	NTSTATUS lsa_CREDRENUMERATE();
+	[todo] NTSTATUS lsa_CREDRENUMERATE();
 
 	/* Function 0x3f */
-	NTSTATUS lsa_CREDRWRITEDOMAINCREDENTIALS();
+	[todo] NTSTATUS lsa_CREDRWRITEDOMAINCREDENTIALS();
 
 	/* Function 0x40 */
-	NTSTATUS lsa_CREDRREADDOMAINCREDENTIALS();
+	[todo] NTSTATUS lsa_CREDRREADDOMAINCREDENTIALS();
 
 	/* Function 0x41 */
-	NTSTATUS lsa_CREDRDELETE();
+	[todo] NTSTATUS lsa_CREDRDELETE();
 
 	/* Function 0x42 */
-	NTSTATUS lsa_CREDRGETTARGETINFO();
+	[todo] NTSTATUS lsa_CREDRGETTARGETINFO();
 
 	/* Function 0x43 */
-	NTSTATUS lsa_CREDRPROFILELOADED();
+	[todo] NTSTATUS lsa_CREDRPROFILELOADED();
 
 	/**********************/
 	/* Function 0x44 */
@@ -980,7 +1096,7 @@ import "security.idl";
 		lsa_SidType sid_type;
 		dom_sid2 *sid;
 		uint32 sid_index;
-		uint32 unknown;
+		uint32 flags;
 	} lsa_TranslatedSid3;
 
 	typedef struct {
@@ -996,21 +1112,21 @@ import "security.idl";
 		[in,out,ref] lsa_TransSidArray3 *sids,
 		[in]         lsa_LookupNamesLevel level,
 		[in,out,ref] uint32 *count,
-		[in]         uint32 unknown1,
-		[in]         uint32 unknown2
+		[in]         uint32 lookup_options,
+		[in]         uint32 client_revision /* LSA_CLIENT_REVISION* */
 		);
 
 	/* Function 0x45 */
-	NTSTATUS lsa_CREDRGETSESSIONTYPES();
+	[todo] NTSTATUS lsa_CREDRGETSESSIONTYPES();
 
 	/* Function 0x46 */
-	NTSTATUS lsa_LSARREGISTERAUDITEVENT();
+	[todo] NTSTATUS lsa_LSARREGISTERAUDITEVENT();
 
 	/* Function 0x47 */
-	NTSTATUS lsa_LSARGENAUDITEVENT();
+	[todo] NTSTATUS lsa_LSARGENAUDITEVENT();
 
 	/* Function 0x48 */
-	NTSTATUS lsa_LSARUNREGISTERAUDITEVENT();
+	[todo] NTSTATUS lsa_LSARUNREGISTERAUDITEVENT();
 
 	/* Function 0x49 */
 	typedef struct {
@@ -1058,10 +1174,10 @@ import "security.idl";
 		);
 
 	/* Function 0x4a */
-	NTSTATUS lsa_LSARSETFORESTTRUSTINFORMATION();
+	[todo] NTSTATUS lsa_LSARSETFORESTTRUSTINFORMATION();
 
 	/* Function 0x4b */
-	NTSTATUS lsa_CREDRRENAME();
+	[todo] NTSTATUS lsa_CREDRRENAME();
 
 	/*****************/
 	/* Function 0x4c */
@@ -1076,6 +1192,11 @@ import "security.idl";
 		[in]         uint32 unknown2
 		);
 
+	const int LSA_CLIENT_REVISION_NO_DNS     = 0x00000001;
+	const int LSA_CLIENT_REVISION_DNS        = 0x00000002;
+
+	const int LSA_LOOKUP_OPTIONS_NO_ISOLATED = 0x80000000;
+
 	/* Function 0x4d */
 	NTSTATUS lsa_LookupNames4(
 		[in,range(0,1000)] uint32 num_names,
@@ -1084,20 +1205,20 @@ import "security.idl";
 		[in,out,ref] lsa_TransSidArray3 *sids,
 		[in]         lsa_LookupNamesLevel level,
 		[in,out,ref] uint32 *count,
-		[in]         uint32 unknown1,
-		[in]         uint32 unknown2
+		[in]         uint32 lookup_options,
+		[in]         uint32 client_revision /* LSA_CLIENT_REVISION* */
 		);
 
 	/* Function 0x4e */
-	NTSTATUS lsa_LSAROPENPOLICYSCE();
+	[todo] NTSTATUS lsa_LSAROPENPOLICYSCE();
 
 	/* Function 0x4f */
-	NTSTATUS lsa_LSARADTREGISTERSECURITYEVENTSOURCE();
+	[todo] NTSTATUS lsa_LSARADTREGISTERSECURITYEVENTSOURCE();
 
 	/* Function 0x50 */
-	NTSTATUS lsa_LSARADTUNREGISTERSECURITYEVENTSOURCE();
+	[todo] NTSTATUS lsa_LSARADTUNREGISTERSECURITYEVENTSOURCE();
 
 	/* Function 0x51 */
-	NTSTATUS lsa_LSARADTREPORTSECURITYEVENT();
+	[todo] NTSTATUS lsa_LSARADTREPORTSECURITYEVENT();
 
 }

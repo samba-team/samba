@@ -1181,6 +1181,10 @@ static NTSTATUS gensec_gssapi_session_key(struct gensec_security *gensec_securit
 	OM_uint32 maj_stat, min_stat;
 	krb5_keyblock *subkey;
 
+	if (gensec_gssapi_state->sasl_state != STAGE_DONE) {
+		return NT_STATUS_NO_USER_SESSION_KEY;
+	}
+
 	if (gensec_gssapi_state->session_key.data) {
 		*session_key = gensec_gssapi_state->session_key;
 		return NT_STATUS_OK;
@@ -1200,10 +1204,7 @@ static NTSTATUS gensec_gssapi_session_key(struct gensec_security *gensec_securit
 	*session_key = data_blob_talloc(gensec_gssapi_state,
 					KRB5_KEY_DATA(subkey), KRB5_KEY_LENGTH(subkey));
 	krb5_free_keyblock(gensec_gssapi_state->smb_krb5_context->krb5_context, subkey);
-	if (gensec_gssapi_state->sasl_state == STAGE_DONE) {
-		/* only cache in the done stage */
-		gensec_gssapi_state->session_key = *session_key;
-	}
+	gensec_gssapi_state->session_key = *session_key;
 	dump_data_pw("KRB5 Session Key:\n", session_key->data, session_key->length);
 
 	return NT_STATUS_OK;
@@ -1360,7 +1361,7 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 	return NT_STATUS_OK;
 }
 
-size_t gensec_gssapi_sig_size(struct gensec_security *gensec_security, size_t data_size)
+static size_t gensec_gssapi_sig_size(struct gensec_security *gensec_security, size_t data_size)
 {
 	struct gensec_gssapi_state *gensec_gssapi_state
 		= talloc_get_type(gensec_security->private_data, struct gensec_gssapi_state);

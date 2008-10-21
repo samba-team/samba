@@ -48,34 +48,34 @@ struct tdb_validation_status {
 
 typedef int (*tdb_validate_data_func)(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *state);
 
-TDB_DATA make_tdb_data(const uint8 *dptr, size_t dsize);
+TDB_DATA make_tdb_data(const uint8_t *dptr, size_t dsize);
 TDB_DATA string_tdb_data(const char *string);
 TDB_DATA string_term_tdb_data(const char *string);
 
 TDB_LIST_NODE *tdb_search_keys(struct tdb_context*, const char*);
 void tdb_search_list_free(TDB_LIST_NODE*);
 
-int tdb_chainlock_with_timeout( TDB_CONTEXT *tdb, TDB_DATA key,
+int tdb_chainlock_with_timeout( struct tdb_context *tdb, TDB_DATA key,
 				unsigned int timeout);
 int tdb_lock_bystring(struct tdb_context *tdb, const char *keyval);
-int tdb_lock_bystring_with_timeout(TDB_CONTEXT *tdb, const char *keyval,
+int tdb_lock_bystring_with_timeout(struct tdb_context *tdb, const char *keyval,
 				   int timeout);
 void tdb_unlock_bystring(struct tdb_context *tdb, const char *keyval);
 int tdb_read_lock_bystring_with_timeout(TDB_CONTEXT *tdb, const char *keyval,
 					unsigned int timeout);
-void tdb_read_unlock_bystring(TDB_CONTEXT *tdb, const char *keyval);
+void tdb_read_unlock_bystring(struct tdb_context *tdb, const char *keyval);
 
-int32 tdb_fetch_int32_byblob(TDB_CONTEXT *tdb, TDB_DATA key);
-int32 tdb_fetch_int32(struct tdb_context *tdb, const char *keystr);
-bool tdb_store_uint32_byblob(TDB_CONTEXT *tdb, TDB_DATA key, uint32 value);
-bool tdb_store_uint32(struct tdb_context *tdb, const char *keystr, uint32 value);
-int tdb_store_int32_byblob(TDB_CONTEXT *tdb, TDB_DATA key, int32 v);
-int tdb_store_int32(struct tdb_context *tdb, const char *keystr, int32 v);
-bool tdb_fetch_uint32_byblob(TDB_CONTEXT *tdb, TDB_DATA key, uint32 *value);
-bool tdb_fetch_uint32(struct tdb_context *tdb, const char *keystr, uint32 *value);
-int32 tdb_change_int32_atomic(struct tdb_context *tdb, const char *keystr, int32 *oldval, int32 change_val);
-bool tdb_change_uint32_atomic(TDB_CONTEXT *tdb, const char *keystr,
-			      uint32 *oldval, uint32 change_val);
+int32_t tdb_fetch_int32_byblob(struct tdb_context *tdb, TDB_DATA key);
+int32_t tdb_fetch_int32(struct tdb_context *tdb, const char *keystr);
+bool tdb_store_uint32_byblob(struct tdb_context *tdb, TDB_DATA key, uint32_t value);
+bool tdb_store_uint32(struct tdb_context *tdb, const char *keystr, uint32_t value);
+int tdb_store_int32_byblob(struct tdb_context *tdb, TDB_DATA key, int32_t v);
+int tdb_store_int32(struct tdb_context *tdb, const char *keystr, int32_t v);
+bool tdb_fetch_uint32_byblob(struct tdb_context *tdb, TDB_DATA key, uint32_t *value);
+bool tdb_fetch_uint32(struct tdb_context *tdb, const char *keystr, uint32_t *value);
+int32_t tdb_change_int32_atomic(struct tdb_context *tdb, const char *keystr, int32_t *oldval, int32_t change_val);
+bool tdb_change_uint32_atomic(struct tdb_context *tdb, const char *keystr,
+			      uint32_t *oldval, uint32_t change_val);
 
 int tdb_store_bystring(struct tdb_context *tdb, const char *keystr, TDB_DATA data, int flags);
 int tdb_trans_store_bystring(TDB_CONTEXT *tdb, const char *keystr,

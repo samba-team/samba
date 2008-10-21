@@ -869,7 +869,7 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 	}
 
 	if (strequal(request, "LANMAN-Challenge")) {
-		challenge = strhex_to_data_blob(parameter);
+		challenge = strhex_to_data_blob(NULL, parameter);
 		if (challenge.length != 8) {
 			mux_printf(mux_id, "Error: hex decode of %s failed! (got %d bytes, expected 8)\n.\n", 
 				  parameter,
@@ -877,7 +877,7 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 			challenge = data_blob(NULL, 0);
 		}
 	} else if (strequal(request, "NT-Response")) {
-		nt_response = strhex_to_data_blob(parameter);
+		nt_response = strhex_to_data_blob(NULL, parameter);
 		if (nt_response.length < 24) {
 			mux_printf(mux_id, "Error: hex decode of %s failed! (only got %d bytes, needed at least 24)\n.\n", 
 				  parameter,
@@ -885,7 +885,7 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 			nt_response = data_blob(NULL, 0);
 		}
 	} else if (strequal(request, "LANMAN-Response")) {
-		lm_response = strhex_to_data_blob(parameter);
+		lm_response = strhex_to_data_blob(NULL, parameter);
 		if (lm_response.length != 24) {
 			mux_printf(mux_id, "Error: hex decode of %s failed! (got %d bytes, expected 24)\n.\n", 
 				  parameter,

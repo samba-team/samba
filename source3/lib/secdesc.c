@@ -249,7 +249,7 @@ NTSTATUS marshall_sec_desc(TALLOC_CTX *mem_ctx,
 	enum ndr_err_code ndr_err;
 
 	ndr_err = ndr_push_struct_blob(
-		&blob, mem_ctx, secdesc,
+		&blob, mem_ctx, NULL, secdesc,
 		(ndr_push_flags_fn_t)ndr_push_security_descriptor);
 
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -285,7 +285,7 @@ NTSTATUS unmarshall_sec_desc(TALLOC_CTX *mem_ctx, uint8 *data, size_t len,
 	blob = data_blob_const(data, len);
 
 	ndr_err = ndr_pull_struct_blob(
-		&blob, result, result,
+		&blob, result, NULL, result,
 		(ndr_pull_flags_fn_t)ndr_pull_security_descriptor);
 
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -512,7 +512,7 @@ SEC_DESC_BUF *se_create_child_secdesc(TALLOC_CTX *ctx, SEC_DESC *parent_ctr,
 		if (!inherit)
 			continue;
 
-		init_sec_access(&new_ace->access_mask, ace->access_mask);
+		new_ace->access_mask = ace->access_mask;
 		init_sec_ace(new_ace, &ace->trustee, ace->type,
 			     new_ace->access_mask, new_flags);
 
@@ -546,14 +546,3 @@ SEC_DESC_BUF *se_create_child_secdesc(TALLOC_CTX *ctx, SEC_DESC *parent_ctr,
 
 	return sdb;
 }
-
-/*******************************************************************
- Sets up a SEC_ACCESS structure.
-********************************************************************/
-
-void init_sec_access(uint32 *t, uint32 mask)
-{
-	*t = mask;
-}
-
-

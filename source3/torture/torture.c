@@ -294,15 +294,6 @@ static bool torture_open_connection_share(struct cli_state **c,
 	return True;
 }
 
-void torture_open_connection_free_unclist(char **unc_list)
-{
-	if (unc_list!=NULL)
-	{
-		SAFE_FREE(unc_list[0]);
-		SAFE_FREE(unc_list);
-	}
-}
-
 bool torture_open_connection(struct cli_state **c, int conn_index)
 {
 	char **unc_list = NULL;
@@ -311,7 +302,7 @@ bool torture_open_connection(struct cli_state **c, int conn_index)
 
 	if (use_multishare_conn==True) {
 		char *h, *s;
-		unc_list = file_lines_load(multishare_conn_fname, &num_unc_names, 0);
+		unc_list = file_lines_load(multishare_conn_fname, &num_unc_names, 0, NULL);
 		if (!unc_list || num_unc_names <= 0) {
 			printf("Failed to load unc names list from '%s'\n", multishare_conn_fname);
 			exit(1);
@@ -321,14 +312,14 @@ bool torture_open_connection(struct cli_state **c, int conn_index)
 				      NULL, &h, &s)) {
 			printf("Failed to parse UNC name %s\n",
 			       unc_list[conn_index % num_unc_names]);
-			torture_open_connection_free_unclist(unc_list);
+			TALLOC_FREE(unc_list);
 			exit(1);
 		}
 
 		result = torture_open_connection_share(c, h, s);
 
 		/* h, s were copied earlier */
-		torture_open_connection_free_unclist(unc_list);
+		TALLOC_FREE(unc_list);
 		return result;
 	}
 
@@ -5075,7 +5066,7 @@ static bool run_local_gencache(int dummy)
 		return False;
 	}
 
-	blob = data_blob_string_const("bar");
+	blob = data_blob_string_const_null("bar");
 	tm = time(NULL);
 
 	if (!gencache_set_data_blob("foo", &blob, tm)) {
@@ -5649,7 +5640,7 @@ static void usage(void)
 	*p = 0;
 	fstrcpy(share, p+1);
 
-	fstrcpy(myname, get_myname(talloc_tos()));
+	fstrcpy(myname, talloc_get_myname(talloc_tos()));
 	if (!*myname) {
 		fprintf(stderr, "Failed to get my hostname.\n");
 		return 1;

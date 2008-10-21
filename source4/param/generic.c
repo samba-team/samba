@@ -17,7 +17,7 @@
  */
 
 #include "includes.h"
-#include "lib/util/dlinklist.h"
+#include "../lib/util/dlinklist.h"
 #include "param/param.h"
 #include "system/filesys.h"
 
@@ -130,7 +130,7 @@ const char **param_get_string_list(struct param_context *ctx, const char *param,
 	if (separator == NULL)
 		separator = LIST_SEP;
 	
-	return str_list_make(ctx, p->value, separator);
+	return (const char **)str_list_make(ctx, p->value, separator);
 }
 
 int param_set_string_list(struct param_context *ctx, const char *param, const char **list, const char *section)

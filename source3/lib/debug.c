@@ -578,7 +578,9 @@ void setup_logging(const char *pname, bool interactive)
 	stdout_logging = False;
 	if (dbf) {
 		x_fflush(dbf);
-		(void) x_fclose(dbf);
+                if (dbf != x_stdout) {
+                        (void) x_fclose(dbf);
+                }
 	}
 
 	dbf = NULL;
@@ -982,7 +984,7 @@ void dbgflush( void )
 
 ****************************************************************************/
 
-bool dbghdr(int level, int cls, const char *file, const char *func, int line)
+bool dbghdrclass(int level, int cls, const char *location, const char *func)
 {
 	/* Ensure we don't lose any real errno value. */
 	int old_errno = errno;
@@ -1044,15 +1046,21 @@ bool dbghdr(int level, int cls, const char *file, const char *func, int line)
 					   lp_debug_hires_timestamp()),
 			level, header_str);
 		} else {
-		    (void)Debug1( "[%s, %2d%s] %s:%s(%d)\n",
+		    (void)Debug1( "[%s, %2d%s] %s(%s)\n",
 			current_timestring(debug_ctx(),
 					   lp_debug_hires_timestamp()),
-			level, header_str, file, func, line );
+			level, header_str, location, func );
 		}
 	}
 
 	errno = old_errno;
 	return( True );
+}
+
+bool dbghdr(int level, const char *location, const char *func)
+{
+	/* For compatibility with Samba 4, which doesn't have debug classes */
+	return dbghdrclass(level, 0, location, func);
 }
 
 /***************************************************************************

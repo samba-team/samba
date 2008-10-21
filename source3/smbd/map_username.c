@@ -116,7 +116,7 @@ bool map_username(fstring user)
 		}
 
 		numlines = 0;
-		qlines = fd_lines_load(fd, &numlines,0);
+		qlines = fd_lines_load(fd, &numlines,0, NULL);
 		DEBUGADD(10,("Lines returned = [%d]\n", numlines));
 		close(fd);
 
@@ -127,7 +127,7 @@ bool map_username(fstring user)
 			fstrcpy( user, qlines[0] );
 		}
 
-		file_lines_free(qlines);
+		TALLOC_FREE(qlines);
 
 		return numlines != 0;
 	}

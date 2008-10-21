@@ -47,9 +47,9 @@ static char *store_file_unix_basic_info2(connection_struct *conn,
  Only do this for Windows clients.
 ********************************************************************/
 
-SMB_BIG_UINT smb_roundup(connection_struct *conn, SMB_BIG_UINT val)
+uint64_t smb_roundup(connection_struct *conn, uint64_t val)
 {
-	SMB_BIG_UINT rval = lp_allocation_roundup_size(SNUM(conn));
+	uint64_t rval = lp_allocation_roundup_size(SNUM(conn));
 
 	/* Only roundup for Windows clients. */
 	enum remote_arch_types ra_type = get_remote_arch();
@@ -64,18 +64,18 @@ SMB_BIG_UINT smb_roundup(connection_struct *conn, SMB_BIG_UINT val)
  account sparse files.
 ********************************************************************/
 
-SMB_BIG_UINT get_allocation_size(connection_struct *conn, files_struct *fsp, const SMB_STRUCT_STAT *sbuf)
+uint64_t get_allocation_size(connection_struct *conn, files_struct *fsp, const SMB_STRUCT_STAT *sbuf)
 {
-	SMB_BIG_UINT ret;
+	uint64_t ret;
 
 	if(S_ISDIR(sbuf->st_mode)) {
 		return 0;
 	}
 
 #if defined(HAVE_STAT_ST_BLOCKS) && defined(STAT_ST_BLOCKSIZE)
-	ret = (SMB_BIG_UINT)STAT_ST_BLOCKSIZE * (SMB_BIG_UINT)sbuf->st_blocks;
+	ret = (uint64_t)STAT_ST_BLOCKSIZE * (uint64_t)sbuf->st_blocks;
 #else
-	ret = (SMB_BIG_UINT)get_file_size(*sbuf);
+	ret = (uint64_t)get_file_size(*sbuf);
 #endif
 
 	if (fsp && fsp->initial_allocation_size)
@@ -1031,7 +1031,7 @@ static void call_trans2open(connection_struct *conn,
 	mtime = sbuf.st_mtime;
 	inode = sbuf.st_ino;
 	if (fattr & aDIR) {
-		close_file(fsp,ERROR_CLOSE);
+		close_file(req, fsp, ERROR_CLOSE);
 		reply_doserror(req, ERRDOS,ERRnoaccess);
 		return;
 	}
@@ -1264,7 +1264,7 @@ static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 	long prev_dirpos=0;
 	uint32 mode=0;
 	SMB_OFF_T file_size = 0;
-	SMB_BIG_UINT allocation_size = 0;
+	uint64_t allocation_size = 0;
 	uint32 len;
 	struct timespec mdate_ts, adate_ts, create_date_ts;
 	time_t mdate = (time_t)0, adate = (time_t)0, create_date = (time_t)0;
@@ -1892,7 +1892,7 @@ static void call_trans2findfirst(connection_struct *conn,
 	bool requires_resume_key;
 	int info_level;
 	char *directory = NULL;
-	const char *mask = NULL;
+	char *mask = NULL;
 	char *p;
 	int last_entry_off=0;
 	int dptr_num = -1;
@@ -1980,7 +1980,7 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 		return;
 	}
 
-	ntstatus = unix_convert(ctx, conn, directory, True, &directory, NULL, &sbuf);
+	ntstatus = unix_convert(ctx, conn, directory, True, &directory, &mask, &sbuf);
 	if (!NT_STATUS_IS_OK(ntstatus)) {
 		reply_nterror(req, ntstatus);
 		return;
@@ -1996,10 +1996,12 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 	if(p == NULL) {
 		/* Windows and OS/2 systems treat search on the root '\' as if it were '\*' */
 		if((directory[0] == '.') && (directory[1] == '\0')) {
-			mask = "*";
+			mask = talloc_strdup(ctx,"*");
+			if (!mask) {
+				reply_nterror(req, NT_STATUS_NO_MEMORY);
+				return;
+			}
 			mask_contains_wcard = True;
-		} else {
-			mask = directory;
 		}
 		directory = talloc_strdup(talloc_tos(), "./");
 		if (!directory) {
@@ -2007,7 +2009,6 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 			return;
 		}
 	} else {
-		mask = p+1;
 		*p = 0;
 	}
 
@@ -2612,22 +2613,22 @@ static void call_trans2qfsinfo(connection_struct *conn,
 	switch (info_level) {
 		case SMB_INFO_ALLOCATION:
 		{
-			SMB_BIG_UINT dfree,dsize,bsize,block_size,sectors_per_unit,bytes_per_sector;
+			uint64_t dfree,dsize,bsize,block_size,sectors_per_unit,bytes_per_sector;
 			data_len = 18;
-			if (get_dfree_info(conn,".",False,&bsize,&dfree,&dsize) == (SMB_BIG_UINT)-1) {
+			if (get_dfree_info(conn,".",False,&bsize,&dfree,&dsize) == (uint64_t)-1) {
 				reply_unixerror(req, ERRHRD, ERRgeneral);
 				return;
 			}
 
 			block_size = lp_block_size(snum);
 			if (bsize < block_size) {
-				SMB_BIG_UINT factor = block_size/bsize;
+				uint64_t factor = block_size/bsize;
 				bsize = block_size;
 				dsize /= factor;
 				dfree /= factor;
 			}
 			if (bsize > block_size) {
-				SMB_BIG_UINT factor = bsize/block_size;
+				uint64_t factor = bsize/block_size;
 				bsize = block_size;
 				dsize *= factor;
 				dfree *= factor;
@@ -2732,21 +2733,21 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)st.st_dev, (unsi
 		case SMB_QUERY_FS_SIZE_INFO:
 		case SMB_FS_SIZE_INFORMATION:
 		{
-			SMB_BIG_UINT dfree,dsize,bsize,block_size,sectors_per_unit,bytes_per_sector;
+			uint64_t dfree,dsize,bsize,block_size,sectors_per_unit,bytes_per_sector;
 			data_len = 24;
-			if (get_dfree_info(conn,".",False,&bsize,&dfree,&dsize) == (SMB_BIG_UINT)-1) {
+			if (get_dfree_info(conn,".",False,&bsize,&dfree,&dsize) == (uint64_t)-1) {
 				reply_unixerror(req, ERRHRD, ERRgeneral);
 				return;
 			}
 			block_size = lp_block_size(snum);
 			if (bsize < block_size) {
-				SMB_BIG_UINT factor = block_size/bsize;
+				uint64_t factor = block_size/bsize;
 				bsize = block_size;
 				dsize /= factor;
 				dfree /= factor;
 			}
 			if (bsize > block_size) {
-				SMB_BIG_UINT factor = bsize/block_size;
+				uint64_t factor = bsize/block_size;
 				bsize = block_size;
 				dsize *= factor;
 				dfree *= factor;
@@ -2765,21 +2766,21 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 
 		case SMB_FS_FULL_SIZE_INFORMATION:
 		{
-			SMB_BIG_UINT dfree,dsize,bsize,block_size,sectors_per_unit,bytes_per_sector;
+			uint64_t dfree,dsize,bsize,block_size,sectors_per_unit,bytes_per_sector;
 			data_len = 32;
-			if (get_dfree_info(conn,".",False,&bsize,&dfree,&dsize) == (SMB_BIG_UINT)-1) {
+			if (get_dfree_info(conn,".",False,&bsize,&dfree,&dsize) == (uint64_t)-1) {
 				reply_unixerror(req, ERRHRD, ERRgeneral);
 				return;
 			}
 			block_size = lp_block_size(snum);
 			if (bsize < block_size) {
-				SMB_BIG_UINT factor = block_size/bsize;
+				uint64_t factor = block_size/bsize;
 				bsize = block_size;
 				dsize /= factor;
 				dfree /= factor;
 			}
 			if (bsize > block_size) {
-				SMB_BIG_UINT factor = bsize/block_size;
+				uint64_t factor = bsize/block_size;
 				bsize = block_size;
 				dsize *= factor;
 				dfree *= factor;
@@ -2810,8 +2811,8 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 		 * what we have to send --metze:
 		 *
 		 * Unknown1: 		24 NULL bytes
-		 * Soft Quota Treshold: 8 bytes seems like SMB_BIG_UINT or so
-		 * Hard Quota Limit:	8 bytes seems like SMB_BIG_UINT or so
+		 * Soft Quota Treshold: 8 bytes seems like uint64_t or so
+		 * Hard Quota Limit:	8 bytes seems like uint64_t or so
 		 * Quota Flags:		2 byte :
 		 * Unknown3:		6 NULL bytes
 		 *
@@ -2859,9 +2860,9 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			DEBUG(10,("SMB_FS_QUOTA_INFORMATION: for service [%s]\n",lp_servicename(SNUM(conn))));		
 		
 			/* Unknown1 24 NULL bytes*/
-			SBIG_UINT(pdata,0,(SMB_BIG_UINT)0);
-			SBIG_UINT(pdata,8,(SMB_BIG_UINT)0);
-			SBIG_UINT(pdata,16,(SMB_BIG_UINT)0);
+			SBIG_UINT(pdata,0,(uint64_t)0);
+			SBIG_UINT(pdata,8,(uint64_t)0);
+			SBIG_UINT(pdata,16,(uint64_t)0);
 		
 			/* Default Soft Quota 8 bytes */
 			SBIG_UINT(pdata,24,quotas.softlim);
@@ -2934,7 +2935,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			/* We have POSIX ACLs, pathname, encryption, 
 			 * large read/write, and locking capability. */
 
-			SBIG_UINT(pdata,4,((SMB_BIG_UINT)(
+			SBIG_UINT(pdata,4,((uint64_t)(
 					CIFS_UNIX_POSIX_ACLS_CAP|
 					CIFS_UNIX_POSIX_PATHNAMES_CAP|
 					CIFS_UNIX_FCNTL_LOCKS_CAP|
@@ -3036,9 +3037,9 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			SIVAL(pdata, 0, flags);
 			SIVAL(pdata, 4, SMB_WHOAMI_MASK);
 			SBIG_UINT(pdata, 8,
-				  (SMB_BIG_UINT)conn->server_info->utok.uid);
+				  (uint64_t)conn->server_info->utok.uid);
 			SBIG_UINT(pdata, 16,
-				  (SMB_BIG_UINT)conn->server_info->utok.gid);
+				  (uint64_t)conn->server_info->utok.gid);
 
 
 			if (data_len >= max_data_bytes) {
@@ -3077,7 +3078,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			/* GID list */
 			for (i = 0; i < conn->server_info->utok.ngroups; ++i) {
 				SBIG_UINT(pdata, data_len,
-					  (SMB_BIG_UINT)conn->server_info->utok.groups[i]);
+					  (uint64_t)conn->server_info->utok.groups[i]);
 				data_len += 8;
 			}
 
@@ -3297,7 +3298,7 @@ cap_low = 0x%x, cap_high = 0x%x\n",
 				 * but we didn't use the last 6 bytes for now 
 				 * --metze 
 				 */
-				fsp = file_fsp(SVAL(params,0));
+				fsp = file_fsp(req, SVAL(params,0));
 
 				if (!check_fsp_ntquota_handle(conn, req,
 							      fsp)) {
@@ -3318,10 +3319,10 @@ cap_low = 0x%x, cap_high = 0x%x\n",
 			
 				/* unknown_1 24 NULL bytes in pdata*/
 		
-				/* the soft quotas 8 bytes (SMB_BIG_UINT)*/
-				quotas.softlim = (SMB_BIG_UINT)IVAL(pdata,24);
+				/* the soft quotas 8 bytes (uint64_t)*/
+				quotas.softlim = (uint64_t)IVAL(pdata,24);
 #ifdef LARGE_SMB_OFF_T
-				quotas.softlim |= (((SMB_BIG_UINT)IVAL(pdata,28)) << 32);
+				quotas.softlim |= (((uint64_t)IVAL(pdata,28)) << 32);
 #else /* LARGE_SMB_OFF_T */
 				if ((IVAL(pdata,28) != 0)&&
 					((quotas.softlim != 0xFFFFFFFF)||
@@ -3334,10 +3335,10 @@ cap_low = 0x%x, cap_high = 0x%x\n",
 				}
 #endif /* LARGE_SMB_OFF_T */
 		
-				/* the hard quotas 8 bytes (SMB_BIG_UINT)*/
-				quotas.hardlim = (SMB_BIG_UINT)IVAL(pdata,32);
+				/* the hard quotas 8 bytes (uint64_t)*/
+				quotas.hardlim = (uint64_t)IVAL(pdata,32);
 #ifdef LARGE_SMB_OFF_T
-				quotas.hardlim |= (((SMB_BIG_UINT)IVAL(pdata,36)) << 32);
+				quotas.hardlim |= (((uint64_t)IVAL(pdata,36)) << 32);
 #else /* LARGE_SMB_OFF_T */
 				if ((IVAL(pdata,36) != 0)&&
 					((quotas.hardlim != 0xFFFFFFFF)||
@@ -3753,7 +3754,7 @@ static void call_trans2qpipeinfo(connection_struct *conn,
 	unsigned int data_size = 0;
 	unsigned int param_size = 2;
 	uint16 info_level;
-	smb_np_struct *p_pipe = NULL;
+	files_struct *fsp;
 
 	if (!params) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
@@ -3765,8 +3766,8 @@ static void call_trans2qpipeinfo(connection_struct *conn,
 		return;
 	}
 
-	p_pipe = get_rpc_pipe_p(SVAL(params,0));
-	if (p_pipe == NULL) {
+	fsp = file_fsp(req, SVAL(params,0));
+	if (!fsp_is_np(fsp)) {
 		reply_nterror(req, NT_STATUS_INVALID_HANDLE);
 		return;
 	}
@@ -3827,7 +3828,7 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 	int mode=0;
 	int nlink;
 	SMB_OFF_T file_size=0;
-	SMB_BIG_UINT allocation_size=0;
+	uint64_t allocation_size=0;
 	unsigned int data_size = 0;
 	unsigned int param_size = 2;
 	SMB_STRUCT_STAT sbuf;
@@ -3872,7 +3873,7 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 			return;
 		}
 
-		fsp = file_fsp(SVAL(params,0));
+		fsp = file_fsp(req, SVAL(params,0));
 		info_level = SVAL(params,2);
 
 		DEBUG(3,("call_trans2qfilepathinfo: TRANSACT2_QFILEINFO: level = %d\n", info_level));
@@ -4681,8 +4682,8 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 		case SMB_QUERY_POSIX_LOCK:
 		{
 			NTSTATUS status = NT_STATUS_INVALID_LEVEL;
-			SMB_BIG_UINT count;
-			SMB_BIG_UINT offset;
+			uint64_t count;
+			uint64_t offset;
 			uint32 lock_pid;
 			enum brl_type lock_type;
 
@@ -4710,13 +4711,13 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 
 			lock_pid = IVAL(pdata, POSIX_LOCK_PID_OFFSET);
 #if defined(HAVE_LONGLONG)
-			offset = (((SMB_BIG_UINT) IVAL(pdata,(POSIX_LOCK_START_OFFSET+4))) << 32) |
-					((SMB_BIG_UINT) IVAL(pdata,POSIX_LOCK_START_OFFSET));
-			count = (((SMB_BIG_UINT) IVAL(pdata,(POSIX_LOCK_LEN_OFFSET+4))) << 32) |
-					((SMB_BIG_UINT) IVAL(pdata,POSIX_LOCK_LEN_OFFSET));
+			offset = (((uint64_t) IVAL(pdata,(POSIX_LOCK_START_OFFSET+4))) << 32) |
+					((uint64_t) IVAL(pdata,POSIX_LOCK_START_OFFSET));
+			count = (((uint64_t) IVAL(pdata,(POSIX_LOCK_LEN_OFFSET+4))) << 32) |
+					((uint64_t) IVAL(pdata,POSIX_LOCK_LEN_OFFSET));
 #else /* HAVE_LONGLONG */
-			offset = (SMB_BIG_UINT)IVAL(pdata,POSIX_LOCK_START_OFFSET);
-			count = (SMB_BIG_UINT)IVAL(pdata,POSIX_LOCK_LEN_OFFSET);
+			offset = (uint64_t)IVAL(pdata,POSIX_LOCK_START_OFFSET);
+			count = (uint64_t)IVAL(pdata,POSIX_LOCK_LEN_OFFSET);
 #endif /* HAVE_LONGLONG */
 
 			status = query_lock(fsp,
@@ -5015,12 +5016,12 @@ static NTSTATUS smb_set_file_size(connection_struct *conn,
 
 	if (vfs_set_filelen(new_fsp, size) == -1) {
 		status = map_nt_error_from_unix(errno);
-		close_file(new_fsp,NORMAL_CLOSE);
+		close_file(req, new_fsp,NORMAL_CLOSE);
 		return status;
 	}
 
 	trigger_write_time_update_immediate(new_fsp);
-	close_file(new_fsp,NORMAL_CLOSE);
+	close_file(req, new_fsp,NORMAL_CLOSE);
 	return NT_STATUS_OK;
 }
 
@@ -5122,7 +5123,7 @@ static NTSTATUS smb_file_position_information(connection_struct *conn,
 				int total_data,
 				files_struct *fsp)
 {
-	SMB_BIG_UINT position_information;
+	uint64_t position_information;
 
 	if (total_data < 8) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -5133,9 +5134,9 @@ static NTSTATUS smb_file_position_information(connection_struct *conn,
 		return NT_STATUS_OK;
 	}
 
-	position_information = (SMB_BIG_UINT)IVAL(pdata,0);
+	position_information = (uint64_t)IVAL(pdata,0);
 #ifdef LARGE_SMB_OFF_T
-	position_information |= (((SMB_BIG_UINT)IVAL(pdata,4)) << 32);
+	position_information |= (((uint64_t)IVAL(pdata,4)) << 32);
 #else /* LARGE_SMB_OFF_T */
 	if (IVAL(pdata,4) != 0) {
 		/* more than 32 bits? */
@@ -5474,8 +5475,8 @@ static NTSTATUS smb_set_posix_lock(connection_struct *conn,
 				int total_data,
 				files_struct *fsp)
 {
-	SMB_BIG_UINT count;
-	SMB_BIG_UINT offset;
+	uint64_t count;
+	uint64_t offset;
 	uint32 lock_pid;
 	bool blocking_lock = False;
 	enum brl_type lock_type;
@@ -5522,13 +5523,13 @@ static NTSTATUS smb_set_posix_lock(connection_struct *conn,
 
 	lock_pid = IVAL(pdata, POSIX_LOCK_PID_OFFSET);
 #if defined(HAVE_LONGLONG)
-	offset = (((SMB_BIG_UINT) IVAL(pdata,(POSIX_LOCK_START_OFFSET+4))) << 32) |
-			((SMB_BIG_UINT) IVAL(pdata,POSIX_LOCK_START_OFFSET));
-	count = (((SMB_BIG_UINT) IVAL(pdata,(POSIX_LOCK_LEN_OFFSET+4))) << 32) |
-			((SMB_BIG_UINT) IVAL(pdata,POSIX_LOCK_LEN_OFFSET));
+	offset = (((uint64_t) IVAL(pdata,(POSIX_LOCK_START_OFFSET+4))) << 32) |
+			((uint64_t) IVAL(pdata,POSIX_LOCK_START_OFFSET));
+	count = (((uint64_t) IVAL(pdata,(POSIX_LOCK_LEN_OFFSET+4))) << 32) |
+			((uint64_t) IVAL(pdata,POSIX_LOCK_LEN_OFFSET));
 #else /* HAVE_LONGLONG */
-	offset = (SMB_BIG_UINT)IVAL(pdata,POSIX_LOCK_START_OFFSET);
-	count = (SMB_BIG_UINT)IVAL(pdata,POSIX_LOCK_LEN_OFFSET);
+	offset = (uint64_t)IVAL(pdata,POSIX_LOCK_START_OFFSET);
+	count = (uint64_t)IVAL(pdata,POSIX_LOCK_LEN_OFFSET);
 #endif /* HAVE_LONGLONG */
 
 	DEBUG(10,("smb_set_posix_lock: file %s, lock_type = %u,"
@@ -5701,7 +5702,7 @@ static NTSTATUS smb_set_file_allocation_info(connection_struct *conn,
 					const char *fname,
 					SMB_STRUCT_STAT *psbuf)
 {
-	SMB_BIG_UINT allocation_size = 0;
+	uint64_t allocation_size = 0;
 	NTSTATUS status = NT_STATUS_OK;
 	files_struct *new_fsp = NULL;
 
@@ -5713,9 +5714,9 @@ static NTSTATUS smb_set_file_allocation_info(connection_struct *conn,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	allocation_size = (SMB_BIG_UINT)IVAL(pdata,0);
+	allocation_size = (uint64_t)IVAL(pdata,0);
 #ifdef LARGE_SMB_OFF_T
-	allocation_size |= (((SMB_BIG_UINT)IVAL(pdata,4)) << 32);
+	allocation_size |= (((uint64_t)IVAL(pdata,4)) << 32);
 #else /* LARGE_SMB_OFF_T */
 	if (IVAL(pdata,4) != 0) {
 		/* more than 32 bits? */
@@ -5770,7 +5771,7 @@ static NTSTATUS smb_set_file_allocation_info(connection_struct *conn,
 	if (allocation_size != get_file_size(*psbuf)) {
 		if (vfs_allocate_file_space(new_fsp, allocation_size) == -1) {
 			status = map_nt_error_from_unix(errno);
-			close_file(new_fsp,NORMAL_CLOSE);
+			close_file(req, new_fsp, NORMAL_CLOSE);
 			return status;
 		}
 	}
@@ -5782,7 +5783,7 @@ static NTSTATUS smb_set_file_allocation_info(connection_struct *conn,
 	 */
 	trigger_write_time_update_immediate(new_fsp);
 
-	close_file(new_fsp,NORMAL_CLOSE);
+	close_file(req, new_fsp, NORMAL_CLOSE);
 	return NT_STATUS_OK;
 }
 
@@ -6195,7 +6196,7 @@ static NTSTATUS smb_posix_mkdir(connection_struct *conn,
 				&fsp);
 
         if (NT_STATUS_IS_OK(status)) {
-                close_file(fsp, NORMAL_CLOSE);
+                close_file(req, fsp, NORMAL_CLOSE);
         }
 
 	info_level_return = SVAL(pdata,16);
@@ -6388,7 +6389,7 @@ static NTSTATUS smb_posix_open(connection_struct *conn,
 	/* Realloc the data size */
 	*ppdata = (char *)SMB_REALLOC(*ppdata,*pdata_return_size);
 	if (*ppdata == NULL) {
-		close_file(fsp,ERROR_CLOSE);
+		close_file(req, fsp, ERROR_CLOSE);
 		*pdata_return_size = 0;
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -6506,7 +6507,7 @@ static NTSTATUS smb_posix_unlink(connection_struct *conn,
 	if (lck == NULL) {
 		DEBUG(0, ("smb_posix_unlink: Could not get share mode "
 			"lock for file %s\n", fsp->fsp_name));
-		close_file(fsp, NORMAL_CLOSE);
+		close_file(req, fsp, NORMAL_CLOSE);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -6522,7 +6523,7 @@ static NTSTATUS smb_posix_unlink(connection_struct *conn,
 				continue;
 			}
 			/* Fail with sharing violation. */
-			close_file(fsp, NORMAL_CLOSE);
+			close_file(req, fsp, NORMAL_CLOSE);
 			TALLOC_FREE(lck);
 			return NT_STATUS_SHARING_VIOLATION;
 		}
@@ -6539,12 +6540,12 @@ static NTSTATUS smb_posix_unlink(connection_struct *conn,
 						psbuf);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		close_file(fsp, NORMAL_CLOSE);
+		close_file(req, fsp, NORMAL_CLOSE);
 		TALLOC_FREE(lck);
 		return status;
 	}
 	TALLOC_FREE(lck);
-	return close_file(fsp, NORMAL_CLOSE);
+	return close_file(req, fsp, NORMAL_CLOSE);
 }
 
 /****************************************************************************
@@ -6581,7 +6582,7 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 			return;
 		}
 
-		fsp = file_fsp(SVAL(params,0));
+		fsp = file_fsp(req, SVAL(params,0));
 		/* Basic check for non-null fsp. */
 	        if (!check_fsp_open(conn, req, fsp)) {
 			return;
@@ -7064,10 +7065,11 @@ static void call_trans2mkdir(connection_struct *conn, struct smb_request *req,
 			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 			return;
 		}
-	} else if (IVAL(pdata,0) != 4) {
-		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
-		return;
 	}
+	/* If total_data == 4 Windows doesn't care what values
+	 * are placed in that field, it just ignores them.
+	 * The System i QNTC IBM SMB client puts bad values here,
+	 * so ignore them. */
 
 	status = create_directory(conn, req, directory);
 
@@ -7249,7 +7251,7 @@ static void call_trans2ioctl(connection_struct *conn,
 			     unsigned int max_data_bytes)
 {
 	char *pdata = *ppdata;
-	files_struct *fsp = file_fsp(SVAL(req->inbuf,smb_vwv15));
+	files_struct *fsp = file_fsp(req, SVAL(req->inbuf,smb_vwv15));
 
 	/* check for an invalid fid before proceeding */
 

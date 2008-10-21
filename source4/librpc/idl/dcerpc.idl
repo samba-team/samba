@@ -205,26 +205,26 @@ interface dcerpc
 	} dcerpc_working;
 
 	typedef [enum8bit] enum {
-		DCERPC_PKT_REQUEST     =  0,
-		DCERPC_PKT_PING        =  1,
-		DCERPC_PKT_RESPONSE    =  2,
-		DCERPC_PKT_FAULT       =  3,
-		DCERPC_PKT_WORKING     =  4,
-		DCERPC_PKT_NOCALL      =  5,
-		DCERPC_PKT_REJECT      =  6,
-		DCERPC_PKT_ACK         =  7,
-		DCERPC_PKT_CL_CANCEL   =  8,
-		DCERPC_PKT_FACK        =  9,
-		DCERPC_PKT_CANCEL_ACK  = 10,
-		DCERPC_PKT_BIND        = 11,
-		DCERPC_PKT_BIND_ACK    = 12,
-		DCERPC_PKT_BIND_NAK    = 13,
-		DCERPC_PKT_ALTER       = 14,
-		DCERPC_PKT_ALTER_RESP  = 15,
-		DCERPC_PKT_AUTH3       = 16,
-		DCERPC_PKT_SHUTDOWN    = 17,
-		DCERPC_PKT_CO_CANCEL   = 18,
-		DCERPC_PKT_ORPHANED    = 19
+		DCERPC_PKT_REQUEST     =  0,	/* Ordinary request. */
+		DCERPC_PKT_PING        =  1,	/* Connectionless is server alive ? */
+		DCERPC_PKT_RESPONSE    =  2,	/* Ordinary reply. */
+		DCERPC_PKT_FAULT       =  3,	/* Fault in processing of call. */
+		DCERPC_PKT_WORKING     =  4,	/* Connectionless reply to a ping when server busy. */
+		DCERPC_PKT_NOCALL      =  5,	/* Connectionless reply to a ping when server has lost part of clients call. */
+		DCERPC_PKT_REJECT      =  6,	/* Refuse a request with a code. */
+		DCERPC_PKT_ACK         =  7,	/* Connectionless client to server code. */
+		DCERPC_PKT_CL_CANCEL   =  8,	/* Connectionless cancel. */
+		DCERPC_PKT_FACK        =  9,	/* Connectionless fragment ack. Both client and server send. */
+		DCERPC_PKT_CANCEL_ACK  = 10,	/* Server ACK to client cancel request. */
+		DCERPC_PKT_BIND        = 11,	/* Bind to interface. */
+		DCERPC_PKT_BIND_ACK    = 12,	/* Server ack of bind. */
+		DCERPC_PKT_BIND_NAK    = 13,	/* Server nack of bind. */
+		DCERPC_PKT_ALTER       = 14,	/* Alter auth. */
+		DCERPC_PKT_ALTER_RESP  = 15,	/* Reply to alter auth. */
+		DCERPC_PKT_AUTH3       = 16, 	/* not the real name!  this is undocumented! */
+		DCERPC_PKT_SHUTDOWN    = 17,	/* Server to client request to shutdown. */
+		DCERPC_PKT_CO_CANCEL   = 18,	/* Connection-oriented cancel request. */
+		DCERPC_PKT_ORPHANED    = 19	/* Client telling server it's aborting a partially sent request or telling server to stop sending replies. */
 	} dcerpc_pkt_type;
 
 	typedef [nodiscriminant] union {
@@ -261,6 +261,7 @@ interface dcerpc
 	const uint8 DCERPC_PFC_FLAG_OBJECT_UUID		= 0x80; /* on valid guid is in the optional object field */
 
 	/* these offsets are needed by the signing code */
+	const uint8 DCERPC_PFC_OFFSET      =  3;
 	const uint8 DCERPC_DREP_OFFSET     =  4;
 	const uint8 DCERPC_FRAG_LEN_OFFSET =  8;
 	const uint8 DCERPC_AUTH_LEN_OFFSET = 10;

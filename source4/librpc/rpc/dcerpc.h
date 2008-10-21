@@ -27,7 +27,7 @@
 #ifndef __DCERPC_H__
 #define __DCERPC_H__
 
-#include "lib/util/data_blob.h"
+#include "../lib/util/data_blob.h"
 #include "librpc/gen_ndr/dcerpc.h"
 #include "librpc/ndr/libndr.h"
 
@@ -374,5 +374,7 @@ NTSTATUS dcerpc_request(struct dcerpc_pipe *p,
 			DATA_BLOB *stub_data_out);
 
 typedef NTSTATUS (*dcerpc_call_fn) (struct dcerpc_pipe *, TALLOC_CTX *, void *);
+
+enum dcerpc_transport_t dcerpc_transport_by_endpoint_protocol(int prot);
 
 #endif /* __DCERPC_H__ */

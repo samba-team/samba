@@ -24,7 +24,7 @@
 #include "system/time.h"
 #include "librpc/gen_ndr/lsa.h"
 #include "librpc/gen_ndr/ndr_samr_c.h"
-#include "lib/crypto/crypto.h"
+#include "../lib/crypto/crypto.h"
 #include "libcli/auth/libcli_auth.h"
 #include "libcli/security/security.h"
 #include "torture/rpc/rpc.h"
@@ -495,6 +495,24 @@ static char *samr_rand_pass(TALLOC_CTX *mem_ctx, int min_len)
 	char *s = generate_random_str(mem_ctx, len);
 	printf("Generated password '%s'\n", s);
 	return s;
+}
+
+/*
+  generate a random password for password change tests
+*/
+static DATA_BLOB samr_very_rand_pass(TALLOC_CTX *mem_ctx, int len)
+{
+	int i;
+	DATA_BLOB password = data_blob_talloc(mem_ctx, NULL, len * 2 /* number of unicode chars */);
+	generate_random_buffer(password.data, password.length);
+
+	for (i=0; i < len; i++) {
+		if (((uint16_t *)password.data)[i] == 0) {
+			((uint16_t *)password.data)[i] = 1;
+		}
+	}
+
+	return password;
 }
 
 /*
@@ -1841,6 +1859,156 @@ bool test_ChangePasswordUser3(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
+bool test_ChangePasswordRandomBytes(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+				    const char *account_string,
+				    struct policy_handle *handle, 
+				    char **password)
+{
+	NTSTATUS status;
+	struct samr_ChangePasswordUser3 r;
+	struct samr_SetUserInfo s;
+	union samr_UserInfo u;
+	DATA_BLOB session_key;
+	DATA_BLOB confounded_session_key = data_blob_talloc(mem_ctx, NULL, 16);
+	uint8_t confounder[16];
+	struct MD5Context ctx;
+
+	bool ret = true;
+	struct lsa_String server, account;
+	struct samr_CryptPassword nt_pass;
+	struct samr_Password nt_verifier;
+	DATA_BLOB new_random_pass;
+	char *newpass;
+	char *oldpass;
+	uint8_t old_nt_hash[16], new_nt_hash[16];
+	NTTIME t;
+
+	new_random_pass = samr_very_rand_pass(mem_ctx, 128);
+
+	if (!*password) {
+		printf("Failing ChangePasswordUser3 as old password was NULL.  Previous test failed?\n");
+		return false;
+	}
+
+	oldpass = *password;
+	server.string = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
+	init_lsa_String(&account, account_string);
+
+	s.in.user_handle = handle;
+	s.in.info = &u;
+	s.in.level = 25;
+
+	ZERO_STRUCT(u);
+
+	u.info25.info.fields_present = SAMR_FIELD_PASSWORD;
+
+	set_pw_in_buffer(u.info25.password.data, &new_random_pass);
+
+	status = dcerpc_fetch_session_key(p, &session_key);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("SetUserInfo level %u - no session key - %s\n",
+		       s.in.level, nt_errstr(status));
+		return false;
+	}
+
+	generate_random_buffer((uint8_t *)confounder, 16);
+
+	MD5Init(&ctx);
+	MD5Update(&ctx, confounder, 16);
+	MD5Update(&ctx, session_key.data, session_key.length);
+	MD5Final(confounded_session_key.data, &ctx);
+
+	arcfour_crypt_blob(u.info25.password.data, 516, &confounded_session_key);
+	memcpy(&u.info25.password.data[516], confounder, 16);
+
+	printf("Testing SetUserInfo level 25 (set password ex) with a password made up of only random bytes\n");
+
+	status = dcerpc_samr_SetUserInfo(p, mem_ctx, &s);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("SetUserInfo level %u failed - %s\n",
+		       s.in.level, nt_errstr(status));
+		ret = false;
+	}
+
+	printf("Testing ChangePasswordUser3 with a password made up of only random bytes\n");
+
+	mdfour(old_nt_hash, new_random_pass.data, new_random_pass.length);
+
+	new_random_pass = samr_very_rand_pass(mem_ctx, 128);
+
+	mdfour(new_nt_hash, new_random_pass.data, new_random_pass.length);
+
+	set_pw_in_buffer(nt_pass.data, &new_random_pass);
+	arcfour_crypt(nt_pass.data, old_nt_hash, 516);
+	E_old_pw_hash(new_nt_hash, old_nt_hash, nt_verifier.hash);
+
+	r.in.server = &server;
+	r.in.account = &account;
+	r.in.nt_password = &nt_pass;
+	r.in.nt_verifier = &nt_verifier;
+	r.in.lm_change = 0;
+	r.in.lm_password = NULL;
+	r.in.lm_verifier = NULL;
+	r.in.password3 = NULL;
+
+	unix_to_nt_time(&t, time(NULL));
+
+	status = dcerpc_samr_ChangePasswordUser3(p, mem_ctx, &r);
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_PASSWORD_RESTRICTION)) {
+		if (r.out.reject && r.out.reject->reason != SAMR_REJECT_OTHER) {
+			printf("expected SAMR_REJECT_OTHER (%d), got %d\n", 
+			       SAMR_REJECT_OTHER, r.out.reject->reason);
+			return false;
+		}
+		/* Perhaps the server has a 'min password age' set? */
+
+	} else if (!NT_STATUS_IS_OK(status)) {
+		printf("ChangePasswordUser3 failed - %s\n", nt_errstr(status));
+		ret = false;
+	}
+	
+	newpass = samr_rand_pass(mem_ctx, 128);
+
+	mdfour(old_nt_hash, new_random_pass.data, new_random_pass.length);
+
+	E_md4hash(newpass, new_nt_hash);
+
+	encode_pw_buffer(nt_pass.data, newpass, STR_UNICODE);
+	arcfour_crypt(nt_pass.data, old_nt_hash, 516);
+	E_old_pw_hash(new_nt_hash, old_nt_hash, nt_verifier.hash);
+
+	r.in.server = &server;
+	r.in.account = &account;
+	r.in.nt_password = &nt_pass;
+	r.in.nt_verifier = &nt_verifier;
+	r.in.lm_change = 0;
+	r.in.lm_password = NULL;
+	r.in.lm_verifier = NULL;
+	r.in.password3 = NULL;
+
+	unix_to_nt_time(&t, time(NULL));
+
+	status = dcerpc_samr_ChangePasswordUser3(p, mem_ctx, &r);
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_PASSWORD_RESTRICTION)) {
+		if (r.out.reject && r.out.reject->reason != SAMR_REJECT_OTHER) {
+			printf("expected SAMR_REJECT_OTHER (%d), got %d\n", 
+			       SAMR_REJECT_OTHER, r.out.reject->reason);
+			return false;
+		}
+		/* Perhaps the server has a 'min password age' set? */
+
+	} else if (!NT_STATUS_IS_OK(status)) {
+		printf("ChangePasswordUser3 (on second random password) failed - %s\n", nt_errstr(status));
+		ret = false;
+	} else {
+		*password = talloc_strdup(mem_ctx, newpass);
+	}
+
+	return ret;
+}
+
 
 static bool test_GetMembersInAlias(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				  struct policy_handle *alias_handle)
@@ -2061,7 +2229,11 @@ static bool test_user_ops(struct dcerpc_pipe *p,
 			if (!test_ChangePasswordUser2(p, tctx, base_acct_name, &password, samr_rand_pass(tctx, 4), false)) {
 				ret = false;
 			}
-			
+
+			/* Try a compleatly random password */
+			if (!test_ChangePasswordRandomBytes(p, tctx, base_acct_name, user_handle, &password)) {
+				ret = false;
+			}
 		}
 		
 		for (i = 0; password_fields[i]; i++) {
@@ -2554,7 +2726,7 @@ static bool test_CreateUser(struct dcerpc_pipe *p, struct torture_context *tctx,
 	status = dcerpc_samr_CreateUser(p, user_ctx, &r);
 
 	if (dom_sid_equal(domain_sid, dom_sid_parse_talloc(tctx, SID_BUILTIN))) {
-		if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+		if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED) || NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER)) {
 			printf("Server correctly refused create of '%s'\n", r.in.account_name->string);
 			return true;
 		} else {
@@ -2678,7 +2850,7 @@ static bool test_CreateUser2(struct dcerpc_pipe *p, struct torture_context *tctx
 		status = dcerpc_samr_CreateUser2(p, user_ctx, &r);
 		
 		if (dom_sid_equal(domain_sid, dom_sid_parse_talloc(tctx, SID_BUILTIN))) {
-			if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+			if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED) || NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER)) {
 				printf("Server correctly refused create of '%s'\n", r.in.account_name->string);
 				continue;
 			} else {
@@ -4525,7 +4697,7 @@ static bool test_Connect(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	printf("testing samr_Connect4\n");
 
 	r4.in.system_name = "";
-	r4.in.unknown = 0;
+	r4.in.client_version = 0;
 	r4.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r4.out.connect_handle = &h;
 
@@ -4543,7 +4715,7 @@ static bool test_Connect(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	printf("testing samr_Connect5\n");
 
-	info.info1.unknown1 = 0;
+	info.info1.client_version = 0;
 	info.info1.unknown2 = 0;
 
 	r5.in.system_name = "";

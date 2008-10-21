@@ -2494,24 +2494,26 @@ SWIG_Python_MustGetPtr(PyObject *obj, swig_type_info *ty, int argnum, int flags)
 #define SWIGTYPE_p_ldb_ldif swig_types[8]
 #define SWIGTYPE_p_ldb_message swig_types[9]
 #define SWIGTYPE_p_ldb_message_element swig_types[10]
-#define SWIGTYPE_p_ldb_result swig_types[11]
-#define SWIGTYPE_p_loadparm_context swig_types[12]
-#define SWIGTYPE_p_loadparm_service swig_types[13]
-#define SWIGTYPE_p_long_long swig_types[14]
-#define SWIGTYPE_p_param_context swig_types[15]
-#define SWIGTYPE_p_param_opt swig_types[16]
-#define SWIGTYPE_p_param_section swig_types[17]
-#define SWIGTYPE_p_security_descriptor swig_types[18]
-#define SWIGTYPE_p_security_token swig_types[19]
-#define SWIGTYPE_p_short swig_types[20]
-#define SWIGTYPE_p_signed_char swig_types[21]
-#define SWIGTYPE_p_unsigned_char swig_types[22]
-#define SWIGTYPE_p_unsigned_int swig_types[23]
-#define SWIGTYPE_p_unsigned_long swig_types[24]
-#define SWIGTYPE_p_unsigned_long_long swig_types[25]
-#define SWIGTYPE_p_unsigned_short swig_types[26]
-static swig_type_info *swig_types[28];
-static swig_module_info swig_module = {swig_types, 27, 0, 0, 0, 0};
+#define SWIGTYPE_p_ldb_module swig_types[11]
+#define SWIGTYPE_p_ldb_parse_tree swig_types[12]
+#define SWIGTYPE_p_ldb_result swig_types[13]
+#define SWIGTYPE_p_loadparm_context swig_types[14]
+#define SWIGTYPE_p_loadparm_service swig_types[15]
+#define SWIGTYPE_p_long_long swig_types[16]
+#define SWIGTYPE_p_param_context swig_types[17]
+#define SWIGTYPE_p_param_opt swig_types[18]
+#define SWIGTYPE_p_param_section swig_types[19]
+#define SWIGTYPE_p_security_descriptor swig_types[20]
+#define SWIGTYPE_p_security_token swig_types[21]
+#define SWIGTYPE_p_short swig_types[22]
+#define SWIGTYPE_p_signed_char swig_types[23]
+#define SWIGTYPE_p_unsigned_char swig_types[24]
+#define SWIGTYPE_p_unsigned_int swig_types[25]
+#define SWIGTYPE_p_unsigned_long swig_types[26]
+#define SWIGTYPE_p_unsigned_long_long swig_types[27]
+#define SWIGTYPE_p_unsigned_short swig_types[28]
+static swig_type_info *swig_types[30];
+static swig_module_info swig_module = {swig_types, 29, 0, 0, 0, 0};
 #define SWIG_TypeQuery(name) SWIG_TypeQueryModule(&swig_module, &swig_module, name)
 #define SWIG_MangledTypeQuery(name) SWIG_MangledTypeQueryModule(&swig_module, &swig_module, name)
 
@@ -3340,6 +3342,8 @@ static swig_type_info _swigt__p_ldb_dn = {"_p_ldb_dn", "struct ldb_dn *|ldb_dn *
 static swig_type_info _swigt__p_ldb_ldif = {"_p_ldb_ldif", "struct ldb_ldif *|ldb_ldif *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_ldb_message = {"_p_ldb_message", "ldb_msg *|struct ldb_message *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_ldb_message_element = {"_p_ldb_message_element", "struct ldb_message_element *|ldb_message_element *", 0, 0, (void*)0, 0};
+static swig_type_info _swigt__p_ldb_module = {"_p_ldb_module", "struct ldb_module *|ldb_module *", 0, 0, (void*)0, 0};
+static swig_type_info _swigt__p_ldb_parse_tree = {"_p_ldb_parse_tree", "struct ldb_parse_tree *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_ldb_result = {"_p_ldb_result", "struct ldb_result *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_loadparm_context = {"_p_loadparm_context", "struct loadparm_context *|loadparm_context *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_loadparm_service = {"_p_loadparm_service", "struct loadparm_service *|loadparm_service *", 0, 0, (void*)0, 0};
@@ -3369,6 +3373,8 @@ static swig_type_info *swig_type_initial[] = {
   &_swigt__p_ldb_ldif,
   &_swigt__p_ldb_message,
   &_swigt__p_ldb_message_element,
+  &_swigt__p_ldb_module,
+  &_swigt__p_ldb_parse_tree,
   &_swigt__p_ldb_result,
   &_swigt__p_loadparm_context,
   &_swigt__p_loadparm_service,
@@ -3398,6 +3404,8 @@ static swig_cast_info _swigc__p_ldb_dn[] = {  {&_swigt__p_ldb_dn, 0, 0, 0},{0, 0
 static swig_cast_info _swigc__p_ldb_ldif[] = {  {&_swigt__p_ldb_ldif, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_ldb_message[] = {  {&_swigt__p_ldb_message, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_ldb_message_element[] = {  {&_swigt__p_ldb_message_element, 0, 0, 0},{0, 0, 0, 0}};
+static swig_cast_info _swigc__p_ldb_module[] = {  {&_swigt__p_ldb_module, 0, 0, 0},{0, 0, 0, 0}};
+static swig_cast_info _swigc__p_ldb_parse_tree[] = {  {&_swigt__p_ldb_parse_tree, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_ldb_result[] = {  {&_swigt__p_ldb_result, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_loadparm_context[] = {  {&_swigt__p_loadparm_context, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_loadparm_service[] = {  {&_swigt__p_loadparm_service, 0, 0, 0},{0, 0, 0, 0}};
@@ -3427,6 +3435,8 @@ static swig_cast_info *swig_cast_initial[] = {
   _swigc__p_ldb_ldif,
   _swigc__p_ldb_message,
   _swigc__p_ldb_message_element,
+  _swigc__p_ldb_module,
+  _swigc__p_ldb_parse_tree,
   _swigc__p_ldb_result,
   _swigc__p_loadparm_context,
   _swigc__p_loadparm_service,

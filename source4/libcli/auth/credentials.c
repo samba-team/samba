@@ -23,7 +23,7 @@
 #include "includes.h"
 #include "system/time.h"
 #include "auth/auth.h"
-#include "lib/crypto/crypto.h"
+#include "../lib/crypto/crypto.h"
 #include "libcli/auth/libcli_auth.h"
 
 /*

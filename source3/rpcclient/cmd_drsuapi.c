@@ -103,7 +103,7 @@ static WERROR cmd_drsuapi_cracknames(struct rpc_pipe_client *cli,
 
 	werr = cracknames(cli, mem_ctx,
 			  &bind_handle,
-			  DRSUAPI_DS_NAME_FORMAT_UKNOWN,
+			  DRSUAPI_DS_NAME_FORMAT_UNKNOWN,
 			  DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
 			  1,
 			  argv+1,
@@ -419,7 +419,7 @@ static WERROR cmd_drsuapi_getncchanges(struct rpc_pipe_client *cli,
 
 		werr = cracknames(cli, mem_ctx,
 				  &bind_handle,
-				  DRSUAPI_DS_NAME_FORMAT_UKNOWN,
+				  DRSUAPI_DS_NAME_FORMAT_UNKNOWN,
 				  DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
 				  1,
 				  &name,
@@ -495,9 +495,9 @@ static WERROR cmd_drsuapi_getncchanges(struct rpc_pipe_client *cli,
 		if (level_out == 1) {
 			out_level = 1;
 			ctr1 = &ctr.ctr1;
-		} else if (level_out == 2) {
+		} else if (level_out == 2 && ctr.ctr2.mszip1.ts) {
 			out_level = 1;
-			ctr1 = ctr.ctr2.ctr.mszip1.ctr1;
+			ctr1 = &ctr.ctr2.mszip1.ts->ctr1;
 		}
 
 		status = cli_get_session_key(mem_ctx, cli, &session_key);
@@ -527,9 +527,16 @@ static WERROR cmd_drsuapi_getncchanges(struct rpc_pipe_client *cli,
 			ctr6 = &ctr.ctr6;
 		} else if (level_out == 7
 			   && ctr.ctr7.level == 6
-			   && ctr.ctr7.type == DRSUAPI_COMPRESSION_TYPE_MSZIP) {
+			   && ctr.ctr7.type == DRSUAPI_COMPRESSION_TYPE_MSZIP
+			   && ctr.ctr7.ctr.mszip6.ts) {
 			out_level = 6;
-			ctr6 = ctr.ctr7.ctr.mszip6.ctr6;
+			ctr6 = &ctr.ctr7.ctr.mszip6.ts->ctr6;
+		} else if (level_out == 7
+			   && ctr.ctr7.level == 6
+			   && ctr.ctr7.type == DRSUAPI_COMPRESSION_TYPE_XPRESS
+			   && ctr.ctr7.ctr.xpress6.ts) {
+			out_level = 6;
+			ctr6 = &ctr.ctr7.ctr.xpress6.ts->ctr6;
 		}
 
 		if (out_level == 6) {

@@ -174,9 +174,6 @@ typedef uint32 codepoint_t;
 /* pipe string names */
 #define PIPE_LANMAN   "\\PIPE\\LANMAN"
 
-/* 64 bit time (100usec) since ????? - cifs6.txt, section 3.5, page 30 */
-typedef uint64_t NTTIME;
-
 #define MAX_HOURS_LEN 32
 
 #ifndef MAXSUBAUTHS
@@ -248,15 +245,6 @@ struct id_map {
 	struct unixid xid;
 	enum id_mapping status;
 };
-
-/* used to hold an arbitrary blob of data */
-typedef struct data_blob {
-	uint8 *data;
-	size_t length;
-	void (*free)(struct data_blob *data_blob);
-} DATA_BLOB;
-
-extern const DATA_BLOB data_blob_null;
 
 #include "librpc/gen_ndr/misc.h"
 #include "librpc/gen_ndr/security.h"
@@ -372,7 +360,7 @@ typedef struct {
 struct fd_handle {
 	size_t ref_count;
 	int fd;
-	SMB_BIG_UINT position_information;
+	uint64_t position_information;
 	SMB_OFF_T pos;
 	uint32 private_options;	/* NT Create options, but we only look at
 				 * NTCREATEX_OPTIONS_PRIVATE_DENY_DOS and
@@ -391,6 +379,7 @@ struct idle_event;
 struct share_mode_entry;
 struct uuid;
 struct named_mutex;
+struct pcap_cache;
 
 struct vfs_fsp_data {
     struct vfs_fsp_data *next;
@@ -447,7 +436,7 @@ typedef struct files_struct {
 	unsigned int num_smb_operations;
 	uint16 rap_print_jobid;
 	struct file_id file_id;
-	SMB_BIG_UINT initial_allocation_size; /* Faked up initial allocation on disk. */
+	uint64_t initial_allocation_size; /* Faked up initial allocation on disk. */
 	mode_t mode;
 	uint16 file_pid;
 	uint16 vuid;
@@ -558,10 +547,10 @@ struct stream_struct {
 
 struct dfree_cached_info {
 	time_t last_dfree_time;
-	SMB_BIG_UINT dfree_ret;
-	SMB_BIG_UINT bsize;
-	SMB_BIG_UINT dfree;
-	SMB_BIG_UINT dsize;
+	uint64_t dfree_ret;
+	uint64_t bsize;
+	uint64_t dfree;
+	uint64_t dsize;
 };
 
 struct dptr_struct;
@@ -647,6 +636,7 @@ struct smb_request {
 	size_t unread_bytes;
 	bool encrypted;
 	connection_struct *conn;
+	struct files_struct *chain_fsp;
 };
 
 /* Defines for the sent_oplock_break field above. */

@@ -25,7 +25,7 @@
 
 #include "includes.h"
 #include "lib/events/events.h"
-#include "lib/tdb/include/tdb.h"
+#include "../tdb/include/tdb.h"
 #include "lib/socket/socket.h"
 #include "smbd/process_model.h"
 #include "param/secrets.h"
@@ -189,7 +189,7 @@ static void prefork_new_task(struct event_context *ev,
 
 
 /* called when a task goes down */
-_NORETURN_ static void prefork_terminate(struct event_context *ev, const char *reason) 
+_NORETURN_ static void prefork_terminate(struct event_context *ev, struct loadparm_context *lp_ctx, const char *reason) 
 {
 	DEBUG(2,("prefork_terminate: reason[%s]\n",reason));
 }

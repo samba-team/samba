@@ -21,7 +21,7 @@
 
 #include "includes.h"
 
-static unsigned char smb_arc4_state[258];
+static struct arcfour_state smb_arc4_state;
 static uint32 counter;
 
 static bool done_reseed = False;
@@ -89,6 +89,7 @@ static void do_filehash(const char *fname, unsigned char *the_hash)
 static int do_reseed(bool use_fd, int fd)
 {
 	unsigned char seed_inbuf[40];
+	DATA_BLOB seed_blob = { seed_inbuf, 40 };
 	uint32 v1, v2; struct timeval tval; pid_t mypid;
 	struct passwd *pw;
 	int reseed_data = 0;
@@ -146,7 +147,7 @@ static int do_reseed(bool use_fd, int fd)
 			seed_inbuf[i] ^= ((char *)(&reseed_data))[i % sizeof(reseed_data)];
 	}
 
-	smb_arc4_init(smb_arc4_state, seed_inbuf, sizeof(seed_inbuf));
+	arcfour_init(&smb_arc4_state, &seed_blob);
 
 	return -1;
 }
@@ -155,7 +156,7 @@ static int do_reseed(bool use_fd, int fd)
  Interface to the (hopefully) good crypto random number generator.
 ********************************************************************/
 
-void generate_random_buffer( unsigned char *out, int len)
+void generate_random_buffer(uint8_t *out, int len)
 {
 	static int urand_fd = -1;
 	unsigned char md4_buf[64];
@@ -190,7 +191,7 @@ void generate_random_buffer( unsigned char *out, int len)
 	while(len > 0) {
 		int copy_len = len > 16 ? 16 : len;
 
-		smb_arc4_crypt(smb_arc4_state, md4_buf, sizeof(md4_buf));
+		arcfour_crypt_sbox(&smb_arc4_state, md4_buf, sizeof(md4_buf));
 		mdfour(tmp_buf, md4_buf, sizeof(md4_buf));
 		memcpy(p, tmp_buf, copy_len);
 		p += copy_len;
@@ -204,15 +205,11 @@ void generate_random_buffer( unsigned char *out, int len)
 
 static char c_list[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+_-#.,";
 
-char *generate_random_str(size_t len)
+char *generate_random_str(TALLOC_CTX *mem_ctx, size_t len)
 {
-	static unsigned char retstr[256];
+	unsigned char *retstr = talloc_zero_array(mem_ctx, unsigned char, len);
 	size_t i;
 
-	memset(retstr, '\0', sizeof(retstr));
-
-	if (len > sizeof(retstr)-1)
-		len = sizeof(retstr) -1;
 	generate_random_buffer( retstr, len);
 	for (i = 0; i < len; i++)
 		retstr[i] = c_list[ retstr[i] % (sizeof(c_list)-1) ];

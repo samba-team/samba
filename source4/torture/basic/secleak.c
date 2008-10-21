@@ -36,8 +36,11 @@ static bool try_failed_login(struct torture_context *tctx, struct smbcli_state *
 	NTSTATUS status;
 	struct smb_composite_sesssetup setup;
 	struct smbcli_session *session;
+	struct smbcli_session_options options;
 
-	session = smbcli_session_init(cli->transport, cli, false);
+	lp_smbcli_session_options(tctx->lp_ctx, &options);
+
+	session = smbcli_session_init(cli->transport, cli, false, options);
 	setup.in.sesskey = cli->transport->negotiate.sesskey;
 	setup.in.capabilities = cli->transport->negotiate.capabilities;
 	setup.in.workgroup = lp_workgroup(tctx->lp_ctx);

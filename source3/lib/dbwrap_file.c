@@ -105,7 +105,7 @@ static struct db_record *db_file_fetch_locked(struct db_context *db,
 
 	/* Cut to 8 bits */
 	file->hash = fsh(key.dptr, key.dsize);
-	file->name = hex_encode(file, (unsigned char *)key.dptr, key.dsize);
+	file->name = hex_encode_talloc(file, (unsigned char *)key.dptr, key.dsize);
 	if (file->name == NULL) {
 		DEBUG(0, ("hex_encode failed\n"));
 		TALLOC_FREE(result);

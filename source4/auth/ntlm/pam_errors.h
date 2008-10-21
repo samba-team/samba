@@ -20,19 +20,6 @@
 #ifndef __AUTH_NTLM_PAM_ERRORS_H__
 #define __AUTH_NTLM_PAM_ERRORS_H__
 
-/* The following definitions come from auth/pam_errors.c  */
-
-
-/*****************************************************************************
-convert a PAM error to a NT status32 code
- *****************************************************************************/
-NTSTATUS pam_to_nt_status(int pam_error);
-
-/*****************************************************************************
-convert an NT status32 code to a PAM error
- *****************************************************************************/
-int nt_status_to_pam(NTSTATUS nt_status);
-
 /*****************************************************************************
 convert a PAM error to a NT status32 code
  *****************************************************************************/

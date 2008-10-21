@@ -5,6 +5,8 @@
 
 #include "librpc/gen_ndr/ndr_drsuapi.h"
 #include "librpc/gen_ndr/ndr_misc.h"
+#include "librpc/gen_ndr/ndr_samr.h"
+#include "librpc/gen_ndr/ndr_lsa.h"
 static enum ndr_err_code ndr_push_replPropertyMetaData1(struct ndr_push *ndr, int ndr_flags, const struct replPropertyMetaData1 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
@@ -2165,10 +2167,10 @@ _PUBLIC_ enum ndr_err_code ndr_push_package_PrimaryCLEARTEXTBlob(struct ndr_push
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
 		{
-			uint32_t _flags_save_string = ndr->flags;
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NOTERM|LIBNDR_FLAG_REMAINING);
-			NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->cleartext));
-			ndr->flags = _flags_save_string;
+			uint32_t _flags_save_DATA_BLOB = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_REMAINING);
+			NDR_CHECK(ndr_push_DATA_BLOB(ndr, NDR_SCALARS, r->cleartext));
+			ndr->flags = _flags_save_DATA_BLOB;
 		}
 	}
 	if (ndr_flags & NDR_BUFFERS) {
@@ -2181,10 +2183,10 @@ _PUBLIC_ enum ndr_err_code ndr_pull_package_PrimaryCLEARTEXTBlob(struct ndr_pull
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		{
-			uint32_t _flags_save_string = ndr->flags;
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NOTERM|LIBNDR_FLAG_REMAINING);
-			NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->cleartext));
-			ndr->flags = _flags_save_string;
+			uint32_t _flags_save_DATA_BLOB = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_REMAINING);
+			NDR_CHECK(ndr_pull_DATA_BLOB(ndr, NDR_SCALARS, &r->cleartext));
+			ndr->flags = _flags_save_DATA_BLOB;
 		}
 	}
 	if (ndr_flags & NDR_BUFFERS) {
@@ -2196,7 +2198,7 @@ _PUBLIC_ void ndr_print_package_PrimaryCLEARTEXTBlob(struct ndr_print *ndr, cons
 {
 	ndr_print_struct(ndr, name, "package_PrimaryCLEARTEXTBlob");
 	ndr->depth++;
-	ndr_print_string(ndr, "cleartext", r->cleartext);
+	ndr_print_DATA_BLOB(ndr, "cleartext", r->cleartext);
 	ndr->depth--;
 }
 
@@ -2311,359 +2313,157 @@ _PUBLIC_ void ndr_print_package_PrimaryWDigestBlob(struct ndr_print *ndr, const 
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_trustAuthInOutSecret1(struct ndr_push *ndr, int ndr_flags, const struct trustAuthInOutSecret1 *r)
+static enum ndr_err_code ndr_push_AuthInfoNone(struct ndr_push *ndr, int ndr_flags, const struct AuthInfoNone *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
-		NDR_CHECK(ndr_push_NTTIME(ndr, NDR_SCALARS, r->time1));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->unknown1));
-		NDR_CHECK(ndr_push_DATA_BLOB(ndr, NDR_SCALARS, r->value));
-		{
-			uint32_t _flags_save_DATA_BLOB = ndr->flags;
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_ALIGN4);
-			NDR_CHECK(ndr_push_DATA_BLOB(ndr, NDR_SCALARS, r->_pad));
-			ndr->flags = _flags_save_DATA_BLOB;
-		}
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_trustAuthInOutSecret1(struct ndr_pull *ndr, int ndr_flags, struct trustAuthInOutSecret1 *r)
+static enum ndr_err_code ndr_pull_AuthInfoNone(struct ndr_pull *ndr, int ndr_flags, struct AuthInfoNone *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
-		NDR_CHECK(ndr_pull_NTTIME(ndr, NDR_SCALARS, &r->time1));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->unknown1));
-		NDR_CHECK(ndr_pull_DATA_BLOB(ndr, NDR_SCALARS, &r->value));
-		{
-			uint32_t _flags_save_DATA_BLOB = ndr->flags;
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_ALIGN4);
-			NDR_CHECK(ndr_pull_DATA_BLOB(ndr, NDR_SCALARS, &r->_pad));
-			ndr->flags = _flags_save_DATA_BLOB;
-		}
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->size));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
 	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ void ndr_print_trustAuthInOutSecret1(struct ndr_print *ndr, const char *name, const struct trustAuthInOutSecret1 *r)
+_PUBLIC_ void ndr_print_AuthInfoNone(struct ndr_print *ndr, const char *name, const struct AuthInfoNone *r)
 {
-	ndr_print_struct(ndr, name, "trustAuthInOutSecret1");
+	ndr_print_struct(ndr, name, "AuthInfoNone");
 	ndr->depth++;
-	ndr_print_NTTIME(ndr, "time1", r->time1);
-	ndr_print_uint32(ndr, "unknown1", r->unknown1);
-	ndr_print_DATA_BLOB(ndr, "value", r->value);
-	ndr_print_DATA_BLOB(ndr, "_pad", r->_pad);
+	ndr_print_uint32(ndr, "size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?0:r->size);
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_trustAuthInOutCtr1(struct ndr_push *ndr, int ndr_flags, const struct trustAuthInOutCtr1 *r)
+static enum ndr_err_code ndr_push_AuthInfoNT4Owf(struct ndr_push *ndr, int ndr_flags, const struct AuthInfoNT4Owf *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
-		NDR_CHECK(ndr_push_relative_ptr1(ndr, r->value1));
-		NDR_CHECK(ndr_push_relative_ptr1(ndr, r->value2));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 16));
+		NDR_CHECK(ndr_push_samr_Password(ndr, NDR_SCALARS, &r->password));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
-		if (r->value1) {
-			NDR_CHECK(ndr_push_relative_ptr2(ndr, r->value1));
-			NDR_CHECK(ndr_push_trustAuthInOutSecret1(ndr, NDR_SCALARS, r->value1));
-		}
-		if (r->value2) {
-			NDR_CHECK(ndr_push_relative_ptr2(ndr, r->value2));
-			NDR_CHECK(ndr_push_trustAuthInOutSecret1(ndr, NDR_SCALARS, r->value2));
-		}
+		NDR_CHECK(ndr_push_samr_Password(ndr, NDR_BUFFERS, &r->password));
 	}
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_trustAuthInOutCtr1(struct ndr_pull *ndr, int ndr_flags, struct trustAuthInOutCtr1 *r)
+static enum ndr_err_code ndr_pull_AuthInfoNT4Owf(struct ndr_pull *ndr, int ndr_flags, struct AuthInfoNT4Owf *r)
 {
-	uint32_t _ptr_value1;
-	TALLOC_CTX *_mem_save_value1_0;
-	uint32_t _ptr_value2;
-	TALLOC_CTX *_mem_save_value2_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
-		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_value1));
-		if (_ptr_value1) {
-			NDR_PULL_ALLOC(ndr, r->value1);
-			NDR_CHECK(ndr_pull_relative_ptr1(ndr, r->value1, _ptr_value1));
-		} else {
-			r->value1 = NULL;
-		}
-		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_value2));
-		if (_ptr_value2) {
-			NDR_PULL_ALLOC(ndr, r->value2);
-			NDR_CHECK(ndr_pull_relative_ptr1(ndr, r->value2, _ptr_value2));
-		} else {
-			r->value2 = NULL;
-		}
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->size));
+		NDR_CHECK(ndr_pull_samr_Password(ndr, NDR_SCALARS, &r->password));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
-		if (r->value1) {
-			uint32_t _relative_save_offset;
-			_relative_save_offset = ndr->offset;
-			NDR_CHECK(ndr_pull_relative_ptr2(ndr, r->value1));
-			_mem_save_value1_0 = NDR_PULL_GET_MEM_CTX(ndr);
-			NDR_PULL_SET_MEM_CTX(ndr, r->value1, 0);
-			NDR_CHECK(ndr_pull_trustAuthInOutSecret1(ndr, NDR_SCALARS, r->value1));
-			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_value1_0, 0);
-			ndr->offset = _relative_save_offset;
-		}
-		if (r->value2) {
-			uint32_t _relative_save_offset;
-			_relative_save_offset = ndr->offset;
-			NDR_CHECK(ndr_pull_relative_ptr2(ndr, r->value2));
-			_mem_save_value2_0 = NDR_PULL_GET_MEM_CTX(ndr);
-			NDR_PULL_SET_MEM_CTX(ndr, r->value2, 0);
-			NDR_CHECK(ndr_pull_trustAuthInOutSecret1(ndr, NDR_SCALARS, r->value2));
-			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_value2_0, 0);
-			ndr->offset = _relative_save_offset;
-		}
+		NDR_CHECK(ndr_pull_samr_Password(ndr, NDR_BUFFERS, &r->password));
 	}
 	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ void ndr_print_trustAuthInOutCtr1(struct ndr_print *ndr, const char *name, const struct trustAuthInOutCtr1 *r)
+_PUBLIC_ void ndr_print_AuthInfoNT4Owf(struct ndr_print *ndr, const char *name, const struct AuthInfoNT4Owf *r)
 {
-	ndr_print_struct(ndr, name, "trustAuthInOutCtr1");
+	ndr_print_struct(ndr, name, "AuthInfoNT4Owf");
 	ndr->depth++;
-	ndr_print_ptr(ndr, "value1", r->value1);
-	ndr->depth++;
-	if (r->value1) {
-		ndr_print_trustAuthInOutSecret1(ndr, "value1", r->value1);
-	}
-	ndr->depth--;
-	ndr_print_ptr(ndr, "value2", r->value2);
-	ndr->depth++;
-	if (r->value2) {
-		ndr_print_trustAuthInOutSecret1(ndr, "value2", r->value2);
-	}
-	ndr->depth--;
+	ndr_print_uint32(ndr, "size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?16:r->size);
+	ndr_print_samr_Password(ndr, "password", &r->password);
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_trustAuthInOutSecret2V1(struct ndr_push *ndr, int ndr_flags, const struct trustAuthInOutSecret2V1 *r)
+static enum ndr_err_code ndr_push_AuthInfoClear(struct ndr_push *ndr, int ndr_flags, const struct AuthInfoClear *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
-		NDR_CHECK(ndr_push_NTTIME(ndr, NDR_SCALARS, r->time1));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->unknown1));
-		NDR_CHECK(ndr_push_DATA_BLOB(ndr, NDR_SCALARS, r->value));
-		NDR_CHECK(ndr_push_NTTIME(ndr, NDR_SCALARS, r->time2));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->unknown2));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->unknown3));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->unknown4));
-		{
-			uint32_t _flags_save_DATA_BLOB = ndr->flags;
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_ALIGN4);
-			NDR_CHECK(ndr_push_DATA_BLOB(ndr, NDR_SCALARS, r->_pad));
-			ndr->flags = _flags_save_DATA_BLOB;
-		}
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->size));
+		NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->password, r->size));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_trustAuthInOutSecret2V1(struct ndr_pull *ndr, int ndr_flags, struct trustAuthInOutSecret2V1 *r)
+static enum ndr_err_code ndr_pull_AuthInfoClear(struct ndr_pull *ndr, int ndr_flags, struct AuthInfoClear *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
-		NDR_CHECK(ndr_pull_NTTIME(ndr, NDR_SCALARS, &r->time1));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->unknown1));
-		NDR_CHECK(ndr_pull_DATA_BLOB(ndr, NDR_SCALARS, &r->value));
-		NDR_CHECK(ndr_pull_NTTIME(ndr, NDR_SCALARS, &r->time2));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->unknown2));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->unknown3));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->unknown4));
-		{
-			uint32_t _flags_save_DATA_BLOB = ndr->flags;
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_ALIGN4);
-			NDR_CHECK(ndr_pull_DATA_BLOB(ndr, NDR_SCALARS, &r->_pad));
-			ndr->flags = _flags_save_DATA_BLOB;
-		}
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->size));
+		NDR_PULL_ALLOC_N(ndr, r->password, r->size);
+		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->password, r->size));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
 	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ void ndr_print_trustAuthInOutSecret2V1(struct ndr_print *ndr, const char *name, const struct trustAuthInOutSecret2V1 *r)
+_PUBLIC_ void ndr_print_AuthInfoClear(struct ndr_print *ndr, const char *name, const struct AuthInfoClear *r)
 {
-	ndr_print_struct(ndr, name, "trustAuthInOutSecret2V1");
+	ndr_print_struct(ndr, name, "AuthInfoClear");
 	ndr->depth++;
-	ndr_print_NTTIME(ndr, "time1", r->time1);
-	ndr_print_uint32(ndr, "unknown1", r->unknown1);
-	ndr_print_DATA_BLOB(ndr, "value", r->value);
-	ndr_print_NTTIME(ndr, "time2", r->time2);
-	ndr_print_uint32(ndr, "unknown2", r->unknown2);
-	ndr_print_uint32(ndr, "unknown3", r->unknown3);
-	ndr_print_uint32(ndr, "unknown4", r->unknown4);
-	ndr_print_DATA_BLOB(ndr, "_pad", r->_pad);
+	ndr_print_uint32(ndr, "size", r->size);
+	ndr_print_array_uint8(ndr, "password", r->password, r->size);
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_trustAuthInOutSecret2V2(struct ndr_push *ndr, int ndr_flags, const struct trustAuthInOutSecret2V2 *r)
+static enum ndr_err_code ndr_push_AuthInfoVersion(struct ndr_push *ndr, int ndr_flags, const struct AuthInfoVersion *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
-		NDR_CHECK(ndr_push_NTTIME(ndr, NDR_SCALARS, r->time1));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->unknown1));
-		NDR_CHECK(ndr_push_DATA_BLOB(ndr, NDR_SCALARS, r->value));
-		NDR_CHECK(ndr_push_NTTIME(ndr, NDR_SCALARS, r->time2));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->unknown2));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->unknown3));
-		{
-			uint32_t _flags_save_DATA_BLOB = ndr->flags;
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_ALIGN4);
-			NDR_CHECK(ndr_push_DATA_BLOB(ndr, NDR_SCALARS, r->_pad));
-			ndr->flags = _flags_save_DATA_BLOB;
-		}
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->version));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_trustAuthInOutSecret2V2(struct ndr_pull *ndr, int ndr_flags, struct trustAuthInOutSecret2V2 *r)
+static enum ndr_err_code ndr_pull_AuthInfoVersion(struct ndr_pull *ndr, int ndr_flags, struct AuthInfoVersion *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
-		NDR_CHECK(ndr_pull_NTTIME(ndr, NDR_SCALARS, &r->time1));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->unknown1));
-		NDR_CHECK(ndr_pull_DATA_BLOB(ndr, NDR_SCALARS, &r->value));
-		NDR_CHECK(ndr_pull_NTTIME(ndr, NDR_SCALARS, &r->time2));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->unknown2));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->unknown3));
-		{
-			uint32_t _flags_save_DATA_BLOB = ndr->flags;
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_ALIGN4);
-			NDR_CHECK(ndr_pull_DATA_BLOB(ndr, NDR_SCALARS, &r->_pad));
-			ndr->flags = _flags_save_DATA_BLOB;
-		}
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->size));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->version));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
 	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ void ndr_print_trustAuthInOutSecret2V2(struct ndr_print *ndr, const char *name, const struct trustAuthInOutSecret2V2 *r)
+_PUBLIC_ void ndr_print_AuthInfoVersion(struct ndr_print *ndr, const char *name, const struct AuthInfoVersion *r)
 {
-	ndr_print_struct(ndr, name, "trustAuthInOutSecret2V2");
+	ndr_print_struct(ndr, name, "AuthInfoVersion");
 	ndr->depth++;
-	ndr_print_NTTIME(ndr, "time1", r->time1);
-	ndr_print_uint32(ndr, "unknown1", r->unknown1);
-	ndr_print_DATA_BLOB(ndr, "value", r->value);
-	ndr_print_NTTIME(ndr, "time2", r->time2);
-	ndr_print_uint32(ndr, "unknown2", r->unknown2);
-	ndr_print_uint32(ndr, "unknown3", r->unknown3);
-	ndr_print_DATA_BLOB(ndr, "_pad", r->_pad);
+	ndr_print_uint32(ndr, "size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?4:r->size);
+	ndr_print_uint32(ndr, "version", r->version);
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_trustAuthInOutCtr2(struct ndr_push *ndr, int ndr_flags, const struct trustAuthInOutCtr2 *r)
-{
-	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_push_align(ndr, 4));
-		NDR_CHECK(ndr_push_relative_ptr1(ndr, r->value1));
-		NDR_CHECK(ndr_push_relative_ptr1(ndr, r->value2));
-	}
-	if (ndr_flags & NDR_BUFFERS) {
-		if (r->value1) {
-			NDR_CHECK(ndr_push_relative_ptr2(ndr, r->value1));
-			NDR_CHECK(ndr_push_trustAuthInOutSecret2V1(ndr, NDR_SCALARS, r->value1));
-		}
-		if (r->value2) {
-			NDR_CHECK(ndr_push_relative_ptr2(ndr, r->value2));
-			NDR_CHECK(ndr_push_trustAuthInOutSecret2V2(ndr, NDR_SCALARS, r->value2));
-		}
-	}
-	return NDR_ERR_SUCCESS;
-}
-
-static enum ndr_err_code ndr_pull_trustAuthInOutCtr2(struct ndr_pull *ndr, int ndr_flags, struct trustAuthInOutCtr2 *r)
-{
-	uint32_t _ptr_value1;
-	TALLOC_CTX *_mem_save_value1_0;
-	uint32_t _ptr_value2;
-	TALLOC_CTX *_mem_save_value2_0;
-	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_pull_align(ndr, 4));
-		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_value1));
-		if (_ptr_value1) {
-			NDR_PULL_ALLOC(ndr, r->value1);
-			NDR_CHECK(ndr_pull_relative_ptr1(ndr, r->value1, _ptr_value1));
-		} else {
-			r->value1 = NULL;
-		}
-		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_value2));
-		if (_ptr_value2) {
-			NDR_PULL_ALLOC(ndr, r->value2);
-			NDR_CHECK(ndr_pull_relative_ptr1(ndr, r->value2, _ptr_value2));
-		} else {
-			r->value2 = NULL;
-		}
-	}
-	if (ndr_flags & NDR_BUFFERS) {
-		if (r->value1) {
-			uint32_t _relative_save_offset;
-			_relative_save_offset = ndr->offset;
-			NDR_CHECK(ndr_pull_relative_ptr2(ndr, r->value1));
-			_mem_save_value1_0 = NDR_PULL_GET_MEM_CTX(ndr);
-			NDR_PULL_SET_MEM_CTX(ndr, r->value1, 0);
-			NDR_CHECK(ndr_pull_trustAuthInOutSecret2V1(ndr, NDR_SCALARS, r->value1));
-			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_value1_0, 0);
-			ndr->offset = _relative_save_offset;
-		}
-		if (r->value2) {
-			uint32_t _relative_save_offset;
-			_relative_save_offset = ndr->offset;
-			NDR_CHECK(ndr_pull_relative_ptr2(ndr, r->value2));
-			_mem_save_value2_0 = NDR_PULL_GET_MEM_CTX(ndr);
-			NDR_PULL_SET_MEM_CTX(ndr, r->value2, 0);
-			NDR_CHECK(ndr_pull_trustAuthInOutSecret2V2(ndr, NDR_SCALARS, r->value2));
-			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_value2_0, 0);
-			ndr->offset = _relative_save_offset;
-		}
-	}
-	return NDR_ERR_SUCCESS;
-}
-
-_PUBLIC_ void ndr_print_trustAuthInOutCtr2(struct ndr_print *ndr, const char *name, const struct trustAuthInOutCtr2 *r)
-{
-	ndr_print_struct(ndr, name, "trustAuthInOutCtr2");
-	ndr->depth++;
-	ndr_print_ptr(ndr, "value1", r->value1);
-	ndr->depth++;
-	if (r->value1) {
-		ndr_print_trustAuthInOutSecret2V1(ndr, "value1", r->value1);
-	}
-	ndr->depth--;
-	ndr_print_ptr(ndr, "value2", r->value2);
-	ndr->depth++;
-	if (r->value2) {
-		ndr_print_trustAuthInOutSecret2V2(ndr, "value2", r->value2);
-	}
-	ndr->depth--;
-	ndr->depth--;
-}
-
-static enum ndr_err_code ndr_push_trustAuthInOutCtr(struct ndr_push *ndr, int ndr_flags, const union trustAuthInOutCtr *r)
+static enum ndr_err_code ndr_push_AuthInfo(struct ndr_push *ndr, int ndr_flags, const union AuthInfo *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		switch (level) {
-			case 1: {
-				NDR_CHECK(ndr_push_trustAuthInOutCtr1(ndr, NDR_SCALARS, &r->ctr1));
+			case TRUST_AUTH_TYPE_NONE: {
+				NDR_CHECK(ndr_push_AuthInfoNone(ndr, NDR_SCALARS, &r->none));
 			break; }
 
-			case 2: {
-				NDR_CHECK(ndr_push_trustAuthInOutCtr2(ndr, NDR_SCALARS, &r->ctr2));
+			case TRUST_AUTH_TYPE_NT4OWF: {
+				NDR_CHECK(ndr_push_AuthInfoNT4Owf(ndr, NDR_SCALARS, &r->nt4owf));
+			break; }
+
+			case TRUST_AUTH_TYPE_CLEAR: {
+				NDR_CHECK(ndr_push_AuthInfoClear(ndr, NDR_SCALARS, &r->clear));
+			break; }
+
+			case TRUST_AUTH_TYPE_VERSION: {
+				NDR_CHECK(ndr_push_AuthInfoVersion(ndr, NDR_SCALARS, &r->version));
 			break; }
 
 			default:
@@ -2673,12 +2473,17 @@ static enum ndr_err_code ndr_push_trustAuthInOutCtr(struct ndr_push *ndr, int nd
 	if (ndr_flags & NDR_BUFFERS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		switch (level) {
-			case 1:
-				NDR_CHECK(ndr_push_trustAuthInOutCtr1(ndr, NDR_BUFFERS, &r->ctr1));
+			case TRUST_AUTH_TYPE_NONE:
 			break;
 
-			case 2:
-				NDR_CHECK(ndr_push_trustAuthInOutCtr2(ndr, NDR_BUFFERS, &r->ctr2));
+			case TRUST_AUTH_TYPE_NT4OWF:
+				NDR_CHECK(ndr_push_AuthInfoNT4Owf(ndr, NDR_BUFFERS, &r->nt4owf));
+			break;
+
+			case TRUST_AUTH_TYPE_CLEAR:
+			break;
+
+			case TRUST_AUTH_TYPE_VERSION:
 			break;
 
 			default:
@@ -2688,18 +2493,26 @@ static enum ndr_err_code ndr_push_trustAuthInOutCtr(struct ndr_push *ndr, int nd
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_trustAuthInOutCtr(struct ndr_pull *ndr, int ndr_flags, union trustAuthInOutCtr *r)
+static enum ndr_err_code ndr_pull_AuthInfo(struct ndr_pull *ndr, int ndr_flags, union AuthInfo *r)
 {
 	int level;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
 		switch (level) {
-			case 1: {
-				NDR_CHECK(ndr_pull_trustAuthInOutCtr1(ndr, NDR_SCALARS, &r->ctr1));
+			case TRUST_AUTH_TYPE_NONE: {
+				NDR_CHECK(ndr_pull_AuthInfoNone(ndr, NDR_SCALARS, &r->none));
 			break; }
 
-			case 2: {
-				NDR_CHECK(ndr_pull_trustAuthInOutCtr2(ndr, NDR_SCALARS, &r->ctr2));
+			case TRUST_AUTH_TYPE_NT4OWF: {
+				NDR_CHECK(ndr_pull_AuthInfoNT4Owf(ndr, NDR_SCALARS, &r->nt4owf));
+			break; }
+
+			case TRUST_AUTH_TYPE_CLEAR: {
+				NDR_CHECK(ndr_pull_AuthInfoClear(ndr, NDR_SCALARS, &r->clear));
+			break; }
+
+			case TRUST_AUTH_TYPE_VERSION: {
+				NDR_CHECK(ndr_pull_AuthInfoVersion(ndr, NDR_SCALARS, &r->version));
 			break; }
 
 			default:
@@ -2708,12 +2521,17 @@ static enum ndr_err_code ndr_pull_trustAuthInOutCtr(struct ndr_pull *ndr, int nd
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		switch (level) {
-			case 1:
-				NDR_CHECK(ndr_pull_trustAuthInOutCtr1(ndr, NDR_BUFFERS, &r->ctr1));
+			case TRUST_AUTH_TYPE_NONE:
 			break;
 
-			case 2:
-				NDR_CHECK(ndr_pull_trustAuthInOutCtr2(ndr, NDR_BUFFERS, &r->ctr2));
+			case TRUST_AUTH_TYPE_NT4OWF:
+				NDR_CHECK(ndr_pull_AuthInfoNT4Owf(ndr, NDR_BUFFERS, &r->nt4owf));
+			break;
+
+			case TRUST_AUTH_TYPE_CLEAR:
+			break;
+
+			case TRUST_AUTH_TYPE_VERSION:
 			break;
 
 			default:
@@ -2723,18 +2541,26 @@ static enum ndr_err_code ndr_pull_trustAuthInOutCtr(struct ndr_pull *ndr, int nd
 	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ void ndr_print_trustAuthInOutCtr(struct ndr_print *ndr, const char *name, const union trustAuthInOutCtr *r)
+_PUBLIC_ void ndr_print_AuthInfo(struct ndr_print *ndr, const char *name, const union AuthInfo *r)
 {
 	int level;
 	level = ndr_print_get_switch_value(ndr, r);
-	ndr_print_union(ndr, name, level, "trustAuthInOutCtr");
+	ndr_print_union(ndr, name, level, "AuthInfo");
 	switch (level) {
-		case 1:
-			ndr_print_trustAuthInOutCtr1(ndr, "ctr1", &r->ctr1);
+		case TRUST_AUTH_TYPE_NONE:
+			ndr_print_AuthInfoNone(ndr, "none", &r->none);
 		break;
 
-		case 2:
-			ndr_print_trustAuthInOutCtr2(ndr, "ctr2", &r->ctr2);
+		case TRUST_AUTH_TYPE_NT4OWF:
+			ndr_print_AuthInfoNT4Owf(ndr, "nt4owf", &r->nt4owf);
+		break;
+
+		case TRUST_AUTH_TYPE_CLEAR:
+			ndr_print_AuthInfoClear(ndr, "clear", &r->clear);
+		break;
+
+		case TRUST_AUTH_TYPE_VERSION:
+			ndr_print_AuthInfoVersion(ndr, "version", &r->version);
 		break;
 
 		default:
@@ -2742,41 +2568,192 @@ _PUBLIC_ void ndr_print_trustAuthInOutCtr(struct ndr_print *ndr, const char *nam
 	}
 }
 
-_PUBLIC_ enum ndr_err_code ndr_push_trustAuthInOutBlob(struct ndr_push *ndr, int ndr_flags, const struct trustAuthInOutBlob *r)
+_PUBLIC_ enum ndr_err_code ndr_push_AuthenticationInformation(struct ndr_push *ndr, int ndr_flags, const struct AuthenticationInformation *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->version));
-		NDR_CHECK(ndr_push_set_switch_value(ndr, &r->ctr, r->version));
-		NDR_CHECK(ndr_push_trustAuthInOutCtr(ndr, NDR_SCALARS, &r->ctr));
+		NDR_CHECK(ndr_push_NTTIME(ndr, NDR_SCALARS, r->LastUpdateTime));
+		NDR_CHECK(ndr_push_lsa_TrustAuthType(ndr, NDR_SCALARS, r->AuthType));
+		NDR_CHECK(ndr_push_set_switch_value(ndr, &r->AuthInfo, r->AuthType));
+		NDR_CHECK(ndr_push_AuthInfo(ndr, NDR_SCALARS, &r->AuthInfo));
+		{
+			uint32_t _flags_save_DATA_BLOB = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_ALIGN4);
+			NDR_CHECK(ndr_push_DATA_BLOB(ndr, NDR_SCALARS, r->_pad));
+			ndr->flags = _flags_save_DATA_BLOB;
+		}
 	}
 	if (ndr_flags & NDR_BUFFERS) {
-		NDR_CHECK(ndr_push_trustAuthInOutCtr(ndr, NDR_BUFFERS, &r->ctr));
+		NDR_CHECK(ndr_push_AuthInfo(ndr, NDR_BUFFERS, &r->AuthInfo));
 	}
 	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ enum ndr_err_code ndr_pull_trustAuthInOutBlob(struct ndr_pull *ndr, int ndr_flags, struct trustAuthInOutBlob *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_AuthenticationInformation(struct ndr_pull *ndr, int ndr_flags, struct AuthenticationInformation *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->version));
-		NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->ctr, r->version));
-		NDR_CHECK(ndr_pull_trustAuthInOutCtr(ndr, NDR_SCALARS, &r->ctr));
+		NDR_CHECK(ndr_pull_NTTIME(ndr, NDR_SCALARS, &r->LastUpdateTime));
+		NDR_CHECK(ndr_pull_lsa_TrustAuthType(ndr, NDR_SCALARS, &r->AuthType));
+		NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->AuthInfo, r->AuthType));
+		NDR_CHECK(ndr_pull_AuthInfo(ndr, NDR_SCALARS, &r->AuthInfo));
+		{
+			uint32_t _flags_save_DATA_BLOB = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_ALIGN4);
+			NDR_CHECK(ndr_pull_DATA_BLOB(ndr, NDR_SCALARS, &r->_pad));
+			ndr->flags = _flags_save_DATA_BLOB;
+		}
 	}
 	if (ndr_flags & NDR_BUFFERS) {
-		NDR_CHECK(ndr_pull_trustAuthInOutCtr(ndr, NDR_BUFFERS, &r->ctr));
+		NDR_CHECK(ndr_pull_AuthInfo(ndr, NDR_BUFFERS, &r->AuthInfo));
 	}
 	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ void ndr_print_trustAuthInOutBlob(struct ndr_print *ndr, const char *name, const struct trustAuthInOutBlob *r)
+_PUBLIC_ void ndr_print_AuthenticationInformation(struct ndr_print *ndr, const char *name, const struct AuthenticationInformation *r)
 {
-	ndr_print_struct(ndr, name, "trustAuthInOutBlob");
+	ndr_print_struct(ndr, name, "AuthenticationInformation");
 	ndr->depth++;
-	ndr_print_uint32(ndr, "version", r->version);
-	ndr_print_set_switch_value(ndr, &r->ctr, r->version);
-	ndr_print_trustAuthInOutCtr(ndr, "ctr", &r->ctr);
+	ndr_print_NTTIME(ndr, "LastUpdateTime", r->LastUpdateTime);
+	ndr_print_lsa_TrustAuthType(ndr, "AuthType", r->AuthType);
+	ndr_print_set_switch_value(ndr, &r->AuthInfo, r->AuthType);
+	ndr_print_AuthInfo(ndr, "AuthInfo", &r->AuthInfo);
+	ndr_print_DATA_BLOB(ndr, "_pad", r->_pad);
+	ndr->depth--;
+}
+
+_PUBLIC_ size_t ndr_size_trustAuthInOutBlob(const struct trustAuthInOutBlob *r, int flags)
+{
+	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_trustAuthInOutBlob);
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_trustCurrentPasswords(struct ndr_push *ndr, int ndr_flags, const struct trustCurrentPasswords *r)
+{
+	uint32_t cntr_current_0;
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->count));
+		for (cntr_current_0 = 0; cntr_current_0 < r->count; cntr_current_0++) {
+			NDR_CHECK(ndr_push_relative_ptr1(ndr, r->current[cntr_current_0]));
+		}
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		for (cntr_current_0 = 0; cntr_current_0 < r->count; cntr_current_0++) {
+			if (r->current[cntr_current_0]) {
+				NDR_CHECK(ndr_push_relative_ptr2(ndr, r->current[cntr_current_0]));
+				NDR_CHECK(ndr_push_AuthenticationInformation(ndr, NDR_SCALARS|NDR_BUFFERS, r->current[cntr_current_0]));
+			}
+		}
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_trustCurrentPasswords(struct ndr_pull *ndr, int ndr_flags, struct trustCurrentPasswords *r)
+{
+	uint32_t _ptr_current;
+	uint32_t cntr_current_0;
+	TALLOC_CTX *_mem_save_current_0;
+	TALLOC_CTX *_mem_save_current_1;
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->count));
+		NDR_PULL_ALLOC_N(ndr, r->current, r->count);
+		_mem_save_current_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->current, 0);
+		for (cntr_current_0 = 0; cntr_current_0 < r->count; cntr_current_0++) {
+			NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_current));
+			if (_ptr_current) {
+				NDR_PULL_ALLOC(ndr, r->current[cntr_current_0]);
+				NDR_CHECK(ndr_pull_relative_ptr1(ndr, r->current[cntr_current_0], _ptr_current));
+			} else {
+				r->current[cntr_current_0] = NULL;
+			}
+		}
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_current_0, 0);
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		_mem_save_current_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->current, 0);
+		for (cntr_current_0 = 0; cntr_current_0 < r->count; cntr_current_0++) {
+			if (r->current[cntr_current_0]) {
+				uint32_t _relative_save_offset;
+				_relative_save_offset = ndr->offset;
+				NDR_CHECK(ndr_pull_relative_ptr2(ndr, r->current[cntr_current_0]));
+				_mem_save_current_1 = NDR_PULL_GET_MEM_CTX(ndr);
+				NDR_PULL_SET_MEM_CTX(ndr, r->current[cntr_current_0], 0);
+				NDR_CHECK(ndr_pull_AuthenticationInformation(ndr, NDR_SCALARS|NDR_BUFFERS, r->current[cntr_current_0]));
+				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_current_1, 0);
+				ndr->offset = _relative_save_offset;
+			}
+		}
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_current_0, 0);
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_trustCurrentPasswords(struct ndr_print *ndr, const char *name, const struct trustCurrentPasswords *r)
+{
+	uint32_t cntr_current_0;
+	ndr_print_struct(ndr, name, "trustCurrentPasswords");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "count", r->count);
+	ndr->print(ndr, "%s: ARRAY(%d)", "current", (int)r->count);
+	ndr->depth++;
+	for (cntr_current_0=0;cntr_current_0<r->count;cntr_current_0++) {
+		char *idx_0=NULL;
+		if (asprintf(&idx_0, "[%d]", cntr_current_0) != -1) {
+			ndr_print_ptr(ndr, "current", r->current[cntr_current_0]);
+			ndr->depth++;
+			if (r->current[cntr_current_0]) {
+				ndr_print_AuthenticationInformation(ndr, "current", r->current[cntr_current_0]);
+			}
+			ndr->depth--;
+			free(idx_0);
+		}
+	}
+	ndr->depth--;
+	ndr->depth--;
+}
+
+_PUBLIC_ size_t ndr_size_trustCurrentPasswords(const struct trustCurrentPasswords *r, int flags)
+{
+	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_trustCurrentPasswords);
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_trustDomainPasswords(struct ndr_push *ndr, int ndr_flags, const struct trustDomainPasswords *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->confounder, 512));
+		{
+			struct ndr_push *_ndr_outgoing;
+			NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_outgoing, 0, ndr_size_trustCurrentPasswords(&r->outgoing, ndr->flags)));
+			NDR_CHECK(ndr_push_trustCurrentPasswords(_ndr_outgoing, NDR_SCALARS|NDR_BUFFERS, &r->outgoing));
+			NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_outgoing, 0, ndr_size_trustCurrentPasswords(&r->outgoing, ndr->flags)));
+		}
+		{
+			struct ndr_push *_ndr_incoming;
+			NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_incoming, 0, ndr_size_trustCurrentPasswords(&r->incoming, ndr->flags)));
+			NDR_CHECK(ndr_push_trustCurrentPasswords(_ndr_incoming, NDR_SCALARS|NDR_BUFFERS, &r->incoming));
+			NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_incoming, 0, ndr_size_trustCurrentPasswords(&r->incoming, ndr->flags)));
+		}
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_size_trustCurrentPasswords(&r->outgoing, ndr->flags)));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_size_trustCurrentPasswords(&r->incoming, ndr->flags)));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_trustDomainPasswords(struct ndr_print *ndr, const char *name, const struct trustDomainPasswords *r)
+{
+	ndr_print_struct(ndr, name, "trustDomainPasswords");
+	ndr->depth++;
+	ndr_print_array_uint8(ndr, "confounder", r->confounder, 512);
+	ndr_print_trustCurrentPasswords(ndr, "outgoing", &r->outgoing);
+	ndr_print_trustCurrentPasswords(ndr, "incoming", &r->incoming);
+	ndr_print_uint32(ndr, "outgoing_size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?ndr_size_trustCurrentPasswords(&r->outgoing, ndr->flags):r->outgoing_size);
+	ndr_print_uint32(ndr, "incoming_size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?ndr_size_trustCurrentPasswords(&r->incoming, ndr->flags):r->incoming_size);
 	ndr->depth--;
 }
 
@@ -2813,47 +2790,750 @@ _PUBLIC_ void ndr_print_DsCompressedChunk(struct ndr_print *ndr, const char *nam
 	ndr->depth--;
 }
 
-_PUBLIC_ enum ndr_err_code ndr_push_DsCompressedBlob(struct ndr_push *ndr, int ndr_flags, const struct DsCompressedBlob *r)
+static enum ndr_err_code ndr_push_ExtendedErrorAString(struct ndr_push *ndr, int ndr_flags, const struct ExtendedErrorAString *r)
 {
-	uint32_t cntr_chunks_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
-		for (cntr_chunks_0 = 0; cntr_chunks_0 < 5; cntr_chunks_0++) {
-			NDR_CHECK(ndr_push_DsCompressedChunk(ndr, NDR_SCALARS, &r->chunks[cntr_chunks_0]));
-		}
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->__size));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->string));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
+		if (r->string) {
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->__size));
+			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->string, r->__size, sizeof(uint8_t), CH_DOS));
+		}
 	}
 	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ enum ndr_err_code ndr_pull_DsCompressedBlob(struct ndr_pull *ndr, int ndr_flags, struct DsCompressedBlob *r)
+static enum ndr_err_code ndr_pull_ExtendedErrorAString(struct ndr_pull *ndr, int ndr_flags, struct ExtendedErrorAString *r)
 {
-	uint32_t cntr_chunks_0;
+	uint32_t _ptr_string;
+	TALLOC_CTX *_mem_save_string_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
-		for (cntr_chunks_0 = 0; cntr_chunks_0 < 5; cntr_chunks_0++) {
-			NDR_CHECK(ndr_pull_DsCompressedChunk(ndr, NDR_SCALARS, &r->chunks[cntr_chunks_0]));
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->__size));
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_string));
+		if (_ptr_string) {
+			NDR_PULL_ALLOC(ndr, r->string);
+		} else {
+			r->string = NULL;
 		}
 	}
 	if (ndr_flags & NDR_BUFFERS) {
+		if (r->string) {
+			_mem_save_string_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->string, 0);
+			NDR_CHECK(ndr_pull_array_size(ndr, &r->string));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->string, ndr_get_array_size(ndr, &r->string), sizeof(uint8_t), CH_DOS));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_string_0, 0);
+		}
+		if (r->string) {
+			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->string, r->__size));
+		}
 	}
 	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ void ndr_print_DsCompressedBlob(struct ndr_print *ndr, const char *name, const struct DsCompressedBlob *r)
+_PUBLIC_ void ndr_print_ExtendedErrorAString(struct ndr_print *ndr, const char *name, const struct ExtendedErrorAString *r)
 {
-	uint32_t cntr_chunks_0;
-	ndr_print_struct(ndr, name, "DsCompressedBlob");
+	ndr_print_struct(ndr, name, "ExtendedErrorAString");
 	ndr->depth++;
-	ndr->print(ndr, "%s: ARRAY(%d)", "chunks", (int)5);
+	ndr_print_uint16(ndr, "__size", r->__size);
+	ndr_print_ptr(ndr, "string", r->string);
 	ndr->depth++;
-	for (cntr_chunks_0=0;cntr_chunks_0<5;cntr_chunks_0++) {
+	if (r->string) {
+		ndr_print_string(ndr, "string", r->string);
+	}
+	ndr->depth--;
+	ndr->depth--;
+}
+
+static enum ndr_err_code ndr_push_ExtendedErrorUString(struct ndr_push *ndr, int ndr_flags, const struct ExtendedErrorUString *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->__size));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->string));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		if (r->string) {
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->__size));
+			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->string, r->__size, sizeof(uint16_t), CH_UTF16));
+		}
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_ExtendedErrorUString(struct ndr_pull *ndr, int ndr_flags, struct ExtendedErrorUString *r)
+{
+	uint32_t _ptr_string;
+	TALLOC_CTX *_mem_save_string_0;
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->__size));
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_string));
+		if (_ptr_string) {
+			NDR_PULL_ALLOC(ndr, r->string);
+		} else {
+			r->string = NULL;
+		}
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		if (r->string) {
+			_mem_save_string_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->string, 0);
+			NDR_CHECK(ndr_pull_array_size(ndr, &r->string));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->string, ndr_get_array_size(ndr, &r->string), sizeof(uint16_t), CH_UTF16));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_string_0, 0);
+		}
+		if (r->string) {
+			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->string, r->__size));
+		}
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_ExtendedErrorUString(struct ndr_print *ndr, const char *name, const struct ExtendedErrorUString *r)
+{
+	ndr_print_struct(ndr, name, "ExtendedErrorUString");
+	ndr->depth++;
+	ndr_print_uint16(ndr, "__size", r->__size);
+	ndr_print_ptr(ndr, "string", r->string);
+	ndr->depth++;
+	if (r->string) {
+		ndr_print_string(ndr, "string", r->string);
+	}
+	ndr->depth--;
+	ndr->depth--;
+}
+
+static enum ndr_err_code ndr_push_ExtendedErrorBlob(struct ndr_push *ndr, int ndr_flags, const struct ExtendedErrorBlob *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->length));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->data));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		if (r->data) {
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->length));
+			NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->data, r->length));
+		}
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_ExtendedErrorBlob(struct ndr_pull *ndr, int ndr_flags, struct ExtendedErrorBlob *r)
+{
+	uint32_t _ptr_data;
+	TALLOC_CTX *_mem_save_data_0;
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->length));
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_data));
+		if (_ptr_data) {
+			NDR_PULL_ALLOC(ndr, r->data);
+		} else {
+			r->data = NULL;
+		}
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		if (r->data) {
+			_mem_save_data_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->data, 0);
+			NDR_CHECK(ndr_pull_array_size(ndr, &r->data));
+			NDR_PULL_ALLOC_N(ndr, r->data, ndr_get_array_size(ndr, &r->data));
+			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->data, ndr_get_array_size(ndr, &r->data)));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_data_0, 0);
+		}
+		if (r->data) {
+			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->data, r->length));
+		}
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_ExtendedErrorBlob(struct ndr_print *ndr, const char *name, const struct ExtendedErrorBlob *r)
+{
+	ndr_print_struct(ndr, name, "ExtendedErrorBlob");
+	ndr->depth++;
+	ndr_print_uint16(ndr, "length", r->length);
+	ndr_print_ptr(ndr, "data", r->data);
+	ndr->depth++;
+	if (r->data) {
+		ndr_print_array_uint8(ndr, "data", r->data, r->length);
+	}
+	ndr->depth--;
+	ndr->depth--;
+}
+
+static enum ndr_err_code ndr_push_ExtendedErrorComputerNamePresent(struct ndr_push *ndr, int ndr_flags, enum ExtendedErrorComputerNamePresent r)
+{
+	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_ExtendedErrorComputerNamePresent(struct ndr_pull *ndr, int ndr_flags, enum ExtendedErrorComputerNamePresent *r)
+{
+	uint16_t v;
+	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_ExtendedErrorComputerNamePresent(struct ndr_print *ndr, const char *name, enum ExtendedErrorComputerNamePresent r)
+{
+	const char *val = NULL;
+
+	switch (r) {
+		case EXTENDED_ERROR_COMPUTER_NAME_PRESENT: val = "EXTENDED_ERROR_COMPUTER_NAME_PRESENT"; break;
+		case EXTENDED_ERROR_COMPUTER_NAME_NOT_PRESENT: val = "EXTENDED_ERROR_COMPUTER_NAME_NOT_PRESENT"; break;
+	}
+	ndr_print_enum(ndr, name, "ENUM", val, r);
+}
+
+static enum ndr_err_code ndr_push_ExtendedErrorComputerNameU(struct ndr_push *ndr, int ndr_flags, const union ExtendedErrorComputerNameU *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		int level = ndr_push_get_switch_value(ndr, r);
+		NDR_CHECK(ndr_push_ExtendedErrorComputerNamePresent(ndr, NDR_SCALARS, level));
+		switch (level) {
+			case EXTENDED_ERROR_COMPUTER_NAME_PRESENT: {
+				NDR_CHECK(ndr_push_ExtendedErrorUString(ndr, NDR_SCALARS, &r->name));
+			break; }
+
+			case EXTENDED_ERROR_COMPUTER_NAME_NOT_PRESENT: {
+			break; }
+
+			default:
+				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
+		}
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		int level = ndr_push_get_switch_value(ndr, r);
+		switch (level) {
+			case EXTENDED_ERROR_COMPUTER_NAME_PRESENT:
+				NDR_CHECK(ndr_push_ExtendedErrorUString(ndr, NDR_BUFFERS, &r->name));
+			break;
+
+			case EXTENDED_ERROR_COMPUTER_NAME_NOT_PRESENT:
+			break;
+
+			default:
+				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
+		}
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_ExtendedErrorComputerNameU(struct ndr_pull *ndr, int ndr_flags, union ExtendedErrorComputerNameU *r)
+{
+	int level;
+	uint16_t _level;
+	level = ndr_pull_get_switch_value(ndr, r);
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &_level));
+		if (_level != level) {
+			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r", _level);
+		}
+		switch (level) {
+			case EXTENDED_ERROR_COMPUTER_NAME_PRESENT: {
+				NDR_CHECK(ndr_pull_ExtendedErrorUString(ndr, NDR_SCALARS, &r->name));
+			break; }
+
+			case EXTENDED_ERROR_COMPUTER_NAME_NOT_PRESENT: {
+			break; }
+
+			default:
+				return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
+		}
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		switch (level) {
+			case EXTENDED_ERROR_COMPUTER_NAME_PRESENT:
+				NDR_CHECK(ndr_pull_ExtendedErrorUString(ndr, NDR_BUFFERS, &r->name));
+			break;
+
+			case EXTENDED_ERROR_COMPUTER_NAME_NOT_PRESENT:
+			break;
+
+			default:
+				return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
+		}
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_ExtendedErrorComputerNameU(struct ndr_print *ndr, const char *name, const union ExtendedErrorComputerNameU *r)
+{
+	int level;
+	level = ndr_print_get_switch_value(ndr, r);
+	ndr_print_union(ndr, name, level, "ExtendedErrorComputerNameU");
+	switch (level) {
+		case EXTENDED_ERROR_COMPUTER_NAME_PRESENT:
+			ndr_print_ExtendedErrorUString(ndr, "name", &r->name);
+		break;
+
+		case EXTENDED_ERROR_COMPUTER_NAME_NOT_PRESENT:
+		break;
+
+		default:
+			ndr_print_bad_level(ndr, name, level);
+	}
+}
+
+static enum ndr_err_code ndr_push_ExtendedErrorComputerName(struct ndr_push *ndr, int ndr_flags, const struct ExtendedErrorComputerName *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_ExtendedErrorComputerNamePresent(ndr, NDR_SCALARS, r->present));
+		NDR_CHECK(ndr_push_set_switch_value(ndr, &r->n, r->present));
+		NDR_CHECK(ndr_push_ExtendedErrorComputerNameU(ndr, NDR_SCALARS, &r->n));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		NDR_CHECK(ndr_push_ExtendedErrorComputerNameU(ndr, NDR_BUFFERS, &r->n));
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_ExtendedErrorComputerName(struct ndr_pull *ndr, int ndr_flags, struct ExtendedErrorComputerName *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_ExtendedErrorComputerNamePresent(ndr, NDR_SCALARS, &r->present));
+		NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->n, r->present));
+		NDR_CHECK(ndr_pull_ExtendedErrorComputerNameU(ndr, NDR_SCALARS, &r->n));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		NDR_CHECK(ndr_pull_ExtendedErrorComputerNameU(ndr, NDR_BUFFERS, &r->n));
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_ExtendedErrorComputerName(struct ndr_print *ndr, const char *name, const struct ExtendedErrorComputerName *r)
+{
+	ndr_print_struct(ndr, name, "ExtendedErrorComputerName");
+	ndr->depth++;
+	ndr_print_ExtendedErrorComputerNamePresent(ndr, "present", r->present);
+	ndr_print_set_switch_value(ndr, &r->n, r->present);
+	ndr_print_ExtendedErrorComputerNameU(ndr, "n", &r->n);
+	ndr->depth--;
+}
+
+static enum ndr_err_code ndr_push_ExtendedErrorParamType(struct ndr_push *ndr, int ndr_flags, enum ExtendedErrorParamType r)
+{
+	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_ExtendedErrorParamType(struct ndr_pull *ndr, int ndr_flags, enum ExtendedErrorParamType *r)
+{
+	uint16_t v;
+	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_ExtendedErrorParamType(struct ndr_print *ndr, const char *name, enum ExtendedErrorParamType r)
+{
+	const char *val = NULL;
+
+	switch (r) {
+		case EXTENDED_ERROR_PARAM_TYPE_ASCII_STRING: val = "EXTENDED_ERROR_PARAM_TYPE_ASCII_STRING"; break;
+		case EXTENDED_ERROR_PARAM_TYPE_UNICODE_STRING: val = "EXTENDED_ERROR_PARAM_TYPE_UNICODE_STRING"; break;
+		case EXTENDED_ERROR_PARAM_TYPE_UINT32: val = "EXTENDED_ERROR_PARAM_TYPE_UINT32"; break;
+		case EXTENDED_ERROR_PARAM_TYPE_UINT16: val = "EXTENDED_ERROR_PARAM_TYPE_UINT16"; break;
+		case EXTENDED_ERROR_PARAM_TYPE_UINT64: val = "EXTENDED_ERROR_PARAM_TYPE_UINT64"; break;
+		case EXTENDED_ERROR_PARAM_TYPE_NONE: val = "EXTENDED_ERROR_PARAM_TYPE_NONE"; break;
+		case EXTENDED_ERROR_PARAM_TYPE_BLOB: val = "EXTENDED_ERROR_PARAM_TYPE_BLOB"; break;
+	}
+	ndr_print_enum(ndr, name, "ENUM", val, r);
+}
+
+static enum ndr_err_code ndr_push_ExtendedErrorParamU(struct ndr_push *ndr, int ndr_flags, const union ExtendedErrorParamU *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		int level = ndr_push_get_switch_value(ndr, r);
+		NDR_CHECK(ndr_push_ExtendedErrorParamType(ndr, NDR_SCALARS, level));
+		switch (level) {
+			case EXTENDED_ERROR_PARAM_TYPE_ASCII_STRING: {
+				NDR_CHECK(ndr_push_ExtendedErrorAString(ndr, NDR_SCALARS, &r->a_string));
+			break; }
+
+			case EXTENDED_ERROR_PARAM_TYPE_UNICODE_STRING: {
+				NDR_CHECK(ndr_push_ExtendedErrorUString(ndr, NDR_SCALARS, &r->u_string));
+			break; }
+
+			case EXTENDED_ERROR_PARAM_TYPE_UINT32: {
+				NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->uint32));
+			break; }
+
+			case EXTENDED_ERROR_PARAM_TYPE_UINT16: {
+				NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->uint16));
+			break; }
+
+			case EXTENDED_ERROR_PARAM_TYPE_UINT64: {
+				NDR_CHECK(ndr_push_hyper(ndr, NDR_SCALARS, r->uint64));
+			break; }
+
+			case EXTENDED_ERROR_PARAM_TYPE_NONE: {
+			break; }
+
+			case EXTENDED_ERROR_PARAM_TYPE_BLOB: {
+				NDR_CHECK(ndr_push_ExtendedErrorBlob(ndr, NDR_SCALARS, &r->blob));
+			break; }
+
+			default:
+				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
+		}
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		int level = ndr_push_get_switch_value(ndr, r);
+		switch (level) {
+			case EXTENDED_ERROR_PARAM_TYPE_ASCII_STRING:
+				NDR_CHECK(ndr_push_ExtendedErrorAString(ndr, NDR_BUFFERS, &r->a_string));
+			break;
+
+			case EXTENDED_ERROR_PARAM_TYPE_UNICODE_STRING:
+				NDR_CHECK(ndr_push_ExtendedErrorUString(ndr, NDR_BUFFERS, &r->u_string));
+			break;
+
+			case EXTENDED_ERROR_PARAM_TYPE_UINT32:
+			break;
+
+			case EXTENDED_ERROR_PARAM_TYPE_UINT16:
+			break;
+
+			case EXTENDED_ERROR_PARAM_TYPE_UINT64:
+			break;
+
+			case EXTENDED_ERROR_PARAM_TYPE_NONE:
+			break;
+
+			case EXTENDED_ERROR_PARAM_TYPE_BLOB:
+				NDR_CHECK(ndr_push_ExtendedErrorBlob(ndr, NDR_BUFFERS, &r->blob));
+			break;
+
+			default:
+				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
+		}
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_ExtendedErrorParamU(struct ndr_pull *ndr, int ndr_flags, union ExtendedErrorParamU *r)
+{
+	int level;
+	uint16_t _level;
+	level = ndr_pull_get_switch_value(ndr, r);
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &_level));
+		if (_level != level) {
+			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r", _level);
+		}
+		switch (level) {
+			case EXTENDED_ERROR_PARAM_TYPE_ASCII_STRING: {
+				NDR_CHECK(ndr_pull_ExtendedErrorAString(ndr, NDR_SCALARS, &r->a_string));
+			break; }
+
+			case EXTENDED_ERROR_PARAM_TYPE_UNICODE_STRING: {
+				NDR_CHECK(ndr_pull_ExtendedErrorUString(ndr, NDR_SCALARS, &r->u_string));
+			break; }
+
+			case EXTENDED_ERROR_PARAM_TYPE_UINT32: {
+				NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->uint32));
+			break; }
+
+			case EXTENDED_ERROR_PARAM_TYPE_UINT16: {
+				NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->uint16));
+			break; }
+
+			case EXTENDED_ERROR_PARAM_TYPE_UINT64: {
+				NDR_CHECK(ndr_pull_hyper(ndr, NDR_SCALARS, &r->uint64));
+			break; }
+
+			case EXTENDED_ERROR_PARAM_TYPE_NONE: {
+			break; }
+
+			case EXTENDED_ERROR_PARAM_TYPE_BLOB: {
+				NDR_CHECK(ndr_pull_ExtendedErrorBlob(ndr, NDR_SCALARS, &r->blob));
+			break; }
+
+			default:
+				return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
+		}
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		switch (level) {
+			case EXTENDED_ERROR_PARAM_TYPE_ASCII_STRING:
+				NDR_CHECK(ndr_pull_ExtendedErrorAString(ndr, NDR_BUFFERS, &r->a_string));
+			break;
+
+			case EXTENDED_ERROR_PARAM_TYPE_UNICODE_STRING:
+				NDR_CHECK(ndr_pull_ExtendedErrorUString(ndr, NDR_BUFFERS, &r->u_string));
+			break;
+
+			case EXTENDED_ERROR_PARAM_TYPE_UINT32:
+			break;
+
+			case EXTENDED_ERROR_PARAM_TYPE_UINT16:
+			break;
+
+			case EXTENDED_ERROR_PARAM_TYPE_UINT64:
+			break;
+
+			case EXTENDED_ERROR_PARAM_TYPE_NONE:
+			break;
+
+			case EXTENDED_ERROR_PARAM_TYPE_BLOB:
+				NDR_CHECK(ndr_pull_ExtendedErrorBlob(ndr, NDR_BUFFERS, &r->blob));
+			break;
+
+			default:
+				return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
+		}
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_ExtendedErrorParamU(struct ndr_print *ndr, const char *name, const union ExtendedErrorParamU *r)
+{
+	int level;
+	level = ndr_print_get_switch_value(ndr, r);
+	ndr_print_union(ndr, name, level, "ExtendedErrorParamU");
+	switch (level) {
+		case EXTENDED_ERROR_PARAM_TYPE_ASCII_STRING:
+			ndr_print_ExtendedErrorAString(ndr, "a_string", &r->a_string);
+		break;
+
+		case EXTENDED_ERROR_PARAM_TYPE_UNICODE_STRING:
+			ndr_print_ExtendedErrorUString(ndr, "u_string", &r->u_string);
+		break;
+
+		case EXTENDED_ERROR_PARAM_TYPE_UINT32:
+			ndr_print_uint32(ndr, "uint32", r->uint32);
+		break;
+
+		case EXTENDED_ERROR_PARAM_TYPE_UINT16:
+			ndr_print_uint16(ndr, "uint16", r->uint16);
+		break;
+
+		case EXTENDED_ERROR_PARAM_TYPE_UINT64:
+			ndr_print_hyper(ndr, "uint64", r->uint64);
+		break;
+
+		case EXTENDED_ERROR_PARAM_TYPE_NONE:
+		break;
+
+		case EXTENDED_ERROR_PARAM_TYPE_BLOB:
+			ndr_print_ExtendedErrorBlob(ndr, "blob", &r->blob);
+		break;
+
+		default:
+			ndr_print_bad_level(ndr, name, level);
+	}
+}
+
+static enum ndr_err_code ndr_push_ExtendedErrorParam(struct ndr_push *ndr, int ndr_flags, const struct ExtendedErrorParam *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 8));
+		NDR_CHECK(ndr_push_ExtendedErrorParamType(ndr, NDR_SCALARS, r->type));
+		NDR_CHECK(ndr_push_set_switch_value(ndr, &r->p, r->type));
+		NDR_CHECK(ndr_push_ExtendedErrorParamU(ndr, NDR_SCALARS, &r->p));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		NDR_CHECK(ndr_push_ExtendedErrorParamU(ndr, NDR_BUFFERS, &r->p));
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_ExtendedErrorParam(struct ndr_pull *ndr, int ndr_flags, struct ExtendedErrorParam *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 8));
+		NDR_CHECK(ndr_pull_ExtendedErrorParamType(ndr, NDR_SCALARS, &r->type));
+		NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->p, r->type));
+		NDR_CHECK(ndr_pull_ExtendedErrorParamU(ndr, NDR_SCALARS, &r->p));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		NDR_CHECK(ndr_pull_ExtendedErrorParamU(ndr, NDR_BUFFERS, &r->p));
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_ExtendedErrorParam(struct ndr_print *ndr, const char *name, const struct ExtendedErrorParam *r)
+{
+	ndr_print_struct(ndr, name, "ExtendedErrorParam");
+	ndr->depth++;
+	ndr_print_ExtendedErrorParamType(ndr, "type", r->type);
+	ndr_print_set_switch_value(ndr, &r->p, r->type);
+	ndr_print_ExtendedErrorParamU(ndr, "p", &r->p);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_ExtendedErrorInfo(struct ndr_push *ndr, int ndr_flags, const struct ExtendedErrorInfo *r)
+{
+	uint32_t cntr_params_0;
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->num_params));
+		NDR_CHECK(ndr_push_align(ndr, 8));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->next));
+		NDR_CHECK(ndr_push_ExtendedErrorComputerName(ndr, NDR_SCALARS, &r->computer_name));
+		NDR_CHECK(ndr_push_hyper(ndr, NDR_SCALARS, r->pid));
+		NDR_CHECK(ndr_push_NTTIME(ndr, NDR_SCALARS, r->time));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->generating_component));
+		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->status));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->detection_location));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->flags));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->num_params));
+		for (cntr_params_0 = 0; cntr_params_0 < r->num_params; cntr_params_0++) {
+			NDR_CHECK(ndr_push_ExtendedErrorParam(ndr, NDR_SCALARS, &r->params[cntr_params_0]));
+		}
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		if (r->next) {
+			NDR_CHECK(ndr_push_ExtendedErrorInfo(ndr, NDR_SCALARS|NDR_BUFFERS, r->next));
+		}
+		NDR_CHECK(ndr_push_ExtendedErrorComputerName(ndr, NDR_BUFFERS, &r->computer_name));
+		for (cntr_params_0 = 0; cntr_params_0 < r->num_params; cntr_params_0++) {
+			NDR_CHECK(ndr_push_ExtendedErrorParam(ndr, NDR_BUFFERS, &r->params[cntr_params_0]));
+		}
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_ExtendedErrorInfo(struct ndr_pull *ndr, int ndr_flags, struct ExtendedErrorInfo *r)
+{
+	uint32_t _ptr_next;
+	TALLOC_CTX *_mem_save_next_0;
+	uint32_t cntr_params_0;
+	TALLOC_CTX *_mem_save_params_0;
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_array_size(ndr, &r->params));
+		NDR_CHECK(ndr_pull_align(ndr, 8));
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_next));
+		if (_ptr_next) {
+			NDR_PULL_ALLOC(ndr, r->next);
+		} else {
+			r->next = NULL;
+		}
+		NDR_CHECK(ndr_pull_ExtendedErrorComputerName(ndr, NDR_SCALARS, &r->computer_name));
+		NDR_CHECK(ndr_pull_hyper(ndr, NDR_SCALARS, &r->pid));
+		NDR_CHECK(ndr_pull_NTTIME(ndr, NDR_SCALARS, &r->time));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->generating_component));
+		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->status));
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->detection_location));
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->flags));
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->num_params));
+		NDR_PULL_ALLOC_N(ndr, r->params, ndr_get_array_size(ndr, &r->params));
+		_mem_save_params_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->params, 0);
+		for (cntr_params_0 = 0; cntr_params_0 < r->num_params; cntr_params_0++) {
+			NDR_CHECK(ndr_pull_ExtendedErrorParam(ndr, NDR_SCALARS, &r->params[cntr_params_0]));
+		}
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_params_0, 0);
+		if (r->params) {
+			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->params, r->num_params));
+		}
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		if (r->next) {
+			_mem_save_next_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->next, 0);
+			NDR_CHECK(ndr_pull_ExtendedErrorInfo(ndr, NDR_SCALARS|NDR_BUFFERS, r->next));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_next_0, 0);
+		}
+		NDR_CHECK(ndr_pull_ExtendedErrorComputerName(ndr, NDR_BUFFERS, &r->computer_name));
+		_mem_save_params_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->params, 0);
+		for (cntr_params_0 = 0; cntr_params_0 < r->num_params; cntr_params_0++) {
+			NDR_CHECK(ndr_pull_ExtendedErrorParam(ndr, NDR_BUFFERS, &r->params[cntr_params_0]));
+		}
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_params_0, 0);
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_ExtendedErrorInfo(struct ndr_print *ndr, const char *name, const struct ExtendedErrorInfo *r)
+{
+	uint32_t cntr_params_0;
+	ndr_print_struct(ndr, name, "ExtendedErrorInfo");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "next", r->next);
+	ndr->depth++;
+	if (r->next) {
+		ndr_print_ExtendedErrorInfo(ndr, "next", r->next);
+	}
+	ndr->depth--;
+	ndr_print_ExtendedErrorComputerName(ndr, "computer_name", &r->computer_name);
+	ndr_print_hyper(ndr, "pid", r->pid);
+	ndr_print_NTTIME(ndr, "time", r->time);
+	ndr_print_uint32(ndr, "generating_component", r->generating_component);
+	ndr_print_WERROR(ndr, "status", r->status);
+	ndr_print_uint16(ndr, "detection_location", r->detection_location);
+	ndr_print_uint16(ndr, "flags", r->flags);
+	ndr_print_uint16(ndr, "num_params", r->num_params);
+	ndr->print(ndr, "%s: ARRAY(%d)", "params", (int)r->num_params);
+	ndr->depth++;
+	for (cntr_params_0=0;cntr_params_0<r->num_params;cntr_params_0++) {
 		char *idx_0=NULL;
-		if (asprintf(&idx_0, "[%d]", cntr_chunks_0) != -1) {
-			ndr_print_DsCompressedChunk(ndr, "chunks", &r->chunks[cntr_chunks_0]);
+		if (asprintf(&idx_0, "[%d]", cntr_params_0) != -1) {
+			ndr_print_ExtendedErrorParam(ndr, "params", &r->params[cntr_params_0]);
 			free(idx_0);
 		}
+	}
+	ndr->depth--;
+	ndr->depth--;
+}
+
+static enum ndr_err_code ndr_push_ExtendedErrorInfoPtr(struct ndr_push *ndr, int ndr_flags, const struct ExtendedErrorInfoPtr *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->info));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		if (r->info) {
+			NDR_CHECK(ndr_push_ExtendedErrorInfo(ndr, NDR_SCALARS|NDR_BUFFERS, r->info));
+		}
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_ExtendedErrorInfoPtr(struct ndr_pull *ndr, int ndr_flags, struct ExtendedErrorInfoPtr *r)
+{
+	uint32_t _ptr_info;
+	TALLOC_CTX *_mem_save_info_0;
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_info));
+		if (_ptr_info) {
+			NDR_PULL_ALLOC(ndr, r->info);
+		} else {
+			r->info = NULL;
+		}
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		if (r->info) {
+			_mem_save_info_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->info, 0);
+			NDR_CHECK(ndr_pull_ExtendedErrorInfo(ndr, NDR_SCALARS|NDR_BUFFERS, r->info));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_info_0, 0);
+		}
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_ExtendedErrorInfoPtr(struct ndr_print *ndr, const char *name, const struct ExtendedErrorInfoPtr *r)
+{
+	ndr_print_struct(ndr, name, "ExtendedErrorInfoPtr");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "info", r->info);
+	ndr->depth++;
+	if (r->info) {
+		ndr_print_ExtendedErrorInfo(ndr, "info", r->info);
 	}
 	ndr->depth--;
 	ndr->depth--;
@@ -3351,41 +4031,92 @@ _PUBLIC_ void ndr_print_decode_trustAuthInOut(struct ndr_print *ndr, const char 
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_decode_DsCompressed(struct ndr_push *ndr, int flags, const struct decode_DsCompressed *r)
+static enum ndr_err_code ndr_push_decode_trustDomainPasswords(struct ndr_push *ndr, int flags, const struct decode_trustDomainPasswords *r)
 {
 	if (flags & NDR_IN) {
-		NDR_CHECK(ndr_push_DsCompressedBlob(ndr, NDR_SCALARS, &r->in.blob));
+		NDR_CHECK(ndr_push_trustDomainPasswords(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.blob));
 	}
 	if (flags & NDR_OUT) {
 	}
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_decode_DsCompressed(struct ndr_pull *ndr, int flags, struct decode_DsCompressed *r)
+static enum ndr_err_code ndr_pull_decode_trustDomainPasswords(struct ndr_pull *ndr, int flags, struct decode_trustDomainPasswords *r)
 {
 	if (flags & NDR_IN) {
-		NDR_CHECK(ndr_pull_DsCompressedBlob(ndr, NDR_SCALARS, &r->in.blob));
+		NDR_CHECK(ndr_pull_trustDomainPasswords(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.blob));
 	}
 	if (flags & NDR_OUT) {
 	}
 	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ void ndr_print_decode_DsCompressed(struct ndr_print *ndr, const char *name, int flags, const struct decode_DsCompressed *r)
+_PUBLIC_ void ndr_print_decode_trustDomainPasswords(struct ndr_print *ndr, const char *name, int flags, const struct decode_trustDomainPasswords *r)
 {
-	ndr_print_struct(ndr, name, "decode_DsCompressed");
+	ndr_print_struct(ndr, name, "decode_trustDomainPasswords");
 	ndr->depth++;
 	if (flags & NDR_SET_VALUES) {
 		ndr->flags |= LIBNDR_PRINT_SET_VALUES;
 	}
 	if (flags & NDR_IN) {
-		ndr_print_struct(ndr, "in", "decode_DsCompressed");
+		ndr_print_struct(ndr, "in", "decode_trustDomainPasswords");
 		ndr->depth++;
-		ndr_print_DsCompressedBlob(ndr, "blob", &r->in.blob);
+		ndr_print_trustDomainPasswords(ndr, "blob", &r->in.blob);
 		ndr->depth--;
 	}
 	if (flags & NDR_OUT) {
-		ndr_print_struct(ndr, "out", "decode_DsCompressed");
+		ndr_print_struct(ndr, "out", "decode_trustDomainPasswords");
+		ndr->depth++;
+		ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+static enum ndr_err_code ndr_push_decode_ExtendedErrorInfo(struct ndr_push *ndr, int flags, const struct decode_ExtendedErrorInfo *r)
+{
+	if (flags & NDR_IN) {
+		{
+			struct ndr_push *_ndr_ptr;
+			NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_ptr, 0xFFFFFC01, -1));
+			NDR_CHECK(ndr_push_ExtendedErrorInfoPtr(_ndr_ptr, NDR_SCALARS|NDR_BUFFERS, &r->in.ptr));
+			NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_ptr, 0xFFFFFC01, -1));
+		}
+	}
+	if (flags & NDR_OUT) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_decode_ExtendedErrorInfo(struct ndr_pull *ndr, int flags, struct decode_ExtendedErrorInfo *r)
+{
+	if (flags & NDR_IN) {
+		{
+			struct ndr_pull *_ndr_ptr;
+			NDR_CHECK(ndr_pull_subcontext_start(ndr, &_ndr_ptr, 0xFFFFFC01, -1));
+			NDR_CHECK(ndr_pull_ExtendedErrorInfoPtr(_ndr_ptr, NDR_SCALARS|NDR_BUFFERS, &r->in.ptr));
+			NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_ptr, 0xFFFFFC01, -1));
+		}
+	}
+	if (flags & NDR_OUT) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_decode_ExtendedErrorInfo(struct ndr_print *ndr, const char *name, int flags, const struct decode_ExtendedErrorInfo *r)
+{
+	ndr_print_struct(ndr, name, "decode_ExtendedErrorInfo");
+	ndr->depth++;
+	if (flags & NDR_SET_VALUES) {
+		ndr->flags |= LIBNDR_PRINT_SET_VALUES;
+	}
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "decode_ExtendedErrorInfo");
+		ndr->depth++;
+		ndr_print_ExtendedErrorInfoPtr(ndr, "ptr", &r->in.ptr);
+		ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "decode_ExtendedErrorInfo");
 		ndr->depth++;
 		ndr->depth--;
 	}
@@ -3490,11 +4221,19 @@ static const struct ndr_interface_call drsblobs_calls[] = {
 		false,
 	},
 	{
-		"decode_DsCompressed",
-		sizeof(struct decode_DsCompressed),
-		(ndr_push_flags_fn_t) ndr_push_decode_DsCompressed,
-		(ndr_pull_flags_fn_t) ndr_pull_decode_DsCompressed,
-		(ndr_print_function_t) ndr_print_decode_DsCompressed,
+		"decode_trustDomainPasswords",
+		sizeof(struct decode_trustDomainPasswords),
+		(ndr_push_flags_fn_t) ndr_push_decode_trustDomainPasswords,
+		(ndr_pull_flags_fn_t) ndr_pull_decode_trustDomainPasswords,
+		(ndr_print_function_t) ndr_print_decode_trustDomainPasswords,
+		false,
+	},
+	{
+		"decode_ExtendedErrorInfo",
+		sizeof(struct decode_ExtendedErrorInfo),
+		(ndr_push_flags_fn_t) ndr_push_decode_ExtendedErrorInfo,
+		(ndr_pull_flags_fn_t) ndr_pull_decode_ExtendedErrorInfo,
+		(ndr_print_function_t) ndr_print_decode_ExtendedErrorInfo,
 		false,
 	},
 	{ NULL, 0, NULL, NULL, NULL, false }
@@ -3526,7 +4265,7 @@ const struct ndr_interface_table ndr_table_drsblobs = {
 		NDR_DRSBLOBS_VERSION
 	},
 	.helpstring	= NDR_DRSBLOBS_HELPSTRING,
-	.num_calls	= 13,
+	.num_calls	= 14,
 	.calls		= drsblobs_calls,
 	.endpoints	= &drsblobs_endpoints,
 	.authservices	= &drsblobs_authservices

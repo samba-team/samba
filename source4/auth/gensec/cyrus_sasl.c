@@ -110,7 +110,7 @@ static int gensec_sasl_get_password(sasl_conn_t *conn, void *context, int id,
 static int gensec_sasl_dispose(struct gensec_sasl_state *gensec_sasl_state)
 {
 	sasl_dispose(&gensec_sasl_state->conn);
-	return 0;
+	return SASL_OK;
 }
 
 static NTSTATUS gensec_sasl_client_start(struct gensec_security *gensec_security)
@@ -319,43 +319,43 @@ static const struct gensec_security_ops gensec_sasl_security_ops = {
 	.priority         = GENSEC_SASL
 };
 
-int gensec_sasl_log(void *context, 
+static int gensec_sasl_log(void *context, 
 		    int sasl_log_level,
 		    const char *message) 
 {
-	int debug_level;
+	int dl;
 	switch (sasl_log_level) {
 	case SASL_LOG_NONE:
-		debug_level = 0;
+		dl = 0;
 		break;
 	case SASL_LOG_ERR:
-		debug_level = 1;
+		dl = 1;
 		break;
 	case SASL_LOG_FAIL:
-		debug_level = 2;
+		dl = 2;
 		break;
 	case SASL_LOG_WARN:
-		debug_level = 3;
+		dl = 3;
 		break;
 	case SASL_LOG_NOTE:
-		debug_level = 5;
+		dl = 5;
 		break;
 	case SASL_LOG_DEBUG:
-		debug_level = 10;
+		dl = 10;
 		break;
 	case SASL_LOG_TRACE:
-		debug_level = 11;
+		dl = 11;
 		break;
 #if DEBUG_PASSWORD
 	case SASL_LOG_PASS:
-		debug_level = 100;
+		dl = 100;
 		break;
 #endif
 	default:
-		debug_level = 0;
+		dl = 0;
 		break;
 	}
-	DEBUG(debug_level, ("gensec_sasl: %s\n", message));
+	DEBUG(dl, ("gensec_sasl: %s\n", message));
 
 	return SASL_OK;
 }

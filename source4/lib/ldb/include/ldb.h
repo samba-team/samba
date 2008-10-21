@@ -181,6 +181,7 @@ enum ldb_scope {LDB_SCOPE_DEFAULT=-1,
 		LDB_SCOPE_SUBTREE=2};
 
 struct ldb_context;
+struct event_context;
 
 /* debugging uses one of the following levels */
 enum ldb_debug_level {LDB_DEBUG_FATAL, LDB_DEBUG_ERROR, 
@@ -651,7 +652,6 @@ enum ldb_request_type {
 	LDB_DELETE,
 	LDB_RENAME,
 	LDB_EXTENDED,
-	LDB_SEQUENCE_NUMBER,
 	LDB_REQ_REGISTER_CONTROL,
 	LDB_REQ_REGISTER_PARTITION
 };
@@ -659,7 +659,6 @@ enum ldb_request_type {
 enum ldb_reply_type {
 	LDB_REPLY_ENTRY,
 	LDB_REPLY_REFERRAL,
-	LDB_REPLY_EXTENDED,
 	LDB_REPLY_DONE
 };
 
@@ -679,28 +678,42 @@ struct ldb_extended {
 	void *data; /* NULL or a valid talloc pointer! talloc_get_type() will be used on it */
 };
 
+#define LDB_EXTENDED_SEQUENCE_NUMBER	"1.3.6.1.4.1.7165.4.4.3"
+
+enum ldb_sequence_type {
+	LDB_SEQ_HIGHEST_SEQ,
+	LDB_SEQ_HIGHEST_TIMESTAMP,
+	LDB_SEQ_NEXT
+};
+
+struct ldb_seqnum_request {
+	enum ldb_sequence_type type;
+};
+
+struct ldb_seqnum_result {
+	uint64_t seq_num;
+	uint32_t flags;
+};
+
 struct ldb_result {
 	unsigned int count;
 	struct ldb_message **msgs;
-	char **refs;
 	struct ldb_extended *extended;
 	struct ldb_control **controls;
+	char **refs;
 };
 
 struct ldb_reply {
+	int error;
 	enum ldb_reply_type type;
 	struct ldb_message *message;
 	struct ldb_extended *response;
-	char *referral;
 	struct ldb_control **controls;
+	char *referral;
 };
 
-struct ldb_handle {
-	int status;
-	enum ldb_state state;
-	void *private_data;
-	struct ldb_module *module;
-};
+struct ldb_request;
+struct ldb_handle;
 
 struct ldb_search {
 	struct ldb_dn *base;
@@ -735,19 +748,8 @@ struct ldb_register_partition {
 	struct ldb_dn *dn;
 };
 
-enum ldb_sequence_type {
-	LDB_SEQ_HIGHEST_SEQ,
-	LDB_SEQ_HIGHEST_TIMESTAMP,
-	LDB_SEQ_NEXT
-};
+typedef int (*ldb_request_callback_t)(struct ldb_request *, struct ldb_reply *);
 
-struct ldb_sequence_number {
-	enum ldb_sequence_type type;
-	uint64_t seq_num;
-	uint32_t flags;
-};
-
-typedef int (*ldb_request_callback_t)(struct ldb_context *, void *, struct ldb_reply *);
 struct ldb_request {
 
 	enum ldb_request_type operation;
@@ -759,7 +761,6 @@ struct ldb_request {
 		struct ldb_delete del;
 		struct ldb_rename rename;
 		struct ldb_extended extended;
-		struct ldb_sequence_number seq_num;
 		struct ldb_register_control reg_control;
 		struct ldb_register_partition reg_partition;
 	} op;
@@ -775,7 +776,10 @@ struct ldb_request {
 };
 
 int ldb_request(struct ldb_context *ldb, struct ldb_request *request);
+int ldb_request_done(struct ldb_request *req, int status);
+bool ldb_request_is_done(struct ldb_request *req);
 
+int ldb_modules_wait(struct ldb_handle *handle);
 int ldb_wait(struct ldb_handle *handle, enum ldb_wait_type type);
 
 int ldb_set_timeout(struct ldb_context *ldb, struct ldb_request *req, int timeout);
@@ -831,6 +835,19 @@ struct ldb_context *ldb_init(TALLOC_CTX *mem_ctx, struct event_context *ev_ctx);
    (that is, with LDB_FLG_RDONLY). However in read-write mode, the database will be
    created if it does not exist.
 */
+
+typedef void (*ldb_async_timeout_fn) (void *);
+typedef bool (*ldb_async_callback_fn) (void *);
+typedef int (*ldb_async_ctx_add_op_fn)(void *, time_t, void *, ldb_async_timeout_fn, ldb_async_callback_fn);
+typedef int (*ldb_async_ctx_wait_op_fn)(void *);
+
+void ldb_async_ctx_set_private_data(struct ldb_context *ldb,
+					void *private_data);
+void ldb_async_ctx_set_add_op(struct ldb_context *ldb,
+				ldb_async_ctx_add_op_fn add_op);
+void ldb_async_ctx_set_wait_op(struct ldb_context *ldb,
+				ldb_async_ctx_wait_op_fn wait_op);
+
 int ldb_connect(struct ldb_context *ldb, const char *url, unsigned int flags, const char *options[]);
 
 /*
@@ -860,13 +877,12 @@ struct ldb_dn *ldb_get_default_basedn(struct ldb_context *ldb);
 /**
   The default async search callback function 
 
-  \param ldb the context associated with the database (from ldb_init())
-  \param context the callback context (struct ldb_result *)
+  \param req the request we are callback of
   \param ares a single reply from the async core
 
   \return result code (LDB_SUCCESS on success, or a failure code)
 
-  \note this function expects the context to always be an struct ldb_result pointer
+  \note this function expects req->context to always be an struct ldb_result pointer
   AND a talloc context, this function will steal on the context each message
   from the ares reply passed on by the async core so that in the end all the
   messages will be in the context (ldb_result)  memory tree.
@@ -875,7 +891,18 @@ struct ldb_dn *ldb_get_default_basedn(struct ldb_context *ldb);
   request that can be freed as sson as the search request is finished)
 */
 
-int ldb_search_default_callback(struct ldb_context *ldb, void *context, struct ldb_reply *ares);
+int ldb_search_default_callback(struct ldb_request *req, struct ldb_reply *ares);
+
+/**
+  The default async extended operation callback function
+
+  \param req the request we are callback of
+  \param ares a single reply from the async core
+
+  \return result code (LDB_SUCCESS on success, or a failure code)
+*/
+int ldb_op_default_callback(struct ldb_request *req, struct ldb_reply *ares);
+
 
 /**
   Helper function to build a search request
@@ -889,7 +916,8 @@ int ldb_search_default_callback(struct ldb_context *ldb, void *context, struct l
   \param attrs the search attributes for the query (pass NULL if none required)
   \param controls an array of controls
   \param context the callback function context
-  \param callback the callback function to handle the async replies
+  \param the callback function to handle the async replies
+  \param the parent request if any
 
   \return result code (LDB_SUCCESS on success, or a failure code)
 */
@@ -903,7 +931,20 @@ int ldb_build_search_req(struct ldb_request **ret_req,
 			const char * const *attrs,
 			struct ldb_control **controls,
 			void *context,
-			ldb_request_callback_t callback);
+			ldb_request_callback_t callback,
+			struct ldb_request *parent);
+
+int ldb_build_search_req_ex(struct ldb_request **ret_req,
+			struct ldb_context *ldb,
+			TALLOC_CTX *mem_ctx,
+			struct ldb_dn *base,
+			enum ldb_scope scope,
+			struct ldb_parse_tree *tree,
+			const char * const *attrs,
+			struct ldb_control **controls,
+			void *context,
+			ldb_request_callback_t callback,
+			struct ldb_request *parent);
 
 /**
   Helper function to build an add request
@@ -914,7 +955,8 @@ int ldb_build_search_req(struct ldb_request **ret_req,
   \param message contains the entry to be added 
   \param controls an array of controls
   \param context the callback function context
-  \param callback the callback function to handle the async replies
+  \param the callback function to handle the async replies
+  \param the parent request if any
 
   \return result code (LDB_SUCCESS on success, or a failure code)
 */
@@ -925,7 +967,8 @@ int ldb_build_add_req(struct ldb_request **ret_req,
 			const struct ldb_message *message,
 			struct ldb_control **controls,
 			void *context,
-			ldb_request_callback_t callback);
+			ldb_request_callback_t callback,
+			struct ldb_request *parent);
 
 /**
   Helper function to build a modify request
@@ -936,7 +979,8 @@ int ldb_build_add_req(struct ldb_request **ret_req,
   \param message contains the entry to be modified
   \param controls an array of controls
   \param context the callback function context
-  \param callback the callback function to handle the async replies
+  \param the callback function to handle the async replies
+  \param the parent request if any
 
   \return result code (LDB_SUCCESS on success, or a failure code)
 */
@@ -947,7 +991,8 @@ int ldb_build_mod_req(struct ldb_request **ret_req,
 			const struct ldb_message *message,
 			struct ldb_control **controls,
 			void *context,
-			ldb_request_callback_t callback);
+			ldb_request_callback_t callback,
+			struct ldb_request *parent);
 
 /**
   Helper function to build a delete request
@@ -958,7 +1003,8 @@ int ldb_build_mod_req(struct ldb_request **ret_req,
   \param dn the DN to be deleted
   \param controls an array of controls
   \param context the callback function context
-  \param callback the callback function to handle the async replies
+  \param the callback function to handle the async replies
+  \param the parent request if any
 
   \return result code (LDB_SUCCESS on success, or a failure code)
 */
@@ -969,7 +1015,8 @@ int ldb_build_del_req(struct ldb_request **ret_req,
 			struct ldb_dn *dn,
 			struct ldb_control **controls,
 			void *context,
-			ldb_request_callback_t callback);
+			ldb_request_callback_t callback,
+			struct ldb_request *parent);
 
 /**
   Helper function to build a rename request
@@ -981,7 +1028,8 @@ int ldb_build_del_req(struct ldb_request **ret_req,
   \param newdn the new DN
   \param controls an array of controls
   \param context the callback function context
-  \param callback the callback function to handle the async replies
+  \param the callback function to handle the async replies
+  \param the parent request if any
 
   \return result code (LDB_SUCCESS on success, or a failure code)
 */
@@ -993,7 +1041,8 @@ int ldb_build_rename_req(struct ldb_request **ret_req,
 			struct ldb_dn *newdn,
 			struct ldb_control **controls,
 			void *context,
-			ldb_request_callback_t callback);
+			ldb_request_callback_t callback,
+			struct ldb_request *parent);
 
 /**
   Add a ldb_control to a ldb_request
@@ -1023,31 +1072,21 @@ struct ldb_control *ldb_request_get_control(struct ldb_request *req, const char 
   records that match an LDAP-like search expression
 
   \param ldb the context associated with the database (from ldb_init())
+  \param mem_ctx the memory context to use for the request and the results
+  \param result the return result
   \param base the Base Distinguished Name for the query (use ldb_dn_new() for an empty one)
   \param scope the search scope for the query
-  \param expression the search expression to use for this query
   \param attrs the search attributes for the query (pass NULL if none required)
-  \param res the return result
+  \param exp_fmt the search expression to use for this query (printf like)
 
   \return result code (LDB_SUCCESS on success, or a failure code)
 
   \note use talloc_free() to free the ldb_result returned
 */
-int ldb_search(struct ldb_context *ldb, 
-	       struct ldb_dn *base,
-	       enum ldb_scope scope,
-	       const char *expression,
-	       const char * const *attrs, struct ldb_result **res);
-
-/*
- * a useful search function where you can easily define the expression and
- * that takes a memory context where results are allocated
-*/
-
-int ldb_search_exp_fmt(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
-		       struct ldb_result **result, struct ldb_dn *base,
-		       enum ldb_scope scope, const char * const *attrs,
-		       const char *exp_fmt, ...) PRINTF_ATTRIBUTE(7,8);
+int ldb_search(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
+	       struct ldb_result **result, struct ldb_dn *base,
+	       enum ldb_scope scope, const char * const *attrs,
+	       const char *exp_fmt, ...) PRINTF_ATTRIBUTE(7,8);
 
 /**
   Add a record to the database.
@@ -1113,13 +1152,12 @@ int ldb_delete(struct ldb_context *ldb, struct ldb_dn *dn);
 /**
   The default async extended operation callback function 
 
-  \param ldb the context associated with the database (from ldb_init())
-  \param context the callback context (struct ldb_result *)
+  \param req the request we are callback of
   \param ares a single reply from the async core
 
   \return result code (LDB_SUCCESS on success, or a failure code)
 
-  \note this function expects the context to always be an struct ldb_result pointer
+  \note this function expects req->context to always be an struct ldb_result pointer
   AND a talloc context, this function will steal on the context each message
   from the ares reply passed on by the async core so that in the end all the
   messages will be in the context (ldb_result)  memory tree.
@@ -1127,7 +1165,9 @@ int ldb_delete(struct ldb_context *ldb, struct ldb_dn *dn);
   (the request need to be freed separately and the result doe not depend on the
   request that can be freed as sson as the search request is finished)
 */
-int ldb_extended_default_callback(struct ldb_context *ldb, void *context, struct ldb_reply *ares);
+
+int ldb_extended_default_callback(struct ldb_request *req, struct ldb_reply *ares);
+
 
 /**
   Helper function to build a extended request
@@ -1140,7 +1180,8 @@ int ldb_extended_default_callback(struct ldb_context *ldb, void *context, struct
   it needs to be NULL or a valid talloc pointer! talloc_get_type() will be used on it  
   \param controls an array of controls
   \param context the callback function context
-  \param callback the callback function to handle the async replies
+  \param the callback function to handle the async replies
+  \param the parent request if any
 
   \return result code (LDB_SUCCESS on success, or a failure code)
 */
@@ -1151,7 +1192,8 @@ int ldb_build_extended_req(struct ldb_request **ret_req,
 			   void *data,/* NULL or a valid talloc pointer! talloc_get_type() will be used on it */
 			   struct ldb_control **controls,
 			   void *context,
-			   ldb_request_callback_t callback);
+			   ldb_request_callback_t callback,
+			   struct ldb_request *parent);
 
 /**
   call an extended operation

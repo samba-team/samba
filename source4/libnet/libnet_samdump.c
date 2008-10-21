@@ -22,7 +22,7 @@
 
 #include "includes.h"
 #include "libnet/libnet.h"
-#include "lib/util/dlinklist.h"
+#include "../lib/util/dlinklist.h"
 #include "samba3/samba3.h"
 #include "libcli/security/security.h"
 

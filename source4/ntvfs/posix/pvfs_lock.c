@@ -22,7 +22,7 @@
 #include "includes.h"
 #include "vfs_posix.h"
 #include "system/time.h"
-#include "lib/util/dlinklist.h"
+#include "../lib/util/dlinklist.h"
 #include "messaging/messaging.h"
 
 

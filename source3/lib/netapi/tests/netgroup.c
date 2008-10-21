@@ -36,14 +36,14 @@ static NET_API_STATUS test_netgroupenum(const char *hostname,
 	uint32_t total_entries = 0;
 	uint32_t resume_handle = 0;
 	int found_group = 0;
-	const char *current_name;
+	const char *current_name = NULL;
 	uint8_t *buffer = NULL;
 	int i;
 
-	struct GROUP_INFO_0 *info0;
-	struct GROUP_INFO_1 *info1;
-	struct GROUP_INFO_2 *info2;
-	struct GROUP_INFO_3 *info3;
+	struct GROUP_INFO_0 *info0 = NULL;
+	struct GROUP_INFO_1 *info1 = NULL;
+	struct GROUP_INFO_2 *info2 = NULL;
+	struct GROUP_INFO_3 *info3 = NULL;
 
 	printf("testing NetGroupEnum level %d\n", level);
 

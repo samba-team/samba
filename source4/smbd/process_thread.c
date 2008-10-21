@@ -188,7 +188,7 @@ static void thread_new_task(struct event_context *ev,
 }
 
 /* called when a task goes down */
-static void thread_terminate(struct event_context *event_ctx, const char *reason) 
+static void thread_terminate(struct event_context *event_ctx, struct loadparm_context *lp_ctx, const char *reason) 
 {
 	DEBUG(10,("thread_terminate: reason[%s]\n",reason));
 

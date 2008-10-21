@@ -33,7 +33,7 @@ struct result_struct {
 
 static void increment_handler(struct nbt_name_request *req)
 {
-	struct result_struct *v = talloc_get_type(req->async.private, struct result_struct);
+	struct result_struct *v = talloc_get_type(req->async.private_data, struct result_struct);
 	if (req->state != NBT_REQUEST_DONE) {
 		v->num_fail++;
 	} else {
@@ -76,7 +76,7 @@ static bool bench_namequery(struct torture_context *tctx)
 			req = nbt_name_query_send(nbtsock, &io);
 			torture_assert(tctx, req != NULL, "Failed to setup request!");
 			req->async.fn = increment_handler;
-			req->async.private = result;
+			req->async.private_data = result;
 			num_sent++;
 			if (num_sent % 1000 == 0) {
 				if (torture_setting_bool(tctx, "progress", true)) {

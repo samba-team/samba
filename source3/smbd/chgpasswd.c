@@ -1131,7 +1131,7 @@ NTSTATUS change_oem_password(struct samu *hnd, char *old_passwd, char *new_passw
 	if ((can_change_time != 0) && (time(NULL) < can_change_time)) {
 		DEBUG(1, ("user %s cannot change password now, must "
 			  "wait until %s\n", username,
-			  http_timestring(can_change_time)));
+			  http_timestring(talloc_tos(), can_change_time)));
 		if (samr_reject_reason) {
 			*samr_reject_reason = SAMR_REJECT_OTHER;
 		}

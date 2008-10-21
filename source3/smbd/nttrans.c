@@ -22,6 +22,7 @@
 
 extern int max_send;
 extern enum protocol_types Protocol;
+extern const struct generic_mapping file_generic_mapping;
 
 static char *nttrans_realloc(char **ptr, size_t size)
 {
@@ -267,7 +268,8 @@ bool is_ntfs_stream_name(const char *fname)
 static void nt_open_pipe(char *fname, connection_struct *conn,
 			 struct smb_request *req, int *ppnum)
 {
-	smb_np_struct *p = NULL;
+	files_struct *fsp;
+	NTSTATUS status;
 
 	DEBUG(4,("nt_open_pipe: Opening pipe %s.\n", fname));
 
@@ -284,19 +286,13 @@ static void nt_open_pipe(char *fname, connection_struct *conn,
 
 	DEBUG(3,("nt_open_pipe: Known pipe %s opening.\n", fname));
 
-	p = open_rpc_pipe_p(fname, conn, req->vuid);
-	if (!p) {
-		reply_doserror(req, ERRSRV, ERRnofids);
+	status = np_open(req, conn, fname, &fsp);
+	if (!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
 		return;
 	}
 
-	/* TODO: Add pipe to db */
-
-	if ( !store_pipe_opendb( p ) ) {
-		DEBUG(3,("nt_open_pipe: failed to store %s pipe open.\n", fname));
-	}
-
-	*ppnum = p->pnum;
+	*ppnum = fsp->fnum;
 	return;
 }
 
@@ -390,7 +386,7 @@ void reply_ntcreate_and_X(struct smb_request *req)
 	uint32 create_disposition;
 	uint32 create_options;
 	uint16 root_dir_fid;
-	SMB_BIG_UINT allocation_size;
+	uint64_t allocation_size;
 	/* Breakout the oplock request bits so we can set the
 	   reply bits separately. */
 	uint32 fattr=0;
@@ -422,10 +418,10 @@ void reply_ntcreate_and_X(struct smb_request *req)
 	create_options = IVAL(req->inbuf,smb_ntcreate_CreateOptions);
 	root_dir_fid = (uint16)IVAL(req->inbuf,smb_ntcreate_RootDirectoryFid);
 
-	allocation_size = (SMB_BIG_UINT)IVAL(req->inbuf,
+	allocation_size = (uint64_t)IVAL(req->inbuf,
 					     smb_ntcreate_AllocationSize);
 #ifdef LARGE_SMB_OFF_T
-	allocation_size |= (((SMB_BIG_UINT)IVAL(
+	allocation_size |= (((uint64_t)IVAL(
 				     req->inbuf,
 				     smb_ntcreate_AllocationSize + 4)) << 32);
 #endif
@@ -739,6 +735,10 @@ static NTSTATUS set_sd(files_struct *fsp, uint8 *data, uint32 sd_len,
 		security_info_sent &= ~DACL_SECURITY_INFORMATION;
 	}
 
+	/* Convert all the generic bits. */
+	security_acl_map_generic(psd->dacl, &file_generic_mapping);
+	security_acl_map_generic(psd->sacl, &file_generic_mapping);
+
 	status = SMB_VFS_FSET_NT_ACL(fsp, security_info_sent, psd);
 
 	TALLOC_FREE(psd);
@@ -814,7 +814,7 @@ static void call_nt_transact_create(connection_struct *conn,
 	struct ea_list *ea_list = NULL;
 	NTSTATUS status;
 	size_t param_len;
-	SMB_BIG_UINT allocation_size;
+	uint64_t allocation_size;
 	int oplock_request;
 	uint8_t oplock_granted;
 	TALLOC_CTX *ctx = talloc_tos();
@@ -857,9 +857,9 @@ static void call_nt_transact_create(connection_struct *conn,
 	sd_len = IVAL(params,36);
 	ea_len = IVAL(params,40);
 	root_dir_fid = (uint16)IVAL(params,4);
-	allocation_size = (SMB_BIG_UINT)IVAL(params,12);
+	allocation_size = (uint64_t)IVAL(params,12);
 #ifdef LARGE_SMB_OFF_T
-	allocation_size |= (((SMB_BIG_UINT)IVAL(params,16)) << 32);
+	allocation_size |= (((uint64_t)IVAL(params,16)) << 32);
 #endif
 
 	/*
@@ -1183,7 +1183,7 @@ static NTSTATUS copy_internals(TALLOC_CTX *ctx,
 			&info, &fsp2);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		close_file(fsp1,ERROR_CLOSE);
+		close_file(NULL, fsp1, ERROR_CLOSE);
 		return status;
 	}
 
@@ -1197,12 +1197,12 @@ static NTSTATUS copy_internals(TALLOC_CTX *ctx,
 	 * Thus we don't look at the error return from the
 	 * close of fsp1.
 	 */
-	close_file(fsp1,NORMAL_CLOSE);
+	close_file(NULL, fsp1, NORMAL_CLOSE);
 
 	/* Ensure the modtime is set correctly on the destination file. */
 	set_close_write_time(fsp2, get_mtimespec(&sbuf1));
 
-	status = close_file(fsp2,NORMAL_CLOSE);
+	status = close_file(NULL, fsp2, NORMAL_CLOSE);
 
 	/* Grrr. We have to do this as open_file_ntcreate adds aARCH when it
 	   creates the file. This isn't the correct thing to do in the copy
@@ -1394,7 +1394,7 @@ static void call_nt_transact_notify_change(connection_struct *conn,
 		return;
 	}
 
-	fsp = file_fsp(SVAL(setup,4));
+	fsp = file_fsp(req, SVAL(setup,4));
 	filter = IVAL(setup, 0);
 	recursive = (SVAL(setup, 6) != 0) ? True : False;
 
@@ -1494,7 +1494,7 @@ static void call_nt_transact_rename(connection_struct *conn,
 		return;
 	}
 
-	fsp = file_fsp(SVAL(params, 0));
+	fsp = file_fsp(req, SVAL(params, 0));
 	if (!check_fsp(conn, req, fsp)) {
 		return;
 	}
@@ -1563,7 +1563,7 @@ static void call_nt_transact_query_security_desc(connection_struct *conn,
 		return;
 	}
 
-	fsp = file_fsp(SVAL(params,0));
+	fsp = file_fsp(req, SVAL(params,0));
 	if(!fsp) {
 		reply_doserror(req, ERRDOS, ERRbadfid);
 		return;
@@ -1659,7 +1659,7 @@ static void call_nt_transact_set_security_desc(connection_struct *conn,
 		return;
 	}
 
-	if((fsp = file_fsp(SVAL(params,0))) == NULL) {
+	if((fsp = file_fsp(req, SVAL(params,0))) == NULL) {
 		reply_doserror(req, ERRDOS, ERRbadfid);
 		return;
 	}
@@ -1723,7 +1723,7 @@ static void call_nt_transact_ioctl(connection_struct *conn,
 	DEBUG(10,("call_nt_transact_ioctl: function[0x%08X] FID[0x%04X] isFSctl[0x%02X] compfilter[0x%02X]\n", 
 		 function, fidnum, isFSctl, compfilter));
 
-	fsp=file_fsp(fidnum);
+	fsp=file_fsp(req, fidnum);
 	/* this check is done in each implemented function case for now
 	   because I don't want to break anything... --metze
 	FSP_BELONGS_CONN(fsp,conn);*/
@@ -2030,7 +2030,7 @@ static void call_nt_transact_get_user_quota(connection_struct *conn,
 	}
 
 	/* maybe we can check the quota_fnum */
-	fsp = file_fsp(SVAL(params,0));
+	fsp = file_fsp(req, SVAL(params,0));
 	if (!check_fsp_ntquota_handle(conn, req, fsp)) {
 		DEBUG(3,("TRANSACT_GET_USER_QUOTA: no valid QUOTA HANDLE\n"));
 		reply_nterror(req, NT_STATUS_INVALID_HANDLE);
@@ -2127,16 +2127,16 @@ static void call_nt_transact_get_user_quota(connection_struct *conn,
 				/* then the len of the SID 4 bytes */
 				SIVAL(entry,4,sid_len);
 
-				/* unknown data 8 bytes SMB_BIG_UINT */
-				SBIG_UINT(entry,8,(SMB_BIG_UINT)0); /* this is not 0 in windows...-metze*/
+				/* unknown data 8 bytes uint64_t */
+				SBIG_UINT(entry,8,(uint64_t)0); /* this is not 0 in windows...-metze*/
 
-				/* the used disk space 8 bytes SMB_BIG_UINT */
+				/* the used disk space 8 bytes uint64_t */
 				SBIG_UINT(entry,16,tmp_list->quotas->usedspace);
 
-				/* the soft quotas 8 bytes SMB_BIG_UINT */
+				/* the soft quotas 8 bytes uint64_t */
 				SBIG_UINT(entry,24,tmp_list->quotas->softlim);
 
-				/* the hard quotas 8 bytes SMB_BIG_UINT */
+				/* the hard quotas 8 bytes uint64_t */
 				SBIG_UINT(entry,32,tmp_list->quotas->hardlim);
 
 				/* and now the SID */
@@ -2225,16 +2225,16 @@ static void call_nt_transact_get_user_quota(connection_struct *conn,
 			/* then the len of the SID 4 bytes */
 			SIVAL(entry,4,sid_len);
 
-			/* unknown data 8 bytes SMB_BIG_UINT */
-			SBIG_UINT(entry,8,(SMB_BIG_UINT)0); /* this is not 0 in windows...-mezte*/
+			/* unknown data 8 bytes uint64_t */
+			SBIG_UINT(entry,8,(uint64_t)0); /* this is not 0 in windows...-mezte*/
 
-			/* the used disk space 8 bytes SMB_BIG_UINT */
+			/* the used disk space 8 bytes uint64_t */
 			SBIG_UINT(entry,16,qt.usedspace);
 
-			/* the soft quotas 8 bytes SMB_BIG_UINT */
+			/* the soft quotas 8 bytes uint64_t */
 			SBIG_UINT(entry,24,qt.softlim);
 
-			/* the hard quotas 8 bytes SMB_BIG_UINT */
+			/* the hard quotas 8 bytes uint64_t */
 			SBIG_UINT(entry,32,qt.hardlim);
 
 			/* and now the SID */
@@ -2297,7 +2297,7 @@ static void call_nt_transact_set_user_quota(connection_struct *conn,
 	}
 
 	/* maybe we can check the quota_fnum */
-	fsp = file_fsp(SVAL(params,0));
+	fsp = file_fsp(req, SVAL(params,0));
 	if (!check_fsp_ntquota_handle(conn, req, fsp)) {
 		DEBUG(3,("TRANSACT_GET_USER_QUOTA: no valid QUOTA HANDLE\n"));
 		reply_nterror(req, NT_STATUS_INVALID_HANDLE);
@@ -2328,10 +2328,10 @@ static void call_nt_transact_set_user_quota(connection_struct *conn,
 	 * maybe its the change time in NTTIME
 	 */
 
-	/* the used space 8 bytes (SMB_BIG_UINT)*/
-	qt.usedspace = (SMB_BIG_UINT)IVAL(pdata,16);
+	/* the used space 8 bytes (uint64_t)*/
+	qt.usedspace = (uint64_t)IVAL(pdata,16);
 #ifdef LARGE_SMB_OFF_T
-	qt.usedspace |= (((SMB_BIG_UINT)IVAL(pdata,20)) << 32);
+	qt.usedspace |= (((uint64_t)IVAL(pdata,20)) << 32);
 #else /* LARGE_SMB_OFF_T */
 	if ((IVAL(pdata,20) != 0)&&
 		((qt.usedspace != 0xFFFFFFFF)||
@@ -2342,10 +2342,10 @@ static void call_nt_transact_set_user_quota(connection_struct *conn,
 	}
 #endif /* LARGE_SMB_OFF_T */
 
-	/* the soft quotas 8 bytes (SMB_BIG_UINT)*/
-	qt.softlim = (SMB_BIG_UINT)IVAL(pdata,24);
+	/* the soft quotas 8 bytes (uint64_t)*/
+	qt.softlim = (uint64_t)IVAL(pdata,24);
 #ifdef LARGE_SMB_OFF_T
-	qt.softlim |= (((SMB_BIG_UINT)IVAL(pdata,28)) << 32);
+	qt.softlim |= (((uint64_t)IVAL(pdata,28)) << 32);
 #else /* LARGE_SMB_OFF_T */
 	if ((IVAL(pdata,28) != 0)&&
 		((qt.softlim != 0xFFFFFFFF)||
@@ -2356,10 +2356,10 @@ static void call_nt_transact_set_user_quota(connection_struct *conn,
 	}
 #endif /* LARGE_SMB_OFF_T */
 
-	/* the hard quotas 8 bytes (SMB_BIG_UINT)*/
-	qt.hardlim = (SMB_BIG_UINT)IVAL(pdata,32);
+	/* the hard quotas 8 bytes (uint64_t)*/
+	qt.hardlim = (uint64_t)IVAL(pdata,32);
 #ifdef LARGE_SMB_OFF_T
-	qt.hardlim |= (((SMB_BIG_UINT)IVAL(pdata,36)) << 32);
+	qt.hardlim |= (((uint64_t)IVAL(pdata,36)) << 32);
 #else /* LARGE_SMB_OFF_T */
 	if ((IVAL(pdata,36) != 0)&&
 		((qt.hardlim != 0xFFFFFFFF)||

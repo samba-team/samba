@@ -34,7 +34,7 @@
 #include "libcli/security/security.h"
 #include "lib/ldb/include/ldb.h"
 #include "lib/ldb/include/ldb_errors.h"
-#include "lib/crypto/md5.h"
+#include "../lib/crypto/md5.h"
 #include "system/passwd.h"
 
 /*
@@ -166,7 +166,7 @@ static NTSTATUS ntp_signd_recv(void *private, DATA_BLOB wrapped_input)
 		return signing_failure(ntp_signdconn, sign_request.packet_id);
 	}
 
-	ret = ldb_search_exp_fmt(ntp_signdconn->ntp_signd->samdb, tmp_ctx,
+	ret = ldb_search(ntp_signdconn->ntp_signd->samdb, tmp_ctx,
 				 &res, samdb_base_dn(ntp_signdconn->ntp_signd->samdb),
 				 LDB_SCOPE_SUBTREE, attrs, "(&(objectSid=%s)(objectClass=user))",
 				 dom_sid_string(tmp_ctx, sid));
@@ -349,7 +349,7 @@ static void ntp_signd_task_init(struct task_server *task)
 	/* within the ntp_signd task we want to be a single process, so
 	   ask for the single process model ops and pass these to the
 	   stream_setup_socket() call. */
-	model_ops = process_model_byname("single");
+	model_ops = process_model_startup(task->event_ctx, "single");
 	if (!model_ops) {
 		DEBUG(0,("Can't find 'single' process model_ops\n"));
 		return;

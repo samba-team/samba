@@ -1,1 +1,0 @@
-AC_CHECK_HEADERS(math.h)

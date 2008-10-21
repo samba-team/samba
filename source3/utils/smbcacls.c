@@ -23,13 +23,13 @@
 
 #include "includes.h"
 
-static int test_args = False;
+static int test_args;
 
 #define CREATE_ACCESS_READ READ_CONTROL_ACCESS
 
 /* numeric is set when the user wants numeric SIDs and ACEs rather
    than going via LSA calls to resolve them */
-static int numeric = False;
+static int numeric;
 
 enum acl_mode {SMB_ACL_SET, SMB_ACL_DELETE, SMB_ACL_MODIFY, SMB_ACL_ADD };
 enum chown_mode {REQUEST_NONE, REQUEST_CHOWN, REQUEST_CHGRP};
@@ -179,9 +179,12 @@ static void SidToString(struct cli_state *cli, fstring str, const DOM_SID *sid)
 		return;
 	}
 
-	slprintf(str, sizeof(fstring) - 1, "%s%s%s",
-		 domain, lp_winbind_separator(), name);
-	
+	if (*domain) {
+		slprintf(str, sizeof(fstring) - 1, "%s%s%s",
+			domain, lp_winbind_separator(), name);
+	} else {
+		fstrcpy(str, name);
+	}
 }
 
 /* convert a string to a SID, either numeric or username/group */
@@ -196,6 +199,65 @@ static bool StringToSid(struct cli_state *cli, DOM_SID *sid, const char *str)
 	return NT_STATUS_IS_OK(cli_lsa_lookup_name(cli, str, &type, sid));
 }
 
+static void print_ace_flags(FILE *f, uint8_t flags)
+{
+	char *str = talloc_strdup(NULL, "");
+
+	if (!str) {
+		goto out;
+	}
+
+	if (flags & SEC_ACE_FLAG_OBJECT_INHERIT) {
+		str = talloc_asprintf(str, "%s%s",
+				str, "OI|");
+		if (!str) {
+			goto out;
+		}
+	}
+	if (flags & SEC_ACE_FLAG_CONTAINER_INHERIT) {
+		str = talloc_asprintf(str, "%s%s",
+				str, "CI|");
+		if (!str) {
+			goto out;
+		}
+	}
+	if (flags & SEC_ACE_FLAG_NO_PROPAGATE_INHERIT) {
+		str = talloc_asprintf(str, "%s%s",
+				str, "NP|");
+		if (!str) {
+			goto out;
+		}
+	}
+	if (flags & SEC_ACE_FLAG_INHERIT_ONLY) {
+		str = talloc_asprintf(str, "%s%s",
+				str, "IO|");
+		if (!str) {
+			goto out;
+		}
+	}
+	if (flags & SEC_ACE_FLAG_INHERITED_ACE) {
+		str = talloc_asprintf(str, "%s%s",
+				str, "I|");
+		if (!str) {
+			goto out;
+		}
+	}
+	/* Ignore define SEC_ACE_FLAG_SUCCESSFUL_ACCESS ( 0x40 )
+	   and SEC_ACE_FLAG_FAILED_ACCESS ( 0x80 ) as they're
+	   audit ace flags. */
+
+	if (str[strlen(str)-1] == '|') {
+		str[strlen(str)-1] = '\0';
+		fprintf(f, "/%s/", str);
+	} else {
+		fprintf(f, "/0x%x/", flags);
+	}
+	TALLOC_FREE(str);
+	return;
+
+  out:
+	fprintf(f, "/0x%x/", flags);
+}
 
 /* print an ACE on a FILE, using either numeric or ascii representation */
 static void print_ace(struct cli_state *cli, FILE *f, SEC_ACE *ace)
@@ -210,7 +272,7 @@ static void print_ace(struct cli_state *cli, FILE *f, SEC_ACE *ace)
 	fprintf(f, "%s:", sidstr);
 
 	if (numeric) {
-		fprintf(f, "%d/%d/0x%08x", 
+		fprintf(f, "%d/0x%x/0x%08x",
 			ace->type, ace->flags, ace->access_mask);
 		return;
 	}
@@ -225,9 +287,7 @@ static void print_ace(struct cli_state *cli, FILE *f, SEC_ACE *ace)
 		fprintf(f, "%d", ace->type);
 	}
 
-	/* Not sure what flags can be set in a file ACL */
-
-	fprintf(f, "/%d/", ace->flags);
+	print_ace_flags(f, ace->flags);
 
 	/* Standard permissions */
 
@@ -263,6 +323,37 @@ static void print_ace(struct cli_state *cli, FILE *f, SEC_ACE *ace)
 	}
 }
 
+static bool parse_ace_flags(const char *str, unsigned int *pflags)
+{
+	const char *p = str;
+	*pflags = 0;
+
+	while (*p) {
+		if (strnequal(p, "OI", 2)) {
+			*pflags |= SEC_ACE_FLAG_OBJECT_INHERIT;
+			p += 2;
+		} else if (strnequal(p, "CI", 2)) {
+			*pflags |= SEC_ACE_FLAG_CONTAINER_INHERIT;
+			p += 2;
+		} else if (strnequal(p, "NP", 2)) {
+			*pflags |= SEC_ACE_FLAG_NO_PROPAGATE_INHERIT;
+			p += 2;
+		} else if (strnequal(p, "IO", 2)) {
+			*pflags |= SEC_ACE_FLAG_INHERIT_ONLY;
+			p += 2;
+		} else if (*p == 'I') {
+			*pflags |= SEC_ACE_FLAG_INHERITED_ACE;
+			p += 1;
+		} else if (*p) {
+			return false;
+		}
+
+		if (*p != '|' && *p != '\0') {
+			return false;
+		}
+	}
+	return true;
+}
 
 /* parse an ACE in the same format as print_ace() */
 static bool parse_ace(struct cli_state *cli, SEC_ACE *ace,
@@ -275,7 +366,7 @@ static bool parse_ace(struct cli_state *cli, SEC_ACE *ace,
 	unsigned int aflags = 0;
 	unsigned int amask = 0;
 	DOM_SID sid;
-	SEC_ACCESS mask;
+	uint32_t mask;
 	const struct perm_value *v;
 	char *str = SMB_STRDUP(orig_str);
 	TALLOC_CTX *frame = talloc_stackframe();
@@ -335,13 +426,38 @@ static bool parse_ace(struct cli_state *cli, SEC_ACE *ace,
 
 	/* Only numeric form accepted for flags at present */
 
-	if (!(next_token_talloc(frame, &cp, &tok, "/") &&
-	      sscanf(tok, "%i", &aflags))) {
-		printf("ACE '%s': bad integer flags entry at '%s'\n",
+	if (!next_token_talloc(frame, &cp, &tok, "/")) {
+		printf("ACE '%s': bad flags entry at '%s'\n",
 			orig_str, tok);
 		SAFE_FREE(str);
 		TALLOC_FREE(frame);
 		return False;
+	}
+
+	if (tok[0] < '0' || tok[0] > '9') {
+		if (!parse_ace_flags(tok, &aflags)) {
+			printf("ACE '%s': bad named flags entry at '%s'\n",
+				orig_str, tok);
+			SAFE_FREE(str);
+			TALLOC_FREE(frame);
+			return False;
+		}
+	} else if (strnequal(tok, "0x", 2)) {
+		if (!sscanf(tok, "%x", &aflags)) {
+			printf("ACE '%s': bad hex flags entry at '%s'\n",
+				orig_str, tok);
+			SAFE_FREE(str);
+			TALLOC_FREE(frame);
+			return False;
+		}
+	} else {
+		if (!sscanf(tok, "%i", &aflags)) {
+			printf("ACE '%s': bad integer flags entry at '%s'\n",
+				orig_str, tok);
+			SAFE_FREE(str);
+			TALLOC_FREE(frame);
+			return False;
+		}
 	}
 
 	if (!next_token_talloc(frame, &cp, &tok, "/")) {
@@ -506,6 +622,7 @@ static void sec_desc_print(struct cli_state *cli, FILE *f, SEC_DESC *sd)
 	uint32 i;
 
 	fprintf(f, "REVISION:%d\n", sd->revision);
+	fprintf(f, "CONTROL:0x%x\n", sd->type);
 
 	/* Print owner and group sid */
 
@@ -626,29 +743,42 @@ static int owner_set(struct cli_state *cli, enum chown_mode change_mode,
 }
 
 
-/* The MSDN is contradictory over the ordering of ACE entries in an ACL.
-   However NT4 gives a "The information may have been modified by a
-   computer running Windows NT 5.0" if denied ACEs do not appear before
-   allowed ACEs. */
+/* The MSDN is contradictory over the ordering of ACE entries in an
+   ACL.  However NT4 gives a "The information may have been modified
+   by a computer running Windows NT 5.0" if denied ACEs do not appear
+   before allowed ACEs. At
+   http://technet.microsoft.com/en-us/library/cc781716.aspx the
+   canonical order is specified as "Explicit Deny, Explicit Allow,
+   Inherited ACEs unchanged" */
 
 static int ace_compare(SEC_ACE *ace1, SEC_ACE *ace2)
 {
-	if (sec_ace_equal(ace1, ace2)) 
+	if (sec_ace_equal(ace1, ace2))
 		return 0;
 
-	if (ace1->type != ace2->type) 
+	if ((ace1->flags & SEC_ACE_FLAG_INHERITED_ACE) &&
+			!(ace2->flags & SEC_ACE_FLAG_INHERITED_ACE))
+		return 1;
+	if (!(ace1->flags & SEC_ACE_FLAG_INHERITED_ACE) &&
+			(ace2->flags & SEC_ACE_FLAG_INHERITED_ACE))
+		return -1;
+	if ((ace1->flags & SEC_ACE_FLAG_INHERITED_ACE) &&
+			(ace2->flags & SEC_ACE_FLAG_INHERITED_ACE))
+		return ace1 - ace2;
+
+	if (ace1->type != ace2->type)
 		return ace2->type - ace1->type;
 
-	if (sid_compare(&ace1->trustee, &ace2->trustee)) 
+	if (sid_compare(&ace1->trustee, &ace2->trustee))
 		return sid_compare(&ace1->trustee, &ace2->trustee);
 
-	if (ace1->flags != ace2->flags) 
+	if (ace1->flags != ace2->flags)
 		return ace1->flags - ace2->flags;
 
-	if (ace1->access_mask != ace2->access_mask) 
+	if (ace1->access_mask != ace2->access_mask)
 		return ace1->access_mask - ace2->access_mask;
 
-	if (ace1->size != ace2->size) 
+	if (ace1->size != ace2->size)
 		return ace1->size - ace2->size;
 
 	return memcmp(ace1, ace2, sizeof(SEC_ACE));
@@ -677,6 +807,7 @@ static void sort_acl(SEC_ACL *the_acl)
 /***************************************************** 
 set the ACLs on a file given an ascii description
 *******************************************************/
+
 static int cacl_set(struct cli_state *cli, char *filename, 
 		    char *the_acl, enum acl_mode mode)
 {
@@ -730,7 +861,7 @@ static int cacl_set(struct cli_state *cli, char *filename,
 			}
 
 			if (!found) {
-				printf("ACL for ACE:"); 
+				printf("ACL for ACE:");
 				print_ace(cli, stdout, &sd->dacl->aces[i]);
 				printf(" not found\n");
 			}
@@ -762,7 +893,7 @@ static int cacl_set(struct cli_state *cli, char *filename,
 			old->owner_sid = sd->owner_sid;
 		}
 
-		if (sd->group_sid) { 
+		if (sd->group_sid) {
 			old->group_sid = sd->group_sid;
 		}
 
@@ -895,8 +1026,8 @@ static struct cli_state *connect_one(const char *server, const char *share)
 		{ "set", 'S', POPT_ARG_STRING, NULL, 'S', "Set acls", "ACLS" },
 		{ "chown", 'C', POPT_ARG_STRING, NULL, 'C', "Change ownership of a file", "USERNAME" },
 		{ "chgrp", 'G', POPT_ARG_STRING, NULL, 'G', "Change group ownership of a file", "GROUPNAME" },
-		{ "numeric", 0, POPT_ARG_NONE, &numeric, True, "Don't resolve sids or masks to names" },
-		{ "test-args", 't', POPT_ARG_NONE, &test_args, True, "Test arguments"},
+		{ "numeric", 0, POPT_ARG_NONE, &numeric, 1, "Don't resolve sids or masks to names" },
+		{ "test-args", 't', POPT_ARG_NONE, &test_args, 1, "Test arguments"},
 		POPT_COMMON_SAMBA
 		POPT_COMMON_CONNECTION
 		POPT_COMMON_CREDENTIALS

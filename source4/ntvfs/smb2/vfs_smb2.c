@@ -35,7 +35,7 @@
 #include "auth/auth.h"
 #include "auth/credentials/credentials.h"
 #include "ntvfs/ntvfs.h"
-#include "lib/util/dlinklist.h"
+#include "../lib/util/dlinklist.h"
 #include "param/param.h"
 #include "libcli/resolve/resolve.h"
 #include "libcli/smb2/smb2.h"

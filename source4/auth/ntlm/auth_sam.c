@@ -23,7 +23,7 @@
 #include "librpc/gen_ndr/ndr_netlogon.h"
 #include "system/time.h"
 #include "lib/ldb/include/ldb.h"
-#include "util/util_ldb.h"
+#include "../lib/util/util_ldb.h"
 #include "auth/auth.h"
 #include "auth/ntlm/ntlm_check.h"
 #include "auth/ntlm/auth_proto.h"
@@ -248,7 +248,7 @@ static NTSTATUS authsam_authenticate(struct auth_context *auth_context,
 		}
 	}
 
-	nt_status = samdb_result_passwords(mem_ctx, msgs[0], &lm_pwd, &nt_pwd);
+	nt_status = samdb_result_passwords(mem_ctx, auth_context->lp_ctx, msgs[0], &lm_pwd, &nt_pwd);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 
 	nt_status = authsam_password_ok(auth_context, mem_ctx, 

@@ -53,16 +53,56 @@
 
 struct ildb_private {
 	struct ldap_connection *ldap;
-	struct ldb_module *module;
+	struct event_context *event_ctx;
 };
 
 struct ildb_context {
+	struct ldb_module *module;
+	struct ldb_request *req;
+
 	struct ildb_private *ildb;
-	struct ldb_handle *handle;
-	struct ldap_request *req;
-	void *context;
-	int (*callback)(struct ldb_context *, void *, struct ldb_reply *);
+	struct ldap_request *ireq;
+
+	bool done;
+
+	struct ildb_destructor_ctx *dc;
 };
+
+static void ildb_request_done(struct ildb_context *ctx,
+			      struct ldb_control **ctrls, int error)
+{
+	struct ldb_reply *ares;
+
+	ctx->done = true;
+
+	if (ctx->req == NULL) {
+		/* if the req has been freed already just return */
+		return;
+	}
+
+	ares = talloc_zero(ctx->req, struct ldb_reply);
+	if (!ares) {
+		ldb_oom(ctx->req->handle->ldb);
+		ctx->req->callback(ctx->req, NULL);
+		return;
+	}
+	ares->type = LDB_REPLY_DONE;
+	ares->controls = talloc_steal(ares, ctrls);
+	ares->error = error;
+
+	ctx->req->callback(ctx->req, ares);
+}
+
+static void ildb_auto_done_callback(struct event_context *ev,
+				    struct timed_event *te,
+				    struct timeval t,
+				    void *private_data)
+{
+	struct ildb_context *ac;
+
+	ac = talloc_get_type(private_data, struct ildb_context);
+	ildb_request_done(ac, NULL, LDB_SUCCESS);
+}
 
 /*
   convert a ldb_message structure to a list of ldap_mod structures
@@ -122,17 +162,19 @@ failed:
 /*
   map an ildap NTSTATUS to a ldb error code
 */
-static int ildb_map_error(struct ildb_private *ildb, NTSTATUS status)
+static int ildb_map_error(struct ldb_module *module, NTSTATUS status)
 {
+	struct ildb_private *ildb = talloc_get_type(module->private_data, struct ildb_private);
+
 	TALLOC_CTX *mem_ctx = talloc_new(ildb);
 	if (NT_STATUS_IS_OK(status)) {
 		return LDB_SUCCESS;
 	}
 	if (!mem_ctx) {
-		ldb_oom(ildb->module->ldb);
+		ldb_oom(module->ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	ldb_set_errstring(ildb->module->ldb,
+	ldb_set_errstring(module->ldb,
 			  ldap_errstr(ildb->ldap, mem_ctx, status));
 	talloc_free(mem_ctx);
 	if (NT_STATUS_IS_LDAP(status)) {
@@ -141,47 +183,46 @@ static int ildb_map_error(struct ildb_private *ildb, NTSTATUS status)
 	return LDB_ERR_OPERATIONS_ERROR;
 }
 
-static void ildb_request_timeout(struct event_context *ev,
-				 struct timed_event *te,
+static void ildb_request_timeout(struct event_context *ev, struct timed_event *te,
 				 struct timeval t, void *private_data)
 {
-	struct ildb_context *ac;
-	struct ldb_handle *handle;
+	struct ildb_context *ac = talloc_get_type(private_data, struct ildb_context);
 
-	ac = talloc_get_type(private_data, struct ildb_context);
-	handle = ac->handle;
-
-	ac = talloc_get_type(private_data, struct ildb_context);
-
-	if (ac->req->state == LDAP_REQUEST_PENDING) {
-		DLIST_REMOVE(ac->req->conn->pending, ac->req);
+	if (ac->ireq->state == LDAP_REQUEST_PENDING) {
+		DLIST_REMOVE(ac->ireq->conn->pending, ac->ireq);
 	}
 
-	handle->status = LDB_ERR_TIME_LIMIT_EXCEEDED;
-
-	return;
+	ildb_request_done(ac, NULL, LDB_ERR_TIME_LIMIT_EXCEEDED);
 }
 
 static void ildb_callback(struct ldap_request *req)
 {
 	struct ildb_context *ac;
-	struct ldb_handle *handle;
-	struct ildb_private *ildb;
 	NTSTATUS status;
+	struct ldap_SearchResEntry *search;
+	struct ldap_message *msg;
+	struct ldb_control **controls;
+	struct ldb_message *ldbmsg;
+	char *referral;
+	bool callback_failed;
+	bool request_done;
+	int ret;
 	int i;
 
 	ac = talloc_get_type(req->async.private_data, struct ildb_context);
-	ildb = ac->ildb;
-	handle = ac->handle;
-	handle->status = LDB_SUCCESS;
+	callback_failed = false;
+	request_done = false;
+	controls = NULL;
 
 	if (!NT_STATUS_IS_OK(req->status)) {
-		handle->status = ildb_map_error(ildb, req->status);
+		ret = ildb_map_error(ac->module, req->status);
+		ildb_request_done(ac, NULL, ret);
 		return;
 	}
 
 	if (req->num_replies < 1) {
-		handle->status = LDB_ERR_OPERATIONS_ERROR;
+		ret = LDB_ERR_OPERATIONS_ERROR;
+		ildb_request_done(ac, NULL, ret);
 		return;
 	}
 
@@ -189,140 +230,112 @@ static void ildb_callback(struct ldap_request *req)
 
 	case LDAP_TAG_ModifyRequest:
 		if (req->replies[0]->type != LDAP_TAG_ModifyResponse) {
-			handle->status = LDB_ERR_PROTOCOL_ERROR;
-			return;
+			ret = LDB_ERR_PROTOCOL_ERROR;
+			break;
 		}
-		status = ldap_check_response(req->conn, &req->replies[0]->r.GeneralResult);
-		handle->status = ildb_map_error(ildb, status);
-		if (ac->callback && handle->status == LDB_SUCCESS) {
-			/* FIXME: build a corresponding ares to pass on */
-			handle->status = ac->callback(ac->ildb->module->ldb, ac->context, NULL);
-		}
-		handle->state = LDB_ASYNC_DONE;
+		status = ldap_check_response(ac->ireq->conn, &req->replies[0]->r.GeneralResult);
+		ret = ildb_map_error(ac->module, status);
+		request_done = true;
 		break;
 
 	case LDAP_TAG_AddRequest:
 		if (req->replies[0]->type != LDAP_TAG_AddResponse) {
-			handle->status = LDB_ERR_PROTOCOL_ERROR;
+			ret = LDB_ERR_PROTOCOL_ERROR;
 			return;
 		}
-		status = ldap_check_response(req->conn, &req->replies[0]->r.GeneralResult);
-		handle->status = ildb_map_error(ildb, status);
-		if (ac->callback && handle->status == LDB_SUCCESS) {
-			/* FIXME: build a corresponding ares to pass on */
-			handle->status = ac->callback(ac->ildb->module->ldb, ac->context, NULL);
-		}
-		handle->state = LDB_ASYNC_DONE;
+		status = ldap_check_response(ac->ireq->conn, &req->replies[0]->r.GeneralResult);
+		ret = ildb_map_error(ac->module, status);
+		request_done = true;
 		break;
 
 	case LDAP_TAG_DelRequest:
 		if (req->replies[0]->type != LDAP_TAG_DelResponse) {
-			handle->status = LDB_ERR_PROTOCOL_ERROR;
+			ret = LDB_ERR_PROTOCOL_ERROR;
 			return;
 		}
-		status = ldap_check_response(req->conn, &req->replies[0]->r.GeneralResult);
-		handle->status = ildb_map_error(ildb, status);
-		if (ac->callback && handle->status == LDB_SUCCESS) {
-			/* FIXME: build a corresponding ares to pass on */
-			handle->status = ac->callback(ac->ildb->module->ldb, ac->context, NULL);
-		}
-		handle->state = LDB_ASYNC_DONE;
+		status = ldap_check_response(ac->ireq->conn, &req->replies[0]->r.GeneralResult);
+		ret = ildb_map_error(ac->module, status);
+		request_done = true;
 		break;
 
 	case LDAP_TAG_ModifyDNRequest:
 		if (req->replies[0]->type != LDAP_TAG_ModifyDNResponse) {
-			handle->status = LDB_ERR_PROTOCOL_ERROR;
+			ret = LDB_ERR_PROTOCOL_ERROR;
 			return;
 		}
-		status = ldap_check_response(req->conn, &req->replies[0]->r.GeneralResult);
-		handle->status = ildb_map_error(ildb, status);
-		if (ac->callback && handle->status == LDB_SUCCESS) {
-			/* FIXME: build a corresponding ares to pass on */
-			handle->status = ac->callback(ac->ildb->module->ldb, ac->context, NULL);
-		}
-		handle->state = LDB_ASYNC_DONE;
+		status = ldap_check_response(ac->ireq->conn, &req->replies[0]->r.GeneralResult);
+		ret = ildb_map_error(ac->module, status);
+		request_done = true;
 		break;
 
 	case LDAP_TAG_SearchRequest:
 		/* loop over all messages */
 		for (i = 0; i < req->num_replies; i++) {
-			struct ldap_SearchResEntry *search;
-			struct ldb_reply *ares = NULL;
-			struct ldap_message *msg;
-			int ret;
-
-			ares = talloc_zero(ac, struct ldb_reply);
-			if (!ares) {
-				handle->status = LDB_ERR_OPERATIONS_ERROR;
-				return;
-			}
 
 			msg = req->replies[i];
 			switch (msg->type) {
 
 			case LDAP_TAG_SearchResultDone:
 
-				status = ldap_check_response(req->conn, &msg->r.GeneralResult);
+				status = ldap_check_response(ac->ireq->conn, &msg->r.GeneralResult);
 				if (!NT_STATUS_IS_OK(status)) {
-					handle->status = ildb_map_error(ildb, status);
-					return;
+					ret = ildb_map_error(ac->module, status);
+					break;
 				}
 
-				ares->controls = talloc_move(ares, &msg->controls);
+				controls = talloc_steal(ac, msg->controls);
 				if (msg->r.SearchResultDone.resultcode) {
 					if (msg->r.SearchResultDone.errormessage) {
-						ldb_set_errstring(ac->ildb->module->ldb, msg->r.SearchResultDone.errormessage);
+						ldb_set_errstring(ac->module->ldb, msg->r.SearchResultDone.errormessage);
 					}
 				}
 
-				handle->status = msg->r.SearchResultDone.resultcode;
-				handle->state = LDB_ASYNC_DONE;
-				ares->type = LDB_REPLY_DONE;
+				ret = msg->r.SearchResultDone.resultcode;
+				request_done = true;
 				break;
 
 			case LDAP_TAG_SearchResultEntry:
 
-
-				ares->message = ldb_msg_new(ares);
-				if (!ares->message) {
-					handle->status = LDB_ERR_OPERATIONS_ERROR;
-					return;
+				ldbmsg = ldb_msg_new(ac);
+				if (!ldbmsg) {
+					ret = LDB_ERR_OPERATIONS_ERROR;
+					break;
 				}
 
 				search = &(msg->r.SearchResultEntry);
 
-				ares->message->dn = ldb_dn_new(ares->message, ac->ildb->module->ldb, search->dn);
-				if ( ! ldb_dn_validate(ares->message->dn)) {
-					handle->status = LDB_ERR_OPERATIONS_ERROR;
-					return;
+				ldbmsg->dn = ldb_dn_new(ldbmsg, ac->module->ldb, search->dn);
+				if ( ! ldb_dn_validate(ldbmsg->dn)) {
+					ret = LDB_ERR_OPERATIONS_ERROR;
+					break;
 				}
-				ares->message->num_elements = search->num_attributes;
-				ares->message->elements = talloc_move(ares->message,
-								      &search->attributes);
+				ldbmsg->num_elements = search->num_attributes;
+				ldbmsg->elements = talloc_move(ldbmsg, &search->attributes);
 
-				handle->status = LDB_SUCCESS;
-				handle->state = LDB_ASYNC_PENDING;
-				ares->type = LDB_REPLY_ENTRY;
+				ret = ldb_module_send_entry(ac->req, ldbmsg);
+				if (ret != LDB_SUCCESS) {
+					callback_failed = true;
+				}
 				break;
 
 			case LDAP_TAG_SearchResultReference:
 
-				ares->referral = talloc_strdup(ares, msg->r.SearchResultReference.referral);
+				referral = talloc_strdup(ac, msg->r.SearchResultReference.referral);
 
-				handle->status = LDB_SUCCESS;
-				handle->state = LDB_ASYNC_PENDING;
-				ares->type = LDB_REPLY_REFERRAL;
+				ret = ldb_module_send_referral(ac->req, referral);
+				if (ret != LDB_SUCCESS) {
+					callback_failed = true;
+				}
 				break;
 
 			default:
 				/* TAG not handled, fail ! */
-				handle->status = LDB_ERR_PROTOCOL_ERROR;
-				return;
+				ret = LDB_ERR_PROTOCOL_ERROR;
+				break;
 			}
 
-			ret = ac->callback(ac->ildb->module->ldb, ac->context, ares);
-			if (ret) {
-				handle->status = ret;
+			if (ret != LDB_SUCCESS) {
+				break;
 			}
 		}
 
@@ -333,121 +346,81 @@ static void ildb_callback(struct ldap_request *req)
 		break;
 
 	default:
-		handle->status = LDB_ERR_PROTOCOL_ERROR;
-		return;
+		ret = LDB_ERR_PROTOCOL_ERROR;
+		break;
 	}
+
+	if (ret != LDB_SUCCESS) {
+
+		/* if the callback failed the caller will have freed the
+		 * request. Just return and don't try to use it */
+		if ( ! callback_failed) {
+			request_done = true;
+		}
+	}
+
+	if (request_done) {
+		ildb_request_done(ac, controls, ret);
+	}
+	return;
 }
 
-static struct ildb_context *init_ildb_handle(struct ildb_private *ildb,
-					     struct ldb_request *req)
+static int ildb_request_send(struct ildb_context *ac, struct ldap_message *msg)
 {
-	struct ildb_context *ildb_ac;
-	struct ldb_handle *h;
-
-	h = talloc_zero(req, struct ldb_handle);
-	if (h == NULL) {
-		ldb_set_errstring(ildb->module->ldb, "Out of Memory");
-		return NULL;
-	}
-
-	h->module = ildb->module;
-
-	ildb_ac = talloc(h, struct ildb_context);
-	if (ildb_ac == NULL) {
-		ldb_set_errstring(ildb->module->ldb, "Out of Memory");
-		talloc_free(h);
-		return NULL;
-	}
-
-	h->private_data = ildb_ac;
-
-	h->state = LDB_ASYNC_INIT;
-	h->status = LDB_SUCCESS;
-
-	ildb_ac->ildb = ildb;
-	ildb_ac->handle = h;
-	ildb_ac->context = req->context;
-	ildb_ac->callback = req->callback;
-
-	req->handle = h;
-	return ildb_ac;
-}
-
-static int ildb_request_send(struct ildb_private *ildb, struct ldap_message *msg, struct ldb_request *r)
-{
-	struct ildb_context *ildb_ac = init_ildb_handle(ildb, r);
 	struct ldap_request *req;
 
-	if (!ildb_ac) {
+	if (!ac) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	req = ldap_request_send(ildb->ldap, msg);
+	req = ldap_request_send(ac->ildb->ldap, msg);
 	if (req == NULL) {
-		ldb_set_errstring(ildb->module->ldb, "async send request failed");
+		ldb_set_errstring(ac->module->ldb, "async send request failed");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	ildb_ac->req = talloc_steal(ildb_ac, req);
+	ac->ireq = talloc_steal(ac, req);
 
-	if (!req->conn) {
-		ldb_set_errstring(ildb->module->ldb, "connection to remote LDAP server dropped?");
+	if (!ac->ireq->conn) {
+		ldb_set_errstring(ac->module->ldb, "connection to remote LDAP server dropped?");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	talloc_free(req->time_event);
 	req->time_event = NULL;
-	if (r->timeout) {
-		req->time_event = event_add_timed(req->conn->event.event_ctx, ildb_ac, 
-						  timeval_current_ofs(r->timeout, 0),
-						  ildb_request_timeout, ildb_ac);
+	if (ac->req->timeout) {
+		req->time_event = event_add_timed(ac->ildb->event_ctx, ac,
+						  timeval_current_ofs(ac->req->timeout, 0),
+						  ildb_request_timeout, ac);
 	}
 
 	req->async.fn = ildb_callback;
-	req->async.private_data = ildb_ac;
+	req->async.private_data = ac;
 
 	return LDB_SUCCESS;
-}
-
-static int ildb_request_noop(struct ildb_private *ildb, struct ldb_request *req) 
-{
-	struct ildb_context *ildb_ac = init_ildb_handle(ildb, req);
-	int ret = LDB_SUCCESS;
-
-	if (!ildb_ac) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	if (ildb_ac->callback) {
-		ret = ildb_ac->callback(ildb->module->ldb, ildb_ac->context, NULL);
-	}
-	ildb_ac->handle->state = LDB_ASYNC_DONE;
-	return ret;
 }
 
 /*
   search for matching records using an asynchronous function
  */
-static int ildb_search(struct ldb_module *module, struct ldb_request *req)
+static int ildb_search(struct ildb_context *ac)
 {
-	struct ildb_private *ildb = talloc_get_type(module->private_data, struct ildb_private);
+	struct ldb_request *req = ac->req;
 	struct ldap_message *msg;
 	int n;
 
-	req->handle = NULL;
-
 	if (!req->callback || !req->context) {
-		ldb_set_errstring(module->ldb, "Async interface called with NULL callback function or NULL context");
+		ldb_set_errstring(ac->module->ldb, "Async interface called with NULL callback function or NULL context");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	if (req->op.search.tree == NULL) {
-		ldb_set_errstring(module->ldb, "Invalid expression parse tree");
+		ldb_set_errstring(ac->module->ldb, "Invalid expression parse tree");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	msg = new_ldap_message(req);
 	if (msg == NULL) {
-		ldb_set_errstring(module->ldb, "Out of Memory");
+		ldb_set_errstring(ac->module->ldb, "Out of Memory");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -459,7 +432,7 @@ static int ildb_search(struct ldb_module *module, struct ldb_request *req)
 		msg->r.SearchRequest.basedn  = ldb_dn_alloc_linearized(msg, req->op.search.base);
 	}
 	if (msg->r.SearchRequest.basedn == NULL) {
-		ldb_set_errstring(module->ldb, "Unable to determine baseDN");
+		ldb_set_errstring(ac->module->ldb, "Unable to determine baseDN");
 		talloc_free(msg);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -481,25 +454,18 @@ static int ildb_search(struct ldb_module *module, struct ldb_request *req)
 	msg->r.SearchRequest.attributes = discard_const(req->op.search.attrs);
 	msg->controls = req->controls;
 
-	return ildb_request_send(ildb, msg, req);
+	return ildb_request_send(ac, msg);
 }
 
 /*
   add a record
 */
-static int ildb_add(struct ldb_module *module, struct ldb_request *req)
+static int ildb_add(struct ildb_context *ac)
 {
-	struct ildb_private *ildb = talloc_get_type(module->private_data, struct ildb_private);
+	struct ldb_request *req = ac->req;
 	struct ldap_message *msg;
 	struct ldap_mod **mods;
 	int i,n;
-
-	req->handle = NULL;
-
-	/* ignore ltdb specials */
-	if (ldb_dn_is_special(req->op.add.message->dn)) {
-		return ildb_request_noop(ildb, req);
-	}
 
 	msg = new_ldap_message(req);
 	if (msg == NULL) {
@@ -531,25 +497,18 @@ static int ildb_add(struct ldb_module *module, struct ldb_request *req)
 		msg->r.AddRequest.attributes[i] = mods[i]->attrib;
 	}
 
-	return ildb_request_send(ildb, msg, req);
+	return ildb_request_send(ac, msg);
 }
 
 /*
   modify a record
 */
-static int ildb_modify(struct ldb_module *module, struct ldb_request *req)
+static int ildb_modify(struct ildb_context *ac)
 {
-	struct ildb_private *ildb = talloc_get_type(module->private_data, struct ildb_private);
+	struct ldb_request *req = ac->req;
 	struct ldap_message *msg;
 	struct ldap_mod **mods;
 	int i,n;
-
-	req->handle = NULL;
-
-	/* ignore ltdb specials */
-	if (ldb_dn_is_special(req->op.mod.message->dn)) {
-		return ildb_request_noop(ildb, req);
-	}
 
 	msg = new_ldap_message(req);
 	if (msg == NULL) {
@@ -581,23 +540,16 @@ static int ildb_modify(struct ldb_module *module, struct ldb_request *req)
 		msg->r.ModifyRequest.mods[i] = *mods[i];
 	}
 
-	return ildb_request_send(ildb, msg, req);
+	return ildb_request_send(ac, msg);
 }
 
 /*
   delete a record
 */
-static int ildb_delete(struct ldb_module *module, struct ldb_request *req)
+static int ildb_delete(struct ildb_context *ac)
 {
-	struct ildb_private *ildb = talloc_get_type(module->private_data, struct ildb_private);
+	struct ldb_request *req = ac->req;
 	struct ldap_message *msg;
-
-	req->handle = NULL;
-
-	/* ignore ltdb specials */
-	if (ldb_dn_is_special(req->op.del.dn)) {
-		return ildb_request_noop(ildb, req);
-	}
 
 	msg = new_ldap_message(req);
 	if (msg == NULL) {
@@ -612,23 +564,16 @@ static int ildb_delete(struct ldb_module *module, struct ldb_request *req)
 		return LDB_ERR_INVALID_DN_SYNTAX;
 	}
 
-	return ildb_request_send(ildb, msg, req);
+	return ildb_request_send(ac, msg);
 }
 
 /*
   rename a record
 */
-static int ildb_rename(struct ldb_module *module, struct ldb_request *req)
+static int ildb_rename(struct ildb_context *ac)
 {
-	struct ildb_private *ildb = talloc_get_type(module->private_data, struct ildb_private);
+	struct ldb_request *req = ac->req;
 	struct ldap_message *msg;
-
-	req->handle = NULL;
-
-	/* ignore ltdb specials */
-	if (ldb_dn_is_special(req->op.rename.olddn) || ldb_dn_is_special(req->op.rename.newdn)) {
-		return ildb_request_noop(ildb, req);
-	}
 
 	msg = new_ldap_message(req);
 	if (msg == NULL) {
@@ -660,7 +605,7 @@ static int ildb_rename(struct ldb_module *module, struct ldb_request *req)
 
 	msg->r.ModifyDNRequest.deleteolddn = true;
 
-	return ildb_request_send(ildb, msg, req);
+	return ildb_request_send(ac, msg);
 }
 
 static int ildb_start_trans(struct ldb_module *module)
@@ -684,57 +629,105 @@ static int ildb_del_trans(struct ldb_module *module)
 	return LDB_SUCCESS;
 }
 
-static int ildb_request(struct ldb_module *module, struct ldb_request *req)
+static bool ildb_dn_is_special(struct ldb_request *req)
 {
-	return LDB_ERR_OPERATIONS_ERROR;
-}
+	struct ldb_dn *dn = NULL;
 
-static int ildb_wait(struct ldb_handle *handle, enum ldb_wait_type type)
-{
-	struct ildb_context *ac = talloc_get_type(handle->private_data, struct ildb_context);
-
-	if (handle->state == LDB_ASYNC_DONE) {
-		return handle->status;
-	}
-
-	if (!ac) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	handle->state = LDB_ASYNC_INIT;
-
-	switch(type) {
-	case LDB_WAIT_NONE:
-		if (event_loop_once(ac->req->conn->event.event_ctx) != 0) {
-			return LDB_ERR_OTHER;
-		}
+	switch (req->operation) {
+	case LDB_ADD:
+		dn = req->op.add.message->dn;
 		break;
-	case LDB_WAIT_ALL:
-		while (handle->status == LDB_SUCCESS && handle->state != LDB_ASYNC_DONE) {
-			if (event_loop_once(ac->req->conn->event.event_ctx) != 0) {
-				return LDB_ERR_OTHER;
-			}
-		}
+	case LDB_MODIFY:
+		dn = req->op.mod.message->dn;
+		break;
+	case LDB_DELETE:
+		dn = req->op.del.dn;
+		break;
+	case LDB_RENAME:
+		dn = req->op.rename.olddn;
 		break;
 	default:
+		break;
+	}
+
+	if (dn && ldb_dn_is_special(dn)) {
+		return true;
+	}
+	return false;
+}
+
+static int ildb_handle_request(struct ldb_module *module, struct ldb_request *req)
+{
+	struct ildb_private *ildb;
+	struct ildb_context *ac;
+	struct timed_event *te;
+	int ret;
+
+	ildb = talloc_get_type(module->private_data, struct ildb_private);
+
+	if (req->starttime == 0 || req->timeout == 0) {
+		ldb_set_errstring(module->ldb, "Invalid timeout settings");
+		return LDB_ERR_TIME_LIMIT_EXCEEDED;
+	}
+
+	ac = talloc_zero(req, struct ildb_context);
+	if (ac == NULL) {
+		ldb_set_errstring(module->ldb, "Out of Memory");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	return handle->status;
+	ac->module = module;
+	ac->req = req;
+	ac->ildb = ildb;
+
+	if (ildb_dn_is_special(req)) {
+
+		te = event_add_timed(ac->ildb->event_ctx,
+					ac, timeval_zero(),
+					ildb_auto_done_callback, ac);
+		if (NULL == te) {
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+
+		return LDB_SUCCESS;
+	}
+
+	switch (ac->req->operation) {
+	case LDB_SEARCH:
+		ret = ildb_search(ac);
+		break;
+	case LDB_ADD:
+		ret = ildb_add(ac);
+		break;
+	case LDB_MODIFY:
+		ret = ildb_modify(ac);
+		break;
+	case LDB_DELETE:
+		ret = ildb_delete(ac);
+		break;
+	case LDB_RENAME:
+		ret = ildb_rename(ac);
+		break;
+	default:
+		/* no other op supported */
+		ret = LDB_ERR_OPERATIONS_ERROR;
+		break;
+	}
+
+	return ret;
 }
 
 static const struct ldb_module_ops ildb_ops = {
 	.name              = "ldap",
-	.search            = ildb_search,
-	.add               = ildb_add,
-	.modify            = ildb_modify,
-	.del               = ildb_delete,
-	.rename            = ildb_rename,
-	.request           = ildb_request,
+	.search            = ildb_handle_request,
+	.add               = ildb_handle_request,
+	.modify            = ildb_handle_request,
+	.del               = ildb_handle_request,
+	.rename            = ildb_handle_request,
+/*	.request           = ildb_handle_request, */
 	.start_transaction = ildb_start_trans,
 	.end_transaction   = ildb_end_trans,
 	.del_transaction   = ildb_del_trans,
-	.wait              = ildb_wait
 };
 
 /*
@@ -748,7 +741,6 @@ static int ildb_connect(struct ldb_context *ldb, const char *url,
 	struct ildb_private *ildb;
 	NTSTATUS status;
 	struct cli_credentials *creds;
-	struct event_context *event_ctx;
 
 	module = talloc(ldb, struct ldb_module);
 	if (!module) {
@@ -758,7 +750,6 @@ static int ildb_connect(struct ldb_context *ldb, const char *url,
 	talloc_set_name_const(module, "ldb_ildap backend");
 	module->ldb		= ldb;
 	module->prev		= module->next = NULL;
-	module->private_data	= NULL;
 	module->ops		= &ildb_ops;
 
 	ildb = talloc(module, struct ildb_private);
@@ -767,12 +758,12 @@ static int ildb_connect(struct ldb_context *ldb, const char *url,
 		goto failed;
 	}
 	module->private_data	= ildb;
-	ildb->module		= module;
 
-	event_ctx = ldb_get_event_context(ldb);
+	ildb->event_ctx = ldb_get_event_context(ldb);
+
 
 	ildb->ldap = ldap4_new_connection(ildb, ldb_get_opaque(ldb, "loadparm"),
-					  event_ctx);
+					  ildb->event_ctx);
 	if (!ildb->ldap) {
 		ldb_oom(ldb);
 		goto failed;

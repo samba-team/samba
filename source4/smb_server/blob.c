@@ -19,7 +19,7 @@
 */
 
 #include "includes.h"
-#include "lib/util/dlinklist.h"
+#include "../lib/util/dlinklist.h"
 #include "smb_server/smb_server.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "ntvfs/ntvfs.h"
@@ -35,7 +35,7 @@
 
 #define BLOB_CHECK_MIN_SIZE(blob, size) do { \
 	if ((blob)->length < (size)) { \
-		return NT_STATUS_INFO_LENGTH_MISMATCH; \
+		return NT_STATUS_INVALID_PARAMETER; \
 	} \
 } while (0)
 
@@ -530,13 +530,14 @@ NTSTATUS smbsrv_pull_passthru_sfileinfo(TALLOC_CTX *mem_ctx,
 
 	switch (level) {
 	case SMB_SFILEINFO_BASIC_INFORMATION:
-		BLOB_CHECK_MIN_SIZE(blob, 36);
+		BLOB_CHECK_MIN_SIZE(blob, 40);
 
 		st->basic_info.in.create_time = pull_nttime(blob->data,  0);
 		st->basic_info.in.access_time = pull_nttime(blob->data,  8);
 		st->basic_info.in.write_time =  pull_nttime(blob->data, 16);
 		st->basic_info.in.change_time = pull_nttime(blob->data, 24);
-		st->basic_info.in.attrib =      IVAL(blob->data,        32);
+		st->basic_info.in.attrib      = IVAL(blob->data,        32);
+		st->basic_info.in.reserved    = IVAL(blob->data,        36);
 
 		return NT_STATUS_OK;
 
@@ -576,6 +577,27 @@ NTSTATUS smbsrv_pull_passthru_sfileinfo(TALLOC_CTX *mem_ctx,
 					&st->rename_information.in.new_name,
 					STR_UNICODE);
 		if (st->rename_information.in.new_name == NULL) {
+			return NT_STATUS_FOOBAR;
+		}
+
+		return NT_STATUS_OK;
+
+
+	case RAW_SFILEINFO_LINK_INFORMATION:
+		if (!bufinfo) {
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+		BLOB_CHECK_MIN_SIZE(blob, 20);
+		st->link_information.in.overwrite = CVAL(blob->data, 0);
+		st->link_information.in.root_fid  = IVAL(blob->data, 8);
+		len                                 = IVAL(blob->data, 16);
+		ofs                                 = 20;
+		str_blob = *blob;
+		str_blob.length = MIN(str_blob.length, ofs+len);
+		smbsrv_blob_pull_string(bufinfo, &str_blob, ofs,
+					&st->link_information.in.new_name,
+					STR_UNICODE);
+		if (st->link_information.in.new_name == NULL) {
 			return NT_STATUS_FOOBAR;
 		}
 

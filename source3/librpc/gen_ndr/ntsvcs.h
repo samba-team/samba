@@ -101,6 +101,14 @@ struct PNP_EnumerateSubKeys {
 
 struct PNP_GetDeviceList {
 	struct {
+		const char *filter;/* [unique,charset(UTF16)] */
+		uint32_t flags;
+		uint32_t *length;/* [ref] */
+	} in;
+
+	struct {
+		uint16_t *buffer;/* [ref,length_is(*length),size_is(*length)] */
+		uint32_t *length;/* [ref] */
 		WERROR result;
 	} out;
 
@@ -133,15 +141,15 @@ struct PNP_GetDeviceRegProp {
 	struct {
 		const char *devicepath;/* [ref,charset(UTF16)] */
 		uint32_t property;
-		uint32_t unknown3;
-		uint32_t *unknown1;/* [ref] */
+		uint32_t flags;
+		uint32_t *reg_data_type;/* [ref] */
 		uint32_t *buffer_size;/* [ref] */
 		uint32_t *needed;/* [ref] */
 	} in;
 
 	struct {
 		uint8_t *buffer;/* [ref,length_is(*buffer_size),size_is(*buffer_size)] */
-		uint32_t *unknown1;/* [ref] */
+		uint32_t *reg_data_type;/* [ref] */
 		uint32_t *buffer_size;/* [ref] */
 		uint32_t *needed;/* [ref] */
 		WERROR result;

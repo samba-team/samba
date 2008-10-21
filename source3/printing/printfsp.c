@@ -25,7 +25,8 @@ open a print file and setup a fsp for it. This is a wrapper around
 print_job_start().
 ***************************************************************************/
 
-NTSTATUS print_fsp_open(connection_struct *conn, const char *fname,
+NTSTATUS print_fsp_open(struct smb_request *req, connection_struct *conn,
+			const char *fname,
 			uint16_t current_vuid, files_struct **result)
 {
 	int jobid;
@@ -34,7 +35,7 @@ NTSTATUS print_fsp_open(connection_struct *conn, const char *fname,
 	fstring name;
 	NTSTATUS status;
 
-	status = file_new(conn, &fsp);
+	status = file_new(req, conn, &fsp);
 	if(!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -52,7 +53,7 @@ NTSTATUS print_fsp_open(connection_struct *conn, const char *fname,
 	jobid = print_job_start(conn->server_info, SNUM(conn), name, NULL);
 	if (jobid == -1) {
 		status = map_nt_error_from_unix(errno);
-		file_free(fsp);
+		file_free(req, fsp);
 		return status;
 	}
 
@@ -61,7 +62,7 @@ NTSTATUS print_fsp_open(connection_struct *conn, const char *fname,
 	if (fsp->rap_print_jobid == 0) {
 		/* We need to delete the entry in the tdb. */
 		pjob_delete(lp_const_servicename(SNUM(conn)), jobid);
-		file_free(fsp);
+		file_free(req, fsp);
 		return NT_STATUS_ACCESS_DENIED;	/* No errno around here */
 	}
 

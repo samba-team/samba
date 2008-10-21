@@ -112,11 +112,11 @@ extern int get_total_size;
 static int blocksize=20;
 static int tarhandle;
 
-static void writetarheader(int f,  const char *aname, SMB_BIG_UINT size, time_t mtime,
+static void writetarheader(int f,  const char *aname, uint64_t size, time_t mtime,
 			   const char *amode, unsigned char ftype);
 static void do_atar(const char *rname_in,char *lname,file_info *finfo1);
 static void do_tar(file_info *finfo, const char *dir);
-static void oct_it(SMB_BIG_UINT value, int ndgs, char *p);
+static void oct_it(uint64_t value, int ndgs, char *p);
 static void fixtarname(char *tptr, const char *fp, size_t l);
 static int dotarbuf(int f, char *b, int n);
 static void dozerobuf(int f, int n);
@@ -154,7 +154,7 @@ static char *string_create_s(int size)
 Write a tar header to buffer
 ****************************************************************************/
 
-static void writetarheader(int f, const char *aname, SMB_BIG_UINT size, time_t mtime,
+static void writetarheader(int f, const char *aname, uint64_t size, time_t mtime,
 			   const char *amode, unsigned char ftype)
 {
 	union hblock hb;
@@ -195,10 +195,10 @@ static void writetarheader(int f, const char *aname, SMB_BIG_UINT size, time_t m
 
 	hb.dbuf.name[NAMSIZ-1]='\0';
 	safe_strcpy(hb.dbuf.mode, amode, sizeof(hb.dbuf.mode)-1);
-	oct_it((SMB_BIG_UINT)0, 8, hb.dbuf.uid);
-	oct_it((SMB_BIG_UINT)0, 8, hb.dbuf.gid);
-	oct_it((SMB_BIG_UINT) size, 13, hb.dbuf.size);
-	if (size > (SMB_BIG_UINT)077777777777LL) {
+	oct_it((uint64_t)0, 8, hb.dbuf.uid);
+	oct_it((uint64_t)0, 8, hb.dbuf.gid);
+	oct_it((uint64_t) size, 13, hb.dbuf.size);
+	if (size > (uint64_t)077777777777LL) {
 		/* This is a non-POSIX compatible extention to store files
 			greater than 8GB. */
 
@@ -207,7 +207,7 @@ static void writetarheader(int f, const char *aname, SMB_BIG_UINT size, time_t m
 		for (i = 8, jp=(char*)&size; i; i--)
 			hb.dbuf.size[i+3] = *(jp++);
 	}
-	oct_it((SMB_BIG_UINT) mtime, 13, hb.dbuf.mtime);
+	oct_it((uint64_t) mtime, 13, hb.dbuf.mtime);
 	memcpy(hb.dbuf.chksum, "        ", sizeof(hb.dbuf.chksum));
 	memset(hb.dbuf.linkname, 0, NAMSIZ);
 	hb.dbuf.linkflag=ftype;
@@ -215,7 +215,7 @@ static void writetarheader(int f, const char *aname, SMB_BIG_UINT size, time_t m
 	for (chk=0, i=sizeof(hb.dummy), jp=hb.dummy; --i>=0;)
 		chk+=(0xFF & *jp++);
 
-	oct_it((SMB_BIG_UINT) chk, 8, hb.dbuf.chksum);
+	oct_it((uint64_t) chk, 8, hb.dbuf.chksum);
 	hb.dbuf.chksum[6] = '\0';
 
 	(void) dotarbuf(f, hb.dummy, sizeof(hb.dummy));
@@ -431,7 +431,7 @@ static void fixtarname(char *tptr, const char *fp, size_t l)
 Convert from decimal to octal string
 ****************************************************************************/
 
-static void oct_it (SMB_BIG_UINT value, int ndgs, char *p)
+static void oct_it (uint64_t value, int ndgs, char *p)
 {
 	/* Converts long to octal string, pads with leading zeros */
 
@@ -567,7 +567,7 @@ static bool ensurepath(const char *fname)
 	return True;
 }
 
-static int padit(char *buf, SMB_BIG_UINT bufsize, SMB_BIG_UINT padsize)
+static int padit(char *buf, uint64_t bufsize, uint64_t padsize)
 {
 	int berr= 0;
 	int bytestowrite;
@@ -607,7 +607,7 @@ append one remote file to the tar file
 static void do_atar(const char *rname_in,char *lname,file_info *finfo1)
 {
 	int fnum = -1;
-	SMB_BIG_UINT nread=0;
+	uint64_t nread=0;
 	char ftype;
 	file_info2 finfo;
 	bool shallitime=True;
@@ -738,7 +738,7 @@ static void do_atar(const char *rname_in,char *lname,file_info *finfo1)
 			if (nread < finfo.size) {
 				DEBUG(0, ("Didn't get entire file. size=%.0f, nread=%d\n",
 							(double)finfo.size, (int)nread));
-				if (padit(data, (SMB_BIG_UINT)sizeof(data), finfo.size - nread))
+				if (padit(data, (uint64_t)sizeof(data), finfo.size - nread))
 					DEBUG(0,("Error writing tar file - %s\n", strerror(errno)));
 			}
 
@@ -992,7 +992,7 @@ static int skip_file(int skipsize)
 static int get_file(file_info2 finfo)
 {
 	int fnum = -1, pos = 0, dsize = 0, bpos = 0;
-	SMB_BIG_UINT rsize = 0;
+	uint64_t rsize = 0;
 
 	DEBUG(5, ("get_file: file: %s, size %.0f\n", finfo.name, (double)finfo.size));
 

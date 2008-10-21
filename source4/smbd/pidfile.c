@@ -57,7 +57,7 @@ pid_t pidfile_pid(const char *piddir, const char *name)
 
 	ret = (pid_t)atoi(pidstr);
 	
-	if (!process_exists(ret)) {
+	if (!process_exists_by_pid(ret)) {
 		goto noproc;
 	}
 

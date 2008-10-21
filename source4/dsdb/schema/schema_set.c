@@ -24,7 +24,7 @@
 #include "dsdb/samdb/samdb.h"
 #include "lib/ldb/include/ldb_errors.h"
 #include "lib/ldb/include/ldb_private.h"
-#include "lib/util/dlinklist.h"
+#include "../lib/util/dlinklist.h"
 #include "param/param.h"
 
 
@@ -116,7 +116,7 @@ static int dsdb_schema_set_attributes(struct ldb_context *ldb, struct dsdb_schem
 
 
 	/* Try to avoid churning the attributes too much - we only want to do this if they have changed */
-	ret = ldb_search_exp_fmt(ldb, mem_ctx, &res, msg->dn, LDB_SCOPE_BASE, NULL, "dn=%s", ldb_dn_get_linearized(msg->dn));
+	ret = ldb_search(ldb, mem_ctx, &res, msg->dn, LDB_SCOPE_BASE, NULL, "dn=%s", ldb_dn_get_linearized(msg->dn));
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 		ret = ldb_add(ldb, msg);
 	} else if (ret != LDB_SUCCESS) {
@@ -144,7 +144,7 @@ static int dsdb_schema_set_attributes(struct ldb_context *ldb, struct dsdb_schem
 
 	/* Now write out the indexs, as found in the schema (if they have changed) */
 
-	ret = ldb_search_exp_fmt(ldb, mem_ctx, &res_idx, msg_idx->dn, LDB_SCOPE_BASE, NULL, "dn=%s", ldb_dn_get_linearized(msg_idx->dn));
+	ret = ldb_search(ldb, mem_ctx, &res_idx, msg_idx->dn, LDB_SCOPE_BASE, NULL, "dn=%s", ldb_dn_get_linearized(msg_idx->dn));
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 		ret = ldb_add(ldb, msg_idx);
 	} else if (ret != LDB_SUCCESS) {
@@ -328,11 +328,10 @@ WERROR dsdb_attach_schema_from_ldif_file(struct ldb_context *ldb, const char *pf
 
 	info_val = ldb_msg_find_ldb_val(msg, "schemaInfo");
 	if (!info_val) {
-		info_val_default = strhex_to_data_blob("FF0000000000000000000000000000000000000000");
+		info_val_default = strhex_to_data_blob(mem_ctx, "FF0000000000000000000000000000000000000000");
 		if (!info_val_default.data) {
 			goto nomem;
 		}
-		talloc_steal(mem_ctx, info_val_default.data);
 		info_val = &info_val_default;
 	}
 

@@ -384,7 +384,8 @@ static void show_parameters(int snum, int allparameters, unsigned int parm_filte
 					break;
 
 				case P_LIST:
-					if (!str_list_compare(*(char ***)ptr, (char **)(parm->def.lvalue))) continue;
+					if (!str_list_equal(*(const char ***)ptr, 
+							    (const char **)(parm->def.lvalue))) continue;
 					break;
 
 				case P_STRING:
@@ -595,7 +596,7 @@ static void ViewModeBoxes(int mode)
 ****************************************************************************/
 static void welcome_page(void)
 {
-	if (file_exist("help/welcome.html", NULL)) {
+	if (file_exist("help/welcome.html")) {
 		include_html("help/welcome.html");
 	} else {
 		include_html("help/welcome-no-samba-doc.html");
@@ -1439,7 +1440,7 @@ const char *lang_msg_rotate(TALLOC_CTX *ctx, const char *msgid)
 
 	cgi_load_variables();
 
-	if (!file_exist(get_dyn_CONFIGFILE(), NULL)) {
+	if (!file_exist(get_dyn_CONFIGFILE())) {
 		have_read_access = True;
 		have_write_access = True;
 	} else {

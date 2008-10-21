@@ -33,7 +33,6 @@ char *schema_attribute_description(TALLOC_CTX *mem_ctx,
 					  const char *seperator,
 					  const char *oid, 
 					  const char *name,
-					  const char *description,
 					  const char *equality, 
 					  const char *substring, 
 					  const char *syntax,
@@ -46,15 +45,6 @@ char *schema_attribute_description(TALLOC_CTX *mem_ctx,
 					      "NAME '%s'%s", name, seperator);
 	IF_NULL_FAIL_RET(schema_entry);
 	
-	if (description) {
-#if 0		
-		/* Need a way to escape ' characters from the description */
-		schema_entry = talloc_asprintf_append(schema_entry, 
-						      "DESC '%s'%s", description, seperator);
-		IF_NULL_FAIL_RET(schema_entry);
-#endif
-	}
-
 	if (equality) {
 		schema_entry = talloc_asprintf_append(schema_entry, 
 						      "EQUALITY %s%s", equality, seperator);
@@ -104,7 +94,7 @@ char *schema_attribute_to_description(TALLOC_CTX *mem_ctx, const struct dsdb_att
 					       " ",
 					       attribute->attributeID_oid,
 					       attribute->lDAPDisplayName,
-					       NULL, NULL, NULL, talloc_asprintf(tmp_ctx, "'%s'", syntax),
+					       NULL, NULL, talloc_asprintf(tmp_ctx, "'%s'", syntax),
 					       attribute->isSingleValued,
 					       attribute->systemOnly);
 	talloc_free(tmp_ctx);
@@ -149,7 +139,6 @@ char *schema_class_description(TALLOC_CTX *mem_ctx,
 			       const char *oid, 
 			       const char *name,
 			       const char **auxillary_classes,
-			       const char *description,
 			       const char *subClassOf,
 			       int objectClassCategory,
 			       char **must,
@@ -164,12 +153,6 @@ char *schema_class_description(TALLOC_CTX *mem_ctx,
 					      "NAME '%s'%s", name, seperator);
 	IF_NULL_FAIL_RET(schema_entry);
 	
-	if (description) {
-		schema_entry = talloc_asprintf_append(schema_entry, 
-						      "DESC '%s'%s", description, seperator);
-		IF_NULL_FAIL_RET(schema_entry);
-	}
-
 	if (auxillary_classes) {
 		schema_entry = talloc_asprintf_append(schema_entry, 
 						      "AUX ( ");
@@ -262,7 +245,6 @@ char *schema_class_to_description(TALLOC_CTX *mem_ctx, const struct dsdb_class *
 					   " ",
 					   class->governsID_oid,
 					   class->lDAPDisplayName,
-					   NULL,
 					   NULL, 
 					   class->subClassOf,
 					   class->objectClassCategory,
@@ -308,8 +290,11 @@ char *schema_class_to_dITContentRule(TALLOC_CTX *mem_ctx, const struct dsdb_clas
 					   class->governsID_oid,
 					   class->lDAPDisplayName,
 					   (const char **)aux_class_list,
-					   NULL, 
-					   class->subClassOf,
+					   NULL, /* Must not specify a
+						  * SUP (subclass) in
+						  * ditContentRules
+						  * per MS-ADTS
+						  * 3.1.1.3.1.1.1 */
 					   -1, must_attr_list, may_attr_list);
 	talloc_free(tmp_ctx);
 	return schema_description;

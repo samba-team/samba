@@ -24,8 +24,7 @@
 #include "includes.h"
 #include "auth/ntlmssp/ntlmssp.h"
 #include "auth/ntlmssp/msrpc_parse.h"
-#include "lib/crypto/crypto.h"
-#include "system/filesys.h"
+#include "../lib/crypto/crypto.h"
 #include "libcli/auth/libcli_auth.h"
 #include "auth/credentials/credentials.h"
 #include "auth/gensec/gensec.h"
@@ -125,8 +124,6 @@ NTSTATUS ntlmssp_server_negotiate(struct gensec_security *gensec_security,
 {
 	struct gensec_ntlmssp_state *gensec_ntlmssp_state = (struct gensec_ntlmssp_state *)gensec_security->private_data;
 	DATA_BLOB struct_blob;
-	char dnsname[MAXHOSTNAMELEN], dnsdomname[MAXHOSTNAMELEN];
-	const char *p;
 	uint32_t neg_flags = 0;
 	uint32_t ntlmssp_command, chal_flags;
 	const uint8_t *cryptkey;
@@ -183,25 +180,24 @@ NTSTATUS ntlmssp_server_negotiate(struct gensec_security *gensec_security,
 	gensec_ntlmssp_state->chal = data_blob_talloc(gensec_ntlmssp_state, cryptkey, 8);
 	gensec_ntlmssp_state->internal_chal = data_blob_talloc(gensec_ntlmssp_state, cryptkey, 8);
 
-	dnsname[0] = '\0';
-	if (gethostname(dnsname, sizeof(dnsname)) == -1) {
-		DEBUG(0,("gethostname failed\n"));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	/* This should be a 'netbios domain -> DNS domain' mapping */
-	p = strchr(dnsname, '.');
-	if (p != NULL) {
-		safe_strcpy(dnsdomname, p+1, sizeof(dnsdomname));
-		strlower_m(dnsdomname);
-	} else {
-		dnsdomname[0] = '\0';
-	}
-	
 	/* This creates the 'blob' of names that appears at the end of the packet */
-	if (chal_flags & NTLMSSP_CHAL_TARGET_INFO) 
-	{
+	if (chal_flags & NTLMSSP_CHAL_TARGET_INFO) {
+		char dnsdomname[MAXHOSTNAMELEN], dnsname[MAXHOSTNAMELEN];
 		const char *target_name_dns = "";
+
+		/* Find out the DNS domain name */
+		dnsdomname[0] = '\0';
+		safe_strcpy(dnsdomname, lp_realm(gensec_security->lp_ctx), sizeof(dnsdomname) - 1);
+		strlower_m(dnsdomname);
+
+		/* Find out the DNS host name */
+		safe_strcpy(dnsname, gensec_ntlmssp_state->server_name, sizeof(dnsname) - 1);
+		if (dnsdomname[0] != '\0') {
+			safe_strcat(dnsname, ".", sizeof(dnsname) - 1);
+			safe_strcat(dnsname, dnsdomname, sizeof(dnsname) - 1);
+		}
+		strlower_m(dnsname);
+
 		if (chal_flags |= NTLMSSP_TARGET_TYPE_DOMAIN) {
 			target_name_dns = dnsdomname;
 		} else if (chal_flags |= NTLMSSP_TARGET_TYPE_SERVER) {
@@ -221,7 +217,7 @@ NTSTATUS ntlmssp_server_negotiate(struct gensec_security *gensec_security,
 	}
 
 	{
-		/* Marshel the packet in the right format, be it unicode or ASCII */
+		/* Marshal the packet in the right format, be it unicode or ASCII */
 		const char *gen_string;
 		if (gensec_ntlmssp_state->unicode) {
 			gen_string = "CdUdbddB";

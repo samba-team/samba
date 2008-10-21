@@ -56,7 +56,7 @@ static struct nbt_name generate_name(TALLOC_CTX *tctx, int idx)
 
 static void register_handler(struct nbt_name_request *req)
 {
-	struct idx_state *istate = talloc_get_type(req->async.private, struct idx_state);
+	struct idx_state *istate = talloc_get_type(req->async.private_data, struct idx_state);
 	struct wins_state *state = istate->state;
 	struct nbt_name_register io;
 	NTSTATUS status;
@@ -100,7 +100,7 @@ static void generate_register(struct nbt_name_socket *nbtsock, struct wins_state
 	req = nbt_name_register_send(nbtsock, &io);
 
 	req->async.fn = register_handler;
-	req->async.private = istate;
+	req->async.private_data = istate;
 
 	talloc_free(tmp_ctx);
 }
@@ -108,7 +108,7 @@ static void generate_register(struct nbt_name_socket *nbtsock, struct wins_state
 
 static void release_handler(struct nbt_name_request *req)
 {
-	struct idx_state *istate = talloc_get_type(req->async.private, struct idx_state);
+	struct idx_state *istate = talloc_get_type(req->async.private_data, struct idx_state);
 	struct wins_state *state = istate->state;
 	struct nbt_name_release io;
 	NTSTATUS status;
@@ -150,7 +150,7 @@ static void generate_release(struct nbt_name_socket *nbtsock, struct wins_state 
 	req = nbt_name_release_send(nbtsock, &io);
 
 	req->async.fn = release_handler;
-	req->async.private = istate;
+	req->async.private_data = istate;
 
 	talloc_free(tmp_ctx);
 }
@@ -158,7 +158,7 @@ static void generate_release(struct nbt_name_socket *nbtsock, struct wins_state 
 
 static void query_handler(struct nbt_name_request *req)
 {
-	struct idx_state *istate = talloc_get_type(req->async.private, struct idx_state);
+	struct idx_state *istate = talloc_get_type(req->async.private_data, struct idx_state);
 	struct wins_state *state = istate->state;
 	struct nbt_name_query io;
 	NTSTATUS status;
@@ -197,7 +197,7 @@ static void generate_query(struct nbt_name_socket *nbtsock, struct wins_state *s
 	req = nbt_name_query_send(nbtsock, &io);
 
 	req->async.fn = query_handler;
-	req->async.private = istate;
+	req->async.private_data = istate;
 
 	talloc_free(tmp_ctx);
 }

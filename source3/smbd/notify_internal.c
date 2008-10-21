@@ -166,7 +166,7 @@ static NTSTATUS notify_load(struct notify_context *notify, struct db_record *rec
 	status = NT_STATUS_OK;
 	if (blob.length > 0) {
 		enum ndr_err_code ndr_err;
-		ndr_err = ndr_pull_struct_blob(&blob, notify->array, notify->array,
+		ndr_err = ndr_pull_struct_blob(&blob, notify->array, NULL, notify->array,
 					       (ndr_pull_flags_fn_t)ndr_pull_notify_array);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			status = ndr_map_error2ntstatus(ndr_err);
@@ -220,7 +220,7 @@ static NTSTATUS notify_save(struct notify_context *notify, struct db_record *rec
 	tmp_ctx = talloc_new(notify);
 	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
 
-	ndr_err = ndr_push_struct_blob(&blob, tmp_ctx, notify->array,
+	ndr_err = ndr_push_struct_blob(&blob, tmp_ctx, NULL, notify->array,
 				      (ndr_push_flags_fn_t)ndr_push_notify_array);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(tmp_ctx);
@@ -258,7 +258,7 @@ static void notify_handler(struct messaging_context *msg_ctx, void *private_data
 		return;
 	}
 
-	ndr_err = ndr_pull_struct_blob(data, tmp_ctx, &ev,
+	ndr_err = ndr_pull_struct_blob(data, tmp_ctx, NULL, &ev,
 				       (ndr_pull_flags_fn_t)ndr_pull_notify_event);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(tmp_ctx);
@@ -561,7 +561,7 @@ static NTSTATUS notify_send(struct notify_context *notify, struct notify_entry *
 
 	tmp_ctx = talloc_new(notify);
 
-	ndr_err = ndr_push_struct_blob(&data, tmp_ctx, &ev,
+	ndr_err = ndr_push_struct_blob(&data, tmp_ctx, NULL, &ev,
 				       (ndr_push_flags_fn_t)ndr_push_notify_event);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(tmp_ctx);

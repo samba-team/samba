@@ -24,8 +24,8 @@
 #ifndef _INTERFACES_H
 #define _INTERFACES_H
 
-#include "lib/replace/replace.h"
-#include "lib/replace/system/network.h"
+#include "../replace/replace.h"
+#include "../replace/system/network.h"
 
 #define MAX_INTERFACES 128
 

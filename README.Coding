@@ -1,6 +1,7 @@
-##
-## Coding conventions in the Samba 3 tree
-##
+Coding conventions in the Samba tree
+------------------------------------
+
+.. contents::
 
 ===========
 Quick Start
@@ -14,14 +15,12 @@ style should never outweigh coding itself and so the the guidelines
 described here are hopefully easy enough to follow as they are very
 common and supported by tools and editors.
 
-The basic style, also mentioned in the SAMBA_4_0/prog_guide.txt is the
-Linux kernel coding style (See Documentation/CodingStyle in the kernel
-source tree).  The closely matches what most Samba developers use already
-anyways.
+The basic style, also mentioned in prog_guide4.txt, is the Linux kernel coding 
+style (See Documentation/CodingStyle in the kernel source tree). This closely 
+matches what most Samba developers use already anyways.
 
 But to save you the trouble of reading the Linux kernel style guide, here
 are the highlights.
-
 
 * Maximum Line Width is 80 Characters
   The reason is not for people with low-res screens but rather sticking
@@ -59,14 +58,14 @@ Vi
 --
 (Thanks to SATOH Fumiyasu <fumiyas@osstech.jp> for these hints):
 
-For the basic vi editor including with all variants of *nix, add the 
+For the basic vi editor including with all variants of \*nix, add the 
 following to $HOME/.exrc:
 
   set tabstop=8
   set shiftwidth=8
 
 For Vim, the following settings in $HOME/.vimrc will also deal with 
-displaying trailing whitespace:
+displaying trailing whitespace::
 
   if has("syntax") && (&t_Co > 2 || has("gui_running"))
 	syntax on
@@ -91,7 +90,7 @@ FAQ & Statement Reference
 Comments
 --------
 
-Comments should always use the standard C syntax.  I.e. /* ... */.  C++ 
+Comments should always use the standard C syntax.  C++ 
 style comments are not currently allowed.
 
 
@@ -145,7 +144,7 @@ The exception to the ending rule is when the closing brace is followed by
 another language keyword such as else or the closing while in a do..while 
 loop.
 
-Good examples:
+Good examples::
 
 	if (x == 1) {
 		printf("good\n");
@@ -162,7 +161,7 @@ Good examples:
 		printf("also good\n");
 	} while (1);
 
-Bad examples:
+Bad examples::
 
 	while (1)
 	{
@@ -173,33 +172,33 @@ Goto
 ----
 
 While many people have been academically taught that goto's are fundamentally
-evil, then can greatly enhance readability and reduce memory leaks when used
+evil, they can greatly enhance readability and reduce memory leaks when used
 as the single exit point from a function.  But in no Samba world what so ever 
 is a goto outside of a function or block of code a good idea.
 
-Good Examples:
+Good Examples::
 
-int function foo(int y)
-{
-	int *z = NULL;
-	int ret = 0;
+	int function foo(int y)
+	{
+		int *z = NULL;
+		int ret = 0;
 
-	if ( y < 10 ) {
-		z = malloc(sizeof(int)*y);
-		if (!z) {
-			ret = 1;
-			goto done;
+		if ( y < 10 ) {
+			z = malloc(sizeof(int)*y);
+			if (!z) {
+				ret = 1;
+				goto done;
+			}
 		}
+
+		print("Allocated %d elements.\n", y);
+
+	 done: 
+		if (z)
+			free(z);
+
+		return ret;
 	}
-
-	print("Allocated %d elements.\n", y);
-
- done: 
-	if (z)
-		free(z);
-
-	return ret;
-}
 
 
 Checking Pointer Values
@@ -207,13 +206,13 @@ Checking Pointer Values
 
 When invoking functions that return pointer values, either of the following 
 are acceptable.  Use you best judgement and choose the more readable option.
-Remember that many other people will review it.
+Remember that many other people will review it.::
 
 	if ((x = malloc(sizeof(short)*10)) == NULL ) {
 		fprintf(stderr, "Unable to alloc memory!\n");
 	}
 
-or
+or::
 
 	x = malloc(sizeof(short)*10);
 	if (!x) {

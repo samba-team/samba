@@ -22,7 +22,7 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "librpc/gen_ndr/ndr_xattr.h"
-#include "lib/util/wrap_xattr.h"
+#include "../lib/util/wrap_xattr.h"
 #include "param/param.h"
 
 static void ntacl_print_debug_helper(struct ndr_print *ndr, const char *format, ...) PRINTF_ATTRIBUTE(2,3);

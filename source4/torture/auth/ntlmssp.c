@@ -48,7 +48,7 @@ static bool torture_ntlmssp_self_check(struct torture_context *tctx)
 
 	gensec_ntlmssp_state = (struct gensec_ntlmssp_state *)gensec_security->private_data;
 
-	gensec_ntlmssp_state->session_key = strhex_to_data_blob("0102030405060708090a0b0c0d0e0f00");
+	gensec_ntlmssp_state->session_key = strhex_to_data_blob(tctx, "0102030405060708090a0b0c0d0e0f00");
 	dump_data_pw("NTLMSSP session key: \n", 
 		     gensec_ntlmssp_state->session_key.data,  
 		     gensec_ntlmssp_state->session_key.length);
@@ -59,11 +59,11 @@ static bool torture_ntlmssp_self_check(struct torture_context *tctx)
 		ntlmssp_sign_init(gensec_ntlmssp_state),
 		"Failed to sign_init");
 
-	data = strhex_to_data_blob("6a43494653");
+	data = strhex_to_data_blob(tctx, "6a43494653");
 	gensec_ntlmssp_sign_packet(gensec_security, gensec_security,
 				   data.data, data.length, data.data, data.length, &sig);
 
-	expected_sig = strhex_to_data_blob("01000000e37f97f2544f4d7e00000000");
+	expected_sig = strhex_to_data_blob(tctx, "01000000e37f97f2544f4d7e00000000");
 
 	dump_data_pw("NTLMSSP calc sig:     ", sig.data, sig.length);
 	dump_data_pw("NTLMSSP expected sig: ", expected_sig.data, expected_sig.length);
@@ -103,7 +103,7 @@ static bool torture_ntlmssp_self_check(struct torture_context *tctx)
 
 	gensec_ntlmssp_state = (struct gensec_ntlmssp_state *)gensec_security->private_data;
 
-	gensec_ntlmssp_state->session_key = strhex_to_data_blob("0102030405e538b0");
+	gensec_ntlmssp_state->session_key = strhex_to_data_blob(tctx, "0102030405e538b0");
 	dump_data_pw("NTLMSSP session key: \n", 
 		     gensec_ntlmssp_state->session_key.data,  
 		     gensec_ntlmssp_state->session_key.length);
@@ -114,11 +114,11 @@ static bool torture_ntlmssp_self_check(struct torture_context *tctx)
 		ntlmssp_sign_init(gensec_ntlmssp_state),
 		"Failed to sign_init");
 
-	data = strhex_to_data_blob("6a43494653");
+	data = strhex_to_data_blob(tctx, "6a43494653");
 	gensec_ntlmssp_sign_packet(gensec_security, gensec_security,
 			    data.data, data.length, data.data, data.length, &sig);
 
-	expected_sig = strhex_to_data_blob("0100000078010900397420fe0e5a0f89");
+	expected_sig = strhex_to_data_blob(tctx, "0100000078010900397420fe0e5a0f89");
 
 	dump_data_pw("NTLMSSP calc sig:     ", sig.data, sig.length);
 	dump_data_pw("NTLMSSP expected sig: ", expected_sig.data, expected_sig.length);

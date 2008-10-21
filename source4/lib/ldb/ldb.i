@@ -46,6 +46,7 @@ typedef struct ldb_context ldb;
 typedef struct ldb_dn ldb_dn;
 typedef struct ldb_ldif ldb_ldif;
 typedef struct ldb_message_element ldb_message_element;
+typedef struct ldb_module ldb_module;
 typedef int ldb_error;
 typedef int ldb_int_error;
 
@@ -152,17 +153,21 @@ PyObject *ldb_val_to_py_object(struct ldb_context *ldb_ctx,
  * Wrap struct ldb_result
  */
 
-%typemap(in,noblock=1,numinputs=0) struct ldb_result **OUT (struct ldb_result *temp_ldb_result) {
+%typemap(in,noblock=1,numinputs=0) struct ldb_result ** (struct ldb_result *temp_ldb_result) {
 	$1 = &temp_ldb_result;
 }
 
 #ifdef SWIGPYTHON
 %typemap(argout,noblock=1) struct ldb_result ** (int i) {
-	$result = PyList_New((*$1)->count);
-    for (i = 0; i < (*$1)->count; i++) {
-        PyList_SetItem($result, i, 
-            SWIG_NewPointerObj((*$1)->msgs[i], SWIGTYPE_p_ldb_message, 0)
-        );
+    if ($1 == NULL) {
+        $result = Py_None;
+    } else {
+        $result = PyList_New((*$1)->count);
+        for (i = 0; i < (*$1)->count; i++) {
+            PyList_SetItem($result, i, 
+                SWIG_NewPointerObj((*$1)->msgs[i], SWIGTYPE_p_ldb_message, 0)
+            );
+        }
     }
 }
 
@@ -189,7 +194,7 @@ PyObject *ldb_val_to_py_object(struct ldb_context *ldb_ctx,
 
 #endif
 
-%types(struct ldb_result *);
+%types(struct ldb_result *, struct ldb_parse_tree *);
 
 /*
  * Wrap struct ldb_dn
@@ -685,6 +690,20 @@ PyObject *PyExc_LdbError;
 
 /* Top-level ldb operations */
 typedef struct ldb_context {
+    %rename(firstmodule) modules;
+    struct ldb_module *modules;
+
+    %pythoncode {
+        def itermodules(self):
+            m = self.firstmodule
+            while m is not None:
+                yield m
+                m = m.next
+
+        def modules(self):
+            return list(self.itermodules())
+    }
+
     %extend {
         ldb(void) { 
             return ldb_init(NULL, event_context_init(NULL)); 
@@ -718,15 +737,14 @@ typedef struct ldb_context {
                            attrs,
                            controls,
                            res,
-                           ldb_search_default_callback);
+                           ldb_search_default_callback,
+                           NULL);
 
             if (ret != LDB_SUCCESS) {
                 talloc_free(res);
                 return ret;
             }
 
-            ldb_set_timeout($self, req, 0); /* use default timeout */
-                
             ret = ldb_request($self, req);
                 
             if (ret == LDB_SUCCESS) {
@@ -826,8 +844,7 @@ typedef struct ldb_context {
         %typemap(freearg,noblock=1) struct ldb_result **result_as_bool { talloc_free(*$1); }
         ldb_error __contains__(ldb_dn *dn, struct ldb_result **result_as_bool)
         {
-            return ldb_search($self, dn, LDB_SCOPE_BASE, NULL, NULL, 
-                             result_as_bool);
+            return ldb_search($self, $self, result_as_bool, dn, LDB_SCOPE_BASE, NULL, NULL);
         }
 
         %feature("docstring") parse_ldif "S.parse_ldif(ldif) -> iter(messages)\n" \
@@ -915,10 +932,347 @@ static char *timestring(time_t t)
                                      "Parse a LDAP time string into a UNIX timestamp.";
 time_t ldb_string_to_time(const char *s);
 
+typedef struct ldb_module {
+    struct ldb_module *prev, *next;
+
+    %extend {
+#ifdef SWIGPYTHON
+        const char *__str__() {
+            return $self->ops->name;
+        }
+        char *__repr__() {
+            char *ret;
+            asprintf(&ret, "<ldb module '%s'>", $self->ops->name);
+            return ret;
+        }
+#endif
+        int search(struct ldb_dn *base, enum ldb_scope scope, struct ldb_parse_tree *tree, const char * const * attrs, struct ldb_result **res) {
+            int ret;
+            struct ldb_request *req = talloc_zero(NULL, struct ldb_request);
+
+            req->operation = LDB_SEARCH;
+            req->op.search.base = base;
+            req->op.search.scope = scope;
+            req->op.search.tree = tree;
+            req->op.search.attrs = attrs;
+
+            req->op.search.res = talloc_zero(NULL, struct ldb_result);
+
+            ret = $self->ops->search($self, req);
+
+            *res = req->op.search.res;
+
+            talloc_free(req);
+
+            return ret;
+        }
+        ldb_error add(struct ldb_message *message) {
+            struct ldb_request *req = talloc_zero(NULL, struct ldb_request);
+            req->operation = LDB_ADD;
+            req->op.add.message = message;
+            
+            return $self->ops->add($self, &req);
+        }
+        ldb_error modify(struct ldb_message *message) {
+            struct ldb_request *req = talloc_zero(NULL, struct ldb_request);
+            req->operation = LDB_MODIFY;
+            req->op.mod.message = message;
+            
+            return $self->ops->modify($self, &req);
+        }
+        ldb_error delete(struct ldb_dn *dn) {
+            struct ldb_request *req = talloc_zero(NULL, struct ldb_request);
+            req->operation = LDB_DELETE;
+            req->op.del.dn = dn;
+            
+            return $self->ops->del($self, &req);
+
+        }
+        ldb_error rename(struct ldb_dn *olddn, struct ldb_dn *newdn) {
+            struct ldb_request *req = talloc_zero(NULL, struct ldb_request);
+            req->operation = LDB_RENAME;
+            req->op.rename.olddn = olddn;
+            req->op.rename.olddn = newdn;
+            
+            return $self->ops->rename($self, &req);
+        }
+        ldb_error start_transaction() {
+            return $self->ops->start_transaction($self);
+        }
+        ldb_error end_transaction() {
+            return $self->ops->end_transaction($self);
+        }
+        ldb_error del_transaction() {
+            return $self->ops->del_transaction($self);
+        }
+    }
+} ldb_module;
+
+%{
+int py_module_search(struct ldb_module *mod, struct ldb_request *req)
+{
+    PyObject *py_ldb = mod->private_data;
+    PyObject *py_result, *py_base, *py_attrs, *py_tree;
+
+    py_base = SWIG_NewPointerObj(req->op.search.base, SWIGTYPE_p_ldb_dn, 0);
+
+    if (py_base == NULL)
+        return LDB_ERR_OPERATIONS_ERROR;
+
+    py_tree = SWIG_NewPointerObj(req->op.search.tree, SWIGTYPE_p_ldb_parse_tree, 0);
+
+    if (py_tree == NULL)
+        return LDB_ERR_OPERATIONS_ERROR;
+
+    if (req->op.search.attrs == NULL) {
+        py_attrs = Py_None;
+    } else {
+        int i, len;
+        for (len = 0; req->op.search.attrs[len]; len++);
+        py_attrs = PyList_New(len);
+        for (i = 0; i < len; i++)
+            PyList_SetItem(py_attrs, i, PyString_FromString(req->op.search.attrs[i]));
+    }
+
+    py_result = PyObject_CallMethod(py_ldb, "search", "OiOO", py_base, req->op.search.scope, py_tree, py_attrs);
+
+    Py_DECREF(py_attrs);
+    Py_DECREF(py_tree);
+    Py_DECREF(py_base);
+
+    if (py_result == NULL) {
+        return LDB_ERR_OPERATIONS_ERROR;
+    }
+
+    if (SWIG_ConvertPtr(py_result, &req->op.search.res, SWIGTYPE_p_ldb_result, 0) != 0) {
+        return LDB_ERR_OPERATIONS_ERROR;
+    }
+
+    Py_DECREF(py_result);
+
+    return LDB_SUCCESS;
+}
+
+int py_module_add(struct ldb_module *mod, struct ldb_request *req)
+{
+    PyObject *py_ldb = mod->private_data;
+    PyObject *py_result, *py_msg;
+
+    py_msg = SWIG_NewPointerObj(req->op.add.message, SWIGTYPE_p_ldb_message, 0);
+
+    if (py_msg == NULL) {
+        return LDB_ERR_OPERATIONS_ERROR;
+    }
+
+    py_result = PyObject_CallMethod(py_ldb, "add", "O", py_msg);
+
+    Py_DECREF(py_msg);
+
+    if (py_result == NULL) {
+        return LDB_ERR_OPERATIONS_ERROR;
+    }
+
+    Py_DECREF(py_result);
+
+    return LDB_SUCCESS;
+}
+
+int py_module_modify(struct ldb_module *mod, struct ldb_request *req)
+{
+    PyObject *py_ldb = mod->private_data;
+    PyObject *py_result, *py_msg;
+
+    py_msg = SWIG_NewPointerObj(req->op.mod.message, SWIGTYPE_p_ldb_message, 0);
+
+    if (py_msg == NULL) {
+        return LDB_ERR_OPERATIONS_ERROR;
+    }
+
+    py_result = PyObject_CallMethod(py_ldb, "modify", "O", py_msg);
+
+    Py_DECREF(py_msg);
+
+    if (py_result == NULL) {
+        return LDB_ERR_OPERATIONS_ERROR;
+    }
+
+    Py_DECREF(py_result);
+
+    return LDB_SUCCESS;
+}
+
+int py_module_del(struct ldb_module *mod, struct ldb_request *req)
+{
+    PyObject *py_ldb = mod->private_data;
+    PyObject *py_result, *py_dn;
+
+    py_dn = SWIG_NewPointerObj(req->op.del.dn, SWIGTYPE_p_ldb_dn, 0);
+
+    if (py_dn == NULL)
+        return LDB_ERR_OPERATIONS_ERROR;
+
+    py_result = PyObject_CallMethod(py_ldb, "delete", "O", py_dn);
+
+    if (py_result == NULL) {
+        return LDB_ERR_OPERATIONS_ERROR;
+    }
+
+    Py_DECREF(py_result);
+
+    return LDB_SUCCESS;
+}
+
+int py_module_rename(struct ldb_module *mod, struct ldb_request *req)
+{
+    PyObject *py_ldb = mod->private_data;
+    PyObject *py_result, *py_olddn, *py_newdn;
+
+    py_olddn = SWIG_NewPointerObj(req->op.rename.olddn, SWIGTYPE_p_ldb_dn, 0);
+
+    if (py_olddn == NULL)
+        return LDB_ERR_OPERATIONS_ERROR;
+
+    py_newdn = SWIG_NewPointerObj(req->op.rename.newdn, SWIGTYPE_p_ldb_dn, 0);
+
+    if (py_newdn == NULL)
+        return LDB_ERR_OPERATIONS_ERROR;
+
+    py_result = PyObject_CallMethod(py_ldb, "rename", "OO", py_olddn, py_newdn);
+
+    Py_DECREF(py_olddn);
+    Py_DECREF(py_newdn);
+
+    if (py_result == NULL) {
+        return LDB_ERR_OPERATIONS_ERROR;
+    }
+
+    Py_DECREF(py_result);
+
+    return LDB_SUCCESS;
+}
+
+int py_module_request(struct ldb_module *mod, struct ldb_request *req)
+{
+    PyObject *py_ldb = mod->private_data;
+    PyObject *py_result;
+
+    py_result = PyObject_CallMethod(py_ldb, "request", "");
+
+    return LDB_ERR_OPERATIONS_ERROR;
+}
+
+int py_module_extended(struct ldb_module *mod, struct ldb_request *req)
+{
+    PyObject *py_ldb = mod->private_data;
+    PyObject *py_result;
+
+    py_result = PyObject_CallMethod(py_ldb, "extended", "");
+
+    return LDB_ERR_OPERATIONS_ERROR;
+}
+
+int py_module_start_transaction(struct ldb_module *mod)
+{
+    PyObject *py_ldb = mod->private_data;
+    PyObject *py_result;
+
+    py_result = PyObject_CallMethod(py_ldb, "start_transaction", "");
+
+    if (py_result == NULL) {
+        return LDB_ERR_OPERATIONS_ERROR;
+    }
+
+    Py_DECREF(py_result);
+
+    return LDB_SUCCESS;
+}
+
+int py_module_end_transaction(struct ldb_module *mod)
+{
+    PyObject *py_ldb = mod->private_data;
+    PyObject *py_result;
+
+    py_result = PyObject_CallMethod(py_ldb, "end_transaction", "");
+
+    if (py_result == NULL) {
+        return LDB_ERR_OPERATIONS_ERROR;
+    }
+
+    Py_DECREF(py_result);
+
+    return LDB_SUCCESS;
+}
+
+int py_module_del_transaction(struct ldb_module *mod)
+{
+    PyObject *py_ldb = mod->private_data;
+    PyObject *py_result;
+
+    py_result = PyObject_CallMethod(py_ldb, "del_transaction", "");
+
+    if (py_result == NULL) {
+        return LDB_ERR_OPERATIONS_ERROR;
+    }
+
+    Py_DECREF(py_result);
+
+    return LDB_SUCCESS;
+}
+
+static int py_module_destructor(void *_mod)
+{
+    struct ldb_module *mod = _mod;
+    Py_DECREF((PyObject *)mod->private_data);
+    return 0;
+}
+
+int py_module_init (struct ldb_module *mod)
+{
+    PyObject *py_class = mod->ops->private_data;
+    PyObject *py_result, *py_next, *py_ldb;
+
+    py_ldb = SWIG_NewPointerObj(mod->ldb, SWIGTYPE_p_ldb_context, 0);
+
+    if (py_ldb == NULL)
+        return LDB_ERR_OPERATIONS_ERROR;
+
+    py_next = SWIG_NewPointerObj(mod->next, SWIGTYPE_p_ldb_module, 0);
+
+    if (py_next == NULL)
+        return LDB_ERR_OPERATIONS_ERROR;
+
+    py_result = PyObject_CallFunction(py_class, "OO", py_ldb, py_next);
+
+    if (py_result == NULL) {
+        return LDB_ERR_OPERATIONS_ERROR;
+    }
+
+    mod->private_data = py_result;
+
+    talloc_set_destructor (mod, py_module_destructor);
+
+    return ldb_next_init(mod);
+}
+%}
+
 %typemap(in,noblock=1) const struct ldb_module_ops * {
     $1 = talloc_zero(talloc_autofree_context(), struct ldb_module_ops);
 
-    $1->name = (char *)PyObject_GetAttrString($input, (char *)"name");
+    $1->name = talloc_strdup($1, PyString_AsString(PyObject_GetAttrString($input, (char *)"name")));
+
+    Py_INCREF($input);
+    $1->private_data = $input;
+    $1->init_context = py_module_init;
+    $1->search = py_module_search;
+    $1->add = py_module_add;
+    $1->modify = py_module_modify;
+    $1->del = py_module_del;
+    $1->rename = py_module_rename;
+    $1->request = py_module_request;
+    $1->extended = py_module_extended;
+    $1->start_transaction = py_module_start_transaction;
+    $1->end_transaction = py_module_end_transaction;
+    $1->del_transaction = py_module_del_transaction;
 }
 
 %feature("docstring") ldb_register_module "S.register_module(module) -> None\n"
@@ -928,4 +1282,5 @@ ldb_int_error ldb_register_module(const struct ldb_module_ops *);
 
 %pythoncode {
 __docformat__ = "restructuredText"
+open = Ldb
 }

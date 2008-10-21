@@ -1,7 +1,7 @@
 /* 
    ldb database library
 
-   Copyright (C) Simo Sorce  2006
+   Copyright (C) Simo Sorce  2006-2008
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2005-2007
 
    This program is free software; you can redistribute it and/or modify
@@ -38,7 +38,7 @@
 #include "ldb/include/ldb_errors.h"
 #include "ldb/include/ldb_private.h"
 #include "dsdb/samdb/samdb.h"
-#include "lib/util/dlinklist.h"
+#include "../lib/util/dlinklist.h"
 #include "librpc/ndr/libndr.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "libcli/security/security.h"
@@ -47,21 +47,12 @@
 
 struct oc_context {
 
-	enum oc_step {OC_DO_REQ, OC_SEARCH_SELF, OC_DO_MOD, 
-		      OC_SEARCH_ADD_PARENT, OC_DO_ADD, 
-		      OC_SEARCH_RENAME_PARENT, OC_DO_RENAME} step;
-
 	struct ldb_module *module;
-	struct ldb_request *orig_req;
+	struct ldb_request *req;
 
-	struct ldb_request *down_req;
-
-	struct ldb_request *search_req;
 	struct ldb_reply *search_res;
 
-	struct ldb_request *add_req;
-	struct ldb_request *mod_req;
-	struct ldb_request *rename_req;
+	int (*step_fn)(struct oc_context *);
 };
 
 struct class_list {
@@ -69,38 +60,24 @@ struct class_list {
 	const struct dsdb_class *objectclass;
 };
 
-static int objectclass_do_add(struct ldb_handle *h);
-
-static struct ldb_handle *oc_init_handle(struct ldb_request *req, struct ldb_module *module)
+static struct oc_context *oc_init_context(struct ldb_module *module,
+					  struct ldb_request *req)
 {
 	struct oc_context *ac;
-	struct ldb_handle *h;
 
-	h = talloc_zero(req, struct ldb_handle);
-	if (h == NULL) {
-		ldb_set_errstring(module->ldb, "Out of Memory");
-		return NULL;
-	}
-
-	h->module = module;
-
-	ac = talloc_zero(h, struct oc_context);
+	ac = talloc_zero(req, struct oc_context);
 	if (ac == NULL) {
 		ldb_set_errstring(module->ldb, "Out of Memory");
-		talloc_free(h);
 		return NULL;
 	}
 
-	h->private_data = (void *)ac;
-
-	h->state = LDB_ASYNC_INIT;
-	h->status = LDB_SUCCESS;
-
 	ac->module = module;
-	ac->orig_req = req;
+	ac->req = req;
 
-	return h;
+	return ac;
 }
+
+static int objectclass_do_add(struct oc_context *ac);
 
 /* Sort objectClasses into correct order, and validate that all
  * objectClasses specified actually exist in the schema
@@ -108,7 +85,6 @@ static struct ldb_handle *oc_init_handle(struct ldb_request *req, struct ldb_mod
 
 static int objectclass_sort(struct ldb_module *module,
 			    const struct dsdb_schema *schema,
-			    struct ldb_message *msg, /* so that when we create new elements, we put it on the right parent */
 			    TALLOC_CTX *mem_ctx,
 			    struct ldb_message_element *objectclass_element,
 			    struct class_list **sorted_out) 
@@ -117,6 +93,7 @@ static int objectclass_sort(struct ldb_module *module,
 	int layer;
 	struct class_list *sorted = NULL, *parent_class = NULL,
 		*subclass = NULL, *unsorted = NULL, *current, *poss_subclass, *poss_parent, *new_parent;
+
 	/* DESIGN:
 	 *
 	 * We work on 4 different 'bins' (implemented here as linked lists):
@@ -150,8 +127,7 @@ static int objectclass_sort(struct ldb_module *module,
 	for (i=0; i < objectclass_element->num_values; i++) {
 		current = talloc(mem_ctx, struct class_list);
 		if (!current) {
-			ldb_set_errstring(module->ldb, "objectclass: out of memory allocating objectclass list");
-			talloc_free(mem_ctx);
+			ldb_oom(module->ldb);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 		current->objectclass = dsdb_class_by_lDAPDisplayName(schema, (const char *)objectclass_element->values[i].data);
@@ -258,7 +234,7 @@ static DATA_BLOB *get_sd(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 	struct auth_session_info *session_info
 		= ldb_get_opaque(module->ldb, "sessionInfo");
 	struct security_descriptor *sd;
-	struct dom_sid *domain_sid = samdb_domain_sid(module->ldb);
+	const struct dom_sid *domain_sid = samdb_domain_sid(module->ldb);
 
 	if (!objectclass->defaultSecurityDescriptor || !domain_sid) {
 		return NULL;
@@ -292,26 +268,75 @@ static DATA_BLOB *get_sd(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 
 }
 
-static int get_search_callback(struct ldb_context *ldb, void *context, struct ldb_reply *ares)
+static int get_search_callback(struct ldb_request *req, struct ldb_reply *ares)
 {
 	struct oc_context *ac;
+	int ret;
 
-	ac = talloc_get_type(context, struct oc_context);
+	ac = talloc_get_type(req->context, struct oc_context);
 
-	/* we are interested only in the single reply (base search) we receive here */
-	if (ares->type == LDB_REPLY_ENTRY) {
+	if (!ares) {
+		return ldb_module_done(ac->req, NULL, NULL,
+					LDB_ERR_OPERATIONS_ERROR);
+	}
+	if (ares->error != LDB_SUCCESS &&
+	    ares->error != LDB_ERR_NO_SUCH_OBJECT) {
+		return ldb_module_done(ac->req, ares->controls,
+					ares->response, ares->error);
+	}
+
+	switch (ares->type) {
+	case LDB_REPLY_ENTRY:
 		if (ac->search_res != NULL) {
-			ldb_set_errstring(ldb, "Too many results");
+			ldb_set_errstring(ac->module->ldb, "Too many results");
 			talloc_free(ares);
-			return LDB_ERR_OPERATIONS_ERROR;
+			return ldb_module_done(ac->req, NULL, NULL,
+						LDB_ERR_OPERATIONS_ERROR);
 		}
 
-		ac->search_res = talloc_move(ac, &ares);
-	} else {
+		ac->search_res = talloc_steal(ac, ares);
+		break;
+
+	case LDB_REPLY_REFERRAL:
+		/* ignore */
 		talloc_free(ares);
+		break;
+
+	case LDB_REPLY_DONE:
+		talloc_free(ares);
+		ret = ac->step_fn(ac);
+		if (ret != LDB_SUCCESS) {
+			return ldb_module_done(ac->req, NULL, NULL, ret);
+		}
+		break;
 	}
 
 	return LDB_SUCCESS;
+}
+
+static int oc_op_callback(struct ldb_request *req, struct ldb_reply *ares)
+{
+	struct oc_context *ac;
+
+	ac = talloc_get_type(req->context, struct oc_context);
+
+	if (!ares) {
+		return ldb_module_done(ac->req, NULL, NULL,
+					LDB_ERR_OPERATIONS_ERROR);
+	}
+	if (ares->error != LDB_SUCCESS) {
+		return ldb_module_done(ac->req, ares->controls,
+					ares->response, ares->error);
+	}
+
+	if (ares->type != LDB_REPLY_DONE) {
+		talloc_free(ares);
+		return ldb_module_done(ac->req, NULL, NULL,
+					LDB_ERR_OPERATIONS_ERROR);
+	}
+
+	return ldb_module_done(ac->req, ares->controls,
+				ares->response, ares->error);
 }
 
 /* Fix up the DN to be in the standard form, taking particular care to match the parent DN
@@ -357,22 +382,27 @@ static int fix_attributes(struct ldb_context *ldb, const struct dsdb_schema *sch
 	int i;
 	for (i=0; i < msg->num_elements; i++) {
 		const struct dsdb_attribute *attribute = dsdb_attribute_by_lDAPDisplayName(schema, msg->elements[i].name);
+		/* Add in a very special case for 'clearTextPassword',
+		 * which is used for internal processing only, and is
+		 * not presented in the schema */
 		if (!attribute) {
-			ldb_asprintf_errstring(ldb, "attribute %s is not a valid attribute in schema", msg->elements[i].name);
-			return LDB_ERR_UNDEFINED_ATTRIBUTE_TYPE;
+			if (strcasecmp(msg->elements[i].name, "clearTextPassword") != 0) {
+				ldb_asprintf_errstring(ldb, "attribute %s is not a valid attribute in schema", msg->elements[i].name);
+				return LDB_ERR_UNDEFINED_ATTRIBUTE_TYPE;
+			}
+		} else {
+			msg->elements[i].name = attribute->lDAPDisplayName;
 		}
-		msg->elements[i].name = attribute->lDAPDisplayName;
 	}
 
 	return LDB_SUCCESS;
 }
 
+static int objectclass_do_add(struct oc_context *ac);
+
 static int objectclass_add(struct ldb_module *module, struct ldb_request *req)
 {
-
-	static const char * const attrs[] = { NULL };
-
-	struct ldb_handle *h;
+	struct ldb_request *search_req;
 	struct oc_context *ac;
 	struct ldb_dn *parent_dn;
 	int ret;
@@ -384,61 +414,56 @@ static int objectclass_add(struct ldb_module *module, struct ldb_request *req)
 		return ldb_next_request(module, req);
 	}
 
-	/* Need to object to this, but cn=rootdse doesn't hae an objectClass... */
+	/* Need to object to this, but cn=rootdse doesn't have an objectClass... */
 	if (ldb_msg_find_element(req->op.add.message, 
 				 "objectClass") == NULL) {
 		return ldb_next_request(module, req);
 	}
 
-	h = oc_init_handle(req, module);
-	if (!h) {
+	ac = oc_init_context(module, req);
+	if (ac == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	ac = talloc_get_type(h->private_data, struct oc_context);
-	
-	/* return or own handle to deal with this call */
-	req->handle = h;
 
 	/* If there isn't a parent, just go on to the add processing */
-	if (ldb_dn_get_comp_num(ac->orig_req->op.add.message->dn) == 1) {
-		return objectclass_do_add(h);
+	if (ldb_dn_get_comp_num(ac->req->op.add.message->dn) == 1) {
+		return objectclass_do_add(ac);
 	}
 
-	parent_dn = ldb_dn_get_parent(ac, ac->orig_req->op.add.message->dn);
+	/* get copy of parent DN */
+	parent_dn = ldb_dn_get_parent(ac, ac->req->op.add.message->dn);
 	if (parent_dn == NULL) {
 		ldb_oom(module->ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ret = ldb_build_search_req(&ac->search_req, module->ldb,
+	ret = ldb_build_search_req(&search_req, module->ldb,
 				   ac, parent_dn, LDB_SCOPE_BASE,
-				   "(objectClass=*)",
-				   attrs, NULL, 
-				   ac, get_search_callback);
+				   "(objectClass=*)", NULL,
+				   NULL,
+				   ac, get_search_callback,
+				   req);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
+	talloc_steal(search_req, parent_dn);
 
-	talloc_steal(ac->search_req, parent_dn);
+	ac->step_fn = objectclass_do_add;
 
-	ldb_set_timeout_from_prev_req(ac->module->ldb, ac->orig_req, ac->search_req);
-
-	ac->step = OC_SEARCH_ADD_PARENT;
-
-	return ldb_next_request(ac->module, ac->search_req);
+	return ldb_next_request(ac->module, search_req);
 }
 
-static int objectclass_do_add(struct ldb_handle *h) 
+static int objectclass_do_add(struct oc_context *ac)
 {
 	const struct dsdb_schema *schema;
-	struct oc_context *ac;
+	struct ldb_request *add_req;
+	char *value;
 	struct ldb_message_element *objectclass_element;
 	struct ldb_message *msg;
 	TALLOC_CTX *mem_ctx;
 	struct class_list *sorted, *current;
 	int ret;
-      
-	ac = talloc_get_type(h->private_data, struct oc_context);
+
 	schema = dsdb_get_schema(ac->module->ldb);
 
 	mem_ctx = talloc_new(ac);
@@ -446,41 +471,34 @@ static int objectclass_do_add(struct ldb_handle *h)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ac->add_req = talloc(ac, struct ldb_request);
-	if (ac->add_req == NULL) {
-		talloc_free(mem_ctx);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
+	msg = ldb_msg_copy_shallow(ac, ac->req->op.add.message);
 
-	*ac->add_req = *ac->orig_req;
-
-	ac->add_req->op.add.message = msg = ldb_msg_copy_shallow(ac->add_req, ac->orig_req->op.add.message);
-
-	ldb_set_timeout_from_prev_req(ac->module->ldb, ac->orig_req, ac->add_req);
-	
 	/* Check we have a valid parent */
 	if (ac->search_res == NULL) {
-		if (ldb_dn_compare(ldb_get_root_basedn(ac->module->ldb), ac->orig_req->op.add.message->dn) == 0) {
+		if (ldb_dn_compare(ldb_get_root_basedn(ac->module->ldb),
+								msg->dn) == 0) {
 			/* Allow the tree to be started */
 			
 			/* but don't keep any error string, it's meaningless */
 			ldb_set_errstring(ac->module->ldb, NULL);
 		} else {
 			ldb_asprintf_errstring(ac->module->ldb, "objectclass: Cannot add %s, parent does not exist!", 
-					       ldb_dn_get_linearized(ac->orig_req->op.add.message->dn));
+					       ldb_dn_get_linearized(msg->dn));
+			talloc_free(mem_ctx);
 			return LDB_ERR_UNWILLING_TO_PERFORM;
 		}
 	} else {
 		
 		/* Fix up the DN to be in the standard form, taking particular care to match the parent DN */
 		ret = fix_dn(msg, 
-			     ac->orig_req->op.add.message->dn,
+			     ac->req->op.add.message->dn,
 			     ac->search_res->message->dn,
 			     &msg->dn);
 
 		if (ret != LDB_SUCCESS) {
 			ldb_asprintf_errstring(ac->module->ldb, "Could not munge DN %s into normal form", 
-					       ldb_dn_get_linearized(ac->orig_req->op.add.message->dn));
+					       ldb_dn_get_linearized(ac->req->op.add.message->dn));
+			talloc_free(mem_ctx);
 			return ret;
 		}
 
@@ -505,7 +523,7 @@ static int objectclass_do_add(struct ldb_handle *h)
 			talloc_free(mem_ctx);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
-		ret = objectclass_sort(ac->module, schema, msg, mem_ctx, objectclass_element, &sorted);
+		ret = objectclass_sort(ac->module, schema, mem_ctx, objectclass_element, &sorted);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(mem_ctx);
 			return ret;
@@ -524,7 +542,13 @@ static int objectclass_do_add(struct ldb_handle *h)
 		
 		/* Move from the linked list back into an ldb msg */
 		for (current = sorted; current; current = current->next) {
-			ret = ldb_msg_add_string(msg, "objectClass", current->objectclass->lDAPDisplayName);
+			value = talloc_strdup(msg, current->objectclass->lDAPDisplayName);
+			if (value == NULL) {
+				ldb_oom(ac->module->ldb);
+				talloc_free(mem_ctx);
+				return LDB_ERR_OPERATIONS_ERROR;
+			}
+			ret = ldb_msg_add_string(msg, "objectClass", value);
 			if (ret != LDB_SUCCESS) {
 				ldb_set_errstring(ac->module->ldb, 
 						  "objectclass: could not re-add sorted "
@@ -537,8 +561,13 @@ static int objectclass_do_add(struct ldb_handle *h)
 				struct ldb_message_element *el;
 				int32_t systemFlags = 0;
 				if (!ldb_msg_find_element(msg, "objectCategory")) {
-					ldb_msg_add_string(msg, "objectCategory", 
-							   current->objectclass->defaultObjectCategory);
+					value = talloc_strdup(msg, current->objectclass->defaultObjectCategory);
+					if (value == NULL) {
+						ldb_oom(ac->module->ldb);
+						talloc_free(mem_ctx);
+						return LDB_ERR_OPERATIONS_ERROR;
+					}
+					ldb_msg_add_string(msg, "objectCategory", value);
 				}
 				if (!ldb_msg_find_element(msg, "showInAdvancedViewOnly") && (current->objectclass->defaultHidingValue == true)) {
 					ldb_msg_add_string(msg, "showInAdvancedViewOnly", 
@@ -597,20 +626,33 @@ static int objectclass_do_add(struct ldb_handle *h)
 		return ret;
 	}
 
-	h->state = LDB_ASYNC_INIT;
-	h->status = LDB_SUCCESS;
-
-	ac->step = OC_DO_ADD;
+	ret = ldb_build_add_req(&add_req, ac->module->ldb, ac,
+				msg,
+				ac->req->controls,
+				ac, oc_op_callback,
+				ac->req);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
 
 	/* perform the add */
-	return ldb_next_request(ac->module, ac->add_req);
+	return ldb_next_request(ac->module, add_req);
 }
+
+static int oc_modify_callback(struct ldb_request *req,
+				struct ldb_reply *ares);
+static int objectclass_do_mod(struct oc_context *ac);
 
 static int objectclass_modify(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_message_element *objectclass_element;
 	struct ldb_message *msg;
 	const struct dsdb_schema *schema = dsdb_get_schema(module->ldb);
+	struct class_list *sorted, *current;
+	struct ldb_request *down_req;
+	struct oc_context *ac;
+	TALLOC_CTX *mem_ctx;
+	char *value;
 	int ret;
 
 	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "objectclass_modify\n");
@@ -626,23 +668,19 @@ static int objectclass_modify(struct ldb_module *module, struct ldb_request *req
 	}
 	objectclass_element = ldb_msg_find_element(req->op.mod.message, "objectClass");
 
+	ac = oc_init_context(module, req);
+	if (ac == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
 	/* If no part of this touches the objectClass, then we don't
 	 * need to make any changes.  */
 
 	/* If the only operation is the deletion of the objectClass
 	 * then go on with just fixing the attribute case */
 	if (!objectclass_element) {
-		struct ldb_request *down_req = talloc(req, struct ldb_request);
-		if (down_req == NULL) {
-			ldb_set_errstring(module->ldb, "Out of memory!");
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-		
-		*down_req = *req; /* copy the request */
-		
-		down_req->op.mod.message = msg = ldb_msg_copy_shallow(down_req, req->op.mod.message);
-		
-		if (down_req->op.mod.message == NULL) {
+		msg = ldb_msg_copy_shallow(ac, req->op.mod.message);
+		if (msg == NULL) {
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 		
@@ -651,15 +689,17 @@ static int objectclass_modify(struct ldb_module *module, struct ldb_request *req
 			return ret;
 		}
 
-		/* go on with the call chain */
-		ret = ldb_next_request(module, down_req);
-		
-		/* do not free down_req as the call results may be linked to it,
-		 * it will be freed when the upper level request get freed */
-		if (ret == LDB_SUCCESS) {
-			req->handle = down_req->handle;
+		ret = ldb_build_mod_req(&down_req, module->ldb, ac,
+					msg,
+					req->controls,
+					ac, oc_op_callback,
+					req);
+		if (ret != LDB_SUCCESS) {
+			return ret;
 		}
-		return ret;
+
+		/* go on with the call chain */
+		return ldb_next_request(module, down_req);
 	}
 
 	switch (objectclass_element->flags & LDB_FLAG_MOD_MASK) {
@@ -668,41 +708,28 @@ static int objectclass_modify(struct ldb_module *module, struct ldb_request *req
 			return LDB_ERR_OBJECT_CLASS_MODS_PROHIBITED;
 		}
 		break;
+
 	case LDB_FLAG_MOD_REPLACE:
-	{
-		struct ldb_request *down_req;
-		struct class_list *sorted, *current;
-		TALLOC_CTX *mem_ctx;
-		mem_ctx = talloc_new(req);
+		mem_ctx = talloc_new(ac);
 		if (mem_ctx == NULL) {
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 
-		/* prepare the first operation */
-		down_req = talloc(req, struct ldb_request);
-		if (down_req == NULL) {
-			ldb_set_errstring(module->ldb, "Out of memory!");
+		msg = ldb_msg_copy_shallow(ac, req->op.mod.message);
+		if (msg == NULL) {
 			talloc_free(mem_ctx);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
-		
-		*down_req = *req; /* copy the request */
-		
-		down_req->op.mod.message = msg = ldb_msg_copy_shallow(down_req, req->op.mod.message);
-		
-		if (down_req->op.mod.message == NULL) {
-			talloc_free(mem_ctx);
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-		
+
 		ret = fix_attributes(module->ldb, schema, msg);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(mem_ctx);
 			return ret;
 		}
 
-		ret = objectclass_sort(module, schema, msg, mem_ctx, objectclass_element, &sorted);
+		ret = objectclass_sort(module, schema, mem_ctx, objectclass_element, &sorted);
 		if (ret != LDB_SUCCESS) {
+			talloc_free(mem_ctx);
 			return ret;
 		}
 
@@ -719,9 +746,21 @@ static int objectclass_modify(struct ldb_module *module, struct ldb_request *req
 
 		/* Move from the linked list back into an ldb msg */
 		for (current = sorted; current; current = current->next) {
-			ret = ldb_msg_add_string(msg, "objectClass", current->objectclass->lDAPDisplayName);
+			/* copy the value as this string is on the schema
+			 * context and we can't rely on it not changing
+			 * before the operation is over */
+			value = talloc_strdup(msg,
+					current->objectclass->lDAPDisplayName);
+			if (value == NULL) {
+				ldb_oom(module->ldb);
+				talloc_free(mem_ctx);
+				return LDB_ERR_OPERATIONS_ERROR;
+			}
+			ret = ldb_msg_add_string(msg, "objectClass", value);
 			if (ret != LDB_SUCCESS) {
-				ldb_set_errstring(module->ldb, "objectclass: could not re-add sorted objectclass to modify msg");
+				ldb_set_errstring(module->ldb,
+					"objectclass: could not re-add sorted "
+					"objectclass to modify msg");
 				talloc_free(mem_ctx);
 				return ret;
 			}
@@ -731,107 +770,109 @@ static int objectclass_modify(struct ldb_module *module, struct ldb_request *req
 
 		ret = ldb_msg_sanity_check(module->ldb, msg);
 		if (ret != LDB_SUCCESS) {
-			talloc_free(mem_ctx);
 			return ret;
 		}
-		
-		/* go on with the call chain */
-		ret = ldb_next_request(module, down_req);
-		
-		/* do not free down_req as the call results may be linked to it,
-		 * it will be freed when the upper level request get freed */
-		if (ret == LDB_SUCCESS) {
-			req->handle = down_req->handle;
+
+		ret = ldb_build_mod_req(&down_req, module->ldb, ac,
+					msg,
+					req->controls,
+					ac, oc_op_callback,
+					req);
+		if (ret != LDB_SUCCESS) {
+			return ret;
 		}
-		return ret;
-	}
+
+		/* go on with the call chain */
+		return ldb_next_request(module, down_req);
 	}
 
 	/* This isn't the default branch of the switch, but a 'in any
 	 * other case'.  When a delete isn't for all objectClasses for
 	 * example
 	 */
-	{
-		struct ldb_handle *h;
-		struct oc_context *ac;
-		
-		h = oc_init_handle(req, module);
-		if (!h) {
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-		ac = talloc_get_type(h->private_data, struct oc_context);
-		
-		/* return or own handle to deal with this call */
-		req->handle = h;
-		
-		/* prepare the first operation */
-		ac->down_req = talloc(ac, struct ldb_request);
-		if (ac->down_req == NULL) {
-			ldb_oom(ac->module->ldb);
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-		
-		*(ac->down_req) = *req; /* copy the request */
-		
-		ac->down_req->op.mod.message = msg = ldb_msg_copy_shallow(ac->down_req, req->op.mod.message);
-		
-		if (ac->down_req->op.mod.message == NULL) {
-			ldb_oom(ac->module->ldb);
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-		
-		ret = fix_attributes(ac->module->ldb, schema, msg);
-		if (ret != LDB_SUCCESS) {
-			ldb_oom(ac->module->ldb);
-			return ret;
-		}
 
-		ac->down_req->context = NULL;
-		ac->down_req->callback = NULL;
-		ldb_set_timeout_from_prev_req(module->ldb, req, ac->down_req);
-		
-		ac->step = OC_DO_REQ;
-
-		return ldb_next_request(module, ac->down_req);
+	msg = ldb_msg_copy_shallow(ac, req->op.mod.message);
+	if (msg == NULL) {
+		ldb_oom(module->ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
-}
 
-static int objectclass_search_self(struct ldb_handle *h) 
-{
-	int ret;
-	struct oc_context *ac;
-	static const char * const attrs[] = { "objectClass", NULL };
+	ret = fix_attributes(module->ldb, schema, msg);
+	if (ret != LDB_SUCCESS) {
+		ldb_oom(ac->module->ldb);
+		return ret;
+	}
 
-	ac = talloc_get_type(h->private_data, struct oc_context);
-
-	ret = ldb_build_search_req(&ac->search_req, ac->module->ldb,
-				   ac, ac->orig_req->op.mod.message->dn, LDB_SCOPE_BASE,
-				   "(objectClass=*)",
-				   attrs, NULL, 
-				   ac, get_search_callback);
-
+	ret = ldb_build_mod_req(&down_req, module->ldb, ac,
+				msg,
+				req->controls,
+				ac, oc_modify_callback,
+				req);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
 
-	ldb_set_timeout_from_prev_req(ac->module->ldb, ac->orig_req, ac->search_req);
-
-	ac->step = OC_SEARCH_SELF;
-
-	return ldb_next_request(ac->module, ac->search_req);
+	return ldb_next_request(module, down_req);
 }
 
-static int objectclass_do_mod(struct ldb_handle *h) {
+static int oc_modify_callback(struct ldb_request *req, struct ldb_reply *ares)
+{
+	static const char * const attrs[] = { "objectClass", NULL };
+	struct ldb_request *search_req;
+	struct oc_context *ac;
+	int ret;
+
+	ac = talloc_get_type(req->context, struct oc_context);
+
+	if (!ares) {
+		return ldb_module_done(ac->req, NULL, NULL,
+					LDB_ERR_OPERATIONS_ERROR);
+	}
+	if (ares->error != LDB_SUCCESS) {
+		return ldb_module_done(ac->req, ares->controls,
+					ares->response, ares->error);
+	}
+
+	if (ares->type != LDB_REPLY_DONE) {
+		talloc_free(ares);
+		return ldb_module_done(ac->req, NULL, NULL,
+					LDB_ERR_OPERATIONS_ERROR);
+	}
+
+	ret = ldb_build_search_req(&search_req, ac->module->ldb, ac,
+				   ac->req->op.mod.message->dn, LDB_SCOPE_BASE,
+				   "(objectClass=*)",
+				   attrs, NULL, 
+				   ac, get_search_callback,
+				   ac->req);
+	if (ret != LDB_SUCCESS) {
+		return ldb_module_done(ac->req, NULL, NULL, ret);
+	}
+
+	ac->step_fn = objectclass_do_mod;
+
+	ret = ldb_next_request(ac->module, search_req);
+	if (ret != LDB_SUCCESS) {
+		return ldb_module_done(ac->req, NULL, NULL, ret);
+	}
+	return LDB_SUCCESS;
+}
+
+static int objectclass_do_mod(struct oc_context *ac)
+{
 
 	const struct dsdb_schema *schema;
-	struct oc_context *ac;
+	struct ldb_request *mod_req;
+	char *value;
 	struct ldb_message_element *objectclass_element;
 	struct ldb_message *msg;
 	TALLOC_CTX *mem_ctx;
 	struct class_list *sorted, *current;
 	int ret;
-      
-	ac = talloc_get_type(h->private_data, struct oc_context);
+
+	if (ac->search_res == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
 	schema = dsdb_get_schema(ac->module->ldb);
 
 	mem_ctx = talloc_new(ac);
@@ -839,22 +880,11 @@ static int objectclass_do_mod(struct ldb_handle *h) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ac->mod_req = talloc(ac, struct ldb_request);
-	if (ac->mod_req == NULL) {
-		talloc_free(mem_ctx);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	ac->mod_req->operation = LDB_MODIFY;
-	ac->mod_req->controls = NULL;
-	ac->mod_req->context = ac;
-	ac->mod_req->callback = NULL;
-	ldb_set_timeout_from_prev_req(ac->module->ldb, ac->orig_req, ac->mod_req);
-	
 	/* use a new message structure */
-	ac->mod_req->op.mod.message = msg = ldb_msg_new(ac->mod_req);
+	msg = ldb_msg_new(ac);
 	if (msg == NULL) {
-		ldb_set_errstring(ac->module->ldb, "objectclass: could not create new modify msg");
+		ldb_set_errstring(ac->module->ldb,
+			"objectclass: could not create new modify msg");
 		talloc_free(mem_ctx);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -869,9 +899,9 @@ static int objectclass_do_mod(struct ldb_handle *h) {
 	}
 	
 	/* modify dn */
-	msg->dn = ac->orig_req->op.mod.message->dn;
+	msg->dn = ac->req->op.mod.message->dn;
 
-	ret = objectclass_sort(ac->module, schema, msg, mem_ctx, objectclass_element, &sorted);
+	ret = objectclass_sort(ac->module, schema, mem_ctx, objectclass_element, &sorted);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -889,7 +919,12 @@ static int objectclass_do_mod(struct ldb_handle *h) {
 	
 	/* Move from the linked list back into an ldb msg */
 	for (current = sorted; current; current = current->next) {
-		ret = ldb_msg_add_string(msg, "objectClass", current->objectclass->lDAPDisplayName);
+		value = talloc_strdup(msg, current->objectclass->lDAPDisplayName);
+		if (value == NULL) {
+			ldb_oom(ac->module->ldb);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		ret = ldb_msg_add_string(msg, "objectClass", value);
 		if (ret != LDB_SUCCESS) {
 			ldb_set_errstring(ac->module->ldb, "objectclass: could not re-add sorted objectclass to modify msg");
 			talloc_free(mem_ctx);
@@ -903,33 +938,38 @@ static int objectclass_do_mod(struct ldb_handle *h) {
 		return ret;
 	}
 
-
-	h->state = LDB_ASYNC_INIT;
-	h->status = LDB_SUCCESS;
-
-	ac->step = OC_DO_MOD;
+	ret = ldb_build_mod_req(&mod_req, ac->module->ldb, ac,
+				msg,
+				ac->req->controls,
+				ac, oc_op_callback,
+				ac->req);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(mem_ctx);
+		return ret;
+	}
 
 	talloc_free(mem_ctx);
-	/* perform the search */
-	return ldb_next_request(ac->module, ac->mod_req);
+	/* perform the modify */
+	return ldb_next_request(ac->module, mod_req);
 }
+
+static int objectclass_do_rename(struct oc_context *ac);
 
 static int objectclass_rename(struct ldb_module *module, struct ldb_request *req)
 {
-
 	static const char * const attrs[] = { NULL };
 
-	struct ldb_handle *h;
+	struct ldb_request *search_req;
 	struct oc_context *ac;
 	struct ldb_dn *parent_dn;
 	int ret;
-	
+
 	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "objectclass_rename\n");
 
 	if (ldb_dn_is_special(req->op.rename.newdn)) { /* do not manipulate our control entries */
 		return ldb_next_request(module, req);
 	}
-	
+
 	/* Firstly ensure we are not trying to rename it to be a child of itself */
 	if ((ldb_dn_compare_base(req->op.rename.olddn, req->op.rename.newdn) == 0) 
 	    && (ldb_dn_compare(req->op.rename.olddn, req->op.rename.newdn) != 0)) {
@@ -938,65 +978,50 @@ static int objectclass_rename(struct ldb_module *module, struct ldb_request *req
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
-	h = oc_init_handle(req, module);
-	if (!h) {
+	ac = oc_init_context(module, req);
+	if (ac == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	ac = talloc_get_type(h->private_data, struct oc_context);
-	
-	/* return or own handle to deal with this call */
-	req->handle = h;
 
-	parent_dn = ldb_dn_get_parent(ac, ac->orig_req->op.rename.newdn);
+	parent_dn = ldb_dn_get_parent(ac, req->op.rename.newdn);
 	if (parent_dn == NULL) {
 		ldb_oom(module->ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	ret = ldb_build_search_req(&ac->search_req, module->ldb,
+	ret = ldb_build_search_req(&search_req, module->ldb,
 				   ac, parent_dn, LDB_SCOPE_BASE,
 				   "(objectClass=*)",
 				   attrs, NULL, 
-				   ac, get_search_callback);
+				   ac, get_search_callback,
+				   req);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
-	talloc_steal(ac->search_req, parent_dn);
-	ldb_set_timeout_from_prev_req(ac->module->ldb, ac->orig_req, ac->search_req);
 
-	ac->step = OC_SEARCH_RENAME_PARENT;
+	ac->step_fn = objectclass_do_rename;
 
-	return ldb_next_request(ac->module, ac->search_req);
+	return ldb_next_request(ac->module, search_req);
 }
 
-static int objectclass_do_rename(struct ldb_handle *h) 
+static int objectclass_do_rename(struct oc_context *ac)
 {
-	struct oc_context *ac;
+	struct ldb_request *rename_req;
+	struct ldb_dn *fixed_dn;
 	int ret;
-      
-	ac = talloc_get_type(h->private_data, struct oc_context);
 
-	ac->rename_req = talloc(ac, struct ldb_request);
-	if (ac->rename_req == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	*ac->rename_req = *ac->orig_req;
-
-	ldb_set_timeout_from_prev_req(ac->module->ldb, ac->orig_req, ac->rename_req);
-	
 	/* Check we have a valid parent */
 	if (ac->search_res == NULL) {
 		ldb_asprintf_errstring(ac->module->ldb, "objectclass: Cannot rename %s, parent does not exist!", 
-				       ldb_dn_get_linearized(ac->orig_req->op.rename.newdn));
+				       ldb_dn_get_linearized(ac->req->op.rename.newdn));
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 	
-	/* Fix up the DN to be in the standard form, taking particular care to match the parent DN */
-	ret = fix_dn(ac->rename_req, 
-		     ac->orig_req->op.rename.newdn, 
-		     ac->search_res->message->dn, 
-		     &ac->rename_req->op.rename.newdn);
-
+	/* Fix up the DN to be in the standard form,
+	 * taking particular care to match the parent DN */
+	ret = fix_dn(ac,
+		     ac->req->op.rename.newdn,
+		     ac->search_res->message->dn,
+		     &fixed_dn);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -1005,197 +1030,17 @@ static int objectclass_do_rename(struct ldb_handle *h)
 	 * by reading the allowedChildClasses and
 	 * allowedChildClasssesEffective attributes */
 
-	h->state = LDB_ASYNC_INIT;
-	h->status = LDB_SUCCESS;
-
-	ac->step = OC_DO_RENAME;
+	ret = ldb_build_rename_req(&rename_req, ac->module->ldb, ac,
+				   ac->req->op.rename.olddn, fixed_dn,
+				   ac->req->controls,
+				   ac, oc_op_callback,
+				   ac->req);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
 
 	/* perform the rename */
-	return ldb_next_request(ac->module, ac->rename_req);
-}
-
-static int oc_wait(struct ldb_handle *handle) {
-	struct oc_context *ac;
-	int ret;
-    
-	if (!handle || !handle->private_data) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	if (handle->state == LDB_ASYNC_DONE) {
-		return handle->status;
-	}
-
-	handle->state = LDB_ASYNC_PENDING;
-	handle->status = LDB_SUCCESS;
-
-	ac = talloc_get_type(handle->private_data, struct oc_context);
-
-	switch (ac->step) {
-	case OC_DO_REQ:
-		ret = ldb_wait(ac->down_req->handle, LDB_WAIT_NONE);
-
-		if (ret != LDB_SUCCESS) {
-			handle->status = ret;
-			goto done;
-		}
-		if (ac->down_req->handle->status != LDB_SUCCESS) {
-			handle->status = ac->down_req->handle->status;
-			goto done;
-		}
-
-		if (ac->down_req->handle->state != LDB_ASYNC_DONE) {
-			return LDB_SUCCESS;
-		}
-
-		/* mods done, go on */
-		return objectclass_search_self(handle);
-
-	case OC_SEARCH_SELF:
-		ret = ldb_wait(ac->search_req->handle, LDB_WAIT_NONE);
-
-		if (ret != LDB_SUCCESS) {
-			handle->status = ret;
-			goto done;
-		}
-		if (ac->search_req->handle->status != LDB_SUCCESS) {
-			handle->status = ac->search_req->handle->status;
-			goto done;
-		}
-
-		if (ac->search_req->handle->state != LDB_ASYNC_DONE) {
-			return LDB_SUCCESS;
-		}
-
-		/* self search done, go on */
-		return objectclass_do_mod(handle);
-
-	case OC_DO_MOD:
-		ret = ldb_wait(ac->mod_req->handle, LDB_WAIT_NONE);
-
-		if (ret != LDB_SUCCESS) {
-			handle->status = ret;
-			goto done;
-		}
-		if (ac->mod_req->handle->status != LDB_SUCCESS) {
-			handle->status = ac->mod_req->handle->status;
-			goto done;
-		}
-
-		if (ac->mod_req->handle->state != LDB_ASYNC_DONE) {
-			return LDB_SUCCESS;
-		}
-
-		break;
-		
-	case OC_SEARCH_ADD_PARENT:
-		ret = ldb_wait(ac->search_req->handle, LDB_WAIT_NONE);
-
-		if (ret != LDB_SUCCESS && ret != LDB_ERR_NO_SUCH_OBJECT) {
-			handle->status = ret;
-			goto done;
-		}
-		if (ac->search_req->handle->status != LDB_SUCCESS
-		    && ac->search_req->handle->status != LDB_ERR_NO_SUCH_OBJECT) {
-			handle->status = ac->search_req->handle->status;
-			goto done;
-		}
-
-		if (ac->search_req->handle->state != LDB_ASYNC_DONE) {
-			return LDB_SUCCESS;
-		}
-
-		/* parent search done, go on */
-		return objectclass_do_add(handle);
-
-	case OC_DO_ADD:
-		ret = ldb_wait(ac->add_req->handle, LDB_WAIT_NONE);
-
-		if (ret != LDB_SUCCESS) {
-			handle->status = ret;
-			goto done;
-		}
-		if (ac->add_req->handle->status != LDB_SUCCESS) {
-			handle->status = ac->add_req->handle->status;
-			goto done;
-		}
-
-		if (ac->add_req->handle->state != LDB_ASYNC_DONE) {
-			return LDB_SUCCESS;
-		}
-
-		break;
-		
-	case OC_SEARCH_RENAME_PARENT:
-		ret = ldb_wait(ac->search_req->handle, LDB_WAIT_NONE);
-
-		if (ret != LDB_SUCCESS && ret != LDB_ERR_NO_SUCH_OBJECT) {
-			handle->status = ret;
-			goto done;
-		}
-		if (ac->search_req->handle->status != LDB_SUCCESS && ac->search_req->handle->status != LDB_ERR_NO_SUCH_OBJECT) {
-			handle->status = ac->search_req->handle->status;
-			goto done;
-		}
-
-		if (ac->search_req->handle->state != LDB_ASYNC_DONE) {
-			return LDB_SUCCESS;
-		}
-
-		/* parent search done, go on */
-		return objectclass_do_rename(handle);
-
-	case OC_DO_RENAME:
-		ret = ldb_wait(ac->rename_req->handle, LDB_WAIT_NONE);
-
-		if (ret != LDB_SUCCESS) {
-			handle->status = ret;
-			goto done;
-		}
-		if (ac->rename_req->handle->status != LDB_SUCCESS) {
-			handle->status = ac->rename_req->handle->status;
-			goto done;
-		}
-
-		if (ac->rename_req->handle->state != LDB_ASYNC_DONE) {
-			return LDB_SUCCESS;
-		}
-
-		break;
-		
-	default:
-		ret = LDB_ERR_OPERATIONS_ERROR;
-		goto done;
-	}
-
-	ret = LDB_SUCCESS;
-
-done:
-	handle->state = LDB_ASYNC_DONE;
-	return ret;
-}
-
-static int oc_wait_all(struct ldb_handle *handle) {
-
-	int ret;
-
-	while (handle->state != LDB_ASYNC_DONE) {
-		ret = oc_wait(handle);
-		if (ret != LDB_SUCCESS) {
-			return ret;
-		}
-	}
-
-	return handle->status;
-}
-
-static int objectclass_wait(struct ldb_handle *handle, enum ldb_wait_type type)
-{
-	if (type == LDB_WAIT_ALL) {
-		return oc_wait_all(handle);
-	} else {
-		return oc_wait(handle);
-	}
+	return ldb_next_request(ac->module, rename_req);
 }
 
 _PUBLIC_ const struct ldb_module_ops ldb_objectclass_module_ops = {
@@ -1203,5 +1048,4 @@ _PUBLIC_ const struct ldb_module_ops ldb_objectclass_module_ops = {
 	.add           = objectclass_add,
 	.modify        = objectclass_modify,
 	.rename        = objectclass_rename,
-	.wait          = objectclass_wait
 };

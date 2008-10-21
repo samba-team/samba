@@ -281,6 +281,16 @@ LDB_ERR_OTHER = _ldb.LDB_ERR_OTHER
 class Ldb(object):
     """Connection to a LDB database."""
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
+    firstmodule = _swig_property(_ldb.Ldb_firstmodule_get, _ldb.Ldb_firstmodule_set)
+    def itermodules(self):
+        m = self.firstmodule
+        while m is not None:
+            yield m
+            m = m.next
+
+    def modules(self):
+        return list(self.itermodules())
+
     def __init__(self, *args, **kwargs): 
         _ldb.Ldb_swiginit(self,_ldb.new_Ldb(*args, **kwargs))
     def connect(*args, **kwargs):
@@ -464,6 +474,26 @@ def string_to_time(*args, **kwargs):
     Parse a LDAP time string into a UNIX timestamp.
     """
   return _ldb.string_to_time(*args, **kwargs)
+class ldb_module(object):
+    thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
+    prev = _swig_property(_ldb.ldb_module_prev_get, _ldb.ldb_module_prev_set)
+    next = _swig_property(_ldb.ldb_module_next_get, _ldb.ldb_module_next_set)
+    def __init__(self, *args, **kwargs): 
+        _ldb.ldb_module_swiginit(self,_ldb.new_ldb_module(*args, **kwargs))
+    __swig_destroy__ = _ldb.delete_ldb_module
+ldb_module.__str__ = new_instancemethod(_ldb.ldb_module___str__,None,ldb_module)
+ldb_module.__repr__ = new_instancemethod(_ldb.ldb_module___repr__,None,ldb_module)
+ldb_module.search = new_instancemethod(_ldb.ldb_module_search,None,ldb_module)
+ldb_module.add = new_instancemethod(_ldb.ldb_module_add,None,ldb_module)
+ldb_module.modify = new_instancemethod(_ldb.ldb_module_modify,None,ldb_module)
+ldb_module.delete = new_instancemethod(_ldb.ldb_module_delete,None,ldb_module)
+ldb_module.rename = new_instancemethod(_ldb.ldb_module_rename,None,ldb_module)
+ldb_module.start_transaction = new_instancemethod(_ldb.ldb_module_start_transaction,None,ldb_module)
+ldb_module.end_transaction = new_instancemethod(_ldb.ldb_module_end_transaction,None,ldb_module)
+ldb_module.del_transaction = new_instancemethod(_ldb.ldb_module_del_transaction,None,ldb_module)
+ldb_module_swigregister = _ldb.ldb_module_swigregister
+ldb_module_swigregister(ldb_module)
+
 
 def register_module(*args, **kwargs):
   """
@@ -472,6 +502,7 @@ def register_module(*args, **kwargs):
     """
   return _ldb.register_module(*args, **kwargs)
 __docformat__ = "restructuredText"
+open = Ldb
 
 
 

@@ -24,12 +24,13 @@
 #include "cluster/cluster.h"
 #include "system/filesys.h"
 #include "cluster/cluster_private.h"
-#include "lib/tdb/include/tdb.h"
+#include "../tdb/include/tdb.h"
 #include "include/ctdb.h"
 #include "tdb_wrap.h"
-#include "lib/util/dlinklist.h"
+#include "../lib/util/dlinklist.h"
 #include "param/param.h"
-#include "librpc/gen_ndr/misc.h"
+#include "librpc/gen_ndr/security.h"
+#include "cluster/ctdb/ctdb_cluster.h"
 
 /* a linked list of messaging handlers, allowing incoming messages
    to be directed to the right messaging context */

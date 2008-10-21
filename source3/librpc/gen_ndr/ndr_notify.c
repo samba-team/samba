@@ -3,6 +3,7 @@
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_notify.h"
 
+#include "librpc/gen_ndr/ndr_security.h"
 _PUBLIC_ enum ndr_err_code ndr_push_notify_entry(struct ndr_push *ndr, int ndr_flags, const struct notify_entry *r)
 {
 	if (ndr_flags & NDR_SCALARS) {

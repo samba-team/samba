@@ -11,27 +11,32 @@ AC_DEFINE(CONFIG_H_IS_FROM_SAMBA,1,[Marker for samba's config.h])
 
 # Configuration rules.
 m4_include(build/m4/env.m4)
-m4_include(lib/replace/samba.m4)
+m4_include(../lib/replace/samba.m4)
 m4_include(lib/smbreadline/readline.m4)
 m4_include(heimdal_build/config.m4)
-m4_include(lib/util/fault.m4)
-m4_include(lib/util/signal.m4)
-m4_include(lib/util/util.m4)
-m4_include(lib/util/fsusage.m4)
-m4_include(lib/util/xattr.m4)
-m4_include(lib/util/capability.m4)
-m4_include(lib/util/time.m4)
-m4_include(lib/popt/samba.m4)
+m4_include(../lib/util/fault.m4)
+m4_include(../lib/util/signal.m4)
+m4_include(../lib/util/util.m4)
+m4_include(../lib/util/fsusage.m4)
+m4_include(../lib/util/xattr.m4)
+m4_include(../lib/util/capability.m4)
+m4_include(../lib/util/time.m4)
+m4_include(../lib/popt/samba.m4)
 m4_include(lib/charset/config.m4)
 m4_include(lib/socket/config.m4)
-m4_include(lib/zlib.m4)
+m4_include(../lib/zlib/zlib.m4)
+AC_ZLIB([
+SMB_EXT_LIB(ZLIB, [${ZLIB_LIBS}])
+],[
+SMB_INCLUDE_MK(lib/zlib.mk)
+])
 m4_include(nsswitch/nsstest.m4)
-m4_include(pidl/config.m4)
+m4_include(../pidl/config.m4)
 
 AC_CONFIG_FILES(lib/registry/registry.pc)
 AC_CONFIG_FILES(lib/events/events.pc)
 AC_CONFIG_FILES(librpc/dcerpc.pc)
-AC_CONFIG_FILES(librpc/ndr.pc)
+AC_CONFIG_FILES(../librpc/ndr.pc)
 AC_CONFIG_FILES(lib/torture/torture.pc)
 AC_CONFIG_FILES(auth/gensec/gensec.pc)
 AC_CONFIG_FILES(param/samba-hostconfig.pc)
@@ -41,20 +46,20 @@ AC_CONFIG_FILES(librpc/dcerpc_atsvc.pc)
 SMB_EXT_LIB_FROM_PKGCONFIG(LIBTALLOC, talloc >= 1.2.0,
 	[],
 	[
-		m4_include(lib/talloc/libtalloc.m4)
-		SMB_INCLUDE_MK(lib/talloc/config.mk)
+		m4_include(../lib/talloc/libtalloc.m4)
+		SMB_INCLUDE_MK(../lib/talloc/config.mk)
 	]
 )
 
-SMB_EXT_LIB_FROM_PKGCONFIG(LIBTDB, tdb >= 1.1.0,
+SMB_EXT_LIB_FROM_PKGCONFIG(LIBTDB, tdb >= 1.1.3,
 	[],
 	[
-		m4_include(lib/tdb/libtdb.m4)
-		SMB_INCLUDE_MK(lib/tdb/config.mk)
+		m4_include(../lib/tdb/libtdb.m4)
+		SMB_INCLUDE_MK(../lib/tdb/config.mk)
 	]
 )
 
-SMB_INCLUDE_MK(lib/tdb/python.mk) 
+SMB_INCLUDE_MK(../lib/tdb/python.mk) 
 
 SMB_EXT_LIB_FROM_PKGCONFIG(LIBLDB, ldb >= 0.9.1,
 	[
@@ -94,17 +99,15 @@ m4_include(lib/tls/config.m4)
 m4_include(lib/events/libevents.m4)
 
 dnl m4_include(auth/kerberos/config.m4)
-m4_include(scripting/python/config.m4)
 m4_include(auth/gensec/config.m4)
 m4_include(smbd/process_model.m4)
 m4_include(ntvfs/posix/config.m4)
 m4_include(ntvfs/unixuid/config.m4)
-m4_include(lib/socket_wrapper/config.m4)
-m4_include(lib/nss_wrapper/config.m4)
+m4_include(../lib/socket_wrapper/config.m4)
+m4_include(../lib/nss_wrapper/config.m4)
 m4_include(auth/config.m4)
 m4_include(kdc/config.m4)
 m4_include(ntvfs/sysdep/config.m4)
-m4_include(lib/appweb/config.m4)
 m4_include(nsswitch/config.m4)
 
 #################################################
@@ -159,7 +162,7 @@ then
 	builddir_headers="-I\$(builddir)/include -I\$(builddir) -I\$(builddir)/lib ";
 fi
 
-CPPFLAGS="$builddir_headers-I\$(srcdir)/include -I\$(srcdir) -I\$(srcdir)/lib -I\$(srcdir)/lib/replace -I\$(srcdir)/lib/talloc -D_SAMBA_BUILD_=4 -DHAVE_CONFIG_H $CPPFLAGS"
+CPPFLAGS="$builddir_headers-I\$(srcdir)/include -I\$(srcdir) -I\$(srcdir)/lib -I\$(srcdir)/../lib/replace -I\$(srcdir)/../lib/talloc -I\$(srcdir)/.. -D_SAMBA_BUILD_=4 -DHAVE_CONFIG_H $CPPFLAGS"
 
 SMB_WRITE_PERLVARS(build/smb_build/config.pm)
 

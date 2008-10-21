@@ -183,7 +183,7 @@ static WERROR smbconf_txt_load_file(struct smbconf_ctx *ctx)
 	WERROR werr;
 	uint64_t new_csn;
 
-	if (!file_exist(ctx->path, NULL)) {
+	if (!file_exist(ctx->path)) {
 		return WERR_BADFILE;
 	}
 

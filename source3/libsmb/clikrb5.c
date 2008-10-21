@@ -607,7 +607,7 @@ static bool ads_cleanup_expired_creds(krb5_context context,
 
 	DEBUG(3, ("ads_cleanup_expired_creds: Ticket in ccache[%s:%s] expiration %s\n",
 		  cc_type, krb5_cc_get_name(context, ccache),
-		  http_timestring(credsp->times.endtime)));
+		  http_timestring(talloc_tos(), credsp->times.endtime)));
 
 	/* we will probably need new tickets if the current ones
 	   will expire within 10 seconds.
@@ -704,7 +704,7 @@ static krb5_error_code ads_krb5_mk_req(krb5_context context,
 
 	DEBUG(10,("ads_krb5_mk_req: Ticket (%s) in ccache (%s:%s) is valid until: (%s - %u)\n",
 		  principal, krb5_cc_get_type(context, ccache), krb5_cc_get_name(context, ccache),
-		  http_timestring((unsigned)credsp->times.endtime), 
+		  http_timestring(talloc_tos(), (unsigned)credsp->times.endtime), 
 		  (unsigned)credsp->times.endtime));
 
 	if (expire_time) {

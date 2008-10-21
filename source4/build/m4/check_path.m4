@@ -23,8 +23,13 @@ winbindd_socket_dir="${localstatedir}/run/winbindd"
 winbindd_privileged_socket_dir="${localstatedir}/lib/winbindd_privileged"
 ntp_signd_socket_dir="${localstatedir}/run/ntp_signd"
 
-AC_ARG_WITH(fhs, 
-[AS_HELP_STRING([--with-fhs],[Use FHS-compliant paths (default=no)])],
+AC_ARG_ENABLE(fhs, 
+[AS_HELP_STRING([--enable-fhs],[Use FHS-compliant paths (default=no)])],
+[fhs=$enableval],
+[fhs=no]
+)
+
+if test x$fhs = xyes; then
     lockdir="${localstatedir}/lib/samba"
     piddir="${localstatedir}/run/samba"
     logfilebase="${localstatedir}/log/samba"
@@ -36,7 +41,12 @@ AC_ARG_WITH(fhs,
     ntp_signd_socket_dir="${localstatedir}/run/samba/ntp_signd"
     winbindd_socket_dir="${localstatedir}/run/samba/winbindd"
     winbindd_privileged_socket_dir="${localstatedir}/lib/samba/winbindd_privileged"
-)
+else
+	# Check to prevent installing directly under /usr without the FHS
+	AS_IF([test $prefix == /usr || test $prefix == /usr/local],[
+		AC_MSG_ERROR([Don't install directly under "/usr" or "/usr/local" without using the FHS option (--enable-fhs). This could lead to file loss!])
+	])
+fi
 
 #################################################
 # set private directory location

@@ -139,6 +139,12 @@ typedef krb5_error_code (*hdb_foreach_func_t)(krb5_context, HDB*,
 					      hdb_entry_ex*, void*);
 extern krb5_kt_ops hdb_kt_ops;
 
+struct hdb_method {
+    int	interface_version;
+    const char *prefix;
+    krb5_error_code (*create)(krb5_context, HDB **, const char *filename);
+};
+
 #include <hdb-protos.h>
 
 #endif /* __HDB_H__ */

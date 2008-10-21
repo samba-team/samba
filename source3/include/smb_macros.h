@@ -75,22 +75,6 @@
 				return ERROR_NT(NT_STATUS_INVALID_HANDLE); \
 			} while(0)
 
-/* you must add the following extern declaration to files using this macro
- * (do not add it to the macro as that causes nested extern declaration warnings)
- * extern struct current_user current_user;
- */
-#define CHECK_FSP(fsp,conn) do {\
-			if (!(fsp) || !(conn)) \
-				return ERROR_NT(NT_STATUS_INVALID_HANDLE); \
-			else if (((conn) != (fsp)->conn) || current_user.vuid != (fsp)->vuid) \
-				return ERROR_NT(NT_STATUS_INVALID_HANDLE); \
-			else if ((fsp)->is_directory) \
-				return ERROR_NT(NT_STATUS_INVALID_DEVICE_REQUEST); \
-			else if ((fsp)->fh->fd == -1) \
-				return ERROR_NT(NT_STATUS_ACCESS_DENIED); \
-			(fsp)->num_smb_operations++;\
-			} while(0)
-
 #define CHECK_READ(fsp,inbuf) (((fsp)->fh->fd != -1) && ((fsp)->can_read || \
 			((SVAL((inbuf),smb_flg2) & FLAGS2_READ_PERMIT_EXECUTE) && \
 			 (fsp->access_mask & FILE_EXECUTE))))

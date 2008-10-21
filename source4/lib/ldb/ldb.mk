@@ -1,7 +1,7 @@
-LDB_LIB = $(STATICLIB)
+LDB_LIB = -Llib -lldb
 
-LIB_FLAGS=$(LDFLAGS) -Llib $(LDB_LIB) $(LIBS) $(POPT_LIBS) $(TALLOC_LIBS) \
-		  $(TDB_LIBS) $(LDAP_LIBS) $(LIBDL)
+LIB_FLAGS=$(LDFLAGS) $(LIBS) $(LDB_LIB) $(POPT_LIBS) $(TALLOC_LIBS) \
+		  $(TDB_LIBS) $(EVENTS_LIBS) $(LDAP_LIBS) $(LIBDL)
 
 LDB_TDB_DIR=ldb_tdb
 LDB_TDB_OBJ=$(LDB_TDB_DIR)/ldb_tdb.o \
@@ -34,34 +34,31 @@ lib/libldb.a: $(OBJS)
 sample.$(SHLIBEXT): tests/sample_module.o
 	$(MDLD) $(MDLD_FLAGS) -o $@ tests/sample_module.o
 
-bin/ldbadd: tools/ldbadd.o tools/cmdline.o $(LIBS)
+bin/ldbadd: tools/ldbadd.o tools/cmdline.o
 	$(CC) -o bin/ldbadd tools/ldbadd.o tools/cmdline.o $(LIB_FLAGS) $(LD_EXPORT_DYNAMIC)
 
-bin/ldbsearch: tools/ldbsearch.o tools/cmdline.o $(LIBS)
+bin/ldbsearch: tools/ldbsearch.o tools/cmdline.o
 	$(CC) -o bin/ldbsearch tools/ldbsearch.o tools/cmdline.o $(LIB_FLAGS) $(LD_EXPORT_DYNAMIC)
 
-bin/ldbdel: tools/ldbdel.o tools/cmdline.o $(LIBS)
+bin/ldbdel: tools/ldbdel.o tools/cmdline.o
 	$(CC) -o bin/ldbdel tools/ldbdel.o tools/cmdline.o $(LIB_FLAGS) $(LD_EXPORT_DYNAMIC)
 
-bin/ldbmodify: tools/ldbmodify.o tools/cmdline.o $(LIBS)
+bin/ldbmodify: tools/ldbmodify.o tools/cmdline.o
 	$(CC) -o bin/ldbmodify tools/ldbmodify.o tools/cmdline.o $(LIB_FLAGS) $(LD_EXPORT_DYNAMIC)
 
-bin/ldbedit: tools/ldbedit.o tools/cmdline.o $(LIBS)
+bin/ldbedit: tools/ldbedit.o tools/cmdline.o
 	$(CC) -o bin/ldbedit tools/ldbedit.o tools/cmdline.o $(LIB_FLAGS) $(LD_EXPORT_DYNAMIC)
 
-bin/ldbrename: tools/ldbrename.o tools/cmdline.o $(LIBS)
+bin/ldbrename: tools/ldbrename.o tools/cmdline.o
 	$(CC) -o bin/ldbrename tools/ldbrename.o tools/cmdline.o $(LIB_FLAGS) $(LD_EXPORT_DYNAMIC)
 
-bin/ldbtest: tools/ldbtest.o tools/cmdline.o $(LIBS)
+bin/ldbtest: tools/ldbtest.o tools/cmdline.o
 	$(CC) -o bin/ldbtest tools/ldbtest.o tools/cmdline.o $(LIB_FLAGS) $(LD_EXPORT_DYNAMIC)
 
-bin/oLschema2ldif: tools/oLschema2ldif.o tools/cmdline.o tools/convert.o $(LIBS)
-	$(CC) -o bin/oLschema2ldif tools/oLschema2ldif.o tools/cmdline.o tools/convert.o $(LIB_FLAGS)
-
-examples/ldbreader: examples/ldbreader.o $(LIBS)
+examples/ldbreader: examples/ldbreader.o
 	$(CC) -o examples/ldbreader examples/ldbreader.o $(LIB_FLAGS)
 
-examples/ldifreader: examples/ldifreader.o $(LIBS)
+examples/ldifreader: examples/ldifreader.o
 	$(CC) -o examples/ldifreader examples/ldifreader.o $(LIB_FLAGS)
 
 # Python bindings
@@ -70,7 +67,7 @@ build-python:: _ldb.$(SHLIBEXT)
 ldb_wrap.o: $(ldbdir)/ldb_wrap.c
 	$(CC) $(PICFLAG) -c $(ldbdir)/ldb_wrap.c $(CFLAGS) `$(PYTHON_CONFIG) --cflags`
 	
-_ldb.$(SHLIBEXT): $(LIBS) ldb_wrap.o
+_ldb.$(SHLIBEXT): ldb_wrap.o
 	$(SHLD) $(SHLD_FLAGS) -o _ldb.$(SHLIBEXT) ldb_wrap.o $(LIB_FLAGS) `$(PYTHON_CONFIG) --ldflags`
 
 install-python:: build-python

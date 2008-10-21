@@ -13,17 +13,26 @@ my %defines;
 # First, make a list of defines in configure
 $in = shift;
 
-open(IN, $in);
-while(<IN>) {
-	my $line = $_;
-	while($line =~ /^\b([a-zA-Z0-9_][a-zA-Z0-9_]*)\b[ \t]*=.*/sgm) {
-		$defines{$1} = 1;
+sub process_file($)
+{
+	my ($fn) = @_;
+	open(IN, $fn);
+	while(<IN>) {
+		my $line = $_;
+		while($line =~ /^\b([a-zA-Z0-9_][a-zA-Z0-9_]*)\b[ \t]*=.*/sgm) {
+			$defines{$1} = 1;
+		}
+		while($line =~ /\$\(([a-zA-Z0-9_][a-zA-Z0-9_]*)\)/sgm) {
+			$references{$1} = 1;
+		}
+		while ($line =~ /^include (.*)/sgm) {
+			process_file($1);
+		}
 	}
-	while($line =~ /\$\(([a-zA-Z0-9_][a-zA-Z0-9_]*)\)/sgm) {
-		$references{$1} = 1;
-	}
+	close IN;
 }
-close IN;
+
+process_file($in);
 
 print "##### DEFINED BUT UNUSED: #####\n";
 foreach(%defines) {

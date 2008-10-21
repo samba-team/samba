@@ -1,7 +1,7 @@
 /* 
    ldb database library
 
-   Copyright (C) Simo Sorce  2005-2006
+   Copyright (C) Simo Sorce  2005-2008
 
      ** NOTE! The following LGPL license applies to the ldb
      ** library. This does NOT imply that all of Samba is released
@@ -51,9 +51,8 @@ struct results_store {
 	char *cookie;
 	time_t timestamp;
 
-	struct results_store *prev;
 	struct results_store *next;
-	
+
 	struct message_store *first;
 	struct message_store *last;
 	int num_entries;
@@ -62,8 +61,6 @@ struct results_store {
 	struct message_store *last_ref;
 
 	struct ldb_control **controls;
-
-	struct ldb_request *req;
 };
 
 struct private_data {
@@ -73,20 +70,25 @@ struct private_data {
 	
 };
 
-int store_destructor(struct results_store *store)
+static int store_destructor(struct results_store *del)
 {
-	if (store->prev) {
-		store->prev->next = store->next;
-	}
-	if (store->next) {
-		store->next->prev = store->prev;
+	struct private_data *priv = del->priv;
+	struct results_store *loop;
+
+	if (priv->store == del) {
+		priv->store = del->next;
+		return 0;
 	}
 
-	if (store == store->priv->store) {
-		store->priv->store = NULL;
+	for (loop = priv->store; loop; loop = loop->next) {
+		if (loop->next == del) {
+			loop->next = del->next;
+			return 0;
+		}
 	}
 
-	return 0;
+	/* is not in list ? */
+	return -1;
 }
 
 static struct results_store *new_store(struct private_data *priv)
@@ -116,10 +118,7 @@ static struct results_store *new_store(struct private_data *priv)
 	newr->first_ref = NULL;
 	newr->controls = NULL;
 
-	/* put this entry as first */
-	newr->prev = NULL;
 	newr->next = priv->store;
-	if (priv->store != NULL) priv->store->prev = newr;
 	priv->store = newr;
 
 	talloc_set_destructor(newr, store_destructor);
@@ -129,229 +128,27 @@ static struct results_store *new_store(struct private_data *priv)
 
 struct paged_context {
 	struct ldb_module *module;
-	void *up_context;
-	int (*up_callback)(struct ldb_context *, void *, struct ldb_reply *);
-
-	int size;
+	struct ldb_request *req;
 
 	struct results_store *store;
+	int size;
+	struct ldb_control **controls;
 };
 
-static struct ldb_handle *init_handle(void *mem_ctx, struct ldb_module *module,
-					    void *context,
-					    int (*callback)(struct ldb_context *, void *, struct ldb_reply *))
+static int paged_results(struct paged_context *ac)
 {
-	struct paged_context *ac;
-	struct ldb_handle *h;
-
-	h = talloc_zero(mem_ctx, struct ldb_handle);
-	if (h == NULL) {
-		ldb_set_errstring(module->ldb, "Out of Memory");
-		return NULL;
-	}
-
-	h->module = module;
-
-	ac = talloc_zero(h, struct paged_context);
-	if (ac == NULL) {
-		ldb_set_errstring(module->ldb, "Out of Memory");
-		talloc_free(h);
-		return NULL;
-	}
-
-	h->private_data = (void *)ac;
-
-	h->state = LDB_ASYNC_INIT;
-	h->status = LDB_SUCCESS;
-
-	ac->module = module;
-	ac->up_context = context;
-	ac->up_callback = callback;
-
-	return h;
-}
-
-static int paged_search_callback(struct ldb_context *ldb, void *context, struct ldb_reply *ares)
-{
-	struct paged_context *ac = NULL;
-
-	if (!context || !ares) {
-		ldb_set_errstring(ldb, "NULL Context or Result in callback");
-		goto error;
-	}
-
-	ac = talloc_get_type(context, struct paged_context);
-
-	if (ares->type == LDB_REPLY_ENTRY) {
-		if (ac->store->first == NULL) {
-			ac->store->first = ac->store->last = talloc(ac->store, struct message_store);
-		} else {
-			ac->store->last->next = talloc(ac->store, struct message_store);
-			ac->store->last = ac->store->last->next;
-		}
-		if (ac->store->last == NULL) {
-			goto error;
-		}
-
-		ac->store->num_entries++;
-
-		ac->store->last->r = talloc_steal(ac->store->last, ares);
-		ac->store->last->next = NULL;
-	}
-
-	if (ares->type == LDB_REPLY_REFERRAL) {
-		if (ac->store->first_ref == NULL) {
-			ac->store->first_ref = ac->store->last_ref = talloc(ac->store, struct message_store);
-		} else {
-			ac->store->last_ref->next = talloc(ac->store, struct message_store);
-			ac->store->last_ref = ac->store->last_ref->next;
-		}
-		if (ac->store->last_ref == NULL) {
-			goto error;
-		}
-
-		ac->store->last_ref->r = talloc_steal(ac->store->last, ares);
-		ac->store->last_ref->next = NULL;
-	}
-
-	if (ares->type == LDB_REPLY_DONE) {
-		ac->store->controls = talloc_move(ac->store, &ares->controls);
-		talloc_free(ares);
-	}
-
-	return LDB_SUCCESS;
-
-error:
-	talloc_free(ares);
-	return LDB_ERR_OPERATIONS_ERROR;
-}
-
-static int paged_search(struct ldb_module *module, struct ldb_request *req)
-{
-	struct ldb_control *control;
-	struct private_data *private_data;
-	struct ldb_paged_control *paged_ctrl;
-	struct ldb_control **saved_controls;
-	struct paged_context *ac;
-	struct ldb_handle *h;
-	int ret;
-
-	/* check if there's a paged request control */
-	control = ldb_request_get_control(req, LDB_CONTROL_PAGED_RESULTS_OID);
-	if (control == NULL) {
-		/* not found go on */
-		return ldb_next_request(module, req);
-	}
-
-	private_data = talloc_get_type(module->private_data, struct private_data);
-
-	req->handle = NULL;
-
-	if (!req->callback || !req->context) {
-		ldb_set_errstring(module->ldb,
-				  "Async interface called with NULL callback function or NULL context");
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	
-	paged_ctrl = talloc_get_type(control->data, struct ldb_paged_control);
-	if (!paged_ctrl) {
-		return LDB_ERR_PROTOCOL_ERROR;
-	}
-
-	h = init_handle(req, module, req->context, req->callback);
-	if (!h) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	ac = talloc_get_type(h->private_data, struct paged_context);
-
-	ac->size = paged_ctrl->size;
-
-	/* check if it is a continuation search the store */
-	if (paged_ctrl->cookie_len == 0) {
-		
-		ac->store = new_store(private_data);
-		if (ac->store == NULL) {
-			talloc_free(h);
-			return LDB_ERR_UNWILLING_TO_PERFORM;
-		}
-
-		ac->store->req = talloc(ac->store, struct ldb_request);
-		if (!ac->store->req)
-			return LDB_ERR_OPERATIONS_ERROR;
-
-		ac->store->req->operation = req->operation;
-		ac->store->req->op.search.base = req->op.search.base;
-		ac->store->req->op.search.scope = req->op.search.scope;
-		ac->store->req->op.search.tree = req->op.search.tree;
-		ac->store->req->op.search.attrs = req->op.search.attrs;
-		ac->store->req->controls = req->controls;
-
-		/* save it locally and remove it from the list */
-		/* we do not need to replace them later as we
-		 * are keeping the original req intact */
-		if (!save_controls(control, ac->store->req, &saved_controls)) {
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-
-		ac->store->req->context = ac;
-		ac->store->req->callback = paged_search_callback;
-		ldb_set_timeout_from_prev_req(module->ldb, req, ac->store->req);
-
-		ret = ldb_next_request(module, ac->store->req);
-
-	} else {
-		struct results_store *current = NULL;
-
-		for (current = private_data->store; current; current = current->next) {
-			if (strcmp(current->cookie, paged_ctrl->cookie) == 0) {
-				current->timestamp = time(NULL);
-				break;
-			}
-		}
-		if (current == NULL) {
-			talloc_free(h);
-			return LDB_ERR_UNWILLING_TO_PERFORM;
-		}
-
-		ac->store = current;
-		ret = LDB_SUCCESS;
-	}
-
-	req->handle = h;
-
-	/* check if it is an abandon */
-	if (ac->size == 0) {
-		talloc_free(ac->store);
-		h->status = LDB_SUCCESS;
-		h->state = LDB_ASYNC_DONE;
-		return LDB_SUCCESS;
-	}
-
-	/* TODO: age out old outstanding requests */
-
-	return ret;
-
-}
-
-static int paged_results(struct ldb_handle *handle)
-{
-	struct paged_context *ac;
 	struct ldb_paged_control *paged;
-	struct ldb_reply *ares;
 	struct message_store *msg;
 	int i, num_ctrls, ret;
 
-	ac = talloc_get_type(handle->private_data, struct paged_context);
-
-	if (ac->store == NULL)
+	if (ac->store == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
+	}
 
 	while (ac->store->num_entries > 0 && ac->size > 0) {
 		msg = ac->store->first;
-		ret = ac->up_callback(ac->module->ldb, ac->up_context, msg->r);
+		ret = ldb_module_send_entry(ac->req, msg->r->message);
 		if (ret != LDB_SUCCESS) {
-			handle->status = ret;
-			handle->state = LDB_ASYNC_DONE;
 			return ret;
 		}
 
@@ -361,14 +158,10 @@ static int paged_results(struct ldb_handle *handle)
 		ac->size--;
 	}
 
-	handle->state = LDB_ASYNC_DONE;
-
 	while (ac->store->first_ref != NULL) {
 		msg = ac->store->first_ref;
-		ret = ac->up_callback(ac->module->ldb, ac->up_context, msg->r);
+		ret = ldb_module_send_referral(ac->req, msg->r->referral);
 		if (ret != LDB_SUCCESS) {
-			handle->status = ret;
-			handle->state = LDB_ASYNC_DONE;
 			return ret;
 		}
 
@@ -376,50 +169,45 @@ static int paged_results(struct ldb_handle *handle)
 		talloc_free(msg);
 	}
 
-	ares = talloc_zero(ac->store, struct ldb_reply);
-	if (ares == NULL) {
-		handle->status = LDB_ERR_OPERATIONS_ERROR;
-		return handle->status;
-	}
-	num_ctrls = 2;
+	/* return result done */
+	num_ctrls = 1;
 	i = 0;
 
 	if (ac->store->controls != NULL) {
-		ares->controls = ac->store->controls;
-		while (ares->controls[i]) i++; /* counting */
+		while (ac->store->controls[i]) i++; /* counting */
 
-		ares->controls = talloc_move(ares, &ac->store->controls);
 		num_ctrls += i;
 	}
 
-	ares->controls = talloc_realloc(ares, ares->controls, struct ldb_control *, num_ctrls);
-	if (ares->controls == NULL) {
-		handle->status = LDB_ERR_OPERATIONS_ERROR;
-		return handle->status;
+	ac->controls = talloc_array(ac, struct ldb_control *, num_ctrls +1);
+	if (ac->controls == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	ac->controls[num_ctrls] = NULL;
+
+	for (i = 0; i < (num_ctrls -1); i++) {
+		ac->controls[i] = talloc_reference(ac->controls, ac->store->controls[i]);
 	}
 
-	ares->controls[i] = talloc(ares->controls, struct ldb_control);
-	if (ares->controls[i] == NULL) {
-		handle->status = LDB_ERR_OPERATIONS_ERROR;
-		return handle->status;
+	ac->controls[i] = talloc(ac->controls, struct ldb_control);
+	if (ac->controls[i] == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ares->controls[i]->oid = talloc_strdup(ares->controls[i], LDB_CONTROL_PAGED_RESULTS_OID);
-	if (ares->controls[i]->oid == NULL) {
-		handle->status = LDB_ERR_OPERATIONS_ERROR;
-		return handle->status;
+	ac->controls[i]->oid = talloc_strdup(ac->controls[i],
+						LDB_CONTROL_PAGED_RESULTS_OID);
+	if (ac->controls[i]->oid == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
-		
-	ares->controls[i]->critical = 0;
-	ares->controls[i + 1] = NULL;
 
-	paged = talloc(ares->controls[i], struct ldb_paged_control);
+	ac->controls[i]->critical = 0;
+
+	paged = talloc(ac->controls[i], struct ldb_paged_control);
 	if (paged == NULL) {
-		handle->status = LDB_ERR_OPERATIONS_ERROR;
-		return handle->status;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	
-	ares->controls[i]->data = paged;
+
+	ac->controls[i]->data = paged;
 
 	if (ac->size > 0) {
 		paged->size = 0;
@@ -431,127 +219,196 @@ static int paged_results(struct ldb_handle *handle)
 		paged->cookie_len = strlen(paged->cookie) + 1;
 	}
 
-	ares->type = LDB_REPLY_DONE;
-
-	ret = ac->up_callback(ac->module->ldb, ac->up_context, ares);
-
-	handle->status = ret;
-
-	return ret;
+	return LDB_SUCCESS;
 }
 
-static int paged_wait_once(struct ldb_handle *handle) {
+static int paged_search_callback(struct ldb_request *req, struct ldb_reply *ares)
+{
+	struct paged_context *ac ;
+	struct message_store *msg_store;
+	int ret;
+
+	ac = talloc_get_type(req->context, struct paged_context);
+
+	if (!ares) {
+		return ldb_module_done(ac->req, NULL, NULL,
+					LDB_ERR_OPERATIONS_ERROR);
+	}
+	if (ares->error != LDB_SUCCESS) {
+		return ldb_module_done(ac->req, ares->controls,
+					ares->response, ares->error);
+	}
+
+	switch (ares->type) {
+	case LDB_REPLY_ENTRY:
+		msg_store = talloc(ac->store, struct message_store);
+		if (msg_store == NULL) {
+			return ldb_module_done(ac->req, NULL, NULL,
+						LDB_ERR_OPERATIONS_ERROR);
+		}
+		msg_store->next = NULL;
+		msg_store->r = talloc_steal(msg_store, ares);
+
+		if (ac->store->first == NULL) {
+			ac->store->first = msg_store;
+		} else {
+			ac->store->last->next = msg_store;
+		}
+		ac->store->last = msg_store;
+
+		ac->store->num_entries++;
+
+		break;
+
+	case LDB_REPLY_REFERRAL:
+		msg_store = talloc(ac->store, struct message_store);
+		if (msg_store == NULL) {
+			return ldb_module_done(ac->req, NULL, NULL,
+						LDB_ERR_OPERATIONS_ERROR);
+		}
+		msg_store->next = NULL;
+		msg_store->r = talloc_steal(msg_store, ares);
+
+		if (ac->store->first_ref == NULL) {
+			ac->store->first_ref = msg_store;
+		} else {
+			ac->store->last_ref->next = msg_store;
+		}
+		ac->store->last_ref = msg_store;
+
+		break;
+
+	case LDB_REPLY_DONE:
+		ac->store->controls = talloc_move(ac->store, &ares->controls);
+		ret = paged_results(ac);
+		return ldb_module_done(ac->req, ac->controls,
+					ares->response, ret);
+	}
+
+	return LDB_SUCCESS;
+}
+
+static int paged_search(struct ldb_module *module, struct ldb_request *req)
+{
+	struct ldb_control *control;
+	struct private_data *private_data;
+	struct ldb_paged_control *paged_ctrl;
+	struct ldb_control **saved_controls;
+	struct ldb_request *search_req;
 	struct paged_context *ac;
 	int ret;
-    
-	if (!handle || !handle->private_data) {
+
+	/* check if there's a paged request control */
+	control = ldb_request_get_control(req, LDB_CONTROL_PAGED_RESULTS_OID);
+	if (control == NULL) {
+		/* not found go on */
+		return ldb_next_request(module, req);
+	}
+
+	paged_ctrl = talloc_get_type(control->data, struct ldb_paged_control);
+	if (!paged_ctrl) {
+		return LDB_ERR_PROTOCOL_ERROR;
+	}
+
+	private_data = talloc_get_type(module->private_data, struct private_data);
+
+	ac = talloc_zero(req, struct paged_context);
+	if (ac == NULL) {
+		ldb_set_errstring(module->ldb, "Out of Memory");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	if (handle->state == LDB_ASYNC_DONE) {
-		return handle->status;
-	}
+	ac->module = module;
+	ac->req = req;
+	ac->size = paged_ctrl->size;
 
-	handle->state = LDB_ASYNC_PENDING;
-
-	ac = talloc_get_type(handle->private_data, struct paged_context);
-
-	if (ac->store->req->handle->state == LDB_ASYNC_DONE) {
-		/* if lower level is finished we do not need to call it anymore */
-		/* return all we have until size == 0 or we empty storage */
-		ret = paged_results(handle);
-
-		/* we are done, if num_entries is zero free the storage
-		 * as that mean we delivered the last batch */
-		if (ac->store->num_entries == 0) {
-			talloc_free(ac->store);
+	/* check if it is a continuation search the store */
+	if (paged_ctrl->cookie_len == 0) {
+		if (paged_ctrl->size == 0) {
+			return LDB_ERR_OPERATIONS_ERROR;
 		}
 
-		return ret;
-	}
-
-	ret = ldb_wait(ac->store->req->handle, LDB_WAIT_NONE);
-	if (ret != LDB_SUCCESS) {
-		handle->state = LDB_ASYNC_DONE;
-		handle->status = ret;
-		return ret;
-	}
-
-	handle->status = ret;
-
-	if (ac->store->num_entries >= ac->size ||
-	    ac->store->req->handle->state == LDB_ASYNC_DONE) {
-
-		ret = paged_results(handle);
-
-		/* we are done, if num_entries is zero free the storage
-		 * as that mean we delivered the last batch */
-		if (ac->store->num_entries == 0) {
-			talloc_free(ac->store);
+		ac->store = new_store(private_data);
+		if (ac->store == NULL) {
+			return LDB_ERR_OPERATIONS_ERROR;
 		}
-	}
 
-	return ret;
-}
+		ret = ldb_build_search_req_ex(&search_req, module->ldb, ac,
+						req->op.search.base,
+						req->op.search.scope,
+						req->op.search.tree,
+						req->op.search.attrs,
+						req->controls,
+						ac,
+						paged_search_callback,
+						req);
 
-static int paged_wait(struct ldb_handle *handle, enum ldb_wait_type type)
-{
-	int ret;
- 
-	if (!handle || !handle->private_data) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
+		/* save it locally and remove it from the list */
+		/* we do not need to replace them later as we
+		 * are keeping the original req intact */
+		if (!save_controls(control, search_req, &saved_controls)) {
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
 
-	if (type == LDB_WAIT_ALL) {
-		while (handle->state != LDB_ASYNC_DONE) {
-			ret = paged_wait_once(handle);
-			if (ret != LDB_SUCCESS) {
-				return ret;
+		return ldb_next_request(module, search_req);
+
+	} else {
+		struct results_store *current = NULL;
+
+		/* TODO: age out old outstanding requests */
+		for (current = private_data->store; current; current = current->next) {
+			if (strcmp(current->cookie, paged_ctrl->cookie) == 0) {
+				current->timestamp = time(NULL);
+				break;
 			}
 		}
+		if (current == NULL) {
+			return LDB_ERR_UNWILLING_TO_PERFORM;
+		}
 
-		return handle->status;
+		ac->store = current;
+
+		/* check if it is an abandon */
+		if (ac->size == 0) {
+			return ldb_module_done(req, NULL, NULL,
+								LDB_SUCCESS);
+		}
+
+		ret = paged_results(ac);
+		if (ret != LDB_SUCCESS) {
+			return ldb_module_done(req, NULL, NULL, ret);
+		}
+		return ldb_module_done(req, ac->controls, NULL,
+								LDB_SUCCESS);
 	}
-
-	return paged_wait_once(handle);
 }
 
 static int paged_request_init(struct ldb_module *module)
 {
 	struct private_data *data;
-	struct ldb_request *req;
 	int ret;
 
 	data = talloc(module, struct private_data);
 	if (data == NULL) {
 		return LDB_ERR_OTHER;
 	}
-	
+
 	data->next_free_id = 1;
 	data->store = NULL;
 	module->private_data = data;
 
-	req = talloc(module, struct ldb_request);
-	if (req == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	req->operation = LDB_REQ_REGISTER_CONTROL;
-	req->op.reg_control.oid = LDB_CONTROL_PAGED_RESULTS_OID;
-	req->controls = NULL;
-
-	ret = ldb_request(module->ldb, req);
+	ret = ldb_mod_register_control(module, LDB_CONTROL_PAGED_RESULTS_OID);
 	if (ret != LDB_SUCCESS) {
-		ldb_debug(module->ldb, LDB_DEBUG_WARNING, "paged_request: Unable to register control with rootdse!\n");
+		ldb_debug(module->ldb, LDB_DEBUG_WARNING,
+			"paged_request:"
+			"Unable to register control with rootdse!\n");
 	}
 
-	talloc_free(req);
 	return ldb_next_init(module);
 }
 
 const struct ldb_module_ops ldb_paged_results_module_ops = {
 	.name           = "paged_results",
 	.search         = paged_search,
-	.wait           = paged_wait,
 	.init_context 	= paged_request_init
 };

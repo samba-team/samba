@@ -68,6 +68,11 @@ static NTSTATUS samdump_keytab_handle_user(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+struct libnet_samdump_keytab_data {
+	const char *keytab_name;
+	struct loadparm_context *lp_ctx;
+};
+
 static NTSTATUS libnet_samdump_keytab_fn(TALLOC_CTX *mem_ctx, 		
 					 void *private, 			
 					 enum netr_SamDatabaseID database,
@@ -75,8 +80,7 @@ static NTSTATUS libnet_samdump_keytab_fn(TALLOC_CTX *mem_ctx,
 					 char **error_string)
 {
 	NTSTATUS nt_status = NT_STATUS_OK;
-	const char *keytab_name = private;
-
+	struct libnet_samdump_keytab_data *data = private; 
 	*error_string = NULL;
 	switch (delta->delta_type) {
 	case NETR_DELTA_USER:
@@ -85,8 +89,8 @@ static NTSTATUS libnet_samdump_keytab_fn(TALLOC_CTX *mem_ctx,
 		if (database == SAM_DATABASE_DOMAIN) {
 			nt_status = samdump_keytab_handle_user(mem_ctx, 
 							       event_context_find(mem_ctx),
-							       global_loadparm,
-							       keytab_name,
+							       data->lp_ctx,
+							       data->keytab_name,
 							       delta);
 			break;
 		}
@@ -101,14 +105,18 @@ static NTSTATUS libnet_samdump_keytab_fn(TALLOC_CTX *mem_ctx,
 NTSTATUS libnet_SamDump_keytab(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, struct libnet_SamDump_keytab *r)
 {
 	NTSTATUS nt_status;
+	struct libnet_samdump_keytab_data data;
 	struct libnet_SamSync r2;
+
+	data.keytab_name = r->in.keytab_name;
+	data.lp_ctx = ctx->lp_ctx;
 
 	r2.out.error_string            = NULL;
 	r2.in.binding_string           = r->in.binding_string;
 	r2.in.rid_crypt                = true;
 	r2.in.init_fn                  = NULL;
 	r2.in.delta_fn                 = libnet_samdump_keytab_fn;
-	r2.in.fn_ctx                   = discard_const(r->in.keytab_name);
+	r2.in.fn_ctx                   = &data;
 	r2.in.machine_account          = r->in.machine_account;
 	nt_status                      = libnet_SamSync_netlogon(ctx, mem_ctx, &r2);
 	r->out.error_string            = r2.out.error_string;

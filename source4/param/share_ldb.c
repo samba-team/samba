@@ -174,8 +174,8 @@ static NTSTATUS sldb_list_all(TALLOC_CTX *mem_ctx,
 
 	ldb = talloc_get_type(ctx->priv_data, struct ldb_context);
 
-	ret = ldb_search(ldb, ldb_dn_new(tmp_ctx, ldb, "CN=SHARES"), LDB_SCOPE_SUBTREE, "(name=*)", NULL, &res);
-	talloc_steal(tmp_ctx, res);
+	ret = ldb_search(ldb, tmp_ctx, &res, ldb_dn_new(tmp_ctx, ldb, "CN=SHARES"),
+			 LDB_SCOPE_SUBTREE, NULL, "(name=*)");
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
@@ -223,7 +223,7 @@ static NTSTATUS sldb_get_config(TALLOC_CTX *mem_ctx,
 
 	ldb = talloc_get_type(ctx->priv_data, struct ldb_context);
 
-	ret = ldb_search_exp_fmt(ldb, tmp_ctx, &res,
+	ret = ldb_search(ldb, tmp_ctx, &res,
 				 ldb_dn_new(tmp_ctx, ldb, "CN=SHARES"), LDB_SCOPE_SUBTREE, NULL,
 				 "(name=%s)", name);
 	if (ret != LDB_SUCCESS || res->count > 1) {
@@ -287,7 +287,7 @@ static NTSTATUS sldb_get_config(TALLOC_CTX *mem_ctx,
 		goto done; \
 	} } while(0)
 
-NTSTATUS sldb_create(struct share_context *ctx, const char *name, struct share_info *info, int count)
+static NTSTATUS sldb_create(struct share_context *ctx, const char *name, struct share_info *info, int count)
 {
 	struct ldb_context *ldb;
 	struct ldb_message *msg;
@@ -426,7 +426,7 @@ done:
 		goto done; \
 	} } while(0)
 
-NTSTATUS sldb_set(struct share_context *ctx, const char *name, struct share_info *info, int count)
+static NTSTATUS sldb_set(struct share_context *ctx, const char *name, struct share_info *info, int count)
 {
 	struct ldb_context *ldb;
 	struct ldb_message *msg;
@@ -535,7 +535,7 @@ done:
 	return ret;
 }
 
-NTSTATUS sldb_remove(struct share_context *ctx, const char *name)
+static NTSTATUS sldb_remove(struct share_context *ctx, const char *name)
 {
 	struct ldb_context *ldb;
 	struct ldb_dn *dn;

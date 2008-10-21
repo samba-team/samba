@@ -1234,7 +1234,7 @@ bool cli_unlock(struct cli_state *cli, int fnum, uint32 offset, uint32 len)
 ****************************************************************************/
 
 bool cli_lock64(struct cli_state *cli, int fnum,
-		SMB_BIG_UINT offset, SMB_BIG_UINT len, int timeout, enum brl_type lock_type)
+		uint64_t offset, uint64_t len, int timeout, enum brl_type lock_type)
 {
 	char *p;
         int saved_timeout = cli->timeout;
@@ -1294,7 +1294,7 @@ bool cli_lock64(struct cli_state *cli, int fnum,
  Unlock a file with 64 bit offsets.
 ****************************************************************************/
 
-bool cli_unlock64(struct cli_state *cli, int fnum, SMB_BIG_UINT offset, SMB_BIG_UINT len)
+bool cli_unlock64(struct cli_state *cli, int fnum, uint64_t offset, uint64_t len)
 {
 	char *p;
 
@@ -1341,7 +1341,7 @@ bool cli_unlock64(struct cli_state *cli, int fnum, SMB_BIG_UINT offset, SMB_BIG_
 ****************************************************************************/
 
 static bool cli_posix_lock_internal(struct cli_state *cli, int fnum,
-		SMB_BIG_UINT offset, SMB_BIG_UINT len, bool wait_lock, enum brl_type lock_type)
+		uint64_t offset, uint64_t len, bool wait_lock, enum brl_type lock_type)
 {
 	unsigned int param_len = 4;
 	unsigned int data_len = POSIX_LOCK_DATA_SIZE;
@@ -1412,7 +1412,7 @@ static bool cli_posix_lock_internal(struct cli_state *cli, int fnum,
 ****************************************************************************/
 
 bool cli_posix_lock(struct cli_state *cli, int fnum,
-			SMB_BIG_UINT offset, SMB_BIG_UINT len,
+			uint64_t offset, uint64_t len,
 			bool wait_lock, enum brl_type lock_type)
 {
 	if (lock_type != READ_LOCK && lock_type != WRITE_LOCK) {
@@ -1425,7 +1425,7 @@ bool cli_posix_lock(struct cli_state *cli, int fnum,
  POSIX Unlock a file.
 ****************************************************************************/
 
-bool cli_posix_unlock(struct cli_state *cli, int fnum, SMB_BIG_UINT offset, SMB_BIG_UINT len)
+bool cli_posix_unlock(struct cli_state *cli, int fnum, uint64_t offset, uint64_t len)
 {
 	return cli_posix_lock_internal(cli, fnum, offset, len, False, UNLOCK_LOCK);
 }
@@ -1434,7 +1434,7 @@ bool cli_posix_unlock(struct cli_state *cli, int fnum, SMB_BIG_UINT offset, SMB_
  POSIX Get any lock covering a file.
 ****************************************************************************/
 
-bool cli_posix_getlock(struct cli_state *cli, int fnum, SMB_BIG_UINT *poffset, SMB_BIG_UINT *plen)
+bool cli_posix_getlock(struct cli_state *cli, int fnum, uint64_t *poffset, uint64_t *plen)
 {
 	return True;
 }

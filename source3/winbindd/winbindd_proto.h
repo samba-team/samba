@@ -48,8 +48,6 @@ int count_all_current_connections(void);
 bool claim_connection(connection_struct *conn, const char *name,
 		      uint32 msg_flags);
 bool register_message_flags(bool doreg, uint32 msg_flags);
-bool store_pipe_opendb( smb_np_struct *p );
-bool delete_pipe_opendb( smb_np_struct *p );
 
 /* The following definitions come from winbindd/winbindd.c  */
 
@@ -569,6 +567,10 @@ bool parse_domain_user_talloc(TALLOC_CTX *mem_ctx, const char *domuser,
 void parse_add_domuser(void *buf, char *domuser, int *len);
 bool canonicalize_username(fstring username_inout, fstring domain, fstring user);
 void fill_domain_username(fstring name, const char *domain, const char *user, bool can_assume);
+char *fill_domain_username_talloc(TALLOC_CTX *ctx,
+				  const char *domain,
+				  const char *user,
+				  bool can_assume);
 const char *get_winbind_pipe_dir(void) ;
 char *get_winbind_priv_pipe_dir(void) ;
 int open_winbindd_socket(void);
@@ -583,8 +585,22 @@ NTSTATUS lookup_usergroups_cached(struct winbindd_domain *domain,
 				  TALLOC_CTX *mem_ctx,
 				  const DOM_SID *user_sid,
 				  uint32 *p_num_groups, DOM_SID **user_sids);
-void ws_name_replace( char *name, char replace );
-void ws_name_return( char *name, char replace );
+
+NTSTATUS normalize_name_map(TALLOC_CTX *mem_ctx,
+			    struct winbindd_domain *domain,
+			    char *name,
+			    char **normalized);
+NTSTATUS normalize_name_unmap(TALLOC_CTX *mem_ctx,
+			      char *name,
+			      char **normalized);
+
+NTSTATUS resolve_username_to_alias(TALLOC_CTX *mem_ctx,
+				   struct winbindd_domain *domain,
+				   const char *name, char **alias);
+NTSTATUS resolve_alias_to_username(TALLOC_CTX *mem_ctx,
+				   struct winbindd_domain *domain,
+				   const char *alias, char **name);
+
 bool winbindd_can_contact_domain(struct winbindd_domain *domain);
 bool winbindd_internal_child(struct winbindd_child *child);
 void winbindd_set_locator_kdc_envs(const struct winbindd_domain *domain);

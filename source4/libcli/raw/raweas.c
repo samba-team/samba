@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "smb.h"
 #include "libcli/raw/libcliraw.h"
+#include "libcli/raw/raw_proto.h"
 
 /*
   work out how many bytes on the wire a ea list will consume. 

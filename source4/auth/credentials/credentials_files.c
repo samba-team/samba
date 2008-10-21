@@ -27,9 +27,10 @@
 #include "librpc/gen_ndr/samr.h" /* for struct samrPassword */
 #include "param/secrets.h"
 #include "system/filesys.h"
-#include "util/util_ldb.h"
+#include "../lib/util/util_ldb.h"
 #include "auth/credentials/credentials.h"
 #include "auth/credentials/credentials_krb5.h"
+#include "auth/credentials/credentials_proto.h"
 #include "param/param.h"
 #include "lib/events/events.h"
 
@@ -118,7 +119,7 @@ _PUBLIC_ bool cli_credentials_parse_file(struct cli_credentials *cred, const cha
 	char **lines;
 	int i, numlines;
 
-	lines = file_lines_load(file, &numlines, NULL);
+	lines = file_lines_load(file, &numlines, 0, NULL);
 
 	if (lines == NULL)
 	{

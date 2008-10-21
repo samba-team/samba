@@ -371,7 +371,7 @@ static int info_fn(struct file_list *fl, void *priv)
 		return -1;
 	}
 
-	lines = fd_lines_load(fd, &numlines, 10240);
+	lines = fd_lines_load(fd, &numlines, 10240, NULL);
 	close(fd);
 
 	if (lines == NULL) {
@@ -385,7 +385,7 @@ static int info_fn(struct file_list *fl, void *priv)
 				&psd,
 				&guest_ok);
 
-	file_lines_free(lines);
+	TALLOC_FREE(lines);
 
 	if (us_err != USERSHARE_OK) {
 		d_fprintf(stderr, "info_fn: file %s is not a well formed usershare file.\n",

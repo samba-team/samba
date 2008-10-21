@@ -60,7 +60,7 @@
 #include "system/network.h" /* needed for TCP_NODELAY */
 #include "smb_server/smb_server.h"
 #include "libcli/raw/signing.h"
-#include "lib/util/dlinklist.h"
+#include "../lib/util/dlinklist.h"
 #include "param/param.h"
 #include "param/loadparm.h"
 #include "libcli/raw/libcliraw.h"
@@ -97,8 +97,6 @@ struct loadparm_global
 	char *szWINS_CONFIG_URL;
 	char *szWINS_URL;
 	char *szPrivateDir;
-	const char **jsInclude;
-	char *jsonrpcServicesDir;
 	const char **szPasswordServers;
 	char *szSocketOptions;
 	char *szRealm;
@@ -469,7 +467,6 @@ static struct parm_struct parm_table[] = {
 	{"lock directory", P_STRING, P_GLOBAL, GLOBAL_VAR(szLockDir), NULL, NULL},
 	{"modules dir", P_STRING, P_GLOBAL, GLOBAL_VAR(szModulesDir), NULL, NULL},
 	{"pid directory", P_STRING, P_GLOBAL, GLOBAL_VAR(szPidDir), NULL, NULL}, 
-	{"js include", P_LIST, P_GLOBAL, GLOBAL_VAR(jsInclude), NULL, NULL},
 	{"setup directory", P_STRING, P_GLOBAL, GLOBAL_VAR(szSetupDir), NULL, NULL},
 
 	{"socket address", P_STRING, P_GLOBAL, GLOBAL_VAR(szSocketAddress), NULL, NULL},
@@ -702,7 +699,6 @@ _PUBLIC_ FN_GLOBAL_INTEGER(lp_cli_minprotocol, cli_minprotocol)
 _PUBLIC_ FN_GLOBAL_INTEGER(lp_security, security)
 _PUBLIC_ FN_GLOBAL_BOOL(lp_paranoid_server_security, paranoid_server_security)
 _PUBLIC_ FN_GLOBAL_INTEGER(lp_announce_as, announce_as)
-_PUBLIC_ FN_GLOBAL_LIST(lp_js_include, jsInclude)
 const char *lp_servicename(const struct loadparm_service *service)
 {
 	return lp_string((const char *)service->szService);
@@ -889,7 +885,7 @@ const char **lp_parm_string_list(TALLOC_CTX *mem_ctx,
 	const char *value = lp_get_parametric(lp_ctx, service, type, option);
 
 	if (value != NULL)
-		return str_list_make(mem_ctx, value, separator);
+		return (const char **)str_list_make(mem_ctx, value, separator);
 
 	return NULL;
 }
@@ -1303,7 +1299,7 @@ static void copy_service(struct loadparm_service *pserviceDest,
 					strupper(*(char **)dest_ptr);
 					break;
 				case P_LIST:
-					*(const char ***)dest_ptr = str_list_copy(pserviceDest, 
+					*(const char ***)dest_ptr = (const char **)str_list_copy(pserviceDest, 
 										  *(const char ***)src_ptr);
 					break;
 				default:
@@ -1657,7 +1653,7 @@ static bool set_variable(TALLOC_CTX *mem_ctx, int parmnum, void *parm_ptr,
 		}
 
 		case P_LIST:
-			*(const char ***)parm_ptr = str_list_make(mem_ctx,
+			*(const char ***)parm_ptr = (const char **)str_list_make(mem_ctx,
 								  pszParmValue, NULL);
 			break;
 
@@ -2413,7 +2409,6 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lp_do_global_parameter(lp_ctx, "tls keyfile", "tls/key.pem");
 	lp_do_global_parameter(lp_ctx, "tls certfile", "tls/cert.pem");
 	lp_do_global_parameter(lp_ctx, "tls cafile", "tls/ca.pem");
-	lp_do_global_parameter_var(lp_ctx, "js include", "%s", dyn_JSDIR);
 	lp_do_global_parameter_var(lp_ctx, "setup directory", "%s",
 				   dyn_SETUPDIR);
 
@@ -2633,4 +2628,12 @@ void lp_smbcli_options(struct loadparm_context *lp_ctx,
 	options->unicode = lp_unicode(lp_ctx);
 	options->use_oplocks = true;
 	options->use_level2_oplocks = true;
+}
+
+void lp_smbcli_session_options(struct loadparm_context *lp_ctx,
+				 struct smbcli_session_options *options)
+{
+	options->lanman_auth = lp_client_lanman_auth(lp_ctx);
+	options->ntlmv2_auth = lp_client_ntlmv2_auth(lp_ctx);
+	options->plaintext_auth = lp_client_plaintext_auth(lp_ctx);
 }

@@ -280,7 +280,7 @@ static bool upgrade_to_version_3(void)
 	DEBUG(0,("upgrade_to_version_3: upgrading print tdb's to version 3\n"));
  
 	for (kbuf = tdb_firstkey(tdb_drivers); kbuf.dptr;
-			newkey = tdb_nextkey(tdb_drivers, kbuf), safe_free(kbuf.dptr), kbuf=newkey) {
+			newkey = tdb_nextkey(tdb_drivers, kbuf), free(kbuf.dptr), kbuf=newkey) {
 
 		dbuf = tdb_fetch(tdb_drivers, kbuf);
 
@@ -807,7 +807,7 @@ int get_ntforms(nt_forms_struct **list)
 
 	for (kbuf = tdb_firstkey(tdb_forms);
 	     kbuf.dptr;
-	     newkey = tdb_nextkey(tdb_forms, kbuf), safe_free(kbuf.dptr), kbuf=newkey) 
+	     newkey = tdb_nextkey(tdb_forms, kbuf), free(kbuf.dptr), kbuf=newkey) 
 	{
 		if (strncmp((const char *)kbuf.dptr, FORMS_PREFIX, strlen(FORMS_PREFIX)) != 0) 
 			continue;
@@ -1024,7 +1024,7 @@ int get_ntdrivers(fstring **list, const char *architecture, uint32 version)
 
 	for (kbuf = tdb_firstkey(tdb_drivers);
 	     kbuf.dptr;
-	     newkey = tdb_nextkey(tdb_drivers, kbuf), safe_free(kbuf.dptr), kbuf=newkey) {
+	     newkey = tdb_nextkey(tdb_drivers, kbuf), free(kbuf.dptr), kbuf=newkey) {
 
 		if (strncmp((const char *)kbuf.dptr, key, strlen(key)) != 0)
 			continue;
@@ -1376,7 +1376,8 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 			DEBUGADD(6,("file_version_is_newer: mod time = %ld sec\n", old_create_time));
 		}
 	}
-	close_file(fsp, NORMAL_CLOSE);
+	close_file(NULL, fsp, NORMAL_CLOSE);
+	fsp = NULL;
 
 	/* Get file version info (if available) for new file */
 	filepath = driver_unix_convert(conn,new_file,&stat_buf);
@@ -1416,7 +1417,8 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 			DEBUGADD(6,("file_version_is_newer: mod time = %ld sec\n", new_create_time));
 		}
 	}
-	close_file(fsp, NORMAL_CLOSE);
+	close_file(NULL, fsp, NORMAL_CLOSE);
+	fsp = NULL;
 
 	if (use_version && (new_major != old_major || new_minor != old_minor)) {
 		/* Compare versions and choose the larger version number */
@@ -1445,7 +1447,7 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 
 	error_exit:
 		if(fsp)
-			close_file(fsp, NORMAL_CLOSE);
+			close_file(NULL, fsp, NORMAL_CLOSE);
 		return -1;
 }
 
@@ -1581,7 +1583,7 @@ static uint32 get_correct_cversion(const char *architecture, fstring driverpath_
 	DEBUG(10,("get_correct_cversion: Driver file [%s] cversion = %d\n",
 		driverpath, cversion));
 
-	close_file(fsp, NORMAL_CLOSE);
+	close_file(NULL, fsp, NORMAL_CLOSE);
 	close_cnum(conn, user->vuid);
 	unbecome_user();
 	*perr = WERR_OK;
@@ -1591,7 +1593,7 @@ static uint32 get_correct_cversion(const char *architecture, fstring driverpath_
   error_exit:
 
 	if(fsp)
-		close_file(fsp, NORMAL_CLOSE);
+		close_file(NULL, fsp, NORMAL_CLOSE);
 
 	close_cnum(conn, user->vuid);
 	unbecome_user();
@@ -3121,8 +3123,7 @@ static void map_single_multi_sz_into_ctr(REGVAL_CTR *ctr, const char *val_name,
 	regval_ctr_delvalue(ctr, val_name);
 	regval_ctr_addvalue(ctr, val_name, REG_MULTI_SZ, 
 			    (char *) conv_strs, str_size);	
-	safe_free(conv_strs);
-	
+	SAFE_FREE(conv_strs);
 }
 
 /****************************************************************************
@@ -3219,7 +3220,7 @@ static void store_printer_guid(NT_PRINTER_INFO_LEVEL_2 *info2,
 
 	ZERO_STRUCT( unistr_guid );	
 	
-	init_unistr2( &unistr_guid, smb_uuid_string(talloc_tos(), guid),
+	init_unistr2( &unistr_guid, GUID_string(talloc_tos(), &guid),
 		      UNI_STR_TERMINATE );
 
 	regval_ctr_addvalue(ctr, "objectGUID", REG_SZ, 
@@ -3534,7 +3535,7 @@ bool is_printer_published(Printer_entry *print_hnd, int snum,
 		case REG_SZ:		
 			rpcstr_pull( guid_str, regval_data_p(guid_val), 
 				     sizeof(guid_str)-1, -1, STR_TERMINATE );
-			ret = smb_string_to_uuid( guid_str, guid );
+			ret = NT_STATUS_IS_OK(GUID_from_string( guid_str, guid ));
 			break;			
 		case REG_BINARY:
 			if ( regval_size(guid_val) != sizeof(struct GUID) ) {
@@ -3839,7 +3840,7 @@ static int unpack_values(NT_PRINTER_DATA *printer_data, const uint8 *buf, int bu
 			memcpy( &guid, data_p, sizeof(struct GUID) );
 
 			init_unistr2( &unistr_guid,
-				      smb_uuid_string(talloc_tos(), guid), 
+				      GUID_string(talloc_tos(), &guid), 
 				      UNI_STR_TERMINATE );
 
 			regval_ctr_addvalue( printer_data->keys[key_index].values, 
@@ -3923,10 +3924,10 @@ static void map_to_os2_driver(fstring drivername)
 		return;
 	}
 
-	lines = file_lines_load(mapfile, &numlines,0);
+	lines = file_lines_load(mapfile, &numlines,0,NULL);
 	if (numlines == 0 || lines == NULL) {
 		DEBUG(0,("No entries in OS/2 driver map %s\n",mapfile));
-		SAFE_FREE(lines);
+		TALLOC_FREE(lines);
 		return;
 	}
 
@@ -3970,12 +3971,12 @@ static void map_to_os2_driver(fstring drivername)
 			DEBUG(3,("Mapped windows driver %s to os2 driver%s\n",drivername,os2_name));
 			set_last_from_to(drivername,os2_name);
 			fstrcpy(drivername,os2_name);
-			file_lines_free(lines);
+			TALLOC_FREE(lines);
 			return;
 		}
 	}
 
-	file_lines_free(lines);
+	TALLOC_FREE(lines);
 }
 
 /****************************************************************************
@@ -5491,7 +5492,7 @@ static SEC_DESC_BUF *construct_default_printer_sdb(TALLOC_CTX *ctx)
 {
 	SEC_ACE ace[5];	/* max number of ace entries */
 	int i = 0;
-	SEC_ACCESS sa;
+	uint32_t sa;
 	SEC_ACL *psa = NULL;
 	SEC_DESC_BUF *sdb = NULL;
 	SEC_DESC *psd = NULL;
@@ -5500,7 +5501,7 @@ static SEC_DESC_BUF *construct_default_printer_sdb(TALLOC_CTX *ctx)
 
 	/* Create an ACE where Everyone is allowed to print */
 
-	init_sec_access(&sa, PRINTER_ACE_PRINT);
+	sa = PRINTER_ACE_PRINT;
 	init_sec_ace(&ace[i++], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED,
 		     sa, SEC_ACE_FLAG_CONTAINER_INHERIT);
 
@@ -5512,7 +5513,7 @@ static SEC_DESC_BUF *construct_default_printer_sdb(TALLOC_CTX *ctx)
 		sid_copy(&domadmins_sid, get_global_sam_sid());
 		sid_append_rid(&domadmins_sid, DOMAIN_GROUP_RID_ADMINS);
 		
-		init_sec_access(&sa, PRINTER_ACE_FULL_CONTROL);
+		sa = PRINTER_ACE_FULL_CONTROL;
 		init_sec_ace(&ace[i++], &domadmins_sid, 
 			SEC_ACE_TYPE_ACCESS_ALLOWED, sa, 
 			SEC_ACE_FLAG_OBJECT_INHERIT | SEC_ACE_FLAG_INHERIT_ONLY);
@@ -5522,7 +5523,7 @@ static SEC_DESC_BUF *construct_default_printer_sdb(TALLOC_CTX *ctx)
 	else if (secrets_fetch_domain_sid(lp_workgroup(), &adm_sid)) {
 		sid_append_rid(&adm_sid, DOMAIN_USER_RID_ADMIN);
 
-		init_sec_access(&sa, PRINTER_ACE_FULL_CONTROL);
+		sa = PRINTER_ACE_FULL_CONTROL;
 		init_sec_ace(&ace[i++], &adm_sid, 
 			SEC_ACE_TYPE_ACCESS_ALLOWED, sa, 
 			SEC_ACE_FLAG_OBJECT_INHERIT | SEC_ACE_FLAG_INHERIT_ONLY);
@@ -5532,7 +5533,7 @@ static SEC_DESC_BUF *construct_default_printer_sdb(TALLOC_CTX *ctx)
 
 	/* add BUILTIN\Administrators as FULL CONTROL */
 
-	init_sec_access(&sa, PRINTER_ACE_FULL_CONTROL);
+	sa = PRINTER_ACE_FULL_CONTROL;
 	init_sec_ace(&ace[i++], &global_sid_Builtin_Administrators, 
 		SEC_ACE_TYPE_ACCESS_ALLOWED, sa, 
 		SEC_ACE_FLAG_OBJECT_INHERIT | SEC_ACE_FLAG_INHERIT_ONLY);

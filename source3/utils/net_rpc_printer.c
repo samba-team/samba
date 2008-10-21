@@ -2482,7 +2482,7 @@ NTSTATUS rpc_printer_migrate_settings_internals(struct net_context *c,
 			TALLOC_FREE( reg_ctr );
 		}
 
-		safe_free(keylist);
+		SAFE_FREE(keylist);
 
 		/* close printer handles here */
 		if (got_hnd_src) {

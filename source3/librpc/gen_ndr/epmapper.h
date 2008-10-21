@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 
+#include "librpc/gen_ndr/misc.h"
 #ifndef _HEADER_epmapper
 #define _HEADER_epmapper
 
@@ -226,7 +227,9 @@ struct epm_twr_t {
 struct epm_entry_t {
 	struct GUID object;
 	struct epm_twr_t *tower;/* [ptr] */
-	const char * annotation;/* [flag(LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_LEN4)] */
+	uint32_t __annotation_offset;/* [value(0)] */
+	uint32_t __annotation_length;/* [value(strlen(annotation)+1)] */
+	const char *annotation;/* [charset(DOS)] */
 };
 
 struct rpc_if_id_t {

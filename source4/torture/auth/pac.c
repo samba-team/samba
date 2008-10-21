@@ -379,7 +379,7 @@ static bool torture_pac_saved_check(struct torture_context *tctx)
 
 	pac_file = torture_setting_string(tctx, "pac_file", NULL);
 	if (pac_file) {
-		tmp_blob.data = (uint8_t *)file_load(pac_file, &tmp_blob.length, mem_ctx);
+		tmp_blob.data = (uint8_t *)file_load(pac_file, &tmp_blob.length, 0, mem_ctx);
 		torture_comment(tctx, "(saved test) Loaded pac of size %ld from %s\n", (long)tmp_blob.length, pac_file);
 	} else {
 		tmp_blob = data_blob_talloc(mem_ctx, saved_pac, sizeof(saved_pac));

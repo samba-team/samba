@@ -26,8 +26,8 @@
 #include "auth/auth.h"
 #include "auth/credentials/credentials.h"
 #include "librpc/gen_ndr/ndr_samr.h"
-#include "lib/util/dlinklist.h"
-#include "lib/util/asn1.h"
+#include "../lib/util/dlinklist.h"
+#include "../lib/util/asn1.h"
 #include "ldap_server/ldap_server.h"
 #include "smbd/service_task.h"
 #include "smbd/service_stream.h"
@@ -253,12 +253,10 @@ static int ldapsrv_load_limits(struct ldapsrv_connection *conn)
 		goto failed;
 	}
 
-	ret = ldb_search(conn->ldb, basedn, LDB_SCOPE_BASE, NULL, attrs, &res);
+	ret = ldb_search(conn->ldb, tmp_ctx, &res, basedn, LDB_SCOPE_BASE, attrs, NULL);
 	if (ret != LDB_SUCCESS) {
 		goto failed;
 	}
-
-	talloc_steal(tmp_ctx, res);
 
 	if (res->count != 1) {
 		goto failed;
@@ -275,12 +273,10 @@ static int ldapsrv_load_limits(struct ldapsrv_connection *conn)
 		goto failed;
 	}
 
-	ret = ldb_search(conn->ldb, policy_dn, LDB_SCOPE_BASE, NULL, attrs2, &res);
+	ret = ldb_search(conn->ldb, tmp_ctx, &res, policy_dn, LDB_SCOPE_BASE, attrs2, NULL);
 	if (ret != LDB_SUCCESS) {
 		goto failed;
 	}
-
-	talloc_steal(tmp_ctx, res);
 
 	if (res->count != 1) {
 		goto failed;
@@ -529,7 +525,7 @@ static void ldapsrv_task_init(struct task_server *task)
 	task_server_set_title(task, "task[ldapsrv]");
 
 	/* run the ldap server as a single process */
-	model_ops = process_model_byname("single");
+	model_ops = process_model_startup(task->event_ctx, "single");
 	if (!model_ops) goto failed;
 
 	ldap_service = talloc_zero(task, struct ldapsrv_service);

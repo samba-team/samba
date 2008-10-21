@@ -31,7 +31,7 @@
 /* Include header files from data in config.h file */
 
 #ifndef NO_CONFIG_H
-#include "lib/replace/replace.h"
+#include "../replace/replace.h"
 #endif
 
 #include "system/passwd.h"

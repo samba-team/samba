@@ -18,10 +18,6 @@ extern const struct ndr_interface_table ndr_table_initshutdown;
 #define NDR_INITSHUTDOWN_INITEX (0x02)
 
 #define NDR_INITSHUTDOWN_CALL_COUNT (3)
-void ndr_print_initshutdown_String_sub(struct ndr_print *ndr, const char *name, const struct initshutdown_String_sub *r);
-enum ndr_err_code ndr_push_initshutdown_String(struct ndr_push *ndr, int ndr_flags, const struct initshutdown_String *r);
-enum ndr_err_code ndr_pull_initshutdown_String(struct ndr_pull *ndr, int ndr_flags, struct initshutdown_String *r);
-void ndr_print_initshutdown_String(struct ndr_print *ndr, const char *name, const struct initshutdown_String *r);
 void ndr_print_initshutdown_Init(struct ndr_print *ndr, const char *name, int flags, const struct initshutdown_Init *r);
 void ndr_print_initshutdown_Abort(struct ndr_print *ndr, const char *name, int flags, const struct initshutdown_Abort *r);
 void ndr_print_initshutdown_InitEx(struct ndr_print *ndr, const char *name, int flags, const struct initshutdown_InitEx *r);

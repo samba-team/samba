@@ -25,7 +25,7 @@
 #include "torture/rpc/rpc.h"
 #include "torture/smbtorture.h"
 #include "librpc/ndr/ndr_table.h"
-#include "lib/util/dlinklist.h"
+#include "../lib/util/dlinklist.h"
 
 static bool torture_rpc_teardown (struct torture_context *tcase, 
 					  void *data)
@@ -387,6 +387,7 @@ NTSTATUS torture_rpc_init(void)
 	torture_suite_add_suite(suite, torture_rpc_atsvc(suite));
 	torture_suite_add_suite(suite, torture_rpc_wkssvc(suite));
 	torture_suite_add_suite(suite, torture_rpc_handles(suite));
+	torture_suite_add_suite(suite, torture_rpc_object_uuid(suite));
 	torture_suite_add_suite(suite, torture_rpc_winreg(suite));
 	torture_suite_add_simple_test(suite, "SPOOLSS", torture_rpc_spoolss);
 	torture_suite_add_suite(suite, torture_rpc_spoolss_notify(suite));

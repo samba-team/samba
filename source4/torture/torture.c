@@ -21,9 +21,10 @@
 #include "includes.h"
 #include "system/time.h"
 #include "torture/torture.h"
-#include "lib/util/dlinklist.h"
+#include "../lib/util/dlinklist.h"
 #include "param/param.h"
 #include "lib/cmdline/popt_common.h"
+#include "torture/smbtorture.h"
 
 _PUBLIC_ int torture_numops=10;
 _PUBLIC_ int torture_entries=1000;

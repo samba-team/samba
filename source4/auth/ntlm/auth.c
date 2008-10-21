@@ -19,7 +19,7 @@
 */
 
 #include "includes.h"
-#include "lib/util/dlinklist.h"
+#include "../lib/util/dlinklist.h"
 #include "auth/auth.h"
 #include "auth/ntlm/auth_proto.h"
 #include "lib/events/events.h"

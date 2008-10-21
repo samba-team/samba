@@ -482,7 +482,7 @@ smb_connect(const char *workgroup,	/* I - Workgroup */
 	/*
          * Get the names and addresses of the client and server...
          */
-	myname = get_myname(talloc_tos());
+	myname = talloc_get_myname(talloc_tos());
 	if (!myname) {
 		return NULL;
 	}

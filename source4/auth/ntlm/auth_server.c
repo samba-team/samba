@@ -80,6 +80,7 @@ static NTSTATUS server_get_challenge(struct auth_method_context *ctx, TALLOC_CTX
 	io.in.workgroup = ""; /* only used with SPNEGO, disabled above */
 
 	io.in.options = smb_options;
+	lp_smbcli_session_options(ctx->auth_ctx->lp_ctx, &io.in.session_options);
 
 	status = smb_composite_connect(&io, mem_ctx, lp_resolve_context(ctx->auth_ctx->lp_ctx),
 				       ctx->auth_ctx->event_ctx);
@@ -111,7 +112,6 @@ static NTSTATUS server_check_password(struct auth_method_context *ctx,
 	NTSTATUS nt_status;
 	struct auth_serversupplied_info *server_info;
 	struct cli_credentials *creds;
-	const char *user;
 	struct smb_composite_sesssetup session_setup;
 
 	struct smbcli_session *session = talloc_get_type(ctx->private_data, struct smbcli_session);

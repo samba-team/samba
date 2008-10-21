@@ -2,15 +2,9 @@
 # install miscellaneous files
 
 SRCDIR="$1"
-JSDIR="$2"
-SETUPDIR="$3"
-BINDIR="$4"
+SETUPDIR="$2"
 
 cd $SRCDIR || exit 1
-
-echo "Installing js libs"
-mkdir -p $JSDIR || exit 1
-cp scripting/libjs/*.js $JSDIR || exit 1
 
 echo "Installing setup templates"
 mkdir -p $SETUPDIR || exit 1
@@ -29,10 +23,5 @@ cp setup/*.txt $SETUPDIR || exit 1
 cp setup/provision.smb.conf.dc $SETUPDIR || exit 1
 cp setup/provision.smb.conf.member $SETUPDIR || exit 1
 cp setup/provision.smb.conf.standalone $SETUPDIR || exit 1
-
-echo "Installing script tools"
-mkdir -p "$BINDIR"
-rm -f scripting/bin/*~
-cp scripting/bin/* $BINDIR/ || exit 1
 
 exit 0

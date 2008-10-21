@@ -238,7 +238,7 @@ bool secrets_fetch_domain_guid(const char *domain, struct GUID *guid)
 
 	if (!dyn_guid) {
 		if (lp_server_role() == ROLE_DOMAIN_PDC) {
-			smb_uuid_generate_random(&new_guid);
+			new_guid = GUID_random();
 			if (!secrets_store_domain_guid(domain, &new_guid))
 				return False;
 			dyn_guid = (struct GUID *)secrets_fetch(key, &size);
@@ -257,6 +257,31 @@ bool secrets_fetch_domain_guid(const char *domain, struct GUID *guid)
 	*guid = *dyn_guid;
 	SAFE_FREE(dyn_guid);
 	return True;
+}
+
+bool secrets_store_local_schannel_key(uint8_t schannel_key[16])
+{
+	return secrets_store(SECRETS_LOCAL_SCHANNEL_KEY, schannel_key, 16);
+}
+
+bool secrets_fetch_local_schannel_key(uint8_t schannel_key[16])
+{
+	size_t size = 0;
+	uint8_t *key;
+
+	key = (uint8_t *)secrets_fetch(SECRETS_LOCAL_SCHANNEL_KEY, &size);
+	if (key == NULL) {
+		return false;
+	}
+
+	if (size != 16) {
+		SAFE_FREE(key);
+		return false;
+	}
+
+	memcpy(schannel_key, key, 16);
+	SAFE_FREE(key);
+	return true;
 }
 
 /**

@@ -56,6 +56,7 @@ static int do_compare_msg(struct ldb_message **el1,
 }
 
 struct search_context {
+	struct ldb_context *ldb;
 	struct ldb_control **req_ctrls;
 
 	int sort;
@@ -101,7 +102,7 @@ static int store_referral(char *referral, struct search_context *sctx) {
 	return 0;
 }
 
-static int display_message(struct ldb_context *ldb, struct ldb_message *msg, struct search_context *sctx) {
+static int display_message(struct ldb_message *msg, struct search_context *sctx) {
 	struct ldb_ldif ldif;
 
 	sctx->entries++;
@@ -119,7 +120,7 @@ static int display_message(struct ldb_context *ldb, struct ldb_message *msg, str
         	ldb_msg_sort_elements(ldif.msg);
        	}
 
-	ldb_ldif_write_file(ldb, stdout, &ldif);
+	ldb_ldif_write_file(sctx->ldb, stdout, &ldif);
 
 	return 0;
 }
@@ -133,18 +134,26 @@ static int display_referral(char *referral, struct search_context *sctx)
 	return 0;
 }
 
-static int search_callback(struct ldb_context *ldb, void *context, struct ldb_reply *ares)
+static int search_callback(struct ldb_request *req, struct ldb_reply *ares)
 {
-	struct search_context *sctx = talloc_get_type(context, struct search_context);
+	struct search_context *sctx;
 	int ret;
+
+	sctx = talloc_get_type(req->context, struct search_context);
+
+	if (!ares) {
+		return ldb_request_done(req, LDB_ERR_OPERATIONS_ERROR);
+	}
+	if (ares->error != LDB_SUCCESS) {
+		return ldb_request_done(req, ares->error);
+	}
 	
 	switch (ares->type) {
-
 	case LDB_REPLY_ENTRY:
 		if (sctx->sort) {
 			ret = store_message(ares->message, sctx);
 		} else {
-			ret = display_message(ldb, ares->message, sctx);
+			ret = display_message(ares->message, sctx);
 		}
 		break;
 
@@ -154,6 +163,9 @@ static int search_callback(struct ldb_context *ldb, void *context, struct ldb_re
 		} else {
 			ret = display_referral(ares->referral, sctx);
 		}
+		if (ret) {
+			return ldb_request_done(req, LDB_ERR_OPERATIONS_ERROR);
+		}
 		break;
 
 	case LDB_REPLY_DONE:
@@ -161,22 +173,13 @@ static int search_callback(struct ldb_context *ldb, void *context, struct ldb_re
 			if (handle_controls_reply(ares->controls, sctx->req_ctrls) == 1)
 				sctx->pending = 1;
 		}
-		ret = 0;
-		break;
-		
-	default:
-		fprintf(stderr, "unknown Reply Type\n");
-		return LDB_ERR_OTHER;
+		talloc_free(ares);
+		return ldb_request_done(req, LDB_SUCCESS);
 	}
 
-	if (talloc_free(ares) == -1) {
-		fprintf(stderr, "talloc_free failed\n");
-		sctx->pending = 0;
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
+	talloc_free(ares);
 	if (ret) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_request_done(req, LDB_ERR_OPERATIONS_ERROR);
 	}
 
 	return LDB_SUCCESS;
@@ -192,12 +195,12 @@ static int do_search(struct ldb_context *ldb,
 	struct search_context *sctx;
 	int ret;
 
-	req = talloc(ldb, struct ldb_request);
-	if (!req) return -1;
+	req = NULL;
 	
-	sctx = talloc(req, struct search_context);
+	sctx = talloc(ldb, struct search_context);
 	if (!sctx) return -1;
 
+	sctx->ldb = ldb;
 	sctx->sort = options->sorted;
 	sctx->num_stored = 0;
 	sctx->refs_stored = 0;
@@ -214,18 +217,22 @@ static int do_search(struct ldb_context *ldb,
 		basedn = ldb_get_default_basedn(ldb);
 	}
 
-	req->operation = LDB_SEARCH;
-	req->op.search.base = basedn;
-	req->op.search.scope = options->scope;
-	req->op.search.tree = ldb_parse_tree(req, expression);
-	if (req->op.search.tree == NULL) return -1;
-	req->op.search.attrs = attrs;
-	req->controls = sctx->req_ctrls;
-	req->context = sctx;
-	req->callback = &search_callback;
-	ldb_set_timeout(ldb, req, 0); /* TODO: make this settable by command line */
-
 again:
+	/* free any previous requests */
+	if (req) talloc_free(req);
+
+	ret = ldb_build_search_req(&req, ldb, ldb,
+				   basedn, options->scope,
+				   expression, attrs,
+				   sctx->req_ctrls,
+				   sctx, search_callback,
+				   NULL);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(sctx);
+		printf("allocating request failed: %s\n", ldb_errstring(ldb));
+		return -1;
+	}
+
 	sctx->pending = 0;
 
 	ret = ldb_request(ldb, req);
@@ -251,7 +258,7 @@ again:
 				  ldb, (ldb_qsort_cmp_fn_t)do_compare_msg);
 		}
 		for (i = 0; i < sctx->num_stored; i++) {
-			display_message(ldb, sctx->store[i], sctx);
+			display_message(sctx->store[i], sctx);
 		}
 
 		for (i = 0; i < sctx->refs_stored; i++) {
@@ -262,6 +269,7 @@ again:
 	printf("# returned %d records\n# %d entries\n# %d referrals\n",
 		sctx->entries + sctx->refs, sctx->entries, sctx->refs);
 
+	talloc_free(sctx);
 	talloc_free(req);
 
 	return 0;

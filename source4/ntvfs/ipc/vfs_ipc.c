@@ -25,7 +25,7 @@
 
 
 #include "includes.h"
-#include "lib/util/dlinklist.h"
+#include "../lib/util/dlinklist.h"
 #include "ntvfs/ntvfs.h"
 #include "libcli/rap/rap.h"
 #include "ntvfs/ipc/proto.h"

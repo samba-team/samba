@@ -35,7 +35,7 @@ void task_server_terminate(struct task_server *task, const char *reason)
 	struct event_context *event_ctx = task->event_ctx;
 	const struct model_ops *model_ops = task->model_ops;
 	DEBUG(0,("task_server_terminate: [%s]\n", reason));
-	model_ops->terminate(event_ctx, reason);
+	model_ops->terminate(event_ctx, task->lp_ctx, reason);
 	
 	/* don't free this above, it might contain the 'reason' being printed */
 	talloc_free(task);

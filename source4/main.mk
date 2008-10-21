@@ -16,16 +16,18 @@ mkinclude lib/registry/config.mk
 mkinclude lib/messaging/config.mk
 mkinclude lib/events/config.mk
 mkinclude lib/cmdline/config.mk
-mkinclude lib/socket_wrapper/config.mk
-mkinclude lib/nss_wrapper/config.mk
-mkinclude lib/appweb/config.mk
+mkinclude ../lib/socket_wrapper/config.mk
+mkinclude ../lib/nss_wrapper/config.mk
 mkinclude lib/stream/config.mk
-mkinclude lib/util/config.mk
+mkinclude ../lib/util/config.mk
 mkinclude lib/tdr/config.mk
 mkinclude lib/dbwrap/config.mk
-mkinclude lib/crypto/config.mk
+mkinclude ../lib/crypto/config.mk
 mkinclude lib/torture/config.mk
 mkinclude lib/basic.mk
+mkinclude lib/com/config.mk
+# WMI fails at the moment
+# mkinclude lib/wmi/config.mk
 mkinclude param/config.mk
 mkinclude smb_server/config.mk
 mkinclude rpc_server/config.mk
@@ -44,6 +46,5 @@ mkinclude torture/config.mk
 mkinclude librpc/config.mk
 mkinclude client/config.mk
 mkinclude libcli/config.mk
-mkinclude scripting/ejs/config.mk
 mkinclude scripting/python/config.mk
 mkinclude kdc/config.mk

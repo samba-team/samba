@@ -25,7 +25,7 @@
 #include "includes.h"
 #include "libcli/raw/libcliraw.h"
 #include "libcli/raw/raw_proto.h"
-#include "lib/util/dlinklist.h"
+#include "../lib/util/dlinklist.h"
 #include "lib/events/events.h"
 #include "param/param.h"
 #include "librpc/ndr/libndr.h"
@@ -72,7 +72,11 @@ _PUBLIC_ NTSTATUS smbcli_request_destroy(struct smbcli_request *req)
 	}
 
 	status = req->status;
-	talloc_free(req);
+
+	if (!req->do_not_free) {
+		talloc_free(req);
+	}
+
 	return status;
 }
 

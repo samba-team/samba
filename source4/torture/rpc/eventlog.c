@@ -40,13 +40,16 @@ static bool get_policy_handle(struct torture_context *tctx,
 {
 	struct eventlog_OpenEventLogW r;
 	struct eventlog_OpenUnknown0 unknown0;
+	struct lsa_String logname, servername;
 
 	unknown0.unknown0 = 0x005c;
 	unknown0.unknown1 = 0x0001;
 
 	r.in.unknown0 = &unknown0;
-	init_lsa_String(&r.in.logname, "dns server");
-	init_lsa_String(&r.in.servername, NULL);
+	init_lsa_String(r.in.logname, "dns server");
+	init_lsa_String(r.in.servername, NULL);
+	r.in.logname = &logname;
+	r.in.servername = &servername;
 	r.in.unknown2 = 0x00000001;
 	r.in.unknown3 = 0x00000001;
 	r.out.handle = handle;
@@ -205,7 +208,7 @@ static bool test_ClearEventLog(struct torture_context *tctx,
 		return false;
 
 	r.in.handle = &handle;
-	r.in.unknown = NULL;
+	r.in.backupfile = NULL;
 
 	torture_assert_ntstatus_ok(tctx, 
 			dcerpc_eventlog_ClearEventLogW(p, tctx, &r), 

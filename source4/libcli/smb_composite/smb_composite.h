@@ -57,6 +57,7 @@ struct smb_composite_fetchfile {
 		const char *workgroup;
 		const char *filename;
 		struct smbcli_options options;
+		struct smbcli_session_options session_options;
 		struct resolve_context *resolve_ctx;
 	} in;
 	struct {
@@ -98,6 +99,7 @@ struct smb_composite_connect {
 		bool fallback_to_anonymous;
 		const char *workgroup;
 		struct smbcli_options options;
+		struct smbcli_session_options session_options;
 	} in;
 	struct {
 		struct smbcli_tree *tree;

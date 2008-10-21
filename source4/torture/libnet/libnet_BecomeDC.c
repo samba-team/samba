@@ -26,7 +26,7 @@
 #include "libnet/libnet.h"
 #include "lib/events/events.h"
 #include "dsdb/samdb/samdb.h"
-#include "lib/util/dlinklist.h"
+#include "../lib/util/dlinklist.h"
 #include "lib/ldb/include/ldb.h"
 #include "lib/ldb/include/ldb_errors.h"
 #include "librpc/ndr/libndr.h"

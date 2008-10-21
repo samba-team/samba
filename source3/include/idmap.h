@@ -31,8 +31,9 @@
    Updated to 3 for enum types by JRA. */
 
 /* Updated to 4, completely new interface, SSS */
+/* Updated to 5, simplified interface by Volker */
 
-#define SMB_IDMAP_INTERFACE_VERSION 4
+#define SMB_IDMAP_INTERFACE_VERSION 5
 
 struct idmap_domain {
 	const char *name;

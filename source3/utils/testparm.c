@@ -56,7 +56,7 @@ cannot be set in the smb.conf file. nmbd will abort with this setting.\n");
 		ret = 1;
 	}
 
-	if (!directory_exist(lp_lockdir(), &st)) {
+	if (!directory_exist_stat(lp_lockdir(), &st)) {
 		fprintf(stderr, "ERROR: lock directory %s does not exist\n",
 		       lp_lockdir());
 		ret = 1;
@@ -66,7 +66,7 @@ cannot be set in the smb.conf file. nmbd will abort with this setting.\n");
 		ret = 1;
 	}
 
-	if (!directory_exist(lp_piddir(), &st)) {
+	if (!directory_exist_stat(lp_piddir(), &st)) {
 		fprintf(stderr, "ERROR: pid directory %s does not exist\n",
 		       lp_piddir());
 		ret = 1;
@@ -329,9 +329,12 @@ rameter is ignored when using CUPS libraries.\n",
 	cname = poptGetArg(pc);
 	caddr = poptGetArg(pc);
 
+	poptFreeContext(pc);
+
 	if ( cname && ! caddr ) {
 		printf ( "ERROR: You must specify both a machine name and an IP address.\n" );
-		return(1);
+		ret = 1;
+		goto done;
 	}
 
 	if (new_local_machine) {
@@ -346,7 +349,8 @@ rameter is ignored when using CUPS libraries.\n",
 
 	if (!lp_load_with_registry_shares(config_file,False,True,False,True)) {
 		fprintf(stderr,"Error loading services.\n");
-		return(1);
+		ret = 1;
+		goto done;
 	}
 
 	fprintf(stderr,"Loaded services file OK.\n");
@@ -393,13 +397,15 @@ rameter is ignored when using CUPS libraries.\n",
 				 (s=lp_servicenumber(section_name)) == -1) {
 					fprintf(stderr,"Unknown section %s\n",
 						section_name);
-					return(1);
+					ret = 1;
+					goto done;
 			}
 			if (parameter_name) {
 				if (!dump_a_parameter( s, parameter_name, stdout, isGlobal)) {
 					fprintf(stderr,"Parameter %s unknown for section %s\n",
 						parameter_name, section_name);
-					return(1);
+					ret = 1;
+					goto done;
 				}
 			} else {
 				if (isGlobal == True)
@@ -407,7 +413,7 @@ rameter is ignored when using CUPS libraries.\n",
 				else
 					lp_dump_one(stdout, show_defaults, s);
 			}
-			return(ret);
+			goto done;
 		}
 
 		lp_dump(stdout, show_defaults, lp_numservices());
@@ -428,7 +434,10 @@ rameter is ignored when using CUPS libraries.\n",
 			}
 		}
 	}
+
+done:
+	gfree_loadparm();
 	TALLOC_FREE(frame);
-	return(ret);
+	return ret;
 }
 

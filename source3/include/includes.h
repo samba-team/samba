@@ -25,7 +25,7 @@
 #undef SIZEOF_LONG
 #endif
 
-#include "lib/replace/replace.h"
+#include "../replace/replace.h"
 
 /* make sure we have included the correct config.h */
 #ifndef NO_CONFIG_H /* for some tests */
@@ -69,23 +69,6 @@
 #ifdef SUNOS4
 /* on SUNOS4 termios.h conflicts with sys/ioctl.h */
 #undef HAVE_TERMIOS_H
-#endif
-
-#ifndef _PUBLIC_
-#ifdef HAVE_VISIBILITY_ATTR
-#  define _PUBLIC_ __attribute__((visibility("default")))
-#else
-#  define _PUBLIC_
-#endif
-#endif
-
-#if defined(__GNUC__) && !defined(__cplusplus)
-/** gcc attribute used on function parameters so that it does not emit
- * warnings about them being unused. **/
-#  define UNUSED(param) param __attribute__ ((unused))
-#else
-#  define UNUSED(param) param
-/** Feel free to add definitions for other compilers here. */
 #endif
 
 #ifdef RELIANTUNIX
@@ -286,34 +269,16 @@ typedef int ber_int_t;
 #endif
 
 /*
- * Define VOLATILE if needed.
- */
-
-#if defined(HAVE_VOLATILE)
-#define VOLATILE volatile
-#else
-#define VOLATILE
-#endif
-
-/*
  * Define additional missing types
  */
-#if defined(HAVE_SIG_ATOMIC_T_TYPE) && defined(AIX)
+#if defined(AIX)
 typedef sig_atomic_t SIG_ATOMIC_T;
-#elif defined(HAVE_SIG_ATOMIC_T_TYPE) && !defined(AIX)
-typedef sig_atomic_t VOLATILE SIG_ATOMIC_T;
 #else
-typedef int VOLATILE SIG_ATOMIC_T;
+typedef sig_atomic_t volatile SIG_ATOMIC_T;
 #endif
 
 #ifndef uchar
 #define uchar unsigned char
-#endif
-
-#ifdef HAVE_UNSIGNED_CHAR
-#define schar signed char
-#else
-#define schar char
 #endif
 
 /*
@@ -326,15 +291,11 @@ typedef int VOLATILE SIG_ATOMIC_T;
 */
 
 #ifndef uint8
-#define uint8 unsigned char
+#define uint8 uint8_t
 #endif
 
 #if !defined(int16) && !defined(HAVE_INT16_FROM_RPC_RPC_H)
-#  if (SIZEOF_SHORT == 4)
-#    define int16 __ERROR___CANNOT_DETERMINE_TYPE_FOR_INT16;
-#  else /* SIZEOF_SHORT != 4 */
-#    define int16 short
-#  endif /* SIZEOF_SHORT != 4 */
+#  define int16 int16_t
    /* needed to work around compile issue on HP-UX 11.x */
 #  define _INT16	1
 #endif
@@ -344,25 +305,13 @@ typedef int VOLATILE SIG_ATOMIC_T;
  * case as int16 may be a typedef from rpc/rpc.h
  */
 
+
 #if !defined(uint16) && !defined(HAVE_UINT16_FROM_RPC_RPC_H)
-#if (SIZEOF_SHORT == 4)
-#define uint16 __ERROR___CANNOT_DETERMINE_TYPE_FOR_INT16;
-#else /* SIZEOF_SHORT != 4 */
-#define uint16 unsigned short
-#endif /* SIZEOF_SHORT != 4 */
+#  define uint16 uint16_t
 #endif
 
 #if !defined(int32) && !defined(HAVE_INT32_FROM_RPC_RPC_H)
-#  if (SIZEOF_INT == 4)
-#    define int32 int
-#  elif (SIZEOF_LONG == 4)
-#    define int32 long
-#  elif (SIZEOF_SHORT == 4)
-#    define int32 short
-#  else
-     /* uggh - no 32 bit type?? probably a CRAY. just hope this works ... */
-#    define int32 int
-#  endif
+#  define int32 int32_t
    /* needed to work around compile issue on HP-UX 11.x */
 #  define _INT32	1
 #endif
@@ -373,16 +322,7 @@ typedef int VOLATILE SIG_ATOMIC_T;
  */
 
 #if !defined(uint32) && !defined(HAVE_UINT32_FROM_RPC_RPC_H)
-#if (SIZEOF_INT == 4)
-#define uint32 unsigned int
-#elif (SIZEOF_LONG == 4)
-#define uint32 unsigned long
-#elif (SIZEOF_SHORT == 4)
-#define uint32 unsigned short
-#else
-/* uggh - no 32 bit type?? probably a CRAY. just hope this works ... */
-#define uint32 unsigned
-#endif
+#  define uint32 uint32_t
 #endif
 
 /*
@@ -390,19 +330,11 @@ typedef int VOLATILE SIG_ATOMIC_T;
  */
 
 #if !defined(uint64)
-#if (SIZEOF_LONG == 8)
-#define uint64 unsigned long
-#elif (SIZEOF_LONG_LONG == 8)
-#define uint64 unsigned long long
-#endif	/* don't lie.  If we don't have it, then don't use it */
+#  define uint64 uint64_t
 #endif
 
 #if !defined(int64)
-#if (SIZEOF_LONG == 8)
-#define int64 long
-#elif (SIZEOF_LONG_LONG == 8)
-#define int64 long long
-#endif	/* don't lie.  If we don't have it, then don't use it */
+#  define int64 int64_t
 #endif
 
 
@@ -426,7 +358,7 @@ typedef int VOLATILE SIG_ATOMIC_T;
 
 #ifdef LARGE_SMB_DEV_T
 #define SDEV_T_VAL(p, ofs, v) (SIVAL((p),(ofs),(v)&0xFFFFFFFF), SIVAL((p),(ofs)+4,(v)>>32))
-#define DEV_T_VAL(p, ofs) ((SMB_DEV_T)(((SMB_BIG_UINT)(IVAL((p),(ofs))))| (((SMB_BIG_UINT)(IVAL((p),(ofs)+4))) << 32)))
+#define DEV_T_VAL(p, ofs) ((SMB_DEV_T)(((uint64_t)(IVAL((p),(ofs))))| (((uint64_t)(IVAL((p),(ofs)+4))) << 32)))
 #else 
 #define SDEV_T_VAL(p, ofs, v) (SIVAL((p),(ofs),v),SIVAL((p),(ofs)+4,0))
 #define DEV_T_VAL(p, ofs) ((SMB_DEV_T)(IVAL((p),(ofs))))
@@ -452,7 +384,7 @@ typedef int VOLATILE SIG_ATOMIC_T;
 
 #ifdef LARGE_SMB_INO_T
 #define SINO_T_VAL(p, ofs, v) (SIVAL((p),(ofs),(v)&0xFFFFFFFF), SIVAL((p),(ofs)+4,(v)>>32))
-#define INO_T_VAL(p, ofs) ((SMB_INO_T)(((SMB_BIG_UINT)(IVAL(p,ofs)))| (((SMB_BIG_UINT)(IVAL(p,(ofs)+4))) << 32)))
+#define INO_T_VAL(p, ofs) ((SMB_INO_T)(((uint64_t)(IVAL(p,ofs)))| (((uint64_t)(IVAL(p,(ofs)+4))) << 32)))
 #else 
 #define SINO_T_VAL(p, ofs, v) (SIVAL(p,ofs,v),SIVAL(p,(ofs)+4,0))
 #define INO_T_VAL(p, ofs) ((SMB_INO_T)(IVAL((p),(ofs))))
@@ -466,20 +398,13 @@ typedef int VOLATILE SIG_ATOMIC_T;
 #  endif
 #endif
 
-#if defined(HAVE_LONGLONG)
-#define SMB_BIG_UINT unsigned long long
-#define SMB_BIG_INT long long
 #define SBIG_UINT(p, ofs, v) (SIVAL(p,ofs,(v)&0xFFFFFFFF), SIVAL(p,(ofs)+4,(v)>>32))
-#else
-#define SMB_BIG_UINT unsigned long
-#define SMB_BIG_INT long
-#define SBIG_UINT(p, ofs, v) (SIVAL(p,ofs,v),SIVAL(p,(ofs)+4,0))
-#endif
+#define IVAL2_TO_SMB_BIG_UINT(buf,off) ( (((uint64_t)(IVAL((buf),(off)))) & ((uint64_t)0xFFFFFFFF)) | \
+		(( ((uint64_t)(IVAL((buf),(off+4)))) & ((uint64_t)0xFFFFFFFF) ) << 32 ) )
 
-#define SMB_BIG_UINT_BITS (sizeof(SMB_BIG_UINT)*8)
 
 /* this should really be a 64 bit type if possible */
-#define br_off SMB_BIG_UINT
+typedef uint64_t br_off;
 
 #define SMB_OFF_T_BITS (sizeof(SMB_OFF_T)*8)
 
@@ -497,15 +422,11 @@ typedef int VOLATILE SIG_ATOMIC_T;
 #ifdef LARGE_SMB_OFF_T
 #define SOFF_T(p, ofs, v) (SIVAL(p,ofs,(v)&0xFFFFFFFF), SIVAL(p,(ofs)+4,(v)>>32))
 #define SOFF_T_R(p, ofs, v) (SIVAL(p,(ofs)+4,(v)&0xFFFFFFFF), SIVAL(p,ofs,(v)>>32))
-#define IVAL_TO_SMB_OFF_T(buf,off) ((SMB_OFF_T)(( ((SMB_BIG_UINT)(IVAL((buf),(off)))) & ((SMB_BIG_UINT)0xFFFFFFFF) )))
-#define IVAL2_TO_SMB_BIG_UINT(buf,off) ( (((SMB_BIG_UINT)(IVAL((buf),(off)))) & ((SMB_BIG_UINT)0xFFFFFFFF)) | \
-		(( ((SMB_BIG_UINT)(IVAL((buf),(off+4)))) & ((SMB_BIG_UINT)0xFFFFFFFF) ) << 32 ) )
+#define IVAL_TO_SMB_OFF_T(buf,off) ((SMB_OFF_T)(( ((uint64_t)(IVAL((buf),(off)))) & ((uint64_t)0xFFFFFFFF) )))
 #else 
 #define SOFF_T(p, ofs, v) (SIVAL(p,ofs,v),SIVAL(p,(ofs)+4,0))
 #define SOFF_T_R(p, ofs, v) (SIVAL(p,(ofs)+4,v),SIVAL(p,ofs,0))
 #define IVAL_TO_SMB_OFF_T(buf,off) ((SMB_OFF_T)(( ((uint32)(IVAL((buf),(off)))) & 0xFFFFFFFF )))
-#define IVAL2_TO_SMB_BIG_UINT(buf,off) ( (((SMB_BIG_UINT)(IVAL((buf),(off)))) & ((SMB_BIG_UINT)0xFFFFFFFF)) | \
-		                (( ((SMB_BIG_UINT)(IVAL((buf),(off+4)))) & ((SMB_BIG_UINT)0xFFFFFFFF) ) << 32 ) )
 #endif
 
 /*
@@ -645,14 +566,24 @@ struct timespec {
 typedef char fstring[FSTRING_LEN];
 #endif
 
+/* Samba 3 doesn't use iconv_convenience: */
+extern void *global_loadparm;
+extern void *cmdline_lp_ctx;
+struct smb_iconv_convenience *lp_iconv_convenience(void *lp_ctx);
+
 /* Lists, trees, caching, database... */
-#include "xfile.h"
+#include "../lib/util/xfile.h"
+#include "../lib/util/memory.h"
+#include "../lib/util/attr.h"
 #include "intl.h"
-#include "dlinklist.h"
+#include "../lib/util/dlinklist.h"
 #include "tdb.h"
 #include "util_tdb.h"
 
-#include "lib/talloc/talloc.h"
+#include "../talloc/talloc.h"
+
+#include "../lib/util/data_blob.h"
+#include "../lib/util/time.h"
 /* And a little extension. Abort on type mismatch */
 #define talloc_get_type_abort(ptr, type) \
 	(type *)talloc_check_name_abort(ptr, #type)
@@ -675,7 +606,7 @@ typedef char fstring[FSTRING_LEN];
 #include "smb.h"
 #include "nameserv.h"
 #include "secrets.h"
-#include "byteorder.h"
+#include "../lib/util/byteorder.h"
 #include "privileges.h"
 #include "rpc_misc.h"
 #include "rpc_dce.h"
@@ -686,8 +617,10 @@ typedef char fstring[FSTRING_LEN];
 #include "authdata.h"
 #include "msdfs.h"
 #include "rap.h"
-#include "md5.h"
-#include "hmacmd5.h"
+#include "../lib/crypto/md5.h"
+#include "../lib/crypto/arcfour.h"
+#include "../lib/crypto/crc32.h"
+#include "../lib/crypto/hmacmd5.h"
 #include "ntlmssp.h"
 #include "auth.h"
 #include "ntdomain.h"
@@ -703,6 +636,7 @@ typedef char fstring[FSTRING_LEN];
 #include "librpc/gen_ndr/notify.h"
 #include "librpc/gen_ndr/xattr.h"
 #include "librpc/gen_ndr/messaging.h"
+#include "librpc/gen_ndr/ndr_nbt.h"
 #include "librpc/rpc/dcerpc.h"
 #include "nt_printing.h"
 #include "idmap.h"
@@ -782,14 +716,6 @@ enum flush_reason_enum {
 #include "modules/nfs4_acls.h"
 #include "nsswitch/libwbclient/wbclient.h"
 
-/* generated rpc server implementation functions */
-#include "librpc/gen_ndr/srv_echo.h"
-#include "librpc/gen_ndr/srv_svcctl.h"
-#include "librpc/gen_ndr/srv_lsa.h"
-#include "librpc/gen_ndr/srv_eventlog.h"
-#include "librpc/gen_ndr/srv_winreg.h"
-#include "librpc/gen_ndr/srv_initshutdown.h"
-
 /***** automatically generated prototypes *****/
 #ifndef NO_PROTO_H
 #include "proto.h"
@@ -829,14 +755,6 @@ enum flush_reason_enum {
 
 /* prototypes from lib/util_transfer_file.c */
 #include "transfer_file.h"
-
-#ifdef __COMPAR_FN_T
-#define QSORT_CAST (__compar_fn_t)
-#endif
-
-#ifndef QSORT_CAST
-#define QSORT_CAST (int (*)(const void *, const void *))
-#endif
 
 #ifndef DEFAULT_PRINTING
 #ifdef HAVE_CUPS
@@ -887,26 +805,6 @@ enum flush_reason_enum {
 #define SYNC_DNS 1
 #endif
 
-#ifndef SEEK_SET
-#define SEEK_SET 0
-#endif
-
-#ifndef INADDR_LOOPBACK
-#define INADDR_LOOPBACK 0x7f000001
-#endif
-
-#ifndef INADDR_NONE
-#define INADDR_NONE 0xffffffff
-#endif
-
-#ifndef HAVE_CRYPT
-#define crypt ufc_crypt
-#endif
-
-#ifndef O_ACCMODE
-#define O_ACCMODE (O_RDONLY | O_WRONLY | O_RDWR)
-#endif
-
 #if defined(HAVE_CRYPT16) && defined(HAVE_GETAUTHUID)
 #define ULTRIX_AUTH 1
 #endif
@@ -919,25 +817,8 @@ int setresuid(uid_t ruid, uid_t euid, uid_t suid);
 int setresgid(gid_t rgid, gid_t egid, gid_t sgid);
 #endif
 
-/*
- * Some older systems seem not to have MAXHOSTNAMELEN
- * defined.
- */
-#ifndef MAXHOSTNAMELEN
-#define MAXHOSTNAMELEN 255
-#endif
-
 /* yuck, I'd like a better way of doing this */
 #define DIRP_SIZE (256 + 32)
-
-/*
- * glibc on linux doesn't seem to have MSG_WAITALL
- * defined. I think the kernel has it though..
- */
-
-#ifndef MSG_WAITALL
-#define MSG_WAITALL 0
-#endif
 
 /* default socket options. Dave Miller thinks we should default to TCP_NODELAY
    given the socket IO pattern that Samba uses */
@@ -953,84 +834,6 @@ int setresgid(gid_t rgid, gid_t egid, gid_t sgid);
 #  include <dmalloc.h>
 #endif
 
-
-/* Some POSIX definitions for those without */
- 
-#ifndef S_IFDIR
-#define S_IFDIR         0x4000
-#endif
-#ifndef S_ISDIR
-#define S_ISDIR(mode)   ((mode & 0xF000) == S_IFDIR)
-#endif
-#ifndef S_IRWXU
-#define S_IRWXU 00700           /* read, write, execute: owner */
-#endif
-#ifndef S_IRUSR
-#define S_IRUSR 00400           /* read permission: owner */
-#endif
-#ifndef S_IWUSR
-#define S_IWUSR 00200           /* write permission: owner */
-#endif
-#ifndef S_IXUSR
-#define S_IXUSR 00100           /* execute permission: owner */
-#endif
-#ifndef S_IRWXG
-#define S_IRWXG 00070           /* read, write, execute: group */
-#endif
-#ifndef S_IRGRP
-#define S_IRGRP 00040           /* read permission: group */
-#endif
-#ifndef S_IWGRP
-#define S_IWGRP 00020           /* write permission: group */
-#endif
-#ifndef S_IXGRP
-#define S_IXGRP 00010           /* execute permission: group */
-#endif
-#ifndef S_IRWXO
-#define S_IRWXO 00007           /* read, write, execute: other */
-#endif
-#ifndef S_IROTH
-#define S_IROTH 00004           /* read permission: other */
-#endif
-#ifndef S_IWOTH
-#define S_IWOTH 00002           /* write permission: other */
-#endif
-#ifndef S_IXOTH
-#define S_IXOTH 00001           /* execute permission: other */
-#endif
-
-/* For sys_adminlog(). */
-#ifndef LOG_EMERG
-#define LOG_EMERG       0       /* system is unusable */
-#endif
-
-#ifndef LOG_ALERT
-#define LOG_ALERT       1       /* action must be taken immediately */
-#endif
-
-#ifndef LOG_CRIT
-#define LOG_CRIT        2       /* critical conditions */
-#endif
-
-#ifndef LOG_ERR
-#define LOG_ERR         3       /* error conditions */
-#endif
-
-#ifndef LOG_WARNING
-#define LOG_WARNING     4       /* warning conditions */
-#endif
-
-#ifndef LOG_NOTICE
-#define LOG_NOTICE      5       /* normal but significant condition */
-#endif
-
-#ifndef LOG_INFO
-#define LOG_INFO        6       /* informational */
-#endif
-
-#ifndef LOG_DEBUG
-#define LOG_DEBUG       7       /* debug-level messages */
-#endif
 
 #if HAVE_KERNEL_SHARE_MODES
 #ifndef LOCK_MAND 
@@ -1058,19 +861,6 @@ extern int DEBUGLEVEL;
 #define F_SETLKW 14
 #endif
 
-
-/* Needed for sys_dlopen/sys_dlsym/sys_dlclose */
-#ifndef RTLD_GLOBAL
-#define RTLD_GLOBAL 0
-#endif
-
-#ifndef RTLD_LAZY
-#define RTLD_LAZY 0
-#endif
-
-#ifndef RTLD_NOW
-#define RTLD_NOW 0
-#endif
 
 /* needed for some systems without iconv. Doesn't really matter
    what error code we use */
@@ -1103,17 +893,6 @@ char *talloc_asprintf_strupper_m(TALLOC_CTX *t, const char *fmt, ...) PRINTF_ATT
    for snprintf and vsnprintf */
 #define slprintf snprintf
 #define vslprintf vsnprintf
-
-/* we need to use __va_copy() on some platforms */
-#ifdef HAVE_VA_COPY
-#define VA_COPY(dest, src) va_copy(dest, src)
-#else
-#ifdef HAVE___VA_COPY
-#define VA_COPY(dest, src) __va_copy(dest, src)
-#else
-#define VA_COPY(dest, src) (dest) = (src)
-#endif
-#endif
 
 /*
  * Veritas File System.  Often in addition to native.
@@ -1270,10 +1049,6 @@ LDAP *ldap_open_with_timeout(const char *server, int port, unsigned int to);
 ssize_t readahead(int fd, off64_t offset, size_t count);
 #endif
 
-/* TRUE and FALSE are part of the C99 standard and gcc, but
-   unfortunately many vendor compilers don't support them.  Use True
-   and False instead. */
-
 #ifdef TRUE
 #undef TRUE
 #endif
@@ -1292,21 +1067,12 @@ ssize_t readahead(int fd, off64_t offset, size_t count);
 #endif
 
 #define CONST_DISCARD(type, ptr)      ((type) ((void *) (ptr)))
-#define CONST_ADD(type, ptr)          ((type) ((const void *) (ptr)))
 
-#ifndef NORETURN_ATTRIBUTE
-#if (__GNUC__ >= 3)
-#define NORETURN_ATTRIBUTE __attribute__ ((noreturn))
-#else
-#define NORETURN_ATTRIBUTE
-#endif
-#endif
-
-void smb_panic( const char *why ) NORETURN_ATTRIBUTE ;
-void dump_core(void) NORETURN_ATTRIBUTE ;
-void exit_server(const char *const reason) NORETURN_ATTRIBUTE ;
-void exit_server_cleanly(const char *const reason) NORETURN_ATTRIBUTE ;
-void exit_server_fault(void) NORETURN_ATTRIBUTE ;
+void smb_panic( const char *why ) _NORETURN_;
+void dump_core(void) _NORETURN_;
+void exit_server(const char *const reason) _NORETURN_;
+void exit_server_cleanly(const char *const reason) _NORETURN_;
+void exit_server_fault(void) _NORETURN_;
 
 #ifdef HAVE_LIBNSCD
 #include "libnscd.h"

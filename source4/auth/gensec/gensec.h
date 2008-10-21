@@ -133,6 +133,8 @@ struct gensec_security_ops {
 	NTSTATUS (*session_key)(struct gensec_security *gensec_security, DATA_BLOB *session_key);
 	NTSTATUS (*session_info)(struct gensec_security *gensec_security, 
 				 struct auth_session_info **session_info); 
+	void (*want_feature)(struct gensec_security *gensec_security,
+				    uint32_t feature);
 	bool (*have_feature)(struct gensec_security *gensec_security,
 				    uint32_t feature); 
 	bool enabled;
@@ -174,6 +176,7 @@ struct gensec_security;
 struct socket_context;
 
 NTSTATUS gensec_socket_init(struct gensec_security *gensec_security,
+			    TALLOC_CTX *mem_ctx, 
 			    struct socket_context *current_socket,
 			    struct event_context *ev,
 			    void (*recv_handler)(void *, uint16_t),

@@ -503,7 +503,7 @@ NTSTATUS rpccli_lsa_EnumAccounts(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_lsa_CreateTrustedDomain(struct rpc_pipe_client *cli,
 					TALLOC_CTX *mem_ctx,
-					struct policy_handle *handle /* [in] [ref] */,
+					struct policy_handle *policy_handle /* [in] [ref] */,
 					struct lsa_DomainInfo *info /* [in] [ref] */,
 					uint32_t access_mask /* [in]  */,
 					struct policy_handle *trustdom_handle /* [out] [ref] */)
@@ -512,7 +512,7 @@ NTSTATUS rpccli_lsa_CreateTrustedDomain(struct rpc_pipe_client *cli,
 	NTSTATUS status;
 
 	/* In parameters */
-	r.in.handle = handle;
+	r.in.policy_handle = policy_handle;
 	r.in.info = info;
 	r.in.access_mask = access_mask;
 
@@ -1141,12 +1141,18 @@ NTSTATUS rpccli_lsa_QueryTrustedDomainInfo(struct rpc_pipe_client *cli,
 }
 
 NTSTATUS rpccli_lsa_SetInformationTrustedDomain(struct rpc_pipe_client *cli,
-						TALLOC_CTX *mem_ctx)
+						TALLOC_CTX *mem_ctx,
+						struct policy_handle *trustdom_handle /* [in] [ref] */,
+						enum lsa_TrustDomInfoEnum level /* [in]  */,
+						union lsa_TrustedDomainInfo *info /* [in] [ref,switch_is(level)] */)
 {
 	struct lsa_SetInformationTrustedDomain r;
 	NTSTATUS status;
 
 	/* In parameters */
+	r.in.trustdom_handle = trustdom_handle;
+	r.in.level = level;
+	r.in.info = info;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(lsa_SetInformationTrustedDomain, &r);
@@ -1706,12 +1712,20 @@ NTSTATUS rpccli_lsa_QueryTrustedDomainInfoBySid(struct rpc_pipe_client *cli,
 }
 
 NTSTATUS rpccli_lsa_SetTrustedDomainInfo(struct rpc_pipe_client *cli,
-					 TALLOC_CTX *mem_ctx)
+					 TALLOC_CTX *mem_ctx,
+					 struct policy_handle *handle /* [in] [ref] */,
+					 struct dom_sid2 *dom_sid /* [in] [ref] */,
+					 enum lsa_TrustDomInfoEnum level /* [in]  */,
+					 union lsa_TrustedDomainInfo *info /* [in] [ref,switch_is(level)] */)
 {
 	struct lsa_SetTrustedDomainInfo r;
 	NTSTATUS status;
 
 	/* In parameters */
+	r.in.handle = handle;
+	r.in.dom_sid = dom_sid;
+	r.in.level = level;
+	r.in.info = info;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(lsa_SetTrustedDomainInfo, &r);
@@ -2161,12 +2175,21 @@ NTSTATUS rpccli_lsa_EnumTrustedDomainsEx(struct rpc_pipe_client *cli,
 }
 
 NTSTATUS rpccli_lsa_CreateTrustedDomainEx(struct rpc_pipe_client *cli,
-					  TALLOC_CTX *mem_ctx)
+					  TALLOC_CTX *mem_ctx,
+					  struct policy_handle *policy_handle /* [in] [ref] */,
+					  struct lsa_TrustDomainInfoInfoEx *info /* [in] [ref] */,
+					  struct lsa_TrustDomainInfoAuthInfoInternal *auth_info /* [in] [ref] */,
+					  uint32_t access_mask /* [in]  */,
+					  struct policy_handle *trustdom_handle /* [out] [ref] */)
 {
 	struct lsa_CreateTrustedDomainEx r;
 	NTSTATUS status;
 
 	/* In parameters */
+	r.in.policy_handle = policy_handle;
+	r.in.info = info;
+	r.in.auth_info = auth_info;
+	r.in.access_mask = access_mask;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(lsa_CreateTrustedDomainEx, &r);
@@ -2191,6 +2214,7 @@ NTSTATUS rpccli_lsa_CreateTrustedDomainEx(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
+	*trustdom_handle = *r.out.trustdom_handle;
 
 	/* Return result */
 	return r.out.result;
@@ -2462,8 +2486,8 @@ NTSTATUS rpccli_lsa_LookupNames2(struct rpc_pipe_client *cli,
 				 struct lsa_TransSidArray2 *sids /* [in,out] [ref] */,
 				 enum lsa_LookupNamesLevel level /* [in]  */,
 				 uint32_t *count /* [in,out] [ref] */,
-				 uint32_t unknown1 /* [in]  */,
-				 uint32_t unknown2 /* [in]  */)
+				 uint32_t lookup_options /* [in]  */,
+				 uint32_t client_revision /* [in]  */)
 {
 	struct lsa_LookupNames2 r;
 	NTSTATUS status;
@@ -2475,8 +2499,8 @@ NTSTATUS rpccli_lsa_LookupNames2(struct rpc_pipe_client *cli,
 	r.in.sids = sids;
 	r.in.level = level;
 	r.in.count = count;
-	r.in.unknown1 = unknown1;
-	r.in.unknown2 = unknown2;
+	r.in.lookup_options = lookup_options;
+	r.in.client_revision = client_revision;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(lsa_LookupNames2, &r);
@@ -2510,12 +2534,21 @@ NTSTATUS rpccli_lsa_LookupNames2(struct rpc_pipe_client *cli,
 }
 
 NTSTATUS rpccli_lsa_CreateTrustedDomainEx2(struct rpc_pipe_client *cli,
-					   TALLOC_CTX *mem_ctx)
+					   TALLOC_CTX *mem_ctx,
+					   struct policy_handle *policy_handle /* [in] [ref] */,
+					   struct lsa_TrustDomainInfoInfoEx *info /* [in] [ref] */,
+					   struct lsa_TrustDomainInfoAuthInfoInternal *auth_info /* [in] [ref] */,
+					   uint32_t access_mask /* [in]  */,
+					   struct policy_handle *trustdom_handle /* [out] [ref] */)
 {
 	struct lsa_CreateTrustedDomainEx2 r;
 	NTSTATUS status;
 
 	/* In parameters */
+	r.in.policy_handle = policy_handle;
+	r.in.info = info;
+	r.in.auth_info = auth_info;
+	r.in.access_mask = access_mask;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(lsa_CreateTrustedDomainEx2, &r);
@@ -2540,6 +2573,7 @@ NTSTATUS rpccli_lsa_CreateTrustedDomainEx2(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
+	*trustdom_handle = *r.out.trustdom_handle;
 
 	/* Return result */
 	return r.out.result;
@@ -2842,8 +2876,8 @@ NTSTATUS rpccli_lsa_LookupNames3(struct rpc_pipe_client *cli,
 				 struct lsa_TransSidArray3 *sids /* [in,out] [ref] */,
 				 enum lsa_LookupNamesLevel level /* [in]  */,
 				 uint32_t *count /* [in,out] [ref] */,
-				 uint32_t unknown1 /* [in]  */,
-				 uint32_t unknown2 /* [in]  */)
+				 uint32_t lookup_options /* [in]  */,
+				 uint32_t client_revision /* [in]  */)
 {
 	struct lsa_LookupNames3 r;
 	NTSTATUS status;
@@ -2855,8 +2889,8 @@ NTSTATUS rpccli_lsa_LookupNames3(struct rpc_pipe_client *cli,
 	r.in.sids = sids;
 	r.in.level = level;
 	r.in.count = count;
-	r.in.unknown1 = unknown1;
-	r.in.unknown2 = unknown2;
+	r.in.lookup_options = lookup_options;
+	r.in.client_revision = client_revision;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(lsa_LookupNames3, &r);
@@ -3209,8 +3243,8 @@ NTSTATUS rpccli_lsa_LookupNames4(struct rpc_pipe_client *cli,
 				 struct lsa_TransSidArray3 *sids /* [in,out] [ref] */,
 				 enum lsa_LookupNamesLevel level /* [in]  */,
 				 uint32_t *count /* [in,out] [ref] */,
-				 uint32_t unknown1 /* [in]  */,
-				 uint32_t unknown2 /* [in]  */)
+				 uint32_t lookup_options /* [in]  */,
+				 uint32_t client_revision /* [in]  */)
 {
 	struct lsa_LookupNames4 r;
 	NTSTATUS status;
@@ -3221,8 +3255,8 @@ NTSTATUS rpccli_lsa_LookupNames4(struct rpc_pipe_client *cli,
 	r.in.sids = sids;
 	r.in.level = level;
 	r.in.count = count;
-	r.in.unknown1 = unknown1;
-	r.in.unknown2 = unknown2;
+	r.in.lookup_options = lookup_options;
+	r.in.client_revision = client_revision;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(lsa_LookupNames4, &r);

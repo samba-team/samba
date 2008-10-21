@@ -84,12 +84,14 @@ int smbcli_deltree(struct smbcli_tree *tree, const char *dname)
 {
 	char *mask;
 	struct delete_state dstate;
+	NTSTATUS status;
 
 	dstate.tree = tree;
 	dstate.total_deleted = 0;
 	dstate.failed = false;
 
 	/* it might be a file */
+	status = smbcli_unlink(tree, dname);
 	if (NT_STATUS_IS_OK(smbcli_unlink(tree, dname))) {
 		return 1;
 	}
@@ -98,6 +100,13 @@ int smbcli_deltree(struct smbcli_tree *tree, const char *dname)
 	    NT_STATUS_EQUAL(smbcli_nt_error(tree), NT_STATUS_NO_SUCH_FILE)) {
 		return 0;
 	}
+	if (NT_STATUS_EQUAL(status, NT_STATUS_CANNOT_DELETE)) {
+		/* it could be read-only */
+		status = smbcli_setatr(tree, dname, FILE_ATTRIBUTE_NORMAL, 0);
+		if (NT_STATUS_IS_OK(smbcli_unlink(tree, dname))) {
+			return 1;
+		}
+	}
 
 	asprintf(&mask, "%s\\*", dname);
 	smbcli_unlink(dstate.tree, mask);
@@ -105,7 +114,14 @@ int smbcli_deltree(struct smbcli_tree *tree, const char *dname)
 		 FILE_ATTRIBUTE_DIRECTORY|FILE_ATTRIBUTE_HIDDEN|FILE_ATTRIBUTE_SYSTEM, 
 		 delete_fn, &dstate);
 	free(mask);
-	if (NT_STATUS_IS_ERR(smbcli_rmdir(dstate.tree, dname))) {
+
+	status = smbcli_rmdir(dstate.tree, dname);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_CANNOT_DELETE)) {
+		/* it could be read-only */
+		status = smbcli_setatr(dstate.tree, dname, FILE_ATTRIBUTE_NORMAL, 0);
+		status = smbcli_rmdir(dstate.tree, dname);
+	}
+	if (NT_STATUS_IS_ERR(status)) {
 		DEBUG(2,("Failed to delete %s - %s\n", 
 			 dname, smbcli_errstr(dstate.tree)));
 		return -1;

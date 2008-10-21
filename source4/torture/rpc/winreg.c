@@ -80,6 +80,7 @@ static bool test_NotifyChangeKeyValue(struct dcerpc_pipe *p,
 {
 	struct winreg_NotifyChangeKeyValue r;
 
+	ZERO_STRUCT(r);
 	r.in.handle = handle;
 	r.in.watch_subtree = true;
 	r.in.notify_filter = 0;
@@ -109,6 +110,7 @@ static bool test_CreateKey(struct dcerpc_pipe *p, struct torture_context *tctx,
 	struct policy_handle newhandle;
 	enum winreg_CreateAction action_taken = 0;
 
+	ZERO_STRUCT(r);
 	r.in.handle = handle;
 	r.out.new_handle = &newhandle;
 	init_winreg_String(&r.in.name, name);
@@ -163,6 +165,7 @@ static bool test_CreateKey_sd(struct dcerpc_pipe *p,
 	secbuf.length = sdblob.length-10;
 	secbuf.inherit = 0;
 
+	ZERO_STRUCT(r);
 	r.in.handle = handle;
 	r.out.new_handle = newhandle;
 	init_winreg_String(&r.in.name, name);
@@ -317,6 +320,7 @@ static bool test_CloseKey(struct dcerpc_pipe *p, struct torture_context *tctx,
 {
 	struct winreg_CloseKey r;
 
+	ZERO_STRUCT(r);
 	r.in.handle = r.out.handle = handle;
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_winreg_CloseKey(p, tctx, &r),
@@ -332,6 +336,7 @@ static bool test_FlushKey(struct dcerpc_pipe *p, struct torture_context *tctx,
 {
 	struct winreg_FlushKey r;
 
+	ZERO_STRUCT(r);
 	r.in.handle = handle;
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_winreg_FlushKey(p, tctx, &r),
@@ -351,6 +356,7 @@ static bool _test_OpenKey(struct dcerpc_pipe *p, struct torture_context *tctx,
 {
 	struct winreg_OpenKey r;
 
+	ZERO_STRUCT(r);
 	r.in.parent_handle = hive_handle;
 	init_winreg_String(&r.in.keyname, keyname);
 	r.in.unknown = 0x00000000;
@@ -384,6 +390,7 @@ static bool test_Cleanup(struct dcerpc_pipe *p, struct torture_context *tctx,
 {
 	struct winreg_DeleteKey r;
 
+	ZERO_STRUCT(r);
 	r.in.handle = handle;
 
 	init_winreg_String(&r.in.key, key);
@@ -1389,7 +1396,7 @@ static bool test_QueryInfoKey(struct dcerpc_pipe *p,
 			      struct policy_handle *handle, char *class)
 {
 	struct winreg_QueryInfoKey r;
-	uint32_t num_subkeys, max_subkeylen, max_subkeysize,
+	uint32_t num_subkeys, max_subkeylen, max_classlen,
 		num_values, max_valnamelen, max_valbufsize,
 		secdescsize;
 	NTTIME last_changed_time;
@@ -1398,7 +1405,7 @@ static bool test_QueryInfoKey(struct dcerpc_pipe *p,
 	r.in.handle = handle;
 	r.out.num_subkeys = &num_subkeys;
 	r.out.max_subkeylen = &max_subkeylen;
-	r.out.max_subkeysize = &max_subkeysize;
+	r.out.max_classlen = &max_classlen;
 	r.out.num_values = &num_values;
 	r.out.max_valnamelen = &max_valnamelen;
 	r.out.max_valbufsize = &max_valbufsize;
@@ -1435,6 +1442,7 @@ static bool test_EnumKey(struct dcerpc_pipe *p, struct torture_context *tctx,
 	class.name   = "";
 	class.size   = 1024;
 
+	ZERO_STRUCT(r);
 	r.in.handle = handle;
 	r.in.enum_index = 0;
 	r.in.name = &name;
@@ -1486,6 +1494,7 @@ static bool test_QueryMultipleValues(struct dcerpc_pipe *p,
 	NTSTATUS status;
 	uint32_t bufsize=0;
 
+	ZERO_STRUCT(r);
 	r.in.key_handle = handle;
 	r.in.values = r.out.values = talloc_array(tctx, struct QueryMultipleValue, 1);
 	r.in.values[0].name = talloc(tctx, struct winreg_String);
@@ -1527,12 +1536,14 @@ static bool test_QueryValue(struct dcerpc_pipe *p,
 	uint32_t offered = 0xfff;
 	uint32_t zero = 0;
 
+	ZERO_STRUCT(r);
 	r.in.handle = handle;
 	r.in.data = NULL;
-	r.in.value_name.name = valuename;
+	r.in.value_name = talloc_zero(tctx, struct winreg_String);
+	r.in.value_name->name = valuename;
 	r.in.type = &zero_type;
-	r.in.size = &offered;
-	r.in.length = &zero;
+	r.in.data_size = &offered;
+	r.in.data_length = &zero;
 
 	status = dcerpc_winreg_QueryValue(p, tctx, &r);
 	if (NT_STATUS_IS_ERR(status)) {
@@ -1558,6 +1569,7 @@ static bool test_EnumValue(struct dcerpc_pipe *p, struct torture_context *tctx,
 	name.name   = "";
 	name.size   = 1024;
 
+	ZERO_STRUCT(r);
 	r.in.handle = handle;
 	r.in.enum_index = 0;
 	r.in.name = &name;
@@ -1594,6 +1606,7 @@ static bool test_AbortSystemShutdown(struct dcerpc_pipe *p,
 	struct winreg_AbortSystemShutdown r;
 	uint16_t server = 0x0;
 
+	ZERO_STRUCT(r);
 	r.in.server = &server;
 
 	torture_assert_ntstatus_ok(tctx,
@@ -1612,12 +1625,13 @@ static bool test_InitiateSystemShutdown(struct torture_context *tctx,
 	struct winreg_InitiateSystemShutdown r;
 	uint16_t hostname = 0x0;
 
+	ZERO_STRUCT(r);
 	r.in.hostname = &hostname;
 	r.in.message = talloc(tctx, struct lsa_StringLarge);
 	init_lsa_StringLarge(r.in.message, "spottyfood");
 	r.in.force_apps = 1;
 	r.in.timeout = 30;
-	r.in.reboot = 1;
+	r.in.do_reboot = 1;
 
 	torture_assert_ntstatus_ok(tctx,
 				   dcerpc_winreg_InitiateSystemShutdown(p, tctx, &r),
@@ -1636,12 +1650,13 @@ static bool test_InitiateSystemShutdownEx(struct torture_context *tctx,
 	struct winreg_InitiateSystemShutdownEx r;
 	uint16_t hostname = 0x0;
 
+	ZERO_STRUCT(r);
 	r.in.hostname = &hostname;
 	r.in.message = talloc(tctx, struct lsa_StringLarge);
 	init_lsa_StringLarge(r.in.message, "spottyfood");
 	r.in.force_apps = 1;
 	r.in.timeout = 30;
-	r.in.reboot = 1;
+	r.in.do_reboot = 1;
 	r.in.reason = 0;
 
 	torture_assert_ntstatus_ok(tctx,
@@ -1694,6 +1709,7 @@ static bool test_Open_Security(struct torture_context *tctx,
 
 	winreg_open_fn open_fn = userdata;
 
+	ZERO_STRUCT(r);
 	r.in.system_name = 0;
 	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r.out.handle = &handle;
@@ -1767,6 +1783,7 @@ static bool test_Open(struct torture_context *tctx, struct dcerpc_pipe *p,
 
 	winreg_open_fn open_fn = userdata;
 
+	ZERO_STRUCT(r);
 	r.in.system_name = 0;
 	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r.out.handle = &handle;

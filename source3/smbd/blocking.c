@@ -33,10 +33,10 @@ typedef struct _blocking_lock_record {
 	files_struct *fsp;
 	struct timeval expire_time;
 	int lock_num;
-	SMB_BIG_UINT offset;
-	SMB_BIG_UINT count;
-	uint32 lock_pid;
-	uint32 blocking_pid; /* PID that blocks us. */
+	uint64_t offset;
+	uint64_t count;
+	uint32_t lock_pid;
+	uint32_t blocking_pid; /* PID that blocks us. */
 	enum brl_flavour lock_flav;
 	enum brl_type lock_type;
 	char *inbuf;
@@ -154,12 +154,12 @@ bool push_blocking_lock_request( struct byte_range_lock *br_lck,
 		files_struct *fsp,
 		int lock_timeout,
 		int lock_num,
-		uint32 lock_pid,
+		uint32_t lock_pid,
 		enum brl_type lock_type,
 		enum brl_flavour lock_flav,
-		SMB_BIG_UINT offset,
-		SMB_BIG_UINT count,
-		uint32 blocking_pid)
+		uint64_t offset,
+		uint64_t count,
+		uint32_t blocking_pid)
 {
 	static bool set_lock_msg;
 	size_t length = smb_len(req->inbuf)+4;
@@ -331,7 +331,7 @@ static void reply_lockingX_error(blocking_lock_record *blr, NTSTATUS status)
 	char *inbuf = blr->inbuf;
 	files_struct *fsp = blr->fsp;
 	uint16 num_ulocks = SVAL(inbuf,smb_vwv6);
-	SMB_BIG_UINT count = (SMB_BIG_UINT)0, offset = (SMB_BIG_UINT) 0;
+	uint64_t count = (uint64_t)0, offset = (uint64_t) 0;
 	uint32 lock_pid;
 	unsigned char locktype = CVAL(inbuf,smb_vwv3);
 	bool large_file_format = (locktype & LOCKING_ANDX_LARGE_FILES);
@@ -420,7 +420,7 @@ static bool process_lockingX(blocking_lock_record *blr)
 	files_struct *fsp = blr->fsp;
 	uint16 num_ulocks = SVAL(inbuf,smb_vwv6);
 	uint16 num_locks = SVAL(inbuf,smb_vwv7);
-	SMB_BIG_UINT count = (SMB_BIG_UINT)0, offset = (SMB_BIG_UINT)0;
+	uint64_t count = (uint64_t)0, offset = (uint64_t)0;
 	uint32 lock_pid;
 	bool large_file_format = (locktype & LOCKING_ANDX_LARGE_FILES);
 	char *data;
@@ -704,7 +704,6 @@ static void process_blocking_lock_queue(void)
 		 * sitting around....
 		 */
 		chain_size = 0;
-		file_chain_reset();
 		fsp = blr->fsp;
 
 		conn = conn_find(SVAL(blr->inbuf,smb_tid));
@@ -875,8 +874,8 @@ static void process_blocking_lock_cancel_message(struct messaging_context *ctx,
 
 bool blocking_lock_cancel(files_struct *fsp,
 			uint32 lock_pid,
-			SMB_BIG_UINT offset,
-			SMB_BIG_UINT count,
+			uint64_t offset,
+			uint64_t count,
 			enum brl_flavour lock_flav,
 			unsigned char locktype,
                         NTSTATUS err)

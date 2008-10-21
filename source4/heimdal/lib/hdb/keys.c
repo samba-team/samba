@@ -39,7 +39,7 @@ RCSID("$Id$");
  * free all the memory used by (len, keys)
  */
 
-void
+static void
 hdb_free_keys (krb5_context context, int len, Key *keys)
 {
     int i;
@@ -250,7 +250,7 @@ add_enctype_to_key_set(Key **key_set, size_t *nkeyset,
  * it's random keys that is going to be created.
  */
 
-krb5_error_code
+static krb5_error_code
 hdb_generate_key_set(krb5_context context, krb5_principal principal,
 		     Key **ret_key_set, size_t *nkeyset, int no_salt)
 {
@@ -362,7 +362,7 @@ hdb_generate_key_set(krb5_context context, krb5_principal principal,
 }
 
 
-krb5_error_code
+static krb5_error_code
 hdb_generate_key_set_password(krb5_context context, 
 			      krb5_principal principal, 
 			      const char *password, 

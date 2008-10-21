@@ -71,6 +71,7 @@ static void ldb_wrap_debug(void *context, enum ldb_debug_level level,
 static int ldb_wrap_destructor(struct ldb_context *ldb)
 {
 	size_t *startup_blocks = (size_t *)ldb_get_opaque(ldb, "startup_blocks");
+
 	if (startup_blocks &&
 	    talloc_total_blocks(ldb) > *startup_blocks + 400) {
 		DEBUG(0,("WARNING: probable memory leak in ldb %s - %lu blocks (startup %lu) %lu bytes\n",
@@ -123,15 +124,6 @@ struct ldb_context *ldb_wrap_connect(TALLOC_CTX *mem_ctx,
 			    talloc_asprintf(ldb,
 					    "%s/ldb",
 					    lp_modulesdir(lp_ctx)));
-
-#if 0
-	if (ev) {
-		ldb_event_sys_op_init(ldb, ev);
-	} else {
-		talloc_free(ldb);
-		return NULL;
-	}
-#endif
 
 	if (ldb_set_opaque(ldb, "sessionInfo", session_info)) {
 		talloc_free(ldb);
@@ -198,6 +190,3 @@ struct ldb_context *ldb_wrap_connect(TALLOC_CTX *mem_ctx,
 
 	return ldb;
 }
-
-
-

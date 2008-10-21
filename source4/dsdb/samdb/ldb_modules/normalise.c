@@ -45,6 +45,14 @@
     CN=Admins,CN=Users,DC=samba,DC=example,DC=com
    
  */
+
+struct norm_context {
+	struct ldb_module *module;
+	struct ldb_request *req;
+
+	const struct dsdb_schema *schema;
+};
+
 static int fix_dn(struct ldb_dn *dn) 
 {
 	int i, ret;
@@ -69,91 +77,115 @@ static int fix_dn(struct ldb_dn *dn)
 	return LDB_SUCCESS;
 }
 
-static int normalise_search_callback(struct ldb_context *ldb, void *context, struct ldb_reply *ares) 
+static int normalize_search_callback(struct ldb_request *req, struct ldb_reply *ares)
 {
-	const struct dsdb_schema *schema = dsdb_get_schema(ldb);
-	struct ldb_request *orig_req = talloc_get_type(context, struct ldb_request);
-	TALLOC_CTX *mem_ctx;
+	struct ldb_message *msg;
+	struct norm_context *ac;
 	int i, j, ret;
 
+	ac = talloc_get_type(req->context, struct norm_context);
+
+	if (!ares) {
+		return ldb_module_done(ac->req, NULL, NULL,
+					LDB_ERR_OPERATIONS_ERROR);
+	}
+	if (ares->error != LDB_SUCCESS) {
+		return ldb_module_done(ac->req, ares->controls,
+					ares->response, ares->error);
+	}
+
 	/* Only entries are interesting, and we handle the case of the parent seperatly */
-	if (ares->type != LDB_REPLY_ENTRY) {
-		return orig_req->callback(ldb, orig_req->context, ares);
-	}
 
-	if (!schema) {
-		return orig_req->callback(ldb, orig_req->context, ares);
-	}
+	switch (ares->type) {
+	case LDB_REPLY_ENTRY:
 
-	mem_ctx = talloc_new(ares);
-	if (!mem_ctx) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
+		/* OK, we have one of *many* search results passing by here,
+		 * but we should get them one at a time */
+		msg = ares->message;
 
-	/* OK, we have one of *many* search results passing by here,
-	 * but we should get them one at a time */
-
-	ret = fix_dn(ares->message->dn);
-	if (ret != LDB_SUCCESS) {
-		talloc_free(mem_ctx);
-		return ret;
-	}
-
-	for (i = 0; i < ares->message->num_elements; i++) {
-		const struct dsdb_attribute *attribute = dsdb_attribute_by_lDAPDisplayName(schema, ares->message->elements[i].name);
-		if (!attribute) {
-			continue;
+		ret = fix_dn(msg->dn);
+		if (ret != LDB_SUCCESS) {
+			return ldb_module_done(ac->req, NULL, NULL, ret);
 		}
-		/* Look to see if this attributeSyntax is a DN */
-		if (!((strcmp(attribute->attributeSyntax_oid, "2.5.5.1") == 0) ||
-		      (strcmp(attribute->attributeSyntax_oid, "2.5.5.7") == 0))) {
-			continue;
-		}
-		for (j = 0; j < ares->message->elements[i].num_values; j++) {
-			const char *dn_str;
-			struct ldb_dn *dn = ldb_dn_from_ldb_val(mem_ctx, ldb, &ares->message->elements[i].values[j]);
-			if (!dn) {
-				talloc_free(mem_ctx);
-				return LDB_ERR_OPERATIONS_ERROR;
+
+		for (i = 0; i < msg->num_elements; i++) {
+			const struct dsdb_attribute *attribute = dsdb_attribute_by_lDAPDisplayName(ac->schema, msg->elements[i].name);
+			if (!attribute) {
+				continue;
 			}
-			ret = fix_dn(dn);
-			if (ret != LDB_SUCCESS) {
-				talloc_free(mem_ctx);
-				return ret;
+			/* Look to see if this attributeSyntax is a DN */
+			if (!((strcmp(attribute->attributeSyntax_oid, "2.5.5.1") == 0) ||
+			      (strcmp(attribute->attributeSyntax_oid, "2.5.5.7") == 0))) {
+				continue;
 			}
-			dn_str = talloc_steal(ares->message->elements[i].values, ldb_dn_get_linearized(dn));
-			ares->message->elements[i].values[j] = data_blob_string_const(dn_str);
-			talloc_free(dn);
+			for (j = 0; j < msg->elements[i].num_values; j++) {
+				const char *dn_str;
+				struct ldb_dn *dn = ldb_dn_new(ac, ac->module->ldb, (const char *)msg->elements[i].values[j].data);
+				if (!dn) {
+					return ldb_module_done(ac->req, NULL, NULL, LDB_ERR_OPERATIONS_ERROR);
+				}
+				ret = fix_dn(dn);
+				if (ret != LDB_SUCCESS) {
+					return ldb_module_done(ac->req, NULL, NULL, ret);
+				}
+				dn_str = talloc_steal(msg->elements[i].values, ldb_dn_get_linearized(dn));
+				msg->elements[i].values[j] = data_blob_string_const(dn_str);
+				talloc_free(dn);
+			}
 		}
+
+		return ldb_module_send_entry(ac->req, msg);
+
+	case LDB_REPLY_REFERRAL:
+
+		return ldb_module_send_referral(ac->req, ares->referral);
+
+	case LDB_REPLY_DONE:
+
+		return ldb_module_done(ac->req, ares->controls,
+					ares->response, ares->error);
 	}
-	talloc_free(mem_ctx);
-	return orig_req->callback(ldb, orig_req->context, ares);
+
+	return LDB_SUCCESS;
 }
 
 /* search */
 static int normalise_search(struct ldb_module *module, struct ldb_request *req)
 {
+	struct ldb_request *down_req;
+	struct norm_context *ac;
 	int ret;
-	struct ldb_request *down_req = talloc(req, struct ldb_request);
-	if (!down_req) {
-		ldb_oom(module->ldb);
+
+	ac = talloc(req, struct norm_context);
+	if (ac == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	
-	*down_req = *req;
-	down_req->context = req;
-	down_req->callback = normalise_search_callback;
 
-	ret = ldb_next_request(module, down_req);
+	ac->module = module;
+	ac->req = req;
 
-	/* do not free down_req as the call results may be linked to it,
-	 * it will be freed when the upper level request get freed */
-	if (ret == LDB_SUCCESS) {
-		req->handle = down_req->handle;
+	/* if schema not yet present just skip over */
+	ac->schema = dsdb_get_schema(ac->module->ldb);
+	if (ac->schema == NULL) {
+		talloc_free(ac);
+		return ldb_next_request(module, req);
 	}
-	return ret;
+
+	ret = ldb_build_search_req_ex(&down_req, module->ldb, ac,
+					req->op.search.base,
+					req->op.search.scope,
+					req->op.search.tree,
+					req->op.search.attrs,
+					req->controls,
+					ac, normalize_search_callback,
+					req);
+	if (ret != LDB_SUCCESS) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	return ldb_next_request(module, down_req);
 }
+
 
 
 _PUBLIC_ const struct ldb_module_ops ldb_normalise_module_ops = {

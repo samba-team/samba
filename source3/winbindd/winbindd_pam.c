@@ -127,7 +127,7 @@ static NTSTATUS append_info3_as_ndr(TALLOC_CTX *mem_ctx,
 	DATA_BLOB blob;
 	enum ndr_err_code ndr_err;
 
-	ndr_err = ndr_push_struct_blob(&blob, mem_ctx, info3,
+	ndr_err = ndr_push_struct_blob(&blob, mem_ctx, NULL, info3,
 				       (ndr_push_flags_fn_t)ndr_push_netr_SamInfo3);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		DEBUG(0,("append_info3_as_ndr: failed to append\n"));
@@ -811,7 +811,9 @@ void winbindd_pam_auth(struct winbindd_cli_state *state)
 {
 	struct winbindd_domain *domain;
 	fstring name_domain, name_user;
+	char *mapped_user = NULL;
 	NTSTATUS result;
+	NTSTATUS name_map_status = NT_STATUS_UNSUCCESSFUL;
 
 	/* Ensure null termination */
 	state->request.data.auth.user
@@ -831,10 +833,20 @@ void winbindd_pam_auth(struct winbindd_cli_state *state)
 
 	/* Parse domain and username */
 
-	ws_name_return( state->request.data.auth.user, WB_REPLACE_CHAR );
+	name_map_status = normalize_name_unmap(state->mem_ctx,
+					       state->request.data.auth.user,
+					       &mapped_user);
 
-	if (!canonicalize_username(state->request.data.auth.user,
-			       name_domain, name_user)) {
+	/* If the name normalization didnt' actually do anything,
+	   just use the original name */
+
+	if (!NT_STATUS_IS_OK(name_map_status) &&
+	    !NT_STATUS_EQUAL(name_map_status, NT_STATUS_FILE_RENAMED))
+	{
+		mapped_user = state->request.data.auth.user;
+	}
+
+	if (!canonicalize_username(mapped_user, name_domain, name_user)) {
 		result = NT_STATUS_NO_SUCH_USER;
 		goto done;
 	}
@@ -1447,7 +1459,10 @@ enum winbindd_result winbindd_dual_pam_auth(struct winbindd_domain *domain,
 	NTSTATUS result = NT_STATUS_LOGON_FAILURE;
 	NTSTATUS krb5_result = NT_STATUS_OK;
 	fstring name_domain, name_user;
+	char *mapped_user;
+	fstring domain_user;
 	struct netr_SamInfo3 *info3 = NULL;
+	NTSTATUS name_map_status = NT_STATUS_UNSUCCESSFUL;
 
 	/* Ensure null termination */
 	state->request.data.auth.user[sizeof(state->request.data.auth.user)-1]='\0';
@@ -1465,9 +1480,26 @@ enum winbindd_result winbindd_dual_pam_auth(struct winbindd_domain *domain,
 
 	/* Parse domain and username */
 
-	ws_name_return( state->request.data.auth.user, WB_REPLACE_CHAR );
+	name_map_status = normalize_name_unmap(state->mem_ctx,
+					       state->request.data.auth.user,
+					       &mapped_user);
 
-	parse_domain_user(state->request.data.auth.user, name_domain, name_user);
+	/* If the name normalization didnt' actually do anything,
+	   just use the original name */
+
+	if (!NT_STATUS_IS_OK(name_map_status) &&
+	    !NT_STATUS_EQUAL(name_map_status, NT_STATUS_FILE_RENAMED))
+	{
+		mapped_user = state->request.data.auth.user;
+	}
+
+	parse_domain_user(mapped_user, name_domain, name_user);
+
+	if ( mapped_user != state->request.data.auth.user ) {
+		fstr_sprintf( domain_user, "%s\\%s", name_domain, name_user );
+		safe_strcpy( state->request.data.auth.user, domain_user,
+			     sizeof(state->request.data.auth.user)-1 );
+	}
 
 	if (domain->online == false) {
 		result = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
@@ -1970,14 +2002,30 @@ done:
 void winbindd_pam_chauthtok(struct winbindd_cli_state *state)
 {
 	fstring domain, user;
+	char *mapped_user;
 	struct winbindd_domain *contact_domain;
+	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 
 	DEBUG(3, ("[%5lu]: pam chauthtok %s\n", (unsigned long)state->pid,
 		state->request.data.chauthtok.user));
 
 	/* Setup crap */
 
-	ws_name_return( state->request.data.auth.user, WB_REPLACE_CHAR );
+	nt_status = normalize_name_unmap(state->mem_ctx,
+					 state->request.data.chauthtok.user,
+					 &mapped_user);
+
+	/* Update the chauthtok name if we did any mapping */
+
+	if (NT_STATUS_IS_OK(nt_status) ||
+	    NT_STATUS_EQUAL(nt_status, NT_STATUS_FILE_RENAMED))
+	{
+		fstrcpy(state->request.data.chauthtok.user, mapped_user);
+	}
+
+	/* Must pass in state->...chauthtok.user because
+	   canonicalize_username() assumes an fstring().  Since
+	   we have already copied it (if necessary), this is ok. */
 
 	if (!canonicalize_username(state->request.data.chauthtok.user, domain, user)) {
 		set_auth_errors(&state->response, NT_STATUS_NO_SUCH_USER);

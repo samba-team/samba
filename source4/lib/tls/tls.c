@@ -363,7 +363,6 @@ struct tls_params *tls_initialise(TALLOC_CTX *mem_ctx, struct loadparm_context *
 	const char *crlfile = private_path(tmp_ctx, lp_ctx, lp_tls_crlfile(lp_ctx));
 	const char *dhpfile = private_path(tmp_ctx, lp_ctx, lp_tls_dhpfile(lp_ctx));
 	void tls_cert_generate(TALLOC_CTX *, const char *, const char *, const char *);
-
 	params = talloc(mem_ctx, struct tls_params);
 	if (params == NULL) {
 		talloc_free(tmp_ctx);
@@ -421,7 +420,7 @@ struct tls_params *tls_initialise(TALLOC_CTX *mem_ctx, struct loadparm_context *
 	if (dhpfile && *dhpfile) {
 		gnutls_datum_t dhparms;
 		size_t size;
-		dhparms.data = (uint8_t *)file_load(dhpfile, &size, mem_ctx);
+		dhparms.data = (uint8_t *)file_load(dhpfile, &size, 0, mem_ctx);
 
 		if (!dhparms.data) {
 			DEBUG(0,("Failed to read DH Parms from %s\n", dhpfile));

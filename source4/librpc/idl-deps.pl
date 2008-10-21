@@ -4,8 +4,9 @@ use strict;
 my %vars = ();
 
 foreach(@ARGV) {
+	my $f = $_;
 	my $b = $_; $b =~ s/.*\/(.*?).idl$/$1/;
-	push (@{$vars{IDL_FILES}}, "\$(librpcsrcdir)/idl/$b.idl");
+	push (@{$vars{IDL_FILES}}, $f);
 	push (@{$vars{IDL_HEADER_FILES}}, "\$(librpcsrcdir)/gen_ndr/$b.h");
 	push (@{$vars{IDL_NDR_PARSE_H_FILES}}, "\$(librpcsrcdir)/gen_ndr/ndr_$b.h");
 	push (@{$vars{IDL_NDR_PARSE_C_FILES}}, "\$(librpcsrcdir)/gen_ndr/ndr_$b.c");

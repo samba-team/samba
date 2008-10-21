@@ -38,6 +38,10 @@ static uint32_t access_check_max_allowed(const struct security_descriptor *sd,
 		granted |= SEC_STD_DELETE;
 	}
 
+	if (sd->dacl == NULL) {
+		return granted & ~denied;
+	}
+	
 	for (i = 0;i<sd->dacl->num_aces; i++) {
 		struct security_ace *ace = &sd->dacl->aces[i];
 
@@ -101,10 +105,14 @@ NTSTATUS sec_access_check(const struct security_descriptor *sd,
 		return NT_STATUS_OK;
 	}
 
-	/* empty dacl denies access */
+#if 0
+	/* tridge: previously we had empty dacl denying access, but
+	   that can lead to undeletable directories, where
+	   nobody can change the ACL on a directory */
 	if (sd->dacl == NULL || sd->dacl->num_aces == 0) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
+#endif
 
 	/* the owner always gets SEC_STD_WRITE_DAC, SEC_STD_READ_CONTROL and SEC_STD_DELETE */
 	if ((bits_remaining & (SEC_STD_WRITE_DAC|SEC_STD_READ_CONTROL|SEC_STD_DELETE)) &&
@@ -114,6 +122,10 @@ NTSTATUS sec_access_check(const struct security_descriptor *sd,
 	if ((bits_remaining & SEC_STD_DELETE) &&
 	    security_token_has_privilege(token, SEC_PRIV_RESTORE)) {
 		bits_remaining &= ~SEC_STD_DELETE;
+	}
+
+	if (sd->dacl == NULL) {
+		goto done;
 	}
 
 	/* check each ace in turn. */
@@ -143,6 +155,7 @@ NTSTATUS sec_access_check(const struct security_descriptor *sd,
 		}
 	}
 
+done:
 	if (bits_remaining != 0) {
 		return NT_STATUS_ACCESS_DENIED;
 	}

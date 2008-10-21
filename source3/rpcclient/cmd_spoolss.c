@@ -691,7 +691,7 @@ static void display_reg_value(REGISTRY_VALUE value)
 		printf("%s: REG_SZ: %s\n", value.valuename, text ? text : "");
 		break;
 	case REG_BINARY: {
-		char *hex = hex_encode(NULL, value.data_p, value.size);
+		char *hex = hex_encode_talloc(NULL, value.data_p, value.size);
 		size_t i, len;
 		printf("%s: REG_BINARY:", value.valuename);
 		len = strlen(hex);

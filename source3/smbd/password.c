@@ -545,7 +545,7 @@ static bool user_ok(const char *user, int snum)
 	ret = True;
 
 	if (lp_invalid_users(snum)) {
-		str_list_copy(talloc_tos(), &invalid, lp_invalid_users(snum));
+		invalid = str_list_copy(talloc_tos(), lp_invalid_users(snum));
 		if (invalid &&
 		    str_list_substitute(invalid, "%S", lp_servicename(snum))) {
 
@@ -561,7 +561,7 @@ static bool user_ok(const char *user, int snum)
 	TALLOC_FREE(invalid);
 
 	if (ret && lp_valid_users(snum)) {
-		str_list_copy(talloc_tos(), &valid, lp_valid_users(snum));
+		valid = str_list_copy(talloc_tos(), lp_valid_users(snum));
 		if ( valid &&
 		     str_list_substitute(valid, "%S", lp_servicename(snum)) ) {
 

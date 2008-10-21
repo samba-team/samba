@@ -281,11 +281,7 @@ static const struct ndr_interface_table *load_iface_from_plugin(const char *plug
 			exit(1);
 		}
 			
-#if (_SAMBA_BUILD_ >= 4)
-		data = (uint8_t *)file_load(ctx_filename, &size, mem_ctx);
-#else
-		data = (uint8_t *)file_load(ctx_filename, &size, 0);
-#endif
+		data = (uint8_t *)file_load(ctx_filename, &size, 0, mem_ctx);
 		if (!data) {
 			perror(ctx_filename);
 			exit(1);
@@ -294,7 +290,7 @@ static const struct ndr_interface_table *load_iface_from_plugin(const char *plug
 		blob.data = data;
 		blob.length = size;
 
-		ndr_pull = ndr_pull_init_blob(&blob, mem_ctx);
+		ndr_pull = ndr_pull_init_blob(&blob, mem_ctx, NULL);
 		ndr_pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 
 		ndr_err = f->ndr_pull(ndr_pull, NDR_IN, st);
@@ -312,11 +308,7 @@ static const struct ndr_interface_table *load_iface_from_plugin(const char *plug
 	} 
 
 	if (filename)
-#if (_SAMBA_BUILD_ >= 4)
-		data = (uint8_t *)file_load(filename, &size, mem_ctx);
-#else
-		data = (uint8_t *)file_load(filename, &size, 0);
-#endif
+		data = (uint8_t *)file_load(filename, &size, 0, mem_ctx);
 	else
 		data = (uint8_t *)stdin_load(mem_ctx, &size);
 
@@ -331,7 +323,7 @@ static const struct ndr_interface_table *load_iface_from_plugin(const char *plug
 	blob.data = data;
 	blob.length = size;
 
-	ndr_pull = ndr_pull_init_blob(&blob, mem_ctx);
+	ndr_pull = ndr_pull_init_blob(&blob, mem_ctx, NULL);
 	ndr_pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 
 	ndr_err = f->ndr_pull(ndr_pull, flags, st);
@@ -368,7 +360,7 @@ static const struct ndr_interface_table *load_iface_from_plugin(const char *plug
 		uint8_t byte_a, byte_b;
 		bool differ;
 
-		ndr_v_push = ndr_push_init_ctx(mem_ctx);
+		ndr_v_push = ndr_push_init_ctx(mem_ctx, NULL);
 		
 		ndr_err = f->ndr_push(ndr_v_push, flags, st);
 		status = ndr_map_error2ntstatus(ndr_err);
@@ -385,7 +377,7 @@ static const struct ndr_interface_table *load_iface_from_plugin(const char *plug
 			dump_data(0, v_blob.data, v_blob.length);
 		}
 
-		ndr_v_pull = ndr_pull_init_blob(&v_blob, mem_ctx);
+		ndr_v_pull = ndr_pull_init_blob(&v_blob, mem_ctx, NULL);
 		ndr_v_pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 
 		ndr_err = f->ndr_pull(ndr_v_pull, flags, v_st);

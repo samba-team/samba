@@ -19,7 +19,7 @@
 
 #include "includes.h"
 #include "ldap_server/ldap_server.h"
-#include "lib/util/dlinklist.h"
+#include "../lib/util/dlinklist.h"
 #include "libcli/ldap/ldap.h"
 #include "auth/credentials/credentials.h"
 #include "auth/gensec/gensec.h"
@@ -158,6 +158,8 @@ static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 	struct ldb_dn *basedn;
 	struct ldb_result *res = NULL;
 	struct ldb_request *lreq;
+	struct ldb_control *search_control;
+	struct ldb_search_options_control *search_options;
 	enum ldb_scope scope = LDB_SCOPE_DEFAULT;
 	const char **attrs = NULL;
 	const char *scope_str, *errstr = NULL;
@@ -216,21 +218,24 @@ static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 	DEBUG(5,("ldb_request %s dn=%s filter=%s\n", 
 		 scope_str, req->basedn, ldb_filter_from_tree(call, req->tree)));
 
-	lreq = talloc(local_ctx, struct ldb_request);
-	NT_STATUS_HAVE_NO_MEMORY(lreq);
+	res = talloc_zero(local_ctx, struct ldb_result);
+	NT_STATUS_HAVE_NO_MEMORY(res);
 
-	lreq->operation = LDB_SEARCH;
-	lreq->op.search.base = basedn;
-	lreq->op.search.scope = scope;
-	lreq->op.search.tree = req->tree;
-	lreq->op.search.attrs = attrs;
+	ldb_ret = ldb_build_search_req_ex(&lreq, samdb, local_ctx,
+					  basedn, scope,
+					  req->tree, attrs,
+					  call->request->controls,
+					  res, ldb_search_default_callback,
+					  NULL);
 
-	lreq->controls = call->request->controls;
+	if (ldb_ret != LDB_SUCCESS) {
+		goto reply;
+	}
 
 	if (call->conn->global_catalog) {
-		struct ldb_control *search_control = ldb_request_get_control(lreq, LDB_CONTROL_SEARCH_OPTIONS_OID);
-		
-		struct ldb_search_options_control *search_options = NULL;
+		search_control = ldb_request_get_control(lreq, LDB_CONTROL_SEARCH_OPTIONS_OID);
+
+		search_options = NULL;
 		if (search_control) {
 			search_options = talloc_get_type(search_control->data, struct ldb_search_options_control);
 			search_options->search_options |= LDB_SEARCH_OPTION_PHANTOM_ROOT;
@@ -241,14 +246,6 @@ static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 			ldb_request_add_control(lreq, LDB_CONTROL_SEARCH_OPTIONS_OID, false, search_options);
 		}
 	}
-
-	res = talloc_zero(lreq, struct ldb_result);
-	NT_STATUS_HAVE_NO_MEMORY(res);
-	
-	lreq->context = res;
-	lreq->callback = ldb_search_default_callback;
-
-	/* Copy the timeout from the incoming call */
 	ldb_set_timeout(samdb, lreq, req->timelimit);
 
 	ldb_ret = ldb_request(samdb, lreq);
@@ -688,8 +685,8 @@ reply:
 	NT_STATUS_HAVE_NO_MEMORY(compare_r);
 
 	if (result == LDAP_SUCCESS) {
-		ldb_ret = ldb_search(samdb, dn, LDB_SCOPE_BASE, filter, attrs, &res);
-		talloc_steal(local_ctx, res);
+		ldb_ret = ldb_search(samdb, local_ctx, &res,
+				     dn, LDB_SCOPE_BASE, attrs, "%s", filter);
 		if (ldb_ret != LDB_SUCCESS) {
 			result = map_ldb_error(samdb, ldb_ret, &errstr);
 			DEBUG(10,("CompareRequest: error: %s\n", errstr));

@@ -124,7 +124,7 @@ static struct name_record *wins_record_to_name_record(TDB_DATA key, TDB_DATA dat
 	namerec->data.refresh_time = (time_t)refresh_time;
 	namerec->data.id = id_low;
 #if defined(HAVE_LONGLONG)
-	namerec->data.id |= ((SMB_BIG_UINT)id_high << 32);
+	namerec->data.id |= ((uint64_t)id_high << 32);
 #endif
 	namerec->data.wins_ip.s_addr = saddr;
 	namerec->data.wins_flags = wins_flags,
@@ -412,14 +412,14 @@ static void update_wins_flag(struct name_record *namerec, int flags)
  Return the general ID value and increase it if requested.
 *****************************************************************************/
 
-static void get_global_id_and_update(SMB_BIG_UINT *current_id, bool update)
+static void get_global_id_and_update(uint64_t *current_id, bool update)
 {
 	/*
 	 * it's kept as a static here, to prevent people from messing
 	 * with the value directly
 	 */
 
-	static SMB_BIG_UINT general_id = 1;
+	static uint64_t general_id = 1;
 
 	DEBUG(5,("get_global_id_and_update: updating version ID: %d\n", (int)general_id));
 	

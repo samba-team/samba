@@ -45,6 +45,8 @@
 
 #define SECRETS_LDAP_BIND_PW "SECRETS/LDAP_BIND_PW"
 
+#define SECRETS_LOCAL_SCHANNEL_KEY "SECRETS/LOCAL_SCHANNEL_KEY"
+
 /* Authenticated user info is stored in secrets.tdb under these keys */
 
 #define SECRETS_AUTH_USER      "SECRETS/AUTH_USER"

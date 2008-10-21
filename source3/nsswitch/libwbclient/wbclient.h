@@ -137,6 +137,19 @@ struct wbcSidWithAttr {
 #define WBC_SID_ATTR_GROUP_LOGON_ID 		0xC0000000
 
 /**
+ *  @brief Windows GUID
+ *
+ **/
+
+struct wbcGuid {
+	uint32_t time_low;
+	uint16_t time_mid;
+	uint16_t time_hi_and_version;
+	uint8_t clock_seq[2];
+	uint8_t node[6];
+};
+
+/**
  * @brief Domain Information
  **/
 
@@ -203,6 +216,36 @@ struct wbcAuthUserParams {
 			uint8_t *lm_data;
 		} response;
 	} password;
+};
+
+/**
+ * @brief Generic Blob
+ **/
+
+struct wbcBlob {
+	uint8_t *data;
+	size_t length;
+};
+
+/**
+ * @brief Named Blob
+ **/
+
+struct wbcNamedBlob {
+	const char *name;
+	uint32_t flags;
+	struct wbcBlob blob;
+};
+
+/**
+ * @brief Logon User Parameters
+ **/
+
+struct wbcLogonUserParams {
+	const char *username;
+	const char *password;
+	size_t num_blobs;
+	struct wbcNamedBlob *blobs;
 };
 
 /**
@@ -297,6 +340,18 @@ struct wbcAuthUserInfo {
 	struct wbcSidWithAttr *sids;
 };
 
+/**
+ * @brief Logon User Information
+ *
+ * Some of the strings are maybe NULL
+ **/
+
+struct wbcLogonUserInfo {
+	struct wbcAuthUserInfo *info;
+	size_t num_blobs;
+	struct wbcNamedBlob *blobs;
+};
+
 /* wbcAuthUserInfo->user_flags */
 
 #define WBC_AUTH_USER_INFO_GUEST			0x00000001
@@ -372,6 +427,16 @@ enum wbcPasswordChangeRejectReason {
 	WBC_PWD_CHANGE_REJECT_COMPLEXITY=5
 };
 
+/**
+ * @brief Logoff User Parameters
+ **/
+
+struct wbcLogoffUserParams {
+	const char *username;
+	size_t num_blobs;
+	struct wbcNamedBlob *blobs;
+};
+
 /*
  * DomainControllerInfo struct
  */
@@ -379,7 +444,20 @@ struct wbcDomainControllerInfo {
 	char *dc_name;
 };
 
-
+/*
+ * DomainControllerInfoEx struct
+ */
+struct wbcDomainControllerInfoEx {
+	const char *dc_unc;
+	const char *dc_address;
+	uint16_t dc_address_type;
+	struct wbcGuid *domain_guid;
+	const char *domain_name;
+	const char *forest_name;
+	uint32_t dc_flags;
+	const char *dc_site_name;
+	const char *client_site_name;
+};
 
 /*
  * Memory Management
@@ -397,6 +475,16 @@ wbcErr wbcSidToString(const struct wbcDomainSid *sid,
 
 wbcErr wbcStringToSid(const char *sid_string,
 		      struct wbcDomainSid *sid);
+
+/*
+ * Utility functions for dealing with GUIDs
+ */
+
+wbcErr wbcGuidToString(const struct wbcGuid *guid,
+		       char **guid_string);
+
+wbcErr wbcStringToGuid(const char *guid_string,
+		       struct wbcGuid *guid);
 
 wbcErr wbcPing(void);
 
@@ -531,6 +619,12 @@ wbcErr wbcLookupDomainController(const char *domain,
 				 uint32_t flags,
 				 struct wbcDomainControllerInfo **dc_info);
 
+wbcErr wbcLookupDomainControllerEx(const char *domain,
+				   struct wbcGuid *guid,
+				   const char *site,
+				   uint32_t flags,
+				   struct wbcDomainControllerInfoEx **dc_info);
+
 /*
  * Athenticate functions
  */
@@ -542,9 +636,17 @@ wbcErr wbcAuthenticateUserEx(const struct wbcAuthUserParams *params,
 			     struct wbcAuthUserInfo **info,
 			     struct wbcAuthErrorInfo **error);
 
+wbcErr wbcLogonUser(const struct wbcLogonUserParams *params,
+		    struct wbcLogonUserInfo **info,
+		    struct wbcAuthErrorInfo **error,
+		    struct wbcUserPasswordPolicyInfo **policy);
+
 wbcErr wbcLogoffUser(const char *username,
 		     uid_t uid,
 		     const char *ccfilename);
+
+wbcErr wbcLogoffUserEx(const struct wbcLogoffUserParams *params,
+		       struct wbcAuthErrorInfo **error);
 
 wbcErr wbcChangeUserPassword(const char *username,
 			     const char *old_password,
@@ -566,6 +668,14 @@ wbcErr wbcResolveWinsByIP(const char *ip, char **name);
  */
 wbcErr wbcCheckTrustCredentials(const char *domain,
 				struct wbcAuthErrorInfo **error);
-
+/*
+ * Helper functions
+ */
+wbcErr wbcAddNamedBlob(size_t *num_blobs,
+		       struct wbcNamedBlob **blobs,
+		       const char *name,
+		       uint32_t flags,
+		       uint8_t *data,
+		       size_t length);
 
 #endif      /* _WBCLIENT_H */

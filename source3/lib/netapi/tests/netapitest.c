@@ -84,6 +84,11 @@ int main(int argc, const char **argv)
 		goto out;
 	}
 
+	status = netapitest_file(ctx, hostname);
+	if (status) {
+		goto out;
+	}
+
  out:
 	if (status != 0) {
 		printf("testsuite failed with: %s\n",

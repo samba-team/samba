@@ -82,7 +82,6 @@ struct server_id {
 
 struct messaging_context;
 struct messaging_rec;
-struct data_blob;
 
 /*
  * struct messaging_context belongs to messages.c, but because we still have
@@ -102,7 +101,7 @@ struct messaging_context {
 struct messaging_backend {
 	NTSTATUS (*send_fn)(struct messaging_context *msg_ctx,
 			    struct server_id pid, int msg_type,
-			    const struct data_blob *data,
+			    const DATA_BLOB *data,
 			    struct messaging_backend *backend);
 	void *private_data;
 };
@@ -138,12 +137,12 @@ NTSTATUS messaging_register(struct messaging_context *msg_ctx,
 				       void *private_data, 
 				       uint32_t msg_type, 
 				       struct server_id server_id,
-				       struct data_blob *data));
+				       DATA_BLOB *data));
 void messaging_deregister(struct messaging_context *ctx, uint32_t msg_type,
 			  void *private_data);
 NTSTATUS messaging_send(struct messaging_context *msg_ctx,
 			struct server_id server, 
-			uint32_t msg_type, const struct data_blob *data);
+			uint32_t msg_type, const DATA_BLOB *data);
 NTSTATUS messaging_send_buf(struct messaging_context *msg_ctx,
 			    struct server_id server, uint32_t msg_type,
 			    const uint8 *buf, size_t len);
