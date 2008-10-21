@@ -26,7 +26,7 @@ EOF
 
 test_one_global_option()
 {
-	OPTION=$1
+	OPTION="$@"
 	rm -f ${TEMP_CONFFILE}
 	cat > ${TEMP_CONFFILE}<<EOF
 [global]
