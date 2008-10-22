@@ -93,9 +93,12 @@ void send_nt_replies(connection_struct *conn,
 				    + data_alignment_offset);
 
 	if (useable_space < 0) {
-		DEBUG(0, ("send_nt_replies failed sanity useable_space "
-			  "= %d!!!", useable_space));
-		exit_server_cleanly("send_nt_replies: srv_send_smb failed.");
+		char *msg = talloc_asprintf(
+			talloc_tos(),
+			"send_nt_replies failed sanity useable_space = %d!!!",
+			useable_space);
+		DEBUG(0, ("%s\n", msg));
+		exit_server_cleanly(msg);
 	}
 
 	while (params_to_send || data_to_send) {
