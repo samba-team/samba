@@ -4907,6 +4907,8 @@ NTSTATUS _samr_DeleteUser(pipes_struct *p,
 	if (!close_policy_hnd(p, r->in.user_handle))
 		return NT_STATUS_OBJECT_NAME_INVALID;
 
+	ZERO_STRUCTP(r->out.user_handle);
+
 	force_flush_samr_cache(disp_info);
 
 	return NT_STATUS_OK;
