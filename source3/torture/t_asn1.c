@@ -31,22 +31,26 @@ int main(void)
 	bool ok = True;
 
 	for (i=0; tests[i].data != NULL; i++) {
-		ASN1_DATA data;
+		ASN1_DATA *data;
 		DATA_BLOB blob;
 
-		ZERO_STRUCT(data);
-		asn1_write_Integer(&data, values[i]);
+		data = asn1_init(talloc_tos());
+		if (!data) {
+			return -1;
+		}
 
-		if ((data.length != tests[i].length) ||
-		    (memcmp(data.data, tests[i].data, data.length) != 0)) {
+		asn1_write_Integer(data, values[i]);
+
+		if ((data->length != tests[i].length) ||
+		    (memcmp(data>data, tests[i].data, data->length) != 0)) {
 			printf("Test for %d failed\n", values[i]);
 			ok = False;
 		}
 
-		blob.data = data.data;
-		blob.length = data.length;
-		asn1_load(&data, blob);
-		if (!asn1_read_Integer(&data, &val)) {
+		blob.data = data->data;
+		blob.length = data->length;
+		asn1_load(data, blob);
+		if (!asn1_read_Integer(data, &val)) {
 			printf("Could not read our own Integer for %d\n",
 			       values[i]);
 			ok = False;

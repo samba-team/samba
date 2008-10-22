@@ -24,10 +24,10 @@
 /*
   do a cldap netlogon query
 */
-static int send_cldap_netlogon(int sock, const char *domain, 
+static int send_cldap_netlogon(TALLOC_CTX *mem_ctx, int sock, const char *domain,
 			       const char *hostname, unsigned ntversion)
 {
-	ASN1_DATA data;
+	ASN1_DATA *data;
 	char ntver[4];
 #ifdef CLDAP_USER_QUERY
 	char aac[4];
@@ -36,69 +36,72 @@ static int send_cldap_netlogon(int sock, const char *domain,
 #endif
 	SIVAL(ntver, 0, ntversion);
 
-	memset(&data, 0, sizeof(data));
+	data = asn1_init(mem_ctx);
+	if (data == NULL) {
+		return -1;
+	}
 
-	asn1_push_tag(&data,ASN1_SEQUENCE(0));
-	asn1_write_Integer(&data, 4);
-	asn1_push_tag(&data, ASN1_APPLICATION(3));
-	asn1_write_OctetString(&data, NULL, 0);
-	asn1_write_enumerated(&data, 0);
-	asn1_write_enumerated(&data, 0);
-	asn1_write_Integer(&data, 0);
-	asn1_write_Integer(&data, 0);
-	asn1_write_BOOLEAN(&data, False);
-	asn1_push_tag(&data, ASN1_CONTEXT(0));
+	asn1_push_tag(data,ASN1_SEQUENCE(0));
+	asn1_write_Integer(data, 4);
+	asn1_push_tag(data, ASN1_APPLICATION(3));
+	asn1_write_OctetString(data, NULL, 0);
+	asn1_write_enumerated(data, 0);
+	asn1_write_enumerated(data, 0);
+	asn1_write_Integer(data, 0);
+	asn1_write_Integer(data, 0);
+	asn1_write_BOOLEAN(data, False);
+	asn1_push_tag(data, ASN1_CONTEXT(0));
 
 	if (domain) {
-		asn1_push_tag(&data, ASN1_CONTEXT(3));
-		asn1_write_OctetString(&data, "DnsDomain", 9);
-		asn1_write_OctetString(&data, domain, strlen(domain));
-		asn1_pop_tag(&data);
+		asn1_push_tag(data, ASN1_CONTEXT(3));
+		asn1_write_OctetString(data, "DnsDomain", 9);
+		asn1_write_OctetString(data, domain, strlen(domain));
+		asn1_pop_tag(data);
 	}
 
-	asn1_push_tag(&data, ASN1_CONTEXT(3));
-	asn1_write_OctetString(&data, "Host", 4);
-	asn1_write_OctetString(&data, hostname, strlen(hostname));
-	asn1_pop_tag(&data);
+	asn1_push_tag(data, ASN1_CONTEXT(3));
+	asn1_write_OctetString(data, "Host", 4);
+	asn1_write_OctetString(data, hostname, strlen(hostname));
+	asn1_pop_tag(data);
 
 #ifdef CLDAP_USER_QUERY
-	asn1_push_tag(&data, ASN1_CONTEXT(3));
-	asn1_write_OctetString(&data, "User", 4);
-	asn1_write_OctetString(&data, "SAMBA$", 6);
-	asn1_pop_tag(&data);
+	asn1_push_tag(data, ASN1_CONTEXT(3));
+	asn1_write_OctetString(data, "User", 4);
+	asn1_write_OctetString(data, "SAMBA$", 6);
+	asn1_pop_tag(data);
 
-	asn1_push_tag(&data, ASN1_CONTEXT(3));
-	asn1_write_OctetString(&data, "AAC", 4);
-	asn1_write_OctetString(&data, aac, 4);
-	asn1_pop_tag(&data);
+	asn1_push_tag(data, ASN1_CONTEXT(3));
+	asn1_write_OctetString(data, "AAC", 4);
+	asn1_write_OctetString(data, aac, 4);
+	asn1_pop_tag(data);
 #endif
 
-	asn1_push_tag(&data, ASN1_CONTEXT(3));
-	asn1_write_OctetString(&data, "NtVer", 5);
-	asn1_write_OctetString(&data, ntver, 4);
-	asn1_pop_tag(&data);
+	asn1_push_tag(data, ASN1_CONTEXT(3));
+	asn1_write_OctetString(data, "NtVer", 5);
+	asn1_write_OctetString(data, ntver, 4);
+	asn1_pop_tag(data);
 
-	asn1_pop_tag(&data);
+	asn1_pop_tag(data);
 
-	asn1_push_tag(&data,ASN1_SEQUENCE(0));
-	asn1_write_OctetString(&data, "NetLogon", 8);
-	asn1_pop_tag(&data);
-	asn1_pop_tag(&data);
-	asn1_pop_tag(&data);
+	asn1_push_tag(data,ASN1_SEQUENCE(0));
+	asn1_write_OctetString(data, "NetLogon", 8);
+	asn1_pop_tag(data);
+	asn1_pop_tag(data);
+	asn1_pop_tag(data);
 
-	if (data.has_error) {
-		DEBUG(2,("Failed to build cldap netlogon at offset %d\n", (int)data.ofs));
-		asn1_free(&data);
+	if (data->has_error) {
+		DEBUG(2,("Failed to build cldap netlogon at offset %d\n", (int)data->ofs));
+		asn1_free(data);
 		return -1;
 	}
 
-	if (write(sock, data.data, data.length) != (ssize_t)data.length) {
+	if (write(sock, data->data, data->length) != (ssize_t)data->length) {
 		DEBUG(2,("failed to send cldap query (%s)\n", strerror(errno)));
-		asn1_free(&data);
+		asn1_free(data);
 		return -1;
 	}
 
-	asn1_free(&data);
+	asn1_free(data);
 
 	return 0;
 }
@@ -123,7 +126,7 @@ static int recv_cldap_netlogon(TALLOC_CTX *mem_ctx,
 			       struct netlogon_samlogon_response **reply)
 {
 	int ret;
-	ASN1_DATA data;
+	ASN1_DATA *data;
 	DATA_BLOB blob = data_blob_null;
 	DATA_BLOB os1 = data_blob_null;
 	DATA_BLOB os2 = data_blob_null;
@@ -160,28 +163,34 @@ static int recv_cldap_netlogon(TALLOC_CTX *mem_ctx,
 	}
 	blob.length = ret;
 
-	asn1_load(&data, blob);
-	asn1_start_tag(&data, ASN1_SEQUENCE(0));
-	asn1_read_Integer(&data, &i1);
-	asn1_start_tag(&data, ASN1_APPLICATION(4));
-	asn1_read_OctetString(&data, NULL, &os1);
-	asn1_start_tag(&data, ASN1_SEQUENCE(0));
-	asn1_start_tag(&data, ASN1_SEQUENCE(0));
-	asn1_read_OctetString(&data, NULL, &os2);
-	asn1_start_tag(&data, ASN1_SET);
-	asn1_read_OctetString(&data, NULL, &os3);
-	asn1_end_tag(&data);
-	asn1_end_tag(&data);
-	asn1_end_tag(&data);
-	asn1_end_tag(&data);
-	asn1_end_tag(&data);
+	data = asn1_init(mem_ctx);
+	if (data == NULL) {
+		data_blob_free(&blob);
+		return -1;
+	}
 
-	if (data.has_error) {
+	asn1_load(data, blob);
+	asn1_start_tag(data, ASN1_SEQUENCE(0));
+	asn1_read_Integer(data, &i1);
+	asn1_start_tag(data, ASN1_APPLICATION(4));
+	asn1_read_OctetString(data, NULL, &os1);
+	asn1_start_tag(data, ASN1_SEQUENCE(0));
+	asn1_start_tag(data, ASN1_SEQUENCE(0));
+	asn1_read_OctetString(data, NULL, &os2);
+	asn1_start_tag(data, ASN1_SET);
+	asn1_read_OctetString(data, NULL, &os3);
+	asn1_end_tag(data);
+	asn1_end_tag(data);
+	asn1_end_tag(data);
+	asn1_end_tag(data);
+	asn1_end_tag(data);
+
+	if (data->has_error) {
 		data_blob_free(&blob);
 		data_blob_free(&os1);
 		data_blob_free(&os2);
 		data_blob_free(&os3);
-		asn1_free(&data);
+		asn1_free(data);
 		DEBUG(1,("Failed to parse cldap reply\n"));
 		return -1;
 	}
@@ -193,6 +202,7 @@ static int recv_cldap_netlogon(TALLOC_CTX *mem_ctx,
 		data_blob_free(&os2);
 		data_blob_free(&os3);
 		data_blob_free(&blob);
+		asn1_free(data);
 		return -1;
 	}
 
@@ -202,6 +212,7 @@ static int recv_cldap_netlogon(TALLOC_CTX *mem_ctx,
 		data_blob_free(&os2);
 		data_blob_free(&os3);
 		data_blob_free(&blob);
+		asn1_free(data);
 		TALLOC_FREE(r);
 		return -1;
 	}
@@ -212,8 +223,8 @@ static int recv_cldap_netlogon(TALLOC_CTX *mem_ctx,
 	data_blob_free(&os2);
 	data_blob_free(&os3);
 	data_blob_free(&blob);
-	
-	asn1_free(&data);
+
+	asn1_free(data);
 
 	if (reply) {
 		*reply = r;
@@ -244,7 +255,7 @@ bool ads_cldap_netlogon(TALLOC_CTX *mem_ctx,
 		return False;
 	}
 
-	ret = send_cldap_netlogon(sock, realm, global_myname(), nt_version);
+	ret = send_cldap_netlogon(mem_ctx, sock, realm, global_myname(), nt_version);
 	if (ret != 0) {
 		close(sock);
 		return False;

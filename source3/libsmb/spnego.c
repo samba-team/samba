@@ -249,24 +249,29 @@ static bool write_negTokenTarg(ASN1_DATA *asn1, negTokenTarg_t *token)
 
 ssize_t read_spnego_data(DATA_BLOB data, SPNEGO_DATA *token)
 {
-	ASN1_DATA asn1;
+	ASN1_DATA *asn1;
 	ssize_t ret = -1;
 
 	ZERO_STRUCTP(token);
-	ZERO_STRUCT(asn1);
-	asn1_load(&asn1, data);
 
-	switch (asn1.data[asn1.ofs]) {
+	asn1 = asn1_init(talloc_tos());
+	if (asn1 == NULL) {
+		return -1;
+	}
+
+	asn1_load(asn1, data);
+
+	switch (asn1->data[asn1->ofs]) {
 	case ASN1_APPLICATION(0):
-		asn1_start_tag(&asn1, ASN1_APPLICATION(0));
-		asn1_check_OID(&asn1, OID_SPNEGO);
-		if (read_negTokenInit(&asn1, &token->negTokenInit)) {
+		asn1_start_tag(asn1, ASN1_APPLICATION(0));
+		asn1_check_OID(asn1, OID_SPNEGO);
+		if (read_negTokenInit(asn1, &token->negTokenInit)) {
 			token->type = SPNEGO_NEG_TOKEN_INIT;
 		}
-		asn1_end_tag(&asn1);
+		asn1_end_tag(asn1);
 		break;
 	case ASN1_CONTEXT(1):
-		if (read_negTokenTarg(&asn1, &token->negTokenTarg)) {
+		if (read_negTokenTarg(asn1, &token->negTokenTarg)) {
 			token->type = SPNEGO_NEG_TOKEN_TARG;
 		}
 		break;
@@ -274,39 +279,42 @@ ssize_t read_spnego_data(DATA_BLOB data, SPNEGO_DATA *token)
 		break;
 	}
 
-	if (!asn1.has_error) ret = asn1.ofs;
-	asn1_free(&asn1);
+	if (!asn1->has_error) ret = asn1->ofs;
+	asn1_free(asn1);
 
 	return ret;
 }
 
 ssize_t write_spnego_data(DATA_BLOB *blob, SPNEGO_DATA *spnego)
 {
-	ASN1_DATA asn1;
+	ASN1_DATA *asn1;
 	ssize_t ret = -1;
 
-	ZERO_STRUCT(asn1);
+	asn1 = asn1_init(talloc_tos());
+	if (asn1 == NULL) {
+		return -1;
+	}
 
 	switch (spnego->type) {
 	case SPNEGO_NEG_TOKEN_INIT:
-		asn1_push_tag(&asn1, ASN1_APPLICATION(0));
-		asn1_write_OID(&asn1, OID_SPNEGO);
-		write_negTokenInit(&asn1, &spnego->negTokenInit);
-		asn1_pop_tag(&asn1);
+		asn1_push_tag(asn1, ASN1_APPLICATION(0));
+		asn1_write_OID(asn1, OID_SPNEGO);
+		write_negTokenInit(asn1, &spnego->negTokenInit);
+		asn1_pop_tag(asn1);
 		break;
 	case SPNEGO_NEG_TOKEN_TARG:
-		write_negTokenTarg(&asn1, &spnego->negTokenTarg);
+		write_negTokenTarg(asn1, &spnego->negTokenTarg);
 		break;
 	default:
-		asn1.has_error = True;
+		asn1->has_error = True;
 		break;
 	}
 
-	if (!asn1.has_error) {
-		*blob = data_blob(asn1.data, asn1.length);
-		ret = asn1.ofs;
+	if (!asn1->has_error) {
+		*blob = data_blob(asn1->data, asn1->length);
+		ret = asn1->ofs;
 	}
-	asn1_free(&asn1);
+	asn1_free(asn1);
 
 	return ret;
 }

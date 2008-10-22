@@ -998,7 +998,7 @@ static NTSTATUS check_spnego_blob_complete(uint16 smbpid, uint16 vuid,
 		DATA_BLOB *pblob)
 {
 	struct pending_auth_data *pad = NULL;
-	ASN1_DATA data;
+	ASN1_DATA *data;
 	size_t needed_len = 0;
 
 	pad = get_pending_auth_data(smbpid);
@@ -1085,34 +1085,39 @@ static NTSTATUS check_spnego_blob_complete(uint16 smbpid, uint16 vuid,
 	 * the data given in this blob is enough.
 	 */
 
-	asn1_load(&data, *pblob);
-	asn1_start_tag(&data, pblob->data[0]);
-	if (data.has_error || data.nesting == NULL) {
-		asn1_free(&data);
+	data = asn1_init(NULL);
+	if (data == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	asn1_load(data, *pblob);
+	asn1_start_tag(data, pblob->data[0]);
+	if (data->has_error || data->nesting == NULL) {
+		asn1_free(data);
 		/* Let caller catch. */
 		return NT_STATUS_OK;
 	}
 
 	/* Integer wrap paranoia.... */
 
-	if (data.nesting->taglen + data.nesting->start < data.nesting->taglen ||
-	    data.nesting->taglen + data.nesting->start < data.nesting->start) {
+	if (data->nesting->taglen + data->nesting->start < data->nesting->taglen ||
+	    data->nesting->taglen + data->nesting->start < data->nesting->start) {
 
 		DEBUG(2,("check_spnego_blob_complete: integer wrap "
 			"data.nesting->taglen = %u, "
 			"data.nesting->start = %u\n",
-			(unsigned int)data.nesting->taglen,
-			(unsigned int)data.nesting->start ));
+			(unsigned int)data->nesting->taglen,
+			(unsigned int)data->nesting->start ));
 
-		asn1_free(&data);
+		asn1_free(data);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	/* Total length of the needed asn1 is the tag length
 	 * plus the current offset. */
 
-	needed_len = data.nesting->taglen + data.nesting->start;
-	asn1_free(&data);
+	needed_len = data->nesting->taglen + data->nesting->start;
+	asn1_free(data);
 
 	DEBUG(10,("check_spnego_blob_complete: needed_len = %u, "
 		"pblob->length = %u\n",

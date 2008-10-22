@@ -65,7 +65,7 @@ static DATA_BLOB encode_krb5_setpw(const char *principal, const char *password)
 	char* c;
 	char* princ;
 
-	ASN1_DATA req;
+	ASN1_DATA *req;
 	DATA_BLOB ret;
 
 
@@ -90,40 +90,43 @@ static DATA_BLOB encode_krb5_setpw(const char *principal, const char *password)
 		return data_blob_null;
 	}
 
-	memset(&req, 0, sizeof(req));
-	
-	asn1_push_tag(&req, ASN1_SEQUENCE(0));
-	asn1_push_tag(&req, ASN1_CONTEXT(0));
-	asn1_write_OctetString(&req, password, strlen(password));
-	asn1_pop_tag(&req);
+	req = asn1_init(talloc_tos());
+	if (req == NULL) {
+		return data_blob_null;
+	}
 
-	asn1_push_tag(&req, ASN1_CONTEXT(1));
-	asn1_push_tag(&req, ASN1_SEQUENCE(0));
+	asn1_push_tag(req, ASN1_SEQUENCE(0));
+	asn1_push_tag(req, ASN1_CONTEXT(0));
+	asn1_write_OctetString(req, password, strlen(password));
+	asn1_pop_tag(req);
 
-	asn1_push_tag(&req, ASN1_CONTEXT(0));
-	asn1_write_Integer(&req, 1);
-	asn1_pop_tag(&req);
+	asn1_push_tag(req, ASN1_CONTEXT(1));
+	asn1_push_tag(req, ASN1_SEQUENCE(0));
 
-	asn1_push_tag(&req, ASN1_CONTEXT(1));
-	asn1_push_tag(&req, ASN1_SEQUENCE(0));
+	asn1_push_tag(req, ASN1_CONTEXT(0));
+	asn1_write_Integer(req, 1);
+	asn1_pop_tag(req);
+
+	asn1_push_tag(req, ASN1_CONTEXT(1));
+	asn1_push_tag(req, ASN1_SEQUENCE(0));
 
 	if (princ_part1) {
-		asn1_write_GeneralString(&req, princ_part1);
+		asn1_write_GeneralString(req, princ_part1);
 	}
 	
-	asn1_write_GeneralString(&req, princ_part2);
-	asn1_pop_tag(&req);
-	asn1_pop_tag(&req);
-	asn1_pop_tag(&req);
-	asn1_pop_tag(&req);
+	asn1_write_GeneralString(req, princ_part2);
+	asn1_pop_tag(req);
+	asn1_pop_tag(req);
+	asn1_pop_tag(req);
+	asn1_pop_tag(req);
 
-	asn1_push_tag(&req, ASN1_CONTEXT(2));
-	asn1_write_GeneralString(&req, realm);
-	asn1_pop_tag(&req);
-	asn1_pop_tag(&req);
+	asn1_push_tag(req, ASN1_CONTEXT(2));
+	asn1_write_GeneralString(req, realm);
+	asn1_pop_tag(req);
+	asn1_pop_tag(req);
 
-	ret = data_blob(req.data, req.length);
-	asn1_free(&req);
+	ret = data_blob(req->data, req->length);
+	asn1_free(req);
 
 	free(princ);
 

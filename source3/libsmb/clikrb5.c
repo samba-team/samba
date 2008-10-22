@@ -320,31 +320,36 @@ bool unwrap_edata_ntstatus(TALLOC_CTX *mem_ctx,
 			   DATA_BLOB *edata_out)
 {
 	DATA_BLOB edata_contents;
-	ASN1_DATA data;
+	ASN1_DATA *data;
 	int edata_type;
 
 	if (!edata->length) {
 		return False;
 	}
 
-	asn1_load(&data, *edata);
-	asn1_start_tag(&data, ASN1_SEQUENCE(0));
-	asn1_start_tag(&data, ASN1_CONTEXT(1));
-	asn1_read_Integer(&data, &edata_type);
+	data = asn1_init(mem_ctx);
+	if (data == NULL) {
+		return false;
+	}
+
+	asn1_load(data, *edata);
+	asn1_start_tag(data, ASN1_SEQUENCE(0));
+	asn1_start_tag(data, ASN1_CONTEXT(1));
+	asn1_read_Integer(data, &edata_type);
 
 	if (edata_type != KRB5_PADATA_PW_SALT) {
 		DEBUG(0,("edata is not of required type %d but of type %d\n", 
 			KRB5_PADATA_PW_SALT, edata_type));
-		asn1_free(&data);
+		asn1_free(data);
 		return False;
 	}
 	
-	asn1_start_tag(&data, ASN1_CONTEXT(2));
-	asn1_read_OctetString(&data, NULL, &edata_contents);
-	asn1_end_tag(&data);
-	asn1_end_tag(&data);
-	asn1_end_tag(&data);
-	asn1_free(&data);
+	asn1_start_tag(data, ASN1_CONTEXT(2));
+	asn1_read_OctetString(data, NULL, &edata_contents);
+	asn1_end_tag(data);
+	asn1_end_tag(data);
+	asn1_end_tag(data);
+	asn1_free(data);
 
 	*edata_out = data_blob_talloc(mem_ctx, edata_contents.data, edata_contents.length);
 
@@ -357,32 +362,37 @@ bool unwrap_edata_ntstatus(TALLOC_CTX *mem_ctx,
 bool unwrap_pac(TALLOC_CTX *mem_ctx, DATA_BLOB *auth_data, DATA_BLOB *unwrapped_pac_data)
 {
 	DATA_BLOB pac_contents;
-	ASN1_DATA data;
+	ASN1_DATA *data;
 	int data_type;
 
 	if (!auth_data->length) {
 		return False;
 	}
 
-	asn1_load(&data, *auth_data);
-	asn1_start_tag(&data, ASN1_SEQUENCE(0));
-	asn1_start_tag(&data, ASN1_SEQUENCE(0));
-	asn1_start_tag(&data, ASN1_CONTEXT(0));
-	asn1_read_Integer(&data, &data_type);
+	data = asn1_init(mem_ctx);
+	if (data == NULL) {
+		return false;
+	}
+
+	asn1_load(data, *auth_data);
+	asn1_start_tag(data, ASN1_SEQUENCE(0));
+	asn1_start_tag(data, ASN1_SEQUENCE(0));
+	asn1_start_tag(data, ASN1_CONTEXT(0));
+	asn1_read_Integer(data, &data_type);
 	
 	if (data_type != KRB5_AUTHDATA_WIN2K_PAC ) {
 		DEBUG(10,("authorization data is not a Windows PAC (type: %d)\n", data_type));
-		asn1_free(&data);
+		asn1_free(data);
 		return False;
 	}
 	
-	asn1_end_tag(&data);
-	asn1_start_tag(&data, ASN1_CONTEXT(1));
-	asn1_read_OctetString(&data, NULL, &pac_contents);
-	asn1_end_tag(&data);
-	asn1_end_tag(&data);
-	asn1_end_tag(&data);
-	asn1_free(&data);
+	asn1_end_tag(data);
+	asn1_start_tag(data, ASN1_CONTEXT(1));
+	asn1_read_OctetString(data, NULL, &pac_contents);
+	asn1_end_tag(data);
+	asn1_end_tag(data);
+	asn1_end_tag(data);
+	asn1_free(data);
 
 	*unwrapped_pac_data = data_blob_talloc(mem_ctx, pac_contents.data, pac_contents.length);
 

@@ -30,45 +30,47 @@ DATA_BLOB spnego_gen_negTokenInit(char guid[16],
 				  const char *principal)
 {
 	int i;
-	ASN1_DATA data;
+	ASN1_DATA *data;
 	DATA_BLOB ret;
 
-	memset(&data, 0, sizeof(data));
+	data = asn1_init(talloc_tos());
+	if (data == NULL) {
+		return data_blob_null;
+	}
 
-	asn1_write(&data, guid, 16);
-	asn1_push_tag(&data,ASN1_APPLICATION(0));
-	asn1_write_OID(&data,OID_SPNEGO);
-	asn1_push_tag(&data,ASN1_CONTEXT(0));
-	asn1_push_tag(&data,ASN1_SEQUENCE(0));
+	asn1_write(data, guid, 16);
+	asn1_push_tag(data,ASN1_APPLICATION(0));
+	asn1_write_OID(data,OID_SPNEGO);
+	asn1_push_tag(data,ASN1_CONTEXT(0));
+	asn1_push_tag(data,ASN1_SEQUENCE(0));
 
-	asn1_push_tag(&data,ASN1_CONTEXT(0));
-	asn1_push_tag(&data,ASN1_SEQUENCE(0));
+	asn1_push_tag(data,ASN1_CONTEXT(0));
+	asn1_push_tag(data,ASN1_SEQUENCE(0));
 	for (i=0; OIDs[i]; i++) {
-		asn1_write_OID(&data,OIDs[i]);
+		asn1_write_OID(data,OIDs[i]);
 	}
-	asn1_pop_tag(&data);
-	asn1_pop_tag(&data);
+	asn1_pop_tag(data);
+	asn1_pop_tag(data);
 
-	asn1_push_tag(&data, ASN1_CONTEXT(3));
-	asn1_push_tag(&data, ASN1_SEQUENCE(0));
-	asn1_push_tag(&data, ASN1_CONTEXT(0));
-	asn1_write_GeneralString(&data,principal);
-	asn1_pop_tag(&data);
-	asn1_pop_tag(&data);
-	asn1_pop_tag(&data);
+	asn1_push_tag(data, ASN1_CONTEXT(3));
+	asn1_push_tag(data, ASN1_SEQUENCE(0));
+	asn1_push_tag(data, ASN1_CONTEXT(0));
+	asn1_write_GeneralString(data,principal);
+	asn1_pop_tag(data);
+	asn1_pop_tag(data);
+	asn1_pop_tag(data);
 
-	asn1_pop_tag(&data);
-	asn1_pop_tag(&data);
+	asn1_pop_tag(data);
+	asn1_pop_tag(data);
 
-	asn1_pop_tag(&data);
+	asn1_pop_tag(data);
 
-	if (data.has_error) {
-		DEBUG(1,("Failed to build negTokenInit at offset %d\n", (int)data.ofs));
-		asn1_free(&data);
+	if (data->has_error) {
+		DEBUG(1,("Failed to build negTokenInit at offset %d\n", (int)data->ofs));
 	}
 
-	ret = data_blob(data.data, data.length);
-	asn1_free(&data);
+	ret = data_blob(data->data, data->length);
+	asn1_free(data);
 
 	return ret;
 }
@@ -82,38 +84,40 @@ DATA_BLOB spnego_gen_negTokenInit(char guid[16],
 */
 DATA_BLOB gen_negTokenInit(const char *OID, DATA_BLOB blob)
 {
-	ASN1_DATA data;
+	ASN1_DATA *data;
 	DATA_BLOB ret;
 
-	memset(&data, 0, sizeof(data));
-
-	asn1_push_tag(&data, ASN1_APPLICATION(0));
-	asn1_write_OID(&data,OID_SPNEGO);
-	asn1_push_tag(&data, ASN1_CONTEXT(0));
-	asn1_push_tag(&data, ASN1_SEQUENCE(0));
-
-	asn1_push_tag(&data, ASN1_CONTEXT(0));
-	asn1_push_tag(&data, ASN1_SEQUENCE(0));
-	asn1_write_OID(&data, OID);
-	asn1_pop_tag(&data);
-	asn1_pop_tag(&data);
-
-	asn1_push_tag(&data, ASN1_CONTEXT(2));
-	asn1_write_OctetString(&data,blob.data,blob.length);
-	asn1_pop_tag(&data);
-
-	asn1_pop_tag(&data);
-	asn1_pop_tag(&data);
-
-	asn1_pop_tag(&data);
-
-	if (data.has_error) {
-		DEBUG(1,("Failed to build negTokenInit at offset %d\n", (int)data.ofs));
-		asn1_free(&data);
+	data = asn1_init(talloc_tos());
+	if (data == NULL) {
+		return data_blob_null;
 	}
 
-	ret = data_blob(data.data, data.length);
-	asn1_free(&data);
+	asn1_push_tag(data, ASN1_APPLICATION(0));
+	asn1_write_OID(data,OID_SPNEGO);
+	asn1_push_tag(data, ASN1_CONTEXT(0));
+	asn1_push_tag(data, ASN1_SEQUENCE(0));
+
+	asn1_push_tag(data, ASN1_CONTEXT(0));
+	asn1_push_tag(data, ASN1_SEQUENCE(0));
+	asn1_write_OID(data, OID);
+	asn1_pop_tag(data);
+	asn1_pop_tag(data);
+
+	asn1_push_tag(data, ASN1_CONTEXT(2));
+	asn1_write_OctetString(data,blob.data,blob.length);
+	asn1_pop_tag(data);
+
+	asn1_pop_tag(data);
+	asn1_pop_tag(data);
+
+	asn1_pop_tag(data);
+
+	if (data->has_error) {
+		DEBUG(1,("Failed to build negTokenInit at offset %d\n", (int)data->ofs));
+	}
+
+	ret = data_blob(data->data, data->length);
+	asn1_free(data);
 
 	return ret;
 }
@@ -128,44 +132,50 @@ bool spnego_parse_negTokenInit(DATA_BLOB blob,
 {
 	int i;
 	bool ret;
-	ASN1_DATA data;
+	ASN1_DATA *data;
 
-	asn1_load(&data, blob);
+	data = asn1_init(talloc_tos());
+	if (data == NULL) {
+		return false;
+	}
 
-	asn1_start_tag(&data,ASN1_APPLICATION(0));
-	asn1_check_OID(&data,OID_SPNEGO);
-	asn1_start_tag(&data,ASN1_CONTEXT(0));
-	asn1_start_tag(&data,ASN1_SEQUENCE(0));
+	asn1_load(data, blob);
 
-	asn1_start_tag(&data,ASN1_CONTEXT(0));
-	asn1_start_tag(&data,ASN1_SEQUENCE(0));
-	for (i=0; asn1_tag_remaining(&data) > 0 && i < ASN1_MAX_OIDS-1; i++) {
+	asn1_start_tag(data,ASN1_APPLICATION(0));
+
+	asn1_check_OID(data,OID_SPNEGO);
+	asn1_start_tag(data,ASN1_CONTEXT(0));
+	asn1_start_tag(data,ASN1_SEQUENCE(0));
+
+	asn1_start_tag(data,ASN1_CONTEXT(0));
+	asn1_start_tag(data,ASN1_SEQUENCE(0));
+	for (i=0; asn1_tag_remaining(data) > 0 && i < ASN1_MAX_OIDS-1; i++) {
 		const char *oid_str = NULL;
-		asn1_read_OID(&data,NULL,&oid_str);
+		asn1_read_OID(data,NULL,&oid_str);
 		OIDs[i] = oid_str;
 	}
 	OIDs[i] = NULL;
-	asn1_end_tag(&data);
-	asn1_end_tag(&data);
+	asn1_end_tag(data);
+	asn1_end_tag(data);
 
 	*principal = NULL;
-	if (asn1_tag_remaining(&data) > 0) {
-		asn1_start_tag(&data, ASN1_CONTEXT(3));
-		asn1_start_tag(&data, ASN1_SEQUENCE(0));
-		asn1_start_tag(&data, ASN1_CONTEXT(0));
-		asn1_read_GeneralString(&data,NULL,principal);
-		asn1_end_tag(&data);
-		asn1_end_tag(&data);
-		asn1_end_tag(&data);
+	if (asn1_tag_remaining(data) > 0) {
+		asn1_start_tag(data, ASN1_CONTEXT(3));
+		asn1_start_tag(data, ASN1_SEQUENCE(0));
+		asn1_start_tag(data, ASN1_CONTEXT(0));
+		asn1_read_GeneralString(data,NULL,principal);
+		asn1_end_tag(data);
+		asn1_end_tag(data);
+		asn1_end_tag(data);
 	}
 
-	asn1_end_tag(&data);
-	asn1_end_tag(&data);
+	asn1_end_tag(data);
+	asn1_end_tag(data);
 
-	asn1_end_tag(&data);
+	asn1_end_tag(data);
 
-	ret = !data.has_error;
-	if (data.has_error) {
+	ret = !data->has_error;
+	if (data->has_error) {
 		int j;
 		TALLOC_FREE(*principal);
 		for(j = 0; j < i && j < ASN1_MAX_OIDS-1; j++) {
@@ -173,7 +183,7 @@ bool spnego_parse_negTokenInit(DATA_BLOB blob,
 		}
 	}
 
-	asn1_free(&data);
+	asn1_free(data);
 	return ret;
 }
 
@@ -183,40 +193,42 @@ bool spnego_parse_negTokenInit(DATA_BLOB blob,
 DATA_BLOB gen_negTokenTarg(const char *OIDs[], DATA_BLOB blob)
 {
 	int i;
-	ASN1_DATA data;
+	ASN1_DATA *data;
 	DATA_BLOB ret;
 
-	memset(&data, 0, sizeof(data));
+	data = asn1_init(talloc_tos());
+	if (data == NULL) {
+		return data_blob_null;
+	}
 
-	asn1_push_tag(&data, ASN1_APPLICATION(0));
-	asn1_write_OID(&data,OID_SPNEGO);
-	asn1_push_tag(&data, ASN1_CONTEXT(0));
-	asn1_push_tag(&data, ASN1_SEQUENCE(0));
+	asn1_push_tag(data, ASN1_APPLICATION(0));
+	asn1_write_OID(data,OID_SPNEGO);
+	asn1_push_tag(data, ASN1_CONTEXT(0));
+	asn1_push_tag(data, ASN1_SEQUENCE(0));
 
-	asn1_push_tag(&data, ASN1_CONTEXT(0));
-	asn1_push_tag(&data, ASN1_SEQUENCE(0));
+	asn1_push_tag(data, ASN1_CONTEXT(0));
+	asn1_push_tag(data, ASN1_SEQUENCE(0));
 	for (i=0; OIDs[i]; i++) {
-		asn1_write_OID(&data,OIDs[i]);
+		asn1_write_OID(data,OIDs[i]);
 	}
-	asn1_pop_tag(&data);
-	asn1_pop_tag(&data);
+	asn1_pop_tag(data);
+	asn1_pop_tag(data);
 
-	asn1_push_tag(&data, ASN1_CONTEXT(2));
-	asn1_write_OctetString(&data,blob.data,blob.length);
-	asn1_pop_tag(&data);
+	asn1_push_tag(data, ASN1_CONTEXT(2));
+	asn1_write_OctetString(data,blob.data,blob.length);
+	asn1_pop_tag(data);
 
-	asn1_pop_tag(&data);
-	asn1_pop_tag(&data);
+	asn1_pop_tag(data);
+	asn1_pop_tag(data);
 
-	asn1_pop_tag(&data);
+	asn1_pop_tag(data);
 
-	if (data.has_error) {
-		DEBUG(1,("Failed to build negTokenTarg at offset %d\n", (int)data.ofs));
-		asn1_free(&data);
+	if (data->has_error) {
+		DEBUG(1,("Failed to build negTokenTarg at offset %d\n", (int)data->ofs));
 	}
 
-	ret = data_blob(data.data, data.length);
-	asn1_free(&data);
+	ret = data_blob(data->data, data->length);
+	asn1_free(data);
 
 	return ret;
 }
@@ -224,61 +236,66 @@ DATA_BLOB gen_negTokenTarg(const char *OIDs[], DATA_BLOB blob)
 /*
   parse a negTokenTarg packet giving a list of OIDs and a security blob
 */
-bool parse_negTokenTarg(DATA_BLOB blob, const char *OIDs[ASN1_MAX_OIDS], DATA_BLOB *secblob)
+bool parse_negTokenTarg(DATA_BLOB blob, char *OIDs[ASN1_MAX_OIDS], DATA_BLOB *secblob)
 {
 	int i;
-	ASN1_DATA data;
+	ASN1_DATA *data;
 
-	asn1_load(&data, blob);
-	asn1_start_tag(&data, ASN1_APPLICATION(0));
-	asn1_check_OID(&data,OID_SPNEGO);
-	asn1_start_tag(&data, ASN1_CONTEXT(0));
-	asn1_start_tag(&data, ASN1_SEQUENCE(0));
+	data = asn1_init(talloc_tos());
+	if (data == NULL) {
+		return false;
+	}
 
-	asn1_start_tag(&data, ASN1_CONTEXT(0));
-	asn1_start_tag(&data, ASN1_SEQUENCE(0));
-	for (i=0; asn1_tag_remaining(&data) > 0 && i < ASN1_MAX_OIDS-1; i++) {
+	asn1_load(data, blob);
+	asn1_start_tag(data, ASN1_APPLICATION(0));
+	asn1_check_OID(data,OID_SPNEGO);
+	asn1_start_tag(data, ASN1_CONTEXT(0));
+	asn1_start_tag(data, ASN1_SEQUENCE(0));
+
+	asn1_start_tag(data, ASN1_CONTEXT(0));
+	asn1_start_tag(data, ASN1_SEQUENCE(0));
+	for (i=0; asn1_tag_remaining(data) > 0 && i < ASN1_MAX_OIDS-1; i++) {
 		const char *oid_str = NULL;
-		asn1_read_OID(&data,NULL,&oid_str);
+		asn1_read_OID(data,NULL,&oid_str);
 		OIDs[i] = oid_str;
 	}
 	OIDs[i] = NULL;
-	asn1_end_tag(&data);
-	asn1_end_tag(&data);
+	asn1_end_tag(data);
+	asn1_end_tag(data);
 
 	/* Skip any optional req_flags that are sent per RFC 4178 */
-	if (asn1_peek_tag(&data, ASN1_CONTEXT(1))) {
+	if (asn1_peek_tag(data, ASN1_CONTEXT(1))) {
 		uint8 flags;
 
-		asn1_start_tag(&data, ASN1_CONTEXT(1));
-		asn1_start_tag(&data, ASN1_BITFIELD);
-		while (asn1_tag_remaining(&data) > 0)
-			asn1_read_uint8(&data, &flags);
-		asn1_end_tag(&data);
-		asn1_end_tag(&data);
+		asn1_start_tag(data, ASN1_CONTEXT(1));
+		asn1_start_tag(data, ASN1_BITFIELD);
+		while (asn1_tag_remaining(data) > 0)
+			asn1_read_uint8(data, &flags);
+		asn1_end_tag(data);
+		asn1_end_tag(data);
 	}
 
-	asn1_start_tag(&data, ASN1_CONTEXT(2));
-	asn1_read_OctetString(&data,NULL,secblob);
-	asn1_end_tag(&data);
+	asn1_start_tag(data, ASN1_CONTEXT(2));
+	asn1_read_OctetString(data,NULL,secblob);
+	asn1_end_tag(data);
 
-	asn1_end_tag(&data);
-	asn1_end_tag(&data);
+	asn1_end_tag(data);
+	asn1_end_tag(data);
 
-	asn1_end_tag(&data);
+	asn1_end_tag(data);
 
-	if (data.has_error) {
+	if (data->has_error) {
 		int j;
 		data_blob_free(secblob);
 		for(j = 0; j < i && j < ASN1_MAX_OIDS-1; j++) {
 			TALLOC_FREE(OIDs[j]);
 		}
-		DEBUG(1,("Failed to parse negTokenTarg at offset %d\n", (int)data.ofs));
-		asn1_free(&data);
+		DEBUG(1,("Failed to parse negTokenTarg at offset %d\n", (int)data->ofs));
+		asn1_free(data);
 		return False;
 	}
 
-	asn1_free(&data);
+	asn1_free(data);
 	return True;
 }
 
@@ -287,25 +304,27 @@ bool parse_negTokenTarg(DATA_BLOB blob, const char *OIDs[ASN1_MAX_OIDS], DATA_BL
 */
 DATA_BLOB spnego_gen_krb5_wrap(const DATA_BLOB ticket, const uint8 tok_id[2])
 {
-	ASN1_DATA data;
+	ASN1_DATA *data;
 	DATA_BLOB ret;
 
-	memset(&data, 0, sizeof(data));
-
-	asn1_push_tag(&data, ASN1_APPLICATION(0));
-	asn1_write_OID(&data, OID_KERBEROS5);
-
-	asn1_write(&data, tok_id, 2);
-	asn1_write(&data, ticket.data, ticket.length);
-	asn1_pop_tag(&data);
-
-	if (data.has_error) {
-		DEBUG(1,("Failed to build krb5 wrapper at offset %d\n", (int)data.ofs));
-		asn1_free(&data);
+	data = asn1_init(talloc_tos());
+	if (data == NULL) {
+		return data_blob_null;
 	}
 
-	ret = data_blob(data.data, data.length);
-	asn1_free(&data);
+	asn1_push_tag(data, ASN1_APPLICATION(0));
+	asn1_write_OID(data, OID_KERBEROS5);
+
+	asn1_write(data, tok_id, 2);
+	asn1_write(data, ticket.data, ticket.length);
+	asn1_pop_tag(data);
+
+	if (data->has_error) {
+		DEBUG(1,("Failed to build krb5 wrapper at offset %d\n", (int)data->ofs));
+	}
+
+	ret = data_blob(data->data, data->length);
+	asn1_free(data);
 
 	return ret;
 }
@@ -316,33 +335,38 @@ DATA_BLOB spnego_gen_krb5_wrap(const DATA_BLOB ticket, const uint8 tok_id[2])
 bool spnego_parse_krb5_wrap(DATA_BLOB blob, DATA_BLOB *ticket, uint8 tok_id[2])
 {
 	bool ret;
-	ASN1_DATA data;
+	ASN1_DATA *data;
 	int data_remaining;
 
-	asn1_load(&data, blob);
-	asn1_start_tag(&data, ASN1_APPLICATION(0));
-	asn1_check_OID(&data, OID_KERBEROS5);
-
-	data_remaining = asn1_tag_remaining(&data);
-
-	if (data_remaining < 3) {
-		data.has_error = True;
-	} else {
-		asn1_read(&data, tok_id, 2);
-		data_remaining -= 2;
-		*ticket = data_blob(NULL, data_remaining);
-		asn1_read(&data, ticket->data, ticket->length);
+	data = asn1_init(talloc_tos());
+	if (data == NULL) {
+		return false;
 	}
 
-	asn1_end_tag(&data);
+	asn1_load(data, blob);
+	asn1_start_tag(data, ASN1_APPLICATION(0));
+	asn1_check_OID(data, OID_KERBEROS5);
 
-	ret = !data.has_error;
+	data_remaining = asn1_tag_remaining(data);
 
-	if (data.has_error) {
+	if (data_remaining < 3) {
+		data->has_error = True;
+	} else {
+		asn1_read(data, tok_id, 2);
+		data_remaining -= 2;
+		*ticket = data_blob(NULL, data_remaining);
+		asn1_read(data, ticket->data, ticket->length);
+	}
+
+	asn1_end_tag(data);
+
+	ret = !data->has_error;
+
+	if (data->has_error) {
 		data_blob_free(ticket);
 	}
 
-	asn1_free(&data);
+	asn1_free(data);
 
 	return ret;
 }
@@ -389,45 +413,50 @@ bool spnego_parse_challenge(const DATA_BLOB blob,
 			    DATA_BLOB *chal1, DATA_BLOB *chal2)
 {
 	bool ret;
-	ASN1_DATA data;
+	ASN1_DATA *data;
 
 	ZERO_STRUCTP(chal1);
 	ZERO_STRUCTP(chal2);
 
-	asn1_load(&data, blob);
-	asn1_start_tag(&data,ASN1_CONTEXT(1));
-	asn1_start_tag(&data,ASN1_SEQUENCE(0));
-
-	asn1_start_tag(&data,ASN1_CONTEXT(0));
-	asn1_check_enumerated(&data,1);
-	asn1_end_tag(&data);
-
-	asn1_start_tag(&data,ASN1_CONTEXT(1));
-	asn1_check_OID(&data, OID_NTLMSSP);
-	asn1_end_tag(&data);
-
-	asn1_start_tag(&data,ASN1_CONTEXT(2));
-	asn1_read_OctetString(&data, NULL, chal1);
-	asn1_end_tag(&data);
-
-	/* the second challenge is optional (XP doesn't send it) */
-	if (asn1_tag_remaining(&data)) {
-		asn1_start_tag(&data,ASN1_CONTEXT(3));
-		asn1_read_OctetString(&data, NULL, chal2);
-		asn1_end_tag(&data);
+	data = asn1_init(talloc_tos());
+	if (data == NULL) {
+		return false;
 	}
 
-	asn1_end_tag(&data);
-	asn1_end_tag(&data);
+	asn1_load(data, blob);
+	asn1_start_tag(data,ASN1_CONTEXT(1));
+	asn1_start_tag(data,ASN1_SEQUENCE(0));
 
-	ret = !data.has_error;
+	asn1_start_tag(data,ASN1_CONTEXT(0));
+	asn1_check_enumerated(data,1);
+	asn1_end_tag(data);
 
-	if (data.has_error) {
+	asn1_start_tag(data,ASN1_CONTEXT(1));
+	asn1_check_OID(data, OID_NTLMSSP);
+	asn1_end_tag(data);
+
+	asn1_start_tag(data,ASN1_CONTEXT(2));
+	asn1_read_OctetString(data, NULL, chal1);
+	asn1_end_tag(data);
+
+	/* the second challenge is optional (XP doesn't send it) */
+	if (asn1_tag_remaining(data)) {
+		asn1_start_tag(data,ASN1_CONTEXT(3));
+		asn1_read_OctetString(data, NULL, chal2);
+		asn1_end_tag(data);
+	}
+
+	asn1_end_tag(data);
+	asn1_end_tag(data);
+
+	ret = !data->has_error;
+
+	if (data->has_error) {
 		data_blob_free(chal1);
 		data_blob_free(chal2);
 	}
 
-	asn1_free(&data);
+	asn1_free(data);
 	return ret;
 }
 
@@ -437,22 +466,25 @@ bool spnego_parse_challenge(const DATA_BLOB blob,
 */
 DATA_BLOB spnego_gen_auth(DATA_BLOB blob)
 {
-	ASN1_DATA data;
+	ASN1_DATA *data;
 	DATA_BLOB ret;
 
-	memset(&data, 0, sizeof(data));
+	data = asn1_init(talloc_tos());
+	if (data == NULL) {
+		return data_blob_null;
+	}
 
-	asn1_push_tag(&data, ASN1_CONTEXT(1));
-	asn1_push_tag(&data, ASN1_SEQUENCE(0));
-	asn1_push_tag(&data, ASN1_CONTEXT(2));
-	asn1_write_OctetString(&data,blob.data,blob.length);	
-	asn1_pop_tag(&data);
-	asn1_pop_tag(&data);
-	asn1_pop_tag(&data);
+	asn1_push_tag(data, ASN1_CONTEXT(1));
+	asn1_push_tag(data, ASN1_SEQUENCE(0));
+	asn1_push_tag(data, ASN1_CONTEXT(2));
+	asn1_write_OctetString(data,blob.data,blob.length);
+	asn1_pop_tag(data);
+	asn1_pop_tag(data);
+	asn1_pop_tag(data);
 
-	ret = data_blob(data.data, data.length);
+	ret = data_blob(data->data, data->length);
 
-	asn1_free(&data);
+	asn1_free(data);
 
 	return ret;
 }
@@ -462,25 +494,30 @@ DATA_BLOB spnego_gen_auth(DATA_BLOB blob)
 */
 bool spnego_parse_auth(DATA_BLOB blob, DATA_BLOB *auth)
 {
-	ASN1_DATA data;
+	ASN1_DATA *data;
 
-	asn1_load(&data, blob);
-	asn1_start_tag(&data, ASN1_CONTEXT(1));
-	asn1_start_tag(&data, ASN1_SEQUENCE(0));
-	asn1_start_tag(&data, ASN1_CONTEXT(2));
-	asn1_read_OctetString(&data, NULL, auth);
-	asn1_end_tag(&data);
-	asn1_end_tag(&data);
-	asn1_end_tag(&data);
+	data = asn1_init(talloc_tos());
+	if (data == NULL) {
+		return false;
+	}
 
-	if (data.has_error) {
-		DEBUG(3,("spnego_parse_auth failed at %d\n", (int)data.ofs));
+	asn1_load(data, blob);
+	asn1_start_tag(data, ASN1_CONTEXT(1));
+	asn1_start_tag(data, ASN1_SEQUENCE(0));
+	asn1_start_tag(data, ASN1_CONTEXT(2));
+	asn1_read_OctetString(data, NULL, auth);
+	asn1_end_tag(data);
+	asn1_end_tag(data);
+	asn1_end_tag(data);
+
+	if (data->has_error) {
+		DEBUG(3,("spnego_parse_auth failed at %d\n", (int)data->ofs));
 		data_blob_free(auth);
-		asn1_free(&data);
+		asn1_free(data);
 		return False;
 	}
 
-	asn1_free(&data);
+	asn1_free(data);
 	return True;
 }
 
@@ -490,7 +527,7 @@ bool spnego_parse_auth(DATA_BLOB blob, DATA_BLOB *auth)
 DATA_BLOB spnego_gen_auth_response(DATA_BLOB *reply, NTSTATUS nt_status,
 				   const char *mechOID)
 {
-	ASN1_DATA data;
+	ASN1_DATA *data;
 	DATA_BLOB ret;
 	uint8 negResult;
 
@@ -502,31 +539,34 @@ DATA_BLOB spnego_gen_auth_response(DATA_BLOB *reply, NTSTATUS nt_status,
 		negResult = SPNEGO_NEG_RESULT_REJECT; 
 	}
 
-	ZERO_STRUCT(data);
+	data = asn1_init(talloc_tos());
+	if (data == NULL) {
+		return data_blob_null;
+	}
 
-	asn1_push_tag(&data, ASN1_CONTEXT(1));
-	asn1_push_tag(&data, ASN1_SEQUENCE(0));
-	asn1_push_tag(&data, ASN1_CONTEXT(0));
-	asn1_write_enumerated(&data, negResult);
-	asn1_pop_tag(&data);
+	asn1_push_tag(data, ASN1_CONTEXT(1));
+	asn1_push_tag(data, ASN1_SEQUENCE(0));
+	asn1_push_tag(data, ASN1_CONTEXT(0));
+	asn1_write_enumerated(data, negResult);
+	asn1_pop_tag(data);
 
 	if (mechOID) {
-		asn1_push_tag(&data,ASN1_CONTEXT(1));
-		asn1_write_OID(&data, mechOID);
-		asn1_pop_tag(&data);
+		asn1_push_tag(data,ASN1_CONTEXT(1));
+		asn1_write_OID(data, mechOID);
+		asn1_pop_tag(data);
 	}
 
 	if (reply && reply->data != NULL) {
-		asn1_push_tag(&data,ASN1_CONTEXT(2));
-		asn1_write_OctetString(&data, reply->data, reply->length);
-		asn1_pop_tag(&data);
+		asn1_push_tag(data,ASN1_CONTEXT(2));
+		asn1_write_OctetString(data, reply->data, reply->length);
+		asn1_pop_tag(data);
 	}
 
-	asn1_pop_tag(&data);
-	asn1_pop_tag(&data);
+	asn1_pop_tag(data);
+	asn1_pop_tag(data);
 
-	ret = data_blob(data.data, data.length);
-	asn1_free(&data);
+	ret = data_blob(data->data, data->length);
+	asn1_free(data);
 	return ret;
 }
 
@@ -537,7 +577,7 @@ bool spnego_parse_auth_response(DATA_BLOB blob, NTSTATUS nt_status,
 				const char *mechOID,
 				DATA_BLOB *auth)
 {
-	ASN1_DATA data;
+	ASN1_DATA *data;
 	uint8 negResult;
 
 	if (NT_STATUS_IS_OK(nt_status)) {
@@ -548,53 +588,58 @@ bool spnego_parse_auth_response(DATA_BLOB blob, NTSTATUS nt_status,
 		negResult = SPNEGO_NEG_RESULT_REJECT;
 	}
 
-	asn1_load(&data, blob);
-	asn1_start_tag(&data, ASN1_CONTEXT(1));
-	asn1_start_tag(&data, ASN1_SEQUENCE(0));
-	asn1_start_tag(&data, ASN1_CONTEXT(0));
-	asn1_check_enumerated(&data, negResult);
-	asn1_end_tag(&data);
+	data = asn1_init(talloc_tos());
+	if (data == NULL) {
+		return false;
+	}
+
+	asn1_load(data, blob);
+	asn1_start_tag(data, ASN1_CONTEXT(1));
+	asn1_start_tag(data, ASN1_SEQUENCE(0));
+	asn1_start_tag(data, ASN1_CONTEXT(0));
+	asn1_check_enumerated(data, negResult);
+	asn1_end_tag(data);
 
 	*auth = data_blob_null;
 
-	if (asn1_tag_remaining(&data)) {
-		asn1_start_tag(&data,ASN1_CONTEXT(1));
-		asn1_check_OID(&data, mechOID);
-		asn1_end_tag(&data);
+	if (asn1_tag_remaining(data)) {
+		asn1_start_tag(data,ASN1_CONTEXT(1));
+		asn1_check_OID(data, mechOID);
+		asn1_end_tag(data);
 
-		if (asn1_tag_remaining(&data)) {
-			asn1_start_tag(&data,ASN1_CONTEXT(2));
-			asn1_read_OctetString(&data, NULL, auth);
-			asn1_end_tag(&data);
+		if (asn1_tag_remaining(data)) {
+			asn1_start_tag(data,ASN1_CONTEXT(2));
+			asn1_read_OctetString(data, NULL, auth);
+			asn1_end_tag(data);
 		}
 	} else if (negResult == SPNEGO_NEG_RESULT_INCOMPLETE) {
-		data.has_error = 1;
+		data->has_error = 1;
 	}
 
 	/* Binding against Win2K DC returns a duplicate of the responseToken in
 	 * the optional mechListMIC field. This is a bug in Win2K. We ignore
 	 * this field if it exists. Win2K8 may return a proper mechListMIC at
 	 * which point we need to implement the integrity checking. */
-	if (asn1_tag_remaining(&data)) {
+	if (asn1_tag_remaining(data)) {
 		DATA_BLOB mechList = data_blob_null;
-		asn1_start_tag(&data, ASN1_CONTEXT(3));
-		asn1_read_OctetString(&data, NULL, &mechList);
-		asn1_end_tag(&data);
+		asn1_start_tag(data, ASN1_CONTEXT(3));
+		asn1_read_OctetString(data, NULL, &mechList);
+		asn1_end_tag(data);
 		data_blob_free(&mechList);
 		DEBUG(5,("spnego_parse_auth_response received mechListMIC, "
 		    "ignoring.\n"));
 	}
 
-	asn1_end_tag(&data);
-	asn1_end_tag(&data);
+	asn1_end_tag(data);
+	asn1_end_tag(data);
 
-	if (data.has_error) {
-		DEBUG(3,("spnego_parse_auth_response failed at %d\n", (int)data.ofs));
-		asn1_free(&data);
+	if (data->has_error) {
+		DEBUG(3,("spnego_parse_auth_response failed at %d\n", (int)data->ofs));
+		asn1_free(data);
 		data_blob_free(auth);
 		return False;
 	}
 
-	asn1_free(&data);
+	asn1_free(data);
 	return True;
 }
