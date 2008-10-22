@@ -1462,6 +1462,16 @@ NTSTATUS _lsa_GetUserName(pipes_struct *p,
 	struct lsa_String *account_name = NULL;
 	struct lsa_String *authority_name = NULL;
 
+	if (r->in.account_name &&
+	   *r->in.account_name) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (r->in.authority_name &&
+	   *r->in.authority_name) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
 	if (p->server_info->guest) {
 		/*
 		 * I'm 99% sure this is not the right place to do this,
@@ -1481,17 +1491,20 @@ NTSTATUS _lsa_GetUserName(pipes_struct *p,
 	if (!account_name) {
 		return NT_STATUS_NO_MEMORY;
 	}
+	init_lsa_String(account_name, username);
 
-	authority_name = TALLOC_ZERO_P(p->mem_ctx, struct lsa_String);
-	if (!authority_name) {
-		return NT_STATUS_NO_MEMORY;
+	if (r->out.authority_name) {
+		authority_name = TALLOC_ZERO_P(p->mem_ctx, struct lsa_String);
+		if (!authority_name) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		init_lsa_String(authority_name, domname);
 	}
 
-	init_lsa_String(account_name, username);
-	init_lsa_String(authority_name, domname);
-
 	*r->out.account_name = account_name;
-	*r->out.authority_name = authority_name;
+	if (r->out.authority_name) {
+		*r->out.authority_name = authority_name;
+	}
 
 	return NT_STATUS_OK;
 }
