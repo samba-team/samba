@@ -518,10 +518,6 @@ foreach (@opt_exclude) {
 	push (@excludes, read_test_regexes($_));
 }
 
-if ($opt_quick) {
-	push (@includes, read_test_regexes("selftest/quick"));
-}
-
 foreach (@opt_include) {
 	push (@includes, read_test_regexes($_));
 }

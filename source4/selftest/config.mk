@@ -8,7 +8,7 @@ SELFTEST = $(LD_LIBPATH_OVERRIDE) $(PERL) $(selftestdir)/selftest.pl --prefix=${
     $(TEST_OPTIONS) 
 
 SELFTEST_NOSLOW_OPTS = --exclude=$(srcdir)/selftest/slow
-SELFTEST_QUICK_OPTS = $(SELFTEST_NOSLOW_OPTS) --quick 
+SELFTEST_QUICK_OPTS = $(SELFTEST_NOSLOW_OPTS) --quick --include=$(srcdir)/selftest/quick
 
 slowtest:: everything
 	$(SELFTEST) $(DEFAULT_TEST_OPTIONS) --immediate $(TESTS)
