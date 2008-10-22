@@ -3956,17 +3956,6 @@ static void free_user_token(NT_USER_TOKEN *token)
 	SAFE_FREE(token->user_sids);
 }
 
-static bool is_sid_in_token(NT_USER_TOKEN *token, DOM_SID *sid)
-{
-	int i;
-
-	for (i=0; i<token->num_sids; i++) {
-		if (sid_compare(sid, &token->user_sids[i]) == 0)
-			return true;
-	}
-	return false;
-}
-
 static void add_sid_to_token(NT_USER_TOKEN *token, DOM_SID *sid)
 {
 	if (is_sid_in_token(token, sid))
