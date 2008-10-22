@@ -24,6 +24,9 @@
 #include <asm/types.h>
 #include <linux/smb_fs.h>
 
+#define pstrcpy(d,s) safe_strcpy((d),(s),sizeof(pstring)-1)
+#define pstrcat(d,s) safe_strcat((d),(s),sizeof(pstring)-1)
+
 static pstring credentials;
 static pstring my_netbios_name;
 static pstring password;

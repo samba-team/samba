@@ -127,8 +127,8 @@ static void mux_printf(unsigned int mux_id, const char *format, ...)
 /* Copy of parse_domain_user from winbindd_util.c.  Parse a string of the
    form DOMAIN/user into a domain and a user */
 
-static bool parse_ntlm_auth_domain_user(const char *domuser, fstring domain, 
-					fstring user, char winbind_separator)
+static bool parse_ntlm_auth_domain_user(const char *domuser, char **domain, 
+										char **user, char winbind_separator)
 {
 
 	char *p = strchr(domuser, winbind_separator);
@@ -137,9 +137,9 @@ static bool parse_ntlm_auth_domain_user(const char *domuser, fstring domain,
 		return false;
 	}
         
-	fstrcpy(user, p+1);
-	fstrcpy(domain, domuser);
-	domain[PTR_DIFF(p, domuser)] = 0;
+	*user = smb_xstrdup(p+1);
+	*domain = smb_xstrdup(domuser);
+	(*domain)[PTR_DIFF(p, domuser)] = 0;
 
 	return true;
 }
@@ -753,18 +753,14 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 			uint32_t flags = 0;
 
 			if (full_username && !username) {
-				fstring fstr_user;
-				fstring fstr_domain;
-				
-				if (!parse_ntlm_auth_domain_user(full_username, fstr_user, fstr_domain, 
-								 *lp_winbind_separator(lp_ctx))) {
+				SAFE_FREE(username);
+				SAFE_FREE(domain);
+				if (!parse_ntlm_auth_domain_user(full_username, &username, 
+												 &domain, 
+												 *lp_winbind_separator(lp_ctx))) {
 					/* username might be 'tainted', don't print into our new-line deleimianted stream */
 					mux_printf(mux_id, "Error: Could not parse into domain and username\n");
 				}
-				SAFE_FREE(username);
-				SAFE_FREE(domain);
-				username = smb_xstrdup(fstr_user);
-				domain = smb_xstrdup(fstr_domain);
 			}
 
 			if (!domain) {

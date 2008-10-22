@@ -33,8 +33,6 @@
 _DEPRECATED_ typedef char pstring[PSTRING_LEN];
 typedef char fstring[FSTRING_LEN];
 
-#define pstrcpy(d,s) safe_strcpy((d),(s),sizeof(pstring)-1)
-#define pstrcat(d,s) safe_strcat((d),(s),sizeof(pstring)-1)
 #define fstrcpy(d,s) safe_strcpy((d),(s),sizeof(fstring)-1)
 #define fstrcat(d,s) safe_strcat((d),(s),sizeof(fstring)-1)
 

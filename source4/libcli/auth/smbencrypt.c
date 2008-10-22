@@ -27,7 +27,6 @@
 #include "auth/ntlmssp/msrpc_parse.h"
 #include "../lib/crypto/crypto.h"
 #include "libcli/auth/libcli_auth.h"
-#include "pstring.h"
 #include "param/param.h"
 
 /*
@@ -94,7 +93,7 @@ bool E_md4hash(const char *passwd, uint8_t p16[16])
 bool E_deshash(const char *passwd, uint8_t p16[16])
 {
 	bool ret = true;
-	fstring dospwd; 
+	char dospwd[20];
 	ZERO_STRUCT(dospwd);
 
 	/* Password must be converted to DOS charset - null terminated, uppercase. */
