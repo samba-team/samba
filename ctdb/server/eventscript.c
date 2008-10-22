@@ -72,13 +72,13 @@ static int ctdb_event_script_v(struct ctdb_context *ctdb, const char *options)
 	if (ctdb->recovery_mode != CTDB_RECOVERY_NORMAL) {
 		/* we guarantee that only some specifically allowed event scripts are run
 		   while in recovery */
-		const char *allowed_scripts[] = {"startrecovery", "shutdown" };
+		const char *allowed_scripts[] = {"startrecovery", "shutdown", "releaseip" };
 		int i;
 		for (i=0;i<ARRAY_SIZE(allowed_scripts);i++) {
-			if (strcmp(options, allowed_scripts[i]) == 0) break;
+			if (strncmp(options, allowed_scripts[i], strlen(allowed_scripts[i])) == 0) break;
 		}
 		if (i == ARRAY_SIZE(allowed_scripts)) {
-			DEBUG(0,("Refusing to run event scripts with option '%s' while in recovery\n",
+			DEBUG(DEBUG_ERR,("Refusing to run event scripts with option '%s' while in recovery\n",
 				 options));
 			return -1;
 		}

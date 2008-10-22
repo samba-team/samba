@@ -420,6 +420,7 @@ struct ctdb_context {
 	uint32_t event_script_timeouts; /* counting how many consecutive times an eventscript has timedout */
 	TALLOC_CTX *eventscripts_ctx; /* a context to hold data for the RUN_EVENTSCRIPTS control */
 	uint32_t *recd_ping_count;
+	TALLOC_CTX *release_ips_ctx; /* a context used to automatically drop all IPs if we fail to recover the node */
 };
 
 struct ctdb_db_context {
@@ -1422,6 +1423,7 @@ char *ctdb_addr_to_str(ctdb_sock_addr *addr);
 void ctdb_canonicalize_ip(const ctdb_sock_addr *ip, ctdb_sock_addr *cip);
 
 int32_t ctdb_control_recd_ping(struct ctdb_context *ctdb);
+int32_t ctdb_control_set_recmaster(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indata);
 
 extern int script_log_level;
 

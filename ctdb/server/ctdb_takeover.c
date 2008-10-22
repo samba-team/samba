@@ -1291,6 +1291,9 @@ void ctdb_release_all_ips(struct ctdb_context *ctdb)
 		if (!ctdb_sys_have_ip(&vnn->public_address)) {
 			continue;
 		}
+		if (vnn->pnn == ctdb->pnn) {
+			vnn->pnn = -1;
+		}
 		ctdb_event_script(ctdb, "releaseip %s %s %u",
 				  vnn->iface, 
 				  talloc_strdup(ctdb, ctdb_addr_to_str(&vnn->public_address)),
