@@ -136,10 +136,6 @@ static void reply_sesssetup_blob(struct smb_request *req,
 			reply_nterror(req, NT_STATUS_NO_MEMORY);
 		}
 	}
-
-	show_msg((char *)req->outbuf);
-	srv_send_smb(smbd_server_fd(),(char *)req->outbuf,req->encrypted);
-	TALLOC_FREE(req->outbuf);
 }
 
 /****************************************************************************
