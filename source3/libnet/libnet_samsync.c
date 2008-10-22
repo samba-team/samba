@@ -33,7 +33,6 @@
 
 static NTSTATUS fix_user(TALLOC_CTX *mem_ctx,
 			 DATA_BLOB *session_key,
-			 bool rid_crypt,
 			 enum netr_SamDatabaseID database_id,
 			 struct netr_DELTA_ENUM *delta)
 {
@@ -42,17 +41,29 @@ static NTSTATUS fix_user(TALLOC_CTX *mem_ctx,
 	struct netr_DELTA_USER *user = delta->delta_union.user;
 	struct samr_Password lm_hash;
 	struct samr_Password nt_hash;
+	unsigned char zero_buf[16];
 
-	if (rid_crypt) {
-		if (user->lm_password_present) {
+	memset(zero_buf, '\0', sizeof(zero_buf));
+
+	/* Note that win2000 may send us all zeros
+	 * for the hashes if it doesn't
+	 * think this channel is secure enough. */
+	if (user->lm_password_present) {
+		if (memcmp(user->lmpassword.hash, zero_buf, 16) != 0) {
 			sam_pwd_hash(rid, user->lmpassword.hash, lm_hash.hash, 0);
-			user->lmpassword = lm_hash;
+		} else {
+			memset(lm_hash.hash, '\0', sizeof(lm_hash.hash));
 		}
+		user->lmpassword = lm_hash;
+	}
 
-		if (user->nt_password_present) {
+	if (user->nt_password_present) {
+		if (memcmp(user->ntpassword.hash, zero_buf, 16) != 0) {
 			sam_pwd_hash(rid, user->ntpassword.hash, nt_hash.hash, 0);
-			user->ntpassword = nt_hash;
+		} else {
+			memset(nt_hash.hash, '\0', sizeof(nt_hash.hash));
 		}
+		user->ntpassword = nt_hash;
 	}
 
 	if (user->user_private_info.SensitiveData) {
@@ -72,26 +83,31 @@ static NTSTATUS fix_user(TALLOC_CTX *mem_ctx,
 			return ndr_map_error2ntstatus(ndr_err);
 		}
 
+		/* Note that win2000 may send us all zeros
+		 * for the hashes if it doesn't
+		 * think this channel is secure enough. */
 		if (keys.keys.keys2.lmpassword.length == 16) {
-			if (rid_crypt) {
+			if (memcmp(keys.keys.keys2.lmpassword.pwd.hash,
+					zero_buf, 16) != 0) {
 				sam_pwd_hash(rid,
-					     keys.keys.keys2.lmpassword.pwd.hash,
-					     lm_hash.hash, 0);
-				user->lmpassword = lm_hash;
+					keys.keys.keys2.lmpassword.pwd.hash,
+					lm_hash.hash, 0);
 			} else {
-				user->lmpassword = keys.keys.keys2.lmpassword.pwd;
+				memset(lm_hash.hash, '\0', sizeof(lm_hash.hash));
 			}
+			user->lmpassword = lm_hash;
 			user->lm_password_present = true;
 		}
 		if (keys.keys.keys2.ntpassword.length == 16) {
-			if (rid_crypt) {
+			if (memcmp(keys.keys.keys2.ntpassword.pwd.hash,
+						zero_buf, 16) != 0) {
 				sam_pwd_hash(rid,
-					     keys.keys.keys2.ntpassword.pwd.hash,
-					     nt_hash.hash, 0);
-				user->ntpassword = nt_hash;
+					keys.keys.keys2.ntpassword.pwd.hash,
+					nt_hash.hash, 0);
 			} else {
-				user->ntpassword = keys.keys.keys2.ntpassword.pwd;
+				memset(nt_hash.hash, '\0', sizeof(nt_hash.hash));
 			}
+			user->ntpassword = nt_hash;
 			user->nt_password_present = true;
 		}
 		/* TODO: rid decrypt history fields */
@@ -129,7 +145,6 @@ static NTSTATUS fix_secret(TALLOC_CTX *mem_ctx,
 
 static NTSTATUS samsync_fix_delta(TALLOC_CTX *mem_ctx,
 				  DATA_BLOB *session_key,
-				  bool rid_crypt,
 				  enum netr_SamDatabaseID database_id,
 				  struct netr_DELTA_ENUM *delta)
 {
@@ -140,7 +155,6 @@ static NTSTATUS samsync_fix_delta(TALLOC_CTX *mem_ctx,
 
 			status = fix_user(mem_ctx,
 					  session_key,
-					  rid_crypt,
 					  database_id,
 					  delta);
 			break;
@@ -165,7 +179,6 @@ static NTSTATUS samsync_fix_delta(TALLOC_CTX *mem_ctx,
 
 static NTSTATUS samsync_fix_delta_array(TALLOC_CTX *mem_ctx,
 					DATA_BLOB *session_key,
-					bool rid_crypt,
 					enum netr_SamDatabaseID database_id,
 					struct netr_DELTA_ENUM_ARRAY *r)
 {
@@ -176,7 +189,6 @@ static NTSTATUS samsync_fix_delta_array(TALLOC_CTX *mem_ctx,
 
 		status = samsync_fix_delta(mem_ctx,
 					   session_key,
-					   rid_crypt,
 					   database_id,
 					   &r->delta_enum[i]);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -330,7 +342,6 @@ NTSTATUS libnet_samsync(enum netr_SamDatabaseID database_id,
 
 		samsync_fix_delta_array(mem_ctx,
 					&session_key,
-					false,
 					database_id,
 					delta_enum_array);
 

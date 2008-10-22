@@ -40,8 +40,9 @@ static NTSTATUS sam_account_from_delta(struct samu *account,
 {
 	const char *old_string, *new_string;
 	time_t unix_time, stored_time;
-	uchar lm_passwd[16], nt_passwd[16];
-	static uchar zero_buf[16];
+	uchar zero_buf[16];
+
+	memset(zero_buf, '\0', sizeof(zero_buf));
 
 	/* Username, fullname, home dir, dir drive, logon script, acct
 	   desc, workstations, profile. */
@@ -205,14 +206,12 @@ static NTSTATUS sam_account_from_delta(struct samu *account,
 	   think this channel is secure enough - don't set the passwords at all
 	   in that case
 	*/
-	if (memcmp(r->ntpassword.hash, zero_buf, 16) != 0) {
-		sam_pwd_hash(r->rid, r->ntpassword.hash, lm_passwd, 0);
-		pdb_set_lanman_passwd(account, lm_passwd, PDB_CHANGED);
+	if (memcmp(r->lmpassword.hash, zero_buf, 16) != 0) {
+		pdb_set_lanman_passwd(account, r->lmpassword.hash, PDB_CHANGED);
 	}
 
-	if (memcmp(r->lmpassword.hash, zero_buf, 16) != 0) {
-		sam_pwd_hash(r->rid, r->lmpassword.hash, nt_passwd, 0);
-		pdb_set_nt_passwd(account, nt_passwd, PDB_CHANGED);
+	if (memcmp(r->ntpassword.hash, zero_buf, 16) != 0) {
+		pdb_set_nt_passwd(account, r->ntpassword.hash, PDB_CHANGED);
 	}
 
 	/* TODO: account expiry time */
