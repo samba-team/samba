@@ -291,7 +291,7 @@ retry:
 
 		tried_closest_dc = true; /* avoid loop */
 
-		if (!ads->config.tried_closest_dc) {
+		if (!ads_closest_dc(ads)) {
 
 			namecache_delete(ads->server.realm, 0x1C);
 			namecache_delete(ads->server.workgroup, 0x1C);
