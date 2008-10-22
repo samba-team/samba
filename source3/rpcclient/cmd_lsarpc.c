@@ -789,7 +789,7 @@ static NTSTATUS cmd_lsa_add_acct_rights(struct rpc_pipe_client *cli,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	for (i=0; i<argc-1; i++) {
+	for (i=0; i<argc-2; i++) {
 		init_lsa_StringLarge(&rights.names[i], argv[i+2]);
 	}
 
