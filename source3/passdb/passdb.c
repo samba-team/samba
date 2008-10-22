@@ -259,7 +259,7 @@ NTSTATUS samu_alloc_rid_unix(struct samu *user, const struct passwd *pwd)
  null). length *MUST BE MORE THAN 2* !
  **********************************************************/
 
-char *pdb_encode_acct_ctrl(uint32 acct_ctrl, size_t length)
+char *pdb_encode_acct_ctrl(uint32_t acct_ctrl, size_t length)
 {
 	fstring acct_str;
 	char *result;
@@ -298,10 +298,10 @@ char *pdb_encode_acct_ctrl(uint32 acct_ctrl, size_t length)
  Decode the account control bits from a string.
  **********************************************************/
 
-uint32 pdb_decode_acct_ctrl(const char *p)
+uint32_t pdb_decode_acct_ctrl(const char *p)
 {
-	uint32 acct_ctrl = 0;
-	bool finished = False;
+	uint32_t acct_ctrl = 0;
+	bool finished = false;
 
 	/*
 	 * Check if the account type bits have been encoded after the
@@ -329,7 +329,7 @@ uint32 pdb_decode_acct_ctrl(const char *p)
 			case '\n':
 			case '\0': 
 			case ']':
-			default:  { finished = True; }
+			default:  { finished = true; }
 		}
 	}
 
@@ -367,7 +367,7 @@ bool pdb_gethexpwd(const char *p, unsigned char *pwd)
 	char           *p1, *p2;
 	
 	if (!p)
-		return (False);
+		return false;
 	
 	for (i = 0; i < 32; i += 2) {
 		hinybble = toupper_ascii(p[i]);
@@ -377,14 +377,14 @@ bool pdb_gethexpwd(const char *p, unsigned char *pwd)
 		p2 = strchr(hexchars, lonybble);
 
 		if (!p1 || !p2)
-			return (False);
+			return false;
 
 		hinybble = PTR_DIFF(p1, hexchars);
 		lonybble = PTR_DIFF(p2, hexchars);
 
 		pwd[i / 2] = (hinybble << 4) | lonybble;
 	}
-	return (True);
+	return true;
 }
 
 /*************************************************************

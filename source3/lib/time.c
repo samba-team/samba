@@ -105,7 +105,7 @@ NTTIME nttime_from_string(const char *s)
  preserve the "special" values.
 **************************************************************/
 
-uint32 convert_time_t_to_uint32(time_t t)
+uint32_t convert_time_t_to_uint32(time_t t)
 {
 #if (defined(SIZEOF_TIME_T) && (SIZEOF_TIME_T == 8))
 	/* time_t is 64-bit. */
@@ -115,10 +115,10 @@ uint32 convert_time_t_to_uint32(time_t t)
 		return 0x7FFFFFFF;
 	}
 #endif
-	return (uint32)t;
+	return (uint32_t)t;
 }
 
-time_t convert_uint32_to_time_t(uint32 u)
+time_t convert_uint32_to_time_t(uint32_t u)
 {
 #if (defined(SIZEOF_TIME_T) && (SIZEOF_TIME_T == 8))
 	/* time_t is 64-bit. */
@@ -253,7 +253,7 @@ char *current_timestring(TALLOC_CTX *ctx, bool hires)
 
 static void put_dos_date(char *buf,int offset,time_t unixdate, int zone_offset)
 {
-	uint32 x = make_dos_date(unixdate, zone_offset);
+	uint32_t x = make_dos_date(unixdate, zone_offset);
 	SIVAL(buf,offset,x);
 }
 
@@ -264,7 +264,7 @@ static void put_dos_date(char *buf,int offset,time_t unixdate, int zone_offset)
 
 static void put_dos_date2(char *buf,int offset,time_t unixdate, int zone_offset)
 {
-	uint32 x = make_dos_date(unixdate, zone_offset);
+	uint32_t x = make_dos_date(unixdate, zone_offset);
 	x = ((x&0xFFFF)<<16) | ((x&0xFFFF0000)>>16);
 	SIVAL(buf,offset,x);
 }
@@ -522,7 +522,7 @@ void dos_filetime_timespec(struct timespec *tsp)
 
 static time_t make_unix_date(const void *date_ptr, int zone_offset)
 {
-	uint32 dos_date=0;
+	uint32_t dos_date=0;
 	struct tm t;
 	time_t ret;
 
@@ -549,7 +549,7 @@ static time_t make_unix_date(const void *date_ptr, int zone_offset)
 
 static time_t make_unix_date2(const void *date_ptr, int zone_offset)
 {
-	uint32 x,x2;
+	uint32_t x,x2;
 
 	x = IVAL(date_ptr,0);
 	x2 = ((x&0xFFFF)<<16) | ((x&0xFFFF0000)>>16);
@@ -765,13 +765,13 @@ void get_process_uptime(struct timeval *ret_time)
 
 time_t nt_time_to_unix_abs(const NTTIME *nt)
 {
-	uint64 d;
+	uint64_t d;
 
 	if (*nt == 0) {
 		return (time_t)0;
 	}
 
-	if (*nt == (uint64)-1) {
+	if (*nt == (uint64_t)-1) {
 		return (time_t)-1;
 	}
 
@@ -806,7 +806,7 @@ time_t uint64s_nt_time_to_unix_abs(const uint64_t *src)
 
 void unix_timespec_to_nt_time(NTTIME *nt, struct timespec ts)
 {
-	uint64 d;
+	uint64_t d;
 
 	if (ts.tv_sec ==0 && ts.tv_nsec == 0) {
 		*nt = 0;
@@ -817,7 +817,7 @@ void unix_timespec_to_nt_time(NTTIME *nt, struct timespec ts)
 		return;
 	}		
 	if (ts.tv_sec == (time_t)-1) {
-		*nt = (uint64)-1;
+		*nt = (uint64_t)-1;
 		return;
 	}		
 
@@ -875,8 +875,8 @@ void unix_to_nt_time_abs(NTTIME *nt, time_t t)
 bool null_mtime(time_t mtime)
 {
 	if (mtime == 0 || mtime == (time_t)0xFFFFFFFF || mtime == (time_t)-1)
-		return(True);
-	return(False);
+		return true;
+	return false;
 }
 
 /****************************************************************************
@@ -936,12 +936,12 @@ const char *display_time(NTTIME nttime)
 bool nt_time_is_set(const NTTIME *nt)
 {
 	if (*nt == 0x7FFFFFFFFFFFFFFFLL) {
-		return False;
+		return false;
 	}
 
 	if (*nt == NTTIME_INFINITY) {
-		return False;
+		return false;
 	}
 
-	return True;
+	return true;
 }
