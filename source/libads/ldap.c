@@ -310,11 +310,35 @@ static NTSTATUS ads_find_dc(ADS_STRUCT *ads)
 
 	realm = c_realm;
 
+	/*
+	 * In case of LDAP we use get_dc_name() as that
+	 * creates the custom krb5.conf file
+	 */
+	if (!(ads->auth.flags & ADS_AUTH_NO_BIND)) {
+		fstring srv_name;
+		struct sockaddr_storage ip_out;
+
+		DEBUG(6,("ads_find_dc: (ldap) looking for %s '%s'\n",
+			(got_realm ? "realm" : "domain"), realm));
+
+		if (get_dc_name(realm, realm, srv_name, &ip_out)) {
+			/*
+			 * we call ads_try_connect() to fill in the
+			 * ads->config details
+			 */
+			if (ads_try_connect(ads, srv_name)) {
+				return NT_STATUS_OK;
+			}
+		}
+
+		return NT_STATUS_NO_LOGON_SERVERS;
+	}
+
 	sitename = sitename_fetch(realm);
 
  again:
 
-	DEBUG(6,("ads_find_dc: looking for %s '%s'\n",
+	DEBUG(6,("ads_find_dc: (cldap) looking for %s '%s'\n",
 		(got_realm ? "realm" : "domain"), realm));
 
 	status = get_sorted_dc_list(realm, sitename, &ip_list, &count, got_realm);
