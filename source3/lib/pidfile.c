@@ -93,7 +93,7 @@ void pidfile_create(const char *program_name)
 
 	/* Add a suffix to the program name if this is a process with a
 	 * none default configuration file name. */
-	if (strcmp( CONFIGFILE, get_dyn_CONFIGFILE()) == 0) {
+	if (is_default_dyn_CONFIGFILE()) {
 		name = SMB_STRDUP(program_name);
 	} else {
 		short_configfile = strrchr( get_dyn_CONFIGFILE(), '/');
