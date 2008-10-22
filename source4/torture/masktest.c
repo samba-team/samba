@@ -74,15 +74,16 @@ return a connection to a server
 *******************************************************/
 static struct smbcli_state *connect_one(struct resolve_context *resolve_ctx, 
 					struct event_context *ev,
+					TALLOC_CTX *mem_ctx,
 					char *share, const char **ports,
 					struct smbcli_options *options,
 					struct smbcli_session_options *session_options)
 {
 	struct smbcli_state *c;
-	char server[256];
+	char *server;
 	NTSTATUS status;
 
-	safe_strcpy(server,share+2,sizeof(server));
+	server = talloc_strdup(mem_ctx, share+2);
 	share = strchr_m(server,'\\');
 	if (!share) return NULL;
 	*share = 0;
@@ -210,15 +211,13 @@ static void testpair(TALLOC_CTX *mem_ctx, struct smbcli_state *cli, char *mask,
 }
 
 static void test_mask(int argc, char *argv[],
+					  TALLOC_CTX *mem_ctx,
 		      struct smbcli_state *cli)
 {
-	TALLOC_CTX *mem_ctx;
 	char *mask, *file;
 	int l1, l2, i, l;
 	int mc_len = strlen(maskchars);
 	int fc_len = strlen(filechars);
-
-	mem_ctx = talloc_init("test_mask");
 
 	smbcli_mkdir(cli->tree, "\\masktest");
 
@@ -300,6 +299,7 @@ static void usage(poptContext pc)
 	poptContext pc;
 	int argc_new, i;
 	char **argv_new;
+	TALLOC_CTX *mem_ctx;
 	enum {OPT_UNCLIST=1000};
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -356,14 +356,16 @@ static void usage(poptContext pc)
 
 	lp_ctx = cmdline_lp_ctx;
 
-	ev = s4_event_context_init(talloc_autofree_context());
+	mem_ctx = talloc_autofree_context();
+
+	ev = s4_event_context_init(mem_ctx);
 
 	gensec_init(lp_ctx);
 
 	lp_smbcli_options(lp_ctx, &options);
 	lp_smbcli_session_options(lp_ctx, &session_options);
 
-	cli = connect_one(lp_resolve_context(lp_ctx), ev, share, 
+	cli = connect_one(lp_resolve_context(lp_ctx), ev, mem_ctx, share, 
 			  lp_smb_ports(lp_ctx), &options, &session_options);
 	if (!cli) {
 		DEBUG(0,("Failed to connect to %s\n", share));
@@ -374,7 +376,7 @@ static void usage(poptContext pc)
 	DEBUG(0,("seed=%d     format --- --- (server, correct)\n", seed));
 	srandom(seed);
 
-	test_mask(argc_new-1, argv_new+1, cli);
+	test_mask(argc_new-1, argv_new+1, mem_ctx, cli);
 
 	return(0);
 }
