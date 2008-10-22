@@ -46,7 +46,7 @@ static bool read_negTokenInit(ASN1_DATA *asn1, negTokenInit_t *token)
 				     0 < asn1_tag_remaining(asn1); i++) {
 				const char *p_oid = NULL;
 				token->mechTypes = 
-					TALLOC_REALLOC_ARRAY(token->mechTypes, const char *, i + 2);
+					TALLOC_REALLOC_ARRAY(NULL, token->mechTypes, const char *, i + 2);
 				if (!token->mechTypes) {
 					asn1->has_error = True;
 					return False;
@@ -90,7 +90,7 @@ static bool read_negTokenInit(ASN1_DATA *asn1, negTokenInit_t *token)
 
 				token->mechListMIC =
 					data_blob(mechListMIC, strlen(mechListMIC));
-				TALLO_FREE(mechListMIC);
+				TALLOC_FREE(mechListMIC);
 			}
 			asn1_end_tag(asn1);
 			break;
