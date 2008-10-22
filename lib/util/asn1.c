@@ -355,7 +355,7 @@ bool asn1_check_BOOLEAN(struct asn1_data *data, bool v)
 bool asn1_load(struct asn1_data *data, DATA_BLOB blob)
 {
 	ZERO_STRUCTP(data);
-	data->data = talloc_memdup(data, blob.data, blob.length);
+	data->data = (uint8_t *)talloc_memdup(data, blob.data, blob.length);
 	if (!data->data) {
 		data->has_error = true;
 		return false;
