@@ -34,6 +34,8 @@ struct asn1_data {
 	bool has_error;
 };
 
+typedef struct asn1_data ASN1_DATA;
+
 #define ASN1_APPLICATION(x) ((x)+0x60)
 #define ASN1_APPLICATION_SIMPLE(x) ((x)+0x40)
 #define ASN1_SEQUENCE(x) ((x)+0x30)
@@ -44,6 +46,7 @@ struct asn1_data {
 #define ASN1_OID 0x6
 #define ASN1_BOOLEAN 0x1
 #define ASN1_INTEGER 0x2
+#define ASN1_BITFIELD 0x3
 #define ASN1_ENUMERATED 0xa
 #define ASN1_SET 0x31
 
