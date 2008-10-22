@@ -576,14 +576,15 @@ static NTSTATUS fetch_account_info_to_ldif(TALLOC_CTX *mem_ctx,
 	fstring username, logonscript, homedrive, homepath = "", homedir = "";
 	fstring hex_nt_passwd, hex_lm_passwd;
 	fstring description, profilepath, fullname, sambaSID;
-	uchar lm_passwd[16], nt_passwd[16];
 	char *flags, *user_rdn;
 	const char *ou;
 	const char* nopasswd = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
-	static uchar zero_buf[16];
+	uchar zero_buf[16];
 	uint32 rid = 0, group_rid = 0, gidNumber = 0;
 	time_t unix_time;
 	int i;
+
+	memset(zero_buf, '\0', sizeof(zero_buf));
 
 	/* Get the username */
 	fstrcpy(username, r->account_name.string);
@@ -630,14 +631,12 @@ static NTSTATUS fetch_account_info_to_ldif(TALLOC_CTX *mem_ctx,
 
 	/* Get lm and nt password data */
 	if (memcmp(r->lmpassword.hash, zero_buf, 16) != 0) {
-		sam_pwd_hash(r->rid, r->lmpassword.hash, lm_passwd, 0);
-		pdb_sethexpwd(hex_lm_passwd, lm_passwd, r->acct_flags);
+		pdb_sethexpwd(hex_lm_passwd, r->lmpassword.hash, r->acct_flags);
 	} else {
 		pdb_sethexpwd(hex_lm_passwd, NULL, 0);
 	}
 	if (memcmp(r->ntpassword.hash, zero_buf, 16) != 0) {
-		sam_pwd_hash(r->rid, r->ntpassword.hash, nt_passwd, 0);
-		pdb_sethexpwd(hex_nt_passwd, nt_passwd, r->acct_flags);
+		pdb_sethexpwd(hex_nt_passwd, r->ntpassword.hash, r->acct_flags);
 	} else {
 		pdb_sethexpwd(hex_nt_passwd, NULL, 0);
 	}
