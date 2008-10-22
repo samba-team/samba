@@ -65,21 +65,19 @@ static void display_account_info(uint32_t rid,
 				 struct netr_DELTA_USER *r)
 {
 	fstring hex_nt_passwd, hex_lm_passwd;
-	uchar lm_passwd[16], nt_passwd[16];
-	static uchar zero_buf[16];
+	uchar zero_buf[16];
 
+	memset(zero_buf, '\0', sizeof(zero_buf));
 	/* Decode hashes from password hash (if they are not NULL) */
 
 	if (memcmp(r->lmpassword.hash, zero_buf, 16) != 0) {
-		sam_pwd_hash(r->rid, r->lmpassword.hash, lm_passwd, 0);
-		pdb_sethexpwd(hex_lm_passwd, lm_passwd, r->acct_flags);
+		pdb_sethexpwd(hex_lm_passwd, r->lmpassword.hash, r->acct_flags);
 	} else {
 		pdb_sethexpwd(hex_lm_passwd, NULL, 0);
 	}
 
 	if (memcmp(r->ntpassword.hash, zero_buf, 16) != 0) {
-		sam_pwd_hash(r->rid, r->ntpassword.hash, nt_passwd, 0);
-		pdb_sethexpwd(hex_nt_passwd, nt_passwd, r->acct_flags);
+		pdb_sethexpwd(hex_nt_passwd, r->ntpassword.hash, r->acct_flags);
 	} else {
 		pdb_sethexpwd(hex_nt_passwd, NULL, 0);
 	}
@@ -391,7 +389,6 @@ static void dump_database(struct rpc_pipe_client *pipe_hnd,
 
 		samsync_fix_delta_array(mem_ctx,
 					&session_key,
-					false,
 					database_id,
 					delta_enum_array);
 
@@ -466,8 +463,9 @@ static NTSTATUS sam_account_from_delta(struct samu *account,
 {
 	const char *old_string, *new_string;
 	time_t unix_time, stored_time;
-	uchar lm_passwd[16], nt_passwd[16];
-	static uchar zero_buf[16];
+	uchar zero_buf[16];
+
+	memset(zero_buf, '\0', sizeof(zero_buf));
 
 	/* Username, fullname, home dir, dir drive, logon script, acct
 	   desc, workstations, profile. */
@@ -631,14 +629,12 @@ static NTSTATUS sam_account_from_delta(struct samu *account,
 	   think this channel is secure enough - don't set the passwords at all
 	   in that case
 	*/
-	if (memcmp(r->ntpassword.hash, zero_buf, 16) != 0) {
-		sam_pwd_hash(r->rid, r->ntpassword.hash, lm_passwd, 0);
-		pdb_set_lanman_passwd(account, lm_passwd, PDB_CHANGED);
+	if (memcmp(r->lmpassword.hash, zero_buf, 16) != 0) {
+		pdb_set_lanman_passwd(account, r->lmpassword.hash, PDB_CHANGED);
 	}
 
-	if (memcmp(r->lmpassword.hash, zero_buf, 16) != 0) {
-		sam_pwd_hash(r->rid, r->lmpassword.hash, nt_passwd, 0);
-		pdb_set_nt_passwd(account, nt_passwd, PDB_CHANGED);
+	if (memcmp(r->ntpassword.hash, zero_buf, 16) != 0) {
+		pdb_set_nt_passwd(account, r->ntpassword.hash, PDB_CHANGED);
 	}
 
 	/* TODO: account expiry time */
@@ -1257,7 +1253,6 @@ static NTSTATUS fetch_database(struct rpc_pipe_client *pipe_hnd, uint32 db_type,
 
 		samsync_fix_delta_array(mem_ctx,
 					&session_key,
-					true,
 					database_id,
 					delta_enum_array);
 
@@ -1755,14 +1750,15 @@ static NTSTATUS fetch_account_info_to_ldif(struct netr_DELTA_USER *r,
 	fstring username, logonscript, homedrive, homepath = "", homedir = "";
 	fstring hex_nt_passwd, hex_lm_passwd;
 	fstring description, profilepath, fullname, sambaSID;
-	uchar lm_passwd[16], nt_passwd[16];
 	char *flags, *user_rdn;
 	const char *ou;
 	const char* nopasswd = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
-	static uchar zero_buf[16];
+	uchar zero_buf[16];
 	uint32 rid = 0, group_rid = 0, gidNumber = 0;
 	time_t unix_time;
 	int i;
+
+	memset(zero_buf, '\0', sizeof(zero_buf));
 
 	/* Get the username */
 	fstrcpy(username, r->account_name.string);
@@ -1808,14 +1804,12 @@ static NTSTATUS fetch_account_info_to_ldif(struct netr_DELTA_USER *r,
 
 	/* Get lm and nt password data */
 	if (memcmp(r->lmpassword.hash, zero_buf, 16) != 0) {
-		sam_pwd_hash(r->rid, r->lmpassword.hash, lm_passwd, 0);
-		pdb_sethexpwd(hex_lm_passwd, lm_passwd, r->acct_flags);
+		pdb_sethexpwd(hex_lm_passwd, r->lmpassword.hash, r->acct_flags);
 	} else {
 		pdb_sethexpwd(hex_lm_passwd, NULL, 0);
 	}
 	if (memcmp(r->ntpassword.hash, zero_buf, 16) != 0) {
-		sam_pwd_hash(r->rid, r->ntpassword.hash, nt_passwd, 0);
-		pdb_sethexpwd(hex_nt_passwd, nt_passwd, r->acct_flags);
+		pdb_sethexpwd(hex_nt_passwd, r->ntpassword.hash, r->acct_flags);
 	} else {
 		pdb_sethexpwd(hex_nt_passwd, NULL, 0);
 	}
@@ -2173,7 +2167,6 @@ static NTSTATUS fetch_database_to_ldif(struct rpc_pipe_client *pipe_hnd,
 
 		samsync_fix_delta_array(mem_ctx,
 					&session_key,
-					true,
 					database_id,
 					delta_enum_array);
 
