@@ -664,6 +664,17 @@ bool is_null_sid(const DOM_SID *sid)
 	return sid_equal(sid, &null_sid);
 }
 
+bool is_sid_in_token(const NT_USER_TOKEN *token, const DOM_SID *sid)
+{
+        int i;
+
+        for (i=0; i<token->num_sids; i++) {
+                if (sid_compare(sid, &token->user_sids[i]) == 0)
+                        return true;
+        }
+        return false;
+}
+
 NTSTATUS sid_array_from_info3(TALLOC_CTX *mem_ctx,
 			      const struct netr_SamInfo3 *info3,
 			      DOM_SID **user_sids,
