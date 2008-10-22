@@ -93,7 +93,7 @@ bool E_md4hash(const char *passwd, uint8_t p16[16])
 bool E_deshash(const char *passwd, uint8_t p16[16])
 {
 	bool ret = true;
-	char dospwd[20];
+	char dospwd[256];
 	ZERO_STRUCT(dospwd);
 
 	/* Password must be converted to DOS charset - null terminated, uppercase. */
