@@ -41,17 +41,17 @@ static bool read_negTokenInit(ASN1_DATA *asn1, negTokenInit_t *token)
 			asn1_start_tag(asn1, ASN1_CONTEXT(0));
 			asn1_start_tag(asn1, ASN1_SEQUENCE(0));
 
-			token->mechTypes = SMB_MALLOC_P(const char *);
+			token->mechTypes = TALLOC_P(NULL, const char *);
 			for (i = 0; !asn1->has_error &&
 				     0 < asn1_tag_remaining(asn1); i++) {
-				char *p_oid = NULL;
+				const char *p_oid = NULL;
 				token->mechTypes = 
-					SMB_REALLOC_ARRAY(token->mechTypes, const char *, i + 2);
+					TALLOC_REALLOC_ARRAY(token->mechTypes, const char *, i + 2);
 				if (!token->mechTypes) {
 					asn1->has_error = True;
 					return False;
 				}
-				asn1_read_OID(asn1, &p_oid);
+				asn1_read_OID(asn1, NULL, &p_oid);
 				token->mechTypes[i] = p_oid;
 			}
 			token->mechTypes[i] = NULL;
@@ -69,14 +69,14 @@ static bool read_negTokenInit(ASN1_DATA *asn1, negTokenInit_t *token)
                 /* Read mechToken */
 		case ASN1_CONTEXT(2):
 			asn1_start_tag(asn1, ASN1_CONTEXT(2));
-			asn1_read_OctetString(asn1, &token->mechToken);
+			asn1_read_OctetString(asn1, NULL, &token->mechToken);
 			asn1_end_tag(asn1);
 			break;
 		/* Read mecListMIC */
 		case ASN1_CONTEXT(3):
 			asn1_start_tag(asn1, ASN1_CONTEXT(3));
 			if (asn1->data[asn1->ofs] == ASN1_OCTET_STRING) {
-				asn1_read_OctetString(asn1,
+				asn1_read_OctetString(asn1, NULL,
 						      &token->mechListMIC);
 			} else {
 				/* RFC 2478 says we have an Octet String here,
@@ -84,13 +84,13 @@ static bool read_negTokenInit(ASN1_DATA *asn1, negTokenInit_t *token)
 				char *mechListMIC;
 				asn1_push_tag(asn1, ASN1_SEQUENCE(0));
 				asn1_push_tag(asn1, ASN1_CONTEXT(0));
-				asn1_read_GeneralString(asn1, &mechListMIC);
+				asn1_read_GeneralString(asn1, NULL, &mechListMIC);
 				asn1_pop_tag(asn1);
 				asn1_pop_tag(asn1);
 
 				token->mechListMIC =
 					data_blob(mechListMIC, strlen(mechListMIC));
-				SAFE_FREE(mechListMIC);
+				TALLO_FREE(mechListMIC);
 			}
 			asn1_end_tag(asn1);
 			break;
@@ -187,17 +187,17 @@ static bool read_negTokenTarg(ASN1_DATA *asn1, negTokenTarg_t *token)
 			break;
 		case ASN1_CONTEXT(1):
 			asn1_start_tag(asn1, ASN1_CONTEXT(1));
-			asn1_read_OID(asn1, &token->supportedMech);
+			asn1_read_OID(asn1, NULL, &token->supportedMech);
 			asn1_end_tag(asn1);
 			break;
 		case ASN1_CONTEXT(2):
 			asn1_start_tag(asn1, ASN1_CONTEXT(2));
-			asn1_read_OctetString(asn1, &token->responseToken);
+			asn1_read_OctetString(asn1, NULL, &token->responseToken);
 			asn1_end_tag(asn1);
 			break;
 		case ASN1_CONTEXT(3):
 			asn1_start_tag(asn1, ASN1_CONTEXT(3));
-			asn1_read_OctetString(asn1, &token->mechListMIC);
+			asn1_read_OctetString(asn1, NULL, &token->mechListMIC);
 			asn1_end_tag(asn1);
 			break;
 		default:
@@ -322,16 +322,16 @@ bool free_spnego_data(SPNEGO_DATA *spnego)
 		if (spnego->negTokenInit.mechTypes) {
 			int i;
 			for (i = 0; spnego->negTokenInit.mechTypes[i]; i++) {
-				free(CONST_DISCARD(char *,spnego->negTokenInit.mechTypes[i]));
+				talloc_free(CONST_DISCARD(char *,spnego->negTokenInit.mechTypes[i]));
 			}
-			free(spnego->negTokenInit.mechTypes);
+			talloc_free(spnego->negTokenInit.mechTypes);
 		}
 		data_blob_free(&spnego->negTokenInit.mechToken);
 		data_blob_free(&spnego->negTokenInit.mechListMIC);
 		break;
 	case SPNEGO_NEG_TOKEN_TARG:
 		if (spnego->negTokenTarg.supportedMech) {
-			free(spnego->negTokenTarg.supportedMech);
+			talloc_free(spnego->negTokenTarg.supportedMech);
 		}
 		data_blob_free(&spnego->negTokenTarg.responseToken);
 		data_blob_free(&spnego->negTokenTarg.mechListMIC);

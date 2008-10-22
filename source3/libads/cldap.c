@@ -46,7 +46,7 @@ static int send_cldap_netlogon(int sock, const char *domain,
 	asn1_write_enumerated(&data, 0);
 	asn1_write_Integer(&data, 0);
 	asn1_write_Integer(&data, 0);
-	asn1_write_BOOLEAN2(&data, False);
+	asn1_write_BOOLEAN(&data, False);
 	asn1_push_tag(&data, ASN1_CONTEXT(0));
 
 	if (domain) {
@@ -164,12 +164,12 @@ static int recv_cldap_netlogon(TALLOC_CTX *mem_ctx,
 	asn1_start_tag(&data, ASN1_SEQUENCE(0));
 	asn1_read_Integer(&data, &i1);
 	asn1_start_tag(&data, ASN1_APPLICATION(4));
-	asn1_read_OctetString(&data, &os1);
+	asn1_read_OctetString(&data, NULL, &os1);
 	asn1_start_tag(&data, ASN1_SEQUENCE(0));
 	asn1_start_tag(&data, ASN1_SEQUENCE(0));
-	asn1_read_OctetString(&data, &os2);
+	asn1_read_OctetString(&data, NULL, &os2);
 	asn1_start_tag(&data, ASN1_SET);
-	asn1_read_OctetString(&data, &os3);
+	asn1_read_OctetString(&data, NULL, &os3);
 	asn1_end_tag(&data);
 	asn1_end_tag(&data);
 	asn1_end_tag(&data);

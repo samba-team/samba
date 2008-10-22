@@ -746,7 +746,7 @@ NTSTATUS parse_spnego_mechanisms(DATA_BLOB blob_in,
 
 	for (i=0;OIDs[i];i++) {
 		DEBUG(5,("parse_spnego_mechanisms: Got OID %s\n", OIDs[i]));
-		free(OIDs[i]);
+		talloc_free(OIDs[i]);
 	}
 	return ret;
 }

@@ -425,7 +425,7 @@ LIBSAMBA_OBJ = $(LIBSMB_OBJ0) \
 CLDAP_OBJ = libads/cldap.o
 
 LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
-	     libsmb/clikrb5.o libsmb/clispnego.o libsmb/asn1.o \
+	     libsmb/clikrb5.o libsmb/clispnego.o ../lib/util/asn1.o \
 	     libsmb/clirap.o libsmb/clierror.o libsmb/climessage.o \
 	     libsmb/clireadwrite.o libsmb/clilist.o libsmb/cliprint.o \
 	     libsmb/clitrans.o libsmb/clisecdesc.o libsmb/clidgram.o \
@@ -772,7 +772,7 @@ SMBPASSWD_OBJ = utils/smbpasswd.o $(PASSWD_UTIL_OBJ) $(PASSCHANGE_OBJ) \
 PDBEDIT_OBJ = utils/pdbedit.o $(PASSWD_UTIL_OBJ) $(PARAM_OBJ) $(PASSDB_OBJ) @LIBWBCLIENT_STATIC@ \
 		$(LIBSAMBA_OBJ) \
 		$(LIB_NONSMBD_OBJ) $(GROUPDB_OBJ) \
-		$(POPT_LIB_OBJ) $(SMBLDAP_OBJ) libsmb/asn1.o \
+		$(POPT_LIB_OBJ) $(SMBLDAP_OBJ) ../lib/util/asn1.o \
 		$(LDB_OBJ)
 
 SMBGET_OBJ = utils/smbget.o $(POPT_LIB_OBJ) $(LIBSMBCLIENT_OBJ1) @LIBWBCLIENT_STATIC@
@@ -988,7 +988,7 @@ NDRDUMP_OBJ = ../librpc/tools/ndrdump.o \
 	      librpc/gen_ndr/ndr_svcctl.o \
 		  librpc/gen_ndr/tables.o ../librpc/ndr/ndr_table.o \
 	      ../librpc/ndr/ndr_krb5pac.o \
-		  librpc/gen_ndr/ndr_krb5pac.o libsmb/asn1.o
+		  librpc/gen_ndr/ndr_krb5pac.o ../lib/util/asn1.o
 
 DEBUG2HTML_OBJ = utils/debug2html.o utils/debugparse.o
 
@@ -1121,7 +1121,7 @@ TDBTORTURE_OBJ = @tdbdir@/tools/tdbtorture.o @LIBTDB_STATIC@ $(LIBREPLACE_OBJ) \
 NTLM_AUTH_OBJ1 = utils/ntlm_auth.o utils/ntlm_auth_diagnostics.o
 
 NTLM_AUTH_OBJ = ${NTLM_AUTH_OBJ1} $(LIBSAMBA_OBJ) $(POPT_LIB_OBJ) \
-		libsmb/asn1.o libsmb/spnego.o libsmb/clikrb5.o libads/kerberos.o \
+		../lib/util/asn1.o libsmb/spnego.o libsmb/clikrb5.o libads/kerberos.o \
 		$(SERVER_MUTEX_OBJ) $(LIBADS_SERVER_OBJ) \
 		$(PASSDB_OBJ) $(GROUPDB_OBJ) \
 		$(SMBLDAP_OBJ) $(LIBNMB_OBJ) \

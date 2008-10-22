@@ -833,7 +833,7 @@ ADS_STATUS cli_session_setup_spnego(struct cli_state *cli, const char *user,
 		    strcmp(OIDs[i], OID_KERBEROS5) == 0) {
 			cli->got_kerberos_mechanism = True;
 		}
-		free(OIDs[i]);
+		talloc_free(OIDs[i]);
 	}
 
 	DEBUG(3,("got principal=%s\n", principal ? principal : "<null>"));
@@ -854,7 +854,7 @@ ADS_STATUS cli_session_setup_spnego(struct cli_state *cli, const char *user,
 			ret = kerberos_kinit_password(user, pass, 0 /* no time correction for now */, NULL);
 			
 			if (ret){
-				SAFE_FREE(principal);
+				TALLOC_FREE(principal);
 				DEBUG(0, ("Kinit failed: %s\n", error_message(ret)));
 				if (cli->fallback_after_kerberos)
 					goto ntlmssp;
@@ -866,7 +866,7 @@ ADS_STATUS cli_session_setup_spnego(struct cli_state *cli, const char *user,
 		   we have a valid host NetBIOS name.
 		 */
 		if (strequal(principal, ADS_IGNORE_PRINCIPAL)) {
-			SAFE_FREE(principal);
+			TALLOC_FREE(principal);
 		}
 
 		if (principal == NULL &&
@@ -897,8 +897,9 @@ ADS_STATUS cli_session_setup_spnego(struct cli_state *cli, const char *user,
 				realm = kerberos_get_default_realm_from_ccache();
 			}
 			if (realm && *realm) {
-				if (asprintf(&principal, "%s$@%s",
-						machine, realm) < 0) {
+				principal = talloc_asprintf(NULL, "%s$@%s",
+							machine, realm);
+				if (!principal) {
 					SAFE_FREE(machine);
 					SAFE_FREE(realm);
 					return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
@@ -915,14 +916,14 @@ ADS_STATUS cli_session_setup_spnego(struct cli_state *cli, const char *user,
 			rc = cli_session_setup_kerberos(cli, principal,
 				dest_realm);
 			if (ADS_ERR_OK(rc) || !cli->fallback_after_kerberos) {
-				SAFE_FREE(principal);
+				TALLOC_FREE(principal);
 				return rc;
 			}
 		}
 	}
 #endif
 
-	SAFE_FREE(principal);
+	TALLOC_FREE(principal);
 
 ntlmssp:
 

@@ -784,7 +784,7 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 			got_kerberos_mechanism = True;
 		}
 #endif
-		free(OIDs[i]);
+		talloc_free(OIDs[i]);
 	}
 	DEBUG(3,("ads_sasl_spnego_bind: got server principal name = %s\n", given_principal));
 
@@ -795,7 +795,7 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 		struct ads_service_principal p;
 
 		status = ads_generate_service_principal(ads, given_principal, &p);
-		SAFE_FREE(given_principal);
+		TALLOC_FREE(given_principal);
 		if (!ADS_ERR_OK(status)) {
 			return status;
 		}
@@ -830,7 +830,7 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 	} else
 #endif
 	{
-		SAFE_FREE(given_principal);
+		TALLOC_FREE(given_principal);
 	}
 
 	/* lets do NTLMSSP ... this has the big advantage that we don't need

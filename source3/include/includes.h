@@ -584,6 +584,8 @@ struct smb_iconv_convenience *lp_iconv_convenience(void *lp_ctx);
 
 #include "../lib/util/data_blob.h"
 #include "../lib/util/time.h"
+#include "../lib/util/asn1.h"
+
 /* And a little extension. Abort on type mismatch */
 #define talloc_get_type_abort(ptr, type) \
 	(type *)talloc_check_name_abort(ptr, #type)
@@ -643,7 +645,6 @@ struct smb_iconv_convenience *lp_iconv_convenience(void *lp_ctx);
 #include "client.h"
 
 #include "session.h"
-#include "asn_1.h"
 #include "popt.h"
 #include "mangle.h"
 #include "module.h"

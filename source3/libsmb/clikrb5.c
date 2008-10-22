@@ -340,7 +340,7 @@ bool unwrap_edata_ntstatus(TALLOC_CTX *mem_ctx,
 	}
 	
 	asn1_start_tag(&data, ASN1_CONTEXT(2));
-	asn1_read_OctetString(&data, &edata_contents);
+	asn1_read_OctetString(&data, NULL, &edata_contents);
 	asn1_end_tag(&data);
 	asn1_end_tag(&data);
 	asn1_end_tag(&data);
@@ -378,7 +378,7 @@ bool unwrap_pac(TALLOC_CTX *mem_ctx, DATA_BLOB *auth_data, DATA_BLOB *unwrapped_
 	
 	asn1_end_tag(&data);
 	asn1_start_tag(&data, ASN1_CONTEXT(1));
-	asn1_read_OctetString(&data, &pac_contents);
+	asn1_read_OctetString(&data, NULL, &pac_contents);
 	asn1_end_tag(&data);
 	asn1_end_tag(&data);
 	asn1_end_tag(&data);

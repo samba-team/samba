@@ -2474,37 +2474,6 @@ _PUBLIC_ NTSTATUS dcerpc_pipe_connect(TALLOC_CTX *parent_ctx, struct dcerpc_pipe
 				      struct cli_credentials *credentials, struct event_context *ev, 
 				      struct loadparm_context *lp_ctx);
 
-/* The following definitions come from libsmb/asn1.c  */
-
-void asn1_free(ASN1_DATA *data);
-bool asn1_write(ASN1_DATA *data, const void *p, int len);
-bool asn1_write_uint8(ASN1_DATA *data, uint8 v);
-bool asn1_push_tag(ASN1_DATA *data, uint8 tag);
-bool asn1_pop_tag(ASN1_DATA *data);
-bool asn1_write_Integer(ASN1_DATA *data, int i);
-bool asn1_write_OID(ASN1_DATA *data, const char *OID);
-bool asn1_write_OctetString(ASN1_DATA *data, const void *p, size_t length);
-bool asn1_write_GeneralString(ASN1_DATA *data, const char *s);
-bool asn1_write_BOOLEAN(ASN1_DATA *data, bool v);
-bool asn1_write_BOOLEAN2(ASN1_DATA *data, bool v);
-bool asn1_check_BOOLEAN(ASN1_DATA *data, bool v);
-bool asn1_load(ASN1_DATA *data, DATA_BLOB blob);
-bool asn1_read(ASN1_DATA *data, void *p, int len);
-bool asn1_read_uint8(ASN1_DATA *data, uint8 *v);
-bool asn1_check_tag(ASN1_DATA *data, uint8 tag);
-bool asn1_start_tag(ASN1_DATA *data, uint8 tag);
-bool asn1_end_tag(ASN1_DATA *data);
-int asn1_tag_remaining(ASN1_DATA *data);
-bool asn1_read_OID(ASN1_DATA *data, char **OID);
-bool asn1_check_OID(ASN1_DATA *data, const char *OID);
-bool asn1_read_GeneralString(ASN1_DATA *data, char **s);
-bool asn1_read_OctetString(ASN1_DATA *data, DATA_BLOB *blob);
-bool asn1_read_Integer(ASN1_DATA *data, int *i);
-bool asn1_check_enumerated(ASN1_DATA *data, int v);
-bool asn1_write_enumerated(ASN1_DATA *data, uint8 v);
-bool ber_write_OID_String(DATA_BLOB *blob, const char *OID);
-bool ber_read_OID_String(TALLOC_CTX *mem_ctx, DATA_BLOB blob, const char **OID);
-
 /* The following definitions come from libsmb/cliconnect.c  */
 
 ADS_STATUS cli_session_setup_spnego(struct cli_state *cli, const char *user, 
@@ -2966,7 +2935,7 @@ DATA_BLOB spnego_gen_negTokenInit(char guid[16],
 				  const char *principal);
 DATA_BLOB gen_negTokenInit(const char *OID, DATA_BLOB blob);
 bool spnego_parse_negTokenInit(DATA_BLOB blob,
-			       char *OIDs[ASN1_MAX_OIDS], 
+			       char *OIDs[ASN1_MAX_OIDS],
 			       char **principal);
 DATA_BLOB gen_negTokenTarg(const char *OIDs[], DATA_BLOB blob);
 bool parse_negTokenTarg(DATA_BLOB blob, char *OIDs[ASN1_MAX_OIDS], DATA_BLOB *secblob);

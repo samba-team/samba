@@ -1168,7 +1168,7 @@ static bool pipe_spnego_auth_bind_negotiate(pipes_struct *p, prs_struct *rpc_in_
 
 	for (i=0;OIDs[i];i++) {
 		DEBUG(3,("pipe_spnego_auth_bind_negotiate: Got OID %s\n", OIDs[i]));
-		SAFE_FREE(OIDs[i]);
+		TALLOC_FREE(OIDs[i]);
 	}
 	DEBUG(3,("pipe_spnego_auth_bind_negotiate: Got secblob of size %lu\n", (unsigned long)secblob.length));
 
