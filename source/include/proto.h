@@ -1507,6 +1507,7 @@ void del_sid_from_array(const DOM_SID *sid, DOM_SID **sids, size_t *num);
 bool add_rid_to_array_unique(TALLOC_CTX *mem_ctx,
 				    uint32 rid, uint32 **pp_rids, size_t *p_num);
 bool is_null_sid(const DOM_SID *sid);
+bool is_sid_in_token(const NT_USER_TOKEN *token, const DOM_SID *sid);
 NTSTATUS sid_array_from_info3(TALLOC_CTX *mem_ctx,
 			      const struct netr_SamInfo3 *info3,
 			      DOM_SID **user_sids,
