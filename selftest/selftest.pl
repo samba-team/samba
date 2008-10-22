@@ -519,7 +519,7 @@ foreach (@opt_exclude) {
 }
 
 if ($opt_quick) {
-	push (@includes, read_test_regexes("samba4-quick"));
+	push (@includes, read_test_regexes("selftest/quick"));
 }
 
 foreach (@opt_include) {
