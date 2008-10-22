@@ -24,7 +24,6 @@
 #include "libcli/libcli.h"
 #include "libcli/raw/libcliraw.h"
 #include "system/time.h"
-#include "pstring.h"
 #include "auth/credentials/credentials.h"
 #include "auth/gensec/gensec.h"
 #include "param/param.h"
@@ -55,10 +54,10 @@ static bool reg_match_one(struct smbcli_state *cli, const char *pattern, const c
 	return ms_fnmatch(pattern, file, cli->transport->negotiate.protocol)==0;
 }
 
-static char *reg_test(struct smbcli_state *cli, char *pattern, char *long_name, char *short_name)
+static char *reg_test(struct smbcli_state *cli, TALLOC_CTX *mem_ctx, const char *pattern, const char *long_name, const char *short_name)
 {
-	static fstring ret;
-	fstrcpy(ret, "---");
+	char *ret;
+	ret = talloc_strdup(mem_ctx, "---");
 
 	pattern = 1+strrchr_m(pattern,'\\');
 
@@ -80,12 +79,15 @@ static struct smbcli_state *connect_one(struct resolve_context *resolve_ctx,
 					struct smbcli_session_options *session_options)
 {
 	struct smbcli_state *c;
-	fstring server;
+	char *server;
 	NTSTATUS status;
 
-	fstrcpy(server,share+2);
+	server = smb_xstrdup(share+2);
 	share = strchr_m(server,'\\');
-	if (!share) return NULL;
+	if (!share) {
+		SAFE_FREE(server);
+		return NULL;
+	}
 	*share = 0;
 	share++;
 
@@ -97,6 +99,8 @@ static struct smbcli_state *connect_one(struct resolve_context *resolve_ctx,
 					share, NULL,
 					cmdline_credentials, resolve_ctx, ev,
 					options, session_options);
+
+	SAFE_FREE(server);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return NULL;
@@ -130,7 +134,7 @@ static void listfn(struct clilist_file_info *f, const char *s, void *state)
 }
 
 static void get_real_name(TALLOC_CTX *mem_ctx, struct smbcli_state *cli,
-			  char **long_name, fstring short_name)
+			  char **long_name, char **short_name)
 {
 	const char *mask;
 	struct masktest_state state;
@@ -151,14 +155,14 @@ static void get_real_name(TALLOC_CTX *mem_ctx, struct smbcli_state *cli,
 			listfn, &state);
 
 	if (f_info_hit) {
-		fstrcpy(short_name, last_hit.short_name);
-		strlower(short_name);
+		*short_name = talloc_strdup(mem_ctx, last_hit.short_name);
+		strlower(*short_name);
 		*long_name = talloc_strdup(mem_ctx, last_hit.long_name);
 		strlower(*long_name);
 	}
 
 	if (*short_name == '\0') {
-		fstrcpy(short_name, *long_name);
+		*short_name = talloc_strdup(mem_ctx, *long_name);
 	}
 }
 
@@ -166,16 +170,16 @@ static void testpair(TALLOC_CTX *mem_ctx, struct smbcli_state *cli, char *mask,
 		char *file)
 {
 	int fnum;
-	fstring res1;
+	char *res1;
 	char *res2;
 	static int count;
-	fstring short_name;
+	char *short_name = NULL;
 	char *long_name = NULL;
 	struct masktest_state state;
 
 	count++;
 
-	fstrcpy(res1, "---");
+	res1 = talloc_strdup(mem_ctx, "---");
 
 	state.mem_ctx = mem_ctx;
 
@@ -187,15 +191,14 @@ static void testpair(TALLOC_CTX *mem_ctx, struct smbcli_state *cli, char *mask,
 	smbcli_close(cli->tree, fnum);
 
 	resultp = res1;
-	fstrcpy(short_name, "");
-	get_real_name(mem_ctx, cli, &long_name, short_name);
-	fstrcpy(res1, "---");
+	get_real_name(mem_ctx, cli, &long_name, &short_name);
+	res1 = talloc_strdup(mem_ctx, "---");
 	smbcli_list_new(cli->tree, mask,
 			FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_DIRECTORY,
 			RAW_SEARCH_DATA_BOTH_DIRECTORY_INFO,
 			listfn, &state);
 
-	res2 = reg_test(cli, mask, long_name, short_name);
+	res2 = reg_test(cli, mem_ctx, mask, long_name, short_name);
 
 	if (showall || strcmp(res1, res2)) {
 		d_printf("%s %s %d mask=[%s] file=[%s] rfile=[%s/%s]\n",

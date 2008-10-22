@@ -23,13 +23,12 @@
 #include "system/locale.h"
 #include "libcli/libcli.h"
 #include "torture/util.h"
-#include "pstring.h"
 #include "param/param.h"
 
 bool torture_utable(struct torture_context *tctx, 
 					struct smbcli_state *cli)
 {
-	fstring fname;
+	char fname[256];
 	const char *alt_name;
 	int fnum;
 	uint8_t c2[4];
@@ -48,13 +47,13 @@ bool torture_utable(struct torture_context *tctx,
 		char *p;
 
 		SSVAL(c2, 0, c);
-		fstrcpy(fname, "\\utable\\x");
+		strncpy(fname, "\\utable\\x", sizeof(fname)-1);
 		p = fname+strlen(fname);
 		len = convert_string(lp_iconv_convenience(tctx->lp_ctx), CH_UTF16, CH_UNIX, 
 				     c2, 2, 
 				     p, sizeof(fname)-strlen(fname));
 		p[len] = 0;
-		fstrcat(fname,"_a_long_extension");
+		strncat(fname,"_a_long_extension",sizeof(fname)-1);
 
 		fnum = smbcli_open(cli->tree, fname, O_RDWR | O_CREAT | O_TRUNC, 
 				DENY_NONE);
@@ -100,12 +99,12 @@ bool torture_utable(struct torture_context *tctx,
 
 static char *form_name(struct smb_iconv_convenience *iconv_convenience, int c)
 {
-	static fstring fname;
+	static char fname[256];
 	uint8_t c2[4];
 	char *p;
 	int len;
 
-	fstrcpy(fname, "\\utable\\");
+	strncpy(fname, "\\utable\\", sizeof(fname)-1);
 	p = fname+strlen(fname);
 	SSVAL(c2, 0, c);
 

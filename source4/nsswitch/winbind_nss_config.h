@@ -40,17 +40,6 @@
 
 #include "nsswitch/winbind_nss.h"
 
-/* I'm trying really hard not to include anything from smb.h with the
-   result of some silly looking redeclaration of structures. */
-
-#ifndef _PSTRING
-#define _PSTRING
-#define PSTRING_LEN 1024
-#define FSTRING_LEN 256
-typedef char pstring[PSTRING_LEN];
-typedef char fstring[FSTRING_LEN];
-#endif
-
 /* Some systems (SCO) treat UNIX domain sockets as FIFOs */
 
 #ifndef S_IFSOCK

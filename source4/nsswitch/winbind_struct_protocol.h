@@ -18,6 +18,14 @@
 #ifndef _WINBINDD_NTDOM_H
 #define _WINBINDD_NTDOM_H
 
+#define _PSTRING
+#define FSTRING_LEN 256
+
+typedef char fstring[FSTRING_LEN];
+
+#define fstrcpy(d,s) safe_strcpy((d),(s),sizeof(fstring)-1)
+#define fstrcat(d,s) safe_strcat((d),(s),sizeof(fstring)-1)
+
 #define WINBINDD_SOCKET_NAME "pipe"            /* Name of PF_UNIX socket */
 
 /* Let the build environment override the public winbindd socket location. This

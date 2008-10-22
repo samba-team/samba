@@ -19,7 +19,6 @@
 */
 
 #include "includes.h"
-#include "pstring.h"
 #include "torture/torture.h"
 #include "torture/winbind/proto.h"
 #include "nsswitch/winbind_client.h"
@@ -275,7 +274,7 @@ static bool get_trusted_domains(struct torture_context *torture,
 	struct winbindd_response rep;
 	struct torture_trust_domain *d = NULL;
 	uint32_t dcount = 0;
-	fstring line;
+	char line[256];
 	const char *extra_data;
 
 	ZERO_STRUCT(req);
@@ -290,7 +289,7 @@ static bool get_trusted_domains(struct torture_context *torture,
 
 	torture_assert(torture, extra_data, "NULL trust list");
 
-	while (next_token(&extra_data, line, "\n", sizeof(fstring))) {
+	while (next_token(&extra_data, line, "\n", sizeof(line))) {
 		char *p, *lp;
 
 		d = talloc_realloc(torture, d,
@@ -583,7 +582,7 @@ static bool get_user_list(struct torture_context *torture, char ***users)
 	struct winbindd_response rep;
 	char **u = NULL;
 	uint32_t count;
-	fstring name;
+	char name[256];
 	const char *extra_data;
 
 	ZERO_STRUCT(req);
@@ -595,7 +594,7 @@ static bool get_user_list(struct torture_context *torture, char ***users)
 	torture_assert(torture, extra_data, "NULL extra data");
 
 	for(count = 0;
-	    next_token(&extra_data, name, ",", sizeof(fstring));
+	    next_token(&extra_data, name, ",", sizeof(name));
 	    count++)
 	{
 		u = talloc_realloc(torture, u, char *, count + 2);
@@ -633,7 +632,7 @@ static bool get_group_list(struct torture_context *torture, char ***groups)
 	struct winbindd_response rep;
 	char **g = NULL;
 	uint32_t count;
-	fstring name;
+	char name[256];
 	const char *extra_data;
 
 	ZERO_STRUCT(req);
@@ -645,7 +644,7 @@ static bool get_group_list(struct torture_context *torture, char ***groups)
 	torture_assert(torture, extra_data, "NULL extra data");
 
 	for(count = 0;
-	    next_token(&extra_data, name, ",", sizeof(fstring));
+	    next_token(&extra_data, name, ",", sizeof(name));
 	    count++)
 	{
 		g = talloc_realloc(torture, g, char *, count + 2);
@@ -688,7 +687,7 @@ static bool get_sequence_numbers(struct torture_context *torture,
 	struct winbindd_request req;
 	struct winbindd_response rep;
 	const char *extra_data;
-	fstring line;
+	char line[256];
 	uint32_t count = 0;
 	struct torture_domain_sequence *s = NULL;
 
@@ -700,7 +699,7 @@ static bool get_sequence_numbers(struct torture_context *torture,
 	extra_data = (char *)rep.extra_data.data;
 	torture_assert(torture, extra_data, "NULL sequence list");
 
-	while (next_token(&extra_data, line, "\n", sizeof(fstring))) {
+	while (next_token(&extra_data, line, "\n", sizeof(line))) {
 		char *p, *lp;
 		uint32_t seq;
 
