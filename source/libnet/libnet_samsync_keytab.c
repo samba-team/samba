@@ -78,20 +78,17 @@ static NTSTATUS fetch_sam_entry_keytab(TALLOC_CTX *mem_ctx,
 				       bool last_query,
 				       struct libnet_keytab_context *ctx)
 {
-	uchar nt_passwd[16];
 	struct libnet_keytab_entry entry;
 
 	if (memcmp(r->ntpassword.hash, ctx->zero_buf, 16) == 0) {
 		return NT_STATUS_OK;
 	}
 
-	sam_pwd_hash(rid, r->ntpassword.hash, nt_passwd, 0);
-
 	entry.name = talloc_strdup(mem_ctx, r->account_name.string);
 	entry.principal = talloc_asprintf(mem_ctx, "%s@%s",
 					  r->account_name.string,
 					  ctx->dns_domain_name);
-	entry.password = data_blob_talloc(mem_ctx, nt_passwd, 16);
+	entry.password = data_blob_talloc(mem_ctx, r->ntpassword.hash, 16);
 	entry.kvno = ads_get_kvno(ctx->ads, entry.name);
 	entry.enctype = ENCTYPE_NULL;
 
