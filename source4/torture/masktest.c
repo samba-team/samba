@@ -79,15 +79,12 @@ static struct smbcli_state *connect_one(struct resolve_context *resolve_ctx,
 					struct smbcli_session_options *session_options)
 {
 	struct smbcli_state *c;
-	char *server;
+	char server[256];
 	NTSTATUS status;
 
-	server = smb_xstrdup(share+2);
+	safe_strcpy(server,share+2,sizeof(server));
 	share = strchr_m(server,'\\');
-	if (!share) {
-		SAFE_FREE(server);
-		return NULL;
-	}
+	if (!share) return NULL;
 	*share = 0;
 	share++;
 
@@ -99,8 +96,6 @@ static struct smbcli_state *connect_one(struct resolve_context *resolve_ctx,
 					share, NULL,
 					cmdline_credentials, resolve_ctx, ev,
 					options, session_options);
-
-	SAFE_FREE(server);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return NULL;
@@ -170,7 +165,7 @@ static void testpair(TALLOC_CTX *mem_ctx, struct smbcli_state *cli, char *mask,
 		char *file)
 {
 	int fnum;
-	char *res1;
+	char res1[256];
 	char *res2;
 	static int count;
 	char *short_name = NULL;
@@ -179,7 +174,7 @@ static void testpair(TALLOC_CTX *mem_ctx, struct smbcli_state *cli, char *mask,
 
 	count++;
 
-	res1 = talloc_strdup(mem_ctx, "---");
+	safe_strcpy(res1, "---", sizeof(res1));
 
 	state.mem_ctx = mem_ctx;
 
@@ -191,8 +186,9 @@ static void testpair(TALLOC_CTX *mem_ctx, struct smbcli_state *cli, char *mask,
 	smbcli_close(cli->tree, fnum);
 
 	resultp = res1;
+	short_name = talloc_strdup(mem_ctx, "");
 	get_real_name(mem_ctx, cli, &long_name, &short_name);
-	res1 = talloc_strdup(mem_ctx, "---");
+	safe_strcpy(res1, "---", sizeof(res1));
 	smbcli_list_new(cli->tree, mask,
 			FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_DIRECTORY,
 			RAW_SEARCH_DATA_BOTH_DIRECTORY_INFO,
