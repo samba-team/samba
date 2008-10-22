@@ -5,7 +5,7 @@ Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
 Version: 1.0
-Release: 63
+Release: 64
 Epoch: 0
 License: GNU GPL version 3
 Group: System Environment/Daemons
@@ -120,6 +120,9 @@ fi
 %{_includedir}/ctdb_private.h
 
 %changelog
+* Mon Oct 22 2008 : Version 1.0.64
+ - Add a context and a timed event so that once we have been in recovery for
+   too long we drop all public addresses.
 * Mon Oct 20 2008 : Version 1.0.63
  - Remove logging of "periodic cleanup ..." in 50.samba
  - When we reload a nodes file, we must detect this and reload the file also
