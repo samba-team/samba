@@ -871,7 +871,7 @@ NTSTATUS _samr_QuerySecurity(pipes_struct *p,
 	status = access_check_samr_function(acc_granted,
 					    STD_RIGHT_READ_CONTROL_ACCESS,
 					    "_samr_QuerySecurity");
-	if (NT_STATUS_IS_OK(status)) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
