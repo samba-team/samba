@@ -1243,7 +1243,7 @@ WERROR NetGroupEnum_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	if (r->out.resume_handle) {
+	if (r->out.resume_handle && info.info3.count > 0) {
 		*r->out.resume_handle =
 			info.info3.entries[info.info3.count-1].idx;
 	}
