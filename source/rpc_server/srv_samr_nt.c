@@ -5,7 +5,7 @@
  *  Copyright (C) Luke Kenneth Casson Leighton      1996-1997,
  *  Copyright (C) Paul Ashton                       1997,
  *  Copyright (C) Marc Jacobsen			    1999,
- *  Copyright (C) Jeremy Allison                    2001-2005,
+ *  Copyright (C) Jeremy Allison                    2001-2008,
  *  Copyright (C) Jean François Micouleau           1998-2001,
  *  Copyright (C) Jim McDonough <jmcd@us.ibm.com>   2002,
  *  Copyright (C) Gerald (Jerry) Carter             2003-2004,
@@ -245,6 +245,48 @@ static NTSTATUS access_check_samr_function(uint32 acc_granted, uint32 acc_requir
 		debug, acc_granted, acc_required));
 
 	return NT_STATUS_ACCESS_DENIED;
+}
+
+/*******************************************************************
+ Map any MAXIMUM_ALLOWED_ACCESS request to a valid access set.
+********************************************************************/
+
+static void map_max_allowed_access(const NT_USER_TOKEN *token,
+					uint32_t *pacc_requested)
+{
+	if (!((*pacc_requested) & MAXIMUM_ALLOWED_ACCESS)) {
+		return;
+	}
+	*pacc_requested &= ~MAXIMUM_ALLOWED_ACCESS;
+
+	/* At least try for generic read. */
+	*pacc_requested = GENERIC_READ_ACCESS;
+
+	/* root gets anything. */
+	if (geteuid() == sec_initial_uid()) {
+		*pacc_requested |= GENERIC_ALL_ACCESS;
+		return;
+	}
+
+	/* Full Access for 'BUILTIN\Administrators' and 'BUILTIN\Account Operators */
+
+	if (is_sid_in_token(token, &global_sid_Builtin_Administrators) ||
+			is_sid_in_token(token, &global_sid_Builtin_Account_Operators)) {
+		*pacc_requested |= GENERIC_ALL_ACCESS;
+		return;
+	}
+
+	/* Full access for DOMAIN\Domain Admins. */
+	if ( IS_DC ) {
+		DOM_SID domadmin_sid;
+		sid_copy( &domadmin_sid, get_global_sam_sid() );
+		sid_append_rid( &domadmin_sid, DOMAIN_GROUP_RID_ADMINS );
+		if (is_sid_in_token(token, &domadmin_sid)) {
+			*pacc_requested |= GENERIC_ALL_ACCESS;
+			return;
+		}
+	}
+	/* TODO ! Check privileges. */
 }
 
 /*******************************************************************
@@ -585,6 +627,7 @@ NTSTATUS _samr_OpenDomain(pipes_struct *p,
 		return status;
 
 	/*check if access can be granted as requested by client. */
+	map_max_allowed_access(p->pipe_user.nt_user_token, &des_access);
 
 	make_samr_object_sd( p->mem_ctx, &psd, &sd_size, &dom_generic_mapping, NULL, 0 );
 	se_map_generic( &des_access, &dom_generic_mapping );
@@ -2178,6 +2221,8 @@ NTSTATUS _samr_OpenUser(pipes_struct *p,
 
 	/* check if access can be granted as requested by client. */
 
+	map_max_allowed_access(p->pipe_user.nt_user_token, &des_access);
+
 	make_samr_object_sd(p->mem_ctx, &psd, &sd_size, &usr_generic_mapping, &sid, SAMR_USR_RIGHTS_WRITE_PW);
 	se_map_generic(&des_access, &usr_generic_mapping);
 
@@ -3255,6 +3300,8 @@ NTSTATUS _samr_CreateUser2(pipes_struct *p,
 
 	sid_compose(&sid, get_global_sam_sid(), *r->out.rid);
 
+	map_max_allowed_access(p->pipe_user.nt_user_token, &des_access);
+
 	make_samr_object_sd(p->mem_ctx, &psd, &sd_size, &usr_generic_mapping,
 			    &sid, SAMR_USR_RIGHTS_WRITE_PW);
 	se_map_generic(&des_access, &usr_generic_mapping);
@@ -3316,10 +3363,7 @@ NTSTATUS _samr_Connect(pipes_struct *p,
 	   was observed from a win98 client trying to enumerate users (when configured
 	   user level access control on shares)   --jerry */
 
-	if (des_access == MAXIMUM_ALLOWED_ACCESS) {
-		/* Map to max possible knowing we're filtered below. */
-		des_access = GENERIC_ALL_ACCESS;
-	}
+	map_max_allowed_access(p->pipe_user.nt_user_token, &des_access);
 
 	se_map_generic( &des_access, &sam_generic_mapping );
 	info->acc_granted = des_access & (SA_RIGHT_SAM_ENUM_DOMAINS|SA_RIGHT_SAM_OPEN_DOMAIN);
@@ -3354,6 +3398,8 @@ NTSTATUS _samr_Connect2(pipes_struct *p,
 		DEBUG(3, ("access denied to _samr_Connect2\n"));
 		return NT_STATUS_ACCESS_DENIED;
 	}
+
+	map_max_allowed_access(p->pipe_user.nt_user_token, &des_access);
 
 	make_samr_object_sd(p->mem_ctx, &psd, &sd_size, &sam_generic_mapping, NULL, 0);
 	se_map_generic(&des_access, &sam_generic_mapping);
@@ -3404,6 +3450,8 @@ NTSTATUS _samr_Connect4(pipes_struct *p,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
+	map_max_allowed_access(p->pipe_user.nt_user_token, &des_access);
+
 	make_samr_object_sd(p->mem_ctx, &psd, &sd_size, &sam_generic_mapping, NULL, 0);
 	se_map_generic(&des_access, &sam_generic_mapping);
 
@@ -3452,6 +3500,8 @@ NTSTATUS _samr_Connect5(pipes_struct *p,
 		DEBUG(3, ("access denied to samr_Connect5\n"));
 		return NT_STATUS_ACCESS_DENIED;
 	}
+
+	map_max_allowed_access(p->pipe_user.nt_user_token, &des_access);
 
 	make_samr_object_sd(p->mem_ctx, &psd, &sd_size, &sam_generic_mapping, NULL, 0);
 	se_map_generic(&des_access, &sam_generic_mapping);
@@ -3619,6 +3669,8 @@ NTSTATUS _samr_OpenAlias(pipes_struct *p,
 		return NT_STATUS_NO_SUCH_ALIAS;
 
 	/*check if access can be granted as requested by client. */
+
+	map_max_allowed_access(p->pipe_user.nt_user_token, &des_access);
 
 	make_samr_object_sd(p->mem_ctx, &psd, &sd_size, &ali_generic_mapping, NULL, 0);
 	se_map_generic(&des_access,&ali_generic_mapping);
@@ -5514,6 +5566,8 @@ NTSTATUS _samr_OpenGroup(pipes_struct *p,
 		return status;
 
 	/*check if access can be granted as requested by client. */
+	map_max_allowed_access(p->pipe_user.nt_user_token, &des_access);
+
 	make_samr_object_sd(p->mem_ctx, &psd, &sd_size, &grp_generic_mapping, NULL, 0);
 	se_map_generic(&des_access,&grp_generic_mapping);
 
