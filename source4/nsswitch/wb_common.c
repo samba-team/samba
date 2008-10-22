@@ -168,7 +168,7 @@ static int winbind_named_pipe_sock(const char *dir)
 {
 	struct sockaddr_un sunaddr;
 	struct stat st;
-	pstring path;
+	char *path;
 	int fd;
 	int wait_time;
 	int slept;
@@ -186,24 +186,18 @@ static int winbind_named_pipe_sock(const char *dir)
 	
 	/* Connect to socket */
 	
-	strncpy(path, dir, sizeof(path) - 1);
-	path[sizeof(path) - 1] = '\0';
-	
-	strncat(path, "/", sizeof(path) - 1 - strlen(path));
-	path[sizeof(path) - 1] = '\0';
-	
-	strncat(path, WINBINDD_SOCKET_NAME, sizeof(path) - 1 - strlen(path));
-	path[sizeof(path) - 1] = '\0';
+	asprintf(&path, "%s/%s", dir, WINBINDD_SOCKET_NAME);
 	
 	ZERO_STRUCT(sunaddr);
 	sunaddr.sun_family = AF_UNIX;
 	strncpy(sunaddr.sun_path, path, sizeof(sunaddr.sun_path) - 1);
+	SAFE_FREE(path);
 	
 	/* If socket file doesn't exist, don't bother trying to connect
 	   with retry.  This is an attempt to make the system usable when
 	   the winbindd daemon is not running. */
 
-	if (lstat(path, &st) == -1) {
+	if (lstat(sunaddr.sun_path, &st) == -1) {
 		return -1;
 	}
 	
