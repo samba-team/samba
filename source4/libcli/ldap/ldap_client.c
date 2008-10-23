@@ -401,7 +401,7 @@ static void ldap_connect_got_sock(struct composite_context *ctx,
 	if (conn->ldaps) {
 		struct socket_context *tls_socket;
 		struct socket_context *tmp_socket;
-		char *cafile = private_path(conn->sock, conn->lp_ctx, lp_tls_cafile(conn->lp_ctx));
+		char *cafile = lp_tls_cafile(conn->sock, conn->lp_ctx);
 
 		if (!cafile || !*cafile) {
 			talloc_free(conn->sock);
