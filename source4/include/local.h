@@ -34,19 +34,10 @@
 /* separators for lists */
 #define LIST_SEP " \t,\n\r"
 
-/* what default type of filesystem do we want this to show up as in a
-   NT file manager window? */
-#define FSTYPE_STRING "NTFS"
-
-/* user to test password server with as invalid in security=server mode. */
-#ifndef INVALID_USER_PREFIX
-#define INVALID_USER_PREFIX "sambatest"
-#endif
-
 /* the default pager to use for the client "more" command. Users can
    override this with the PAGER environment variable */
-#ifndef PAGER
-#define PAGER "more"
+#ifndef DEFAULT_PAGER
+#define DEFAULT_PAGER "more"
 #endif
 
 /*
