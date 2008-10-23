@@ -221,7 +221,7 @@ static WERROR smbconf_txt_load_file(struct smbconf_ctx *ctx)
 static WERROR smbconf_txt_init(struct smbconf_ctx *ctx, const char *path)
 {
 	if (path == NULL) {
-		path = get_dyn_CONFIGFILE();
+		return WERR_BADFILE;
 	}
 	ctx->path = talloc_strdup(ctx, path);
 	if (ctx->path == NULL) {
