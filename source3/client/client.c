@@ -1652,6 +1652,9 @@ static int do_put(const char *rname, const char *lname, bool reput)
 		d_printf("ERROR: Not enough memory!\n");
 		return 1;
 	}
+
+	x_setvbuf(f, NULL, X_IOFBF, maxwrite);
+
 	while (!x_feof(f)) {
 		int n = maxwrite;
 		int ret;
