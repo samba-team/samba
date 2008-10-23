@@ -1737,7 +1737,7 @@ NTSTATUS _samr_QueryAliasInfo(pipes_struct *p,
 		return NT_STATUS_INVALID_HANDLE;
 
 	status = access_check_samr_function(acc_granted,
-					    SA_RIGHT_ALIAS_LOOKUP_INFO,
+					    SAMR_ALIAS_ACCESS_LOOKUP_INFO,
 					    "_samr_QueryAliasInfo");
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -4412,7 +4412,7 @@ NTSTATUS _samr_GetMembersInAlias(pipes_struct *p,
 		return NT_STATUS_INVALID_HANDLE;
 
 	status = access_check_samr_function(acc_granted,
-					    SA_RIGHT_ALIAS_GET_MEMBERS,
+					    SAMR_ALIAS_ACCESS_GET_MEMBERS,
 					    "_samr_GetMembersInAlias");
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -4544,7 +4544,7 @@ NTSTATUS _samr_AddAliasMember(pipes_struct *p,
 		return NT_STATUS_INVALID_HANDLE;
 
 	status = access_check_samr_function(acc_granted,
-					    SA_RIGHT_ALIAS_ADD_MEMBER,
+					    SAMR_ALIAS_ACCESS_ADD_MEMBER,
 					    "_samr_AddAliasMember");
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -4593,7 +4593,7 @@ NTSTATUS _samr_DeleteAliasMember(pipes_struct *p,
 		return NT_STATUS_INVALID_HANDLE;
 
 	status = access_check_samr_function(acc_granted,
-					    SA_RIGHT_ALIAS_REMOVE_MEMBER,
+					    SAMR_ALIAS_ACCESS_REMOVE_MEMBER,
 					    "_samr_DeleteAliasMember");
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -5330,7 +5330,7 @@ NTSTATUS _samr_SetAliasInfo(pipes_struct *p,
 		return NT_STATUS_INVALID_HANDLE;
 
 	status = access_check_samr_function(acc_granted,
-					    SA_RIGHT_ALIAS_SET_INFO,
+					    SAMR_ALIAS_ACCESS_SET_INFO,
 					    "_samr_SetAliasInfo");
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
