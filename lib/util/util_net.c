@@ -96,7 +96,7 @@ _PUBLIC_ bool is_zero_ip(struct in_addr ip)
  Are two IPs on the same subnet?
 **/
 
-_PUBLIC_ bool same_net(struct in_addr ip1, struct in_addr ip2, struct in_addr mask)
+_PUBLIC_ bool same_net_v4(struct in_addr ip1, struct in_addr ip2, struct in_addr mask)
 {
 	uint32_t net1,net2,nmask;
 
