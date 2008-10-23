@@ -2748,15 +2748,23 @@ NTSTATUS add_GROUP_USERS_INFO_X_buffer(TALLOC_CTX *mem_ctx,
 
 	switch (level) {
 		case 0:
-			u0.grui0_name = talloc_strdup(mem_ctx, group_name);
-			NT_STATUS_HAVE_NO_MEMORY(u0.grui0_name);
+			if (group_name) {
+				u0.grui0_name = talloc_strdup(mem_ctx, group_name);
+				NT_STATUS_HAVE_NO_MEMORY(u0.grui0_name);
+			} else {
+				u0.grui0_name = NULL;
+			}
 
 			ADD_TO_ARRAY(mem_ctx, struct GROUP_USERS_INFO_0, u0,
 				     (struct GROUP_USERS_INFO_0 **)buffer, num_entries);
 			break;
 		case 1:
-			u1.grui1_name = talloc_strdup(mem_ctx, group_name);
-			NT_STATUS_HAVE_NO_MEMORY(u1.grui1_name);
+			if (group_name) {
+				u1.grui1_name = talloc_strdup(mem_ctx, group_name);
+				NT_STATUS_HAVE_NO_MEMORY(u1.grui1_name);
+			} else {
+				u1.grui1_name = NULL;
+			}
 
 			u1.grui1_attributes = attributes;
 
