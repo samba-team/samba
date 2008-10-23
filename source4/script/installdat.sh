@@ -6,7 +6,7 @@ SRCDIR=$2/
 
 echo Installing dat files in $DATDIR
 
-for f in $SRCDIR/codepages/*.dat; do
+for f in $SRCDIR/../codepages/*.dat; do
 	FNAME=$DATDIR/`basename $f`
 	echo $FNAME
 	cp $f $FNAME || echo Cannot install $FNAME. Does $USER have privileges?

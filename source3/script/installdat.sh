@@ -20,7 +20,7 @@ case $0 in
 	*) mode='install' ;;    
 esac
 
-for f in $SRCDIR/codepages/*.dat; do
+for f in $SRCDIR/../codepages/*.dat; do
 	FNAME="$DESTDIR/$DATDIR/`basename $f`"
 	if test "$mode" = 'install'; then
 		echo "Installing $f as $FNAME "
