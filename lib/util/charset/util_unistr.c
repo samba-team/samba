@@ -274,7 +274,7 @@ _PUBLIC_ bool strcsequal_w(const char *s1,const char *s2)
  String replace.
  NOTE: oldc and newc must be 7 bit characters
 **/
-_PUBLIC_ void string_replace_w(char *s, char oldc, char newc)
+_PUBLIC_ void string_replace_m(char *s, char oldc, char newc)
 {
 	while (s && *s) {
 		size_t size;

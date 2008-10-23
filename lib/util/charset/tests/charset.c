@@ -80,21 +80,21 @@ static bool test_strcsequal_w(struct torture_context *tctx)
 	return true;
 }
 
-static bool test_string_replace_w(struct torture_context *tctx)
+static bool test_string_replace_m(struct torture_context *tctx)
 {
 	char data[6] = "bla";
-	string_replace_w(data, 'b', 'c');
+	string_replace_m(data, 'b', 'c');
 	torture_assert_str_equal(tctx, data, "cla", "first char replaced");
 	memcpy(data, "bab", 4);
-	string_replace_w(data, 'b', 'c');
+	string_replace_m(data, 'b', 'c');
 	torture_assert_str_equal(tctx, data, "cac", "other chars replaced");
 	memcpy(data, "bba", 4);
-	string_replace_w(data, 'b', 'c');
+	string_replace_m(data, 'b', 'c');
 	torture_assert_str_equal(tctx, data, "cca", "other chars replaced");
 	memcpy(data, "blala", 6);
-	string_replace_w(data, 'o', 'c');
+	string_replace_m(data, 'o', 'c');
 	torture_assert_str_equal(tctx, data, "blala", "no chars replaced");
-	string_replace_w(NULL, 'b', 'c');
+	string_replace_m(NULL, 'b', 'c');
 	return true;
 }
 
@@ -254,7 +254,7 @@ struct torture_suite *torture_local_charset(TALLOC_CTX *mem_ctx)
 	torture_suite_add_simple_test(suite, "strcasecmp_m", test_strcasecmp_m);
 	torture_suite_add_simple_test(suite, "strequal_w", test_strequal_w);
 	torture_suite_add_simple_test(suite, "strcsequal_w", test_strcsequal_w);
-	torture_suite_add_simple_test(suite, "string_replace_w", test_string_replace_w);
+	torture_suite_add_simple_test(suite, "string_replace_m", test_string_replace_m);
 	torture_suite_add_simple_test(suite, "strncasecmp_m", test_strncasecmp_m);
 	torture_suite_add_simple_test(suite, "next_token", test_next_token);
 	torture_suite_add_simple_test(suite, "next_token_null", test_next_token_null);

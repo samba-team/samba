@@ -9,5 +9,3 @@ PRIVATE_DEPENDENCIES = DYNCONFIG
 CHARSET_OBJ_FILES = $(addprefix $(libcharsetsrcdir)/, iconv.o charcnv.o util_unistr.o)
 
 PUBLIC_HEADERS += $(libcharsetsrcdir)/charset.h
-
-$(eval $(call proto_header_template,$(libcharsetsrcdir)/charset_proto.h,$(CHARSET_OBJ_FILES:.o=.c)))

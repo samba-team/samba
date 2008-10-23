@@ -87,7 +87,7 @@ char *strchr_m(const char *s, char c);
 size_t strlen_m_term(const char *s);
 size_t strlen_m(const char *s);
 char *alpha_strcpy(char *dest, const char *src, const char *other_safe_chars, size_t maxlength);
-void string_replace_w(char *s, char oldc, char newc);
+void string_replace_m(char *s, char oldc, char newc);
 bool strcsequal_w(const char *s1,const char *s2);
 bool strequal_w(const char *s1, const char *s2);
 int strncasecmp_m(const char *s1, const char *s2, size_t n);

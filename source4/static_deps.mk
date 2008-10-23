@@ -2,15 +2,13 @@
 # perhaps by some perl scripts run from config.status ?
 #
 $(gen_ndrsrcdir)/misc.h: idl
-$(ndrsrcdir)/libndr.h: $(ndrsrcdir)/libndr_proto.h $(gen_ndrsrcdir)/misc.h
+$(ndrsrcdir)/libndr.h: $(gen_ndrsrcdir)/misc.h
 $(dcerpcsrcdir)/dcerpc.h: $(dcerpcsrcdir)/dcerpc_proto.h
 $(authsrcdir)/credentials/credentials.h: $(authsrcdir)/credentials/credentials_proto.h
 $(libclisrcdir)/nbt/libnbt.h: $(libclisrcdir)/nbt/nbt_proto.h
-$(libcharsetsrcdir)/charset.h: $(libcharsetsrcdir)/charset_proto.h
 
 include/includes.h: \
 		include/config.h \
-		$(libcharsetsrcdir)/charset.h \
 		$(gen_ndrsrcdir)/misc.h
 
 proto::
