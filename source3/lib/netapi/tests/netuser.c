@@ -449,6 +449,10 @@ NET_API_STATUS netapitest_user(struct libnetapi_ctx *ctx,
 
 	printf("NetUser tests succeeded\n");
  out:
+	/* cleanup */
+	NetUserDel(hostname, username);
+	NetUserDel(hostname, username2);
+
 	if (status != 0) {
 		printf("NetUser testsuite failed with: %s\n",
 			libnetapi_get_error_string(ctx, status));
