@@ -408,3 +408,17 @@ bool is_address_any(const struct sockaddr *psa)
 	}
 	return false;
 }
+
+void set_sockaddr_port(struct sockaddr *psa, uint16_t port)
+{
+#if defined(HAVE_IPV6)
+	if (psa->sa_family == AF_INET6) {
+		((struct sockaddr_in6 *)psa)->sin6_port = htons(port);
+	}
+#endif
+	if (psa->sa_family == AF_INET) {
+		((struct sockaddr_in *)psa)->sin_port = htons(port);
+	}
+}
+
+

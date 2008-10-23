@@ -241,18 +241,6 @@ static int get_socket_port(int fd)
 }
 #endif
 
-void set_sockaddr_port(struct sockaddr_storage *psa, uint16 port)
-{
-#if defined(HAVE_IPV6)
-	if (psa->ss_family == AF_INET6) {
-		((struct sockaddr_in6 *)psa)->sin6_port = htons(port);
-	}
-#endif
-	if (psa->ss_family == AF_INET) {
-		((struct sockaddr_in *)psa)->sin_port = htons(port);
-	}
-}
-
 const char *client_name(int fd)
 {
 	return get_peer_name(fd,false);
