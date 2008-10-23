@@ -4,7 +4,7 @@
   svcctl interface definitions
 */
 
-import "misc.idl";
+import "misc.idl", "security.idl";
 [ uuid("367abb81-9844-35f1-ad32-98f038001003"),
   version(2.0),
   pointer_default(unique),
@@ -227,6 +227,9 @@ import "misc.idl";
 
 	/*****************/
 	/* Function 0x0f */
+
+	/* Service Control Manager Bits */
+
 	typedef [bitmap32bit] bitmap {
 		SC_RIGHT_MGR_CONNECT		= 0x0001,
 		SC_RIGHT_MGR_CREATE_SERVICE	= 0x0002,
@@ -235,6 +238,23 @@ import "misc.idl";
 		SC_RIGHT_MGR_QUERY_LOCK_STATUS	= 0x0010,
 		SC_RIGHT_MGR_MODIFY_BOOT_CONFIG	= 0x0020
 	} svcctl_MgrAccessMask;
+
+	const int SC_MANAGER_READ_ACCESS =
+		(SEC_STD_READ_CONTROL			|
+		 SC_RIGHT_MGR_CONNECT			|
+		 SC_RIGHT_MGR_ENUMERATE_SERVICE		|
+		 SC_RIGHT_MGR_QUERY_LOCK_STATUS);
+
+	const int SC_MANAGER_EXECUTE_ACCESS = SC_MANAGER_READ_ACCESS;
+
+	const int SC_MANAGER_WRITE_ACCESS =
+		(SEC_STD_REQUIRED			|
+		 SC_MANAGER_READ_ACCESS			|
+		 SC_RIGHT_MGR_CREATE_SERVICE		|
+		 SC_RIGHT_MGR_LOCK			|
+		 SC_RIGHT_MGR_MODIFY_BOOT_CONFIG);
+
+	const int SC_MANAGER_ALL_ACCESS = SC_MANAGER_WRITE_ACCESS;
 
 	WERROR svcctl_OpenSCManagerW(
 		[in,unique] [string,charset(UTF16)] uint16 *MachineName,
@@ -245,6 +265,9 @@ import "misc.idl";
 
 	/*****************/
 	/* Function 0x10 */
+
+	/* Service Object Bits */
+
 	typedef [bitmap32bit] bitmap {
 		SC_RIGHT_SVC_QUERY_CONFIG		= 0x0001,
 		SC_RIGHT_SVC_CHANGE_CONFIG		= 0x0002,
@@ -256,6 +279,28 @@ import "misc.idl";
 		SC_RIGHT_SVC_INTERROGATE		= 0x0080,
 		SC_RIGHT_SVC_USER_DEFINED_CONTROL	= 0x0100
 	} svcctl_ServiceAccessMask;
+
+	const int SERVICE_READ_ACCESS =
+		(SEC_STD_READ_CONTROL			|
+		 SC_RIGHT_SVC_ENUMERATE_DEPENDENTS	|
+		 SC_RIGHT_SVC_INTERROGATE		|
+		 SC_RIGHT_SVC_QUERY_CONFIG		|
+		 SC_RIGHT_SVC_QUERY_STATUS		|
+		 SC_RIGHT_SVC_USER_DEFINED_CONTROL);
+
+	const int SERVICE_EXECUTE_ACCESS =
+		(SERVICE_READ_ACCESS 			|
+		 SC_RIGHT_SVC_START			|
+		 SC_RIGHT_SVC_STOP			|
+		 SC_RIGHT_SVC_PAUSE_CONTINUE);
+
+	const int SERVICE_WRITE_ACCESS =
+		(SEC_STD_REQUIRED			|
+		 SERVICE_READ_ACCESS			|
+		 SERVICE_EXECUTE_ACCESS			|
+		 SC_RIGHT_SVC_CHANGE_CONFIG);
+
+	const int SERVICE_ALL_ACCESS = SERVICE_WRITE_ACCESS;
 
 	WERROR svcctl_OpenServiceW(
 		[in,ref] policy_handle *scmanager_handle,
