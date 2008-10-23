@@ -357,11 +357,11 @@ struct tls_params *tls_initialise(TALLOC_CTX *mem_ctx, struct loadparm_context *
 	struct tls_params *params;
 	int ret;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
-	const char *keyfile = private_path(tmp_ctx, lp_ctx, lp_tls_keyfile(lp_ctx));
-	const char *certfile = private_path(tmp_ctx, lp_ctx, lp_tls_certfile(lp_ctx));
-	const char *cafile = private_path(tmp_ctx, lp_ctx, lp_tls_cafile(lp_ctx));
-	const char *crlfile = private_path(tmp_ctx, lp_ctx, lp_tls_crlfile(lp_ctx));
-	const char *dhpfile = private_path(tmp_ctx, lp_ctx, lp_tls_dhpfile(lp_ctx));
+	const char *keyfile = lp_tls_keyfile(tmp_ctx, lp_ctx);
+	const char *certfile = lp_tls_certfile(tmp_ctx, lp_ctx);
+	const char *cafile = lp_tls_cafile(tmp_ctx, lp_ctx);
+	const char *crlfile = lp_tls_crlfile(tmp_ctx, lp_ctx);
+	const char *dhpfile = lp_tls_dhpfile(tmp_ctx, lp_ctx);
 	void tls_cert_generate(TALLOC_CTX *, const char *, const char *, const char *);
 	params = talloc(mem_ctx, struct tls_params);
 	if (params == NULL) {

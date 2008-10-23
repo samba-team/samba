@@ -616,11 +616,6 @@ _PUBLIC_ FN_GLOBAL_INTEGER(lp_kpasswd_port, kpasswd_port)
 _PUBLIC_ FN_GLOBAL_INTEGER(lp_web_port, web_port)
 _PUBLIC_ FN_GLOBAL_STRING(lp_swat_directory, swat_directory)
 _PUBLIC_ FN_GLOBAL_BOOL(lp_tls_enabled, tls_enabled)
-_PUBLIC_ FN_GLOBAL_STRING(lp_tls_keyfile, tls_keyfile)
-_PUBLIC_ FN_GLOBAL_STRING(lp_tls_certfile, tls_certfile)
-_PUBLIC_ FN_GLOBAL_STRING(lp_tls_cafile, tls_cafile)
-_PUBLIC_ FN_GLOBAL_STRING(lp_tls_crlfile, tls_crlfile)
-_PUBLIC_ FN_GLOBAL_STRING(lp_tls_dhpfile, tls_dhpfile)
 _PUBLIC_ FN_GLOBAL_STRING(lp_share_backend, szShareBackend)
 _PUBLIC_ FN_GLOBAL_STRING(lp_sam_url, szSAM_URL)
 _PUBLIC_ FN_GLOBAL_STRING(lp_idmap_url, szIDMAP_URL)
@@ -2637,3 +2632,29 @@ void lp_smbcli_session_options(struct loadparm_context *lp_ctx,
 	options->ntlmv2_auth = lp_client_ntlmv2_auth(lp_ctx);
 	options->plaintext_auth = lp_client_plaintext_auth(lp_ctx);
 }
+
+_PUBLIC_ const char *lp_tls_keyfile(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
+{
+	return private_path(mem_ctx, lp_ctx, lp_ctx->globals->tls_keyfile);
+}
+
+_PUBLIC_ const char *lp_tls_certfile(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
+{
+	return private_path(mem_ctx, lp_ctx, lp_ctx->globals->tls_certfile);
+}
+
+_PUBLIC_ const char *lp_tls_cafile(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
+{
+	return private_path(mem_ctx, lp_ctx, lp_ctx->globals->tls_cafile);
+}
+
+_PUBLIC_ const char *lp_tls_crlfile(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
+{
+	return private_path(mem_ctx, lp_ctx, lp_ctx->globals->tls_crlfile);
+}
+
+_PUBLIC_ const char *lp_tls_dhpfile(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
+{
+	return private_path(mem_ctx, lp_ctx, lp_ctx->globals->tls_dhpfile);
+}
+
