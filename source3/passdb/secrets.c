@@ -40,7 +40,7 @@ bool global_machine_password_needs_changing;
  *
  * @note Not called by systems with a working /dev/urandom.
  */
-static void get_rand_seed(int *new_seed)
+static void get_rand_seed(void *userdata, int *new_seed)
 {
 	*new_seed = sys_getpid();
 	if (db_ctx) {
@@ -81,7 +81,7 @@ bool secrets_init(void)
 	 * This avoids a problem where systems without /dev/urandom
 	 * could send the same challenge to multiple clients
 	 */
-	set_rand_reseed_callback(get_rand_seed);
+	set_rand_reseed_callback(get_rand_seed, NULL);
 
 	/* Ensure that the reseed is done now, while we are root, etc */
 	generate_random_buffer(&dummy, sizeof(dummy));

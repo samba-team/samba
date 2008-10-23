@@ -320,7 +320,8 @@ UTIL_OBJ = ../lib/util/rbtree.o ../lib/util/signal.o ../lib/util/time.o \
 		   ../lib/util/xfile.o ../lib/util/util_strlist.o  \
 		   ../lib/util/util_file.o ../lib/util/data_blob.o \
 		   ../lib/util/util.o ../lib/util/fsusage.o \
-		   ../lib/util/params.o ../lib/util/talloc_stack.o
+		   ../lib/util/params.o ../lib/util/talloc_stack.o \
+		   ../lib/util/genrand.o 
 
 CRYPTO_OBJ = ../lib/crypto/crc32.o ../lib/crypto/md5.o \
 			 ../lib/crypto/hmacmd5.o ../lib/crypto/arcfour.o \
@@ -336,7 +337,7 @@ LIB_OBJ = $(LIBSAMBAUTIL_OBJ) $(UTIL_OBJ) $(CRYPTO_OBJ) \
 	  $(VERSION_OBJ) lib/charcnv.o lib/debug.o lib/fault.o \
 	  lib/interface.o lib/pidfile.o \
 	  lib/system.o lib/sendfile.o lib/recvfile.o lib/time.o \
-	  lib/genrand.o lib/username.o \
+	  lib/username.o \
 	  lib/util_pw.o lib/access.o lib/smbrun.o \
 	  lib/bitmap.o lib/dprintf.o $(UTIL_REG_OBJ) \
 	  lib/wins_srv.o \

@@ -575,7 +575,7 @@ void gencache_unlock_entry( const char *key );
 
 /* The following definitions come from lib/genrand.c  */
 
-void set_rand_reseed_callback(void (*fn)(int *));
+void set_rand_reseed_callback(void (*fn)(void *, int *), void *userdata);
 void set_need_random_reseed(void);
 void generate_random_buffer(uint8_t *out, int len);
 char *generate_random_str(TALLOC_CTX *mem_ctx, size_t len);
