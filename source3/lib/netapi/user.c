@@ -2916,12 +2916,13 @@ WERROR NetUserGetGroups_r(struct libnetapi_ctx *ctx,
 					rids,
 					&names,
 					&types);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (!NT_STATUS_IS_OK(status) &&
+	    !NT_STATUS_EQUAL(status, STATUS_SOME_UNMAPPED)) {
 		werr = ntstatus_to_werror(status);
 		goto done;
 	}
 
-	for (i=0; i < rid_array->count; i++) {
+	for (i=0; i < names.count; i++) {
 		status = add_GROUP_USERS_INFO_X_buffer(ctx,
 						       r->in.level,
 						       names.names[i].string,
