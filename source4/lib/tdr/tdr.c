@@ -199,40 +199,6 @@ NTSTATUS tdr_print_charset(struct tdr_print *tdr, const char *name, const char *
 }
 
 /**
-  pull a ipv4address
-*/
-NTSTATUS tdr_pull_ipv4address(struct tdr_pull *tdr, TALLOC_CTX *ctx, 
-							  const char **address)
-{
-	struct in_addr in;
-	TDR_CHECK(tdr_pull_uint32(tdr, ctx, &in.s_addr));
-	in.s_addr = htonl(in.s_addr);
-	*address = talloc_strdup(tdr, inet_ntoa(in));
-	NT_STATUS_HAVE_NO_MEMORY(*address);
-	return NT_STATUS_OK;
-}
-
-/**
-  push a ipv4address
-*/
-NTSTATUS tdr_push_ipv4address(struct tdr_push *tdr, const char **address)
-{
-	uint32_t addr = htonl(interpret_addr(*address));
-	TDR_CHECK(tdr_push_uint32(tdr, &addr));
-	return NT_STATUS_OK;
-}
-
-/**
-  print a ipv4address
-*/
-NTSTATUS tdr_print_ipv4address(struct tdr_print *tdr, const char *name, 
-			   const char **address)
-{
-	tdr->print(tdr, "%-25s: %s", name, *address);
-	return NT_STATUS_OK;
-}
-
-/**
   parse a hyper
 */
 NTSTATUS tdr_pull_hyper(struct tdr_pull *tdr, TALLOC_CTX *ctx, uint64_t *v)
