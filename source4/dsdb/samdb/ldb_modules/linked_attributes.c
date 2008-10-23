@@ -466,6 +466,9 @@ static int linked_attributes_modify(struct ldb_module *module, struct ldb_reques
 					}
 				}
 			} else {
+				/* Flag that there was a DELETE
+				 * without a value specified, so we
+				 * need to look for the old value */
 				store_el = true;
 			}
 
@@ -475,6 +478,7 @@ static int linked_attributes_modify(struct ldb_module *module, struct ldb_reques
 		if (store_el) {
 			struct ldb_message_element *search_el;
 
+			/* Fill out ac->rc only if we have to find the old values */
 			if (!ac->rc) {
 				ac->rc = talloc_zero(ac, struct replace_context);
 				if (!ac->rc) {
@@ -499,6 +503,9 @@ static int linked_attributes_modify(struct ldb_module *module, struct ldb_reques
 
 	/* both replace and delete without values are handled in the callback
 	 * after the search on the entry to be modified is performed */
+
+	/* Only bother doing a search of this entry (to find old
+	 * values) if replace or delete operations are attempted */
 	if (ac->rc) {
 		const char **attrs;
 
@@ -527,9 +534,10 @@ static int linked_attributes_modify(struct ldb_module *module, struct ldb_reques
 			ret = ldb_next_request(module, search_req);
 		}
 
+		
 	} else {
 		if (ac->ops) {
-			/* start the mod requests chain */
+			/* Jump directly to handling the modifies */
 			ret = la_do_mod_request(ac);
 		} else {
 			/* nothing to do for this module, proceed */
