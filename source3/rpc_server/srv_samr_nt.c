@@ -622,7 +622,7 @@ NTSTATUS _samr_OpenDomain(pipes_struct *p,
 		return NT_STATUS_INVALID_HANDLE;
 
 	status = access_check_samr_function(info->acc_granted,
-					    SA_RIGHT_SAM_OPEN_DOMAIN,
+					    SAMR_ACCESS_OPEN_DOMAIN,
 					    "_samr_OpenDomain" );
 
 	if ( !NT_STATUS_IS_OK(status) )
@@ -2891,7 +2891,7 @@ NTSTATUS _samr_QueryDomainInfo(pipes_struct *p,
 	}
 
 	status = access_check_samr_function(info->acc_granted,
-					    SA_RIGHT_SAM_OPEN_DOMAIN,
+					    SAMR_ACCESS_OPEN_DOMAIN,
 					    "_samr_QueryDomainInfo" );
 
 	if ( !NT_STATUS_IS_OK(status) )
@@ -3284,14 +3284,14 @@ NTSTATUS _samr_Connect(pipes_struct *p,
 	if ((info = get_samr_info_by_sid(NULL)) == NULL)
 		return NT_STATUS_NO_MEMORY;
 
-	/* don't give away the farm but this is probably ok.  The SA_RIGHT_SAM_ENUM_DOMAINS
+	/* don't give away the farm but this is probably ok.  The SAMR_ACCESS_ENUM_DOMAINS
 	   was observed from a win98 client trying to enumerate users (when configured
 	   user level access control on shares)   --jerry */
 
 	map_max_allowed_access(p->pipe_user.nt_user_token, &des_access);
 
 	se_map_generic( &des_access, &sam_generic_mapping );
-	info->acc_granted = des_access & (SA_RIGHT_SAM_ENUM_DOMAINS|SA_RIGHT_SAM_OPEN_DOMAIN);
+	info->acc_granted = des_access & (SAMR_ACCESS_ENUM_DOMAINS|SAMR_ACCESS_OPEN_DOMAIN);
 
 	/* get a (unique) handle.  open a policy on it. */
 	if (!create_policy_hnd(p, r->out.connect_handle, free_samr_info, (void *)info))
@@ -3474,11 +3474,11 @@ NTSTATUS _samr_LookupDomain(pipes_struct *p,
 	if (!find_policy_by_hnd(p, r->in.connect_handle, (void**)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
-	/* win9x user manager likes to use SA_RIGHT_SAM_ENUM_DOMAINS here.
+	/* win9x user manager likes to use SAMR_ACCESS_ENUM_DOMAINS here.
 	   Reverted that change so we will work with RAS servers again */
 
 	status = access_check_samr_function(info->acc_granted,
-					    SA_RIGHT_SAM_OPEN_DOMAIN,
+					    SAMR_ACCESS_OPEN_DOMAIN,
 					    "_samr_LookupDomain");
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -3524,7 +3524,7 @@ NTSTATUS _samr_EnumDomains(pipes_struct *p,
 		return NT_STATUS_INVALID_HANDLE;
 
 	status = access_check_samr_function(info->acc_granted,
-					    SA_RIGHT_SAM_ENUM_DOMAINS,
+					    SAMR_ACCESS_ENUM_DOMAINS,
 					    "_samr_EnumDomains");
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
