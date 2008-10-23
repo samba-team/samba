@@ -173,17 +173,46 @@ done:
 	return ret;
 }
 
+static bool create_conf_file(const char *filename)
+{
+	FILE *f;
+
+	printf("creating file\n");
+	f = sys_fopen(filename, "w");
+	if (!f) {
+		printf("failure: failed to open %s for writing: %s\n",
+		       filename, strerror(errno));
+		return false;
+	}
+
+	fprintf(f, "[global]\n");
+	fprintf(f, "\tserver string = smbconf testsuite\n");
+	fprintf(f, "\tworkgroup = SAMBA\n");
+	fprintf(f, "\tsecurity = user\n");
+
+	fclose(f);
+
+	printf("success: create file\n");
+	return true;
+}
+
 static bool torture_smbconf_txt(void)
 {
 	WERROR werr;
 	bool ret = true;
+	const char *filename = "/tmp/smb.conf.smbconf_testsuite";
 	struct smbconf_ctx *conf_ctx = NULL;
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
 
 	printf("test: text backend\n");
 
+	if (!create_conf_file(filename)) {
+		ret = false;
+		goto done;
+	}
+
 	printf("test: init\n");
-	werr = smbconf_init_txt(mem_ctx, &conf_ctx, NULL);
+	werr = smbconf_init_txt(mem_ctx, &conf_ctx, filename);
 	if (!W_ERROR_IS_OK(werr)) {
 		printf("failure: init failed: %s\n", dos_errstr(werr));
 		ret = false;
@@ -194,6 +223,14 @@ static bool torture_smbconf_txt(void)
 	ret &= test_get_includes(conf_ctx);
 
 	smbconf_shutdown(conf_ctx);
+
+	printf("unlinking file\n");
+	if (unlink(filename) != 0) {
+		printf("failure: unlink failed: %s\n", strerror(errno));
+		ret = false;
+		goto done;
+	}
+	printf("success: unlink file\n");
 
 	printf("%s: text backend\n", ret ? "success" : "failure");
 
