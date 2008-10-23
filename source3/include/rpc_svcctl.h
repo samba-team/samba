@@ -117,9 +117,6 @@
 
 #define SVC_STATUS_PROCESS_INFO                 0x00000000
 
-/* where we assume the location of the service control scripts */
-#define SVCCTL_SCRIPT_DIR  "svcctl"
-
 /* utility structures for RPCs */
 
 /*
@@ -158,26 +155,6 @@ typedef struct {
         uint32  num_actions;
         SC_ACTION *actions;
 } SERVICE_FAILURE_ACTIONS;
-
-/* 
- * dispatch table of functions to handle the =ServiceControl API
- */ 
- 
-typedef struct {
-	/* functions for enumerating subkeys and values */	
-	WERROR 	(*stop_service)( const char *service, SERVICE_STATUS *status );
-	WERROR 	(*start_service) ( const char *service );
-	WERROR 	(*service_status)( const char *service, SERVICE_STATUS *status );
-} SERVICE_CONTROL_OPS;
-
-/* structure to store the service handle information  */
-
-typedef struct _ServiceInfo {
-	uint8			type;
-	char			*name;
-	uint32			access_granted;
-	SERVICE_CONTROL_OPS	*ops;
-} SERVICE_INFO;
 
 
 /* rpc structures */
