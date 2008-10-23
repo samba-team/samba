@@ -19,7 +19,7 @@ PRIVATE_DEPENDENCIES = \
 #################################
 
 TORTURE_LOCAL_OBJ_FILES = \
-		$(torturesrcdir)/../lib/charset/tests/iconv.o \
+		$(torturesrcdir)/../../lib/util/charset/tests/iconv.o \
 		$(torturesrcdir)/../../lib/talloc/testsuite.o \
 		$(torturesrcdir)/../../lib/replace/test/getifaddrs.o \
 		$(torturesrcdir)/../../lib/replace/test/os2_delete.o \
@@ -39,7 +39,7 @@ TORTURE_LOCAL_OBJ_FILES = \
 		$(torturesrcdir)/../../lib/util/tests/file.o \
 		$(torturesrcdir)/../../lib/util/tests/genrand.o \
 		$(torturesrcdir)/../../lib/compression/testsuite.o \
-		$(torturesrcdir)/../lib/charset/tests/charset.o \
+		$(torturesrcdir)/../../lib/util/charset/tests/charset.o \
 		$(torturesrcdir)/../libcli/security/tests/sddl.o \
 		$(torturesrcdir)/../lib/tdr/testsuite.o \
 		$(torturesrcdir)/../lib/events/testsuite.o \

@@ -9,7 +9,7 @@ mkinclude auth/config.mk
 mkinclude nsswitch/config.mk
 mkinclude lib/samba3/config.mk
 mkinclude lib/socket/config.mk
-mkinclude lib/charset/config.mk
+mkinclude ../lib/util/charset/config.mk
 mkinclude lib/ldb-samba/config.mk
 mkinclude lib/tls/config.mk
 mkinclude lib/registry/config.mk

@@ -25,7 +25,7 @@
 #include "librpc/gen_ndr/ndr_drsuapi.h"
 #include "lib/ldb/include/ldb.h"
 #include "system/time.h"
-#include "lib/charset/charset.h"
+#include "../lib/util/charset/charset.h"
 #include "librpc/ndr/libndr.h"
 #include "param/param.h"
 

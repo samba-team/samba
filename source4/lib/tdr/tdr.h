@@ -21,7 +21,7 @@
 #define __TDR_H__
 
 #include <talloc.h>
-#include "charset/charset.h"
+#include "../lib/util/charset/charset.h"
 
 #define TDR_BIG_ENDIAN			0x01
 #define TDR_ALIGN2			0x02

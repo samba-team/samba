@@ -29,7 +29,7 @@
 #include <sys/time.h>
 #if _SAMBA_BUILD_ == 4
 #include "../lib/util/util.h" /* for discard_const */
-#include "lib/charset/charset.h"
+#include "../lib/util/charset/charset.h"
 #endif
 
 /*
