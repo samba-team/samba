@@ -1781,66 +1781,6 @@ NTSTATUS _samr_QueryAliasInfo(pipes_struct *p,
 	return NT_STATUS_OK;
 }
 
-#if 0
-/*******************************************************************
- samr_reply_lookup_ids
- ********************************************************************/
-
- uint32 _samr_lookup_ids(pipes_struct *p, SAMR_Q_LOOKUP_IDS *q_u, SAMR_R_LOOKUP_IDS *r_u)
-{
-    uint32 rid[MAX_SAM_ENTRIES];
-    int num_rids = q_u->num_sids1;
-
-    r_u->status = NT_STATUS_OK;
-
-    DEBUG(5,("_samr_lookup_ids: %d\n", __LINE__));
-
-    if (num_rids > MAX_SAM_ENTRIES) {
-        num_rids = MAX_SAM_ENTRIES;
-        DEBUG(5,("_samr_lookup_ids: truncating entries to %d\n", num_rids));
-    }
-
-#if 0
-    int i;
-    SMB_ASSERT_ARRAY(q_u->uni_user_name, num_rids);
-
-    for (i = 0; i < num_rids && status == 0; i++)
-    {
-        struct sam_passwd *sam_pass;
-        fstring user_name;
-
-
-        fstrcpy(user_name, unistrn2(q_u->uni_user_name[i].buffer,
-                                    q_u->uni_user_name[i].uni_str_len));
-
-        /* find the user account */
-        become_root();
-        sam_pass = get_smb21pwd_entry(user_name, 0);
-        unbecome_root();
-
-        if (sam_pass == NULL)
-        {
-            status = 0xC0000000 | NT_STATUS_NO_SUCH_USER;
-            rid[i] = 0;
-        }
-        else
-        {
-            rid[i] = sam_pass->user_rid;
-        }
-    }
-#endif
-
-    num_rids = 1;
-    rid[0] = BUILTIN_ALIAS_RID_USERS;
-
-    init_samr_r_lookup_ids(&r_u, num_rids, rid, NT_STATUS_OK);
-
-    DEBUG(5,("_samr_lookup_ids: %d\n", __LINE__));
-
-    return r_u->status;
-}
-#endif
-
 /*******************************************************************
  _samr_LookupNames
  ********************************************************************/
