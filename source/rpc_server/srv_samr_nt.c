@@ -1648,7 +1648,7 @@ NTSTATUS _samr_QueryDisplayInfo(pipes_struct *p,
 	/* calculate the total size */
 	total_data_size=num_account*struct_size;
 
-	if (num_account) {
+	if (max_entries <= num_account) {
 		status = STATUS_MORE_ENTRIES;
 	} else {
 		status = NT_STATUS_OK;
