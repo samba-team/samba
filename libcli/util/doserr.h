@@ -5,6 +5,7 @@
    Copyright (C) John H Terpstra              1996-2000
    Copyright (C) Luke Kenneth Casson Leighton 1996-2000
    Copyright (C) Paul Ashton                  1998-2000
+   Copyright (C) Gerald (Jerry) Carter        2005
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -42,6 +43,7 @@
 #define ERRnomem 8 /* Out of memory */
 #define ERRbadmem 9 /* Invalid memory block address */
 #define ERRbadenv 10 /* Invalid environment */
+#define ERRbadformat 11 /* Bad Format */
 #define ERRbadaccess 12 /* Invalid open mode */
 #define ERRbaddata 13 /* Invalid data (only from ioctl call) */
 #define ERRres 14 /* reserved */
@@ -58,6 +60,7 @@
 #define ERRfilexists 80 /* File in operation already exists */
 #define ERRinvalidparam 87
 #define ERRcannotopen 110 /* Cannot open the file specified */
+#define ERRbufferoverflow 111
 #define ERRinsufficientbuffer 122
 #define ERRinvalidname 123 /* Invalid name */
 #define ERRunknownlevel 124
@@ -138,6 +141,7 @@
 #define ERRuseMPX 250 /* temporarily unable to use raw mode, use MPX mode */
 #define ERRuseSTD 251 /* temporarily unable to use raw mode, use standard mode */
 #define ERRcontMPX 252 /* resume MPX mode */
+#define ERRbadPW /* reserved */
 #define ERRnosupport 0xFFFF
 #define ERRunknownsmb 22 /* from NT 3.5 response */
 
