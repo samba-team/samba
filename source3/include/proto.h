@@ -1507,7 +1507,7 @@ char *print_sockaddr(char *dest,
 			const struct sockaddr_storage *psa);
 char *print_canonical_sockaddr(TALLOC_CTX *ctx,
 			const struct sockaddr_storage *pss);
-void set_sockaddr_port(struct sockaddr_storage *psa, uint16 port);
+void set_sockaddr_port(struct sockaddr *psa, uint16_t port);
 const char *client_name(int fd);
 const char *client_addr(int fd, char *addr, size_t addrlen);
 const char *client_socket_addr(int fd, char *addr, size_t addr_len);
