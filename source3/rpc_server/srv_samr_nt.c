@@ -4140,20 +4140,18 @@ static NTSTATUS set_user_info_25(TALLOC_CTX *mem_ctx,
 }
 
 /*******************************************************************
- samr_SetUserInfo_internal
+ samr_SetUserInfo
  ********************************************************************/
 
-static NTSTATUS samr_SetUserInfo_internal(const char *fn_name,
-					  pipes_struct *p,
-					  struct policy_handle *user_handle,
-					  uint16_t level,
-					  union samr_UserInfo *info)
+NTSTATUS _samr_SetUserInfo(pipes_struct *p,
+			   struct samr_SetUserInfo *r)
 {
 	NTSTATUS status;
 	struct samu *pwd = NULL;
 	DOM_SID sid;
-	POLICY_HND *pol = user_handle;
-	uint16_t switch_value = level;
+	POLICY_HND *pol = r->in.user_handle;
+	union samr_UserInfo *info = r->in.info;
+	uint16_t switch_value = r->in.level;
 	uint32_t acc_granted;
 	uint32_t acc_required;
 	bool ret;
@@ -4161,7 +4159,7 @@ static NTSTATUS samr_SetUserInfo_internal(const char *fn_name,
 	uint32_t acb_info;
 	DISP_INFO *disp_info = NULL;
 
-	DEBUG(5,("%s: %d\n", fn_name, __LINE__));
+	DEBUG(5,("_samr_SetUserInfo: %d\n", __LINE__));
 
 	/* find the policy handle.  open a policy on it. */
 	if (!get_lsa_policy_samr_sid(p, pol, &sid, &acc_granted, &disp_info)) {
@@ -4191,16 +4189,16 @@ static NTSTATUS samr_SetUserInfo_internal(const char *fn_name,
 
 	status = access_check_samr_function(acc_granted,
 					    acc_required,
-					    fn_name);
+					    "_samr_SetUserInfo");
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	DEBUG(5, ("%s: sid:%s, level:%d\n",
-		  fn_name, sid_string_dbg(&sid), switch_value));
+	DEBUG(5, ("_samr_SetUserInfo: sid:%s, level:%d\n",
+		  sid_string_dbg(&sid), switch_value));
 
 	if (info == NULL) {
-		DEBUG(5, ("%s: NULL info level\n", fn_name));
+		DEBUG(5, ("_samr_SetUserInfo: NULL info level\n"));
 		return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
@@ -4234,8 +4232,7 @@ static NTSTATUS samr_SetUserInfo_internal(const char *fn_name,
 		}
 	}
 
-	DEBUG(5, ("%s: %s does%s possess sufficient rights\n",
-		  fn_name,
+	DEBUG(5, ("_samr_SetUserInfo: %s does%s possess sufficient rights\n",
 		  uidtoname(p->pipe_user.ut.uid),
 		  has_enough_rights ? "" : " not"));
 
@@ -4364,31 +4361,19 @@ static NTSTATUS samr_SetUserInfo_internal(const char *fn_name,
 }
 
 /*******************************************************************
- _samr_SetUserInfo
- ********************************************************************/
-
-NTSTATUS _samr_SetUserInfo(pipes_struct *p,
-			   struct samr_SetUserInfo *r)
-{
-	return samr_SetUserInfo_internal("_samr_SetUserInfo",
-					 p,
-					 r->in.user_handle,
-					 r->in.level,
-					 r->in.info);
-}
-
-/*******************************************************************
  _samr_SetUserInfo2
  ********************************************************************/
 
 NTSTATUS _samr_SetUserInfo2(pipes_struct *p,
 			    struct samr_SetUserInfo2 *r)
 {
-	return samr_SetUserInfo_internal("_samr_SetUserInfo2",
-					 p,
-					 r->in.user_handle,
-					 r->in.level,
-					 r->in.info);
+	struct samr_SetUserInfo q;
+
+	q.in.user_handle	= r->in.user_handle;
+	q.in.level		= r->in.level;
+	q.in.info		= r->in.info;
+
+	return _samr_SetUserInfo(p, &q);
 }
 
 /*********************************************************************
