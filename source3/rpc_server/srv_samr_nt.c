@@ -2910,14 +2910,11 @@ NTSTATUS _samr_GetGroupsForUser(pipes_struct *p,
 }
 
 /*******************************************************************
- samr_QueryDomainInfo_internal
+ _samr_QueryDomainInfo
  ********************************************************************/
 
-static NTSTATUS samr_QueryDomainInfo_internal(const char *fn_name,
-					      pipes_struct *p,
-					      struct policy_handle *handle,
-					      uint32_t level,
-					      union samr_DomainInfo **dom_info_ptr)
+NTSTATUS _samr_QueryDomainInfo(pipes_struct *p,
+			       struct samr_QueryDomainInfo *r)
 {
 	NTSTATUS status = NT_STATUS_OK;
 	struct samr_info *info = NULL;
@@ -2939,28 +2936,26 @@ static NTSTATUS samr_QueryDomainInfo_internal(const char *fn_name,
 
 	uint32 num_users=0, num_groups=0, num_aliases=0;
 
-	DEBUG(5,("%s: %d\n", fn_name, __LINE__));
+	DEBUG(5,("_samr_QueryDomainInfo: %d\n", __LINE__));
 
 	dom_info = TALLOC_ZERO_P(p->mem_ctx, union samr_DomainInfo);
 	if (!dom_info) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	*dom_info_ptr = dom_info;
-
 	/* find the policy handle.  open a policy on it. */
-	if (!find_policy_by_hnd(p, handle, (void **)(void *)&info)) {
+	if (!find_policy_by_hnd(p, r->in.domain_handle, (void **)(void *)&info)) {
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
 	status = access_check_samr_function(info->acc_granted,
 					    SA_RIGHT_SAM_OPEN_DOMAIN,
-					    "_samr_QueryDomainInfo_internal" );
+					    "_samr_QueryDomainInfo" );
 
 	if ( !NT_STATUS_IS_OK(status) )
 		return status;
 
-	switch (level) {
+	switch (r->in.level) {
 		case 0x01:
 
 			become_root();
@@ -3136,23 +3131,11 @@ static NTSTATUS samr_QueryDomainInfo_internal(const char *fn_name,
             		return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
-	DEBUG(5,("%s: %d\n", fn_name, __LINE__));
+	*r->out.info = dom_info;
+
+	DEBUG(5,("_samr_QueryDomainInfo: %d\n", __LINE__));
 
 	return status;
-}
-
-/*******************************************************************
- _samr_QueryDomainInfo
- ********************************************************************/
-
-NTSTATUS _samr_QueryDomainInfo(pipes_struct *p,
-			       struct samr_QueryDomainInfo *r)
-{
-	return samr_QueryDomainInfo_internal("_samr_QueryDomainInfo",
-					     p,
-					     r->in.domain_handle,
-					     r->in.level,
-					     r->out.info);
 }
 
 /* W2k3 seems to use the same check for all 3 objects that can be created via
@@ -5682,11 +5665,14 @@ NTSTATUS _samr_RemoveMemberFromForeignDomain(pipes_struct *p,
 NTSTATUS _samr_QueryDomainInfo2(pipes_struct *p,
 				struct samr_QueryDomainInfo2 *r)
 {
-	return samr_QueryDomainInfo_internal("_samr_QueryDomainInfo2",
-					     p,
-					     r->in.domain_handle,
-					     r->in.level,
-					     r->out.info);
+	struct samr_QueryDomainInfo q;
+
+	q.in.domain_handle	= r->in.domain_handle;
+	q.in.level		= r->in.level;
+
+	q.out.info		= r->out.info;
+
+	return _samr_QueryDomainInfo(p, &q);
 }
 
 /*******************************************************************
