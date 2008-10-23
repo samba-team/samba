@@ -22,7 +22,6 @@
 /* This is the interface to the rpcecho pipe. */
 
 #include "includes.h"
-#include "nterr.h"
 
 #ifdef DEVELOPER
 

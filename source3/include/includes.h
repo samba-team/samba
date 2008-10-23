@@ -590,12 +590,11 @@ struct smb_iconv_convenience *lp_iconv_convenience(void *lp_ctx);
 #define talloc_get_type_abort(ptr, type) \
 	(type *)talloc_check_name_abort(ptr, #type)
 
-#include "nt_status.h"
 #include "ads.h"
 #include "ads_dns.h"
 #include "interfaces.h"
 #include "trans2.h"
-#include "nterr.h"
+#include "../libcli/util/error.h"
 #include "ntioctl.h"
 #include "charset.h"
 #include "dynconfig.h"

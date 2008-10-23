@@ -1000,7 +1000,7 @@ static WERROR check_ads_config( void )
 		d_printf("Our netbios name can be at most 15 chars long, "
 			 "\"%s\" is %u chars long\n", global_myname(),
 			 (unsigned int)strlen(global_myname()));
-		return WERR_INVALID_COMPUTER_NAME;
+		return WERR_INVALID_COMPUTERNAME;
 	}
 
 	if ( lp_security() == SEC_ADS && !*lp_realm()) {
