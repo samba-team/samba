@@ -38,10 +38,10 @@
 
 #define SAMR_USR_RIGHTS_WRITE_PW \
 		( READ_CONTROL_ACCESS		| \
-		  SA_RIGHT_USER_CHANGE_PASSWORD	| \
-		  SA_RIGHT_USER_SET_LOC_COM )
+		  SAMR_USER_ACCESS_CHANGE_PASSWORD	| \
+		  SAMR_USER_ACCESS_SET_LOC_COM)
 #define SAMR_USR_RIGHTS_CANT_WRITE_PW \
-		( READ_CONTROL_ACCESS | SA_RIGHT_USER_SET_LOC_COM )
+		( READ_CONTROL_ACCESS | SAMR_USER_ACCESS_SET_LOC_COM )
 
 #define DISP_INFO_CACHE_TIMEOUT 10
 
@@ -91,7 +91,7 @@ static const struct generic_mapping usr_generic_mapping = {
 static const struct generic_mapping usr_nopwchange_generic_mapping = {
 	GENERIC_RIGHTS_USER_READ,
 	GENERIC_RIGHTS_USER_WRITE,
-	GENERIC_RIGHTS_USER_EXECUTE & ~SA_RIGHT_USER_CHANGE_PASSWORD,
+	GENERIC_RIGHTS_USER_EXECUTE & ~SAMR_USER_ACCESS_CHANGE_PASSWORD,
 	GENERIC_RIGHTS_USER_ALL_ACCESS};
 static const struct generic_mapping grp_generic_mapping = {
 	GENERIC_RIGHTS_GROUP_READ,
@@ -791,7 +791,7 @@ NTSTATUS _samr_SetSecurity(pipes_struct *p,
 		if (sid_equal(&pol_sid, &dacl->aces[i].trustee)) {
 			ret = pdb_set_pass_can_change(sampass,
 				(dacl->aces[i].access_mask &
-				 SA_RIGHT_USER_CHANGE_PASSWORD) ?
+				 SAMR_USER_ACCESS_CHANGE_PASSWORD) ?
 						      True: False);
 			break;
 		}
@@ -803,7 +803,7 @@ NTSTATUS _samr_SetSecurity(pipes_struct *p,
 	}
 
 	status = access_check_samr_function(acc_granted,
-					    SA_RIGHT_USER_SET_ATTRIBUTES,
+					    SAMR_USER_ACCESS_SET_ATTRIBUTES,
 					    "_samr_SetSecurity");
 	if (NT_STATUS_IS_OK(status)) {
 		become_root();
@@ -2824,7 +2824,7 @@ NTSTATUS _samr_GetGroupsForUser(pipes_struct *p,
 		return NT_STATUS_INVALID_HANDLE;
 
 	result = access_check_samr_function(acc_granted,
-					    SA_RIGHT_USER_GET_GROUPS,
+					    SAMR_USER_ACCESS_GET_GROUPS,
 					    "_samr_GetGroupsForUser");
 	if (!NT_STATUS_IS_OK(result)) {
 		return result;
@@ -4169,9 +4169,9 @@ NTSTATUS _samr_SetUserInfo(pipes_struct *p,
 	}
 
 	/* This is tricky.  A WinXP domain join sets
-	  (SA_RIGHT_USER_SET_PASSWORD|SA_RIGHT_USER_SET_ATTRIBUTES|SA_RIGHT_USER_ACCT_FLAGS_EXPIRY)
+	  (SAMR_USER_ACCESS_SET_PASSWORD|SAMR_USER_ACCESS_SET_ATTRIBUTES|SAMR_USER_ACCESS_GET_ATTRIBUTES)
 	  The MMC lusrmgr plugin includes these perms and more in the SamrOpenUser().  But the
-	  standard Win32 API calls just ask for SA_RIGHT_USER_SET_PASSWORD in the SamrOpenUser().
+	  standard Win32 API calls just ask for SAMR_USER_ACCESS_SET_PASSWORD in the SamrOpenUser().
 	  This should be enough for levels 18, 24, 25,& 26.  Info level 23 can set more so
 	  we'll use the set from the WinXP join as the basis. */
 
@@ -4180,12 +4180,12 @@ NTSTATUS _samr_SetUserInfo(pipes_struct *p,
 	case 24:
 	case 25:
 	case 26:
-		acc_required = SA_RIGHT_USER_SET_PASSWORD;
+		acc_required = SAMR_USER_ACCESS_SET_PASSWORD;
 		break;
 	default:
-		acc_required = SA_RIGHT_USER_SET_PASSWORD |
-			       SA_RIGHT_USER_SET_ATTRIBUTES |
-			       SA_RIGHT_USER_ACCT_FLAGS_EXPIRY;
+		acc_required = SAMR_USER_ACCESS_SET_PASSWORD |
+			       SAMR_USER_ACCESS_SET_ATTRIBUTES |
+			       SAMR_USER_ACCESS_GET_ATTRIBUTES;
 		break;
 	}
 
