@@ -4480,7 +4480,7 @@ NTSTATUS _samr_QueryGroupMember(pipes_struct *p,
 		return NT_STATUS_INVALID_HANDLE;
 
 	status = access_check_samr_function(acc_granted,
-					    SA_RIGHT_GROUP_GET_MEMBERS,
+					    SAMR_GROUP_ACCESS_GET_MEMBERS,
 					    "_samr_QueryGroupMember");
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -4644,7 +4644,7 @@ NTSTATUS _samr_AddGroupMember(pipes_struct *p,
 		return NT_STATUS_INVALID_HANDLE;
 
 	status = access_check_samr_function(acc_granted,
-					    SA_RIGHT_GROUP_ADD_MEMBER,
+					    SAMR_GROUP_ACCESS_ADD_MEMBER,
 					    "_samr_AddGroupMember");
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -4704,7 +4704,7 @@ NTSTATUS _samr_DeleteGroupMember(pipes_struct *p,
 		return NT_STATUS_INVALID_HANDLE;
 
 	status = access_check_samr_function(acc_granted,
-					    SA_RIGHT_GROUP_REMOVE_MEMBER,
+					    SAMR_GROUP_ACCESS_REMOVE_MEMBER,
 					    "_samr_DeleteGroupMember");
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -5159,7 +5159,7 @@ NTSTATUS _samr_QueryGroupInfo(pipes_struct *p,
 		return NT_STATUS_INVALID_HANDLE;
 
 	status = access_check_samr_function(acc_granted,
-					    SA_RIGHT_GROUP_LOOKUP_INFO,
+					    SAMR_GROUP_ACCESS_LOOKUP_INFO,
 					    "_samr_QueryGroupInfo");
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -5265,7 +5265,7 @@ NTSTATUS _samr_SetGroupInfo(pipes_struct *p,
 		return NT_STATUS_INVALID_HANDLE;
 
 	status = access_check_samr_function(acc_granted,
-					    SA_RIGHT_GROUP_SET_INFO,
+					    SAMR_GROUP_ACCESS_SET_INFO,
 					    "_samr_SetGroupInfo");
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
