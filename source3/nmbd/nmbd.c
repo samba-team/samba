@@ -219,7 +219,7 @@ static void reload_interfaces(time_t t)
 		 * ignore it here. JRA.
 		 */
 
-		if (is_loopback_addr(&iface->ip)) {
+		if (is_loopback_addr((struct sockaddr *)&iface->ip)) {
 			DEBUG(2,("reload_interfaces: Ignoring loopback "
 				"interface %s\n",
 				print_sockaddr(str, sizeof(str), &iface->ip) ));
@@ -397,7 +397,7 @@ static void msg_nmbd_send_packet(struct messaging_context *msg,
 	}
 
 	in_addr_to_sockaddr_storage(&ss, p->ip);
-	pss = iface_ip(&ss);
+	pss = iface_ip((struct sockaddr *)&ss);
 
 	if (pss == NULL) {
 		DEBUG(2, ("Could not find ip for packet from %d\n",

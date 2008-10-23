@@ -49,11 +49,11 @@ static struct interface *iface_find(struct interface *interfaces,
 				    struct in_addr ip, bool CheckMask)
 {
 	struct interface *i;
-	if (is_zero_ip(ip)) return interfaces;
+	if (is_zero_ip_v4(ip)) return interfaces;
 
 	for (i=interfaces;i;i=i->next)
 		if (CheckMask) {
-			if (same_net(i->ip,ip,i->nmask)) return i;
+			if (same_net_v4(i->ip,ip,i->nmask)) return i;
 		} else if (i->ip.s_addr == ip.s_addr) return i;
 
 	return NULL;
@@ -173,7 +173,7 @@ static void interpret_interface(TALLOC_CTX *mem_ctx,
 	if (ip.s_addr == MKBCADDR(ip.s_addr, nmask.s_addr) ||
 	    ip.s_addr == MKNETADDR(ip.s_addr, nmask.s_addr)) {
 		for (i=0;i<total_probed;i++) {
-			if (same_net(ip, probed_ifaces[i].ip, nmask)) {
+			if (same_net_v4(ip, probed_ifaces[i].ip, nmask)) {
 				add_interface(mem_ctx, probed_ifaces[i].ip, nmask,
 					      local_interfaces);
 				talloc_free(address);
@@ -329,7 +329,7 @@ bool iface_is_local(struct interface *ifaces, const char *dest)
 */
 bool iface_same_net(const char *ip1, const char *ip2, const char *netmask)
 {
-	return same_net(interpret_addr2(ip1),
+	return same_net_v4(interpret_addr2(ip1),
 			interpret_addr2(ip2),
 			interpret_addr2(netmask));
 }

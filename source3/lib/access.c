@@ -66,7 +66,7 @@ static bool masked_match(const char *tok, const char *slash, const char *s)
 		}
         }
 
-	return same_net(&ss_host, &ss_tok, &ss_mask);
+	return same_net((struct sockaddr *)&ss_host, (struct sockaddr *)&ss_tok, (struct sockaddr *)&ss_mask);
 }
 
 /* string_match - match string s against token tok */

@@ -65,7 +65,7 @@ static struct cli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
 			continue;
 		}
 
-		if (ismyaddr(&dest_ss)) {
+		if (ismyaddr((struct sockaddr *)&dest_ss)) {
 			DEBUG(1,("Password server loop - disabling password server %s\n",desthost));
 			continue;
 		}

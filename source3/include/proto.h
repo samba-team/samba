@@ -575,7 +575,7 @@ void gencache_unlock_entry( const char *key );
 
 /* The following definitions come from lib/genrand.c  */
 
-void set_rand_reseed_callback(void (*fn)(int *));
+void set_rand_reseed_callback(void (*fn)(void *, int *), void *userdata);
 void set_need_random_reseed(void);
 void generate_random_buffer(uint8_t *out, int len);
 char *generate_random_str(TALLOC_CTX *mem_ctx, size_t len);
@@ -591,10 +591,10 @@ int smb_iconv_close (smb_iconv_t cd);
 
 /* The following definitions come from lib/interface.c  */
 
-bool ismyaddr(const struct sockaddr_storage *ip);
+bool ismyaddr(const struct sockaddr *ip);
 bool ismyip_v4(struct in_addr ip);
-bool is_local_net(const struct sockaddr_storage *from);
-void setup_linklocal_scope_id(struct sockaddr_storage *pss);
+bool is_local_net(const struct sockaddr *from);
+void setup_linklocal_scope_id(struct sockaddr *pss);
 bool is_local_net_v4(struct in_addr from);
 int iface_count(void);
 int iface_count_v4_nl(void);
@@ -604,8 +604,8 @@ const struct sockaddr_storage *iface_n_sockaddr_storage(int n);
 const struct in_addr *iface_n_ip_v4(int n);
 const struct in_addr *iface_n_bcast_v4(int n);
 const struct sockaddr_storage *iface_n_bcast(int n);
-const struct sockaddr_storage *iface_ip(const struct sockaddr_storage *ip);
-bool iface_local(const struct sockaddr_storage *ip);
+const struct sockaddr_storage *iface_ip(const struct sockaddr *ip);
+bool iface_local(const struct sockaddr *ip);
 void load_interfaces(void);
 void gfree_interfaces(void);
 bool interfaces_changed(void);
@@ -1476,29 +1476,31 @@ NTSTATUS sid_array_from_info3(TALLOC_CTX *mem_ctx,
 
 /* The following definitions come from lib/util_sock.c  */
 
+bool interpret_string_addr_internal(struct addrinfo **ppres,
+					const char *str, int flags);
 bool is_ipaddress_v4(const char *str);
 bool is_ipaddress(const char *str);
-bool is_broadcast_addr(const struct sockaddr_storage *pss);
+bool is_broadcast_addr(const struct sockaddr *pss);
 uint32 interpret_addr(const char *str);
-struct in_addr *interpret_addr2(struct in_addr *ip, const char *str);
+struct in_addr interpret_addr2(const char *str);
 bool interpret_string_addr(struct sockaddr_storage *pss,
 		const char *str,
 		int flags);
 bool is_loopback_ip_v4(struct in_addr ip);
-bool is_loopback_addr(const struct sockaddr_storage *pss);
+bool is_loopback_addr(const struct sockaddr *pss);
 bool is_zero_ip_v4(struct in_addr ip);
-bool is_zero_addr(const struct sockaddr_storage *pss);
+bool is_zero_addr(const struct sockaddr *pss);
 void zero_ip_v4(struct in_addr *ip);
 void zero_addr(struct sockaddr_storage *pss);
 bool same_net_v4(struct in_addr ip1,struct in_addr ip2,struct in_addr mask);
 void in_addr_to_sockaddr_storage(struct sockaddr_storage *ss,
 		struct in_addr ip);
-bool same_net(const struct sockaddr_storage *ip1,
-		const struct sockaddr_storage *ip2,
-		const struct sockaddr_storage *mask);
-bool addr_equal(const struct sockaddr_storage *ip1,
-		const struct sockaddr_storage *ip2);
-bool is_address_any(const struct sockaddr_storage *psa);
+bool same_net(const struct sockaddr *ip1,
+		const struct sockaddr *ip2,
+		const struct sockaddr *mask);
+bool addr_equal(const struct sockaddr *ip1,
+		const struct sockaddr *ip2);
+bool is_address_any(const struct sockaddr *psa);
 uint16_t get_sockaddr_port(const struct sockaddr_storage *pss);
 char *print_sockaddr(char *dest,
 			size_t destlen,

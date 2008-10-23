@@ -29,11 +29,11 @@ static struct interface *local_interfaces;
  Check if an IP is one of mine.
 **************************************************************************/
 
-bool ismyaddr(const struct sockaddr_storage *ip)
+bool ismyaddr(const struct sockaddr *ip)
 {
 	struct interface *i;
 	for (i=local_interfaces;i;i=i->next) {
-		if (addr_equal(&i->ip,ip)) {
+		if (addr_equal((struct sockaddr *)&i->ip,ip)) {
 			return true;
 		}
 	}
@@ -44,14 +44,14 @@ bool ismyip_v4(struct in_addr ip)
 {
 	struct sockaddr_storage ss;
 	in_addr_to_sockaddr_storage(&ss, ip);
-	return ismyaddr(&ss);
+	return ismyaddr((struct sockaddr *)&ss);
 }
 
 /****************************************************************************
  Try and find an interface that matches an ip. If we cannot, return NULL.
 **************************************************************************/
 
-static struct interface *iface_find(const struct sockaddr_storage *ip,
+static struct interface *iface_find(const struct sockaddr *ip,
 				bool check_mask)
 {
 	struct interface *i;
@@ -62,10 +62,10 @@ static struct interface *iface_find(const struct sockaddr_storage *ip,
 
 	for (i=local_interfaces;i;i=i->next) {
 		if (check_mask) {
-			if (same_net(ip, &i->ip, &i->netmask)) {
+			if (same_net(ip, (struct sockaddr *)&i->ip, (struct sockaddr *)&i->netmask)) {
 				return i;
 			}
-		} else if (addr_equal(&i->ip, ip)) {
+		} else if (addr_equal((struct sockaddr *)&i->ip, ip)) {
 			return i;
 		}
 	}
@@ -77,11 +77,11 @@ static struct interface *iface_find(const struct sockaddr_storage *ip,
  Check if a packet is from a local (known) net.
 **************************************************************************/
 
-bool is_local_net(const struct sockaddr_storage *from)
+bool is_local_net(const struct sockaddr *from)
 {
 	struct interface *i;
 	for (i=local_interfaces;i;i=i->next) {
-		if (same_net(from, &i->ip, &i->netmask)) {
+		if (same_net(from, (struct sockaddr *)&i->ip, (struct sockaddr *)&i->netmask)) {
 			return true;
 		}
 	}
@@ -89,11 +89,11 @@ bool is_local_net(const struct sockaddr_storage *from)
 }
 
 #if defined(HAVE_IPV6)
-void setup_linklocal_scope_id(struct sockaddr_storage *pss)
+void setup_linklocal_scope_id(struct sockaddr *pss)
 {
 	struct interface *i;
 	for (i=local_interfaces;i;i=i->next) {
-		if (addr_equal(&i->ip,pss)) {
+		if (addr_equal((struct sockaddr *)&i->ip,pss)) {
 			struct sockaddr_in6 *psa6 =
 				(struct sockaddr_in6 *)pss;
 			psa6->sin6_scope_id = if_nametoindex(i->name);
@@ -112,7 +112,7 @@ bool is_local_net_v4(struct in_addr from)
 	struct sockaddr_storage ss;
 
 	in_addr_to_sockaddr_storage(&ss, from);
-	return is_local_net(&ss);
+	return is_local_net((struct sockaddr *)&ss);
 }
 
 /****************************************************************************
@@ -140,7 +140,7 @@ int iface_count_v4_nl(void)
 	struct interface *i;
 
 	for (i=local_interfaces;i;i=i->next) {
-		if (is_loopback_addr(&i->ip)) {
+		if (is_loopback_addr((struct sockaddr *)&i->ip)) {
 			continue;
 		}
 		if (i->ip.ss_family == AF_INET) {
@@ -265,7 +265,7 @@ const struct sockaddr_storage *iface_n_bcast(int n)
    an appropriate interface they return the requested field of the
    first known interface. */
 
-const struct sockaddr_storage *iface_ip(const struct sockaddr_storage *ip)
+const struct sockaddr_storage *iface_ip(const struct sockaddr *ip)
 {
 	struct interface *i = iface_find(ip, true);
 	if (i) {
@@ -276,7 +276,7 @@ const struct sockaddr_storage *iface_ip(const struct sockaddr_storage *ip)
 	 * matching address family. */
 
 	for (i=local_interfaces;i;i=i->next) {
-		if (i->ip.ss_family == ip->ss_family) {
+		if (i->ip.ss_family == ip->sa_family) {
 			return &i->ip;
 		}
 	}
@@ -287,7 +287,7 @@ const struct sockaddr_storage *iface_ip(const struct sockaddr_storage *ip)
   return True if a IP is directly reachable on one of our interfaces
 */
 
-bool iface_local(const struct sockaddr_storage *ip)
+bool iface_local(const struct sockaddr *ip)
 {
 	return iface_find(ip, True) ? true : false;
 }
@@ -301,7 +301,7 @@ static void add_interface(const struct iface_struct *ifs)
 	char addr[INET6_ADDRSTRLEN];
 	struct interface *iface;
 
-	if (iface_find(&ifs->ip, False)) {
+	if (iface_find((struct sockaddr *)&ifs->ip, False)) {
 		DEBUG(3,("add_interface: not adding duplicate interface %s\n",
 			print_sockaddr(addr, sizeof(addr), &ifs->ip) ));
 		return;
@@ -388,7 +388,7 @@ static void interpret_interface(char *token)
 		}
 
 		for (i=0;i<total_probed;i++) {
-			if (addr_equal(&ss, &probed_ifaces[i].ip)) {
+			if (addr_equal((struct sockaddr *)&ss, (struct sockaddr *)&probed_ifaces[i].ip)) {
 				add_interface(&probed_ifaces[i]);
 				return;
 			}
@@ -441,9 +441,12 @@ static void interpret_interface(char *token)
 	make_net(&ss_net, &ss, &ss_mask);
 
 	/* Maybe the first component was a broadcast address. */
-	if (addr_equal(&ss_bcast, &ss) || addr_equal(&ss_net, &ss)) {
+	if (addr_equal((struct sockaddr *)&ss_bcast, (struct sockaddr *)&ss) || 
+		addr_equal((struct sockaddr *)&ss_net, (struct sockaddr *)&ss)) {
 		for (i=0;i<total_probed;i++) {
-			if (same_net(&ss, &probed_ifaces[i].ip, &ss_mask)) {
+			if (same_net((struct sockaddr *)&ss, 
+						 (struct sockaddr *)&probed_ifaces[i].ip, 
+						 (struct sockaddr *)&ss_mask)) {
 				/* Temporarily replace netmask on
 				 * the detected interface - user knows
 				 * best.... */

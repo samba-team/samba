@@ -69,7 +69,7 @@ static TALLOC_CTX *talloc_stackframe_internal(size_t poolsize)
 	TALLOC_CTX **tmp, *top, *parent;
 
 	if (talloc_stack_arraysize < talloc_stacksize + 1) {
-		tmp = TALLOC_REALLOC_ARRAY(NULL, talloc_stack, TALLOC_CTX *,
+		tmp = talloc_realloc(NULL, talloc_stack, TALLOC_CTX *,
 					   talloc_stacksize + 1);
 		if (tmp == NULL) {
 			goto fail;

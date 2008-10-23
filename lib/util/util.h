@@ -541,12 +541,14 @@ _PUBLIC_ struct in_addr interpret_addr2(const char *str);
 /**
  Check if an IP is the 0.0.0.0.
 **/
-_PUBLIC_ bool is_zero_ip(struct in_addr ip);
+_PUBLIC_ bool is_zero_ip_v4(struct in_addr ip);
 
 /**
  Are two IPs on the same subnet?
 **/
-_PUBLIC_ bool same_net(struct in_addr ip1,struct in_addr ip2,struct in_addr mask);
+_PUBLIC_ bool same_net_v4(struct in_addr ip1,struct in_addr ip2,struct in_addr mask);
+
+_PUBLIC_ bool is_ipaddress_v4(const char *str);
 
 /**
  Check if a process exists. Does this work on all unixes?

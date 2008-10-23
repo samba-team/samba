@@ -1514,7 +1514,7 @@ NTSTATUS cli_connect(struct cli_state *cli,
 		*p = 0;
 	}
 
-	if (!dest_ss || is_zero_addr(dest_ss)) {
+	if (!dest_ss || is_zero_addr((struct sockaddr *)dest_ss)) {
 		NTSTATUS status =resolve_name_list(frame,
 					cli->desthost,
 					name_type,
