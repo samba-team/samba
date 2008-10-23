@@ -1,5 +1,5 @@
-#ifndef ___LIB_UTIL_ASN1_PROTO_H__
-#define ___LIB_UTIL_ASN1_PROTO_H__
+#ifndef _____LIB_UTIL_ASN1_PROTO_H__
+#define _____LIB_UTIL_ASN1_PROTO_H__
 
 #undef _PRINTF_ATTRIBUTE
 #define _PRINTF_ATTRIBUTE(a1, a2) PRINTF_ATTRIBUTE(a1, a2)
@@ -10,7 +10,7 @@
  * used outside this particular subsystem! */
 
 
-/* The following definitions come from lib/util/asn1.c  */
+/* The following definitions come from ../lib/util/asn1.c  */
 
 struct asn1_data *asn1_init(TALLOC_CTX *mem_ctx);
 void asn1_free(struct asn1_data *data);
@@ -55,5 +55,5 @@ NTSTATUS asn1_full_tag(DATA_BLOB blob, uint8_t tag, size_t *packet_size);
 #undef _PRINTF_ATTRIBUTE
 #define _PRINTF_ATTRIBUTE(a1, a2)
 
-#endif /* ___LIB_UTIL_ASN1_PROTO_H__ */
+#endif /* _____LIB_UTIL_ASN1_PROTO_H__ */
 
