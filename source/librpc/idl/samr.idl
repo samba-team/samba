@@ -40,6 +40,8 @@ import "misc.idl", "lsa.idl", "security.idl";
 		ACB_NO_AUTH_DATA_REQD		= 0x00080000   /* 1 = No authorization data required */
 	} samr_AcctFlags;
 
+	/* SAM server specific access rights */
+
 	typedef [bitmap32bit] bitmap {
 		SAMR_ACCESS_CONNECT_TO_SERVER   = 0x00000001,
 		SAMR_ACCESS_SHUTDOWN_SERVER     = 0x00000002,
@@ -48,6 +50,27 @@ import "misc.idl", "lsa.idl", "security.idl";
 		SAMR_ACCESS_ENUM_DOMAINS        = 0x00000010,
 		SAMR_ACCESS_OPEN_DOMAIN         = 0x00000020
 	} samr_ConnectAccessMask;
+
+	const int SAMR_ACCESS_ALL_ACCESS = 0x0000003F;
+
+	const int GENERIC_RIGHTS_SAM_ALL_ACCESS =
+		(STANDARD_RIGHTS_REQUIRED_ACCESS	|
+		 SAMR_ACCESS_ALL_ACCESS);
+
+	const int GENERIC_RIGHTS_SAM_READ =
+		(STANDARD_RIGHTS_READ_ACCESS		|
+		 SAMR_ACCESS_ENUM_DOMAINS);
+
+	const int GENERIC_RIGHTS_SAM_WRITE =
+		(STANDARD_RIGHTS_WRITE_ACCESS		|
+		 SAMR_ACCESS_CREATE_DOMAIN		|
+		 SAMR_ACCESS_INITIALIZE_SERVER		|
+		 SAMR_ACCESS_SHUTDOWN_SERVER);
+
+	const int GENERIC_RIGHTS_SAM_EXECUTE =
+		(STANDARD_RIGHTS_EXECUTE_ACCESS		|
+		 SAMR_ACCESS_OPEN_DOMAIN		|
+		 SAMR_ACCESS_CONNECT_TO_SERVER);
 
 	typedef [bitmap32bit] bitmap {
 		SAMR_USER_ACCESS_GET_NAME_ETC             = 0x00000001,
