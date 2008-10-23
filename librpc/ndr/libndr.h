@@ -337,6 +337,11 @@ struct ndr_interface_list {
 	const struct ndr_interface_table *table;
 };
 
+/*********************************************************************
+ Map an NT error code from a NDR error code.
+*********************************************************************/
+NTSTATUS ndr_map_error2ntstatus(enum ndr_err_code ndr_err);
+
 /* FIXME: Use represent_as instead */
 struct dom_sid;
 enum ndr_err_code ndr_push_dom_sid2(struct ndr_push *ndr, int ndr_flags, const struct dom_sid *sid);

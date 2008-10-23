@@ -2290,7 +2290,8 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	SAFE_FREE(myname);
 	lp_do_global_parameter(lp_ctx, "name resolve order", "wins host bcast");
 
-	lp_do_global_parameter(lp_ctx, "fstype", FSTYPE_STRING);
+	lp_do_global_parameter(lp_ctx, "fstype", "NTFS");
+
 	lp_do_global_parameter(lp_ctx, "ntvfs handler", "unixuid default");
 	lp_do_global_parameter(lp_ctx, "max connections", "-1");
 

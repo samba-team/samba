@@ -934,7 +934,7 @@ static int cmd_more(struct smbclient_context *ctx, const char **args)
 
 	pager=getenv("PAGER");
 
-	pager_cmd = talloc_asprintf(ctx, "%s %s",(pager? pager:PAGER), lname);
+	pager_cmd = talloc_asprintf(ctx, "%s %s",(pager? pager:DEFAULT_PAGER), lname);
 	system(pager_cmd);
 	unlink(lname);
 	
