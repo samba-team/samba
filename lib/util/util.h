@@ -44,6 +44,7 @@ extern const char *panic_action;
 #include "../lib/util/xfile.h"
 #include "../lib/util/mutex.h"
 #include "../lib/util/byteorder.h"
+#include "../lib/util/talloc_stack.h"
 
 /**
  * assert macros 

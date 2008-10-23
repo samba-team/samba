@@ -172,7 +172,7 @@ WERROR smbconf_create_share(struct smbconf_ctx *ctx,
 			    const char *servicename)
 {
 	if ((servicename != NULL) && smbconf_share_exists(ctx, servicename)) {
-		return WERR_ALREADY_EXISTS;
+		return WERR_FILE_EXISTS;
 	}
 
 	return ctx->ops->create_share(ctx, servicename);

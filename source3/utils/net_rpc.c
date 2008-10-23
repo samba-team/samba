@@ -3126,7 +3126,7 @@ static NTSTATUS rpc_share_migrate_shares_internals(struct net_context *c,
 						      &parm_error,
 						      &result);
 
-                if (W_ERROR_V(result) == W_ERROR_V(WERR_ALREADY_EXISTS)) {
+                if (W_ERROR_V(result) == W_ERROR_V(WERR_FILE_EXISTS)) {
 			printf("           [%s] does already exist\n",
 				info502.name);
 			continue;

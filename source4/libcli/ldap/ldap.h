@@ -18,8 +18,8 @@
    
 */
 
-#ifndef _SMB_LDAP_H
-#define _SMB_LDAP_H
+#ifndef _SMB_LDAP_H_
+#define _SMB_LDAP_H_
 
 #include "lib/ldb/include/ldb.h"
 #include "librpc/gen_ndr/misc.h"
@@ -258,4 +258,4 @@ struct ldap_message *new_ldap_message(TALLOC_CTX *mem_ctx);
 NTSTATUS ldap_decode(struct asn1_data *data, struct ldap_message *msg);
 bool ldap_encode(struct ldap_message *msg, DATA_BLOB *result, TALLOC_CTX *mem_ctx);
 
-#endif
+#endif 

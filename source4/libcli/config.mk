@@ -5,7 +5,7 @@ mkinclude wbclient/config.mk
 
 [SUBSYSTEM::LIBSAMBA-ERRORS]
 
-LIBSAMBA-ERRORS_OBJ_FILES = $(addprefix ../libcli/util/, doserr.o errormap.o nterr.o)
+LIBSAMBA-ERRORS_OBJ_FILES = $(addprefix ../libcli/util/, doserr.o ) $(libclisrcdir)/util/errormap.o $(libclisrcdir)/util/nterr.o
 
 PUBLIC_HEADERS += $(addprefix ../libcli/util/, error.h ntstatus.h doserr.h werror.h)
 

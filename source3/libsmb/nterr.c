@@ -653,7 +653,7 @@ const char *nt_errstr(NTSTATUS nt_code)
 	char *result;
 
 #ifdef HAVE_LDAP
-        if (NT_STATUS_TYPE(nt_code) == NT_STATUS_TYPE_LDAP) {
+        if (NT_STATUS_IS_LDAP(nt_code)) {
                 return ldap_err2string(NT_STATUS_LDAP_CODE(nt_code));
 	}
 #endif
@@ -718,7 +718,7 @@ const char *get_nt_error_c_code(NTSTATUS nt_code)
  Returns the NT_STATUS constant matching the string supplied (as an NTSTATUS)
  *****************************************************************************/
 
-NTSTATUS nt_status_string_to_code(char *nt_status_str)
+NTSTATUS nt_status_string_to_code(const char *nt_status_str)
 {
         int idx = 0;
 

@@ -23,7 +23,7 @@
 #include "tdb.h"
 
 #include "talloc.h" /* for tdb_wrap_open() */
-#include "nt_status.h" /* for map_nt_error_from_tdb() */
+#include "../libcli/util/ntstatus.h" /* for map_nt_error_from_tdb() */
 
 /* single node of a list returned by tdb_search_keys */
 typedef struct keys_node 

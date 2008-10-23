@@ -208,7 +208,7 @@ static WERROR smbconf_reg_create_service_key(TALLOC_CTX *mem_ctx,
 			     REG_KEY_WRITE, newkey, &action);
 	if (W_ERROR_IS_OK(werr) && (action != REG_CREATED_NEW_KEY)) {
 		DEBUG(10, ("Key '%s' already exists.\n", subkeyname));
-		werr = WERR_ALREADY_EXISTS;
+		werr = WERR_FILE_EXISTS;
 	}
 	if (!W_ERROR_IS_OK(werr)) {
 		DEBUG(5, ("Error creating key %s: %s\n",

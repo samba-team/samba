@@ -387,7 +387,7 @@ print CONF "
 	## create a test account
 	##
 
-	open(PWD, "|".$self->binpath("smbpasswd")." -c $conffile -L -s -a $username");
+	open(PWD, "|".$self->binpath("smbpasswd")." -c $conffile -L -s -a $username >/dev/null");
 	print PWD "$password\n$password\n";
 	close(PWD) or die("Unable to set password for test account");
 

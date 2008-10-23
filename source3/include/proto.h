@@ -3213,7 +3213,7 @@ int name_len(char *s1);
 const char *nt_errstr(NTSTATUS nt_code);
 const char *get_friendly_nt_error_msg(NTSTATUS nt_code);
 const char *get_nt_error_c_code(NTSTATUS nt_code);
-NTSTATUS nt_status_string_to_code(char *nt_status_str);
+NTSTATUS nt_status_string_to_code(const char *nt_status_str);
 NTSTATUS nt_status_squash(NTSTATUS nt_status);
 
 /* The following definitions come from libsmb/ntlm_check.c  */
