@@ -52,6 +52,14 @@ bool smbconf_backend_requires_messaging(struct smbconf_ctx *ctx)
 }
 
 /**
+ * Tell whether the source is writeable.
+ */
+bool smbconf_is_writeable(struct smbconf_ctx *ctx)
+{
+	return ctx->ops->is_writeable(ctx);
+}
+
+/**
  * Close the configuration.
  */
 void smbconf_shutdown(struct smbconf_ctx *ctx)
