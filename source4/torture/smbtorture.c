@@ -365,80 +365,6 @@ const static struct torture_ui_ops std_ui_ops = {
 	.test_result = simple_test_result
 };
 
-static void subunit_init(struct torture_context *ctx) 
-{
-	/* FIXME: register segv and bus handler */
-}
-
-static void subunit_suite_start(struct torture_context *ctx,
-				struct torture_suite *suite)
-{
-}
-
-static void subunit_print_testname(struct torture_context *ctx, 
-				   struct torture_tcase *tcase,
-				   struct torture_test *test)
-{
-	if (!strcmp(tcase->name, test->name)) {
-		printf("%s", test->name);
-	} else {
-		printf("%s.%s", tcase->name, test->name);
-	}
-}
-
-static void subunit_test_start(struct torture_context *ctx, 
-			       struct torture_tcase *tcase,
-			       struct torture_test *test)
-{
-	printf("test: ");
-	subunit_print_testname(ctx, tcase, test);	
-	printf("\n");
-}
-
-static void subunit_test_result(struct torture_context *context, 
-				enum torture_result res, const char *reason)
-{
-	switch (res) {
-	case TORTURE_OK:
-		printf("success: ");
-		break;
-	case TORTURE_FAIL:
-		printf("failure: ");
-		break;
-	case TORTURE_ERROR:
-		printf("error: ");
-		break;
-	case TORTURE_SKIP:
-		printf("skip: ");
-		break;
-	}
-	subunit_print_testname(context, context->active_tcase, context->active_test);	
-
-	if (reason)
-		printf(" [\n%s\n]", reason);
-	printf("\n");
-}
-
-static void subunit_comment(struct torture_context *test,
-			    const char *comment)
-{
-	fprintf(stderr, "%s", comment);
-}
-
-static void subunit_warning(struct torture_context *test,
-			    const char *comment)
-{
-	fprintf(stderr, "WARNING!: %s\n", comment);
-}
-
-const static struct torture_ui_ops subunit_ui_ops = {
-	.init = subunit_init,
-	.comment = subunit_comment,
-	.warning = subunit_warning,
-	.test_start = subunit_test_start,
-	.test_result = subunit_test_result,
-	.suite_start = subunit_suite_start
-};
 
 static void quiet_suite_start(struct torture_context *ctx,
 			      struct torture_suite *suite)
@@ -693,7 +619,7 @@ int main(int argc,char *argv[])
 	if (!strcmp(ui_ops_name, "simple")) {
 		ui_ops = &std_ui_ops;
 	} else if (!strcmp(ui_ops_name, "subunit")) {
-		ui_ops = &subunit_ui_ops;
+		ui_ops = &torture_subunit_ui_ops;
 	} else if (!strcmp(ui_ops_name, "quiet")) {
 		ui_ops = &quiet_ui_ops;
 	} else {

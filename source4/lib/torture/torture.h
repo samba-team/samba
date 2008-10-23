@@ -393,4 +393,6 @@ bool torture_suite_init_tcase(struct torture_suite *suite,
 struct torture_context *torture_context_init(struct event_context *event_ctx, 
 					     const struct torture_ui_ops *ui_ops);
 
+extern const struct torture_ui_ops torture_subunit_ui_ops;
+
 #endif /* __TORTURE_UI_H__ */

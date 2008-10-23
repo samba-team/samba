@@ -24,8 +24,11 @@
 #include "param/param.h"
 #include "system/filesys.h"
 
+/**
+ * Initialize a torture context
+ */
 struct torture_context *torture_context_init(struct event_context *event_ctx, 
-					     const struct torture_ui_ops *ui_ops)
+											 const struct torture_ui_ops *ui_ops)
 {
 	struct torture_context *torture = talloc_zero(event_ctx, 
 						      struct torture_context);
@@ -59,6 +62,9 @@ _PUBLIC_ NTSTATUS torture_temp_dir(struct torture_context *tctx,
 	return NT_STATUS_OK;
 }
 
+/**
+ * Comment on the status/progress of a test
+ */
 void torture_comment(struct torture_context *context, const char *comment, ...)
 {
 	va_list ap;
@@ -75,6 +81,9 @@ void torture_comment(struct torture_context *context, const char *comment, ...)
 	talloc_free(tmp);
 }
 
+/**
+ * Print a warning about the current test
+ */
 void torture_warning(struct torture_context *context, const char *comment, ...)
 {
 	va_list ap;
@@ -91,6 +100,9 @@ void torture_warning(struct torture_context *context, const char *comment, ...)
 	talloc_free(tmp);
 }
 
+/**
+ * Store the result of a torture test.
+ */
 void torture_result(struct torture_context *context, 
 		    enum torture_result result, const char *fmt, ...)
 {
@@ -108,6 +120,9 @@ void torture_result(struct torture_context *context,
 	va_end(ap);
 }
 
+/**
+ * Create a new torture suite
+ */
 struct torture_suite *torture_suite_create(TALLOC_CTX *ctx, const char *name)
 {
 	struct torture_suite *suite = talloc_zero(ctx, struct torture_suite);
@@ -119,6 +134,9 @@ struct torture_suite *torture_suite_create(TALLOC_CTX *ctx, const char *name)
 	return suite;
 }
 
+/**
+ * Set the setup() and teardown() functions for a testcase.
+ */
 void torture_tcase_set_fixture(struct torture_tcase *tcase, 
 		bool (*setup) (struct torture_context *, void **),
 		bool (*teardown) (struct torture_context *, void *))
@@ -140,6 +158,9 @@ static bool wrap_test_with_testcase_const(struct torture_context *torture_ctx,
 	return fn(torture_ctx, tcase->data, test->data);
 }
 
+/**
+ * Add a test that uses const data to a testcase
+ */
 struct torture_test *torture_tcase_add_test_const(struct torture_tcase *tcase,
 		const char *name,
 		bool (*run) (struct torture_context *, const void *tcase_data,
@@ -160,7 +181,9 @@ struct torture_test *torture_tcase_add_test_const(struct torture_tcase *tcase,
 	return test;
 }
 
-
+/**
+ * Add a new testcase
+ */
 bool torture_suite_init_tcase(struct torture_suite *suite, 
 			      struct torture_tcase *tcase, 
 			      const char *name)
@@ -189,6 +212,9 @@ struct torture_tcase *torture_suite_add_tcase(struct torture_suite *suite,
 	return tcase;
 }
 
+/**
+ * Run a torture test suite.
+ */
 bool torture_run_suite(struct torture_context *context, 
 		       struct torture_suite *suite)
 {
@@ -472,6 +498,9 @@ struct torture_tcase *torture_suite_add_simple_test(
 	return tcase;
 }
 
+/**
+ * Add a child testsuite to a testsuite.
+ */
 bool torture_suite_add_suite(struct torture_suite *suite, 
 			     struct torture_suite *child)
 {
@@ -486,7 +515,9 @@ bool torture_suite_add_suite(struct torture_suite *suite,
 	return true;
 }
 
-
+/**
+ * Find the child testsuite with the specified name.
+ */
 struct torture_suite *torture_find_suite(struct torture_suite *parent, 
 					 const char *name)
 {
