@@ -185,10 +185,13 @@ static bool read_negTokenTarg(ASN1_DATA *asn1, negTokenTarg_t *token)
 			asn1_end_tag(asn1);
 			asn1_end_tag(asn1);
 			break;
-		case ASN1_CONTEXT(1):
+		case ASN1_CONTEXT(1): {
+			const char *mech = NULL;
 			asn1_start_tag(asn1, ASN1_CONTEXT(1));
-			asn1_read_OID(asn1, NULL, &token->supportedMech);
+			asn1_read_OID(asn1, NULL, &mech);
 			asn1_end_tag(asn1);
+			token->supportedMech = CONST_DISCARD(char *, mech);
+			}
 			break;
 		case ASN1_CONTEXT(2):
 			asn1_start_tag(asn1, ASN1_CONTEXT(2));
