@@ -4,6 +4,7 @@
 #include "librpc/gen_ndr/ndr_svcctl.h"
 
 #include "librpc/gen_ndr/ndr_misc.h"
+#include "librpc/gen_ndr/ndr_security.h"
 static enum ndr_err_code ndr_push_SERVICE_LOCK_STATUS(struct ndr_push *ndr, int ndr_flags, const struct SERVICE_LOCK_STATUS *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
