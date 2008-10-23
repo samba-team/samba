@@ -5,9 +5,9 @@ mkinclude wbclient/config.mk
 
 [SUBSYSTEM::LIBSAMBA-ERRORS]
 
-LIBSAMBA-ERRORS_OBJ_FILES = $(addprefix $(libclisrcdir)/util/, doserr.o errormap.o nterr.o)
+LIBSAMBA-ERRORS_OBJ_FILES = $(addprefix ../libcli/util/, doserr.o errormap.o nterr.o)
 
-PUBLIC_HEADERS += $(addprefix $(libclisrcdir)/, util/error.h util/ntstatus.h util/doserr.h util/werror.h)
+PUBLIC_HEADERS += $(addprefix ../libcli/util/, util/error.h util/ntstatus.h util/doserr.h util/werror.h)
 
 [SUBSYSTEM::LIBCLI_LSA]
 PUBLIC_DEPENDENCIES = RPC_NDR_LSA

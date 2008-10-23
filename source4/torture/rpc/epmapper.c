@@ -268,9 +268,7 @@ struct torture_suite *torture_rpc_epmapper(TALLOC_CTX *mem_ctx)
 											  &ndr_table_epmapper);
 
 	torture_rpc_tcase_add_test(tcase, "Lookup", test_Lookup);
-
 	torture_rpc_tcase_add_test(tcase, "Insert", test_Insert);
-
 	torture_rpc_tcase_add_test(tcase, "InqObject", test_InqObject);
 
 	return suite;
