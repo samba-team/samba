@@ -1129,7 +1129,7 @@ static bool do_nodestatus(struct messaging_context *msg_ctx,
 
 	ZERO_STRUCT(p);
 
-	(void)interpret_addr2(&p.ip, argv[1]);
+	p.ip = interpret_addr2(argv[1]);
 	p.port = 137;
 	p.packet_type = NMB_PACKET;
 

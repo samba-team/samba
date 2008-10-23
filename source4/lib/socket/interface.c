@@ -49,7 +49,7 @@ static struct interface *iface_find(struct interface *interfaces,
 				    struct in_addr ip, bool CheckMask)
 {
 	struct interface *i;
-	if (is_zero_ip(ip)) return interfaces;
+	if (is_zero_ip_v4(ip)) return interfaces;
 
 	for (i=interfaces;i;i=i->next)
 		if (CheckMask) {

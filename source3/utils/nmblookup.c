@@ -332,7 +332,7 @@ int main(int argc,char *argv[])
 
 		if(lookup_by_ip) {
 			struct sockaddr_storage ss;
-			(void)interpret_addr2(&ip, lookup);
+			ip = interpret_addr2(lookup);
 			in_addr_to_sockaddr_storage(&ss, ip);
 			fstrcpy(lookup,"*");
 			do_node_status(ServerFD, lookup, lookup_type, &ss);

@@ -168,7 +168,8 @@ bool register_my_workgroup_and_names(void)
 					namerec = find_name_on_subnet(unicast_subnet, &nmbname, FIND_SELF_NAME);
 					if (namerec == NULL) continue;
 					for (a=0;cluster_addresses[a];a++) {
-						add_ip_to_name_record(namerec, *interpret_addr2(&ip, cluster_addresses[a]));
+						ip = interpret_addr2(cluster_addresses[a]);
+						add_ip_to_name_record(namerec, ip);
 					}
 				}
 			}

@@ -1476,11 +1476,13 @@ NTSTATUS sid_array_from_info3(TALLOC_CTX *mem_ctx,
 
 /* The following definitions come from lib/util_sock.c  */
 
+bool interpret_string_addr_internal(struct addrinfo **ppres,
+					const char *str, int flags);
 bool is_ipaddress_v4(const char *str);
 bool is_ipaddress(const char *str);
 bool is_broadcast_addr(const struct sockaddr *pss);
 uint32 interpret_addr(const char *str);
-struct in_addr *interpret_addr2(struct in_addr *ip, const char *str);
+struct in_addr interpret_addr2(const char *str);
 bool interpret_string_addr(struct sockaddr_storage *pss,
 		const char *str,
 		int flags);
