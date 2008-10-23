@@ -809,7 +809,6 @@ int main (int argc, char **argv)
 	static char *pwd_time_format = NULL;
 	static int pw_from_stdin = False;
 	struct pdb_methods *bin, *bout, *bdef;
-	char *configfile = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
 	poptContext pc;
 	struct poptOption long_options[] = {
@@ -868,9 +867,6 @@ int main (int argc, char **argv)
 		switch (opt) {
 		case 'C':
 			account_policy_value_set = True;
-			break;
-		case 's':
-			configfile = optarg;
 			break;
 		}
 	}
