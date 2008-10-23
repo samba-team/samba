@@ -248,6 +248,12 @@ static bool smbconf_txt_requires_messaging(struct smbconf_ctx *ctx)
 	return false;
 }
 
+static bool smbconf_txt_is_writeable(struct smbconf_ctx *ctx)
+{
+	/* no write support in this backend yet... */
+	return false;
+}
+
 static WERROR smbconf_txt_open(struct smbconf_ctx *ctx)
 {
 	return smbconf_txt_load_file(ctx);
@@ -610,6 +616,7 @@ static struct smbconf_ops smbconf_ops_txt = {
 	.init			= smbconf_txt_init,
 	.shutdown		= smbconf_txt_shutdown,
 	.requires_messaging	= smbconf_txt_requires_messaging,
+	.is_writeable		= smbconf_txt_is_writeable,
 	.open_conf		= smbconf_txt_open,
 	.close_conf		= smbconf_txt_close,
 	.get_csn		= smbconf_txt_get_csn,
