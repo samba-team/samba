@@ -22,7 +22,6 @@
 */
 #include "includes.h"
 #include "system/iconv.h"
-#include "param/param.h"
 
 /**
  * @file
@@ -66,7 +65,7 @@ static const char *charset_name(struct smb_iconv_convenience *ic, charset_t ch)
 /**
  re-initialize iconv conversion descriptors
 **/
-static int close_iconv(struct smb_iconv_convenience *data)
+static int close_iconv_convenience(struct smb_iconv_convenience *data)
 {
 	unsigned c1, c2;
 	for (c1=0;c1<NUM_CHARSETS;c1++) {
@@ -95,7 +94,7 @@ _PUBLIC_ struct smb_iconv_convenience *smb_iconv_convenience_init(TALLOC_CTX *me
 		return NULL;
 	}
 
-	talloc_set_destructor(ret, close_iconv);
+	talloc_set_destructor(ret, close_iconv_convenience);
 
 	ret->dos_charset = talloc_strdup(ret, dos_charset);
 	ret->unix_charset = talloc_strdup(ret, unix_charset);
