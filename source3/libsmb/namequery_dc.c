@@ -171,7 +171,7 @@ static bool rpc_dc_name(const char *domain,
 	/* Remove the entry we've already failed with (should be the PDC). */
 
 	for (i = 0; i < count; i++) {
-		if (is_zero_addr(&ip_list[i].ss))
+		if (is_zero_addr((struct sockaddr *)&ip_list[i].ss))
 			continue;
 
 		if (name_status_find(domain, 0x1c, 0x20, &ip_list[i].ss, srv_name)) {

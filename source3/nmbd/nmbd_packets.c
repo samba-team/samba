@@ -476,7 +476,7 @@ struct response_record *queue_register_name( struct subnet_record *subrec,
 		return NULL;
 
 	in_addr_to_sockaddr_storage(&ss, subrec->bcast_ip);
-	pss = iface_ip(&ss);
+	pss = iface_ip((struct sockaddr *)&ss);
 	if (!pss || pss->ss_family != AF_INET) {
 		p->locked = False;
 		free_packet(p);

@@ -73,19 +73,19 @@ bool is_ipaddress(const char *str)
 }
 
 /****************************************************************************
- Is a sockaddr_storage a broadcast address ?
+ Is a sockaddr a broadcast address ?
 ****************************************************************************/
 
-bool is_broadcast_addr(const struct sockaddr_storage *pss)
+bool is_broadcast_addr(const struct sockaddr *pss)
 {
 #if defined(HAVE_IPV6)
-	if (pss->ss_family == AF_INET6) {
+	if (pss->sa_family == AF_INET6) {
 		const struct in6_addr *sin6 =
 			&((const struct sockaddr_in6 *)pss)->sin6_addr;
 		return IN6_IS_ADDR_MULTICAST(sin6);
 	}
 #endif
-	if (pss->ss_family == AF_INET) {
+	if (pss->sa_family == AF_INET) {
 		uint32_t addr =
 		ntohl(((const struct sockaddr_in *)pss)->sin_addr.s_addr);
 		return addr == INADDR_BROADCAST;
@@ -271,19 +271,19 @@ bool is_loopback_ip_v4(struct in_addr ip)
 }
 
 /*******************************************************************
- Check if a struct sockaddr_storage is the loopback address.
+ Check if a struct sockaddr is the loopback address.
 ******************************************************************/
 
-bool is_loopback_addr(const struct sockaddr_storage *pss)
+bool is_loopback_addr(const struct sockaddr *pss)
 {
 #if defined(HAVE_IPV6)
-	if (pss->ss_family == AF_INET6) {
+	if (pss->sa_family == AF_INET6) {
 		struct in6_addr *pin6 =
 			&((struct sockaddr_in6 *)pss)->sin6_addr;
 		return IN6_IS_ADDR_LOOPBACK(pin6);
 	}
 #endif
-	if (pss->ss_family == AF_INET) {
+	if (pss->sa_family == AF_INET) {
 		struct in_addr *pin = &((struct sockaddr_in *)pss)->sin_addr;
 		return is_loopback_ip_v4(*pin);
 	}
@@ -302,19 +302,19 @@ bool is_zero_ip_v4(struct in_addr ip)
 }
 
 /*******************************************************************
- Check if a struct sockaddr_storage has an unspecified address.
+ Check if a struct sockaddr has an unspecified address.
 ******************************************************************/
 
-bool is_zero_addr(const struct sockaddr_storage *pss)
+bool is_zero_addr(const struct sockaddr *pss)
 {
 #if defined(HAVE_IPV6)
-	if (pss->ss_family == AF_INET6) {
+	if (pss->sa_family == AF_INET6) {
 		struct in6_addr *pin6 =
 			&((struct sockaddr_in6 *)pss)->sin6_addr;
 		return IN6_IS_ADDR_UNSPECIFIED(pin6);
 	}
 #endif
-	if (pss->ss_family == AF_INET) {
+	if (pss->sa_family == AF_INET) {
 		struct in_addr *pin = &((struct sockaddr_in *)pss)->sin_addr;
 		return is_zero_ip_v4(*pin);
 	}
@@ -388,17 +388,17 @@ void in_addr_to_sockaddr_storage(struct sockaddr_storage *ss,
  Are two IPs on the same subnet?
 ********************************************************************/
 
-bool same_net(const struct sockaddr_storage *ip1,
-		const struct sockaddr_storage *ip2,
-		const struct sockaddr_storage *mask)
+bool same_net(const struct sockaddr *ip1,
+		const struct sockaddr *ip2,
+		const struct sockaddr *mask)
 {
-	if (ip1->ss_family != ip2->ss_family) {
+	if (ip1->sa_family != ip2->sa_family) {
 		/* Never on the same net. */
 		return false;
 	}
 
 #if defined(HAVE_IPV6)
-	if (ip1->ss_family == AF_INET6) {
+	if (ip1->sa_family == AF_INET6) {
 		struct sockaddr_in6 ip1_6 = *(struct sockaddr_in6 *)ip1;
 		struct sockaddr_in6 ip2_6 = *(struct sockaddr_in6 *)ip2;
 		struct sockaddr_in6 mask_6 = *(struct sockaddr_in6 *)mask;
@@ -417,7 +417,7 @@ bool same_net(const struct sockaddr_storage *ip1,
 				sizeof(struct in6_addr)) == 0);
 	}
 #endif
-	if (ip1->ss_family == AF_INET) {
+	if (ip1->sa_family == AF_INET) {
 		return same_net_v4(((const struct sockaddr_in *)ip1)->sin_addr,
 				((const struct sockaddr_in *)ip2)->sin_addr,
 				((const struct sockaddr_in *)mask)->sin_addr);
@@ -426,25 +426,25 @@ bool same_net(const struct sockaddr_storage *ip1,
 }
 
 /*******************************************************************
- Are two sockaddr_storage's the same family and address ? Ignore port etc.
+ Are two sockaddr 's the same family and address ? Ignore port etc.
 ********************************************************************/
 
-bool addr_equal(const struct sockaddr_storage *ip1,
-		const struct sockaddr_storage *ip2)
+bool addr_equal(const struct sockaddr *ip1,
+		const struct sockaddr *ip2)
 {
-	if (ip1->ss_family != ip2->ss_family) {
+	if (ip1->sa_family != ip2->sa_family) {
 		/* Never the same. */
 		return false;
 	}
 
 #if defined(HAVE_IPV6)
-	if (ip1->ss_family == AF_INET6) {
+	if (ip1->sa_family == AF_INET6) {
 		return (memcmp(&((const struct sockaddr_in6 *)ip1)->sin6_addr,
 				&((const struct sockaddr_in6 *)ip2)->sin6_addr,
 				sizeof(struct in6_addr)) == 0);
 	}
 #endif
-	if (ip1->ss_family == AF_INET) {
+	if (ip1->sa_family == AF_INET) {
 		return (memcmp(&((const struct sockaddr_in *)ip1)->sin_addr,
 				&((const struct sockaddr_in *)ip2)->sin_addr,
 				sizeof(struct in_addr)) == 0);
@@ -456,10 +456,10 @@ bool addr_equal(const struct sockaddr_storage *ip1,
  Is an IP address the INADDR_ANY or in6addr_any value ?
 ****************************************************************************/
 
-bool is_address_any(const struct sockaddr_storage *psa)
+bool is_address_any(const struct sockaddr *psa)
 {
 #if defined(HAVE_IPV6)
-	if (psa->ss_family == AF_INET6) {
+	if (psa->sa_family == AF_INET6) {
 		struct sockaddr_in6 *si6 = (struct sockaddr_in6 *)psa;
 		if (memcmp(&in6addr_any,
 				&si6->sin6_addr,
@@ -469,7 +469,7 @@ bool is_address_any(const struct sockaddr_storage *psa)
 		return false;
 	}
 #endif
-	if (psa->ss_family == AF_INET) {
+	if (psa->sa_family == AF_INET) {
 		struct sockaddr_in *si = (struct sockaddr_in *)psa;
 		if (si->sin_addr.s_addr == INADDR_ANY) {
 			return true;
@@ -508,13 +508,13 @@ uint16_t get_sockaddr_port(const struct sockaddr_storage *pss)
 
 static char *print_sockaddr_len(char *dest,
 			size_t destlen,
-			const struct sockaddr_storage *psa,
+			const struct sockaddr *psa,
 			socklen_t psalen)
 {
 	if (destlen > 0) {
 		dest[0] = '\0';
 	}
-	(void)sys_getnameinfo((const struct sockaddr *)psa,
+	(void)sys_getnameinfo(psa,
 			psalen,
 			dest, destlen,
 			NULL, 0,
@@ -530,7 +530,7 @@ char *print_sockaddr(char *dest,
 			size_t destlen,
 			const struct sockaddr_storage *psa)
 {
-	return print_sockaddr_len(dest, destlen, psa,
+	return print_sockaddr_len(dest, destlen, (struct sockaddr *)psa,
 			sizeof(struct sockaddr_storage));
 }
 
@@ -596,7 +596,7 @@ static const char *get_socket_addr(int fd, char *addr_buf, size_t addr_len)
 		return addr_buf;
 	}
 
-	return print_sockaddr_len(addr_buf, addr_len, &sa, length);
+	return print_sockaddr_len(addr_buf, addr_len, (struct sockaddr *)&sa, length);
 }
 
 #if 0
@@ -1313,7 +1313,7 @@ int open_socket_out(int type,
 		psa6->sin6_port = htons(port);
 		if (psa6->sin6_scope_id == 0 &&
 				IN6_IS_ADDR_LINKLOCAL(&psa6->sin6_addr)) {
-			setup_linklocal_scope_id(&sock_out);
+			setup_linklocal_scope_id((struct sockaddr *)&sock_out);
 		}
 	}
 #endif
@@ -1583,7 +1583,7 @@ int open_udp_socket(const char *host, int port)
 static const char *get_peer_addr_internal(int fd,
 				char *addr_buf,
 				size_t addr_buf_len,
-				struct sockaddr_storage *pss,
+				struct sockaddr *pss,
 				socklen_t *plength)
 {
 	struct sockaddr_storage ss;
@@ -1596,9 +1596,7 @@ static const char *get_peer_addr_internal(int fd,
 	}
 
 	if (pss == NULL) {
-		pss = &ss;
-	}
-	if (plength == NULL) {
+		pss = (struct sockaddr *)&ss;
 		plength = &length;
 	}
 
@@ -1621,7 +1619,7 @@ static const char *get_peer_addr_internal(int fd,
 ******************************************************************/
 
 static bool matchname(const char *remotehost,
-		const struct sockaddr_storage *pss,
+		const struct sockaddr *pss,
 		socklen_t len)
 {
 	struct addrinfo *res = NULL;
@@ -1659,8 +1657,8 @@ static bool matchname(const char *remotehost,
 		if (!res->ai_addr) {
 			continue;
 		}
-		if (addr_equal((const struct sockaddr_storage *)res->ai_addr,
-					pss)) {
+		if (addr_equal((const struct sockaddr *)res->ai_addr,
+					(struct sockaddr *)pss)) {
 			freeaddrinfo(ailist);
 			return true;
 		}
@@ -1760,7 +1758,7 @@ const char *get_peer_name(int fd, bool force_lookup)
 	if (!lp_hostname_lookups() && (force_lookup == false)) {
 		length = sizeof(nc.ss);
 		nc.name = get_peer_addr_internal(fd, addr_buf, sizeof(addr_buf),
-			&nc.ss, &length);
+			(struct sockaddr *)&nc.ss, &length);
 		store_nc(&nc);
 		lookup_nc(&nc);
 		return nc.name ? nc.name : "UNKNOWN";
@@ -1769,10 +1767,10 @@ const char *get_peer_name(int fd, bool force_lookup)
 	lookup_nc(&nc);
 
 	memset(&ss, '\0', sizeof(ss));
-	p = get_peer_addr_internal(fd, addr_buf, sizeof(addr_buf), &ss, &length);
+	p = get_peer_addr_internal(fd, addr_buf, sizeof(addr_buf), (struct sockaddr *)&ss, &length);
 
 	/* it might be the same as the last one - save some DNS work */
-	if (addr_equal(&ss, &nc.ss)) {
+	if (addr_equal((struct sockaddr *)&ss, (struct sockaddr *)&nc.ss)) {
 		return nc.name ? nc.name : "UNKNOWN";
 	}
 
@@ -1797,7 +1795,7 @@ const char *get_peer_name(int fd, bool force_lookup)
 			gai_strerror(ret)));
 		strlcpy(name_buf, p, sizeof(name_buf));
 	} else {
-		if (!matchname(name_buf, &ss, length)) {
+		if (!matchname(name_buf, (struct sockaddr *)&ss, length)) {
 			DEBUG(0,("Matchname failed on %s %s\n",name_buf,p));
 			strlcpy(name_buf,"UNKNOWN",sizeof(name_buf));
 		}
@@ -2080,7 +2078,8 @@ bool is_myname_or_ipaddr(const char *s)
 			return false;
 		}
 
-		if (is_zero_addr(&ss) || is_loopback_addr(&ss)) {
+		if (is_zero_addr((struct sockaddr *)&ss) || 
+			is_loopback_addr((struct sockaddr *)&ss)) {
 			return false;
 		}
 
@@ -2091,7 +2090,7 @@ bool is_myname_or_ipaddr(const char *s)
 		}
 		n = get_interfaces(nics, MAX_INTERFACES);
 		for (i=0; i<n; i++) {
-			if (addr_equal(&nics[i].ip, &ss)) {
+			if (addr_equal((struct sockaddr *)&nics[i].ip, (struct sockaddr *)&ss)) {
 				TALLOC_FREE(nics);
 				return true;
 			}

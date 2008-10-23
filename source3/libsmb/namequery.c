@@ -381,16 +381,16 @@ bool name_status_find(const char *q_name,
   comparison function used by sort_addr_list
 */
 
-static int addr_compare(const struct sockaddr_storage *ss1,
-		const struct sockaddr_storage *ss2)
+static int addr_compare(const struct sockaddr *ss1,
+		const struct sockaddr *ss2)
 {
 	int max_bits1=0, max_bits2=0;
 	int num_interfaces = iface_count();
 	int i;
 
 	/* Sort IPv6 addresses first. */
-	if (ss1->ss_family != ss2->ss_family) {
-		if (ss2->ss_family == AF_INET) {
+	if (ss1->sa_family != ss2->sa_family) {
+		if (ss2->sa_family == AF_INET) {
 			return -1;
 		} else {
 			return 1;
@@ -408,7 +408,7 @@ static int addr_compare(const struct sockaddr_storage *ss1,
 		size_t len = 0;
 		int bits1, bits2;
 
-		if (pss->ss_family != ss1->ss_family) {
+		if (pss->ss_family != ss1->sa_family) {
 			/* Ignore interfaces of the wrong type. */
 			continue;
 		}
@@ -443,14 +443,14 @@ static int addr_compare(const struct sockaddr_storage *ss1,
 
 	/* Bias towards directly reachable IPs */
 	if (iface_local(ss1)) {
-		if (ss1->ss_family == AF_INET) {
+		if (ss1->sa_family == AF_INET) {
 			max_bits1 += 32;
 		} else {
 			max_bits1 += 128;
 		}
 	}
 	if (iface_local(ss2)) {
-		if (ss2->ss_family == AF_INET) {
+		if (ss2->sa_family == AF_INET) {
 			max_bits2 += 32;
 		} else {
 			max_bits2 += 128;
@@ -467,7 +467,7 @@ int ip_service_compare(struct ip_service *ss1, struct ip_service *ss2)
 {
 	int result;
 
-	if ((result = addr_compare(&ss1->ss, &ss2->ss)) != 0) {
+	if ((result = addr_compare((struct sockaddr *)&ss1->ss, (struct sockaddr *)&ss2->ss)) != 0) {
 		return result;
 	}
 
@@ -521,12 +521,12 @@ static int remove_duplicate_addrs2(struct ip_service *iplist, int count )
 
 	/* one loop to remove duplicates */
 	for ( i=0; i<count; i++ ) {
-		if ( is_zero_addr(&iplist[i].ss)) {
+		if ( is_zero_addr((struct sockaddr *)&iplist[i].ss)) {
 			continue;
 		}
 
 		for ( j=i+1; j<count; j++ ) {
-			if (addr_equal(&iplist[i].ss, &iplist[j].ss) &&
+			if (addr_equal((struct sockaddr *)&iplist[i].ss, (struct sockaddr *)&iplist[j].ss) &&
 					iplist[i].port == iplist[j].port) {
 				zero_addr(&iplist[j].ss);
 			}
@@ -536,7 +536,7 @@ static int remove_duplicate_addrs2(struct ip_service *iplist, int count )
 	/* one loop to clean up any holes we left */
 	/* first ip should never be a zero_ip() */
 	for (i = 0; i<count; ) {
-		if (is_zero_addr(&iplist[i].ss) ) {
+		if (is_zero_addr((struct sockaddr *)&iplist[i].ss) ) {
 			if (i != count-1) {
 				memmove(&iplist[i], &iplist[i+1],
 					(count - i - 1)*sizeof(iplist[i]));
@@ -1403,7 +1403,7 @@ static NTSTATUS resolve_ads(const char *name,
 		 * for falling back to netbios lookups is that our DNS server
 		 * doesn't know anything about the DC's   -- jerry */
 
-		if (!is_zero_addr(&r->ss)) {
+		if (!is_zero_addr((struct sockaddr *)&r->ss)) {
 			(*return_count)++;
 		}
 	}
@@ -1632,8 +1632,8 @@ bool resolve_name(const char *name,
 
 		/* only return valid addresses for TCP connections */
 		for (i=0; i<count; i++) {
-			if (!is_zero_addr(&ss_list[i].ss) &&
-					!is_broadcast_addr(&ss_list[i].ss)) {
+			if (!is_zero_addr((struct sockaddr *)&ss_list[i].ss) &&
+					!is_broadcast_addr((struct sockaddr *)&ss_list[i].ss)) {
 				*return_ss = ss_list[i].ss;
 				SAFE_FREE(ss_list);
 				SAFE_FREE(sitename);
@@ -1696,8 +1696,8 @@ NTSTATUS resolve_name_list(TALLOC_CTX *ctx,
 
 	/* only return valid addresses for TCP connections */
 	for (i=0, num_entries = 0; i<count; i++) {
-		if (!is_zero_addr(&ss_list[i].ss) &&
-				!is_broadcast_addr(&ss_list[i].ss)) {
+		if (!is_zero_addr((struct sockaddr *)&ss_list[i].ss) &&
+				!is_broadcast_addr((struct sockaddr *)&ss_list[i].ss)) {
 			num_entries++;
 		}
 	}
@@ -1715,8 +1715,8 @@ NTSTATUS resolve_name_list(TALLOC_CTX *ctx,
 	}
 
 	for (i=0, num_entries = 0; i<count; i++) {
-		if (!is_zero_addr(&ss_list[i].ss) &&
-				!is_broadcast_addr(&ss_list[i].ss)) {
+		if (!is_zero_addr((struct sockaddr *)&ss_list[i].ss) &&
+				!is_broadcast_addr((struct sockaddr *)&ss_list[i].ss)) {
 			(*return_ss_arr)[num_entries++] = ss_list[i].ss;
 		}
 	}

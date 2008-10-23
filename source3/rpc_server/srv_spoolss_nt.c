@@ -2573,13 +2573,13 @@ static bool spoolss_connect_to_client(struct rpc_pipe_client **pp_pipe,
 	struct cli_state *the_cli;
 	struct sockaddr_storage rm_addr;
 
-	if ( is_zero_addr(client_ss) ) {
+	if ( is_zero_addr((struct sockaddr *)client_ss) ) {
 		if ( !resolve_name( remote_machine, &rm_addr, 0x20) ) {
 			DEBUG(2,("spoolss_connect_to_client: Can't resolve address for %s\n", remote_machine));
 			return False;
 		}
 
-		if (ismyaddr(&rm_addr)) {
+		if (ismyaddr((struct sockaddr *)&rm_addr)) {
 			DEBUG(0,("spoolss_connect_to_client: Machine %s is one of our addresses. Cannot add to ourselves.\n", remote_machine));
 			return False;
 		}

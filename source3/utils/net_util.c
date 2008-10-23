@@ -406,7 +406,7 @@ bool net_find_server(struct net_context *c,
 			return false;
 		}
 
-		if (is_zero_addr(&pdc_ss)) {
+		if (is_zero_addr((struct sockaddr *)&pdc_ss)) {
 			return false;
 		}
 
@@ -463,7 +463,7 @@ bool net_find_pdc(struct sockaddr_storage *server_ss,
 	if (!get_pdc_ip(domain_name, server_ss)) {
 		return false;
 	}
-	if (is_zero_addr(server_ss)) {
+	if (is_zero_addr((struct sockaddr *)server_ss)) {
 		return false;
 	}
 

@@ -93,7 +93,7 @@ void process_logon_packet(struct packet_struct *p, char *buf,int len,
 	struct in_addr ip;
 
 	in_addr_to_sockaddr_storage(&ss, p->ip);
-	pss = iface_ip(&ss);
+	pss = iface_ip((struct sockaddr *)&ss);
 	if (!pss) {
 		DEBUG(5,("process_logon_packet:can't find outgoing interface "
 			"for packet from IP %s\n",
