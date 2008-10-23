@@ -25,7 +25,7 @@ interface krb5pac
 		[flag(NDR_REMAINING)] DATA_BLOB signature;
 	} PAC_SIGNATURE_DATA;
 
-	typedef [gensize] struct {
+	typedef struct {
 		netr_SamInfo3 info3;
 		dom_sid2 *res_group_dom_sid;
 		samr_RidWithAttributeArray res_groups;

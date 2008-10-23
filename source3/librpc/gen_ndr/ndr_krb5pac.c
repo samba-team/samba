@@ -161,11 +161,6 @@ _PUBLIC_ void ndr_print_PAC_LOGON_INFO(struct ndr_print *ndr, const char *name, 
 	ndr->depth--;
 }
 
-static size_t ndr_size_PAC_LOGON_INFO(const struct PAC_LOGON_INFO *r, int flags)
-{
-	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_PAC_LOGON_INFO);
-}
-
 _PUBLIC_ enum ndr_err_code ndr_push_PAC_LOGON_INFO_CTR(struct ndr_push *ndr, int ndr_flags, const struct PAC_LOGON_INFO_CTR *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
