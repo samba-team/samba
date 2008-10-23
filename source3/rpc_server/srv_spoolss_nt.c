@@ -8490,7 +8490,7 @@ WERROR _spoolss_addform( pipes_struct *p, SPOOL_Q_ADDFORM *q_u, SPOOL_R_ADDFORM 
 	/* can't add if builtin */
 
 	if (get_a_builtin_ntform(&form->name,&tmpForm)) {
-		status = WERR_ALREADY_EXISTS;
+		status = WERR_FILE_EXISTS;
 		goto done;
 	}
 

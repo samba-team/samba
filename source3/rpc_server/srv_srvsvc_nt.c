@@ -1781,7 +1781,7 @@ WERROR _srvsvc_NetShareAdd(pipes_struct *p,
 
 	/* Share already exists. */
 	if (snum >= 0) {
-		return WERR_ALREADY_EXISTS;
+		return WERR_FILE_EXISTS;
 	}
 
 	/* We can only add disk shares. */
