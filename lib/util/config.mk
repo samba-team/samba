@@ -43,8 +43,6 @@ PUBLIC_HEADERS += $(addprefix $(libutilsrcdir)/, util.h \
 
 ASN1_UTIL_OBJ_FILES = $(libutilsrcdir)/asn1.o
 
-$(eval $(call proto_header_template,$(libutilsrcdir)/asn1_proto.h,$(ASN1_UTIL_OBJ_FILES:.o=.c)))
-
 [SUBSYSTEM::UNIX_PRIVS]
 
 UNIX_PRIVS_OBJ_FILES = $(libutilsrcdir)/unix_privs.o

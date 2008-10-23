@@ -52,6 +52,45 @@ typedef struct asn1_data ASN1_DATA;
 
 #define ASN1_MAX_OIDS 20
 
-#include "../lib/util/asn1_proto.h"
+struct asn1_data *asn1_init(TALLOC_CTX *mem_ctx);
+void asn1_free(struct asn1_data *data);
+bool asn1_write(struct asn1_data *data, const void *p, int len);
+bool asn1_write_uint8(struct asn1_data *data, uint8_t v);
+bool asn1_push_tag(struct asn1_data *data, uint8_t tag);
+bool asn1_pop_tag(struct asn1_data *data);
+bool asn1_write_implicit_Integer(struct asn1_data *data, int i);
+bool asn1_write_Integer(struct asn1_data *data, int i);
+bool ber_write_OID_String(DATA_BLOB *blob, const char *OID);
+bool asn1_write_OID(struct asn1_data *data, const char *OID);
+bool asn1_write_OctetString(struct asn1_data *data, const void *p, size_t length);
+bool asn1_write_LDAPString(struct asn1_data *data, const char *s);
+bool asn1_write_DATA_BLOB_LDAPString(struct asn1_data *data, const DATA_BLOB *s);
+bool asn1_write_GeneralString(struct asn1_data *data, const char *s);
+bool asn1_write_ContextSimple(struct asn1_data *data, uint8_t num, DATA_BLOB *blob);
+bool asn1_write_BOOLEAN(struct asn1_data *data, bool v);
+bool asn1_read_BOOLEAN(struct asn1_data *data, bool *v);
+bool asn1_check_BOOLEAN(struct asn1_data *data, bool v);
+bool asn1_load(struct asn1_data *data, DATA_BLOB blob);
+bool asn1_peek(struct asn1_data *data, void *p, int len);
+bool asn1_read(struct asn1_data *data, void *p, int len);
+bool asn1_read_uint8(struct asn1_data *data, uint8_t *v);
+bool asn1_peek_uint8(struct asn1_data *data, uint8_t *v);
+bool asn1_peek_tag(struct asn1_data *data, uint8_t tag);
+bool asn1_start_tag(struct asn1_data *data, uint8_t tag);
+bool asn1_end_tag(struct asn1_data *data);
+int asn1_tag_remaining(struct asn1_data *data);
+bool ber_read_OID_String(TALLOC_CTX *mem_ctx, DATA_BLOB blob, const char **OID);
+bool asn1_read_OID(struct asn1_data *data, TALLOC_CTX *mem_ctx, const char **OID);
+bool asn1_check_OID(struct asn1_data *data, const char *OID);
+bool asn1_read_LDAPString(struct asn1_data *data, TALLOC_CTX *mem_ctx, char **s);
+bool asn1_read_GeneralString(struct asn1_data *data, TALLOC_CTX *mem_ctx, char **s);
+bool asn1_read_OctetString(struct asn1_data *data, TALLOC_CTX *mem_ctx, DATA_BLOB *blob);
+bool asn1_read_ContextSimple(struct asn1_data *data, uint8_t num, DATA_BLOB *blob);
+bool asn1_read_implicit_Integer(struct asn1_data *data, int *i);
+bool asn1_read_Integer(struct asn1_data *data, int *i);
+bool asn1_read_enumerated(struct asn1_data *data, int *v);
+bool asn1_check_enumerated(struct asn1_data *data, int v);
+bool asn1_write_enumerated(struct asn1_data *data, uint8_t v);
+NTSTATUS asn1_full_tag(DATA_BLOB blob, uint8_t tag, size_t *packet_size);
 
 #endif /* _ASN_1_H */
