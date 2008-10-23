@@ -871,7 +871,7 @@ NTSTATUS _samr_QuerySecurity(pipes_struct *p,
 	status = access_check_samr_function(acc_granted,
 					    STD_RIGHT_READ_CONTROL_ACCESS,
 					    "_samr_QuerySecurity");
-	if (NT_STATUS_IS_OK(status)) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
@@ -4907,6 +4907,8 @@ NTSTATUS _samr_DeleteUser(pipes_struct *p,
 
 	if (!close_policy_hnd(p, r->in.user_handle))
 		return NT_STATUS_OBJECT_NAME_INVALID;
+
+	ZERO_STRUCTP(r->out.user_handle);
 
 	force_flush_samr_cache(disp_info);
 
