@@ -652,6 +652,17 @@ static bool smbconf_reg_requires_messaging(struct smbconf_ctx *ctx)
 	return false;
 }
 
+static bool smbconf_reg_is_writeable(struct smbconf_ctx *ctx)
+{
+	/*
+	 * The backend has write support.
+	 *
+	 *  TODO: add access checks whether the concrete
+	 *  config source is really writeable by the calling user.
+	 */
+	return true;
+}
+
 static WERROR smbconf_reg_open(struct smbconf_ctx *ctx)
 {
 	WERROR werr;
@@ -1130,6 +1141,7 @@ struct smbconf_ops smbconf_ops_reg = {
 	.init			= smbconf_reg_init,
 	.shutdown		= smbconf_reg_shutdown,
 	.requires_messaging	= smbconf_reg_requires_messaging,
+	.is_writeable		= smbconf_reg_is_writeable,
 	.open_conf		= smbconf_reg_open,
 	.close_conf		= smbconf_reg_close,
 	.get_csn		= smbconf_reg_get_csn,
