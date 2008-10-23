@@ -553,7 +553,7 @@ WERROR NetUserDel_r(struct libnetapi_ctx *ctx,
 
 	status = rpccli_samr_OpenUser(pipe_cli, ctx,
 				      &domain_handle,
-				      STD_RIGHT_DELETE_ACCESS,
+				      SEC_STD_DELETE,
 				      user_rids.ids[0],
 				      &user_handle);
 	if (!NT_STATUS_IS_OK(status)) {
