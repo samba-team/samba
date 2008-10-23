@@ -14,9 +14,9 @@ lib/ldb/include/ldb_errors.h: ldb_errors.h
 auth/gensec/gensec.h: gensec.h
 ../librpc/ndr/libndr.h: ndr.h
 lib/registry/registry.h: registry.h
-libcli/util/werror.h: core/werror.h
-libcli/util/doserr.h: core/doserr.h
-libcli/util/ntstatus.h: core/ntstatus.h
+../libcli/util/werror.h: core/werror.h
+../libcli/util/doserr.h: core/doserr.h
+../libcli/util/ntstatus.h: core/ntstatus.h
 libcli/cldap/cldap.h: cldap.h
 librpc/gen_ndr/dcerpc.h: gen_ndr/dcerpc.h
 librpc/gen_ndr/netlogon.h: gen_ndr/netlogon.h
@@ -58,7 +58,7 @@ lib/cmdline/popt_common.h: samba/popt.h
 version.h: samba/version.h
 param/param.h: param.h
 ../lib/util/asn1.h: samba/asn1.h
-libcli/util/error.h: core/error.h
+../libcli/util/error.h: core/error.h
 lib/tdb_wrap.h: tdb_wrap.h
 lib/ldb_wrap.h: ldb_wrap.h
 torture/smbtorture.h: smbtorture.h
