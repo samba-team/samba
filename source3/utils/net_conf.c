@@ -769,10 +769,16 @@ static int net_conf_setparm(struct net_context *c, struct smbconf_ctx *conf_ctx,
 		net_conf_setparm_usage(c, argc, argv);
 		goto done;
 	}
-	service = talloc_strdup(mem_ctx, argv[0]);
-	if (service == NULL) {
-		d_printf("error: out of memory!\n");
-		goto done;
+	/*
+	 * NULL service name means "dangling parameters" to libsmbconf.
+	 * We use the empty string from the command line for this purpose.
+	 */
+	if (strlen(argv[0]) != 0) {
+		service = talloc_strdup(mem_ctx, argv[0]);
+		if (service == NULL) {
+			d_printf("error: out of memory!\n");
+			goto done;
+		}
 	}
 	param = strlower_talloc(mem_ctx, argv[1]);
 	if (param == NULL) {
@@ -821,10 +827,16 @@ static int net_conf_getparm(struct net_context *c, struct smbconf_ctx *conf_ctx,
 		net_conf_getparm_usage(c, argc, argv);
 		goto done;
 	}
-	service = talloc_strdup(mem_ctx, argv[0]);
-	if (service == NULL) {
-		d_printf("error: out of memory!\n");
-		goto done;
+	/*
+	 * NULL service name means "dangling parameters" to libsmbconf.
+	 * We use the empty string from the command line for this purpose.
+	 */
+	if (strlen(argv[0]) != 0) {
+		service = talloc_strdup(mem_ctx, argv[0]);
+		if (service == NULL) {
+			d_printf("error: out of memory!\n");
+			goto done;
+		}
 	}
 	param = strlower_talloc(mem_ctx, argv[1]);
 	if (param == NULL) {
@@ -871,10 +883,16 @@ static int net_conf_delparm(struct net_context *c, struct smbconf_ctx *conf_ctx,
 		net_conf_delparm_usage(c, argc, argv);
 		goto done;
 	}
-	service = talloc_strdup(mem_ctx, argv[0]);
-	if (service == NULL) {
-		d_printf("error: out of memory!\n");
-		goto done;
+	/*
+	 * NULL service name means "dangling parameters" to libsmbconf.
+	 * We use the empty string from the command line for this purpose.
+	 */
+	if (strlen(argv[0]) != 0) {
+		service = talloc_strdup(mem_ctx, argv[0]);
+		if (service == NULL) {
+			d_printf("error: out of memory!\n");
+			goto done;
+		}
 	}
 	param = strlower_talloc(mem_ctx, argv[1]);
 	if (param == NULL) {
