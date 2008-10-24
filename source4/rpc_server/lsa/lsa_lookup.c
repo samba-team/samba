@@ -522,6 +522,7 @@ NTSTATUS dcesrv_lsa_LookupSids2(struct dcesrv_call_state *dce_call,
 				struct lsa_LookupSids2 *r)
 {
 	struct lsa_policy_state *state;
+	struct lsa_RefDomainList *domains = NULL;
 	int i;
 	NTSTATUS status = NT_STATUS_OK;
 
@@ -530,7 +531,7 @@ NTSTATUS dcesrv_lsa_LookupSids2(struct dcesrv_call_state *dce_call,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	r->out.domains = NULL;
+	*r->out.domains = NULL;
 
 	/* NOTE: the WSPP test suite tries SIDs with invalid revision numbers,
 	   and expects NT_STATUS_INVALID_PARAMETER back - we just treat it as 
@@ -543,10 +544,11 @@ NTSTATUS dcesrv_lsa_LookupSids2(struct dcesrv_call_state *dce_call,
 		return status;
 	}
 
-	r->out.domains = talloc_zero(mem_ctx,  struct lsa_RefDomainList);
-	if (r->out.domains == NULL) {
+	domains = talloc_zero(r->out.domains,  struct lsa_RefDomainList);
+	if (domains == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
+	*r->out.domains = domains;
 
 	r->out.names = talloc_zero(mem_ctx,  struct lsa_TransNameArray2);
 	if (r->out.names == NULL) {
@@ -592,7 +594,7 @@ NTSTATUS dcesrv_lsa_LookupSids2(struct dcesrv_call_state *dce_call,
 		/* set up the authority table */
 		status2 = dcesrv_lsa_authority_list(state, mem_ctx, rtype, 
 						    authority_name, sid, 
-						    r->out.domains, &sid_index);
+						    domains, &sid_index);
 		if (!NT_STATUS_IS_OK(status2)) {
 			continue;
 		}
@@ -604,7 +606,7 @@ NTSTATUS dcesrv_lsa_LookupSids2(struct dcesrv_call_state *dce_call,
 
 		(*r->out.count)++;
 	}
-	
+
 	if (*r->out.count == 0) {
 		return NT_STATUS_NONE_MAPPED;
 	}
@@ -660,6 +662,7 @@ NTSTATUS dcesrv_lsa_LookupSids3(struct dcesrv_call_state *dce_call,
 	r2.in.unknown2 = r->in.unknown2;
 	r2.out.count   = r->out.count;
 	r2.out.names   = r->out.names;
+	r2.out.domains = r->out.domains;
 
 	status = dcesrv_lsa_LookupSids2(dce_call, mem_ctx, &r2);
 
@@ -692,6 +695,7 @@ NTSTATUS dcesrv_lsa_LookupSids(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 	r2.in.unknown2 = 0;
 	r2.out.count   = r->out.count;
 	r2.out.names   = NULL;
+	r2.out.domains = r->out.domains;
 
 	status = dcesrv_lsa_LookupSids2(dce_call, mem_ctx, &r2);
 	/* we deliberately don't check for error from the above,

@@ -449,6 +449,7 @@ static bool test_LookupSids(struct dcerpc_pipe *p,
 {
 	struct lsa_LookupSids r;
 	struct lsa_TransNameArray names;
+	struct lsa_RefDomainList *domains = NULL;
 	uint32_t count = sids->num_sids;
 	NTSTATUS status;
 
@@ -464,6 +465,7 @@ static bool test_LookupSids(struct dcerpc_pipe *p,
 	r.in.count = &count;
 	r.out.count = &count;
 	r.out.names = &names;
+	r.out.domains = &domains;
 
 	status = dcerpc_lsa_LookupSids(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -488,6 +490,7 @@ static bool test_LookupSids2(struct dcerpc_pipe *p,
 {
 	struct lsa_LookupSids2 r;
 	struct lsa_TransNameArray2 names;
+	struct lsa_RefDomainList *domains = NULL;
 	uint32_t count = sids->num_sids;
 	NTSTATUS status;
 
@@ -505,6 +508,7 @@ static bool test_LookupSids2(struct dcerpc_pipe *p,
 	r.in.unknown2 = 0;
 	r.out.count = &count;
 	r.out.names = &names;
+	r.out.domains = &domains;
 
 	status = dcerpc_lsa_LookupSids2(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -531,6 +535,7 @@ static bool test_LookupSids3(struct dcerpc_pipe *p,
 {
 	struct lsa_LookupSids3 r;
 	struct lsa_TransNameArray2 names;
+	struct lsa_RefDomainList *domains = NULL;
 	uint32_t count = sids->num_sids;
 	NTSTATUS status;
 
@@ -545,6 +550,7 @@ static bool test_LookupSids3(struct dcerpc_pipe *p,
 	r.in.count = &count;
 	r.in.unknown1 = 0;
 	r.in.unknown2 = 0;
+	r.out.domains = &domains;
 	r.out.count = &count;
 	r.out.names = &names;
 
@@ -594,6 +600,7 @@ bool test_many_LookupSids(struct dcerpc_pipe *p,
 	if (handle) {
 		struct lsa_LookupSids r;
 		struct lsa_TransNameArray names;
+		struct lsa_RefDomainList *domains = NULL;
 		names.count = 0;
 		names.names = NULL;
 
@@ -604,6 +611,7 @@ bool test_many_LookupSids(struct dcerpc_pipe *p,
 		r.in.count = &names.count;
 		r.out.count = &count;
 		r.out.names = &names;
+		r.out.domains = &domains;
 		
 		status = dcerpc_lsa_LookupSids(p, mem_ctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -619,6 +627,7 @@ bool test_many_LookupSids(struct dcerpc_pipe *p,
 	} else if (p->conn->security_state.auth_info->auth_type == DCERPC_AUTH_TYPE_SCHANNEL &&
 		   p->conn->security_state.auth_info->auth_level >= DCERPC_AUTH_LEVEL_INTEGRITY) {
 		struct lsa_LookupSids3 r;
+		struct lsa_RefDomainList *domains = NULL;
 		struct lsa_TransNameArray2 names;
 
 		names.count = 0;
@@ -634,6 +643,7 @@ bool test_many_LookupSids(struct dcerpc_pipe *p,
 		r.in.unknown2 = 0;
 		r.out.count = &count;
 		r.out.names = &names;
+		r.out.domains = &domains;
 		
 		status = dcerpc_lsa_LookupSids3(p, mem_ctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -683,6 +693,7 @@ static bool test_LookupSids_async(struct dcerpc_pipe *p,
 	uint32_t *count;
 	struct lsa_TransNameArray *names;
 	struct lsa_LookupSids *r;
+	struct lsa_RefDomainList *domains = NULL;
 	struct rpc_request **req;
 	int i, replies;
 	bool ret = true;
@@ -714,6 +725,7 @@ static bool test_LookupSids_async(struct dcerpc_pipe *p,
 		r[i].in.count = &names[i].count;
 		r[i].out.count = &count[i];
 		r[i].out.names = &names[i];
+		r[i].out.domains = &domains;
 		
 		req[i] = dcerpc_lsa_LookupSids_send(p, req, &r[i]);
 		if (req[i] == NULL) {

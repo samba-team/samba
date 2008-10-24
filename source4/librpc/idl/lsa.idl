@@ -440,13 +440,13 @@ import "misc.idl", "security.idl";
 		[size_is(count)] lsa_TranslatedName *names;
 	} lsa_TransNameArray;
 
-	[public] NTSTATUS lsa_LookupSids (
+	[public] NTSTATUS lsa_LookupSids(
 		[in]         policy_handle *handle,
-		[in]         lsa_SidArray *sids,
-		[out,unique]        lsa_RefDomainList *domains,
-		[in,out]     lsa_TransNameArray *names,
+		[in,ref]     lsa_SidArray *sids,
+		[out,ref]    lsa_RefDomainList **domains,
+		[in,out,ref] lsa_TransNameArray *names,
 		[in]         uint16 level,
-		[in,out] uint32 *count
+		[in,out,ref] uint32 *count
 		);
 
 
@@ -1013,11 +1013,11 @@ import "misc.idl", "security.idl";
 
 	[public] NTSTATUS lsa_LookupSids2(
 		[in]     policy_handle *handle,
-		[in]     lsa_SidArray *sids,
-		[out,unique]        lsa_RefDomainList *domains,
-		[in,out] lsa_TransNameArray2 *names,
+		[in,ref] lsa_SidArray *sids,
+		[out,ref]    lsa_RefDomainList **domains,
+		[in,out,ref] lsa_TransNameArray2 *names,
 		[in]         uint16 level,
-		[in,out] uint32 *count,
+		[in,out,ref] uint32 *count,
 		[in]         uint32 unknown1,
 		[in]         uint32 unknown2
 		);
@@ -1175,11 +1175,11 @@ import "misc.idl", "security.idl";
 	/* Function 0x4c */
 
 	[public] NTSTATUS lsa_LookupSids3(
-		[in]         lsa_SidArray *sids,
-		[out,unique] lsa_RefDomainList *domains,
-		[in,out]     lsa_TransNameArray2 *names,
+		[in,ref]     lsa_SidArray *sids,
+		[out,ref]    lsa_RefDomainList **domains,
+		[in,out,ref] lsa_TransNameArray2 *names,
 		[in]         uint16 level,
-		[in,out]     uint32 *count,
+		[in,out,ref] uint32 *count,
 		[in]         uint32 unknown1,
 		[in]         uint32 unknown2
 		);

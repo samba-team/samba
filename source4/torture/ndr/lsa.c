@@ -1014,11 +1014,12 @@ static const uint8_t lsarlookupsids_out_data[] = {
 static bool lsarlookupsids_out_check(struct torture_context *tctx, 
 									 struct lsa_LookupSids *r)
 {
-	torture_assert(tctx, r->out.domains != NULL, "domains");
-	torture_assert_int_equal(tctx, r->out.domains->count, 1, "domains count");
-	torture_assert_int_equal(tctx, r->out.domains->max_size, 32, "domains size");
-	torture_assert(tctx, r->out.domains->domains != NULL, "domains domains");
-	torture_assert_str_equal(tctx, r->out.domains->domains[0].name.string, "BUILTIN", "name");
+	struct lsa_RefDomainList *domains = *(r->out.domains);
+	torture_assert(tctx, domains != NULL, "domains");
+	torture_assert_int_equal(tctx, domains->count, 1, "domains count");
+	torture_assert_int_equal(tctx, domains->max_size, 32, "domains size");
+	torture_assert(tctx, domains->domains != NULL, "domains domains");
+	torture_assert_str_equal(tctx, domains->domains[0].name.string, "BUILTIN", "name");
 	torture_assert_ntstatus_ok(tctx, r->out.result, "return code");
 	return true;
 }
@@ -1474,12 +1475,13 @@ static const uint8_t lsarlookupsids2_out_data[] = {
 static bool lsarlookupsids2_out_check(struct torture_context *tctx, 
 									 struct lsa_LookupSids2 *r)
 {
+	struct lsa_RefDomainList *domains = *(r->out.domains);
 	/* FIXME: Handle */
 	torture_assert(tctx, r->out.names != NULL, "names ptr");
 	torture_assert(tctx, r->out.domains != NULL, "domains ptr");
-	torture_assert_int_equal(tctx, r->out.domains->count, 4, "domains count");
-	torture_assert_int_equal(tctx, r->out.domains->max_size, 32, "domains size");
-	torture_assert_str_equal(tctx, r->out.domains->domains[0].name.string, "NT AUTHORITY", "trust info name");
+	torture_assert_int_equal(tctx, domains->count, 4, "domains count");
+	torture_assert_int_equal(tctx, domains->max_size, 32, "domains size");
+	torture_assert_str_equal(tctx, domains->domains[0].name.string, "NT AUTHORITY", "trust info name");
 	torture_assert_int_equal(tctx, r->out.names->count, 7, "names count");
 	torture_assert_str_equal(tctx, r->out.names->names[0].name.string, "Account Operators", "name str 1");
 	torture_assert_str_equal(tctx, r->out.names->names[1].name.string, "Administrators", "name str 2");
@@ -1749,12 +1751,13 @@ static const uint8_t lsarlookupsids3_out_data[] = {
 static bool lsarlookupsids3_out_check(struct torture_context *tctx, 
 				      struct lsa_LookupSids3 *r)
 {
+	struct lsa_RefDomainList *domains = *(r->out.domains);
 	/* FIXME: Handle */
 	torture_assert(tctx, r->out.names != NULL, "names ptr");
 	torture_assert(tctx, r->out.domains != NULL, "domains ptr");
-	torture_assert_int_equal(tctx, r->out.domains->count, 4, "domains count");
-	torture_assert_int_equal(tctx, r->out.domains->max_size, 32, "domains size");
-	torture_assert_str_equal(tctx, r->out.domains->domains[0].name.string, "NT AUTHORITY", "trust info name");
+	torture_assert_int_equal(tctx, domains->count, 4, "domains count");
+	torture_assert_int_equal(tctx, domains->max_size, 32, "domains size");
+	torture_assert_str_equal(tctx, domains->domains[0].name.string, "NT AUTHORITY", "trust info name");
 	torture_assert_int_equal(tctx, r->out.names->count, 7, "names count");
 	torture_assert_str_equal(tctx, r->out.names->names[0].name.string, "Account Operators", "name str 1");
 	torture_assert_str_equal(tctx, r->out.names->names[1].name.string, "Administrators", "name str 2");
