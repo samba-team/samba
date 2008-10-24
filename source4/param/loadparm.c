@@ -2634,27 +2634,27 @@ void lp_smbcli_session_options(struct loadparm_context *lp_ctx,
 	options->plaintext_auth = lp_client_plaintext_auth(lp_ctx);
 }
 
-_PUBLIC_ const char *lp_tls_keyfile(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
+_PUBLIC_ char *lp_tls_keyfile(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
 {
 	return private_path(mem_ctx, lp_ctx, lp_ctx->globals->tls_keyfile);
 }
 
-_PUBLIC_ const char *lp_tls_certfile(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
+_PUBLIC_ char *lp_tls_certfile(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
 {
 	return private_path(mem_ctx, lp_ctx, lp_ctx->globals->tls_certfile);
 }
 
-_PUBLIC_ const char *lp_tls_cafile(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
+_PUBLIC_ char *lp_tls_cafile(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
 {
 	return private_path(mem_ctx, lp_ctx, lp_ctx->globals->tls_cafile);
 }
 
-_PUBLIC_ const char *lp_tls_crlfile(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
+_PUBLIC_ char *lp_tls_crlfile(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
 {
 	return private_path(mem_ctx, lp_ctx, lp_ctx->globals->tls_crlfile);
 }
 
-_PUBLIC_ const char *lp_tls_dhpfile(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
+_PUBLIC_ char *lp_tls_dhpfile(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
 {
 	return private_path(mem_ctx, lp_ctx, lp_ctx->globals->tls_dhpfile);
 }
