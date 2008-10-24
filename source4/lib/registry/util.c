@@ -64,7 +64,7 @@ _PUBLIC_ char *reg_val_data_string(TALLOC_CTX *mem_ctx,
 	switch (type) {
 		case REG_EXPAND_SZ:
 		case REG_SZ:
-			convert_string_talloc(mem_ctx, iconv_convenience, CH_UTF16, CH_UNIX,
+			convert_string_talloc_convenience(mem_ctx, iconv_convenience, CH_UTF16, CH_UNIX,
 					      data.data, data.length,
 					      (void **)&ret);
 			return ret;
@@ -124,7 +124,7 @@ _PUBLIC_ bool reg_string_to_val(TALLOC_CTX *mem_ctx,
 	{
 		case REG_SZ:
 		case REG_EXPAND_SZ:
-      		data->length = convert_string_talloc(mem_ctx, iconv_convenience, CH_UNIX, CH_UTF16,
+      		data->length = convert_string_talloc_convenience(mem_ctx, iconv_convenience, CH_UNIX, CH_UTF16,
 						     data_str, strlen(data_str),
 						     (void **)&data->data);
 			break;

@@ -1319,7 +1319,7 @@ static int setup_password_fields(struct setup_password_fields_io *io)
 			ldb_oom(io->ac->module->ldb);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
-		converted_pw_len = convert_string_talloc(io->ac, lp_iconv_convenience(ldb_get_opaque(io->ac->module->ldb, "loadparm")), 
+		converted_pw_len = convert_string_talloc_convenience(io->ac, lp_iconv_convenience(ldb_get_opaque(io->ac->module->ldb, "loadparm")), 
 							 CH_UTF8, CH_UTF16, io->n.cleartext_utf8->data, io->n.cleartext_utf8->length, 
 							 (void **)&cleartext_utf16_str);
 		if (converted_pw_len == -1) {
@@ -1337,7 +1337,7 @@ static int setup_password_fields(struct setup_password_fields_io *io)
 			ldb_oom(io->ac->module->ldb);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
-		converted_pw_len = convert_string_talloc(io->ac, lp_iconv_convenience(ldb_get_opaque(io->ac->module->ldb, "loadparm")), 
+		converted_pw_len = convert_string_talloc_convenience(io->ac, lp_iconv_convenience(ldb_get_opaque(io->ac->module->ldb, "loadparm")), 
 							 CH_UTF16, CH_UTF8, io->n.cleartext_utf16->data, io->n.cleartext_utf16->length, 
 							 (void **)&cleartext_utf8_str);
 		if (converted_pw_len == -1) {
@@ -1363,7 +1363,7 @@ static int setup_password_fields(struct setup_password_fields_io *io)
 	if (io->n.cleartext_utf8) {
 		struct samr_Password *lm_hash;
 		char *cleartext_unix;
-		converted_pw_len = convert_string_talloc(io->ac, lp_iconv_convenience(ldb_get_opaque(io->ac->module->ldb, "loadparm")), 
+		converted_pw_len = convert_string_talloc_convenience(io->ac, lp_iconv_convenience(ldb_get_opaque(io->ac->module->ldb, "loadparm")), 
 							 CH_UTF8, CH_UNIX, io->n.cleartext_utf8->data, io->n.cleartext_utf8->length, 
 							 (void **)&cleartext_unix);
 		if (converted_pw_len != -1) {

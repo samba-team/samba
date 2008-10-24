@@ -769,7 +769,8 @@ static WERROR dsdb_syntax_UNICODE_drsuapi_to_ldb(const struct dsdb_schema *schem
 			return WERR_FOOBAR;
 		}
 
-		ret = convert_string_talloc(out->values, schema->iconv_convenience, 
+		ret = convert_string_talloc_convenience(out->values, 
+						schema->iconv_convenience, 
 									CH_UTF16, CH_UNIX,
 					    in->value_ctr.values[i].blob->data,
 					    in->value_ctr.values[i].blob->length,
@@ -812,7 +813,7 @@ static WERROR dsdb_syntax_UNICODE_ldb_to_drsuapi(const struct dsdb_schema *schem
 
 		out->value_ctr.values[i].blob	= &blobs[i];
 
-		ret = convert_string_talloc(blobs, schema->iconv_convenience, CH_UNIX, CH_UTF16,
+		ret = convert_string_talloc_convenience(blobs, schema->iconv_convenience, CH_UNIX, CH_UTF16,
 					    in->values[i].data,
 					    in->values[i].length,
 					    (void **)&blobs[i].data);
@@ -1046,7 +1047,7 @@ static WERROR dsdb_syntax_PRESENTATION_ADDRESS_drsuapi_to_ldb(const struct dsdb_
 			return WERR_FOOBAR;
 		}
 
-		ret = convert_string_talloc(out->values, schema->iconv_convenience, CH_UTF16, CH_UNIX,
+		ret = convert_string_talloc_convenience(out->values, schema->iconv_convenience, CH_UTF16, CH_UNIX,
 					    in->value_ctr.values[i].blob->data+4,
 					    in->value_ctr.values[i].blob->length-4,
 					    (void **)&str);
@@ -1089,7 +1090,7 @@ static WERROR dsdb_syntax_PRESENTATION_ADDRESS_ldb_to_drsuapi(const struct dsdb_
 
 		out->value_ctr.values[i].blob	= &blobs[i];
 
-		ret = convert_string_talloc(blobs, schema->iconv_convenience, CH_UNIX, CH_UTF16,
+		ret = convert_string_talloc_convenience(blobs, schema->iconv_convenience, CH_UNIX, CH_UTF16,
 					    in->values[i].data,
 					    in->values[i].length,
 					    (void **)&data);

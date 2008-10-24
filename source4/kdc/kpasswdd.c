@@ -233,7 +233,7 @@ static bool kpasswd_process_request(struct kdc_server *kdc,
 	case KRB5_KPASSWD_VERS_CHANGEPW:
 	{
 		DATA_BLOB password;
-		pw_len = convert_string_talloc(mem_ctx, lp_iconv_convenience(kdc->task->lp_ctx), 
+		pw_len = convert_string_talloc_convenience(mem_ctx, lp_iconv_convenience(kdc->task->lp_ctx), 
 					       CH_UTF8, CH_UTF16, 
 					       (const char *)input->data, 
 					       input->length,
@@ -281,7 +281,7 @@ static bool kpasswd_process_request(struct kdc_server *kdc,
 							reply);
 		}
 		
-		pw_len = convert_string_talloc(mem_ctx, lp_iconv_convenience(kdc->task->lp_ctx), 
+		pw_len = convert_string_talloc_convenience(mem_ctx, lp_iconv_convenience(kdc->task->lp_ctx), 
 					       CH_UTF8, CH_UTF16, 
 					       (const char *)chpw.newpasswd.data, 
 					       chpw.newpasswd.length,

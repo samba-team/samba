@@ -49,7 +49,7 @@ bool torture_utable(struct torture_context *tctx,
 		SSVAL(c2, 0, c);
 		strncpy(fname, "\\utable\\x", sizeof(fname)-1);
 		p = fname+strlen(fname);
-		len = convert_string(lp_iconv_convenience(tctx->lp_ctx), CH_UTF16, CH_UNIX, 
+		len = convert_string_convenience(lp_iconv_convenience(tctx->lp_ctx), CH_UTF16, CH_UNIX, 
 				     c2, 2, 
 				     p, sizeof(fname)-strlen(fname));
 		p[len] = 0;
@@ -108,7 +108,7 @@ static char *form_name(struct smb_iconv_convenience *iconv_convenience, int c)
 	p = fname+strlen(fname);
 	SSVAL(c2, 0, c);
 
-	len = convert_string(iconv_convenience, CH_UTF16, CH_UNIX, 
+	len = convert_string_convenience(iconv_convenience, CH_UTF16, CH_UNIX, 
 			     c2, 2, 
 			     p, sizeof(fname)-strlen(fname));
 	p[len] = 0;

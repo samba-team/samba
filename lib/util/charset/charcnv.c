@@ -164,7 +164,7 @@ static smb_iconv_t get_conv_handle(struct smb_iconv_convenience *ic,
  * @param destlen maximal length allowed for string
  * @returns the number of bytes occupied in the destination
  **/
-_PUBLIC_ ssize_t convert_string(struct smb_iconv_convenience *ic,
+_PUBLIC_ ssize_t convert_string_convenience(struct smb_iconv_convenience *ic,
 				charset_t from, charset_t to,
 				void const *src, size_t srclen, 
 				void *dest, size_t destlen)
@@ -286,7 +286,7 @@ convert:
  * @returns Size in bytes of the converted string; or -1 in case of error.
  **/
 
-_PUBLIC_ ssize_t convert_string_talloc(TALLOC_CTX *ctx, 
+_PUBLIC_ ssize_t convert_string_talloc_convenience(TALLOC_CTX *ctx, 
 				       struct smb_iconv_convenience *ic, 
 				       charset_t from, charset_t to, 
 				       void const *src, size_t srclen, 

@@ -113,6 +113,16 @@ ssize_t pull_utf8_talloc(TALLOC_CTX *ctx, char **dest, const char *src);
 ssize_t push_string(void *dest, const char *src, size_t dest_len, int flags);
 ssize_t pull_string(char *dest, const void *src, size_t dest_len, size_t src_len, int flags);
 
+ssize_t convert_string_talloc(TALLOC_CTX *ctx, 
+				       charset_t from, charset_t to, 
+				       void const *src, size_t srclen, 
+				       void **dest);
+
+ssize_t convert_string(charset_t from, charset_t to,
+				void const *src, size_t srclen, 
+				void *dest, size_t destlen);
+
+
 /* codepoints */
 codepoint_t next_codepoint(struct smb_iconv_convenience *ic, 
 			    const char *str, size_t *size);
@@ -128,12 +138,12 @@ struct smb_iconv_convenience *smb_iconv_convenience_init(TALLOC_CTX *mem_ctx,
 							 const char *unix_charset,
 							 bool native_iconv);
 
-ssize_t convert_string(struct smb_iconv_convenience *ic,
+ssize_t convert_string_convenience(struct smb_iconv_convenience *ic,
 				charset_t from, charset_t to,
 				void const *src, size_t srclen, 
 				void *dest, size_t destlen);
 ssize_t convert_string_talloc_descriptor(TALLOC_CTX *ctx, smb_iconv_t descriptor, void const *src, size_t srclen, void **dest);
-ssize_t convert_string_talloc(TALLOC_CTX *ctx, 
+ssize_t convert_string_talloc_convenience(TALLOC_CTX *ctx, 
 				       struct smb_iconv_convenience *ic, 
 				       charset_t from, charset_t to, 
 				       void const *src, size_t srclen, 

@@ -1169,7 +1169,7 @@ static struct drsuapi_DsReplicaAttribute *dsdb_find_object_attr_name(struct dsdb
 	} \
 	if (_a && _a->value_ctr.num_values >= 1) { \
 		ssize_t _ret; \
-		_ret = convert_string_talloc(mem_ctx, s->iconv_convenience, CH_UTF16, CH_UNIX, \
+		_ret = convert_string_talloc_convenience(mem_ctx, s->iconv_convenience, CH_UTF16, CH_UNIX, \
 					     _a->value_ctr.values[0].blob->data, \
 					     _a->value_ctr.values[0].blob->length, \
 					     (void **)discard_const(&(p)->elem)); \

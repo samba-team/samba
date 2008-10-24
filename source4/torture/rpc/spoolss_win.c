@@ -354,7 +354,7 @@ static bool test_EnumPrinterKey(struct torture_context *tctx,
 
 	torture_assert_werr_ok(tctx, epk.out.result, "EnumPrinterKey failed");
 
-	convert_string_talloc(ctx, lp_iconv_convenience(tctx->lp_ctx), CH_UTF16,
+	convert_string_talloc_convenience(ctx, lp_iconv_convenience(tctx->lp_ctx), CH_UTF16,
 			CH_UNIX, epk.out.key_buffer, epk.out.needed,
 			(void**)&ctx->printer_keys);
 

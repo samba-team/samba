@@ -321,7 +321,7 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 		mdfour(client_nt.hash, nt_response->data, nt_response->length);
 		
 		if (lm_response->length && 
-		    (convert_string_talloc(mem_ctx, lp_iconv_convenience(lp_ctx), CH_DOS, CH_UNIX, 
+		    (convert_string_talloc_convenience(mem_ctx, lp_iconv_convenience(lp_ctx), CH_DOS, CH_UNIX, 
 					  lm_response->data, lm_response->length, 
 					   (void **)&unix_pw) != -1)) {
 			if (E_deshash(unix_pw, client_lm.hash)) {

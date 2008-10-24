@@ -64,7 +64,6 @@ NTSTATUS smbcli_parse_stream_info(DATA_BLOB blob, TALLOC_CTX *mem_ctx,
 			return NT_STATUS_INFO_LENGTH_MISMATCH;
 		}
 		size = convert_string_talloc(io->streams, 
-					     lp_iconv_convenience(global_loadparm),
 					     CH_UTF16, CH_UNIX,
 					     blob.data+ofs+24, nlen, &vstr);
 		if (size == -1) {

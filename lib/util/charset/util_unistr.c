@@ -618,7 +618,6 @@ static ssize_t push_ascii(void *dest, const char *src, size_t dest_len, int flag
 {
 	size_t src_len;
 	ssize_t ret;
-	struct smb_iconv_convenience *ic = get_iconv_convenience();
 
 	if (flags & STR_UPPER) {
 		char *tmpbuf = strupper_talloc(NULL, src);
@@ -635,7 +634,7 @@ static ssize_t push_ascii(void *dest, const char *src, size_t dest_len, int flag
 	if (flags & (STR_TERMINATE | STR_TERMINATE_ASCII))
 		src_len++;
 
-	return convert_string(ic, CH_UNIX, CH_DOS, src, src_len, dest, dest_len);
+	return convert_string(CH_UNIX, CH_DOS, src, src_len, dest, dest_len);
 }
 
 /**
@@ -649,10 +648,9 @@ static ssize_t push_ascii(void *dest, const char *src, size_t dest_len, int flag
  **/
 _PUBLIC_ ssize_t push_ascii_talloc(TALLOC_CTX *ctx, char **dest, const char *src)
 {
-	struct smb_iconv_convenience *ic = get_iconv_convenience();
 	size_t src_len = strlen(src)+1;
 	*dest = NULL;
-	return convert_string_talloc(ctx, ic, CH_UNIX, CH_DOS, src, src_len, (void **)dest);
+	return convert_string_talloc(ctx, CH_UNIX, CH_DOS, src, src_len, (void **)dest);
 }
 
 
@@ -673,7 +671,6 @@ _PUBLIC_ ssize_t push_ascii_talloc(TALLOC_CTX *ctx, char **dest, const char *src
  **/
 static ssize_t pull_ascii(char *dest, const void *src, size_t dest_len, size_t src_len, int flags)
 {
-	struct smb_iconv_convenience *ic = get_iconv_convenience();
 	size_t ret;
 
 	if (flags & (STR_TERMINATE | STR_TERMINATE_ASCII)) {
@@ -687,7 +684,7 @@ static ssize_t pull_ascii(char *dest, const void *src, size_t dest_len, size_t s
 		}
 	}
 
-	ret = convert_string(ic, CH_DOS, CH_UNIX, src, src_len, dest, dest_len);
+	ret = convert_string(CH_DOS, CH_UNIX, src, src_len, dest, dest_len);
 
 	if (dest_len)
 		dest[MIN(ret, dest_len-1)] = 0;
@@ -713,7 +710,6 @@ static ssize_t pull_ascii(char *dest, const void *src, size_t dest_len, size_t s
  **/
 static ssize_t push_ucs2(void *dest, const char *src, size_t dest_len, int flags)
 {
-	struct smb_iconv_convenience *ic = get_iconv_convenience();
 	size_t len=0;
 	size_t src_len = strlen(src);
 	size_t ret;
@@ -741,7 +737,7 @@ static ssize_t push_ucs2(void *dest, const char *src, size_t dest_len, int flags
 	/* ucs2 is always a multiple of 2 bytes */
 	dest_len &= ~1;
 
-	ret = convert_string(ic, CH_UNIX, CH_UTF16, src, src_len, dest, dest_len);
+	ret = convert_string(CH_UNIX, CH_UTF16, src, src_len, dest, dest_len);
 	if (ret == (size_t)-1) {
 		return 0;
 	}
@@ -763,10 +759,9 @@ static ssize_t push_ucs2(void *dest, const char *src, size_t dest_len, int flags
  **/
 _PUBLIC_ ssize_t push_ucs2_talloc(TALLOC_CTX *ctx, void **dest, const char *src)
 {
-	struct smb_iconv_convenience *ic = get_iconv_convenience();
 	size_t src_len = strlen(src)+1;
 	*dest = NULL;
-	return convert_string_talloc(ctx, ic, CH_UNIX, CH_UTF16, src, src_len, dest);
+	return convert_string_talloc(ctx, CH_UNIX, CH_UTF16, src, src_len, dest);
 }
 
 
@@ -780,10 +775,9 @@ _PUBLIC_ ssize_t push_ucs2_talloc(TALLOC_CTX *ctx, void **dest, const char *src)
 
 _PUBLIC_ ssize_t push_utf8_talloc(TALLOC_CTX *ctx, char **dest, const char *src)
 {
-	struct smb_iconv_convenience *ic = get_iconv_convenience();
 	size_t src_len = strlen(src)+1;
 	*dest = NULL;
-	return convert_string_talloc(ctx, ic, CH_UNIX, CH_UTF8, src, src_len, (void **)dest);
+	return convert_string_talloc(ctx, CH_UNIX, CH_UTF8, src, src_len, (void **)dest);
 }
 
 /**
@@ -799,7 +793,6 @@ _PUBLIC_ ssize_t push_utf8_talloc(TALLOC_CTX *ctx, char **dest, const char *src)
 
 static size_t pull_ucs2(char *dest, const void *src, size_t dest_len, size_t src_len, int flags)
 {
-	struct smb_iconv_convenience *ic = get_iconv_convenience();
 	size_t ret;
 
 	if (ucs2_align(NULL, src, flags)) {
@@ -820,7 +813,7 @@ static size_t pull_ucs2(char *dest, const void *src, size_t dest_len, size_t src
 	if (src_len != (size_t)-1)
 		src_len &= ~1;
 	
-	ret = convert_string(ic, CH_UTF16, CH_UNIX, src, src_len, dest, dest_len);
+	ret = convert_string(CH_UTF16, CH_UNIX, src, src_len, dest, dest_len);
 	if (dest_len)
 		dest[MIN(ret, dest_len-1)] = 0;
 
@@ -837,10 +830,9 @@ static size_t pull_ucs2(char *dest, const void *src, size_t dest_len, size_t src
 
 _PUBLIC_ ssize_t pull_ascii_talloc(TALLOC_CTX *ctx, char **dest, const char *src)
 {
-	struct smb_iconv_convenience *ic = get_iconv_convenience();
 	size_t src_len = strlen(src)+1;
 	*dest = NULL;
-	return convert_string_talloc(ctx, ic, CH_DOS, CH_UNIX, src, src_len, (void **)dest);
+	return convert_string_talloc(ctx, CH_DOS, CH_UNIX, src, src_len, (void **)dest);
 }
 
 /**
@@ -853,10 +845,9 @@ _PUBLIC_ ssize_t pull_ascii_talloc(TALLOC_CTX *ctx, char **dest, const char *src
 
 _PUBLIC_ ssize_t pull_ucs2_talloc(TALLOC_CTX *ctx, char **dest, const void *src)
 {
-	struct smb_iconv_convenience *ic = get_iconv_convenience();
 	size_t src_len = utf16_len(src);
 	*dest = NULL;
-	return convert_string_talloc(ctx, ic, CH_UTF16, CH_UNIX, src, src_len, (void **)dest);
+	return convert_string_talloc(ctx, CH_UTF16, CH_UNIX, src, src_len, (void **)dest);
 }
 
 /**
@@ -869,10 +860,9 @@ _PUBLIC_ ssize_t pull_ucs2_talloc(TALLOC_CTX *ctx, char **dest, const void *src)
 
 _PUBLIC_ ssize_t pull_utf8_talloc(TALLOC_CTX *ctx, char **dest, const char *src)
 {
-	struct smb_iconv_convenience *ic = get_iconv_convenience();
 	size_t src_len = strlen(src)+1;
 	*dest = NULL;
-	return convert_string_talloc(ctx, ic, CH_UTF8, CH_UNIX, src, src_len, (void **)dest);
+	return convert_string_talloc(ctx, CH_UTF8, CH_UNIX, src, src_len, (void **)dest);
 }
 
 /**
@@ -929,3 +919,39 @@ _PUBLIC_ ssize_t pull_string(char *dest, const void *src, size_t dest_len, size_
 }
 
 
+/**
+ * Convert string from one encoding to another, making error checking etc
+ *
+ * @param src pointer to source string (multibyte or singlebyte)
+ * @param srclen length of the source string in bytes
+ * @param dest pointer to destination string (multibyte or singlebyte)
+ * @param destlen maximal length allowed for string
+ * @returns the number of bytes occupied in the destination
+ **/
+_PUBLIC_ ssize_t convert_string(charset_t from, charset_t to,
+				void const *src, size_t srclen, 
+				void *dest, size_t destlen)
+{
+	return convert_string_convenience(get_iconv_convenience(), from, to, 
+									  src, srclen,
+									  dest, destlen);
+}
+
+/**
+ * Convert between character sets, allocating a new buffer using talloc for the result.
+ *
+ * @param srclen length of source buffer.
+ * @param dest always set at least to NULL
+ * @note -1 is not accepted for srclen.
+ *
+ * @returns Size in bytes of the converted string; or -1 in case of error.
+ **/
+
+_PUBLIC_ ssize_t convert_string_talloc(TALLOC_CTX *ctx, 
+				       charset_t from, charset_t to, 
+				       void const *src, size_t srclen, 
+				       void **dest)
+{
+	return convert_string_talloc_convenience(ctx, get_iconv_convenience(),
+											 from, to, src, srclen, dest);
+}

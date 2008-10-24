@@ -251,7 +251,7 @@ NTSTATUS dcesrv_samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call, 
 		return NT_STATUS_WRONG_PASSWORD;
 	}
 		
-	if (convert_string_talloc(mem_ctx, lp_iconv_convenience(dce_call->conn->dce_ctx->lp_ctx), 
+	if (convert_string_talloc_convenience(mem_ctx, lp_iconv_convenience(dce_call->conn->dce_ctx->lp_ctx), 
 				  CH_DOS, CH_UNIX, 
 				  (const char *)new_password.data, 
 				  new_password.length,
@@ -261,7 +261,7 @@ NTSTATUS dcesrv_samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call, 
 		return NT_STATUS_WRONG_PASSWORD;
 	}
 
-	unicode_pw_len = convert_string_talloc(mem_ctx, lp_iconv_convenience(dce_call->conn->dce_ctx->lp_ctx), 
+	unicode_pw_len = convert_string_talloc_convenience(mem_ctx, lp_iconv_convenience(dce_call->conn->dce_ctx->lp_ctx), 
 					       CH_DOS, CH_UTF16, 
 					       (const char *)new_password.data, 
 					       new_password.length,
@@ -428,7 +428,7 @@ NTSTATUS dcesrv_samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 	 * this) */
 	if (lm_pwd && r->in.lm_verifier != NULL) {
 		char *new_pass;
-		if (convert_string_talloc(mem_ctx, lp_iconv_convenience(dce_call->conn->dce_ctx->lp_ctx), 
+		if (convert_string_talloc_convenience(mem_ctx, lp_iconv_convenience(dce_call->conn->dce_ctx->lp_ctx), 
 					  CH_UTF16, CH_UNIX, 
 					  (const char *)new_password.data, 
 					  new_password.length,

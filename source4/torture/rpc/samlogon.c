@@ -1171,7 +1171,7 @@ static bool test_plaintext(struct samlogon_state *samlogon_state, enum ntlm_brea
 
 	password = strupper_talloc(samlogon_state->mem_ctx, samlogon_state->password);
 
-	if ((convert_string_talloc(samlogon_state->mem_ctx, 
+	if ((convert_string_talloc_convenience(samlogon_state->mem_ctx, 
 				   samlogon_state->iconv_convenience,
 				   CH_UNIX, CH_DOS, 
 				   password, strlen(password)+1, 
