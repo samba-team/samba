@@ -183,7 +183,7 @@ uint32_t pvfs_name_hash(const char *key, size_t length)
 	while (*key && length--) {
 		size_t c_size;
 		codepoint_t c = next_codepoint(lp_iconv_convenience(global_loadparm), key, &c_size);
-		c = toupper_w(c);
+		c = toupper_m(c);
                 value *= fnv1_prime;
                 value ^= (uint32_t)c;
 		key += c_size;

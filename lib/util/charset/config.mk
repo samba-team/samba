@@ -6,6 +6,6 @@ PRIVATE_DEPENDENCIES = DYNCONFIG
 # End SUBSYSTEM CHARSET
 ################################################
 
-CHARSET_OBJ_FILES = $(addprefix $(libcharsetsrcdir)/, iconv.o charcnv.o util_unistr.o)
+CHARSET_OBJ_FILES = $(addprefix $(libcharsetsrcdir)/, iconv.o charcnv.o util_unistr.o codepoints.o)
 
 PUBLIC_HEADERS += $(libcharsetsrcdir)/charset.h

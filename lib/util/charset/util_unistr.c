@@ -20,100 +20,14 @@
 
 #include "includes.h"
 #include "system/locale.h"
-#include "dynconfig/dynconfig.h"
 #include "param/param.h"
 
-/**
- * @file
- * @brief Unicode string manipulation
- */
-
-/* these 2 tables define the unicode case handling.  They are loaded
-   at startup either via mmap() or read() from the lib directory */
-static void *upcase_table;
-static void *lowcase_table;
-
-
-/*******************************************************************
-load the case handling tables
-********************************************************************/
-void load_case_tables(void)
+static inline struct smb_iconv_convenience *get_iconv_convenience(void)
 {
-	TALLOC_CTX *mem_ctx;
-
-	mem_ctx = talloc_init("load_case_tables");
-	if (!mem_ctx) {
-		smb_panic("No memory for case_tables");
-	}
-	upcase_table = map_file(talloc_asprintf(mem_ctx, "%s/upcase.dat", dyn_DATADIR), 0x20000);
-	lowcase_table = map_file(talloc_asprintf(mem_ctx, "%s/lowcase.dat", dyn_DATADIR), 0x20000);
-	talloc_free(mem_ctx);
-	if (upcase_table == NULL) {
-		/* try also under codepages for testing purposes */
-		upcase_table = map_file("codepages/upcase.dat", 0x20000);
-		if (upcase_table == NULL) {
-			upcase_table = (void *)-1;
-		}
-	}
-	if (lowcase_table == NULL) {
-		/* try also under codepages for testing purposes */
-		lowcase_table = map_file("codepages/lowcase.dat", 0x20000);
-		if (lowcase_table == NULL) {
-			lowcase_table = (void *)-1;
-		}
-	}
-}
-
-/**
- Convert a codepoint_t to upper case.
-**/
-_PUBLIC_ codepoint_t toupper_w(codepoint_t val)
-{
-	if (val < 128) {
-		return toupper(val);
-	}
-	if (upcase_table == NULL) {
-		load_case_tables();
-	}
-	if (upcase_table == (void *)-1) {
-		return val;
-	}
-	if (val & 0xFFFF0000) {
-		return val;
-	}
-	return SVAL(upcase_table, val*2);
-}
-
-/**
- Convert a codepoint_t to lower case.
-**/
-_PUBLIC_ codepoint_t tolower_w(codepoint_t val)
-{
-	if (val < 128) {
-		return tolower(val);
-	}
-	if (lowcase_table == NULL) {
-		load_case_tables();
-	}
-	if (lowcase_table == (void *)-1) {
-		return val;
-	}
-	if (val & 0xFFFF0000) {
-		return val;
-	}
-	return SVAL(lowcase_table, val*2);
-}
-
-/**
-  compare two codepoints case insensitively
-*/
-_PUBLIC_ int codepoint_cmpi(codepoint_t c1, codepoint_t c2)
-{
-	if (c1 == c2 ||
-	    toupper_w(c1) == toupper_w(c2)) {
-		return 0;
-	}
-	return c1 - c2;
+	static struct smb_iconv_convenience *ic = NULL;
+	if (ic == NULL)
+		ic = lp_iconv_convenience(global_loadparm);
+	return ic;
 }
 
 /**
@@ -123,7 +37,7 @@ _PUBLIC_ int strcasecmp_m(const char *s1, const char *s2)
 {
 	codepoint_t c1=0, c2=0;
 	size_t size1, size2;
-	struct smb_iconv_convenience *iconv_convenience = lp_iconv_convenience(global_loadparm);
+	struct smb_iconv_convenience *iconv_convenience = get_iconv_convenience();
 
 	/* handle null ptr comparisons to simplify the use in qsort */
 	if (s1 == s2) return 0;
@@ -147,7 +61,7 @@ _PUBLIC_ int strcasecmp_m(const char *s1, const char *s2)
 			return strcasecmp(s1, s2);
 		}
 
-		if (toupper_w(c1) != toupper_w(c2)) {
+		if (toupper_m(c1) != toupper_m(c2)) {
 			return c1 - c2;
 		}
 	}
@@ -208,7 +122,7 @@ _PUBLIC_ int strncasecmp_m(const char *s1, const char *s2, size_t n)
 {
 	codepoint_t c1=0, c2=0;
 	size_t size1, size2;
-	struct smb_iconv_convenience *iconv_convenience = lp_iconv_convenience(global_loadparm);
+	struct smb_iconv_convenience *iconv_convenience = get_iconv_convenience();
 
 	/* handle null ptr comparisons to simplify the use in qsort */
 	if (s1 == s2) return 0;
@@ -234,7 +148,7 @@ _PUBLIC_ int strncasecmp_m(const char *s1, const char *s2, size_t n)
 			return strcasecmp(s1, s2);
 		}
 
-		if (toupper_w(c1) != toupper_w(c2)) {
+		if (toupper_m(c1) != toupper_m(c2)) {
 			return c1 - c2;
 		}
 	}
@@ -251,7 +165,7 @@ _PUBLIC_ int strncasecmp_m(const char *s1, const char *s2, size_t n)
  *
  * @note The comparison is case-insensitive.
  **/
-_PUBLIC_ bool strequal_w(const char *s1, const char *s2)
+_PUBLIC_ bool strequal_m(const char *s1, const char *s2)
 {
 	return strcasecmp_m(s1,s2) == 0;
 }
@@ -259,7 +173,7 @@ _PUBLIC_ bool strequal_w(const char *s1, const char *s2)
 /**
  Compare 2 strings (case sensitive).
 **/
-_PUBLIC_ bool strcsequal_w(const char *s1,const char *s2)
+_PUBLIC_ bool strcsequal_m(const char *s1,const char *s2)
 {
 	if (s1 == s2)
 		return true;
@@ -278,7 +192,7 @@ _PUBLIC_ void string_replace_m(char *s, char oldc, char newc)
 {
 	while (s && *s) {
 		size_t size;
-		codepoint_t c = next_codepoint(lp_iconv_convenience(global_loadparm), s, &size);
+		codepoint_t c = next_codepoint(get_iconv_convenience(), s, &size);
 		if (c == oldc) {
 			*s = newc;
 		}
@@ -356,7 +270,7 @@ _PUBLIC_ size_t strlen_m(const char *s)
 
 	while (*s) {
 		size_t c_size;
-		codepoint_t c = next_codepoint(lp_iconv_convenience(global_loadparm), s, &c_size);
+		codepoint_t c = next_codepoint(get_iconv_convenience(), s, &c_size);
 		if (c < 0x10000) {
 			count += 1;
 		} else {
@@ -397,7 +311,7 @@ _PUBLIC_ char *strchr_m(const char *s, char c)
 
 	while (*s) {
 		size_t size;
-		codepoint_t c2 = next_codepoint(lp_iconv_convenience(global_loadparm), s, &size);
+		codepoint_t c2 = next_codepoint(get_iconv_convenience(), s, &size);
 		if (c2 == c) {
 			return discard_const_p(char, s);
 		}
@@ -426,7 +340,7 @@ _PUBLIC_ char *strrchr_m(const char *s, char c)
 
 	while (*s) {
 		size_t size;
-		codepoint_t c2 = next_codepoint(lp_iconv_convenience(global_loadparm), s, &size);
+		codepoint_t c2 = next_codepoint(get_iconv_convenience(), s, &size);
 		if (c2 == c) {
 			ret = discard_const_p(char, s);
 		}
@@ -446,10 +360,10 @@ _PUBLIC_ bool strhaslower(const char *string)
 		codepoint_t s;
 		codepoint_t t;
 
-		s = next_codepoint(lp_iconv_convenience(global_loadparm), string, &c_size);
+		s = next_codepoint(get_iconv_convenience(), string, &c_size);
 		string += c_size;
 
-		t = toupper_w(s);
+		t = toupper_m(s);
 
 		if (s != t) {
 			return true; /* that means it has lower case chars */
@@ -469,10 +383,10 @@ _PUBLIC_ bool strhasupper(const char *string)
 		codepoint_t s;
 		codepoint_t t;
 
-		s = next_codepoint(lp_iconv_convenience(global_loadparm), string, &c_size);
+		s = next_codepoint(get_iconv_convenience(), string, &c_size);
 		string += c_size;
 
-		t = tolower_w(s);
+		t = tolower_m(s);
 
 		if (s != t) {
 			return true; /* that means it has upper case chars */
@@ -489,7 +403,7 @@ _PUBLIC_ char *strlower_talloc(TALLOC_CTX *ctx, const char *src)
 {
 	size_t size=0;
 	char *dest;
-	struct smb_iconv_convenience *iconv_convenience = lp_iconv_convenience(global_loadparm);
+	struct smb_iconv_convenience *iconv_convenience = get_iconv_convenience();
 
 	/* this takes advantage of the fact that upper/lower can't
 	   change the length of a character by more than 1 byte */
@@ -503,7 +417,7 @@ _PUBLIC_ char *strlower_talloc(TALLOC_CTX *ctx, const char *src)
 		codepoint_t c = next_codepoint(iconv_convenience, src, &c_size);
 		src += c_size;
 
-		c = tolower_w(c);
+		c = tolower_m(c);
 
 		c_size = push_codepoint(iconv_convenience, dest+size, c);
 		if (c_size == -1) {
@@ -531,7 +445,7 @@ _PUBLIC_ char *strupper_talloc_n(TALLOC_CTX *ctx, const char *src, size_t n)
 {
 	size_t size=0;
 	char *dest;
-	struct smb_iconv_convenience *iconv_convenience = lp_iconv_convenience(global_loadparm);
+	struct smb_iconv_convenience *iconv_convenience = get_iconv_convenience();
 	
 	if (!src) {
 		return NULL;
@@ -549,7 +463,7 @@ _PUBLIC_ char *strupper_talloc_n(TALLOC_CTX *ctx, const char *src, size_t n)
 		codepoint_t c = next_codepoint(iconv_convenience, src, &c_size);
 		src += c_size;
 
-		c = toupper_w(c);
+		c = toupper_m(c);
 
 		c_size = push_codepoint(iconv_convenience, dest+size, c);
 		if (c_size == -1) {
@@ -605,17 +519,17 @@ _PUBLIC_ void strlower_m(char *s)
 	if (!*s)
 		return;
 
-	iconv_convenience = lp_iconv_convenience(global_loadparm);
+	iconv_convenience = get_iconv_convenience();
 
 	d = s;
 
 	while (*s) {
 		size_t c_size, c_size2;
 		codepoint_t c = next_codepoint(iconv_convenience, s, &c_size);
-		c_size2 = push_codepoint(iconv_convenience, d, tolower_w(c));
+		c_size2 = push_codepoint(iconv_convenience, d, tolower_m(c));
 		if (c_size2 > c_size) {
 			DEBUG(0,("FATAL: codepoint 0x%x (0x%x) expanded from %d to %d bytes in strlower_m\n",
-				 c, tolower_w(c), (int)c_size, (int)c_size2));
+				 c, tolower_m(c), (int)c_size, (int)c_size2));
 			smb_panic("codepoint expansion in strlower_m\n");
 		}
 		s += c_size;
@@ -644,17 +558,17 @@ _PUBLIC_ void strupper_m(char *s)
 	if (!*s)
 		return;
 
-	iconv_convenience = lp_iconv_convenience(global_loadparm);
+	iconv_convenience = get_iconv_convenience();
 
 	d = s;
 
 	while (*s) {
 		size_t c_size, c_size2;
 		codepoint_t c = next_codepoint(iconv_convenience, s, &c_size);
-		c_size2 = push_codepoint(iconv_convenience, d, toupper_w(c));
+		c_size2 = push_codepoint(iconv_convenience, d, toupper_m(c));
 		if (c_size2 > c_size) {
 			DEBUG(0,("FATAL: codepoint 0x%x (0x%x) expanded from %d to %d bytes in strupper_m\n",
-				 c, toupper_w(c), (int)c_size, (int)c_size2));
+				 c, toupper_m(c), (int)c_size, (int)c_size2));
 			smb_panic("codepoint expansion in strupper_m\n");
 		}
 		s += c_size;
@@ -667,13 +581,13 @@ _PUBLIC_ void strupper_m(char *s)
 /**
  Find the number of 'c' chars in a string
 **/
-_PUBLIC_ size_t count_chars_w(const char *s, char c)
+_PUBLIC_ size_t count_chars_m(const char *s, char c)
 {
 	size_t count = 0;
 
 	while (*s) {
 		size_t size;
-		codepoint_t c2 = next_codepoint(lp_iconv_convenience(global_loadparm), s, &size);
+		codepoint_t c2 = next_codepoint(get_iconv_convenience(), s, &size);
 		if (c2 == c) count++;
 		s += size;
 	}

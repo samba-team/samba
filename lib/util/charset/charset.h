@@ -88,12 +88,12 @@ size_t strlen_m_term(const char *s);
 size_t strlen_m(const char *s);
 char *alpha_strcpy(char *dest, const char *src, const char *other_safe_chars, size_t maxlength);
 void string_replace_m(char *s, char oldc, char newc);
-bool strcsequal_w(const char *s1,const char *s2);
-bool strequal_w(const char *s1, const char *s2);
+bool strcsequal_m(const char *s1,const char *s2);
+bool strequal_m(const char *s1, const char *s2);
 int strncasecmp_m(const char *s1, const char *s2, size_t n);
 bool next_token(const char **ptr,char *buff, const char *sep, size_t bufsize);
 int strcasecmp_m(const char *s1, const char *s2);
-size_t count_chars_w(const char *s, char c);
+size_t count_chars_m(const char *s, char c);
 void strupper_m(char *s);
 void strlower_m(char *s);
 char *strupper_talloc(TALLOC_CTX *ctx, const char *src);
@@ -110,8 +110,8 @@ codepoint_t next_codepoint(struct smb_iconv_convenience *ic,
 			    const char *str, size_t *size);
 ssize_t push_codepoint(struct smb_iconv_convenience *ic, 
 				char *str, codepoint_t c);
-codepoint_t toupper_w(codepoint_t val);
-codepoint_t tolower_w(codepoint_t val);
+codepoint_t toupper_m(codepoint_t val);
+codepoint_t tolower_m(codepoint_t val);
 int codepoint_cmpi(codepoint_t c1, codepoint_t c2);
 ssize_t push_string(struct smb_iconv_convenience *ic, void *dest, const char *src, size_t dest_len, int flags);
 ssize_t pull_string(struct smb_iconv_convenience *ic,

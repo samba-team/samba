@@ -67,7 +67,7 @@ struct libnet_ModifyUser {
 
 #define SET_FIELD_LSA_STRING(new, current, mod, field, flag) \
 	if (new.field != NULL && \
-	    !strequal_w(current->field.string, new.field)) { \
+	    !strequal_m(current->field.string, new.field)) { \
 		\
 		mod->field = talloc_strdup(mem_ctx, new.field);	\
 		if (mod->field == NULL) return NT_STATUS_NO_MEMORY; \

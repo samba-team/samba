@@ -21,19 +21,19 @@
 #include "includes.h"
 #include "torture/torture.h"
 
-static bool test_toupper_w(struct torture_context *tctx)
+static bool test_toupper_m(struct torture_context *tctx)
 {
-	torture_assert_int_equal(tctx, toupper_w('c'), 'C', "c");
-	torture_assert_int_equal(tctx, toupper_w('Z'), 'Z', "z");
-	torture_assert_int_equal(tctx, toupper_w(0xFFFF4565), 0xFFFF4565, "0xFFFF4565");
+	torture_assert_int_equal(tctx, toupper_m('c'), 'C', "c");
+	torture_assert_int_equal(tctx, toupper_m('Z'), 'Z', "z");
+	torture_assert_int_equal(tctx, toupper_m(0xFFFF4565), 0xFFFF4565, "0xFFFF4565");
 	return true;
 }
 
-static bool test_tolower_w(struct torture_context *tctx)
+static bool test_tolower_m(struct torture_context *tctx)
 {
-	torture_assert_int_equal(tctx, tolower_w('C'), 'c', "c");
-	torture_assert_int_equal(tctx, tolower_w('z'), 'z', "z");
-	torture_assert_int_equal(tctx, tolower_w(0xFFFF4565), 0xFFFF4565, "0xFFFF4565");
+	torture_assert_int_equal(tctx, tolower_m('C'), 'c', "c");
+	torture_assert_int_equal(tctx, tolower_m('z'), 'z', "z");
+	torture_assert_int_equal(tctx, tolower_m(0xFFFF4565), 0xFFFF4565, "0xFFFF4565");
 	return true;
 }
 
@@ -58,25 +58,25 @@ static bool test_strcasecmp_m(struct torture_context *tctx)
 }
 
 
-static bool test_strequal_w(struct torture_context *tctx)
+static bool test_strequal_m(struct torture_context *tctx)
 {
-	torture_assert(tctx, !strequal_w("foo", "bar"), "different strings");
-	torture_assert(tctx, strequal_w("foo", "foo"), "same case strings");
-	torture_assert(tctx, strequal_w("foo", "Foo"), "different case strings");
-	torture_assert(tctx, !strequal_w(NULL, "Foo"), "one NULL");
-	torture_assert(tctx, !strequal_w("foo", NULL), "other NULL");
-	torture_assert(tctx, strequal_w(NULL, NULL), "both NULL");
+	torture_assert(tctx, !strequal_m("foo", "bar"), "different strings");
+	torture_assert(tctx, strequal_m("foo", "foo"), "same case strings");
+	torture_assert(tctx, strequal_m("foo", "Foo"), "different case strings");
+	torture_assert(tctx, !strequal_m(NULL, "Foo"), "one NULL");
+	torture_assert(tctx, !strequal_m("foo", NULL), "other NULL");
+	torture_assert(tctx, strequal_m(NULL, NULL), "both NULL");
 	return true;
 }
 
-static bool test_strcsequal_w(struct torture_context *tctx)
+static bool test_strcsequal_m(struct torture_context *tctx)
 {
-	torture_assert(tctx, !strcsequal_w("foo", "bar"), "different strings");
-	torture_assert(tctx, strcsequal_w("foo", "foo"), "same case strings");
-	torture_assert(tctx, !strcsequal_w("foo", "Foo"), "different case strings");
-	torture_assert(tctx, !strcsequal_w(NULL, "Foo"), "one NULL");
-	torture_assert(tctx, !strcsequal_w("foo", NULL), "other NULL");
-	torture_assert(tctx, strcsequal_w(NULL, NULL), "both NULL");
+	torture_assert(tctx, !strcsequal_m("foo", "bar"), "different strings");
+	torture_assert(tctx, strcsequal_m("foo", "foo"), "same case strings");
+	torture_assert(tctx, !strcsequal_m("foo", "Foo"), "different case strings");
+	torture_assert(tctx, !strcsequal_m(NULL, "Foo"), "one NULL");
+	torture_assert(tctx, !strcsequal_m("foo", NULL), "other NULL");
+	torture_assert(tctx, strcsequal_m(NULL, NULL), "both NULL");
 	return true;
 }
 
@@ -235,12 +235,12 @@ static bool test_strhasupper(struct torture_context *tctx)
 	return true;
 }
 
-static bool test_count_chars_w(struct torture_context *tctx)
+static bool test_count_chars_m(struct torture_context *tctx)
 {
-	torture_assert_int_equal(tctx, count_chars_w("foo", 'o'), 2, "simple");
-	torture_assert_int_equal(tctx, count_chars_w("", 'o'), 0, "empty");
-	torture_assert_int_equal(tctx, count_chars_w("bla", 'o'), 0, "none");
-	torture_assert_int_equal(tctx, count_chars_w("bla", '\0'), 0, "null");
+	torture_assert_int_equal(tctx, count_chars_m("foo", 'o'), 2, "simple");
+	torture_assert_int_equal(tctx, count_chars_m("", 'o'), 0, "empty");
+	torture_assert_int_equal(tctx, count_chars_m("bla", 'o'), 0, "none");
+	torture_assert_int_equal(tctx, count_chars_m("bla", '\0'), 0, "null");
 	return true;
 }
 
@@ -248,12 +248,12 @@ struct torture_suite *torture_local_charset(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "CHARSET");
 
-	torture_suite_add_simple_test(suite, "toupper_w", test_toupper_w);
-	torture_suite_add_simple_test(suite, "tolower_w", test_tolower_w);
+	torture_suite_add_simple_test(suite, "toupper_m", test_toupper_m);
+	torture_suite_add_simple_test(suite, "tolower_m", test_tolower_m);
 	torture_suite_add_simple_test(suite, "codepoint_cmpi", test_codepoint_cmpi);
 	torture_suite_add_simple_test(suite, "strcasecmp_m", test_strcasecmp_m);
-	torture_suite_add_simple_test(suite, "strequal_w", test_strequal_w);
-	torture_suite_add_simple_test(suite, "strcsequal_w", test_strcsequal_w);
+	torture_suite_add_simple_test(suite, "strequal_m", test_strequal_m);
+	torture_suite_add_simple_test(suite, "strcsequal_m", test_strcsequal_m);
 	torture_suite_add_simple_test(suite, "string_replace_m", test_string_replace_m);
 	torture_suite_add_simple_test(suite, "strncasecmp_m", test_strncasecmp_m);
 	torture_suite_add_simple_test(suite, "next_token", test_next_token);
@@ -266,7 +266,7 @@ struct torture_suite *torture_local_charset(TALLOC_CTX *mem_ctx)
 	torture_suite_add_simple_test(suite, "strlen_m_term", test_strlen_m_term);
 	torture_suite_add_simple_test(suite, "strhaslower", test_strhaslower);
 	torture_suite_add_simple_test(suite, "strhasupper", test_strhasupper);
-	torture_suite_add_simple_test(suite, "count_chars_w", test_count_chars_w);
+	torture_suite_add_simple_test(suite, "count_chars_m", test_count_chars_m);
 
 	return suite;
 }
