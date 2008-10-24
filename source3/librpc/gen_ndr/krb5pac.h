@@ -24,7 +24,7 @@ struct PAC_LOGON_INFO {
 	struct netr_SamInfo3 info3;
 	struct dom_sid2 *res_group_dom_sid;/* [unique] */
 	struct samr_RidWithAttributeArray res_groups;
-}/* [gensize] */;
+};
 
 struct PAC_UNKNOWN_12 {
 	uint16_t upn_size;/* [value(2*strlen_m(upn_name))] */

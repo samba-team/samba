@@ -289,7 +289,7 @@ const struct sockaddr_storage *iface_ip(const struct sockaddr *ip)
 
 bool iface_local(const struct sockaddr *ip)
 {
-	return iface_find(ip, True) ? true : false;
+	return iface_find(ip, true) ? true : false;
 }
 
 /****************************************************************************
