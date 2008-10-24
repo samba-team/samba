@@ -263,5 +263,4 @@ param_section_swigregister = _param.param_section_swigregister
 param_section_swigregister(param_section)
 
 
-cvar = _param.cvar
 

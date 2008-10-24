@@ -3118,20 +3118,19 @@ SWIGINTERN PyObject *_wrap_reg_diff_apply(PyObject *SWIGUNUSEDPARM(self), PyObje
   int alloc3 = 0 ;
   PyObject * obj0 = 0 ;
   PyObject * obj1 = 0 ;
-  PyObject * obj2 = 0 ;
   char *  kwnames[] = {
-    (char *) "self",(char *) "ic",(char *) "filename", NULL 
+    (char *) "self",(char *) "filename", NULL 
   };
   WERROR result;
   
-  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OOO:reg_diff_apply",kwnames,&obj0,&obj1,&obj2)) SWIG_fail;
+  arg2 = py_iconv_convenience(NULL);
+  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OO:reg_diff_apply",kwnames,&obj0,&obj1)) SWIG_fail;
   res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_registry_context, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "reg_diff_apply" "', argument " "1"" of type '" "reg *""'"); 
   }
   arg1 = (reg *)(argp1);
-  arg2 = py_iconv_convenience(NULL);
-  res3 = SWIG_AsCharPtrAndSize(obj2, &buf3, NULL, &alloc3);
+  res3 = SWIG_AsCharPtrAndSize(obj1, &buf3, NULL, &alloc3);
   if (!SWIG_IsOK(res3)) {
     SWIG_exception_fail(SWIG_ArgError(res3), "in method '" "reg_diff_apply" "', argument " "3"" of type '" "char const *""'");
   }

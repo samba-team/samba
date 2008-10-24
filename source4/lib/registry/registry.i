@@ -63,11 +63,11 @@ const char *str_regtype(int type);
     $result = SWIG_NewPointerObj(*$1, SWIGTYPE_p_registry_context, 0);
 }
 
-%typemap(in,noblock=1) struct smb_iconv_convenience * {
+%typemap(in,noblock=1,numinputs=0) struct smb_iconv_convenience *ic {
     $1 = py_iconv_convenience(NULL);
 }
 
-%typemap(freearg,noblock=1) struct smb_iconv_convenience * {
+%typemap(freearg,noblock=1) struct smb_iconv_convenience *ic {
     talloc_free($1);
 }
 
