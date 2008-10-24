@@ -19,6 +19,7 @@
 #include "includes.h"
 #include "../lib/util/dlinklist.h"
 #include "param/param.h"
+#include "param/loadparm.h"
 #include "system/filesys.h"
 
 struct param_section *param_get_section(struct param_context *ctx, const char *name)

@@ -37,6 +37,7 @@
 #include "lib/cmdline/popt_common.h"
 #include "lib/socket/socket.h"
 #include "param/param.h"
+#include "param/loadparm.h"
 
 
 /***********************************************
