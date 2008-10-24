@@ -56,7 +56,7 @@ import "misc.idl", "security.idl";
 	NTSTATUS lsa_Close (
 		[in,out]     policy_handle *handle
 		);
-	
+
 
 	/******************/
 	/* Function: 0x01 */
@@ -71,7 +71,7 @@ import "misc.idl", "security.idl";
 		uint32 low;
 		uint32 high;
 	} lsa_LUID;
-	
+
 	typedef struct {
 		lsa_StringLarge name;
 		lsa_LUID luid;
@@ -118,7 +118,7 @@ import "misc.idl", "security.idl";
 		uint8   context_mode;
 		uint8   effective_only;
 	} lsa_QosInfo;
-	
+
 	typedef struct {
 		uint32 len; /* ignored */
 		uint8 *root_dir;
@@ -151,7 +151,7 @@ import "misc.idl", "security.idl";
 		[in]   lsa_PolicyAccessMask access_mask,
 		[out]  policy_handle *handle
 		);
-	
+
 
 
 	/******************/
@@ -315,13 +315,13 @@ import "misc.idl", "security.idl";
 
 	/******************/
 	/* NOTE: This only returns accounts that have at least
-	   one privilege set 
+	   one privilege set
 	*/
 	/* Function: 0x0b */
 	typedef struct {
 		dom_sid2 *sid;
 	} lsa_SidPtr;
-	
+
 	typedef [public] struct {
 		[range(0,1000)] uint32 num_sids;
 		[size_is(num_sids)] lsa_SidPtr *sids;
@@ -476,13 +476,13 @@ import "misc.idl", "security.idl";
 		lsa_LUID luid;
 		uint32 attribute;
 	} lsa_LUIDAttribute;
-	
+
 	typedef struct {
 		[range(0,1000)] uint32 count;
 		uint32 unknown;
 		[size_is(count)] lsa_LUIDAttribute set[*];
 	} lsa_PrivilegeSet;
-	
+
 	NTSTATUS lsa_EnumPrivsAccount(
 		[in]         policy_handle *handle,
 		[out,ref] lsa_PrivilegeSet **privs
@@ -495,7 +495,7 @@ import "misc.idl", "security.idl";
 		[in]         policy_handle *handle,
 		[in,ref]     lsa_PrivilegeSet *privs
 		);
-	
+
 
 	/****************************************/
 	/* Function:         0x14 */
@@ -507,10 +507,10 @@ import "misc.idl", "security.idl";
 
 	/* Function:           0x15 */
 	[todo] NTSTATUS lsa_GetQuotasForAccount();
-	
+
 	/* Function:           0x16 */
 	[todo] NTSTATUS lsa_SetQuotasForAccount();
-	
+
 	typedef [bitmap32bit] bitmap {
 		LSA_POLICY_MODE_INTERACTIVE             = 0x00000001,
 		LSA_POLICY_MODE_NETWORK                 = 0x00000002,
@@ -802,12 +802,12 @@ import "misc.idl", "security.idl";
 	typedef struct {
 		[string,charset(UTF16)] uint16 *name;
 	} lsa_RightAttribute;
-	
+
 	typedef struct {
 		[range(0,256)] uint32 count;
 		[size_is(count)] lsa_StringLarge *names;
 	} lsa_RightSet;
-	
+
 	NTSTATUS lsa_EnumAccountRights (
 		[in]     policy_handle *handle,
 		[in,ref] dom_sid2 *sid,
@@ -945,7 +945,7 @@ import "misc.idl", "security.idl";
 
 	/* Function 0x35 */
 
-	/* w2k3 returns either 0x000bbbd000000000 or 0x000a48e800000000 
+	/* w2k3 returns either 0x000bbbd000000000 or 0x000a48e800000000
 	   for unknown6 - gd */
 	typedef struct {
 		uint32 enforce_restrictions;
