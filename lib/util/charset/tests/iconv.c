@@ -299,7 +299,7 @@ static bool test_codepoint(struct torture_context *tctx, unsigned int codepoint)
 	buf[size+2] = random();
 	buf[size+3] = random();
 
-	c = next_codepoint(lp_iconv_convenience(tctx->lp_ctx), (char *)buf, &size2);
+	c = next_codepoint_convenience(lp_iconv_convenience(tctx->lp_ctx), (char *)buf, &size2);
 
 	torture_assert(tctx, c == codepoint, 
 		       talloc_asprintf(tctx, 

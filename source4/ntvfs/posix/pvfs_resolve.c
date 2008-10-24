@@ -265,7 +265,7 @@ static NTSTATUS pvfs_unix_path(struct pvfs_state *pvfs, const char *cifs_name,
 
 	while (*p) {
 		size_t c_size;
-		codepoint_t c = next_codepoint(lp_iconv_convenience(pvfs->ntvfs->ctx->lp_ctx), p, &c_size);
+		codepoint_t c = next_codepoint_convenience(lp_iconv_convenience(pvfs->ntvfs->ctx->lp_ctx), p, &c_size);
 		switch (c) {
 		case '\\':
 			if (name->has_wildcard) {
@@ -358,7 +358,7 @@ static NTSTATUS pvfs_reduce_name(TALLOC_CTX *mem_ctx,
 	if (s == NULL) return NT_STATUS_NO_MEMORY;
 
 	for (num_components=1, p=s; *p; p += c_size) {
-		c = next_codepoint(iconv_convenience, p, &c_size);
+		c = next_codepoint_convenience(iconv_convenience, p, &c_size);
 		if (c == '\\') num_components++;
 	}
 
@@ -370,7 +370,7 @@ static NTSTATUS pvfs_reduce_name(TALLOC_CTX *mem_ctx,
 
 	components[0] = s;
 	for (i=0, p=s; *p; p += c_size) {
-		c = next_codepoint(iconv_convenience, p, &c_size);
+		c = next_codepoint_convenience(iconv_convenience, p, &c_size);
 		if (c == '\\') {
 			*p = 0;
 			components[++i] = p+1;

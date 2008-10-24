@@ -115,8 +115,8 @@ static const char *pvfs_resolve_wildcard_component(TALLOC_CTX *mem_ctx,
 	while (*p2) {
 		codepoint_t c1, c2;
 		size_t c_size1, c_size2;
-		c1 = next_codepoint(iconv_convenience, p1, &c_size1);
-		c2 = next_codepoint(iconv_convenience, p2, &c_size2);
+		c1 = next_codepoint_convenience(iconv_convenience, p1, &c_size1);
+		c2 = next_codepoint_convenience(iconv_convenience, p2, &c_size2);
 		if (c2 == '?') {
 			d += push_codepoint(iconv_convenience, d, c1);
 		} else if (c2 == '*') {

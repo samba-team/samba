@@ -45,8 +45,8 @@ _PUBLIC_ int strcasecmp_m(const char *s1, const char *s2)
 	if (s2 == NULL) return 1;
 
 	while (*s1 && *s2) {
-		c1 = next_codepoint(iconv_convenience, s1, &size1);
-		c2 = next_codepoint(iconv_convenience, s2, &size2);
+		c1 = next_codepoint_convenience(iconv_convenience, s1, &size1);
+		c2 = next_codepoint_convenience(iconv_convenience, s2, &size2);
 
 		s1 += size1;
 		s2 += size2;
@@ -132,8 +132,8 @@ _PUBLIC_ int strncasecmp_m(const char *s1, const char *s2, size_t n)
 	while (*s1 && *s2 && n) {
 		n--;
 
-		c1 = next_codepoint(iconv_convenience, s1, &size1);
-		c2 = next_codepoint(iconv_convenience, s2, &size2);
+		c1 = next_codepoint_convenience(iconv_convenience, s1, &size1);
+		c2 = next_codepoint_convenienceconv_convenience, s2, &size2);
 
 		s1 += size1;
 		s2 += size2;
@@ -193,7 +193,7 @@ _PUBLIC_ void string_replace_m(char *s, char oldc, char newc)
 	struct smb_iconv_convenience *ic = get_iconv_convenience();
 	while (s && *s) {
 		size_t size;
-		codepoint_t c = next_codepoint(ic, s, &size);
+		codepoint_t c = next_codepoint_convenience(ic, s, &size);
 		if (c == oldc) {
 			*s = newc;
 		}
@@ -314,7 +314,7 @@ _PUBLIC_ char *strchr_m(const char *s, char c)
 
 	while (*s) {
 		size_t size;
-		codepoint_t c2 = next_codepoint(ic, s, &size);
+		codepoint_t c2 = next_codepoint_convenience(ic, s, &size);
 		if (c2 == c) {
 			return discard_const_p(char, s);
 		}
@@ -365,7 +365,7 @@ _PUBLIC_ bool strhaslower(const char *string)
 		codepoint_t s;
 		codepoint_t t;
 
-		s = next_codepoint(ic, string, &c_size);
+		s = next_codepoint_convenience(ic, string, &c_size);
 		string += c_size;
 
 		t = toupper_m(s);
@@ -389,7 +389,7 @@ _PUBLIC_ bool strhasupper(const char *string)
 		codepoint_t s;
 		codepoint_t t;
 
-		s = next_codepoint(ic, string, &c_size);
+		s = next_codepoint_convenience(ic, string, &c_size);
 		string += c_size;
 
 		t = tolower_m(s);
@@ -420,7 +420,7 @@ _PUBLIC_ char *strlower_talloc(TALLOC_CTX *ctx, const char *src)
 
 	while (*src) {
 		size_t c_size;
-		codepoint_t c = next_codepoint(iconv_convenience, src, &c_size);
+		codepoint_t c = next_codepoint_convenience(iconv_convenience, src, &c_size);
 		src += c_size;
 
 		c = tolower_m(c);
@@ -531,7 +531,7 @@ _PUBLIC_ void strlower_m(char *s)
 
 	while (*s) {
 		size_t c_size, c_size2;
-		codepoint_t c = next_codepoint(iconv_convenience, s, &c_size);
+		codepoint_t c = next_codepoint_convenience(iconv_convenience, s, &c_size);
 		c_size2 = push_codepoint(iconv_convenience, d, tolower_m(c));
 		if (c_size2 > c_size) {
 			DEBUG(0,("FATAL: codepoint 0x%x (0x%x) expanded from %d to %d bytes in strlower_m\n",
@@ -570,7 +570,7 @@ _PUBLIC_ void strupper_m(char *s)
 
 	while (*s) {
 		size_t c_size, c_size2;
-		codepoint_t c = next_codepoint(iconv_convenience, s, &c_size);
+		codepoint_t c = next_codepoint_convenience(iconv_convenience, s, &c_size);
 		c_size2 = push_codepoint(iconv_convenience, d, toupper_m(c));
 		if (c_size2 > c_size) {
 			DEBUG(0,("FATAL: codepoint 0x%x (0x%x) expanded from %d to %d bytes in strupper_m\n",
@@ -594,7 +594,7 @@ _PUBLIC_ size_t count_chars_m(const char *s, char c)
 
 	while (*s) {
 		size_t size;
-		codepoint_t c2 = next_codepoint(ic, s, &size);
+		codepoint_t c2 = next_codepoint_convenience(ic, s, &size);
 		if (c2 == c) count++;
 		s += size;
 	}
@@ -957,4 +957,10 @@ _PUBLIC_ ssize_t convert_string_talloc(TALLOC_CTX *ctx,
 {
 	return convert_string_talloc_convenience(ctx, get_iconv_convenience(),
 											 from, to, src, srclen, dest);
+}
+
+
+_PUBLIC_ codepoint_t next_codepoint(const char *str, size_t *size)
+{
+	return next_codepoint_convenience(get_iconv_convenience(), str, size);
 }

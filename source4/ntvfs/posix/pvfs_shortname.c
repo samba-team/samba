@@ -390,7 +390,7 @@ static bool is_legal_name(struct pvfs_mangle_context *ctx, const char *name)
 {
 	while (*name) {
 		size_t c_size;
-		codepoint_t c = next_codepoint(ctx->iconv_convenience, name, &c_size);
+		codepoint_t c = next_codepoint_convenience(ctx->iconv_convenience, name, &c_size);
 		if (c == INVALID_CODEPOINT) {
 			return false;
 		}

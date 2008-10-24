@@ -321,7 +321,7 @@ _PUBLIC_ ssize_t convert_string_talloc_convenience(TALLOC_CTX *ctx,
 
   return INVALID_CODEPOINT if the next character cannot be converted
 */
-_PUBLIC_ codepoint_t next_codepoint(struct smb_iconv_convenience *ic, 
+_PUBLIC_ codepoint_t next_codepoint_convenience(struct smb_iconv_convenience *ic, 
 				    const char *str, size_t *size)
 {
 	/* it cannot occupy more than 4 bytes in UTF16 format */

@@ -64,9 +64,8 @@ static int ms_fnmatch_core(const char *p, const char *n,
 	codepoint_t c, c2;
 	int i;
 	size_t size, size_n;
-	struct smb_iconv_convenience *iconv_convenience = lp_iconv_convenience(global_loadparm);
 
-	while ((c = next_codepoint(iconv_convenience, p, &size))) {
+	while ((c = next_codepoint(p, &size))) {
 		p += size;
 
 		switch (c) {
@@ -76,7 +75,7 @@ static int ms_fnmatch_core(const char *p, const char *n,
 				return null_match(p);
 			}
 			for (i=0; n[i]; i += size_n) {
-				next_codepoint(iconv_convenience, n+i, &size_n);
+				next_codepoint(n+i, &size_n);
 				if (ms_fnmatch_core(p, n+i, max_n+1, ldot) == 0) {
 					return 0;
 				}
@@ -95,7 +94,7 @@ static int ms_fnmatch_core(const char *p, const char *n,
 				return -1;
 			}
 			for (i=0; n[i]; i += size_n) {
-				next_codepoint(iconv_convenience, n+i, &size_n);
+				next_codepoint(n+i, &size_n);
 				if (ms_fnmatch_core(p, n+i, max_n+1, ldot) == 0) return 0;
 				if (n+i == ldot) {
 					if (ms_fnmatch_core(p, n+i+size_n, max_n+1, ldot) == 0) return 0;
@@ -111,7 +110,7 @@ static int ms_fnmatch_core(const char *p, const char *n,
 			if (! *n) {
 				return -1;
 			}
-			next_codepoint(iconv_convenience, n, &size_n);
+			next_codepoint(n, &size_n);
 			n += size_n;
 			break;
 
@@ -125,7 +124,7 @@ static int ms_fnmatch_core(const char *p, const char *n,
 				break;
 			}
 			if (! *n) return null_match(p);
-			next_codepoint(iconv_convenience, n, &size_n);
+			next_codepoint(n, &size_n);
 			n += size_n;
 			break;
 
@@ -135,12 +134,12 @@ static int ms_fnmatch_core(const char *p, const char *n,
 				return 0;
 			}
 			if (*n != '.') return -1;
-			next_codepoint(iconv_convenience, n, &size_n);
+			next_codepoint(n, &size_n);
 			n += size_n;
 			break;
 
 		default:
-			c2 = next_codepoint(iconv_convenience, n, &size_n);
+			c2 = next_codepoint(n, &size_n);
 			if (c != c2 && codepoint_cmpi(c, c2) != 0) {
 				return -1;
 			}

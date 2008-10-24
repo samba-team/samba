@@ -179,11 +179,10 @@ uint32_t pvfs_name_hash(const char *key, size_t length)
 	const uint32_t fnv1_prime = 0x01000193;
 	const uint32_t fnv1_init = 0xa6b93095;
 	uint32_t value = fnv1_init;
-	struct smb_iconv_convenience *iconv_convenience = lp_iconv_convenience(global_loadparm);
 
 	while (*key && length--) {
 		size_t c_size;
-		codepoint_t c = next_codepoint(iconv_convenience, key, &c_size);
+		codepoint_t c = next_codepoint(key, &c_size);
 		c = toupper_m(c);
                 value *= fnv1_prime;
                 value ^= (uint32_t)c;
