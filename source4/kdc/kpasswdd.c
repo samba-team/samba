@@ -65,7 +65,7 @@ static bool kpasswdd_make_error_reply(struct kdc_server *kdc,
 	
 	DEBUG(result_code ? 3 : 10, ("kpasswdd: %s\n", error_string));
 
-	len = push_utf8_talloc(mem_ctx, lp_iconv_convenience(kdc->task->lp_ctx), &error_string_utf8, error_string);
+	len = push_utf8_talloc(mem_ctx, &error_string_utf8, error_string);
 	if (len == -1) {
 		return false;
 	}

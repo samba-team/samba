@@ -140,10 +140,10 @@ size_t smbsrv_blob_push_string(TALLOC_CTX *mem_ctx,
 		alignment = 1;
 		if (dest_len > 0) {
 			SCVAL(blob->data + offset, 0, 0);
-			ret = push_string(lp_iconv_convenience(global_loadparm), blob->data + offset + 1, str, dest_len-1, flags);
+			ret = push_string(blob->data + offset + 1, str, dest_len-1, flags);
 		}
 	} else {
-		ret = push_string(lp_iconv_convenience(global_loadparm), blob->data + offset, str, dest_len, flags);
+		ret = push_string(blob->data + offset, str, dest_len, flags);
 	}
 
 	/* sometimes the string needs to be terminated, but the length

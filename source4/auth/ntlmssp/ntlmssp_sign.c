@@ -119,7 +119,6 @@ static NTSTATUS ntlmssp_make_packet_signature(struct gensec_ntlmssp_state *gense
 		uint32_t crc;
 		crc = crc32_calc_buffer(data, length);
 		if (!msrpc_gen(sig_mem_ctx, 
-			       lp_iconv_convenience(gensec_ntlmssp_state->gensec_security->lp_ctx),
 			       sig, "dddd", NTLMSSP_SIGN_VERSION, 0, crc, gensec_ntlmssp_state->crypt.ntlm.seq_num)) {
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -248,7 +247,6 @@ NTSTATUS gensec_ntlmssp_seal_packet(struct gensec_security *gensec_security,
 		uint32_t crc;
 		crc = crc32_calc_buffer(data, length);
 		if (!msrpc_gen(sig_mem_ctx, 
-		               lp_iconv_convenience(gensec_security->lp_ctx),
 			       sig, "dddd", NTLMSSP_SIGN_VERSION, 0, crc, gensec_ntlmssp_state->crypt.ntlm.seq_num)) {
 			return NT_STATUS_NO_MEMORY;
 		}

@@ -430,7 +430,7 @@ size_t smbcli_req_append_string(struct smbcli_request *req, const char *str, uin
 
 	smbcli_req_grow_allocation(req, len + req->out.data_size);
 
-	len = push_string(lp_iconv_convenience(global_loadparm), req->out.data + req->out.data_size, str, len, flags);
+	len = push_string(req->out.data + req->out.data_size, str, len, flags);
 
 	smbcli_req_grow_data(req, len + req->out.data_size);
 
@@ -977,7 +977,7 @@ size_t smbcli_blob_append_string(struct smbcli_session *session,
 		return 0;
 	}
 
-	len = push_string(lp_iconv_convenience(global_loadparm), blob->data + blob->length, str, max_len, flags);
+	len = push_string(blob->data + blob->length, str, max_len, flags);
 
 	blob->length += len;
 

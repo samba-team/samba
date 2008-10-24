@@ -966,8 +966,7 @@ static bool test_NetrMessageBufferSend(struct torture_context *tctx,
 	size_t size;
 	uint8_t *msg;
 
-	size = push_ucs2_talloc(tctx, lp_iconv_convenience(tctx->lp_ctx), 
-				(void **)&msg, message);
+	size = push_ucs2_talloc(tctx, (void **)&msg, message);
 
 	r.in.server_name = dcerpc_server_name(p);
 	r.in.message_name = dcerpc_server_name(p);

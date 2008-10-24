@@ -245,7 +245,6 @@ struct composite_context *wb_cmd_pam_auth_send(TALLOC_CTX *mem_ctx,
 
 	names_blob = NTLMv2_generate_names_blob(
 		mem_ctx,
-		lp_iconv_convenience(service->task->lp_ctx),
 		cli_credentials_get_workstation(credentials), 
 		cli_credentials_get_domain(credentials));
 

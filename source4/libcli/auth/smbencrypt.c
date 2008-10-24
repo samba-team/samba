@@ -67,7 +67,7 @@ bool E_md4hash(const char *passwd, uint8_t p16[16])
 	int len;
 	void *wpwd;
 
-	len = push_ucs2_talloc(NULL, lp_iconv_convenience(global_loadparm), &wpwd, passwd);
+	len = push_ucs2_talloc(NULL, &wpwd, passwd);
 	if (len < 2) {
 		/* We don't want to return fixed data, as most callers
 		 * don't check */
@@ -97,7 +97,7 @@ bool E_deshash(const char *passwd, uint8_t p16[16])
 	ZERO_STRUCT(dospwd);
 
 	/* Password must be converted to DOS charset - null terminated, uppercase. */
-	push_string(lp_iconv_convenience(global_loadparm), dospwd, passwd, sizeof(dospwd), STR_ASCII|STR_UPPER|STR_TERMINATE);
+	push_string(dospwd, passwd, sizeof(dospwd), STR_ASCII|STR_UPPER|STR_TERMINATE);
 
 	/* Only the first 14 chars are considered, password need not be null terminated. */
 	E_P16((const uint8_t *)dospwd, p16);
@@ -124,7 +124,6 @@ bool ntv2_owf_gen(const uint8_t owf[16],
 
 	HMACMD5Context ctx;
 	TALLOC_CTX *mem_ctx = talloc_init("ntv2_owf_gen for %s\\%s", domain_in, user_in); 
-	struct smb_iconv_convenience *iconv_convenience = lp_iconv_convenience(global_loadparm);
 
 	if (!mem_ctx) {
 		return false;
@@ -152,14 +151,14 @@ bool ntv2_owf_gen(const uint8_t owf[16],
 		}
 	}
 
-	user_byte_len = push_ucs2_talloc(mem_ctx, iconv_convenience, &user, user_in);
+	user_byte_len = push_ucs2_talloc(mem_ctx, &user, user_in);
 	if (user_byte_len == (ssize_t)-1) {
 		DEBUG(0, ("push_uss2_talloc() for user returned -1 (probably talloc() failure)\n"));
 		talloc_free(mem_ctx);
 		return false;
 	}
 
-	domain_byte_len = push_ucs2_talloc(mem_ctx, iconv_convenience, &domain, domain_in);
+	domain_byte_len = push_ucs2_talloc(mem_ctx, &domain, domain_in);
 	if (domain_byte_len == (ssize_t)-1) {
 		DEBUG(0, ("push_ucs2_talloc() for domain returned -1 (probably talloc() failure)\n"));
 		talloc_free(mem_ctx);
@@ -295,13 +294,12 @@ void SMBsesskeygen_lm_sess_key(const uint8_t lm_hash[16],
 }
 
 DATA_BLOB NTLMv2_generate_names_blob(TALLOC_CTX *mem_ctx, 
-				     struct smb_iconv_convenience *iconv_convenience,
 				     const char *hostname, 
 				     const char *domain)
 {
 	DATA_BLOB names_blob = data_blob_talloc(mem_ctx, NULL, 0);
 	
-	msrpc_gen(mem_ctx, iconv_convenience, &names_blob, 
+	msrpc_gen(mem_ctx, &names_blob, 
 		  "aaa", 
 		  NTLMSSP_NAME_TYPE_DOMAIN, domain,
 		  NTLMSSP_NAME_TYPE_SERVER, hostname,
@@ -324,7 +322,7 @@ static DATA_BLOB NTLMv2_generate_client_data(TALLOC_CTX *mem_ctx, const DATA_BLO
 
 	/* See http://www.ubiqx.org/cifs/SMB.html#SMB.8.5 */
 
-	msrpc_gen(mem_ctx, NULL, &response, "ddbbdb", 
+	msrpc_gen(mem_ctx, &response, "ddbbdb", 
 		  0x00000101,     /* Header  */
 		  0,              /* 'Reserved'  */
 		  long_date, 8,	  /* Timestamp */
@@ -472,7 +470,7 @@ bool encode_pw_buffer(uint8_t buffer[516], const char *password, int string_flag
 	/* the incoming buffer can be any alignment. */
 	string_flags |= STR_NOALIGN;
 
-	new_pw_len = push_string(lp_iconv_convenience(global_loadparm), new_pw,
+	new_pw_len = push_string(new_pw,
 				 password, 
 				 sizeof(new_pw), string_flags);
 	
@@ -525,7 +523,7 @@ bool decode_pw_buffer(uint8_t in_buffer[516], char *new_pwrd,
 	}
 
 	/* decode into the return buffer.  Buffer length supplied */
- 	converted_pw_len = pull_string(lp_iconv_convenience(global_loadparm), new_pwrd, &in_buffer[512 - byte_len], new_pwrd_size, 
+ 	converted_pw_len = pull_string(new_pwrd, &in_buffer[512 - byte_len], new_pwrd_size, 
 				  byte_len, string_flags);
 
 	if (converted_pw_len == -1) {

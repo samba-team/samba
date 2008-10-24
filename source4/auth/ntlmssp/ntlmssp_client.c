@@ -73,7 +73,6 @@ NTSTATUS ntlmssp_client_initial(struct gensec_security *gensec_security,
 
 	/* generate the ntlmssp negotiate packet */
 	msrpc_gen(out_mem_ctx, 
-		  lp_iconv_convenience(gensec_security->lp_ctx),
 		  out, "CddAA",
 		  "NTLMSSP",
 		  NTLMSSP_NEGOTIATE,
@@ -258,7 +257,6 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 
 	/* this generates the actual auth packet */
 	if (!msrpc_gen(mem_ctx, 
-		       lp_iconv_convenience(gensec_security->lp_ctx),
 		       out, auth_gen_string, 
 		       "NTLMSSP", 
 		       NTLMSSP_AUTH, 

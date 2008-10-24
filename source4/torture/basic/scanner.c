@@ -163,7 +163,7 @@ static bool trans2_op_exists(struct smbcli_state *cli, int op)
 /****************************************************************************
 check for existance of a trans2 call
 ****************************************************************************/
-static bool scan_trans2(struct smb_iconv_convenience *iconv_convenience, 
+static bool scan_trans2(
 			struct smbcli_state *cli, int op, int level,
 			int fnum, int dnum, int qfnum, const char *fname)
 {
@@ -233,7 +233,7 @@ static bool scan_trans2(struct smb_iconv_convenience *iconv_convenience,
 	SSVAL(param, 0, level);
 	SSVAL(param, 2, 0);
 	SSVAL(param, 4, 0);
-	param_len += push_string(iconv_convenience,
+	param_len += push_string(
 			&param[6], fname, PARAM_SIZE-7,
 			STR_TERMINATE|STR_UNICODE);
 
@@ -249,7 +249,7 @@ static bool scan_trans2(struct smb_iconv_convenience *iconv_convenience,
 	SSVAL(param, 0, level);
 	SSVAL(param, 2, 0);
 	SSVAL(param, 4, 0);
-	param_len += push_string(iconv_convenience,
+	param_len += push_string(
 			&param[6], "\\newfile.dat", PARAM_SIZE-7,
 			STR_TERMINATE|STR_UNICODE);
 
@@ -266,7 +266,7 @@ static bool scan_trans2(struct smb_iconv_convenience *iconv_convenience,
 	smbcli_mkdir(cli->tree, "\\testdir");
 	param_len = 2;
 	SSVAL(param, 0, level);
-	param_len += push_string(iconv_convenience,
+	param_len += push_string(
 			&param[2], "\\testdir", PARAM_SIZE-3,
 			STR_TERMINATE|STR_UNICODE);
 
@@ -321,15 +321,15 @@ bool torture_trans2_scan(struct torture_context *torture,
 		}
 
 		for (level = 0; level <= 50; level++) {
-			scan_trans2(lp_iconv_convenience(torture->lp_ctx), cli, op, level, fnum, dnum, qfnum, fname);
+			scan_trans2(cli, op, level, fnum, dnum, qfnum, fname);
 		}
 
 		for (level = 0x100; level <= 0x130; level++) {
-			scan_trans2(lp_iconv_convenience(torture->lp_ctx), cli, op, level, fnum, dnum, qfnum, fname);
+			scan_trans2(cli, op, level, fnum, dnum, qfnum, fname);
 		}
 
 		for (level = 1000; level < 1050; level++) {
-			scan_trans2(lp_iconv_convenience(torture->lp_ctx), cli, op, level, fnum, dnum, qfnum, fname);
+			scan_trans2(cli, op, level, fnum, dnum, qfnum, fname);
 		}
 	}
 
@@ -494,7 +494,7 @@ static bool scan_nttrans(struct smb_iconv_convenience *iconv_convenience,
 	SSVAL(param, 0, level);
 	SSVAL(param, 2, 0);
 	SSVAL(param, 4, 0);
-	param_len += push_string(iconv_convenience,
+	param_len += push_string(
 			&param[6], fname, PARAM_SIZE,
 			STR_TERMINATE | STR_UNICODE);
 
@@ -510,7 +510,7 @@ static bool scan_nttrans(struct smb_iconv_convenience *iconv_convenience,
 	SSVAL(param, 0, level);
 	SSVAL(param, 2, 0);
 	SSVAL(param, 4, 0);
-	param_len += push_string(iconv_convenience,
+	param_len += push_string(
 			&param[6], "\\newfile.dat", PARAM_SIZE,
 			STR_TERMINATE | STR_UNICODE);
 
@@ -527,8 +527,7 @@ static bool scan_nttrans(struct smb_iconv_convenience *iconv_convenience,
 	smbcli_mkdir(cli->tree, "\\testdir");
 	param_len = 2;
 	SSVAL(param, 0, level);
-	param_len += push_string(iconv_convenience,
-			&param[2], "\\testdir", PARAM_SIZE,
+	param_len += push_string(&param[2], "\\testdir", PARAM_SIZE,
 			STR_TERMINATE | STR_UNICODE);
 
 	status = try_nttrans_len(cli, "dfs", op, level, param, data, param_len,

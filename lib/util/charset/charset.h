@@ -76,7 +76,6 @@ typedef struct smb_iconv_s {
 
 struct loadparm_context;
 struct smb_iconv_convenience;
-extern struct smb_iconv_convenience *global_smb_iconv_convenience;
 
 /* replace some string functions with multi-byte
    versions */
@@ -105,6 +104,15 @@ bool strhaslower(const char *string);
 char *strrchr_m(const char *s, char c);
 char *strchr_m(const char *s, char c);
 
+ssize_t push_ascii_talloc(TALLOC_CTX *ctx, char **dest, const char *src);
+ssize_t push_ucs2_talloc(TALLOC_CTX *ctx, void **dest, const char *src);
+ssize_t push_utf8_talloc(TALLOC_CTX *ctx, char **dest, const char *src);
+ssize_t pull_ascii_talloc(TALLOC_CTX *ctx, char **dest, const char *src);
+ssize_t pull_ucs2_talloc(TALLOC_CTX *ctx, char **dest, const void *src);
+ssize_t pull_utf8_talloc(TALLOC_CTX *ctx, char **dest, const char *src);
+ssize_t push_string(void *dest, const char *src, size_t dest_len, int flags);
+ssize_t pull_string(char *dest, const void *src, size_t dest_len, size_t src_len, int flags);
+
 /* codepoints */
 codepoint_t next_codepoint(struct smb_iconv_convenience *ic, 
 			    const char *str, size_t *size);
@@ -113,9 +121,13 @@ ssize_t push_codepoint(struct smb_iconv_convenience *ic,
 codepoint_t toupper_m(codepoint_t val);
 codepoint_t tolower_m(codepoint_t val);
 int codepoint_cmpi(codepoint_t c1, codepoint_t c2);
-ssize_t push_string(struct smb_iconv_convenience *ic, void *dest, const char *src, size_t dest_len, int flags);
-ssize_t pull_string(struct smb_iconv_convenience *ic,
-		    char *dest, const void *src, size_t dest_len, size_t src_len, int flags);
+
+/* Iconv convenience functions */
+struct smb_iconv_convenience *smb_iconv_convenience_init(TALLOC_CTX *mem_ctx,
+							 const char *dos_charset,
+							 const char *unix_charset,
+							 bool native_iconv);
+
 ssize_t convert_string(struct smb_iconv_convenience *ic,
 				charset_t from, charset_t to,
 				void const *src, size_t srclen, 
@@ -126,13 +138,6 @@ ssize_t convert_string_talloc(TALLOC_CTX *ctx,
 				       charset_t from, charset_t to, 
 				       void const *src, size_t srclen, 
 				       void **dest);
-ssize_t push_ascii_talloc(TALLOC_CTX *ctx, struct smb_iconv_convenience *ic, char **dest, const char *src);
-ssize_t push_ucs2_talloc(TALLOC_CTX *ctx, struct smb_iconv_convenience *ic, void **dest, const char *src);
-ssize_t push_utf8_talloc(TALLOC_CTX *ctx, struct smb_iconv_convenience *ic, char **dest, const char *src);
-ssize_t pull_ascii_talloc(TALLOC_CTX *ctx, struct smb_iconv_convenience *ic, char **dest, const char *src);
-ssize_t pull_ucs2_talloc(TALLOC_CTX *ctx, struct smb_iconv_convenience *ic, char **dest, const void *src);
-ssize_t pull_utf8_talloc(TALLOC_CTX *ctx, struct smb_iconv_convenience *ic, char **dest, const char *src);
-
 /* iconv */
 smb_iconv_t smb_iconv_open(const char *tocode, const char *fromcode);
 int smb_iconv_close(smb_iconv_t cd);
@@ -141,12 +146,6 @@ size_t smb_iconv(smb_iconv_t cd,
 		 char **outbuf, size_t *outbytesleft);
 smb_iconv_t smb_iconv_open_ex(TALLOC_CTX *mem_ctx, const char *tocode, 
 			      const char *fromcode, bool native_iconv);
-
-/* iconv convenience */
-struct smb_iconv_convenience *smb_iconv_convenience_init(TALLOC_CTX *mem_ctx,
-							 const char *dos_charset,
-							 const char *unix_charset,
-							 bool native_iconv);
 
 void load_case_tables(void);
 bool charset_register_backend(const void *_funcs);

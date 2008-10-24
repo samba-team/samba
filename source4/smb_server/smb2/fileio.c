@@ -458,7 +458,7 @@ static void smb2srv_notify_send(struct ntvfs_request *ntvfs)
 		ssize_t len;
 
 		SIVAL(p, 4, io->smb2.out.changes[i].action);
-		len = push_string(lp_iconv_convenience(ntvfs->ctx->lp_ctx), p + 12, io->smb2.out.changes[i].name.s, 
+		len = push_string(p + 12, io->smb2.out.changes[i].name.s, 
 				  blob.length - (p+12 - blob.data), STR_UNICODE);
 		SIVAL(p, 8, len);
 

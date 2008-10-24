@@ -205,7 +205,6 @@ NTSTATUS ntlmssp_server_negotiate(struct gensec_security *gensec_security,
 		}
 
 		msrpc_gen(out_mem_ctx, 
-		          lp_iconv_convenience(gensec_security->lp_ctx),
 			  &struct_blob, "aaaaa",
 			  NTLMSSP_NAME_TYPE_DOMAIN, target_name,
 			  NTLMSSP_NAME_TYPE_SERVER, gensec_ntlmssp_state->server_name,
@@ -226,7 +225,6 @@ NTSTATUS ntlmssp_server_negotiate(struct gensec_security *gensec_security,
 		}
 		
 		msrpc_gen(out_mem_ctx, 
-		          lp_iconv_convenience(gensec_security->lp_ctx),
 			  out, gen_string,
 			  "NTLMSSP", 
 			  NTLMSSP_CHALLENGE,

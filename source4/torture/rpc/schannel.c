@@ -68,7 +68,7 @@ bool test_netlogon_ex_ops(struct dcerpc_pipe *p, struct torture_context *tctx,
 	chal = data_blob_const(ninfo.challenge, 
 			       sizeof(ninfo.challenge));
 
-	names_blob = NTLMv2_generate_names_blob(tctx, lp_iconv_convenience(tctx->lp_ctx), cli_credentials_get_workstation(credentials), 
+	names_blob = NTLMv2_generate_names_blob(tctx, cli_credentials_get_workstation(credentials), 
 						cli_credentials_get_domain(credentials));
 
 	status = cli_credentials_get_ntlm_response(cmdline_credentials, tctx, 
@@ -573,7 +573,7 @@ static bool torture_schannel_bench_start(struct torture_schannel_bench_conn *con
 	chal = data_blob_const(conn->ninfo.challenge,
 			       sizeof(conn->ninfo.challenge));
 
-	names_blob = NTLMv2_generate_names_blob(conn->tmp, lp_iconv_convenience(s->tctx->lp_ctx),
+	names_blob = NTLMv2_generate_names_blob(conn->tmp, 
 						cli_credentials_get_workstation(conn->wks_creds),
 						cli_credentials_get_domain(conn->wks_creds));
 

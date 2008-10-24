@@ -1041,7 +1041,7 @@ static bool schan(struct smbcli_state *cli,
 
 		generate_random_buffer(chal.data, chal.length);
 		names_blob = NTLMv2_generate_names_blob(
-			mem_ctx, lp_iconv_convenience(lp_ctx), 
+			mem_ctx, 
 			cli_credentials_get_workstation(user_creds),
 			cli_credentials_get_domain(user_creds));
 		status = cli_credentials_get_ntlm_response(
@@ -2420,8 +2420,7 @@ static NTSTATUS get_servername(TALLOC_CTX *mem_ctx, struct smbcli_tree *tree,
 	memcpy(servername, r.out.info.info0.name, 16);
 	servername[16] = '\0';
 
-	if (pull_ascii_talloc(mem_ctx, iconv_convenience, 
-			      name, servername) < 0) {
+	if (pull_ascii_talloc(mem_ctx, name, servername) < 0) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
