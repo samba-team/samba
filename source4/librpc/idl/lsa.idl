@@ -289,7 +289,7 @@ import "misc.idl", "security.idl";
 	NTSTATUS lsa_QueryInfoPolicy(
 		[in]                            policy_handle *handle,
 		[in]                            lsa_PolicyInfo level,
-		[out,unique,switch_is(level)]   lsa_PolicyInformation *info
+		[out,ref,switch_is(level)]      lsa_PolicyInformation **info
 		);
 
 	/******************/
@@ -883,7 +883,7 @@ import "misc.idl", "security.idl";
 	NTSTATUS lsa_QueryInfoPolicy2(
 		[in]                         policy_handle *handle,
 		[in]                         lsa_PolicyInfo level,
-		[out,unique,switch_is(level)]   lsa_PolicyInformation *info
+		[out,ref,switch_is(level)]   lsa_PolicyInformation **info
 		);
 
 	/* Function 0x2f */

@@ -444,6 +444,8 @@ struct composite_context *libnet_GroupList_send(struct libnet_context *ctx,
 	/* prepare arguments of QueryDomainInfo call */
 	s->query_domain.in.handle = &ctx->lsa.handle;
 	s->query_domain.in.level  = LSA_POLICY_INFO_DOMAIN;
+	s->query_domain.out.info  = talloc_zero(c, union lsa_PolicyInformation *);
+	if (composite_nomem(s->query_domain.out.info, c)) return c;
 
 	/* send the request */
 	query_req = dcerpc_lsa_QueryInfoPolicy_send(ctx->lsa.pipe, c, &s->query_domain);
@@ -502,7 +504,7 @@ static void continue_domain_queried(struct rpc_request *req)
 	if (!composite_is_ok(c)) return;
 
 	/* get the returned domain info */
-	s->dominfo = s->query_domain.out.info->domain;
+	s->dominfo = (*s->query_domain.out.info)->domain;
 
 	/* make sure we have samr domain handle before continuing */
 	prereq_met = samr_domain_opened(s->ctx, s->domain_name, &c, &s->domain_open,
@@ -592,7 +594,7 @@ static void continue_groups_enumerated(struct rpc_request *req)
 		for (i = 0; i < s->group_list.out.sam->count; i++) {
 			struct dom_sid *group_sid;
 			struct samr_SamEntry *entry = &s->group_list.out.sam->entries[i];
-			struct dom_sid *domain_sid = s->query_domain.out.info->domain.sid;
+			struct dom_sid *domain_sid = (*s->query_domain.out.info)->domain.sid;
 			
 			/* construct group sid from returned rid and queried domain sid */
 			group_sid = dom_sid_add_rid(c, domain_sid, entry->idx);

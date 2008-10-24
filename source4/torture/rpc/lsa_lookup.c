@@ -66,15 +66,17 @@ static bool get_domainsid(TALLOC_CTX *mem_ctx, struct dcerpc_pipe *p,
 			  struct dom_sid **sid)
 {
 	struct lsa_QueryInfoPolicy r;
+	union lsa_PolicyInformation *info = NULL;
 	NTSTATUS status;
 
 	r.in.level = LSA_POLICY_INFO_DOMAIN;
 	r.in.handle = handle;
+	r.out.info = &info;
 
 	status = dcerpc_lsa_QueryInfoPolicy(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) return false;
 
-	*sid = r.out.info->domain.sid;
+	*sid = info->domain.sid;
 	return true;
 }
 

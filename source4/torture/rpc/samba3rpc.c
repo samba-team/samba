@@ -208,6 +208,7 @@ static bool bindtest(struct smbcli_state *cli,
 	struct lsa_ObjectAttribute objectattr;
 	struct lsa_OpenPolicy2 openpolicy;
 	struct lsa_QueryInfoPolicy query;
+	union lsa_PolicyInformation *info = NULL;
 	struct policy_handle handle;
 	struct lsa_Close close_handle;
 
@@ -256,6 +257,7 @@ static bool bindtest(struct smbcli_state *cli,
 
 	query.in.handle = &handle;
 	query.in.level = LSA_POLICY_INFO_DOMAIN;
+	query.out.info = &info;
 
 	status = dcerpc_lsa_QueryInfoPolicy(lsa_pipe, mem_ctx, &query);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2393,8 +2395,10 @@ bool torture_samba3_rpc_lsa(struct torture_context *torture)
 
 		for (i=0; i<ARRAY_SIZE(levels); i++) {
 			struct lsa_QueryInfoPolicy r;
+			union lsa_PolicyInformation *info = NULL;
 			r.in.handle = &lsa_handle;
 			r.in.level = levels[i];
+			r.out.info = &info;
 			status = dcerpc_lsa_QueryInfoPolicy(p, mem_ctx, &r);
 			if (!NT_STATUS_IS_OK(status)) {
 				d_printf("(%s) dcerpc_lsa_QueryInfoPolicy %d "
@@ -2404,7 +2408,7 @@ bool torture_samba3_rpc_lsa(struct torture_context *torture)
 				return false;
 			}
 			if (levels[i] == 5) {
-				domain_sid = r.out.info->account_domain.sid;
+				domain_sid = info->account_domain.sid;
 			}
 		}
 	}

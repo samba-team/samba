@@ -434,67 +434,67 @@ static NTSTATUS dcesrv_lsa_QueryInfoPolicy2(struct dcesrv_call_state *dce_call, 
 {
 	struct lsa_policy_state *state;
 	struct dcesrv_handle *h;
+	union lsa_PolicyInformation *info;
 
-	r->out.info = NULL;
+	*r->out.info = NULL;
 
 	DCESRV_PULL_HANDLE(h, r->in.handle, LSA_HANDLE_POLICY);
 
 	state = h->data;
 
-	r->out.info = talloc(mem_ctx, union lsa_PolicyInformation);
-	if (!r->out.info) {
+	info = talloc_zero(mem_ctx, union lsa_PolicyInformation);
+	if (!info) {
 		return NT_STATUS_NO_MEMORY;
 	}
-
-	ZERO_STRUCTP(r->out.info);
+	*r->out.info = info;
 
 	switch (r->in.level) {
 	case LSA_POLICY_INFO_AUDIT_LOG:
 		/* we don't need to fill in any of this */
-		ZERO_STRUCT(r->out.info->audit_log);
+		ZERO_STRUCT(info->audit_log);
 		return NT_STATUS_OK;
 	case LSA_POLICY_INFO_AUDIT_EVENTS:
 		/* we don't need to fill in any of this */
-		ZERO_STRUCT(r->out.info->audit_events);
+		ZERO_STRUCT(info->audit_events);
 		return NT_STATUS_OK;
 	case LSA_POLICY_INFO_PD:
 		/* we don't need to fill in any of this */
-		ZERO_STRUCT(r->out.info->pd);
+		ZERO_STRUCT(info->pd);
 		return NT_STATUS_OK;
 
 	case LSA_POLICY_INFO_DOMAIN:
-		return dcesrv_lsa_info_AccountDomain(state, mem_ctx, &r->out.info->domain);
+		return dcesrv_lsa_info_AccountDomain(state, mem_ctx, &info->domain);
 	case LSA_POLICY_INFO_ACCOUNT_DOMAIN:
-		return dcesrv_lsa_info_AccountDomain(state, mem_ctx, &r->out.info->account_domain);
+		return dcesrv_lsa_info_AccountDomain(state, mem_ctx, &info->account_domain);
 	case LSA_POLICY_INFO_L_ACCOUNT_DOMAIN:
-		return dcesrv_lsa_info_AccountDomain(state, mem_ctx, &r->out.info->l_account_domain);
+		return dcesrv_lsa_info_AccountDomain(state, mem_ctx, &info->l_account_domain);
 
 
 	case LSA_POLICY_INFO_ROLE:
-		r->out.info->role.role = LSA_ROLE_PRIMARY;
+		info->role.role = LSA_ROLE_PRIMARY;
 		return NT_STATUS_OK;
 
 	case LSA_POLICY_INFO_DNS:
 	case LSA_POLICY_INFO_DNS_INT:
-		return dcesrv_lsa_info_DNS(state, mem_ctx, &r->out.info->dns);
+		return dcesrv_lsa_info_DNS(state, mem_ctx, &info->dns);
 
 	case LSA_POLICY_INFO_REPLICA:
-		ZERO_STRUCT(r->out.info->replica);
+		ZERO_STRUCT(info->replica);
 		return NT_STATUS_OK;
 
 	case LSA_POLICY_INFO_QUOTA:
-		ZERO_STRUCT(r->out.info->quota);
+		ZERO_STRUCT(info->quota);
 		return NT_STATUS_OK;
 
 	case LSA_POLICY_INFO_MOD:
 	case LSA_POLICY_INFO_AUDIT_FULL_SET:
 	case LSA_POLICY_INFO_AUDIT_FULL_QUERY:
 		/* windows gives INVALID_PARAMETER */
-		r->out.info = NULL;
+		*r->out.info = NULL;
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	r->out.info = NULL;
+	*r->out.info = NULL;
 	return NT_STATUS_INVALID_INFO_CLASS;
 }
 
@@ -511,10 +511,9 @@ static NTSTATUS dcesrv_lsa_QueryInfoPolicy(struct dcesrv_call_state *dce_call, T
 
 	r2.in.handle = r->in.handle;
 	r2.in.level = r->in.level;
+	r2.out.info = r->out.info;
 	
 	status = dcesrv_lsa_QueryInfoPolicy2(dce_call, mem_ctx, &r2);
-
-	r->out.info = r2.out.info;
 
 	return status;
 }

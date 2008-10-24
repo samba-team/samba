@@ -2352,6 +2352,7 @@ static bool test_QueryInfoPolicyCalls(	bool version2,
 					struct policy_handle *handle)
 {
 	struct lsa_QueryInfoPolicy r;
+	union lsa_PolicyInformation *info = NULL;
 	NTSTATUS status;
 	int i;
 	bool ret = true;
@@ -2364,6 +2365,7 @@ static bool test_QueryInfoPolicyCalls(	bool version2,
 	for (i=1;i<=14;i++) {
 		r.in.handle = handle;
 		r.in.level = i;
+		r.out.info = &info;
 
 		if (version2)
 			printf("\nTrying QueryInfoPolicy2 level %d\n", i);
@@ -2433,33 +2435,33 @@ static bool test_QueryInfoPolicyCalls(	bool version2,
 			struct lsa_TransNameArray tnames;
 			tnames.count = 14;
 			tnames.names = talloc_zero_array(tctx, struct lsa_TranslatedName, tnames.count);
-			tnames.names[0].name.string = r.out.info->dns.name.string;
+			tnames.names[0].name.string = info->dns.name.string;
 			tnames.names[0].sid_type = SID_NAME_DOMAIN;
-			tnames.names[1].name.string = r.out.info->dns.dns_domain.string;
+			tnames.names[1].name.string = info->dns.dns_domain.string;
 			tnames.names[1].sid_type = SID_NAME_DOMAIN;
-			tnames.names[2].name.string = talloc_asprintf(tctx, "%s\\", r.out.info->dns.name.string);
+			tnames.names[2].name.string = talloc_asprintf(tctx, "%s\\", info->dns.name.string);
 			tnames.names[2].sid_type = SID_NAME_DOMAIN;
-			tnames.names[3].name.string = talloc_asprintf(tctx, "%s\\", r.out.info->dns.dns_domain.string);
+			tnames.names[3].name.string = talloc_asprintf(tctx, "%s\\", info->dns.dns_domain.string);
 			tnames.names[3].sid_type = SID_NAME_DOMAIN;
-			tnames.names[4].name.string = talloc_asprintf(tctx, "%s\\guest", r.out.info->dns.name.string);
+			tnames.names[4].name.string = talloc_asprintf(tctx, "%s\\guest", info->dns.name.string);
 			tnames.names[4].sid_type = SID_NAME_USER;
-			tnames.names[5].name.string = talloc_asprintf(tctx, "%s\\krbtgt", r.out.info->dns.name.string);
+			tnames.names[5].name.string = talloc_asprintf(tctx, "%s\\krbtgt", info->dns.name.string);
 			tnames.names[5].sid_type = SID_NAME_USER;
-			tnames.names[6].name.string = talloc_asprintf(tctx, "%s\\guest", r.out.info->dns.dns_domain.string);
+			tnames.names[6].name.string = talloc_asprintf(tctx, "%s\\guest", info->dns.dns_domain.string);
 			tnames.names[6].sid_type = SID_NAME_USER;
-			tnames.names[7].name.string = talloc_asprintf(tctx, "%s\\krbtgt", r.out.info->dns.dns_domain.string);
+			tnames.names[7].name.string = talloc_asprintf(tctx, "%s\\krbtgt", info->dns.dns_domain.string);
 			tnames.names[7].sid_type = SID_NAME_USER;
-			tnames.names[8].name.string = talloc_asprintf(tctx, "krbtgt@%s", r.out.info->dns.name.string);
+			tnames.names[8].name.string = talloc_asprintf(tctx, "krbtgt@%s", info->dns.name.string);
 			tnames.names[8].sid_type = SID_NAME_USER;
-			tnames.names[9].name.string = talloc_asprintf(tctx, "krbtgt@%s", r.out.info->dns.dns_domain.string);
+			tnames.names[9].name.string = talloc_asprintf(tctx, "krbtgt@%s", info->dns.dns_domain.string);
 			tnames.names[9].sid_type = SID_NAME_USER;
-			tnames.names[10].name.string = talloc_asprintf(tctx, "%s\\"TEST_MACHINENAME "$", r.out.info->dns.name.string);
+			tnames.names[10].name.string = talloc_asprintf(tctx, "%s\\"TEST_MACHINENAME "$", info->dns.name.string);
 			tnames.names[10].sid_type = SID_NAME_USER;
-			tnames.names[11].name.string = talloc_asprintf(tctx, "%s\\"TEST_MACHINENAME "$", r.out.info->dns.dns_domain.string);
+			tnames.names[11].name.string = talloc_asprintf(tctx, "%s\\"TEST_MACHINENAME "$", info->dns.dns_domain.string);
 			tnames.names[11].sid_type = SID_NAME_USER;
-			tnames.names[12].name.string = talloc_asprintf(tctx, TEST_MACHINENAME "$@%s", r.out.info->dns.name.string);
+			tnames.names[12].name.string = talloc_asprintf(tctx, TEST_MACHINENAME "$@%s", info->dns.name.string);
 			tnames.names[12].sid_type = SID_NAME_USER;
-			tnames.names[13].name.string = talloc_asprintf(tctx, TEST_MACHINENAME "$@%s", r.out.info->dns.dns_domain.string);
+			tnames.names[13].name.string = talloc_asprintf(tctx, TEST_MACHINENAME "$@%s", info->dns.dns_domain.string);
 			tnames.names[13].sid_type = SID_NAME_USER;
 			ret &= test_LookupNames(p, tctx, handle, &tnames);
 
