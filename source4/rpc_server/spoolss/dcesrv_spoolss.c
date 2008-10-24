@@ -39,7 +39,7 @@ enum spoolss_handle {
 	((info)?ndr_size_##fn(info, level, 0):0)
 
 #define SPOOLSS_BUFFER_UNION_ARRAY(fn,info,level,count) \
-	((info)?ndr_size_##fn##_info(dce_call, level, count, info):0)
+	((info)?ndr_size_##fn##_info(dce_call, lp_iconv_convenience(dce_call->conn->dce_ctx->lp_ctx), level, count, info):0)
 
 #define SPOOLSS_BUFFER_OK(val_true,val_false) ((r->in.offered >= r->out.needed)?val_true:val_false)
 

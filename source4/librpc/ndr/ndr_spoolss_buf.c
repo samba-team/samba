@@ -165,7 +165,7 @@
 #define NDR_SPOOLSS_SIZE_ENUM(fn) do { \
 	struct __##fn __r;\
 	DATA_BLOB _data_blob_info;\
-	struct ndr_push *_ndr_info = ndr_push_init_ctx(mem_ctx, lp_iconv_convenience(global_loadparm));\
+	struct ndr_push *_ndr_info = ndr_push_init_ctx(mem_ctx, iconv_convenience);\
 	if (!_ndr_info) return 0;\
 	_ndr_info->flags|=0;\
 	__r.in.level	= level;\
@@ -203,7 +203,7 @@ enum ndr_err_code ndr_pull_spoolss_EnumPrinters(struct ndr_pull *ndr, int flags,
 	return NDR_ERR_SUCCESS;
 }
 
-uint32_t ndr_size_spoolss_EnumPrinters_info(TALLOC_CTX *mem_ctx, uint32_t level, uint32_t count, union spoolss_PrinterInfo *info)
+uint32_t ndr_size_spoolss_EnumPrinters_info(TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *iconv_convenience, uint32_t level, uint32_t count, union spoolss_PrinterInfo *info)
 {
 	NDR_SPOOLSS_SIZE_ENUM(spoolss_EnumPrinters);
 }
@@ -239,7 +239,7 @@ enum ndr_err_code ndr_pull_spoolss_EnumJobs(struct ndr_pull *ndr, int flags, str
 	return NDR_ERR_SUCCESS;
 }
 
-uint32_t ndr_size_spoolss_EnumJobss_info(TALLOC_CTX *mem_ctx, uint32_t level, uint32_t count, union spoolss_JobInfo *info)
+uint32_t ndr_size_spoolss_EnumJobss_info(TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *iconv_convenience, uint32_t level, uint32_t count, union spoolss_JobInfo *info)
 {
 	NDR_SPOOLSS_SIZE_ENUM(spoolss_EnumJobs);
 }
@@ -271,7 +271,7 @@ enum ndr_err_code ndr_pull_spoolss_EnumPrinterDrivers(struct ndr_pull *ndr, int 
 	return NDR_ERR_SUCCESS;
 }
 
-uint32_t ndr_size_spoolss_EnumPrinterDrivers_info(TALLOC_CTX *mem_ctx, uint32_t level, uint32_t count, union spoolss_DriverInfo *info)
+uint32_t ndr_size_spoolss_EnumPrinterDrivers_info(TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *iconv_convenience, uint32_t level, uint32_t count, union spoolss_DriverInfo *info)
 {
 	NDR_SPOOLSS_SIZE_ENUM(spoolss_EnumPrinterDrivers);
 }
@@ -299,7 +299,7 @@ enum ndr_err_code ndr_pull_spoolss_EnumForms(struct ndr_pull *ndr, int flags, st
 	return NDR_ERR_SUCCESS;
 }
 
-uint32_t ndr_size_spoolss_EnumForms_info(TALLOC_CTX *mem_ctx, uint32_t level, uint32_t count, union spoolss_FormInfo *info)
+uint32_t ndr_size_spoolss_EnumForms_info(TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *iconv_convenience, uint32_t level, uint32_t count, union spoolss_FormInfo *info)
 {
 	NDR_SPOOLSS_SIZE_ENUM(spoolss_EnumForms);
 }
@@ -327,7 +327,7 @@ enum ndr_err_code ndr_pull_spoolss_EnumPorts(struct ndr_pull *ndr, int flags, st
 	return NDR_ERR_SUCCESS;
 }
 
-uint32_t ndr_size_spoolss_EnumPorts_info(TALLOC_CTX *mem_ctx, uint32_t level, uint32_t count, union spoolss_PortInfo *info)
+uint32_t ndr_size_spoolss_EnumPorts_info(TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *iconv_convenience, uint32_t level, uint32_t count, union spoolss_PortInfo *info)
 {
 	NDR_SPOOLSS_SIZE_ENUM(spoolss_EnumPorts);
 }
@@ -355,7 +355,7 @@ enum ndr_err_code ndr_pull_spoolss_EnumMonitors(struct ndr_pull *ndr, int flags,
 	return NDR_ERR_SUCCESS;
 }
 
-uint32_t ndr_size_spoolss_EnumMonitors_info(TALLOC_CTX *mem_ctx, uint32_t level, uint32_t count, union spoolss_MonitorInfo *info)
+uint32_t ndr_size_spoolss_EnumMonitors_info(TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *iconv_convenience, uint32_t level, uint32_t count, union spoolss_MonitorInfo *info)
 {
 	NDR_SPOOLSS_SIZE_ENUM(spoolss_EnumMonitors);
 }
@@ -387,7 +387,8 @@ enum ndr_err_code ndr_pull_spoolss_EnumPrintProcessors(struct ndr_pull *ndr, int
 	return NDR_ERR_SUCCESS;
 }
 
-uint32_t ndr_size_spoolss_EnumPrinterProcessors_info(TALLOC_CTX *mem_ctx, uint32_t level, uint32_t count, union spoolss_PrintProcessorInfo *info)
+uint32_t ndr_size_spoolss_EnumPrinterProcessors_info(TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *iconv_convenience, 
+													 uint32_t level, uint32_t count, union spoolss_PrintProcessorInfo *info)
 {
 	NDR_SPOOLSS_SIZE_ENUM(spoolss_EnumPrintProcessors);
 }
