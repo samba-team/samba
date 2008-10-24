@@ -122,6 +122,7 @@ ssize_t convert_string(charset_t from, charset_t to,
 				void const *src, size_t srclen, 
 				void *dest, size_t destlen);
 
+extern struct smb_iconv_convenience *global_iconv_convenience;
 
 /* codepoints */
 codepoint_t next_codepoint(struct smb_iconv_convenience *ic, 

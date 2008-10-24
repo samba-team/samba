@@ -20,11 +20,14 @@
 
 #include "includes.h"
 #include "system/locale.h"
-#include "param/param.h"
+
+struct smb_iconv_convenience *global_iconv_convenience = NULL;
 
 static inline struct smb_iconv_convenience *get_iconv_convenience(void)
 {
-	return lp_iconv_convenience(global_loadparm);
+	if (global_iconv_convenience == NULL)
+		global_iconv_convenience = smb_iconv_convenience_init(talloc_autofree_context(), "ASCII", "UTF-8", true);
+	return global_iconv_convenience;
 }
 
 /**

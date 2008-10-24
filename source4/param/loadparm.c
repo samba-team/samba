@@ -2608,7 +2608,7 @@ struct smb_iconv_convenience *lp_iconv_convenience(struct loadparm_context *lp_c
 _PUBLIC_ void reload_charcnv(struct loadparm_context *lp_ctx)
 {
 	talloc_free(lp_ctx->iconv_convenience);
-	lp_ctx->iconv_convenience = smb_iconv_convenience_init_lp(lp_ctx, lp_ctx);
+	global_iconv_convenience = lp_ctx->iconv_convenience = smb_iconv_convenience_init_lp(lp_ctx, lp_ctx);
 }
 
 void lp_smbcli_options(struct loadparm_context *lp_ctx,
