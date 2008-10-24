@@ -124,7 +124,7 @@ ssize_t convert_string(charset_t from, charset_t to,
 
 extern struct smb_iconv_convenience *global_iconv_convenience;
 
-_PUBLIC_ codepoint_t next_codepoint(const char *str, size_t *size);
+codepoint_t next_codepoint(const char *str, size_t *size);
 
 /* codepoints */
 codepoint_t next_codepoint_convenience(struct smb_iconv_convenience *ic, 

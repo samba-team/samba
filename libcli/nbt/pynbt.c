@@ -20,9 +20,9 @@
 #include "includes.h"
 #include <Python.h>
 #include "libcli/util/pyerrors.h"
+#include "scripting/python/modules.h"
 #include "../libcli/nbt/libnbt.h"
 #include "lib/events/events.h"
-#include "param/param.h"
 
 PyAPI_DATA(PyTypeObject) nbt_node_Type;
 
@@ -229,7 +229,7 @@ static PyObject *py_nbt_name_status(PyObject *self, PyObject *args, PyObject *kw
 		return NULL;
 	PyTuple_SetItem(ret, 0, PyString_FromString(io.out.reply_from));
 
-	py_name = PyObject_FromNBTName(node->socket, lp_iconv_convenience(global_loadparm), &io.out.name);
+	py_name = PyObject_FromNBTName(node->socket, py_iconv_convenience(NULL), &io.out.name);
 	if (py_name == NULL)
 		return NULL;
 
@@ -292,7 +292,7 @@ static PyObject *py_nbt_name_register(PyObject *self, PyObject *args, PyObject *
 		return NULL;
 	PyTuple_SetItem(ret, 0, PyString_FromString(io.out.reply_from));
 
-	py_name = PyObject_FromNBTName(node->socket, lp_iconv_convenience(global_loadparm), &io.out.name);
+	py_name = PyObject_FromNBTName(node->socket, py_iconv_convenience(NULL), &io.out.name);
 	if (py_name == NULL)
 		return NULL;
 
@@ -347,7 +347,7 @@ static PyObject *py_nbt_name_refresh(PyObject *self, PyObject *args, PyObject *k
 		return NULL;
 	PyTuple_SetItem(ret, 0, PyString_FromString(io.out.reply_from));
 
-	py_name = PyObject_FromNBTName(node->socket, lp_iconv_convenience(global_loadparm), &io.out.name);
+	py_name = PyObject_FromNBTName(node->socket, py_iconv_convenience(NULL), &io.out.name);
 	if (py_name == NULL)
 		return NULL;
 

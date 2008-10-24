@@ -133,7 +133,7 @@ _PUBLIC_ int strncasecmp_m(const char *s1, const char *s2, size_t n)
 		n--;
 
 		c1 = next_codepoint_convenience(iconv_convenience, s1, &size1);
-		c2 = next_codepoint_convenienceconv_convenience, s2, &size2);
+		c2 = next_codepoint_convenience(iconv_convenience, s2, &size2);
 
 		s1 += size1;
 		s2 += size2;
@@ -272,7 +272,7 @@ _PUBLIC_ size_t strlen_m(const char *s)
 
 	while (*s) {
 		size_t c_size;
-		codepoint_t c = next_codepoint(ic, s, &c_size);
+		codepoint_t c = next_codepoint_convenience(ic, s, &c_size);
 		if (c < 0x10000) {
 			count += 1;
 		} else {
@@ -344,7 +344,7 @@ _PUBLIC_ char *strrchr_m(const char *s, char c)
 
 	while (*s) {
 		size_t size;
-		codepoint_t c2 = next_codepoint(ic, s, &size);
+		codepoint_t c2 = next_codepoint_convenience(ic, s, &size);
 		if (c2 == c) {
 			ret = discard_const_p(char, s);
 		}
@@ -466,7 +466,7 @@ _PUBLIC_ char *strupper_talloc_n(TALLOC_CTX *ctx, const char *src, size_t n)
 
 	while (*src && n--) {
 		size_t c_size;
-		codepoint_t c = next_codepoint(iconv_convenience, src, &c_size);
+		codepoint_t c = next_codepoint_convenience(iconv_convenience, src, &c_size);
 		src += c_size;
 
 		c = toupper_m(c);
