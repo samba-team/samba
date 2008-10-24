@@ -260,7 +260,7 @@ static NTSTATUS session_setup_nt1(struct composite_context *c,
 {
 	NTSTATUS nt_status = NT_STATUS_INTERNAL_ERROR;
 	struct sesssetup_state *state = talloc_get_type(c->private_data, struct sesssetup_state);
-	DATA_BLOB names_blob = NTLMv2_generate_names_blob(state, session->transport->socket->hostname, lp_workgroup(global_loadparm));
+	DATA_BLOB names_blob = NTLMv2_generate_names_blob(state, session->transport->socket->hostname, cli_credentials_get_domain(io->in.credentials));
 	DATA_BLOB session_key = data_blob(NULL, 0);
 	int flags = CLI_CRED_NTLM_AUTH;
 
@@ -334,7 +334,7 @@ static NTSTATUS session_setup_old(struct composite_context *c,
 	NTSTATUS nt_status;
 	struct sesssetup_state *state = talloc_get_type(c->private_data, struct sesssetup_state);
 	const char *password = cli_credentials_get_password(io->in.credentials);
-	DATA_BLOB names_blob = NTLMv2_generate_names_blob(state, session->transport->socket->hostname, lp_workgroup(global_loadparm));
+	DATA_BLOB names_blob = NTLMv2_generate_names_blob(state, session->transport->socket->hostname, cli_credentials_get_domain(io->in.credentials));
 	DATA_BLOB session_key;
 	int flags = 0;
 	if (session->options.lanman_auth) {

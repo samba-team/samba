@@ -2502,12 +2502,13 @@ SWIG_Python_MustGetPtr(PyObject *obj, swig_type_info *ty, int argnum, int flags)
 #define SWIGTYPE_p_registry_key swig_types[19]
 #define SWIGTYPE_p_short swig_types[20]
 #define SWIGTYPE_p_signed_char swig_types[21]
-#define SWIGTYPE_p_unsigned_char swig_types[22]
-#define SWIGTYPE_p_unsigned_int swig_types[23]
-#define SWIGTYPE_p_unsigned_long_long swig_types[24]
-#define SWIGTYPE_p_unsigned_short swig_types[25]
-static swig_type_info *swig_types[27];
-static swig_module_info swig_module = {swig_types, 26, 0, 0, 0, 0};
+#define SWIGTYPE_p_smb_iconv_convenience swig_types[22]
+#define SWIGTYPE_p_unsigned_char swig_types[23]
+#define SWIGTYPE_p_unsigned_int swig_types[24]
+#define SWIGTYPE_p_unsigned_long_long swig_types[25]
+#define SWIGTYPE_p_unsigned_short swig_types[26]
+static swig_type_info *swig_types[28];
+static swig_module_info swig_module = {swig_types, 27, 0, 0, 0, 0};
 #define SWIG_TypeQuery(name) SWIG_TypeQueryModule(&swig_module, &swig_module, name)
 #define SWIG_MangledTypeQuery(name) SWIG_MangledTypeQueryModule(&swig_module, &swig_module, name)
 
@@ -2555,6 +2556,7 @@ static swig_module_info swig_module = {swig_types, 26, 0, 0, 0, 0};
 #include "registry.h"
 #include "param/param.h"
 #include "events/events.h"
+#include "scripting/python/modules.h"
 
 typedef struct registry_context reg;
 typedef struct hive_key hive_key;
@@ -3107,41 +3109,46 @@ fail:
 SWIGINTERN PyObject *_wrap_reg_diff_apply(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
   PyObject *resultobj = 0;
   reg *arg1 = (reg *) 0 ;
-  char *arg2 = (char *) 0 ;
+  struct smb_iconv_convenience *arg2 = (struct smb_iconv_convenience *) 0 ;
+  char *arg3 = (char *) 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
-  int res2 ;
-  char *buf2 = 0 ;
-  int alloc2 = 0 ;
+  int res3 ;
+  char *buf3 = 0 ;
+  int alloc3 = 0 ;
   PyObject * obj0 = 0 ;
   PyObject * obj1 = 0 ;
+  PyObject * obj2 = 0 ;
   char *  kwnames[] = {
-    (char *) "self",(char *) "filename", NULL 
+    (char *) "self",(char *) "ic",(char *) "filename", NULL 
   };
   WERROR result;
   
-  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OO:reg_diff_apply",kwnames,&obj0,&obj1)) SWIG_fail;
+  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OOO:reg_diff_apply",kwnames,&obj0,&obj1,&obj2)) SWIG_fail;
   res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_registry_context, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "reg_diff_apply" "', argument " "1"" of type '" "reg *""'"); 
   }
   arg1 = (reg *)(argp1);
-  res2 = SWIG_AsCharPtrAndSize(obj1, &buf2, NULL, &alloc2);
-  if (!SWIG_IsOK(res2)) {
-    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "reg_diff_apply" "', argument " "2"" of type '" "char const *""'");
+  arg2 = py_iconv_convenience(NULL);
+  res3 = SWIG_AsCharPtrAndSize(obj2, &buf3, NULL, &alloc3);
+  if (!SWIG_IsOK(res3)) {
+    SWIG_exception_fail(SWIG_ArgError(res3), "in method '" "reg_diff_apply" "', argument " "3"" of type '" "char const *""'");
   }
-  arg2 = (char *)(buf2);
-  result = reg_diff_apply(arg1,(char const *)arg2);
+  arg3 = (char *)(buf3);
+  result = reg_diff_apply(arg1,arg2,(char const *)arg3);
   if (!W_ERROR_IS_OK(result)) {
     PyErr_SetWERROR(result);
     SWIG_fail;
   } else if (resultobj == NULL) {
     resultobj = Py_None;
   }
-  if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
+  talloc_free(arg2);
+  if (alloc3 == SWIG_NEWOBJ) free((char*)buf3);
   return resultobj;
 fail:
-  if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
+  talloc_free(arg2);
+  if (alloc3 == SWIG_NEWOBJ) free((char*)buf3);
   return NULL;
 }
 
@@ -3849,6 +3856,7 @@ static swig_type_info _swigt__p_registry_context = {"_p_registry_context", "stru
 static swig_type_info _swigt__p_registry_key = {"_p_registry_key", "struct registry_key *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_short = {"_p_short", "short *|int_least16_t *|int16_t *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_signed_char = {"_p_signed_char", "signed char *|int_least8_t *|int_fast8_t *|int8_t *", 0, 0, (void*)0, 0};
+static swig_type_info _swigt__p_smb_iconv_convenience = {"_p_smb_iconv_convenience", "struct smb_iconv_convenience *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_unsigned_char = {"_p_unsigned_char", "unsigned char *|uint_least8_t *|uint_fast8_t *|uint8_t *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_unsigned_int = {"_p_unsigned_int", "uintptr_t *|uint_least32_t *|uint_fast32_t *|uint32_t *|unsigned int *|uint_fast16_t *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_unsigned_long_long = {"_p_unsigned_long_long", "uint_least64_t *|uint_fast64_t *|uint64_t *|unsigned long long *|uintmax_t *", 0, 0, (void*)0, 0};
@@ -3877,6 +3885,7 @@ static swig_type_info *swig_type_initial[] = {
   &_swigt__p_registry_key,
   &_swigt__p_short,
   &_swigt__p_signed_char,
+  &_swigt__p_smb_iconv_convenience,
   &_swigt__p_unsigned_char,
   &_swigt__p_unsigned_int,
   &_swigt__p_unsigned_long_long,
@@ -3905,6 +3914,7 @@ static swig_cast_info _swigc__p_registry_context[] = {  {&_swigt__p_registry_con
 static swig_cast_info _swigc__p_registry_key[] = {  {&_swigt__p_registry_key, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_short[] = {  {&_swigt__p_short, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_signed_char[] = {  {&_swigt__p_signed_char, 0, 0, 0},{0, 0, 0, 0}};
+static swig_cast_info _swigc__p_smb_iconv_convenience[] = {  {&_swigt__p_smb_iconv_convenience, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_unsigned_char[] = {  {&_swigt__p_unsigned_char, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_unsigned_int[] = {  {&_swigt__p_unsigned_int, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_unsigned_long_long[] = {  {&_swigt__p_unsigned_long_long, 0, 0, 0},{0, 0, 0, 0}};
@@ -3933,6 +3943,7 @@ static swig_cast_info *swig_cast_initial[] = {
   _swigc__p_registry_key,
   _swigc__p_short,
   _swigc__p_signed_char,
+  _swigc__p_smb_iconv_convenience,
   _swigc__p_unsigned_char,
   _swigc__p_unsigned_int,
   _swigc__p_unsigned_long_long,

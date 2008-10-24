@@ -71,7 +71,7 @@ static bool test_diff_apply(struct torture_context *tctx, void *tcase_data)
 	struct registry_key *key;
 	WERROR error;
 
-	error = reg_diff_apply(td->r1_ctx, td->filename);
+	error = reg_diff_apply(td->r1_ctx, lp_iconv_convenience(tctx->lp_ctx), td->filename);
 	torture_assert_werr_ok(tctx, error, "reg_diff_apply");
 
 	error = td->r1_ctx->ops->get_predefined_key(td->r1_ctx, HKEY_LOCAL_MACHINE, &key);

@@ -31,6 +31,7 @@
 #include "registry.h"
 #include "param/param.h"
 #include "events/events.h"
+#include "scripting/python/modules.h"
 
 typedef struct registry_context reg;
 typedef struct hive_key hive_key;
@@ -60,6 +61,14 @@ const char *str_regtype(int type);
 
 %typemap(argout,noblock=1) struct registry_context ** {
     $result = SWIG_NewPointerObj(*$1, SWIGTYPE_p_registry_context, 0);
+}
+
+%typemap(in,noblock=1) struct smb_iconv_convenience * {
+    $1 = py_iconv_convenience(NULL);
+}
+
+%typemap(freearg,noblock=1) struct smb_iconv_convenience * {
+    talloc_free($1);
 }
 
 %rename(Registry) reg_open_local;
@@ -111,7 +120,7 @@ typedef struct registry_context {
     %feature("docstring") diff_apply "S.diff_apply(filename) -> None\n"
                                       "Apply the diff from the specified file";
 
-    WERROR diff_apply(const char *filename);
+    WERROR diff_apply(struct smb_iconv_convenience *ic, const char *filename);
     WERROR generate_diff(struct registry_context *ctx2, const struct reg_diff_callbacks *callbacks,
                          void *callback_data);
 
