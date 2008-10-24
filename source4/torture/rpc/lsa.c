@@ -153,6 +153,7 @@ static bool test_LookupNames(struct dcerpc_pipe *p,
 {
 	struct lsa_LookupNames r;
 	struct lsa_TransSidArray sids;
+	struct lsa_RefDomainList *domains = NULL;
 	struct lsa_String *names;
 	uint32_t count = 0;
 	NTSTATUS status;
@@ -176,6 +177,7 @@ static bool test_LookupNames(struct dcerpc_pipe *p,
 	r.in.count = &count;
 	r.out.count = &count;
 	r.out.sids = &sids;
+	r.out.domains = &domains;
 
 	status = dcerpc_lsa_LookupNames(p, mem_ctx, &r);
 
@@ -217,6 +219,7 @@ static bool test_LookupNames_bogus(struct dcerpc_pipe *p,
 {
 	struct lsa_LookupNames r;
 	struct lsa_TransSidArray sids;
+	struct lsa_RefDomainList *domains = NULL;
 	struct lsa_String *names;
 	uint32_t count = 0;
 	NTSTATUS status;
@@ -248,6 +251,7 @@ static bool test_LookupNames_bogus(struct dcerpc_pipe *p,
 	r.in.count = &count;
 	r.out.count = &count;
 	r.out.sids = &sids;
+	r.out.domains = &domains;
 
 	status = dcerpc_lsa_LookupNames(p, mem_ctx, &r);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_NONE_MAPPED)) {
@@ -317,6 +321,7 @@ static bool test_LookupNames2(struct dcerpc_pipe *p,
 {
 	struct lsa_LookupNames2 r;
 	struct lsa_TransSidArray2 sids;
+	struct lsa_RefDomainList *domains = NULL;
 	struct lsa_String *names;
 	uint32_t count = 0;
 	NTSTATUS status;
@@ -342,6 +347,7 @@ static bool test_LookupNames2(struct dcerpc_pipe *p,
 	r.in.client_revision = 0;
 	r.out.count = &count;
 	r.out.sids = &sids;
+	r.out.domains = &domains;
 
 	status = dcerpc_lsa_LookupNames2(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -362,6 +368,7 @@ static bool test_LookupNames3(struct dcerpc_pipe *p,
 {
 	struct lsa_LookupNames3 r;
 	struct lsa_TransSidArray3 sids;
+	struct lsa_RefDomainList *domains = NULL;
 	struct lsa_String *names;
 	uint32_t count = 0;
 	NTSTATUS status;
@@ -387,6 +394,7 @@ static bool test_LookupNames3(struct dcerpc_pipe *p,
 	r.in.client_revision = 0;
 	r.out.count = &count;
 	r.out.sids = &sids;
+	r.out.domains = &domains;
 
 	status = dcerpc_lsa_LookupNames3(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -405,6 +413,7 @@ static bool test_LookupNames4(struct dcerpc_pipe *p,
 {
 	struct lsa_LookupNames4 r;
 	struct lsa_TransSidArray3 sids;
+	struct lsa_RefDomainList *domains = NULL;
 	struct lsa_String *names;
 	uint32_t count = 0;
 	NTSTATUS status;
@@ -429,6 +438,7 @@ static bool test_LookupNames4(struct dcerpc_pipe *p,
 	r.in.client_revision = 0;
 	r.out.count = &count;
 	r.out.sids = &sids;
+	r.out.domains = &domains;
 
 	status = dcerpc_lsa_LookupNames4(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {

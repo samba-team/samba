@@ -1500,6 +1500,7 @@ static struct dom_sid *name2sid(TALLOC_CTX *mem_ctx,
 	struct policy_handle handle;
 	struct lsa_LookupNames l;
 	struct lsa_TransSidArray sids;
+	struct lsa_RefDomainList *domains = NULL;
 	struct lsa_String lsa_name;
 	uint32_t count = 0;
 	struct dom_sid *result;
@@ -1546,6 +1547,7 @@ static struct dom_sid *name2sid(TALLOC_CTX *mem_ctx,
 	l.in.count = &count;
 	l.out.count = &count;
 	l.out.sids = &sids;
+	l.out.domains = &domains;
 
 	status = dcerpc_lsa_LookupNames(p, tmp_ctx, &l);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1555,7 +1557,7 @@ static struct dom_sid *name2sid(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	result = dom_sid_add_rid(mem_ctx, l.out.domains->domains[0].sid,
+	result = dom_sid_add_rid(mem_ctx, domains->domains[0].sid,
 				 l.out.sids->sids[0].rid);
 
 	c.in.handle = &handle;

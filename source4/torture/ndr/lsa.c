@@ -428,11 +428,12 @@ static const uint8_t lsarlookupnames_out_data[] = {
 static bool lsarlookupnames_out_check(struct torture_context *tctx, 
 									 struct lsa_LookupNames *r)
 {
+	struct lsa_RefDomainList *domains = *(r->out.domains);
 	torture_assert(tctx, r->out.domains != NULL, "domains ptr");
-	torture_assert_int_equal(tctx, r->out.domains->count, 1, "domains count");
-	torture_assert_int_equal(tctx, r->out.domains->max_size, 32, "domains size");
-	torture_assert(tctx, r->out.domains->domains != NULL, "domains domains");
-	torture_assert_str_equal(tctx, r->out.domains->domains[0].name.string, "BUILTIN", "domain name");
+	torture_assert_int_equal(tctx, domains->count, 1, "domains count");
+	torture_assert_int_equal(tctx, domains->max_size, 32, "domains size");
+	torture_assert(tctx, domains->domains != NULL, "domains domains");
+	torture_assert_str_equal(tctx, domains->domains[0].name.string, "BUILTIN", "domain name");
 	/* FIXME: SID */
 	torture_assert(tctx, r->out.count != NULL, "count ptr");
 	torture_assert_int_equal(tctx, *r->out.count, 100, "count");

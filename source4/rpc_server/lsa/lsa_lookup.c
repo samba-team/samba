@@ -738,6 +738,7 @@ NTSTATUS dcesrv_lsa_LookupNames3(struct dcesrv_call_state *dce_call,
 	struct dcesrv_handle *policy_handle;
 	int i;
 	struct loadparm_context *lp_ctx = dce_call->conn->dce_ctx->lp_ctx;
+	struct lsa_RefDomainList *domains;
 
 	DCESRV_PULL_HANDLE(policy_handle, r->in.handle, LSA_HANDLE_POLICY);
 
@@ -748,12 +749,13 @@ NTSTATUS dcesrv_lsa_LookupNames3(struct dcesrv_call_state *dce_call,
 
 	policy_state = policy_handle->data;
 
-	r->out.domains = NULL;
+	*r->out.domains = NULL;
 
-	r->out.domains = talloc_zero(mem_ctx,  struct lsa_RefDomainList);
-	if (r->out.domains == NULL) {
+	domains = talloc_zero(mem_ctx,  struct lsa_RefDomainList);
+	if (domains == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
+	*r->out.domains = domains;
 
 	r->out.sids = talloc_zero(mem_ctx,  struct lsa_TransSidArray3);
 	if (r->out.sids == NULL) {
@@ -789,7 +791,7 @@ NTSTATUS dcesrv_lsa_LookupNames3(struct dcesrv_call_state *dce_call,
 		}
 
 		status2 = dcesrv_lsa_authority_list(policy_state, mem_ctx, rtype, authority_name, 
-						    sid, r->out.domains, &sid_index);
+						    sid, domains, &sid_index);
 		if (!NT_STATUS_IS_OK(status2)) {
 			continue;
 		}
@@ -877,8 +879,9 @@ NTSTATUS dcesrv_lsa_LookupNames2(struct dcesrv_call_state *dce_call,
 	struct dcesrv_handle *h;
 	int i;
 	struct loadparm_context *lp_ctx = dce_call->conn->dce_ctx->lp_ctx;
+	struct lsa_RefDomainList *domains;
 
-	r->out.domains = NULL;
+	*r->out.domains = NULL;
 
 	DCESRV_PULL_HANDLE(h, r->in.handle, LSA_HANDLE_POLICY);
 
@@ -889,10 +892,11 @@ NTSTATUS dcesrv_lsa_LookupNames2(struct dcesrv_call_state *dce_call,
 
 	state = h->data;
 
-	r->out.domains = talloc_zero(mem_ctx,  struct lsa_RefDomainList);
-	if (r->out.domains == NULL) {
+	domains = talloc_zero(mem_ctx,  struct lsa_RefDomainList);
+	if (domains == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
+	*r->out.domains = domains;
 
 	r->out.sids = talloc_zero(mem_ctx,  struct lsa_TransSidArray2);
 	if (r->out.sids == NULL) {
@@ -931,7 +935,7 @@ NTSTATUS dcesrv_lsa_LookupNames2(struct dcesrv_call_state *dce_call,
 		}
 
 		status2 = dcesrv_lsa_authority_list(state, mem_ctx, rtype, authority_name, 
-						    sid, r->out.domains, &sid_index);
+						    sid, domains, &sid_index);
 		if (!NT_STATUS_IS_OK(status2)) {
 			continue;
 		}
@@ -975,13 +979,13 @@ NTSTATUS dcesrv_lsa_LookupNames(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	r2.in.lookup_options = 0;
 	r2.in.client_revision = 0;
 	r2.out.count    = r->out.count;
+	r2.out.domains	= r->out.domains;
 
 	status = dcesrv_lsa_LookupNames2(dce_call, mem_ctx, &r2);
 	if (r2.out.sids == NULL) {
 		return status;
 	}
 
-	r->out.domains = r2.out.domains;
 	r->out.sids = talloc(mem_ctx, struct lsa_TransSidArray);
 	if (r->out.sids == NULL) {
 		return NT_STATUS_NO_MEMORY;

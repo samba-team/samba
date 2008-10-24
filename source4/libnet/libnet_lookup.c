@@ -312,6 +312,8 @@ static bool prepare_lookup_params(struct libnet_context *ctx,
 	s->lookup.in.count     = &s->count;
 	s->lookup.out.count    = &s->count;
 	s->lookup.out.sids     = &s->sids;
+	s->lookup.out.domains  = talloc_zero(ctx, struct lsa_RefDomainList *);
+	if (composite_nomem(s->lookup.out.domains, c)) return false;
 	
 	return true;
 }
@@ -372,7 +374,7 @@ NTSTATUS libnet_LookupName_recv(struct composite_context *c, TALLOC_CTX *mem_ctx
 		io->out.sidstr = NULL;
 
 		if (*s->lookup.out.count > 0) {
-			struct lsa_RefDomainList *domains = s->lookup.out.domains;
+			struct lsa_RefDomainList *domains = *s->lookup.out.domains;
 			struct lsa_TransSidArray *sids = s->lookup.out.sids;
 
 			if (domains == NULL || sids == NULL) {

@@ -419,10 +419,10 @@ import "misc.idl", "security.idl";
 		[in]         policy_handle *handle,
 		[in,range(0,1000)] uint32 num_names,
 		[in,size_is(num_names)]  lsa_String names[],
-		[out,unique] lsa_RefDomainList *domains,
-		[in,out]     lsa_TransSidArray *sids,
+		[out,ref]    lsa_RefDomainList **domains,
+		[in,out,ref] lsa_TransSidArray *sids,
 		[in]         lsa_LookupNamesLevel level,
-		[in,out]     uint32 *count
+		[in,out,ref] uint32 *count
 		);
 
 
@@ -1041,10 +1041,10 @@ import "misc.idl", "security.idl";
 		[in]     policy_handle *handle,
 		[in,range(0,1000)] uint32 num_names,
 		[in,size_is(num_names)]  lsa_String names[],
-		[out,unique]        lsa_RefDomainList *domains,
-		[in,out] lsa_TransSidArray2 *sids,
+		[out,ref]    lsa_RefDomainList **domains,
+		[in,out,ref] lsa_TransSidArray2 *sids,
 		[in]         lsa_LookupNamesLevel level,
-		[in,out] uint32 *count,
+		[in,out,ref] uint32 *count,
 		[in]         uint32 lookup_options,
 		[in]         uint32 client_revision /* LSA_CLIENT_REVISION* */
 		);
@@ -1100,10 +1100,10 @@ import "misc.idl", "security.idl";
 		[in]     policy_handle *handle,
 		[in,range(0,1000)] uint32 num_names,
 		[in,size_is(num_names)]  lsa_String names[],
-		[out,unique]        lsa_RefDomainList *domains,
-		[in,out] lsa_TransSidArray3 *sids,
+		[out,ref]    lsa_RefDomainList **domains,
+		[in,out,ref] lsa_TransSidArray3 *sids,
 		[in]         lsa_LookupNamesLevel level,
-		[in,out] uint32 *count,
+		[in,out,ref] uint32 *count,
 		[in]         uint32 lookup_options,
 		[in]         uint32 client_revision /* LSA_CLIENT_REVISION* */
 		);
@@ -1193,10 +1193,10 @@ import "misc.idl", "security.idl";
 	NTSTATUS lsa_LookupNames4(
 		[in,range(0,1000)] uint32 num_names,
 		[in,size_is(num_names)]  lsa_String names[],
-		[out,unique]        lsa_RefDomainList *domains,
-		[in,out] lsa_TransSidArray3 *sids,
+		[out,ref]    lsa_RefDomainList **domains,
+		[in,out,ref] lsa_TransSidArray3 *sids,
 		[in]         lsa_LookupNamesLevel level,
-		[in,out] uint32 *count,
+		[in,out,ref] uint32 *count,
 		[in]         uint32 lookup_options,
 		[in]         uint32 client_revision /* LSA_CLIENT_REVISION* */
 		);

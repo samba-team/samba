@@ -264,6 +264,7 @@ NTSTATUS smblsa_lookup_name(struct smbcli_state *cli,
 	struct lsa_LookupNames r;
 	struct lsa_TransSidArray sids;
 	struct lsa_String names;
+	struct lsa_RefDomainList *domains = NULL;
 	uint32_t count = 1;
 	NTSTATUS status;
 	struct dom_sid *sid;
@@ -288,6 +289,7 @@ NTSTATUS smblsa_lookup_name(struct smbcli_state *cli,
 	r.in.count = &count;
 	r.out.count = &count;
 	r.out.sids = &sids;
+	r.out.domains = &domains;
 
 	status = dcerpc_lsa_LookupNames(cli->lsa->pipe, mem_ctx2, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -299,7 +301,7 @@ NTSTATUS smblsa_lookup_name(struct smbcli_state *cli,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	sid = r.out.domains->domains[0].sid;
+	sid = domains->domains[0].sid;
 	rid = sids.sids[0].rid;
 	
 	(*sid_str) = talloc_asprintf(mem_ctx, "%s-%u", 
