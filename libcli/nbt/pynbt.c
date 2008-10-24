@@ -48,7 +48,7 @@ static PyObject *py_nbt_node_init(PyTypeObject *self, PyObject *args, PyObject *
 		return NULL;
 
 	ev = s4_event_context_init(ret->mem_ctx);
-	ret->socket = nbt_name_socket_init(ret->mem_ctx, ev, lp_iconv_convenience(global_loadparm));
+	ret->socket = nbt_name_socket_init(ret->mem_ctx, ev, py_iconv_convenience(ret->mem_ctx));
 	return (PyObject *)ret;
 }
 
@@ -171,7 +171,7 @@ static PyObject *py_nbt_name_query(PyObject *self, PyObject *args, PyObject *kwa
 		return NULL;
 	PyTuple_SetItem(ret, 0, PyString_FromString(io.out.reply_from));
 
-	py_name = PyObject_FromNBTName(node->socket, lp_iconv_convenience(global_loadparm), &io.out.name);
+	py_name = PyObject_FromNBTName(node->socket, py_iconv_convenience(node->socket), &io.out.name);
 	if (py_name == NULL)
 		return NULL;
 

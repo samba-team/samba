@@ -22,6 +22,7 @@
 #include "libnet.h"
 #include "libcli/security/security.h"
 #include "lib/events/events.h"
+#include "param/param.h"
 
 static struct libnet_context *py_net_ctx(PyObject *obj, struct event_context *ev)
 {
