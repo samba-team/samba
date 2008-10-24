@@ -249,9 +249,13 @@ static int linked_attributes_add(struct ldb_module *module, struct ldb_request *
 		return ldb_next_request(module, req);
 	}
 
-	/* start with the first one */
-	return la_do_mod_request(ac);
+	/* start with the original request */
+	return la_down_req(ac);
 }
+
+/* For a delete or rename, we need to find out what linked attributes
+ * are currently on this DN, and then deal with them.  This is the
+ * callback to the base search */
 
 static int la_mod_search_callback(struct ldb_request *req, struct ldb_reply *ares)
 {
@@ -349,8 +353,8 @@ static int la_mod_search_callback(struct ldb_request *req, struct ldb_reply *are
 
 		talloc_free(ares);
 
-		/* All mods set up, start with the first one */
-		ret = la_do_mod_request(ac);
+		/* Start with the original request */
+		ret = la_down_req(ac);
 		if (ret != LDB_SUCCESS) {
 			return ldb_module_done(ac->req, NULL, NULL, ret);
 		}
@@ -539,8 +543,8 @@ static int linked_attributes_modify(struct ldb_module *module, struct ldb_reques
 		
 	} else {
 		if (ac->ops) {
-			/* Jump directly to handling the modifies */
-			ret = la_do_mod_request(ac);
+			/* Start with the original request */
+			ret = la_down_req(ac);
 		} else {
 			/* nothing to do for this module, proceed */
 			talloc_free(ac);
@@ -732,12 +736,8 @@ static int la_op_search_callback(struct ldb_request *req,
 
 		talloc_free(ares);
 
-		if (ac->ops) {
-			/* start the mod requests chain */
-			ret = la_do_mod_request(ac);
-		} else {
-			ret = la_down_req(ac);
-		}
+		/* start the mod requests chain */
+		ret = la_down_req(ac);
 		if (ret != LDB_SUCCESS) {
 			return ldb_module_done(ac->req, NULL, NULL, ret);
 		}
@@ -840,11 +840,13 @@ static int la_mod_callback(struct ldb_request *req, struct ldb_reply *ares)
 		talloc_free(os);
 	}
 
-	/* as last op run the original request */
+	/* If we still have modifies in the queue, then run them */
 	if (ac->ops) {
 		ret = la_do_mod_request(ac);
 	} else {
-		ret = la_down_req(ac);
+		/* Otherwise, we are done! */
+		ret = ldb_module_done(ac->req, ares->controls,
+				      ares->response, ares->error);
 	}
 
 	if (ret != LDB_SUCCESS) {
@@ -898,6 +900,7 @@ static int la_down_req(struct la_context *ac)
 	return ldb_next_request(ac->module, down_req);
 }
 
+/* Having done the original operation, then try to fix up all the linked attributes */
 static int la_down_callback(struct ldb_request *req, struct ldb_reply *ares)
 {
 	struct la_context *ac;
@@ -920,9 +923,13 @@ static int la_down_callback(struct ldb_request *req, struct ldb_reply *ares)
 		return ldb_module_done(ac->req, NULL, NULL,
 					LDB_ERR_OPERATIONS_ERROR);
 	}
-
-	return ldb_module_done(ac->req, ares->controls,
-				ares->response, ares->error);
+	/* If we have modfies to make, then run them */
+	if (ac->ops) {
+		return la_do_mod_request(ac);
+	} else {
+		return ldb_module_done(ac->req, ares->controls,
+				      ares->response, ares->error);
+	}
 }
 
 _PUBLIC_ const struct ldb_module_ops ldb_linked_attributes_module_ops = {
