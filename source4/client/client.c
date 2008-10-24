@@ -53,6 +53,12 @@
 #include "param/param.h"
 #include "librpc/rpc/dcerpc.h"
 
+/* the default pager to use for the client "more" command. Users can
+ *    override this with the PAGER environment variable */
+#ifndef DEFAULT_PAGER
+#define DEFAULT_PAGER "more"
+#endif
+
 struct smbclient_context {
 	char *remote_cur_dir;
 	struct smbcli_state *cli;

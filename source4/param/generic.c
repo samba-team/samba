@@ -127,9 +127,6 @@ const char **param_get_string_list(struct param_context *ctx, const char *param,
 	if (p == NULL)
 		return NULL;
 
-	if (separator == NULL)
-		separator = LIST_SEP;
-	
 	return (const char **)str_list_make(ctx, p->value, separator);
 }
 

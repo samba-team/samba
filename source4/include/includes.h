@@ -30,8 +30,6 @@
 #endif
 #endif /* NO_CONFIG_H */
 
-#include "local.h"
-
 #include "system/time.h"
 #include "system/wait.h"
 

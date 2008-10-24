@@ -353,6 +353,8 @@ _PUBLIC_ bool strequal(const char *s1, const char *s2);
 
 /* The following definitions come from lib/util/util_strlist.c  */
 
+/* separators for lists */
+#define LIST_SEP " \t,\n\r"
 
 /**
   build a null terminated list of strings from a input string and a

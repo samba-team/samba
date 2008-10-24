@@ -59,9 +59,6 @@ struct parm_struct {
 	} def;
 };
 
-
-
-
 #define FLAG_DEFAULT    0x0001 /* this option was a default */
 #define FLAG_CMDLINE    0x0002 /* this option was set from the command line */
 
@@ -72,4 +69,31 @@ struct parm_struct {
 #ifndef HOMES_NAME
 #define HOMES_NAME "homes"
 #endif
+
+/* This defines the section name in the configuration file that will contain */
+/* global parameters - that is, parameters relating to the whole server, not */
+/* just services. This name is then reserved, and may not be used as a       */
+/* a service name. It will default to "global" if not defined here.          */
+#ifndef GLOBAL_NAME
+#define GLOBAL_NAME "global"
+#define GLOBAL_NAME2 "globals"
+#endif
+
+/* The default workgroup - usually overridden in smb.conf */
+#ifndef DEFAULT_WORKGROUP
+#define DEFAULT_WORKGROUP "WORKGROUP"
+#endif
+
+/*
+ * Default passwd chat script.
+ */
+#ifndef DEFAULT_PASSWD_CHAT
+#define DEFAULT_PASSWD_CHAT "*new*password* %n\\n *new*password* %n\\n *changed*"
+#endif
+
+/* Max number of jobs per print queue. */
+#ifndef PRINT_MAX_JOBID
+#define PRINT_MAX_JOBID 10000
+#endif
+
 
