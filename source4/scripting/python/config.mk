@@ -8,7 +8,7 @@ LIBPYTHON_OBJ_FILES = $(addprefix $(pyscriptsrcdir)/, modules.o)
 [SUBSYSTEM::PYTALLOC]
 PUBLIC_DEPENDENCIES = EXT_LIB_PYTHON LIBTALLOC
 
-PYTALLOC_OBJ_FILES = $(addprefix $(pyscriptsrcdir)/, pytalloc.o)
+PYTALLOC_OBJ_FILES = ../lib/talloc/pytalloc.o
 
 [PYTHON::python_uuid]
 PRIVATE_DEPENDENCIES = LIBNDR 

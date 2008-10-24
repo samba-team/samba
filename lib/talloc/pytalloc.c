@@ -17,8 +17,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
-#include "scripting/python/pytalloc.h"
+#include <talloc.h>
+#include "../lib/talloc/pytalloc.h"
 
 void py_talloc_dealloc(PyObject* self)
 {
