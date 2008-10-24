@@ -23,7 +23,6 @@
 #include "libcli/raw/libcliraw.h"
 #include "libcli/raw/raw_proto.h"
 #include "system/filesys.h"
-#include "param/param.h"
 
 #define SETUP_REQUEST_SESSION(cmd, wct, buflen) do { \
 	req = smbcli_request_setup_session(session, cmd, wct, buflen); \

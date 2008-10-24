@@ -44,6 +44,12 @@ struct smbsrv_connection;
 
 typedef NTSTATUS (*init_module_fn) (void);
 
+/* this needs to be a string which is not in the C library. We
+   previously used "init_module", but that meant that modules which
+   did not define this function ended up calling the C library
+   function init_module() which makes a system call */
+#define SAMBA_INIT_MODULE "samba_init_module"
+
 enum server_role {
 	ROLE_STANDALONE=0,
 	ROLE_DOMAIN_MEMBER=1,

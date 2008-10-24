@@ -26,7 +26,6 @@
 #include "../lib/util/dlinklist.h"
 #include "lib/events/events.h"
 #include "libcli/smb2/smb2_calls.h"
-#include "param/param.h"
 
 /* fill in the bufinfo */
 void smb2_setup_bufinfo(struct smb2_request *req)

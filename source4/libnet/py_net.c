@@ -20,7 +20,6 @@
 #include "includes.h"
 #include <Python.h>
 #include "libnet.h"
-#include "param/param.h"
 #include "libcli/security/security.h"
 #include "lib/events/events.h"
 

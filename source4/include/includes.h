@@ -55,10 +55,4 @@
 #define TALLOC_ABORT(reason) smb_panic(reason)
 #endif
 
-/* this needs to be a string which is not in the C library. We
-   previously used "init_module", but that meant that modules which
-   did not define this function ended up calling the C library
-   function init_module() which makes a system call */
-#define SAMBA_INIT_MODULE "samba_init_module"
-
 #endif /* _INCLUDES_H */

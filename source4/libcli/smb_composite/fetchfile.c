@@ -23,7 +23,6 @@
 #include "includes.h"
 #include "libcli/composite/composite.h"
 #include "libcli/smb_composite/smb_composite.h"
-#include "param/param.h"
 #include "libcli/resolve/resolve.h"
 
 enum fetchfile_stage {FETCHFILE_CONNECT,

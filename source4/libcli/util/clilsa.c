@@ -32,7 +32,6 @@
 #include "librpc/gen_ndr/ndr_lsa.h"
 #include "librpc/gen_ndr/ndr_lsa_c.h"
 #include "libcli/util/clilsa.h"
-#include "param/param.h"
 
 struct smblsa_state {
 	struct dcerpc_pipe *pipe;

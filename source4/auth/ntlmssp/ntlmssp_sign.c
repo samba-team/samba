@@ -26,7 +26,6 @@
 #include "../lib/crypto/crypto.h"
 #include "auth/credentials/credentials.h"
 #include "auth/gensec/gensec.h"
-#include "param/param.h"
 
 #define CLI_SIGN "session key to client-to-server signing key magic constant"
 #define CLI_SEAL "session key to client-to-server sealing key magic constant"

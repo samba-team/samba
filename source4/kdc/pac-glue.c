@@ -28,7 +28,6 @@
 #include "auth/auth.h"
 #include "auth/auth_sam.h"
 #include "auth/auth_sam_reply.h"
-#include "param/param.h"
 #include "kdc/kdc.h"
 
 struct krb5_dh_moduli;

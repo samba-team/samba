@@ -22,7 +22,6 @@
 
 #include "includes.h"
 #include "vfs_posix.h"
-#include "param/param.h"
 
 /*
   return true if a string contains one of the CIFS wildcard characters

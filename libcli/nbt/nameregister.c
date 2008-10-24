@@ -25,7 +25,6 @@
 #include "libcli/composite/composite.h"
 #include "lib/socket/socket.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
-#include "param/param.h"
 
 /*
   send a nbt name registration request

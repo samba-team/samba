@@ -24,7 +24,6 @@
 #include "libcli/raw/libcliraw.h"
 #include "libcli/raw/raw_proto.h"
 #include "../lib/crypto/crypto.h"
-#include "param/param.h"
 
 /***********************************************************
  SMB signing - Common code before we set a new signing implementation

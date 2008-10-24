@@ -22,7 +22,6 @@
 #include "includes.h"
 #include "lib/registry/registry.h"
 #include "system/filesys.h"
-#include "param/param.h"
 #include "librpc/gen_ndr/winreg.h"
 
 struct preg_data {
@@ -48,7 +47,7 @@ static WERROR preg_write_utf16(struct smb_iconv_convenience *ic, int fd, const c
 	size_t size;
 
 	for (i = 0; i < strlen(string); i+=size) {
-		v = next_codepoint(ic, &string[i], &size);
+		v = next_codepoint_convenience(ic, &string[i], &size);
 		if (write(fd, &v, 2) < 2) {
 			return WERR_GENERAL_FAILURE;
 		}

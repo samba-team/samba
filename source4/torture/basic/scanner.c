@@ -548,6 +548,7 @@ bool torture_nttrans_scan(struct torture_context *torture,
 {
 	int op, level;
 	const char *fname = "\\scanner.dat";
+	struct smb_iconv_convenience *iconv_convenience = lp_iconv_convenience(torture->lp_ctx);
 	int fnum, dnum;
 
 	fnum = smbcli_open(cli->tree, fname, O_RDWR | O_CREAT | O_TRUNC, 
@@ -557,17 +558,17 @@ bool torture_nttrans_scan(struct torture_context *torture,
 	for (op=OP_MIN; op<=OP_MAX; op++) {
 		printf("Scanning op=%d\n", op);
 		for (level = 0; level <= 50; level++) {
-			scan_nttrans(lp_iconv_convenience(torture->lp_ctx),
+			scan_nttrans(iconv_convenience,
 				     cli, op, level, fnum, dnum, fname);
 		}
 
 		for (level = 0x100; level <= 0x130; level++) {
-			scan_nttrans(lp_iconv_convenience(torture->lp_ctx),
+			scan_nttrans(iconv_convenience,
 				     cli, op, level, fnum, dnum, fname);
 		}
 
 		for (level = 1000; level < 1050; level++) {
-			scan_nttrans(lp_iconv_convenience(torture->lp_ctx),
+			scan_nttrans(iconv_convenience,
 				     cli, op, level, fnum, dnum, fname);
 		}
 	}

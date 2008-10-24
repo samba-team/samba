@@ -29,7 +29,6 @@
 #include "torture/util.h"
 #include "auth/credentials/credentials.h"
 #include "lib/cmdline/popt_common.h"
-#include "param/param.h"
 
 /* enum for whether reads/writes are possible on a file */
 enum rdwr_mode {RDWR_NONE, RDWR_RDONLY, RDWR_WRONLY, RDWR_RDWR};

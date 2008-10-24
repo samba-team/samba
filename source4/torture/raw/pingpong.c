@@ -50,7 +50,6 @@
 #include "system/filesys.h"
 #include "libcli/libcli.h"
 #include "torture/util.h"
-#include "param/param.h"
 
 static void lock_byte(struct smbcli_state *cli, int fd, int offset, int lock_timeout)
 {

@@ -27,7 +27,6 @@
 #include "system/time.h"
 #include "../lib/util/charset/charset.h"
 #include "librpc/ndr/libndr.h"
-#include "param/param.h"
 
 static WERROR dsdb_syntax_FOOBAR_drsuapi_to_ldb(const struct dsdb_schema *schema,
 						const struct dsdb_attribute *attr,

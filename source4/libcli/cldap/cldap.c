@@ -40,7 +40,6 @@
 #include "lib/socket/socket.h"
 #include "libcli/security/security.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
-#include "param/param.h"
 
 /*
   destroy a pending request

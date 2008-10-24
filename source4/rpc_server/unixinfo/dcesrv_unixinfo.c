@@ -26,7 +26,6 @@
 #include "libcli/wbclient/wbclient.h"
 #include "lib/events/events.h"
 #include "system/passwd.h"
-#include "param/param.h"
 
 static NTSTATUS dcerpc_unixinfo_bind(struct dcesrv_call_state *dce_call,
 				     const struct dcesrv_interface *iface)

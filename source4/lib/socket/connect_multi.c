@@ -26,7 +26,6 @@
 #include "lib/events/events.h"
 #include "libcli/composite/composite.h"
 #include "libcli/resolve/resolve.h"
-#include "param/param.h"
 
 #define MULTI_PORT_DELAY 2000 /* microseconds */
 

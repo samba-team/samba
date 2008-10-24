@@ -32,7 +32,6 @@
 #include "auth/credentials/credentials.h"
 #include "auth/credentials/credentials_krb5.h"
 #include "system/kerberos.h"
-#include "param/param.h"
 
 struct dn_list {
 	struct cli_credentials *creds;

@@ -27,7 +27,6 @@
 #include "smbd/service_stream.h"
 #include "lib/stream/packet.h"
 #include "ntvfs/ntvfs.h"
-#include "param/param.h"
 
 
 /* we over allocate the data buffer to prevent too many realloc calls */

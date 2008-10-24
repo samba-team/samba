@@ -27,7 +27,6 @@
 #include "torture/rpc/rpc.h"
 #include "ldb/include/ldb.h"
 #include "libcli/security/security.h"
-#include "param/param.h"
 
 static bool test_DsCrackNamesMatrix(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 				    struct DsPrivate *priv, const char *dn,

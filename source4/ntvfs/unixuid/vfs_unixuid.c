@@ -26,7 +26,6 @@
 #include "auth/auth.h"
 #include "ntvfs/ntvfs.h"
 #include "libcli/wbclient/wbclient.h"
-#include "param/param.h"
 
 struct unixuid_private {
 	struct wbc_context *wbc_ctx;

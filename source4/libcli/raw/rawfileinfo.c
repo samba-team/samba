@@ -23,7 +23,6 @@
 #include "libcli/raw/libcliraw.h"
 #include "libcli/raw/raw_proto.h"
 #include "librpc/gen_ndr/ndr_security.h"
-#include "param/param.h"
 
 /* local macros to make the code more readable */
 #define FINFO_CHECK_MIN_SIZE(size) if (blob->length < (size)) { \

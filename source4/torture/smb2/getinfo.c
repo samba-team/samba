@@ -26,8 +26,6 @@
 #include "torture/torture.h"
 #include "torture/smb2/proto.h"
 
-#include "param/param.h"
-
 static struct {
 	const char *name;
 	uint16_t level;

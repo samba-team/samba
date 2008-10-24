@@ -24,7 +24,6 @@
 #include "libcli/raw/libcliraw.h"
 #include "libcli/raw/raw_proto.h"
 #include "system/time.h"
-#include "param/param.h"
 
 static const struct {
 	enum protocol_types prot;

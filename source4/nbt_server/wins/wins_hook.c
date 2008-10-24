@@ -24,7 +24,6 @@
 #include "nbt_server/nbt_server.h"
 #include "nbt_server/wins/winsdb.h"
 #include "system/filesys.h"
-#include "param/param.h"
 
 static const char *wins_hook_action_string(enum wins_hook_action action)
 {

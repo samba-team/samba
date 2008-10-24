@@ -24,7 +24,6 @@
 #include "../libcli/nbt/nbt_proto.h"
 #include "libcli/composite/composite.h"
 #include "lib/socket/socket.h"
-#include "param/param.h"
 
 /*
   send a nbt name refresh request

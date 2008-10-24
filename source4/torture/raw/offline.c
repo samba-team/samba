@@ -33,7 +33,6 @@
 #include "libcli/composite/composite.h"
 #include "libcli/smb_composite/smb_composite.h"
 #include "libcli/resolve/resolve.h"
-#include "param/param.h"
 
 #define BASEDIR "\\testoffline"
 

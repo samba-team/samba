@@ -28,7 +28,6 @@
 #include "libcli/libcli.h"
 #include "libcli/resolve/resolve.h"
 #include "libcli/finddcs.h"
-#include "param/param.h"
 
 struct finddcs_state {
 	struct composite_context *ctx;

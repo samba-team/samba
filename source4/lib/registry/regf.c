@@ -23,7 +23,6 @@
 #include "lib/registry/tdr_regf.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "librpc/gen_ndr/winreg.h"
-#include "param/param.h"
 #include "lib/registry/registry.h"
 #include "libcli/security/security.h"
 

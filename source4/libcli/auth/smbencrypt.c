@@ -27,7 +27,6 @@
 #include "auth/ntlmssp/msrpc_parse.h"
 #include "../lib/crypto/crypto.h"
 #include "libcli/auth/libcli_auth.h"
-#include "param/param.h"
 
 /*
    This implements the X/Open SMB password encryption

@@ -25,7 +25,6 @@
 #include "includes.h"
 #include "lib/registry/registry.h"
 #include "system/filesys.h"
-#include "param/param.h"
 
 /**
  * @file

@@ -26,7 +26,6 @@
 #include "librpc/gen_ndr/com_wmi.h"
 #include "librpc/rpc/dcerpc.h"
 #include "librpc/ndr/ndr_table.h"
-#include "param/param.h"
 
 struct IWbemServices;
 struct IWbemContext;

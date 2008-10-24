@@ -27,7 +27,6 @@
 #include "libcli/raw/raw_proto.h"
 #include "../lib/util/dlinklist.h"
 #include "lib/events/events.h"
-#include "param/param.h"
 #include "librpc/ndr/libndr.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 

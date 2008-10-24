@@ -20,7 +20,6 @@
 #include "includes.h"
 #include "lib/registry/registry.h"
 #include "librpc/gen_ndr/winreg.h"
-#include "param/param.h"
 
 /**
  * @file

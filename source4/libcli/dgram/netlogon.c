@@ -24,7 +24,6 @@
 #include "lib/socket/socket.h"
 #include "libcli/resolve/resolve.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
-#include "param/param.h"
 
 /* 
    send a netlogon mailslot request 

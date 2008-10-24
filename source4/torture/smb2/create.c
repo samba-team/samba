@@ -24,7 +24,6 @@
 #include "libcli/smb2/smb2_calls.h"
 #include "torture/torture.h"
 #include "torture/smb2/proto.h"
-#include "param/param.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "libcli/security/security.h"
 
