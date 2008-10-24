@@ -1142,7 +1142,7 @@ sub Parse($$$$$)
 #include \"includes.h\"
 #include <Python.h>
 #include \"librpc/rpc/dcerpc.h\"
-#include \"scripting/python/pytalloc.h\"
+#include \"lib/talloc/pytalloc.h\"
 #include \"librpc/rpc/pyrpc.h\"
 #include \"lib/events/events.h\"
 #include \"$hdr\"
