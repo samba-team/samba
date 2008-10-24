@@ -226,7 +226,8 @@ static struct smbcli_state * init_smb_session(struct resolve_context *resolve_ct
 					      const char **ports,
 					      const char * share,
 					      struct smbcli_options *options,
-					      struct smbcli_session_options *session_options)
+					      struct smbcli_session_options *session_options,
+					      struct smb_iconv_convenience *iconv_convenience)
 {
 	NTSTATUS		ret;
 	struct smbcli_state *	cli = NULL;
@@ -238,7 +239,8 @@ static struct smbcli_state * init_smb_session(struct resolve_context *resolve_ct
 				     NULL /* devtype */,
 				     cmdline_credentials, resolve_ctx,
 				     ev, options,
-				     session_options);
+				     session_options,
+				     iconv_convenience);
 
 	if (!NT_STATUS_IS_OK(ret)) {
 		fprintf(stderr, "%s: connecting to //%s/%s: %s\n",
@@ -305,7 +307,8 @@ static struct dd_iohandle * open_cifs_handle(struct resolve_context *resolve_ctx
 					uint64_t io_size,
 					int options,
 					struct smbcli_options *smb_options,
-					struct smbcli_session_options *smb_session_options)
+					struct smbcli_session_options *smb_session_options,
+					struct smb_iconv_convenience *iconv_convenience)
 {
 	struct cifs_handle * smbh;
 
@@ -326,7 +329,8 @@ static struct dd_iohandle * open_cifs_handle(struct resolve_context *resolve_ctx
 	smbh->h.io_seek = smb_seek_func;
 
 	if ((smbh->cli = init_smb_session(resolve_ctx, ev, host, ports, share,
-					  smb_options, smb_session_options)) == NULL) {
+					  smb_options, smb_session_options,
+					  iconv_convenience)) == NULL) {
 		return(NULL);
 	}
 
@@ -348,7 +352,8 @@ struct dd_iohandle * dd_open_path(struct resolve_context *resolve_ctx,
 				uint64_t io_size,
 				int options,
 				struct smbcli_options *smb_options,
-				struct smbcli_session_options *smb_session_options)
+				struct smbcli_session_options *smb_session_options,
+				struct smb_iconv_convenience *iconv_convenience)
 {
 	if (file_exist(path)) {
 		return(open_fd_handle(path, io_size, options));
@@ -366,7 +371,8 @@ struct dd_iohandle * dd_open_path(struct resolve_context *resolve_ctx,
 			return(open_cifs_handle(resolve_ctx, ev, host, ports,
 						share, remain,
 						io_size, options, smb_options,
-						smb_session_options));
+						smb_session_options,
+						iconv_convenience));
 		}
 
 		return(open_fd_handle(path, io_size, options));

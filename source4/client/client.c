@@ -3033,7 +3033,8 @@ static bool do_connect(struct smbclient_context *ctx,
 		       const char *specified_share, 
 		       struct cli_credentials *cred, 
 		       struct smbcli_options *options,
-		       struct smbcli_session_options *session_options)
+		       struct smbcli_session_options *session_options,
+			   struct smb_iconv_convenience *iconv_convenience)
 {
 	NTSTATUS status;
 	char *server, *share;
@@ -3052,7 +3053,8 @@ static bool do_connect(struct smbclient_context *ctx,
 	
 	status = smbcli_full_connection(ctx, &ctx->cli, server, ports,
 					share, NULL, cred, resolve_ctx, 
-					ev_ctx, options, session_options);
+					ev_ctx, options, session_options,
+					iconv_convenience);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("Connection to \\\\%s\\%s failed - %s\n", 
 			 server, share, nt_errstr(status));
@@ -3085,7 +3087,8 @@ static int do_message_op(const char *netbios_name, const char *desthost,
 			 int name_type,
 			 struct event_context *ev_ctx,
 			 struct resolve_context *resolve_ctx,
-			 struct smbcli_options *options)
+			 struct smbcli_options *options,
+			 struct smb_iconv_convenience *iconv_convenience)
 {
 	struct nbt_name called, calling;
 	const char *server_name;
@@ -3099,7 +3102,8 @@ static int do_message_op(const char *netbios_name, const char *desthost,
 
 	if (!(cli = smbcli_state_init(NULL)) ||
 	    !smbcli_socket_connect(cli, server_name, destports,
-				   ev_ctx, resolve_ctx, options)) {
+				   ev_ctx, resolve_ctx, options,
+				   iconv_convenience)) {
 		d_printf("Connection to %s failed\n", server_name);
 		return 1;
 	}
@@ -3252,13 +3256,14 @@ static int do_message_op(const char *netbios_name, const char *desthost,
 				   lp_smb_ports(cmdline_lp_ctx), dest_ip,
 				   name_type, ev_ctx,
 				   lp_resolve_context(cmdline_lp_ctx),
-				   &smb_options);
+				   &smb_options, lp_iconv_convenience(cmdline_lp_ctx));
 		return rc;
 	}
 	
 	if (!do_connect(ctx, ev_ctx, lp_resolve_context(cmdline_lp_ctx),
 			desthost, lp_smb_ports(cmdline_lp_ctx), service,
-			cmdline_credentials, &smb_options, &smb_session_options))
+			cmdline_credentials, &smb_options, &smb_session_options,
+			lp_iconv_convenience(cmdline_lp_ctx)))
 		return 1;
 
 	if (base_directory) 

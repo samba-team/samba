@@ -145,6 +145,7 @@ struct composite_context *smb_composite_fetchfile_send(struct smb_composite_fetc
 	state->connect->in.credentials  = io->in.credentials;
 	state->connect->in.fallback_to_anonymous = false;
 	state->connect->in.workgroup    = io->in.workgroup;
+	state->connect->in.iconv_convenience = io->in.iconv_convenience;
 
 	state->connect->in.options	= io->in.options;
 	state->connect->in.session_options = io->in.session_options;

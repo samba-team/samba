@@ -178,7 +178,8 @@ NTSTATUS smbcli_tree_full_connection(TALLOC_CTX *parent_ctx,
 				     struct resolve_context *resolve_ctx,
 				     struct event_context *ev,
 				     struct smbcli_options *options,
-				     struct smbcli_session_options *session_options)
+				     struct smbcli_session_options *session_options,
+					 struct smb_iconv_convenience *iconv_convenience)
 {
 	struct smb_composite_connect io;
 	NTSTATUS status;
@@ -201,6 +202,7 @@ NTSTATUS smbcli_tree_full_connection(TALLOC_CTX *parent_ctx,
 	io.in.workgroup = "";
 	io.in.options = *options;
 	io.in.session_options = *session_options;
+	io.in.iconv_convenience = iconv_convenience;
 	
 	status = smb_composite_connect(&io, parent_ctx, resolve_ctx, ev);
 	if (NT_STATUS_IS_OK(status)) {

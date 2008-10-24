@@ -162,6 +162,9 @@ struct smbcli_transport {
 
 	/* context of the stream -> packet parser */
 	struct packet_context *packet;
+
+	/* iconv convenience */
+	struct smb_iconv_convenience *iconv_convenience;
 };
 
 /* this is the context for the user */

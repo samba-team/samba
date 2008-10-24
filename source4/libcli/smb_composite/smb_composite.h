@@ -59,6 +59,7 @@ struct smb_composite_fetchfile {
 		struct smbcli_options options;
 		struct smbcli_session_options session_options;
 		struct resolve_context *resolve_ctx;
+		struct smb_iconv_convenience *iconv_convenience;
 	} in;
 	struct {
 		uint8_t *data;
@@ -100,6 +101,7 @@ struct smb_composite_connect {
 		const char *workgroup;
 		struct smbcli_options options;
 		struct smbcli_session_options session_options;
+		struct smb_iconv_convenience *iconv_convenience;
 	} in;
 	struct {
 		struct smbcli_tree *tree;
@@ -137,6 +139,7 @@ struct smb_composite_fsinfo {
 		struct cli_credentials *credentials;
 		const char *workgroup;
 		enum smb_fsinfo_level level;
+		struct smb_iconv_convenience *iconv_convenience;
 	} in;
 	
 	struct {

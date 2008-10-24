@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include <Python.h>
+#include "scripting/python/modules.h"
 #include "libcli/util/pyerrors.h"
 #include "librpc/rpc/pyrpc.h"
 #include "lib/messaging/irpc.h"
@@ -347,12 +348,12 @@ PyObject *py_irpc_connect(PyTypeObject *self, PyObject *args, PyObject *kwargs)
 		ret->msg_ctx = messaging_init(ret->mem_ctx, 
 					    messaging_path,
 					    server_id,
-				            lp_iconv_convenience(global_loadparm),
+				        py_iconv_convenience(ret->mem_ctx),
 					    ev);
 	} else {
 		ret->msg_ctx = messaging_client_init(ret->mem_ctx, 
 					    messaging_path,
-				            lp_iconv_convenience(global_loadparm),
+				        py_iconv_convenience(ret->mem_ctx),
 					    ev);
 	}
 

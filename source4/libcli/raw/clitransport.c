@@ -76,7 +76,8 @@ static NTSTATUS smbcli_transport_finish_recv(void *private, DATA_BLOB blob);
 struct smbcli_transport *smbcli_transport_init(struct smbcli_socket *sock,
 					       TALLOC_CTX *parent_ctx, 
 					       bool primary, 
-					       struct smbcli_options *options)
+					       struct smbcli_options *options,
+						   struct smb_iconv_convenience *iconv_convenience)
 {
 	struct smbcli_transport *transport;
 
@@ -91,6 +92,7 @@ struct smbcli_transport *smbcli_transport_init(struct smbcli_socket *sock,
 	transport->negotiate.protocol = PROTOCOL_NT1;
 	transport->options = *options;
 	transport->negotiate.max_xmit = transport->options.max_xmit;
+	transport->iconv_convenience = iconv_convenience;
 
 	/* setup the stream -> packet parser */
 	transport->packet = packet_init(transport);

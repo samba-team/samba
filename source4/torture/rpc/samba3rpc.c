@@ -91,7 +91,8 @@ bool torture_bind_authcontext(struct torture_context *torture)
 					lp_smb_ports(torture->lp_ctx),
 					"IPC$", NULL, cmdline_credentials,
 					lp_resolve_context(torture->lp_ctx),
-					torture->ev, &options, &session_options);
+					torture->ev, &options, &session_options,
+					lp_iconv_convenience(torture->lp_ctx));
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("smbcli_full_connection failed: %s\n",
 			 nt_errstr(status));
@@ -307,7 +308,8 @@ bool torture_bind_samba3(struct torture_context *torture)
 					lp_smb_ports(torture->lp_ctx),
 					"IPC$", NULL, cmdline_credentials,
 					lp_resolve_context(torture->lp_ctx),
-					torture->ev, &options, &session_options);
+					torture->ev, &options, &session_options,
+					lp_iconv_convenience(torture->lp_ctx));
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("smbcli_full_connection failed: %s\n",
 			 nt_errstr(status));
@@ -1226,7 +1228,8 @@ bool torture_netlogon_samba3(struct torture_context *torture)
 					lp_smb_ports(torture->lp_ctx),
 					"IPC$", NULL, anon_creds, 
 					lp_resolve_context(torture->lp_ctx),
-					torture->ev, &options, &session_options);
+					torture->ev, &options, &session_options,
+					lp_iconv_convenience(torture->lp_ctx));
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("smbcli_full_connection failed: %s\n",
 			 nt_errstr(status));
@@ -1315,7 +1318,8 @@ static bool test_join3(struct torture_context *tctx,
 					lp_smb_ports(tctx->lp_ctx),
 					"IPC$", NULL, smb_creds, 
 					lp_resolve_context(tctx->lp_ctx),
-					tctx->ev, &options, &session_options);
+					tctx->ev, &options, &session_options,
+					lp_iconv_convenience(tctx->lp_ctx));
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("smbcli_full_connection failed: %s\n",
 			 nt_errstr(status));
@@ -1692,7 +1696,8 @@ bool torture_samba3_rpc_getusername(struct torture_context *torture)
 		lp_smb_ports(torture->lp_ctx),
 		"IPC$", NULL, cmdline_credentials, 
 		lp_resolve_context(torture->lp_ctx),
-		torture->ev, &options, &session_options);
+		torture->ev, &options, &session_options,
+		lp_iconv_convenience(torture->lp_ctx));
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("(%s) smbcli_full_connection failed: %s\n",
 			 __location__, nt_errstr(status));
@@ -1719,7 +1724,8 @@ bool torture_samba3_rpc_getusername(struct torture_context *torture)
 		lp_smb_ports(torture->lp_ctx),
 		"IPC$", NULL, anon_creds, 
 		lp_resolve_context(torture->lp_ctx),
-		torture->ev, &options, &session_options);
+		torture->ev, &options, &session_options,
+		lp_iconv_convenience(torture->lp_ctx));
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("(%s) anon smbcli_full_connection failed: %s\n",
 			 __location__, nt_errstr(status));

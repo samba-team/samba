@@ -23,4 +23,6 @@
 void py_load_samba_modules(void);
 void py_update_path(const char *bindir);
 
+#define py_iconv_convenience(mem_ctx) smb_iconv_convenience_init(mem_ctx, "ASCII", PyUnicode_GetDefaultEncoding(), true)
+
 #endif /* __SAMBA_PYTHON_MODULES_H__ */ 

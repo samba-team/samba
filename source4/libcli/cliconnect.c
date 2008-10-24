@@ -35,7 +35,8 @@ bool smbcli_socket_connect(struct smbcli_state *cli, const char *server,
 			   const char **ports, 
 			   struct event_context *ev_ctx,
 			   struct resolve_context *resolve_ctx,
-			   struct smbcli_options *options)
+			   struct smbcli_options *options,
+			   struct smb_iconv_convenience *iconv_convenience)
 {
 	struct smbcli_socket *sock;
 
@@ -44,7 +45,8 @@ bool smbcli_socket_connect(struct smbcli_state *cli, const char *server,
 
 	if (sock == NULL) return false;
 	
-	cli->transport = smbcli_transport_init(sock, cli, true, options);
+	cli->transport = smbcli_transport_init(sock, cli, true, options, 
+										   iconv_convenience);
 	if (!cli->transport) {
 		return false;
 	}
@@ -147,7 +149,8 @@ NTSTATUS smbcli_full_connection(TALLOC_CTX *parent_ctx,
 				struct resolve_context *resolve_ctx,
 				struct event_context *ev,
 				struct smbcli_options *options,
-				struct smbcli_session_options *session_options)
+				struct smbcli_session_options *session_options,
+				struct smb_iconv_convenience *iconv_convenience)
 {
 	struct smbcli_tree *tree;
 	NTSTATUS status;
@@ -159,7 +162,8 @@ NTSTATUS smbcli_full_connection(TALLOC_CTX *parent_ctx,
 					     sharename, devtype,
 					     credentials, resolve_ctx, ev,
 					     options,
-					     session_options);
+					     session_options,
+						 iconv_convenience);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
