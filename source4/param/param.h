@@ -64,7 +64,7 @@ struct smbcli_session_options;
 
 void reload_charcnv(struct loadparm_context *lp_ctx);
 
-extern struct loadparm_context *global_loadparm;
+extern _DEPRECATED_ struct loadparm_context *global_loadparm;
 
 struct loadparm_service *lp_default_service(struct loadparm_context *lp_ctx);
 struct parm_struct *lp_parm_table(void);
