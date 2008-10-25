@@ -66,13 +66,6 @@ void reply_open_pipe_and_X(connection_struct *conn, struct smb_request *req)
 
 	DEBUG(4,("Opening pipe %s.\n", pipe_name));
 
-	/* See if it is one we want to handle. */
-	if (!is_known_pipename(pipe_name)) {
-		reply_botherror(req, NT_STATUS_OBJECT_NAME_NOT_FOUND,
-				ERRDOS, ERRbadpipe);
-		return;
-	}
-
 	/* Strip \PIPE\ off the name. */
 	fname = pipe_name + PIPELEN;
 
@@ -86,12 +79,13 @@ void reply_open_pipe_and_X(connection_struct *conn, struct smb_request *req)
 	}
 #endif
 
-	/* Known pipes arrive with DIR attribs. Remove it so a regular file */
-	/* can be opened and add it in after the open. */
-	DEBUG(3,("Known pipe %s opening.\n",fname));
-
 	status = np_open(req, conn, fname, &fsp);
 	if (!NT_STATUS_IS_OK(status)) {
+		if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+			reply_botherror(req, NT_STATUS_OBJECT_NAME_NOT_FOUND,
+					ERRDOS, ERRbadpipe);
+			return;
+		}
 		reply_nterror(req, status);
 		return;
 	}

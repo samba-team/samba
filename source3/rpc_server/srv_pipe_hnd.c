@@ -925,6 +925,12 @@ NTSTATUS np_open(struct smb_request *smb_req, struct connection_struct *conn,
 	struct files_struct *fsp;
 	struct pipes_struct *p;
 
+	/* See if it is one we want to handle. */
+
+	if (!is_known_pipename(name)) {
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+
 	status = file_new(smb_req, conn, &fsp);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("file_new failed: %s\n", nt_errstr(status)));
