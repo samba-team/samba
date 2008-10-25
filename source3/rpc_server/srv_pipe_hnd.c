@@ -913,9 +913,74 @@ static int close_internal_rpc_pipe_hnd(struct pipes_struct *p)
 
 bool fsp_is_np(struct files_struct *fsp)
 {
-	return ((fsp != NULL)
-		&& (fsp->fake_file_handle != NULL)
-		&& (fsp->fake_file_handle->type == FAKE_FILE_TYPE_NAMED_PIPE));
+	enum FAKE_FILE_TYPE type;
+
+	if ((fsp == NULL) || (fsp->fake_file_handle == NULL)) {
+		return false;
+	}
+
+	type = fsp->fake_file_handle->type;
+
+	return ((type == FAKE_FILE_TYPE_NAMED_PIPE)
+		|| (type == FAKE_FILE_TYPE_NAMED_PIPE_PROXY));
+}
+
+struct np_proxy_state {
+	int fd;
+};
+
+static int np_proxy_state_destructor(struct np_proxy_state *state)
+{
+	if (state->fd != -1) {
+		close(state->fd);
+	}
+	return 0;
+}
+
+static struct np_proxy_state *make_external_rpc_pipe_p(TALLOC_CTX *mem_ctx,
+						       const char *pipe_name,
+						       struct auth_serversupplied_info *server_info)
+{
+	struct np_proxy_state *result;
+	struct sockaddr_un addr;
+	char *socket_path;
+
+	result = talloc(mem_ctx, struct np_proxy_state);
+	if (result == NULL) {
+		DEBUG(0, ("talloc failed\n"));
+		return NULL;
+	}
+
+	result->fd = socket(AF_UNIX, SOCK_STREAM, 0);
+	if (result->fd == -1) {
+		DEBUG(10, ("socket(2) failed: %s\n", strerror(errno)));
+		goto fail;
+	}
+	talloc_set_destructor(result, np_proxy_state_destructor);
+
+	ZERO_STRUCT(addr);
+	addr.sun_family = AF_UNIX;
+
+	socket_path = talloc_asprintf(talloc_tos(), "%s/%s",
+				      get_dyn_NCALRPCDIR(), "DEFAULT");
+	if (socket_path == NULL) {
+		DEBUG(0, ("talloc_asprintf failed\n"));
+		goto fail;
+	}
+	strncpy(addr.sun_path, socket_path, sizeof(addr.sun_path));
+	TALLOC_FREE(socket_path);
+
+	if (sys_connect(result->fd, (struct sockaddr *)&addr) == -1) {
+		DEBUG(0, ("connect(%s) failed: %s\n", addr.sun_path,
+			  strerror(errno)));
+		goto fail;
+	}
+
+	return result;
+
+ fail:
+	TALLOC_FREE(result);
+	return NULL;
 }
 
 NTSTATUS np_open(struct smb_request *smb_req, struct connection_struct *conn,
@@ -923,13 +988,9 @@ NTSTATUS np_open(struct smb_request *smb_req, struct connection_struct *conn,
 {
 	NTSTATUS status;
 	struct files_struct *fsp;
-	struct pipes_struct *p;
+	const char **proxy_list;
 
-	/* See if it is one we want to handle. */
-
-	if (!is_known_pipename(name)) {
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
+	proxy_list = lp_parm_string_list(SNUM(conn), "np", "proxy", NULL);
 
 	status = file_new(smb_req, conn, &fsp);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -949,16 +1010,36 @@ NTSTATUS np_open(struct smb_request *smb_req, struct connection_struct *conn,
 		file_free(smb_req, fsp);
 		return NT_STATUS_NO_MEMORY;
 	}
-	fsp->fake_file_handle->type = FAKE_FILE_TYPE_NAMED_PIPE;
 
-	p = make_internal_rpc_pipe_p(fsp->fake_file_handle, name,
-				     conn->client_address, conn->server_info,
-				     smb_req->vuid);
-	if (p == NULL) {
+	if ((proxy_list != NULL) && str_list_check_ci(proxy_list, name)) {
+		struct np_proxy_state *p;
+
+		p = make_external_rpc_pipe_p(fsp->fake_file_handle, name,
+					     conn->server_info);
+
+		fsp->fake_file_handle->type = FAKE_FILE_TYPE_NAMED_PIPE_PROXY;
+		fsp->fake_file_handle->private_data = p;
+	} else {
+		struct pipes_struct *p;
+
+		if (!is_known_pipename(name)) {
+			file_free(smb_req, fsp);
+			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		}
+
+		p = make_internal_rpc_pipe_p(fsp->fake_file_handle, name,
+					     conn->client_address,
+					     conn->server_info,
+					     smb_req->vuid);
+
+		fsp->fake_file_handle->type = FAKE_FILE_TYPE_NAMED_PIPE;
+		fsp->fake_file_handle->private_data = p;
+	}
+
+	if (fsp->fake_file_handle->private_data == NULL) {
 		file_free(smb_req, fsp);
 		return NT_STATUS_PIPE_NOT_AVAILABLE;
 	}
-	fsp->fake_file_handle->private_data = p;
 
 	*pfsp = fsp;
 
@@ -968,20 +1049,33 @@ NTSTATUS np_open(struct smb_request *smb_req, struct connection_struct *conn,
 NTSTATUS np_write(struct files_struct *fsp, uint8_t *data, size_t len,
 		  ssize_t *nwritten)
 {
-	struct pipes_struct *p;
-
 	if (!fsp_is_np(fsp)) {
 		return NT_STATUS_INVALID_HANDLE;
 	}
-
-	p = talloc_get_type_abort(
-		fsp->fake_file_handle->private_data, struct pipes_struct);
 
 	DEBUG(6, ("np_write: %x name: %s len: %d\n", (int)fsp->fnum,
 		  fsp->fsp_name, (int)len));
 	dump_data(50, data, len);
 
-	*nwritten = write_to_internal_pipe(p, (char *)data, len);
+	switch (fsp->fake_file_handle->type) {
+	case FAKE_FILE_TYPE_NAMED_PIPE: {
+		struct pipes_struct *p = talloc_get_type_abort(
+			fsp->fake_file_handle->private_data,
+			struct pipes_struct);
+		*nwritten = write_to_internal_pipe(p, (char *)data, len);
+		break;
+	}
+	case FAKE_FILE_TYPE_NAMED_PIPE_PROXY: {
+		struct np_proxy_state *p = talloc_get_type_abort(
+			fsp->fake_file_handle->private_data,
+			struct np_proxy_state);
+		*nwritten = write_data(p->fd, (char *)data, len);
+		break;
+	}
+	default:
+		return NT_STATUS_INVALID_HANDLE;
+		break;
+	}
 
 	return ((*nwritten) >= 0)
 		? NT_STATUS_OK : NT_STATUS_UNEXPECTED_IO_ERROR;
@@ -990,19 +1084,41 @@ NTSTATUS np_write(struct files_struct *fsp, uint8_t *data, size_t len,
 NTSTATUS np_read(struct files_struct *fsp, uint8_t *data, size_t len,
 		 ssize_t *nread, bool *is_data_outstanding)
 {
-	struct pipes_struct *p;
-
 	if (!fsp_is_np(fsp)) {
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	p = talloc_get_type_abort(
-		fsp->fake_file_handle->private_data, struct pipes_struct);
+	switch (fsp->fake_file_handle->type) {
+	case FAKE_FILE_TYPE_NAMED_PIPE: {
+		struct pipes_struct *p = talloc_get_type_abort(
+			fsp->fake_file_handle->private_data,
+			struct pipes_struct);
+		*nread = read_from_internal_pipe(p, (char *)data, len,
+						 is_data_outstanding);
+		break;
+	}
+	case FAKE_FILE_TYPE_NAMED_PIPE_PROXY: {
+		struct np_proxy_state *p = talloc_get_type_abort(
+			fsp->fake_file_handle->private_data,
+			struct np_proxy_state);
+		int available = 0;
 
-	*nread = read_from_internal_pipe(p, (char *)data, len,
-					 is_data_outstanding);
+		*nread = sys_read(p->fd, (char *)data, len);
+
+		/*
+		 * We don't look at the ioctl result. We don't really care
+		 * if there is data available, because this is racy anyway.
+		 */
+		ioctl(p->fd, FIONREAD, &available);
+		*is_data_outstanding = (available > 0);
+
+		break;
+	}
+	default:
+		return NT_STATUS_INVALID_HANDLE;
+		break;
+	}
 
 	return ((*nread) >= 0)
 		? NT_STATUS_OK : NT_STATUS_UNEXPECTED_IO_ERROR;
-
 }
