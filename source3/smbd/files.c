@@ -200,11 +200,6 @@ open files, %d are available.\n", request_max_open_files, real_max_open_files));
 	if (!file_bmap) {
 		exit_server("out of memory in file_init");
 	}
-	
-	/*
-	 * Ensure that pipe_handle_oppset is set correctly.
-	 */
-	set_pipe_handle_offset(real_max_open_files);
 }
 
 /****************************************************************************

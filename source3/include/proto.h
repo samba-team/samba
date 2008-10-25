@@ -1663,6 +1663,9 @@ size_t str_list_length( const char * const*list );
 bool str_list_sub_basic( char **list, const char *smb_name,
 			 const char *domain_name );
 bool str_list_substitute(char **list, const char *pattern, const char *insert);
+bool str_list_check(const char **list, const char *s);
+bool str_list_check_ci(const char **list, const char *s);
+
 char *ipstr_list_make(char **ipstr_list,
 			const struct ip_service *ip_list,
 			int ip_count);
@@ -7110,7 +7113,6 @@ bool api_pipe_request(pipes_struct *p);
 
 pipes_struct *get_first_internal_pipe(void);
 pipes_struct *get_next_internal_pipe(pipes_struct *p);
-void set_pipe_handle_offset(int max_open_files);
 void init_rpc_pipe_hnd(void);
 
 bool fsp_is_np(struct files_struct *fsp);

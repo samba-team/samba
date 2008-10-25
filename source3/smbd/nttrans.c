@@ -276,21 +276,16 @@ static void nt_open_pipe(char *fname, connection_struct *conn,
 
 	DEBUG(4,("nt_open_pipe: Opening pipe %s.\n", fname));
 
-	/* See if it is one we want to handle. */
-
-	if (!is_known_pipename(fname)) {
-		reply_botherror(req, NT_STATUS_OBJECT_NAME_NOT_FOUND,
-				ERRDOS, ERRbadpipe);
-		return;
-	}
-
 	/* Strip \\ off the name. */
 	fname++;
 
-	DEBUG(3,("nt_open_pipe: Known pipe %s opening.\n", fname));
-
 	status = np_open(req, conn, fname, &fsp);
 	if (!NT_STATUS_IS_OK(status)) {
+		if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+			reply_botherror(req, NT_STATUS_OBJECT_NAME_NOT_FOUND,
+					ERRDOS, ERRbadpipe);
+			return;
+		}
 		reply_nterror(req, status);
 		return;
 	}
