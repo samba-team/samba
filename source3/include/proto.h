@@ -7110,7 +7110,6 @@ bool api_pipe_request(pipes_struct *p);
 
 pipes_struct *get_first_internal_pipe(void);
 pipes_struct *get_next_internal_pipe(pipes_struct *p);
-void set_pipe_handle_offset(int max_open_files);
 void init_rpc_pipe_hnd(void);
 
 bool fsp_is_np(struct files_struct *fsp);

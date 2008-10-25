@@ -55,22 +55,6 @@ pipes_struct *get_next_internal_pipe(pipes_struct *p)
 	return p->next;
 }
 
-/* this must be larger than the sum of the open files and directories */
-static int pipe_handle_offset;
-
-/****************************************************************************
- Set the pipe_handle_offset. Called from smbd/files.c
-****************************************************************************/
-
-void set_pipe_handle_offset(int max_open_files)
-{
-	if(max_open_files < 0x7000) {
-		pipe_handle_offset = 0x7000;
-	} else {
-		pipe_handle_offset = max_open_files + 10; /* For safety. :-) */
-	}
-}
-
 /****************************************************************************
  Initialise pipe handle states.
 ****************************************************************************/
