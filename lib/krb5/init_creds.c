@@ -42,8 +42,6 @@ krb5_get_init_creds_opt_init(krb5_get_init_creds_opt *opt)
     __attribute__((deprecated))
 {
     memset (opt, 0, sizeof(*opt));
-    opt->flags = 0;
-    opt->opt_private = NULL;
 }
 
 krb5_error_code KRB5_LIB_FUNCTION
