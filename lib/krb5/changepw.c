@@ -501,17 +501,6 @@ static struct kpwd_proc {
     { NULL }
 };
 
-static struct kpwd_proc *
-find_chpw_proto(const char *name)
-{
-    struct kpwd_proc *p;
-    for (p = procs; p->name != NULL; p++) {
-	if (strcmp(p->name, name) == 0)
-	    return p;
-    }
-    return NULL;
-}
-
 /*
  *
  */
@@ -670,6 +659,17 @@ change_password_loop (krb5_context	context,
 }
 
 #ifndef HEIMDAL_SMALLER
+
+static struct kpwd_proc *
+find_chpw_proto(const char *name)
+{
+    struct kpwd_proc *p;
+    for (p = procs; p->name != NULL; p++) {
+	if (strcmp(p->name, name) == 0)
+	    return p;
+    }
+    return NULL;
+}
 
 /**
  * krb5_change_password() is deprecated, use krb5_set_password().
