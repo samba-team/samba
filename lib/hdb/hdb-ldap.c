@@ -794,7 +794,7 @@ LDAP__lookup_princ(krb5_context context,
 		   const char *userid,
 		   LDAPMessage **msg)
 {
-    struct berval princnamebv, quotedp;
+    struct berval namebv, quotedp;
     krb5_error_code ret;
     int rc;
     char *filter = NULL;
@@ -808,8 +808,8 @@ LDAP__lookup_princ(krb5_context context,
      * searches for *@REALM, which takes very long time.
      */
 
-    ber_str2bv(princname, 0, 0, &princnamebv);
-    if (ldap_bv2escaped_filter_value(&princnamebv, &quotedp) != 0) {
+    ber_str2bv(princname, 0, 0, &namebv);
+    if (ldap_bv2escaped_filter_value(&namebv, &quotedp) != 0) {
 	ret = ENOMEM;
 	krb5_set_error_message(context, ret, "malloc: out of memory");
 	goto out;
@@ -848,9 +848,17 @@ LDAP__lookup_princ(krb5_context context,
 	ldap_msgfree(*msg);
 	*msg = NULL;
 	
+	ber_str2bv(userid, 0, 0, &namebv);
+	if (ldap_bv2escaped_filter_value(&namebv, &quotedp) != 0) {
+	    ret = ENOMEM;
+	    krb5_set_error_message(context, ret, "malloc: out of memory");
+	    goto out;
+	}
+
 	rc = asprintf(&filter,
 	    "(&(|(objectClass=sambaSamAccount)(objectClass=%s))(uid=%s))",
-		      structural_object, userid);
+		      structural_object, quotedp.bv_val);
+	ber_memfree(quotedp.bv_val);
 	if (rc < 0) {
 	    ret = ENOMEM;
 	    krb5_set_error_message(context, ret, "asprintf: out of memory");
