@@ -34,6 +34,8 @@
 #include "krb5_locl.h"
 RCSID("$Id$");
 
+#ifndef HEIMDAL_SMALLER
+
 /*
  * Glue for MIT API
  */
@@ -367,3 +369,5 @@ krb5_c_prf(krb5_context context,
 
     return ret;
 }
+
+#endif /* HEIMDAL_SMALLER */
