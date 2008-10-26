@@ -32,8 +32,10 @@ Heimdal_la_LDFLAGS = -module
 $(Heimdal_la_OBJECTS): symbollist.map
 Heimdal_la_LDFLAGS += -Wl,-dead_strip -Wl,-exported_symbols_list,symbollist.map
 
+#	../krb5/version-script.map
+#	../hx509/version-script.map
+
 SYMBOLFILES = \
-	../krb5/version-script.map \
 	../gssapi/version-script.map
 
 symbollist.map: $(SYMBOLFILES)
