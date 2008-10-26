@@ -2,7 +2,7 @@
 
 include $(top_srcdir)/Makefile.am.common
 
-noinst_LTLIBRARIES = libsqlite.la
+lib_LTLIBRARIES = libheimsqlite.la
 
 noinst_HEADERS = sqlite3.h sqlite3ext.h
 
