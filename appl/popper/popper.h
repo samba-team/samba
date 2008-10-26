@@ -342,7 +342,7 @@ __attribute__ ((format (printf, 3, 4)))
 #endif
 ;
 
-int pop_msg(POP *p, int stat, char *format, ...)
+int pop_msg(POP *p, int stat, const char *format, ...)
 #ifdef __GNUC__
 __attribute__ ((format (printf, 3, 4)))
 #endif
