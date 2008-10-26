@@ -50,7 +50,7 @@ kcm_ccache_acquire(krb5_context context,
     krb5_error_code ret = 0;
     krb5_creds cred;
     krb5_const_realm realm;
-    krb5_get_init_creds_opt opt;
+    krb5_get_init_creds_opt *opt = NULL;
     krb5_ccache_data ccdata;
     char *in_tkt_service = NULL;
     int done = 0;
@@ -91,12 +91,12 @@ kcm_ccache_acquire(krb5_context context,
 
     realm = krb5_principal_get_realm(context, ccache->client);
 
-    krb5_get_init_creds_opt_init(&opt);
-    krb5_get_init_creds_opt_set_default_flags(context, "kcm", realm, &opt);
+    krb5_get_init_creds_opt_alloc(context, &opt);
+    krb5_get_init_creds_opt_set_default_flags(context, "kcm", realm, opt);
     if (ccache->tkt_life != 0)
-	krb5_get_init_creds_opt_set_tkt_life(&opt, ccache->tkt_life);
+	krb5_get_init_creds_opt_set_tkt_life(opt, ccache->tkt_life);
     if (ccache->renew_life != 0)
-	krb5_get_init_creds_opt_set_renew_life(&opt, ccache->renew_life);
+	krb5_get_init_creds_opt_set_renew_life(opt, ccache->renew_life);
 
     if (ccache->flags & KCM_FLAGS_USE_CACHED_KEY) {
 	ret = krb5_get_init_creds_keyblock(context,
@@ -105,7 +105,7 @@ kcm_ccache_acquire(krb5_context context,
 					   &ccache->key.keyblock,
 					   0,
 					   in_tkt_service,
-					   &opt);
+					   opt);
     } else {
 	/* loosely based on lib/krb5/init_creds_pw.c */
 	while (!done) {
@@ -115,7 +115,7 @@ kcm_ccache_acquire(krb5_context context,
 					     ccache->key.keytab,
 					     0,
 					     in_tkt_service,
-					     &opt);
+					     opt);
 	    switch (ret) {
 	    case KRB5KDC_ERR_KEY_EXPIRED:
 		if (in_tkt_service != NULL &&
@@ -158,6 +158,9 @@ kcm_ccache_acquire(krb5_context context,
     }
 
 out:
+    if (opt)
+	krb5_get_init_creds_opt_free(context, opt);
+
     HEIMDAL_MUTEX_unlock(&ccache->mutex);
 
     return ret;
