@@ -38,8 +38,9 @@ RCSID("$Id$");
 #undef __attribute__
 #define __attribute__(X)
 
-#ifndef HEIMDAL_SMALLER
 #define WEAK_ENCTYPES 1
+
+#ifndef HEIMDAL_SMALLER
 #define DES3_OLD_ENCTYPE 1
 #endif
 
