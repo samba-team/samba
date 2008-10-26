@@ -221,7 +221,7 @@ _gss_load_mech(void)
 
 	add_builtin(__gss_krb5_initialize());
 	add_builtin(__gss_spnego_initialize());
-#ifdef HEIMDAL_SMALLER
+#ifndef HEIMDAL_SMALLER
 	add_builtin(__gss_ntlm_initialize());
 #endif
 
