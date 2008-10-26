@@ -7,7 +7,7 @@
 #include <popper.h>
 RCSID("$Id$");
 
-static char standard_error[] =
+static const char standard_error[] =
     "Error error updating primary drop. Mailbox unchanged";
 
 /*
