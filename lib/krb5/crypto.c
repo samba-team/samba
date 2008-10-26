@@ -145,7 +145,6 @@ struct encryption_type {
 
 static struct checksum_type *_find_checksum(krb5_cksumtype type);
 static struct encryption_type *_find_enctype(krb5_enctype type);
-static struct key_type *_find_keytype(krb5_keytype type);
 static krb5_error_code _get_derived_key(krb5_context, krb5_crypto,
 					unsigned, struct key_data**);
 static struct key_data *_new_derived_key(krb5_crypto crypto, unsigned usage);
@@ -179,6 +178,7 @@ struct evp_schedule {
 
 static HEIMDAL_MUTEX crypto_mutex = HEIMDAL_MUTEX_INITIALIZER;
 
+#ifdef WEAK_ENCTYPES
 static void
 krb5_DES_random_key(krb5_context context,
 		    krb5_keyblock *key)
@@ -190,7 +190,6 @@ krb5_DES_random_key(krb5_context context,
     } while(DES_is_weak_key(k));
 }
 
-#ifdef WEAK_ENCTYPES
 static void
 krb5_DES_schedule_old(krb5_context context,
 		      struct key_type *kt,
@@ -198,8 +197,6 @@ krb5_DES_schedule_old(krb5_context context,
 {
     DES_set_key_unchecked(key->key->keyvalue.data, key->schedule->data);
 }
-#endif /* WEAK_ENCTYPES */
-
 
 #ifdef ENABLE_AFS_STRING_TO_KEY
 
@@ -384,6 +381,7 @@ krb5_DES_random_to_key(krb5_context context,
     if(DES_is_weak_key(k))
 	xor(k, (const unsigned char*)"\0\0\0\0\0\0\0\xf0");
 }
+#endif
 
 /*
  *
@@ -722,6 +720,7 @@ evp_cleanup(krb5_context context, struct key_data *kd)
  *
  */
 
+#ifdef WEAK_ENCTYPES
 static struct salt_type des_salt[] = {
     {
 	KRB5_PW_SALT,
@@ -737,6 +736,7 @@ static struct salt_type des_salt[] = {
 #endif
     { 0 }
 };
+#endif
 
 #ifdef DES3_OLD_ENCTYPE
 static struct salt_type des3_salt[] = {
@@ -803,7 +803,6 @@ static struct key_type keytype_des_old = {
     des_salt,
     krb5_DES_random_to_key
 };
-#endif /* WEAK_ENCTYPES */
 
 static struct key_type keytype_des = {
     KEYTYPE_DES,
@@ -818,6 +817,7 @@ static struct key_type keytype_des = {
     evp_cleanup,
     EVP_des_cbc
 };
+#endif /* WEAK_ENCTYPES */
 
 #ifdef DES3_OLD_ENCTYPE
 static struct key_type keytype_des3 = {
@@ -887,31 +887,6 @@ static struct key_type keytype_arcfour = {
     ARCFOUR_schedule,
     arcfour_salt
 };
-
-static struct key_type *keytypes[] = {
-    &keytype_null,
-    &keytype_des,
-    &keytype_des3_derived,
-#ifdef DES3_OLD_ENCTYPE
-    &keytype_des3,
-#endif
-    &keytype_aes128,
-    &keytype_aes256,
-    &keytype_arcfour
-};
-
-static int num_keytypes = sizeof(keytypes) / sizeof(keytypes[0]);
-
-static struct key_type *
-_find_keytype(krb5_keytype type)
-{
-    int i;
-    for(i = 0; i < num_keytypes; i++)
-	if(keytypes[i]->type == type)
-	    return keytypes[i];
-    return NULL;
-}
-
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_salttype_to_string (krb5_context context,
@@ -1379,6 +1354,7 @@ RSA_MD5_DES_verify(krb5_context context,
     return des_verify(context, EVP_md5(), key, data, len, C);
 }
 
+#ifdef DES3_OLD_ENCTYPE
 static krb5_error_code
 RSA_MD5_DES3_checksum(krb5_context context,
 		      struct key_data *key,
@@ -1400,6 +1376,7 @@ RSA_MD5_DES3_verify(krb5_context context,
 {
     return des_verify(context, EVP_md5(), key, data, len, C);
 }
+#endif
 
 static krb5_error_code
 SHA1_checksum(krb5_context context,
@@ -4596,6 +4573,31 @@ krb5_crypto_prf(krb5_context context,
 
 #ifndef HEIMDAL_SMALLER
 
+static struct key_type *keytypes[] = {
+    &keytype_null,
+    &keytype_des,
+    &keytype_des3_derived,
+#ifdef DES3_OLD_ENCTYPE
+    &keytype_des3,
+#endif
+    &keytype_aes128,
+    &keytype_aes256,
+    &keytype_arcfour
+};
+
+static int num_keytypes = sizeof(keytypes) / sizeof(keytypes[0]);
+
+
+static struct key_type *
+_find_keytype(krb5_keytype type)
+{
+    int i;
+    for(i = 0; i < num_keytypes; i++)
+	if(keytypes[i]->type == type)
+	    return keytypes[i];
+    return NULL;
+}
+
 /*
  * First take the configured list of etypes for `keytype' if available,
  * else, do `krb5_keytype_to_enctypes'.
@@ -4707,4 +4709,4 @@ krb5_keytype_to_enctypes (krb5_context context,
     return 0;
 }
 
-#endif
+#endif /* HEIMDAL_SMALLER */
