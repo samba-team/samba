@@ -211,8 +211,9 @@ krb5_free_error_message(krb5_context context, const char *msg)
  * @ingroup krb5_deprecated
  */
 
-void KRB5_LIB_FUNCTION __attribute__((deprecated))
+void KRB5_LIB_FUNCTION
 krb5_free_error_string(krb5_context context, char *str)
+    __attribute__((deprecated))
 {
     krb5_free_error_message(context, str);
 }
