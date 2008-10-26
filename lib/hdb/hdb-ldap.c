@@ -794,34 +794,34 @@ LDAP__lookup_princ(krb5_context context,
 		   const char *userid,
 		   LDAPMessage **msg)
 {
+    struct berval princnamebv, quotedp;
     krb5_error_code ret;
     int rc;
     char *filter = NULL;
-    size_t len;
-
-    /* 
-     * Filter out searches for *@REALM, which takes very long time,
-     * and other ldap special characters, this should really be
-     * quoting instead.
-     */
-    len = strcspn(princname, "()*=&\\|~=<>!");
-    if (princname[len] != '\0') {
-	krb5_set_error_message(context, HDB_ERR_NOENTRY,
-			       "Principal contains ldap "
-			       "search term: %s", princname);
-	return HDB_ERR_NOENTRY;
-    }
 
     ret = LDAP__connect(context, db);
     if (ret)
 	return ret;
 
+    /* 
+     * Quote searches that contain filter language, this quote
+     * searches for *@REALM, which takes very long time.
+     */
+
+    ber_str2bv(princname, 0, 0, &princnamebv);
+    if (ldap_bv2escaped_filter_value(&princnamebv, &quotedp) != 0) {
+	ret = ENOMEM;
+	krb5_set_error_message(context, ret, "malloc: out of memory");
+	goto out;
+    }
     rc = asprintf(&filter,
 		  "(&(objectClass=krb5Principal)(krb5PrincipalName=%s))",
-		  princname);
+		  quotedp.bv_val);
+    ber_memfree(quotedp.bv_val);
+
     if (rc < 0) {
 	ret = ENOMEM;
-	krb5_set_error_message(context, ret, "asprintf: out of memory");
+	krb5_set_error_message(context, ret, "malloc: out of memory");
 	goto out;
     }
 
@@ -1198,8 +1198,8 @@ LDAP_message2entry(krb5_context context, HDB * db, LDAPMessage * msg,
 	if (ent->entry.pw_end == NULL) {
             ent->entry.pw_end = malloc(sizeof(*ent->entry.pw_end));
             if (ent->entry.pw_end == NULL) {
-                krb5_set_error_string(context, "malloc: out of memory");
                 ret = ENOMEM;
+                krb5_set_error_message(context, ret, "malloc: out of memory");
                 goto out;
             }
         }
