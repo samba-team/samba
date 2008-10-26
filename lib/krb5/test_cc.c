@@ -570,7 +570,9 @@ main(int argc, char **argv)
 
     test_cache_remove(context, &krb5_fcc_ops);
     test_cache_remove(context, &krb5_mcc_ops);
+#ifdef USE_SQLITE
     test_cache_remove(context, &krb5_scc_ops);
+#endif
 
     test_default_name(context);
     test_mcache(context);
