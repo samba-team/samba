@@ -1705,8 +1705,6 @@ pk_copy_error(krb5_context context,
     free(f);
 }
 
-#endif /* PKINIT */
-
 static int
 parse_integer(krb5_context context, char **p, const char *file, int lineno,
 	      const char *name, heim_integer *integer)
@@ -1993,6 +1991,7 @@ _krb5_dh_group_ok(krb5_context context, unsigned long bits,
 			   N_("PKINIT: DH group parameter no ok", ""));
     return KRB5_KDC_ERR_DH_KEY_PARAMETERS_NOT_ACCEPTED;
 }
+#endif /* PKINIT */
 
 void KRB5_LIB_FUNCTION
 _krb5_get_init_creds_opt_free_pkinit(krb5_get_init_creds_opt *opt)
