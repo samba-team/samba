@@ -476,6 +476,7 @@ krb_enc_mit(krb5_context context,
 	    krb5_data *cipher,
 	    krb5_data *clear)
 {
+#ifndef HEIMDAL_SMALLER
     krb5_error_code ret;
     krb5_enc_data e;
     krb5_data decrypt;
@@ -506,7 +507,7 @@ krb_enc_mit(krb5_context context,
 		   (unsigned long)len, (unsigned long)cipher->length);
 	return EINVAL;
     }
-
+#endif /* HEIMDAL_SMALLER */
     return 0;
 }
 
