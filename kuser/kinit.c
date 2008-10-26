@@ -58,8 +58,11 @@ struct getarg_strings etype_str;
 int use_keytab		= 0;
 char *keytab_str	= NULL;
 int do_afslog		= -1;
+#ifndef HEIMDAL_SMALLER
 int get_v4_tgt		= -1;
 int convert_524		= 0;
+static char *krb4_cc_name;
+#endif
 int fcache_version;
 char *password_file	= NULL;
 char *pk_user_id	= NULL;
@@ -71,7 +74,6 @@ static int use_referrals_flag = 0;
 static int windows_flag = 0;
 static char *ntlm_domain;
 
-static char *krb4_cc_name;
 
 static struct getargs args[] = {
     /*
@@ -83,12 +85,13 @@ static struct getargs args[] = {
      * C: v4 cache name?
      * 5:
      */
+#ifndef HEIMDAL_SMALLER
     { "524init", 	'4', arg_flag, &get_v4_tgt,
       NP_("obtain version 4 TGT", "") },
 
     { "524convert", 	'9', arg_flag, &convert_524,
       NP_("only convert ticket to version 4", "") },
-
+#endif
     { "afslog", 	0  , arg_flag, &do_afslog,
       NP_("obtain afs tokens", "")  },
 
@@ -204,6 +207,8 @@ get_server(krb5_context context,
 			       KRB5_TGS_NAME, *client_realm, NULL);
 }
 
+#ifndef HEIMDAL_SMALLER
+
 static krb5_error_code
 do_524init(krb5_context context, krb5_ccache ccache,
 	   krb5_creds *creds, const char *server)
@@ -246,6 +251,8 @@ do_524init(krb5_context context, krb5_ccache ccache,
 
     return ret;
 }
+
+#endif
 
 static int
 renew_validate(krb5_context context,
@@ -326,8 +333,10 @@ renew_validate(krb5_context context,
 
     if(ret == 0 && server == NULL) {
 	/* only do this if it's a general renew-my-tgt request */
+#ifndef HEIMDAL_SMALLER
 	if(get_v4_tgt)
 	    do_524init(context, cache, out, NULL);
+#endif
 	if(do_afslog && k_hasafs())
 	    krb5_afslog(context, cache, NULL, NULL);
     }
@@ -691,8 +700,10 @@ renew_func(void *ptr)
 	get_new_tickets(ctx->context, ctx->principal,
 			ctx->ccache, ctx->ticket_life, 0);
 
+#ifndef HEIMDAL_SMALLER
     if(get_v4_tgt || convert_524)
 	do_524init(ctx->context, ctx->ccache, NULL, server_str);
+#endif
     if(do_afslog && k_hasafs())
 	krb5_afslog(ctx->context, ctx->ccache, NULL, NULL);
 
@@ -759,10 +770,12 @@ main (int argc, char **argv)
 	krb5_appdefault_boolean(context, "kinit",
 				krb5_principal_get_realm(context, principal),
 				"renewable", FALSE, &renewable_flag);
+#ifndef HEIMDAL_SMALLER
     if(get_v4_tgt == -1)
 	krb5_appdefault_boolean(context, "kinit",
 				krb5_principal_get_realm(context, principal),
 				"krb4_get_tickets", FALSE, &get_v4_tgt);
+#endif
     if(do_afslog == -1)
 	krb5_appdefault_boolean(context, "kinit",
 				krb5_principal_get_realm(context, principal),
@@ -780,6 +793,7 @@ main (int argc, char **argv)
 		     krb5_cc_get_type(context, ccache),
 		     krb5_cc_get_name(context, ccache));
 	    setenv("KRB5CCNAME", s, 1);
+#ifndef HEIMDAL_SMALLER
 	    if (get_v4_tgt) {
 		int fd;
 		if (asprintf(&krb4_cc_name, "%s_XXXXXX", TKT_ROOT) < 0)
@@ -792,6 +806,7 @@ main (int argc, char **argv)
 		    krb4_cc_name = NULL;
 		}
 	    }
+#endif
 	} else {
 	    ret = krb5_cc_cache_match(context, principal, &ccache);
 	    if (ret)
@@ -837,11 +852,15 @@ main (int argc, char **argv)
 	exit(ret != 0);
     }
 
+#ifndef HEIMDAL_SMALLER
     if(!convert_524)
+#endif
 	get_new_tickets(context, principal, ccache, ticket_life, 1);
 
+#ifndef HEIMDAL_SMALLER
     if(get_v4_tgt || convert_524)
 	do_524init(context, ccache, NULL, server_str);
+#endif
     if(do_afslog && k_hasafs())
 	krb5_afslog(context, ccache, NULL, NULL);
     if(argc > 1) {
@@ -865,7 +884,9 @@ main (int argc, char **argv)
 	    krb5_warnx(context, N_("command not found: %s", ""), argv[1]);
 	
 	krb5_cc_destroy(context, ccache);
+#ifndef HEIMDAL_SMALLER
 	_krb5_krb_dest_tkt(context, krb4_cc_name);
+#endif
 	if(k_hasafs())
 	    k_unlog();
     } else {
