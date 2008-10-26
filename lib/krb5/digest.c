@@ -35,6 +35,8 @@
 RCSID("$Id$");
 #include "digest_asn1.h"
 
+#ifdef HEIMDAL_SMALLER
+
 struct krb5_digest_data {
     char *cbtype;
     char *cbbinding;
@@ -1220,3 +1222,5 @@ krb5_digest_probe(krb5_context context,
 
     return ret;
 }
+
+#endif /* HEIMDAL_SMALLER */
