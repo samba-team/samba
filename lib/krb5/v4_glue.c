@@ -36,6 +36,8 @@ RCSID("$Id$");
 
 #include "krb5-v4compat.h"
 
+#ifndef HEIMDAL_SMALLER
+
 /*
  *
  */
@@ -947,3 +949,5 @@ _krb5_krb_free_auth_data(krb5_context context, struct _krb5_krb_auth_data *ad)
     krb5_free_keyblock_contents(context, &ad->session);
     memset(ad, 0, sizeof(*ad));
 }
+
+#endif /* HEIMDAL_SMALLER */
