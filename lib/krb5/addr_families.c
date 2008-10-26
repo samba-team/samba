@@ -440,6 +440,8 @@ ipv6_mask_boundary(krb5_context context, const krb5_address *inaddr,
 
 #endif /* IPv6 */
 
+#ifndef HEIMDAL_SMALLER
+
 /*
  * table
  */
@@ -664,6 +666,8 @@ arange_order_addr(krb5_context context,
     }
 }
 
+#endif /* HEIMDAL_SMALLER */
+
 static int
 addrport_print_addr (const krb5_address *addr, char *str, size_t len)
 {
@@ -730,14 +734,16 @@ static struct addr_operations at[] = {
      ipv6_uninteresting, ipv6_anyaddr, ipv6_print_addr, ipv6_parse_addr,
      NULL, NULL, NULL, ipv6_mask_boundary } ,
 #endif
-    {KRB5_ADDRESS_ADDRPORT, KRB5_ADDRESS_ADDRPORT, 0,
-     NULL, NULL, NULL, NULL, NULL,
-     NULL, NULL, addrport_print_addr, NULL, NULL, NULL, NULL },
+#ifndef HEIMDAL_SMALLER
     /* fake address type */
     {KRB5_ADDRESS_ARANGE, KRB5_ADDRESS_ARANGE, sizeof(struct arange),
      NULL, NULL, NULL, NULL, NULL, NULL, NULL,
      arange_print_addr, arange_parse_addr,
-     arange_order_addr, arange_free, arange_copy }
+     arange_order_addr, arange_free, arange_copy },
+#endif
+    {KRB5_ADDRESS_ADDRPORT, KRB5_ADDRESS_ADDRPORT, 0,
+     NULL, NULL, NULL, NULL, NULL,
+     NULL, NULL, addrport_print_addr, NULL, NULL, NULL, NULL }
 };
 
 static int num_addrs = sizeof(at) / sizeof(at[0]);
