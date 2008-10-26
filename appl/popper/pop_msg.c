@@ -12,7 +12,7 @@ RCSID("$Id$");
  */
 
 int
-pop_msg(POP *p, int stat, char *format, ...)
+pop_msg(POP *p, int stat, const char *format, ...)
 {
     char	       *mp;
     char                message[MAXLINELEN];
