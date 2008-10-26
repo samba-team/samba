@@ -921,7 +921,7 @@ fcc_move(krb5_context context, krb5_ccache from, krb5_ccache to)
 }
 
 static krb5_error_code
-fcc_default_name(krb5_context context, char **str)
+fcc_get_default_name(krb5_context context, char **str)
 {
     return _krb5_expand_default_cc_name(context,
 					KRB5_DEFAULT_CCNAME_FILE,
@@ -977,6 +977,7 @@ KRB5_LIB_VARIABLE const krb5_cc_ops krb5_fcc_ops = {
     fcc_get_cache_next,
     fcc_end_cache_get,
     fcc_move,
-    fcc_default_name,
+    fcc_get_default_name,
+    NULL,
     fcc_lastchange
 };
