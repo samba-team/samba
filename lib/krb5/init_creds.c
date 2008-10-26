@@ -33,10 +33,13 @@
 
 #include "krb5_locl.h"
 
+#undef __attribute__
+
 RCSID("$Id$");
 
 void KRB5_LIB_FUNCTION
 krb5_get_init_creds_opt_init(krb5_get_init_creds_opt *opt)
+    __attribute__((deprecated))
 {
     memset (opt, 0, sizeof(*opt));
     opt->flags = 0;
