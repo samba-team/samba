@@ -35,6 +35,8 @@
 
 RCSID("$Id$");
 
+#ifndef HEIMDAL_SMALLER
+
 /* afs keyfile operations --------------------------------------- */
 
 /*
@@ -445,3 +447,5 @@ const krb5_kt_ops krb5_akf_ops = {
     akf_add_entry,
     NULL /* remove */
 };
+
+#endif /* HEIMDAL_SMALLER */
