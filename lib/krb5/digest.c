@@ -35,7 +35,7 @@
 RCSID("$Id$");
 #include "digest_asn1.h"
 
-#ifdef HEIMDAL_SMALLER
+#ifndef HEIMDAL_SMALLER
 
 struct krb5_digest_data {
     char *cbtype;
