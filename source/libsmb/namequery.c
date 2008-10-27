@@ -1648,6 +1648,14 @@ NTSTATUS get_sorted_dc_list( const char *domain, const char *sitename, struct ip
 	}
 
 	status = get_dc_list(domain, sitename, ip_list, count, lookup_type, &ordered);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NO_LOGON_SERVERS) && sitename) {
+		DEBUG(3,("get_sorted_dc_list: no server for name %s available"
+			 " in site %s, fallback to all servers\n",
+			 domain, sitename));
+		status = get_dc_list(domain, NULL, ip_list, count,
+				     lookup_type, &ordered);
+	}
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status; 
 	}
