@@ -1576,7 +1576,7 @@ installlibtalloc:: installdirs libtalloc
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(LIBDIR)
 	-$(INSTALLLIBCMD_SH) $(LIBTALLOC_SHARED_TARGET_SONAME) $(DESTDIR)$(LIBDIR)
 	@rm -f $(DESTDIR)$(LIBDIR)/`basename $(LIBTALLOC_SHARED_TARGET)`
-	-if test -e $(LIBTALLOC_SHARED_TARGET_SONAME) ; then \
+	-if test -r $(LIBTALLOC_SHARED_TARGET_SONAME) ; then \
 		ln -s -f `basename $(LIBTALLOC_SHARED_TARGET_SONAME)` \
 			$(DESTDIR)$(LIBDIR)/`basename $(LIBTALLOC_SHARED_TARGET)` ; \
 	fi
@@ -1643,7 +1643,7 @@ installlibtdb:: installdirs libtdb
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(LIBDIR)
 	-$(INSTALLLIBCMD_SH) $(LIBTDB_SHARED_TARGET_SONAME) $(DESTDIR)$(LIBDIR)
 	@rm -f $(DESTDIR)$(LIBDIR)/`basename $(LIBTDB_SHARED_TARGET)`
-	-if test -e $(LIBTDB_SHARED_TARGET_SONAME) ; then \
+	-if test -r $(LIBTDB_SHARED_TARGET_SONAME) ; then \
 		ln -s -f `basename $(LIBTDB_SHARED_TARGET_SONAME)` \
 			$(DESTDIR)$(LIBDIR)/`basename $(LIBTDB_SHARED_TARGET)` ; \
 	fi
@@ -1716,7 +1716,7 @@ installlibwbclient:: installdirs libwbclient
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(LIBDIR)
 	-$(INSTALLLIBCMD_SH) $(LIBWBCLIENT_SHARED_TARGET_SONAME) $(DESTDIR)$(LIBDIR)
 	@rm -f $(DESTDIR)$(LIBDIR)/`basename $(LIBWBCLIENT_SHARED_TARGET)`
-	-if test -e $(LIBWBCLIENT_SHARED_TARGET_SONAME) ; then \
+	-if test -r $(LIBWBCLIENT_SHARED_TARGET_SONAME) ; then \
 		ln -s -f `basename $(LIBWBCLIENT_SHARED_TARGET_SONAME)` \
 			$(DESTDIR)$(LIBDIR)/`basename $(LIBWBCLIENT_SHARED_TARGET)` ; \
 	fi
@@ -1776,7 +1776,7 @@ installlibaddns:: installdirs libaddns
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(LIBDIR)
 	-$(INSTALLLIBCMD_SH) $(LIBADDNS_SHARED_TARGET_SONAME) $(DESTDIR)$(LIBDIR)
 	@rm -f $(DESTDIR)$(LIBDIR)/`basename $(LIBADDNS_SHARED_TARGET)`
-	-if test -e $(LIBADDNS_SHARED_TARGET_SONAME) ; then \
+	-if test -r $(LIBADDNS_SHARED_TARGET_SONAME) ; then \
 		ln -s -f `basename $(LIBADDNS_SHARED_TARGET_SONAME)` \
 			$(DESTDIR)$(LIBDIR)/`basename $(LIBADDNS_SHARED_TARGET)` ; \
 	fi
@@ -1856,7 +1856,7 @@ installlibnetapi:: installdirs libnetapi
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(LIBDIR)
 	-$(INSTALLLIBCMD_SH) $(LIBNETAPI_SHARED_TARGET_SONAME) $(DESTDIR)$(LIBDIR)
 	@rm -f $(DESTDIR)$(LIBDIR)/`basename $(LIBNETAPI_SHARED_TARGET)`
-	-if test -e $(LIBNETAPI_SHARED_TARGET_SONAME) ; then \
+	-if test -r $(LIBNETAPI_SHARED_TARGET_SONAME) ; then \
 		ln -s -f `basename $(LIBNETAPI_SHARED_TARGET_SONAME)` \
 			$(DESTDIR)$(LIBDIR)/`basename $(LIBNETAPI_SHARED_TARGET)` ; \
 	fi
@@ -1917,7 +1917,7 @@ installlibsmbclient:: installdirs libsmbclient
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(LIBDIR)
 	-$(INSTALLLIBCMD_SH) $(LIBSMBCLIENT_SHARED_TARGET_SONAME) $(DESTDIR)$(LIBDIR)
 	@rm -f $(DESTDIR)$(LIBDIR)/`basename $(LIBSMBCLIENT_SHARED_TARGET)`
-	-if test -e $(LIBSMBCLIENT_SHARED_TARGET_SONAME) ; then \
+	-if test -r $(LIBSMBCLIENT_SHARED_TARGET_SONAME) ; then \
 		ln -s -f `basename $(LIBSMBCLIENT_SHARED_TARGET_SONAME)` \
 			$(DESTDIR)$(LIBDIR)/`basename $(LIBSMBCLIENT_SHARED_TARGET)` ; \
 	fi
@@ -1988,7 +1988,7 @@ installlibsmbsharemodes:: installdirs libsmbsharemodes
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(LIBDIR)
 	-$(INSTALLLIBCMD_SH) $(LIBSMBSHAREMODES_SHARED_TARGET_SONAME) $(DESTDIR)$(LIBDIR)
 	@rm -f $(DESTDIR)$(LIBDIR)/`basename $(LIBSMBSHAREMODES_SHARED_TARGET)`
-	-if test -e $(LIBSMBSHAREMODES_SHARED_TARGET_SONAME) ; then \
+	-if test -r $(LIBSMBSHAREMODES_SHARED_TARGET_SONAME) ; then \
 		ln -s -f `basename $(LIBSMBSHAREMODES_SHARED_TARGET_SONAME)` \
 			$(DESTDIR)$(LIBDIR)/`basename $(LIBSMBSHAREMODES_SHARED_TARGET)` ; \
 	fi
