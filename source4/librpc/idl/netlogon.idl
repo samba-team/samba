@@ -1130,7 +1130,7 @@ interface netlogon
 	/* Function 0x1c */
 	WERROR netr_DsRGetSiteName(
 		[in,unique] [string,charset(UTF16)] uint16 *computer_name,
-		[out,unique] [string,charset(UTF16)] uint16 *site
+		[out,ref] [string,charset(UTF16)] uint16 **site
 		);
 
 	/****************/

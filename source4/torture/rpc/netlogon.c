@@ -1230,17 +1230,19 @@ static bool test_netr_DsRGetSiteName(struct dcerpc_pipe *p, struct torture_conte
 {
 	NTSTATUS status;
 	struct netr_DsRGetSiteName r;
+	const char *site = NULL;
 
 	if (torture_setting_bool(tctx, "samba4", false))
 		torture_skip(tctx, "skipping DsRGetSiteName test against Samba4");
 
 	r.in.computer_name		= computer_name;
+	r.out.site			= &site;
 	torture_comment(tctx, "Testing netr_DsRGetSiteName\n");
 
 	status = dcerpc_netr_DsRGetSiteName(p, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "DsRGetSiteName");
 	torture_assert_werr_ok(tctx, r.out.result, "DsRGetSiteName");
-	torture_assert_str_equal(tctx, expected_site, r.out.site, "netr_DsRGetSiteName");
+	torture_assert_str_equal(tctx, expected_site, site, "netr_DsRGetSiteName");
 
 	r.in.computer_name		= talloc_asprintf(tctx, "\\\\%s", computer_name);
 	torture_comment(tctx, 
