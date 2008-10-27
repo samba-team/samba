@@ -750,6 +750,9 @@ static bool test_DatabaseDeltas(struct torture_context *tctx,
 	NTSTATUS status;
 	struct netr_DatabaseDeltas r;
 	struct creds_CredentialState *creds;
+	struct netr_Authenticator credential;
+	struct netr_Authenticator return_authenticator;
+	struct netr_DELTA_ENUM_ARRAY *delta_enum_array = NULL;
 	const uint32_t database_ids[] = {0, 1, 2}; 
 	int i;
 
@@ -761,20 +764,22 @@ static bool test_DatabaseDeltas(struct torture_context *tctx,
 	r.in.computername = TEST_MACHINE_NAME;
 	r.in.preferredmaximumlength = (uint32_t)-1;
 	ZERO_STRUCT(r.in.return_authenticator);
+	r.out.return_authenticator = &return_authenticator;
+	r.out.delta_enum_array = &delta_enum_array;
 
 	for (i=0;i<ARRAY_SIZE(database_ids);i++) {
 		r.in.database_id = database_ids[i];
-		r.in.sequence_num = sequence_nums[r.in.database_id];
+		r.in.sequence_num = &sequence_nums[r.in.database_id];
 
-		if (r.in.sequence_num == 0) continue;
+		if (*r.in.sequence_num == 0) continue;
 
-		r.in.sequence_num -= 1;
+		*r.in.sequence_num -= 1;
 
 		torture_comment(tctx, "Testing DatabaseDeltas of id %d at %llu\n", 
-		       r.in.database_id, (unsigned long long)r.in.sequence_num);
+		       r.in.database_id, (unsigned long long)*r.in.sequence_num);
 
 		do {
-			creds_client_authenticator(creds, &r.in.credential);
+			creds_client_authenticator(creds, &credential);
 
 			status = dcerpc_netr_DatabaseDeltas(p, tctx, &r);
 			if (NT_STATUS_EQUAL(status, 
@@ -788,11 +793,11 @@ static bool test_DatabaseDeltas(struct torture_context *tctx,
 
 			torture_assert_ntstatus_ok(tctx, status, "DatabaseDeltas");
 
-			if (!creds_client_check(creds, &r.out.return_authenticator.cred)) {
+			if (!creds_client_check(creds, &return_authenticator.cred)) {
 				torture_comment(tctx, "Credential chaining failed\n");
 			}
 
-			r.in.sequence_num++;
+			(*r.in.sequence_num)++;
 		} while (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES));
 	}
 

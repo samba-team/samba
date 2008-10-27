@@ -1313,34 +1313,45 @@ static bool test_DatabaseDeltas(struct samsync_state *samsync_state, TALLOC_CTX 
 	NTSTATUS status;
 	TALLOC_CTX *loop_ctx;
 	struct netr_DatabaseDeltas r;
+	struct netr_Authenticator credential;
+	struct netr_Authenticator return_authenticator;
+	struct netr_DELTA_ENUM_ARRAY *delta_enum_array = NULL;
 	const uint32_t database_ids[] = {0, 1, 2}; 
 	int i;
 	bool ret = true;
 
+	ZERO_STRUCT(return_authenticator);
+
 	r.in.logon_server = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(samsync_state->p));
 	r.in.computername = TEST_MACHINE_NAME;
+	r.in.credential = &credential;
 	r.in.preferredmaximumlength = (uint32_t)-1;
-	ZERO_STRUCT(r.in.return_authenticator);
+	r.in.return_authenticator = &return_authenticator;
+	r.out.return_authenticator = &return_authenticator;
+	r.out.delta_enum_array = &delta_enum_array;
 
 	for (i=0;i<ARRAY_SIZE(database_ids);i++) {
-		r.in.database_id = database_ids[i];
-		r.in.sequence_num = samsync_state->seq_num[i];
 
-		if (r.in.sequence_num == 0) continue;
+		uint64_t seq_num = samsync_state->seq_num[i];
+
+		r.in.database_id = database_ids[i];
+		r.in.sequence_num = &seq_num;
+		r.out.sequence_num = &seq_num;
+
+		if (seq_num == 0) continue;
 
 		/* this shows that the bdc doesn't need to do a single call for
 		 * each seqnumber, and the pdc doesn't need to know about old values
 		 * -- metze
 		 */
-		r.in.sequence_num -= 10;
-
+		seq_num -= 10;
 
 		printf("Testing DatabaseDeltas of id %d at %llu\n", 
-		       r.in.database_id, (long long)r.in.sequence_num);
+		       r.in.database_id, (long long)seq_num);
 
 		do {
 			loop_ctx = talloc_named(mem_ctx, 0, "test_DatabaseDeltas loop context");
-			creds_client_authenticator(samsync_state->creds, &r.in.credential);
+			creds_client_authenticator(samsync_state->creds, &credential);
 
 			status = dcerpc_netr_DatabaseDeltas(samsync_state->p, loop_ctx, &r);
 			if (!NT_STATUS_IS_OK(status) &&
@@ -1350,11 +1361,11 @@ static bool test_DatabaseDeltas(struct samsync_state *samsync_state, TALLOC_CTX 
 				ret = false;
 			}
 
-			if (!creds_client_check(samsync_state->creds, &r.out.return_authenticator.cred)) {
+			if (!creds_client_check(samsync_state->creds, &return_authenticator.cred)) {
 				printf("Credential chaining failed\n");
 			}
 
-			r.in.sequence_num++;
+			seq_num++;
 			talloc_free(loop_ctx);
 		} while (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES));
 	}
