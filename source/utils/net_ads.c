@@ -1575,6 +1575,9 @@ int net_ads_join(int argc, const char **argv)
 		goto fail;
 	}
 
+	saf_join_store(ads->server.workgroup, ads->config.ldap_server_name);
+	saf_join_store(ads->server.realm, ads->config.ldap_server_name);
+
 	/* Verify that everything is ok */
 
 	if ( net_rpc_join_ok(short_domain_name, ads->config.ldap_server_name, &ads->ldap_ip) != 0 ) {
