@@ -267,10 +267,12 @@ bool ads_try_connect(ADS_STRUCT *ads, const char *server )
 
 static NTSTATUS ads_find_dc(ADS_STRUCT *ads)
 {
+	const char *c_domain;
 	const char *c_realm;
 	int count, i=0;
 	struct ip_service *ip_list;
 	const char *realm;
+	const char *domain;
 	bool got_realm = False;
 	bool use_own_domain = False;
 	char *sitename;
@@ -308,7 +310,14 @@ static NTSTATUS ads_find_dc(ADS_STRUCT *ads)
 		return NT_STATUS_INVALID_PARAMETER; /* rather need MISSING_PARAMETER ... */
 	}
 
+	if ( use_own_domain ) {
+		c_domain = lp_workgroup();
+	} else {
+		c_domain = ads->server.workgroup;
+	}
+
 	realm = c_realm;
+	domain = c_domain;
 
 	/*
 	 * In case of LDAP we use get_dc_name() as that
@@ -321,7 +330,7 @@ static NTSTATUS ads_find_dc(ADS_STRUCT *ads)
 		DEBUG(6,("ads_find_dc: (ldap) looking for %s '%s'\n",
 			(got_realm ? "realm" : "domain"), realm));
 
-		if (get_dc_name(realm, realm, srv_name, &ip_out)) {
+		if (get_dc_name(domain, realm, srv_name, &ip_out)) {
 			/*
 			 * we call ads_try_connect() to fill in the
 			 * ads->config details
