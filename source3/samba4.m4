@@ -37,7 +37,6 @@ m4_include(../lib/util/charset/config.m4)
 m4_include(lib/socket/config.m4)
 m4_include(nsswitch/nsstest.m4)
 m4_include(../pidl/config.m4)
-m4_include(../lib/zlib/zlib.m4)
 AC_ZLIB([
 SMB_EXT_LIB(ZLIB, [${ZLIB_LIBS}])
 ],[
