@@ -1,34 +1,34 @@
 /*
- * Copyright (c) 1997-2007 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * Copyright (c) 1997-2007 Kungliga Tekniska HÃ¶gskolan
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * 3. Neither the name of the Institute nor the names of its contributors 
- *    may be used to endorse or promote products derived from this software 
- *    without specific prior written permission. 
+ * 3. Neither the name of the Institute nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
- * SUCH DAMAGE. 
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 #include "kuser_locl.h"
@@ -58,8 +58,11 @@ struct getarg_strings etype_str;
 int use_keytab		= 0;
 char *keytab_str	= NULL;
 int do_afslog		= -1;
+#ifndef HEIMDAL_SMALLER
 int get_v4_tgt		= -1;
 int convert_524		= 0;
+static char *krb4_cc_name;
+#endif
 int fcache_version;
 char *password_file	= NULL;
 char *pk_user_id	= NULL;
@@ -71,107 +74,107 @@ static int use_referrals_flag = 0;
 static int windows_flag = 0;
 static char *ntlm_domain;
 
-static char *krb4_cc_name;
 
 static struct getargs args[] = {
-    /* 
+    /*
      * used by MIT
      * a: ~A
      * V: verbose
      * F: ~f
      * P: ~p
      * C: v4 cache name?
-     * 5: 
+     * 5:
      */
+#ifndef HEIMDAL_SMALLER
     { "524init", 	'4', arg_flag, &get_v4_tgt,
-      "obtain version 4 TGT" },
+      NP_("obtain version 4 TGT", "") },
 
     { "524convert", 	'9', arg_flag, &convert_524,
-      "only convert ticket to version 4" },
-
+      NP_("only convert ticket to version 4", "") },
+#endif
     { "afslog", 	0  , arg_flag, &do_afslog,
-      "obtain afs tokens"  },
+      NP_("obtain afs tokens", "")  },
 
     { "cache", 		'c', arg_string, &cred_cache,
-      "credentials cache", "cachename" },
+      NP_("credentials cache", ""), "cachename" },
 
     { "forwardable",	'f', arg_flag, &forwardable_flag,
-      "get forwardable tickets"},
+      NP_("get forwardable tickets", "")},
 
     { "keytab",         't', arg_string, &keytab_str,
-      "keytab to use", "keytabname" },
+      NP_("keytab to use", ""), "keytabname" },
 
     { "lifetime",	'l', arg_string, &lifetime,
-      "lifetime of tickets", "time"},
+      NP_("lifetime of tickets", ""), "time"},
 
     { "proxiable",	'p', arg_flag, &proxiable_flag,
-      "get proxiable tickets" },
+      NP_("get proxiable tickets", "") },
 
     { "renew",          'R', arg_flag, &renew_flag,
-      "renew TGT" },
+      NP_("renew TGT", "") },
 
     { "renewable",	0,   arg_flag, &renewable_flag,
-      "get renewable tickets" },
+      NP_("get renewable tickets", "") },
 
     { "renewable-life",	'r', arg_string, &renew_life,
-      "renewable lifetime of tickets", "time" },
+      NP_("renewable lifetime of tickets", ""), "time" },
 
     { "server", 	'S', arg_string, &server_str,
-      "server to get ticket for", "principal" },
+      NP_("server to get ticket for", ""), "principal" },
 
     { "start-time",	's', arg_string, &start_str,
-      "when ticket gets valid", "time" },
+      NP_("when ticket gets valid", ""), "time" },
 
     { "use-keytab",     'k', arg_flag, &use_keytab,
-      "get key from keytab" },
+      NP_("get key from keytab", "") },
 
     { "validate",	'v', arg_flag, &validate_flag,
-      "validate TGT" },
+      NP_("validate TGT", "") },
 
     { "enctypes",	'e', arg_strings, &etype_str,
-      "encryption types to use", "enctypes" },
+      NP_("encryption types to use", ""), "enctypes" },
 
     { "fcache-version", 0,   arg_integer, &fcache_version,
-      "file cache version to create" },
+      NP_("file cache version to create", "") },
 
     { "addresses",	'A',   arg_negative_flag,	&addrs_flag,
-      "request a ticket with no addresses" },
+      NP_("request a ticket with no addresses", "") },
 
     { "extra-addresses",'a', arg_strings,	&extra_addresses,
-      "include these extra addresses", "addresses" },
+      NP_("include these extra addresses", ""), "addresses" },
 
     { "anonymous",	0,   arg_flag,	&anonymous_flag,
-      "request an anonymous ticket" },
+      NP_("request an anonymous ticket", "") },
 
     { "request-pac",	0,   arg_flag,	&pac_flag,
-      "request a Windows PAC" },
+      NP_("request a Windows PAC", "") },
 
     { "password-file",	0,   arg_string, &password_file,
-      "read the password from a file" },
+      NP_("read the password from a file", "") },
 
     { "canonicalize",0,   arg_flag, &canonicalize_flag,
-      "canonicalize client principal" },
+      NP_("canonicalize client principal", "") },
 #ifdef PKINIT
     { "pk-user",	'C',	arg_string,	&pk_user_id,
-      "principal's public/private/certificate identifier", "id" },
+      NP_("principal's public/private/certificate identifier", ""), "id" },
 
     { "x509-anchors",	'D',  arg_string, &pk_x509_anchors,
-      "directory with CA certificates", "directory" },
+      NP_("directory with CA certificates", ""), "directory" },
 
     { "pk-use-enckey",	0,  arg_flag, &pk_use_enckey,
-      "Use RSA encrypted reply (instead of DH)" },
+      NP_("Use RSA encrypted reply (instead of DH)", "") },
 #endif
     { "ntlm-domain",	0,  arg_string, &ntlm_domain,
-      "NTLM domain", "domain" },
+      NP_("NTLM domain", ""), "domain" },
 
     { "ok-as-delegate",	0,  arg_flag, &ok_as_delegate_flag,
-      "honor ok-as-delegate on tickets" },
+      NP_("honor ok-as-delegate on tickets", "") },
 
     { "use-referrals",	0,  arg_flag, &use_referrals_flag,
-      "only use referrals, no dns canalisation" },
+      NP_("only use referrals, no dns canalisation", "") },
 
     { "windows",	0,  arg_flag, &windows_flag,
-      "get windows behavior" },
+      NP_("get windows behavior", "") },
 
     { "version", 	0,   arg_flag, &version_flag },
     { "help",		0,   arg_flag, &help_flag }
@@ -180,10 +183,12 @@ static struct getargs args[] = {
 static void
 usage (int ret)
 {
-    arg_printusage (args,
-		    sizeof(args)/sizeof(*args),
-		    NULL,
-		    "[principal [command]]");
+    arg_printusage_i18n (args,
+			 sizeof(args)/sizeof(*args),
+			 N_("Usage: ", ""),
+			 NULL,
+			 "[principal [command]]",
+			 getarg_i18n);
     exit (ret);
 }
 
@@ -202,8 +207,10 @@ get_server(krb5_context context,
 			       KRB5_TGS_NAME, *client_realm, NULL);
 }
 
+#ifndef HEIMDAL_SMALLER
+
 static krb5_error_code
-do_524init(krb5_context context, krb5_ccache ccache, 
+do_524init(krb5_context context, krb5_ccache ccache,
 	   krb5_creds *creds, const char *server)
 {
     krb5_error_code ret;
@@ -245,11 +252,13 @@ do_524init(krb5_context context, krb5_ccache ccache,
     return ret;
 }
 
+#endif
+
 static int
-renew_validate(krb5_context context, 
+renew_validate(krb5_context context,
 	       int renew,
 	       int validate,
-	       krb5_ccache cache, 
+	       krb5_ccache cache,
 	       const char *server,
 	       krb5_deltat life)
 {
@@ -271,8 +280,8 @@ renew_validate(krb5_context context,
     }
 
     if (renew) {
-	/* 
-	 * no need to check the error here, it's only to be 
+	/*
+	 * no need to check the error here, it's only to be
 	 * friendly to the user
 	 */
 	krb5_get_credentials(context, KRB5_GC_CACHED, cache, &in, &out);
@@ -324,8 +333,10 @@ renew_validate(krb5_context context,
 
     if(ret == 0 && server == NULL) {
 	/* only do this if it's a general renew-my-tgt request */
+#ifndef HEIMDAL_SMALLER
 	if(get_v4_tgt)
 	    do_524init(context, cache, out, NULL);
+#endif
 	if(do_afslog && k_hasafs())
 	    krb5_afslog(context, cache, NULL, NULL);
     }
@@ -350,10 +361,10 @@ store_ntlmkey(krb5_context context, krb5_ccache id,
 
     asprintf(&name, "ntlm-key-%s", domain);
     if (name == NULL) {
-	krb5_clear_error_string(context);
+	krb5_clear_error_message(context);
 	return ENOMEM;
     }
-    
+
     data.length = buf->length;
     data.data = buf->data;
 
@@ -363,7 +374,7 @@ store_ntlmkey(krb5_context context, krb5_ccache id,
 }
 
 static krb5_error_code
-get_new_tickets(krb5_context context, 
+get_new_tickets(krb5_context context,
 		krb5_principal principal,
 		krb5_ccache ccache,
 		krb5_deltat ticket_life,
@@ -395,8 +406,9 @@ get_new_tickets(krb5_context context,
 		      password_file);
 
 	if (fgets(passwd, sizeof(passwd), f) == NULL)
-	    krb5_errx(context, 1, 
-		      "Failed to read password from file %s", password_file);
+	    krb5_errx(context, 1,
+		      N_("Failed to read password from file %s", ""),
+		      password_file);
 	if (f != stdin)
 	    fclose(f);
 	passwd[strcspn(passwd, "\n")] = '\0';
@@ -408,7 +420,7 @@ get_new_tickets(krb5_context context,
     ret = krb5_get_init_creds_opt_alloc (context, &opt);
     if (ret)
 	krb5_err(context, 1, ret, "krb5_get_init_creds_opt_alloc");
-    
+
     krb5_get_init_creds_opt_set_default_flags(context, "kinit",
 	krb5_principal_get_realm(context, principal), opt);
 
@@ -419,7 +431,7 @@ get_new_tickets(krb5_context context,
     if(anonymous_flag != -1)
 	krb5_get_init_creds_opt_set_anonymous (opt, anonymous_flag);
     if (pac_flag != -1)
-	krb5_get_init_creds_opt_set_pac_request(context, opt, 
+	krb5_get_init_creds_opt_set_pac_request(context, opt,
 						pac_flag ? TRUE : FALSE);
     if (canonicalize_flag)
 	krb5_get_init_creds_opt_set_canonicalize(context, opt, TRUE);
@@ -439,7 +451,7 @@ get_new_tickets(krb5_context context,
     }
 
     if (addrs_flag != -1)
-	krb5_get_init_creds_opt_set_addressless(context, opt, 
+	krb5_get_init_creds_opt_set_addressless(context, opt,
 						addrs_flag ? FALSE : TRUE);
 
     if (renew_life == NULL && renewable_flag)
@@ -460,7 +472,7 @@ get_new_tickets(krb5_context context,
     if(start_str) {
 	int tmp = parse_time (start_str, "s");
 	if (tmp < 0)
-	    errx (1, "unparsable time: %s", start_str);
+	    errx (1, N_("unparsable time: %s", ""), start_str);
 
 	start_time = tmp;
     }
@@ -472,13 +484,13 @@ get_new_tickets(krb5_context context,
 	if(enctype == NULL)
 	    errx(1, "out of memory");
 	for(i = 0; i < etype_str.num_strings; i++) {
-	    ret = krb5_string_to_enctype(context, 
-					 etype_str.strings[i], 
+	    ret = krb5_string_to_enctype(context,
+					 etype_str.strings[i],
 					 &enctype[i]);
 	    if(ret)
 		errx(1, "unrecognized enctype: %s", etype_str.strings[i]);
 	}
-	krb5_get_init_creds_opt_set_etype_list(opt, enctype, 
+	krb5_get_init_creds_opt_set_etype_list(opt, enctype,
 					       etype_str.num_strings);
     }
 
@@ -516,11 +528,11 @@ get_new_tickets(krb5_context context,
 
 	if (passwd[0] == '\0') {
 	    char *p, *prompt;
-	    
+	
 	    krb5_unparse_name (context, principal, &p);
-	    asprintf (&prompt, "%s's Password: ", p);
+	    asprintf (&prompt, N_("%s's Password: ", ""), p);
 	    free (p);
-	    
+	
 	    if (UI_UTIL_read_pw_string(passwd, sizeof(passwd)-1, prompt, 0)){
 		memset(passwd, 0, sizeof(passwd));
 		exit(1);
@@ -552,10 +564,10 @@ get_new_tickets(krb5_context context,
     case KRB5KRB_AP_ERR_BAD_INTEGRITY:
     case KRB5KRB_AP_ERR_MODIFIED:
     case KRB5KDC_ERR_PREAUTH_FAILED:
-	krb5_errx(context, 1, "Password incorrect");
+	krb5_errx(context, 1, N_("Password incorrect", ""));
 	break;
     case KRB5KRB_AP_ERR_V4_REPLY:
-	krb5_errx(context, 1, "Looks like a Kerberos 4 reply");
+	krb5_errx(context, 1, N_("Looks like a Kerberos 4 reply", ""));
 	break;
     default:
 	krb5_err(context, 1, ret, "krb5_get_init_creds");
@@ -564,22 +576,23 @@ get_new_tickets(krb5_context context,
     if(ticket_life != 0) {
 	if(abs(cred.times.endtime - cred.times.starttime - ticket_life) > 30) {
 	    char life[64];
-	    unparse_time_approx(cred.times.endtime - cred.times.starttime, 
+	    unparse_time_approx(cred.times.endtime - cred.times.starttime,
 				life, sizeof(life));
-	    krb5_warnx(context, "NOTICE: ticket lifetime is %s", life);
+	    krb5_warnx(context, N_("NOTICE: ticket lifetime is %s", ""), life);
 	}
     }
     if(renew_life) {
 	if(abs(cred.times.renew_till - cred.times.starttime - renew) > 30) {
 	    char life[64];
-	    unparse_time_approx(cred.times.renew_till - cred.times.starttime, 
+	    unparse_time_approx(cred.times.renew_till - cred.times.starttime,
 				life, sizeof(life));
-	    krb5_warnx(context, "NOTICE: ticket renewable lifetime is %s", 
+	    krb5_warnx(context, 
+		       N_("NOTICE: ticket renewable lifetime is %s", ""),
 		       life);
 	}
     }
 
-    ret = krb5_cc_new_unique(context, krb5_cc_get_type(context, ccache), 
+    ret = krb5_cc_new_unique(context, krb5_cc_get_type(context, ccache),
 			     NULL, &tempccache);
     if (ret)
 	krb5_err (context, 1, ret, "krb5_cc_new_unique");
@@ -587,7 +600,7 @@ get_new_tickets(krb5_context context,
     ret = krb5_cc_initialize (context, tempccache, cred.client);
     if (ret)
 	krb5_err (context, 1, ret, "krb5_cc_initialize");
-    
+
     ret = krb5_cc_store_cred (context, tempccache, &cred);
     if (ret)
 	krb5_err (context, 1, ret, "krb5_cc_store_cred");
@@ -624,7 +637,7 @@ get_new_tickets(krb5_context context,
 }
 
 static time_t
-ticket_lifetime(krb5_context context, krb5_ccache cache, 
+ticket_lifetime(krb5_context context, krb5_ccache cache,
 		krb5_principal client, const char *server)
 {
     krb5_creds in_cred, *cred;
@@ -684,11 +697,13 @@ renew_func(void *ptr)
 	new_tickets = 1;
 
     if (new_tickets)
-	get_new_tickets(ctx->context, ctx->principal, 
+	get_new_tickets(ctx->context, ctx->principal,
 			ctx->ccache, ctx->ticket_life, 0);
 
+#ifndef HEIMDAL_SMALLER
     if(get_v4_tgt || convert_524)
 	do_524init(ctx->context, ctx->ccache, NULL, server_str);
+#endif
     if(do_afslog && k_hasafs())
 	krb5_afslog(ctx->context, ctx->ccache, NULL, NULL);
 
@@ -709,16 +724,20 @@ main (int argc, char **argv)
     int parseflags = 0;
 
     setprogname (argv[0]);
-    
+
+    setlocale (LC_ALL, "");
+    bindtextdomain ("heimdal_kuser", HEIMDAL_LOCALEDIR);
+    textdomain("heimdal_kuser");
+
     ret = krb5_init_context (&context);
     if (ret == KRB5_CONFIG_BADFORMAT)
 	errx (1, "krb5_init_context failed to parse configuration file");
     else if (ret)
 	errx(1, "krb5_init_context failed: %d", ret);
-  
+
     if(getarg(args, sizeof(args) / sizeof(args[0]), argc, argv, &optidx))
 	usage(1);
-    
+
     if (help_flag)
 	usage (0);
 
@@ -751,16 +770,18 @@ main (int argc, char **argv)
 	krb5_appdefault_boolean(context, "kinit",
 				krb5_principal_get_realm(context, principal),
 				"renewable", FALSE, &renewable_flag);
+#ifndef HEIMDAL_SMALLER
     if(get_v4_tgt == -1)
-	krb5_appdefault_boolean(context, "kinit", 
-				krb5_principal_get_realm(context, principal), 
+	krb5_appdefault_boolean(context, "kinit",
+				krb5_principal_get_realm(context, principal),
 				"krb4_get_tickets", FALSE, &get_v4_tgt);
+#endif
     if(do_afslog == -1)
-	krb5_appdefault_boolean(context, "kinit", 
-				krb5_principal_get_realm(context, principal), 
+	krb5_appdefault_boolean(context, "kinit",
+				krb5_principal_get_realm(context, principal),
 				"afslog", TRUE, &do_afslog);
 
-    if(cred_cache) 
+    if(cred_cache)
 	ret = krb5_cc_resolve(context, cred_cache, &ccache);
     else {
 	if(argc > 1) {
@@ -772,6 +793,7 @@ main (int argc, char **argv)
 		     krb5_cc_get_type(context, ccache),
 		     krb5_cc_get_name(context, ccache));
 	    setenv("KRB5CCNAME", s, 1);
+#ifndef HEIMDAL_SMALLER
 	    if (get_v4_tgt) {
 		int fd;
 		if (asprintf(&krb4_cc_name, "%s_XXXXXX", TKT_ROOT) < 0)
@@ -784,14 +806,15 @@ main (int argc, char **argv)
 		    krb4_cc_name = NULL;
 		}
 	    }
+#endif
 	} else {
-	    ret = krb5_cc_cache_match(context, principal, NULL, &ccache);
+	    ret = krb5_cc_cache_match(context, principal, &ccache);
 	    if (ret)
 		ret = krb5_cc_default (context, &ccache);
 	}
     }
     if (ret)
-	krb5_err (context, 1, ret, "resolving credentials cache");
+	krb5_err (context, 1, ret, N_("resolving credentials cache", ""));
 
     if(argc > 1 && k_hasafs ())
 	k_setpag();
@@ -799,20 +822,21 @@ main (int argc, char **argv)
     if (lifetime) {
 	int tmp = parse_time (lifetime, "s");
 	if (tmp < 0)
-	    errx (1, "unparsable time: %s", lifetime);
+	    errx (1, N_("unparsable time: %s", ""), lifetime);
 
 	ticket_life = tmp;
     }
 
     if(addrs_flag == 0 && extra_addresses.num_strings > 0)
-	krb5_errx(context, 1, "specifying both extra addresses and "
-		  "no addresses makes no sense");
+	krb5_errx(context, 1,
+		  N_("specifying both extra addresses and "
+		     "no addresses makes no sense", ""));
     {
 	int i;
 	krb5_addresses addresses;
 	memset(&addresses, 0, sizeof(addresses));
 	for(i = 0; i < extra_addresses.num_strings; i++) {
-	    ret = krb5_parse_address(context, extra_addresses.strings[i], 
+	    ret = krb5_parse_address(context, extra_addresses.strings[i],
 				     &addresses);
 	    if (ret == 0) {
 		krb5_add_extra_addresses(context, &addresses);
@@ -823,16 +847,20 @@ main (int argc, char **argv)
     }
 
     if(renew_flag || validate_flag) {
-	ret = renew_validate(context, renew_flag, validate_flag, 
+	ret = renew_validate(context, renew_flag, validate_flag,
 			     ccache, server_str, ticket_life);
 	exit(ret != 0);
     }
 
+#ifndef HEIMDAL_SMALLER
     if(!convert_524)
+#endif
 	get_new_tickets(context, principal, ccache, ticket_life, 1);
 
+#ifndef HEIMDAL_SMALLER
     if(get_v4_tgt || convert_524)
 	do_524init(context, ccache, NULL, server_str);
+#endif
     if(do_afslog && k_hasafs())
 	krb5_afslog(context, ccache, NULL, NULL);
     if(argc > 1) {
@@ -846,17 +874,19 @@ main (int argc, char **argv)
 	ctx.principal = principal;
 	ctx.ticket_life = ticket_life;
 
-	ret = simple_execvp_timed(argv[1], argv+1, 
+	ret = simple_execvp_timed(argv[1], argv+1,
 				  renew_func, &ctx, timeout);
 #define EX_NOEXEC	126
 #define EX_NOTFOUND	127
 	if(ret == EX_NOEXEC)
-	    krb5_warnx(context, "permission denied: %s", argv[1]);
+	    krb5_warnx(context, N_("permission denied: %s", ""), argv[1]);
 	else if(ret == EX_NOTFOUND)
-	    krb5_warnx(context, "command not found: %s", argv[1]);
+	    krb5_warnx(context, N_("command not found: %s", ""), argv[1]);
 	
 	krb5_cc_destroy(context, ccache);
+#ifndef HEIMDAL_SMALLER
 	_krb5_krb_dest_tkt(context, krb4_cc_name);
+#endif
 	if(k_hasafs())
 	    k_unlog();
     } else {

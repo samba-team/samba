@@ -1,34 +1,34 @@
 /*
- * Copyright (c) 2001, 2003, 2005 - 2006 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * Copyright (c) 2001, 2003, 2005 - 2006 Kungliga Tekniska HÃ¶gskolan
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * 3. Neither the name of the Institute nor the names of its contributors 
- *    may be used to endorse or promote products derived from this software 
- *    without specific prior written permission. 
+ * 3. Neither the name of the Institute nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
- * SUCH DAMAGE. 
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 #include "krb5_locl.h"
@@ -38,8 +38,16 @@ RCSID("$Id$");
 #undef __attribute__
 #define __attribute__(X)
 
+/**
+ * Clears the error message from the Kerberos 5 context.
+ *
+ * @param context The Kerberos 5 context to clear
+ *
+ * @ingroup krb5_error
+ */
+
 void KRB5_LIB_FUNCTION
-krb5_clear_error_string(krb5_context context)
+krb5_clear_error_message(krb5_context context)
 {
     HEIMDAL_MUTEX_lock(context->mutex);
     if (context->error_string)
@@ -51,6 +59,7 @@ krb5_clear_error_string(krb5_context context)
 
 /**
  * Set the context full error string for a specific error code.
+ * The error that is stored should be internationalized.
  *
  * @param context Kerberos 5 context
  * @param ret The error code
@@ -90,7 +99,7 @@ krb5_vset_error_message (krb5_context context, krb5_error_code ret,
     __attribute__ ((format (printf, 3, 0)))
 {
 
-    krb5_clear_error_string(context);
+    krb5_clear_error_message(context);
     HEIMDAL_MUTEX_lock(context->mutex);
     context->error_code = ret;
     vasprintf(&context->error_string, fmt, args);
@@ -152,7 +161,7 @@ krb5_get_error_message(krb5_context context, krb5_error_code code)
     char *str;
 
     HEIMDAL_MUTEX_lock(context->mutex);
-    if (context->error_string && 
+    if (context->error_string &&
 	(code == context->error_code || context->error_code == 0))
     {
 	str = strdup(context->error_string);
@@ -202,8 +211,9 @@ krb5_free_error_message(krb5_context context, const char *msg)
  * @ingroup krb5_deprecated
  */
 
-void KRB5_LIB_FUNCTION __attribute__((deprecated))
+void KRB5_LIB_FUNCTION
 krb5_free_error_string(krb5_context context, char *str)
+    __attribute__((deprecated))
 {
     krb5_free_error_message(context, str);
 }
@@ -246,6 +256,22 @@ krb5_vset_error_string(krb5_context context, const char *fmt, va_list args)
 {
     krb5_vset_error_message(context, 0, fmt, args);
     return 0;
+}
+
+/**
+ * Clar the error message returned by krb5_get_error_string(),
+ * deprecated, use krb5_clear_error_message().
+ *
+ * @param context Kerberos context
+ *
+ * @ingroup krb5_deprecated
+ */
+
+void KRB5_LIB_FUNCTION
+krb5_clear_error_string(krb5_context context)
+     __attribute__((deprecated))
+{
+    return krb5_clear_error_message(context);
 }
 
 #endif /* !HEIMDAL_SMALLER */

@@ -1,34 +1,34 @@
 /*
- * Copyright (c) 2006 - 2008 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * Copyright (c) 2006 - 2008 Kungliga Tekniska HÃ¶gskolan
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * 3. Neither the name of the Institute nor the names of its contributors 
- *    may be used to endorse or promote products derived from this software 
- *    without specific prior written permission. 
+ * 3. Neither the name of the Institute nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
- * SUCH DAMAGE. 
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 #ifdef HAVE_CONFIG_H
@@ -254,7 +254,7 @@ RSA_check_key(const RSA *key)
     void *buffer;
     int ret;
 
-    /* 
+    /*
      * XXX I have no clue how to implement this w/o a bignum library.
      * Well, when we have a RSA key pair, we can try to encrypt/sign
      * and then decrypt/verify.
@@ -267,8 +267,8 @@ RSA_check_key(const RSA *key)
     buffer = malloc(RSA_size(rsa));
     if (buffer == NULL)
 	return 0;
-    
-    ret = RSA_private_encrypt(sizeof(inbuf), inbuf, buffer, 
+
+    ret = RSA_private_encrypt(sizeof(inbuf), inbuf, buffer,
 			     rsa, RSA_PKCS1_PADDING);
     if (ret == -1) {
 	free(buffer);
@@ -287,7 +287,7 @@ RSA_check_key(const RSA *key)
 	return 1;
     }
     free(buffer);
-    return 0; 
+    return 0;
 }
 
 int
@@ -350,7 +350,7 @@ RSA_generate_key_ex(RSA *r, int bits, BIGNUM *e, BN_GENCB *cb)
  *
  */
 
-static int 
+static int
 null_rsa_init(RSA *rsa)
 {
     return 1;
@@ -444,7 +444,7 @@ d2i_RSAPrivateKey(RSA *rsa, const unsigned char **pp, size_t len)
     ret = decode_RSAPrivateKey(*pp, len, &data, &size);
     if (ret)
 	return NULL;
-    
+
     *pp += size;
 
     if (k == NULL) {
@@ -466,7 +466,7 @@ d2i_RSAPrivateKey(RSA *rsa, const unsigned char **pp, size_t len)
     free_RSAPrivateKey(&data);
 
     if (k->n == NULL || k->e == NULL || k->d == NULL || k->p == NULL ||
-	k->q == NULL || k->dmp1 == NULL || k->dmq1 == NULL || k->iqmp == NULL) 
+	k->q == NULL || k->dmp1 == NULL || k->dmq1 == NULL || k->iqmp == NULL)
     {
 	RSA_free(k);
 	return NULL;
@@ -554,12 +554,12 @@ i2d_RSAPublicKey(RSA *rsa, unsigned char **pp)
 	    return -1;
 	if (len != size)
 	    abort();
-    
+
 	memcpy(*pp, p, size);
 	free(p);
 
 	*pp += size;
     }
-    
+
     return size;
 }

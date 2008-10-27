@@ -1,34 +1,34 @@
 /*
- * Copyright (c) 2004 - 2007 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * Copyright (c) 2004 - 2007 Kungliga Tekniska HÃ¶gskolan
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * 3. Neither the name of the Institute nor the names of its contributors 
- *    may be used to endorse or promote products derived from this software 
- *    without specific prior written permission. 
+ * 3. Neither the name of the Institute nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
- * SUCH DAMAGE. 
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 #include "hx_locl.h"
@@ -114,7 +114,7 @@ print_func(hx509_vprint_func func, void *ctx, const char *fmt, ...)
 
 /**
  * Print a oid to a string.
- * 
+ *
  * @param oid oid to print
  * @param str allocated string, free with hx509_xfree().
  *
@@ -132,7 +132,7 @@ hx509_oid_sprint(const heim_oid *oid, char **str)
 /**
  * Print a oid using a hx509_vprint_func function. To print to stdout
  * use hx509_print_stdout().
- * 
+ *
  * @param oid oid to print
  * @param func hx509_vprint_func to print with.
  * @param ctx context variable to hx509_vprint_func function.
@@ -152,7 +152,7 @@ hx509_oid_print(const heim_oid *oid, hx509_vprint_func func, void *ctx)
 /**
  * Print a bitstring using a hx509_vprint_func function. To print to
  * stdout use hx509_print_stdout().
- * 
+ *
  * @param b bit string to print.
  * @param func hx509_vprint_func to print with.
  * @param ctx context variable to hx509_vprint_func function.
@@ -168,7 +168,7 @@ hx509_bitstring_print(const heim_bit_string *b,
     print_func(func, ctx, "\tlength: %d\n\t", b->length);
     for (i = 0; i < (b->length + 7) / 8; i++)
 	print_func(func, ctx, "%02x%s%s",
-		   ((unsigned char *)b->data)[i], 
+		   ((unsigned char *)b->data)[i],
 		   i < (b->length - 7) / 8
 		   && (i == 0 || (i % 16) != 15) ? ":" : "",
 		   i != 0 && (i % 16) == 15 ?
@@ -177,7 +177,7 @@ hx509_bitstring_print(const heim_bit_string *b,
 
 /**
  * Print certificate usage for a certificate to a string.
- * 
+ *
  * @param context A hx509 context.
  * @param c a certificate print the keyusage for.
  * @param s the return string with the keysage printed in to, free
@@ -234,7 +234,7 @@ validate_print(hx509_validate_ctx ctx, int flags, const char *fmt, ...)
     va_end(va);
 }
 
-/* 
+/*
  * Dont Care, SHOULD critical, SHOULD NOT critical, MUST critical,
  * MUST NOT critical
  */
@@ -275,7 +275,7 @@ check_Null(hx509_validate_ctx ctx,
 }
 
 static int
-check_subjectKeyIdentifier(hx509_validate_ctx ctx, 
+check_subjectKeyIdentifier(hx509_validate_ctx ctx,
 			   struct cert_status *status,
 			   enum critical_flag cf,
 			   const Extension *e)
@@ -287,7 +287,7 @@ check_subjectKeyIdentifier(hx509_validate_ctx ctx,
     status->haveSKI = 1;
     check_Null(ctx, status, cf, e);
 
-    ret = decode_SubjectKeyIdentifier(e->extnValue.data, 
+    ret = decode_SubjectKeyIdentifier(e->extnValue.data,
 				      e->extnValue.length,
 				      &si, &size);
     if (ret) {
@@ -323,7 +323,7 @@ check_subjectKeyIdentifier(hx509_validate_ctx ctx,
 }
 
 static int
-check_authorityKeyIdentifier(hx509_validate_ctx ctx, 
+check_authorityKeyIdentifier(hx509_validate_ctx ctx,
 			     struct cert_status *status,
 			     enum critical_flag cf,
 			     const Extension *e)
@@ -335,7 +335,7 @@ check_authorityKeyIdentifier(hx509_validate_ctx ctx,
     status->haveAKI = 1;
     check_Null(ctx, status, cf, e);
 
-    ret = decode_AuthorityKeyIdentifier(e->extnValue.data, 
+    ret = decode_AuthorityKeyIdentifier(e->extnValue.data,
 					e->extnValue.length,
 					&ai, &size);
     if (ret) {
@@ -363,7 +363,7 @@ check_authorityKeyIdentifier(hx509_validate_ctx ctx,
 }
 
 static int
-check_extKeyUsage(hx509_validate_ctx ctx, 
+check_extKeyUsage(hx509_validate_ctx ctx,
 		  struct cert_status *status,
 		  enum critical_flag cf,
 		  const Extension *e)
@@ -374,7 +374,7 @@ check_extKeyUsage(hx509_validate_ctx ctx,
 
     check_Null(ctx, status, cf, e);
 
-    ret = decode_ExtKeyUsage(e->extnValue.data, 
+    ret = decode_ExtKeyUsage(e->extnValue.data,
 			     e->extnValue.length,
 			     &eku, &size);
     if (ret) {
@@ -436,7 +436,7 @@ check_pkinit_san(hx509_validate_ctx ctx, heim_any *a)
 
     /* print kerberos principal, add code to quote / within components */
     for (i = 0; i < kn.principalName.name_string.len; i++) {
-	validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "%s", 
+	validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "%s",
 		       kn.principalName.name_string.val[i]);
 	if (i + 1 < kn.principalName.name_string.len)
 	    validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "/");
@@ -475,7 +475,7 @@ check_altnull(hx509_validate_ctx ctx, heim_any *a)
 }
 
 static int
-check_CRLDistributionPoints(hx509_validate_ctx ctx, 
+check_CRLDistributionPoints(hx509_validate_ctx ctx,
 			   struct cert_status *status,
 			   enum critical_flag cf,
 			   const Extension *e)
@@ -486,7 +486,7 @@ check_CRLDistributionPoints(hx509_validate_ctx ctx,
 
     check_Null(ctx, status, cf, e);
 
-    ret = decode_CRLDistributionPoints(e->extnValue.data, 
+    ret = decode_CRLDistributionPoints(e->extnValue.data,
 				       e->extnValue.length,
 				       &dp, &size);
     if (ret) {
@@ -501,11 +501,11 @@ check_CRLDistributionPoints(hx509_validate_ctx ctx,
 	    DistributionPointName dpname;
 	    heim_any *data = dp.val[i].distributionPoint;
 	    int j;
-	    
+	
 	    ret = decode_DistributionPointName(data->data, data->length,
 					       &dpname, NULL);
 	    if (ret) {
-		validate_print(ctx, HX509_VALIDATE_F_VALIDATE, 
+		validate_print(ctx, HX509_VALIDATE_F_VALIDATE,
 			       "Failed to parse CRL Distribution Point Name: %d\n", ret);
 		continue;
 	    }
@@ -579,7 +579,7 @@ check_altName(hx509_validate_ctx ctx,
 			      &gn, &size);
     if (ret) {
 	validate_print(ctx, HX509_VALIDATE_F_VALIDATE,
-		       "\tret = %d while decoding %s GeneralNames\n", 
+		       "\tret = %d while decoding %s GeneralNames\n",
 		       ret, name);
 	return 1;
     }
@@ -598,11 +598,11 @@ check_altName(hx509_validate_ctx ctx,
 			   "%sAltName otherName ", name);
 
 	    for (j = 0; j < sizeof(check_altname)/sizeof(check_altname[0]); j++) {
-		if (der_heim_oid_cmp((*check_altname[j].oid)(), 
+		if (der_heim_oid_cmp((*check_altname[j].oid)(),
 				     &gn.val[i].u.otherName.type_id) != 0)
 		    continue;
 		
-		validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "%s: ", 
+		validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "%s: ",
 			       check_altname[j].name);
 		(*check_altname[j].func)(ctx, &gn.val[i].u.otherName.value);
 		break;
@@ -657,9 +657,9 @@ check_issuerAltName(hx509_validate_ctx ctx,
 
 
 static int
-check_basicConstraints(hx509_validate_ctx ctx, 
+check_basicConstraints(hx509_validate_ctx ctx,
 		       struct cert_status *status,
-		       enum critical_flag cf, 
+		       enum critical_flag cf,
 		       const Extension *e)
 {
     BasicConstraints b;
@@ -667,7 +667,7 @@ check_basicConstraints(hx509_validate_ctx ctx,
     int ret;
 
     check_Null(ctx, status, cf, e);
-    
+
     ret = decode_BasicConstraints(e->extnValue.data, e->extnValue.length,
 				  &b, &size);
     if (ret) {
@@ -700,9 +700,9 @@ check_basicConstraints(hx509_validate_ctx ctx,
 }
 
 static int
-check_proxyCertInfo(hx509_validate_ctx ctx, 
+check_proxyCertInfo(hx509_validate_ctx ctx,
 		    struct cert_status *status,
-		    enum critical_flag cf, 
+		    enum critical_flag cf,
 		    const Extension *e)
 {
     check_Null(ctx, status, cf, e);
@@ -711,9 +711,9 @@ check_proxyCertInfo(hx509_validate_ctx ctx,
 }
 
 static int
-check_authorityInfoAccess(hx509_validate_ctx ctx, 
+check_authorityInfoAccess(hx509_validate_ctx ctx,
 			  struct cert_status *status,
-			  enum critical_flag cf, 
+			  enum critical_flag cf,
 			  const Extension *e)
 {
     AuthorityInfoAccessSyntax aia;
@@ -722,7 +722,7 @@ check_authorityInfoAccess(hx509_validate_ctx ctx,
 
     check_Null(ctx, status, cf, e);
 
-    ret = decode_AuthorityInfoAccessSyntax(e->extnValue.data, 
+    ret = decode_AuthorityInfoAccessSyntax(e->extnValue.data,
 					   e->extnValue.length,
 					   &aia, &size);
     if (ret) {
@@ -752,13 +752,13 @@ check_authorityInfoAccess(hx509_validate_ctx ctx,
 struct {
     const char *name;
     const heim_oid *(*oid)(void);
-    int (*func)(hx509_validate_ctx ctx, 
+    int (*func)(hx509_validate_ctx ctx,
 		struct cert_status *status,
-		enum critical_flag cf, 
+		enum critical_flag cf,
 		const Extension *);
     enum critical_flag cf;
 } check_extension[] = {
-#define ext(name, checkname) #name, &oid_id_x509_ce_##name, check_##checkname 
+#define ext(name, checkname) #name, &oid_id_x509_ce_##name, check_##checkname
     { ext(subjectDirectoryAttributes, Null), M_N_C },
     { ext(subjectKeyIdentifier, subjectKeyIdentifier), M_N_C },
     { ext(keyUsage, Null), S_C },
@@ -782,20 +782,20 @@ struct {
     { ext(freshestCRL, Null), M_N_C },
     { ext(inhibitAnyPolicy, Null), M_C },
 #undef ext
-#define ext(name, checkname) #name, &oid_id_pkix_pe_##name, check_##checkname 
+#define ext(name, checkname) #name, &oid_id_pkix_pe_##name, check_##checkname
     { ext(proxyCertInfo, proxyCertInfo), M_C },
     { ext(authorityInfoAccess, authorityInfoAccess), M_C },
 #undef ext
-    { "US Fed PKI - PIV Interim", oid_id_uspkicommon_piv_interim, 
+    { "US Fed PKI - PIV Interim", oid_id_uspkicommon_piv_interim,
       check_Null, D_C },
-    { "Netscape cert comment", oid_id_netscape_cert_comment, 
+    { "Netscape cert comment", oid_id_netscape_cert_comment,
       check_Null, D_C },
     { NULL }
 };
 
 /**
  * Allocate a hx509 validation/printing context.
- * 
+ *
  * @param context A hx509 context.
  * @param ctx a new allocated hx509 validation context, free with
  * hx509_validate_ctx_free().
@@ -817,7 +817,7 @@ hx509_validate_ctx_init(hx509_context context, hx509_validate_ctx *ctx)
 
 /**
  * Set the printing functions for the validation context.
- * 
+ *
  * @param ctx a hx509 valication context.
  * @param func the printing function to usea.
  * @param c the context variable to the printing function.
@@ -828,7 +828,7 @@ hx509_validate_ctx_init(hx509_context context, hx509_validate_ctx *ctx)
  */
 
 void
-hx509_validate_ctx_set_print(hx509_validate_ctx ctx, 
+hx509_validate_ctx_set_print(hx509_validate_ctx ctx,
 			     hx509_vprint_func func,
 			     void *c)
 {
@@ -839,7 +839,7 @@ hx509_validate_ctx_set_print(hx509_validate_ctx ctx,
 /**
  * Add flags to control the behaivor of the hx509_validate_cert()
  * function.
- * 
+ *
  * @param ctx A hx509 validation context.
  * @param flags flags to add to the validation context.
  *
@@ -856,7 +856,7 @@ hx509_validate_ctx_add_flags(hx509_validate_ctx ctx, int flags)
 
 /**
  * Free an hx509 validate context.
- * 
+ *
  * @param ctx the hx509 validate context to free.
  *
  * @ingroup hx509_print
@@ -870,7 +870,7 @@ hx509_validate_ctx_free(hx509_validate_ctx ctx)
 
 /**
  * Validate/Print the status of the certificate.
- * 
+ *
  * @param context A hx509 context.
  * @param ctx A hx509 validation context.
  * @param cert the cerificate to validate/print.
@@ -897,7 +897,7 @@ hx509_validate_cert(hx509_context context,
     if (_hx509_cert_get_version(c) != 3)
 	validate_print(ctx, HX509_VALIDATE_F_VERBOSE,
 		       "Not version 3 certificate\n");
-    
+
     if ((t->version == NULL || *t->version < 2) && t->extensions)
 	validate_print(ctx, HX509_VALIDATE_F_VALIDATE,
 		       "Not version 3 certificate with extensions\n");
@@ -960,7 +960,7 @@ hx509_validate_cert(hx509_context context,
 		if (t->extensions->val[i].critical)
 		    validate_print(ctx, flags, "and is CRITICAL ");
 		if (ctx->flags & flags)
-		    hx509_oid_print(&t->extensions->val[i].extnID, 
+		    hx509_oid_print(&t->extensions->val[i].extnID,
 				    validate_vprint, ctx);
 		validate_print(ctx, flags, " is\n");
 		continue;
@@ -979,40 +979,40 @@ hx509_validate_cert(hx509_context context,
 	
     if (status.isca) {
 	if (!status.haveSKI)
-	    validate_print(ctx, HX509_VALIDATE_F_VALIDATE, 
+	    validate_print(ctx, HX509_VALIDATE_F_VALIDATE,
 			   "CA certificate have no SubjectKeyIdentifier\n");
 
     } else {
 	if (!status.haveAKI)
-	    validate_print(ctx, HX509_VALIDATE_F_VALIDATE, 
+	    validate_print(ctx, HX509_VALIDATE_F_VALIDATE,
 			   "Is not CA and doesn't have "
 			   "AuthorityKeyIdentifier\n");
     }
-	    
+	
 
     if (!status.haveSKI)
-	validate_print(ctx, HX509_VALIDATE_F_VALIDATE, 
+	validate_print(ctx, HX509_VALIDATE_F_VALIDATE,
 		       "Doesn't have SubjectKeyIdentifier\n");
 
     if (status.isproxy && status.isca)
-	validate_print(ctx, HX509_VALIDATE_F_VALIDATE, 
+	validate_print(ctx, HX509_VALIDATE_F_VALIDATE,
 		       "Proxy and CA at the same time!\n");
 
     if (status.isproxy) {
 	if (status.haveSAN)
-	    validate_print(ctx, HX509_VALIDATE_F_VALIDATE, 
+	    validate_print(ctx, HX509_VALIDATE_F_VALIDATE,
 			   "Proxy and have SAN\n");
 	if (status.haveIAN)
-	    validate_print(ctx, HX509_VALIDATE_F_VALIDATE, 
+	    validate_print(ctx, HX509_VALIDATE_F_VALIDATE,
 			   "Proxy and have IAN\n");
     }
 
     if (hx509_name_is_null_p(subject) && !status.haveSAN)
-	validate_print(ctx, HX509_VALIDATE_F_VALIDATE, 
+	validate_print(ctx, HX509_VALIDATE_F_VALIDATE,
 		       "NULL subject DN and doesn't have a SAN\n");
 
     if (!status.selfsigned && !status.haveCRLDP)
-	validate_print(ctx, HX509_VALIDATE_F_VALIDATE, 
+	validate_print(ctx, HX509_VALIDATE_F_VALIDATE,
 		       "Not a CA nor PROXY and doesn't have"
 		       "CRL Dist Point\n");
 
@@ -1023,10 +1023,10 @@ hx509_validate_cert(hx509_context context,
 						&c->tbsCertificate._save,
 						&c->signatureValue);
 	if (ret == 0)
-	    validate_print(ctx, HX509_VALIDATE_F_VERBOSE, 
+	    validate_print(ctx, HX509_VALIDATE_F_VERBOSE,
 			   "Self-signed certificate was self-signed\n");
 	else
-	    validate_print(ctx, HX509_VALIDATE_F_VALIDATE, 
+	    validate_print(ctx, HX509_VALIDATE_F_VALIDATE,
 			   "Self-signed certificate NOT really self-signed!\n");
     }
 

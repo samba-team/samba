@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008 Kungliga Tekniska Högskolan
+ * Copyright (c) 2008 Kungliga Tekniska HÃ¶gskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  *
@@ -183,10 +183,10 @@ eval_parent(pid_t pid)
 	    }
 	    alarm(0);
 	    if (alarmset == SIGALRM)
-		errx(1, "timeout waiting for %s (line %u)", 
+		errx(1, "timeout waiting for %s (line %u)",
 		     c->str, c->lineno);
 	    else if (alarmset)
-		errx(1, "got a signal %d waiting for %s (line %u)", 
+		errx(1, "got a signal %d waiting for %s (line %u)",
 		     alarmset, c->str, c->lineno);
 	    if (sret <= 0)
 		errx(1, "end command while waiting for %s (line %u)",
@@ -211,7 +211,7 @@ eval_parent(pid_t pid)
 		    case 'r': ctrl = '\r'; break;
 		    case 't': ctrl = '\t'; break;
 		    default:
-			errx(1, "unknown control char %c (line %u)", 
+			errx(1, "unknown control char %c (line %u)",
 			     c->str[i], c->lineno);
 		    }
 		    if (net_write(master, &ctrl, 1) != 1)
@@ -327,7 +327,7 @@ main(int argc, char **argv)
 	    sa.sa_handler = caught_signal;
 	    sa.sa_flags = 0;
 	    sigemptyset (&sa.sa_mask);
-	    
+	
 	    sigaction(SIGALRM, &sa, NULL);
 	}
 

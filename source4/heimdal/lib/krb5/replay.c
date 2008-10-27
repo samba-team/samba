@@ -1,34 +1,34 @@
 /*
- * Copyright (c) 1997-2001 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * Copyright (c) 1997-2001 Kungliga Tekniska HÃ¶gskolan
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * 3. Neither the name of the Institute nor the names of its contributors 
- *    may be used to endorse or promote products derived from this software 
- *    without specific prior written permission. 
+ * 3. Neither the name of the Institute nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
- * SUCH DAMAGE. 
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 #include "krb5_locl.h"
@@ -47,7 +47,8 @@ krb5_rc_resolve(krb5_context context,
 {
     id->name = strdup(name);
     if(id->name == NULL) {
-	krb5_set_error_message(context, KRB5_RC_MALLOC, "malloc: out of memory");
+	krb5_set_error_message(context, KRB5_RC_MALLOC,
+			       N_("malloc: out of memory", ""));
 	return KRB5_RC_MALLOC;
     }
     return 0;
@@ -61,13 +62,14 @@ krb5_rc_resolve_type(krb5_context context,
     *id = NULL;
     if(strcmp(type, "FILE")) {
 	krb5_set_error_message (context, KRB5_RC_TYPE_NOTFOUND,
-				"replay cache type %s not supported",
+				N_("replay cache type %s not supported", ""),
 				type);
 	return KRB5_RC_TYPE_NOTFOUND;
     }
     *id = calloc(1, sizeof(**id));
     if(*id == NULL) {
-	krb5_set_error_message(context, KRB5_RC_MALLOC, "malloc: out of memory");
+	krb5_set_error_message(context, KRB5_RC_MALLOC,
+			       N_("malloc: out of memory", ""));
 	return KRB5_RC_MALLOC;
     }
     return 0;
@@ -84,7 +86,7 @@ krb5_rc_resolve_full(krb5_context context,
 
     if(strncmp(string_name, "FILE:", 5)) {
 	krb5_set_error_message(context, KRB5_RC_TYPE_NOTFOUND,
-			       "replay cache type %s not supported",
+			       N_("replay cache type %s not supported", ""),
 			       string_name);
 	return KRB5_RC_TYPE_NOTFOUND;
     }
@@ -184,7 +186,7 @@ checksum_authenticator(Authenticator *auth, void *data)
     MD5_Init (&md5);
     MD5_Update (&md5, auth->crealm, strlen(auth->crealm));
     for(i = 0; i < auth->cname.name_string.len; i++)
-	MD5_Update(&md5, auth->cname.name_string.val[i], 
+	MD5_Update(&md5, auth->cname.name_string.val[i],
 		   strlen(auth->cname.name_string.val[i]));
     MD5_Update (&md5, &auth->ctime, sizeof(auth->ctime));
     MD5_Update (&md5, &auth->cusec, sizeof(auth->cusec));
@@ -218,7 +220,7 @@ krb5_rc_store(krb5_context context,
 	    continue;
 	if(memcmp(tmp.data, ent.data, sizeof(ent.data)) == 0){
 	    fclose(f);
-	    krb5_clear_error_string (context);
+	    krb5_clear_error_message (context);
 	    return KRB5_RC_REPLAY;
 	}
     }
@@ -263,7 +265,7 @@ krb5_rc_get_lifespan(krb5_context context,
 	*auth_lifespan = ent.stamp;
 	return 0;
     }
-    krb5_clear_error_string (context);
+    krb5_clear_error_message (context);
     return KRB5_RC_IO_UNKNOWN;
 }
 
@@ -273,17 +275,17 @@ krb5_rc_get_name(krb5_context context,
 {
     return id->name;
 }
-		 
+		
 const char* KRB5_LIB_FUNCTION
 krb5_rc_get_type(krb5_context context,
 		 krb5_rcache id)
 {
     return "FILE";
 }
-		 
+		
 krb5_error_code KRB5_LIB_FUNCTION
-krb5_get_server_rcache(krb5_context context, 
-		       const krb5_data *piece, 
+krb5_get_server_rcache(krb5_context context,
+		       const krb5_data *piece,
 		       krb5_rcache *id)
 {
     krb5_rcache rcache;
@@ -293,7 +295,8 @@ krb5_get_server_rcache(krb5_context context,
     char *name;
 
     if(tmp == NULL) {
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM,
+			       N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     strvisx(tmp, piece->data, piece->length, VIS_WHITE | VIS_OCTAL);
@@ -304,7 +307,8 @@ krb5_get_server_rcache(krb5_context context,
 #endif
     free(tmp);
     if(name == NULL) {
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM,
+			       N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
 

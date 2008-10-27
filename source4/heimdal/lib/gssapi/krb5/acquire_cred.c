@@ -1,34 +1,34 @@
 /*
- * Copyright (c) 1997 - 2005 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * Copyright (c) 1997 - 2005 Kungliga Tekniska HÃ¶gskolan
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * 3. Neither the name of the Institute nor the names of its contributors 
- *    may be used to endorse or promote products derived from this software 
- *    without specific prior written permission. 
+ * 3. Neither the name of the Institute nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
- * SUCH DAMAGE. 
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 #include "krb5/gsskrb5_locl.h"
@@ -56,14 +56,14 @@ __gsskrb5_ccache_lifetime(OM_uint32 *minor_status,
 	return GSS_S_FAILURE;
     }
 
-    kret = krb5_make_principal(context, &in_cred.server, 
+    kret = krb5_make_principal(context, &in_cred.server,
 			       realm, KRB5_TGS_NAME, realm, NULL);
     if (kret) {
 	*minor_status = kret;
 	return GSS_S_FAILURE;
     }
 
-    kret = krb5_get_credentials(context, 0, 
+    kret = krb5_get_credentials(context, 0,
 				id, &in_cred, &out_cred);
     krb5_free_principal(context, in_cred.server);
     if (kret) {
@@ -128,7 +128,7 @@ static OM_uint32 acquire_initiator_cred
     ret = GSS_S_FAILURE;
     memset(&cred, 0, sizeof(cred));
 
-    /* 
+    /*
      * If we have a preferred principal, lets try to find it in all
      * caches, otherwise, fall back to default cache, ignore all
      * errors while searching.
@@ -137,14 +137,13 @@ static OM_uint32 acquire_initiator_cred
     if (handle->principal) {
 	kret = krb5_cc_cache_match (context,
 				    handle->principal,
-				    NULL,
 				    &ccache);
 	if (kret == 0) {
 	    ret = GSS_S_COMPLETE;
 	    goto found;
 	}
     }
-    
+
     if (ccache == NULL) {
 	kret = krb5_cc_default(context, &ccache);
 	if (kret)
@@ -251,19 +250,19 @@ static OM_uint32 acquire_acceptor_cred
     kret = get_keytab(context, &handle->keytab);
     if (kret)
 	goto end;
-    
+
     /* check that the requested principal exists in the keytab */
     if (handle->principal) {
 	krb5_keytab_entry entry;
 
-	kret = krb5_kt_get_entry(context, handle->keytab, 
+	kret = krb5_kt_get_entry(context, handle->keytab,
 				 handle->principal, 0, 0, &entry);
 	if (kret)
 	    goto end;
 	krb5_kt_free_entry(context, &entry);
 	ret = GSS_S_COMPLETE;
     } else {
-	/* 
+	/*
 	 * Check if there is at least one entry in the keytab before
 	 * declaring it as an useful keytab.
 	 */
@@ -278,7 +277,7 @@ static OM_uint32 acquire_acceptor_cred
 	    ret = GSS_S_COMPLETE; /* ok found one entry */
 	}
 	krb5_kt_end_seq_get (context, handle->keytab, &c);
-    } 
+    }
 end:
     if (ret != GSS_S_COMPLETE) {
 	if (handle->keytab != NULL)
@@ -322,7 +321,7 @@ OM_uint32 _gsskrb5_acquire_cred
 	int present = 0;
 
 	ret = gss_test_oid_set_member(minor_status, GSS_KRB5_MECHANISM,
-				      desired_mechs, &present); 
+				      desired_mechs, &present);
 	if (ret)
 	    return ret;
 	if (!present) {
@@ -341,7 +340,7 @@ OM_uint32 _gsskrb5_acquire_cred
 
     if (desired_name != GSS_C_NO_NAME) {
 
-	ret = _gsskrb5_canon_name(minor_status, context, 0, desired_name, 
+	ret = _gsskrb5_canon_name(minor_status, context, 0, desired_name,
 				  &handle->principal);
 	if (ret) {
 	    HEIMDAL_MUTEX_destroy(&handle->cred_id_mutex);
@@ -377,7 +376,7 @@ OM_uint32 _gsskrb5_acquire_cred
     	ret = gss_add_oid_set_member(minor_status, GSS_KRB5_MECHANISM,
 				     &handle->mechanisms);
     if (ret == GSS_S_COMPLETE)
-    	ret = _gsskrb5_inquire_cred(minor_status, (gss_cred_id_t)handle, 
+    	ret = _gsskrb5_inquire_cred(minor_status, (gss_cred_id_t)handle,
 				    NULL, time_rec, NULL, actual_mechs);
     if (ret != GSS_S_COMPLETE) {
 	if (handle->mechanisms != NULL)
@@ -386,7 +385,7 @@ OM_uint32 _gsskrb5_acquire_cred
 	krb5_free_principal(context, handle->principal);
 	free(handle);
 	return (ret);
-    } 
+    }
     *minor_status = 0;
     if (time_rec) {
 	ret = _gsskrb5_lifetime_left(minor_status,

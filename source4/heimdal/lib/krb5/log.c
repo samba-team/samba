@@ -1,34 +1,34 @@
 /*
- * Copyright (c) 1997-2006 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * Copyright (c) 1997-2006 Kungliga Tekniska HÃ¶gskolan
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * 3. Neither the name of the Institute nor the names of its contributors 
- *    may be used to endorse or promote products derived from this software 
- *    without specific prior written permission. 
+ * 3. Neither the name of the Institute nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
- * SUCH DAMAGE. 
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 #include "krb5_locl.h"
@@ -121,13 +121,15 @@ krb5_initlog(krb5_context context,
 {
     krb5_log_facility *f = calloc(1, sizeof(*f));
     if(f == NULL) {
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM,
+			       N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     f->program = strdup(program);
     if(f->program == NULL){
 	free(f);
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM,
+			       N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     *fac = f;
@@ -145,7 +147,8 @@ krb5_addlog_func(krb5_context context,
 {
     struct facility *fp = log_realloc(fac);
     if(fp == NULL) {
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM,
+			       N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     fp->min = min;
@@ -165,7 +168,7 @@ static void
 log_syslog(const char *timestr,
 	   const char *msg,
 	   void *data)
-     
+
 {
     struct _heimdal_syslog_data *s = data;
     syslog(s->priority, "%s", msg);
@@ -187,7 +190,8 @@ open_syslog(krb5_context context,
     int i;
 
     if(sd == NULL) {
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM,
+			       N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     i = find_value(sev, syslogvals);
@@ -242,7 +246,8 @@ open_file(krb5_context context, krb5_log_facility *fac, int min, int max,
 {
     struct file_data *fd = malloc(sizeof(*fd));
     if(fd == NULL) {
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM,
+			       N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     fd->filename = filename;
@@ -278,7 +283,7 @@ krb5_addlog_dest(krb5_context context, krb5_log_facility *f, const char *orig)
 	p = strchr(p, '/');
 	if(p == NULL) {
 	    krb5_set_error_message(context, HEIM_ERR_LOG_PARSE,
-				   "failed to parse \"%s\"", orig);
+				   N_("failed to parse \"%s\"", ""), orig);
 	    return HEIM_ERR_LOG_PARSE;
 	}
 	p++;
@@ -293,15 +298,17 @@ krb5_addlog_dest(krb5_context context, krb5_log_facility *f, const char *orig)
 	int keep_open = 0;
 	fn = strdup(p + 5);
 	if(fn == NULL) {
-	    krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	    krb5_set_error_message(context, ENOMEM,
+				   N_("malloc: out of memory", ""));
 	    return ENOMEM;
 	}
 	if(p[4] == '='){
-	    int i = open(fn, O_WRONLY | O_CREAT | 
+	    int i = open(fn, O_WRONLY | O_CREAT |
 			 O_TRUNC | O_APPEND, 0666);
 	    if(i < 0) {
 		ret = errno;
-		krb5_set_error_message(context, ret, "open(%s): %s", fn,
+		krb5_set_error_message(context, ret,
+				       N_("open(%s) logile: %s", ""), fn,
 				       strerror(ret));
 		free(fn);
 		return ret;
@@ -311,8 +318,9 @@ krb5_addlog_dest(krb5_context context, krb5_log_facility *f, const char *orig)
 	    if(file == NULL){
 		ret = errno;
 		close(i);
-		krb5_set_error_message(context, ret, "fdopen(%s): %s", fn,
-				       strerror(ret));
+		krb5_set_error_message(context, ret,
+				       N_("fdopen(%s) logfile: %s", ""),
+				       fn, strerror(ret));
 		free(fn);
 		return ret;
 	    }
@@ -336,7 +344,8 @@ krb5_addlog_dest(krb5_context context, krb5_log_facility *f, const char *orig)
 	ret = open_syslog(context, f, min, max, severity, facility);
     }else{
 	ret = HEIM_ERR_LOG_PARSE; /* XXX */
-	krb5_set_error_message (context, ret, "unknown log type: %s", p);
+	krb5_set_error_message (context, ret,
+				N_("unknown log type: %s", ""), p);
     }
     return ret;
 }
@@ -394,7 +403,7 @@ krb5_vlog_msg(krb5_context context,
 	      va_list ap)
      __attribute__((format (printf, 5, 0)))
 {
-    
+
     char *msg = NULL;
     const char *actual = NULL;
     char buf[64];
@@ -402,7 +411,7 @@ krb5_vlog_msg(krb5_context context,
     int i;
 
     for(i = 0; fac && i < fac->len; i++)
-	if(fac->val[i].min <= level && 
+	if(fac->val[i].min <= level &&
 	   (fac->val[i].max < 0 || fac->val[i].max >= level)) {
 	    if(t == 0) {
 		t = time(NULL);

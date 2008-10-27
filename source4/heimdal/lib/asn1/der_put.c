@@ -1,34 +1,34 @@
 /*
- * Copyright (c) 1997-2005 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * Copyright (c) 1997-2005 Kungliga Tekniska HÃ¶gskolan
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * 3. Neither the name of the Institute nor the names of its contributors 
- *    may be used to endorse or promote products derived from this software 
- *    without specific prior written permission. 
+ * 3. Neither the name of the Institute nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
- * SUCH DAMAGE. 
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 #include "der_locl.h"
@@ -157,7 +157,7 @@ der_put_boolean(unsigned char *p, size_t len, const int *data, size_t *size)
 }
 
 int
-der_put_general_string (unsigned char *p, size_t len, 
+der_put_general_string (unsigned char *p, size_t len,
 			const heim_general_string *str, size_t *size)
 {
     size_t slen = strlen(*str);
@@ -172,28 +172,28 @@ der_put_general_string (unsigned char *p, size_t len,
 }
 
 int
-der_put_utf8string (unsigned char *p, size_t len, 
+der_put_utf8string (unsigned char *p, size_t len,
 		    const heim_utf8_string *str, size_t *size)
 {
     return der_put_general_string(p, len, str, size);
 }
 
 int
-der_put_printable_string (unsigned char *p, size_t len, 
+der_put_printable_string (unsigned char *p, size_t len,
 			  const heim_printable_string *str, size_t *size)
 {
     return der_put_general_string(p, len, str, size);
 }
 
 int
-der_put_ia5_string (unsigned char *p, size_t len, 
+der_put_ia5_string (unsigned char *p, size_t len,
 		    const heim_ia5_string *str, size_t *size)
 {
     return der_put_general_string(p, len, str, size);
 }
 
 int
-der_put_bmp_string (unsigned char *p, size_t len, 
+der_put_bmp_string (unsigned char *p, size_t len,
 		    const heim_bmp_string *data, size_t *size)
 {
     size_t i;
@@ -211,7 +211,7 @@ der_put_bmp_string (unsigned char *p, size_t len,
 }
 
 int
-der_put_universal_string (unsigned char *p, size_t len, 
+der_put_universal_string (unsigned char *p, size_t len,
 			  const heim_universal_string *data, size_t *size)
 {
     size_t i;
@@ -231,14 +231,14 @@ der_put_universal_string (unsigned char *p, size_t len,
 }
 
 int
-der_put_visible_string (unsigned char *p, size_t len, 
+der_put_visible_string (unsigned char *p, size_t len,
 			 const heim_visible_string *str, size_t *size)
 {
     return der_put_general_string(p, len, str, size);
 }
 
 int
-der_put_octet_string (unsigned char *p, size_t len, 
+der_put_octet_string (unsigned char *p, size_t len,
 		      const heim_octet_string *data, size_t *size)
 {
     if (len < data->length)
@@ -251,7 +251,7 @@ der_put_octet_string (unsigned char *p, size_t len,
 }
 
 int
-der_put_heim_integer (unsigned char *p, size_t len, 
+der_put_heim_integer (unsigned char *p, size_t len,
 		     const heim_integer *data, size_t *size)
 {
     unsigned char *buf = data->data;
@@ -303,7 +303,7 @@ der_put_heim_integer (unsigned char *p, size_t len,
 }
 
 int
-der_put_generalized_time (unsigned char *p, size_t len, 
+der_put_generalized_time (unsigned char *p, size_t len,
 			  const time_t *data, size_t *size)
 {
     heim_octet_string k;
@@ -323,7 +323,7 @@ der_put_generalized_time (unsigned char *p, size_t len,
 }
 
 int
-der_put_utctime (unsigned char *p, size_t len, 
+der_put_utctime (unsigned char *p, size_t len,
 		 const time_t *data, size_t *size)
 {
     heim_octet_string k;
@@ -405,7 +405,7 @@ der_put_tag (unsigned char *p, size_t len, Der_class class, Der_type type,
 
 int
 der_put_length_and_tag (unsigned char *p, size_t len, size_t len_val,
-			Der_class class, Der_type type, 
+			Der_class class, Der_type type,
 			unsigned int tag, size_t *size)
 {
     size_t ret = 0;
@@ -440,19 +440,19 @@ _heim_time2generalizedtime (time_t t, heim_octet_string *s, int gtimep)
      s->length = len;
      tm = gmtime (&t);
      if (gtimep)
-	 snprintf (s->data, len + 1, "%04d%02d%02d%02d%02d%02dZ", 
-		   tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday, 
+	 snprintf (s->data, len + 1, "%04d%02d%02d%02d%02d%02dZ",
+		   tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday,
 		   tm->tm_hour, tm->tm_min, tm->tm_sec);
      else
-	 snprintf (s->data, len + 1, "%02d%02d%02d%02d%02d%02dZ", 
-		   tm->tm_year % 100, tm->tm_mon + 1, tm->tm_mday, 
+	 snprintf (s->data, len + 1, "%02d%02d%02d%02d%02d%02dZ",
+		   tm->tm_year % 100, tm->tm_mon + 1, tm->tm_mday,
 		   tm->tm_hour, tm->tm_min, tm->tm_sec);
 
      return 0;
 }
 
 int
-der_put_bit_string (unsigned char *p, size_t len, 
+der_put_bit_string (unsigned char *p, size_t len,
 		    const heim_bit_string *data, size_t *size)
 {
     size_t data_size = (data->length + 7) / 8;
@@ -469,13 +469,13 @@ der_put_bit_string (unsigned char *p, size_t len,
     return 0;
 }
 
-int 
+int
 _heim_der_set_sort(const void *a1, const void *a2)
 {
     const struct heim_octet_string *s1 = a1, *s2 = a2;
     int ret;
 
-    ret = memcmp(s1->data, s2->data, 
+    ret = memcmp(s1->data, s2->data,
 		 s1->length < s2->length ? s1->length : s2->length);
     if(ret)
 	return ret;

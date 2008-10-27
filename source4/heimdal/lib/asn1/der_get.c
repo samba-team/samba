@@ -1,34 +1,34 @@
 /*
- * Copyright (c) 1997 - 2007 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * Copyright (c) 1997 - 2007 Kungliga Tekniska HÃ¶gskolan
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * 3. Neither the name of the Institute nor the names of its contributors 
- *    may be used to endorse or promote products derived from this software 
- *    without specific prior written permission. 
+ * 3. Neither the name of the Institute nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
- * SUCH DAMAGE. 
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 #include "der_locl.h"
@@ -37,7 +37,7 @@ RCSID("$Id$");
 
 #include <version.h>
 
-/* 
+/*
  * All decoding functions take a pointer `p' to first position in
  * which to read, from the left, `len' which means the maximum number
  * of characters we are able to read, `ret' were the value will be
@@ -132,7 +132,7 @@ der_get_boolean(const unsigned char *p, size_t len, int *data, size_t *size)
 }
 
 int
-der_get_general_string (const unsigned char *p, size_t len, 
+der_get_general_string (const unsigned char *p, size_t len,
 			heim_general_string *str, size_t *size)
 {
     const unsigned char *p1;
@@ -140,7 +140,7 @@ der_get_general_string (const unsigned char *p, size_t len,
 
     p1 = memchr(p, 0, len);
     if (p1 != NULL) {
-	/* 
+	/*
 	 * Allow trailing NULs. We allow this since MIT Kerberos sends
 	 * an strings in the NEED_PREAUTH case that includes a
 	 * trailing NUL.
@@ -164,28 +164,28 @@ der_get_general_string (const unsigned char *p, size_t len,
 }
 
 int
-der_get_utf8string (const unsigned char *p, size_t len, 
+der_get_utf8string (const unsigned char *p, size_t len,
 		    heim_utf8_string *str, size_t *size)
 {
     return der_get_general_string(p, len, str, size);
 }
 
 int
-der_get_printable_string (const unsigned char *p, size_t len, 
+der_get_printable_string (const unsigned char *p, size_t len,
 			  heim_printable_string *str, size_t *size)
 {
     return der_get_general_string(p, len, str, size);
 }
 
 int
-der_get_ia5_string (const unsigned char *p, size_t len, 
+der_get_ia5_string (const unsigned char *p, size_t len,
 		    heim_ia5_string *str, size_t *size)
 {
     return der_get_general_string(p, len, str, size);
 }
 
 int
-der_get_bmp_string (const unsigned char *p, size_t len, 
+der_get_bmp_string (const unsigned char *p, size_t len,
 		    heim_bmp_string *data, size_t *size)
 {
     size_t i;
@@ -209,7 +209,7 @@ der_get_bmp_string (const unsigned char *p, size_t len,
 }
 
 int
-der_get_universal_string (const unsigned char *p, size_t len, 
+der_get_universal_string (const unsigned char *p, size_t len,
 			  heim_universal_string *data, size_t *size)
 {
     size_t i;
@@ -232,14 +232,14 @@ der_get_universal_string (const unsigned char *p, size_t len,
 }
 
 int
-der_get_visible_string (const unsigned char *p, size_t len, 
+der_get_visible_string (const unsigned char *p, size_t len,
 			heim_visible_string *str, size_t *size)
 {
     return der_get_general_string(p, len, str, size);
 }
 
 int
-der_get_octet_string (const unsigned char *p, size_t len, 
+der_get_octet_string (const unsigned char *p, size_t len,
 		      heim_octet_string *data, size_t *size)
 {
     data->length = len;
@@ -252,7 +252,7 @@ der_get_octet_string (const unsigned char *p, size_t len,
 }
 
 int
-der_get_heim_integer (const unsigned char *p, size_t len, 
+der_get_heim_integer (const unsigned char *p, size_t len,
 		      heim_integer *data, size_t *size)
 {
     data->length = 0;
@@ -338,7 +338,7 @@ generalizedtime2time (const char *s, time_t *t)
 }
 
 static int
-der_get_time (const unsigned char *p, size_t len, 
+der_get_time (const unsigned char *p, size_t len,
 	      time_t *data, size_t *size)
 {
     char *times;
@@ -359,14 +359,14 @@ der_get_time (const unsigned char *p, size_t len,
 }
 
 int
-der_get_generalized_time (const unsigned char *p, size_t len, 
+der_get_generalized_time (const unsigned char *p, size_t len,
 			  time_t *data, size_t *size)
 {
     return der_get_time(p, len, data, size);
 }
 
 int
-der_get_utctime (const unsigned char *p, size_t len, 
+der_get_utctime (const unsigned char *p, size_t len,
 			  time_t *data, size_t *size)
 {
     return der_get_time(p, len, data, size);
@@ -497,7 +497,7 @@ der_match_tag_and_length (const unsigned char *p, size_t len,
     return 0;
 }
 
-/* 
+/*
  * Old versions of DCE was based on a very early beta of the MIT code,
  * which used MAVROS for ASN.1 encoding. MAVROS had the interesting
  * feature that it encoded data in the forward direction, which has
@@ -507,7 +507,7 @@ der_match_tag_and_length (const unsigned char *p, size_t len,
  * to indefinite, BER style, lengths. The version of MAVROS used by
  * the DCE people could apparently generate correct X.509 DER encodings, and
  * did this by making space for the length after encoding, but
- * unfortunately this feature wasn't used with Kerberos. 
+ * unfortunately this feature wasn't used with Kerberos.
  */
 
 int
@@ -522,7 +522,7 @@ _heim_fix_dce(size_t reallen, size_t *len)
 }
 
 int
-der_get_bit_string (const unsigned char *p, size_t len, 
+der_get_bit_string (const unsigned char *p, size_t len,
 		    heim_bit_string *data, size_t *size)
 {
     if (len < 1)

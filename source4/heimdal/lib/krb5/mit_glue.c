@@ -1,49 +1,51 @@
 /*
- * Copyright (c) 2003 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * Copyright (c) 2003 Kungliga Tekniska HÃ¶gskolan
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * 3. Neither the name of the Institute nor the names of its contributors 
- *    may be used to endorse or promote products derived from this software 
- *    without specific prior written permission. 
+ * 3. Neither the name of the Institute nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
- * SUCH DAMAGE. 
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 #include "krb5_locl.h"
 RCSID("$Id$");
+
+#ifndef HEIMDAL_SMALLER
 
 /*
  * Glue for MIT API
  */
 
 krb5_error_code KRB5_LIB_FUNCTION
-krb5_c_make_checksum(krb5_context context, 
-		     krb5_cksumtype cksumtype, 
-		     const krb5_keyblock *key, 
+krb5_c_make_checksum(krb5_context context,
+		     krb5_cksumtype cksumtype,
+		     const krb5_keyblock *key,
 		     krb5_keyusage usage,
-		     const krb5_data *input, 
+		     const krb5_data *input,
 		     krb5_checksum *cksum)
 {
     krb5_error_code ret;
@@ -116,7 +118,7 @@ krb5_c_set_checksum(krb5_context context, krb5_checksum *cksum,
     return der_copy_octet_string(data, &cksum->checksum);
 }
 
-void KRB5_LIB_FUNCTION 
+void KRB5_LIB_FUNCTION
 krb5_free_checksum (krb5_context context, krb5_checksum *cksum)
 {
     krb5_checksum_free(context, cksum);
@@ -179,8 +181,8 @@ krb5_c_checksum_length (krb5_context context, krb5_cksumtype cksumtype,
 }
 
 krb5_error_code KRB5_LIB_FUNCTION
-krb5_c_block_size(krb5_context context, 
-		  krb5_enctype enctype, 
+krb5_c_block_size(krb5_context context,
+		  krb5_enctype enctype,
 		  size_t *blocksize)
 {
     krb5_error_code ret;
@@ -202,11 +204,11 @@ krb5_c_block_size(krb5_context context,
 }
 
 krb5_error_code KRB5_LIB_FUNCTION
-krb5_c_decrypt(krb5_context context, 
-	       const krb5_keyblock key, 
-	       krb5_keyusage usage, 
-	       const krb5_data *ivec, 
-	       krb5_enc_data *input, 
+krb5_c_decrypt(krb5_context context,
+	       const krb5_keyblock key,
+	       krb5_keyusage usage,
+	       const krb5_data *ivec,
+	       krb5_enc_data *input,
 	       krb5_data *output)
 {
     krb5_error_code ret;
@@ -231,9 +233,9 @@ krb5_c_decrypt(krb5_context context,
 	}
     }
 
-    ret = krb5_decrypt_ivec(context, crypto, usage, 
-			    input->ciphertext.data, input->ciphertext.length, 
-			    output, 
+    ret = krb5_decrypt_ivec(context, crypto, usage,
+			    input->ciphertext.data, input->ciphertext.length,
+			    output,
 			    ivec ? ivec->data : NULL);
 
     krb5_crypto_destroy(context, crypto);
@@ -242,10 +244,10 @@ krb5_c_decrypt(krb5_context context,
 }
 
 krb5_error_code KRB5_LIB_FUNCTION
-krb5_c_encrypt(krb5_context context, 
-	       const krb5_keyblock *key, 
+krb5_c_encrypt(krb5_context context,
+	       const krb5_keyblock *key,
 	       krb5_keyusage usage,
-	       const krb5_data *ivec, 
+	       const krb5_data *ivec,
 	       const krb5_data *input,
 	       krb5_enc_data *output)
 {
@@ -271,9 +273,9 @@ krb5_c_encrypt(krb5_context context,
 	}
     }
 
-    ret = krb5_encrypt_ivec(context, crypto, usage, 
-			    input->data, input->length, 
-			    &output->ciphertext, 
+    ret = krb5_encrypt_ivec(context, crypto, usage,
+			    input->data, input->length,
+			    &output->ciphertext,
 			    ivec ? ivec->data : NULL);
     output->kvno = 0;
     krb5_crypto_getenctype(context, crypto, &output->enctype);
@@ -284,8 +286,8 @@ krb5_c_encrypt(krb5_context context,
 }
 
 krb5_error_code KRB5_LIB_FUNCTION
-krb5_c_encrypt_length(krb5_context context, 
-		      krb5_enctype enctype, 
+krb5_c_encrypt_length(krb5_context context,
+		      krb5_enctype enctype,
 		      size_t inputlen,
 		      size_t *length)
 {
@@ -309,9 +311,9 @@ krb5_c_encrypt_length(krb5_context context,
 }
 
 krb5_error_code KRB5_LIB_FUNCTION
-krb5_c_enctype_compare(krb5_context context, 
+krb5_c_enctype_compare(krb5_context context,
 		       krb5_enctype e1,
-		       krb5_enctype e2, 
+		       krb5_enctype e2,
 		       krb5_boolean *similar)
 {
     *similar = krb5_enctypes_compatible_keys(context, e1, e2);
@@ -320,7 +322,7 @@ krb5_c_enctype_compare(krb5_context context,
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_c_make_random_key(krb5_context context,
-		       krb5_enctype enctype, 
+		       krb5_enctype enctype,
 		       krb5_keyblock *random_key)
 {
     return krb5_generate_random_keyblock(context, enctype, random_key);
@@ -352,7 +354,7 @@ krb5_c_prf_length(krb5_context context,
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_c_prf(krb5_context context,
 	   const krb5_keyblock *key,
-	   const krb5_data *input, 
+	   const krb5_data *input,
 	   krb5_data *output)
 {
     krb5_crypto crypto;
@@ -367,3 +369,5 @@ krb5_c_prf(krb5_context context,
 
     return ret;
 }
+
+#endif /* HEIMDAL_SMALLER */

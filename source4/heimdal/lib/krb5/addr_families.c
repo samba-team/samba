@@ -1,34 +1,34 @@
 /*
- * Copyright (c) 1997-2007 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * Copyright (c) 1997-2007 Kungliga Tekniska HÃ¶gskolan
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * 3. Neither the name of the Institute nor the names of its contributors 
- *    may be used to endorse or promote products derived from this software 
- *    without specific prior written permission. 
+ * 3. Neither the name of the Institute nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
- * SUCH DAMAGE. 
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 #include "krb5_locl.h"
@@ -52,8 +52,8 @@ struct addr_operations {
     int (*order_addr)(krb5_context, const krb5_address*, const krb5_address*);
     int (*free_addr)(krb5_context, krb5_address*);
     int (*copy_addr)(krb5_context, const krb5_address*, krb5_address*);
-    int (*mask_boundary)(krb5_context, const krb5_address*, unsigned long, 
-				     krb5_address*, krb5_address*);
+    int (*mask_boundary)(krb5_context, const krb5_address*, unsigned long,
+			 krb5_address*, krb5_address*);
 };
 
 /*
@@ -203,7 +203,7 @@ ipv4_mask_boundary(krb5_context context, const krb5_address *inaddr,
 
     if (len > 32) {
 	krb5_set_error_message(context, KRB5_PROG_ATYPE_NOSUPP,
-			       "IPv4 prefix too large (%ld)", len);
+			       N_("IPv4 prefix too large (%ld)", "len"), len);
 	return KRB5_PROG_ATYPE_NOSUPP;
     }
     m = m << (32 - len);
@@ -311,7 +311,7 @@ ipv6_h_addr2addr (const char *addr,
 }
 
 /*
- * 
+ *
  */
 
 static krb5_boolean
@@ -319,7 +319,7 @@ ipv6_uninteresting (const struct sockaddr *sa)
 {
     const struct sockaddr_in6 *sin6 = (const struct sockaddr_in6 *)sa;
     const struct in6_addr *in6 = (const struct in6_addr *)&sin6->sin6_addr;
-    
+
     return
 	IN6_IS_ADDR_LINKLOCAL(in6)
 	|| IN6_IS_ADDR_V4COMPAT(in6);
@@ -397,13 +397,13 @@ ipv6_mask_boundary(krb5_context context, const krb5_address *inaddr,
 
     if (len > 128) {
 	krb5_set_error_message(context, KRB5_PROG_ATYPE_NOSUPP,
-			       "IPv6 prefix too large (%ld)", len);
+			       N_("IPv6 prefix too large (%ld)", "length"), len);
 	return KRB5_PROG_ATYPE_NOSUPP;
     }
 
     if (inaddr->address.length != sizeof(addr)) {
 	krb5_set_error_message(context, KRB5_PROG_ATYPE_NOSUPP,
-			       "IPv6 addr bad length");
+			       N_("IPv6 addr bad length", ""));
 	return KRB5_PROG_ATYPE_NOSUPP;
     }
 
@@ -440,6 +440,8 @@ ipv6_mask_boundary(krb5_context context, const krb5_address *inaddr,
 
 #endif /* IPv6 */
 
+#ifndef HEIMDAL_SMALLER
+
 /*
  * table
  */
@@ -452,17 +454,17 @@ struct arange {
 };
 
 static int
-arange_parse_addr (krb5_context context, 
+arange_parse_addr (krb5_context context,
 		   const char *address, krb5_address *addr)
 {
     char buf[1024], *p;
     krb5_address low0, high0;
     struct arange *a;
     krb5_error_code ret;
-    
+
     if(strncasecmp(address, "RANGE:", 6) != 0)
 	return -1;
-    
+
     address += 6;
 
     p = strrchr(address, '/');
@@ -560,7 +562,7 @@ arange_free (krb5_context context, krb5_address *addr)
 
 
 static int
-arange_copy (krb5_context context, const krb5_address *inaddr, 
+arange_copy (krb5_context context, const krb5_address *inaddr,
 	     krb5_address *outaddr)
 {
     krb5_error_code ret;
@@ -626,8 +628,8 @@ arange_print_addr (const krb5_address *addr, char *str, size_t len)
 }
 
 static int
-arange_order_addr(krb5_context context, 
-		  const krb5_address *addr1, 
+arange_order_addr(krb5_context context,
+		  const krb5_address *addr1,
 		  const krb5_address *addr2)
 {
     int tmp1, tmp2, sign;
@@ -663,6 +665,8 @@ arange_order_addr(krb5_context context,
 	return sign * (addr1->addr_type - addr2->addr_type);
     }
 }
+
+#endif /* HEIMDAL_SMALLER */
 
 static int
 addrport_print_addr (const krb5_address *addr, char *str, size_t len)
@@ -713,7 +717,7 @@ addrport_print_addr (const krb5_address *addr, char *str, size_t len)
 
 static struct addr_operations at[] = {
     {AF_INET,	KRB5_ADDRESS_INET, sizeof(struct sockaddr_in),
-     ipv4_sockaddr2addr, 
+     ipv4_sockaddr2addr,
      ipv4_sockaddr2port,
      ipv4_addr2sockaddr,
      ipv4_h_addr2sockaddr,
@@ -722,7 +726,7 @@ static struct addr_operations at[] = {
      NULL, NULL, NULL, ipv4_mask_boundary },
 #ifdef HAVE_IPV6
     {AF_INET6,	KRB5_ADDRESS_INET6, sizeof(struct sockaddr_in6),
-     ipv6_sockaddr2addr, 
+     ipv6_sockaddr2addr,
      ipv6_sockaddr2port,
      ipv6_addr2sockaddr,
      ipv6_h_addr2sockaddr,
@@ -730,14 +734,16 @@ static struct addr_operations at[] = {
      ipv6_uninteresting, ipv6_anyaddr, ipv6_print_addr, ipv6_parse_addr,
      NULL, NULL, NULL, ipv6_mask_boundary } ,
 #endif
-    {KRB5_ADDRESS_ADDRPORT, KRB5_ADDRESS_ADDRPORT, 0,
-     NULL, NULL, NULL, NULL, NULL, 
-     NULL, NULL, addrport_print_addr, NULL, NULL, NULL, NULL },
+#ifndef HEIMDAL_SMALLER
     /* fake address type */
     {KRB5_ADDRESS_ARANGE, KRB5_ADDRESS_ARANGE, sizeof(struct arange),
      NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-     arange_print_addr, arange_parse_addr, 
-     arange_order_addr, arange_free, arange_copy }
+     arange_print_addr, arange_parse_addr,
+     arange_order_addr, arange_free, arange_copy },
+#endif
+    {KRB5_ADDRESS_ADDRPORT, KRB5_ADDRESS_ADDRPORT, 0,
+     NULL, NULL, NULL, NULL, NULL,
+     NULL, NULL, addrport_print_addr, NULL, NULL, NULL, NULL }
 };
 
 static int num_addrs = sizeof(at) / sizeof(at[0]);
@@ -772,7 +778,7 @@ find_atype(int atype)
 
 /**
  * krb5_sockaddr2address stores a address a "struct sockaddr" sa in
- * the krb5_address addr. 
+ * the krb5_address addr.
  *
  * @param context a Keberos context
  * @param sa a struct sockaddr to extract the address from
@@ -790,7 +796,7 @@ krb5_sockaddr2address (krb5_context context,
     struct addr_operations *a = find_af(sa->sa_family);
     if (a == NULL) {
 	krb5_set_error_message (context, KRB5_PROG_ATYPE_NOSUPP,
-				"Address family %d not supported",
+				N_("Address family %d not supported", ""),
 				sa->sa_family);
 	return KRB5_PROG_ATYPE_NOSUPP;
     }
@@ -818,7 +824,7 @@ krb5_sockaddr2port (krb5_context context,
     struct addr_operations *a = find_af(sa->sa_family);
     if (a == NULL) {
 	krb5_set_error_message (context, KRB5_PROG_ATYPE_NOSUPP,
-				"Address family %d not supported",
+				N_("Address family %d not supported", ""),
 				sa->sa_family);
 	return KRB5_PROG_ATYPE_NOSUPP;
     }
@@ -857,14 +863,15 @@ krb5_addr2sockaddr (krb5_context context,
 
     if (a == NULL) {
 	krb5_set_error_message (context, KRB5_PROG_ATYPE_NOSUPP,
-				"Address type %d not supported",
+				N_("Address type %d not supported",
+				   "krb5_address type"),
 				addr->addr_type);
 	return KRB5_PROG_ATYPE_NOSUPP;
     }
     if (a->addr2sockaddr == NULL) {
 	krb5_set_error_message (context,
 				KRB5_PROG_ATYPE_NOSUPP,
-				"Can't convert address type %d to sockaddr",
+				N_("Can't convert address type %d to sockaddr", ""),
 				addr->addr_type);
 	return KRB5_PROG_ATYPE_NOSUPP;
     }
@@ -972,7 +979,7 @@ krb5_h_addr2addr (krb5_context context,
     struct addr_operations *a = find_af(af);
     if (a == NULL) {
 	krb5_set_error_message (context, KRB5_PROG_ATYPE_NOSUPP,
-				"Address family %d not supported", af);
+				N_("Address family %d not supported", ""), af);
 	return KRB5_PROG_ATYPE_NOSUPP;
     }
     return (*a->h_addr2addr)(haddr, addr);
@@ -1006,7 +1013,7 @@ krb5_anyaddr (krb5_context context,
 
     if (a == NULL) {
 	krb5_set_error_message (context, KRB5_PROG_ATYPE_NOSUPP,
-				"Address family %d not supported", af);
+				N_("Address family %d not supported", ""), af);
 	return KRB5_PROG_ATYPE_NOSUPP;
     }
 
@@ -1031,7 +1038,7 @@ krb5_anyaddr (krb5_context context,
  */
 
 krb5_error_code KRB5_LIB_FUNCTION
-krb5_print_address (const krb5_address *addr, 
+krb5_print_address (const krb5_address *addr,
 		    char *str, size_t len, size_t *ret_len)
 {
     struct addr_operations *a = find_atype(addr->addr_type);
@@ -1100,7 +1107,7 @@ krb5_parse_address(krb5_context context,
 		ALLOC_SEQ(addresses, 1);
 		if (addresses->val == NULL) {
 		    krb5_set_error_message(context, ENOMEM,
-					   "malloc: out of memory");
+					   N_("malloc: out of memory", ""));
 		    return ENOMEM;
 		}
 		addresses->val[0] = addr;
@@ -1118,15 +1125,15 @@ krb5_parse_address(krb5_context context,
 				string, gai_strerror(error));
 	return ret2;
     }
-    
+
     n = 0;
     for (a = ai; a != NULL; a = a->ai_next)
 	++n;
 
     ALLOC_SEQ(addresses, n);
     if (addresses->val == NULL) {
-	krb5_set_error_message(context, ENOMEM, 
-			       "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM,
+			       N_("malloc: out of memory", ""));
 	freeaddrinfo(ai);
 	return ENOMEM;
     }
@@ -1147,7 +1154,7 @@ krb5_parse_address(krb5_context context,
 /**
  * krb5_address_order compares the addresses addr1 and addr2 so that
  * it can be used for sorting addresses. If the addresses are the same
- * address krb5_address_order will return 0. Behavies like memcmp(2). 
+ * address krb5_address_order will return 0. Behavies like memcmp(2).
  *
  * @param context a Keberos context
  * @param addr1 krb5_address to compare
@@ -1167,23 +1174,23 @@ krb5_address_order(krb5_context context,
     /* this sucks; what if both addresses have order functions, which
        should we call? this works for now, though */
     struct addr_operations *a;
-    a = find_atype(addr1->addr_type); 
+    a = find_atype(addr1->addr_type);
     if(a == NULL) {
 	krb5_set_error_message (context, KRB5_PROG_ATYPE_NOSUPP,
-				"Address family %d not supported", 
+				N_("Address family %d not supported", ""),
 				addr1->addr_type);
 	return KRB5_PROG_ATYPE_NOSUPP;
     }
-    if(a->order_addr != NULL) 
-	return (*a->order_addr)(context, addr1, addr2); 
-    a = find_atype(addr2->addr_type); 
+    if(a->order_addr != NULL)
+	return (*a->order_addr)(context, addr1, addr2);
+    a = find_atype(addr2->addr_type);
     if(a == NULL) {
 	krb5_set_error_message (context, KRB5_PROG_ATYPE_NOSUPP,
-				"Address family %d not supported", 
-			       addr2->addr_type);
+				N_("Address family %d not supported", ""),
+				addr2->addr_type);
 	return KRB5_PROG_ATYPE_NOSUPP;
     }
-    if(a->order_addr != NULL) 
+    if(a->order_addr != NULL)
 	return (*a->order_addr)(context, addr1, addr2);
 
     if(addr1->addr_type != addr2->addr_type)
@@ -1367,7 +1374,7 @@ krb5_append_addresses(krb5_context context,
 	tmp = realloc(dest->val, (dest->len + source->len) * sizeof(*tmp));
 	if(tmp == NULL) {
 	    krb5_set_error_message (context, ENOMEM,
-				    "realloc: out of memory");
+				    N_("malloc: out of memory", ""));
 	    return ENOMEM;
 	}
 	dest->val = tmp;
@@ -1375,8 +1382,8 @@ krb5_append_addresses(krb5_context context,
 	    /* skip duplicates */
 	    if(krb5_address_search(context, &source->val[i], dest))
 		continue;
-	    ret = krb5_copy_address(context, 
-				    &source->val[i], 
+	    ret = krb5_copy_address(context,
+				    &source->val[i],
 				    &dest->val[dest->len]);
 	    if(ret)
 		return ret;
@@ -1410,14 +1417,14 @@ krb5_make_addrport (krb5_context context,
     *res = malloc (sizeof(**res));
     if (*res == NULL) {
 	krb5_set_error_message (context, ENOMEM,
-				"malloc: out of memory");
+				N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     (*res)->addr_type = KRB5_ADDRESS_ADDRPORT;
     ret = krb5_data_alloc (&(*res)->address, len);
     if (ret) {
 	krb5_set_error_message (context, ret,
-				"malloc: out of memory");
+				N_("malloc: out of memory", ""));
 	free (*res);
 	*res = NULL;
 	return ret;
@@ -1478,7 +1485,8 @@ krb5_address_prefixlen_boundary(krb5_context context,
     if(a != NULL && a->mask_boundary != NULL)
 	return (*a->mask_boundary)(context, inaddr, prefixlen, low, high);
     krb5_set_error_message(context, KRB5_PROG_ATYPE_NOSUPP,
-			  "Address family %d doesn't support "
-			  "address mask operation", inaddr->addr_type);
+			   N_("Address family %d doesn't support "
+			      "address mask operation", ""),
+			   inaddr->addr_type);
     return KRB5_PROG_ATYPE_NOSUPP;
 }

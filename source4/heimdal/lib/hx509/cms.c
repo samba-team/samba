@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003 - 2007 Kungliga Tekniska Högskolan
+ * Copyright (c) 2003 - 2007 Kungliga Tekniska HÃ¶gskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  *
@@ -38,7 +38,7 @@ RCSID("$Id$");
  * @page page_cms CMS/PKCS7 message functions.
  *
  * CMS is defined in RFC 3369 and is an continuation of the RSA Labs
- * standard PKCS7. The basic messages in CMS is 
+ * standard PKCS7. The basic messages in CMS is
  *
  * - SignedData
  *   Data signed with private key (RSA, DSA, ECDSA) or secret
@@ -68,7 +68,7 @@ RCSID("$Id$");
  * der_free_octet_string().
  *
  * @return Returns an hx509 error code.
- * 
+ *
  * @ingroup hx509_cms
  */
 
@@ -122,7 +122,7 @@ hx509_cms_wrap_ContentInfo(const heim_oid *oid,
  * diffrence between no data and the zero length data.
  *
  * @return Returns an hx509 error code.
- * 
+ *
  * @ingroup hx509_cms
  */
 
@@ -709,8 +709,8 @@ any_to_certs(hx509_context context, const SignedData *sd, hx509_certs certs)
     for (i = 0; i < sd->certificates->len; i++) {
 	hx509_cert c;
 
-	ret = hx509_cert_init_data(context, 
-				   sd->certificates->val[i].data, 
+	ret = hx509_cert_init_data(context,
+				   sd->certificates->val[i].data,
 				   sd->certificates->val[i].length,
 				   &c);
 	if (ret)
@@ -838,7 +838,7 @@ hx509_cms_verify_signed(hx509_context context,
 	    continue;
 	}
 
-	ret = find_CMSIdentifier(context, &signer_info->sid, certs, 
+	ret = find_CMSIdentifier(context, &signer_info->sid, certs,
 				 _hx509_verify_get_time(ctx), &cert,
 				 HX509_QUERY_KU_DIGITALSIGNATURE);
 	if (ret)
@@ -1314,7 +1314,7 @@ hx509_cms_create_signed_1(hx509_context context,
      */
     if (pool) {
 	_hx509_calculate_path(context,
-			      HX509_CALCULATE_PATH_NO_ANCHOR,			      
+			      HX509_CALCULATE_PATH_NO_ANCHOR,			
 			      time(NULL),
 			      anchors,
 			      0,

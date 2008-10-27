@@ -1,34 +1,34 @@
 /*
- * Copyright (c) 2006 - 2007 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * Copyright (c) 2006 - 2007 Kungliga Tekniska HÃ¶gskolan
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * 3. Neither the name of the Institute nor the names of its contributors 
- *    may be used to endorse or promote products derived from this software 
- *    without specific prior written permission. 
+ * 3. Neither the name of the Institute nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
- * SUCH DAMAGE. 
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 #ifdef HAVE_CONFIG_H
@@ -121,14 +121,14 @@ rsa_private_calculate(mp_int in, mp_int p,  mp_int q,
 {
     mpz_t vp, vq, u;
     mp_int_init(&vp); mp_int_init(&vq); mp_int_init(&u);
-    
+
     /* vq = c ^ (d mod (q - 1)) mod q */
     /* vp = c ^ (d mod (p - 1)) mod p */
     mp_int_mod(in, p, &u);
     mp_int_exptmod(&u, dmp1, p, &vp);
     mp_int_mod(in, q, &u);
     mp_int_exptmod(&u, dmq1, q, &vq);
-    
+
     /* C2 = 1/q mod p  (iqmp) */
     /* u = (vp - vq)C2 mod p. */
     mp_int_sub(&vp, &vq, &u);
@@ -136,11 +136,11 @@ rsa_private_calculate(mp_int in, mp_int p,  mp_int q,
 	mp_int_add(&u, p, &u);
     mp_int_mul(&u, iqmp, &u);
     mp_int_mod(&u, p, &u);
-    
+
     /* c ^ d mod n = vq + u q */
     mp_int_mul(&u, q, &u);
     mp_int_add(&u, &vq, out);
-    
+
     mp_int_clear(&vp);
     mp_int_clear(&vq);
     mp_int_clear(&u);
@@ -153,7 +153,7 @@ rsa_private_calculate(mp_int in, mp_int p,  mp_int q,
  */
 
 static int
-imath_rsa_public_encrypt(int flen, const unsigned char* from, 
+imath_rsa_public_encrypt(int flen, const unsigned char* from,
 			unsigned char* to, RSA* rsa, int padding)
 {
     unsigned char *p, *p0;
@@ -222,7 +222,7 @@ imath_rsa_public_encrypt(int flen, const unsigned char* from,
 }
 
 static int
-imath_rsa_public_decrypt(int flen, const unsigned char* from, 
+imath_rsa_public_decrypt(int flen, const unsigned char* from,
 			 unsigned char* to, RSA* rsa, int padding)
 {
     unsigned char *p;
@@ -294,7 +294,7 @@ imath_rsa_public_decrypt(int flen, const unsigned char* from,
 }
 
 static int
-imath_rsa_private_encrypt(int flen, const unsigned char* from, 
+imath_rsa_private_encrypt(int flen, const unsigned char* from,
 			  unsigned char* to, RSA* rsa, int padding)
 {
     unsigned char *p, *p0;
@@ -381,7 +381,7 @@ imath_rsa_private_encrypt(int flen, const unsigned char* from,
 	mp_int_to_unsigned(&out, to, size);
 	size = ssize;
     }
-    
+
 out:
     mp_int_clear(&e);
     mp_int_clear(&n);
@@ -392,7 +392,7 @@ out:
 }
 
 static int
-imath_rsa_private_decrypt(int flen, const unsigned char* from, 
+imath_rsa_private_decrypt(int flen, const unsigned char* from,
 			  unsigned char* to, RSA* rsa, int padding)
 {
     unsigned char *ptr;
@@ -505,7 +505,7 @@ random_num(mp_int num, size_t len)
 {
     unsigned char *p;
     mp_result res;
- 
+
     len = (len + 7) / 8;
     p = malloc(len);
     if (p == NULL)
@@ -624,7 +624,7 @@ out:
     return ret;
 }
 
-static int 
+static int
 imath_rsa_init(RSA *rsa)
 {
     return 1;

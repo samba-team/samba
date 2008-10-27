@@ -1,34 +1,34 @@
 /*
- * Copyright (c) 1997 - 2005 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * Copyright (c) 1997 - 2005 Kungliga Tekniska HÃ¶gskolan
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * 3. Neither the name of the Institute nor the names of its contributors 
- *    may be used to endorse or promote products derived from this software 
- *    without specific prior written permission. 
+ * 3. Neither the name of the Institute nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
- * SUCH DAMAGE. 
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 #include "gen_locl.h"
@@ -40,7 +40,7 @@ static int used_fail;
 static void
 copy_primitive (const char *typename, const char *from, const char *to)
 {
-    fprintf (codefile, "if(der_copy_%s(%s, %s)) goto fail;\n", 
+    fprintf (codefile, "if(der_copy_%s(%s, %s)) goto fail;\n",
 	     typename, from, to);
     used_fail++;
 }
@@ -53,7 +53,7 @@ copy_type (const char *from, const char *to, const Type *t, int preserve)
 #if 0
 	copy_type (from, to, t->symbol->type, preserve);
 #endif
-	fprintf (codefile, "if(copy_%s(%s, %s)) goto fail;\n", 
+	fprintf (codefile, "if(copy_%s(%s, %s)) goto fail;\n",
 		 t->symbol->gen_name, from, to);
 	used_fail++;
 	break;
@@ -82,7 +82,7 @@ copy_type (const char *from, const char *to, const Type *t, int preserve)
 
 	if(t->members == NULL)
 	    break;
-      
+
 	if ((t->type == TSequence || t->type == TChoice) && preserve) {
 	    fprintf(codefile,
 		    "{ int ret;\n"
@@ -111,12 +111,12 @@ copy_type (const char *from, const char *to, const Type *t, int preserve)
 		fprintf(codefile, "case %s:\n", m->label);
 
 	    asprintf (&fs, "%s(%s)->%s%s",
-		      m->optional ? "" : "&", from, 
+		      m->optional ? "" : "&", from,
 		      t->type == TChoice ? "u." : "", m->gen_name);
 	    if (fs == NULL)
 		errx(1, "malloc");
 	    asprintf (&ts, "%s(%s)->%s%s",
-		      m->optional ? "" : "&", to, 
+		      m->optional ? "" : "&", to,
 		      t->type == TChoice ? "u." : "", m->gen_name);
 	    if (ts == NULL)
 		errx(1, "malloc");
@@ -145,7 +145,7 @@ copy_type (const char *from, const char *to, const Type *t, int preserve)
 			"break;\n"
 			"}\n",
 			have_ellipsis->label,
-			from, have_ellipsis->gen_name, 
+			from, have_ellipsis->gen_name,
 			to, have_ellipsis->gen_name);
 		used_fail++;
 	    }
@@ -159,7 +159,7 @@ copy_type (const char *from, const char *to, const Type *t, int preserve)
 	char *T;
 
 	fprintf (codefile, "if(((%s)->val = "
-		 "malloc((%s)->len * sizeof(*(%s)->val))) == NULL && (%s)->len != 0)\n", 
+		 "malloc((%s)->len * sizeof(*(%s)->val))) == NULL && (%s)->len != 0)\n",
 		 to, from, to, from);
 	fprintf (codefile, "goto fail;\n");
 	used_fail++;

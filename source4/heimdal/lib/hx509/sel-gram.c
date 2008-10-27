@@ -1474,7 +1474,7 @@ yyreduce:
 
   case 23:
 #line 105 "heimdal/lib/hx509/sel-gram.y"
-    { 
+    {
 			(yyval.expr) = _hx509_make_expr(expr_FUNCTION, (yyvsp[(1) - (4)].string), (yyvsp[(3) - (4)].expr)); }
     break;
 
@@ -1485,13 +1485,13 @@ yyreduce:
 
   case 25:
 #line 111 "heimdal/lib/hx509/sel-gram.y"
-    { 
+    {
 			(yyval.expr) = _hx509_make_expr(expr_VAR, (yyvsp[(1) - (3)].string), (yyvsp[(3) - (3)].expr)); }
     break;
 
   case 26:
 #line 113 "heimdal/lib/hx509/sel-gram.y"
-    { 
+    {
 			(yyval.expr) = _hx509_make_expr(expr_VAR, (yyvsp[(1) - (1)].string), NULL); }
     break;
 

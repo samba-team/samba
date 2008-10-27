@@ -1,34 +1,34 @@
 /*
- * Copyright (c) 2003 - 2006 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * Copyright (c) 2003 - 2006 Kungliga Tekniska HÃ¶gskolan
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * 3. Neither the name of the Institute nor the names of its contributors 
- *    may be used to endorse or promote products derived from this software 
- *    without specific prior written permission. 
+ * 3. Neither the name of the Institute nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
- * SUCH DAMAGE. 
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 #include "krb5/gsskrb5_locl.h"
@@ -75,13 +75,13 @@ arcfour_mic_key(krb5_context context, krb5_keyblock *key,
 		void *key6_data, size_t key6_size)
 {
     krb5_error_code ret;
-    
+
     Checksum cksum_k5;
     krb5_keyblock key5;
     char k5_data[16];
-    
+
     Checksum cksum_k6;
-    
+
     char T[4];
 
     memset(T, 0, 4);
@@ -126,7 +126,7 @@ arcfour_mic_cksum(krb5_context context,
     size_t len;
     krb5_crypto crypto;
     krb5_error_code ret;
-    
+
     assert(sgn_cksum_sz == 8);
 
     len = l1 + l2 + l3;
@@ -138,13 +138,13 @@ arcfour_mic_cksum(krb5_context context,
     memcpy(ptr, v1, l1);
     memcpy(ptr + l1, v2, l2);
     memcpy(ptr + l1 + l2, v3, l3);
-    
+
     ret = krb5_crypto_init(context, key, 0, &crypto);
     if (ret) {
 	free(ptr);
 	return ret;
     }
-    
+
     ret = krb5_create_checksum(context,
 			       crypto,
 			       usage,
@@ -176,21 +176,21 @@ _gssapi_get_mic_arcfour(OM_uint32 * minor_status,
     size_t len, total_len;
     u_char k6_data[16], *p0, *p;
     RC4_KEY rc4_key;
-    
+
     _gsskrb5_encap_length (22, &len, &total_len, GSS_KRB5_MECHANISM);
-    
+
     message_token->length = total_len;
     message_token->value  = malloc (total_len);
     if (message_token->value == NULL) {
 	*minor_status = ENOMEM;
 	return GSS_S_FAILURE;
     }
-    
+
     p0 = _gssapi_make_mech_header(message_token->value,
 				  len,
 				  GSS_KRB5_MECHANISM);
     p = p0;
-    
+
     *p++ = 0x01; /* TOK_ID */
     *p++ = 0x01;
     *p++ = 0x11; /* SGN_ALG */
@@ -229,12 +229,12 @@ _gssapi_get_mic_arcfour(OM_uint32 * minor_status,
 				     &seq_number);
     p = p0 + 8; /* SND_SEQ */
     _gsskrb5_encode_be_om_uint32(seq_number, p);
-    
+
     krb5_auth_con_setlocalseqnumber (context,
 				     context_handle->auth_context,
 				     ++seq_number);
     HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
-    
+
     memset (p + 4, (context_handle->more_flags & LOCAL) ? 0 : 0xff, 4);
 
     RC4_set_key (&rc4_key, sizeof(k6_data), k6_data);
@@ -242,7 +242,7 @@ _gssapi_get_mic_arcfour(OM_uint32 * minor_status,
 	
     memset(&rc4_key, 0, sizeof(rc4_key));
     memset(k6_data, 0, sizeof(k6_data));
-    
+
     *minor_status = 0;
     return GSS_S_COMPLETE;
 }
@@ -264,7 +264,7 @@ _gssapi_verify_mic_arcfour(OM_uint32 * minor_status,
     u_char SND_SEQ[8], cksum_data[8], *p;
     char k6_data[16];
     int cmp;
-    
+
     if (qop_state)
 	*qop_state = 0;
 
@@ -275,7 +275,7 @@ _gssapi_verify_mic_arcfour(OM_uint32 * minor_status,
 				       GSS_KRB5_MECHANISM);
     if (omret)
 	return omret;
-    
+
     if (memcmp(p, "\x11\x00", 2) != 0) /* SGN_ALG = HMAC MD5 ARCFOUR */
 	return GSS_S_BAD_SIG;
     p += 2;
@@ -330,7 +330,7 @@ _gssapi_verify_mic_arcfour(OM_uint32 * minor_status,
 	*minor_status = 0;
 	return GSS_S_BAD_MIC;
     }
-    
+
     HEIMDAL_MUTEX_lock(&context_handle->ctx_id_mutex);
     omret = _gssapi_msg_order_check(context_handle->order, seq_number);
     HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
@@ -379,7 +379,7 @@ _gssapi_wrap_arcfour(OM_uint32 * minor_status,
 	*minor_status = ENOMEM;
 	return GSS_S_FAILURE;
     }
-    
+
     p0 = _gssapi_make_mech_header(output_message_buffer->value,
 				  len,
 				  GSS_KRB5_MECHANISM);
@@ -418,7 +418,7 @@ _gssapi_wrap_arcfour(OM_uint32 * minor_status,
 	    4);
 
     krb5_generate_random_block(p0 + 24, 8); /* fill in Confounder */
-    
+
     /* p points to data */
     p = p0 + GSS_ARCFOUR_WRAP_TOKEN_SIZE;
     memcpy(p, input_message_buffer->value, input_message_buffer->length);
@@ -428,10 +428,10 @@ _gssapi_wrap_arcfour(OM_uint32 * minor_status,
 
     ret = arcfour_mic_cksum(context,
 			    key, KRB5_KU_USAGE_SEAL,
-			    p0 + 16, 8, /* SGN_CKSUM */ 
+			    p0 + 16, 8, /* SGN_CKSUM */
 			    p0, 8, /* TOK_ID, SGN_ALG, SEAL_ALG, Filler */
 			    p0 + 24, 8, /* Confounder */
-			    p0 + GSS_ARCFOUR_WRAP_TOKEN_SIZE, 
+			    p0 + GSS_ARCFOUR_WRAP_TOKEN_SIZE,
 			    datalen);
     if (ret) {
 	*minor_status = ret;
@@ -516,7 +516,7 @@ OM_uint32 _gssapi_unwrap_arcfour(OM_uint32 *minor_status,
     int cmp;
     int conf_flag;
     size_t padlen = 0, len;
-    
+
     if (conf_state)
 	*conf_state = 0;
     if (qop_state)
@@ -525,7 +525,7 @@ OM_uint32 _gssapi_unwrap_arcfour(OM_uint32 *minor_status,
     p0 = input_message_buffer->value;
 
     if (IS_DCE_STYLE(context_handle)) {
-	len = GSS_ARCFOUR_WRAP_TOKEN_SIZE + 
+	len = GSS_ARCFOUR_WRAP_TOKEN_SIZE +
 	    GSS_ARCFOUR_WRAP_TOKEN_DCE_DER_HEADER_SIZE;
 	if (input_message_buffer->length < len)
 	    return GSS_S_BAD_MECH;
@@ -540,7 +540,7 @@ OM_uint32 _gssapi_unwrap_arcfour(OM_uint32 *minor_status,
 	return omret;
 
     /* length of mech header */
-    len = (p0 - (u_char *)input_message_buffer->value) + 
+    len = (p0 - (u_char *)input_message_buffer->value) +
 	GSS_ARCFOUR_WRAP_TOKEN_SIZE;
 
     if (len > input_message_buffer->length)
@@ -635,7 +635,7 @@ OM_uint32 _gssapi_unwrap_arcfour(OM_uint32 *minor_status,
 	memset(&rc4_key, 0, sizeof(rc4_key));
     } else {
 	memcpy(Confounder, p0 + 24, 8); /* Confounder */
-	memcpy(output_message_buffer->value, 
+	memcpy(output_message_buffer->value,
 	       p0 + GSS_ARCFOUR_WRAP_TOKEN_SIZE,
 	       datalen);
     }
@@ -654,9 +654,9 @@ OM_uint32 _gssapi_unwrap_arcfour(OM_uint32 *minor_status,
     ret = arcfour_mic_cksum(context,
 			    key, KRB5_KU_USAGE_SEAL,
 			    cksum_data, sizeof(cksum_data),
-			    p0, 8, 
+			    p0, 8,
 			    Confounder, sizeof(Confounder),
-			    output_message_buffer->value, 
+			    output_message_buffer->value,
 			    output_message_buffer->length + padlen);
     if (ret) {
 	_gsskrb5_release_buffer(minor_status, output_message_buffer);
@@ -690,10 +690,10 @@ max_wrap_length_arcfour(const gsskrb5_ctx ctx,
 			size_t input_length,
 			OM_uint32 *max_input_size)
 {
-    /* 
+    /*
      * if GSS_C_DCE_STYLE is in use:
      *  - we only need to encapsulate the WRAP token
-     * However, since this is a fixed since, we just 
+     * However, since this is a fixed since, we just
      */
     if (IS_DCE_STYLE(ctx)) {
 	size_t len, total_len;

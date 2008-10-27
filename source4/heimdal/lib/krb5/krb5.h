@@ -1,34 +1,34 @@
 /*
- * Copyright (c) 1997 - 2007 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * Copyright (c) 1997 - 2007 Kungliga Tekniska HÃ¶gskolan
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * 3. Neither the name of the Institute nor the names of its contributors 
- *    may be used to endorse or promote products derived from this software 
- *    without specific prior written permission. 
+ * 3. Neither the name of the Institute nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
- * SUCH DAMAGE. 
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 /* $Id$ */
@@ -205,7 +205,7 @@ typedef enum krb5_key_usage {
     /* acceptor sign in GSSAPI CFX krb5 mechanism */
     KRB5_KU_USAGE_ACCEPTOR_SIGN = 23,
     /* acceptor seal in GSSAPI CFX krb5 mechanism */
-    KRB5_KU_USAGE_INITIATOR_SEAL = 24,       
+    KRB5_KU_USAGE_INITIATOR_SEAL = 24,
     /* initiator sign in GSSAPI CFX krb5 mechanism */
     KRB5_KU_USAGE_INITIATOR_SIGN = 25,
     /* initiator seal in GSSAPI CFX krb5 mechanism */
@@ -253,7 +253,7 @@ typedef struct krb5_preauthdata {
     krb5_preauthdata_entry *val;
 }krb5_preauthdata;
 
-typedef enum krb5_address_type { 
+typedef enum krb5_address_type {
     KRB5_ADDRESS_INET     =   2,
     KRB5_ADDRESS_NETBIOS  =  20,
     KRB5_ADDRESS_INET6    =  24,
@@ -271,7 +271,7 @@ typedef HostAddress krb5_address;
 
 typedef HostAddresses krb5_addresses;
 
-typedef enum krb5_keytype { 
+typedef enum krb5_keytype {
     KEYTYPE_NULL	= 0,
     KEYTYPE_DES		= 1,
     KEYTYPE_DES3	= 7,
@@ -297,6 +297,7 @@ struct krb5_cc_ops;
 				 NULL)
 
 typedef void *krb5_cc_cursor;
+typedef struct krb5_cccol_cursor *krb5_cccol_cursor;
 
 typedef struct krb5_ccache_data {
     const struct krb5_cc_ops *ops;
@@ -396,7 +397,7 @@ typedef struct krb5_creds {
 
 typedef struct krb5_cc_cache_cursor_data *krb5_cc_cache_cursor;
 
-#define KRB5_CC_OPS_VERSION 1
+#define KRB5_CC_OPS_VERSION 2
 
 typedef struct krb5_cc_ops {
     int version;
@@ -408,14 +409,14 @@ typedef struct krb5_cc_ops {
     krb5_error_code (*destroy)(krb5_context, krb5_ccache);
     krb5_error_code (*close)(krb5_context, krb5_ccache);
     krb5_error_code (*store)(krb5_context, krb5_ccache, krb5_creds*);
-    krb5_error_code (*retrieve)(krb5_context, krb5_ccache, 
+    krb5_error_code (*retrieve)(krb5_context, krb5_ccache,
 				krb5_flags, const krb5_creds*, krb5_creds *);
     krb5_error_code (*get_princ)(krb5_context, krb5_ccache, krb5_principal*);
     krb5_error_code (*get_first)(krb5_context, krb5_ccache, krb5_cc_cursor *);
-    krb5_error_code (*get_next)(krb5_context, krb5_ccache, 
+    krb5_error_code (*get_next)(krb5_context, krb5_ccache,
 				krb5_cc_cursor*, krb5_creds*);
     krb5_error_code (*end_get)(krb5_context, krb5_ccache, krb5_cc_cursor*);
-    krb5_error_code (*remove_cred)(krb5_context, krb5_ccache, 
+    krb5_error_code (*remove_cred)(krb5_context, krb5_ccache,
 				   krb5_flags, krb5_creds*);
     krb5_error_code (*set_flags)(krb5_context, krb5_ccache, krb5_flags);
     int (*get_version)(krb5_context, krb5_ccache);
@@ -425,6 +426,7 @@ typedef struct krb5_cc_ops {
     krb5_error_code (*move)(krb5_context, krb5_ccache, krb5_ccache);
     krb5_error_code (*get_default_name)(krb5_context, char **);
     krb5_error_code (*set_default)(krb5_context, krb5_ccache);
+    krb5_error_code (*lastchange)(krb5_context, krb5_ccache, krb5_timestamp *);
 } krb5_cc_ops;
 
 struct krb5_log_facility;
@@ -495,10 +497,10 @@ struct krb5_keytab_data {
     krb5_error_code (*resolve)(krb5_context, const char*, krb5_keytab);
     krb5_error_code (*get_name)(krb5_context, krb5_keytab, char*, size_t);
     krb5_error_code (*close)(krb5_context, krb5_keytab);
-    krb5_error_code (*get)(krb5_context, krb5_keytab, krb5_const_principal, 
+    krb5_error_code (*get)(krb5_context, krb5_keytab, krb5_const_principal,
 			   krb5_kvno, krb5_enctype, krb5_keytab_entry*);
     krb5_error_code (*start_seq_get)(krb5_context, krb5_keytab, krb5_kt_cursor*);
-    krb5_error_code (*next_entry)(krb5_context, krb5_keytab, 
+    krb5_error_code (*next_entry)(krb5_context, krb5_keytab,
 				  krb5_keytab_entry*, krb5_kt_cursor*);
     krb5_error_code (*end_seq_get)(krb5_context, krb5_keytab, krb5_kt_cursor*);
     krb5_error_code (*add)(krb5_context, krb5_keytab, krb5_keytab_entry*);
@@ -556,14 +558,14 @@ typedef struct krb5_auth_context_data {
     uint32_t remote_seqnumber;
 
     krb5_authenticator authenticator;
-  
+
     krb5_pointer i_vector;
-  
+
     krb5_rcache rcache;
 
-    krb5_keytype keytype;	/* ¿requested key type ? */
-    krb5_cksumtype cksumtype;	/* ¡requested checksum type! */
-  
+    krb5_keytype keytype;	/* Â¿requested key type ? */
+    krb5_cksumtype cksumtype;	/* Â¡requested checksum type! */
+
 }krb5_auth_context_data, *krb5_auth_context;
 
 typedef struct {
@@ -722,8 +724,8 @@ enum {
     KRB5_KRBHST_FLAGS_LARGE_MSG	  = 2
 };
 
-typedef krb5_error_code (*krb5_send_to_kdc_func)(krb5_context, 
-						 void *, 
+typedef krb5_error_code (*krb5_send_to_kdc_func)(krb5_context,
+						 void *,
 						 krb5_krbhst_info *,
 						 time_t timeout,
 						 const krb5_data *,
@@ -779,6 +781,8 @@ typedef struct krb5_crypto_iov {
 #define KRB5_CRYPTO_TYPE_PADDING	4
    /* OUT krb5_crypto_length(KRB5_CRYPTO_TYPE_TRAILER) */
 #define KRB5_CRYPTO_TYPE_TRAILER	5
+   /* OUT krb5_crypto_length(KRB5_CRYPTO_TYPE_CHECKSUM) */
+#define KRB5_CRYPTO_TYPE_CHECKSUM	6
     krb5_data data;
 } krb5_crypto_iov;
 

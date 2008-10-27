@@ -1,34 +1,34 @@
 /*
- * Copyright (c) 2006 - 2007 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * Copyright (c) 2006 - 2007 Kungliga Tekniska HÃ¶gskolan
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * 3. Neither the name of the Institute nor the names of its contributors 
- *    may be used to endorse or promote products derived from this software 
- *    without specific prior written permission. 
+ * 3. Neither the name of the Institute nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
- * SUCH DAMAGE. 
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 /**
@@ -234,19 +234,19 @@ verify_ocsp(hx509_context context,
 	    goto out;
 	}
 
-	ret = hx509_cert_check_eku(context, signer, 
+	ret = hx509_cert_check_eku(context, signer,
 				   oid_id_pkix_kp_OCSPSigning(), 0);
 	if (ret)
 	    goto out;
     }
 
     ret = _hx509_verify_signature_bitstring(context,
-					    _hx509_get_cert(signer), 
+					    _hx509_get_cert(signer),
 					    &ocsp->ocsp.signatureAlgorithm,
 					    &ocsp->ocsp.tbsResponseData._save,
 					    &ocsp->ocsp.signature);
     if (ret) {
-	hx509_set_error_string(context, HX509_ERROR_APPEND, ret, 
+	hx509_set_error_string(context, HX509_ERROR_APPEND, ret,
 			       "OCSP signature invalid");
 	goto out;
     }
@@ -294,7 +294,7 @@ parse_ocsp_basic(const void *data, size_t length, OCSPBasicOCSPResponse *basic)
 	return EINVAL;
     }
 
-    ret = der_heim_oid_cmp(&resp.responseBytes->responseType, 
+    ret = der_heim_oid_cmp(&resp.responseBytes->responseType,
 			   oid_id_pkix_ocsp_basic());
     if (ret != 0) {
 	free_OCSPResponse(&resp);
@@ -352,7 +352,7 @@ load_ocsp(hx509_context context, struct revoke_ocsp *ocsp)
     if (basic.certs) {
 	int i;
 
-	ret = hx509_certs_init(context, "MEMORY:ocsp-certs", 0, 
+	ret = hx509_certs_init(context, "MEMORY:ocsp-certs", 0,
 			       NULL, &certs);
 	if (ret) {
 	    free_OCSPBasicOCSPResponse(&basic);
@@ -361,11 +361,11 @@ load_ocsp(hx509_context context, struct revoke_ocsp *ocsp)
 
 	for (i = 0; i < basic.certs->len; i++) {
 	    hx509_cert c;
-	    
+	
 	    ret = hx509_cert_init(context, &basic.certs->val[i], &c);
 	    if (ret)
 		continue;
-	    
+	
 	    ret = hx509_certs_add(context, certs, c);
 	    hx509_cert_free(c);
 	    if (ret)
@@ -420,7 +420,7 @@ hx509_revoke_add_ocsp(hx509_context context,
 	    return 0;
     }
 
-    data = realloc(ctx->ocsps.val, 
+    data = realloc(ctx->ocsps.val,
 		   (ctx->ocsps.len + 1) * sizeof(ctx->ocsps.val[0]));
     if (data == NULL) {
 	hx509_clear_error_string(context);
@@ -429,7 +429,7 @@ hx509_revoke_add_ocsp(hx509_context context,
 
     ctx->ocsps.val = data;
 
-    memset(&ctx->ocsps.val[ctx->ocsps.len], 0, 
+    memset(&ctx->ocsps.val[ctx->ocsps.len], 0,
 	   sizeof(ctx->ocsps.val[0]));
 
     ctx->ocsps.val[ctx->ocsps.len].path = strdup(path);
@@ -507,7 +507,7 @@ verify_crl(hx509_context context,
     }
 
     ret = _hx509_verify_signature_bitstring(context,
-					    _hx509_get_cert(signer), 
+					    _hx509_get_cert(signer),
 					    &crl->signatureAlgorithm,
 					    &crl->tbsCertList._save,
 					    &crl->signatureValue);
@@ -517,7 +517,7 @@ verify_crl(hx509_context context,
 	goto out;
     }
 
-    /* 
+    /*
      * If signer is not CA cert, need to check revoke status of this
      * CRL signing cert too, this include all parent CRL signer cert
      * up to the root *sigh*, assume root at least hve CERTSIGN flag
@@ -540,7 +540,7 @@ verify_crl(hx509_context context,
 	}
 
 	ret = hx509_revoke_verify(context,
-				  ctx, 
+				  ctx,
 				  certs,
 				  time_now,
 				  signer,
@@ -621,7 +621,7 @@ hx509_revoke_add_crl(hx509_context context,
 	return HX509_UNSUPPORTED_OPERATION;
     }
 
-    
+
     path += 5;
 
     for (i = 0; i < ctx->crls.len; i++) {
@@ -629,7 +629,7 @@ hx509_revoke_add_crl(hx509_context context,
 	    return 0;
     }
 
-    data = realloc(ctx->crls.val, 
+    data = realloc(ctx->crls.val,
 		   (ctx->crls.len + 1) * sizeof(ctx->crls.val[0]));
     if (data == NULL) {
 	hx509_clear_error_string(context);
@@ -645,7 +645,7 @@ hx509_revoke_add_crl(hx509_context context,
 	return ENOMEM;
     }
 
-    ret = load_crl(path, 
+    ret = load_crl(path,
 		   &ctx->crls.val[ctx->crls.len].last_modfied,
 		   &ctx->crls.val[ctx->crls.len].crl);
     if (ret) {
@@ -719,7 +719,7 @@ hx509_revoke_verify(hx509_context context,
 				   &c->tbsCertificate.serialNumber);
 	    if (ret != 0)
 		continue;
-	    
+	
 	    /* verify issuer hashes hash */
 	    ret = _hx509_verify_signature(context,
 					  NULL,
@@ -744,7 +744,7 @@ hx509_revoke_verify(hx509_context context,
 	    case choice_OCSPCertStatus_good:
 		break;
 	    case choice_OCSPCertStatus_revoked:
-		hx509_set_error_string(context, 0, 
+		hx509_set_error_string(context, 0,
 				       HX509_CERT_REVOKED,
 				       "Certificate revoked by issuer in OCSP");
 		return HX509_CERT_REVOKED;
@@ -753,7 +753,7 @@ hx509_revoke_verify(hx509_context context,
 	    }
 
 	    /* don't allow the update to be in the future */
-	    if (ocsp->ocsp.tbsResponseData.responses.val[j].thisUpdate > 
+	    if (ocsp->ocsp.tbsResponseData.responses.val[j].thisUpdate >
 		now + context->ocsp_time_diff)
 		continue;
 
@@ -774,7 +774,7 @@ hx509_revoke_verify(hx509_context context,
 	int diff;
 
 	/* check if cert.issuer == crls.val[i].crl.issuer */
-	ret = _hx509_name_cmp(&c->tbsCertificate.issuer, 
+	ret = _hx509_name_cmp(&c->tbsCertificate.issuer,
 			      &crl->crl.tbsCertList.issuer, &diff);
 	if (ret || diff)
 	    continue;
@@ -807,7 +807,7 @@ hx509_revoke_verify(hx509_context context,
 	if (crl->crl.tbsCertList.crlExtensions) {
 	    for (j = 0; j < crl->crl.tbsCertList.crlExtensions->len; j++) {
 		if (crl->crl.tbsCertList.crlExtensions->val[j].critical) {
-		    hx509_set_error_string(context, 0, 
+		    hx509_set_error_string(context, 0,
 					   HX509_CRL_UNKNOWN_EXTENSION,
 					   "Unknown CRL extension");
 		    return HX509_CRL_UNKNOWN_EXTENSION;
@@ -830,13 +830,13 @@ hx509_revoke_verify(hx509_context context,
 	    t = _hx509_Time2time_t(&crl->crl.tbsCertList.revokedCertificates->val[j].revocationDate);
 	    if (t > now)
 		continue;
-	    
+	
 	    if (crl->crl.tbsCertList.revokedCertificates->val[j].crlEntryExtensions)
 		for (k = 0; k < crl->crl.tbsCertList.revokedCertificates->val[j].crlEntryExtensions->len; k++)
 		    if (crl->crl.tbsCertList.revokedCertificates->val[j].crlEntryExtensions->val[k].critical)
 			return HX509_CRL_UNKNOWN_EXTENSION;
-	    
-	    hx509_set_error_string(context, 0, 
+	
+	    hx509_set_error_string(context, 0,
 				   HX509_CERT_REVOKED,
 				   "Certificate revoked by issuer in CRL");
 	    return HX509_CERT_REVOKED;
@@ -848,7 +848,7 @@ hx509_revoke_verify(hx509_context context,
 
     if (context->flags & HX509_CTX_VERIFY_MISSING_OK)
 	return 0;
-    hx509_set_error_string(context, HX509_ERROR_APPEND, 
+    hx509_set_error_string(context, HX509_ERROR_APPEND,
 			   HX509_REVOKE_STATUS_MISSING,
 			   "No revoke status found for "
 			   "certificates");
@@ -874,13 +874,13 @@ add_to_req(hx509_context context, void *ptr, hx509_cert cert)
     hx509_query q;
     void *d;
 
-    d = realloc(ctx->req->requestList.val, 
+    d = realloc(ctx->req->requestList.val,
 		sizeof(ctx->req->requestList.val[0]) *
 		(ctx->req->requestList.len + 1));
     if (d == NULL)
 	return ENOMEM;
     ctx->req->requestList.val = d;
-    
+
     one = &ctx->req->requestList.val[ctx->req->requestList.len];
     memset(one, 0, sizeof(*one));
 
@@ -920,7 +920,7 @@ add_to_req(hx509_context context, void *ptr, hx509_cert cert)
 	goto out;
 
     os.data = p->tbsCertificate.subjectPublicKeyInfo.subjectPublicKey.data;
-    os.length = 
+    os.length =
 	p->tbsCertificate.subjectPublicKeyInfo.subjectPublicKey.length / 8;
 
     ret = _hx509_create_signature(context,
@@ -994,9 +994,9 @@ hx509_ocsp_request(hx509_context context,
     hx509_cert_free(ctx.parent);
     if (ret)
 	goto out;
-    
+
     if (nonce) {
-	req.tbsRequest.requestExtensions = 
+	req.tbsRequest.requestExtensions =
 	    calloc(1, sizeof(*req.tbsRequest.requestExtensions));
 	if (req.tbsRequest.requestExtensions == NULL) {
 	    ret = ENOMEM;
@@ -1079,7 +1079,7 @@ hx509_revoke_ocsp_print(hx509_context context, const char *path, FILE *out)
 {
     struct revoke_ocsp ocsp;
     int ret, i;
-    
+
     if (out == NULL)
 	out = stdout;
 
@@ -1122,7 +1122,7 @@ hx509_revoke_ocsp_print(hx509_context context, const char *path, FILE *out)
 	break;
     }
 
-    fprintf(out, "producedAt: %s\n", 
+    fprintf(out, "producedAt: %s\n",
 	    printable_time(ocsp.ocsp.tbsResponseData.producedAt));
 
     fprintf(out, "replies: %d\n", ocsp.ocsp.tbsResponseData.responses.len);
@@ -1145,10 +1145,10 @@ hx509_revoke_ocsp_print(hx509_context context, const char *path, FILE *out)
 
 	fprintf(out, "\t%d. status: %s\n", i, status);
 
-	fprintf(out, "\tthisUpdate: %s\n", 
+	fprintf(out, "\tthisUpdate: %s\n",
 		printable_time(ocsp.ocsp.tbsResponseData.responses.val[i].thisUpdate));
 	if (ocsp.ocsp.tbsResponseData.responses.val[i].nextUpdate)
-	    fprintf(out, "\tproducedAt: %s\n", 
+	    fprintf(out, "\tproducedAt: %s\n",
 		    printable_time(ocsp.ocsp.tbsResponseData.responses.val[i].thisUpdate));
 
     }
@@ -1210,7 +1210,7 @@ hx509_ocsp_verify(hx509_context context,
 			       &c->tbsCertificate.serialNumber);
 	if (ret != 0)
 	    continue;
-	    
+	
 	/* verify issuer hashes hash */
 	ret = _hx509_verify_signature(context,
 				      NULL,
@@ -1229,7 +1229,7 @@ hx509_ocsp_verify(hx509_context context,
 	}
 
 	/* don't allow the update to be in the future */
-	if (basic.tbsResponseData.responses.val[i].thisUpdate > 
+	if (basic.tbsResponseData.responses.val[i].thisUpdate >
 	    now + context->ocsp_time_diff)
 	    continue;
 
@@ -1323,7 +1323,7 @@ hx509_crl_alloc(hx509_context context, hx509_crl *crl)
 
 int
 hx509_crl_add_revoked_certs(hx509_context context,
-			    hx509_crl crl, 
+			    hx509_crl crl,
 			    hx509_certs certs)
 {
     return hx509_certs_merge(context, crl->revoked, certs);
@@ -1386,13 +1386,13 @@ add_revoked(hx509_context context, void *ctx, hx509_cert cert)
     }
     c->revokedCertificates->val = ptr;
 
-    ret = hx509_cert_get_serialnumber(cert, 
+    ret = hx509_cert_get_serialnumber(cert,
 				      &c->revokedCertificates->val[num].userCertificate);
     if (ret) {
 	hx509_clear_error_string(context);
 	return ret;
     }
-    c->revokedCertificates->val[num].revocationDate.element = 
+    c->revokedCertificates->val[num].revocationDate.element =
 	choice_Time_generalTime;
     c->revokedCertificates->val[num].revocationDate.u.generalTime =
 	time(NULL) - 3600 * 24;
@@ -1401,7 +1401,7 @@ add_revoked(hx509_context context, void *ctx, hx509_cert cert)
     c->revokedCertificates->len++;
 
     return 0;
-}    
+}
 
 /**
  * Sign a CRL and return an encode certificate.
@@ -1479,7 +1479,7 @@ hx509_crl_sign(hx509_context context,
 	c.tbsCertList.nextUpdate->u.generalTime = next;
     }
 
-    c.tbsCertList.revokedCertificates = 
+    c.tbsCertList.revokedCertificates =
 	calloc(1, sizeof(*c.tbsCertList.revokedCertificates));
     if (c.tbsCertList.revokedCertificates == NULL) {
 	hx509_set_error_string(context, 0, ENOMEM, "out of memory");

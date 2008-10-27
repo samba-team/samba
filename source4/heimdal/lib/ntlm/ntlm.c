@@ -1,34 +1,34 @@
 /*
- * Copyright (c) 2006 - 2008 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * Copyright (c) 2006 - 2008 Kungliga Tekniska HÃ¶gskolan
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * 3. Neither the name of the Institute nor the names of its contributors 
- *    may be used to endorse or promote products derived from this software 
- *    without specific prior written permission. 
+ * 3. Neither the name of the Institute nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
- * SUCH DAMAGE. 
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 #include <config.h>
@@ -61,7 +61,7 @@ RCSID("$Id$");
  * protocol, both version 1 and 2. The GSS-API mech that uses this
  * library adds support for transport encryption and integrity
  * checking.
- * 
+ *
  * NTLM is a protocol for mutual authentication, its still used in
  * many protocol where Kerberos is not support, one example is
  * EAP/X802.1x mechanism LEAP from Microsoft and Cisco.
@@ -74,12 +74,21 @@ RCSID("$Id$");
  *
  * More information about the NTLM protocol can found here
  * http://davenport.sourceforge.net/ntlm.html .
- * 
+ *
  * The Heimdal projects web page: http://www.h5l.org/
+ *
+ * @section ntlm_example NTLM Example
+ *
+ * Example to to use @ref test_ntlm.c .
+ *
+ * @example test_ntlm.c
+ *
+ * Example how to use the NTLM primitives.
+ *
  */
 
-/** @defgroup ntlm_core Heimdal NTLM library 
- * 
+/** @defgroup ntlm_core Heimdal NTLM library
+ *
  * The NTLM core functions implement the string2key generation
  * function, message encode and decode function, and the hash function
  * functions.
@@ -116,7 +125,7 @@ heim_ntlm_free_buf(struct ntlm_buf *p)
     p->data = NULL;
     p->length = 0;
 }
-    
+
 
 static int
 ascii2ucs2le(const char *string, int up, struct ntlm_buf *buf)
@@ -315,7 +324,7 @@ out:
 
 int
 heim_ntlm_encode_targetinfo(const struct ntlm_targetinfo *ti,
-			    int ucs2, 
+			    int ucs2,
 			    struct ntlm_buf *data)
 {
     krb5_error_code ret;
@@ -400,7 +409,7 @@ heim_ntlm_decode_type1(const struct ntlm_buf *buf, struct ntlm_type1 *data)
     uint32_t type;
     struct sec_buffer domain, hostname;
     krb5_storage *in;
-    
+
     memset(data, 0, sizeof(*data));
 
     in = krb5_storage_from_readonly_mem(buf->data, buf->length);
@@ -458,7 +467,7 @@ heim_ntlm_encode_type1(const struct ntlm_type1 *type1, struct ntlm_buf *data)
     struct sec_buffer domain, hostname;
     krb5_storage *out;
     uint32_t base, flags;
-    
+
     flags = type1->flags;
     base = 16;
 
@@ -489,11 +498,11 @@ heim_ntlm_encode_type1(const struct ntlm_type1 *type1, struct ntlm_buf *data)
 	return ENOMEM;
 
     krb5_storage_set_byteorder(out, KRB5_STORAGE_BYTEORDER_LE);
-    CHECK(krb5_storage_write(out, ntlmsigature, sizeof(ntlmsigature)), 
+    CHECK(krb5_storage_write(out, ntlmsigature, sizeof(ntlmsigature)),
 	  sizeof(ntlmsigature));
     CHECK(krb5_store_uint32(out, 1), 0);
     CHECK(krb5_store_uint32(out, flags), 0);
-    
+
     if (type1->domain)
 	CHECK(store_sec_buffer(out, &domain), 0);
     if (type1->hostname)
@@ -545,7 +554,7 @@ heim_ntlm_decode_type2(const struct ntlm_buf *buf, struct ntlm_type2 *type2)
     struct sec_buffer targetname, targetinfo;
     krb5_storage *in;
     int ucs2 = 0;
-    
+
     memset(type2, 0, sizeof(*type2));
 
     in = krb5_storage_from_readonly_mem(buf->data, buf->length);
@@ -630,7 +639,7 @@ heim_ntlm_encode_type2(const struct ntlm_type2 *type2, struct ntlm_buf *data)
 	return ENOMEM;
 
     krb5_storage_set_byteorder(out, KRB5_STORAGE_BYTEORDER_LE);
-    CHECK(krb5_storage_write(out, ntlmsigature, sizeof(ntlmsigature)), 
+    CHECK(krb5_storage_write(out, ntlmsigature, sizeof(ntlmsigature)),
 	  sizeof(ntlmsigature));
     CHECK(krb5_store_uint32(out, 2), 0);
     CHECK(store_sec_buffer(out, &targetname), 0);
@@ -646,10 +655,10 @@ heim_ntlm_encode_type2(const struct ntlm_type2 *type2, struct ntlm_buf *data)
 	CHECK(krb5_store_uint32(out, type2->os[1]), 0);
     }
     CHECK(put_string(out, ucs2, type2->targetname), 0);
-    CHECK(krb5_storage_write(out, type2->targetinfo.data, 
+    CHECK(krb5_storage_write(out, type2->targetinfo.data,
 			     type2->targetinfo.length),
 	  type2->targetinfo.length);
-    
+
     {
 	krb5_data d;
 	ret = krb5_storage_to_data(out, &d);
@@ -816,7 +825,7 @@ heim_ntlm_encode_type3(const struct ntlm_type3 *type3, struct ntlm_buf *data)
 	return ENOMEM;
 
     krb5_storage_set_byteorder(out, KRB5_STORAGE_BYTEORDER_LE);
-    CHECK(krb5_storage_write(out, ntlmsigature, sizeof(ntlmsigature)), 
+    CHECK(krb5_storage_write(out, ntlmsigature, sizeof(ntlmsigature)),
 	  sizeof(ntlmsigature));
     CHECK(krb5_store_uint32(out, 3), 0);
 
@@ -841,7 +850,7 @@ heim_ntlm_encode_type3(const struct ntlm_type3 *type3, struct ntlm_buf *data)
     CHECK(put_string(out, ucs2, type3->username), 0);
     CHECK(put_string(out, ucs2, type3->ws), 0);
     CHECK(put_buf(out, &type3->sessionkey), 0);
-    
+
     {
 	krb5_data d;
 	ret = krb5_storage_to_data(out, &d);
@@ -861,7 +870,7 @@ out:
  */
 
 static void
-splitandenc(unsigned char *hash, 
+splitandenc(unsigned char *hash,
 	    unsigned char *challange,
 	    unsigned char *answer)
 {
@@ -985,13 +994,13 @@ heim_ntlm_build_ntlm1_master(void *key, size_t len,
 
     if (len != MD4_DIGEST_LENGTH)
 	return EINVAL;
-    
+
     session->length = MD4_DIGEST_LENGTH;
     session->data = malloc(session->length);
     if (session->data == NULL) {
 	session->length = 0;
 	return EINVAL;
-    }    
+    }
     master->length = MD4_DIGEST_LENGTH;
     master->data = malloc(master->length);
     if (master->data == NULL) {
@@ -999,27 +1008,27 @@ heim_ntlm_build_ntlm1_master(void *key, size_t len,
 	heim_ntlm_free_buf(session);
 	return EINVAL;
     }
-    
+
     {
 	unsigned char sessionkey[MD4_DIGEST_LENGTH];
 	MD4_CTX ctx;
-    
+
 	MD4_Init(&ctx);
 	MD4_Update(&ctx, key, len);
 	MD4_Final(sessionkey, &ctx);
 	
 	RC4_set_key(&rc4, sizeof(sessionkey), sessionkey);
     }
-    
+
     if (RAND_bytes(session->data, session->length) != 1) {
 	heim_ntlm_free_buf(master);
 	heim_ntlm_free_buf(session);
 	return EINVAL;
     }
-    
+
     RC4(&rc4, master->length, session->data, master->data);
     memset(&rc4, 0, sizeof(rc4));
-    
+
     return 0;
 }
 
@@ -1121,12 +1130,12 @@ heim_ntlm_calculate_ntlm2(const void *key, size_t len,
     unsigned char clientchallange[8];
     HMAC_CTX c;
     uint64_t t;
-    
+
     t = unix2nttime(time(NULL));
 
     if (RAND_bytes(clientchallange, sizeof(clientchallange)) != 1)
 	return EINVAL;
-    
+
     /* calculate ntlmv2 key */
 
     heim_ntlm_ntlmv2_key(key, len, username, target, ntlmv2);
@@ -1147,10 +1156,10 @@ heim_ntlm_calculate_ntlm2(const void *key, size_t len,
     CHECK(krb5_storage_write(sp, clientchallange, 8), 8);
 
     CHECK(krb5_store_uint32(sp, 0), 0);  /* unknown but zero will work */
-    CHECK(krb5_storage_write(sp, infotarget->data, infotarget->length), 
+    CHECK(krb5_storage_write(sp, infotarget->data, infotarget->length),
 	  infotarget->length);
     CHECK(krb5_store_uint32(sp, 0), 0); /* unknown but zero will work */
-    
+
     CHECK(krb5_storage_to_data(sp, &data), 0);
     krb5_storage_free(sp);
     sp = NULL;
@@ -1171,7 +1180,7 @@ heim_ntlm_calculate_ntlm2(const void *key, size_t len,
     CHECK(krb5_storage_write(sp, ntlmv2answer, 16), 16);
     CHECK(krb5_storage_write(sp, data.data, data.length), data.length);
     krb5_data_free(&data);
-    
+
     CHECK(krb5_storage_to_data(sp, &data), 0);
     krb5_storage_free(sp);
     sp = NULL;
@@ -1228,8 +1237,8 @@ heim_ntlm_verify_ntlm2(const void *key, size_t len,
     time_t authtime;
     uint32_t temp;
 
-    infotarget->length = 0;    
-    infotarget->data = NULL;    
+    infotarget->length = 0;
+    infotarget->data = NULL;
 
     if (answer->length < 16)
 	return EINVAL;
@@ -1279,7 +1288,7 @@ heim_ntlm_verify_ntlm2(const void *key, size_t len,
 	ret = ENOMEM;
 	goto out;
     }
-    CHECK(krb5_storage_read(sp, infotarget->data, infotarget->length), 
+    CHECK(krb5_storage_read(sp, infotarget->data, infotarget->length),
 	  infotarget->length);
     /* XXX remove the unknown ?? */
     krb5_storage_free(sp);

@@ -1,34 +1,34 @@
 /*
- * Copyright (c) 2004 - 2007 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * Copyright (c) 2004 - 2007 Kungliga Tekniska HÃ¶gskolan
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * 3. Neither the name of the Institute nor the names of its contributors 
- *    may be used to endorse or promote products derived from this software 
- *    without specific prior written permission. 
+ * 3. Neither the name of the Institute nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
- * SUCH DAMAGE. 
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 #include "hx_locl.h"
@@ -241,11 +241,11 @@ rsa_verify_signature(hx509_context context,
 	goto out;
     }
 
-    retsize = RSA_public_decrypt(sig->length, (unsigned char *)sig->data, 
+    retsize = RSA_public_decrypt(sig->length, (unsigned char *)sig->data,
 				 to, rsa, RSA_PKCS1_PADDING);
     if (retsize <= 0) {
 	ret = HX509_CRYPTO_SIG_INVALID_FORMAT;
-	hx509_set_error_string(context, 0, ret, 
+	hx509_set_error_string(context, 0, ret,
 			       "RSA public decrypt failed: %d", retsize);
 	free(to);
 	goto out;
@@ -269,8 +269,8 @@ rsa_verify_signature(hx509_context context,
 	}
 	
 	if (sig_alg->digest_oid &&
-	    der_heim_oid_cmp(&di.digestAlgorithm.algorithm, 
-			     (*sig_alg->digest_oid)()) != 0) 
+	    der_heim_oid_cmp(&di.digestAlgorithm.algorithm,
+			     (*sig_alg->digest_oid)()) != 0)
 	{
 	    ret = HX509_CRYPTO_OID_MISMATCH;
 	    hx509_set_error_string(context, 0, ret, "object identifier in RSA sig mismatch");
@@ -323,7 +323,7 @@ rsa_create_signature(hx509_context context,
     const heim_oid *sig_oid;
     size_t size;
     int ret;
-    
+
     if (alg)
 	sig_oid = &alg->algorithm;
     else
@@ -391,8 +391,8 @@ rsa_create_signature(hx509_context context,
 	return ENOMEM;
     }
 
-    ret = RSA_private_encrypt(indata.length, indata.data, 
-			      sig->data, 
+    ret = RSA_private_encrypt(indata.length, indata.data,
+			      sig->data,
 			      signer->private_key.rsa,
 			      RSA_PKCS1_PADDING);
     if (indata.data != data->data)
@@ -407,7 +407,7 @@ rsa_create_signature(hx509_context context,
 	_hx509_abort("RSA signature prelen longer the output len");
 
     sig->length = ret;
-    
+
     return 0;
 }
 
@@ -419,7 +419,7 @@ rsa_private_key_import(hx509_context context,
 {
     const unsigned char *p = data;
 
-    private_key->private_key.rsa = 
+    private_key->private_key.rsa =
 	d2i_RSAPrivateKey(NULL, &p, len);
     if (private_key->private_key.rsa == NULL) {
 	hx509_set_error_string(context, 0, HX509_PARSING_KEY_FAILED,
@@ -449,7 +449,7 @@ rsa_private_key2SPKI(hx509_context context,
     }
     spki->subjectPublicKey.length = len * 8;
 
-    ret = set_digest_alg(&spki->algorithm,oid_id_pkcs1_rsaEncryption(), 
+    ret = set_digest_alg(&spki->algorithm,oid_id_pkcs1_rsaEncryption(),
 			 "\x05\x00", 2);
     if (ret) {
 	hx509_set_error_string(context, 0, ret, "malloc - out of memory");
@@ -468,7 +468,7 @@ rsa_private_key2SPKI(hx509_context context,
 }
 
 static int
-rsa_generate_private_key(hx509_context context, 
+rsa_generate_private_key(hx509_context context,
 			 struct hx509_generate_private_context *ctx,
 			 hx509_private_key private_key)
 {
@@ -485,7 +485,7 @@ rsa_generate_private_key(hx509_context context,
 			       "Failed to generate RSA key");
 	return HX509_PARSING_KEY_FAILED;
     }
-    
+
     e = BN_new();
     BN_set_word(e, default_rsa_e);
 
@@ -508,7 +508,7 @@ rsa_generate_private_key(hx509_context context,
     return 0;
 }
 
-static int 
+static int
 rsa_private_key_export(hx509_context context,
 		       const hx509_private_key key,
 		       heim_octet_string *data)
@@ -533,7 +533,7 @@ rsa_private_key_export(hx509_context context,
 	return ret;
     }
     data->length = ret;
-    
+
     {
 	unsigned char *p = data->data;
 	i2d_RSAPrivateKey(key->private_key.rsa, &p);
@@ -664,7 +664,7 @@ dsa_parse_private_key(hx509_context context,
 {
     const unsigned char *p = data;
 
-    private_key->private_key.dsa = 
+    private_key->private_key.dsa =
 	d2i_DSAPrivateKey(NULL, &p, len);
     if (private_key->private_key.dsa == NULL)
 	return EINVAL;
@@ -689,7 +689,7 @@ sha1_verify_signature(hx509_context context,
 {
     unsigned char digest[SHA_DIGEST_LENGTH];
     SHA_CTX m;
-    
+
     if (sig->length != SHA_DIGEST_LENGTH) {
 	hx509_set_error_string(context, 0, HX509_CRYPTO_SIG_INVALID_FORMAT,
 			       "SHA1 sigature have wrong length");
@@ -719,7 +719,7 @@ sha256_create_signature(hx509_context context,
 			heim_octet_string *sig)
 {
     SHA256_CTX m;
-    
+
     memset(sig, 0, sizeof(*sig));
 
     if (signatureAlgorithm) {
@@ -729,7 +729,7 @@ sha256_create_signature(hx509_context context,
 	if (ret)
 	    return ret;
     }
-	    
+	
 
     sig->data = malloc(SHA256_DIGEST_LENGTH);
     if (sig->data == NULL) {
@@ -755,7 +755,7 @@ sha256_verify_signature(hx509_context context,
 {
     unsigned char digest[SHA256_DIGEST_LENGTH];
     SHA256_CTX m;
-    
+
     if (sig->length != SHA256_DIGEST_LENGTH) {
 	hx509_set_error_string(context, 0, HX509_CRYPTO_SIG_INVALID_FORMAT,
 			       "SHA256 sigature have wrong length");
@@ -785,17 +785,17 @@ sha1_create_signature(hx509_context context,
 		      heim_octet_string *sig)
 {
     SHA_CTX m;
-    
+
     memset(sig, 0, sizeof(*sig));
 
     if (signatureAlgorithm) {
 	int ret;
-	ret = set_digest_alg(signatureAlgorithm, (*sig_alg->sig_oid)(), 
+	ret = set_digest_alg(signatureAlgorithm, (*sig_alg->sig_oid)(),
 			     "\x05\x00", 2);
 	if (ret)
 	    return ret;
     }
-	    
+	
 
     sig->data = malloc(SHA_DIGEST_LENGTH);
     if (sig->data == NULL) {
@@ -821,7 +821,7 @@ md5_verify_signature(hx509_context context,
 {
     unsigned char digest[MD5_DIGEST_LENGTH];
     MD5_CTX m;
-    
+
     if (sig->length != MD5_DIGEST_LENGTH) {
 	hx509_set_error_string(context, 0, HX509_CRYPTO_SIG_INVALID_FORMAT,
 			       "MD5 sigature have wrong length");
@@ -851,7 +851,7 @@ md2_verify_signature(hx509_context context,
 {
     unsigned char digest[MD2_DIGEST_LENGTH];
     MD2_CTX m;
-    
+
     if (sig->length != MD2_DIGEST_LENGTH) {
 	hx509_set_error_string(context, 0, HX509_CRYPTO_SIG_INVALID_FORMAT,
 			       "MD2 sigature have wrong length");
@@ -941,7 +941,7 @@ static const struct signature_alg dsa_sha1_alg = {
     "dsa-with-sha1",
     oid_id_dsa_with_sha1,
     NULL,
-    oid_id_dsa, 
+    oid_id_dsa,
     oid_id_secsig_sha_1,
     PROVIDE_CONF|REQUIRE_SIGNER|SIG_PUBLIC_SIG,
     dsa_verify_signature,
@@ -990,7 +990,7 @@ static const struct signature_alg md2_alg = {
     md2_verify_signature
 };
 
-/* 
+/*
  * Order matter in this structure, "best" first for each "key
  * compatible" type (type is RSA, DSA, none, etc)
  */
@@ -1094,7 +1094,7 @@ _hx509_verify_signature_bitstring(hx509_context context,
 
     os.data = sig->data;
     os.length = sig->length / 8;
-    
+
     return _hx509_verify_signature(context, signer, alg, data, &os);
 }
 
@@ -1111,7 +1111,7 @@ _hx509_create_signature(hx509_context context,
     if (signer && signer->ops && signer->ops->handle_alg &&
 	(*signer->ops->handle_alg)(signer, alg, COT_SIGN))
     {
-	return (*signer->ops->sign)(context, signer, alg, data, 
+	return (*signer->ops->sign)(context, signer, alg, data,
 				    signatureAlgorithm, sig);
     }
 
@@ -1128,7 +1128,7 @@ _hx509_create_signature(hx509_context context,
 	return HX509_CRYPTO_SIG_NO_CONF;
     }
 
-    return (*md->create_signature)(context, md, signer, alg, data, 
+    return (*md->create_signature)(context, md, signer, alg, data,
 				   signatureAlgorithm, sig);
 }
 
@@ -1205,8 +1205,8 @@ _hx509_public_encrypt(hx509_context context,
 	return ENOMEM;
     }
 
-    ret = RSA_public_encrypt(cleartext->length, 
-			     (unsigned char *)cleartext->data, 
+    ret = RSA_public_encrypt(cleartext->length,
+			     (unsigned char *)cleartext->data,
 			     to, rsa, RSA_PKCS1_PADDING);
     RSA_free(rsa);
     if (ret <= 0) {
@@ -1331,7 +1331,7 @@ _hx509_generate_private_key_init(hx509_context context,
     *ctx = NULL;
 
     if (der_heim_oid_cmp(oid, oid_id_pkcs1_rsaEncryption()) != 0) {
-	hx509_set_error_string(context, 0, EINVAL, 
+	hx509_set_error_string(context, 0, EINVAL,
 			       "private key not an RSA key");
 	return EINVAL;
     }
@@ -1408,72 +1408,72 @@ _hx509_generate_private_key(hx509_context context,
 static const heim_octet_string null_entry_oid = { 2, rk_UNCONST("\x05\x00") };
 
 static const unsigned sha512_oid_tree[] = { 2, 16, 840, 1, 101, 3, 4, 2, 3 };
-const AlgorithmIdentifier _hx509_signature_sha512_data = { 
+const AlgorithmIdentifier _hx509_signature_sha512_data = {
     { 9, rk_UNCONST(sha512_oid_tree) }, rk_UNCONST(&null_entry_oid)
 };
 
 static const unsigned sha384_oid_tree[] = { 2, 16, 840, 1, 101, 3, 4, 2, 2 };
-const AlgorithmIdentifier _hx509_signature_sha384_data = { 
+const AlgorithmIdentifier _hx509_signature_sha384_data = {
     { 9, rk_UNCONST(sha384_oid_tree) }, rk_UNCONST(&null_entry_oid)
 };
 
 static const unsigned sha256_oid_tree[] = { 2, 16, 840, 1, 101, 3, 4, 2, 1 };
-const AlgorithmIdentifier _hx509_signature_sha256_data = { 
+const AlgorithmIdentifier _hx509_signature_sha256_data = {
     { 9, rk_UNCONST(sha256_oid_tree) }, rk_UNCONST(&null_entry_oid)
 };
 
 static const unsigned sha1_oid_tree[] = { 1, 3, 14, 3, 2, 26 };
-const AlgorithmIdentifier _hx509_signature_sha1_data = { 
+const AlgorithmIdentifier _hx509_signature_sha1_data = {
     { 6, rk_UNCONST(sha1_oid_tree) }, rk_UNCONST(&null_entry_oid)
 };
 
 static const unsigned md5_oid_tree[] = { 1, 2, 840, 113549, 2, 5 };
-const AlgorithmIdentifier _hx509_signature_md5_data = { 
+const AlgorithmIdentifier _hx509_signature_md5_data = {
     { 6, rk_UNCONST(md5_oid_tree) }, rk_UNCONST(&null_entry_oid)
 };
 
 static const unsigned md2_oid_tree[] = { 1, 2, 840, 113549, 2, 2 };
-const AlgorithmIdentifier _hx509_signature_md2_data = { 
+const AlgorithmIdentifier _hx509_signature_md2_data = {
     { 6, rk_UNCONST(md2_oid_tree) }, rk_UNCONST(&null_entry_oid)
 };
 
 static const unsigned rsa_with_sha512_oid[] ={ 1, 2, 840, 113549, 1, 1, 13 };
-const AlgorithmIdentifier _hx509_signature_rsa_with_sha512_data = { 
+const AlgorithmIdentifier _hx509_signature_rsa_with_sha512_data = {
     { 7, rk_UNCONST(rsa_with_sha512_oid) }, NULL
 };
 
 static const unsigned rsa_with_sha384_oid[] ={ 1, 2, 840, 113549, 1, 1, 12 };
-const AlgorithmIdentifier _hx509_signature_rsa_with_sha384_data = { 
+const AlgorithmIdentifier _hx509_signature_rsa_with_sha384_data = {
     { 7, rk_UNCONST(rsa_with_sha384_oid) }, NULL
 };
 
 static const unsigned rsa_with_sha256_oid[] ={ 1, 2, 840, 113549, 1, 1, 11 };
-const AlgorithmIdentifier _hx509_signature_rsa_with_sha256_data = { 
+const AlgorithmIdentifier _hx509_signature_rsa_with_sha256_data = {
     { 7, rk_UNCONST(rsa_with_sha256_oid) }, NULL
 };
 
 static const unsigned rsa_with_sha1_oid[] ={ 1, 2, 840, 113549, 1, 1, 5 };
-const AlgorithmIdentifier _hx509_signature_rsa_with_sha1_data = { 
+const AlgorithmIdentifier _hx509_signature_rsa_with_sha1_data = {
     { 7, rk_UNCONST(rsa_with_sha1_oid) }, NULL
 };
 
 static const unsigned rsa_with_md5_oid[] ={ 1, 2, 840, 113549, 1, 1, 4 };
-const AlgorithmIdentifier _hx509_signature_rsa_with_md5_data = { 
+const AlgorithmIdentifier _hx509_signature_rsa_with_md5_data = {
     { 7, rk_UNCONST(rsa_with_md5_oid) }, NULL
 };
 
 static const unsigned rsa_with_md2_oid[] ={ 1, 2, 840, 113549, 1, 1, 2 };
-const AlgorithmIdentifier _hx509_signature_rsa_with_md2_data = { 
+const AlgorithmIdentifier _hx509_signature_rsa_with_md2_data = {
     { 7, rk_UNCONST(rsa_with_md2_oid) }, NULL
 };
 
 static const unsigned rsa_oid[] ={ 1, 2, 840, 113549, 1, 1, 1 };
-const AlgorithmIdentifier _hx509_signature_rsa_data = { 
+const AlgorithmIdentifier _hx509_signature_rsa_data = {
     { 7, rk_UNCONST(rsa_oid) }, NULL
 };
 
 static const unsigned rsa_pkcs1_x509_oid[] ={ 1, 2, 752, 43, 16, 1 };
-const AlgorithmIdentifier _hx509_signature_rsa_pkcs1_x509_data = { 
+const AlgorithmIdentifier _hx509_signature_rsa_pkcs1_x509_data = {
     { 6, rk_UNCONST(rsa_pkcs1_x509_oid) }, NULL
 };
 
@@ -1564,11 +1564,11 @@ hx509_crypto_aes256_cbc(void)
  *
  */
 
-const AlgorithmIdentifier * _hx509_crypto_default_sig_alg = 
+const AlgorithmIdentifier * _hx509_crypto_default_sig_alg =
     &_hx509_signature_rsa_with_sha1_data;
-const AlgorithmIdentifier * _hx509_crypto_default_digest_alg = 
+const AlgorithmIdentifier * _hx509_crypto_default_digest_alg =
     &_hx509_signature_sha1_data;
-const AlgorithmIdentifier * _hx509_crypto_default_secret_alg = 
+const AlgorithmIdentifier * _hx509_crypto_default_secret_alg =
     &_hx509_crypto_aes128_cbc_data;
 
 /*
@@ -1635,7 +1635,7 @@ _hx509_private_key_assign_rsa(hx509_private_key key, void *ptr)
     key->md = &pkcs1_rsa_sha1_alg;
 }
 
-int 
+int
 _hx509_private_key_oid(hx509_context context,
 		       const hx509_private_key key,
 		       heim_oid *data)
@@ -1657,7 +1657,7 @@ _hx509_private_key_exportable(hx509_private_key key)
 
 BIGNUM *
 _hx509_private_key_get_internal(hx509_context context,
-				hx509_private_key key, 
+				hx509_private_key key,
 				const char *type)
 {
     if (key->ops->get_internal == NULL)
@@ -1665,7 +1665,7 @@ _hx509_private_key_get_internal(hx509_context context,
     return (*key->ops->get_internal)(context, key, type);
 }
 
-int 
+int
 _hx509_private_key_export(hx509_context context,
 			  const hx509_private_key key,
 			  heim_octet_string *data)
@@ -1688,7 +1688,7 @@ struct hx509cipher {
     const EVP_CIPHER *(*evp_func)(void);
     int (*get_params)(hx509_context, const hx509_crypto,
 		      const heim_octet_string *, heim_octet_string *);
-    int (*set_params)(hx509_context, const heim_octet_string *, 
+    int (*set_params)(hx509_context, const heim_octet_string *,
 		      hx509_crypto, heim_octet_string *);
 };
 
@@ -2063,7 +2063,7 @@ hx509_crypto_set_random_key(hx509_crypto crypto, heim_octet_string *key)
 
 int
 hx509_crypto_set_params(hx509_context context,
-			hx509_crypto crypto, 
+			hx509_crypto crypto,
 			const heim_octet_string *param,
 			heim_octet_string *ivec)
 {
@@ -2072,7 +2072,7 @@ hx509_crypto_set_params(hx509_context context,
 
 int
 hx509_crypto_get_params(hx509_context context,
-			hx509_crypto crypto, 
+			hx509_crypto crypto,
 			const heim_octet_string *ivec,
 			heim_octet_string *param)
 {
@@ -2128,7 +2128,7 @@ hx509_crypto_encrypt(hx509_crypto crypto,
 	ret = ENOMEM;
 	goto out;
     }
-    
+
     if (EVP_CIPHER_block_size(crypto->c) == 1) {
 	padsize = 0;
     } else {
@@ -2222,7 +2222,7 @@ hx509_crypto_decrypt(hx509_crypto crypto,
 
     if (EVP_CIPHER_block_size(crypto->c) > 1) {
 	int padsize;
-	unsigned char *p; 
+	unsigned char *p;
 	int j, bsize = EVP_CIPHER_block_size(crypto->c);
 
 	if (clear->length < bsize) {
@@ -2259,7 +2259,7 @@ hx509_crypto_decrypt(hx509_crypto crypto,
 typedef int (*PBE_string2key_func)(hx509_context,
 				   const char *,
 				   const heim_octet_string *,
-				   hx509_crypto *, heim_octet_string *, 
+				   hx509_crypto *, heim_octet_string *,
 				   heim_octet_string *,
 				   const heim_oid *, const EVP_MD *);
 
@@ -2267,7 +2267,7 @@ static int
 PBE_string2key(hx509_context context,
 	       const char *password,
 	       const heim_octet_string *parameters,
-	       hx509_crypto *crypto, 
+	       hx509_crypto *crypto,
 	       heim_octet_string *key, heim_octet_string *iv,
 	       const heim_oid *enc_oid,
 	       const EVP_MD *md)
@@ -2296,13 +2296,13 @@ PBE_string2key(hx509_context context,
     salt = p12params.salt.data;
     saltlen = p12params.salt.length;
 
-    if (!PKCS12_key_gen (password, passwordlen, salt, saltlen, 
+    if (!PKCS12_key_gen (password, passwordlen, salt, saltlen,
 			 PKCS12_KEY_ID, iter, key->length, key->data, md)) {
 	ret = HX509_CRYPTO_INTERNAL_ERROR;
 	goto out;
     }
-    
-    if (!PKCS12_key_gen (password, passwordlen, salt, saltlen, 
+
+    if (!PKCS12_key_gen (password, passwordlen, salt, saltlen,
 			 PKCS12_IV_ID, iter, iv->length, iv->data, md)) {
 	ret = HX509_CRYPTO_INTERNAL_ERROR;
 	goto out;
@@ -2325,8 +2325,8 @@ out:
 }
 
 static const heim_oid *
-find_string2key(const heim_oid *oid, 
-		const EVP_CIPHER **c, 
+find_string2key(const heim_oid *oid,
+		const EVP_CIPHER **c,
 		const EVP_MD **md,
 		PBE_string2key_func *s2k)
 {
@@ -2439,7 +2439,7 @@ _hx509_pbe_decrypt(hx509_context context,
 	else
 	    password = NULL;
 
-	ret = (*s2k)(context, password, ai->parameters, &crypto, 
+	ret = (*s2k)(context, password, ai->parameters, &crypto,
 		     &key, &iv, enc_oid, md);
 	if (ret)
 	    goto out;
@@ -2452,7 +2452,7 @@ _hx509_pbe_decrypt(hx509_context context,
 	hx509_crypto_destroy(crypto);
 	if (ret == 0)
 	    goto out;
-				   
+				
     }
 out:
     if (key.data)
@@ -2510,7 +2510,7 @@ _hx509_match_keys(hx509_cert c, hx509_private_key private_key)
     rsa->dmq1 = BN_dup(private_key->private_key.rsa->dmq1);
     rsa->iqmp = BN_dup(private_key->private_key.rsa->iqmp);
 
-    if (rsa->n == NULL || rsa->e == NULL || 
+    if (rsa->n == NULL || rsa->e == NULL ||
 	rsa->d == NULL || rsa->p == NULL|| rsa->q == NULL ||
 	rsa->dmp1 == NULL || rsa->dmq1 == NULL) {
 	RSA_free(rsa);
@@ -2556,13 +2556,13 @@ hx509_crypto_select(const hx509_context context,
 	def = _hx509_crypto_default_digest_alg;
     } else if (type == HX509_SELECT_PUBLIC_SIG) {
 	bits = SIG_PUBLIC_SIG;
-	/* XXX depend on `source´ and `peer´ */
+	/* XXX depend on `sourceÂ´ and `peerÂ´ */
 	def = _hx509_crypto_default_sig_alg;
     } else if (type == HX509_SELECT_SECRET_ENC) {
 	bits = SIG_SECRET;
 	def = _hx509_crypto_default_secret_alg;
     } else {
-	hx509_set_error_string(context, 0, EINVAL, 
+	hx509_set_error_string(context, 0, EINVAL,
 			       "Unknown type %d of selection", type);
 	return EINVAL;
     }
@@ -2576,10 +2576,10 @@ hx509_crypto_select(const hx509_context context,
 	    for (j = 0; sig_algs[j]; j++) {
 		if ((sig_algs[j]->flags & bits) != bits)
 		    continue;
-		if (der_heim_oid_cmp((*sig_algs[j]->sig_oid)(), 
+		if (der_heim_oid_cmp((*sig_algs[j]->sig_oid)(),
 				     &peer->val[i].algorithm) != 0)
 		    continue;
-		if (keytype && sig_algs[j]->key_oid && 
+		if (keytype && sig_algs[j]->key_oid &&
 		    der_heim_oid_cmp(keytype, (*sig_algs[j]->key_oid)()))
 		    continue;
 
@@ -2633,7 +2633,7 @@ hx509_crypto_available(hx509_context context,
     } else if (type == HX509_SELECT_PUBLIC_SIG) {
 	bits = SIG_PUBLIC_SIG;
     } else {
-	hx509_set_error_string(context, 0, EINVAL, 
+	hx509_set_error_string(context, 0, EINVAL,
 			       "Unknown type %d of available", type);
 	return EINVAL;
     }
@@ -2647,7 +2647,7 @@ hx509_crypto_available(hx509_context context,
 	    continue;
 	if (sig_algs[i]->sig_alg == NULL)
 	    continue;
-	if (keytype && sig_algs[i]->key_oid && 
+	if (keytype && sig_algs[i]->key_oid &&
 	    der_heim_oid_cmp((*sig_algs[i]->key_oid)(), keytype))
 	    continue;
 
@@ -2675,7 +2675,7 @@ hx509_crypto_available(hx509_context context,
 	    if (ptr == NULL)
 		goto out;
 	    *val = ptr;
-	    
+	
 	    ret = copy_AlgorithmIdentifier((ciphers[i].ai_func)(), &(*val)[len]);
 	    if (ret)
 		goto out;
@@ -2703,4 +2703,4 @@ hx509_crypto_free_algs(AlgorithmIdentifier *val,
     for (i = 0; i < len; i++)
 	free_AlgorithmIdentifier(&val[i]);
     free(val);
-}    
+}

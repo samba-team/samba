@@ -1,34 +1,34 @@
 /*
- * Copyright (c) 1997 - 2007 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * Copyright (c) 1997 - 2008 Kungliga Tekniska HÃ¶gskolan
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * 3. Neither the name of the Institute nor the names of its contributors 
- *    may be used to endorse or promote products derived from this software 
- *    without specific prior written permission. 
+ * 3. Neither the name of the Institute nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
- * SUCH DAMAGE. 
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 #include "krb5_locl.h"
@@ -44,14 +44,14 @@ RCSID("$Id$");
  * @param override flag to select if the registration is to overide
  * an existing ops with the same name.
  *
- * @return Return an error code or 0.
+ * @return Return an error code or 0, see krb5_get_error_message().
  *
  * @ingroup krb5_ccache
  */
 
 krb5_error_code KRB5_LIB_FUNCTION
-krb5_cc_register(krb5_context context, 
-		 const krb5_cc_ops *ops, 
+krb5_cc_register(krb5_context context,
+		 const krb5_cc_ops *ops,
 		 krb5_boolean override)
 {
     int i;
@@ -59,9 +59,9 @@ krb5_cc_register(krb5_context context,
     for(i = 0; i < context->num_cc_ops && context->cc_ops[i].prefix; i++) {
 	if(strcmp(context->cc_ops[i].prefix, ops->prefix) == 0) {
 	    if(!override) {
-		krb5_set_error_message(context, 
+		krb5_set_error_message(context,
 				       KRB5_CC_TYPE_EXISTS,
-				       "ccache type %s already exists",
+				       N_("cache type %s already exists", "type"),
 				       ops->prefix);
 		return KRB5_CC_TYPE_EXISTS;
 	    }
@@ -73,13 +73,13 @@ krb5_cc_register(krb5_context context,
 				 (context->num_cc_ops + 1) *
 				 sizeof(*context->cc_ops));
 	if(o == NULL) {
-	    krb5_set_error_message(context, KRB5_CC_NOMEM, 
-				   "malloc: out of memory");
+	    krb5_set_error_message(context, KRB5_CC_NOMEM,
+				   N_("malloc: out of memory", ""));
 	    return KRB5_CC_NOMEM;
 	}
 	context->num_cc_ops++;
 	context->cc_ops = o;
-	memset(context->cc_ops + i, 0, 
+	memset(context->cc_ops + i, 0,
 	       (context->num_cc_ops - i) * sizeof(*context->cc_ops));
     }
     memcpy(&context->cc_ops[i], ops, sizeof(context->cc_ops[i]));
@@ -92,7 +92,7 @@ krb5_cc_register(krb5_context context,
  */
 
 krb5_error_code
-_krb5_cc_allocate(krb5_context context, 
+_krb5_cc_allocate(krb5_context context,
 		  const krb5_cc_ops *ops,
 		  krb5_ccache *id)
 {
@@ -100,7 +100,8 @@ _krb5_cc_allocate(krb5_context context,
 
     p = malloc (sizeof(*p));
     if(p == NULL) {
-	krb5_set_error_message(context, KRB5_CC_NOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, KRB5_CC_NOMEM,
+			       N_("malloc: out of memory", ""));
 	return KRB5_CC_NOMEM;
     }
     p->ops = ops;
@@ -140,7 +141,7 @@ allocate_ccache (krb5_context context,
  * @param id return pointer to a found credential cache.
  *
  * @return Return 0 or an error code. In case of an error, id is set
- * to NULL.
+ * to NULL, see krb5_get_error_message().
  *
  * @ingroup krb5_ccache
  */
@@ -169,7 +170,7 @@ krb5_cc_resolve(krb5_context context,
 	return allocate_ccache (context, &krb5_fcc_ops, name, id);
     else {
 	krb5_set_error_message(context, KRB5_CC_UNKNOWN_TYPE,
-			       "unknown ccache type %s", name);
+			       N_("unknown ccache type %s", "name"), name);
 	return KRB5_CC_UNKNOWN_TYPE;
     }
 }
@@ -177,7 +178,7 @@ krb5_cc_resolve(krb5_context context,
 /**
  * Generate a new ccache of type `ops' in `id'.
  *
- * @return Return 0 or an error code.
+ * @return Return an error code or 0, see krb5_get_error_message().
  *
  * @ingroup krb5_ccache
  */
@@ -198,13 +199,13 @@ krb5_cc_gen_new(krb5_context context,
  * type can use to base the name of the credential on, this is to make
  * it easier for the user to differentiate the credentials.
  *
- * @return Returns 0 or an error code.
+ * @return Return an error code or 0, see krb5_get_error_message().
  *
  * @ingroup krb5_ccache
  */
 
 krb5_error_code KRB5_LIB_FUNCTION
-krb5_cc_new_unique(krb5_context context, const char *type, 
+krb5_cc_new_unique(krb5_context context, const char *type,
 		   const char *hint, krb5_ccache *id)
 {
     const krb5_cc_ops *ops;
@@ -252,7 +253,7 @@ krb5_cc_get_type(krb5_context context,
 }
 
 /**
- * Return the complete resolvable name the ccache `id' in `str´.
+ * Return the complete resolvable name the ccache `id' in `strÂ´.
  * `str` should be freed with free(3).
  * Returns 0 or an error (and then *str is set to NULL).
  *
@@ -282,9 +283,9 @@ krb5_cc_get_full_name(krb5_context context,
 			       "cache of type %s have no name", type);
 	return KRB5_CC_BADNAME;
     }
-    
+
     if (asprintf(str, "%s:%s", type, name) == -1) {
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	*str = NULL;
 	return ENOMEM;
     }
@@ -341,7 +342,7 @@ _krb5_expand_default_cc_name(krb5_context context, const char *str, char **res)
 	    else {
 		free(*res);
 		*res = NULL;
-		krb5_set_error_message(context, 
+		krb5_set_error_message(context,
 				       KRB5_CONFIG_BADFORMAT,
 				       "expand default cache unknown "
 				       "variable \"%.*s\"",
@@ -356,7 +357,8 @@ _krb5_expand_default_cc_name(krb5_context context, const char *str, char **res)
 	if (append == NULL) {
 	    free(*res);
 	    *res = NULL;
-	    krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	    krb5_set_error_message(context, ENOMEM,
+				   N_("malloc: out of memory", ""));
 	    return ENOMEM;
 	}
 	
@@ -366,15 +368,15 @@ _krb5_expand_default_cc_name(krb5_context context, const char *str, char **res)
 	    free(append);
 	    free(*res);
 	    *res = NULL;
-	    krb5_set_error_message(context, ENOMEM, 
-				   "malloc: out of memory");
+	    krb5_set_error_message(context, ENOMEM,
+				   N_("malloc: out of memory", ""));
 	    return ENOMEM;
 	}
 	*res = tmp;
 	memcpy(*res + len, append, tlen + 1);
 	len = len + tlen;
 	free(append);
-    }    
+    }
     return 0;
 }
 
@@ -415,7 +417,7 @@ environment_changed(krb5_context context)
  * Switch the default default credential cache for a specific
  * credcache type (and name for some implementations).
  *
- * @return Returns 0 or an error code.
+ * @return Return an error code or 0, see krb5_get_error_message().
  *
  * @ingroup krb5_ccache
  */
@@ -488,7 +490,7 @@ krb5_cc_set_default_name(krb5_context context, const char *name)
     }
 
     if (p == NULL) {
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
 
@@ -522,7 +524,7 @@ krb5_cc_default_name(krb5_context context)
 /**
  * Open the default ccache in `id'.
  *
- * @return Return 0 or an error code.
+ * @return Return an error code or 0, see krb5_get_error_message().
  *
  * @ingroup krb5_ccache
  */
@@ -535,7 +537,7 @@ krb5_cc_default(krb5_context context,
     const char *p = krb5_cc_default_name(context);
 
     if (p == NULL) {
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     return krb5_cc_resolve(context, p, id);
@@ -544,7 +546,7 @@ krb5_cc_default(krb5_context context,
 /**
  * Create a new ccache in `id' for `primary_principal'.
  *
- * @return Return 0 or an error code.
+ * @return Return an error code or 0, see krb5_get_error_message().
  *
  * @ingroup krb5_ccache
  */
@@ -562,7 +564,7 @@ krb5_cc_initialize(krb5_context context,
 /**
  * Remove the ccache `id'.
  *
- * @return Return 0 or an error code.
+ * @return Return an error code or 0, see krb5_get_error_message().
  *
  * @ingroup krb5_ccache
  */
@@ -582,7 +584,7 @@ krb5_cc_destroy(krb5_context context,
 /**
  * Stop using the ccache `id' and free the related resources.
  *
- * @return Return 0 or an error code.
+ * @return Return an error code or 0, see krb5_get_error_message().
  *
  * @ingroup krb5_ccache
  */
@@ -601,7 +603,7 @@ krb5_cc_close(krb5_context context,
 /**
  * Store `creds' in the ccache `id'.
  *
- * @return Return 0 or an error code.
+ * @return Return an error code or 0, see krb5_get_error_message().
  *
  * @ingroup krb5_ccache
  */
@@ -620,7 +622,7 @@ krb5_cc_store_cred(krb5_context context,
  * from `id' in `creds'. 'creds' must be free by the caller using
  * krb5_free_cred_contents.
  *
- * @return Return 0 or an error code.
+ * @return Return an error code or 0, see krb5_get_error_message().
  *
  * @ingroup krb5_ccache
  */
@@ -658,7 +660,7 @@ krb5_cc_retrieve_cred(krb5_context context,
 /**
  * Return the principal of `id' in `principal'.
  *
- * @return Return 0 or an error code.
+ * @return Return an error code or 0, see krb5_get_error_message().
  *
  * @ingroup krb5_ccache
  */
@@ -676,7 +678,7 @@ krb5_cc_get_principal(krb5_context context,
  * Start iterating over `id', `cursor' is initialized to the
  * beginning.
  *
- * @return Return 0 or an error code.
+ * @return Return an error code or 0, see krb5_get_error_message().
  *
  * @ingroup krb5_ccache
  */
@@ -694,7 +696,7 @@ krb5_cc_start_seq_get (krb5_context context,
  * Retrieve the next cred pointed to by (`id', `cursor') in `creds'
  * and advance `cursor'.
  *
- * @return Return 0 or an error code.
+ * @return Return an error code or 0, see krb5_get_error_message().
  *
  * @ingroup krb5_ccache
  */
@@ -787,7 +789,22 @@ krb5_cc_set_flags(krb5_context context,
 {
     return (*id->ops->set_flags)(context, id, flags);
 }
-		    
+		
+/**
+ * Get the flags of `id', store them in `flags'.
+ *
+ * @ingroup krb5_ccache
+ */
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_cc_get_flags(krb5_context context,
+		  krb5_ccache id,
+		  krb5_flags *flags)
+{
+    *flags = 0;
+    return 0;
+}
+
 /**
  * Copy the contents of `from' to `to'.
  *
@@ -836,12 +853,12 @@ krb5_cc_copy_cache_match(krb5_context context,
     return ret;
 }
 
+
 /**
  * Just like krb5_cc_copy_cache_match, but copy everything.
  *
- * @ingroup krb5_ccache
+ * @ingroup @krb5_ccache
  */
-
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_cc_copy_cache(krb5_context context,
@@ -849,6 +866,20 @@ krb5_cc_copy_cache(krb5_context context,
 		   krb5_ccache to)
 {
     return krb5_cc_copy_cache_match(context, from, to, 0, NULL, NULL);
+}
+
+/**
+ * MIT compat glue
+ *
+ * @ingroup krb5_ccache
+ */
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_cc_copy_creds(krb5_context context,
+		   const krb5_ccache from,
+		   krb5_ccache to)
+{
+    return krb5_cc_copy_cache(context, from, to);
 }
 
 /**
@@ -887,7 +918,7 @@ krb5_cc_clear_mcred(krb5_creds *mcred)
  * prefix, the function will only use part up to the first colon (:)
  * if there is one. If prefix the argument is NULL, the default ccache
  * implemtation is returned.
- 
+ *
  * @return Returns NULL if ops not found.
  *
  * @ingroup krb5_ccache
@@ -899,7 +930,7 @@ krb5_cc_get_prefix_ops(krb5_context context, const char *prefix)
 {
     char *p, *p1;
     int i;
-    
+
     if (prefix == NULL)
 	return KRB5_DEFAULT_CCTYPE;
     if (prefix[0] == '/')
@@ -907,7 +938,7 @@ krb5_cc_get_prefix_ops(krb5_context context, const char *prefix)
 
     p = strdup(prefix);
     if (p == NULL) {
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	return NULL;
     }
     p1 = strchr(p, ':');
@@ -930,10 +961,14 @@ struct krb5_cc_cache_cursor_data {
 };
 
 /**
- * Start iterating over all caches of `type'. If `type' is NULL, the
- * default type is * used. `cursor' is initialized to the beginning.
+ * Start iterating over all caches of specified type. See also
+ * krb5_cccol_cursor_new().
+
+ * @param context A Kerberos 5 context
+ * @param type optional type to iterate over, if NULL, the default cache is used.
+ * @param cursor cursor should be freed with krb5_cc_cache_end_seq_get().
  *
- * @return Return 0 or an error code.
+ * @return Return an error code or 0, see krb5_get_error_message().
  *
  * @ingroup krb5_ccache
  */
@@ -960,14 +995,15 @@ krb5_cc_cache_get_first (krb5_context context,
 
     if (ops->get_cache_first == NULL) {
 	krb5_set_error_message(context, KRB5_CC_NOSUPP,
-			       "Credential cache type %s doesn't support "
-			       "iterations over caches", ops->prefix);
+			       N_("Credential cache type %s doesn't support "
+				 "iterations over caches", "type"),
+			       ops->prefix);
 	return KRB5_CC_NOSUPP;
     }
 
     *cursor = calloc(1, sizeof(**cursor));
     if (*cursor == NULL) {
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
 
@@ -985,7 +1021,8 @@ krb5_cc_cache_get_first (krb5_context context,
  * Retrieve the next cache pointed to by (`cursor') in `id'
  * and advance `cursor'.
  *
- * @return Return 0 or an error code.
+ * @return Return 0 or an error code. Returns KRB5_CC_END when the end
+ *         of caches is reached, see krb5_get_error_message().
  *
  * @ingroup krb5_ccache
  */
@@ -1002,7 +1039,7 @@ krb5_cc_cache_next (krb5_context context,
 /**
  * Destroy the cursor `cursor'.
  *
- * @return Return 0 or an error code.
+ * @return Return an error code or 0, see krb5_get_error_message().
  *
  * @ingroup krb5_ccache
  */
@@ -1021,9 +1058,8 @@ krb5_cc_cache_end_seq_get (krb5_context context,
 
 /**
  * Search for a matching credential cache of type `type' that have the
- * `principal' as the default principal. If NULL is used for `type',
- * the default type is used. On success, `id' needs to be freed with
- * krb5_cc_close or krb5_cc_destroy.
+ * `principal' as the default principal. On success, `id' needs to be
+ * freed with krb5_cc_close() or krb5_cc_destroy().
  *
  * @return On failure, error code is returned and `id' is set to NULL.
  *
@@ -1034,26 +1070,25 @@ krb5_cc_cache_end_seq_get (krb5_context context,
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_cc_cache_match (krb5_context context,
 		     krb5_principal client,
-		     const char *type,
 		     krb5_ccache *id)
 {
-    krb5_cc_cache_cursor cursor;
+    krb5_cccol_cursor cursor;
     krb5_error_code ret;
     krb5_ccache cache = NULL;
 
     *id = NULL;
 
-    ret = krb5_cc_cache_get_first (context, type, &cursor);
+    ret = krb5_cccol_cursor_new (context, &cursor);
     if (ret)
 	return ret;
 
-    while ((ret = krb5_cc_cache_next (context, cursor, &cache)) == 0) {
+    while ((ret = krb5_cccol_cursor_next (context, cursor, &cache)) == 0) {
 	krb5_principal principal;
 
 	ret = krb5_cc_get_principal(context, cache, &principal);
 	if (ret == 0) {
 	    krb5_boolean match;
-	    
+	
 	    match = krb5_principal_compare(context, principal, client);
 	    krb5_free_principal(context, principal);
 	    if (match)
@@ -1064,7 +1099,7 @@ krb5_cc_cache_match (krb5_context context,
 	cache = NULL;
     }
 
-    krb5_cc_cache_end_seq_get(context, cursor);
+    krb5_cccol_cursor_free(context, &cursor);
 
     if (cache == NULL) {
 	char *str;
@@ -1072,8 +1107,8 @@ krb5_cc_cache_match (krb5_context context,
 	krb5_unparse_name(context, client, &str);
 
 	krb5_set_error_message(context, KRB5_CC_NOTFOUND,
-			       "Principal %s not found in a "
-			       "credential cache", 
+			       N_("Principal %s not found in a "
+				  "credential cache", ""),
 			       str ? str : "<out of memory>");
 	if (str)
 	    free(str);
@@ -1086,14 +1121,14 @@ krb5_cc_cache_match (krb5_context context,
 
 /**
  * Move the content from one credential cache to another. The
- * operation is an atomic switch. 
+ * operation is an atomic switch.
  *
  * @param context a Keberos context
  * @param from the credential cache to move the content from
  * @param to the credential cache to move the content to
 
  * @return On sucess, from is freed. On failure, error code is
- * returned and from and to are both still allocated.
+ * returned and from and to are both still allocated, see krb5_get_error_message().
  *
  * @ingroup krb5_ccache
  */
@@ -1105,8 +1140,8 @@ krb5_cc_move(krb5_context context, krb5_ccache from, krb5_ccache to)
 
     if (strcmp(from->ops->prefix, to->ops->prefix) != 0) {
 	krb5_set_error_message(context, KRB5_CC_NOSUPP,
-			       "Moving credentials between diffrent "
-			       "types not yet supported");
+			       N_("Moving credentials between diffrent "
+				 "types not yet supported", ""));
 	return KRB5_CC_NOSUPP;
     }
 
@@ -1118,7 +1153,8 @@ krb5_cc_move(krb5_context context, krb5_ccache from, krb5_ccache to)
     return ret;
 }
 
-#define KRB5_CONF_NAME "@krb5_ccache_conf_data"
+#define KRB5_CONF_NAME "krb5_ccache_conf_data"
+#define KRB5_REALM_NAME "X-CACHECONF:"
 
 static krb5_error_code
 build_conf_principals(krb5_context context, krb5_ccache id,
@@ -1134,7 +1170,7 @@ build_conf_principals(krb5_context context, krb5_ccache id,
     ret = krb5_cc_get_principal(context, id, &client);
     if (ret)
 	return ret;
-       
+
     if (principal) {
 	ret = krb5_unparse_name(context, principal, &pname);
 	if (ret)
@@ -1153,7 +1189,32 @@ build_conf_principals(krb5_context context, krb5_ccache id,
     krb5_free_principal(context, client);
     return ret;
 }
-		      
+		
+/**
+ * Return TRUE (non zero) if the principal is a configuration
+ * principal (generated part of krb5_cc_set_config()). Returns FALSE
+ * (zero) if not a configuration principal.
+ *
+ * @param context a Keberos context
+ * @param principal principal to check if it a configuration principal
+ *
+ * @ingroup krb5_ccache
+ */
+
+krb5_boolean KRB5_LIB_FUNCTION
+krb5_is_config_principal(krb5_context context,
+			 krb5_const_principal principal)
+{
+    if (strcmp(principal->realm, KRB5_REALM_NAME) != 0)
+	return FALSE;
+
+    if (principal->name.name_string.len == 0 ||
+	strcmp(principal->name.name_string.val[0], KRB5_CONF_NAME) != 0)
+	return FALSE;
+	
+    return TRUE;
+}
+
 /**
  * Store some configuration for the credential cache in the cache.
  * Existing configuration under the same name is over-written.
@@ -1164,10 +1225,12 @@ build_conf_principals(krb5_context context, krb5_ccache id,
  * NULL, global for the whole cache.
  * @param name name under which the configuraion is stored.
  * @param data data to store
+ *
+ * @ingroup krb5_ccache
  */
 
 krb5_error_code KRB5_LIB_FUNCTION
-krb5_cc_set_config(krb5_context context, krb5_ccache id, 
+krb5_cc_set_config(krb5_context context, krb5_ccache id,
 		   krb5_const_principal principal,
 		   const char *name, krb5_data *data)
 {
@@ -1180,12 +1243,12 @@ krb5_cc_set_config(krb5_context context, krb5_ccache id,
 
     /* Remove old configuration */
     ret = krb5_cc_remove_cred(context, id, 0, &cred);
-    if (ret)
-	goto out;
+    if (ret && ret != KRB5_CC_NOTFOUND)
+        goto out;
 
     /* not that anyone care when this expire */
     cred.times.authtime = time(NULL);
-    cred.times.endtime = cred.times.authtime + 3600 * 24 * 30; 
+    cred.times.endtime = cred.times.authtime + 3600 * 24 * 30;
 
     ret = krb5_data_copy(&cred.ticket, data->data, data->length);
     if (ret)
@@ -1207,6 +1270,8 @@ out:
  * NULL, global for the whole cache.
  * @param name name under which the configuraion is stored.
  * @param data data to fetched, free with krb5_data_free()
+ *
+ * @ingroup krb5_ccache
  */
 
 
@@ -1237,3 +1302,188 @@ out:
     return ret;
 }
 
+/*
+ *
+ */
+
+struct krb5_cccol_cursor {
+    int idx;
+    krb5_cc_cache_cursor cursor;
+};
+
+/**
+ * Get a new cache interation cursor that will interate over all
+ * credentials caches independent of type.
+ *
+ * @param context a Keberos context
+ * @param cursor passed into krb5_cccol_cursor_next() and free with krb5_cccol_cursor_free().
+ *
+ * @return Returns 0 or and error code, see krb5_get_error_message().
+ *
+ * @ingroup krb5_ccache
+ */
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_cccol_cursor_new(krb5_context context, krb5_cccol_cursor *cursor)
+{
+    *cursor = calloc(1, sizeof(**cursor));
+    if (*cursor == NULL) {
+	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
+	return ENOMEM;
+    }
+    (*cursor)->idx = 0;
+    (*cursor)->cursor = NULL;
+
+    return 0;
+}
+
+/**
+ * Get next credential cache from the iteration. 
+ *
+ * @param context A Kerberos 5 context
+ * @param cursor the iteration cursor
+ * @param cache the returned cursor, pointer is set to NULL on failure
+ *        and a cache on success. The returned cache needs to be freed
+ *        with krb5_cc_close() or destroyed with krb5_cc_destroy().
+ *
+ * @return Return 0 or and error, KRB5_CC_END is returned at the end
+ *        of iteration. See krb5_get_error_message().
+ *
+ * @ingroup krb5_ccache
+ */
+
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_cccol_cursor_next(krb5_context context, krb5_cccol_cursor cursor,
+		       krb5_ccache *cache)
+{
+    krb5_error_code ret;
+    
+    *cache = NULL;
+
+    while (cursor->idx < context->num_cc_ops) {
+
+	if (cursor->cursor == NULL) {
+	    ret = krb5_cc_cache_get_first (context, 
+					   context->cc_ops[cursor->idx].prefix,
+					   &cursor->cursor);
+	    if (ret) {
+		cursor->idx++;
+		continue;
+	    }
+	}
+	ret = krb5_cc_cache_next(context, cursor->cursor, cache);
+	if (ret == 0)
+	    break;
+
+	krb5_cc_cache_end_seq_get(context, cursor->cursor);
+	cursor->cursor = NULL;
+	if (ret != KRB5_CC_END)
+	    break;
+	
+	cursor->idx++;
+    }
+    if (cursor->idx >= context->num_cc_ops) {
+	krb5_set_error_message(context, KRB5_CC_END,
+			       N_("Reached end of credential caches", ""));
+	return KRB5_CC_END;
+    }
+
+    return 0;
+}
+
+/**
+ * End an iteration and free all resources, can be done before end is reached.
+ *
+ * @param context A Kerberos 5 context
+ * @param cursor the iteration cursor to be freed.
+ *
+ * @return Return 0 or and error, KRB5_CC_END is returned at the end
+ *        of iteration. See krb5_get_error_message().
+ *
+ * @ingroup krb5_ccache
+ */
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_cccol_cursor_free(krb5_context context, krb5_cccol_cursor *cursor)
+{
+    krb5_cccol_cursor c = *cursor;
+
+    *cursor = NULL;
+    if (c) {
+	if (c->cursor)
+	    krb5_cc_cache_end_seq_get(context, c->cursor);
+	free(c);
+    }
+    return 0;
+}
+
+/**
+ * Return the last time the credential cache was modified.
+ *
+ * @param context A Kerberos 5 context
+ * @param id The credential cache to probe
+ * @param mtime the last modification time, set to 0 on error.
+
+ * @return Return 0 or and error. See krb5_get_error_message().
+ *
+ * @ingroup krb5_ccache
+ */
+
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_cc_last_change_time(krb5_context context,
+			 krb5_ccache id, 
+			 krb5_timestamp *mtime)
+{
+    *mtime = 0;
+    return (*id->ops->lastchange)(context, id, mtime);
+}
+
+/**
+ * Return the last modfication time for a cache collection. The query
+ * can be limited to a specific cache type. If the function return 0
+ * and mtime is 0, there was no credentials in the caches.
+ *
+ * @param context A Kerberos 5 context
+ * @param id The credential cache to probe
+ * @param mtime the last modification time, set to 0 on error.
+
+ * @return Return 0 or and error. See krb5_get_error_message().
+ *
+ * @ingroup krb5_ccache
+ */
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_cccol_last_change_time(krb5_context context,
+			    const char *type,
+			    krb5_timestamp *mtime)
+{
+    krb5_cccol_cursor cursor;
+    krb5_error_code ret;
+    krb5_ccache id;
+    krb5_timestamp t = 0;
+
+    *mtime = 0;
+
+    ret = krb5_cccol_cursor_new (context, &cursor);
+    if (ret)
+	return ret;
+
+    while ((ret = krb5_cccol_cursor_next (context, cursor, &id)) == 0) {
+
+	if (type && strcmp(krb5_cc_get_type(context, id), type) != 0)
+	    continue;
+
+	ret = krb5_cc_last_change_time(context, id, &t);
+	krb5_cc_close(context, id);
+	if (ret)
+	    continue;
+	if (t > *mtime)
+	    *mtime = t;
+    }
+
+    krb5_cccol_cursor_free(context, &cursor);
+
+    return 0;
+}

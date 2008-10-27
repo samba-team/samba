@@ -1,34 +1,34 @@
 /*
- * Copyright (c) 1997 - 2005 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * Copyright (c) 1997 - 2005 Kungliga Tekniska HÃ¶gskolan
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * 3. Neither the name of the Institute nor the names of its contributors 
- *    may be used to endorse or promote products derived from this software 
- *    without specific prior written permission. 
+ * 3. Neither the name of the Institute nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
- * SUCH DAMAGE. 
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 #include "gen_locl.h"
@@ -93,10 +93,10 @@ init_generate (const char *filename, const char *base)
 	     "/* Generated from %s */\n"
 	     "/* Do not edit */\n\n",
 	     filename);
-    fprintf (headerfile, 
+    fprintf (headerfile,
 	     "#ifndef __%s_h__\n"
 	     "#define __%s_h__\n\n", headerbase, headerbase);
-    fprintf (headerfile, 
+    fprintf (headerfile,
 	     "#include <stddef.h>\n"
 	     "#include <time.h>\n\n");
     fprintf (headerfile,
@@ -245,7 +245,7 @@ generate_header_of_codefile(const char *name)
 	err (1, "fopen %s", filename);
     fprintf(logfile, "%s ", filename);
     free(filename);
-    fprintf (codefile, 
+    fprintf (codefile,
 	     "/* Generated from %s */\n"
 	     "/* Do not edit */\n\n"
 	     "#include <stdio.h>\n"
@@ -331,7 +331,7 @@ generate_constant (const Symbol *s)
 	fprintf(codefile, "};\n");
 
 	fprintf (codefile, "static const heim_oid oid_%s_variable = "
-		 "{ %d, oid_%s_variable_num };\n\n", 
+		 "{ %d, oid_%s_variable_num };\n\n",
 		 s->gen_name, len, s->gen_name);
 
 	fprintf (codefile, "const heim_oid *oid_%s(void)\n"
@@ -396,7 +396,7 @@ define_asn1 (int level, Type *t)
             fprintf (headerfile, "INTEGER {\n");
 	    ASN1_TAILQ_FOREACH(m, t->members, members) {
                 space (level + 1);
-		fprintf(headerfile, "%s(%d)%s\n", m->gen_name, m->val, 
+		fprintf(headerfile, "%s(%d)%s\n", m->gen_name, m->val,
 			last_member_p(m));
             }
 	    space(level);
@@ -420,7 +420,7 @@ define_asn1 (int level, Type *t)
 	    fprintf (headerfile, "ENUMERATED {\n");
 	ASN1_TAILQ_FOREACH(m, t->members, members) {
 	    space(level + 1);
-	    fprintf (headerfile, "%s(%d)%s\n", m->name, m->val, 
+	    fprintf (headerfile, "%s(%d)%s\n", m->name, m->val,
 		     last_member_p(m));
 	}
 	space(level);
@@ -480,10 +480,10 @@ define_asn1 (int level, Type *t)
 	fprintf (headerfile, "GeneralString");
 	break;
     case TTag: {
-	const char *classnames[] = { "UNIVERSAL ", "APPLICATION ", 
+	const char *classnames[] = { "UNIVERSAL ", "APPLICATION ",
 				     "" /* CONTEXT */, "PRIVATE " };
 	if(t->tag.tagclass != ASN1_C_UNIV)
-	    fprintf (headerfile, "[%s%d] ", 
+	    fprintf (headerfile, "[%s%d] ",
 		     classnames[t->tag.tagclass],
 		     t->tag.tagvalue);
 	if(t->tag.tagenv == TE_IMPLICIT)
@@ -546,7 +546,7 @@ define_type (int level, const char *name, Type *t, int typedefp, int preservep)
             fprintf (headerfile, "enum %s {\n", typedefp ? name : "");
 	    ASN1_TAILQ_FOREACH(m, t->members, members) {
                 space (level + 1);
-                fprintf(headerfile, "%s = %d%s\n", m->gen_name, m->val, 
+                fprintf(headerfile, "%s = %d%s\n", m->gen_name, m->val,
                         last_member_p(m));
             }
             fprintf (headerfile, "} %s;\n", name);
@@ -559,7 +559,7 @@ define_type (int level, const char *name, Type *t, int typedefp, int preservep)
 	} else if (t->range->min == 0 && t->range->max == INT_MAX) {
 	    fprintf (headerfile, "unsigned int %s;\n", name);
 	} else
-	    errx(1, "%s: unsupported range %d -> %d", 
+	    errx(1, "%s: unsupported range %d -> %d",
 		 name, t->range->min, t->range->max);
 	break;
     case TBoolean:
@@ -581,7 +581,7 @@ define_type (int level, const char *name, Type *t, int typedefp, int preservep)
 	i.constraint = NULL;
 
 	space(level);
-	if(ASN1_TAILQ_EMPTY(t->members)) 
+	if(ASN1_TAILQ_EMPTY(t->members))
 	    fprintf (headerfile, "heim_bit_string %s;\n", name);
 	else {
 	    fprintf (headerfile, "struct %s {\n", typedefp ? name : "");
@@ -688,7 +688,7 @@ define_type (int level, const char *name, Type *t, int typedefp, int preservep)
 	m = have_ellipsis(t);
 	if (m) {
 	    space(level + 2);
-	    fprintf (headerfile, "%s = 0,\n", m->label); 
+	    fprintf (headerfile, "%s = 0,\n", m->label);
 	    first = 0;
 	}
 	ASN1_TAILQ_FOREACH(m, t->members, members) {
@@ -696,8 +696,8 @@ define_type (int level, const char *name, Type *t, int typedefp, int preservep)
 	    if (m->ellipsis)
 		fprintf (headerfile, "/* ... */\n");
 	    else
-		fprintf (headerfile, "%s%s%s\n", m->label, 
-			 first ? " = 1" : "", 
+		fprintf (headerfile, "%s%s%s\n", m->label,
+			 first ? " = 1" : "",
 			 last_member_p(m));
 	    first = 0;
 	}

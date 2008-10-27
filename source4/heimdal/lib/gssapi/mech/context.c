@@ -75,7 +75,7 @@ _gss_mg_get_error(const gss_OID mech, OM_uint32 type,
 	return GSS_S_BAD_STATUS;
 
 #if 0
-    /* 
+    /*
      * We cant check the mech here since a pseudo-mech might have
      * called an lower layer and then the mech info is all broken
      */
@@ -113,7 +113,7 @@ _gss_mg_error(gssapi_mech_interface m, OM_uint32 maj, OM_uint32 min)
     OM_uint32 message_content;
     struct mg_thread_ctx *mg;
 
-    /* 
+    /*
      * Mechs without gss_display_status() does
      * gss_mg_collect_error() by themself.
      */
@@ -132,7 +132,7 @@ _gss_mg_error(gssapi_mech_interface m, OM_uint32 maj, OM_uint32 min)
     mg->min_stat = min;
 
     major_status = m->gm_display_status(&minor_status,
-					maj, 
+					maj,
 					GSS_C_GSS_CODE,
 					&m->gm_mech_oid,
 					&message_content,
@@ -142,7 +142,7 @@ _gss_mg_error(gssapi_mech_interface m, OM_uint32 maj, OM_uint32 min)
 	mg->maj_error.length = 0;
     }
     major_status = m->gm_display_status(&minor_status,
-					min, 
+					min,
 					GSS_C_MECH_CODE,
 					&m->gm_mech_oid,
 					&message_content,

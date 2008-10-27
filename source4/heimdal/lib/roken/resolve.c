@@ -1,23 +1,23 @@
 /*
- * Copyright (c) 1995 - 2006 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995 - 2006 Kungliga Tekniska HÃ¶gskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the Institute nor the names of its contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -124,7 +124,7 @@ dns_free_data(struct dns_reply *r)
 }
 
 static int
-parse_record(const unsigned char *data, const unsigned char *end_data, 
+parse_record(const unsigned char *data, const unsigned char *end_data,
 	     const unsigned char **pp, struct resource_record **ret_rr)
 {
     struct resource_record *rr;
@@ -137,7 +137,7 @@ parse_record(const unsigned char *data, const unsigned char *end_data,
     *ret_rr = NULL;
 
     status = dn_expand(data, end_data, p, host, sizeof(host));
-    if(status < 0) 
+    if(status < 0)
 	return -1;
     if (p + status + 10 > end_data)
 	return -1;
@@ -156,7 +156,7 @@ parse_record(const unsigned char *data, const unsigned char *end_data,
 	return -1;
 
     rr = calloc(1, sizeof(*rr));
-    if(rr == NULL) 
+    if(rr == NULL)
 	return -1;
     rr->domain = strdup(host);
     if(rr->domain == NULL) {
@@ -197,7 +197,7 @@ parse_record(const unsigned char *data, const unsigned char *end_data,
 	}
 
 	hostlen = strlen(host);
-	rr->u.mx = (struct mx_record*)malloc(sizeof(struct mx_record) + 
+	rr->u.mx = (struct mx_record*)malloc(sizeof(struct mx_record) +
 						hostlen);
 	if(rr->u.mx == NULL) {
 	    dns_free_rr(rr);
@@ -220,8 +220,8 @@ parse_record(const unsigned char *data, const unsigned char *end_data,
 	}
 
 	hostlen = strlen(host);
-	rr->u.srv = 
-	    (struct srv_record*)malloc(sizeof(struct srv_record) + 
+	rr->u.srv =
+	    (struct srv_record*)malloc(sizeof(struct srv_record) +
 				       hostlen);
 	if(rr->u.srv == NULL) {
 	    dns_free_rr(rr);
@@ -411,7 +411,7 @@ parse_reply(const unsigned char *data, size_t len)
     const unsigned char *end_data = data + len;
     struct dns_reply *r;
     struct resource_record **rr;
-    
+
     r = calloc(1, sizeof(*r));
     if (r == NULL)
 	return NULL;
@@ -466,7 +466,7 @@ parse_reply(const unsigned char *data, size_t len)
     p += 2;
     r->q.class = (p[0] << 8 | p[1]);
     p += 2;
-    
+
     rr = &r->head;
     for(i = 0; i < r->h.ancount; i++) {
 	if(parse_record(data, end_data, &p, rr) != 0) {
@@ -516,7 +516,7 @@ dns_lookup_int(const char *domain, int rr_class, int rr_type)
 #elif defined(HAVE__RES)
     u_long old_options = 0;
 #endif
-    
+
     size = 0;
     len = 1000;
     do {
@@ -577,11 +577,11 @@ struct dns_reply * ROKEN_LIB_FUNCTION
 dns_lookup(const char *domain, const char *type_name)
 {
     int type;
-    
+
     type = dns_string_to_type(type_name);
     if(type == -1) {
 	if(_resolve_debug)
-	    fprintf(stderr, "dns_lookup: unknown resource type: `%s'\n", 
+	    fprintf(stderr, "dns_lookup: unknown resource type: `%s'\n",
 		    type_name);
 	return NULL;
     }
@@ -615,7 +615,7 @@ dns_srv_order(struct dns_reply *r)
     char *oldstate;
 #endif
 
-    for(rr = r->head; rr; rr = rr->next) 
+    for(rr = r->head; rr; rr = rr->next)
 	if(rr->type == rk_ns_t_srv)
 	    num_srv++;
 
@@ -625,7 +625,7 @@ dns_srv_order(struct dns_reply *r)
     srvs = malloc(num_srv * sizeof(*srvs));
     if(srvs == NULL)
 	return; /* XXX not much to do here */
-    
+
     /* unlink all srv-records from the linked list and put them in
        a vector */
     for(ss = srvs, headp = &r->head; *headp; )
@@ -636,7 +636,7 @@ dns_srv_order(struct dns_reply *r)
 	    ss++;
 	} else
 	    headp = &(*headp)->next;
-    
+
     /* sort them by priority and weight */
     qsort(srvs, num_srv, sizeof(*srvs), compare_srv);
 
@@ -645,7 +645,7 @@ dns_srv_order(struct dns_reply *r)
 #endif
 
     headp = &r->head;
-    
+
     for(ss = srvs; ss < srvs + num_srv; ) {
 	int sum, rnd, count;
 	struct resource_record **ee, **tt;
@@ -683,7 +683,7 @@ dns_srv_order(struct dns_reply *r)
 		ss++;
 	}
     }
-    
+
 #if defined(HAVE_INITSTATE) && defined(HAVE_SETSTATE)
     setstate(oldstate);
 #endif

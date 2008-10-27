@@ -1,34 +1,34 @@
 /*
- * Copyright (c) 1997 - 2004 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * Copyright (c) 1997 - 2004 Kungliga Tekniska HÃ¶gskolan
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * 3. Neither the name of the Institute nor the names of its contributors 
- *    may be used to endorse or promote products derived from this software 
- *    without specific prior written permission. 
+ * 3. Neither the name of the Institute nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
- * SUCH DAMAGE. 
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 #include "krb5_locl.h"
@@ -59,7 +59,7 @@ check_ticket_flags(TicketFlags f)
  */
 
 krb5_error_code KRB5_LIB_FUNCTION
-krb524_convert_creds_kdc(krb5_context context, 
+krb524_convert_creds_kdc(krb5_context context,
 			 krb5_creds *in_cred,
 			 struct credentials *v4creds)
 {
@@ -79,7 +79,7 @@ krb524_convert_creds_kdc(krb5_context context,
 	krb5_krbhst_handle handle;
 
 	ret = krb5_krbhst_init(context,
-			       krb5_principal_get_realm(context, 
+			       krb5_principal_get_realm(context,
 							v5_creds->server),
 			       KRB5_KRBHST_KRB524,
 			       &handle);
@@ -97,7 +97,7 @@ krb524_convert_creds_kdc(krb5_context context,
     sp = krb5_storage_from_mem(reply.data, reply.length);
     if(sp == NULL) {
 	ret = ENOMEM;
-	krb5_set_error_message (context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message (context, ENOMEM, N_("malloc: out of memory", ""));
 	goto out2;
     }
     krb5_ret_int32(sp, &tmp);
@@ -114,25 +114,27 @@ krb524_convert_creds_kdc(krb5_context context,
 	v4creds->ticket_st.length = ticket.length;
 	memcpy(v4creds->ticket_st.dat, ticket.data, ticket.length);
 	krb5_data_free(&ticket);
-	ret = krb5_524_conv_principal(context, 
-				      v5_creds->server, 
-				      v4creds->service, 
-				      v4creds->instance, 
+	ret = krb5_524_conv_principal(context,
+				      v5_creds->server,
+				      v4creds->service,
+				      v4creds->instance,
 				      v4creds->realm);
 	if(ret)
 	    goto out;
 	v4creds->issue_date = v5_creds->times.starttime;
 	v4creds->lifetime = _krb5_krb_time_to_life(v4creds->issue_date,
 						   v5_creds->times.endtime);
-	ret = krb5_524_conv_principal(context, v5_creds->client, 
-				      v4creds->pname, 
-				      v4creds->pinst, 
+	ret = krb5_524_conv_principal(context, v5_creds->client,
+				      v4creds->pname,
+				      v4creds->pinst,
 				      realm);
 	if(ret)
 	    goto out;
 	memcpy(v4creds->session, v5_creds->session.keyvalue.data, 8);
     } else {
-	krb5_set_error_message (context, ret, "converting credentials: %s", 
+	krb5_set_error_message (context, ret,
+				N_("converting credentials: %s",
+				  "already localized"),
 				krb5_get_err_text(context, ret));
     }
 out:
@@ -160,7 +162,7 @@ out2:
  */
 
 krb5_error_code KRB5_LIB_FUNCTION
-krb524_convert_creds_kdc_ccache(krb5_context context, 
+krb524_convert_creds_kdc_ccache(krb5_context context,
 				krb5_ccache ccache,
 				krb5_creds *in_cred,
 				struct credentials *v4creds)

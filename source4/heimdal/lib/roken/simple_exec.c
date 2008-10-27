@@ -1,34 +1,34 @@
 /*
- * Copyright (c) 1998 - 2001, 2004 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * Copyright (c) 1998 - 2001, 2004 Kungliga Tekniska HÃ¶gskolan
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * 3. Neither the name of the Institute nor the names of its contributors 
- *    may be used to endorse or promote products derived from this software 
- *    without specific prior written permission. 
+ * 3. Neither the name of the Institute nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
- * SUCH DAMAGE. 
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 #ifdef HAVE_CONFIG_H
@@ -50,6 +50,10 @@ RCSID("$Id$");
 #include <errno.h>
 
 #include "roken.h"
+
+#if !HAVE_DECL_ENVIRON
+extern char **environ;
+#endif
 
 #define EX_NOEXEC	126
 #define EX_NOTFOUND	127
@@ -82,7 +86,7 @@ sigtimeout(int sig)
 }
 
 int ROKEN_LIB_FUNCTION
-wait_for_process_timed(pid_t pid, time_t (*func)(void *), 
+wait_for_process_timed(pid_t pid, time_t (*func)(void *),
 		       void *ptr, time_t timeout)
 {
     RETSIGTYPE (*old_func)(int sig) = NULL;
@@ -144,7 +148,7 @@ wait_for_process(pid_t pid)
 }
 
 int ROKEN_LIB_FUNCTION
-pipe_execv(FILE **stdin_fd, FILE **stdout_fd, FILE **stderr_fd, 
+pipe_execv(FILE **stdin_fd, FILE **stdout_fd, FILE **stderr_fd,
 	   const char *file, ...)
 {
     int in_fd[2], out_fd[2], err_fd[2];
@@ -233,7 +237,7 @@ pipe_execv(FILE **stdin_fd, FILE **stdout_fd, FILE **stderr_fd,
 }
 
 int ROKEN_LIB_FUNCTION
-simple_execvp_timed(const char *file, char *const args[], 
+simple_execvp_timed(const char *file, char *const args[],
 		    time_t (*func)(void *), void *ptr, time_t timeout)
 {
     pid_t pid = fork();
@@ -243,7 +247,7 @@ simple_execvp_timed(const char *file, char *const args[],
     case 0:
 	execvp(file, args);
 	exit((errno == ENOENT) ? EX_NOTFOUND : EX_NOEXEC);
-    default: 
+    default:
 	return wait_for_process_timed(pid, func, ptr, timeout);
     }
 }
@@ -266,7 +270,7 @@ simple_execve_timed(const char *file, char *const args[], char *const envp[],
     case 0:
 	execve(file, args, envp);
 	exit((errno == ENOENT) ? EX_NOTFOUND : EX_NOEXEC);
-    default: 
+    default:
 	return wait_for_process_timed(pid, func, ptr, timeout);
     }
 }
@@ -314,7 +318,7 @@ simple_execle(const char *file, ... /* ,char *const envp[] */)
 }
 
 int ROKEN_LIB_FUNCTION
-simple_execl(const char *file, ...) 
+simple_execl(const char *file, ...)
 {
     va_list ap;
     char **argv;

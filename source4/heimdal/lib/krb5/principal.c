@@ -1,34 +1,34 @@
 /*
- * Copyright (c) 1997-2007 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * Copyright (c) 1997-2007 Kungliga Tekniska HÃ¶gskolan
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * 3. Neither the name of the Institute nor the names of its contributors 
- *    may be used to endorse or promote products derived from this software 
- *    without specific prior written permission. 
+ * 3. Neither the name of the Institute nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
- * SUCH DAMAGE. 
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 /**
@@ -37,7 +37,7 @@
  * A Kerberos principal is a email address looking string that
  * contains to parts separeted by a @.  The later part is the kerbero
  * realm the principal belongs to and the former is a list of 0 or
- * more components. For example 
+ * more components. For example
  * @verbatim
 lha@SU.SE
 host/hummel.it.su.se@SU.SE
@@ -110,7 +110,7 @@ krb5_principal_get_realm(krb5_context context,
 			 krb5_const_principal principal)
 {
     return princ_realm(principal);
-}			 
+}			
 
 const char* KRB5_LIB_FUNCTION
 krb5_principal_get_comp_string(krb5_context context,
@@ -120,6 +120,22 @@ krb5_principal_get_comp_string(krb5_context context,
     if(component >= princ_num_comp(principal))
        return NULL;
     return princ_ncomp(principal, component);
+}
+
+/**
+ * Get number of component is principal.
+ *
+ * @param context Kerberos 5 context
+ * @param principal principal to query
+ * @return number of components in string
+ * @ingroup krb5
+ */
+
+unsigned int KRB5_LIB_FUNCTION
+krb5_principal_get_num_comp(krb5_context context,
+			    krb5_const_principal principal)
+{
+    return princ_num_comp(principal);
 }
 
 krb5_error_code KRB5_LIB_FUNCTION
@@ -143,15 +159,15 @@ krb5_parse_name_flags(krb5_context context,
     int got_realm = 0;
     int first_at = 1;
     int enterprise = (flags & KRB5_PRINCIPAL_PARSE_ENTERPRISE);
-  
+
     *principal = NULL;
 
 #define RFLAGS (KRB5_PRINCIPAL_PARSE_NO_REALM|KRB5_PRINCIPAL_PARSE_MUST_REALM)
 
     if ((flags & RFLAGS) == RFLAGS) {
 	krb5_set_error_message(context, KRB5_ERR_NO_SERVICE,
-			       "Can't require both realm and "
-			       "no realm at the same time");
+			       N_("Can't require both realm and "
+				  "no realm at the same time", ""));
 	return KRB5_ERR_NO_SERVICE;
     }
 #undef RFLAGS
@@ -165,7 +181,7 @@ krb5_parse_name_flags(krb5_context context,
 	    if(*p=='\\'){
 		if(!p[1]) {
 		    krb5_set_error_message(context, KRB5_PARSE_MALFORMED,
-					   "trailing \\ in principal name");
+					   N_("trailing \\ in principal name", ""));
 		    return KRB5_PARSE_MALFORMED;
 		}
 		p++;
@@ -177,15 +193,17 @@ krb5_parse_name_flags(krb5_context context,
     }
     comp = calloc(ncomp, sizeof(*comp));
     if (comp == NULL) {
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM,
+			       N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
-  
+
     n = 0;
     p = start = q = s = strdup(name);
     if (start == NULL) {
 	free (comp);
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM,
+			       N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     while(*p){
@@ -203,7 +221,7 @@ krb5_parse_name_flags(krb5_context context,
 	    else if(c == '\0') {
 		ret = KRB5_PARSE_MALFORMED;
 		krb5_set_error_message(context, ret,
-				       "trailing \\ in principal name");
+				       N_("trailing \\ in principal name", ""));
 		goto exit;
 	    }
 	}else if(enterprise && first_at) {
@@ -213,13 +231,14 @@ krb5_parse_name_flags(krb5_context context,
 	    if(got_realm){
 		ret = KRB5_PARSE_MALFORMED;
 		krb5_set_error_message(context, ret,
-				       "part after realm in principal name");
+				       N_("part after realm in principal name", ""));
 		goto exit;
 	    }else{
 		comp[n] = malloc(q - start + 1);
 		if (comp[n] == NULL) {
 		    ret = ENOMEM;
-		    krb5_set_error_message(context, ret, "malloc: out of memory");
+		    krb5_set_error_message(context, ret,
+					   N_("malloc: out of memory", ""));
 		    goto exit;
 		}
 		memcpy(comp[n], start, q - start);
@@ -231,10 +250,10 @@ krb5_parse_name_flags(krb5_context context,
 	    start = q;
 	    continue;
 	}
-	if(got_realm && (c == ':' || c == '/' || c == '\0')) {
+	if(got_realm && (c == '/' || c == '\0')) {
 	    ret = KRB5_PARSE_MALFORMED;
 	    krb5_set_error_message(context, ret,
-				   "part after realm in principal name");
+				   N_("part after realm in principal name", ""));
 	    goto exit;
 	}
 	*q++ = c;
@@ -242,14 +261,16 @@ krb5_parse_name_flags(krb5_context context,
     if(got_realm){
 	if (flags & KRB5_PRINCIPAL_PARSE_NO_REALM) {
 	    ret = KRB5_PARSE_MALFORMED;
-	    krb5_set_error_message(context, ret, "realm found in 'short' principal "
-				   "expected to be without one");
+	    krb5_set_error_message(context, ret,
+				   N_("realm found in 'short' principal "
+				      "expected to be without one", ""));
 	    goto exit;
 	}
 	realm = malloc(q - start + 1);
 	if (realm == NULL) {
 	    ret = ENOMEM;
-	    krb5_set_error_message(context, ret, "malloc: out of memory");
+	    krb5_set_error_message(context, ret,
+				   N_("malloc: out of memory", ""));
 	    goto exit;
 	}
 	memcpy(realm, start, q - start);
@@ -257,8 +278,9 @@ krb5_parse_name_flags(krb5_context context,
     }else{
 	if (flags & KRB5_PRINCIPAL_PARSE_MUST_REALM) {
 	    ret = KRB5_PARSE_MALFORMED;
-	    krb5_set_error_message(context, ret, "realm NOT found in principal "
-				   "expected to be with one");
+	    krb5_set_error_message(context, ret,
+				   N_("realm NOT found in principal "
+				      "expected to be with one", ""));
 	    goto exit;
 	} else if (flags & KRB5_PRINCIPAL_PARSE_NO_REALM) {
 	    realm = NULL;
@@ -271,7 +293,8 @@ krb5_parse_name_flags(krb5_context context,
 	comp[n] = malloc(q - start + 1);
 	if (comp[n] == NULL) {
 	    ret = ENOMEM;
-	    krb5_set_error_message(context, ret, "malloc: out of memory");
+	    krb5_set_error_message(context, ret,
+				   N_("malloc: out of memory", ""));
 	    goto exit;
 	}
 	memcpy(comp[n], start, q - start);
@@ -281,7 +304,8 @@ krb5_parse_name_flags(krb5_context context,
     *principal = malloc(sizeof(**principal));
     if (*principal == NULL) {
 	ret = ENOMEM;
-	krb5_set_error_message(context, ret, "malloc: out of memory");
+	krb5_set_error_message(context, ret,
+			       N_("malloc: out of memory", ""));
 	goto exit;
     }
     if (enterprise)
@@ -352,8 +376,8 @@ unparse_name_fixed(krb5_context context,
 
     if (!no_realm && princ_realm(principal) == NULL) {
 	krb5_set_error_message(context, ERANGE,
-			       "Realm missing from principal, "
-			      "can't unparse");
+			       N_("Realm missing from principal, "
+				  "can't unparse", ""));
 	return ERANGE;
     }
 
@@ -362,10 +386,11 @@ unparse_name_fixed(krb5_context context,
 	    add_char(name, idx, len, '/');
 	idx = quote_string(princ_ncomp(principal, i), name, idx, len, display);
 	if(idx == len) {
-	    krb5_set_error_message(context, ERANGE, "Out of space printing principal");
+	    krb5_set_error_message(context, ERANGE,
+				   N_("Out of space printing principal", ""));
 	    return ERANGE;
 	}
-    } 
+    }
     /* add realm if different from default realm */
     if(short_form && !no_realm) {
 	krb5_realm r;
@@ -382,7 +407,8 @@ unparse_name_fixed(krb5_context context,
 	idx = quote_string(princ_realm(principal), name, idx, len, display);
 	if(idx == len) {
 	    krb5_set_error_message(context, ERANGE,
-				   "Out of space printing realm of principal");
+				   N_("Out of space printing "
+				      "realm of principal", ""));
 	    return ERANGE;
 	}
     }
@@ -404,7 +430,7 @@ krb5_unparse_name_fixed_short(krb5_context context,
 			      char *name,
 			      size_t len)
 {
-    return unparse_name_fixed(context, principal, name, len, 
+    return unparse_name_fixed(context, principal, name, len,
 			      KRB5_PRINCIPAL_UNPARSE_SHORT);
 }
 
@@ -448,7 +474,8 @@ unparse_name(krb5_context context,
     len++; /* '\0' */
     *name = malloc(len);
     if(*name == NULL) {
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM,
+			       N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     ret = unparse_name_fixed(context, principal, *name, len, flags);
@@ -523,7 +550,8 @@ krb5_principal_set_realm(krb5_context context,
 
     princ_realm(principal) = strdup(realm);
     if (princ_realm(principal) == NULL) {
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM,
+			       N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     return 0;
@@ -546,7 +574,7 @@ krb5_build_principal(krb5_context context,
 }
 
 static krb5_error_code
-append_component(krb5_context context, krb5_principal p, 
+append_component(krb5_context context, krb5_principal p,
 		 const char *comp,
 		 size_t comp_len)
 {
@@ -555,13 +583,15 @@ append_component(krb5_context context, krb5_principal p,
 
     tmp = realloc(princ_comp(p), (len + 1) * sizeof(*tmp));
     if(tmp == NULL) {
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM,
+			       N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     princ_comp(p) = tmp;
     princ_ncomp(p, len) = malloc(comp_len + 1);
     if (princ_ncomp(p, len) == NULL) {
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM,
+			       N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     memcpy (princ_ncomp(p, len), comp, comp_len);
@@ -606,10 +636,11 @@ build_principal(krb5_context context,
 		va_list ap)
 {
     krb5_principal p;
-  
+
     p = calloc(1, sizeof(*p));
     if (p == NULL) {
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM,
+			       N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     princ_type(p) = KRB5_NT_PRINCIPAL;
@@ -617,10 +648,11 @@ build_principal(krb5_context context,
     princ_realm(p) = strdup(realm);
     if(p->realm == NULL){
 	free(p);
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM,
+			       N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
-  
+
     (*func)(context, p, ap);
     *principal = p;
     return 0;
@@ -650,8 +682,8 @@ krb5_make_principal(krb5_context context,
 }
 
 krb5_error_code KRB5_LIB_FUNCTION
-krb5_build_principal_va(krb5_context context, 
-			krb5_principal *principal, 
+krb5_build_principal_va(krb5_context context,
+			krb5_principal *principal,
 			int rlen,
 			krb5_const_realm realm,
 			va_list ap)
@@ -660,8 +692,8 @@ krb5_build_principal_va(krb5_context context,
 }
 
 krb5_error_code KRB5_LIB_FUNCTION
-krb5_build_principal_va_ext(krb5_context context, 
-			    krb5_principal *principal, 
+krb5_build_principal_va_ext(krb5_context context,
+			    krb5_principal *principal,
 			    int rlen,
 			    krb5_const_realm realm,
 			    va_list ap)
@@ -693,12 +725,14 @@ krb5_copy_principal(krb5_context context,
 {
     krb5_principal p = malloc(sizeof(*p));
     if (p == NULL) {
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM,
+			       N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     if(copy_Principal(inprinc, p)) {
 	free(p);
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM,
+			       N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     *outprinc = p;
@@ -790,7 +824,7 @@ krb5_principal_match(krb5_context context,
 
 static struct v4_name_convert {
     const char *from;
-    const char *to; 
+    const char *to;
 } default_v4_name_convert[] = {
     { "ftp",	"ftp" },
     { "hprop",	"hprop" },
@@ -816,7 +850,7 @@ get_name_conversion(krb5_context context, const char *realm, const char *name)
     p = krb5_config_get_string(context, NULL, "realms", realm,
 			       "v4_name_convert", "host", name, NULL);
     if(p == NULL)
-	p = krb5_config_get_string(context, NULL, "libdefaults", 
+	p = krb5_config_get_string(context, NULL, "libdefaults",
 				   "v4_name_convert", "host", name, NULL);
     if(p)
 	return p;
@@ -856,7 +890,7 @@ krb5_425_conv_principal_ext2(krb5_context context,
 			     const char *name,
 			     const char *instance,
 			     const char *realm,
-			     krb5_boolean (*func)(krb5_context, 
+			     krb5_boolean (*func)(krb5_context,
 						  void *, krb5_principal),
 			     void *funcctx,
 			     krb5_boolean resolve,
@@ -886,7 +920,7 @@ krb5_425_conv_principal_ext2(krb5_context context,
     if(p == NULL)
 	goto no_host;
     name = p;
-    p = krb5_config_get_string(context, NULL, "realms", realm, 
+    p = krb5_config_get_string(context, NULL, "realms", realm,
 			       "v4_instance_convert", instance, NULL);
     if(p){
 	instance = p;
@@ -897,7 +931,7 @@ krb5_425_conv_principal_ext2(krb5_context context,
 	}
 	krb5_free_principal(context, pr);
 	*princ = NULL;
-	krb5_clear_error_string (context);
+	krb5_clear_error_message (context);
 	return HEIM_ERR_V4_PRINC_NO_CONV;
     }
     if(resolve){
@@ -943,7 +977,8 @@ krb5_425_conv_principal_ext2(krb5_context context,
 #endif
 	if (passed) {
 	    if (inst == NULL) {
-		krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+		krb5_set_error_message(context, ENOMEM,
+				       N_("malloc: out of memory", ""));
 		return ENOMEM;
 	    }
 	    strlwr(inst);
@@ -975,9 +1010,9 @@ krb5_425_conv_principal_ext2(krb5_context context,
      * the converted host should be the long hostname.
      */
 
-    if (func == NULL && 
+    if (func == NULL &&
         gethostname (local_hostname, sizeof(local_hostname)) == 0 &&
-        strncmp(instance, local_hostname, strlen(instance)) == 0 && 
+        strncmp(instance, local_hostname, strlen(instance)) == 0 &&
 	local_hostname[strlen(instance)] == '.') {
 	strlcpy(host, local_hostname, sizeof(host));
 	goto local_host;
@@ -1000,12 +1035,12 @@ krb5_425_conv_principal_ext2(krb5_context context,
 	krb5_config_free_strings(domains);
     }
 
-    
-    p = krb5_config_get_string(context, NULL, "realms", realm, 
+
+    p = krb5_config_get_string(context, NULL, "realms", realm,
 			       "default_domain", NULL);
     if(p == NULL){
 	/* this should be an error, just faking a name is not good */
-	krb5_clear_error_string (context);
+	krb5_clear_error_message (context);
 	return HEIM_ERR_V4_PRINC_NO_CONV;
     }
 	
@@ -1019,7 +1054,7 @@ local_host:
 	return 0;
     }
     krb5_free_principal(context, pr);
-    krb5_clear_error_string (context);
+    krb5_clear_error_message (context);
     return HEIM_ERR_V4_PRINC_NO_CONV;
 no_host:
     p = krb5_config_get_string(context, NULL,
@@ -1038,14 +1073,14 @@ no_host:
 				   NULL);
     if(p)
 	name = p;
-    
+
     ret = krb5_make_principal(context, &pr, realm, name, instance, NULL);
     if(func == NULL || (*func)(context, funcctx, pr)){
 	*princ = pr;
 	return 0;
     }
     krb5_free_principal(context, pr);
-    krb5_clear_error_string (context);
+    krb5_clear_error_message (context);
     return HEIM_ERR_V4_PRINC_NO_CONV;
 }
 
@@ -1086,11 +1121,11 @@ krb5_425_conv_principal(krb5_context context,
 {
     krb5_boolean resolve = krb5_config_get_bool(context,
 						NULL,
-						"libdefaults", 
-						"v4_instance_resolve", 
+						"libdefaults",
+						"v4_instance_resolve",
 						NULL);
 
-    return krb5_425_conv_principal_ext(context, name, instance, realm, 
+    return krb5_425_conv_principal_ext(context, name, instance, realm,
 				       NULL, resolve, princ);
 }
 
@@ -1111,7 +1146,7 @@ check_list(const krb5_config_binding *l, const char *name, const char **out)
 }
 
 static int
-name_convert(krb5_context context, const char *name, const char *realm, 
+name_convert(krb5_context context, const char *name, const char *realm,
 	     const char **out)
 {
     const krb5_config_binding *l;
@@ -1149,7 +1184,7 @@ name_convert(krb5_context context, const char *name, const char *realm,
 			      NULL);
     if(l && check_list(l, name, out))
 	return KRB5_NT_UNKNOWN;
-    
+
     /* didn't find it in config file, try built-in list */
     {
 	struct v4_name_convert *q;
@@ -1173,7 +1208,7 @@ name_convert(krb5_context context, const char *name, const char *realm,
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_524_conv_principal(krb5_context context,
 			const krb5_principal principal,
-			char *name, 
+			char *name,
 			char *instance,
 			char *realm)
 {
@@ -1195,7 +1230,8 @@ krb5_524_conv_principal(krb5_context context,
 	break;
     default:
 	krb5_set_error_message(context, KRB5_PARSE_MALFORMED,
-			       "cannot convert a %d component principal",
+			       N_("cannot convert a %d "
+				  "component principal", ""),
 			       principal->name.name_string.len);
 	return KRB5_PARSE_MALFORMED;
     }
@@ -1218,28 +1254,40 @@ krb5_524_conv_principal(krb5_context context,
 	    *p = 0;
 	i = tmpinst;
     }
-    
+
     if (strlcpy (name, n, aname_sz) >= aname_sz) {
 	krb5_set_error_message(context, KRB5_PARSE_MALFORMED,
-			       "too long name component to convert");
+			       N_("too long name component to convert", ""));
 	return KRB5_PARSE_MALFORMED;
     }
     if (strlcpy (instance, i, aname_sz) >= aname_sz) {
 	krb5_set_error_message(context, KRB5_PARSE_MALFORMED,
-			       "too long instance component to convert");
+			       N_("too long instance component to convert", ""));
 	return KRB5_PARSE_MALFORMED;
     }
     if (strlcpy (realm, r, aname_sz) >= aname_sz) {
 	krb5_set_error_message(context, KRB5_PARSE_MALFORMED,
-			       "too long realm component to convert");
+			       N_("too long realm component to convert", ""));
 	return KRB5_PARSE_MALFORMED;
     }
     return 0;
 }
 
-/*
- * Create a principal in `ret_princ' for the service `sname' running
- * on host `hostname'.  */
+/**
+ * Create a principal for the service running on hostname. If
+ * KRB5_NT_SRV_HST is used, the hostname is canonization using DNS (or
+ * some other service), this is potentially insecure.
+ *
+ * @param context A Kerberos context.
+ * @param hostname hostname to use
+ * @param sname Service name to use
+ * @param type name type of pricipal, use KRB5_NT_SRV_HST or KRB5_NT_UNKNOWN.
+ * @param ret_princ return principal, free with krb5_free_principal().
+ *
+ * @return An krb5 error code, see krb5_get_error_message().
+ *
+ * @ingroup krb5_principal
+ */
 			
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_sname_to_principal (krb5_context context,
@@ -1254,7 +1302,7 @@ krb5_sname_to_principal (krb5_context context,
 	
     if(type != KRB5_NT_SRV_HST && type != KRB5_NT_UNKNOWN) {
 	krb5_set_error_message(context, KRB5_SNAME_UNSUPP_NAMETYPE,
-			       "unsupported name type %d",
+			       N_("unsupported name type %d", ""),
 			       (int)type);
 	return KRB5_SNAME_UNSUPP_NAMETYPE;
     }
@@ -1263,9 +1311,9 @@ krb5_sname_to_principal (krb5_context context,
 	if (ret != 0) {
 	    ret = errno;
 	    krb5_set_error_message(context, ret,
-				   "Failed to get local hostname");
+				   N_("Failed to get local hostname", ""));
 	    return ret;
-	}	    
+	}	
 	localhost[sizeof(localhost) - 1] = '\0';
 	hostname = localhost;
     }
@@ -1315,7 +1363,7 @@ krb5_error_code
 krb5_parse_nametype(krb5_context context, const char *str, int32_t *nametype)
 {
     size_t i;
-    
+
     for(i = 0; nametypes[i].type; i++) {
 	if (strcasecmp(nametypes[i].type, str) == 0) {
 	    *nametype = nametypes[i].value;
@@ -1323,6 +1371,6 @@ krb5_parse_nametype(krb5_context context, const char *str, int32_t *nametype)
 	}
     }
     krb5_set_error_message(context, KRB5_PARSE_MALFORMED,
-			   "Failed to find name type %s", str);
+			   N_("Failed to find name type %s", ""), str);
     return KRB5_PARSE_MALFORMED;
 }

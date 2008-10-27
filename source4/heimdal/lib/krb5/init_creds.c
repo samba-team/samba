@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2004 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2004 Kungliga Tekniska HÃ¶gskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  *
@@ -33,32 +33,36 @@
 
 #include "krb5_locl.h"
 
+#undef __attribute__
+#define __attribute__(x)
+
 RCSID("$Id$");
 
 void KRB5_LIB_FUNCTION
 krb5_get_init_creds_opt_init(krb5_get_init_creds_opt *opt)
+    __attribute__((deprecated))
 {
     memset (opt, 0, sizeof(*opt));
-    opt->flags = 0;
-    opt->opt_private = NULL;
 }
 
 krb5_error_code KRB5_LIB_FUNCTION
-krb5_get_init_creds_opt_alloc(krb5_context context, 
+krb5_get_init_creds_opt_alloc(krb5_context context,
 			      krb5_get_init_creds_opt **opt)
 {
     krb5_get_init_creds_opt *o;
-    
+
     *opt = NULL;
     o = calloc(1, sizeof(*o));
     if (o == NULL) {
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, 
+			       N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
-    krb5_get_init_creds_opt_init(o);
+
     o->opt_private = calloc(1, sizeof(*o->opt_private));
     if (o->opt_private == NULL) {
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, 
+			       N_("malloc: out of memory", ""));
 	free(o);
 	return ENOMEM;
     }
@@ -68,7 +72,7 @@ krb5_get_init_creds_opt_alloc(krb5_context context,
 }
 
 krb5_error_code
-_krb5_get_init_creds_opt_copy(krb5_context context, 
+_krb5_get_init_creds_opt_copy(krb5_context context,
 			      const krb5_get_init_creds_opt *in,
 			      krb5_get_init_creds_opt **out)
 {
@@ -77,7 +81,7 @@ _krb5_get_init_creds_opt_copy(krb5_context context,
     *out = NULL;
     opt = calloc(1, sizeof(*opt));
     if (opt == NULL) {
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     if (in)
@@ -85,7 +89,7 @@ _krb5_get_init_creds_opt_copy(krb5_context context,
     if(opt->opt_private == NULL) {
 	opt->opt_private = calloc(1, sizeof(*opt->opt_private));
 	if (opt->opt_private == NULL) {
-	    krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	    krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	    free(opt);
 	    return ENOMEM;
 	}
@@ -108,7 +112,7 @@ _krb5_get_init_creds_opt_free_krb5_error(krb5_get_init_creds_opt *opt)
 
 void KRB5_LIB_FUNCTION
 _krb5_get_init_creds_opt_set_krb5_error(krb5_context context,
-					krb5_get_init_creds_opt *opt, 
+					krb5_get_init_creds_opt *opt,
 					const KRB_ERROR *error)
 {
     krb5_error_code ret;
@@ -224,7 +228,7 @@ krb5_get_init_creds_opt_set_default_flags(krb5_context context,
     if(t != 0)
 	krb5_get_init_creds_opt_set_renew_life(opt, t);
 
-    krb5_appdefault_boolean(context, appname, realm, "no-addresses", 
+    krb5_appdefault_boolean(context, appname, realm, "no-addresses",
 			    KRB5_ADDRESSLESS_DEFAULT, &b);
     krb5_get_init_creds_opt_set_addressless (context, opt, b);
 
@@ -327,7 +331,8 @@ require_ext_opt(krb5_context context,
 		const char *type)
 {
     if (opt->opt_private == NULL) {
-	krb5_set_error_message(context, EINVAL, "%s on non extendable opt", type);
+	krb5_set_error_message(context, EINVAL,
+			       N_("%s on non extendable opt", ""), type);
 	return EINVAL;
     }
     return 0;
@@ -381,13 +386,13 @@ krb5_get_init_creds_opt_get_error(krb5_context context,
 
     *error = malloc(sizeof(**error));
     if (*error == NULL) {
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
 
     ret = copy_KRB_ERROR(opt->opt_private->error, *error);
     if (ret)
-	krb5_clear_error_string(context);
+	krb5_clear_error_message(context);
 
     return 0;
 }

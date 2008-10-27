@@ -1,34 +1,34 @@
 /*
- * Copyright (c) 1997 - 2003 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * Copyright (c) 1997 - 2003 Kungliga Tekniska HÃ¶gskolan
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * 3. Neither the name of the Institute nor the names of its contributors 
- *    may be used to endorse or promote products derived from this software 
- *    without specific prior written permission. 
+ * 3. Neither the name of the Institute nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
- * SUCH DAMAGE. 
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 #include "krb5/gsskrb5_locl.h"
@@ -49,16 +49,16 @@ _gsskrb5i_get_initiator_subkey(const gsskrb5_ctx ctx,
 
     if (ctx->more_flags & LOCAL) {
 	ret = krb5_auth_con_getlocalsubkey(context,
-				     ctx->auth_context, 
+				     ctx->auth_context,
 				     key);
     } else {
 	ret = krb5_auth_con_getremotesubkey(context,
-				      ctx->auth_context, 
+				      ctx->auth_context,
 				      key);
     }
     if (ret == 0 && *key == NULL)
 	ret = krb5_auth_con_getkey(context,
-				   ctx->auth_context, 
+				   ctx->auth_context,
 				   key);
     if (ret == 0 && *key == NULL) {
 	krb5_set_error_message(context, 0, "No initiator subkey available");
@@ -77,11 +77,11 @@ _gsskrb5i_get_acceptor_subkey(const gsskrb5_ctx ctx,
 
     if (ctx->more_flags & LOCAL) {
 	ret = krb5_auth_con_getremotesubkey(context,
-				      ctx->auth_context, 
+				      ctx->auth_context,
 				      key);
     } else {
 	ret = krb5_auth_con_getlocalsubkey(context,
-				     ctx->auth_context, 
+				     ctx->auth_context,
 				     key);
     }
     if (ret == 0 && *key == NULL) {
@@ -120,7 +120,7 @@ sub_wrap_size (
 	    int extrasize
            )
 {
-    size_t len, total_len; 
+    size_t len, total_len;
 
     len = 8 + req_output_size + blocksize + extrasize;
 
@@ -170,7 +170,7 @@ _gsskrb5_wrap_size_limit (
   case KEYTYPE_ARCFOUR:
   case KEYTYPE_ARCFOUR_56:
       ret = _gssapi_wrap_size_arcfour(minor_status, ctx, context,
-				      conf_req_flag, qop_req, 
+				      conf_req_flag, qop_req,
 				      req_output_size, max_input_size, key);
       break;
   case KEYTYPE_DES3 :
@@ -178,7 +178,7 @@ _gsskrb5_wrap_size_limit (
       break;
   default :
       ret = _gssapi_wrap_size_cfx(minor_status, ctx, context,
-				  conf_req_flag, qop_req, 
+				  conf_req_flag, qop_req,
 				  req_output_size, max_input_size, key);
       break;
   }
@@ -370,7 +370,7 @@ wrap_des3
   p = _gsskrb5_make_header(output_message_buffer->value,
 			      len,
 			      "\x02\x01", /* TOK_ID */
-			      GSS_KRB5_MECHANISM); 
+			      GSS_KRB5_MECHANISM);
 
   /* SGN_ALG */
   memcpy (p, "\x04\x00", 2);	/* HMAC SHA1 DES3-KD */
@@ -467,7 +467,7 @@ wrap_des3
       *minor_status = ret;
       return GSS_S_FAILURE;
   }
-  
+
   assert (encdata.length == 8);
 
   memcpy (p, encdata.data, encdata.length);

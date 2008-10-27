@@ -322,13 +322,13 @@ OM_uint32 _gss_spnego_import_name
 	*minor_status = ENOMEM;
 	return GSS_S_FAILURE;
     }
-    
+
     maj_stat = _gss_copy_oid(minor_status, name_type, &name->type);
     if (maj_stat) {
 	free(name);
 	return GSS_S_FAILURE;
     }
-    
+
     maj_stat = _gss_copy_buffer(minor_status, name_buffer, &name->value);
     if (maj_stat) {
 	gss_name_t rname = (gss_name_t)name;
@@ -427,7 +427,7 @@ OM_uint32 _gss_spnego_inquire_context (
 	*src_name = (gss_name_t)name;
     } else
 	gss_release_name(&junk, &src_mn);
-    
+
     if (targ_name) {
 	spnego_name name = calloc(1, sizeof(*name));
 	if (name == NULL) {

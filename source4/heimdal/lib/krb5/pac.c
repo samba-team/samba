@@ -1,34 +1,34 @@
 /*
- * Copyright (c) 2006 - 2007 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * Copyright (c) 2006 - 2007 Kungliga Tekniska HÃ¶gskolan
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * 3. Neither the name of the Institute nor the names of its contributors 
- *    may be used to endorse or promote products derived from this software 
- *    without specific prior written permission. 
+ * 3. Neither the name of the Institute nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
- * SUCH DAMAGE. 
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 #include "krb5_locl.h"
@@ -45,7 +45,7 @@ struct PAC_INFO_BUFFER {
 
 struct PACTYPE {
     uint32_t numbuffers;
-    uint32_t version;                         
+    uint32_t version;
     struct PAC_INFO_BUFFER buffers[1];
 };
 
@@ -70,7 +70,7 @@ struct krb5_pac_data {
 #define CHECK(r,f,l)						\
 	do {							\
 		if (((r) = f ) != 0) {				\
-			krb5_clear_error_string(context);	\
+			krb5_clear_error_message(context);	\
 			goto l;					\
 		}						\
 	} while(0)
@@ -93,14 +93,14 @@ krb5_pac_parse(krb5_context context, const void *ptr, size_t len,
     p = calloc(1, sizeof(*p));
     if (p == NULL) {
 	ret = ENOMEM;
-	krb5_set_error_message(context, ret, "malloc: out of memory");
+	krb5_set_error_message(context, ret, N_("malloc: out of memory", ""));
 	goto out;
     }
 
     sp = krb5_storage_from_readonly_mem(ptr, len);
     if (sp == NULL) {
 	ret = ENOMEM;
-	krb5_set_error_message(context, ret, "malloc: out of memory");
+	krb5_set_error_message(context, ret, N_("malloc: out of memory", ""));
 	goto out;
     }
     krb5_storage_set_flags(sp, KRB5_STORAGE_BYTEORDER_LE);
@@ -109,20 +109,22 @@ krb5_pac_parse(krb5_context context, const void *ptr, size_t len,
     CHECK(ret, krb5_ret_uint32(sp, &tmp2), out);
     if (tmp < 1) {
 	ret = EINVAL; /* Too few buffers */
-	krb5_set_error_message(context, ret, "PAC have too few buffer");
+	krb5_set_error_message(context, ret, N_("PAC have too few buffer", ""));
 	goto out;
     }
     if (tmp2 != 0) {
 	ret = EINVAL; /* Wrong version */
-	krb5_set_error_message(context, ret, "PAC have wrong version");
+	krb5_set_error_message(context, ret,
+			       N_("PAC have wrong version %d", ""),
+			       (int)tmp2);
 	goto out;
     }
 
-    p->pac = calloc(1, 
+    p->pac = calloc(1,
 		    sizeof(*p->pac) + (sizeof(p->pac->buffers[0]) * (tmp - 1)));
     if (p->pac == NULL) {
 	ret = ENOMEM;
-	krb5_set_error_message(context, ret, "malloc: out of memory");
+	krb5_set_error_message(context, ret, N_("malloc: out of memory", ""));
 	goto out;
     }
 
@@ -144,29 +146,33 @@ krb5_pac_parse(krb5_context context, const void *ptr, size_t len,
 	/* consistency checks */
 	if (p->pac->buffers[i].offset_lo & (PAC_ALIGNMENT - 1)) {
 	    ret = EINVAL;
-	    krb5_set_error_message(context, ret, "PAC out of allignment");
+	    krb5_set_error_message(context, ret,
+				   N_("PAC out of allignment", ""));
 	    goto out;
 	}
 	if (p->pac->buffers[i].offset_hi) {
 	    ret = EINVAL;
-	    krb5_set_error_message(context, ret, "PAC high offset set");
+	    krb5_set_error_message(context, ret,
+				   N_("PAC high offset set", ""));
 	    goto out;
 	}
 	if (p->pac->buffers[i].offset_lo > len) {
 	    ret = EINVAL;
-	    krb5_set_error_message(context, ret, "PAC offset off end");
+	    krb5_set_error_message(context, ret,
+				   N_("PAC offset off end", ""));
 	    goto out;
 	}
 	if (p->pac->buffers[i].offset_lo < header_end) {
 	    ret = EINVAL;
-	    krb5_set_error_message(context, ret, "PAC offset inside header: %lu %lu",
-				  (unsigned long)p->pac->buffers[i].offset_lo, 
-				  (unsigned long)header_end);
+	    krb5_set_error_message(context, ret,
+				   N_("PAC offset inside header: %lu %lu", ""),
+				   (unsigned long)p->pac->buffers[i].offset_lo,
+				   (unsigned long)header_end);
 	    goto out;
 	}
 	if (p->pac->buffers[i].buffersize > len - p->pac->buffers[i].offset_lo){
 	    ret = EINVAL;
-	    krb5_set_error_message(context, ret, "PAC length off end");
+	    krb5_set_error_message(context, ret, N_("PAC length off end", ""));
 	    goto out;
 	}
 
@@ -174,21 +180,24 @@ krb5_pac_parse(krb5_context context, const void *ptr, size_t len,
 	if (p->pac->buffers[i].type == PAC_SERVER_CHECKSUM) {
 	    if (p->server_checksum) {
 		ret = EINVAL;
-		krb5_set_error_message(context, ret, "PAC have two server checksums");
+		krb5_set_error_message(context, ret,
+				       N_("PAC have two server checksums", ""));
 		goto out;
 	    }
 	    p->server_checksum = &p->pac->buffers[i];
 	} else if (p->pac->buffers[i].type == PAC_PRIVSVR_CHECKSUM) {
 	    if (p->privsvr_checksum) {
 		ret = EINVAL;
-		krb5_set_error_message(context, ret, "PAC have two KDC checksums");
+		krb5_set_error_message(context, ret,
+				       N_("PAC have two KDC checksums", ""));
 		goto out;
 	    }
 	    p->privsvr_checksum = &p->pac->buffers[i];
 	} else if (p->pac->buffers[i].type == PAC_LOGON_NAME) {
 	    if (p->logon_name) {
 		ret = EINVAL;
-		krb5_set_error_message(context, ret, "PAC have two logon names");
+		krb5_set_error_message(context, ret,
+				       N_("PAC have two logon names", ""));
 		goto out;
 	    }
 	    p->logon_name = &p->pac->buffers[i];
@@ -225,14 +234,14 @@ krb5_pac_init(krb5_context context, krb5_pac *pac)
 
     p = calloc(1, sizeof(*p));
     if (p == NULL) {
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
 
     p->pac = calloc(1, sizeof(*p->pac));
     if (p->pac == NULL) {
 	free(p);
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
 
@@ -240,7 +249,7 @@ krb5_pac_init(krb5_context context, krb5_pac *pac)
     if (ret) {
 	free (p->pac);
 	free(p);
-	krb5_set_error_message(context, ret, "malloc: out of memory");
+	krb5_set_error_message(context, ret, N_("malloc: out of memory", ""));
 	return ret;
     }
 
@@ -263,7 +272,7 @@ krb5_pac_add_buffer(krb5_context context, krb5_pac p,
     ptr = realloc(p->pac,
 		  sizeof(*p->pac) + (sizeof(p->pac->buffers[0]) * len));
     if (ptr == NULL) {
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     p->pac = ptr;
@@ -284,17 +293,17 @@ krb5_pac_add_buffer(krb5_context context, krb5_pac p,
 	krb5_set_error_message(context, EINVAL, "integer overrun");
 	return EINVAL;
     }
-    
+
     /* align to PAC_ALIGNMENT */
     len = ((len + PAC_ALIGNMENT - 1) / PAC_ALIGNMENT) * PAC_ALIGNMENT;
 
     ret = krb5_data_realloc(&p->data, len);
     if (ret) {
-	krb5_set_error_message(context, ret, "malloc: out of memory");
+	krb5_set_error_message(context, ret, N_("malloc: out of memory", ""));
 	return ret;
     }
 
-    /* 
+    /*
      * make place for new PAC INFO BUFFER header
      */
     header_end = PACTYPE_SIZE + (PAC_INFO_BUFFER_SIZE * p->pac->numbuffers);
@@ -317,6 +326,20 @@ krb5_pac_add_buffer(krb5_context context, krb5_pac p,
     return 0;
 }
 
+/**
+ * Get the PAC buffer of specific type from the pac.
+ *
+ * @param context Kerberos 5 context.
+ * @param p the pac structure returned by krb5_pac_parse().
+ * @param type type of buffer to get
+ * @param data return data, free with krb5_data_free().
+ *
+ * @return Returns 0 to indicate success. Otherwise an kerberos et
+ * error code is returned, see krb5_get_error_message().
+ *
+ * @ingroup krb5_pac
+ */
+
 krb5_error_code
 krb5_pac_get_buffer(krb5_context context, krb5_pac p,
 		    uint32_t type, krb5_data *data)
@@ -325,15 +348,15 @@ krb5_pac_get_buffer(krb5_context context, krb5_pac p,
     uint32_t i;
 
     for (i = 0; i < p->pac->numbuffers; i++) {
-	size_t len = p->pac->buffers[i].buffersize;
-	size_t offset = p->pac->buffers[i].offset_lo;
+	const size_t len = p->pac->buffers[i].buffersize;
+	const size_t offset = p->pac->buffers[i].offset_lo;
 
 	if (p->pac->buffers[i].type != type)
 	    continue;
 
 	ret = krb5_data_copy(data, (unsigned char *)p->data.data + offset, len);
 	if (ret) {
-	    krb5_set_error_message(context, ret, "malloc: out of memory");
+	    krb5_set_error_message(context, ret, N_("malloc: out of memory", ""));
 	    return ret;
 	}
 	return 0;
@@ -358,7 +381,7 @@ krb5_pac_get_types(krb5_context context,
     *types = calloc(p->pac->numbuffers, sizeof(*types));
     if (*types == NULL) {
 	*len = 0;
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     for (i = 0; i < p->pac->numbuffers; i++)
@@ -402,19 +425,19 @@ verify_checksum(krb5_context context,
     sp = krb5_storage_from_mem((char *)data->data + sig->offset_lo,
 			       sig->buffersize);
     if (sp == NULL) {
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     krb5_storage_set_flags(sp, KRB5_STORAGE_BYTEORDER_LE);
 
     CHECK(ret, krb5_ret_uint32(sp, &type), out);
     cksum.cksumtype = type;
-    cksum.checksum.length = 
+    cksum.checksum.length =
 	sig->buffersize - krb5_storage_seek(sp, 0, SEEK_CUR);
     cksum.checksum.data = malloc(cksum.checksum.length);
     if (cksum.checksum.data == NULL) {
 	ret = ENOMEM;
-	krb5_set_error_message(context, ret, "malloc: out of memory");
+	krb5_set_error_message(context, ret, N_("malloc: out of memory", ""));
 	goto out;
     }
     ret = krb5_storage_read(sp, cksum.checksum.data, cksum.checksum.length);
@@ -517,7 +540,7 @@ verify_logonname(krb5_context context,
     sp = krb5_storage_from_readonly_mem((const char *)data->data + logon_name->offset_lo,
 					logon_name->buffersize);
     if (sp == NULL) {
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
 
@@ -546,7 +569,7 @@ verify_logonname(krb5_context context,
     s = malloc(len);
     if (s == NULL) {
 	krb5_storage_free(sp);
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     ret = krb5_storage_read(sp, s, len);
@@ -564,7 +587,7 @@ verify_logonname(krb5_context context,
 
 	ucs2 = malloc(sizeof(ucs2[0]) * ucs2len);
 	if (ucs2 == NULL) {
-	    krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	    krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	    return ENOMEM;
 	}
 	ret = wind_ucs2read(s, len, &flags, ucs2, &ucs2len);
@@ -584,7 +607,7 @@ verify_logonname(krb5_context context,
 	s = malloc(u8len);
 	if (s == NULL) {
 	    free(ucs2);
-	    krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	    krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	    return ENOMEM;
 	}
 	ret = wind_ucs2utf8(ucs2, ucs2len, s, &u8len);
@@ -598,7 +621,7 @@ verify_logonname(krb5_context context,
     free(s);
     if (ret)
 	return ret;
-    
+
     if (krb5_principal_compare_any_realm(context, principal, p2) != TRUE) {
 	ret = EINVAL;
 	krb5_set_error_message(context, ret, "PAC logon name mismatch");
@@ -614,9 +637,9 @@ out:
  */
 
 static krb5_error_code
-build_logon_name(krb5_context context, 
+build_logon_name(krb5_context context,
 		 time_t authtime,
-		 krb5_const_principal principal, 
+		 krb5_const_principal principal,
 		 krb5_data *logon)
 {
     krb5_error_code ret;
@@ -631,7 +654,7 @@ build_logon_name(krb5_context context,
 
     sp = krb5_storage_emem();
     if (sp == NULL) {
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     krb5_storage_set_flags(sp, KRB5_STORAGE_BYTEORDER_LE);
@@ -645,7 +668,7 @@ build_logon_name(krb5_context context,
 	goto out;
 
     len = strlen(s);
-    
+
     CHECK(ret, krb5_store_uint16(sp, len * 2), out);
 
 #if 1 /* cheat for now */
@@ -682,12 +705,24 @@ out:
 }
 
 
-/*
+/**
+ * Verify the PAC.
  *
+ * @param context Kerberos 5 context.
+ * @param pac the pac structure returned by krb5_pac_parse().
+ * @param authtime The time of the ticket the PAC belongs to.
+ * @param principal the principal to verify.
+ * @param server The service key, most always be given.
+ * @param privsvr The KDC key, may be given.
+
+ * @return Returns 0 to indicate success. Otherwise an kerberos et
+ * error code is returned, see krb5_get_error_message().
+ *
+ * @ingroup krb5_pac
  */
 
 krb5_error_code
-krb5_pac_verify(krb5_context context, 
+krb5_pac_verify(krb5_context context,
 		const krb5_pac pac,
 		time_t authtime,
 		krb5_const_principal principal,
@@ -709,7 +744,7 @@ krb5_pac_verify(krb5_context context,
 	return EINVAL;
     }
 
-    ret = verify_logonname(context, 
+    ret = verify_logonname(context,
 			   pac->logon_name,
 			   &pac->data,
 			   authtime,
@@ -717,7 +752,7 @@ krb5_pac_verify(krb5_context context,
     if (ret)
 	return ret;
 
-    /* 
+    /*
      * in the service case, clean out data option of the privsvr and
      * server checksum before checking the checksum.
      */
@@ -752,6 +787,7 @@ krb5_pac_verify(krb5_context context,
 	    return ret;
     }
     if (privsvr) {
+	/* The priv checksum covers the server checksum */
 	ret = verify_checksum(context,
 			      pac->privsvr_checksum,
 			      &pac->data,
@@ -782,7 +818,7 @@ fill_zeros(krb5_context context, krb5_storage *sp, size_t len)
 	    l = sizeof(zeros);
 	sret = krb5_storage_write(sp, zeros, l);
 	if (sret <= 0) {
-	    krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	    krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	    return ENOMEM;
 	}
 	len -= sret;
@@ -791,7 +827,7 @@ fill_zeros(krb5_context context, krb5_storage *sp, size_t len)
 }
 
 static krb5_error_code
-pac_checksum(krb5_context context, 
+pac_checksum(krb5_context context,
 	     const krb5_keyblock *key,
 	     uint32_t *cksumtype,
 	     size_t *cksumsize)
@@ -817,7 +853,7 @@ pac_checksum(krb5_context context,
     ret = krb5_checksumsize(context, cktype, cksumsize);
     if (ret)
 	return ret;
-    
+
     *cksumtype = (uint32_t)cktype;
 
     return 0;
@@ -855,7 +891,7 @@ _krb5_pac_sign(krb5_context context,
 
 	ptr = realloc(p->pac, sizeof(*p->pac) + (sizeof(p->pac->buffers[0]) * (p->pac->numbuffers + num - 1)));
 	if (ptr == NULL) {
-	    krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	    krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	    return ENOMEM;
 	}
 	p->pac = ptr;
@@ -893,7 +929,7 @@ _krb5_pac_sign(krb5_context context,
     /* Encode PAC */
     sp = krb5_storage_emem();
     if (sp == NULL) {
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     krb5_storage_set_flags(sp, KRB5_STORAGE_BYTEORDER_LE);
@@ -901,7 +937,7 @@ _krb5_pac_sign(krb5_context context,
     spdata = krb5_storage_emem();
     if (spdata == NULL) {
 	krb5_storage_free(sp);
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     krb5_storage_set_flags(spdata, KRB5_STORAGE_BYTEORDER_LE);
@@ -941,7 +977,7 @@ _krb5_pac_sign(krb5_context context,
 	    sret = krb5_storage_write(spdata, ptr, len);
 	    if (sret != len) {
 		ret = ENOMEM;
-		krb5_set_error_message(context, ret, "malloc: out of memory");
+		krb5_set_error_message(context, ret, N_("malloc: out of memory", ""));
 		goto out;
 	    }
 	    /* XXX if not aligned, fill_zeros */
@@ -972,21 +1008,21 @@ _krb5_pac_sign(krb5_context context,
     /* export PAC */
     ret = krb5_storage_to_data(spdata, &d);
     if (ret) {
-	krb5_set_error_message(context, ret, "malloc: out of memory");
+	krb5_set_error_message(context, ret, N_("malloc: out of memory", ""));
 	goto out;
     }
     ret = krb5_storage_write(sp, d.data, d.length);
     if (ret != d.length) {
 	krb5_data_free(&d);
 	ret = ENOMEM;
-	krb5_set_error_message(context, ret, "malloc: out of memory");
+	krb5_set_error_message(context, ret, N_("malloc: out of memory", ""));
 	goto out;
     }
     krb5_data_free(&d);
 
     ret = krb5_storage_to_data(sp, &d);
     if (ret) {
-	krb5_set_error_message(context, ret, "malloc: out of memory");
+	krb5_set_error_message(context, ret, N_("malloc: out of memory", ""));
 	goto out;
     }
 

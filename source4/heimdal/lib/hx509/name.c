@@ -1,34 +1,34 @@
 /*
- * Copyright (c) 2004 - 2007 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * Copyright (c) 2004 - 2007 Kungliga Tekniska HÃ¶gskolan
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * 3. Neither the name of the Institute nor the names of its contributors 
- *    may be used to endorse or promote products derived from this software 
- *    without specific prior written permission. 
+ * 3. Neither the name of the Institute nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
- * SUCH DAMAGE. 
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 #include "hx_locl.h"
@@ -116,7 +116,7 @@ quote_string(const char *f, size_t len, size_t *rlen)
 
 
 static int
-append_string(char **str, size_t *total_len, const char *ss, 
+append_string(char **str, size_t *total_len, const char *ss,
 	      size_t len, int quote)
 {
     char *s, *qs;
@@ -143,7 +143,7 @@ oidtostring(const heim_oid *type)
 {
     char *s;
     size_t i;
-    
+
     for (i = 0; i < sizeof(no)/sizeof(no[0]); i++) {
 	if (der_heim_oid_cmp((*no[i].o)(), type) == 0)
 	    return strdup(no[i].n);
@@ -158,7 +158,7 @@ stringtooid(const char *name, size_t len, heim_oid *oid)
 {
     int i, ret;
     char *s;
-    
+
     memset(oid, 0, sizeof(*oid));
 
     for (i = 0; i < sizeof(no)/sizeof(no[0]); i++) {
@@ -210,7 +210,7 @@ _hx509_Name_to_string(const Name *n, char **str)
 	    DirectoryString *ds = &n->u.rdnSequence.val[i].val[j].value;
 	    char *oidname;
 	    char *ss;
-	    
+	
 	    oidname = oidtostring(&n->u.rdnSequence.val[i].val[j].type);
 
 	    switch(ds->element) {
@@ -426,7 +426,7 @@ _hx509_name_cmp(const Name *n1, const Name *n2, int *c)
 				  &n1->u.rdnSequence.val[i].val[j].type);
 	    if (*c)
 		return 0;
-			     
+			
 	    ret = _hx509_name_ds_cmp(&n1->u.rdnSequence.val[i].val[j].value,
 				     &n2->u.rdnSequence.val[i].val[j].value,
 				     c);
@@ -480,17 +480,17 @@ _hx509_name_from_Name(const Name *n, hx509_name *name)
 
 int
 _hx509_name_modify(hx509_context context,
-		   Name *name, 
+		   Name *name,
 		   int append,
-		   const heim_oid *oid, 
+		   const heim_oid *oid,
 		   const char *str)
 {
     RelativeDistinguishedName *rdn;
     int ret;
     void *ptr;
 
-    ptr = realloc(name->u.rdnSequence.val, 
-		  sizeof(name->u.rdnSequence.val[0]) * 
+    ptr = realloc(name->u.rdnSequence.val,
+		  sizeof(name->u.rdnSequence.val[0]) *
 		  (name->u.rdnSequence.len + 1));
     if (ptr == NULL) {
 	hx509_set_error_string(context, 0, ENOMEM, "Out of memory");
@@ -503,7 +503,7 @@ _hx509_name_modify(hx509_context context,
     } else {
 	memmove(&name->u.rdnSequence.val[1],
 		&name->u.rdnSequence.val[0],
-		name->u.rdnSequence.len * 
+		name->u.rdnSequence.len *
 		sizeof(name->u.rdnSequence.val[0]));
 	
 	rdn = &name->u.rdnSequence.val[0];
@@ -577,7 +577,7 @@ hx509_parse_name(hx509_context context, const char *str, hx509_name *name)
 	}
 	if (q == p) {
 	    ret = HX509_PARSING_NAME_FAILED;
-	    hx509_set_error_string(context, 0, ret, 
+	    hx509_set_error_string(context, 0, ret,
 				   "missing name before = in %s", p);
 	    goto out;
 	}
@@ -591,7 +591,7 @@ hx509_parse_name(hx509_context context, const char *str, hx509_name *name)
 	ret = stringtooid(p, q - p, &oid);
 	if (ret) {
 	    ret = HX509_PARSING_NAME_FAILED;
-	    hx509_set_error_string(context, 0, ret, 
+	    hx509_set_error_string(context, 0, ret,
 				   "unknown type: %.*s", (int)(q - p), p);
 	    goto out;
 	}
@@ -600,7 +600,7 @@ hx509_parse_name(hx509_context context, const char *str, hx509_name *name)
 	    size_t pstr_len = len - (q - p) - 1;
 	    const char *pstr = p + (q - p) + 1;
 	    char *r;
-	    
+	
 	    r = malloc(pstr_len + 1);
 	    if (r == NULL) {
 		der_free_oid(&oid);
@@ -731,8 +731,8 @@ hx509_name_expand(hx509_context context,
 	    }
 	    p = strstr(ds->u.utf8String, "${");
 	    if (p) {
-		strpool = rk_strpoolprintf(strpool, "%.*s", 
-					   (int)(p - ds->u.utf8String), 
+		strpool = rk_strpoolprintf(strpool, "%.*s",
+					   (int)(p - ds->u.utf8String),
 					   ds->u.utf8String);
 		if (strpool == NULL) {
 		    hx509_set_error_string(context, 0, ENOMEM, "out of memory");
@@ -751,7 +751,7 @@ hx509_name_expand(hx509_context context,
 		p += 2;
 		value = hx509_env_lfind(context, env, p, p2 - p);
 		if (value == NULL) {
-		    hx509_set_error_string(context, 0, EINVAL, 
+		    hx509_set_error_string(context, 0, EINVAL,
 					   "variable %.*s missing",
 					   (int)(p2 - p), p);
 		    rk_strpoolfree(strpool);
@@ -766,7 +766,7 @@ hx509_name_expand(hx509_context context,
 
 		p = strstr(p2, "${");
 		if (p)
-		    strpool = rk_strpoolprintf(strpool, "%.*s", 
+		    strpool = rk_strpoolprintf(strpool, "%.*s",
 					       (int)(p - p2), p2);
 		else
 		    strpool = rk_strpoolprintf(strpool, "%s", p2);
@@ -942,7 +942,7 @@ hx509_general_name_unparse(GeneralName *name, char **str)
 	break;
     }
     case choice_GeneralName_uniformResourceIdentifier:
-	strpool = rk_strpoolprintf(strpool, "URI: %s", 
+	strpool = rk_strpoolprintf(strpool, "URI: %s",
 				   name->u.uniformResourceIdentifier);
 	break;
     case choice_GeneralName_iPAddress: {
@@ -952,20 +952,20 @@ hx509_general_name_unparse(GeneralName *name, char **str)
 	if (strpool == NULL)
 	    break;
 	if (name->u.iPAddress.length == 4)
-	    strpool = rk_strpoolprintf(strpool, "%d.%d.%d.%d", 
+	    strpool = rk_strpoolprintf(strpool, "%d.%d.%d.%d",
 				       a[0], a[1], a[2], a[3]);
 	else if (name->u.iPAddress.length == 16)
-	    strpool = rk_strpoolprintf(strpool, 
+	    strpool = rk_strpoolprintf(strpool,
 				       "%02X:%02X:%02X:%02X:"
 				       "%02X:%02X:%02X:%02X:"
 				       "%02X:%02X:%02X:%02X:"
-				       "%02X:%02X:%02X:%02X", 
+				       "%02X:%02X:%02X:%02X",
 				       a[0], a[1], a[2], a[3],
 				       a[4], a[5], a[6], a[7],
 				       a[8], a[9], a[10], a[11],
 				       a[12], a[13], a[14], a[15]);
 	else
-	    strpool = rk_strpoolprintf(strpool, 
+	    strpool = rk_strpoolprintf(strpool,
 				       "unknown IP address of length %lu",
 				       (unsigned long)name->u.iPAddress.length);
 	break;

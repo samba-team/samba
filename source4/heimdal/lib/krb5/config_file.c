@@ -1,34 +1,34 @@
 /*
- * Copyright (c) 1997 - 2004 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * Copyright (c) 1997 - 2004 Kungliga Tekniska HÃ¶gskolan
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * 3. Neither the name of the Institute nor the names of its contributors 
- *    may be used to endorse or promote products derived from this software 
- *    without specific prior written permission. 
+ * 3. Neither the name of the Institute nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
- * SUCH DAMAGE. 
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 #include "krb5_locl.h"
@@ -85,7 +85,7 @@ get_entry(krb5_config_section **parent, const char *name, int type)
     krb5_config_section **q;
 
     for(q = parent; *q != NULL; q = &(*q)->next)
-	if(type == krb5_config_list && 
+	if(type == krb5_config_list &&
 	   type == (*q)->type &&
 	   strcmp(name, (*q)->name) == 0)
 	    return *q;
@@ -111,7 +111,7 @@ get_entry(krb5_config_section **parent, const char *name, int type)
  *		a
  *	    }
  * ...
- * 
+ *
  * starting at the line in `p', storing the resulting structure in
  * `s' and hooking it into `parent'.
  * Store the error message in `error_message'.
@@ -262,7 +262,7 @@ krb5_config_parse_debug (struct fileptr *f,
 	    continue;
 	if (*p == '[') {
 	    ret = parse_section(p, &s, res, error_message);
-	    if (ret) 
+	    if (ret)
 		return ret;
 	    b = NULL;
 	} else if (*p == '}') {
@@ -315,7 +315,7 @@ krb5_config_parse_file_multi (krb5_context context,
     f.s = NULL;
     if(f.f == NULL) {
 	ret = errno;
-	krb5_set_error_message (context, ret, "open %s: %s", 
+	krb5_set_error_message (context, ret, "open %s: %s",
 				fname, strerror(ret));
 	return ret;
     }
@@ -352,7 +352,7 @@ free_binding (krb5_context context, krb5_config_binding *b)
 	else if (b->type == krb5_config_list)
 	    free_binding (context, b->u.list);
 	else
-	    krb5_abortx(context, "unknown binding type (%d) in free_binding", 
+	    krb5_abortx(context, "unknown binding type (%d) in free_binding",
 			b->type);
 	next_b = b->next;
 	free (b);
@@ -366,6 +366,42 @@ krb5_config_file_free (krb5_context context, krb5_config_section *s)
     free_binding (context, s);
     return 0;
 }
+
+krb5_error_code
+_krb5_config_copy(krb5_context context,
+		  krb5_config_section *c,
+		  krb5_config_section **head)
+{
+    krb5_config_binding *d, *previous = NULL;
+
+    *head = NULL;
+
+    while (c) {
+	d = calloc(1, sizeof(*d));
+
+	if (*head == NULL)
+	    *head = d;
+
+	d->name = strdup(c->name);
+	d->type = c->type;
+	if (d->type == krb5_config_string)
+	    d->u.string = strdup(c->u.string);
+	else if (d->type == krb5_config_list)
+	    _krb5_config_copy (context, c->u.list, &d->u.list);
+	else
+	    krb5_abortx(context,
+			"unknown binding type (%d) in krb5_config_copy",
+			d->type);
+	if (previous)
+	    previous->next = d;
+
+	previous = d;
+	c = c->next;
+    }
+    return 0;
+}
+
+
 
 const void *
 krb5_config_get_next (krb5_context context,
@@ -551,7 +587,7 @@ krb5_config_vget_strings(krb5_context context,
     const krb5_config_binding *b = NULL;
     const char *p;
 
-    while((p = krb5_config_vget_next(context, c, &b, 
+    while((p = krb5_config_vget_next(context, c, &b,
 				     krb5_config_string, args))) {
 	char *tmp = strdup(p);
 	char *pos = NULL;
@@ -726,13 +762,13 @@ krb5_config_vget_int_default (krb5_context context,
     str = krb5_config_vget_string (context, c, args);
     if(str == NULL)
 	return def_value;
-    else { 
-	char *endptr; 
-	long l; 
-	l = strtol(str, &endptr, 0); 
-	if (endptr == str) 
-	    return def_value; 
-	else 
+    else {
+	char *endptr;
+	long l;
+	l = strtol(str, &endptr, 0);
+	if (endptr == str)
+	    return def_value;
+	else
 	    return l;
     }
 }

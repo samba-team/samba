@@ -87,7 +87,7 @@ parse_header(const gss_buffer_t input_token, gss_OID mech_oid)
 	mech_oid->elements = p;
 	
 	return GSS_S_COMPLETE;
-}		       
+}		
 
 static gss_OID_desc krb5_mechanism =
     {9, rk_UNCONST("\x2a\x86\x48\x86\xf7\x12\x01\x02\x02")};
@@ -109,12 +109,12 @@ choose_mech(const gss_buffer_t input, gss_OID mech_oid)
 	status = parse_header(input, mech_oid);
 	if (status == GSS_S_COMPLETE)
 	    return GSS_S_COMPLETE;
-    
+
 	/*
 	 * Lets guess what mech is really is, callback function to mech ??
 	 */
 
-	if (input->length > 8 && 
+	if (input->length > 8 &&
 	    memcmp((const char *)input->value, "NTLMSSP\x00", 8) == 0)
 	{
 		*mech_oid = ntlm_mechanism;
@@ -126,11 +126,14 @@ choose_mech(const gss_buffer_t input, gss_OID mech_oid)
 		*mech_oid = krb5_mechanism;
 		return GSS_S_COMPLETE;
 	} else if (input->length == 0) {
-		/* 
+		/*
 		 * There is the a wierd mode of SPNEGO (in CIFS and
 		 * SASL GSS-SPENGO where the first token is zero
 		 * length and the acceptor returns a mech_list, lets
 		 * hope that is what is happening now.
+		 *
+		 * http://msdn.microsoft.com/en-us/library/cc213114.aspx
+		 * "NegTokenInit2 Variation for Server-Initiation"
 		 */
 		*mech_oid = spnego_mechanism;
 		return GSS_S_COMPLETE;

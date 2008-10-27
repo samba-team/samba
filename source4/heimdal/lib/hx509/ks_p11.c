@@ -1,34 +1,34 @@
 /*
- * Copyright (c) 2004 - 2006 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * Copyright (c) 2004 - 2008 Kungliga Tekniska HÃ¶gskolan
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * 3. Neither the name of the Institute nor the names of its contributors 
- *    may be used to endorse or promote products derived from this software 
- *    without specific prior written permission. 
+ * 3. Neither the name of the Institute nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
- * SUCH DAMAGE. 
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 #include "hx_locl.h"
@@ -83,7 +83,7 @@ static void p11_release_module(struct p11_module *);
 
 static int p11_list_keys(hx509_context,
 			 struct p11_module *,
-			 struct p11_slot *, 
+			 struct p11_slot *,
 			 CK_SESSION_HANDLE,
 			 hx509_lock,
 			 hx509_certs *);
@@ -121,7 +121,7 @@ p11_rsa_public_decrypt(int flen,
 
 
 static int
-p11_rsa_private_encrypt(int flen, 
+p11_rsa_private_encrypt(int flen,
 			const unsigned char *from,
 			unsigned char *to,
 			RSA *rsa,
@@ -152,7 +152,7 @@ p11_rsa_private_encrypt(int flen,
 	return -1;
     }
 
-    ret = P11FUNC(p11rsa->p, Sign, 
+    ret = P11FUNC(p11rsa->p, Sign,
 		  (session, (CK_BYTE *)from, flen, to, &ck_sigsize));
     p11_put_session(p11rsa->p, p11rsa->slot, session);
     if (ret != CKR_OK)
@@ -190,7 +190,7 @@ p11_rsa_private_decrypt(int flen, const unsigned char *from, unsigned char *to,
 	return -1;
     }
 
-    ret = P11FUNC(p11rsa->p, Decrypt, 
+    ret = P11FUNC(p11rsa->p, Decrypt,
 		  (session, (CK_BYTE *)from, flen, to, &ck_sigsize));
     p11_put_session(p11rsa->p, p11rsa->slot, session);
     if (ret != CKR_OK)
@@ -199,7 +199,7 @@ p11_rsa_private_decrypt(int flen, const unsigned char *from, unsigned char *to,
     return ck_sigsize;
 }
 
-static int 
+static int
 p11_rsa_init(RSA *rsa)
 {
     return 1;
@@ -299,7 +299,7 @@ p11_mech_info(hx509_context context,
 }
 
 static int
-p11_init_slot(hx509_context context, 
+p11_init_slot(hx509_context context,
 	      struct p11_module *p,
 	      hx509_lock lock,
 	      CK_SLOT_ID id,
@@ -376,14 +376,14 @@ p11_get_session(hx509_context context,
 
     if (slot->flags & P11_SESSION_IN_USE)
 	_hx509_abort("slot already in session");
-    
+
     if (slot->flags & P11_SESSION) {
 	slot->flags |= P11_SESSION_IN_USE;
 	*psession = slot->session;
 	return 0;
     }
 
-    ret = P11FUNC(p, OpenSession, (slot->id, 
+    ret = P11FUNC(p, OpenSession, (slot->id,
 				   CKF_SERIAL_SESSION,
 				   NULL,
 				   NULL,
@@ -396,10 +396,10 @@ p11_get_session(hx509_context context,
 				   (int)slot->id, ret);
 	return HX509_PKCS11_OPEN_SESSION;
     }
-    
+
     slot->flags |= P11_SESSION;
-    
-    /* 
+
+    /*
      * If we have have to login, and haven't tried before and have a
      * prompter or known to work pin code.
      *
@@ -419,8 +419,6 @@ p11_get_session(hx509_context context,
 	char pin[20];
 	char *str;
 
-	slot->flags |= P11_LOGIN_DONE;
-
 	if (slot->pin == NULL) {
 
 	    memset(&prompt, 0, sizeof(prompt));
@@ -430,7 +428,7 @@ p11_get_session(hx509_context context,
 	    prompt.type = HX509_PROMPT_TYPE_PASSWORD;
 	    prompt.reply.data = pin;
 	    prompt.reply.length = sizeof(pin);
-	    
+	
 	    ret = hx509_lock_prompt(lock, &prompt);
 	    if (ret) {
 		free(str);
@@ -454,16 +452,16 @@ p11_get_session(hx509_context context,
 				       "Failed to login on slot id %d "
 				       "with error: 0x%08x",
 				       (int)slot->id, ret);
-	    p11_put_session(p, slot, slot->session);
 	    return HX509_PKCS11_LOGIN;
-	}
+	} else
+	    slot->flags |= P11_LOGIN_DONE;
+
 	if (slot->pin == NULL) {
 	    slot->pin = strdup(pin);
 	    if (slot->pin == NULL) {
 		if (context)
 		    hx509_set_error_string(context, 0, ENOMEM,
 					   "out of memory");
-		p11_put_session(p, slot, slot->session);
 		return ENOMEM;
 	    }
 	}
@@ -479,7 +477,7 @@ p11_get_session(hx509_context context,
 
 static int
 p11_put_session(struct p11_module *p,
-		struct p11_slot *slot, 
+		struct p11_slot *slot,
 		CK_SESSION_HANDLE session)
 {
     if ((slot->flags & P11_SESSION_IN_USE) == 0)
@@ -520,7 +518,7 @@ iterate_entries(hx509_context context,
 	for (i = 0; i < num_query; i++)
 	    query[i].pValue = NULL;
 
-	ret = P11FUNC(p, GetAttributeValue, 
+	ret = P11FUNC(p, GetAttributeValue,
 		      (session, object, query, num_query));
 	if (ret != CKR_OK) {
 	    return -1;
@@ -569,7 +567,7 @@ static BIGNUM *
 getattr_bn(struct p11_module *p,
 	   struct p11_slot *slot,
 	   CK_SESSION_HANDLE session,
-	   CK_OBJECT_HANDLE object, 
+	   CK_OBJECT_HANDLE object,
 	   unsigned int type)
 {
     CK_ATTRIBUTE query;
@@ -580,14 +578,14 @@ getattr_bn(struct p11_module *p,
     query.pValue = NULL;
     query.ulValueLen = 0;
 
-    ret = P11FUNC(p, GetAttributeValue, 
+    ret = P11FUNC(p, GetAttributeValue,
 		  (session, object, &query, 1));
     if (ret != CKR_OK)
 	return NULL;
 
     query.pValue = malloc(query.ulValueLen);
 
-    ret = P11FUNC(p, GetAttributeValue, 
+    ret = P11FUNC(p, GetAttributeValue,
 		  (session, object, &query, 1));
     if (ret != CKR_OK) {
 	free(query.pValue);
@@ -624,7 +622,7 @@ collect_private_key(hx509_context context,
     if (rsa == NULL)
 	_hx509_abort("out of memory");
 
-    /* 
+    /*
      * The exponent and modulus should always be present according to
      * the pkcs11 specification, but some smartcards leaves it out,
      * let ignore any failure to fetch it.
@@ -639,7 +637,7 @@ collect_private_key(hx509_context context,
     p11rsa->p = p;
     p11rsa->slot = slot;
     p11rsa->private_key = object;
-    
+
     if (p->ref == 0)
 	_hx509_abort("pkcs11 ref == 0 on alloc");
     p->ref++;
@@ -676,7 +674,7 @@ p11_cert_release(hx509_cert cert, void *ctx)
 
 
 static int
-collect_cert(hx509_context context, 
+collect_cert(hx509_context context,
 	     struct p11_module *p, struct p11_slot *slot,
 	     CK_SESSION_HANDLE session,
 	     CK_OBJECT_HANDLE object,
@@ -687,12 +685,12 @@ collect_cert(hx509_context context,
     int ret;
 
     if ((CK_LONG)query[0].ulValueLen == -1 ||
-	(CK_LONG)query[1].ulValueLen == -1) 
+	(CK_LONG)query[1].ulValueLen == -1)
     {
 	return 0;
     }
 
-    ret = hx509_cert_init_data(context, query[1].pValue, 
+    ret = hx509_cert_init_data(context, query[1].pValue,
 			       query[1].ulValueLen, &cert);
     if (ret)
 	return ret;
@@ -738,7 +736,7 @@ collect_cert(hx509_context context,
 static int
 p11_list_keys(hx509_context context,
 	      struct p11_module *p,
-	      struct p11_slot *slot, 
+	      struct p11_slot *slot,
 	      CK_SESSION_HANDLE session,
 	      hx509_lock lock,
 	      hx509_certs *certs)
@@ -792,7 +790,7 @@ out:
 
 static int
 p11_init(hx509_context context,
-	 hx509_certs certs, void **data, int flags, 
+	 hx509_certs certs, void **data, int flags,
 	 const char *residue, hx509_lock lock)
 {
     CK_C_GetFunctionList getFuncs;
@@ -842,7 +840,7 @@ p11_init(hx509_context context,
     if (getFuncs == NULL) {
 	ret = HX509_PKCS11_LOAD;
 	hx509_set_error_string(context, 0, ret,
-			       "C_GetFunctionList missing in %s: %s", 
+			       "C_GetFunctionList missing in %s: %s",
 			       list, dlerror());
 	goto out;
     }
@@ -908,7 +906,7 @@ p11_init(hx509_context context,
 	    ret = ENOMEM;
 	    goto out;
 	}
-			 
+			
 	for (i = 0; i < p->num_slots; i++) {
 	    ret = p11_init_slot(context, p, lock, slot_ids[i], i, &p->slot[i]);
 	    if (ret)
@@ -928,7 +926,7 @@ p11_init(hx509_context context,
     *data = p;
 
     return 0;
- out:    
+ out:
     p11_release_module(p);
     return ret;
 }
@@ -1003,7 +1001,7 @@ struct p11_cursor {
     void *cursor;
 };
 
-static int 
+static int
 p11_iter_start(hx509_context context,
 	       hx509_certs certs, void *data, void **cursor)
 {
@@ -1103,16 +1101,16 @@ static struct units mechflags[] = {
 #undef MECHFLAG
 
 static int
-p11_printinfo(hx509_context context, 
-	      hx509_certs certs, 
+p11_printinfo(hx509_context context,
+	      hx509_certs certs,
 	      void *data,
 	      int (*func)(void *, const char *),
 	      void *ctx)
 {
     struct p11_module *p = data;
     int i, j;
-        
-    _hx509_pi_printf(func, ctx, "pkcs11 driver with %d slot%s", 
+
+    _hx509_pi_printf(func, ctx, "pkcs11 driver with %d slot%s",
 		     p->num_slots, p->num_slots > 1 ? "s" : "");
 
     for (i = 0; i < p->num_slots; i++) {
@@ -1121,7 +1119,7 @@ p11_printinfo(hx509_context context,
 	_hx509_pi_printf(func, ctx, "slot %d: id: %d name: %s flags: %08x",
 			 i, (int)s->id, s->name, s->flags);
 
-	_hx509_pi_printf(func, ctx, "number of supported mechanisms: %lu", 
+	_hx509_pi_printf(func, ctx, "number of supported mechanisms: %lu",
 			 (unsigned long)s->mechs.num);
 	for (j = 0; j < s->mechs.num; j++) {
 	    const char *mechname = "unknown";
@@ -1155,13 +1153,13 @@ p11_printinfo(hx509_context context,
 		MECHNAME(CKM_DH_PKCS_PARAMETER_GEN, "dh-pkcs-parameter-gen");
 	    default:
 		snprintf(unknownname, sizeof(unknownname),
-			 "unknown-mech-%lu", 
+			 "unknown-mech-%lu",
 			 (unsigned long)s->mechs.list[j]);
 		mechname = unknownname;
 		break;
 	    }
 #undef MECHNAME
-	    unparse_flags(s->mechs.infos[j]->flags, mechflags, 
+	    unparse_flags(s->mechs.infos[j]->flags, mechflags,
 			  flags, sizeof(flags));
 
 	    _hx509_pi_printf(func, ctx, "  %s: %s", mechname, flags);

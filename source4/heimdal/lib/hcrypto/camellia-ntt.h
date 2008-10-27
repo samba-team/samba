@@ -37,17 +37,17 @@ typedef u32 KEY_TABLE_TYPE[CAMELLIA_TABLE_WORD_LEN];
 
 
 void Camellia_Ekeygen(const int keyBitLength,
-		      const unsigned char *rawKey, 
+		      const unsigned char *rawKey,
 		      KEY_TABLE_TYPE keyTable);
 
 void Camellia_EncryptBlock(const int keyBitLength,
-			   const unsigned char *plaintext, 
-			   const KEY_TABLE_TYPE keyTable, 
+			   const unsigned char *plaintext,
+			   const KEY_TABLE_TYPE keyTable,
 			   unsigned char *cipherText);
 
-void Camellia_DecryptBlock(const int keyBitLength, 
-			   const unsigned char *cipherText, 
-			   const KEY_TABLE_TYPE keyTable, 
+void Camellia_DecryptBlock(const int keyBitLength,
+			   const unsigned char *cipherText,
+			   const KEY_TABLE_TYPE keyTable,
 			   unsigned char *plaintext);
 
 

@@ -1,23 +1,23 @@
 /*
- * Copyright (c) 2005 - 2006 Kungliga Tekniska Högskolan
+ * Copyright (c) 2005 - 2008 Kungliga Tekniska HÃ¶gskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the Institute nor the names of its contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -104,6 +104,8 @@
 #define	OpenSSL_add_all_algorithms hc_OpenSSL_add_all_algorithms
 #define	OpenSSL_add_all_algorithms_conf hc_OpenSSL_add_all_algorithms_conf
 #define	OpenSSL_add_all_algorithms_noconf hc_OpenSSL_add_all_algorithms_noconf
+#define EVP_CIPHER_CTX_ctrl hc_EVP_CIPHER_CTX_ctrl
+#define EVP_CIPHER_CTX_rand_key hc_EVP_CIPHER_CTX_rand_key
 
 /*
  *
@@ -134,7 +136,8 @@ struct hc_CIPHER {
 #define EVP_CIPH_CBC_MODE		2
 #define EVP_CIPH_MODE			0x7
 
-#define EVP_CIPH_ALWAYS_CALL_INIT	0x20
+#define EVP_CIPH_ALWAYS_CALL_INIT	0x020
+#define EVP_CIPH_RAND_KEY		0x200
 
     int (*init)(EVP_CIPHER_CTX*,const unsigned char*,const unsigned char*,int);
     int (*do_cipher)(EVP_CIPHER_CTX *, unsigned char *,
@@ -143,7 +146,9 @@ struct hc_CIPHER {
     int ctx_size;
     void *set_asn1_parameters;
     void *get_asn1_parameters;
-    void *ctrl;
+    int (*ctrl)(EVP_CIPHER_CTX *, int type, int arg, void *ptr);
+#define EVP_CTRL_RAND_KEY		0x6
+
     void *app_data;
 };
 
@@ -250,7 +255,7 @@ int	HC_DEPRECATED EVP_MD_CTX_cleanup(EVP_MD_CTX *);
 int	EVP_DigestInit_ex(EVP_MD_CTX *, const EVP_MD *, ENGINE *);
 int	EVP_DigestUpdate(EVP_MD_CTX *,const void *, size_t);
 int	EVP_DigestFinal_ex(EVP_MD_CTX *, void *, unsigned int *);
-int	EVP_Digest(const void *, size_t, void *, unsigned int *, 
+int	EVP_Digest(const void *, size_t, void *, unsigned int *,
 		   const EVP_MD *, ENGINE *);
 /*
  *
@@ -279,6 +284,10 @@ size_t	EVP_CIPHER_CTX_iv_length(const EVP_CIPHER_CTX *);
 void *	EVP_CIPHER_CTX_get_app_data(EVP_CIPHER_CTX *);
 void	EVP_CIPHER_CTX_set_app_data(EVP_CIPHER_CTX *, void *);
 
+int	EVP_CIPHER_CTX_ctrl(EVP_CIPHER_CTX *, int, int, void *);
+int	EVP_CIPHER_CTX_rand_key(EVP_CIPHER_CTX *, void *);
+
+
 int	EVP_CipherInit_ex(EVP_CIPHER_CTX *,const EVP_CIPHER *, ENGINE *,
 			  const void *, const void *, int);
 int	EVP_CipherUpdate(EVP_CIPHER_CTX *, void *, int *, void *, size_t);
@@ -289,7 +298,7 @@ int	EVP_Cipher(EVP_CIPHER_CTX *,void *,const void *,size_t);
 int	PKCS5_PBKDF2_HMAC_SHA1(const void *, size_t, const void *, size_t,
 			       unsigned long, size_t, void *);
 
-int	EVP_BytesToKey(const EVP_CIPHER *, const EVP_MD *, 
+int	EVP_BytesToKey(const EVP_CIPHER *, const EVP_MD *,
 		       const void *, const void *, size_t,
 		       unsigned int, void *, void *);
 

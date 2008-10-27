@@ -1,34 +1,34 @@
 /*
- * Copyright (c) 2004 - 2007 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * Copyright (c) 2004 - 2007 Kungliga Tekniska HÃ¶gskolan
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * 3. Neither the name of the Institute nor the names of its contributors 
- *    may be used to endorse or promote products derived from this software 
- *    without specific prior written permission. 
+ * 3. Neither the name of the Institute nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
- * SUCH DAMAGE. 
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 #include "hx_locl.h"
@@ -113,7 +113,7 @@ free_private_key(struct private_key *key)
 
 int
 _hx509_collector_private_key_add(hx509_context context,
-				 struct hx509_collector *c, 
+				 struct hx509_collector *c,
 				 const AlgorithmIdentifier *alg,
 				 hx509_private_key private_key,
 				 const heim_octet_string *key_data,
@@ -153,7 +153,7 @@ _hx509_collector_private_key_add(hx509_context context,
     if (localKeyId) {
 	ret = der_copy_octet_string(localKeyId, &key->localKeyId);
 	if (ret) {
-	    hx509_set_error_string(context, 0, ret, 
+	    hx509_set_error_string(context, 0, ret,
 				   "Failed to copy localKeyId");
 	    goto out;
 	}
@@ -187,9 +187,9 @@ match_localkeyid(hx509_context context,
 
     _hx509_query_clear(&q);
     q.match |= HX509_QUERY_MATCH_LOCAL_KEY_ID;
-    
+
     q.local_key_id = &value->localKeyId;
-    
+
     ret = hx509_certs_find(context, certs, &q, &cert);
     if (ret == 0) {
 	
@@ -208,7 +208,7 @@ match_keys(hx509_context context, struct private_key *value, hx509_certs certs)
     int ret, found = HX509_CERT_NOT_FOUND;
 
     if (value->private_key == NULL) {
-	hx509_set_error_string(context, 0, HX509_PRIVATE_KEY_MISSING, 
+	hx509_set_error_string(context, 0, HX509_PRIVATE_KEY_MISSING,
 			       "No private key to compare with");
 	return HX509_PRIVATE_KEY_MISSING;
     }
@@ -248,7 +248,7 @@ match_keys(hx509_context context, struct private_key *value, hx509_certs certs)
 }
 
 int
-_hx509_collector_collect_certs(hx509_context context, 
+_hx509_collector_collect_certs(hx509_context context,
 			       struct hx509_collector *c,
 			       hx509_certs *ret_certs)
 {
@@ -282,7 +282,7 @@ _hx509_collector_collect_certs(hx509_context context,
 }
 
 int
-_hx509_collector_collect_private_keys(hx509_context context, 
+_hx509_collector_collect_private_keys(hx509_context context,
 				      struct hx509_collector *c,
 				      hx509_private_key **keys)
 {

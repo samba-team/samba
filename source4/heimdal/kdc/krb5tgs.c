@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2008 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2008 Kungliga Tekniska HÃ¶gskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  *
@@ -501,7 +501,7 @@ check_constrained_delegation(krb5_context context,
 
     ret = hdb_entry_get_ConstrainedDelegACL(&client->entry, &acl);
     if (ret) {
-	krb5_clear_error_string(context);
+	krb5_clear_error_message(context);
 	return ret;
     }
 
@@ -888,7 +888,7 @@ tgs_make_reply(krb5_context context,
     }
 
     if (krb5_enctype_valid(context, et.key.keytype) != 0
-	&& _kdc_is_weak_expection(server->entry.principal, et.key.keytype)) 
+	&& _kdc_is_weak_expection(server->entry.principal, et.key.keytype))
     {
 	krb5_enctype_enable(context, et.key.keytype);
 	is_weak = 1;
@@ -1295,7 +1295,7 @@ build_server_referral(krb5_context context,
     memset(&ref, 0, sizeof(ref));
 
     if (referred_realm) {
-	ref.referred_realm = malloc(sizeof(ref.referred_realm));
+	ALLOC(ref.referred_realm);
 	if (ref.referred_realm == NULL)
 	    goto eout;
 	*ref.referred_realm = strdup(referred_realm);
@@ -1303,8 +1303,7 @@ build_server_referral(krb5_context context,
 	    goto eout;
     }
     if (true_principal_name) {
-	ref.true_principal_name =
-	    malloc(sizeof(ref.true_principal_name));
+	ALLOC(ref.true_principal_name);
 	if (ref.true_principal_name == NULL)
 	    goto eout;
 	ret = copy_PrincipalName(true_principal_name, ref.true_principal_name);
@@ -1312,8 +1311,7 @@ build_server_referral(krb5_context context,
 	    goto eout;
     }
     if (requested_principal) {
-	ref.requested_principal_name =
-	    malloc(sizeof(ref.requested_principal_name));
+	ALLOC(ref.requested_principal_name);
 	if (ref.requested_principal_name == NULL)
 	    goto eout;
 	ret = copy_PrincipalName(requested_principal,
@@ -1392,8 +1390,6 @@ tgs_build_reply(krb5_context context,
     EncTicketPart adtkt;
     char opt_str[128];
     int signedpath = 0;
-
-    Key *tkey;
 
     memset(&sessionkey, 0, sizeof(sessionkey));
     memset(&adtkt, 0, sizeof(adtkt));
@@ -1582,7 +1578,7 @@ server_lookup:
 	    if(i == b->etype.len) {
 		kdc_log(context, config, 0,
 			"Addition ticket have not matching etypes", spp);
-		krb5_clear_error_string(context);
+		krb5_clear_error_message(context);
 		return KRB5KDC_ERR_ETYPE_NOSUPP;
 	    }
 	    etype = b->etype.val[i];
@@ -1632,22 +1628,26 @@ server_lookup:
     }
 
     /* check PAC if not cross realm and if there is one */
-    ret = hdb_enctype2key(context, &krbtgt->entry,
-			  krbtgt_etype, &tkey);
-    if(ret) {
-	kdc_log(context, config, 0,
-		    "Failed to find key for krbtgt PAC check");
-	goto out;
-    }
+    if (!cross_realm) {
+	Key *tkey;
 
-    ret = check_PAC(context, config, cp,
-		    client, server, ekey, &tkey->key,
-		    tgt, &rspac, &signedpath);
-    if (ret) {
-	kdc_log(context, config, 0,
-		"Verify PAC failed for %s (%s) from %s with %s",
-		spn, cpn, from, krb5_get_err_text(context, ret));
-	goto out;
+	ret = hdb_enctype2key(context, &krbtgt->entry,
+			      krbtgt_etype, &tkey);
+	if(ret) {
+	    kdc_log(context, config, 0,
+		    "Failed to find key for krbtgt PAC check");
+	    goto out;
+	}
+
+	ret = check_PAC(context, config, cp,
+			client, server, ekey, &tkey->key,
+			tgt, &rspac, &signedpath);
+	if (ret) {
+	    kdc_log(context, config, 0,
+		    "Verify PAC failed for %s (%s) from %s with %s",
+		    spn, cpn, from, krb5_get_err_text(context, ret));
+	    goto out;
+	}
     }
 
     /* also check the krbtgt for signature */

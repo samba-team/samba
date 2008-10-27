@@ -1785,7 +1785,7 @@ yyreduce:
 
   case 17:
 #line 270 "heimdal/lib/asn1/parse.y"
-    { 
+    {
 		    struct string_list *sl;
 		    for(sl = (yyvsp[(1) - (4)].sl); sl != NULL; sl = sl->next) {
 			Symbol *s = addsym(sl->string);
@@ -1827,7 +1827,7 @@ yyreduce:
   case 42:
 #line 334 "heimdal/lib/asn1/parse.y"
     {
-			(yyval.type) = new_tag(ASN1_C_UNIV, UT_Boolean, 
+			(yyval.type) = new_tag(ASN1_C_UNIV, UT_Boolean,
 				     TE_EXPLICIT, new_type(TBoolean));
 		}
     break;
@@ -1881,7 +1881,7 @@ yyreduce:
   case 47:
 #line 378 "heimdal/lib/asn1/parse.y"
     {
-			(yyval.type) = new_tag(ASN1_C_UNIV, UT_Integer, 
+			(yyval.type) = new_tag(ASN1_C_UNIV, UT_Integer,
 				     TE_EXPLICIT, new_type(TInteger));
 		}
     break;
@@ -1971,7 +1971,7 @@ yyreduce:
   case 58:
 #line 451 "heimdal/lib/asn1/parse.y"
     {
-			(yyval.type) = new_tag(ASN1_C_UNIV, UT_OID, 
+			(yyval.type) = new_tag(ASN1_C_UNIV, UT_OID,
 				     TE_EXPLICIT, new_type(TOID));
 		}
     break;
@@ -1981,7 +1981,7 @@ yyreduce:
     {
 		    Type *t = new_type(TOctetString);
 		    t->range = (yyvsp[(3) - (3)].range);
-		    (yyval.type) = new_tag(ASN1_C_UNIV, UT_OctetString, 
+		    (yyval.type) = new_tag(ASN1_C_UNIV, UT_OctetString,
 				 TE_EXPLICIT, t);
 		}
     break;
@@ -1989,7 +1989,7 @@ yyreduce:
   case 60:
 #line 466 "heimdal/lib/asn1/parse.y"
     {
-			(yyval.type) = new_tag(ASN1_C_UNIV, UT_Null, 
+			(yyval.type) = new_tag(ASN1_C_UNIV, UT_Null,
 				     TE_EXPLICIT, new_type(TNull));
 		}
     break;
@@ -2082,7 +2082,7 @@ yyreduce:
   case 73:
 #line 547 "heimdal/lib/asn1/parse.y"
     {
-			(yyval.type) = new_tag(ASN1_C_UNIV, UT_GeneralizedTime, 
+			(yyval.type) = new_tag(ASN1_C_UNIV, UT_GeneralizedTime,
 				     TE_EXPLICIT, new_type(TGeneralizedTime));
 		}
     break;
@@ -2090,7 +2090,7 @@ yyreduce:
   case 74:
 #line 552 "heimdal/lib/asn1/parse.y"
     {
-			(yyval.type) = new_tag(ASN1_C_UNIV, UT_UTCTime, 
+			(yyval.type) = new_tag(ASN1_C_UNIV, UT_UTCTime,
 				     TE_EXPLICIT, new_type(TUTCTime));
 		}
     break;
@@ -2243,7 +2243,7 @@ yyreduce:
   case 95:
 #line 686 "heimdal/lib/asn1/parse.y"
     {
-			(yyval.type) = new_tag(ASN1_C_UNIV, UT_GeneralString, 
+			(yyval.type) = new_tag(ASN1_C_UNIV, UT_GeneralString,
 				     TE_EXPLICIT, new_type(TGeneralString));
 		}
     break;
@@ -2251,7 +2251,7 @@ yyreduce:
   case 96:
 #line 691 "heimdal/lib/asn1/parse.y"
     {
-			(yyval.type) = new_tag(ASN1_C_UNIV, UT_UTF8String, 
+			(yyval.type) = new_tag(ASN1_C_UNIV, UT_UTF8String,
 				     TE_EXPLICIT, new_type(TUTF8String));
 		}
     break;
@@ -2259,7 +2259,7 @@ yyreduce:
   case 97:
 #line 696 "heimdal/lib/asn1/parse.y"
     {
-			(yyval.type) = new_tag(ASN1_C_UNIV, UT_PrintableString, 
+			(yyval.type) = new_tag(ASN1_C_UNIV, UT_PrintableString,
 				     TE_EXPLICIT, new_type(TPrintableString));
 		}
     break;
@@ -2267,7 +2267,7 @@ yyreduce:
   case 98:
 #line 701 "heimdal/lib/asn1/parse.y"
     {
-			(yyval.type) = new_tag(ASN1_C_UNIV, UT_VisibleString, 
+			(yyval.type) = new_tag(ASN1_C_UNIV, UT_VisibleString,
 				     TE_EXPLICIT, new_type(TVisibleString));
 		}
     break;
@@ -2275,7 +2275,7 @@ yyreduce:
   case 99:
 #line 706 "heimdal/lib/asn1/parse.y"
     {
-			(yyval.type) = new_tag(ASN1_C_UNIV, UT_IA5String, 
+			(yyval.type) = new_tag(ASN1_C_UNIV, UT_IA5String,
 				     TE_EXPLICIT, new_type(TIA5String));
 		}
     break;
@@ -2283,7 +2283,7 @@ yyreduce:
   case 100:
 #line 711 "heimdal/lib/asn1/parse.y"
     {
-			(yyval.type) = new_tag(ASN1_C_UNIV, UT_BMPString, 
+			(yyval.type) = new_tag(ASN1_C_UNIV, UT_BMPString,
 				     TE_EXPLICIT, new_type(TBMPString));
 		}
     break;
@@ -2291,7 +2291,7 @@ yyreduce:
   case 101:
 #line 716 "heimdal/lib/asn1/parse.y"
     {
-			(yyval.type) = new_tag(ASN1_C_UNIV, UT_UniversalString, 
+			(yyval.type) = new_tag(ASN1_C_UNIV, UT_UniversalString,
 				     TE_EXPLICIT, new_type(TUniversalString));
 		}
     break;
@@ -2439,7 +2439,7 @@ yyreduce:
 		    Symbol *s = addsym((yyvsp[(1) - (1)].name));
 		    if(s->stype != SValue ||
 		       s->value->type != objectidentifiervalue) {
-			error_message("%s is not an object identifier\n", 
+			error_message("%s is not an object identifier\n",
 				      s->name);
 			exit(1);
 		    }
@@ -2751,7 +2751,7 @@ new_tag(int tagclass, int tagvalue, int tagenv, Type *oldtype)
 	oldtype = oldtype->subtype; /* XXX */
     } else
 	t = new_type (TTag);
-    
+
     t->tag.tagclass = tagclass;
     t->tag.tagvalue = tagvalue;
     t->tag.tagenv = tagenv;

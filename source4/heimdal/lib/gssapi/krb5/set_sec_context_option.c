@@ -192,7 +192,7 @@ _gsskrb5_set_sec_context_option
 	    }
 	    memcpy(&c, value->value, sizeof(c));
 	    krb5_set_send_to_kdc_func(context,
-				      (krb5_send_to_kdc_func)c.func, 
+				      (krb5_send_to_kdc_func)c.func,
 				      c.ptr);
 	}
 
@@ -241,6 +241,18 @@ _gsskrb5_set_sec_context_option
 	maj_stat = set_int32(minor_status, value, sec - t);
 	if (maj_stat != GSS_S_COMPLETE)
 	    return maj_stat;
+
+	*minor_status = 0;
+	return GSS_S_COMPLETE;
+    } else if (gss_oid_equal(desired_object, GSS_KRB5_PLUGIN_REGISTER_X)) {
+	struct gsskrb5_krb5_plugin c;
+
+	if (value->length != sizeof(c)) {
+	    *minor_status = EINVAL;
+	    return GSS_S_FAILURE;
+	}
+	memcpy(&c, value->value, sizeof(c));
+	krb5_plugin_register(context, c.type, c.name, c.symbol);
 
 	*minor_status = 0;
 	return GSS_S_COMPLETE;

@@ -1,34 +1,34 @@
 /*
- * Copyright (c) 1997 - 2001, 2003 - 2004 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * Copyright (c) 1997 - 2001, 2003 - 2004 Kungliga Tekniska HÃ¶gskolan
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * 3. Neither the name of the Institute nor the names of its contributors 
- *    may be used to endorse or promote products derived from this software 
- *    without specific prior written permission. 
+ * 3. Neither the name of the Institute nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
- * SUCH DAMAGE. 
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 #include "hdb_locl.h"
@@ -39,7 +39,7 @@ RCSID("$Id$");
  * free all the memory used by (len, keys)
  */
 
-static void
+void
 hdb_free_keys (krb5_context context, int len, Key *keys)
 {
     int i;
@@ -57,7 +57,7 @@ hdb_free_keys (krb5_context context, int len, Key *keys)
     free (keys);
 }
 
-/* 
+/*
  * for each entry in `default_keys' try to parse it as a sequence
  * of etype:salttype:salt, syntax of this if something like:
  * [(des|des3|etype):](pw-salt|afs3)[:string], if etype is omitted it
@@ -68,21 +68,21 @@ hdb_free_keys (krb5_context context, int len, Key *keys)
  *	afs or afs3 == des:afs3-salt
  */
 
-static const krb5_enctype des_etypes[] = { 
+static const krb5_enctype des_etypes[] = {
     ETYPE_DES_CBC_MD5,
     ETYPE_DES_CBC_MD4,
     ETYPE_DES_CBC_CRC
 };
 
-static const krb5_enctype all_etypes[] = { 
+static const krb5_enctype all_etypes[] = {
     ETYPE_AES256_CTS_HMAC_SHA1_96,
     ETYPE_ARCFOUR_HMAC_MD5,
     ETYPE_DES3_CBC_SHA1
 };
 
 static krb5_error_code
-parse_key_set(krb5_context context, const char *key, 
-	      krb5_enctype **ret_enctypes, size_t *ret_num_enctypes, 
+parse_key_set(krb5_context context, const char *key,
+	      krb5_enctype **ret_enctypes, size_t *ret_num_enctypes,
 	      krb5_salt *salt, krb5_principal principal)
 {
     const char *p;
@@ -92,7 +92,7 @@ parse_key_set(krb5_context context, const char *key,
     krb5_enctype e;
     const krb5_enctype *enctypes = NULL;
     krb5_error_code ret;
-    
+
     p = key;
 
     *ret_enctypes = NULL;
@@ -161,12 +161,12 @@ parse_key_set(krb5_context context, const char *key,
 	    salt->saltvalue.length = strlen(buf[i]);
 	}
     }
-    
+
     if(enctypes == NULL || salt->salttype == 0) {
 	krb5_set_error_message(context, EINVAL, "bad value for default_keys `%s'", key);
 	return EINVAL;
     }
-    
+
     /* if no salt was specified make up default salt */
     if(salt->saltvalue.data == NULL) {
 	if(salt->salttype == KRB5_PW_SALT)
@@ -198,7 +198,7 @@ parse_key_set(krb5_context context, const char *key,
 }
 
 static krb5_error_code
-add_enctype_to_key_set(Key **key_set, size_t *nkeyset, 
+add_enctype_to_key_set(Key **key_set, size_t *nkeyset,
 		       krb5_enctype enctype, krb5_salt *salt)
 {
     krb5_error_code ret;
@@ -209,13 +209,13 @@ add_enctype_to_key_set(Key **key_set, size_t *nkeyset,
     tmp = realloc(*key_set, (*nkeyset + 1) * sizeof((*key_set)[0]));
     if (tmp == NULL)
 	return ENOMEM;
-    
+
     *key_set = tmp;
 
     key.key.keytype = enctype;
     key.key.keyvalue.length = 0;
     key.key.keyvalue.data = NULL;
-    
+
     if (salt) {
 	key.salt = malloc(sizeof(*key.salt));
 	if (key.salt == NULL) {
@@ -226,8 +226,8 @@ add_enctype_to_key_set(Key **key_set, size_t *nkeyset,
 	key.salt->type = salt->salttype;
 	krb5_data_zero (&key.salt->salt);
 	
-	ret = krb5_data_copy(&key.salt->salt, 
-			     salt->saltvalue.data, 
+	ret = krb5_data_copy(&key.salt->salt,
+			     salt->saltvalue.data,
 			     salt->saltvalue.length);
 	if (ret) {
 	    free_Key(&key);
@@ -235,9 +235,9 @@ add_enctype_to_key_set(Key **key_set, size_t *nkeyset,
 	}
     } else
 	key.salt = NULL;
-    
+
     (*key_set)[*nkeyset] = key;
-    
+
     *nkeyset += 1;
 
     return 0;
@@ -250,7 +250,7 @@ add_enctype_to_key_set(Key **key_set, size_t *nkeyset,
  * it's random keys that is going to be created.
  */
 
-static krb5_error_code
+krb5_error_code
 hdb_generate_key_set(krb5_context context, krb5_principal principal,
 		     Key **ret_key_set, size_t *nkeyset, int no_salt)
 {
@@ -265,7 +265,7 @@ hdb_generate_key_set(krb5_context context, krb5_principal principal,
 	"arcfour-hmac-md5:pw-salt",
 	NULL
     };
-    
+
     ktypes = krb5_config_get_strings(context, NULL, "kadmin",
 				     "default_keys", NULL);
     if (ktypes == NULL)
@@ -278,7 +278,7 @@ hdb_generate_key_set(krb5_context context, krb5_principal principal,
     *nkeyset = 0;
 
     ret = 0;
- 
+
     for(kp = ktypes; kp && *kp; kp++) {
 	const char *p;
 	krb5_salt salt;
@@ -295,7 +295,7 @@ hdb_generate_key_set(krb5_context context, krb5_principal principal,
 	    p = "des:afs3-salt";
 	else if (strcmp(p, "arcfour-hmac-md5") == 0)
 	    p = "arcfour-hmac-md5:pw-salt";
-	    
+	
 	memset(&salt, 0, sizeof(salt));
 
 	ret = parse_key_set(context, p,
@@ -319,14 +319,14 @@ hdb_generate_key_set(krb5_context context, krb5_principal principal,
 			break;
 		    if (k->salt->type == salt.salttype &&
 			k->salt->salt.length == salt.saltvalue.length &&
-			memcmp(k->salt->salt.data, salt.saltvalue.data, 
+			memcmp(k->salt->salt.data, salt.saltvalue.data,
 			       salt.saltvalue.length) == 0)
 			break;
 		}
 	    }
 	    /* not a duplicate, lets add it */
 	    if (j == *nkeyset) {
-		ret = add_enctype_to_key_set(&key_set, nkeyset, enctypes[i], 
+		ret = add_enctype_to_key_set(&key_set, nkeyset, enctypes[i],
 					     no_salt ? NULL : &salt);
 		if (ret) {
 		    free(enctypes);
@@ -338,7 +338,7 @@ hdb_generate_key_set(krb5_context context, krb5_principal principal,
 	free(enctypes);
 	krb5_free_salt(context, salt);
     }
-    
+
     *ret_key_set = key_set;
 
  out:
@@ -346,14 +346,14 @@ hdb_generate_key_set(krb5_context context, krb5_principal principal,
 	krb5_config_free_strings(ktypes);
 
     if (ret) {
-	krb5_warn(context, ret, 
+	krb5_warn(context, ret,
 		  "failed to parse the [kadmin]default_keys values");
 
 	for (i = 0; i < *nkeyset; i++)
 	    free_Key(&key_set[i]);
 	free(key_set);
     } else if (*nkeyset == 0) {
-	krb5_warnx(context, 
+	krb5_warnx(context,
 		   "failed to parse any of the [kadmin]default_keys values");
 	ret = EINVAL; /* XXX */
     }
@@ -362,11 +362,11 @@ hdb_generate_key_set(krb5_context context, krb5_principal principal,
 }
 
 
-static krb5_error_code
-hdb_generate_key_set_password(krb5_context context, 
-			      krb5_principal principal, 
-			      const char *password, 
-			      Key **keys, size_t *num_keys) 
+krb5_error_code
+hdb_generate_key_set_password(krb5_context context,
+			      krb5_principal principal,
+			      const char *password,
+			      Key **keys, size_t *num_keys)
 {
     krb5_error_code ret;
     int i;

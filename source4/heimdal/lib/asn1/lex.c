@@ -798,36 +798,36 @@ char *yytext;
 #line 1 "lex.l"
 #line 2 "lex.l"
 /*
- * Copyright (c) 1997 - 2005 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * Copyright (c) 1997 - 2005 Kungliga Tekniska HÃ¶gskolan
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * 3. Neither the name of the Institute nor the names of its contributors 
- *    may be used to endorse or promote products derived from this software 
- *    without specific prior written permission. 
+ * 3. Neither the name of the Institute nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
- * SUCH DAMAGE. 
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 /* $Id$ */
@@ -1516,7 +1516,7 @@ YY_RULE_SETUP
 case 85:
 YY_RULE_SETUP
 #line 153 "lex.l"
-{ 
+{
 			    int c, start_lineno = lineno;
 			    int f = 0;
 			    while((c = input()) != EOF) {
@@ -1539,7 +1539,7 @@ YY_RULE_SETUP
 case 86:
 YY_RULE_SETUP
 #line 172 "lex.l"
-{ 
+{
 			    int c, start_lineno = lineno;
 			    int level = 1;
 			    int seen_star = 0;
@@ -1566,7 +1566,7 @@ YY_RULE_SETUP
 					level++;
 					seen_star = seen_slash = 0;
 					continue;
-				    } 
+				    }
 				    seen_star = 1;
 				    continue;
 				}
@@ -1583,14 +1583,14 @@ YY_RULE_SETUP
 case 87:
 YY_RULE_SETUP
 #line 212 "lex.l"
-{ 
+{
 			    int start_lineno = lineno;
 			    int c;
 			    char buf[1024];
 			    char *p = buf;
 			    int f = 0;
 			    int skip_ws = 0;
-			    
+			
 			    while((c = input()) != EOF) {
 				if(isspace(c) && skip_ws) {
 				    if(c == '\n')
@@ -1625,7 +1625,7 @@ YY_RULE_SETUP
 			    *p++ = '\0';
 			    fprintf(stderr, "string -- %s\n", buf);
 			    yylval.name = estrdup(buf);
-			    return STRING; 
+			    return STRING;
 			}
 	YY_BREAK
 case 88:
@@ -1634,8 +1634,8 @@ YY_RULE_SETUP
 { char *e, *y = yytext;
 			  yylval.constant = strtol((const char *)yytext,
 						   &e, 0);
-			  if(e == y) 
-			    error_message("malformed constant (%s)", yytext); 
+			  if(e == y)
+			    error_message("malformed constant (%s)", yytext);
 			  else
 			    return NUMBER;
 			}
@@ -2683,7 +2683,7 @@ void yyfree (void * ptr )
 
 #ifndef yywrap /* XXX */
 int
-yywrap () 
+yywrap ()
 {
      return 1;
 }

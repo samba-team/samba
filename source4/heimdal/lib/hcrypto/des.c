@@ -1,23 +1,23 @@
 /*
- * Copyright (c) 2005 Kungliga Tekniska Högskolan
+ * Copyright (c) 2005 Kungliga Tekniska HÃ¶gskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the Institute nor the names of its contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -243,7 +243,7 @@ DES_set_key_unchecked(DES_cblock *key, DES_key_schedule *ks)
 	| (pc1_c_4[(t2 >> (4 + 8 + 8    )) & 0xf] << 1)
 	| (pc1_c_4[(t2 >> (4 + 8 + 8 + 8)) & 0xf] << 0);
 
-    
+
     d =   (pc1_d_3[(t2 >> (1            )) & 0x7] << 3)
 	| (pc1_d_3[(t2 >> (1 + 8        )) & 0x7] << 2)
 	| (pc1_d_3[(t2 >> (1 + 8 + 8    )) & 0x7] << 1)
@@ -549,7 +549,7 @@ DES_pcbc_encrypt(const void *in, void *out, long length,
  */
 
 static void
-_des3_encrypt(uint32_t u[2], DES_key_schedule *ks1, DES_key_schedule *ks2, 
+_des3_encrypt(uint32_t u[2], DES_key_schedule *ks1, DES_key_schedule *ks2,
 	      DES_key_schedule *ks3, int encp)
 {
     IP(u);
@@ -613,7 +613,7 @@ DES_ecb3_encrypt(DES_cblock *input,
 
 void
 DES_ede3_cbc_encrypt(const void *in, void *out,
-		     long length, DES_key_schedule *ks1, 
+		     long length, DES_key_schedule *ks1,
 		     DES_key_schedule *ks2, DES_key_schedule *ks3,
 		     DES_cblock *iv, int encp)
 {
@@ -691,7 +691,7 @@ DES_ede3_cbc_encrypt(const void *in, void *out,
  */
 
 void
-DES_cfb64_encrypt(const void *in, void *out, 
+DES_cfb64_encrypt(const void *in, void *out,
 		  long length, DES_key_schedule *ks, DES_cblock *iv,
 		  int *num, int encp)
 {
@@ -901,9 +901,9 @@ _DES_ipfp_test(void)
     store(u, k2);
     if (memcmp(k, k2, 8) != 0)
 	abort();
-}    
+}
 
-/* D3DES (V5.09) - 
+/* D3DES (V5.09) -
  *
  * A portable, public domain, version of the Data Encryption Standard.
  *
@@ -911,7 +911,7 @@ _DES_ipfp_test(void)
  * Thanks to: Dan Hoey for his excellent Initial and Inverse permutation
  * code;  Jim Gillogly & Phil Karn for the DES key schedule code; Dennis
  * Ferguson, Eric Young and Dana How for comparing notes; and Ray Lau,
- * for humouring me on. 
+ * for humouring me on.
  *
  * Copyright (c) 1988,1989,1990,1991,1992 by Richard Outerbridge.
  * (GEnie : OUTER; CIS : [71755,204]) Graven Imagery, 1992.

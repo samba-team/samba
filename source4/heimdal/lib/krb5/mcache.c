@@ -1,34 +1,34 @@
 /*
- * Copyright (c) 1997-2004 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * Copyright (c) 1997-2004 Kungliga Tekniska HÃ¶gskolan
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * 3. Neither the name of the Institute nor the names of its contributors 
- *    may be used to endorse or promote products derived from this software 
- *    without specific prior written permission. 
+ * 3. Neither the name of the Institute nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
- * SUCH DAMAGE. 
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 #include "krb5_locl.h"
@@ -45,6 +45,7 @@ typedef struct krb5_mcache {
 	struct link *next;
     } *creds;
     struct krb5_mcache *next;
+    time_t mtime;
 } krb5_mcache;
 
 static HEIMDAL_MUTEX mcc_mutex = HEIMDAL_MUTEX_INITIALIZER;
@@ -93,6 +94,7 @@ mcc_alloc(const char *name)
     m->refcnt = 1;
     m->primary_principal = NULL;
     m->creds = NULL;
+    m->mtime = time(NULL);
     m->next = mcc_head;
     mcc_head = m;
     HEIMDAL_MUTEX_unlock(&mcc_mutex);
@@ -119,10 +121,11 @@ mcc_resolve(krb5_context context, krb5_ccache *id, const char *res)
 
     m = mcc_alloc(res);
     if (m == NULL) {
-	krb5_set_error_message(context, KRB5_CC_NOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, KRB5_CC_NOMEM,
+			       N_("malloc: out of memory", ""));
 	return KRB5_CC_NOMEM;
     }
-    
+
     (*id)->data.data = m;
     (*id)->data.length = sizeof(*m);
 
@@ -138,7 +141,8 @@ mcc_gen_new(krb5_context context, krb5_ccache *id)
     m = mcc_alloc(NULL);
 
     if (m == NULL) {
-	krb5_set_error_message(context, KRB5_CC_NOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, KRB5_CC_NOMEM,
+			       N_("malloc: out of memory", ""));
 	return KRB5_CC_NOMEM;
     }
 
@@ -155,6 +159,7 @@ mcc_initialize(krb5_context context,
 {
     krb5_mcache *m = MCACHE(id);
     m->dead = 0;
+    m->mtime = time(NULL);
     return krb5_copy_principal (context,
 				primary_principal,
 				&m->primary_principal);
@@ -212,7 +217,7 @@ mcc_destroy(krb5_context context,
 	l = m->creds;
 	while (l != NULL) {
 	    struct link *old;
-	    
+	
 	    krb5_free_cred_contents (context, &l->cred);
 	    old = l;
 	    l = l->next;
@@ -237,7 +242,8 @@ mcc_store_cred(krb5_context context,
 
     l = malloc (sizeof(*l));
     if (l == NULL) {
-	krb5_set_error_message(context, KRB5_CC_NOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, KRB5_CC_NOMEM,
+			       N_("malloc: out of memory", ""));
 	return KRB5_CC_NOMEM;
     }
     l->next = m->creds;
@@ -249,6 +255,7 @@ mcc_store_cred(krb5_context context,
 	free (l);
 	return ret;
     }
+    m->mtime = time(NULL);
     return 0;
 }
 
@@ -323,6 +330,7 @@ mcc_remove_cred(krb5_context context,
 	    *q = p->next;
 	    krb5_free_cred_contents(context, &p->cred);
 	    free(p);
+	    m->mtime = time(NULL);
 	} else
 	    q = &p->next;
     }
@@ -336,7 +344,7 @@ mcc_set_flags(krb5_context context,
 {
     return 0; /* XXX */
 }
-		    
+		
 struct mcache_iter {
     krb5_mcache *cache;
 };
@@ -348,9 +356,10 @@ mcc_get_cache_first(krb5_context context, krb5_cc_cursor *cursor)
 
     iter = calloc(1, sizeof(*iter));
     if (iter == NULL) {
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM,
+			       N_("malloc: out of memory", ""));
 	return ENOMEM;
-    }    
+    }
 
     HEIMDAL_MUTEX_lock(&mcc_mutex);
     iter->cache = mcc_head;
@@ -428,6 +437,8 @@ mcc_move(krb5_context context, krb5_ccache from, krb5_ccache to)
     mto->primary_principal = mfrom->primary_principal;
     mfrom->primary_principal = principal;
 
+    mto->mtime = mfrom->mtime = time(NULL);
+
     HEIMDAL_MUTEX_unlock(&mcc_mutex);
     mcc_destroy(context, from);
 
@@ -439,9 +450,17 @@ mcc_default_name(krb5_context context, char **str)
 {
     *str = strdup("MEMORY:");
     if (*str == NULL) {
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM,
+			       N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
+    return 0;
+}
+
+static krb5_error_code
+mcc_lastchange(krb5_context context, krb5_ccache id, krb5_timestamp *mtime)
+{
+    *mtime = MCACHE(id)->mtime;
     return 0;
 }
 
@@ -474,5 +493,7 @@ KRB5_LIB_VARIABLE const krb5_cc_ops krb5_mcc_ops = {
     mcc_get_cache_next,
     mcc_end_cache_get,
     mcc_move,
-    mcc_default_name
+    mcc_default_name,
+    NULL,
+    mcc_lastchange
 };

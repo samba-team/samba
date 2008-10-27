@@ -1,34 +1,34 @@
 /*
- * Copyright (c) 2005 - 2007 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * Copyright (c) 2005 - 2007 Kungliga Tekniska HÃ¶gskolan
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * 3. Neither the name of the Institute nor the names of its contributors 
- *    may be used to endorse or promote products derived from this software 
- *    without specific prior written permission. 
+ * 3. Neither the name of the Institute nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
- * SUCH DAMAGE. 
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 #include "hx_locl.h"
@@ -47,8 +47,8 @@ struct ks_file {
  */
 
 static int
-parse_certificate(hx509_context context, const char *fn, 
-		  struct hx509_collector *c, 
+parse_certificate(hx509_context context, const char *fn,
+		  struct hx509_collector *c,
 		  const hx509_pem_header *headers,
 		  const void *data, size_t len)
 {
@@ -131,7 +131,7 @@ out:
 
 static int
 parse_rsa_private_key(hx509_context context, const char *fn,
-		      struct hx509_collector *c, 
+		      struct hx509_collector *c,
 		      const hx509_pem_header *headers,
 		      const void *data, size_t len)
 {
@@ -281,7 +281,7 @@ parse_rsa_private_key(hx509_context context, const char *fn,
 
 struct pem_formats {
     const char *name;
-    int (*func)(hx509_context, const char *, struct hx509_collector *, 
+    int (*func)(hx509_context, const char *, struct hx509_collector *,
 		const hx509_pem_header *, const void *, size_t);
 } formats[] = {
     { "CERTIFICATE", parse_certificate },
@@ -327,7 +327,7 @@ pem_func(hx509_context context, const char *type,
 
 static int
 file_init_common(hx509_context context,
-		 hx509_certs certs, void **data, int flags, 
+		 hx509_certs certs, void **data, int flags,
 		 const char *residue, hx509_lock lock, outformat format)
 {
     char *p, *pnext;
@@ -358,13 +358,13 @@ file_init_common(hx509_context context,
 	goto out;
     }
 
-    /* 
+    /*
      * XXX this is broken, the function should parse the file before
      * overwriting it
      */
 
     if (flags & HX509_CERTS_CREATE) {
-	ret = hx509_certs_init(context, "MEMORY:ks-file-create", 
+	ret = hx509_certs_init(context, "MEMORY:ks-file-create",
 			       0, lock, &f->certs);
 	if (ret)
 	    goto out;
@@ -386,15 +386,15 @@ file_init_common(hx509_context context,
 
 	if ((f = fopen(p, "r")) == NULL) {
 	    ret = ENOENT;
-	    hx509_set_error_string(context, 0, ret, 
-				   "Failed to open PEM file \"%s\": %s", 
+	    hx509_set_error_string(context, 0, ret,
+				   "Failed to open PEM file \"%s\": %s",
 				   p, strerror(errno));
 	    goto out;
 	}
 	rk_cloexec_file(f);
 
 	ret = hx509_pem_read(context, f, pem_func, &pem_ctx);
-	fclose(f);		     
+	fclose(f);		
 	if (ret != 0 && ret != HX509_PARSING_KEY_FAILED)
 	    goto out;
 	else if (ret == HX509_PARSING_KEY_FAILED) {
@@ -448,7 +448,7 @@ out:
 
 static int
 file_init_pem(hx509_context context,
-	      hx509_certs certs, void **data, int flags, 
+	      hx509_certs certs, void **data, int flags,
 	      const char *residue, hx509_lock lock)
 {
     return file_init_common(context, certs, data, flags, residue, lock, USE_PEM);
@@ -456,7 +456,7 @@ file_init_pem(hx509_context context,
 
 static int
 file_init_der(hx509_context context,
-	      hx509_certs certs, void **data, int flags, 
+	      hx509_certs certs, void **data, int flags,
 	      const char *residue, hx509_lock lock)
 {
     return file_init_common(context, certs, data, flags, residue, lock, USE_DER);
@@ -487,14 +487,14 @@ store_func(hx509_context context, void *ctx, hx509_cert c)
     ret = hx509_cert_binary(context, c, &data);
     if (ret)
 	return ret;
-    
+
     switch (sc->format) {
     case USE_DER:
 	fwrite(data.data, data.length, 1, sc->f);
 	free(data.data);
 	break;
     case USE_PEM:
-	hx509_pem_write(context, "CERTIFICATE", NULL, sc->f, 
+	hx509_pem_write(context, "CERTIFICATE", NULL, sc->f,
 			data.data, data.length);
 	free(data.data);
 	if (_hx509_cert_private_key_exportable(c)) {
@@ -513,7 +513,7 @@ store_func(hx509_context context, void *ctx, hx509_cert c)
 }
 
 static int
-file_store(hx509_context context, 
+file_store(hx509_context context,
 	   hx509_certs certs, void *data, int flags, hx509_lock lock)
 {
     struct ks_file *f = data;
@@ -534,14 +534,14 @@ file_store(hx509_context context,
     return ret;
 }
 
-static int 
+static int
 file_add(hx509_context context, hx509_certs certs, void *data, hx509_cert c)
 {
     struct ks_file *f = data;
     return hx509_certs_add(context, f->certs, c);
 }
 
-static int 
+static int
 file_iter_start(hx509_context context,
 		hx509_certs certs, void *data, void **cursor)
 {

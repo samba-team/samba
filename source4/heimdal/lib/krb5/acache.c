@@ -1,34 +1,34 @@
 /*
- * Copyright (c) 2004 - 2007 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * Copyright (c) 2004 - 2007 Kungliga Tekniska HÃ¶gskolan
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * 3. Neither the name of the Institute nor the names of its contributors 
- *    may be used to endorse or promote products derived from this software 
- *    without specific prior written permission. 
+ * 3. Neither the name of the Institute nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
- * SUCH DAMAGE. 
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 #include "krb5_locl.h"
@@ -44,7 +44,7 @@ static HEIMDAL_MUTEX acc_mutex = HEIMDAL_MUTEX_INITIALIZER;
 static cc_initialize_func init_func;
 
 #ifdef HAVE_DLOPEN
-static void *cc_handle; 
+static void *cc_handle;
 #endif
 
 typedef struct krb5_acc {
@@ -76,7 +76,7 @@ static krb5_error_code
 translate_cc_error(krb5_context context, cc_int32 error)
 {
     int i;
-    krb5_clear_error_string(context);
+    krb5_clear_error_message(context);
     for(i = 0; i < sizeof(cc_errors)/sizeof(cc_errors[0]); i++)
 	if (cc_errors[i].error == error)
 	    return cc_errors[i].ret;
@@ -91,12 +91,12 @@ init_ccapi(krb5_context context)
     HEIMDAL_MUTEX_lock(&acc_mutex);
     if (init_func) {
 	HEIMDAL_MUTEX_unlock(&acc_mutex);
-	krb5_clear_error_string(context);
+	krb5_clear_error_message(context);
 	return 0;
     }
 
     lib = krb5_config_get_string(context, NULL,
-				 "libdefaults", "ccapi_library", 
+				 "libdefaults", "ccapi_library",
 				 NULL);
     if (lib == NULL) {
 #ifdef __APPLE__
@@ -115,8 +115,9 @@ init_ccapi(krb5_context context)
     cc_handle = dlopen(lib, RTLD_LAZY);
     if (cc_handle == NULL) {
 	HEIMDAL_MUTEX_unlock(&acc_mutex);
-	krb5_set_error_message(context, KRB5_CC_NOSUPP, 
-			       "Failed to load %s", lib);
+	krb5_set_error_message(context, KRB5_CC_NOSUPP,
+			       N_("Failed to load API cache module %s", "file"),
+			       lib);
 	return KRB5_CC_NOSUPP;
     }
 
@@ -124,8 +125,8 @@ init_ccapi(krb5_context context)
     HEIMDAL_MUTEX_unlock(&acc_mutex);
     if (init_func == NULL) {
 	krb5_set_error_message(context, KRB5_CC_NOSUPP,
-			       "Failed to find cc_initialize"
-			       "in %s: %s", lib, dlerror());
+			       N_("Failed to find cc_initialize"
+				 "in %s: %s", "file, error"), lib, dlerror());
 	dlclose(cc_handle);
 	return KRB5_CC_NOSUPP;
     }
@@ -133,10 +134,11 @@ init_ccapi(krb5_context context)
     return 0;
 #else
     HEIMDAL_MUTEX_unlock(&acc_mutex);
-    krb5_set_error_message(context, KRB5_CC_NOSUPP, "no support for shared object");
+    krb5_set_error_message(context, KRB5_CC_NOSUPP,
+			   N_("no support for shared object", "file, error"));
     return KRB5_CC_NOSUPP;
 #endif
-}    
+}
 
 static krb5_error_code
 make_cred_from_ccred(krb5_context context,
@@ -183,13 +185,13 @@ make_cred_from_ccred(krb5_context context,
 
     cred->authdata.val = NULL;
     cred->authdata.len = 0;
-    
+
     cred->addresses.val = NULL;
     cred->addresses.len = 0;
-    
+
     for (i = 0; incred->authdata && incred->authdata[i]; i++)
 	;
-    
+
     if (i) {
 	cred->authdata.val = calloc(i, sizeof(cred->authdata.val[0]));
 	if (cred->authdata.val == NULL)
@@ -204,10 +206,10 @@ make_cred_from_ccred(krb5_context context,
 		goto nomem;
 	}
     }
-    
+
     for (i = 0; incred->addresses && incred->addresses[i]; i++)
 	;
-    
+
     if (i) {
 	cred->addresses.val = calloc(i, sizeof(cred->addresses.val[0]));
 	if (cred->addresses.val == NULL)
@@ -223,7 +225,7 @@ make_cred_from_ccred(krb5_context context,
 		goto nomem;
 	}
     }
-    
+
     cred->flags.i = 0;
     if (incred->ticket_flags & KRB5_CCAPI_TKT_FLG_FORWARDABLE)
 	cred->flags.b.forwardable = 1;
@@ -255,11 +257,11 @@ make_cred_from_ccred(krb5_context context,
 	cred->flags.b.anonymous = 1;
 
     return 0;
-    
+
 nomem:
     ret = ENOMEM;
-    krb5_set_error_message(context, ret, "malloc: out of memory");
-    
+    krb5_set_error_message(context, ret, N_("malloc: out of memory", "malloc"));
+
 fail:
     krb5_free_cred_contents(context, cred);
     return ret;
@@ -320,8 +322,8 @@ make_ccred_from_cred(krb5_context context,
 
     /* XXX this one should also be filled in */
     cred->authdata = NULL;
-    
-    cred->addresses = calloc(incred->addresses.len + 1, 
+
+    cred->addresses = calloc(incred->addresses.len + 1,
 			     sizeof(cred->addresses[0]));
     if (cred->addresses == NULL) {
 
@@ -343,7 +345,7 @@ make_ccred_from_cred(krb5_context context,
 	    ret = ENOMEM;
 	    goto fail;
 	}
-	memcpy(addr->data, incred->addresses.val[i].address.data, 
+	memcpy(addr->data, incred->addresses.val[i].address.data,
 	       addr->length);
 	cred->addresses[i] = addr;
     }
@@ -381,10 +383,10 @@ make_ccred_from_cred(krb5_context context,
 
     return 0;
 
-fail:    
+fail:
     free_ccred(cred);
 
-    krb5_clear_error_string(context);
+    krb5_clear_error_message(context);
     return ret;
 }
 
@@ -438,7 +440,7 @@ acc_get_name(krb5_context context,
 	error = get_cc_name(a);
 	if (error)
 	    return NULL;
-    }    
+    }
 
     return a->cache_name;
 }
@@ -456,10 +458,10 @@ acc_alloc(krb5_context context, krb5_ccache *id)
 
     ret = krb5_data_alloc(&(*id)->data, sizeof(*a));
     if (ret) {
-	krb5_clear_error_string(context);
+	krb5_clear_error_message(context);
 	return ret;
     }
-    
+
     a = ACACHE(*id);
 
     error = (*init_func)(&a->context, ccapi_version_3, NULL, NULL);
@@ -623,17 +625,17 @@ acc_store_cred(krb5_context context,
     cc_credentials_v5_t v5cred;
     krb5_error_code ret;
     cc_int32 error;
-    
+
     if (a->ccache == NULL) {
 	krb5_set_error_message(context, KRB5_CC_NOTFOUND,
-			       "No API credential found");
+			       N_("No API credential found", ""));
 	return KRB5_CC_NOTFOUND;
     }
 
     cred.version = cc_credentials_v5;
     cred.credentials.credentials_v5 = &v5cred;
 
-    ret = make_ccred_from_cred(context, 
+    ret = make_ccred_from_cred(context,
 			       creds,
 			       &v5cred);
     if (ret)
@@ -660,7 +662,7 @@ acc_get_principal(krb5_context context,
 
     if (a->ccache == NULL) {
 	krb5_set_error_message(context, KRB5_CC_NOTFOUND,
-			       "No API credential found");
+			       N_("No API credential found", ""));
 	return KRB5_CC_NOTFOUND;
     }
 
@@ -669,9 +671,9 @@ acc_get_principal(krb5_context context,
 					      &name);
     if (error)
 	return translate_cc_error(context, error);
-    
+
     ret = krb5_parse_name(context, name->data, principal);
-    
+
     (*name->func->release)(name);
     return ret;
 }
@@ -684,16 +686,16 @@ acc_get_first (krb5_context context,
     cc_credentials_iterator_t iter;
     krb5_acc *a = ACACHE(id);
     int32_t error;
-    
+
     if (a->ccache == NULL) {
 	krb5_set_error_message(context, KRB5_CC_NOTFOUND,
-			       "No API credential found");
+			       N_("No API credential found", ""));
 	return KRB5_CC_NOTFOUND;
     }
 
     error = (*a->ccache->func->new_credentials_iterator)(a->ccache, &iter);
     if (error) {
-	krb5_clear_error_string(context);
+	krb5_clear_error_message(context);
 	return ENOENT;
     }
     *cursor = iter;
@@ -721,7 +723,7 @@ acc_get_next (krb5_context context,
 	(*cred->func->release)(cred);
     }
 
-    ret = make_cred_from_ccred(context, 
+    ret = make_cred_from_ccred(context,
 			       cred->data->credentials.credentials_v5,
 			       creds);
     (*cred->func->release)(cred);
@@ -750,10 +752,10 @@ acc_remove_cred(krb5_context context,
     krb5_error_code ret;
     cc_int32 error;
     char *client, *server;
-    
+
     if (a->ccache == NULL) {
 	krb5_set_error_message(context, KRB5_CC_NOTFOUND,
-			       "No API credential found");
+			       N_("No API credential found", ""));
 	return KRB5_CC_NOTFOUND;
     }
 
@@ -806,7 +808,8 @@ acc_remove_cred(krb5_context context,
 
     if (ret)
 	krb5_set_error_message(context, ret,
-			       "Can't find credential %s in cache", server);
+			       N_("Can't find credential %s in cache",
+				 "principal"), server);
     free(server);
     free(client);
 
@@ -827,7 +830,7 @@ acc_get_version(krb5_context context,
 {
     return 0;
 }
-		    
+		
 struct cache_iter {
     cc_context_t context;
     cc_ccache_iterator_t iter;
@@ -860,7 +863,7 @@ acc_get_cache_first(krb5_context context, krb5_cc_cursor *cursor)
 							&iter->iter);
     if (error) {
 	free(iter);
-	krb5_clear_error_string(context);
+	krb5_clear_error_message(context);
 	return ENOENT;
     }
     *cursor = iter;
@@ -933,7 +936,7 @@ acc_move(krb5_context context, krb5_ccache from, krb5_ccache to)
 						      &name);
 	if (error)
 	    return translate_cc_error(context, error);
-    
+
 	error = (*ato->context->func->create_new_ccache)(ato->context,
 							 cc_credentials_v5,
 							 name->data,
@@ -975,7 +978,7 @@ acc_get_default_name(krb5_context context, char **str)
     (*cc->func->release)(cc);
 
     if (*str == NULL) {
-	krb5_set_error_message(context, ENOMEM, "out of memory");
+	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     return 0;
@@ -986,16 +989,38 @@ acc_set_default(krb5_context context, krb5_ccache id)
 {
     krb5_acc *a = ACACHE(id);
     cc_int32 error;
-    
+
     if (a->ccache == NULL) {
 	krb5_set_error_message(context, KRB5_CC_NOTFOUND,
-			       "No API credential found");
+			       N_("No API credential found", ""));
 	return KRB5_CC_NOTFOUND;
     }
 
     error = (*a->ccache->func->set_default)(a->ccache);
     if (error)
 	return translate_cc_error(context, error);
+
+    return 0;
+}
+
+static krb5_error_code
+acc_lastchange(krb5_context context, krb5_ccache id, krb5_timestamp *mtime)
+{
+    krb5_acc *a = ACACHE(id);
+    cc_int32 error;
+    cc_time_t t;
+
+    if (a->ccache == NULL) {
+	krb5_set_error_message(context, KRB5_CC_NOTFOUND,
+			       N_("No API credential found", ""));
+	return KRB5_CC_NOTFOUND;
+    }
+
+    error = (*a->ccache->func->get_change_time)(a->ccache, &t);
+    if (error)
+	return translate_cc_error(context, error);
+
+    *mtime = t;
 
     return 0;
 }
@@ -1029,5 +1054,6 @@ KRB5_LIB_VARIABLE const krb5_cc_ops krb5_acc_ops = {
     acc_end_cache_get,
     acc_move,
     acc_get_default_name,
-    acc_set_default
+    acc_set_default,
+    acc_lastchange
 };

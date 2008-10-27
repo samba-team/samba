@@ -1,6 +1,6 @@
 /* -*- C -*- */
 /*
- * Copyright (c) 1995-2005 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995-2005 Kungliga Tekniska HÃ¶gskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -442,10 +442,6 @@ extern int optind;
 #endif
 #if !HAVE_DECL_OPTERR
 extern int opterr;
-#endif
-
-#if !HAVE_DECL_ENVIRON
-extern char **environ;
 #endif
 
 #ifndef HAVE_GETIPNODEBYNAME
