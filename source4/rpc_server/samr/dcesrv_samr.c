@@ -2451,7 +2451,7 @@ static NTSTATUS dcesrv_samr_QueryGroupMember(struct dcesrv_call_state *dce_call,
 			struct ldb_message **res2;
 			const char * const attrs2[2] = { "objectSid", NULL };
 			ret = gendb_search_dn(a_state->sam_ctx, mem_ctx,
-					   ldb_dn_new(mem_ctx, a_state->sam_ctx, (const char *)el->values[i].data),
+					   ldb_dn_from_ldb_val(mem_ctx, a_state->sam_ctx, &el->values[i]),
 					   &res2, attrs2);
 			if (ret != 1)
 				return NT_STATUS_INTERNAL_DB_CORRUPTION;
@@ -2845,8 +2845,8 @@ static NTSTATUS dcesrv_samr_GetMembersInAlias(struct dcesrv_call_state *dce_call
 			struct ldb_message **msgs2;
 			const char * const attrs2[2] = { "objectSid", NULL };
 			ret = gendb_search_dn(a_state->sam_ctx, mem_ctx,
-					   ldb_dn_new(mem_ctx, a_state->sam_ctx, (const char *)el->values[i].data),
-					   &msgs2, attrs2);
+					      ldb_dn_new(mem_ctx, a_state->sam_ctx, &el->values[i]),
+					      &msgs2, attrs2);
 			if (ret != 1)
 				return NT_STATUS_INTERNAL_DB_CORRUPTION;
 

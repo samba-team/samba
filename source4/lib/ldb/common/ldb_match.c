@@ -147,7 +147,7 @@ static int ldb_match_equality(struct ldb_context *ldb,
 	int ret;
 
 	if (ldb_attr_dn(tree->u.equality.attr) == 0) {
-		valuedn = ldb_dn_new(ldb, ldb, (char *)tree->u.equality.value.data);
+		valuedn = ldb_dn_from_ldb_val(ldb, ldb, &tree->u.equality.value);
 		if (valuedn == NULL) {
 			return 0;
 		}
