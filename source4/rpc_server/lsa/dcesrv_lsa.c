@@ -1409,7 +1409,6 @@ static NTSTATUS dcesrv_lsa_QueryTrustedDomainInfoBySid(struct dcesrv_call_state 
 	NTSTATUS status;
 	struct lsa_OpenTrustedDomain open;
 	struct lsa_QueryTrustedDomainInfo query;
-	union lsa_TrustedDomainInfo *info;
 	struct dcesrv_handle *h;
 	open.in.handle = r->in.handle;
 	open.in.sid = r->in.dom_sid;
