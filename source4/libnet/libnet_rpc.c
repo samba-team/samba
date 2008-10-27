@@ -607,6 +607,8 @@ static void continue_lsa_policy(struct rpc_request *req)
 	/* query lsa info for dns domain name and guid */
 	s->lsa_query_info2.in.handle = &s->lsa_handle;
 	s->lsa_query_info2.in.level  = LSA_POLICY_INFO_DNS;
+	s->lsa_query_info2.out.info  = talloc_zero(c, union lsa_PolicyInformation *);
+	if (composite_nomem(s->lsa_query_info2.out.info, c)) return;
 
 	query_info_req = dcerpc_lsa_QueryInfoPolicy2_send(s->lsa_pipe, c, &s->lsa_query_info2);
 	if (composite_nomem(query_info_req, c)) return;
@@ -658,13 +660,13 @@ static void continue_lsa_query_info2(struct rpc_request *req)
 		/* Copy the dns domain name and guid from the query result */
 
 		/* this should actually be a conversion from lsa_StringLarge */
-		s->r.out.realm = s->lsa_query_info2.out.info->dns.dns_domain.string;
+		s->r.out.realm = (*s->lsa_query_info2.out.info)->dns.dns_domain.string;
 		s->r.out.guid  = talloc(c, struct GUID);
 		if (composite_nomem(s->r.out.guid, c)) {
 			s->r.out.error_string = NULL;
 			return;
 		}
-		*s->r.out.guid = s->lsa_query_info2.out.info->dns.domain_guid;
+		*s->r.out.guid = (*s->lsa_query_info2.out.info)->dns.domain_guid;
 	}
 
 	/* post monitor message */
@@ -680,6 +682,8 @@ static void continue_lsa_query_info2(struct rpc_request *req)
 	/* query lsa info for domain name and sid */
 	s->lsa_query_info.in.handle = &s->lsa_handle;
 	s->lsa_query_info.in.level  = LSA_POLICY_INFO_DOMAIN;
+	s->lsa_query_info.out.info  = talloc_zero(c, union lsa_PolicyInformation *);
+	if (composite_nomem(s->lsa_query_info.out.info, c)) return;
 
 	query_info_req = dcerpc_lsa_QueryInfoPolicy_send(s->lsa_pipe, c, &s->lsa_query_info);
 	if (composite_nomem(query_info_req, c)) return;
@@ -719,8 +723,8 @@ static void continue_lsa_query_info(struct rpc_request *req)
 	}
 
 	/* Copy the domain name and sid from the query result */
-	s->r.out.domain_sid  = s->lsa_query_info.out.info->domain.sid;
-	s->r.out.domain_name = s->lsa_query_info.out.info->domain.name.string;
+	s->r.out.domain_sid  = (*s->lsa_query_info.out.info)->domain.sid;
+	s->r.out.domain_name = (*s->lsa_query_info.out.info)->domain.name.string;
 
 	continue_epm_map_binding_send(c);
 }

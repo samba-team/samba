@@ -204,10 +204,12 @@ static struct sec_desc_buf *samsync_query_lsa_sec_desc(TALLOC_CTX *mem_ctx,
 						       struct policy_handle *handle) 
 {
 	struct lsa_QuerySecurity r;
+	struct sec_desc_buf *sdbuf = NULL;
 	NTSTATUS status;
 
 	r.in.handle = handle;
 	r.in.sec_info = 0x7;
+	r.out.sdbuf = &sdbuf;
 
 	status = dcerpc_lsa_QuerySecurity(samsync_state->p_lsa, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -215,7 +217,7 @@ static struct sec_desc_buf *samsync_query_lsa_sec_desc(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	return r.out.sdbuf;
+	return sdbuf;
 }
 
 #define TEST_UINT64_EQUAL(i1, i2) do {\
@@ -965,6 +967,7 @@ static bool samsync_handle_trusted_domain(TALLOC_CTX *mem_ctx, struct samsync_st
 	struct policy_handle trustdom_handle;
 	struct lsa_QueryTrustedDomainInfo q;
 	union lsa_TrustedDomainInfo *info[9];
+	union lsa_TrustedDomainInfo *_info = NULL;
 	int levels [] = {1, 3, 8};
 	int i;
 
@@ -985,6 +988,7 @@ static bool samsync_handle_trusted_domain(TALLOC_CTX *mem_ctx, struct samsync_st
 	for (i=0; i< ARRAY_SIZE(levels); i++) {
 		q.in.trustdom_handle = &trustdom_handle;
 		q.in.level = levels[i];
+		q.out.info = &_info;
 		status = dcerpc_lsa_QueryTrustedDomainInfo(samsync_state->p_lsa, mem_ctx, &q);
 		if (!NT_STATUS_IS_OK(status)) {
 			if (q.in.level == 8 && NT_STATUS_EQUAL(status,NT_STATUS_INVALID_PARAMETER)) {
@@ -995,7 +999,7 @@ static bool samsync_handle_trusted_domain(TALLOC_CTX *mem_ctx, struct samsync_st
 			       levels[i], nt_errstr(status));
 			return false;
 		}
-		info[levels[i]]  = q.out.info;
+		info[levels[i]]  = _info;
 	}
 
 	if (info[8]) {
@@ -1025,6 +1029,7 @@ static bool samsync_handle_account(TALLOC_CTX *mem_ctx, struct samsync_state *sa
 	struct lsa_OpenAccount a;
 	struct policy_handle acct_handle;
 	struct lsa_EnumPrivsAccount e;
+	struct lsa_PrivilegeSet *privs = NULL;
 	struct lsa_LookupPrivName r;
 
 	int i, j;
@@ -1047,6 +1052,7 @@ static bool samsync_handle_account(TALLOC_CTX *mem_ctx, struct samsync_state *sa
 	found_priv_in_lsa = talloc_zero_array(mem_ctx, bool, account->privilege_entries);
 
 	e.in.handle = &acct_handle;
+	e.out.privs = &privs;
 
 	status = dcerpc_lsa_EnumPrivsAccount(samsync_state->p_lsa, mem_ctx, &e);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1054,23 +1060,27 @@ static bool samsync_handle_account(TALLOC_CTX *mem_ctx, struct samsync_state *sa
 		return false;
 	}
 
-	if ((account->privilege_entries && !e.out.privs)) {
+	if ((account->privilege_entries && !privs)) {
 		printf("Account %s has privileges in SamSync, but not LSA\n",
 		       dom_sid_string(mem_ctx, dom_sid));
 		return false;
 	}
 
-	if (!account->privilege_entries && e.out.privs && e.out.privs->count) {
+	if (!account->privilege_entries && privs && privs->count) {
 		printf("Account %s has privileges in LSA, but not SamSync\n",
 		       dom_sid_string(mem_ctx, dom_sid));
 		return false;
 	}
 
-	TEST_INT_EQUAL(account->privilege_entries, e.out.privs->count);
+	TEST_INT_EQUAL(account->privilege_entries, privs->count);
 	
-	for (i=0;i< e.out.privs->count; i++) {
+	for (i=0;i< privs->count; i++) {
+
+		struct lsa_StringLarge *name = NULL;
+
 		r.in.handle = samsync_state->lsa_handle;
-		r.in.luid = &e.out.privs->set[i].luid;
+		r.in.luid = &privs->set[i].luid;
+		r.out.name = &name;
 		
 		status = dcerpc_lsa_LookupPrivName(samsync_state->p_lsa, mem_ctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -1083,7 +1093,7 @@ static bool samsync_handle_account(TALLOC_CTX *mem_ctx, struct samsync_state *sa
 			return false;
 		}
 		for (j=0;j<account->privilege_entries; j++) {
-			if (strcmp(r.out.name->string, account->privilege_name[j].string) == 0) {
+			if (strcmp(name->string, account->privilege_name[j].string) == 0) {
 				found_priv_in_lsa[j] = true;
 				break;
 			}

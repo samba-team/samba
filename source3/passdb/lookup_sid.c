@@ -746,7 +746,7 @@ NTSTATUS lookup_sids(TALLOC_CTX *mem_ctx, int num_sids,
 	}
 
 	dom_infos = TALLOC_ZERO_ARRAY(mem_ctx, struct lsa_dom_info,
-				      MAX_REF_DOMAINS);
+				      LSA_REF_DOMAIN_LIST_MULTIPLIER);
 	if (dom_infos == NULL) {
 		result = NT_STATUS_NO_MEMORY;
 		goto fail;
@@ -816,7 +816,7 @@ NTSTATUS lookup_sids(TALLOC_CTX *mem_ctx, int num_sids,
 			continue;
 		}
 
-		for (j=0; j<MAX_REF_DOMAINS; j++) {
+		for (j=0; j<LSA_REF_DOMAIN_LIST_MULTIPLIER; j++) {
 			if (!dom_infos[j].valid) {
 				break;
 			}
@@ -825,7 +825,7 @@ NTSTATUS lookup_sids(TALLOC_CTX *mem_ctx, int num_sids,
 			}
 		}
 
-		if (j == MAX_REF_DOMAINS) {
+		if (j == LSA_REF_DOMAIN_LIST_MULTIPLIER) {
 			/* TODO: What's the right error message here? */
 			result = NT_STATUS_NONE_MAPPED;
 			goto fail;
@@ -869,7 +869,7 @@ NTSTATUS lookup_sids(TALLOC_CTX *mem_ctx, int num_sids,
 
 	/* Iterate over the domains found */
 
-	for (i=0; i<MAX_REF_DOMAINS; i++) {
+	for (i=0; i<LSA_REF_DOMAIN_LIST_MULTIPLIER; i++) {
 		uint32_t *rids;
 		const char *domain_name = NULL;
 		const char **names;

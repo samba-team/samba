@@ -153,6 +153,7 @@ static bool test_LookupNames(struct dcerpc_pipe *p,
 {
 	struct lsa_LookupNames r;
 	struct lsa_TransSidArray sids;
+	struct lsa_RefDomainList *domains = NULL;
 	struct lsa_String *names;
 	uint32_t count = 0;
 	NTSTATUS status;
@@ -176,6 +177,7 @@ static bool test_LookupNames(struct dcerpc_pipe *p,
 	r.in.count = &count;
 	r.out.count = &count;
 	r.out.sids = &sids;
+	r.out.domains = &domains;
 
 	status = dcerpc_lsa_LookupNames(p, mem_ctx, &r);
 
@@ -217,6 +219,7 @@ static bool test_LookupNames_bogus(struct dcerpc_pipe *p,
 {
 	struct lsa_LookupNames r;
 	struct lsa_TransSidArray sids;
+	struct lsa_RefDomainList *domains = NULL;
 	struct lsa_String *names;
 	uint32_t count = 0;
 	NTSTATUS status;
@@ -248,6 +251,7 @@ static bool test_LookupNames_bogus(struct dcerpc_pipe *p,
 	r.in.count = &count;
 	r.out.count = &count;
 	r.out.sids = &sids;
+	r.out.domains = &domains;
 
 	status = dcerpc_lsa_LookupNames(p, mem_ctx, &r);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_NONE_MAPPED)) {
@@ -317,6 +321,7 @@ static bool test_LookupNames2(struct dcerpc_pipe *p,
 {
 	struct lsa_LookupNames2 r;
 	struct lsa_TransSidArray2 sids;
+	struct lsa_RefDomainList *domains = NULL;
 	struct lsa_String *names;
 	uint32_t count = 0;
 	NTSTATUS status;
@@ -342,6 +347,7 @@ static bool test_LookupNames2(struct dcerpc_pipe *p,
 	r.in.client_revision = 0;
 	r.out.count = &count;
 	r.out.sids = &sids;
+	r.out.domains = &domains;
 
 	status = dcerpc_lsa_LookupNames2(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -362,6 +368,7 @@ static bool test_LookupNames3(struct dcerpc_pipe *p,
 {
 	struct lsa_LookupNames3 r;
 	struct lsa_TransSidArray3 sids;
+	struct lsa_RefDomainList *domains = NULL;
 	struct lsa_String *names;
 	uint32_t count = 0;
 	NTSTATUS status;
@@ -387,6 +394,7 @@ static bool test_LookupNames3(struct dcerpc_pipe *p,
 	r.in.client_revision = 0;
 	r.out.count = &count;
 	r.out.sids = &sids;
+	r.out.domains = &domains;
 
 	status = dcerpc_lsa_LookupNames3(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -405,6 +413,7 @@ static bool test_LookupNames4(struct dcerpc_pipe *p,
 {
 	struct lsa_LookupNames4 r;
 	struct lsa_TransSidArray3 sids;
+	struct lsa_RefDomainList *domains = NULL;
 	struct lsa_String *names;
 	uint32_t count = 0;
 	NTSTATUS status;
@@ -429,6 +438,7 @@ static bool test_LookupNames4(struct dcerpc_pipe *p,
 	r.in.client_revision = 0;
 	r.out.count = &count;
 	r.out.sids = &sids;
+	r.out.domains = &domains;
 
 	status = dcerpc_lsa_LookupNames4(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -449,6 +459,7 @@ static bool test_LookupSids(struct dcerpc_pipe *p,
 {
 	struct lsa_LookupSids r;
 	struct lsa_TransNameArray names;
+	struct lsa_RefDomainList *domains = NULL;
 	uint32_t count = sids->num_sids;
 	NTSTATUS status;
 
@@ -464,6 +475,7 @@ static bool test_LookupSids(struct dcerpc_pipe *p,
 	r.in.count = &count;
 	r.out.count = &count;
 	r.out.names = &names;
+	r.out.domains = &domains;
 
 	status = dcerpc_lsa_LookupSids(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -488,6 +500,7 @@ static bool test_LookupSids2(struct dcerpc_pipe *p,
 {
 	struct lsa_LookupSids2 r;
 	struct lsa_TransNameArray2 names;
+	struct lsa_RefDomainList *domains = NULL;
 	uint32_t count = sids->num_sids;
 	NTSTATUS status;
 
@@ -505,6 +518,7 @@ static bool test_LookupSids2(struct dcerpc_pipe *p,
 	r.in.unknown2 = 0;
 	r.out.count = &count;
 	r.out.names = &names;
+	r.out.domains = &domains;
 
 	status = dcerpc_lsa_LookupSids2(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -531,6 +545,7 @@ static bool test_LookupSids3(struct dcerpc_pipe *p,
 {
 	struct lsa_LookupSids3 r;
 	struct lsa_TransNameArray2 names;
+	struct lsa_RefDomainList *domains = NULL;
 	uint32_t count = sids->num_sids;
 	NTSTATUS status;
 
@@ -545,6 +560,7 @@ static bool test_LookupSids3(struct dcerpc_pipe *p,
 	r.in.count = &count;
 	r.in.unknown1 = 0;
 	r.in.unknown2 = 0;
+	r.out.domains = &domains;
 	r.out.count = &count;
 	r.out.names = &names;
 
@@ -594,6 +610,7 @@ bool test_many_LookupSids(struct dcerpc_pipe *p,
 	if (handle) {
 		struct lsa_LookupSids r;
 		struct lsa_TransNameArray names;
+		struct lsa_RefDomainList *domains = NULL;
 		names.count = 0;
 		names.names = NULL;
 
@@ -604,6 +621,7 @@ bool test_many_LookupSids(struct dcerpc_pipe *p,
 		r.in.count = &names.count;
 		r.out.count = &count;
 		r.out.names = &names;
+		r.out.domains = &domains;
 		
 		status = dcerpc_lsa_LookupSids(p, mem_ctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -619,6 +637,7 @@ bool test_many_LookupSids(struct dcerpc_pipe *p,
 	} else if (p->conn->security_state.auth_info->auth_type == DCERPC_AUTH_TYPE_SCHANNEL &&
 		   p->conn->security_state.auth_info->auth_level >= DCERPC_AUTH_LEVEL_INTEGRITY) {
 		struct lsa_LookupSids3 r;
+		struct lsa_RefDomainList *domains = NULL;
 		struct lsa_TransNameArray2 names;
 
 		names.count = 0;
@@ -634,6 +653,7 @@ bool test_many_LookupSids(struct dcerpc_pipe *p,
 		r.in.unknown2 = 0;
 		r.out.count = &count;
 		r.out.names = &names;
+		r.out.domains = &domains;
 		
 		status = dcerpc_lsa_LookupSids3(p, mem_ctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -683,6 +703,7 @@ static bool test_LookupSids_async(struct dcerpc_pipe *p,
 	uint32_t *count;
 	struct lsa_TransNameArray *names;
 	struct lsa_LookupSids *r;
+	struct lsa_RefDomainList *domains = NULL;
 	struct rpc_request **req;
 	int i, replies;
 	bool ret = true;
@@ -714,6 +735,7 @@ static bool test_LookupSids_async(struct dcerpc_pipe *p,
 		r[i].in.count = &names[i].count;
 		r[i].out.count = &count[i];
 		r[i].out.names = &names[i];
+		r[i].out.domains = &domains;
 		
 		req[i] = dcerpc_lsa_LookupSids_send(p, req, &r[i]);
 		if (req[i] == NULL) {
@@ -767,9 +789,11 @@ static bool test_LookupPrivName(struct dcerpc_pipe *p,
 {
 	NTSTATUS status;
 	struct lsa_LookupPrivName r;
+	struct lsa_StringLarge *name = NULL;
 
 	r.in.handle = handle;
 	r.in.luid = luid;
+	r.out.name = &name;
 
 	status = dcerpc_lsa_LookupPrivName(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -807,22 +831,24 @@ static bool test_RemovePrivilegesFromAccount(struct dcerpc_pipe *p,
 	if (!NT_STATUS_IS_OK(status)) {
 		
 		struct lsa_LookupPrivName r_name;
+		struct lsa_StringLarge *name = NULL;
 		
 		r_name.in.handle = handle;
 		r_name.in.luid = luid;
-		
+		r_name.out.name = &name;
+
 		status = dcerpc_lsa_LookupPrivName(p, mem_ctx, &r_name);
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("\nLookupPrivName failed - %s\n", nt_errstr(status));
 			return false;
 		}
 		/* Windows 2008 does not allow this to be removed */
-		if (strcmp("SeAuditPrivilege", r_name.out.name->string) == 0) {
+		if (strcmp("SeAuditPrivilege", name->string) == 0) {
 			return ret;
 		}
 
 		printf("RemovePrivilegesFromAccount failed to remove %s - %s\n", 
-		       r_name.out.name->string, 
+		       name->string,
 		       nt_errstr(status));
 		return false;
 	}
@@ -867,11 +893,13 @@ static bool test_EnumPrivsAccount(struct dcerpc_pipe *p,
 {
 	NTSTATUS status;
 	struct lsa_EnumPrivsAccount r;
+	struct lsa_PrivilegeSet *privs = NULL;
 	bool ret = true;
 
 	printf("\nTesting EnumPrivsAccount\n");
 
 	r.in.handle = acct_handle;
+	r.out.privs = &privs;
 
 	status = dcerpc_lsa_EnumPrivsAccount(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -879,17 +907,17 @@ static bool test_EnumPrivsAccount(struct dcerpc_pipe *p,
 		return false;
 	}
 
-	if (r.out.privs && r.out.privs->count > 0) {
+	if (privs && privs->count > 0) {
 		int i;
-		for (i=0;i<r.out.privs->count;i++) {
+		for (i=0;i<privs->count;i++) {
 			test_LookupPrivName(p, mem_ctx, handle, 
-					    &r.out.privs->set[i].luid);
+					    &privs->set[i].luid);
 		}
 
 		ret &= test_RemovePrivilegesFromAccount(p, mem_ctx, handle, acct_handle, 
-							&r.out.privs->set[0].luid);
+							&privs->set[0].luid);
 		ret &= test_AddPrivilegesToAccount(p, mem_ctx, acct_handle, 
-						   &r.out.privs->set[0].luid);
+						   &privs->set[0].luid);
 	}
 
 	return ret;
@@ -1462,6 +1490,7 @@ static bool test_QuerySecurity(struct dcerpc_pipe *p,
 {
 	NTSTATUS status;
 	struct lsa_QuerySecurity r;
+	struct sec_desc_buf *sdbuf = NULL;
 
 	if (torture_setting_bool(tctx, "samba4", false)) {
 		printf("\nskipping QuerySecurity test against Samba4\n");
@@ -1472,6 +1501,7 @@ static bool test_QuerySecurity(struct dcerpc_pipe *p,
 
 	r.in.handle = acct_handle;
 	r.in.sec_info = 7;
+	r.out.sdbuf = &sdbuf;
 
 	status = dcerpc_lsa_QuerySecurity(p, tctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1602,14 +1632,17 @@ static bool test_LookupPrivDisplayName(struct dcerpc_pipe *p,
 	/* produce a reasonable range of language output without screwing up
 	   terminals */
 	uint16_t language_id = (random() % 4) + 0x409;
+	uint16_t returned_language_id = 0;
+	struct lsa_StringLarge *disp_name = NULL;
 
 	printf("\nTesting LookupPrivDisplayName(%s)\n", priv_name->string);
 	
 	r.in.handle = handle;
 	r.in.name = priv_name;
-	r.in.language_id = &language_id;
-	r.out.language_id = &language_id;
-	r.in.unknown = 0;
+	r.in.language_id = language_id;
+	r.in.language_id_sys = 0;
+	r.out.returned_language_id = &returned_language_id;
+	r.out.disp_name = &disp_name;
 
 	status = dcerpc_lsa_LookupPrivDisplayName(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1617,8 +1650,8 @@ static bool test_LookupPrivDisplayName(struct dcerpc_pipe *p,
 		return false;
 	}
 	printf("%s -> \"%s\"  (language 0x%x/0x%x)\n", 
-	       priv_name->string, r.out.disp_name->string, 
-	       *r.in.language_id, *r.out.language_id);
+	       priv_name->string, disp_name->string,
+	       r.in.language_id, *r.out.returned_language_id);
 
 	return true;
 }
@@ -1794,7 +1827,7 @@ static bool test_query_each_TrustDom(struct dcerpc_pipe *p,
 			
 			for (j=0; j < ARRAY_SIZE(levels); j++) {
 				struct lsa_QueryTrustedDomainInfo q;
-				union lsa_TrustedDomainInfo info;
+				union lsa_TrustedDomainInfo *info = NULL;
 				q.in.trustdom_handle = &trustdom_handle;
 				q.in.level = levels[j];
 				q.out.info = &info;
@@ -1827,7 +1860,7 @@ static bool test_query_each_TrustDom(struct dcerpc_pipe *p,
 
 			for (j=0; j < ARRAY_SIZE(levels); j++) {
 				struct lsa_QueryTrustedDomainInfoBySid q;
-				union lsa_TrustedDomainInfo info;
+				union lsa_TrustedDomainInfo *info = NULL;
 				
 				if (!domains->domains[i].sid) {
 					continue;
@@ -1837,6 +1870,7 @@ static bool test_query_each_TrustDom(struct dcerpc_pipe *p,
 				q.in.dom_sid = domains->domains[i].sid;
 				q.in.level   = levels[j];
 				q.out.info   = &info;
+
 				status = dcerpc_lsa_QueryTrustedDomainInfoBySid(p, mem_ctx, &q);
 				if (!NT_STATUS_IS_OK(status) && ok[j]) {
 					printf("QueryTrustedDomainInfoBySid level %d failed - %s\n", 
@@ -1864,7 +1898,7 @@ static bool test_query_each_TrustDom(struct dcerpc_pipe *p,
 
 		for (j=0; j < ARRAY_SIZE(levels); j++) {
 			struct lsa_QueryTrustedDomainInfo q;
-			union lsa_TrustedDomainInfo info;
+			union lsa_TrustedDomainInfo *info = NULL;
 			q.in.trustdom_handle = &trustdom_handle;
 			q.in.level = levels[j];
 			q.out.info = &info;
@@ -1891,9 +1925,13 @@ static bool test_query_each_TrustDom(struct dcerpc_pipe *p,
 
 		for (j=0; j < ARRAY_SIZE(levels); j++) {
 			struct lsa_QueryTrustedDomainInfoByName q;
-			union lsa_TrustedDomainInfo info;
+			union lsa_TrustedDomainInfo *info = NULL;
+			struct lsa_String name;
+
+			name.string = domains->domains[i].name.string;
+
 			q.in.handle         = handle;
-			q.in.trusted_domain.string = domains->domains[i].name.string;
+			q.in.trusted_domain = &name;
 			q.in.level          = levels[j];
 			q.out.info          = &info;
 			status = dcerpc_lsa_QueryTrustedDomainInfoByName(p, mem_ctx, &q);
@@ -2055,6 +2093,7 @@ static bool test_CreateTrustedDomain(struct dcerpc_pipe *p,
 	struct dom_sid *domsid[12];
 	struct policy_handle trustdom_handle[12];
 	struct lsa_QueryTrustedDomainInfo q;
+	union lsa_TrustedDomainInfo *info = NULL;
 	int i;
 
 	printf("\nTesting CreateTrustedDomain for 12 domains\n");
@@ -2089,6 +2128,7 @@ static bool test_CreateTrustedDomain(struct dcerpc_pipe *p,
 		
 			q.in.trustdom_handle = &trustdom_handle[i];
 			q.in.level = LSA_TRUSTED_DOMAIN_INFO_INFO_EX;
+			q.out.info = &info;
 			status = dcerpc_lsa_QueryTrustedDomainInfo(p, mem_ctx, &q);
 			if (!NT_STATUS_IS_OK(status)) {
 				printf("QueryTrustedDomainInfo level 1 failed - %s\n", nt_errstr(status));
@@ -2096,24 +2136,24 @@ static bool test_CreateTrustedDomain(struct dcerpc_pipe *p,
 			} else if (!q.out.info) {
 				ret = false;
 			} else {
-				if (strcmp(q.out.info->info_ex.netbios_name.string, trustinfo.name.string) != 0) {
+				if (strcmp(info->info_ex.netbios_name.string, trustinfo.name.string) != 0) {
 					printf("QueryTrustedDomainInfo returned inconsistant short name: %s != %s\n",
-					       q.out.info->info_ex.netbios_name.string, trustinfo.name.string);
+					       info->info_ex.netbios_name.string, trustinfo.name.string);
 					ret = false;
 				}
-				if (q.out.info->info_ex.trust_type != LSA_TRUST_TYPE_DOWNLEVEL) {
+				if (info->info_ex.trust_type != LSA_TRUST_TYPE_DOWNLEVEL) {
 					printf("QueryTrustedDomainInfo of %s returned incorrect trust type %d != %d\n", 
-					       trust_name, q.out.info->info_ex.trust_type, LSA_TRUST_TYPE_DOWNLEVEL);
+					       trust_name, info->info_ex.trust_type, LSA_TRUST_TYPE_DOWNLEVEL);
 					ret = false;
 				}
-				if (q.out.info->info_ex.trust_attributes != 0) {
+				if (info->info_ex.trust_attributes != 0) {
 					printf("QueryTrustedDomainInfo of %s returned incorrect trust attributes %d != %d\n", 
-					       trust_name, q.out.info->info_ex.trust_attributes, 0);
+					       trust_name, info->info_ex.trust_attributes, 0);
 					ret = false;
 				}
-				if (q.out.info->info_ex.trust_direction != LSA_TRUST_DIRECTION_OUTBOUND) {
+				if (info->info_ex.trust_direction != LSA_TRUST_DIRECTION_OUTBOUND) {
 					printf("QueryTrustedDomainInfo of %s returned incorrect trust direction %d != %d\n", 
-					       trust_name, q.out.info->info_ex.trust_direction, LSA_TRUST_DIRECTION_OUTBOUND);
+					       trust_name, info->info_ex.trust_direction, LSA_TRUST_DIRECTION_OUTBOUND);
 					ret = false;
 				}
 			}
@@ -2149,6 +2189,7 @@ static bool test_CreateTrustedDomainEx2(struct dcerpc_pipe *p,
 	struct dom_sid *domsid[12];
 	struct policy_handle trustdom_handle[12];
 	struct lsa_QueryTrustedDomainInfo q;
+	union lsa_TrustedDomainInfo *info = NULL;
 	DATA_BLOB session_key;
 	enum ndr_err_code ndr_err;
 	int i;
@@ -2221,6 +2262,7 @@ static bool test_CreateTrustedDomainEx2(struct dcerpc_pipe *p,
 		
 			q.in.trustdom_handle = &trustdom_handle[i];
 			q.in.level = LSA_TRUSTED_DOMAIN_INFO_INFO_EX;
+			q.out.info = &info;
 			status = dcerpc_lsa_QueryTrustedDomainInfo(p, mem_ctx, &q);
 			if (!NT_STATUS_IS_OK(status)) {
 				printf("QueryTrustedDomainInfo level 1 failed - %s\n", nt_errstr(status));
@@ -2229,24 +2271,24 @@ static bool test_CreateTrustedDomainEx2(struct dcerpc_pipe *p,
 				printf("QueryTrustedDomainInfo level 1 failed to return an info pointer\n");
 				ret = false;
 			} else {
-				if (strcmp(q.out.info->info_ex.netbios_name.string, trustinfo.netbios_name.string) != 0) {
+				if (strcmp(info->info_ex.netbios_name.string, trustinfo.netbios_name.string) != 0) {
 					printf("QueryTrustedDomainInfo returned inconsistant short name: %s != %s\n",
-					       q.out.info->info_ex.netbios_name.string, trustinfo.netbios_name.string);
+					       info->info_ex.netbios_name.string, trustinfo.netbios_name.string);
 					ret = false;
 				}
-				if (q.out.info->info_ex.trust_type != trustinfo.trust_type) {
+				if (info->info_ex.trust_type != trustinfo.trust_type) {
 					printf("QueryTrustedDomainInfo of %s returned incorrect trust type %d != %d\n", 
-					       trust_name, q.out.info->info_ex.trust_type, trustinfo.trust_type);
+					       trust_name, info->info_ex.trust_type, trustinfo.trust_type);
 					ret = false;
 				}
-				if (q.out.info->info_ex.trust_attributes != LSA_TRUST_ATTRIBUTE_USES_RC4_ENCRYPTION) {
+				if (info->info_ex.trust_attributes != LSA_TRUST_ATTRIBUTE_USES_RC4_ENCRYPTION) {
 					printf("QueryTrustedDomainInfo of %s returned incorrect trust attributes %d != %d\n", 
-					       trust_name, q.out.info->info_ex.trust_attributes, LSA_TRUST_ATTRIBUTE_USES_RC4_ENCRYPTION);
+					       trust_name, info->info_ex.trust_attributes, LSA_TRUST_ATTRIBUTE_USES_RC4_ENCRYPTION);
 					ret = false;
 				}
-				if (q.out.info->info_ex.trust_direction != trustinfo.trust_direction) {
+				if (info->info_ex.trust_direction != trustinfo.trust_direction) {
 					printf("QueryTrustedDomainInfo of %s returned incorrect trust direction %d != %d\n", 
-					       trust_name, q.out.info->info_ex.trust_direction, trustinfo.trust_direction);
+					       trust_name, info->info_ex.trust_direction, trustinfo.trust_direction);
 					ret = false;
 				}
 			}
@@ -2274,6 +2316,7 @@ static bool test_QueryDomainInfoPolicy(struct dcerpc_pipe *p,
 				 struct policy_handle *handle)
 {
 	struct lsa_QueryDomainInformationPolicy r;
+	union lsa_DomainInformationPolicy *info = NULL;
 	NTSTATUS status;
 	int i;
 	bool ret = true;
@@ -2283,6 +2326,7 @@ static bool test_QueryDomainInfoPolicy(struct dcerpc_pipe *p,
 	for (i=2;i<4;i++) {
 		r.in.handle = handle;
 		r.in.level = i;
+		r.out.info = &info;
 
 		printf("\nTrying QueryDomainInformationPolicy level %d\n", i);
 
@@ -2308,6 +2352,7 @@ static bool test_QueryInfoPolicyCalls(	bool version2,
 					struct policy_handle *handle)
 {
 	struct lsa_QueryInfoPolicy r;
+	union lsa_PolicyInformation *info = NULL;
 	NTSTATUS status;
 	int i;
 	bool ret = true;
@@ -2320,6 +2365,7 @@ static bool test_QueryInfoPolicyCalls(	bool version2,
 	for (i=1;i<=14;i++) {
 		r.in.handle = handle;
 		r.in.level = i;
+		r.out.info = &info;
 
 		if (version2)
 			printf("\nTrying QueryInfoPolicy2 level %d\n", i);
@@ -2389,33 +2435,33 @@ static bool test_QueryInfoPolicyCalls(	bool version2,
 			struct lsa_TransNameArray tnames;
 			tnames.count = 14;
 			tnames.names = talloc_zero_array(tctx, struct lsa_TranslatedName, tnames.count);
-			tnames.names[0].name.string = r.out.info->dns.name.string;
+			tnames.names[0].name.string = info->dns.name.string;
 			tnames.names[0].sid_type = SID_NAME_DOMAIN;
-			tnames.names[1].name.string = r.out.info->dns.dns_domain.string;
+			tnames.names[1].name.string = info->dns.dns_domain.string;
 			tnames.names[1].sid_type = SID_NAME_DOMAIN;
-			tnames.names[2].name.string = talloc_asprintf(tctx, "%s\\", r.out.info->dns.name.string);
+			tnames.names[2].name.string = talloc_asprintf(tctx, "%s\\", info->dns.name.string);
 			tnames.names[2].sid_type = SID_NAME_DOMAIN;
-			tnames.names[3].name.string = talloc_asprintf(tctx, "%s\\", r.out.info->dns.dns_domain.string);
+			tnames.names[3].name.string = talloc_asprintf(tctx, "%s\\", info->dns.dns_domain.string);
 			tnames.names[3].sid_type = SID_NAME_DOMAIN;
-			tnames.names[4].name.string = talloc_asprintf(tctx, "%s\\guest", r.out.info->dns.name.string);
+			tnames.names[4].name.string = talloc_asprintf(tctx, "%s\\guest", info->dns.name.string);
 			tnames.names[4].sid_type = SID_NAME_USER;
-			tnames.names[5].name.string = talloc_asprintf(tctx, "%s\\krbtgt", r.out.info->dns.name.string);
+			tnames.names[5].name.string = talloc_asprintf(tctx, "%s\\krbtgt", info->dns.name.string);
 			tnames.names[5].sid_type = SID_NAME_USER;
-			tnames.names[6].name.string = talloc_asprintf(tctx, "%s\\guest", r.out.info->dns.dns_domain.string);
+			tnames.names[6].name.string = talloc_asprintf(tctx, "%s\\guest", info->dns.dns_domain.string);
 			tnames.names[6].sid_type = SID_NAME_USER;
-			tnames.names[7].name.string = talloc_asprintf(tctx, "%s\\krbtgt", r.out.info->dns.dns_domain.string);
+			tnames.names[7].name.string = talloc_asprintf(tctx, "%s\\krbtgt", info->dns.dns_domain.string);
 			tnames.names[7].sid_type = SID_NAME_USER;
-			tnames.names[8].name.string = talloc_asprintf(tctx, "krbtgt@%s", r.out.info->dns.name.string);
+			tnames.names[8].name.string = talloc_asprintf(tctx, "krbtgt@%s", info->dns.name.string);
 			tnames.names[8].sid_type = SID_NAME_USER;
-			tnames.names[9].name.string = talloc_asprintf(tctx, "krbtgt@%s", r.out.info->dns.dns_domain.string);
+			tnames.names[9].name.string = talloc_asprintf(tctx, "krbtgt@%s", info->dns.dns_domain.string);
 			tnames.names[9].sid_type = SID_NAME_USER;
-			tnames.names[10].name.string = talloc_asprintf(tctx, "%s\\"TEST_MACHINENAME "$", r.out.info->dns.name.string);
+			tnames.names[10].name.string = talloc_asprintf(tctx, "%s\\"TEST_MACHINENAME "$", info->dns.name.string);
 			tnames.names[10].sid_type = SID_NAME_USER;
-			tnames.names[11].name.string = talloc_asprintf(tctx, "%s\\"TEST_MACHINENAME "$", r.out.info->dns.dns_domain.string);
+			tnames.names[11].name.string = talloc_asprintf(tctx, "%s\\"TEST_MACHINENAME "$", info->dns.dns_domain.string);
 			tnames.names[11].sid_type = SID_NAME_USER;
-			tnames.names[12].name.string = talloc_asprintf(tctx, TEST_MACHINENAME "$@%s", r.out.info->dns.name.string);
+			tnames.names[12].name.string = talloc_asprintf(tctx, TEST_MACHINENAME "$@%s", info->dns.name.string);
 			tnames.names[12].sid_type = SID_NAME_USER;
-			tnames.names[13].name.string = talloc_asprintf(tctx, TEST_MACHINENAME "$@%s", r.out.info->dns.dns_domain.string);
+			tnames.names[13].name.string = talloc_asprintf(tctx, TEST_MACHINENAME "$@%s", info->dns.dns_domain.string);
 			tnames.names[13].sid_type = SID_NAME_USER;
 			ret &= test_LookupNames(p, tctx, handle, &tnames);
 
@@ -2444,14 +2490,27 @@ static bool test_GetUserName(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	struct lsa_GetUserName r;
 	NTSTATUS status;
 	bool ret = true;
-	struct lsa_StringPointer authority_name_p;
+	struct lsa_String *authority_name_p = NULL;
+	struct lsa_String *account_name_p = NULL;
 
 	printf("\nTesting GetUserName\n");
 
-	r.in.system_name = "\\";
-	r.in.account_name = NULL;
-	r.in.authority_name = &authority_name_p;
-	authority_name_p.string = NULL;
+	r.in.system_name	= "\\";
+	r.in.account_name	= &account_name_p;
+	r.in.authority_name	= NULL;
+	r.out.account_name	= &account_name_p;
+
+	status = dcerpc_lsa_GetUserName(p, mem_ctx, &r);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("GetUserName failed - %s\n", nt_errstr(status));
+		ret = false;
+	}
+
+	account_name_p = NULL;
+	r.in.account_name	= &account_name_p;
+	r.in.authority_name	= &authority_name_p;
+	r.out.account_name	= &account_name_p;
 
 	status = dcerpc_lsa_GetUserName(p, mem_ctx, &r);
 

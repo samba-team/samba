@@ -182,18 +182,21 @@ static bool test_lsa_ops(struct torture_context *tctx, struct dcerpc_pipe *p)
 	struct lsa_GetUserName r;
 	NTSTATUS status;
 	bool ret = true;
-	struct lsa_StringPointer authority_name_p;
+	struct lsa_String *account_name_p = NULL;
+	struct lsa_String *authority_name_p = NULL;
 
 	printf("\nTesting GetUserName\n");
 
 	r.in.system_name = "\\";	
-	r.in.account_name = NULL;	
+	r.in.account_name = &account_name_p;
 	r.in.authority_name = &authority_name_p;
-	authority_name_p.string = NULL;
+	r.out.account_name = &account_name_p;
 
 	/* do several ops to test credential chaining and various operations */
 	status = dcerpc_lsa_GetUserName(p, tctx, &r);
-	
+
+	authority_name_p = *r.out.authority_name;
+
 	if (NT_STATUS_EQUAL(status, NT_STATUS_RPC_PROTSEQ_NOT_SUPPORTED)) {
 		printf("not considering %s to be an error\n", nt_errstr(status));
 	} else if (!NT_STATUS_IS_OK(status)) {
@@ -204,18 +207,18 @@ static bool test_lsa_ops(struct torture_context *tctx, struct dcerpc_pipe *p)
 			return false;
 		}
 		
-		if (strcmp(r.out.account_name->string, "ANONYMOUS LOGON") != 0) {
+		if (strcmp(account_name_p->string, "ANONYMOUS LOGON") != 0) {
 			printf("GetUserName returned wrong user: %s, expected %s\n",
-			       r.out.account_name->string, "ANONYMOUS LOGON");
+			       account_name_p->string, "ANONYMOUS LOGON");
 			return false;
 		}
-		if (!r.out.authority_name || !r.out.authority_name->string) {
+		if (!authority_name_p || !authority_name_p->string) {
 			return false;
 		}
 		
-		if (strcmp(r.out.authority_name->string->string, "NT AUTHORITY") != 0) {
+		if (strcmp(authority_name_p->string, "NT AUTHORITY") != 0) {
 			printf("GetUserName returned wrong user: %s, expected %s\n",
-			       r.out.authority_name->string->string, "NT AUTHORITY");
+			       authority_name_p->string, "NT AUTHORITY");
 			return false;
 		}
 	}

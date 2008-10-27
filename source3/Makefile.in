@@ -1214,7 +1214,7 @@ modules:: SHOWFLAGS $(MODULES)
 ## Perl IDL Compiler
 samba3-idl::
 	@PIDL_ARGS="$(PIDL_ARGS)" CPP="$(CPP)" PIDL="../pidl/pidl" \
-	 srcdir="$(srcdir)" $(srcdir)/script/build_idl.sh librpc/idl/lsa.idl \
+	 srcdir="$(srcdir)" $(srcdir)/script/build_idl.sh ../librpc/idl/lsa.idl \
 	 	../librpc/idl/dfs.idl ../librpc/idl/echo.idl ../librpc/idl/winreg.idl \
 		../librpc/idl/initshutdown.idl librpc/idl/srvsvc.idl ../librpc/idl/svcctl.idl \
 		../librpc/idl/eventlog.idl ../librpc/idl/wkssvc.idl librpc/idl/netlogon.idl \

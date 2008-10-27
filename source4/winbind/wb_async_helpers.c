@@ -41,6 +41,7 @@ struct lsa_lookupsids_state {
 	struct lsa_LookupSids r;
 	struct lsa_SidArray sids;
 	struct lsa_TransNameArray names;
+	struct lsa_RefDomainList *domains;
 	uint32_t count;
 	struct wb_sid_object **result;
 };
@@ -76,6 +77,9 @@ struct composite_context *wb_lsa_lookupsids_send(TALLOC_CTX *mem_ctx,
 		if (state->sids.sids[i].sid == NULL) goto failed;
 	}
 
+	state->domains = talloc(state, struct lsa_RefDomainList);
+	if (state->domains == NULL) goto failed;
+
 	state->count = 0;
 	state->num_sids = num_sids;
 	state->names.count = 0;
@@ -88,6 +92,7 @@ struct composite_context *wb_lsa_lookupsids_send(TALLOC_CTX *mem_ctx,
 	state->r.in.count = &state->count;
 	state->r.out.names = &state->names;
 	state->r.out.count = &state->count;
+	state->r.out.domains = &state->domains;
 
 	req = dcerpc_lsa_LookupSids_send(lsa_pipe, state, &state->r);
 	if (req == NULL) goto failed;
@@ -125,6 +130,8 @@ static void lsa_lookupsids_recv_names(struct rpc_request *req)
 		struct lsa_TranslatedName *name =
 			&state->r.out.names->names[i];
 		struct lsa_DomainInfo *dom;
+		struct lsa_RefDomainList *domains =
+			state->domains;
 
 		state->result[i] = talloc_zero(state->result,
 					       struct wb_sid_object);
@@ -135,13 +142,13 @@ static void lsa_lookupsids_recv_names(struct rpc_request *req)
 			continue;
 		}
 
-		if (name->sid_index >= state->r.out.domains->count) {
+		if (name->sid_index >= domains->count) {
 			composite_error(state->ctx,
 					NT_STATUS_INVALID_PARAMETER);
 			return;
 		}
 
-		dom = &state->r.out.domains->domains[name->sid_index];
+		dom = &domains->domains[name->sid_index];
 		state->result[i]->domain = talloc_reference(state->result[i],
 							    dom->name.string);
 		if ((name->sid_type == SID_NAME_DOMAIN) ||
@@ -183,6 +190,7 @@ struct lsa_lookupnames_state {
 	uint32_t num_names;
 	struct lsa_LookupNames r;
 	struct lsa_TransSidArray sids;
+	struct lsa_RefDomainList *domains;
 	uint32_t count;
 	struct wb_sid_object **result;
 };
@@ -222,6 +230,9 @@ struct composite_context *wb_lsa_lookupnames_send(TALLOC_CTX *mem_ctx,
 		lsa_names[i].string = names[i];
 	}
 
+	state->domains = talloc(state, struct lsa_RefDomainList);
+	if (state->domains == NULL) goto failed;
+
 	state->r.in.handle = handle;
 	state->r.in.num_names = num_names;
 	state->r.in.names = lsa_names;
@@ -230,6 +241,7 @@ struct composite_context *wb_lsa_lookupnames_send(TALLOC_CTX *mem_ctx,
 	state->r.in.count = &state->count;
 	state->r.out.count = &state->count;
 	state->r.out.sids = &state->sids;
+	state->r.out.domains = &state->domains;
 
 	req = dcerpc_lsa_LookupNames_send(lsa_pipe, state, &state->r);
 	if (req == NULL) goto failed;
@@ -265,6 +277,7 @@ static void lsa_lookupnames_recv_sids(struct rpc_request *req)
 
 	for (i=0; i<state->num_names; i++) {
 		struct lsa_TranslatedSid *sid = &state->r.out.sids->sids[i];
+		struct lsa_RefDomainList *domains = state->domains;
 		struct lsa_DomainInfo *dom;
 
 		state->result[i] = talloc_zero(state->result,
@@ -276,13 +289,13 @@ static void lsa_lookupnames_recv_sids(struct rpc_request *req)
 			continue;
 		}
 
-		if (sid->sid_index >= state->r.out.domains->count) {
+		if (sid->sid_index >= domains->count) {
 			composite_error(state->ctx,
 					NT_STATUS_INVALID_PARAMETER);
 			return;
 		}
 
-		dom = &state->r.out.domains->domains[sid->sid_index];
+		dom = &domains->domains[sid->sid_index];
 
 		state->result[i]->sid = dom_sid_add_rid(state->result[i],
 							dom->sid, sid->rid);

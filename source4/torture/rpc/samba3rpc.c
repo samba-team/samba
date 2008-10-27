@@ -208,6 +208,7 @@ static bool bindtest(struct smbcli_state *cli,
 	struct lsa_ObjectAttribute objectattr;
 	struct lsa_OpenPolicy2 openpolicy;
 	struct lsa_QueryInfoPolicy query;
+	union lsa_PolicyInformation *info = NULL;
 	struct policy_handle handle;
 	struct lsa_Close close_handle;
 
@@ -256,6 +257,7 @@ static bool bindtest(struct smbcli_state *cli,
 
 	query.in.handle = &handle;
 	query.in.level = LSA_POLICY_INFO_DOMAIN;
+	query.out.info = &info;
 
 	status = dcerpc_lsa_QueryInfoPolicy(lsa_pipe, mem_ctx, &query);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1500,6 +1502,7 @@ static struct dom_sid *name2sid(TALLOC_CTX *mem_ctx,
 	struct policy_handle handle;
 	struct lsa_LookupNames l;
 	struct lsa_TransSidArray sids;
+	struct lsa_RefDomainList *domains = NULL;
 	struct lsa_String lsa_name;
 	uint32_t count = 0;
 	struct dom_sid *result;
@@ -1546,6 +1549,7 @@ static struct dom_sid *name2sid(TALLOC_CTX *mem_ctx,
 	l.in.count = &count;
 	l.out.count = &count;
 	l.out.sids = &sids;
+	l.out.domains = &domains;
 
 	status = dcerpc_lsa_LookupNames(p, tmp_ctx, &l);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1555,7 +1559,7 @@ static struct dom_sid *name2sid(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	result = dom_sid_add_rid(mem_ctx, l.out.domains->domains[0].sid,
+	result = dom_sid_add_rid(mem_ctx, domains->domains[0].sid,
 				 l.out.sids->sids[0].rid);
 
 	c.in.handle = &handle;
@@ -1583,7 +1587,8 @@ static struct dom_sid *whoami(TALLOC_CTX *mem_ctx,
 	struct dcerpc_pipe *lsa;
 	struct lsa_GetUserName r;
 	NTSTATUS status;
-	struct lsa_StringPointer authority_name_p;
+	struct lsa_String *authority_name_p = NULL;
+	struct lsa_String *account_name_p = NULL;
 	struct dom_sid *result;
 
 	status = pipe_bind_smb(mem_ctx, lp_ctx, tree, "\\pipe\\lsarpc",
@@ -1595,11 +1600,13 @@ static struct dom_sid *whoami(TALLOC_CTX *mem_ctx,
 	}
 
 	r.in.system_name = "\\";
-	r.in.account_name = NULL;
-	authority_name_p.string = NULL;
+	r.in.account_name = &account_name_p;
 	r.in.authority_name = &authority_name_p;
+	r.out.account_name = &account_name_p;
 
 	status = dcerpc_lsa_GetUserName(lsa, mem_ctx, &r);
+
+	authority_name_p = *r.out.authority_name;
 
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("(%s) GetUserName failed - %s\n",
@@ -1608,8 +1615,8 @@ static struct dom_sid *whoami(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	result = name2sid(mem_ctx, lsa, r.out.account_name->string,
-			  r.out.authority_name->string->string);
+	result = name2sid(mem_ctx, lsa, account_name_p->string,
+			  authority_name_p->string);
 
 	talloc_free(lsa);
 	return result;
@@ -2388,8 +2395,10 @@ bool torture_samba3_rpc_lsa(struct torture_context *torture)
 
 		for (i=0; i<ARRAY_SIZE(levels); i++) {
 			struct lsa_QueryInfoPolicy r;
+			union lsa_PolicyInformation *info = NULL;
 			r.in.handle = &lsa_handle;
 			r.in.level = levels[i];
+			r.out.info = &info;
 			status = dcerpc_lsa_QueryInfoPolicy(p, mem_ctx, &r);
 			if (!NT_STATUS_IS_OK(status)) {
 				d_printf("(%s) dcerpc_lsa_QueryInfoPolicy %d "
@@ -2399,7 +2408,7 @@ bool torture_samba3_rpc_lsa(struct torture_context *torture)
 				return false;
 			}
 			if (levels[i] == 5) {
-				domain_sid = r.out.info->account_domain.sid;
+				domain_sid = info->account_domain.sid;
 			}
 		}
 	}

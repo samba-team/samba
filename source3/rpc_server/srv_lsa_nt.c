@@ -33,6 +33,8 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
+#define MAX_LOOKUP_SIDS 0x5000 /* 20480 */
+
 extern PRIVS privs[];
 
 struct lsa_info {
@@ -68,13 +70,13 @@ static int init_lsa_ref_domain_list(TALLOC_CTX *mem_ctx,
 		num = ref->count;
 	}
 
-	if (num >= MAX_REF_DOMAINS) {
+	if (num >= LSA_REF_DOMAIN_LIST_MULTIPLIER) {
 		/* index not found, already at maximum domain limit */
 		return -1;
 	}
 
 	ref->count = num + 1;
-	ref->max_size = MAX_REF_DOMAINS;
+	ref->max_size = LSA_REF_DOMAIN_LIST_MULTIPLIER;
 
 	ref->domains = TALLOC_REALLOC_ARRAY(mem_ctx, ref->domains,
 					    struct lsa_DomainInfo, ref->count);
@@ -725,7 +727,7 @@ static NTSTATUS _lsa_lookup_sids_internal(pipes_struct *p,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	for (i=0; i<MAX_REF_DOMAINS; i++) {
+	for (i=0; i<LSA_REF_DOMAIN_LIST_MULTIPLIER; i++) {
 
 		if (!dom_infos[i].valid) {
 			break;

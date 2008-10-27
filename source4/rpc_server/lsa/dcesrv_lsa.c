@@ -434,67 +434,67 @@ static NTSTATUS dcesrv_lsa_QueryInfoPolicy2(struct dcesrv_call_state *dce_call, 
 {
 	struct lsa_policy_state *state;
 	struct dcesrv_handle *h;
+	union lsa_PolicyInformation *info;
 
-	r->out.info = NULL;
+	*r->out.info = NULL;
 
 	DCESRV_PULL_HANDLE(h, r->in.handle, LSA_HANDLE_POLICY);
 
 	state = h->data;
 
-	r->out.info = talloc(mem_ctx, union lsa_PolicyInformation);
-	if (!r->out.info) {
+	info = talloc_zero(mem_ctx, union lsa_PolicyInformation);
+	if (!info) {
 		return NT_STATUS_NO_MEMORY;
 	}
-
-	ZERO_STRUCTP(r->out.info);
+	*r->out.info = info;
 
 	switch (r->in.level) {
 	case LSA_POLICY_INFO_AUDIT_LOG:
 		/* we don't need to fill in any of this */
-		ZERO_STRUCT(r->out.info->audit_log);
+		ZERO_STRUCT(info->audit_log);
 		return NT_STATUS_OK;
 	case LSA_POLICY_INFO_AUDIT_EVENTS:
 		/* we don't need to fill in any of this */
-		ZERO_STRUCT(r->out.info->audit_events);
+		ZERO_STRUCT(info->audit_events);
 		return NT_STATUS_OK;
 	case LSA_POLICY_INFO_PD:
 		/* we don't need to fill in any of this */
-		ZERO_STRUCT(r->out.info->pd);
+		ZERO_STRUCT(info->pd);
 		return NT_STATUS_OK;
 
 	case LSA_POLICY_INFO_DOMAIN:
-		return dcesrv_lsa_info_AccountDomain(state, mem_ctx, &r->out.info->domain);
+		return dcesrv_lsa_info_AccountDomain(state, mem_ctx, &info->domain);
 	case LSA_POLICY_INFO_ACCOUNT_DOMAIN:
-		return dcesrv_lsa_info_AccountDomain(state, mem_ctx, &r->out.info->account_domain);
+		return dcesrv_lsa_info_AccountDomain(state, mem_ctx, &info->account_domain);
 	case LSA_POLICY_INFO_L_ACCOUNT_DOMAIN:
-		return dcesrv_lsa_info_AccountDomain(state, mem_ctx, &r->out.info->l_account_domain);
+		return dcesrv_lsa_info_AccountDomain(state, mem_ctx, &info->l_account_domain);
 
 
 	case LSA_POLICY_INFO_ROLE:
-		r->out.info->role.role = LSA_ROLE_PRIMARY;
+		info->role.role = LSA_ROLE_PRIMARY;
 		return NT_STATUS_OK;
 
 	case LSA_POLICY_INFO_DNS:
 	case LSA_POLICY_INFO_DNS_INT:
-		return dcesrv_lsa_info_DNS(state, mem_ctx, &r->out.info->dns);
+		return dcesrv_lsa_info_DNS(state, mem_ctx, &info->dns);
 
 	case LSA_POLICY_INFO_REPLICA:
-		ZERO_STRUCT(r->out.info->replica);
+		ZERO_STRUCT(info->replica);
 		return NT_STATUS_OK;
 
 	case LSA_POLICY_INFO_QUOTA:
-		ZERO_STRUCT(r->out.info->quota);
+		ZERO_STRUCT(info->quota);
 		return NT_STATUS_OK;
 
 	case LSA_POLICY_INFO_MOD:
 	case LSA_POLICY_INFO_AUDIT_FULL_SET:
 	case LSA_POLICY_INFO_AUDIT_FULL_QUERY:
 		/* windows gives INVALID_PARAMETER */
-		r->out.info = NULL;
+		*r->out.info = NULL;
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	r->out.info = NULL;
+	*r->out.info = NULL;
 	return NT_STATUS_INVALID_INFO_CLASS;
 }
 
@@ -511,10 +511,9 @@ static NTSTATUS dcesrv_lsa_QueryInfoPolicy(struct dcesrv_call_state *dce_call, T
 
 	r2.in.handle = r->in.handle;
 	r2.in.level = r->in.level;
+	r2.out.info = r->out.info;
 	
 	status = dcesrv_lsa_QueryInfoPolicy2(dce_call, mem_ctx, &r2);
-
-	r->out.info = r2.out.info;
 
 	return status;
 }
@@ -1314,6 +1313,7 @@ static NTSTATUS fill_trust_domain_ex(TALLOC_CTX *mem_ctx,
 static NTSTATUS dcesrv_lsa_QueryTrustedDomainInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 					   struct lsa_QueryTrustedDomainInfo *r)
 {
+	union lsa_TrustedDomainInfo *info = NULL;
 	struct dcesrv_handle *h;
 	struct lsa_trusted_domain_state *trusted_domain_state;
 	struct ldb_message *msg;
@@ -1342,17 +1342,19 @@ static NTSTATUS dcesrv_lsa_QueryTrustedDomainInfo(struct dcesrv_call_state *dce_
 	}
 	msg = res[0];
 	
-	r->out.info = talloc(mem_ctx, union lsa_TrustedDomainInfo);
-	if (!r->out.info) {
+	info = talloc_zero(mem_ctx, union lsa_TrustedDomainInfo);
+	if (!info) {
 		return NT_STATUS_NO_MEMORY;
 	}
+	*r->out.info = info;
+
 	switch (r->in.level) {
 	case LSA_TRUSTED_DOMAIN_INFO_NAME:
-		r->out.info->name.netbios_name.string
+		info->name.netbios_name.string
 			= samdb_result_string(msg, "flatname", NULL);					   
 		break;
 	case LSA_TRUSTED_DOMAIN_INFO_POSIX_OFFSET:
-		r->out.info->posix_offset.posix_offset
+		info->posix_offset.posix_offset
 			= samdb_result_uint(msg, "posixOffset", 0);					   
 		break;
 #if 0  /* Win2k3 doesn't implement this */
@@ -1364,32 +1366,32 @@ static NTSTATUS dcesrv_lsa_QueryTrustedDomainInfo(struct dcesrv_call_state *dce_
 		break;
 #endif
 	case LSA_TRUSTED_DOMAIN_INFO_INFO_EX:
-		return fill_trust_domain_ex(mem_ctx, msg, &r->out.info->info_ex);
+		return fill_trust_domain_ex(mem_ctx, msg, &info->info_ex);
 
 	case LSA_TRUSTED_DOMAIN_INFO_FULL_INFO:
-		ZERO_STRUCT(r->out.info->full_info);
-		return fill_trust_domain_ex(mem_ctx, msg, &r->out.info->full_info.info_ex);
+		ZERO_STRUCT(info->full_info);
+		return fill_trust_domain_ex(mem_ctx, msg, &info->full_info.info_ex);
 
 	case LSA_TRUSTED_DOMAIN_INFO_FULL_INFO_2_INTERNAL:
-		ZERO_STRUCT(r->out.info->full_info2_internal);
-		r->out.info->full_info2_internal.posix_offset.posix_offset
+		ZERO_STRUCT(info->full_info2_internal);
+		info->full_info2_internal.posix_offset.posix_offset
 			= samdb_result_uint(msg, "posixOffset", 0);					   
-		return fill_trust_domain_ex(mem_ctx, msg, &r->out.info->full_info2_internal.info.info_ex);
+		return fill_trust_domain_ex(mem_ctx, msg, &info->full_info2_internal.info.info_ex);
 		
 	case LSA_TRUSTED_DOMAIN_SUPPORTED_ENCRTYPION_TYPES:
-		r->out.info->enc_types.enc_types
+		info->enc_types.enc_types
 			= samdb_result_uint(msg, "msDs-supportedEncryptionTypes", KERB_ENCTYPE_RC4_HMAC_MD5);
 		break;
 
 	case LSA_TRUSTED_DOMAIN_INFO_CONTROLLERS:
 	case LSA_TRUSTED_DOMAIN_INFO_INFO_EX2_INTERNAL:
 		/* oops, we don't want to return the info after all */
-		talloc_free(r->out.info);
+		talloc_free(info);
 		r->out.info = NULL;
 		return NT_STATUS_INVALID_PARAMETER;
 	default:
 		/* oops, we don't want to return the info after all */
-		talloc_free(r->out.info);
+		talloc_free(info);
 		r->out.info = NULL;
 		return NT_STATUS_INVALID_INFO_CLASS;
 	}
@@ -1407,6 +1409,7 @@ static NTSTATUS dcesrv_lsa_QueryTrustedDomainInfoBySid(struct dcesrv_call_state 
 	NTSTATUS status;
 	struct lsa_OpenTrustedDomain open;
 	struct lsa_QueryTrustedDomainInfo query;
+	union lsa_TrustedDomainInfo *info;
 	struct dcesrv_handle *h;
 	open.in.handle = r->in.handle;
 	open.in.sid = r->in.dom_sid;
@@ -1423,15 +1426,15 @@ static NTSTATUS dcesrv_lsa_QueryTrustedDomainInfoBySid(struct dcesrv_call_state 
 	/* Ensure this handle goes away at the end of this call */
 	DCESRV_PULL_HANDLE(h, open.out.trustdom_handle, DCESRV_HANDLE_ANY);
 	talloc_steal(mem_ctx, h);
-	
+
 	query.in.trustdom_handle = open.out.trustdom_handle;
 	query.in.level = r->in.level;
+	query.out.info = r->out.info;
 	status = dcesrv_lsa_QueryTrustedDomainInfo(dce_call, mem_ctx, &query);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
-	r->out.info = query.out.info;
+
 	return NT_STATUS_OK;
 }
 
@@ -1457,7 +1460,7 @@ static NTSTATUS dcesrv_lsa_QueryTrustedDomainInfoByName(struct dcesrv_call_state
 	struct lsa_QueryTrustedDomainInfo query;
 	struct dcesrv_handle *h;
 	open.in.handle = r->in.handle;
-	open.in.name = r->in.trusted_domain;
+	open.in.name = *r->in.trusted_domain;
 	open.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	open.out.trustdom_handle = talloc(mem_ctx, struct policy_handle);
 	if (!open.out.trustdom_handle) {
@@ -1474,12 +1477,12 @@ static NTSTATUS dcesrv_lsa_QueryTrustedDomainInfoByName(struct dcesrv_call_state
 
 	query.in.trustdom_handle = open.out.trustdom_handle;
 	query.in.level = r->in.level;
+	query.out.info = r->out.info;
 	status = dcesrv_lsa_QueryTrustedDomainInfo(dce_call, mem_ctx, &query);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
-	r->out.info = query.out.info;
 	return NT_STATUS_OK;
 }
 
@@ -1724,15 +1727,21 @@ static NTSTATUS dcesrv_lsa_EnumPrivsAccount(struct dcesrv_call_state *dce_call,
 	const char * const attrs[] = { "privilege", NULL};
 	struct ldb_message_element *el;
 	const char *sidstr;
+	struct lsa_PrivilegeSet *privs;
 
 	DCESRV_PULL_HANDLE(h, r->in.handle, LSA_HANDLE_ACCOUNT);
 
 	astate = h->data;
 
-	r->out.privs = talloc(mem_ctx, struct lsa_PrivilegeSet);
-	r->out.privs->count = 0;
-	r->out.privs->unknown = 0;
-	r->out.privs->set = NULL;
+	privs = talloc(mem_ctx, struct lsa_PrivilegeSet);
+	if (privs == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	privs->count = 0;
+	privs->unknown = 0;
+	privs->set = NULL;
+
+	*r->out.privs = privs;
 
 	sidstr = ldap_encode_ndr_dom_sid(mem_ctx, astate->account_sid);
 	if (sidstr == NULL) {
@@ -1750,9 +1759,9 @@ static NTSTATUS dcesrv_lsa_EnumPrivsAccount(struct dcesrv_call_state *dce_call,
 		return NT_STATUS_OK;
 	}
 
-	r->out.privs->set = talloc_array(r->out.privs, 
-					 struct lsa_LUIDAttribute, el->num_values);
-	if (r->out.privs->set == NULL) {
+	privs->set = talloc_array(privs,
+				  struct lsa_LUIDAttribute, el->num_values);
+	if (privs->set == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -1761,12 +1770,12 @@ static NTSTATUS dcesrv_lsa_EnumPrivsAccount(struct dcesrv_call_state *dce_call,
 		if (id == -1) {
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
-		r->out.privs->set[i].attribute = 0;
-		r->out.privs->set[i].luid.low = id;
-		r->out.privs->set[i].luid.high = 0;
+		privs->set[i].attribute = 0;
+		privs->set[i].luid.low = id;
+		privs->set[i].luid.high = 0;
 	}
 
-	r->out.privs->count = el->num_values;
+	privs->count = el->num_values;
 
 	return NT_STATUS_OK;
 }
@@ -2058,8 +2067,18 @@ static NTSTATUS dcesrv_lsa_GetSystemAccessAccount(struct dcesrv_call_state *dce_
 	int i;
 	NTSTATUS status;
 	struct lsa_EnumPrivsAccount enumPrivs;
+	struct lsa_PrivilegeSet *privs;
+
+	privs = talloc(mem_ctx, struct lsa_PrivilegeSet);
+	if (!privs) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	privs->count = 0;
+	privs->unknown = 0;
+	privs->set = NULL;
 
 	enumPrivs.in.handle = r->in.handle;
+	enumPrivs.out.privs = &privs;
 
 	status = dcesrv_lsa_EnumPrivsAccount(dce_call, mem_ctx, &enumPrivs);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2068,8 +2087,8 @@ static NTSTATUS dcesrv_lsa_GetSystemAccessAccount(struct dcesrv_call_state *dce_
 
 	*(r->out.access_mask) = 0x00000000;
 
-	for (i = 0; i < enumPrivs.out.privs->count; i++) {
-		int priv = enumPrivs.out.privs->set[i].luid.low;
+	for (i = 0; i < privs->count; i++) {
+		int priv = privs->set[i].luid.low;
 
 		switch (priv) {
 		case SEC_PRIV_INTERACTIVE_LOGON:
@@ -2695,6 +2714,7 @@ static NTSTATUS dcesrv_lsa_LookupPrivName(struct dcesrv_call_state *dce_call,
 {
 	struct dcesrv_handle *h;
 	struct lsa_policy_state *state;
+	struct lsa_StringLarge *name;
 	const char *privname;
 
 	DCESRV_PULL_HANDLE(h, r->in.handle, LSA_HANDLE_POLICY);
@@ -2710,11 +2730,14 @@ static NTSTATUS dcesrv_lsa_LookupPrivName(struct dcesrv_call_state *dce_call,
 		return NT_STATUS_NO_SUCH_PRIVILEGE;
 	}
 
-	r->out.name = talloc(mem_ctx, struct lsa_StringLarge);
-	if (r->out.name == NULL) {
+	name = talloc(mem_ctx, struct lsa_StringLarge);
+	if (name == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	r->out.name->string = privname;
+
+	name->string = privname;
+
+	*r->out.name = name;
 
 	return NT_STATUS_OK;	
 }
@@ -2729,6 +2752,7 @@ static NTSTATUS dcesrv_lsa_LookupPrivDisplayName(struct dcesrv_call_state *dce_c
 {
 	struct dcesrv_handle *h;
 	struct lsa_policy_state *state;
+	struct lsa_StringLarge *disp_name = NULL;
 	int id;
 
 	DCESRV_PULL_HANDLE(h, r->in.handle, LSA_HANDLE_POLICY);
@@ -2739,16 +2763,19 @@ static NTSTATUS dcesrv_lsa_LookupPrivDisplayName(struct dcesrv_call_state *dce_c
 	if (id == -1) {
 		return NT_STATUS_NO_SUCH_PRIVILEGE;
 	}
-	
-	r->out.disp_name = talloc(mem_ctx, struct lsa_StringLarge);
-	if (r->out.disp_name == NULL) {
+
+	disp_name = talloc(mem_ctx, struct lsa_StringLarge);
+	if (disp_name == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	r->out.disp_name->string = sec_privilege_display_name(id, r->in.language_id);
-	if (r->out.disp_name->string == NULL) {
+	disp_name->string = sec_privilege_display_name(id, &r->in.language_id);
+	if (disp_name->string == NULL) {
 		return NT_STATUS_INTERNAL_ERROR;
 	}
+
+	*r->out.disp_name = disp_name;
+	*r->out.returned_language_id = 0;
 
 	return NT_STATUS_OK;
 }
@@ -2875,19 +2902,23 @@ static NTSTATUS dcesrv_lsa_GetUserName(struct dcesrv_call_state *dce_call, TALLO
 	const char *account_name;
 	const char *authority_name;
 	struct lsa_String *_account_name;
-	struct lsa_StringPointer *_authority_name = NULL;
+	struct lsa_String *_authority_name = NULL;
 
 	/* this is what w2k3 does */
 	r->out.account_name = r->in.account_name;
 	r->out.authority_name = r->in.authority_name;
 
-	if (r->in.account_name && r->in.account_name->string) {
+	if (r->in.account_name
+	    && *r->in.account_name
+	    /* && *(*r->in.account_name)->string */
+	    ) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (r->in.authority_name &&
-	    r->in.authority_name->string &&
-	    r->in.authority_name->string->string) {
+	if (r->in.authority_name
+	    && *r->in.authority_name
+	    /* && *(*r->in.authority_name)->string */
+	    ) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -2899,15 +2930,15 @@ static NTSTATUS dcesrv_lsa_GetUserName(struct dcesrv_call_state *dce_call, TALLO
 	_account_name->string = account_name;
 
 	if (r->in.authority_name) {
-		_authority_name = talloc(mem_ctx, struct lsa_StringPointer);
+		_authority_name = talloc(mem_ctx, struct lsa_String);
 		NT_STATUS_HAVE_NO_MEMORY(_authority_name);
-		_authority_name->string = talloc(mem_ctx, struct lsa_String);
-		NT_STATUS_HAVE_NO_MEMORY(_authority_name->string);
-		_authority_name->string->string = authority_name;
+		_authority_name->string = authority_name;
 	}
 
-	r->out.account_name = _account_name;
-	r->out.authority_name = _authority_name;
+	*r->out.account_name = _account_name;
+	if (r->out.authority_name) {
+		*r->out.authority_name = _authority_name;
+	}
 
 	return status;
 }
@@ -2930,19 +2961,21 @@ static NTSTATUS dcesrv_lsa_QueryDomainInformationPolicy(struct dcesrv_call_state
 						 TALLOC_CTX *mem_ctx,
 						 struct lsa_QueryDomainInformationPolicy *r)
 {
-	r->out.info = talloc(mem_ctx, union lsa_DomainInformationPolicy);
-	if (!r->out.info) {
+	union lsa_DomainInformationPolicy *info;
+
+	info = talloc(r->out.info, union lsa_DomainInformationPolicy);
+	if (!info) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	switch (r->in.level) {
 	case LSA_DOMAIN_INFO_POLICY_EFS:
-		talloc_free(r->out.info);
-		r->out.info = NULL;
+		talloc_free(info);
+		*r->out.info = NULL;
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	case LSA_DOMAIN_INFO_POLICY_KERBEROS:
 	{
-		struct lsa_DomainInfoKerberos *k = &r->out.info->kerberos_info;
+		struct lsa_DomainInfoKerberos *k = &info->kerberos_info;
 		struct smb_krb5_context *smb_krb5_context;
 		int ret = smb_krb5_init_context(mem_ctx, 
 							dce_call->event_ctx, 
@@ -2959,11 +2992,12 @@ static NTSTATUS dcesrv_lsa_QueryDomainInformationPolicy(struct dcesrv_call_state
 		k->user_tkt_renewaltime = 0; /* Need to find somewhere to store this, and query in KDC too */
 		k->clock_skew = krb5_get_max_time_skew(smb_krb5_context->krb5_context);
 		talloc_free(smb_krb5_context);
+		*r->out.info = info;
 		return NT_STATUS_OK;
 	}
 	default:
-		talloc_free(r->out.info);
-		r->out.info = NULL;
+		talloc_free(info);
+		*r->out.info = NULL;
 		return NT_STATUS_INVALID_INFO_CLASS;
 	}
 }

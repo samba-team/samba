@@ -39,7 +39,8 @@ static bool test_random_uuid(struct torture_context *torture)
 	struct GUID uuid;
 	struct dssetup_DsRoleGetPrimaryDomainInformation r1;
 	struct lsa_GetUserName r2;
-	struct lsa_StringPointer authority_name_p;
+	struct lsa_String *authority_name_p = NULL;
+	struct lsa_String *account_name_p = NULL;
 
 	torture_comment(torture, "RPC-OBJECTUUID-RANDOM\n");
 
@@ -63,9 +64,10 @@ static bool test_random_uuid(struct torture_context *torture)
 	uuid = GUID_random();
 
 	r2.in.system_name = "\\";
-	r2.in.account_name = NULL;
+	r2.in.account_name = &account_name_p;
 	r2.in.authority_name = &authority_name_p;
-	authority_name_p.string = NULL;
+	r2.out.account_name = &account_name_p;
+	r2.out.authority_name = &authority_name_p;
 
 	req = dcerpc_ndr_request_send(p2, &uuid,
 				      &ndr_table_lsarpc,

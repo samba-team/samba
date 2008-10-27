@@ -70,6 +70,7 @@ struct init_domain_state {
 	struct lsa_ObjectAttribute objectattr;
 	struct lsa_OpenPolicy2 lsa_openpolicy;
 	struct lsa_QueryInfoPolicy queryinfo;
+	union lsa_PolicyInformation *info;
 };
 
 static void init_domain_recv_netlogonpipe(struct composite_context *ctx);
@@ -326,8 +327,12 @@ static void init_domain_recv_lsa_policy(struct rpc_request *req)
 	state->ctx->status = state->lsa_openpolicy.out.result;
 	if (!composite_is_ok(state->ctx)) return;
 
+	state->info = talloc_zero(state->ctx, union lsa_PolicyInformation);
+	if (composite_nomem(state->info, state->ctx)) return;
+
 	state->queryinfo.in.handle = &state->domain->libnet_ctx->lsa.handle;
 	state->queryinfo.in.level = LSA_POLICY_INFO_ACCOUNT_DOMAIN;
+	state->queryinfo.out.info = &state->info;
 
 	req = dcerpc_lsa_QueryInfoPolicy_send(state->domain->libnet_ctx->lsa.pipe, state,
 					      &state->queryinfo);
@@ -347,7 +352,7 @@ static void init_domain_recv_queryinfo(struct rpc_request *req)
 	state->ctx->status = state->queryinfo.out.result;
 	if (!composite_is_ok(state->ctx)) return;
 
-	dominfo = &state->queryinfo.out.info->account_domain;
+	dominfo = &(*state->queryinfo.out.info)->account_domain;
 
 	if (strcasecmp(state->domain->info->name, dominfo->name.string) != 0) {
 		DEBUG(2, ("Expected domain name %s, DC %s said %s\n",
