@@ -1431,7 +1431,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 	NTSTATUS samr_RidToSid(
 		[in,ref]    policy_handle *domain_handle,
 		[in]        uint32        rid,
-		[out,ref]   dom_sid2      *sid
+		[out,ref]   dom_sid2      **sid
 		);
 
 	/************************/

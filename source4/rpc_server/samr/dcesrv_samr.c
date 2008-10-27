@@ -4307,8 +4307,8 @@ static NTSTATUS dcesrv_samr_RidToSid(struct dcesrv_call_state *dce_call, TALLOC_
 	d_state = h->data;
 
 	/* form the users SID */
-	r->out.sid = dom_sid_add_rid(mem_ctx, d_state->domain_sid, r->in.rid);
-	if (!r->out.sid) {
+	*r->out.sid = dom_sid_add_rid(mem_ctx, d_state->domain_sid, r->in.rid);
+	if (!*r->out.sid) {
 		return NT_STATUS_NO_MEMORY;
 	}
 

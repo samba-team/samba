@@ -4146,7 +4146,7 @@ static bool test_RidToSid(struct dcerpc_pipe *p, struct torture_context *tctx,
     	struct samr_RidToSid r;
 	NTSTATUS status;
 	bool ret = true;
-	struct dom_sid *calc_sid;
+	struct dom_sid *calc_sid, *out_sid;
 	int rids[] = { 0, 42, 512, 10200 };
 	int i;
 
@@ -4156,6 +4156,7 @@ static bool test_RidToSid(struct dcerpc_pipe *p, struct torture_context *tctx,
 		calc_sid = dom_sid_dup(tctx, domain_sid);
 		r.in.domain_handle = domain_handle;
 		r.in.rid = rids[i];
+		r.out.sid = &out_sid;
 		
 		status = dcerpc_samr_RidToSid(p, tctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -4164,9 +4165,9 @@ static bool test_RidToSid(struct dcerpc_pipe *p, struct torture_context *tctx,
 		} else {
 			calc_sid = dom_sid_add_rid(calc_sid, calc_sid, rids[i]);
 
-			if (!dom_sid_equal(calc_sid, r.out.sid)) {
+			if (!dom_sid_equal(calc_sid, out_sid)) {
 				printf("RidToSid for %d failed - got %s, expected %s\n", rids[i], 
-				       dom_sid_string(tctx, r.out.sid), 
+				       dom_sid_string(tctx, out_sid),
 				       dom_sid_string(tctx, calc_sid));
 				ret = false;
 			}
