@@ -519,9 +519,8 @@ got_connection:
 
 	/* cache the successful connection for workgroup and realm */
 	if (ads_closest_dc(ads)) {
-		print_sockaddr(addr, sizeof(addr), &ads->ldap.ss);
-		saf_store( ads->server.workgroup, addr);
-		saf_store( ads->server.realm, addr);
+		saf_store( ads->server.workgroup, ads->config.ldap_server_name);
+		saf_store( ads->server.realm, ads->config.ldap_server_name);
 	}
 
 	ldap_set_option(ads->ldap.ld, LDAP_OPT_PROTOCOL_VERSION, &version);
