@@ -4742,6 +4742,7 @@ bool namecache_status_fetch(const char *keyname,
 /* The following definitions come from libsmb/namequery.c  */
 
 bool saf_store( const char *domain, const char *servername );
+bool saf_join_store( const char *domain, const char *servername );
 bool saf_delete( const char *domain );
 char *saf_fetch( const char *domain );
 NODE_STATUS_STRUCT *node_status_query(int fd,
