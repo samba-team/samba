@@ -229,7 +229,7 @@ static NTSTATUS dcesrv_samr_QuerySecurity(struct dcesrv_call_state *dce_call, TA
 	struct dcesrv_handle *h;
 	struct sec_desc_buf *sd;
 
-	r->out.sdbuf = NULL;
+	*r->out.sdbuf = NULL;
 
 	DCESRV_PULL_HANDLE(h, r->in.handle, DCESRV_HANDLE_ANY);
 
@@ -240,7 +240,7 @@ static NTSTATUS dcesrv_samr_QuerySecurity(struct dcesrv_call_state *dce_call, TA
 
 	sd->sd = samdb_default_security_descriptor(mem_ctx);
 
-	r->out.sdbuf = sd;
+	*r->out.sdbuf = sd;
 
 	return NT_STATUS_OK;
 }

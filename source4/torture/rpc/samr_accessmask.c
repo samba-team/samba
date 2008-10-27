@@ -236,7 +236,7 @@ static bool test_samr_connect_user_acl(struct torture_context *tctx,
 	struct samr_SetSecurity ss;
 	struct security_ace ace;
 	struct security_descriptor *sd;
-	struct sec_desc_buf sdb;
+	struct sec_desc_buf sdb, *sdbuf = NULL;
 	bool ret = true;
 	int sd_size;
 	struct dcerpc_pipe *test_p;
@@ -255,6 +255,7 @@ static bool test_samr_connect_user_acl(struct torture_context *tctx,
 	/* get the current ACL for the SAMR policy handle */
 	qs.in.handle = &ch;
 	qs.in.sec_info = SECINFO_DACL;
+	qs.out.sdbuf = &sdbuf;
 	status = dcerpc_samr_QuerySecurity(p, tctx, &qs);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("QuerySecurity failed - %s\n", nt_errstr(status));
@@ -262,13 +263,13 @@ static bool test_samr_connect_user_acl(struct torture_context *tctx,
 	}
 
 	/* how big is the security descriptor? */
-	sd_size = qs.out.sdbuf->sd_size;
+	sd_size = sdbuf->sd_size;
 
 
 	/* add an ACE to the security descriptor to deny the user the
 	 * 'connect to server' right
 	 */
-	sd = qs.out.sdbuf->sd;
+	sd = sdbuf->sd;
 	ace.type = SEC_ACE_TYPE_ACCESS_DENIED;
 	ace.flags = 0;
 	ace.access_mask = SAMR_ACCESS_CONNECT_TO_SERVER;
@@ -314,7 +315,7 @@ static bool test_samr_connect_user_acl(struct torture_context *tctx,
 		printf("QuerySecurity failed - %s\n", nt_errstr(status));
 		ret = false;
 	}
-	if (sd_size != qs.out.sdbuf->sd_size) {
+	if (sd_size != sdbuf->sd_size) {
 		printf("security descriptor changed\n");
 		ret = false;
 	}

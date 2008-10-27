@@ -192,10 +192,12 @@ static struct sec_desc_buf *samsync_query_samr_sec_desc(TALLOC_CTX *mem_ctx,
 							struct policy_handle *handle) 
 {
 	struct samr_QuerySecurity r;
+	struct sec_desc_buf *sdbuf = NULL;
 	NTSTATUS status;
 
 	r.in.handle = handle;
 	r.in.sec_info = 0x7;
+	r.out.sdbuf = &sdbuf;
 
 	status = dcerpc_samr_QuerySecurity(samsync_state->p_samr, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -203,7 +205,7 @@ static struct sec_desc_buf *samsync_query_samr_sec_desc(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	return r.out.sdbuf;
+	return sdbuf;
 }
 
 static struct sec_desc_buf *samsync_query_lsa_sec_desc(TALLOC_CTX *mem_ctx, 

@@ -248,7 +248,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 	NTSTATUS samr_QuerySecurity (
 		[in,ref]          policy_handle *handle,
 		[in]              security_secinfo sec_info,
-		[out,unique]      sec_desc_buf *sdbuf
+		[out,ref]         sec_desc_buf **sdbuf
 		);
 
 	/******************/

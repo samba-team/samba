@@ -138,18 +138,20 @@ static bool test_QuerySecurity(struct dcerpc_pipe *p,
 	NTSTATUS status;
 	struct samr_QuerySecurity r;
 	struct samr_SetSecurity s;
+	struct sec_desc_buf *sdbuf = NULL;
 
 	r.in.handle = handle;
 	r.in.sec_info = 7;
+	r.out.sdbuf = &sdbuf;
 
 	status = dcerpc_samr_QuerySecurity(p, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "QuerySecurity");
 
-	torture_assert(tctx, r.out.sdbuf != NULL, "sdbuf is NULL");
+	torture_assert(tctx, sdbuf != NULL, "sdbuf is NULL");
 
 	s.in.handle = handle;
 	s.in.sec_info = 7;
-	s.in.sdbuf = r.out.sdbuf;
+	s.in.sdbuf = sdbuf;
 
 	if (torture_setting_bool(tctx, "samba4", false)) {
 		torture_skip(tctx, "skipping SetSecurity test against Samba4\n");
