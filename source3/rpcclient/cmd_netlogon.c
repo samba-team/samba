@@ -1003,6 +1003,43 @@ static WERROR cmd_netlogon_enumtrusteddomainsex(struct rpc_pipe_client *cli,
 	return werr;
 }
 
+static WERROR cmd_netlogon_getdcsitecoverage(struct rpc_pipe_client *cli,
+					     TALLOC_CTX *mem_ctx, int argc,
+					     const char **argv)
+{
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	WERROR werr = WERR_GENERAL_FAILURE;
+	const char *server_name = cli->desthost;
+	struct DcSitesCtr *ctr = NULL;
+
+	if (argc < 1 || argc > 3) {
+		fprintf(stderr, "Usage: %s <server_name>\n", argv[0]);
+		return WERR_OK;
+	}
+
+	if (argc >= 2) {
+		server_name = argv[1];
+	}
+
+	status = rpccli_netr_DsrGetDcSiteCoverageW(cli, mem_ctx,
+						   server_name,
+						   &ctr,
+						   &werr);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+
+	if (W_ERROR_IS_OK(werr) && ctr->num_sites) {
+		int i;
+		printf("sites covered by this DC: %d\n", ctr->num_sites);
+		for (i=0; i<ctr->num_sites; i++) {
+			printf("%s\n", ctr->sites[i].string);
+		}
+	}
+ done:
+	return werr;
+}
+
 
 /* List of commands exported by this module */
 
@@ -1029,6 +1066,7 @@ struct cmd_set netlogon_commands[] = {
 	{ "deregisterdnsrecords", RPC_RTYPE_WERROR, NULL, cmd_netlogon_deregisterdnsrecords, &ndr_table_netlogon.syntax_id, NULL, "Deregister DNS records",     "" },
 	{ "netrenumtrusteddomains", RPC_RTYPE_WERROR, NULL, cmd_netlogon_enumtrusteddomains, &ndr_table_netlogon.syntax_id, NULL, "Enumerate trusted domains",     "" },
 	{ "netrenumtrusteddomainsex", RPC_RTYPE_WERROR, NULL, cmd_netlogon_enumtrusteddomainsex, &ndr_table_netlogon.syntax_id, NULL, "Enumerate trusted domains",     "" },
+	{ "getdcsitecoverage", RPC_RTYPE_WERROR, NULL, cmd_netlogon_getdcsitecoverage, &ndr_table_netlogon.syntax_id, NULL, "Get the Site-Coverage from a DC",     "" },
 
 	{ NULL }
 };
