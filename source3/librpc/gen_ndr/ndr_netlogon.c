@@ -13819,7 +13819,10 @@ static enum ndr_err_code ndr_push_netr_DsrGetDcSiteCoverageW(struct ndr_push *nd
 		if (r->out.ctr == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_DcSitesCtr(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.ctr));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, *r->out.ctr));
+		if (*r->out.ctr) {
+			NDR_CHECK(ndr_push_DcSitesCtr(ndr, NDR_SCALARS|NDR_BUFFERS, *r->out.ctr));
+		}
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
@@ -13828,8 +13831,10 @@ static enum ndr_err_code ndr_push_netr_DsrGetDcSiteCoverageW(struct ndr_push *nd
 static enum ndr_err_code ndr_pull_netr_DsrGetDcSiteCoverageW(struct ndr_pull *ndr, int flags, struct netr_DsrGetDcSiteCoverageW *r)
 {
 	uint32_t _ptr_server_name;
+	uint32_t _ptr_ctr;
 	TALLOC_CTX *_mem_save_server_name_0;
 	TALLOC_CTX *_mem_save_ctr_0;
+	TALLOC_CTX *_mem_save_ctr_1;
 	if (flags & NDR_IN) {
 		ZERO_STRUCT(r->out);
 
@@ -13860,7 +13865,18 @@ static enum ndr_err_code ndr_pull_netr_DsrGetDcSiteCoverageW(struct ndr_pull *nd
 		}
 		_mem_save_ctr_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.ctr, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_DcSitesCtr(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.ctr));
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_ctr));
+		if (_ptr_ctr) {
+			NDR_PULL_ALLOC(ndr, *r->out.ctr);
+		} else {
+			*r->out.ctr = NULL;
+		}
+		if (*r->out.ctr) {
+			_mem_save_ctr_1 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, *r->out.ctr, 0);
+			NDR_CHECK(ndr_pull_DcSitesCtr(ndr, NDR_SCALARS|NDR_BUFFERS, *r->out.ctr));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_ctr_1, 0);
+		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_ctr_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
@@ -13890,7 +13906,12 @@ _PUBLIC_ void ndr_print_netr_DsrGetDcSiteCoverageW(struct ndr_print *ndr, const 
 		ndr->depth++;
 		ndr_print_ptr(ndr, "ctr", r->out.ctr);
 		ndr->depth++;
-		ndr_print_DcSitesCtr(ndr, "ctr", r->out.ctr);
+		ndr_print_ptr(ndr, "ctr", *r->out.ctr);
+		ndr->depth++;
+		if (*r->out.ctr) {
+			ndr_print_DcSitesCtr(ndr, "ctr", *r->out.ctr);
+		}
+		ndr->depth--;
 		ndr->depth--;
 		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;

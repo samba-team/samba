@@ -1547,7 +1547,7 @@ struct netr_DsrGetDcSiteCoverageW {
 	} in;
 
 	struct {
-		struct DcSitesCtr *ctr;/* [ref] */
+		struct DcSitesCtr **ctr;/* [ref] */
 		WERROR result;
 	} out;
 

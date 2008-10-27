@@ -3101,7 +3101,7 @@ static bool api_netr_DsrGetDcSiteCoverageW(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.ctr = talloc_zero(r, struct DcSitesCtr);
+	r->out.ctr = talloc_zero(r, struct DcSitesCtr *);
 	if (r->out.ctr == NULL) {
 		talloc_free(r);
 		return false;

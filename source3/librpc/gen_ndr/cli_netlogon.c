@@ -1888,7 +1888,7 @@ NTSTATUS rpccli_netr_DsRAddressToSitenamesExW(struct rpc_pipe_client *cli,
 NTSTATUS rpccli_netr_DsrGetDcSiteCoverageW(struct rpc_pipe_client *cli,
 					   TALLOC_CTX *mem_ctx,
 					   const char *server_name /* [in] [unique,charset(UTF16)] */,
-					   struct DcSitesCtr *ctr /* [out] [ref] */,
+					   struct DcSitesCtr **ctr /* [out] [ref] */,
 					   WERROR *werror)
 {
 	struct netr_DsrGetDcSiteCoverageW r;
