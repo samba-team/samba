@@ -797,14 +797,11 @@ NTSTATUS _netr_LogonSamLogon(pipes_struct *p,
 	}
 
 	if (process_creds) {
-		fstring remote_machine;
 
 		/* Get the remote machine name for the creds store. */
 		/* Note this is the remote machine this request is coming from (member server),
 		   not neccessarily the workstation name the user is logging onto.
 		*/
-
-		fstrcpy(remote_machine, r->in.computer_name);
 
 		if (!p->dc) {
 			/* Restore the saved state of the netlogon creds. */
@@ -812,7 +809,7 @@ NTSTATUS _netr_LogonSamLogon(pipes_struct *p,
 
 			become_root();
 			ret = secrets_restore_schannel_session_info(
-				p, remote_machine, &p->dc);
+				p, r->in.computer_name, &p->dc);
 			unbecome_root();
 			if (!ret) {
 				return NT_STATUS_INVALID_HANDLE;
@@ -827,13 +824,13 @@ NTSTATUS _netr_LogonSamLogon(pipes_struct *p,
 		if (!netlogon_creds_server_step(p->dc, r->in.credential,  r->out.return_authenticator)) {
 			DEBUG(2,("_netr_LogonSamLogon: creds_server_step failed. Rejecting auth "
 				"request from client %s machine account %s\n",
-				remote_machine, p->dc->mach_acct ));
+				r->in.computer_name, p->dc->mach_acct ));
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 
 		/* We must store the creds state after an update. */
 		become_root();
-		secrets_store_schannel_session_info(p, remote_machine, p->dc);
+		secrets_store_schannel_session_info(p, r->in.computer_name, p->dc);
 		unbecome_root();
 	}
 
