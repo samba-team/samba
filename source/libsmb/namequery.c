@@ -34,12 +34,23 @@ BOOL global_in_nmbd = False;
 ****************************************************************************/
 #define SAFKEY_FMT	"SAF/DOMAIN/%s"
 #define SAF_TTL		900
+#define SAFJOINKEY_FMT	"SAFJOIN/DOMAIN/%s"
+#define SAFJOIN_TTL	3600
 
 static char *saf_key(const char *domain)
 {
 	char *keystr;
 	
 	asprintf( &keystr, SAFKEY_FMT, strupper_static(domain) );
+
+	return keystr;
+}
+
+static char *saf_join_key(const char *domain)
+{
+	char *keystr;
+
+	asprintf( &keystr, SAFJOINKEY_FMT, strupper_static(domain) );
 
 	return keystr;
 }
@@ -67,7 +78,7 @@ BOOL saf_store( const char *domain, const char *servername )
 		return False;
 	
 	key = saf_key( domain );
-	expire = time( NULL ) + SAF_TTL;
+	expire = time( NULL ) + lp_parm_int(-1, "saf","ttl", SAF_TTL);
 	
 	
 	DEBUG(10,("saf_store: domain = [%s], server = [%s], expire = [%u]\n",
@@ -77,6 +88,38 @@ BOOL saf_store( const char *domain, const char *servername )
 	
 	SAFE_FREE( key );
 	
+	return ret;
+}
+
+BOOL saf_join_store( const char *domain, const char *servername )
+{
+	char *key;
+	time_t expire;
+	BOOL ret = False;
+
+	if ( !domain || !servername ) {
+		DEBUG(2,("saf_join_store: Refusing to store empty domain or servername!\n"));
+		return False;
+	}
+
+	if ( (strlen(domain) == 0) || (strlen(servername) == 0) ) {
+		DEBUG(0,("saf_join_store: refusing to store 0 length domain or servername!\n"));
+		return False;
+	}
+
+	if ( !gencache_init() )
+		return False;
+
+	key = saf_join_key( domain );
+	expire = time( NULL ) + lp_parm_int(-1, "saf","join ttl", SAFJOIN_TTL);
+
+	DEBUG(10,("saf_join_store: domain = [%s], server = [%s], expire = [%u]\n",
+		domain, servername, (unsigned int)expire ));
+
+	ret = gencache_set( key, servername, expire );
+
+	SAFE_FREE( key );
+
 	return ret;
 }
 
@@ -93,14 +136,21 @@ BOOL saf_delete( const char *domain )
 	if ( !gencache_init() ) 
 		return False;
 	
+	key = saf_join_key(domain);
+	ret = gencache_del(key);
+	SAFE_FREE(key);
+
+	if (ret) {
+		DEBUG(10,("saf_delete[join]: domain = [%s]\n", domain ));
+	}
+
 	key = saf_key(domain);
 	ret = gencache_del(key);
-	
+	SAFE_FREE(key);
+
 	if (ret) {
 		DEBUG(10,("saf_delete: domain = [%s]\n", domain ));		
 	}
-
-	SAFE_FREE( key );
 
 	return ret;
 }
@@ -122,7 +172,19 @@ char *saf_fetch( const char *domain )
 	
 	if ( !gencache_init() ) 
 		return False;
-	
+
+	key = saf_join_key( domain );
+
+	ret = gencache_get( key, &server, &timeout );
+
+	SAFE_FREE( key );
+
+	if ( ret ) {
+		DEBUG(5,("saf_fetch[join]: Returning \"%s\" for \"%s\" domain\n",
+			server, domain ));
+		return server;
+	}
+
 	key = saf_key( domain );
 	
 	ret = gencache_get( key, &server, &timeout );
