@@ -476,6 +476,8 @@ static void continue_lsa_domain_opened(struct composite_context *ctx)
 	/* prepare arguments of QueryDomainInfo call */
 	s->query_domain.in.handle = &s->ctx->lsa.handle;
 	s->query_domain.in.level  = LSA_POLICY_INFO_DOMAIN;
+	s->query_domain.out.info  = talloc_zero(c, union lsa_PolicyInformation *);
+	if (composite_nomem(s->query_domain.out.info, c)) return;
 
 	/* send the request */
 	query_req = dcerpc_lsa_QueryInfoPolicy_send(s->ctx->lsa.pipe, c, &s->query_domain);
