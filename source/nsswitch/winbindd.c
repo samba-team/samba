@@ -669,12 +669,17 @@ static void new_connection(int listen_sock, BOOL privileged)
 
 static void remove_client(struct winbindd_cli_state *state)
 {
+	char c = 0;
+
 	/* It's a dead client - hold a funeral */
 	
 	if (state == NULL) {
 		return;
 	}
-		
+
+	/* tell client, we are closing ... */
+	write(state->sock, &c, sizeof(c));
+
 	/* Close socket */
 		
 	close(state->sock);
