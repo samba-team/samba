@@ -162,6 +162,11 @@ bool ads_closest_dc(ADS_STRUCT *ads)
 		return True;
 	}
 
+	if (ads->config.client_site_name == NULL) {
+		DEBUG(10,("ads_closest_dc: client belongs to no site\n"));
+		return True;
+	}
+
 	DEBUG(10,("ads_closest_dc: %s is not the closest DC\n", 
 		ads->config.ldap_server_name));
 
