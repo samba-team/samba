@@ -177,7 +177,7 @@ static int linked_attributes_add(struct ldb_module *module, struct ldb_request *
 	int ret;
 	int i, j;
 
-	if (ldb_dn_is_special(req->op.mod.message->dn)) {
+	if (ldb_dn_is_special(req->op.add.message->dn)) {
 		/* do not manipulate our control entries */
 		return ldb_next_request(module, req);
 	}
