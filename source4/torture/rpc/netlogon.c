@@ -1153,10 +1153,12 @@ static bool test_DsrEnumerateDomainTrusts(struct torture_context *tctx,
 {
 	NTSTATUS status;
 	struct netr_DsrEnumerateDomainTrusts r;
+	struct netr_DomainTrustList trusts;
 	int i;
 
 	r.in.server_name = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.trust_flags = 0x3f;
+	r.out.trusts = &trusts;
 
 	status = dcerpc_netr_DsrEnumerateDomainTrusts(p, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "DsrEnumerateDomaintrusts");
@@ -1166,19 +1168,19 @@ static bool test_DsrEnumerateDomainTrusts(struct torture_context *tctx,
 	 * will show non-forest trusts and all UPN suffixes of the own forest
 	 * as LSA_FOREST_TRUST_TOP_LEVEL_NAME types */
 
-	if (r.out.count) {
+	if (r.out.trusts->count) {
 		if (!test_netr_DsRGetForestTrustInformation(tctx, p, NULL)) {
 			return false;
 		}
 	}
 
-	for (i=0; i<r.out.count; i++) {
+	for (i=0; i<r.out.trusts->count; i++) {
 
 		/* get info for transitive forest trusts */
 
-		if (r.out.trusts[i].trust_attributes & NETR_TRUST_ATTRIBUTE_FOREST_TRANSITIVE) {
+		if (r.out.trusts->array[i].trust_attributes & NETR_TRUST_ATTRIBUTE_FOREST_TRANSITIVE) {
 			if (!test_netr_DsRGetForestTrustInformation(tctx, p, 
-								    r.out.trusts[i].dns_name)) {
+								    r.out.trusts->array[i].dns_name)) {
 				return false;
 			}
 		}

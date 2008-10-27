@@ -1396,8 +1396,7 @@ interface netlogon
 	WERROR netr_DsrEnumerateDomainTrusts(
 		[in,unique]          [string,charset(UTF16)] uint16           *server_name,
 		[in]                 netr_TrustFlags  trust_flags,
-		[out]                uint32           count,
-		[out,unique,size_is(count)] netr_DomainTrust *trusts
+		[out,ref]            netr_DomainTrustList *trusts
 		);
 
 
