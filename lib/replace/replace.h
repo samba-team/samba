@@ -182,6 +182,15 @@ char *rep_strndup(const char *s, size_t n);
 size_t rep_strnlen(const char *s, size_t n);
 #endif
 
+#if !HAVE_DECL_ENVIRON
+#ifdef __APPLE__
+#include <crt_externs.h>
+#define environ (*_NSGetEnviron())
+#else
+extern char **environ;
+#endif
+#endif
+
 #ifndef HAVE_SETENV
 #define setenv rep_setenv
 int rep_setenv(const char *name, const char *value, int overwrite);

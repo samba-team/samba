@@ -222,6 +222,7 @@ AC_CHECK_TYPE(comparison_fn_t,
 
 AC_HAVE_DECL(setenv, [#include <stdlib.h>])
 AC_CHECK_FUNCS(setenv unsetenv)
+AC_HAVE_DECL(environ, [#include <unistd.h>])
 
 AC_CHECK_FUNCS(strnlen)
 AC_CHECK_FUNCS(strtoull __strtoull strtouq strtoll __strtoll strtoq)
