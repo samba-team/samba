@@ -1374,7 +1374,7 @@ interface netlogon
 
 	WERROR netr_DsrGetDcSiteCoverageW(
 		[in,unique] [string,charset(UTF16)] uint16 *server_name,
-		[out,unique] DcSitesCtr *ctr
+		[out,ref] DcSitesCtr **ctr
 		);
 
 	/****************/

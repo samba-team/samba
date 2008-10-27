@@ -1337,8 +1337,10 @@ static bool test_netr_DsrGetDcSiteCoverageW(struct torture_context *tctx,
 {
 	NTSTATUS status;
 	struct netr_DsrGetDcSiteCoverageW r;
+	struct DcSitesCtr *ctr = NULL;
 
 	r.in.server_name = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
+	r.out.ctr = &ctr;
 
 	status = dcerpc_netr_DsrGetDcSiteCoverageW(p, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "failed");
