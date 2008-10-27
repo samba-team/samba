@@ -87,7 +87,9 @@ static int la_store_op(struct la_context *ac,
 
 	op_dn = ldb_dn_from_ldb_val(ac, ac->module->ldb, dn);
 	if (!op_dn) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		ldb_asprintf_errstring(ac->module->ldb, 
+				       "could not parse attribute as a DN");
+		return LDB_ERR_INVALID_DN_SYNTAX;
 	}
 
 	/* optimize out del - add operations that would end up
