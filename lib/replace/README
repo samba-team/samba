@@ -72,6 +72,7 @@ uint_t
 uint{8,16,32,64}_t
 int{8,16,32,64}_t
 intptr_t
+sig_atomic_t
 
 Constants:
 PATH_NAME_MAX
@@ -106,6 +107,9 @@ PTR_DIFF
 Headers:
 stdint.h
 stdbool.h
+
+Optional C keywords:
+volatile
 
 Prerequisites:
 memset (for bzero)
