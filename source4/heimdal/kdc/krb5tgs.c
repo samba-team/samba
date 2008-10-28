@@ -1376,6 +1376,7 @@ tgs_build_reply(krb5_context context,
     krb5_realm ref_realm = NULL;
     EncTicketPart *tgt = &ticket->ticket;
     KRB5SignedPathPrincipals *spp = NULL;
+    Key *tkey;
     const EncryptionKey *ekey;
     krb5_keyblock sessionkey;
     krb5_kvno kvno;
@@ -1627,27 +1628,24 @@ server_lookup:
 	goto out;
     }
 
-    /* check PAC if not cross realm and if there is one */
-    if (!cross_realm) {
-	Key *tkey;
+    /* check PAC if there is one */
 
-	ret = hdb_enctype2key(context, &krbtgt->entry,
-			      krbtgt_etype, &tkey);
-	if(ret) {
-	    kdc_log(context, config, 0,
-		    "Failed to find key for krbtgt PAC check");
-	    goto out;
-	}
+    ret = hdb_enctype2key(context, &krbtgt->entry,
+			  krbtgt_etype, &tkey);
+    if(ret) {
+	kdc_log(context, config, 0,
+		"Failed to find key for krbtgt PAC check");
+	goto out;
+    }
 
-	ret = check_PAC(context, config, cp,
-			client, server, ekey, &tkey->key,
-			tgt, &rspac, &signedpath);
-	if (ret) {
-	    kdc_log(context, config, 0,
-		    "Verify PAC failed for %s (%s) from %s with %s",
-		    spn, cpn, from, krb5_get_err_text(context, ret));
-	    goto out;
-	}
+    ret = check_PAC(context, config, cp,
+		    client, server, ekey, &tkey->key,
+		    tgt, &rspac, &signedpath);
+    if (ret) {
+	kdc_log(context, config, 0,
+		"Verify PAC failed for %s (%s) from %s with %s",
+		spn, cpn, from, krb5_get_err_text(context, ret));
+	goto out;
     }
 
     /* also check the krbtgt for signature */
