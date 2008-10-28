@@ -370,7 +370,8 @@ void winbindd_sid_to_gid(struct winbindd_cli_state *state)
 	   range from random SIDs. */
 
  backend:
-	winbindd_lookupsid_async( state->mem_ctx, &sid, sid2gid_lookupsid_recv, state );	
+	winbindd_lookupsid_async( state->mem_ctx, &sid, sid2gid_lookupsid_recv,
+				  state );
 }
 
 static void set_mapping_recv(void *private_data, bool success)
