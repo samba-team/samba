@@ -1452,6 +1452,7 @@ static bool test_GetDomainInfo(struct torture_context *tctx,
 	struct netr_DomainQuery1 q1;
 	struct netr_Authenticator a;
 	struct creds_CredentialState *creds;
+	union netr_DomainInfo info;
 
 	if (!test_SetupCredentials3(p, tctx, NETLOGON_NEG_AUTH2_ADS_FLAGS, 
 				    machine_credentials, &creds)) {
@@ -1468,6 +1469,7 @@ static bool test_GetDomainInfo(struct torture_context *tctx,
 	r.in.credential = &a;
 	r.in.return_authenticator = &a;
 	r.out.return_authenticator = &a;
+	r.out.info = &info;
 
 	r.in.query.query1 = &q1;
 	ZERO_STRUCT(q1);
@@ -1519,6 +1521,7 @@ static bool test_GetDomainInfo_async(struct torture_context *tctx,
 	struct rpc_request *req[ASYNC_COUNT];
 	int i;
 	int *async_counter = talloc(tctx, int);
+	union netr_DomainInfo info;
 
 	if (!test_SetupCredentials3(p, tctx, NETLOGON_NEG_AUTH2_ADS_FLAGS, 
 				    machine_credentials, &creds)) {
@@ -1532,6 +1535,7 @@ static bool test_GetDomainInfo_async(struct torture_context *tctx,
 	r.in.credential = &a;
 	r.in.return_authenticator = &a;
 	r.out.return_authenticator = &a;
+	r.out.info = &info;
 
 	r.in.query.query1 = &q1;
 	ZERO_STRUCT(q1);

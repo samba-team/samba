@@ -1077,7 +1077,7 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 		NETR_WS_FLAG_HANDLES_INBOUND_TRUSTS | NETR_WS_FLAG_HANDLES_SPN_UPDATE;
 	info1->supported_enc_types = 0; /* w2008 gives this 0 */
 
-	r->out.info.info1 = info1;
+	r->out.info->info1 = info1;
 
 	return NT_STATUS_OK;
 }
