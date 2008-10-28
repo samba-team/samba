@@ -959,10 +959,10 @@ interface netlogon
 		[in]     [string,charset(UTF16)] uint16 logon_server[],
 		[in]     [string,charset(UTF16)] uint16 computername[],
 		[in]     netr_Authenticator credential,
-		[in,out] netr_Authenticator return_authenticator,
+		[in,out,ref] netr_Authenticator *return_authenticator,
 		[in,unique][size_is(change_log_entry_size)] uint8 *change_log_entry,
 		[in]     uint32 change_log_entry_size,
-		[out,unique]    netr_DELTA_ENUM_ARRAY *delta_enum_array
+		[out,ref]    netr_DELTA_ENUM_ARRAY *delta_enum_array
 		);
 
 
