@@ -57,9 +57,12 @@ const char *wbcErrorString(wbcErr error);
 /**
  *  @brief Some useful details about the wbclient library
  *
+ *  0.1: Initial version
+ *  0.2: Added wbcRemoveUidMapping()
+ *       Added wbcRemoveGidMapping()
  **/
 #define WBCLIENT_MAJOR_VERSION 0
-#define WBCLIENT_MINOR_VERSION 1
+#define WBCLIENT_MINOR_VERSION 2
 #define WBCLIENT_VENDOR_VERSION "Samba libwbclient"
 struct wbcLibraryDetails {
 	uint16_t major_version;
@@ -502,6 +505,10 @@ wbcErr wbcAllocateGid(gid_t *pgid);
 wbcErr wbcSetUidMapping(uid_t uid, const struct wbcDomainSid *sid);
 
 wbcErr wbcSetGidMapping(gid_t gid, const struct wbcDomainSid *sid);
+
+wbcErr wbcRemoveUidMapping(uid_t uid, const struct wbcDomainSid *sid);
+
+wbcErr wbcRemoveGidMapping(gid_t gid, const struct wbcDomainSid *sid);
 
 wbcErr wbcSetUidHwm(uid_t uid_hwm);
 
