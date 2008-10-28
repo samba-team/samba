@@ -1080,12 +1080,14 @@ static bool test_LogonControl2Ex(struct torture_context *tctx,
 {
 	NTSTATUS status;
 	struct netr_LogonControl2Ex r;
+	union netr_CONTROL_QUERY_INFORMATION query;
 	int i;
 
 	r.in.logon_server = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 
 	r.in.function_code = NETLOGON_CONTROL_REDISCOVER;
 	r.in.data.domain = lp_workgroup(tctx->lp_ctx);
+	r.out.query = &query;
 
 	for (i=1;i<4;i++) {
 		r.in.level = i;

@@ -974,7 +974,7 @@ interface netlogon
 		[in]   uint32 function_code,
 		[in]   uint32 level,
 		[in][switch_is(function_code)] netr_CONTROL_DATA_INFORMATION  data,
-		[out][switch_is(level)]        netr_CONTROL_QUERY_INFORMATION query
+		[out,ref][switch_is(level)]	netr_CONTROL_QUERY_INFORMATION *query
 		);
 
 	/*****************/
