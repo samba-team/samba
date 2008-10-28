@@ -60,10 +60,12 @@ static bool test_LogonUasLogoff(struct torture_context *tctx,
 {
 	NTSTATUS status;
 	struct netr_LogonUasLogoff r;
+	struct netr_UasLogoffInfo info;
 
 	r.in.server_name = NULL;
 	r.in.account_name = cli_credentials_get_username(cmdline_credentials);
 	r.in.workstation = TEST_MACHINE_NAME;
+	r.out.info = &info;
 
 	status = dcerpc_netr_LogonUasLogoff(p, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "LogonUasLogoff");
