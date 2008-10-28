@@ -99,20 +99,11 @@ NTSTATUS sec_access_check(const struct security_descriptor *sd,
 		}
 	}
 
-	/* dacl not present allows access */
-	if (!(sd->type & SEC_DESC_DACL_PRESENT)) {
+	/* a NULL dacl allows access */
+	if ((sd->type & SEC_DESC_DACL_PRESENT) && sd->dacl == NULL) {
 		*access_granted = access_desired;
 		return NT_STATUS_OK;
 	}
-
-#if 0
-	/* tridge: previously we had empty dacl denying access, but
-	   that can lead to undeletable directories, where
-	   nobody can change the ACL on a directory */
-	if (sd->dacl == NULL || sd->dacl->num_aces == 0) {
-		return NT_STATUS_ACCESS_DENIED;
-	}
-#endif
 
 	/* the owner always gets SEC_STD_WRITE_DAC, SEC_STD_READ_CONTROL and SEC_STD_DELETE */
 	if ((bits_remaining & (SEC_STD_WRITE_DAC|SEC_STD_READ_CONTROL|SEC_STD_DELETE)) &&
