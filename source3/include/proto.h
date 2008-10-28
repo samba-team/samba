@@ -8665,6 +8665,7 @@ NTSTATUS idmap_backends_sid_to_unixid(const char *domname,
 NTSTATUS idmap_new_mapping(const struct dom_sid *psid, enum id_type type,
 			   struct unixid *pxid);
 NTSTATUS idmap_set_mapping(const struct id_map *map);
+NTSTATUS idmap_remove_mapping(const struct id_map *map);
 
 /* The following definitions come from winbindd/idmap_cache.c  */
 

@@ -811,6 +811,54 @@ static bool wbinfo_set_gid_mapping(gid_t gid, const char *sid_str)
 	return true;
 }
 
+static bool wbinfo_remove_uid_mapping(uid_t uid, const char *sid_str)
+{
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+	struct wbcDomainSid sid;
+
+	/* Send request */
+
+	wbc_status = wbcStringToSid(sid_str, &sid);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		return false;
+	}
+
+	wbc_status = wbcRemoveUidMapping(uid, &sid);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		return false;
+	}
+
+	/* Display response */
+
+	d_printf("Removed uid %d to sid %s mapping\n", uid, sid_str);
+
+	return true;
+}
+
+static bool wbinfo_remove_gid_mapping(gid_t gid, const char *sid_str)
+{
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+	struct wbcDomainSid sid;
+
+	/* Send request */
+
+	wbc_status = wbcStringToSid(sid_str, &sid);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		return false;
+	}
+
+	wbc_status = wbcRemoveGidMapping(gid, &sid);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		return false;
+	}
+
+	/* Display response */
+
+	d_printf("Removed gid %d to sid %s mapping\n", gid, sid_str);
+
+	return true;
+}
+
 /* Convert sid to string */
 
 static bool wbinfo_lookupsid(const char *sid_str)
@@ -1489,6 +1537,8 @@ enum {
 	OPT_ALLOCATE_GID,
 	OPT_SET_UID_MAPPING,
 	OPT_SET_GID_MAPPING,
+	OPT_REMOVE_UID_MAPPING,
+	OPT_REMOVE_GID_MAPPING,
 	OPT_SEPARATOR,
 	OPT_LIST_ALL_DOMAINS,
 	OPT_LIST_OWN_DOMAIN,
@@ -1538,6 +1588,8 @@ int main(int argc, char **argv, char **envp)
 		  "Get a new GID out of idmap" },
 		{ "set-uid-mapping", 0, POPT_ARG_STRING, &string_arg, OPT_SET_UID_MAPPING, "Create or modify uid to sid mapping in idmap", "UID,SID" },
 		{ "set-gid-mapping", 0, POPT_ARG_STRING, &string_arg, OPT_SET_GID_MAPPING, "Create or modify gid to sid mapping in idmap", "GID,SID" },
+		{ "remove-uid-mapping", 0, POPT_ARG_STRING, &string_arg, OPT_REMOVE_UID_MAPPING, "Remove uid to sid mapping in idmap", "UID,SID" },
+		{ "remove-gid-mapping", 0, POPT_ARG_STRING, &string_arg, OPT_REMOVE_GID_MAPPING, "Remove gid to sid mapping in idmap", "GID,SID" },
 		{ "check-secret", 't', POPT_ARG_NONE, 0, 't', "Check shared secret" },
 		{ "trusted-domains", 'm', POPT_ARG_NONE, 0, 'm', "List trusted domains" },
 		{ "all-domains", 0, POPT_ARG_NONE, 0, OPT_LIST_ALL_DOMAINS, "List all domains (trusted and own domain)" },
@@ -1723,6 +1775,28 @@ int main(int argc, char **argv, char **envp)
 			{
 				d_fprintf(stderr, "Could not create or modify "
 					  "gid to sid mapping\n");
+				goto done;
+			}
+			break;
+		case OPT_REMOVE_UID_MAPPING:
+			if (!parse_mapping_arg(string_arg, &int_subarg,
+				&string_subarg) ||
+			    !wbinfo_remove_uid_mapping(int_subarg,
+				string_subarg))
+			{
+				d_fprintf(stderr, "Could not remove uid to sid "
+				    "mapping\n");
+				goto done;
+			}
+			break;
+		case OPT_REMOVE_GID_MAPPING:
+			if (!parse_mapping_arg(string_arg, &int_subarg,
+			        &string_subarg) ||
+			    !wbinfo_remove_gid_mapping(int_subarg,
+			        string_subarg))
+			{
+				d_fprintf(stderr, "Could not remove gid to sid "
+				    "mapping\n");
 				goto done;
 			}
 			break;
