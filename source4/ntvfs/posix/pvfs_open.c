@@ -106,6 +106,7 @@ static NTSTATUS pvfs_open_setup_eas_acl(struct pvfs_state *pvfs,
 					union smb_open *io)
 {
 	NTSTATUS status;
+	struct security_descriptor *sd;
 
 	/* setup any EAs that were asked for */
 	if (io->ntcreatex.in.ea_list) {
@@ -117,8 +118,9 @@ static NTSTATUS pvfs_open_setup_eas_acl(struct pvfs_state *pvfs,
 		}
 	}
 
+	sd = io->ntcreatex.in.sec_desc;
 	/* setup an initial sec_desc if requested */
-	if (io->ntcreatex.in.sec_desc) {
+	if (sd && (sd->type & SEC_DESC_DACL_PRESENT)) {
 		union smb_setfileinfo set;
 /* 
  * TODO: set the full ACL! 
@@ -129,7 +131,7 @@ static NTSTATUS pvfs_open_setup_eas_acl(struct pvfs_state *pvfs,
  */
 		set.set_secdesc.in.file.ntvfs = f->ntvfs;
 		set.set_secdesc.in.secinfo_flags = SECINFO_DACL;
-		set.set_secdesc.in.sd = io->ntcreatex.in.sec_desc;
+		set.set_secdesc.in.sd = sd;
 
 		status = pvfs_acl_set(pvfs, req, name, fd, SEC_STD_WRITE_DAC, &set);
 	} else {
