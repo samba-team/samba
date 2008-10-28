@@ -1387,12 +1387,12 @@ static NTSTATUS dcesrv_lsa_QueryTrustedDomainInfo(struct dcesrv_call_state *dce_
 	case LSA_TRUSTED_DOMAIN_INFO_INFO_EX2_INTERNAL:
 		/* oops, we don't want to return the info after all */
 		talloc_free(info);
-		r->out.info = NULL;
+		*r->out.info = NULL;
 		return NT_STATUS_INVALID_PARAMETER;
 	default:
 		/* oops, we don't want to return the info after all */
 		talloc_free(info);
-		r->out.info = NULL;
+		*r->out.info = NULL;
 		return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
@@ -2981,8 +2981,8 @@ static NTSTATUS dcesrv_lsa_QueryDomainInformationPolicy(struct dcesrv_call_state
 							dce_call->conn->dce_ctx->lp_ctx,
 							&smb_krb5_context);
 		if (ret != 0) {
-			talloc_free(r->out.info);
-			r->out.info = NULL;
+			talloc_free(info);
+			*r->out.info = NULL;
 			return NT_STATUS_INTERNAL_ERROR;
 		}
 		k->enforce_restrictions = 0; /* FIXME, details missing from MS-LSAD 2.2.53 */
