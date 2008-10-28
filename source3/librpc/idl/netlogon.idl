@@ -46,7 +46,7 @@ interface netlogon
 		[in,unique] [string,charset(UTF16)] uint16 *server_name,
 		[in]   [string,charset(UTF16)] uint16 account_name[],
 		[in]   [string,charset(UTF16)] uint16 workstation[],
-		[out,ref]  netr_UasInfo *info
+		[out,ref]  netr_UasInfo **info
 		);
 
 
