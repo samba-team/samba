@@ -97,7 +97,7 @@ enum winbindd_cmd {
 
 	/* Lookup functions */
 
-	WINBINDD_SID_TO_UID,       
+	WINBINDD_SID_TO_UID,
 	WINBINDD_SID_TO_GID,
 	WINBINDD_SIDS_TO_XIDS,
 	WINBINDD_UID_TO_SID,

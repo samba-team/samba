@@ -319,7 +319,7 @@ struct wbcAuthUserInfo {
 #define WBC_AUTH_USER_INFO_NOENCRYPTION			0x00000002
 #define WBC_AUTH_USER_INFO_CACHED_ACCOUNT		0x00000004
 #define WBC_AUTH_USER_INFO_USED_LM_PASSWORD		0x00000008
-#define WBC_AUTH_USER_INFO_EXTRA_SIDS 			0x00000020
+#define WBC_AUTH_USER_INFO_EXTRA_SIDS			0x00000020
 #define WBC_AUTH_USER_INFO_SUBAUTH_SESSION_KEY		0x00000040
 #define WBC_AUTH_USER_INFO_SERVER_TRUST_ACCOUNT		0x00000080
 #define WBC_AUTH_USER_INFO_NTLMV2_ENABLED		0x00000100
@@ -346,7 +346,7 @@ struct wbcAuthUserInfo {
 #define WBC_ACB_NOT_DELEGATED			0x00004000 /* 1 Not delegated */
 #define WBC_ACB_USE_DES_KEY_ONLY		0x00008000 /* 1 Use DES key only */
 #define WBC_ACB_DONT_REQUIRE_PREAUTH		0x00010000 /* 1 Preauth not required */
-#define WBC_ACB_PW_EXPIRED              	0x00020000 /* 1 Password Expired */
+#define WBC_ACB_PW_EXPIRED			0x00020000 /* 1 Password Expired */
 #define WBC_ACB_NO_AUTH_DATA_REQD		0x00080000   /* 1 = No authorization data required */
 
 struct wbcAuthErrorInfo {

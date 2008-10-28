@@ -59,7 +59,7 @@ wbcErr wbcRequestResponse(int cmd,
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
 	NSS_STATUS nss_status;
 
-	/* for some calls the request and/or response cna be NULL */
+	/* for some calls the request and/or response can be NULL */
 
 	nss_status = winbindd_request_response(cmd, request, response);
 
