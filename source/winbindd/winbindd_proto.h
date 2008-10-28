@@ -355,6 +355,11 @@ void winbindd_set_mapping_async(TALLOC_CTX *mem_ctx, const struct id_map *map,
 			     void *private_data);
 enum winbindd_result winbindd_dual_set_mapping(struct winbindd_domain *domain,
 					    struct winbindd_cli_state *state);
+void winbindd_remove_mapping_async(TALLOC_CTX *mem_ctx, const struct id_map *map,
+			     void (*cont)(void *private_data, bool success),
+			     void *private_data);
+enum winbindd_result winbindd_dual_remove_mapping(struct winbindd_domain *domain,
+					    struct winbindd_cli_state *state);
 void winbindd_set_hwm_async(TALLOC_CTX *mem_ctx, const struct unixid *xid,
 			     void (*cont)(void *private_data, bool success),
 			     void *private_data);
@@ -507,6 +512,7 @@ void winbindd_sid_to_uid(struct winbindd_cli_state *state);
 void winbindd_sid_to_gid(struct winbindd_cli_state *state);
 void winbindd_sids_to_unixids(struct winbindd_cli_state *state);
 void winbindd_set_mapping(struct winbindd_cli_state *state);
+void winbindd_remove_mapping(struct winbindd_cli_state *state);
 void winbindd_set_hwm(struct winbindd_cli_state *state);
 void winbindd_uid_to_sid(struct winbindd_cli_state *state);
 void winbindd_gid_to_sid(struct winbindd_cli_state *state);

@@ -41,7 +41,9 @@
 
 /* Update this when you change the interface.  */
 
-#define WINBIND_INTERFACE_VERSION 19
+/* Version 20: added WINBINDD_REMOVE_MAPPING command */
+
+#define WINBIND_INTERFACE_VERSION 20
 
 /* Have to deal with time_t being 4 or 8 bytes due to structure alignment.
    On a 64bit Linux box, we have to support a constant structure size
@@ -104,6 +106,7 @@ enum winbindd_cmd {
 	WINBINDD_ALLOCATE_UID,
 	WINBINDD_ALLOCATE_GID,
 	WINBINDD_SET_MAPPING,
+	WINBINDD_REMOVE_MAPPING,
 	WINBINDD_SET_HWM,
 
 	/* Miscellaneous other stuff */
@@ -150,6 +153,7 @@ enum winbindd_cmd {
 	WINBINDD_DUAL_UID2SID,
 	WINBINDD_DUAL_GID2SID,
 	WINBINDD_DUAL_SET_MAPPING,
+	WINBINDD_DUAL_REMOVE_MAPPING,
 	WINBINDD_DUAL_SET_HWM,
 
 	/* Wrapper around possibly blocking unix nss calls */

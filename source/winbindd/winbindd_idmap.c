@@ -111,6 +111,65 @@ enum winbindd_result winbindd_dual_set_mapping(struct winbindd_domain *domain,
 	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
 }
 
+static void winbindd_remove_mapping_recv(TALLOC_CTX *mem_ctx, bool success,
+				   struct winbindd_response *response,
+				   void *c, void *private_data)
+{
+	void (*cont)(void *priv, bool succ) = (void (*)(void *, bool))c;
+
+	if (!success) {
+		DEBUG(5, ("Could not trigger idmap_remove_mapping\n"));
+		cont(private_data, False);
+		return;
+	}
+
+	if (response->result != WINBINDD_OK) {
+		DEBUG(5, ("idmap_remove_mapping returned an error\n"));
+		cont(private_data, False);
+		return;
+	}
+
+	cont(private_data, True);
+}
+
+void winbindd_remove_mapping_async(TALLOC_CTX *mem_ctx,
+			     const struct id_map *map,
+			     void (*cont)(void *private_data, bool success),
+			     void *private_data)
+{
+	struct winbindd_request request;
+	ZERO_STRUCT(request);
+	request.cmd = WINBINDD_DUAL_REMOVE_MAPPING;
+	request.data.dual_idmapset.id = map->xid.id;
+	request.data.dual_idmapset.type = map->xid.type;
+	sid_to_fstring(request.data.dual_idmapset.sid, map->sid);
+
+	do_async(mem_ctx, idmap_child(), &request, winbindd_remove_mapping_recv,
+		 (void *)cont, private_data);
+}
+
+enum winbindd_result winbindd_dual_remove_mapping(
+					    struct winbindd_domain *domain,
+					    struct winbindd_cli_state *state)
+{
+	struct id_map map;
+	DOM_SID sid;
+	NTSTATUS result;
+
+	DEBUG(3, ("[%5lu]: dual_idmapremove\n", (unsigned long)state->pid));
+
+	if (!string_to_sid(&sid, state->request.data.dual_idmapset.sid))
+		return WINBINDD_ERROR;
+
+	map.sid = &sid;
+	map.xid.id = state->request.data.dual_idmapset.id;
+	map.xid.type = state->request.data.dual_idmapset.type;
+	map.status = ID_MAPPED;
+
+	result = idmap_remove_mapping(&map);
+	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
+}
+
 static void winbindd_set_hwm_recv(TALLOC_CTX *mem_ctx, bool success,
 				   struct winbindd_response *response,
 				   void *c, void *private_data)
@@ -485,6 +544,10 @@ static const struct winbindd_child_dispatch_table idmap_dispatch_table[] = {
 		.name		= "DUAL_SET_MAPPING",
 		.struct_cmd	= WINBINDD_DUAL_SET_MAPPING,
 		.struct_fn	= winbindd_dual_set_mapping,
+	},{
+		.name		= "DUAL_REMOVE_MAPPING",
+		.struct_cmd	= WINBINDD_DUAL_REMOVE_MAPPING,
+		.struct_fn	= winbindd_dual_remove_mapping,
 	},{
 		.name		= "DUAL_SET_HWMS",
 		.struct_cmd	= WINBINDD_DUAL_SET_HWM,

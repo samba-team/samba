@@ -788,3 +788,20 @@ NTSTATUS idmap_set_mapping(const struct id_map *map)
 
 	return dom->methods->set_mapping(dom, map);
 }
+
+NTSTATUS idmap_remove_mapping(const struct id_map *map)
+{
+	struct idmap_domain *dom;
+
+	dom = idmap_find_domain(NULL);
+	if (dom == NULL) {
+		DEBUG(3, ("no default domain, no place to write\n"));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+	if (dom->methods->remove_mapping == NULL) {
+		DEBUG(3, ("default domain not writable\n"));
+		return NT_STATUS_MEDIA_WRITE_PROTECTED;
+	}
+
+	return dom->methods->remove_mapping(dom, map);
+}

@@ -875,8 +875,13 @@ static NTSTATUS idmap_tdb_set_mapping(struct idmap_domain *dom, const struct id_
 	ksid = string_term_tdb_data(ksidstr);
 
 	/* *DELETE* previous mappings if any.
-	 * This is done both SID and [U|G]ID passed in */
-	
+	 * This is done for both the SID and [U|G]ID passed in */
+
+	/* NOTE: We should lock both the ksid and kid records here, before
+	 * making modifications.  However, because tdb_chainlock() is a
+	 * blocking call we could create an unrecoverable deadlock, so for now
+	 * we only lock the ksid record. */
+
 	/* Lock the record for this SID. */
 	if (tdb_chainlock(ctx->tdb, ksid) != 0) {
 		DEBUG(10,("Failed to lock record %s. Error %s\n",
@@ -980,6 +985,11 @@ static NTSTATUS idmap_tdb_remove_mapping(struct idmap_domain *dom, const struct 
 	DEBUG(10, ("Checking %s <-> %s map\n", ksidstr, kidstr));
 	ksid = string_term_tdb_data(ksidstr);
 	kid = string_term_tdb_data(kidstr);
+
+	/* NOTE: We should lock both the ksid and kid records here, before
+	 * making modifications.  However, because tdb_chainlock() is a
+	 * blocking call we could create an unrecoverable deadlock, so for now
+	 * we only lock the ksid record. */
 
 	/* Lock the record for this SID. */
 	if (tdb_chainlock(ctx->tdb, ksid) != 0) {
