@@ -47,7 +47,12 @@ static bool test_PACVerify(struct torture_context *tctx,
 	NTSTATUS status;
 
 	struct netr_LogonSamLogon r;
-	
+
+	union netr_LogonLevel logon;
+	union netr_Validation validation;
+	uint8_t authoritative;
+	struct netr_Authenticator return_authenticator;
+
 	struct netr_GenericInfo generic;
 	struct netr_Authenticator auth, auth2;
 	
@@ -166,15 +171,20 @@ static bool test_PACVerify(struct torture_context *tctx,
 
 	generic.package_name.string = "Kerberos";
 
+	logon.generic = &generic;
+
 	ZERO_STRUCT(auth2);
 	creds_client_authenticator(creds, &auth);
 	r.in.credential = &auth;
 	r.in.return_authenticator = &auth2;
+	r.in.logon = &logon;
 	r.in.logon_level = NetlogonGenericInformation;
-	r.in.logon.generic = &generic;
 	r.in.server_name = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.computer_name = cli_credentials_get_workstation(credentials);
 	r.in.validation_level = NetlogonValidationGenericInfo2;
+	r.out.validation = &validation;
+	r.out.authoritative = &authoritative;
+	r.out.return_authenticator = &return_authenticator;
 
 	status = dcerpc_netr_LogonSamLogon(p, tctx, &r);
 
@@ -183,12 +193,14 @@ static bool test_PACVerify(struct torture_context *tctx,
 	/* This will break the signature nicely (even in the crypto wrapping), check we get a logon failure */
 	generic.data[generic.length-1]++;
 
+	logon.generic = &generic;
+
 	ZERO_STRUCT(auth2);
 	creds_client_authenticator(creds, &auth);
 	r.in.credential = &auth;
 	r.in.return_authenticator = &auth2;
 	r.in.logon_level = NetlogonGenericInformation;
-	r.in.logon.generic = &generic;
+	r.in.logon = &logon;
 	r.in.server_name = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.computer_name = cli_credentials_get_workstation(credentials);
 	r.in.validation_level = NetlogonValidationGenericInfo2;
@@ -203,12 +215,14 @@ static bool test_PACVerify(struct torture_context *tctx,
 	/* This will break the parsing nicely (even in the crypto wrapping), check we get INVALID_PARAMETER */
 	generic.length--;
 
+	logon.generic = &generic;
+
 	ZERO_STRUCT(auth2);
 	creds_client_authenticator(creds, &auth);
 	r.in.credential = &auth;
 	r.in.return_authenticator = &auth2;
 	r.in.logon_level = NetlogonGenericInformation;
-	r.in.logon.generic = &generic;
+	r.in.logon = &logon;
 	r.in.server_name = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.computer_name = cli_credentials_get_workstation(credentials);
 	r.in.validation_level = NetlogonValidationGenericInfo2;
@@ -247,13 +261,15 @@ static bool test_PACVerify(struct torture_context *tctx,
 	
 	generic.length = pac_wrapped.length;
 	generic.data = pac_wrapped.data;
-	
+
+	logon.generic = &generic;
+
 	ZERO_STRUCT(auth2);
 	creds_client_authenticator(creds, &auth);
 	r.in.credential = &auth;
 	r.in.return_authenticator = &auth2;
 	r.in.logon_level = NetlogonGenericInformation;
-	r.in.logon.generic = &generic;
+	r.in.logon = &logon;
 	r.in.server_name = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.computer_name = cli_credentials_get_workstation(credentials);
 	r.in.validation_level = NetlogonValidationGenericInfo2;
@@ -292,13 +308,15 @@ static bool test_PACVerify(struct torture_context *tctx,
 	
 	generic.length = pac_wrapped.length;
 	generic.data = pac_wrapped.data;
-	
+
+	logon.generic = &generic;
+
 	ZERO_STRUCT(auth2);
 	creds_client_authenticator(creds, &auth);
 	r.in.credential = &auth;
 	r.in.return_authenticator = &auth2;
 	r.in.logon_level = NetlogonGenericInformation;
-	r.in.logon.generic = &generic;
+	r.in.logon = &logon;
 	r.in.server_name = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.computer_name = cli_credentials_get_workstation(credentials);
 	r.in.validation_level = NetlogonValidationGenericInfo2;

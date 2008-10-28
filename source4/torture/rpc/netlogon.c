@@ -575,6 +575,9 @@ bool test_netlogon_ops(struct dcerpc_pipe *p, struct torture_context *tctx,
 	NTSTATUS status;
 	struct netr_LogonSamLogon r;
 	struct netr_Authenticator auth, auth2;
+	union netr_LogonLevel logon;
+	union netr_Validation validation;
+	uint8_t authoritative;
 	struct netr_NetworkInfo ninfo;
 	DATA_BLOB names_blob, chal, lm_resp, nt_resp;
 	int i;
@@ -618,12 +621,16 @@ bool test_netlogon_ops(struct dcerpc_pipe *p, struct torture_context *tctx,
 	ninfo.identity_info.logon_id_high = 0;
 	ninfo.identity_info.workstation.string = cli_credentials_get_workstation(credentials);
 
+	logon.network = &ninfo;
+
 	r.in.server_name = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.computer_name = cli_credentials_get_workstation(credentials);
 	r.in.credential = &auth;
 	r.in.return_authenticator = &auth2;
 	r.in.logon_level = 2;
-	r.in.logon.network = &ninfo;
+	r.in.logon = &logon;
+	r.out.validation = &validation;
+	r.out.authoritative = &authoritative;
 
 	d_printf("Testing LogonSamLogon with name %s\n", ninfo.identity_info.account_name.string);
 	

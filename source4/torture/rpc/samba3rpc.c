@@ -1033,6 +1033,10 @@ static bool schan(struct smbcli_state *cli,
 		struct netr_NetworkInfo ninfo;
 		struct netr_PasswordInfo pinfo;
 		struct netr_LogonSamLogon r;
+		union netr_LogonLevel logon;
+		union netr_Validation validation;
+		uint8_t authoritative;
+		struct netr_Authenticator return_authenticator;
 
 		flags = CLI_CRED_LANMAN_AUTH | CLI_CRED_NTLM_AUTH |
 			CLI_CRED_NTLMv2_AUTH;
@@ -1075,6 +1079,8 @@ static bool schan(struct smbcli_state *cli,
 		ninfo.lm.length = lm_resp.length;
 		ninfo.lm.data = lm_resp.data;
 
+		logon.network = &ninfo;
+
 		r.in.server_name = talloc_asprintf(
 			mem_ctx, "\\\\%s", dcerpc_server_name(net_pipe));
 		ZERO_STRUCT(netr_auth2);
@@ -1084,8 +1090,10 @@ static bool schan(struct smbcli_state *cli,
 		r.in.return_authenticator = &netr_auth2;
 		r.in.logon_level = 2;
 		r.in.validation_level = i;
-		r.in.logon.network = &ninfo;
-		r.out.return_authenticator = NULL;
+		r.in.logon = &logon;
+		r.out.validation = &validation;
+		r.out.authoritative = &authoritative;
+		r.out.return_authenticator = &return_authenticator;
 
 		status = dcerpc_netr_LogonSamLogon(net_pipe, mem_ctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -1113,9 +1121,11 @@ static bool schan(struct smbcli_state *cli,
 				   sizeof(pinfo.ntpassword.hash),
 				   &session_key);
 
+		logon.password = &pinfo;
+
 		r.in.logon_level = 1;
-		r.in.logon.password = &pinfo;
-		r.out.return_authenticator = NULL;
+		r.in.logon = &logon;
+		r.out.return_authenticator = &return_authenticator;
 
 		status = dcerpc_netr_LogonSamLogon(net_pipe, mem_ctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {

@@ -48,6 +48,10 @@ bool test_netlogon_ex_ops(struct dcerpc_pipe *p, struct torture_context *tctx,
 	NTSTATUS status;
 	struct netr_LogonSamLogonEx r;
 	struct netr_NetworkInfo ninfo;
+	union netr_LogonLevel logon;
+	union netr_Validation validation;
+	uint8_t authoritative = 0;
+	uint32_t _flags = 0;
 	DATA_BLOB names_blob, chal, lm_resp, nt_resp;
 	int i;
 	int flags = CLI_CRED_NTLM_AUTH;
@@ -91,11 +95,16 @@ bool test_netlogon_ex_ops(struct dcerpc_pipe *p, struct torture_context *tctx,
 	ninfo.identity_info.logon_id_high = 0;
 	ninfo.identity_info.workstation.string = cli_credentials_get_workstation(credentials);
 
+	logon.network = &ninfo;
+
 	r.in.server_name = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.computer_name = cli_credentials_get_workstation(credentials);
 	r.in.logon_level = 2;
-	r.in.logon.network = &ninfo;
-	r.in.flags = 0;
+	r.in.logon= &logon;
+	r.in.flags = &_flags;
+	r.out.validation = &validation;
+	r.out.authoritative = &authoritative;
+	r.out.flags = &_flags;
 
 	torture_comment(tctx, 
 			"Testing LogonSamLogonEx with name %s\n", 
@@ -603,9 +612,13 @@ static bool torture_schannel_bench_start(struct torture_schannel_bench_conn *con
 	conn->r.in.server_name = talloc_asprintf(conn->tmp, "\\\\%s", dcerpc_server_name(conn->pipe));
 	conn->r.in.computer_name = cli_credentials_get_workstation(conn->wks_creds);
 	conn->r.in.logon_level = 2;
-	conn->r.in.logon.network = &conn->ninfo;
-	conn->r.in.flags = 0;
+	conn->r.in.logon = talloc(conn->tmp, union netr_LogonLevel);
+	conn->r.in.logon->network = &conn->ninfo;
+	conn->r.in.flags = talloc(conn->tmp, uint32_t);
 	conn->r.in.validation_level = 2;
+	conn->r.out.validation = talloc(conn->tmp, union netr_Validation);
+	conn->r.out.authoritative = talloc(conn->tmp, uint8_t);
+	conn->r.out.flags = conn->r.in.flags;
 
 	req = dcerpc_netr_LogonSamLogonEx_send(conn->pipe, conn->tmp, &conn->r);
 	torture_assert(s->tctx, req, "Failed to setup LogonSamLogonEx request");

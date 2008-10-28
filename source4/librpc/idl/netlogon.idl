@@ -289,10 +289,10 @@ interface netlogon
 		[in,unique] netr_Authenticator                     *credential,
 		[in,out,unique] netr_Authenticator                 *return_authenticator,
 		[in]  netr_LogonInfoClass                           logon_level,
-		[in]  [switch_is(logon_level)] netr_LogonLevel      logon,
+		[in,ref]  [switch_is(logon_level)] netr_LogonLevel *logon,
 		[in]  uint16                                        validation_level,
-		[out] [switch_is(validation_level)] netr_Validation validation,
-		[out] uint8                                         authoritative
+		[out,ref] [switch_is(validation_level)] netr_Validation *validation,
+		[out,ref] uint8                                    *authoritative
 		);
 
 
@@ -1384,11 +1384,11 @@ interface netlogon
 		[in,unique] [string,charset(UTF16)] uint16 *server_name,
 		[in,unique] [string,charset(UTF16)] uint16 *computer_name,
 		[in]  netr_LogonInfoClass logon_level,
-		[in]  [switch_is(logon_level)] netr_LogonLevel logon,
+		[in,ref]  [switch_is(logon_level)] netr_LogonLevel *logon,
 		[in]  uint16 validation_level,
-		[out] [switch_is(validation_level)] netr_Validation validation,
-		[out] uint8 authoritative,
-		[in,out] uint32 flags
+		[out,ref] [switch_is(validation_level)] netr_Validation *validation,
+		[out,ref] uint8 *authoritative,
+		[in,out,ref] uint32 *flags
 		);
 
 	/****************/
@@ -1457,11 +1457,11 @@ interface netlogon
 		[in,unique] netr_Authenticator *credential,
 		[in,out,unique] netr_Authenticator *return_authenticator,
 		[in]  netr_LogonInfoClass logon_level,
-		[in]  [switch_is(logon_level)] netr_LogonLevel logon,
+		[in,ref]  [switch_is(logon_level)] netr_LogonLevel *logon,
 		[in]  uint16 validation_level,
-		[out] [switch_is(validation_level)] netr_Validation validation,
-		[out] uint8 authoritative,
-		[in,out] uint32 flags
+		[out,ref] [switch_is(validation_level)] netr_Validation *validation,
+		[out,ref] uint8 *authoritative,
+		[in,out,ref] uint32 *flags
 		);
 
 	/****************/

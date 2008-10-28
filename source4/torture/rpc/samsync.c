@@ -58,6 +58,9 @@ static NTSTATUS test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct netr_LogonSamLogon r;
 	struct netr_Authenticator auth, auth2;
 	struct netr_NetworkInfo ninfo;
+	union netr_LogonLevel logon;
+	union netr_Validation validation;
+	uint8_t authoritative;
 
 	ninfo.identity_info.domain_name.string = domain;
 	ninfo.identity_info.parameter_control = 0;
@@ -85,12 +88,16 @@ static NTSTATUS test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		ninfo.lm.data = NULL;
 	}
 
+	logon.network = &ninfo;
+
 	r.in.server_name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.computer_name = workstation;
 	r.in.credential = &auth;
 	r.in.return_authenticator = &auth2;
 	r.in.logon_level = 2;
-	r.in.logon.network = &ninfo;
+	r.in.logon = &logon;
+	r.out.validation = &validation;
+	r.out.authoritative = &authoritative;
 
 	ZERO_STRUCT(auth2);
 	creds_client_authenticator(creds, &auth);
@@ -104,7 +111,7 @@ static NTSTATUS test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	}
 
 	if (info3) {
-		*info3 = r.out.validation.sam3;
+		*info3 = validation.sam3;
 	}
 
 	return status;

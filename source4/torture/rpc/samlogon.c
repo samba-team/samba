@@ -92,9 +92,9 @@ static NTSTATUS check_samlogon(struct samlogon_state *samlogon_state,
 	struct netr_SamBaseInfo *base = NULL;
 	uint16_t validation_level = 0;
 	
-	samlogon_state->r.in.logon.network = &ninfo;
-	samlogon_state->r_ex.in.logon.network = &ninfo;
-	samlogon_state->r_flags.in.logon.network = &ninfo;
+	samlogon_state->r.in.logon->network = &ninfo;
+	samlogon_state->r_ex.in.logon->network = &ninfo;
+	samlogon_state->r_flags.in.logon->network = &ninfo;
 	
 	ninfo.identity_info.domain_name.string = samlogon_state->account_domain;
 	ninfo.identity_info.parameter_control = parameter_control;
@@ -170,17 +170,17 @@ static NTSTATUS check_samlogon(struct samlogon_state *samlogon_state,
 
 		validation_level = r->in.validation_level;
 
-		creds_decrypt_samlogon(samlogon_state->creds, validation_level, &r->out.validation);
+		creds_decrypt_samlogon(samlogon_state->creds, validation_level, r->out.validation);
 
 		switch (validation_level) {
 		case 2:
-			base = &r->out.validation.sam2->base;
+			base = &r->out.validation->sam2->base;
 			break;
 		case 3:
-			base = &r->out.validation.sam3->base;
+			base = &r->out.validation->sam3->base;
 			break;
 		case 6:
-			base = &r->out.validation.sam6->base;
+			base = &r->out.validation->sam6->base;
 			break;
 		}
 		break;
@@ -195,17 +195,17 @@ static NTSTATUS check_samlogon(struct samlogon_state *samlogon_state,
 
 		validation_level = r_ex->in.validation_level;
 
-		creds_decrypt_samlogon(samlogon_state->creds, validation_level, &r_ex->out.validation);
+		creds_decrypt_samlogon(samlogon_state->creds, validation_level, r_ex->out.validation);
 
 		switch (validation_level) {
 		case 2:
-			base = &r_ex->out.validation.sam2->base;
+			base = &r_ex->out.validation->sam2->base;
 			break;
 		case 3:
-			base = &r_ex->out.validation.sam3->base;
+			base = &r_ex->out.validation->sam3->base;
 			break;
 		case 6:
-			base = &r_ex->out.validation.sam6->base;
+			base = &r_ex->out.validation->sam6->base;
 			break;
 		}
 		break;
@@ -228,17 +228,17 @@ static NTSTATUS check_samlogon(struct samlogon_state *samlogon_state,
 		
 		validation_level = r_flags->in.validation_level;
 
-		creds_decrypt_samlogon(samlogon_state->creds, validation_level, &r_flags->out.validation);
+		creds_decrypt_samlogon(samlogon_state->creds, validation_level, r_flags->out.validation);
 
 		switch (validation_level) {
 		case 2:
-			base = &r_flags->out.validation.sam2->base;
+			base = &r_flags->out.validation->sam2->base;
 			break;
 		case 3:
-			base = &r_flags->out.validation.sam3->base;
+			base = &r_flags->out.validation->sam3->base;
 			break;
 		case 6:
-			base = &r_flags->out.validation.sam6->base;
+			base = &r_flags->out.validation->sam6->base;
 			break;
 		}
 		break;
@@ -1331,7 +1331,14 @@ static bool test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		NDR_NETR_LOGONSAMLOGONEX,
 		NDR_NETR_LOGONSAMLOGONWITHFLAGS };
 	struct samlogon_state samlogon_state;
-	
+
+	union netr_LogonLevel logon;
+	union netr_Validation validation;
+	uint8_t authoritative = 0;
+	uint32_t flags = 0;
+
+	ZERO_STRUCT(logon);
+
 	d_printf("testing netr_LogonSamLogon and netr_LogonSamLogonWithFlags\n");
 	
 	samlogon_state.comment = comment;
@@ -1353,16 +1360,28 @@ static bool test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	samlogon_state.r_flags.in.computer_name = TEST_MACHINE_NAME;
 	samlogon_state.r_flags.in.credential = &samlogon_state.auth;
 	samlogon_state.r_flags.in.return_authenticator = &samlogon_state.auth2;
-	samlogon_state.r_flags.in.flags = 0;
+	samlogon_state.r_flags.in.flags = &flags;
+	samlogon_state.r_flags.in.logon = &logon;
+	samlogon_state.r_flags.out.validation = &validation;
+	samlogon_state.r_flags.out.authoritative = &authoritative;
+	samlogon_state.r_flags.out.flags = &flags;
 
 	samlogon_state.r_ex.in.server_name = talloc_asprintf(fn_ctx, "\\\\%s", dcerpc_server_name(p));
 	samlogon_state.r_ex.in.computer_name = TEST_MACHINE_NAME;
-	samlogon_state.r_ex.in.flags = 0;
+	samlogon_state.r_ex.in.flags = &flags;
+	samlogon_state.r_ex.in.logon = &logon;
+	samlogon_state.r_ex.out.validation = &validation;
+	samlogon_state.r_ex.out.authoritative = &authoritative;
+	samlogon_state.r_ex.out.flags = &flags;
 
 	samlogon_state.r.in.server_name = talloc_asprintf(fn_ctx, "\\\\%s", dcerpc_server_name(p));
 	samlogon_state.r.in.computer_name = TEST_MACHINE_NAME;
 	samlogon_state.r.in.credential = &samlogon_state.auth;
 	samlogon_state.r.in.return_authenticator = &samlogon_state.auth2;
+	samlogon_state.r.in.logon = &logon;
+	samlogon_state.r.out.validation = &validation;
+	samlogon_state.r.out.authoritative = &authoritative;
+
 
 	for (f=0;f<ARRAY_SIZE(function_levels);f++) {
 		for (i=0; test_table[i].fn; i++) {
@@ -1422,21 +1441,34 @@ bool test_InteractiveLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct netr_LogonSamLogonWithFlags r;
 	struct netr_Authenticator a, ra;
 	struct netr_PasswordInfo pinfo;
+	uint32_t flags = 0;
+
+	union netr_LogonLevel logon;
+	union netr_Validation validation;
+	uint8_t authoritative = 0;
 
 	ZERO_STRUCT(a);
 	ZERO_STRUCT(r);
 	ZERO_STRUCT(ra);
 
+	ZERO_STRUCT(logon);
+	ZERO_STRUCT(validation);
+
 	creds_client_authenticator(creds, &a);
+
+	logon.password = &pinfo;
 
 	r.in.server_name = talloc_asprintf(fn_ctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.computer_name = TEST_MACHINE_NAME;
 	r.in.credential = &a;
 	r.in.return_authenticator = &ra;
 	r.in.logon_level = 5;
-	r.in.logon.password = &pinfo;
+	r.in.logon = &logon;
 	r.in.validation_level = 6;
-	r.in.flags = 0;
+	r.in.flags = &flags;
+	r.out.validation = &validation;
+	r.out.authoritative = &authoritative;
+	r.out.flags = &flags;
 
 	pinfo.identity_info.domain_name.string = account_domain;
 	pinfo.identity_info.parameter_control = parameter_control;

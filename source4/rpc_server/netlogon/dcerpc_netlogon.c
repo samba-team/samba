@@ -474,14 +474,14 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 	case NetlogonServiceTransitiveInformation:
 		if (creds->negotiate_flags & NETLOGON_NEG_ARCFOUR) {
 			creds_arcfour_crypt(creds, 
-					    r->in.logon.password->lmpassword.hash, 
-					    sizeof(r->in.logon.password->lmpassword.hash));
+					    r->in.logon->password->lmpassword.hash,
+					    sizeof(r->in.logon->password->lmpassword.hash));
 			creds_arcfour_crypt(creds, 
-					    r->in.logon.password->ntpassword.hash, 
-					    sizeof(r->in.logon.password->ntpassword.hash));
+					    r->in.logon->password->ntpassword.hash,
+					    sizeof(r->in.logon->password->ntpassword.hash));
 		} else {
-			creds_des_decrypt(creds, &r->in.logon.password->lmpassword);
-			creds_des_decrypt(creds, &r->in.logon.password->ntpassword);
+			creds_des_decrypt(creds, &r->in.logon->password->lmpassword);
+			creds_des_decrypt(creds, &r->in.logon->password->ntpassword);
 		}
 
 		/* TODO: we need to deny anonymous access here */
@@ -491,21 +491,21 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 						&auth_context);
 		NT_STATUS_NOT_OK_RETURN(nt_status);
 
-		user_info->logon_parameters = r->in.logon.password->identity_info.parameter_control;
-		user_info->client.account_name = r->in.logon.password->identity_info.account_name.string;
-		user_info->client.domain_name = r->in.logon.password->identity_info.domain_name.string;
-		user_info->workstation_name = r->in.logon.password->identity_info.workstation.string;
+		user_info->logon_parameters = r->in.logon->password->identity_info.parameter_control;
+		user_info->client.account_name = r->in.logon->password->identity_info.account_name.string;
+		user_info->client.domain_name = r->in.logon->password->identity_info.domain_name.string;
+		user_info->workstation_name = r->in.logon->password->identity_info.workstation.string;
 		
 		user_info->flags |= USER_INFO_INTERACTIVE_LOGON;
 		user_info->password_state = AUTH_PASSWORD_HASH;
 
 		user_info->password.hash.lanman = talloc(user_info, struct samr_Password);
 		NT_STATUS_HAVE_NO_MEMORY(user_info->password.hash.lanman);
-		*user_info->password.hash.lanman = r->in.logon.password->lmpassword;
+		*user_info->password.hash.lanman = r->in.logon->password->lmpassword;
 
 		user_info->password.hash.nt = talloc(user_info, struct samr_Password);
 		NT_STATUS_HAVE_NO_MEMORY(user_info->password.hash.nt);
-		*user_info->password.hash.nt = r->in.logon.password->ntpassword;
+		*user_info->password.hash.nt = r->in.logon->password->ntpassword;
 
 		break;
 	case NetlogonNetworkInformation:
@@ -518,17 +518,17 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 						&auth_context);
 		NT_STATUS_NOT_OK_RETURN(nt_status);
 
-		nt_status = auth_context_set_challenge(auth_context, r->in.logon.network->challenge, "netr_LogonSamLogonWithFlags");
+		nt_status = auth_context_set_challenge(auth_context, r->in.logon->network->challenge, "netr_LogonSamLogonWithFlags");
 		NT_STATUS_NOT_OK_RETURN(nt_status);
 
-		user_info->logon_parameters = r->in.logon.network->identity_info.parameter_control;
-		user_info->client.account_name = r->in.logon.network->identity_info.account_name.string;
-		user_info->client.domain_name = r->in.logon.network->identity_info.domain_name.string;
-		user_info->workstation_name = r->in.logon.network->identity_info.workstation.string;
+		user_info->logon_parameters = r->in.logon->network->identity_info.parameter_control;
+		user_info->client.account_name = r->in.logon->network->identity_info.account_name.string;
+		user_info->client.domain_name = r->in.logon->network->identity_info.domain_name.string;
+		user_info->workstation_name = r->in.logon->network->identity_info.workstation.string;
 		
 		user_info->password_state = AUTH_PASSWORD_RESPONSE;
-		user_info->password.response.lanman = data_blob_talloc(mem_ctx, r->in.logon.network->lm.data, r->in.logon.network->lm.length);
-		user_info->password.response.nt = data_blob_talloc(mem_ctx, r->in.logon.network->nt.data, r->in.logon.network->nt.length);
+		user_info->password.response.lanman = data_blob_talloc(mem_ctx, r->in.logon->network->lm.data, r->in.logon->network->lm.length);
+		user_info->password.response.nt = data_blob_talloc(mem_ctx, r->in.logon->network->nt.data, r->in.logon->network->nt.length);
 	
 		break;
 
@@ -537,24 +537,24 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 	{
 		if (creds->negotiate_flags & NETLOGON_NEG_ARCFOUR) {
 			creds_arcfour_crypt(creds, 
-					    r->in.logon.generic->data, r->in.logon.generic->length);
+					    r->in.logon->generic->data, r->in.logon->generic->length);
 		} else {
 			/* Using DES to verify kerberos tickets makes no sense */
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 
-		if (strcmp(r->in.logon.generic->package_name.string, "Kerberos") == 0) {
+		if (strcmp(r->in.logon->generic->package_name.string, "Kerberos") == 0) {
 			NTSTATUS status;
 			struct server_id *kdc;
 			struct kdc_check_generic_kerberos check;
 			struct netr_GenericInfo2 *generic = talloc_zero(mem_ctx, struct netr_GenericInfo2);
 			NT_STATUS_HAVE_NO_MEMORY(generic);
-			r->out.authoritative = 1;
+			*r->out.authoritative = 1;
 			
 			/* TODO: Describe and deal with these flags */
-			r->out.flags = 0;
+			*r->out.flags = 0;
 
-			r->out.validation.generic = generic;
+			r->out.validation->generic = generic;
 	
 			kdc = irpc_servers_byname(dce_call->msg_ctx, mem_ctx, "kdc_server");
 			if ((kdc == NULL) || (kdc[0].id == 0)) {
@@ -562,8 +562,8 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 			}
 			
 			check.in.generic_request = 
-				data_blob_const(r->in.logon.generic->data,
-						r->in.logon.generic->length);	
+				data_blob_const(r->in.logon->generic->data,
+						r->in.logon->generic->length);
 			
 			status = irpc_call(dce_call->msg_ctx, kdc[0],
 					   &ndr_table_irpc, NDR_KDC_CHECK_GENERIC_KERBEROS,
@@ -620,14 +620,14 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 		sam2 = talloc_zero(mem_ctx, struct netr_SamInfo2);
 		NT_STATUS_HAVE_NO_MEMORY(sam2);
 		sam2->base = *sam;
-		r->out.validation.sam2 = sam2;
+		r->out.validation->sam2 = sam2;
 		break;
 
 	case 3:
 		sam3 = talloc_zero(mem_ctx, struct netr_SamInfo3);
 		NT_STATUS_HAVE_NO_MEMORY(sam3);
 		sam3->base = *sam;
-		r->out.validation.sam3 = sam3;
+		r->out.validation->sam3 = sam3;
 		break;
 
 	case 6:
@@ -638,17 +638,17 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 		sam6->principle.string = talloc_asprintf(mem_ctx, "%s@%s", 
 							 sam->account_name.string, sam6->forest.string);
 		NT_STATUS_HAVE_NO_MEMORY(sam6->principle.string);
-		r->out.validation.sam6 = sam6;
+		r->out.validation->sam6 = sam6;
 		break;
 
 	default:
 		break;
 	}
 
-	r->out.authoritative = 1;
+	*r->out.authoritative = 1;
 
 	/* TODO: Describe and deal with these flags */
-	r->out.flags = 0;
+	*r->out.flags = 0;
 
 	return NT_STATUS_OK;
 }
@@ -700,13 +700,13 @@ static NTSTATUS dcesrv_netr_LogonSamLogonWithFlags(struct dcesrv_call_state *dce
 	r2.in.logon		= r->in.logon;
 	r2.in.validation_level	= r->in.validation_level;
 	r2.in.flags		= r->in.flags;
+	r2.out.validation	= r->out.validation;
+	r2.out.authoritative	= r->out.authoritative;
+	r2.out.flags		= r->out.flags;
 
 	nt_status = dcesrv_netr_LogonSamLogon_base(dce_call, mem_ctx, &r2, creds);
 
 	r->out.return_authenticator	= return_authenticator;
-	r->out.validation		= r2.out.validation;
-	r->out.authoritative		= r2.out.authoritative;
-	r->out.flags			= r2.out.flags;
 
 	return nt_status;
 }
@@ -718,6 +718,7 @@ static NTSTATUS dcesrv_netr_LogonSamLogon(struct dcesrv_call_state *dce_call, TA
 				   struct netr_LogonSamLogon *r)
 {
 	struct netr_LogonSamLogonWithFlags r2;
+	uint32_t flags = 0;
 	NTSTATUS status;
 
 	ZERO_STRUCT(r2);
@@ -729,13 +730,14 @@ static NTSTATUS dcesrv_netr_LogonSamLogon(struct dcesrv_call_state *dce_call, TA
 	r2.in.logon_level = r->in.logon_level;
 	r2.in.logon = r->in.logon;
 	r2.in.validation_level = r->in.validation_level;
-	r2.in.flags = 0;
+	r2.in.flags = &flags;
+	r2.out.validation = r->out.validation;
+	r2.out.authoritative = r->out.authoritative;
+	r2.out.flags = &flags;
 
 	status = dcesrv_netr_LogonSamLogonWithFlags(dce_call, mem_ctx, &r2);
 
 	r->out.return_authenticator = r2.out.return_authenticator;
-	r->out.validation = r2.out.validation;
-	r->out.authoritative = r2.out.authoritative;
 
 	return status;
 }

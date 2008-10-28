@@ -96,9 +96,14 @@ static void wb_sam_logon_recv_domain(struct composite_context *creq)
 	s->r.in.credential = &s->auth1;
 	s->r.in.return_authenticator = &s->auth2;
 	s->r.in.logon_level = s->req->in.logon_level;
-	s->r.in.logon = s->req->in.logon;
+	s->r.in.logon = &s->req->in.logon;
 	s->r.in.validation_level = s->req->in.validation_level;
 	s->r.out.return_authenticator = NULL;
+	s->r.out.validation = talloc(s, union netr_Validation);
+	if (composite_nomem(s->r.out.validation, s->ctx)) return;
+	s->r.out.authoritative = talloc(s, uint8_t);
+	if (composite_nomem(s->r.out.authoritative, s->ctx)) return;
+
 
 	/*
 	 * use a new talloc context for the LogonSamLogon call
@@ -142,7 +147,7 @@ static void wb_sam_logon_recv_samlogon(struct rpc_request *req)
 	 * They won't have the encryption key anyway */
 	creds_decrypt_samlogon(s->creds_state,
 			       s->r.in.validation_level,
-			       &s->r.out.validation);
+			       s->r.out.validation);
 
 	composite_done(s->ctx);
 }
@@ -157,7 +162,7 @@ NTSTATUS wb_sam_logon_recv(struct composite_context *c,
 
 	if (NT_STATUS_IS_OK(status)) {
 		talloc_steal(mem_ctx, s->r_mem_ctx);
-		req->out.validation	= s->r.out.validation;
+		req->out.validation	= *s->r.out.validation;
 		req->out.authoritative	= 1;
 	}
 
