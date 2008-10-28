@@ -816,18 +816,31 @@ static bool test_AccountDeltas(struct torture_context *tctx,
 	struct netr_AccountDeltas r;
 	struct creds_CredentialState *creds;
 
+	struct netr_AccountBuffer buffer;
+	uint32_t count_returned = 0;
+	uint32_t total_entries = 0;
+	struct netr_UAS_INFO_0 recordid;
+	struct netr_Authenticator return_authenticator;
+
 	if (!test_SetupCredentials(p, tctx, machine_credentials, &creds)) {
 		return false;
 	}
 
+	ZERO_STRUCT(return_authenticator);
+
 	r.in.logon_server = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.computername = TEST_MACHINE_NAME;
-	ZERO_STRUCT(r.in.return_authenticator);
+	r.in.return_authenticator = &return_authenticator;
 	creds_client_authenticator(creds, &r.in.credential);
 	ZERO_STRUCT(r.in.uas);
 	r.in.count=10;
 	r.in.level=0;
 	r.in.buffersize=100;
+	r.out.buffer = &buffer;
+	r.out.count_returned = &count_returned;
+	r.out.total_entries = &total_entries;
+	r.out.recordid = &recordid;
+	r.out.return_authenticator = &return_authenticator;
 
 	/* w2k3 returns "NOT IMPLEMENTED" for this call */
 	status = dcerpc_netr_AccountDeltas(p, tctx, &r);

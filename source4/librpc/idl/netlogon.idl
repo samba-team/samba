@@ -767,15 +767,15 @@ interface netlogon
 		[in,unique] [string,charset(UTF16)] uint16 *logon_server,
 		[in]     [string,charset(UTF16)] uint16 computername[],
 		[in]     netr_Authenticator credential,
-		[in,out] netr_Authenticator return_authenticator,
+		[in,out,ref] netr_Authenticator *return_authenticator,
 		[in]     netr_UAS_INFO_0 uas,
 		[in]     uint32 count,
 		[in]     uint32 level,
 		[in]     uint32 buffersize,
-		[out,subcontext(4)] netr_AccountBuffer buffer,
-		[out]    uint32 count_returned,
-		[out]    uint32 total_entries,
-		[out]    netr_UAS_INFO_0 recordid
+		[out,ref,subcontext(4)] netr_AccountBuffer *buffer,
+		[out,ref]    uint32 *count_returned,
+		[out,ref]    uint32 *total_entries,
+		[out,ref]    netr_UAS_INFO_0 *recordid
 		);
 
 
