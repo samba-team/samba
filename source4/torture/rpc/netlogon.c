@@ -859,18 +859,34 @@ static bool test_AccountSync(struct torture_context *tctx, struct dcerpc_pipe *p
 	struct netr_AccountSync r;
 	struct creds_CredentialState *creds;
 
+	struct netr_AccountBuffer buffer;
+	uint32_t count_returned = 0;
+	uint32_t total_entries = 0;
+	uint32_t next_reference = 0;
+	struct netr_UAS_INFO_0 recordid;
+	struct netr_Authenticator return_authenticator;
+
+	ZERO_STRUCT(recordid);
+	ZERO_STRUCT(return_authenticator);
+
 	if (!test_SetupCredentials(p, tctx, machine_credentials, &creds)) {
 		return false;
 	}
 
 	r.in.logon_server = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.computername = TEST_MACHINE_NAME;
-	ZERO_STRUCT(r.in.return_authenticator);
+	r.in.return_authenticator = &return_authenticator;
 	creds_client_authenticator(creds, &r.in.credential);
-	ZERO_STRUCT(r.in.recordid);
+	r.in.recordid = &recordid;
 	r.in.reference=0;
 	r.in.level=0;
 	r.in.buffersize=100;
+	r.out.buffer = &buffer;
+	r.out.count_returned = &count_returned;
+	r.out.total_entries = &total_entries;
+	r.out.next_reference = &next_reference;
+	r.out.recordid = &recordid;
+	r.out.return_authenticator = &return_authenticator;
 
 	/* w2k3 returns "NOT IMPLEMENTED" for this call */
 	status = dcerpc_netr_AccountSync(p, tctx, &r);
