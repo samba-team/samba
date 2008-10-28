@@ -1131,23 +1131,35 @@ static bool test_DatabaseSync(struct torture_context *tctx,
 	bool ret = true;
 	struct samsync_trusted_domain *t;
 	struct samsync_secret *s;
+	struct netr_Authenticator return_authenticator, credential;
+	struct netr_DELTA_ENUM_ARRAY *delta_enum_array = NULL;
 	
 	const char *domain, *username;
+
+	ZERO_STRUCT(return_authenticator);
 
 	r.in.logon_server = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(samsync_state->p));
 	r.in.computername = TEST_MACHINE_NAME;
 	r.in.preferredmaximumlength = (uint32_t)-1;
-	ZERO_STRUCT(r.in.return_authenticator);
+	r.in.return_authenticator = &return_authenticator;
+	r.out.return_authenticator = &return_authenticator;
+	r.out.delta_enum_array = &delta_enum_array;
 
 	for (i=0;i<ARRAY_SIZE(database_ids);i++) {
-		r.in.sync_context = 0;
+
+		uint32_t sync_context = 0;
+
 		r.in.database_id = database_ids[i];
+		r.in.sync_context = &sync_context;
+		r.out.sync_context = &sync_context;
 
 		printf("Testing DatabaseSync of id %d\n", r.in.database_id);
 
 		do {
 			loop_ctx = talloc_named(mem_ctx, 0, "DatabaseSync loop context");
-			creds_client_authenticator(samsync_state->creds, &r.in.credential);
+			creds_client_authenticator(samsync_state->creds, &credential);
+
+			r.in.credential = &credential;
 
 			status = dcerpc_netr_DatabaseSync(samsync_state->p, loop_ctx, &r);
 			if (!NT_STATUS_IS_OK(status) &&
@@ -1157,67 +1169,67 @@ static bool test_DatabaseSync(struct torture_context *tctx,
 				break;
 			}
 
-			if (!creds_client_check(samsync_state->creds, &r.out.return_authenticator.cred)) {
+			if (!creds_client_check(samsync_state->creds, &r.out.return_authenticator->cred)) {
 				printf("Credential chaining failed\n");
 			}
 
 			r.in.sync_context = r.out.sync_context;
 
-			for (d=0; d < r.out.delta_enum_array->num_deltas; d++) {
+			for (d=0; d < delta_enum_array->num_deltas; d++) {
 				delta_ctx = talloc_named(loop_ctx, 0, "DatabaseSync delta context");
-				switch (r.out.delta_enum_array->delta_enum[d].delta_type) {
+				switch (delta_enum_array->delta_enum[d].delta_type) {
 				case NETR_DELTA_DOMAIN:
 					if (!samsync_handle_domain(delta_ctx, samsync_state, 
-								   r.in.database_id, &r.out.delta_enum_array->delta_enum[d])) {
+								   r.in.database_id, &delta_enum_array->delta_enum[d])) {
 						printf("Failed to handle DELTA_DOMAIN\n");
 						ret = false;
 					}
 					break;
 				case NETR_DELTA_GROUP:
 					if (!samsync_handle_group(delta_ctx, samsync_state, 
-								  r.in.database_id, &r.out.delta_enum_array->delta_enum[d])) {
+								  r.in.database_id, &delta_enum_array->delta_enum[d])) {
 						printf("Failed to handle DELTA_USER\n");
 						ret = false;
 					}
 					break;
 				case NETR_DELTA_USER:
 					if (!samsync_handle_user(tctx, delta_ctx, samsync_state, 
-								 r.in.database_id, &r.out.delta_enum_array->delta_enum[d])) {
+								 r.in.database_id, &delta_enum_array->delta_enum[d])) {
 						printf("Failed to handle DELTA_USER\n");
 						ret = false;
 					}
 					break;
 				case NETR_DELTA_ALIAS:
 					if (!samsync_handle_alias(delta_ctx, samsync_state, 
-								  r.in.database_id, &r.out.delta_enum_array->delta_enum[d])) {
+								  r.in.database_id, &delta_enum_array->delta_enum[d])) {
 						printf("Failed to handle DELTA_ALIAS\n");
 						ret = false;
 					}
 					break;
 				case NETR_DELTA_POLICY:
 					if (!samsync_handle_policy(delta_ctx, samsync_state, 
-								   r.in.database_id, &r.out.delta_enum_array->delta_enum[d])) {
+								   r.in.database_id, &delta_enum_array->delta_enum[d])) {
 						printf("Failed to handle DELTA_POLICY\n");
 						ret = false;
 					}
 					break;
 				case NETR_DELTA_TRUSTED_DOMAIN:
 					if (!samsync_handle_trusted_domain(delta_ctx, samsync_state, 
-									   r.in.database_id, &r.out.delta_enum_array->delta_enum[d])) {
+									   r.in.database_id, &delta_enum_array->delta_enum[d])) {
 						printf("Failed to handle DELTA_TRUSTED_DOMAIN\n");
 						ret = false;
 					}
 					break;
 				case NETR_DELTA_ACCOUNT:
 					if (!samsync_handle_account(delta_ctx, samsync_state, 
-								    r.in.database_id, &r.out.delta_enum_array->delta_enum[d])) {
+								    r.in.database_id, &delta_enum_array->delta_enum[d])) {
 						printf("Failed to handle DELTA_ACCOUNT\n");
 						ret = false;
 					}
 					break;
 				case NETR_DELTA_SECRET:
 					if (!samsync_handle_secret(delta_ctx, samsync_state, 
-								   r.in.database_id, &r.out.delta_enum_array->delta_enum[d])) {
+								   r.in.database_id, &delta_enum_array->delta_enum[d])) {
 						printf("Failed to handle DELTA_SECRET\n");
 						ret = false;
 					}
@@ -1239,7 +1251,7 @@ static bool test_DatabaseSync(struct torture_context *tctx,
 				case NETR_DELTA_DELETE_USER2:
 				case NETR_DELTA_MODIFY_COUNT:
 				default:
-					printf("Uxpected delta type %d\n", r.out.delta_enum_array->delta_enum[d].delta_type);
+					printf("Uxpected delta type %d\n", delta_enum_array->delta_enum[d].delta_type);
 					ret = false;
 					break;
 				}

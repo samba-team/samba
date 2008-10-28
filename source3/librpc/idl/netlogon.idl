@@ -741,12 +741,12 @@ interface netlogon
 	NTSTATUS netr_DatabaseSync(
 		[in]     [string,charset(UTF16)] uint16 logon_server[],
 		[in]     [string,charset(UTF16)] uint16 computername[],
-		[in]     netr_Authenticator credential,
+		[in,ref] netr_Authenticator *credential,
 		[in,out,ref] netr_Authenticator *return_authenticator,
 		[in]     netr_SamDatabaseID database_id,
 		[in,out,ref] uint32 *sync_context,
-		[in]     uint32 preferredmaximumlength,
-		[out,ref]    netr_DELTA_ENUM_ARRAY *delta_enum_array
+		[out,ref]    netr_DELTA_ENUM_ARRAY **delta_enum_array,
+		[in]     uint32 preferredmaximumlength
 		);
 
 

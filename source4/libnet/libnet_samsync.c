@@ -169,6 +169,8 @@ NTSTATUS libnet_SamSync_netlogon(struct libnet_context *ctx, TALLOC_CTX *mem_ctx
 	TALLOC_CTX *samsync_ctx, *loop_ctx, *delta_ctx;
 	struct creds_CredentialState *creds;
 	struct netr_DatabaseSync dbsync;
+	struct netr_Authenticator credential, return_authenticator;
+	struct netr_DELTA_ENUM_ARRAY *delta_enum_array = NULL;
 	struct cli_credentials *machine_account;
 	struct dcerpc_pipe *p;
 	struct libnet_context *machine_net_ctx;
@@ -320,19 +322,30 @@ NTSTATUS libnet_SamSync_netlogon(struct libnet_context *ctx, TALLOC_CTX *mem_ctx
 	}
 
 	/* Setup details for the synchronisation */
+
+	ZERO_STRUCT(return_authenticator);
+
 	dbsync.in.logon_server = talloc_asprintf(samsync_ctx, "\\\\%s", dcerpc_server_name(p));
 	dbsync.in.computername = cli_credentials_get_workstation(machine_account);
 	dbsync.in.preferredmaximumlength = (uint32_t)-1;
-	ZERO_STRUCT(dbsync.in.return_authenticator);
+	dbsync.in.return_authenticator = &return_authenticator;
+	dbsync.out.return_authenticator = &return_authenticator;
+	dbsync.out.delta_enum_array = &delta_enum_array;
 
-	for (i=0;i< ARRAY_SIZE(database_ids); i++) { 
-		dbsync.in.sync_context = 0;
-		dbsync.in.database_id = database_ids[i]; 
+	for (i=0;i< ARRAY_SIZE(database_ids); i++) {
+
+		uint32_t sync_context = 0;
+
+		dbsync.in.database_id = database_ids[i];
+		dbsync.in.sync_context = &sync_context;
+		dbsync.out.sync_context = &sync_context;
 		
 		do {
 			int d;
 			loop_ctx = talloc_named(samsync_ctx, 0, "DatabaseSync loop context");
-			creds_client_authenticator(creds, &dbsync.in.credential);
+			creds_client_authenticator(creds, &credential);
+
+			dbsync.in.credential = &credential;
 			
 			dbsync_nt_status = dcerpc_netr_DatabaseSync(p, loop_ctx, &dbsync);
 			if (!NT_STATUS_IS_OK(dbsync_nt_status) &&
@@ -342,7 +355,7 @@ NTSTATUS libnet_SamSync_netlogon(struct libnet_context *ctx, TALLOC_CTX *mem_ctx
 				return nt_status;
 			}
 			
-			if (!creds_client_check(creds, &dbsync.out.return_authenticator.cred)) {
+			if (!creds_client_check(creds, &dbsync.out.return_authenticator->cred)) {
 				r->out.error_string = talloc_strdup(mem_ctx, "Credential chaining on incoming DatabaseSync failed");
 				talloc_free(samsync_ctx);
 				return NT_STATUS_ACCESS_DENIED;
@@ -351,7 +364,7 @@ NTSTATUS libnet_SamSync_netlogon(struct libnet_context *ctx, TALLOC_CTX *mem_ctx
 			dbsync.in.sync_context = dbsync.out.sync_context;
 			
 			/* For every single remote 'delta' entry: */
-			for (d=0; d < dbsync.out.delta_enum_array->num_deltas; d++) {
+			for (d=0; d < delta_enum_array->num_deltas; d++) {
 				char *error_string = NULL;
 				delta_ctx = talloc_named(loop_ctx, 0, "DatabaseSync delta context");
 				/* 'Fix' elements, by decrypting and
@@ -360,7 +373,7 @@ NTSTATUS libnet_SamSync_netlogon(struct libnet_context *ctx, TALLOC_CTX *mem_ctx
 						      creds, 
 						      r->in.rid_crypt,
 						      dbsync.in.database_id,
-						      &dbsync.out.delta_enum_array->delta_enum[d], 
+						      &delta_enum_array->delta_enum[d],
 						      &error_string);
 				if (!NT_STATUS_IS_OK(nt_status)) {
 					r->out.error_string = talloc_steal(mem_ctx, error_string);
@@ -374,7 +387,7 @@ NTSTATUS libnet_SamSync_netlogon(struct libnet_context *ctx, TALLOC_CTX *mem_ctx
 				nt_status = r->in.delta_fn(delta_ctx, 
 							   r->in.fn_ctx,
 							   dbsync.in.database_id,
-							   &dbsync.out.delta_enum_array->delta_enum[d], 
+							   &delta_enum_array->delta_enum[d],
 							   &error_string);
 				if (!NT_STATUS_IS_OK(nt_status)) {
 					r->out.error_string = talloc_steal(mem_ctx, error_string);

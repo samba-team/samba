@@ -695,24 +695,36 @@ static bool test_DatabaseSync(struct torture_context *tctx,
 	struct creds_CredentialState *creds;
 	const uint32_t database_ids[] = {SAM_DATABASE_DOMAIN, SAM_DATABASE_BUILTIN, SAM_DATABASE_PRIVS}; 
 	int i;
+	struct netr_DELTA_ENUM_ARRAY *delta_enum_array = NULL;
+	struct netr_Authenticator credential, return_authenticator;
 
 	if (!test_SetupCredentials(p, tctx, machine_credentials, &creds)) {
 		return false;
 	}
 
+	ZERO_STRUCT(return_authenticator);
+
 	r.in.logon_server = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.computername = TEST_MACHINE_NAME;
 	r.in.preferredmaximumlength = (uint32_t)-1;
-	ZERO_STRUCT(r.in.return_authenticator);
+	r.in.return_authenticator = &return_authenticator;
+	r.out.delta_enum_array = &delta_enum_array;
+	r.out.return_authenticator = &return_authenticator;
 
 	for (i=0;i<ARRAY_SIZE(database_ids);i++) {
-		r.in.sync_context = 0;
+
+		uint32_t sync_context = 0;
+
 		r.in.database_id = database_ids[i];
+		r.in.sync_context = &sync_context;
+		r.out.sync_context = &sync_context;
 
 		torture_comment(tctx, "Testing DatabaseSync of id %d\n", r.in.database_id);
 
 		do {
-			creds_client_authenticator(creds, &r.in.credential);
+			creds_client_authenticator(creds, &credential);
+
+			r.in.credential = &credential;
 
 			status = dcerpc_netr_DatabaseSync(p, tctx, &r);
 			if (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES))
@@ -724,18 +736,16 @@ static bool test_DatabaseSync(struct torture_context *tctx,
 			}
 			torture_assert_ntstatus_ok(tctx, status, "DatabaseSync");
 
-			if (!creds_client_check(creds, &r.out.return_authenticator.cred)) {
+			if (!creds_client_check(creds, &r.out.return_authenticator->cred)) {
 				torture_comment(tctx, "Credential chaining failed\n");
 			}
 
-			r.in.sync_context = r.out.sync_context;
-
-			if (r.out.delta_enum_array &&
-			    r.out.delta_enum_array->num_deltas > 0 &&
-			    r.out.delta_enum_array->delta_enum[0].delta_type == NETR_DELTA_DOMAIN &&
-			    r.out.delta_enum_array->delta_enum[0].delta_union.domain) {
+			if (delta_enum_array &&
+			    delta_enum_array->num_deltas > 0 &&
+			    delta_enum_array->delta_enum[0].delta_type == NETR_DELTA_DOMAIN &&
+			    delta_enum_array->delta_enum[0].delta_union.domain) {
 				sequence_nums[r.in.database_id] = 
-					r.out.delta_enum_array->delta_enum[0].delta_union.domain->sequence_num;
+					delta_enum_array->delta_enum[0].delta_union.domain->sequence_num;
 				torture_comment(tctx, "\tsequence_nums[%d]=%llu\n",
 				       r.in.database_id, 
 				       (unsigned long long)sequence_nums[r.in.database_id]);
