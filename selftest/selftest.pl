@@ -573,7 +573,7 @@ sub write_clientconf($$)
 	print CF "
 	private dir = $prefix_abs/client/private
 	name resolve order = bcast
-	panic action = $srcdir_abs/script/gdb_backtrace \%PID\% \%PROG\%
+	panic action = $RealBin/gdb_backtrace \%PID\% \%PROG\%
 	max xmit = 32K
 	notify:inotify = false
 	ldb:nosync = true

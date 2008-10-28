@@ -562,7 +562,7 @@ sub provision($$$$$$)
 	name resolve order = bcast
 	interfaces = $interfaces
 	tls dh params file = $tlsdir/dhparms.pem
-	panic action = $srcdir/script/gdb_backtrace \%PID% \%PROG%
+	panic action = $RealBin/gdb_backtrace \%PID% \%PROG%
 	wins support = yes
 	server role = $server_role
 	max xmit = 32K
