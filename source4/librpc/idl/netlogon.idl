@@ -857,7 +857,7 @@ interface netlogon
 		[in,unique] [string,charset(UTF16)] uint16 *logon_server,
 		[in]   netr_LogonControlCode function_code,
 		[in]   uint32 level,
-		[out,switch_is(level)]  netr_CONTROL_QUERY_INFORMATION info
+		[out,ref,switch_is(level)]  netr_CONTROL_QUERY_INFORMATION *info
 		);
 
 
