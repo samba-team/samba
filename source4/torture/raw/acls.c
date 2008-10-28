@@ -248,6 +248,249 @@ done:
 	} \
 } while (0)
 
+/*
+  test using NTTRANS CREATE to create a file with a null ACL set
+*/
+static bool test_nttrans_create_null_dacl(struct torture_context *tctx,
+					  struct smbcli_state *cli)
+{
+	NTSTATUS status;
+	union smb_open io;
+	const char *fname = BASEDIR "\\acl3.txt";
+	bool ret = true;
+	int fnum = -1;
+	union smb_fileinfo q;
+	union smb_setfileinfo s;
+	struct security_descriptor *sd = security_descriptor_initialise(tctx);
+	struct security_acl dacl;
+
+	printf("TESTING SEC_DESC WITH A NULL DACL\n");
+
+	io.generic.level = RAW_OPEN_NTTRANS_CREATE;
+	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.flags = 0;
+	io.ntcreatex.in.access_mask = SEC_STD_READ_CONTROL | SEC_STD_WRITE_DAC
+		| SEC_STD_WRITE_OWNER;
+	io.ntcreatex.in.create_options = 0;
+	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	io.ntcreatex.in.share_access =
+		NTCREATEX_SHARE_ACCESS_READ | NTCREATEX_SHARE_ACCESS_WRITE;
+	io.ntcreatex.in.alloc_size = 0;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN_IF;
+	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	io.ntcreatex.in.security_flags = 0;
+	io.ntcreatex.in.fname = fname;
+	io.ntcreatex.in.sec_desc = sd;
+	io.ntcreatex.in.ea_list = NULL;
+
+	printf("creating a file with a empty sd\n");
+	status = smb_raw_open(cli->tree, tctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum = io.ntcreatex.out.file.fnum;
+
+	printf("get the original sd\n");
+	q.query_secdesc.level = RAW_FILEINFO_SEC_DESC;
+	q.query_secdesc.in.file.fnum = fnum;
+	q.query_secdesc.in.secinfo_flags =
+		SECINFO_OWNER |
+		SECINFO_GROUP |
+		SECINFO_DACL;
+	status = smb_raw_fileinfo(cli->tree, tctx, &q);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/*
+	 * Testing the created DACL,
+	 * the server should add the inherited DACL
+	 * when SEC_DESC_DACL_PRESENT isn't specified
+	 */
+	if (!(q.query_secdesc.out.sd->type & SEC_DESC_DACL_PRESENT)) {
+		printf("DACL_PRESENT flag not set by the server!\n");
+		ret = false;
+		goto done;
+	}
+	if (q.query_secdesc.out.sd->dacl == NULL) {
+		printf("no DACL has been created on the server!\n");
+		ret = false;
+		goto done;
+	}
+
+	printf("set NULL DACL\n");
+	sd->type |= SEC_DESC_DACL_PRESENT;
+
+	s.set_secdesc.level = RAW_SFILEINFO_SEC_DESC;
+	s.set_secdesc.in.file.fnum = fnum;
+	s.set_secdesc.in.secinfo_flags = SECINFO_DACL;
+	s.set_secdesc.in.sd = sd;
+	status = smb_raw_setfileinfo(cli->tree, &s);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	printf("get the sd\n");
+	q.query_secdesc.level = RAW_FILEINFO_SEC_DESC;
+	q.query_secdesc.in.file.fnum = fnum;
+	q.query_secdesc.in.secinfo_flags =
+		SECINFO_OWNER |
+		SECINFO_GROUP |
+		SECINFO_DACL;
+	status = smb_raw_fileinfo(cli->tree, tctx, &q);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* Testing the modified DACL */
+	if (!(q.query_secdesc.out.sd->type & SEC_DESC_DACL_PRESENT)) {
+		printf("DACL_PRESENT flag not set by the server!\n");
+		ret = false;
+		goto done;
+	}
+	if (q.query_secdesc.out.sd->dacl != NULL) {
+		printf("DACL has been created on the server!\n");
+		ret = false;
+		goto done;
+	}
+
+	printf("try open for read control\n");
+	io.ntcreatex.in.access_mask = SEC_STD_READ_CONTROL;
+	status = smb_raw_open(cli->tree, tctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_ACCESS_FLAGS(io.ntcreatex.out.file.fnum,
+		SEC_STD_READ_CONTROL | SEC_FILE_READ_ATTRIBUTE);
+	smbcli_close(cli->tree, io.ntcreatex.out.file.fnum);
+
+	printf("try open for write\n");
+	io.ntcreatex.in.access_mask = SEC_FILE_WRITE_DATA;
+	status = smb_raw_open(cli->tree, tctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_ACCESS_FLAGS(io.ntcreatex.out.file.fnum,
+		SEC_FILE_WRITE_DATA | SEC_FILE_READ_ATTRIBUTE);
+	smbcli_close(cli->tree, io.ntcreatex.out.file.fnum);
+
+	printf("try open for read\n");
+	io.ntcreatex.in.access_mask = SEC_FILE_READ_DATA;
+	status = smb_raw_open(cli->tree, tctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_ACCESS_FLAGS(io.ntcreatex.out.file.fnum,
+		SEC_FILE_READ_DATA | SEC_FILE_READ_ATTRIBUTE);
+	smbcli_close(cli->tree, io.ntcreatex.out.file.fnum);
+
+	printf("try open for generic write\n");
+	io.ntcreatex.in.access_mask = SEC_GENERIC_WRITE;
+	status = smb_raw_open(cli->tree, tctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_ACCESS_FLAGS(io.ntcreatex.out.file.fnum,
+		SEC_RIGHTS_FILE_WRITE | SEC_FILE_READ_ATTRIBUTE);
+	smbcli_close(cli->tree, io.ntcreatex.out.file.fnum);
+
+	printf("try open for generic read\n");
+	io.ntcreatex.in.access_mask = SEC_GENERIC_READ;
+	status = smb_raw_open(cli->tree, tctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_ACCESS_FLAGS(io.ntcreatex.out.file.fnum,
+		SEC_RIGHTS_FILE_READ | SEC_FILE_READ_ATTRIBUTE);
+	smbcli_close(cli->tree, io.ntcreatex.out.file.fnum);
+
+	printf("set DACL with 0 aces\n");
+	ZERO_STRUCT(dacl);
+	dacl.revision = SECURITY_ACL_REVISION_NT4;
+	dacl.num_aces = 0;
+	sd->dacl = &dacl;
+
+	s.set_secdesc.level = RAW_SFILEINFO_SEC_DESC;
+	s.set_secdesc.in.file.fnum = fnum;
+	s.set_secdesc.in.secinfo_flags = SECINFO_DACL;
+	s.set_secdesc.in.sd = sd;
+	status = smb_raw_setfileinfo(cli->tree, &s);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	printf("get the sd\n");
+	q.query_secdesc.level = RAW_FILEINFO_SEC_DESC;
+	q.query_secdesc.in.file.fnum = fnum;
+	q.query_secdesc.in.secinfo_flags =
+		SECINFO_OWNER |
+		SECINFO_GROUP |
+		SECINFO_DACL;
+	status = smb_raw_fileinfo(cli->tree, tctx, &q);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* Testing the modified DACL */
+	if (!(q.query_secdesc.out.sd->type & SEC_DESC_DACL_PRESENT)) {
+		printf("DACL_PRESENT flag not set by the server!\n");
+		ret = false;
+		goto done;
+	}
+	if (q.query_secdesc.out.sd->dacl == NULL) {
+		printf("no DACL has been created on the server!\n");
+		ret = false;
+		goto done;
+	}
+	if (q.query_secdesc.out.sd->dacl->num_aces != 0) {
+		printf("DACL has %u aces!\n",
+		       q.query_secdesc.out.sd->dacl->num_aces);
+		ret = false;
+		goto done;
+	}
+
+	printf("try open for read control\n");
+	io.ntcreatex.in.access_mask = SEC_STD_READ_CONTROL;
+	status = smb_raw_open(cli->tree, tctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_ACCESS_FLAGS(io.ntcreatex.out.file.fnum,
+		SEC_STD_READ_CONTROL | SEC_FILE_READ_ATTRIBUTE);
+	smbcli_close(cli->tree, io.ntcreatex.out.file.fnum);
+
+	printf("try open for write => access_denied\n");
+	io.ntcreatex.in.access_mask = SEC_FILE_WRITE_DATA;
+	status = smb_raw_open(cli->tree, tctx, &io);
+	CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);
+
+	printf("try open for read => access_denied\n");
+	io.ntcreatex.in.access_mask = SEC_FILE_READ_DATA;
+	status = smb_raw_open(cli->tree, tctx, &io);
+	CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);
+
+	printf("try open for generic write => access_denied\n");
+	io.ntcreatex.in.access_mask = SEC_GENERIC_WRITE;
+	status = smb_raw_open(cli->tree, tctx, &io);
+	CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);
+
+	printf("try open for generic read => access_denied\n");
+	io.ntcreatex.in.access_mask = SEC_GENERIC_READ;
+	status = smb_raw_open(cli->tree, tctx, &io);
+	CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);
+
+	printf("set empty sd\n");
+	sd->type &= ~SEC_DESC_DACL_PRESENT;
+	sd->dacl = NULL;
+
+	s.set_secdesc.level = RAW_SFILEINFO_SEC_DESC;
+	s.set_secdesc.in.file.fnum = fnum;
+	s.set_secdesc.in.secinfo_flags = SECINFO_DACL;
+	s.set_secdesc.in.sd = sd;
+	status = smb_raw_setfileinfo(cli->tree, &s);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	printf("get the sd\n");
+	q.query_secdesc.level = RAW_FILEINFO_SEC_DESC;
+	q.query_secdesc.in.file.fnum = fnum;
+	q.query_secdesc.in.secinfo_flags =
+		SECINFO_OWNER |
+		SECINFO_GROUP |
+		SECINFO_DACL;
+	status = smb_raw_fileinfo(cli->tree, tctx, &q);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* Testing the modified DACL */
+	if (!(q.query_secdesc.out.sd->type & SEC_DESC_DACL_PRESENT)) {
+		printf("DACL_PRESENT flag not set by the server!\n");
+		ret = false;
+		goto done;
+	}
+	if (q.query_secdesc.out.sd->dacl != NULL) {
+		printf("DACL has been created on the server!\n");
+		ret = false;
+		goto done;
+	}
+done:
+	smbcli_close(cli->tree, fnum);
+	return ret;
+}
 
 /*
   test the behaviour of the well known SID_CREATOR_OWNER sid, and some generic
@@ -1744,6 +1987,7 @@ bool torture_raw_acls(struct torture_context *tctx, struct smbcli_state *cli)
 
 	ret &= test_sd(tctx, cli);
 	ret &= test_nttrans_create(tctx, cli);
+	ret &= test_nttrans_create_null_dacl(tctx, cli);
 	ret &= test_creator_sid(tctx, cli);
 	ret &= test_generic_bits(tctx, cli);
 	ret &= test_owner_bits(tctx, cli);
