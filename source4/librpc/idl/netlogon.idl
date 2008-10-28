@@ -940,13 +940,13 @@ interface netlogon
 	NTSTATUS netr_DatabaseSync2(
 		[in]     [string,charset(UTF16)] uint16 logon_server[],
 		[in]     [string,charset(UTF16)] uint16 computername[],
-		[in]     netr_Authenticator credential,
-		[in,out] netr_Authenticator return_authenticator,
+		[in,ref] netr_Authenticator *credential,
+		[in,out,ref] netr_Authenticator *return_authenticator,
 		[in]     netr_SamDatabaseID database_id,
 		[in]     uint16 restart_state,
-		[in,out] uint32 sync_context,
-		[in]     uint32 preferredmaximumlength,
-		[out,unique] netr_DELTA_ENUM_ARRAY *delta_enum_array
+		[in,out,ref] uint32 *sync_context,
+		[out,ref]    netr_DELTA_ENUM_ARRAY **delta_enum_array,
+		[in]     uint32 preferredmaximumlength
 		);
 
 

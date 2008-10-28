@@ -1405,22 +1405,34 @@ static bool test_DatabaseSync2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	const uint32_t database_ids[] = {0, 1, 2}; 
 	int i;
 	bool ret = true;
+	struct netr_Authenticator return_authenticator, credential;
+	struct netr_DELTA_ENUM_ARRAY *delta_enum_array = NULL;
+
+	ZERO_STRUCT(return_authenticator);
 
 	r.in.logon_server = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.computername = TEST_MACHINE_NAME;
 	r.in.preferredmaximumlength = (uint32_t)-1;
-	ZERO_STRUCT(r.in.return_authenticator);
+	r.in.return_authenticator = &return_authenticator;
+	r.out.return_authenticator = &return_authenticator;
+	r.out.delta_enum_array = &delta_enum_array;
 
 	for (i=0;i<ARRAY_SIZE(database_ids);i++) {
-		r.in.sync_context = 0;
+
+		uint32_t sync_context = 0;
+
 		r.in.database_id = database_ids[i];
+		r.in.sync_context = &sync_context;
+		r.out.sync_context = &sync_context;
 		r.in.restart_state = 0;
 
 		printf("Testing DatabaseSync2 of id %d\n", r.in.database_id);
 
 		do {
 			loop_ctx = talloc_named(mem_ctx, 0, "test_DatabaseSync2 loop context");
-			creds_client_authenticator(creds, &r.in.credential);
+			creds_client_authenticator(creds, &credential);
+
+			r.in.credential = &credential;
 
 			status = dcerpc_netr_DatabaseSync2(p, loop_ctx, &r);
 			if (!NT_STATUS_IS_OK(status) &&
@@ -1429,11 +1441,10 @@ static bool test_DatabaseSync2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				ret = false;
 			}
 
-			if (!creds_client_check(creds, &r.out.return_authenticator.cred)) {
+			if (!creds_client_check(creds, &r.out.return_authenticator->cred)) {
 				printf("Credential chaining failed\n");
 			}
 
-			r.in.sync_context = r.out.sync_context;
 			talloc_free(loop_ctx);
 		} while (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES));
 	}

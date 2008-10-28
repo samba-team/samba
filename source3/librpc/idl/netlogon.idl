@@ -943,7 +943,7 @@ interface netlogon
 	NTSTATUS netr_DatabaseSync2(
 		[in]     [string,charset(UTF16)] uint16 logon_server[],
 		[in]     [string,charset(UTF16)] uint16 computername[],
-		[in]     netr_Authenticator *credential,
+		[in,ref] netr_Authenticator *credential,
 		[in,out,ref] netr_Authenticator *return_authenticator,
 		[in]     netr_SamDatabaseID database_id,
 		[in]     uint16 restart_state,
