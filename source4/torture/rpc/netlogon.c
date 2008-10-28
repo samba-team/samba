@@ -1267,19 +1267,21 @@ static bool test_netr_DsRGetDCName(struct torture_context *tctx,
 {
 	NTSTATUS status;
 	struct netr_DsRGetDCName r;
+	struct netr_DsRGetDCNameInfo *info = NULL;
 
 	r.in.server_unc		= talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.domain_name	= talloc_asprintf(tctx, "%s", lp_realm(tctx->lp_ctx));
 	r.in.domain_guid	= NULL;
 	r.in.site_guid	        = NULL;
 	r.in.flags		= DS_RETURN_DNS_NAME;
+	r.out.info		= &info;
 
 	status = dcerpc_netr_DsRGetDCName(p, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "DsRGetDCName");
 	torture_assert_werr_ok(tctx, r.out.result, "DsRGetDCName");
 	return test_netr_DsRGetSiteName(p, tctx, 
-				       r.out.info->dc_unc, 
-				       r.out.info->dc_site_name);
+				       info->dc_unc,
+				       info->dc_site_name);
 }
 
 /*
@@ -1290,19 +1292,21 @@ static bool test_netr_DsRGetDCNameEx(struct torture_context *tctx,
 {
 	NTSTATUS status;
 	struct netr_DsRGetDCNameEx r;
+	struct netr_DsRGetDCNameInfo *info = NULL;
 
 	r.in.server_unc		= talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.domain_name	= talloc_asprintf(tctx, "%s", lp_realm(tctx->lp_ctx));
 	r.in.domain_guid	= NULL;
 	r.in.site_name	        = NULL;
 	r.in.flags		= DS_RETURN_DNS_NAME;
+	r.out.info		= &info;
 
 	status = dcerpc_netr_DsRGetDCNameEx(p, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "netr_DsRGetDCNameEx");
 	torture_assert_werr_ok(tctx, r.out.result, "netr_DsRGetDCNameEx");
 
-	return test_netr_DsRGetSiteName(p, tctx, r.out.info->dc_unc, 
-				       r.out.info->dc_site_name);
+	return test_netr_DsRGetSiteName(p, tctx, info->dc_unc,
+				        info->dc_site_name);
 }
 
 /*
@@ -1313,6 +1317,7 @@ static bool test_netr_DsRGetDCNameEx2(struct torture_context *tctx,
 {
 	NTSTATUS status;
 	struct netr_DsRGetDCNameEx2 r;
+	struct netr_DsRGetDCNameInfo *info = NULL;
 
 	r.in.server_unc		= talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.client_account	= NULL;
@@ -1321,6 +1326,7 @@ static bool test_netr_DsRGetDCNameEx2(struct torture_context *tctx,
 	r.in.domain_guid	= NULL;
 	r.in.site_name		= NULL;
 	r.in.flags		= DS_RETURN_DNS_NAME;
+	r.out.info		= &info;
 
 	torture_comment(tctx, "Testing netr_DsRGetDCNameEx2 without client account\n");
 
@@ -1332,12 +1338,13 @@ static bool test_netr_DsRGetDCNameEx2(struct torture_context *tctx,
 	r.in.client_account	= TEST_MACHINE_NAME"$";
 	r.in.mask		= ACB_SVRTRUST;
 	r.in.flags		= DS_RETURN_FLAT_NAME;
+	r.out.info		= &info;
 
 	status = dcerpc_netr_DsRGetDCNameEx2(p, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "netr_DsRGetDCNameEx2");
 	torture_assert_werr_ok(tctx, r.out.result, "netr_DsRGetDCNameEx2");
-	return test_netr_DsRGetSiteName(p, tctx, r.out.info->dc_unc, 
-					r.out.info->dc_site_name);
+	return test_netr_DsRGetSiteName(p, tctx, info->dc_unc,
+					info->dc_site_name);
 }
 
 static bool test_netr_DsrGetDcSiteCoverageW(struct torture_context *tctx, 

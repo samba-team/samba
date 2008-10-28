@@ -1075,7 +1075,7 @@ interface netlogon
 		[in,unique] GUID *domain_guid,
 		[in,unique] GUID *site_guid,
 		[in] netr_DsRGetDCName_flags flags,
-		[out,unique] netr_DsRGetDCNameInfo *info
+		[out,ref] netr_DsRGetDCNameInfo **info
 		);
 
 	/*****************/
@@ -1123,8 +1123,9 @@ interface netlogon
 		[in,unique] GUID *domain_guid,
 		[in,unique] [string,charset(UTF16)] uint16 *site_name,
 		[in] netr_DsRGetDCName_flags flags,
-		[out,unique] netr_DsRGetDCNameInfo *info
+		[out,ref] netr_DsRGetDCNameInfo **info
 		);
+
 
 	/****************/
 	/* Function 0x1c */
@@ -1301,7 +1302,7 @@ interface netlogon
 		[in,unique] GUID *domain_guid,
 		[in,unique] [string,charset(UTF16)] uint16 *site_name,
 		[in] netr_DsRGetDCName_flags flags,
-		[out,unique] netr_DsRGetDCNameInfo *info
+		[out,ref] netr_DsRGetDCNameInfo **info
 		);
 
 	/****************/

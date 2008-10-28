@@ -104,6 +104,8 @@ static void trusted_dom_info_recv_domain(struct composite_context *ctx)
 	state->d.in.domain_guid = NULL;
 	state->d.in.site_guid = NULL;
 	state->d.in.flags = DS_RETURN_DNS_NAME;
+	state->d.out.info = talloc(state, struct netr_DsRGetDCNameInfo *);
+	if (composite_nomem(state->d.out.info, state->ctx)) return;
 
 	req = dcerpc_netr_DsRGetDCName_send(state->my_domain->netlogon_pipe,
 					    state, &state->d);
@@ -140,17 +142,17 @@ static void trusted_dom_info_recv_dsr(struct rpc_request *req)
 	state->info->num_dcs = 1;
 	state->info->dcs = talloc(state->info, struct nbt_dc_name);
 	state->info->dcs[0].name = talloc_steal(state->info,
-					    state->d.out.info->dc_unc);
+					    (*state->d.out.info)->dc_unc);
 	if (*state->info->dcs[0].name == '\\') state->info->dcs[0].name++;
 	if (*state->info->dcs[0].name == '\\') state->info->dcs[0].name++;
 
 	state->info->dcs[0].address = talloc_steal(state->info,
-					       state->d.out.info->dc_address);
+					       (*state->d.out.info)->dc_address);
 	if (*state->info->dcs[0].address == '\\') state->info->dcs[0].address++;
 	if (*state->info->dcs[0].address == '\\') state->info->dcs[0].address++;
 
 	state->info->dns_name = talloc_steal(state->info,
-					     state->d.out.info->domain_name);
+					     (*state->d.out.info)->domain_name);
 
 	composite_done(state->ctx);
 	return;

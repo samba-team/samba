@@ -1125,8 +1125,9 @@ static WERROR dcesrv_netr_DsRGetDCNameEx2(struct dcesrv_call_state *dce_call, TA
 	struct ldb_message **res;
 	struct ldb_dn *domain_dn;
 	int ret;
+	struct netr_DsRGetDCNameInfo *info;
 
-	ZERO_STRUCT(r->out);
+	ZERO_STRUCTP(r->out.info);
 
 	sam_ctx = samdb_connect(mem_ctx, dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx, dce_call->conn->auth_state.session_info);
 	if (sam_ctx == NULL) {
@@ -1144,23 +1145,23 @@ static WERROR dcesrv_netr_DsRGetDCNameEx2(struct dcesrv_call_state *dce_call, TA
 		return WERR_NO_SUCH_DOMAIN;
 	}
 
-	r->out.info = talloc(mem_ctx, struct netr_DsRGetDCNameInfo);
-	W_ERROR_HAVE_NO_MEMORY(r->out.info);
+	info = talloc(mem_ctx, struct netr_DsRGetDCNameInfo);
+	W_ERROR_HAVE_NO_MEMORY(info);
 
 	/* TODO: - return real IP address
 	 *       - check all r->in.* parameters (server_unc is ignored by w2k3!)
 	 */
-	r->out.info->dc_unc		= talloc_asprintf(mem_ctx, "\\\\%s.%s", 
+	info->dc_unc			= talloc_asprintf(mem_ctx, "\\\\%s.%s",
 							  lp_netbios_name(dce_call->conn->dce_ctx->lp_ctx), 
 							  lp_realm(dce_call->conn->dce_ctx->lp_ctx));
-	W_ERROR_HAVE_NO_MEMORY(r->out.info->dc_unc);
-	r->out.info->dc_address		= talloc_strdup(mem_ctx, "\\\\0.0.0.0");
-	W_ERROR_HAVE_NO_MEMORY(r->out.info->dc_address);
-	r->out.info->dc_address_type	= DS_ADDRESS_TYPE_INET;
-	r->out.info->domain_guid	= samdb_result_guid(res[0], "objectGUID");
-	r->out.info->domain_name	= samdb_result_string(res[0], "dnsDomain", NULL);
-	r->out.info->forest_name	= samdb_result_string(res[0], "dnsDomain", NULL);
-	r->out.info->dc_flags		= DS_DNS_FOREST |
+	W_ERROR_HAVE_NO_MEMORY(info->dc_unc);
+	info->dc_address		= talloc_strdup(mem_ctx, "\\\\0.0.0.0");
+	W_ERROR_HAVE_NO_MEMORY(info->dc_address);
+	info->dc_address_type		= DS_ADDRESS_TYPE_INET;
+	info->domain_guid		= samdb_result_guid(res[0], "objectGUID");
+	info->domain_name		= samdb_result_string(res[0], "dnsDomain", NULL);
+	info->forest_name		= samdb_result_string(res[0], "dnsDomain", NULL);
+	info->dc_flags			= DS_DNS_FOREST |
 					  DS_DNS_DOMAIN |
 					  DS_DNS_CONTROLLER |
 					  DS_SERVER_WRITABLE |
@@ -1171,10 +1172,12 @@ static WERROR dcesrv_netr_DsRGetDCNameEx2(struct dcesrv_call_state *dce_call, TA
 					  DS_SERVER_LDAP |
 					  DS_SERVER_GC |
 					  DS_SERVER_PDC;
-	r->out.info->dc_site_name	= talloc_strdup(mem_ctx, "Default-First-Site-Name");
-	W_ERROR_HAVE_NO_MEMORY(r->out.info->dc_site_name);
-	r->out.info->client_site_name	= talloc_strdup(mem_ctx, "Default-First-Site-Name");
-	W_ERROR_HAVE_NO_MEMORY(r->out.info->client_site_name);
+	info->dc_site_name	= talloc_strdup(mem_ctx, "Default-First-Site-Name");
+	W_ERROR_HAVE_NO_MEMORY(info->dc_site_name);
+	info->client_site_name	= talloc_strdup(mem_ctx, "Default-First-Site-Name");
+	W_ERROR_HAVE_NO_MEMORY(info->client_site_name);
+
+	*r->out.info = info;
 
 	return WERR_OK;
 }
@@ -1197,12 +1200,10 @@ static WERROR dcesrv_netr_DsRGetDCNameEx(struct dcesrv_call_state *dce_call, TAL
 	r2.in.domain_name = r->in.domain_name;
 	r2.in.site_name = r->in.site_name;
 	r2.in.flags = r->in.flags;
-	r2.out.info = NULL;
+	r2.out.info = r->out.info;
 
 	werr = dcesrv_netr_DsRGetDCNameEx2(dce_call, mem_ctx, &r2);
-	
-	r->out.info = r2.out.info;
-	
+
 	return werr;
 }
 
@@ -1225,15 +1226,12 @@ static WERROR dcesrv_netr_DsRGetDCName(struct dcesrv_call_state *dce_call, TALLO
 	
 	r2.in.site_name = NULL; /* should fill in from site GUID */
 	r2.in.flags = r->in.flags;
-	r2.out.info = NULL;
+	r2.out.info = r->out.info;
 
 	werr = dcesrv_netr_DsRGetDCNameEx2(dce_call, mem_ctx, &r2);
-	
-	r->out.info = r2.out.info;
-	
+
 	return werr;
 }
-
 /* 
   netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN 
 */
