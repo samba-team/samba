@@ -867,7 +867,7 @@ interface netlogon
 	WERROR netr_GetAnyDCName(
 		[in,unique] [string,charset(UTF16)] uint16 *logon_server,
 		[in,unique] [string,charset(UTF16)] uint16 *domainname,
-		[out,unique] [string,charset(UTF16)] uint16 *dcname
+		[out,ref] [string,charset(UTF16)] uint16 **dcname
 		);
 
 

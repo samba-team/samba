@@ -916,15 +916,17 @@ static bool test_GetAnyDCName(struct torture_context *tctx,
 {
 	NTSTATUS status;
 	struct netr_GetAnyDCName r;
+	const char *dcname = NULL;
 
 	r.in.logon_server = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.domainname = lp_workgroup(tctx->lp_ctx);
+	r.out.dcname = &dcname;
 
 	status = dcerpc_netr_GetAnyDCName(p, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "GetAnyDCName");
 
-	if (r.out.dcname) {
-	    torture_comment(tctx, "\tDC is at '%s'\n", r.out.dcname);
+	if (dcname) {
+	    torture_comment(tctx, "\tDC is at '%s'\n", dcname);
 	}
 
 	return true;
@@ -1569,6 +1571,7 @@ static bool test_ManyGetDCName(struct torture_context *tctx,
 	struct lsa_EnumTrustDom t;
 	uint32_t resume_handle = 0;
 	struct netr_GetAnyDCName d;
+	const char *dcname = NULL;
 
 	int i;
 
@@ -1620,6 +1623,7 @@ static bool test_ManyGetDCName(struct torture_context *tctx,
 
 	d.in.logon_server = talloc_asprintf(tctx, "\\\\%s",
 					    dcerpc_server_name(p));
+	d.out.dcname = &dcname;
 
 	for (i=0; i<domains.count * 4; i++) {
 		struct lsa_DomainInfo *info =
@@ -1631,7 +1635,7 @@ static bool test_ManyGetDCName(struct torture_context *tctx,
 		torture_assert_ntstatus_ok(tctx, status, "GetAnyDCName");
 
 		torture_comment(tctx, "\tDC for domain %s is %s\n", info->name.string,
-		       d.out.dcname ? d.out.dcname : "unknown");
+		       dcname ? dcname : "unknown");
 	}
 
 	return true;

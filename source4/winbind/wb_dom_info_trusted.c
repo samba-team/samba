@@ -161,6 +161,7 @@ static void trusted_dom_info_recv_dsr(struct rpc_request *req)
 		state, "\\\\%s",
 		dcerpc_server_name(state->my_domain->netlogon_pipe));
 	state->g.in.domainname = state->info->name;
+	state->g.out.dcname = talloc(state, const char *);
 
 	req = dcerpc_netr_GetAnyDCName_send(state->my_domain->netlogon_pipe,
 					    state, &state->g);
@@ -187,7 +188,7 @@ static void trusted_dom_info_recv_dcname(struct rpc_request *req)
 	state->info->num_dcs = 1;
 	state->info->dcs = talloc(state->info, struct nbt_dc_name);
 	state->info->dcs[0].name = talloc_steal(state->info,
-					    state->g.out.dcname);
+					    *(state->g.out.dcname));
 	if (*state->info->dcs[0].name == '\\') state->info->dcs[0].name++;
 	if (*state->info->dcs[0].name == '\\') state->info->dcs[0].name++;
 	

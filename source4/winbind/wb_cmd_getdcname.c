@@ -81,6 +81,7 @@ static void getdcname_recv_domain(struct composite_context *ctx)
 		state, "\\\\%s",
 		dcerpc_server_name(domain->netlogon_pipe));
 	state->g.in.domainname = state->domain_name;
+	state->g.out.dcname = talloc(state, const char **);
 
 	req = dcerpc_netr_GetAnyDCName_send(domain->netlogon_pipe, state,
 					    &state->g);
@@ -111,7 +112,7 @@ NTSTATUS wb_cmd_getdcname_recv(struct composite_context *c,
 		talloc_get_type(c->private_data, struct cmd_getdcname_state);
 	NTSTATUS status = composite_wait(c);
 	if (NT_STATUS_IS_OK(status)) {
-		const char *p = state->g.out.dcname;
+		const char *p = *(state->g.out.dcname);
 		if (*p == '\\') p += 1;
 		if (*p == '\\') p += 1;
 		*dcname = talloc_strdup(mem_ctx, p);
