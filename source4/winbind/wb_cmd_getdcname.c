@@ -81,7 +81,7 @@ static void getdcname_recv_domain(struct composite_context *ctx)
 		state, "\\\\%s",
 		dcerpc_server_name(domain->netlogon_pipe));
 	state->g.in.domainname = state->domain_name;
-	state->g.out.dcname = talloc(state, const char **);
+	state->g.out.dcname = talloc(state, const char *);
 
 	req = dcerpc_netr_GetAnyDCName_send(domain->netlogon_pipe, state,
 					    &state->g);

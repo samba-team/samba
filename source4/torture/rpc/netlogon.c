@@ -869,15 +869,17 @@ static bool test_GetDcName(struct torture_context *tctx,
 {
 	NTSTATUS status;
 	struct netr_GetDcName r;
+	const char *dcname = NULL;
 
 	r.in.logon_server = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.domainname = lp_workgroup(tctx->lp_ctx);
+	r.out.dcname = &dcname;
 
 	status = dcerpc_netr_GetDcName(p, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "GetDcName");
 	torture_assert_werr_ok(tctx, r.out.result, "GetDcName");
 
-	torture_comment(tctx, "\tDC is at '%s'\n", r.out.dcname);
+	torture_comment(tctx, "\tDC is at '%s'\n", dcname);
 
 	return true;
 }
