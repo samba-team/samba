@@ -2112,7 +2112,7 @@ static WERROR dcesrv_srvsvc_NetGetFileSecurity(struct dcesrv_call_state *dce_cal
 
 	sd_buf->sd = io->query_secdesc.out.sd;
 
-	r->out.sd_buf = sd_buf;
+	*r->out.sd_buf = sd_buf;
 	return WERR_OK;
 }
 
