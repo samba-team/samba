@@ -11,7 +11,7 @@ NTSTATUS rpccli_netr_LogonUasLogon(struct rpc_pipe_client *cli,
 				   const char *server_name /* [in] [unique,charset(UTF16)] */,
 				   const char *account_name /* [in] [charset(UTF16)] */,
 				   const char *workstation /* [in] [charset(UTF16)] */,
-				   struct netr_UasInfo *info /* [out] [ref] */,
+				   struct netr_UasInfo **info /* [out] [ref] */,
 				   WERROR *werror)
 {
 	struct netr_LogonUasLogon r;
@@ -412,12 +412,12 @@ NTSTATUS rpccli_netr_DatabaseSync(struct rpc_pipe_client *cli,
 				  TALLOC_CTX *mem_ctx,
 				  const char *logon_server /* [in] [charset(UTF16)] */,
 				  const char *computername /* [in] [charset(UTF16)] */,
-				  struct netr_Authenticator credential /* [in]  */,
+				  struct netr_Authenticator *credential /* [in] [ref] */,
 				  struct netr_Authenticator *return_authenticator /* [in,out] [ref] */,
 				  enum netr_SamDatabaseID database_id /* [in]  */,
 				  uint32_t *sync_context /* [in,out] [ref] */,
-				  uint32_t preferredmaximumlength /* [in]  */,
-				  struct netr_DELTA_ENUM_ARRAY *delta_enum_array /* [out] [ref] */)
+				  struct netr_DELTA_ENUM_ARRAY **delta_enum_array /* [out] [ref] */,
+				  uint32_t preferredmaximumlength /* [in]  */)
 {
 	struct netr_DatabaseSync r;
 	NTSTATUS status;
@@ -1303,7 +1303,8 @@ NTSTATUS rpccli_netr_ServerAuthenticate3(struct rpc_pipe_client *cli,
 					 const char *account_name /* [in] [charset(UTF16)] */,
 					 enum netr_SchannelType secure_channel_type /* [in]  */,
 					 const char *computer_name /* [in] [charset(UTF16)] */,
-					 struct netr_Credential *credentials /* [in,out] [ref] */,
+					 struct netr_Credential *credentials /* [in] [ref] */,
+					 struct netr_Credential *return_credentials /* [out] [ref] */,
 					 uint32_t *negotiate_flags /* [in,out] [ref] */,
 					 uint32_t *rid /* [out] [ref] */)
 {
@@ -1341,7 +1342,7 @@ NTSTATUS rpccli_netr_ServerAuthenticate3(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	*credentials = *r.out.credentials;
+	*return_credentials = *r.out.return_credentials;
 	*negotiate_flags = *r.out.negotiate_flags;
 	*rid = *r.out.rid;
 
@@ -2242,7 +2243,7 @@ NTSTATUS rpccli_netr_LogonSamLogonWithFlags(struct rpc_pipe_client *cli,
 					    struct netr_Authenticator *credential /* [in] [unique] */,
 					    struct netr_Authenticator *return_authenticator /* [in,out] [unique] */,
 					    enum netr_LogonInfoClass logon_level /* [in]  */,
-					    union netr_LogonLevel logon /* [in] [switch_is(logon_level)] */,
+					    union netr_LogonLevel *logon /* [in] [ref,switch_is(logon_level)] */,
 					    uint16_t validation_level /* [in]  */,
 					    union netr_Validation *validation /* [out] [ref,switch_is(validation_level)] */,
 					    uint8_t *authoritative /* [out] [ref] */,

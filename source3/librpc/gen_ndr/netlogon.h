@@ -945,7 +945,7 @@ struct netr_LogonUasLogon {
 	} in;
 
 	struct {
-		struct netr_UasInfo *info;/* [ref] */
+		struct netr_UasInfo **info;/* [ref] */
 		WERROR result;
 	} out;
 
@@ -1081,7 +1081,7 @@ struct netr_DatabaseSync {
 	struct {
 		const char *logon_server;/* [charset(UTF16)] */
 		const char *computername;/* [charset(UTF16)] */
-		struct netr_Authenticator credential;
+		struct netr_Authenticator *credential;/* [ref] */
 		enum netr_SamDatabaseID database_id;
 		uint32_t preferredmaximumlength;
 		struct netr_Authenticator *return_authenticator;/* [ref] */
@@ -1089,7 +1089,7 @@ struct netr_DatabaseSync {
 	} in;
 
 	struct {
-		struct netr_DELTA_ENUM_ARRAY *delta_enum_array;/* [ref] */
+		struct netr_DELTA_ENUM_ARRAY **delta_enum_array;/* [ref] */
 		struct netr_Authenticator *return_authenticator;/* [ref] */
 		uint32_t *sync_context;/* [ref] */
 		NTSTATUS result;
@@ -1369,8 +1369,8 @@ struct netr_ServerAuthenticate3 {
 	} in;
 
 	struct {
+		struct netr_Credential *return_credentials;/* [ref] */
 		uint32_t *rid;/* [ref] */
-		struct netr_Credential *credentials;/* [ref] */
 		uint32_t *negotiate_flags;/* [ref] */
 		NTSTATUS result;
 	} out;
@@ -1661,7 +1661,7 @@ struct netr_LogonSamLogonWithFlags {
 		const char *computer_name;/* [unique,charset(UTF16)] */
 		struct netr_Authenticator *credential;/* [unique] */
 		enum netr_LogonInfoClass logon_level;
-		union netr_LogonLevel logon;/* [switch_is(logon_level)] */
+		union netr_LogonLevel *logon;/* [ref,switch_is(logon_level)] */
 		uint16_t validation_level;
 		struct netr_Authenticator *return_authenticator;/* [unique] */
 		uint32_t *flags;/* [ref] */
