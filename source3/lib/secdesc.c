@@ -429,19 +429,47 @@ NTSTATUS sec_desc_del_sid(TALLOC_CTX *ctx, SEC_DESC **psd, DOM_SID *sid, size_t 
 	return NT_STATUS_OK;
 }
 
+/*
+ * Determine if an ACE is inheritable
+ */
+
+static bool is_inheritable_ace(const SEC_ACE *ace,
+				bool container)
+{
+	if (!container) {
+		return ((ace->flags & SEC_ACE_FLAG_OBJECT_INHERIT) != 0);
+	}
+
+	if (ace->flags & SEC_ACE_FLAG_CONTAINER_INHERIT) {
+		return true;
+	}
+
+	if ((ace->flags & SEC_ACE_FLAG_OBJECT_INHERIT) &&
+			!(ace->flags & SEC_ACE_FLAG_NO_PROPAGATE_INHERIT)) {
+		return true;
+	}
+
+	return false;
+}
+
 /* Create a child security descriptor using another security descriptor as
    the parent container.  This child object can either be a container or
    non-container object. */
 
-SEC_DESC_BUF *se_create_child_secdesc(TALLOC_CTX *ctx, SEC_DESC *parent_ctr, 
-				      bool child_container)
+NTSTATUS se_create_child_secdesc(TALLOC_CTX *ctx,
+					SEC_DESC **ppsd,
+					size_t *psize,
+					const SEC_DESC *parent_ctr,
+					const DOM_SID *owner_sid,
+					const DOM_SID *group_sid,
+					bool container)
 {
-	SEC_DESC_BUF *sdb;
-	SEC_DESC *sd;
-	SEC_ACL *new_dacl, *the_acl;
+	SEC_ACL *new_dacl = NULL, *the_acl = NULL;
 	SEC_ACE *new_ace_list = NULL;
 	unsigned int new_ace_list_ndx = 0, i;
-	size_t size;
+
+	*ppsd = NULL;
+	*psize = 0;
 
 	/* Currently we only process the dacl when creating the child.  The
 	   sacl should also be processed but this is left out as sacls are
@@ -450,71 +478,78 @@ SEC_DESC_BUF *se_create_child_secdesc(TALLOC_CTX *ctx, SEC_DESC *parent_ctr,
 	the_acl = parent_ctr->dacl;
 
 	if (the_acl->num_aces) {
-		if (!(new_ace_list = TALLOC_ARRAY(ctx, SEC_ACE, the_acl->num_aces))) 
-			return NULL;
+		if (2*the_acl->num_aces < the_acl->num_aces) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		if (!(new_ace_list = TALLOC_ARRAY(ctx, SEC_ACE,
+						2*the_acl->num_aces))) {
+			return NT_STATUS_NO_MEMORY;
+		}
 	} else {
 		new_ace_list = NULL;
 	}
 
 	for (i = 0; i < the_acl->num_aces; i++) {
-		SEC_ACE *ace = &the_acl->aces[i];
+		const SEC_ACE *ace = &the_acl->aces[i];
 		SEC_ACE *new_ace = &new_ace_list[new_ace_list_ndx];
-		uint8 new_flags = 0;
-		bool inherit = False;
+		const DOM_SID *ptrustee = &ace->trustee;
+		const DOM_SID *creator = NULL;
+		uint8 new_flags = ace->flags;
 
-		/* The OBJECT_INHERIT_ACE flag causes the ACE to be
-		   inherited by non-container children objects.  Container
-		   children objects will inherit it as an INHERIT_ONLY
-		   ACE. */
+		if (!is_inheritable_ace(ace, container)) {
+			continue;
+		}
 
-		if (ace->flags & SEC_ACE_FLAG_OBJECT_INHERIT) {
+		/* see the RAW-ACLS inheritance test for details on these rules */
+		if (!container) {
+			new_flags = 0;
+		} else {
+			new_flags &= ~SEC_ACE_FLAG_INHERIT_ONLY;
 
-			if (!child_container) {
-				new_flags |= SEC_ACE_FLAG_OBJECT_INHERIT;
-			} else {
+			if (!(new_flags & SEC_ACE_FLAG_CONTAINER_INHERIT)) {
 				new_flags |= SEC_ACE_FLAG_INHERIT_ONLY;
 			}
-
-			inherit = True;
-		}
-
-		/* The CONAINER_INHERIT_ACE flag means all child container
-		   objects will inherit and use the ACE. */
-
-		if (ace->flags & SEC_ACE_FLAG_CONTAINER_INHERIT) {
-			if (!child_container) {
-				inherit = False;
-			} else {
-				new_flags |= SEC_ACE_FLAG_CONTAINER_INHERIT;
+			if (new_flags & SEC_ACE_FLAG_NO_PROPAGATE_INHERIT) {
+				new_flags = 0;
 			}
 		}
 
-		/* The INHERIT_ONLY_ACE is not used by the se_access_check()
-		   function for the parent container, but is inherited by
-		   all child objects as a normal ACE. */
-
-		if (ace->flags & SEC_ACE_FLAG_INHERIT_ONLY) {
-			/* Move along, nothing to see here */
+		/* The CREATOR sids are special when inherited */
+		if (sid_equal(ptrustee, &global_sid_Creator_Owner)) {
+			creator = &global_sid_Creator_Owner;
+			ptrustee = owner_sid;
+		} else if (sid_equal(ptrustee, &global_sid_Creator_Group)) {
+			creator = &global_sid_Creator_Group;
+			ptrustee = group_sid;
 		}
 
-		/* The SEC_ACE_FLAG_NO_PROPAGATE_INHERIT flag means the ACE
-		   is inherited by child objects but not grandchildren
-		   objects.  We clear the object inherit and container
-		   inherit flags in the inherited ACE. */
+		if (creator && container &&
+				(new_flags & SEC_ACE_FLAG_CONTAINER_INHERIT)) {
 
-		if (ace->flags & SEC_ACE_FLAG_NO_PROPAGATE_INHERIT) {
-			new_flags &= ~(SEC_ACE_FLAG_OBJECT_INHERIT |
-				       SEC_ACE_FLAG_CONTAINER_INHERIT);
+			/* First add the regular ACE entry with flags = 0. */
+			init_sec_ace(new_ace, ptrustee, ace->type,
+			     	ace->access_mask, 0);
+
+			DEBUG(5,("se_create_child_secdesc(): %s:%d/0x%02x/0x%08x"
+				" inherited as %s:%d/0x%02x/0x%08x\n",
+				sid_string_dbg(&ace->trustee),
+				ace->type, ace->flags, ace->access_mask,
+				sid_string_dbg(&new_ace->trustee),
+				new_ace->type, new_ace->flags,
+				new_ace->access_mask));
+
+			new_ace_list_ndx++;
+
+			/* Now add the extra creator ACE. */
+			new_ace = &new_ace_list[new_ace_list_ndx];
+
+			ptrustee = creator;
+			new_flags |= SEC_ACE_FLAG_INHERIT_ONLY;
 		}
 
-		/* Add ACE to ACE list */
-
-		if (!inherit)
-			continue;
-
-		new_ace->access_mask = ace->access_mask;
-		init_sec_ace(new_ace, &ace->trustee, ace->type,
-			     new_ace->access_mask, new_flags);
+		init_sec_ace(new_ace, ptrustee, ace->type,
+			     ace->access_mask, new_flags);
 
 		DEBUG(5, ("se_create_child_secdesc(): %s:%d/0x%02x/0x%08x "
 			  " inherited as %s:%d/0x%02x/0x%08x\n",
@@ -528,21 +563,54 @@ SEC_DESC_BUF *se_create_child_secdesc(TALLOC_CTX *ctx, SEC_DESC *parent_ctr,
 	}
 
 	/* Create child security descriptor to return */
-	
-	new_dacl = make_sec_acl(ctx, ACL_REVISION, new_ace_list_ndx, new_ace_list);
 
-	/* Use the existing user and group sids.  I don't think this is
-	   correct.  Perhaps the user and group should be passed in as
-	   parameters by the caller? */
+	new_dacl = make_sec_acl(ctx,
+				ACL_REVISION,
+				new_ace_list_ndx,
+				new_ace_list);
 
-	sd = make_sec_desc(ctx, SECURITY_DESCRIPTOR_REVISION_1,
-			   SEC_DESC_SELF_RELATIVE,
-			   parent_ctr->owner_sid,
-			   parent_ctr->group_sid,
-			   parent_ctr->sacl,
-			   new_dacl, &size);
+	if (!new_dacl) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	*ppsd = make_sec_desc(ctx,
+			SECURITY_DESCRIPTOR_REVISION_1,
+			SEC_DESC_SELF_RELATIVE|SEC_DESC_DACL_PRESENT|
+				SEC_DESC_DACL_DEFAULTED,
+			owner_sid,
+			group_sid,
+			NULL,
+			new_dacl,
+			psize);
+	if (!*ppsd) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	return NT_STATUS_OK;
+}
 
-	sdb = make_sec_desc_buf(ctx, size, sd);
+NTSTATUS se_create_child_secdesc_buf(TALLOC_CTX *ctx,
+					SEC_DESC_BUF **ppsdb,
+					const SEC_DESC *parent_ctr,
+					bool container)
+{
+	NTSTATUS status;
+	size_t size = 0;
+	SEC_DESC *sd = NULL;
 
-	return sdb;
+	*ppsdb = NULL;
+	status = se_create_child_secdesc(ctx,
+					&sd,
+					&size,
+					parent_ctr,
+					parent_ctr->owner_sid,
+					parent_ctr->group_sid,
+					container);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	*ppsdb = make_sec_desc_buf(ctx, size, sd);
+	if (!*ppsdb) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	return NT_STATUS_OK;
 }
