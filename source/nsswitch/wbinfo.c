@@ -760,6 +760,36 @@ static bool wbinfo_lookupsid(const char *sid_str)
 	return true;
 }
 
+/* Convert sid to fullname */
+
+static bool wbinfo_lookupsid_fullname(const char *sid_str)
+{
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+	struct wbcDomainSid sid;
+	char *domain;
+	char *name;
+	enum wbcSidType type;
+
+	/* Send off request */
+
+	wbc_status = wbcStringToSid(sid_str, &sid);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		return false;
+	}
+
+	wbc_status = wbcGetDisplayName(&sid, &domain, &name, &type);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		return false;
+	}
+
+	/* Display response */
+
+	d_printf("%s%c%s %d\n",
+		 domain, winbind_separator(), name, type);
+
+	return true;
+}
+
 /* Lookup a list of RIDs */
 
 static bool wbinfo_lookuprids(const char *domain, const char *arg)
@@ -1383,7 +1413,8 @@ enum {
 	OPT_GROUP_INFO,
 	OPT_VERBOSE,
 	OPT_ONLINESTATUS,
-	OPT_CHANGE_USER_PASSWORD
+	OPT_CHANGE_USER_PASSWORD,
+	OPT_SID_TO_FULLNAME
 };
 
 int main(int argc, char **argv, char **envp)
@@ -1409,6 +1440,8 @@ int main(int argc, char **argv, char **envp)
 		{ "WINS-by-ip", 'I', POPT_ARG_STRING, &string_arg, 'I', "Converts IP address to NetBIOS name", "IP" },
 		{ "name-to-sid", 'n', POPT_ARG_STRING, &string_arg, 'n', "Converts name to sid", "NAME" },
 		{ "sid-to-name", 's', POPT_ARG_STRING, &string_arg, 's', "Converts sid to name", "SID" },
+		{ "sid-to-fullname", 0, POPT_ARG_STRING, &string_arg,
+		  OPT_SID_TO_FULLNAME, "Converts sid to fullname", "SID" },
 		{ "lookup-rids", 'R', POPT_ARG_STRING, &string_arg, 'R', "Converts RIDs to names", "RIDs" },
 		{ "uid-to-sid", 'U', POPT_ARG_INT, &int_arg, 'U', "Converts uid to sid" , "UID" },
 		{ "gid-to-sid", 'G', POPT_ARG_INT, &int_arg, 'G', "Converts gid to sid", "GID" },
@@ -1513,6 +1546,13 @@ int main(int argc, char **argv, char **envp)
 		case 's':
 			if (!wbinfo_lookupsid(string_arg)) {
 				d_fprintf(stderr, "Could not lookup sid %s\n", string_arg);
+				goto done;
+			}
+			break;
+		case OPT_SID_TO_FULLNAME:
+			if (!wbinfo_lookupsid_fullname(string_arg)) {
+				d_fprintf(stderr, "Could not lookup sid %s\n",
+					  string_arg);
 				goto done;
 			}
 			break;
