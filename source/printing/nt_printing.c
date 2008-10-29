@@ -5812,11 +5812,11 @@ bool print_access_check(struct auth_serversupplied_info *server_info, int snum,
 		   against.  This is because print jobs are child objects
 		   objects of a printer. */
 
-		secdesc = se_create_child_secdesc(mem_ctx, parent_secdesc->sd, False);
+		status = se_create_child_secdesc_buf(mem_ctx, &secdesc, parent_secdesc->sd, False);
 
-		if (!secdesc) {
+		if (!NT_STATUS_IS_OK(status)) {
 			talloc_destroy(mem_ctx);
-			errno = ENOMEM;
+			errno = map_errno_from_nt_status(status);
 			return False;
 		}
 

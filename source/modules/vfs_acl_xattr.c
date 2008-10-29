@@ -36,7 +36,6 @@ static NTSTATUS parse_acl_blob(const DATA_BLOB *pblob,
 	struct xattr_NTACL xacl;
 	enum ndr_err_code ndr_err;
 	size_t sd_size;
-	struct timespec ts;
 
 	ndr_err = ndr_pull_struct_blob(pblob, ctx, &xacl,
 			(ndr_pull_flags_fn_t)ndr_pull_xattr_NTACL);
@@ -51,17 +50,29 @@ static NTSTATUS parse_acl_blob(const DATA_BLOB *pblob,
 		return NT_STATUS_REVISION_MISMATCH;
 	}
 
-	/*
-	 * Check that the ctime timestamp is ealier
-	 * than the stored timestamp.
-	 */
+#if 0
+	{
+		struct timespec ts;
+		/* Arg. This doesn't work. Too many activities
+		 * change the ctime. May have to roll back to
+		 * version 1.
+		 */
+		/*
+		 * Check that the ctime timestamp is ealier
+		 * than the stored timestamp.
+		 */
 
-	ts = nt_time_to_unix_timespec(&xacl.info.sd_ts->last_changed);
+		ts = nt_time_to_unix_timespec(&xacl.info.sd_ts->last_changed);
 
-	if (timespec_compare(&cts, &ts) > 0) {
-		DEBUG(5, ("parse_acl_blob: stored ACL out of date.\n"));
-		return NT_STATUS_EA_CORRUPT_ERROR;
+		if (timespec_compare(&cts, &ts) > 0) {
+			DEBUG(5, ("parse_acl_blob: stored ACL out of date "
+				"(%s > %s.\n",
+				timestring(ctx, cts.tv_sec),
+				timestring(ctx, ts.tv_sec)));
+			return NT_STATUS_EA_CORRUPT_ERROR;
+		}
 	}
+#endif
 
 	*ppdesc = make_sec_desc(ctx, SEC_DESC_REVISION, SEC_DESC_SELF_RELATIVE,
 			(security_info & OWNER_SECURITY_INFORMATION)
@@ -133,6 +144,78 @@ static NTSTATUS get_acl_blob(TALLOC_CTX *ctx,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS create_acl_blob(const SEC_DESC *psd, DATA_BLOB *pblob)
+{
+	struct xattr_NTACL xacl;
+	struct security_descriptor_timestamp sd_ts;
+	enum ndr_err_code ndr_err;
+	TALLOC_CTX *ctx = talloc_tos();
+	struct timespec curr = timespec_current();
+
+	ZERO_STRUCT(xacl);
+	ZERO_STRUCT(sd_ts);
+
+	/* Horrid hack as setting an xattr changes the ctime
+ 	 * on Linux. This gives a race of 1 second during
+ 	 * which we would not see a POSIX ACL set.
+ 	 */
+	curr.tv_sec += 1;
+
+	xacl.version = 2;
+	xacl.info.sd_ts = &sd_ts;
+	xacl.info.sd_ts->sd = CONST_DISCARD(SEC_DESC *, psd);
+	unix_timespec_to_nt_time(&xacl.info.sd_ts->last_changed, curr);
+
+	DEBUG(10, ("create_acl_blob: timestamp stored as %s\n",
+		timestring(ctx, curr.tv_sec) ));
+
+	ndr_err = ndr_push_struct_blob(
+			pblob, ctx, &xacl,
+			(ndr_push_flags_fn_t)ndr_push_xattr_NTACL);
+
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DEBUG(5, ("create_acl_blob: ndr_push_xattr_NTACL failed: %s\n",
+			ndr_errstr(ndr_err)));
+		return ndr_map_error2ntstatus(ndr_err);;
+	}
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS store_acl_blob(files_struct *fsp,
+				DATA_BLOB *pblob)
+{
+	int ret;
+	int saved_errno = 0;
+
+	DEBUG(10,("store_acl_blob: storing blob length %u on file %s\n",
+			(unsigned int)pblob->length, fsp->fsp_name));
+
+	become_root();
+	if (fsp->fh->fd != -1) {
+		ret = SMB_VFS_FSETXATTR(fsp, XATTR_NTACL_NAME,
+			pblob->data, pblob->length, 0);
+	} else {
+		ret = SMB_VFS_SETXATTR(fsp->conn, fsp->fsp_name,
+				XATTR_NTACL_NAME,
+				pblob->data, pblob->length, 0);
+	}
+	if (ret) {
+		saved_errno = errno;
+	}
+	unbecome_root();
+	if (ret) {
+		errno = saved_errno;
+		DEBUG(5, ("store_acl_blob: setting attr failed for file %s"
+			"with error %s\n",
+			fsp->fsp_name,
+			strerror(errno) ));
+		return map_nt_error_from_unix(errno);
+	}
+	return NT_STATUS_OK;
+}
+
+
 static NTSTATUS get_nt_acl_xattr_internal(vfs_handle_struct *handle,
 					files_struct *fsp,
 					const char *name,
@@ -188,10 +271,72 @@ static int mkdir_acl_xattr(vfs_handle_struct *handle,  const char *path, mode_t 
  * inheritance for new files.
 *********************************************************************/
 
-static int open_acl_xattr(vfs_handle_struct *handle,  const char *fname, files_struct *fsp, int flags, mode_t mode)
+static NTSTATUS inherit_new_acl(vfs_handle_struct *handle,
+					const char *fname,
+					files_struct *fsp)
+{
+	TALLOC_CTX *ctx = talloc_tos();
+	NTSTATUS status;
+	SEC_DESC *parent_desc = NULL;
+	SEC_DESC *psd = NULL;
+	DATA_BLOB blob;
+	size_t size;
+	char *parent_name;
+
+	if (!parent_dirname_talloc(ctx,
+				fname,
+				&parent_name,
+				NULL)) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	DEBUG(10,("inherit_new_acl: check directory %s\n",
+			parent_name));
+
+	status = get_nt_acl_xattr_internal(handle,
+					NULL,
+					parent_name,
+					DACL_SECURITY_INFORMATION,
+					&parent_desc);
+        if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10,("inherit_new_acl: directory %s failed "
+			"to get acl %s\n",
+			parent_name,
+			nt_errstr(status) ));
+		return status;
+	}
+
+	/* Create an inherited descriptor from the parent. */
+	status = se_create_child_secdesc(ctx,
+				&psd,
+				&size,
+				parent_desc,
+				&handle->conn->server_info->ptok->user_sids[PRIMARY_USER_SID_INDEX],
+				&handle->conn->server_info->ptok->user_sids[PRIMARY_GROUP_SID_INDEX],
+				false);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	status = create_acl_blob(psd, &blob);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	return store_acl_blob(fsp, &blob);
+}
+
+/*********************************************************************
+ Check ACL on open. For new files inherit from parent directory.
+*********************************************************************/
+
+static int open_acl_xattr(vfs_handle_struct *handle,
+					const char *fname,
+					files_struct *fsp,
+					int flags,
+					mode_t mode)
 {
 	uint32_t access_granted = 0;
 	SEC_DESC *pdesc = NULL;
+	bool file_existed = true;
 	NTSTATUS status = get_nt_acl_xattr_internal(handle,
 					NULL,
 					fname,
@@ -209,9 +354,24 @@ static int open_acl_xattr(vfs_handle_struct *handle,  const char *fname, files_s
 			errno = map_errno_from_nt_status(status);
 			return -1;
 		}
-        }
+        } else if (NT_STATUS_EQUAL(status,NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+		file_existed = false;
+	}
 
-	return SMB_VFS_NEXT_OPEN(handle, fname, fsp, flags, mode);
+	DEBUG(10,("open_acl_xattr: get_nt_acl_attr_internal for "
+		"file %s returned %s\n",
+		fname,
+		nt_errstr(status) ));
+
+	fsp->fh->fd = SMB_VFS_NEXT_OPEN(handle, fname, fsp, flags, mode);
+
+	if (!file_existed && fsp->fh->fd != -1) {
+		/* File was created. Inherit from parent directory. */
+		string_set(&fsp->fsp_name, fname);
+		inherit_new_acl(handle, fname, fsp);
+	}
+
+	return fsp->fh->fd;
 }
 
 static NTSTATUS fget_nt_acl_xattr(vfs_handle_struct *handle, files_struct *fsp,
@@ -236,74 +396,6 @@ static NTSTATUS get_nt_acl_xattr(vfs_handle_struct *handle,
 	}
 	return SMB_VFS_NEXT_GET_NT_ACL(handle, name,
 			security_info, ppdesc);
-}
-
-static NTSTATUS create_acl_blob(const SEC_DESC *psd, DATA_BLOB *pblob)
-{
-	struct xattr_NTACL xacl;
-	struct security_descriptor_timestamp sd_ts;
-	enum ndr_err_code ndr_err;
-	TALLOC_CTX *ctx = talloc_tos();
-	struct timespec curr = timespec_current();
-
-	ZERO_STRUCT(xacl);
-	ZERO_STRUCT(sd_ts);
-
-	/* Horrid hack as setting an xattr changes the ctime
- 	 * on Linux. This gives a race of 1 second during
- 	 * which we would not see a POSIX ACL set.
- 	 */
-	curr.tv_sec += 1;
-
-	xacl.version = 2;
-	xacl.info.sd_ts = &sd_ts;
-	xacl.info.sd_ts->sd = CONST_DISCARD(SEC_DESC *, psd);
-	unix_timespec_to_nt_time(&xacl.info.sd_ts->last_changed, curr);
-
-	ndr_err = ndr_push_struct_blob(
-			pblob, ctx, &xacl,
-			(ndr_push_flags_fn_t)ndr_push_xattr_NTACL);
-
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		DEBUG(5, ("create_acl_blob: ndr_push_xattr_NTACL failed: %s\n",
-			ndr_errstr(ndr_err)));
-		return ndr_map_error2ntstatus(ndr_err);;
-	}
-
-	return NT_STATUS_OK;
-}
-
-static NTSTATUS store_acl_blob(files_struct *fsp,
-				DATA_BLOB *pblob)
-{
-	int ret;
-	int saved_errno = 0;
-
-	DEBUG(10,("store_acl_blob: storing blob length %u on file %s\n",
-			(unsigned int)pblob->length, fsp->fsp_name));
-
-	become_root();
-	if (fsp->fh->fd != -1) {
-		ret = SMB_VFS_FSETXATTR(fsp, XATTR_NTACL_NAME,
-			pblob->data, pblob->length, 0);
-	} else {
-		ret = SMB_VFS_SETXATTR(fsp->conn, fsp->fsp_name,
-				XATTR_NTACL_NAME,
-				pblob->data, pblob->length, 0);
-	}
-	if (ret) {
-		saved_errno = errno;
-	}
-	unbecome_root();
-	if (ret) {
-		errno = saved_errno;
-		DEBUG(5, ("store_acl_blob: setting attr failed for file %s"
-			"with error %s\n",
-			fsp->fsp_name,
-			strerror(errno) ));
-		return map_nt_error_from_unix(errno);
-	}
-	return NT_STATUS_OK;
 }
 
 static NTSTATUS fset_nt_acl_xattr(vfs_handle_struct *handle, files_struct *fsp,
