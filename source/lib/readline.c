@@ -105,6 +105,7 @@ static char *smb_readline_replacement(const char *prompt, void (*callback)(void)
 			callback();
 		}
 	}
+	SAFE_FREE(line);
 	return NULL;
 }
 
