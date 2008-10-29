@@ -90,7 +90,7 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 	const char *trust_dom_attrs[] = {"flatname", NULL};
 	const char *account_name;
 
-	ZERO_STRUCTP(r->out.credentials);
+	ZERO_STRUCTP(r->out.return_credentials);
 	*r->out.rid = 0;
 	*r->out.negotiate_flags = *r->in.negotiate_flags;
 
@@ -208,7 +208,7 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 
 	creds_server_init(creds, &pipe_state->client_challenge, 
 			  &pipe_state->server_challenge, mach_pwd,
-			  r->out.credentials,
+			  r->out.return_credentials,
 			  *r->in.negotiate_flags);
 	
 	if (!creds_server_check(creds, r->in.credentials)) {
@@ -250,7 +250,7 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate(struct dcesrv_call_state *dce_cal
 	r3.in.secure_channel_type = r->in.secure_channel_type;
 	r3.in.computer_name = r->in.computer_name;
 	r3.in.credentials = r->in.credentials;
-	r3.out.credentials = r->out.credentials;
+	r3.out.return_credentials = r->out.return_credentials;
 	r3.in.negotiate_flags = &negotiate_flags;
 	r3.out.negotiate_flags = &negotiate_flags;
 	r3.out.rid = &rid;
@@ -269,7 +269,7 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate2(struct dcesrv_call_state *dce_ca
 	r3.in.secure_channel_type = r->in.secure_channel_type;
 	r3.in.computer_name = r->in.computer_name;
 	r3.in.credentials = r->in.credentials;
-	r3.out.credentials = r->out.credentials;
+	r3.out.return_credentials = r->out.return_credentials;
 	r3.in.negotiate_flags = r->in.negotiate_flags;
 	r3.out.negotiate_flags = r->out.negotiate_flags;
 	r3.out.rid = &rid;

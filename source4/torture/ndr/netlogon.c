@@ -59,7 +59,7 @@ static bool netrserverauthenticate3_out_check(struct torture_context *tctx,
 											struct netr_ServerAuthenticate3 *r)
 {
 	uint8_t cred_expected[8] = { 0x22, 0x0c, 0x86, 0x8a, 0xe9, 0x92, 0x93, 0xc9 };
-	torture_assert_mem_equal(tctx, cred_expected, r->out.credentials->data, 8, "credentials");
+	torture_assert_mem_equal(tctx, cred_expected, r->out.return_credentials->data, 8, "return_credentials");
 	torture_assert_int_equal(tctx, *r->out.negotiate_flags, 0x6007ffff, "negotiate flags");
 	torture_assert_int_equal(tctx, *r->out.rid, 0x454, "rid");
 	torture_assert_ntstatus_ok(tctx, r->out.result, "return code");

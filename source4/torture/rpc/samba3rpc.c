@@ -946,7 +946,7 @@ static bool auth2(struct smbcli_state *cli,
 	a.in.negotiate_flags = &negotiate_flags;
 	a.out.negotiate_flags = &negotiate_flags;
 	a.in.credentials = &netr_cred;
-	a.out.credentials = &netr_cred;
+	a.out.return_credentials = &netr_cred;
 
 	status = dcerpc_netr_ServerAuthenticate2(net_pipe, mem_ctx, &a);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -955,7 +955,7 @@ static bool auth2(struct smbcli_state *cli,
 		goto done;
 	}
 
-	if (!creds_client_check(creds_state, a.out.credentials)) {
+	if (!creds_client_check(creds_state, a.out.return_credentials)) {
 		d_printf("creds_client_check failed\n");
 		goto done;
 	}
@@ -2081,7 +2081,7 @@ bool torture_samba3_rpc_randomauth2(struct torture_context *torture)
 	a.in.negotiate_flags = &negotiate_flags;
 	a.out.negotiate_flags = &negotiate_flags;
 	a.in.credentials = &netr_cred;
-	a.out.credentials = &netr_cred;
+	a.out.return_credentials = &netr_cred;
 
 	status = dcerpc_netr_ServerAuthenticate2(net_pipe, mem_ctx, &a);
 

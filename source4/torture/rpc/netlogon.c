@@ -108,7 +108,7 @@ static bool test_SetupCredentials(struct dcerpc_pipe *p, struct torture_context 
 	a.in.secure_channel_type = SEC_CHAN_BDC;
 	a.in.computer_name = machine_name;
 	a.in.credentials = &credentials3;
-	a.out.credentials = &credentials3;
+	a.out.return_credentials = &credentials3;
 
 	creds_client_init(creds, &credentials1, &credentials2, 
 			  mach_password, &credentials3, 
@@ -173,7 +173,7 @@ bool test_SetupCredentials2(struct dcerpc_pipe *p, struct torture_context *tctx,
 	a.in.negotiate_flags = &negotiate_flags;
 	a.out.negotiate_flags = &negotiate_flags;
 	a.in.credentials = &credentials3;
-	a.out.credentials = &credentials3;
+	a.out.return_credentials = &credentials3;
 
 	creds_client_init(creds, &credentials1, &credentials2, 
 			  mach_password, &credentials3, 
@@ -235,7 +235,7 @@ static bool test_SetupCredentials3(struct dcerpc_pipe *p, struct torture_context
 	a.in.computer_name = machine_name;
 	a.in.negotiate_flags = &negotiate_flags;
 	a.in.credentials = &credentials3;
-	a.out.credentials = &credentials3;
+	a.out.return_credentials = &credentials3;
 	a.out.negotiate_flags = &negotiate_flags;
 	a.out.rid = &rid;
 

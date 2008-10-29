@@ -178,7 +178,7 @@ static void continue_srv_challenge(struct rpc_request *req)
 	s->a.in.negotiate_flags  = &s->negotiate_flags;
 	s->a.in.credentials      = &s->credentials3;
 	s->a.out.negotiate_flags = &s->negotiate_flags;
-	s->a.out.credentials     = &s->credentials3;
+	s->a.out.return_credentials     = &s->credentials3;
 
 	/*
 	  authenticate on the netlogon pipe - a rpc request over secondary pipe
@@ -207,7 +207,7 @@ static void continue_srv_auth2(struct rpc_request *req)
 	if (!composite_is_ok(c)) return;
 
 	/* verify credentials */
-	if (!creds_client_check(s->creds, s->a.out.credentials)) {
+	if (!creds_client_check(s->creds, s->a.out.return_credentials)) {
 		composite_error(c, NT_STATUS_UNSUCCESSFUL);
 		return;
 	}

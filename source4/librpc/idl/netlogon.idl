@@ -330,7 +330,8 @@ interface netlogon
 		[in,string,charset(UTF16)] uint16 account_name[],
 		[in]                       netr_SchannelType secure_channel_type,
 		[in,string,charset(UTF16)] uint16 computer_name[],
-		[in,out,ref] netr_Credential *credentials
+		[in,ref] netr_Credential *credentials,
+		[out,ref] netr_Credential *return_credentials
 		);
 
 
@@ -929,7 +930,8 @@ interface netlogon
 		[in]         [string,charset(UTF16)] uint16 account_name[],
 		[in]         netr_SchannelType secure_channel_type,
 		[in]         [string,charset(UTF16)] uint16 computer_name[],
-		[in,out,ref] netr_Credential *credentials,
+		[in,ref]     netr_Credential *credentials,
+		[out,ref]    netr_Credential *return_credentials,
 		[in,out,ref] netr_NegotiateFlags *negotiate_flags
 		);
 
@@ -1109,7 +1111,8 @@ interface netlogon
 		[in]         [string,charset(UTF16)] uint16 account_name[],
 		[in]         netr_SchannelType secure_channel_type,
 		[in]         [string,charset(UTF16)] uint16 computer_name[],
-		[in,out,ref] netr_Credential *credentials,
+		[in,ref]     netr_Credential *credentials,
+		[out,ref]    netr_Credential *return_credentials,
 		[in,out,ref] netr_NegotiateFlags *negotiate_flags,
 		[out,ref]    uint32 *rid
 		);
