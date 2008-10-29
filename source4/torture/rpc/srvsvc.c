@@ -766,19 +766,15 @@ static bool test_NetSrvGetInfo(struct torture_context *tctx,
 {
 	NTSTATUS status;
 	struct srvsvc_NetSrvGetInfo r;
-	struct srvsvc_NetSrvInfo503 i503;
+	union srvsvc_NetSrvInfo info;
 	uint32_t levels[] = {100, 101, 102, 502, 503};
 	int i;
-	uint32_t resume_handle;
-
-	ZERO_STRUCT(i503);
 
 	r.in.server_unc = talloc_asprintf(tctx,"\\\\%s",dcerpc_server_name(p));
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
-		ZERO_STRUCT(r.out);
-		resume_handle = 0;
 		r.in.level = levels[i];
+		r.out.info = &info;
 		torture_comment(tctx, "testing NetSrvGetInfo level %u\n", r.in.level);
 		status = dcerpc_srvsvc_NetSrvGetInfo(p, tctx, &r);
 		torture_assert_ntstatus_ok(tctx, status, "NetSrvGetInfo failed");

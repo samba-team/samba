@@ -1468,7 +1468,7 @@ static WERROR dcesrv_srvsvc_NetSrvGetInfo(struct dcesrv_call_state *dce_call, TA
 {
 	struct dcesrv_context *dce_ctx = dce_call->conn->dce_ctx;
 
-	ZERO_STRUCT(r->out);
+	ZERO_STRUCTP(r->out.info);
 
 	switch (r->in.level) {
 	case 100:
@@ -1482,7 +1482,7 @@ static WERROR dcesrv_srvsvc_NetSrvGetInfo(struct dcesrv_call_state *dce_call, TA
 		info100->server_name	= dcesrv_common_get_server_name(mem_ctx, dce_ctx, r->in.server_unc);
 		W_ERROR_HAVE_NO_MEMORY(info100->server_name);
 
-		r->out.info.info100 = info100;
+		r->out.info->info100 = info100;
 		return WERR_OK;
 	}
 	case 101:
@@ -1502,7 +1502,7 @@ static WERROR dcesrv_srvsvc_NetSrvGetInfo(struct dcesrv_call_state *dce_call, TA
 		info101->comment	= talloc_strdup(mem_ctx, lp_serverstring(dce_ctx->lp_ctx));
 		W_ERROR_HAVE_NO_MEMORY(info101->comment);
 
-		r->out.info.info101 = info101;
+		r->out.info->info101 = info101;
 		return WERR_OK;
 	}
 	case 102:
@@ -1531,7 +1531,7 @@ static WERROR dcesrv_srvsvc_NetSrvGetInfo(struct dcesrv_call_state *dce_call, TA
 		info102->userpath	= dcesrv_common_get_userpath(mem_ctx, dce_ctx);
 		W_ERROR_HAVE_NO_MEMORY(info102->userpath);
 
-		r->out.info.info102 = info102;
+		r->out.info->info102 = info102;
 		return WERR_OK;
 	}
 	default:
