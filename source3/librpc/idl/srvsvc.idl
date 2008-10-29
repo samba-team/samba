@@ -1291,12 +1291,16 @@ import "security.idl", "svcctl.idl";
 		[default];
 	} srvsvc_NetTransportCtr;
 
+	typedef struct {
+		uint32 level;
+		[switch_is(level)] srvsvc_NetTransportCtr ctr;
+	} srvsvc_NetTransportInfoCtr;
+
 	/******************/
 	/* Function: 0x1a */
 	WERROR srvsvc_NetTransportEnum(
 		[in,unique]   [string,charset(UTF16)] uint16 *server_unc,
-		[in,out,ref] uint32 *level,
-		[in,out,ref,switch_is(*level)]   srvsvc_NetTransportCtr *transports,
+		[in,out,ref] srvsvc_NetTransportInfoCtr *transports,
 		[in]   uint32 max_buffer,
 		[out,ref]   uint32 *totalentries,
 		[in,out,unique]   uint32 *resume_handle

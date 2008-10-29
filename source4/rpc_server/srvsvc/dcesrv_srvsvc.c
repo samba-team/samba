@@ -1617,48 +1617,50 @@ static WERROR dcesrv_srvsvc_NetTransportAdd(struct dcesrv_call_state *dce_call, 
 static WERROR dcesrv_srvsvc_NetTransportEnum(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NetTransportEnum *r)
 {
-	r->out.level = r->in.level;
-	r->out.totalentries = 0;
-	r->out.resume_handle = NULL;
+	r->out.transports->level = r->in.transports->level;
+	*r->out.totalentries = 0;
+	if (r->out.resume_handle) {
+		*r->out.resume_handle = 0;
+	}
 
-	switch (r->in.level) {
+	switch (r->in.transports->level) {
 	case 0:
 	{
-		r->out.transports.ctr0 = talloc(mem_ctx, struct srvsvc_NetTransportCtr0);
-		W_ERROR_HAVE_NO_MEMORY(r->out.transports.ctr0);
+		r->out.transports->ctr.ctr0 = talloc(mem_ctx, struct srvsvc_NetTransportCtr0);
+		W_ERROR_HAVE_NO_MEMORY(r->out.transports->ctr.ctr0);
 
-		r->out.transports.ctr0->count = 0;
-		r->out.transports.ctr0->array = NULL;
+		r->out.transports->ctr.ctr0->count = 0;
+		r->out.transports->ctr.ctr0->array = NULL;
 
 		return WERR_NOT_SUPPORTED;
 	}
 	case 1:
 	{
-		r->out.transports.ctr1 = talloc(mem_ctx, struct srvsvc_NetTransportCtr1);
-		W_ERROR_HAVE_NO_MEMORY(r->out.transports.ctr1);
+		r->out.transports->ctr.ctr1 = talloc(mem_ctx, struct srvsvc_NetTransportCtr1);
+		W_ERROR_HAVE_NO_MEMORY(r->out.transports->ctr.ctr1);
 
-		r->out.transports.ctr1->count = 0;
-		r->out.transports.ctr1->array = NULL;
+		r->out.transports->ctr.ctr1->count = 0;
+		r->out.transports->ctr.ctr1->array = NULL;
 
 		return WERR_NOT_SUPPORTED;
 	}
 	case 2:
 	{
-		r->out.transports.ctr2 = talloc(mem_ctx, struct srvsvc_NetTransportCtr2);
-		W_ERROR_HAVE_NO_MEMORY(r->out.transports.ctr2);
+		r->out.transports->ctr.ctr2 = talloc(mem_ctx, struct srvsvc_NetTransportCtr2);
+		W_ERROR_HAVE_NO_MEMORY(r->out.transports->ctr.ctr2);
 
-		r->out.transports.ctr2->count = 0;
-		r->out.transports.ctr2->array = NULL;
+		r->out.transports->ctr.ctr2->count = 0;
+		r->out.transports->ctr.ctr2->array = NULL;
 
 		return WERR_NOT_SUPPORTED;
 	}
 	case 3:
 	{
-		r->out.transports.ctr3 = talloc(mem_ctx, struct srvsvc_NetTransportCtr3);
-		W_ERROR_HAVE_NO_MEMORY(r->out.transports.ctr3);
+		r->out.transports->ctr.ctr3 = talloc(mem_ctx, struct srvsvc_NetTransportCtr3);
+		W_ERROR_HAVE_NO_MEMORY(r->out.transports->ctr.ctr3);
 
-		r->out.transports.ctr3->count = 0;
-		r->out.transports.ctr3->array = NULL;
+		r->out.transports->ctr.ctr3->count = 0;
+		r->out.transports->ctr.ctr3->array = NULL;
 
 		return WERR_NOT_SUPPORTED;
 	}

@@ -826,21 +826,36 @@ static bool test_NetTransportEnum(struct torture_context *tctx,
 {
 	NTSTATUS status;
 	struct srvsvc_NetTransportEnum r;
-	struct srvsvc_NetTransportCtr0 c0;
+	struct srvsvc_NetTransportInfoCtr transports;
+	struct srvsvc_NetTransportCtr0 ctr0;
+	struct srvsvc_NetTransportCtr1 ctr1;
+
+	uint32_t totalentries = 0;
 	uint32_t levels[] = {0, 1};
 	int i;
 
+	ZERO_STRUCT(transports);
+
 	r.in.server_unc = talloc_asprintf(tctx,"\\\\%s", dcerpc_server_name(p));
-	r.in.transports.ctr0 = &c0;
-	r.in.transports.ctr0->count = 0;
-	r.in.transports.ctr0->array = NULL;
+	r.in.transports = &transports;
 	r.in.max_buffer = (uint32_t)-1;
 	r.in.resume_handle = NULL;
+	r.out.totalentries = &totalentries;
+	r.out.transports = &transports;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
-		ZERO_STRUCT(r.out);
-		r.in.level = levels[i];
-		torture_comment(tctx, "testing NetTransportEnum level %u\n", r.in.level);
+		transports.level = levels[i];
+		switch (transports.level) {
+		case 0:
+			ZERO_STRUCT(ctr0);
+			transports.ctr.ctr0 = &ctr0;
+			break;
+		case 1:
+			ZERO_STRUCT(ctr1);
+			transports.ctr.ctr1 = &ctr1;
+			break;
+		}
+		torture_comment(tctx, "testing NetTransportEnum level %u\n", transports.level);
 		status = dcerpc_srvsvc_NetTransportEnum(p, tctx, &r);
 		torture_assert_ntstatus_ok(tctx, status, "NetTransportEnum failed");
 		if (!W_ERROR_IS_OK(r.out.result)) {
