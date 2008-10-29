@@ -391,7 +391,7 @@ static NTSTATUS dcesrv_netr_ServerPasswordSet2(struct dcesrv_call_state *dce_cal
 
 	nt_status = dcesrv_netr_creds_server_step_check(dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx,
 							r->in.computer_name, mem_ctx, 
-							&r->in.credential, &r->out.return_authenticator,
+							r->in.credential, r->out.return_authenticator,
 							&creds);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 
@@ -400,8 +400,8 @@ static NTSTATUS dcesrv_netr_ServerPasswordSet2(struct dcesrv_call_state *dce_cal
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
 
-	memcpy(password_buf.data, r->in.new_password.data, 512);
-	SIVAL(password_buf.data, 512, r->in.new_password.length);
+	memcpy(password_buf.data, r->in.new_password->data, 512);
+	SIVAL(password_buf.data, 512, r->in.new_password->length);
 	creds_arcfour_crypt(creds, password_buf.data, 516);
 
 	if (!extract_pw_from_buffer(mem_ctx, password_buf.data, &new_password)) {

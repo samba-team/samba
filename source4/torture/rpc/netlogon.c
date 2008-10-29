@@ -362,6 +362,8 @@ static bool test_SetPassword2(struct torture_context *tctx,
 	struct creds_CredentialState *creds;
 	struct samr_CryptPassword password_buf;
 	struct samr_Password nt_hash;
+	struct netr_Authenticator credential, return_authenticator;
+	struct netr_CryptPassword new_password;
 
 	if (!test_SetupCredentials(p, tctx, machine_credentials, &creds)) {
 		return false;
@@ -371,23 +373,26 @@ static bool test_SetPassword2(struct torture_context *tctx,
 	r.in.account_name = talloc_asprintf(tctx, "%s$", TEST_MACHINE_NAME);
 	r.in.secure_channel_type = SEC_CHAN_BDC;
 	r.in.computer_name = TEST_MACHINE_NAME;
+	r.in.credential = &credential;
+	r.in.new_password = &new_password;
+	r.out.return_authenticator = &return_authenticator;
 
 	password = generate_random_str(tctx, 8);
 	encode_pw_buffer(password_buf.data, password, STR_UNICODE);
 	creds_arcfour_crypt(creds, password_buf.data, 516);
 
-	memcpy(r.in.new_password.data, password_buf.data, 512);
-	r.in.new_password.length = IVAL(password_buf.data, 512);
+	memcpy(new_password.data, password_buf.data, 512);
+	new_password.length = IVAL(password_buf.data, 512);
 
 	torture_comment(tctx, "Testing ServerPasswordSet2 on machine account\n");
 	torture_comment(tctx, "Changing machine account password to '%s'\n", password);
 
-	creds_client_authenticator(creds, &r.in.credential);
+	creds_client_authenticator(creds, &credential);
 
 	status = dcerpc_netr_ServerPasswordSet2(p, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "ServerPasswordSet2");
 
-	if (!creds_client_check(creds, &r.out.return_authenticator.cred)) {
+	if (!creds_client_check(creds, &r.out.return_authenticator->cred)) {
 		torture_comment(tctx, "Credential chaining failed\n");
 	}
 
@@ -406,20 +411,20 @@ static bool test_SetPassword2(struct torture_context *tctx,
 		encode_pw_buffer(password_buf.data, password, STR_UNICODE);
 		creds_arcfour_crypt(creds, password_buf.data, 516);
 		
-		memcpy(r.in.new_password.data, password_buf.data, 512);
-		r.in.new_password.length = IVAL(password_buf.data, 512);
+		memcpy(new_password.data, password_buf.data, 512);
+		new_password.length = IVAL(password_buf.data, 512);
 		
 		torture_comment(tctx, 
 			"Testing ServerPasswordSet2 on machine account\n");
 		torture_comment(tctx, 
 			"Changing machine account password to '%s'\n", password);
 		
-		creds_client_authenticator(creds, &r.in.credential);
+		creds_client_authenticator(creds, &credential);
 		
 		status = dcerpc_netr_ServerPasswordSet2(p, tctx, &r);
 		torture_assert_ntstatus_ok(tctx, status, "ServerPasswordSet2");
 		
-		if (!creds_client_check(creds, &r.out.return_authenticator.cred)) {
+		if (!creds_client_check(creds, &r.out.return_authenticator->cred)) {
 			torture_comment(tctx, "Credential chaining failed\n");
 		}
 		
@@ -434,18 +439,18 @@ static bool test_SetPassword2(struct torture_context *tctx,
 	encode_pw_buffer(password_buf.data, password, STR_UNICODE);
 	creds_arcfour_crypt(creds, password_buf.data, 516);
 
-	memcpy(r.in.new_password.data, password_buf.data, 512);
-	r.in.new_password.length = IVAL(password_buf.data, 512);
+	memcpy(new_password.data, password_buf.data, 512);
+	new_password.length = IVAL(password_buf.data, 512);
 
 	torture_comment(tctx, "Testing second ServerPasswordSet2 on machine account\n");
 	torture_comment(tctx, "Changing machine account password to '%s'\n", password);
 
-	creds_client_authenticator(creds, &r.in.credential);
+	creds_client_authenticator(creds, &credential);
 
 	status = dcerpc_netr_ServerPasswordSet2(p, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "ServerPasswordSet2 (2)");
 
-	if (!creds_client_check(creds, &r.out.return_authenticator.cred)) {
+	if (!creds_client_check(creds, &r.out.return_authenticator->cred)) {
 		torture_comment(tctx, "Credential chaining failed\n");
 	}
 
@@ -458,12 +463,12 @@ static bool test_SetPassword2(struct torture_context *tctx,
 	torture_comment(tctx, 
 		"Changing machine account password to '%s' (same as previous run)\n", password);
 
-	creds_client_authenticator(creds, &r.in.credential);
+	creds_client_authenticator(creds, &credential);
 
 	status = dcerpc_netr_ServerPasswordSet2(p, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "ServerPasswordSet (3)");
 
-	if (!creds_client_check(creds, &r.out.return_authenticator.cred)) {
+	if (!creds_client_check(creds, &r.out.return_authenticator->cred)) {
 		torture_comment(tctx, "Credential chaining failed\n");
 	}
 
@@ -480,18 +485,18 @@ static bool test_SetPassword2(struct torture_context *tctx,
 
 	creds_arcfour_crypt(creds, password_buf.data, 516);
 
-	memcpy(r.in.new_password.data, password_buf.data, 512);
-	r.in.new_password.length = IVAL(password_buf.data, 512);
+	memcpy(new_password.data, password_buf.data, 512);
+	new_password.length = IVAL(password_buf.data, 512);
 
 	torture_comment(tctx, 
 		"Testing a third ServerPasswordSet2 on machine account, with a compleatly random password\n");
 
-	creds_client_authenticator(creds, &r.in.credential);
+	creds_client_authenticator(creds, &credential);
 
 	status = dcerpc_netr_ServerPasswordSet2(p, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "ServerPasswordSet (3)");
 
-	if (!creds_client_check(creds, &r.out.return_authenticator.cred)) {
+	if (!creds_client_check(creds, &r.out.return_authenticator->cred)) {
 		torture_comment(tctx, "Credential chaining failed\n");
 	}
 
