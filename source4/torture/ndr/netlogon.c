@@ -98,7 +98,7 @@ static bool netrserverreqchallenge_out_check(struct torture_context *tctx,
 					     struct netr_ServerReqChallenge *r)
 {
 	uint8_t cred_expected[8] = { 0x22, 0xfc, 0xc1, 0x17, 0xc0, 0xae, 0x27, 0x8e };
-	torture_assert_mem_equal(tctx, cred_expected, r->out.credentials->data, 8, "credentials");
+	torture_assert_mem_equal(tctx, cred_expected, r->out.return_credentials->data, 8, "return_credentials");
 	torture_assert_ntstatus_ok(tctx, r->out.result, "return code");
 
 	return true;

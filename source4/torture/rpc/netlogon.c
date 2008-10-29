@@ -96,7 +96,7 @@ static bool test_SetupCredentials(struct dcerpc_pipe *p, struct torture_context 
 	r.in.server_name = NULL;
 	r.in.computer_name = machine_name;
 	r.in.credentials = &credentials1;
-	r.out.credentials = &credentials2;
+	r.out.return_credentials = &credentials2;
 
 	generate_random_buffer(credentials1.data, sizeof(credentials1.data));
 
@@ -159,7 +159,7 @@ bool test_SetupCredentials2(struct dcerpc_pipe *p, struct torture_context *tctx,
 	r.in.server_name = NULL;
 	r.in.computer_name = machine_name;
 	r.in.credentials = &credentials1;
-	r.out.credentials = &credentials2;
+	r.out.return_credentials = &credentials2;
 
 	generate_random_buffer(credentials1.data, sizeof(credentials1.data));
 
@@ -220,7 +220,7 @@ static bool test_SetupCredentials3(struct dcerpc_pipe *p, struct torture_context
 	r.in.server_name = NULL;
 	r.in.computer_name = machine_name;
 	r.in.credentials = &credentials1;
-	r.out.credentials = &credentials2;
+	r.out.return_credentials = &credentials2;
 
 	generate_random_buffer(credentials1.data, sizeof(credentials1.data));
 

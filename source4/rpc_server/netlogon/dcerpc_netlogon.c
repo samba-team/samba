@@ -49,7 +49,7 @@ static NTSTATUS dcesrv_netr_ServerReqChallenge(struct dcesrv_call_state *dce_cal
 {
 	struct server_pipe_state *pipe_state = dce_call->context->private;
 
-	ZERO_STRUCTP(r->out.credentials);
+	ZERO_STRUCTP(r->out.return_credentials);
 
 	/* destroyed on pipe shutdown */
 
@@ -66,7 +66,7 @@ static NTSTATUS dcesrv_netr_ServerReqChallenge(struct dcesrv_call_state *dce_cal
 	generate_random_buffer(pipe_state->server_challenge.data, 
 			       sizeof(pipe_state->server_challenge.data));
 
-	*r->out.credentials = pipe_state->server_challenge;
+	*r->out.return_credentials = pipe_state->server_challenge;
 
 	dce_call->context->private = pipe_state;
 

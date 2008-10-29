@@ -132,7 +132,7 @@ static void continue_bind_auth_none(struct composite_context *ctx)
 	if (composite_nomem(s->r.in.server_name, c)) return;
 	s->r.in.computer_name = cli_credentials_get_workstation(s->credentials);
 	s->r.in.credentials   = &s->credentials1;
-	s->r.out.credentials  = &s->credentials2;
+	s->r.out.return_credentials  = &s->credentials2;
 	
 	generate_random_buffer(s->credentials1.data, sizeof(s->credentials1.data));
 

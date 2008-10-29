@@ -920,7 +920,7 @@ static bool auth2(struct smbcli_state *cli,
 	generate_random_buffer(netr_cli_creds.data,
 			       sizeof(netr_cli_creds.data));
 	r.in.credentials = &netr_cli_creds;
-	r.out.credentials = &netr_srv_creds;
+	r.out.return_credentials = &netr_srv_creds;
 
 	status = dcerpc_netr_ServerReqChallenge(net_pipe, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -934,7 +934,7 @@ static bool auth2(struct smbcli_state *cli,
 
 	creds_state = talloc(mem_ctx, struct creds_CredentialState);
 	creds_client_init(creds_state, r.in.credentials,
-			  r.out.credentials, &mach_pw,
+			  r.out.return_credentials, &mach_pw,
 			  &netr_cred, negotiate_flags);
 
 	a.in.server_name = talloc_asprintf(
@@ -2055,7 +2055,7 @@ bool torture_samba3_rpc_randomauth2(struct torture_context *torture)
 	generate_random_buffer(netr_cli_creds.data,
 			       sizeof(netr_cli_creds.data));
 	r.in.credentials = &netr_cli_creds;
-	r.out.credentials = &netr_srv_creds;
+	r.out.return_credentials = &netr_srv_creds;
 
 	status = dcerpc_netr_ServerReqChallenge(net_pipe, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2069,7 +2069,7 @@ bool torture_samba3_rpc_randomauth2(struct torture_context *torture)
 
 	creds_state = talloc(mem_ctx, struct creds_CredentialState);
 	creds_client_init(creds_state, r.in.credentials,
-			  r.out.credentials, &mach_pw,
+			  r.out.return_credentials, &mach_pw,
 			  &netr_cred, negotiate_flags);
 
 	a.in.server_name = talloc_asprintf(
