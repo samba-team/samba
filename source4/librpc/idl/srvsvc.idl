@@ -135,7 +135,7 @@ import "security.idl", "svcctl.idl";
 		[in]   [string,charset(UTF16)] uint16 queue_name[],
 		[in]   [string,charset(UTF16)] uint16 user[],
 		[in]   uint32 level,
-		[out,switch_is(level)]   srvsvc_NetCharDevQInfo info
+		[out,switch_is(level),ref]   srvsvc_NetCharDevQInfo *info
 		);
 
 	/******************/

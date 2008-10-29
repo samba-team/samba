@@ -131,15 +131,16 @@ static bool test_NetCharDevQGetInfo(struct dcerpc_pipe *p, struct torture_contex
 {
 	NTSTATUS status;
 	struct srvsvc_NetCharDevQGetInfo r;
+	union srvsvc_NetCharDevQInfo info;
 	uint32_t levels[] = {0, 1};
 	int i;
 
 	r.in.server_unc = talloc_asprintf(tctx,"\\\\%s",dcerpc_server_name(p));
 	r.in.queue_name = devicequeue;
 	r.in.user = talloc_asprintf(tctx,"Administrator");
+	r.out.info = &info;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
-		ZERO_STRUCT(r.out);
 		r.in.level = levels[i];
 		torture_comment(tctx, "testing NetCharDevQGetInfo level %u on devicequeue '%s'\n",
 			r.in.level, r.in.queue_name);

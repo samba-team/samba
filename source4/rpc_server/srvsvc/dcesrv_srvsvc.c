@@ -156,7 +156,7 @@ static WERROR dcesrv_srvsvc_NetCharDevQEnum(struct dcesrv_call_state *dce_call, 
 static WERROR dcesrv_srvsvc_NetCharDevQGetInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 					struct srvsvc_NetCharDevQGetInfo *r)
 {
-	ZERO_STRUCT(r->out);
+	ZERO_STRUCTP(r->out.info);
 
 	switch (r->in.level) {
 	case 0:
