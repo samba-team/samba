@@ -82,7 +82,7 @@ static WERROR dcesrv_srvsvc_NetCharDevEnum(struct dcesrv_call_state *dce_call, T
 static WERROR dcesrv_srvsvc_NetCharDevGetInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NetCharDevGetInfo *r)
 {
-	ZERO_STRUCT(r->out);
+	ZERO_STRUCTP(r->out.info);
 
 	switch (r->in.level) {
 	case 0:

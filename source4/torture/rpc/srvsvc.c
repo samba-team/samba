@@ -32,14 +32,15 @@ static bool test_NetCharDevGetInfo(struct dcerpc_pipe *p, struct torture_context
 {
 	NTSTATUS status;
 	struct srvsvc_NetCharDevGetInfo r;
+	union srvsvc_NetCharDevInfo info;
 	uint32_t levels[] = {0, 1};
 	int i;
 
 	r.in.server_unc = talloc_asprintf(tctx,"\\\\%s",dcerpc_server_name(p));
 	r.in.device_name = devname;
+	r.out.info = &info;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
-		ZERO_STRUCT(r.out);
 		r.in.level = levels[i];
 		torture_comment(tctx, "testing NetCharDevGetInfo level %u on device '%s'\n",
 			r.in.level, r.in.device_name);
