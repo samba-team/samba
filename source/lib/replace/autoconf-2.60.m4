@@ -179,6 +179,7 @@ AC_DEFUN([AC_PROG_CC_C99],
 # ------------------------
 # Enable extensions on systems that normally disable them,
 # typically due to standards-conformance issues.
+m4_ifndef([AC_USE_SYSTEM_EXTENSIONS],[
 AC_DEFUN([AC_USE_SYSTEM_EXTENSIONS],
 [
   AC_BEFORE([$0], [AC_COMPILE_IFELSE])
@@ -207,4 +208,5 @@ AC_DEFUN([AC_USE_SYSTEM_EXTENSIONS],
   test $ac_cv_safe_to_define___extensions__ = yes &&
     AC_DEFINE([__EXTENSIONS__])
   AC_DEFINE([_POSIX_PTHREAD_SEMANTICS])
+])
 ])
