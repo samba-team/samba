@@ -1361,7 +1361,7 @@ import "security.idl", "svcctl.idl";
 		[out]  [size_is(maxbuf)] uint8 can_path[],
 		[in]   uint32 maxbuf,
 		[in]   [string,charset(UTF16)] uint16 prefix[],
-		[in,out] uint32 pathtype,
+		[in,out,ref] uint32 *pathtype,
 		[in]    uint32 pathflags
 		);
 
