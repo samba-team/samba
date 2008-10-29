@@ -196,6 +196,11 @@ import "security.idl", "svcctl.idl";
 		[default] ;
 	} srvsvc_NetConnCtr;
 
+	typedef struct {
+		uint32 level;
+		[switch_is(level)] srvsvc_NetConnCtr ctr;
+	} srvsvc_NetConnInfoCtr;
+
 	/******************/
 	/* Function: 0x08 */
 	WERROR srvsvc_NetConnEnum(
@@ -244,6 +249,11 @@ import "security.idl", "svcctl.idl";
 		[case(3)] srvsvc_NetFileCtr3 *ctr3;
 		[default] ;
 	} srvsvc_NetFileCtr;
+
+	typedef struct {
+		uint32 level;
+		[switch_is(level)] srvsvc_NetFileCtr ctr;
+	} srvsvc_NetFileInfoCtr;
 
 	/******************/
 	/* Function: 0x09 */
@@ -354,6 +364,12 @@ import "security.idl", "svcctl.idl";
 
 	/******************/
 	/* Function: 0x0c */
+
+	typedef struct {
+		uint32 level;
+		[switch_is(level)] srvsvc_NetSessCtr ctr;
+	} srvsvc_NetSessInfoCtr;
+
 	WERROR srvsvc_NetSessEnum(
 		[in,unique]   [string,charset(UTF16)] uint16 *server_unc,
 		[in,unique]   [string,charset(UTF16)] uint16 *client,
@@ -401,10 +417,20 @@ import "security.idl", "svcctl.idl";
 	} srvsvc_NetShareInfo0;
 
 	typedef struct {
+		uint32 count;
+		[size_is(count)] srvsvc_NetShareInfo0 *array;
+	} srvsvc_NetShareCtr0;
+
+	typedef struct {
 		[string,charset(UTF16)] uint16 *name;
 		srvsvc_ShareType type;
 		[string,charset(UTF16)] uint16 *comment;
 	} srvsvc_NetShareInfo1;
+
+	typedef struct {
+		uint32 count;
+		[size_is(count)] srvsvc_NetShareInfo1 *array;
+	} srvsvc_NetShareCtr1;
 
 	typedef struct {
 		[string,charset(UTF16)] uint16 *name;
@@ -418,11 +444,21 @@ import "security.idl", "svcctl.idl";
 	} srvsvc_NetShareInfo2;
 
 	typedef struct {
+		uint32 count;
+		[size_is(count)] srvsvc_NetShareInfo2 *array;
+	} srvsvc_NetShareCtr2;
+
+	typedef struct {
 		[string,charset(UTF16)] uint16 *name;
 		srvsvc_ShareType type;
 		[string,charset(UTF16)] uint16 *comment;
 		uint32 csc_policy;
 	} srvsvc_NetShareInfo501;
+
+	typedef struct {
+		uint32 count;
+		[size_is(count)] srvsvc_NetShareInfo501 *array;
+	} srvsvc_NetShareCtr501;
 
 	typedef struct {
 		[string,charset(UTF16)] uint16 *name;
@@ -439,12 +475,18 @@ import "security.idl", "svcctl.idl";
 	} srvsvc_NetShareInfo502;
 
 	typedef struct {
+		uint32 count;
+		[size_is(count)] srvsvc_NetShareInfo502 *array;
+	} srvsvc_NetShareCtr502;
+
+	typedef struct {
 		[string,charset(UTF16)] uint16 *comment;
 	} srvsvc_NetShareInfo1004;
 
 	typedef struct {
-		int32 max_users;
-	} srvsvc_NetShareInfo1006;
+		uint32 count;
+		[size_is(count)] srvsvc_NetShareInfo1004 *array;
+	} srvsvc_NetShareCtr1004;
 
 	typedef bitmap {
 		SHARE_1005_IN_DFS               = 0x00000001,
@@ -459,9 +501,33 @@ import "security.idl", "svcctl.idl";
 	} srvsvc_NetShareInfo1005;
 
 	typedef struct {
+		uint32 count;
+		[size_is(count)] srvsvc_NetShareInfo1005 *array;
+	} srvsvc_NetShareCtr1005;
+
+	typedef struct {
+		int32 max_users;
+	} srvsvc_NetShareInfo1006;
+
+	typedef struct {
+		uint32 count;
+		[size_is(count)] srvsvc_NetShareInfo1006 *array;
+	} srvsvc_NetShareCtr1006;
+
+	typedef struct {
 		uint32 flags;
 		[string,charset(UTF16)] uint16 *alternate_directory_name;
 	} srvsvc_NetShareInfo1007;
+
+	typedef struct {
+		uint32 count;
+		[size_is(count)] srvsvc_NetShareInfo1007 *array;
+	} srvsvc_NetShareCtr1007;
+
+	typedef struct {
+		uint32 count;
+		[size_is(count)] sec_desc_buf *array;
+	} srvsvc_NetShareCtr1501;
 
 	typedef union {
 		[case(0)] srvsvc_NetShareInfo0 *info0;
@@ -477,56 +543,6 @@ import "security.idl", "svcctl.idl";
 		[default] ;
 	} srvsvc_NetShareInfo;
 
-	typedef struct {
-		uint32 count;
-		[size_is(count)] srvsvc_NetShareInfo0 *array;
-	} srvsvc_NetShareCtr0;
-
-	typedef struct {
-		uint32 count;
-		[size_is(count)] srvsvc_NetShareInfo1 *array;
-	} srvsvc_NetShareCtr1;
-
-	typedef struct {
-		uint32 count;
-		[size_is(count)] srvsvc_NetShareInfo2 *array;
-	} srvsvc_NetShareCtr2;
-
-	typedef struct {
-		uint32 count;
-		[size_is(count)] srvsvc_NetShareInfo501 *array;
-	} srvsvc_NetShareCtr501;
-
-	typedef struct {
-		uint32 count;
-		[size_is(count)] srvsvc_NetShareInfo502 *array;
-	} srvsvc_NetShareCtr502;
-
-	typedef struct {
-		uint32 count;
-		[size_is(count)] srvsvc_NetShareInfo1004 *array;
-	} srvsvc_NetShareCtr1004;
-
-	typedef struct {
-		uint32 count;
-		[size_is(count)] srvsvc_NetShareInfo1005 *array;
-	} srvsvc_NetShareCtr1005;
-
-	typedef struct {
-		uint32 count;
-		[size_is(count)] srvsvc_NetShareInfo1006 *array;
-	} srvsvc_NetShareCtr1006;
-
-	typedef struct {
-		uint32 count;
-		[size_is(count)] srvsvc_NetShareInfo1007 *array;
-	} srvsvc_NetShareCtr1007;
-
-	typedef struct {
-		uint32 count;
-		[size_is(count)] sec_desc_buf *array;
-	} srvsvc_NetShareCtr1501;
-
 	typedef union {
 		[case(0)] srvsvc_NetShareCtr0 *ctr0;
 		[case(1)] srvsvc_NetShareCtr1 *ctr1;
@@ -540,6 +556,11 @@ import "security.idl", "svcctl.idl";
 		[case(1501)] srvsvc_NetShareCtr1501 *ctr1501;
 		[default] ;
 	} srvsvc_NetShareCtr;
+
+	typedef struct {
+		uint32 level;
+		[switch_is(level)] srvsvc_NetShareCtr ctr;
+	} srvsvc_NetShareInfoCtr;
 
 	/******************/
 	/* Function: 0x0e */
