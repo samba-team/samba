@@ -613,8 +613,8 @@ dcerpc_VERSION = 0.0.1
 dcerpc_SOVERSION = 0
 
 dcerpc_OBJ_FILES = $(addprefix $(dcerpcsrcdir)/, dcerpc.o dcerpc_auth.o dcerpc_schannel.o dcerpc_util.o \
-				  dcerpc_error.o dcerpc_smb.o dcerpc_smb2.o dcerpc_sock.o dcerpc_connect.o dcerpc_secondary.o) \
-					../librpc/rpc/binding.o
+				  dcerpc_smb.o dcerpc_smb2.o dcerpc_sock.o dcerpc_connect.o dcerpc_secondary.o) \
+					../librpc/rpc/binding.o ../librpc/rpc/dcerpc_error.o
 
 $(eval $(call proto_header_template,$(dcerpcsrcdir)/dcerpc_proto.h,$(dcerpc_OBJ_FILES:.o=.c)))
 

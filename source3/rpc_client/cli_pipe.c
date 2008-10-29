@@ -751,7 +751,7 @@ static NTSTATUS cli_pipe_validate_current_pdu(struct rpc_pipe_client *cli, RPC_H
 
 			DEBUG(1, ("cli_pipe_validate_current_pdu: RPC fault "
 				  "code %s received from %s!\n",
-				dcerpc_errstr(NT_STATUS_V(fault_resp.status)),
+				dcerpc_errstr(debug_ctx(), NT_STATUS_V(fault_resp.status)),
 				rpccli_pipe_txt(debug_ctx(), cli)));
 			if (NT_STATUS_IS_OK(fault_resp.status)) {
 				return NT_STATUS_UNSUCCESSFUL;

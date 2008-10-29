@@ -3072,9 +3072,9 @@ bool netlogon_creds_client_check(const struct dcinfo *dc,
 void netlogon_creds_client_step(struct dcinfo *dc,
 				struct netr_Authenticator *next_cred_out);
 
-/* The following definitions come from libsmb/dcerpc_err.c  */
+/* The following definitions come from ../librpc/rpc/dcerpc_error.c  */
 
-const char *dcerpc_errstr(uint32 fault_code);
+const char *dcerpc_errstr(TALLOC_CTX *mem_ctx, uint32_t fault_code);
 
 /* The following definitions come from libsmb/doserr.c  */
 

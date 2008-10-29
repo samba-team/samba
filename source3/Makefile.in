@@ -406,7 +406,7 @@ LIBNMB_OBJ = libsmb/unexpected.o libsmb/namecache.o libsmb/nmblib.o \
 NTERR_OBJ = libsmb/nterr.o
 DOSERR_OBJ = libsmb/doserr.o
 ERRORMAP_OBJ = libsmb/errormap.o
-DCE_RPC_ERR_OBJ = libsmb/dcerpc_err.o
+DCE_RPC_ERR_OBJ = ../librpc/rpc/dcerpc_error.o
 
 LIBSMB_ERR_OBJ0 = $(NTERR_OBJ) $(DOSERR_OBJ) $(ERRORMAP_OBJ) $(DCE_RPC_ERR_OBJ) \
 		  libsmb/smbdes.o libsmb/smbencrypt.o libsmb/ntlmssp_parse.o
