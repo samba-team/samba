@@ -123,6 +123,7 @@ static int smb_traffic_analyzer_connect_unix_socket(vfs_handle_struct *handle,
 		DEBUG(1, ("smb_traffic_analyzer_connect_unix_socket: "
 			"Couldn't create socket, "
 			"make sure stad is running!\n"));
+		return -1;
 	}
 	remote.sun_family = AF_UNIX;
 	strlcpy(remote.sun_path, name,
