@@ -170,6 +170,7 @@ static bool test_addshare(struct dcerpc_pipe *svc_pipe, TALLOC_CTX *mem_ctx, con
 {
 	NTSTATUS status;
 	struct srvsvc_NetShareAdd add;
+	union srvsvc_NetShareInfo info;
 	struct srvsvc_NetShareInfo2 i;
 	
 	i.name         = share;
@@ -180,9 +181,11 @@ static bool test_addshare(struct dcerpc_pipe *svc_pipe, TALLOC_CTX *mem_ctx, con
 	i.password     = NULL;
 	i.permissions  = 0x0;
 
+	info.info2 = &i;
+
 	add.in.server_unc = host;
 	add.in.level      = 2;
-	add.in.info.info2 = &i;
+	add.in.info       = &info;
 	add.in.parm_error = NULL;
 
 	status = dcerpc_srvsvc_NetShareAdd(svc_pipe, mem_ctx, &add);

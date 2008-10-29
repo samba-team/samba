@@ -447,6 +447,7 @@ static bool test_NetShareAddSetDel(struct torture_context *tctx,
 	struct srvsvc_NetShareGetInfo q;
 	struct srvsvc_NetShareDel d;
 	struct sec_desc_buf sd_buf;
+	union srvsvc_NetShareInfo info;
 	struct {
 		uint32_t level;
 		WERROR expected;
@@ -468,17 +469,18 @@ static bool test_NetShareAddSetDel(struct torture_context *tctx,
 		talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.share_name = talloc_strdup(tctx, "testshare");
 
-	a.in.level = 2;
-	a.in.info.info2 = talloc(tctx, struct srvsvc_NetShareInfo2);
-	a.in.info.info2->name = r.in.share_name;
-	a.in.info.info2->type = STYPE_DISKTREE;
-	a.in.info.info2->comment = talloc_strdup(tctx, "test comment");
-	a.in.info.info2->permissions = 123434566;
-	a.in.info.info2->max_users = -1;
-	a.in.info.info2->current_users = 0;
-	a.in.info.info2->path = talloc_strdup(tctx, "C:\\");
-	a.in.info.info2->password = NULL;
+	info.info2 = talloc(tctx, struct srvsvc_NetShareInfo2);
+	info.info2->name = r.in.share_name;
+	info.info2->type = STYPE_DISKTREE;
+	info.info2->comment = talloc_strdup(tctx, "test comment");
+	info.info2->permissions = 123434566;
+	info.info2->max_users = -1;
+	info.info2->current_users = 0;
+	info.info2->path = talloc_strdup(tctx, "C:\\");
+	info.info2->password = NULL;
 
+	a.in.info = &info;
+	a.in.level = 2;
 	a.in.parm_error = NULL;
 
 	status = dcerpc_srvsvc_NetShareAdd(p, tctx, &a);
