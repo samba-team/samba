@@ -2153,7 +2153,7 @@ static struct security_descriptor *get_sharesec(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	result = talloc_steal(mem_ctx, r.out.info.info502->sd);
+	result = talloc_steal(mem_ctx, r.out.info.info502->sd_buf.sd);
 	talloc_free(tmp_ctx);
 	return result;
 }

@@ -697,8 +697,7 @@ static WERROR dcesrv_srvsvc_fiel_ShareInfo(struct dcesrv_call_state *dce_call, T
 		info->info502->path		= dcesrv_common_get_share_path(mem_ctx, dce_ctx, scfg);
 		W_ERROR_HAVE_NO_MEMORY(info->info502->path);
 		info->info502->password		= talloc_strdup(mem_ctx, share_string_option(scfg, SHARE_PASSWORD, NULL));
-		info->info502->unknown		= dcesrv_common_get_share_unknown(mem_ctx, dce_ctx, scfg);
-		info->info502->sd		= dcesrv_common_get_security_descriptor(mem_ctx, dce_ctx, scfg);
+		info->info502->sd_buf.sd	= dcesrv_common_get_security_descriptor(mem_ctx, dce_ctx, scfg);
 
 		return WERR_OK;
 	}
@@ -1323,7 +1322,7 @@ static WERROR dcesrv_srvsvc_NetShareSetInfo(struct dcesrv_call_state *dce_call, 
 					r->in.info.info502->type,
 					r->in.info.info502->max_users,
 					0,
-					r->in.info.info502->sd);
+					r->in.info.info502->sd_buf.sd);
 		if (W_ERROR_EQUAL(status, WERR_OK)) {
 			return status;
 		}

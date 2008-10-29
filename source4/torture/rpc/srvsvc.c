@@ -444,6 +444,7 @@ static bool test_NetShareAddSetDel(struct torture_context *tctx,
 	struct srvsvc_NetShareSetInfo r;
 	struct srvsvc_NetShareGetInfo q;
 	struct srvsvc_NetShareDel d;
+	struct sec_desc_buf sd_buf;
 	struct {
 		uint32_t level;
 		WERROR expected;
@@ -524,6 +525,7 @@ static bool test_NetShareAddSetDel(struct torture_context *tctx,
 			r.in.info.info501->csc_policy = 0;
 			break;
 		case 502:
+			ZERO_STRUCT(sd_buf);
 			r.in.info.info502 = talloc(tctx, struct srvsvc_NetShareInfo502);
 			r.in.info.info502->name = r.in.share_name;
 			r.in.info.info502->type = STYPE_DISKTREE;
@@ -533,8 +535,7 @@ static bool test_NetShareAddSetDel(struct torture_context *tctx,
 			r.in.info.info502->current_users = 1;
 			r.in.info.info502->path = talloc_strdup(tctx, "C:\\");
 			r.in.info.info502->password = NULL;
-			r.in.info.info502->unknown = 0;
-			r.in.info.info502->sd = NULL;
+			r.in.info.info502->sd_buf = sd_buf;
 			break;
 		case 1004:
 			r.in.info.info1004 = talloc(tctx, struct srvsvc_NetShareInfo1004);
