@@ -503,7 +503,7 @@ static WERROR dcesrv_srvsvc_NetShareAdd(struct dcesrv_call_state *dce_call, TALL
 		if (r->in.info.info2->password && r->in.info.info2->password[0]) {
 			info[i].name = SHARE_PASSWORD;
 			info[i].type = SHARE_INFO_STRING;
-			info[i].value = talloc_strdup(info, r->in.info.info502->password);
+			info[i].value = talloc_strdup(info, r->in.info.info2->password);
 			W_ERROR_HAVE_NO_MEMORY(info[i].value);
 
 			i++;
@@ -577,7 +577,7 @@ static WERROR dcesrv_srvsvc_NetShareAdd(struct dcesrv_call_state *dce_call, TALL
 			info[i].type = SHARE_INFO_STRING;
 
 			/* Windows will send a path in a form of C:\example\path */
-			if (r->in.info.info2->path[1] == ':') {
+			if (r->in.info.info502->path[1] == ':') {
 				info[i].value = talloc_strdup(info, &r->in.info.info502->path[2]);
 			} else {
 				/* very strange let's try to set as is */
