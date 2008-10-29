@@ -354,7 +354,7 @@ static NTSTATUS dcesrv_netr_ServerPasswordSet(struct dcesrv_call_state *dce_call
 
 	nt_status = dcesrv_netr_creds_server_step_check(dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx,
 							r->in.computer_name, mem_ctx, 
-						 &r->in.credential, &r->out.return_authenticator,
+						 r->in.credential, r->out.return_authenticator,
 						 &creds);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 
@@ -363,13 +363,13 @@ static NTSTATUS dcesrv_netr_ServerPasswordSet(struct dcesrv_call_state *dce_call
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
 
-	creds_des_decrypt(creds, &r->in.new_password);
+	creds_des_decrypt(creds, r->in.new_password);
 
 	/* Using the sid for the account as the key, set the password */
 	nt_status = samdb_set_password_sid(sam_ctx, mem_ctx, 
 					   creds->sid,
 					   NULL, /* Don't have plaintext */
-					   NULL, &r->in.new_password,
+					   NULL, r->in.new_password,
 					   true, /* Password change */
 					   NULL, NULL);
 	return nt_status;

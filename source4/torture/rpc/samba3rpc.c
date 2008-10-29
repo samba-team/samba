@@ -1146,6 +1146,8 @@ static bool schan(struct smbcli_state *cli,
 		struct netr_ServerPasswordSet s;
 		char *password = generate_random_str(wks_creds, 8);
 		struct creds_CredentialState *creds_state;
+		struct netr_Authenticator credential, return_authenticator;
+		struct samr_Password new_password;
 
 		s.in.server_name = talloc_asprintf(
 			mem_ctx, "\\\\%s", dcerpc_server_name(net_pipe));
@@ -1153,11 +1155,15 @@ static bool schan(struct smbcli_state *cli,
 		s.in.account_name = talloc_asprintf(
 			mem_ctx, "%s$", s.in.computer_name);
 		s.in.secure_channel_type = SEC_CHAN_WKSTA;
-		E_md4hash(password, s.in.new_password.hash);
+		s.in.credential = &credential;
+		s.in.new_password = &new_password;
+		s.out.return_authenticator = &return_authenticator;
+
+		E_md4hash(password, new_password.hash);
 
 		creds_state = cli_credentials_get_netlogon_creds(wks_creds);
-		creds_des_encrypt(creds_state, &s.in.new_password);
-		creds_client_authenticator(creds_state, &s.in.credential);
+		creds_des_encrypt(creds_state, &new_password);
+		creds_client_authenticator(creds_state, &credential);
 
 		status = dcerpc_netr_ServerPasswordSet(net_pipe, mem_ctx, &s);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -1166,7 +1172,7 @@ static bool schan(struct smbcli_state *cli,
 		}
 
 		if (!creds_client_check(creds_state,
-					&s.out.return_authenticator.cred)) {
+					&s.out.return_authenticator->cred)) {
 			printf("Credential chaining failed\n");
 		}
 

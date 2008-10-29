@@ -270,6 +270,8 @@ static bool test_SetPassword(struct torture_context *tctx,
 	struct netr_ServerPasswordSet r;
 	const char *password;
 	struct creds_CredentialState *creds;
+	struct netr_Authenticator credential, return_authenticator;
+	struct samr_Password new_password;
 
 	if (!test_SetupCredentials(p, tctx, machine_credentials, &creds)) {
 		return false;
@@ -279,22 +281,25 @@ static bool test_SetPassword(struct torture_context *tctx,
 	r.in.account_name = talloc_asprintf(tctx, "%s$", TEST_MACHINE_NAME);
 	r.in.secure_channel_type = SEC_CHAN_BDC;
 	r.in.computer_name = TEST_MACHINE_NAME;
+	r.in.credential = &credential;
+	r.in.new_password = &new_password;
+	r.out.return_authenticator = &return_authenticator;
 
 	password = generate_random_str(tctx, 8);
-	E_md4hash(password, r.in.new_password.hash);
+	E_md4hash(password, new_password.hash);
 
-	creds_des_encrypt(creds, &r.in.new_password);
+	creds_des_encrypt(creds, &new_password);
 
 	torture_comment(tctx, "Testing ServerPasswordSet on machine account\n");
 	torture_comment(tctx, "Changing machine account password to '%s'\n", 
 			password);
 
-	creds_client_authenticator(creds, &r.in.credential);
+	creds_client_authenticator(creds, &credential);
 
 	status = dcerpc_netr_ServerPasswordSet(p, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "ServerPasswordSet");
 
-	if (!creds_client_check(creds, &r.out.return_authenticator.cred)) {
+	if (!creds_client_check(creds, &r.out.return_authenticator->cred)) {
 		torture_comment(tctx, "Credential chaining failed\n");
 	}
 
@@ -307,12 +312,12 @@ static bool test_SetPassword(struct torture_context *tctx,
 	torture_comment(tctx, 
 		"Changing machine account password to '%s' (same as previous run)\n", password);
 
-	creds_client_authenticator(creds, &r.in.credential);
+	creds_client_authenticator(creds, &credential);
 
 	status = dcerpc_netr_ServerPasswordSet(p, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "ServerPasswordSet (2)");
 
-	if (!creds_client_check(creds, &r.out.return_authenticator.cred)) {
+	if (!creds_client_check(creds, &r.out.return_authenticator->cred)) {
 		torture_comment(tctx, "Credential chaining failed\n");
 	}
 

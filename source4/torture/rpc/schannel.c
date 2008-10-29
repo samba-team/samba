@@ -765,6 +765,8 @@ bool torture_rpc_schannel_bench1(struct torture_context *torture)
 		char *password = generate_random_str(s->join_ctx1, 8);
 		struct creds_CredentialState *creds_state;
 		struct dcerpc_pipe *net_pipe;
+		struct netr_Authenticator credential, return_authenticator;
+		struct samr_Password new_password;
 
 		status = dcerpc_pipe_connect_b(s, &net_pipe, s->b,
 					       &ndr_table_netlogon,
@@ -781,19 +783,23 @@ bool torture_rpc_schannel_bench1(struct torture_context *torture)
 		pwset.in.account_name = talloc_asprintf(
 			net_pipe, "%s$", pwset.in.computer_name);
 		pwset.in.secure_channel_type = SEC_CHAN_WKSTA;
-		E_md4hash(password, pwset.in.new_password.hash);
+		pwset.in.credential = &credential;
+		pwset.in.new_password = &new_password;
+		pwset.out.return_authenticator = &return_authenticator;
+
+		E_md4hash(password, new_password.hash);
 
 		creds_state = cli_credentials_get_netlogon_creds(
 			s->wks_creds1);
-		creds_des_encrypt(creds_state, &pwset.in.new_password);
-		creds_client_authenticator(creds_state, &pwset.in.credential);
+		creds_des_encrypt(creds_state, &new_password);
+		creds_client_authenticator(creds_state, &credential);
 
 		status = dcerpc_netr_ServerPasswordSet(net_pipe, torture, &pwset);
 		torture_assert_ntstatus_ok(torture, status,
 					   "ServerPasswordSet failed");
 
 		if (!creds_client_check(creds_state,
-					&pwset.out.return_authenticator.cred)) {
+					&pwset.out.return_authenticator->cred)) {
 			printf("Credential chaining failed\n");
 		}
 
