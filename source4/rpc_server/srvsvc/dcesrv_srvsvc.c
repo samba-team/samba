@@ -308,7 +308,7 @@ static WERROR dcesrv_srvsvc_NetFileEnum(struct dcesrv_call_state *dce_call, TALL
 static WERROR dcesrv_srvsvc_NetFileGetInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				    struct srvsvc_NetFileGetInfo *r)
 {
-	ZERO_STRUCT(r->out);
+	ZERO_STRUCTP(r->out.info);
 
 	switch (r->in.level) {
 	case 2:
