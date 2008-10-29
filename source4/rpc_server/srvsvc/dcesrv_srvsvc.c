@@ -1395,13 +1395,13 @@ static WERROR dcesrv_srvsvc_NetShareCheck(struct dcesrv_call_state *dce_call, TA
 	const char **names;
 	int count, i;
 
-	ZERO_STRUCT(r->out);
+	*r->out.type = 0;
 
 	/* TODO: - access check
 	 */
 
 	if (strcmp("", r->in.device_name) == 0) {
-		r->out.type = STYPE_IPC;
+		*r->out.type = STYPE_IPC;
 		return WERR_OK;
 	}
 
@@ -1440,17 +1440,17 @@ static WERROR dcesrv_srvsvc_NetShareCheck(struct dcesrv_call_state *dce_call, TA
 			if (!type) continue;
 
 			if (strcmp(type, "DISK") == 0) {
-				r->out.type = STYPE_DISKTREE;
+				*r->out.type = STYPE_DISKTREE;
 				return WERR_OK;
 			}
 
 			if (strcmp(type, "IPC") == 0) {
-				r->out.type = STYPE_IPC;
+				*r->out.type = STYPE_IPC;
 				return WERR_OK;
 			}
 
 			if (strcmp(type, "PRINTER") == 0) {
-				r->out.type = STYPE_PRINTQ;
+				*r->out.type = STYPE_PRINTQ;
 				return WERR_OK;
 			}
 		}

@@ -362,9 +362,11 @@ static bool test_NetShareCheck(struct dcerpc_pipe *p, struct torture_context *tc
 {
 	NTSTATUS status;
 	struct srvsvc_NetShareCheck r;
+	enum srvsvc_ShareType type;
 
 	r.in.server_unc = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.device_name = device_name;
+	r.out.type = &type;
 
 	torture_comment(tctx, 
 			"testing NetShareCheck on device '%s'\n", r.in.device_name);
