@@ -384,6 +384,7 @@ static bool test_NetShareGetInfo(struct torture_context *tctx,
 {
 	NTSTATUS status;
 	struct srvsvc_NetShareGetInfo r;
+	union srvsvc_NetShareInfo info;
 	struct {
 		uint32_t level;
 		WERROR anon_status;
@@ -400,6 +401,7 @@ static bool test_NetShareGetInfo(struct torture_context *tctx,
 
 	r.in.server_unc = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.share_name = sharename;
+	r.out.info = &info;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		WERROR expected;
@@ -407,7 +409,6 @@ static bool test_NetShareGetInfo(struct torture_context *tctx,
 		r.in.level = levels[i].level;
 		expected = levels[i].anon_status;
 		if (admin) expected = levels[i].admin_status;
-		ZERO_STRUCT(r.out);
 
 		torture_comment(tctx, "testing NetShareGetInfo level %u on share '%s'\n", 
 		       r.in.level, r.in.share_name);
@@ -417,8 +418,8 @@ static bool test_NetShareGetInfo(struct torture_context *tctx,
 		torture_assert_werr_equal(tctx, r.out.result, expected, "NetShareGetInfo failed");
 
 		if (r.in.level != 2) continue;
-		if (!r.out.info.info2 || !r.out.info.info2->path) continue;
-		if (!test_NetShareCheck(p, tctx, r.out.info.info2->path)) {
+		if (!r.out.info->info2 || !r.out.info->info2->path) continue;
+		if (!test_NetShareCheck(p, tctx, r.out.info->info2->path)) {
 			return false;
 		}
 	}
@@ -571,41 +572,42 @@ static bool test_NetShareAddSetDel(struct torture_context *tctx,
 		torture_assert_werr_equal(tctx, r.out.result, levels[i].expected, "NetShareSetInfo failed");
 		
 		q.in.share_name = r.in.share_name;
+		q.out.info = &info;
 
 		status = dcerpc_srvsvc_NetShareGetInfo(p, tctx, &q);
 		torture_assert_ntstatus_ok(tctx, status, "NetShareGetInfo failed");
 		torture_assert_werr_ok(tctx, q.out.result, "NetShareGetInfo failed");
 
-		torture_assert_str_equal(tctx, q.out.info.info502->name, r.in.share_name, 
+		torture_assert_str_equal(tctx, q.out.info->info502->name, r.in.share_name,
 					 "share name invalid");
 
 		switch (levels[i].level) {
 		case 0:
 			break;
 		case 1:
-			torture_assert_str_equal(tctx, q.out.info.info502->comment, "test comment 1", "comment");
+			torture_assert_str_equal(tctx, q.out.info->info502->comment, "test comment 1", "comment");
 			break;
 		case 2:
-			torture_assert_str_equal(tctx, q.out.info.info2->comment, "test comment 2", "comment");
-			torture_assert_int_equal(tctx, q.out.info.info2->max_users, 2, "max users");
-			torture_assert_str_equal(tctx, q.out.info.info2->path, "C:\\", "path");
+			torture_assert_str_equal(tctx, q.out.info->info2->comment, "test comment 2", "comment");
+			torture_assert_int_equal(tctx, q.out.info->info2->max_users, 2, "max users");
+			torture_assert_str_equal(tctx, q.out.info->info2->path, "C:\\", "path");
 			break;
 		case 501:
-			torture_assert_str_equal(tctx, q.out.info.info501->comment, "test comment 501", "comment");
+			torture_assert_str_equal(tctx, q.out.info->info501->comment, "test comment 501", "comment");
 			break;
 		case 502:
-			torture_assert_str_equal(tctx, q.out.info.info502->comment, "test comment 502", "comment");
-			torture_assert_int_equal(tctx, q.out.info.info502->max_users, 502, "max users");
-			torture_assert_str_equal(tctx, q.out.info.info502->path, "C:\\", "path");
+			torture_assert_str_equal(tctx, q.out.info->info502->comment, "test comment 502", "comment");
+			torture_assert_int_equal(tctx, q.out.info->info502->max_users, 502, "max users");
+			torture_assert_str_equal(tctx, q.out.info->info502->path, "C:\\", "path");
 			break;
 		case 1004:
-			torture_assert_str_equal(tctx, q.out.info.info1004->comment, "test comment 1004",
+			torture_assert_str_equal(tctx, q.out.info->info1004->comment, "test comment 1004",
 						 "comment");
 			break;
 		case 1005:
 			break;
 		case 1006:
-			torture_assert_int_equal(tctx, q.out.info.info1006->max_users, 1006, "Max users");
+			torture_assert_int_equal(tctx, q.out.info->info1006->max_users, 1006, "Max users");
 			break;
 /*		case 1007:
 			break;

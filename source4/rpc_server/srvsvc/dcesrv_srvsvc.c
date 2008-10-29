@@ -974,7 +974,7 @@ static WERROR dcesrv_srvsvc_NetShareGetInfo(struct dcesrv_call_state *dce_call, 
 	struct share_context *sctx = NULL;
 	struct share_config *scfg = NULL;
 
-	ZERO_STRUCT(r->out);
+	ZERO_STRUCTP(r->out.info);
 
 	/* TODO: - access check
 	 */
@@ -1007,7 +1007,7 @@ static WERROR dcesrv_srvsvc_NetShareGetInfo(struct dcesrv_call_state *dce_call, 
 			return status;
 		}
 
-		r->out.info.info0 = info.info0;
+		r->out.info->info0 = info.info0;
 		return WERR_OK;
 	}
 	case 1:
@@ -1023,7 +1023,7 @@ static WERROR dcesrv_srvsvc_NetShareGetInfo(struct dcesrv_call_state *dce_call, 
 			return status;
 		}
 
-		r->out.info.info1 = info.info1;
+		r->out.info->info1 = info.info1;
 		return WERR_OK;
 	}
 	case 2:
@@ -1041,7 +1041,7 @@ static WERROR dcesrv_srvsvc_NetShareGetInfo(struct dcesrv_call_state *dce_call, 
 			return status;
 		}
 
-		r->out.info.info2 = info.info2;
+		r->out.info->info2 = info.info2;
 		return WERR_OK;
 	}
 	case 501:
@@ -1057,7 +1057,7 @@ static WERROR dcesrv_srvsvc_NetShareGetInfo(struct dcesrv_call_state *dce_call, 
 			return status;
 		}
 
-		r->out.info.info501 = info.info501;
+		r->out.info->info501 = info.info501;
 		return WERR_OK;
 	}
 	case 502:
@@ -1075,7 +1075,7 @@ static WERROR dcesrv_srvsvc_NetShareGetInfo(struct dcesrv_call_state *dce_call, 
 			return status;
 		}
 
-		r->out.info.info502 = info.info502;
+		r->out.info->info502 = info.info502;
 		return WERR_OK;
 	}
 	case 1005:
@@ -1091,7 +1091,7 @@ static WERROR dcesrv_srvsvc_NetShareGetInfo(struct dcesrv_call_state *dce_call, 
 			return status;
 		}
 
-		r->out.info.info1005 = info.info1005;
+		r->out.info->info1005 = info.info1005;
 		return WERR_OK;
 	}
 	default:

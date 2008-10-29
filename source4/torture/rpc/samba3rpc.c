@@ -1866,6 +1866,7 @@ static bool test_NetShareGetInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct srvsvc_NetShareGetInfo r;
+	union srvsvc_NetShareInfo info;
 	uint32_t levels[] = { 0, 1, 2, 501, 502, 1004, 1005, 1006, 1007, 1501 };
 	int i;
 	bool ret = true;
@@ -1873,11 +1874,10 @@ static bool test_NetShareGetInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.in.server_unc = talloc_asprintf(mem_ctx, "\\\\%s",
 					  dcerpc_server_name(p));
 	r.in.share_name = sharename;
+	r.out.info = &info;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		r.in.level = levels[i];
-
-		ZERO_STRUCT(r.out);
 
 		printf("testing NetShareGetInfo level %u on share '%s'\n", 
 		       r.in.level, r.in.share_name);
@@ -2114,6 +2114,7 @@ static struct security_descriptor *get_sharesec(TALLOC_CTX *mem_ctx,
 	struct dcerpc_pipe *p;
 	NTSTATUS status;
 	struct srvsvc_NetShareGetInfo r;
+	union srvsvc_NetShareInfo info;
 	struct security_descriptor *result;
 
 	if (!(tmp_ctx = talloc_new(mem_ctx))) {
@@ -2144,6 +2145,7 @@ static struct security_descriptor *get_sharesec(TALLOC_CTX *mem_ctx,
 					  dcerpc_server_name(p));
 	r.in.share_name = sharename;
 	r.in.level = 502;
+	r.out.info = &info;
 
 	status = dcerpc_srvsvc_NetShareGetInfo(p, tmp_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2153,7 +2155,7 @@ static struct security_descriptor *get_sharesec(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	result = talloc_steal(mem_ctx, r.out.info.info502->sd_buf.sd);
+	result = talloc_steal(mem_ctx, info.info502->sd_buf.sd);
 	talloc_free(tmp_ctx);
 	return result;
 }
@@ -2208,7 +2210,7 @@ static NTSTATUS set_sharesec(TALLOC_CTX *mem_ctx,
 
 	status = dcerpc_srvsvc_NetShareSetInfo(p, tmp_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
-		d_printf("srvsvc_NetShareGetInfo failed: %s\n",
+		d_printf("srvsvc_NetShareSetInfo failed: %s\n",
 			 nt_errstr(status));
 	}
 
@@ -3105,11 +3107,12 @@ static NTSTATUS get_shareinfo(TALLOC_CTX *mem_ctx,
 			      struct loadparm_context *lp_ctx,
 			      struct smbcli_state *cli,
 			      const char *share,
-			      struct srvsvc_NetShareInfo502 **info)
+			      struct srvsvc_NetShareInfo502 **info502)
 {
 	struct smbcli_tree *ipc;
 	struct dcerpc_pipe *p;
 	struct srvsvc_NetShareGetInfo r;
+	union srvsvc_NetShareInfo info;
 	NTSTATUS status;
 
 	if (!(p = dcerpc_pipe_init(cli,
@@ -3142,15 +3145,16 @@ static NTSTATUS get_shareinfo(TALLOC_CTX *mem_ctx,
 					  dcerpc_server_name(p));
 	r.in.share_name = share;
 	r.in.level = 502;
+	r.out.info = &info;
 
 	status = dcerpc_srvsvc_NetShareGetInfo(p, p, &r);
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(r.out.result)) {
-		d_printf("(%s) OpenHKLM failed: %s, %s\n", __location__,
+		d_printf("(%s) srvsvc_NetShareGetInfo failed: %s, %s\n", __location__,
 			 nt_errstr(status), win_errstr(r.out.result));
 		goto fail;
 	}
 
-	*info = talloc_move(mem_ctx, &r.out.info.info502);
+	*info502 = talloc_move(mem_ctx, &info.info502);
 	return NT_STATUS_OK;
 
  fail:
