@@ -501,69 +501,71 @@ static bool test_NetShareAddSetDel(struct torture_context *tctx,
 
 		switch (levels[i].level) {
 		case 0:
-			r.in.info.info0 = talloc(tctx, struct srvsvc_NetShareInfo0);
-			r.in.info.info0->name = r.in.share_name;
+			info.info0 = talloc(tctx, struct srvsvc_NetShareInfo0);
+			info.info0->name = r.in.share_name;
 			break;
 		case 1:
-			r.in.info.info1 = talloc(tctx, struct srvsvc_NetShareInfo1);
-			r.in.info.info1->name = r.in.share_name;
-			r.in.info.info1->type = STYPE_DISKTREE;
-			r.in.info.info1->comment = talloc_strdup(tctx, "test comment 1");
+			info.info1 = talloc(tctx, struct srvsvc_NetShareInfo1);
+			info.info1->name = r.in.share_name;
+			info.info1->type = STYPE_DISKTREE;
+			info.info1->comment = talloc_strdup(tctx, "test comment 1");
 			break;
 		case 2:	
-			r.in.info.info2 = talloc(tctx, struct srvsvc_NetShareInfo2);
-			r.in.info.info2->name = r.in.share_name;
-			r.in.info.info2->type = STYPE_DISKTREE;
-			r.in.info.info2->comment = talloc_strdup(tctx, "test comment 2");
-			r.in.info.info2->permissions = 0;
-			r.in.info.info2->max_users = 2;
-			r.in.info.info2->current_users = 1;
-			r.in.info.info2->path = talloc_strdup(tctx, "::BLaH::"); /* "C:\\"); */
-			r.in.info.info2->password = NULL;
+			info.info2 = talloc(tctx, struct srvsvc_NetShareInfo2);
+			info.info2->name = r.in.share_name;
+			info.info2->type = STYPE_DISKTREE;
+			info.info2->comment = talloc_strdup(tctx, "test comment 2");
+			info.info2->permissions = 0;
+			info.info2->max_users = 2;
+			info.info2->current_users = 1;
+			info.info2->path = talloc_strdup(tctx, "::BLaH::"); /* "C:\\"); */
+			info.info2->password = NULL;
 			break;
 		case 501:
-			r.in.info.info501 = talloc(tctx, struct srvsvc_NetShareInfo501);
-			r.in.info.info501->name = r.in.share_name;
-			r.in.info.info501->type = STYPE_DISKTREE;
-			r.in.info.info501->comment = talloc_strdup(tctx, "test comment 501");
-			r.in.info.info501->csc_policy = 0;
+			info.info501 = talloc(tctx, struct srvsvc_NetShareInfo501);
+			info.info501->name = r.in.share_name;
+			info.info501->type = STYPE_DISKTREE;
+			info.info501->comment = talloc_strdup(tctx, "test comment 501");
+			info.info501->csc_policy = 0;
 			break;
 		case 502:
 			ZERO_STRUCT(sd_buf);
-			r.in.info.info502 = talloc(tctx, struct srvsvc_NetShareInfo502);
-			r.in.info.info502->name = r.in.share_name;
-			r.in.info.info502->type = STYPE_DISKTREE;
-			r.in.info.info502->comment = talloc_strdup(tctx, "test comment 502");
-			r.in.info.info502->permissions = 0;
-			r.in.info.info502->max_users = 502;
-			r.in.info.info502->current_users = 1;
-			r.in.info.info502->path = talloc_strdup(tctx, "C:\\");
-			r.in.info.info502->password = NULL;
-			r.in.info.info502->sd_buf = sd_buf;
+			info.info502 = talloc(tctx, struct srvsvc_NetShareInfo502);
+			info.info502->name = r.in.share_name;
+			info.info502->type = STYPE_DISKTREE;
+			info.info502->comment = talloc_strdup(tctx, "test comment 502");
+			info.info502->permissions = 0;
+			info.info502->max_users = 502;
+			info.info502->current_users = 1;
+			info.info502->path = talloc_strdup(tctx, "C:\\");
+			info.info502->password = NULL;
+			info.info502->sd_buf = sd_buf;
 			break;
 		case 1004:
-			r.in.info.info1004 = talloc(tctx, struct srvsvc_NetShareInfo1004);
-			r.in.info.info1004->comment = talloc_strdup(tctx, "test comment 1004");
+			info.info1004 = talloc(tctx, struct srvsvc_NetShareInfo1004);
+			info.info1004->comment = talloc_strdup(tctx, "test comment 1004");
 			break;
 		case 1005:
-			r.in.info.info1005 = talloc(tctx, struct srvsvc_NetShareInfo1005);
-			r.in.info.info1005->dfs_flags = 0;
+			info.info1005 = talloc(tctx, struct srvsvc_NetShareInfo1005);
+			info.info1005->dfs_flags = 0;
 			break;
 		case 1006:
-			r.in.info.info1006 = talloc(tctx, struct srvsvc_NetShareInfo1006);
-			r.in.info.info1006->max_users = 1006;
+			info.info1006 = talloc(tctx, struct srvsvc_NetShareInfo1006);
+			info.info1006->max_users = 1006;
 			break;
 /*		case 1007:
-			r.in.info.info1007 = talloc(tctx, struct srvsvc_NetShareInfo1007);
-			r.in.info.info1007->flags = 0;
-			r.in.info.info1007->alternate_directory_name = talloc_strdup(tctx, "test");
+			info.info1007 = talloc(tctx, struct srvsvc_NetShareInfo1007);
+			info.info1007->flags = 0;
+			info.info1007->alternate_directory_name = talloc_strdup(tctx, "test");
 			break;
 */
 		case 1501:
-			r.in.info.info1501 = talloc_zero(tctx, struct sec_desc_buf);
+			info.info1501 = talloc_zero(tctx, struct sec_desc_buf);
 			break;
 		}
-		
+
+		r.in.info = &info;
+
 		status = dcerpc_srvsvc_NetShareSetInfo(p, tctx, &r);
 		torture_assert_ntstatus_ok(tctx, status, "NetShareGetInfo failed");
 		torture_assert_werr_equal(tctx, r.out.result, levels[i].expected, "NetShareSetInfo failed");
@@ -584,7 +586,7 @@ static bool test_NetShareAddSetDel(struct torture_context *tctx,
 			torture_assert_str_equal(tctx, q.out.info.info502->comment, "test comment 1", "comment");
 			break;
 		case 2:
-			torture_assert_str_equal(tctx, q.out.info.info502->comment, "test comment 2", "comment");
+			torture_assert_str_equal(tctx, q.out.info.info2->comment, "test comment 2", "comment");
 			torture_assert_int_equal(tctx, q.out.info.info2->max_users, 2, "max users");
 			torture_assert_str_equal(tctx, q.out.info.info2->path, "C:\\", "path");
 			break;
@@ -593,17 +595,17 @@ static bool test_NetShareAddSetDel(struct torture_context *tctx,
 			break;
 		case 502:
 			torture_assert_str_equal(tctx, q.out.info.info502->comment, "test comment 502", "comment");
-			torture_assert_int_equal(tctx, q.out.info.info2->max_users, 502, "max users");
-			torture_assert_str_equal(tctx, q.out.info.info2->path, "C:\\", "path");
+			torture_assert_int_equal(tctx, q.out.info.info502->max_users, 502, "max users");
+			torture_assert_str_equal(tctx, q.out.info.info502->path, "C:\\", "path");
 			break;
 		case 1004:
-			torture_assert_str_equal(tctx, q.out.info.info502->comment, "test comment 1004", 
+			torture_assert_str_equal(tctx, q.out.info.info1004->comment, "test comment 1004",
 						 "comment");
 			break;
 		case 1005:
 			break;
 		case 1006:
-			torture_assert_int_equal(tctx, q.out.info.info2->max_users, 1006, "Max users");
+			torture_assert_int_equal(tctx, q.out.info.info1006->max_users, 1006, "Max users");
 			break;
 /*		case 1007:
 			break;

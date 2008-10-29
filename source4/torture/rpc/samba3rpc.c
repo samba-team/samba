@@ -2170,6 +2170,7 @@ static NTSTATUS set_sharesec(TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	struct sec_desc_buf i;
 	struct srvsvc_NetShareSetInfo r;
+	union srvsvc_NetShareInfo info;
 	uint32_t error = 0;
 
 	if (!(tmp_ctx = talloc_new(mem_ctx))) {
@@ -2201,7 +2202,8 @@ static NTSTATUS set_sharesec(TALLOC_CTX *mem_ctx,
 	r.in.share_name = sharename;
 	r.in.level = 1501;
 	i.sd = sd;
-	r.in.info.info1501 = &i;
+	info.info1501 = &i;
+	r.in.info = &info;
 	r.in.parm_error = &error;
 
 	status = dcerpc_srvsvc_NetShareSetInfo(p, tmp_ctx, &r);
