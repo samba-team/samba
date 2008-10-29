@@ -30,6 +30,7 @@ static NTSTATUS libnet_RemoteTOD_srvsvc(struct libnet_context *ctx, TALLOC_CTX *
         NTSTATUS status;
 	struct libnet_RpcConnect c;
 	struct srvsvc_NetRemoteTOD tod;
+	struct srvsvc_NetRemoteTODInfo *info = NULL;
 	struct tm tm;
 
 	/* prepare connect to the SRVSVC pipe of a timeserver */
@@ -48,6 +49,7 @@ static NTSTATUS libnet_RemoteTOD_srvsvc(struct libnet_context *ctx, TALLOC_CTX *
 
 	/* prepare srvsvc_NetrRemoteTOD */
 	tod.in.server_unc = talloc_asprintf(mem_ctx, "\\%s", c.in.name);
+	tod.out.info = &info;
 
 	/* 2. try srvsvc_NetRemoteTOD */
 	status = dcerpc_srvsvc_NetRemoteTOD(c.out.dcerpc_pipe, mem_ctx, &tod);
@@ -68,18 +70,18 @@ static NTSTATUS libnet_RemoteTOD_srvsvc(struct libnet_context *ctx, TALLOC_CTX *
 	}
 
 	/* need to set the out parameters */
-	tm.tm_sec = (int)tod.out.info->secs;
-	tm.tm_min = (int)tod.out.info->mins;
-	tm.tm_hour = (int)tod.out.info->hours;
-	tm.tm_mday = (int)tod.out.info->day;
-	tm.tm_mon = (int)tod.out.info->month -1;
-	tm.tm_year = (int)tod.out.info->year - 1900;
+	tm.tm_sec = (int)info->secs;
+	tm.tm_min = (int)info->mins;
+	tm.tm_hour = (int)info->hours;
+	tm.tm_mday = (int)info->day;
+	tm.tm_mon = (int)info->month -1;
+	tm.tm_year = (int)info->year - 1900;
 	tm.tm_wday = -1;
 	tm.tm_yday = -1;
 	tm.tm_isdst = -1;
 
 	r->srvsvc.out.time = timegm(&tm);
-	r->srvsvc.out.time_zone = tod.out.info->timezone * 60;
+	r->srvsvc.out.time_zone = info->timezone * 60;
 
 	goto disconnect;
 

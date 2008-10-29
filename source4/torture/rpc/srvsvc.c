@@ -851,10 +851,11 @@ static bool test_NetRemoteTOD(struct torture_context *tctx,
 {
 	NTSTATUS status;
 	struct srvsvc_NetRemoteTOD r;
+	struct srvsvc_NetRemoteTODInfo *info = NULL;
 
 	r.in.server_unc = talloc_asprintf(tctx,"\\\\%s",dcerpc_server_name(p));
+	r.out.info = &info;
 
-	ZERO_STRUCT(r.out);
 	torture_comment(tctx, "testing NetRemoteTOD\n");
 	status = dcerpc_srvsvc_NetRemoteTOD(p, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "NetRemoteTOD failed");

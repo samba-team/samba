@@ -1688,31 +1688,34 @@ static WERROR dcesrv_srvsvc_NetRemoteTOD(struct dcesrv_call_state *dce_call, TAL
 	struct timeval tval;
 	time_t t;
 	struct tm tm;
+	struct srvsvc_NetRemoteTODInfo *info;
 
-	r->out.info = talloc(mem_ctx, struct srvsvc_NetRemoteTODInfo);
-	W_ERROR_HAVE_NO_MEMORY(r->out.info);
+	info = talloc(mem_ctx, struct srvsvc_NetRemoteTODInfo);
+	W_ERROR_HAVE_NO_MEMORY(info);
 
 	GetTimeOfDay(&tval);
 	t = tval.tv_sec;
 
 	gmtime_r(&t, &tm);
 
-	r->out.info->elapsed	= t;
+	info->elapsed	= t;
 	/* TODO: fake the uptime: just return the milliseconds till 0:00:00 today */
-	r->out.info->msecs	= (tm.tm_hour*60*60*1000)
-				+ (tm.tm_min*60*1000)
-				+ (tm.tm_sec*1000)
-				+ (tval.tv_usec/1000);
-	r->out.info->hours	= tm.tm_hour;
-	r->out.info->mins	= tm.tm_min;
-	r->out.info->secs	= tm.tm_sec;
-	r->out.info->hunds	= tval.tv_usec/10000;
-	r->out.info->timezone	= get_time_zone(t)/60;
-	r->out.info->tinterval	= 310; /* just return the same as windows */
-	r->out.info->day	= tm.tm_mday;
-	r->out.info->month	= tm.tm_mon + 1;
-	r->out.info->year	= tm.tm_year + 1900;
-	r->out.info->weekday	= tm.tm_wday;
+	info->msecs	= (tm.tm_hour*60*60*1000)
+			+ (tm.tm_min*60*1000)
+			+ (tm.tm_sec*1000)
+			+ (tval.tv_usec/1000);
+	info->hours	= tm.tm_hour;
+	info->mins	= tm.tm_min;
+	info->secs	= tm.tm_sec;
+	info->hunds	= tval.tv_usec/10000;
+	info->timezone	= get_time_zone(t)/60;
+	info->tinterval	= 310; /* just return the same as windows */
+	info->day	= tm.tm_mday;
+	info->month	= tm.tm_mon + 1;
+	info->year	= tm.tm_year + 1900;
+	info->weekday	= tm.tm_wday;
+
+	*r->out.info = info;
 
 	return WERR_OK;
 }
