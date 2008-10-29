@@ -2144,7 +2144,7 @@ static WERROR dcesrv_srvsvc_NetSetFileSecurity(struct dcesrv_call_state *dce_cal
 	io->set_secdesc.level			= RAW_FILEINFO_SEC_DESC;
 	io->set_secdesc.in.file.path		= r->in.file;
 	io->set_secdesc.in.secinfo_flags	= r->in.securityinformation;
-	io->set_secdesc.in.sd			= r->in.sd_buf.sd;
+	io->set_secdesc.in.sd			= r->in.sd_buf->sd;
 
 	nt_status = ntvfs_setpathinfo(ntvfs_req, io);
 	if (!NT_STATUS_IS_OK(nt_status)) return ntstatus_to_werror(nt_status);
