@@ -1154,7 +1154,7 @@ static bool fork_domain_child(struct winbindd_child *child)
 
 		set_domain_online_request(child->domain);
 
-		if (primary_domain != child->domain) {
+		if (primary_domain && (primary_domain != child->domain)) {
 			/* We need to talk to the primary
 			 * domain as well as the trusted
 			 * domain inside a trusted domain
