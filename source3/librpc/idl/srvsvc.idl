@@ -1210,7 +1210,7 @@ import "security.idl", "svcctl.idl";
 		[in,unique]      [string,charset(UTF16)] uint16 *service,
 		[in]      uint32 level,
 		[in]      uint32 options,
-		[out,ref]     srvsvc_Statistics *stats
+		[out,ref]     srvsvc_Statistics **stats
 		);
 
 /**************************/
