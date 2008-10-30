@@ -118,20 +118,21 @@ tallocsrcdir := $(samba4srcdir)/../lib/talloc
 comsrcdir := $(samba4srcdir)/lib/com
 override ASN1C = bin/asn1_compile4
 override ET_COMPILER = bin/compile_et4
+include $(samba4srcdir)/build/make/python.mk
 include samba4-data.mk
 include $(samba4srcdir)/static_deps.mk
-include $(samba4srcdir)/build/make/python.mk
 
 INSTALLPERMS = 0755
+$(foreach SCRIPT,$(wildcard scripting/bin/*),$(eval $(call binary_install_template,$(SCRIPT))))
 
-$(DESTDIR)$(bindir)/%: bin/%4 installdirs
+$(DESTDIR)$(bindir)/%4: bin/%4 installdirs
 	@mkdir -p $(@D)
 	@echo Installing $(@F) as $@
 	@if test -f $@; then rm -f $@.old; mv $@ $@.old; fi
 	@cp $< $@
 	@chmod $(INSTALLPERMS) $@
 
-$(DESTDIR)$(sbindir)/%: bin/%4 installdirs
+$(DESTDIR)$(sbindir)/%4: bin/%4 installdirs
 	@mkdir -p $(@D)
 	@echo Installing $(@F) as $@
 	@if test -f $@; then rm -f $@.old; mv $@ $@.old; fi
@@ -157,6 +158,8 @@ clean::
 
 proto:: $(PROTO_HEADERS)
 modules:: $(PLUGINS)
+
+pythonmods:: $(PYTHON_PYS) $(PYTHON_SO)
 
 all:: bin/samba4 bin/regpatch4 bin/regdiff4 bin/regshell4 bin/regtree4 bin/smbclient4
 torture:: bin/smbtorture4
