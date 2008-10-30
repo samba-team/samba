@@ -69,7 +69,7 @@ devscripts, etc.):
 4) Run 'fakeroot debian/rules binary'.
 5) That's it. Your new packages should be in ../. Install with dpkg.
 
-Please e-mail samba@packages.debian.org with comments, questions or
+Please e-mail pkg-samba-maint@lists.debian.org with comments, questions or
 suggestions. Please talk to us and not to the Samba Team. They have
 better things to do and know nothing about the Debian packaging system.
 
