@@ -226,28 +226,26 @@ static WERROR dcesrv_srvsvc_NetCharDevQPurgeSelf(struct dcesrv_call_state *dce_c
 static WERROR dcesrv_srvsvc_NetConnEnum(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NetConnEnum *r)
 {
-	r->out.level = r->in.level;
-	r->out.totalentries = 0;
-	r->out.resume_handle = NULL;
+	*r->out.totalentries = 0;
 
-	switch (r->in.level) {
+	switch (r->in.info_ctr->level) {
 	case 0:
 	{
-		r->out.ctr.ctr0 = talloc(mem_ctx, struct srvsvc_NetConnCtr0);
-		W_ERROR_HAVE_NO_MEMORY(r->out.ctr.ctr0);
+		r->out.info_ctr->ctr.ctr0 = talloc(mem_ctx, struct srvsvc_NetConnCtr0);
+		W_ERROR_HAVE_NO_MEMORY(r->out.info_ctr->ctr.ctr0);
 
-		r->out.ctr.ctr0->count = 0;
-		r->out.ctr.ctr0->array = NULL;
+		r->out.info_ctr->ctr.ctr0->count = 0;
+		r->out.info_ctr->ctr.ctr0->array = NULL;
 
 		return WERR_NOT_SUPPORTED;
 	}
 	case 1:
 	{
-		r->out.ctr.ctr1 = talloc(mem_ctx, struct srvsvc_NetConnCtr1);
-		W_ERROR_HAVE_NO_MEMORY(r->out.ctr.ctr1);
+		r->out.info_ctr->ctr.ctr1 = talloc(mem_ctx, struct srvsvc_NetConnCtr1);
+		W_ERROR_HAVE_NO_MEMORY(r->out.info_ctr->ctr.ctr1);
 
-		r->out.ctr.ctr1->count = 0;
-		r->out.ctr.ctr1->array = NULL;
+		r->out.info_ctr->ctr.ctr1->count = 0;
+		r->out.info_ctr->ctr.ctr1->array = NULL;
 
 		return WERR_NOT_SUPPORTED;
 	}
