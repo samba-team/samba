@@ -341,23 +341,38 @@ static bool test_NetFileEnum(struct torture_context *tctx,
 {
 	NTSTATUS status;
 	struct srvsvc_NetFileEnum r;
+	struct srvsvc_NetFileInfoCtr info_ctr;
+	struct srvsvc_NetFileCtr2 c2;
 	struct srvsvc_NetFileCtr3 c3;
+	uint32_t totalentries = 0;
 	uint32_t levels[] = {2, 3};
 	int i;
+
+	ZERO_STRUCT(info_ctr);
 
 	r.in.server_unc = talloc_asprintf(tctx,"\\\\%s",dcerpc_server_name(p));
 	r.in.path = NULL;
 	r.in.user = NULL;
-	r.in.ctr.ctr3 = &c3;
-	r.in.ctr.ctr3->count = 0;
-	r.in.ctr.ctr3->array = NULL;
+	r.in.info_ctr = &info_ctr;
 	r.in.max_buffer = (uint32_t)4096;
 	r.in.resume_handle = NULL;
+	r.out.totalentries = &totalentries;
+	r.out.info_ctr = &info_ctr;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
-		ZERO_STRUCT(r.out);
-		r.in.level = levels[i];
-		torture_comment(tctx, "testing NetFileEnum level %u\n", r.in.level);
+		info_ctr.level = levels[i];
+
+		switch (info_ctr.level) {
+		case 2:
+			ZERO_STRUCT(c2);
+			info_ctr.ctr.ctr2 = &c2;
+			break;
+		case 3:
+			ZERO_STRUCT(c3);
+			info_ctr.ctr.ctr3 = &c3;
+			break;
+		}
+		torture_comment(tctx, "testing NetFileEnum level %u\n", info_ctr.level);
 		status = dcerpc_srvsvc_NetFileEnum(p, tctx, &r);
 		torture_assert_ntstatus_ok(tctx, status, "NetFileEnum failed");
 		if (!W_ERROR_IS_OK(r.out.result)) {
