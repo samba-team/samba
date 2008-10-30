@@ -716,10 +716,7 @@ static WERROR dcesrv_srvsvc_NetShareEnumAll(struct dcesrv_call_state *dce_call, 
 	struct share_context *sctx;
 	struct share_config *scfg;
 
-	r->out.level = r->in.level;
-	ZERO_STRUCT(r->out.ctr);
-	r->out.totalentries = 0;
-	r->out.resume_handle = NULL;
+	*r->out.totalentries = 0;
 
 	/* TODO: - paging of results 
 	 */
@@ -734,7 +731,7 @@ static WERROR dcesrv_srvsvc_NetShareEnumAll(struct dcesrv_call_state *dce_call, 
 		return ntstatus_to_werror(nterr);
 	}
 
-	switch (r->in.level) {
+	switch (r->in.info_ctr->level) {
 	case 0:
 	{
 		int i;
@@ -747,7 +744,7 @@ static WERROR dcesrv_srvsvc_NetShareEnumAll(struct dcesrv_call_state *dce_call, 
 		ctr0->array = NULL;
 
 		if (ctr0->count == 0) {
-			r->out.ctr.ctr0	= ctr0;
+			r->out.info_ctr->ctr.ctr0	= ctr0;
 			return WERR_OK;
 		}
 
@@ -764,7 +761,7 @@ static WERROR dcesrv_srvsvc_NetShareEnumAll(struct dcesrv_call_state *dce_call, 
 				return WERR_GENERAL_FAILURE;
 			}
 			info.info0 = &ctr0->array[i];
-			status = dcesrv_srvsvc_fiel_ShareInfo(dce_call, mem_ctx, scfg, r->in.level, &info);
+			status = dcesrv_srvsvc_fiel_ShareInfo(dce_call, mem_ctx, scfg, r->in.info_ctr->level, &info);
 			if (!W_ERROR_IS_OK(status)) {
 				return status;
 			}
@@ -772,8 +769,8 @@ static WERROR dcesrv_srvsvc_NetShareEnumAll(struct dcesrv_call_state *dce_call, 
 		}
 		talloc_free(snames);
 
-		r->out.ctr.ctr0		= ctr0;
-		r->out.totalentries	= r->out.ctr.ctr0->count;
+		r->out.info_ctr->ctr.ctr0	= ctr0;
+		*r->out.totalentries		= r->out.info_ctr->ctr.ctr0->count;
 		return WERR_OK;
 	}
 	case 1:
@@ -788,7 +785,7 @@ static WERROR dcesrv_srvsvc_NetShareEnumAll(struct dcesrv_call_state *dce_call, 
 		ctr1->array = NULL;
 
 		if (ctr1->count == 0) {
-			r->out.ctr.ctr1	= ctr1;
+			r->out.info_ctr->ctr.ctr1	= ctr1;
 			return WERR_OK;
 		}
 
@@ -805,7 +802,7 @@ static WERROR dcesrv_srvsvc_NetShareEnumAll(struct dcesrv_call_state *dce_call, 
 				return WERR_GENERAL_FAILURE;
 			}
 			info.info1 = &ctr1->array[i];
-			status = dcesrv_srvsvc_fiel_ShareInfo(dce_call, mem_ctx, scfg, r->in.level, &info);
+			status = dcesrv_srvsvc_fiel_ShareInfo(dce_call, mem_ctx, scfg, r->in.info_ctr->level, &info);
 			if (!W_ERROR_IS_OK(status)) {
 				return status;
 			}
@@ -813,8 +810,9 @@ static WERROR dcesrv_srvsvc_NetShareEnumAll(struct dcesrv_call_state *dce_call, 
 		}
 		talloc_free(snames);
 
-		r->out.ctr.ctr1		= ctr1;
-		r->out.totalentries	= r->out.ctr.ctr1->count;
+		r->out.info_ctr->ctr.ctr1	= ctr1;
+		*r->out.totalentries		= r->out.info_ctr->ctr.ctr1->count;
+
 		return WERR_OK;
 	}
 	case 2:
@@ -831,7 +829,7 @@ static WERROR dcesrv_srvsvc_NetShareEnumAll(struct dcesrv_call_state *dce_call, 
 		ctr2->array = NULL;
 
 		if (ctr2->count == 0) {
-			r->out.ctr.ctr2 = ctr2;
+			r->out.info_ctr->ctr.ctr2	= ctr2;
 			return WERR_OK;
 		}
 
@@ -848,7 +846,7 @@ static WERROR dcesrv_srvsvc_NetShareEnumAll(struct dcesrv_call_state *dce_call, 
 				return WERR_GENERAL_FAILURE;
 			}
 			info.info2 = &ctr2->array[i];
-			status = dcesrv_srvsvc_fiel_ShareInfo(dce_call, mem_ctx, scfg, r->in.level, &info);
+			status = dcesrv_srvsvc_fiel_ShareInfo(dce_call, mem_ctx, scfg, r->in.info_ctr->level, &info);
 			if (!W_ERROR_IS_OK(status)) {
 				return status;
 			}
@@ -856,8 +854,9 @@ static WERROR dcesrv_srvsvc_NetShareEnumAll(struct dcesrv_call_state *dce_call, 
 		}
 		talloc_free(snames);
 
-		r->out.ctr.ctr2		= ctr2;
-		r->out.totalentries	= r->out.ctr.ctr2->count;
+		r->out.info_ctr->ctr.ctr2	= ctr2;
+		*r->out.totalentries		= r->out.info_ctr->ctr.ctr2->count;
+
 		return WERR_OK;
 	}
 	case 501:
@@ -874,7 +873,7 @@ static WERROR dcesrv_srvsvc_NetShareEnumAll(struct dcesrv_call_state *dce_call, 
 		ctr501->array = NULL;
 
 		if (ctr501->count == 0) {
-			r->out.ctr.ctr501 = ctr501;
+			r->out.info_ctr->ctr.ctr501	= ctr501;
 			return WERR_OK;
 		}
 
@@ -891,7 +890,7 @@ static WERROR dcesrv_srvsvc_NetShareEnumAll(struct dcesrv_call_state *dce_call, 
 				return WERR_GENERAL_FAILURE;
 			}
 			info.info501 = &ctr501->array[i];
-			status = dcesrv_srvsvc_fiel_ShareInfo(dce_call, mem_ctx, scfg, r->in.level, &info);
+			status = dcesrv_srvsvc_fiel_ShareInfo(dce_call, mem_ctx, scfg, r->in.info_ctr->level, &info);
 			if (!W_ERROR_IS_OK(status)) {
 				return status;
 			}
@@ -899,8 +898,9 @@ static WERROR dcesrv_srvsvc_NetShareEnumAll(struct dcesrv_call_state *dce_call, 
 		}
 		talloc_free(snames);
 
-		r->out.ctr.ctr501	= ctr501;
-		r->out.totalentries	= r->out.ctr.ctr501->count;
+		r->out.info_ctr->ctr.ctr501	= ctr501;
+		*r->out.totalentries		= r->out.info_ctr->ctr.ctr501->count;
+
 		return WERR_OK;
 	}
 	case 502:
@@ -917,7 +917,7 @@ static WERROR dcesrv_srvsvc_NetShareEnumAll(struct dcesrv_call_state *dce_call, 
 		ctr502->array = NULL;
 
 		if (ctr502->count == 0) {
-			r->out.ctr.ctr502 = ctr502;
+			r->out.info_ctr->ctr.ctr502	= ctr502;
 			return WERR_OK;
 		}
 
@@ -934,7 +934,7 @@ static WERROR dcesrv_srvsvc_NetShareEnumAll(struct dcesrv_call_state *dce_call, 
 				return WERR_GENERAL_FAILURE;
 			}
 			info.info502 = &ctr502->array[i];
-			status = dcesrv_srvsvc_fiel_ShareInfo(dce_call, mem_ctx, scfg, r->in.level, &info);
+			status = dcesrv_srvsvc_fiel_ShareInfo(dce_call, mem_ctx, scfg, r->in.info_ctr->level, &info);
 			if (!W_ERROR_IS_OK(status)) {
 				return status;
 			}
@@ -942,8 +942,9 @@ static WERROR dcesrv_srvsvc_NetShareEnumAll(struct dcesrv_call_state *dce_call, 
 		}
 		talloc_free(snames);
 
-		r->out.ctr.ctr502	= ctr502;
-		r->out.totalentries	= r->out.ctr.ctr502->count;
+		r->out.info_ctr->ctr.ctr502	= ctr502;
+		*r->out.totalentries		= r->out.info_ctr->ctr.ctr502->count;
+
 		return WERR_OK;
 	}
 	default:
