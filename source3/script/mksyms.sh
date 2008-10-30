@@ -6,7 +6,7 @@
 # Extract symbols to export from C-header files.
 # output in version-script format for linking shared libraries.
 #
-# This is the shell warpper for the mksyms.awk core script.
+# This is the shell wrapper for the mksyms.awk core script.
 #
 # Copyright (C) 2008 Micheal Adam <obnox@samba.org>
 #
