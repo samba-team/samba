@@ -29,6 +29,10 @@
 #include "libcli/raw/smb.h"
 #include "param/param.h"
 
+#if HAVE_SYS_INOTIFY_H
+#include <sys/inotify.h>
+#else
+/* for older glibc varients - we can remove this eventually */
 #include <linux/inotify.h>
 #include <asm/unistd.h>
 
@@ -50,6 +54,7 @@ static int inotify_rm_watch(int fd, int wd)
 {
 	return syscall(__NR_inotify_rm_watch, fd, wd);
 }
+#endif
 #endif
 
 
