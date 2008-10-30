@@ -182,13 +182,13 @@ static NTSTATUS create_acl_blob(const SEC_DESC *psd, DATA_BLOB *pblob)
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS store_acl_blob(files_struct *fsp,
+static NTSTATUS store_acl_blob_fsp(files_struct *fsp,
 				DATA_BLOB *pblob)
 {
 	int ret;
 	int saved_errno = 0;
 
-	DEBUG(10,("store_acl_blob: storing blob length %u on file %s\n",
+	DEBUG(10,("store_acl_blob_fsp: storing blob length %u on file %s\n",
 			(unsigned int)pblob->length, fsp->fsp_name));
 
 	become_root();
@@ -206,9 +206,39 @@ static NTSTATUS store_acl_blob(files_struct *fsp,
 	unbecome_root();
 	if (ret) {
 		errno = saved_errno;
-		DEBUG(5, ("store_acl_blob: setting attr failed for file %s"
+		DEBUG(5, ("store_acl_blob_fsp: setting attr failed for file %s"
 			"with error %s\n",
 			fsp->fsp_name,
+			strerror(errno) ));
+		return map_nt_error_from_unix(errno);
+	}
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS store_acl_blob_pathname(connection_struct *conn,
+					const char *fname,
+					DATA_BLOB *pblob)
+{
+	int ret;
+	int saved_errno = 0;
+
+	DEBUG(10,("store_acl_blob_pathname: storing blob "
+			"length %u on file %s\n",
+			(unsigned int)pblob->length, fname));
+
+	become_root();
+	ret = SMB_VFS_SETXATTR(conn, fname,
+				XATTR_NTACL_NAME,
+				pblob->data, pblob->length, 0);
+	if (ret) {
+		saved_errno = errno;
+	}
+	unbecome_root();
+	if (ret) {
+		errno = saved_errno;
+		DEBUG(5, ("store_acl_blob_pathname: setting attr failed "
+			"for file %s with error %s\n",
+			fname,
 			strerror(errno) ));
 		return map_nt_error_from_unix(errno);
 	}
@@ -261,11 +291,6 @@ static NTSTATUS get_nt_acl_xattr_internal(vfs_handle_struct *handle,
 	return status;
 }
 
-static int mkdir_acl_xattr(vfs_handle_struct *handle,  const char *path, mode_t mode)
-{
-	return SMB_VFS_NEXT_MKDIR(handle, path, mode);
-}
-
 /*********************************************************************
  * Currently this only works for existing files. Need to work on
  * inheritance for new files.
@@ -273,7 +298,8 @@ static int mkdir_acl_xattr(vfs_handle_struct *handle,  const char *path, mode_t 
 
 static NTSTATUS inherit_new_acl(vfs_handle_struct *handle,
 					const char *fname,
-					files_struct *fsp)
+					files_struct *fsp,
+					bool container)
 {
 	TALLOC_CTX *ctx = talloc_tos();
 	NTSTATUS status;
@@ -313,7 +339,7 @@ static NTSTATUS inherit_new_acl(vfs_handle_struct *handle,
 				parent_desc,
 				&handle->conn->server_info->ptok->user_sids[PRIMARY_USER_SID_INDEX],
 				&handle->conn->server_info->ptok->user_sids[PRIMARY_GROUP_SID_INDEX],
-				false);
+				container);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -321,7 +347,11 @@ static NTSTATUS inherit_new_acl(vfs_handle_struct *handle,
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	return store_acl_blob(fsp, &blob);
+	if (fsp) {
+		return store_acl_blob_fsp(fsp, &blob);
+	} else {
+		return store_acl_blob_pathname(handle->conn, fname, &blob);
+	}
 }
 
 /*********************************************************************
@@ -368,10 +398,22 @@ static int open_acl_xattr(vfs_handle_struct *handle,
 	if (!file_existed && fsp->fh->fd != -1) {
 		/* File was created. Inherit from parent directory. */
 		string_set(&fsp->fsp_name, fname);
-		inherit_new_acl(handle, fname, fsp);
+		inherit_new_acl(handle, fname, fsp, false);
 	}
 
 	return fsp->fh->fd;
+}
+
+static int mkdir_acl_xattr(vfs_handle_struct *handle, const char *path, mode_t mode)
+{
+	int ret = SMB_VFS_NEXT_MKDIR(handle, path, mode);
+
+	if (ret == -1) {
+		return ret;
+	}
+	/* New directory - inherit from parent. */
+	inherit_new_acl(handle, path, NULL, true);
+	return ret;
 }
 
 static NTSTATUS fget_nt_acl_xattr(vfs_handle_struct *handle, files_struct *fsp,
@@ -426,7 +468,7 @@ static NTSTATUS fset_nt_acl_xattr(vfs_handle_struct *handle, files_struct *fsp,
 	}
 
 	create_acl_blob(psd, &blob);
-	store_acl_blob(fsp, &blob);
+	store_acl_blob_fsp(fsp, &blob);
 
 	return NT_STATUS_OK;
 }
