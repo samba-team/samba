@@ -931,6 +931,18 @@ interface netlogon
 
 	/* i'm not at all sure how this call works */
 
+	typedef [public] struct {
+		uint32 serial_number1;
+		uint32 serial_number2;
+		uint32 object_rid;
+		uint16 flags;
+		uint8 db_index;
+		uint8 delta_type;
+		[value(ndr_size_dom_sid0(&object_sid, ndr->flags))] uint32 sid_size;
+		[subcontext(0),subcontext_size(sid_size)] dom_sid0 object_sid;
+		[string,charset(UTF16)] uint16 *object_name;
+	} netr_ChangeLogEntry;
+
 	NTSTATUS netr_DatabaseRedo(
 		[in]     [string,charset(UTF16)] uint16 logon_server[],
 		[in]     [string,charset(UTF16)] uint16 computername[],
