@@ -81,23 +81,39 @@ static bool test_NetCharDevEnum(struct torture_context *tctx,
 {
 	NTSTATUS status;
 	struct srvsvc_NetCharDevEnum r;
+	struct srvsvc_NetCharDevInfoCtr info_ctr;
 	struct srvsvc_NetCharDevCtr0 c0;
+	struct srvsvc_NetCharDevCtr0 c1;
+	uint32_t totalentries = 0;
 	uint32_t levels[] = {0, 1};
 	int i;
 
+	ZERO_STRUCT(info_ctr);
+
 	r.in.server_unc = talloc_asprintf(tctx,"\\\\%s",dcerpc_server_name(p));
-	r.in.ctr.ctr0 = &c0;
-	r.in.ctr.ctr0->count = 0;
-	r.in.ctr.ctr0->array = NULL;
+	r.in.info_ctr = &info_ctr;
 	r.in.max_buffer = (uint32_t)-1;
 	r.in.resume_handle = NULL;
+	r.out.info_ctr = &info_ctr;
+	r.out.totalentries = &totalentries;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		int j;
 
-		ZERO_STRUCT(r.out);
-		r.in.level = levels[i];
-		torture_comment(tctx, "testing NetCharDevEnum level %u\n", r.in.level);
+		info_ctr.level = levels[i];
+
+		switch(info_ctr.level) {
+		case 0:
+			ZERO_STRUCT(c0);
+			info_ctr.ctr.ctr0 = &c0;
+			break;
+		case 1:
+			ZERO_STRUCT(c1);
+			info_ctr.ctr.ctr0 = &c1;
+			break;
+		}
+
+		torture_comment(tctx, "testing NetCharDevEnum level %u\n", info_ctr.level);
 		status = dcerpc_srvsvc_NetCharDevEnum(p, tctx, &r);
 		torture_assert_ntstatus_ok(tctx, status, "NetCharDevEnum failed");
 		if (!W_ERROR_IS_OK(r.out.result)) {
@@ -106,10 +122,10 @@ static bool test_NetCharDevEnum(struct torture_context *tctx,
 		}
 
 		/* call test_NetCharDevGetInfo and test_NetCharDevControl for each returned share */
-		if (r.in.level == 1) {
-			for (j=0;j<r.out.ctr.ctr1->count;j++) {
+		if (info_ctr.level == 1) {
+			for (j=0;j<r.out.info_ctr->ctr.ctr1->count;j++) {
 				const char *device;
-				device = r.out.ctr.ctr1->array[j].device;
+				device = r.out.info_ctr->ctr.ctr1->array[j].device;
 				if (!test_NetCharDevGetInfo(p, tctx, device)) {
 					return false;
 				}
