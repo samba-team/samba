@@ -7,6 +7,7 @@
 #include "lib/replace/replace.h"
 #include "system/syslog.h"
 #include "system/time.h"
+#include "localedir.h"
 
 #define MODULE_NAME "pam_winbind"
 #define PAM_SM_AUTH
@@ -19,6 +20,10 @@
 #endif
 
 #include <iniparser.h>
+
+#ifdef HAVE_LIBINTL_H
+#include <libintl.h>
+#endif
 
 #ifndef LINUX
 
@@ -98,12 +103,20 @@ do {                             \
 #define WINBIND_DEBUG_STATE		0x00001000
 #define WINBIND_WARN_PWD_EXPIRE		0x00002000
 
+#if defined(HAVE_GETTEXT) && !defined(__LCLINT__)
+#define _(string) dgettext(MODULE_NAME, string)
+#else
+#define _(string) string
+#endif
+
+#define N_(string) string
+
 /*
  * here is the string to inform the user that the new passwords they
  * typed were not the same.
  */
 
-#define MISTYPED_PASS "Sorry, passwords do not match"
+#define MISTYPED_PASS _("Sorry, passwords do not match")
 
 #define on(x, y) (x & y)
 #define off(x, y) (!(x & y))
