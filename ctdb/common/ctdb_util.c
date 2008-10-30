@@ -132,8 +132,8 @@ void ctdb_latency(struct ctdb_db_context *ctdb_db, const char *name, double *lat
 	}
 
 	if (ctdb_db->ctdb->tunable.log_latency_ms !=0) {
-		if (l > ctdb_db->ctdb->tunable.log_latency_ms) {
-			DEBUG(DEBUG_WARNING, ("High latency %f for operation %s on database %s\n", l, name, ctdb_db->db_name));
+		if (l*1000 > ctdb_db->ctdb->tunable.log_latency_ms) {
+			DEBUG(DEBUG_WARNING, ("High latency %fs for operation %s on database %s\n", l*1000000, name, ctdb_db->db_name));
 		}
 	}
 }
