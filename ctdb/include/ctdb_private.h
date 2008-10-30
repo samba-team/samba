@@ -116,6 +116,7 @@ struct ctdb_tunable {
 	uint32_t verbose_memory_names;
 	uint32_t recd_ping_timeout;
 	uint32_t recd_ping_failcount;
+	uint32_t log_latency_ms;
 };
 
 /*
@@ -967,7 +968,7 @@ void ctdb_recv_raw_pkt(void *p, uint8_t *data, uint32_t length);
 
 int ctdb_socket_connect(struct ctdb_context *ctdb);
 
-void ctdb_latency(double *latency, struct timeval t);
+void ctdb_latency(struct ctdb_db_context *ctdb_db, const char *name, double *latency, struct timeval t);
 
 uint32_t ctdb_reqid_new(struct ctdb_context *ctdb, void *state);
 void *_ctdb_reqid_find(struct ctdb_context *ctdb, uint32_t reqid, const char *type, const char *location);

@@ -124,11 +124,17 @@ static void *_idr_find_type(struct idr_context *idp, int id, const char *type, c
 /*
   update a max latency number
  */
-void ctdb_latency(double *latency, struct timeval t)
+void ctdb_latency(struct ctdb_db_context *ctdb_db, const char *name, double *latency, struct timeval t)
 {
 	double l = timeval_elapsed(&t);
 	if (l > *latency) {
 		*latency = l;
+	}
+
+	if (ctdb_db->ctdb->tunable.log_latency_ms !=0) {
+		if (l > ctdb_db->ctdb->tunable.log_latency_ms) {
+			DEBUG(DEBUG_WARNING, ("High latency %f for operation %s on database %s\n", l, name, ctdb_db->db_name));
+		}
 	}
 }
 

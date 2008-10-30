@@ -52,6 +52,7 @@ static const struct {
 	{ "VerboseMemoryNames",   0,  offsetof(struct ctdb_tunable, verbose_memory_names) },
 	{ "RecdPingTimeout",	 20,  offsetof(struct ctdb_tunable, recd_ping_timeout) },
 	{ "RecdFailCount",	  3,  offsetof(struct ctdb_tunable, recd_ping_failcount) },
+	{ "LogLatencyMs",         0,  offsetof(struct ctdb_tunable, log_latency_ms) },
 };
 
 /*
