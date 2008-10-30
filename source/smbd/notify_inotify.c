@@ -25,6 +25,10 @@
 
 #ifdef HAVE_INOTIFY
 
+#if HAVE_SYS_INOTIFY_H
+#include <sys/inotify.h>
+#else
+
 #ifdef HAVE_ASM_TYPES_H
 #include <asm/types.h>
 #endif
@@ -57,7 +61,7 @@ static int inotify_rm_watch(int fd, int wd)
 #include <sys/inotify.h>
 
 #endif
-
+#endif
 
 /* older glibc headers don't have these defines either */
 #ifndef IN_ONLYDIR
