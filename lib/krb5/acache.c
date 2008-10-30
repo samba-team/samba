@@ -135,7 +135,7 @@ init_ccapi(krb5_context context)
 #else
     HEIMDAL_MUTEX_unlock(&acc_mutex);
     krb5_set_error_message(context, KRB5_CC_NOSUPP,
-			   N_("no support for shared object"));
+			   N_("no support for shared object", ""));
     return KRB5_CC_NOSUPP;
 #endif
 }
