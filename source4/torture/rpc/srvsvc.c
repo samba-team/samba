@@ -796,16 +796,23 @@ static bool test_NetDiskEnum(struct torture_context *tctx,
 {
 	NTSTATUS status;
 	struct srvsvc_NetDiskEnum r;
+	struct srvsvc_NetDiskInfo info;
+	uint32_t totalentries = 0;
 	uint32_t levels[] = {0};
 	int i;
 	uint32_t resume_handle=0;
 
-	ZERO_STRUCT(r.in);
+	ZERO_STRUCT(info);
+
 	r.in.server_unc = NULL;
 	r.in.resume_handle = &resume_handle;
+	r.in.info = &info;
+	r.out.info = &info;
+	r.out.totalentries = &totalentries;
+	r.out.resume_handle = &resume_handle;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
-		ZERO_STRUCT(r.out);
+		ZERO_STRUCTP(r.out.info);
 		r.in.level = levels[i];
 		torture_comment(tctx, "testing NetDiskEnum level %u\n", r.in.level);
 		status = dcerpc_srvsvc_NetDiskEnum(p, tctx, &r);
