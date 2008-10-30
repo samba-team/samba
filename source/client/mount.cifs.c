@@ -441,6 +441,7 @@ static int parse_options(char ** optionsp, int * filesys_flags)
 					goto nocopy;
 				} else {
 					printf("username specified with no parameter\n");
+					SAFE_FREE(out);
 					return 1;	/* needs_arg; */
 				}
 			} else {
@@ -473,6 +474,7 @@ static int parse_options(char ** optionsp, int * filesys_flags)
 					domain_name = check_for_domain(&value);
 				} else {
 					printf("username too long\n");
+					SAFE_FREE(out);
 					return 1;
 				}
 			}
@@ -488,6 +490,7 @@ static int parse_options(char ** optionsp, int * filesys_flags)
 				got_password = 1;
 			} else {
 				printf("password too long\n");
+				SAFE_FREE(out);
 				return 1;
 			}
 		} else if (strncmp(data, "sec", 3) == 0) {
@@ -504,6 +507,7 @@ static int parse_options(char ** optionsp, int * filesys_flags)
 				got_ip = 1;
 			} else {
 				printf("ip address too long\n");
+				SAFE_FREE(out);
 				return 1;
 			}
 		} else if ((strncmp(data, "unc", 3) == 0)
@@ -511,6 +515,7 @@ static int parse_options(char ** optionsp, int * filesys_flags)
 		   || (strncmp(data, "path", 4) == 0)) {
 			if (!value || !*value) {
 				printf("invalid path to network resource\n");
+				SAFE_FREE(out);
 				return 1;  /* needs_arg; */
 			} else if(strnlen(value,5) < 5) {
 				printf("UNC name too short");
@@ -525,6 +530,7 @@ static int parse_options(char ** optionsp, int * filesys_flags)
 						got_unc = 1;
 				} else if (strncmp(value, "\\\\", 2) != 0) {	                   
 					printf("UNC Path does not begin with // or \\\\ \n");
+					SAFE_FREE(out);
 					return 1;
 				} else {
 					if(got_unc)
@@ -534,18 +540,21 @@ static int parse_options(char ** optionsp, int * filesys_flags)
 				}
 			} else {
 				printf("CIFS: UNC name too long\n");
+				SAFE_FREE(out);
 				return 1;
 			}
 		} else if ((strncmp(data, "domain", 3) == 0)
 			   || (strncmp(data, "workgroup", 5) == 0)) {
 			if (!value || !*value) {
 				printf("CIFS: invalid domain name\n");
+				SAFE_FREE(out);
 				return 1;	/* needs_arg; */
 			}
 			if (strnlen(value, DOMAIN_SIZE+1) < DOMAIN_SIZE+1) {
 				got_domain = 1;
 			} else {
 				printf("domain name too long\n");
+				SAFE_FREE(out);
 				return 1;
 			}
 		} else if (strncmp(data, "cred", 4) == 0) {
@@ -554,10 +563,12 @@ static int parse_options(char ** optionsp, int * filesys_flags)
 				if(rc) {
 					printf("error %d (%s) opening credential file %s\n",
 						rc, strerror(rc), value);
+					SAFE_FREE(out);
 					return 1;
 				}
 			} else {
 				printf("invalid credential file name specified\n");
+				SAFE_FREE(out);
 				return 1;
 			}
 		} else if (strncmp(data, "uid", 3) == 0) {
@@ -596,6 +607,7 @@ static int parse_options(char ** optionsp, int * filesys_flags)
 		} else if (strcmp(data, "file_mode") == 0 || strcmp(data, "fmask")==0) {
 			if (!value || !*value) {
 				printf ("Option '%s' requires a numerical argument\n", data);
+				SAFE_FREE(out);
 				return 1;
 			}
 
@@ -610,6 +622,7 @@ static int parse_options(char ** optionsp, int * filesys_flags)
 		} else if (strcmp(data, "dir_mode") == 0 || strcmp(data, "dmask")==0) {
 			if (!value || !*value) {
 				printf ("Option '%s' requires a numerical argument\n", data);
+				SAFE_FREE(out);
 				return 1;
 			}
 
