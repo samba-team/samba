@@ -287,7 +287,7 @@ import "security.idl", "svcctl.idl";
 	/* Function: 0x0b */
 	WERROR srvsvc_NetFileClose(
 		[in,unique]   [string,charset(UTF16)] uint16 *server_unc,
-		[in]   uint32 fid	
+		[in]   uint32 fid
 		);
 
 /**************************/
@@ -495,7 +495,7 @@ import "security.idl", "svcctl.idl";
 		SHARE_1005_IN_DFS               = 0x00000001,
 		SHARE_1005_DFS_ROOT             = 0x00000002
 	} NetShareInfo1005Flags;
-	
+
 	const uint32 SHARE_1005_CSC_POLICY_MASK = 0x00000030;
 	const uint32 SHARE_1005_CSC_POLICY_SHIFT = 4;
 
@@ -618,7 +618,7 @@ import "security.idl", "svcctl.idl";
 		[in]   [string,charset(UTF16)] uint16 share_name[],
 		[in]   uint32 reserved
 		);
-	
+
 	/******************/
 	/* Function: 0x14 */
 	WERROR srvsvc_NetShareCheck(
@@ -1417,7 +1417,7 @@ import "security.idl", "svcctl.idl";
 /**************************/
 	/******************/
 	/* Function: 0x24 */
-	/* Note, there must be some way to return entries read vs 
+	/* Note, there must be some way to return entries read vs
 	   total entries ... */
 	WERROR srvsvc_NetShareEnum(
 		[in,unique]       [string,charset(UTF16)] uint16 *server_unc,
