@@ -749,9 +749,6 @@ int ldb_dn_compare_base(struct ldb_dn *base, struct ldb_dn *dn)
 		if (base->linearized && dn->linearized) {
 			/* try with a normal compare first, if we are lucky
 			 * we will avoid exploding and casfolding */
-			int dif;
-			dif = strlen(dn->linearized) - strlen(base->linearized);
-			if (dif < 0) return dif;
 			if (strcmp(base->linearized, &dn->linearized[dif]) == 0) return 0;
 		}
 
