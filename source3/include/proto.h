@@ -7821,6 +7821,7 @@ bool dns_register_smbd_reply(struct dns_reg_state *dns_state,
 mode_t unix_mode(connection_struct *conn, int dosmode, const char *fname,
 		 const char *inherit_from_dir);
 uint32 dos_mode_msdfs(connection_struct *conn, const char *path,SMB_STRUCT_STAT *sbuf);
+int dos_attributes_to_stat_dos_flags(uint32_t dosmode);
 uint32 dos_mode(connection_struct *conn, const char *path,SMB_STRUCT_STAT *sbuf);
 int file_set_dosmode(connection_struct *conn, const char *fname,
 		     uint32 dosmode, SMB_STRUCT_STAT *st,
@@ -8097,6 +8098,34 @@ NTSTATUS smb1_file_se_access_check(const struct security_descriptor *sd,
                           uint32_t access_desired,
                           uint32_t *access_granted);
 NTSTATUS fd_close(files_struct *fsp);
+void change_file_owner_to_parent(connection_struct *conn,
+				 const char *inherit_from_dir,
+				 files_struct *fsp);
+NTSTATUS change_dir_owner_to_parent(connection_struct *conn,
+				    const char *inherit_from_dir,
+				    const char *fname,
+				    SMB_STRUCT_STAT *psbuf);
+bool is_executable(const char *fname);
+bool is_stat_open(uint32 access_mask);
+bool request_timed_out(struct timeval request_time,
+		       struct timeval timeout);
+bool open_match_attributes(connection_struct *conn,
+			   const char *path,
+			   uint32 old_dos_attr,
+			   uint32 new_dos_attr,
+			   mode_t existing_unx_mode,
+			   mode_t new_unx_mode,
+			   mode_t *returned_unx_mode);
+NTSTATUS fcb_or_dos_open(struct smb_request *req,
+			 connection_struct *conn,
+			 files_struct *fsp_to_dup_into,
+			 const char *fname,
+			 struct file_id id,
+			 uint16 file_pid,
+			 uint16 vuid,
+			 uint32 access_mask,
+			 uint32 share_access,
+			 uint32 create_options);
 bool map_open_params_to_ntcreate(const char *fname, int deny_mode, int open_func,
 				 uint32 *paccess_mask,
 				 uint32 *pshare_mode,
@@ -8112,6 +8141,9 @@ void msg_file_was_renamed(struct messaging_context *msg,
 			  uint32_t msg_type,
 			  struct server_id server_id,
 			  DATA_BLOB *data);
+struct case_semantics_state;
+struct case_semantics_state *set_posix_case_semantics(TALLOC_CTX *mem_ctx,
+						      connection_struct *conn);
 NTSTATUS create_file_default(connection_struct *conn,
 			     struct smb_request *req,
 			     uint16_t root_dir_fid,

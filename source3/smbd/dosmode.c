@@ -353,7 +353,7 @@ uint32 dos_mode_msdfs(connection_struct *conn, const char *path,SMB_STRUCT_STAT 
  Convert dos attributes (FILE_ATTRIBUTE_*) to dos stat flags (UF_*)
 ****************************************************************************/
 
-static int dos_attributes_to_stat_dos_flags(uint32_t dosmode)
+int dos_attributes_to_stat_dos_flags(uint32_t dosmode)
 {
 	uint32_t dos_stat_flags = 0;
 

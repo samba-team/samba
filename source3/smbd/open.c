@@ -159,7 +159,7 @@ NTSTATUS fd_close(files_struct *fsp)
  Do this by fd if possible.
 ****************************************************************************/
 
-static void change_file_owner_to_parent(connection_struct *conn,
+void change_file_owner_to_parent(connection_struct *conn,
 					const char *inherit_from_dir,
 					files_struct *fsp)
 {
@@ -190,7 +190,7 @@ static void change_file_owner_to_parent(connection_struct *conn,
 		  (unsigned int)parent_st.st_uid ));
 }
 
-static NTSTATUS change_dir_owner_to_parent(connection_struct *conn,
+NTSTATUS change_dir_owner_to_parent(connection_struct *conn,
 				       const char *inherit_from_dir,
 				       const char *fname,
 				       SMB_STRUCT_STAT *psbuf)
@@ -499,7 +499,7 @@ static NTSTATUS open_file(files_struct *fsp,
  Return True if the filename is one of the special executable types.
 ********************************************************************/
 
-static bool is_executable(const char *fname)
+bool is_executable(const char *fname)
 {
 	if ((fname = strrchr_m(fname,'.'))) {
 		if (strequal(fname,".com") ||
@@ -661,7 +661,7 @@ static void validate_my_share_entries(int num,
 }
 #endif
 
-static bool is_stat_open(uint32 access_mask)
+bool is_stat_open(uint32 access_mask)
 {
 	return (access_mask &&
 		((access_mask & ~(SYNCHRONIZE_ACCESS| FILE_READ_ATTRIBUTES|
@@ -862,8 +862,8 @@ static bool delay_for_oplocks(struct share_mode_lock *lck,
 	return True;
 }
 
-static bool request_timed_out(struct timeval request_time,
-			      struct timeval timeout)
+bool request_timed_out(struct timeval request_time,
+		       struct timeval timeout)
 {
 	struct timeval now, end_time;
 	GetTimeOfDay(&now);
@@ -928,13 +928,13 @@ static void defer_open(struct share_mode_lock *lck,
  On overwrite open ensure that the attributes match.
 ****************************************************************************/
 
-static bool open_match_attributes(connection_struct *conn,
-				  const char *path,
-				  uint32 old_dos_attr,
-				  uint32 new_dos_attr,
-				  mode_t existing_unx_mode,
-				  mode_t new_unx_mode,
-				  mode_t *returned_unx_mode)
+bool open_match_attributes(connection_struct *conn,
+			   const char *path,
+			   uint32 old_dos_attr,
+			   uint32 new_dos_attr,
+			   mode_t existing_unx_mode,
+			   mode_t new_unx_mode,
+			   mode_t *returned_unx_mode)
 {
 	uint32 noarch_old_dos_attr, noarch_new_dos_attr;
 
@@ -978,7 +978,7 @@ static bool open_match_attributes(connection_struct *conn,
  Try and find a duplicated file handle.
 ****************************************************************************/
 
-static NTSTATUS fcb_or_dos_open(struct smb_request *req,
+NTSTATUS fcb_or_dos_open(struct smb_request *req,
 				     connection_struct *conn,
 				     files_struct *fsp_to_dup_into,
 				     const char *fname,
@@ -2562,8 +2562,8 @@ static int restore_case_semantics(struct case_semantics_state *state)
 /****************************************************************************
  Save case semantics.
 ****************************************************************************/
-static struct case_semantics_state *set_posix_case_semantics(TALLOC_CTX *mem_ctx,
-							     connection_struct *conn)
+struct case_semantics_state *set_posix_case_semantics(TALLOC_CTX *mem_ctx,
+						      connection_struct *conn)
 {
 	struct case_semantics_state *result;
 
