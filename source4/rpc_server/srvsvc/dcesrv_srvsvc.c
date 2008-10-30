@@ -1815,10 +1815,7 @@ static WERROR dcesrv_srvsvc_NetShareEnum(struct dcesrv_call_state *dce_call, TAL
 	struct share_config *scfg;
 	struct dcesrv_context *dce_ctx = dce_call->conn->dce_ctx;
 
-	r->out.level = r->in.level;
-	ZERO_STRUCT(r->out.ctr);
-	r->out.totalentries = 0;
-	r->out.resume_handle = NULL;
+	*r->out.totalentries = 0;
 
 	/* TODO: - paging of results 
 	 */
@@ -1833,7 +1830,7 @@ static WERROR dcesrv_srvsvc_NetShareEnum(struct dcesrv_call_state *dce_call, TAL
 		return ntstatus_to_werror(nterr);
 	}
 
-	switch (r->in.level) {
+	switch (r->in.info_ctr->level) {
 	case 0:
 	{
 		int i, y = 0;
@@ -1848,7 +1845,7 @@ static WERROR dcesrv_srvsvc_NetShareEnum(struct dcesrv_call_state *dce_call, TAL
 		ctr0->array = NULL;
 
 		if (ctr0->count == 0) {
-			r->out.ctr.ctr0	= ctr0;
+			r->out.info_ctr->ctr.ctr0	= ctr0;
 			return WERR_OK;
 		}
 
@@ -1874,15 +1871,16 @@ static WERROR dcesrv_srvsvc_NetShareEnum(struct dcesrv_call_state *dce_call, TAL
 			}
 
 			info.info0 = &ctr0->array[y];
-			status = dcesrv_srvsvc_fiel_ShareInfo(dce_call, mem_ctx, scfg, r->in.level, &info);
+			status = dcesrv_srvsvc_fiel_ShareInfo(dce_call, mem_ctx, scfg, r->in.info_ctr->level, &info);
 			W_ERROR_NOT_OK_RETURN(status);
 			talloc_free(scfg);
 			y++;
 		}
 		talloc_free(snames);
 
-		r->out.ctr.ctr0		= ctr0;
-		r->out.totalentries	= r->out.ctr.ctr0->count;
+		r->out.info_ctr->ctr.ctr0	= ctr0;
+		*r->out.totalentries		= r->out.info_ctr->ctr.ctr0->count;
+
 		return WERR_OK;
 	}
 	case 1:
@@ -1899,7 +1897,7 @@ static WERROR dcesrv_srvsvc_NetShareEnum(struct dcesrv_call_state *dce_call, TAL
 		ctr1->array = NULL;
 
 		if (ctr1->count == 0) {
-			r->out.ctr.ctr1	= ctr1;
+			r->out.info_ctr->ctr.ctr1	= ctr1;
 			return WERR_OK;
 		}
 
@@ -1925,15 +1923,16 @@ static WERROR dcesrv_srvsvc_NetShareEnum(struct dcesrv_call_state *dce_call, TAL
 			}
 
 			info.info1 = &ctr1->array[y];
-			status = dcesrv_srvsvc_fiel_ShareInfo(dce_call, mem_ctx, scfg, r->in.level, &info);
+			status = dcesrv_srvsvc_fiel_ShareInfo(dce_call, mem_ctx, scfg, r->in.info_ctr->level, &info);
 			W_ERROR_NOT_OK_RETURN(status);
 			talloc_free(scfg);
 			y++;
 		}
 		talloc_free(snames);
 
-		r->out.ctr.ctr1		= ctr1;
-		r->out.totalentries	= r->out.ctr.ctr1->count;
+		r->out.info_ctr->ctr.ctr1	= ctr1;
+		*r->out.totalentries		= r->out.info_ctr->ctr.ctr1->count;
+
 		return WERR_OK;
 	}
 	case 2:
@@ -1952,7 +1951,7 @@ static WERROR dcesrv_srvsvc_NetShareEnum(struct dcesrv_call_state *dce_call, TAL
 		ctr2->array = NULL;
 
 		if (ctr2->count == 0) {
-			r->out.ctr.ctr2 = ctr2;
+			r->out.info_ctr->ctr.ctr2	= ctr2;
 			return WERR_OK;
 		}
 
@@ -1978,15 +1977,16 @@ static WERROR dcesrv_srvsvc_NetShareEnum(struct dcesrv_call_state *dce_call, TAL
 			}
 
 			info.info2 = &ctr2->array[y];
-			status = dcesrv_srvsvc_fiel_ShareInfo(dce_call, mem_ctx, scfg, r->in.level, &info);
+			status = dcesrv_srvsvc_fiel_ShareInfo(dce_call, mem_ctx, scfg, r->in.info_ctr->level, &info);
 			W_ERROR_NOT_OK_RETURN(status);
 			talloc_free(scfg);
 			y++;
 		}
 		talloc_free(snames);
 
-		r->out.ctr.ctr2		= ctr2;
-		r->out.totalentries	= r->out.ctr.ctr2->count;
+		r->out.info_ctr->ctr.ctr2	= ctr2;
+		*r->out.totalentries		= r->out.info_ctr->ctr.ctr2->count;
+
 		return WERR_OK;
 	}
 	case 502:
@@ -2005,7 +2005,7 @@ static WERROR dcesrv_srvsvc_NetShareEnum(struct dcesrv_call_state *dce_call, TAL
 		ctr502->array = NULL;
 
 		if (ctr502->count == 0) {
-			r->out.ctr.ctr502 = ctr502;
+			r->out.info_ctr->ctr.ctr502	= ctr502;
 			return WERR_OK;
 		}
 
@@ -2031,15 +2031,16 @@ static WERROR dcesrv_srvsvc_NetShareEnum(struct dcesrv_call_state *dce_call, TAL
 			}
 
 			info.info502 = &ctr502->array[y];
-			status = dcesrv_srvsvc_fiel_ShareInfo(dce_call, mem_ctx, scfg, r->in.level, &info);
+			status = dcesrv_srvsvc_fiel_ShareInfo(dce_call, mem_ctx, scfg, r->in.info_ctr->level, &info);
 			W_ERROR_NOT_OK_RETURN(status);
 			talloc_free(scfg);
 			y++;
 		}
 		talloc_free(snames);
 
-		r->out.ctr.ctr502	= ctr502;
-		r->out.totalentries	= r->out.ctr.ctr502->count;
+		r->out.info_ctr->ctr.ctr502	= ctr502;
+		*r->out.totalentries		= r->out.info_ctr->ctr.ctr502->count;
+
 		return WERR_OK;
 	}
 	default:

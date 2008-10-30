@@ -1907,38 +1907,87 @@ static bool test_NetShareEnum(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct srvsvc_NetShareEnum r;
+	struct srvsvc_NetShareInfoCtr info_ctr;
 	struct srvsvc_NetShareCtr0 c0;
+	struct srvsvc_NetShareCtr1 c1;
+	struct srvsvc_NetShareCtr2 c2;
+	struct srvsvc_NetShareCtr501 c501;
+	struct srvsvc_NetShareCtr502 c502;
+	struct srvsvc_NetShareCtr1004 c1004;
+	struct srvsvc_NetShareCtr1005 c1005;
+	struct srvsvc_NetShareCtr1006 c1006;
+	struct srvsvc_NetShareCtr1007 c1007;
+	uint32_t totalentries = 0;
 	uint32_t levels[] = { 0, 1, 2, 501, 502, 1004, 1005, 1006, 1007 };
 	int i;
 	bool ret = true;
 
+	ZERO_STRUCT(info_ctr);
+
 	r.in.server_unc = talloc_asprintf(mem_ctx,"\\\\%s",dcerpc_server_name(p));
-	r.in.ctr.ctr0 = &c0;
-	r.in.ctr.ctr0->count = 0;
-	r.in.ctr.ctr0->array = NULL;
+	r.in.info_ctr = &info_ctr;
 	r.in.max_buffer = (uint32_t)-1;
 	r.in.resume_handle = NULL;
+	r.out.totalentries = &totalentries;
+	r.out.info_ctr = &info_ctr;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
-		r.in.level = levels[i];
+		info_ctr.level = levels[i];
 
-		ZERO_STRUCT(r.out);
+		switch (info_ctr.level) {
+		case 0:
+			ZERO_STRUCT(c0);
+			info_ctr.ctr.ctr0 = &c0;
+			break;
+		case 1:
+			ZERO_STRUCT(c1);
+			info_ctr.ctr.ctr1 = &c1;
+			break;
+		case 2:
+			ZERO_STRUCT(c2);
+			info_ctr.ctr.ctr2 = &c2;
+			break;
+		case 501:
+			ZERO_STRUCT(c501);
+			info_ctr.ctr.ctr501 = &c501;
+			break;
+		case 502:
+			ZERO_STRUCT(c502);
+			info_ctr.ctr.ctr502 = &c502;
+			break;
+		case 1004:
+			ZERO_STRUCT(c1004);
+			info_ctr.ctr.ctr1004 = &c1004;
+			break;
+		case 1005:
+			ZERO_STRUCT(c1005);
+			info_ctr.ctr.ctr1005 = &c1005;
+			break;
+		case 1006:
+			ZERO_STRUCT(c1006);
+			info_ctr.ctr.ctr1006 = &c1006;
+			break;
+		case 1007:
+			ZERO_STRUCT(c1007);
+			info_ctr.ctr.ctr1007 = &c1007;
+			break;
+		}
 
-		printf("testing NetShareEnum level %u\n", r.in.level);
+		printf("testing NetShareEnum level %u\n", info_ctr.level);
 		status = dcerpc_srvsvc_NetShareEnum(p, mem_ctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("NetShareEnum level %u failed - %s\n",
-			       r.in.level, nt_errstr(status));
+			       info_ctr.level, nt_errstr(status));
 			ret = false;
 			continue;
 		}
 		if (!W_ERROR_IS_OK(r.out.result)) {
 			printf("NetShareEnum level %u failed - %s\n",
-			       r.in.level, win_errstr(r.out.result));
+			       info_ctr.level, win_errstr(r.out.result));
 			continue;
 		}
-		if (r.in.level == 0) {
-			struct srvsvc_NetShareCtr0 *ctr = r.out.ctr.ctr0;
+		if (info_ctr.level == 0) {
+			struct srvsvc_NetShareCtr0 *ctr = r.out.info_ctr->ctr.ctr0;
 			if (ctr->count > 0) {
 				*one_sharename = ctr->array[0].name;
 			}
@@ -2471,8 +2520,10 @@ static NTSTATUS find_printers(TALLOC_CTX *ctx, struct loadparm_context *lp_ctx,
 	NTSTATUS status;
 	struct dcerpc_pipe *p;
 	struct srvsvc_NetShareEnum r;
+	struct srvsvc_NetShareInfoCtr info_ctr;
 	struct srvsvc_NetShareCtr1 c1_in;
 	struct srvsvc_NetShareCtr1 *c1;
+	uint32_t totalentries = 0;
 	int i;
 
 	mem_ctx = talloc_new(ctx);
@@ -2489,25 +2540,29 @@ static NTSTATUS find_printers(TALLOC_CTX *ctx, struct loadparm_context *lp_ctx,
 		return status;
 	}
 
+	ZERO_STRUCT(c1_in);
+	info_ctr.level = 1;
+	info_ctr.ctr.ctr1 = &c1_in;
+
 	r.in.server_unc = talloc_asprintf(
 		mem_ctx, "\\\\%s", dcerpc_server_name(p));
-	r.in.level = 1;
-	ZERO_STRUCT(c1_in);
-	r.in.ctr.ctr1 = &c1_in;
+	r.in.info_ctr = &info_ctr;
 	r.in.max_buffer = (uint32_t)-1;
 	r.in.resume_handle = NULL;
+	r.out.totalentries = &totalentries;
+	r.out.info_ctr = &info_ctr;
 
 	status = dcerpc_srvsvc_NetShareEnum(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("NetShareEnum level %u failed - %s\n",
-			 r.in.level, nt_errstr(status));
+			 info_ctr.level, nt_errstr(status));
 		talloc_free(mem_ctx);
 		return status;
 	}
 
 	*printers = NULL;
 	*num_printers = 0;
-	c1 = r.out.ctr.ctr1;
+	c1 = r.out.info_ctr->ctr.ctr1;
 	for (i=0; i<c1->count; i++) {
 		if (c1->array[i].type != STYPE_PRINTQ) {
 			continue;

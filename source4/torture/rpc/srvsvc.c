@@ -834,7 +834,13 @@ static bool test_NetShareEnum(struct torture_context *tctx,
 {
 	NTSTATUS status;
 	struct srvsvc_NetShareEnum r;
+	struct srvsvc_NetShareInfoCtr info_ctr;
 	struct srvsvc_NetShareCtr0 c0;
+	struct srvsvc_NetShareCtr1 c1;
+	struct srvsvc_NetShareCtr2 c2;
+	struct srvsvc_NetShareCtr501 c501;
+	struct srvsvc_NetShareCtr502 c502;
+	uint32_t totalentries = 0;
 	struct {
 		uint32_t level;
 		WERROR anon_status;
@@ -849,22 +855,44 @@ static bool test_NetShareEnum(struct torture_context *tctx,
 	int i;
 
 	r.in.server_unc = talloc_asprintf(tctx,"\\\\%s",dcerpc_server_name(p));
-	r.in.ctr.ctr0 = &c0;
-	r.in.ctr.ctr0->count = 0;
-	r.in.ctr.ctr0->array = NULL;
+	r.in.info_ctr = &info_ctr;
 	r.in.max_buffer = (uint32_t)-1;
 	r.in.resume_handle = NULL;
+	r.out.totalentries = &totalentries;
+	r.out.info_ctr = &info_ctr;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		WERROR expected;
 
-		r.in.level = levels[i].level;
+		info_ctr.level = levels[i].level;
+
+		switch (info_ctr.level) {
+		case 0:
+			ZERO_STRUCT(c0);
+			info_ctr.ctr.ctr0 = &c0;
+			break;
+		case 1:
+			ZERO_STRUCT(c1);
+			info_ctr.ctr.ctr1 = &c1;
+			break;
+		case 2:
+			ZERO_STRUCT(c2);
+			info_ctr.ctr.ctr2 = &c2;
+			break;
+		case 501:
+			ZERO_STRUCT(c501);
+			info_ctr.ctr.ctr501 = &c501;
+			break;
+		case 502:
+			ZERO_STRUCT(c502);
+			info_ctr.ctr.ctr502 = &c502;
+			break;
+		}
+
 		expected = levels[i].anon_status;
 		if (admin) expected = levels[i].admin_status;
 
-		ZERO_STRUCT(r.out);
-
-		torture_comment(tctx, "testing NetShareEnum level %u\n", r.in.level);
+		torture_comment(tctx, "testing NetShareEnum level %u\n", info_ctr.level);
 		status = dcerpc_srvsvc_NetShareEnum(p, tctx, &r);
 		torture_assert_ntstatus_ok(tctx, status, "NetShareEnum failed");
 		torture_assert_werr_equal(tctx, r.out.result, expected, "NetShareEnum failed");
