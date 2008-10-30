@@ -380,10 +380,9 @@ import "security.idl", "svcctl.idl";
 		[in,unique]   [string,charset(UTF16)] uint16 *server_unc,
 		[in,unique]   [string,charset(UTF16)] uint16 *client,
 		[in,unique]   [string,charset(UTF16)] uint16 *user,
-		[in,out]   uint32 level,
-		[in,out,switch_is(level)]   srvsvc_NetSessCtr ctr,
+		[in,out,ref]   srvsvc_NetSessInfoCtr *info_ctr,
 		[in]   uint32 max_buffer,
-		[out]   uint32 totalentries,
+		[out,ref]   uint32 *totalentries,
 		[in,out,unique]   uint32 *resume_handle
 		);
 

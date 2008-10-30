@@ -335,58 +335,56 @@ static WERROR dcesrv_srvsvc_NetFileClose(struct dcesrv_call_state *dce_call, TAL
 static WERROR dcesrv_srvsvc_NetSessEnum(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NetSessEnum *r)
 {
-	r->out.level = r->in.level;
-	r->out.totalentries = 0;
-	r->out.resume_handle = NULL;
+	*r->out.totalentries = 0;
 
-	switch (r->in.level) {
+	switch (r->in.info_ctr->level) {
 	case 0:
 	{
-		r->out.ctr.ctr0 = talloc(mem_ctx, struct srvsvc_NetSessCtr0);
-		W_ERROR_HAVE_NO_MEMORY(r->out.ctr.ctr0);
+		r->out.info_ctr->ctr.ctr0 = talloc(mem_ctx, struct srvsvc_NetSessCtr0);
+		W_ERROR_HAVE_NO_MEMORY(r->out.info_ctr->ctr.ctr0);
 
-		r->out.ctr.ctr0->count = 0;
-		r->out.ctr.ctr0->array = NULL;
+		r->out.info_ctr->ctr.ctr0->count = 0;
+		r->out.info_ctr->ctr.ctr0->array = NULL;
 
 		return WERR_NOT_SUPPORTED;
 	}
 	case 1:
 	{
-		r->out.ctr.ctr1 = talloc(mem_ctx, struct srvsvc_NetSessCtr1);
-		W_ERROR_HAVE_NO_MEMORY(r->out.ctr.ctr1);
+		r->out.info_ctr->ctr.ctr1 = talloc(mem_ctx, struct srvsvc_NetSessCtr1);
+		W_ERROR_HAVE_NO_MEMORY(r->out.info_ctr->ctr.ctr1);
 
-		r->out.ctr.ctr1->count = 0;
-		r->out.ctr.ctr1->array = NULL;
+		r->out.info_ctr->ctr.ctr1->count = 0;
+		r->out.info_ctr->ctr.ctr1->array = NULL;
 
 		return WERR_NOT_SUPPORTED;
 	}
 	case 2:
 	{
-		r->out.ctr.ctr2 = talloc(mem_ctx, struct srvsvc_NetSessCtr2);
-		W_ERROR_HAVE_NO_MEMORY(r->out.ctr.ctr2);
+		r->out.info_ctr->ctr.ctr2 = talloc(mem_ctx, struct srvsvc_NetSessCtr2);
+		W_ERROR_HAVE_NO_MEMORY(r->out.info_ctr->ctr.ctr2);
 
-		r->out.ctr.ctr2->count = 0;
-		r->out.ctr.ctr2->array = NULL;
+		r->out.info_ctr->ctr.ctr2->count = 0;
+		r->out.info_ctr->ctr.ctr2->array = NULL;
 
 		return WERR_NOT_SUPPORTED;
 	}
 	case 10:
 	{
-		r->out.ctr.ctr10 = talloc(mem_ctx, struct srvsvc_NetSessCtr10);
-		W_ERROR_HAVE_NO_MEMORY(r->out.ctr.ctr10);
+		r->out.info_ctr->ctr.ctr10 = talloc(mem_ctx, struct srvsvc_NetSessCtr10);
+		W_ERROR_HAVE_NO_MEMORY(r->out.info_ctr->ctr.ctr10);
 
-		r->out.ctr.ctr2->count = 0;
-		r->out.ctr.ctr2->array = NULL;
+		r->out.info_ctr->ctr.ctr10->count = 0;
+		r->out.info_ctr->ctr.ctr10->array = NULL;
 
 		return WERR_NOT_SUPPORTED;
 	}
 	case 502:
 	{
-		r->out.ctr.ctr502 = talloc(mem_ctx, struct srvsvc_NetSessCtr502);
-		W_ERROR_HAVE_NO_MEMORY(r->out.ctr.ctr502);
+		r->out.info_ctr->ctr.ctr502 = talloc(mem_ctx, struct srvsvc_NetSessCtr502);
+		W_ERROR_HAVE_NO_MEMORY(r->out.info_ctr->ctr.ctr502);
 
-		r->out.ctr.ctr2->count = 0;
-		r->out.ctr.ctr2->array = NULL;
+		r->out.info_ctr->ctr.ctr502->count = 0;
+		r->out.info_ctr->ctr.ctr502->array = NULL;
 
 		return WERR_NOT_SUPPORTED;
 	}

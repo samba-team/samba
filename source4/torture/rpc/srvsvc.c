@@ -391,23 +391,54 @@ static bool test_NetSessEnum(struct torture_context *tctx,
 {
 	NTSTATUS status;
 	struct srvsvc_NetSessEnum r;
+	struct srvsvc_NetSessInfoCtr info_ctr;
 	struct srvsvc_NetSessCtr0 c0;
+	struct srvsvc_NetSessCtr1 c1;
+	struct srvsvc_NetSessCtr2 c2;
+	struct srvsvc_NetSessCtr10 c10;
+	struct srvsvc_NetSessCtr502 c502;
+	uint32_t totalentries = 0;
 	uint32_t levels[] = {0, 1, 2, 10, 502};
 	int i;
+
+	ZERO_STRUCT(info_ctr);
 
 	r.in.server_unc = talloc_asprintf(tctx,"\\\\%s",dcerpc_server_name(p));
 	r.in.client = NULL;
 	r.in.user = NULL;
-	r.in.ctr.ctr0 = &c0;
-	r.in.ctr.ctr0->count = 0;
-	r.in.ctr.ctr0->array = NULL;
+	r.in.info_ctr = &info_ctr;
 	r.in.max_buffer = (uint32_t)-1;
 	r.in.resume_handle = NULL;
+	r.out.totalentries = &totalentries;
+	r.out.info_ctr = &info_ctr;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
-		ZERO_STRUCT(r.out);
-		r.in.level = levels[i];
-		torture_comment(tctx, "testing NetSessEnum level %u\n", r.in.level);
+		info_ctr.level = levels[i];
+
+		switch (info_ctr.level) {
+		case 0:
+			ZERO_STRUCT(c0);
+			info_ctr.ctr.ctr0 = &c0;
+			break;
+		case 1:
+			ZERO_STRUCT(c1);
+			info_ctr.ctr.ctr1 = &c1;
+			break;
+		case 2:
+			ZERO_STRUCT(c2);
+			info_ctr.ctr.ctr2 = &c2;
+			break;
+		case 10:
+			ZERO_STRUCT(c10);
+			info_ctr.ctr.ctr10 = &c10;
+			break;
+		case 502:
+			ZERO_STRUCT(c502);
+			info_ctr.ctr.ctr502 = &c502;
+			break;
+		}
+
+		torture_comment(tctx, "testing NetSessEnum level %u\n", info_ctr.level);
 		status = dcerpc_srvsvc_NetSessEnum(p, tctx, &r);
 		torture_assert_ntstatus_ok(tctx, status, "NetSessEnum failed");
 		if (!W_ERROR_IS_OK(r.out.result)) {
