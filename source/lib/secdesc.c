@@ -527,9 +527,9 @@ NTSTATUS se_create_child_secdesc(TALLOC_CTX *ctx,
 		if (creator && container &&
 				(new_flags & SEC_ACE_FLAG_CONTAINER_INHERIT)) {
 
-			/* First add the regular ACE entry with flags = 0. */
+			/* First add the regular ACE entry. */
 			init_sec_ace(new_ace, ptrustee, ace->type,
-			     	ace->access_mask, 0);
+			     	ace->access_mask, SEC_ACE_FLAG_INHERITED_ACE);
 
 			DEBUG(5,("se_create_child_secdesc(): %s:%d/0x%02x/0x%08x"
 				" inherited as %s:%d/0x%02x/0x%08x\n",
@@ -549,7 +549,7 @@ NTSTATUS se_create_child_secdesc(TALLOC_CTX *ctx,
 		}
 
 		init_sec_ace(new_ace, ptrustee, ace->type,
-			     ace->access_mask, new_flags);
+			     ace->access_mask, new_flags | SEC_ACE_FLAG_INHERITED_ACE);
 
 		DEBUG(5, ("se_create_child_secdesc(): %s:%d/0x%02x/0x%08x "
 			  " inherited as %s:%d/0x%02x/0x%08x\n",
