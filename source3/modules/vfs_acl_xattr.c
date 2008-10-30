@@ -422,6 +422,11 @@ static NTSTATUS fget_nt_acl_xattr(vfs_handle_struct *handle, files_struct *fsp,
 	NTSTATUS status = get_nt_acl_xattr_internal(handle, fsp,
 				NULL, security_info, ppdesc);
 	if (NT_STATUS_IS_OK(status)) {
+		if (DEBUGLEVEL >= 10) {
+			DEBUG(10,("fget_nt_acl_xattr: returning xattr sd for file %s\n",
+				fsp->fsp_name));
+			NDR_PRINT_DEBUG(security_descriptor, *ppdesc);
+		}
 		return NT_STATUS_OK;
 	}
 	return SMB_VFS_NEXT_FGET_NT_ACL(handle, fsp,
@@ -434,6 +439,11 @@ static NTSTATUS get_nt_acl_xattr(vfs_handle_struct *handle,
 	NTSTATUS status = get_nt_acl_xattr_internal(handle, NULL,
 				name, security_info, ppdesc);
 	if (NT_STATUS_IS_OK(status)) {
+		if (DEBUGLEVEL >= 10) {
+			DEBUG(10,("get_nt_acl_xattr: returning xattr sd for file %s\n",
+				name));
+			NDR_PRINT_DEBUG(security_descriptor, *ppdesc);
+		}
 		return NT_STATUS_OK;
 	}
 	return SMB_VFS_NEXT_GET_NT_ACL(handle, name,
@@ -446,9 +456,44 @@ static NTSTATUS fset_nt_acl_xattr(vfs_handle_struct *handle, files_struct *fsp,
 	NTSTATUS status;
 	DATA_BLOB blob;
 
+	if (DEBUGLEVEL >= 10) {
+		DEBUG(10,("fset_nt_acl_xattr: incoming sd for file %s\n",
+			fsp->fsp_name));
+		NDR_PRINT_DEBUG(security_descriptor,
+			CONST_DISCARD(SEC_DESC *,psd));
+	}
+
 	status = SMB_VFS_NEXT_FSET_NT_ACL(handle, fsp, security_info_sent, psd);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
+	}
+
+	/* Ensure owner and group are set. */
+	if (!psd->owner_sid || !psd->group_sid) {
+		int ret;
+		SMB_STRUCT_STAT sbuf;
+		DOM_SID owner_sid, group_sid;
+		SEC_DESC *nc_psd = dup_sec_desc(talloc_tos(), psd);
+
+		if (!nc_psd) {
+			return NT_STATUS_OK;
+		}
+		if (fsp->is_directory || fsp->fh->fd == -1) {
+			ret = SMB_VFS_STAT(fsp->conn,fsp->fsp_name, &sbuf);
+		} else {
+			ret = SMB_VFS_FSTAT(fsp, &sbuf);
+		}
+		if (ret == -1) {
+			/* Lower level acl set succeeded,
+			 * so still return OK. */
+			return NT_STATUS_OK;
+		}
+		create_file_sids(&sbuf, &owner_sid, &group_sid);
+		/* This is safe as nc_psd is discarded at fn exit. */
+		nc_psd->owner_sid = &owner_sid;
+		nc_psd->group_sid = &group_sid;
+		security_info_sent |= (OWNER_SECURITY_INFORMATION|GROUP_SECURITY_INFORMATION);
+		psd = nc_psd;
 	}
 
 	if ((security_info_sent & DACL_SECURITY_INFORMATION) &&
@@ -467,6 +512,12 @@ static NTSTATUS fset_nt_acl_xattr(vfs_handle_struct *handle, files_struct *fsp,
 		psd = new_psd;
 	}
 
+	if (DEBUGLEVEL >= 10) {
+		DEBUG(10,("fset_nt_acl_xattr: storing xattr sd for file %s\n",
+			fsp->fsp_name));
+		NDR_PRINT_DEBUG(security_descriptor,
+			CONST_DISCARD(SEC_DESC *,psd));
+	}
 	create_acl_blob(psd, &blob);
 	store_acl_blob_fsp(fsp, &blob);
 
