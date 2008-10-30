@@ -147,6 +147,21 @@ static const char *_pam_error_code_str(int err)
 
 #define MAX_PASSWD_TRIES	3
 
+#ifdef HAVE_GETTEXT
+static char initialized = 0;
+
+static inline void textdomain_init(void);
+static inline void textdomain_init(void)
+{
+	if (!initialized) {
+		bindtextdomain(MODULE_NAME, dyn_LOCALEDIR);
+		initialized = 1;
+	}
+	return;
+}
+#endif
+
+
 /*
  * Work around the pam API that has functions with void ** as parameters
  * These lead to strict aliasing warnings with gcc.
@@ -515,6 +530,10 @@ static int _pam_winbind_init_context(pam_handle_t *pamh,
 {
 	struct pwb_context *r = NULL;
 
+#ifdef HAVE_GETTEXT
+	textdomain_init();
+#endif
+
 	r = TALLOC_ZERO_P(NULL, struct pwb_context);
 	if (!r) {
 		return PAM_BUF_ERR;
@@ -557,44 +576,44 @@ static const struct ntstatus_errors {
 	const char *error_string;
 } ntstatus_errors[] = {
 	{"NT_STATUS_OK",
-		"Success"},
+		N_("Success")},
 	{"NT_STATUS_BACKUP_CONTROLLER",
-		"No primary Domain Controler available"},
+		N_("No primary Domain Controler available")},
 	{"NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND",
-		"No domain controllers found"},
+		N_("No domain controllers found")},
 	{"NT_STATUS_NO_LOGON_SERVERS",
-		"No logon servers"},
+		N_("No logon servers")},
 	{"NT_STATUS_PWD_TOO_SHORT",
-		"Password too short"},
+		N_("Password too short")},
 	{"NT_STATUS_PWD_TOO_RECENT",
-		"The password of this user is too recent to change"},
+		N_("The password of this user is too recent to change")},
 	{"NT_STATUS_PWD_HISTORY_CONFLICT",
-		"Password is already in password history"},
+		N_("Password is already in password history")},
 	{"NT_STATUS_PASSWORD_EXPIRED",
-		"Your password has expired"},
+		N_("Your password has expired")},
 	{"NT_STATUS_PASSWORD_MUST_CHANGE",
-		"You need to change your password now"},
+		N_("You need to change your password now")},
 	{"NT_STATUS_INVALID_WORKSTATION",
-		"You are not allowed to logon from this workstation"},
+		N_("You are not allowed to logon from this workstation")},
 	{"NT_STATUS_INVALID_LOGON_HOURS",
-		"You are not allowed to logon at this time"},
+		N_("You are not allowed to logon at this time")},
 	{"NT_STATUS_ACCOUNT_EXPIRED",
 		"Your account has expired. "
-		"Please contact your System administrator"}, /* SCNR */
+		N_("Please contact your System administrator")}, /* SCNR */
 	{"NT_STATUS_ACCOUNT_DISABLED",
 		"Your account is disabled. "
-		"Please contact your System administrator"}, /* SCNR */
+		N_("Please contact your System administrator")}, /* SCNR */
 	{"NT_STATUS_ACCOUNT_LOCKED_OUT",
 		"Your account has been locked. "
-		"Please contact your System administrator"}, /* SCNR */
+		N_("Please contact your System administrator")}, /* SCNR */
 	{"NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT",
-		"Invalid Trust Account"},
+		N_("Invalid Trust Account")},
 	{"NT_STATUS_NOLOGON_SERVER_TRUST_ACCOUNT",
-		"Invalid Trust Account"},
+		N_("Invalid Trust Account")},
 	{"NT_STATUS_NOLOGON_INTERDOMAIN_TRUST_ACCOUNT",
-		"Invalid Trust Account"},
+		N_("Invalid Trust Account")},
 	{"NT_STATUS_ACCESS_DENIED",
-		"Access is denied"},
+		N_("Access is denied")},
 	{NULL, NULL}
 };
 
@@ -604,7 +623,7 @@ static const char *_get_ntstatus_error_string(const char *nt_status_string)
 	for (i=0; ntstatus_errors[i].ntstatus_string != NULL; i++) {
 		if (!strcasecmp(ntstatus_errors[i].ntstatus_string,
 				nt_status_string)) {
-			return ntstatus_errors[i].error_string;
+			return _(ntstatus_errors[i].error_string);
 		}
 	}
 	return NULL;
@@ -832,14 +851,14 @@ static bool _pam_send_password_expiry_message(struct pwb_context *ctx,
 
 	if (days == 0) {
 		_make_remark(ctx, PAM_TEXT_INFO,
-			     "Your password expires today");
+			     _("Your password expires today"));
 		return true;
 	}
 
 	if (days > 0 && days < warn_pwd_expire) {
 		_make_remark_format(ctx, PAM_TEXT_INFO,
-				    "Your password will expire in %d %s",
-				    days, (days > 1) ? "days":"day");
+				    _("Your password will expire in %d %s"),
+				    days, (days > 1) ? _("days"):_("day"));
 		return true;
 	}
 
@@ -1231,9 +1250,9 @@ static void _pam_warn_logon_type(struct pwb_context *ctx,
 	if (PAM_WB_GRACE_LOGON(info3_user_flgs)) {
 
 		_make_remark(ctx, PAM_ERROR_MSG,
-			     "Grace login. "
-			     "Please change your password as soon you're "
-			     "online again");
+			     _("Grace login. "
+			       "Please change your password as soon you're "
+			       "online again"));
 		_pam_log_debug(ctx, LOG_DEBUG,
 			       "User %s logged on using grace logon\n",
 			       username);
@@ -1241,9 +1260,9 @@ static void _pam_warn_logon_type(struct pwb_context *ctx,
 	} else if (PAM_WB_CACHED_LOGON(info3_user_flgs)) {
 
 		_make_remark(ctx, PAM_ERROR_MSG,
-			     "Domain Controller unreachable, "
-			     "using cached credentials instead. "
-			     "Network resources may be unavailable");
+			     _("Domain Controller unreachable, "
+			       "using cached credentials instead. "
+			       "Network resources may be unavailable"));
 		_pam_log_debug(ctx, LOG_DEBUG,
 			       "User %s logged on using cached credentials\n",
 			       username);
@@ -1266,10 +1285,10 @@ static void _pam_warn_krb5_failure(struct pwb_context *ctx,
 {
 	if (PAM_WB_KRB5_CLOCK_SKEW(info3_user_flgs)) {
 		_make_remark(ctx, PAM_ERROR_MSG,
-			     "Failed to establish your Kerberos Ticket cache "
-			     "due time differences\n"
-			     "with the domain controller.  "
-			     "Please verify the system time.\n");
+			     _("Failed to establish your Kerberos Ticket cache "
+			       "due time differences\n"
+			       "with the domain controller.  "
+			       "Please verify the system time.\n"));
 		_pam_log_debug(ctx, LOG_DEBUG,
 			       "User %s: Clock skew when getting Krb5 TGT\n",
 			       username);
@@ -1334,7 +1353,7 @@ static char *_pam_compose_pwd_restriction_string(struct pwb_context *ctx,
 		goto failed;
 	}
 
-	str = talloc_asprintf(ctx, "Your password ");
+	str = talloc_asprintf(ctx, _("Your password "));
 	if (!str) {
 		goto failed;
 	}
@@ -1350,8 +1369,8 @@ static char *_pam_compose_pwd_restriction_string(struct pwb_context *ctx,
 
 	if (i->password_history > 0) {
 		str = talloc_asprintf_append(str,
-			       "cannot repeat any of your previous %d "
-			       "passwords; ",
+			       _("cannot repeat any of your previous %d "
+			        "passwords; "),
 			       i->password_history);
 		if (!str) {
 			goto failed;
@@ -1360,19 +1379,19 @@ static char *_pam_compose_pwd_restriction_string(struct pwb_context *ctx,
 
 	if (i->password_properties & WBC_DOMAIN_PASSWORD_COMPLEX) {
 		str = talloc_asprintf_append(str,
-			       "must contain capitals, numerals "
-			       "or punctuation; "
-			       "and cannot contain your account "
-			       "or full name; ");
+			       _("must contain capitals, numerals "
+			         "or punctuation; "
+			         "and cannot contain your account "
+			         "or full name; "));
 		if (!str) {
 			goto failed;
 		}
 	}
 
 	str = talloc_asprintf_append(str,
-		       "Please type a different password. "
-		       "Type a password which meets these requirements in "
-		       "both text boxes.");
+		       _("Please type a different password. "
+		         "Type a password which meets these requirements in "
+		         "both text boxes."));
 	if (!str) {
 		goto failed;
 	}
@@ -1855,8 +1874,8 @@ static int winbind_chauthtok_request(struct pwb_context *ctx,
 				break;
 			case WBC_PWD_CHANGE_REJECT_COMPLEXITY:
 				_make_remark(ctx, PAM_ERROR_MSG,
-					     "Password does not meet "
-					     "complexity requirements");
+					     _("Password does not meet "
+					       "complexity requirements"));
 				break;
 			default:
 				_pam_log_debug(ctx, LOG_DEBUG,
@@ -2489,7 +2508,7 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 	}
 
 	retval = _winbind_read_password(ctx, ctx->ctrl, NULL,
-					"Password: ", NULL,
+					_("Password: "), NULL,
 					&password);
 
 	if (retval != PAM_SUCCESS) {
@@ -2897,7 +2916,7 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 
 		/* instruct user what is happening */
 
-#define greeting "Changing password for"
+#define greeting _("Changing password for")
 		Announce = talloc_asprintf(ctx, "%s %s", greeting, user);
 		if (!Announce) {
 			_pam_log(ctx, LOG_CRIT,
@@ -2910,7 +2929,7 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 		lctrl = ctx->ctrl | WINBIND__OLD_PASSWORD;
 		ret = _winbind_read_password(ctx, lctrl,
 						Announce,
-						"(current) NT password: ",
+						_("(current) NT password: "),
 						NULL,
 						(const char **) &pass_old);
 		TALLOC_FREE(Announce);
@@ -2980,8 +2999,8 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 
 			ret = _winbind_read_password(ctx, lctrl,
 						     NULL,
-						     "Enter new NT password: ",
-						     "Retype new NT password: ",
+						     _("Enter new NT password: "),
+						     _("Retype new NT password: "),
 						     (const char **)&pass_new);
 
 			if (ret != PAM_SUCCESS) {

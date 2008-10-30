@@ -140,6 +140,9 @@ PRIVATE_DIR = $(PRIVATEDIR)
 # This is where SWAT images and help files go
 SWATDIR = @swatdir@
 
+# This is where locale(mo) files go
+LOCALEDIR= @localedir@
+
 # the directory where lock files go
 LOCKDIR = @lockdir@
 
@@ -173,7 +176,8 @@ PATH_FLAGS = -DSMB_PASSWD_FILE=\"$(SMB_PASSWD_FILE)\" \
 	-DCONFIGDIR=\"$(CONFIGDIR)\" \
 	-DCODEPAGEDIR=\"$(CODEPAGEDIR)\" \
 	-DCACHEDIR=\"$(CACHEDIR)\" \
-	-DSTATEDIR=\"$(STATEDIR)\"
+	-DSTATEDIR=\"$(STATEDIR)\" \
+	-DLOCALEDIR=\"$(LOCALEDIR)\"
 
 # Note that all executable programs now provide for an optional executable suffix.
 
@@ -803,7 +807,7 @@ RPCCLIENT_OBJ = $(RPCCLIENT_OBJ1) \
 	     $(LIBADS_OBJ) $(POPT_LIB_OBJ) \
 	     $(SMBLDAP_OBJ) $(DCUTIL_OBJ) $(LDB_OBJ) 
 
-PAM_WINBIND_OBJ = nsswitch/pam_winbind.o $(WBCOMMON_OBJ) \
+PAM_WINBIND_OBJ = nsswitch/pam_winbind.o localedir.o $(WBCOMMON_OBJ) \
 		  $(LIBREPLACE_OBJ) @BUILD_INIPARSER@
 
 LIBSMBCLIENT_OBJ0 = \
@@ -1306,6 +1310,13 @@ BINARY_PREREQS = bin/.dummy
 # rebuild it's a bit hard.
 
 dynconfig.o: dynconfig.c Makefile
+	@echo Compiling $*.c
+	@$(COMPILE_CC_PATH) && exit 0;\
+		echo "The following command failed:" 1>&2;\
+		echo "$(COMPILE_CC_PATH)" 1>&2;\
+		$(COMPILE_CC_PATH) >/dev/null 2>&1
+
+localedir.o: localedir.c Makefile
 	@echo Compiling $*.c
 	@$(COMPILE_CC_PATH) && exit 0;\
 		echo "The following command failed:" 1>&2;\
@@ -2558,7 +2569,7 @@ bin/test_lp_load@EXEEXT@: $(BINARY_PREREQS) $(TEST_LP_LOAD_OBJ) @BUILD_POPT@ @LI
 
 install:: installservers installbin @INSTALL_CIFSMOUNT@ @INSTALL_CIFSUPCALL@ installman \
 		installscripts installdat installmodules @SWAT_INSTALL_TARGETS@ \
-		@INSTALL_PAM_MODULES@ installlibs
+		@INSTALL_PAM_MODULES@ installlibs installmo
 
 install-everything:: install installmodules
 
@@ -2571,7 +2582,7 @@ install-everything:: install installmodules
 # is not used
 
 installdirs::
-	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(BINDIR) $(SBINDIR) $(LIBDIR) $(VARDIR) $(PRIVATEDIR) $(PIDDIR) $(LOCKDIR) $(MANDIR) $(CODEPAGEDIR) $(MODULESDIR)
+	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(BINDIR) $(SBINDIR) $(LIBDIR) $(VARDIR) $(PRIVATEDIR) $(PIDDIR) $(LOCKDIR) $(MANDIR) $(CODEPAGEDIR) $(MODULESDIR) $(LOCALEDIR)
 
 installservers:: all installdirs
 	@$(SHELL) script/installbin.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(SBINDIR) $(SBIN_PROGS)
@@ -2637,6 +2648,9 @@ revert::
 installman:: installdirs
 	@$(SHELL) $(srcdir)/script/installman.sh $(DESTDIR)$(MANDIR) $(srcdir) C "@ROFF@"
 
+installmo:: all installdirs
+	@$(SHELL) $(srcdir)/script/installmo.sh $(DESTDIR) $(LOCALEDIR) $(srcdir)
+
 .PHONY: showlayout
 
 showlayout::
@@ -2656,7 +2670,10 @@ showlayout::
 	@echo "  codepagedir: $(CODEPAGEDIR)"
 
 
-uninstall:: uninstallman uninstallservers uninstallbin @UNINSTALL_CIFSMOUNT@ @UNINSTALL_CIFSUPCALL@ uninstallscripts uninstalldat uninstallswat uninstallmodules uninstalllibs @UNINSTALL_PAM_MODULES@
+uninstall:: uninstallmo uninstallman uninstallservers uninstallbin @UNINSTALL_CIFSMOUNT@ @UNINSTALL_CIFSUPCALL@ uninstallscripts uninstalldat uninstallswat uninstallmodules uninstalllibs @UNINSTALL_PAM_MODULES@
+
+uninstallmo::
+	@$(SHELL) $(srcdir)/script/uninstallmo.sh $(DESTDIR) $(LOCALEDIR) $(srcdir)
 
 uninstallman::
 	@$(SHELL) $(srcdir)/script/uninstallman.sh $(DESTDIR)$(MANDIR) $(srcdir) C
@@ -2701,7 +2718,7 @@ uninstallpammodules::
 	done
 
 # Toplevel clean files
-TOPFILES=dynconfig.o
+TOPFILES=dynconfig.o localedir.o
 
 cleanlibs::
 	-rm -f ../lib/*/*.o ../lib/*/*/*.o \

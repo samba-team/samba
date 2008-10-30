@@ -654,7 +654,7 @@ AUTH_LIBS="${AUTH_LIBS} ${CRYPT_LIBS}"
 
 AC_CHECK_HEADERS(aio.h sys/fcntl.h sys/select.h fcntl.h sys/time.h sys/unistd.h rpc/nettype.h)
 AC_CHECK_HEADERS(unistd.h grp.h sys/id.h memory.h alloca.h)
-AC_CHECK_HEADERS(limits.h float.h pthread.h)
+AC_CHECK_HEADERS(limits.h float.h pthread.h libintl.h)
 AC_CHECK_HEADERS(rpc/rpc.h rpcsvc/nis.h rpcsvc/ypclnt.h)
 AC_CHECK_HEADERS(sys/param.h ctype.h sys/wait.h sys/resource.h sys/ioctl.h sys/ipc.h sys/prctl.h)
 AC_CHECK_HEADERS(sys/mman.h sys/filio.h sys/priv.h sys/shm.h string.h strings.h stdlib.h)
@@ -1029,6 +1029,7 @@ AC_CHECK_FUNCS(memalign posix_memalign hstrerror)
 AC_CHECK_HEADERS(sys/mman.h)
 # setbuffer, shmget, shm_open are needed for smbtorture
 AC_CHECK_FUNCS(shmget shm_open)
+AC_CHECK_FUNCS(gettext dgettext)
 
 # Find a method of generating a stack trace
 AC_CHECK_HEADERS(execinfo.h libexc.h libunwind.h)
