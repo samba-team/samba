@@ -46,7 +46,7 @@ swig:: pythonmods
 .SUFFIXES: _wrap.c .i .py
 
 %_wrap.c %.py: %.i
-	[ "$(SWIG)" == "no" ] || $(SWIG) -O -Wall -python -keyword $<
+	[ "$(SWIG)" == "no" ] || $(SWIG) -O -Wall -python -keyword  -I../source4 $<
 
 realdistclean::
 	@echo "Removing SWIG output files"
