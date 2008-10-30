@@ -35,10 +35,6 @@ ProductType=LanmanNT
 [HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Netlogon\Parameters]
 RefusePasswordChange=REG_DWORD:0
 
-[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\REPLICATOR]
-
-[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\REPLICATOR\Parameters]
-
 [HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Alerter]
 
 [HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Alerter\Parameters]
