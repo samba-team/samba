@@ -228,24 +228,39 @@ static bool test_NetCharDevQEnum(struct torture_context *tctx,
 {
 	NTSTATUS status;
 	struct srvsvc_NetCharDevQEnum r;
+	struct srvsvc_NetCharDevQInfoCtr info_ctr;
 	struct srvsvc_NetCharDevQCtr0 c0;
+	struct srvsvc_NetCharDevQCtr1 c1;
+	uint32_t totalentries = 0;
 	uint32_t levels[] = {0, 1};
 	int i;
 
+	ZERO_STRUCT(info_ctr);
+
 	r.in.server_unc = talloc_asprintf(tctx,"\\\\%s",dcerpc_server_name(p));
 	r.in.user = talloc_asprintf(tctx,"%s","Administrator");
-	r.in.ctr.ctr0 = &c0;
-	r.in.ctr.ctr0->count = 0;
-	r.in.ctr.ctr0->array = NULL;
+	r.in.info_ctr = &info_ctr;
 	r.in.max_buffer = (uint32_t)-1;
 	r.in.resume_handle = NULL;
+	r.out.totalentries = &totalentries;
+	r.out.info_ctr = &info_ctr;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		int j;
 
-		ZERO_STRUCT(r.out);
-		r.in.level = levels[i];
-		torture_comment(tctx, "testing NetCharDevQEnum level %u\n", r.in.level);
+		info_ctr.level = levels[i];
+
+		switch (info_ctr.level) {
+		case 0:
+			ZERO_STRUCT(c0);
+			info_ctr.ctr.ctr0 = &c0;
+			break;
+		case 1:
+			ZERO_STRUCT(c1);
+			info_ctr.ctr.ctr1 = &c1;
+			break;
+		}
+		torture_comment(tctx, "testing NetCharDevQEnum level %u\n", info_ctr.level);
 		status = dcerpc_srvsvc_NetCharDevQEnum(p, tctx, &r);
 		torture_assert_ntstatus_ok(tctx, status, "NetCharDevQEnum failed");
 		if (!W_ERROR_IS_OK(r.out.result)) {
@@ -254,10 +269,10 @@ static bool test_NetCharDevQEnum(struct torture_context *tctx,
 		}
 
 		/* call test_NetCharDevGetInfo and test_NetCharDevControl for each returned share */
-		if (r.in.level == 1) {
-			for (j=0;j<r.out.ctr.ctr1->count;j++) {
+		if (info_ctr.level == 1) {
+			for (j=0;j<r.out.info_ctr->ctr.ctr1->count;j++) {
 				const char *device;
-				device = r.out.ctr.ctr1->array[j].device;
+				device = r.out.info_ctr->ctr.ctr1->array[j].device;
 				if (!test_NetCharDevQGetInfo(p, tctx, device)) {
 					return false;
 				}
