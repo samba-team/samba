@@ -38,6 +38,10 @@ int main(int argc, const char **argv)
 	struct SERVER_INFO_100 *i100;
 	struct SERVER_INFO_101 *i101;
 	struct SERVER_INFO_102 *i102;
+	struct SERVER_INFO_402 *i402;
+	struct SERVER_INFO_403 *i403;
+	struct SERVER_INFO_502 *i502;
+	struct SERVER_INFO_503 *i503;
 	struct SERVER_INFO_1005 *i1005;
 
 	poptContext pc;
@@ -111,6 +115,18 @@ int main(int argc, const char **argv)
 			printf("anndelta: %d\n", i102->sv102_anndelta);
 			printf("licenses: %d\n", i102->sv102_licenses);
 			printf("userpath: %s\n", i102->sv102_userpath);
+			break;
+		case 402:
+			i402 = (struct SERVER_INFO_402 *)buffer;
+			break;
+		case 403:
+			i403 = (struct SERVER_INFO_403 *)buffer;
+			break;
+		case 502:
+			i502 = (struct SERVER_INFO_502 *)buffer;
+			break;
+		case 503:
+			i503 = (struct SERVER_INFO_503 *)buffer;
 			break;
 		case 1005:
 			i1005 = (struct SERVER_INFO_1005 *)buffer;
