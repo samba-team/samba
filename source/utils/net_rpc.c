@@ -4285,16 +4285,15 @@ static void show_userlist(struct rpc_pipe_client *pipe_hnd,
 		uint32 acc_granted;
 
 		if (share_sd != NULL) {
-			if (!se_access_check(share_sd, &tokens[i].token,
-					     1, &acc_granted, &status)) {
+			status = se_access_check(share_sd, &tokens[i].token,
+					     1, &acc_granted);
+
+			if (!NT_STATUS_IS_OK(status)) {
 				DEBUG(1, ("Could not check share_sd for "
 					  "user %s\n",
 					  tokens[i].name));
 				continue;
 			}
-
-			if (!NT_STATUS_IS_OK(status))
-				continue;
 		}
 
 		if (root_sd == NULL) {
@@ -4302,16 +4301,13 @@ static void show_userlist(struct rpc_pipe_client *pipe_hnd,
 			continue;
 		}
 
-		if (!se_access_check(root_sd, &tokens[i].token,
-				     1, &acc_granted, &status)) {
+		status = se_access_check(root_sd, &tokens[i].token,
+				     1, &acc_granted);
+		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("Could not check root_sd for user %s\n",
 				  tokens[i].name));
 			continue;
 		}
-
-		if (!NT_STATUS_IS_OK(status))
-			continue;
-
 		d_printf(" %s\n", tokens[i].name);
 	}
 

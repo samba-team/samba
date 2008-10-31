@@ -5826,10 +5826,10 @@ bool print_access_check(struct auth_serversupplied_info *server_info, int snum,
 	}
 
 	/* Check access */
-	result = se_access_check(secdesc->sd, server_info->ptok, access_type,
-				 &access_granted, &status);
+	status = se_access_check(secdesc->sd, server_info->ptok, access_type,
+				 &access_granted);
 
-	DEBUG(4, ("access check was %s\n", result ? "SUCCESS" : "FAILURE"));
+	DEBUG(4, ("access check was %s\n", NT_STATUS_IS_OK(status) ? "SUCCESS" : "FAILURE"));
 
         /* see if we need to try the printer admin list */
 
@@ -5843,11 +5843,11 @@ bool print_access_check(struct auth_serversupplied_info *server_info, int snum,
 
 	talloc_destroy(mem_ctx);
 	
-	if (!result) {
+	if (!NT_STATUS_IS_OK(status)) {
 		errno = EACCES;
 	}
 
-	return result;
+	return NT_STATUS_IS_OK(status);
 }
 
 /****************************************************************************

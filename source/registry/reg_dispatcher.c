@@ -170,7 +170,8 @@ bool regkey_access_check( REGISTRY_KEY *key, uint32 requested, uint32 *granted,
 
 	se_map_generic( &requested, &reg_generic_map );
 
-	if (!se_access_check(sec_desc, token, requested, granted, &status)) {
+	status =se_access_check(sec_desc, token, requested, granted);
+	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(mem_ctx);
 		return false;
 	}

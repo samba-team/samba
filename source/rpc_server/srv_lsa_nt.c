@@ -379,7 +379,8 @@ NTSTATUS _lsa_OpenPolicy2(pipes_struct *p,
 	/* get the generic lsa policy SD until we store it */
 	lsa_get_generic_sd(p->mem_ctx, &psd, &sd_size);
 
-	if(!se_access_check(psd, p->pipe_user.nt_user_token, des_access, &acc_granted, &status)) {
+	status = se_access_check(psd, p->pipe_user.nt_user_token, des_access, &acc_granted);
+	if (!NT_STATUS_IS_OK(status)) {
 		if (p->pipe_user.ut.uid != sec_initial_uid()) {
 			return status;
 		}
@@ -429,7 +430,8 @@ NTSTATUS _lsa_OpenPolicy(pipes_struct *p,
 	/* get the generic lsa policy SD until we store it */
 	lsa_get_generic_sd(p->mem_ctx, &psd, &sd_size);
 
-	if(!se_access_check(psd, p->pipe_user.nt_user_token, des_access, &acc_granted, &status)) {
+	status = se_access_check(psd, p->pipe_user.nt_user_token, des_access, &acc_granted);
+	if (!NT_STATUS_IS_OK(status)) {
 		if (p->pipe_user.ut.uid != sec_initial_uid()) {
 			return status;
 		}

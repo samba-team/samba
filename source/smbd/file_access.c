@@ -30,7 +30,6 @@ bool can_access_file_acl(struct connection_struct *conn,
 				const char * fname,
 				uint32_t access_mask)
 {
-	bool result;
 	NTSTATUS status;
 	uint32_t access_granted;
 	struct security_descriptor *secdesc = NULL;
@@ -45,10 +44,10 @@ bool can_access_file_acl(struct connection_struct *conn,
 		return false;
 	}
 
-	result = se_access_check(secdesc, conn->server_info->ptok,
-				 access_mask, &access_granted, &status);
+	status = se_access_check(secdesc, conn->server_info->ptok,
+				 access_mask, &access_granted);
 	TALLOC_FREE(secdesc);
-	return result;
+	return NT_STATUS_IS_OK(status);
 }
 
 /****************************************************************************
