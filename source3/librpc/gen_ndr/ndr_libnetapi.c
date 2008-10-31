@@ -264,6 +264,837 @@ _PUBLIC_ void ndr_print_SERVER_INFO_102(struct ndr_print *ndr, const char *name,
 	ndr->depth--;
 }
 
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_402(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_402 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv402_ulist_mtime));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv402_glist_mtime));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv402_alist_mtime));
+		NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->sv402_alerts));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv402_security));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv402_numadmin));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv402_lanmask));
+		NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->sv402_guestacct));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv402_chdevs));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv402_chdevq));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv402_chdevjobs));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv402_connections));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv402_shares));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv402_openfiles));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv402_sessopens));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv402_sessvcs));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv402_sessreqs));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv402_opensearch));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv402_activelocks));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv402_numreqbuf));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv402_sizreqbuf));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv402_numbigbuf));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv402_numfiletasks));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv402_alertsched));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv402_erroralert));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv402_logonalert));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv402_accessalert));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv402_diskalert));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv402_netioalert));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv402_maxauditsz));
+		NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->sv402_srvheuristics));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_402(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_402 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv402_ulist_mtime));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv402_glist_mtime));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv402_alist_mtime));
+		NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->sv402_alerts));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv402_security));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv402_numadmin));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv402_lanmask));
+		NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->sv402_guestacct));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv402_chdevs));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv402_chdevq));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv402_chdevjobs));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv402_connections));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv402_shares));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv402_openfiles));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv402_sessopens));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv402_sessvcs));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv402_sessreqs));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv402_opensearch));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv402_activelocks));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv402_numreqbuf));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv402_sizreqbuf));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv402_numbigbuf));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv402_numfiletasks));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv402_alertsched));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv402_erroralert));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv402_logonalert));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv402_accessalert));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv402_diskalert));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv402_netioalert));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv402_maxauditsz));
+		NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->sv402_srvheuristics));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_402(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_402 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_402");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv402_ulist_mtime", r->sv402_ulist_mtime);
+	ndr_print_uint32(ndr, "sv402_glist_mtime", r->sv402_glist_mtime);
+	ndr_print_uint32(ndr, "sv402_alist_mtime", r->sv402_alist_mtime);
+	ndr_print_string(ndr, "sv402_alerts", r->sv402_alerts);
+	ndr_print_uint32(ndr, "sv402_security", r->sv402_security);
+	ndr_print_uint32(ndr, "sv402_numadmin", r->sv402_numadmin);
+	ndr_print_uint32(ndr, "sv402_lanmask", r->sv402_lanmask);
+	ndr_print_string(ndr, "sv402_guestacct", r->sv402_guestacct);
+	ndr_print_uint32(ndr, "sv402_chdevs", r->sv402_chdevs);
+	ndr_print_uint32(ndr, "sv402_chdevq", r->sv402_chdevq);
+	ndr_print_uint32(ndr, "sv402_chdevjobs", r->sv402_chdevjobs);
+	ndr_print_uint32(ndr, "sv402_connections", r->sv402_connections);
+	ndr_print_uint32(ndr, "sv402_shares", r->sv402_shares);
+	ndr_print_uint32(ndr, "sv402_openfiles", r->sv402_openfiles);
+	ndr_print_uint32(ndr, "sv402_sessopens", r->sv402_sessopens);
+	ndr_print_uint32(ndr, "sv402_sessvcs", r->sv402_sessvcs);
+	ndr_print_uint32(ndr, "sv402_sessreqs", r->sv402_sessreqs);
+	ndr_print_uint32(ndr, "sv402_opensearch", r->sv402_opensearch);
+	ndr_print_uint32(ndr, "sv402_activelocks", r->sv402_activelocks);
+	ndr_print_uint32(ndr, "sv402_numreqbuf", r->sv402_numreqbuf);
+	ndr_print_uint32(ndr, "sv402_sizreqbuf", r->sv402_sizreqbuf);
+	ndr_print_uint32(ndr, "sv402_numbigbuf", r->sv402_numbigbuf);
+	ndr_print_uint32(ndr, "sv402_numfiletasks", r->sv402_numfiletasks);
+	ndr_print_uint32(ndr, "sv402_alertsched", r->sv402_alertsched);
+	ndr_print_uint32(ndr, "sv402_erroralert", r->sv402_erroralert);
+	ndr_print_uint32(ndr, "sv402_logonalert", r->sv402_logonalert);
+	ndr_print_uint32(ndr, "sv402_accessalert", r->sv402_accessalert);
+	ndr_print_uint32(ndr, "sv402_diskalert", r->sv402_diskalert);
+	ndr_print_uint32(ndr, "sv402_netioalert", r->sv402_netioalert);
+	ndr_print_uint32(ndr, "sv402_maxauditsz", r->sv402_maxauditsz);
+	ndr_print_string(ndr, "sv402_srvheuristics", r->sv402_srvheuristics);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_403(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_403 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv403_ulist_mtime));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv403_glist_mtime));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv403_alist_mtime));
+		NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->sv403_alerts));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv403_security));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv403_numadmin));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv403_lanmask));
+		NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->sv403_guestacct));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv403_chdevs));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv403_chdevq));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv403_chdevjobs));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv403_connections));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv403_shares));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv403_openfiles));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv403_sessopens));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv403_sessvcs));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv403_sessreqs));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv403_opensearch));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv403_activelocks));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv403_numreqbuf));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv403_sizreqbuf));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv403_numbigbuf));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv403_numfiletasks));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv403_alertsched));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv403_erroralert));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv403_logonalert));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv403_accessalert));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv403_diskalert));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv403_netioalert));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv403_maxauditsz));
+		NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->sv403_srvheuristics));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv403_auditedevents));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv403_autoprofile));
+		NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->sv403_autopath));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_403(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_403 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv403_ulist_mtime));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv403_glist_mtime));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv403_alist_mtime));
+		NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->sv403_alerts));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv403_security));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv403_numadmin));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv403_lanmask));
+		NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->sv403_guestacct));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv403_chdevs));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv403_chdevq));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv403_chdevjobs));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv403_connections));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv403_shares));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv403_openfiles));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv403_sessopens));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv403_sessvcs));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv403_sessreqs));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv403_opensearch));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv403_activelocks));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv403_numreqbuf));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv403_sizreqbuf));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv403_numbigbuf));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv403_numfiletasks));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv403_alertsched));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv403_erroralert));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv403_logonalert));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv403_accessalert));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv403_diskalert));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv403_netioalert));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv403_maxauditsz));
+		NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->sv403_srvheuristics));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv403_auditedevents));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv403_autoprofile));
+		NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->sv403_autopath));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_403(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_403 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_403");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv403_ulist_mtime", r->sv403_ulist_mtime);
+	ndr_print_uint32(ndr, "sv403_glist_mtime", r->sv403_glist_mtime);
+	ndr_print_uint32(ndr, "sv403_alist_mtime", r->sv403_alist_mtime);
+	ndr_print_string(ndr, "sv403_alerts", r->sv403_alerts);
+	ndr_print_uint32(ndr, "sv403_security", r->sv403_security);
+	ndr_print_uint32(ndr, "sv403_numadmin", r->sv403_numadmin);
+	ndr_print_uint32(ndr, "sv403_lanmask", r->sv403_lanmask);
+	ndr_print_string(ndr, "sv403_guestacct", r->sv403_guestacct);
+	ndr_print_uint32(ndr, "sv403_chdevs", r->sv403_chdevs);
+	ndr_print_uint32(ndr, "sv403_chdevq", r->sv403_chdevq);
+	ndr_print_uint32(ndr, "sv403_chdevjobs", r->sv403_chdevjobs);
+	ndr_print_uint32(ndr, "sv403_connections", r->sv403_connections);
+	ndr_print_uint32(ndr, "sv403_shares", r->sv403_shares);
+	ndr_print_uint32(ndr, "sv403_openfiles", r->sv403_openfiles);
+	ndr_print_uint32(ndr, "sv403_sessopens", r->sv403_sessopens);
+	ndr_print_uint32(ndr, "sv403_sessvcs", r->sv403_sessvcs);
+	ndr_print_uint32(ndr, "sv403_sessreqs", r->sv403_sessreqs);
+	ndr_print_uint32(ndr, "sv403_opensearch", r->sv403_opensearch);
+	ndr_print_uint32(ndr, "sv403_activelocks", r->sv403_activelocks);
+	ndr_print_uint32(ndr, "sv403_numreqbuf", r->sv403_numreqbuf);
+	ndr_print_uint32(ndr, "sv403_sizreqbuf", r->sv403_sizreqbuf);
+	ndr_print_uint32(ndr, "sv403_numbigbuf", r->sv403_numbigbuf);
+	ndr_print_uint32(ndr, "sv403_numfiletasks", r->sv403_numfiletasks);
+	ndr_print_uint32(ndr, "sv403_alertsched", r->sv403_alertsched);
+	ndr_print_uint32(ndr, "sv403_erroralert", r->sv403_erroralert);
+	ndr_print_uint32(ndr, "sv403_logonalert", r->sv403_logonalert);
+	ndr_print_uint32(ndr, "sv403_accessalert", r->sv403_accessalert);
+	ndr_print_uint32(ndr, "sv403_diskalert", r->sv403_diskalert);
+	ndr_print_uint32(ndr, "sv403_netioalert", r->sv403_netioalert);
+	ndr_print_uint32(ndr, "sv403_maxauditsz", r->sv403_maxauditsz);
+	ndr_print_string(ndr, "sv403_srvheuristics", r->sv403_srvheuristics);
+	ndr_print_uint32(ndr, "sv403_auditedevents", r->sv403_auditedevents);
+	ndr_print_uint32(ndr, "sv403_autoprofile", r->sv403_autoprofile);
+	ndr_print_string(ndr, "sv403_autopath", r->sv403_autopath);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_502(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_502 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv502_sessopens));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv502_sessvcs));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv502_opensearch));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv502_sizreqbuf));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv502_initworkitems));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv502_maxworkitems));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv502_rawworkitems));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv502_irpstacksize));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv502_maxrawbuflen));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv502_sessusers));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv502_sessconns));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv502_maxpagedmemoryusage));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv502_maxnonpagedmemoryusage));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->sv502_enablesoftcompat));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->sv502_enableforcedlogoff));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->sv502_timesource));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->sv502_acceptdownlevelapis));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->sv502_lmannounce));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_502(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_502 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv502_sessopens));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv502_sessvcs));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv502_opensearch));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv502_sizreqbuf));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv502_initworkitems));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv502_maxworkitems));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv502_rawworkitems));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv502_irpstacksize));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv502_maxrawbuflen));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv502_sessusers));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv502_sessconns));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv502_maxpagedmemoryusage));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv502_maxnonpagedmemoryusage));
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->sv502_enablesoftcompat));
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->sv502_enableforcedlogoff));
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->sv502_timesource));
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->sv502_acceptdownlevelapis));
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->sv502_lmannounce));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_502(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_502 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_502");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv502_sessopens", r->sv502_sessopens);
+	ndr_print_uint32(ndr, "sv502_sessvcs", r->sv502_sessvcs);
+	ndr_print_uint32(ndr, "sv502_opensearch", r->sv502_opensearch);
+	ndr_print_uint32(ndr, "sv502_sizreqbuf", r->sv502_sizreqbuf);
+	ndr_print_uint32(ndr, "sv502_initworkitems", r->sv502_initworkitems);
+	ndr_print_uint32(ndr, "sv502_maxworkitems", r->sv502_maxworkitems);
+	ndr_print_uint32(ndr, "sv502_rawworkitems", r->sv502_rawworkitems);
+	ndr_print_uint32(ndr, "sv502_irpstacksize", r->sv502_irpstacksize);
+	ndr_print_uint32(ndr, "sv502_maxrawbuflen", r->sv502_maxrawbuflen);
+	ndr_print_uint32(ndr, "sv502_sessusers", r->sv502_sessusers);
+	ndr_print_uint32(ndr, "sv502_sessconns", r->sv502_sessconns);
+	ndr_print_uint32(ndr, "sv502_maxpagedmemoryusage", r->sv502_maxpagedmemoryusage);
+	ndr_print_uint32(ndr, "sv502_maxnonpagedmemoryusage", r->sv502_maxnonpagedmemoryusage);
+	ndr_print_uint8(ndr, "sv502_enablesoftcompat", r->sv502_enablesoftcompat);
+	ndr_print_uint8(ndr, "sv502_enableforcedlogoff", r->sv502_enableforcedlogoff);
+	ndr_print_uint8(ndr, "sv502_timesource", r->sv502_timesource);
+	ndr_print_uint8(ndr, "sv502_acceptdownlevelapis", r->sv502_acceptdownlevelapis);
+	ndr_print_uint8(ndr, "sv502_lmannounce", r->sv502_lmannounce);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_503(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_503 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv503_sessopens));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv503_sessvcs));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv503_opensearch));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv503_sizreqbuf));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv503_initworkitems));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv503_maxworkitems));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv503_rawworkitems));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv503_irpstacksize));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv503_maxrawbuflen));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv503_sessusers));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv503_sessconns));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv503_maxpagedmemoryusage));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv503_maxnonpagedmemoryusage));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->sv503_enablesoftcompat));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->sv503_enableforcedlogoff));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->sv503_timesource));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->sv503_acceptdownlevelapis));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->sv503_lmannounce));
+		NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->sv503_domain));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv503_maxcopyreadlen));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv503_maxcopywritelen));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv503_minkeepsearch));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv503_maxkeepsearch));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv503_minkeepcomplsearch));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv503_maxkeepcomplsearch));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv503_threadcountadd));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv503_numblockthreads));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv503_scavtimeout));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv503_minrcvqueue));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv503_minfreeworkitems));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv503_xactmemsize));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv503_threadpriority));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv503_maxmpxct));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv503_oplockbreakwait));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv503_oplockbreakresponsewait));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->sv503_enableoplocks));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->sv503_enableoplockforceclose));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->sv503_enablefcbopens));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->sv503_enableraw));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->sv503_enablesharednetdrives));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv503_minfreeconnections));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv503_maxfreeconnections));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_503(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_503 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv503_sessopens));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv503_sessvcs));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv503_opensearch));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv503_sizreqbuf));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv503_initworkitems));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv503_maxworkitems));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv503_rawworkitems));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv503_irpstacksize));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv503_maxrawbuflen));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv503_sessusers));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv503_sessconns));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv503_maxpagedmemoryusage));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv503_maxnonpagedmemoryusage));
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->sv503_enablesoftcompat));
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->sv503_enableforcedlogoff));
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->sv503_timesource));
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->sv503_acceptdownlevelapis));
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->sv503_lmannounce));
+		NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->sv503_domain));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv503_maxcopyreadlen));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv503_maxcopywritelen));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv503_minkeepsearch));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv503_maxkeepsearch));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv503_minkeepcomplsearch));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv503_maxkeepcomplsearch));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv503_threadcountadd));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv503_numblockthreads));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv503_scavtimeout));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv503_minrcvqueue));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv503_minfreeworkitems));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv503_xactmemsize));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv503_threadpriority));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv503_maxmpxct));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv503_oplockbreakwait));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv503_oplockbreakresponsewait));
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->sv503_enableoplocks));
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->sv503_enableoplockforceclose));
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->sv503_enablefcbopens));
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->sv503_enableraw));
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->sv503_enablesharednetdrives));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv503_minfreeconnections));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv503_maxfreeconnections));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_503(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_503 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_503");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv503_sessopens", r->sv503_sessopens);
+	ndr_print_uint32(ndr, "sv503_sessvcs", r->sv503_sessvcs);
+	ndr_print_uint32(ndr, "sv503_opensearch", r->sv503_opensearch);
+	ndr_print_uint32(ndr, "sv503_sizreqbuf", r->sv503_sizreqbuf);
+	ndr_print_uint32(ndr, "sv503_initworkitems", r->sv503_initworkitems);
+	ndr_print_uint32(ndr, "sv503_maxworkitems", r->sv503_maxworkitems);
+	ndr_print_uint32(ndr, "sv503_rawworkitems", r->sv503_rawworkitems);
+	ndr_print_uint32(ndr, "sv503_irpstacksize", r->sv503_irpstacksize);
+	ndr_print_uint32(ndr, "sv503_maxrawbuflen", r->sv503_maxrawbuflen);
+	ndr_print_uint32(ndr, "sv503_sessusers", r->sv503_sessusers);
+	ndr_print_uint32(ndr, "sv503_sessconns", r->sv503_sessconns);
+	ndr_print_uint32(ndr, "sv503_maxpagedmemoryusage", r->sv503_maxpagedmemoryusage);
+	ndr_print_uint32(ndr, "sv503_maxnonpagedmemoryusage", r->sv503_maxnonpagedmemoryusage);
+	ndr_print_uint8(ndr, "sv503_enablesoftcompat", r->sv503_enablesoftcompat);
+	ndr_print_uint8(ndr, "sv503_enableforcedlogoff", r->sv503_enableforcedlogoff);
+	ndr_print_uint8(ndr, "sv503_timesource", r->sv503_timesource);
+	ndr_print_uint8(ndr, "sv503_acceptdownlevelapis", r->sv503_acceptdownlevelapis);
+	ndr_print_uint8(ndr, "sv503_lmannounce", r->sv503_lmannounce);
+	ndr_print_string(ndr, "sv503_domain", r->sv503_domain);
+	ndr_print_uint32(ndr, "sv503_maxcopyreadlen", r->sv503_maxcopyreadlen);
+	ndr_print_uint32(ndr, "sv503_maxcopywritelen", r->sv503_maxcopywritelen);
+	ndr_print_uint32(ndr, "sv503_minkeepsearch", r->sv503_minkeepsearch);
+	ndr_print_uint32(ndr, "sv503_maxkeepsearch", r->sv503_maxkeepsearch);
+	ndr_print_uint32(ndr, "sv503_minkeepcomplsearch", r->sv503_minkeepcomplsearch);
+	ndr_print_uint32(ndr, "sv503_maxkeepcomplsearch", r->sv503_maxkeepcomplsearch);
+	ndr_print_uint32(ndr, "sv503_threadcountadd", r->sv503_threadcountadd);
+	ndr_print_uint32(ndr, "sv503_numblockthreads", r->sv503_numblockthreads);
+	ndr_print_uint32(ndr, "sv503_scavtimeout", r->sv503_scavtimeout);
+	ndr_print_uint32(ndr, "sv503_minrcvqueue", r->sv503_minrcvqueue);
+	ndr_print_uint32(ndr, "sv503_minfreeworkitems", r->sv503_minfreeworkitems);
+	ndr_print_uint32(ndr, "sv503_xactmemsize", r->sv503_xactmemsize);
+	ndr_print_uint32(ndr, "sv503_threadpriority", r->sv503_threadpriority);
+	ndr_print_uint32(ndr, "sv503_maxmpxct", r->sv503_maxmpxct);
+	ndr_print_uint32(ndr, "sv503_oplockbreakwait", r->sv503_oplockbreakwait);
+	ndr_print_uint32(ndr, "sv503_oplockbreakresponsewait", r->sv503_oplockbreakresponsewait);
+	ndr_print_uint8(ndr, "sv503_enableoplocks", r->sv503_enableoplocks);
+	ndr_print_uint8(ndr, "sv503_enableoplockforceclose", r->sv503_enableoplockforceclose);
+	ndr_print_uint8(ndr, "sv503_enablefcbopens", r->sv503_enablefcbopens);
+	ndr_print_uint8(ndr, "sv503_enableraw", r->sv503_enableraw);
+	ndr_print_uint8(ndr, "sv503_enablesharednetdrives", r->sv503_enablesharednetdrives);
+	ndr_print_uint32(ndr, "sv503_minfreeconnections", r->sv503_minfreeconnections);
+	ndr_print_uint32(ndr, "sv503_maxfreeconnections", r->sv503_maxfreeconnections);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_599(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_599 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv599_sessopens));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv599_sessvcs));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv599_opensearch));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv599_sizreqbuf));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv599_initworkitems));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv599_maxworkitems));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv599_rawworkitems));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv599_irpstacksize));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv599_maxrawbuflen));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv599_sessusers));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv599_sessconns));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv599_maxpagedmemoryusage));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv599_maxnonpagedmemoryusage));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->sv599_enablesoftcompat));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->sv599_enableforcedlogoff));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->sv599_timesource));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->sv599_acceptdownlevelapis));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->sv599_lmannounce));
+		NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->sv599_domain));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv599_maxcopyreadlen));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv599_maxcopywritelen));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv599_minkeepsearch));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv599_maxkeepsearch));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv599_minkeepcomplsearch));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv599_maxkeepcomplsearch));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv599_threadcountadd));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv599_numblockthreads));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv599_scavtimeout));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv599_minrcvqueue));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv599_minfreeworkitems));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv599_xactmemsize));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv599_threadpriority));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv599_maxmpxct));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv599_oplockbreakwait));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv599_oplockbreakresponsewait));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->sv599_enableoplocks));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->sv599_enableoplockforceclose));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->sv599_enablefcbopens));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->sv599_enableraw));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->sv599_enablesharednetdrives));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv599_minfreeconnections));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv599_maxfreeconnections));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv599_initsesstable));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv599_initconntable));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv599_initfiletable));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv599_initsearchtable));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv599_alertschedule));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv599_errorthreshold));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv599_networkerrorthreshold));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv599_diskspacethreshold));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv599_reserved));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv599_maxlinkdelay));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv599_minlinkthroughput));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv599_linkinfovalidtime));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv599_scavqosinfoupdatetime));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv599_maxworkitemidletime));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_599(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_599 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv599_sessopens));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv599_sessvcs));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv599_opensearch));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv599_sizreqbuf));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv599_initworkitems));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv599_maxworkitems));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv599_rawworkitems));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv599_irpstacksize));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv599_maxrawbuflen));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv599_sessusers));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv599_sessconns));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv599_maxpagedmemoryusage));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv599_maxnonpagedmemoryusage));
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->sv599_enablesoftcompat));
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->sv599_enableforcedlogoff));
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->sv599_timesource));
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->sv599_acceptdownlevelapis));
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->sv599_lmannounce));
+		NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->sv599_domain));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv599_maxcopyreadlen));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv599_maxcopywritelen));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv599_minkeepsearch));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv599_maxkeepsearch));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv599_minkeepcomplsearch));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv599_maxkeepcomplsearch));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv599_threadcountadd));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv599_numblockthreads));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv599_scavtimeout));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv599_minrcvqueue));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv599_minfreeworkitems));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv599_xactmemsize));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv599_threadpriority));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv599_maxmpxct));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv599_oplockbreakwait));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv599_oplockbreakresponsewait));
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->sv599_enableoplocks));
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->sv599_enableoplockforceclose));
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->sv599_enablefcbopens));
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->sv599_enableraw));
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->sv599_enablesharednetdrives));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv599_minfreeconnections));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv599_maxfreeconnections));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv599_initsesstable));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv599_initconntable));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv599_initfiletable));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv599_initsearchtable));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv599_alertschedule));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv599_errorthreshold));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv599_networkerrorthreshold));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv599_diskspacethreshold));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv599_reserved));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv599_maxlinkdelay));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv599_minlinkthroughput));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv599_linkinfovalidtime));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv599_scavqosinfoupdatetime));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv599_maxworkitemidletime));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_599(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_599 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_599");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv599_sessopens", r->sv599_sessopens);
+	ndr_print_uint32(ndr, "sv599_sessvcs", r->sv599_sessvcs);
+	ndr_print_uint32(ndr, "sv599_opensearch", r->sv599_opensearch);
+	ndr_print_uint32(ndr, "sv599_sizreqbuf", r->sv599_sizreqbuf);
+	ndr_print_uint32(ndr, "sv599_initworkitems", r->sv599_initworkitems);
+	ndr_print_uint32(ndr, "sv599_maxworkitems", r->sv599_maxworkitems);
+	ndr_print_uint32(ndr, "sv599_rawworkitems", r->sv599_rawworkitems);
+	ndr_print_uint32(ndr, "sv599_irpstacksize", r->sv599_irpstacksize);
+	ndr_print_uint32(ndr, "sv599_maxrawbuflen", r->sv599_maxrawbuflen);
+	ndr_print_uint32(ndr, "sv599_sessusers", r->sv599_sessusers);
+	ndr_print_uint32(ndr, "sv599_sessconns", r->sv599_sessconns);
+	ndr_print_uint32(ndr, "sv599_maxpagedmemoryusage", r->sv599_maxpagedmemoryusage);
+	ndr_print_uint32(ndr, "sv599_maxnonpagedmemoryusage", r->sv599_maxnonpagedmemoryusage);
+	ndr_print_uint8(ndr, "sv599_enablesoftcompat", r->sv599_enablesoftcompat);
+	ndr_print_uint8(ndr, "sv599_enableforcedlogoff", r->sv599_enableforcedlogoff);
+	ndr_print_uint8(ndr, "sv599_timesource", r->sv599_timesource);
+	ndr_print_uint8(ndr, "sv599_acceptdownlevelapis", r->sv599_acceptdownlevelapis);
+	ndr_print_uint8(ndr, "sv599_lmannounce", r->sv599_lmannounce);
+	ndr_print_string(ndr, "sv599_domain", r->sv599_domain);
+	ndr_print_uint32(ndr, "sv599_maxcopyreadlen", r->sv599_maxcopyreadlen);
+	ndr_print_uint32(ndr, "sv599_maxcopywritelen", r->sv599_maxcopywritelen);
+	ndr_print_uint32(ndr, "sv599_minkeepsearch", r->sv599_minkeepsearch);
+	ndr_print_uint32(ndr, "sv599_maxkeepsearch", r->sv599_maxkeepsearch);
+	ndr_print_uint32(ndr, "sv599_minkeepcomplsearch", r->sv599_minkeepcomplsearch);
+	ndr_print_uint32(ndr, "sv599_maxkeepcomplsearch", r->sv599_maxkeepcomplsearch);
+	ndr_print_uint32(ndr, "sv599_threadcountadd", r->sv599_threadcountadd);
+	ndr_print_uint32(ndr, "sv599_numblockthreads", r->sv599_numblockthreads);
+	ndr_print_uint32(ndr, "sv599_scavtimeout", r->sv599_scavtimeout);
+	ndr_print_uint32(ndr, "sv599_minrcvqueue", r->sv599_minrcvqueue);
+	ndr_print_uint32(ndr, "sv599_minfreeworkitems", r->sv599_minfreeworkitems);
+	ndr_print_uint32(ndr, "sv599_xactmemsize", r->sv599_xactmemsize);
+	ndr_print_uint32(ndr, "sv599_threadpriority", r->sv599_threadpriority);
+	ndr_print_uint32(ndr, "sv599_maxmpxct", r->sv599_maxmpxct);
+	ndr_print_uint32(ndr, "sv599_oplockbreakwait", r->sv599_oplockbreakwait);
+	ndr_print_uint32(ndr, "sv599_oplockbreakresponsewait", r->sv599_oplockbreakresponsewait);
+	ndr_print_uint8(ndr, "sv599_enableoplocks", r->sv599_enableoplocks);
+	ndr_print_uint8(ndr, "sv599_enableoplockforceclose", r->sv599_enableoplockforceclose);
+	ndr_print_uint8(ndr, "sv599_enablefcbopens", r->sv599_enablefcbopens);
+	ndr_print_uint8(ndr, "sv599_enableraw", r->sv599_enableraw);
+	ndr_print_uint8(ndr, "sv599_enablesharednetdrives", r->sv599_enablesharednetdrives);
+	ndr_print_uint32(ndr, "sv599_minfreeconnections", r->sv599_minfreeconnections);
+	ndr_print_uint32(ndr, "sv599_maxfreeconnections", r->sv599_maxfreeconnections);
+	ndr_print_uint32(ndr, "sv599_initsesstable", r->sv599_initsesstable);
+	ndr_print_uint32(ndr, "sv599_initconntable", r->sv599_initconntable);
+	ndr_print_uint32(ndr, "sv599_initfiletable", r->sv599_initfiletable);
+	ndr_print_uint32(ndr, "sv599_initsearchtable", r->sv599_initsearchtable);
+	ndr_print_uint32(ndr, "sv599_alertschedule", r->sv599_alertschedule);
+	ndr_print_uint32(ndr, "sv599_errorthreshold", r->sv599_errorthreshold);
+	ndr_print_uint32(ndr, "sv599_networkerrorthreshold", r->sv599_networkerrorthreshold);
+	ndr_print_uint32(ndr, "sv599_diskspacethreshold", r->sv599_diskspacethreshold);
+	ndr_print_uint32(ndr, "sv599_reserved", r->sv599_reserved);
+	ndr_print_uint32(ndr, "sv599_maxlinkdelay", r->sv599_maxlinkdelay);
+	ndr_print_uint32(ndr, "sv599_minlinkthroughput", r->sv599_minlinkthroughput);
+	ndr_print_uint32(ndr, "sv599_linkinfovalidtime", r->sv599_linkinfovalidtime);
+	ndr_print_uint32(ndr, "sv599_scavqosinfoupdatetime", r->sv599_scavqosinfoupdatetime);
+	ndr_print_uint32(ndr, "sv599_maxworkitemidletime", r->sv599_maxworkitemidletime);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_598(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_598 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv598_maxrawworkitems));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv598_maxthreadsperqueue));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv598_producttype));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv598_serversize));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv598_connectionlessautodisc));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv598_sharingviolationretries));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv598_sharingviolationdelay));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv598_maxglobalopensearch));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv598_removeduplicatesearches));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv598_lockviolationoffset));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv598_lockviolationdelay));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv598_mdlreadswitchover));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv598_cachedopenlimit));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv598_otherqueueaffinity));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->sv598_restrictnullsessaccess));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->sv598_enablewfw311directipx));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv598_queuesamplesecs));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv598_balancecount));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv598_preferredaffinity));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv598_maxfreerfcbs));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv598_maxfreemfcbs));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv598_maxfreelfcbs));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv598_maxfreepagedpoolchunks));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv598_minpagedpoolchunksize));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv598_maxpagedpoolchunksize));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->sv598_sendsfrompreferredprocessor));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv598_cacheddirectorylimit));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv598_maxcopylength));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->sv598_enablecompression));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->sv598_autosharewks));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->sv598_autoshareserver));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->sv598_enablesecuritysignature));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->sv598_requiresecuritysignature));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv598_minclientbuffersize));
+		NDR_CHECK(ndr_push_GUID(ndr, NDR_SCALARS, &r->sv598_serverguid));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv598_ConnectionNoSessionsTimeout));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv598_IdleThreadTimeOut));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->sv598_enableW9xsecuritysignature));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->sv598_enforcekerberosreauthentication));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->sv598_disabledos));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv598_lowdiskspaceminimum));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->sv598_disablestrictnamechecking));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_598(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_598 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv598_maxrawworkitems));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv598_maxthreadsperqueue));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv598_producttype));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv598_serversize));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv598_connectionlessautodisc));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv598_sharingviolationretries));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv598_sharingviolationdelay));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv598_maxglobalopensearch));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv598_removeduplicatesearches));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv598_lockviolationoffset));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv598_lockviolationdelay));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv598_mdlreadswitchover));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv598_cachedopenlimit));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv598_otherqueueaffinity));
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->sv598_restrictnullsessaccess));
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->sv598_enablewfw311directipx));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv598_queuesamplesecs));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv598_balancecount));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv598_preferredaffinity));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv598_maxfreerfcbs));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv598_maxfreemfcbs));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv598_maxfreelfcbs));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv598_maxfreepagedpoolchunks));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv598_minpagedpoolchunksize));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv598_maxpagedpoolchunksize));
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->sv598_sendsfrompreferredprocessor));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv598_cacheddirectorylimit));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv598_maxcopylength));
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->sv598_enablecompression));
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->sv598_autosharewks));
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->sv598_autoshareserver));
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->sv598_enablesecuritysignature));
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->sv598_requiresecuritysignature));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv598_minclientbuffersize));
+		NDR_CHECK(ndr_pull_GUID(ndr, NDR_SCALARS, &r->sv598_serverguid));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv598_ConnectionNoSessionsTimeout));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv598_IdleThreadTimeOut));
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->sv598_enableW9xsecuritysignature));
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->sv598_enforcekerberosreauthentication));
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->sv598_disabledos));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv598_lowdiskspaceminimum));
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->sv598_disablestrictnamechecking));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_598(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_598 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_598");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv598_maxrawworkitems", r->sv598_maxrawworkitems);
+	ndr_print_uint32(ndr, "sv598_maxthreadsperqueue", r->sv598_maxthreadsperqueue);
+	ndr_print_uint32(ndr, "sv598_producttype", r->sv598_producttype);
+	ndr_print_uint32(ndr, "sv598_serversize", r->sv598_serversize);
+	ndr_print_uint32(ndr, "sv598_connectionlessautodisc", r->sv598_connectionlessautodisc);
+	ndr_print_uint32(ndr, "sv598_sharingviolationretries", r->sv598_sharingviolationretries);
+	ndr_print_uint32(ndr, "sv598_sharingviolationdelay", r->sv598_sharingviolationdelay);
+	ndr_print_uint32(ndr, "sv598_maxglobalopensearch", r->sv598_maxglobalopensearch);
+	ndr_print_uint32(ndr, "sv598_removeduplicatesearches", r->sv598_removeduplicatesearches);
+	ndr_print_uint32(ndr, "sv598_lockviolationoffset", r->sv598_lockviolationoffset);
+	ndr_print_uint32(ndr, "sv598_lockviolationdelay", r->sv598_lockviolationdelay);
+	ndr_print_uint32(ndr, "sv598_mdlreadswitchover", r->sv598_mdlreadswitchover);
+	ndr_print_uint32(ndr, "sv598_cachedopenlimit", r->sv598_cachedopenlimit);
+	ndr_print_uint32(ndr, "sv598_otherqueueaffinity", r->sv598_otherqueueaffinity);
+	ndr_print_uint8(ndr, "sv598_restrictnullsessaccess", r->sv598_restrictnullsessaccess);
+	ndr_print_uint8(ndr, "sv598_enablewfw311directipx", r->sv598_enablewfw311directipx);
+	ndr_print_uint32(ndr, "sv598_queuesamplesecs", r->sv598_queuesamplesecs);
+	ndr_print_uint32(ndr, "sv598_balancecount", r->sv598_balancecount);
+	ndr_print_uint32(ndr, "sv598_preferredaffinity", r->sv598_preferredaffinity);
+	ndr_print_uint32(ndr, "sv598_maxfreerfcbs", r->sv598_maxfreerfcbs);
+	ndr_print_uint32(ndr, "sv598_maxfreemfcbs", r->sv598_maxfreemfcbs);
+	ndr_print_uint32(ndr, "sv598_maxfreelfcbs", r->sv598_maxfreelfcbs);
+	ndr_print_uint32(ndr, "sv598_maxfreepagedpoolchunks", r->sv598_maxfreepagedpoolchunks);
+	ndr_print_uint32(ndr, "sv598_minpagedpoolchunksize", r->sv598_minpagedpoolchunksize);
+	ndr_print_uint32(ndr, "sv598_maxpagedpoolchunksize", r->sv598_maxpagedpoolchunksize);
+	ndr_print_uint8(ndr, "sv598_sendsfrompreferredprocessor", r->sv598_sendsfrompreferredprocessor);
+	ndr_print_uint32(ndr, "sv598_cacheddirectorylimit", r->sv598_cacheddirectorylimit);
+	ndr_print_uint32(ndr, "sv598_maxcopylength", r->sv598_maxcopylength);
+	ndr_print_uint8(ndr, "sv598_enablecompression", r->sv598_enablecompression);
+	ndr_print_uint8(ndr, "sv598_autosharewks", r->sv598_autosharewks);
+	ndr_print_uint8(ndr, "sv598_autoshareserver", r->sv598_autoshareserver);
+	ndr_print_uint8(ndr, "sv598_enablesecuritysignature", r->sv598_enablesecuritysignature);
+	ndr_print_uint8(ndr, "sv598_requiresecuritysignature", r->sv598_requiresecuritysignature);
+	ndr_print_uint32(ndr, "sv598_minclientbuffersize", r->sv598_minclientbuffersize);
+	ndr_print_GUID(ndr, "sv598_serverguid", &r->sv598_serverguid);
+	ndr_print_uint32(ndr, "sv598_ConnectionNoSessionsTimeout", r->sv598_ConnectionNoSessionsTimeout);
+	ndr_print_uint32(ndr, "sv598_IdleThreadTimeOut", r->sv598_IdleThreadTimeOut);
+	ndr_print_uint8(ndr, "sv598_enableW9xsecuritysignature", r->sv598_enableW9xsecuritysignature);
+	ndr_print_uint8(ndr, "sv598_enforcekerberosreauthentication", r->sv598_enforcekerberosreauthentication);
+	ndr_print_uint8(ndr, "sv598_disabledos", r->sv598_disabledos);
+	ndr_print_uint32(ndr, "sv598_lowdiskspaceminimum", r->sv598_lowdiskspaceminimum);
+	ndr_print_uint8(ndr, "sv598_disablestrictnamechecking", r->sv598_disablestrictnamechecking);
+	ndr->depth--;
+}
+
 _PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1005(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1005 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
@@ -291,6 +1122,2796 @@ _PUBLIC_ void ndr_print_SERVER_INFO_1005(struct ndr_print *ndr, const char *name
 	ndr_print_struct(ndr, name, "SERVER_INFO_1005");
 	ndr->depth++;
 	ndr_print_string(ndr, "sv1005_comment", r->sv1005_comment);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1107(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1107 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv1107_users));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1107(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1107 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv1107_users));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1107(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1107 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1107");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv1107_users", r->sv1107_users);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1010(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1010 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_int32(ndr, NDR_SCALARS, r->sv1010_disc));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1010(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1010 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_int32(ndr, NDR_SCALARS, &r->sv1010_disc));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1010(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1010 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1010");
+	ndr->depth++;
+	ndr_print_int32(ndr, "sv1010_disc", r->sv1010_disc);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1016(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1016 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 1));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->sv1016_hidden));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1016(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1016 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 1));
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->sv1016_hidden));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1016(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1016 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1016");
+	ndr->depth++;
+	ndr_print_uint8(ndr, "sv1016_hidden", r->sv1016_hidden);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1017(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1017 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv1017_announce));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1017(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1017 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv1017_announce));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1017(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1017 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1017");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv1017_announce", r->sv1017_announce);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1018(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1018 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv1018_anndelta));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1018(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1018 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv1018_anndelta));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1018(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1018 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1018");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv1018_anndelta", r->sv1018_anndelta);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1501(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1501 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv1501_sessopens));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1501(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1501 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv1501_sessopens));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1501(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1501 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1501");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv1501_sessopens", r->sv1501_sessopens);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1502(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1502 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv1502_sessvcs));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1502(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1502 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv1502_sessvcs));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1502(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1502 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1502");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv1502_sessvcs", r->sv1502_sessvcs);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1503(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1503 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv1503_opensearch));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1503(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1503 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv1503_opensearch));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1503(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1503 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1503");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv1503_opensearch", r->sv1503_opensearch);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1506(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1506 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv1506_maxworkitems));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1506(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1506 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv1506_maxworkitems));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1506(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1506 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1506");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv1506_maxworkitems", r->sv1506_maxworkitems);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1509(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1509 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv1509_maxrawbuflen));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1509(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1509 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv1509_maxrawbuflen));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1509(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1509 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1509");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv1509_maxrawbuflen", r->sv1509_maxrawbuflen);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1510(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1510 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv1510_sessusers));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1510(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1510 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv1510_sessusers));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1510(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1510 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1510");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv1510_sessusers", r->sv1510_sessusers);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1511(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1511 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv1511_sessconns));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1511(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1511 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv1511_sessconns));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1511(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1511 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1511");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv1511_sessconns", r->sv1511_sessconns);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1512(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1512 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv1512_maxnonpagedmemoryusage));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1512(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1512 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv1512_maxnonpagedmemoryusage));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1512(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1512 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1512");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv1512_maxnonpagedmemoryusage", r->sv1512_maxnonpagedmemoryusage);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1513(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1513 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv1513_maxpagedmemoryusage));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1513(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1513 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv1513_maxpagedmemoryusage));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1513(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1513 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1513");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv1513_maxpagedmemoryusage", r->sv1513_maxpagedmemoryusage);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1514(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1514 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 1));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->sv1514_enablesoftcompat));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1514(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1514 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 1));
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->sv1514_enablesoftcompat));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1514(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1514 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1514");
+	ndr->depth++;
+	ndr_print_uint8(ndr, "sv1514_enablesoftcompat", r->sv1514_enablesoftcompat);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1515(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1515 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 1));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->sv1515_enableforcedlogoff));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1515(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1515 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 1));
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->sv1515_enableforcedlogoff));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1515(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1515 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1515");
+	ndr->depth++;
+	ndr_print_uint8(ndr, "sv1515_enableforcedlogoff", r->sv1515_enableforcedlogoff);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1516(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1516 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 1));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->sv1516_timesource));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1516(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1516 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 1));
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->sv1516_timesource));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1516(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1516 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1516");
+	ndr->depth++;
+	ndr_print_uint8(ndr, "sv1516_timesource", r->sv1516_timesource);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1518(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1518 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 1));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->sv1518_lmannounce));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1518(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1518 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 1));
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->sv1518_lmannounce));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1518(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1518 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1518");
+	ndr->depth++;
+	ndr_print_uint8(ndr, "sv1518_lmannounce", r->sv1518_lmannounce);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1520(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1520 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv1520_maxcopyreadlen));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1520(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1520 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv1520_maxcopyreadlen));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1520(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1520 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1520");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv1520_maxcopyreadlen", r->sv1520_maxcopyreadlen);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1521(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1521 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv1521_maxcopywritelen));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1521(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1521 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv1521_maxcopywritelen));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1521(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1521 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1521");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv1521_maxcopywritelen", r->sv1521_maxcopywritelen);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1522(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1522 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv1522_minkeepsearch));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1522(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1522 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv1522_minkeepsearch));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1522(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1522 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1522");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv1522_minkeepsearch", r->sv1522_minkeepsearch);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1523(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1523 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv1523_maxkeepsearch));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1523(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1523 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv1523_maxkeepsearch));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1523(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1523 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1523");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv1523_maxkeepsearch", r->sv1523_maxkeepsearch);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1524(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1524 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv1524_minkeepcomplsearch));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1524(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1524 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv1524_minkeepcomplsearch));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1524(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1524 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1524");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv1524_minkeepcomplsearch", r->sv1524_minkeepcomplsearch);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1525(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1525 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv1525_maxkeepcomplsearch));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1525(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1525 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv1525_maxkeepcomplsearch));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1525(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1525 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1525");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv1525_maxkeepcomplsearch", r->sv1525_maxkeepcomplsearch);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1528(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1528 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv1528_scavtimeout));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1528(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1528 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv1528_scavtimeout));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1528(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1528 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1528");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv1528_scavtimeout", r->sv1528_scavtimeout);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1529(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1529 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv1529_minrcvqueue));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1529(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1529 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv1529_minrcvqueue));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1529(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1529 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1529");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv1529_minrcvqueue", r->sv1529_minrcvqueue);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1530(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1530 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv1530_minfreeworkitems));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1530(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1530 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv1530_minfreeworkitems));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1530(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1530 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1530");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv1530_minfreeworkitems", r->sv1530_minfreeworkitems);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1533(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1533 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv1533_maxmpxct));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1533(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1533 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv1533_maxmpxct));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1533(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1533 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1533");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv1533_maxmpxct", r->sv1533_maxmpxct);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1534(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1534 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv1534_oplockbreakwait));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1534(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1534 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv1534_oplockbreakwait));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1534(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1534 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1534");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv1534_oplockbreakwait", r->sv1534_oplockbreakwait);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1535(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1535 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv1535_oplockbreakresponsewait));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1535(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1535 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv1535_oplockbreakresponsewait));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1535(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1535 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1535");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv1535_oplockbreakresponsewait", r->sv1535_oplockbreakresponsewait);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1536(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1536 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 1));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->sv1536_enableoplocks));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1536(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1536 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 1));
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->sv1536_enableoplocks));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1536(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1536 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1536");
+	ndr->depth++;
+	ndr_print_uint8(ndr, "sv1536_enableoplocks", r->sv1536_enableoplocks);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1537(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1537 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 1));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->sv1537_enableoplockforceclose));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1537(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1537 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 1));
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->sv1537_enableoplockforceclose));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1537(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1537 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1537");
+	ndr->depth++;
+	ndr_print_uint8(ndr, "sv1537_enableoplockforceclose", r->sv1537_enableoplockforceclose);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1538(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1538 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 1));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->sv1538_enablefcbopens));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1538(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1538 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 1));
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->sv1538_enablefcbopens));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1538(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1538 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1538");
+	ndr->depth++;
+	ndr_print_uint8(ndr, "sv1538_enablefcbopens", r->sv1538_enablefcbopens);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1539(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1539 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 1));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->sv1539_enableraw));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1539(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1539 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 1));
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->sv1539_enableraw));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1539(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1539 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1539");
+	ndr->depth++;
+	ndr_print_uint8(ndr, "sv1539_enableraw", r->sv1539_enableraw);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1540(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1540 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 1));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->sv1540_enablesharednetdrives));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1540(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1540 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 1));
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->sv1540_enablesharednetdrives));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1540(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1540 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1540");
+	ndr->depth++;
+	ndr_print_uint8(ndr, "sv1540_enablesharednetdrives", r->sv1540_enablesharednetdrives);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1541(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1541 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 1));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->sv1541_minfreeconnections));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1541(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1541 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 1));
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->sv1541_minfreeconnections));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1541(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1541 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1541");
+	ndr->depth++;
+	ndr_print_uint8(ndr, "sv1541_minfreeconnections", r->sv1541_minfreeconnections);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1542(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1542 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 1));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->sv1542_maxfreeconnections));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1542(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1542 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 1));
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->sv1542_maxfreeconnections));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1542(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1542 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1542");
+	ndr->depth++;
+	ndr_print_uint8(ndr, "sv1542_maxfreeconnections", r->sv1542_maxfreeconnections);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1543(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1543 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv1543_initsesstable));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1543(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1543 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv1543_initsesstable));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1543(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1543 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1543");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv1543_initsesstable", r->sv1543_initsesstable);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1544(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1544 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv1544_initconntable));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1544(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1544 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv1544_initconntable));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1544(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1544 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1544");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv1544_initconntable", r->sv1544_initconntable);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1545(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1545 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv1545_initfiletable));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1545(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1545 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv1545_initfiletable));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1545(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1545 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1545");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv1545_initfiletable", r->sv1545_initfiletable);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1546(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1546 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv1546_initsearchtable));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1546(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1546 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv1546_initsearchtable));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1546(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1546 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1546");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv1546_initsearchtable", r->sv1546_initsearchtable);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1547(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1547 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv1547_alertschedule));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1547(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1547 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv1547_alertschedule));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1547(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1547 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1547");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv1547_alertschedule", r->sv1547_alertschedule);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1548(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1548 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv1548_errorthreshold));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1548(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1548 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv1548_errorthreshold));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1548(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1548 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1548");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv1548_errorthreshold", r->sv1548_errorthreshold);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1549(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1549 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv1549_networkerrorthreshold));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1549(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1549 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv1549_networkerrorthreshold));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1549(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1549 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1549");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv1549_networkerrorthreshold", r->sv1549_networkerrorthreshold);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1550(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1550 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv1550_diskspacethreshold));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1550(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1550 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv1550_diskspacethreshold));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1550(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1550 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1550");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv1550_diskspacethreshold", r->sv1550_diskspacethreshold);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1552(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1552 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv1552_maxlinkdelay));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1552(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1552 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv1552_maxlinkdelay));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1552(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1552 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1552");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv1552_maxlinkdelay", r->sv1552_maxlinkdelay);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1553(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1553 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv1553_minlinkthroughput));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1553(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1553 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv1553_minlinkthroughput));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1553(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1553 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1553");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv1553_minlinkthroughput", r->sv1553_minlinkthroughput);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1554(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1554 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv1554_linkinfovalidtime));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1554(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1554 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv1554_linkinfovalidtime));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1554(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1554 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1554");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv1554_linkinfovalidtime", r->sv1554_linkinfovalidtime);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1555(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1555 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv1555_scavqosinfoupdatetime));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1555(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1555 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv1555_scavqosinfoupdatetime));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1555(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1555 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1555");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv1555_scavqosinfoupdatetime", r->sv1555_scavqosinfoupdatetime);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1556(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1556 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv1556_maxworkitemidletime));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1556(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1556 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv1556_maxworkitemidletime));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1556(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1556 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1556");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv1556_maxworkitemidletime", r->sv1556_maxworkitemidletime);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1557(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1557 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv1557_maxrawworkitems));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1557(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1557 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv1557_maxrawworkitems));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1557(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1557 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1557");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv1557_maxrawworkitems", r->sv1557_maxrawworkitems);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1560(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1560 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv1560_producttype));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1560(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1560 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv1560_producttype));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1560(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1560 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1560");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv1560_producttype", r->sv1560_producttype);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1561(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1561 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv1561_serversize));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1561(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1561 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv1561_serversize));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1561(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1561 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1561");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv1561_serversize", r->sv1561_serversize);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1562(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1562 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv1562_connectionlessautodisc));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1562(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1562 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv1562_connectionlessautodisc));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1562(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1562 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1562");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv1562_connectionlessautodisc", r->sv1562_connectionlessautodisc);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1563(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1563 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv1563_sharingviolationretries));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1563(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1563 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv1563_sharingviolationretries));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1563(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1563 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1563");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv1563_sharingviolationretries", r->sv1563_sharingviolationretries);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1564(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1564 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv1564_sharingviolationdelay));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1564(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1564 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv1564_sharingviolationdelay));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1564(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1564 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1564");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv1564_sharingviolationdelay", r->sv1564_sharingviolationdelay);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1565(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1565 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv1565_maxglobalopensearch));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1565(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1565 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv1565_maxglobalopensearch));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1565(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1565 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1565");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv1565_maxglobalopensearch", r->sv1565_maxglobalopensearch);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1566(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1566 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 1));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->sv1566_removeduplicatesearches));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1566(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1566 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 1));
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->sv1566_removeduplicatesearches));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1566(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1566 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1566");
+	ndr->depth++;
+	ndr_print_uint8(ndr, "sv1566_removeduplicatesearches", r->sv1566_removeduplicatesearches);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1567(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1567 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv1567_lockviolationretries));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1567(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1567 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv1567_lockviolationretries));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1567(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1567 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1567");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv1567_lockviolationretries", r->sv1567_lockviolationretries);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1568(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1568 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv1568_lockviolationoffset));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1568(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1568 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv1568_lockviolationoffset));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1568(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1568 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1568");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv1568_lockviolationoffset", r->sv1568_lockviolationoffset);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1569(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1569 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv1569_lockviolationdelay));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1569(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1569 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv1569_lockviolationdelay));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1569(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1569 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1569");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv1569_lockviolationdelay", r->sv1569_lockviolationdelay);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1570(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1570 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv1570_mdlreadswitchover));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1570(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1570 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv1570_mdlreadswitchover));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1570(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1570 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1570");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv1570_mdlreadswitchover", r->sv1570_mdlreadswitchover);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1571(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1571 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv1571_cachedopenlimit));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1571(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1571 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv1571_cachedopenlimit));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1571(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1571 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1571");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv1571_cachedopenlimit", r->sv1571_cachedopenlimit);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1572(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1572 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv1572_criticalthreads));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1572(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1572 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv1572_criticalthreads));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1572(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1572 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1572");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv1572_criticalthreads", r->sv1572_criticalthreads);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1573(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1573 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv1573_restrictnullsessaccess));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1573(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1573 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv1573_restrictnullsessaccess));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1573(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1573 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1573");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv1573_restrictnullsessaccess", r->sv1573_restrictnullsessaccess);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1574(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1574 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv1574_enablewfw311directipx));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1574(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1574 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv1574_enablewfw311directipx));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1574(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1574 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1574");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv1574_enablewfw311directipx", r->sv1574_enablewfw311directipx);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1575(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1575 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv1575_otherqueueaffinity));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1575(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1575 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv1575_otherqueueaffinity));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1575(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1575 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1575");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv1575_otherqueueaffinity", r->sv1575_otherqueueaffinity);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1576(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1576 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv1576_queuesamplesecs));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1576(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1576 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv1576_queuesamplesecs));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1576(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1576 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1576");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv1576_queuesamplesecs", r->sv1576_queuesamplesecs);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1577(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1577 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv1577_balancecount));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1577(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1577 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv1577_balancecount));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1577(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1577 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1577");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv1577_balancecount", r->sv1577_balancecount);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1578(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1578 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv1578_preferredaffinity));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1578(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1578 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv1578_preferredaffinity));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1578(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1578 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1578");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv1578_preferredaffinity", r->sv1578_preferredaffinity);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1579(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1579 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv1579_maxfreerfcbs));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1579(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1579 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv1579_maxfreerfcbs));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1579(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1579 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1579");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv1579_maxfreerfcbs", r->sv1579_maxfreerfcbs);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1580(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1580 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv1580_maxfreemfcbs));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1580(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1580 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv1580_maxfreemfcbs));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1580(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1580 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1580");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv1580_maxfreemfcbs", r->sv1580_maxfreemfcbs);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1581(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1581 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv1581_maxfreemlcbs));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1581(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1581 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv1581_maxfreemlcbs));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1581(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1581 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1581");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv1581_maxfreemlcbs", r->sv1581_maxfreemlcbs);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1582(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1582 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv1582_maxfreepagedpoolchunks));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1582(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1582 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv1582_maxfreepagedpoolchunks));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1582(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1582 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1582");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv1582_maxfreepagedpoolchunks", r->sv1582_maxfreepagedpoolchunks);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1583(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1583 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv1583_minpagedpoolchunksize));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1583(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1583 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv1583_minpagedpoolchunksize));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1583(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1583 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1583");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv1583_minpagedpoolchunksize", r->sv1583_minpagedpoolchunksize);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1584(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1584 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv1584_maxpagedpoolchunksize));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1584(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1584 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv1584_maxpagedpoolchunksize));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1584(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1584 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1584");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv1584_maxpagedpoolchunksize", r->sv1584_maxpagedpoolchunksize);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1585(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1585 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 1));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->sv1585_sendsfrompreferredprocessor));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1585(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1585 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 1));
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->sv1585_sendsfrompreferredprocessor));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1585(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1585 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1585");
+	ndr->depth++;
+	ndr_print_uint8(ndr, "sv1585_sendsfrompreferredprocessor", r->sv1585_sendsfrompreferredprocessor);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1586(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1586 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv1586_maxthreadsperqueue));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1586(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1586 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv1586_maxthreadsperqueue));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1586(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1586 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1586");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv1586_maxthreadsperqueue", r->sv1586_maxthreadsperqueue);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1587(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1587 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv1587_cacheddirectorylimit));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1587(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1587 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv1587_cacheddirectorylimit));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1587(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1587 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1587");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv1587_cacheddirectorylimit", r->sv1587_cacheddirectorylimit);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1588(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1588 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv1588_maxcopylength));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1588(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1588 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv1588_maxcopylength));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1588(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1588 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1588");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv1588_maxcopylength", r->sv1588_maxcopylength);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1590(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1590 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv1590_enablecompression));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1590(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1590 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv1590_enablecompression));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1590(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1590 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1590");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv1590_enablecompression", r->sv1590_enablecompression);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1591(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1591 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv1591_autosharewks));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1591(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1591 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv1591_autosharewks));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1591(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1591 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1591");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv1591_autosharewks", r->sv1591_autosharewks);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1592(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1592 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv1592_autosharewks));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1592(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1592 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv1592_autosharewks));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1592(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1592 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1592");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv1592_autosharewks", r->sv1592_autosharewks);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1593(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1593 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv1593_enablesecuritysignature));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1593(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1593 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv1593_enablesecuritysignature));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1593(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1593 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1593");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv1593_enablesecuritysignature", r->sv1593_enablesecuritysignature);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1594(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1594 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv1594_requiresecuritysignature));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1594(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1594 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv1594_requiresecuritysignature));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1594(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1594 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1594");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv1594_requiresecuritysignature", r->sv1594_requiresecuritysignature);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1595(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1595 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv1595_minclientbuffersize));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1595(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1595 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv1595_minclientbuffersize));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1595(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1595 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1595");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv1595_minclientbuffersize", r->sv1595_minclientbuffersize);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1596(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1596 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv1596_ConnectionNoSessionsTimeout));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1596(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1596 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv1596_ConnectionNoSessionsTimeout));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1596(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1596 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1596");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv1596_ConnectionNoSessionsTimeout", r->sv1596_ConnectionNoSessionsTimeout);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1597(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1597 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv1597_IdleThreadTimeOut));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1597(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1597 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv1597_IdleThreadTimeOut));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1597(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1597 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1597");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv1597_IdleThreadTimeOut", r->sv1597_IdleThreadTimeOut);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1598(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1598 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv1598_enableW9xsecuritysignature));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1598(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1598 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv1598_enableW9xsecuritysignature));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1598(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1598 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1598");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv1598_enableW9xsecuritysignature", r->sv1598_enableW9xsecuritysignature);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1599(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1599 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 1));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->sv1598_enforcekerberosreauthentication));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1599(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1599 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 1));
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->sv1598_enforcekerberosreauthentication));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1599(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1599 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1599");
+	ndr->depth++;
+	ndr_print_uint8(ndr, "sv1598_enforcekerberosreauthentication", r->sv1598_enforcekerberosreauthentication);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1600(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1600 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 1));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->sv1598_disabledos));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1600(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1600 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 1));
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->sv1598_disabledos));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1600(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1600 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1600");
+	ndr->depth++;
+	ndr_print_uint8(ndr, "sv1598_disabledos", r->sv1598_disabledos);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1601(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1601 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sv1598_lowdiskspaceminimum));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1601(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1601 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sv1598_lowdiskspaceminimum));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1601(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1601 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1601");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sv1598_lowdiskspaceminimum", r->sv1598_lowdiskspaceminimum);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1602(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1602 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 1));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->sv_1598_disablestrictnamechecking));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1602(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1602 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 1));
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->sv_1598_disablestrictnamechecking));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1602(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1602 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1602");
+	ndr->depth++;
+	ndr_print_uint8(ndr, "sv_1598_disablestrictnamechecking", r->sv_1598_disablestrictnamechecking);
 	ndr->depth--;
 }
 
