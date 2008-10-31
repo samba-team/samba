@@ -2361,8 +2361,8 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lp_do_global_parameter(lp_ctx, "TimeServer", "False");
 	lp_do_global_parameter(lp_ctx, "BindInterfacesOnly", "False");
 	lp_do_global_parameter(lp_ctx, "Unicode", "True");
-	lp_do_global_parameter(lp_ctx, "ClientLanManAuth", "True");
-	lp_do_global_parameter(lp_ctx, "LanmanAuth", "True");
+	lp_do_global_parameter(lp_ctx, "ClientLanManAuth", "False");
+	lp_do_global_parameter(lp_ctx, "LanmanAuth", "False");
 	lp_do_global_parameter(lp_ctx, "NTLMAuth", "True");
 	lp_do_global_parameter(lp_ctx, "client use spnego principal", "False");
 

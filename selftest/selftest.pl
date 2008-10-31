@@ -578,6 +578,7 @@ sub write_clientconf($$)
 	notify:inotify = false
 	ldb:nosync = true
 	system:anonymous = true
+	client lanman auth = Yes
 	torture:basedir = $prefix_abs/client
 #We don't want to pass our self-tests if the PAC code is wrong
 	gensec:require_pac = true

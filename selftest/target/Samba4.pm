@@ -572,6 +572,7 @@ sub provision($$$$$$)
 #We don't want to pass our self-tests if the PAC code is wrong
 	gensec:require_pac = true
 	log level = $server_loglevel
+	lanman auth = Yes
 
 [tmp]
 	path = $tmpdir
