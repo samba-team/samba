@@ -376,11 +376,11 @@ static int open_acl_xattr(vfs_handle_struct *handle,
 					&pdesc);
         if (NT_STATUS_IS_OK(status)) {
 		/* See if we can access it. */
-		if (!se_access_check(pdesc,
+		status = se_access_check(pdesc,
 					handle->conn->server_info->ptok,
 					fsp->access_mask,
-					&access_granted,
-					&status)) {
+					&access_granted);
+		if (!NT_STATUS_IS_OK(status)) {
 			errno = map_errno_from_nt_status(status);
 			return -1;
 		}

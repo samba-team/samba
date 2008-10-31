@@ -71,8 +71,7 @@ static bool elog_check_access( EVENTLOG_INFO *info, NT_USER_TOKEN *token )
 {
 	char *tdbname = elog_tdbname(talloc_tos(), info->logname );
 	SEC_DESC *sec_desc;
-	bool ret;
-	NTSTATUS ntstatus;
+	NTSTATUS status;
 	
 	if ( !tdbname ) 
 		return False;
@@ -97,15 +96,15 @@ static bool elog_check_access( EVENTLOG_INFO *info, NT_USER_TOKEN *token )
 
 	/* run the check, try for the max allowed */
 	
-	ret = se_access_check( sec_desc, token, MAXIMUM_ALLOWED_ACCESS,
-		&info->access_granted, &ntstatus );
+	status = se_access_check( sec_desc, token, MAXIMUM_ALLOWED_ACCESS,
+		&info->access_granted);
 		
 	if ( sec_desc )
 		TALLOC_FREE( sec_desc );
 		
-	if ( !ret ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(8,("elog_check_access: se_access_check() return %s\n",
-			nt_errstr( ntstatus)));
+			nt_errstr(status)));
 		return False;
 	}
 	
