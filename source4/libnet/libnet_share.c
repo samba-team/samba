@@ -28,7 +28,9 @@ NTSTATUS libnet_ListShares(struct libnet_context *ctx,
 	NTSTATUS status;
 	struct libnet_RpcConnect c;
 	struct srvsvc_NetShareEnumAll s;
+	struct srvsvc_NetShareInfoCtr info_ctr;
 	uint32_t resume_handle = 0;
+	uint32_t totalentries = 0;
 	struct srvsvc_NetShareCtr0 ctr0;
 	struct srvsvc_NetShareCtr1 ctr1;
 	struct srvsvc_NetShareCtr2 ctr2;
@@ -51,37 +53,39 @@ NTSTATUS libnet_ListShares(struct libnet_context *ctx,
 		return status;
 	}
 
-	s.in.level = r->in.level;
-	switch (s.in.level) {
+	info_ctr.level = r->in.level;
+	switch (info_ctr.level) {
 	case 0:
-		s.in.ctr.ctr0 = &ctr0;
+		info_ctr.ctr.ctr0 = &ctr0;
 		ZERO_STRUCT(ctr0);
 		break;
 	case 1:
-		s.in.ctr.ctr1 = &ctr1;
+		info_ctr.ctr.ctr1 = &ctr1;
 		ZERO_STRUCT(ctr1);
 		break;
 	case 2:
-		s.in.ctr.ctr2 = &ctr2;
+		info_ctr.ctr.ctr2 = &ctr2;
 		ZERO_STRUCT(ctr2);
 		break;
 	case 501:
-		s.in.ctr.ctr501 = &ctr501;
+		info_ctr.ctr.ctr501 = &ctr501;
 		ZERO_STRUCT(ctr501);
 		break;
 	case 502:
-		s.in.ctr.ctr502 = &ctr502;
+		info_ctr.ctr.ctr502 = &ctr502;
 		ZERO_STRUCT(ctr502);
 		break;
 	default:
 		r->out.error_string = talloc_asprintf(mem_ctx,
 						      "libnet_ListShares: Invalid info level requested: %d",
-						      s.in.level);
+						      info_ctr.level);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	s.in.max_buffer = ~0;
 	s.in.resume_handle = &resume_handle;
-
+	s.in.info_ctr = &info_ctr;
+	s.out.info_ctr = &info_ctr;
+	s.out.totalentries = &totalentries;
 
 	status = dcerpc_srvsvc_NetShareEnumAll(c.out.dcerpc_pipe, mem_ctx, &s);
 	
@@ -100,7 +104,7 @@ NTSTATUS libnet_ListShares(struct libnet_context *ctx,
 		goto disconnect;
 	}
 
-	r->out.ctr = s.out.ctr;
+	r->out.ctr = s.out.info_ctr->ctr;
 
 disconnect:
 	talloc_free(c.out.dcerpc_pipe);
@@ -115,6 +119,7 @@ NTSTATUS libnet_AddShare(struct libnet_context *ctx,
 	NTSTATUS status;
 	struct libnet_RpcConnect c;
 	struct srvsvc_NetShareAdd s;
+	union srvsvc_NetShareInfo info;
 
 	c.level              = LIBNET_RPC_CONNECT_SERVER;
 	c.in.name            = r->in.server_name;
@@ -129,8 +134,10 @@ NTSTATUS libnet_AddShare(struct libnet_context *ctx,
 		return status;
 	}
 
+	info.info2		= &r->in.share;
+
 	s.in.level 		= 2;
-	s.in.info.info2 	= &r->in.share;
+	s.in.info		= &info;
 	s.in.server_unc		= talloc_asprintf(mem_ctx, "\\\\%s", r->in.server_name);
  
 	status = dcerpc_srvsvc_NetShareAdd(c.out.dcerpc_pipe, mem_ctx, &s);	

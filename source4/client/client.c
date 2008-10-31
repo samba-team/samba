@@ -2563,9 +2563,11 @@ static bool browse_host(struct loadparm_context *lp_ctx,
 	char *binding;
 	NTSTATUS status;
 	struct srvsvc_NetShareEnumAll r;
+	struct srvsvc_NetShareInfoCtr info_ctr;
 	uint32_t resume_handle = 0;
 	TALLOC_CTX *mem_ctx = talloc_init("browse_host");
 	struct srvsvc_NetShareCtr1 ctr1;
+	uint32_t totalentries = 0;
 
 	binding = talloc_asprintf(mem_ctx, "ncacn_np:%s", query_host);
 
@@ -2580,11 +2582,16 @@ static bool browse_host(struct loadparm_context *lp_ctx,
 		return false;
 	}
 
+	info_ctr.level = 1;
+	info_ctr.ctr.ctr1 = &ctr1;
+
 	r.in.server_unc = talloc_asprintf(mem_ctx,"\\\\%s",dcerpc_server_name(p));
-	r.in.level = 1;
-	r.in.ctr.ctr1 = &ctr1;
+	r.in.info_ctr = &info_ctr;
 	r.in.max_buffer = ~0;
 	r.in.resume_handle = &resume_handle;
+	r.out.resume_handle = &resume_handle;
+	r.out.totalentries = &totalentries;
+	r.out.info_ctr = &info_ctr;
 
 	d_printf("\n\tSharename       Type       Comment\n");
 	d_printf("\t---------       ----       -------\n");
@@ -2596,9 +2603,9 @@ static bool browse_host(struct loadparm_context *lp_ctx,
 		if (NT_STATUS_IS_OK(status) && 
 		    (W_ERROR_EQUAL(r.out.result, WERR_MORE_DATA) ||
 		     W_ERROR_IS_OK(r.out.result)) &&
-		    r.out.ctr.ctr1) {
-			display_share_result(r.out.ctr.ctr1);
-			resume_handle += r.out.ctr.ctr1->count;
+		    r.out.info_ctr->ctr.ctr1) {
+			display_share_result(r.out.info_ctr->ctr.ctr1);
+			resume_handle += r.out.info_ctr->ctr.ctr1->count;
 		}
 	} while (NT_STATUS_IS_OK(status) && W_ERROR_EQUAL(r.out.result, WERR_MORE_DATA));
 

@@ -51,12 +51,16 @@ import "security.idl", "svcctl.idl";
 		[default] ;
 	} srvsvc_NetCharDevCtr;
 
+	typedef struct {
+		uint32 level;
+		[switch_is(level)] srvsvc_NetCharDevCtr ctr;
+	} srvsvc_NetCharDevInfoCtr;
+
 	/******************/
 	/* Function: 0x00 */
 	WERROR srvsvc_NetCharDevEnum(
 		[in,unique]   [string,charset(UTF16)] uint16 *server_unc,
-		[in,out,ref]   uint32 *level,
-		[in,out,ref,switch_is(*level)]   srvsvc_NetCharDevCtr *ctr,
+		[in,out,ref]  srvsvc_NetCharDevInfoCtr *info_ctr,
 		[in]   uint32 max_buffer,
 		[out,ref]   uint32 *totalentries,
 		[in,out,unique]   uint32 *resume_handle
@@ -116,13 +120,17 @@ import "security.idl", "svcctl.idl";
 		[default] ;
 	} srvsvc_NetCharDevQCtr;
 
+	typedef struct {
+		uint32 level;
+		[switch_is(level)] srvsvc_NetCharDevQCtr ctr;
+	} srvsvc_NetCharDevQInfoCtr;
+
 	/******************/
 	/* Function: 0x03 */
 	WERROR srvsvc_NetCharDevQEnum(
 		[in,unique]   [string,charset(UTF16)] uint16 *server_unc,
 		[in,unique]   [string,charset(UTF16)] uint16 *user,
-		[in,out,ref]   uint32 *level,
-		[in,out,switch_is(*level),ref]   srvsvc_NetCharDevQCtr *ctr,
+		[in,out,ref]  srvsvc_NetCharDevQInfoCtr *info_ctr,
 		[in]   uint32 max_buffer,
 		[out,ref]   uint32 *totalentries,
 		[in,out,unique]   uint32 *resume_handle
@@ -279,7 +287,7 @@ import "security.idl", "svcctl.idl";
 	/* Function: 0x0b */
 	WERROR srvsvc_NetFileClose(
 		[in,unique]   [string,charset(UTF16)] uint16 *server_unc,
-		[in]   uint32 fid	
+		[in]   uint32 fid
 		);
 
 /**************************/
@@ -487,7 +495,7 @@ import "security.idl", "svcctl.idl";
 		SHARE_1005_IN_DFS               = 0x00000001,
 		SHARE_1005_DFS_ROOT             = 0x00000002
 	} NetShareInfo1005Flags;
-	
+
 	const uint32 SHARE_1005_CSC_POLICY_MASK = 0x00000030;
 	const uint32 SHARE_1005_CSC_POLICY_SHIFT = 4;
 
@@ -610,7 +618,7 @@ import "security.idl", "svcctl.idl";
 		[in]   [string,charset(UTF16)] uint16 share_name[],
 		[in]   uint32 reserved
 		);
-	
+
 	/******************/
 	/* Function: 0x14 */
 	WERROR srvsvc_NetShareCheck(
@@ -680,6 +688,7 @@ import "security.idl", "svcctl.idl";
 		uint32 sessreqs;
 		uint32 opensearch;
 		uint32 activelocks;
+		uint32 numreqbufs;
 		uint32 sizereqbufs;
 		uint32 numbigbufs;
 		uint32 numfiletasks;
@@ -713,6 +722,7 @@ import "security.idl", "svcctl.idl";
 		uint32 sessreqs;
 		uint32 opensearch;
 		uint32 activelocks;
+		uint32 numreqbufs;
 		uint32 sizereqbufs;
 		uint32 numbigbufs;
 		uint32 numfiletasks;
@@ -1142,7 +1152,16 @@ import "security.idl", "svcctl.idl";
 /* srvsvc_NetDisk         */
 /**************************/
 	typedef struct {
-		[flag(STR_LEN4)] string disk;
+		/*
+		 * In theory this should be:
+		 *      [charset(UTF16),string] uint16 annotation[3]
+		 * But midl treats this as:
+		 *      [charset(UTF16),string] uint16 annotation[]
+		 * and pidl doesn't support this yet
+		 */
+		[value(0)] uint32 __disk_offset;
+		[value(strlen(disk)+1)] uint32 __disk_length;
+		[charset(UTF16)] uint16 disk[__disk_length];
 	} srvsvc_NetDiskInfo0;
 
 	typedef struct {
@@ -1191,7 +1210,7 @@ import "security.idl", "svcctl.idl";
 		[in,unique]      [string,charset(UTF16)] uint16 *service,
 		[in]      uint32 level,
 		[in]      uint32 options,
-		[out,ref]     srvsvc_Statistics *stats
+		[out,ref]     srvsvc_Statistics **stats
 		);
 
 /**************************/
@@ -1272,12 +1291,16 @@ import "security.idl", "svcctl.idl";
 		[default];
 	} srvsvc_NetTransportCtr;
 
+	typedef struct {
+		uint32 level;
+		[switch_is(level)] srvsvc_NetTransportCtr ctr;
+	} srvsvc_NetTransportInfoCtr;
+
 	/******************/
 	/* Function: 0x1a */
 	WERROR srvsvc_NetTransportEnum(
 		[in,unique]   [string,charset(UTF16)] uint16 *server_unc,
-		[in,out,ref] uint32 *level,
-		[in,out,ref,switch_is(*level)]   srvsvc_NetTransportCtr *transports,
+		[in,out,ref] srvsvc_NetTransportInfoCtr *transports,
 		[in]   uint32 max_buffer,
 		[out,ref]   uint32 *totalentries,
 		[in,out,unique]   uint32 *resume_handle
@@ -1287,8 +1310,8 @@ import "security.idl", "svcctl.idl";
 	/* Function: 0x1b */
 	WERROR srvsvc_NetTransportDel(
 		[in,unique]   [string,charset(UTF16)] uint16 *server_unc,
-		[in]	uint32 unknown,
-		[in] 	srvsvc_NetTransportInfo0 transport
+		[in]	uint32 level,
+		[in] 	srvsvc_NetTransportInfo0 *info0
 		);
 
 /**************************/
@@ -1394,7 +1417,7 @@ import "security.idl", "svcctl.idl";
 /**************************/
 	/******************/
 	/* Function: 0x24 */
-	/* Note, there must be some way to return entries read vs 
+	/* Note, there must be some way to return entries read vs
 	   total entries ... */
 	WERROR srvsvc_NetShareEnum(
 		[in,unique]       [string,charset(UTF16)] uint16 *server_unc,

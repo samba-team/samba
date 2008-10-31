@@ -31,32 +31,63 @@ static bool test_NetShareEnumAll(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
 	struct srvsvc_NetShareEnumAll r;
+	struct srvsvc_NetShareInfoCtr info_ctr;
 	struct srvsvc_NetShareCtr0 c0;
+	struct srvsvc_NetShareCtr1 c1;
+	struct srvsvc_NetShareCtr2 c2;
+	struct srvsvc_NetShareCtr501 c501;
+	struct srvsvc_NetShareCtr502 c502;
+	uint32_t totalentries = 0;
 	uint32_t levels[] = {0, 1, 2, 501, 502};
 	int i;
 	bool ret = true;
 	uint32_t resume_handle;
 
-	ZERO_STRUCT(c0);
+	ZERO_STRUCT(info_ctr);
 
 	r.in.server_unc = talloc_asprintf(mem_ctx,"\\\\%s",dcerpc_server_name(p));
-	r.in.ctr.ctr0 = &c0;
+	r.in.info_ctr = &info_ctr;
 	r.in.max_buffer = (uint32_t)-1;
 	r.in.resume_handle = &resume_handle;
 	r.out.resume_handle = &resume_handle;
+	r.out.totalentries = &totalentries;
+	r.out.info_ctr = &info_ctr;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
-		ZERO_STRUCT(r.out);
 		resume_handle = 0;
-		r.in.level = levels[i];
+		info_ctr.level = levels[i];
+
+		switch (info_ctr.level) {
+		case 0:
+			ZERO_STRUCT(c0);
+			info_ctr.ctr.ctr0 = &c0;
+			break;
+		case 1:
+			ZERO_STRUCT(c1);
+			info_ctr.ctr.ctr1 = &c1;
+			break;
+		case 2:
+			ZERO_STRUCT(c2);
+			info_ctr.ctr.ctr2 = &c2;
+			break;
+		case 501:
+			ZERO_STRUCT(c501);
+			info_ctr.ctr.ctr501 = &c501;
+			break;
+		case 502:
+			ZERO_STRUCT(c502);
+			info_ctr.ctr.ctr502 = &c502;
+			break;
+		}
+
 		status = dcerpc_srvsvc_NetShareEnumAll(p, mem_ctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
-			printf("NetShareEnumAll level %u failed - %s\n", r.in.level, nt_errstr(status));
+			printf("NetShareEnumAll level %u failed - %s\n", info_ctr.level, nt_errstr(status));
 			ret = false;
 			continue;
 		}
 		if (!W_ERROR_IS_OK(r.out.result)) {
-			printf("NetShareEnumAll level %u failed - %s\n", r.in.level, win_errstr(r.out.result));
+			printf("NetShareEnumAll level %u failed - %s\n", info_ctr.level, win_errstr(r.out.result));
 			continue;
 		}
 	}
