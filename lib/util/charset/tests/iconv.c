@@ -398,9 +398,64 @@ static bool test_random_5m(struct torture_context *tctx)
 	return true;
 }
 
+
+static bool test_string2key(struct torture_context *tctx)
+{
+	uint16_t *buf;
+	char *dest = NULL;
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	ssize_t ret;
+	size_t len = (random()%1000)+1;
+	const uint16_t in1[10] = { 'a', 0xd805, 'b', 0xdcf0, 'c', 0, 'd', 'e', 'f', 'g' };
+	uint8_t le1[20];
+	uint8_t *munged1;
+	uint8_t *out1;
+	int i;
+	const char *correct = "a\357\277\275b\357\277\275c\001defg";
+
+	buf = talloc_size(mem_ctx, len*2);
+	generate_random_buffer((uint8_t *)buf, len*2);
+
+	torture_comment(tctx, "converting random buffer\n");
+
+	ret = convert_string_talloc(mem_ctx, CH_UTF16MUNGED, CH_UTF8, (void *)buf, len*2, (void**)&dest);
+	if (ret == -1) {
+		torture_fail(tctx, "Failed to convert random buffer\n");
+	}
+
+	for (i=0;i<10;i++) {
+		SSVAL(&le1[2*i], 0, in1[i]);
+	}
+
+	torture_comment(tctx, "converting fixed buffer to UTF16\n");
+
+	ret = convert_string_talloc(mem_ctx, CH_UTF16MUNGED, CH_UTF16, (void *)le1, 20, (void**)&munged1);
+	if (ret == -1) {
+		torture_fail(tctx, "Failed to convert fixed buffer to UTF16_MUNGED\n");
+	}
+
+	torture_assert(tctx, ret == 20, "conversion should give 20 bytes\n");
+
+	torture_comment(tctx, "converting fixed buffer to UTF8\n");
+
+	ret = convert_string_talloc(mem_ctx, CH_UTF16MUNGED, CH_UTF8, (void *)le1, 20, (void**)&out1);
+	if (ret == -1) {
+		torture_fail(tctx, "Failed to convert fixed buffer to UTF8\n");
+	}
+
+	torture_assert(tctx, strcmp(correct, out1) == 0, "conversion gave incorrect result\n");
+
+	talloc_free(mem_ctx);
+
+	return true;
+}
+
 struct torture_suite *torture_local_iconv(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "ICONV");
+
+	torture_suite_add_simple_test(suite, "string2key",
+				      test_string2key);
 
 	torture_suite_add_simple_test(suite, "next_codepoint()",
 				      test_next_codepoint);
@@ -410,6 +465,9 @@ struct torture_suite *torture_local_iconv(TALLOC_CTX *mem_ctx)
 
 	torture_suite_add_simple_test(suite, "5M random UTF-16LE sequences",
 				      test_random_5m);
+
+	torture_suite_add_simple_test(suite, "string2key",
+				      test_string2key);
 	return suite;
 }
 

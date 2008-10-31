@@ -57,6 +57,7 @@ static const char *charset_name(struct smb_iconv_convenience *ic, charset_t ch)
 	case CH_DOS: return ic->dos_charset;
 	case CH_UTF8: return "UTF8";
 	case CH_UTF16BE: return "UTF-16BE";
+	case CH_UTF16MUNGED: return "UTF16_MUNGED";
 	default:
 	return "ASCII";
 	}

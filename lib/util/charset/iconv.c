@@ -51,7 +51,7 @@ static size_t ascii_pull  (void *,const char **, size_t *, char **, size_t *);
 static size_t ascii_push  (void *,const char **, size_t *, char **, size_t *);
 static size_t utf8_pull   (void *,const char **, size_t *, char **, size_t *);
 static size_t utf8_push   (void *,const char **, size_t *, char **, size_t *);
-static size_t utf8_munged_push(void *,const char **, size_t *, char **, size_t *);
+static size_t utf16_munged_pull(void *,const char **, size_t *, char **, size_t *);
 static size_t ucs2hex_pull(void *,const char **, size_t *, char **, size_t *);
 static size_t ucs2hex_push(void *,const char **, size_t *, char **, size_t *);
 static size_t iconv_copy  (void *,const char **, size_t *, char **, size_t *);
@@ -69,7 +69,7 @@ static const struct charset_functions builtin_functions[] = {
 	{"UTF-8",   utf8_pull,  utf8_push},
 
 	/* this handles the munging needed for String2Key */
-	{"UTF8_MUNGED",   utf8_pull,  utf8_munged_push},
+	{"UTF16_MUNGED",   utf16_munged_pull,  iconv_copy},
 
 	{"ASCII", ascii_pull, ascii_push},
 	{"UCS2-HEX", ucs2hex_pull, ucs2hex_push}
@@ -713,103 +713,74 @@ error:
 
 
 /*
-  this takes a UTF16 sequence, munges it according to the string2key
-  rules, and produces a UTF8 sequence
+  this takes a UTF16 munged sequence, modifies it according to the
+  string2key rules, and produces a UTF16 sequence
 
 The rules are:
 
-    1) convert any instance of 0xD800 - 0xDBFF (high surrogate)
+    1) any 0x0000 characters are mapped to 0x0001
+
+    2) convert any instance of 0xD800 - 0xDBFF (high surrogate)
        without an immediately following 0xDC00 - 0x0xDFFF (low surrogate) to
        U+FFFD (OBJECT REPLACEMENT CHARACTER).
 
-    2) the same for any low surrogate that was not preceded by a high surrogate.
+    3) the same for any low surrogate that was not preceded by a high surrogate.
+
  */
-static size_t utf8_munged_push(void *cd, const char **inbuf, size_t *inbytesleft,
+static size_t utf16_munged_pull(void *cd, const char **inbuf, size_t *inbytesleft,
 			       char **outbuf, size_t *outbytesleft)
 {
 	size_t in_left=*inbytesleft, out_left=*outbytesleft;
 	uint8_t *c = (uint8_t *)*outbuf;
 	const uint8_t *uc = (const uint8_t *)*inbuf;
 
-	while (in_left >= 2 && out_left >= 1) {
-		unsigned int codepoint;
+	while (in_left >= 2 && out_left >= 2) {
+		unsigned int codepoint = uc[0] | (uc[1]<<8);
 
-		if (uc[1] == 0 && !(uc[0] & 0x80)) {
-			/* simplest case */
-			c[0] = uc[0];
-			in_left  -= 2;
-			out_left -= 1;
-			uc += 2;
-			c  += 1;
-			continue;
+		if (codepoint == 0) {
+			codepoint = 1;
 		}
 
-		if ((uc[1]&0xf8) == 0) {
-			/* next simplest case */
-			if (out_left < 2) {
+		if ((codepoint & 0xfc00) == 0xd800) {
+			/* a high surrogate */
+			unsigned int codepoint2;
+			if (in_left < 4) {
+				codepoint = 0xfffd;
+				goto codepoint16;				
+			}
+			codepoint2 = uc[2] | (uc[3]<<8);
+			if ((codepoint2 & 0xfc00) != 0xdc00) {
+				/* high surrogate not followed by low
+				   surrogate: convert to 0xfffd */
+				codepoint = 0xfffd;
+				goto codepoint16;
+			}
+			if (out_left < 4) {
 				errno = E2BIG;
 				goto error;
 			}
-			c[0] = 0xc0 | (uc[0]>>6) | (uc[1]<<2);
-			c[1] = 0x80 | (uc[0] & 0x3f);
-			in_left  -= 2;
-			out_left -= 2;
-			uc += 2;
-			c  += 2;
+			memcpy(c, uc, 4);
+			in_left  -= 4;
+			out_left -= 4;
+			uc       += 4;
+			c        += 4;
 			continue;
 		}
 
-		if ((uc[1] & 0xfc) == 0xdc) {
-			/* low surrogate not preceded by high surrogate
-			   convert to 0xfffd */
+		if ((codepoint & 0xfc00) == 0xdc00) {
+			/* low surrogate not preceded by high
+			   surrogate: convert to 0xfffd */
 			codepoint = 0xfffd;
-			goto codepoint16;
 		}
-
-		if ((uc[1] & 0xfc) != 0xd8) {
-			codepoint = uc[0] | (uc[1]<<8);
-			goto codepoint16;
-		}
-
-		/* its the first part of a 4 byte sequence */
-		if (in_left < 4 || (uc[3] & 0xfc) != 0xdc) {
-			/* high surrogate not followed by low surrogate 
-			   convert to 0xfffd */
-			codepoint = 0xfffd;
-			goto codepoint16;
-		}
-
-		codepoint = 0x10000 + (uc[2] | ((uc[3] & 0x3)<<8) | 
-				       (uc[0]<<10) | ((uc[1] & 0x3)<<18));
-		
-		if (out_left < 4) {
-			errno = E2BIG;
-			goto error;
-		}
-		c[0] = 0xf0 | (codepoint >> 18);
-		c[1] = 0x80 | ((codepoint >> 12) & 0x3f);
-		c[2] = 0x80 | ((codepoint >> 6) & 0x3f);
-		c[3] = 0x80 | (codepoint & 0x3f);
-		
-		in_left  -= 4;
-		out_left -= 4;
-		uc       += 4;
-		c        += 4;
-		continue;
 
 	codepoint16:
-		if (out_left < 3) {
-			errno = E2BIG;
-			goto error;
-		}
-		c[0] = 0xe0 | (codepoint >> 12);
-		c[1] = 0x80 | ((codepoint >> 6) & 0x3f);
-		c[2] = 0x80 | (codepoint & 0x3f);
+		c[0] = codepoint & 0xFF;
+		c[1] = (codepoint>>8) & 0xFF;
 		
 		in_left  -= 2;
-		out_left -= 3;
+		out_left -= 2;
 		uc  += 2;
-		c   += 3;
+		c   += 2;
 		continue;		
 	}
 
