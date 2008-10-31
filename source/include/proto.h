@@ -1458,9 +1458,8 @@ WERROR registry_push_value(TALLOC_CTX *mem_ctx,
 void se_map_generic(uint32 *access_mask, const struct generic_mapping *mapping);
 void security_acl_map_generic(struct security_acl *sa, const struct generic_mapping *mapping);
 void se_map_standard(uint32 *access_mask, struct standard_mapping *mapping);
-bool se_access_check(const SEC_DESC *sd, const NT_USER_TOKEN *token,
-		     uint32 acc_desired, uint32 *acc_granted, 
-		     NTSTATUS *status);
+NTSTATUS se_access_check(const SEC_DESC *sd, const NT_USER_TOKEN *token,
+		     uint32 acc_desired, uint32 *acc_granted);
 NTSTATUS samr_make_sam_obj_sd(TALLOC_CTX *ctx, SEC_DESC **psd, size_t *sd_size);
 
 /* The following definitions come from lib/util_sec.c  */

@@ -1,8 +1,10 @@
 /*
    Unix SMB/CIFS implementation.
-   Copyright (C) Luke Kenneth Casson Leighton 1996-2000.
-   Copyright (C) Tim Potter 2000.
-   Copyright (C) Re-written by Jeremy Allison 2000.
+
+   Copyright (C) Andrew Tridgell 2004
+   Copyright (C) Gerald Carter 2005
+   Copyright (C) Volker Lendecke 2007
+   Copyright (C) Jeremy Allison 2008
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -21,125 +23,6 @@
 #include "includes.h"
 
 extern NT_USER_TOKEN anonymous_token;
-
-/*********************************************************************************
- Check an ACE against a SID.  We return the remaining needed permission
- bits not yet granted. Zero means permission allowed (no more needed bits).
-**********************************************************************************/
-
-static uint32 check_ace(SEC_ACE *ace, const NT_USER_TOKEN *token, uint32 acc_desired, 
-			NTSTATUS *status)
-{
-	uint32_t mask = ace->access_mask;
-
-	/*
-	 * Inherit only is ignored.
-	 */
-
-	if (ace->flags & SEC_ACE_FLAG_INHERIT_ONLY) {
-		return acc_desired;
-	}
-
-	/*
-	 * If this ACE has no SID in common with the token,
-	 * ignore it as it cannot be used to make an access
-	 * determination.
-	 */
-
-	if (!token_sid_in_ace( token, ace))
-		return acc_desired;	
-
-	switch (ace->type) {
-		case SEC_ACE_TYPE_ACCESS_ALLOWED:
-			/*
-			 * This is explicitly allowed.
-			 * Remove the bits from the remaining
-			 * access required. Return the remaining
-			 * bits needed.
-			 */
-			acc_desired &= ~mask;
-			break;
-		case SEC_ACE_TYPE_ACCESS_DENIED:
-			/*
-			 * This is explicitly denied.
-			 * If any bits match terminate here,
-			 * we are denied.
-			 */
-			if (acc_desired & mask) {
-				*status = NT_STATUS_ACCESS_DENIED;
-				return 0xFFFFFFFF;
-			}
-			break;
-		case SEC_ACE_TYPE_SYSTEM_ALARM:
-		case SEC_ACE_TYPE_SYSTEM_AUDIT:
-			*status = NT_STATUS_NOT_IMPLEMENTED;
-			return 0xFFFFFFFF;
-		default:
-			*status = NT_STATUS_INVALID_PARAMETER;
-			return 0xFFFFFFFF;
-	}
-
-	return acc_desired;
-}
-
-/*********************************************************************************
- Maximum access was requested. Calculate the max possible. Fail if it doesn't
- include other bits requested.
-**********************************************************************************/ 
-
-static bool get_max_access( SEC_ACL *the_acl, const NT_USER_TOKEN *token, uint32 *granted, 
-			    uint32 desired, 
-			    NTSTATUS *status)
-{
-	uint32 acc_denied = 0;
-	uint32 acc_granted = 0;
-	size_t i;
-	
-	for ( i = 0 ; i < the_acl->num_aces; i++) {
-		SEC_ACE *ace = &the_acl->aces[i];
-		uint32 mask = ace->access_mask;
-
-		if (!token_sid_in_ace( token, ace))
-			continue;
-
-		switch (ace->type) {
-			case SEC_ACE_TYPE_ACCESS_ALLOWED:
-				acc_granted |= (mask & ~acc_denied);
-				break;
-			case SEC_ACE_TYPE_ACCESS_DENIED:
-				acc_denied |= (mask & ~acc_granted);
-				break;
-			case SEC_ACE_TYPE_SYSTEM_ALARM:
-			case SEC_ACE_TYPE_SYSTEM_AUDIT:
-				*status = NT_STATUS_NOT_IMPLEMENTED;
-				*granted = 0;
-				return False;
-			default:
-				*status = NT_STATUS_INVALID_PARAMETER;
-				*granted = 0;
-				return False;
-		}                           
-	}
-
-	/*
-	 * If we were granted no access, or we desired bits that we
-	 * didn't get, then deny.
-	 */
-
-	if ((acc_granted == 0) || ((acc_granted & desired) != desired)) {
-		*status = NT_STATUS_ACCESS_DENIED;
-		*granted = 0;
-		return False;
-	}
-
-	/*
-	 * Return the access we did get.
-	 */
-
-	*granted = acc_granted;
-	*status = NT_STATUS_OK;
-	return True;
-}
 
 /* Map generic access rights to object specific rights.  This technique is
    used to give meaning to assigning read, write, execute and all access to
@@ -203,13 +86,13 @@ void se_map_standard(uint32 *access_mask, struct standard_mapping *mapping)
 {
 	uint32 old_mask = *access_mask;
 
-	if (*access_mask & READ_CONTROL_ACCESS) {
-		*access_mask &= ~READ_CONTROL_ACCESS;
+	if (*access_mask & SEC_STD_READ_CONTROL) {
+		*access_mask &= ~SEC_STD_READ_CONTROL;
 		*access_mask |= mapping->std_read;
 	}
 
-	if (*access_mask & (DELETE_ACCESS|WRITE_DAC_ACCESS|WRITE_OWNER_ACCESS|SYNCHRONIZE_ACCESS)) {
-		*access_mask &= ~(DELETE_ACCESS|WRITE_DAC_ACCESS|WRITE_OWNER_ACCESS|SYNCHRONIZE_ACCESS);
+	if (*access_mask & (SEC_STD_DELETE|SEC_STD_WRITE_DAC|SEC_STD_WRITE_OWNER|SEC_STD_SYNCHRONIZE)) {
+		*access_mask &= ~(SEC_STD_DELETE|SEC_STD_WRITE_DAC|SEC_STD_WRITE_OWNER|SEC_STD_SYNCHRONIZE);
 		*access_mask |= mapping->std_all;
 	}
 
@@ -219,122 +102,140 @@ void se_map_standard(uint32 *access_mask, struct standard_mapping *mapping)
 	}
 }
 
-/*****************************************************************************
- Check access rights of a user against a security descriptor.  Look at
- each ACE in the security descriptor until an access denied ACE denies
- any of the desired rights to the user or any of the users groups, or one
- or more ACEs explicitly grant all requested access rights.  See
- "Access-Checking" document in MSDN.
-*****************************************************************************/ 
-
-bool se_access_check(const SEC_DESC *sd, const NT_USER_TOKEN *token,
-		     uint32 acc_desired, uint32 *acc_granted, 
-		     NTSTATUS *status)
+/*
+  perform a SEC_FLAG_MAXIMUM_ALLOWED access check
+*/
+static uint32_t access_check_max_allowed(const struct security_descriptor *sd, 
+			  		const NT_USER_TOKEN *token)
 {
-	size_t i;
-	SEC_ACL *the_acl;
-	uint32 tmp_acc_desired = acc_desired;
-
-	if (!status || !acc_granted)
-		return False;
-
-	if (!token)
-		token = &anonymous_token;
-
-	*status = NT_STATUS_OK;
-	*acc_granted = 0;
-
-	DEBUG(10,("se_access_check: requested access 0x%08x, for NT token "
-		  "with %u entries and first sid %s.\n",
-		  (unsigned int)acc_desired, (unsigned int)token->num_sids,
-		  sid_string_dbg(&token->user_sids[0])));
-
-	/*
-	 * No security descriptor or security descriptor with no DACL
-	 * present allows all access.
-	 */
-
-	/* ACL must have something in it */
-
-	if (!sd || (sd && (!(sd->type & SEC_DESC_DACL_PRESENT) || sd->dacl == NULL))) {
-		*status = NT_STATUS_OK;
-		*acc_granted = acc_desired;
-		DEBUG(5, ("se_access_check: no sd or blank DACL, access allowed\n"));
-		return True;
+	uint32_t denied = 0, granted = 0;
+	unsigned i;
+	
+	if (is_sid_in_token(token, sd->owner_sid)) {
+		granted |= SEC_STD_WRITE_DAC | SEC_STD_READ_CONTROL | SEC_STD_DELETE;
+	} else if (user_has_privileges(token, &se_restore)) {
+		granted |= SEC_STD_DELETE;
 	}
 
-	/* The user sid is the first in the token */
-	if (DEBUGLVL(3)) {
-		DEBUG(3, ("se_access_check: user sid is %s\n",
-			  sid_string_dbg(
-				  &token->user_sids[PRIMARY_USER_SID_INDEX])));
-		
-		for (i = 1; i < token->num_sids; i++) {
-			DEBUGADD(3, ("se_access_check: also %s\n",
-				     sid_string_dbg(&token->user_sids[i])));
+	if (sd->dacl == NULL) {
+		return granted & ~denied;
+	}
+	
+	for (i = 0;i<sd->dacl->num_aces; i++) {
+		struct security_ace *ace = &sd->dacl->aces[i];
+
+		if (ace->flags & SEC_ACE_FLAG_INHERIT_ONLY) {
+			continue;
+		}
+
+		if (!is_sid_in_token(token, &ace->trustee)) {
+			continue;
+		}
+
+		switch (ace->type) {
+		case SEC_ACE_TYPE_ACCESS_ALLOWED:
+			granted |= ace->access_mask;
+			break;
+		case SEC_ACE_TYPE_ACCESS_DENIED:
+		case SEC_ACE_TYPE_ACCESS_DENIED_OBJECT:
+			denied |= ace->access_mask;
+			break;
+		default:	/* Other ACE types not handled/supported */
+			break;
 		}
 	}
 
-	/* Is the token the owner of the SID ? */
-
-	if (sd->owner_sid) {
-		for (i = 0; i < token->num_sids; i++) {
-			if (sid_equal(&token->user_sids[i], sd->owner_sid)) {
-				/*
-				 * The owner always has SEC_RIGHTS_WRITE_DAC & READ_CONTROL.
-				 */
-				if (tmp_acc_desired & WRITE_DAC_ACCESS)
-					tmp_acc_desired &= ~WRITE_DAC_ACCESS;
-				if (tmp_acc_desired & READ_CONTROL_ACCESS)
-					tmp_acc_desired &= ~READ_CONTROL_ACCESS;
-			}
-		}
-	}
-
-	the_acl = sd->dacl;
-
-	if (tmp_acc_desired & MAXIMUM_ALLOWED_ACCESS) {
-		tmp_acc_desired &= ~MAXIMUM_ALLOWED_ACCESS;
-		return get_max_access( the_acl, token, acc_granted, tmp_acc_desired, 
-				       status);
-	}
-
-	for ( i = 0 ; i < the_acl->num_aces && tmp_acc_desired != 0; i++) {
-		SEC_ACE *ace = &the_acl->aces[i];
-
-		DEBUGADD(10,("se_access_check: ACE %u: type %d, flags = "
-			     "0x%02x, SID = %s mask = %x, current desired "
-			     "= %x\n", (unsigned int)i, ace->type, ace->flags,
-			     sid_string_dbg(&ace->trustee),
-			     (unsigned int) ace->access_mask,
-			     (unsigned int)tmp_acc_desired ));
-
-		tmp_acc_desired = check_ace( ace, token, tmp_acc_desired, status);
-		if (NT_STATUS_V(*status)) {
-			*acc_granted = 0;
-			DEBUG(5,("se_access_check: ACE %u denied with status %s.\n", (unsigned int)i, nt_errstr(*status)));
-			return False;
-		}
-	}
-
-	/*
-	 * If there are no more desired permissions left then
-	 * access was allowed.
-	 */
-
-	if (tmp_acc_desired == 0) {
-		*acc_granted = acc_desired;
-		*status = NT_STATUS_OK;
-		DEBUG(5,("se_access_check: access (%x) granted.\n", (unsigned int)acc_desired ));
-		return True;
-	}
-		
-	*acc_granted = 0;
-	*status = NT_STATUS_ACCESS_DENIED;
-	DEBUG(5,("se_access_check: access (%x) denied.\n", (unsigned int)acc_desired ));
-	return False;
+	return granted & ~denied;
 }
 
+/*
+  the main entry point for access checking. 
+*/
+NTSTATUS se_access_check(const struct security_descriptor *sd, 
+			  const NT_USER_TOKEN *token,
+			  uint32_t access_desired,
+			  uint32_t *access_granted)
+{
+	int i;
+	uint32_t bits_remaining;
+
+	*access_granted = access_desired;
+	bits_remaining = access_desired;
+
+	/* handle the maximum allowed flag */
+	if (access_desired & SEC_FLAG_MAXIMUM_ALLOWED) {
+		access_desired |= access_check_max_allowed(sd, token);
+		access_desired &= ~SEC_FLAG_MAXIMUM_ALLOWED;
+		*access_granted = access_desired;
+		bits_remaining = access_desired & ~SEC_STD_DELETE;
+	}
+
+#if 0
+	/* We need to support SeSecurityPrivilege for this. */
+
+	if (access_desired & SEC_FLAG_SYSTEM_SECURITY) {
+		if (user_has_privileges(token, &sec_security)) {
+			bits_remaining &= ~SEC_FLAG_SYSTEM_SECURITY;
+		} else {
+			return NT_STATUS_PRIVILEGE_NOT_HELD;
+		}
+	}
+#endif
+
+	/* a NULL dacl allows access */
+	if ((sd->type & SEC_DESC_DACL_PRESENT) && sd->dacl == NULL) {
+		*access_granted = access_desired;
+		return NT_STATUS_OK;
+	}
+
+	/* the owner always gets SEC_STD_WRITE_DAC, SEC_STD_READ_CONTROL and SEC_STD_DELETE */
+	if ((bits_remaining & (SEC_STD_WRITE_DAC|SEC_STD_READ_CONTROL|SEC_STD_DELETE)) &&
+	    is_sid_in_token(token, sd->owner_sid)) {
+		bits_remaining &= ~(SEC_STD_WRITE_DAC|SEC_STD_READ_CONTROL|SEC_STD_DELETE);
+	}
+	if ((bits_remaining & SEC_STD_DELETE) &&
+	    user_has_privileges(token, &se_restore)) {
+		bits_remaining &= ~SEC_STD_DELETE;
+	}
+
+	if (sd->dacl == NULL) {
+		goto done;
+	}
+
+	/* check each ace in turn. */
+	for (i=0; bits_remaining && i < sd->dacl->num_aces; i++) {
+		struct security_ace *ace = &sd->dacl->aces[i];
+
+		if (ace->flags & SEC_ACE_FLAG_INHERIT_ONLY) {
+			continue;
+		}
+
+		if (!is_sid_in_token(token, &ace->trustee)) {
+			continue;
+		}
+
+		switch (ace->type) {
+		case SEC_ACE_TYPE_ACCESS_ALLOWED:
+			bits_remaining &= ~ace->access_mask;
+			break;
+		case SEC_ACE_TYPE_ACCESS_DENIED:
+		case SEC_ACE_TYPE_ACCESS_DENIED_OBJECT:
+			if (bits_remaining & ace->access_mask) {
+				return NT_STATUS_ACCESS_DENIED;
+			}
+			break;
+		default:	/* Other ACE types not handled/supported */
+			break;
+		}
+	}
+
+done:
+	if (bits_remaining != 0) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	return NT_STATUS_OK;
+}
 
 /*******************************************************************
  samr_make_sam_obj_sd

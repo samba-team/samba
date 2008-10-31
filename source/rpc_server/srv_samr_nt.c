@@ -186,8 +186,10 @@ static NTSTATUS access_check_samr_object( SEC_DESC *psd, NT_USER_TOKEN *token,
 
 	/* check the security descriptor first */
 
-	if ( se_access_check(psd, token, des_access, acc_granted, &status) )
+	status = se_access_check(psd, token, des_access, acc_granted);
+	if (NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
 
 	/* give root a free pass */
 
