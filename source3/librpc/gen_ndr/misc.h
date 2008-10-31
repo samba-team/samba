@@ -2,8 +2,11 @@
 
 #include <stdint.h>
 
+#define netr_SamDatabaseID8Bit netr_SamDatabaseID
 #ifndef _HEADER_misc
 #define _HEADER_misc
+
+enum netr_SamDatabaseID8Bit;
 
 struct GUID {
 	uint32_t time_low;
