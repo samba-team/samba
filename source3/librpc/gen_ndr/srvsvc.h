@@ -517,7 +517,7 @@ struct srvsvc_NetSrvInfo403 {
 	uint32_t numbigbufs;
 	uint32_t numfiletasks;
 	uint32_t alertsched;
-	uint32_t eroralert;
+	uint32_t erroralert;
 	uint32_t logonalert;
 	uint32_t accessalert;
 	uint32_t diskalert;

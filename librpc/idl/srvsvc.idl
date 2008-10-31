@@ -727,7 +727,7 @@ import "security.idl", "svcctl.idl";
 		uint32 numbigbufs;
 		uint32 numfiletasks;
 		uint32 alertsched;
-		uint32 eroralert;
+		uint32 erroralert;
 		uint32 logonalert;
 		uint32 accessalert;
 		uint32 diskalert;
