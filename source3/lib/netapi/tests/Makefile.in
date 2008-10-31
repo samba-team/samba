@@ -44,7 +44,7 @@ bin/.dummy:
 
 CMDLINE_OBJ = common.o
 NETAPIBUFFER_OBJ = netapibuffer.o
-NETAPITEST_OBJ = netapitest.o netlocalgroup.o netuser.o netgroup.o netdisplay.o netshare.o netfile.o $(CMDLINE_OBJ)
+NETAPITEST_OBJ = netapitest.o netlocalgroup.o netuser.o netgroup.o netdisplay.o netshare.o netfile.o netserver.o $(CMDLINE_OBJ)
 
 bin/netapitest@EXEEXT@: $(BINARY_PREREQS) $(NETAPITEST_OBJ)
 	@echo Linking $@
