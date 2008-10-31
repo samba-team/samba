@@ -6920,7 +6920,7 @@ static enum ndr_err_code ndr_push_srvsvc_NetSrvInfo403(struct ndr_push *ndr, int
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->numbigbufs));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->numfiletasks));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->alertsched));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->eroralert));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->erroralert));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->logonalert));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->accessalert));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->diskalert));
@@ -7006,7 +7006,7 @@ static enum ndr_err_code ndr_pull_srvsvc_NetSrvInfo403(struct ndr_pull *ndr, int
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->numbigbufs));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->numfiletasks));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->alertsched));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->eroralert));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->erroralert));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->logonalert));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->accessalert));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->diskalert));
@@ -7118,7 +7118,7 @@ _PUBLIC_ void ndr_print_srvsvc_NetSrvInfo403(struct ndr_print *ndr, const char *
 	ndr_print_uint32(ndr, "numbigbufs", r->numbigbufs);
 	ndr_print_uint32(ndr, "numfiletasks", r->numfiletasks);
 	ndr_print_uint32(ndr, "alertsched", r->alertsched);
-	ndr_print_uint32(ndr, "eroralert", r->eroralert);
+	ndr_print_uint32(ndr, "erroralert", r->erroralert);
 	ndr_print_uint32(ndr, "logonalert", r->logonalert);
 	ndr_print_uint32(ndr, "accessalert", r->accessalert);
 	ndr_print_uint32(ndr, "diskalert", r->diskalert);
