@@ -32,14 +32,15 @@ static bool test_NetCharDevGetInfo(struct dcerpc_pipe *p, struct torture_context
 {
 	NTSTATUS status;
 	struct srvsvc_NetCharDevGetInfo r;
+	union srvsvc_NetCharDevInfo info;
 	uint32_t levels[] = {0, 1};
 	int i;
 
 	r.in.server_unc = talloc_asprintf(tctx,"\\\\%s",dcerpc_server_name(p));
 	r.in.device_name = devname;
+	r.out.info = &info;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
-		ZERO_STRUCT(r.out);
 		r.in.level = levels[i];
 		torture_comment(tctx, "testing NetCharDevGetInfo level %u on device '%s'\n",
 			r.in.level, r.in.device_name);
@@ -80,23 +81,39 @@ static bool test_NetCharDevEnum(struct torture_context *tctx,
 {
 	NTSTATUS status;
 	struct srvsvc_NetCharDevEnum r;
+	struct srvsvc_NetCharDevInfoCtr info_ctr;
 	struct srvsvc_NetCharDevCtr0 c0;
+	struct srvsvc_NetCharDevCtr0 c1;
+	uint32_t totalentries = 0;
 	uint32_t levels[] = {0, 1};
 	int i;
 
+	ZERO_STRUCT(info_ctr);
+
 	r.in.server_unc = talloc_asprintf(tctx,"\\\\%s",dcerpc_server_name(p));
-	r.in.ctr.ctr0 = &c0;
-	r.in.ctr.ctr0->count = 0;
-	r.in.ctr.ctr0->array = NULL;
+	r.in.info_ctr = &info_ctr;
 	r.in.max_buffer = (uint32_t)-1;
 	r.in.resume_handle = NULL;
+	r.out.info_ctr = &info_ctr;
+	r.out.totalentries = &totalentries;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		int j;
 
-		ZERO_STRUCT(r.out);
-		r.in.level = levels[i];
-		torture_comment(tctx, "testing NetCharDevEnum level %u\n", r.in.level);
+		info_ctr.level = levels[i];
+
+		switch(info_ctr.level) {
+		case 0:
+			ZERO_STRUCT(c0);
+			info_ctr.ctr.ctr0 = &c0;
+			break;
+		case 1:
+			ZERO_STRUCT(c1);
+			info_ctr.ctr.ctr0 = &c1;
+			break;
+		}
+
+		torture_comment(tctx, "testing NetCharDevEnum level %u\n", info_ctr.level);
 		status = dcerpc_srvsvc_NetCharDevEnum(p, tctx, &r);
 		torture_assert_ntstatus_ok(tctx, status, "NetCharDevEnum failed");
 		if (!W_ERROR_IS_OK(r.out.result)) {
@@ -105,10 +122,10 @@ static bool test_NetCharDevEnum(struct torture_context *tctx,
 		}
 
 		/* call test_NetCharDevGetInfo and test_NetCharDevControl for each returned share */
-		if (r.in.level == 1) {
-			for (j=0;j<r.out.ctr.ctr1->count;j++) {
+		if (info_ctr.level == 1) {
+			for (j=0;j<r.out.info_ctr->ctr.ctr1->count;j++) {
 				const char *device;
-				device = r.out.ctr.ctr1->array[j].device;
+				device = r.out.info_ctr->ctr.ctr1->array[j].device;
 				if (!test_NetCharDevGetInfo(p, tctx, device)) {
 					return false;
 				}
@@ -130,15 +147,16 @@ static bool test_NetCharDevQGetInfo(struct dcerpc_pipe *p, struct torture_contex
 {
 	NTSTATUS status;
 	struct srvsvc_NetCharDevQGetInfo r;
+	union srvsvc_NetCharDevQInfo info;
 	uint32_t levels[] = {0, 1};
 	int i;
 
 	r.in.server_unc = talloc_asprintf(tctx,"\\\\%s",dcerpc_server_name(p));
 	r.in.queue_name = devicequeue;
 	r.in.user = talloc_asprintf(tctx,"Administrator");
+	r.out.info = &info;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
-		ZERO_STRUCT(r.out);
 		r.in.level = levels[i];
 		torture_comment(tctx, "testing NetCharDevQGetInfo level %u on devicequeue '%s'\n",
 			r.in.level, r.in.queue_name);
@@ -210,24 +228,39 @@ static bool test_NetCharDevQEnum(struct torture_context *tctx,
 {
 	NTSTATUS status;
 	struct srvsvc_NetCharDevQEnum r;
+	struct srvsvc_NetCharDevQInfoCtr info_ctr;
 	struct srvsvc_NetCharDevQCtr0 c0;
+	struct srvsvc_NetCharDevQCtr1 c1;
+	uint32_t totalentries = 0;
 	uint32_t levels[] = {0, 1};
 	int i;
 
+	ZERO_STRUCT(info_ctr);
+
 	r.in.server_unc = talloc_asprintf(tctx,"\\\\%s",dcerpc_server_name(p));
 	r.in.user = talloc_asprintf(tctx,"%s","Administrator");
-	r.in.ctr.ctr0 = &c0;
-	r.in.ctr.ctr0->count = 0;
-	r.in.ctr.ctr0->array = NULL;
+	r.in.info_ctr = &info_ctr;
 	r.in.max_buffer = (uint32_t)-1;
 	r.in.resume_handle = NULL;
+	r.out.totalentries = &totalentries;
+	r.out.info_ctr = &info_ctr;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		int j;
 
-		ZERO_STRUCT(r.out);
-		r.in.level = levels[i];
-		torture_comment(tctx, "testing NetCharDevQEnum level %u\n", r.in.level);
+		info_ctr.level = levels[i];
+
+		switch (info_ctr.level) {
+		case 0:
+			ZERO_STRUCT(c0);
+			info_ctr.ctr.ctr0 = &c0;
+			break;
+		case 1:
+			ZERO_STRUCT(c1);
+			info_ctr.ctr.ctr1 = &c1;
+			break;
+		}
+		torture_comment(tctx, "testing NetCharDevQEnum level %u\n", info_ctr.level);
 		status = dcerpc_srvsvc_NetCharDevQEnum(p, tctx, &r);
 		torture_assert_ntstatus_ok(tctx, status, "NetCharDevQEnum failed");
 		if (!W_ERROR_IS_OK(r.out.result)) {
@@ -236,10 +269,10 @@ static bool test_NetCharDevQEnum(struct torture_context *tctx,
 		}
 
 		/* call test_NetCharDevGetInfo and test_NetCharDevControl for each returned share */
-		if (r.in.level == 1) {
-			for (j=0;j<r.out.ctr.ctr1->count;j++) {
+		if (info_ctr.level == 1) {
+			for (j=0;j<r.out.info_ctr->ctr.ctr1->count;j++) {
 				const char *device;
-				device = r.out.ctr.ctr1->array[j].device;
+				device = r.out.info_ctr->ctr.ctr1->array[j].device;
 				if (!test_NetCharDevQGetInfo(p, tctx, device)) {
 					return false;
 				}
@@ -258,22 +291,38 @@ static bool test_NetConnEnum(struct torture_context *tctx,
 {
 	NTSTATUS status;
 	struct srvsvc_NetConnEnum r;
+	struct srvsvc_NetConnInfoCtr info_ctr;
 	struct srvsvc_NetConnCtr0 c0;
+	struct srvsvc_NetConnCtr1 c1;
+	uint32_t totalentries = 0;
 	uint32_t levels[] = {0, 1};
 	int i;
 
+	ZERO_STRUCT(info_ctr);
+
 	r.in.server_unc = talloc_asprintf(tctx,"\\\\%s",dcerpc_server_name(p));
 	r.in.path = talloc_asprintf(tctx,"%s","ADMIN$");
-	r.in.ctr.ctr0 = &c0;
-	r.in.ctr.ctr0->count = 0;
-	r.in.ctr.ctr0->array = NULL;
+	r.in.info_ctr = &info_ctr;
 	r.in.max_buffer = (uint32_t)-1;
 	r.in.resume_handle = NULL;
+	r.out.totalentries = &totalentries;
+	r.out.info_ctr = &info_ctr;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
-		ZERO_STRUCT(r.out);
-		r.in.level = levels[i];
-		torture_comment(tctx, "testing NetConnEnum level %u\n", r.in.level);
+		info_ctr.level = levels[i];
+
+		switch (info_ctr.level) {
+		case 0:
+			ZERO_STRUCT(c0);
+			info_ctr.ctr.ctr0 = &c0;
+			break;
+		case 1:
+			ZERO_STRUCT(c1);
+			info_ctr.ctr.ctr1 = &c1;
+			break;
+		}
+
+		torture_comment(tctx, "testing NetConnEnum level %u\n", info_ctr.level);
 		status = dcerpc_srvsvc_NetConnEnum(p, tctx, &r);
 		torture_assert_ntstatus_ok(tctx, status, "NetConnEnum failed");
 		if (!W_ERROR_IS_OK(r.out.result)) {
@@ -292,23 +341,38 @@ static bool test_NetFileEnum(struct torture_context *tctx,
 {
 	NTSTATUS status;
 	struct srvsvc_NetFileEnum r;
+	struct srvsvc_NetFileInfoCtr info_ctr;
+	struct srvsvc_NetFileCtr2 c2;
 	struct srvsvc_NetFileCtr3 c3;
+	uint32_t totalentries = 0;
 	uint32_t levels[] = {2, 3};
 	int i;
+
+	ZERO_STRUCT(info_ctr);
 
 	r.in.server_unc = talloc_asprintf(tctx,"\\\\%s",dcerpc_server_name(p));
 	r.in.path = NULL;
 	r.in.user = NULL;
-	r.in.ctr.ctr3 = &c3;
-	r.in.ctr.ctr3->count = 0;
-	r.in.ctr.ctr3->array = NULL;
+	r.in.info_ctr = &info_ctr;
 	r.in.max_buffer = (uint32_t)4096;
 	r.in.resume_handle = NULL;
+	r.out.totalentries = &totalentries;
+	r.out.info_ctr = &info_ctr;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
-		ZERO_STRUCT(r.out);
-		r.in.level = levels[i];
-		torture_comment(tctx, "testing NetFileEnum level %u\n", r.in.level);
+		info_ctr.level = levels[i];
+
+		switch (info_ctr.level) {
+		case 2:
+			ZERO_STRUCT(c2);
+			info_ctr.ctr.ctr2 = &c2;
+			break;
+		case 3:
+			ZERO_STRUCT(c3);
+			info_ctr.ctr.ctr3 = &c3;
+			break;
+		}
+		torture_comment(tctx, "testing NetFileEnum level %u\n", info_ctr.level);
 		status = dcerpc_srvsvc_NetFileEnum(p, tctx, &r);
 		torture_assert_ntstatus_ok(tctx, status, "NetFileEnum failed");
 		if (!W_ERROR_IS_OK(r.out.result)) {
@@ -327,23 +391,54 @@ static bool test_NetSessEnum(struct torture_context *tctx,
 {
 	NTSTATUS status;
 	struct srvsvc_NetSessEnum r;
+	struct srvsvc_NetSessInfoCtr info_ctr;
 	struct srvsvc_NetSessCtr0 c0;
+	struct srvsvc_NetSessCtr1 c1;
+	struct srvsvc_NetSessCtr2 c2;
+	struct srvsvc_NetSessCtr10 c10;
+	struct srvsvc_NetSessCtr502 c502;
+	uint32_t totalentries = 0;
 	uint32_t levels[] = {0, 1, 2, 10, 502};
 	int i;
+
+	ZERO_STRUCT(info_ctr);
 
 	r.in.server_unc = talloc_asprintf(tctx,"\\\\%s",dcerpc_server_name(p));
 	r.in.client = NULL;
 	r.in.user = NULL;
-	r.in.ctr.ctr0 = &c0;
-	r.in.ctr.ctr0->count = 0;
-	r.in.ctr.ctr0->array = NULL;
+	r.in.info_ctr = &info_ctr;
 	r.in.max_buffer = (uint32_t)-1;
 	r.in.resume_handle = NULL;
+	r.out.totalentries = &totalentries;
+	r.out.info_ctr = &info_ctr;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
-		ZERO_STRUCT(r.out);
-		r.in.level = levels[i];
-		torture_comment(tctx, "testing NetSessEnum level %u\n", r.in.level);
+		info_ctr.level = levels[i];
+
+		switch (info_ctr.level) {
+		case 0:
+			ZERO_STRUCT(c0);
+			info_ctr.ctr.ctr0 = &c0;
+			break;
+		case 1:
+			ZERO_STRUCT(c1);
+			info_ctr.ctr.ctr1 = &c1;
+			break;
+		case 2:
+			ZERO_STRUCT(c2);
+			info_ctr.ctr.ctr2 = &c2;
+			break;
+		case 10:
+			ZERO_STRUCT(c10);
+			info_ctr.ctr.ctr10 = &c10;
+			break;
+		case 502:
+			ZERO_STRUCT(c502);
+			info_ctr.ctr.ctr502 = &c502;
+			break;
+		}
+
+		torture_comment(tctx, "testing NetSessEnum level %u\n", info_ctr.level);
 		status = dcerpc_srvsvc_NetSessEnum(p, tctx, &r);
 		torture_assert_ntstatus_ok(tctx, status, "NetSessEnum failed");
 		if (!W_ERROR_IS_OK(r.out.result)) {
@@ -362,9 +457,11 @@ static bool test_NetShareCheck(struct dcerpc_pipe *p, struct torture_context *tc
 {
 	NTSTATUS status;
 	struct srvsvc_NetShareCheck r;
+	enum srvsvc_ShareType type;
 
 	r.in.server_unc = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.device_name = device_name;
+	r.out.type = &type;
 
 	torture_comment(tctx, 
 			"testing NetShareCheck on device '%s'\n", r.in.device_name);
@@ -382,6 +479,7 @@ static bool test_NetShareGetInfo(struct torture_context *tctx,
 {
 	NTSTATUS status;
 	struct srvsvc_NetShareGetInfo r;
+	union srvsvc_NetShareInfo info;
 	struct {
 		uint32_t level;
 		WERROR anon_status;
@@ -398,6 +496,7 @@ static bool test_NetShareGetInfo(struct torture_context *tctx,
 
 	r.in.server_unc = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.share_name = sharename;
+	r.out.info = &info;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		WERROR expected;
@@ -405,7 +504,6 @@ static bool test_NetShareGetInfo(struct torture_context *tctx,
 		r.in.level = levels[i].level;
 		expected = levels[i].anon_status;
 		if (admin) expected = levels[i].admin_status;
-		ZERO_STRUCT(r.out);
 
 		torture_comment(tctx, "testing NetShareGetInfo level %u on share '%s'\n", 
 		       r.in.level, r.in.share_name);
@@ -415,8 +513,8 @@ static bool test_NetShareGetInfo(struct torture_context *tctx,
 		torture_assert_werr_equal(tctx, r.out.result, expected, "NetShareGetInfo failed");
 
 		if (r.in.level != 2) continue;
-		if (!r.out.info.info2 || !r.out.info.info2->path) continue;
-		if (!test_NetShareCheck(p, tctx, r.out.info.info2->path)) {
+		if (!r.out.info->info2 || !r.out.info->info2->path) continue;
+		if (!test_NetShareCheck(p, tctx, r.out.info->info2->path)) {
 			return false;
 		}
 	}
@@ -444,6 +542,8 @@ static bool test_NetShareAddSetDel(struct torture_context *tctx,
 	struct srvsvc_NetShareSetInfo r;
 	struct srvsvc_NetShareGetInfo q;
 	struct srvsvc_NetShareDel d;
+	struct sec_desc_buf sd_buf;
+	union srvsvc_NetShareInfo info;
 	struct {
 		uint32_t level;
 		WERROR expected;
@@ -465,17 +565,18 @@ static bool test_NetShareAddSetDel(struct torture_context *tctx,
 		talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.share_name = talloc_strdup(tctx, "testshare");
 
-	a.in.level = 2;
-	a.in.info.info2 = talloc(tctx, struct srvsvc_NetShareInfo2);
-	a.in.info.info2->name = r.in.share_name;
-	a.in.info.info2->type = STYPE_DISKTREE;
-	a.in.info.info2->comment = talloc_strdup(tctx, "test comment");
-	a.in.info.info2->permissions = 123434566;
-	a.in.info.info2->max_users = -1;
-	a.in.info.info2->current_users = 0;
-	a.in.info.info2->path = talloc_strdup(tctx, "C:\\");
-	a.in.info.info2->password = NULL;
+	info.info2 = talloc(tctx, struct srvsvc_NetShareInfo2);
+	info.info2->name = r.in.share_name;
+	info.info2->type = STYPE_DISKTREE;
+	info.info2->comment = talloc_strdup(tctx, "test comment");
+	info.info2->permissions = 123434566;
+	info.info2->max_users = -1;
+	info.info2->current_users = 0;
+	info.info2->path = talloc_strdup(tctx, "C:\\");
+	info.info2->password = NULL;
 
+	a.in.info = &info;
+	a.in.level = 2;
 	a.in.parm_error = NULL;
 
 	status = dcerpc_srvsvc_NetShareAdd(p, tctx, &a);
@@ -496,109 +597,112 @@ static bool test_NetShareAddSetDel(struct torture_context *tctx,
 
 		switch (levels[i].level) {
 		case 0:
-			r.in.info.info0 = talloc(tctx, struct srvsvc_NetShareInfo0);
-			r.in.info.info0->name = r.in.share_name;
+			info.info0 = talloc(tctx, struct srvsvc_NetShareInfo0);
+			info.info0->name = r.in.share_name;
 			break;
 		case 1:
-			r.in.info.info1 = talloc(tctx, struct srvsvc_NetShareInfo1);
-			r.in.info.info1->name = r.in.share_name;
-			r.in.info.info1->type = STYPE_DISKTREE;
-			r.in.info.info1->comment = talloc_strdup(tctx, "test comment 1");
+			info.info1 = talloc(tctx, struct srvsvc_NetShareInfo1);
+			info.info1->name = r.in.share_name;
+			info.info1->type = STYPE_DISKTREE;
+			info.info1->comment = talloc_strdup(tctx, "test comment 1");
 			break;
 		case 2:	
-			r.in.info.info2 = talloc(tctx, struct srvsvc_NetShareInfo2);
-			r.in.info.info2->name = r.in.share_name;
-			r.in.info.info2->type = STYPE_DISKTREE;
-			r.in.info.info2->comment = talloc_strdup(tctx, "test comment 2");
-			r.in.info.info2->permissions = 0;
-			r.in.info.info2->max_users = 2;
-			r.in.info.info2->current_users = 1;
-			r.in.info.info2->path = talloc_strdup(tctx, "::BLaH::"); /* "C:\\"); */
-			r.in.info.info2->password = NULL;
+			info.info2 = talloc(tctx, struct srvsvc_NetShareInfo2);
+			info.info2->name = r.in.share_name;
+			info.info2->type = STYPE_DISKTREE;
+			info.info2->comment = talloc_strdup(tctx, "test comment 2");
+			info.info2->permissions = 0;
+			info.info2->max_users = 2;
+			info.info2->current_users = 1;
+			info.info2->path = talloc_strdup(tctx, "::BLaH::"); /* "C:\\"); */
+			info.info2->password = NULL;
 			break;
 		case 501:
-			r.in.info.info501 = talloc(tctx, struct srvsvc_NetShareInfo501);
-			r.in.info.info501->name = r.in.share_name;
-			r.in.info.info501->type = STYPE_DISKTREE;
-			r.in.info.info501->comment = talloc_strdup(tctx, "test comment 501");
-			r.in.info.info501->csc_policy = 0;
+			info.info501 = talloc(tctx, struct srvsvc_NetShareInfo501);
+			info.info501->name = r.in.share_name;
+			info.info501->type = STYPE_DISKTREE;
+			info.info501->comment = talloc_strdup(tctx, "test comment 501");
+			info.info501->csc_policy = 0;
 			break;
 		case 502:
-			r.in.info.info502 = talloc(tctx, struct srvsvc_NetShareInfo502);
-			r.in.info.info502->name = r.in.share_name;
-			r.in.info.info502->type = STYPE_DISKTREE;
-			r.in.info.info502->comment = talloc_strdup(tctx, "test comment 502");
-			r.in.info.info502->permissions = 0;
-			r.in.info.info502->max_users = 502;
-			r.in.info.info502->current_users = 1;
-			r.in.info.info502->path = talloc_strdup(tctx, "C:\\");
-			r.in.info.info502->password = NULL;
-			r.in.info.info502->unknown = 0;
-			r.in.info.info502->sd = NULL;
+			ZERO_STRUCT(sd_buf);
+			info.info502 = talloc(tctx, struct srvsvc_NetShareInfo502);
+			info.info502->name = r.in.share_name;
+			info.info502->type = STYPE_DISKTREE;
+			info.info502->comment = talloc_strdup(tctx, "test comment 502");
+			info.info502->permissions = 0;
+			info.info502->max_users = 502;
+			info.info502->current_users = 1;
+			info.info502->path = talloc_strdup(tctx, "C:\\");
+			info.info502->password = NULL;
+			info.info502->sd_buf = sd_buf;
 			break;
 		case 1004:
-			r.in.info.info1004 = talloc(tctx, struct srvsvc_NetShareInfo1004);
-			r.in.info.info1004->comment = talloc_strdup(tctx, "test comment 1004");
+			info.info1004 = talloc(tctx, struct srvsvc_NetShareInfo1004);
+			info.info1004->comment = talloc_strdup(tctx, "test comment 1004");
 			break;
 		case 1005:
-			r.in.info.info1005 = talloc(tctx, struct srvsvc_NetShareInfo1005);
-			r.in.info.info1005->dfs_flags = 0;
+			info.info1005 = talloc(tctx, struct srvsvc_NetShareInfo1005);
+			info.info1005->dfs_flags = 0;
 			break;
 		case 1006:
-			r.in.info.info1006 = talloc(tctx, struct srvsvc_NetShareInfo1006);
-			r.in.info.info1006->max_users = 1006;
+			info.info1006 = talloc(tctx, struct srvsvc_NetShareInfo1006);
+			info.info1006->max_users = 1006;
 			break;
 /*		case 1007:
-			r.in.info.info1007 = talloc(tctx, struct srvsvc_NetShareInfo1007);
-			r.in.info.info1007->flags = 0;
-			r.in.info.info1007->alternate_directory_name = talloc_strdup(tctx, "test");
+			info.info1007 = talloc(tctx, struct srvsvc_NetShareInfo1007);
+			info.info1007->flags = 0;
+			info.info1007->alternate_directory_name = talloc_strdup(tctx, "test");
 			break;
 */
 		case 1501:
-			r.in.info.info1501 = talloc_zero(tctx, struct sec_desc_buf);
+			info.info1501 = talloc_zero(tctx, struct sec_desc_buf);
 			break;
 		}
-		
+
+		r.in.info = &info;
+
 		status = dcerpc_srvsvc_NetShareSetInfo(p, tctx, &r);
 		torture_assert_ntstatus_ok(tctx, status, "NetShareGetInfo failed");
 		torture_assert_werr_equal(tctx, r.out.result, levels[i].expected, "NetShareSetInfo failed");
 		
 		q.in.share_name = r.in.share_name;
+		q.out.info = &info;
 
 		status = dcerpc_srvsvc_NetShareGetInfo(p, tctx, &q);
 		torture_assert_ntstatus_ok(tctx, status, "NetShareGetInfo failed");
 		torture_assert_werr_ok(tctx, q.out.result, "NetShareGetInfo failed");
 
-		torture_assert_str_equal(tctx, q.out.info.info502->name, r.in.share_name, 
+		torture_assert_str_equal(tctx, q.out.info->info502->name, r.in.share_name,
 					 "share name invalid");
 
 		switch (levels[i].level) {
 		case 0:
 			break;
 		case 1:
-			torture_assert_str_equal(tctx, q.out.info.info502->comment, "test comment 1", "comment");
+			torture_assert_str_equal(tctx, q.out.info->info502->comment, "test comment 1", "comment");
 			break;
 		case 2:
-			torture_assert_str_equal(tctx, q.out.info.info502->comment, "test comment 2", "comment");
-			torture_assert_int_equal(tctx, q.out.info.info2->max_users, 2, "max users");
-			torture_assert_str_equal(tctx, q.out.info.info2->path, "C:\\", "path");
+			torture_assert_str_equal(tctx, q.out.info->info2->comment, "test comment 2", "comment");
+			torture_assert_int_equal(tctx, q.out.info->info2->max_users, 2, "max users");
+			torture_assert_str_equal(tctx, q.out.info->info2->path, "C:\\", "path");
 			break;
 		case 501:
-			torture_assert_str_equal(tctx, q.out.info.info501->comment, "test comment 501", "comment");
+			torture_assert_str_equal(tctx, q.out.info->info501->comment, "test comment 501", "comment");
 			break;
 		case 502:
-			torture_assert_str_equal(tctx, q.out.info.info502->comment, "test comment 502", "comment");
-			torture_assert_int_equal(tctx, q.out.info.info2->max_users, 502, "max users");
-			torture_assert_str_equal(tctx, q.out.info.info2->path, "C:\\", "path");
+			torture_assert_str_equal(tctx, q.out.info->info502->comment, "test comment 502", "comment");
+			torture_assert_int_equal(tctx, q.out.info->info502->max_users, 502, "max users");
+			torture_assert_str_equal(tctx, q.out.info->info502->path, "C:\\", "path");
 			break;
 		case 1004:
-			torture_assert_str_equal(tctx, q.out.info.info502->comment, "test comment 1004", 
+			torture_assert_str_equal(tctx, q.out.info->info1004->comment, "test comment 1004",
 						 "comment");
 			break;
 		case 1005:
 			break;
 		case 1006:
-			torture_assert_int_equal(tctx, q.out.info.info2->max_users, 1006, "Max users");
+			torture_assert_int_equal(tctx, q.out.info->info1006->max_users, 1006, "Max users");
 			break;
 /*		case 1007:
 			break;
@@ -627,7 +731,13 @@ static bool test_NetShareEnumAll(struct torture_context *tctx,
 {
 	NTSTATUS status;
 	struct srvsvc_NetShareEnumAll r;
+	struct srvsvc_NetShareInfoCtr info_ctr;
 	struct srvsvc_NetShareCtr0 c0;
+	struct srvsvc_NetShareCtr1 c1;
+	struct srvsvc_NetShareCtr2 c2;
+	struct srvsvc_NetShareCtr501 c501;
+	struct srvsvc_NetShareCtr502 c502;
+	uint32_t totalentries = 0;
 	struct {
 		uint32_t level;
 		WERROR anon_status;
@@ -642,35 +752,61 @@ static bool test_NetShareEnumAll(struct torture_context *tctx,
 	int i;
 	uint32_t resume_handle;
 
-	ZERO_STRUCT(c0);
+	ZERO_STRUCT(info_ctr);
 
 	r.in.server_unc = talloc_asprintf(tctx,"\\\\%s",dcerpc_server_name(p));
-	r.in.ctr.ctr0 = &c0;
+	r.in.info_ctr = &info_ctr;
 	r.in.max_buffer = (uint32_t)-1;
 	r.in.resume_handle = &resume_handle;
 	r.out.resume_handle = &resume_handle;
+	r.out.totalentries = &totalentries;
+	r.out.info_ctr = &info_ctr;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
+
 		int j;
 		WERROR expected;
 
-		r.in.level = levels[i].level;
+		info_ctr.level = levels[i].level;
+
+		switch (info_ctr.level) {
+		case 0:
+			ZERO_STRUCT(c0);
+			info_ctr.ctr.ctr0 = &c0;
+			break;
+		case 1:
+			ZERO_STRUCT(c1);
+			info_ctr.ctr.ctr1 = &c1;
+			break;
+		case 2:
+			ZERO_STRUCT(c2);
+			info_ctr.ctr.ctr2 = &c2;
+			break;
+		case 501:
+			ZERO_STRUCT(c501);
+			info_ctr.ctr.ctr501 = &c501;
+			break;
+		case 502:
+			ZERO_STRUCT(c502);
+			info_ctr.ctr.ctr502 = &c502;
+			break;
+		}
+
 		expected = levels[i].anon_status;
 		if (admin) expected = levels[i].admin_status;
 
-		ZERO_STRUCT(r.out);
 		resume_handle = 0;
 
-		torture_comment(tctx, "testing NetShareEnumAll level %u\n", r.in.level);
+		torture_comment(tctx, "testing NetShareEnumAll level %u\n", info_ctr.level);
 		status = dcerpc_srvsvc_NetShareEnumAll(p, tctx, &r);
 		torture_assert_ntstatus_ok(tctx, status, "NetShareEnumAll failed");
 		torture_assert_werr_equal(tctx, r.out.result, expected, "NetShareEnumAll failed");
 
 		/* call srvsvc_NetShareGetInfo for each returned share */
-		if (r.in.level == 2 && r.out.ctr.ctr2) {
-			for (j=0;j<r.out.ctr.ctr2->count;j++) {
+		if (info_ctr.level == 2 && r.out.info_ctr->ctr.ctr2) {
+			for (j=0;j<r.out.info_ctr->ctr.ctr2->count;j++) {
 				const char *name;
-				name = r.out.ctr.ctr2->array[j].name;
+				name = r.out.info_ctr->ctr.ctr2->array[j].name;
 				if (!test_NetShareGetInfo(tctx, p, name, admin)) {
 					return false;
 				}
@@ -698,7 +834,13 @@ static bool test_NetShareEnum(struct torture_context *tctx,
 {
 	NTSTATUS status;
 	struct srvsvc_NetShareEnum r;
+	struct srvsvc_NetShareInfoCtr info_ctr;
 	struct srvsvc_NetShareCtr0 c0;
+	struct srvsvc_NetShareCtr1 c1;
+	struct srvsvc_NetShareCtr2 c2;
+	struct srvsvc_NetShareCtr501 c501;
+	struct srvsvc_NetShareCtr502 c502;
+	uint32_t totalentries = 0;
 	struct {
 		uint32_t level;
 		WERROR anon_status;
@@ -713,22 +855,44 @@ static bool test_NetShareEnum(struct torture_context *tctx,
 	int i;
 
 	r.in.server_unc = talloc_asprintf(tctx,"\\\\%s",dcerpc_server_name(p));
-	r.in.ctr.ctr0 = &c0;
-	r.in.ctr.ctr0->count = 0;
-	r.in.ctr.ctr0->array = NULL;
+	r.in.info_ctr = &info_ctr;
 	r.in.max_buffer = (uint32_t)-1;
 	r.in.resume_handle = NULL;
+	r.out.totalentries = &totalentries;
+	r.out.info_ctr = &info_ctr;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		WERROR expected;
 
-		r.in.level = levels[i].level;
+		info_ctr.level = levels[i].level;
+
+		switch (info_ctr.level) {
+		case 0:
+			ZERO_STRUCT(c0);
+			info_ctr.ctr.ctr0 = &c0;
+			break;
+		case 1:
+			ZERO_STRUCT(c1);
+			info_ctr.ctr.ctr1 = &c1;
+			break;
+		case 2:
+			ZERO_STRUCT(c2);
+			info_ctr.ctr.ctr2 = &c2;
+			break;
+		case 501:
+			ZERO_STRUCT(c501);
+			info_ctr.ctr.ctr501 = &c501;
+			break;
+		case 502:
+			ZERO_STRUCT(c502);
+			info_ctr.ctr.ctr502 = &c502;
+			break;
+		}
+
 		expected = levels[i].anon_status;
 		if (admin) expected = levels[i].admin_status;
 
-		ZERO_STRUCT(r.out);
-
-		torture_comment(tctx, "testing NetShareEnum level %u\n", r.in.level);
+		torture_comment(tctx, "testing NetShareEnum level %u\n", info_ctr.level);
 		status = dcerpc_srvsvc_NetShareEnum(p, tctx, &r);
 		torture_assert_ntstatus_ok(tctx, status, "NetShareEnum failed");
 		torture_assert_werr_equal(tctx, r.out.result, expected, "NetShareEnum failed");
@@ -757,19 +921,15 @@ static bool test_NetSrvGetInfo(struct torture_context *tctx,
 {
 	NTSTATUS status;
 	struct srvsvc_NetSrvGetInfo r;
-	struct srvsvc_NetSrvInfo503 i503;
+	union srvsvc_NetSrvInfo info;
 	uint32_t levels[] = {100, 101, 102, 502, 503};
 	int i;
-	uint32_t resume_handle;
-
-	ZERO_STRUCT(i503);
 
 	r.in.server_unc = talloc_asprintf(tctx,"\\\\%s",dcerpc_server_name(p));
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
-		ZERO_STRUCT(r.out);
-		resume_handle = 0;
 		r.in.level = levels[i];
+		r.out.info = &info;
 		torture_comment(tctx, "testing NetSrvGetInfo level %u\n", r.in.level);
 		status = dcerpc_srvsvc_NetSrvGetInfo(p, tctx, &r);
 		torture_assert_ntstatus_ok(tctx, status, "NetSrvGetInfo failed");
@@ -789,16 +949,23 @@ static bool test_NetDiskEnum(struct torture_context *tctx,
 {
 	NTSTATUS status;
 	struct srvsvc_NetDiskEnum r;
+	struct srvsvc_NetDiskInfo info;
+	uint32_t totalentries = 0;
 	uint32_t levels[] = {0};
 	int i;
 	uint32_t resume_handle=0;
 
-	ZERO_STRUCT(r.in);
+	ZERO_STRUCT(info);
+
 	r.in.server_unc = NULL;
 	r.in.resume_handle = &resume_handle;
+	r.in.info = &info;
+	r.out.info = &info;
+	r.out.totalentries = &totalentries;
+	r.out.resume_handle = &resume_handle;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
-		ZERO_STRUCT(r.out);
+		ZERO_STRUCTP(r.out.info);
 		r.in.level = levels[i];
 		torture_comment(tctx, "testing NetDiskEnum level %u\n", r.in.level);
 		status = dcerpc_srvsvc_NetDiskEnum(p, tctx, &r);
@@ -817,21 +984,36 @@ static bool test_NetTransportEnum(struct torture_context *tctx,
 {
 	NTSTATUS status;
 	struct srvsvc_NetTransportEnum r;
-	struct srvsvc_NetTransportCtr0 c0;
+	struct srvsvc_NetTransportInfoCtr transports;
+	struct srvsvc_NetTransportCtr0 ctr0;
+	struct srvsvc_NetTransportCtr1 ctr1;
+
+	uint32_t totalentries = 0;
 	uint32_t levels[] = {0, 1};
 	int i;
 
+	ZERO_STRUCT(transports);
+
 	r.in.server_unc = talloc_asprintf(tctx,"\\\\%s", dcerpc_server_name(p));
-	r.in.transports.ctr0 = &c0;
-	r.in.transports.ctr0->count = 0;
-	r.in.transports.ctr0->array = NULL;
+	r.in.transports = &transports;
 	r.in.max_buffer = (uint32_t)-1;
 	r.in.resume_handle = NULL;
+	r.out.totalentries = &totalentries;
+	r.out.transports = &transports;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
-		ZERO_STRUCT(r.out);
-		r.in.level = levels[i];
-		torture_comment(tctx, "testing NetTransportEnum level %u\n", r.in.level);
+		transports.level = levels[i];
+		switch (transports.level) {
+		case 0:
+			ZERO_STRUCT(ctr0);
+			transports.ctr.ctr0 = &ctr0;
+			break;
+		case 1:
+			ZERO_STRUCT(ctr1);
+			transports.ctr.ctr1 = &ctr1;
+			break;
+		}
+		torture_comment(tctx, "testing NetTransportEnum level %u\n", transports.level);
 		status = dcerpc_srvsvc_NetTransportEnum(p, tctx, &r);
 		torture_assert_ntstatus_ok(tctx, status, "NetTransportEnum failed");
 		if (!W_ERROR_IS_OK(r.out.result)) {
@@ -850,10 +1032,11 @@ static bool test_NetRemoteTOD(struct torture_context *tctx,
 {
 	NTSTATUS status;
 	struct srvsvc_NetRemoteTOD r;
+	struct srvsvc_NetRemoteTODInfo *info = NULL;
 
 	r.in.server_unc = talloc_asprintf(tctx,"\\\\%s",dcerpc_server_name(p));
+	r.out.info = &info;
 
-	ZERO_STRUCT(r.out);
 	torture_comment(tctx, "testing NetRemoteTOD\n");
 	status = dcerpc_srvsvc_NetRemoteTOD(p, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "NetRemoteTOD failed");

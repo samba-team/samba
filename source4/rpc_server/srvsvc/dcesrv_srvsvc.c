@@ -45,26 +45,24 @@
 static WERROR dcesrv_srvsvc_NetCharDevEnum(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				      struct srvsvc_NetCharDevEnum *r)
 {
-	r->out.level = r->in.level;
-	r->out.totalentries = 0;
-	r->out.resume_handle = NULL;
+	*r->out.totalentries = 0;
 
-	switch (r->in.level) {
+	switch (r->in.info_ctr->level) {
 	case 0:
-		r->out.ctr.ctr0 = talloc(mem_ctx, struct srvsvc_NetCharDevCtr0);
-		W_ERROR_HAVE_NO_MEMORY(r->out.ctr.ctr0);
+		r->out.info_ctr->ctr.ctr0 = talloc(mem_ctx, struct srvsvc_NetCharDevCtr0);
+		W_ERROR_HAVE_NO_MEMORY(r->out.info_ctr->ctr.ctr0);
 
-		r->out.ctr.ctr0->count = 0;
-		r->out.ctr.ctr0->array = NULL;
+		r->out.info_ctr->ctr.ctr0->count = 0;
+		r->out.info_ctr->ctr.ctr0->array = NULL;
 
 		return WERR_NOT_SUPPORTED;
 
 	case 1:
-		r->out.ctr.ctr1 = talloc(mem_ctx, struct srvsvc_NetCharDevCtr1);
-		W_ERROR_HAVE_NO_MEMORY(r->out.ctr.ctr1);
+		r->out.info_ctr->ctr.ctr1 = talloc(mem_ctx, struct srvsvc_NetCharDevCtr1);
+		W_ERROR_HAVE_NO_MEMORY(r->out.info_ctr->ctr.ctr1);
 
-		r->out.ctr.ctr1->count = 0;
-		r->out.ctr.ctr1->array = NULL;
+		r->out.info_ctr->ctr.ctr1->count = 0;
+		r->out.info_ctr->ctr.ctr1->array = NULL;
 
 		return WERR_NOT_SUPPORTED;
 
@@ -82,7 +80,7 @@ static WERROR dcesrv_srvsvc_NetCharDevEnum(struct dcesrv_call_state *dce_call, T
 static WERROR dcesrv_srvsvc_NetCharDevGetInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NetCharDevGetInfo *r)
 {
-	ZERO_STRUCT(r->out);
+	ZERO_STRUCTP(r->out.info);
 
 	switch (r->in.level) {
 	case 0:
@@ -117,28 +115,26 @@ static WERROR dcesrv_srvsvc_NetCharDevControl(struct dcesrv_call_state *dce_call
 static WERROR dcesrv_srvsvc_NetCharDevQEnum(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				     struct srvsvc_NetCharDevQEnum *r)
 {
-	r->out.level = r->in.level;
-	r->out.totalentries = 0;
-	r->out.resume_handle = NULL;
+	*r->out.totalentries = 0;
 
-	switch (r->in.level) {
+	switch (r->in.info_ctr->level) {
 	case 0:
 	{
-		r->out.ctr.ctr0 = talloc(mem_ctx, struct srvsvc_NetCharDevQCtr0);
-		W_ERROR_HAVE_NO_MEMORY(r->out.ctr.ctr0);
+		r->out.info_ctr->ctr.ctr0 = talloc(mem_ctx, struct srvsvc_NetCharDevQCtr0);
+		W_ERROR_HAVE_NO_MEMORY(r->out.info_ctr->ctr.ctr0);
 
-		r->out.ctr.ctr0->count = 0;
-		r->out.ctr.ctr0->array = NULL;
+		r->out.info_ctr->ctr.ctr0->count = 0;
+		r->out.info_ctr->ctr.ctr0->array = NULL;
 
 		return WERR_NOT_SUPPORTED;
 	}
 	case 1:
 	{
-		r->out.ctr.ctr1 = talloc(mem_ctx, struct srvsvc_NetCharDevQCtr1);
-		W_ERROR_HAVE_NO_MEMORY(r->out.ctr.ctr1);
+		r->out.info_ctr->ctr.ctr1 = talloc(mem_ctx, struct srvsvc_NetCharDevQCtr1);
+		W_ERROR_HAVE_NO_MEMORY(r->out.info_ctr->ctr.ctr1);
 
-		r->out.ctr.ctr1->count = 0;
-		r->out.ctr.ctr1->array = NULL;
+		r->out.info_ctr->ctr.ctr1->count = 0;
+		r->out.info_ctr->ctr.ctr1->array = NULL;
 
 		return WERR_NOT_SUPPORTED;
 	}
@@ -156,7 +152,7 @@ static WERROR dcesrv_srvsvc_NetCharDevQEnum(struct dcesrv_call_state *dce_call, 
 static WERROR dcesrv_srvsvc_NetCharDevQGetInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 					struct srvsvc_NetCharDevQGetInfo *r)
 {
-	ZERO_STRUCT(r->out);
+	ZERO_STRUCTP(r->out.info);
 
 	switch (r->in.level) {
 	case 0:
@@ -230,28 +226,26 @@ static WERROR dcesrv_srvsvc_NetCharDevQPurgeSelf(struct dcesrv_call_state *dce_c
 static WERROR dcesrv_srvsvc_NetConnEnum(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NetConnEnum *r)
 {
-	r->out.level = r->in.level;
-	r->out.totalentries = 0;
-	r->out.resume_handle = NULL;
+	*r->out.totalentries = 0;
 
-	switch (r->in.level) {
+	switch (r->in.info_ctr->level) {
 	case 0:
 	{
-		r->out.ctr.ctr0 = talloc(mem_ctx, struct srvsvc_NetConnCtr0);
-		W_ERROR_HAVE_NO_MEMORY(r->out.ctr.ctr0);
+		r->out.info_ctr->ctr.ctr0 = talloc(mem_ctx, struct srvsvc_NetConnCtr0);
+		W_ERROR_HAVE_NO_MEMORY(r->out.info_ctr->ctr.ctr0);
 
-		r->out.ctr.ctr0->count = 0;
-		r->out.ctr.ctr0->array = NULL;
+		r->out.info_ctr->ctr.ctr0->count = 0;
+		r->out.info_ctr->ctr.ctr0->array = NULL;
 
 		return WERR_NOT_SUPPORTED;
 	}
 	case 1:
 	{
-		r->out.ctr.ctr1 = talloc(mem_ctx, struct srvsvc_NetConnCtr1);
-		W_ERROR_HAVE_NO_MEMORY(r->out.ctr.ctr1);
+		r->out.info_ctr->ctr.ctr1 = talloc(mem_ctx, struct srvsvc_NetConnCtr1);
+		W_ERROR_HAVE_NO_MEMORY(r->out.info_ctr->ctr.ctr1);
 
-		r->out.ctr.ctr1->count = 0;
-		r->out.ctr.ctr1->array = NULL;
+		r->out.info_ctr->ctr.ctr1->count = 0;
+		r->out.info_ctr->ctr.ctr1->array = NULL;
 
 		return WERR_NOT_SUPPORTED;
 	}
@@ -269,28 +263,26 @@ static WERROR dcesrv_srvsvc_NetConnEnum(struct dcesrv_call_state *dce_call, TALL
 static WERROR dcesrv_srvsvc_NetFileEnum(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				 struct srvsvc_NetFileEnum *r)
 {
-	r->out.level = r->in.level;
-	r->out.totalentries = 0;
-	r->out.resume_handle = NULL;
+	*r->out.totalentries = 0;
 
-	switch (r->in.level) {
+	switch (r->in.info_ctr->level) {
 	case 2:
 	{
-		r->out.ctr.ctr2 = talloc(mem_ctx, struct srvsvc_NetFileCtr2);
-		W_ERROR_HAVE_NO_MEMORY(r->out.ctr.ctr2);
+		r->out.info_ctr->ctr.ctr2 = talloc(mem_ctx, struct srvsvc_NetFileCtr2);
+		W_ERROR_HAVE_NO_MEMORY(r->out.info_ctr->ctr.ctr2);
 
-		r->out.ctr.ctr2->count = 0;
-		r->out.ctr.ctr2->array = NULL;
+		r->out.info_ctr->ctr.ctr2->count = 0;
+		r->out.info_ctr->ctr.ctr2->array = NULL;
 
 		return WERR_NOT_SUPPORTED;
 	}
 	case 3:
 	{
-		r->out.ctr.ctr3 = talloc(mem_ctx, struct srvsvc_NetFileCtr3);
-		W_ERROR_HAVE_NO_MEMORY(r->out.ctr.ctr3);
+		r->out.info_ctr->ctr.ctr3 = talloc(mem_ctx, struct srvsvc_NetFileCtr3);
+		W_ERROR_HAVE_NO_MEMORY(r->out.info_ctr->ctr.ctr3);
 
-		r->out.ctr.ctr3->count = 0;
-		r->out.ctr.ctr3->array = NULL;
+		r->out.info_ctr->ctr.ctr3->count = 0;
+		r->out.info_ctr->ctr.ctr3->array = NULL;
 
 		return WERR_NOT_SUPPORTED;
 	}
@@ -308,7 +300,7 @@ static WERROR dcesrv_srvsvc_NetFileEnum(struct dcesrv_call_state *dce_call, TALL
 static WERROR dcesrv_srvsvc_NetFileGetInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				    struct srvsvc_NetFileGetInfo *r)
 {
-	ZERO_STRUCT(r->out);
+	ZERO_STRUCTP(r->out.info);
 
 	switch (r->in.level) {
 	case 2:
@@ -343,58 +335,56 @@ static WERROR dcesrv_srvsvc_NetFileClose(struct dcesrv_call_state *dce_call, TAL
 static WERROR dcesrv_srvsvc_NetSessEnum(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NetSessEnum *r)
 {
-	r->out.level = r->in.level;
-	r->out.totalentries = 0;
-	r->out.resume_handle = NULL;
+	*r->out.totalentries = 0;
 
-	switch (r->in.level) {
+	switch (r->in.info_ctr->level) {
 	case 0:
 	{
-		r->out.ctr.ctr0 = talloc(mem_ctx, struct srvsvc_NetSessCtr0);
-		W_ERROR_HAVE_NO_MEMORY(r->out.ctr.ctr0);
+		r->out.info_ctr->ctr.ctr0 = talloc(mem_ctx, struct srvsvc_NetSessCtr0);
+		W_ERROR_HAVE_NO_MEMORY(r->out.info_ctr->ctr.ctr0);
 
-		r->out.ctr.ctr0->count = 0;
-		r->out.ctr.ctr0->array = NULL;
+		r->out.info_ctr->ctr.ctr0->count = 0;
+		r->out.info_ctr->ctr.ctr0->array = NULL;
 
 		return WERR_NOT_SUPPORTED;
 	}
 	case 1:
 	{
-		r->out.ctr.ctr1 = talloc(mem_ctx, struct srvsvc_NetSessCtr1);
-		W_ERROR_HAVE_NO_MEMORY(r->out.ctr.ctr1);
+		r->out.info_ctr->ctr.ctr1 = talloc(mem_ctx, struct srvsvc_NetSessCtr1);
+		W_ERROR_HAVE_NO_MEMORY(r->out.info_ctr->ctr.ctr1);
 
-		r->out.ctr.ctr1->count = 0;
-		r->out.ctr.ctr1->array = NULL;
+		r->out.info_ctr->ctr.ctr1->count = 0;
+		r->out.info_ctr->ctr.ctr1->array = NULL;
 
 		return WERR_NOT_SUPPORTED;
 	}
 	case 2:
 	{
-		r->out.ctr.ctr2 = talloc(mem_ctx, struct srvsvc_NetSessCtr2);
-		W_ERROR_HAVE_NO_MEMORY(r->out.ctr.ctr2);
+		r->out.info_ctr->ctr.ctr2 = talloc(mem_ctx, struct srvsvc_NetSessCtr2);
+		W_ERROR_HAVE_NO_MEMORY(r->out.info_ctr->ctr.ctr2);
 
-		r->out.ctr.ctr2->count = 0;
-		r->out.ctr.ctr2->array = NULL;
+		r->out.info_ctr->ctr.ctr2->count = 0;
+		r->out.info_ctr->ctr.ctr2->array = NULL;
 
 		return WERR_NOT_SUPPORTED;
 	}
 	case 10:
 	{
-		r->out.ctr.ctr10 = talloc(mem_ctx, struct srvsvc_NetSessCtr10);
-		W_ERROR_HAVE_NO_MEMORY(r->out.ctr.ctr10);
+		r->out.info_ctr->ctr.ctr10 = talloc(mem_ctx, struct srvsvc_NetSessCtr10);
+		W_ERROR_HAVE_NO_MEMORY(r->out.info_ctr->ctr.ctr10);
 
-		r->out.ctr.ctr2->count = 0;
-		r->out.ctr.ctr2->array = NULL;
+		r->out.info_ctr->ctr.ctr10->count = 0;
+		r->out.info_ctr->ctr.ctr10->array = NULL;
 
 		return WERR_NOT_SUPPORTED;
 	}
 	case 502:
 	{
-		r->out.ctr.ctr502 = talloc(mem_ctx, struct srvsvc_NetSessCtr502);
-		W_ERROR_HAVE_NO_MEMORY(r->out.ctr.ctr502);
+		r->out.info_ctr->ctr.ctr502 = talloc(mem_ctx, struct srvsvc_NetSessCtr502);
+		W_ERROR_HAVE_NO_MEMORY(r->out.info_ctr->ctr.ctr502);
 
-		r->out.ctr.ctr2->count = 0;
-		r->out.ctr.ctr2->array = NULL;
+		r->out.info_ctr->ctr.ctr502->count = 0;
+		r->out.info_ctr->ctr.ctr502->array = NULL;
 
 		return WERR_NOT_SUPPORTED;
 	}
@@ -458,7 +448,7 @@ static WERROR dcesrv_srvsvc_NetShareAdd(struct dcesrv_call_state *dce_call, TALL
 
 		info[i].name = SHARE_TYPE;
 		info[i].type = SHARE_INFO_STRING;
-		switch (r->in.info.info2->type) {
+		switch (r->in.info->info2->type) {
 		case 0x00:
 			info[i].value = talloc_strdup(info, "DISK");
 			break;
@@ -474,16 +464,16 @@ static WERROR dcesrv_srvsvc_NetShareAdd(struct dcesrv_call_state *dce_call, TALL
 		W_ERROR_HAVE_NO_MEMORY(info[i].value);
 		i++;
 
-		if (r->in.info.info2->path && r->in.info.info2->path[0]) {
+		if (r->in.info->info2->path && r->in.info->info2->path[0]) {
 			info[i].name = SHARE_PATH;
 			info[i].type = SHARE_INFO_STRING;
 
 			/* Windows will send a path in a form of C:\example\path */
-			if (r->in.info.info2->path[1] == ':') {
-				info[i].value = talloc_strdup(info, &r->in.info.info2->path[2]);
+			if (r->in.info->info2->path[1] == ':') {
+				info[i].value = talloc_strdup(info, &r->in.info->info2->path[2]);
 			} else {
 				/* very strange let's try to set as is */
-				info[i].value = talloc_strdup(info, r->in.info.info2->path);
+				info[i].value = talloc_strdup(info, r->in.info->info2->path);
 			}
 			W_ERROR_HAVE_NO_MEMORY(info[i].value);
 			all_string_sub((char *)info[i].value, "\\", "/", 0);
@@ -491,19 +481,19 @@ static WERROR dcesrv_srvsvc_NetShareAdd(struct dcesrv_call_state *dce_call, TALL
 			i++;
 		}
 
-		if (r->in.info.info2->comment && r->in.info.info2->comment[0]) {
+		if (r->in.info->info2->comment && r->in.info->info2->comment[0]) {
 			info[i].name = SHARE_COMMENT;
 			info[i].type = SHARE_INFO_STRING;
-			info[i].value = talloc_strdup(info, r->in.info.info2->comment);
+			info[i].value = talloc_strdup(info, r->in.info->info2->comment);
 			W_ERROR_HAVE_NO_MEMORY(info[i].value);
 
 			i++;
 		}
 
-		if (r->in.info.info2->password && r->in.info.info2->password[0]) {
+		if (r->in.info->info2->password && r->in.info->info2->password[0]) {
 			info[i].name = SHARE_PASSWORD;
 			info[i].type = SHARE_INFO_STRING;
-			info[i].value = talloc_strdup(info, r->in.info.info2->password);
+			info[i].value = talloc_strdup(info, r->in.info->info2->password);
 			W_ERROR_HAVE_NO_MEMORY(info[i].value);
 
 			i++;
@@ -512,12 +502,12 @@ static WERROR dcesrv_srvsvc_NetShareAdd(struct dcesrv_call_state *dce_call, TALL
 		info[i].name = SHARE_MAX_CONNECTIONS;
 		info[i].type = SHARE_INFO_INT;
 		info[i].value = talloc(info, int);
-		*((int *)info[i].value) = r->in.info.info2->max_users;
+		*((int *)info[i].value) = r->in.info->info2->max_users;
 		i++;
 
 		/* TODO: security descriptor */
 
-		nterr = share_create(sctx, r->in.info.info2->name, info, i);
+		nterr = share_create(sctx, r->in.info->info2->name, info, i);
 		if (!NT_STATUS_IS_OK(nterr)) {
 			return ntstatus_to_werror(nterr);
 		}
@@ -556,7 +546,7 @@ static WERROR dcesrv_srvsvc_NetShareAdd(struct dcesrv_call_state *dce_call, TALL
 
 		info[i].name = SHARE_TYPE;
 		info[i].type = SHARE_INFO_STRING;
-		switch (r->in.info.info502->type) {
+		switch (r->in.info->info502->type) {
 		case 0x00:
 			info[i].value = talloc_strdup(info, "DISK");
 			break;
@@ -572,16 +562,16 @@ static WERROR dcesrv_srvsvc_NetShareAdd(struct dcesrv_call_state *dce_call, TALL
 		W_ERROR_HAVE_NO_MEMORY(info[i].value);
 		i++;
 
-		if (r->in.info.info502->path && r->in.info.info502->path[0]) {
+		if (r->in.info->info502->path && r->in.info->info502->path[0]) {
 			info[i].name = SHARE_PATH;
 			info[i].type = SHARE_INFO_STRING;
 
 			/* Windows will send a path in a form of C:\example\path */
-			if (r->in.info.info502->path[1] == ':') {
-				info[i].value = talloc_strdup(info, &r->in.info.info502->path[2]);
+			if (r->in.info->info502->path[1] == ':') {
+				info[i].value = talloc_strdup(info, &r->in.info->info502->path[2]);
 			} else {
 				/* very strange let's try to set as is */
-				info[i].value = talloc_strdup(info, r->in.info.info502->path);
+				info[i].value = talloc_strdup(info, r->in.info->info502->path);
 			}
 			W_ERROR_HAVE_NO_MEMORY(info[i].value);
 			all_string_sub((char *)info[i].value, "\\", "/", 0);
@@ -589,19 +579,19 @@ static WERROR dcesrv_srvsvc_NetShareAdd(struct dcesrv_call_state *dce_call, TALL
 			i++;
 		}
 
-		if (r->in.info.info502->comment && r->in.info.info502->comment[0]) {
+		if (r->in.info->info502->comment && r->in.info->info502->comment[0]) {
 			info[i].name = SHARE_COMMENT;
 			info[i].type = SHARE_INFO_STRING;
-			info[i].value = talloc_strdup(info, r->in.info.info502->comment);
+			info[i].value = talloc_strdup(info, r->in.info->info502->comment);
 			W_ERROR_HAVE_NO_MEMORY(info[i].value);
 
 			i++;
 		}
 
-		if (r->in.info.info502->password && r->in.info.info502->password[0]) {
+		if (r->in.info->info502->password && r->in.info->info502->password[0]) {
 			info[i].name = SHARE_PASSWORD;
 			info[i].type = SHARE_INFO_STRING;
-			info[i].value = talloc_strdup(info, r->in.info.info502->password);
+			info[i].value = talloc_strdup(info, r->in.info->info502->password);
 			W_ERROR_HAVE_NO_MEMORY(info[i].value);
 
 			i++;
@@ -610,12 +600,12 @@ static WERROR dcesrv_srvsvc_NetShareAdd(struct dcesrv_call_state *dce_call, TALL
 		info[i].name = SHARE_MAX_CONNECTIONS;
 		info[i].type = SHARE_INFO_INT;
 		info[i].value = talloc(info, int);
-		*((int *)info[i].value) = r->in.info.info502->max_users;
+		*((int *)info[i].value) = r->in.info->info502->max_users;
 		i++;
 
 		/* TODO: security descriptor */
 
-		nterr = share_create(sctx, r->in.info.info502->name, info, i);
+		nterr = share_create(sctx, r->in.info->info502->name, info, i);
 		if (!NT_STATUS_IS_OK(nterr)) {
 			return ntstatus_to_werror(nterr);
 		}
@@ -697,8 +687,7 @@ static WERROR dcesrv_srvsvc_fiel_ShareInfo(struct dcesrv_call_state *dce_call, T
 		info->info502->path		= dcesrv_common_get_share_path(mem_ctx, dce_ctx, scfg);
 		W_ERROR_HAVE_NO_MEMORY(info->info502->path);
 		info->info502->password		= talloc_strdup(mem_ctx, share_string_option(scfg, SHARE_PASSWORD, NULL));
-		info->info502->unknown		= dcesrv_common_get_share_unknown(mem_ctx, dce_ctx, scfg);
-		info->info502->sd		= dcesrv_common_get_security_descriptor(mem_ctx, dce_ctx, scfg);
+		info->info502->sd_buf.sd	= dcesrv_common_get_security_descriptor(mem_ctx, dce_ctx, scfg);
 
 		return WERR_OK;
 	}
@@ -727,10 +716,7 @@ static WERROR dcesrv_srvsvc_NetShareEnumAll(struct dcesrv_call_state *dce_call, 
 	struct share_context *sctx;
 	struct share_config *scfg;
 
-	r->out.level = r->in.level;
-	ZERO_STRUCT(r->out.ctr);
-	r->out.totalentries = 0;
-	r->out.resume_handle = NULL;
+	*r->out.totalentries = 0;
 
 	/* TODO: - paging of results 
 	 */
@@ -745,7 +731,7 @@ static WERROR dcesrv_srvsvc_NetShareEnumAll(struct dcesrv_call_state *dce_call, 
 		return ntstatus_to_werror(nterr);
 	}
 
-	switch (r->in.level) {
+	switch (r->in.info_ctr->level) {
 	case 0:
 	{
 		int i;
@@ -758,7 +744,7 @@ static WERROR dcesrv_srvsvc_NetShareEnumAll(struct dcesrv_call_state *dce_call, 
 		ctr0->array = NULL;
 
 		if (ctr0->count == 0) {
-			r->out.ctr.ctr0	= ctr0;
+			r->out.info_ctr->ctr.ctr0	= ctr0;
 			return WERR_OK;
 		}
 
@@ -775,7 +761,7 @@ static WERROR dcesrv_srvsvc_NetShareEnumAll(struct dcesrv_call_state *dce_call, 
 				return WERR_GENERAL_FAILURE;
 			}
 			info.info0 = &ctr0->array[i];
-			status = dcesrv_srvsvc_fiel_ShareInfo(dce_call, mem_ctx, scfg, r->in.level, &info);
+			status = dcesrv_srvsvc_fiel_ShareInfo(dce_call, mem_ctx, scfg, r->in.info_ctr->level, &info);
 			if (!W_ERROR_IS_OK(status)) {
 				return status;
 			}
@@ -783,8 +769,8 @@ static WERROR dcesrv_srvsvc_NetShareEnumAll(struct dcesrv_call_state *dce_call, 
 		}
 		talloc_free(snames);
 
-		r->out.ctr.ctr0		= ctr0;
-		r->out.totalentries	= r->out.ctr.ctr0->count;
+		r->out.info_ctr->ctr.ctr0	= ctr0;
+		*r->out.totalentries		= r->out.info_ctr->ctr.ctr0->count;
 		return WERR_OK;
 	}
 	case 1:
@@ -799,7 +785,7 @@ static WERROR dcesrv_srvsvc_NetShareEnumAll(struct dcesrv_call_state *dce_call, 
 		ctr1->array = NULL;
 
 		if (ctr1->count == 0) {
-			r->out.ctr.ctr1	= ctr1;
+			r->out.info_ctr->ctr.ctr1	= ctr1;
 			return WERR_OK;
 		}
 
@@ -816,7 +802,7 @@ static WERROR dcesrv_srvsvc_NetShareEnumAll(struct dcesrv_call_state *dce_call, 
 				return WERR_GENERAL_FAILURE;
 			}
 			info.info1 = &ctr1->array[i];
-			status = dcesrv_srvsvc_fiel_ShareInfo(dce_call, mem_ctx, scfg, r->in.level, &info);
+			status = dcesrv_srvsvc_fiel_ShareInfo(dce_call, mem_ctx, scfg, r->in.info_ctr->level, &info);
 			if (!W_ERROR_IS_OK(status)) {
 				return status;
 			}
@@ -824,8 +810,9 @@ static WERROR dcesrv_srvsvc_NetShareEnumAll(struct dcesrv_call_state *dce_call, 
 		}
 		talloc_free(snames);
 
-		r->out.ctr.ctr1		= ctr1;
-		r->out.totalentries	= r->out.ctr.ctr1->count;
+		r->out.info_ctr->ctr.ctr1	= ctr1;
+		*r->out.totalentries		= r->out.info_ctr->ctr.ctr1->count;
+
 		return WERR_OK;
 	}
 	case 2:
@@ -842,7 +829,7 @@ static WERROR dcesrv_srvsvc_NetShareEnumAll(struct dcesrv_call_state *dce_call, 
 		ctr2->array = NULL;
 
 		if (ctr2->count == 0) {
-			r->out.ctr.ctr2 = ctr2;
+			r->out.info_ctr->ctr.ctr2	= ctr2;
 			return WERR_OK;
 		}
 
@@ -859,7 +846,7 @@ static WERROR dcesrv_srvsvc_NetShareEnumAll(struct dcesrv_call_state *dce_call, 
 				return WERR_GENERAL_FAILURE;
 			}
 			info.info2 = &ctr2->array[i];
-			status = dcesrv_srvsvc_fiel_ShareInfo(dce_call, mem_ctx, scfg, r->in.level, &info);
+			status = dcesrv_srvsvc_fiel_ShareInfo(dce_call, mem_ctx, scfg, r->in.info_ctr->level, &info);
 			if (!W_ERROR_IS_OK(status)) {
 				return status;
 			}
@@ -867,8 +854,9 @@ static WERROR dcesrv_srvsvc_NetShareEnumAll(struct dcesrv_call_state *dce_call, 
 		}
 		talloc_free(snames);
 
-		r->out.ctr.ctr2		= ctr2;
-		r->out.totalentries	= r->out.ctr.ctr2->count;
+		r->out.info_ctr->ctr.ctr2	= ctr2;
+		*r->out.totalentries		= r->out.info_ctr->ctr.ctr2->count;
+
 		return WERR_OK;
 	}
 	case 501:
@@ -885,7 +873,7 @@ static WERROR dcesrv_srvsvc_NetShareEnumAll(struct dcesrv_call_state *dce_call, 
 		ctr501->array = NULL;
 
 		if (ctr501->count == 0) {
-			r->out.ctr.ctr501 = ctr501;
+			r->out.info_ctr->ctr.ctr501	= ctr501;
 			return WERR_OK;
 		}
 
@@ -902,7 +890,7 @@ static WERROR dcesrv_srvsvc_NetShareEnumAll(struct dcesrv_call_state *dce_call, 
 				return WERR_GENERAL_FAILURE;
 			}
 			info.info501 = &ctr501->array[i];
-			status = dcesrv_srvsvc_fiel_ShareInfo(dce_call, mem_ctx, scfg, r->in.level, &info);
+			status = dcesrv_srvsvc_fiel_ShareInfo(dce_call, mem_ctx, scfg, r->in.info_ctr->level, &info);
 			if (!W_ERROR_IS_OK(status)) {
 				return status;
 			}
@@ -910,8 +898,9 @@ static WERROR dcesrv_srvsvc_NetShareEnumAll(struct dcesrv_call_state *dce_call, 
 		}
 		talloc_free(snames);
 
-		r->out.ctr.ctr501	= ctr501;
-		r->out.totalentries	= r->out.ctr.ctr501->count;
+		r->out.info_ctr->ctr.ctr501	= ctr501;
+		*r->out.totalentries		= r->out.info_ctr->ctr.ctr501->count;
+
 		return WERR_OK;
 	}
 	case 502:
@@ -928,7 +917,7 @@ static WERROR dcesrv_srvsvc_NetShareEnumAll(struct dcesrv_call_state *dce_call, 
 		ctr502->array = NULL;
 
 		if (ctr502->count == 0) {
-			r->out.ctr.ctr502 = ctr502;
+			r->out.info_ctr->ctr.ctr502	= ctr502;
 			return WERR_OK;
 		}
 
@@ -945,7 +934,7 @@ static WERROR dcesrv_srvsvc_NetShareEnumAll(struct dcesrv_call_state *dce_call, 
 				return WERR_GENERAL_FAILURE;
 			}
 			info.info502 = &ctr502->array[i];
-			status = dcesrv_srvsvc_fiel_ShareInfo(dce_call, mem_ctx, scfg, r->in.level, &info);
+			status = dcesrv_srvsvc_fiel_ShareInfo(dce_call, mem_ctx, scfg, r->in.info_ctr->level, &info);
 			if (!W_ERROR_IS_OK(status)) {
 				return status;
 			}
@@ -953,8 +942,9 @@ static WERROR dcesrv_srvsvc_NetShareEnumAll(struct dcesrv_call_state *dce_call, 
 		}
 		talloc_free(snames);
 
-		r->out.ctr.ctr502	= ctr502;
-		r->out.totalentries	= r->out.ctr.ctr502->count;
+		r->out.info_ctr->ctr.ctr502	= ctr502;
+		*r->out.totalentries		= r->out.info_ctr->ctr.ctr502->count;
+
 		return WERR_OK;
 	}
 	default:
@@ -975,7 +965,7 @@ static WERROR dcesrv_srvsvc_NetShareGetInfo(struct dcesrv_call_state *dce_call, 
 	struct share_context *sctx = NULL;
 	struct share_config *scfg = NULL;
 
-	ZERO_STRUCT(r->out);
+	ZERO_STRUCTP(r->out.info);
 
 	/* TODO: - access check
 	 */
@@ -1008,7 +998,7 @@ static WERROR dcesrv_srvsvc_NetShareGetInfo(struct dcesrv_call_state *dce_call, 
 			return status;
 		}
 
-		r->out.info.info0 = info.info0;
+		r->out.info->info0 = info.info0;
 		return WERR_OK;
 	}
 	case 1:
@@ -1024,7 +1014,7 @@ static WERROR dcesrv_srvsvc_NetShareGetInfo(struct dcesrv_call_state *dce_call, 
 			return status;
 		}
 
-		r->out.info.info1 = info.info1;
+		r->out.info->info1 = info.info1;
 		return WERR_OK;
 	}
 	case 2:
@@ -1042,7 +1032,7 @@ static WERROR dcesrv_srvsvc_NetShareGetInfo(struct dcesrv_call_state *dce_call, 
 			return status;
 		}
 
-		r->out.info.info2 = info.info2;
+		r->out.info->info2 = info.info2;
 		return WERR_OK;
 	}
 	case 501:
@@ -1058,7 +1048,7 @@ static WERROR dcesrv_srvsvc_NetShareGetInfo(struct dcesrv_call_state *dce_call, 
 			return status;
 		}
 
-		r->out.info.info501 = info.info501;
+		r->out.info->info501 = info.info501;
 		return WERR_OK;
 	}
 	case 502:
@@ -1076,7 +1066,7 @@ static WERROR dcesrv_srvsvc_NetShareGetInfo(struct dcesrv_call_state *dce_call, 
 			return status;
 		}
 
-		r->out.info.info502 = info.info502;
+		r->out.info->info502 = info.info502;
 		return WERR_OK;
 	}
 	case 1005:
@@ -1092,7 +1082,7 @@ static WERROR dcesrv_srvsvc_NetShareGetInfo(struct dcesrv_call_state *dce_call, 
 			return status;
 		}
 
-		r->out.info.info1005 = info.info1005;
+		r->out.info->info1005 = info.info1005;
 		return WERR_OK;
 	}
 	default:
@@ -1248,7 +1238,7 @@ static WERROR dcesrv_srvsvc_NetShareSetInfo(struct dcesrv_call_state *dce_call, 
 	{
 		status = dcesrv_srvsvc_fill_share_info(info, &count,
 					r->in.share_name, r->in.level,
-					r->in.info.info0->name,
+					r->in.info->info0->name,
 					NULL,
 					NULL,
 					NULL,
@@ -1265,11 +1255,11 @@ static WERROR dcesrv_srvsvc_NetShareSetInfo(struct dcesrv_call_state *dce_call, 
 	{
 		status = dcesrv_srvsvc_fill_share_info(info, &count,
 					r->in.share_name, r->in.level,
-					r->in.info.info1->name,
+					r->in.info->info1->name,
 					NULL,
-					r->in.info.info1->comment,
+					r->in.info->info1->comment,
 					NULL,
-					r->in.info.info1->type,
+					r->in.info->info1->type,
 					0,
 					0,
 					NULL);
@@ -1282,12 +1272,12 @@ static WERROR dcesrv_srvsvc_NetShareSetInfo(struct dcesrv_call_state *dce_call, 
 	{
 		status = dcesrv_srvsvc_fill_share_info(info, &count,
 					r->in.share_name, r->in.level,
-					r->in.info.info2->name,
-					r->in.info.info2->path,
-					r->in.info.info2->comment,
-					r->in.info.info2->password,
-					r->in.info.info2->type,
-					r->in.info.info2->max_users,
+					r->in.info->info2->name,
+					r->in.info->info2->path,
+					r->in.info->info2->comment,
+					r->in.info->info2->password,
+					r->in.info->info2->type,
+					r->in.info->info2->max_users,
 					0,
 					NULL);
 		if (W_ERROR_EQUAL(status, WERR_OK)) {
@@ -1299,13 +1289,13 @@ static WERROR dcesrv_srvsvc_NetShareSetInfo(struct dcesrv_call_state *dce_call, 
 	{
 		status = dcesrv_srvsvc_fill_share_info(info, &count,
 					r->in.share_name, r->in.level,
-					r->in.info.info501->name,
+					r->in.info->info501->name,
 					NULL,
-					r->in.info.info501->comment,
+					r->in.info->info501->comment,
 					NULL,
-					r->in.info.info501->type,
+					r->in.info->info501->type,
 					0,
-					r->in.info.info501->csc_policy,
+					r->in.info->info501->csc_policy,
 					NULL);
 		if (W_ERROR_EQUAL(status, WERR_OK)) {
 			return status;
@@ -1316,14 +1306,14 @@ static WERROR dcesrv_srvsvc_NetShareSetInfo(struct dcesrv_call_state *dce_call, 
 	{
 		status = dcesrv_srvsvc_fill_share_info(info, &count,
 					r->in.share_name, r->in.level,
-					r->in.info.info502->name,
-					r->in.info.info502->path,
-					r->in.info.info502->comment,
-					r->in.info.info502->password,
-					r->in.info.info502->type,
-					r->in.info.info502->max_users,
+					r->in.info->info502->name,
+					r->in.info->info502->path,
+					r->in.info->info502->comment,
+					r->in.info->info502->password,
+					r->in.info->info502->type,
+					r->in.info->info502->max_users,
 					0,
-					r->in.info.info502->sd);
+					r->in.info->info502->sd_buf.sd);
 		if (W_ERROR_EQUAL(status, WERR_OK)) {
 			return status;
 		}
@@ -1335,7 +1325,7 @@ static WERROR dcesrv_srvsvc_NetShareSetInfo(struct dcesrv_call_state *dce_call, 
 					r->in.share_name, r->in.level,
 					NULL,
 					NULL,
-					r->in.info.info1004->comment,
+					r->in.info->info1004->comment,
 					NULL,
 					0,
 					0,
@@ -1396,13 +1386,13 @@ static WERROR dcesrv_srvsvc_NetShareCheck(struct dcesrv_call_state *dce_call, TA
 	const char **names;
 	int count, i;
 
-	ZERO_STRUCT(r->out);
+	*r->out.type = 0;
 
 	/* TODO: - access check
 	 */
 
 	if (strcmp("", r->in.device_name) == 0) {
-		r->out.type = STYPE_IPC;
+		*r->out.type = STYPE_IPC;
 		return WERR_OK;
 	}
 
@@ -1441,17 +1431,17 @@ static WERROR dcesrv_srvsvc_NetShareCheck(struct dcesrv_call_state *dce_call, TA
 			if (!type) continue;
 
 			if (strcmp(type, "DISK") == 0) {
-				r->out.type = STYPE_DISKTREE;
+				*r->out.type = STYPE_DISKTREE;
 				return WERR_OK;
 			}
 
 			if (strcmp(type, "IPC") == 0) {
-				r->out.type = STYPE_IPC;
+				*r->out.type = STYPE_IPC;
 				return WERR_OK;
 			}
 
 			if (strcmp(type, "PRINTER") == 0) {
-				r->out.type = STYPE_PRINTQ;
+				*r->out.type = STYPE_PRINTQ;
 				return WERR_OK;
 			}
 		}
@@ -1469,7 +1459,7 @@ static WERROR dcesrv_srvsvc_NetSrvGetInfo(struct dcesrv_call_state *dce_call, TA
 {
 	struct dcesrv_context *dce_ctx = dce_call->conn->dce_ctx;
 
-	ZERO_STRUCT(r->out);
+	ZERO_STRUCTP(r->out.info);
 
 	switch (r->in.level) {
 	case 100:
@@ -1483,7 +1473,7 @@ static WERROR dcesrv_srvsvc_NetSrvGetInfo(struct dcesrv_call_state *dce_call, TA
 		info100->server_name	= dcesrv_common_get_server_name(mem_ctx, dce_ctx, r->in.server_unc);
 		W_ERROR_HAVE_NO_MEMORY(info100->server_name);
 
-		r->out.info.info100 = info100;
+		r->out.info->info100 = info100;
 		return WERR_OK;
 	}
 	case 101:
@@ -1503,7 +1493,7 @@ static WERROR dcesrv_srvsvc_NetSrvGetInfo(struct dcesrv_call_state *dce_call, TA
 		info101->comment	= talloc_strdup(mem_ctx, lp_serverstring(dce_ctx->lp_ctx));
 		W_ERROR_HAVE_NO_MEMORY(info101->comment);
 
-		r->out.info.info101 = info101;
+		r->out.info->info101 = info101;
 		return WERR_OK;
 	}
 	case 102:
@@ -1532,7 +1522,7 @@ static WERROR dcesrv_srvsvc_NetSrvGetInfo(struct dcesrv_call_state *dce_call, TA
 		info102->userpath	= dcesrv_common_get_userpath(mem_ctx, dce_ctx);
 		W_ERROR_HAVE_NO_MEMORY(info102->userpath);
 
-		r->out.info.info102 = info102;
+		r->out.info->info102 = info102;
 		return WERR_OK;
 	}
 	default:
@@ -1559,27 +1549,26 @@ static WERROR dcesrv_srvsvc_NetSrvSetInfo(struct dcesrv_call_state *dce_call, TA
 static WERROR dcesrv_srvsvc_NetDiskEnum(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NetDiskEnum *r)
 {
-	r->out.info.disks = NULL;
-	r->out.info.count = 0;
-	r->out.totalentries = 0;
-	r->out.resume_handle = NULL;
+	r->out.info->disks = NULL;
+	r->out.info->count = 0;
+	*r->out.totalentries = 0;
 
 	switch (r->in.level) {
 	case 0:
 	{
 		/* we can safely hardcode the reply and report we have only one disk (C:) */
 		/* for some reason Windows wants 2 entries with the second being empty */
-		r->out.info.disks = talloc_array(mem_ctx, struct srvsvc_NetDiskInfo0, 2);
-		W_ERROR_HAVE_NO_MEMORY(r->out.info.disks);
-		r->out.info.count = 2;
+		r->out.info->disks = talloc_array(mem_ctx, struct srvsvc_NetDiskInfo0, 2);
+		W_ERROR_HAVE_NO_MEMORY(r->out.info->disks);
+		r->out.info->count = 2;
 
-		r->out.info.disks[0].disk = talloc_strdup(mem_ctx, "C:");
-		W_ERROR_HAVE_NO_MEMORY(r->out.info.disks[0].disk);
+		r->out.info->disks[0].disk = talloc_strdup(mem_ctx, "C:");
+		W_ERROR_HAVE_NO_MEMORY(r->out.info->disks[0].disk);
 
-		r->out.info.disks[1].disk = talloc_strdup(mem_ctx, "");
-		W_ERROR_HAVE_NO_MEMORY(r->out.info.disks[1].disk);
+		r->out.info->disks[1].disk = talloc_strdup(mem_ctx, "");
+		W_ERROR_HAVE_NO_MEMORY(r->out.info->disks[1].disk);
 
-		r->out.totalentries = 1;
+		*r->out.totalentries = 1;
 		r->out.resume_handle = r->in.resume_handle;
 
 		return WERR_OK;
@@ -1618,48 +1607,50 @@ static WERROR dcesrv_srvsvc_NetTransportAdd(struct dcesrv_call_state *dce_call, 
 static WERROR dcesrv_srvsvc_NetTransportEnum(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NetTransportEnum *r)
 {
-	r->out.level = r->in.level;
-	r->out.totalentries = 0;
-	r->out.resume_handle = NULL;
+	r->out.transports->level = r->in.transports->level;
+	*r->out.totalentries = 0;
+	if (r->out.resume_handle) {
+		*r->out.resume_handle = 0;
+	}
 
-	switch (r->in.level) {
+	switch (r->in.transports->level) {
 	case 0:
 	{
-		r->out.transports.ctr0 = talloc(mem_ctx, struct srvsvc_NetTransportCtr0);
-		W_ERROR_HAVE_NO_MEMORY(r->out.transports.ctr0);
+		r->out.transports->ctr.ctr0 = talloc(mem_ctx, struct srvsvc_NetTransportCtr0);
+		W_ERROR_HAVE_NO_MEMORY(r->out.transports->ctr.ctr0);
 
-		r->out.transports.ctr0->count = 0;
-		r->out.transports.ctr0->array = NULL;
+		r->out.transports->ctr.ctr0->count = 0;
+		r->out.transports->ctr.ctr0->array = NULL;
 
 		return WERR_NOT_SUPPORTED;
 	}
 	case 1:
 	{
-		r->out.transports.ctr1 = talloc(mem_ctx, struct srvsvc_NetTransportCtr1);
-		W_ERROR_HAVE_NO_MEMORY(r->out.transports.ctr1);
+		r->out.transports->ctr.ctr1 = talloc(mem_ctx, struct srvsvc_NetTransportCtr1);
+		W_ERROR_HAVE_NO_MEMORY(r->out.transports->ctr.ctr1);
 
-		r->out.transports.ctr1->count = 0;
-		r->out.transports.ctr1->array = NULL;
+		r->out.transports->ctr.ctr1->count = 0;
+		r->out.transports->ctr.ctr1->array = NULL;
 
 		return WERR_NOT_SUPPORTED;
 	}
 	case 2:
 	{
-		r->out.transports.ctr2 = talloc(mem_ctx, struct srvsvc_NetTransportCtr2);
-		W_ERROR_HAVE_NO_MEMORY(r->out.transports.ctr2);
+		r->out.transports->ctr.ctr2 = talloc(mem_ctx, struct srvsvc_NetTransportCtr2);
+		W_ERROR_HAVE_NO_MEMORY(r->out.transports->ctr.ctr2);
 
-		r->out.transports.ctr2->count = 0;
-		r->out.transports.ctr2->array = NULL;
+		r->out.transports->ctr.ctr2->count = 0;
+		r->out.transports->ctr.ctr2->array = NULL;
 
 		return WERR_NOT_SUPPORTED;
 	}
 	case 3:
 	{
-		r->out.transports.ctr3 = talloc(mem_ctx, struct srvsvc_NetTransportCtr3);
-		W_ERROR_HAVE_NO_MEMORY(r->out.transports.ctr3);
+		r->out.transports->ctr.ctr3 = talloc(mem_ctx, struct srvsvc_NetTransportCtr3);
+		W_ERROR_HAVE_NO_MEMORY(r->out.transports->ctr.ctr3);
 
-		r->out.transports.ctr3->count = 0;
-		r->out.transports.ctr3->array = NULL;
+		r->out.transports->ctr.ctr3->count = 0;
+		r->out.transports->ctr.ctr3->array = NULL;
 
 		return WERR_NOT_SUPPORTED;
 	}
@@ -1689,31 +1680,34 @@ static WERROR dcesrv_srvsvc_NetRemoteTOD(struct dcesrv_call_state *dce_call, TAL
 	struct timeval tval;
 	time_t t;
 	struct tm tm;
+	struct srvsvc_NetRemoteTODInfo *info;
 
-	r->out.info = talloc(mem_ctx, struct srvsvc_NetRemoteTODInfo);
-	W_ERROR_HAVE_NO_MEMORY(r->out.info);
+	info = talloc(mem_ctx, struct srvsvc_NetRemoteTODInfo);
+	W_ERROR_HAVE_NO_MEMORY(info);
 
 	GetTimeOfDay(&tval);
 	t = tval.tv_sec;
 
 	gmtime_r(&t, &tm);
 
-	r->out.info->elapsed	= t;
+	info->elapsed	= t;
 	/* TODO: fake the uptime: just return the milliseconds till 0:00:00 today */
-	r->out.info->msecs	= (tm.tm_hour*60*60*1000)
-				+ (tm.tm_min*60*1000)
-				+ (tm.tm_sec*1000)
-				+ (tval.tv_usec/1000);
-	r->out.info->hours	= tm.tm_hour;
-	r->out.info->mins	= tm.tm_min;
-	r->out.info->secs	= tm.tm_sec;
-	r->out.info->hunds	= tval.tv_usec/10000;
-	r->out.info->timezone	= get_time_zone(t)/60;
-	r->out.info->tinterval	= 310; /* just return the same as windows */
-	r->out.info->day	= tm.tm_mday;
-	r->out.info->month	= tm.tm_mon + 1;
-	r->out.info->year	= tm.tm_year + 1900;
-	r->out.info->weekday	= tm.tm_wday;
+	info->msecs	= (tm.tm_hour*60*60*1000)
+			+ (tm.tm_min*60*1000)
+			+ (tm.tm_sec*1000)
+			+ (tval.tv_usec/1000);
+	info->hours	= tm.tm_hour;
+	info->mins	= tm.tm_min;
+	info->secs	= tm.tm_sec;
+	info->hunds	= tval.tv_usec/10000;
+	info->timezone	= get_time_zone(t)/60;
+	info->tinterval	= 310; /* just return the same as windows */
+	info->day	= tm.tm_mday;
+	info->month	= tm.tm_mon + 1;
+	info->year	= tm.tm_year + 1900;
+	info->weekday	= tm.tm_wday;
+
+	*r->out.info = info;
 
 	return WERR_OK;
 }
@@ -1821,10 +1815,7 @@ static WERROR dcesrv_srvsvc_NetShareEnum(struct dcesrv_call_state *dce_call, TAL
 	struct share_config *scfg;
 	struct dcesrv_context *dce_ctx = dce_call->conn->dce_ctx;
 
-	r->out.level = r->in.level;
-	ZERO_STRUCT(r->out.ctr);
-	r->out.totalentries = 0;
-	r->out.resume_handle = NULL;
+	*r->out.totalentries = 0;
 
 	/* TODO: - paging of results 
 	 */
@@ -1839,7 +1830,7 @@ static WERROR dcesrv_srvsvc_NetShareEnum(struct dcesrv_call_state *dce_call, TAL
 		return ntstatus_to_werror(nterr);
 	}
 
-	switch (r->in.level) {
+	switch (r->in.info_ctr->level) {
 	case 0:
 	{
 		int i, y = 0;
@@ -1854,7 +1845,7 @@ static WERROR dcesrv_srvsvc_NetShareEnum(struct dcesrv_call_state *dce_call, TAL
 		ctr0->array = NULL;
 
 		if (ctr0->count == 0) {
-			r->out.ctr.ctr0	= ctr0;
+			r->out.info_ctr->ctr.ctr0	= ctr0;
 			return WERR_OK;
 		}
 
@@ -1880,15 +1871,16 @@ static WERROR dcesrv_srvsvc_NetShareEnum(struct dcesrv_call_state *dce_call, TAL
 			}
 
 			info.info0 = &ctr0->array[y];
-			status = dcesrv_srvsvc_fiel_ShareInfo(dce_call, mem_ctx, scfg, r->in.level, &info);
+			status = dcesrv_srvsvc_fiel_ShareInfo(dce_call, mem_ctx, scfg, r->in.info_ctr->level, &info);
 			W_ERROR_NOT_OK_RETURN(status);
 			talloc_free(scfg);
 			y++;
 		}
 		talloc_free(snames);
 
-		r->out.ctr.ctr0		= ctr0;
-		r->out.totalentries	= r->out.ctr.ctr0->count;
+		r->out.info_ctr->ctr.ctr0	= ctr0;
+		*r->out.totalentries		= r->out.info_ctr->ctr.ctr0->count;
+
 		return WERR_OK;
 	}
 	case 1:
@@ -1905,7 +1897,7 @@ static WERROR dcesrv_srvsvc_NetShareEnum(struct dcesrv_call_state *dce_call, TAL
 		ctr1->array = NULL;
 
 		if (ctr1->count == 0) {
-			r->out.ctr.ctr1	= ctr1;
+			r->out.info_ctr->ctr.ctr1	= ctr1;
 			return WERR_OK;
 		}
 
@@ -1931,15 +1923,16 @@ static WERROR dcesrv_srvsvc_NetShareEnum(struct dcesrv_call_state *dce_call, TAL
 			}
 
 			info.info1 = &ctr1->array[y];
-			status = dcesrv_srvsvc_fiel_ShareInfo(dce_call, mem_ctx, scfg, r->in.level, &info);
+			status = dcesrv_srvsvc_fiel_ShareInfo(dce_call, mem_ctx, scfg, r->in.info_ctr->level, &info);
 			W_ERROR_NOT_OK_RETURN(status);
 			talloc_free(scfg);
 			y++;
 		}
 		talloc_free(snames);
 
-		r->out.ctr.ctr1		= ctr1;
-		r->out.totalentries	= r->out.ctr.ctr1->count;
+		r->out.info_ctr->ctr.ctr1	= ctr1;
+		*r->out.totalentries		= r->out.info_ctr->ctr.ctr1->count;
+
 		return WERR_OK;
 	}
 	case 2:
@@ -1958,7 +1951,7 @@ static WERROR dcesrv_srvsvc_NetShareEnum(struct dcesrv_call_state *dce_call, TAL
 		ctr2->array = NULL;
 
 		if (ctr2->count == 0) {
-			r->out.ctr.ctr2 = ctr2;
+			r->out.info_ctr->ctr.ctr2	= ctr2;
 			return WERR_OK;
 		}
 
@@ -1984,15 +1977,16 @@ static WERROR dcesrv_srvsvc_NetShareEnum(struct dcesrv_call_state *dce_call, TAL
 			}
 
 			info.info2 = &ctr2->array[y];
-			status = dcesrv_srvsvc_fiel_ShareInfo(dce_call, mem_ctx, scfg, r->in.level, &info);
+			status = dcesrv_srvsvc_fiel_ShareInfo(dce_call, mem_ctx, scfg, r->in.info_ctr->level, &info);
 			W_ERROR_NOT_OK_RETURN(status);
 			talloc_free(scfg);
 			y++;
 		}
 		talloc_free(snames);
 
-		r->out.ctr.ctr2		= ctr2;
-		r->out.totalentries	= r->out.ctr.ctr2->count;
+		r->out.info_ctr->ctr.ctr2	= ctr2;
+		*r->out.totalentries		= r->out.info_ctr->ctr.ctr2->count;
+
 		return WERR_OK;
 	}
 	case 502:
@@ -2011,7 +2005,7 @@ static WERROR dcesrv_srvsvc_NetShareEnum(struct dcesrv_call_state *dce_call, TAL
 		ctr502->array = NULL;
 
 		if (ctr502->count == 0) {
-			r->out.ctr.ctr502 = ctr502;
+			r->out.info_ctr->ctr.ctr502	= ctr502;
 			return WERR_OK;
 		}
 
@@ -2037,15 +2031,16 @@ static WERROR dcesrv_srvsvc_NetShareEnum(struct dcesrv_call_state *dce_call, TAL
 			}
 
 			info.info502 = &ctr502->array[y];
-			status = dcesrv_srvsvc_fiel_ShareInfo(dce_call, mem_ctx, scfg, r->in.level, &info);
+			status = dcesrv_srvsvc_fiel_ShareInfo(dce_call, mem_ctx, scfg, r->in.info_ctr->level, &info);
 			W_ERROR_NOT_OK_RETURN(status);
 			talloc_free(scfg);
 			y++;
 		}
 		talloc_free(snames);
 
-		r->out.ctr.ctr502	= ctr502;
-		r->out.totalentries	= r->out.ctr.ctr502->count;
+		r->out.info_ctr->ctr.ctr502	= ctr502;
+		*r->out.totalentries		= r->out.info_ctr->ctr.ctr502->count;
+
 		return WERR_OK;
 	}
 	default:
@@ -2113,7 +2108,7 @@ static WERROR dcesrv_srvsvc_NetGetFileSecurity(struct dcesrv_call_state *dce_cal
 
 	sd_buf->sd = io->query_secdesc.out.sd;
 
-	r->out.sd_buf = sd_buf;
+	*r->out.sd_buf = sd_buf;
 	return WERR_OK;
 }
 
@@ -2145,7 +2140,7 @@ static WERROR dcesrv_srvsvc_NetSetFileSecurity(struct dcesrv_call_state *dce_cal
 	io->set_secdesc.level			= RAW_FILEINFO_SEC_DESC;
 	io->set_secdesc.in.file.path		= r->in.file;
 	io->set_secdesc.in.secinfo_flags	= r->in.securityinformation;
-	io->set_secdesc.in.sd			= r->in.sd_buf.sd;
+	io->set_secdesc.in.sd			= r->in.sd_buf->sd;
 
 	nt_status = ntvfs_setpathinfo(ntvfs_req, io);
 	if (!NT_STATUS_IS_OK(nt_status)) return ntstatus_to_werror(nt_status);

@@ -45,8 +45,7 @@ static bool api_srvsvc_NetCharDevEnum(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.level = r->in.level;
-	r->out.ctr = r->in.ctr;
+	r->out.info_ctr = r->in.info_ctr;
 	r->out.totalentries = talloc_zero(r, uint32_t);
 	if (r->out.totalentries == NULL) {
 		talloc_free(r);
@@ -281,8 +280,7 @@ static bool api_srvsvc_NetCharDevQEnum(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.level = r->in.level;
-	r->out.ctr = r->in.ctr;
+	r->out.info_ctr = r->in.info_ctr;
 	r->out.totalentries = talloc_zero(r, uint32_t);
 	if (r->out.totalentries == NULL) {
 		talloc_free(r);
@@ -1912,7 +1910,7 @@ static bool api_srvsvc_NetServerStatisticsGet(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.stats = talloc_zero(r, struct srvsvc_Statistics);
+	r->out.stats = talloc_zero(r, struct srvsvc_Statistics *);
 	if (r->out.stats == NULL) {
 		talloc_free(r);
 		return false;
@@ -2065,7 +2063,6 @@ static bool api_srvsvc_NetTransportEnum(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.level = r->in.level;
 	r->out.transports = r->in.transports;
 	r->out.totalentries = talloc_zero(r, uint32_t);
 	if (r->out.totalentries == NULL) {

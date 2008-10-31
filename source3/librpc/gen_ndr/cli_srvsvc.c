@@ -9,8 +9,7 @@
 NTSTATUS rpccli_srvsvc_NetCharDevEnum(struct rpc_pipe_client *cli,
 				      TALLOC_CTX *mem_ctx,
 				      const char *server_unc /* [in] [unique,charset(UTF16)] */,
-				      uint32_t *level /* [in,out] [ref] */,
-				      union srvsvc_NetCharDevCtr *ctr /* [in,out] [ref,switch_is(*level)] */,
+				      struct srvsvc_NetCharDevInfoCtr *info_ctr /* [in,out] [ref] */,
 				      uint32_t max_buffer /* [in]  */,
 				      uint32_t *totalentries /* [out] [ref] */,
 				      uint32_t *resume_handle /* [in,out] [unique] */,
@@ -21,8 +20,7 @@ NTSTATUS rpccli_srvsvc_NetCharDevEnum(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 	r.in.server_unc = server_unc;
-	r.in.level = level;
-	r.in.ctr = ctr;
+	r.in.info_ctr = info_ctr;
 	r.in.max_buffer = max_buffer;
 	r.in.resume_handle = resume_handle;
 
@@ -49,8 +47,7 @@ NTSTATUS rpccli_srvsvc_NetCharDevEnum(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	*level = *r.out.level;
-	*ctr = *r.out.ctr;
+	*info_ctr = *r.out.info_ctr;
 	*totalentries = *r.out.totalentries;
 	if (resume_handle && r.out.resume_handle) {
 		*resume_handle = *r.out.resume_handle;
@@ -164,8 +161,7 @@ NTSTATUS rpccli_srvsvc_NetCharDevQEnum(struct rpc_pipe_client *cli,
 				       TALLOC_CTX *mem_ctx,
 				       const char *server_unc /* [in] [unique,charset(UTF16)] */,
 				       const char *user /* [in] [unique,charset(UTF16)] */,
-				       uint32_t *level /* [in,out] [ref] */,
-				       union srvsvc_NetCharDevQCtr *ctr /* [in,out] [ref,switch_is(*level)] */,
+				       struct srvsvc_NetCharDevQInfoCtr *info_ctr /* [in,out] [ref] */,
 				       uint32_t max_buffer /* [in]  */,
 				       uint32_t *totalentries /* [out] [ref] */,
 				       uint32_t *resume_handle /* [in,out] [unique] */,
@@ -177,8 +173,7 @@ NTSTATUS rpccli_srvsvc_NetCharDevQEnum(struct rpc_pipe_client *cli,
 	/* In parameters */
 	r.in.server_unc = server_unc;
 	r.in.user = user;
-	r.in.level = level;
-	r.in.ctr = ctr;
+	r.in.info_ctr = info_ctr;
 	r.in.max_buffer = max_buffer;
 	r.in.resume_handle = resume_handle;
 
@@ -205,8 +200,7 @@ NTSTATUS rpccli_srvsvc_NetCharDevQEnum(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	*level = *r.out.level;
-	*ctr = *r.out.ctr;
+	*info_ctr = *r.out.info_ctr;
 	*totalentries = *r.out.totalentries;
 	if (resume_handle && r.out.resume_handle) {
 		*resume_handle = *r.out.resume_handle;
@@ -1246,7 +1240,7 @@ NTSTATUS rpccli_srvsvc_NetServerStatisticsGet(struct rpc_pipe_client *cli,
 					      const char *service /* [in] [unique,charset(UTF16)] */,
 					      uint32_t level /* [in]  */,
 					      uint32_t options /* [in]  */,
-					      struct srvsvc_Statistics *stats /* [out] [ref] */,
+					      struct srvsvc_Statistics **stats /* [out] [ref] */,
 					      WERROR *werror)
 {
 	struct srvsvc_NetServerStatisticsGet r;
@@ -1341,8 +1335,7 @@ NTSTATUS rpccli_srvsvc_NetTransportAdd(struct rpc_pipe_client *cli,
 NTSTATUS rpccli_srvsvc_NetTransportEnum(struct rpc_pipe_client *cli,
 					TALLOC_CTX *mem_ctx,
 					const char *server_unc /* [in] [unique,charset(UTF16)] */,
-					uint32_t *level /* [in,out] [ref] */,
-					union srvsvc_NetTransportCtr *transports /* [in,out] [ref,switch_is(*level)] */,
+					struct srvsvc_NetTransportInfoCtr *transports /* [in,out] [ref] */,
 					uint32_t max_buffer /* [in]  */,
 					uint32_t *totalentries /* [out] [ref] */,
 					uint32_t *resume_handle /* [in,out] [unique] */,
@@ -1353,7 +1346,6 @@ NTSTATUS rpccli_srvsvc_NetTransportEnum(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 	r.in.server_unc = server_unc;
-	r.in.level = level;
 	r.in.transports = transports;
 	r.in.max_buffer = max_buffer;
 	r.in.resume_handle = resume_handle;
@@ -1381,7 +1373,6 @@ NTSTATUS rpccli_srvsvc_NetTransportEnum(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	*level = *r.out.level;
 	*transports = *r.out.transports;
 	*totalentries = *r.out.totalentries;
 	if (resume_handle && r.out.resume_handle) {
@@ -1399,8 +1390,8 @@ NTSTATUS rpccli_srvsvc_NetTransportEnum(struct rpc_pipe_client *cli,
 NTSTATUS rpccli_srvsvc_NetTransportDel(struct rpc_pipe_client *cli,
 				       TALLOC_CTX *mem_ctx,
 				       const char *server_unc /* [in] [unique,charset(UTF16)] */,
-				       uint32_t unknown /* [in]  */,
-				       struct srvsvc_NetTransportInfo0 transport /* [in]  */,
+				       uint32_t level /* [in]  */,
+				       struct srvsvc_NetTransportInfo0 *info0 /* [in] [ref] */,
 				       WERROR *werror)
 {
 	struct srvsvc_NetTransportDel r;
@@ -1408,8 +1399,8 @@ NTSTATUS rpccli_srvsvc_NetTransportDel(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 	r.in.server_unc = server_unc;
-	r.in.unknown = unknown;
-	r.in.transport = transport;
+	r.in.level = level;
+	r.in.info0 = info0;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(srvsvc_NetTransportDel, &r);

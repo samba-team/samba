@@ -107,12 +107,6 @@ uint32_t dcesrv_common_get_share_dfs_flags(TALLOC_CTX *mem_ctx, struct dcesrv_co
 }
 
 /* This hardcoded value should go into a ldb database! */
-uint32_t dcesrv_common_get_share_unknown(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx, struct share_config *scfg)
-{
-	return 0;
-}
-
-/* This hardcoded value should go into a ldb database! */
 struct security_descriptor *dcesrv_common_get_security_descriptor(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx, struct share_config *scfg)
 {
 	return NULL;

@@ -42,6 +42,11 @@ union srvsvc_NetCharDevCtr {
 	struct srvsvc_NetCharDevCtr1 *ctr1;/* [unique,case] */
 };
 
+struct srvsvc_NetCharDevInfoCtr {
+	uint32_t level;
+	union srvsvc_NetCharDevCtr ctr;/* [switch_is(level)] */
+};
+
 struct srvsvc_NetCharDevQInfo0 {
 	const char *device;/* [unique,charset(UTF16)] */
 };
@@ -72,6 +77,11 @@ union srvsvc_NetCharDevQInfo {
 union srvsvc_NetCharDevQCtr {
 	struct srvsvc_NetCharDevQCtr0 *ctr0;/* [unique,case(0)] */
 	struct srvsvc_NetCharDevQCtr1 *ctr1;/* [unique,case] */
+};
+
+struct srvsvc_NetCharDevQInfoCtr {
+	uint32_t level;
+	union srvsvc_NetCharDevQCtr ctr;/* [switch_is(level)] */
 };
 
 struct srvsvc_NetConnInfo0 {
@@ -468,6 +478,7 @@ struct srvsvc_NetSrvInfo402 {
 	uint32_t sessreqs;
 	uint32_t opensearch;
 	uint32_t activelocks;
+	uint32_t numreqbufs;
 	uint32_t sizereqbufs;
 	uint32_t numbigbufs;
 	uint32_t numfiletasks;
@@ -501,6 +512,7 @@ struct srvsvc_NetSrvInfo403 {
 	uint32_t sessreqs;
 	uint32_t opensearch;
 	uint32_t activelocks;
+	uint32_t numreqbufs;
 	uint32_t sizereqbufs;
 	uint32_t numbigbufs;
 	uint32_t numfiletasks;
@@ -908,7 +920,9 @@ union srvsvc_NetSrvInfo {
 };
 
 struct srvsvc_NetDiskInfo0 {
-	const char * disk;/* [flag(LIBNDR_FLAG_STR_LEN4)] */
+	uint32_t __disk_offset;/* [value(0)] */
+	uint32_t __disk_length;/* [value(strlen(disk)+1)] */
+	const char *disk;/* [charset(UTF16)] */
 };
 
 struct srvsvc_NetDiskInfo {
@@ -1002,6 +1016,11 @@ union srvsvc_NetTransportCtr {
 	struct srvsvc_NetTransportCtr3 *ctr3;/* [unique,case(3)] */
 };
 
+struct srvsvc_NetTransportInfoCtr {
+	uint32_t level;
+	union srvsvc_NetTransportCtr ctr;/* [switch_is(level)] */
+};
+
 struct srvsvc_NetRemoteTODInfo {
 	uint32_t elapsed;
 	uint32_t msecs;
@@ -1029,15 +1048,13 @@ struct srvsvc_NetCharDevEnum {
 	struct {
 		const char *server_unc;/* [unique,charset(UTF16)] */
 		uint32_t max_buffer;
-		uint32_t *level;/* [ref] */
-		union srvsvc_NetCharDevCtr *ctr;/* [ref,switch_is(*level)] */
+		struct srvsvc_NetCharDevInfoCtr *info_ctr;/* [ref] */
 		uint32_t *resume_handle;/* [unique] */
 	} in;
 
 	struct {
 		uint32_t *totalentries;/* [ref] */
-		uint32_t *level;/* [ref] */
-		union srvsvc_NetCharDevCtr *ctr;/* [ref,switch_is(*level)] */
+		struct srvsvc_NetCharDevInfoCtr *info_ctr;/* [ref] */
 		uint32_t *resume_handle;/* [unique] */
 		WERROR result;
 	} out;
@@ -1079,15 +1096,13 @@ struct srvsvc_NetCharDevQEnum {
 		const char *server_unc;/* [unique,charset(UTF16)] */
 		const char *user;/* [unique,charset(UTF16)] */
 		uint32_t max_buffer;
-		uint32_t *level;/* [ref] */
-		union srvsvc_NetCharDevQCtr *ctr;/* [ref,switch_is(*level)] */
+		struct srvsvc_NetCharDevQInfoCtr *info_ctr;/* [ref] */
 		uint32_t *resume_handle;/* [unique] */
 	} in;
 
 	struct {
 		uint32_t *totalentries;/* [ref] */
-		uint32_t *level;/* [ref] */
-		union srvsvc_NetCharDevQCtr *ctr;/* [ref,switch_is(*level)] */
+		struct srvsvc_NetCharDevQInfoCtr *info_ctr;/* [ref] */
 		uint32_t *resume_handle;/* [unique] */
 		WERROR result;
 	} out;
@@ -1422,7 +1437,7 @@ struct srvsvc_NetServerStatisticsGet {
 	} in;
 
 	struct {
-		struct srvsvc_Statistics *stats;/* [ref] */
+		struct srvsvc_Statistics **stats;/* [ref] */
 		WERROR result;
 	} out;
 
@@ -1447,15 +1462,13 @@ struct srvsvc_NetTransportEnum {
 	struct {
 		const char *server_unc;/* [unique,charset(UTF16)] */
 		uint32_t max_buffer;
-		uint32_t *level;/* [ref] */
-		union srvsvc_NetTransportCtr *transports;/* [ref,switch_is(*level)] */
+		struct srvsvc_NetTransportInfoCtr *transports;/* [ref] */
 		uint32_t *resume_handle;/* [unique] */
 	} in;
 
 	struct {
 		uint32_t *totalentries;/* [ref] */
-		uint32_t *level;/* [ref] */
-		union srvsvc_NetTransportCtr *transports;/* [ref,switch_is(*level)] */
+		struct srvsvc_NetTransportInfoCtr *transports;/* [ref] */
 		uint32_t *resume_handle;/* [unique] */
 		WERROR result;
 	} out;
@@ -1466,8 +1479,8 @@ struct srvsvc_NetTransportEnum {
 struct srvsvc_NetTransportDel {
 	struct {
 		const char *server_unc;/* [unique,charset(UTF16)] */
-		uint32_t unknown;
-		struct srvsvc_NetTransportInfo0 transport;
+		uint32_t level;
+		struct srvsvc_NetTransportInfo0 *info0;/* [ref] */
 	} in;
 
 	struct {

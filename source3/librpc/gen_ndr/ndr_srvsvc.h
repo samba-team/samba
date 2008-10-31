@@ -126,12 +126,14 @@ void ndr_print_srvsvc_NetCharDevInfo1(struct ndr_print *ndr, const char *name, c
 void ndr_print_srvsvc_NetCharDevCtr1(struct ndr_print *ndr, const char *name, const struct srvsvc_NetCharDevCtr1 *r);
 void ndr_print_srvsvc_NetCharDevInfo(struct ndr_print *ndr, const char *name, const union srvsvc_NetCharDevInfo *r);
 void ndr_print_srvsvc_NetCharDevCtr(struct ndr_print *ndr, const char *name, const union srvsvc_NetCharDevCtr *r);
+void ndr_print_srvsvc_NetCharDevInfoCtr(struct ndr_print *ndr, const char *name, const struct srvsvc_NetCharDevInfoCtr *r);
 void ndr_print_srvsvc_NetCharDevQInfo0(struct ndr_print *ndr, const char *name, const struct srvsvc_NetCharDevQInfo0 *r);
 void ndr_print_srvsvc_NetCharDevQCtr0(struct ndr_print *ndr, const char *name, const struct srvsvc_NetCharDevQCtr0 *r);
 void ndr_print_srvsvc_NetCharDevQInfo1(struct ndr_print *ndr, const char *name, const struct srvsvc_NetCharDevQInfo1 *r);
 void ndr_print_srvsvc_NetCharDevQCtr1(struct ndr_print *ndr, const char *name, const struct srvsvc_NetCharDevQCtr1 *r);
 void ndr_print_srvsvc_NetCharDevQInfo(struct ndr_print *ndr, const char *name, const union srvsvc_NetCharDevQInfo *r);
 void ndr_print_srvsvc_NetCharDevQCtr(struct ndr_print *ndr, const char *name, const union srvsvc_NetCharDevQCtr *r);
+void ndr_print_srvsvc_NetCharDevQInfoCtr(struct ndr_print *ndr, const char *name, const struct srvsvc_NetCharDevQInfoCtr *r);
 void ndr_print_srvsvc_NetConnInfo0(struct ndr_print *ndr, const char *name, const struct srvsvc_NetConnInfo0 *r);
 void ndr_print_srvsvc_NetConnCtr0(struct ndr_print *ndr, const char *name, const struct srvsvc_NetConnCtr0 *r);
 void ndr_print_srvsvc_NetConnInfo1(struct ndr_print *ndr, const char *name, const struct srvsvc_NetConnInfo1 *r);
@@ -256,6 +258,7 @@ void ndr_print_srvsvc_NetTransportCtr2(struct ndr_print *ndr, const char *name, 
 void ndr_print_srvsvc_NetTransportInfo3(struct ndr_print *ndr, const char *name, const struct srvsvc_NetTransportInfo3 *r);
 void ndr_print_srvsvc_NetTransportCtr3(struct ndr_print *ndr, const char *name, const struct srvsvc_NetTransportCtr3 *r);
 void ndr_print_srvsvc_NetTransportCtr(struct ndr_print *ndr, const char *name, const union srvsvc_NetTransportCtr *r);
+void ndr_print_srvsvc_NetTransportInfoCtr(struct ndr_print *ndr, const char *name, const struct srvsvc_NetTransportInfoCtr *r);
 void ndr_print_srvsvc_NetRemoteTODInfo(struct ndr_print *ndr, const char *name, const struct srvsvc_NetRemoteTODInfo *r);
 void ndr_print_srvsvc_NetTransportInfo(struct ndr_print *ndr, const char *name, const union srvsvc_NetTransportInfo *r);
 void ndr_print_srvsvc_NetCharDevEnum(struct ndr_print *ndr, const char *name, int flags, const struct srvsvc_NetCharDevEnum *r);
