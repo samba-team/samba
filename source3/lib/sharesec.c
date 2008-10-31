@@ -287,11 +287,11 @@ bool share_access_check(const NT_USER_TOKEN *token, const char *sharename,
 		return True;
 	}
 
-	ret = se_access_check(psd, token, desired_access, &granted, &status);
+	status = se_access_check(psd, token, desired_access, &granted);
 
 	TALLOC_FREE(psd);
 
-	return ret;
+	return NT_STATUS_IS_OK(status);
 }
 
 /***************************************************************************
