@@ -25,6 +25,7 @@ struct torture_test;
 struct torture_context;
 struct torture_suite;
 struct torture_tcase;
+struct torture_results;
 
 enum torture_result { 
 	TORTURE_OK=0, 
@@ -39,7 +40,7 @@ enum torture_result {
  */
 struct torture_ui_ops
 {
-	void (*init) (struct torture_context *);
+	void (*init) (struct torture_results *);
 	void (*comment) (struct torture_context *, const char *);
 	void (*warning) (struct torture_context *, const char *);
 	void (*suite_start) (struct torture_context *, struct torture_suite *);
@@ -73,20 +74,14 @@ void torture_ui_test_result(struct torture_context *context,
 
 struct torture_context
 {
-	const struct torture_ui_ops *ui_ops;
-	void *ui_data;
+	struct torture_results *results;
 
 	char *active_testname;
 	struct torture_test *active_test;
 	struct torture_tcase *active_tcase;
 
-	/** Whether tests should avoid writing output to stdout */
-	bool quiet;
-
 	enum torture_result last_result;
 	char *last_reason;
-
-	bool returncode;
 
 	/** Directory used for temporary test data */
 	const char *outputdir;
@@ -99,6 +94,19 @@ struct torture_context
 
 	/** Loadparm context (will go away in favor of torture_setting_ at some point) */
 	struct loadparm_context *lp_ctx;
+};
+
+struct torture_results
+{
+	const struct torture_ui_ops *ui_ops;
+	void *ui_data;
+
+	/** Whether tests should avoid writing output to stdout */
+	bool quiet;
+
+	bool returncode;
+
+
 };
 
 /* 
@@ -406,8 +414,9 @@ bool torture_suite_init_tcase(struct torture_suite *suite,
 			      struct torture_tcase *tcase, 
 			      const char *name);
 
-struct torture_context *torture_context_init(struct event_context *event_ctx, 
-					     const struct torture_ui_ops *ui_ops);
+struct torture_context *torture_context_init(struct event_context *event_ctx, struct torture_results *results);
+
+struct torture_results *torture_results_init(TALLOC_CTX *mem_ctx, const struct torture_ui_ops *ui_ops);
 
 struct torture_context *torture_context_child(struct torture_context *tctx);
 
