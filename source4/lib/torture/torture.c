@@ -32,6 +32,10 @@ struct torture_context *torture_context_init(struct event_context *event_ctx,
 {
 	struct torture_context *torture = talloc_zero(event_ctx, 
 						      struct torture_context);
+
+	if (torture == NULL)
+		return NULL;
+
 	torture->ui_ops = ui_ops;
 	torture->returncode = true;
 	torture->ev = event_ctx;
@@ -41,6 +45,26 @@ struct torture_context *torture_context_init(struct event_context *event_ctx,
 
 	return torture;
 }
+
+/**
+ * Create a sub torture context
+ */
+struct torture_context *torture_context_child(struct torture_context *parent)
+{
+	struct torture_context *subtorture = talloc_zero(parent, struct torture_context);
+
+	if (subtorture == NULL)
+		return NULL;
+
+	subtorture->ui_ops = parent->ui_ops;
+	subtorture->level = parent->level+1;
+	subtorture->ev = talloc_reference(subtorture, parent->ev);
+	subtorture->lp_ctx = talloc_reference(subtorture, parent->lp_ctx);
+	subtorture->ui_data = parent->ui_data;
+	subtorture->outputdir = talloc_reference(subtorture, parent->outputdir);
+
+	return subtorture;
+}	
 
 /**
  create a temporary directory.
