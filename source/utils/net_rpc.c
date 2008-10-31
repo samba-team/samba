@@ -6117,7 +6117,7 @@ static int rpc_trustdom_list(struct net_context *c, int argc, const char **argv)
 	/* SamrConnect2 */
 	nt_status = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
 					 pipe_hnd->desthost,
-					 SA_RIGHT_SAM_OPEN_DOMAIN,
+					 SAMR_ACCESS_OPEN_DOMAIN,
 					 &connect_hnd);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("Couldn't open SAMR policy handle. Error was %s\n",
@@ -6131,7 +6131,7 @@ static int rpc_trustdom_list(struct net_context *c, int argc, const char **argv)
 	   able to enumerate accounts*/
 	nt_status = rpccli_samr_OpenDomain(pipe_hnd, mem_ctx,
 					   &connect_hnd,
-					   SA_RIGHT_DOMAIN_ENUM_ACCOUNTS,
+					   SAMR_DOMAIN_ACCESS_ENUM_ACCOUNTS,
 					   queried_dom_sid,
 					   &domain_hnd);
 	if (!NT_STATUS_IS_OK(nt_status)) {
