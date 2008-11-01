@@ -284,7 +284,6 @@ bool share_access_check(const NT_USER_TOKEN *token, const char *sharename,
 	NTSTATUS status;
 	SEC_DESC *psd = NULL;
 	size_t sd_size;
-	bool ret = True;
 
 	psd = get_share_security(talloc_tos(), sharename, &sd_size);
 
