@@ -3102,7 +3102,8 @@ static int do_message_op(const char *netbios_name, const char *desthost,
 			 struct event_context *ev_ctx,
 			 struct resolve_context *resolve_ctx,
 			 struct smbcli_options *options,
-			 struct smb_iconv_convenience *iconv_convenience)
+			 struct smb_iconv_convenience *iconv_convenience,
+             const char *socket_options)
 {
 	struct nbt_name called, calling;
 	const char *server_name;
@@ -3117,7 +3118,8 @@ static int do_message_op(const char *netbios_name, const char *desthost,
 	if (!(cli = smbcli_state_init(NULL)) ||
 	    !smbcli_socket_connect(cli, server_name, destports,
 				   ev_ctx, resolve_ctx, options,
-				   iconv_convenience)) {
+				   iconv_convenience,
+                   socket_options)) {
 		d_printf("Connection to %s failed\n", server_name);
 		return 1;
 	}
@@ -3270,7 +3272,8 @@ static int do_message_op(const char *netbios_name, const char *desthost,
 				   lp_smb_ports(cmdline_lp_ctx), dest_ip,
 				   name_type, ev_ctx,
 				   lp_resolve_context(cmdline_lp_ctx),
-				   &smb_options, lp_iconv_convenience(cmdline_lp_ctx));
+				   &smb_options, lp_iconv_convenience(cmdline_lp_ctx),
+                   lp_socket_options(cmdline_lp_ctx));
 		return rc;
 	}
 	

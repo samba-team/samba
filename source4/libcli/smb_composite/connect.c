@@ -29,6 +29,7 @@
 #include "libcli/resolve/resolve.h"
 #include "auth/credentials/credentials.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
+#include "param/param.h"
 
 /* the stages of this call */
 enum connect_stage {CONNECT_RESOLVE, 
@@ -375,7 +376,8 @@ static NTSTATUS connect_resolve(struct composite_context *c,
 	state->creq = smbcli_sock_connect_send(state, address, 
 					       io->in.dest_ports,
 					       io->in.dest_host, 
-					       NULL, c->event_ctx);
+					       NULL, c->event_ctx, 
+						   lp_socket_options(global_loadparm));
 	NT_STATUS_HAVE_NO_MEMORY(state->creq);
 
 	state->stage = CONNECT_SOCKET;

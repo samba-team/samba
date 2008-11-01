@@ -137,7 +137,6 @@ static void continue_negprot(struct smb2_request *req)
 		}
 		break;
 	}
-	
 
 	state->session = smb2_session_init(transport, global_loadparm, state, true);
 	if (composite_nomem(state->session, c)) return;
@@ -217,7 +216,7 @@ static void continue_resolve(struct composite_context *creq)
 	c->status = resolve_name_recv(creq, state, &addr);
 	if (!composite_is_ok(c)) return;
 
-	creq = smbcli_sock_connect_send(state, addr, ports, state->host, state->resolve_ctx, c->event_ctx);
+	creq = smbcli_sock_connect_send(state, addr, ports, state->host, state->resolve_ctx, c->event_ctx, lp_socket_options(global_loadparm));
 
 	composite_continue(c, creq, continue_socket, c);
 }
