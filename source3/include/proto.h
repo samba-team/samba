@@ -1003,7 +1003,6 @@ int sys_mknod(const char *path, mode_t mode, SMB_DEV_T dev);
 char *sys_realpath(const char *path, char *resolved_path);
 int sys_waitpid(pid_t pid,int *status,int options);
 char *sys_getwd(char *s);
-int sys_lchown(const char *fname,uid_t uid,gid_t gid);
 int sys_chroot(const char *dname);
 void set_effective_capability(enum smbd_capability capability);
 void drop_effective_capability(enum smbd_capability capability);

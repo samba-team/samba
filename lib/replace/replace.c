@@ -650,3 +650,11 @@ int rep_symlink(const char *oldpath, const char *newpath)
 	return -1;
 }
 #endif
+
+#ifndef HAVE_LCHOWN
+int rep_lchown(const char *fname,uid_t uid,gid_t gid)
+{
+	errno = ENOSYS;
+	return -1;
+}
+#endif

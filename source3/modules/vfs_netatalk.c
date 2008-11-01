@@ -399,7 +399,7 @@ static int atalk_lchown(struct vfs_handle_struct *handle, const char *path, uid_
 		goto exit_lchown;
 	}
 
-	sys_lchown(adbl_path, uid, gid);
+	lchown(adbl_path, uid, gid);
 
 exit_lchown:	
 	talloc_destroy(ctx);

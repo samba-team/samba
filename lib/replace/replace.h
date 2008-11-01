@@ -235,6 +235,10 @@ int rep_readlink(const char *path, char *buf, size_t bufsize);
 int rep_symlink(const char *oldpath, const char *newpath);
 #endif
 
+#ifndef HAVE_LCHOWN
+#define lchown rep_lchown
+int rep_lchown(const char *fname,uid_t uid,gid_t gid);
+#endif
 
 #ifndef HAVE_SETLINEBUF
 #define setlinebuf rep_setlinebuf
