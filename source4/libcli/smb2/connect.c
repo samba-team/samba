@@ -33,6 +33,8 @@ struct smb2_connect_state {
 	struct resolve_context *resolve_ctx;
 	const char *host;
 	const char *share;
+	const char **ports;
+	const char *socket_options;
 	struct smbcli_options options;
 	struct smb2_negprot negprot;
 	struct smb2_tree_connect tcon;
@@ -208,15 +210,16 @@ static void continue_resolve(struct composite_context *creq)
 	const char **ports;
 	const char *default_ports[] = { "445", NULL };
 
-	ports = lp_parm_string_list(state, global_loadparm, NULL, "smb2", "ports", NULL);
-	if (ports == NULL) {
-		ports = default_ports;
-	}
-
 	c->status = resolve_name_recv(creq, state, &addr);
 	if (!composite_is_ok(c)) return;
 
-	creq = smbcli_sock_connect_send(state, addr, ports, state->host, state->resolve_ctx, c->event_ctx, lp_socket_options(global_loadparm));
+	if (state->ports == NULL) {
+		ports = default_ports;
+	} else {
+		ports = state->ports;
+	}
+
+	creq = smbcli_sock_connect_send(state, addr, ports, state->host, state->resolve_ctx, c->event_ctx, state->socket_options);
 
 	composite_continue(c, creq, continue_socket, c);
 }
@@ -237,6 +240,7 @@ struct composite_context *smb2_connect_send(TALLOC_CTX *mem_ctx,
 	struct smb2_connect_state *state;
 	struct nbt_name name;
 	struct composite_context *creq;
+	const char **ports;
 
 	c = composite_create(mem_ctx, ev);
 	if (c == NULL) return NULL;
@@ -249,9 +253,14 @@ struct composite_context *smb2_connect_send(TALLOC_CTX *mem_ctx,
 	state->options = *options;
 	state->host = talloc_strdup(c, host);
 	if (composite_nomem(state->host, c)) return c;
+	state->ports = lp_parm_string_list(state, global_loadparm, 
+									   NULL, "smb2", "ports", NULL);
+	if (composite_nomem(state->ports, c)) return c;
 	state->share = talloc_strdup(c, share);
 	if (composite_nomem(state->share, c)) return c;
 	state->resolve_ctx = talloc_reference(state, resolve_ctx);
+	state->socket_options = lp_socket_options(global_loadparm);
+	if (composite_nomem(state->socket_options, c)) return c;
 
 	ZERO_STRUCT(name);
 	name.name = host;
