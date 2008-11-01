@@ -136,7 +136,6 @@ NTSTATUS ntlmssp_server_negotiate(struct gensec_security *gensec_security,
 
 	if (in.length) {
 		if ((in.length < 16) || !msrpc_parse(out_mem_ctx, 
-				 lp_iconv_convenience(gensec_security->lp_ctx),
 				 			 &in, "Cdd",
 							 "NTLMSSP",
 							 &ntlmssp_command,
@@ -282,7 +281,6 @@ static NTSTATUS ntlmssp_server_preauth(struct gensec_ntlmssp_state *gensec_ntlms
 
 	/* now the NTLMSSP encoded auth hashes */
 	if (!msrpc_parse(gensec_ntlmssp_state, 
-			 lp_iconv_convenience(gensec_ntlmssp_state->gensec_security->lp_ctx),
 			 &request, parse_string,
 			 "NTLMSSP", 
 			 &ntlmssp_command, 
@@ -309,7 +307,6 @@ static NTSTATUS ntlmssp_server_preauth(struct gensec_ntlmssp_state *gensec_ntlms
 
 		/* now the NTLMSSP encoded auth hashes */
 		if (!msrpc_parse(gensec_ntlmssp_state, 
-			 	 lp_iconv_convenience(gensec_ntlmssp_state->gensec_security->lp_ctx),
 				 &request, parse_string,
 				 "NTLMSSP", 
 				 &ntlmssp_command, 

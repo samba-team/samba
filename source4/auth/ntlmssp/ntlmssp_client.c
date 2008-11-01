@@ -122,7 +122,6 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 	}
 
 	if (!msrpc_parse(mem_ctx,
-		         lp_iconv_convenience(gensec_security->lp_ctx),
 			 &in, "CdBd",
 			 "NTLMSSP",
 			 &ntlmssp_command, 
@@ -160,7 +159,6 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 	}
 
 	if (!msrpc_parse(mem_ctx,
-			 lp_iconv_convenience(gensec_security->lp_ctx),
 			 &in, chal_parse_string,
 			 "NTLMSSP",
 			 &ntlmssp_command, 

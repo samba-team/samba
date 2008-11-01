@@ -186,7 +186,7 @@ if ((head_ofs + amount) > blob->length) { \
         return false; \
 }
 
-/*
+/**
   this is a tiny msrpc packet parser. This the the partner of msrpc_gen
 
   format specifiers are:
@@ -200,7 +200,6 @@ if ((head_ofs + amount) > blob->length) { \
  */
 
 bool msrpc_parse(TALLOC_CTX *mem_ctx, 
-		 struct smb_iconv_convenience *iconv_convenience, 
 		 const DATA_BLOB *blob,
 		 const char *format, ...)
 {
