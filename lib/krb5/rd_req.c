@@ -626,7 +626,10 @@ _krb5_rd_req_out_ctx_alloc(krb5_context context, krb5_rd_req_out_ctx *ctx)
 void  KRB5_LIB_FUNCTION
 krb5_rd_req_out_ctx_free(krb5_context context, krb5_rd_req_out_ctx ctx)
 {
-    krb5_free_keyblock(context, ctx->keyblock);
+    if (ctx->ticket)
+	krb5_free_ticket(context, ctx->ticket);
+    if (ctx->keyblock)
+	krb5_free_keyblock(context, ctx->keyblock);
     free(ctx);
 }
 
