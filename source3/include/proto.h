@@ -8351,9 +8351,12 @@ NTSTATUS copy_file(TALLOC_CTX *ctx,
 			int count,
 			bool target_is_directory);
 void reply_copy(struct smb_request *req);
-uint32 get_lock_pid( char *data, int data_offset, bool large_file_format);
-uint64_t get_lock_count( char *data, int data_offset, bool large_file_format);
-uint64_t get_lock_offset( char *data, int data_offset, bool large_file_format, bool *err);
+uint32 get_lock_pid(const uint8_t *data, int data_offset,
+		    bool large_file_format);
+uint64_t get_lock_count(const uint8_t *data, int data_offset,
+			bool large_file_format);
+uint64_t get_lock_offset(const uint8_t *data, int data_offset,
+			 bool large_file_format, bool *err);
 void reply_lockingX(struct smb_request *req);
 void reply_readbmpx(struct smb_request *req);
 void reply_readbs(struct smb_request *req);

@@ -335,10 +335,11 @@ static void reply_lockingX_error(blocking_lock_record *blr, NTSTATUS status)
 	uint32 lock_pid;
 	unsigned char locktype = CVAL(inbuf,smb_vwv3);
 	bool large_file_format = (locktype & LOCKING_ANDX_LARGE_FILES);
-	char *data;
+	uint8_t *data;
 	int i;
 
-	data = smb_buf(inbuf) + ((large_file_format ? 20 : 10)*num_ulocks);
+	data = (uint8_t *)smb_buf(inbuf)
+		+ ((large_file_format ? 20 : 10)*num_ulocks);
 	
 	/* 
 	 * Data now points at the beginning of the list
@@ -423,10 +424,11 @@ static bool process_lockingX(blocking_lock_record *blr)
 	uint64_t count = (uint64_t)0, offset = (uint64_t)0;
 	uint32 lock_pid;
 	bool large_file_format = (locktype & LOCKING_ANDX_LARGE_FILES);
-	char *data;
+	uint8_t *data;
 	NTSTATUS status = NT_STATUS_OK;
 
-	data = smb_buf(inbuf) + ((large_file_format ? 20 : 10)*num_ulocks);
+	data = (uint8_t *)smb_buf(inbuf)
+		+ ((large_file_format ? 20 : 10)*num_ulocks);
 
 	/* 
 	 * Data now points at the beginning of the list

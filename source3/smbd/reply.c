@@ -6476,7 +6476,8 @@ void reply_copy(struct smb_request *req)
  Get a lock pid, dealing with large count requests.
 ****************************************************************************/
 
-uint32 get_lock_pid( char *data, int data_offset, bool large_file_format)
+uint32 get_lock_pid(const uint8_t *data, int data_offset,
+		    bool large_file_format)
 {
 	if(!large_file_format)
 		return (uint32)SVAL(data,SMB_LPID_OFFSET(data_offset));
@@ -6488,7 +6489,8 @@ uint32 get_lock_pid( char *data, int data_offset, bool large_file_format)
  Get a lock count, dealing with large count requests.
 ****************************************************************************/
 
-uint64_t get_lock_count( char *data, int data_offset, bool large_file_format)
+uint64_t get_lock_count(const uint8_t *data, int data_offset,
+			bool large_file_format)
 {
 	uint64_t count = 0;
 
@@ -6560,7 +6562,8 @@ static uint32 map_lock_offset(uint32 high, uint32 low)
  Get a lock offset, dealing with large offset requests.
 ****************************************************************************/
 
-uint64_t get_lock_offset( char *data, int data_offset, bool large_file_format, bool *err)
+uint64_t get_lock_offset(const uint8_t *data, int data_offset,
+			 bool large_file_format, bool *err)
 {
 	uint64_t offset = 0;
 
