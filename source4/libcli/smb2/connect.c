@@ -235,7 +235,8 @@ struct composite_context *smb2_connect_send(TALLOC_CTX *mem_ctx,
 					    struct resolve_context *resolve_ctx,
 					    struct cli_credentials *credentials,
 					    struct event_context *ev,
-					    struct smbcli_options *options)
+					    struct smbcli_options *options,
+						const char *socket_options)
 {
 	struct composite_context *c;
 	struct smb2_connect_state *state;
@@ -258,7 +259,7 @@ struct composite_context *smb2_connect_send(TALLOC_CTX *mem_ctx,
 	state->share = talloc_strdup(c, share);
 	if (composite_nomem(state->share, c)) return c;
 	state->resolve_ctx = talloc_reference(state, resolve_ctx);
-	state->socket_options = lp_socket_options(global_loadparm);
+	state->socket_options = talloc_reference(state, socket_options);
 	if (composite_nomem(state->socket_options, c)) return c;
 
 	ZERO_STRUCT(name);
@@ -296,10 +297,12 @@ NTSTATUS smb2_connect(TALLOC_CTX *mem_ctx,
 		      struct cli_credentials *credentials,
 		      struct smb2_tree **tree,
 		      struct event_context *ev,
-		      struct smbcli_options *options)
+		      struct smbcli_options *options,
+			  const char *socket_options)
 {
 	struct composite_context *c = smb2_connect_send(mem_ctx, host, ports, 
 													share, resolve_ctx, 
-													credentials, ev, options);
+													credentials, ev, options,
+													socket_options);
 	return smb2_connect_recv(c, mem_ctx, tree);
 }

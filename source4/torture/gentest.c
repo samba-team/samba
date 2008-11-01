@@ -231,7 +231,9 @@ static bool connect_servers(struct event_context *ev,
 						      lp_resolve_context(lp_ctx),
 						      servers[i].credentials,
 						      &servers[i].smb2_tree[j],
-						      ev, &smb_options);
+						      ev, &smb_options,
+							  lp_socket_options(lp_ctx)
+							  );
 			} else {
 				status = smbcli_tree_full_connection(NULL,
 								     &servers[i].smb_tree[j], 
