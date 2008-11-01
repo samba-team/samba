@@ -6141,8 +6141,9 @@ void reply_copy(struct smb_request *req)
 	char *name = NULL;
 	char *newname = NULL;
 	char *directory = NULL;
-	char *mask = NULL;
-	char *p;
+	const char *mask = NULL;
+	const char mask_star[] = "*";
+	const char *p;
 	int count=0;
 	int error = ERRnoaccess;
 	int err = 0;
@@ -6269,23 +6270,18 @@ void reply_copy(struct smb_request *req)
 	}
 
 	p = strrchr_m(name,'/');
-	if (!p) {
-		directory = talloc_strdup(ctx, "./");
-		if (!directory) {
-			reply_nterror(req, NT_STATUS_NO_MEMORY);
-			END_PROFILE(SMBcopy);
-			return;
-		}
-		mask = name;
-	} else {
-		*p = 0;
-		directory = talloc_strdup(ctx, name);
-		if (!directory) {
-			reply_nterror(req, NT_STATUS_NO_MEMORY);
-			END_PROFILE(SMBcopy);
-			return;
-		}
+	if (p != NULL) {
+		directory = talloc_strndup(ctx, name, PTR_DIFF(p, name));
 		mask = p+1;
+	} else {
+		directory = talloc_strdup(ctx, "./");
+		mask = name;
+	}
+
+	if (!directory) {
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
+		END_PROFILE(SMBcopy);
+		return;
 	}
 
 	/*
@@ -6353,8 +6349,7 @@ void reply_copy(struct smb_request *req)
 		long offset = 0;
 
 		if (strequal(mask,"????????.???")) {
-			mask[0] = '*';
-			mask[1] = '\0';
+			mask = mask_star;
 		}
 
 		status = check_name(conn, directory);
