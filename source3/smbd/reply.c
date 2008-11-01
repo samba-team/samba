@@ -1339,27 +1339,21 @@ void reply_search(struct smb_request *req)
 		}
 
 		p = strrchr_m(directory,'/');
-		if (!p) {
+		if ((p != NULL) && (*directory != '/')) {
+			mask = p + 1;
+			directory = talloc_strndup(ctx, directory,
+						   PTR_DIFF(p, directory));
+		} else {
 			mask = directory;
 			directory = talloc_strdup(ctx,".");
-			if (!directory) {
-				reply_nterror(req, NT_STATUS_NO_MEMORY);
-				END_PROFILE(SMBsearch);
-				return;
-			}
-		} else {
-			*p = 0;
-			mask = p+1;
 		}
 
-		if (*directory == '\0') {
-			directory = talloc_strdup(ctx,".");
-			if (!directory) {
-				reply_nterror(req, NT_STATUS_NO_MEMORY);
-				END_PROFILE(SMBsearch);
-				return;
-			}
+		if (!directory) {
+			reply_nterror(req, NT_STATUS_NO_MEMORY);
+			END_PROFILE(SMBsearch);
+			return;
 		}
+
 		memset((char *)status,'\0',21);
 		SCVAL(status,0,(dirtype & 0x1F));
 
