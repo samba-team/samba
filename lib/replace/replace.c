@@ -635,3 +635,10 @@ int rep_link(const char *oldpath, const char *newpath)
 }
 #endif
 
+#ifndef HAVE_READLINK
+int rep_readlink(const char *path, char *buf, size_t bufsiz)
+{
+	errno = ENOSYS;
+	return -1;
+}
+#endif

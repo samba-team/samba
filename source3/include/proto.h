@@ -1005,7 +1005,6 @@ int sys_waitpid(pid_t pid,int *status,int options);
 char *sys_getwd(char *s);
 int sys_symlink(const char *oldpath, const char *newpath);
 int sys_readlink(const char *path, char *buf, size_t bufsiz);
-int sys_link(const char *oldpath, const char *newpath);
 int sys_lchown(const char *fname,uid_t uid,gid_t gid);
 int sys_chroot(const char *dname);
 void set_effective_capability(enum smbd_capability capability);

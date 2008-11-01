@@ -225,6 +225,11 @@ int rep_chown(const char *path, uid_t uid, gid_t gid);
 int rep_link(const char *oldpath, const char *newpath);
 #endif
 
+#ifndef HAVE_READLINK
+#define readlink rep_readlink
+int rep_readlink(const char *path, char *buf, size_t bufsize);
+#endif
+
 #ifndef HAVE_SETLINEBUF
 #define setlinebuf rep_setlinebuf
 void rep_setlinebuf(FILE *);

@@ -66,6 +66,7 @@ freeifaddrs
 utime
 utimes
 link
+readlink
 
 Types:
 bool
