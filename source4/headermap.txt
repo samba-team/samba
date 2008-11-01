@@ -6,6 +6,8 @@
 ../lib/util/attr.h: util/attr.h
 ../lib/util/byteorder.h: util/byteorder.h
 ../lib/util/safe_string.h: util/safe_string.h
+../lib/util/memory.h: util/memory.h
+../lib/util/talloc_stack.h: util/talloc_stack.h
 ../lib/util/xfile.h: util/xfile.h
 lib/tdr/tdr.h: tdr.h
 librpc/rpc/dcerpc.h: dcerpc.h

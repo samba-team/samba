@@ -34,10 +34,12 @@ PUBLIC_HEADERS += $(addprefix $(libutilsrcdir)/, util.h \
 				 byteorder.h \
 				 data_blob.h \
 				 debug.h \
+				 memory.h \
 				 mutex.h \
 				 safe_string.h \
 				 time.h \
 				 util_ldb.h \
+				 talloc_stack.h \
 				 xfile.h)
 
 [SUBSYSTEM::ASN1_UTIL]
