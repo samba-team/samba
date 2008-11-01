@@ -424,8 +424,8 @@ void reply_ntcreate_and_X(struct smb_request *req)
 				     smb_ntcreate_AllocationSize + 4)) << 32);
 #endif
 
-	srvstr_get_path(ctx, (char *)req->inbuf, req->flags2, &fname,
-			(const char *)req->buf, 0, STR_TERMINATE, &status);
+	srvstr_get_path_req(ctx, req, &fname, (const char *)req->buf,
+			    STR_TERMINATE, &status);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
@@ -1248,9 +1248,8 @@ void reply_ntrename(struct smb_request *req)
 	rename_type = SVAL(req->inbuf,smb_vwv1);
 
 	p = (const char *)req->buf + 1;
-	p += srvstr_get_path_wcard(ctx, (char *)req->inbuf, req->flags2, &oldname, p,
-				   0, STR_TERMINATE, &status,
-				   &src_has_wcard);
+	p += srvstr_get_path_req_wcard(ctx, req, &oldname, p, STR_TERMINATE,
+				       &status, &src_has_wcard);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		END_PROFILE(SMBntrename);
@@ -1271,9 +1270,8 @@ void reply_ntrename(struct smb_request *req)
 	}
 
 	p++;
-	p += srvstr_get_path_wcard(ctx, (char *)req->inbuf, req->flags2, &newname, p,
-				   0, STR_TERMINATE, &status,
-				   &dest_has_wcard);
+	p += srvstr_get_path_req_wcard(ctx, req, &newname, p, STR_TERMINATE,
+				       &status, &dest_has_wcard);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		END_PROFILE(SMBntrename);

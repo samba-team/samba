@@ -221,22 +221,8 @@ size_t srvstr_get_path_wcard(TALLOC_CTX *ctx,
 
 	*pp_dest = NULL;
 
-	if (src_len == 0) {
-		ret = srvstr_pull_buf_talloc(ctx,
-				inbuf,
-				smb_flags2,
-				pp_dest,
-				src,
-				flags);
-	} else {
-		ret = srvstr_pull_talloc(ctx,
-				inbuf,
-				smb_flags2,
-				pp_dest,
-				src,
-				src_len,
-				flags);
-	}
+	ret = srvstr_pull_talloc(ctx, inbuf, smb_flags2, pp_dest, src, src_len,
+				 flags);
 
 	if (!*pp_dest) {
 		*err = NT_STATUS_INVALID_PARAMETER;
@@ -276,48 +262,27 @@ size_t srvstr_get_path(TALLOC_CTX *ctx,
 			int flags,
 			NTSTATUS *err)
 {
-	size_t ret;
+	bool ignore;
+	return srvstr_get_path_wcard(ctx, inbuf, smb_flags2, pp_dest, src,
+				     src_len, flags, err, &ignore);
+}
 
-	*pp_dest = NULL;
+size_t srvstr_get_path_req_wcard(TALLOC_CTX *mem_ctx, struct smb_request *req,
+				 char **pp_dest, const char *src, int flags,
+				 NTSTATUS *err, bool *contains_wcard)
+{
+	return srvstr_get_path_wcard(mem_ctx, (char *)req->inbuf, req->flags2,
+				     pp_dest, src, smb_bufrem(req->inbuf, src),
+				     flags, err, contains_wcard);
+}
 
-	if (src_len == 0) {
-		ret = srvstr_pull_buf_talloc(ctx,
-					inbuf,
-					smb_flags2,
-					pp_dest,
-					src,
-					flags);
-	} else {
-		ret = srvstr_pull_talloc(ctx,
-				inbuf,
-				smb_flags2,
-				pp_dest,
-				src,
-				src_len,
-				flags);
-	}
-
-	if (!*pp_dest) {
-		*err = NT_STATUS_INVALID_PARAMETER;
-		return ret;
-	}
-
-	if (smb_flags2 & FLAGS2_DFS_PATHNAMES) {
-		/*
-		 * For a DFS path the function parse_dfs_path()
-		 * will do the path processing, just make a copy.
-		 */
-		*err = NT_STATUS_OK;
-		return ret;
-	}
-
-	if (lp_posix_pathnames()) {
-		*err = check_path_syntax_posix(*pp_dest);
-	} else {
-		*err = check_path_syntax(*pp_dest);
-	}
-
-	return ret;
+size_t srvstr_get_path_req(TALLOC_CTX *mem_ctx, struct smb_request *req,
+			   char **pp_dest, const char *src, int flags,
+			   NTSTATUS *err)
+{
+	bool ignore;
+	return srvstr_get_path_req_wcard(mem_ctx, req, pp_dest, src,
+					 flags, err, &ignore);
 }
 
 /****************************************************************************
@@ -884,8 +849,9 @@ void reply_checkpath(struct smb_request *req)
 
 	START_PROFILE(SMBcheckpath);
 
-	srvstr_get_path(ctx,(char *)req->inbuf, req->flags2, &name,
-			(const char *)req->buf + 1, 0, STR_TERMINATE, &status);
+	srvstr_get_path_req(ctx, req, &name, (const char *)req->buf + 1,
+			    STR_TERMINATE, &status);
+
 	if (!NT_STATUS_IS_OK(status)) {
 		status = map_checkpath_error((char *)req->inbuf, status);
 		reply_nterror(req, status);
@@ -983,8 +949,7 @@ void reply_getatr(struct smb_request *req)
 	START_PROFILE(SMBgetatr);
 
 	p = (const char *)req->buf + 1;
-	p += srvstr_get_path(ctx, (char *)req->inbuf, req->flags2, &fname, p,
-			     0, STR_TERMINATE, &status);
+	p += srvstr_get_path_req(ctx, req, &fname, p, STR_TERMINATE, &status);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		END_PROFILE(SMBgetatr);
@@ -1092,8 +1057,7 @@ void reply_setatr(struct smb_request *req)
 	}
 
 	p = (const char *)req->buf + 1;
-	p += srvstr_get_path(ctx, (char *)req->inbuf, req->flags2, &fname, p,
-				0, STR_TERMINATE, &status);
+	p += srvstr_get_path_req(ctx, req, &fname, p, STR_TERMINATE, &status);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		END_PROFILE(SMBsetatr);
@@ -1279,15 +1243,8 @@ void reply_search(struct smb_request *req)
 	maxentries = SVAL(req->inbuf,smb_vwv0);
 	dirtype = SVAL(req->inbuf,smb_vwv1);
 	p = (const char *)req->buf + 1;
-	p += srvstr_get_path_wcard(ctx,
-				(char *)req->inbuf,
-				req->flags2,
-				&path,
-				p,
-				0,
-				STR_TERMINATE,
-				&nt_status,
-				&mask_contains_wcard);
+	p += srvstr_get_path_req_wcard(ctx, req, &path, p, STR_TERMINATE,
+				       &nt_status, &mask_contains_wcard);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		reply_nterror(req, nt_status);
 		END_PROFILE(SMBsearch);
@@ -1556,15 +1513,8 @@ void reply_fclose(struct smb_request *req)
 	}
 
 	p = (const char *)req->buf + 1;
-	p += srvstr_get_path_wcard(ctx,
-				(char *)req->inbuf,
-				req->flags2,
-				&path,
-				p,
-				0,
-				STR_TERMINATE,
-				&err,
-				&path_contains_wcard);
+	p += srvstr_get_path_req_wcard(ctx, req, &path, p, STR_TERMINATE,
+				       &err, &path_contains_wcard);
 	if (!NT_STATUS_IS_OK(err)) {
 		reply_nterror(req, err);
 		END_PROFILE(SMBfclose);
@@ -1632,8 +1582,8 @@ void reply_open(struct smb_request *req)
 	deny_mode = SVAL(req->inbuf,smb_vwv0);
 	dos_attr = SVAL(req->inbuf,smb_vwv1);
 
-	srvstr_get_path(ctx, (char *)req->inbuf, req->flags2, &fname,
-			(const char *)req->buf+1, 0, STR_TERMINATE, &status);
+	srvstr_get_path_req(ctx, req, &fname, (const char *)req->buf+1,
+			    STR_TERMINATE, &status);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		END_PROFILE(SMBopen);
@@ -1776,8 +1726,8 @@ void reply_open_and_X(struct smb_request *req)
 	}
 
 	/* XXXX we need to handle passed times, sattr and flags */
-	srvstr_get_path(ctx, (char *)req->inbuf, req->flags2, &fname,
-			(const char *)req->buf, 0, STR_TERMINATE, &status);
+	srvstr_get_path_req(ctx, req, &fname, (const char *)req->buf,
+			STR_TERMINATE, &status);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		END_PROFILE(SMBopenX);
@@ -1972,8 +1922,8 @@ void reply_mknew(struct smb_request *req)
 			srv_make_unix_date3(req->inbuf + smb_vwv1));
 			/* mtime. */
 
-	srvstr_get_path(ctx, (char *)req->inbuf, req->flags2, &fname,
-                        (const char *)req->buf + 1, 0, STR_TERMINATE, &status);
+	srvstr_get_path_req(ctx, req, &fname, (const char *)req->buf + 1,
+			    STR_TERMINATE, &status);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		END_PROFILE(SMBcreate);
@@ -2077,8 +2027,8 @@ void reply_ctemp(struct smb_request *req)
 	fattr = SVAL(req->inbuf,smb_vwv0);
 	oplock_request = CORE_OPLOCK_REQUEST(req->inbuf);
 
-	srvstr_get_path(ctx, (char *)req->inbuf, req->flags2, &fname,
-			(const char *)req->buf+1, 0, STR_TERMINATE, &status);
+	srvstr_get_path_req(ctx, req, &fname, (const char *)req->buf+1,
+			    STR_TERMINATE, &status);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		END_PROFILE(SMBctemp);
@@ -2547,9 +2497,9 @@ void reply_unlink(struct smb_request *req)
 
 	dirtype = SVAL(req->inbuf,smb_vwv0);
 
-	srvstr_get_path_wcard(ctx, (char *)req->inbuf, req->flags2, &name,
-			      (const char *)req->buf + 1, 0, STR_TERMINATE,
-			      &status, &path_contains_wcard);
+	srvstr_get_path_req_wcard(ctx, req, &name, (const char *)req->buf + 1,
+				  STR_TERMINATE, &status,
+				  &path_contains_wcard);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		END_PROFILE(SMBunlink);
@@ -4848,8 +4798,8 @@ void reply_mkdir(struct smb_request *req)
 
 	START_PROFILE(SMBmkdir);
 
-	srvstr_get_path(ctx, (char *)req->inbuf, req->flags2, &directory,
-			(const char *)req->buf + 1, 0, STR_TERMINATE, &status);
+	srvstr_get_path_req(ctx, req, &directory, (const char *)req->buf + 1,
+			    STR_TERMINATE, &status);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		END_PROFILE(SMBmkdir);
@@ -5118,8 +5068,8 @@ void reply_rmdir(struct smb_request *req)
 
 	START_PROFILE(SMBrmdir);
 
-	srvstr_get_path(ctx, (char *)req->inbuf, req->flags2, &directory,
-			(const char *)req->buf + 1, 0, STR_TERMINATE, &status);
+	srvstr_get_path_req(ctx, req, &directory, (const char *)req->buf + 1,
+			    STR_TERMINATE, &status);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		END_PROFILE(SMBrmdir);
@@ -5917,18 +5867,16 @@ void reply_mv(struct smb_request *req)
 	attrs = SVAL(req->inbuf,smb_vwv0);
 
 	p = (const char *)req->buf + 1;
-	p += srvstr_get_path_wcard(ctx, (char *)req->inbuf, req->flags2, &name, p,
-				   0, STR_TERMINATE, &status,
-				   &src_has_wcard);
+	p += srvstr_get_path_req_wcard(ctx, req, &name, p, STR_TERMINATE,
+				       &status, &src_has_wcard);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		END_PROFILE(SMBmv);
 		return;
 	}
 	p++;
-	p += srvstr_get_path_wcard(ctx, (char *)req->inbuf, req->flags2, &newname, p,
-				   0, STR_TERMINATE, &status,
-				   &dest_has_wcard);
+	p += srvstr_get_path_req_wcard(ctx, req, &newname, p, STR_TERMINATE,
+				       &status, &dest_has_wcard);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		END_PROFILE(SMBmv);
@@ -6161,17 +6109,15 @@ void reply_copy(struct smb_request *req)
 	flags = SVAL(req->inbuf,smb_vwv2);
 
 	p = (const char *)req->buf;
-	p += srvstr_get_path_wcard(ctx, (char *)req->inbuf, req->flags2, &name, p,
-				   0, STR_TERMINATE, &status,
-				   &source_has_wild);
+	p += srvstr_get_path_req_wcard(ctx, req, &name, p, STR_TERMINATE,
+				       &status, &source_has_wild);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		END_PROFILE(SMBcopy);
 		return;
 	}
-	p += srvstr_get_path_wcard(ctx, (char *)req->inbuf, req->flags2, &newname, p,
-				   0, STR_TERMINATE, &status,
-				   &dest_has_wild);
+	p += srvstr_get_path_req_wcard(ctx, req, &newname, p, STR_TERMINATE,
+				       &status, &dest_has_wild);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		END_PROFILE(SMBcopy);
