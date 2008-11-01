@@ -212,7 +212,8 @@ static NTSTATUS local_pw_check_specified(struct loadparm_context *lp_ctx,
 		
 		
 		nt_status = ntlm_password_check(mem_ctx, 
-						lp_ctx,
+						lp_lanman_auth(lp_ctx),
+						lp_ntlm_auth(lp_ctx),
 						MSV1_0_ALLOW_SERVER_TRUST_ACCOUNT |
 						MSV1_0_ALLOW_WORKSTATION_TRUST_ACCOUNT,
 						challenge,

@@ -36,7 +36,7 @@
  */
 
 NTSTATUS hash_password_check(TALLOC_CTX *mem_ctx,
-			     struct loadparm_context *lp_ctx, 
+				 bool lanman_auth,
 			     const struct samr_Password *client_lanman,
 			     const struct samr_Password *client_nt,
 			     const char *username, 
@@ -61,7 +61,8 @@ NTSTATUS hash_password_check(TALLOC_CTX *mem_ctx,
  */
 
 NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
-			     struct loadparm_context *lp_ctx,
+				 bool lanman_auth,
+				 bool ntlm_auth,
 			     uint32_t logon_parameters,
 			     const DATA_BLOB *challenge,
 			     const DATA_BLOB *lm_response,
