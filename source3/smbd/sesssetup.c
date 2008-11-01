@@ -1164,7 +1164,10 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 	const uint8 *p;
 	DATA_BLOB blob1;
 	size_t bufrem;
-	fstring native_os, native_lanman, primary_domain;
+	char *tmp;
+	const char *native_os;
+	const char *native_lanman;
+	const char *primary_domain;
 	const char *p2;
 	uint16 data_blob_len = SVAL(req->inbuf, smb_vwv7);
 	enum remote_arch_types ra_type = get_remote_arch();
@@ -1202,12 +1205,19 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 #endif
 
 	p2 = (char *)req->inbuf + smb_vwv13 + data_blob_len;
-	p2 += srvstr_pull_buf(req->inbuf, smb_flag2, native_os, p2,
-			      sizeof(native_os), STR_TERMINATE);
-	p2 += srvstr_pull_buf(req->inbuf, smb_flag2, native_lanman, p2,
-			      sizeof(native_lanman), STR_TERMINATE);
-	p2 += srvstr_pull_buf(req->inbuf, smb_flag2, primary_domain, p2,
-			      sizeof(primary_domain), STR_TERMINATE);
+
+	p2 += srvstr_pull_buf_talloc(talloc_tos(), req->inbuf, smb_flag2,
+				     &tmp, p2, STR_TERMINATE);
+	native_os = tmp ? tmp : "";
+
+	p2 += srvstr_pull_buf_talloc(talloc_tos(), req->inbuf, smb_flag2,
+				     &tmp, p2, STR_TERMINATE);
+	native_lanman = tmp ? tmp : "";
+
+	p2 += srvstr_pull_buf_talloc(talloc_tos(), req->inbuf, smb_flag2,
+				     &tmp, p2,STR_TERMINATE);
+	primary_domain = tmp ? tmp : "";
+
 	DEBUG(3,("NativeOS=[%s] NativeLanMan=[%s] PrimaryDomain=[%s]\n",
 		native_os, native_lanman, primary_domain));
 
@@ -1390,12 +1400,13 @@ void reply_sesssetup_and_X(struct smb_request *req)
 	DATA_BLOB lm_resp;
 	DATA_BLOB nt_resp;
 	DATA_BLOB plaintext_password;
-	fstring user;
+	char *tmp;
+	const char *user;
 	fstring sub_user; /* Sainitised username for substituion */
-	fstring domain;
-	fstring native_os;
-	fstring native_lanman;
-	fstring primary_domain;
+	const char *domain;
+	const char *native_os;
+	const char *native_lanman;
+	const char *primary_domain;
 	static bool done_sesssetup = False;
 	auth_usersupplied_info *user_info = NULL;
 	auth_serversupplied_info *server_info = NULL;
@@ -1461,10 +1472,12 @@ void reply_sesssetup_and_X(struct smb_request *req)
 			plaintext_password.data[passlen1] = 0;
 		}
 
-		srvstr_pull_buf(req->inbuf, req->flags2, user,
-				req->buf + passlen1, sizeof(user),
-				STR_TERMINATE);
-		*domain = 0;
+		srvstr_pull_buf_talloc(talloc_tos(), req->inbuf, req->flags2,
+				       &tmp, req->buf + passlen1,
+				       STR_TERMINATE);
+		user = tmp ? tmp : "";
+
+		domain = "";
 
 	} else {
 		uint16 passlen1 = SVAL(req->inbuf,smb_vwv7);
@@ -1578,15 +1591,26 @@ void reply_sesssetup_and_X(struct smb_request *req)
 		}
 
 		p += passlen1 + passlen2;
-		p += srvstr_pull_buf(req->inbuf, req->flags2, user, p,
-				     sizeof(user), STR_TERMINATE);
-		p += srvstr_pull_buf(req->inbuf, req->flags2, domain, p,
-				     sizeof(domain), STR_TERMINATE);
-		p += srvstr_pull_buf(req->inbuf, req->flags2, native_os,
-				     p, sizeof(native_os), STR_TERMINATE);
-		p += srvstr_pull_buf(req->inbuf, req->flags2,
-				     native_lanman, p, sizeof(native_lanman),
-				     STR_TERMINATE);
+
+		p += srvstr_pull_buf_talloc(talloc_tos(), req->inbuf,
+					    req->flags2, &tmp, p,
+					    STR_TERMINATE);
+		user = tmp ? tmp : "";
+
+		p += srvstr_pull_buf_talloc(talloc_tos(), req->inbuf,
+					    req->flags2, &tmp, p,
+					    STR_TERMINATE);
+		domain = tmp ? tmp : "";
+
+		p += srvstr_pull_buf_talloc(talloc_tos(), req->inbuf,
+					    req->flags2, &tmp, p,
+					    STR_TERMINATE);
+		native_os = tmp ? tmp : "";
+
+		p += srvstr_pull_buf_talloc(talloc_tos(), req->inbuf,
+					    req->flags2, &tmp, p,
+					    STR_TERMINATE);
+		native_lanman = tmp ? tmp : "";
 
 		/* not documented or decoded by Ethereal but there is one more
 		 * string in the extra bytes which is the same as the
@@ -1597,12 +1621,12 @@ void reply_sesssetup_and_X(struct smb_request *req)
 
 		byte_count = SVAL(req->inbuf, smb_vwv13);
 		if ( PTR_DIFF(p, save_p) < byte_count) {
-			p += srvstr_pull_buf(req->inbuf, req->flags2,
-					     primary_domain, p,
-					     sizeof(primary_domain),
-					     STR_TERMINATE);
+			p += srvstr_pull_buf_talloc(talloc_tos(), req->inbuf,
+						    req->flags2, &tmp, p,
+						    STR_TERMINATE);
+			primary_domain = tmp ? tmp : "";
 		} else {
-			fstrcpy( primary_domain, "null" );
+			primary_domain = talloc_strdup(talloc_tos(), "null");
 		}
 
 		DEBUG(3,("Domain=[%s]  NativeOS=[%s] NativeLanMan=[%s] "
@@ -1659,7 +1683,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 		add_session_user(sub_user);
 		add_session_workgroup(domain);
 		/* Then force it to null for the benfit of the code below */
-		*user = 0;
+		user = "";
 	}
 
 	if (!*user) {
