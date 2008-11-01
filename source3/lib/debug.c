@@ -680,8 +680,8 @@ bool reopen_logs( void )
 	force_check_log_size();
 	(void)umask(oldumask);
 
-	/* Take over stderr to catch ouput into logs */
-	if (dbf && sys_dup2(x_fileno(dbf), 2) == -1) {
+	/* Take over stderr to catch output into logs */
+	if (dbf && dup2(x_fileno(dbf), 2) == -1) {
 		close_low_fds(True); /* Close stderr too, if dup2 can't point it
 					at the logfile */
 	}

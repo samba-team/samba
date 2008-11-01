@@ -358,6 +358,11 @@ struct tm;
 char *rep_strptime(const char *buf, const char *format, struct tm *tm);
 #endif
 
+#ifndef HAVE_DUP2
+#define dup2 rep_dup2
+int rep_dup2(int oldfd, int newfd);
+#endif
+
 /* Load header file for dynamic linking stuff */
 #ifdef HAVE_DLFCN_H
 #include <dlfcn.h>

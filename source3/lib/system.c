@@ -1343,16 +1343,6 @@ const char *sys_dlerror(void)
 #endif
 }
 
-int sys_dup2(int oldfd, int newfd) 
-{
-#if defined(HAVE_DUP2)
-	return dup2(oldfd, newfd);
-#else
-	errno = ENOSYS;
-	return -1;
-#endif
-}
-
 /**************************************************************************
  Wrapper for Admin Logs.
 ****************************************************************************/

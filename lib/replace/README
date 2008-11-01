@@ -64,6 +64,7 @@ getifaddrs
 freeifaddrs
 utime
 utimes
+dup2
 
 Types:
 bool

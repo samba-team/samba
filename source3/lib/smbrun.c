@@ -153,7 +153,7 @@ static int smbrun_internal(const char *cmd, int *outfd, bool sanitize)
 	/* point our stdout at the file we want output to go into */
 	if (outfd) {
 		close(1);
-		if (sys_dup2(*outfd,1) != 1) {
+		if (dup2(*outfd,1) != 1) {
 			DEBUG(2,("Failed to create stdout file descriptor\n"));
 			close(*outfd);
 			exit(80);
@@ -305,7 +305,7 @@ int smbrunsecret(const char *cmd, const char *secret)
 	
 	close(ifd[1]);
 	close(0);
-	if (sys_dup2(ifd[0], 0) != 0) {
+	if (dup2(ifd[0], 0) != 0) {
 		DEBUG(2,("Failed to create stdin file descriptor\n"));
 		close(ifd[0]);
 		exit(80);

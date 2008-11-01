@@ -1054,7 +1054,6 @@ void *sys_dlopen(const char *name, int flags);
 void *sys_dlsym(void *handle, const char *symbol);
 int sys_dlclose (void *handle);
 const char *sys_dlerror(void);
-int sys_dup2(int oldfd, int newfd) ;
 ssize_t sys_getxattr (const char *path, const char *name, void *value, size_t size);
 ssize_t sys_lgetxattr (const char *path, const char *name, void *value, size_t size);
 ssize_t sys_fgetxattr (int filedes, const char *name, void *value, size_t size);

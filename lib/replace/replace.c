@@ -614,3 +614,12 @@ int rep_utimes(const char *filename, const struct timeval tv[2])
 	return utime(filename, &u);
 }
 #endif
+
+#ifndef HAVE_DUP2
+int rep_dup2(int oldfd, int newfd) 
+{
+	errno = ENOSYS;
+	return -1;
+}
+#endif
+
