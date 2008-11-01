@@ -69,6 +69,7 @@ utimes
 link
 readlink
 symlink
+realpath
 
 Types:
 bool

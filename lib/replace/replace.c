@@ -658,3 +658,14 @@ int rep_lchown(const char *fname,uid_t uid,gid_t gid)
 	return -1;
 }
 #endif
+
+#ifndef HAVE_REALPATH
+char *rep_realpath(const char *path, char *resolved_path)
+{
+	/* As realpath is not a system call we can't return ENOSYS. */
+	errno = EINVAL;
+	return NULL;
+}
+#endif
+
+

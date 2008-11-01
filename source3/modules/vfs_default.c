@@ -909,7 +909,7 @@ static char *vfswrap_realpath(vfs_handle_struct *handle,  const char *path, char
 	char *result;
 
 	START_PROFILE(syscall_realpath);
-	result = sys_realpath(path, resolved_path);
+	result = realpath(path, resolved_path);
 	END_PROFILE(syscall_realpath);
 	return result;
 }

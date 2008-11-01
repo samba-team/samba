@@ -1000,7 +1000,6 @@ long sys_telldir(SMB_STRUCT_DIR *dirp);
 void sys_rewinddir(SMB_STRUCT_DIR *dirp);
 int sys_closedir(SMB_STRUCT_DIR *dirp);
 int sys_mknod(const char *path, mode_t mode, SMB_DEV_T dev);
-char *sys_realpath(const char *path, char *resolved_path);
 int sys_waitpid(pid_t pid,int *status,int options);
 char *sys_getwd(char *s);
 int sys_chroot(const char *dname);

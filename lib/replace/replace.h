@@ -235,6 +235,11 @@ int rep_readlink(const char *path, char *buf, size_t bufsize);
 int rep_symlink(const char *oldpath, const char *newpath);
 #endif
 
+#ifndef HAVE_REALPATH
+#define realpath rep_realpath
+char *rep_realpath(const char *path, char *resolved_path);
+#endif
+
 #ifndef HAVE_LCHOWN
 #define lchown rep_lchown
 int rep_lchown(const char *fname,uid_t uid,gid_t gid);
