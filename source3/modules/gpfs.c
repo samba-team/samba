@@ -141,40 +141,40 @@ void init_gpfs(void)
 		return;
 	}
 
-	libgpfs_handle = sys_dlopen("libgpfs_gpl.so", RTLD_LAZY);
+	libgpfs_handle = dlopen("libgpfs_gpl.so", RTLD_LAZY);
 
 	if (libgpfs_handle == NULL) {
-		DEBUG(10, ("sys_dlopen for libgpfs_gpl failed: %s\n",
+		DEBUG(10, ("dlopen for libgpfs_gpl failed: %s\n",
 			   strerror(errno)));
 		return;
 	}
 
 	DEBUG(10, ("libgpfs_gpl.so loaded\n"));
 
-	gpfs_set_share_fn = sys_dlsym(libgpfs_handle, "gpfs_set_share");
+	gpfs_set_share_fn = dlsym(libgpfs_handle, "gpfs_set_share");
 	if (gpfs_set_share_fn == NULL) {
 		DEBUG(3, ("libgpfs_gpl.so does not contain the symbol "
 			  "'gpfs_set_share'\n"));
 		goto failed;
 	}
 
-	gpfs_set_lease_fn = sys_dlsym(libgpfs_handle, "gpfs_set_lease");
+	gpfs_set_lease_fn = dlsym(libgpfs_handle, "gpfs_set_lease");
 	if (gpfs_set_lease_fn == NULL) {
 		DEBUG(3, ("libgpfs_gpl.so does not contain the symbol "
 			  "'gpfs_set_lease'\n"));
-		sys_dlclose(libgpfs_handle);
+		dlclose(libgpfs_handle);
 
 		goto failed;
 	}
 
-	gpfs_getacl_fn = sys_dlsym(libgpfs_handle, "gpfs_getacl");
+	gpfs_getacl_fn = dlsym(libgpfs_handle, "gpfs_getacl");
 	if (gpfs_getacl_fn == NULL) {
 		DEBUG(3, ("libgpfs_gpl.so does not contain the symbol "
 			  "'gpfs_getacl'\n"));
 		goto failed;
 	}
 
-	gpfs_putacl_fn = sys_dlsym(libgpfs_handle, "gpfs_putacl");
+	gpfs_putacl_fn = dlsym(libgpfs_handle, "gpfs_putacl");
 	if (gpfs_putacl_fn == NULL) {
 		DEBUG(3, ("libgpfs_gpl.so does not contain the symbol "
 			  "'gpfs_putacl'\n"));
@@ -187,7 +187,7 @@ void init_gpfs(void)
 	return;
 
 failed:
-	sys_dlclose(libgpfs_handle);
+	dlclose(libgpfs_handle);
 	/* leave libgpfs_handle != NULL around, no point
 	   in trying twice */
 	gpfs_set_share_fn = NULL;

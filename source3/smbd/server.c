@@ -1415,7 +1415,7 @@ extern void build_options(bool screen);
 	}
 
 	if (*lp_rootdir()) {
-		if (sys_chroot(lp_rootdir()) == 0)
+		if (chroot(lp_rootdir()) == 0)
 			DEBUG(2,("Changed root to %s\n", lp_rootdir()));
 	}
 

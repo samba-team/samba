@@ -215,6 +215,41 @@ int rep_seteuid(uid_t);
 int rep_setegid(gid_t);
 #endif
 
+#ifndef HAVE_CHOWN
+#define chown rep_chown
+int rep_chown(const char *path, uid_t uid, gid_t gid);
+#endif
+
+#ifndef HAVE_CHROOT
+#define chroot rep_chroot
+int rep_chroot(const char *dirname);
+#endif
+
+#ifndef HAVE_LINK
+#define link rep_link
+int rep_link(const char *oldpath, const char *newpath);
+#endif
+
+#ifndef HAVE_READLINK
+#define readlink rep_readlink
+int rep_readlink(const char *path, char *buf, size_t bufsize);
+#endif
+
+#ifndef HAVE_SYMLINK
+#define symlink rep_symlink
+int rep_symlink(const char *oldpath, const char *newpath);
+#endif
+
+#ifndef HAVE_REALPATH
+#define realpath rep_realpath
+char *rep_realpath(const char *path, char *resolved_path);
+#endif
+
+#ifndef HAVE_LCHOWN
+#define lchown rep_lchown
+int rep_lchown(const char *fname,uid_t uid,gid_t gid);
+#endif
+
 #ifndef HAVE_SETLINEBUF
 #define setlinebuf rep_setlinebuf
 void rep_setlinebuf(FILE *);

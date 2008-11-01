@@ -37,13 +37,13 @@ static void *find_fn(const char *name)
 	}
 
 	if (!h) {
-		h = sys_dlopen(so_path, RTLD_LAZY);
+		h = dlopen(so_path, RTLD_LAZY);
 	}
 	if (!h) {
 		printf("Can't open shared library %s\n", so_path);
 		exit(1);
 	}
-	res = sys_dlsym(h, s);
+	res = dlsym(h, s);
 	if (!res) {
 		printf("Can't find function %s\n", s);
 		total_errors++;
