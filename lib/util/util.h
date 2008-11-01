@@ -52,7 +52,7 @@ extern const char *panic_action;
 #ifdef DEVELOPER
 #define SMB_ASSERT(b) do { if (!(b)) { \
         DEBUG(0,("PANIC: assert failed at %s(%d): %s\n", \
-		 __FILE__, __LINE__, #b)), smb_panic("assert failed: " #b); }} while(0)
+		 __FILE__, __LINE__, #b)); smb_panic("assert failed: " #b); }} while(0)
 #else
 /* redefine the assert macro for non-developer builds */
 #define SMB_ASSERT(b) do { if (!(b)) { \

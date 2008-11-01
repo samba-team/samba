@@ -79,3 +79,4 @@ libcli/ldap/ldap_ndr.h: ldap_ndr.h
 lib/events/events.h: events.h
 lib/events/events_internal.h: events_internal.h
 auth/session.h: samba/session.h
+../talloc/talloc.h: talloc.h
