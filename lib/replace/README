@@ -46,6 +46,7 @@ mkdtemp
 mkstemp (a secure one!)
 pread
 pwrite
+chown
 getpass
 readline (the library)
 inet_ntoa

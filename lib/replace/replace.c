@@ -2,6 +2,7 @@
    Unix SMB/CIFS implementation.
    replacement routines for broken systems
    Copyright (C) Andrew Tridgell 1992-1998
+   Copyright (C) Jelmer Vernooij 2005-2008
 
      ** NOTE! The following LGPL license applies to the replace
      ** library. This does NOT imply that all of Samba is released
@@ -614,3 +615,15 @@ int rep_utimes(const char *filename, const struct timeval tv[2])
 	return utime(filename, &u);
 }
 #endif
+
+#ifndef HAVE_CHOWN
+/**
+chown isn't used much but OS/2 doesn't have it
+**/
+int rep_chown(const char *fname, uid_t uid, gid_t gid)
+{
+	errno = ENOSYS;
+	return -1;
+}
+#endif
+

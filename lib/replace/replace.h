@@ -215,6 +215,11 @@ int rep_seteuid(uid_t);
 int rep_setegid(gid_t);
 #endif
 
+#ifndef HAVE_CHOWN
+#define chown rep_chown
+int rep_chown(const char *path, uid_t uid, gid_t gid);
+#endif
+
 #ifndef HAVE_SETLINEBUF
 #define setlinebuf rep_setlinebuf
 void rep_setlinebuf(FILE *);

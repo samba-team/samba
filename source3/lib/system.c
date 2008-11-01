@@ -623,25 +623,6 @@ int sys_link(const char *oldpath, const char *newpath)
 }
 
 /*******************************************************************
-chown isn't used much but OS/2 doesn't have it
-********************************************************************/
-
-int sys_chown(const char *fname,uid_t uid,gid_t gid)
-{
-#ifndef HAVE_CHOWN
-	static int done;
-	if (!done) {
-		DEBUG(1,("WARNING: no chown!\n"));
-		done=1;
-	}
-	errno = ENOSYS;
-	return -1;
-#else
-	return(chown(fname,uid,gid));
-#endif
-}
-
-/*******************************************************************
  Wrapper for lchown.
 ********************************************************************/
 
