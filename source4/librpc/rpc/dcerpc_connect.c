@@ -247,7 +247,9 @@ static struct composite_context *dcerpc_pipe_connect_ncacn_np_smb2_send(
 	lp_smbcli_options(lp_ctx, &options);
 
 	/* send smb2 connect request */
-	conn_req = smb2_connect_send(mem_ctx, s->io.binding->host, "IPC$", 
+	conn_req = smb2_connect_send(mem_ctx, s->io.binding->host, 
+			lp_parm_string_list(mem_ctx, lp_ctx, NULL, "smb2", "ports", NULL),
+					"IPC$", 
 				     s->io.resolve_ctx,
 				     s->io.creds,
 				     c->event_ctx,

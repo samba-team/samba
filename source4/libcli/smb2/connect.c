@@ -230,6 +230,7 @@ static void continue_resolve(struct composite_context *creq)
  */
 struct composite_context *smb2_connect_send(TALLOC_CTX *mem_ctx,
 					    const char *host,
+						const char **ports,
 					    const char *share,
 					    struct resolve_context *resolve_ctx,
 					    struct cli_credentials *credentials,
@@ -240,7 +241,6 @@ struct composite_context *smb2_connect_send(TALLOC_CTX *mem_ctx,
 	struct smb2_connect_state *state;
 	struct nbt_name name;
 	struct composite_context *creq;
-	const char **ports;
 
 	c = composite_create(mem_ctx, ev);
 	if (c == NULL) return NULL;
@@ -253,8 +253,7 @@ struct composite_context *smb2_connect_send(TALLOC_CTX *mem_ctx,
 	state->options = *options;
 	state->host = talloc_strdup(c, host);
 	if (composite_nomem(state->host, c)) return c;
-	state->ports = lp_parm_string_list(state, global_loadparm, 
-									   NULL, "smb2", "ports", NULL);
+	state->ports = talloc_reference(state, ports);
 	if (composite_nomem(state->ports, c)) return c;
 	state->share = talloc_strdup(c, share);
 	if (composite_nomem(state->share, c)) return c;
@@ -291,15 +290,16 @@ NTSTATUS smb2_connect_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
   sync version of smb2_connect
 */
 NTSTATUS smb2_connect(TALLOC_CTX *mem_ctx, 
-		      const char *host, const char *share,
+		      const char *host, const char **ports, 
+			  const char *share,
 		      struct resolve_context *resolve_ctx,
 		      struct cli_credentials *credentials,
 		      struct smb2_tree **tree,
 		      struct event_context *ev,
 		      struct smbcli_options *options)
 {
-	struct composite_context *c = smb2_connect_send(mem_ctx, host, share, 
-							resolve_ctx,
-							credentials, ev, options);
+	struct composite_context *c = smb2_connect_send(mem_ctx, host, ports, 
+													share, resolve_ctx, 
+													credentials, ev, options);
 	return smb2_connect_recv(c, mem_ctx, tree);
 }
