@@ -23,6 +23,7 @@
 #include "rpc_server/dcerpc_server.h"
 #include "librpc/gen_ndr/ndr_wkssvc.h"
 #include "rpc_server/common/common.h"
+#include "param/param.h"
 
 /*
   wkssvc_NetWkstaGetInfo
@@ -31,6 +32,7 @@ static WERROR dcesrv_wkssvc_NetWkstaGetInfo(struct dcesrv_call_state *dce_call, 
 		       struct wkssvc_NetWkstaGetInfo *r)
 {
 	struct dcesrv_context *dce_ctx = dce_call->conn->dce_ctx;
+	struct dcerpc_server_info *server_info = lp_dcerpc_server_info(mem_ctx, dce_ctx->lp_ctx);
 
 	ZERO_STRUCT(r->out);
 	r->out.info = talloc_zero(mem_ctx, union wkssvc_NetWkstaInfo);
@@ -49,10 +51,10 @@ static WERROR dcesrv_wkssvc_NetWkstaGetInfo(struct dcesrv_call_state *dce_call, 
 		info100->platform_id	= dcesrv_common_get_platform_id(mem_ctx, dce_ctx);
 		info100->server_name	= dcesrv_common_get_server_name(mem_ctx, dce_ctx, NULL);
 		W_ERROR_HAVE_NO_MEMORY(info100->server_name);
-		info100->domain_name	= dcesrv_common_get_domain_name(mem_ctx, dce_ctx);
+		info100->domain_name	= talloc_reference(mem_ctx, server_info->domain_name);
 		W_ERROR_HAVE_NO_MEMORY(info100->domain_name);
-		info100->version_major	= dcesrv_common_get_version_major(mem_ctx, dce_ctx->lp_ctx);
-		info100->version_minor	= dcesrv_common_get_version_minor(mem_ctx, dce_ctx->lp_ctx);
+		info100->version_major	= server_info->version_major;
+		info100->version_minor	= server_info->version_minor;
 
 		r->out.info->info100 = info100;
 		return WERR_OK;
@@ -67,10 +69,10 @@ static WERROR dcesrv_wkssvc_NetWkstaGetInfo(struct dcesrv_call_state *dce_call, 
 		info101->platform_id	= dcesrv_common_get_platform_id(mem_ctx, dce_ctx);
 		info101->server_name	= dcesrv_common_get_server_name(mem_ctx, dce_ctx, NULL);
 		W_ERROR_HAVE_NO_MEMORY(info101->server_name);
-		info101->domain_name	= dcesrv_common_get_domain_name(mem_ctx, dce_ctx);
+		info101->domain_name	= talloc_reference(mem_ctx, server_info->domain_name);
 		W_ERROR_HAVE_NO_MEMORY(info101->domain_name);
-		info101->version_major	= dcesrv_common_get_version_major(mem_ctx, dce_ctx->lp_ctx);
-		info101->version_minor	= dcesrv_common_get_version_minor(mem_ctx, dce_ctx->lp_ctx);
+		info101->version_major	= server_info->version_major;
+		info101->version_minor	= server_info->version_minor;
 		info101->lan_root	= dcesrv_common_get_lan_root(mem_ctx, dce_ctx);
 
 		r->out.info->info101 = info101;

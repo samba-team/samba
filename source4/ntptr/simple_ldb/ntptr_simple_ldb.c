@@ -125,6 +125,7 @@ static WERROR sptr_OpenPrintServer(struct ntptr_context *ntptr, TALLOC_CTX *mem_
 static WERROR sptr_GetPrintServerData(struct ntptr_GenericHandle *server, TALLOC_CTX *mem_ctx,
 				      struct spoolss_GetPrinterData *r)
 {
+	struct dcerpc_server_info *server_info = lp_dcerpc_server_info(mem_ctx, server->ntptr->lp_ctx);
 	if (strcmp("W3SvcInstalled", r->in.value_name) == 0) {
 		r->out.type		= SPOOLSS_PRINTER_DATA_TYPE_UINT32;
 		r->out.data.value	= 0;
@@ -170,9 +171,9 @@ static WERROR sptr_GetPrintServerData(struct ntptr_GenericHandle *server, TALLOC
 		enum ndr_err_code ndr_err;
 		struct spoolss_OSVersion os;
 
-		os.major		= dcesrv_common_get_version_major(mem_ctx, server->ntptr->lp_ctx);
-		os.minor		= dcesrv_common_get_version_minor(mem_ctx, server->ntptr->lp_ctx);
-		os.build		= dcesrv_common_get_version_build(mem_ctx, server->ntptr->lp_ctx);
+		os.major		= server_info->version_major;
+		os.minor		= server_info->version_minor;
+		os.build		= server_info->version_build;
 		os.extra_string		= "";
 
 		ndr_err = ndr_push_struct_blob(&blob, mem_ctx, lp_iconv_convenience(server->ntptr->lp_ctx), &os, (ndr_push_flags_fn_t)ndr_push_spoolss_OSVersion);
@@ -188,9 +189,9 @@ static WERROR sptr_GetPrintServerData(struct ntptr_GenericHandle *server, TALLOC
 		enum ndr_err_code ndr_err;
 		struct spoolss_OSVersionEx os_ex;
 
-		os_ex.major		= dcesrv_common_get_version_major(mem_ctx, server->ntptr->lp_ctx);
-		os_ex.minor		= dcesrv_common_get_version_minor(mem_ctx, server->ntptr->lp_ctx);
-		os_ex.build		= dcesrv_common_get_version_build(mem_ctx, server->ntptr->lp_ctx);
+		os_ex.major		= server_info->version_major;
+		os_ex.minor		= server_info->version_minor;
+		os_ex.build		= server_info->version_build;
 		os_ex.extra_string		= "";
 		os_ex.unknown2		= 0;
 		os_ex.unknown3		= 0;

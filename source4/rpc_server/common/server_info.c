@@ -60,28 +60,6 @@ const char *dcesrv_common_get_server_name(TALLOC_CTX *mem_ctx, struct dcesrv_con
 	return talloc_strdup(mem_ctx, p);
 }
 
-const char *dcesrv_common_get_domain_name(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx)
-{
-	return talloc_strdup(mem_ctx, lp_workgroup(dce_ctx->lp_ctx));
-}
-
-/* This hardcoded value should go into a ldb database! */
-uint32_t dcesrv_common_get_version_major(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
-{
-	return lp_parm_int(lp_ctx, NULL, "server_info", "version_major", 5);
-}
-
-/* This hardcoded value should go into a ldb database! */
-uint32_t dcesrv_common_get_version_minor(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
-{
-	return lp_parm_int(lp_ctx, NULL, "server_info", "version_minor", 2);
-}
-
-/* This hardcoded value should go into a ldb database! */
-uint32_t dcesrv_common_get_version_build(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
-{
-	return lp_parm_int(lp_ctx, NULL, "server_info", "version_build", 3790);
-}
 
 /* This hardcoded value should go into a ldb database! */
 uint32_t dcesrv_common_get_server_type(TALLOC_CTX *mem_ctx, struct event_context *event_ctx, struct dcesrv_context *dce_ctx)
