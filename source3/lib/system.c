@@ -1190,46 +1190,6 @@ int sys_pclose(int fd)
 	return wstatus;
 }
 
-/**************************************************************************
- Wrappers for dlopen, dlsym, dlclose.
-****************************************************************************/
-
-void *sys_dlopen(const char *name, int flags)
-{
-#if defined(HAVE_DLOPEN)
-	return dlopen(name, flags);
-#else
-	return NULL;
-#endif
-}
-
-void *sys_dlsym(void *handle, const char *symbol)
-{
-#if defined(HAVE_DLSYM)
-    return dlsym(handle, symbol);
-#else
-    return NULL;
-#endif
-}
-
-int sys_dlclose (void *handle)
-{
-#if defined(HAVE_DLCLOSE)
-	return dlclose(handle);
-#else
-	return 0;
-#endif
-}
-
-const char *sys_dlerror(void)
-{
-#if defined(HAVE_DLERROR)
-	return dlerror();
-#else
-	return NULL;
-#endif
-}
-
 int sys_dup2(int oldfd, int newfd) 
 {
 #if defined(HAVE_DUP2)
